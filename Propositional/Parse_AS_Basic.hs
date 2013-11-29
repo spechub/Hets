@@ -18,7 +18,7 @@ module Propositional.Parse_AS_Basic
   ( basicSpec                      -- Parser for basic specs
   , symbItems
   , symbMapItems
-  , impFormula 
+  , impFormula
   ) where
 
 import qualified Common.AnnoState as AnnoState
@@ -59,7 +59,7 @@ parseAxItems = do
        d <- AnnoState.dotT
        (fs, ds) <- aFormula `Lexer.separatedBy` AnnoState.dotT
        (_, an) <- AnnoState.optSemi
-       let _  = Id.catRange (d:ds)
+       let _ = Id.catRange (d : ds)
            ns = init fs ++ [Annotation.appendAnno (last fs) an]
        return $ AS_BASIC.Axiom_items ns
 
@@ -104,7 +104,7 @@ negKey :: AnnoState.AParser st Id.Token
 negKey = AnnoState.asKey Keywords.negS
 
 -- | Parser for equivalence @<=>@
-equivKey ::  AnnoState.AParser st Id.Token
+equivKey :: AnnoState.AParser st Id.Token
 equivKey = AnnoState.asKey Keywords.equivS
 
 -- | Parser for primitive formulae
@@ -128,11 +128,11 @@ andOrFormula = do
                   f <- primFormula
                   do c <- andKey
                      (fs, ps) <- primFormula `Lexer.separatedBy` andKey
-                     return (AS_BASIC.Conjunction (f:fs) (Id.catRange (c:ps)))
+                     return (AS_BASIC.Conjunction (f : fs) (Id.catRange (c : ps)))
                     <|>
                     do c <- orKey
                        (fs, ps) <- primFormula `Lexer.separatedBy` orKey
-                       return (AS_BASIC.Disjunction (f:fs) (Id.catRange (c:ps)))
+                       return (AS_BASIC.Disjunction (f : fs) (Id.catRange (c : ps)))
                     <|> return f
 
 -- | Parser for formulae with implications
@@ -141,17 +141,17 @@ impFormula = do
                 f <- andOrFormula
                 do c <- implKey
                    (fs, ps) <- andOrFormula `Lexer.separatedBy` implKey
-                   return (makeImpl      (f:fs) (Id.catPosAux (c:ps)))
+                   return (makeImpl (f : fs) (Id.catPosAux (c : ps)))
                   <|>
                   do c <- equivKey
                      g <- andOrFormula
                      return (AS_BASIC.Equivalence f g $ Id.tokPos c)
                   <|> return f
-                    where makeImpl [f,g] p =
+                    where makeImpl [f, g] p =
                               AS_BASIC.Implication f g (Id.Range p)
-                          makeImpl (f:r) (c:p) = AS_BASIC.Implication f
+                          makeImpl (f : r) (c : p) = AS_BASIC.Implication f
                               (makeImpl r p) (Id.Range [c])
-                          makeImpl   _ _ =
+                          makeImpl _ _ =
                               error "makeImpl got illegal argument"
 
 -- | Parser for formulae with parentheses
@@ -163,7 +163,7 @@ parenFormula = do
 
 -- | Toplevel parser for formulae
 aFormula :: AnnoState.AParser st (Annotation.Annoted AS_BASIC.FORMULA)
-aFormula =  AnnoState.allAnnoParser impFormula
+aFormula = AnnoState.allAnnoParser impFormula
 
 -- | parsing a prop symbol
 symb :: GenParser Char st SYMB
@@ -173,9 +173,9 @@ symb = fmap Symb_id propId
 symbMap :: GenParser Char st SYMB_OR_MAP
 symbMap = do
   s <- symb
-  do  f <- pToken $ toKey mapsTo
-      t <- symb
-      return (Symb_map s t $ tokPos f)
+  do f <- pToken $ toKey mapsTo
+     t <- symb
+     return (Symb_map s t $ tokPos f)
     <|> return (Symb s)
 
 -- | Parse a list of comma separated symbols.
@@ -188,9 +188,9 @@ symbItems = do
 symbs :: GenParser Char st ([SYMB], [Token])
 symbs = do
        s <- symb
-       do   c <- commaT `followedWith` symb
-            (is, ps) <- symbs
-            return (s:is, c:ps)
+       do c <- commaT `followedWith` symb
+          (is, ps) <- symbs
+          return (s : is, c : ps)
          <|> return ([s], [])
 
 -- | parse a list of symbol mappings
@@ -203,7 +203,7 @@ symbMapItems = do
 symbMaps :: GenParser Char st ([SYMB_OR_MAP], [Token])
 symbMaps = do
   s <- symbMap
-  do  c <- commaT `followedWith` symb
-      (is, ps) <- symbMaps
-      return (s:is, c:ps)
+  do c <- commaT `followedWith` symb
+     (is, ps) <- symbMaps
+     return (s : is, c : ps)
     <|> return ([s], [])

@@ -312,8 +312,8 @@ individualUri = uriP
 individual :: CharParser st Individual
 individual = do
     i <- individualUri
-    if namePrefix i == "_" then return $ i {iriType = NodeID}
-                            else return i
+    return $ if namePrefix i == "_" then i {iriType = NodeID}
+                                    else i
 
 skipChar :: Char -> CharParser st ()
 skipChar = forget . skips . char
@@ -602,6 +602,6 @@ importEntry = pkeyword importC >> uriP
 convertPrefixMap :: GA.PrefixMap -> Map.Map String String
 convertPrefixMap pm = Map.fromList $ map convertPrefixMapping (Map.toList pm)
 
-convertPrefixMapping :: (String,IRI.IRI) -> (String,String)
-convertPrefixMapping (pfx,i) = (if not (null pfx) then init pfx else pfx,
+convertPrefixMapping :: (String, IRI.IRI) -> (String, String)
+convertPrefixMapping (pfx, i) = (if not (null pfx) then init pfx else pfx,
                                 IRI.iriToStringUnsecure i)

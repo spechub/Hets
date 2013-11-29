@@ -31,13 +31,14 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.List (partition, groupBy, sortBy)
 import Data.Ord
+import Data.Function (on)
 
 instance Pretty GlobalAnnos where
   pretty = printAnnotationList . convertGlobalAnnos . removeHetCASLprefixes
 
 removeHetCASLprefixes :: GlobalAnnos -> GlobalAnnos
 removeHetCASLprefixes ga = ga
-  { prefix_map = Map.filter (not. null . iriScheme) $ prefix_map ga }
+  { prefix_map = Map.filter (not . null . iriScheme) $ prefix_map ga }
 
 convertGlobalAnnos :: GlobalAnnos -> [Annotation]
 convertGlobalAnnos ga = convertPrefixMap (prefix_map ga)
@@ -57,7 +58,7 @@ convertPrec pg =
            (filter ((> 1) . length) $ map Set.toList cs)
        ++ map (\ l ->
         Prec_anno Lower (map fst l) (Set.toList $ snd $ head l) nullRange)
-        (groupBy (\ a b -> snd a == snd b)
+        (groupBy ((==) `on` snd)
           $ sortBy (comparing snd)
             $ Map.toList $ Rel.toMap
                $ Rel.rmNullSets $ Rel.transReduce $ Rel.irreflex

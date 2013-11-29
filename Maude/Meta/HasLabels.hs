@@ -18,7 +18,7 @@ Consider importing "Maude.Meta" instead of this module.
 
 module Maude.Meta.HasLabels (
     -- * The HasLabels type class
-    HasLabels(..)
+    HasLabels (..)
 ) where
 
 import Maude.AS_Maude

@@ -10,8 +10,6 @@ Portability :  portable
 
 Definition of morphisms for temporal logic
 copied from "Propositional.Morphism"
--}
-{-
   Ref.
 
   Till Mossakowski, Joseph Goguen, Razvan Diaconescu, Andrzej Tarlecki.
@@ -42,9 +40,10 @@ import Common.Id as Id
 import Common.Result
 import Common.Doc
 import Common.DocUtils
+import Control.Monad (unless)
 
--- | The datatype for morphisms in temporal logic as
---   maps of sets
+{- | The datatype for morphisms in temporal logic as
+maps of sets -}
 data Morphism = Morphism
   { source :: Sign
   , target :: Sign
@@ -63,10 +62,10 @@ isLegalMorphism :: Morphism -> Result ()
 isLegalMorphism pmor =
     let psource = items $ source pmor
         ptarget = items $ target pmor
-        pdom    = Map.keysSet $ propMap pmor
-        pcodom  = Set.map (applyMorphism pmor) $ psource
-    in if Set.isSubsetOf pcodom ptarget && Set.isSubsetOf pdom psource
-    then return () else fail "illegal Temporal morphism"
+        pdom = Map.keysSet $ propMap pmor
+        pcodom = Set.map (applyMorphism pmor) psource
+    in unless (Set.isSubsetOf pcodom ptarget && Set.isSubsetOf pdom psource) $
+        fail "illegal Temporal morphism"
 
 -- | Application funtion for morphisms
 applyMorphism :: Morphism -> Id -> Id
@@ -81,8 +80,8 @@ composeMor :: Morphism -> Morphism -> Result Morphism
 composeMor f g =
   let fSource = source f
       gTarget = target g
-      fMap    = propMap f
-      gMap    = propMap g
+      fMap = propMap f
+      gMap = propMap g
   in return Morphism
   { source = fSource
   , target = gTarget
@@ -104,8 +103,8 @@ inclusionMap s1 s2 = Morphism
   , target = s2
   , propMap = Map.empty }
 
--- | sentence translation along signature morphism
--- here just the renaming of formulae
+{- | sentence translation along signature morphism
+here just the renaming of formulae -}
 mapSentence :: Morphism -> AS_BASIC.FORMULA -> Result.Result AS_BASIC.FORMULA
 mapSentence mor = return . mapSentenceH mor
 

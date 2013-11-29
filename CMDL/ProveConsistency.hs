@@ -24,7 +24,7 @@ import Interfaces.GenericATPState (ATPTacticScript (..))
 import Interfaces.History
 import Interfaces.Utils
 
-import CMDL.DataTypes (CmdlState (intState), ProveCmdType(..)) 
+import CMDL.DataTypes (CmdlState (intState), ProveCmdType (..))
 import CMDL.DataTypesUtils
 import CMDL.Utils (checkPresenceProvers)
 
@@ -59,21 +59,26 @@ import Control.Concurrent.MVar (MVar, newMVar, putMVar, takeMVar, readMVar,
 
 import Control.Monad
 
+import Data.Foldable (forM_)
 
-negate_th_with_cons_checker :: G_theory_with_cons_checker -> String -> Maybe G_theory_with_cons_checker 
+negate_th_with_cons_checker :: G_theory_with_cons_checker -> String ->
+                               Maybe G_theory_with_cons_checker
 negate_th_with_cons_checker g_th goal = case g_th of
   G_theory_with_cons_checker lid1 th cons_check ->
-    case (P.tTarget th) of
+    case P.tTarget th of
       P.Theory lid2 sens -> case OMap.lookup goal sens of
         Nothing -> Nothing
         Just sen -> case negation lid1 $ sentence sen of
                                 Nothing -> Nothing
                                 Just sen' -> let
-                                  negSen = sen { sentence = sen', isAxiom = True }
-                                  sens' = OMap.insert goal negSen $ OMap.filter isAxiom sens
+                                  negSen = sen { sentence = sen',
+                                                 isAxiom = True }
+                                  sens' = OMap.insert goal negSen $
+                                           OMap.filter isAxiom sens
                                   target' = P.Theory lid2 sens'
-                                 in Just $ G_theory_with_cons_checker lid1 th{P.tTarget = target'} cons_check
-        
+                                 in Just $ G_theory_with_cons_checker lid1 th
+                                            {P.tTarget = target'} cons_check
+
 getProversAutomatic :: G_sublogics -> [(G_prover, AnyComorphism)]
 getProversAutomatic sl = getAllProvers P.ProveCMDLautomatic sl logicGraph
 
@@ -99,12 +104,12 @@ cProver input state =
         in case case cComorphism pS of
                    Nothing -> pl
                    Just x -> filter ((== x) . snd) pl ++ pl of
-             [] -> (if inp=="" then do
+             [] -> if inp == "" then do
                             mapM_ putStrLn (nub prover_names)
-                            return state        
+                            return state
                                else return (genMsgAndCode
                  ("No applicable prover with name \"" ++ inp ++ "\" found") 1
-                 state))
+                 state)
              (p, nCm@(Comorphism cid)) : _ ->
                return $ add2hist [ ProverChange $ prover pS
                                  , CComorphismChange $ cComorphism pS ]
@@ -129,7 +134,7 @@ cConsChecker input state =
      case elements pS of
       [] -> return $ genMsgAndCode "Nothing selected" 1 state
       Element z _ : _ ->
-       do 
+       do
         let consCheckList = getConsCheckers $ findComorphismPaths
                                 logicGraph $ sublogicOfTheory z
         -- see if any comorphism was used
@@ -137,11 +142,14 @@ cConsChecker input state =
         {- if none use the theory of the first selected node
         to find possible comorphisms -}
          Nothing -> case find (\ (y, _) -> getCcName y == inp) consCheckList of
-                    Nothing ->if inp =="" then do
-                                            let shortConsCList =nub $  map (\ (y, _) -> getCcName y) consCheckList
+                    Nothing -> if inp == "" then do
+                                            let shortConsCList = nub $ map
+                                                 (\ (y, _) -> getCcName y)
+                                                 consCheckList
                                             mapM_ putStrLn shortConsCList
                                             return state
-                                          else return $ genMsgAndCode ("No applicable " ++
+                                          else return $ genMsgAndCode
+                                ("No applicable " ++
                                  "consistency checker with this name found") 1
                                  state
                     Just (p, _) -> return $ add2hist
@@ -156,12 +164,15 @@ cConsChecker input state =
           case find (\ (y, _) -> getCcName y == inp)
                      $ getConsCheckers [x] of
            Nothing ->
-            case find (\ (y, _) -> getCcName y == inp) $ consCheckList of
-             Nothing -> if inp =="" then do
-                                            let shortConsCList =nub $ map (\ (y, _) -> getCcName y) consCheckList
+            case find (\ (y, _) -> getCcName y == inp) consCheckList of
+             Nothing -> if inp == "" then do
+                                            let shortConsCList = nub $ map
+                                                 (\ (y, _) -> getCcName y)
+                                                 consCheckList
                                             mapM_ putStrLn shortConsCList
                                             return state
-                                    else return $ genMsgAndCode ("No applicable " ++
+                                    else return $ genMsgAndCode
+                                ("No applicable " ++
                                  "consistency checker with this name found") 1
                                  state
              Just (p, nCm@(Comorphism cid)) ->
@@ -183,7 +194,7 @@ cConsChecker input state =
 {- | Given a proofstatus the function does the actual call of the
 prover for consistency checking -}
 
-checkNode :: 
+checkNode ::
               -- Tactic script
               ATPTacticScript ->
               {- proofState of the node that needs proving
@@ -257,12 +268,12 @@ checkNode sTxt ndpf ndnm mp mcm mSt miSt ln =
             Just iist -> case P.ccResult cstat of
              Nothing -> return ""
              Just b -> do
-              if (showOutput iist) then 
+              if showOutput iist then
                 do
                   putStrLn "____________________________"
-                  putStrLn $ show $ P.ccProofTree cstat 
+                  print $ P.ccProofTree cstat
                   putStrLn "____________________________"
-                                   else putStr ""         
+                                   else putStr ""
               let le = i_libEnv iist
                   dg = lookupDGraph ln le
                   nl = labDG dg nd
@@ -357,7 +368,7 @@ proveNode useTh save2File sTxt ndpf ndnm mp mcm mThr mSt miSt libname =
            _ ->
             do
              putStrLn "selectedGoals:"
-             putStrLn $ unlines (selectedGoals st') 
+             putStrLn $ unlines (selectedGoals st')
              tmp <- fn useTh
                       save2File
                       answ
@@ -432,20 +443,21 @@ disproveNode sTxt ndpf ndnm mp mcm mSt miSt ln =
       Just (theory@(G_theory_with_cons_checker l _ p), _) ->
         case P.ccAutomatic p of
          fn ->
-          do         
+          do
           let goals = selectedGoals st
-              st' = st{ proverRunning = True }
+              st' = st { proverRunning = True }
               negate_theory = negate_th_with_cons_checker theory
               theories = map negate_theory goals
-              th_and_goals = zip theories goals 
-              disprove_goal (theory',goal) = 
-                case theory' of 
-                  Nothing -> return  $ "Negating goal " ++ goal ++" failed"
+              th_and_goals = zip theories goals
+              disprove_goal (theory', goal) =
+                case theory' of
+                  Nothing -> return $ "Negating goal " ++ goal ++ " failed"
                   Just (G_theory_with_cons_checker l2 th' _) ->
-                    do   
+                    do
                     -- store initial input of the prover
                     let tLimit = show $ tsTimeLimit sTxt
-                    th2 <- coerceTheoryMorphism l2 l "coerce error CMDL.ProveConsistency " th'
+                    th2 <- coerceTheoryMorphism l2 l
+                            "coerce error CMDL.ProveConsistency " th'
                     swapMVar mSt $ Just $ Element st' nd
                     cstat <- fn (theoryName st)
                           (P.TacticScript tLimit)
@@ -468,18 +480,22 @@ disproveNode sTxt ndpf ndnm mp mcm mSt miSt ln =
                             newDg0 = changeDGH dg $ SetNodeLab nl (nd,
                               markNodeConsistency
                               (if b then Cons else Inconsistent) "" nl)
-                            newDg = groupHistory dg (DGRule "Consistency check") newDg0
+                            newDg = groupHistory dg
+                                     (DGRule "Consistency check") newDg0
                             nst = add2history
-                              (CommentCmd $ "disprove at goal " ++ goal ++ ", node " ++ nn ++ "\n")
+                              (CommentCmd $ "disprove at goal " ++ goal ++
+                                            ", node " ++ nn ++ "\n")
                               ist [DgCommandChange ln]
                             nwst = nst { i_state =
-                                     Just iist { i_libEnv = Map.insert ln newDg le } }
+                                     Just iist { i_libEnv = Map.insert ln
+                                                             newDg le } }
                         swapMVar miSt nwst
                         return ""
-          mapM_ (\x -> do y <- x 
-                          putStrLn y
-                          return () ) $ map disprove_goal th_and_goals
-          return "" 
+          mapM_ ((\ x -> do
+                           y <- x
+                           putStrLn y
+                           return () ) . disprove_goal) th_and_goals
+          return ""
 
 getResults :: (Logic lid sublogics basic_spec sentence
                      symb_items symb_map_items
@@ -534,9 +550,7 @@ sigIntHandler mthr miSt mSt thr mOut libname =
    putStrLn "Prover stopped."
    -- check if the prover is runnig
    tmp <- readMVar mthr
-   case tmp of
-     Nothing -> return ()
-     Just sm -> killThread sm
+   Data.Foldable.forM_ tmp killThread
    -- kill the prove/prove-all thread
    killThread thr
    -- update LibEnv with intermidiar results !?

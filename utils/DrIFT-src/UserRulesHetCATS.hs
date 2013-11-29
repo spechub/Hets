@@ -186,7 +186,7 @@ showsfn n ns cn =
 
 preorder :: [Body] -> [b] -> [b]
 preorder cs =
-    map snd . reverse . sortBy (\ (a, _) (b, _) -> compare a b)
+    map snd . sortBy (\ (b, _) (a, _) -> compare a b)
     . zip (map constructor cs)
 
 

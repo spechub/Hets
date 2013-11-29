@@ -36,8 +36,8 @@ data ATOMCONJUNCTION = Atom_Conjunction [ATOM]
                    deriving (Eq, Ord, Show)
 
 
-data ATOM = Prefix_Atom RELATION [(ConstraintTERM)]
-          | Infix_Atom (ConstraintTERM) RELATION (ConstraintTERM)
+data ATOM = Prefix_Atom RELATION [ConstraintTERM]
+          | Infix_Atom ConstraintTERM RELATION ConstraintTERM
             deriving (Eq, Ord, Show)
 
 data ConstraintTERM = Atomar_Term Id | Composite_Term Id [ConstraintTERM]

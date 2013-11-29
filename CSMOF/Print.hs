@@ -16,18 +16,18 @@ import CSMOF.As
 import Common.Doc
 import Common.DocUtils
 
-                            
+
 instance Pretty Metamodel where
-  pretty (Metamodel nam ele mode) = 
-    text "metamodel" <+> text nam <+> lbrace  
-    $++$ space <+> space <+> foldr (($++$). pretty) empty ele
-    $+$ rbrace 
+  pretty (Metamodel nam ele mode) =
+    text "metamodel" <+> text nam <+> lbrace
+    $++$ space <+> space <+> foldr (($++$) . pretty) empty ele
+    $+$ rbrace
     $++$ foldr (($+$) . pretty) empty mode
 
 instance Show Metamodel where
   show m = show $ pretty m
 
-                                   
+
 instance Pretty NamedElement where
   pretty (NamedElement _ _ nes) = pretty nes
 
@@ -41,15 +41,15 @@ instance Pretty TypeOrTypedElement where
 
 instance Show TypeOrTypedElement where
   show m = show $ pretty m
-  
-  
+
+
 instance Pretty Type where
   pretty (Type _ sub) = pretty sub
 
 instance Show Type where
   show m = show $ pretty m
-  
-                   
+
+
 instance Pretty DataTypeOrClass where
   pretty (DDataType dat) = pretty dat
   pretty (DClass cla) = pretty cla
@@ -57,26 +57,24 @@ instance Pretty DataTypeOrClass where
 instance Show DataTypeOrClass where
   show m = show $ pretty m
 
-                        
+
 instance Pretty DataType where
   pretty (DataType sup) = text "datatype" <+> text (namedElementName (typeSuper sup))
 
 instance Show DataType where
   show m = show $ pretty m
 
-                        
+
 instance Pretty Class where
   pretty (Class sup isa supC own) =
-    (case isa of 
-        True -> text "abstract class"
-        False -> text "class")
+    text (if isa then "abstract class" else "class")
     <+> text (namedElementName (typeSuper sup))
     <+> (case supC of
            [] -> lbrace
            _ : _ -> text "extends"
                     <+> foldr ( (<+>) . text . namedElementName . typeSuper . classSuperType) empty supC
                     <+> lbrace)
-    $+$ space <+> space <+> foldr (($+$). pretty) empty own
+    $+$ space <+> space <+> foldr (($+$) . pretty) empty own
     $+$ rbrace
 
 instance Show Class where
@@ -88,9 +86,9 @@ instance Pretty TypedElement where
 
 instance Show TypedElement where
   show m = show $ pretty m
-        
-        
-instance Pretty Property where                           
+
+
+instance Pretty Property where
   pretty (Property sup mul opp _) =
     text "property" <+> text (namedElementName (typedElementSuper sup))
     <> pretty mul
@@ -101,26 +99,26 @@ instance Pretty Property where
 
 instance Show Property where
   show m = show $ pretty m
-    
-                                      
+
+
 instance Pretty MultiplicityElement where
   pretty (MultiplicityElement low upp _) =
-    lbrack <> pretty low <> comma 
-    <> (if upp == -1 
+    lbrack <> pretty low <> comma
+    <> (if upp == -1
         then text "*"
         else pretty upp)
     <> rbrack
 
 instance Show MultiplicityElement where
   show m = show $ pretty m
-                                      
-  
+
+
 -- Model part of CSMOF
 
-                        
+
 instance Pretty Model where
   pretty (Model mon obj lin mode) =
-    text "model" <+> text mon 
+    text "model" <+> text mon
     <+> text "conformsTo" <+> text (metamodelName mode) <+> lbrace
     $++$ space <+> space <+> foldr (($+$) . pretty) empty obj
     $++$ space <+> space <+> foldr (($+$) . pretty) empty lin
@@ -128,17 +126,17 @@ instance Pretty Model where
 
 instance Show Model where
   show m = show $ pretty m
-                        
-    
+
+
 instance Pretty Object where
-  pretty (Object on ot _) = 
+  pretty (Object on ot _) =
     text "object " <> text on
     <+> colon <+> text (namedElementName (typeSuper ot))
 
 instance Show Object where
   show m = show $ pretty m
-    
-    
+
+
 instance Pretty Link where
   pretty (Link lt sou tar _) =
     text "link" <+> text (namedElementName (typedElementSuper (propertySuper lt)))
@@ -146,4 +144,3 @@ instance Pretty Link where
 
 instance Show Link where
   show m = show $ pretty m
-    

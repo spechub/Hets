@@ -36,7 +36,7 @@ instance Pretty COLSign where
 
 printCOLSign :: COLSign -> Doc
 printCOLSign s = keyword constructorS <+>
-    (fsep $ punctuate semi $ map idDoc (Set.toList $ constructors s))
+    fsep (punctuate semi $ map idDoc (Set.toList $ constructors s))
     $+$ keyword observerS <+>
-    (fsep $ punctuate semi $
+    fsep (punctuate semi $
       map (printPair idDoc pretty) (Map.toList $ observers s))

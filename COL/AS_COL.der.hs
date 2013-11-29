@@ -31,13 +31,13 @@ data COL_SIG_ITEM =
              deriving (Eq, Show)
 
 
-constructorS, constructorsS    :: String
+constructorS, constructorsS :: String
 constructorS = "constructor"
 constructorsS = constructorS ++ "s"
 
-observerS, observersS    :: String
+observerS, observersS :: String
 observerS = "observer"
 observersS = observerS ++ "s"
 
 col_reserved_words :: [String]
-col_reserved_words = [constructorS,constructorsS,observerS,observersS]
+col_reserved_words = [constructorS, constructorsS, observerS, observersS]

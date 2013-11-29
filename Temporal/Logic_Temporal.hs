@@ -41,11 +41,11 @@ instance Category
     Sign.Sign
     Morphism.Morphism
     where
-        ide         = Morphism.idMor  -- Identity morphism
-        dom         = Morphism.source -- Returns the domain of a morphism
-        cod         = Morphism.target -- Returns the codomain of a morphism
-        legal_mor f = Morphism.isLegalMorphism f -- Tests if the morphism is ok
-        composeMorphisms f g = Morphism.composeMor f g
+        ide = Morphism.idMor  -- Identity morphism
+        dom = Morphism.source -- Returns the domain of a morphism
+        cod = Morphism.target -- Returns the codomain of a morphism
+        legal_mor = Morphism.isLegalMorphism -- Tests if the morphism is ok
+        composeMorphisms = Morphism.composeMor
         -- Composition of morphisms
 
 -- | Instance of Sentences for temporal logic
@@ -55,13 +55,13 @@ instance Sentences Temporal
     Morphism.Morphism
     Symbol.Symbol
     where
-        sym_of       Temporal        = singletonList . Symbol.symOf
+        sym_of Temporal = singletonList . Symbol.symOf
         -- Returns a list of sets of symbols
-        symmap_of    Temporal        = Symbol.getSymbolMap
+        symmap_of Temporal = Symbol.getSymbolMap
         -- Returns the symbol map
-        sym_name     Temporal        = Symbol.getSymbolName
+        sym_name Temporal = Symbol.getSymbolName
         -- Returns the name of a symbol
-        map_sen      Temporal        = Morphism.mapSentence
+        map_sen Temporal = Morphism.mapSentence
         -- Translation of sentences along signature morphism
         simplify_sen Temporal _ form = form
         -- There is nothing to leave out
@@ -72,8 +72,8 @@ instance Monoid AS_BASIC.BASIC_SPEC where
 
 -- | Syntax of Temporal logic
 instance Syntax Temporal
-    AS_BASIC.BASIC_SPEC 
-    Symbol.Symbol 
+    AS_BASIC.BASIC_SPEC
+    Symbol.Symbol
     ()
     ()
 
@@ -101,10 +101,10 @@ instance StaticAnalysis Temporal
     Symbol.Symbol                      -- symbol
     Symbol.Symbol                      -- raw_symbol
         where
-          empty_signature          Temporal = Sign.emptySig
-          is_subsig                Temporal = Sign.isSubSigOf
+          empty_signature Temporal = Sign.emptySig
+          is_subsig Temporal = Sign.isSubSigOf
           subsig_inclusion Temporal s = return . Morphism.inclusionMap s
-          signature_union          Temporal = Sign.sigUnion
-          symbol_to_raw            Temporal = Symbol.symbolToRaw
-          id_to_raw                Temporal = Symbol.idToRaw
-          matches                  Temporal = Symbol.matches
+          signature_union Temporal = Sign.sigUnion
+          symbol_to_raw Temporal = Symbol.symbolToRaw
+          id_to_raw Temporal = Symbol.idToRaw
+          matches Temporal = Symbol.matches

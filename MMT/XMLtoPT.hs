@@ -1,11 +1,11 @@
 {- |
 Module      :  $Header$
 Description :  parsing functions from XML to parse tree
-Copyright   :  
-License     :  
+Copyright   :
+License     :
 Maintainer  :  a.jakubauskas@jacobs-university.de
 Stability   :  experimental
-Portability :  
+Portability :
 
 Parsing functions from XML to parse tree
 -}
@@ -29,18 +29,18 @@ parse :: String -> IO [Result Decl]
 parse fname = do
     putStr $ "reading file " ++ fname ++ "\n"
     tree <- readPT fname
---    putStr $ "reading XML tree: \n" ++ (show (onlyElems tree)) ++ "\n\n"
+-- putStr $ "reading XML tree: \n" ++ (show (onlyElems tree)) ++ "\n\n"
     return (map parseDeclR (onlyElems tree))
 
 -- get attribute value by key (string)
 getAttByName :: String -> Element -> String
-getAttByName x e = -- trace ("looking at:\n" ++ show x ++ "\nin\n" ++ show e) $ 
+getAttByName x e = -- trace ("looking at:\n" ++ show x ++ "\nin\n" ++ show e) $
                    fromJust
         (findAttr QName {qName = x, qURI = Nothing, qPrefix = Nothing} e)
 
 getAttByNameMaybe :: String -> Element -> Maybe String
-getAttByNameMaybe x e =
-        findAttr QName {qName = x, qURI = Nothing, qPrefix = Nothing} e
+getAttByNameMaybe x =
+        findAttr QName {qName = x, qURI = Nothing, qPrefix = Nothing}
 
 getAttByNameR :: String -> Element -> Result String
 getAttByNameR x e = let
@@ -103,16 +103,16 @@ parseNTreeR "app" e = let
                     Nothing -> Result (diags body) Nothing
 
 parseNTreeR "bind" e = let
-                     binder = (getAttByName "binder" e)
-                     var = (getAttByName "var" e)
+                     binder = getAttByName "binder" e
+                     var = getAttByName "var" e
                      body = parseTreeR (head (elChildren e))
                      in
                      case maybeResult body of
                         (Just r) -> Result [] (Just (Bind binder var r))
                         Nothing -> Result [] Nothing
 parseNTreeR "tbind" e = let
-                      binder = (getAttByName "binder" e)
-                      var = (getAttByName "var" e)
+                      binder = getAttByName "binder" e
+                      var = getAttByName "var" e
                       tp = parseTreeR (head (elChildren e))
                       body = parseTreeR (last (elChildren e))
                       in

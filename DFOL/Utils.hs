@@ -65,11 +65,11 @@ piPrec = 3
 -- datatype for items annotated with diagnostic messages
 data DIAGN a = Diagn
     { diags :: [Result.Diagnosis]
-    , item  :: a
+    , item :: a
     } deriving (Show, Eq)
 
 -- conjunction for a list of truth values with diagnostic messages
 andD :: [DIAGN Bool] -> DIAGN Bool
 andD xs = Diagn diag result
-          where result = and $ map item xs
-                diag = concat $ map diags xs
+          where result = all item xs
+                diag = concatMap diags xs

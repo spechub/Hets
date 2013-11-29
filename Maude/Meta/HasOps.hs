@@ -18,7 +18,7 @@ Consider importing "Maude.Meta" instead of this module.
 
 module Maude.Meta.HasOps (
     -- * The HasOps type class
-    HasOps(..)
+    HasOps (..)
 ) where
 
 import Maude.AS_Maude
@@ -42,11 +42,11 @@ class HasOps a where
 
 instance HasOps Symbol where
     getOps sym = case sym of
-        Operator _ _ _ -> Set.singleton sym
+        Operator {} -> Set.singleton sym
         OpWildcard _ -> Set.singleton sym
         _ -> Set.empty
     mapOps mp sym = case sym of
-        Operator _ _ _ -> mapAsSymbol id mp sym
+        Operator {} -> mapAsSymbol id mp sym
         OpWildcard _ -> mapAsSymbol id mp sym
         _ -> sym
 
@@ -74,13 +74,13 @@ instance HasOps Operator where
 
 instance HasOps Attr where
     getOps attr = case attr of
-        Id term      -> getOps term
-        LeftId term  -> getOps term
+        Id term -> getOps term
+        LeftId term -> getOps term
         RightId term -> getOps term
         _ -> Set.empty
     mapOps mp attr = case attr of
-        Id term      -> Id $ mapOps mp term
-        LeftId term  -> LeftId $ mapOps mp term
+        Id term -> Id $ mapOps mp term
+        LeftId term -> LeftId $ mapOps mp term
         RightId term -> RightId $ mapOps mp term
         _ -> attr
 
@@ -96,15 +96,15 @@ instance HasOps Term where
 
 instance HasOps Condition where
     getOps cond = case cond of
-        EqCond t1 t2    -> getOps (t1, t2)
-        MbCond t _      -> getOps t
+        EqCond t1 t2 -> getOps (t1, t2)
+        MbCond t _ -> getOps t
         MatchCond t1 t2 -> getOps (t1, t2)
-        RwCond t1 t2    -> getOps (t1, t2)
+        RwCond t1 t2 -> getOps (t1, t2)
     mapOps mp cond = case cond of
-        EqCond t1 t2    -> EqCond (mapOps mp t1) (mapOps mp t2)
-        MbCond t s      -> MbCond (mapOps mp t) s
+        EqCond t1 t2 -> EqCond (mapOps mp t1) (mapOps mp t2)
+        MbCond t s -> MbCond (mapOps mp t) s
         MatchCond t1 t2 -> MatchCond (mapOps mp t1) (mapOps mp t2)
-        RwCond t1 t2    -> RwCond (mapOps mp t1) (mapOps mp t2)
+        RwCond t1 t2 -> RwCond (mapOps mp t1) (mapOps mp t2)
 
 instance HasOps Membership where
     getOps (Mb t _ cs _) = getOps (t, cs)

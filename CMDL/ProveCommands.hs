@@ -30,7 +30,7 @@ module CMDL.ProveCommands
        ) where
 
 import CMDL.DataTypes (CmdlState (intState), CmdlGoalAxiom (..),
-                      CmdlListAction (..), ProveCmdType(..))
+                      CmdlListAction (..), ProveCmdType (..))
 import CMDL.DataTypesUtils (add2hist, genMsgAndCode, genMessage,
                             genAddMessage, getIdComorphism)
 
@@ -253,15 +253,14 @@ cSetUseThms val state
                              useTheorems = val } } }
 
 cShowOutput :: Bool -> CmdlState -> IO CmdlState
-cShowOutput b state = do
+cShowOutput b state =
   case i_state $ intState state of
     Nothing -> return $ genMsgAndCode "Nothing selected" 1 state
-    Just pS -> do
-      return $ add2hist [ChShowOutput $ showOutput pS] $ 
-       state { 
+    Just pS -> return $ add2hist [ChShowOutput $ showOutput pS] $
+       state {
                 intState = (intState state) {
                   i_state = Just pS {
-                                  showOutput = b } } }  
+                                  showOutput = b } } }
 
 -- | Sets the save2File value to either true or false
 cSetSave2File :: Bool -> CmdlState -> IO CmdlState

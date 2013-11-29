@@ -174,14 +174,14 @@ mkNodeUpdate opts lg mGt (dg, lv, chL) xnd = let
 markLinkUpdates :: DGraph -> Node -> NodeMod -> ChangeList -> ChangeList
 markLinkUpdates dg t nmod chL = let
   (Just (ins, _, _, outs), _) = match t $ dgBody dg
-  in foldr (updateLinkChange (MkUpdate nmod)) chL
-     $ map (dgl_id . fst) $ ins ++ outs
+  in foldr (updateLinkChange (MkUpdate nmod) . dgl_id . fst) chL
+     $ ins ++ outs
 
 -- | update or insert a link if said so in changelist
 mkLinkUpdate :: LogicGraph -> (DGraph, LibEnv, ChangeList)
              -> (Node, GMorphism, DGLinkType, XLink)
              -> ResultT IO (DGraph, LibEnv, ChangeList)
-mkLinkUpdate lg (dg, lv, chL) (i, mr, tp, xl) = let ei = edgeId xl in do
+mkLinkUpdate lg (dg, lv, chL) (i, mr, tp, xl) = let ei = edgeId xl in
   case retrieveLinkChange ei chL of
     Nothing -> return (dg, lv, chL)
     Just (chA, chL') -> do

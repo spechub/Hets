@@ -58,8 +58,8 @@ instance StaticAnalysis Framework LogicDef () () ()
 instance Logic Framework () LogicDef () () () LogicDef Morphism () () ()
 
 
---------------------------------------------------------------------------------
---      FrameworkCom -     logical framework for the analysis of comorphisms
+{- ------------------------------------------------------------------------------
+FrameworkCom -     logical framework for the analysis of comorphisms -}
 type MorphismCom = DefaultMorphism ComorphismDef
 
 data FrameworkCom = FrameworkCom deriving Show

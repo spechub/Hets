@@ -28,10 +28,10 @@ import System.IO
 
 
 parseXmi :: FilePath -> IO LIB_DEFN
-parseXmi fp = 
+parseXmi fp =
   do
-    handle <- openFile fp ReadMode  
-    contents <- hGetContents handle 
+    handle <- openFile fp ReadMode
+    contents <- hGetContents handle
     case parseXMLDoc contents of
       Nothing -> return (Lib_defn (emptyLibName (convertFileToLibStr fp)) [] nullRange [])
       Just el -> return (parseCSMOFXmi fp el)
@@ -54,4 +54,3 @@ convertoItem el = makeSpecItem (simpleIdToIRI $ mkSimpleId $ metamodelName el) $
 
 createSpec :: Metamodel -> Annoted SPEC
 createSpec el = makeSpec $ G_basic_spec CSMOF el
-

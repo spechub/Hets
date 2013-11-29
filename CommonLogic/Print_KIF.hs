@@ -67,34 +67,34 @@ getQuantVarName v = stripVar $ tokStr $ case v of
   AS.Name x -> x
   AS.SeqMark x -> x
 
--- The "bv" argument contains a set of variables that are bound by quantifiers.
--- These variables are prepended by a '?' sign when printed.  
--- Sequence markers are always prepended by '@', without checking if they
--- are bounded.
+{- The "bv" argument contains a set of variables that are bound by quantifiers.
+These variables are prepended by a '?' sign when printed.
+Sequence markers are always prepended by '@', without checking if they
+are bounded. -}
 
 printSentence :: Set.Set String -> AS.SENTENCE -> Doc
 printSentence bv s = case s of
   AS.Quant_sent q vs is _ ->
-    parens $ printQuant q <+> parens (sep $ map (printNameOrSeqMark bv') vs) <+> 
+    parens $ printQuant q <+> parens (sep $ map (printNameOrSeqMark bv') vs) <+>
     printSentence bv' is
     where bv' = Set.union (Set.fromList $ map getQuantVarName vs) bv
   AS.Bool_sent xs _ -> parens $ printBoolSent bv xs
   AS.Atom_sent xs _ -> printAtom bv xs
   AS.Comment_sent _ y _ -> printSentence bv y
   AS.Irregular_sent xs _ -> printSentence bv xs
-  
+
 printBoolSent :: Set.Set String -> AS.BOOL_SENT -> Doc
 printBoolSent bv s = case s of
   AS.Junction q xs -> printAndOr q <+> fsep (map (printSentence bv) xs)
   AS.Negation xs -> text notS <+> printSentence bv xs
   AS.BinOp q x y -> printImplEq q <+> printSentence bv x <+> printSentence bv y
-  
+
 printAtom :: Set.Set String -> AS.ATOM -> Doc
 printAtom bv s = case s of
   AS.Equation a b -> parens $ equals <+> printTerm bv a <+> printTerm bv b
   AS.Atom t [] -> printTerm bv t
   AS.Atom t ts -> parens $ printTerm bv t <+> sep (map (printTermSeq bv) ts)
-  
+
 stripVar :: String -> String
 stripVar = dropWhile (`elem` "?@.")
 
@@ -103,7 +103,7 @@ printName bv name = text $ if Set.member cleanName bv
                            then '?' : cleanName
                            else cleanName
   where cleanName = stripVar $ tokStr name
-        
+
 printRowVar :: Token -> Doc
 printRowVar name = text $ '@' : stripVar (tokStr name)
 

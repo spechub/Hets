@@ -377,13 +377,13 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
                                              prName goal pt (configsMap s)}
                           cfg = getConfig prName goal pt (configsMap sEnt)
                           t = timeLimit cfg
-                          t' = (case sp of
+                          t' = case sp of
                                 Up -> maybe (guiDefaultTimeLimit + 10)
                                             (+ 10)
                                             t
                                 _ -> maybe (guiDefaultTimeLimit - 10)
                                             (subtract 10)
-                                            t)
+                                            t
                           s' = sEnt {configsMap =
                                          adjustOrSetConfig
                                               (setTimeLimit t')

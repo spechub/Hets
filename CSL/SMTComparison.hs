@@ -22,7 +22,7 @@ This could be an alternative if speed and robustness will be a problem.
 module CSL.SMTComparison
     ( smtCompare
     , smtCheck
-    , VarEnv(..)
+    , VarEnv (..)
     , VarMap
     ) where
 
@@ -36,12 +36,12 @@ import System.Process
 import CSL.TreePO
 import CSL.BoolBasic
 
--- ----------------------------------------------------------------------
--- * SMT output generation for SMT based comparison
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+SMT output generation for SMT based comparison
+---------------------------------------------------------------------- -}
 
--- | This maps are assumed to have distinct values in [1..Map.size varmap],
--- i.e., v::VarMap => Set.fromList (Map.elems v) = {1..Map.size v}
+{- | This maps are assumed to have distinct values in [1..Map.size varmap],
+i.e., v::VarMap => Set.fromList (Map.elems v) = {1..Map.size v} -}
 type VarMap = Map.Map String Int
 
 type VarTypes = Map.Map String BoolRep
@@ -51,25 +51,25 @@ data VarEnv = VarEnv { varmap :: VarMap
                      , loghandle :: Maybe Handle }
 
 smtVars :: VarEnv -> String -> [String]
-smtVars m s = smtGenericVars m ((s++) . show)
+smtVars m s = smtGenericVars m ((s ++) . show)
 
 smtGenericVars :: VarEnv -> (Int -> a) -> [a]
 smtGenericVars m f = map f [1 .. Map.size $ varmap m]
 
 smtGenericStmt :: VarEnv -> String -> String -> String -> String
 smtGenericStmt m s a b =
-    let vl = concat $ map (" "++) $ smtVars m "x"
+    let vl = concatMap (" " ++) $ smtVars m "x"
     in concat ["(assert+ (not (", s, " (", a, vl, ") (", b, vl, "))))"]
 
 smtEQStmt :: VarEnv -> String -> String -> String
-smtEQStmt m a b = smtGenericStmt m "=" a b
+smtEQStmt m = smtGenericStmt m "="
 
 smtLEStmt :: VarEnv -> String -> String -> String
-smtLEStmt m a b = smtGenericStmt m "=>" a b
+smtLEStmt m = smtGenericStmt m "=>"
 
 smtDisjStmt :: VarEnv -> String -> String -> String
-smtDisjStmt m a b = 
-    let vl = concat $ map (" "++) $ smtVars m "x"
+smtDisjStmt m a b =
+    let vl = concatMap (" " ++) $ smtVars m "x"
     in concat ["(assert+ (and (", a, vl, ") (", b, vl, ")))"]
 
 
@@ -91,9 +91,9 @@ data SMTStatus = Sat | Unsat deriving (Show, Eq)
 smtCheck :: VarEnv -> BoolRep -> BoolRep -> IO [SMTStatus]
 smtCheck m r1 r2 = smtMultiResponse (loghandle m) $ smtAllScript m r1 r2
 
--- | The result states of the smt solver are translated to the
--- adequate compare outcome. The boolean value is true if the corresponding
--- set is empty.
+{- | The result states of the smt solver are translated to the
+adequate compare outcome. The boolean value is true if the corresponding
+set is empty. -}
 smtStatusCompareTable :: [SMTStatus] -> (SetOrdering, Bool, Bool)
 smtStatusCompareTable l =
     case l of
@@ -113,7 +113,7 @@ smtResponseToStatus s
     | s == "unsat" = Unsat
     | s == "" = Sat
     | isInfixOf "Error" s = error $ "yices-error: " ++ s
-    | otherwise = error $ "unknown yices error"
+    | otherwise = error "unknown yices error"
 
 maybeWrite :: Maybe Handle -> String -> IO ()
 maybeWrite mH s = case mH of
@@ -126,9 +126,6 @@ smtMultiResponse mH inp = do
   s <- readProcess "yices" [] inp
   maybeWrite mH $ "---------- Yices raw output ----------\n" ++ s
   return $ map smtResponseToStatus $ lines s
-
-
-
 
 
 -- * Alternative Script Generation (without subtypes)
@@ -166,7 +163,7 @@ smtVarConstraint' m = h l where
     h l' = concat ["(assert (and ", concat l' , "))"]
     l = Map.foldWithKey f [] $ varmap m
     g k = case Map.lookup k $ vartypes m of
-            Just br -> " " ++ smtBoolExp br
+            Just br -> ' ' : smtBoolExp br
             Nothing -> ""
     f k _ l' = case g k of
                 "" -> l'
@@ -252,4 +249,3 @@ smtVarDef m =
     $ smtGenericVars m (\ i -> let j = show i
                                in concat ["(define x", j, "::t", j, ")"])
 -}
-

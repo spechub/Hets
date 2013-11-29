@@ -27,10 +27,10 @@ import Control.Monad.State (MonadState (..))
 data IOS s a = IOS { unIOS :: s -> IO (a, s) }
 
 getIOS :: IOS s s
-getIOS = IOS (\s -> return (s,s))
+getIOS = IOS (\ s -> return (s, s))
 
 setIOS :: s -> IOS s ()
-setIOS s = IOS (\_ -> return ((),s))
+setIOS s = IOS (\ _ -> return ((), s))
 
 {- not needed
 modifyIOS :: (s->s) -> IOS s s
@@ -43,20 +43,18 @@ runIOS s cmd = unIOS cmd s
 -- | Like fmap but changes the state type, this needs map and unmap functions
 stmap :: (s -> s') -> (s' -> s) -> IOS s a -> IOS s' a
 stmap map' unmap ios = let f (a, b) = (a, map' b)
-                       in IOS (\ s' -> fmap f $ unIOS ios $ unmap s')
-  
+                       in IOS (fmap f . unIOS ios . unmap)
+
 
 instance Monad (IOS s) where
-    return x = IOS (\s -> return (x,s))
-    m >>= f = IOS (\s ->
-                       do{ (x,s1) <- unIOS m s
+    return x = IOS (\ s -> return (x, s))
+    m >>= f = IOS (\ s ->
+                       do { (x, s1) <- unIOS m s
                          ; unIOS (f x) s1 } )
 
 instance MonadIO (IOS s) where
-    liftIO m = IOS (\s -> do{ a <- m; return (a,s) })
+    liftIO m = IOS (\ s -> do { a <- m; return (a, s) })
 
 instance MonadState s (IOS s) where
     get = getIOS
     put = setIOS
-
-

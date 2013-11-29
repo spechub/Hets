@@ -19,7 +19,7 @@ import Haskell.HatParser hiding (hatParser)
 import Haskell.PreludeString
 
 import Common.AS_Annotation
-import Common.Id(Pos(..),Range(..))
+import Common.Id (Pos (..), Range (..))
 import Common.Result
 import Common.GlobalAnnotations
 import qualified Data.Map as Map
@@ -31,6 +31,7 @@ import Common.ExtSign
 import Data.List
 import Data.Char
 import qualified Data.Set as DSet
+import Data.Maybe (fromMaybe)
 
 type Scope = Rel (SN HsName) (Ent (SN String))
 
@@ -143,8 +144,7 @@ hatAna (HsDecls hs, e, ga) = do
 
 preludeSign :: Sign
 preludeSign = case maybeResult $ hatAna2
-                (HsDecls $ preludeDecls,
-                         emptySign, emptyGlobalAnnos) of
+                (HsDecls preludeDecls, emptySign, emptyGlobalAnnos) of
                 Just (_, sig, _) -> sig
                 _ -> error "preludeSign"
 
@@ -168,11 +168,11 @@ hatAna2 (hs@(HsDecls ds), e, _) = do
            HsCon (topName Nothing m (bn i) (origt m t))
        ent2pnt (Ent m (HsVar i) t) =
            HsVar (topName Nothing m (bn i) (origt m t))
-       bn i = getBaseName i
+       bn = getBaseName
        origt m = fmap (osub m)
        osub m n = origName n m n
        findPredef ns (_, n) =
-           case filter ((==ns) . namespace) $ applyRel expScope (fakeSN n) of
+           case filter ((== ns) . namespace) $ applyRel expScope (fakeSN n) of
            [v] -> Right (ent2pnt v)
            _ -> Left ("'" ++ n ++ "' unknown or ambiguous")
        inMyEnv = withStdNames findPredef
@@ -182,7 +182,7 @@ hatAna2 (hs@(HsDecls ds), e, _) = do
                . extendIEnv (instances e)
    case sds of
        [] -> return ()
-       d : _ -> Result [Diag Hint ("\n" ++ pp sds)
+       d : _ -> Result [Diag Hint ('\n' : pp sds)
                         (Range [formSrcLoc $ srcLoc d])] $ Just ()
    fs :>: (is, (ts, vs)) <-
         lift $ inMyEnv $ tcTopDecls id sds
@@ -197,7 +197,7 @@ formSrcLoc (SrcLoc file _ line col) = SourcePos file line col
 
 getHsDecl :: (Rec a b, GetBaseStruct b (DI i e p ds t [t] t)) =>
               a -> DI i e p ds t [t] t
-getHsDecl = maybe (HsFunBind loc0 []) id . basestruct . struct
+getHsDecl = Data.Maybe.fromMaybe (HsFunBind loc0 []) . basestruct . struct
   -- use a dummy for properties
 
 preludeConflicts :: [HsDecl] -> ([HsDecl], [Diagnosis])
@@ -219,8 +219,8 @@ preludeEntity d = case d of
     HsTypeDecl _ ty _ -> Set.member (pp $ definedType ty) preludeTypes
     HsDataDecl _ _ ty cs _ -> Set.member (pp $ definedType ty) preludeTypes
                               || any preludeConstr cs
-    HsInstDecl _ _ _ _ _ -> False
-    HsClassDecl _ _ _ _ _ -> False -- should not be a prelude class
+    HsInstDecl {} -> False
+    HsClassDecl {} -> False -- should not be a prelude class
     _ -> True -- ignore others
 
 preludeMatch :: Printable i =>
@@ -239,7 +239,7 @@ genPrefixes :: [String]
 genPrefixes = ["$--", "default__", "derived__Prelude", "inst__Prelude"]
 
 prefixed :: String -> Bool
-prefixed s = any (flip isPrefixOf s) genPrefixes
+prefixed s = any (`isPrefixOf` s) genPrefixes
 
 preludeValues :: Set.Set String
 preludeValues = Set.fromList $ filter (not . prefixed) $ map pp

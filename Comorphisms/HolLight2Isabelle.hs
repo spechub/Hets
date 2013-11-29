@@ -102,7 +102,7 @@ notIgnore :: [String]
 notIgnore = ["+", "-", "*"]
 
 ignore :: [String]
-ignore = (map fst $ Map.toList constMap) \\ notIgnore
+ignore = map fst (Map.toList constMap) \\ notIgnore
 
 transConstS :: String -> HolType -> IsaSign.VName
 transConstS s t = case (Map.lookup s constMap, elem s notIgnore) of
@@ -110,7 +110,7 @@ transConstS s t = case (Map.lookup s constMap, elem s notIgnore) of
                    (_, _) -> IsaConsts.mkVName $ typedName s t
 
 typedName :: String -> HolType -> String
-typedName s _t = transConstStringT bs $ s -- ++ "_" ++ (show $ pp_print_type t)
+typedName s _t = transConstStringT bs s -- ++ "_" ++ (show $ pp_print_type t)
 
 unpack_gabs :: Term -> [String] -> (IsaSign.Term, [IsaSign.Term], IsaSign.Term, IsaSign.Term)
 unpack_gabs t vs = case unpack_gabs' t vs [] of
@@ -123,10 +123,10 @@ unpack_gabs t vs = case unpack_gabs' t vs [] of
                     Nothing -> error "unpack_gabs' failed"
 
 unpack_gabs' :: Term -> [String] -> [IsaSign.Term] -> Maybe (IsaSign.Term, [IsaSign.Term], Term)
-unpack_gabs' (Comb c@(Const "!" _ _) (Abs v@(Var _ _ _) tm)) vs vars =
-  case unpack_gabs' tm vs ((translateTerm v vs) : vars) of
+unpack_gabs' (Comb c@(Const "!" _ _) (Abs v@(Var {}) tm)) vs vars =
+  case unpack_gabs' tm vs (translateTerm v vs : vars) of
     Just r -> Just r
-    Nothing -> Just (translateTerm c vs, (translateTerm v vs) : vars, tm)
+    Nothing -> Just (translateTerm c vs, translateTerm v vs : vars, tm)
 unpack_gabs' _ _ _ = Nothing
 
 makeForAll :: IsaSign.Term -> [IsaSign.Term] -> IsaSign.Term -> IsaSign.Term
@@ -141,7 +141,7 @@ handleGabs :: Bool -> Term -> [String] -> IsaSign.Term
 handleGabs b t vs = case t of
  (Comb (Const "GABS" _ _) (Abs (Var "f" _ _) tm)) ->
    let (q, vars, pat, res) = unpack_gabs tm vs in
-   let n = IsaSign.Free $ IsaConsts.mkVName (freeName ((varNames vars)++vs)) in
+   let n = IsaSign.Free $ IsaConsts.mkVName (freeName (varNames vars ++ vs)) in
    let t1 = IsaSign.Abs n
              (IsaSign.Case n [(pat, res)])
              IsaSign.NotCont
@@ -154,7 +154,7 @@ mkAbs :: Term -> [String] -> IsaSign.Term
 mkAbs t vs = let name = freeName vs in
              IsaSign.Abs
               (IsaSign.Free (IsaConsts.mkVName name))
-              (IsaSign.App (translateTerm t (name:vs))
+              (IsaSign.App (translateTerm t (name : vs))
                 (IsaSign.Free (IsaConsts.mkVName name))
                 IsaSign.NotCont)
               IsaSign.NotCont
@@ -163,7 +163,7 @@ mkQuantifier :: Term -> [String] -> IsaSign.Term
 mkQuantifier t vs = let name = freeName vs in
                     IsaSign.Abs
                      (IsaSign.Free (IsaConsts.mkVName name))
-                     (IsaSign.App (translateTerm t (name:vs))
+                     (IsaSign.App (translateTerm t (name : vs))
                        (IsaSign.Abs
                         (IsaSign.Free (IsaConsts.mkVName name))
                         (IsaSign.Free (IsaConsts.mkVName name))
@@ -181,35 +181,37 @@ isQuantifier _ = False
 
 varNames :: [IsaSign.Term] -> [String]
 varNames [] = []
-varNames ((IsaSign.Free s):vs) = (IsaSign.orig s):(varNames vs)
-varNames (_:vs) = varNames vs
+varNames (IsaSign.Free s : vs) = IsaSign.orig s : varNames vs
+varNames (_ : vs) = varNames vs
 
 allVars :: Term -> [String]
-allVars (Comb a b) = (allVars a) ++ (allVars b)
-allVars (Abs a b) = (allVars a) ++ (allVars b)
-allVars (Const _ _ _) = []
+allVars (Comb a b) = allVars a ++ allVars b
+allVars (Abs a b) = allVars a ++ allVars b
+allVars (Const {}) = []
 allVars (Var s _ _) = [s]
 
 translateTerm :: Term -> [String] -> IsaSign.Term
-translateTerm (Comb (Comb (Const "," _ _) a) b) vs = IsaSign.Tuplex [translateTerm a vs, translateTerm b vs] IsaSign.NotCont
-translateTerm (Var s tp _) _ = IsaSign.Free $ (transConstS s tp)
+translateTerm (Comb (Comb (Const "," _ _) a) b) vs =
+  IsaSign.Tuplex [translateTerm a vs, translateTerm b vs] IsaSign.NotCont
+translateTerm (Var s tp _) _ = IsaSign.Free $ transConstS s tp
 translateTerm (Const s tp _) _ = IsaSign.Const (transConstS s tp) $ tp2DTyp tp
-translateTerm (Comb (Const "!" _ _) t@(Comb (Const "GABS" _ _) _)) vs = handleGabs True t vs
-translateTerm t@(Comb (Const "GABS" _ _) (Abs (Var "f" _ _) _)) vs = handleGabs False t vs
-translateTerm (Comb (Comb (Comb (Const "COND" _ _) i) t) e) vs = IsaSign.If
-                                                               (translateTerm i vs)
-                                                               (translateTerm t vs)
-                                                               (translateTerm e vs)
-                                                               IsaSign.NotCont
-translateTerm (Comb c1@(Const c tp _) t) vs = if (isAbs t) || ((isAppT tp) && not (isQuantifier t) && not (isQuantifier c1) && c /= "@")
+translateTerm (Comb (Const "!" _ _) t@(Comb (Const "GABS" _ _) _)) vs =
+  handleGabs True t vs
+translateTerm t@(Comb (Const "GABS" _ _) (Abs (Var "f" _ _) _)) vs =
+  handleGabs False t vs
+translateTerm (Comb (Comb (Comb (Const "COND" _ _) i) t) e) vs =
+  IsaSign.If (translateTerm i vs) (translateTerm t vs)
+             (translateTerm e vs) IsaSign.NotCont
+translateTerm (Comb c1@(Const c tp _) t) vs = if isAbs t || (isAppT tp &&
+  not (isQuantifier t) && not (isQuantifier c1) && c /= "@")
                                            then IsaSign.App
                                                 (translateTerm c1 vs)
                                                 (translateTerm t vs)
                                                 IsaSign.NotCont
                                           else IsaSign.App (translateTerm c1 vs)
                                                 (if isQuantifier t
-                                                 then (mkQuantifier t vs)
-                                                 else (mkAbs t vs))
+                                                 then mkQuantifier t vs
+                                                 else mkAbs t vs)
                                                 IsaSign.NotCont
 translateTerm (Comb tm1 tm2) vs = IsaSign.App (translateTerm tm1 vs)
                                 (translateTerm tm2 vs)
@@ -239,10 +241,11 @@ mapSign (Sign t o) = IsaSign.emptySign {
 mapOps :: Map.Map String HolType -> IsaSign.ConstTab
 mapOps f = Map.fromList
              $ map (\ (x, y) -> (transConstS x y, tp2Typ y))
-             $ Map.toList (foldl (\ m i -> Map.delete i m) f ignore)
+             $ Map.toList (foldl (flip Map.delete) f ignore)
 
 tp2Typ :: HolType -> IsaSign.Typ
-tp2Typ (TyVar ('\'':s')) =IsaSign.TFree ('\'':(transTypeStringT bs s')) holType
+tp2Typ (TyVar ('\'' : s')) = IsaSign.TFree ('\'' : transTypeStringT bs s')
+                              holType
 tp2Typ (TyVar s) = IsaSign.Type (transTypeStringT bs s) holType []
 tp2Typ (TyApp s tps) = case tps of
   [a1, a2] | s == "fun" -> mkFunType (tp2Typ a1) (tp2Typ a2)
@@ -250,11 +253,11 @@ tp2Typ (TyApp s tps) = case tps of
   _ -> IsaSign.Type (transTypeStringT bs s) holType $ map tp2Typ tps
 
 arity2tp :: Int -> [(IsaSign.IsaClass, [(IsaSign.Typ, IsaSign.Sort)])]
-arity2tp i = [(isaTerm, map (\ k -> (IsaSign.TFree ("'a" ++ show (k)) [], [isaTerm]))
-                            [1 .. i])]
+arity2tp i = [(isaTerm, map (\ k -> (IsaSign.TFree ("'a" ++ show k) [],
+  [isaTerm])) [1 .. i])]
 
 mapTypes :: Map.Map String Int -> IsaSign.TypeSig
-mapTypes tps    = IsaSign.emptyTypeSig {
+mapTypes tps = IsaSign.emptyTypeSig {
                     IsaSign.arities = Map.fromList $ map extractTypeName
                   $ Map.toList $ foldr Map.delete tps
                        ["bool", "fun", "prod"] }

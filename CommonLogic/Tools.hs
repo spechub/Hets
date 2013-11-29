@@ -77,14 +77,14 @@ indvC_sen :: SENTENCE -> Set NAME
 indvC_sen s =
     case s of
          Quant_sent q vs is _ -> indvC_quantsent q vs is
-         Bool_sent b _      -> indvC_boolsent b
-         Atom_sent a _      -> indvC_atomsent a
+         Bool_sent b _ -> indvC_boolsent b
+         Atom_sent a _ -> indvC_atomsent a
          Comment_sent _ c _ -> indvC_sen c
          Irregular_sent i _ -> indvC_sen i
 
 -- | retrieves the individual constants from a quantified sentence
 indvC_quantsent :: QUANT -> [NAME_OR_SEQMARK] -> SENTENCE -> Set NAME
-indvC_quantsent _ noss s = quant noss s
+indvC_quantsent _ = quant
     where quant :: [NAME_OR_SEQMARK] -> SENTENCE -> Set NAME
           quant nss se = Set.difference (indvC_sen se)
             $ setUnion_list nameof nss
@@ -173,7 +173,7 @@ prd_sentence s =
          Irregular_sent i _ -> prd_sentence i
 
 prd_quantSent :: QUANT -> [NAME_OR_SEQMARK] -> SENTENCE -> Set.Set NAME
-prd_quantSent _ _ s = prd_sentence s
+prd_quantSent _ _ = prd_sentence
 {- we do not know if variables are predicates, we assume no, and only
 check the body -}
 

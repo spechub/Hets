@@ -50,4 +50,3 @@ instance Monad m => MonadResult (ResultT m) where
 
 instance MonadIO m => MonadIO (ResultT m) where
     liftIO = ResultT . liftM return . liftIO
-

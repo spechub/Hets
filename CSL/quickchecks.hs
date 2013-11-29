@@ -25,9 +25,9 @@ import CSL.TreePO
 import CSL.AS_BASIC_CSL
 
 
--- ----------------------------------------------------------------------
--- * Pretty printing
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+Pretty printing
+---------------------------------------------------------------------- -}
 
 
 class Show' a where
@@ -56,7 +56,7 @@ instance Show' a => Show' (Maybe a) where
     show' Nothing = ""
 
 instance Show' a => Show' (a, a) where
-    show' (x,y) = "(" ++ show' x ++ ", " ++ show' y ++ ")"
+    show' (x, y) = "(" ++ show' x ++ ", " ++ show' y ++ ")"
 
 instance Show' SetOrdering where
     show' = show
@@ -68,9 +68,9 @@ instance Show' GroundConstant where
 instance Show' APFloat where
     show' x = showFFloat (Just 2) (fromRational x) ""
 
--- ----------------------------------------------------------------------
--- * Generator for test sets
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+Generator for test sets
+---------------------------------------------------------------------- -}
 
 gconst :: Gen GroundConstant
 gconst = do
@@ -89,7 +89,7 @@ border = frequency [ (2, elements [(PosInf, False), (NegInf, False)])
 
 
 finset :: Gen (SetOrInterval InfInt)
-finset = fmap (Set . Set.fromList . map FinInt) $ listOf1 arbitrary 
+finset = fmap (Set . Set.fromList . map FinInt) $ listOf1 arbitrary
 -- finset = fmap (Set . Set.map FinInt) arbitrary
 
 intval :: Gen (SetOrInterval InfInt)
@@ -102,7 +102,6 @@ intval = do
           | a > b = IntVal (b, bb) (a, ba)
           | otherwise = IntVal (a, ba) (b, bb)
   return $ mkRes x bx y by
-
 
 
 finsetC :: (Ord a) => Gen a -> Gen (SetOrInterval a)
@@ -120,7 +119,7 @@ intvalC g = do
           | a > b = IntVal (b, bb) (a, ba)
           | otherwise = IntVal (a, ba) (b, bb)
   return $ mkRes x1 b1 x2 b2
-  
+
 
 -- main generator functions
 soi :: Gen (SetOrInterval InfInt)
@@ -142,8 +141,6 @@ compsC = do
   return (soi1, soi2)
 
 
-
-
 -- run function f on many samples
 onSmpl g f = do
   l <- smpls g
@@ -151,7 +148,6 @@ onSmpl g f = do
       where pr x = do
                putStrLn $ "Input: " ++ show' x
                putStrLn $ "  -->  " ++ show' (f x)
-
 
 
 -- get many samples
@@ -166,6 +162,3 @@ insts = replicateM_ 10 . sample
 -- write samples to file
 insts' :: Show' a => Gen a -> IO ()
 insts' g = smpls g >>= writeFile "/tmp/qc" . unlines . map show'
-
-
-

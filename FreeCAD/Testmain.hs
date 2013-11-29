@@ -6,7 +6,7 @@ import FreeCAD.As
 import System.FilePath
 import Common.Lib.Pretty
 
-main :: IO()
+main :: IO ()
 
 main = do
   doc <- processFile "./FreeCAD/test.fcstd"

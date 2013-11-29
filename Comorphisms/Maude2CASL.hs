@@ -152,9 +152,7 @@ morExtension phi tExt sCASL tCASL =
              CMor.mtarget = tExt,
              CMor.sort_map = Map.union sortF $
                               changeMap kindId sortF,
-             CMor.op_map = Map.fromList $
-                            foldl (++) [] $
-                            map genOps $ Map.keys $
+             CMor.op_map = Map.fromList $ concatMap genOps $ Map.keys $
                             MMor.opMap phi ,
              CMor.pred_map = Map.empty,
                 -- because rew is mapped identically!

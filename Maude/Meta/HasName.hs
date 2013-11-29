@@ -19,7 +19,7 @@ Consider importing "Maude.Meta" instead of this module.
 
 module Maude.Meta.HasName (
     -- * The HasName type class
-    HasName(..)
+    HasName (..)
 ) where
 
 import Maude.AS_Maude
@@ -93,6 +93,6 @@ instance HasName Spec where
         SpecTh theory -> getName theory
         SpecView view -> getName view
     mapName mp spec = case spec of
-        SpecMod modul -> SpecMod  $ mapName mp modul
-        SpecTh theory -> SpecTh   $ mapName mp theory
+        SpecMod modul -> SpecMod $ mapName mp modul
+        SpecTh theory -> SpecTh $ mapName mp theory
         SpecView view -> SpecView $ mapName mp view

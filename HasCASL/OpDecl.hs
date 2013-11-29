@@ -52,7 +52,7 @@ anaAttr (TypeScheme tvs ty _) b = case b of
                    [arg, t3] | lesserType e fty (toFunType PFunArr)
                        -> let (pty, ts) = getTypeAppl arg in case ts of
                           [t1, t2] | lesserType e pty (toProdType 2 ps)
-                                       -> Just (t1,t2,t3)
+                                       -> Just (t1, t2, t3)
                           _ -> Nothing
                    _ -> Nothing
        let tm = typeMap e
@@ -170,7 +170,7 @@ anaProgEq ape = do
        let pe@(ProgEq _ _ q) = item ape
        rp <- resolve (LetTerm Program [pe] (BracketTerm Parens [] q) q)
        case rp of
-         Just t@(LetTerm _ (rpe@(ProgEq _ _ _) : _) _ _) -> do
+         Just t@(LetTerm _ (rpe@(ProgEq {}) : _) _ _) -> do
            mp <- typeCheck unitType t
            ga <- State.gets globAnnos
            case mp of

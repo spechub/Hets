@@ -81,37 +81,37 @@ rsDatetime = "datetime"
 rsDatetimeId :: Id
 rsDatetimeId = stringToId rsDatetime
 
-rsDecimal ::String
+rsDecimal :: String
 rsDecimal = "decimal"
 
 rsDecimalId :: Id
 rsDecimalId = stringToId rsDecimal
 
-rsFloat ::String
+rsFloat :: String
 rsFloat = "float"
 
 rsFloatId :: Id
 rsFloatId = stringToId rsFloat
 
-rsDouble ::String
+rsDouble :: String
 rsDouble = "double"
 
 rsDoubleId :: Id
 rsDoubleId = stringToId rsDouble
 
-rsLong ::String
+rsLong :: String
 rsLong = "long"
 
 rsLongId :: Id
 rsLongId = stringToId rsLong
 
-rsInteger ::String
+rsInteger :: String
 rsInteger = "integer"
 
 rsIntegerId :: Id
 rsIntegerId = stringToId rsInteger
 
-rsString ::String
+rsString :: String
 rsString = "string"
 
 rsStringId :: Id
@@ -161,7 +161,7 @@ rsPointerId = stringToId rsPointer
 
 rsDataTypes :: [String]
 rsDataTypes = [rsBool, rsBin, rsDate, rsDatetime, rsDecimal, rsFloat, rsInteger,
-               rsString, rsText, rsTime, rsTimestamp,rsDouble,rsNonPosInteger,
+               rsString, rsText, rsTime, rsTimestamp, rsDouble, rsNonPosInteger,
                rsNonNegInteger]
 
 rsKeyWords :: [String]

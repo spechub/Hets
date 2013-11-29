@@ -24,40 +24,40 @@ import Common.Item
 import CASL.AS_Basic_CASL
 import CASL.ToDoc
 
---------------------- TS = TransState
+-- ------------------- TS = TransState
 data TS b s f = TS { fB :: b -> Doc
                    , fS :: s -> Doc }
 
--- LITC = LocalITContext
--- This datastructure is used to pass an additional ItemType argument to
--- the toitem method when one needs an instance for which this method
--- should behave differently in different contexts depending on this argument.
--- Typically the ItemType is used as ItemType of the Item to be created.
+{- LITC = LocalITContext
+This datastructure is used to pass an additional ItemType argument to
+the toitem method when one needs an instance for which this method
+should behave differently in different contexts depending on this argument.
+Typically the ItemType is used as ItemType of the Item to be created. -}
 
 data LITC a = LITC ItemType a
 
---------------------- lifting to Local Contexts
+-- ------------------- lifting to Local Contexts
 withLIT :: ItemTypeable a => a -> b -> LITC b
 withLIT = LITC . toIT
 
 listWithLIT :: ItemTypeable a => a -> [b] -> [LITC b]
 listWithLIT = map . withLIT
 
--- analogous for annotated objects, don't needed yet
---annWithLIT :: ItemTypeable a => a -> Annoted b -> Annoted (LITC b)
---annWithLIT it = fmap (withLIT it)
+{- analogous for annotated objects, don't needed yet
+annWithLIT :: ItemTypeable a => a -> Annoted b -> Annoted (LITC b)
+annWithLIT it = fmap (withLIT it) -}
 
---annlistWithLIT :: ItemTypeable a => a -> [Annoted b] -> [Annoted (LITC b)]
---annlistWithLIT it = map (annWithLIT it)
+{- annlistWithLIT :: ItemTypeable a => a -> [Annoted b] -> [Annoted (LITC b)]
+annlistWithLIT it = map (annWithLIT it) -}
 
 
--- this function is only to unify the types of the state and the basic spec
--- in the call of toitem and runState in bsToItem
+{- this function is only to unify the types of the state and the basic spec
+in the call of toitem and runState in bsToItem -}
 getTransState :: (Pretty b, Pretty s)
     => BASIC_SPEC b s f -> TS b s f
 getTransState _ = TS pretty pretty
 
---------------------- The Main function of this module
+-- ------------------- The Main function of this module
 bsToItem :: (Pretty b, Pretty s, GetRange b, GetRange s, FormExtension f)
     => BASIC_SPEC b s f -> Item
 bsToItem bs = runReader (toitem bs) $ getTransState bs
@@ -65,7 +65,7 @@ bsToItem bs = runReader (toitem bs) $ getTransState bs
 instance (GetRange b, GetRange s, FormExtension f)
     => ItemConvertible (BASIC_SPEC b s f) (Reader (TS b s f)) where
     toitem (Basic_spec l) = do
-        l' <-  listFromAL l
+        l' <- listFromAL l
         return rootItem { items = l' }
 
 instance (GetRange b, GetRange s, FormExtension f)
@@ -144,7 +144,7 @@ instance FormExtension f
               mkItemMM "Pred_defn" rg [ fromC $ withLIT "PRED_NAME" pn, fromC ph
                                       , fromAC af]
 
--------------------- not further expanded --------------------
+-- ------------------ not further expanded --------------------
 
 fromPrinterWithRg :: (Monad m, GetRange a) =>
                      (a -> Doc) -> String -> a -> m Item

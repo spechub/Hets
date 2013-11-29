@@ -59,6 +59,7 @@ import Data.Maybe
 import Data.List
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import Control.Monad (liftM)
 
 import System.FilePath
 
@@ -99,7 +100,7 @@ fmapNM :: (Ord a, Ord b) => (a -> b) -> NameMap a -> NameMap b
 fmapNM = Map.mapKeys
 
 emptyEnv :: LibName -> ExpEnv
-emptyEnv ln = ExpEnv { getSSN = SpecSymNames $ Map.empty
+emptyEnv ln = ExpEnv { getSSN = SpecSymNames Map.empty
                      , getInitialLN = ln
                      , getFilePathMapping = Map.empty }
 
@@ -165,16 +166,16 @@ exportLibEnv b odir ln le =
         fpm = initFilePathMapping odir le
         im = (emptyEnv ln) { getFilePathMapping = fpm }
         f (ln', o) = let fp = Map.findWithDefault
-                              (error $ "exportLibEnv: filepath not mapped")
+                              (error "exportLibEnv: filepath not mapped")
                               ln' fpm
                      in (setFilePath fp ln', o)
     in do
-      l <- mapAccumLCM cmbnF (exportDGraph le) im inputList >>= return . snd
+      l <- liftM snd $ mapAccumLCM cmbnF (exportDGraph le) im inputList
       return $ map f l
 
 initFilePathMapping :: FilePath -> LibEnv -> Map.Map LibName FilePath
 initFilePathMapping fp le =
-    let f k _ = (snd $ getFilePrefixGeneric downloadExtensions fp
+    let f k _ = snd (getFilePrefixGeneric downloadExtensions fp
                          $ getFilePath k) ++ ".omdoc"
     in Map.mapWithKey f le
 
@@ -185,7 +186,7 @@ exportDGraph le s (ln, dg) = do
                     $ topsortedNodes dg
   (s'', views) <- mapAccumLM (exportLinkLab le ln dg) s' $ labEdgesDG dg
   return (s'', OMDoc (show $ getLibId ln)
-                 $ (catMaybes theories) ++ (catMaybes views))
+                 $ catMaybes theories ++ catMaybes views)
 
 
 -- | DGNodeLab to TLTheory translation
@@ -327,8 +328,8 @@ exportLinkLab le ln dg s (from, to, lbl) =
          (_, _, True) -> withWarning "Hiding"
          _ ->
              case (dgn_theory lb1, dgn_theory lb2) of
-               { ((G_theory lid1 _ (ExtSign sig1 _) _ sens1 _) ,
-                  (G_theory lid2 _ (ExtSign sig2 _) _ sens2 _ )) ->
+               { (G_theory lid1 _ (ExtSign sig1 _) _ sens1 _ ,
+                  G_theory lid2 _ (ExtSign sig2 _) _ sens2 _ ) ->
                  do
                    let sn1 = getDGNodeName lb1
                        sn2 = getDGNodeName lb2
@@ -447,7 +448,7 @@ mkCD s lnCurr ln sn =
         fpRel = makeRelativeDesc (takeDirectory fpCurr) fp
         fpRel' = if isAbsolute fpRel then "file://" ++ fpRel else fpRel
         base = if lnCurr == ln then [] else [fpRel']
-    in return $ CD $ [sn] ++ base
+    in return $ CD $ sn : base
 
 -- * Symbols and Sentences
 exportSymbol :: forall lid sublogics
@@ -463,7 +464,7 @@ exportSymbol lid (SigMap sm _) mSynTbl sl sym n =
     in if all (Set.notMember sym) sl
        then do
          symConst <- export_symToOmdoc lid sm sym $ nameToString n
-         return $ [symConst] ++ symNotation
+         return $ symConst : symNotation
        else return symNotation
 
 exportSentence :: forall lid sublogics
@@ -487,8 +488,8 @@ exportSentence lid (SigMap sm thm) nsen = do
         warning () ("Name for adt not exported: " ++ show omname) nullRange
                     >> return [adt]
     Right omobj ->
-        return $ [TCSymbol omname omobj symRole Nothing]
-                   ++ mkNotation un Nothing
+        return $ TCSymbol omname omobj symRole Nothing :
+                 mkNotation un Nothing
 
 {- | We only export simple constant-notations if the OMDoc element name differs
 from the hets-name.

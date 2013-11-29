@@ -34,11 +34,11 @@ genericATPgui :: (Ord proof_tree, Ord sentence)
               -> Bool -- ^ prover supports extra options
               -> String -- ^ prover name
               -> String -- ^ theory name
-              -> Theory sign sentence proof_tree -- ^ theory consisting of a
-                 -- signature and a list of Named sentence
+              -> Theory sign sentence proof_tree {- ^ theory consisting of a
+                 signature and a list of Named sentence -}
               -> [FreeDefMorphism sentence mor] -- ^ freeness constraints
               -> proof_tree -- ^ initial empty proof_tree
-              -> IO([ProofStatus proof_tree]) -- ^ proof status for each goal
+              -> IO [ProofStatus proof_tree] -- ^ proof status for each goal
 #ifdef GTKGLADE
 genericATPgui = Gtk.genericATPgui
 #elif defined UNI_PACKAGE

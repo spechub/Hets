@@ -18,7 +18,7 @@ Consider importing "Maude.Meta" instead of this module.
 
 module Maude.Meta.AsSymbol (
     -- * The AsSymbol type class
-    AsSymbol(..),
+    AsSymbol (..),
     -- * Auxiliary functions
     asSymbolSet,
     mapAsSymbol,
@@ -34,11 +34,11 @@ import qualified Data.Set as Set
 
 -- * The AsSymbol type class
 
--- | Represents something that can be converted into a 'Symbol'.
--- Instances should only override /one/ of its class methods:
+{- | Represents something that can be converted into a 'Symbol'.
+Instances should only override /one/ of its class methods: -}
 --
--- * Use 'asSymbol' when every member of the instance type can be
--- represented as a 'Symbol'.
+{- * Use 'asSymbol' when every member of the instance type can be
+represented as a 'Symbol'. -}
 --
 -- * Use 'asSymbolMaybe' otherwise.
 --
@@ -58,8 +58,8 @@ class AsSymbol a where
 asSymbolSet :: (AsSymbol a) => a -> SymbolSet
 asSymbolSet = maybe Set.empty Set.singleton . asSymbolMaybe
 
--- | Apply a 'SymbolMap' to the input, then convert the result back to
--- the original type.
+{- | Apply a 'SymbolMap' to the input, then convert the result back to
+the original type. -}
 mapAsSymbol :: (AsSymbol a) => (Symbol -> a) -> SymbolMap -> a -> a
 mapAsSymbol ctr mp item = let extract = ctr . mapAsFunction mp
     in maybe item extract $ asSymbolMaybe item
@@ -89,11 +89,11 @@ instance AsSymbol OpId where
 instance AsSymbol StmntAttr where
     asSymbolMaybe attr = case attr of
         Label name -> Just $ Labl name
-        _          -> Nothing
+        _ -> Nothing
 
 instance AsSymbol Operator where
     asSymbol (Op op dom cod _) = let
-            op'  = getName op
+            op' = getName op
             dom' = map asSymbol dom
             cod' = asSymbol cod
         in Operator op' dom' cod'
@@ -101,7 +101,7 @@ instance AsSymbol Operator where
 instance AsSymbol Term where
     asSymbolMaybe term = case term of
         Const _ _ -> Nothing
-        Var _ _   -> Nothing
+        Var _ _ -> Nothing
         Apply op ts tp -> let
                 dom = map (asSymbol . getTermType) ts
                 cod = asSymbol tp

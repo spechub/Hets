@@ -19,7 +19,7 @@ Consider importing "Maude.Meta" instead of this module.
 
 module Maude.Meta.HasSorts (
     -- * The HasSorts type class
-    HasSorts(..)
+    HasSorts (..)
 ) where
 
 import Maude.AS_Maude
@@ -50,7 +50,7 @@ instance HasSorts Symbol where
     getSorts sym = case sym of
         Sort _ -> Set.singleton sym
         Kind _ -> Set.singleton $ asSort sym
-        Operator _ dom cod -> getSorts(dom, cod)
+        Operator _ dom cod -> getSorts (dom, cod)
         OpWildcard _ -> Set.empty
         Labl _ -> Set.empty
     mapSorts mp sym = case sym of
@@ -112,43 +112,43 @@ instance HasSorts Operator where
 
 instance HasSorts Attr where
     getSorts attr = case attr of
-        Id term      -> getSorts term
-        LeftId term  -> getSorts term
+        Id term -> getSorts term
+        LeftId term -> getSorts term
         RightId term -> getSorts term
         _ -> Set.empty
     mapSorts mp attr = case attr of
-        Id term      -> Id $ mapSorts mp term
-        LeftId term  -> LeftId $ mapSorts mp term
+        Id term -> Id $ mapSorts mp term
+        LeftId term -> LeftId $ mapSorts mp term
         RightId term -> RightId $ mapSorts mp term
         _ -> attr
 
 instance HasSorts Term where
     getSorts term = case term of
-        Const _ tp    -> getSorts tp
-        Var _ tp      -> getSorts tp
+        Const _ tp -> getSorts tp
+        Var _ tp -> getSorts tp
         Apply _ ts tp -> getSorts (ts, tp)
     mapSorts mp term = case term of
-        Const con tp   -> Const con (mapSorts mp tp)
-        Var var tp     -> Var var (mapSorts mp tp)
+        Const con tp -> Const con (mapSorts mp tp)
+        Var var tp -> Var var (mapSorts mp tp)
         Apply op ts tp -> Apply op (mapSorts mp ts) (mapSorts mp tp)
 
 instance HasSorts Condition where
     getSorts cond = case cond of
-        EqCond t1 t2    -> getSorts (t1, t2)
-        MbCond t s      -> getSorts (t, s)
+        EqCond t1 t2 -> getSorts (t1, t2)
+        MbCond t s -> getSorts (t, s)
         MatchCond t1 t2 -> getSorts (t1, t2)
-        RwCond t1 t2    -> getSorts (t1, t2)
+        RwCond t1 t2 -> getSorts (t1, t2)
     mapSorts mp cond = case cond of
-        EqCond t1 t2    -> EqCond (mapSorts mp t1) (mapSorts mp t2)
-        MbCond t s      -> MbCond (mapSorts mp t) (mapSorts mp s)
+        EqCond t1 t2 -> EqCond (mapSorts mp t1) (mapSorts mp t2)
+        MbCond t s -> MbCond (mapSorts mp t) (mapSorts mp s)
         MatchCond t1 t2 -> MatchCond (mapSorts mp t1) (mapSorts mp t2)
-        RwCond t1 t2    -> RwCond (mapSorts mp t1) (mapSorts mp t2)
+        RwCond t1 t2 -> RwCond (mapSorts mp t1) (mapSorts mp t2)
 
 instance HasSorts Membership where
     getSorts (Mb t s cs _) = getSorts (t, s, cs)
     mapSorts mp (Mb t s cs as) = let
-            t'  = mapSorts mp t
-            s'  = mapSorts mp s
+            t' = mapSorts mp t
+            s' = mapSorts mp s
             cs' = mapSorts mp cs
         in Mb t' s' cs' as
 

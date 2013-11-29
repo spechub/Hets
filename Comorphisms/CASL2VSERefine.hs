@@ -351,13 +351,13 @@ mapSig sign =
                (mkImpl
                   (conjunct
                    (concatMap (\ (si, ii) -> let
-                     xv = (Qual_var (genNumVar "x" ii)
-                           si nullRange)
-                     yv = (Qual_var (genNumVar "y" ii)
-                           si nullRange)
+                     xv = Qual_var (genNumVar "x" ii)
+                           si nullRange
+                     yv = Qual_var (genNumVar "y" ii)
+                           si nullRange
                      varbi = genNumVar "b" ii
-                     bi1 = (Qual_var (genNumVar "b" ii)
-                           uBoolean nullRange)
+                     bi1 = Qual_var (genNumVar "b" ii)
+                            uBoolean nullRange
                                           in
                      [ExtFORMULA $ Ranged ( Dlformula Diamond
                           (Ranged
@@ -552,12 +552,12 @@ mapSig sign =
                (mkImpl
                   (conjunct
                    (concatMap (\ (si, ii) -> let
-                     xv = (Qual_var (genNumVar "x" ii)
-                           si nullRange)
-                     yv = (Qual_var (genNumVar "y" ii)
-                           si nullRange)
-                     bi1 = (Qual_var (genNumVar "b" ii)
-                           uBoolean nullRange)
+                     xv = Qual_var (genNumVar "x" ii)
+                           si nullRange
+                     yv = Qual_var (genNumVar "y" ii)
+                           si nullRange
+                     bi1 = Qual_var (genNumVar "b" ii)
+                            uBoolean nullRange
                                           in
                      [ExtFORMULA $ Ranged ( Dlformula Diamond
                           (Ranged
@@ -636,8 +636,8 @@ mapSig sign =
                       (mkImpl
                          (conjunct
                           (concatMap (\ (si, ii) -> let
-                      xv = (Qual_var (genNumVar "x" ii)
-                            si nullRange)
+                      xv = Qual_var (genNumVar "x" ii)
+                            si nullRange
                                            in
                       [ExtFORMULA $ Ranged ( Dlformula Diamond
                            (Ranged

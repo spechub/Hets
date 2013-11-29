@@ -11,14 +11,9 @@ Portability :  non-portable
 (child) processes, (sync) events and destruction
 -}
 
-module Common.UniUtils
-  ( module Posixutil.ChildProcess
-  , module Posixutil.ProcessClasses
-  , module Events.Events
-  , module Events.Destructible
-  ) where
+module Common.UniUtils (module X) where
 
-import Posixutil.ChildProcess
-import Posixutil.ProcessClasses
-import Events.Events
-import Events.Destructible
+import Posixutil.ChildProcess as X
+import Posixutil.ProcessClasses as X
+import Events.Events as X
+import Events.Destructible as X

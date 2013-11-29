@@ -24,7 +24,7 @@ pTok = mkTok "p"
 cTok = mkTok "c"
 dTok = mkTok "d"
 
-i,j,c,d,p :: TERM
+i, j, c, d, p :: TERM
 
 i = Identifier iTok
 j = Identifier jTok
@@ -33,7 +33,7 @@ c = Identifier cTok
 d = Identifier dTok
 
 sig1 :: Sign
-sig1 = Sign [([iTok], Sort)]                        
+sig1 = Sign [([iTok], Sort)]
 
 sig2 :: Sign
 sig2 = Sign [([iTok], Sort),
@@ -51,11 +51,8 @@ syms = Set.fromList [Symbol cTok]
 Result.Result ds Nothing = coGenSig True syms sig
 
 sig3 :: Sign
-sig3 = Sign [([iTok], Sort)]            
-             
-m1,m2 :: Morphism
-m1 = Morphism sig1 sig3 $ Map.fromList $ [(iTok,jTok)]
-m2 = Morphism sig2 sig $ Map.fromList $ [(cTok,dTok)]
+sig3 = Sign [([iTok], Sort)]
 
-
-
+m1, m2 :: Morphism
+m1 = Morphism sig1 sig3 $ Map.fromList [(iTok, jTok)]
+m2 = Morphism sig2 sig $ Map.fromList [(cTok, dTok)]

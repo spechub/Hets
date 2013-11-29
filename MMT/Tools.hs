@@ -2,11 +2,11 @@
 {- |
 Module      :  $Header$
 Description :  parse tree produced by MMT
-Copyright   :  
-License     :  
+Copyright   :
+License     :
 Maintainer  :  a.jakubauskas@jacobs-university.de
 Stability   :  experimental
-Portability :  
+Portability :
 -}
 module MMT.Tools where
 import Data.Typeable
@@ -14,7 +14,7 @@ import Data.Typeable
 -- | identifier is just a string
 type Id = String
 
-{- | 
+{- |
 tree:
   variables
 
@@ -30,7 +30,7 @@ tree:
   typed binding
 -}
 data Tree = Variable Id |
-    Application Id (Maybe(Id, Id)) [Tree] |
+    Application Id (Maybe (Id, Id)) [Tree] |
     Bind Id Id Tree |
     Tbind Id Id Tree Tree deriving (Show, Typeable)
 
@@ -41,4 +41,4 @@ data Decl = Decl Id Id [Tree] deriving (Show, Typeable)
 data Sign = Sign [Decl] deriving (Show, Typeable)
 
 -- theory
-data Theo = Theo{sign::Sign, axioms::[Tree]} deriving (Show, Typeable)
+data Theo = Theo {sign :: Sign, axioms :: [Tree]} deriving (Show, Typeable)

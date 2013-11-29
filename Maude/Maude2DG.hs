@@ -980,9 +980,9 @@ instantiateSort ps _ _ = ps
 {- | replaces one param by one view in a sort identifier
 sort id -> param id -> view id -}
 instantiateSortString :: String -> String -> String -> String
-instantiateSortString ('{' : cs) param view = if notElem '{' cs
-    then '{' : instantiateSortStringAux cs param view ""
-    else '{' : instantiateSortString cs param view
+instantiateSortString ('{' : cs) param view = '{' : if notElem '{' cs
+    then instantiateSortStringAux cs param view ""
+    else instantiateSortString cs param view
 instantiateSortString (c : cs) param view =
      c : instantiateSortString cs param view
 instantiateSortString [] _ _ = ""

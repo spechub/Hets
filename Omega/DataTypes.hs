@@ -12,14 +12,14 @@ Datatypes for an intermediate Omega Representation.
 -}
 module Omega.DataTypes where
 
-justWhen:: Bool -> a -> Maybe a
+justWhen :: Bool -> a -> Maybe a
 justWhen b x = if b then Just x else Nothing
 
 -- | Top level element with libname and a list of theories
 data Library = Library String [Theory] deriving (Show, Eq, Ord)
 
--- | Contains a theoryname a list of imports, signature elements and
--- sentences (axioms or theorems)
+{- | Contains a theoryname a list of imports, signature elements and
+sentences (axioms or theorems) -}
 data Theory = Theory String [String] [TCElement]
                  deriving (Show, Eq, Ord)
 
@@ -34,7 +34,6 @@ data TCElement =
     deriving (Show, Eq, Ord)
 
 
-
 -- | Term structure
 data Term =
     -- | Symbol
@@ -46,4 +45,3 @@ data Term =
     -- | Bindersymbol, bound vars, body
   | Bind String [Term] Term
   deriving (Show, Eq, Ord)
-

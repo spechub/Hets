@@ -32,7 +32,7 @@ type OMDocRef = IRI.IRI
 type OMDocRefs = [OMDocRef]
 
 showIRI :: IRI.IRI -> String
-showIRI iri = (IRI.iriToString id iri) ""
+showIRI iri = IRI.iriToString id iri ""
 
 -- Try to parse an IRI
 mkOMDocRef :: String -> Maybe OMDocRef
@@ -40,7 +40,7 @@ mkOMDocRef = IRI.parseIRIReference
 
 mkSymbolRef :: XmlId -> OMDocRef
 mkSymbolRef xid =
-  case IRI.parseIRIReference ("#" ++ xid) of
+  case IRI.parseIRIReference ('#' : xid) of
     Nothing -> error ("Invalid Symbol-Id! (" ++ xid ++ ")")
     (Just u) -> u
 
@@ -71,14 +71,14 @@ addTheories :: OMDoc -> [Theory] -> OMDoc
 addTheories omdoc theories =
   omdoc
     {
-      omdocTheories = (omdocTheories omdoc) ++ theories
+      omdocTheories = omdocTheories omdoc ++ theories
     }
 
 addInclusions :: OMDoc -> [Inclusion] -> OMDoc
 addInclusions omdoc inclusions =
   omdoc
     {
-      omdocInclusions = (omdocInclusions omdoc) ++ inclusions
+      omdocInclusions = omdocInclusions omdoc ++ inclusions
     }
 
 -- Theory
@@ -94,17 +94,17 @@ data Theory =
 
 instance Pretty Theory where
   pretty t = text $
-    (show (theoryId t))
+    show (theoryId t)
     ++
-      case (theoryComment t) of
+      case theoryComment t of
         Nothing -> ""
-        (Just c) -> ": " ++ (show c)
+        (Just c) -> ": " ++ show c
 
 instance Eq Theory where
-  t1 == t2 = (theoryId t1) == (theoryId t2)
+  t1 == t2 = theoryId t1 == theoryId t2
 
 instance Ord Theory where
-  t1 `compare` t2 = (theoryId t1) `compare` (theoryId t2)
+  t1 `compare` t2 = theoryId t1 `compare` theoryId t2
 
 -- debug
 showTheory :: Theory -> String
@@ -143,7 +143,7 @@ mkPresentation :: XmlId -> [Use] -> Presentation
 mkPresentation forid = Presentation forid Nothing
 
 addUse :: Presentation -> Use -> Presentation
-addUse pres use = pres { presentationUses = (presentationUses pres) ++ [use] }
+addUse pres use = pres { presentationUses = presentationUses pres ++ [use] }
 
 -- | Use for Presentation
 data Use =
@@ -357,20 +357,11 @@ instance Show SortType where
   show STLoose = "loose"
 
 instance Read SortType where
-  readsPrec _ s =
-    if s == "free"
-      then
-        [(STFree, "")]
-      else
-        if s == "generated"
-          then
-            [(STGenerated, "")]
-          else
-            if s == "loose"
-              then
-                [(STLoose, "")]
-              else
-                []
+  readsPrec _ s
+   | s == "free" = [(STFree, "")]
+   | s == "generated" = [(STGenerated, "")]
+   | s == "loose" = [(STLoose, "")]
+   | otherwise = []
 
 -- | SortDef
 data SortDef =
@@ -389,7 +380,7 @@ mkSortDefE :: XmlId -> SymbolRole -> SortType -> [Constructor] -> [Insort] -> [R
 mkSortDefE = SortDef
 
 mkSortDef :: XmlId -> [Constructor] -> [Insort] -> [Recognizer] -> SortDef
-mkSortDef xid cons ins recs = mkSortDefE xid SRSort STFree cons ins recs
+mkSortDef xid = mkSortDefE xid SRSort STFree
 
 -- | Constructor
 data Constructor =
@@ -405,7 +396,7 @@ mkConstructorE :: XmlId -> SymbolRole -> [Type] -> Constructor
 mkConstructorE = Constructor
 
 mkConstructor :: XmlId -> [Type] -> Constructor
-mkConstructor xid types = Constructor xid SRObject types
+mkConstructor xid = Constructor xid SRObject
 
 -- | Insort
 data Insort =
@@ -643,7 +634,7 @@ mkOMBWordsE :: [Word.Word8] -> OMElement
 mkOMBWordsE = toElement . mkOMBWords
 
 getOMBWords :: OMBase64 -> [Word.Word8]
-getOMBWords omb = ombContent omb
+getOMBWords = ombContent
 
 -- | OMSTR
 data OMString =
@@ -788,7 +779,7 @@ instance OMElementClass OMVariable where
   fromElement _ = Nothing
 
 instance OMElementClass OMSimpleVariable where
-  toElement omv = OMEV omv
+  toElement = OMEV
   fromElement (OMEV omv) = Just omv
   fromElement _ = Nothing
 

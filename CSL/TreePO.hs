@@ -14,7 +14,7 @@ encountered, e.g., in the set lattice.
  -}
 
 module CSL.TreePO
-{-    ( Incomparable (..)
+{- ( Incomparable (..)
     , SetOrdering (..)
     , SetOrInterval (..)
     , swapCompare
@@ -26,9 +26,9 @@ module CSL.TreePO
 import qualified Data.Set as Set
 
 
--- ----------------------------------------------------------------------
--- * Datatypes for comparison
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+Datatypes for comparison
+---------------------------------------------------------------------- -}
 
 data Incomparable = Disjoint | Overlap deriving (Eq, Show)
 
@@ -77,8 +77,8 @@ instance Ord InfDev where
 
 newtype CIType a = CIType (a, InfDev) deriving (Eq, Show)
 
--- | This type with the given ordering is to represent opened/closed intervals
---   over 'a' as closed intervals over '(a, InfDev)'
+{- | This type with the given ordering is to represent opened/closed intervals
+over 'a' as closed intervals over '(a, InfDev)' -}
 instance Ord a => Ord (CIType a) where
     compare (CIType (x, a)) (CIType (y, b)) =
         case compare x y of
@@ -117,20 +117,20 @@ class Discrete a where
 
 
 instance Discrete InfInt where
-    nextA (FinInt a) = FinInt $ a+1
+    nextA (FinInt a) = FinInt $ a + 1
     nextA x = x
-    prevA (FinInt a) = FinInt $ a-1
+    prevA (FinInt a) = FinInt $ a - 1
     prevA x = x
-    intsizeA (FinInt a) (FinInt b) = Just $ (1+) $ abs $ b-a
+    intsizeA (FinInt a) (FinInt b) = Just $ (1 +) $ abs $ b - a
     intsizeA _ _ = Nothing
 
--- ----------------------------------------------------------------------
--- * Comparison facility for sets
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+Comparison facility for sets
+---------------------------------------------------------------------- -}
 
--- | Compares closed intervals [l1, r1] and [l2, r2]. Assumes
--- | non-singular intervals, i.e., l1 < r1 and l2 < r2.
--- | Works only for linearly ordered types.
+{- | Compares closed intervals [l1, r1] and [l2, r2]. Assumes
+non-singular intervals, i.e., l1 < r1 and l2 < r2.
+Works only for linearly ordered types. -}
 cmpClosedInts :: Ord a => ClosedInterval a -- ^ [l1, r1]
               -> ClosedInterval a -- ^ [l2, r2]
               -> SetOrdering
@@ -141,9 +141,9 @@ cmpClosedInts (ClosedInterval l1 r1) (ClosedInterval l2 r2)
     | r1 < l2 || r2 < l1 = Incomparable Disjoint
     | otherwise = Incomparable Overlap
 
--- ----------------------------------------------------------------------
--- ** Comparison for discrete types
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+Comparison for discrete types
+---------------------------------------------------------------------- -}
 
 -- | Membership in 'SetOrInterval'
 membSoID :: (Discrete a, Ord a) => a -> SetOrInterval a -> Bool
@@ -155,8 +155,8 @@ nullSoID :: (Discrete a, Ord a) => SetOrInterval a -> Bool
 nullSoID (Set s) = Set.null s
 nullSoID i = let ClosedInterval a b = setToClosedIntD i in a > b
 
--- | If the set is singular, i.e., consists only from one point, then we
--- return this point. Reports error on empty SoI's.
+{- | If the set is singular, i.e., consists only from one point, then we
+return this point. Reports error on empty SoI's. -}
 toSingularD :: (Discrete a, Ord a) => SetOrInterval a -> Maybe a
 toSingularD d
     | nullSoID d = error "toSingularD: empty set"
@@ -169,7 +169,7 @@ toSingularD d
                in if a == b then Just a else Nothing
 
 -- | Transforms a 'SetOrInterval' to a closed representation
-setToClosedIntD :: (Discrete a, Ord a) =>  SetOrInterval a -> ClosedInterval a
+setToClosedIntD :: (Discrete a, Ord a) => SetOrInterval a -> ClosedInterval a
 setToClosedIntD (Set s) = ClosedInterval (Set.findMin s) $ Set.findMax s
 setToClosedIntD (IntVal (l, bL) (r, bR)) =
     ClosedInterval (if bL then l else nextA l) $ if bR then r else prevA r
@@ -192,8 +192,8 @@ cmpSoIsD d1 d2 =
       _ -> cmpSoIsExD d1 d2 -- singular cases are dispelled here
 
 
--- | Compare sets helper function which only works on regular (non-singular)
--- sets
+{- | Compare sets helper function which only works on regular (non-singular)
+sets -}
 cmpSoIsExD :: (Discrete a, Ord a) =>
               SetOrInterval a -> SetOrInterval a -> SetOrdering
 cmpSoIsExD i1@(IntVal _ _) i2@(IntVal _ _) =
@@ -211,16 +211,16 @@ cmpSoIsExD i1@(IntVal _ _) s2@(Set s) =
                              | otherwise -> Comparable GT
                          -- Nothing means infinite. This is a misuse!
                          _ -> error "cmpSoIsExD: unbounded finite set!"
-      Comparable LT -> if any (flip membSoID i1) $ Set.toList s
-                       then Incomparable Overlap
-                       else Incomparable Disjoint
+      Comparable LT -> Incomparable $ if any (`membSoID` i1) $ Set.toList s
+                       then Overlap
+                       else Disjoint
       so -> so
 
 cmpSoIsExD s1 i2 = swapCmp $ cmpSoIsExD i2 s1
 
--- ----------------------------------------------------------------------
--- ** Comparison for continuous types
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+Comparison for continuous types
+---------------------------------------------------------------------- -}
 
 -- | Membership in 'SetOrInterval'
 membSoI :: Ord a => a -> SetOrInterval a -> Bool
@@ -228,15 +228,15 @@ membSoI x (Set s) = Set.member x s
 membSoI x i = let ClosedInterval a b = setToClosedInt i
                   x' = CIType (x, Zero) in x' >= a && x' <= b
 
--- | Checks if the set is empty.
--- Only for continuous types.
+{- | Checks if the set is empty.
+Only for continuous types. -}
 nullSoI :: (Continuous a, Ord a) => SetOrInterval a -> Bool
 nullSoI (Set s) = Set.null s
 nullSoI (IntVal (a, bA) (b, bB)) = a == b && not (bA && bB)
 
--- | If the set is singular, i.e., consists only from one point, then we
--- return this point. Reports error on empty SoI's.
--- Only for continuous types.
+{- | If the set is singular, i.e., consists only from one point, then we
+return this point. Reports error on empty SoI's.
+Only for continuous types. -}
 toSingular :: (Continuous a, Ord a) => SetOrInterval a -> Maybe a
 toSingular d
     | nullSoI d = error "toSingular: empty set"
@@ -249,8 +249,8 @@ toSingular d
               | a == b -> Just a
               | otherwise -> Nothing
 
--- | Transforms a 'SetOrInterval' to a closed representation
--- Only for continuous types.
+{- | Transforms a 'SetOrInterval' to a closed representation
+Only for continuous types. -}
 setToClosedInt :: Ord a =>
                   SetOrInterval a -> ClosedInterval (CIType a)
 setToClosedInt (Set s) = ClosedInterval (CIType (Set.findMin s, Zero))
@@ -276,9 +276,8 @@ cmpSoIs d1 d2 =
       _ -> cmpSoIsEx d1 d2 -- singular cases are dispelled here
 
 
-
--- | Compare sets helper function which only works on regular (non-singular)
--- sets
+{- | Compare sets helper function which only works on regular (non-singular)
+sets -}
 cmpSoIsEx :: (Ord a) => SetOrInterval a -> SetOrInterval a -> SetOrdering
 cmpSoIsEx (Set s1) (Set s2)
     | s1 == s2 = Comparable EQ
@@ -293,17 +292,17 @@ cmpSoIsEx i1@(IntVal _ _) i2@(IntVal _ _) =
 cmpSoIsEx i1@(IntVal _ _) s2@(Set s) =
     case cmpClosedInts (setToClosedInt i1) $ setToClosedInt s2 of
       Comparable EQ -> Comparable GT
-      Comparable LT -> if any (flip membSoI i1) $ Set.toList s
-                       then Incomparable Overlap
-                       else Incomparable Disjoint
+      Comparable LT -> Incomparable $ if any (`membSoI` i1) $ Set.toList s
+                       then Overlap
+                       else Disjoint
       so -> so
 
 cmpSoIsEx s1 i2 = swapCmp $ cmpSoIsEx i2 s1
 
 
--- ----------------------------------------------------------------------
--- * Combining comparison results
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+Combining comparison results
+---------------------------------------------------------------------- -}
 
 swapCompare :: Ordering -> Ordering
 swapCompare GT = LT
@@ -359,5 +358,3 @@ combineCmp x y
           (Comparable EQ, _) -> y -- neutral element
           (Comparable GT, Comparable LT) -> Incomparable Overlap
           _ -> combineCmp y x -- commutative (should capture all cases)
-
-

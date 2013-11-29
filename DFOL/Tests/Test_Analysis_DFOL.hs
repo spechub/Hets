@@ -49,12 +49,12 @@ t1 = Pi [([mTok, m1Tok], Univ nat)] $ Func [Univ $ Appl mat [m, m1], Univ $ Appl
 t2 = Func [] $ typeRecForm t0
 t3 = Func [Univ nat, Univ nat] Sort
 t4 = Func [Univ nat] $ Func [Univ nat] $ Func [] Sort
-t5 = Pi [([xTok],Sort)] $ Pi [([nTok],Sort)] $ Univ $ Appl mat [Identifier xTok, Identifier nTok]
-t6 = Pi [([mTok],Sort)] $ Pi [([xTok],Sort)] $ Univ $ Appl mat [Identifier mTok, Identifier xTok]
+t5 = Pi [([xTok], Sort)] $ Pi [([nTok], Sort)] $ Univ $ Appl mat [Identifier xTok, Identifier nTok]
+t6 = Pi [([mTok], Sort)] $ Pi [([xTok], Sort)] $ Univ $ Appl mat [Identifier mTok, Identifier xTok]
 
 t :: TYPE
-t = let (Pi [([n1],t1)] s1) = t5
-        (Pi [([n2],t2)] s2) = t6
+t = let (Pi [([n1], t1)] s1) = t5
+        (Pi [([n2], t2)] s2) = t6
         syms1 = Set.delete n1 $ getFreeVars s1
         syms2 = Set.delete n2 $ getFreeVars s2
         v = getNewName n1 $ Set.union syms1 syms2
@@ -63,8 +63,8 @@ t = let (Pi [([n1],t1)] s1) = t5
         in type2
 
 u :: NAME
-u = let (Pi [([n1],t1)] s1) = t5
-        (Pi [([n2],t2)] s2) = t6
+u = let (Pi [([n1], t1)] s1) = t5
+        (Pi [([n2], t2)] s2) = t6
         syms1 = Set.delete n1 $ getFreeVars s1
         syms2 = Set.delete n2 $ getFreeVars s2
         v = getNewName n1 $ Set.union syms1 syms2

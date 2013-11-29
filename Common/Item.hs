@@ -29,8 +29,8 @@ data ItemType = IT
   , attrList :: [(String, String)]
   , getText :: Maybe Doc }
 
--- flat items (isFlat=True) are intended for output as xml-attributes
--- but this is not yet used
+{- flat items (isFlat=True) are intended for output as xml-attributes
+but this is not yet used -}
 data Item = Item { itemType :: ItemType
                  , isFlat :: Bool
                  , range :: Range
@@ -50,8 +50,8 @@ instance GetRange Item where
   IT = ItemType or ItemTypeable
 -}
 
--- often we have the situation where we want to obtain an ItemType
--- from a certain Type:
+{- often we have the situation where we want to obtain an ItemType
+from a certain Type: -}
 class ItemTypeable a where
     toIT :: a -> ItemType
 
@@ -93,8 +93,8 @@ toAItem = toAItemWithA emptyAnno
 
 -- -------------------------- ItemType lifting ----------------------------
 
--- often we have the situation where we want to obtain a whole Item
--- or even an Annoted Item from an ItemType:
+{- often we have the situation where we want to obtain a whole Item
+or even an Annoted Item from an ItemType: -}
 liftIT2I :: ItemTypeable a => a -> Item
 liftIT2I t = mkItem t nullRange []
 liftIT2AI :: ItemTypeable a => a -> Annoted Item

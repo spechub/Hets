@@ -15,7 +15,7 @@ during program evaluation. The output is in Isabelle Syntax.
 
 module CSL.Verification where
 
---import qualified Data.Map as Map
+-- import qualified Data.Map as Map
 import qualified Data.Set as Set
 import CSL.Interpreter
 import CSL.Transformation
@@ -31,14 +31,14 @@ import System.IO
 import Control.Monad.Reader
 import Control.Monad.Error (MonadError (..))
 
---import Control.Monad.Trans (MonadIO (..))
---import Control.Monad (when)
+{- import Control.Monad.Trans (MonadIO (..))
+import Control.Monad (when) -}
 
--- ----------------------------------------------------------------------
--- * Verification Conditions
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+Verification Conditions
+---------------------------------------------------------------------- -}
 
-{- Given an instantiated constant this data structure keeps 
+{- Given an instantiated constant this data structure keeps
 
 * the value of this constant looked up in the assignment store
 
@@ -72,14 +72,14 @@ getVCPremises adg e =
 mkCondition :: AssDefinition -> EXPRESSION -> EXPRESSION -> EXPRESSION
 mkCondition def lhs rhs = f args where
     args = getArguments def
-    f (x:l) = g x $ f l
-    f _ = if isInterval rhs then toExp ("in", lhs, rhs)
-          else toExp ("=", lhs, rhs)
+    f (x : l) = g x $ f l
+    f _ = toExp $ if isInterval rhs then ("in", lhs, rhs)
+          else ("=", lhs, rhs)
     g v b = toExp ("all", mkVar v, b)
-    
+
 mkVCPrem :: ConstantName -> AssDefinition -> EXPRESSION
-mkVCPrem n def = mkCondition def (toExp( "::"
-                                       , toExp(n, map mkVar $ getArguments def)
+mkVCPrem n def = mkCondition def (toExp ( "::"
+                                       , toExp (n, map mkVar $ getArguments def)
                                        , OP_real)) $ getDefiniens def
 
 mkVC :: ConstantName
@@ -97,7 +97,7 @@ mkBoolVC :: EXPRESSION -- ^ the Boolean term
          -> Bool -- ^ the evaluated Boolean term
          -> [EXPRESSION] -- ^ a list of premises from assignment graph
          -> EXPRESSION
-mkBoolVC e evalB prl = 
+mkBoolVC e evalB prl =
     let prem = foldl f (head prl) $ tail prl
         f a b = toExp ("and", a, b)
         conc = if evalB then e else toExp ("not", e)
@@ -107,8 +107,8 @@ verifyingStepper ::
     (StepDebugger m, VCGenerator m, MonadIO m, MonadError ASError m) =>
     m () -> EvalAtom -> m Bool
 verifyingStepper prog x = do
-  -- liftIO $ putStrLn $ "At step " ++ show (prettyEvalAtom x)
-  -- liftIO $ putStrLn ""
+  {- liftIO $ putStrLn $ "At step " ++ show (prettyEvalAtom x)
+  liftIO $ putStrLn "" -}
   b <- evaluateAndVerify prog x
   dm <- getDebugMode
   when dm $ do
@@ -144,9 +144,9 @@ evaluateAndVerify prog ea@(RepeatAtom _ _ e') = do
   return b
 
 
--- ----------------------------------------------------------------------
--- * Printing Verification Conditions
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+Printing Verification Conditions
+---------------------------------------------------------------------- -}
 
 showOpnameForVC :: OPNAME -> String
 showOpnameForVC x =
@@ -177,7 +177,7 @@ printExpForVC :: EXPRESSION -> Doc
 printExpForVC e = doubleQuotes $ runReader (printExpression e) VCPrinter
 
 printVCForIsabelle :: EvalAtom -> String -> EXPRESSION -> Doc
-printVCForIsabelle  ea s e =
+printVCForIsabelle ea s e =
     let cm = text "Verification condition for" <+> pretty ea <> text ":"
     in sep [ parens $ hcat [text "*", cm, text "*"], text "lemma"
            , doubleQuotes $ text s, text ":", printExpForVC e ]

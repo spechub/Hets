@@ -26,40 +26,40 @@ data FRAM = LF | Isabelle | Maude deriving (Ord, Eq, Show)
 
 data LogicDef = LogicDef
   { -- the name of the object logic
-    newlogicName  :: NAME,     
+    newlogicName :: NAME,
     -- the framework used for defining the object logic
-    meta          :: FRAM,
+    meta :: FRAM,
     {- name of the morphism specifying the sentences and truth judgement of the
        object logic -}
-    syntax        :: MORPH_NAME,
-    -- name of the morphism specifying the model category of the object logic 
-    models        :: MORPH_NAME,
+    syntax :: MORPH_NAME,
+    -- name of the morphism specifying the model category of the object logic
+    models :: MORPH_NAME,
     -- the foundation used to construct the model theory of the object logic
-    foundation    :: SIG_NAME,
-    -- name of the morphism specifying the proof category of the object logic     
-    proofs        :: MORPH_NAME,
+    foundation :: SIG_NAME,
+    -- name of the morphism specifying the proof category of the object logic
+    proofs :: MORPH_NAME,
     -- name of the pattern specifying the signature category of the object logic
-    patterns      :: PATTERN_NAME        
+    patterns :: PATTERN_NAME
   } deriving (Ord, Eq, Show)
 
 data ComorphismDef = ComorphismDef
-  { --the name of the comorphism
+  { -- the name of the comorphism
     newcomorphismName :: NAME,
     -- the framework used for defining the comorphism
-    metaC             :: FRAM,
+    metaC :: FRAM,
     -- name of the source logic
-    source            :: SIG_NAME,
+    source :: SIG_NAME,
     -- name of the target logic
-    target            :: SIG_NAME,
-    {- name of the morphism between the syntax of the source logic and 
+    target :: SIG_NAME,
+    {- name of the morphism between the syntax of the source logic and
        the syntax of the target logic -}
-    syntaxC           :: MORPH_NAME,
+    syntaxC :: MORPH_NAME,
     {- name of the morphism between the model category of the source logic and
        the model category of the target logic -}
-    modelC            :: MORPH_NAME,
-    {- name of the morphism between the proof category of the source logic and 
+    modelC :: MORPH_NAME,
+    {- name of the morphism between the proof category of the source logic and
        the proof category of the target logic -}
-    proofC            :: MORPH_NAME
+    proofC :: MORPH_NAME
   } deriving (Ord, Eq, Show)
 
 instance GetRange LogicDef
@@ -73,7 +73,7 @@ instance Pretty FRAM where
     pretty = printFram
 
 printLogicDef :: LogicDef -> Doc
-printLogicDef (LogicDef l ml s m f p pa) = 
+printLogicDef (LogicDef l ml s m f p pa) =
   vcat [ text newlogicS <+> pretty l
        , text " " <+> text metaS <+> pretty ml
        , text " " <+> text syntaxS <+> pretty s
@@ -81,8 +81,8 @@ printLogicDef (LogicDef l ml s m f p pa) =
        , text " " <+> text foundationS <+> pretty f
        , text " " <+> text proofsS <+> pretty p
        , text " " <+> text patternsS <+> pretty pa
-       ] 
-    
+       ]
+
 printComorphismDef :: ComorphismDef -> Doc
 printComorphismDef (ComorphismDef c ml sl tl s m p) =
   vcat [ text newcomorphismS <+> pretty c

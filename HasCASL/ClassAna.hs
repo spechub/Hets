@@ -42,7 +42,7 @@ anaKindM k cm = case k of
 -- | get minimal function kinds of (class) kind
 getFunKinds :: Monad m => ClassMap -> Kind -> m (Set.Set Kind)
 getFunKinds cm k = case k of
-    FunKind _ _ _ _ -> return $ Set.singleton k
+    FunKind {} -> return $ Set.singleton k
     ClassKind c -> case Map.lookup c cm of
          Just info -> do
              ks <- mapM (getFunKinds cm) $ Set.toList $ classKinds info
@@ -105,8 +105,7 @@ minVariance v1 v2 = case v1 of
 lesserKind :: ClassMap -> Kind -> Kind -> Bool
 lesserKind cm k1 k2 = case k1 of
     ClassKind c1 -> (case k2 of
-        ClassKind c2 -> c1 == c2 || if k1 == universe then
-                        False else k2 == universe
+        ClassKind c2 -> c1 == c2 || (k1 /= universe && k2 == universe)
         _ -> False) ||
           case Map.lookup c1 cm of
           Just info -> not $ newKind cm k2 $ classKinds info

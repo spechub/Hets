@@ -271,7 +271,7 @@ renameKind ok = do
   c <- choice $ map (\ (s, k) -> (asKey s >> return k))
         expectedSymbs
   s2 <- cspSortId
-  return (c, (Just (s1, s2)))
+  return (c, Just (s1, s2))
 
 renameOpOrPred :: RenameKind -> AParser st Rename
 renameOpOrPred k = do
@@ -360,8 +360,8 @@ procDecl = do
   pn <- processId
   argSorts <- optionL $ parenList cspSortId
   al <- procTail
-  -- BUG for the parse tree we should preserve the order of the decalred
-  -- ccommunication alphabet.
+  {- BUG for the parse tree we should preserve the order of the decalred
+  ccommunication alphabet. -}
   let alSet = case al of
         ProcAlphabet al' -> Set.fromList al'
   return $ FQ_PROCESS_NAME pn (ProcProfile argSorts alSet)

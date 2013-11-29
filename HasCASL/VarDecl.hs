@@ -118,10 +118,10 @@ addTypeId warn dfn k i = do
     tvs <- gets localTypeVars
     case Map.lookup i tvs of
         Just _ -> do
-            when warn $ addDiags[mkDiag Warning
+            when warn $ addDiags [mkDiag Warning
                                   "new type shadows type variable" i]
             putLocalTypeVars $ Map.delete i tvs
-        Nothing -> return()
+        Nothing -> return ()
     cm <- gets classMap
     case Map.lookup i cm of
       Just _ -> do
@@ -316,8 +316,8 @@ addLocalVar warn (VarDecl v t _ _) =
 
 -- | add analysed local variable or type variable declaration
 addGenVarDecl :: GenVarDecl -> State Env ()
-addGenVarDecl(GenVarDecl v) = addLocalVar True v
-addGenVarDecl(GenTypeVarDecl t) = addTypeVarDecl False t
+addGenVarDecl (GenVarDecl v) = addLocalVar True v
+addGenVarDecl (GenTypeVarDecl t) = addTypeVarDecl False t
 
 -- | analyse and add local variable or type variable declaration
 anaddGenVarDecl :: Bool -> GenVarDecl -> State Env (Maybe GenVarDecl)
@@ -368,7 +368,7 @@ monoType = foldType mapTypeRec
 
 -- | analyse variable declaration
 anaVarDecl :: VarDecl -> State Env (Maybe VarDecl)
-anaVarDecl(VarDecl v oldT sk ps) =
+anaVarDecl (VarDecl v oldT sk ps) =
     do mt <- anaStarType oldT
        return $ case mt of
                Nothing -> Nothing

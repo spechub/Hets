@@ -135,6 +135,7 @@ symbMaps ks k =
          return (s : is, c : ps)
         <|> return ([s], [])
 
-parseSymb :: [String] ->  AParser st SYMB
-parseSymb ks = do k <- option Implicit $ fmap fst symbKind
+parseSymb :: [String] -> AParser st SYMB
+parseSymb ks = do
+                  k <- option Implicit $ fmap fst symbKind
                   symb ks k

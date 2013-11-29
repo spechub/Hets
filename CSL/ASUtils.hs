@@ -46,9 +46,9 @@ import Data.List (sort, mapAccumL)
 import CSL.AS_BASIC_CSL
 import CSL.Fold
 
--- ---------------------------------------------------------------------------
--- * Preliminaries and Utilities
--- ---------------------------------------------------------------------------
+{- ---------------------------------------------------------------------------
+Preliminaries and Utilities
+--------------------------------------------------------------------------- -}
 
 -- | A simple operator constructor from given operator name and arguments
 mkOp :: String -> [EXPRESSION] -> EXPRESSION
@@ -64,11 +64,11 @@ mkPredefOp n el = Op (OpId n) [] el nullRange
 
 -- | A simple operator constructor from given operator id and arguments
 mkUserdefOp :: String -> [EXTPARAM] -> [EXPRESSION] -> Range -> EXPRESSION
-mkUserdefOp n epl el rg = Op (OpUser $ SimpleConstant n) epl el rg
+mkUserdefOp n = Op (OpUser $ SimpleConstant n)
 
 
 foldNaryToBinary :: OPID -> Range -> [EXPRESSION] -> EXPRESSION
-foldNaryToBinary op rg exps = foldl f (f (exps!!0) (exps!!1)) $ drop 2 exps
+foldNaryToBinary op rg exps = foldl f (f (head exps) (exps !! 1)) $ drop 2 exps
     where f e' e'' = Op op [] [e', e''] rg
 
 mkAndAnalyzeOp :: OperatorState st => st -> String -> [EXTPARAM] -> [EXPRESSION]
@@ -87,11 +87,11 @@ mkAndAnalyzeOp' b st s eps exps rg =
     case lookupOperator st s (length exps) of
       Left False
           | isVar st s -> if null exps && null eps
-                          then Right $ Var $ Token { tokStr = s, tokPos = rg }
+                          then Right $ Var Token { tokStr = s, tokPos = rg }
                           else Left "Variable requires no (extended) parameters"
           | otherwise -> f exps $ OpUser $ SimpleConstant s
-      -- if registered it must be registered with the given arity or
-      -- as flex-op, otherwise we don't accept it
+      {- if registered it must be registered with the given arity or
+      as flex-op, otherwise we don't accept it -}
       Left True -> Left "Wrong arity"
       Right oi
           | null eps ->
@@ -106,14 +106,14 @@ mkAndAnalyzeOp' b st s eps exps rg =
           | otherwise -> Left "No extended parameters allowed"
     where f exps' op = Right $ Op op eps exps' rg
 
--- | For given binder arguments we replace the constant-expressions at the
--- bound variable positions by variable-expressions and also all constants with
--- the name of a variable in the arguments at binder body positions.
+{- | For given binder arguments we replace the constant-expressions at the
+bound variable positions by variable-expressions and also all constants with
+the name of a variable in the arguments at binder body positions. -}
 processBinderArgs :: BindInfo -> [EXPRESSION] -> [EXPRESSION]
 processBinderArgs (BindInfo {bindingVarPos = bvl, boundBodyPos = bbl}) exps =
     let bvl' = sort bvl
-        (vs, vl) = varSet $ map (exps!!) bvl'
-        g l'@((j,ve):l) (i, e)
+        (vs, vl) = varSet $ map (exps !!) bvl'
+        g l'@((j, ve) : l) (i, e)
             | j == i -- at bound variable position
                 = (l, ve)
             | otherwise = (l', g' (i, e))
@@ -122,7 +122,7 @@ processBinderArgs (BindInfo {bindingVarPos = bvl, boundBodyPos = bbl}) exps =
             | elem i bbl -- at binder body position
                 = constsToVars vs e
             | otherwise = e
-    in snd $ mapAccumL g (zip bvl' vl) $ zip [0..] exps
+    in snd $ mapAccumL g (zip bvl' vl) $ zip [0 ..] exps
 
 
 mapExpr :: (EXPRESSION -> EXPRESSION) -> EXPRESSION -> EXPRESSION
@@ -138,7 +138,7 @@ varSet :: [EXPRESSION] -> (Set.Set String, [EXPRESSION])
 varSet l =
     let opToVar' s (Op v _ _ rg') =
             ( Set.insert (simpleName v) s
-            , Var Token{ tokStr = simpleName v, tokPos = rg' } )
+            , Var Token { tokStr = simpleName v, tokPos = rg' } )
         opToVar' s v@(Var tok) = (Set.insert (tokStr tok) s, v)
         opToVar' _ x =
             error $ "varSet: not supported varexpression at " ++ show x
@@ -153,7 +153,7 @@ constsToVars env e =
             \ _ s epl' args rg' ->
                 if Set.member (simpleName s) env then
                     if null args
-                    then Var (Token { tokStr = simpleName s, tokPos = rg' })
+                    then Var Token { tokStr = simpleName s, tokPos = rg' }
                     else error $ "constsToVars: variable must not have"
                              ++ " arguments:" ++ show args
                 else Op s epl' args rg'
@@ -183,13 +183,14 @@ isFunDef (FunDef _ _) = True
 isFunDef _ = False
 
 isInterval :: EXPRESSION -> Bool
-isInterval (Interval _ _ _) = True
+isInterval (Interval {}) = True
 isInterval _ = False
 
 simpleName :: OPID -> String
 simpleName (OpId n) = showOPNAME n
 simpleName (OpUser (SimpleConstant s)) = s
-simpleName (OpUser x) = error "simpleName: ElimConstant not supported: " ++ show x
+simpleName (OpUser x) = error "simpleName: ElimConstant not supported: " ++
+                        show x
 
 toElimConst :: ConstantName -> Int -> ConstantName
 toElimConst (SimpleConstant s) i = ElimConstant s i
@@ -206,19 +207,19 @@ opDeclToOp (OpDecl n epl vdl rg ) = Op (OpUser n) epl (map varDeclToVar vdl) rg
 
 -- | Returns a set of user defined constants ignoring 'EXTPARAM' instantiation.
 setOfUserDefined :: EXPRESSION -> Set.Set String
-setOfUserDefined e = g Set.empty e
+setOfUserDefined = g Set.empty
     where
       g s x =
        case x of
          Op oi@(OpUser _) _ al _ -> foldl g (Set.insert (simpleName oi) s) al
          -- handle also non-userdefined ops.
-         Op _ _ al _ -> foldl g s al 
+         Op _ _ al _ -> foldl g s al
          -- ignoring lists (TODO: they should be removed soon anyway)
          _ -> s
 
 -- | Returns a set of user defined constants and 'EXTPARAM' specifications.
 setOfConstsAndEPSpecs :: EXPRESSION -> (Set.Set String, Set.Set EXTPARAM)
-setOfConstsAndEPSpecs e = g (Set.empty, Set.empty) e
+setOfConstsAndEPSpecs = g (Set.empty, Set.empty)
     where
       g s@(s1, s2) x =
        case x of
@@ -226,7 +227,6 @@ setOfConstsAndEPSpecs e = g (Set.empty, Set.empty) e
              foldl g ( Set.insert (simpleName oi) s1
                      , foldr Set.insert s2 epl) al
          -- handle also non-userdefined ops.
-         Op _ _ al _ -> foldl g s al 
+         Op _ _ al _ -> foldl g s al
          -- ignoring lists (TODO: they should be removed soon anyway)
          _ -> s
-

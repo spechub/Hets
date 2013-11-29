@@ -13,15 +13,14 @@ import System.Directory
 import System.IO.Unsafe
 
 import qualified Data.Map as Map
+import Data.Maybe (fromMaybe)
 
 
 readMorphism :: FilePath -> Morphism
 readMorphism file =
      let mor = unsafePerformIO $ readMorph file
-     in case mor of
-             Just m -> m
-             Nothing -> error $ "readMorphism : Could not read the " ++
-                                "morphism from " ++ (show file)
+     in fromMaybe (error $ "readMorphism : Could not read the " ++
+                           "morphism from " ++ show file) mor
 
 readMorph :: FilePath -> IO (Maybe Morphism)
 readMorph file = do
@@ -32,14 +31,14 @@ readMorph file = do
                Right m -> return $ Just m
                Left err -> error $ show err
        else return Nothing
-          
-        
+
+
 parseMorphism :: CharParser st Morphism
 parseMorphism = do
      skips $ manyTill anyChar (string "=")
-     pkeyword "Morphism" 
+     pkeyword "Morphism"
      skipChar '{'
-     mb <- parseWithEq "morphBase" 
+     mb <- parseWithEq "morphBase"
      skipChar ','
      mm <- parseWithEq "morphModule"
      skipChar ','
@@ -90,7 +89,7 @@ bracketsP = between (skipChar '[') (skipChar ']')
 endsWithQuot :: CharParser st String
 endsWithQuot = do
      skipChar '"'
-     manyTill anyChar (string "\"") >>= return
+     manyTill anyChar (string "\"")
 
 commaP :: CharParser st ()
 commaP = skipChar ',' >> return ()
@@ -104,11 +103,11 @@ skipChar = forget . skips . char
 parseWithEq :: String -> CharParser st String
 parseWithEq s = do
     pkeyword s
-    skipChar '=' 
-    qString >>= return
+    skipChar '='
+    qString
 
 parseSym :: CharParser st Symbol
-parseSym = do 
+parseSym = do
     pkeyword "Symbol"
     skipChar '{'
     sb <- parseWithEq "symBase"
@@ -129,12 +128,11 @@ parse1Context = do
     return [(v, e)]
 
 parseExp :: CharParser st EXP
-parseExp = do
-    pkeyword "Type" >> return Type
+parseExp = (pkeyword "Type" >> return Type)
    <|> do
     pkeyword "Var"
     fmap Var qString
-   <|> do 
+   <|> do
     pkeyword "Const"
     fmap Const parseSym
    <|> do
@@ -151,11 +149,11 @@ parseExp = do
     ty <- choice $ map (\ ty -> pkeyword ty >> return ty)
                ["Pi", "Lamb"]
     c <- bracketsP $ option [] $ sepByComma parse1Context
-    e <- parensP parseExp 
+    e <- parensP parseExp
     return $ (case ty of
-        "Pi" -> Pi 
+        "Pi" -> Pi
         "Lamb" -> Lamb
-        _ -> error $ "Pi or Lamb expected.\n") (concat c) e
+        _ -> error "Pi or Lamb expected.\n") (concat c) e
 
 parseDef :: CharParser st DEF
 parseDef = do
@@ -171,13 +169,13 @@ parseDef = do
     skipChar ','
     pkeyword "getValue"
     skipChar '='
-    val <- do pkeyword "Nothing" >> return Nothing
+    val <- (pkeyword "Nothing" >> return Nothing)
              <|> do pkeyword "Just"
                     e <- parensP parseExp
                     return $ Just e
     skipChar '}'
     return $ Def sym tp val
-    
+
 parseSignature :: CharParser st Sign
 parseSignature = do
     pkeyword "Sign"
@@ -191,9 +189,9 @@ parseSignature = do
     sd <- bracketsP $ option [] $ sepByComma parseDef
     skipChar '}'
     return $ Sign sb sm sd
-    
+
 parseMorphType :: CharParser st MorphType
-parseMorphType = do
+parseMorphType =
      choice $ map (\ t -> pkeyword (show t) >> return t)
           [Definitional, Postulated, Unknown ]
 

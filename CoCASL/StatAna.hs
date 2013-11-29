@@ -58,19 +58,19 @@ basicCoCASLAnalysis =
 
 -- analyses cocasl sentences only
 co_sen_analysis ::
-        (BASIC_SPEC C_BASIC_ITEM C_SIG_ITEM C_FORMULA, CSign, (FORMULA C_FORMULA))
+        (BASIC_SPEC C_BASIC_ITEM C_SIG_ITEM C_FORMULA, CSign, FORMULA C_FORMULA)
         -> Result (FORMULA C_FORMULA)
-co_sen_analysis (bs,s,f) = let
+co_sen_analysis (bs, s, f) = let
                         mix = emptyMix
-                        allIds = unite $ 
+                        allIds = unite $
                                 ids_BASIC_SPEC (getBaseIds mix) (getSigIds mix) bs
                                 : getExtIds mix (extendedInfo s) :
                                 [mkIdSets (allConstIds s) (allOpIds s)
-                                $ allPredIds s] 
+                                $ allPredIds s]
                         mix' = mix { mixRules = makeRules emptyGlobalAnnos allIds}
-                        in (liftM fst) $ anaForm minExpForm mix' s f
+                        in liftM fst $ anaForm minExpForm mix' s f
 
- 
+
 ana_CMix :: Mix C_BASIC_ITEM C_SIG_ITEM C_FORMULA CoCASLSign
 ana_CMix = emptyMix
     { getBaseIds = ids_C_BASIC_ITEM

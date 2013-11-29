@@ -25,9 +25,9 @@ import CSL.Interpreter
 import Control.Monad.State.Class
 import Control.Monad.Reader
 
--- ----------------------------------------------------------------------
--- * Generic Translation Interface
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+Generic Translation Interface
+---------------------------------------------------------------------- -}
 
 getBooleanFromExpr :: EXPRESSION -> Either String Bool
 getBooleanFromExpr (Op (OpId OP_true) _ _ _) = Right True
@@ -93,9 +93,9 @@ revtransExpr args e = do
            else revtranslateExprWithVars args bm e
 
 
--- ----------------------------------------------------------------------
--- * Generic AssignmentStore Methods
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+Generic AssignmentStore Methods
+---------------------------------------------------------------------- -}
 
 genAssign :: ( MonadState (ASState s) as) =>
              (String -> AssDefinition -> as EXPRESSION)
@@ -127,4 +127,3 @@ genCheck :: (MonadState (ASState s) as) =>
              (EXPRESSION -> as EXPRESSION)
            -> EXPRESSION -> as (Either String Bool)
 genCheck ef e = transExpr e >>= liftM getBooleanFromExpr . ef
-

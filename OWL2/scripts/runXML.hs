@@ -21,8 +21,8 @@ import Common.DocUtils
 processFile :: String -> IO ()
 processFile file = do
   s <- readFile file
-  case parseXML s of 
-    elems -> putStrLn $ show (map xmlBasicSpec
+  case parseXML s of
+    elems -> print (map xmlBasicSpec
                         $ concatMap (filterElementsName $ isSmth "Ontology")
                         $ onlyElems elems)
 main :: IO ()

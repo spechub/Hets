@@ -25,10 +25,10 @@ import qualified CASL.Logic_CASL as CASL
 
 baseCASLSig :: CSign.CASLSign
 baseCASLSig = sig
-  where Just (_,lib) = SysUnsafe.unsafePerformIO $ AnaLib.anaLib Options.defaultHetcatsOpts "CommonLogic/CommonLogic.casl" 
+  where Just (_, lib) = SysUnsafe.unsafePerformIO $ AnaLib.anaLib Options.defaultHetcatsOpts "CommonLogic/CommonLogic.casl"
         dgraph = head $ Map.elems lib
         gsig = head $ Map.elems $ DevGraph.sigMap dgraph
         Just esig = case gsig of
-                      Grothendieck.G_sign lid extsign _  
+                      Grothendieck.G_sign lid extsign _
                         -> Coerce.coerceSign lid CASL.CASL "error: CommonoLogic.CASLSig" extsign
         ExtSign.ExtSign sig _ = esig

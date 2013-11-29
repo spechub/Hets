@@ -24,22 +24,21 @@ import Common.IRI
 import Common.Id
 import Common.LibName
 
-import Text.XML.Light 
-import System.IO 
+import Text.XML.Light
+import System.IO
 
 import Common.Doc
 import Common.DocUtils
 
 
 main :: IO ()
-main = 
+main =
   let fp = "MetamodelWMult.xmi"
   in
   do
-    handle <- openFile fp ReadMode  
-    contents <- hGetContents handle 
+    handle <- openFile fp ReadMode
+    contents <- hGetContents handle
     case parseXMLDoc contents of
-      Nothing -> putStrLn $ show $ Lib_defn (emptyLibName (convertFileToLibStr fp)) [] nullRange []
-      Just el -> putStrLn $ show $ parseCSMOFXmi fp el
+      Nothing -> print $ Lib_defn (emptyLibName (convertFileToLibStr fp)) [] nullRange []
+      Just el -> print $ parseCSMOFXmi fp el
     hClose handle
-

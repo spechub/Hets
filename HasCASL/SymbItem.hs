@@ -29,9 +29,9 @@ import HasCASL.As
 symb :: AParser st Symb
 symb = do
     p@(PolyId i tys _) <- parsePolyId
-    do  c <- colonST
-        sc <- typeScheme p
-        return $ Symb i (Just $ SymbType sc) $ tokPos c
+    do c <- colonST
+       sc <- typeScheme p
+       return $ Symb i (Just $ SymbType sc) $ tokPos c
       <|> if null tys then return $ Symb i Nothing $ posOfId i else
           fail ("bound type variables for '" ++ showId i "' without type")
 
@@ -39,10 +39,10 @@ symb = do
 symbMap :: AParser st SymbOrMap
 symbMap = do
     s <- symb
-    do  f <- asKey mapsTo
-        optional symbKind
-        t <- symb
-        return $ SymbOrMap s (Just t) $ tokPos f
+    do f <- asKey mapsTo
+       optional symbKind
+       t <- symb
+       return $ SymbOrMap s (Just t) $ tokPos f
       <|> return (SymbOrMap s Nothing nullRange)
 
 -- | parse kind of symbols
@@ -68,9 +68,9 @@ symbItems = do
 symbs :: AParser st ([Symb], [Token])
 symbs = do
     s <- symb
-    do  c <- anComma `followedWith` symb
-        (is, ps) <- symbs
-        return (s : is, c : ps)
+    do c <- anComma `followedWith` symb
+       (is, ps) <- symbs
+       return (s : is, c : ps)
       <|> return ([s], [])
 
 -- | parse symbol mappings
@@ -86,7 +86,7 @@ symbMapItems = do
 symbMaps :: AParser st ([SymbOrMap], [Token])
 symbMaps = do
     s <- symbMap
-    do  c <- anComma `followedWith` symb
-        (is, ps) <- symbMaps
-        return (s : is, c : ps)
+    do c <- anComma `followedWith` symb
+       (is, ps) <- symbMaps
+       return (s : is, c : ps)
       <|> return ([s], [])

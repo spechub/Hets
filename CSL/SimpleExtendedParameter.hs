@@ -34,9 +34,9 @@ import Common.Id (tokStr)
 import Common.Doc
 import Common.DocUtils
 
--- ----------------------------------------------------------------------
--- * Datatypes for efficient Extended Parameter comparison
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+Datatypes for efficient Extended Parameter comparison
+---------------------------------------------------------------------- -}
 
 -- | Normalized representation of an extended param relation
 data NormEP = LeftOf | RightOf | Equal | Except deriving (Eq, Ord)
@@ -55,7 +55,7 @@ type EPExp = (NormEP, APInt)
 cmpOp :: NormEP -> APInt -> APInt -> Bool
 cmpOp LeftOf = (<=)
 cmpOp RightOf = (>=)
-cmpOp Equal= (==)
+cmpOp Equal = (==)
 cmpOp Except = (/=)
 
 evalEP :: Int -> EPExp -> Bool
@@ -67,11 +67,11 @@ showEP (s, (n, i)) = s ++ show n ++ show i
 -- | Conversion function into the more efficient representation.
 toEPExp :: EXTPARAM -> Maybe (String, EPExp)
 toEPExp (EP t r i) =
-    case r of 
+    case r of
       "<=" -> Just (tokStr t, (LeftOf, i))
-      "<" -> Just (tokStr t, (LeftOf, i-1))
+      "<" -> Just (tokStr t, (LeftOf, i - 1))
       ">=" -> Just (tokStr t, (RightOf, i))
-      ">" -> Just (tokStr t, (RightOf, i+1))
+      ">" -> Just (tokStr t, (RightOf, i + 1))
       "=" -> Just (tokStr t, (Equal, i))
       "!=" -> Just (tokStr t, (Except, i))
       "-|" -> Nothing
@@ -83,14 +83,14 @@ toBoolRep s (x, i) = Pred (show x) [s, show i]
 
 complementEP :: EPExp -> EPExp
 complementEP (x, i) = case x of
-                        LeftOf -> (RightOf, i+1)
-                        RightOf -> (LeftOf, i-1)
+                        LeftOf -> (RightOf, i + 1)
+                        RightOf -> (LeftOf, i - 1)
                         Equal -> (Except, i)
                         Except -> (Equal, i)
-                   
--- ----------------------------------------------------------------------
--- * Extended Parameter comparison
--- ----------------------------------------------------------------------
+
+{- ----------------------------------------------------------------------
+Extended Parameter comparison
+---------------------------------------------------------------------- -}
 
 
 -- | Compares two 'EPExp': They are uncompareable if they overlap or are disjoint.
@@ -123,4 +123,3 @@ compareSameRel r n1 n2
           RightOf -> Comparable (compare n2 n1)
           Equal -> Incomparable Disjoint
           Except -> Incomparable Overlap
-

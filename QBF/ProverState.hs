@@ -162,16 +162,16 @@ showQDIMACSProblem thName pst nGoal _ =
                ++ " "
                ++ show (length goal2 + axiomsL)
              ]
-          ++ (if qf == [] then []
+          ++ (if null qf then []
               else ["a " ++ unwords (map show ([1 .. lqf] ++ [0]))])
-          ++ (if qe == [] then []
+          ++ (if null qe then []
               else ["e " ++ unwords (map show
                      ([(lqf + 1) .. (lqf + lqe)] ++ [0]))])
-          ++ foldl (++) [] (map
+          ++ concatMap
                  (\ (_, f) -> map
                                 (\ fs -> unwords
                                           (map (show . atomToNum) fs ++ ["0"])
                                 ) f
-                 ) (axioms2 ++ [("", goal2)]))
+                 ) (axioms2 ++ [("", goal2)])
           ++ (if cTrueAtom then [show trueAtom, " 0"] else [])
           ++ (if cFalseAtom then [show falseAtom, " 0"] else [])))

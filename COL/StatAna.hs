@@ -21,6 +21,7 @@ import CASL.StaticAna
 import Common.AS_Annotation
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+import Data.Maybe (fromMaybe)
 import Common.Id
 import Common.Result
 
@@ -30,7 +31,7 @@ addConstructor i m = return
 
 addObserver :: (Id, Maybe Int) -> COLSign -> Result COLSign
 addObserver (i, v) m = return
-       m { observers = Map.insert i (maybe 0 id v) $ observers m }
+       m { observers = Map.insert i (fromMaybe 0 v) $ observers m }
 
 ana_COL_SIG_ITEM :: Ana COL_SIG_ITEM () COL_SIG_ITEM () COLSign
 ana_COL_SIG_ITEM _ mi =

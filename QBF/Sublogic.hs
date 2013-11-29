@@ -190,12 +190,10 @@ anaForm ps f =
       AS_BASIC.Disjunction l _ ->
                     let lprime = concatMap Tools.flattenDis l in
                     if all isLiteral lprime
-                    then
+                    then return $
                         if moreThanNLit lprime 1
-                          then
-                              return $ sublogicsMax needPF ps
-                          else
-                              return ps
+                          then sublogicsMax needPF ps
+                          else ps
                     else
                         do
                           st <- State.get
@@ -205,8 +203,8 @@ anaForm ps f =
       AS_BASIC.TrueAtom _ -> return ps
       AS_BASIC.FalseAtom _ -> return ps
       AS_BASIC.Predication _ -> return ps
-      AS_BASIC.ForAll _ _ _ -> return needPF
-      AS_BASIC.Exists _ _ _ -> return needPF
+      AS_BASIC.ForAll {} -> return needPF
+      AS_BASIC.Exists {} -> return needPF
 
 moreThanNLit :: [AS_BASIC.FORMULA] -> Int -> Bool
 moreThanNLit = (>) . foldl (\ y x -> if x then y + 1 else y) 0
@@ -218,11 +216,11 @@ isLiteral (AS_BASIC.Predication _) = True
 isLiteral (AS_BASIC.Negation (AS_BASIC.Predication _) _ ) = True
 isLiteral (AS_BASIC.Negation _ _) = False
 isLiteral (AS_BASIC.Conjunction _ _) = False
-isLiteral (AS_BASIC.Implication _ _ _) = False
-isLiteral (AS_BASIC.Equivalence _ _ _) = False
+isLiteral (AS_BASIC.Implication {}) = False
+isLiteral (AS_BASIC.Equivalence {}) = False
 isLiteral (AS_BASIC.Disjunction _ _) = False
-isLiteral (AS_BASIC.ForAll _ _ _) = False
-isLiteral (AS_BASIC.Exists _ _ _) = False
+isLiteral (AS_BASIC.ForAll {}) = False
+isLiteral (AS_BASIC.Exists {}) = False
 isLiteral (AS_BASIC.TrueAtom _) = True
 isLiteral (AS_BASIC.FalseAtom _) = True
 
@@ -231,11 +229,11 @@ isPosLiteral :: AS_BASIC.FORMULA -> Bool
 isPosLiteral (AS_BASIC.Predication _) = True
 isPosLiteral (AS_BASIC.Negation _ _) = False
 isPosLiteral (AS_BASIC.Conjunction _ _) = False
-isPosLiteral (AS_BASIC.Implication _ _ _) = False
-isPosLiteral (AS_BASIC.Equivalence _ _ _) = False
+isPosLiteral (AS_BASIC.Implication {}) = False
+isPosLiteral (AS_BASIC.Equivalence {}) = False
 isPosLiteral (AS_BASIC.Disjunction _ _) = False
-isPosLiteral (AS_BASIC.ForAll _ _ _) = False
-isPosLiteral (AS_BASIC.Exists _ _ _) = False
+isPosLiteral (AS_BASIC.ForAll {}) = False
+isPosLiteral (AS_BASIC.Exists {}) = False
 isPosLiteral (AS_BASIC.TrueAtom _ ) = True
 isPosLiteral (AS_BASIC.FalseAtom _) = True
 

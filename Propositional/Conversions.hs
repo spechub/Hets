@@ -22,7 +22,6 @@ import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Id as Id
 import Common.DocUtils
 
-import Data.List
 import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -103,7 +102,7 @@ mapLiteral :: AS.FORMULA
            -> Map.Map Id.Token Integer
            -> String
 mapLiteral f mapL = case f of
-      AS.Disjunction ts _ -> intercalate " " $ map (`mapLiteral` mapL) ts
+      AS.Disjunction ts _ -> unwords $ map (`mapLiteral` mapL) ts
       AS.Negation n _ ->
         '-' : mapLiteral n mapL
       AS.Predication tok -> show (Map.findWithDefault 0 tok mapL)

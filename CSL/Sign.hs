@@ -52,8 +52,8 @@ defaultType = OpType { opArity = 0 }
 optypeFromArity :: Int -> OpType
 optypeFromArity i = defaultType { opArity = i }
 
--- | Datatype for EnCL Signatures
--- Signatures are just sets of Tokens for the operators
+{- | Datatype for EnCL Signatures
+Signatures are just sets of Tokens for the operators -}
 data Sign = Sign { items :: Map.Map Token OpType
                  , epvars :: Map.Map Token (Maybe APInt)
                  , epdecls :: Map.Map Token EPDecl
@@ -106,7 +106,7 @@ addToSig sig tok ot = sig {items = Map.insert tok ot $ items sig}
 
 addEPDefValToSig :: Sign -> Token -> APInt -> Sign
 addEPDefValToSig sig tok i
-    | mD == Nothing = error $ "addEPDefValToSig: The extended parameter"
+    | isNothing mD = error $ "addEPDefValToSig: The extended parameter"
                       ++ " declaration for " ++ show tok ++ " is missing"
     | otherwise = sig {epdecls = ed'}
     where (mD, ed') = Map.insertLookupWithKey f tok err $ epdecls sig
@@ -124,7 +124,7 @@ addEmptyEPDomVarDeclToSig sig tok = sig {epvars = ev'}
 addEPDomVarDeclToSig :: Sign -> Token -> APInt -> Sign
 addEPDomVarDeclToSig sig tok i = sig {epvars = ev'}
     where ev' = Map.insertWith f tok (Just i) $ epvars sig
-          f _ (Just x) 
+          f _ (Just x)
               | x == i = error $ "addEPDomVarDeclToSig: equal values for "
                          ++ show tok
               | otherwise = error $ "addEPDomVarDeclToSig: variable already"
@@ -132,9 +132,9 @@ addEPDomVarDeclToSig sig tok i = sig {epvars = ev'}
                             ++ show x
           f n _ = n
 
--- | Adds an extended parameter declaration for a given domain and
--- eventually implicitly defined EP domain vars, e.g., for 'I = [0, n]'
--- 'n' is implicitly added
+{- | Adds an extended parameter declaration for a given domain and
+eventually implicitly defined EP domain vars, e.g., for 'I = [0, n]'
+'n' is implicitly added -}
 addEPDeclToSig :: Sign -> Token -> EPDomain -> Sign
 addEPDeclToSig sig tok dom = g $ sig {epdecls = ed'}
     where (mD, ed') = Map.insertLookupWithKey f tok epd $ epdecls sig
@@ -151,7 +151,6 @@ addEPDeclToSig sig tok dom = g $ sig {epdecls = ed'}
                       [] -> s
                       l -> foldl addEmptyEPDomVarDeclToSig s l
                 _ -> s
-            
 
 
 -- TODO: add support for epdecls and report errors if they do not match!
@@ -179,8 +178,8 @@ isSubSigOf sig1 sig2 = Map.isSubmapOf (items sig1) $ items sig2
 sigDiff :: Sign -> Sign -> Sign
 sigDiff sig1 sig2 = sig1 {items = Map.difference (items sig1) $ items sig2}
 
--- | union of Signatures
--- or do I have to care about more things here?
+{- | union of Signatures
+or do I have to care about more things here? -}
 sigUnion :: Sign -> Sign -> Result Sign
 sigUnion s1 = Result [Diag Debug "All fine sigUnion" nullRange]
     . Just . unite s1

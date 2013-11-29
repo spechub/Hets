@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
 {- |
 Module      :  $Header$
 Copyright   :  (c) Dominik Dietrich, DFKI Bremen 2010
@@ -36,14 +36,16 @@ import Data.Time.Clock
 import Control.Monad.Reader
 -- expression parser
 
------------------------------------------------------------------------------
---------------------------------- Parsing -----------------------------------
------------------------------------------------------------------------------
+{- ---------------------------------------------------------------------------
+------------------------------- Parsing -----------------------------------
+--------------------------------------------------------------------------- -}
 
 expression = plusmin
 
 instance OperatorState String where
     lookupOperator _ = lookupOpInfoForParsing operatorInfoMap
+    -- FIXME: This probably needs to be implemented!
+    lookupBinder _ = error "Not implemented!"
 
 
 res1 = runParser expression (emptyAnnos ()) "" "x+y+y"
@@ -77,7 +79,6 @@ res23 = runParser parseOpDecl (emptyAnnos ()) "" "operator f,h"
 res24 = runParser parseAxItems (emptyAnnos ()) "" ". solve(x^2=1,x)"
 
 res25 = runParser basicSpec (emptyAnnos ()) "" "operator f,h . solve(x^2=1,x)"
-
 
 
 res30 = runParser extparam () "" "I=0"
@@ -117,7 +118,7 @@ scanMyFloat =
     in -- '1.' or '2.e-13' or '1.213'
       try (getSNumber <++> (optionL (try $ compD getNumber') <++> optionL compE))
       -- everything starting with a dot
-      <|> (choice (map string ["+.", "-.", "."])  >-> checkSp) <++> getNumber <++> optionL compE
+      <|> (choice (map string ["+.", "-.", "."]) >-> checkSp) <++> getNumber <++> optionL compE
 
 -- withS (compD getNumber >-> ("0"++)) <++> optionL compE
 
@@ -137,7 +138,7 @@ scanFloatExt1 =
       try (getSign <++> getNumber
            <++> (optionL (try $ compD getNumber') <++> optionL compE))
       -- everything starting with a dot
-      <|> getSign <++> (compD getNumber >-> ("0"++)) <++> optionL compE
+      <|> getSign <++> (compD getNumber >-> ("0" ++)) <++> optionL compE
 
 scanFloatExt2 :: CharParser st String
 scanFloatExt2 =
@@ -155,29 +156,26 @@ scanFloatExt2 =
       getSign <++>
               ((getNumber <++> optionL (try $ compD getNumber') <++> optionL compE)
                -- everything starting with a dot
-               <|> (compD getNumber >-> ("0"++)) <++> optionL compE)
-
-
-
+               <|> (compD getNumber >-> ("0" ++)) <++> optionL compE)
 
 
 -- declares an equation and ask for the result
 castest = do
   reducecmd <- getEnvDef "HETS_REDUCE" "redcsl"
   (inpt, out, _, pid) <- connectCAS reducecmd
-  let sess = (inpt,out,pid)
+  let sess = (inpt, out, pid)
   putStrLn "Send the command "
   casDeclareEquation sess res32pure
-  procCmd sess (makeNamed "test" (Cmd "ask" [(Var (mkSimpleId "d_4"))]))
-  -- putStrLn "query term.. "
-  -- hPutStrLn inp "d_4;"
-  -- res <- getNextResultOutput out
-  -- putStrLn ( "Output is " ++ res)
+  procCmd sess (makeNamed "test" (Cmd "ask" [Var (mkSimpleId "d_4")]))
+  {- putStrLn "query term.. "
+  hPutStrLn inp "d_4;"
+  res <- getNextResultOutput out
+  putStrLn ( "Output is " ++ res) -}
   disconnectCAS sess
   return ()
 
 
-resS s = runParser basicSpec (emptyAnnos ()) "" s
+resS = runParser basicSpec (emptyAnnos ()) ""
 
 
 -- time measurement, pendant of the time shell command
@@ -186,9 +184,8 @@ time p = do
   t <- liftIO getCurrentTime
   res <- p
   t' <- liftIO getCurrentTime
-  liftIO $ putStrLn $ show $ diffUTCTime t' t
+  liftIO $ print $ diffUTCTime t' t
   return res
-
 
 
 -- Run e.g.: time $ testBS "Hets-lib/EnCL/antlr/t2.het" "/tmp/t2.out"
@@ -206,9 +203,9 @@ testBS fpin fpout = do
            time $ writeFile fpout $ show $ pretty bs
     Left e -> putStrLn $ "Error: " ++ show e
 
------------------------------------------------------------------------------
-------------------------- test of static analysis... ------------------------
------------------------------------------------------------------------------
+{- ---------------------------------------------------------------------------
+----------------------- test of static analysis... ------------------------
+--------------------------------------------------------------------------- -}
 
 testspec =
     case runParser basicSpec (emptyAnnos ()) "" "operator f,h . solve(x^2=1,x) . solve(x*x=1,x)" of
@@ -218,28 +215,28 @@ res26 = splitSpec testspec emptySig
 
 res27 = basicCSLAnalysis (testspec, emptySig, [])
 
------------------------------------------------------------------------------
---------------------------------- Analysis ----------------------------------
------------------------------------------------------------------------------
+{- ---------------------------------------------------------------------------
+------------------------------- Analysis ----------------------------------
+--------------------------------------------------------------------------- -}
 
 -- getAtomsFromFile fp = readFile fp >>= return . getAtomsFrom
 
--- getAtomsFrom s =
---     case runParser basicSpec (emptyAnnos ()) "" s of
---       Right a -> map (\ (x:l) -> (x, 1 + length l)) $ group $ sort $ getBSAtoms a
---       _ -> error "no parse"
+{- getAtomsFrom s =
+case runParser basicSpec (emptyAnnos ()) "" s of
+Right a -> map (\ (x:l) -> (x, 1 + length l)) $ group $ sort $ getBSAtoms a
+_ -> error "no parse" -}
 
 
------------------------------------------------------------------------------
---------------------------------- Morphisms ---------------------------------
------------------------------------------------------------------------------
+{- ---------------------------------------------------------------------------
+------------------------------- Morphisms ---------------------------------
+--------------------------------------------------------------------------- -}
 
 
------------------------------------------------------------------------------
---------------------------------- Signature ---------------------------------
------------------------------------------------------------------------------
+{- ---------------------------------------------------------------------------
+------------------------------- Signature ---------------------------------
+--------------------------------------------------------------------------- -}
 
 
------------------------------------------------------------------------------
------------------------------- CSL Interface -----------------------------
------------------------------------------------------------------------------
+{- ---------------------------------------------------------------------------
+---------------------------- CSL Interface -----------------------------
+--------------------------------------------------------------------------- -}

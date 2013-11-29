@@ -8,13 +8,13 @@ Maintainer  :  eugenk@informatik.uni-bremen.de
 Stability   :  experimental
 Portability :  portable
 
-Common Logic implementation of the interface functions 
-omdocToSym and omdocToSen from class Logic. 
+Common Logic implementation of the interface functions
+omdocToSym and omdocToSen from class Logic.
 The actual instantiation can be found in module "CommonLogic.Logic_CommonLogic".
 -}
 
 
-module CommonLogic.OMDocImport 
+module CommonLogic.OMDocImport
        ( omdocToSym
        , omdocToSen
        ) where
@@ -28,7 +28,7 @@ import CommonLogic.OMDoc
 
 import Common.Id
 import Common.Result
-import Common.AS_Annotation 
+import Common.AS_Annotation
 
 
 type Env = SigMapI Symbol
@@ -40,8 +40,6 @@ omdocToSym _ (TCSymbol _ _ sr _) n =
        Obj -> return $ Symbol (nameToId n)
        _ -> fail $ "omdocToSym: only objects are allowed as symbol roles, but found" ++ show sr
 omdocToSym _ symb _ = fail $ "omdocToSym: only TCSymbols are allowed, but found: " ++ show symb
-
-
 
 
 -- | Sentences from OMElements
@@ -70,7 +68,7 @@ toText e om = case om of
     | otherwise -> error $ concat ["toText: only ", show const_and , " and ",
             show const_textName, " and Named_text supported, but found ", show op]
   _ -> error $ "toText: only OMA with at lease one argument is allowed, but found " ++ show om
- 
+
 toPhrase :: Env -> OMElement -> PHRASE
 toPhrase e om = case om of
   OMBIND op [n] m ->
@@ -109,20 +107,20 @@ toSen e om = case om of
     | omh == const_or ->
       Bool_sent (Junction Disjunction (map (toSen e) os)) nullRange
     | omh == const_implies ->
-      let s1:s2:[] = map (toSen e) os
+      let s1 : s2 : [] = map (toSen e) os
       in Bool_sent (BinOp Implication s1 s2) nullRange
     | omh == const_equivalent ->
-      let s1:s2:[] = map (toSen e) os
+      let s1 : s2 : [] = map (toSen e) os
       in Bool_sent (BinOp Biconditional s1 s2) nullRange
-    | omh == const_not -> let ns:[] = map (toSen e) os
+    | omh == const_not -> let ns : [] = map (toSen e) os
                           in Bool_sent (Negation ns) nullRange
-    | omh == const_eq -> let t1:t2:[] = map (omdocToTerm e) os
+    | omh == const_eq -> let t1 : t2 : [] = map (omdocToTerm e) os
                          in Atom_sent (Equation t1 t2) nullRange
-    | omh == const_comment && length os > 0 ->
-      let s:[] = map (toSen e) $ tail os
+    | omh == const_comment && not (null os) ->
+      let s : [] = map (toSen e) $ tail os
       in Comment_sent (varToComment $ head os) s nullRange
     | omh == const_comment -> error "toSen: commented sentence has no comment"
-    | omh == const_irregular -> let s:[] = map (toSen e) os
+    | omh == const_irregular -> let s : [] = map (toSen e) os
                                 in Irregular_sent s nullRange
     | otherwise -> Atom_sent (Atom (omdocToTerm e omh)
                               (map (omdocToTermSeq e) os)) nullRange
@@ -130,20 +128,20 @@ toSen e om = case om of
        concat [ "toSen: only applications and quantifications are allowed,"
               , " but found: ", show om ]
 
-toNameSeqmark :: OMElement -> NAME_OR_SEQMARK 
-toNameSeqmark (OMV (OMName n _)) =  let dec = strToToken n
+toNameSeqmark :: OMElement -> NAME_OR_SEQMARK
+toNameSeqmark (OMV (OMName n _)) = let dec = strToToken n
                                      in if isSeqMark n
                                         then SeqMark dec
                                         else AS.Name dec
 toNameSeqmark _ = error "toNameSeqmark: only variables allowed"
 
 omdocToTerm :: Env -> OMElement -> TERM
-omdocToTerm e (OMA (omh : om)) 
+omdocToTerm e (OMA (omh : om))
                      | omh == const_comment_term
-                        && length om > 0 = let t:[] = map (omdocToTerm e) $ tail om
+                        && not (null om) = let t : [] = map (omdocToTerm e) $ tail om
                                            in Comment_term t (varToComment $ head om) nullRange
                      | omh == const_comment_term = error "omdocToTerm: commented term has no comment"
-                     | otherwise = let th = omdocToTerm e omh 
+                     | otherwise = let th = omdocToTerm e omh
                                        ts = map (omdocToTermSeq e) om
                                     in Funct_term th ts nullRange
 omdocToTerm _ (OMS (_, OMName n _)) = Name_term (strToToken n)
@@ -151,23 +149,23 @@ omdocToTerm _ (OMV (OMName n _)) = Name_term (strToToken n)
 omdocToTerm _ om = error $ "omdocToTerm: only applications and symbols allowed, but found: " ++ show om
 
 
-omdocToTermSeq :: Env -> OMElement -> TERM_SEQ 
+omdocToTermSeq :: Env -> OMElement -> TERM_SEQ
 omdocToTermSeq e om@(OMA _) = Term_seq $ omdocToTerm e om
-omdocToTermSeq _ (OMS (_,OMName n _)) = let dec = strToToken n 
+omdocToTermSeq _ (OMS (_, OMName n _)) = let dec = strToToken n
                                          in if isSeqMark n
                                             then Seq_marks dec
                                             else Term_seq (Name_term dec)
-omdocToTermSeq _ (OMV (OMName n _)) = let dec = strToToken n 
+omdocToTermSeq _ (OMV (OMName n _)) = let dec = strToToken n
                                        in if isSeqMark n
                                           then Seq_marks dec
                                           else Term_seq (Name_term dec)
-omdocToTermSeq _ om = error $ "omdocToTermSeq: only applications, symbols and variables allowed, but found: " ++ show om 
+omdocToTermSeq _ om = error $ "omdocToTermSeq: only applications, symbols and variables allowed, but found: " ++ show om
 
 strToToken :: String -> Token
 strToToken s = Token s nullRange
 
 isSeqMark :: String -> Bool
-isSeqMark ('.':_) = True
+isSeqMark ('.' : _) = True
 isSeqMark _ = False
 
 varToComment :: OMElement -> COMMENT

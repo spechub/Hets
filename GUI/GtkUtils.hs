@@ -218,14 +218,14 @@ fileDialog fAction fname' filters mAction = do
     FileChooserActionOpen -> do
       dlg' <- fileChooserDialogNew Nothing Nothing FileChooserActionOpen
                                   [ (stockCancel, ResponseCancel)
-                                  , (stockOpen,   ResponseAccept)]
+                                  , (stockOpen, ResponseAccept)]
       fileChooserSetCurrentFolder dlg' $ takeDirectory fname
       fileChooserSetFilename dlg' $ takeFileName fname
       return dlg'
     FileChooserActionSave -> do
       dlg' <- fileChooserDialogNew Nothing Nothing FileChooserActionSave
                                    [ (stockCancel, ResponseCancel)
-                                   , (stockSave,   ResponseAccept)]
+                                   , (stockSave, ResponseAccept)]
       fileChooserSetCurrentFolder dlg' $ takeDirectory fname
       fileChooserSetCurrentName dlg' $ takeFileName fname
       return dlg'
@@ -290,10 +290,10 @@ listChoiceAux :: String -- ^ Title
               -> (a -> String) -- ^ Name of element
               -> [a] -- ^ Rows to display
               -> IO (Maybe (Int, a)) -- ^ Selected row
-listChoiceAux title showF items  = do
-  xml     <- getGladeXML Utils.get
+listChoiceAux title showF items = do
+  xml <- getGladeXML Utils.get
   -- get objects
-  dlg     <- xmlGetWidget xml castToDialog "ListView"
+  dlg <- xmlGetWidget xml castToDialog "ListView"
   trvList <- xmlGetWidget xml castToTreeView "trvList"
 
   windowSetTitle dlg title
@@ -336,9 +336,9 @@ progressBarAux :: Bool -- ^ Percent or pulse
                -> String -- ^ Description
                -> IO (Double -> String -> IO (), IO ())
 progressBarAux isProgress title description = do
-  xml         <- getGladeXML Utils.get
+  xml <- getGladeXML Utils.get
   -- get window
-  window      <- xmlGetWidget xml castToWindow "ProgressBar"
+  window <- xmlGetWidget xml castToWindow "ProgressBar"
   -- get progress bar
   bar <- xmlGetWidget xml castToProgressBar "pbProgress"
 
@@ -397,9 +397,9 @@ textView :: String -- ^ Title
          -> Maybe FilePath -- ^ Filename
          -> IO ()
 textView title message mfile = do
-  xml     <- getGladeXML Utils.get
+  xml <- getGladeXML Utils.get
   -- get objects
-  dlg    <- xmlGetWidget xml castToDialog "TextView"
+  dlg <- xmlGetWidget xml castToDialog "TextView"
   tvText <- xmlGetWidget xml castToTextView "tvText"
 
   windowSetTitle dlg title

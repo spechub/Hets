@@ -105,7 +105,7 @@ getSymbolType n (Sign ds) = getVarTypeFromDecls n ds
 
 -- get the symbol kind
 getSymbolKind :: NAME -> Sign -> Maybe KIND
-getSymbolKind n sig = case (getReturnType n sig) of
+getSymbolKind n sig = case getReturnType n sig of
                            Nothing -> Nothing
                            Just Sort -> Just SortKind
                            Just Form -> Just PredKind
@@ -113,14 +113,14 @@ getSymbolKind n sig = case (getReturnType n sig) of
 
 -- get the symbol arity
 getSymbolArity :: NAME -> Sign -> Maybe ARITY
-getSymbolArity n sig = case (getArgumentTypes n sig) of
+getSymbolArity n sig = case getArgumentTypes n sig of
                             Nothing -> Nothing
                             Just ts -> Just $ length ts
 
 -- get a list of symbols of the given kind
 getSymbolsByKind :: Sign -> KIND -> Set.Set NAME
 getSymbolsByKind sig kind =
-   Set.filter (\ n -> (getSymbolKind n sig) == Just kind) $ getSymbols sig
+   Set.filter (\ n -> getSymbolKind n sig == Just kind) $ getSymbols sig
 
 -- get the list of types of the arguments of the given symbol
 getArgumentTypes :: NAME -> Sign -> Maybe [TYPE]
@@ -132,9 +132,9 @@ getArgumentTypes n sig = case typM of
 getArgumentTypesH :: TYPE -> [TYPE]
 getArgumentTypesH (Pi ds t) =
   types1 ++ types2
-  where types1 = concatMap (\ (ns, t1) -> take (length ns) $ repeat t1) ds
+  where types1 = concatMap (\ (ns, t1) -> replicate (length ns) t1) ds
         types2 = getArgumentTypesH t
-getArgumentTypesH (Func ts t) = ts ++ (getArgumentTypesH t)
+getArgumentTypesH (Func ts t) = ts ++ getArgumentTypesH t
 getArgumentTypesH _ = []
 
 -- get the return type of a symbol with the given type
@@ -159,9 +159,9 @@ getArgumentNames n sig =
 
 getArgumentNamesH :: TYPE -> [Maybe NAME]
 getArgumentNamesH (Pi ds t) =
-  (map Just $ getVarsFromDecls ds) ++ getArgumentNamesH t
+  map Just (getVarsFromDecls ds) ++ getArgumentNamesH t
 getArgumentNamesH (Func ts t) =
-  (take (length ts) $ repeat Nothing) ++ getArgumentNamesH t
+  replicate (length ts) Nothing ++ getArgumentNamesH t
 getArgumentNamesH _ = []
 
 fillArgumentNames :: [Maybe NAME] -> [NAME]
@@ -171,9 +171,9 @@ fillArgumentNamesH :: [Maybe NAME] -> Int -> [NAME]
 fillArgumentNamesH [] _ = []
 fillArgumentNamesH (nameM : namesM) i =
   case nameM of
-       Just name -> name : (fillArgumentNamesH namesM i)
-       Nothing -> (Token ("gen_x_" ++ show i) nullRange) :
-                  (fillArgumentNamesH namesM (i + 1))
+       Just name -> name : fillArgumentNamesH namesM i
+       Nothing -> Token ("gen_x_" ++ show i) nullRange :
+                  fillArgumentNamesH namesM (i + 1)
 
 -- pretty printing
 instance Pretty Sign where
@@ -205,9 +205,9 @@ sigUnion sig (Sign ds) = sigUnionH (expandDecls ds) sig
 sigUnionH :: [SDECL] -> Sign -> Result.Result Sign
 sigUnionH [] sig = Result.Result [] $ Just sig
 sigUnionH ((n, t) : ds) sig =
-  if (isConstant n sig)
+  if isConstant n sig
      then let Just t1 = getSymbolType n sig
-              in if (t == t1)
+              in if t == t1
                     then sigUnionH ds sig
                     else Result.Result [incompatibleUnionError n t t1] Nothing
      else let t1 = translate Map.empty (getSymbols sig) t
@@ -219,19 +219,16 @@ sigUnionH ((n, t) : ds) sig =
    Sig2 as a subsignature. It is always defined but may be the empty
    signature. -}
 sigIntersection :: Sign -> Sign -> Result.Result Sign
-sigIntersection (Sign ds) sig = sigIntersectionH (expandDecls ds) emptySig sig
+sigIntersection (Sign ds) = sigIntersectionH (expandDecls ds) emptySig
 
 sigIntersectionH :: [SDECL] -> Sign -> Sign -> Result.Result Sign
 sigIntersectionH [] sig _ = Result.Result [] $ Just sig
 sigIntersectionH ((n, t) : ds) sig sig2 =
-  let present = if (isConstant n sig2)
-                   then let Just t1 = getSymbolType n sig2
-                        in if (t == t1)
-                              then True
-                              else False
-                   else False
+  let present = isConstant n sig2
+                && let Just t1 = getSymbolType n sig2
+                   in t == t1
       Diagn _ valid = isValidDecl ([n], t) sig emptyContext
-      in if (and [present, valid])
+      in if present && valid
             then let sig1 = addSymbolDecl ([n], t) sig
                      in sigIntersectionH ds sig1 sig2
             else sigIntersectionH ds sig sig2
@@ -252,7 +249,7 @@ isValidVarDecl d@(_, t) sig cont = andD [discourseType, validDec]
    and a context -}
 areValidNames :: [NAME] -> Sign -> CONTEXT -> DIAGN Bool
 areValidNames names sig cont =
-   if (Set.null overlap)
+   if Set.null overlap
       then Diagn [] True
       else Diagn [redeclaredNamesError overlap cont] False
    where declaredSyms = Set.union (getSymbols sig) (getVars cont)
@@ -287,7 +284,7 @@ hasType term expectedType sig cont =
    case inferredTypeM of
         Nothing -> Diagn diag False
         Just inferredType ->
-           if (inferredType == expectedType)
+           if inferredType == expectedType
               then Diagn [] True
               else Diagn [wrongTypeError expectedType inferredType term cont]
                          False
@@ -297,7 +294,7 @@ hasType term expectedType sig cont =
 returns the type in recursive form, with bound variables different
    from signature constants -}
 getTermType :: TERM -> Sign -> CONTEXT -> Result.Result TYPE
-getTermType term sig cont = getTermTypeH (termRecForm term) sig cont
+getTermType term = getTermTypeH (termRecForm term)
 
 getTermTypeH :: TERM -> Sign -> CONTEXT -> Result.Result TYPE
 getTermTypeH (Identifier n) sig cont =
@@ -319,12 +316,12 @@ getTermTypeH (Appl f [a]) sig cont =
           case typeFM of
                Nothing -> Result.Result diagF Nothing
                Just (Func (dom : doms) cod) ->
-                 if (dom == typeA)
+                 if dom == typeA
                     then Result.Result [] $ Just $ typeRecForm
                             $ Func doms cod
                     else Result.Result [wrongTypeError dom typeA a cont] Nothing
                Just (Pi [([x], t)] typ) ->
-                 if (t == typeA)
+                 if t == typeA
                     then Result.Result [] $ Just $ substitute x a typ
                     else Result.Result [wrongTypeError t typeA a cont] Nothing
                Just typeF ->
@@ -335,13 +332,13 @@ getTermTypeH _ _ _ = Result.Result [] Nothing
 
 -- returns all symbols of the specified type
 getSymsOfType :: Sign -> TYPE -> [NAME]
-getSymsOfType (Sign ds) t = getSymsOfTypeH ds t
+getSymsOfType (Sign ds) = getSymsOfTypeH ds
 
 getSymsOfTypeH :: [DECL] -> TYPE -> [NAME]
 getSymsOfTypeH [] _ = []
 getSymsOfTypeH ((ns, t1) : ds) t =
-  if (t1 == t)
-     then ns ++ (getSymsOfTypeH ds t)
+  if t1 == t
+     then ns ++ getSymsOfTypeH ds t
      else getSymsOfTypeH ds t
 
 -- renames bound variables in a type to make it valid w.r.t. a sig and a context
@@ -351,7 +348,7 @@ renameBoundVars t sig cont =
       in translate Map.empty syms t
 
 substitute :: NAME -> TERM -> TYPE -> TYPE
-substitute n val t = translate (Map.singleton n val) Set.empty t
+substitute n val = translate (Map.singleton n val) Set.empty
 
 -- ERROR MESSAGES
 redeclaredNamesError :: Set.Set NAME -> CONTEXT -> Result.Diagnosis
@@ -359,9 +356,9 @@ redeclaredNamesError ns cont =
   Result.Diag
     { Result.diagKind = Result.Error
     , Result.diagString = "Symbols or variables\n"
-                          ++ (show $ printNames $ Set.toList ns)
+                          ++ show (printNames $ Set.toList ns)
                           ++ "\ndeclared previously in the context\n"
-                          ++ (show $ pretty cont) ++ "\nor in the signature."
+                          ++ show (pretty cont) ++ "\nor in the signature."
     , Result.diagPos = nullRange
     }
 
@@ -369,10 +366,10 @@ noFunctionTermError :: TERM -> TYPE -> CONTEXT -> Result.Diagnosis
 noFunctionTermError term t cont =
   Result.Diag
     { Result.diagKind = Result.Error
-    , Result.diagString = "Term\n" ++ (show $ pretty term)
+    , Result.diagString = "Term\n" ++ show (pretty term)
                           ++ "\nhas the non-function type\n"
-                          ++ (show $ pretty t)
-                          ++ "\nin the context\n" ++ (show $ pretty cont)
+                          ++ show (pretty t)
+                          ++ "\nin the context\n" ++ show (pretty cont)
                           ++ "\nand hence cannot be applied to an argument."
     , Result.diagPos = nullRange
     }
@@ -382,7 +379,7 @@ noDiscourseTypeError t =
   Result.Diag
     { Result.diagKind = Result.Error
     , Result.diagString =
-         "Type\n" ++ (show $ pretty t)
+         "Type\n" ++ show (pretty t)
          ++ "\nis a non-discourse type (does not start with Univ) "
          ++ "and hence cannot be used as a type of an argument."
     , Result.diagPos = nullRange
@@ -392,11 +389,11 @@ wrongTypeError :: TYPE -> TYPE -> TERM -> CONTEXT -> Result.Diagnosis
 wrongTypeError type1 type2 term cont =
   Result.Diag
     { Result.diagKind = Result.Error
-    , Result.diagString = "Term\n" ++ (show $ pretty term)
+    , Result.diagString = "Term\n" ++ show (pretty term)
                           ++ "\nmust be of type "
-                          ++ (show $ pretty type1) ++ "\nbut is of type\n"
-                          ++ (show $ pretty type2) ++ "\nin context\n"
-                          ++ (show $ pretty cont)
+                          ++ show (pretty type1) ++ "\nbut is of type\n"
+                          ++ show (pretty type2) ++ "\nin context\n"
+                          ++ show (pretty cont)
     , Result.diagPos = nullRange
     }
 
@@ -404,8 +401,8 @@ unknownIdentifierError :: NAME -> CONTEXT -> Result.Diagnosis
 unknownIdentifierError n cont =
   Result.Diag
     { Result.diagKind = Result.Error
-    , Result.diagString = "Unknown identifier\n" ++ (show $ pretty n)
-                          ++ "\nin the context\n" ++ (show $ pretty cont)
+    , Result.diagString = "Unknown identifier\n" ++ show (pretty n)
+                          ++ "\nin the context\n" ++ show (pretty cont)
     , Result.diagPos = nullRange
     }
 
@@ -413,9 +410,9 @@ incompatibleUnionError :: NAME -> TYPE -> TYPE -> Result.Diagnosis
 incompatibleUnionError n t1 t2 =
   Result.Diag
     { Result.diagKind = Result.Error
-    , Result.diagString = "Symbol\n" ++ (show $ pretty n)
-                          ++ "\nmust have both type\n" ++ (show $ pretty t1)
-                          ++ "\nand type\n" ++ (show $ pretty t2)
+    , Result.diagString = "Symbol\n" ++ show (pretty n)
+                          ++ "\nmust have both type\n" ++ show (pretty t1)
+                          ++ "\nand type\n" ++ show (pretty t2)
                           ++ "\nin the signature union and hence "
                           ++ "the union is not defined."
     , Result.diagPos = nullRange

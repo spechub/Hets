@@ -144,7 +144,7 @@ anaForms l bs f s = mapM (flipM . makeNamedSen . fmap (anaForm l bs s)) f
 
 -- Just flips the monad position with the functor
 flipM :: (Monad m) => Named (m a) -> m (Named a)
-flipM y = sentence y >>= \ a -> return $ mapNamed (\ _ -> a) y
+flipM y = sentence y >>= \ a -> return $ mapNamed (const a) y
 
 {- | Examining the list of formulas and collecting results
 

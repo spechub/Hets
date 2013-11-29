@@ -33,8 +33,8 @@ import CSL.GenericInterpreter
 import qualified Interfaces.Process as PC
 
 import Control.Monad
---import Control.Monad.Trans (MonadTrans (..), MonadIO (..))
-import Control.Monad.Error (ErrorT(..), MonadError (..))
+-- import Control.Monad.Trans (MonadTrans (..), MonadIO (..))
+import Control.Monad.Error (ErrorT (..), MonadError (..))
 import Control.Monad.State.Class
 import Control.Monad.Reader
 
@@ -46,9 +46,9 @@ import System.IO
 
 import Prelude hiding (lookup)
 
--- ----------------------------------------------------------------------
--- * Maple Types and Instances
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+Maple Types and Instances
+---------------------------------------------------------------------- -}
 
 type ConnectInfo = (PC.CommandState, PC.DTime)
 
@@ -77,19 +77,19 @@ setMI cs = fmap (updateCS cs)
 type MapleIO = ErrorT ASError (IOS MITrans)
 
 instance AssignmentStore MapleIO where
-    assign  = genAssign mapleAssignDirect
+    assign = genAssign mapleAssignDirect
     assigns l = genAssigns mapleAssignsDirect l >> return ()
     lookup = genLookup mapleLookupDirect
     eval = genEval mapleEvalDirect
     check = mapleCheck
-    names = get >>= return . SMem . getBMap
+    names = liftM (SMem . getBMap) get
     evalRaw s = get >>= liftIO . flip (mapleDirect True) s
 
     getUndefinedConstants e = do
       adg <- gets depGraph
       let g = isNothing . depGraphLookup adg
       return $ Set.filter g $ Set.map SimpleConstant $ setOfUserDefined e
-      
+
     genNewKey = do
       mit <- get
       let (bm, i) = genKey $ getBMap mit
@@ -99,8 +99,8 @@ instance AssignmentStore MapleIO where
     getDepGraph = gets depGraph
     updateConstant n def =
         let f gr = updateGraph gr n
-                   $ DepGraphAnno { annoDef = def
-                                  , annoVal = () } 
+                     DepGraphAnno { annoDef = def
+                                  , annoVal = () }
             mf mit = mit { depGraph = f $ depGraph mit }
         in modify mf
 
@@ -110,9 +110,9 @@ instance VCGenerator MapleIO where
           s = show
               $ (text "Verification condition for" <+> pretty ea <> text ":")
                     $++$ printExpForVC e
-          --s = show $ printExpForVC e <> text ";"
-          -- s = (++ "\n\n;\n\n") $ showRaw $ text "VC for" <+> pretty ea <> text ":" $++$ pretty e
---          vcHdl = stdout
+          {- s = show $ printExpForVC e <> text ";"
+          s = (++ "\n\n;\n\n") $ showRaw $ text "VC for" <+> pretty ea <> text ":" $++$ pretty e
+vcHdl = stdout -}
       vcHdl <- liftM (fromMaybe stdout) $ gets vericondOut
       liftIO $ hPutStrLn vcHdl s where
 
@@ -127,9 +127,9 @@ instance SymbolicEvaluator MapleIO where
 instance MessagePrinter MapleIO where
     printMessage = liftIO . putStrLn
 
--- ----------------------------------------------------------------------
--- * Maple syntax functions
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+Maple syntax functions
+---------------------------------------------------------------------- -}
 
 data OfMaple a = OfMaple { mplValue :: a }
 
@@ -139,7 +139,7 @@ instance ExpressionPrinter MaplePrinter where
     getOINM = asks mplValue
     printOpname = return . text . mplShowOPNAME
 
-printMaplePretty :: (MaplePrinter Doc) -> Doc
+printMaplePretty :: MaplePrinter Doc -> Doc
 printMaplePretty = flip runReader $ OfMaple mapleOpInfoNameMap
 
 class MaplePretty a where
@@ -155,7 +155,7 @@ instance MaplePretty String where
     mplPretty = text
 
 instance (MaplePretty a, MaplePretty b) => MaplePretty [(a, b)] where
-    mplPretty l = ppPairlist mplPretty mplPretty braces sepBySemis (<>) l
+    mplPretty = ppPairlist mplPretty mplPretty braces sepBySemis (<>)
 
 
 printExp :: EXPRESSION -> String
@@ -183,8 +183,8 @@ printAssignment n (FunDef l e) = concat [ n, ":= proc", args, printExp e
 
 printAssignmentWithEval :: String -> AssDefinition -> String
 printAssignmentWithEval n (ConstDef e) =
---    concat [n, ":= evalf(", printExp e, "):", n, " &+ 0", ";"]
---    concat [n, ":= evalf(", printExp e, "):", n, ";"]
+{- concat [n, ":= evalf(", printExp e, "):", n, " &+ 0", ";"]
+concat [n, ":= evalf(", printExp e, "):", n, ";"] -}
     concat [n, ":= evalf(", printExp e, "):g(", n, ")", ";"]
 printAssignmentWithEval n (FunDef l e) = concat [ n, ":= proc", args, printExp e
                                                 , " end proc:", n, args, ";"]
@@ -193,8 +193,8 @@ printAssignmentWithEval n (FunDef l e) = concat [ n, ":= proc", args, printExp e
 printEvaluation :: EXPRESSION -> String
 printEvaluation e = printExp e ++ ";"
 
---printEvaluationWithEval :: EXPRESSION -> String
---printEvaluationWithEval e = "evalf(" ++ printExp e ++ ");"
+{- printEvaluationWithEval :: EXPRESSION -> String
+printEvaluationWithEval e = "evalf(" ++ printExp e ++ ");" -}
 
 printLookup :: String -> String
 printLookup n = n ++ ";"
@@ -214,8 +214,7 @@ is(abs(x2)<1.0e-4);
 printBooleanExpr :: EXPRESSION -> String
 printBooleanExpr e = concat [ "is(evalf(", printExp e, "));" ]
 
--- The evalf is mandatory if we use the if-statement for encoding
-{-
+{- The evalf is mandatory if we use the if-statement for encoding
 
 -- | As maple does not evaluate boolean expressions we encode them in an
 -- if-stmt and transform the numeric response back.
@@ -226,13 +225,13 @@ printBooleanExpr e = concat [ "if evalf("
 
 -}
 
--- ----------------------------------------------------------------------
--- * Methods for Maple 'AssignmentStore' Interface
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+Methods for Maple 'AssignmentStore' Interface
+---------------------------------------------------------------------- -}
 
--- | Evaluate the given String as maple expression and
--- parse the result to an maybe expression. If the boolean flag is false
--- the result will not be parsed.
+{- | Evaluate the given String as maple expression and
+parse the result to an maybe expression. If the boolean flag is false
+the result will not be parsed. -}
 evalMapleString' :: Bool -- ^ Use parser
                 -> String -- ^ the maple command to evaluate
                 -> MapleIO (Maybe EXPRESSION)
@@ -241,7 +240,7 @@ evalMapleString' b s = do
   mit <- get
   res <- lift $ wrapCommand $ PC.call (getChannelTimeout mit) s
   return $ if b
-           --    then parseExpression mapleOpInfoMap $ trimLeft $ removeOutputComments res
+           -- then parseExpression mapleOpInfoMap $ trimLeft $ removeOutputComments res
            then parseExpression (mapleOpInfoMap, mapleBindInfoMap) $ trimLeft res
            else Nothing
 
@@ -250,8 +249,8 @@ sendMapleString :: String -- ^ the maple command to evaluate
                 -> MapleIO ()
 sendMapleString s = evalMapleString' False s >> return ()
 
--- | Evaluate the given String as maple expression and
--- parse the result back to an expression.
+{- | Evaluate the given String as maple expression and
+parse the result back to an expression. -}
 evalMapleString :: String -- ^ an error message for the failure case
                 -> String -- ^ the maple command to evaluate
                 -> MapleIO EXPRESSION
@@ -266,7 +265,7 @@ mapleAssignDirect n def = do
   sm <- getSymbolicMode
   let f = if sm then printAssignment else printAssignmentWithEval
       msg = "mapleAssignDirect: unparseable result for assignment of "
-            ++ (show $ pretty n <+> pretty def)
+            ++ (show (pretty n) <+> pretty def)
   prettyInfo3 $ mplPretty [(n, def)]
   evalMapleString msg $ f n def
 
@@ -282,16 +281,16 @@ mapleLookupDirect n = evalMapleString msg $ printLookup n where
 
 mapleEvalDirect :: EXPRESSION -> MapleIO EXPRESSION
 mapleEvalDirect e = do
---  b <- getSymbolicMode
+-- b <- getSymbolicMode
   let -- f = if b then printEvaluation else printEvaluationWithEval
       msg = "mapleEvalDirect: unparseable result for evaluation of "
-            ++ (show $ pretty e)
+            ++ show (pretty e)
   evalMapleString msg $ printEvaluation e -- f e
 
 mapleCheck :: EXPRESSION -> MapleIO Bool
 mapleCheck e = do
   let msg = "mapleCheck: unparseable result for evaluation of "
-            ++ (show $ pretty e)
+            ++ show (pretty e)
   eB <- genCheck (evalMapleString msg . printBooleanExpr) e
   case eB of
     Right b -> return b
@@ -300,9 +299,9 @@ mapleCheck e = do
                    concat [ "mapleCheck: CAS error for expression "
                           , show e, "\n", s ]
 
--- ----------------------------------------------------------------------
--- * The Communication Interface
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+The Communication Interface
+---------------------------------------------------------------------- -}
 
 
 wrapCommand :: IOS PC.CommandState a -> IOS MITrans a
@@ -367,16 +366,16 @@ runWithMaple adg i to l m = do
   -- wraps an interval around the number
   let debugFun = "g := proc(v) z:=abs(Float(v,1-Digits)):[v-z, v+z] end;"
   runIOS (getMI mit) $ PC.call 0.3 debugFun
-        
+
   execWithMaple mit m
 
--- ----------------------------------------------------------------------
--- * The Maple system
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+The Maple system
+---------------------------------------------------------------------- -}
 
 -- | Left String is success, Right String is failure
 lookupMapleShellCmd :: IO (Either String String)
-lookupMapleShellCmd  = do
+lookupMapleShellCmd = do
   cmd <- getEnvDef "HETS_MAPLE" "maple"
   -- check that prog exists
   noProg <- missingExecutableInPath cmd
@@ -387,12 +386,12 @@ lookupMapleShellCmd  = do
 removeOutputComments :: String -> String
 removeOutputComments =
     filter (/= '\\') . concat . filter (not . isPrefixOf ">") . lines
- 
+
 {- Some problems with the maximization in Maple:
 
-> Maximize(-x^6+t*x^3-3, {t >= -1000, t <= 1000}, x=-2..0);     
+> Maximize(-x^6+t*x^3-3, {t >= -1000, t <= 1000}, x=-2..0);
 Error, (in Optimization:-NLPSolve) no improved point could be found
-> Maximize(-x^t*x^3-3, {t >= -1000, t <= 1000}, x=-2..0);  
+> Maximize(-x^t*x^3-3, {t >= -1000, t <= 1000}, x=-2..0);
 Error, (in Optimization:-NLPSolve) complex value encountered
 
 

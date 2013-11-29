@@ -186,13 +186,12 @@ checkReflCondition Morphism
       rel' = sortRel sig'
       allPairs = LT.cartesian $ sortSet sig
       failures = Set.filter (not . test) allPairs
-      test (s1, s2) = if Rel.path (mapSort sm s1) (mapSort sm s2) rel' ||
-                        mapSort sm s1 == mapSort sm s2
-                     then Rel.path s1 s2 rel || s1 == s2
-                     else True
+      test (s1, s2) = not (Rel.path (mapSort sm s1) (mapSort sm s2) rel' ||
+                        mapSort sm s1 == mapSort sm s2) ||
+                      (Rel.path s1 s2 rel || s1 == s2)
       produceDiag (s1, s2) =
-                let x = (mapSort sm s1)
-                    y = (mapSort sm s2)
+                let x = mapSort sm s1
+                    y = mapSort sm s2
                 in Diag Error
                  ("CSP-CASL Signature Morphism Refl Property Violated:\n'"
                   ++ showDoc (Symbol x $ SubsortAsItemType y)
@@ -232,8 +231,8 @@ checkWNECondition Morphism
          in or $ Set.toList $ Set.map test possibleWitnesses
       failures = Set.filter (not . testCandidate) allCandidateTripples
       produceDiag (s1, s2, u') =
-                let x = (mapSort sm s1)
-                    y = (mapSort sm s2)
+                let x = mapSort sm s1
+                    y = mapSort sm s2
                 in Diag Error
                    ("CSP-CASL Signature Morphism Weak Non-Extension Property "
                     ++ "Violated:\n'"

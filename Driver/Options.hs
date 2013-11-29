@@ -865,7 +865,7 @@ checkFlags fs = do
         v = null [ () | Version <- fs]
     unless h $ putStr hetsUsage
     unless v $ putStrLn ("version of hets: " ++ hetcats_version)
-    unless (v && h) $ exitWith ExitSuccess
+    unless (v && h) exitSuccess
     collectFlags fs
 
 -- | 'checkInFiles' checks all given input files for sanity

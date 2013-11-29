@@ -21,9 +21,9 @@ import VSE.As
 data FoldRec a = FoldRec
   { foldAbort :: Program -> a
   , foldSkip :: Program -> a
-  , foldAssign :: Program -> VAR  -> TERM () -> a
-  , foldCall :: Program ->  FORMULA () -> a
-  , foldReturn :: Program -> (TERM ()) -> a
+  , foldAssign :: Program -> VAR -> TERM () -> a
+  , foldCall :: Program -> FORMULA () -> a
+  , foldReturn :: Program -> TERM () -> a
   , foldBlock :: Program -> [VAR_DECL] -> a -> a
   , foldSeq :: Program -> a -> a -> a
   , foldIf :: Program -> FORMULA () -> a -> a -> a
@@ -34,7 +34,7 @@ foldProg :: FoldRec a -> Program -> a
 foldProg r p = case unRanged p of
   Abort -> foldAbort r p
   Skip -> foldSkip r p
-  Assign v t-> foldAssign r p v t
+  Assign v t -> foldAssign r p v t
   Call f -> foldCall r p f
   Return t -> foldReturn r p t
   Block vs q -> foldBlock r p vs $ foldProg r q

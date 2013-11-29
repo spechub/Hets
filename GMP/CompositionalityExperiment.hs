@@ -1,4 +1,5 @@
-{-# OPTIONS -fglasgow-exts #-}
+{-# LANGUAGE ScopedTypeVariables, MultiParamTypeClasses,
+             FunctionalDependencies #-}
 {- |
 Module      :  $EmptyHeader$
 Description :  <optional short description entry>
@@ -24,7 +25,7 @@ data K l = K (Boole l) deriving (Eq, Ord, Show)
 
 data RK = RK Int deriving Show
 
-data KD l  = KD (Boole l) deriving (Eq, Ord, Show)
+data KD l = KD (Boole l) deriving (Eq, Ord, Show)
 
 data RKD = RKDPos Int | RKDNeg Int deriving Show
 
@@ -40,24 +41,24 @@ class Logic a b | a -> b, b -> a where
   subclauses :: Ord c => Clause (a c) -> Set.Set (Clause (a c))
 
 instance Logic K RK where
-  match ((Implies n p)::Clause (K c)) =
+  match ((Implies n p) :: Clause (K c)) =
     let i = Set.size n
         strip (K x) = x
-        substHead = (i+1,strip(head(Set.elems p)))
-        substTail = zip [1..i] (map strip (Set.elems n))
-    in [(RK i, Subst (Map.fromList (substHead:substTail)))]
-  clauses (RK n) = [Implies (Set.fromList [1..n]) (Set.singleton (n+1))]
+        substHead = (i + 1, strip (head (Set.elems p)))
+        substTail = zip [1 .. i] (map strip (Set.elems n))
+    in [(RK i, Subst (Map.fromList (substHead : substTail)))]
+  clauses (RK n) = [Implies (Set.fromList [1 .. n]) (Set.singleton (n + 1))]
   subclauses (Implies n p) =
     Set.fromList [Implies n (Set.singleton l) | l <- Set.elems p]
 
 instance Logic KD RKD where
-  match ((Implies n p):: Clause (KD c)) =
+  match ((Implies n p) :: Clause (KD c)) =
     let i = Set.size n
         strip (KD x) = x
-        substHead = (i+1,strip(head(Set.elems p)))
-        substTail = zip [1..i] (map strip (Set.elems n))
-    in [(RKDPos i, Subst (Map.fromList (substHead:substTail)))]
-  clauses (RKDPos n) = [Implies (Set.fromList [1..n]) (Set.singleton (n+1))]
-  clauses (RKDNeg n) = [Implies (Set.fromList [1..n]) (Set.singleton (n+1))]
+        substHead = (i + 1, strip (head (Set.elems p)))
+        substTail = zip [1 .. i] (map strip (Set.elems n))
+    in [(RKDPos i, Subst (Map.fromList (substHead : substTail)))]
+  clauses (RKDPos n) = [Implies (Set.fromList [1 .. n]) (Set.singleton (n + 1))]
+  clauses (RKDNeg n) = [Implies (Set.fromList [1 .. n]) (Set.singleton (n + 1))]
   subclauses (Implies n p) =
     Set.fromList [Implies n (Set.singleton l) | l <- Set.elems p]

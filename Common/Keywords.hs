@@ -274,7 +274,7 @@ newcomorphismS = "newcomorphism"
 sourceS :: String
 sourceS = "source"
 
-targetS :: String 
+targetS :: String
 targetS = "target"
 
 -- * DOL keywords

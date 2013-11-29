@@ -12,9 +12,9 @@ Definition of symbols for Maude.
 -}
 
 module Maude.Symbol (
-    -- * Types
-    -- ** The Symbol type
-    Symbol(..),
+    {- * Types
+    The Symbol type -}
+    Symbol (..),
     -- ** Auxiliary types
     Symbols,
     SymbolSet,
@@ -46,14 +46,14 @@ import qualified Common.Lib.Rel as Rel
 
 import Common.Id (Id, mkId, mkSimpleId, GetRange, getRange, nullRange)
 import Common.Doc
-import Common.DocUtils (Pretty(..))
+import Common.DocUtils (Pretty (..))
 
 import Data.Maybe (fromJust)
 
 -- * Types
 
--- ** The Symbol type
--- | A 'Sort', 'Kind', 'Label', or 'Operator'.
+{- ** The Symbol type
+A 'Sort', 'Kind', 'Label', or 'Operator'. -}
 data Symbol = Sort Qid                      -- ^ A 'Sort' Symbol
             | Kind Qid                      -- ^ A 'Kind' Symbol
             | Labl Qid                      -- ^ A 'Label' Symbol
@@ -61,7 +61,7 @@ data Symbol = Sort Qid                      -- ^ A 'Sort' Symbol
             | OpWildcard Qid                -- ^ A wildcard 'Operator' Symbol
             deriving (Show, Read, Ord, Eq)
 -- ** Auxiliary types
-type Symbols   = [Symbol]
+type Symbols = [Symbol]
 type SymbolSet = Set Symbol
 type SymbolMap = Map Symbol Symbol
 type SymbolRel = Rel Symbol
@@ -143,7 +143,7 @@ isOpWildcard symb = case symb of
 -- | True iff the argument is a qualified 'Operator'.
 isOperator :: Symbol -> Bool
 isOperator symb = case symb of
-    Operator _ _ _ -> True
+    Operator {} -> True
     _ -> False
 
 toOperatorMaybe :: Symbol -> Maybe Operator
@@ -168,42 +168,42 @@ mkOpPartial qid dom cod = Operator qid (map Sort dom) (Kind cod)
 
 -- * Testing
 
--- | True iff both 'Symbol's are of the same 'Kind' in the given
--- 'SymbolRel'. The 'isType' predicate is assumed to hold for both
--- 'Symbol's; this precondition is /not/ checked.
+{- | True iff both 'Symbol's are of the same 'Kind' in the given
+'SymbolRel'. The 'isType' predicate is assumed to hold for both
+'Symbol's; this precondition is /not/ checked. -}
 typeSameKind :: SymbolRel -> Symbol -> Symbol -> Bool
 typeSameKind rel s1 s2 = let
     preds1 = Rel.predecessors rel s1
     preds2 = Rel.predecessors rel s2
     succs1 = Rel.succs rel s1
     succs2 = Rel.succs rel s2
-    psect  = Set.intersection preds1 preds2
-    ssect  = Set.intersection succs1 succs2
-    in any id [ s1 == s2
-              , Set.member s2 preds1
-              , Set.member s1 preds2
-              , Set.member s2 succs1
-              , Set.member s1 succs2
-              , not $ Set.null psect
-              , not $ Set.null ssect ]
+    psect = Set.intersection preds1 preds2
+    ssect = Set.intersection succs1 succs2
+    in or [ s1 == s2
+          , Set.member s2 preds1
+          , Set.member s1 preds2
+          , Set.member s2 succs1
+          , Set.member s1 succs2
+          , not $ Set.null psect
+          , not $ Set.null ssect ]
 
--- | True iff the 'Symbol's of both lists are pairwise of the same
--- 'Kind' in the given 'SymbolRel'.
+{- | True iff the 'Symbol's of both lists are pairwise of the same
+'Kind' in the given 'SymbolRel'. -}
 zipSameKind :: SymbolRel -> Symbols -> Symbols -> Bool
-zipSameKind rel s1 s2 = all id $ zipWith (sameKind rel) s1 s2
+zipSameKind rel s1 s2 = and $ zipWith (sameKind rel) s1 s2
 
 -- | True iff both 'Symbol's are of the same 'Kind' in the given 'SymbolRel'.
 sameKind :: SymbolRel -> Symbol -> Symbol -> Bool
 sameKind rel s1 s2
-    | all id [isOpWildcard s1, isOperator s2] = True
-    | all id [isOperator s1, isOpWildcard s2] = True
+    | isOpWildcard s1 && isOperator s2 = True
+    | isOperator s1 && isOpWildcard s2 = True
     | all isType [s1, s2] = typeSameKind rel (kindSym2sortSym s1) (kindSym2sortSym s2)
     | all isOperator [s1, s2] = let
         Operator _ dom1 _ = s1
         Operator _ dom2 _ = s2
         in zipSameKind rel dom1 dom2
     | otherwise = False
-    
+
 kindSym2sortSym :: Symbol -> Symbol
 kindSym2sortSym (Kind q) = Sort q
 kindSym2sortSym s = s

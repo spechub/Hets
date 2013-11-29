@@ -38,7 +38,7 @@ markSimpAux isAx s = let
 excludePrefixes :: [String]
 excludePrefixes = [ "ga_predicate_monotonicity"
                   , "ga_function_monotonicity"
-                  ,"ga_transitive"]
+                  , "ga_transitive"]
 
 includePrefixes :: [String]
 includePrefixes =
@@ -59,7 +59,7 @@ isSimpRuleSen sen = case sen of
 isSimplAppl :: Term -> Bool
 isSimplAppl trm = case trm of
     Free {} -> True
-    Const q _ -> not $ elem (new q)
+    Const q _ -> notElem (new q)
       [allS, exS, ex1S, eq, impl, disj, conj, cNot]
     App f a _ -> isSimplAppl f && isSimplAppl a
     Tuplex ts _ -> all isSimplAppl ts
@@ -73,12 +73,12 @@ isEqOrSimplAppl trm = case trm of
 
 isEqOrNeg :: Term -> Bool
 isEqOrNeg trm = case trm of
-    App (Const q _) arg _  | new q == cNot -> isEqOrNeg arg
+    App (Const q _) arg _ | new q == cNot -> isEqOrNeg arg
     _ -> isEqOrSimplAppl trm
 
 isCondEq :: Term -> Bool
-isCondEq  trm = case trm of
-    App (Const q _) arg@Abs{} _ | new q == allS  -> isCondEq (termId arg)
+isCondEq trm = case trm of
+    App (Const q _) arg@Abs {} _ | new q == allS -> isCondEq (termId arg)
     App (App (Const q _) a1 _) a2 _
         | new q == impl -> isEqOrNeg a1 && isCondEq a2
         | new q == conj -> isCondEq a1 && isCondEq a2
@@ -91,7 +91,7 @@ sizeOfTerm trm = case trm of
     If { ifId = t1, thenId = t2, elseId = t3 } ->
         sizeOfTerm t1 + max (sizeOfTerm t2) (sizeOfTerm t3)
     Case { termId = t1, caseSubst = cs } ->
-        sizeOfTerm t1 + foldr max 0 (map (sizeOfTerm . snd) cs)
+        sizeOfTerm t1 + foldr (max . sizeOfTerm . snd) 0 cs
     Let { letSubst = es, inId = t } ->
         sizeOfTerm t + sum (map (sizeOfTerm . snd) es)
     IsaEq { firstTerm = t1, secondTerm = t2 } ->

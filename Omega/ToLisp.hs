@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 {- |
 Module      :  $Header$
 Description :  Omega Lisp Output
@@ -17,7 +18,7 @@ import qualified Data.Map as Map
 
 import Omega.DataTypes
 
-data PrintEnvironment = Env { library::String, theory::String }
+data PrintEnvironment = Env { library :: String, theory :: String }
 
 class SExprPrintable a where
   -- | Render instance to an SExpression string.
@@ -42,29 +43,29 @@ symbolFun = "theory:add-symbol"
 
 -- | Outputs a library to omega's lisp format.
 printLibrary :: Library -> String
-printLibrary l = toSExpr emptyEnv l
+printLibrary = toSExpr emptyEnv
 
 instance SExprPrintable Library where
     toSExpr e (Library name theories) =
-        let e' = e{library = name}
+        let e' = e {library = name}
             in unlines $ map (toSExpr e') theories
 
 instance SExprPrintable Theory where
     toSExpr e (Theory name imports items) =
-        let e' = e{theory = name}
+        let e' = e {theory = name}
         in unlines $ toSExpr e' (theoryFun : show name : map show imports)
                                : map (toSExpr e') items
 
 instance SExprPrintable TCElement where
     toSExpr e (TCAxiomOrTheorem isTheorem name formula) =
-        toSExpr e [theoremFun isTheorem, show name, 
+        toSExpr e [theoremFun isTheorem, show name,
                    show $ printTerm formula, show $ theory e]
     toSExpr e (TCSymbol name) = toSExpr e [symbolFun, show name, show $ theory e]
---    toSExpr e (TCComment comment) = ""
+-- toSExpr e (TCComment comment) = ""
     toSExpr _ _ = ""
 
 instance SExprPrintable [String] where
-    toSExpr _ l = "(" ++ intercalate " " l ++ ")"
+    toSExpr _ l = "(" ++ unwords l ++ ")"
 
 -- * TERM HANDLING
 
@@ -91,10 +92,10 @@ printTerm (App _ []) =
 printTerm (App fun args) =
     let mapped = symbolLookup fun
     in case mapped of
-         Nothing -> concat [(printTerm fun), "(", concatSTL args, ")"]
-         Just(t, Infix) -> concat ["(", printTerm (args!!0), " ",
-                                   printTerm t, " ", printTerm (args!!1), ")"]
-         Just(t, _) -> concat [(printTerm t), "(", concatSTL args, ")"]
+         Nothing -> concat [printTerm fun, "(", concatSTL args, ")"]
+         Just (t, Infix) -> concat ["(", printTerm (head args), " ",
+                                   printTerm t, " ", printTerm (args !! 1), ")"]
+         Just (t, _) -> concat [printTerm t, "(", concatSTL args, ")"]
 printTerm (Bind binder vars body) =
     concat ["(", binder, " ", concatSTL vars, ". ", printTerm body, ")"]
 

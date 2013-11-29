@@ -18,7 +18,7 @@ import Common.Id
 import Common.AS_Annotation as AS_Anno
 
 negateFormula :: CMD -> CMD
-negateFormula (Cmd s exps) = Cmd "Not" [(mkOp s exps)]
+negateFormula (Cmd s exps) = Cmd "Not" [mkOp s exps]
 negateFormula _ = error "negateFormula: not implemented" -- TODO: implement this
 
 getAtoms :: EXPRESSION -> [String]
@@ -26,10 +26,10 @@ getAtoms e =
     case e of
       Var tk -> ["var:" ++ tokStr tk]
       Op s _ el _ -> ("op:" ++ show s) : concatMap getAtoms el
-      List el _ -> ("list") : concatMap getAtoms el
+      List el _ -> "list" : concatMap getAtoms el
       Int _ _ -> ["int"]
       Rat _ _ -> ["dbl"]
-      Interval _ _ _ -> ["intv"]
+      Interval {} -> ["intv"]
 
 getCmdAtoms :: CMD -> [String]
 getCmdAtoms c =

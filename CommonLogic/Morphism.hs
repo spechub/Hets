@@ -37,6 +37,8 @@ import Common.DocUtils
 import CommonLogic.AS_CommonLogic as AS
 import CommonLogic.Sign as Sign
 
+import Control.Monad (unless)
+
 -- maps of sets
 data Morphism = Morphism
   { source :: Sign
@@ -58,8 +60,8 @@ isLegalMorphism pmor =
         ptarget = allItems $ target pmor
         pdom = Map.keysSet $ propMap pmor
         pcodom = Set.map (applyMorphism pmor) psource
-    in if Set.isSubsetOf pcodom ptarget && Set.isSubsetOf pdom psource
-    then return () else fail "illegal CommonLogic morphism"
+    in unless (Set.isSubsetOf pcodom ptarget && Set.isSubsetOf pdom psource) $
+    fail "illegal CommonLogic morphism"
 
 -- | Application funtion for morphisms
 applyMorphism :: Morphism -> Id -> Id
@@ -74,8 +76,8 @@ composeMor :: Morphism -> Morphism -> Result Morphism
 composeMor f g =
   let fSource = source f
       gTarget = target g
-      fMap    = propMap f
-      gMap    = propMap g
+      fMap = propMap f
+      gMap = propMap g
   in return Morphism
   { source = fSource
   , target = gTarget
@@ -104,8 +106,8 @@ mkMorphism s t p =
            , target = t
            , propMap = p }
 
--- | sentence (text) translation along signature morphism
--- here just the renaming of formulae
+{- | sentence (text) translation along signature morphism
+here just the renaming of formulae -}
 mapSentence :: Morphism -> AS.TEXT_META -> Result.Result AS.TEXT_META
 mapSentence mor tm =
   return $ tm { getText = mapSen_txt mor $ getText tm }
@@ -135,7 +137,7 @@ mapSen_sen mor frm = case frm of
   AS.Quant_sent q vs is rn ->
     AS.Quant_sent q (map (mapSen_nos mor) vs) (mapSen_sen mor is) rn
   AS.Bool_sent bs rn -> AS.Bool_sent (case bs of
-      AS.Junction j sens ->  AS.Junction j (map (mapSen_sen mor) sens)
+      AS.Junction j sens -> AS.Junction j (map (mapSen_sen mor) sens)
       AS.Negation sen -> AS.Negation (mapSen_sen mor sen)
       AS.BinOp op s1 s2 ->
           AS.BinOp op (mapSen_sen mor s1) (mapSen_sen mor s2)

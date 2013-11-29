@@ -46,7 +46,7 @@ import Control.Monad
 -- ---------------------------------------------------------------------------
 
 parseBasicSpec :: Maybe (PrefixMap -> AnnoState.AParser st BASIC_SPEC)
-parseBasicSpec = Just (\_ -> basicSpec)
+parseBasicSpec = Just (const basicSpec)
 
 parseSymbItems :: Maybe (GenParser Char st SYMB_ITEMS)
 parseSymbItems = Just symbItems
@@ -126,8 +126,6 @@ runWithVars l p = do
 -- TEST: for subparser...
 
 
-
-
 parseError :: String -> CharParser st a
 parseError s = do
   p <- getPosition
@@ -150,11 +148,11 @@ lexemeParser = (<< skip)
 
 getOpName :: String -> [OPNAME] -> OPNAME
 getOpName s l = f l
-    where f (x:xs) = if s == show x then x else f xs
+    where f (x : xs) = if s == show x then x else f xs
           f [] = error $ "getOpName: no op found for " ++ s ++ " in " ++ show l
 
 mkFromOps :: [OPNAME] -> String -> [EXPRESSION] -> EXPRESSION
-mkFromOps l s exps = mkPredefOp (getOpName s l) exps
+mkFromOps l s = mkPredefOp (getOpName s l)
 
 -- ---------------------------------------------------------------------------
 
@@ -184,24 +182,24 @@ signednumber :: CharParser st (Either APInt String, Range)
 signednumber =
     let f c x = return (c $ tokStr x, tokPos x)
         g x | isFloating x = f Right x
-            | otherwise  = f (Left . read) x
+            | otherwise = f (Left . read) x
     in Lexer.pToken Lexer.scanFloatExt >>= g
 
 readRat :: String -> APFloat
 readRat s = case readFloat fls of
               [(r, "")] -> withSgn r
               _ -> error $ "readRat: cannot read float " ++ s
-    where withSgn x = if sgn then -x else x
+    where withSgn x = if sgn then - x else x
           (sgn, fls) = case dropWhile isSpace s of
-                         '-':s' -> (True, s')
+                         '-' : s' -> (True, s')
                          _ -> (False, s)
 
 readDbl :: String -> Double
-readDbl s = read s
+readDbl = read
 
--- | The version in Common.Lexer is not compatible with floating point numbers
--- which may start with ".". This one does it.
--- This version is still not compatible with -!
+{- | The version in Common.Lexer is not compatible with floating point numbers
+which may start with ".". This one does it.
+This version is still not compatible with -! -}
 keySignNumCompat :: CharParser st a -> CharParser st a
 keySignNumCompat = try . (<< notFollowedBy (oneOf signNumCompatChars))
 
@@ -217,7 +215,7 @@ plusmin = do
   let ops = [OP_plus, OP_minus]
   exp1 <- factor
   exps <- many $ pair (oneOfKeys $ map show ops) factor
-  return $ if null exps then  exp1
+  return $ if null exps then exp1
            else foldl (\ a b -> mkFromOps ops (fst b) [a, snd b]) exp1 exps
 
 -- | parse a product of basic expressions
@@ -226,16 +224,16 @@ factor = do
   let ops = [OP_mult, OP_div]
   exp1 <- expexp
   exps <- many $ pair (oneOfKeys $ map show ops) expexp
-  if null exps then return exp1
-     else return $ foldl (\ a b -> mkFromOps ops (fst b) [a, snd b]) exp1 exps
+  return $ if null exps then exp1
+     else foldl (\ a b -> mkFromOps ops (fst b) [a, snd b]) exp1 exps
 
 -- | parse a sequence of exponentiations
 expexp :: OperatorState st => CharParser st EXPRESSION
 expexp = do
   exp1 <- expatom
   exps <- many $ pair (oneOfKeys ["**", "^"]) expatom
-  if null exps then return exp1
-    else return $ foldl (\ a b -> mkPredefOp OP_pow [a, snd b]) exp1 exps
+  return $ if null exps then exp1
+    else foldl (\ a b -> mkPredefOp OP_pow [a, snd b]) exp1 exps
 
 -- | parse a basic expression
 expatom :: OperatorState st => CharParser st EXPRESSION
@@ -245,23 +243,23 @@ expatom = try signednumberExp <|> (oParenT >> plusmin << cParenT)
 expsymbol :: OperatorState st => CharParser st EXPRESSION
 expsymbol = do
   ident <- prefixidentifier  -- EXTENDED
-  ep <- option ([],[])
+  ep <- option ([], [])
         $ oBracketT >> Lexer.separatedBy extparam pComma << cBracketT
-  exps <- option ([],[])
+  exps <- option ([], [])
           $ oParenT >> Lexer.separatedBy formulaorexpression pComma << cParenT
   st <- getState
   case mkAndAnalyzeOp' True st (tokStr ident) (fst ep) (fst exps)
            $ getRange ident of
-    Left s -> parseError $ "expsymbol at op " ++ (tokStr ident)
+    Left s -> parseError $ "expsymbol at op " ++ tokStr ident
               ++ show (fst exps) ++ ": " ++ s
     Right e -> return e
 
 opdecl :: OperatorState st => CharParser st OpDecl
 opdecl = do
   ident <- prefixidentifier  -- EXTENDED
-  ep <- option ([],[])
+  ep <- option ([], [])
         $ oBracketT >> Lexer.separatedBy extparam pComma << cBracketT
-  args <- option ([],[])
+  args <- option ([], [])
           $ oParenT >> Lexer.separatedBy prefixidentifier pComma << cParenT
   let vdl = map (flip VarDecl Nothing) $ fst args
   return $ OpDecl (SimpleConstant $ tokStr ident) (fst ep) vdl $ tokPos ident
@@ -316,13 +314,12 @@ parseVar = do
   return (Var ident)
 
 
-
 quantFormula :: OperatorState st => OPNAME -> CharParser st EXPRESSION
  -- TODO: static analysis requires probably a better representation of quantifiers
 quantFormula q = do
   Lexer.keySign (string $ show q)
   oParenT
-  vars <- ( parseVar <|> parseVarList)
+  vars <- parseVar <|> parseVarList
   pComma
   expr <- formulaorexpression
   cParenT
@@ -351,7 +348,7 @@ predFormula = do
                    <|> lexemeParser (single $ oneOf "=<>")) plusmin
   case mExp2 of
     Just (op, exp2) -> return $ mkFromOps ops op [exp1, exp2]
-    _ -> return $ exp1
+    _ -> return exp1
 
 atomicFormula :: OperatorState st => CharParser st EXPRESSION
 atomicFormula = truefalseFormula <|> predFormula <|> parenFormula
@@ -382,8 +379,8 @@ impOrFormula = do
   opfs <- many $ pair (lexemeParser $ Lexer.keyWord
                       $ tryString (show OP_or) <|> tryString (show OP_impl))
           andFormula
-  if null opfs then return f1
-   else return $ foldl (\ a (op, b) -> mkFromOps ops op [a, b]) f1 opfs
+  return $ if null opfs then f1
+   else foldl (\ a (op, b) -> mkFromOps ops op [a, b]) f1 opfs
 
 -- | a parser for and sequence of and formulas
 andFormula :: OperatorState st => CharParser st EXPRESSION
@@ -391,8 +388,8 @@ andFormula = do
   f1 <- atomicFormula
   opfs <- many $ pair (lexemeParser $ keyWord $ tryString $ show OP_and)
           atomicFormula
-  if null opfs then return f1
-   else return $ foldl (\ b a -> (mkPredefOp OP_and [b, snd a])) f1 opfs
+  return $ if null opfs then f1
+   else foldl (\ b a -> (mkPredefOp OP_and [b, snd a])) f1 opfs
 
 -- ---------------------------------------------------------------------------
 
@@ -430,7 +427,7 @@ constraint :: OperatorState st => CharParser st CMD
 constraint = do
   exp' <- try aFormula
   case exp' of
-    Op _ _ _ _ ->
+    Op {} ->
         return $ Cmd "constraint" [exp']
     _ -> fail "Malformed constraint"
 
@@ -492,16 +489,16 @@ varItem = do
   return $ Var_item vars dom nullRange
 
 
--- | Parser for extended parameter declarations:
--- example: I in [1,2]; 
+{- | Parser for extended parameter declarations:
+example: I in [1,2]; -}
 epDecl :: CharParser st (Id.Token, EPDomain)
 epDecl = do
   epId <- identifier
   oneOfKeys ["in"]
   parseEPDomain >-> (,) epId
 
--- | Parser for extended parameter default values and domain variable
--- declarations: example: I = 1; n=2
+{- | Parser for extended parameter default values and domain variable
+declarations: example: I = 1; n=2 -}
 epNumValAss :: CharParser st (Id.Token, APInt)
 epNumValAss = do
   epId <- identifier
@@ -561,9 +558,9 @@ parseOpDecl = opItem >-> Op_decl
 parseVarDecl :: AnnoState.AParser st BASIC_ITEM
 parseVarDecl = varItems >-> Var_decls
 
--- | parser for extended parameter declarations, one of:
--- default value for an extended parameter (I=2)
--- a domain variable declaration (n=10)
+{- | parser for extended parameter declarations, one of:
+default value for an extended parameter (I=2)
+a domain variable declaration (n=10) -}
 parseEPDefValOrDomDecl :: AnnoState.AParser st BASIC_ITEM
 parseEPDefValOrDomDecl = do
   lstring "set"
@@ -580,7 +577,7 @@ parseEPDecl = oneOfKeys ["eps", "ep"] >> sepBy1 epDecl pSemi >-> EP_decl
 parseAxItems :: AnnoState.AParser st BASIC_ITEM
 parseAxItems = do
   AnnoState.dotT
-  cmd <- (AnnoState.allAnnoParser command)
+  cmd <- AnnoState.allAnnoParser command
   return $ Axiom_item cmd
 
 
@@ -645,4 +642,3 @@ parseExpression st inp =
     case runParser formulaorexpression st "" inp of
       Left _ -> Nothing
       Right s -> Just s
-

@@ -48,7 +48,7 @@ instance Pretty a => Pretty (AnyKind a) where
         ClassKind ci -> pretty ci
         FunKind v k1 k2 _ -> fsep
             [ pretty v <> (case k1 of
-                FunKind _ _ _ _ -> parens
+                FunKind {} -> parens
                 _ -> id) (pretty k1)
             , funArrow, pretty k2]
 
@@ -196,22 +196,22 @@ instance Pretty Term where
 isSimpleTerm :: Term -> Bool
 isSimpleTerm trm = case trm of
     QualVar _ -> True
-    QualOp _ _ _ _ _ _ -> True
-    ResolvedMixTerm _ _ _ _ -> True
-    ApplTerm _ _ _ -> True
+    QualOp {} -> True
+    ResolvedMixTerm {} -> True
+    ApplTerm {} -> True
     TupleTerm _ _ -> True
     TermToken _ -> True
-    BracketTerm _ _ _ -> True
+    BracketTerm {} -> True
     _ -> False
 
 -- | used only to produce CASL applications
 isSimpleArgTerm :: Term -> Bool
 isSimpleArgTerm trm = case trm of
     QualVar vd -> not (isPatVarDecl vd)
-    QualOp _ _ _ _ _ _ -> True
+    QualOp {} -> True
     ResolvedMixTerm n _ l _ -> placeCount n /= 0 || not (null l)
     TupleTerm _ _ -> True
-    BracketTerm _ _ _ -> True
+    BracketTerm {} -> True
     _ -> False
 
 hasRightQuant :: Term -> Bool
@@ -356,9 +356,9 @@ parenTermRec = let
      addParAppl t = case t of
            ResolvedMixTerm _ _ [] _ -> t
            QualVar _ -> t
-           QualOp _ _ _ _ _ _ -> t
+           QualOp {} -> t
            TermToken _ -> t
-           BracketTerm _ _ _ -> t
+           BracketTerm {} -> t
            TupleTerm _ _ -> t
            _ -> TupleTerm [t] nullRange
      in mapRec
@@ -489,8 +489,7 @@ instance Pretty SigItems where
     pretty si = case si of
         TypeItems i l _ -> noNullPrint l $
           let b = semiAnnos pretty l in case i of
-            Plain -> topSigKey ((if all (isSimpleTypeItem . item) l
-                                then typeS else typeS) ++ plTypes l) <+> b
+            Plain -> topSigKey (typeS ++ plTypes l) <+> b
             Instance ->
               sep [keyword typeS <+> keyword (instanceS ++ plTypes l), b]
         OpItems b l _ -> noNullPrint l $ topSigKey (show b ++ plOps l)
@@ -620,8 +619,7 @@ instance Pretty Alternative where
 -- comment out the following line to output real CASL
             ([NoSelector (TypeToken t)], Total) | isSimpleId n -> pretty t
             _ -> parens $ semiDs l) cs) <> pretty p
-        Subtype l _ -> text (if all isSimpleType l then typeS else typeS)
-            <+> ppWithCommas l
+        Subtype l _ -> text typeS <+> ppWithCommas l
 
 instance Pretty Component where
     pretty sel = case sel of

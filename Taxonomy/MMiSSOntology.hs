@@ -312,8 +312,8 @@ insertRelationType onto relName source target =
                _ -> insErr $ "relation type: Relation " ++ relName
              Just (RelationDecl nam card defText typeList super inserted) ->
                let newType = RelationTypeDecl source target
-                   newRel = (RelationDecl nam card defText
-                             (typeList ++ [newType]) super inserted)
+                   newRel = RelationDecl nam card defText
+                             (typeList ++ [newType]) super inserted
                in return (addRelations o2 [(nam, newRel)])
      addEdge o3 (getClassGraph o3) relName source target
   where

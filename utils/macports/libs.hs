@@ -9,8 +9,7 @@ getDepLibs :: String -> IO ()
 getDepLibs binOrLib = do
    str <- readProcess "otool" ["-L", binOrLib] ""
    let ls = map (takeWhile $ not . isSpace)
-               $ catMaybes
-               $ map (stripPrefix lib . dropWhile isSpace) $ lines str
+               $ mapMaybe (stripPrefix lib . dropWhile isSpace) $ lines str
    mapM_ (handleLibs binOrLib) ls
 
 lib :: String

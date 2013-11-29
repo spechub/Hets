@@ -12,8 +12,8 @@ Portability :  portable
 module DFOL.Parse_AS_DFOL
        (
            basicSpec           -- parser for DFOL specifications
-       ,   symbItems           -- parser for symbol lists
-       ,   symbMapItems        -- parser for symbol map lists
+       , symbItems           -- parser for symbol lists
+       , symbMapItems        -- parser for symbol map lists
        )
        where
 
@@ -66,10 +66,10 @@ typeP = do AnnoState.asKey "Pi"
            (do AnnoState.asKey Keywords.funS
                (ts, _) <- type1P `Lexer.separatedBy`
                             AnnoState.asKey Keywords.funS
-               let xs = t:ts
-               return $ Func (init xs) (last xs)
+               let xs = t : ts
+               return $ Func (init xs) (last xs))
             <|>
-            return t)
+            return t
 
 -- parser for basic types and types enclosed in parentheses
 type1P :: AnnoState.AParser st TYPE
@@ -96,10 +96,10 @@ type1P = do AnnoState.asKey "Sort"
 -- parser for terms
 termP :: AnnoState.AParser st TERM
 termP = do f <- nameP
-           do  Lexer.oParenT
-               (as, _) <- termP `Lexer.separatedBy` AnnoState.anComma
-               Lexer.cParenT
-               return $ Appl (Identifier f) as
+           do Lexer.oParenT
+              (as, _) <- termP `Lexer.separatedBy` AnnoState.anComma
+              Lexer.cParenT
+              return $ Appl (Identifier f) as
              <|> return (Identifier f)
 
 -- parsers for names
@@ -133,37 +133,33 @@ formulaP = forallP
    negations, equalities, atomic formulas, and formulas in parentheses -}
 formula1P :: AnnoState.AParser st FORMULA
 formula1P = do f <- formula2P
-               (-- equivalences
-                do AnnoState.asKey Keywords.equivS
+                -- equivalences
+               (do AnnoState.asKey Keywords.equivS
                    g <- formula2P
-                   return $ Equivalence f g
+                   return $ Equivalence f g)
                 <|>
                 -- implications
                 do AnnoState.asKey Keywords.implS
                    g <- formula2P
                    return $ Implication f g
-                <|>
-                -- all other cases
-                return f)
+                <|> return f -- all other cases
 
 {- parser for conjunctions, disjunctions, negations, equalities,
    atomic formulas, and formulas in parentheses -}
 formula2P :: AnnoState.AParser st FORMULA
 formula2P = do f <- formula3P
-               (-- conjunctions
-                do AnnoState.asKey Keywords.lAnd
+                -- conjunctions
+               (do AnnoState.asKey Keywords.lAnd
                    (fs, _) <- formula3P `Lexer.separatedBy`
                                 AnnoState.asKey Keywords.lAnd
-                   return $ Conjunction (f:fs)
+                   return $ Conjunction (f : fs))
                 <|>
                 -- disjunctions
                 do AnnoState.asKey Keywords.lOr
                    (fs, _) <- formula3P `Lexer.separatedBy`
                                 AnnoState.asKey Keywords.lOr
-                   return $ Disjunction (f:fs)
-                <|>
-                -- all other cases
-                return f)
+                   return $ Disjunction (f : fs)
+                <|> return f -- all other cases
 
 {- parser for negations, equalities, atomic formulas,
    and formulas in parentheses -}
@@ -181,13 +177,13 @@ formula3P = parenFormulaP
 -- parser for equalities and predicate formulas
 formula4P :: AnnoState.AParser st FORMULA
 formula4P = do x <- termP
-               (-- equalities
-                do AnnoState.asKey "=="
+                -- equalities
+               (do AnnoState.asKey "=="
                    y <- termP
-                   return $ Equality x y
+                   return $ Equality x y)
                 <|>
                 -- predicates
-                return (Pred x))
+                return (Pred x)
 
 -- parser for formulas enclosed in parentheses
 parenFormulaP :: AnnoState.AParser st FORMULA
@@ -240,6 +236,6 @@ symbOrMap :: AnnoState.AParser st SYMB_OR_MAP
 symbOrMap = do s <- nameP
                (do AnnoState.asKey Keywords.mapsTo
                    t <- nameP
-                   return $ Symb_map s t
+                   return $ Symb_map s t)
                 <|>
-                return (Symb s))
+                return (Symb s)

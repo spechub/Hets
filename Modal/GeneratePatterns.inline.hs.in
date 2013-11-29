@@ -8,11 +8,11 @@ toNFrm = head . head
 
 {- The perl script will use the following subtitutions:
 
-"°!modalAx" =>
+"Â°!modalAx" =>
     "inlineAxioms Modal \"modality empty\\n"++
     "pred p,q:()\\n"++
     ". ",
-"°!caslAx" =>
+"Â°!caslAx" =>
     "inlineAxioms CASL \"sort world \\n"++
     "pred rel : world * world\\n"++
     "forall w1 : world \\n. "
@@ -27,17 +27,17 @@ as variables for modal formulas only 'p','q' and 'r' are recognized.
 genPatterns :: [(Named ModalFORMULA,Named CASLFORMULA)]
 genPatterns = map (\ (x,y) -> (toNFrm x, toNFrm y))
  snip><Patterns
-     [([°!modalAx"[](p=>q) => (([]p) => []q)"],
+     [([Â°!modalAx"[](p=>q) => (([]p) => []q)"],
        [[Nothing]]),
-      ([°!modalAx"[] p => <> p"],
-       [°!caslAx"exists w2 : world . rel(w1,w2) %(Serial_D)%"]),
-      ([°!modalAx"[] p => p"],
-       [°!caslAx"rel(w1,w1) %(Reflexive_M)%"]),
-      ([°!modalAx"[] p => [][] p "],
-       [°!caslAx"forall w2,w3: world . (rel(w1,w2) /\\ rel(w2,w3)) => rel(w1,w3) %(Transitive_4)%"]),
-      ([°!modalAx" p => []<> p "],
-       [°!caslAx"forall w2:world . rel(w1,w2) => rel(w2,w1) %(Symmetric_B)%"]),
-      ([°!modalAx"<> p => []<> p"],
-       [°!caslAx"forall w2,w3:world . (rel(w1,w2) /\\ rel(w1,w3)) => rel(w2,w3) %(Euclidean_5)%"])
+      ([Â°!modalAx"[] p => <> p"],
+       [Â°!caslAx"exists w2 : world . rel(w1,w2) %(Serial_D)%"]),
+      ([Â°!modalAx"[] p => p"],
+       [Â°!caslAx"rel(w1,w1) %(Reflexive_M)%"]),
+      ([Â°!modalAx"[] p => [][] p "],
+       [Â°!caslAx"forall w2,w3: world . (rel(w1,w2) /\\ rel(w2,w3)) => rel(w1,w3) %(Transitive_4)%"]),
+      ([Â°!modalAx" p => []<> p "],
+       [Â°!caslAx"forall w2:world . rel(w1,w2) => rel(w2,w1) %(Symmetric_B)%"]),
+      ([Â°!modalAx"<> p => []<> p"],
+       [Â°!caslAx"forall w2,w3:world . (rel(w1,w2) /\\ rel(w1,w3)) => rel(w2,w3) %(Euclidean_5)%"])
      ]
    snip>/<Patterns

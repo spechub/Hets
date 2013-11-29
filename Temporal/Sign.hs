@@ -9,8 +9,6 @@ Stability   :  experimental
 Portability :  portable
 
 Definition of signatures for propositional logic
--}
-{-
   Ref.
 
   Till Mossakowski, Joseph Goguen, Razvan Diaconescu, Andrzej Tarlecki.
@@ -21,14 +19,14 @@ Definition of signatures for propositional logic
 
 module Temporal.Sign
     (Sign (..)                     -- Propositional Signatures
-    ,pretty                        -- pretty printing
-    ,isLegalSignature              -- is a signature ok?
-    ,addToSig                      -- adds an id to the given Signature
-    ,unite                         -- union of sigantures
-    ,emptySig                      -- empty signature
-    ,isSubSigOf                    -- is subsiganture?
-    ,sigDiff                       -- Difference of Signatures
-    ,sigUnion                      -- Union for Logic.Logic
+    , pretty                        -- pretty printing
+    , isLegalSignature              -- is a signature ok?
+    , addToSig                      -- adds an id to the given Signature
+    , unite                         -- union of sigantures
+    , emptySig                      -- empty signature
+    , isSubSigOf                    -- is subsiganture?
+    , sigDiff                       -- Difference of Signatures
+    , sigUnion                      -- Union for Logic.Logic
     ) where
 
 import qualified Data.Set as Set
@@ -37,15 +35,15 @@ import Common.Result
 import Common.Doc
 import Common.DocUtils
 
--- | Datatype for propositional Signatures
--- Signatures are just sets
+{- | Datatype for propositional Signatures
+Signatures are just sets -}
 newtype Sign = Sign {items :: Set.Set Id} deriving (Eq, Ord, Show)
 
 instance Pretty Sign where
     pretty = printSign
 
--- | determines whether a signature is vaild
--- all sets are ok, so glued to true
+{- | determines whether a signature is vaild
+all sets are ok, so glued to true -}
 isLegalSignature :: Sign -> Bool
 isLegalSignature _ = True
 
@@ -72,10 +70,10 @@ isSubSigOf sig1 sig2 = Set.isSubsetOf (items sig1) $ items sig2
 
 -- | difference of Signatures
 sigDiff :: Sign -> Sign -> Sign
-sigDiff sig1 sig2 = Sign{items = Set.difference (items sig1) $ items sig2}
+sigDiff sig1 sig2 = Sign {items = Set.difference (items sig1) $ items sig2}
 
--- | union of Signatures
--- or do I have to care about more things here?
+{- | union of Signatures
+or do I have to care about more things here? -}
 sigUnion :: Sign -> Sign -> Result Sign
 sigUnion s1 s2 = Result [Diag Debug "All fine sigUnion" nullRange]
     $ Just $ unite s1 s2

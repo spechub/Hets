@@ -13,7 +13,7 @@ the data types 'ShATerm' and 'ATermTable' plus some utilities
 -}
 
 module ATerm.AbstractSyntax
-    (ShATerm(..),
+    (ShATerm (..),
      ATermTable,
      emptyATermTable,
      addATerm,
@@ -35,8 +35,8 @@ import Data.Maybe
 
 data ShATerm =
     ShAAppl String [Int] [Int]
-  | ShAList [Int]        [Int]
-  | ShAInt  Integer      [Int]
+  | ShAList [Int] [Int]
+  | ShAInt Integer [Int]
     deriving (Show, Eq, Ord)
 
 data IntMap =
@@ -63,7 +63,7 @@ data Key = Key Int EqKey
 mkKey :: Typeable a => a -> IO Key
 mkKey t = do
     s <- makeStableName t
-    return $ Key (hashStableName s) $ EqKey (unsafeCoerce# s) $ typeOf t
+    return $ Key (hashStableName s) $ EqKey (unsafeCoerce # s) $ typeOf t
 
 data ATermTable = ATT
     (IntMap.Map Int [(EqKey, Int)])
@@ -124,9 +124,9 @@ str2Char str = case str of
       conv' r = case r of
         [x] -> x
         ['\\', x] -> case x of
-          'n'  -> '\n'
-          't'  -> '\t'
-          'r'  -> '\r'
+          'n' -> '\n'
+          't' -> '\t'
+          'r' -> '\r'
           '\"' -> '\"'
           _ -> error "ATerm.AbstractSyntax: unexpected escape sequence"
         _ -> error "ATerm.AbstractSyntax: String not convertible to Char"

@@ -92,19 +92,19 @@ mapMor mor =
   let src = mapSign $ DefaultMorphism.domOfDefaultMorphism mor
       tgt = mapSign $ DefaultMorphism.codOfDefaultMorphism mor
       pmp = Map.empty
-  in  return $ ClMor.Morphism src tgt pmp
+  in return $ ClMor.Morphism src tgt pmp
 
 mapSentence :: FOLSign.Sign -> FOLSign.Sentence -> Result TEXT_META
-mapSentence s f = translate s f
+mapSentence = translate
 
 mapSign :: FOLSign.Sign -> ClSign.Sign
 mapSign sig =
-  let items = Set.map (\t -> mkId [t]) $ Set.fromList $ concat
+  let items = Set.map (\ t -> mkId [t]) $ Set.fromList $ concat
                                 [ Map.keys $ FOLSign.sortMap sig
                                 , Map.keys $ FOLSign.funcMap sig
                                 , Map.keys $ FOLSign.predMap sig
                                 ]
-  in  ClSign.emptySig { ClSign.discourseNames = items }
+  in ClSign.emptySig { ClSign.discourseNames = items }
 
 -- | translates SoftFOL-theories to CL-theories keeping their names
 mapTheory :: (FOLSign.Sign, [AS_Anno.Named FOLSign.Sentence])
@@ -123,7 +123,7 @@ mapTheory (srcSign, srcFormulas) = do
 -- translates a SoftFOL-theory to a CL-Text
 translate :: FOLSign.Sign -> FOLSign.Sentence -> Result TEXT_META
 translate s f = do
-  sen <-trmToSen s f
+  sen <- trmToSen s f
   return $ emptyTextMeta { getText = Text [Sentence sen] nullRange }
 
 signToTexts :: FOLSign.Sign -> [AS_Anno.Named TEXT_META]
@@ -131,7 +131,7 @@ signToTexts srcSign =
   let sr = sortRelText $ Rel.toMap $ FOLSign.sortRel srcSign
       fm = funcMapText $ FOLSign.funcMap srcSign
       pm = predMapText $ FOLSign.predMap srcSign
-  in concat $
+  in concat
       [ map (AS_Anno.makeNamed sortRelTrS) (maybeToList sr)
       , map (AS_Anno.makeNamed funcMapTrS) (maybeToList fm)
       , map (AS_Anno.makeNamed predMapTrS) (maybeToList pm)
@@ -141,15 +141,15 @@ signToTexts srcSign =
 sortRelText :: Map.Map FOLSign.SPIdentifier (Set.Set FOLSign.SPIdentifier)
                 -> Maybe TEXT_META
 sortRelText m =
-  let ps = Map.foldWithKey (\subSrt set phrs -> (
-        Set.fold (\superSrt phrs2 ->
+  let ps = Map.foldWithKey (\ subSrt set phrs ->
+        Set.fold (\ superSrt phrs2 ->
             Sentence (Quant_sent Universal [Name xName]
                       (Bool_sent (BinOp Implication
                                   (predicateNames subSrt [xName])
                                   (predicateNames superSrt [xName])
                                  ) nullRange) nullRange)
             : phrs2) [] set
-        ) ++ phrs) [] m
+        ++ phrs) [] m
   in if null ps
         then Nothing
         else Just $ emptyTextMeta { getText = Named_text (mkSimpleId sortRelTrS)
@@ -158,16 +158,16 @@ sortRelText m =
 
 typesWithIndv :: [Token] -> [(Token, NAME)] -- (type, individual)
 typesWithIndv args =
-  foldr (\(a, i) resArg -> (a, indv a i) : resArg) [] $ zip args [0..]
+  foldr (\ (a, i) resArg -> (a, indv a i) : resArg) [] $ zip args [0 ..]
 
--- creates one-sentence-phrases:
--- forall x y z. (if (and (T1 x) (T2 y) (T3 z)) (T4 f[x,y,z]))
+{- creates one-sentence-phrases:
+forall x y z. (if (and (T1 x) (T2 y) (T3 z)) (T4 f[x,y,z])) -}
 funcMapText :: Map.Map Token (Set.Set ([Token], Token)) -> Maybe TEXT_META
 funcMapText m =
-  let ps = Map.foldWithKey (\f set phrs -> (
-          Set.fold (\(args, res) phrs2 ->
+  let ps = Map.foldWithKey (\ f set phrs ->
+          Set.fold (\ (args, res) phrs2 ->
             let argsAndNames = typesWithIndv args
-            in  Sentence (
+            in Sentence (
                   if null args
                   then predicateNames res [f]
                   else
@@ -175,7 +175,7 @@ funcMapText m =
                                 (map (Name . snd) argsAndNames) (
                       Bool_sent (BinOp Implication
                           (Bool_sent (Junction Conjunction $
-                              map (\(p, x) -> predicateNames p [x]) argsAndNames
+                              map (\ (p, x) -> predicateNames p [x]) argsAndNames
                             ) nullRange)
                           (Atom_sent (Atom
                               (Name_term res)
@@ -186,31 +186,31 @@ funcMapText m =
                         ) nullRange
                       ) nullRange)
             : phrs2) [] set
-          ) ++ phrs) [] m
+          ++ phrs) [] m
   in if null ps
         then Nothing
         else Just $ emptyTextMeta { getText = Named_text (mkSimpleId funcMapTrS)
                                                 (Text ps nullRange) nullRange
                                   }
 
--- creates one-sentence-phrases:
--- forall x y z. (P[x,y,z]) => (and (T1 x) (T2 y) (T3 z))
+{- creates one-sentence-phrases:
+forall x y z. (P[x,y,z]) => (and (T1 x) (T2 y) (T3 z)) -}
 predMapText :: Map.Map Token (Set.Set [Token]) -> Maybe TEXT_META
 predMapText m =
-  let ps = Map.foldWithKey (\prd set phrs -> (
-          Set.fold (\args phrs2 ->
+  let ps = Map.foldWithKey (\ prd set phrs ->
+          Set.fold (\ args phrs2 ->
             let argsAndNames = typesWithIndv args
-            in  Sentence (Quant_sent Universal
+            in Sentence (Quant_sent Universal
                                       (map (Name . snd) argsAndNames) (
                     Bool_sent (BinOp Implication
                         (predicateNames prd (map snd argsAndNames))
                         (Bool_sent (Junction Conjunction $
-                            map (\(p, x) -> predicateNames p [x]) argsAndNames
+                            map (\ (p, x) -> predicateNames p [x]) argsAndNames
                           ) nullRange)
                       ) nullRange
                     ) nullRange)
             : phrs2) [] set
-          ) ++ phrs) [] m
+          ++ phrs) [] m
   in if null ps
         then Nothing
         else Just $ emptyTextMeta { getText = Named_text
@@ -224,18 +224,18 @@ trmToSen s t = case t of
   FOLSign.SPQuantTerm qsym vl f -> quantTrm s qsym vl f
   FOLSign.SPComplexTerm sym args -> case sym of
     FOLSign.SPEqual -> case args of
-        [x,y] -> toEquation (x,y)
-        l@(_:_:_) -> do
+        [x, y] -> toEquation (x, y)
+        l@(_ : _ : _) -> do
             eqs <- mapM toEquation $ zip l $ tail l
             return $ Bool_sent (Junction Conjunction eqs) nullRange
         x -> fail $ "equation needs at least two arguments, but found: " ++ show x
-    FOLSign.SPTrue -> return $ clTrue
-    FOLSign.SPFalse -> return $ clFalse
+    FOLSign.SPTrue -> return clTrue
+    FOLSign.SPFalse -> return clFalse
     FOLSign.SPOr -> do
-        sens <-mapM (trmToSen s) args
+        sens <- mapM (trmToSen s) args
         return $ Bool_sent (Junction Disjunction sens) nullRange
     FOLSign.SPAnd -> do
-        sens <-mapM (trmToSen s) args
+        sens <- mapM (trmToSen s) args
         return $ Bool_sent (Junction Conjunction sens) nullRange
     FOLSign.SPNot -> case args of
         [x] -> do
@@ -245,25 +245,25 @@ trmToSen s t = case t of
               "negation can only be applied to a single argument, but found: "
               ++ show t
     FOLSign.SPImplies -> case args of
-        [x,y] -> do
-            sen1 <- (trmToSen s x)
-            sen2 <- (trmToSen s y)
+        [x, y] -> do
+            sen1 <- trmToSen s x
+            sen2 <- trmToSen s y
             return $ Bool_sent (BinOp Implication sen1 sen2) nullRange
         _ -> fail $
               "implication can only be applied to two arguments, but found: "
               ++ show t
     FOLSign.SPImplied -> case args of
-        [x,y] ->  do
-            sen1 <- (trmToSen s x)
-            sen2 <- (trmToSen s y)
+        [x, y] -> do
+            sen1 <- trmToSen s x
+            sen2 <- trmToSen s y
             return $ Bool_sent (BinOp Implication sen2 sen1) nullRange
         _ -> fail $
               "implication can only be applied to two arguments, but found: "
               ++ show t
-    FOLSign.SPEquiv ->  case args of
-        [x,y] -> do
-            sen1 <- (trmToSen s x)
-            sen2 <- (trmToSen s y)
+    FOLSign.SPEquiv -> case args of
+        [x, y] -> do
+            sen1 <- trmToSen s x
+            sen2 <- trmToSen s y
             return $ Bool_sent (BinOp Biconditional sen1 sen2) nullRange
         _ -> fail $
               "equivalence can only be applied to two arguments, but found: "
@@ -272,7 +272,7 @@ trmToSen s t = case t of
 
 -- | converts SPEquation to a CL-Equation
 toEquation :: (FOLSign.SPTerm, FOLSign.SPTerm) -> Result SENTENCE
-toEquation (x,y) = do
+toEquation (x, y) = do
   trmx <- trmToTerm x
   trmy <- trmToTerm y
   return $ Atom_sent (Equation trmx trmy) nullRange
@@ -289,15 +289,15 @@ predicateNames p xs =
 predicateTerm :: NAME -> TERM -> SENTENCE
 predicateTerm p xs = Atom_sent (Atom (Name_term p) [Term_seq xs]) nullRange
 
--- Converts a quantified FOL-term to a CL-Quant_sent. Quantifier arguments
--- contain only the inner-most arguments  of the SoftFOL Quantifier in order to
--- convert sentences like
--- @forall s(Y1), t(u(Y2)) .  Y1 /= Y2@
--- to
--- @forall Y1, Y2 . S(Y1) & T(u(Y2)) & U(Y2) => Y1 /= Y2@
--- where S, T and U are the types that Y1, u(Y2) and Y2 must have
--- in order to apply functions/predicates s, t and u to them (defined in
--- funcMap and predMap).
+{- Converts a quantified FOL-term to a CL-Quant_sent. Quantifier arguments
+contain only the inner-most arguments  of the SoftFOL Quantifier in order to
+convert sentences like
+@forall s(Y1), t(u(Y2)) .  Y1 /= Y2@
+to
+@forall Y1, Y2 . S(Y1) & T(u(Y2)) & U(Y2) => Y1 /= Y2@
+where S, T and U are the types that Y1, u(Y2) and Y2 must have
+in order to apply functions/predicates s, t and u to them (defined in
+funcMap and predMap). -}
 quantTrm :: FOLSign.Sign -> FOLSign.SPQuantSym
             -> [FOLSign.SPTerm] -> FOLSign.SPTerm -> Result SENTENCE
 quantTrm sig qsymm vs f = do
@@ -317,7 +317,7 @@ quantTrm sig qsymm vs f = do
 
 typeSentence :: FOLSign.Sign -> [FOLSign.SPTerm] -> Result SENTENCE
 typeSentence sig vs = case vs of
-  [] -> return $ clTrue
+  [] -> return clTrue
   [v] -> typeSentence1 sig v      -- v = f(x,y,z)
   _ -> do
       sens <- mapM (typeSentence1 sig) vs
@@ -328,15 +328,15 @@ typeSentence1 sig v = case v of
   FOLSign.SPComplexTerm _ [] ->
     fail "bug (typeSentence1): nullary functions should not occur here"
   FOLSign.SPComplexTerm sym args -> typeSentenceGetTypes sig (symToName sym) args
-  FOLSign.SPQuantTerm _ _ _ ->
+  FOLSign.SPQuantTerm {} ->
     fail "quantification not allowed in bound variable list"
 
 typeSentenceGetTypes :: FOLSign.Sign -> FOLSign.SPIdentifier -> [FOLSign.SPTerm]
                         -> Result SENTENCE
 typeSentenceGetTypes sig symN args =
-  case (Map.lookup symN $ FOLSign.funcMap sig) of
-    Nothing -> case (Map.lookup symN $ FOLSign.predMap sig) of
-      Nothing -> case (Map.lookup symN $ FOLSign.sortMap sig) of
+  case Map.lookup symN $ FOLSign.funcMap sig of
+    Nothing -> case Map.lookup symN $ FOLSign.predMap sig of
+      Nothing -> case Map.lookup symN $ FOLSign.sortMap sig of
         Nothing -> fail $ "symbol has no type: " ++ show symN
         Just _ -> typeSentencesSort args symN
       Just ts -> typeSentencesDisjPred sig args $ Set.elems ts
@@ -350,7 +350,7 @@ typeSentencesSort args srt = case args of
       funtrm <- trmToFunctTrm arg
       return $ predicateTerm srt funtrm
   _ -> do
-      sens <- mapM (\arg -> do
+      sens <- mapM (\ arg -> do
                      funtrm <- trmToFunctTrm arg
                      return $ predicateTerm srt funtrm
                    ) args
@@ -366,12 +366,12 @@ typeSentencesDisjPred sig args typeSet = case typeSet of
     return $ Bool_sent (Junction Disjunction sens) nullRange
   where tsdp1 :: [FOLSign.SPIdentifier] -> Result SENTENCE
         tsdp1 t = do
-          sens <- mapM (\(arg, argType) -> case arg of
+          sens <- mapM (\ (arg, argType) -> case arg of
               FOLSign.SPComplexTerm _ [] ->
                 return $ predicateNames argType [trmToName arg]
               FOLSign.SPComplexTerm _ _ ->
                 typeSentence1 sig arg
-              FOLSign.SPQuantTerm _ _ _ ->
+              FOLSign.SPQuantTerm {} ->
                 fail "quantification not allowed in quantifier-argument list"
             ) $ zip args t
           return $ Bool_sent (Junction Conjunction sens) nullRange
@@ -386,36 +386,36 @@ typeSentencesDisjFunc sig args typeSet = case typeSet of
       return $ Bool_sent (Junction Disjunction sens) nullRange
   where tsdf1 :: ([FOLSign.SPIdentifier], FOLSign.SPIdentifier) -> Result SENTENCE
         tsdf1 (t, resType) = do
-          sens <- concatMapM (\(arg, argType) -> case arg of
+          sens <- concatMapM (\ (arg, argType) -> case arg of
               FOLSign.SPComplexTerm _ [] ->
                 return [predicateNames argType [trmToName arg]]
               FOLSign.SPComplexTerm _ _ -> do
                 funtrm <- trmToFunctTrm arg
                 typsen <- typeSentence1 sig arg
-                return $ [predicateTerm resType funtrm, typsen]
-              FOLSign.SPQuantTerm _ _ _ ->
+                return [predicateTerm resType funtrm, typsen]
+              FOLSign.SPQuantTerm {} ->
                 fail "quantification not allowed in quantifier-argument list"
             ) $ zip args t
           return $ Bool_sent (Junction Conjunction sens) nullRange
 
 trmToName :: FOLSign.SPTerm -> NAME
-trmToName t  = case t of
+trmToName t = case t of
   FOLSign.SPComplexTerm sym _ -> symToName sym
   x -> error $ "quantification not convertible to a name: " ++ show x
 
--- converts an @SPTerm@ to @[NAME_OR_SEQMARK]@ as an argument for a quantifier
--- using only the inner-most arguments
+{- converts an @SPTerm@ to @[NAME_OR_SEQMARK]@ as an argument for a quantifier
+using only the inner-most arguments -}
 trmToNameSeq :: FOLSign.SPTerm -> [NAME_OR_SEQMARK]
 trmToNameSeq t = case t of
   FOLSign.SPComplexTerm sym [] -> [Name $ symToName sym]
   FOLSign.SPComplexTerm _ args -> concatMap trmToNameSeq args
-  FOLSign.SPQuantTerm _ _ _ ->
+  FOLSign.SPQuantTerm {} ->
       error "quantification not allowed in quantifier-argument list"
 
 -- converts an SPTerm to a TERM, i.e. for the arguments of an equation
 trmToTerm :: FOLSign.SPTerm -> Result TERM
 trmToTerm t = case t of
-  FOLSign.SPQuantTerm _ _ _ -> fail "quantification not allowed for a term"
+  FOLSign.SPQuantTerm {} -> fail "quantification not allowed for a term"
   FOLSign.SPComplexTerm _ [] -> return $ Name_term $ trmToName t
   FOLSign.SPComplexTerm _ _ -> trmToFunctTrm t
 
@@ -425,7 +425,7 @@ trmToTermSeq t = case t of
   FOLSign.SPComplexTerm _ _ -> do
     tseq <- trmToTerm t
     return $ Term_seq tseq
-  FOLSign.SPQuantTerm _ _ _ ->
+  FOLSign.SPQuantTerm {} ->
       fail "quantification not allowed in argument list"
 
 trmToFunctTrm :: FOLSign.SPTerm -> Result TERM
@@ -436,7 +436,7 @@ trmToFunctTrm t = case t of
       else do
         tseq <- mapM trmToTermSeq args
         return $ Funct_term (symToTerm sym) tseq nullRange
-  FOLSign.SPQuantTerm _ _ _ ->
+  FOLSign.SPQuantTerm {} ->
       fail "quantification not allowed in quantifier-argument list"
 
 -- | converts a custom symbol to a NAME, used in
@@ -459,7 +459,7 @@ isNullary t = case t of
   _ -> False
 
 -- representation for true in CL
-clTrue :: SENTENCE --forall x. x=x
+clTrue :: SENTENCE -- forall x. x=x
 clTrue = Quant_sent Universal [Name xName]
          (Atom_sent (Equation (Name_term xName) (Name_term xName)) nullRange
          ) nullRange

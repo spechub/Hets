@@ -16,10 +16,10 @@ Computes the colimit of an arbitrary diagram in Set:
 
 -}
 
-module Common.SetColimit(
+module Common.SetColimit (
     computeColimitSet,
     addIntToSymbols,
-    SymbolName(..)
+    SymbolName (..)
   )
  where
 
@@ -45,11 +45,11 @@ compose s f g = Set.fold ( \ i h ->
 coeq :: (Ord a) =>
         Set.Set (a, Int) -> Set.Set (a, Int) ->
         Map.Map (a, Int) (a, Int) -> Map.Map (a, Int) (a, Int) ->
-        (Set.Set (a, Int), Map.Map (a,Int) (a, Int))
+        (Set.Set (a, Int), Map.Map (a, Int) (a, Int))
 coeq sSet tSet f1 f2 =
  case Set.elems sSet of
    [] -> (tSet, Map.empty)
-   x:xs -> if null xs then let
+   x : xs -> if null xs then let
              f1x = Map.findWithDefault x x f1
              f2x = Map.findWithDefault x x f2
             in if f1x == f2x then (tSet, Map.empty)
@@ -70,12 +70,11 @@ computeColimitSet :: (Ord a) =>
                      (Set.Set (a, Node), Map.Map Node (Map.Map a (a, Node)))
 computeColimitSet graph = let
    unionSet = foldl Set.union Set.empty $
-               map (\(n, s) -> Set.map (\x -> (x, n)) s) $ labNodes graph
-   inclMap = Map.fromAscList $ map (\ (n, _) ->(n, Map.empty)) $ labNodes graph
+               map (\ (n, s) -> Set.map (\ x -> (x, n)) s) $ labNodes graph
+   inclMap = Map.fromAscList $ map (\ (n, _) -> (n, Map.empty)) $ labNodes graph
    (colim, morMap) = computeCoeqs graph (unionSet, inclMap) $ labEdges graph
    morMap' = Map.map
-               (\f -> Map.fromAscList $ map (\((x,_),z) -> (x,z))$
-                      Map.toList f)
+               (Map.fromAscList . map (\ ((x, _), z) -> (x, z)) . Map.toList)
                morMap
   in (colim, morMap')
 
@@ -87,44 +86,44 @@ computeCoeqs :: (Ord a) =>
 computeCoeqs graph (colim, morMap) edgeList =
   case edgeList of
    [] -> (colim, morMap)
-   (sn, tn, (_, f)):edges' -> let
+   (sn, tn, (_, f)) : edges' -> let
      Just sset = lab graph sn
      f1 = morMap Map.! sn
-     f' = Map.fromList $ map (\x -> ((x,sn),(Map.findWithDefault x x f, tn))) $
+     f' = Map.fromList $ map (\ x -> ((x, sn), (Map.findWithDefault x x f, tn))) $
           Set.toList sset
-     f2 = Map.map (\x -> Map.findWithDefault x  x (morMap Map.! tn)) f'
-     (colim', coeqMor) = coeq (Set.map (\x -> (x, sn)) sset) colim f1 f2
+     f2 = Map.map (\ x -> Map.findWithDefault x x (morMap Map.! tn)) f'
+     (colim', coeqMor) = coeq (Set.map (\ x -> (x, sn)) sset) colim f1 f2
      morMap' = Map.fromList $
-               map (\(n, g) ->let
+               map (\ (n, g) -> let
                      Just nset = lab graph n
-                              in(n, Map.fromAscList $
-                               map (\x -> let
+                              in (n, Map.fromAscList $
+                               map (\ x -> let
                                       y = Map.findWithDefault x x g
-                                     in (x,Map.findWithDefault y y coeqMor)) $
-                               Set.toList $ Set.map (\x-> (x,n)) nset ))
-               $ Map.toList  morMap
+                                     in (x, Map.findWithDefault y y coeqMor)) $
+                               Set.toList $ Set.map (\ x -> (x, n)) nset ))
+               $ Map.toList morMap
     in computeCoeqs graph (colim', morMap') edges'
 
 class (Eq a, Ord a) => SymbolName a where
   addIntAsSuffix :: (a, Int) -> a
 
 instance SymbolName Id where
- addIntAsSuffix (x,y) = appendNumber x y
+ addIntAsSuffix (x, y) = appendNumber x y
 
 addIntToSymbols :: (SymbolName a) =>
                (Set.Set (a, Node), Map.Map Node (Map.Map a (a, Node))) ->
                (Set.Set a, Map.Map Node (Map.Map a a))
 addIntToSymbols (set, fun) = let
-  fstEqual (x1,_) (x2,_) = x1 == x2
-  partList pairSet = leqClasses fstEqual pairSet
+  fstEqual (x1, _) (x2, _) = x1 == x2
+  partList = leqClasses fstEqual
   namePartitions elemList f0 s1 f1 = case elemList of
    [] -> (s1, f1)
-   p:ps -> if length p == 1 then
+   p : ps -> if length p == 1 then
      -- a single element with this name,it can be kept
     let s2 = Set.insert (fst $ head p) s1
         updateF node = Map.union (Map.findWithDefault (error "f1") node f1) $
-                       Map.fromList $ map (\x -> (x, fst $ head p)) $
-                       filter (\x -> Map.findWithDefault (error "fo(node)") x
+                       Map.fromList $ map (\ x -> (x, fst $ head p)) $
+                       filter (\ x -> Map.findWithDefault (error "fo(node)") x
                                      (Map.findWithDefault (error "f0") node f0)
                                      == head p) $
                        Map.keys $ Map.findWithDefault (error "f0")
@@ -132,18 +131,18 @@ addIntToSymbols (set, fun) = let
         f2 = Map.fromList $ zip (Map.keys f0) $ map updateF $ Map.keys f0
     in namePartitions ps f0 s2 f2
                 else
-     --several elements with same name, the number is added at the end
+     -- several elements with same name, the number is added at the end
     let s2 = Set.union s1 $ Set.fromList $ map addIntAsSuffix p
         updateF node = Map.union (Map.findWithDefault (error "f1") node f1) $
              Map.fromList $
-             map ( \x -> (x, addIntAsSuffix $
+             map ( \ x -> (x, addIntAsSuffix $
                              Map.findWithDefault (error "addSuffixToId") x
                              (Map.findWithDefault (error "f0") node f0))) $
-             filter (\x -> (Map.findWithDefault (error "fo(node)") x
-                           (Map.findWithDefault (error "f0") node f0))
+             filter (\ x -> Map.findWithDefault (error "fo(node)") x
+                            (Map.findWithDefault (error "f0") node f0)
                            `elem` p) $
              Map.keys $ Map.findWithDefault (error "f0") node f0
         f2 = Map.fromList $ zip (Map.keys f0) $ map updateF $ Map.keys f0
     in namePartitions ps f0 s2 f2
- in namePartitions (partList set) fun (Set.empty) $
+ in namePartitions (partList set) fun Set.empty $
     Map.fromList $ zip (Map.keys fun) (repeat Map.empty)

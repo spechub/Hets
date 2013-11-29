@@ -21,8 +21,7 @@ import COL.AS_COL
 import Text.ParserCombinators.Parsec
 
 colSigItems :: AParser st COL_SIG_ITEM
-colSigItems =
- do itemList col_reserved_words constructorS parseId Constructor_items
+colSigItems = itemList col_reserved_words constructorS parseId Constructor_items
    <|> itemList col_reserved_words observerS observerItem Observer_items
 
 instance AParsable COL_SIG_ITEM where

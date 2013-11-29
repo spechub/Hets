@@ -199,13 +199,13 @@ legalMor m = let
     ts = typeIdMap m
     cs = classIdMap m
     fs = funMap m in
-    if all (`elem` Map.keys (typeMap s)) (Map.keys ts)
+    unless (all (`elem` Map.keys (typeMap s)) (Map.keys ts)
     && all (`elem` Map.keys (typeMap t)) (Map.elems ts)
     && all (`elem` Map.keys (classMap s)) (Map.keys cs)
     && all (`elem` Map.keys (classMap t)) (Map.elems cs)
     && all ((`elem` Map.keys (assumps s)) . fst) (Map.keys fs)
-    && all ((`elem` Map.keys (assumps t)) . fst) (Map.elems fs)
-    then return () else fail "illegal HasCASL morphism"
+    && all ((`elem` Map.keys (assumps t)) . fst) (Map.elems fs))
+     (fail "illegal HasCASL morphism")
 
 morphismUnion :: Morphism -> Morphism -> Result Morphism
 morphismUnion m1 m2 = do

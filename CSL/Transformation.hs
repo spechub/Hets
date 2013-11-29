@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, TypeSynonymInstances, FlexibleInstances, FlexibleContexts, UndecidableInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, FlexibleContexts, UndecidableInstances #-}
 {- |
 Module      :  $Header$
 Description :  Program transformations
@@ -16,7 +16,7 @@ and utilities for lemma generation
 
 module CSL.Transformation where
 
-import Control.Monad.State (State, StateT(..), MonadState(get, put))
+import Control.Monad.State (State, StateT (..), MonadState (get, put))
 import Control.Monad.Trans (lift)
 import Prelude hiding (lookup)
 
@@ -24,9 +24,9 @@ import CSL.AS_BASIC_CSL
 import CSL.ASUtils
 import Common.Id
 
--- ----------------------------------------------------------------------
--- * Datatypes and Classes for Term- and Program Transformations
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+Datatypes and Classes for Term- and Program Transformations
+---------------------------------------------------------------------- -}
 
 
 mkOperator :: String -> [EXTPARAM] -> [EXPRESSION] -> Range -> EXPRESSION
@@ -34,18 +34,18 @@ mkOperator = mkAndAnalyzeOp ()
 
 -- | A class to abstract from the concrete variable generation facility
 class Monad m => VarGen m where
-    genVar :: m (String)
+    genVar :: m String
 
 instance VarGen (State Int) where
     genVar = do
       i <- get
-      put $ i+1
+      put $ i + 1
       return $ "gv" ++ show i
 
 instance VarGen (State (Int, String)) where
     genVar = do
       (i, s) <- get
-      put $ (i+1, s)
+      put (i + 1, s)
       return $ s ++ show i
 
 instance VarGen m => VarGen (StateT s m) where
@@ -95,9 +95,9 @@ instance (SExp a, SExp b, SExp c) => SExp (String, a, b, c) where
         mkOperator s [] [toExp x, toExp y, toExp z] nullRange
 
 
--- strangely, ghc says that we would have overlapping instances with 
--- instance SExp a => SExp (String, a), but I can't see it. I introduce
--- this strange looking instance
+{- strangely, ghc says that we would have overlapping instances with
+instance SExp a => SExp (String, a), but I can't see it. I introduce
+this strange looking instance -}
 instance (SExp a) => SExp ((), String, [a]) where
     toExp (_, s, l) = mkOperator s [] (map toExp l) nullRange
 
@@ -119,4 +119,3 @@ instance IntervalLike EXPRESSION where
 
 instance IntervalLike (Double, Double) where
     toIntervalExp (a, b) = Interval a b nullRange
-

@@ -54,7 +54,7 @@ etaReduce k nAs t =
 addSuperType :: Type -> Kind -> (Id, [TypeArg]) -> State Env ()
 addSuperType t ak p@(i, nAs) = case t of
     TypeName j _ v -> if v /= 0 then
-         addDiags[mkDiag Error "illegal type variable as supertype" j]
+         addDiags [mkDiag Error "illegal type variable as supertype" j]
          else addSuperId i ak j
     _ -> case etaReduce ak nAs t of
         Just (nk, rAs, rT) -> addSuperType rT nk (i, rAs)
@@ -82,7 +82,7 @@ addSuperType t ak p@(i, nAs) = case t of
           ExpandedType t1 t2 -> do
             addSuperType t1 ak p
             addSuperType t2 ak p
-          _ -> addDiags[mkDiag Error "unexpected type as supertype" t]
+          _ -> addDiags [mkDiag Error "unexpected type as supertype" t]
 
 -- | generalize a type scheme for an alias type
 generalizeT :: TypeScheme -> State Env TypeScheme
@@ -103,15 +103,15 @@ addSuperId i kind j = do
     unless (i == j) -- silently ignore
       $ case Map.lookup i tm of
           Nothing -> return () -- previous error
-          Just (TypeInfo ok ks sups defn) -> if Set.member j sups
-              then addDiags[mkDiag Hint "repeated supertype" j]
-              else if Set.member i $ superIds tm j then do
-                   addDiags[mkDiag Warning
+          Just (TypeInfo ok ks sups defn)
+           | Set.member j sups -> addDiags [mkDiag Hint "repeated supertype" j]
+           | Set.member i $ superIds tm j -> do
+                   addDiags [mkDiag Warning
                             ("made '" ++ showId i "' an alias of") j]
                    addAliasType False i (TypeScheme [] (TypeName j ok 0)
                                                     $ posOfId j) kind
                    return ()
-                else let Result _ (Just rk) = anaKindM kind cm in
+           | otherwise -> let Result _ (Just rk) = anaKindM kind cm in
                 maybe (addDiags $ diffKindDiag i ok rk)
                 (const $ putTypeMap $ Map.insert i
                           (TypeInfo ok ks (Set.insert j sups) defn) tm)
@@ -126,7 +126,7 @@ addAliasType b i sc fullKind = do
 addAliasTypeAux :: Bool -> Id -> TypeScheme -> Kind -> State Env Bool
 addAliasTypeAux b i (TypeScheme args ty ps) fullKind =
   if elem i $ map (fst . snd) $ leaves (== 0) ty then do
-    addDiags[mkDiag Error "cyclic alias type" i]
+    addDiags [mkDiag Error "cyclic alias type" i]
     return False
   else addTypeId b (AliasTypeDefn $ foldr ( \ t y -> TypeAbs t y ps) ty args)
         fullKind i

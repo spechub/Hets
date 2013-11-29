@@ -18,7 +18,7 @@ import HasCASL.Subst
 
 import HasCASL.As
 import HasCASL.Le
-import HasCASL.PrintAs()
+import HasCASL.PrintAs ()
 import HasCASL.SimplifyTerm
 
 import Common.Doc
@@ -29,8 +29,8 @@ import qualified Data.Map as Map
 class PrettyInEnv a where
     prettyInEnv :: Env -> a -> Doc
 
--- instance Pretty a => PrettyInEnv a where
---     prettyInEnv _ x  = pretty x
+{- instance Pretty a => PrettyInEnv a where
+prettyInEnv _ x  = pretty x -}
 
 
 instance Pretty SubstConst where
@@ -41,7 +41,7 @@ instance Pretty a => Pretty (SRule a) where
     pretty (Ready x) = mapsto <+> pretty x
 
 instance Pretty Subst where
-    pretty (Subst (a,b,_)) =
+    pretty (Subst (a, b, _)) =
         text "Subs"
                  <> vcat [ text "titution"
                          , prettyRuleMap "Terms" a, prettyRuleMap "Types" b]
@@ -50,9 +50,9 @@ prettyRuleMap :: (Pretty key, Pretty val)
                  => String -> Map.Map key (SRule val) -> Doc
 prettyRuleMap t m | Map.null m = empty
                   | otherwise =
-                      vcat $ (if null t then [] else 
+                      vcat $ (if null t then [] else
                                   [ text t <+> colon
-                                  , text $ map (const '-') [0..length t+1]])
+                                  , text $ map (const '-') [0 .. length t + 1]])
                                ++ map prettyRule (Map.toList m)
 
 prettyRule :: (Pretty key, Pretty val) => (key, SRule val) -> Doc
@@ -70,7 +70,7 @@ instance PrettyInEnv a => PrettyInEnv (SRule a) where
     prettyInEnv e (Ready x) = mapsto <+> prettyInEnv e x
 
 instance PrettyInEnv Subst where
-    prettyInEnv e (Subst (a,b,_)) =
+    prettyInEnv e (Subst (a, b, _)) =
         text "Subs"
                  <> vcat [ text "titution"
                          , prettyInEnvRuleMap e "Terms" a
@@ -81,10 +81,10 @@ prettyInEnvRuleMap :: (Pretty key, PrettyInEnv val)
 prettyInEnvRuleMap e t m
     | Map.null m = empty
     | otherwise =
-        vcat 
-        $ (if null t then [] else 
+        vcat
+        $ (if null t then [] else
                [ text t <+> colon
-               , text $ map (const '-') [0..length t+1]])
+               , text $ map (const '-') [0 .. length t + 1]])
             ++ map (prettyInEnvRule e) (Map.toList m)
 
 prettyInEnvRule :: (Pretty key, PrettyInEnv val) => Env -> (key, SRule val) -> Doc

@@ -17,7 +17,7 @@ module Comorphisms.HasCASL2Haskell where
 import Logic.Logic
 import Logic.Comorphism
 
-import Data.List((\\))
+import Data.List ((\\))
 
 import Common.Id
 import Common.Result
@@ -36,7 +36,7 @@ import HasCASL.Logic_HasCASL
 import HasCASL.Sublogic
 
 import Haskell.Logic_Haskell as HS
-import Haskell.HatParser hiding(TypeInfo, Kind)
+import Haskell.HatParser hiding (TypeInfo, Kind)
 import Haskell.HatAna
 import Haskell.TranslateId
 
@@ -85,7 +85,7 @@ mapTheory (sig, csens) = do
             hatAna (HsDecls (cs ++ map sentence ps),
                             emptySign, emptyGlobalAnnos)
     return (diffSign hsig preludeSign,
-            filter  (not . preludeEntity . getHsDecl . sentence) sens)
+            filter (not . preludeEntity . getHsDecl . sentence) sens)
 
 -- former file UniqueId
 
@@ -113,32 +113,32 @@ findUniqueId env uid ts =
         fit n tl =
             case tl of
                    [] -> Nothing
-                   oi:rt -> if ts == opType oi then
+                   oi : rt -> if ts == opType oi then
                             Just (if null rt then uid else newName uid n, oi)
                             else fit (n + 1) rt
     in fit 2 l
 
 -- former TranslateAna file
 
--------------------------------------------------------------------------
--- Translation of an HasCASL-Environement
--------------------------------------------------------------------------
+{- -----------------------------------------------------------------------
+Translation of an HasCASL-Environement
+----------------------------------------------------------------------- -}
 
--- | Converts an abstract syntax of HasCASL (after the static analysis)
--- to the top datatype of the abstract syntax of haskell.
+{- | Converts an abstract syntax of HasCASL (after the static analysis)
+to the top datatype of the abstract syntax of haskell. -}
 translateSig :: Env -> [HsDecl]
 translateSig env =
     concatMap (translateTypeInfo env) (Map.toList $ typeMap env)
     ++ concatMap translateAssump (distinctOpIds 2 $ Map.toList
                       $ Map.map Set.toList $ assumps env)
 
--------------------------------------------------------------------------
--- Translation of types
--------------------------------------------------------------------------
+{- -----------------------------------------------------------------------
+Translation of types
+----------------------------------------------------------------------- -}
 
 -- | Converts one type to a data or type declaration in Haskell.
 translateTypeInfo :: Env -> (Id, TypeInfo) -> [HsDecl]
-translateTypeInfo env (tid,info) =
+translateTypeInfo env (tid, info) =
   let hsname = mkHsIdent UpperId tid
       hsTyName = hsTyCon hsname
       mkTp = foldl hsTyApp hsTyName
@@ -168,8 +168,8 @@ typeSynonym loc hsname = hsTypeDecl loc hsname . translateType
 kindToTypeArgs :: Int -> RawKind -> [HsType]
 kindToTypeArgs i k = case k of
     ClassKind _ -> []
-    FunKind _ _ kr ps -> (hsTyVar $ mkSName ('a' : show i)
-                                   $ toProgPos ps)
+    FunKind _ _ kr ps -> hsTyVar (mkSName ('a' : show i)
+                                $ toProgPos ps)
                       : kindToTypeArgs (i + 1) kr
 
 getAliasArgs :: Type -> [HsType]
@@ -190,7 +190,7 @@ getAliasType ty = case ty of
     _ -> translateType ty
 
 -- | Translation of an alternative constructor for a datatype definition.
-translateAltDefn :: Env -> DataPat-> AltDefn
+translateAltDefn :: Env -> DataPat -> AltDefn
                  -> [HsConDecl HsType [HsType]]
 translateAltDefn env dp (Construct muid ts p _) = case muid of
     Just uid -> let loc = toProgPos $ posOfId uid
@@ -218,14 +218,14 @@ translateDt env de@(DataEntry _ i _ args _ alts) =
                            $ Set.toList alts)
                        derives) { isDef = True }
 
--------------------------------------------------------------------------
--- Translation of functions
--------------------------------------------------------------------------
+{- -----------------------------------------------------------------------
+Translation of functions
+----------------------------------------------------------------------- -}
 
--- | Converts one distinct named function in HasCASL to the corresponding
--- haskell declaration.
--- Generates a definition (Prelude.undefined) for functions that are not
--- defined in HasCASL.
+{- | Converts one distinct named function in HasCASL to the corresponding
+haskell declaration.
+Generates a definition (Prelude.undefined) for functions that are not
+defined in HasCASL. -}
 translateAssump :: (Id, OpInfo) -> [HsDecl]
 translateAssump (i, opinf) =
   let fname = mkHsIdent LowerId i
@@ -237,8 +237,8 @@ translateAssump (i, opinf) =
     ConstructData _ -> [] -- wrong case!
     _ -> [res, functionUndef loc fname]
 
--- | Translation of the result type of a typescheme to a haskell type.
---   Uses 'translateType'.
+{- | Translation of the result type of a typescheme to a haskell type.
+Uses 'translateType'. -}
 translateTypeScheme :: TypeScheme -> HsType
 translateTypeScheme (TypeScheme _ t _) =
   translateType t
@@ -266,8 +266,8 @@ translateType t = case getTypeAppl t of
 
 toProgPos :: Range -> SrcLoc
 toProgPos p = if isNullRange p then loc0
-               else let Range (SourcePos n l c:_) = p
-                     in SrcLoc n (1000 + (l-1) * 80 + c) l c
+               else let Range (SourcePos n l c : _) = p
+                     in SrcLoc n (1000 + (l - 1) * 80 + c) l c
 
 mkSName :: String -> SrcLoc -> SN HsName
 mkSName = SN . UnQual
@@ -297,10 +297,10 @@ translateTerm env t =
             LowerId -> rec $ HsId $ HsVar i
             _ -> error "translateTerm: variable with UpperId"
     QualOp _ (PolyId uid _ _) sc _ _ _ -> let
-    -- The identifier 'uid' may have been renamed. To find its new name,
-    -- the typescheme 'ts' is tested for unifiability with the
-    -- typeschemes of the assumps. If an identifier is found, it is used
-    -- as HsVar or HsCon.
+    {- The identifier 'uid' may have been renamed. To find its new name,
+    the typescheme 'ts' is tested for unifiability with the
+    typeschemes of the assumps. If an identifier is found, it is used
+    as HsVar or HsCon. -}
       mkPHsVar s = rec $ HsPId $ HsVar $ mkSName s loc
       mkHsVar s = rec $ HsId $ HsVar $ mkSName s loc
       mkHsCon s = rec $ HsId $ HsCon $ mkSName s loc
@@ -324,7 +324,7 @@ translateTerm env t =
                (HsVar $ mkSName "seq" loc) hTrue
       else if uid == orId then mkUncurry "||"
       else if uid == andId then mkUncurry "&&"
-      else if uid == eqId || uid == eqvId || uid == exEq then
+      else if elem uid [eqId, eqvId, exEq] then
            mkErr "equality at "
       else if uid == implId then mkLam2 a b
       else if uid == infixIf then mkLam2 b a
@@ -380,7 +380,7 @@ translatePattern env pat = case pat of
                   $ map (translatePattern env) pats
       TypedTerm _ InType _ _ -> error "translatePattern InType"
       TypedTerm p _ _ty _ -> translatePattern env p
-                                 --the type is implicit
+                                 -- the type is implicit
       AsPattern (VarDecl v ty _ _) p _ ->
             let (c, i) = translateId env v $ simpleTypeScheme ty
                 hp = translatePattern env p
@@ -437,8 +437,8 @@ expUndef :: SrcLoc -> String -> HsExp
 expUndef loc = rec . HsApp (rec $ HsId $ HsVar $ mkSName "error" loc)
                    . rec . HsLit loc . HsString
 
--- For the definition of an undefined function.
--- Takes the name of the function as argument.
+{- For the definition of an undefined function.
+Takes the name of the function as argument. -}
 functionUndef :: SrcLoc -> SN HsName -> HsDecl
 functionUndef loc s =
     hsFunBind loc [HsMatch loc s []  -- hsPatBind loc (rec $ HsPId $ HsVar s)

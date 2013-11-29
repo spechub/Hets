@@ -27,14 +27,12 @@ import CSL.Sign
 -- as mkProverTemplate, but with additionally functionality to export lemmas
 mkProverTemplateWithLemmaExport :: String -> sublogics
   -> (String -> theory -> [FreeDefMorphism sentence morphism]
-      -> IO ([ProofStatus proof_tree],[(Named sentence, ProofStatus proof_tree)]))
+      -> IO ([ProofStatus proof_tree], [(Named sentence, ProofStatus proof_tree)]))
   -> ProverTemplate theory sentence morphism sublogics proof_tree
 mkProverTemplateWithLemmaExport str sl fct = Prover
     { proverName = str
     , proverSublogic = sl
-    , proveGUI = Just $ \ s t fs -> do
-                ps <- fct s t fs
-                return ps
+    , proveGUI = Just $ \ s t fs -> fct s t fs
     , proveCMDLautomaticBatch = Nothing }
 
 -- | the prover
@@ -55,40 +53,37 @@ isReduceAxiom s = case sentence s of
 {- | takes a theory name and a theory as input, starts the prover
   and returns a list of ProofStatus. -}
 reduceProve :: String -> Theory Sign CMD [EXPRESSION] -> a
-  -> IO ([ProofStatus [EXPRESSION]],[(Named CMD, ProofStatus [EXPRESSION])])
+  -> IO ([ProofStatus [EXPRESSION]], [(Named CMD, ProofStatus [EXPRESSION])])
 reduceProve _ (Theory _ senMap) _freedefs =
     let
         namedCmds = toNamedList senMap
         (_, namedGoals) = getAxioms namedCmds
-    in
-      do
-        proofinfos <- processCmds namedGoals
-        return proofinfos
+    in processCmds namedGoals
 
 -- | connect to CAS, stepwise process the cmds
-processCmds :: [Named CMD] -> IO ([ProofStatus [EXPRESSION]],[(Named CMD, ProofStatus [EXPRESSION])])
+processCmds :: [Named CMD] -> IO ([ProofStatus [EXPRESSION]], [(Named CMD, ProofStatus [EXPRESSION])])
 processCmds cmds = do
   putStr "Connecting CAS.."
   sc <- lookupRedShellCmd
   case sc of
-    Right reducecmd -> 
+    Right reducecmd ->
         do
           putStrLn "failed"
           putStrLn $ "Could not find reduce under " ++ reducecmd
-          return ([],[])
+          return ([], [])
     Left reducecmd ->
         do
           (inpt, out, _, pid) <- connectCAS reducecmd
           proofinfos <- processCmdsIntern (inpt, out, pid) cmds
           disconnectCAS (inpt, out, pid)
           return proofinfos
-                      
+
 
 -- | internal function to process commands over an existing connection
 processCmdsIntern :: Session a => a -> [Named CMD]
-  -> IO ([ProofStatus [EXPRESSION]],[(Named CMD, ProofStatus [EXPRESSION])])
-processCmdsIntern _ [] = return ([],[])
+  -> IO ([ProofStatus [EXPRESSION]], [(Named CMD, ProofStatus [EXPRESSION])])
+processCmdsIntern _ [] = return ([], [])
 processCmdsIntern sess (x : xs) = do
-  (prooftree,newlemmas) <- procCmd sess x
-  (prooftrees,newlemmas2) <- processCmdsIntern sess xs
-  return (prooftree:prooftrees,newlemmas++newlemmas2)
+  (prooftree, newlemmas) <- procCmd sess x
+  (prooftrees, newlemmas2) <- processCmdsIntern sess xs
+  return (prooftree : prooftrees, newlemmas ++ newlemmas2)

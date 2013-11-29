@@ -12,7 +12,7 @@ Portability :  portable
 
 module Common.Lib.Tabular where
 
-import Data.List (intersperse, transpose)
+import Data.List (intercalate, transpose)
 import Common.Lib.State (evalState, get, put)
 
 data Properties = NoLine | SingleLine | DoubleLine
@@ -81,8 +81,7 @@ zipHeader e ss h = evalState (helper h) ss
 
 flattenHeader :: Header h -> [Either Properties h]
 flattenHeader (Header s) = [Right s]
-flattenHeader (Group l s) =
-  concat . intersperse [Left l] . map flattenHeader $ s
+flattenHeader (Group l s) = intercalate [Left l] . map flattenHeader $ s
 
 {- | The idea is to deal with the fact that Properties
   (e.g. borders) are not standalone cells but attributes
@@ -212,7 +211,7 @@ render fr fc f (Table rh ch cells) =
   -- maximum width for each column
   sizes = map (maximum . map length) . transpose $ cells2
   renderRs (Header s) = [s]
-  renderRs (Group p hs) = concat . intersperse sep . map renderRs $ hs
+  renderRs (Group p hs) = intercalate sep . map renderRs $ hs
     where sep = renderHLine sizes ch2 p
 
 -- | We stop rendering on the shortest list!

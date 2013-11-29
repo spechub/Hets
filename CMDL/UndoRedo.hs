@@ -33,7 +33,7 @@ cRedo :: CmdlState -> IO CmdlState
 cRedo = cdo False
 
 cdo :: Bool -> CmdlState -> IO CmdlState
-cdo isUndo state = 
+cdo isUndo state =
    let msg = (if isUndo then "un" else "re") ++ "do"
    in case (if isUndo then undoList else redoList) . i_hist $ intState state of
     [] -> return $ genMessage [] ("Nothing to " ++ msg) state
@@ -44,6 +44,3 @@ cdo isUndo state =
        return . genMessage [] ("Action '" ++ showCmd (command action)
                                ++ "' is now " ++ msg ++ "ne")
               $ state { intState = nwIntState }
-
-
-

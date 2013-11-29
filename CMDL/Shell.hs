@@ -50,7 +50,7 @@ import Static.GTheory
 import Data.Char (isSpace)
 import Data.List
 import qualified Data.Map
-import Data.Maybe (mapMaybe,isNothing)
+import Data.Maybe (mapMaybe, isNothing)
 import System.Directory (doesDirectoryExist, getDirectoryContents)
 
 register2history :: CmdlCmdDescription -> CmdlState -> IO CmdlState
@@ -262,10 +262,10 @@ cmdlCompletionFn allcmds allState input =
                   return $ map (app bC) $ filter (isPrefixOf tC) lst
    ReqComorphism ->
     let input'' = case words input of
-                   cmd:s' -> unwords $ cmd:(concatMap (splitOn ':') $
-                                            concatMap (splitOn ';') $ s')
+                   cmd : s' -> unwords (cmd : concatMap (splitOn ':')
+                                               (concatMap (splitOn ';') s'))
                    _ -> input
-        input'  = if elem (lastChar input) ";: " then
+        input' = if elem (lastChar input) ";: " then
                    input'' ++ " " else input''
     in case i_state $ intState allState of
          Nothing -> return []
@@ -280,7 +280,7 @@ cmdlCompletionFn allcmds allState input =
                    map (\ coname -> case lookupComorphism_in_LG coname of
                                     Result _ cmor -> cmor) $
                     tail $ words input'
-                  appendC = sequence $ (if length appendC' > 0 &&
+                  appendC = sequence $ (if not (null appendC') &&
                                             isNothing (last appendC')
                                          then init else id) appendC'
                   comor = case appendC of
@@ -326,7 +326,7 @@ cmdlCompletionFn allcmds allState input =
                      (\ (n, Logic lid) ->
                         case map sublogicName $ all_sublogics lid of
                          [_] -> [i ++ n]
-                         sls -> (i++n) : map 
+                         sls -> (i ++ n) : map
                           (\ sl -> i ++ n ++ "." ++ sl) sls) $
                      filter (Data.List.isPrefixOf l' . fst) $
                      Data.Map.toList $ logics logicGraph
@@ -387,9 +387,9 @@ cmdlCompletionFn allcmds allState input =
                 $ elements pS
    ReqNumber -> case words input of
                    [hd] -> return $ map (app hd) s0_9
-                   _ : _ : [] -> if isSpace $ lastChar input
-                          then return []
-                          else return $ map (input ++) s0_9
+                   _ : _ : [] -> return $ if isSpace $ lastChar input
+                          then []
+                          else map (input ++) s0_9
                    _ -> return []
    ReqNothing -> return []
    ReqUnknown -> return []

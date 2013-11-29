@@ -44,25 +44,25 @@ import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Map as Map
 import Data.Maybe
 
-------------------------------------------------
--- Theorem hide shift and  auxiliaries
------------------------------------------------
+{- ----------------------------------------------
+Theorem hide shift and  auxiliaries
+--------------------------------------------- -}
 
 theoremHideShift :: LibName -> LibEnv -> Result LibEnv
 theoremHideShift ln = return .
   Map.adjust (\ dg -> theoremHideShiftAux (labNodesDG dg) dg) ln
 
--- | assume that the normal forms a commputed already.
--- return Nothing if nothing changed
+{- | assume that the normal forms a commputed already.
+return Nothing if nothing changed -}
 theoremHideShiftAux :: [LNode DGNodeLab] -> DGraph -> DGraph
 theoremHideShiftAux ns dg = let
   nodesWHiding = map fst $ filter
            (\ (_, lbl) -> labelHasHiding lbl && isJust (dgn_nf lbl)
            && isJust (dgn_sigma lbl)) ns
-     -- all nodes with incoming hiding links
-     -- all the theorem links entering these nodes
-     -- have to replaced by theorem links with the same origin
-     -- but pointing to the normal form of the former target node
+     {- all nodes with incoming hiding links
+     all the theorem links entering these nodes
+     have to replaced by theorem links with the same origin
+     but pointing to the normal form of the former target node -}
   ingoingEdges = concatMap (getInComingGlobalUnprovenEdges dg) nodesWHiding
   in foldl theoremHideShiftForEdge dg ingoingEdges
 
@@ -85,7 +85,7 @@ theoremHideShiftForEdgeAux dg (sn, tn, llab) = do
       phi = dgl_morphism llab
       Just muN = dgn_sigma tlab
   cmor <- comp phi muN
-  let newEdge =(sn, nfNode, defDGLink cmor globalThm DGLinkProof)
+  let newEdge = (sn, nfNode, defDGLink cmor globalThm DGLinkProof)
   case tryToGetEdge newEdge dg of
         Nothing -> let
           newGraph = changeDGH dg $ InsertEdge newEdge

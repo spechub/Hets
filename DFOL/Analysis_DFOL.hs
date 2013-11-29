@@ -45,19 +45,19 @@ basicAnalysis (bs, sig, _) =
          diag = diag1 ++ diag2
          errs = Result.hasErrors diag
 
--- SIGNATURES
--- make a new signature out of a basic spec and an input signature
+{- SIGNATURES
+make a new signature out of a basic spec and an input signature -}
 makeSig :: BASIC_SPEC -> Sign -> DIAGN Sign
-makeSig (Basic_spec items) sig = addItemsToSig items sig
+makeSig (Basic_spec items) = addItemsToSig items
 
 -- adds a list of annotated basic items to an input signature
 addItemsToSig :: [Anno.Annoted BASIC_ITEM] -> Sign -> DIAGN Sign
 addItemsToSig [] sig = Diagn [] sig
-addItemsToSig (i:is) sig =
+addItemsToSig (i : is) sig =
    case i of
         (Anno.Annoted (Axiom_item _) _ _ _) -> addItemsToSig is sig
         (Anno.Annoted (Decl_item d) _ _ _) ->
-             if (Result.hasErrors diag)
+             if Result.hasErrors diag
                 then Diagn diag sig
                 else addItemsToSig is newSig
              where Diagn diag newSig = addDeclToSig d sig
@@ -69,42 +69,42 @@ addDeclToSig dec sig = if valid
                           else Diagn diag sig
                        where Diagn diag valid = isValidDecl dec sig emptyContext
 
--- FORMULAS
--- make a list of formulas for the given signature out of a basic spec
+{- FORMULAS
+make a list of formulas for the given signature out of a basic spec -}
 makeFormulas :: BASIC_SPEC -> Sign -> DIAGN [Anno.Named FORMULA]
-makeFormulas (Basic_spec items) sig = makeFormulasFromItems items 0 sig
+makeFormulas (Basic_spec items) = makeFormulasFromItems items 0
 
 -- make a list of named formulas out of a list of annotated items
 makeFormulasFromItems :: [Anno.Annoted BASIC_ITEM] -> Int
                          -> Sign -> DIAGN [Anno.Named FORMULA]
 makeFormulasFromItems [] _ _ = Diagn [] []
-makeFormulasFromItems (i:is) num sig =
+makeFormulasFromItems (i : is) num sig =
     case i of
          (Anno.Annoted (Decl_item _) _ _ _) -> makeFormulasFromItems is num sig
          (Anno.Annoted (Axiom_item a) _ _ annos) ->
            case fM of
                 Just f ->
                    let Diagn diagL fs = makeFormulasFromItems is newNum sig
-                       in Diagn diagL (f:fs)
+                       in Diagn diagL (f : fs)
                 Nothing ->
                    let Diagn diagL fs = makeFormulasFromItems is num sig
                        in Diagn (diag ++ diagL) fs
            where Result.Result diag fM = makeNamedFormula a nam annos sig
                  label = Anno.getRLabel i
-                 nam = if (label == "") then "Ax_" ++ show num else label
-                 newNum = if (label == "") then num + 1 else num
+                 nam = if label == "" then "Ax_" ++ show num else label
+                 newNum = if label == "" then num + 1 else num
 
 -- make a named formula
 makeNamedFormula :: FORMULA -> String -> [Anno.Annotation]
                     -> Sign -> Result.Result (Anno.Named FORMULA)
 makeNamedFormula f nam annos sig =
     if valid
-       then Result.Result [] $ Just $ namedF
+       then Result.Result [] $ Just namedF
        else Result.Result diag Nothing
     where Diagn diag valid = isValidFormula f sig emptyContext
           namedF = (Anno.makeNamed nam f) {Anno.isAxiom = not isTheorem}
-          isImplies = or $ map Anno.isImplies annos
-          isImplied = or $ map Anno.isImplied annos
+          isImplies = any Anno.isImplies annos
+          isImplied = any Anno.isImplied annos
           isTheorem = isImplies || isImplied
 
 -- determines whether a formula is valid w.r.t. a signature and a context
@@ -122,26 +122,26 @@ isValidFormula (Equality term1 term2) sig cont =
     where Result.Result diag1 type1M = getTermType term1 sig cont
 isValidFormula (Negation f) sig cont = isValidFormula f sig cont
 isValidFormula (Conjunction fs) sig cont =
-   andD $ map (\f -> isValidFormula f sig cont) fs
+   andD $ map (\ f -> isValidFormula f sig cont) fs
 isValidFormula (Disjunction fs) sig cont =
-   andD $ map (\f -> isValidFormula f sig cont) fs
+   andD $ map (\ f -> isValidFormula f sig cont) fs
 isValidFormula (Implication f g) sig cont =
    andD [isValidFormula f sig cont, isValidFormula g sig cont]
 isValidFormula (Equivalence f g) sig cont =
    andD [isValidFormula f sig cont, isValidFormula g sig cont]
 isValidFormula (Forall [] f) sig cont = isValidFormula f sig cont
-isValidFormula (Forall (d:ds) f) sig cont =
+isValidFormula (Forall (d : ds) f) sig cont =
    andD [validDecl, validFormula]
    where validDecl = isValidVarDecl d sig cont
          validFormula = isValidFormula (Forall ds f) sig (addVarDecl d cont)
 isValidFormula (Exists [] f) sig cont = isValidFormula f sig cont
-isValidFormula (Exists (d:ds) f) sig cont =
+isValidFormula (Exists (d : ds) f) sig cont =
    andD [validDecl, validFormula]
    where validDecl = isValidVarDecl d sig cont
          validFormula = isValidFormula (Exists ds f) sig (addVarDecl d cont)
 
--- SYMBOL LIST AND MAP ANALYSIS
--- creates a symbol map out of a list of symbol map items
+{- SYMBOL LIST AND MAP ANALYSIS
+creates a symbol map out of a list of symbol map items -}
 symbMapAnalysis :: [SYMB_MAP_ITEMS] -> Result.Result (Map.Map Symbol Symbol)
 symbMapAnalysis xs = Result.Result []
      $ Just $ foldl (\ m x -> Map.union m (makeSymbMap x)) Map.empty xs
@@ -158,7 +158,7 @@ makeSymbMap (Symb_map_items xs) =
 
 -- creates a symbol list out of a list of symbol items
 symbAnalysis :: [SYMB_ITEMS] -> Result.Result [Symbol]
-symbAnalysis xs = Result.Result [] $ Just $ concat $ map makeSymbols xs
+symbAnalysis xs = Result.Result [] $ Just $ concatMap makeSymbols xs
 
 -- creates a symbol list out of symbol item
 makeSymbols :: SYMB_ITEMS -> [Symbol]
@@ -169,9 +169,9 @@ noDiscourseTermError :: TERM -> TYPE -> CONTEXT -> Result.Diagnosis
 noDiscourseTermError term t cont =
   Result.Diag
     { Result.diagKind = Result.Error
-    , Result.diagString = "Term " ++ (show $ pretty term)
-                          ++ " has the non-discourse type " ++ (show $ pretty t)
-                          ++ " in the context " ++ (show $ pretty cont)
+    , Result.diagString = "Term " ++ show (pretty term)
+                          ++ " has the non-discourse type " ++ show (pretty t)
+                          ++ " in the context " ++ show (pretty cont)
                           ++ " and hence cannot be used in an equality."
     , Result.diagPos = nullRange
     }

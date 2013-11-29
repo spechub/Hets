@@ -62,7 +62,7 @@ head (N n xs) = case xs of
 tail :: SizedList a -> SizedList a
 tail (N n xs) = case xs of
   _ : r | n > 0 -> N (pred n) r
-  _ ->  error "SizedList.tail: empty list"
+  _ -> error "SizedList.tail: empty list"
 
 null :: SizedList a -> Bool
 null (N n _) = n == 0

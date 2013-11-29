@@ -545,7 +545,7 @@ sl_type = sl_BasicFun
 
 sl_Basictype :: Type -> Sublogic
 sl_Basictype ty = case getTypeAppl ty of
- (TypeName tid _ _,_) | isProductId tid -> need_product_type_constructor
+ (TypeName tid _ _, _) | isProductId tid -> need_product_type_constructor
  _ -> case ty of
     TypeName _ k v -> sublogic_max
         (if v /= 0 then need_polymorphism else bottom) $ sl_Rawkind k

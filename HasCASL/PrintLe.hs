@@ -49,9 +49,9 @@ import Data.List
 import Data.Maybe
 
 instance Pretty ClassInfo where
-    pretty (ClassInfo rk ks) =
-        if Set.null ks then less <+> pretty (rawToKind rk) else
-        less <+> printList0 (Set.toList ks)
+    pretty (ClassInfo rk ks) = less <+>
+        if Set.null ks then pretty (rawToKind rk) else
+        printList0 (Set.toList ks)
 
 printGenKind :: GenKind -> Doc
 printGenKind k = case k of
@@ -198,7 +198,7 @@ instance Pretty Env where
       bas = map (\ (b, o) -> Unparsed_anno (Annote_word "binder")
              (Line_anno $ " " ++ show b ++ ", " ++ show o) $ posOfId b)
             $ Map.toList $ binders d
-      mkPlural s = if last s == 's' then s ++ "es" else s ++ "s"
+      mkPlural s = s ++ if last s == 's' then "es" else "s"
       header2 l s = keyword $ case l of
         _ : _ : _ -> mkPlural s
         _ -> s

@@ -19,15 +19,15 @@ import Common.Id
 
 import Logic.Logic
 
-import Isabelle.ATC_Isabelle()
+import Isabelle.ATC_Isabelle ()
 import Isabelle.IsaSign
 import Isabelle.IsaPrint
 import Isabelle.IsaProve
 
 type IsabelleMorphism = DefaultMorphism Sign
 
--- a dummy datatype for the LogicGraph and for identifying the right
--- instances
+{- a dummy datatype for the LogicGraph and for identifying the right
+instances -}
 data Isabelle = Isabelle deriving Show
 
 instance Language Isabelle where
@@ -44,15 +44,15 @@ instance Logic.Logic.Syntax Isabelle () () () ()
 
 instance GetRange Sentence
 
-instance Sentences Isabelle Sentence Sign IsabelleMorphism ()  where
-      map_sen Isabelle _ s = return s
+instance Sentences Isabelle Sentence Sign IsabelleMorphism () where
+      map_sen Isabelle _ = return
       print_named Isabelle = printNamedSen
     -- other default implementations are fine
 
 instance StaticAnalysis Isabelle () Sentence
                () ()
                Sign
-               IsabelleMorphism () ()  where
+               IsabelleMorphism () () where
          empty_signature Isabelle = emptySign
          is_subsig Isabelle = isSubSign
          subsig_inclusion Isabelle = defaultInclusion

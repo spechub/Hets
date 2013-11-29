@@ -123,7 +123,7 @@ eitherMapHasDiagnosis = Map.fold (\ a b -> case a of
 -- only use after eitherMapHasDiagnosis returned true
 eitherMapGetDiagnosis :: EitherMap c x -> [Diagnosis]
 eitherMapGetDiagnosis =
-    Map.fold (\ e dl -> either (\ _ -> dl) (: dl) e) []
+    Map.fold (\ e dl -> either (const dl) (: dl) e) []
 
 -- only use after eitherMapHasDiagnosis returned false
 eitherMapGetMap :: EitherMap c x -> Map.Map c x

@@ -53,8 +53,8 @@ data MODALITY = Simple_mod SIMPLE_ID | Term_mod (TERM C_FORMULA)
              deriving (Eq, Ord, Show)
 
 data C_FORMULA = BoxOrDiamond Bool MODALITY (FORMULA C_FORMULA) Range
-               -- The identifier and the term specify the kind of the modality
-               -- pos: "[]" or  "<>", True if Box, False if Diamond
+               {- The identifier and the term specify the kind of the modality
+               pos: "[]" or  "<>", True if Box, False if Diamond -}
                | CoSort_gen_ax [SORT] [OP_SYMB] Bool
                -- flag: belongs to a cofree type and hence is cofreeness axiom?
              deriving (Eq, Ord, Show)

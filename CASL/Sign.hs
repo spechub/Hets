@@ -456,16 +456,16 @@ addSubsortOrIso b super sub = do
   if super == sub then addDiags [mkDiag Warning "void reflexive subsort" sub]
     else if b then
       if Rel.path super sub r then
-        if Rel.path sub super r
-        then addDiags [Diag Warning ("sorts are isomorphic" ++ rel) p]
-        else addDiags [Diag Warning ("added subsort cycle by" ++ rel) p]
+        addDiags $ if Rel.path sub super r
+                   then [Diag Warning ("sorts are isomorphic" ++ rel) p]
+                   else [Diag Warning ("added subsort cycle by" ++ rel) p]
       else when (Rel.path sub super r)
            $ addDiags [Diag Hint ("redeclared subsort" ++ rel) p]
     else if Rel.path super sub r then
-      if Rel.path sub super r
-      then addDiags [Diag Hint ("redeclared isomoprhic sorts" ++ rel) p]
-      else addDiags [Diag Warning ("subsort '" ++
-        showDoc super "' made isomorphic by" ++ rel) $ posOfId super]
+      addDiags $ if Rel.path sub super r
+                 then [Diag Hint ("redeclared isomoprhic sorts" ++ rel) p]
+                 else [Diag Warning ("subsort '" ++
+                  showDoc super "' made isomorphic by" ++ rel) $ posOfId super]
     else when (Rel.path sub super r)
          $ addDiags [Diag Warning ("subsort  '" ++
            showDoc sub "' made isomorphic by" ++ rel) p]

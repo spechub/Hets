@@ -32,22 +32,22 @@ import Common.Result
 import Common.Id
 
 import Control.Monad (foldM)
-import Data.List(nub)
+import Data.List (nub)
+import Data.Maybe (fromMaybe)
 import Common.IRI
-
 
 
 import Static.GTheory
 import Static.DevGraph
 import Static.DgUtils
 
--- * Types
--- (as defined for extended static semantics in Chap. III:5.6.1)
+{- * Types
+(as defined for extended static semantics in Chap. III:5.6.1) -}
 
 -- moved in Static.DevGraph
 
 emptyDiag :: Diag
-emptyDiag = Diagram{diagGraph = Graph.empty, numberOfEdges = 0}
+emptyDiag = Diagram {diagGraph = Graph.empty, numberOfEdges = 0}
 
 data DiagNodeSig = Diag_node_sig Node NodeSig deriving Show
 
@@ -69,9 +69,9 @@ getSigFromDiag (Diag_node_sig _ ns) = ns
 data BasedUnitSig = Based_unit_sig DiagNodeSig RefSig
                   | Based_par_unit_sig MaybeDiagNode RefSig
                   | Based_lambda_unit_sig [DiagNodeSig] RefSig
-                    -- the list is always non-empty,
-                    -- actually has at least 2 elems, and the
-                    -- head stores the "result" node
+                    {- the list is always non-empty,
+                    actually has at least 2 elems, and the
+                    head stores the "result" node -}
 
 instance Show BasedUnitSig where
  show (Based_unit_sig dns _) = show dns
@@ -82,8 +82,8 @@ type StBasedUnitCtx = Map.Map IRI BasedUnitSig
 emptyStBasedUnitCtx :: StBasedUnitCtx
 emptyStBasedUnitCtx = Map.empty
 
--- Since Ps and Bs in the definition of ExtStUnitCtx have disjoint domains
--- we can merge them into a single mapping represented by StBasedUnitCtx.
+{- Since Ps and Bs in the definition of ExtStUnitCtx have disjoint domains
+we can merge them into a single mapping represented by StBasedUnitCtx. -}
 type ExtStUnitCtx = (StBasedUnitCtx, Diag)
 emptyExtStUnitCtx :: ExtStUnitCtx
 emptyExtStUnitCtx = (emptyStBasedUnitCtx, emptyDiag)
@@ -120,8 +120,8 @@ ctx (buc, _) =
                     _ -> uctx -- this should never be the case
     in ctx' (Map.keys buc) buc
 
--- | Insert the edges from given source nodes to given target node
--- into the given diagram. The edges are labelled with inclusions.
+{- | Insert the edges from given source nodes to given target node
+into the given diagram. The edges are labelled with inclusions. -}
 insInclusionEdges :: LogicGraph
                   -> Diag -- ^ the diagram to insert edges to
                   -> [DiagNodeSig] -- ^ the source nodes
@@ -134,15 +134,14 @@ insInclusionEdges lgraph diag0 srcNodes (Diag_node_sig tn tnsig) = do
      case dns of
        Diag_node_sig n nsig -> do
         incl <- ginclusion lgraph (getSig nsig) (getSig tnsig)
-        return $ Diagram {diagGraph = insEdge (n, tn, DiagLink {
+        return Diagram {diagGraph = insEdge (n, tn, DiagLink {
                                  dl_morphism = incl,
                                  dl_number = numberOfEdges d1 + 1 }) d,
                           numberOfEdges = numberOfEdges d1 + 1}
- diag' <- foldl inslink (return diag0) srcNodes
- return diag'
+ foldl inslink (return diag0) srcNodes
 
--- | Insert the edges from given source node to given target nodes
--- into the given diagram. The edges are labelled with inclusions.
+{- | Insert the edges from given source node to given target nodes
+into the given diagram. The edges are labelled with inclusions. -}
 insInclusionEdgesRev :: LogicGraph
                      -> Diag -- ^ the diagram to insert edges to
                      -> DiagNodeSig   -- ^ the source node
@@ -155,12 +154,11 @@ insInclusionEdgesRev lgraph diag0 (Diag_node_sig sn snsig) targetNodes =
                case dns of
                  Diag_node_sig n nsig -> do
                    incl <- ginclusion lgraph (getSig snsig) (getSig nsig)
-                   return $ Diagram {diagGraph = insEdge (sn, n, DiagLink {
+                   return Diagram {diagGraph = insEdge (sn, n, DiagLink {
                       dl_morphism = incl,
                       dl_number = numberOfEdges d1 + 1 }) d,
                                      numberOfEdges = numberOfEdges d1 + 1}
-       diag' <- foldl inslink (return diag0) targetNodes
-       return diag'
+       foldl inslink (return diag0) targetNodes
 
 {- | Build a diagram that extends given diagram with a node containing
 given signature and with edges from given set of nodes to the new
@@ -178,14 +176,14 @@ extendDiagramIncl lgraph diag srcNodes newNodeSig desc =
   do let nodeContents = DiagNode {dn_sig = newNodeSig, dn_desc = desc}
          diagGr = diagGraph diag
          node = Tree.getNewNode diagGr
-         diag' = Diagram{diagGraph = insNode (node, nodeContents) diagGr,
+         diag' = Diagram {diagGraph = insNode (node, nodeContents) diagGr,
                          numberOfEdges = numberOfEdges diag}
          newDiagNode = Diag_node_sig node newNodeSig
      diag'' <- insInclusionEdges lgraph diag' srcNodes newDiagNode
      printDiag (newDiagNode, diag'') "extendDiagramIncl" diag''
 
--- | Extend the development graph with given morphism originating
--- from given NodeSig
+{- | Extend the development graph with given morphism originating
+from given NodeSig -}
 extendDGraph :: DGraph    -- ^ the development graph to be extended
              -> NodeSig   -- ^ the NodeSig from which the morphism originates
              -> GMorphism -- ^ the morphism to be inserted
@@ -202,8 +200,8 @@ extendDGraph dg (NodeSig n _) morph orig = case cod morph of
       dg'' = snd $ insLEdgeDG (n, node, linkContents) dg'
       in return (NodeSig node targetSig, dg'')
 
--- | Extend the development graph with given morphism pointing to
--- given NodeSig
+{- | Extend the development graph with given morphism pointing to
+given NodeSig -}
 extendDGraphRev :: DGraph    -- ^ the development graph to be extended
              -> NodeSig   -- ^ the NodeSig to which the morphism points
              -> GMorphism -- ^ the morphism to be inserted
@@ -220,8 +218,8 @@ extendDGraphRev dg (NodeSig n _) morph orig = case dom morph of
       dg'' = snd $ insLEdgeDG (node, n, linkContents) dg'
       in return (NodeSig node sourceSig, dg'')
 
--- | Extend the development graph with given morphism pointing to
--- given NodeSig
+{- | Extend the development graph with given morphism pointing to
+given NodeSig -}
 extendDGraphRevHide :: DGraph    -- ^ the development graph to be extended
              -> NodeSig   -- ^ the NodeSig to which the morphism points
              -> GMorphism -- ^ the morphism to be inserted
@@ -259,7 +257,7 @@ extendDiagramWithMorphismRevHide pos _ diag dg (Diag_node_sig n nsig)
             diagGr = diagGraph diag
             node = Tree.getNewNode diagGr
             diagGr' = insNode (node, nodeContents) diagGr
-            diag' = Diagram{ diagGraph = insEdge (node, n, DiagLink {
+            diag' = Diagram { diagGraph = insEdge (node, n, DiagLink {
                                 dl_morphism = mor ,
                                 dl_number = numberOfEdges diag + 1}) diagGr',
                               numberOfEdges = numberOfEdges diag + 1 }
@@ -269,7 +267,6 @@ extendDiagramWithMorphismRevHide pos _ diag dg (Diag_node_sig n nsig)
      ("Internal error: Static.ArchDiagram.extendDiagramWithMorphismRev:\n" ++
       " the morphism codomain differs from the signature in given target node")
      pos
-
 
 
 {- | Build a diagram that extends the given diagram with a node and an
@@ -295,7 +292,7 @@ extendDiagramWithMorphism pos _ diag dg (Diag_node_sig n nsig) mor desc orig =
             diagGr = diagGraph diag
             node = Tree.getNewNode diagGr
             diagGr' = insNode (node, nodeContents) diagGr
-            diag' = Diagram{diagGraph = insEdge (n, node, DiagLink {
+            diag' = Diagram {diagGraph = insEdge (n, node, DiagLink {
                                dl_morphism = mor,
                                dl_number = numberOfEdges diag + 1 }) diagGr',
                             numberOfEdges = numberOfEdges diag + 1 }
@@ -330,7 +327,7 @@ extendDiagramWithMorphismRev pos _ diag dg (Diag_node_sig n nsig)
             diagGr = diagGraph diag
             node = Tree.getNewNode diagGr
             diagGr' = insNode (node, nodeContents) diagGr
-            diag' = Diagram{ diagGraph = insEdge (node, n, DiagLink {
+            diag' = Diagram { diagGraph = insEdge (node, n, DiagLink {
                                 dl_morphism = mor ,
                                 dl_number = numberOfEdges diag + 1}) diagGr',
                               numberOfEdges = numberOfEdges diag + 1 }
@@ -356,7 +353,7 @@ extendDiagram diag (Diag_node_sig n _) edgeMorph newNodeSig desc =
          diagGr = diagGraph diag
          node = Tree.getNewNode diagGr
          diagGr' = insNode (node, nodeContents) diagGr
-         diag' = Diagram{diagGraph = insEdge (n, node, DiagLink {
+         diag' = Diagram {diagGraph = insEdge (n, node, DiagLink {
                              dl_morphism = edgeMorph,
                              dl_number = numberOfEdges diag + 1 }) diagGr',
                          numberOfEdges = numberOfEdges diag + 1 }
@@ -371,7 +368,7 @@ homogeniseDiagram :: Logic lid sublogics
                            sign morphism symbol raw_symbol proof_tree
                   => lid     -- ^ the target logic to be coerced to
                   -> Diag    -- ^ the diagram to be homogenised
-                  -> Result (Tree.Gr sign (Int,morphism))
+                  -> Result (Tree.Gr sign (Int, morphism))
 {- The implementation relies on the representation of graph nodes as
 integers. We can therefore just obtain a list of all the labelled
 nodes from diag, convert all the nodes and insert them to a new
@@ -383,19 +380,19 @@ homogeniseDiagram targetLid diag =
                   sig' <- coerceSign srcLid targetLid "" sig
                   return (n, plainSign sig')
            convertEdge (n1, n2, DiagLink {
-                   dl_morphism =  GMorphism cid _ _ mor _, dl_number = nr})
+                   dl_morphism = GMorphism cid _ _ mor _, dl_number = nr})
                = if isIdComorphism (Comorphism cid) then
                  do mor' <- coerceMorphism (targetLogic cid) targetLid "" mor
-                    return (n1, n2, (nr,mor'))
+                    return (n1, n2, (nr, mor'))
                  else fail $
                   "Trying to coerce a morphism between different logics.\n" ++
                   "Heterogeneous specifications are not fully supported yet."
-           convertNodes cDiag [] = do return cDiag
+           convertNodes cDiag [] = return cDiag
            convertNodes cDiag (lNode : lNodes) =
                do convNode <- convertNode lNode
                   let cDiag' = insNode convNode cDiag
                   convertNodes cDiag' lNodes
-           convertEdges cDiag [] = do return cDiag
+           convertEdges cDiag [] = return cDiag
            convertEdges cDiag (lEdge : lEdges) =
                do convEdge <- convertEdge lEdge
                   let cDiag' = insEdge convEdge cDiag
@@ -405,8 +402,7 @@ homogeniseDiagram targetLid diag =
        -- insert converted nodes to an empty diagram
        cDiag <- convertNodes Graph.empty dNodes
        -- insert converted edges to the diagram containing only nodes
-       cDiag' <- convertEdges cDiag dEdges
-       return cDiag'
+       convertEdges cDiag dEdges
 
 -- | Create a graph containing descriptions of nodes and edges.
 diagDesc :: Diag
@@ -416,8 +412,8 @@ diagDesc diag =
             if desc == "" then g else insNode (n, desc) g
     in foldl insNodeDesc Graph.empty . labNodes $ diagGraph diag
 
--- | Create a sink consisting of incusion morphisms between
--- signatures from given set of nodes and given signature.
+{- | Create a sink consisting of incusion morphisms between
+signatures from given set of nodes and given signature. -}
 inclusionSink :: LogicGraph
               -> [DiagNodeSig] -- ^ the source nodes
               -> NodeSig       -- ^ the target signature
@@ -429,9 +425,8 @@ inclusionSink lgraph srcNodes tnsig =
              case dns of
                Diag_node_sig n nsig -> do
                  incl <- ginclusion lgraph (getSig nsig) (getSig tnsig)
-                 return ((n, incl): l)
-       sink <- foldl insmorph (return []) srcNodes
-       return sink
+                 return ((n, incl) : l)
+       foldl insmorph (return []) srcNodes
 
 {- | Build a diagram that extends the given diagram with an
 edge between existing nodes.
@@ -462,7 +457,7 @@ extendDiagramWithEdge pos _ diag dg
             t' = getNode tsig
             dg' = snd $ insLEdgeDG (s', t', linkContents) dg
             diagGr = diagGraph diag
-            diag' = Diagram{diagGraph = insEdge (s, t, DiagLink {
+            diag' = Diagram {diagGraph = insEdge (s, t, DiagLink {
                                dl_morphism = mor,
                                dl_number = numberOfEdges diag + 1 }) diagGr,
                             numberOfEdges = numberOfEdges diag + 1 }
@@ -479,7 +474,7 @@ extendDiagramWithEdge pos _ diag dg
 
 matchDiagram :: Node -> Diag -> (Graph.MContext DiagNodeLab DiagLinkLab, Diag)
 matchDiagram n diag =
- let (mc, b) = match n $ diagGraph diag in (mc, diag{diagGraph = b})
+ let (mc, b) = match n $ diagGraph diag in (mc, diag {diagGraph = b})
 
 copyDiagram :: LogicGraph -> [Node] -> Diag ->
                Result (Diag, Map.Map Node Node)
@@ -494,20 +489,20 @@ copyEdges ns diag c visit =
  case ns of
    [] -> (visit, diag)
    _ -> let sucs = nub $ concatMap (suc (diagGraph diag)) ns
-            sEdges  = concatMap (inn (diagGraph diag)) sucs
-            (visit', diag') = foldl (\(v,d) e -> copyEdge d c e v) (visit, diag) sEdges
+            sEdges = concatMap (inn (diagGraph diag)) sucs
+            (visit', diag') = foldl (\ (v, d) e -> copyEdge d c e v) (visit, diag) sEdges
           in copyEdges sucs diag' c visit'
 
 copyEdge :: Diag -> Map.Map Node Node -> LEdge DiagLinkLab -> Map.Map Edge Bool ->
             (Map.Map Edge Bool, Diag)
-copyEdge diag c (s,t, llab) visit =
- if (s,t) `elem` (Map.keys visit) then (visit, diag)
+copyEdge diag c (s, t, llab) visit =
+ if (s, t) `elem` Map.keys visit then (visit, diag)
   else
     -- visit edge
-    let visit' = Map.insert (s,t) True visit
+    let visit' = Map.insert (s, t) True visit
         s' = Map.findWithDefault s s c
         t' = Map.findWithDefault (error "t") t c
-        diag' = Diagram{diagGraph = insEdge (s', t', llab {
+        diag' = Diagram {diagGraph = insEdge (s', t', llab {
                                dl_number = numberOfEdges diag + 1 }) $ diagGraph diag,
                             numberOfEdges = numberOfEdges diag + 1 }
     in (visit', diag')
@@ -518,18 +513,16 @@ copyDiagramAux c lgraph ns diag =
  case ns of
   [] -> return (diag, c)
   _ -> do
-    (diag', c')<- foldM (\(d, c0) x->  do
-                            let DiagNode nsig desc =
-                                 case lab (diagGraph d) x of
-                                  Nothing -> error $  "copy:"++show x
-                                  Just y ->  y
+    (diag', c') <- foldM (\ (d, c0) x -> do
+                            let DiagNode nsig desc = fromMaybe
+                                 (error $ "copy:" ++ show x) $
+                                 lab (diagGraph d) x
                             (Diag_node_sig y _, d') <- extendDiagramIncl
                                 lgraph d [] nsig $ desc ++ "copy"
                             return (d', Map.insert x y c0)) (diag, c) ns
-    let sucs = filter (\x -> not (x `elem` (Map.keys c'))) $ nub $ concatMap
-               (\n -> suc (diagGraph diag) n) ns
+    let sucs = filter (`notElem` Map.keys c') $ nub $ concatMap
+               (suc (diagGraph diag)) ns
     copyDiagramAux c' lgraph sucs diag'
-
 
 
 insertFormalParamAndVerifCond :: Range       -- ^ the position (for diagnostics)
@@ -557,7 +550,7 @@ insertFormalParamAndVerifCond
       node = Tree.getNewNode diagGr
       diagGr' = insNode (node, nodeContents) diagGr
        -- this inserts p^F_i
-      diag' = Diagram{ diagGraph = insEdge (node, tNode, DiagLink {
+      diag' = Diagram { diagGraph = insEdge (node, tNode, DiagLink {
                                 dl_morphism = mor ,
                                 dl_number = numberOfEdges diag0 + 1}) diagGr',
                               numberOfEdges = numberOfEdges diag0 + 1 }
@@ -565,12 +558,12 @@ insertFormalParamAndVerifCond
   (dnsig, diag'', dg'') <- printDiag (Diag_node_sig node fpi, diag', dg0)
                "extendDiagramWithMorphismRev" diag'
   diag''' <- insInclusionEdges lgraph diag'' [dnsig] qB
-        -- this inserts incl : p^F_i -> q^B
-  -- now we add the verification condition
-  -- as a theorem link from
-  -- fpi with mor
-  -- to
-  -- tNode
+        {- this inserts incl : p^F_i -> q^B
+  now we add the verification condition
+  as a theorem link from
+  fpi with mor
+  to
+  tNode -}
   case cod mor of
     cmor@(G_sign lid tar ind) -> do
       let f = getNode fpi
@@ -580,13 +573,11 @@ insertFormalParamAndVerifCond
                     (extName "Verification" $ dgn_name fpiLab)
                     (newNodeInfo origin) $ noSensGTheory lid tar ind
           dgK = insNodeDG (k, labelK) dg''
-          (_, dg''') = insLEdgeDG (f,k, globDefLink mor DGLinkProof) dgK
-          -- inserts the node for fpi with sigma and
-          -- a definition link from fpi to it
+          (_, dg''') = insLEdgeDG (f, k, globDefLink mor DGLinkProof) dgK
+          {- inserts the node for fpi with sigma and
+          a definition link from fpi to it -}
       incl <- ginclusion lgraph cmor (getSig tSig)
       let linkLabel = defDGLink incl globalThm DGLinkVerif
           (_, dg2) = insLEdgeDG (k, getNode tSig, linkLabel) dg'''
            -- inserts the theorem link from fpi with sigma to p^A_i
       return (diag''', dg2)
-
-

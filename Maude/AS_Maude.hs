@@ -21,7 +21,7 @@ module Maude.AS_Maude where
 
 import Common.Id hiding (Id)
 import Common.Doc (specBraces, text)
-import Common.DocUtils (Pretty(..))
+import Common.DocUtils (Pretty (..))
 
 -- * Types
 
@@ -173,8 +173,8 @@ mkVar = Var . mkSimpleId
 -- | Extract the 'Type' from the given 'Term'.
 getTermType :: Term -> Type
 getTermType term = case term of
-    Const _ typ   -> typ
-    Var _ typ     -> typ
+    Const _ typ -> typ
+    Var _ typ -> typ
     Apply _ _ typ -> typ
 
 -- * Attribute Classification

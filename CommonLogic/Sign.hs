@@ -44,7 +44,7 @@ instance Pretty Sign where
 
 -- | union of all signature-fields
 allItems :: Sign -> Set.Set Id
-allItems s = Set.unions $ map (\f -> f s) [ discourseNames
+allItems s = Set.unions $ map (\ f -> f s) [ discourseNames
                                           , nondiscourseNames
                                           , sequenceMarkers
                                           ]

@@ -30,8 +30,8 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Data.Maybe
 
--- | Transforms the old guards where inclusion overlapping was allowed into
--- disjoint new guards.
+{- | Transforms the old guards where inclusion overlapping was allowed into
+disjoint new guards. -}
 analyzeGuarded :: Guarded [EXTPARAM] -> Guarded EPRange
 analyzeGuarded x =
     let f grd = (grd, toEPExps $ range grd)
@@ -42,8 +42,8 @@ analyzeGuarded x =
             let nodeRg = Atom $ eplabel rl
                 newRg = case map (Atom . eplabel . Tr.rootLabel) sf of
                           [] -> nodeRg
-                          -- we make nodeRg disjoint with its children
-                          -- by removing the union of the children from it
+                          {- we make nodeRg disjoint with its children
+                          by removing the union of the children from it -}
                           rgl -> if isStarEP (eplabel rl)
                                  then Complement $ mkUnion rgl
                                  else Intersection
@@ -52,8 +52,8 @@ analyzeGuarded x =
         newguards = foldForest g [] frst
     in x { guards = newguards }
 
--- | Folds the forest in top-down direction constructing the accumulator
--- from the labels and children of each node.
+{- | Folds the forest in top-down direction constructing the accumulator
+from the labels and children of each node. -}
 foldForest :: (b -> a -> Tr.Forest a -> b) -> b -> Tr.Forest a -> b
 foldForest f = foldl g where
      g x tr = let sf = Tr.subForest tr
@@ -62,9 +62,9 @@ foldForest f = foldl g where
 
 -- ** Dependency Sorting
 
--- | Returns a dependency sorted list of constants with their guarded
--- definitions. Requires as input an analyzed Assignment store:
--- @(fmap analyzeGuarded . fst . splitAS)@ produces an adequate input.
+{- | Returns a dependency sorted list of constants with their guarded
+definitions. Requires as input an analyzed Assignment store:
+@(fmap analyzeGuarded . fst . splitAS)@ produces an adequate input. -}
 dependencySortAS :: GuardedMap EPRange -> [(String, Guarded EPRange)]
 dependencySortAS grdm = mapMaybe f $ topsortDirect $ getDependencyRelation grdm
     where f x = fmap ((,) x) $ Map.lookup x grdm
@@ -73,8 +73,8 @@ dependencySortAS grdm = mapMaybe f $ topsortDirect $ getDependencyRelation grdm
 type Rel2 a = Map.Map a (Set.Set a)
 type BackRef a = Map.Map a [a]
 
--- | @r dependsOn r'@ if @r'@ occurs in the definition term of @r@. In this case
--- the set which corresponds to the 'Map.Map' entry of @r@ contains @r'@.
+{- | @r dependsOn r'@ if @r'@ occurs in the definition term of @r@. In this case
+the set which corresponds to the 'Map.Map' entry of @r@ contains @r'@. -}
 getDependencyRelation :: GuardedMap a -> Rel2 String
 getDependencyRelation gm = Map.fold f dr dr where
     f s m = Map.union m $ Map.fromAscList
@@ -84,7 +84,7 @@ getDependencyRelation gm = Map.fold f dr dr where
 
 getBackRef :: Ord a => Rel2 a -> BackRef a
 getBackRef d =
-    let uf k n m  = Map.insertWith (++) n [k] m
+    let uf k n = Map.insertWith (++) n [k]
         -- for each entry in the set insert k into the list
         f k s m = Set.fold (uf k) m s
     -- from each entry in d add entries in the map
@@ -94,11 +94,11 @@ getBackRef d =
 topsortDirect :: (Show a, Ord a) => Rel2 a -> [a]
 topsortDirect d = topsort d $ getBackRef d
 
--- | This function is based on the Kahn-algorithm. It requires a representation
--- of a relation which has for each entry of the domain an entry in the map.
--- 
--- E.g., 1 |-> {2}, 2 |-> {3, 4} is not allowed because the entries
--- 3 |-> {}, 4 |-> {} are missing
+{- | This function is based on the Kahn-algorithm. It requires a representation
+of a relation which has for each entry of the domain an entry in the map. -}
+
+{- E.g., 1 |-> {2}, 2 |-> {3, 4} is not allowed because the entries
+3 |-> {}, 4 |-> {} are missing -}
 topsort :: (Show a, Ord a) => Rel2 a -> BackRef a -> [a]
 topsort d br =
  let f d' acc []
@@ -107,7 +107,7 @@ topsort d br =
              let (s, v) = Map.findMin d'
              in error $ concat [ "topsort: Dependency relation contains cycles "
                                , show s, " -> ", show v ]
-     f d' acc (n:l) =
+     f d' acc (n : l) =
          let cl = Map.findWithDefault [] n br
              (nl, d'') = foldl (remEdge n) ([], d') cl
          in f d'' (acc ++ [n]) $ l ++ nl
@@ -115,7 +115,7 @@ topsort d br =
      -- returns a new list of empty-nodes and a new def-map
      remEdge n (nl, m) s = let c = Map.size m
                                m' = Map.update (uf n) s m
-                           in (if Map.size m' < c then s:nl else nl, m')
+                           in (if Map.size m' < c then s : nl else nl, m')
      (me, mne) = Map.partition Set.null d
  in f mne [] $ Map.keys me
 
@@ -123,7 +123,7 @@ topsort d br =
 -- ** Extended Parameter Elimination
 
 
-{- | 
+{- |
    Given a dependency ordered list of constant definitions we compute all
    definitions not depending on extended parameter propagation, therefore
    eliminating them. For each constant we produce probably many new constants
@@ -133,18 +133,18 @@ topsort d br =
 epElimination :: CompareIO m => [(String, Guarded EPRange)]
               -> m [(String, Guarded EPRange)]
 epElimination = f Map.empty
-    -- for efficient lookup, we build a map in addition to the list containing
-    -- the same information
+    {- for efficient lookup, we build a map in addition to the list containing
+    the same information -}
 
     where
       f _ [] = return []
-      f m ((s, g):l) = do
+      f m ((s, g) : l) = do
         newguards <- liftM concat $ mapM (eliminateGuard m) $ guards g
-        let g' = g{ guards = newguards }
+        let g' = g { guards = newguards }
         liftM ((s, g') :) $ f (Map.insert s g' m) l
 
-{- | 
-   The given map already contains only elim-constants. We extract the 
+{- |
+   The given map already contains only elim-constants. We extract the
    (partly instantiated) constants from the definition in the guard and
    create a partition from their guarded entry in the map. We use
    'refineDefPartitions' to create the refinement and from this we produce
@@ -157,9 +157,9 @@ eliminateGuard m grd = do
                     $ case Map.lookup s m of
                         Just grdd -> partitionFromGuarded epl grdd
                         Nothing -> AllPartition 0
-        h pim = foldTerm passRecord{ foldOp = const $ mappedElimConst pim }
+        h pim = foldTerm passRecord { foldOp = const $ mappedElimConst pim }
                 $ definition grd
-        g (er, pim) = grd{ range = er, definition = h pim }
+        g (er, pim) = grd { range = er, definition = h pim }
     logMessage $ "eliminating Guard " ++ assName grd
     partMap <- mapUserDefined f $ definition grd
     rePart <- refineDefPartitions partMap
@@ -170,23 +170,23 @@ eliminateGuard m grd = do
           return $ map g l
 
 
--- | Helper function of 'eliminateGuard' for substitution of operatornames
--- by mapped entries given in the @'Map.Map' 'PIConst' 'Int'@.
-mappedElimConst :: (Map.Map PIConst Int)
+{- | Helper function of 'eliminateGuard' for substitution of operatornames
+by mapped entries given in the @'Map.Map' 'PIConst' 'Int'@. -}
+mappedElimConst :: Map.Map PIConst Int
                 -> OPID  -- ^ the original operator id
                 -> [EXTPARAM] -- ^ the extended parameter instantiation
                 -> [EXPRESSION] -- ^ the new arguments
                 -> Range -- ^ the original range
                 -> EXPRESSION
-mappedElimConst m oi e al rg = Op newOi [] al rg
+mappedElimConst m oi e = Op newOi []
     where err = error $ "mappedElimConst: No entry for " ++ show oi
           i = Map.findWithDefault err (mkPIConst (simpleName oi) e) m
           newOi = case oi of
                     OpUser c -> OpUser $ toElimConst c i
                     _ -> oi
 
--- | Returns the simplified partition representation of the 'Guarded' object
--- probably instantiated by the provided extended parameter list.
+{- | Returns the simplified partition representation of the 'Guarded' object
+probably instantiated by the provided extended parameter list. -}
 partitionFromGuarded :: [EXTPARAM] -> Guarded EPRange -> Partition Int
 partitionFromGuarded epl grdd =
     case guards grdd of
@@ -195,11 +195,12 @@ partitionFromGuarded epl grdd =
             | otherwise ->
                 error $ "partitionFromGuarded: single guard not exhaustive: "
                       ++ show grd
-        
+
       grds ->
-        -- it is crucial here that the zipping takes place with the original guard
-        -- list, otherwise the indexes doesn't match their definitions
-        Partition $ mapMaybe f $ zip grds [0..] where
+        {- it is crucial here that the zipping takes place with the
+           original guard list, otherwise the indexes doesn't
+           match their definitions -}
+        Partition $ mapMaybe f $ zip grds [0 ..] where
             ep = toEPExps epl
             f (a, b) | null epl = Just (range a, b)
                      | otherwise = case projectRange ep $ range a of
@@ -213,11 +214,11 @@ type PIConst = (String, Maybe EPExps)
 mkPIConst :: String -> [EXTPARAM] -> PIConst
 mkPIConst s epl = (s, if null epl then Nothing else Just $ toEPExps epl)
 
--- | Returns a map of user defined (partially instantiated) constants
--- to the result of this constant under the given function.
+{- | Returns a map of user defined (partially instantiated) constants
+to the result of this constant under the given function. -}
 mapUserDefined :: Monad m => (String -> [EXTPARAM] -> [EXPRESSION] -> m a)
                    -> EXPRESSION -> m (Map.Map PIConst a)
-mapUserDefined f e = g Map.empty e
+mapUserDefined f = g Map.empty
     where
       g m x =
        case x of
@@ -227,7 +228,7 @@ mapUserDefined f e = g Map.empty e
                  m' = Map.insert pic v m
              foldM g m' al
          -- handle also non-userdefined ops.
-         Op _ _ al _ -> foldM g m al 
+         Op _ _ al _ -> foldM g m al
          -- ignoring lists (TODO: they should be removed soon anyway)
          _ -> return m
 
@@ -258,22 +259,23 @@ undefinedConstants gm =
      Map.keysSet
             $ Map.difference (Map.filter Set.null $ getDependencyRelation gm) gm
 
--- | Turn the output of the elimination procedure into single (unguarded)
---  (probably functional) definitions. Respects the input order of the list.
+{- | Turn the output of the elimination procedure into single (unguarded)
+(probably functional) definitions. Respects the input order of the list. -}
 getElimAS :: [(String, Guarded EPRange)] ->
              [(ConstantName, AssDefinition)]
 getElimAS = concatMap f where
-    f (s, grdd) = zipWith (g s $ argvars grdd) [0..] $ guards grdd
+    f (s, grdd) = zipWith (g s $ argvars grdd) [0 ..] $ guards grdd
     g s args i grd = (ElimConstant s i, mkDefinition args $ definition grd)
 
 
 -- TODO: implement the map-output
 getElimASWithMap :: [(String, Guarded EPRange)] ->
-                    ([(ConstantName, AssDefinition)], Map.Map ConstantName EPRange)
+                    ([(ConstantName, AssDefinition)],
+                     Map.Map ConstantName EPRange)
 getElimASWithMap gds = (getElimAS gds, Map.empty)
 
--- | Return the assignments in output format of 'getElimAS' but for assignments
---  not beeing extended parameter eliminated (for simple specs).
+{- | Return the assignments in output format of 'getElimAS' but for assignments
+not beeing extended parameter eliminated (for simple specs). -}
 getSimpleAS :: [(String, Guarded EPRange)] ->
              [(ConstantName, AssDefinition)]
 getSimpleAS = map f where
@@ -288,6 +290,5 @@ getSimpleAS = map f where
 elimConstants :: [(String, Guarded EPRange)] ->
              [(String, Map.Map ConstantName EPRange)]
 elimConstants = map f where
-    f (s, grdd) = (s, Map.fromList $ zipWith (g s) [0..] $ guards grdd)
+    f (s, grdd) = (s, Map.fromList $ zipWith (g s) [0 ..] $ guards grdd)
     g s i grd = (ElimConstant s i, range grd)
-

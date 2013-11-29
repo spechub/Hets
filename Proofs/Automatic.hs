@@ -38,10 +38,11 @@ import Common.LibName
 import qualified Common.Lib.SizedList as SizedList
 
 import qualified Data.Map as Map
+import Data.Maybe (fromMaybe)
 import Data.Graph.Inductive.Graph
 import Common.Result
 
-automaticFromList :: LibName ->  [LEdge DGLinkLab] -> LibEnv -> LibEnv
+automaticFromList :: LibName -> [LEdge DGLinkLab] -> LibEnv -> LibEnv
 automaticFromList ln ls libEnv =
   let x = automaticRecursiveFromList ln libEnv ls
       y = localInferenceFromList ln ls x
@@ -60,13 +61,13 @@ automaticRecursiveFromList ln proofstatus ls =
      else automaticRecursiveFromList ln auxProofstatus ls
 
 {- | automatically applies all rules to the library
-   denoted by the library name of the given proofstatus-}
+   denoted by the library name of the given proofstatus -}
 automatic :: LibName -> LibEnv -> LibEnv
 automatic ln le = let nLib = localInference ln $ automaticRecursive 49 ln le in
   Map.intersectionWith (\ odg ndg ->
       groupHistory odg (DGRule "automatic") ndg) le nLib
 
-{- | applies the rules recursively until no further changes can be made -}
+-- | applies the rules recursively until no further changes can be made
 automaticRecursive :: Int -> LibName -> LibEnv -> LibEnv
 automaticRecursive count ln proofstatus =
   let auxProofstatus = automaticApplyRules ln proofstatus
@@ -74,10 +75,8 @@ automaticRecursive count ln proofstatus =
      else automaticRecursive (count - 1) ln auxProofstatus
 
 wrapTheoremHideShift :: LibName -> LibEnv -> LibEnv
-wrapTheoremHideShift ln libEnv =
- case maybeResult $ theoremHideShift ln libEnv of
-   Nothing -> libEnv
-   Just libEnv' -> libEnv'
+wrapTheoremHideShift ln libEnv = fromMaybe libEnv
+ (maybeResult $ theoremHideShift ln libEnv)
 
 -- | list of rules to use
 rules :: [LibName -> LibEnv -> LibEnv]
@@ -96,20 +95,18 @@ rulesWithGoals =
             ]
 
 automaticApplyRulesToGoals :: LibName -> [LEdge DGLinkLab] -> LibEnv ->
-                 ([LibName -> [LEdge DGLinkLab] -> LibEnv -> LibEnv])
-                 ->LibEnv
-automaticApplyRulesToGoals ln ls libEnv ll=
+                 [LibName -> [LEdge DGLinkLab] -> LibEnv -> LibEnv] -> LibEnv
+automaticApplyRulesToGoals ln ls libEnv ll =
  case ll of
      [] -> libEnv
-     f:l-> let nwLibEnv= f ln ls libEnv
-               dgraph = lookupDGraph ln nwLibEnv
-               updateList = filter
-                             (\(_,_,lp) ->
-                                case thmLinkStatus
-                                      $ dgl_type lp of
-                                 Just LeftOpen -> True
-                                 _             -> False)
-                                  $ labEdgesDG dgraph
+     f : l -> let nwLibEnv = f ln ls libEnv
+                  dgraph = lookupDGraph ln nwLibEnv
+                  updateList = filter
+                                (\ (_, _, lp) ->
+                                   case thmLinkStatus
+                                         $ dgl_type lp of
+                                    Just LeftOpen -> True
+                                    _ -> False) $ labEdgesDG dgraph
            in automaticApplyRulesToGoals ln updateList nwLibEnv l
 
 {- | sequentially applies all rules to the given proofstatus,

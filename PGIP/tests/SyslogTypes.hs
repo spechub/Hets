@@ -1,8 +1,8 @@
 -- file: ch27/SyslogTypes.hs
 module SyslogTypes where
-{- | Priorities define how important a log message is. -}
+-- | Priorities define how important a log message is.
 
-data Priority = 
+data Priority =
             DEBUG                   -- ^ Debug messages
           | INFO                    -- ^ Information
           | NOTICE                  -- ^ Normal runtime conditions
@@ -16,7 +16,7 @@ data Priority =
 {- | Facilities are used by the system to determine where messages
 are sent. -}
 
-data Facility = 
+data Facility =
               KERN                      -- ^ Kernel messages
               | USER                    -- ^ General userland messages
               | MAIL                    -- ^ E-Mail system
@@ -29,7 +29,7 @@ data Facility =
               | CRON                    -- ^ Cron messages
               | AUTHPRIV                -- ^ Private authentication messages
               | FTP                     -- ^ FTP messages
-              | LOCAL0                  
+              | LOCAL0
               | LOCAL1
               | LOCAL2
               | LOCAL3
@@ -39,7 +39,7 @@ data Facility =
               | LOCAL7
                 deriving (Eq, Show, Read)
 
-facToCode = [ 
+facToCode = [
                        (KERN, 0),
                        (USER, 1),
                        (MAIL, 2),
@@ -62,16 +62,16 @@ facToCode = [
                        (LOCAL7, 23)
            ]
 
-codeToFac = map (\(x, y) -> (y, x)) facToCode
+codeToFac = map (\ (x, y) -> (y, x)) facToCode
 
 
-{- | We can't use enum here because the numbering is discontiguous -}
+-- | We can't use enum here because the numbering is discontiguous
 codeOfFac :: Facility -> Int
 codeOfFac f = case lookup f facToCode of
                 Just x -> x
-                _ -> error $ "Internal error in codeOfFac"
+                _ -> error "Internal error in codeOfFac"
 
 facOfCode :: Int -> Facility
 facOfCode f = case lookup f codeToFac of
                 Just x -> x
-                _ -> error $ "Invalid code in facOfCode"
+                _ -> error "Invalid code in facOfCode"

@@ -26,7 +26,7 @@ import Data.List (union, (\\), isPrefixOf)
 import Control.Exception
 
 data CASL_DLSign =
-    CASL_DLSign { annoProperties  :: Map.Map SIMPLE_ID PropertyType
+    CASL_DLSign { annoProperties :: Map.Map SIMPLE_ID PropertyType
                 , annoPropertySens :: [AnnoAppl]
                 } deriving (Show, Eq, Ord)
 
@@ -37,7 +37,7 @@ data AnnoAppl = AnnoAppl SIMPLE_ID Id AnnoLiteral
                 deriving (Show, Eq, Ord)
 
 data AnnoLiteral = AL_Term (TERM DL_FORMULA)
-                 | AL_Id   Id
+                 | AL_Id Id
                    deriving (Show, Eq, Ord)
 
 emptyCASL_DLSign :: CASL_DLSign
@@ -62,7 +62,7 @@ throwAnnoError s k e1 e2 =
 diffCASL_DLSign :: CASL_DLSign -> CASL_DLSign -> CASL_DLSign
 diffCASL_DLSign a b = a
      { annoProperties = Map.difference (annoProperties a) (annoProperties b)
-     , annoPropertySens = (annoPropertySens a) \\ (annoPropertySens b)
+     , annoPropertySens = annoPropertySens a \\ annoPropertySens b
      }
 
 isSubCASL_DLSign :: CASL_DLSign -> CASL_DLSign -> Bool
@@ -83,15 +83,15 @@ instance Pretty CASL_DLSign where
                          then empty
                          else text "%OWLAnnotations(" <+>
                               vcat (punctuate (text "; ") $
-                                    (map pretty $
-                                     annoPropertySens dlSign)) <+>
+                                    map pretty
+                                     (annoPropertySens dlSign)) <+>
                               text ")%"
-        where propertyList ty = filter (\ (_,x) -> x==ty) $
+        where propertyList ty = filter (\ (_, x) -> x == ty) $
                                  Map.toList $ annoProperties dlSign
               printPropertyList ty str =
                   case propertyList ty of
                     [] -> empty
-                    l  -> text str <+>
+                    l -> text str <+>
                           fcat (punctuate comma $
                                 map (pretty . fst) l) <+>
                           text ")%"
@@ -99,12 +99,12 @@ instance Pretty CASL_DLSign where
 
 instance Pretty AnnoAppl where
     pretty (AnnoAppl rel subj obj) = pretty rel <>
-                                     parens (pretty subj<>comma<>pretty obj)
+                                     parens (pretty subj <> comma <> pretty obj)
 
 instance Pretty AnnoLiteral where
     pretty annoLit = case annoLit of
                        AL_Term t -> pretty t
-                       AL_Id i   -> pretty i
+                       AL_Id i -> pretty i
 
 isSublistOf :: (Eq a) => [a] -> [a] -> Bool
 isSublistOf ys l = case l of

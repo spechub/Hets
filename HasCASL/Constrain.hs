@@ -136,7 +136,7 @@ freshLeaves ty = case ty of
       ne <- freshLeaves e
       nt <- freshLeaves t
       return $ ExpandedType ne nt
-    TypeAbs _ _ _ -> return ty
+    TypeAbs {} -> return ty
     _ -> error "freshLeaves"
 
 substPairList :: Subst -> [(Type, Type)] -> [(Type, Type)]
@@ -144,7 +144,7 @@ substPairList s = map ( \ (a, b) -> (subst s a, subst s b))
 
 isAtomic :: (Type, Type) -> Bool
 isAtomic p = case p of
-    (TypeName _ _ _, TypeName _ _ _) -> True
+    (TypeName {}, TypeName {}) -> True
     _ -> False
 
 partEqShapes :: [(Type, Type)] -> [(Type, Type)]
@@ -168,9 +168,9 @@ shapeMgu knownAtoms cs = let (atoms, sts) = span isAtomic cs in
     (TypeAppl (TypeName l1 _ _) a1, TypeAppl (TypeName l2 _ _) a2)
         | l1 == lazyTypeId && l2 == lazyTypeId ->
             shapeMgu newKnowns $ (a1, a2) : tl
-    (TypeAppl (TypeName l _ _) t, TypeName _ _ _) | l == lazyTypeId ->
+    (TypeAppl (TypeName l _ _) t, TypeName {}) | l == lazyTypeId ->
         shapeMgu newKnowns $ (t, t2) : tl
-    (TypeName _ _ _, TypeAppl (TypeName l _ _) t) | l == lazyTypeId ->
+    (TypeName {}, TypeAppl (TypeName l _ _) t) | l == lazyTypeId ->
         shapeMgu newKnowns $ (t1, t) : tl
     (TypeName _ _ v1, _) | v1 > 0 -> do
              vt <- freshLeaves t2
@@ -216,9 +216,9 @@ inclusions cs = let (atoms, sts) = partition isAtomic cs in
         (TypeAppl (TypeName l1 _ _) a1, TypeAppl (TypeName l2 _ _) a2)
           | l1 == lazyTypeId && l2 == lazyTypeId ->
             inclusions $ (a1, a2) : tl
-        (TypeAppl (TypeName l _ _) t, TypeName _ _ _) | l == lazyTypeId ->
+        (TypeAppl (TypeName l _ _) t, TypeName {}) | l == lazyTypeId ->
             inclusions $ (t, t2) : tl
-        (TypeName _ _ _, TypeAppl (TypeName l _ _) t) | l == lazyTypeId ->
+        (TypeName {}, TypeAppl (TypeName l _ _) t) | l == lazyTypeId ->
             inclusions $ (t1, t) : tl
         _ -> case redStep t1 of
              Nothing -> case redStep t2 of
@@ -257,10 +257,9 @@ collapser r =
                _ -> error "collapser")) t
         ws = filter (hasMany . fst) ks
     in if null ws then
-       return $ foldr ( \ (cs, vs) s ->
-               if Set.null cs then
-                    extendSubst s $ Set.deleteFindMin vs
-               else extendSubst s (Set.findMin cs, vs)) eps ks
+       return $ foldr ( \ (cs, vs) s -> extendSubst s $
+               if Set.null cs then Set.deleteFindMin vs
+               else (Set.findMin cs, vs)) eps ks
     else Result
          (map ( \ (cs, _) ->
                 let (c1, rs) = Set.deleteFindMin cs

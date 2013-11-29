@@ -262,9 +262,9 @@ insertOpDecl rel symb attrs opmap = let
         decl : _ = Set.toList decls
         syms = Set.insert symb $ fst decl
         attr = nubOrd $ mergeAttrs attrs $ snd decl
-        in if Set.null decls
-           then Set.insert (asSymbolSet symb, attrs)
-           else Set.insert (syms, attr)
+        in Set.insert $ if Set.null decls
+           then (asSymbolSet symb, attrs)
+           else (syms, attr)
     name = getName symb
     same'kind = Fold.any (sameKind rel symb) . fst
     old'ops = Map.findWithDefault Set.empty name opmap
@@ -354,7 +354,7 @@ isLegal sign = let
     has'sort sort = Set.member (asSort sort) (sorts sign)
     has'subsorts = Fold.all has'sort . getSorts $ subsorts sign
     has'ops = Fold.all has'sort . getSorts $ ops sign
-    in all id [has'subsorts, has'ops]
+    in has'subsorts && has'ops
 
 -- | True iff the first argument is a subsignature of the second.
 isSubsign :: Sign -> Sign -> Bool
@@ -363,7 +363,7 @@ isSubsign sig1 sig2 = let
     has'sorts = apply Set.isSubsetOf sorts
     has'subsorts = apply Rel.isSubrelOf subsorts
     has'ops = apply (Map.isSubmapOfBy subODS) ops
-    in all id [has'sorts, has'subsorts, has'ops]
+    in has'sorts && has'subsorts && has'ops
 
 subODS :: OpDeclSet -> OpDeclSet -> Bool
 subODS ods1 ods2 = Set.isSubsetOf ods1' ods2'

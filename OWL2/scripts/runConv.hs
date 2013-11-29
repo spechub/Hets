@@ -16,8 +16,8 @@ import OWL2.Sign
 import OWL2.XML
 import OWL2.XMLConversion
 import Text.XML.Light
-import OWL2.Print()
-import OWL2.ManchesterPrint()
+import OWL2.Print ()
+import OWL2.ManchesterPrint ()
 
 processFile :: String -> IO ()
 processFile file = do

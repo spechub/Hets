@@ -16,9 +16,9 @@ This is mainly for communication with the smt-solver yices.
 module CSL.BoolBasic where
 
 import Data.List
--- ----------------------------------------------------------------------
--- * General Datatypes for Extended Parameters
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+General Datatypes for Extended Parameters
+---------------------------------------------------------------------- -}
 
 data BoolRep = Not BoolRep | Impl BoolRep BoolRep | And [BoolRep]
              | Or [BoolRep] | Pred String [String]
@@ -39,15 +39,15 @@ mapPred f br =
       Or l -> Or $ map (mapPred f) l
       Pred s l -> f s l
 
--- ----------------------------------------------------------------------
--- * Output for SMT
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+Output for SMT
+---------------------------------------------------------------------- -}
 
 
 smtBoolExp :: BoolRep -> String
-smtBoolExp br = let f s l = g s smtBoolExp l
+smtBoolExp br = let f s = g s smtBoolExp
                     g s _ [] = s
-                    g s h l = concat ["(", intercalate " " $ s : map h l, ")"]
+                    g s h l = concat ["(", unwords $ s : map h l, ")"]
                 in case br of
                      Not b -> f "not" [b]
                      Impl b1 b2 -> f "=>" [b1, b2]

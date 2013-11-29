@@ -31,7 +31,3 @@ commut = Forall [([mTok, nTok], Univ nat), ([aTok, bTok], Univ $ Appl mat [m, n]
 
 spec :: BASIC_SPEC
 spec = Basic_spec [Annoted (Decl_item ([natTok], Sort)) nullRange [] []]
-                   
-
-
-

@@ -27,7 +27,7 @@ eliminateModules tm =
 
 -- NOTE: ignores importations
 me_text :: NAME -> [NAME] -> TEXT -> SENTENCE
-me_text newName modules txt  =
+me_text newName modules txt =
     case txt of
         Text phrs _ -> me_phrases newName modules $ filter nonImportation phrs
         Named_text _ t _ -> me_text newName modules t
@@ -76,7 +76,7 @@ me_boolsent newName modules bs =
          Junction j sens -> Junction j $ map me_sen_mod sens
          Negation sen -> Negation $ me_sen_mod sen
          BinOp op s1 s2 -> BinOp op (me_sen_mod s1) (me_sen_mod s2)
-    where me_sen_mod = me_sentence newName modules --TODO: check whether dn stays the same
+    where me_sen_mod = me_sentence newName modules -- TODO: check whether dn stays the same
 
 -- Table 2: R3a - R3b
 me_quantsent :: NAME -> [NAME] -> QUANT -> [NAME_OR_SEQMARK] -> SENTENCE
@@ -87,19 +87,19 @@ me_quantsent newName modules _ noss sen =
              (me_sentence newName modules sen)) nullRange
 
 anticedent :: [NAME] -> [NAME_OR_SEQMARK] -> SENTENCE
-anticedent modules noss = 
+anticedent modules noss =
     case modules of
          [m] -> anticedent1 m noss
-         _ -> Bool_sent (Junction Conjunction (map (flip anticedent1 noss) modules)) nullRange
+         _ -> Bool_sent (Junction Conjunction (map (`anticedent1` noss) modules)) nullRange
 
 anticedent1 :: NAME -> [NAME_OR_SEQMARK] -> SENTENCE
 anticedent1 m noss = case noss of
   [nos] -> Atom_sent (Atom (Name_term m) [nos2termseq nos]) nullRange
   _ -> Bool_sent (Junction Conjunction $
-                  map (\nos -> anticedent1 m [nos]) noss) nullRange
+                  map (\ nos -> anticedent1 m [nos]) noss) nullRange
 
 nos2termseq :: NAME_OR_SEQMARK -> TERM_SEQ
-nos2termseq nos = case nos of 
+nos2termseq nos = case nos of
                     Name n -> Term_seq $ Name_term n
                     SeqMark s -> Seq_marks s
 
@@ -108,15 +108,15 @@ me_module :: NAME -> [NAME] -> MODULE -> SENTENCE
 me_module newName modules m =
     case m of
         Mod n t _ -> Bool_sent (Junction Conjunction (
-            (me_text newName (n:modules) t)
-            : (ex_conj newName (n:modules))
-            : (map (ex_conj_indvC newName (n:modules)) $ Set.elems $ indvC_text t)
+              me_text newName (n : modules) t
+            : ex_conj newName (n : modules)
+            : map (ex_conj_indvC newName (n : modules)) (Set.elems $ indvC_text t)
           )) nullRange
         Mod_ex n excl t _ -> Bool_sent (Junction Conjunction (
-            (me_text newName (n:modules) t)
-            : (ex_conj newName (n:modules))
-            : (map (ex_conj_indvC newName (n:modules)) $ Set.elems $ indvC_text t)
-            ++ (map (not_ex_conj_excl newName (n:modules)) excl)
+              me_text newName (n : modules) t
+            : ex_conj newName (n : modules)
+            : map (ex_conj_indvC newName (n : modules)) (Set.elems $ indvC_text t)
+            ++ map (not_ex_conj_excl newName (n : modules)) excl
           )) nullRange
 
 -- Table 2 R4: each line in the conjunction
@@ -130,7 +130,7 @@ ex_conj n modules =
 ex_conj_indvC :: NAME -> [NAME] -> NAME -> SENTENCE
 ex_conj_indvC n modules c =
     Quant_sent Existential [Name n] (Bool_sent (Junction Conjunction (
-            (Atom_sent (Equation (Name_term n) (Name_term c)) nullRange)
+            Atom_sent (Equation (Name_term n) (Name_term c)) nullRange
             : map (modNameToPredicate n) modules
         )) nullRange) nullRange
 

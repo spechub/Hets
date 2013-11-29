@@ -13,7 +13,7 @@ convert 'ATermTable's (created by 'ATerm.Conversion.toATermTable') from
   Indices (following hash marks) are base64 encoded.
 -}
 
-module ATerm.ReadWrite(
+module ATerm.ReadWrite (
     -- * read shared or unshared ATerms
       readATerm
     , readATermFile
@@ -59,7 +59,7 @@ readATermFile fp = do
   if null str then error $ "ATerm.readATermFile: empty input file: " ++ fp
      else return $ readATerm str
 
---- From String to ATerm ------------------------------------------------------
+-- - From String to ATerm ------------------------------------------------------
 
 data ReadTAFStruct = RTS
     ATermTable
@@ -70,7 +70,7 @@ data ReadTAFStruct = RTS
 {- | create an ATerm table from an input string. Shared or unshared ATerms can
 be read. A string for shared ATerms usually starts with an exclamation mark
 and contains many hash marks indicating references. Unshared ATerms are plain
-constructor terms.  -}
+constructor terms. -}
 readATerm :: String -> ATermTable
 readATerm = readATerm' . dropWhile ( \ c -> case c of
     '!' -> True
@@ -101,7 +101,7 @@ readTAF' at str tbl = case str of
           Nothing -> error $ "unknown aterm index " ++ '#' : i
           Just a -> (RTS at str' tbl $ length i + 1, Left a)
   '[' : _ -> case readParTAFs '[' ']' at str tbl 0 of
-      (RTS at' str'  tbl'  l', kids) ->
+      (RTS at' str' tbl' l', kids) ->
           case readAnnTAF at' (dropSpaces str') tbl' l' of
             (rs, ann) -> (rs, Right $ ShAList kids ann)
   x : xs | isIntHead x -> case span isDigit xs of
@@ -134,7 +134,7 @@ readTAFs1 :: ATermTable -> Char -> String -> AbbrevTable Int -> Int
           -> (ReadTAFStruct, [Int])
 readTAFs1 at par str tbl l =
     case readTAF at (dropSpaces str) tbl of
-      (RTS at' str'  tbl'  l', t) ->
+      (RTS at' str' tbl' l', t) ->
           case readTAFs2 at' par (dropSpaces str') tbl' $ l + l' of
             (RTS at'' str'' tbl'' l'', ts) ->
                 (RTS at'' str'' tbl'' l'', t : ts)
@@ -163,7 +163,7 @@ readAFun str = case str of
 
 spanNotQuote' :: String -> (String, String)
 spanNotQuote' str = case str of
-     q : r | q == '"'  -> ([q], r)
+     q : r | q == '"' -> ([q], r)
      c : r@(d : s) -> let
          (e, l) = if c == '\\' then ([c, d], s) else ([c], r)
          (f, t) = spanNotQuote' l
@@ -179,7 +179,7 @@ spanAbbrevChar = span isBase64Char
 isIntHead :: Char -> Bool
 isIntHead c = isDigit c || c == '-'
 
---- From (shared) ATerms to strings via simple documents with associated length
+-- - From (shared) ATerms to strings via simple documents with associated length
 
 data DocLen = DocLen SDoc Int
 
@@ -208,13 +208,13 @@ writeSharedATermSDoc' b at =
     case writeTAF b (toReadonlyATT at) emptyATab of
     WS _ (DocLen doc _) -> (if b then text "!" else empty) <> doc
 
---shared (if input is True)
+-- shared (if input is True)
 
 writeTAF :: Bool -> ATermTable -> AbbrevTable DocLen -> WriteStruct
 writeTAF b at tbl = let i = getTopIndex at in
     case lookupATab i tbl of
     Just s -> if b then WS tbl s else writeTAF' b at tbl
-    Nothing  -> case writeTAF' b at tbl of
+    Nothing -> case writeTAF' b at tbl of
         WS tbl' d_len@(DocLen _ len) ->
             WS (insertATab len i (abbrevD $ sizeATab tbl') tbl') d_len
 
@@ -262,12 +262,12 @@ writeATermAuxS s = dlConcat (docLen s) . parenthesiseS
 
 -- list brackets must not be omitted
 bracketS :: DocLen -> DocLen
-bracketS         (DocLen d dl)
+bracketS (DocLen d dl)
     | dl == 0 = docLen "[]"
     | otherwise = DocLen (brackets d) $ dl + 2
 
 parenthesiseS :: DocLen -> DocLen
-parenthesiseS    s@(DocLen d dl)
+parenthesiseS s@(DocLen d dl)
     | dl == 0 = s
     | otherwise = DocLen (parens d) $ dl + 2
 
@@ -306,18 +306,18 @@ sizeATab (ATab _ _ s) = s
 lookupATab :: Int -> AbbrevTable a -> Maybe a
 lookupATab i (ATab m _ _) = IntMap.lookup i m
 
---- Intger Read ---------------------------------------------------------------
+-- - Intger Read ---------------------------------------------------------------
 
 readInteger :: String -> (Integer, Int)
 readInteger s = case s of
-                  (hd:str) -> if hd == '-' then case conv str of
+                  (hd : str) -> if hd == '-' then case conv str of
                          (m, l) -> (negate m, l + 1)
                          else conv s
                   _ -> error "readInteger"
     where f (m, l) x = (toInteger (ord x - ord0) + 10 * m, l + 1)
           conv = foldl f (0, 0)
 
---- Base 64 encoding ----------------------------------------------------------
+-- - Base 64 encoding ----------------------------------------------------------
 
 abbrevD :: Int -> DocLen
 abbrevD = docLen . abbrev

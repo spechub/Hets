@@ -21,7 +21,6 @@ import Data.Maybe
 import Data.List
 
 
-
 main :: IO ()
 main = do
   args <- getArgs
@@ -34,7 +33,7 @@ runProg st
     | translate st = matchTranslate (lib st) (spec st) (pattern st) $ design st
     | otherwise = matchDesign (lib st) (spec st) (pattern st) $ design st
 
-------------------------- Input Arguments -------------------------
+-- ----------------------- Input Arguments -------------------------
 
 processArgs :: [String] -> Either String ProgSettings
 processArgs args =
@@ -64,7 +63,7 @@ dmUsage = usageInfo dmHeader options
 information -}
 options :: [OptDescr ProgFlag]
  -- Option [Char] [String] (ArgDescr a) String
-options = map f $
+options = map f
           [ ( "lib", "Path to the hets file", ReqArg PFLib "FILE")
           , ( "spec"
             , "Name of specification importing both, the pattern and the design specification"
@@ -78,13 +77,13 @@ options = map f $
             , NoArg PFTrans)
           , ( "verbosity"
             , "A value from 0=quiet to 4=print out all information during processing"
-            , OptArg (PFVerbosity . read . fromMaybe "4")  "0-4")
+            , OptArg (PFVerbosity . read . fromMaybe "4") "0-4")
           , ( "quiet", "Equal to -v0", NoArg PFQuiet)
           ] where
     f (fs, descr, arg) = Option [head fs] [fs] arg descr
 
 checkFlags :: [ProgFlag] -> [String]
-checkFlags = g . mapAccumL f (0::Int) where
+checkFlags = g . mapAccumL f (0 :: Int) where
     f i (PFLib _) = (setBit i 0, ())
     f i (PFSpec _) = (setBit i 1, ())
     f i (PFPattern _) = (setBit i 2, ())
@@ -136,7 +135,6 @@ makeSettings settings flg =
       PFVerbosity i -> settings { verbosity = i }
       PFQuiet -> settings { verbosity = 0 }
       PFTrans -> settings { translate = True }
-      
+
 getSettings :: [ProgFlag] -> ProgSettings
 getSettings = foldl makeSettings defaultSettings
-

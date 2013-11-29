@@ -14,7 +14,7 @@ import System.Environment
 
 import OWL2.ManchesterParser
 import OWL2.Print ()
-import OWL2.ManchesterPrint()
+import OWL2.ManchesterPrint ()
 
 import Common.DocUtils
 import Common.Parsec
@@ -25,7 +25,7 @@ processFile :: String -> IO ()
 processFile file = do
   str <- readFile file
   case runParser (basicSpec << eof) () file str of
-    Right o -> putStrLn $ show o
+    Right o -> print o
     Left err -> print err
 
 main :: IO ()

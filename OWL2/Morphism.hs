@@ -104,15 +104,15 @@ instance Pretty OWLMorphism where
     s = osource m
     srcD = specBraces $ space <> pretty s
     t = otarget m
-    in if isOWLInclusion m then
+    in fsep $ if isOWLInclusion m then
            if isSubSign t s then
-              fsep [text "identity morphism over", srcD]
-           else fsep
+              [text "identity morphism over", srcD]
+           else
              [ text "inclusion morphism of"
              , srcD
              , text "extended with"
              , pretty $ Set.difference (symOf t) $ symOf s ]
-       else fsep
+       else
          [ pretty $ mmaps m
          , pretty $ pmap m
          , colon <+> srcD, mapsto <+> specBraces (space <> pretty t) ]

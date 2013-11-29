@@ -36,4 +36,3 @@ import HasCASL.Le
 import HasCASL.Builtin
 import HasCASL.Sublogic as HasSub
 import HasCASL.FoldTerm as HasFold
-

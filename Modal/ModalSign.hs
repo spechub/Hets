@@ -26,7 +26,7 @@ data ModalSign = ModalSign
   { flexOps :: OpMap
   , flexPreds :: PredMap
   , modies :: Map.Map SIMPLE_ID [AnModFORM]
-  , termModies :: Map.Map Id [AnModFORM] --SORT
+  , termModies :: Map.Map Id [AnModFORM] -- SORT
   } deriving (Show, Eq, Ord)
 
 emptyModalSign :: ModalSign
@@ -36,7 +36,7 @@ addModalSign :: ModalSign -> ModalSign -> ModalSign
 addModalSign a b = a
   { flexOps = addOpMapSet (flexOps a) $ flexOps b
   , flexPreds = addMapSet (flexPreds a) $ flexPreds b
-  , modies = Map.unionWith  List.union (modies a) $ modies b
+  , modies = Map.unionWith List.union (modies a) $ modies b
   , termModies = Map.unionWith List.union (termModies a) $ termModies b }
 
 interMap :: Ord a => ([b] -> [b] -> [b]) -> Map.Map a [b] -> Map.Map a [b]

@@ -36,10 +36,10 @@ isOpKind :: (OpInfo -> Bool) -> Env -> Term -> Bool
 isOpKind f e t = case t of
     TypedTerm trm q _ _ -> isOfType q && isOpKind f e trm
     QualOp _ (PolyId i _ _) sc _ _ _ ->
-        if i `elem` map fst bList then False else
-           any (\ oi -> f oi && let sc2 = opType oi in
-                         sc == sc2 || haveCommonSupertype e sc sc2)
-              $ Set.toList $ Map.findWithDefault Set.empty i $ assumps e
+        (i `notElem` map fst bList) &&
+        any (\ oi -> f oi && let sc2 = opType oi in
+             sc == sc2 || haveCommonSupertype e sc sc2)
+         (Set.toList $ Map.findWithDefault Set.empty i $ assumps e)
     _ -> False
 
 isOfType :: TypeQual -> Bool
@@ -51,7 +51,7 @@ isOfType q = case q of
 
 isVar :: Env -> Term -> Bool
 isVar e t = case t of
-    TypedTerm trm q _ _  -> isOfType q && isVar e trm
+    TypedTerm trm q _ _ -> isOfType q && isVar e trm
     QualVar _ -> True
     _ -> False
 
@@ -77,8 +77,8 @@ isLHS e t = case t of
 isExecutable :: Env -> Term -> Bool
 isExecutable e t = case t of
     QualVar _ -> True
-    QualOp _ _ _ _ _ _ -> True
-    QuantifiedTerm _ _ _ _ -> False
+    QualOp {} -> True
+    QuantifiedTerm {} -> False
     TypedTerm _ InType _ _ -> False
     TypedTerm trm _ _ _ -> isExecutable e trm
     ApplTerm t1 t2 _ -> isExecutable e t1 && isExecutable e t2
@@ -128,10 +128,10 @@ bottom ty = mkQualOp botId botType [ty] nullRange
 
 mkCondEq :: Env -> Term -> Maybe ProgEq
 mkCondEq e t = case getTupleAp t of
-    Just (i, [p, r]) ->
-        if i == implId then mkCond e p r
-        else if i == infixIf then mkCond e r p
-        else mkProgEq e t
+    Just (i, [p, r])
+     | i == implId -> mkCond e p r
+     | i == infixIf -> mkCond e r p
+     | otherwise -> mkProgEq e t
     _ -> mkProgEq e t
     where
     mkCond env f p = case mkProgEq env p of
@@ -151,8 +151,8 @@ mkCondEq e t = case getTupleAp t of
 mkQuantEq :: Env -> Term -> Maybe ProgEq
 mkQuantEq e t = case t of
     QuantifiedTerm Universal _ trm _ -> mkQuantEq e trm
-    -- ignore quantified variables
-    -- do not allow conditional equations
+    {- ignore quantified variables
+    do not allow conditional equations -}
     _ -> mkCondEq e t
 
 getTupleAp :: Term -> Maybe (Id, [Term])

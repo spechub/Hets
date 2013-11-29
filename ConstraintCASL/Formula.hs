@@ -10,7 +10,7 @@ Portability :  portable
 parse terms and formulae
 -}
 
-module ConstraintCASL.Formula     where
+module ConstraintCASL.Formula where
 
 import Common.AnnoState
 import Common.Id
@@ -20,19 +20,19 @@ import ConstraintCASL.AS_ConstraintCASL
 import Text.ParserCombinators.Parsec
 import CASL.AS_Basic_CASL
 
--- ------------------------------------------------------------------------
--- formula
--- ------------------------------------------------------------------------
+{- ------------------------------------------------------------------------
+formula
+------------------------------------------------------------------------ -}
 
 cformula :: [String] -> AParser st ConstraintFORMULA
 cformula k =
-    try(
-    do  c1 <- conjunction k
-        impliesT
-        c2 <- conjunction k
-        return (Implication_ConstraintFormula c1 c2))
+    try (
+    do c1 <- conjunction k
+       impliesT
+       c2 <- conjunction k
+       return (Implication_ConstraintFormula c1 c2))
   <|>
-    try(
+    try (
     do c1 <- conjunction k
        equivalentT
        c2 <- conjunction k
@@ -44,15 +44,15 @@ cformula k =
 
 conjunction :: [String] -> AParser st ATOMCONJUNCTION
 conjunction k =
-    do (atoms,_) <- atom k `separatedBy` anComma
+    do (atoms, _) <- atom k `separatedBy` anComma
        return (Atom_Conjunction atoms)
 
 atom :: [String] -> AParser st ATOM
 atom k =
     try (do r <- relation k
             oParenT
-            (terms,_) <- constraintterm k `separatedBy` anComma
-            cParenT `notFollowedWith` (relation k)
+            (terms, _) <- constraintterm k `separatedBy` anComma
+            cParenT `notFollowedWith` relation k
             return (Prefix_Atom r terms))
   <|>
     do t1 <- constraintterm k
@@ -82,20 +82,18 @@ simplerelation k =
 
 relation :: [String] -> AParser st RELATION
 relation k =
-    try ( do (rels,_) <- simplerelation k `separatedBy` anComma
+    try ( do (rels, _) <- simplerelation k `separatedBy` anComma
              return (Relation_Disjunction rels))
-   <|>
-    do r <- simplerelation k
-       return r
+   <|> simplerelation k
 
 constraintterm :: [String] -> AParser st ConstraintTERM
 constraintterm k =
-    try(do ide <-  parseId k
-           return (Atomar_Term ide))
+    try (do ide <- parseId k
+            return (Atomar_Term ide))
    <|>
     do ide <- parseId k
        oParenT
-       (terms,_) <- constraintterm k `separatedBy` anComma
+       (terms, _) <- constraintterm k `separatedBy` anComma
        cParenT
        return (Composite_Term ide terms)
 
@@ -134,7 +132,7 @@ equivalentT :: GenParser Char st Token
 equivalentT = pToken $ toKey equivalent
 
 constraintKeywords :: [String]
-constraintKeywords = (equivalent:implies:[])
+constraintKeywords = [equivalent, implies]
 
 instance TermParser ConstraintFORMULA where
   termParser = aToTermParser $ cformula []

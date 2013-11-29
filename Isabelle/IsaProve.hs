@@ -10,8 +10,6 @@ Stability   :  provisional
 Portability :  portable
 
 Interface for Isabelle theorem prover.
--}
-{-
   Interface between Isabelle and Hets:
    Hets writes Isabelle .thy file and starts Isabelle
    User extends .thy file with proofs
@@ -123,7 +121,7 @@ getProofDeps m thName thm = do
       else return $ openIsaProofStatus $ mapN thm
 
 getAllProofDeps :: Map.Map String String -> String -> [String]
-                -> IO([ProofStatus ()])
+                -> IO [ProofStatus ()]
 getAllProofDeps m = mapM . getProofDeps m
 
 checkFinalThyFile :: (TheoryHead, Body) -> String -> IO Bool
@@ -192,7 +190,7 @@ revertThyFile thyFile thy = do
 callSystem :: String -> IO ExitCode
 callSystem s = putStrLn s >> system s
 
-isaProve :: String -> Theory Sign Sentence () -> a -> IO([ProofStatus ()])
+isaProve :: String -> Theory Sign Sentence () -> a -> IO [ProofStatus ()]
 isaProve thName th _freedefs = do
   let (sig, axs, ths, m) = prepareTheory th
       thms = map senAttr ths

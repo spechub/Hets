@@ -14,8 +14,8 @@ Parser for Relational Schemes
 module RelationalScheme.ParseRS
         (
             parseRSScheme
-        ,   testParse
-        ,   longTest
+        , testParse
+        , longTest
         )
         where
 
@@ -54,7 +54,7 @@ parseRSScheme _ =
         tb <- parseRSTables
         rl <- parseRSRelationships
         pos2 <- getPos
-        return $ RSScheme tb rl $ Range [pos1,pos2]
+        return $ RSScheme tb rl $ Range [pos1, pos2]
 
 -- ^ Parser for set of relationships
 parseRSRelationships :: AParser st RSRelationships
@@ -145,11 +145,11 @@ parseRSTable =
         ra <- getAnnos
         return RSTable
             {
-                t_name  = simpleIdToId tid
-            ,   columns = ccl
-            ,   rsannos = la ++ ra
-            ,   t_keys  = Set.fromList
-                  $ map (\x -> (c_name x, c_data x))
+                t_name = simpleIdToId tid
+            , columns = ccl
+            , rsannos = la ++ ra
+            , t_keys = Set.fromList
+                  $ map (\ x -> (c_name x, c_data x))
                   $ filter c_key ccl
             }
 
@@ -166,7 +166,7 @@ parseRSColumn =
         iid <- sepBy1 parseEntry commaT
         colonT
         dt <- parseRSDatatypes
-        return $ map (\(x, y) -> RSColumn (simpleIdToId x) dt y) iid
+        return $ map (\ (x, y) -> RSColumn (simpleIdToId x) dt y) iid
 
 look4Key :: AParser st Bool
 look4Key =
@@ -176,7 +176,7 @@ look4Key =
     <|>
         return False
 
-testParse ::GenParser tok (AnnoState ()) a
+testParse :: GenParser tok (AnnoState ()) a
             -> [tok]
             -> Either Text.ParserCombinators.Parsec.Error.ParseError a
 testParse par = runParser par (emptyAnnos ()) ""

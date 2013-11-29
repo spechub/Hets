@@ -604,7 +604,7 @@ addSentences clf nsmap gsig =
     case (nsmap, gsig) of
       (G_mapofsymbol lidM sm, G_sign lid (ExtSign sig _) ind1) ->
           do
-            sigm <- return $ SigMapI (coerceMapofsymbol lidM lid sm)
+            let sigm = SigMapI (coerceMapofsymbol lidM lid sm)
                     $ notations clf
             -- 1. translate sentences
             mSens <- mapM (\ tc -> omdocToSen lid sigm tc
@@ -706,8 +706,8 @@ classifyTC tc clf =
       TCImport n from morph ->
           clf { importInfo = ImportInfo from n morph : importInfo clf }
       TCComment _ -> clf
-      TCSmartNotation _ _ _ _ _ -> error "classifyTC: unexpected SmartNotation"
-      TCFlexibleNotation _ _ _ ->
+      TCSmartNotation {} -> error "classifyTC: unexpected SmartNotation"
+      TCFlexibleNotation {} ->
           error "classifyTC: unexpected FlexibleNotation"
       -- just for the case TCNotation with a style different from hets
       _ -> clf

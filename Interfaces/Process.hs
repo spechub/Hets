@@ -15,6 +15,7 @@ module Interfaces.Process where
 import Control.Monad (liftM, when)
 import Control.Monad.Trans (MonadIO (..))
 import Control.Monad.State (MonadState (..))
+import Common.IO (catchIOException)
 
 import Data.Time
 import Data.Maybe
@@ -25,9 +26,9 @@ import System.IO
 
 import Common.IOS
 
--- ----------------------------------------------------------------------
--- * ReadState, controlled reading from a handle
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+ReadState, controlled reading from a handle
+---------------------------------------------------------------------- -}
 
 type DTime = NominalDiffTime
 type Time = UTCTime
@@ -71,9 +72,9 @@ class ReadState a where
     -- | For updating the ReadState, you may want to set new timestamps, etc.
     increment :: a      -- ^ the ReadState
               -> Bool   -- ^ a flag for "got data"
-              -> IO a   -- ^ the updated readstate
-    -- | A predicate to tell when to abort a read-try, usally when some
-    -- timeout has passed
+              -> IO a   {- ^ the updated readstate
+    A predicate to tell when to abort a read-try, usally when some
+    timeout has passed -}
     abort :: a -> Bool
     -- | Wait-time for new input
     waitInp :: a   -- ^ the ReadState
@@ -93,8 +94,8 @@ instance ReadState IntelligentReadState where
     increment irs ngd =
         do
           ts <- getCurrentTime
-          return $ if ngd then irs{ updated = ts, readtime = ts, hasread = ngd}
-                          else irs{ updated = ts }
+          return $ if ngd then irs { updated = ts, readtime = ts, hasread = ngd}
+                          else irs { updated = ts }
 
     abort (IRS to st lus slr gd b _) =
         to <= diffUTCTime lus st
@@ -108,35 +109,35 @@ getOutput hdl rs = do
   s <- getOutput' rs hdl ""
   return $ reverse s
 
--- builds the string in the wrong order
--- tail-recursive function shouldn't make stack problems
+{- builds the string in the wrong order
+tail-recursive function shouldn't make stack problems -}
 getOutput' :: (ReadState a) => a -> Handle -> String -> IO String
 getOutput' rs hdl s = do
-  b <- if abort rs then return Nothing -- timeout gone
-       -- eventually error on eof so abort
+  b <- if abort rs then return Nothing {- timeout gone
+       eventually error on eof so abort -}
        else catchIOException Nothing
                 $ liftM Just $ hWaitForInput hdl $ waitInp rs
   case b of Nothing -> return s
             Just b' ->
                 do
-                  ns <- if b' then liftM (:s) $ hGetChar hdl else return s
+                  ns <- if b' then liftM (: s) $ hGetChar hdl else return s
                   nrs <- increment rs b'
                   getOutput' nrs hdl ns
 
--- | From given Time a ReadState is created and the output is fetched using
--- getOutput
+{- | From given Time a ReadState is created and the output is fetched using
+getOutput -}
 getOutp :: Handle -> Int -> DTime -> IO String
 getOutp hdl w t = initIRS w t True >>= getOutput hdl
 
 
--- ----------------------------------------------------------------------
--- * A Command Interface using the read state
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+A Command Interface using the read state
+---------------------------------------------------------------------- -}
 
--- | This is just a type to hold the information returned by
---  System.Process.runInteractiveCommand
+{- | This is just a type to hold the information returned by
+System.Process.runInteractiveCommand -}
 data CommandState = CS { inp :: Handle, outp :: Handle, err :: Handle
-                       , pid :: SP.ProcessHandle,  verbosity:: Int
+                       , pid :: SP.ProcessHandle, verbosity :: Int
                        , tc :: TimeConfig }
 
 -- | The IO State-Monad with state CommandState
@@ -150,13 +151,13 @@ start :: String -- ^ shell string to run the program
       -> IO CommandState
 start shcmd v mTc = do
   when (v > 0) $ putStrLn $ "Running " ++ shcmd ++ " ..."
-  (i,o,e,p) <- SP.runInteractiveCommand $ shcmd
+  (i, o, e, p) <- SP.runInteractiveCommand shcmd
   let cs = CS i o e p v $ fromMaybe defaultConfig mTc
 
   verbMessageIO cs 3 "start: Setting buffer modes"
   -- configure the handles
-  mapM_ (flip hSetBinaryMode False) [i, o, e]
-  mapM_ (flip hSetBuffering NoBuffering) [o, e]
+  mapM_ (`hSetBinaryMode` False) [i, o, e]
+  mapM_ (`hSetBuffering` NoBuffering) [o, e]
   hSetBuffering i LineBuffering
   -- clear all output from the output pipe (TIME: wait 300 milliseconds)
   verbMessageIO cs 3 "start: Clearing connection output."
@@ -209,9 +210,8 @@ verbMessage :: CommandState -> Int -> String -> Command String
 verbMessage cs v s = liftIO $ verbMessageIO cs v s
 
 
-
--- | Send some exit command if there is one to close the connection.
--- This is the best one, but may be blocked by the application.
+{- | Send some exit command if there is one to close the connection.
+This is the best one, but may be blocked by the application. -}
 close :: Maybe String -> Command (Maybe ExitCode)
 close str = do
   s <- get
@@ -222,7 +222,7 @@ close str = do
                 verbMessage s 2 $ "close: sending exit command: " ++ excmd
                 liftIO $ hPutStrLn (inp s) excmd
   -- TODO: find out how to get the process id from the process handle
-  verbMessage s 3 $ "close: waiting for process to terminate"
+  verbMessage s 3 "close: waiting for process to terminate"
   e <- liftIO $ SP.waitForProcess $ pid s
   verbMessage s 2 $ "close: process exited with code " ++ show e
   return $ Just e

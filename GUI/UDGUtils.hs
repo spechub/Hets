@@ -12,17 +12,11 @@ uDrawGraph display
 -}
 
 module GUI.UDGUtils
-  ( module UDrawGraph.Graph
-  , module UDrawGraph.Basic
-  , module Graphs.GraphDisp
-  , module Graphs.GraphConfigure
-  , module Util.Broadcaster
-  , module Util.Sources
-  ) where
+  ( module X ) where
 
-import UDrawGraph.Graph
-import UDrawGraph.Basic
-import Graphs.GraphDisp
-import Graphs.GraphConfigure
-import Util.Broadcaster
-import Util.Sources
+import UDrawGraph.Graph as X
+import UDrawGraph.Basic as X
+import Graphs.GraphDisp as X
+import Graphs.GraphConfigure as X
+import Util.Broadcaster as X
+import Util.Sources as X

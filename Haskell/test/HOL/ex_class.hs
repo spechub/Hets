@@ -2,15 +2,15 @@ module SimpleClass where
 
 data Color a = Red a | Blue a
 
-data MyList a  = MyNil | MyCons a (MyList a)
+data MyList a = MyNil | MyCons a (MyList a)
 
 data MPList a b = MPNil | MPCons a b (MPList a b)
 
-myEqual        :: Eq a => a -> a -> Bool
-myEqual x y    =   if x == y then True else False
+myEqual :: Eq a => a -> a -> Bool
+myEqual x y = if x == y then True else False
 
 myNotEqual :: Eq a => a -> a -> Bool
-myNotEqual x y =   if x /= y then True else False
+myNotEqual x y = if x /= y then True else False
 
 instance Eq a => Eq (Color a)
 
@@ -21,7 +21,7 @@ class Joker a where
  methodTwo :: a -> Bool -> Color a
 
 instance (Joker a, Eq a) => Joker (Color a) where
- methodOne = myEqual 
+ methodOne = myEqual
 
 instance (Joker a, Eq a) => Joker (MyList a) where
  methodOne = myEqual

@@ -28,6 +28,7 @@ import qualified Common.Lib.Graph as Tree
 import Data.Graph.Inductive.Graph
 import Data.Graph.Inductive.Basic (elfilter)
 import Data.List
+import Data.Maybe (isNothing)
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Control.Exception (assert)
@@ -81,10 +82,10 @@ getAllPathsOfType dgraph isType =
 -- | morphisms of (co)free definitions are identities
 realMorphism :: DGLinkLab -> Maybe GMorphism
 realMorphism lbl = let mor = dgl_morphism lbl in case dgl_type lbl of
-  ScopedLink _ _ _ -> return mor
+  ScopedLink {} -> return mor
   HidingDefLink -> fail "hiding definition link"
   FreeOrCofreeDefLink _ _ -> return $ ide $ cod mor
-  HidingFreeOrCofreeThm _ _ _ _ -> fail "hiding or free thm link"
+  HidingFreeOrCofreeThm {} -> fail "hiding or free thm link"
 
 -- | determines the morphism of a given path
 calculateMorphismOfPath :: [LEdge DGLinkLab] -> Maybe GMorphism
@@ -155,7 +156,7 @@ selectProofBasis dg ledge paths = let
   pBl = map (\ (_, _, l) ->
                (dgl_id l, proofBasis $ getProofBasis l))
               $ labEdges $ dgBody dg
-  rel = assert (checkEdgeIds dg == Nothing &&
+  rel = assert (isNothing (checkEdgeIds dg) &&
                 all (\ (e, pB) -> not (Set.member e pB)) pBl) $
         Rel.toMap $ Rel.transClosure $ Rel.fromMap $ Map.fromList pBl
   in selectProofBasisAux rel ledge $ provenPaths ++ unprovenPaths

@@ -17,10 +17,10 @@ import qualified CSMOF.As as CSMOF
 
 -- Simplified QVTR Tranformation
 
-data Transformation = Transformation 
+data Transformation = Transformation
                  { transfName :: String
-                 , sourceMetamodel :: (String,String,CSMOF.Metamodel)
-                 , targetMetamodel :: (String,String,CSMOF.Metamodel)
+                 , sourceMetamodel :: (String, String, CSMOF.Metamodel)
+                 , targetMetamodel :: (String, String, CSMOF.Metamodel)
                  , keys :: [Key]
                  , relations :: [Relation]
                  } deriving (Eq, Ord)
@@ -50,7 +50,7 @@ instance GetRange PropKey where
   rangeSpan _ = []
 
 
-data Relation = Relation 
+data Relation = Relation
               { top :: Bool
               , relName :: String
               , varSet :: [RelVar]
@@ -66,9 +66,9 @@ instance GetRange Relation where
   rangeSpan _ = []
 
 
-data RelVar = RelVar 
+data RelVar = RelVar
             { varType :: String
-            , varName :: String 
+            , varName :: String
             } deriving (Eq, Ord)
 
 instance GetRange RelVar where
@@ -76,9 +76,9 @@ instance GetRange RelVar where
   rangeSpan _ = []
 
 
-data PrimitiveDomain = PrimitiveDomain 
+data PrimitiveDomain = PrimitiveDomain
                      { primName :: String
-                     , primType :: String 
+                     , primType :: String
                      } deriving (Eq, Ord)
 
 instance GetRange PrimitiveDomain where
@@ -119,23 +119,21 @@ instance GetRange PropertyTemplate where
   rangeSpan _ = []
 
 
-data WhenWhere = WhenWhere { relInvokWhen :: [RelInvok], oclExpreWhen :: [OCL] } deriving (Eq, Ord)   
+data WhenWhere = WhenWhere { relInvokWhen :: [RelInvok], oclExpreWhen :: [OCL] } deriving (Eq, Ord)
 
 instance GetRange WhenWhere where
   getRange _ = nullRange
   rangeSpan _ = []
 
-       
-data RelInvok = RelInvok 
+
+data RelInvok = RelInvok
               { name :: String
-              , params :: [String] 
+              , params :: [String]
               } deriving (Eq, Ord)
 
 instance GetRange RelInvok where
   getRange _ = nullRange
   rangeSpan _ = []
-
-
 
 
 -- Fake OCL expressions
@@ -151,7 +149,7 @@ data OCL = Paren { exp :: OCL }
 
 instance GetRange OCL where
   getRange _ = nullRange
-  rangeSpan _ = []      
+  rangeSpan _ = []
 
 
 data STRING = Str { simpleStr :: String }
@@ -161,4 +159,4 @@ data STRING = Str { simpleStr :: String }
 
 instance GetRange STRING where
   getRange _ = nullRange
-  rangeSpan _ = []      
+  rangeSpan _ = []

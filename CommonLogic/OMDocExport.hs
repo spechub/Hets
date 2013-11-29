@@ -55,7 +55,7 @@ exportText en vars txt = case txt of
 exportPhr :: Env -> [NAME_OR_SEQMARK] -> PHRASE -> OMElement
 exportPhr en vars phr = case phr of
    Importation _ -> undefined -- does not occur
-   Module m   -> OMBIND const_module [modName m] $ exportModule en vars m
+   Module m -> OMBIND const_module [modName m] $ exportModule en vars m
    Sentence s -> exportSen en vars s
    Comment_text c t _ ->
       OMA [const_comment, varFromComment c, exportText en vars t]
@@ -66,7 +66,7 @@ exportPhr en vars phr = case phr of
 exportModule :: Env -> [NAME_OR_SEQMARK] -> MODULE -> OMElement
 exportModule en vars m = case m of
   Mod _ t _ -> exportText en vars t
-  Mod_ex _ exs t _ ->  OMA $ const_moduleExcludes : exportText en vars t
+  Mod_ex _ exs t _ -> OMA $ const_moduleExcludes : exportText en vars t
       : map (exportVar . AS.Name) exs
 
 exportSen :: Env -> [NAME_OR_SEQMARK] -> SENTENCE
@@ -80,7 +80,7 @@ exportSen en vars s = case s of
         (exportSen en (vars ++ vars2) s2)
       Bool_sent bs _ -> case bs of
           Junction j ss ->
-            OMA $ (case j of Conjunction -> const_and 
+            OMA $ (case j of Conjunction -> const_and
                              Disjunction -> const_or)
             : map (exportSen en vars) ss
           Negation s1 -> OMA [ const_not, exportSen en vars s1]

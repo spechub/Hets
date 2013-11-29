@@ -28,7 +28,7 @@ type AsAppl a = Id -> [a] -> Range -> a
 
 inc :: Int -> Range -> Range
 inc n (Range p) =
-  Range (map (flip incSourceColumn n) p)
+  Range (map (`incSourceColumn` n) p)
 
 stripIdRange :: Id -> Id
 stripIdRange (Id ts cs _) =
@@ -52,7 +52,7 @@ makeNumberTerm f asAppl t@(Token n p) =
     case n of
            [] -> error "makeNumberTerm"
            [_] -> asAppl (Id [t] [] nullRange) [] p
-           hd:tl -> asAppl f [asAppl (Id [Token [hd] p] [] nullRange) [] p,
+           hd : tl -> asAppl f [asAppl (Id [Token [hd] p] [] nullRange) [] p,
                               makeNumberTerm f asAppl (Token tl
                                                 $ inc 1 p)] p
 

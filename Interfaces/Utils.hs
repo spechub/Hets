@@ -132,22 +132,22 @@ proofTreeToProve :: FilePath
      -> String
      -> (Bool, Int)
      -> [IC.Command]
-proofTreeToProve fn st pcm pt nodeName (useTm, tm)= 
+proofTreeToProve fn st pcm pt nodeName (useTm, tm) =
     [ IC.SelectCmd IC.Node nodeName', IC.GlobCmd IC.DropTranslation ]
-    ++ maybe [] (\(Comorphism cid) -> map (IC.SelectCmd IC.ComorphismTranslation) $ 
-            (drop 1 $ splitOn ';' $ language_name cid) ) commorf 
+    ++ maybe [] (\ (Comorphism cid) -> map (IC.SelectCmd IC.ComorphismTranslation)
+            (drop 1 $ splitOn ';' $ language_name cid) ) commorf
     ++ maybe [] ((: []) . IC.SelectCmd IC.Prover) prvr
     ++ concatMap goalToCommands goals
     where
       -- selected prover
       prvr = maybe (selectedProver st) (Just . getProverName . fst) pcm
       -- selected translation
-      commorf = (case selectedProver st of
+      commorf = case selectedProver st of
           Nothing -> Nothing
-          Just theProver -> 
+          Just theProver ->
             case Map.lookup theProver $ proversMap st of
               Nothing -> Nothing
-              Just com -> Just $ head com)
+              Just com -> Just $ head com
       {- 1. filter out the not proven goals
       2. reverse the list, because the last proven goals are on top
       3. convert all proof-trees to goals
@@ -157,12 +157,12 @@ proofTreeToProve fn st pcm pt nodeName (useTm, tm)=
                   $ filter wasProved pt
       -- axioms to include in prove
       allax = map fst $ getAxioms st
-      nodeName' = if (nodeName == "") then dropName fn $ theoryName st
-                                      else nodeName 
+      nodeName' = if nodeName == "" then dropName fn $ theoryName st
+                                    else nodeName
       -- A goal is a pair of a name as String and time limit as Int
       goalToCommands :: (String, Int) -> [IC.Command]
-      goalToCommands (n, t) = 
-          [ IC.SelectCmd IC.Goal n, IC.SetAxioms allax,IC.TimeLimit (if useTm then tm else t),
+      goalToCommands (n, t) =
+          [ IC.SelectCmd IC.Goal n, IC.SetAxioms allax, IC.TimeLimit (if useTm then tm else t),
             IC.GlobCmd IC.ProveCurrent ]
 
 -- Merge goals with the same time-limit
@@ -198,7 +198,7 @@ addCommandHistoryToState :: IORef IntState
     -> String
     -> (Bool, Int)
     -> IO ()
-addCommandHistoryToState intSt st pcm pt str (useTm,timeout) =
+addCommandHistoryToState intSt st pcm pt str (useTm, timeout) =
   unless (not $ any wasProved pt) $ do
         ost <- readIORef intSt
         fn <- tryRemoveAbsolutePathComponent $ filename ost

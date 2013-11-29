@@ -61,7 +61,7 @@ toSchemes f sc1 sc2 = do
     return $ f t1 t2
 
 asSchemes :: Int -> (Type -> Type -> a) -> TypeScheme -> TypeScheme -> a
-asSchemes c f sc1 sc2 = fst $ runState (toSchemes f sc1 sc2) c
+asSchemes c f sc1 sc2 = evalState (toSchemes f sc1 sc2) c
 
 substTypeArg :: Subst -> TypeArg -> VarKind
 substTypeArg s (TypeArg _ _ vk _ _ _ _) = case vk of
@@ -112,7 +112,7 @@ flatKind = nonVarRawKind . rawKindOfType
 
 noAbs :: Type -> Bool
 noAbs t = case t of
-    TypeAbs _ _ _ -> False
+    TypeAbs {} -> False
     _ -> True
 
 match :: TypeMap -> (Id -> Id -> Bool)
@@ -127,29 +127,28 @@ match tm rel p1@(b1, ty1) p2@(b2, ty2) =
               match tm rel (b1, t1) p2
     (_, KindedType t2 _ _) -> match tm rel p1 (b2, t2)
     (KindedType t1 _ _, _) -> match tm rel (b1, t1) p2
-    (TypeName i1 _k1 v1, TypeName i2 _k2 v2) ->
-        if rel i1 i2 && v1 == v2
-           then return eps
-        else if v1 > 0 && b1 then return $ Map.singleton v1 ty2
-        else if v2 > 0 && b2 then return $ Map.singleton v2 ty1
+    (TypeName i1 _k1 v1, TypeName i2 _k2 v2)
+     | rel i1 i2 && v1 == v2 -> return eps
+     | v1 > 0 && b1 -> return $ Map.singleton v1 ty2
+     | v2 > 0 && b2 -> return $ Map.singleton v2 ty1
 {- the following two conditions only guarantee that instScheme also matches for
    a partial function that is mapped to a total one.
    Maybe a subtype condition is better. -}
-        else if not b1 && b2 && v1 == 0 && v2 == 0 && Set.member i1
-                  (superIds tm i2)
-             || b1 && not b2 && v1 == 0 && v2 == 0 && Set.member i2
-                  (superIds tm i1) then return eps
-        else uniResult "typename" ty1 "is not unifiable with typename" ty2
+     | not b1 && b2 && v1 == 0 && v2 == 0 && Set.member i1 (superIds tm i2) ||
+       b1 && not b2 && v1 == 0 && v2 == 0 && Set.member i2 (superIds tm i1)
+                 -> return eps
+     | otherwise -> uniResult "typename" ty1
+                     "is not unifiable with typename" ty2
     (TypeName _ _ v1, _) -> case redStep ty2 of
       Just ry2 -> match tm rel p1 (b2, ry2)
       Nothing ->
         if v1 > 0 && b1 then
-           if null $ leaves (==v1) ty2 then
+           if null $ leaves (== v1) ty2 then
               return $ Map.singleton v1 ty2
            else uniResult "var" ty1 "occurs in" ty2
         else uniResult "typename" ty1
                             "is not unifiable with type" ty2
-    (_, TypeName _ _ _) -> match tm rel p2 p1
+    (_, TypeName {}) -> match tm rel p2 p1
     (TypeAppl f1 a1, TypeAppl f2 a2) -> case redStep ty1 of
        Just ry1 -> match tm rel (b1, ry1) p2
        Nothing -> case redStep ty2 of
@@ -173,9 +172,8 @@ subsume tm a b =
 -- | substitute generic variables with negative index
 substGen :: Subst -> Type -> Type
 substGen m = foldType mapTypeRec
-  { foldTypeName = \ t _ _ n -> if n >= 0 then t else case Map.lookup n m of
-      Just s -> s
-      Nothing -> t
+  { foldTypeName = \ t _ _ n -> if n >= 0 then t
+     else Data.Maybe.fromMaybe t (Map.lookup n m)
   , foldTypeAbs = \ t v1@(TypeArg _ _ _ _ c _ _) ty p ->
       if Map.member c m then substGen (Map.delete c m) t else TypeAbs v1 ty p }
 
@@ -186,7 +184,7 @@ getTypeOf trm = case trm of
         _ -> t
     QualVar (VarDecl _ t _ _) -> return t
     QualOp _ _ (TypeScheme _ t _) is _ _ -> return $
-        substGen (Map.fromList $ zip [-1, -2..] is) t
+        substGen (Map.fromList $ zip [-1, -2 ..] is) t
     TupleTerm ts ps -> if null ts then return unitType else do
         tys <- mapM getTypeOf ts
         return $ mkProductTypeWithRange tys ps
@@ -198,9 +196,8 @@ getTypeOf trm = case trm of
 -- | substitute variables with positive index
 subst :: Subst -> Type -> Type
 subst m = if Map.null m then id else foldType mapTypeRec
-  { foldTypeName = \ t _ _ n -> if n <= 0 then t else case Map.lookup n m of
-      Just s -> s
-      Nothing -> t }
+  { foldTypeName = \ t _ _ n -> if n <= 0 then t
+     else Data.Maybe.fromMaybe t (Map.lookup n m) }
 
 showDocWithPos :: Type -> ShowS
 showDocWithPos a = let p = getRange a in
@@ -216,7 +213,7 @@ uniResult s1 a s2 b = Result [Diag Hint ("in type\n" ++ "  " ++ s1 ++ " " ++
 -- | make representation of bound variables unique
 generalize :: [TypeArg] -> Type -> Type
 generalize tArgs = subst $ Map.fromList $ zipWith
-    ( \ (TypeArg i _ _ rk c _ _) n -> (c, TypeName i rk n)) tArgs [-1, -2..]
+    ( \ (TypeArg i _ _ rk c _ _) n -> (c, TypeName i rk n)) tArgs [-1, -2 ..]
 
 genTypeArgs :: [TypeArg] -> [TypeArg]
 genTypeArgs tArgs = snd $ mapAccumL ( \ n (TypeArg i v vk rk _ s ps) ->

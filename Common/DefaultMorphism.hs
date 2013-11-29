@@ -14,7 +14,7 @@ Supply a default morphism for a given signature type
 -- due to functional deps the instance for Logic.Category cannot be supplied
 
 module Common.DefaultMorphism
-  ( DefaultMorphism(..) -- constructor is only exported for ATC
+  ( DefaultMorphism (..) -- constructor is only exported for ATC
   , ideOfDefaultMorphism
   , compOfDefaultMorphism
   , defaultInclusion

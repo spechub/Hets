@@ -130,9 +130,8 @@ applySortMap2CASLSort im im' (s1, s2) l = l'
                f x = Map.findWithDefault
                    (errorId $ "err" ++ show (mSym2caslId x)) (mSym2caslId x)
                p2 = (f s1 im, f s2 im')
-               l' = if s1 == s2
-                    then p1 : l
-                    else p1 : p2 : l
+               l' = p1 : if s1 == s2
+                    then l else p2 : l
 
 -- | renames the sorts in a given kind
 rename :: MMorphism.SortMap -> Token -> Token
@@ -296,7 +295,7 @@ natImported :: MSign.SortSet -> MSign.OpMap -> Bool
 natImported ss om = b1 && b2 && b3
      where b1 = Set.member (MSym.Sort $ mkSimpleId "Nat") ss
            b2 = Map.member (mkSimpleId "s_") om
-           b3 = if b2 then specialZeroSet $ om Map.! mkSimpleId "s_" else True
+           b3 = not b2 || specialZeroSet (om Map.! mkSimpleId "s_")
 
 specialZeroSet :: MSign.OpDeclSet -> Bool
 specialZeroSet = Set.fold specialZero False

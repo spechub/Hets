@@ -50,9 +50,9 @@ data REF_SPEC = Unit_spec UNIT_SPEC
               | Refinement Bool UNIT_SPEC [G_mapping] REF_SPEC Range
                 -- false means "behaviourally"
               | Arch_unit_spec (Annoted ARCH_SPEC) Range
-                 -- pos: "arch","spec"
-                 -- The ARCH_SPEC has to be surrounded with braces and
-                 -- after the opening brace is a [Annotation] allowed
+                 {- pos: "arch","spec"
+                 The ARCH_SPEC has to be surrounded with braces and
+                 after the opening brace is a [Annotation] allowed -}
               | Compose_ref [REF_SPEC] Range
                  -- pos: "then"
               | Component_ref [UNIT_REF] Range

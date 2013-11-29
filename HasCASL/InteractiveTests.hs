@@ -23,7 +23,7 @@ import HasCASL.MatchingWithDefinitions ( initialDefStore
                                        , matchCandidates
                                        , getCandidates
                                        , getMatchResult
-                                       , MatchResult(..)
+                                       , MatchResult (..)
                                        , DefinitionStore
                                        -- , DefStore(..)
                                        )
@@ -41,7 +41,7 @@ import Data.List
 
 -- global part imports
 
-import Static.SpecLoader (getSigSensComplete, SigSens(..))
+import Static.SpecLoader (getSigSensComplete, SigSens (..))
 
 import Data.Time.Clock
 
@@ -56,7 +56,7 @@ import Common.DocUtils
 
 -- For Navigation
 import qualified Data.Graph.Inductive.Graph as Graph
-import Static.PrintDevGraph()
+import Static.PrintDevGraph ()
 import Static.DevGraph
 import Static.DGNavigation
 
@@ -105,7 +105,7 @@ help = do
   putStrLn $ unlines $ takeWhile endP $ dropWhile startP l
 
 
-------------------------- Global DG functions -------------------------
+-- ----------------------- Global DG functions -------------------------
 
 -- * Point evaluator
 
@@ -128,16 +128,16 @@ data Point = P (RealType, RealType, RealType) deriving (Read, Show)
 data Vector = V (RealType, RealType, RealType) deriving (Read, Show)
 
 diff :: (Point, Point) -> Vector
-diff(p,q) = V(c1(p)-c1(q), c2(p)-c2(q), c3(p)-c3(q))
+diff (p, q) = V (c1 p - c1 q, c2 p - c2 q, c3 p - c3 q)
 
 prod :: (Vector, Vector) -> RealType
-prod(V (x1, y1, z1),V (x2, y2, z2)) = x1*x2 + y1*y2 + z1*z2
+prod (V (x1, y1, z1), V (x2, y2, z2)) = x1 * x2 + y1 * y2 + z1 * z2
 
 dist :: (Point, Point) -> RealType
-dist(p,q) = sqrt $ prod(diff(p,q), diff(p,q))
+dist (p, q) = sqrt $ prod (diff (p, q), diff (p, q))
 
 diam :: (Point, Point) -> RealType
-diam(p,q) = 2*dist(p,q)
+diam (p, q) = 2 * dist (p, q)
 
 
 c1 :: Point -> RealType
@@ -158,8 +158,8 @@ data EvalTerm = ETbinary ETBinFun EvalTerm EvalTerm | ETpoint Point
 toEvalTerm :: Env -> Term -> Maybe EvalTerm
 toEvalTerm e t =
     let s = show $ prettyWithAnnos e t
-        realL = (reads s) :: [(RealType, String)]
-        pointL = (reads s) :: [(Point, String)]
+        realL = reads s :: [(RealType, String)]
+        pointL = reads s :: [(Point, String)]
         mT | not (null realL) = Just $ ETreal $ fst $ head realL
            | not (null pointL) = Just $ ETpoint $ fst $ head pointL
            | otherwise = Nothing
@@ -169,7 +169,6 @@ toEvalTerm e t =
 envFromSubst :: Env -> Subst -> EvalEnv
 envFromSubst e (Subst (m, _, _)) = Map.fromList $ mapMaybe f $ Map.toList m
     where f (sc, sr) = fmap ((,) $ scName sc) $ toEvalTerm e $ ruleContent sr
-
 
 
 etPoint :: EvalTerm -> Point
@@ -207,7 +206,7 @@ getRealConstMap e sbst l = Map.fromList $ map f l where
     f (s, et) = (s, etReal $ evalInEnv ee et)
 
 evalInSubst :: Env -> Subst -> EvalTerm -> EvalTerm
-evalInSubst e s t = evalInEnv (envFromSubst e s) t
+evalInSubst e s = evalInEnv (envFromSubst e s)
 
 
 constsForEval :: [(String, EvalTerm)]
@@ -219,8 +218,7 @@ constsForEval =
     , ("e_F", ETconst "RingHeight") ]
 
 
-
-------------------------- Global DG functions -------------------------
+-- ----------------------- Global DG functions -------------------------
 
 -- * DG Navigation
 
@@ -245,17 +243,17 @@ collectNodes dg nds = do
       newnds = map linkSource ledgs
       showl = map f ledgs
       f (x, _, lbl) = show x ++ ":" ++ show (pretty $ dgl_origin lbl)
-  putStrLn $ show showl
+  print showl
   collectNodes dg newnds
 
 
 navi :: SigSens Env Sentence
      -> (forall a . DevGraphNavigator a => a -> Maybe (Graph.LNode DGNodeLab))
      -> IO ()
-navi s sf = naviGen s pf sf
+navi s = naviGen s pf
     where pf x = case x of
                    Just dgn -> show $ prettyNode (sigsensDG s) dgn
-                   _ -> error $ "navi: No result."
+                   _ -> error "navi: No result."
 
 naviGen :: SigSens Env Sentence -> (b -> String)
      -> (forall a . DevGraphNavigator a => a -> b) -> IO ()
@@ -268,13 +266,9 @@ naviSimplify :: (a -> Maybe (b, c)) -> a -> Maybe c
 naviSimplify f = fmap snd . f
 
 naviTest :: SigSens Env Sentence -> String -> IO ()
-naviTest sigs s = do
+naviTest sigs s =
   navi sigs $ naviSimplify $ getActualParameterSpec s
---  collectNodes (sigsensDG sigs) [sigsensNode sigs]
-
-
-
-
+-- collectNodes (sigsensDG sigs) [sigsensNode sigs]
 
 
 -- ** Spec extraction
@@ -300,7 +294,7 @@ sigsensGen lb sp = do
       ho = defaultHetcatsOpts { libdirs = [hlib]
                               , verbose = 0 }
   res <- getSigSensComplete False ho HasCASL fp sp
---  putStrLn "\n"
+-- putStrLn "\n"
   return res { sigsensSignature = (sigsensSignature res) { globAnnos = sigsensGlobalAnnos res } }
 
 siggy :: Int -> IO (SigSens Env Sentence)
@@ -331,7 +325,7 @@ time p = do
   res <- p
   t' <- liftIO getCurrentTime
   liftIO $ putStrLn "Time"
-  liftIO $ putStrLn $ show $ diffUTCTime t' t
+  liftIO $ print $ diffUTCTime t' t
   liftIO $ putStrLn ""
   return res
 
@@ -344,10 +338,10 @@ niceOut :: Env -> Doc -> IO ()
 -- niceOut e = putStrLn . show . useGlobalAnnos (globAnnos e) . pretty
 niceOut e x = do
   let ga = globAnnos e
---  putStrLn "Global Annotations:"
---  putStrLn $ show $ pretty $ ga
---  putStrLn "======================================================================"
-  putStrLn $ show $ useGlobalAnnos ga x
+{- putStrLn "Global Annotations:"
+putStrLn $ show $ pretty $ ga
+putStrLn "======================================================================" -}
+  print $ useGlobalAnnos ga x
 
 
 prettyWithAnnos :: PrettyInEnv a => Env -> a -> Doc
@@ -372,10 +366,10 @@ prettyInEnvList :: PrettyInEnv a => Env -> [a] -> Doc
 prettyInEnvList e = vsep . map (prettyInEnv e)
 
 
-------------------------- New Testsuite -------------------------
+-- ----------------------- New Testsuite -------------------------
 
 typeFilter :: TypeScheme -> Bool
-typeFilter = (flip elem ["SWExtrusion", "SWCut"]) . show . pretty
+typeFilter = flip elem ["SWExtrusion", "SWCut"] . show . pretty
 
 fromSigsNice :: (PrettyInEnv a) => SigSens Env Sentence -> String -> String
              -> (DefinitionStore -> DGNav -> String -> String -> IO a) -> IO ()
@@ -385,10 +379,11 @@ fromSigsNiceL :: (PrettyInEnv a) => SigSens Env Sentence -> String -> String
              -> (DefinitionStore -> DGNav -> String -> String -> IO [a]) -> IO ()
 fromSigsNiceL sigs s1 s2 f = niceL sigs $ fromSigs sigs s1 s2 f
 
-fromSigs :: SigSens Env Sentence -> String -> String -> (DefinitionStore -> DGNav -> String -> String -> IO a) -> IO a
+fromSigs :: SigSens Env Sentence -> String -> String ->
+            (DefinitionStore -> DGNav -> String -> String -> IO a) -> IO a
 fromSigs sigs s1 s2 f =
   case prepareDefStore sigs s1 of
-    Nothing ->  fail $ "Pattern spec " ++ s1 ++ " not found."
+    Nothing -> fail $ "Pattern spec " ++ s1 ++ " not found."
     Just (def, dgnav) -> f def dgnav s1 s2
 
 
@@ -441,7 +436,7 @@ testSpecMatchM :: SigSens Env Sentence
                -> IO ()
 testSpecMatchM sigs patN cN =
   case prepareDefStore sigs patN of
-    Nothing ->  fail $ "Pattern spec " ++ patN ++ " not found."
+    Nothing -> fail $ "Pattern spec " ++ patN ++ " not found."
     Just (def, dgnav) -> do
       (res, l) <- matchSpecs def dgnav typeFilter 1 patN cN
       (res2, l') <- matchCandidates def l
@@ -467,7 +462,7 @@ testSpecMatchM sigs patN cN =
             putStrLn s
 
 
-------------------------- Template filler -------------------------
+-- ----------------------- Template filler -------------------------
 
 
 processTemplate :: (String -> a -> String) -> Map.Map String a -> String -> String
@@ -475,12 +470,12 @@ processTemplate f m s = unlines $ map g $ lines s where
     l = Map.toList m
     g ln = h ln l
     h ln [] = ln
-    h ln ((k, v):l')
+    h ln ((k, v) : l')
       | isInfixOf k ln = f k v
       | otherwise = h ln l'
 
 
-------------------------- Shortcuts -------------------------
+-- ----------------------- Shortcuts -------------------------
 
 matchDesign :: String -- ^ The filename of the library containing the specs to match
             -> String -- ^ The specname importing the specs to match
@@ -523,14 +518,13 @@ getMatchMap lb sp patN cN = do
 pretty $ linkSource $ snd $ fromJust $ searchLink (isJust . dglPredActualParam "FlangePattern") dgn
 liftM (pretty . linkSource . snd . fromJust . searchLink (isJust . dglPredActualParam "FlangePattern") . snd) $ env "HasCASL/Real3D/SolidWorks/flange.het" "Component"
 
--}
--- ** Temp
+Temp -}
 
 printDG :: String -> String -> IO ()
 printDG lb sp = sigsensGen lb sp >>= putStrLn . printGE . globalEnv . sigsensDG
 
 printGE :: GlobalEnv -> String
---printGE = show . pretty
+-- printGE = show . pretty
 printGE = unlines . map f . Map.toList where
     f (s, ge) = show $ pretty s <> text ":" <+> infoEntry ge
 

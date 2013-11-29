@@ -7,7 +7,7 @@ import Data.Dynamic
 
 data AnyLogic =
         forall id s m sen b sy .
-        Logic id s m sen b sy  =>
+        Logic id s m sen b sy =>
         G_logic id
 
 data AnyTranslation =
@@ -18,11 +18,11 @@ data AnyTranslation =
 instance Show AnyTranslation where
   show _ = "<tr>"
 
-type LogicGraph = ([(String,AnyLogic)],[(String,AnyTranslation)])
+type LogicGraph = ([(String, AnyLogic)], [(String, AnyTranslation)])
 
 data G_basic_spec =
         forall id s m sen b sy .
-        Logic id s m sen b sy  =>
+        Logic id s m sen b sy =>
         G_basic_spec id b
 
 instance Show G_basic_spec where
@@ -30,7 +30,7 @@ instance Show G_basic_spec where
 
 data G_symbol_mapping_list =
         forall id s m sen b sy .
-        Logic id s m sen b sy  =>
+        Logic id s m sen b sy =>
         G_symbol_mapping_list id sy
 
 instance Show G_symbol_mapping_list where
@@ -38,21 +38,21 @@ instance Show G_symbol_mapping_list where
 
 data G_sentence =
         forall id s m sen b sy .
-        Logic id s m sen b sy  =>
+        Logic id s m sen b sy =>
         G_sentence id sen
 
 data G_theory =
         forall id s m sen b sy .
-        Logic id s m sen b sy  =>
+        Logic id s m sen b sy =>
         G_theory id (Theory s sen)
 
 data G_morphism =
         forall id s m sen b sy .
-        Logic id s m sen b sy  =>
+        Logic id s m sen b sy =>
         G_morphism id m
 
 instance Show G_theory where
-   show (G_theory _ (sig,ax)) = show sig
+   show (G_theory _ (sig, ax)) = show sig
 
 -- auxiliary functions for conversion between different logics
 coerce :: (Typeable a, Typeable b) => a -> Maybe b

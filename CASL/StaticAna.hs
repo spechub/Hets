@@ -885,17 +885,20 @@ basicCASLAnalysis :: (BASIC_SPEC () () (), Sign () (), GlobalAnnos)
   -> Result (BASIC_SPEC () () (),
              ExtSign (Sign () ()) Symbol,
              [Named (FORMULA ())])
-basicCASLAnalysis = basicAnalysis (const return) (const return) (const return) emptyMix
+basicCASLAnalysis = basicAnalysis (const return) (const return)
+                                  (const return) emptyMix
 
 -- | extra
-cASLsen_analysis :: 
-        (BASIC_SPEC () () (),Sign () (),FORMULA ()) -> Result (FORMULA ())
-cASLsen_analysis (bs,s,f) = let
+cASLsen_analysis ::
+        (BASIC_SPEC () () (), Sign () (), FORMULA ()) -> Result (FORMULA ())
+cASLsen_analysis (bs, s, f) = let
                          mix = emptyMix
-                         allIds = unite $ 
-                                ids_BASIC_SPEC (getBaseIds mix) (getSigIds mix) bs
+                         allIds = unite $
+                                ids_BASIC_SPEC (getBaseIds mix)
+                                               (getSigIds mix) bs
                                 : getExtIds mix (extendedInfo s) :
                                 [mkIdSets (allConstIds s) (allOpIds s)
-                                $ allPredIds s] 
-                         mix' = mix { mixRules = makeRules emptyGlobalAnnos allIds}
-                         in (liftM fst) $ anaForm (const return) mix' s f
+                                $ allPredIds s]
+                         mix' = mix { mixRules = makeRules emptyGlobalAnnos
+                                                           allIds }
+                         in liftM fst $ anaForm (const return) mix' s f

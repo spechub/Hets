@@ -131,8 +131,8 @@ callProver st intSt trans_chosen freedefs p_cm@(_, acm) =
         lift exit
         (ps, _) <- lift $ proveTheory lid p (theoryName st) th freedefs1
         let st' = markProved acm lid ps st
-        lift $ (addCommandHistoryToState intSt st' )
-              (if trans_chosen then Just p_cm else Nothing) ps "" (False,0)
+        lift $ addCommandHistoryToState intSt st'
+               (if trans_chosen then Just p_cm else Nothing) ps "" (False, 0)
         return st'
 
 proveFineGrainedSelect :: LogicGraph

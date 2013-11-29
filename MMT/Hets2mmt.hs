@@ -1,11 +1,11 @@
 {- |
 Module      :  $Header$
 Description :  interface for MMT jar
-Copyright   :  
-License     :  
+Copyright   :
+License     :
 Maintainer  :  a.jakubauskas@jacobs-university.de
 Stability   :  experimental
-Portability :  
+Portability :
 -}
 module MMT.Hets2mmt (
     mmtRes,
@@ -22,10 +22,10 @@ import Common.LibName
 import Framework.Analysis (addLogic2LogicList)
 import System.FilePath
 import Common.Utils
---import MMT.XMLtoPT
+-- import MMT.XMLtoPT
 
---import System.IO.Unsafe
---import Text.ParserCombinators.Parsec
+{- import System.IO.Unsafe
+import Text.ParserCombinators.Parsec -}
 
 jar :: String
 jar = "hets-mmt-standalone.jar"

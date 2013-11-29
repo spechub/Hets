@@ -15,7 +15,7 @@ Isabelle. Case-terms and constructor classes are not supported yet.
 -}
 
 module Comorphisms.MonadicHasCASLTranslation
-    (MonadicHasCASL2IsabelleHOL(..)) where
+    (MonadicHasCASL2IsabelleHOL (..)) where
 
 import Comorphisms.PPolyTyConsHOL2IsaUtils
 import Logic.Logic as Logic
@@ -42,7 +42,7 @@ instance Comorphism MonadicHasCASL2IsabelleHOL
                Symbol RawSymbol ()
                Isabelle () () Isa.Sentence () ()
                Isa.Sign
-               IsabelleMorphism () () ()  where
+               IsabelleMorphism () () () where
     sourceLogic MonadicHasCASL2IsabelleHOL = HasCASL
     sourceSublogic MonadicHasCASL2IsabelleHOL = noSubtypes
     targetLogic MonadicHasCASL2IsabelleHOL = Isabelle
@@ -50,7 +50,7 @@ instance Comorphism MonadicHasCASL2IsabelleHOL
                        then Just () else Nothing
     map_theory MonadicHasCASL2IsabelleHOL =
         mapTheory (Old NoSimpLift) simpForOption
-    map_sentence MonadicHasCASL2IsabelleHOL sign phi =
-        transSentence sign (typeToks sign) (Old NoSimpLift) simpForOption phi
+    map_sentence MonadicHasCASL2IsabelleHOL sign =
+        transSentence sign (typeToks sign) (Old NoSimpLift) simpForOption
     isInclusionComorphism MonadicHasCASL2IsabelleHOL = True
     has_model_expansion MonadicHasCASL2IsabelleHOL = True

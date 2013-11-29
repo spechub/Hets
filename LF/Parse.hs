@@ -35,7 +35,7 @@ basicSpec _ =
   (oBraceT >> cBraceT >> return (Basic_spec []))
 
 basicItem :: AParser st BASIC_ITEM
-basicItem = do
+basicItem =
  do d <- tokensP twelfMultDeclChars
     dotT
     return $ Decl $ trim d
@@ -50,28 +50,28 @@ tokenP chars = reserved criticalKeywords $
 
 tokensP :: String -> AParser st String
 tokensP chars = do
-  ss <- many1 (tokenP chars  <|> whitesp)
+  ss <- many1 (tokenP chars <|> whitesp)
   return $ concat ss
 
 whitesp :: AParser st String
 whitesp = many1 $ oneOf whiteChars
 
 symbItems :: AParser st SYMB_ITEMS
-symbItems = fmap Symb_items $ fmap fst $
-   (tokenP twelfSymChars) `separatedBy` anComma
+symbItems = fmap (Symb_items . fst) $
+   tokenP twelfSymChars `separatedBy` anComma
 
 symbMapItems :: AParser st SYMB_MAP_ITEMS
-symbMapItems = fmap Symb_map_items $ fmap fst $
+symbMapItems = fmap (Symb_map_items . fst) $
   symbOrMap `separatedBy` anComma
 
 symbOrMap :: AParser st SYMB_OR_MAP
 symbOrMap = do
   s <- tokenP twelfSymChars
-  ( do asKey mapsTo
-       t <- tokensP twelfDeclChars
-       return $ Symb_map s $ trim t
+  (do asKey mapsTo
+      t <- tokensP twelfDeclChars
+      return $ Symb_map s $ trim t)
     <|>
-    return (Symb s) )
+    return (Symb s)
 
 trim :: String -> String
 trim = let f = reverse . dropWhile isSpace

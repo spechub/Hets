@@ -20,14 +20,14 @@ import Text.ParserCombinators.Parsec
 import Common.Parsec
 
 
--- Parse a QVTR model transformation
--- <transformation> ::= <header> 
---                      '{' <keyDecl>* <relation>* '}'
+{- Parse a QVTR model transformation
+<transformation> ::= <header>
+'{' <keyDecl>* <relation>* '}' -}
 
 pTransformation :: CharParser st QVTR.Transformation
 pTransformation = do
   skip
-  (name,souMeta,tarMeta) <- pTransfHeader
+  (name, souMeta, tarMeta) <- pTransfHeader
   skip
   char '{'
   skip
@@ -38,8 +38,8 @@ pTransformation = do
   char '}'
   skip
   eof
-  return (QVTR.Transformation 
-            name 
+  return (QVTR.Transformation
+            name
             souMeta
             tarMeta
             keys
@@ -47,21 +47,22 @@ pTransformation = do
          )
 
 
--- Parse a transformation header without source and target CSMOF.Metamodel (just names)
--- <header> ::= 'transformation' <identifier>
---              '(' <modelDecl> ',' <modelDecl> ')'
--- <modelDecl> ::= <modelId> ':' <metaModelId>
--- <modelId> ::= <identifier>
--- <metaModelId> ::= <identifier>
+{- Parse a transformation header without source and target CSMOF.Metamodel (just names)
+<header> ::= 'transformation' <identifier>
+'(' <modelDecl> ',' <modelDecl> ')'
+<modelDecl> ::= <modelId> ':' <metaModelId>
+<modelId> ::= <identifier>
+<metaModelId> ::= <identifier> -}
 
-pTransfHeader :: CharParser st (String, (String,String,CSMOF.Metamodel),(String,String,CSMOF.Metamodel))
+pTransfHeader :: CharParser st (String, (String, String, CSMOF.Metamodel),
+                                (String, String, CSMOF.Metamodel))
 pTransfHeader = do
   pKey "transformation"
   skip
   name <- pIdentifier
   skip
-  list <- pBetParent $ pCommaSep $ pColonSep $ (skip >> pIdentifier << skip)
-  return (  name,
+  list <- pBetParent $ pCommaSep $ pColonSep (skip >> pIdentifier << skip)
+  return ( name,
             (head $ head list, head $ tail $ head list, emptyMetamodel),
             (head $ head $ tail list, head $ tail $ head $ tail list, emptyMetamodel)
          )
@@ -71,8 +72,8 @@ emptyMetamodel :: CSMOF.Metamodel
 emptyMetamodel = CSMOF.Metamodel "" [] []
 
 
--- Parse keys of the transfromation
--- <keyDecl> ::= 'key' <classId> '{' <keyProperty> (, <keyProperty>)* '}' ';'
+{- Parse keys of the transfromation
+<keyDecl> ::= 'key' <classId> '{' <keyProperty> (, <keyProperty>)* '}' ';' -}
 pKeyDecl :: CharParser st QVTR.Key
 pKeyDecl = do
   skip
@@ -80,30 +81,30 @@ pKeyDecl = do
   skip
   classId <- pClassId
   skip
-  list <- pBetBraces $ pCommaSep $ (skip >> pKeyProperty << skip)
+  list <- pBetBraces $ pCommaSep (skip >> pKeyProperty << skip)
   skip
   char ';'
-  return (QVTR.Key (fst classId) (snd classId) list) -- ToDo
+  return (uncurry QVTR.Key classId list) -- ToDo
 
 
 -- <classId> ::= <identifier> '::' <identifier>
-pClassId :: CharParser st (String,String)
+pClassId :: CharParser st (String, String)
 pClassId = do
   met <- pIdentifier
   char ':'
   char ':'
   typ <- pIdentifier
-  return ((met,typ))
+  return (met, typ)
 
 
--- <keyProperty> ::= <identifier>
---                 | 'opposite' '(' <identifier> '.' <identifier> ')'
+{- <keyProperty> ::= <identifier>
+'opposite' '(' <identifier> '.' <identifier> ')' -}
 pKeyProperty :: CharParser st QVTR.PropKey
 pKeyProperty = do
     pKey "opposite"
     skip
-    oppo <- pBetParent $ pFullName
-    return (QVTR.OppositeProp (fst oppo) (snd oppo))
+    oppo <- pBetParent pFullName
+    return (uncurry QVTR.OppositeProp oppo)
   <|>
     do
     skip
@@ -112,22 +113,22 @@ pKeyProperty = do
 
 
 -- <identifier> '.' <identifier>
-pFullName :: CharParser st (String,String)
+pFullName :: CharParser st (String, String)
 pFullName = do
   cla <- pIdentifier
   char '.'
   typ <- pIdentifier
-  return ((cla,typ))
+  return (cla, typ)
 
 
--- Parse transformation rules
--- <relation> ::= ['top'] 'relation' <identifier>
---                '{'
---                <varDeclaration>*
---                <primitiveTypeDomain>*
---                <domain> <domain>
---                [<when>] [<where>]
---                '}'
+{- Parse transformation rules
+<relation> ::= ['top'] 'relation' <identifier>
+'{'
+<varDeclaration>*
+<primitiveTypeDomain>*
+<domain> <domain>
+[<when>] [<where>]
+'}' -}
 
 pRelation :: CharParser st QVTR.Relation
 pRelation = do
@@ -151,25 +152,25 @@ pRelation = do
   whereCon <- option Nothing pWhere
   skip
   char '}'
-  return ( QVTR.Relation top iden (concat varSet) 
+  return ( QVTR.Relation top iden (concat varSet)
                      primDom sourceDom targetDom whenCon whereCon )
 
 -- Parse if a relation is top or not
 pIsTop :: CharParser st Bool
-pIsTop = do 
+pIsTop = do
   skip
-  pKey "top" 
+  pKey "top"
   skip
-  pKey "relation" 
-  return (True)
+  pKey "relation"
+  return True
   <|>
   do skip
      pKey "relation"
-     return (False)
+     return False
 
 
--- Parse var declaration
--- <varDeclaration> ::= <identifier> (, <identifier>)* ':' <TypeCS> ';'
+{- Parse var declaration
+<varDeclaration> ::= <identifier> (, <identifier>)* ':' <TypeCS> ';' -}
 
 pVarDeclaration :: CharParser st [QVTR.RelVar]
 pVarDeclaration = do
@@ -181,37 +182,36 @@ pVarDeclaration = do
   typ <- pTypeCS
   skip
   char ';'
-  return ( map (\nam -> (QVTR.RelVar typ nam)) vars )
+  return ( map (QVTR.RelVar typ) vars )
 
 
--- <TypeCS> ::= <identifier> '::' <identifier>
---            | <identifier>
+{- <TypeCS> ::= <identifier> '::' <identifier>
+<identifier> -}
 
 pTypeCS :: CharParser st String
 pTypeCS =
   try (do typ <- pIdentifier
           skip
           notFollowedBy (char ':')
-          return (typ)
+          return typ
          )
   <|>
   do
     _ <- pIdentifier
     char ':'
     char ':'
-    typ <- pIdentifier
-    return (typ)
+    pIdentifier
 
 
--- Parse primitive domain
--- <primitiveTypeDomain> ::= 'primitive' 'domain' <identifier> ':' <TypeCS> ';'
+{- Parse primitive domain
+<primitiveTypeDomain> ::= 'primitive' 'domain' <identifier> ':' <TypeCS> ';' -}
 
 pPrimitiveTypeDomain :: CharParser st QVTR.PrimitiveDomain
 pPrimitiveTypeDomain = do
   skip
-  pKey "primitive" 
+  pKey "primitive"
   skip
-  pKey "domain" 
+  pKey "domain"
   skip
   nam <- pIdentifier
   skip
@@ -220,7 +220,7 @@ pPrimitiveTypeDomain = do
   typ <- pTypeCS
   skip
   char ';'
-  return ( QVTR.PrimitiveDomain nam typ ) 
+  return ( QVTR.PrimitiveDomain nam typ )
 
 
 -- <domain> ::= 'domain' <modelId> <template> ';'
@@ -228,9 +228,9 @@ pPrimitiveTypeDomain = do
 pDomain :: CharParser st QVTR.Domain
 pDomain = do
   skip
-  (pKey "checkonly" <|> pKey "enforce")
+  pKey "checkonly" <|> pKey "enforce"
   skip
-  pKey "domain" 
+  pKey "domain"
   skip
   modelId <- pIdentifier
   skip
@@ -240,9 +240,9 @@ pDomain = do
   return ( QVTR.Domain modelId tem )
 
 
--- <template> ::= <objectTemplate>
--- <objectTemplate> ::= <identifier> ':' <pathNameCS>
---                     '{' [<propertyTemplateList>] '}'
+{- <template> ::= <objectTemplate>
+<objectTemplate> ::= <identifier> ':' <pathNameCS>
+'{' [<propertyTemplateList>] '}' -}
 
 pTemplate :: CharParser st QVTR.ObjectTemplate
 pTemplate = do
@@ -255,7 +255,7 @@ pTemplate = do
   skip
   tempList <- pBetBraces $ option [] pPropertyTemplateList
   skip
-  return ( QVTR.ObjectTemplate ide (fst typ) (snd typ) tempList )
+  return (uncurry (QVTR.ObjectTemplate ide) typ tempList )
 
 
 -- <propertyTemplateList> ::= <propertyTemplate> (',' <propertyTemplate>)*
@@ -263,12 +263,11 @@ pTemplate = do
 pPropertyTemplateList :: CharParser st [QVTR.PropertyTemplate]
 pPropertyTemplateList = do
   skip
-  tempList <- try $ pCommaSep pPropertyTemplate
-  return ( tempList )
+  try $ pCommaSep pPropertyTemplate
 
 
--- <propertyTemplate> ::= <identifier> '=' <OclExpressionCS>
---                     | <identifier> '=' <objectTemplate>
+{- <propertyTemplate> ::= <identifier> '=' <OclExpressionCS>
+<identifier> '=' <objectTemplate> -}
 
 pPropertyTemplate :: CharParser st QVTR.PropertyTemplate
 pPropertyTemplate = do
@@ -278,17 +277,17 @@ pPropertyTemplate = do
   pEqual
   skip
   (do t <- try pTemplate
-      return ( QVTR.PropertyTemplate ident Nothing (Just t) ) 
-   <|> 
+      return ( QVTR.PropertyTemplate ident Nothing (Just t) ))
+   <|>
    do e <- try pOCLExpression
-      return ( QVTR.PropertyTemplate ident (Just e) Nothing ))
+      return ( QVTR.PropertyTemplate ident (Just e) Nothing )
 
 
 -- <when> ::= 'when' '{' (<RelInvocation> ';')* (<OclExpressionCS> ';')* '}'
 pWhen :: CharParser st (Maybe QVTR.WhenWhere)
 pWhen = do
   skip
-  pKey "when" 
+  pKey "when"
   skip
   char '{'
   skip
@@ -304,7 +303,7 @@ pWhen = do
 pWhere :: CharParser st (Maybe QVTR.WhenWhere)
 pWhere = do
   skip
-  pKey "where" 
+  pKey "where"
   skip
   char '{'
   skip
@@ -321,7 +320,7 @@ pOCLWSemi = do
   e <- pOCLExpression
   skip
   char ';'
-  return ( e )
+  return e
 
 
 -- <RelInvocation> ::= <identifier> '(' (<identifier> ',')* ')' ';'
@@ -380,13 +379,13 @@ pBetBraces :: CharParser st a -> CharParser st a
 pBetBraces = between (char '{') (char '}')
 
 pCommaSep :: CharParser st a -> CharParser st [a]
-pCommaSep p  = p `sepBy` (char ',')
+pCommaSep p = p `sepBy` char ','
 
 pSemiSep :: CharParser st a -> CharParser st [a]
-pSemiSep p  = p `sepBy` (char ';')
+pSemiSep p = p `sepBy` char ';'
 
 pColonSep :: CharParser st a -> CharParser st [a]
-pColonSep p  = p `sepBy` (char ':')
+pColonSep p = p `sepBy` char ':'
 
 pIdentifier :: CharParser st String
 pIdentifier = do
@@ -396,28 +395,26 @@ pIdentifier = do
   return (c : rest)
 
 
-
-
--- FAKE OCL PARSER
--- <OclExpressionCS> ::= '(' <OclExpressionCS> ')'
---                     | <String> 
---                     | <Const>
---                     | <OclExpressionCS> <Duop> <OclExpressionCS>
---                     | <Unop> <OclExpressionCS>
---                     | <String> '=' <String> 
+{- FAKE OCL PARSER
+<OclExpressionCS> ::= '(' <OclExpressionCS> ')'
+<String>
+<Const>
+<OclExpressionCS> <Duop> <OclExpressionCS>
+<Unop> <OclExpressionCS>
+<String> '=' <String> -}
 --
--- <Const> ::= 'true' | 'false'
--- <Unop>  ::= 'not'
--- <Duop>  ::= 'and' | 'or'
+{- <Const> ::= 'true' | 'false'
+<Unop>  ::= 'not'
+<Duop>  ::= 'and' | 'or' -}
 --
--- <String> ::= ''' <text> ''' 
---            | <identifier>
---            | <String> '+' <String>
+{- <String> ::= ''' <text> '''
+<identifier>
+<String> '+' <String> -}
 
 pOCLExpression :: CharParser st QVTR.OCL
 pOCLExpression = do
   skip
-  (    try pOCLConst
+  try pOCLConst
    <|> try pUnop
    <|> try pDuopAnd
    <|> try pDuopOr
@@ -425,13 +422,13 @@ pOCLExpression = do
    <|> do ex <- try $ pBetParent pOCLExpression
           return ( QVTR.Paren ex )
    <|> do s <- try pOCLSTRING
-          return ( QVTR.StringExp s ) )
+          return ( QVTR.StringExp s )
 
 
 pUnop :: CharParser st QVTR.OCL
-pUnop = do 
+pUnop = do
   skip
-  pKey "not" 
+  pKey "not"
   skip
   char '('
   skip
@@ -440,42 +437,42 @@ pUnop = do
   char ')'
   return ( QVTR.NotB e )
 
-    
+
 -- Prefix form. This MUST be changed
 pEqualExpre :: CharParser st QVTR.OCL
-pEqualExpre = do 
+pEqualExpre = do
   skip
-  pKey "=" 
+  pKey "="
   skip
   char '('
   skip
-  ex1 <- try $ pOCLSTRING
+  ex1 <- try pOCLSTRING
   skip
   char ')'
   skip
   char '('
   skip
-  ex2 <- try $ pOCLSTRING
+  ex2 <- try pOCLSTRING
   skip
   char ')'
-  return ( QVTR.Equal ex1 ex2 ) 
+  return ( QVTR.Equal ex1 ex2 )
 
 
 -- Prefix form. This MUST be changed
 pDuopAnd :: CharParser st QVTR.OCL
-pDuopAnd = do 
+pDuopAnd = do
   skip
-  pKey "and" 
+  pKey "and"
   skip
   char '('
   skip
-  ex1 <- try $ pOCLExpression
+  ex1 <- try pOCLExpression
   skip
   char ')'
   skip
   char '('
   skip
-  ex2 <- try $ pOCLExpression
+  ex2 <- try pOCLExpression
   skip
   char ')'
   return ( QVTR.AndB ex1 ex2 )
@@ -483,63 +480,59 @@ pDuopAnd = do
 
 -- Prefix form. This MUST be changed
 pDuopOr :: CharParser st QVTR.OCL
-pDuopOr = do 
+pDuopOr = do
   skip
-  pKey "or" 
+  pKey "or"
   skip
   char '('
   skip
-  ex1 <- try $ pOCLExpression
+  ex1 <- try pOCLExpression
   skip
   char ')'
   skip
   char '('
   skip
-  ex2 <- try $ pOCLExpression
+  ex2 <- try pOCLExpression
   skip
   char ')'
-  return ( QVTR.OrB ex1 ex2 )  
+  return ( QVTR.OrB ex1 ex2 )
 
 
 pOCLConst :: CharParser st QVTR.OCL
-pOCLConst = do pKey "true" 
+pOCLConst = do pKey "true"
                return ( QVTR.BExp True )
-        <|> do pKey "false" 
+        <|> do pKey "false"
                return ( QVTR.BExp False )
 
 
 pOCLSTRING :: CharParser st QVTR.STRING
-pOCLSTRING = do ls <- try pOCLSingleSTRING 
+pOCLSTRING = do ls <- try pOCLSingleSTRING
                 skip
-                (do rs <- try pStringConcat
-                    return ( QVTR.ConcatExp (QVTR.Str ls) rs ) 
-                 <|> return ( QVTR.Str ls ))
+                do rs <- try pStringConcat
+                   return ( QVTR.ConcatExp (QVTR.Str ls) rs )
+                 <|> return ( QVTR.Str ls )
          <|> do ls <- try pIdentifier
                 skip
-                (do rs <- try pStringConcat
-                    return ( QVTR.ConcatExp (QVTR.VarExp ls) rs ) 
-                 <|> return ( QVTR.VarExp ls ))
+                do rs <- try pStringConcat
+                   return ( QVTR.ConcatExp (QVTR.VarExp ls) rs )
+                 <|> return ( QVTR.VarExp ls )
 
 
 pStringConcat :: CharParser st QVTR.STRING
 pStringConcat = do
   char '+'
   skip
-  rs <- try pOCLSTRING
-  return ( rs )
+  try pOCLSTRING
 
 
 pOCLSingleSTRING :: CharParser st String
 pOCLSingleSTRING = do
   char '\''
   skip
-  res <- (many (noneOf "\'")) << (oneOf "\'")
-  return ( res )
+  many (noneOf "\'") << oneOf "\'"
 
 
 pEverything :: CharParser st String
 pEverything = do
   skip
-  res <- (many (noneOf ",;{}")) << (oneOf ",;")
-  return ( res )
-
+  many (noneOf ",;{}") << oneOf ",;"

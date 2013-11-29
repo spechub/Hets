@@ -70,7 +70,7 @@ genIList cnt = if cnt <= 0 then return [] else do
 testDDataMap :: String -> FilePath -> IO ()
 testDDataMap upperstr fp = do
                   int_list <- generateRandomLists upperstr
-                  let int_map = (Map.fromList int_list)
+                  let int_map = Map.fromList int_list
                       att0 = emptyATermTable
                   (int_att, selectedATermIndex) <- toShATerm' att0 int_map
                   print (getTopIndex int_att, selectedATermIndex)
@@ -88,7 +88,7 @@ testDDataMap upperstr fp = do
 checkDDataMap :: String -> FilePath -> IO ()
 checkDDataMap upperstr fp = do
                   int_list <- generateRandomLists upperstr
-                  let int_map = (Map.fromList int_list)
+                  let int_map = Map.fromList int_list
                   str <- readFile fp
                   let read_map = fromShATerm (readATerm str)
                   putStrLn ("BigMap of Int -> Int is " ++

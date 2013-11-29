@@ -91,9 +91,7 @@ anaLibExt opts file libEnv initDG = do
               Result es mdg <- runResultT $ dgXUpdate opts xs nEnv ln
                 (lookupDGraph ln nEnv)
               showDiags opts es
-              return $ case mdg of
-                Nothing -> (ln, nEnv)
-                Just fdg -> fdg
+              return $ fromMaybe (ln, nEnv) mdg
             return $ Just p
 
 readPrfFile :: HetcatsOpts -> LibEnv -> LibName -> IO LibEnv

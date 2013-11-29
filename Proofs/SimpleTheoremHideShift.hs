@@ -41,6 +41,7 @@ import Common.LibName
 
 import qualified Data.Map as Map
 import Data.Graph.Inductive.Graph
+import Data.Maybe (fromMaybe)
 
 -- | rule name
 thmHideShift :: DGRule
@@ -91,14 +92,13 @@ theoremHideShiftWithOneHidingDefEdgeAux :: LEdge DGLinkLab -> DGraph
                                         -> LEdge DGLinkLab -> DGraph
 theoremHideShiftWithOneHidingDefEdgeAux hd@(hds, _, _) dgraph x@(s, t, lbl) =
   let
-    newMorphism = case calculateMorphismOfPath [x, hd] of
-      Just m -> m
-      Nothing -> error
-       "SimpleTheoremHideShift.theoremHideShiftWithOneHidingDefEdgeAux"
+    newMorphism = fromMaybe (error
+       "SimpleTheoremHideShift.theoremHideShiftWithOneHidingDefEdgeAux") $
+       calculateMorphismOfPath [x, hd]
     newGlobalEdge = (s, hds, defDGLink newMorphism globalThm DGLinkProof)
     (newDGraph, proofbasis) =
       tryToInsertEdgeAndSelectProofBasis dgraph newGlobalEdge emptyProofBasis
-    -------- to insert a proven global theorem link ---------------
+    -- ------ to insert a proven global theorem link ---------------
     provenEdge = (s, t, lbl
       { dgl_type = setProof (Proven thmHideShift
                               proofbasis) $ dgl_type lbl

@@ -88,10 +88,8 @@ main = do
   return ()
 
 
-
 proceed :: FilePath -> ResultT IO (LibName, LibEnv)
 proceed = proceed' myHetcatsOpts
-
 
 
 -- Test functions for CASL signature

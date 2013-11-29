@@ -26,7 +26,7 @@ import Control.Monad ( unless )
 listBox :: String -> [String] -> IO (Maybe Int)
 listBox prompt choices = do
    putStrLn prompt
-   mapM_ putStrLn $ zipWith (\ n -> (shows n ": " ++)) [0::Int ..] choices
+   mapM_ putStrLn $ zipWith (\ n -> (shows n ": " ++)) [0 :: Int ..] choices
    putStrLn "Please enter a number on the next line"
    s <- getLine
    if all isDigit s then
@@ -34,7 +34,7 @@ listBox prompt choices = do
               if n >= length choices then
                  putStrLn "number to large, try again"
                  >> listBox prompt choices
-              else putStrLn ("you have chosen entry \"" ++ choices!!n)
+              else putStrLn ("you have chosen entry \"" ++ choices !! n)
                    >> return (Just n)
       else putStrLn ("illegal input \"" ++ s ++ "\" try again")
            >> listBox prompt choices
@@ -43,7 +43,7 @@ listBox prompt choices = do
 createTextSaveDisplay :: String -- ^ title of the window
                       -> String -- ^ default filename for saving the text
                       -> String -- ^ text to be displayed
-                      -> IO()
+                      -> IO ()
 createTextSaveDisplay t f txt = do
     putStrLn t
     putStrLn $ replicate (length t) '='

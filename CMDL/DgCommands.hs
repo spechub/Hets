@@ -103,7 +103,8 @@ commandDg fn input state = case i_state $ intState state of
      case (edg, nbEdg) of
        ([], []) ->
          -- leave the internal state intact so that the interface can recover
-         return $ genMsgAndCode (tmpErrs ++ "No edges in input string\n") 1 state
+         return $ genMsgAndCode (tmpErrs ++ "No edges in input string\n") 1
+                   state
        (_, _) -> do
         let lsNodes = getAllNodes ist
             lsEdges = getAllEdges ist
@@ -111,8 +112,8 @@ commandDg fn input state = case i_state $ intState state of
             (errs', listEdges) = obtainEdgeList edg nbEdg lsNodes lsEdges
             tmpErrs' = tmpErrs ++ prettyPrintErrList errs'
         case listEdges of
-         [] -> return $ genMsgAndCode (tmpErrs' ++ "No edge in input string\n") 1
-                              state
+         [] -> return $ genMsgAndCode
+                         (tmpErrs' ++ "No edge in input string\n") 1 state
          _ -> case fn (i_ln ist) listEdges (i_libEnv ist) of
              Result _ (Just nwLibEnv) ->
                -- name added later !!
@@ -165,7 +166,8 @@ cDgThmHideShift input state = case i_state $ intState state of
                         (i_ln dgState) nodes (i_libEnv dgState)
                      -- diag not used, how should it?
                   in return (case nwLibEnv of
-                       Nothing -> genMsgAndCode (concatMap diagString diag) 1 state
+                       Nothing -> genMsgAndCode (concatMap diagString diag) 1
+                                   state
                        -- ADD TO HISTORY ??
                        Just newEnv -> add2hist [IStateChange $ Just dgState] $
                                         genMessage errors [] state
@@ -265,7 +267,8 @@ cAddView input state = let iState = intState state in case i_state iState of
         mkSpecInst s = Spec_inst (simpleIdToIRI $ mkSimpleId s) [] nullRange
     Result ds tmp <- runResultT $ liftR $ anaViewDefn lg ln libenv dg opts
       Map.empty -- not sure if no CURIE-to-IRI mapping shall be done
-      (simpleIdToIRI $ mkSimpleId vn) (Genericity (Params []) (Imported []) nullRange)
+      (simpleIdToIRI $ mkSimpleId vn) (Genericity (Params []) (Imported [])
+                                        nullRange)
       (View_type (emptyAnno $ mkSpecInst spec1)
        (emptyAnno $ mkSpecInst spec2) nullRange) [] nullRange
     return $ case tmp of
@@ -301,6 +304,3 @@ cDgSelectAll state = let iState = intState state in
                   { i_state = Just nwist
                       { elements = elems
                       , cComorphism = getIdComorphism elems } } }
-
-
-

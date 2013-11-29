@@ -16,38 +16,37 @@ import Data.List (intersperse)
 import System.Directory (doesFileExist)
 import System.Environment (getArgs)
 import System.Exit (exitFailure)
-import System.IO (getContents, hWaitForInput, stdin)
+import System.IO (getContents, hReady, stdin)
 import Text.ParserCombinators.Parsec (parse)
 
 import ModalCasl as Casl
 import ModalCaslToNuSmvLtl as CaslToLtl
-import NuSmv as NuSmv
+import NuSmv
 
 main :: IO ()
 
 main = do args <- getArgs
-          file <- if length args == 1 then doesFileExist (args !! 0)
+          file <- if length args == 1 then doesFileExist (head args)
                                       else return False
 
-          formula <- if file then readFile (args !! 0)
-                             else return (concat (intersperse " " args))
+          formula <- if file then readFile (head args)
+                             else return (unwords args)
 
-          let filename = if file then args !! 0
+          let filename = if file then head args
                                  else "<<arguments>>"
 
           case parse (Casl.parser CaslToLtl.expr) filename formula of
-               Left e1  -> do putStrLn (show e1)
-                              exitFailure
-
+               Left e1 -> do print e1
+                             exitFailure
                Right cf -> case CaslToLtl.convert cf of
-                                Nothing -> do putStrLn "Not a LTL formula."
-                                              exitFailure
-
-                                Just lf -> do i <- hWaitForInput stdin 0
-                                              when i $ do contents <- getContents
-                                                          case parse NuSmv.program "<<input>>" contents of
-                                                               Left e2     -> do putStrLn (show e2)
-                                                                                 exitFailure
-
-                                                               Right model -> do putStrLn (show model)
-                                              putStrLn (show lf)
+                Nothing -> do putStrLn "Not a LTL formula."
+                              exitFailure
+                Just lf -> do i <- hReady stdin
+                              when i $
+                                 do contents <- getContents
+                                    case parse NuSmv.program "<<input>>"
+                                               contents of
+                                     Left e2 -> do print e2
+                                                   exitFailure
+                                     Right model -> print model
+                              print lf

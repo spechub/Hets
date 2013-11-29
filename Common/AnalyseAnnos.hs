@@ -47,7 +47,7 @@ addGlobalAnnos ga all_annos = do
   let (annos, rest_annos) = partition ( \ a -> case a of
         Label _ _ -> False
         Semantic_anno _ _ -> False
-        Unparsed_anno _ _ _ -> False
+        Unparsed_anno {} -> False
             -- line and group and comments will be ignored
         _ -> True) all_annos
   appendDiags $ map (mkDiag Hint "no analysis of") rest_annos
@@ -157,12 +157,12 @@ store_literal_map = foldM $ \ m a -> case a of
          else Result [mkDiag Error ("conflict: " ++ showDoc a "") id1] $ Just m
   _ -> return m
 
-{- | add prefix annotation to 'PrefixMap' -}
+-- | add prefix annotation to 'PrefixMap'
 store_prefix_map :: PrefixMap -> [Annotation] -> Result PrefixMap
 store_prefix_map = foldM $ \ m a -> case a of
   Prefix_anno assoc _ ->
       let newPrefixesMap = Map.fromList assoc in
-      return $ Map.unionWith (\_ p2 -> p2) m newPrefixesMap
+      return $ Map.unionWith (\ _ p2 -> p2) m newPrefixesMap
   _ -> return m
 
 {- | add literal annotation to 'LiteralAnnos'

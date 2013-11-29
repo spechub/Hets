@@ -25,10 +25,10 @@ import RDF.AS
 -}
 import RDF.Sign
 import RDF.Function
---import RDF.StaticAnalysis
---import RDF.Symbols
+{- import RDF.StaticAnalysis
+import RDF.Symbols -}
 import RDF.Print ()
-{-}
+{- }
 import Control.Monad
 import Data.Maybe
 -}
@@ -40,7 +40,7 @@ data RDFMorphism = RDFMorphism
   , otarget :: Sign
   , mmaps :: MorphMap
   } deriving (Show, Eq, Ord)
-{-}
+{- }
 inclRDFMorphism :: Sign -> Sign -> RDFMorphism
 inclRDFMorphism s t = RDFMorphism
  { osource = s
@@ -88,15 +88,15 @@ instance Pretty RDFMorphism where
     s = osource m
     srcD = specBraces $ space <> pretty s
     t = otarget m
-    in if isRDFInclusion m then
+    in fsep $ if isRDFInclusion m then
            if isSubSign t s then
-              fsep [text "identity morphism over", srcD]
-           else fsep
+              [text "identity morphism over", srcD]
+           else
              [ text "inclusion morphism of"
              , srcD
              , text "extended with"
              , pretty $ Set.difference (symOf t) $ symOf s ]
-       else fsep
+       else
          [ pretty $ mmaps m
          , colon <+> srcD, mapsto <+> specBraces (space <> pretty t) ]
 {-

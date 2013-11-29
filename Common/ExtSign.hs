@@ -17,8 +17,8 @@ import qualified Data.Set as Set
 import Common.Doc
 import Common.DocUtils
 
--- | signatures with symbol sets.
--- (The Ord instance is needed for the ATC generation)
+{- | signatures with symbol sets.
+(The Ord instance is needed for the ATC generation) -}
 data ExtSign sign symbol = ExtSign
   { plainSign :: sign
   , nonImportedSymbols :: Set.Set symbol

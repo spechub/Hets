@@ -40,24 +40,24 @@ boolop_quant = [(forallS, Universal, "universal quantifier"),
 
 parse_keys :: [(String, op_t, String)] -> CharParser st (Token, op_t, String)
 parse_keys = choice . map
-             (\(ident, con, desc) ->
-               liftM (\ch -> (ch, con, ident)) (key ident <?> desc))
+             (\ (ident, con, desc) ->
+               liftM (\ ch -> (ch, con, ident)) (key ident <?> desc))
 
 logsent :: CharParser st SENTENCE
 logsent = do ch <- key notS <?> "negation"
              s <- sentence <?> "sentence after \"" ++ notS ++ "\""
              return $ Bool_sent (Negation s)
                $ Range $ joinRanges [rangeSpan ch, rangeSpan s]
-      <|> do (ch,con,ident) <- parse_keys boolop_nary
+      <|> do (ch, con, ident) <- parse_keys boolop_nary
              s <- many sentence <?> "sentences after \"" ++ ident ++ "\""
              return $ Bool_sent (con s)
                $ Range $ joinRanges [rangeSpan ch, rangeSpan s]
-      <|> do (ch,con,ident) <- parse_keys boolop_binary
+      <|> do (ch, con, ident) <- parse_keys boolop_binary
              s1 <- sentence <?> "first sentence after \"" ++ ident ++ "\""
              s2 <- sentence <?> "second sentence after \"" ++ ident ++ "\""
              return $ Bool_sent (con s1 s2)
                $ Range $ joinRanges [rangeSpan ch, rangeSpan s1, rangeSpan s2]
-      <|> do (ch,q,ident) <- parse_keys boolop_quant
+      <|> do (ch, q, ident) <- parse_keys boolop_quant
              vars <- parens (many1 (liftM Name (pToken variable)
                                     <|> liftM SeqMark (pToken rowvar)))
                      <?> "quantified variables"
@@ -71,7 +71,7 @@ plainAtom = do
   return $ Atom (Name_term t) []
 
 atomsent :: CharParser st ATOM -> CharParser st SENTENCE
-atomsent = liftM (\a -> Atom_sent a $ Range $ rangeSpan a)
+atomsent = liftM (\ a -> Atom_sent a $ Range $ rangeSpan a)
 
 plainsent :: CharParser st SENTENCE
 plainsent = atomsent plainAtom
@@ -87,9 +87,9 @@ funterm = parens funterm
              let nt = Name_term relword
              t <- many (liftM Seq_marks (pToken rowvar)
                         <|> liftM Term_seq term) <?> "arguments"
-             if null t
-               then return nt
-               else return $ Funct_term nt t
+             return $ if null t
+               then nt
+               else Funct_term nt t
                     (Range $ joinRanges [rangeSpan relword, rangeSpan t])
 
 relsent :: CharParser st SENTENCE
@@ -105,12 +105,12 @@ neqS :: String
 neqS = "/="
 
 eq_ops :: [(String, SENTENCE -> Id.Range -> SENTENCE, String)]
-eq_ops = [(equalS, \e _ -> e, "equation"),
-          (neqS, \e rn -> Bool_sent (Negation e) rn, "inequality")]
+eq_ops = [(equalS, const, "equation"),
+          (neqS, \ e rn -> Bool_sent (Negation e) rn, "inequality")]
 
 eqsent :: CharParser st SENTENCE
 eqsent = do
-  (ch,con,ident) <- parse_keys eq_ops
+  (ch, con, ident) <- parse_keys eq_ops
   t1 <- term <?> "term after \"" ++ ident ++ "\""
   t2 <- term <?> "second term after \"" ++ ident ++ "\""
   let rn = Range $ joinRanges [rangeSpan ch, rangeSpan t1, rangeSpan t2]

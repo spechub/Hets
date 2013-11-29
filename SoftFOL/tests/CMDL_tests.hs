@@ -13,7 +13,7 @@ import SoftFOL.ProveVampire
 import SoftFOL.ProveMathServ
 import SoftFOL.ProveDarwin
 
-import System.IO (stdout, hSetBuffering, BufferMode(NoBuffering))
+import System.IO (stdout, hSetBuffering, BufferMode (NoBuffering))
 import System.Environment (getArgs)
 import System.Exit
 
@@ -33,39 +33,39 @@ import Control.Monad
 sign1 :: SoftFOL.Sign.Sign
 sign1 = emptySign
   { sortMap = Map.insert (mkSimpleId "s") Nothing Map.empty
-  , predMap = Map.fromList (map (\ (x,y) ->
+  , predMap = Map.fromList (map (\ (x, y) ->
       (mkSimpleId x, Set.singleton $ map mkSimpleId y))
-        [("p",["s"]),("q",["s"]),("r",["s"]),("a",["s"])])}
+        [("p", ["s"]), ("q", ["s"]), ("r", ["s"]), ("a", ["s"])])}
 
 term_x :: SPTerm
 term_x = simpTerm (mkSPCustomSymbol "X")
 
 axiom1 :: Named SPTerm
-axiom1 = makeNamed "ax" (SPQuantTerm SPForall [term_x] (SPComplexTerm SPEquiv [SPComplexTerm (mkSPCustomSymbol "p") [term_x],SPComplexTerm (mkSPCustomSymbol "q") [term_x]]))
+axiom1 = makeNamed "ax" (SPQuantTerm SPForall [term_x] (SPComplexTerm SPEquiv [SPComplexTerm (mkSPCustomSymbol "p") [term_x], SPComplexTerm (mkSPCustomSymbol "q") [term_x]]))
 
 axiom2 :: Named SPTerm
-axiom2 = makeNamed "ax2" (SPQuantTerm SPForall [term_x] (SPComplexTerm SPImplies [SPComplexTerm (mkSPCustomSymbol "q") [term_x],SPComplexTerm (mkSPCustomSymbol "r") [term_x]]))
+axiom2 = makeNamed "ax2" (SPQuantTerm SPForall [term_x] (SPComplexTerm SPImplies [SPComplexTerm (mkSPCustomSymbol "q") [term_x], SPComplexTerm (mkSPCustomSymbol "r") [term_x]]))
 
 axiom3 :: Named SPTerm
-axiom3 = makeNamed "b$$-3" (SPQuantTerm SPForall [term_x] (SPComplexTerm SPImplies [SPComplexTerm (mkSPCustomSymbol "q") [term_x],SPComplexTerm (mkSPCustomSymbol "a") [term_x]]))
+axiom3 = makeNamed "b$$-3" (SPQuantTerm SPForall [term_x] (SPComplexTerm SPImplies [SPComplexTerm (mkSPCustomSymbol "q") [term_x], SPComplexTerm (mkSPCustomSymbol "a") [term_x]]))
 
 goal1 :: Named SPTerm
-goal1 = (makeNamed "go" $ SPQuantTerm SPForall [term_x] (SPComplexTerm SPImplies [SPComplexTerm (mkSPCustomSymbol "q") [term_x],SPComplexTerm (mkSPCustomSymbol "p") [term_x] ])) { isAxiom = False }
+goal1 = (makeNamed "go" $ SPQuantTerm SPForall [term_x] (SPComplexTerm SPImplies [SPComplexTerm (mkSPCustomSymbol "q") [term_x], SPComplexTerm (mkSPCustomSymbol "p") [term_x] ])) { isAxiom = False }
 
 goal2 :: Named SPTerm
-goal2 = (makeNamed "go2" $ SPQuantTerm SPForall [term_x] (SPComplexTerm SPImplies [SPComplexTerm (mkSPCustomSymbol "p") [term_x],SPComplexTerm (mkSPCustomSymbol "r") [term_x] ])) { isAxiom = False }
+goal2 = (makeNamed "go2" $ SPQuantTerm SPForall [term_x] (SPComplexTerm SPImplies [SPComplexTerm (mkSPCustomSymbol "p") [term_x], SPComplexTerm (mkSPCustomSymbol "r") [term_x] ])) { isAxiom = False }
 
 goal3 :: Named SPTerm
-goal3 = (makeNamed "go3" $ SPQuantTerm SPForall [term_x] (SPComplexTerm SPImplies [SPComplexTerm (mkSPCustomSymbol "p") [term_x],SPComplexTerm (mkSPCustomSymbol "a") [term_x] ])) { isAxiom = False }
+goal3 = (makeNamed "go3" $ SPQuantTerm SPForall [term_x] (SPComplexTerm SPImplies [SPComplexTerm (mkSPCustomSymbol "p") [term_x], SPComplexTerm (mkSPCustomSymbol "a") [term_x] ])) { isAxiom = False }
 
 
 theory1 :: LProver.Theory SoftFOL.Sign.Sign SPTerm ProofTree
-theory1 = LProver.Theory sign1 $ LProver.toThSens [axiom1,-- axiom2,
-                         goal1,goal2]
+theory1 = LProver.Theory sign1 $ LProver.toThSens [axiom1, -- axiom2,
+                         goal1, goal2]
 
 theory2 :: LProver.Theory SoftFOL.Sign.Sign SPTerm ProofTree
-theory2 = LProver.Theory sign1 $ LProver.toThSens [axiom1,axiom2,axiom3,
-                         goal1,goal2,goal3]
+theory2 = LProver.Theory sign1 $ LProver.toThSens [axiom1, axiom2, axiom3,
+                         goal1, goal2, goal3]
 
 -- A more complicated theory including ExtPartialOrder from Basic/RelationsAndOrders.casl
 
@@ -73,13 +73,13 @@ signExt :: SoftFOL.Sign.Sign
 signExt = emptySign {sortMap = {- Map.insert "Elem" Nothing -} Map.empty,
             funcMap = Map.fromList (map (\ (x, (y, z)) -> (mkSimpleId x,
                                Set.singleton (map mkSimpleId y, mkSimpleId z)))
-                                    [("gn_bottom",([],"Elem")),
-                                     ("inf",(["Elem", "Elem"],"Elem")),
-                                     ("sup",(["Elem", "Elem"],"Elem"))]),
-            predMap = Map.fromList (map (\ (x,y) -> (mkSimpleId x,
+                                    [("gn_bottom", ([], "Elem")),
+                                     ("inf", (["Elem", "Elem"], "Elem")),
+                                     ("sup", (["Elem", "Elem"], "Elem"))]),
+            predMap = Map.fromList (map (\ (x, y) -> (mkSimpleId x,
                                 Set.singleton $ map mkSimpleId y))
-                                        [ ("gn_defined",["Elem"]),
-                                          ("p__LtEq__",["Elem", "Elem"])] )}
+                                        [ ("gn_defined", ["Elem"]),
+                                          ("p__LtEq__", ["Elem", "Elem"])] )}
 
 ga_nonEmpty :: Named SPTerm
 ga_nonEmpty = makeNamed "ga_nonEmpty" SPQuantTerm {quantSym = SPExists, variableList = [simpTerm (mkSPCustomSymbol "X")], qFormula = SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "X")]}}
@@ -89,34 +89,34 @@ ga_notDefBottom :: Named SPTerm
 ga_notDefBottom = makeNamed "ga_notDefBottom" SPComplexTerm {symbol = SPNot, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "gn_bottom", arguments = []}]}]}
 
 ga_strictness :: Named SPTerm
-ga_strictness = makeNamed "ga_strictness" SPQuantTerm {quantSym = SPForall, variableList = [simpTerm (mkSPCustomSymbol "X_one"),simpTerm (mkSPCustomSymbol "X_two")], qFormula = SPComplexTerm {symbol = SPImplies, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "inf", arguments = [simpTerm (mkSPCustomSymbol "X_one"),simpTerm (mkSPCustomSymbol "X_two")]}]},SPComplexTerm {symbol = SPAnd, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "X_one")]},SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "X_two")]}]}]}}
+ga_strictness = makeNamed "ga_strictness" SPQuantTerm {quantSym = SPForall, variableList = [simpTerm (mkSPCustomSymbol "X_one"), simpTerm (mkSPCustomSymbol "X_two")], qFormula = SPComplexTerm {symbol = SPImplies, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "inf", arguments = [simpTerm (mkSPCustomSymbol "X_one"), simpTerm (mkSPCustomSymbol "X_two")]}]}, SPComplexTerm {symbol = SPAnd, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "X_one")]}, SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "X_two")]}]}]}}
 
 ga_strictness_one :: Named SPTerm
-ga_strictness_one = makeNamed "ga_strictness_one" SPQuantTerm {quantSym = SPForall, variableList = [simpTerm (mkSPCustomSymbol "X_one"),simpTerm (mkSPCustomSymbol "X_two")], qFormula = SPComplexTerm {symbol = SPImplies, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "sup", arguments = [simpTerm (mkSPCustomSymbol "X_one"),simpTerm (mkSPCustomSymbol "X_two")]}]},SPComplexTerm {symbol = SPAnd, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "X_one")]},SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "X_two")]}]}]}}
+ga_strictness_one = makeNamed "ga_strictness_one" SPQuantTerm {quantSym = SPForall, variableList = [simpTerm (mkSPCustomSymbol "X_one"), simpTerm (mkSPCustomSymbol "X_two")], qFormula = SPComplexTerm {symbol = SPImplies, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "sup", arguments = [simpTerm (mkSPCustomSymbol "X_one"), simpTerm (mkSPCustomSymbol "X_two")]}]}, SPComplexTerm {symbol = SPAnd, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "X_one")]}, SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "X_two")]}]}]}}
 
 ga_predicate_strictness :: Named SPTerm
-ga_predicate_strictness = makeNamed "ga_predicate_strictness" SPQuantTerm {quantSym = SPForall, variableList = [simpTerm (mkSPCustomSymbol "X_one"),simpTerm (mkSPCustomSymbol "X_two")], qFormula = SPComplexTerm {symbol = SPImplies, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "p__LtEq__", arguments = [simpTerm (mkSPCustomSymbol "X_one"),simpTerm (mkSPCustomSymbol "X_two")]},SPComplexTerm {symbol = SPAnd, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "X_one")]},SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "X_two")]}]}]}}
+ga_predicate_strictness = makeNamed "ga_predicate_strictness" SPQuantTerm {quantSym = SPForall, variableList = [simpTerm (mkSPCustomSymbol "X_one"), simpTerm (mkSPCustomSymbol "X_two")], qFormula = SPComplexTerm {symbol = SPImplies, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "p__LtEq__", arguments = [simpTerm (mkSPCustomSymbol "X_one"), simpTerm (mkSPCustomSymbol "X_two")]}, SPComplexTerm {symbol = SPAnd, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "X_one")]}, SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "X_two")]}]}]}}
 
 antisym :: Named SPTerm
-antisym = makeNamed "antisym" SPQuantTerm {quantSym = SPForall, variableList = [simpTerm (mkSPCustomSymbol "X"),simpTerm (mkSPCustomSymbol "Y")], qFormula = SPComplexTerm {symbol = SPImplies, arguments = [SPComplexTerm {symbol = SPAnd, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "X")]},SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "Y")]}]},SPComplexTerm {symbol = SPImplies, arguments = [SPComplexTerm {symbol = SPAnd, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "p__LtEq__", arguments = [simpTerm (mkSPCustomSymbol "X"),simpTerm (mkSPCustomSymbol "Y")]},SPComplexTerm {symbol = mkSPCustomSymbol "p__LtEq__", arguments = [simpTerm (mkSPCustomSymbol "Y"),simpTerm (mkSPCustomSymbol "X")]}]},SPComplexTerm {symbol = SPEqual, arguments = [simpTerm (mkSPCustomSymbol "X"),simpTerm (mkSPCustomSymbol "Y")]}]}]}}
+antisym = makeNamed "antisym" SPQuantTerm {quantSym = SPForall, variableList = [simpTerm (mkSPCustomSymbol "X"), simpTerm (mkSPCustomSymbol "Y")], qFormula = SPComplexTerm {symbol = SPImplies, arguments = [SPComplexTerm {symbol = SPAnd, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "X")]}, SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "Y")]}]}, SPComplexTerm {symbol = SPImplies, arguments = [SPComplexTerm {symbol = SPAnd, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "p__LtEq__", arguments = [simpTerm (mkSPCustomSymbol "X"), simpTerm (mkSPCustomSymbol "Y")]}, SPComplexTerm {symbol = mkSPCustomSymbol "p__LtEq__", arguments = [simpTerm (mkSPCustomSymbol "Y"), simpTerm (mkSPCustomSymbol "X")]}]}, SPComplexTerm {symbol = SPEqual, arguments = [simpTerm (mkSPCustomSymbol "X"), simpTerm (mkSPCustomSymbol "Y")]}]}]}}
 
 trans :: Named SPTerm
-trans = makeNamed "trans" SPQuantTerm {quantSym = SPForall, variableList = [simpTerm (mkSPCustomSymbol "X"),simpTerm (mkSPCustomSymbol "Y"),simpTerm (mkSPCustomSymbol "Z")], qFormula = SPComplexTerm {symbol = SPImplies, arguments = [SPComplexTerm {symbol = SPAnd, arguments = [SPComplexTerm {symbol = SPAnd, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "X")]},SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "Y")]}]},SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "Z")]}]},SPComplexTerm {symbol = SPImplies, arguments = [SPComplexTerm {symbol = SPAnd, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "p__LtEq__", arguments = [simpTerm (mkSPCustomSymbol "X"),simpTerm (mkSPCustomSymbol "Y")]},SPComplexTerm {symbol = mkSPCustomSymbol "p__LtEq__", arguments = [simpTerm (mkSPCustomSymbol "Y"),simpTerm (mkSPCustomSymbol "Z")]}]},SPComplexTerm {symbol = mkSPCustomSymbol "p__LtEq__", arguments = [simpTerm (mkSPCustomSymbol "X"),simpTerm (mkSPCustomSymbol "Z")]}]}]}}
+trans = makeNamed "trans" SPQuantTerm {quantSym = SPForall, variableList = [simpTerm (mkSPCustomSymbol "X"), simpTerm (mkSPCustomSymbol "Y"), simpTerm (mkSPCustomSymbol "Z")], qFormula = SPComplexTerm {symbol = SPImplies, arguments = [SPComplexTerm {symbol = SPAnd, arguments = [SPComplexTerm {symbol = SPAnd, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "X")]}, SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "Y")]}]}, SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "Z")]}]}, SPComplexTerm {symbol = SPImplies, arguments = [SPComplexTerm {symbol = SPAnd, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "p__LtEq__", arguments = [simpTerm (mkSPCustomSymbol "X"), simpTerm (mkSPCustomSymbol "Y")]}, SPComplexTerm {symbol = mkSPCustomSymbol "p__LtEq__", arguments = [simpTerm (mkSPCustomSymbol "Y"), simpTerm (mkSPCustomSymbol "Z")]}]}, SPComplexTerm {symbol = mkSPCustomSymbol "p__LtEq__", arguments = [simpTerm (mkSPCustomSymbol "X"), simpTerm (mkSPCustomSymbol "Z")]}]}]}}
 
 refl :: Named SPTerm
-refl = makeNamed "refl" SPQuantTerm {quantSym = SPForall, variableList = [simpTerm (mkSPCustomSymbol "X")], qFormula = SPComplexTerm {symbol = SPImplies, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "X")]},SPComplexTerm {symbol = mkSPCustomSymbol "p__LtEq__", arguments = [simpTerm (mkSPCustomSymbol "X"),simpTerm (mkSPCustomSymbol "X")]}]}}
+refl = makeNamed "refl" SPQuantTerm {quantSym = SPForall, variableList = [simpTerm (mkSPCustomSymbol "X")], qFormula = SPComplexTerm {symbol = SPImplies, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "X")]}, SPComplexTerm {symbol = mkSPCustomSymbol "p__LtEq__", arguments = [simpTerm (mkSPCustomSymbol "X"), simpTerm (mkSPCustomSymbol "X")]}]}}
 
 inf_def_ExtPartialOrder :: Named SPTerm
-inf_def_ExtPartialOrder = makeNamed "inf_def_ExtPartialOrder" SPQuantTerm {quantSym = SPForall, variableList = [simpTerm (mkSPCustomSymbol "X"),simpTerm (mkSPCustomSymbol "Y"),simpTerm (mkSPCustomSymbol "Z")], qFormula = SPComplexTerm {symbol = SPImplies, arguments = [SPComplexTerm {symbol = SPAnd, arguments = [SPComplexTerm {symbol = SPAnd, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "X")]},SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "Y")]}]},SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "Z")]}]},SPComplexTerm {symbol = SPEquiv, arguments = [SPComplexTerm {symbol = SPEqual, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "inf", arguments = [simpTerm (mkSPCustomSymbol "X"),simpTerm (mkSPCustomSymbol "Y")]},simpTerm (mkSPCustomSymbol "Z")]},SPComplexTerm {symbol = SPAnd, arguments = [SPComplexTerm {symbol = SPAnd, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "p__LtEq__", arguments = [simpTerm (mkSPCustomSymbol "Z"),simpTerm (mkSPCustomSymbol "X")]},SPComplexTerm {symbol = mkSPCustomSymbol "p__LtEq__", arguments = [simpTerm (mkSPCustomSymbol "Z"),simpTerm (mkSPCustomSymbol "Y")]}]},SPQuantTerm {quantSym = SPForall, variableList = [simpTerm (mkSPCustomSymbol "T")], qFormula = SPComplexTerm {symbol = SPImplies, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "T")]},SPComplexTerm {symbol = SPImplies, arguments = [SPComplexTerm {symbol = SPAnd, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "p__LtEq__", arguments = [simpTerm (mkSPCustomSymbol "T"),simpTerm (mkSPCustomSymbol "X")]},SPComplexTerm {symbol = mkSPCustomSymbol "p__LtEq__", arguments = [simpTerm (mkSPCustomSymbol "T"),simpTerm (mkSPCustomSymbol "Y")]}]},SPComplexTerm {symbol = mkSPCustomSymbol "p__LtEq__", arguments = [simpTerm (mkSPCustomSymbol "T"),simpTerm (mkSPCustomSymbol "Z")]}]}]}}]}]}]}}
+inf_def_ExtPartialOrder = makeNamed "inf_def_ExtPartialOrder" SPQuantTerm {quantSym = SPForall, variableList = [simpTerm (mkSPCustomSymbol "X"), simpTerm (mkSPCustomSymbol "Y"), simpTerm (mkSPCustomSymbol "Z")], qFormula = SPComplexTerm {symbol = SPImplies, arguments = [SPComplexTerm {symbol = SPAnd, arguments = [SPComplexTerm {symbol = SPAnd, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "X")]}, SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "Y")]}]}, SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "Z")]}]}, SPComplexTerm {symbol = SPEquiv, arguments = [SPComplexTerm {symbol = SPEqual, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "inf", arguments = [simpTerm (mkSPCustomSymbol "X"), simpTerm (mkSPCustomSymbol "Y")]}, simpTerm (mkSPCustomSymbol "Z")]}, SPComplexTerm {symbol = SPAnd, arguments = [SPComplexTerm {symbol = SPAnd, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "p__LtEq__", arguments = [simpTerm (mkSPCustomSymbol "Z"), simpTerm (mkSPCustomSymbol "X")]}, SPComplexTerm {symbol = mkSPCustomSymbol "p__LtEq__", arguments = [simpTerm (mkSPCustomSymbol "Z"), simpTerm (mkSPCustomSymbol "Y")]}]}, SPQuantTerm {quantSym = SPForall, variableList = [simpTerm (mkSPCustomSymbol "T")], qFormula = SPComplexTerm {symbol = SPImplies, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "T")]}, SPComplexTerm {symbol = SPImplies, arguments = [SPComplexTerm {symbol = SPAnd, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "p__LtEq__", arguments = [simpTerm (mkSPCustomSymbol "T"), simpTerm (mkSPCustomSymbol "X")]}, SPComplexTerm {symbol = mkSPCustomSymbol "p__LtEq__", arguments = [simpTerm (mkSPCustomSymbol "T"), simpTerm (mkSPCustomSymbol "Y")]}]}, SPComplexTerm {symbol = mkSPCustomSymbol "p__LtEq__", arguments = [simpTerm (mkSPCustomSymbol "T"), simpTerm (mkSPCustomSymbol "Z")]}]}]}}]}]}]}}
 
 sup_def_ExtPartialOrder :: Named SPTerm
-sup_def_ExtPartialOrder = makeNamed "sup_def_ExtPartialOrder" SPQuantTerm {quantSym = SPForall, variableList = [simpTerm (mkSPCustomSymbol "X"),simpTerm (mkSPCustomSymbol "Y"),simpTerm (mkSPCustomSymbol "Z")], qFormula = SPComplexTerm {symbol = SPImplies, arguments = [SPComplexTerm {symbol = SPAnd, arguments = [SPComplexTerm {symbol = SPAnd, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "X")]},SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "Y")]}]},SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "Z")]}]},SPComplexTerm {symbol = SPEquiv, arguments = [SPComplexTerm {symbol = SPEqual, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "sup", arguments = [simpTerm (mkSPCustomSymbol "X"),simpTerm (mkSPCustomSymbol "Y")]},simpTerm (mkSPCustomSymbol "Z")]},SPComplexTerm {symbol = SPAnd, arguments = [SPComplexTerm {symbol = SPAnd, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "p__LtEq__", arguments = [simpTerm (mkSPCustomSymbol "X"),simpTerm (mkSPCustomSymbol "Z")]},SPComplexTerm {symbol = mkSPCustomSymbol "p__LtEq__", arguments = [simpTerm (mkSPCustomSymbol "Y"),simpTerm (mkSPCustomSymbol "Z")]}]},SPQuantTerm {quantSym = SPForall, variableList = [simpTerm (mkSPCustomSymbol "T")], qFormula = SPComplexTerm {symbol = SPImplies, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "T")]},SPComplexTerm {symbol = SPImplies, arguments = [SPComplexTerm {symbol = SPAnd, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "p__LtEq__", arguments = [simpTerm (mkSPCustomSymbol "X"),simpTerm (mkSPCustomSymbol "T")]},SPComplexTerm {symbol = mkSPCustomSymbol "p__LtEq__", arguments = [simpTerm (mkSPCustomSymbol "Y"),simpTerm (mkSPCustomSymbol "T")]}]},SPComplexTerm {symbol = mkSPCustomSymbol "p__LtEq__", arguments = [simpTerm (mkSPCustomSymbol "Z"),simpTerm (mkSPCustomSymbol "T")]}]}]}}]}]}]}}
+sup_def_ExtPartialOrder = makeNamed "sup_def_ExtPartialOrder" SPQuantTerm {quantSym = SPForall, variableList = [simpTerm (mkSPCustomSymbol "X"), simpTerm (mkSPCustomSymbol "Y"), simpTerm (mkSPCustomSymbol "Z")], qFormula = SPComplexTerm {symbol = SPImplies, arguments = [SPComplexTerm {symbol = SPAnd, arguments = [SPComplexTerm {symbol = SPAnd, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "X")]}, SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "Y")]}]}, SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "Z")]}]}, SPComplexTerm {symbol = SPEquiv, arguments = [SPComplexTerm {symbol = SPEqual, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "sup", arguments = [simpTerm (mkSPCustomSymbol "X"), simpTerm (mkSPCustomSymbol "Y")]}, simpTerm (mkSPCustomSymbol "Z")]}, SPComplexTerm {symbol = SPAnd, arguments = [SPComplexTerm {symbol = SPAnd, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "p__LtEq__", arguments = [simpTerm (mkSPCustomSymbol "X"), simpTerm (mkSPCustomSymbol "Z")]}, SPComplexTerm {symbol = mkSPCustomSymbol "p__LtEq__", arguments = [simpTerm (mkSPCustomSymbol "Y"), simpTerm (mkSPCustomSymbol "Z")]}]}, SPQuantTerm {quantSym = SPForall, variableList = [simpTerm (mkSPCustomSymbol "T")], qFormula = SPComplexTerm {symbol = SPImplies, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "T")]}, SPComplexTerm {symbol = SPImplies, arguments = [SPComplexTerm {symbol = SPAnd, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "p__LtEq__", arguments = [simpTerm (mkSPCustomSymbol "X"), simpTerm (mkSPCustomSymbol "T")]}, SPComplexTerm {symbol = mkSPCustomSymbol "p__LtEq__", arguments = [simpTerm (mkSPCustomSymbol "Y"), simpTerm (mkSPCustomSymbol "T")]}]}, SPComplexTerm {symbol = mkSPCustomSymbol "p__LtEq__", arguments = [simpTerm (mkSPCustomSymbol "Z"), simpTerm (mkSPCustomSymbol "T")]}]}]}}]}]}]}}
 
 ga_comm_sup :: Named SPTerm
-ga_comm_sup = (makeNamed "ga_comm_sup" SPQuantTerm {quantSym = SPForall, variableList = [simpTerm (mkSPCustomSymbol "X"),simpTerm (mkSPCustomSymbol "Y")], qFormula = SPComplexTerm {symbol = SPImplies, arguments = [SPComplexTerm {symbol = SPAnd, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "X")]},SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "Y")]}]},SPComplexTerm {symbol = SPEqual, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "sup", arguments = [simpTerm (mkSPCustomSymbol "X"),simpTerm (mkSPCustomSymbol "Y")]},SPComplexTerm {symbol = mkSPCustomSymbol "sup", arguments = [simpTerm (mkSPCustomSymbol "Y"),simpTerm (mkSPCustomSymbol "X")]}]}]}}) { isAxiom = False }
+ga_comm_sup = (makeNamed "ga_comm_sup" SPQuantTerm {quantSym = SPForall, variableList = [simpTerm (mkSPCustomSymbol "X"), simpTerm (mkSPCustomSymbol "Y")], qFormula = SPComplexTerm {symbol = SPImplies, arguments = [SPComplexTerm {symbol = SPAnd, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "X")]}, SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "Y")]}]}, SPComplexTerm {symbol = SPEqual, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "sup", arguments = [simpTerm (mkSPCustomSymbol "X"), simpTerm (mkSPCustomSymbol "Y")]}, SPComplexTerm {symbol = mkSPCustomSymbol "sup", arguments = [simpTerm (mkSPCustomSymbol "Y"), simpTerm (mkSPCustomSymbol "X")]}]}]}}) { isAxiom = False }
 
 ga_comm_inf :: Named SPTerm
-ga_comm_inf = (makeNamed "ga_comm_inf" SPQuantTerm {quantSym = SPForall, variableList = [simpTerm (mkSPCustomSymbol "X"),simpTerm (mkSPCustomSymbol "Y")], qFormula = SPComplexTerm {symbol = SPImplies, arguments = [SPComplexTerm {symbol = SPAnd, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "X")]},SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "Y")]}]},SPComplexTerm {symbol = SPEqual, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "inf", arguments = [simpTerm (mkSPCustomSymbol "X"),simpTerm (mkSPCustomSymbol "Y")]},SPComplexTerm {symbol = mkSPCustomSymbol "inf", arguments = [simpTerm (mkSPCustomSymbol "Y"),simpTerm (mkSPCustomSymbol "X")]}]}]}}) { isAxiom = False }
+ga_comm_inf = (makeNamed "ga_comm_inf" SPQuantTerm {quantSym = SPForall, variableList = [simpTerm (mkSPCustomSymbol "X"), simpTerm (mkSPCustomSymbol "Y")], qFormula = SPComplexTerm {symbol = SPImplies, arguments = [SPComplexTerm {symbol = SPAnd, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "X")]}, SPComplexTerm {symbol = mkSPCustomSymbol "gn_defined", arguments = [simpTerm (mkSPCustomSymbol "Y")]}]}, SPComplexTerm {symbol = SPEqual, arguments = [SPComplexTerm {symbol = mkSPCustomSymbol "inf", arguments = [simpTerm (mkSPCustomSymbol "X"), simpTerm (mkSPCustomSymbol "Y")]}, SPComplexTerm {symbol = mkSPCustomSymbol "inf", arguments = [simpTerm (mkSPCustomSymbol "Y"), simpTerm (mkSPCustomSymbol "X")]}]}]}}) { isAxiom = False }
 
 gone :: Named SPTerm
 gone = (makeNamed "gone" $ simpTerm SPTrue) { isAxiom = False }
@@ -138,26 +138,26 @@ exitOnBool b = exitWith $ if b then ExitSuccess else ExitFailure 9
 
 runBatchTests :: IO ()
 runBatchTests =
-   let go23 = zip ["go","go2","go3"] $ repeat $ LProver.Proved True
+   let go23 = zip ["go", "go2", "go3"] $ repeat $ LProver.Proved True
    in sequence
    [runTestBatch2 True Nothing spassProveCMDLautomaticBatch "SPASS"
                  "[Test]Foo2" theory2 go23
-   ,runTestBatch2 True Nothing darwinCMDLautomaticBatch "Darwin"
+   , runTestBatch2 True Nothing darwinCMDLautomaticBatch "Darwin"
                  "[Test]Foo2" theory2 go23
-   ,runTestBatch2 True Nothing vampireCMDLautomaticBatch "Vampire"
+   , runTestBatch2 True Nothing vampireCMDLautomaticBatch "Vampire"
                  "[Test]Foo2" theory2 go23
-   ,runTestBatch2 True (Just 12) spassProveCMDLautomaticBatch "SPASS"
+   , runTestBatch2 True (Just 12) spassProveCMDLautomaticBatch "SPASS"
                  "[Test]ExtPartialOrder" theoryExt
-                 (("gone",LProver.Proved True)
+                 (("gone", LProver.Proved True)
                   : zip ["ga_comm_inf", "ga_comm_sup"]
                         (repeat LProver.openGoalStatus))
-   ,runTestBatch2 True (Just 12) darwinCMDLautomaticBatch "Darwin"
+   , runTestBatch2 True (Just 12) darwinCMDLautomaticBatch "Darwin"
                  "[Test]ExtPartialOrder" theoryExt
                  [("gone", LProver.Proved True),
                   ("ga_comm_sup", LProver.openGoalStatus)]
-   ,runTestBatch2 True (Just 20) vampireCMDLautomaticBatch "Vampire"
+   , runTestBatch2 True (Just 20) vampireCMDLautomaticBatch "Vampire"
                  "[Test]ExtPartialOrder" theoryExt
-                  (zip ["gone","ga_comm_sup"] (repeat LProver.openGoalStatus))
+                  (zip ["gone", "ga_comm_sup"] (repeat LProver.openGoalStatus))
    ] >>= (exitOnBool . and)
 
 {- |
@@ -169,37 +169,37 @@ runAllTests = do
    let goRes = [("go", LProver.Proved True)]
        goneR = [("gone", LProver.Proved True)]
        go2 = goRes ++ [("go2", LProver.Disproved)]
-       go23 = zip ["go","go2","go3"] $ repeat $ LProver.Proved True
+       go23 = zip ["go", "go2", "go3"] $ repeat $ LProver.Proved True
        goneComm = goneR
-         ++ zip ["ga_comm_inf","ga_comm_sup"] (repeat LProver.openGoalStatus)
+         ++ zip ["ga_comm_inf", "ga_comm_sup"] (repeat LProver.openGoalStatus)
    sequence
     [runTestBatch Nothing spassProveCMDLautomaticBatch "SPASS"
                  "[Test]Foo1" theory1 go2
-    ,runTestBatch Nothing darwinCMDLautomaticBatch "Darwin"
+    , runTestBatch Nothing darwinCMDLautomaticBatch "Darwin"
                  "[Test]Foo1" theory1 go2
-    ,runTestBatch Nothing vampireCMDLautomaticBatch "Vampire"
+    , runTestBatch Nothing vampireCMDLautomaticBatch "Vampire"
                  "[Test]Foo1" theory1 go2
-    ,runTestBatch Nothing mathServBrokerCMDLautomaticBatch "MathServ"
+    , runTestBatch Nothing mathServBrokerCMDLautomaticBatch "MathServ"
                  "[Test]Foo1" theory1 go2
 
-    ,runTestBatch Nothing spassProveCMDLautomaticBatch "SPASS"
+    , runTestBatch Nothing spassProveCMDLautomaticBatch "SPASS"
                  "[Test]Foo2" theory2 go23
-    ,runTestBatch Nothing darwinCMDLautomaticBatch "Darwin"
+    , runTestBatch Nothing darwinCMDLautomaticBatch "Darwin"
                  "[Test]Foo2" theory2 go23
-    ,runTestBatch Nothing vampireCMDLautomaticBatch "Vampire"
+    , runTestBatch Nothing vampireCMDLautomaticBatch "Vampire"
                  "[Test]Foo2" theory2 go23
-    ,runTestBatch Nothing mathServBrokerCMDLautomaticBatch "MathServ"
+    , runTestBatch Nothing mathServBrokerCMDLautomaticBatch "MathServ"
                  "[Test]Foo2" theory2 go23
 
-    ,runTestBatch (Just 30) spassProveCMDLautomaticBatch "SPASS"
+    , runTestBatch (Just 30) spassProveCMDLautomaticBatch "SPASS"
                  "[Test]ExtPartialOrder" theoryExt goneComm
-    ,runTestBatch (Just 30) darwinCMDLautomaticBatch "Darwin"
+    , runTestBatch (Just 30) darwinCMDLautomaticBatch "Darwin"
                  "[Test]ExtPartialOrder" theoryExt goneComm
-    ,runTestBatch (Just 35) vampireCMDLautomaticBatch "Vampire"
+    , runTestBatch (Just 35) vampireCMDLautomaticBatch "Vampire"
                  "[Test]ExtPartialOrder" theoryExt
                   (zip ["gone", "ga_comm_sup", "ga_comm_inf"]
                            (repeat LProver.openGoalStatus))
-    ,runTestBatch (Just 30) mathServBrokerCMDLautomaticBatch "MathServ"
+    , runTestBatch (Just 30) mathServBrokerCMDLautomaticBatch "MathServ"
                  "[Test]ExtPartialOrder" theoryExt goneComm
     ] >>= (exitOnBool . and)
 
@@ -211,12 +211,12 @@ runTest :: (String
             -> LProver.TacticScript
             -> LProver.Theory Sign Sentence ProofTree
             -> [LProver.FreeDefMorphism Sentence SoftFOLMorphism]
-            -> IO (Result ([LProver.ProofStatus ProofTree]))
+            -> IO (Result [LProver.ProofStatus ProofTree])
            )
         -> String -- ^ prover name for proof status in case of error
         -> String -- ^ theory name
         -> LProver.Theory Sign Sentence ProofTree
-        -> [(String,LProver.GoalStatus)] -- ^ list of expected results
+        -> [(String, LProver.GoalStatus)] -- ^ list of expected results
         -> IO Bool
 runTest runCMDLProver prName thName th expStatus = do
     putStrLn $ "Trying " ++ thName ++ "(automatic) with prover " ++ prName
@@ -248,12 +248,12 @@ runTestBatch :: Maybe Int -- ^ seconds to pass before thread will be killed
                   -> LProver.TacticScript
                   -> LProver.Theory Sign Sentence ProofTree
                   -> [LProver.FreeDefMorphism Sentence SoftFOLMorphism]
-                  -> IO (Concurrent.ThreadId,Concurrent.MVar ())
+                  -> IO (Concurrent.ThreadId, Concurrent.MVar ())
                  )
               -> String -- ^ prover name
               -> String -- ^ theory name
               -> LProver.Theory Sign Sentence ProofTree
-              -> [(String,LProver.GoalStatus)] -- ^ list of expected results
+              -> [(String, LProver.GoalStatus)] -- ^ list of expected results
               -> IO Bool
 runTestBatch = runTestBatch2 False
 {- |
@@ -270,16 +270,16 @@ runTestBatch2 :: Bool -- ^ True means try to read intermediate results
                   -> LProver.TacticScript
                   -> LProver.Theory Sign Sentence ProofTree
                   -> [LProver.FreeDefMorphism Sentence SoftFOLMorphism]
-                  -> IO (Concurrent.ThreadId,Concurrent.MVar ())
+                  -> IO (Concurrent.ThreadId, Concurrent.MVar ())
                  )
               -> String -- ^ prover name
               -> String -- ^ theory name
               -> LProver.Theory Sign Sentence ProofTree
-              -> [(String,LProver.GoalStatus)] -- ^ list of expected results
+              -> [(String, LProver.GoalStatus)] -- ^ list of expected results
               -> IO Bool
 runTestBatch2 intermRes waitsec runCMDLProver prName thName th expStatus = do
-    putStr $ "Trying " ++ thName ++ "(automaticBatch"++
-           (if intermRes then " reading intermediate results" else "")++
+    putStr $ "Trying " ++ thName ++ "(automaticBatch" ++
+           (if intermRes then " reading intermediate results" else "") ++
            ") with prover " ++ prName ++ " ... "
     resultMVar <- if intermRes
                   then Concurrent.newEmptyMVar
@@ -290,7 +290,7 @@ runTestBatch2 intermRes waitsec runCMDLProver prName thName th expStatus = do
                                tsTimeLimit = 10, tsExtraOpts = [] }))
                             th []
     maybe (return ()) (\ ws -> do
-             Concurrent.threadDelay (ws*1000000)
+             Concurrent.threadDelay (ws * 1000000)
              Concurrent.killThread threadID) waitsec
     (stResult, diaStr) :: ([LProver.ProofStatus ProofTree], String)
        <- if intermRes
@@ -313,7 +313,7 @@ runTestBatch2 intermRes waitsec runCMDLProver prName thName th expStatus = do
                                         show (LProver.goalStatus res)
                                return res))
                       (maybeResult mRes)
-                Concurrent.putMVar iResMV (oldRes++newRes)
+                Concurrent.putMVar iResMV (oldRes ++ newRes)
                 isReady
           -- external reader thread
           Concurrent.forkIO (
@@ -346,7 +346,7 @@ runTestBatch2 intermRes waitsec runCMDLProver prName thName th expStatus = do
   Checks if a prover run's result matches expected result.
 -}
 succeeded :: [LProver.ProofStatus ProofTree]
-          -> [(String,LProver.GoalStatus)]
+          -> [(String, LProver.GoalStatus)]
           -> Bool
 succeeded stResult expStatus =
     length stResult == length expStatus

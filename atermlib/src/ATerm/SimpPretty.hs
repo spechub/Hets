@@ -42,8 +42,8 @@ import System.IO
 
 infixl 6 <>
 
--- ---------------------------------------------------------------------------
--- The interface
+{- ---------------------------------------------------------------------------
+The interface -}
 
 -- The primitive SDoc values
 
@@ -78,16 +78,16 @@ instance Show SDoc where
 render :: SDoc -> String
 render doc = showSDoc doc ""
 
--- ---------------------------------------------------------------------------
--- The SDoc data type
+{- ---------------------------------------------------------------------------
+The SDoc data type -}
 
 -- | The abstract type of documents
 data SDoc
  = Text String
  | Beside SDoc SDoc
 
--- ---------------------------------------------------------------------------
--- simple layout
+{- ---------------------------------------------------------------------------
+simple layout -}
 
 writeFileSDoc :: FilePath -> SDoc -> IO ()
 writeFileSDoc fp sd =
@@ -99,8 +99,8 @@ showSDoc :: SDoc -> String -> String
 showSDoc = fullRender showString (.)
 
 fullRender :: (String -> a) -> (a -> a -> a) -> SDoc -> a
-fullRender txt comp doc
-  = lay doc
+fullRender txt comp
+  = lay
   where
     lay (Text s) = txt s
     lay (Beside p q) = lay p `comp` lay q

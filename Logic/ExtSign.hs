@@ -49,7 +49,7 @@ checkExtSign :: Logic lid sublogics
         sign morphism symbol raw_symbol proof_tree
         => lid -> String -> ExtSign sign symbol -> Result ()
 checkExtSign l msg e@(ExtSign s sy) = let sys = symset_of l s in
-    if Set.isSubsetOf sy sys then return () else
+    unless (Set.isSubsetOf sy sys) $
         error $ "inconsistent symbol set in extended signature: " ++ msg ++ "\n"
              ++ showDoc e "\rwith unknown symbols\n"
              ++ showDoc (Set.difference sy sys) ""
@@ -125,7 +125,7 @@ checkRawMap l rmap = checkRawSyms l (Map.keys rmap) . symset_of l
 checkRawSyms :: Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol proof_tree
-        => lid -> [raw_symbol] -> Set.Set symbol  -> Result ()
+        => lid -> [raw_symbol] -> Set.Set symbol -> Result ()
 checkRawSyms l rsyms syms = do
   let unknownSyms = filter
           ( \ rsy -> Set.null $ Set.filter (flip (matches l) rsy) syms)
@@ -152,4 +152,3 @@ ext_induced_from_to_morphism l r s@(ExtSign p sy) t = do
             ++ showDoc (filter (uncurry (/=)) $ zip sysI msysI) ""
     legal_mor mor
     return mor
-

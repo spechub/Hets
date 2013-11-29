@@ -69,9 +69,8 @@ addNodesAndEdgesRef gInfo@(GInfo { hetcatsOpts = opts}) graph nodesEdges = do
     dg = lookup' le $ i_ln ist
     rTree = refTree dg
     vertexes = map fst $ Tree.labNodes rTree
-    isRoot n = not $ null $ 
-                filter (\(_,_, llab)-> rtl_type llab == RTComp) $ 
-                out rTree n 
+    isRoot n = any (\ (_, _, llab) -> rtl_type llab == RTComp) $
+                out rTree n
         -- look for outgoing component links
     arcs = Tree.labEdges rTree
     subNodeMenuRoots = LocalMenu (UDG.Menu Nothing [
@@ -92,12 +91,12 @@ addNodesAndEdgesRef gInfo@(GInfo { hetcatsOpts = opts}) graph nodesEdges = do
                        Color (getColor opts Green True True) $$$
                        emptyNodeTypeParms
    subNodeType <- newNodeType graph subNodeTypeParms
-   --subNodeListI <- mapM (newNode graph subNodeType) internal
+   -- subNodeListI <- mapM (newNode graph subNodeType) internal
    subNodeTypeR <- newNodeType graph subNodeTypeParmsR
-   subNodeList <- mapM (\x -> if isRoot x then 
+   subNodeList <- mapM (\ x -> if isRoot x then
                                 newNode graph subNodeTypeR x
                               else newNode graph subNodeType x) vertexes
-   --let subNodeList = subNodeListI ++ subNodeListR
+   -- let subNodeList = subNodeListI ++ subNodeListR
    let
     nodes' = Map.fromList $ zip (Tree.nodes rTree) subNodeList
     subArcMenu = LocalMenu (UDG.Menu Nothing [])

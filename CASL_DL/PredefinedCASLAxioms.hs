@@ -203,7 +203,7 @@ cons :: Id
 cons = mkInfix ":@:"
 
 emptyString :: Id
-emptyString = stringToId $ "emptyString"
+emptyString = stringToId "emptyString"
 
 emptyStringTerm :: TERM ()
 emptyStringTerm = mkAppl (mkQualOp emptyString $ toOP_TYPE emptyStringTy) []
@@ -247,8 +247,8 @@ predefinedSign e = (emptySign e)
                  , predMap =
                      MapSet.fromList
                       $ (nothing, [conceptPred])
-                      : map ( \ o -> (mkInfix o, [dataPred]))
-                        (map showFacet facetList)
+                      : map ((\ o -> (mkInfix o, [dataPred])) .
+                         showFacet) facetList
                       ++ map ( \ o -> (stringToId o, intTypes))
                          ["even", "odd"]
                  , opMap = MapSet.fromList
@@ -282,7 +282,7 @@ predefinedAxioms = let
   t1 = toQualVar v1
   in [makeNamed "nothing in Nothing" $ mkForall [v1] $ Negation
             (Predication noThing [t1] n) n,
-      makeNamed "thing in Thing" $  mkForall [v1] $ Predication
+      makeNamed "thing in Thing" $ mkForall [v1] $ Predication
             (Qual_pred_name thing classPredType n) [t1] n]
 
 mkNNameAux :: Int -> String

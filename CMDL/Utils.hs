@@ -322,14 +322,13 @@ fileFilter lPath ls cons = case ls of
     x : l -> do
          -- check if current element is a directory
          b <- doesDirectoryExist (lPath </> x)
-         if b
+         fileFilter lPath l $ if b
            -- if it is,then add "/" to indicate is a folder
-           then fileFilter lPath l (addTrailingPathSeparator x : cons)
+           then addTrailingPathSeparator x : cons
            {- if it is not a folder then it must be a file
               so check the extension -}
            else if elem (takeExtensions x) [".casl", ".het" ]
-                   then fileFilter lPath l (x : cons)
-                   else fileFilter lPath l cons
+                then x : cons else cons
 
 {- | Given a list of files and folders the function expands
    the list adding the content of all folders in the list -}

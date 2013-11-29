@@ -22,7 +22,7 @@ import HasCASL.Le
 import HasCASL.PrintAs ()
 
 import Common.Id
-import Common.ConvertGlobalAnnos()
+import Common.ConvertGlobalAnnos ()
 import Common.Doc
 import Common.DocUtils
 
@@ -70,9 +70,9 @@ instance DefStore DefinitionStore where
         Set.member (idToOpSymbol opid typ) syms
     getDefinition (DefinitionStore (e, _)) = getOpDefinition e
     getEnv (DefinitionStore (e, _)) = e
---    logMsg _ _ = return ()
+-- logMsg _ _ = return ()
     logMsg def d = let e = getEnv def
-                   in appendFile "/tmp/matcher.out" $ (++"\n") $ show
+                   in appendFile "/tmp/matcher.out" $ (++ "\n") $ show
                           $ useGlobalAnnos (globAnnos e) d
 
 
@@ -99,9 +99,7 @@ instance Match MatchResult where
                          addConstraint mr t t'
              _ -> MatchResult (addTerm sb sc t, ctrts)
 
-    addConstraint (MatchResult (sb, ctrts)) t1 t2 = MatchResult (sb, (t1, t2):ctrts)
-
-
+    addConstraint (MatchResult (sb, ctrts)) t1 t2 = MatchResult (sb, (t1, t2) : ctrts)
 
 
 {- | The rules of matching:
@@ -146,16 +144,16 @@ match def mtch t1 t2 =
                 | otherwise -> logg msg1a21b addLocalConstraint
 
             -- eventually 2b.
-            _ -> logg msg2b $ tryDefExpand2
+            _ -> logg msg2b tryDefExpand2
 
       (TupleTerm l _, _) ->
           case t2 of
             TupleTerm l' _ | length l == length l' ->
                                logg msg1aT $ matchfold mtch $ zip l l'
                            | otherwise ->
-                               logg "tclash" $ tupleClash
+                               logg "tclash" tupleClash
             -- eventually 2b.
-            _ -> logg msg2bT $ tryDefExpand2
+            _ -> logg msg2bT tryDefExpand2
 
       -- 3.: add the mapping v->t2 to output
       (QualVar v, _) -> logg "mapped" $ addMapping v
@@ -167,8 +165,8 @@ match def mtch t1 t2 =
       _ -> return $ Left "match: unhandled term"
 
       where match' = match def mtch
-            -- The definition expansion application case
-            -- (for ApplTerm and TupleTerm) is handled uniformly
+            {- The definition expansion application case
+            (for ApplTerm and TupleTerm) is handled uniformly -}
             tryDefExpand1 oi = case getTermDef t1 of
                                  Just t1' -> match' t1' t2
                                  _ | isMapable def oi -> addMapping oi
@@ -184,15 +182,15 @@ match def mtch t1 t2 =
                 | t1 == t2 = return $ Right mtch
                 | otherwise = return $ Right $ addConstraint mtch t1 t2
             addMapping t = return $ Right $ addMatch mtch (toSC t) t2
-            matchfold mtch' (x:l) = do
+            matchfold mtch' (x : l) = do
                     res <- uncurry (match def mtch') x
                     case res of
                       Right mtch'' -> matchfold mtch'' l
-                      err -> return $ err
+                      err -> return err
             matchfold mtch' [] = return $ Right mtch'
-            --clash = return $ Left $ "match: Clash for " ++ show (pretty (t1,t2))
+            -- clash = return $ Left $ "match: Clash for " ++ show (pretty (t1,t2))
             tupleClash = return $ Left $ "match: Clash for tuples "
-                         ++ show (pretty (t1,t2))
+                         ++ show (pretty (t1, t2))
 
             -- Logging stuff
             logg s a = do
@@ -209,7 +207,7 @@ match def mtch t1 t2 =
             msg2b = "2b: term constant"
 
 
-------------------------- term tools -------------------------
+-- ----------------------- term tools -------------------------
 
 getTermOp :: Term -> Maybe (Id, TypeScheme)
 getTermOp (QualOp _ (PolyId opid _ _) typ _ _ _) = Just (opid, typ)
@@ -247,10 +245,10 @@ toList :: Injection a b -> [(a, b)]
 toList (Injection l) = l
 
 insertMapping :: (a, b) -> Injection a b -> Injection a b
-insertMapping p (Injection l) = Injection (p:l)
+insertMapping p (Injection l) = Injection (p : l)
 
 combine :: Injection a b -> Injection a b -> Injection a b
-combine (Injection l) (Injection l') = Injection (l++l')
+combine (Injection l) (Injection l') = Injection (l ++ l')
 
 singleton :: (a, b) -> Injection a b
 singleton p = Injection [p]
@@ -262,11 +260,11 @@ injections l l'
     | otherwise =
         case l of
           [] -> [Injection []]
-          [x] ->  [ singleton (x, y) | y <- l' ]
-          x:xl ->  f [] l'
+          [x] -> [ singleton (x, y) | y <- l' ]
+          x : xl -> f [] l'
               where
-                f a (y:b) = f (y:a) b ++
-                            (map (insertMapping (x,y)) $ injections xl $ a ++ b)
+                f a (y : b) = f (y : a) b ++
+                            map (insertMapping (x, y)) (injections xl $ a ++ b)
                 f _ [] = []
 
 crossInjs :: [[Injection a b]] -> [Injection a b]
@@ -276,8 +274,8 @@ crossInjs = crosscombine combine
 crosscombine :: (a -> a -> a) -> [[a]] -> [a]
 crosscombine _ [] = []
 crosscombine _ [x] = x
-crosscombine f cl@(x:l)
-    | any null cl  = []
+crosscombine f cl@(x : l)
+    | any null cl = []
     | otherwise = [ f a b | a <- x, b <- crosscombine f l ]
 
 -- ** 2. Candidates from operators
@@ -325,7 +323,7 @@ candidatesAux :: Map.Map TypeScheme [MatchOp]
 candidatesAux patMap cMap = crossInjs $ Map.foldWithKey f [] patMap where
     f typ l injL = let l' = Map.findWithDefault err typ cMap
                        err = error $ "candidates: No concrete ops for type: "
-                             ++ (show $ pretty typ)
+                             ++ show (pretty typ)
                    in injections l l' : injL
 
 candidates :: ((Id, TypeScheme) -> Maybe Term) -- ^ Definiens extractor
@@ -339,7 +337,7 @@ matchCandidate :: (DefStore d) => d -> [(MatchOp, MatchOp)]
                -> IO (Either String MatchResult)
 matchCandidate def = f emptyMatchResult where
     f mtch [] = return $ Right mtch
-    f mtch ((pat, c):l) = do
+    f mtch ((pat, c) : l) = do
       let e = getEnv def
       logMsg def $ text "Matching Candidate Pattern"
                  $+$ prettyInEnv e pat $+$ text " with" $+$ prettyInEnv e c
@@ -352,7 +350,7 @@ matchCandidate def = f emptyMatchResult where
 matchCandidates :: (DefStore d) => d -> [[(MatchOp, MatchOp)]]
                -> IO (Either String MatchResult, [[(MatchOp, MatchOp)]])
 matchCandidates _ [] = return (Left "matchCandidates: Out of candidates", [])
-matchCandidates def (cand:l) = do
+matchCandidates def (cand : l) = do
   res <- matchCandidate def cand
   case res of
     Left _ -> matchCandidates def l
@@ -367,7 +365,7 @@ getCandidates :: (DefStore d, DevGraphNavigator nav) =>
                    -> Maybe [[(MatchOp, MatchOp)]]
 getCandidates def dgnav tFilter patN cN =
     let
---        g s dgnav' = getInLibEnv dgnav' lookupLocalNodeByName s
+-- g s dgnav' = getInLibEnv dgnav' lookupLocalNodeByName s
         g = getNamedSpec
         f s = fromSearchResult (g s) getLocalSyms dgnav
         mGp = f patN

@@ -32,7 +32,7 @@ data FoldRec a b = FoldRec
     , foldLetTerm :: Term -> LetBrand -> [b] -> a -> Range -> a
     , foldResolvedMixTerm :: Term -> Id -> [Type] -> [a] -> Range -> a
     , foldTermToken :: Term -> Token -> a
-    , foldMixTypeTerm  :: Term ->TypeQual -> Type -> Range -> a
+    , foldMixTypeTerm :: Term -> TypeQual -> Type -> Range -> a
     , foldMixfixTerm :: Term -> [a] -> a
     , foldBracketTerm :: Term -> BracketKind -> [a] -> Range -> a
     , foldProgEq :: ProgEq -> a -> a -> Range -> b
@@ -145,9 +145,9 @@ opsInTerm = foldTerm FoldRec
     , foldTypedTerm = \ _ ts _ _ _ -> ts
     , foldAsPattern = \ _ _ ts _ -> ts
     , foldQuantifiedTerm = \ _ _ _ ts _ -> ts
-    , foldLambdaTerm = \ _ pats _ ts _ -> Set.unions $ ts:pats
-    , foldCaseTerm = \ _ ts tts _ -> Set.unions $ ts:tts
-    , foldLetTerm = \ _ _ tts ts _ ->  Set.unions $ ts:tts
+    , foldLambdaTerm = \ _ pats _ ts _ -> Set.unions $ ts : pats
+    , foldCaseTerm = \ _ ts tts _ -> Set.unions $ ts : tts
+    , foldLetTerm = \ _ _ tts ts _ -> Set.unions $ ts : tts
     , foldResolvedMixTerm = \ _ _ _ tts _ -> Set.unions tts
     , foldTermToken = \ _ _ -> Set.empty
     , foldMixTypeTerm = \ _ _ _ _ -> Set.empty
@@ -155,5 +155,3 @@ opsInTerm = foldTerm FoldRec
     , foldBracketTerm = \ _ _ tts _ -> Set.unions tts
     , foldProgEq = \ _ ps ts _ -> Set.union ps ts
     }
-
-

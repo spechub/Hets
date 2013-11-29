@@ -34,16 +34,16 @@ import System.FilePath (replaceBaseName, replaceExtension, takeBaseName)
 import Text.ParserCombinators.Parsec
 
 parseQvt :: FilePath -> IO LIB_DEFN
-parseQvt fp = 
+parseQvt fp =
   do
-    handle <- openFile fp ReadMode  
-    input <- hGetContents handle 
+    handle <- openFile fp ReadMode
+    input <- hGetContents handle
     case runParser pTransformation () fp input of  -- Either ParseError String
       Left erro -> do
                   print erro
                   return (Lib_defn (emptyLibName (convertFileToLibStr fp)) [] nullRange [])
-      Right trans -> let (_,sMet,_) = sourceMetamodel trans
-                         (_,tMet,_) = targetMetamodel trans
+      Right trans -> let (_, sMet, _) = sourceMetamodel trans
+                         (_, tMet, _) = targetMetamodel trans
                      in
                        do
                          sourceMetam <- parseXmiMetamodel (replaceName fp sMet)
@@ -52,19 +52,19 @@ parseQvt fp =
 
 
 replaceName :: FilePath -> String -> String
-replaceName fp na = replaceBaseName (replaceExtension fp "xmi") na
+replaceName fp = replaceBaseName (replaceExtension fp "xmi")
 
 
 parseXmiMetamodel :: FilePath -> IO Metamodel
-parseXmiMetamodel fp = 
+parseXmiMetamodel fp =
   do
-    handle <- openFile fp ReadMode  
-    contents <- hGetContents handle 
+    handle <- openFile fp ReadMode
+    contents <- hGetContents handle
     case parseXMLDoc contents of
-      Nothing -> return (Metamodel { metamodelName = takeBaseName fp
+      Nothing -> return Metamodel { metamodelName = takeBaseName fp
                            , element = []
                            , model = []
-                           })
+                           }
       Just el -> return (parseCSMOF el)
 
 
@@ -83,8 +83,7 @@ createSpec el = makeSpec $ G_basic_spec QVTR el
 
 createTransfWithMeta :: Transformation -> Metamodel -> Metamodel -> Transformation
 createTransfWithMeta trans souMeta tarMeta =
-  let (sVar,sMet,_) = sourceMetamodel trans
-      (tVar,tMet,_) = targetMetamodel trans
+  let (sVar, sMet, _) = sourceMetamodel trans
+      (tVar, tMet, _) = targetMetamodel trans
   in
-    Transformation (transfName trans) (sVar,sMet,souMeta) (tVar,tMet,tarMeta) (keys trans) (relations trans)
-
+    Transformation (transfName trans) (sVar, sMet, souMeta) (tVar, tMet, tarMeta) (keys trans) (relations trans)

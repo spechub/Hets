@@ -45,30 +45,30 @@ sokratesLogicalPart = emptySPLogicalPart
 
 sokratesSymbolList :: SPSymbolList
 sokratesSymbolList = SPSymbolList
-  { functions = [SPSignSym {sym= mkSimpleId "sokrates", arity= 0}],
-    predicates = [SPSignSym {sym= mkSimpleId "Human", arity= 1}
-                 , SPSignSym {sym= mkSimpleId "Mortal", arity= 1}],
-    sorts= [] }
+  { functions = [SPSignSym {sym = mkSimpleId "sokrates", arity = 0}],
+    predicates = [SPSignSym {sym = mkSimpleId "Human", arity = 1}
+                 , SPSignSym {sym = mkSimpleId "Mortal", arity = 1}],
+    sorts = [] }
 
 sokratesAxiomFormulae :: SPFormulaList
-sokratesAxiomFormulae = SPFormulaList {originType= SPOriginAxioms,
-                                       formulae= [f1, f2] }
+sokratesAxiomFormulae = SPFormulaList {originType = SPOriginAxioms,
+                                       formulae = [f1, f2] }
   where
     f1 = makeNamed "f1" $ compTerm (mkSPCustomSymbol "Human")
          [ simpTerm $ mkSPCustomSymbol "sokrates"]
-    f2 = makeNamed "f2" $ SPQuantTerm
-         {quantSym= SPForall,
-          variableList= [simpTerm (mkSPCustomSymbol "x")],
-          qFormula= compTerm SPImplies
-                 [ compTerm (mkSPCustomSymbol "Human")
+    f2 = makeNamed "f2" SPQuantTerm
+         {quantSym = SPForall,
+          variableList = [simpTerm (mkSPCustomSymbol "x")],
+          qFormula = compTerm SPImplies
+                 [ compTerm (mkS1PCustomSymbol "Human")
                    [simpTerm $ mkSPCustomSymbol "x"]
                  , compTerm (mkSPCustomSymbol "Mortal")
                    [simpTerm $ mkSPCustomSymbol "x"]]}
 
 sokratesConjectureFormulae :: SPFormulaList
 sokratesConjectureFormulae = SPFormulaList
-  { originType= SPOriginConjectures,
-    formulae= [f3 {isAxiom  = False} ] }
+  { originType = SPOriginConjectures,
+    formulae = [f3 {isAxiom = False} ] }
   where
     f3 = makeNamed "f3" $ compTerm (mkSPCustomSymbol "Mortal")
          [simpTerm $ mkSPCustomSymbol "sokrates"]

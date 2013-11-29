@@ -85,7 +85,7 @@ lookupLogicM i = if isSimple i
                    Just s -> return s
                    Nothing -> fail $ "logic " ++ show i ++ " not found"
   where l = iriToStringUnsecure i
-                           
+
 {- keep these identical in order to
 decide after seeing ".", ":" or "->" what was meant -}
 logicName :: LogicGraph -> AParser st Logic_name
@@ -119,9 +119,9 @@ logicDescr l = do
          (Logic lid, sm) <- lookupCurrentSyntax "logicDescr" $ setLogicName ld l
          case basicSpecParser sm lid of
            Just _ -> iriManchester >> return ld -- consume and return
-           Nothing -> (unexpected $ "serialization \"" ++ show s
+           Nothing -> unexpected ("serialization \"" ++ show s
                        ++ "\" for logic " ++ show ln)
-                      <|> choice (map (\pn -> pzero <?> '"' : pn ++ "\"")
+                      <|> choice (map (\ pn -> pzero <?> '"' : pn ++ "\"")
                                   (filter (not . null)
                                    (basicSpecSyntaxes lid)))
 
@@ -182,11 +182,11 @@ plainComma = anComma `notFollowedWith` asKey logicS
 -- * parse G_symbol
 
 parseSymbolAux :: AnyLogic -> AParser st G_symbol
-parseSymbolAux (Logic lid) = 
+parseSymbolAux (Logic lid) =
    case parse_symbol lid of
     Nothing ->
-        fail $ "no symbol parser for language " ++ (language_name lid)
-    Just pa -> do s <- pa 
+        fail $ "no symbol parser for language " ++ language_name lid
+    Just pa -> do s <- pa
                   return (G_symbol lid s)
 
 parseSymbol :: LogicGraph -> AParser st G_symbol
@@ -295,7 +295,7 @@ specC lG = do
             <|> rest
 
 translationList :: LogicGraph -> (Annoted b -> RENAMING -> b)
-  -> (Annoted b -> RESTRICTION -> b) -> (Annoted b -> APPROXIMATION -> b) 
+  -> (Annoted b -> RESTRICTION -> b) -> (Annoted b -> APPROXIMATION -> b)
   -> (Annoted b -> MINIMIZATION -> b) -> Annoted b -> AParser st (Annoted b)
 translationList l ftrans frestr fapprox fminimize sp =
      do sp' <- translation l sp ftrans frestr fapprox fminimize
@@ -332,27 +332,27 @@ restriction lg =
        (mappings, commas) <- parseItemsMap nl
        return (Revealed mappings (catRange (kReveal : commas)))
 
-{- | Parse approximation -}
+-- | Parse approximation
 approximation :: LogicGraph -> AParser st APPROXIMATION
 approximation lg =
  do p1 <- asKey approximateS
         -- with
     do p2 <- asKey withS
        n <- hetIRI lg
-       return $ (Named_Approx n) $ tokPos p1 `appRange` tokPos p2
-{-    <|> -- in with 
+       return $ Named_Approx n $ tokPos p1 `appRange` tokPos p2
+{- <|> -- in with
     do ...
 -}
 
 minimization :: LogicGraph -> AParser st MINIMIZATION
 minimization lg = do
    p <- asKey minimizeS <|> asKey closedworldS
-   (cm,p1) <- separatedBy (hetIRI lg) spaceT
-   (cv,p2) <- option ([],[]) $ do
+   (cm, p1) <- separatedBy (hetIRI lg) spaceT
+   (cv, p2) <- option ([], []) $ do
        p3 <- asKey varsS
-       (ct,pos) <- separatedBy (hetIRI lg) spaceT
+       (ct, pos) <- separatedBy (hetIRI lg) spaceT
        return (ct, p3 : pos)
-   return $ Mini cm cv $ catRange $ p : p1 ++ p2       
+   return $ Mini cm cv $ catRange $ p : p1 ++ p2
 
 
 translation :: LogicGraph -> a -> (a -> RENAMING -> b)
@@ -382,23 +382,23 @@ groupSpecLookhead lG =
 specD :: LogicGraph -> AParser st SPEC
            -- do some lookahead for free spec, to avoid clash with free type
 specD l = do
-    p <- asKey freeS `followedWith` (groupSpecLookhead l)
+    p <- asKey freeS `followedWith` groupSpecLookhead l
     sp <- annoParser $ groupSpec l
     return (Free_spec sp $ tokPos p)
   <|> do
-    p <- asKey cofreeS `followedWith` (groupSpecLookhead l)
+    p <- asKey cofreeS `followedWith` groupSpecLookhead l
     sp <- annoParser $ groupSpec l
     return (Cofree_spec sp $ tokPos p)
   <|> do
-    p <- asKey minimizeS `followedWith` (groupSpecLookhead l)
+    p <- asKey minimizeS `followedWith` groupSpecLookhead l
     sp <- annoParser $ groupSpec l
     return (Minimize_spec sp $ tokPos p)
   <|> do
-    p <- asKey closedworldS `followedWith` (groupSpecLookhead l)
+    p <- asKey closedworldS `followedWith` groupSpecLookhead l
     sp <- annoParser $ groupSpec l
     return (Minimize_spec sp $ tokPos p)
   <|> do
-    p <- asKey closedS `followedWith` (groupSpecLookhead l)
+    p <- asKey closedS `followedWith` groupSpecLookhead l
     sp <- annoParser $ groupSpec l
     return (Closed_spec sp $ tokPos p)
   <|> specE l
@@ -418,7 +418,7 @@ basicSpec :: LogicGraph -> (AnyLogic, Maybe IRI) -> AParser st SPEC
 basicSpec lG (Logic lid, sm) = do
     p <- getPos
     bspec <- callParser
-             (liftM (\ps -> ps (prefixes lG)) (basicSpecParser sm lid))
+             (liftM (\ ps -> ps (prefixes lG)) (basicSpecParser sm lid))
              (showSyntax lid sm) "basic specification"
     q <- getPos
     return $ Basic_spec (G_basic_spec lid bspec) $ Range [p, q]
@@ -544,7 +544,7 @@ corr2 l = do
     (mconf, toer) <- corr3 l
     return (Nothing, mconf, toer)
 
-corr3 :: LogicGraph -> AParser st (Maybe CONFIDENCE,G_symbol)
+corr3 :: LogicGraph -> AParser st (Maybe CONFIDENCE, G_symbol)
 corr3 l = do
     conf <- try confidence
     sym <- parseSymbol l

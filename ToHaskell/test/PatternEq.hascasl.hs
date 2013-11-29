@@ -37,12 +37,12 @@ module Dummy where
 data A__s = A__s
 data A__t = A__t
 a :: A__s
-a = error{-A__s-} "a"
+a = error {- A__s -} "a"
 b :: A__s
 c :: A__t
 x :: A__s
-x = error{-A__s-} "x"
+x = error {- A__s -} "x"
 y :: A__t
-y = error{-A__t-} "y"
+y = error {- A__t -} "y"
 b = a
 c = snd (x, y)

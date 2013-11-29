@@ -49,8 +49,8 @@ import Comorphisms.CASL2SubCFOL (mkNotDefBotAxiomName, mkTotalityAxiomName)
 import Comorphisms.CFOL2IsabelleHOL (IsaTheory)
 import qualified Comorphisms.CFOL2IsabelleHOL as CFOL2IsabelleHOL
 
-import CspCASL.AS_CspCASL_Process(FQ_PROCESS_NAME(..), ProcProfile(..),
-                                  PROCESS(..))
+import CspCASL.AS_CspCASL_Process (FQ_PROCESS_NAME (..), ProcProfile (..),
+                                  PROCESS (..))
 import CspCASL.SignCSP
 
 import CspCASLProver.Consts
@@ -66,12 +66,12 @@ import Isabelle.IsaConsts
 import Isabelle.IsaSign
 import Isabelle.Translate (transString)
 
--- -----------------------------------------------------------------------
--- Functions for adding the PreAlphabet datatype to an Isabelle theory --
--- -----------------------------------------------------------------------
+{- -----------------------------------------------------------------------
+Functions for adding the PreAlphabet datatype to an Isabelle theory --
+----------------------------------------------------------------------- -}
 
--- | Add the PreAlphabet (built from a list of sorts) to an Isabelle
--- theory.
+{- | Add the PreAlphabet (built from a list of sorts) to an Isabelle
+theory. -}
 addPreAlphabet :: [SORT] -> IsaTheory -> IsaTheory
 addPreAlphabet sortList isaTh =
    let preAlphabetDomainEntry = mkPreAlphabetDE sortList
@@ -88,10 +88,10 @@ mkPreAlphabetDE sorts =
              ) sorts
     )
 
--- --------------------------------------------------------------
--- Functions for adding the eq functions and the compare_with --
--- functions to an Isabelle theory                            --
--- --------------------------------------------------------------
+{- --------------------------------------------------------------
+Functions for adding the eq functions and the compare_with --
+functions to an Isabelle theory                            --
+-------------------------------------------------------------- -}
 
 -- | Add the eq function to an Isabelle theory using a list of sorts
 addEqFun :: [SORT] -> IsaTheory -> IsaTheory
@@ -108,18 +108,18 @@ addEqFun sortList isaTh =
         eqs = map mkEq sortList
     in addPrimRec eq_PreAlphabetS eqtype eqs isaTh
 
--- | Add all compare_with functions for a given list of sorts to an
--- Isabelle theory. We need to know about the casl signature (data
--- part of a CspCASL spec) so that we can pass it on to the
--- addCompareWithFun function
+{- | Add all compare_with functions for a given list of sorts to an
+Isabelle theory. We need to know about the casl signature (data
+part of a CspCASL spec) so that we can pass it on to the
+addCompareWithFun function -}
 addAllCompareWithFun :: CASLSign.CASLSign -> IsaTheory -> IsaTheory
 addAllCompareWithFun caslSign isaTh =
     let sortList = Set.toList (CASLSign.sortSet caslSign)
     in foldl (addCompareWithFun caslSign) isaTh sortList
 
--- | Add a single compare_with function for a given sort to an
--- Isabelle theory.  We need to know about the casl signature (data
--- part of a CspCASL spec) to work out the RHS of the equations.
+{- | Add a single compare_with function for a given sort to an
+Isabelle theory.  We need to know about the casl signature (data
+part of a CspCASL spec) to work out the RHS of the equations. -}
 addCompareWithFun :: CASLSign.CASLSign -> IsaTheory -> SORT -> IsaTheory
 addCompareWithFun caslSign isaTh sort =
     let sortList = Set.toList (CASLSign.sortSet caslSign)
@@ -140,46 +140,42 @@ addCompareWithFun caslSign isaTh sort =
                                                  sortSuperSet
                                                  sort'SuperSet)
 
-                -- If there are no tests then the rhs=false else
-                -- combine all tests using binConj
+                {- If there are no tests then the rhs=false else
+                combine all tests using binConj -}
                 rhs = if null allTests
                       then false
                       else foldr1 binConj allTests
 
-                -- The tests produce a list of equations for each test
-                -- Test 1 =  test equality at: current sort vs current sort
-                -- Test 2 =  test equality at: current sort vs super sorts
-                -- Test 3 =  test equality at: super sorts  vs current sort
-                -- Test 4 =  test equality at: super sorts  vs super sorts
+                {- The tests produce a list of equations for each test
+                Test 1 =  test equality at: current sort vs current sort
+                Test 2 =  test equality at: current sort vs super sorts
+                Test 3 =  test equality at: super sorts  vs current sort
+                Test 4 =  test equality at: super sorts  vs super sorts -}
                 allTests = concat [test1, test2, test3, test4]
-                test1 = if sort == sort' then [binEq x y] else []
-                test2 = if Set.member sort sort'SuperSet
-                        then [binEq x (mkInjection sort' sort y)]
-                        else []
-                test3 = if Set.member sort' sortSuperSet
-                        then [binEq (mkInjection sort sort' x) y]
-                        else []
-                test4 = if null commonSuperList
-                        then []
-                        else map test4_atSort commonSuperList
+                test1 = [binEq x y | sort == sort']
+                test2 = [binEq x (mkInjection sort' sort y) |
+                         Set.member sort sort'SuperSet]
+                test3 = [binEq (mkInjection sort sort' x) y |
+                         Set.member sort' sortSuperSet]
+                test4 = map test4_atSort commonSuperList
                 test4_atSort s = binEq (mkInjection sort s x)
                                        (mkInjection sort' s y)
             in binEq lhs rhs
         eqs = map mkEq sortList
     in addPrimRec funName funType eqs isaTh
 
--- ------------------------------------------------------
--- Functions that creates a lemma for group many lemmas
--- ------------------------------------------------------
+{- ------------------------------------------------------
+Functions that creates a lemma for group many lemmas
+------------------------------------------------------ -}
 
--- | Add a series of lemmas sentences that collect together all the
--- automatically generate axioms. This allow us to group large collections of
--- lemmas in to a single lemma. This cuts down on the repreated addition of
--- lemmas in the proofs. We need to the CASL signature (from the datapart) and
--- the PFOL Signature to pass it on. We could recalculate the PFOL signature
--- from the CASL signature here, but we dont as it can be passed in. We need
--- the PFOL signature which is the data part CASL signature after translation
--- to PCFOL (i.e. without subsorting)
+{- | Add a series of lemmas sentences that collect together all the
+automatically generate axioms. This allow us to group large collections of
+lemmas in to a single lemma. This cuts down on the repreated addition of
+lemmas in the proofs. We need to the CASL signature (from the datapart) and
+the PFOL Signature to pass it on. We could recalculate the PFOL signature
+from the CASL signature here, but we dont as it can be passed in. We need
+the PFOL signature which is the data part CASL signature after translation
+to PCFOL (i.e. without subsorting) -}
 addAllGaAxiomsCollections :: CASLSign.CASLSign -> CASLSign.CASLSign ->
                         IsaTheory -> IsaTheory
 addAllGaAxiomsCollections caslSign pfolSign isaTh =
@@ -192,16 +188,16 @@ addAllGaAxiomsCollections caslSign pfolSign isaTh =
      $ addLemmasCollection lemmasTransAxS (getCollectionTransAx caslSign)
        isaTh
 
--- ------------------------------------------------------
--- Functions for producing the Justification theorems --
--- ------------------------------------------------------
+{- ------------------------------------------------------
+Functions for producing the Justification theorems --
+------------------------------------------------------ -}
 
--- | Add all justification theorems to an Isabelle Theory. We need to
--- the CASL signature (from the datapart) and the PFOL Signature to
--- pass it on. We could recalculate the PFOL signature from the CASL
--- signature here, but we dont as it can be passed in. We need the
--- PFOL signature which is the data part CASL signature after
--- translation to PCFOL (i.e. without subsorting)
+{- | Add all justification theorems to an Isabelle Theory. We need to
+the CASL signature (from the datapart) and the PFOL Signature to
+pass it on. We could recalculate the PFOL signature from the CASL
+signature here, but we dont as it can be passed in. We need the
+PFOL signature which is the data part CASL signature after
+translation to PCFOL (i.e. without subsorting) -}
 addJustificationTheorems :: CASLSign.CASLSign -> CASLSign.CASLSign ->
                             IsaTheory -> IsaTheory
 addJustificationTheorems caslSign pfolSign isaTh =
@@ -227,9 +223,9 @@ addReflexivityTheorem isaTh =
                  }
     in addTheoremWithProof name thmConds thmConcl proof' isaTh
 
--- | Add the symmetry theorem and proof to an Isabelle Theory. We need
--- to know the number of sorts, but instead we are given a list of
--- all sorts
+{- | Add the symmetry theorem and proof to an Isabelle Theory. We need
+to know the number of sorts, but instead we are given a list of
+all sorts -}
 addSymmetryTheorem :: [SORT] -> IsaTheory -> IsaTheory
 addSymmetryTheorem _ isaTh =
     let -- numSorts = length(sorts)
@@ -238,11 +234,11 @@ addSymmetryTheorem _ isaTh =
         y = mkFree "y"
         thmConds = [binEq_PreAlphabet x y]
         thmConcl = binEq_PreAlphabet y x
-        -- We want to induct Y then apply simp numSorts times and reapeat this
-        -- apply as many times as possibe, thus the true at the end
-        -- inductY = [Apply ((Induct y):(replicate numSorts Simp)) True]
-        -- Bug in above in isabelle?? not sure - does not work for all specs?
-        -- Now we do induction on Y then auto - I think this works for all specs
+        {- We want to induct Y then apply simp numSorts times and reapeat this
+        apply as many times as possibe, thus the true at the end
+        inductY = [Apply ((Induct y):(replicate numSorts Simp)) True]
+        Bug in above in isabelle?? not sure - does not work for all specs?
+        Now we do induction on Y then auto - I think this works for all specs -}
         inductY = [Apply [Induct y, Auto] True]
         proof' = IsaProof {
                    -- Add in front of inductY a apply induct on x
@@ -261,12 +257,12 @@ addAllDecompositionTheorem caslSign pfolSign sorts sortRel isaTh =
     in foldl (addDecompositionTheorem caslSign pfolSign sorts)
        isaTh tripples
 
--- | Add the decomposition theorem and proof which should be deduced
--- from the transitivity axioms from the translation CASL2PCFOL;
--- CASL2SubCFOL for a pair of injections represented as a tripple of
--- sorts. e.g. (S,T,U) means produce the lemma and proof for
--- inj_T_U(inj_S_T(x)) = inj_S_U(x). As a work around, we need to
--- know all sorts to pass them on.
+{- | Add the decomposition theorem and proof which should be deduced
+from the transitivity axioms from the translation CASL2PCFOL;
+CASL2SubCFOL for a pair of injections represented as a tripple of
+sorts. e.g. (S,T,U) means produce the lemma and proof for
+inj_T_U(inj_S_T(x)) = inj_S_U(x). As a work around, we need to
+know all sorts to pass them on. -}
 addDecompositionTheorem :: CASLSign.CASLSign -> CASLSign.CASLSign -> [SORT]
                         -> IsaTheory -> (SORT, SORT, SORT)
                         -> IsaTheory
@@ -319,11 +315,11 @@ addAllInjectivityTheorems :: CASLSign.CASLSign -> [SORT] -> [(SORT, SORT)] ->
 addAllInjectivityTheorems pfolSign sorts sortRel isaTh =
     foldl (addInjectivityTheorem pfolSign sorts sortRel) isaTh sortRel
 
--- | Add the injectivity theorem and proof which should be deduced
--- from the embedding_Injectivity axioms from the translation
--- CASL2PCFOL; CASL2SubCFOL for a single injection represented as a
--- pair of sorts. As a work around, we need to know all sorts to
--- pass them on
+{- | Add the injectivity theorem and proof which should be deduced
+from the embedding_Injectivity axioms from the translation
+CASL2PCFOL; CASL2SubCFOL for a single injection represented as a
+pair of sorts. As a work around, we need to know all sorts to
+pass them on -}
 addInjectivityTheorem :: CASLSign.CASLSign -> [SORT] -> [(SORT, SORT)] ->
                          IsaTheory -> (SORT, SORT) -> IsaTheory
 addInjectivityTheorem pfolSign sorts sortRel isaTh (s1, s2) =
@@ -368,14 +364,14 @@ addInjectivityTheorem pfolSign sorts sortRel isaTh (s1, s2) =
                            Done
     in addTheoremWithProof name conds concl proof' isaTh
 
--- | Add the transitivity theorem and proof to an Isabelle Theory. We
--- need to know the number of sorts to know how much induction to
--- perfom and also the sub-sort relation to build the collection of
--- injectivity theorem names
+{- | Add the transitivity theorem and proof to an Isabelle Theory. We
+need to know the number of sorts to know how much induction to
+perfom and also the sub-sort relation to build the collection of
+injectivity theorem names -}
 addTransitivityTheorem :: [SORT] -> [(SORT, SORT)] -> IsaTheory -> IsaTheory
 addTransitivityTheorem sorts sortRel isaTh =
-    let -- First we extend the theory to include the collections of CspCASL
-        -- prover's injectivity and decomposition theorems
+    let {- First we extend the theory to include the collections of CspCASL
+        prover's injectivity and decomposition theorems -}
         isaThExt =
             addLemmasCollection lemmasCCProverInjectivityThmsS
                 (getColInjectivityThmName sortRel)
@@ -401,25 +397,25 @@ addTransitivityTheorem sorts sortRel isaTh =
 
         simpPlus = SimpAdd Nothing (lemmasCCProverDecompositionThmsS' ++
                                     lemmasCCProverInjectivityThmsS')
-        -- We want to induct Y, Z and perfom simplification is a clever way,
-        -- namely,
-        -- apply(induct y, (induct z, simp * numSorts) * numSorts)+
-        inductZ = (Induct z) : (replicate numSorts simpPlus)
-        inductYZ = ((Induct y) : concat (replicate numSorts inductZ))
+        {- We want to induct Y, Z and perfom simplification is a clever way,
+        namely,
+        apply(induct y, (induct z, simp * numSorts) * numSorts)+ -}
+        inductZ = Induct z : replicate numSorts simpPlus
+        inductYZ = Induct y : concat (replicate numSorts inductZ)
         -- Main induction and simplification proof command
         inductPC = [Apply inductYZ True]
         proof' = IsaProof {
-                   proof = (Apply [Induct x] False : inductPC),
+                   proof = Apply [Induct x] False : inductPC,
                    end = Done
                  }
     in addTheoremWithProof name thmConds thmConcl proof' isaThExt
 
--- -----------------------------------------------------------
--- Functions for producing instances of equivalence classes --
--- ------------------------------------------------------------
+{- -----------------------------------------------------------
+Functions for producing instances of equivalence classes --
+------------------------------------------------------------ -}
 
--- | Function to add preAlphabet as an equivalence relation to an
--- Isabelle theory
+{- | Function to add preAlphabet as an equivalence relation to an
+Isabelle theory -}
 addInstanceOfEquiv :: IsaTheory -> IsaTheory
 addInstanceOfEquiv isaTh =
     let equivSort = [IsaClass equivTypeClassS]
@@ -441,9 +437,9 @@ addInstanceOfEquiv isaTh =
     in addInstanceOf preAlphabetS [] equivSort
            [(preAlphabetSimS, def)] equivProof isaTh
 
--- -----------------------------------------------------------
--- Functions for producing the alphabet type               --
--- -----------------------------------------------------------
+{- -----------------------------------------------------------
+Functions for producing the alphabet type               --
+----------------------------------------------------------- -}
 
 -- | Function to add the Alphabet type (type syonnym) to an Isabelle theory
 addAlphabetType :: IsaTheory -> IsaTheory
@@ -458,9 +454,9 @@ addAlphabetType isaTh =
                              }
     in (isaTh_sign_updated, snd isaTh)
 
--- -----------------------------------------------------------
--- Functions for producing the bar types                   --
--- -----------------------------------------------------------
+{- -----------------------------------------------------------
+Functions for producing the bar types                   --
+----------------------------------------------------------- -}
 
 -- | Function to add all the bar types to an Isabelle theory.
 addAllBarTypes :: [SORT] -> IsaTheory -> IsaTheory
@@ -480,24 +476,24 @@ addBarType isaTh sort =
         exist_eq = termAppl (conDouble exS) (Abs y bin_eq NotCont)
         subset = SubSet x alphabetType exist_eq
         sen = TypeDef barType subset (IsaProof [] (By Auto))
-        namedSen = (makeNamed sortBarString sen)
+        namedSen = makeNamed sortBarString sen
     in (isaTh_sign, isaTh_sen ++ [namedSen])
 
--- -----------------------------------------------------------
--- Functions for producing the choose functions            --
--- -----------------------------------------------------------
+{- -----------------------------------------------------------
+Functions for producing the choose functions            --
+----------------------------------------------------------- -}
 
--- | Add all choose functions for a given list of sorts to an Isabelle
--- theory.
+{- | Add all choose functions for a given list of sorts to an Isabelle
+theory. -}
 addAllChooseFunctions :: [SORT] -> IsaTheory -> IsaTheory
 addAllChooseFunctions sorts isaTh =
     let isaTh' = foldl addChooseFunction isaTh sorts -- add function and def
     in foldl addChooseFunctionLemma isaTh' sorts -- add theorem and proof
 
--- | Add a single choose function for a given sort to an Isabelle
--- theory.  The following Isabelle code is produced by this function:
--- consts choose_Nat :: "Alphabet => Nat"
--- defs choose_Nat_def: "choose_Nat x == the_elem{y . class(C_Nat y) = x}"
+{- | Add a single choose function for a given sort to an Isabelle
+theory.  The following Isabelle code is produced by this function:
+consts choose_Nat :: "Alphabet => Nat"
+defs choose_Nat_def: "choose_Nat x == the_elem{y . class(C_Nat y) = x}" -}
 addChooseFunction :: IsaTheory -> SORT -> IsaTheory
 addChooseFunction isaTh sort =
     let -- constant
@@ -520,10 +516,10 @@ addChooseFunction isaTh sort =
         -- Add constant to theory
       $ addConst chooseFunName chooseFunType isaTh
 
--- | Add a single choose function lemma for a given sort to an
--- Isabelle theory.  The following Isabelle code is produced by this
--- function: lemma "choose_Nat (class (C_Nat x)) = x". The proof is
--- also produced.
+{- | Add a single choose function lemma for a given sort to an
+Isabelle theory.  The following Isabelle code is produced by this
+function: lemma "choose_Nat (class (C_Nat x)) = x". The proof is
+also produced. -}
 
 addChooseFunctionLemma :: IsaTheory -> SORT -> IsaTheory
 addChooseFunctionLemma isaTh sort =
@@ -553,24 +549,24 @@ addChooseFunctionLemma isaTh sort =
                            Done
     in addTheoremWithProof chooseFunName thmConds thmConcl proof' isaTh
 
--- -----------------------------------------------------------
--- Functions for producing the integration theorems        --
--- -----------------------------------------------------------
+{- -----------------------------------------------------------
+Functions for producing the integration theorems        --
+----------------------------------------------------------- -}
 
--- | Add all the integration theorems. We need to know all the sorts
--- to produce all the theorems. We need to know the CASL signature
--- of the data part to pass it on as an argument.
+{- | Add all the integration theorems. We need to know all the sorts
+to produce all the theorems. We need to know the CASL signature
+of the data part to pass it on as an argument. -}
 addAllIntegrationTheorems :: [SORT] -> CASLSign.CASLSign -> IsaTheory ->
                              IsaTheory
 addAllIntegrationTheorems sorts caslSign isaTh =
     let pairs = [(s1, s2) | s1 <- sorts, s2 <- sorts]
     in foldl (addIntegrationTheorem_A caslSign) isaTh pairs
 
--- | Add Integration theorem A -- Compare to elements of the Alphabet.
--- We add the integration theorem based on the sorts of both
--- elements of the alphabet. We need to know the subsort relation to
--- find the highest common sort, but we pass in the CASL signature
--- for the data part.
+{- | Add Integration theorem A -- Compare to elements of the Alphabet.
+We add the integration theorem based on the sorts of both
+elements of the alphabet. We need to know the subsort relation to
+find the highest common sort, but we pass in the CASL signature
+for the data part. -}
 addIntegrationTheorem_A :: CASLSign.CASLSign -> IsaTheory -> (SORT, SORT) ->
                            IsaTheory
 addIntegrationTheorem_A caslSign isaTh (s1, s2) =
@@ -588,8 +584,8 @@ addIntegrationTheorem_A caslSign isaTh (s1, s2) =
         lhs = if null commonSuperList
               then false
               else
-                  -- BUG pick any common sort for now (this does hold
-                  -- and is valid) we should pick the top most one.
+                  {- BUG pick any common sort for now (this does hold
+                  and is valid) we should pick the top most one. -}
                   let s' = head commonSuperList
                   in binEq (mkInjection s1 s' x) (mkInjection s2 s' y)
         thmConds = []
@@ -606,12 +602,12 @@ addIntegrationTheorem_A caslSign isaTh (s1, s2) =
     in addTheoremWithProof "IntegrationTheorem_A"
        thmConds thmConcl proof' isaTh
 
--- ------------------------------------------------------------------------
--- Functions for adding the Event datatype and the channel encoding     --
--- ------------------------------------------------------------------------
+{- ------------------------------------------------------------------------
+Functions for adding the Event datatype and the channel encoding     --
+------------------------------------------------------------------------ -}
 
--- | Add the Event datatype (built from a list of channels and the subsort
--- relation) to an Isabelle theory.
+{- | Add the Event datatype (built from a list of channels and the subsort
+relation) to an Isabelle theory. -}
 addEventDataType :: Rel.Rel SORT -> ChanNameMap -> IsaTheory -> IsaTheory
 addEventDataType sortRel chanNameMap isaTh =
     let eventDomainEntry = mkEventDE sortRel chanNameMap
@@ -625,12 +621,12 @@ mkEventDE _ chanNameMap =
         -- Make a constuctor type for a channel with a target sort
         mkChanCon (c, s) = (mkVName (convertChannelString c),
                                         [mkSortBarType s])
-        -- Make pairs of channel and sorts, where we only build the declared
-        -- channels and not the subsorted channels.
+        {- Make pairs of channel and sorts, where we only build the declared
+        channels and not the subsorted channels. -}
         mkAllChanCons = map mkChanCon $ CASLSign.mapSetToList chanNameMap
-        -- We build the event type out of the flat constructions and the list of
-        -- channel constructions
-    in (eventType, (flat : mkAllChanCons))
+        {- We build the event type out of the flat constructions and the list of
+        channel constructions -}
+    in (eventType, flat : mkAllChanCons)
 
 -- | Add the eq function to an Isabelle theory using a list of sorts
 addProjFlatFun :: IsaTheory -> IsaTheory
@@ -644,10 +640,10 @@ addProjFlatFun isaTh =
         eqs = [binEq lhs rhs]
     in addPrimRec projFlatS eqtype eqs isaTh
 
--- | Function to add all the Flat types. These capture the original sorts, but
--- use the bar values instead wrapped up in the Flat constructor(the Flat
--- channel). We use this as a set of normal communications (action prefix,
--- send, recieve).
+{- | Function to add all the Flat types. These capture the original sorts, but
+use the bar values instead wrapped up in the Flat constructor(the Flat
+channel). We use this as a set of normal communications (action prefix,
+send, recieve). -}
 addFlatTypes :: [SORT] -> IsaTheory -> IsaTheory
 addFlatTypes sorts isaTh = foldl addFlatType isaTh sorts
 
@@ -669,18 +665,18 @@ addFlatType isaTh sort =
         condition_eq = binConj condition1 condition2
         exist_eq = termAppl (conDouble exS) (Abs y condition_eq NotCont)
         subset = SubSet x eventType exist_eq
-        proof' = AutoSimpAdd Nothing [(mkSortBarString sort) ++ "_def"]
+        proof' = AutoSimpAdd Nothing [mkSortBarString sort ++ "_def"]
         sen = TypeDef flatType subset (IsaProof [] (By proof'))
-        namedSen = (makeNamed sortFlatString sen)
+        namedSen = makeNamed sortFlatString sen
     in (isaTh_sign, isaTh_sen ++ [namedSen])
 
--- ------------------------------------------------------------------------
--- Functions for adding the process name datatype to an Isabelle theory --
--- ------------------------------------------------------------------------
+{- ------------------------------------------------------------------------
+Functions for adding the process name datatype to an Isabelle theory --
+------------------------------------------------------------------------ -}
 
--- | Add process name datatype which has a constructor for each
--- process name (along with the arguments for the process) in the
--- CspCASL Signature to an Isabelle theory
+{- | Add process name datatype which has a constructor for each
+process name (along with the arguments for the process) in the
+CspCASL Signature to an Isabelle theory -}
 addProcNameDatatype :: CspSign -> IsaTheory -> IsaTheory
 addProcNameDatatype cspSign isaTh =
     let -- Create a list of pairs of process names and thier profiles
@@ -693,17 +689,17 @@ addProcNameDatatype cspSign isaTh =
         procNameDomainEntry = mkFQProcNameDE $ map f procNamesAndProfileSet
     in updateDomainTab procNameDomainEntry isaTh
 
--- | Make a proccess name Domain Entry from a list of fully qualified Process
--- names. This creates a data type for the process names.
+{- | Make a proccess name Domain Entry from a list of fully qualified Process
+names. This creates a data type for the process names. -}
 mkFQProcNameDE :: [FQ_PROCESS_NAME] -> DomainEntry
 mkFQProcNameDE fqProcesses =
     let -- The a list of pairs of constructors and their arguments
         constructors = map mk_cons fqProcesses
-        -- Take a proccess name and its argument sorts (also its
-        -- commAlpha - thrown away) and make a pair representing the
-        -- constructor and the argument types
-        -- Note: The processes need to have arguments of the bar variants of the
-        -- sorts not the original sorts
+        {- Take a proccess name and its argument sorts (also its
+        commAlpha - thrown away) and make a pair representing the
+        constructor and the argument types
+        Note: The processes need to have arguments of the bar variants of the
+        sorts not the original sorts -}
         mk_cons fqProcName = case fqProcName of
           FQ_PROCESS_NAME _ (ProcProfile argSorts _) ->
             (mkVName (mkProcNameConstructor fqProcName),
@@ -713,17 +709,17 @@ mkFQProcNameDE fqProcesses =
     in
     (procNameType, constructors)
 
--- -----------------------------------------------------------------------
--- Functions adding the process map function to an Isabelle theory     --
--- -----------------------------------------------------------------------
+{- -----------------------------------------------------------------------
+Functions adding the process map function to an Isabelle theory     --
+----------------------------------------------------------------------- -}
 
--- | Add the function procMap to an Isabelle theory. This function maps process
--- names to real processes build using the same names and the alphabet i.e.,
--- in CSP-Prover syntax:
--- ProcName => (ProcName, Alphabet) proc. We need to know the CspCASL
--- sentences and the casl signature (data part). We need the PCFOL and CFOL
--- signatures of the data part after translation to PCFOL and CFOL to pass
--- along the process translation.
+{- | Add the function procMap to an Isabelle theory. This function maps process
+names to real processes build using the same names and the alphabet i.e.,
+in CSP-Prover syntax:
+ProcName => (ProcName, Alphabet) proc. We need to know the CspCASL
+sentences and the casl signature (data part). We need the PCFOL and CFOL
+signatures of the data part after translation to PCFOL and CFOL to pass
+along the process translation. -}
 addProcMap :: [Named CspCASLSen] -> CspCASLSign ->
               CASLSign.Sign () () -> CASLSign.Sign () () ->
               IsaTheory -> IsaTheory
@@ -733,18 +729,17 @@ addProcMap namedSens ccSign pcfolSign cfolSign isaTh =
         tyToks = CFOL2IsabelleHOL.typeToks caslSign
         trForm = CFOL2IsabelleHOL.formTrCASL
         strs = CFOL2IsabelleHOL.getAssumpsToks caslSign
-        transVar fqVar = CASL_Fold.foldTerm
-                         (CFOL2IsabelleHOL.transRecord
-                          caslSign tyToks trForm strs) fqVar
-        -- Get the plain sentences from the named senetences which are not
-        -- implied i.e., where axiom=true. first filter the axioms only then
-        -- stip the named annotation off them.
-        sens = map (sentence) $
-               filter (isAxiom) namedSens
+        transVar = CASL_Fold.foldTerm
+                    (CFOL2IsabelleHOL.transRecord
+                     caslSign tyToks trForm strs)
+        {- Get the plain sentences from the named senetences which are not
+        implied i.e., where axiom=true. first filter the axioms only then
+        stip the named annotation off them. -}
+        sens = map sentence $ filter isAxiom namedSens
         -- Filter so we only have proccess equations and no CASL senetences
         processEqs = filter isProcessEq sens
-        -- the term representing the procMap that takes a term as a
-        -- parameter
+        {- the term representing the procMap that takes a term as a
+        parameter -}
         procMapTerm = termAppl (conDouble procMapS)
         -- Make a single equation for the primrec from a process equation
         mkEq f = case f of
@@ -753,8 +748,8 @@ addProcMap namedSens ccSign pcfolSign cfolSign isaTh =
                 procNameString = convertFQProcessName2String fqProcName
                 -- Change the name to a term
                 procNameTerm = conDouble procNameString
-                -- Turn the list of variables into a list of Isabelle
-                -- free variables
+                {- Turn the list of variables into a list of Isabelle
+                free variables -}
                 varTerms = map transVar fqVars
                 lhs = procMapTerm (foldl termAppl procNameTerm varTerms)
                 addToVdm fqvar vdm' =
@@ -771,27 +766,26 @@ addProcMap namedSens ccSign pcfolSign cfolSign isaTh =
         eqs = map mkEq processEqs
     in addPrimRec procMapS procMapType eqs isaTh
 
--- | Add the implied process equations as theorems to be proven by the user. We
--- need to know the CspCASL sentences and the casl signature (data part). We
--- need the PCFOL and CFOL signatures of the data part after translation to
--- PCFOL and CFOL to pass along the process translation.
+{- | Add the implied process equations as theorems to be proven by the user. We
+need to know the CspCASL sentences and the casl signature (data part). We
+need the PCFOL and CFOL signatures of the data part after translation to
+PCFOL and CFOL to pass along the process translation. -}
 addProcTheorems :: [Named CspCASLSen] -> CspCASLSign ->
                    CASLSign.Sign () () -> CASLSign.Sign () () ->
                    IsaTheory -> IsaTheory
 addProcTheorems namedSens ccSign pcfolSign cfolSign isaTh =
-    let -- Get the plain sentences from the named senetences which are
-        -- implied i.e., where axiom=false. first filter the axioms only then
-        -- stip the named annotation off them.
-        sens = map (sentence) $
-               filter (not . isAxiom) namedSens
+    let {- Get the plain sentences from the named senetences which are
+        implied i.e., where axiom=false. first filter the axioms only then
+        stip the named annotation off them. -}
+        sens = map sentence $ filter (not . isAxiom) namedSens
         -- Filter so we only have proccess equations and no CASL senetences
         processEqs = filter isProcessEq sens
-        -- Make a single equation for the primrec from a process equation
-        -- mkEq (ProcessEq procName fqVars _ proc) =
+        {- Make a single equation for the primrec from a process equation
+        mkEq (ProcessEq procName fqVars _ proc) = -}
         mkEq f = case f of
           ExtFORMULA (ProcessEq fqProcName fqVars _ proc) ->
-            let -- the LHS a a process in abstract syntax i.e. process name with
-                -- variables as arguments
+            let {- the LHS a a process in abstract syntax i.e. process name with
+                variables as arguments -}
                 lhs' = NamedProcess fqProcName fqVars nullRange
                 addToVdm fqvar vdm' =
                     case fqvar of
@@ -806,27 +800,26 @@ addProcTheorems namedSens ccSign pcfolSign cfolSign isaTh =
           _ -> error "addProcTheorems: no ProcessEq"
         eqs = map mkEq processEqs
         proof' = toIsaProof Sorry
-        addTheorem eq' isaTh' = addTheoremWithProof "UserTheorem" [] eq'
-                               proof' isaTh'
+        addTheorem eq' = addTheoremWithProof "UserTheorem" [] eq' proof'
     in foldr addTheorem isaTh eqs
 
 
--- ----------------------------------------------------------
--- Basic function to help keep strings consistent         --
--- ----------------------------------------------------------
+{- ----------------------------------------------------------
+Basic function to help keep strings consistent         --
+---------------------------------------------------------- -}
 
--- | Return the list of strings of all gn_totality axiom names produced by the
--- translation CASL2PCFOL; CASL2SubCFOL. This function is not implemented in a
--- satisfactory way.
+{- | Return the list of strings of all gn_totality axiom names produced by the
+translation CASL2PCFOL; CASL2SubCFOL. This function is not implemented in a
+satisfactory way. -}
 getCollectionTotAx :: CASLSign.CASLSign -> [String]
 getCollectionTotAx pfolSign =
     let totOpList = MapSet.toList . MapSet.filter CASLSign.isTotal
                  $ CASLSign.opMap pfolSign
     in map (mkTotalityAxiomName . fst) totOpList
 
--- | Return the name of the definedness function for a sort. We need
--- to know all sorts to perform this workaround
--- This function is not implemented in a satisfactory way
+{- | Return the name of the definedness function for a sort. We need
+to know all sorts to perform this workaround
+This function is not implemented in a satisfactory way -}
 getDefinedName :: [SORT] -> SORT -> String
 getDefinedName sorts s =
     let index = List.elemIndex s sorts
@@ -835,30 +828,30 @@ getDefinedName sorts s =
                 Just i -> show (i + 1)
     in "gn_definedX" ++ str
 
--- | Return the name of the injection as it is used in the alternative
--- syntax of the injection from one sort to another.
--- This function is not implemented in a satisfactory way
+{- | Return the name of the injection as it is used in the alternative
+syntax of the injection from one sort to another.
+This function is not implemented in a satisfactory way -}
 getInjectionName :: SORT -> SORT -> String
 getInjectionName s s' =
     let t = CASLSign.toOP_TYPE $ CASLSign.mkTotOpType [s] s'
         injName = show $ CASLInject.uniqueInjName t
     in injName
 
--- | Return the injection name of the injection from one sort to another
--- This function is not implemented in a satisfactory way
+{- | Return the injection name of the injection from one sort to another
+This function is not implemented in a satisfactory way -}
 getDefinedOp :: [SORT] -> SORT -> Term -> Term
-getDefinedOp sorts s t =
-    termAppl (con $ VName (getDefinedName sorts s) Nothing) t
+getDefinedOp sorts s =
+    termAppl (con $ VName (getDefinedName sorts s) Nothing)
 
--- | Return the term representing the injection of a term from one sort to
--- another. Note: the term is returned if both sorts are the same. This
--- function is not implemented in a satisfactory way.
+{- | Return the term representing the injection of a term from one sort to
+another. Note: the term is returned if both sorts are the same. This
+function is not implemented in a satisfactory way. -}
 mkInjection :: SORT -> SORT -> Term -> Term
 mkInjection s s' t =
     let injName = getInjectionName s s'
-        replace string c s1 = concat (map (\ x -> if x == c
+        replace string c s1 = concatMap (\ x -> if x == c
                                                  then s1
-                                                 else [x]) string)
+                                                 else [x]) string
         injOp = Const {
                   termName = VName {
                               new = "X_" ++ injName,
@@ -880,62 +873,63 @@ mkInjection s s' t =
        then t
        else termAppl injOp t
 
--- | Return the list of string of all ga_embedding_injectivity axioms
--- produced by the translation CASL2PCFOL; CASL2SubCFOL.
+{- | Return the list of string of all ga_embedding_injectivity axioms
+produced by the translation CASL2PCFOL; CASL2SubCFOL. -}
 getCollectionEmbInjAx :: [(SORT, SORT)] -> [String]
 getCollectionEmbInjAx sortRel =
     let mkName (s, s') = transString $ mkEmbInjName s s'
     in map mkName sortRel
 
--- | Return the list of strings of all ga_notDefBottom axioms produced by
--- the translation CASL2PCFOL; CASL2SubCFOL.
+{- | Return the list of strings of all ga_notDefBottom axioms produced by
+the translation CASL2PCFOL; CASL2SubCFOL. -}
 getCollectionNotDefBotAx :: [SORT] -> [String]
 getCollectionNotDefBotAx = map $ transString . mkNotDefBotAxiomName
 
--- | Return the list of strings of all the transitivity axioms names produced by
--- the translation CASL2PCFOL; CASL2SubCFOL.
+{- | Return the list of strings of all the transitivity axioms names produced by
+the translation CASL2PCFOL; CASL2SubCFOL. -}
 getCollectionTransAx :: CASLSign.CASLSign -> [String]
 getCollectionTransAx caslSign =
     let sorts = Set.toList $ CASLSign.sortSet caslSign
         allSupers s s' s'' =
-            (Set.member s' $ CASLSign.supersortsOf s caslSign) &&
-            (Set.member s'' $ CASLSign.supersortsOf s' caslSign) && (s /= s'')
+            Set.member s' (CASLSign.supersortsOf s caslSign) &&
+            Set.member s'' (CASLSign.supersortsOf s' caslSign) && (s /= s'')
     in [transString $ mkTransAxiomName s s' s''
             | s <- sorts, s' <- sorts, s'' <- sorts, allSupers s s' s'']
 
--- | Return the list of strings of all the identity axioms names produced by
--- the translation CASL2PCFOL; CASL2SubCFOL.
+{- | Return the list of strings of all the identity axioms names produced by
+the translation CASL2PCFOL; CASL2SubCFOL. -}
 getCollectionIdentityAx :: CASLSign.CASLSign -> [String]
 getCollectionIdentityAx caslSign =
     let sorts = Set.toList $ CASLSign.sortSet caslSign
-        isomorphic s s' = (Set.member s $ CASLSign.supersortsOf s' caslSign) &&
-                          (Set.member s' $ CASLSign.supersortsOf s caslSign)
+        isomorphic s s' = Set.member s (CASLSign.supersortsOf s' caslSign) &&
+                          Set.member s' (CASLSign.supersortsOf s caslSign)
     in [transString $ mkIdAxiomName s s'
             | s <- sorts, s' <- sorts, isomorphic s s']
 
 
--- | Return the list of string of all decomposition theorem names that we
--- generate. This function is not implemented in a satisfactory way
+{- | Return the list of string of all decomposition theorem names that we
+generate. This function is not implemented in a satisfactory way -}
 getColDecompositionThmName :: [(SORT, SORT)] -> [String]
 getColDecompositionThmName sortRel =
     let tripples = [(s1, s2, s3) |
                     (s1, s2) <- sortRel, (s2', s3) <- sortRel, s2 == s2']
     in map getDecompositionThmName tripples
 
--- | Produce the theorem name of the decomposition theorem that we produce for a
--- gievn tripple of sorts.
+{- | Produce the theorem name of the decomposition theorem that we produce for a
+gievn tripple of sorts. -}
 getDecompositionThmName :: (SORT, SORT, SORT) -> String
 getDecompositionThmName (s, s', s'') =
-    "ccprover_decomposition_" ++ (convertSort2String s) ++ "_" ++ (convertSort2String s')
-                    ++ "_" ++ (convertSort2String s'')
+    "ccprover_decomposition_" ++ convertSort2String s ++ "_" ++
+    convertSort2String s' ++ "_" ++ convertSort2String s''
 
--- | Return the list of strings of the injectivity theorem names that we
--- generate.  This function is not implemented in a satisfactory way
+{- | Return the list of strings of the injectivity theorem names that we
+generate.  This function is not implemented in a satisfactory way -}
 getColInjectivityThmName :: [(SORT, SORT)] -> [String]
-getColInjectivityThmName sortRel = map getInjectivityThmName sortRel
+getColInjectivityThmName = map getInjectivityThmName
 
--- | Produce the theorem name of the injectivity theorem that we produce for a
--- gievn pair of sorts.
+{- | Produce the theorem name of the injectivity theorem that we produce for a
+gievn pair of sorts. -}
 getInjectivityThmName :: (SORT, SORT) -> String
 getInjectivityThmName (s, s') =
-    "ccprover_injectivity_" ++ convertSort2String s ++ "_" ++ convertSort2String s'
+    "ccprover_injectivity_" ++ convertSort2String s ++ "_" ++
+    convertSort2String s'

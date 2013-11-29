@@ -35,9 +35,9 @@ import qualified Data.Map as Map
 import System.IO
 import System.Process
 
--- ----------------------------------------------------------------------
--- * Connection handling
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+Connection handling
+---------------------------------------------------------------------- -}
 
 -- | A session is a process connection
 class Session a where
@@ -62,7 +62,7 @@ instance Session (Handle, Handle, ProcessHandle) where
 
 -- | Left String is success, Right String is failure
 lookupRedShellCmd :: IO (Either String String)
-lookupRedShellCmd  = do
+lookupRedShellCmd = do
   reducecmd <- getEnvDef "HETS_REDUCE" "redcsl"
   -- check that prog exists
   noProg <- missingExecutableInPath reducecmd
@@ -80,7 +80,7 @@ connectCAS reducecmd = do
     hPutStrLn inpt "off nat;"
     hPutStrLn inpt "load redlog;"
     hPutStrLn inpt "rlset reals;"
-    -- read 7 lines 
+    -- read 7 lines
     replicateM_ 7 $ hGetLine out
     putStrLn "done"
     return (inpt, out, errh, pid)
@@ -92,19 +92,18 @@ disconnectCAS s = do
   case proch s of
     Nothing -> return ()
 
-    -- this is always better, because it closes also the shell-process,
-    -- hence use a Session-variant with ProcessHandle!
+    {- this is always better, because it closes also the shell-process,
+    hence use a Session-variant with ProcessHandle! -}
     Just ph -> waitForProcess ph >> return ()
   putStrLn "CAS disconnected"
   return ()
 
 sendToReduce :: Session a => a -> String -> IO ()
-sendToReduce sess s = do
-  hPutStrLn (inp sess) s
-  
--- ----------------------------------------------------------------------
--- * Prover specific
--- ----------------------------------------------------------------------
+sendToReduce sess = hPutStrLn (inp sess)
+
+{- ----------------------------------------------------------------------
+Prover specific
+---------------------------------------------------------------------- -}
 
 -- | returns the name of the reduce prover
 reduceS :: String
@@ -138,9 +137,9 @@ rlqe(exp...);
 -}
 
 
--- ----------------------------------------------------------------------
--- * Reduce Pretty Printing
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+Reduce Pretty Printing
+---------------------------------------------------------------------- -}
 
 exportExps :: [EXPRESSION] -> String
 exportExps l = intercalate "," $ map exportExp l
@@ -154,17 +153,17 @@ infixOps = [ "+", "-", "/", "**", "^", "=", "<=", ">=", "<", ">", "*", "and"
 -- | Exports an expression to Reduce format
 exportExp :: EXPRESSION -> String
 exportExp (Var token) = tokStr token
-exportExp (Op s _ exps@[e1, e2] _) 
+exportExp (Op s _ exps@[e1, e2] _)
     | elem (simpleName s) infixOps =
         concat ["(", exportExp e1, simpleName s, exportExp e2, ")"]
-    | otherwise       = concat [simpleName s, "(", exportExps exps, ")"]
+    | otherwise = concat [simpleName s, "(", exportExps exps, ")"]
 exportExp (Op s _ [] _) = simpleName s
 exportExp (Op s _ exps _) = concat [simpleName s, "(", exportExps exps, ")"]
 exportExp (List exps _) = "{" ++ exportExps exps ++ "}"
 exportExp (Int i _) = show i
 exportExp (Rat d _) = show d
-exportExp (Interval l r _) =  concat [ "[", show l, ",", show r, "]" ]
---exportExp e = error $ "exportExp: expression not supported: " ++ show e
+exportExp (Interval l r _) = concat [ "[", show l, ",", show r, "]" ]
+-- exportExp e = error $ "exportExp: expression not supported: " ++ show e
 
 -- | exports command to Reduce Format
 exportReduce :: Named CMD -> String
@@ -175,9 +174,9 @@ exportReduce namedcmd = case sentence namedcmd of
   _ -> error "exportReduce: not implemented for this case" -- TODO: implement
 
 
--- ----------------------------------------------------------------------
--- * Reduce Parsing
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+Reduce Parsing
+---------------------------------------------------------------------- -}
 
 -- | removes the newlines 4: from the beginning of the string
 skipReduceLineNr :: String -> String
@@ -189,16 +188,16 @@ redOutputToExpression :: String -> Maybe EXPRESSION
 redOutputToExpression = parseExpression () . skipReduceLineNr
 
 
--- ----------------------------------------------------------------------
--- * Reduce Commands
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+Reduce Commands
+---------------------------------------------------------------------- -}
 
 
 cslReduceDefaultMapping :: [(OPNAME, String)]
 cslReduceDefaultMapping =
     let idmapping = map (\ x -> (x, show x))
     in (OP_pow, "**") :
-           (idmapping $ Map.keys $ Map.delete OP_pow operatorInfoNameMap)
+           idmapping (Map.keys $ Map.delete OP_pow operatorInfoNameMap)
 
 {- | reads characters from the specified output until the next result is
   complete, indicated by $ when using the maxima mode off nat; -}
@@ -244,59 +243,63 @@ procString h axname s = do
   return $ f axname res
 
 -- | factors a given expression over the reals
-casfactorExp :: Session a => a -> Named CMD -> IO ((ProofStatus [EXPRESSION]),[(Named CMD, ProofStatus [EXPRESSION])])
+casfactorExp :: Session a => a -> Named CMD -> IO (ProofStatus [EXPRESSION],
+                 [(Named CMD, ProofStatus [EXPRESSION])])
 casfactorExp sess cmd =
   do
     proofstatus <- procString sess (senAttr cmd) $ exportReduce cmd ++ ";"
-    return (proofstatus,[exportLemmaFactor cmd proofstatus])
+    return (proofstatus, [exportLemmaFactor cmd proofstatus])
 
 -- | solves a single equation over the reals
-cassolve :: Session a => a -> Named CMD -> IO (ProofStatus [EXPRESSION],[(Named CMD, ProofStatus [EXPRESSION])])
+cassolve :: Session a => a -> Named CMD -> IO (ProofStatus [EXPRESSION],
+             [(Named CMD, ProofStatus [EXPRESSION])])
 cassolve sess cmd =
-  do 
+  do
     proofstatus <- procString sess (senAttr cmd) $ exportReduce cmd ++ ";"
-    return (proofstatus,[])
-    
-
+    return (proofstatus, [])
 
 
 -- | simplifies a given expression over the reals
-cassimplify :: Session a => a -> Named CMD -> IO ((ProofStatus [EXPRESSION]),[(Named CMD, ProofStatus [EXPRESSION])])
+cassimplify :: Session a => a -> Named CMD -> IO (ProofStatus [EXPRESSION],
+                [(Named CMD, ProofStatus [EXPRESSION])])
 cassimplify sess cmd = do
   proofstatus <- procString sess (senAttr cmd) $ exportReduce cmd ++ ";"
-  return (proofstatus,[exportLemmaSimplify cmd proofstatus])
+  return (proofstatus, [exportLemmaSimplify cmd proofstatus])
 
 
-
-
--- | asks value of a given expression 
-casask :: Session a => a -> Named CMD -> IO ((ProofStatus [EXPRESSION]),[(Named CMD, ProofStatus [EXPRESSION])])
+-- | asks value of a given expression
+casask :: Session a => a -> Named CMD -> IO (ProofStatus [EXPRESSION],
+           [(Named CMD, ProofStatus [EXPRESSION])])
 casask sess cmd = do
   proofstatus <- procString sess (senAttr cmd) $ exportReduce cmd ++ ";"
-  return (proofstatus,[exportLemmaAsk cmd proofstatus])
+  return (proofstatus, [exportLemmaAsk cmd proofstatus])
 
 
 -- | computes the remainder of a division
-casremainder :: Session a => a -> Named CMD -> IO ((ProofStatus [EXPRESSION]),[(Named CMD, ProofStatus [EXPRESSION])])
+casremainder :: Session a => a -> Named CMD -> IO (ProofStatus [EXPRESSION],
+                 [(Named CMD, ProofStatus [EXPRESSION])])
 casremainder sess cmd =
   do
-    proofstatus <- procString sess (senAttr cmd) $ exportReduce (makeNamed (senAttr cmd) (Cmd "divide" args)) ++ ";" 
-    return (proofstatus,[exportLemmaRemainder cmd proofstatus])
+    proofstatus <- procString sess (senAttr cmd) $ exportReduce
+      (makeNamed (senAttr cmd) (Cmd "divide" args)) ++ ";"
+    return (proofstatus, [exportLemmaRemainder cmd proofstatus])
   where Cmd _ args = sentence cmd
 
 -- | integrates the given expression
-casint :: Session a => a -> Named CMD -> IO ((ProofStatus [EXPRESSION]),[(Named CMD, ProofStatus [EXPRESSION])])
+casint :: Session a => a -> Named CMD -> IO (ProofStatus [EXPRESSION],
+           [(Named CMD, ProofStatus [EXPRESSION])])
 casint sess cmd =
   do
     proofstatus <- procString sess (senAttr cmd) $ exportReduce cmd ++ ";"
-    return (proofstatus,[exportLemmaInt cmd proofstatus])
+    return (proofstatus, [exportLemmaInt cmd proofstatus])
 
 -- | performs quantifier elimination of a given expression
-casqelim :: Session a => a -> Named CMD -> IO ((ProofStatus [EXPRESSION]),[(Named CMD, ProofStatus [EXPRESSION])])
+casqelim :: Session a => a -> Named CMD -> IO (ProofStatus [EXPRESSION],
+ [(Named CMD, ProofStatus [EXPRESSION])])
 casqelim sess cmd =
   do
     proofstatus <- procString sess (senAttr cmd) $ exportReduce cmd ++ ";"
-    return (proofstatus,[exportLemmaQelim cmd proofstatus])
+    return (proofstatus, [exportLemmaQelim cmd proofstatus])
 
 -- | declares an operator, such that it can used infix/prefix in CAS
 casDeclareOperators :: Session a => a -> [EXPRESSION] -> IO ()
@@ -305,14 +308,14 @@ casDeclareOperators sess varlist = do
   hGetLine (outp sess)
   return ()
 
--- | declares an equation x := exp 
+-- | declares an equation x := exp
 casDeclareEquation :: Session a => a -> CMD -> IO ()
-casDeclareEquation sess (Ass c def) = 
+casDeclareEquation sess (Ass c def) =
     do
       let e1 = exportExp $ opDeclToOp c
           e2 = exportExp def
-      putStrLn $ e1 ++ ":=" ++  e2
-      hPutStrLn (inp sess) $ e1 ++ ":=" ++  e2 ++ ";"
+      putStrLn $ e1 ++ ":=" ++ e2
+      hPutStrLn (inp sess) $ e1 ++ ":=" ++ e2 ++ ";"
       res <- getNextResultOutput (outp sess)
       putStrLn $ "Declaration Result: " ++ res
       return ()
@@ -321,37 +324,44 @@ casDeclareEquation _ _ =
     error "casDeclareEquation: not implemented for this case" -- TODO: implement
 
 
--- ----------------------------------------------------------------------
--- * Reduce Lemma Export
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+Reduce Lemma Export
+---------------------------------------------------------------------- -}
 
-exportLemmaGeneric :: Named CMD -> ProofStatus [EXPRESSION] -> (Named CMD, ProofStatus [EXPRESSION])
+exportLemmaGeneric :: Named CMD -> ProofStatus [EXPRESSION] ->
+                      (Named CMD, ProofStatus [EXPRESSION])
 exportLemmaGeneric namedcmd ps =
-  ((makeNamed lemmaname lemma), closedReduceProofStatus lemmaname [mkOp "Proof" []])
+  (makeNamed lemmaname lemma, closedReduceProofStatus lemmaname [mkOp "Proof" []])
       where Cmd _ exps = sentence namedcmd
             lemma = Cmd "=" [head exps, head (proofTree ps)]
-            lemmaname = (ganame namedcmd)
+            lemmaname = ganame namedcmd
 
-exportLemmaQelim :: Named CMD -> ProofStatus [EXPRESSION] -> (Named CMD, ProofStatus [EXPRESSION])
+exportLemmaQelim :: Named CMD -> ProofStatus [EXPRESSION] ->
+                    (Named CMD, ProofStatus [EXPRESSION])
 exportLemmaQelim = exportLemmaGeneric
 
 -- | generates the lemma for cmd with result ProofStatus
-exportLemmaFactor :: Named CMD -> ProofStatus [EXPRESSION] -> (Named CMD, ProofStatus [EXPRESSION])
+exportLemmaFactor :: Named CMD -> ProofStatus [EXPRESSION] ->
+                     (Named CMD, ProofStatus [EXPRESSION])
 exportLemmaFactor = exportLemmaGeneric
 
-exportLemmaSolve :: Named CMD -> ProofStatus [EXPRESSION] -> (Named CMD, ProofStatus [EXPRESSION])
+exportLemmaSolve :: Named CMD -> ProofStatus [EXPRESSION] ->
+                    (Named CMD, ProofStatus [EXPRESSION])
 exportLemmaSolve = exportLemmaGeneric
 
-exportLemmaSimplify :: Named CMD -> ProofStatus [EXPRESSION] -> (Named CMD, ProofStatus [EXPRESSION])
+exportLemmaSimplify :: Named CMD -> ProofStatus [EXPRESSION] ->
+                       (Named CMD, ProofStatus [EXPRESSION])
 exportLemmaSimplify = exportLemmaGeneric
 
-exportLemmaAsk :: Named CMD -> ProofStatus [EXPRESSION] -> (Named CMD, ProofStatus [EXPRESSION])
+exportLemmaAsk :: Named CMD -> ProofStatus [EXPRESSION] ->
+                  (Named CMD, ProofStatus [EXPRESSION])
 exportLemmaAsk = exportLemmaGeneric
 
-exportLemmaRemainder :: Named CMD -> ProofStatus [EXPRESSION] -> (Named CMD, ProofStatus [EXPRESSION])
+exportLemmaRemainder :: Named CMD -> ProofStatus [EXPRESSION] ->
+                        (Named CMD, ProofStatus [EXPRESSION])
 exportLemmaRemainder = exportLemmaGeneric
 
 
-exportLemmaInt :: Named CMD -> ProofStatus [EXPRESSION] -> (Named CMD, ProofStatus [EXPRESSION])
+exportLemmaInt :: Named CMD -> ProofStatus [EXPRESSION] ->
+                  (Named CMD, ProofStatus [EXPRESSION])
 exportLemmaInt = exportLemmaGeneric
-

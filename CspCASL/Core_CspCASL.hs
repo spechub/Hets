@@ -38,34 +38,34 @@ import CspCASL.AS_CspCASL
 import CspCASL.AS_CspCASL_Process
 
 basicToCore :: CspBasicSpec -> CspBasicSpec
-basicToCore c = CspBasicSpec (channels c) (core_procs)
+basicToCore c = CspBasicSpec (channels c) core_procs
     where core_procs = map procEqToCore (proc_items c)
-          procEqToCore (Proc_Eq pn p) = (Proc_Eq pn (procToCore p))
-          procEqToCore x             = x
+          procEqToCore (Proc_Eq pn p) = Proc_Eq pn (procToCore p)
+          procEqToCore x = x
 
 procToCore :: PROCESS -> PROCESS
 procToCore proc = let p' = procToCore in case proc of
     -- First the core operators: we just need to recurse.
-    (Skip r) -> (Skip r)
-    (Stop r) -> (Stop r)
-    (PrefixProcess ev p r) -> (PrefixProcess ev (p' p) r)
-    (ExternalPrefixProcess v es p r) -> (ExternalPrefixProcess v es (p' p) r)
-    (InternalPrefixProcess v es p r) -> (InternalPrefixProcess v es (p' p) r)
-    (Sequential p q r) -> (Sequential (p' p) (p' q) r)
-    (ExternalChoice p q r) -> (ExternalChoice (p' p) (p' q) r)
-    (InternalChoice p q r) -> (InternalChoice (p' p) (p' q) r)
-    (GeneralisedParallel p es q r) -> (GeneralisedParallel (p' p) es (p' q) r)
-    (Hiding p es r) -> (Hiding (p' p) es r)
-    (RelationalRenaming p rn r) -> (RelationalRenaming (p' p) rn r)
-    (NamedProcess pn evs r) -> (NamedProcess pn evs r)
-    (ConditionalProcess f p q r) -> (ConditionalProcess f (p' p) (p' q) r)
+    (Skip r) -> Skip r
+    (Stop r) -> Stop r
+    (PrefixProcess ev p r) -> PrefixProcess ev (p' p) r
+    (ExternalPrefixProcess v es p r) -> ExternalPrefixProcess v es (p' p) r
+    (InternalPrefixProcess v es p r) -> InternalPrefixProcess v es (p' p) r
+    (Sequential p q r) -> Sequential (p' p) (p' q) r
+    (ExternalChoice p q r) -> ExternalChoice (p' p) (p' q) r
+    (InternalChoice p q r) -> InternalChoice (p' p) (p' q) r
+    (GeneralisedParallel p es q r) -> GeneralisedParallel (p' p) es (p' q) r
+    (Hiding p es r) -> Hiding (p' p) es r
+    (RelationalRenaming p rn r) -> RelationalRenaming (p' p) rn r
+    (NamedProcess pn evs r) -> NamedProcess pn evs r
+    (ConditionalProcess f p q r) -> ConditionalProcess f (p' p) (p' q) r
     -- Non-core, done.
-    (Interleaving p q r) -> (GeneralisedParallel (p' p)
+    (Interleaving p q r) -> GeneralisedParallel (p' p
                              (EventSet [] nullRange) (p' q) r)
     -- Non-core, not done yet.
-    (Div r) -> (Div r)
-    (Run es r) -> (Run es r)
-    (Chaos es r) -> (Chaos es r)
-    (SynchronousParallel p q r) -> (SynchronousParallel (p' p) (p' q) r)
+    (Div r) -> Div r
+    (Run es r) -> Run es r
+    (Chaos es r) -> Chaos es r
+    (SynchronousParallel p q r) -> SynchronousParallel (p' p) (p' q) r
     (AlphabetisedParallel p esp esq q r) ->
-        (AlphabetisedParallel (p' p) esp esq (p' q) r)
+        AlphabetisedParallel (p' p) esp esq (p' q) r

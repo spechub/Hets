@@ -44,7 +44,7 @@ instance Sentences QVTR
   Morphism
   ()
   where
-    map_sen QVTR _ sen = return sen
+    map_sen QVTR _ = return
 
 
 instance Syntax QVTR
@@ -85,4 +85,4 @@ instance StaticAnalysis QVTR
     is_subsig QVTR _ _ = True
     subsig_inclusion QVTR = defaultInclusion
     induced_from_morphism _ _ sig = return $ MkMorphism sig sig
-    signature_union QVTR sign1 _ = return sign1 --TODO
+    signature_union QVTR sign1 _ = return sign1 -- TODO

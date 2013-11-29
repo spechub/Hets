@@ -132,7 +132,7 @@ mergeNodeMod NodeMod
     , delSym = delSym2
     , addSym = addSym2 }
     = let delSym3 = delSym1 || delSym2
-          setSenMod a b = if delSym3 then False else a || b
+          setSenMod a b = not delSym3 && (a || b)
     in NodeMod
     { delAx = setSenMod delAx1 delAx2
     , delTh = setSenMod delTh1 delTh2

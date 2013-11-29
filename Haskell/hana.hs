@@ -34,9 +34,9 @@ process fn = do
     let ts = pLexerPass0 True s
         Result ds m = do
             HsModule _ _ _ _ b <- parseTokens HP.parse fn ts
-            hatAna(HsDecls b, emptySign, emptyGlobalAnnos)
+            hatAna (HsDecls b, emptySign, emptyGlobalAnnos)
     case m of
         Just (_, sig, hs) -> do
             putStrLn $ showDoc sig ""
             mapM_ (putStrLn . flip showDoc "" . sentence) hs
-        _ -> mapM_ (putStrLn . show) ds
+        _ -> mapM_ print ds

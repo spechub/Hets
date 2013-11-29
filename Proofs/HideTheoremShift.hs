@@ -47,6 +47,7 @@ import Common.Result
 import Control.Monad.Identity
 import qualified Data.Map as Map
 import Data.Graph.Inductive.Graph
+import Data.Maybe (isJust)
 
 type ListSelector m a = [a] -> m (Maybe a)
 type PathTuple = ([LEdge DGLinkLab], [LEdge DGLinkLab])
@@ -65,15 +66,15 @@ automaticHideTheoremShift ln libEnv =
         ls = filter (liftE isUnprovenHidingThm) $ labEdgesDG dgraph
     in automaticHideTheoremShiftFromList ln ls libEnv
 
-automaticHideTheoremShiftFromList :: LibName -> [LEdge DGLinkLab]-> LibEnv
+automaticHideTheoremShiftFromList :: LibName -> [LEdge DGLinkLab] -> LibEnv
                                   -> LibEnv
-automaticHideTheoremShiftFromList ln ls = runIdentity. hideTheoremShiftFromList
+automaticHideTheoremShiftFromList ln ls = runIdentity . hideTheoremShiftFromList
       (const $ \ l -> return $ case l of
                       [a] -> Just a -- maybe take the first one always ?
-                      _   -> Nothing) ln ls
+                      _ -> Nothing) ln ls
 
 hideTheoremShiftFromList :: Monad m => ProofBaseSelector m -> LibName
-                     -> [LEdge DGLinkLab] -> LibEnv  -> m LibEnv
+                     -> [LEdge DGLinkLab] -> LibEnv -> m LibEnv
 hideTheoremShiftFromList proofBaseSel ln hidingThmEdges proofStatus = do
     let dgraph = lookupDGraph ln proofStatus
         finalHidingThmEdges = filter (liftE isUnprovenHidingThm) hidingThmEdges
@@ -123,8 +124,8 @@ insertNewEdges (dgraph, proofbasis) edge =
                   tempProofBasis = case getLastChange tempDGraph of
                     InsertEdge tempE ->
                         addEdgeId proofbasis $ getEdgeId tempE
-                    _ -> error ("Proofs"++
-                                ".HideTheoremShift"++
+                    _ -> error ("Proofs" ++
+                                ".HideTheoremShift" ++
                                 ".insertNewEdges")
                   in (tempDGraph, tempProofBasis)
 
@@ -132,18 +133,17 @@ insertNewEdges (dgraph, proofbasis) edge =
      HidingThm edge using the edge list as the proofbasis
 -}
 makeProvenHidingThmEdge :: ProofBasis -> LEdge DGLinkLab -> LEdge DGLinkLab
-makeProvenHidingThmEdge proofBasisEdges ledge@(src,tgt,edgeLab) =
+makeProvenHidingThmEdge proofBasisEdges ledge@(src, tgt, edgeLab) =
   (src, tgt, edgeLab
        { dgl_type = setProof (Proven (hideThmShiftRule $ getEdgeId ledge)
                               proofBasisEdges)
            $ dgl_type edgeLab
        , dgl_origin = DGLinkProof })
 
-{- | selects a proof basis for 'hide theorem shift' if there is one
--}
+-- | selects a proof basis for 'hide theorem shift' if there is one
 findProofBaseForHideTheoremShift :: Monad m => DGraph -> LEdge DGLinkLab
                                  -> ProofBaseSelector m -> m [LEdge DGLinkLab]
-findProofBaseForHideTheoremShift dgraph (ledge@(src,tgt, lb)) proofBaseSel = do
+findProofBaseForHideTheoremShift dgraph (ledge@(src, tgt, lb)) proofBaseSel = do
   let dgraph2 = delLEdgeDG ledge dgraph
       pathsFromSrc = getAllPathsOfTypeFrom dgraph2 src
       pathsFromTgt = getAllPathsOfTypeFrom dgraph2 tgt
@@ -163,8 +163,7 @@ findProofBaseForHideTheoremShift dgraph (ledge@(src,tgt, lb)) proofBaseSel = do
           Nothing -> []
           Just (fstPath, sndPath) -> map createEdgeForPath [fstPath, sndPath]
 
-{- | advoiding duplicate to be selected proofbasis.
--}
+-- | advoiding duplicate to be selected proofbasis.
 filterPairsByGlobalProveStatus :: [([LEdge DGLinkLab], [LEdge DGLinkLab])]
                                -> [([LEdge DGLinkLab], [LEdge DGLinkLab])]
 filterPairsByGlobalProveStatus = filter bothAreProven where
@@ -174,16 +173,16 @@ filterPairsByGlobalProveStatus = filter bothAreProven where
 {- removes all pairs from the given list whose second path does not have a
    conservativity greater than or equal to Cons -}
 filterPairsByConservativityOfSecondPath
-    :: [([LEdge DGLinkLab],[LEdge DGLinkLab])]
-    -> [([LEdge DGLinkLab],[LEdge DGLinkLab])]
+    :: [([LEdge DGLinkLab], [LEdge DGLinkLab])]
+    -> [([LEdge DGLinkLab], [LEdge DGLinkLab])]
 filterPairsByConservativityOfSecondPath [] = []
-filterPairsByConservativityOfSecondPath (([],_):list) =
+filterPairsByConservativityOfSecondPath (([], _) : list) =
   filterPairsByConservativityOfSecondPath list
-filterPairsByConservativityOfSecondPath ((_,[]):list) =
+filterPairsByConservativityOfSecondPath ((_, []) : list) =
   filterPairsByConservativityOfSecondPath list
-filterPairsByConservativityOfSecondPath (pair:list) =
-  if (and [cons >= Cons | cons <- map getConservativity (snd pair)])
-   then pair:(filterPairsByConservativityOfSecondPath list)
+filterPairsByConservativityOfSecondPath (pair : list) =
+  if and [cons >= Cons | cons <- map getConservativity (snd pair)]
+   then pair : filterPairsByConservativityOfSecondPath list
     else filterPairsByConservativityOfSecondPath list
 
 {- | selects a proofBasis (i.e. a path tuple) from the list of possible ones:
@@ -211,37 +210,37 @@ hideTheoremShift_selectProofBase dgraph basisList =
 {- returns a string representation of the given paths: for each path a
    tuple of the names of its nodes is shown, the two are combined by
    an \'and\' -}
-prettyPrintPathTuple :: DGraph -> ([LEdge DGLinkLab],[LEdge DGLinkLab])
+prettyPrintPathTuple :: DGraph -> ([LEdge DGLinkLab], [LEdge DGLinkLab])
                      -> String
-prettyPrintPathTuple dgraph (p1,p2) =
-  (prettyPrintPath dgraph p1) ++ " and " ++ (prettyPrintPath dgraph p2)
+prettyPrintPathTuple dgraph (p1, p2) =
+  prettyPrintPath dgraph p1 ++ " and " ++ prettyPrintPath dgraph p2
 
-{- returns the names of the nodes of the path, separated by commas-}
+-- returns the names of the nodes of the path, separated by commas
 prettyPrintNodesOfPath :: DGraph -> [LEdge DGLinkLab] -> String
 prettyPrintNodesOfPath _ [] = ""
-prettyPrintNodesOfPath dgraph (edge:path) =
-  (prettyPrintSourceNode dgraph edge) ++ ", "
-  ++ (prettyPrintNodesOfPath dgraph path)
+prettyPrintNodesOfPath dgraph (edge : path) =
+  prettyPrintSourceNode dgraph edge ++ ", "
+  ++ prettyPrintNodesOfPath dgraph path
   ++ end
   where
     end = case path of
             [] -> prettyPrintTargetNode dgraph edge
             _ -> ""
 
-{- returns a string reprentation of the path: showing a tuple of its nodes-}
+-- returns a string reprentation of the path: showing a tuple of its nodes
 prettyPrintPath :: DGraph -> [LEdge DGLinkLab] -> String
 prettyPrintPath _ [] = "<empty path>"
 prettyPrintPath dgraph path =
-  "(" ++ (prettyPrintNodesOfPath dgraph path) ++ ")"
+  "(" ++ prettyPrintNodesOfPath dgraph path ++ ")"
 
-{- returns the name of the source node of the given edge-}
+-- returns the name of the source node of the given edge
 prettyPrintSourceNode :: DGraph -> LEdge DGLinkLab -> String
-prettyPrintSourceNode dgraph (src,_,_) =
+prettyPrintSourceNode dgraph (src, _, _) =
    getDGNodeName $ labDG dgraph src
 
-{- returns the name of the target node of the given edge-}
+-- returns the name of the target node of the given edge
 prettyPrintTargetNode :: DGraph -> LEdge DGLinkLab -> String
-prettyPrintTargetNode dgraph (_,tgt,_) =
+prettyPrintTargetNode dgraph (_, tgt, _) =
    getDGNodeName $ labDG dgraph tgt
 
 {- creates a unproven global thm edge for the given path, i.e. with
@@ -259,36 +258,35 @@ returned as path-path tuples but as path-<list of path> tuples. Every
 path in the list is a pair of the single path.  The path pairs are
 selected by having the same target node. -}
 selectPathPairs :: [[LEdge DGLinkLab]] -> [[LEdge DGLinkLab]]
-                -> [([LEdge DGLinkLab],[[LEdge DGLinkLab]])]
+                -> [([LEdge DGLinkLab], [[LEdge DGLinkLab]])]
 selectPathPairs [] _ = []
 selectPathPairs _ [] = []
 selectPathPairs paths1 paths2 =
-  [(p1,  [p2| p2 <- paths2, haveSameTgt (last p1) (last p2) ] )| p1 <- paths1]
+  [(p1, [p2 | p2 <- paths2, haveSameTgt (last p1) (last p2) ] ) | p1 <- paths1]
 
   where
     haveSameTgt :: LEdge DGLinkLab -> LEdge DGLinkLab -> Bool
-    haveSameTgt (_,tgt1,_) (_,tgt2,_) = tgt1 == tgt2
+    haveSameTgt (_, tgt1, _) (_, tgt2, _) = tgt1 == tgt2
 
 {- returns a list of path pairs by keeping those pairs, whose first
 path composed with the first given morphism and whose second path
 composed with the second given morphism result in the same morphism,
-and dropping all other pairs.-}
-filterPairsByResultingMorphisms :: [([LEdge DGLinkLab],[[LEdge DGLinkLab]])]
+and dropping all other pairs. -}
+filterPairsByResultingMorphisms :: [([LEdge DGLinkLab], [[LEdge DGLinkLab]])]
                                 -> GMorphism -> GMorphism
-                                -> [([LEdge DGLinkLab],[LEdge DGLinkLab])]
+                                -> [([LEdge DGLinkLab], [LEdge DGLinkLab])]
 filterPairsByResultingMorphisms [] _ _ = []
-filterPairsByResultingMorphisms (pair:pairs) morph1 morph2 =
-  [((fst pair),path)| path <- suitingPaths]
-          ++ (filterPairsByResultingMorphisms pairs morph1 morph2)
-
+filterPairsByResultingMorphisms (pair : pairs) morph1 morph2 =
+  [(fst pair, path) | path <- suitingPaths]
+          ++ filterPairsByResultingMorphisms pairs morph1 morph2
   where
     compMorph1
         = compMaybeMorphisms (Just morph1) (calculateMorphismOfPath (fst pair))
     suitingPaths :: [[LEdge DGLinkLab]]
-    suitingPaths = if (compMorph1 /= Nothing) then
-                      [path |path <- (snd pair),
-                       (compMaybeMorphisms (Just morph2)
-                                           (calculateMorphismOfPath path))
+    suitingPaths = if isJust compMorph1 then
+                      [path | path <- snd pair,
+                       compMaybeMorphisms (Just morph2)
+                                          (calculateMorphismOfPath path)
                        == compMorph1]
                     else []
 

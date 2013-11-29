@@ -1,6 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances,
-             UndecidableInstances, ExistentialQuantification,
-             DeriveDataTypeable #-}
+             UndecidableInstances, ExistentialQuantification #-}
 {- |
 Module      :  $Header$
 License     :  GPLv2 or higher, see LICENSE.txt

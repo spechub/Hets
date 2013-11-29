@@ -70,8 +70,8 @@ dynComorphismsFile = "DynComorphismList.hs"
 dynComorphismsCon :: String
 dynComorphismsCon = "dynComorphismList"
 
--- ----------------------------------------------------------------------------
---                    Logic analysis
+{- ----------------------------------------------------------------------------
+Logic analysis -}
 
 -- analyzes a logic definition
 anaLogicDef :: LogicDef -> DGraph -> IO DGraph
@@ -85,7 +85,7 @@ anaLogicDefH :: LogicalFramework lid sublogics basic_spec sentence symb_items
                        symb_map_items sign morphism symbol raw_symbol
                        proof_tree
                 => lid -> LogicDef -> DGraph -> IO DGraph
-anaLogicDefH ml ld dg = do
+anaLogicDefH ml ld dg =
   case retrieveDiagram ml ld dg of
        Result _ (Just (ltruth, lmod, found, lpf)) -> do
            let l = iriToStringUnsecure $ newlogicName ld
@@ -104,29 +104,29 @@ retrieveDiagram :: LogicalFramework lid sublogics basic_spec sentence symb_items
                               Maybe sign, Maybe morphism)
 retrieveDiagram ml (LogicDef _ _ s m f p _) dg = do
   ltruth <- lookupMorph ml s dg
-  lmod <- if (m == nullIRI)
+  lmod <- if m == nullIRI
              then return Nothing
              else do v <- lookupMorph ml m dg
                      return $ Just v
-  found <- if (f == nullIRI)
+  found <- if f == nullIRI
               then return Nothing
               else do v <- lookupSig ml f dg
                       return $ Just v
-  lpf <- if (p == nullIRI)
+  lpf <- if p == nullIRI
             then return Nothing
             else do v <- lookupMorph ml p dg
                     return $ Just v
---   if (dom ltruth /= base_sig ml) then
---      error $ "The morphism " ++ (show s) ++
---              " must originate from the Base signature for " ++
---              (show ml) ++ "." else do
-  if (isJust lmod && (dom $ fromJust lmod) /= cod ltruth) then
-     error $ "The morphisms " ++ (show s) ++
-             " and " ++ (show m) ++ " must be composable." else do
-  if (isJust lpf && (dom $ fromJust lpf) /= cod ltruth) then
-     error $ "The morphisms " ++ (show s) ++
-             " and " ++ (show p) ++ " must be composable." else do
-  return (ltruth, lmod, found, lpf)
+{- if (dom ltruth /= base_sig ml) then
+error $ "The morphism " ++ (show s) ++
+" must originate from the Base signature for " ++
+(show ml) ++ "." else do -}
+  if isJust lmod && dom (fromJust lmod) /= cod ltruth then
+     error $ "The morphisms " ++ show s ++
+             " and " ++ show m ++ " must be composable."
+  else if isJust lpf && dom (fromJust lpf) /= cod ltruth then
+     error $ "The morphisms " ++ show s ++
+             " and " ++ show p ++ " must be composable."
+  else return (ltruth, lmod, found, lpf)
 
 -- creates a node for the logic definition
 addLogicDef2DG :: LogicDef -> DGraph -> DGraph
@@ -186,8 +186,8 @@ addLogic2LogicList l = do
       else
       writeFile file contentsNew
     Left er -> error $ show er
--- ----------------------------------------------------------------------------
---                    Comorphism analysis
+{- ----------------------------------------------------------------------------
+Comorphism analysis -}
 
 anaComorphismDef :: ComorphismDef -> DGraph -> IO DGraph
 anaComorphismDef cd dg =
@@ -228,19 +228,42 @@ anaComH ml (ComorphismDef _ _ sL tL sM pM mM) dg =
      synM <- lookupMorph ml sM dg
      pfM <- lookupMorph ml pM dg
      modM <- lookupMorph ml mM dg
-     if (cod sLSyn /= dom synM) then error $ "the domain of the syntax morphism has to be the syntax of the source logic.\n"
-      else if (cod tLSyn /= cod synM) then error $ "the codomain of the syntax morphism has to be the syntax of the target logic.\n"
-            else if (cod sLPf /= dom pfM) then error $ "the domain of the proof morphism has to be the proof theory of the source logic.\n"   ++ (show (cod sLPf)) ++ "\n\n" ++ (show (dom pfM)) ++ "\n"
-                  else if (cod tLPf /= cod pfM) then error "the codomain of the proof morphism has to be the proof theory of the target logic.\n"
-                                                else if (cod sLMod /= dom modM) then error $ "the domain of the model morphism has to be the model theory of the source logic.\n" ++ (show (cod sLMod)) ++ "\n" ++ (show (dom modM)) ++ "\n"
-                              else if (cod tLMod /= cod modM) then error "the codomain of the model morphism has to be the model theory of the target logic.\n"
-                                   else case ((composeMorphisms synM tLPf), (composeMorphisms sLPf pfM)) of
-                                        (Result _ comM1, Result _ comM2) -> if (comM1 /= comM2) then error "the syntax - proof diagram does not commute.\n"
-                                                                             else case ((composeMorphisms synM tLMod), (composeMorphisms sLPf modM)) of
-                                                                                      (Result _ comM3, Result _ comM4) -> if (comM3 /= comM4) then error "the syntax - model diagram does not commute.\n"
-                                                                                                                           else return (synM, pfM, modM)
+     if cod sLSyn /= dom synM then error $
+      "the domain of the syntax morphism has" ++
+      " to be the syntax of the source logic.\n"
+      else if cod tLSyn /= cod synM then error $
+        "the codomain of the syntax morphism has" ++
+        " to be the syntax of the target logic.\n"
+            else if cod sLPf /= dom pfM then error $
+              "the domain of the proof morphism has to be the" ++
+              " proof theory of the source logic.\n" ++ show (cod sLPf) ++
+              "\n\n" ++ show (dom pfM) ++ "\n"
+                  else if cod tLPf /= cod pfM then error $
+                    "the codomain of the proof morphism has" ++
+                    " to be the proof theory of the target logic.\n"
+                            else if cod sLMod /= dom modM
+                            then error $ "the domain of the model morphism" ++
+                            " has to be the model theory of the source logic.\n"
+                            ++ show (cod sLMod) ++ "\n" ++ show (dom modM)
+                            ++ "\n"
+                              else if cod tLMod /= cod modM then error $
+                                "the codomain of the model morphism has" ++
+                                " to be the model theory of the target logic.\n"
+                                   else case (composeMorphisms synM tLPf,
+                                              composeMorphisms sLPf pfM) of
+                                      (Result _ comM1, Result _ comM2) ->
+                                       if comM1 /= comM2 then error $
+                                           "the syntax - proof diagram does" ++
+                                           " not commute.\n"
+                                       else case (composeMorphisms synM tLMod,
+                                                  composeMorphisms sLPf modM) of
+                                             (Result _ comM3, Result _ comM4) ->
+                                              if comM3 /= comM4 then error $
+                                                "the syntax - model diagram" ++
+                                                " does not commute.\n"
+                                              else return (synM, pfM, modM)
 
-getMorphL ::  LogicalFramework lid sublogics basic_spec sentence symb_items
+getMorphL :: LogicalFramework lid sublogics basic_spec sentence symb_items
                             symb_map_items sign morphism symbol raw_symbol
                             proof_tree
                      => lid -> String -> String -> morphism
@@ -290,8 +313,8 @@ addComorphism2ComorphismList c = do
       Left er -> error $ show er
 
 
--- ----------------------------------------------------------------------------
---                    Auxiliary functions
+{- ----------------------------------------------------------------------------
+Auxiliary functions -}
 
 -- looks up a signature by name
 lookupSig :: Logic lid sublogics basic_spec sentence symb_items symb_map_items
@@ -300,13 +323,13 @@ lookupSig :: Logic lid sublogics basic_spec sentence symb_items symb_map_items
 lookupSig l n dg = do
   let extSig = case lookupGlobalEnvDG n dg of
                  Just (SpecEntry es) -> es
-                 _ -> error $ "The signature " ++ (show n) ++
+                 _ -> error $ "The signature " ++ show n ++
                               " could not be found."
   case extSig of
     ExtGenSig _ (NodeSig _ (G_sign l' (ExtSign sig _) _)) ->
       if Logic l /= Logic l'
-         then error $ "The signature " ++ (show n) ++
-                      " is not in the logic " ++ (show l) ++ "."
+         then error $ "The signature " ++ show n ++
+                      " is not in the logic " ++ show l ++ "."
          else coercePlainSign l' l "" sig
 
 -- looks up a morphism by name
@@ -316,14 +339,14 @@ lookupMorph :: Logic lid sublogics basic_spec sentence symb_items symb_map_items
 lookupMorph l n dg = do
   let extView = case lookupGlobalEnvDG n dg of
                   Just (ViewOrStructEntry _ ev) -> ev
-                  _ -> error $ "The morphism " ++ (show n) ++
+                  _ -> error $ "The morphism " ++ show n ++
                                " could not be found."
   case extView of
     ExtViewSig _ (GMorphism c _ _ morph _) _ -> do
       let l' = targetLogic c
       if Logic l /= Logic l'
-         then error $ "The morphism " ++ (show n) ++
-                      " is not in the logic " ++ (show l) ++ "."
+         then error $ "The morphism " ++ show n ++
+                      " is not in the logic " ++ show l ++ "."
          else coerceMorphism l' l "" morph
 
 
@@ -336,33 +359,33 @@ parser l = do
   mod_decl <- do m <- asStr "module"
                  n <- moduleName
                  w <- asStr "where"
-                 return $ intercalate " " [m,n,w]
-  imps <- do many1 $ do
+                 return $ unwords [m, n, w]
+  imps <- many1 $ do
              i <- asStr "import"
              n <- moduleName
-             return $ intercalate " " [i,n]
+             return $ unwords [i, n]
   log_var_decl <- do v <- asStr dynLogicsCon
                      s <- asStr "::"
                      t <- do oBracketT
                              asStr "AnyLogic"
                              cBracketT
                              return "[AnyLogic]"
-                     return $ intercalate " " [v,s,t]
+                     return $ unwords [v, s, t]
   log_var_def <- do v <- asStr dynLogicsCon
                     s <- asStr "="
-                    return $ intercalate " " [v,s]
+                    return $ unwords [v, s]
   log_list <- do oBracketT
-                 ( do cBracketT
-                      return []
+                 (do cBracketT
+                     return [])
                    <|>
-                   do (xs,_) <- logParser `separatedBy` commaT
+                   do (xs, _) <- logParser `separatedBy` commaT
                       cBracketT
-                      return xs )
+                      return xs
 
   return $ header ++ mod_decl ++ "\n\n" ++
-           (intercalate "\n" (imps ++ [l_imp])) ++ "\n\n" ++
+           intercalate "\n" (imps ++ [l_imp]) ++ "\n\n" ++
            log_var_decl ++ "\n" ++ log_var_def ++ " " ++ "[" ++
-           (intercalate ", " $ log_list ++ [l_log]) ++ "]"
+           intercalate ", " (log_list ++ [l_log]) ++ "]"
 
 parserc :: String -> AParser st String
 parserc c = do
@@ -373,38 +396,38 @@ parserc c = do
      mod_decl <- do m <- asStr "module"
                     n <- moduleName
                     w <- asStr "where"
-                    return $ intercalate " " [m,n,w]
-     imps <- do many1 $ do
+                    return $ unwords [m, n, w]
+     imps <- many1 $ do
                 i <- asStr "import"
                 n <- moduleName
-                return $ intercalate " " [i,n]
+                return $ unwords [i, n]
      com_var_decl <- do v <- asStr dynComorphismsCon
                         s <- asStr "::"
                         t <- do oBracketT
                                 asStr "AnyComorphism"
                                 cBracketT
                                 return "[AnyComorphism]"
-                        return $ intercalate " " [v, s, t]
+                        return $ unwords [v, s, t]
      com_var_def <- do v <- asStr dynComorphismsCon
                        s <- asStr "="
-                       return $ intercalate " " [v,s]
+                       return $ unwords [v, s]
      com_list <- do oBracketT
-                    ( do cBracketT
-                         return []
-                      <|>
-                      do (xs,_) <- comParser `separatedBy` commaT
-                         cBracketT
-                         return xs )
+                    (do cBracketT
+                        return [])
+                        <|>
+                        do (xs, _) <- comParser `separatedBy` commaT
+                           cBracketT
+                           return xs
      return $ header ++ mod_decl ++ "\n\n" ++
-              (intercalate "\n" (imps ++ [com_imp])) ++ "\n\n" ++
+              intercalate "\n" (imps ++ [com_imp]) ++ "\n\n" ++
               com_var_decl ++ "\n" ++
               com_var_def ++ " " ++ "[" ++
-              (intercalate ", " (com_list ++ [com_c])) ++ "]"
+              intercalate ", " (com_list ++ [com_c]) ++ "]"
 
 skipUntil :: String -> AParser st String
 skipUntil lim = do
-  res <- many $ (reserved [lim] $ many1 $ noneOf whiteChars) <|>
-                (many1 $ oneOf whiteChars)
+  res <- many $ reserved [lim] (many1 $ noneOf whiteChars) <|>
+                many1 (oneOf whiteChars)
   return $ concat res
 
 asStr :: String -> AParser st String

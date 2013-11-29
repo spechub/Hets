@@ -28,8 +28,8 @@ serveLog :: String              -- ^ Port number or name; 514 is default
          -> HandlerFunc         -- ^ Function to handle incoming messages
          -> IO ()
 serveLog port handlerfunc = withSocketsDo $
-    do -- Look up the port.  Either raises an exception or returns
-       -- a nonempty list.
+    do {- Look up the port.  Either raises an exception or returns
+       a nonempty list. -}
        addrinfos <- getAddrInfo
                     (Just (defaultHints {addrFlags = [AI_PASSIVE]}))
                     Nothing (Just port)
@@ -41,8 +41,8 @@ serveLog port handlerfunc = withSocketsDo $
        -- Bind it to the address we're listening to
        bindSocket sock (addrAddress serveraddr)
 
-       -- Start listening for connection requests.  Maximum queue size
-       -- of 5 connection requests waiting to be accepted.
+       {- Start listening for connection requests.  Maximum queue size
+       of 5 connection requests waiting to be accepted. -}
        listen sock 5
 
        -- Create a lock to use for synchronizing access to the handler
@@ -74,11 +74,11 @@ serveLog port handlerfunc = withSocketsDo $
 
           -- Lock the handler before passing data to it.
           handle :: MVar () -> HandlerFunc
-          -- This type is the same as
-          -- handle :: MVar () -> Handle -> SockAddr -> String -> IO ()
+          {- This type is the same as
+          handle :: MVar () -> Handle -> SockAddr -> String -> IO () -}
           handle lock h clientaddr msg =
               withMVar lock
-                 (\a -> handlerfunc h clientaddr msg >> return a)
+                 (\ a -> handlerfunc h clientaddr msg >> return a)
 
 syslog :: Maybe Handle -> Facility -> Priority -> String -> IO ()
 syslog syslogh fac pri msg = case syslogh of

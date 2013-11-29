@@ -132,10 +132,10 @@ findTypeFailure s r = case r of
   UnExp _ e -> if null (typeRule s e) then findTypeFailure s e else r
   MulExp o es -> case es of
     [] -> error "findTypeFailure"
-    e : t ->
-      if null (typeRule s e) then findTypeFailure s e else
-      if null t then e else let n = MulExp o t in
-      if null (typeRule s n) then findTypeFailure s n else r
+    e : t | null (typeRule s e) -> findTypeFailure s e
+          | null t -> e
+          | otherwise -> let n = MulExp o t in if null (typeRule s n)
+                                               then findTypeFailure s n else r
 
 -- | analyze rule and return resolved one
 typeRule :: Sign -> Rule -> [TypedRule]

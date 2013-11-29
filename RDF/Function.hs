@@ -15,11 +15,11 @@ Instances for some of the functions used in RDF
 module RDF.Function where
 import OWL2.AS
 import RDF.AS
---import RDF.Sign
+-- import RDF.Sign
 
 import qualified Data.Map as Map
---import qualified Data.Set as Set
-{-}
+{- import qualified Data.Set as Set
+}
 {- | this class contains general functions which operate on the ontology
     document, such as prefix renaming, IRI expansion or Morphism mapping -}
 class Function a where
@@ -30,7 +30,7 @@ data Action = Rename | Expand
 -}
 type StringMap = Map.Map String String
 type MorphMap = Map.Map RDFEntity IRI
-{-}
+{- }
 data AMap =
       StringMap StringMap
     | PrefixMap RDFPrefixMap
@@ -58,33 +58,33 @@ instance Function IRI where
                             Nothing -> error $ np ++ ": prefix not found"
                     _ -> iri
         _ -> iri
-        
+
 instance Function Predicate where
     function m (Predicate iri) = Predicate $ function m iri
-    
+
 instance Function Subject where
     function m sub = case sub of
         Subject iri -> Subject $ function m iri
         SubjectList ls -> SubjectList $ map (function m) ls
         SubjectCollection ls -> SubjectCollection $ map (function m) ls
-        
+
 instance Function Object where
     function m obj = case obj of
         Object s -> Object $ function m s
         ObjectLiteral l -> ObjectLiteral $ function m l
-        
+
 instance Function PredicateObjectList where
     function m (PredicateObjectList p ol) = PredicateObjectList (function m p)
         $ map (function m) ol
-        
+
 instance Function RDFLiteral where
     function m lit = case lit of
         RDFLiteral b lf (Typed dt) -> RDFLiteral b lf $ Typed $ function m dt
         _ -> lit
-        
+
 instance Function Triples where
     function m (Triples s ls) = Triples (function m s) $ map (function m) ls
-    
+
 instance Function Statement where
     function m s = case s of
         Statement t -> Statement $ function m t
@@ -92,18 +92,18 @@ instance Function Statement where
         Prefix p iri -> case m of
             StringMap sm -> Prefix (fromJust $ Map.lookup p sm) iri
             _ -> s
-            
+
 instance Function RDFPrefixMap where
     function m prefMap = case m of
         StringMap sm -> Map.mapKeys
                             (\ pref -> fromJust $ Map.lookup pref sm) prefMap
         _ -> prefMap
-        
+
 instance Function TurtleDocument where
     function m doc = emptyTurtleDocument
                         { statements = map (function m) $ statements doc
                         , prefixMap = function m $ prefixMap doc }
-    
+
 
 getIri :: RDFEntityType -> IRI -> Map.Map RDFEntity IRI -> IRI
 getIri ty u = fromMaybe u . Map.lookup (RDFEntity ty u)

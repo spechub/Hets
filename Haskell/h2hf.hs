@@ -38,7 +38,7 @@ pickParser c = do
    let res@(Result _ m) = do
           (_, ExtSign sig _, sens) <-
               hatAna (b, HatAna.emptySign, emptyGlobalAnnos)
-          transTheory (fst c) (snd c) sig sens
+          uncurry transTheory c sig sens
    case m of
       Nothing -> fail $ show res
       Just x -> return x
@@ -52,32 +52,32 @@ main = do
   case l of
     [] -> putStrLn err
     c : fs -> let elm = elem $ map toLower c in
-        mapM_ (process (if elm ["h", "hol"] then (NotCont,False)
-                   else if elm ["hc", "holcf"] then (IsCont True,False)
-                   else if elm ["mh", "mhol"] then (NotCont,True)
-                   else if elm ["mhc", "mholcf"] then (IsCont True,True)
+        mapM_ (process (if elm ["h", "hol"] then (NotCont, False)
+                   else if elm ["hc", "holcf"] then (IsCont True, False)
+                   else if elm ["mh", "mhol"] then (NotCont, True)
+                   else if elm ["mhc", "mholcf"] then (IsCont True, True)
                    else error err)) fs
 
-process :: (Continuity,Bool) -> FilePath -> IO ()
+process :: (Continuity, Bool) -> FilePath -> IO ()
 process c fn = do
   putStrLn $ "translating " ++ show fn ++ " to " ++ case c of
-             (IsCont _,False) -> "HOLCF"
-             (NotCont,False) -> "HOL"
-             (IsCont _,True) -> "HOLCF with theory morphisms"
-             (NotCont,True) -> "HOL with theory morphisms"
+             (IsCont _, False) -> "HOLCF"
+             (NotCont, False) -> "HOL"
+             (IsCont _, True) -> "HOLCF with theory morphisms"
+             (NotCont, True) -> "HOL with theory morphisms"
   s <- readFile fn
   case runParser (pickParser c) (emptyAnnos ()) fn s of
     Right (sig, hs) -> do
       let tn = takeWhile (/= '.')
-               (reverse . takeWhile ( \ x -> x /= '/') $ reverse fn) ++ "_"
+               (reverse . takeWhile (/= '/') $ reverse fn) ++ "_"
                 ++ case c of
-                     (IsCont _,False) -> "hc"
-                     (NotCont,False) -> "h"
-                     (IsCont _,True) -> "mhc"
-                     (NotCont,True) -> "mh"
+                     (IsCont _, False) -> "hc"
+                     (NotCont, False) -> "h"
+                     (IsCont _, True) -> "mhc"
+                     (NotCont, True) -> "mh"
           nsig = sig {theoryName = tn}
           doc = printIsaTheory tn nsig hs
           thyFile = tn ++ ".thy"
       putStrLn $ "writing " ++ show thyFile
       writeFile thyFile (shows doc "\n")
-    Left err -> putStrLn $ show err
+    Left err -> print err

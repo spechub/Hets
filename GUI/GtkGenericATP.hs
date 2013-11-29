@@ -44,48 +44,48 @@ genericATPgui :: (Ord proof_tree, Ord sentence)
               -> Bool -- ^ prover supports extra options
               -> String -- ^ prover name
               -> String -- ^ theory name
-              -> Theory sign sentence proof_tree -- ^ theory consisting of a
-                 -- signature and a list of Named sentence
+              -> Theory sign sentence proof_tree {- ^ theory consisting of a
+                 signature and a list of Named sentence -}
               -> [FreeDefMorphism sentence mor] -- ^ freeness constraints
               -> proof_tree -- ^ initial empty proof_tree
               -> IO [ProofStatus proof_tree] -- ^ proof status for each goal
 genericATPgui atpFun hasEOptions prName thName th freedefs pt = do
   result <- newEmptyMVar
   postGUIAsync $ do
-    xml              <- getGladeXML GenericATP.get
+    xml <- getGladeXML GenericATP.get
     -- get objects
-    window           <- xmlGetWidget xml castToWindow "GenericATP"
+    window <- xmlGetWidget xml castToWindow "GenericATP"
     -- buttons at buttom
-    btnClose         <- xmlGetWidget xml castToButton "btnClose"
-    btnHelp          <- xmlGetWidget xml castToButton "btnHelp"
-    btnSaveConfig    <- xmlGetWidget xml castToButton "btnSaveConfig"
+    btnClose <- xmlGetWidget xml castToButton "btnClose"
+    btnHelp <- xmlGetWidget xml castToButton "btnHelp"
+    btnSaveConfig <- xmlGetWidget xml castToButton "btnSaveConfig"
     -- goal list
-    trvGoals         <- xmlGetWidget xml castToTreeView "trvGoals"
+    trvGoals <- xmlGetWidget xml castToTreeView "trvGoals"
     -- options area
-    sbTimeout        <- xmlGetWidget xml castToSpinButton "sbTimeout"
-    entryOptions     <- xmlGetWidget xml castToEntry "entryOptions"
-    cbIncludeProven  <- xmlGetWidget xml castToCheckButton "cbIncludeProven"
-    cbSaveBatch      <- xmlGetWidget xml castToCheckButton "cbSaveBatch"
+    sbTimeout <- xmlGetWidget xml castToSpinButton "sbTimeout"
+    entryOptions <- xmlGetWidget xml castToEntry "entryOptions"
+    cbIncludeProven <- xmlGetWidget xml castToCheckButton "cbIncludeProven"
+    cbSaveBatch <- xmlGetWidget xml castToCheckButton "cbSaveBatch"
     -- prove buttons
-    btnStop          <- xmlGetWidget xml castToButton "btnStop"
+    btnStop <- xmlGetWidget xml castToButton "btnStop"
     btnProveSelected <- xmlGetWidget xml castToButton "btnProveSelected"
-    btnProveAll      <- xmlGetWidget xml castToButton "btnProveAll"
+    btnProveAll <- xmlGetWidget xml castToButton "btnProveAll"
     -- status and axioms
-    lblStatus        <- xmlGetWidget xml castToLabel "lblStatus"
-    trvAxioms        <- xmlGetWidget xml castToTreeView "trvAxioms"
+    lblStatus <- xmlGetWidget xml castToLabel "lblStatus"
+    trvAxioms <- xmlGetWidget xml castToTreeView "trvAxioms"
     -- info and save buttons
-    btnSaveProblem   <- xmlGetWidget xml castToButton "btnSaveProblem"
-    btnShowDetails   <- xmlGetWidget xml castToButton "btnShowDetails"
+    btnSaveProblem <- xmlGetWidget xml castToButton "btnSaveProblem"
+    btnShowDetails <- xmlGetWidget xml castToButton "btnShowDetails"
 
     windowSetTitle window $ prName ++ ": " ++ thName
 
     let widgets = [toWidget entryOptions | hasEOptions] ++
-                  [ toWidget btnClose        , toWidget btnShowDetails
-                  , toWidget btnHelp         , toWidget btnSaveConfig
+                  [ toWidget btnClose , toWidget btnShowDetails
+                  , toWidget btnHelp , toWidget btnSaveConfig
                   , toWidget sbTimeout
                   , toWidget cbIncludeProven , toWidget btnProveSelected
                   , toWidget btnProveSelected, toWidget btnProveAll
-                  , toWidget lblStatus       , toWidget btnSaveProblem ]
+                  , toWidget lblStatus , toWidget btnSaveProblem ]
         switch = activate widgets
         switchAll b = do
           activate widgets b
@@ -131,8 +131,8 @@ genericATPgui atpFun hasEOptions prName thName th freedefs pt = do
 
     -- setting save button name
     let ext = case problemOutput $ fileExtensions atpFun of
-                e@('.':_) -> e
-                e -> '.':e
+                e@('.' : _) -> e
+                e -> '.' : e
     buttonSetLabel btnSaveProblem $ "Save " ++ tail ext ++ " File"
 
     -- bindings
@@ -155,11 +155,11 @@ genericATPgui atpFun hasEOptions prName thName th freedefs pt = do
       s <- save state
       maybe (return ()) (\ g -> do
           inclProven <- toggleButtonGetActive cbIncludeProven
-          let (nGoal,lp') = prepareLP (proverState s) s g inclProven
+          let (nGoal, lp') = prepareLP (proverState s) s g inclProven
           prob <- goalOutput atpFun lp' nGoal $ createProverOptions atpFun
                     $ getConfig prName g pt $ configsMap s
           textView (prName ++ " Problem for Goal " ++ g) prob
-            $ Just (thName ++ '_':g ++ ext)
+            $ Just (thName ++ '_' : g ++ ext)
         ) $ currentGoal s
 
     -- show details of selected goal
@@ -171,7 +171,7 @@ genericATPgui atpFun hasEOptions prName thName th freedefs pt = do
           let res = Map.lookup g $ configsMap s
               output = maybe ["This goal hasn't been run through the prover."]
                              resultOutput res
-              detailsText = concatMap ('\n':) output
+              detailsText = concatMap ('\n' :) output
           textView (prName ++ " Output for Goal " ++ g)
             (seq (length detailsText) detailsText) $ Just $ g ++ ext
 
@@ -190,11 +190,11 @@ genericATPgui atpFun hasEOptions prName thName th freedefs pt = do
         Just g -> do
           (_, exit) <- pulseBar "Proving" g
           inclProven <- toggleButtonGetActive cbIncludeProven
-          let (nGoal,lp') = prepareLP (proverState s) s g inclProven
+          let (nGoal, lp') = prepareLP (proverState s) s g inclProven
               cfg = configsMap s
           switch False
           forkIOWithPostProcessing
-            (runProver atpFun lp'(getConfig prName g pt cfg) False thName nGoal)
+            (runProver atpFun lp' (getConfig prName g pt cfg) False thName nGoal)
             $ \ (retval, cfg') -> do
               case retval of
                 ATPError m -> errorDialog "Error" m
@@ -225,10 +225,10 @@ genericATPgui atpFun hasEOptions prName thName th freedefs pt = do
         saveBatch <- toggleButtonGetActive cbSaveBatch
         inclProven <- toggleButtonGetActive cbIncludeProven
         (updat, exit) <- progressBar "Proving" "please wait..."
-        let firstGoalName = head $ filter (flip Map.member openGoalsMap)
+        let firstGoalName = head $ filter (`Map.member` openGoalsMap)
                               $ map AS_Anno.senAttr $ goalsList s
             opts = words opts'
-            afterEachProofAttempt gPSF nSen nextSen cfg@(retval,_) = do
+            afterEachProofAttempt gPSF nSen nextSen cfg@(retval, _) = do
               cont <- goalProcessed stateMVar timeout opts numGoals prName
                                     gPSF nSen False cfg
               postGUISync $ do
@@ -289,7 +289,7 @@ genericATPgui atpFun hasEOptions prName thName th freedefs pt = do
       let goals = goalsList s
           cfg = configsMap s
           idx = fromMaybe (error "Goal not found!")
-                  $ findIndex ((==g') . AS_Anno.senAttr) goals
+                  $ findIndex ((== g') . AS_Anno.senAttr) goals
           (beforeThis, afterThis) = splitAt idx goals
           g = head afterThis -- Why use head and not goal?
           proved = filter (checkGoal cfg . AS_Anno.senAttr) beforeThis

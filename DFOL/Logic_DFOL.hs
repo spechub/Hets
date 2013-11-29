@@ -21,6 +21,7 @@ import Common.Result
 import Data.Monoid
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import Control.Monad (unless)
 
 import DFOL.AS_DFOL
 import DFOL.Sign
@@ -47,8 +48,7 @@ instance Category Sign Morphism where
    cod = target
    isInclusion = Map.null . symMap . canForm
    composeMorphisms = compMorph
-   legal_mor m = if isValidMorph m then return () else
-                     fail "illegal DFOL morphism"
+   legal_mor m = unless (isValidMorph m) $ fail "illegal DFOL morphism"
 
 instance Monoid BASIC_SPEC where
     mempty = Basic_spec []

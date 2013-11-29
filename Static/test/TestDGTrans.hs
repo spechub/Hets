@@ -35,13 +35,13 @@ process opts file = do
       _ -> fail "analib error."
 
 trans :: LibEnv -> AnyComorphism -> IO LibEnv
-trans libEnv acm = do
+trans libEnv acm =
     case libEnv_translation libEnv acm of
       Result diags' maybeLE -> do
         printDiags 2 diags'
         case maybeLE of
           Just libEnv' -> return libEnv'
-          Nothing  -> fail "no translation"
+          Nothing -> fail "no translation"
 
 main :: IO ()
 main = do
@@ -51,5 +51,3 @@ main = do
          res <- process opts hd
          showGraph hd opts res
     _ -> error "usage: TestDGTrans filename"
-
-

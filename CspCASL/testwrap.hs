@@ -97,42 +97,42 @@ import Text.ParserCombinators.Parsec
 import Common.AnnoState (emptyAnnos)
 import Common.DocUtils
 
-import CspCASL.Parse_CspCASL(cspBasicExt)
-import CspCASL.Parse_CspCASL_Process(csp_casl_process)
-import CspCASL.Print_CspCASL()
+import CspCASL.Parse_CspCASL (cspBasicExt)
+import CspCASL.Parse_CspCASL_Process (csp_casl_process)
+import CspCASL.Print_CspCASL ()
 
 main :: IO ()
 main = do args <- getArgs
           dirs <- filterM doesDirectoryExist args
-          dir_contents <- (liftM concat) (mapM listFilesR dirs)
+          dir_contents <- liftM concat (mapM listFilesR dirs)
           files <- filterM doesFileExist (sort $ nub (args ++ dir_contents))
           doIf ("-t" `notElem` args) (parseCspCASLs (filter isCspCASL files))
           doIf ("-c" `notElem` args) (performTests (filter isTest files))
     where isCspCASL = (".cspcasl" `isSuffixOf`)
-          isTest f = (isSuffixOf ".testcase" f) || (isSuffixOf ".testcases" f)
+          isTest f = isSuffixOf ".testcase" f || isSuffixOf ".testcases" f
           doIf c f = if c then f else putStr ""
 
--- | Given a list of paths to .cspcasl files, parse each in turn,
--- printing results as you go.
+{- | Given a list of paths to .cspcasl files, parse each in turn,
+printing results as you go. -}
 parseCspCASLs :: [FilePath] -> IO ()
-parseCspCASLs [] = do putStr ""
-parseCspCASLs (f:fs) = do putStrLn dash20
-                          prettyCspCASLFromFile f
-                          parseCspCASLs fs
+parseCspCASLs [] = putStr ""
+parseCspCASLs (f : fs) = do putStrLn dash20
+                            prettyCspCASLFromFile f
+                            parseCspCASLs fs
 
 -- | Parse one .cspcasl file; print error or pretty print parse tree.
 prettyCspCASLFromFile :: FilePath -> IO ()
 prettyCspCASLFromFile fname
   = do putStrLn ("Parsing " ++ fname)
        input <- readFile fname
-       case (runParser cspBasicExt (emptyAnnos ()) fname input) of
+       case runParser cspBasicExt (emptyAnnos ()) fname input of
            Left err -> do putStr "parse error at "
                           print err
-           Right x  -> do putStrLn $ showDoc x ""
-                          putStrLn $ (show x)
+           Right x -> do putStrLn $ showDoc x ""
+                         print x
 
--- | Test sense: do we expect parse success or failure?  What is the
--- nature of the expected output?
+{- | Test sense: do we expect parse success or failure?  What is the
+nature of the expected output? -}
 data TestSense = Positive | Negative
                  deriving (Eq, Ord)
 instance Show TestSense where
@@ -153,47 +153,47 @@ data TestCase = TestCase {
       expected :: String
 } deriving (Eq, Ord)
 instance Show TestCase where
-  show a = (name a) ++ " (" ++ (show (sense a)) ++ (parser a) ++ ")"
+  show a = name a ++ " (" ++ show (sense a) ++ parser a ++ ")"
 
 -- | Given a list of paths of test case files, read & perform them.
 performTests :: [FilePath] -> IO ()
 performTests tcs = do putStrLn "Performing tests"
-                      tests <- (liftM concat) (mapM readTestFile tcs)
+                      tests <- liftM concat (mapM readTestFile tcs)
                       doTests tests
 
 -- | Turn a .testcase or .testcases file into list of test cases therein.
 readTestFile :: FilePath -> IO [TestCase]
 readTestFile f
-    | ".testcase"  `isSuffixOf` f = readTestCaseFile f
+    | ".testcase" `isSuffixOf` f = readTestCaseFile f
     | ".testcases" `isSuffixOf` f = readTestCasesFile f
-    | otherwise                   = do return []
+    | otherwise = return []
 
 -- | Turn a .testcase file into the test case therein.
 readTestCaseFile :: FilePath -> IO [TestCase]
 readTestCaseFile f =
     do hdl <- openFile f ReadMode
        contents <- hGetContents hdl
-       let (a, b, c, d) = (testCaseParts contents)
+       let (a, b, c, d) = testCaseParts contents
        hdl_s <- openFile (combine (dropFileName f) a) ReadMode
        e <- hGetContents hdl_s
-       return [TestCase { name=a, parser=b, sense=c, expected=d, src=e }]
+       return [TestCase { name = a, parser = b, sense = c, expected = d, src = e }]
 
 -- | Turn a .testcases file into the test cases therein.
 readTestCasesFile :: FilePath -> IO [TestCase]
 readTestCasesFile f =
     do hdl <- openFile f ReadMode
        s <- hGetContents hdl
-       let tests = map interpretTestCasesOne (map strip (split dash20 s))
+       let tests = map (interpretTestCasesOne . strip) (split dash20 s)
        return tests
 
 -- | Turn test case string from a .testcases file into its test case.
 interpretTestCasesOne :: String -> TestCase
 interpretTestCasesOne s
-    | (length parts) == 2 = TestCase { name=a, parser=b, sense=c,
-                                       expected=d, src=e }
+    | length parts == 2 = TestCase { name = a, parser = b, sense = c,
+                                       expected = d, src = e }
     | otherwise = error s
     where parts = map strip (split dash10 s)
-          (a, b, c, d) = testCaseParts (parts !! 0)
+          (a, b, c, d) = testCaseParts (head parts)
           e = parts !! 1
 
 -- | Turn test case string into its constituent parts (except source).
@@ -207,31 +207,31 @@ testCaseParts s = (head ls,
 -- | Interpret a test case sense (++ or --, positive or negative)
 interpretSense :: String -> TestSense
 interpretSense s = case s of
-                     "++" ->  Positive
+                     "++" -> Positive
                      "--" -> Negative
                      _ -> error ("Bad test sense " ++ s)
 
--- | Given a list of test cases, perform the tests in turn, printing
--- results as you go.
+{- | Given a list of test cases, perform the tests in turn, printing
+results as you go. -}
 doTests :: [TestCase] -> IO ()
-doTests [] = do putStr ""
-doTests (tc:ts) = do --putStrLn dash20
+doTests [] = putStr ""
+doTests (tc : ts) = do -- putStrLn dash20
                      let output = parseTestCase tc
-                     putStr ((show tc) ++ " ")
+                     putStr (show tc ++ " ")
                      printOutcome tc output
                      doTests ts
 
--- | Perform a test and report its outcome.  There are six
--- possibilities: 1) positive test succeeds; 2) postive test
--- fail/non-parse (parse fails); 3) positive test error (unparse not
--- as expected); 4) negative test succeeds; 5) negative test
--- fail/parse (parse succeeds); 6) negative test error (error not as
--- expected).
+{- | Perform a test and report its outcome.  There are six
+possibilities: 1) positive test succeeds; 2) postive test
+fail/non-parse (parse fails); 3) positive test error (unparse not
+as expected); 4) negative test succeeds; 5) negative test
+fail/parse (parse succeeds); 6) negative test error (error not as
+expected). -}
 printOutcome :: TestCase -> Either ParseError (String, String) -> IO ()
 printOutcome tc out =
     case (sense tc, out) of
       (Positive, Right (o, tree)) ->
-          if (strip o) == (strip $ expected tc)
+          if strip o == strip (expected tc)
           then testPass                                    -- case 1
           else do testFail "unparse" (expected tc) o       -- case 3
                   putStrLn ("-> tree:\n" ++ tree)
@@ -240,20 +240,20 @@ printOutcome tc out =
       (Negative, Right (o, _)) ->
           testFail "parse success" (expected tc) o         -- case 5
       (Negative, Left err) ->
-          if (strip $ show $ err) == (strip $ expected tc)
+          if strip (show err) == strip (expected tc)
           then testPass                                    -- case 4
           else testFail "error" (expected tc) (show err)   -- case 6
 
 -- Report on a test pass
 testPass :: IO ()
-testPass = do putStrLn "passed"
+testPass = putStrLn "passed"
 
 -- Report on a test failure
-testFail :: String -> String -> String -> IO()
+testFail :: String -> String -> String -> IO ()
 testFail nature expect got =
     do putStrLn ("failed - unexpected " ++ nature)
        if expect /= ""
-          then putStrLn ("-> expected:\n" ++ (strip expect))
+          then putStrLn ("-> expected:\n" ++ strip expect)
           else putStr ""
        putStrLn "-> got:"
        putStrLn $ strip got
@@ -262,22 +262,22 @@ testFail nature expect got =
 -- | Run a test case through its parser.
 parseTestCase :: TestCase -> Either ParseError (String, String)
 parseTestCase t =
-    case (parser t) of
+    case parser t of
       "CoreCspCASL" -> case runWithEof cspBasicExt of
                          Left err -> Left err
-                         Right x  -> Right (showDoc x "", show x)
+                         Right x -> Right (showDoc x "", show x)
       "Process" -> case runWithEof csp_casl_process of
                      Left err -> Left err
-                     Right x  -> Right (showDoc x "", show x)
+                     Right x -> Right (showDoc x "", show x)
       _ -> error "Parser name"
     where runWithEof p = runParser p' (emptyAnnos ()) (name t) (src t)
               where p' = do n <- p
                             eof
                             return n
 
--- The above implemenation is horrible.  There must be a nice way to
--- abstract the parser out from the code to run it and collect/unparse
--- the result.  Alas, I don't know it, or don't know that I know it.
+{- The above implemenation is horrible.  There must be a nice way to
+abstract the parser out from the code to run it and collect/unparse
+the result.  Alas, I don't know it, or don't know that I know it. -}
 
 dash20, dash10 :: String
 dash10 = "----------"
@@ -285,25 +285,25 @@ dash20 = dash10 ++ dash10
 
 -- Utility functions which really should be in the standard library!
 
--- | Recursive file lister adapted from
--- http://therning.org/magnus/archives/228
+{- | Recursive file lister adapted from
+http://therning.org/magnus/archives/228 -}
 listFilesR :: FilePath -> IO [FilePath]
 listFilesR path =
     do allfiles <- getDirectoryContents path
        nodots <- filterM (return . isDODD) (map (combine path) allfiles)
        dirs <- filterM doesDirectoryExist nodots
-       subdirfiles <- (mapM listFilesR dirs >>= return . concat)
+       subdirfiles <- liftM concat $ mapM listFilesR dirs
        files <- filterM doesFileExist nodots
        return $ files ++ subdirfiles
     where
       isDODD f = not $ ("/." `isSuffixOf` f) || ("/.." `isSuffixOf` f)
 
--- | A function inspired by python's string.split().  A list is split
--- on a separator which is itself a list (not a single element).
+{- | A function inspired by python's string.split().  A list is split
+on a separator which is itself a list (not a single element). -}
 split :: Eq a => [a] -> [a] -> [[a]]
-split tok splitme = unfoldr (sp1 tok) splitme
+split tok = unfoldr (sp1 tok)
     where sp1 _ [] = Nothing
-          sp1 t s = case find (t `isSuffixOf`) $ (inits s) of
+          sp1 t s = case find (t `isSuffixOf`) (inits s) of
                       Nothing -> Just (s, [])
                       Just p -> Just (take (length p - length t) p,
                                       drop (length p) s)
@@ -311,4 +311,4 @@ split tok splitme = unfoldr (sp1 tok) splitme
 -- | String strip in style of python string.strip()
 strip :: String -> String
 strip s = dropWhile ws $ reverse $ dropWhile ws $ reverse s
-    where ws = (`elem` [' ', '\n', '\t', '\r'])
+    where ws = (`elem` " \n\t\r")

@@ -41,10 +41,10 @@ class DevGraphNavigator a where
     relocate :: a -> DGraph -> [LNode DGNodeLab] -> a
 
 
--- | Get all the incoming ledges of the given node and eventually
--- cross the border to an other 'DGraph'. The new 'DevGraphNavigator'
--- is returned with 'DGraph' set to the new graph and current node to
--- the given node.
+{- | Get all the incoming ledges of the given node and eventually
+cross the border to an other 'DGraph'. The new 'DevGraphNavigator'
+is returned with 'DGraph' set to the new graph and current node to
+the given node. -}
 followIncoming :: DevGraphNavigator a => a -> Node
                     -> (a, LNode DGNodeLab, [LEdge DGLinkLab])
 followIncoming dgn n = (dgn', lbln, incoming dgn' n')
@@ -65,8 +65,8 @@ directInn dgnav = concatMap (incoming dgnav . fst) $ getCurrent dgnav
 
 -- * Navigator Instance
 
--- | The navigator instance consists of a 'LibEnv' a current 'DGraph' and
--- a current 'Node' which is the starting point for navigation through the DG.
+{- | The navigator instance consists of a 'LibEnv' a current 'DGraph' and
+a current 'Node' which is the starting point for navigation through the DG. -}
 data DGNav = DGNav { dgnLibEnv :: LibEnv
                    , dgnDG :: DGraph
                    , dgnCurrent :: [LNode DGNodeLab] } deriving Show
@@ -82,7 +82,7 @@ makeDGNav :: LibEnv -> DGraph -> [LNode DGNodeLab] -> DGNav
 makeDGNav le dg cnl = DGNav le dg cnl' where
     cnl' | null cnl = filter f $ labNodesDG dg
          | otherwise = cnl
-         where f (n, _) = null $ filter isDefLink $ outDG dg n
+         where f (n, _) = not $ any isDefLink $ outDG dg n
 
 isDefLink :: LEdge DGLinkLab -> Bool
 isDefLink = isDefEdge . dgl_type . linkLabel
@@ -91,9 +91,9 @@ instance DevGraphNavigator DGNav where
     -- we consider only the definition links in a DGraph
     incoming dgn = filter isDefLink . innDG (dgnDG dgn)
     getLabel = labDG . dgnDG
-    getLocalNode (DGNav{dgnLibEnv = le, dgnDG = dg}) n = lookupLocalNode le dg n
-    getInLibEnv (DGNav{dgnLibEnv = le, dgnDG = dg}) f = f le dg
-    getCurrent (DGNav{dgnCurrent = lblnl}) = lblnl
+    getLocalNode (DGNav {dgnLibEnv = le, dgnDG = dg}) = lookupLocalNode le dg
+    getInLibEnv (DGNav {dgnLibEnv = le, dgnDG = dg}) f = f le dg
+    getCurrent (DGNav {dgnCurrent = lblnl}) = lblnl
     relocate dgn dg lblnl = dgn { dgnDG = dg, dgnCurrent = lblnl }
 
 
@@ -102,13 +102,13 @@ instance DevGraphNavigator DGNav where
 -- | DFS based search
 firstMaybe :: (a -> Maybe b) -> [a] -> Maybe b
 firstMaybe _ [] = Nothing
-firstMaybe f (x:l) =
+firstMaybe f (x : l) =
     case f x of
       Nothing -> firstMaybe f l
       y -> y
 
--- | Searches all ancestor nodes of the current node and also the current node
--- for a node matching the given predicate
+{- | Searches all ancestor nodes of the current node and also the current node
+for a node matching the given predicate -}
 searchNode :: DevGraphNavigator a =>
                  (LNode DGNodeLab -> Bool) -> a -> Maybe (a, LNode DGNodeLab)
 searchNode p dgnav =
@@ -141,8 +141,8 @@ searchLinkFrom p dgnav n =
 dgnPredName :: String -> LNode DGNodeLab -> Maybe (LNode DGNodeLab)
 dgnPredName n nd@(_, lbl) = if getDGNodeName lbl == n then Just nd else Nothing
 
--- | This predicate is true for nodes which are instantiations of a
--- specification with the given name
+{- | This predicate is true for nodes which are instantiations of a
+specification with the given name -}
 dgnPredParameterized :: String -> LNode DGNodeLab -> Maybe (LNode DGNodeLab)
 dgnPredParameterized n nd@(_, DGNodeLab
                                { nodeInfo = DGNode { node_origin = DGInst sid }
@@ -151,9 +151,9 @@ dgnPredParameterized n nd@(_, DGNodeLab
     | otherwise = Nothing
 dgnPredParameterized _ _ = Nothing
 
--- * Predicates to be used with 'searchLink'
--- | This predicate is true for links which are argument instantiations of a
--- parameterized specification with the given name
+{- * Predicates to be used with 'searchLink'
+This predicate is true for links which are argument instantiations of a
+parameterized specification with the given name -}
 dglPredActualParam :: String -> LEdge DGLinkLab -> Maybe (LEdge DGLinkLab)
 dglPredActualParam n edg@(_, _, DGLink { dgl_origin = DGLinkInstArg sid })
     | show sid == n = Just edg
@@ -196,7 +196,7 @@ getParameterizedSpec n dgnav =
 
 -- | Search for the given name in any node
 getNamedSpec :: DevGraphNavigator a => String -> a -> Maybe (a, LNode DGNodeLab)
-getNamedSpec n dgnav = searchNode (isJust . dgnPredName n) dgnav
+getNamedSpec n = searchNode (isJust . dgnPredName n)
 
 
 -- | Combining a search function with an operation on nodes
@@ -217,6 +217,5 @@ getLocalSyms dgnav n =
 
 linkSource :: LEdge a -> Node
 linkLabel :: LEdge a -> a
-linkSource (x,_,_) = x
-linkLabel (_,_,x) = x
-
+linkSource (x, _, _) = x
+linkLabel (_, _, x) = x

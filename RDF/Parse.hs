@@ -31,7 +31,7 @@ import Text.ParserCombinators.Parsec
 uriP :: CharParser st QName
 uriP =
   skips $ try $ checkWithUsing showQN uriQ $ \ q ->
-    if null $ namePrefix q then notElem (localPart q) criticalKeywords else True
+    not (null $ namePrefix q) || notElem (localPart q) criticalKeywords
 
 -- * hets symbols parser
 
@@ -171,7 +171,7 @@ basicSpec pm = do
     ls <- many parseStatement
     let td = TurtleDocument
              dummyQName (Map.map transIri $ convertPrefixMap pm) ls
---    return $ trace (show $ Map.union predefinedPrefixes (prefixMap td)) td
+-- return $ trace (show $ Map.union predefinedPrefixes (prefixMap td)) td
     return td
   where transIri s = QN "" s Full s nullRange
 
@@ -185,4 +185,3 @@ predefinedPrefixes = Map.fromList $ zip
     , "<http://www.w3.org/2002/07/owl#>"
     , "<http://www.example.org/>"
     , "<http://www.w3.org/2001/XMLSchema#>" ]
-    

@@ -26,8 +26,8 @@ import Text.XML.Light
 nodesToContent :: [Expat.UNode String] -> [Content]
 nodesToContent = nodesToContent' ""
 
--- | Version of 'nodesToContent' with accumulator to minimize the occurrences
--- of CData
+{- | Version of 'nodesToContent' with accumulator to minimize the occurrences
+of CData -}
 nodesToContent' :: String -- ^ accumulates text nodes
                 -> [Expat.UNode String] -- ^ list of content items
                 -> [Content]
@@ -56,11 +56,9 @@ attrToAttr :: (String, String) -> Attr
 attrToAttr (n, v) = Attr { attrKey = strToQName n, attrVal = v }
 
 strToQName :: String -> QName
-strToQName s = case break (':' == ) s of
+strToQName s = case break (':' ==) s of
                  (_, []) -> unqual s
                  (pr, _ : n) -> blank_name { qName = n, qPrefix = Just pr }
-
-
 
 
 parseXml :: BS.ByteString -> Either String Element
@@ -71,5 +69,4 @@ parseXml bs =
          Just e -> Left $ "Expat.parse: " ++ show e
          _ -> case contl of
                 [Elem e] -> Right e
-                _ -> Left $ "Expat.parse: No unique root element."
-
+                _ -> Left "Expat.parse: No unique root element."

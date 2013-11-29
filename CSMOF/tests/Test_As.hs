@@ -14,21 +14,21 @@ import CSMOF.As
 import CSMOF.Print
 
 main :: IO ()
-main = let metamodel = Metamodel{ metamodelName = "ClassMetamodel"
-                                , element = [namedElement_String 
-                                            ,namedElement_UMLModelElement
-                                            ,namedElement_Attribute
-                                            ,namedElement_Package 
-                                            ,namedElement_Classifier
-                                            ,namedElement_Class
-                                            ,namedElement_PrimitiveDataType                                        
-                                            ,namedElement_Pkind
-                                            ,namedElement_Pname
-                                            ,namedElement_Pnamespace
-                                            ,namedElement_Pelements
-                                            ,namedElement_Ptype
-                                            ,namedElement_Powner
-                                            ,namedElement_Pattribute
+main = let metamodel = Metamodel { metamodelName = "ClassMetamodel"
+                                , element = [namedElement_String
+                                            , namedElement_UMLModelElement
+                                            , namedElement_Attribute
+                                            , namedElement_Package
+                                            , namedElement_Classifier
+                                            , namedElement_Class
+                                            , namedElement_PrimitiveDataType
+                                            , namedElement_Pkind
+                                            , namedElement_Pname
+                                            , namedElement_Pnamespace
+                                            , namedElement_Pelements
+                                            , namedElement_Ptype
+                                            , namedElement_Powner
+                                            , namedElement_Pattribute
                                             ]
                                 , model = [modelM]
                                 }
@@ -37,8 +37,8 @@ main = let metamodel = Metamodel{ metamodelName = "ClassMetamodel"
                                               , namedElementSubClasses = TType { getType = type_String }
                                               }
            type_String = Type { typeSuper = namedElement_String
-                              , typeSubClasses = DDataType { getDataType = 
-                                                                DataType { classSuper = type_String } 
+                              , typeSubClasses = DDataType { getDataType =
+                                                                DataType { classSuper = type_String }
                                                            }
                               }
 
@@ -68,8 +68,8 @@ main = let metamodel = Metamodel{ metamodelName = "ClassMetamodel"
                                  , superClass = [class_UMLModelElement]
                                  , ownedAttribute = [property_elements]
                                  }
-                           
-                           
+
+
            namedElement_Classifier = NamedElement { namedElementName = "Classifier"
                                                   , namedElementOwner = metamodel
                                                   , namedElementSubClasses = TType { getType = type_Classifier }
@@ -96,8 +96,8 @@ main = let metamodel = Metamodel{ metamodelName = "ClassMetamodel"
                                    , superClass = [class_UMLModelElement]
                                    , ownedAttribute = [property_type, property_owner]
                                    }
-                             
-                             
+
+
            namedElement_PrimitiveDataType = NamedElement { namedElementName = "PrimitiveDataType"
                                                          , namedElementOwner = metamodel
                                                          , namedElementSubClasses = TType { getType = type_PrimitiveDataType }
@@ -110,8 +110,8 @@ main = let metamodel = Metamodel{ metamodelName = "ClassMetamodel"
                                            , superClass = [class_Classifier]
                                            , ownedAttribute = []
                                            }
-                            
-                            
+
+
            namedElement_Class = NamedElement { namedElementName = "Class"
                                              , namedElementOwner = metamodel
                                              , namedElementSubClasses = TType { getType = type_Class }
@@ -124,14 +124,14 @@ main = let metamodel = Metamodel{ metamodelName = "ClassMetamodel"
                                , superClass = [class_Classifier]
                                , ownedAttribute = [property_attribute]
                                }
-                         
-                         
+
+
            namedElement_Pkind = NamedElement { namedElementName = "kind"
                                                , namedElementOwner = metamodel
                                                , namedElementSubClasses = TTypedElement { getTypeElement = typedElement_kind }
                                                }
            typedElement_kind = TypedElement { typedElementSuper = namedElement_Pkind
-                                            , typedElementType = type_String 
+                                            , typedElementType = type_String
                                             , typedElementSubClasses = property_kind
                                             }
            property_kind = Property { propertySuper = typedElement_kind
@@ -142,14 +142,14 @@ main = let metamodel = Metamodel{ metamodelName = "ClassMetamodel"
                                     , opposite = Nothing
                                     , propertyClass = class_UMLModelElement
                                     }
-                           
-                           
+
+
            namedElement_Pname = NamedElement { namedElementName = "name"
                                              , namedElementOwner = metamodel
                                              , namedElementSubClasses = TTypedElement { getTypeElement = typedElement_name }
                                              }
            typedElement_name = TypedElement { typedElementSuper = namedElement_Pname
-                                            , typedElementType = type_String 
+                                            , typedElementType = type_String
                                             , typedElementSubClasses = property_name
                                             }
            property_name = Property { propertySuper = typedElement_name
@@ -160,8 +160,8 @@ main = let metamodel = Metamodel{ metamodelName = "ClassMetamodel"
                                     , opposite = Nothing
                                     , propertyClass = class_UMLModelElement
                                     }
-                           
-                           
+
+
            namedElement_Pnamespace = NamedElement { namedElementName = "namespace"
                                              , namedElementOwner = metamodel
                                              , namedElementSubClasses = TTypedElement { getTypeElement = typedElement_namespace }
@@ -180,7 +180,7 @@ main = let metamodel = Metamodel{ metamodelName = "ClassMetamodel"
                                          }
 
 
-	   namedElement_Pelements = NamedElement { namedElementName = "elements"
+           namedElement_Pelements = NamedElement { namedElementName = "elements"
                                                  , namedElementOwner = metamodel
                                                  , namedElementSubClasses = TTypedElement { getTypeElement = typedElement_elements }
                                                  }
@@ -198,7 +198,7 @@ main = let metamodel = Metamodel{ metamodelName = "ClassMetamodel"
                                          }
 
 
-	   namedElement_Powner = NamedElement { namedElementName = "owner"
+           namedElement_Powner = NamedElement { namedElementName = "owner"
                                              , namedElementOwner = metamodel
                                              , namedElementSubClasses = TTypedElement { getTypeElement = typedElement_owner }
                                              }
@@ -216,7 +216,7 @@ main = let metamodel = Metamodel{ metamodelName = "ClassMetamodel"
                                          }
 
 
-	   namedElement_Pattribute = NamedElement { namedElementName = "attribute"
+           namedElement_Pattribute = NamedElement { namedElementName = "attribute"
                                              , namedElementOwner = metamodel
                                              , namedElementSubClasses = TTypedElement { getTypeElement = typedElement_attribute }
                                              }
@@ -234,7 +234,7 @@ main = let metamodel = Metamodel{ metamodelName = "ClassMetamodel"
                                          }
 
 
-	   namedElement_Ptype = NamedElement { namedElementName = "type"
+           namedElement_Ptype = NamedElement { namedElementName = "type"
                                              , namedElementOwner = metamodel
                                              , namedElementSubClasses = TTypedElement { getTypeElement = typedElement_type }
                                              }
@@ -250,7 +250,7 @@ main = let metamodel = Metamodel{ metamodelName = "ClassMetamodel"
                                     , opposite = Nothing
                                     , propertyClass = class_Attribute
                                     }
-                           
+
 
            modelM = Model { modelName = "ClassModel"
                           , object = [object_p
@@ -264,7 +264,7 @@ main = let metamodel = Metamodel{ metamodelName = "ClassMetamodel"
                                      , object_String
                                      , object_EMPTY
                                      ]
-                                     
+
                           , link = [link_pc
                                    , link_ca
                                    , link_apdt
@@ -278,10 +278,10 @@ main = let metamodel = Metamodel{ metamodelName = "ClassMetamodel"
                                    , link_akind
                                    , link_pdtkind
                                    ]
-                                     
+
                           , modelType = metamodel
                           }
-           
+
            object_p = Object { objectName = "p"
                              , objectType = type_Package
                              , objectOwner = modelM
@@ -341,7 +341,7 @@ main = let metamodel = Metamodel{ metamodelName = "ClassMetamodel"
                             , source = object_a
                             , target = object_pdt
                             , linkOwner = modelM
-        		    }
+                            }
            link_pname = Link { linkType = property_name
                              , source = object_p
                              , target = object_Package
@@ -383,5 +383,4 @@ main = let metamodel = Metamodel{ metamodelName = "ClassMetamodel"
                                , linkOwner = modelM
                                }
 
-        in
-         putStrLn (show metamodel)
+        in print metamodel

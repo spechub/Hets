@@ -84,8 +84,8 @@ instance Pretty OPID where
     pretty = head . printOPID
 
 
--- | A monad for printing of constants. This turns the pretty printing facility
--- more flexible w.r.t. the output of 'ConstantName'.
+{- | A monad for printing of constants. This turns the pretty printing facility
+more flexible w.r.t. the output of 'ConstantName'. -}
 class Monad m => ExpressionPrinter m where
     getOINM :: m OpInfoNameMap
     getOINM = return operatorInfoNameMap
@@ -96,14 +96,14 @@ class Monad m => ExpressionPrinter m where
     prefixMode :: m Bool
     prefixMode = return False
     printArgs :: [Doc] -> m Doc
-    printArgs =  return . parens . sepByCommas
+    printArgs = return . parens . sepByCommas
     printArgPattern :: String -> m Doc
-    printArgPattern =  return . text
+    printArgPattern = return . text
     printInterval :: Double -> Double -> m Doc
     printInterval l r =
         return $ brackets $ sepByCommas $ map (text . show) [l, r]
     printRational :: APFloat -> m Doc
-    printRational r = return $ text $ showFloat ((fromRat r) :: Double) ""
+    printRational r = return $ text $ showFloat (fromRat r :: Double) ""
 
 
 -- | The default ConstantName printer
@@ -113,7 +113,7 @@ printConstantName (ElimConstant s i) =
     text $ if i > 0 then s ++ "__" ++ show i else s
 
 printAssDefinition :: ExpressionPrinter m => AssDefinition -> m Doc
-printAssDefinition (ConstDef e) = printExpression e >>= return . (text "=" <+>)
+printAssDefinition (ConstDef e) = liftM (text "=" <+>) $ printExpression e
 printAssDefinition (FunDef l e) = do
   ed <- printExpression e
   l' <- mapM printArgPattern l
@@ -140,13 +140,13 @@ printCMD (Ass c def) = do
 printCMD c@(Cmd s exps) -- TODO: remove the case := later
     | s == ":=" = error $ "printCMD: use Ass for assignment representation! "
                   ++ show c
-    | s == "constraint" = printExpression (exps !! 0)
+    | s == "constraint" = printExpression (head exps)
     | otherwise = let f l = text s <> parens (sepByCommas l)
                   in liftM f $ mapM printExpression exps
 printCMD (Repeat e stms) = do
   e' <- printExpression e
   let f l = text "re" <>
-               (text "peat" $+$ vcat (map (text "." <+>)  l))
+               (text "peat" $+$ vcat (map (text "." <+>) l))
                $+$ text "until" <+> e'
   liftM f $ mapM printCMD stms
 
@@ -162,22 +162,21 @@ printCase :: ExpressionPrinter m => EXPRESSION -> [CMD] -> m Doc
 printCase e l = do
   e' <- printExpression e
   let f l' = text "ca" <> (text "se" <+> e' <> text ":"
-                                       $+$ vcat (map (text "." <+>)  l'))
+                                       $+$ vcat (map (text "." <+>) l'))
   liftM f $ mapM printCMD l
-
 
 
 getPrec :: OpInfoNameMap -> EXPRESSION -> Int
 getPrec oinm (Op s _ exps _)
- | length exps == 0 = maxPrecedence + 1
+ | null exps = maxPrecedence + 1
  | otherwise =
      case lookupOpInfo oinm s $ length exps of
        Right oi -> prec oi
        Left True -> error $
                     concat [ "getPrec: registered operator ", show s, " used "
                            , "with non-registered arity ", show $ length exps ]
-       _ -> maxPrecedence -- this is probably a user-defined prefix function
-                          -- , binds strongly
+       _ -> maxPrecedence {- this is probably a user-defined prefix function
+                          , binds strongly -}
 getPrec _ _ = maxPrecedence
 
 getOp :: EXPRESSION -> Maybe OPID
@@ -186,7 +185,7 @@ getOp _ = Nothing
 
 printExtparam :: EXTPARAM -> Doc
 printExtparam (EP p op i) =
-    pretty p <> text op <> (if op == "-|" then  empty else text $ show i)
+    pretty p <> text op <> (if op == "-|" then empty else text $ show i)
 
 printExtparams :: [EXTPARAM] -> Doc
 printExtparams [] = empty
@@ -194,8 +193,8 @@ printExtparams l = brackets $ sepByCommas $ map printExtparam l
 
 printInfix :: ExpressionPrinter m => EXPRESSION -> m Doc
 printInfix e@(Op s _ exps@[e1, e2] _) = do
--- we mustn't omit the space between the operator and its arguments for text-
--- operators such as "and", "or", but it would be good to omit it for "+-*/"
+{- we mustn't omit the space between the operator and its arguments for text-
+operators such as "and", "or", but it would be good to omit it for "+-*/" -}
   oi <- printOPID s
   oinm <- getOINM
   let outerprec = getPrec oinm e
@@ -204,7 +203,7 @@ printInfix e@(Op s _ exps@[e1, e2] _) = do
                                  Just op1 | op1 == s -> (<=)
                                           | otherwise -> (<)
                                  _ -> (<)
-                     in sep[f cmp e1 ed1,  oi <+> f (<) e2 ed2]
+                     in sep [f cmp e1 ed1, oi <+> f (<) e2 ed2]
       g _ = error "printInfix: Inner impossible case"
   liftM g $ mapM printExpression exps
 printInfix _ = error "printInfix: Impossible case"
@@ -212,7 +211,7 @@ printInfix _ = error "printInfix: Impossible case"
 printExpression :: ExpressionPrinter m => EXPRESSION -> m Doc
 printExpression (Var token) = return $ text $ tokStr token
 printExpression e@(Op s epl exps _)
-    | length exps == 0 = liftM (<> printExtparams epl) $ printOPID s
+    | null exps = liftM (<> printExtparams epl) $ printOPID s
     | otherwise = do
         let asPrfx pexps = do
                     oid <- printOPID s
@@ -222,7 +221,7 @@ printExpression e@(Op s epl exps _)
         oinm <- getOINM
         pfxMode <- prefixMode
         if pfxMode then asPrfx' else
-            case lookupOpInfo oinm s $ length exps  of
+            case lookupOpInfo oinm s $ length exps of
               Right oi
                   | infx oi -> printInfix e
                   | otherwise -> asPrfx'
@@ -253,7 +252,7 @@ printVarDecl (VarDecl n Nothing) = pretty n
 
 printOpDecl :: ExpressionPrinter m => OpDecl -> m Doc
 printOpDecl (OpDecl n epl vdl _)
-    | length vdl == 0 = liftM (<> printExtparams epl) $ printConstant n
+    | null vdl = liftM (<> printExtparams epl) $ printConstant n
     | otherwise = do
          oid <- printConstant n
          args <- printArgs $ map printVarDecl vdl
@@ -305,13 +304,13 @@ printBasicSpec (Basic_spec xs) = vcat $ map pretty xs
 printBasicItems :: BASIC_ITEM -> Doc
 printBasicItems (Axiom_item x) = pretty x
 printBasicItems (Op_decl x) = pretty x
-printBasicItems (Var_decls x) = text "vars" <+> (sepBySemis $ map pretty x)
-printBasicItems (EP_decl x) = text "eps" <+>
-                              (sepBySemis $ map (printInfixWith True "in") x)
+printBasicItems (Var_decls x) = text "vars" <+> sepBySemis (map pretty x)
+printBasicItems (EP_decl x) = text "eps" <+> sepBySemis
+                               (map (printInfixWith True "in") x)
 printBasicItems (EP_domdecl x) =
-    text "set" <+> (sepBySemis $ map (printInfixWith False "=") x)
+    text "set" <+> sepBySemis (map (printInfixWith False "=") x)
 printBasicItems (EP_defval x) = text "set" <+> text "default" <+>
-                                (sepBySemis $ map (printInfixWith False "=") x)
+                                sepBySemis (map (printInfixWith False "=") x)
 
 printInfixWith :: (Pretty a, Pretty b) => Bool -> String -> (a, b) -> Doc
 printInfixWith b s (x, y) = sep' [pretty x, text s, pretty y]
@@ -394,8 +393,8 @@ instance GetRange EXPRESSION where
   getRange = Range . rangeSpan
   rangeSpan x = case x of
     Var token -> joinRanges [rangeSpan token]
-    Op _ _ exps a -> joinRanges $ [rangeSpan a] ++ (map rangeSpan exps)
-    List exps a -> joinRanges $ [rangeSpan a] ++ (map rangeSpan exps)
+    Op _ _ exps a -> joinRanges $ rangeSpan a : map rangeSpan exps
+    List exps a -> joinRanges $ rangeSpan a : map rangeSpan exps
     Int _ a -> joinRanges [rangeSpan a]
     Rat _ a -> joinRanges [rangeSpan a]
     Interval _ _ a -> joinRanges [rangeSpan a]
@@ -404,6 +403,4 @@ instance GetRange EXPRESSION where
 instance Pretty InstantiatedConstant where
     pretty (InstantiatedConstant { constName = cn, instantiation = el }) =
         if null el then pretty cn
-        else pretty cn <> (parens $ sepByCommas $ map pretty el)
-
-
+        else pretty cn <> parens (sepByCommas $ map pretty el)

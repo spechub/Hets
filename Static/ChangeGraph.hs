@@ -243,7 +243,7 @@ delDGLink ms t i dg = let
                         delDGLink (Just sr) t (dgl_id el) dgx) dg createdLinks
                    delDGLink ms t i dg2
            DefLink -> delDef
-       HidingFreeOrCofreeThm _ _ _ _ -> delE dg
+       HidingFreeOrCofreeThm {} -> delE dg
            {- just delete the theorem link, we don't know what links can be
            in the proof basis by the shifting rules -}
        _ -> delDef          -- delete other def links

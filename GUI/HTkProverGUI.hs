@@ -123,7 +123,7 @@ setSelectedProver :: ListBox String
                   -> IO ()
 setSelectedProver lb st = do
     let ind = case selectedProver st of
-              Just sp -> findIndex (== sp) $ Map.keys (proversMap st)
+              Just sp -> elemIndex sp $ Map.keys (proversMap st)
               Nothing -> Nothing
     maybe (return ()) (\ i -> selection i lb >> return ()) ind
 

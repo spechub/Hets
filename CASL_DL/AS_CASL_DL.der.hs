@@ -43,11 +43,11 @@ data DL_FORMULA =
     Cardinality CardType
                 PRED_SYMB -- refers to a declared (binary) predicate
                 (TERM DL_FORMULA)
-                -- this term is restricted to constructors
-                -- denoting a (typed) variable
+                {- this term is restricted to constructors
+                denoting a (typed) variable -}
                 (TERM DL_FORMULA)
-               -- the second term is restricted to an Application denoting
-               -- a literal of type nonNegativeInteger (Nat)
+               {- the second term is restricted to an Application denoting
+               a literal of type nonNegativeInteger (Nat) -}
                (Maybe (FORMULA DL_FORMULA))
                -- an optional qualification for the number restriction
                 Range

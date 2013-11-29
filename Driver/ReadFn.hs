@@ -110,7 +110,7 @@ readLibDefnAux lgraph opts file fileForPos input =
      case ty of
       CommonLogicIn _ -> liftIO $ parseCL_CLIF file opts
 #ifdef RDFLOGIC
-   -- RDFIn -> liftIO $ parseRDF file
+ -- - RDFIn -> liftIO $ parseRDF file
 #endif
       Xmi -> liftIO $ parseXmi file
       Qvt -> liftIO $ parseQvt file

@@ -23,10 +23,10 @@ import Text.XML.Light
 import Data.List (find, intercalate)
 import Data.Time.Clock.POSIX (getPOSIXTime)
 
-import System.IO(Handle, hPutStrLn, hFlush)
+import System.IO (Handle, hPutStrLn, hFlush)
 
--- Converts any line text that does not stand for a
--- comment into a theoryitem element
+{- Converts any line text that does not stand for a
+comment into a theoryitem element -}
 genProofStep :: String -> Element
 genProofStep str = let
     iname = case trim str of
@@ -57,8 +57,8 @@ addPGIPMarkup str = case lines str of
 genPgipElem :: String -> Element
 genPgipElem = unode "pgipelem" . mkText
 
--- generates a normalresponse element that has a pgml element
--- containing the output text
+{- generates a normalresponse element that has a pgml element
+containing the output text -}
 genNormalResponse :: Node t => String -> t -> Element
 genNormalResponse areaValue = unode "normalresponse"
     . add_attr (mkAttr "area" areaValue)
@@ -71,8 +71,8 @@ genErrorResponse fatality =
   . unode "errorresponse"
   . unode "pgmltext" . mkText
 
--- | It inserts a given string into the XML packet as
--- normal output
+{- | It inserts a given string into the XML packet as
+normal output -}
 addPGIPAnswer :: String -> String -> CmdlPgipState -> CmdlPgipState
 addPGIPAnswer msgtxt errmsg st =
     if useXML st
@@ -83,8 +83,8 @@ addPGIPAnswer msgtxt errmsg st =
          else addPGIPElement resp $ genErrorResponse False errmsg
     else addToMsg errmsg $ addToMsg msgtxt st
 
--- | It inserts a given string into the XML packet as
--- error output
+{- | It inserts a given string into the XML packet as
+error output -}
 addPGIPError :: String -> CmdlPgipState -> CmdlPgipState
 addPGIPError str st = case str of
   "" -> st
@@ -103,15 +103,15 @@ addPGIPAttributes pgipData e = (add_attrs
       , mkAttr "seq" $ show $ seqNb pgipData ])
   $ unode "pgip" ()) { elContent = [Elem e]}
 
--- adds one element to the end of the content of the xml packet that represents
--- the current output of the interface to the broker
+{- adds one element to the end of the content of the xml packet that represents
+the current output of the interface to the broker -}
 addPGIPElement :: CmdlPgipState -> Element -> CmdlPgipState
 addPGIPElement pgData el =
   pgData { xmlElements = addPGIPAttributes pgData el : xmlElements pgData
          , seqNb = seqNb pgData + 1 }
 
--- adds a ready element at the end of the xml packet that represents the
--- current output of the interface to the broker
+{- adds a ready element at the end of the xml packet that represents the
+current output of the interface to the broker -}
 addPGIPReady :: CmdlPgipState -> CmdlPgipState
 addPGIPReady pgData = addPGIPElement pgData $ unode "ready" ()
 
@@ -167,8 +167,8 @@ resetPGIPData pgD = pgD
   { msgs = []
   , xmlElements = [] }
 
--- the PGIP protocol defines the pgip element as containing a single
--- subelement.
+{- the PGIP protocol defines the pgip element as containing a single
+subelement. -}
 convertPGIPDataToString :: CmdlPgipState -> String
 convertPGIPDataToString =
   intercalate "\n" . reverse . map showElement . xmlElements
@@ -229,8 +229,8 @@ getRefseqNb input =
                                   Just elatr -> Just $ attrVal elatr
                      _ -> Nothing
 
--- | parses the xml message creating a list of commands that it needs to
--- execute
+{- | parses the xml message creating a list of commands that it needs to
+execute -}
 parseXMLTree :: [Content] -> [CmdlXMLcommands] -> [CmdlXMLcommands]
 parseXMLTree xmltree acc = case xmltree of
     Elem info : ls -> case parseXMLElement info of
@@ -242,32 +242,32 @@ parseXMLTree xmltree acc = case xmltree of
 parseXMLElement :: Element -> Maybe CmdlXMLcommands
 parseXMLElement info = let cnt = strContent info in
   case qName $ elName info of
-    "proverinit"   -> Just XmlProverInit
-    "proverexit"   -> Just XmlExit
-    "startquiet"   -> Just XmlStartQuiet
-    "stopquiet"    -> Just XmlStopQuiet
-    "opengoal"     -> Just $ XmlOpenGoal cnt
-    "proofstep"    -> Just $ XmlExecute cnt
-    "closegoal"    -> Just $ XmlCloseGoal cnt
-    "giveupgoal"   -> Just $ XmlGiveUpGoal cnt
-    "spurioscmd"   -> Just $ XmlExecute cnt
-    "dostep"       -> Just $ XmlExecute cnt
-    "editobj"      -> Just $ XmlExecute cnt
-    "undostep"     -> Just XmlUndo
-    "redostep"     -> Just XmlRedo
-    "forget"       -> Just $ XmlForget cnt
-    "opentheory"   -> Just $ XmlOpenTheory cnt
-    "theoryitem"   -> Just $ XmlExecute cnt
-    "closetheory"  -> Just $ XmlCloseTheory cnt
-    "closefile"    -> Just $ XmlCloseFile cnt
-    "loadfile"     -> Just $ XmlLoadFile cnt
-    "askpgip"      -> Just XmlAskpgip
-    "parsescript"  -> Just $ XmlParseScript cnt
-    "pgip"         -> Nothing
+    "proverinit" -> Just XmlProverInit
+    "proverexit" -> Just XmlExit
+    "startquiet" -> Just XmlStartQuiet
+    "stopquiet" -> Just XmlStopQuiet
+    "opengoal" -> Just $ XmlOpenGoal cnt
+    "proofstep" -> Just $ XmlExecute cnt
+    "closegoal" -> Just $ XmlCloseGoal cnt
+    "giveupgoal" -> Just $ XmlGiveUpGoal cnt
+    "spurioscmd" -> Just $ XmlExecute cnt
+    "dostep" -> Just $ XmlExecute cnt
+    "editobj" -> Just $ XmlExecute cnt
+    "undostep" -> Just XmlUndo
+    "redostep" -> Just XmlRedo
+    "forget" -> Just $ XmlForget cnt
+    "opentheory" -> Just $ XmlOpenTheory cnt
+    "theoryitem" -> Just $ XmlExecute cnt
+    "closetheory" -> Just $ XmlCloseTheory cnt
+    "closefile" -> Just $ XmlCloseFile cnt
+    "loadfile" -> Just $ XmlLoadFile cnt
+    "askpgip" -> Just XmlAskpgip
+    "parsescript" -> Just $ XmlParseScript cnt
+    "pgip" -> Nothing
     s -> Just $ XmlUnknown s
 
--- | Given a packet (a normal string or a xml formated string), the function
--- converts it into a list of commands
+{- | Given a packet (a normal string or a xml formated string), the function
+converts it into a list of commands -}
 parseMsg :: CmdlPgipState -> String -> [CmdlXMLcommands]
 parseMsg st input = if useXML st
    then parseXMLTree (parseXML input) []

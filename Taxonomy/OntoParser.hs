@@ -78,7 +78,7 @@ data Frag =
  | ObjectLinkFrag ObjectLink
    deriving Show
 
-parseMMiSSOntologyFile :: SourceName -> IO(WithError MMiSSOntology)
+parseMMiSSOntologyFile :: SourceName -> IO (WithError MMiSSOntology)
 parseMMiSSOntologyFile s =
  do peFs <- parseFromFile ontoDoc s
     return $ case peFs of
@@ -113,7 +113,7 @@ generateOntology onto frs = case frs of
           insertRelationType onto name src tgt
       ObjectLinkFrag (ObjectLink src tgt name) ->
           insertLink onto src tgt name
-    in weither (const weOnto) (flip generateOntology fs) weOnto
+    in weither (const weOnto) (`generateOntology` fs) weOnto
 
 -- | parse fragments
 frag :: GenParser Char st (Maybe Frag)

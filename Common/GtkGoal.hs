@@ -36,58 +36,58 @@ data GStatus = GOpen
                deriving (Eq, Ord)
 
 instance Show GStatus where
-  show GProved       = spanString GProved       "Proved"
+  show GProved = spanString GProved "Proved"
   show GInconsistent = spanString GInconsistent "Inconsistent"
-  show GDisproved    = spanString GDisproved    "Disproved"
-  show GOpen         = spanString GOpen         "Open"
-  show GTimeout      = spanString GTimeout      "Open (Timeout!)"
-  show GGuessed      = spanString GGuessed      "Guessed"
-  show GConjectured  = spanString GConjectured  "Conjectured"
-  show GHandwritten  = spanString GHandwritten  "Handwritten"
+  show GDisproved = spanString GDisproved "Disproved"
+  show GOpen = spanString GOpen "Open"
+  show GTimeout = spanString GTimeout "Open (Timeout!)"
+  show GGuessed = spanString GGuessed "Guessed"
+  show GConjectured = spanString GConjectured "Conjectured"
+  show GHandwritten = spanString GHandwritten "Handwritten"
 
 showSimple :: GStatus -> String
 showSimple gs = case gs of
-  GProved       -> "Proved"
+  GProved -> "Proved"
   GInconsistent -> "Inconsistent"
-  GDisproved    -> "Disproved"
-  GOpen         -> "Open"
-  GTimeout      -> "Open (Timeout!)"
-  GGuessed      -> "Guessed"
-  GConjectured  -> "Conjectured"
-  GHandwritten  -> "Handwritten"
+  GDisproved -> "Disproved"
+  GOpen -> "Open"
+  GTimeout -> "Open (Timeout!)"
+  GGuessed -> "Guessed"
+  GConjectured -> "Conjectured"
+  GHandwritten -> "Handwritten"
 
 
 statusToColor :: GStatus -> String
 statusToColor s = case s of
-  GOpen         -> "black"
-  GProved       -> "green"
-  GDisproved    -> "red"
-  GTimeout      -> "blue"
+  GOpen -> "black"
+  GProved -> "green"
+  GDisproved -> "red"
+  GTimeout -> "blue"
   GInconsistent -> "orange"
-  GGuessed      -> "darkgreen"
-  GConjectured  -> "darkgreen"
-  GHandwritten  -> "darkgreen"
+  GGuessed -> "darkgreen"
+  GConjectured -> "darkgreen"
+  GHandwritten -> "darkgreen"
 
 statusToPrefix :: GStatus -> String
 statusToPrefix s = case s of
-  GOpen         -> "[ ] "
-  GProved       -> "[+] "
-  GDisproved    -> "[-] "
-  GTimeout      -> "[t] "
+  GOpen -> "[ ] "
+  GProved -> "[+] "
+  GDisproved -> "[-] "
+  GTimeout -> "[t] "
   GInconsistent -> "[*] "
-  GGuessed      -> "[.] "
-  GConjectured  -> "[:] "
-  GHandwritten  -> "[/] "
+  GGuessed -> "[.] "
+  GConjectured -> "[:] "
+  GHandwritten -> "[/] "
 
 spanString :: GStatus -> String -> String
 spanString s m = "<span color=\"" ++ statusToColor s ++ "\">" ++ m ++ "</span>"
 
 -- | Converts a ProofStatus into a GStatus
 proofStatusToGStatus :: ProofStatus a -> GStatus
-proofStatusToGStatus p = case goalStatus p  of
+proofStatusToGStatus p = case goalStatus p of
   Proved False -> GInconsistent
-  Proved True  -> GProved
-  Disproved    -> GDisproved
+  Proved True -> GProved
+  Disproved -> GDisproved
   Open (Reason s) ->
     if any (isInfixOf "timeout" . map toLower) s then GTimeout else GOpen
 
@@ -95,12 +95,12 @@ proofStatusToGStatus p = case goalStatus p  of
 basicProofToGStatus :: BasicProof -> GStatus
 basicProofToGStatus p = case p of
   BasicProof _ st -> proofStatusToGStatus st
-  Guessed         -> GGuessed
-  Conjectured     -> GConjectured
-  Handwritten     -> GHandwritten
+  Guessed -> GGuessed
+  Conjectured -> GConjectured
+  Handwritten -> GHandwritten
 
 -- | Converts a GenericConfig into a GStatus
 genericConfigToGStatus :: GenericConfig a -> GStatus
 genericConfigToGStatus cfg = case proofStatusToGStatus $ proofStatus cfg of
   GOpen -> if timeLimitExceeded cfg then GTimeout else GOpen
-  s     -> s
+  s -> s

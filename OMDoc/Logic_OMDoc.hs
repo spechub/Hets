@@ -21,6 +21,7 @@ import Common.Id
 import Data.Maybe (fromMaybe)
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+import Control.Monad (unless)
 
 data OMDoc_PUN = OMDoc_PUN
 
@@ -61,36 +62,31 @@ instance Category OMDoc_Sign OMDoc_Morphism where
               (Nothing, Just _) -> im2'
               (Just im1, Just im2) ->
                 Just
-                  (
                     OMDoc.Morphism
                       {
                           OMDoc.morphismId = Just $
-                            (fromMaybe "Unnamed" (OMDoc.morphismId im1))
+                            fromMaybe "Unnamed" (OMDoc.morphismId im1)
                             ++ "_comp_"
-                            ++ (fromMaybe "Unnamed" (OMDoc.morphismId im2))
+                            ++ fromMaybe "Unnamed" (OMDoc.morphismId im2)
                         , OMDoc.morphismHiding =
-                            (OMDoc.morphismHiding im1)
-                            ++
-                            (OMDoc.morphismHiding im2)
+                            OMDoc.morphismHiding im1 ++
+                            OMDoc.morphismHiding im2
                         , OMDoc.morphismBase =
-                            (OMDoc.morphismBase im1)
-                            ++
-                            (OMDoc.morphismBase im2)
+                            OMDoc.morphismBase im1 ++
+                            OMDoc.morphismBase im2
                         , OMDoc.morphismRequations =
-                            (OMDoc.morphismRequations im1)
-                            ++
-                            (OMDoc.morphismRequations im2)
+                            OMDoc.morphismRequations im1 ++
+                            OMDoc.morphismRequations im2
                       }
-                  )
         in
-          return $ (m1 { OMDoc.inclusionMorphism = compim }, s1, t2)
+          return (m1 { OMDoc.inclusionMorphism = compim }, s1, t2)
   dom (_, s, _) = s
   cod (_, _, t) = t
-  legal_mor (m, s, t) = if
-    (OMDoc.inclusionFrom m) == (OMDoc.mkSymbolRef (OMDoc.theoryId s))
-    &&
-    (OMDoc.inclusionTo m) == (OMDoc.mkSymbolRef (OMDoc.theoryId t))
-    then return () else fail "illegal OMDoc morphism"
+  legal_mor (m, s, t) = unless
+    (OMDoc.inclusionFrom m == OMDoc.mkSymbolRef (OMDoc.theoryId s)
+     &&
+     OMDoc.inclusionTo m == OMDoc.mkSymbolRef (OMDoc.theoryId t)) $
+    fail "illegal OMDoc morphism"
 
 instance Sentences OMDoc_PUN () OMDoc_Sign OMDoc_Morphism OMDoc.Symbol where
   sym_of OMDoc_PUN s =
@@ -104,7 +100,7 @@ instance Sentences OMDoc_PUN () OMDoc_Sign OMDoc_Morphism OMDoc.Symbol where
       Nothing -> Map.empty
       (Just im) ->
         foldl
-          (\smap r ->
+          (\ smap r ->
             case r of
               (OMDoc.MTextOM omobj1, OMDoc.MTextOM omobj2) ->
                 case (omobj1, omobj2) of
@@ -115,7 +111,7 @@ instance Sentences OMDoc_PUN () OMDoc_Sign OMDoc_Morphism OMDoc.Symbol where
                       msymbol1 =
                         case
                           filter
-                            (\c ->
+                            (\ c ->
                               case c of
                                 (OMDoc.CSy symbol) ->
                                   OMDoc.symbolId symbol == name1
@@ -125,12 +121,12 @@ instance Sentences OMDoc_PUN () OMDoc_Sign OMDoc_Morphism OMDoc.Symbol where
                             (OMDoc.theoryConstitutives s1)
                         of
                           [] -> Nothing
-                          ((OMDoc.CSy symbol):_) -> Just symbol
+                          (OMDoc.CSy symbol : _) -> Just symbol
                           _ -> error "OMDoc.Logic_OMDoc.symmap_of"
                       msymbol2 =
                         case
                           filter
-                            (\c ->
+                            (\ c ->
                               case c of
                                 (OMDoc.CSy symbol) ->
                                   OMDoc.symbolId symbol == name2
@@ -140,7 +136,7 @@ instance Sentences OMDoc_PUN () OMDoc_Sign OMDoc_Morphism OMDoc.Symbol where
                             (OMDoc.theoryConstitutives s2)
                         of
                           [] -> Nothing
-                          ((OMDoc.CSy symbol):_) -> Just symbol
+                          (OMDoc.CSy symbol : _) -> Just symbol
                           _ -> error "OMDoc.Logic_OMDoc.symmap_of"
                       newmap =
                         case (msymbol1, msymbol2) of
@@ -179,25 +175,25 @@ is_subsig s1 s2 =
     let
       s1sym =
         foldl
-          (\s con ->
+          (\ s con ->
             case con of
               (OMDoc.CSy sym) ->
                 Set.insert sym s
               _ ->
                 s
           )
-          (Set.empty)
+          Set.empty
           (OMDoc.theoryConstitutives s1)
       s2sym =
         foldl
-          (\s con ->
+          (\ s con ->
             case con of
               (OMDoc.CSy sym) ->
                 Set.insert sym s
               _ ->
                 s
           )
-          (Set.empty)
+          Set.empty
           (OMDoc.theoryConstitutives s2)
     in
      Set.isSubsetOf s1sym s2sym

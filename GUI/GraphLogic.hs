@@ -377,7 +377,7 @@ proofMenu :: GInfo
 proofMenu gInfo@(GInfo { hetcatsOpts = hOpts
                        , libName = ln
                        }) cmd proofFun = do
-  ost <- readIORef $ intState gInfo  
+  ost <- readIORef $ intState gInfo
   case i_state ost of
     Nothing -> return ()
     Just ist -> do

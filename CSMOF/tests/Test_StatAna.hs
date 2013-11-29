@@ -19,18 +19,19 @@ import CSMOF.Print
 
 import Common.GlobalAnnotations
 
-import System.IO 
-import Text.XML.Light 
+import System.IO
+import Text.XML.Light
 
 
 main :: IO ()
-main = do  
-    handle <- openFile "MetamodelWModel.xmi" ReadMode  
-    contents <- hGetContents handle 
+main = do
+    handle <- openFile "MetamodelWModel.xmi" ReadMode
+    contents <- hGetContents handle
     case parseXMLDoc contents of
-	Nothing -> putStr "VACIO"
-	Just el -> do
-			handle2 <- openFile "parsingStaticAn_EXIT.txt" WriteMode  
-			hPutStr handle2 (show (basicAna ((parseCSMOF el),emptySign,emptyGlobalAnnos)))
-			hClose handle2
+        Nothing -> putStr "VACIO"
+        Just el -> do
+                        handle2 <- openFile "parsingStaticAn_EXIT.txt" WriteMode
+                        hPutStr handle2 (show (basicAna (parseCSMOF el,
+                                emptySign, emptyGlobalAnnos)))
+                        hClose handle2
     hClose handle

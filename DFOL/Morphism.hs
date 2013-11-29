@@ -75,20 +75,20 @@ checkTypePres :: Morphism -> NAME -> Bool
 checkTypePres m n =
   let Just type1 = getSymbolType n $ source m
       Just type2 = getSymbolType (mapSymbol m n) $ target m
-      in (applyMorph m type1) == type2
+      in applyMorph m type1 == type2
 
 {- converts the morphism into its canonical form where the symbol map contains
    no key/value pairs of the form (k,k) -}
 canForm :: Morphism -> Morphism
 canForm (Morphism sig1 sig2 map1) =
-  let map2 = Map.fromList $ filter (\ (k, a) -> k /= a) $ Map.toList map1
+  let map2 = Map.fromList $ filter (uncurry (/=)) $ Map.toList map1
       in Morphism sig1 sig2 map2
 
 -- constructs the inclusion morphism between signatures
 inclusionMorph :: Sign -> Sign -> Result.Result Morphism
 inclusionMorph sig1 sig2 =
   let m = Morphism sig1 sig2 Map.empty
-      in if (isValidMorph m)
+      in if isValidMorph m
             then Result.Result [] $ Just m
             else Result.Result [noSubsigError sig1 sig2] Nothing
 
@@ -148,10 +148,10 @@ coGenSig :: Bool -> Set.Set Symbol -> Sign -> Result Morphism
 coGenSig flag syms sig@(Sign ds) =
   let names = Set.map name syms
       ds1 = expandDecls ds
-      in if (Set.isSubsetOf names $ getSymbols sig)
+      in if Set.isSubsetOf names (getSymbols sig)
             then let incl = if flag
                                then cogSig names ds1 sig
-                               else genSig names (Set.empty) names sig
+                               else genSig names Set.empty names sig
                      ds2 = map (\ (n, t) -> ([n], t))
                            $ filter (\ (n, _) -> Set.member n incl) ds1
                      in inclusionMorph (Sign ds2) sig
@@ -159,13 +159,13 @@ coGenSig flag syms sig@(Sign ds) =
 
 genSig :: Set.Set NAME -> Set.Set NAME -> Set.Set NAME -> Sign -> Set.Set NAME
 genSig incl done todo sig =
-  if (Set.null todo)
+  if Set.null todo
      then incl
      else let n = Set.findMin todo
               Just t = getSymbolType n sig
               ns = getFreeVars t
               incl1 = Set.union incl ns
-              ns1 = Set.filter (\ n1 -> Set.member n1 done) ns
+              ns1 = Set.filter (`Set.member` done) ns
               done1 = Set.insert n done
               todo1 = Set.union ns1 $ Set.delete n todo
               in genSig incl1 done1 todo1 sig
@@ -173,10 +173,10 @@ genSig incl done todo sig =
 cogSig :: Set.Set NAME -> [SDECL] -> Sign -> Set.Set NAME
 cogSig excl [] sig = Set.difference (getSymbols sig) excl
 cogSig excl ((n, t) : ds) sig =
-  if (Set.member n excl)
+  if Set.member n excl
      then cogSig excl ds sig
      else let ns = Set.toList $ getFreeVars t
-              depen = or $ map (\ n1 -> Set.member n1 excl) ns
+              depen = any (`Set.member` excl) ns
               in if depen
                     then let excl1 = Set.insert n excl
                              in cogSig excl1 ds sig
@@ -198,7 +198,7 @@ morphUnion m1@(Morphism sig1D sig1C map1) m2@(Morphism sig2D sig2C map2) =
                             Nothing -> Result.Result diag3 Nothing
                             Just map3 ->
                               let m = Morphism sigD sigC map3
-                                  in if (isValidMorph m)
+                                  in if isValidMorph m
                                      then Result.Result [] $ Just m
                                      else Result.Result
                                             [invalidMorphError m1 m2] Nothing
@@ -211,9 +211,9 @@ combineMapsH :: Map.Map NAME NAME -> [(NAME, NAME)] ->
                 Result.Result (Map.Map NAME NAME)
 combineMapsH map1 [] = Result.Result [] $ Just map1
 combineMapsH map1 ((k, v) : ds) =
-  if (Map.member k map1)
+  if Map.member k map1
      then let Just v1 = Map.lookup k map1
-              in if (v == v1)
+              in if v == v1
                  then combineMapsH map1 ds
                  else Result.Result [incompatibleMapError k v v1] Nothing
      else let map2 = Map.insert k v map1
@@ -240,7 +240,7 @@ instance Eq Morphism where
 
 eqMorph :: Morphism -> Morphism -> Bool
 eqMorph (Morphism s1 t1 map1) (Morphism s2 t2 map2) =
-  (s1,t1,map1) == (s2,t2,map2) 
+  (s1, t1, map1) == (s2, t2, map2)
 
 -- pretty printing
 instance Pretty Morphism where
@@ -248,11 +248,11 @@ instance Pretty Morphism where
 
 printMorph :: Morphism -> Doc
 printMorph m =
-  if m == (idMorph $ source m)
-     then vcat [text "Identity morphism on:", pretty $ source m]
-     else vcat [text "Source signature:", pretty $ source m,
-                text "Target signature:", pretty $ target m,
-                text "Mapping:", printSymMap $ symMap m]
+  vcat $ if m == idMorph (source m)
+     then [text "Identity morphism on:", pretty $ source m]
+     else [text "Source signature:", pretty $ source m,
+           text "Target signature:", pretty $ target m,
+           text "Mapping:", printSymMap $ symMap m]
 
 printSymMap :: Map.Map NAME NAME -> Doc
 printSymMap m = vcat $ map (\ (k, a) -> pretty k <+> text "|->" <+> pretty a)
@@ -268,7 +268,7 @@ inducedFromMorphism map1 sig1 =
               Just sig2 -> Result.Result [] $ Just $ Morphism sig1 sig2 map2
 
 buildSig :: Sign -> Map.Map NAME NAME -> Result.Result Sign
-buildSig (Sign ds) map1 = buildSigH (expandDecls ds) emptySig map1
+buildSig (Sign ds) = buildSigH (expandDecls ds) emptySig
 
 buildSigH :: [SDECL] -> Sign -> Map.Map NAME NAME -> Result.Result Sign
 buildSigH [] sig _ = Result.Result [] $ Just sig
@@ -278,7 +278,7 @@ buildSigH ((n1, t1) : ds) sig map1 =
       syms = Set.map (\ n -> Map.findWithDefault n n map1)
                  $ getSymbols sig
       t2 = translate map2 syms t1
-      in if (isConstant n2 sig)
+      in if isConstant n2 sig
             then let Just t3 = getSymbolType n2 sig
                  in if t2 == t3
                        then buildSigH ds sig map1
@@ -299,15 +299,15 @@ buildMorph :: [SDECL] -> Morphism -> Result.Result Morphism
 buildMorph [] m = Result.Result [] $ Just m
 buildMorph ((n1, t1) : ds) m@(Morphism _ sig2 map1) = do
   let t2 = applyMorph m t1
-  if (Map.member n1 map1)
+  if Map.member n1 map1
      then do
         let n2 = mapSymbol m n1
         let Just t3 = getSymbolType n2 sig2
-        if (t2 == t3) then buildMorph ds m else
+        if t2 == t3 then buildMorph ds m else
            Result.Result [incompatibleViewError2 n2 t2 t3] Nothing
      else do
         let t3 = getSymbolType n1 sig2
-        if (Just t2 == t3) then buildMorph ds m else do
+        if Just t2 == t3 then buildMorph ds m else do
            let ss = getSymsOfType sig2 t2
            case ss of
                 [s] -> buildMorph ds $
@@ -320,9 +320,9 @@ incompatibleMorphsError :: Morphism -> Morphism -> Result.Diagnosis
 incompatibleMorphsError m1 m2 =
   Result.Diag
     { Result.diagKind = Result.Error
-    , Result.diagString = "Codomain of the morphism\n" ++ (show $ pretty m1)
+    , Result.diagString = "Codomain of the morphism\n" ++ show (pretty m1)
                           ++ "\nis different from the domain of the morphism\n"
-                          ++ (show $ pretty m2)
+                          ++ show (pretty m2)
                           ++ "\nhence their composition cannot be constructed."
     , Result.diagPos = nullRange
     }
@@ -331,9 +331,9 @@ incompatibleViewError1 :: NAME -> TYPE -> TYPE -> Result.Diagnosis
 incompatibleViewError1 n t1 t2 =
   Result.Diag
     { Result.diagKind = Result.Error
-    , Result.diagString = "Symbol\n" ++ (show $ pretty n)
-                          ++ "\nmust have both type\n" ++ (show $ pretty t1)
-                          ++ "\nand type\n" ++ (show $ pretty t2)
+    , Result.diagString = "Symbol\n" ++ show (pretty n)
+                          ++ "\nmust have both type\n" ++ show (pretty t1)
+                          ++ "\nand type\n" ++ show (pretty t2)
                           ++ "\nin the target signature and hence "
                           ++ "the view is ill-formed."
     , Result.diagPos = nullRange
@@ -343,9 +343,9 @@ incompatibleViewError2 :: NAME -> TYPE -> TYPE -> Result.Diagnosis
 incompatibleViewError2 n t1 t2 =
   Result.Diag
     { Result.diagKind = Result.Error
-    , Result.diagString = "Symbol\n" ++ (show $ pretty n)
-                          ++ "\nmust have type\n" ++ (show $ pretty t1)
-                          ++ "\nbut instead has type\n" ++ (show $ pretty t2)
+    , Result.diagString = "Symbol\n" ++ show (pretty n)
+                          ++ "\nmust have type\n" ++ show (pretty t1)
+                          ++ "\nbut instead has type\n" ++ show (pretty t2)
                           ++ "\nin the target signature and hence "
                           ++ "the view is ill-formed."
     , Result.diagPos = nullRange
@@ -355,10 +355,10 @@ noSymToMapError :: NAME -> TYPE -> Result.Diagnosis
 noSymToMapError n t =
   Result.Diag
     { Result.diagKind = Result.Error
-    , Result.diagString = "Symbol\n" ++ (show $ pretty n)
+    , Result.diagString = "Symbol\n" ++ show (pretty n)
                           ++ "\ncannot be mapped to anything as the target "
                           ++ "signature contains no symbols of type\n"
-                          ++ (show $ pretty t)
+                          ++ show (pretty t)
     , Result.diagPos = nullRange
     }
 
@@ -366,11 +366,11 @@ manySymToMapError :: NAME -> TYPE -> [NAME] -> Result.Diagnosis
 manySymToMapError n t ss =
   Result.Diag
     { Result.diagKind = Result.Error
-    , Result.diagString = "Symbol\n" ++ (show $ pretty n)
+    , Result.diagString = "Symbol\n" ++ show (pretty n)
                           ++ "\ncannot be uniquely mapped as the target "
                           ++ "signature contains multiple symbols of type\n"
-                          ++ (show $ pretty t) ++ "\n namely\n"
-                          ++ (show $ printNames ss)
+                          ++ show (pretty t) ++ "\n namely\n"
+                          ++ show (printNames ss)
     , Result.diagPos = nullRange
     }
 
@@ -378,9 +378,9 @@ noSubsigError :: Sign -> Sign -> Result.Diagnosis
 noSubsigError sig1 sig2 =
   Result.Diag
     { Result.diagKind = Result.Error
-    , Result.diagString = "Signature\n" ++ (show $ pretty sig1)
+    , Result.diagString = "Signature\n" ++ show (pretty sig1)
                           ++ "\nis not a subsignature of\n"
-                          ++ (show $ pretty sig2)
+                          ++ show (pretty sig2)
                           ++ "\nand hence the inclusion morphism "
                           ++ "cannot be constructed."
     , Result.diagPos = nullRange
@@ -390,9 +390,9 @@ incompatibleMapError :: NAME -> NAME -> NAME -> Result.Diagnosis
 incompatibleMapError n n1 n2 =
   Result.Diag
     { Result.diagKind = Result.Error
-    , Result.diagString = "Symbol\n" ++ (show $ pretty n)
-                          ++ "\nis mapped both to\n" ++ (show $ pretty n1)
-                          ++ "\nand\n" ++ (show $ pretty n2)
+    , Result.diagString = "Symbol\n" ++ show (pretty n)
+                          ++ "\nis mapped both to\n" ++ show (pretty n1)
+                          ++ "\nand\n" ++ show (pretty n2)
                           ++ "\nin the target signature and hence "
                           ++ "the morphism union cannot be constructed."
     , Result.diagPos = nullRange
@@ -402,8 +402,8 @@ invalidMorphError :: Morphism -> Morphism -> Result.Diagnosis
 invalidMorphError m1 m2 =
   Result.Diag
     { Result.diagKind = Result.Error
-    , Result.diagString = "The combination of morphisms\n" ++ (show $ pretty m1)
-                          ++ "\nand\n" ++ (show $ pretty m2)
+    , Result.diagString = "The combination of morphisms\n" ++ show (pretty m1)
+                          ++ "\nand\n" ++ show (pretty m2)
                           ++ "\nis not a valid morphism and hence "
                           ++ "their union cannot be constructed."
     , Result.diagPos = nullRange
@@ -414,9 +414,9 @@ symsNotInSigError syms sig =
   Result.Diag
     { Result.diagKind = Result.Error
     , Result.diagString = "The symbols\n"
-                          ++ (show $ printNames $ Set.toList syms)
+                          ++ show (printNames $ Set.toList syms)
                           ++ "\nare not in the signature\n"
-                          ++ (show $ pretty sig)
+                          ++ show (pretty sig)
                           ++ "\nand hence the (co)generated signature "
                           ++ "cannot be constructed."
     , Result.diagPos = nullRange

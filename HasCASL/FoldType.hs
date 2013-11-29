@@ -55,7 +55,7 @@ replAlias :: (Id -> RawKind -> Int -> Type) -> Type -> Type
 replAlias m = foldType mapTypeRec
     { foldTypeName = const m
     , foldExpandedType = \ et r1 r2 -> case (et, r1) of
-        (ExpandedType t1@(TypeName _ _ _) _, ExpandedType t3 _) | t1 == t3 ->
+        (ExpandedType t1@(TypeName {}) _, ExpandedType t3 _) | t1 == t3 ->
             ExpandedType t1 r2
         _ -> ExpandedType r1 r2 }
 

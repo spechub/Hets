@@ -220,12 +220,11 @@ transTerm sign trm = case trm of
         in foldr (quantify quan) (transTerm sign phi) varDecls
     TypedTerm t _ _ _ -> transTerm sign t
     LambdaTerm pats p body _ ->
-        let lambdaAbs f = if null pats then termAppl conSome
-                           (Abs (IsaSign.Free $ mkVName "dummyVar")
-                                    (f sign body) NotCont)
-                          else termAppl conSome (foldr (abstraction sign)
-                                 (f sign body)
-                                 pats)
+        let lambdaAbs f = termAppl conSome $ if null pats then
+                           Abs (IsaSign.Free $ mkVName "dummyVar")
+                                    (f sign body) NotCont
+                          else foldr (abstraction sign)
+                                 (f sign body) pats
         in case p of
          {- distinguishes between partial and total lambda abstraction
          total lambda bodies are of type 'a' instead of type 'a option' -}
@@ -303,7 +302,7 @@ transWhenElse :: Env -> As.Term -> IsaSign.Term
 transWhenElse sign t =
     case t of
       TupleTerm terms _ ->
-        let ts = (map (transTerm sign) terms)
+        let ts = map (transTerm sign) terms
         in case ts of
            [i, c, e] -> If c i e NotCont
            _ -> error "HasCASL2IsabelleHOL.transWhenElse.tuple"

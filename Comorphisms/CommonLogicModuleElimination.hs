@@ -9,14 +9,14 @@ Maintainer  :  eugenk@informatik.uni-bremen.de
 Stability   :  experimental (not complete: typleclass-instances missing)
 Portability :  non-portable (via Logic.Logic)
 
-Translating comorphism from CommonLogic to CommonLogic in order to eliminate 
+Translating comorphism from CommonLogic to CommonLogic in order to eliminate
 modules.
 
 -}
 
 
 module Comorphisms.CommonLogicModuleElimination (
-        CommonLogicModuleElimination  (..)
+        CommonLogicModuleElimination (..)
     )
     where
 
@@ -73,29 +73,28 @@ instance Comorphism
       map_theory CommonLogicModuleElimination = mapTheory
       map_morphism CommonLogicModuleElimination = mapMor
       map_sentence CommonLogicModuleElimination = mapSentence
-      --hasCommonLogicModuleElimination_model_expansion  = True -- TODO: check if it is really True
+      -- hasCommonLogicModuleElimination_model_expansion  = True -- TODO: check if it is really True
 
 
 mapSub :: Sl.CommonLogicSL -> Sl.CommonLogicSL
 mapSub = id
 
 mapMor :: Mor.Morphism -> Result Mor.Morphism
-mapMor mor = return mor
+mapMor = return
 
 mapSentence :: Sign.Sign -> TEXT_META -> Result TEXT_META
 mapSentence _ txt = return $ eliminateModules txt
 
--------------------------------------------------------------------------------
--- MODULE ELIMINATION                                                        --
--------------------------------------------------------------------------------
-
+{- -----------------------------------------------------------------------------
+MODULE ELIMINATION                                                        --
+----------------------------------------------------------------------------- -}
 
 
 mapTheory :: (Sign.Sign, [AS_Anno.Named TEXT_META])
              -> Result (Sign.Sign, [AS_Anno.Named TEXT_META])
 mapTheory (srcSign, srcTexts) =
   return (srcSign,
-          map ((uncurry AS_Anno.makeNamed) . elimModSnd . senAndName) srcTexts)
+          map (uncurry AS_Anno.makeNamed . elimModSnd . senAndName) srcTexts)
   where senAndName :: AS_Anno.Named TEXT_META -> (String, TEXT_META)
         senAndName t = (AS_Anno.senAttr t, AS_Anno.sentence t)
         elimModSnd :: (String, TEXT_META) -> (String, TEXT_META)

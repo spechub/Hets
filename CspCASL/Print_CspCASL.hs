@@ -178,7 +178,7 @@ lglue x y =
 
 hasRightCond :: PROCESS -> Bool
 hasRightCond x = case x of
-  ConditionalProcess _ _ _ _ -> True
+  ConditionalProcess {} -> True
   SynchronousParallel _ y _ -> hasRightCond y
   GeneralisedParallel _ _ y _ -> hasRightCond y
   AlphabetisedParallel _ _ _ y _ -> hasRightCond y
@@ -196,17 +196,17 @@ data Prio = Prim | Post | Pre | Seq | Choice | Par | Cond deriving (Eq, Ord)
 
 procPrio :: PROCESS -> Prio
 procPrio x = case x of
-  ConditionalProcess _ _ _ _ -> Cond
-  SynchronousParallel _ _ _ -> Par
-  GeneralisedParallel _ _ _ _ -> Par
-  AlphabetisedParallel _ _ _ _ _ -> Par
-  Interleaving _ _ _ -> Par
-  ExternalChoice _ _ _ -> Choice
-  InternalChoice _ _ _ -> Choice
-  Sequential _ _ _ -> Seq
-  PrefixProcess _ _ _ -> Pre
-  Hiding _ _ _ -> Post
-  RenamingProcess _ _ _ -> Post
+  ConditionalProcess {} -> Cond
+  SynchronousParallel {} -> Par
+  GeneralisedParallel {} -> Par
+  AlphabetisedParallel {} -> Par
+  Interleaving {} -> Par
+  ExternalChoice {} -> Choice
+  InternalChoice {} -> Choice
+  Sequential {} -> Seq
+  PrefixProcess {} -> Pre
+  Hiding {} -> Post
+  RenamingProcess {} -> Post
   _ -> Prim
 
 instance Pretty EVENT where

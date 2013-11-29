@@ -97,7 +97,7 @@ checkGoal cfgMap goal =
   Called every time a goal has been processed in the batch mode.
 -}
 
-goalProcessed ::  (Ord proof_tree) =>
+goalProcessed :: (Ord proof_tree) =>
                  Conc.MVar (GenericState sign sentence proof_tree pst)
                  -- ^ IORef pointing to the backing State data structure
               -> Int -- ^ batch time limit
@@ -110,13 +110,13 @@ goalProcessed ::  (Ord proof_tree) =>
               -> (ATPRetval, GenericConfig proof_tree)
               -> IO Bool
 goalProcessed stateMVar tLimit extOpts numGoals prName processedGoalsSoFar
-              nGoal verbose (retval, res_cfg) 
+              nGoal verbose (retval, res_cfg)
               = do
-                goalPair <- goalProcRetVal stateMVar tLimit extOpts 
+                goalPair <- goalProcRetVal stateMVar tLimit extOpts
                             numGoals prName processedGoalsSoFar nGoal verbose (retval, res_cfg)
                 return $ fst goalPair
 
---same function as goalProcessed but it also returnes the goalStatus 
+-- same function as goalProcessed but it also returnes the goalStatus
 goalProcRetVal :: (Ord proof_tree) =>
                  Conc.MVar (GenericState sign sentence proof_tree pst)
                  -- ^ IORef pointing to the backing State data structure
@@ -141,7 +141,7 @@ goalProcRetVal stateMVar tLimit extOpts numGoals prName processedGoalsSoFar
         , resultOutput = resultOutput res_cfg
         , timeUsed = timeUsed res_cfg
         }) prName (AS_Anno.senAttr nGoal) (currentProofTree s) (configsMap s)}
-  let 
+  let
     theGoalStatus = goalStatus n
   when verbose $ putStrLn $ "Goal " ++ goalName n ++ " is "
     ++ case theGoalStatus of

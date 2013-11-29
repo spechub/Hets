@@ -109,7 +109,7 @@ dgOriginHeader :: DGOrigin -> String
 dgOriginHeader o = case o of
     DGEmpty -> "empty-spec"
     DGBasic -> "foreign-basic-spec"
-    DGBasicSpec _ _ _ -> "basic-spec"
+    DGBasicSpec {} -> "basic-spec"
     DGExtension -> "extension"
     DGLogicCoercion -> "logic-translation"
     DGTranslation _ -> "translation"
@@ -130,7 +130,7 @@ dgOriginHeader o = case o of
     DGNormalForm n -> "normal-form(" ++ shows n ")"
     DGintegratedSCC -> "OWL spec with integrated strongly connected components"
     DGFlattening -> "flattening"
-    DGTest -> "testing" 
+    DGTest -> "testing"
     DGAlignment -> "alignment"
 
 instance Pretty DGOrigin where
@@ -366,7 +366,7 @@ instance Pretty ImpUnitSigOrSig where
       [ pretty usig, prettyImport imp ]
     Sig n -> keyword specS <+> pretty (getNode n)
 
-instance Pretty RTNodeType where 
+instance Pretty RTNodeType where
  pretty (RTPlain usig) = pretty usig
  pretty (RTRef n) = pretty n
 

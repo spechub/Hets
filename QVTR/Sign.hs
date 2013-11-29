@@ -29,11 +29,11 @@ data RuleDef = RuleDef { name :: String
                        } deriving (Show, Eq, Ord)
 
 instance Pretty RuleDef where
-  pretty (RuleDef nam to pars) = 
-    let t = if to 
-            then text "top relation"
-            else text "relation"
-    in t <+> text nam <> lparen 
+  pretty (RuleDef nam to pars) =
+    let t = text $ if to
+            then "top relation"
+            else "relation"
+    in t <+> text nam <> lparen
     <> foldr ((<+>) . pretty) empty pars
     <> rparen
 
@@ -42,25 +42,25 @@ data Sign = Sign { sourceSign :: CSMOF.Sign
                  , targetSign :: CSMOF.Sign
                  , nonTopRelations :: Map.Map String RuleDef
                  , topRelations :: Map.Map String RuleDef
-                 , keyDefs :: [(String,String)]
+                 , keyDefs :: [(String, String)]
                  } deriving (Show, Eq, Ord)
 
 instance GetRange Sign where
   getRange _ = nullRange
-  rangeSpan _ = []      
+  rangeSpan _ = []
 
 instance Pretty Sign where
-  pretty (Sign souS tarS nonRel topRel keyD) = 
+  pretty (Sign souS tarS nonRel topRel keyD) =
     text "-- Source Metamodel"
-    $++$ 
+    $++$
     pretty souS
-    $++$ 
+    $++$
     text "-- Target Metamodel"
-    $++$ 
+    $++$
     pretty tarS
     $++$
     text "-- Model Transformation"
-    $++$ 
+    $++$
     text "Definition of Relations"
     $+$
     Map.fold (($+$) . pretty) empty topRel
@@ -81,12 +81,12 @@ emptySign = Sign { sourceSign = CSMOF.emptySign
 
 
 data Sen = KeyConstr { keyConst :: Key }
-         | QVTSen { rule :: RelationSen } 
+         | QVTSen { rule :: RelationSen }
          deriving (Show, Eq, Ord)
 
 instance GetRange Sen where
   getRange _ = nullRange
-  rangeSpan _ = []      
+  rangeSpan _ = []
 
 instance Pretty Sen where
   pretty (KeyConstr con) = pretty con
@@ -104,7 +104,7 @@ data RelationSen = RelationSen { ruleDef :: RuleDef
 
 instance GetRange RelationSen where
   getRange _ = nullRange
-  rangeSpan _ = []      
+  rangeSpan _ = []
 
 instance Pretty RelationSen where
   pretty (RelationSen rD vS pS souP tarP whenC whereC) =
@@ -128,13 +128,13 @@ instance Pretty RelationSen where
 
 
 data Pattern = Pattern { patVarSet :: [RelVar]
-                       , patRels :: [(CSMOF.PropertyT,RelVar,RelVar)]
-                       , patPreds :: [(String,String,OCL)]
+                       , patRels :: [(CSMOF.PropertyT, RelVar, RelVar)]
+                       , patPreds :: [(String, String, OCL)]
                        } deriving (Show, Eq, Ord)
 
 instance GetRange Pattern where
   getRange _ = nullRange
-  rangeSpan _ = []      
+  rangeSpan _ = []
 
 instance Pretty Pattern where
   pretty (Pattern patVS patRel patPre) =
@@ -147,4 +147,3 @@ instance Pretty Pattern where
     space <+> space <+> text "Predicates" <> colon <+> foldr (($+$) . pretty) empty patPre
     $+$
     rbrace
-

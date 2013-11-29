@@ -60,8 +60,8 @@ dropPrefix [] l = l
 dropPrefix _ [] = []
 dropPrefix (_ : xs) (_ : ys) = dropPrefix xs ys
 
--- | check if a left argument will be added.
--- (The 'Int' is the number of current arguments.)
+{- | check if a left argument will be added.
+(The 'Int' is the number of current arguments.) -}
 isLeftArg :: Id -> [a] -> Bool
 isLeftArg op nArgs = null nArgs && begPlace op
 
@@ -69,7 +69,7 @@ isLeftArg op nArgs = null nArgs && begPlace op
 isRightArg :: Id -> [a] -> Bool
 isRightArg op@(Id toks _ _) nArgs = endPlace op
   && isSingle (dropPrefix nArgs
-  $ filter (flip elem [placeTok, typeInstTok]) toks)
+  $ filter (`elem` [placeTok, typeInstTok]) toks)
 
 joinPlace :: AssocEither -> Id -> Bool
 joinPlace side = case side of
@@ -83,11 +83,11 @@ checkArg side ga (op, opPrec) (arg, argPrec) weight =
         sop = stripPoly op
         assocCond b = if stripPoly arg == sop
           then not $ isAssoc side (assoc_annos ga) sop else b
-    in if argPrec <= 0 then False
-       else case compare argPrec opPrec of
+    in argPrec > 0 &&
+       case compare argPrec opPrec of
            LT -> not junction && op /= applId
            GT -> True
-           EQ -> if junction then
+           EQ -> not junction ||
                case precRel precs sop $ stripPoly weight of
                Lower -> True
                Higher -> False
@@ -98,7 +98,6 @@ checkArg side ga (op, opPrec) (arg, argPrec) weight =
                         (False, True) -> True
                         (True, False) -> False
                         _ -> side == ALeft
-            else True
 
 -- | compute the left or right weight for the application
 nextWeight :: AssocEither -> GlobalAnnos -> Id -> Id -> Id

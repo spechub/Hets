@@ -23,7 +23,7 @@ import Maude.AS_Maude
 import Maude.Symbol
 
 import Common.Doc
-import Common.DocUtils (Pretty(..))
+import Common.DocUtils (Pretty (..))
 
 import Data.List (intersperse)
 
@@ -47,8 +47,8 @@ combineHooks :: (Pretty a) => [a] -> Doc
 combineHooks = let bracketed doc = lbrack $+$ doc <> rbrack
                in combine bracketed vcat
 
--- | Assemble a pretty-printing for all parts of a Sentence,
--- distinguishing conditional Sentence from simple ones.
+{- | Assemble a pretty-printing for all parts of a Sentence,
+distinguishing conditional Sentence from simple ones. -}
 prettySentence :: (Pretty a, Pretty b) =>
     String -> String -> Doc -> a -> b -> [Condition] -> [StmntAttr] -> Doc
 prettySentence s1 s2 op t1 t2 cs as = hsep $ if null cs
@@ -72,7 +72,7 @@ instance Pretty Rule where
 instance Pretty Condition where
     pretty cond = let pretty' x y z = hsep [pretty x, y, pretty z]
         in case cond of
-            MbCond t  s  -> pretty' t colon s
+            MbCond t s -> pretty' t colon s
             EqCond t1 t2 -> pretty' t1 equals t2
             RwCond t1 t2 -> pretty' t1 implies t2
             MatchCond t1 t2 -> pretty' t1 (text ":=") t2
@@ -105,11 +105,11 @@ instance Pretty Attr where
 
 instance Pretty StmntAttr where
     pretty attr = case attr of
-        Owise        -> text "owise"
-        Nonexec      -> text "nonexec"
+        Owise -> text "owise"
+        Nonexec -> text "nonexec"
         Metadata str -> text "metadata" <+> doubleQuotes (pretty str)
-        Label qid    -> text "label" <+> doubleQuotes (pretty qid)
-        Print _      -> empty
+        Label qid -> text "label" <+> doubleQuotes (pretty qid)
+        Print _ -> empty
     pretties = bracketPretties
 
 -- ** Pretty Hooks
@@ -128,8 +128,8 @@ instance Pretty Hook where
 
 instance Pretty Term where
     pretty term = case term of
-        Const qid _    -> pretty qid
-        Var   qid tp   -> hcat [pretty qid, colon, pretty tp]
+        Const qid _ -> pretty qid
+        Var qid tp -> hcat [pretty qid, colon, pretty tp]
         Apply qid ts _ -> pretty qid <> (parens . pretty $ ts)
     pretties = combine id sepByCommas
 

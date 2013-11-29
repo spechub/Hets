@@ -371,7 +371,7 @@ isNumber = isGenNum splitApplM
 
 splitApplM :: TERM f -> Maybe (Id, [TERM f])
 splitApplM t = case t of
-    Application _ _ _ -> Just $ splitAppl t
+    Application {} -> Just $ splitAppl t
     _ -> Nothing
 
 splitAppl :: TERM f -> (Id, [TERM f])

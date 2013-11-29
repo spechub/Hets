@@ -15,7 +15,7 @@ import Common.Id
 
 -- Simplified MOF Metamodel
 
-data Metamodel = Metamodel 
+data Metamodel = Metamodel
                  { metamodelName :: String
                  , element :: [NamedElement]
                  , model :: [Model]
@@ -25,18 +25,18 @@ instance GetRange Metamodel where
  getRange _ = nullRange
  rangeSpan _ = []
 
-    
+
 data NamedElement = NamedElement
                     { namedElementName :: String
                     , namedElementOwner :: Metamodel
                     , namedElementSubClasses :: TypeOrTypedElement
                     } deriving (Eq, Ord)
-                       
+
 instance GetRange NamedElement where
  getRange _ = nullRange
  rangeSpan _ = []
 
-            
+
 data TypeOrTypedElement = TType { getType :: Type }
                         | TTypedElement { getTypeElement :: TypedElement }
                         deriving (Eq, Ord)
@@ -45,9 +45,9 @@ instance GetRange TypeOrTypedElement where
  getRange _ = nullRange
  rangeSpan _ = []
 
-  
--- When going downside-up, we can sort the auxiliary class TypeOrTypedElement and make super of type NamedElement 
-data Type = Type { typeSuper :: NamedElement 
+
+-- When going downside-up, we can sort the auxiliary class TypeOrTypedElement and make super of type NamedElement
+data Type = Type { typeSuper :: NamedElement
                  , typeSubClasses :: DataTypeOrClass
                  } deriving (Eq, Ord)
 
@@ -59,22 +59,22 @@ instance GetRange Type where
 data DataTypeOrClass = DDataType { getDataType :: DataType }
                      | DClass { getClass :: Class }
                      deriving (Eq, Ord)
-                      
+
 instance GetRange DataTypeOrClass where
  getRange _ = nullRange
- rangeSpan _ = [] 
+ rangeSpan _ = []
 
 
--- When going downside-up, we can sort the auxiliary class DataTypeOrClass and make super of type Type 
+-- When going downside-up, we can sort the auxiliary class DataTypeOrClass and make super of type Type
 data DataType = DataType { classSuper :: Type } deriving (Eq, Ord)
-                        
+
 instance GetRange DataType where
  getRange _ = nullRange
- rangeSpan _ = [] 
+ rangeSpan _ = []
 
 
--- When going downside-up, we can sort the auxiliary class DataTypeOrClass and make super of type Type 
-data Class = Class 
+-- When going downside-up, we can sort the auxiliary class DataTypeOrClass and make super of type Type
+data Class = Class
              { classSuperType :: Type
              , isAbstract :: Bool
              , superClass :: [Class]
@@ -83,34 +83,34 @@ data Class = Class
 
 instance GetRange Class where
  getRange _ = nullRange
- rangeSpan _ = [] 
+ rangeSpan _ = []
 
 
--- When going downside-up, we can sort the auxiliary class TypeOrTypedElement and make super of type NamedElement 
-data TypedElement = TypedElement 
-                    { typedElementSuper :: NamedElement 
-                    , typedElementType :: Type 
+-- When going downside-up, we can sort the auxiliary class TypeOrTypedElement and make super of type NamedElement
+data TypedElement = TypedElement
+                    { typedElementSuper :: NamedElement
+                    , typedElementType :: Type
                     , typedElementSubClasses :: Property
                     } deriving (Eq, Ord)
-                  
+
 instance GetRange TypedElement where
  getRange _ = nullRange
- rangeSpan _ = [] 
-             
-        
-data Property = Property 
+ rangeSpan _ = []
+
+
+data Property = Property
                 { propertySuper :: TypedElement
                 , multiplicityElement :: MultiplicityElement
                 , opposite :: Maybe Property
                 , propertyClass :: Class
-                } deriving (Eq, Ord)                         
-    
+                } deriving (Eq, Ord)
+
 instance GetRange Property where
  getRange _ = nullRange
- rangeSpan _ = [] 
+ rangeSpan _ = []
 
 
-data MultiplicityElement = MultiplicityElement 
+data MultiplicityElement = MultiplicityElement
                            { lower :: Integer
                            , upper :: Integer
                            , multiplicityElementSubClasses :: Property
@@ -118,24 +118,24 @@ data MultiplicityElement = MultiplicityElement
 
 instance GetRange MultiplicityElement where
  getRange _ = nullRange
- rangeSpan _ = []                                       
-                                     
-  
+ rangeSpan _ = []
+
+
 -- Model part of CSMOF
 
-data Model = Model 
+data Model = Model
              { modelName :: String
              , object :: [Object]
              , link :: [Link]
              , modelType :: Metamodel
              } deriving (Eq, Ord)
-                       
+
 instance GetRange Model where
  getRange _ = nullRange
- rangeSpan _ = []      
- 
-    
-data Object = Object 
+ rangeSpan _ = []
+
+
+data Object = Object
               { objectName :: String
               , objectType :: Type
               , objectOwner :: Model
@@ -143,16 +143,16 @@ data Object = Object
 
 instance GetRange Object where
  getRange _ = nullRange
- rangeSpan _ = []      
+ rangeSpan _ = []
 
-                         
-data Link = Link 
+
+data Link = Link
             { linkType :: Property
             , source :: Object
             , target :: Object
             , linkOwner :: Model
-            } deriving (Eq, Ord)                       
+            } deriving (Eq, Ord)
 
 instance GetRange Link where
  getRange _ = nullRange
- rangeSpan _ = []      
+ rangeSpan _ = []

@@ -20,7 +20,7 @@ combines the two steps is found in "OWL2.ParseOWLAsLibDefn".
 
 The parser for the Het-CASL representation is found in "OWL2.Parse" and
 "OWL2.ManchesterParser" which take as argument an ontology in our extended
-Manchester Syntax and convert it into the Haskell datatypes. 
+Manchester Syntax and convert it into the Haskell datatypes.
 
 /Pretty printing/
 

@@ -23,16 +23,10 @@ Exports the classes, instances and functions from these modules:
 * "Maude.Meta.AsSymbol"
 -}
 
-module Maude.Meta
-  ( module Maude.Meta.HasName
-  , module Maude.Meta.HasSorts
-  , module Maude.Meta.HasOps
-  , module Maude.Meta.HasLabels
-  , module Maude.Meta.AsSymbol
-  ) where
+module Maude.Meta (module X) where
 
-import Maude.Meta.HasName
-import Maude.Meta.HasSorts
-import Maude.Meta.HasOps
-import Maude.Meta.HasLabels
-import Maude.Meta.AsSymbol
+import Maude.Meta.HasName as X
+import Maude.Meta.HasSorts as X
+import Maude.Meta.HasOps as X
+import Maude.Meta.HasLabels as X
+import Maude.Meta.AsSymbol as X

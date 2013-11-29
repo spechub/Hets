@@ -8,7 +8,6 @@
  -
  -  Provides the implementation of the generic parser for the Boole datatype
  -}
-{-# OPTIONS -fglasgow-exts #-}
 module Parser where
 
 import Text.ParserCombinators.Parsec
@@ -19,19 +18,19 @@ import CombLogic
 
 data ModalOperator = Sqr | Ang | None deriving Eq
 
--- | Main parser
--- par5er :: ModalOperator -> [GenParser Char st a] -> GenParser Char st (Boole a)
-par5er flag logics = implFormula flag logics
+{- | Main parser
+par5er :: ModalOperator -> [GenParser Char st a] -> GenParser Char st (Boole a) -}
+par5er = implFormula
 
--- | Parser which translates all implications in disjunctions & conjunctions
--- implFormula :: ModalOperator -> [GenParser Char st a] -> GenParser Char st (Boole a)
+{- | Parser which translates all implications in disjunctions & conjunctions
+implFormula :: ModalOperator -> [GenParser Char st a] -> GenParser Char st (Boole a) -}
 implFormula flag logics = do
     f <- orFormula flag logics
     option f (do string "->"
                  spaces
                  i <- implFormula flag logics
                  return $ Not (And f (Not i))
-          <|> do try(string "<->")
+          <|> do try (string "<->")
                  spaces
                  i <- implFormula flag logics
                  return $ And (Not (And f (Not i))) (Not (And (Not f) i))
@@ -39,11 +38,11 @@ implFormula flag logics = do
                  spaces
                  i <- implFormula flag logics
                  return $ And (Not f) i
-          <|> do return f
+          <|> return f
           <?> "GMPParser.implFormula")
 
--- | Parser for disjunction - used for handling binding order
--- orFormula :: ModalOperator -> [GenParser Char st a] -> GenParser Char st (Boole a)
+{- | Parser for disjunction - used for handling binding order
+orFormula :: ModalOperator -> [GenParser Char st a] -> GenParser Char st (Boole a) -}
 orFormula flag logics = do
     f <- andFormula flag logics
     option f $ do
@@ -53,8 +52,8 @@ orFormula flag logics = do
       return $ Not (And (Not f) (Not g))
   <?> "GMPParser.orFormula"
 
--- | Parser for conjunction - used for handling the binding order
--- andFormula :: ModalOperator -> [GenParser Char st a] -> GenParser Char st (Boole a)
+{- | Parser for conjunction - used for handling the binding order
+andFormula :: ModalOperator -> [GenParser Char st a] -> GenParser Char st (Boole a) -}
 andFormula flag logics = do
     f <- primFormula flag logics
     option f $ do
@@ -66,26 +65,24 @@ andFormula flag logics = do
 
 
 {- | Parse a primitive formula: T, F, ~f, <i>f, [i]f,
- -   where i stands for an index, f for a formula/boolean expression -}
--- primFormula :: ModalOperator -> [GenParser Char st a] -> GenParser Char st (Boole a)
+ -   where i stands for an index, f for a formula/boolean expression
+primFormula :: ModalOperator -> [GenParser Char st a] -> GenParser Char st (Boole a) -}
 primFormula flag logics =  do string "T"
                               spaces
                               return T
                        <|> do string "F"
                               spaces
                               return F
-                       <|> do f <- parenFormula flag logics
-                              return f
+                       <|> parenFormula flag logics
                        <|> do string "~"
                               spaces
                               f <- primFormula flag logics
                               return $ Not f
-                       <|> do f <- atomFormula flag logics
-                              return f
+                       <|> atomFormula flag logics
                        <?> "GMPParser.primFormula"
 
 
---modalAtom :: ModalOperator -> [Int] -> GenParser Char st (Boole a)
+-- modalAtom :: ModalOperator -> [Int] -> GenParser Char st (Boole a)
 atomFormula flag logics =  do char '<'
                               spaces
                               let h = head logics
@@ -97,9 +94,10 @@ atomFormula flag logics =  do char '<'
                                         spaces
                                         f <- primFormula flag $ t ++ [h]
                                         case flag of
-                                          Ang -> return $ At (K f)--M i f
+                                          -- FIXME: cannot construct the infinite type
+                                          Ang -> return $ At (K f) -- M i f
                                           Sqr -> return $ Not (At (K (Not f)))
-                                          _   -> return $ At (K f)
+                                          _ -> return $ At (K f)
 {-
                                 2 -> do parseKDindex
                                         spaces
@@ -112,8 +110,6 @@ atomFormula flag logics =  do char '<'
                                           _   -> return $ At (KD f)
                                 _ -> do aux <- parseGindex
                                         return aux
--}
-{-
                        <|> do char '['
                               spaces
                               i <- head pa
@@ -127,8 +123,8 @@ atomFormula flag logics =  do char '<'
                                 _   -> return $ At (Box i f)
 -}
 
--- | Parser for un-parenthesizing a formula
--- parenFormula :: ModalOperator -> [GenParser Char st a] -> GenParser Char st (Boole a)
+{- | Parser for un-parenthesizing a formula
+parenFormula :: ModalOperator -> [GenParser Char st a] -> GenParser Char st (Boole a) -}
 parenFormula flag logics = do char '('
                               spaces
                               f <- par5er flag logics
@@ -145,7 +141,7 @@ natural = fmap read $ many1 digit
 
 -- | Parser for Coalition Logic index
 parseCindex :: Parser [Int]
-parseCindex =  do -- checks whether there are more numbers to be parsed
+parseCindex = do -- checks whether there are more numbers to be parsed
                   let stopParser =  do char ','
                                        return False
                                 <|> do char '}'
@@ -157,13 +153,11 @@ parseCindex =  do -- checks whether there are more numbers to be parsed
                                            spaces
                                            q <- stopParser
                                            spaces
-                                           case q of
-                                             False -> normalParser (n:l)
-                                             _     -> return (n:l)
+                                           if q then normalParser (n : l)
+                                           else return (n : l)
                                     <?> "Parser.parseCindex.normal"
                   char '{'
-                  res <- try(normalParser [])
-                  return $ res
+                  try (normalParser [])
            <|> do -- checks whether the index is of the form "n..m"
                   let shortParser =  do x <- natural
                                         let n = fromInteger x
@@ -172,10 +166,9 @@ parseCindex =  do -- checks whether there are more numbers to be parsed
                                         spaces
                                         y <- natural
                                         let m = fromInteger y
-                                        return $ [n..m]
+                                        return [n .. m]
                                  <?> "Parser.parseCindex.short"
-                  res <- try(shortParser)
-                  return $ res
+                  try shortParser
            <?> "Parser.parseCindex"
 
 -- | Parser for Graded Modal Logic index
@@ -186,8 +179,7 @@ parseGindex =  do n <- natural
 
 -- | Parser for Hennesy-Milner Modal Logic index
 parseHMindex :: Parser Char
-parseHMindex =  do c <- letter
-                   return $ c
+parseHMindex = letter
             <?> "Parser.parseHMindex"
 
 -- | Parser for K Modal Logic index
@@ -195,7 +187,7 @@ parseKindex :: Parser ()
 parseKindex = return ()
 
 -- | Parser for KD Modal Logic index
-parseKDindex ::Parser ()
+parseKDindex :: Parser ()
 parseKDindex = return ()
 
 -- | Parser for Probability Logic index
@@ -203,22 +195,20 @@ parsePindex :: Parser Rational
 parsePindex =
     do x <- natural
        let auxP n =  do char '/'
-                        m<-natural
-                        return $ toRational (fromInteger n/fromInteger m)
+                        m <- natural
+                        return $ toRational (fromInteger n / fromInteger m)
                  <|> do char '.'
-                        m<-natural
-                        let noDig n = let tmp = n<10
-                                      in case tmp of
-                                           True -> 1
-                                           _    -> 1 + noDig (div n 10)
-                        let rat n = toRational(fromInteger n /
-                                               fromInteger (10^(noDig n)))
+                        m <- natural
+                        let noDig n = let tmp = n < 10
+                                      in if tmp then 1
+                                         else 1 + noDig (div n 10)
+                        let rat n = toRational (fromInteger n /
+                                               fromInteger (10 ^ noDig n))
                         let res = toRational n + rat m
                         return res
-                 <|> do return $ toRational n
+                 <|> return (toRational n)
                  <?> "Parser.parsePindex.auxP"
-       aux <- auxP x
-       return $ aux
+       auxP x
 
 -- | Parser for Monotonic Modal Logic index
 parseMindex :: Parser ()

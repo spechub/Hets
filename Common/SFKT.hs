@@ -30,7 +30,7 @@ Cf. Hinze's ICFP00 paper, Fig. 8: CPS implementation of BACKTR -}
 type SG r m a = SFKT m a -}
 
 newtype SFKT m a =
-  SFKT { unSFKT :: (forall ans . SK (m ans) a -> FK (m ans) -> m ans) }
+  SFKT { unSFKT :: forall ans . SK (m ans) a -> FK (m ans) -> m ans }
 
 type FK ans = ans
 type SK ans a = a -> FK ans -> ans

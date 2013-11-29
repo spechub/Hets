@@ -40,9 +40,9 @@ minFormSublogic :: C_FORMULA -> CoCASL_Sublogics
 minFormSublogic cf = case cf of
     BoxOrDiamond _ _ f _ ->
         sublogics_max theCoFeature $ sl_sentence minFormSublogic f
-    CoSort_gen_ax _ _ _ -> theCoFeature
-        -- may be changed to Constraints with mappings
-        -- may be ops need to be checked for partiality?
+    CoSort_gen_ax {} -> theCoFeature
+        {- may be changed to Constraints with mappings
+        may be ops need to be checked for partiality? -}
 
 minCSigItem :: C_SIG_ITEM -> CoCASL_Sublogics
 minCSigItem (CoDatatype_items l _) =
@@ -64,6 +64,6 @@ minCoComponents (CoSelect _ t _) = sl_op_type t
 minCBaseItem :: C_BASIC_ITEM -> CoCASL_Sublogics
 minCBaseItem bi = case bi of
      CoFree_datatype l _ ->
-         foldl sublogics_max theCoFeature $ map minCoDatatype $ map item l
+         foldl sublogics_max theCoFeature $ map (minCoDatatype . item) l
      CoSort_gen l _ -> foldl sublogics_max theCoFeature $
          map (sl_sig_items minCSigItem minFormSublogic . item) l

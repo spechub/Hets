@@ -157,9 +157,8 @@ generateInductionLemmasAux b sort_gen_axs goals = let
     combis =
          {- returns big list containing tuples of constraints and a matching
          combination (list) of goals. -}
-         (concatMap (\ c ->
-                          map (\ combi -> (c, combi)) $ constraintGoals c)
-                       sort_gen_axs)
+         concatMap (\ c -> map (\ combi -> (c, combi)) $ constraintGoals c)
+          sort_gen_axs
     singleDts = map head $ filter isSingle sort_gen_axs
     indSorts = Set.fromList $ map newSort singleDts
     (simpleIndGoals, rest2) = foldr (\ (gs, vs) (ul, rl) ->

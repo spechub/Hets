@@ -33,7 +33,7 @@ import Common.Utils (number)
 
 import Data.Char
 import Data.List
-import Data.Maybe (isNothing,catMaybes)
+import Data.Maybe (isNothing, catMaybes)
 
 printIsaTheory :: String -> Sign -> [Named Sentence] -> Doc
 printIsaTheory tn sign sens = let
@@ -250,8 +250,8 @@ printNamedSen ns =
   InstanceSubclass {} -> d
   Subclass {} -> d
   Typedef {} -> d
-  Defs {}    -> d
-  Fixrec {}  -> d
+  Defs {} -> d
+  Fixrec {} -> d
   Domains {} -> d
   Primrec {} -> d
   _ -> let dd = doubleQuotes d in
@@ -311,79 +311,79 @@ printSentence s = case s of
                         else text lemmasS <+> text name <+>
                              equals <+> sep (map text lemmas)
   l@(Locale {}) ->
-   let h       = text "locale" <+> text (show $ localeName l) 
+   let h = text "locale" <+> text (show $ localeName l)
        parents = Data.List.intersperse (text "+") $
                   map (text . show) (localeParents l)
-       (fxs,ass) = printContext $ localeContext l
+       (fxs, ass) = printContext $ localeContext l
    in printFixesAssumes h parents ass fxs
       $+$ printBody (localeBody l)
   c@(Class {}) ->
-   let h       = text "class" <+> text (show $ className c)
+   let h = text "class" <+> text (show $ className c)
        parents = Data.List.intersperse (text "+") $
                   map (text . show) (classParents c)
-       (fxs,ass) = printContext (classContext c)
+       (fxs, ass) = printContext (classContext c)
    in printFixesAssumes h parents ass fxs
       $+$ printBody (classBody c)
   (Datatypes dts) -> if null dts then empty
                      else text "datatype" <+>
-                        andDocs (map (\d ->
+                        andDocs (map (\ d ->
                         let vars = map printType $ datatypeTVars d
                             name = text $ show $ datatypeName d
-                            pretty_cs = \c ->
+                            pretty_cs c =
                              let cname = case c of
                                   DatatypeNoConstructor {} -> ""
                                   _ -> show $ constructorName c
                                  cname' = if any isSpace cname
                                           then doubleQuotes (text cname)
                                           else text cname
-                                 tps   = map (doubleQuotes . printType) $
+                                 tps = map (doubleQuotes . printType) $
                                          constructorArgs c
-                             in hsep (cname':tps)
-                            cs   = map pretty_cs $ datatypeConstructors d
+                             in hsep (cname' : tps)
+                            cs = map pretty_cs $ datatypeConstructors d
                         in hsep vars <+> name <+> text "=" <+>
-                           fsep (bar $ cs)) dts)
+                           fsep (bar cs)) dts)
   Domains ds -> if null ds then empty
                 else text "domain" <+>
-                 andDocs (map (\d ->
+                 andDocs (map (\ d ->
                   let vars = map printType $ domainTVars d
                       name = text $ show $ domainName d
-                      pretty_cs = \c ->
+                      pretty_cs c =
                        let cname = text $ show $ domainConstructorName c
-                           args' = map (\arg ->
+                           args' = map (\ arg ->
                             (if domainConstructorArgLazy arg
                              then text "lazy" else empty) <+>
                             (case domainConstructorArgSel arg of
-                              Just sel -> (text $ show sel) <+> text "::"
-                              Nothing  -> empty) <+> (doubleQuotes . printType)
+                              Just sel -> text (show sel) <+> text "::"
+                              Nothing -> empty) <+> (doubleQuotes . printType)
                             (domainConstructorArgType arg)) $
                             domainConstructorArgs c
                            args = map parens args'
                        in hsep $ cname : args
                       cs = map pretty_cs $ domainConstructors d
                   in hsep vars <+> name <+> text "=" <+>
-                     fsep (bar $ cs)) ds)
+                     fsep (bar cs)) ds)
   Consts cs -> if null cs then empty
-               else vsep $ [text "consts"] ++
-                     map (\(n,_,t) -> text n <+> text "::" <+>
+               else vsep $ text "consts" :
+                     map (\ (n, _, t) -> text n <+> text "::" <+>
                                     doubleQuotes (printType t)) cs
   TypeSynonym n _ vs tp -> hsep $ [text "type_synonym",
-                                 text $ show n,text "="] ++ map text vs
+                                 text $ show n, text "="] ++ map text vs
                                 ++ [doubleQuotes . printType $ tp]
   Axioms axs -> if null axs then empty
-                else vsep $ [text "axioms"] ++
-                      map (\a -> text (show $ axiomName a) <+>
+                else vsep $ text "axioms" :
+                      map (\ a -> text (show $ axiomName a) <+>
                                  (if axiomArgs a /= ""
                                   then brackets (text $ axiomArgs a)
                                   else empty) <+> text ":" <+>
                                  doubleQuotes (printTerm $ axiomTerm a)) axs
-  l@(Lemma {}) -> 
-   let (fxs,ass) = printContext $ lemmaContext l
+  l@(Lemma {}) ->
+   let (fxs, ass) = printContext $ lemmaContext l
    in text "lemma" <+> (case lemmaTarget l of
-                           Just t  -> braces (text "in" <+> (text $ show t))
+                           Just t -> braces (text "in" <+> text (show t))
                            Nothing -> empty) <+>
-                           (case (null fxs,null ass,lemmaProps l) of
-                            (True,True,[sh]) -> printProps sh
-                            _ -> (vsep $ fxs ++ ass ++
+                           (case (null fxs, null ass, lemmaProps l) of
+                            (True, True, [sh]) -> printProps sh
+                            _ -> vsep (fxs ++ ass ++
                                   [text "shows" <+> andDocs
                                     (map printProps (lemmaProps l))]))
       $+$ (case lemmaProof l of
@@ -391,29 +391,29 @@ printSentence s = case s of
             Nothing -> empty)
   d@(Definition {}) -> fsep [text "definition" <+>
    (case definitionTarget d of
-     Just t  -> braces (text "in" <+> (text $ show t))
+     Just t -> braces (text "in" <+> text (show t))
      Nothing -> empty) <+>
    (text (show $ definitionName d) <+> text "::" <+>
     doubleQuotes (printType $ definitionType d)), text "where" <+>
    doubleQuotes (text (show $ definitionName d) <+> hsep (map printTerm (
     definitionVars d)) <+> text "=" <+> printTerm (definitionTerm d))]
   f@(Fun {}) -> text "fun" <+> (case funTarget f of
-   Just t  -> braces (text "in" <+> (text $ show t))
+   Just t -> braces (text "in" <+> text (show t))
    Nothing -> empty) <+> (if funDomintros f then braces (text "domintros")
     else empty) <+> vcat (intersperse (text andS) $
-     map (\(name,mx,tp,_) -> text name <+> text "::" <+>
+     map (\ (name, mx, tp, _) -> text name <+> text "::" <+>
      doubleQuotes (printType tp) <+> case mx of
                       Just (Mixfix _ _ s' _) -> doubleQuotes (text s')
                       _ -> empty) (funEquations f)) <+> text "where" $+$
-    (let eqs  = concat $ map (\(name,_,_,e) -> map (\e' -> (name,e')) e)
+    (let eqs = concatMap (\ (name, _, _, e) -> map (\ e' -> (name, e')) e)
                              (funEquations f)
-         eqs' = map (\(n,(vs,t)) -> doubleQuotes (text n <+>
+         eqs' = map (\ (n, (vs, t)) -> doubleQuotes (text n <+>
                  hsep (map printTerm vs) <+>
                  text "=" <+> printTerm t)) eqs
      in fsep $ bar eqs')
-  i@(Instantiation {}) -> fsep $ [text "instantiation" <+> text
-   (instantiationType i) <+> text "::" <+> printArity (instantiationArity i)]
-    ++ [printBody (instantiationBody i)]
+  i@(Instantiation {}) -> fsep $ (text "instantiation" <+> text
+   (instantiationType i) <+> text "::" <+> printArity (instantiationArity i)) :
+    [printBody (instantiationBody i)]
   InstanceProof prf -> text "instance" $+$ text prf
   i@(InstanceArity {}) -> text "instance" <+>
    hcat (intersperse (text "and") $ map text $ instanceTypes i) <+>
@@ -421,7 +421,7 @@ printSentence s = case s of
   i@(InstanceSubclass {}) -> text "instance" <+> text (instanceClass i) <+>
    text (instanceRel i) <+> text (instanceClass1 i) $+$ text (instanceProof i)
   c@(Subclass {}) -> text "subclass" <+> (case subclassTarget c of
-                           Just t  -> braces (text "in" <+> (text $ show t))
+                           Just t -> braces (text "in" <+> text (show t))
                            Nothing -> empty) <+> text (subclassClass c)
                           <+> text (subclassProof c)
   t@(Typedef {}) -> text "typedef" <+> (case typedefVars t of
@@ -432,44 +432,44 @@ printSentence s = case s of
                     text (show $ typedefName t) <+> text "=" <+>
                     doubleQuotes (printTerm $ typedefTerm t) <+>
                     (case typedefMorphisms t of
-                      Just (m1,m2) -> text "morphisms" <+> text (show m1)
+                      Just (m1, m2) -> text "morphisms" <+> text (show m1)
                                      <+> text (show m2)
                       Nothing -> empty) $+$ text (typedefProof t)
-  d@(Defs {}) -> fsep $ [text "defs" <+> (if defsUnchecked d
+  d@(Defs {}) -> fsep $ (text "defs" <+> (if defsUnchecked d
                                           then text "unchecked"
                                           else empty) <+>
                                          (if defsOverloaded d
                                           then text "overloaded"
-                                          else empty)]
-   ++ map (\eq' ->
+                                          else empty))
+   : map (\ eq' ->
        text (show (defEquationName eq')) <+> text ":" <+> doubleQuotes (
         text (defEquationConst eq') <+> text "==" <+>
         printTerm (defEquationTerm eq')) <+> if null (defEquationArgs eq')
         then empty else brackets (text $ defEquationArgs eq')) (defsEquations d)
   Fixrec fs ->
-   let h = map (\(name,_,tp,_) -> text name <+> text "::" <+>
+   let h = map (\ (name, _, tp, _) -> text name <+> text "::" <+>
                                   (doubleQuotes . printType) tp) fs
-       pretty_fixreceq = \name eq' ->
+       pretty_fixreceq name eq' =
         let unchecked = if fixrecEquationUnchecked eq' then
                         text "(unchecked)" else empty
-            premises  = fixrecEquationPremises eq'
+            premises = fixrecEquationPremises eq'
             p s' = punctuate $ space <> text s'
-            patterns  = map (parens . printTerm) $ fixrecEquationPatterns eq'
-            tm        = printTerm $ fixrecEquationTerm eq'
+            patterns = map (parens . printTerm) $ fixrecEquationPatterns eq'
+            tm = printTerm $ fixrecEquationTerm eq'
         in unchecked <+> doubleQuotes (printTermWithPremises premises
-            (hsep (p "\\<cdot>" (text name:patterns)) <+> text "=" <+> tm))
-       body = concat $ map (\(name,_,_,eqs) -> map (pretty_fixreceq name) eqs)
+            (hsep (p "\\<cdot>" (text name : patterns)) <+> text "=" <+> tm))
+       body = concatMap (\ (name, _, _, eqs) -> map (pretty_fixreceq name) eqs)
                fs
    in text "fixrec" <+> andDocs h <+> text "where" $+$ fsep (bar body)
   Primrec t eqs ->
-                let h = map (\(name,_,tp,_) -> text name <+> text "::" <+>
+                let h = map (\ (name, _, tp, _) -> text name <+> text "::" <+>
                               (doubleQuotes . printType) tp) eqs
-                    pretty_primrec = \name (vs,tm) -> doubleQuotes (text name
+                    pretty_primrec name (vs, tm) = doubleQuotes (text name
                      <+> hsep (map printTerm vs) <+> text "=" <+> printTerm tm)
-                    body = concat $ map (\(name,_,_,tms) ->
+                    body = concatMap (\ (name, _, _, tms) ->
                             map (pretty_primrec name) tms) eqs
                 in text "primrec" <+> (case t of
-                           Just t' -> braces (text "in" <+> (text $ show t'))
+                           Just t' -> braces (text "in" <+> text (show t'))
                            Nothing -> empty) <+> andDocs h <+> text "where"
                    $+$ fsep (bar body)
 
@@ -478,39 +478,39 @@ printTermWithPremises ps t =
  let p s = punctuate $ space <> text s
  in fsep $ p "\\<Longrightarrow>" (map printTerm ps ++ [t])
 
-printArity :: (Sort,[Sort]) -> Doc
-printArity (sort',sorts) = (parens $ hsep $ punctuate comma $
+printArity :: (Sort, [Sort]) -> Doc
+printArity (sort', sorts) = parens (hsep $ punctuate comma $
                            map (printSortAux True) sorts) <+> printSort sort'
 
-printVarWithSort :: (String,Sort) -> Doc
-printVarWithSort (name,[])   = text name
-printVarWithSort (name,sort') = text name <+> printSortAux True sort'
+printVarWithSort :: (String, Sort) -> Doc
+printVarWithSort (name, []) = text name
+printVarWithSort (name, sort') = text name <+> printSortAux True sort'
 
 printBody :: [Sentence] -> Doc
 printBody sens = fsep $ if null sens then []
                else [text "begin"] ++ map printSentence sens ++ [text "end"]
 
-printContext :: Ctxt -> ([Doc],[Doc])
+printContext :: Ctxt -> ([Doc], [Doc])
 printContext ctxt =
- let fixes'   = map (\(n,_,tp) -> if n == "" then empty else text n
+ let fixes' = map (\ (n, _, tp) -> if n == "" then empty else text n
                        <+> text "::" <+> (doubleQuotes . printTyp Null) tp)
                      (fixes ctxt)
-     assumes' = map (\(n,tm) -> if n == "" then empty else text n <+> text ":"
+     assumes' = map (\ (n, tm) -> if n == "" then empty else text n <+> text ":"
                        <+> (doubleQuotes . printTerm) tm)
                      (assumes ctxt)
- in (fixes',assumes')
+ in (fixes', assumes')
 
 printProps :: Props -> Doc
-printProps (Props {propsName=n,propsArgs=a,props=p}) =
+printProps (Props {propsName = n, propsArgs = a, props = p}) =
  printMaybe (text . show) n <+> printMaybe text a
- <+> (if (isNothing n && isNothing a)
+ <+> (if isNothing n && isNothing a
       then empty else text ":") <+>
      vcat (map printProp p)
 
 printProp :: Prop -> Doc
-printProp (Prop {prop=t,propPats=ts}) =
- let t'  = doubleQuotes $ printTerm t
-     ts' = hsep $ map (\p -> text "is" <+> (doubleQuotes . printTerm) p) ts
+printProp (Prop {prop = t, propPats = ts}) =
+ let t' = doubleQuotes $ printTerm t
+     ts' = hsep $ map (\ p -> text "is" <+> (doubleQuotes . printTerm) p) ts
  in t' <+> if null ts then empty
            else parens ts'
 
@@ -689,16 +689,16 @@ printFixesAssumes h p' a f = vcat
   ]
 
 printDefinition :: (String, Def) -> Doc
-printDefinition (n,(tp,vs,tm)) = text "definition" <+> text n <+> text "::"
+printDefinition (n, (tp, vs, tm)) = text "definition" <+> text n <+> text "::"
  $+$ (doubleQuotes . printTyp Null) tp <+> text "where"
- $+$ doubleQuotes (text n <+> (hsep $ map (text . fst) vs)
+ $+$ doubleQuotes (text n <+> hsep (map (text . fst) vs)
  <+> text "\\<equiv>" <+> printTerm tm)
 
 printFunction :: (String, FunDef) -> Doc
-printFunction (n,(tp,def_eqs)) = text "fun" <+> text n <+> text "::"
+printFunction (n, (tp, def_eqs)) = text "fun" <+> text n <+> text "::"
  $+$ (doubleQuotes . printTyp Null) tp <+> text "where"
  $+$ (vcat . punctuate (text "|"))
-      (map (\(pats,tm) -> doubleQuotes $ text n
+      (map (\ (pats, tm) -> doubleQuotes $ text n
        <+> hsep (map printTerm pats) <+> text "="
        <+> printTerm tm) def_eqs)
 
@@ -710,10 +710,10 @@ printLocale (n, (parents, in_ax, ex_ax, params)) =
      f = map (\ (s, t, alt) -> text s <+> text "::"
                  <+> (doubleQuotes . printTyp Null) t
                  <+> (case alt of
-                       Just (AltSyntax s' [i1, i2] i) -> parens ((
-                        if i1 == i2 then text "infix "
-                        else if i1 < i2 then text "infixr "
-                        else text "infixl ") <+> doubleQuotes (text s')
+                       Just (AltSyntax s' [i1, i2] i) -> parens (
+                        text (if i1 == i2 then "infix "
+                        else if i1 < i2 then "infixr "
+                        else "infixl ") <+> doubleQuotes (text s')
                         <+> text (show i))
                        _ -> empty
                  )) params
@@ -947,8 +947,8 @@ printSign sig = let dt = ordDoms $ domainTab sig
                             ++ sp ++ "=>" ++ sp
                 term = showCaseTerm cName args
             in
-               if b then pat ++ "Some" ++ sp ++ lb ++ term ++ rb ++ "\n"
-                 else pat ++ term ++ "\n"
+               pat ++ if b then "Some" ++ sp ++ lb ++ term ++ rb ++ "\n"
+                 else term ++ "\n"
           showCaseTerm name args = case name of
             "" -> sa
             n : _ -> toLower n : sa

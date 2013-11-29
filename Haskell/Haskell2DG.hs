@@ -52,7 +52,7 @@ anaHaskellFile opts file = do
          Result _ (Just (_, sig, sens)) -> do
           let (bas, _, _) = fileparse downloadExtensions file
               mName = simpleIdToIRI $ mkSimpleId bas
-              name = makeName $ mName
+              name = makeName mName
               node_contents = newNodeLab name DGBasic
                 $ G_theory Haskell Nothing sig startSigId (toThSens sens)
                   startThId

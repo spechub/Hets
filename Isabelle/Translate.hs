@@ -125,10 +125,10 @@ toAltSyntax prd over ga n i thy toks = let
       | otherwise = (minL, maxPrio - 1)
     in if n < 0 || ni > 1 && ni /= n
            || any (flip Set.member toks . tokStr) atoks then Nothing
-       else if n == 0 then Just $ AltSyntax ts [] maxPrio
-       else if isMixfix i then Just $ AltSyntax
+       else Just $ if n == 0 then AltSyntax ts [] maxPrio
+       else if isMixfix i then AltSyntax
                 ('(' : ts ++ ")") precList erg
-       else Just $ AltSyntax
+       else AltSyntax
             (ts ++ "/'(" ++
                    concat (replicate (n - 1) "_,/ ")
                    ++ "_')") (replicate n 3) $ maxPrio - 1

@@ -8,7 +8,7 @@ import Control.Monad
 
 import Text.XML.Light
 
-main :: IO()
+main :: IO ()
 main = do
   args <- getArgs
   case args of
@@ -16,17 +16,17 @@ main = do
     (p1 : ps) -> testDiff p1 ps
     _ -> putStrLn "missing arguments: xml-file location and diff/xupdate files"
 
-printDiff :: FilePath -> [FilePath] -> IO()
+printDiff :: FilePath -> [FilePath] -> IO ()
 printDiff p1 ps = do
       xml <- readFile p1
       case parseXMLDoc xml of
         Just xml1 -> mapM_ (\ xup -> do
             diff <- readFile xup
             ef <- liftM snd $ changeXml xml1 diff
-            putStrLn (show ef)) ps
+            print ef) ps
         _ -> fail "failed to parse xml-file"
 
-testDiff :: FilePath -> [FilePath] -> IO()
+testDiff :: FilePath -> [FilePath] -> IO ()
 testDiff p1 ps = do
       xml <- readFile p1
       case parseXMLDoc xml of

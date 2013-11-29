@@ -117,7 +117,7 @@ makeNamed f i =
       if null label
         then case text of
                 AS.Named_text n _ _ -> Id.tokStr n
-                _ ->  "Ax_" ++ show i
+                _ -> "Ax_" ++ show i
         else label
     ) $ AS_Anno.item f)
   { AS_Anno.isAxiom = not isTheorem }
@@ -130,11 +130,11 @@ makeNamed f i =
       isTheorem = isImplies || isImplied
 
 setTextIRI :: AS_Anno.Annoted AS.TEXT_META -> AS_Anno.Annoted AS.TEXT_META
-setTextIRI atm@(AS_Anno.Annoted{ AS_Anno.item = tm }) =
+setTextIRI atm@(AS_Anno.Annoted { AS_Anno.item = tm }) =
   let mi = case AS.getText tm of
             AS.Named_text n _ _ -> parseIRIReference $ init $ tail $ Id.tokStr n
             _ -> Nothing
-  in  atm { AS_Anno.item = tm { AS.textIri = mi } }
+  in atm { AS_Anno.item = tm { AS.textIri = mi } }
 
 -- | Retrives the signature of a sentence
 propsOfFormula :: AS.TEXT -> Sign.Sign
@@ -276,7 +276,7 @@ negForm_phr phr = case phr of
   x -> x
 
 -- negate module - propagates negation to sentences
-negForm_mod ::AS.MODULE -> AS.MODULE
+negForm_mod :: AS.MODULE -> AS.MODULE
 negForm_mod m = case m of
   AS.Mod n t r -> AS.Mod n (negForm_txt t) r
   AS.Mod_ex n exs t r -> AS.Mod_ex n exs (negForm_txt t) r
@@ -343,10 +343,9 @@ nosToSymbol nos = case nos of
   AS.SeqMark tok -> symbToSymbol tok
 
 symbToSymbol :: Id.Token -> Symbol.Symbol
-symbToSymbol tok = Symbol.Symbol{Symbol.symName = Id.simpleIdToId tok}
+symbToSymbol tok = Symbol.Symbol {Symbol.symName = Id.simpleIdToId tok}
 
 -- | retrieves all symbols from the text
 symsOfTextMeta :: AS.TEXT_META -> [Symbol.Symbol]
 symsOfTextMeta tm =
   Set.toList $ Symbol.symOf $ retrieveSign Sign.emptySig $ AS_Anno.emptyAnno tm
-

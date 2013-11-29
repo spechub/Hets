@@ -172,13 +172,13 @@ instance ATermConvertibleSML Id where
                 aa' = from_sml_ATermTokenTup (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = nullRange
-                in (Id aa' ab' ac')
+                in Id aa' ab' ac'
             (ShAAppl "simple-id" [ aa ] _) ->
                 let
                 aa' = from_sml_ATermTokenTup (getATermByIndex1 aa att)
                 ab' = []
                 ac' = nullRange
-                in (Id aa' ab' ac')
+                in Id aa' ab' ac'
             _ -> from_sml_ShATermError "Id" aterm
         where
             aterm = getATerm att
@@ -199,12 +199,12 @@ instance ATermConvertibleSML Annotation where
                 let
                 aa' = trimRight $ from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = pos_l
-                in (Unparsed_anno Comment_start (Line_anno aa') ab')
+                in Unparsed_anno Comment_start (Line_anno aa') ab'
             (ShAAppl "comment" [ aa ] _) ->
                 let
                 aa' = lines (from_sml_ShATerm (getATermByIndex1 aa att))
                 ab' = pos_l
-                in (Unparsed_anno Comment_start (Group_anno aa') ab')
+                in Unparsed_anno Comment_start (Group_anno aa') ab'
             (ShAAppl "unparsed-anno" [ aa ] _) ->
                 parse_anno pos_l
                    (from_sml_ShATerm (getATermByIndex1 aa att))
@@ -213,13 +213,13 @@ instance ATermConvertibleSML Annotation where
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
-                in (Unparsed_anno (Annote_word aa') (Line_anno ab') ac')
+                in Unparsed_anno (Annote_word aa') (Line_anno ab') ac'
             (ShAAppl "annote-group" [ aa, ab ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
-                in (Unparsed_anno (Annote_word aa') (Group_anno ab') ac')
+                in Unparsed_anno (Annote_word aa') (Group_anno ab') ac'
             (ShAAppl "display-anno" [ aa, ab ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
@@ -231,61 +231,61 @@ instance ATermConvertibleSML Annotation where
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
-                in (String_anno aa' ab' ac')
+                in String_anno aa' ab' ac'
             (ShAAppl "list-anno" [ aa, ab, ac ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = from_sml_ShATerm (getATermByIndex1 ac att)
                 ad' = pos_l
-                in (List_anno aa' ab' ac' ad')
+                in List_anno aa' ab' ac' ad'
             (ShAAppl "number-anno" [ aa ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = pos_l
-                in (Number_anno aa' ab')
+                in Number_anno aa' ab'
             (ShAAppl "floating-anno" [ aa, ab ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
-                in (Float_anno aa' ab' ac')
+                in Float_anno aa' ab' ac'
             (ShAAppl "prec-anno" [ aa, ab, ac ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = from_sml_ShATerm (getATermByIndex1 ac att)
                 ad' = pos_l
-                in (Prec_anno (if aa' then Lower else BothDirections)
-                    ab' ac' ad')
+                in Prec_anno (if aa' then Lower else BothDirections)
+                    ab' ac' ad'
             (ShAAppl "lassoc-anno" [ aa ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = pos_l
-                in (Assoc_anno ALeft aa' ab')
+                in Assoc_anno ALeft aa' ab'
             (ShAAppl "rassoc-anno" [ aa ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = pos_l
-                in (Assoc_anno ARight aa' ab')
+                in Assoc_anno ARight aa' ab'
             (ShAAppl "label-anno" [ aa ] _) ->
                 let
                 aa' = lines $ showId
                       (from_sml_ShATerm $ getATermByIndex1 aa att) ""
                 ab' = pos_l
-                in (Label aa' ab')
+                in Label aa' ab'
             (ShAAppl "implies" [] _) ->
                 let
                 aa' = pos_l
-                in (Semantic_anno SA_implies aa')
+                in Semantic_anno SA_implies aa'
             (ShAAppl "definitional" [] _) ->
                 let
                 aa' = pos_l
-                in (Semantic_anno SA_def aa')
+                in Semantic_anno SA_def aa'
             (ShAAppl "conservative" [] _) ->
                 let
                 aa' = pos_l
-                in (Semantic_anno SA_cons aa')
+                in Semantic_anno SA_cons aa'
             (ShAAppl "mono" [] _) ->
                 Semantic_anno SA_mono pos_l
             _ -> from_sml_ShATermError "Annotation" aterm
@@ -387,7 +387,7 @@ instance ATermConvertibleSML (BASIC_SPEC a b c) where
             (ShAAppl "basic-spec" [ aa ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
-                in (CASL.AS_Basic_CASL.Basic_spec aa')
+                in CASL.AS_Basic_CASL.Basic_spec aa'
             _ -> from_sml_ShATermError "BASIC_SPEC" aterm
         where
             aterm = getATerm att'
@@ -403,33 +403,33 @@ instance ATermConvertibleSML (BASIC_ITEMS a b c) where
             (ShAAppl "sig-items" [ aa ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
-                in (Sig_items aa')
+                in Sig_items aa'
             (ShAAppl "free-datatype" [ aa, _ ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = pos_l
-                in (Free_datatype NonEmptySorts aa' ab')
+                in Free_datatype NonEmptySorts aa' ab'
             (ShAAppl "sort-gen" [ aa, _ ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = pos_l
-                in (Sort_gen aa' ab')
+                in Sort_gen aa' ab'
             (ShAAppl "var-items" [ aa, _ ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = pos_l
-                in (Var_items aa' ab')
+                in Var_items aa' ab'
             (ShAAppl "local-var-axioms" [ aa, ab, _ ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
-                in (Local_var_axioms aa' ab' ac')
+                in Local_var_axioms aa' ab' ac'
             (ShAAppl "axiom-items" [ aa, _ ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = pos_l
-                in (Axiom_items aa' ab')
+                in Axiom_items aa' ab'
             _ -> from_sml_ShATermError "BASIC_ITEMS" aterm
         where
             aterm = getATerm att'
@@ -448,28 +448,28 @@ instance ATermConvertibleSML (SIG_ITEMS a b) where
                 as = from_sml_ShATerm (getATermByIndex1 ab att)
                 aa'' = addLAnnoList as hd : tl
                 ab' = pos_l
-                in (Sort_items NonEmptySorts aa'' ab')
+                in Sort_items NonEmptySorts aa'' ab'
             (ShAAppl "op-items" [ aa, ab ] _) ->
                 let
                 hd : tl = from_sml_ShATerm (getATermByIndex1 aa att)
                 as = from_sml_ShATerm (getATermByIndex1 ab att)
                 aa'' = addLAnnoList as hd : tl
                 ab' = pos_l
-                in (Op_items aa'' ab')
+                in Op_items aa'' ab'
             (ShAAppl "pred-items" [ aa, ab ] _) ->
                 let
                 hd : tl = from_sml_ShATerm (getATermByIndex1 aa att)
                 as = from_sml_ShATerm (getATermByIndex1 ab att)
                 aa'' = addLAnnoList as hd : tl
                 ab' = pos_l
-                in (Pred_items aa'' ab')
+                in Pred_items aa'' ab'
             (ShAAppl "datatype-items" [ aa, ab ] _) ->
                 let
                 hd : tl = from_sml_ShATerm (getATermByIndex1 aa att)
                 as = from_sml_ShATerm (getATermByIndex1 ab att)
                 aa'' = addLAnnoList as hd : tl
                 ab' = pos_l
-                in (Datatype_items NonEmptySorts aa'' ab')
+                in Datatype_items NonEmptySorts aa'' ab'
             _ -> from_sml_ShATermError "SIG_ITEMS" aterm
         where
             aterm = getATerm att'
@@ -486,13 +486,13 @@ instance ATermConvertibleSML (SORT_ITEM a) where
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = pos_l
-                in (Sort_decl aa' ab')
+                in Sort_decl aa' ab'
             (ShAAppl "subsort-decl" [ aa, ab ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
-                in (Subsort_decl aa' ab' ac')
+                in Subsort_decl aa' ab' ac'
             (ShAAppl "subsort-defn" [ aa, ab, ac, ad, ae ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
@@ -502,12 +502,12 @@ instance ATermConvertibleSML (SORT_ITEM a) where
                 as = toAnnoList ae att
                 ad'' = addRAnnoList as ad'
                 ae' = pos_l
-                in (Subsort_defn aa' ab' ac' ad'' ae')
+                in Subsort_defn aa' ab' ac' ad'' ae'
             (ShAAppl "iso-decl" [ aa ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = pos_l
-                in (Iso_decl aa' ab')
+                in Iso_decl aa' ab'
             _ -> from_sml_ShATermError "SORT_ITEM" aterm
         where
             aterm = getATerm att'
@@ -526,7 +526,7 @@ instance ATermConvertibleSML (OP_ITEM a) where
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = from_sml_ShATerm (getATermByIndex1 ac att)
                 ad' = pos_l
-                in (Op_decl aa' ab' ac' ad')
+                in Op_decl aa' ab' ac' ad'
             (ShAAppl "op-defn" [ aa, ab, ac, ad ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
@@ -535,7 +535,7 @@ instance ATermConvertibleSML (OP_ITEM a) where
                 as = from_sml_ShATerm (getATermByIndex1 ad att)
                 ac'' = addRAnnoList as ac'
                 ad' = pos_l
-                in (Op_defn aa' ab' ac'' ad')
+                in Op_defn aa' ab' ac'' ad'
             _ -> from_sml_ShATermError "OP_ITEM" aterm
         where
             aterm = getATerm att'
@@ -553,13 +553,13 @@ instance ATermConvertibleSML OP_TYPE where
                 (aa', ps) = from_sml_ATermSORTS (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = insertPos ps pos_l
-                in (Op_type Total aa' ab' ac')
+                in Op_type Total aa' ab' ac'
             (ShAAppl "partial-op-type" [ aa, ab ] _) ->
                 let
                 (aa', ps) = from_sml_ATermSORTS (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = insertPos ps pos_l
-                in (Op_type Partial aa' ab' ac')
+                in Op_type Partial aa' ab' ac'
             _ -> from_sml_ShATermError "OP_TYPE" aterm
         where
             aterm = getATerm att'
@@ -593,14 +593,14 @@ instance ATermConvertibleSML OP_HEAD where
                        (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
-                in (Op_head Total aa' (Just ab') ac')
+                in Op_head Total aa' (Just ab') ac'
             (ShAAppl "partial-op-head" [ aa, ab ] _) ->
                 let
                 aa' = from_sml_ATermList from_sml_ATermARG_DECL
                        (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
-                in (Op_head Partial aa' (Just ab') ac')
+                in Op_head Partial aa' (Just ab') ac'
             _ -> from_sml_ShATermError "OP_HEAD" aterm
         where
             aterm = getATerm att'
@@ -619,7 +619,7 @@ from_sml_ATermARG_DECL att =
                 aa' = from_sml_ATermVARs (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
-                in (Var_decl aa' ab' ac')
+                in Var_decl aa' ab' ac'
         _ -> from_sml_ShATermError "ARG_DECL" aterm
         where
             aterm = case getATerm att' of
@@ -647,7 +647,7 @@ instance ATermConvertibleSML (OP_ATTR a) where
             (ShAAppl "unit-op-attr" [ aa ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
-                in (Unit_op_attr aa')
+                in Unit_op_attr aa'
             _ -> from_sml_ShATermError "OP_ATTR" aterm
         where
             aterm = getATerm att'
@@ -665,14 +665,14 @@ instance ATermConvertibleSML (PRED_ITEM a) where
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
-                in (Pred_decl aa' ab' ac')
+                in Pred_decl aa' ab' ac'
             (ShAAppl "pred-defn" [ aa, ab, ac, _ ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = from_sml_ShATerm (getATermByIndex1 ac att)
                 ad' = pos_l
-                in (Pred_defn aa' ab' ac' ad')
+                in Pred_defn aa' ab' ac' ad'
             _ -> from_sml_ShATermError "PRED_ITEM" aterm
         where
             aterm = getATerm att'
@@ -689,7 +689,7 @@ instance ATermConvertibleSML PRED_TYPE where
                 let
                 (aa', ps) = from_sml_ATermSORTS (getATermByIndex1 aa att)
                 ab' = insertPos ps pos_l
-                in (Pred_type aa' ab')
+                in Pred_type aa' ab'
             _ -> from_sml_ShATermError "PRED_TYPE" aterm
         where
             aterm = getATerm att'
@@ -707,7 +707,7 @@ instance ATermConvertibleSML PRED_HEAD where
                 aa' = from_sml_ATermList from_sml_ATermARG_DECL
                        (getATermByIndex1 aa att)
                 ab' = pos_l
-                in (Pred_head aa' ab')
+                in Pred_head aa' ab'
             _ -> from_sml_ShATermError "PRED_HEAD" aterm
         where
             aterm = getATerm att'
@@ -727,7 +727,7 @@ instance ATermConvertibleSML DATATYPE_DECL where
                 as = from_sml_ShATerm (getATermByIndex1 ac att)
                 ab'' = addLAnnoList as abh : abt
                 ac' = pos_l
-                in (Datatype_decl aa' ab'' ac')
+                in Datatype_decl aa' ab'' ac'
             _ -> from_sml_ShATermError "DATATYPE_DECL" aterm
         where
             aterm = getATerm att'
@@ -745,18 +745,18 @@ instance ATermConvertibleSML ALTERNATIVE where
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
-                in (Alt_construct Total aa' ab' ac')
+                in Alt_construct Total aa' ab' ac'
             (ShAAppl "partial-construct" [ aa, ab ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
-                in (Alt_construct Partial aa' ab' ac')
+                in Alt_construct Partial aa' ab' ac'
             (ShAAppl "subsort" [ aa ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = pos_l
-                in (Subsorts aa' ab')
+                in Subsorts aa' ab'
             _ -> from_sml_ShATermError "ALTERNATIVE" aterm
         where
             aterm = getATerm att'
@@ -774,17 +774,17 @@ instance ATermConvertibleSML COMPONENTS where
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
-                in (Cons_select Total aa' ab' ac')
+                in Cons_select Total aa' ab' ac'
             (ShAAppl "partial-select" [ aa, ab ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
-                in (Cons_select Partial aa' ab' ac')
+                in Cons_select Partial aa' ab' ac'
             (ShAAppl "sort-component" [ aa ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
-                in (Sort aa')
+                in Sort aa'
             _ -> from_sml_ShATermError "COMPONENTS" aterm
         where
             aterm = getATerm att'
@@ -801,7 +801,7 @@ instance ATermConvertibleSML VAR_DECL where
                 let
                 aa' = from_sml_ATermVARs (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
-                in (Var_decl aa' ab' nullRange)
+                in Var_decl aa' ab' nullRange
             _ -> from_sml_ShATermError "VAR_DECL" aterm
         where
             aterm = getATerm att
@@ -816,74 +816,74 @@ instance ATermConvertibleSML (FORMULA a) where
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = from_sml_ShATerm (getATermByIndex1 ac att)
                 ad' = insertPos pq pos_l
-                in (Quantification aa' ab' ac' ad')
+                in Quantification aa' ab' ac' ad'
             (ShAAppl "conjunction" [ aa ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = pos_l
-                in (Junction Con aa' ab')
+                in Junction Con aa' ab'
             (ShAAppl "disjunction" [ aa ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = pos_l
-                in (Junction Dis aa' ab')
+                in Junction Dis aa' ab'
             (ShAAppl "implication" [ aa, ab ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
-                in (Relation aa' Implication ab' ac')
+                in Relation aa' Implication ab' ac'
             (ShAAppl "equivalence" [ aa, ab ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
-                in (Relation aa' Equivalence ab' ac')
+                in Relation aa' Equivalence ab' ac'
             (ShAAppl "negation" [ aa ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = pos_l
-                in (Negation aa' ab')
+                in Negation aa' ab'
             -- the following things are from SML-type ATOM
             (ShAAppl "atom" [i] _) ->
               case getATerm (getATermByIndex1 i att') of
                (ShAAppl "ttrue" [] _) ->
                  let
                  aa' = pos_l
-                 in (Atom True aa')
+                 in Atom True aa'
                (ShAAppl "ffalse" [] _) ->
                  let
                  aa' = pos_l
-                 in (Atom False aa')
+                 in Atom False aa'
                (ShAAppl "predication" [ aa, ab ] _) ->
                  let
                  aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                  (ab', ps) = from_sml_ATermTERMS (getATermByIndex1 ab att)
                  ac' = insertPos ps pos_l
-                 in (Predication aa' ab' ac')
+                 in Predication aa' ab' ac'
                (ShAAppl "definedness" [ aa ] _) ->
                  let
                  aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                  ab' = pos_l
-                 in (Definedness aa' ab')
+                 in Definedness aa' ab'
                (ShAAppl "existl-equation" [ aa, ab ] _) ->
                  let
                  aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                  ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                  ac' = pos_l
-                 in (Equation aa' Existl ab' ac')
+                 in Equation aa' Existl ab' ac'
                (ShAAppl "strong-equation" [ aa, ab ] _) ->
                  let
                  aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                  ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                  ac' = pos_l
-                 in (Equation aa' Strong ab' ac')
+                 in Equation aa' Strong ab' ac'
                (ShAAppl "membership" [ aa, ab ] _) ->
                  let
                  aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                  ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                  ac' = pos_l
-                 in (Membership aa' ab' ac')
+                 in Membership aa' ab' ac'
                _ -> from_sml_ShATermError "FORMULA" aterm
             _ -> from_sml_ShATermError "FORMULA" aterm
         where
@@ -968,7 +968,7 @@ instance ATermConvertibleSML PRED_SYMB where
                    ShAAppl "Some" [ aab ] _ ->
                      let aab' = from_sml_ShATerm (getATermByIndex1 aab att)
                          ac' = pos_l
-                     in (Qual_pred_name aa' aab' ac')
+                     in Qual_pred_name aa' aab' ac'
                    _ -> from_sml_ShATermError "Option" aterm
             _ -> from_sml_ShATermError "PRED_SYMB" aterm
         where
@@ -991,32 +991,32 @@ instance ATermConvertibleSML (TERM a) where
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
-                in (Qual_var aa' ab' ac')
+                in Qual_var aa' ab' ac'
             (ShAAppl "application" [ aa, ab ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 (ab', ps) = from_sml_ATermTERMS (getATermByIndex1 ab att)
                 ac' = insertPos ps pos_l
-                in (Application aa' ab' ac')
+                in Application aa' ab' ac'
             (ShAAppl "sorted-term" [ aa, ab ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
-                in (Sorted_term aa' ab' ac')
+                in Sorted_term aa' ab' ac'
             (ShAAppl "cast" [ aa, ab ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
-                in (Cast aa' ab' ac')
+                in Cast aa' ab' ac'
             (ShAAppl "conditional" [ aa, ab, ac ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = from_sml_ShATerm (getATermByIndex1 ac att)
                 ad' = pos_l
-                in (Conditional aa' ab' ac' ad')
+                in Conditional aa' ab' ac' ad'
             _ -> from_sml_ShATermError "TERM" aterm
         where
             aterm = getATerm att'
@@ -1033,7 +1033,7 @@ instance ATermConvertibleSML OP_SYMB where
                    ShAAppl "Some" [ aab ] _ ->
                      let aab' = from_sml_ShATerm (getATermByIndex1 aab att)
                          ac' = pos_l
-                     in (Qual_op_name aa' aab' ac')
+                     in Qual_op_name aa' aab' ac'
                    _ -> from_sml_ShATermError "Option" aterm
             _ -> from_sml_ShATermError "OP_SYMB" aterm
         where
@@ -1052,7 +1052,7 @@ instance ATermConvertibleSML SYMB_ITEMS where
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
-                in (Symb_items aa' ab' ac')
+                in Symb_items aa' ab' ac'
             _ -> from_sml_ShATermError "SYMB_ITEMS" aterm
         where
             aterm = getATerm att'
@@ -1070,7 +1070,7 @@ instance ATermConvertibleSML SYMB_MAP_ITEMS where
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
-                in (Symb_map_items aa' ab' ac')
+                in Symb_map_items aa' ab' ac'
             _ -> from_sml_ShATermError "SYMB_MAP_ITEMS" aterm
         where
             aterm = getATerm att'
@@ -1107,13 +1107,13 @@ instance ATermConvertibleSML SYMB where
                 let
                 i = from_sml_ShATerm (getATermByIndex1 aa att)
                 aa' = setFstPos pos_l i
-                in (Symb_id aa')
+                in Symb_id aa'
             (ShAAppl "qual-id" [ aa, ab ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
-                in (Qual_id aa' ab' ac')
+                in Qual_id aa' ab' ac'
             _ -> from_sml_ShATermError "SYMB" aterm
         where
             aterm = getATerm att'
@@ -1129,11 +1129,11 @@ instance ATermConvertibleSML TYPE where
             (ShAAppl "op-symb-type" [ aa ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
-                in (O_type aa')
+                in O_type aa'
             (ShAAppl "pred-symb-type" [ aa ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
-                in (P_type aa')
+                in P_type aa'
             _ -> from_sml_ShATermError "TYPE" aterm
         where
             aterm = getATerm att'
@@ -1149,12 +1149,12 @@ instance ATermConvertibleSML SYMB_OR_MAP where
             (ShAAppl "symb" [ aa ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
-                in (Symb aa')
+                in Symb aa'
             (ShAAppl "symb-or-map" [ aa ] _) ->
                 let
                 (aa', ab') = from_sml_ATermSYMB_MAP (getATermByIndex1 aa att)
                 ac' = pos_l
-                in (Symb_map aa' ab' ac')
+                in Symb_map aa' ab' ac'
             _ -> from_sml_ShATermError "SYMB_OR_MAP" aterm
         where
             aterm = getATerm att'
@@ -1238,7 +1238,7 @@ instance ATermConvertibleSML SPEC where
                 let
                 aa' = from_sml_ATermIRI (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
-                in (Spec_inst aa' ab' nullRange)
+                in Spec_inst aa' ab' nullRange
             _ -> from_sml_ShATermError "SPEC" aterm
         where
             aterm = getATerm att'
@@ -1261,7 +1261,7 @@ instance ATermConvertibleSML RENAMING where
                 aa'' = if null aa' then []
                       else [G_symb_map $ G_symb_map_items_list CASL aa']
                 ab' = pos_l
-                in (Renaming aa'' ab')
+                in Renaming aa'' ab'
             _ -> from_sml_ShATermError "RENAMING" aterm
         where
             aterm = getATerm att'
@@ -1280,13 +1280,13 @@ instance ATermConvertibleSML RESTRICTION where
                       [] -> []
                       aa' -> [G_symb_list $ G_symb_items_list CASL aa']
                 ab' = pos_l
-                in (Hidden aa'' ab')
+                in Hidden aa'' ab'
             (ShAAppl "reveal" [ aa ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 aa'' = G_symb_map_items_list CASL aa'
                 ab' = pos_l
-                in (Revealed aa'' ab')
+                in Revealed aa'' ab'
             _ -> from_sml_ShATermError "RESTRICTION" aterm
         where
             aterm = getATerm att'
@@ -1308,7 +1308,7 @@ instance ATermConvertibleSML GENERICITY where
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
-                in (Genericity aa' ab' ac')
+                in Genericity aa' ab' ac'
             _ -> from_sml_ShATermError "GENERICITY" aterm
         where
             aterm = getATerm att'
@@ -1324,7 +1324,7 @@ instance ATermConvertibleSML PARAMS where
             (ShAAppl "params" [ aa ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
-                in (Params aa')
+                in Params aa'
             _ -> from_sml_ShATermError "PARAMS" aterm
         where
             aterm = getATerm att'
@@ -1340,7 +1340,7 @@ instance ATermConvertibleSML IMPORTED where
             (ShAAppl "imports" [ aa ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
-                in (Imported aa')
+                in Imported aa'
             _ -> from_sml_ShATermError "IMPORTED" aterm
         where
             aterm = getATerm att'
@@ -1360,13 +1360,13 @@ instance ATermConvertibleSML FIT_ARG where
                       [] -> []
                       ab' -> [G_symb_map $ G_symb_map_items_list CASL ab']
                 ac' = pos_l
-                in (Fit_spec aa' ab'' ac')
+                in Fit_spec aa' ab'' ac'
             (ShAAppl "fit-view" [ aa, ab ] _) ->
                 let
                 aa' = from_sml_ATermIRI (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
-                in (Fit_view aa' ab' ac')
+                in Fit_view aa' ab' ac'
             _ -> from_sml_ShATermError "FIT_ARG" aterm
         where
             aterm = getATerm att'
@@ -1388,7 +1388,7 @@ instance ATermConvertibleSML VIEW_TYPE where
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
-                in (View_type aa' ab' ac')
+                in View_type aa' ab' ac'
             _ -> from_sml_ShATermError "VIEW_TYPE" aterm
         where
             aterm = getATerm att'
@@ -1413,11 +1413,11 @@ instance ATermConvertibleSML ARCH_SPEC where
                 as = toAnnoList ac att
                 aa'' = addLAnnoList as hd : tl
                 ac' = pos_l
-                in (Basic_arch_spec aa'' ab' ac')
+                in Basic_arch_spec aa'' ab' ac'
             (ShAAppl "named-arch-spec" [ aa ] _) ->
                 let
                 aa' = from_sml_ATermIRI (getATermByIndex1 aa att)
-                in (Arch_spec_name aa')
+                in Arch_spec_name aa'
             _ -> from_sml_ShATermError "ARCH_SPEC" aterm
         where
             aterm = getATerm att'
@@ -1435,7 +1435,7 @@ from_sml_ATermRESULT_UNIT att =
 -- aa' :: UNIT_EXPRESSION
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 as = toAnnoList ab att
-                in (Annoted aa' nullRange as [])
+                in Annoted aa' nullRange as []
             _ -> from_sml_ShATermError "RESULT-UNIT" aterm
         where
             aterm = getATerm att'
@@ -1462,7 +1462,7 @@ instance ATermConvertibleSML UNIT_REF where
                                getATermByIndex1 aa att
                           ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                           ad' = ps
-                      in (Unit_ref aa' ab' ad')
+                      in Unit_ref aa' ab' ad'
                    _ -> from_sml_ShATermError "UNIT_DECL" aterm2
             _ -> from_sml_ShATermError "UNIT-DECL-DEFN" aterm
         where
@@ -1530,7 +1530,7 @@ from_sml_ATermUNIT_DEFN att =
         let aa' = from_sml_ATermIRI (getATermByIndex1 aa att)
             ab' = from_sml_ShATerm (getATermByIndex1 ab att)
             ac' = ps
-        in (Unit_defn aa' ab' ac')
+        in Unit_defn aa' ab' ac'
     _ -> from_sml_ShATermError "UNIT_DEFN" aterm
     where aterm = getATerm att'
           (ps, att') =
@@ -1550,16 +1550,16 @@ instance ATermConvertibleSML UNIT_SPEC where
                 let
                 (aa', ab') = from_sml_ATermUNIT_TYPE $ getATermByIndex1 aa att
                 ac' = pos_l
-                in (Unit_type aa' ab' ac')
+                in Unit_type aa' ab' ac'
             (ShAAppl "spec-name-case" [ aa ] _) ->
                 let
                 aa' = from_sml_ATermIRI (getATermByIndex1 aa att)
-                in (Spec_name aa')
+                in Spec_name aa'
             (ShAAppl "closed" [ aa ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = pos_l
-                in (Closed_unit_spec aa' ab')
+                in Closed_unit_spec aa' ab'
             _ -> from_sml_ShATermError "UNIT_SPEC" aterm
         where
             aterm = getATerm att'
@@ -1591,7 +1591,7 @@ instance ATermConvertibleSML REF_SPEC where
                         (Annoted (Basic_arch_spec {}) _ _ _) ->
                             emptyAnno (Group_arch_spec aa'' ab')
                         _ -> aa''
-                in (Arch_unit_spec aa''' ab')
+                in Arch_unit_spec aa''' ab'
             (ShAAppl "closed" [ aa ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
@@ -1630,7 +1630,7 @@ instance ATermConvertibleSML UNIT_EXPRESSION where
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
-                in (Unit_expression aa' ab' ac')
+                in Unit_expression aa' ab' ac'
             _ -> from_sml_ShATermError "UNIT_EXPRESSION" aterm
         where
             aterm = getATerm att'
@@ -1648,7 +1648,7 @@ instance ATermConvertibleSML UNIT_BINDING where
                 aa' = from_sml_ATermIRI (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
-                in (Unit_binding aa' ab' ac')
+                in Unit_binding aa' ab' ac'
             _ -> from_sml_ShATermError "UNIT_BINDING" aterm
         where
             aterm = getATerm att'
@@ -1722,7 +1722,7 @@ instance ATermConvertibleSML LIB_DEFN where
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
                 ad' = from_sml_ShATerm (getATermByIndex1 ad att)
-                in (Lib_defn aa' ab' ac' ad')
+                in Lib_defn aa' ab' ac' ad'
             _ -> from_sml_ShATermError "LIB_DEFN" aterm
         where
             aterm = getATerm att'
@@ -1753,19 +1753,19 @@ instance ATermConvertibleSML LIB_ITEM where
                       [] -> []
                       ad' -> [G_symb_map $ G_symb_map_items_list CASL ad']
                 ae' = pos_l
-                in (Syntax.AS_Library.View_defn aa' ab' ac' ad'' ae')
+                in Syntax.AS_Library.View_defn aa' ab' ac' ad'' ae'
             (ShAAppl "arch-spec-defn" [ aa, ab, _ ] _) ->
                 let
                 aa' = from_sml_ATermIRI (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
-                in (Syntax.AS_Library.Arch_spec_defn aa' ab' ac')
+                in Syntax.AS_Library.Arch_spec_defn aa' ab' ac'
             (ShAAppl "unit-spec-defn" [ aa, ab, _ ] _) ->
                 let
                 aa' = from_sml_ATermIRI (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
-                in (Syntax.AS_Library.Unit_spec_defn aa' ab' ac')
+                in Syntax.AS_Library.Unit_spec_defn aa' ab' ac'
             (ShAAppl "download-items" [ aa, ab, _ ] _) ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
@@ -1834,9 +1834,8 @@ instance ATermConvertibleSML LibName where
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 in (LibName aa' r Nothing $ Just ab')
             (ShAAppl "lib" [ aa ] _) ->
-                let
-                (aa', r) = fromSmlShATermToLibId (getATermByIndex1 aa att)
-                in (LibName aa' r Nothing Nothing)
+                let (aa', r) = fromSmlShATermToLibId (getATermByIndex1 aa att)
+                in LibName aa' r Nothing Nothing
             _ -> from_sml_ShATermError "LibName" aterm
         where
             aterm = getATerm att'
@@ -1871,7 +1870,7 @@ instance ATermConvertibleSML VersionNumber where
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = pos_l
-                in (VersionNumber aa' ab')
+                in VersionNumber aa' ab'
             _ -> from_sml_ShATermError "VersionNumber" aterm
         where
             aterm = getATerm att'

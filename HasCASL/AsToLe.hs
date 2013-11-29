@@ -60,7 +60,7 @@ idsOfClassItem (ClassItem _ l _) = unite $ map (idsOfBasicItem . item) l
 
 idsOfSigItems :: SigItems -> Ids
 idsOfSigItems si = case si of
-    TypeItems _ _ _ -> Set.empty
+    TypeItems {} -> Set.empty
     OpItems b l _ -> unite $ map (idsOfOpItem b . item) l
 
 idsOfOpItem :: OpBrand -> OpItem -> Ids

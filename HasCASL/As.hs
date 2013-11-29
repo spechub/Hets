@@ -37,8 +37,8 @@ data BasicItem =
   | FreeDatatype [Annoted DatatypeDecl] Range
   -- pos "free", "type", ";"s
   | GenItems [Annoted SigItems] Range
-  -- pos "generated" "{", ";"s, "}"
-  -- or "generated" "type" ";"s
+  {- pos "generated" "{", ";"s, "}"
+  or "generated" "type" ";"s -}
   | AxiomItems [GenVarDecl] [Annoted Term] Range
   -- pos "forall" (if GenVarDecl not empty), dots
   | Internal [Annoted BasicItem] Range
@@ -47,8 +47,8 @@ data BasicItem =
 
 -- | signature items are types or functions
 data SigItems =
-    TypeItems Instance [Annoted TypeItem] Range -- including sort
-    -- pos "type", ";"s
+    TypeItems Instance [Annoted TypeItem] Range {- including sort
+    pos "type", ";"s -}
   | OpItems OpBrand [Annoted OpItem] Range
     -- pos "op", ";"s
     deriving Show
@@ -116,7 +116,7 @@ type Kind = AnyKind Id
 type RawKind = AnyKind ()
 
 -- | the possible type items
-data TypeItem  =
+data TypeItem =
     TypeDecl [TypePattern] Kind Range
     -- pos ","s
   | SubtypeDecl [TypePattern] Type Range
@@ -150,8 +150,8 @@ data Type =
     TypeName Id RawKind Int
     -- Int == 0 means constructor, negative are bound variables
   | TypeAppl Type Type
-  | ExpandedType Type Type    -- an alias type with its expansion
-  -- only the following variants are parsed
+  | ExpandedType Type Type    {- an alias type with its expansion
+  only the following variants are parsed -}
   | TypeAbs TypeArg Type Range
   | KindedType Type (Set.Set Kind) Range
   -- pos ":"
@@ -171,8 +171,8 @@ argument list. The type arguments store proper kinds (including
 downsets) whereas the kind within the type names are only raw
 kinds. -}
 data TypeScheme = TypeScheme [TypeArg] Type Range deriving (Show, Eq, Ord)
-    -- pos "forall", ";"s,  dot (singleton list)
-    -- pos "\" "("s, ")"s, dot for type aliases
+    {- pos "forall", ";"s,  dot (singleton list)
+    pos "\" "("s, ")"s, dot for type aliases -}
 
 -- | indicator for partial or total functions
 data Partiality = Partial | Total deriving (Eq, Ord)
@@ -270,18 +270,18 @@ data Term =
     -- pos "(", "var", ":", ")"
   | QualOp OpBrand PolyId TypeScheme [Type] InstKind Range
   -- pos "(", "op", ":", ")"
-  | ApplTerm Term Term Range  -- analysed
-  -- pos?
-  | TupleTerm [Term] Range    -- special application
-  -- pos "(", ","s, ")"
+  | ApplTerm Term Term Range  {- analysed
+  pos? -}
+  | TupleTerm [Term] Range    {- special application
+  pos "(", ","s, ")" -}
   | TypedTerm Term TypeQual Type Range
   -- pos ":", "as" or "in"
   | AsPattern VarDecl Term Range
-  -- pos "@"
-  -- patterns are terms constructed by the first six variants
+  {- pos "@"
+  patterns are terms constructed by the first six variants -}
   | QuantifiedTerm Quantifier [GenVarDecl] Term Range
-  -- pos quantifier, ";"s, dot
-  -- only "forall" may have a TypeVarDecl
+  {- pos quantifier, ";"s, dot
+  only "forall" may have a TypeVarDecl -}
   | LambdaTerm [Term] Partiality Term Range
   -- pos "\", dot (plus "!")
   | CaseTerm Term [ProgEq] Range
@@ -336,8 +336,8 @@ data GenVarDecl =
   | GenTypeVarDecl TypeArg
     deriving (Show, Eq, Ord)
 
--- * symbol data types
--- | symbols
+{- * symbol data types
+symbols -}
 data SymbItems =
     SymbItems SymbKind [Symb] [Annotation] Range deriving (Show, Eq)
     -- pos: kind, commas
@@ -387,25 +387,25 @@ instance Ord Type where
     (MixfixType l1, MixfixType l2) -> compare l1 l2
     (ExpandedType _ t1, t2) -> compare t1 t2
     (t1, ExpandedType _ t2) -> compare t1 t2
-    (TypeName _ _ _, _) -> LT
-    (_, TypeName _ _ _) -> GT
-    (TypeAppl _ _, _) -> LT
-    (_, TypeAppl _ _) -> GT
-    (TypeAbs _ _ _, _) -> LT
-    (_, TypeAbs _ _ _) -> GT
+    (TypeName {}, _) -> LT
+    (_, TypeName {}) -> GT
+    (TypeAppl {}, _) -> LT
+    (_, TypeAppl {}) -> GT
+    (TypeAbs {}, _) -> LT
+    (_, TypeAbs {}) -> GT
     (TypeToken _, _) -> LT
     (_, TypeToken _) -> GT
-    (BracketType _ _ _, _) -> LT
-    (_, BracketType _ _ _) -> GT
-    (KindedType _ _ _, _) -> LT
-    (_, KindedType _ _ _) -> GT
+    (BracketType {}, _) -> LT
+    (_, BracketType {}) -> GT
+    (KindedType {}, _) -> LT
+    (_, KindedType {}) -> GT
 
 -- used within quantified formulas
 instance Eq TypeArg where
     t1 == t2 = compare t1 t2 == EQ
 instance Ord TypeArg where
     compare (TypeArg i1 v1 e1 r1 c1 _ _) (TypeArg i2 v2 e2 r2 c2 _ _) =
-        if c1 < 0  && c2 < 0 then compare (v1, e1, r1, c1) (v2, e2, r2, c2)
+        if c1 < 0 && c2 < 0 then compare (v1, e1, r1, c1) (v2, e2, r2, c2)
         else compare (i1, v1, e1, r1, c1) (i2, v2, e2, r2, c2)
 
 -- * compute better position

@@ -19,7 +19,6 @@ errors, do not forget to check the xml structure first.
 -}
 
 
-
 module OMDoc.XmlInterface where
 
 import OMDoc.DataTypes
@@ -31,6 +30,7 @@ import Common.IRI (isUnescapedInIRI, escapeIRIString, unEscapeString)
 
 import Data.Maybe
 import Data.List
+import Control.Monad (liftM, when)
 
 import Common.XmlParser (XmlParseable, parseXml)
 import Text.XML.Light
@@ -143,7 +143,7 @@ xmlIn s = case parseXml s of
 
 
 listToXml :: XmlRepresentable a => [a] -> [Content]
-listToXml l = map toXml l
+listToXml = map toXml
 
 listFromXml :: XmlRepresentable a => [Content] -> Result [a]
 listFromXml elms = fmap catMaybes $ mapR fromXml (onlyElems elms)
@@ -158,15 +158,15 @@ inAContent :: QName -> [Attr] -> Maybe Content -> Content
 inAContent qn a c = mkElement qn a $ maybeToList c
 
 inContent :: QName -> Maybe Content -> Content
-inContent qn c = inAContent qn [] c
+inContent qn = inAContent qn []
 
 toOmobj :: Content -> Content
 toOmobj c = inAContent el_omobj [attr_om] $ Just c
 
 -- * Encoding/Decoding
 
--- url escaping and unescaping.
--- We use ? and / as special characters, so we need them to be encoded in names
+{- url escaping and unescaping.
+We use ? and / as special characters, so we need them to be encoded in names -}
 urlEscape :: String -> String
 urlEscape = escapeIRIString isUnescapedInIRI
 
@@ -180,7 +180,7 @@ showCDName :: OMCD -> OMName -> String
 showCDName omcd omname = concat [showCD omcd, "?", showOMName omname]
 
 showCD :: OMCD -> String
-showCD cd = let [x,y] = cdToList cd
+showCD cd = let [x, y] = cdToList cd
                  in concat [x, "?", y]
 
 showOMName :: OMName -> String
@@ -190,15 +190,15 @@ showOMName on = intercalate "/" $ path on ++ [name on]
 readCD :: Show a => a -> String -> OMCD
 readCD _ s = case splitBy '?' s of
                [b, cd] -> cdFromList [b, cd]
-               _ -> error $ concat [ "readCD: The value "
-                                   , "has to contain exactly one '?'"]
+               _ -> error $ "readCD: The value " ++
+                            "has to contain exactly one '?'"
 
 readCDName :: String -> OMQualName
 readCDName s = case splitBy '?' s of
-                 (b:cd:n:[]) -> ( cdFromList [b, cd]
+                 (b : cd : n : []) -> ( cdFromList [b, cd]
                                 , readOMName n)
-                 _ -> error $ concat [ "readCDName: The value "
-                                     , "has to contain exactly two '?'"]
+                 _ -> error $ "readCDName: The value " ++
+                              "has to contain exactly two '?'"
 
 readOMName :: String -> OMName
 readOMName s = let l = splitBy '/' s
@@ -207,8 +207,7 @@ readOMName s = let l = splitBy '/' s
 
 -- encoding
 
--- only uri-fields need to be %-encoded, the following attribs are uri-fields:
-{-
+{- only uri-fields need to be %-encoded, the following attribs are uri-fields:
 theory@meta
 include@from
 structure@from
@@ -223,8 +222,8 @@ tripleEncodeOMS omcd omname
 
 pairEncodeCD :: OMCD -> [Attr]
 pairEncodeCD cd = let [base, modl] = cdToMaybeList cd
-                  in catMaybes $ [ fmap (Attr at_base . urlEscape) base
-                                 , fmap (Attr at_module) modl]
+                  in catMaybes [ fmap (Attr at_base . urlEscape) base
+                               , fmap (Attr at_module) modl]
 
 -- decoding
 
@@ -236,13 +235,13 @@ tripleDecodeOMS cd base nm =
        else (CD cdl, readOMName nm)
 
 
-warnIfNothing :: String -> (Maybe a -> b)  -> Maybe a -> Result b
+warnIfNothing :: String -> (Maybe a -> b) -> Maybe a -> Result b
 warnIfNothing s f v = let o = f v in
-                      case v of Nothing -> warning () s  nullRange >> return o
+                      case v of Nothing -> warning () s nullRange >> return o
                                 _ -> return o
 
 warnIf :: String -> Bool -> Result ()
-warnIf s b = if b then warning () s  nullRange else return ()
+warnIf s b = when b $ warning () s nullRange
 
 elemIsOf :: Element -> QName -> Bool
 elemIsOf e qn = let en = elName e in
@@ -252,7 +251,7 @@ oneOfMsg :: Element -> [QName] -> String
 oneOfMsg e l = let printName = qName in
                concat [ "Couldn't find expected element {"
                       , intercalate ", " (map printName l), "}"
-                      , fromMaybe "" $ fmap ((" at line "++).show) $ elLine e
+                      , maybe "" ((" at line " ++) . show) (elLine e)
                       , " but found ", printName $ elName e, "."
                       ]
 
@@ -273,11 +272,11 @@ encapsMaybe v = case v of
   _ -> return Nothing
 
 flattenMaybe :: Monad m => m (Maybe (Maybe a)) -> m (Maybe a)
-flattenMaybe v = v >>= return . fromMaybe Nothing
+flattenMaybe = liftM (fromMaybe Nothing)
 
 
--- | Function to extract the Just values from maybes with a default missing
---   error in case of Nothing
+{- | Function to extract the Just values from maybes with a default missing
+error in case of Nothing -}
 missingMaybe :: String -> String -> Maybe a -> a
 missingMaybe el misses =
     fromMaybe (error $ el ++ " element must have a " ++ misses ++ ".")
@@ -308,7 +307,7 @@ instance XmlRepresentable OMDoc where
 instance XmlRepresentable TLElement where
     toXml (TLTheory tname meta elms) =
         mkElement
-        el_theory ((Attr at_name tname)
+        el_theory (Attr at_name tname
                    : case meta of Nothing -> []
                                   Just mtcd ->
                                       [Attr at_meta $ urlEscape $ showCD mtcd])
@@ -345,7 +344,7 @@ instance XmlRepresentable TCElement where
         inAContent
         el_notation
         ( [Attr at_for $ urlEscape $ showCDName cd nm, Attr at_role "constant"]
-          ++ maybe [] ((:[]) . Attr at_style) mStl )
+          ++ maybe [] ((: []) . Attr at_style) mStl )
         $ Just $ inAContent el_text [Attr at_value val] Nothing
     toXml (TCSmartNotation (cd, nm) fixity assoc prec implicit) =
         inAContent
@@ -353,9 +352,9 @@ instance XmlRepresentable TCElement where
         ( [ Attr at_for $ urlEscape $ showCDName cd nm
           , Attr at_role "application", Attr at_fixity $ show fixity
           , Attr at_precedence $ show prec ]
-          ++ if implicit == 0 then [] else [Attr at_implicit $ show implicit]
-          ++ if assoc == NoneAssoc then [] else [Attr at_associativity
-                                                          $ show assoc] )
+          ++ (if implicit == 0 then [] else [Attr at_implicit $ show implicit])
+          ++ (if assoc == NoneAssoc then [] else [Attr at_associativity
+                                                          $ show assoc]) )
         Nothing
     toXml (TCFlexibleNotation (cd, nm) prec comps) =
         mkElement
@@ -371,15 +370,15 @@ instance XmlRepresentable TCElement where
 
     fromXml e
         | elemIsOf e el_constant =
-            let musthave s v = missingMaybe "Constant" s v
+            let musthave = missingMaybe "Constant"
                 nm = musthave "name" $ findAttr at_name e
-                role = fromMaybe Obj $ fmap read $ findAttr at_role e
+                role = maybe Obj read $ findAttr at_role e
             in do
               typ <- fmap (musthave "typ") $ omelementFrom el_type e
               defn <- omelementFrom el_definition e
               justReturn $ TCSymbol nm typ role defn
         | elemIsOf e el_notation =
-            let musthave s v = missingMaybe "Notation" s v
+            let musthave = missingMaybe "Notation"
                 nm = urlUnescape $ musthave "for" $ findAttr at_for e
                 role = musthave "role" $ findAttr at_role e
                 mStl = findAttr at_style e
@@ -394,7 +393,7 @@ instance XmlRepresentable TCElement where
                 from = readCD (elLine e) $ urlUnescape $ musthave at_from "from"
             in do
               morph <- mapR xmlToAssignment
-                       $ filterChildrenName (flip elem [el_conass, el_open]) e
+                       $ filterChildrenName (`elem` [el_conass, el_open]) e
               justReturn $ TCImport nm from morph
         | elemIsOf e el_adt =
             do
@@ -419,7 +418,7 @@ instance XmlRepresentable OmdADT where
                                     Just s -> [toXml s]
     toXml (ADTSelector n total) =
         mkElement el_selector [Attr at_name n, Attr at_total $ show total] []
-    toXml (ADTInsort (d,n)) =
+    toXml (ADTInsort (d, n)) =
         mkElement el_insort [Attr at_for $ showCDName d n] []
 
     fromXml e
@@ -478,7 +477,7 @@ instance XmlRepresentable OMElement where
             in justReturn $ OMV $ readOMName nm
         | elemIsOf e el_omattr =
             let [atp, el] = elChildren e
-                musthave s v = missingMaybe "OMATTR" s v
+                musthave = missingMaybe "OMATTR"
             in do
               atp' <- fromXml atp
               el' <- fromXml el
@@ -490,7 +489,7 @@ instance XmlRepresentable OMElement where
               justReturn $ OMA entries
         | elemIsOf e el_ombind =
             let [bd, bvar, body] = elChildren e
-                musthave s v = missingMaybe "OMBIND" s v
+                musthave = missingMaybe "OMBIND"
             in do
               bd' <- fromXml bd
               bvar' <- listFromXml $ elContent bvar
@@ -515,8 +514,8 @@ instance XmlRepresentable OMAttribute where
 
 -- * fromXml methods
 
--- | If the child element with given name contains an OMOBJ xml element,
--- this is transformed to an OMElement.
+{- | If the child element with given name contains an OMOBJ xml element,
+this is transformed to an OMElement. -}
 omelementFrom :: QName -> Element -> Result (Maybe OMElement)
 omelementFrom qn e = fmapFromMaybe omelementFromOmobj $ findChild qn e
 
@@ -530,10 +529,9 @@ omobjToOMElement e = case elChildren e of
                            do
                              omelem <- fromXml om
                              case omelem of
-                               Nothing ->
-                                   fail
-                                   $ concat [ "omobjToOMElement: "
-                                            , "No OpenMath element found."]
+                               Nothing -> fail
+                                   $ "omobjToOMElement: " ++
+                                     "No OpenMath element found."
                                Just x -> return x
                        _ -> fail "OMOBJ element must have a unique child."
 
@@ -542,18 +540,17 @@ omobjToOMElement e = case elChildren e of
 xmlToAssignment :: Element -> Result (OMName, OMImage)
 xmlToAssignment e
     | elName e == el_open =
-        let musthave s v = missingMaybe "Open" s v
+        let musthave = missingMaybe "Open"
             nm = musthave "name" $ findAttr at_name e
             alias = musthave "as" $ findAttr at_as e
         in return (readOMName nm, Left alias)
     | elName e == el_conass =
-        let musthave s v = missingMaybe "Conass" s v
+        let musthave = missingMaybe "Conass"
             nm = musthave "name" $ findAttr at_name e
         in do
           omel <- omelementFromOmobj e
           return (readOMName nm, Right $ musthave "OMOBJ element" omel)
     | otherwise = fail $ oneOfMsg e [el_conass, el_open]
-
 
 
 -- * toXml methods
@@ -574,9 +571,9 @@ constantToXml :: String -> String -> OMElement -> Maybe OMElement -> Content
 constantToXml n r tp prf =
     Elem $ Element el_constant
              [Attr at_name n, Attr at_role r]
-             ([typeToXml tp]
-              ++ map (inContent el_definition . Just . toOmobj . toXml)
-                     (maybeToList prf))
+             (typeToXml tp
+              : map (inContent el_definition . Just . toOmobj . toXml)
+                    (maybeToList prf))
              Nothing
 
 
@@ -585,4 +582,3 @@ notationComponentToXml (TextComp val) = mkElement el_text [Attr at_value val] []
 notationComponentToXml (ArgComp ind prec) =
     mkElement el_component [ Attr at_index $ show ind
                            , Attr at_precedence $ show prec] []
-

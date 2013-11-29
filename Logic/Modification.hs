@@ -51,9 +51,9 @@ class (Language lid, Comorphism cid1
                 sign4 morphism4 symbol4 raw_symbol4 proof_tree4
     where
       tauSigma :: lid -> sign1 -> Result morphism2
-      -- in the instances morphism2 and morphism4 will be the same
-      -- casts needed
-      -- component of the natural transformation
+      {- in the instances morphism2 and morphism4 will be the same
+      casts needed
+      component of the natural transformation -}
       sourceComorphism :: lid -> cid1
       targetComorphism :: lid -> cid2
 
@@ -199,7 +199,7 @@ data AnyModification = forall
             log3 sublogics3 basic_spec3 sentence3 symb_items3 symb_map_items3
                 sign3 morphism3 symbol3 raw_symbol3 proof_tree3
             log4 sublogics4 basic_spec4 sentence4 symb_items4 symb_map_items4
-                sign4 morphism4 symbol4 raw_symbol4 proof_tree4.
+                sign4 morphism4 symbol4 raw_symbol4 proof_tree4 .
                       Modification lid cid1 cid2
             log1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1
@@ -238,7 +238,7 @@ vertCompModification (Modification lid1) (Modification lid2) =
     if language_name cid1 == language_name cid2
     then return $ Modification (VerCompModif lid1 lid2)
     else fail $ "Comorphism mismatch in composition of" ++ language_name lid1
-             ++ "and" ++  language_name lid2
+             ++ "and" ++ language_name lid2
 
 -- | horizontal composition of modifications
 

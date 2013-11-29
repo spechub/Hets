@@ -34,11 +34,11 @@ data DepGraph a b c = DepGraph
                  , Set.Set a -- the direct successors (smaller elements)
                  , Set.Set c -- the direct predecessors (bigger elements)
                  )
-    -- function returning for a given element and value the predecessors
-    -- of this element
+    {- function returning for a given element and value the predecessors
+    of this element -}
     , getPredecessors :: a -> b -> [c]
-    -- function returning for a given element and value the predecessors
-    -- of this element
+    {- function returning for a given element and value the predecessors
+    of this element -}
     , getKey :: c -> a
     }
 
@@ -49,7 +49,7 @@ depGraphLookup :: Ord a =>
                   DepGraph a b c -> a -> Maybe (b, Set.Set a, Set.Set c)
 depGraphLookup gr x = Map.lookup x $ dataMap gr
 
-prettyDepGraph :: (a -> Doc) -> (b -> Doc) -> (c -> Doc) -> DepGraph a b c 
+prettyDepGraph :: (a -> Doc) -> (b -> Doc) -> (c -> Doc) -> DepGraph a b c
                -> Doc
 prettyDepGraph pa pb pc gr =
     ppMap pa pf ((text "DepGraph" <+>) . braces) vcat f $ dataMap gr where
@@ -68,19 +68,19 @@ emptyDepGraph f pf = DepGraph { dataMap = Map.empty, getPredecessors = f
                               , getKey = pf }
 
 
--- TODO: merge the type Rel2 and DepGraph in order to work only on the
--- new type, and implement a construction of this graph from a list
--- without the necessity to order the elements first.
+{- TODO: merge the type Rel2 and DepGraph in order to work only on the
+new type, and implement a construction of this graph from a list
+without the necessity to order the elements first. -}
 
--- | It is important to have the elements given in an order with
--- biggest elements first (elements which depend on nothing)
-depGraphFromDescList :: (Ord a, Ord c) => (a -> b -> [c]) -> (c -> a) -> [(a,b)]
-                     -> DepGraph a b c
+{- | It is important to have the elements given in an order with
+biggest elements first (elements which depend on nothing) -}
+depGraphFromDescList :: (Ord a, Ord c) => (a -> b -> [c]) ->
+                        (c -> a) -> [(a, b)] -> DepGraph a b c
 depGraphFromDescList f pf = foldl g (emptyDepGraph f pf) where
     g x (y, z) = updateGraph x y z
 
 maybeSetUnions :: Ord a => Set.Set (Maybe (Set.Set a)) -> Set.Set a
-maybeSetUnions s = Set.fold f Set.empty s where
+maybeSetUnions = Set.fold f Set.empty where
     f mS s' = maybe s' (Set.union s') mS
 
 upperLevel :: (Ord a, Ord c) => DepGraph a b c -> Set.Set a -> Set.Set c
@@ -99,7 +99,7 @@ setFilterLookup :: (Ord a, Ord b, Ord d, Show a) =>
                 -> (a -> b -> Bool) -- ^ filter predicate
                 -> DepGraph a b c -- ^ dependency graph for lookup
                 -> Set.Set d -- ^ filter this set
-                -> Set.Set (d,b)
+                -> Set.Set (d, b)
 setFilterLookup pf fp gr s = Set.map h $ Set.filter g $ Set.map f s where
     f x = (x, fmap ( \ (v, _, _) -> v ) $ Map.lookup (pf x) $ dataMap gr)
     g (x, Just val) = fp (pf x) val
@@ -112,7 +112,7 @@ lowerUntil :: (Pretty a, Ord a, Ord b, Show a) =>
               (a -> b -> Bool) -- ^ cut-off predicate
            -> DepGraph a b c -- ^ dependency graph to be traversed
            -> [a] -- ^ compare entries to this element
-           -> Set.Set (a,b)
+           -> Set.Set (a, b)
 lowerUntil _ _ [] = Set.empty
 lowerUntil cop gr al =
     let s = lowerLevel gr al
@@ -125,7 +125,7 @@ upperUntil :: (Ord a, Ord b, Ord c, Show a) =>
               (a -> b -> Bool) -- ^ cut-off predicate
            -> DepGraph a b c -- ^ dependency graph to be traversed
            -> Set.Set a -- ^ compare entries to these elements
-           -> Set.Set (c,b)
+           -> Set.Set (c, b)
 upperUntil cop gr es
     | Set.null es = Set.empty
     | otherwise =
@@ -140,7 +140,7 @@ upperUntilRefl :: (Ord a, Ord b, Show a) =>
                   (a -> b -> Bool) -- ^ cut-off predicate
                -> DepGraph a b a -- ^ dependency graph to be traversed
                -> Set.Set a -- ^ compare entries to these elements
-               -> Set.Set (a,b)
+               -> Set.Set (a, b)
 upperUntilRefl cop gr es
     | Set.null es = Set.empty
     | otherwise =
@@ -148,16 +148,16 @@ upperUntilRefl cop gr es
                $ upperUntil cop gr es
 
 
--- | Updates the depgraph at the given key with the update function.
--- The dependencies are NOT recomputed. No new elements are added to the graph.
+{- | Updates the depgraph at the given key with the update function.
+The dependencies are NOT recomputed. No new elements are added to the graph. -}
 updateValue :: Ord a => DepGraph a b c -> (b -> b) -> a -> DepGraph a b c
 updateValue gr uf key = gr { dataMap = Map.adjust uf' key $ dataMap gr } where
     uf' (x, y, z) = (uf x, y, z)
 
 
--- | Updates the depgraph at the given key with the new value.
--- The dependencies are recomputed. If the key does not exist in the graph
--- it is added to the graph.
+{- | Updates the depgraph at the given key with the new value.
+The dependencies are recomputed. If the key does not exist in the graph
+it is added to the graph. -}
 updateGraph :: (Ord a, Ord c) => DepGraph a b c -> a -> b -> DepGraph a b c
 updateGraph gr key val =
     -- update the pred-set of all smaller entries
@@ -165,11 +165,11 @@ updateGraph gr key val =
         npl = getPredecessors gr key val
         nval = (val, Set.empty, Set.fromList npl)
         f _ (v', _, nps) (_, oss, _) = (v', oss, nps)
-        nm' = case mOv of 
+        nm' = case mOv of
                 Just (_, _, ops) ->
                     Set.fold rmFromSucc nm ops
                 _ -> nm
-        rmFromSucc c m = Map.adjust g1 (getKey gr c) m
+        rmFromSucc c = Map.adjust g1 (getKey gr c)
         g1 (x, dss, dps) = (x, Set.delete key dss, dps)
         nm'' = foldl insSucc nm' npl
         insSucc m c = Map.adjust g2 (getKey gr c) m
@@ -194,5 +194,3 @@ assDepGraphFromDescList f l = depGraphFromDescList getPs id $ map g l where
     g (cn, ad) = (cn, DepGraphAnno { annoDef = ad, annoVal = f cn ad })
     getPs _ = map SimpleConstant . Set.toList . setOfUserDefined . getDefiniens
               . annoDef
-
-

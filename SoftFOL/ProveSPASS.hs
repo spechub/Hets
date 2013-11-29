@@ -247,6 +247,6 @@ cleanOptions cfg =
 spassProof :: [String] -- ^ SPASS output containing proof tree
            -> String -- ^ extracted proof tree
 spassProof =
-        unlines . fst . break (isPrefixOf "Formulae used in the proof")
+        unlines . takeWhile (isPrefixOf "Formulae used in the proof")
              . (\ l -> if null l then l else tail l)
-             . snd . break (isPrefixOf "Here is a proof with depth")
+             . dropWhile (isPrefixOf "Here is a proof with depth")

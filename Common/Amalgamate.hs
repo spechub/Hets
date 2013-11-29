@@ -25,12 +25,12 @@ data CASLAmalgOpt = Sharing         -- ^ perform the sharing checks
     | Cell            -- ^ perform cell condition check (implies Sharing)
     | NoAnalysis      -- ^ dummy option to indicate empty option string
 
--- | Amalgamability analysis might be undecidable, so we need
--- a special type for the result of ensures_amalgamability
+{- | Amalgamability analysis might be undecidable, so we need
+a special type for the result of ensures_amalgamability -}
 data Amalgamates = Amalgamates
                  | NoAmalgamation String       -- ^ failure description
-                 | DontKnow String           -- ^ the reason for unknown status
--- | The default value for 'DontKnow' amalgamability result
+                 | DontKnow String           {- ^ the reason for unknown status
+The default value for 'DontKnow' amalgamability result -}
 defaultDontKnow :: Amalgamates
 defaultDontKnow = DontKnow "Unable to assert that amalgamability is ensured"
 

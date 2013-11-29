@@ -78,8 +78,8 @@ isQuantified f = case f of
   Disjunction xs _ -> any isQuantified xs
   Implication x y _ -> any isQuantified [x, y]
   Equivalence x y _ -> any isQuantified [x, y]
-  ForAll _ _ _ -> True
-  Exists _ _ _ -> True
+  ForAll {} -> True
+  Exists {} -> True
 
 getLits :: Set.Set FORMULA -> Set.Set FORMULA
 getLits = Set.fold (\ f -> case f of
@@ -273,7 +273,7 @@ uniqueQuantifiedVars' c m p f = let
    (m1, ts1) = foldr (\ i (m', ts') ->
           (Map.insert (ts !! (i - c)) (Token (p ++ show i) nullRange) m',
             Token (p ++ show i) nullRange : ts')) (m, []) [c .. (c1 - 1)]
-   in (uniqueQuantifiedVars' c1 m1 p x,ts1)
+   in (uniqueQuantifiedVars' c1 m1 p x, ts1)
  in
   case f of
     (Negation x n) -> let (c1, x1) = u x in (c1, Negation x1 n)
@@ -301,11 +301,11 @@ uniqueQuantifiedVars' c m p f = let
                          Nothing -> (c, Predication t)
                          Just t1 -> (c, Predication t1)
     (ForAll ts x n) -> let
-        ((c2, x'),ts1) = handleQuantified ts x
+        ((c2, x'), ts1) = handleQuantified ts x
       in
         (c2, ForAll ts1 x' n)
     (Exists ts x n) -> let
-        ((c2, x'),ts1) = handleQuantified ts x
+        ((c2, x'), ts1) = handleQuantified ts x
       in
         (c2, Exists ts1 x' n)
 

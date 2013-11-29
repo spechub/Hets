@@ -14,8 +14,8 @@ instead of Data.Graph.Inductive.Internal.FiniteMap
 -}
 
 module Common.Lib.Graph
-  ( Gr(..)
-  , GrContext(..)
+  ( Gr (..)
+  , GrContext (..)
   , unsafeConstructGr
   , decomposeGr
   , getPaths
@@ -206,8 +206,8 @@ delLEdge cmp (v, w, l) (Gr m) =
       ls = if b then loops c else Map.findWithDefault [] w sm
       in case partition (\ k -> cmp k l == EQ) ls of
            ([], _) -> error $ err ++ "no edge: " ++ e
-           ([_], rs) -> if b then Gr $ Map.insert v c { loops = rs } m else
-             Gr $ updGrContext w
+           ([_], rs) -> Gr $ if b then Map.insert v c { loops = rs } m else
+             updGrContext w
               ((if null rs then clearPred else addPreds) v rs)
               $ Map.insert v c
                 { nodeSuccs = if null rs then Map.delete w sm else
@@ -230,8 +230,8 @@ insLEdge failIfExist cmp (v, w, l) gr@(Gr m) =
       in if any (\ k -> cmp k l == EQ) ls then
            if failIfExist then error $ err ++ "multiple edges: " ++ e
            else (gr, False)
-         else (if b then Gr $ Map.insert v c { loops = ns } m else
-                  Gr $ updGrContext w (addPreds v ns)
+         else (Gr $ if b then Map.insert v c { loops = ns } m else
+                  updGrContext w (addPreds v ns)
                   $ Map.insert v c { nodeSuccs = Map.insert w ns sm } m, True)
     Nothing -> error $ err ++ "no node: " ++ show v ++ " for edge: " ++ e
 

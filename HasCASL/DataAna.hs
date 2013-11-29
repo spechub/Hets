@@ -12,7 +12,7 @@ analyse alternatives of data types
 -}
 
 module HasCASL.DataAna
-    ( DataPat(..)
+    ( DataPat (..)
     , toDataPat
     , getConstrScheme
     , getSelScheme
@@ -65,9 +65,9 @@ genSelVars n sels = case sels of
        then map (: []) $ genTuple 0 1 $ map head sels
        else genSelVarsAux n sels
 
-genSelVarsAux :: Int -> [[Selector]]  -> [[(Selector, VarDecl)]]
+genSelVarsAux :: Int -> [[Selector]] -> [[(Selector, VarDecl)]]
 genSelVarsAux _ [] = []
-genSelVarsAux n (ts : sels)  =
+genSelVarsAux n (ts : sels) =
     genTuple n 1 ts : genSelVarsAux (n + 1) sels
 
 makeSelTupleEqs :: DataPat -> Term -> [(Selector, VarDecl)] -> [Named Term]
@@ -128,7 +128,7 @@ anaAlts genKind tys dt alts te =
 anaAlt :: GenKind -> [DataPat] -> DataPat -> Env -> Alternative
        -> Result AltDefn
 anaAlt _ _ _ te (Subtype ts _) =
-    do l <- mapM ( \ t -> anaStarTypeM t te) ts
+    do l <- mapM (`anaStarTypeM` te) ts
        return $ Construct Nothing (Set.toList $ Set.fromList $ map snd l)
            Partial []
 anaAlt genKind tys dt te (Constructor i cs p _) =
@@ -160,7 +160,7 @@ anaComp genKind tys rt te (Selector s _ t _ _) =
        return (nct, Select (Just s) nct p)
 anaComp genKind tys rt te (NoSelector t) =
     do ct <- anaCompType genKind tys rt t te
-       return  (ct, Select Nothing ct Partial)
+       return (ct, Select Nothing ct Partial)
 
 anaCompType :: GenKind -> [DataPat] -> DataPat -> Type -> Env -> Result Type
 anaCompType genKind tys (DataPat _ _ tArgs _ _) t te = do
@@ -176,7 +176,7 @@ checkMonomorphRecursion t te (DataPat _ i _ _ rt) =
     case filter (\ ty -> not (lesserType te ty rt || lesserType te rt ty))
        $ findSubTypes (relatedTypeIds (typeMap te) i) i t of
       [] -> return ()
-      ty : _ -> Result [Diag Error  ("illegal polymorphic recursion"
+      ty : _ -> Result [Diag Error ("illegal polymorphic recursion"
                                  ++ expected rt ty) $ getRange ty] Nothing
 
 findSubTypes :: (Id -> Bool) -> Id -> Type -> [Type]
@@ -236,7 +236,7 @@ mkPremise m dp (Construct mc ts p sels) =
     Just c -> let
       vars = map (map snd) $ genSelVars 1 sels
       findHypo vd@(VarDecl _ ty _ _) =
-        fmap (flip mkPredToVarAppl vd) $ Map.lookup ty m
+        fmap (`mkPredToVarAppl` vd) $ Map.lookup ty m
       flatVars = concat vars
       indHypos = mapMaybe findHypo flatVars
       indConcl = mkPredAppl dp

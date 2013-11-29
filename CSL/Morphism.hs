@@ -61,8 +61,8 @@ composeMor :: Morphism -> Morphism -> Result Morphism
 composeMor f g =
   let fSource = source f
       gTarget = target g
-      fMap    = operatorMap f
-      gMap    = operatorMap g
+      fMap = operatorMap f
+      gMap = operatorMap g
   in return Morphism
   { source = fSource
   , target = gTarget
@@ -89,8 +89,8 @@ applyMorphism :: Morphism -> Id -> Id
 applyMorphism mor idt = Map.findWithDefault idt idt $ operatorMap mor
 
 
--- | sentence translation along signature morphism
--- here just the renaming of formulae
+{- | sentence translation along signature morphism
+here just the renaming of formulae -}
 mapSentence :: Morphism -> CMD -> Result.Result CMD
 mapSentence mor = return . mapSentenceH mor
 
@@ -118,6 +118,3 @@ morphismUnion mor1 mor2 =
       { source = unite p1 p2
       , target = unite (target mor1) $ target mor2
       , operatorMap = pmap } else Result pds Nothing
-
-
-

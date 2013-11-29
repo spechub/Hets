@@ -54,20 +54,20 @@ data EVENT
     | ChanRecv CHANNEL_NAME VAR SORT Range
     -- | @t -> p@ - Fully Qualified Term prefix
     | FQTermEvent (TERM ()) Range
-    -- | @[] var :: s -> p@ - Fully Qualified External nondeterministic prefix
-    -- choice. The term here holds the fully qualified variable (name and sort).
+    {- | @[] var :: s -> p@ - Fully Qualified External nondeterministic prefix
+    choice. The term here holds the fully qualified variable (name and sort). -}
     | FQExternalPrefixChoice (TERM ()) Range
-    -- | @|~| var :: s -> p@ - Fully Qualified Internal nondeterministic prefix
-    -- choice. The term here holds the fully qualified variable (name and sort).
+    {- | @|~| var :: s -> p@ - Fully Qualified Internal nondeterministic prefix
+    choice. The term here holds the fully qualified variable (name and sort). -}
     | FQInternalPrefixChoice (TERM ()) Range
-    -- | @c ! t -> p@ - Fully Qualified Channel send. The term holds the fully
-    -- term to send.
+    {- | @c ! t -> p@ - Fully Qualified Channel send. The term holds the fully
+    term to send. -}
     | FQChanSend (CHANNEL_NAME, SORT) (TERM ()) Range
-    -- | @c ! var :: s -> p@ - Fully Qualified Channel nondeterministic
-    -- send. The term here holds the fully qualified variable (name and sort).
+    {- | @c ! var :: s -> p@ - Fully Qualified Channel nondeterministic
+    send. The term here holds the fully qualified variable (name and sort). -}
     | FQChanNonDetSend (CHANNEL_NAME, SORT) (TERM ()) Range
-    -- | @c ? var :: s -> p@ - Fully Qualified Channel recieve. The term here
-    -- holds the fully qualified variable (name and sort).
+    {- | @c ? var :: s -> p@ - Fully Qualified Channel recieve. The term here
+    holds the fully qualified variable (name and sort). -}
     | FQChanRecv (CHANNEL_NAME, SORT) (TERM ()) Range
     deriving (Show, Ord, Eq)
 
@@ -94,7 +94,7 @@ data PROC_ALPHABET = ProcAlphabet [CommType]
                      deriving (Show, Ord, Eq)
 
 splitCASLVar :: TERM () -> (VAR, SORT)
-splitCASLVar (Qual_var v s _ ) = (v,s)
+splitCASLVar (Qual_var v s _ ) = (v, s)
 splitCASLVar _ =
   error "CspCASL.AS_CspCASL_Process: Can not split non Qual_var CASL Term"
 

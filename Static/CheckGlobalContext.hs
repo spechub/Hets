@@ -44,7 +44,7 @@ incrZeroSign s = s { zeroSign = succ $ zeroSign s }
 incrWrongSign :: Statistics -> Statistics
 incrWrongSign s = s { wrongSign = succ $ wrongSign s }
 
-incrRightSign ::Statistics -> Statistics
+incrRightSign :: Statistics -> Statistics
 incrRightSign s = s { rightSign = succ $ rightSign s }
 
 incrZeroG_theory :: Statistics -> Statistics
@@ -70,13 +70,13 @@ checkG_theory g@(G_theory _ _ _ si _ ti) dgraph = do
     if si == startSigId then modify incrZeroSign
        else case lookupSigMapDG si dgraph of
           Nothing -> error "checkG_theory: Sign"
-          Just signErg -> if signOf g /= signErg then modify incrWrongSign
-                          else modify incrRightSign
+          Just signErg -> modify $ if signOf g /= signErg then incrWrongSign
+                          else incrRightSign
     if ti == startThId then modify incrZeroG_theory
        else case lookupThMapDG ti dgraph of
           Nothing -> error "checkG_theory: Theory"
-          Just thErg -> if g /= thErg then modify incrWrongG_theory
-                        else modify incrRightG_theory
+          Just thErg -> modify $ if g /= thErg then incrWrongG_theory
+                        else incrRightG_theory
 
 checkG_theoryInNode :: DGraph -> DGNodeLab -> State Statistics ()
 checkG_theoryInNode dgraph dg = checkG_theory (dgn_theory dg) dgraph
@@ -90,14 +90,14 @@ checkGMorphism g@(GMorphism cid sign si _ mi) dgraph = do
     if si == startSigId then modify incrZeroSign
        else case lookupSigMapDG si dgraph of
            Nothing -> error "checkGMorphism: Sign"
-           Just signErg -> if  G_sign (sourceLogic cid) sign si /= signErg
-                           then modify incrWrongSign
-                           else modify incrRightSign
+           Just signErg -> modify $
+                           if G_sign (sourceLogic cid) sign si /= signErg
+                           then incrWrongSign else incrRightSign
     if mi == startMorId then modify incrZeroGMorphism
        else case lookupMorMapDG mi dgraph of
            Nothing -> error "checkGMorphism: Morphism"
-           Just morErg -> if g /= gEmbed morErg then modify incrWrongGMorphism
-                          else modify incrRightGMorphism
+           Just morErg -> modify $ if g /= gEmbed morErg then incrWrongGMorphism
+                          else incrRightGMorphism
 
 getDGLinkLab :: DGraph -> [DGLinkLab]
 getDGLinkLab dgraph = map (\ (_, _, l) -> l) $ labEdgesDG dgraph

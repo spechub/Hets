@@ -150,7 +150,7 @@ fillGoalDescription (cmo, basicProof) =
                      BasicProof _ ps ->
                        indent (2 * stdIndent) $ show $ proofTree ps
                      _ -> Pretty.empty
-    in  (emptyGoalDescription $ show gd) {
+    in (emptyGoalDescription $ show gd) {
            tacticScriptText = emptyOpenText {
              additionalText = show $ printTS basicProof },
            proofTreeText = emptyOpenText {
@@ -203,29 +203,29 @@ doShowProofDetails prGUISt =
    do
     let thName = theoryName prGUISt
         winTitleStr = "Proof Details of Selected Goals from Theory " ++ thName
-    win       <- createToplevel [text winTitleStr]
-    bFrame    <- newFrame win [relief Groove, borderwidth (cm 0.05)]
-    winTitle  <- newLabel bFrame [text winTitleStr,
+    win <- createToplevel [text winTitleStr]
+    bFrame <- newFrame win [relief Groove, borderwidth (cm 0.05)]
+    winTitle <- newLabel bFrame [text winTitleStr,
                                   font (Helvetica, Roman, 18 :: Int)]
-    btnBox    <- newHBox bFrame []
-    tsBut     <- newButton btnBox [text expand_tacticScripts, width 18]
-    ptBut     <- newButton btnBox [text expand_proofTrees, width 18]
-    sBut      <- newButton btnBox [text "Save", width 12]
-    qBut      <- newButton btnBox [text "Close", width 12]
+    btnBox <- newHBox bFrame []
+    tsBut <- newButton btnBox [text expand_tacticScripts, width 18]
+    ptBut <- newButton btnBox [text expand_proofTrees, width 18]
+    sBut <- newButton btnBox [text "Save", width 12]
+    qBut <- newButton btnBox [text "Close", width 12]
     pack winTitle [Side AtTop, Expand Off, PadY 10]
 
     (sb, ed) <- newScrollBox bFrame
         (`newEditor` [state Normal, size (80, 40)]) []
     ed # state Disabled
     pack bFrame [Side AtTop, Expand On, Fill Both]
-    pack sb     [Side AtTop, Expand On, Fill Both]
-    pack ed     [Side AtTop, Expand On, Fill Both]
+    pack sb [Side AtTop, Expand On, Fill Both]
+    pack ed [Side AtTop, Expand On, Fill Both]
 
     pack btnBox [Side AtTop, Expand On, Fill X]
     pack tsBut [PadX 5, PadY 5]
     pack ptBut [PadX 5, PadY 5]
-    pack sBut  [PadX 5, PadY 5]
-    pack qBut  [PadX 8, PadY 5]
+    pack sBut [PadX 5, PadY 5]
+    pack qBut [PadX 8, PadY 5]
     G_theory _ _ _ _ sSens _ <- return $ selectedTheory prGUISt
     let sttDesc = "Tactic script"
         sptDesc = "Proof tree"
@@ -250,7 +250,7 @@ doShowProofDetails prGUISt =
                        ProofTreeText ed (gName, ind) stateRef
         appendText ed "\n"
         let goalDesc' = goalDesc { tacticScriptText = opTextTS,
-                                  proofTreeText    = opTextPT }
+                                  proofTreeText = opTextPT }
         modifyIORef stateRef (OMap.update (\ _ -> Just goalDesc') (gName, ind))
       ) $ OMap.toList elementMap
 
@@ -337,7 +337,7 @@ toggleTextTag content ed (gName, ind) stateRef = do
         openText = if content == TacticScriptText then tacticScriptText gd
                                                     else proofTreeText gd
         tsp = textStartPosition openText
-        nol = (numberOfLines $ additionalText openText)
+        nol = numberOfLines (additionalText openText)
     if not $ textShown openText then do
         ed # state Normal
         insertText ed tsp $ additionalText openText

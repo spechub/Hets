@@ -1,4 +1,5 @@
-{-# OPTIONS -fglasgow-exts #-}
+{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies,
+             FlexibleInstances #-}
 module CombLogic where
 
 import ModalLogic
@@ -12,7 +13,7 @@ data Box b c = Box b (Boole c)
  -       b is the index type corresponding to a
  -       c is the "result" logic type
  -}
-class Form a b c | a->b, a->c where
+class Form a b c | a -> b, a -> c where
   extract :: Form a b c => a -> Box b c
 
 instance Eq l => Form (K l) () l where
@@ -23,4 +24,3 @@ instance Eq l => Form (KD l) () l where
 
 instance Eq l => Form (G l) Int l where
   extract (G i f) = Box i f
-

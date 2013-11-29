@@ -50,9 +50,9 @@ withName f i = (makeNamed (if label == "" then "Ax_" ++ show i
       isTheorem = isImplies' || isImplied'
 
 
--- | takes a signature and a formula and a number. 
--- It analyzes the formula and returns a formula with diagnosis
-analyzeFormula :: Sign.Sign -> (Annoted CMD) -> Int -> Result (Named CMD)
+{- | takes a signature and a formula and a number.
+It analyzes the formula and returns a formula with diagnosis -}
+analyzeFormula :: Sign.Sign -> Annoted CMD -> Int -> Result (Named CMD)
 analyzeFormula _ f i =
     return $ withName f i
 
@@ -79,7 +79,7 @@ anaBasicItem (sign, i) itm =
       Axiom_item annocmd ->
           do
             ncmd <- analyzeFormula sign annocmd i
-            return ((sign, i+1), Just ncmd)
+            return ((sign, i + 1), Just ncmd)
 
 -- | adds the specified tokens to the signature
 addTokens :: Sign.Sign -> [Token] -> Sign.Sign
@@ -88,10 +88,9 @@ addTokens sign tokens = let f res itm = addToSig res itm
                         in foldl f sign tokens
 
 
-
 -- | adds the specified var items to the signature
 addVarDecls :: Sign.Sign -> [VAR_ITEM] -> Sign.Sign
-addVarDecls  = const
+addVarDecls = const
 {-
 addVarDecls sign vitems = foldl f sign vitems where
     f res (Var_item toks dom _) = addVarItem res toks dom
@@ -106,9 +105,9 @@ addEPDefVals :: Sign.Sign -> [(Token, APInt)] -> Sign.Sign
 addEPDefVals = addPairsToSig addEPDefValToSig
 
 addPairsToSig :: (Sign.Sign -> a -> b -> Sign.Sign)
-              -> Sign.Sign -> [(a,b)] -> Sign.Sign
-addPairsToSig f s l = foldl g s l where g s' = uncurry $ f s'
-
+              -> Sign.Sign -> [(a, b)] -> Sign.Sign
+addPairsToSig f = foldl g where
+                      g s' = uncurry $ f s'
 
 
 {- | stepwise extends an initially empty signature by the basic spec bs.
@@ -120,11 +119,10 @@ addPairsToSig f s l = foldl g s l where g s' = uncurry $ f s'
 basicCSLAnalysis :: (BASIC_SPEC, Sign, a)
                  -> Result (BASIC_SPEC, ExtSign Sign Symbol, [Named CMD])
 basicCSLAnalysis (bs, sig, _) =
-    do 
+    do
       (newSig, ncmds) <- splitSpec bs sig
       let newSyms = Set.map Symbol $ opIds $ sigDiff newSig sig
       return (bs, ExtSign newSig newSyms, ncmds)
-
 
 
 {-
@@ -149,7 +147,6 @@ emptyAnaEnv = AnaEnv
               }
 
 
-
 tTT :: CMD -> CMD
 tTT c = foldCMD myrec c where
     myrec = passAllRecord { foldVar = \ _ _ -> Var $ mkSimpleId "X" }
@@ -160,7 +157,9 @@ type Analysis a = ResultT (State AnaEnv) a
 anaVarDecl :: VAR_ITEM -> Analysis ()
 anaVarDecl (Var_item l dom rg) = error ""
 
--- data EPComponent = EPDomain Id.Token EPDomain | EPDefault Id.Token APInt | EPConst Id.Token APInt
+{- data EPComponent = EPDomain Id.Token EPDomain |
+                      EPDefault Id.Token APInt |
+                      EPConst Id.Token APInt -}
 anaEPComp :: EPComponent -> Analysis ()
 anaEPComp (EPDomain n dom) = addEPDomain n dom
 anaEPComp (EPDefault n i) = addEPDefault n i
@@ -179,4 +178,3 @@ anaBasicItem' itm =
       Axiom_item annocmd -> anaAxiom annocmd
 
 -}
-

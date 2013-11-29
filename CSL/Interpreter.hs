@@ -14,13 +14,13 @@ Defines an interface for Calculators used to evaluate CPL programs
 -}
 
 module CSL.Interpreter
-    ( AssignmentStore(..)
-    , SMem(..)
+    ( AssignmentStore (..)
+    , SMem (..)
     , isDefined
     , evaluate
     , evaluateList
     , loadAS
-    , BMap(..)
+    , BMap (..)
     , CSL.Interpreter.empty
     , initWithOpMap
     , genKey
@@ -37,18 +37,18 @@ module CSL.Interpreter
     , stepwiseSafe
     , interactiveStepper
     , readEvalPrintLoop
-    , EvalAtom(..)
+    , EvalAtom (..)
     , prettyEvalAtom
     , asErrorMsg
     , throwASError
-    , ASState(..)
+    , ASState (..)
     , initASState
     , withLogFile
-    , ASError(..)
-    , ErrorSource(..)
-    , StepDebugger(..)
-    , SymbolicEvaluator(..)
-    , MessagePrinter(..)
+    , ASError (..)
+    , ErrorSource (..)
+    , StepDebugger (..)
+    , SymbolicEvaluator (..)
+    , MessagePrinter (..)
     , verbMsgASSt
     , verbMsgASStLn
     , prettyInfo
@@ -58,7 +58,7 @@ module CSL.Interpreter
 
 import Control.Monad
 import Control.Monad.State
-import Control.Monad.Error (Error(..), MonadError (..))
+import Control.Monad.Error (Error (..), MonadError (..))
 import Data.Maybe
 import qualified Data.Set as Set
 import qualified Data.Map as Map
@@ -77,9 +77,9 @@ import CSL.ASUtils
 import CSL.DependencyGraph
 -- import Common.MonadTrans ()
 
--- ----------------------------------------------------------------------
--- * Evaluator
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+Evaluator
+---------------------------------------------------------------------- -}
 
 -- ** Some utility classes for abstraction of concrete realizations
 
@@ -91,7 +91,7 @@ class SimpleMember a b | a -> b where
     toList :: a -> [b]
 
 -- ** Abstraction wrapper for utility classes
-data SMem b = forall a. SimpleMember a b => SMem a
+data SMem b = forall a . SimpleMember a b => SMem a
 
 -- ** Instances for abstraction wrapper
 instance SimpleMember (SMem b) b where
@@ -167,7 +167,7 @@ withLogFile fp prog = do
   modify $ mf oldHdl
   liftIO $ hClose newHdl
   return res
-  
+
 
 instance Functor ASState where
     fmap f s = s { getConnectInfo = f $ getConnectInfo s }
@@ -175,8 +175,8 @@ instance Functor ASState where
 
 -- ** AssignmentStore
 
--- | Calculation interface, bundles the evaluation engine and the
--- assignment store
+{- | Calculation interface, bundles the evaluation engine and the
+assignment store -}
 class (Monad m) => AssignmentStore m where
     assign :: ConstantName -> AssDefinition -> m EXPRESSION
     assigns :: [(ConstantName, AssDefinition)] -> m ()
@@ -253,12 +253,12 @@ instance Pretty ASError where
 
 -- ** Evaluation, Debugging, Stepping
 
--- | If the expression list is a variable list the list of the variable names
--- is returned.
+{- | If the expression list is a variable list the list of the variable names
+is returned. -}
 toArgList :: [EXPRESSION] -> [String]
 toArgList [] = []
-toArgList (Var tok:l) = tokStr tok : toArgList l
-toArgList (x:_) = error $ "toArgList: unsupported as argument " ++ show (pretty x)
+toArgList (Var tok : l) = tokStr tok : toArgList l
+toArgList (x : _) = error $ "toArgList: unsupported as argument " ++ show (pretty x)
 
 isDefined :: AssignmentStore m => ConstantName -> m Bool
 isDefined s = liftM (member s) names
@@ -303,7 +303,7 @@ prettyEvalAtom (CaseAtom e) = text "Case condition:" <+> pretty e
 instance Pretty EvalAtom where
     pretty = prettyEvalAtom
 
-readEvalPrintLoop  :: (MonadIO m, AssignmentStore m) =>
+readEvalPrintLoop :: (MonadIO m, AssignmentStore m) =>
                   Handle -- ^ Input handle
                -> Handle -- ^ Output handle
                -> String -- ^ Command prompt
@@ -312,11 +312,11 @@ readEvalPrintLoop  :: (MonadIO m, AssignmentStore m) =>
 readEvalPrintLoop inp outp cp exitWhen = do
   s <- liftIO $ hPutStr outp cp >> hFlush outp >> hGetLine inp
   if exitWhen s then return s
-   else evalRaw s >>= liftIO . (hPutStrLn outp)
+   else evalRaw s >>= liftIO . hPutStrLn outp
             >> readEvalPrintLoop inp outp cp exitWhen
 
--- | An atom evaluator for 'stepwise' which pauses at each atomic evaluation
--- position.
+{- | An atom evaluator for 'stepwise' which pauses at each atomic evaluation
+position. -}
 interactiveStepper :: (MonadIO m, AssignmentStore m) => m () -> EvalAtom
                    -> m Bool
 interactiveStepper prog x = do
@@ -359,27 +359,27 @@ stepwise f (Ass (OpDecl n [] l _) e) = do
   f (return ()) $ AssAtom n def
   return ()
 stepwise _ (Cond []) = error "stepwise: non-exhaustive conditional"
-stepwise f (Cond ((e, pl):cl)) = do
+stepwise f (Cond ((e, pl) : cl)) = do
   printStep "" $ CaseAtom e
   b <- f (return ()) $ CaseAtom e
   stepwise f $ if b then Sequence pl else Cond cl
 stepwise f (Repeat e l) = do
-  -- only in the first entry of a repeat loop we need to transform the
-  -- until expression, in all consecutive runs of the same loop we just
-  -- need to update the values of the temporarily introduced constants.
+  {- only in the first entry of a repeat loop we need to transform the
+  until expression, in all consecutive runs of the same loop we just
+  need to update the values of the temporarily introduced constants. -}
   (m, e') <- translateConvergence e
   let rAtom = RepeatAtom e m e'
   printStep "entering loop" rAtom
   let al = Map.toList m
       reploop = do
         -- mapM (uncurry convergenceTerm) al >>= assigns
-        mapM (uncurry convergenceTerm >=> f (return ()) . uncurry AssAtom) al
+        mapM_ (uncurry convergenceTerm >=> f (return ()) . uncurry AssAtom) al
         b <- f (stepwise f $ Sequence l) rAtom
         unless b $ printStep "repeating loop" rAtom >> reploop
   reploop
 stepwise f (Sequence l) = mapM_ (stepwise f) l
 
-stepwise _ (Cmd c l) 
+stepwise _ (Cmd c l)
     | c == "print" =
         let p x x' = printMessage
                      $ show $ pretty x <+> text "evaluates to"
@@ -392,9 +392,9 @@ stepwise _ (Cmd c l)
 stepwise _ a@(Ass _ _) = error $ "stepwise: unsupported assignment " ++ show a
 
 
--- | We check if the expression contains free constants
--- (undefined in the assignment graph) and in this case we replace the
--- definition of the constant by the undefined constant.
+{- | We check if the expression contains free constants
+(undefined in the assignment graph) and in this case we replace the
+definition of the constant by the undefined constant. -}
 convergenceTerm :: AssignmentStore m => EXPRESSION -> Int
                 -> m (ConstantName, AssDefinition)
 convergenceTerm conve i = do
@@ -404,7 +404,7 @@ convergenceTerm conve i = do
 
 translateConvergence :: AssignmentStore m =>
                         EXPRESSION -> m (Map.Map EXPRESSION Int, EXPRESSION)
-translateConvergence e' = f Map.empty e' where
+translateConvergence = f Map.empty where
     f m (Op (OpId OP_convergence) [] [x, e] rg) =
         do
           i <- genNewKey
@@ -417,15 +417,15 @@ translateConvergence e' = f Map.empty e' where
         liftM (\ (m', x) -> (m', Op oi epl x rg)) $ mapAccumLM f m el
     -- ignoring lists, see TODO in AS_BASIC_CSL
     f m e = return (m, e)
-    
+
 
 -- | Loads a dependency ordered assignment list into the store.
 loadAS :: AssignmentStore m => [(ConstantName, AssDefinition)] -> m ()
 loadAS = assigns . reverse
 
--- ----------------------------------------------------------------------
--- * Term translator
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+Term translator
+---------------------------------------------------------------------- -}
 
 {- | For use for constants in the CAS namespace.
    We only need to make sure that x<Num> is not already used in the
@@ -450,8 +450,8 @@ internalPrefix = "$"
 internalConstant :: Int -> ConstantName
 internalConstant i = SimpleConstant $ internalPrefix ++ show i
 
--- | A data structure for invertible maps, with automatic new key generation
--- and insertion at lookup
+{- | A data structure for invertible maps, with automatic new key generation
+and insertion at lookup -}
 data BMap = BMap { mThere :: Map.Map ConstantName Int
                  , mBack :: IMap.IntMap ConstantName
                  , newkey :: Int
@@ -467,22 +467,22 @@ instance SimpleMember BMap ConstantName where
 
 
 genKey :: BMap -> (BMap, Int)
-genKey bm = let i = newkey bm in (bm { newkey = i+1 }, i) 
+genKey bm = let i = newkey bm in (bm { newkey = i + 1 }, i)
 
 -- ** Interface functions for BMap
 empty :: BMap
 empty = BMap
-        { mThere =  Map.empty
+        { mThere = Map.empty
         , mBack = IMap.empty
-        , newkey =  1
+        , newkey = 1
         , opMap = operatorInfoMap
         }
 
 initWithOpMap :: OpInfoMap -> BMap
 initWithOpMap m = CSL.Interpreter.empty { opMap = m }
 
--- | The only way to also insert a value is to use lookup. One should not
--- insert values explicitly. Note that you don't control the inserted value.
+{- | The only way to also insert a value is to use lookup. One should not
+insert values explicitly. Note that you don't control the inserted value. -}
 lookupOrInsert :: BMap
                -> ConstantName
                -> (BMap, String)
@@ -492,7 +492,7 @@ lookupOrInsert m c =
         (mNv', nm) = Map.insertLookupWithKey f c nv $ mThere m
     in case mNv' of
          Just nv' -> (m, bmapIntToString m nv')
-         _ ->  (m { mThere = nm
+         _ -> (m { mThere = nm
                   , mBack = IMap.insert nv c $ mBack m
                   , newkey = nv + 1 }
                , bmapIntToString m nv)
@@ -503,17 +503,17 @@ rolookup :: BMap
          -> Maybe String
 rolookup m c = fmap (bmapIntToString m) $ Map.lookup c $ mThere m
 
-revlookup :: BMap -> String -> (Maybe OPID)
+revlookup :: BMap -> String -> Maybe OPID
 revlookup m k = case revlookupGen IMap.empty m k of
                   Left x -> x
                   _ -> Nothing
 
 revlookupGen :: RevVarMap -> BMap -> String
              -> Either (Maybe OPID) (Maybe EXPRESSION)
-revlookupGen vm m k = 
+revlookupGen vm m k =
     case bmapStringToInt m k of
             Left i -> Left $ fmap OpUser $ IMap.lookup i $ mBack m
-            Right i -> Right $ fmap (Var . mkSimpleId) $ IMap.lookup i $ vm
+            Right i -> Right $ fmap (Var . mkSimpleId) $ IMap.lookup i vm
 
 
 {-
@@ -527,9 +527,9 @@ bmToList m = let prf = constPrefix
 bmapIntToString :: BMap -> Int -> String
 bmapIntToString _ i = constPrefix ++ show i
 
--- | Returns the 'Int' contained in the given constant. If this constant
--- represents a user-defined constant then we return the left value, if
--- it represents a variable then we return the right value
+{- | Returns the 'Int' contained in the given constant. If this constant
+represents a user-defined constant then we return the left value, if
+it represents a variable then we return the right value -}
 bmapStringToInt :: BMap -> String -> Either Int Int
 bmapStringToInt _ s =
     let prf = constPrefix
@@ -549,13 +549,13 @@ type VarMap = Map.Map String Int
 type RevVarMap = IMap.IntMap String
 
 varList :: [String] -> [(String, Int)]
-varList l = zip l [1..]
+varList l = zip l [1 ..]
 
 addToVarMap :: VarMap -> String -> VarMap
-addToVarMap vm s = Map.insert s (Map.size vm + 1) vm 
+addToVarMap vm s = Map.insert s (Map.size vm + 1) vm
 
 revVarList :: [String] -> [(Int, String)]
-revVarList l = zip [1..] l 
+revVarList = zip [1 ..]
 
 varName :: BMap -> Int -> String
 varName _ i = varPrefix ++ show i
@@ -573,8 +573,8 @@ translateExpr = translateExprGen Map.empty
 
 -- TODO: check if we can simplify by not checking if a var is in a given scope..
 
--- | Translate EXPRESSION into a CAS compatible form. Variables are translated
--- as constants with a namespace disjoint from that of the usual constants.
+{- | Translate EXPRESSION into a CAS compatible form. Variables are translated
+as constants with a namespace disjoint from that of the usual constants. -}
 translateExprGen :: VarMap -> BMap -> EXPRESSION -> (BMap, EXPRESSION)
 translateExprGen vm m (Op (OpUser c) epl el rg) =
     let (m', s) = lookupOrInsert m c
@@ -582,9 +582,9 @@ translateExprGen vm m (Op (OpUser c) epl el rg) =
     in (m'', Op (OpUser $ SimpleConstant s) epl el' rg)
 translateExprGen vm m (Op oi epl el rg) =
     let vm' = case lookupBindInfo operatorInfoNameMap oi $ length el of
-                Just bi -> 
+                Just bi ->
                     foldl addToVarMap vm
-                              $ toArgList $ map (el!!) $ bindingVarPos bi
+                              $ toArgList $ map (el !!) $ bindingVarPos bi
                 _ -> vm
         (m', el') = mapAccumL (translateExprGen vm') m el
     in (m', Op oi epl el' rg)

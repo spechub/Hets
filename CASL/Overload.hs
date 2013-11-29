@@ -536,8 +536,7 @@ cmpSubsort sign s1 s2 =
         l2 = supersortsOf s2 sign
         b = Set.member s1 l2 in
     if Set.member s2 l1 then
-        if b then Just EQ
-        else Just LT
+        Just $ if b then EQ else LT
     else if b then Just GT else Nothing
 
 cmpSubsorts :: Sign f e -> POrder [SORT]

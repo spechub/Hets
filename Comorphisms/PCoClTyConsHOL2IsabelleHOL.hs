@@ -15,7 +15,7 @@ Isabelle. Case-terms and constructor classes are not supported yet.
 -}
 
 module Comorphisms.PCoClTyConsHOL2IsabelleHOL
-    (PCoClTyConsHOL2IsabelleHOL(..)) where
+    (PCoClTyConsHOL2IsabelleHOL (..)) where
 
 import Comorphisms.PPolyTyConsHOL2IsaUtils
 import Logic.Logic as Logic
@@ -42,7 +42,7 @@ instance Comorphism PCoClTyConsHOL2IsabelleHOL
                Symbol RawSymbol ()
                Isabelle () () Isa.Sentence () ()
                Isa.Sign
-               IsabelleMorphism () () ()  where
+               IsabelleMorphism () () () where
     sourceLogic PCoClTyConsHOL2IsabelleHOL = HasCASL
     sourceSublogic PCoClTyConsHOL2IsabelleHOL = noSubtypes
     targetLogic PCoClTyConsHOL2IsabelleHOL = Isabelle
@@ -50,7 +50,7 @@ instance Comorphism PCoClTyConsHOL2IsabelleHOL
                        then Just () else Nothing
     map_theory PCoClTyConsHOL2IsabelleHOL =
         mapTheory (Old Lift2Case) simpForOption
-    map_sentence PCoClTyConsHOL2IsabelleHOL sign phi =
-        transSentence sign (typeToks sign) (Old Lift2Case) simpForOption phi
+    map_sentence PCoClTyConsHOL2IsabelleHOL sign =
+        transSentence sign (typeToks sign) (Old Lift2Case) simpForOption
     isInclusionComorphism PCoClTyConsHOL2IsabelleHOL = True
     has_model_expansion PCoClTyConsHOL2IsabelleHOL = True

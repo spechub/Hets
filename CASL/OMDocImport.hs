@@ -35,6 +35,7 @@ import Control.Monad
 
 import qualified Data.Map as Map
 import Data.List
+import Data.Function (on)
 
 -- * Environment Interface
 
@@ -299,7 +300,7 @@ toVarDecls (e, vm) l =
                   in (acc', (v, s))
         (vm', l') = mapAccumL f vm l
         -- group by same sort
-        l'' = groupBy (\ x y -> snd x == snd y) l'
+        l'' = groupBy ((==) `Data.Function.on` snd) l'
         -- the lists returned by groupBy are never empty, so head will succeed
         g vsl = Var_decl (map fst vsl) (snd $ head vsl) nullRange
     in (vm', map g l'')

@@ -32,7 +32,7 @@ import Common.IRI (simpleIdToIRI)
 
 import Isabelle.Logic_Isabelle
 import Isabelle.IsaSign
-import Isabelle.IsaImport (importIsaDataIO,IsaData)
+import Isabelle.IsaImport (importIsaDataIO, IsaData)
 
 import Driver.Options
 
@@ -41,8 +41,8 @@ import Data.Graph.Inductive.Graph (Node)
 import Data.List (intercalate)
 import Data.Maybe (catMaybes)
 
-import Control.Monad (unless)
-import Control.Concurrent (forkIO,killThread)
+import Control.Monad (unless, when)
+import Control.Concurrent (forkIO, killThread)
 
 import Common.Utils
 import System.Exit
@@ -50,7 +50,7 @@ import System.Directory
 import System.FilePath
 
 _insNodeDG :: Sign -> [Named Sentence] -> String
-              -> DGraph -> (DGraph,Node)
+              -> DGraph -> (DGraph, Node)
 _insNodeDG sig sens n dg =
  let gt = G_theory Isabelle Nothing (makeExtSign Isabelle sig) startSigId
            (toThSens sens) startThId
@@ -64,14 +64,13 @@ _insNodeDG sig sens n dg =
      labCh = [SetNodeLab labelK (k, labelK
       { globalTheory = computeLabelTheory Map.empty newDG
         (k, labelK) })]
-     newDG1 = changesDGH newDG labCh in (newDG1,k)
+     newDG1 = changesDGH newDG labCh in (newDG1, k)
 
 analyzeMessages :: Int -> [String] -> IO ()
-analyzeMessages _ []     = return ()
-analyzeMessages i (x:xs) = do
+analyzeMessages _ [] = return ()
+analyzeMessages i (x : xs) = do
  case x of
-  'v':i':':':msg -> if (read [i']) < i then putStr $ msg ++ "\n"
-                                 else return ()
+  'v' : i' : ':' : msg -> when (read [i'] < i) $ putStr $ msg ++ "\n"
   _ -> putStr $ x ++ "\n"
  analyzeMessages i xs
 
@@ -84,18 +83,19 @@ anaThyFile opts path = do
   "HETS_ISA_TOOLS" "./Isabelle/export"
  exportScript <- canonicalizePath exportScript'
  e1 <- doesFileExist exportScript
- unless e1 $ fail $ "Export script not available! Maybe you need to specify HETS_ISA_TOOLS"
- (l,close) <- readFifo fifo
+ unless e1 $ fail
+  "Export script not available! Maybe you need to specify HETS_ISA_TOOLS"
+ (l, close) <- readFifo fifo
  tid <- forkIO $ analyzeMessages (verbose opts) (lines . concat $ l)
- (ex, sout, err) <- executeProcess exportScript [fp,tempFile,fifo] ""
+ (ex, sout, err) <- executeProcess exportScript [fp, tempFile, fifo] ""
  close
  killThread tid
  removeFile fifo
  case ex of
   ExitFailure _ -> do
    removeFile tempFile
-   soutF <- getTempFile sout ((takeBaseName fp) ++ ".sout")
-   errF <- getTempFile err ((takeBaseName fp) ++ ".serr")
+   soutF <- getTempFile sout (takeBaseName fp ++ ".sout")
+   errF <- getTempFile err (takeBaseName fp ++ ".serr")
    fail $ "Export Failed! - Export script died prematurely. See " ++ soutF
           ++ " and " ++ errF ++ " for details."
   ExitSuccess -> do
@@ -103,51 +103,51 @@ anaThyFile opts path = do
    removeFile tempFile
    return ret
 
-mkNode :: (DGraph,Map.Map String (Node,Sign)) -> IsaData ->
-     (DGraph,Map.Map String (Node,Sign))
-mkNode (dg,m) (name,header',imps,keywords',uses',body) =
- let sens = map (\sen ->
+mkNode :: (DGraph, Map.Map String (Node, Sign)) -> IsaData ->
+     (DGraph, Map.Map String (Node, Sign))
+mkNode (dg, m) (name, header', imps, keywords', uses', body) =
+ let sens = map (\ sen ->
              let name' = case sen of
                   Locale n' _ _ _ -> "locale " ++ qname n'
-                  Class  n' _ _ _ -> "class " ++ qname n'
-                  Datatypes dts -> "datatype " ++ (intercalate "_" $
-                                     map (qname . datatypeName) dts)
-                  Consts cs -> "consts " ++ (intercalate "_" $
-                                             map (\(n',_,_) -> n') cs)
+                  Class n' _ _ _ -> "class " ++ qname n'
+                  Datatypes dts -> "datatype " ++ intercalate "_"
+                                     (map (qname . datatypeName) dts)
+                  Consts cs -> "consts " ++ intercalate "_"
+                                             (map (\ (n', _, _) -> n') cs)
                   TypeSynonym n' _ _ _ -> "type_synonym " ++ qname n'
-                  Axioms axs -> "axioms " ++ (intercalate "_" $ 
-                                 map (qname . axiomName) axs)
+                  Axioms axs -> "axioms " ++ intercalate "_"
+                                 (map (qname . axiomName) axs)
                   Lemma _ _ _ l -> "lemma " ++ (intercalate "_" . map qname
                                       . catMaybes $ map propsName l)
-                  Definition n' _ _ _ _ _ -> "definition " ++ (show n')
-                  Fun _ _ _ _ _ fsigs -> "fun " ++ (intercalate "_" $
-                                            map (\(n',_,_,_) -> n') fsigs)
+                  Definition n' _ _ _ _ _ -> "definition " ++ show n'
+                  Fun _ _ _ _ _ fsigs -> "fun " ++ intercalate "_"
+                                            (map (\ (n', _, _, _) -> n') fsigs)
                   _ -> ""
              in makeNamed name' sen) body
-     sgns = Map.foldWithKey (\k a l ->
-             if elem k imps then (snd a):l else l) [] m
-     sgn  = foldl union_sig (emptySign { imports  = imps,
-                                         header   = header',
+     sgns = Map.foldWithKey (\ k a l ->
+             if elem k imps then snd a : l else l) [] m
+     sgn = foldl union_sig (emptySign { imports = imps,
+                                         header = header',
                                          keywords = keywords',
                                          uses = uses' }) sgns
-     (dg',n) = _insNodeDG sgn sens name dg
-     m'      = Map.insert name (n,sgn) m
-     dgRet   = foldr (\imp dg'' ->
+     (dg', n) = _insNodeDG sgn sens name dg
+     m' = Map.insert name (n, sgn) m
+     dgRet = foldr (\ imp dg'' ->
                          case Map.lookup imp m of
-                          Just (n',s') -> 
+                          Just (n', s') ->
                            let gsig = G_sign Isabelle (makeExtSign Isabelle s')
                                        startSigId
                                incl = gEmbed2 gsig $ mkG_morphism Isabelle
                                        (ide sgn)
                            in insLink dg'' incl globalDef DGLinkImports n' n
                           Nothing -> dg'') dg' imps
- in (dgRet,m')
+ in (dgRet, m')
 
 anaIsaFile :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
 anaIsaFile _ path = do
  theories <- importIsaDataIO path
- let name   = "Imported Theory"
-     (dg,_) = foldl mkNode (emptyDG,Map.empty) theories
-     le     = Map.insert (emptyLibName name) dg Map.empty
+ let name = "Imported Theory"
+     (dg, _) = foldl mkNode (emptyDG, Map.empty) theories
+     le = Map.insert (emptyLibName name) dg Map.empty
  return $ Just (emptyLibName name,
   computeLibEnvTheories le)

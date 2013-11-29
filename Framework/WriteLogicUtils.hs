@@ -23,13 +23,13 @@ synOpt :: String
 synOpt = "TypeSynonymInstances"
 
 prefixBy :: String -> [String] -> [String]
-prefixBy s xs = map (\ x -> s ++ x) xs
+prefixBy s = map (s ++)
 
 sepHoriz :: [String] -> String
-sepHoriz = concat . (prefixBy " ")
+sepHoriz = concat . prefixBy " "
 
 sepTabVert :: [String] -> String
-sepTabVert = concat . (prefixBy $ "\n" ++ tab)
+sepTabVert = concat . prefixBy ('\n' : tab)
 
 mkCompOpt :: [String] -> String
 mkCompOpt opts = "{-# LANGUAGE " ++ intercalate ", " opts ++ " #-}"

@@ -14,7 +14,7 @@ Isabelle-HOL.
 -}
 
 module Comorphisms.PCoClTyConsHOL2PairsInIsaHOL
-    (PCoClTyConsHOL2PairsInIsaHOL(..)) where
+    (PCoClTyConsHOL2PairsInIsaHOL (..)) where
 
 import Comorphisms.PPolyTyConsHOL2IsaUtils
 import Logic.Logic as Logic
@@ -41,7 +41,7 @@ instance Comorphism PCoClTyConsHOL2PairsInIsaHOL
                Symbol RawSymbol ()
                Isabelle () () Isa.Sentence () ()
                Isa.Sign
-               IsabelleMorphism () () ()  where
+               IsabelleMorphism () () () where
     sourceLogic PCoClTyConsHOL2PairsInIsaHOL = HasCASL
     sourceSublogic PCoClTyConsHOL2PairsInIsaHOL = noSubtypes
     targetLogic PCoClTyConsHOL2PairsInIsaHOL = Isabelle
@@ -50,7 +50,7 @@ instance Comorphism PCoClTyConsHOL2PairsInIsaHOL
     map_theory PCoClTyConsHOL2PairsInIsaHOL th = do
       (sig, sens) <- mapTheory New simpForOption th
       return (sig { baseSig = MainHC_thy }, sens)
-    map_sentence PCoClTyConsHOL2PairsInIsaHOL sign phi =
-       transSentence sign (typeToks sign) New simpForOption phi
+    map_sentence PCoClTyConsHOL2PairsInIsaHOL sign =
+       transSentence sign (typeToks sign) New simpForOption
     isInclusionComorphism PCoClTyConsHOL2PairsInIsaHOL = True
     has_model_expansion PCoClTyConsHOL2PairsInIsaHOL = True

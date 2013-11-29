@@ -76,7 +76,7 @@ instantiate tys sc@(TypeScheme tArgs t _) =
              addDiags [mkDiag Hint ("for type scheme '" ++
                  showDoc t "' wrong length of instantiation list") tys]
              return Nothing
-        else let s = Map.fromList $ zip [-1, -2..] tys
+        else let s = Map.fromList $ zip [-1, -2 ..] tys
              in return $ Just
                 (substGen s t, zip tys $ map (substTypeArg s) tArgs)
 
@@ -158,11 +158,12 @@ simplifyTypedTerms e = foldTerm mapRec
           case q of
             InType | isSubT -> unitTerm trueId ps
             _ -> case nt of
-              TypedTerm nt2 q2 _ _ ->
-                if q2 == AsType && q /= InType && lesserType e ty ty2
-                   then TypedTerm nt2 q2 ty ps
-                   else if q == AsType && elem q2 [OfType, Inferred] && isSubT
-                   then ityped else ntyped
+              TypedTerm nt2 q2 _ _
+               | q2 == AsType && q /= InType && lesserType e ty ty2
+                  -> TypedTerm nt2 q2 ty ps
+               | q == AsType && elem q2 [OfType, Inferred] && isSubT
+                   -> ityped
+               | otherwise -> ntyped
               _ -> if q == AsType && isSubT then ityped else ntyped }
 
 -- | type checking a term
@@ -182,7 +183,7 @@ typeCheck exTy trm =
                  $ addDiags [(mkDiag Error ("in term '"
                              ++ showGlobalDoc ga t "' of type '"
                              ++ showDoc ty "'\n unresolved constraints")
-                                 rcs){diagPos = p}]
+                                 rcs) {diagPos = p}]
            checkForUninstantiatedVars ga t p
            return $ Just $ simplifyTypedTerms te t
          falts -> do
@@ -190,7 +191,7 @@ typeCheck exTy trm =
                          ("ambiguous typings\n " ++
                           showSepList ("\n " ++)
                           ( \ (n, t) -> shows n . (". " ++) . showDoc t)
-                          (zip [1..(5::Int)] $ map ( \ (_,_,_,t) ->
+                          (zip [1 .. (5 :: Int)] $ map ( \ (_, _, _, t) ->
                                           t) falts) "")
                             p]
                return Nothing
@@ -209,10 +210,10 @@ warnEmpty mt trm res = do
     when (null res) $ addDiags [mkNiceDiag ga Hint ("untypeable term" ++
       case mt of
         Nothing -> ""
-        Just ty -> " (with type: "  ++ showGlobalDoc ga ty ")") trm]
+        Just ty -> " (with type: " ++ showGlobalDoc ga ty ")") trm]
 
 -- | infer type of application, consider lifting for lazy types
-inferAppl :: Bool -> Range -> Term  -> Term
+inferAppl :: Bool -> Range -> Term -> Term
           -> State Env [(Subst, Constraints, Type, Term)]
 inferAppl isP ps t1 t2 = do
     ops <- infer isP t1
@@ -255,7 +256,7 @@ mkTypedTerm trm ty = case trm of
     TupleTerm ts ps | not (null ts) -> let
       n = length ts
       (topTy, tArgs) = getTypeAppl ty
-      in if n > 1 && topTy  == toProdType n ps
+      in if n > 1 && topTy == toProdType n ps
              && length tArgs == n then
       TupleTerm (zipWith mkTypedTerm ts tArgs) ps
       else TypedTerm trm Inferred ty ps
@@ -311,7 +312,7 @@ infer isP trm = do
         vs = localVars e
         ga = globAnnos e
     case trm of
-        qv@(QualVar (VarDecl _ ty _ _))  -> return [(eps, noC, ty, qv)]
+        qv@(QualVar (VarDecl _ ty _ _)) -> return [(eps, noC, ty, qv)]
         QualOp br i sc tys k ps -> do
             ms <- instOpInfo tys OpInfo { opType = sc
                                         , opAttrs = Set.empty
@@ -401,7 +402,7 @@ infer isP trm = do
                                      -> QualVar (VarDecl vp sTy po ps)
                                  _ -> if (qual == Inferred || case tr of
                                         QualVar _ -> True
-                                        QualOp _ _ _ _ _ _ -> True
+                                        QualOp {} -> True
                                         TypedTerm _ OfType _ _ -> True
                                         _ -> False)
                                         && maybe False (eqStrippedType sTy)
@@ -507,12 +508,12 @@ inferCaseEq pty tty (ProgEq pat trm ps) = do
 inferCaseEqs :: Type -> Type -> [ProgEq]
             -> State Env [(Subst, Constraints, Type, Type, [ProgEq])]
 inferCaseEqs pty tTy [] = return [(eps, noC, pty, tTy, [])]
-inferCaseEqs pty tty (eq:eqs) = do
+inferCaseEqs pty tty (eq : eqs) = do
   fts <- inferCaseEq pty tty eq
   rs <- mapM (\ (s, cs, pty1, tty1, ne) -> do
               rts <- inferCaseEqs pty1 tty1 eqs
               return $ map ( \ (s2, cr, pty2, tty2, nes) ->
                              (compSubst s s2,
                               substC s2 cs `joinC` cr,
-                              pty2, tty2, ne:nes)) rts) fts
+                              pty2, tty2, ne : nes)) rts) fts
   return $ concat rs

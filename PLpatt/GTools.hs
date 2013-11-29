@@ -1,5 +1,6 @@
 module Generic.Tools where
 
+-- TODO: Do we actually need this module?
 
 data Tree = Variable Id |
             Application Id [Tree] |
@@ -10,4 +11,4 @@ data Tree = Variable Id |
   1. call mmt on the text
   2. transform mmt output into ParseTree -}
 toPT :: String -> Tree
-toPT s = theo_to_lf s
+toPT = theo_to_lf

@@ -73,12 +73,11 @@ diffSig a b =
       }
 
 addSymbToSign :: Sign -> Entity -> Result Sign
-addSymbToSign sig ent = 
- case ent of 
-   Entity Class eIri -> do
-    return sig{concepts = Set.insert eIri $ concepts sig}
-   _ -> do
-    return sig
+addSymbToSign sig ent =
+ case ent of
+   Entity Class eIri ->
+    return sig {concepts = Set.insert eIri $ concepts sig}
+   _ -> return sig
 
 addSign :: Sign -> Sign -> Sign
 addSign toIns totalSign =

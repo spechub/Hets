@@ -46,7 +46,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.List
 import Data.Maybe
-import Control.Monad (foldM)
+import Control.Monad (foldM, zipWithM)
 
 mapTheory :: SimpKind -> Simplifier -> (Env, [Named Le.Sentence])
           -> Result (Isa.Sign, [Named Isa.Sentence])
@@ -353,7 +353,7 @@ transLetEqs sign tyToks collectConds toks pVars es = case es of
 
 isQualVar :: As.Term -> Bool
 isQualVar trm = case trm of
-    QualVar (VarDecl _ _ _ _) -> True
+    QualVar (VarDecl {}) -> True
     TypedTerm t _ _ _ -> isQualVar t
     _ -> False
 
@@ -744,7 +744,7 @@ adjustArgType aTy ty = case (aTy, ty) of
     (TypeVar _, _) -> return IdOp
     (_, TypeVar _) -> return IdOp
     (ApplType i1 l1, ApplType i2 l2) | i1 == i2 && length l1 == length l2 -> do
-      l <- mapM (uncurry adjustArgType) $ zip l1 l2
+      l <- zipWithM adjustArgType l1 l2
       if any (isNotIdOp . invertConv) l
         then fail "cannot adjust type application"
         else return IdOp
@@ -1055,7 +1055,7 @@ mkApp sign tyToks collectConds toks pVars f arg = do
 
 isPatternType :: As.Term -> Bool
 isPatternType trm = case trm of
-    QualVar (VarDecl _ _ _ _) -> True
+    QualVar (VarDecl {}) -> True
     TypedTerm t _ _ _ -> isPatternType t
     TupleTerm ts _ -> all isPatternType ts
     _ -> False

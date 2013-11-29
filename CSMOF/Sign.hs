@@ -21,13 +21,14 @@ import Common.Id
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-data TypeKind = DataTypeKind | ClassKind  deriving (Show, Eq, Ord)
+data TypeKind = DataTypeKind | ClassKind deriving (Show, Eq, Ord)
 
 instance Pretty TypeKind where
   pretty DataTypeKind = text "datatype"
   pretty ClassKind = text "class"
 
-data TypeClass = TypeClass { name :: String, kind :: TypeKind }  deriving (Show, Eq, Ord)
+data TypeClass = TypeClass { name :: String, kind :: TypeKind }
+ deriving (Show, Eq, Ord)
 
 instance Pretty TypeClass where
   pretty (TypeClass nam _) = text nam
@@ -43,9 +44,9 @@ data PropertyT = PropertyT { sourceRole :: Role
                            } deriving (Show, Eq, Ord)
 
 instance Pretty PropertyT where
-  pretty (PropertyT souR souT tarR tarT) = text "property" <> lparen <> text souR <+> colon <+> (pretty souT) 
-                                           <+> comma <+> text tarR <+> colon <+> (pretty tarT) <> rparen
-
+  pretty (PropertyT souR souT tarR tarT) = text "property" <> lparen <>
+   text souR <+> colon <+> pretty souT <+> comma <+> text tarR <+>
+   colon <+> pretty tarT <> rparen
 
 data LinkT = LinkT { sourceVar :: Role
                    , targetVar :: Role
@@ -53,10 +54,12 @@ data LinkT = LinkT { sourceVar :: Role
                    } deriving (Show, Eq, Ord)
 
 instance Pretty LinkT where
-  pretty (LinkT souV tarV pro) = text "link" <> lparen <> text souV <+> colon <+> 
-                                 text (sourceRole pro) <+> colon <+> pretty (sourceType pro) <+> comma 
-                                 <+> text tarV <+> colon <+> text (targetRole pro) <+> colon <+> (pretty (targetType pro)) <+> rparen
-
+  pretty (LinkT souV tarV pro) = text "link" <> lparen <> text souV <+>
+                                 colon <+> text (sourceRole pro) <+> colon <+>
+                                 pretty (sourceType pro) <+> comma <+>
+                                 text tarV <+> colon <+> text (targetRole pro)
+                                 <+> colon <+> pretty (targetType pro) <+>
+                                 rparen
 
 data Sign = Sign { types :: Set.Set TypeClass
                  , typeRel :: Rel.Rel TypeClass
@@ -69,15 +72,15 @@ data Sign = Sign { types :: Set.Set TypeClass
 
 instance GetRange Sign where
   getRange _ = nullRange
-  rangeSpan _ = []      
+  rangeSpan _ = []
 
 instance Pretty Sign where
-  pretty (Sign typ tyR abst rol pro ins lin) = 
-    Set.fold (($+$) . (toType abst)) empty typ
-    $++$ 
+  pretty (Sign typ tyR abst rol pro ins lin) =
+    Set.fold (($+$) . toType abst) empty typ
+    $++$
     foldr (($+$) . toSubRel) empty (Rel.toList tyR)
     $++$
-    Set.fold (($+$) . text . ("role "++)) empty rol
+    Set.fold (($+$) . text . ("role " ++)) empty rol
     $++$
     Set.fold (($+$) . pretty) empty pro
     $++$
@@ -86,16 +89,16 @@ instance Pretty Sign where
     Set.fold (($+$) . pretty) empty lin
 
 toType :: Set.Set TypeClass -> TypeClass -> Doc
-toType setTC (TypeClass nam ki) = 
+toType setTC (TypeClass nam ki) =
   if Set.member (TypeClass nam ki) setTC then
     text "abstract" <+> pretty ki <+> text nam
   else pretty ki <+> text nam
 
 toSubRel :: (TypeClass, TypeClass) -> Doc
-toSubRel (a,b) = pretty a <+> text "<" <+> pretty b
+toSubRel (a, b) = pretty a <+> text "<" <+> pretty b
 
 toInstance :: (String, TypeClass) -> Doc
-toInstance (a,b) = text "object" <+> text a <+> colon <+> pretty b
+toInstance (a, b) = text "object" <+> text a <+> colon <+> pretty b
 
 emptySign :: Sign
 emptySign = Sign { types = Set.empty
@@ -108,10 +111,10 @@ emptySign = Sign { types = Set.empty
                  }
 
 
--- signUnion :: Sign -> Sign -> Result Sign
--- signUnion s1 s2 = return s1
---   { rels = Map.unionWith Set.union (rels s1) (rels s2)
---  , isas = Rel.union (isas s1) (isas s2) }
+{- signUnion :: Sign -> Sign -> Result Sign
+signUnion s1 s2 = return s1
+{ rels = Map.unionWith Set.union (rels s1) (rels s2)
+, isas = Rel.union (isas s1) (isas s2) } -}
 
 data MultConstr = MultConstr { getType :: TypeClass
                              , getRole :: Role
@@ -131,12 +134,12 @@ instance Pretty ConstraintType where
 
 data Sen = Sen { constraint :: MultConstr
                , cardinality :: Integer
-               , constraintType :: ConstraintType 
+               , constraintType :: ConstraintType
                } deriving (Show, Eq, Ord)
 
 instance GetRange Sen where
   getRange _ = nullRange
-  rangeSpan _ = []      
+  rangeSpan _ = []
 
 instance Pretty Sen where
   pretty (Sen con car cty) = pretty con <+> pretty cty <+> pretty car

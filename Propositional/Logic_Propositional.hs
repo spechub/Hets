@@ -96,7 +96,7 @@ instance Monoid BASIC_SPEC where
     mempty = Basic_spec []
     mappend (Basic_spec l1) (Basic_spec l2) = Basic_spec $ l1 ++ l2
 
---- | Syntax of Propositional logic
+-- - | Syntax of Propositional logic
 instance Syntax Propositional BASIC_SPEC
     Symbol SYMB_ITEMS SYMB_MAP_ITEMS where
          parsersAndPrinters Propositional =
@@ -119,7 +119,7 @@ instance Logic Propositional
     ProofTree                      -- proof_tree
     where
         -- hybridization
-      parse_basic_sen Propositional = Just $ \_ -> impFormula
+      parse_basic_sen Propositional = Just $ const impFormula
       stability Propositional = Experimental
       top_sublogic Propositional = Sublogic.top
       all_sublogics Propositional = sublogics_all
@@ -156,7 +156,7 @@ instance StaticAnalysis Propositional
         where
           basic_analysis Propositional =
               Just basicPropositionalAnalysis
-          sen_analysis Propositional = Just pROPsen_analysis 
+          sen_analysis Propositional = Just pROPsen_analysis
           empty_signature Propositional = emptySig
           is_subsig Propositional = isSubSigOf
           subsig_inclusion Propositional s = return . inclusionMap s

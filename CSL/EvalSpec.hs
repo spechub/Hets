@@ -16,7 +16,7 @@ import System.Environment
 import System.Console.GetOpt
 
 import qualified Interfaces.Process as PC
-import CSL.AnEvenTool (evalWithVerification, CAS (..), CASState(..), runTool)
+import CSL.AnEvenTool (evalWithVerification, CAS (..), CASState (..), runTool)
 import Common.Utils
 
 import Data.Bits
@@ -27,7 +27,7 @@ import Control.Monad
 
 main :: IO ()
 main = getArgs >>= runMain True >> putStr ""
---main = runTool >> return ()
+-- main = runTool >> return ()
 
 runMain :: Bool -> [String] -> IO (Maybe CASState)
 runMain cl args =
@@ -51,11 +51,12 @@ runProg cl st =
                        (lib st)
                        (spec st)
 
-------------------------- Input Arguments -------------------------
+-- ----------------------- Input Arguments -------------------------
 
 processArgs :: [String] -> Either String ProgSettings
 processArgs args =
-    let (flags, noopts, unrecopts, errs) = getOpt' (ReturnInOrder PFLib) options args
+    let (flags, noopts, unrecopts, errs) =
+         getOpt' (ReturnInOrder PFLib) options args
         msgl = checkFlags flags
         f str (l, s) = if null l then str else str ++ "\n" ++ s ++ unlines l
         msg = foldl f ""
@@ -81,38 +82,44 @@ esUsage = usageInfo esHeader options
 information -}
 options :: [OptDescr ProgFlag]
  -- Option [Char] [String] (ArgDescr a) String
-options = map f $
+options = map f
           [ ( "lib", "Path to the hets file", ReqArg PFLib "FILE")
           , ( "spec"
-            , "Name of specification importing both, the pattern and the design specification"
+            , "Name of specification importing both, " ++
+              "the pattern and the design specification"
             , ReqArg PFSpec "SPECNAME")
           , ( "CAS"
-            , "Name of the computer algebra system to carry out the computations"
+            , "Name of the computer algebra system to " ++
+              "carry out the computations"
             , ReqArg (PFCAS . fromMaybe (error "Unknown CAS") . readMaybe)
                          "Mathematica or Maple")
           , ( "Logfile"
-            , "Path to a logfile which will contain low level CAS connection information"
+            , "Path to a logfile which will contain low " ++
+              "level CAS connection information"
             , ReqArg PFLogFile "FILE")
           , ( "connection"
             , "A connection name as given e.g. to the MathLink server"
             , ReqArg PFConnection "String")
           , ( "timeout"
-            , "Timeout for communication with external CAS system in deziseconds (tenth of a second)"
+            , "Timeout for communication with external CAS " ++
+              "system in deziseconds (tenth of a second)"
             , ReqArg (PFTimeout . fromRational
                       . fromMaybe (error "Could not parse timeout")
                       . (readMaybe :: String -> Maybe Rational)
                       . (++ "%10")) "1-1000")
           , ( "verbosity"
-            , "A value from 0=quiet to 4=print out all information during processing"
+            , "A value from 0=quiet to 4=print out all " ++
+              "information during processing"
             , ReqArg (PFVerbosity . read) "0-4")
           , ( "quiet", "Equal to -v0", NoArg PFQuiet)
-          , ( "Symbolic", "Enables symbolic evaluation mode", NoArg (PFSymbolic True))
+          , ( "Symbolic", "Enables symbolic evaluation mode",
+              NoArg (PFSymbolic True))
           , ( "debug", "Enables debug mode", NoArg (PFDebug True))
           ] where
     f (fs, descr, arg) = Option [head fs] [fs] arg descr
 
 checkFlags :: [ProgFlag] -> [String]
-checkFlags = g . mapAccumL f (0::Int) where
+checkFlags = g . mapAccumL f (0 :: Int) where
     f i (PFLib _) = (setBit i 0, ())
     f i (PFSpec _) = (setBit i 1, ())
     f i _ = (i, ())
@@ -174,7 +181,6 @@ makeSettings settings flg =
       PFLogFile fp -> settings { logFile = Just fp }
       PFConnection n -> settings { connectionName = Just n }
       PFCAS c -> settings { cas = c }
-      
+
 getSettings :: [ProgFlag] -> ProgSettings
 getSettings = foldl makeSettings defaultSettings
-

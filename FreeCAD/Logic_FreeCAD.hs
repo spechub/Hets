@@ -40,7 +40,7 @@ import FreeCAD.ATC_FreeCAD ()
 import FreeCAD.PrintAs ()
 import FreeCAD.Translator (processFile)
 
-import Logic.Grothendieck (G_basic_spec(..))
+import Logic.Grothendieck (G_basic_spec (..))
 import Syntax.AS_Library (fromBasicSpec, LIB_DEFN)
 
 data FreeCAD = FreeCAD deriving Show

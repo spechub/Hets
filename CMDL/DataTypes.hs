@@ -106,7 +106,7 @@ data CmdlCmdDescription = CmdlCmdDescription
   , cmdReq :: CmdlCmdRequirements }
 
 instance Show CmdlCmdDescription where
-  show cmd =  show $ cmdDescription cmd
+  show cmd = show $ cmdDescription cmd
 
 cmdInput :: CmdlCmdDescription -> String
 cmdInput = cmdInputStr . cmdDescription

@@ -38,10 +38,10 @@ emptyTurtleDocument = TurtleDocument nullQName Map.empty []
 
 data Statement = Statement Triples | PrefixStatement Prefix | BaseStatement Base
     deriving (Show, Eq, Ord)
-    
+
 data Prefix = Prefix String IRI
     deriving (Show, Eq, Ord)
-    
+
 data Base = Base IRI
     deriving (Show, Eq, Ord)
 
@@ -63,7 +63,7 @@ data Object = Object Subject
 
 data PredicateObjectList = PredicateObjectList Predicate [Object]
     deriving (Show, Eq, Ord)
-    
+
 data RDFLiteral = RDFLiteral Bool LexicalForm TypedOrUntyped
   | RDFNumberLit FloatLit
     deriving (Show, Eq, Ord)
@@ -74,7 +74,7 @@ data Term =
     SubjectTerm IRI
   | PredicateTerm IRI
   | ObjectTerm (Either IRI RDFLiteral)
-    deriving (Show, Eq, Ord) 
+    deriving (Show, Eq, Ord)
 
 data Axiom = Axiom Term Term Term
     deriving (Show, Eq, Ord)
@@ -101,7 +101,7 @@ extractTripleStatements ls = case ls of
     h : t -> case h of
         Statement triple -> triple : extractTripleStatements t
         _ -> extractTripleStatements t
-        
+
 triplesOfDocument :: TurtleDocument -> [Triples]
 triplesOfDocument doc = extractTripleStatements $ statements doc
 
@@ -112,11 +112,10 @@ rdfFirst = QN "rdf" "first" Abbreviated
 rdfRest :: IRI
 rdfRest = QN "rdf" "rest" Abbreviated
     "http://www.w3.org/1999/02/22-rdf-syntax-ns#rest" nullRange
-    
+
 rdfNil :: IRI
 rdfNil = QN "rdf" "nil" Abbreviated
     "http://www.w3.org/1999/02/22-rdf-syntax-ns#nil" nullRange
 
 isAbsoluteIRI :: IRI -> Bool
-isAbsoluteIRI iri = iriType iri == Full && (isPrefixOf "//" $ localPart iri)
-
+isAbsoluteIRI iri = iriType iri == Full && isPrefixOf "//" (localPart iri)

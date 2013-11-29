@@ -21,7 +21,7 @@ module ATerm.Lib
     , ATermTable
     , addATerm
     , getShATerm
-    , ShATermConvertible(toShATermAux, fromShATermAux)
+    , ShATermConvertible (toShATermAux, fromShATermAux)
     , toShATerm'
     , fromShATerm'
     , fromShATermError

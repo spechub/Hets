@@ -41,9 +41,9 @@ import CSL.TreePO
 import CSL.AS_BASIC_CSL
 import Common.Id (tokStr)
 
--- ----------------------------------------------------------------------
--- * Datatypes for efficient Extended Parameter comparison
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+Datatypes for efficient Extended Parameter comparison
+---------------------------------------------------------------------- -}
 
 data ExtNumber = LeftInf | RightInf | Regular APInt deriving (Show, Eq)
 
@@ -58,13 +58,13 @@ instance Ord ExtNumber where
 
 type BaseInterval = (ExtNumber, ExtNumber)
 
-leftOpen:: APInt -> BaseInterval
+leftOpen :: APInt -> BaseInterval
 leftOpen i = (LeftInf, Regular i)
 
-rightOpen:: APInt -> BaseInterval
+rightOpen :: APInt -> BaseInterval
 rightOpen i = (Regular i, RightInf)
 
-between:: APInt -> APInt -> BaseInterval
+between :: APInt -> APInt -> BaseInterval
 between i j = (Regular i, Regular j)
 
 
@@ -92,26 +92,26 @@ toBoolRep = error "TODO"
 -- | Conversion function into the more efficient representation.
 toEPExp :: EXTPARAM -> Maybe (String, EPExp)
 toEPExp (EP t r i) =
-    let l = case r of 
+    let l = case r of
               "<=" -> [leftOpen i]
-              "<" -> [leftOpen $ i-1]
+              "<" -> [leftOpen $ i - 1]
               ">=" -> [rightOpen i]
-              ">" -> [rightOpen $ i+1]
+              ">" -> [rightOpen $ i + 1]
               "=" -> [between i i]
-              "!=" -> [leftOpen $ i-1, rightOpen $ i+1]
+              "!=" -> [leftOpen $ i - 1, rightOpen $ i + 1]
               "-|" -> []
               _ -> error $ "toEPExp: unsupported relation: " ++ r
     in if null l then Nothing else Just (tokStr t, l)
 
--- ----------------------------------------------------------------------
--- * Extended Parameter comparison (subset-comparison)
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+Extended Parameter comparison (subset-comparison)
+---------------------------------------------------------------------- -}
 
 leftOf :: BaseInterval -> BaseInterval -> Bool
-leftOf (_,b) (_,d) = b <= d
+leftOf (_, b) (_, d) = b <= d
 
 compareBI :: BaseInterval -> BaseInterval -> SetOrdering
-compareBI i1@(a,b) i2@(c,d)
+compareBI i1@(a, b) i2@(c, d)
     | i1 == i2 = Comparable EQ
     | b < c || a > d = Incomparable Disjoint
     | a <= c = if b < d then Incomparable Overlap else Comparable GT
@@ -122,7 +122,7 @@ compareBI i1@(a,b) i2@(c,d)
 compareBIEP :: BaseInterval -> EPExp -> SetOrdering
 compareBIEP _ [] = Comparable GT
 compareBIEP i1 [i2] = compareBI i1 i2
-compareBIEP i1 (i2:l) =
+compareBIEP i1 (i2 : l) =
     case compareBI i1 i2 of
       Incomparable Disjoint ->
           if leftOf i1 i2 then Incomparable Disjoint else compareBIEP i1 l
@@ -139,9 +139,9 @@ compareBIEP i1 (i2:l) =
 
 -- | Compares two 'EPExp': They are uncompareable if they overlap or are disjoint.
 compareEP :: EPExp -> EPExp -> SetOrdering
-compareEP [] [] =  Comparable EQ
-compareEP _ [] =  Comparable GT
-compareEP [] _ =  Comparable LT
+compareEP [] [] = Comparable EQ
+compareEP _ [] = Comparable GT
+compareEP [] _ = Comparable LT
 compareEP _ _ = error "GeneralExtendedParameter: TODO"
 {-
 compareEP ep1@(i1:l1) ep2@(i2:l2) =
@@ -149,6 +149,6 @@ compareEP ep1@(i1:l1) ep2@(i2:l2) =
       Comparable EQ -> case compareEP l1 l2 of
                          Incomparable
     i1 == i2 -> wenn compareEP l1 l2 disjoint dann overlap sonst ergebnis
-    i1 > i2 -> wenn compareEP 
-    
+    i1 > i2 -> wenn compareEP
+
 -}

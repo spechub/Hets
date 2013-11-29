@@ -17,7 +17,7 @@ Provides data structures for institution morphisms.
    functions between (some of) the types of logics.
 -}
 
-{-   References: see Logic.hs
+{- References: see Logic.hs
 
    Todo:
    morphism modifications / representation maps
@@ -52,9 +52,9 @@ class (Language cid,
     , lid2 -> sublogics2 basic_spec2 sentence2 symb_items2
         symb_map_items2 sign2 morphism2 sign_symbol2 symbol2 proof_tree2
   where
-    -- source and target logic and sublogic
-    -- the source sublogic is the maximal one for which the comorphism works
-    -- the target sublogic is the resulting one
+    {- source and target logic and sublogic
+    the source sublogic is the maximal one for which the comorphism works
+    the target sublogic is the resulting one -}
     morSourceLogic :: cid -> lid1
     morSourceSublogic :: cid -> sublogics1
     morTargetLogic :: cid -> lid2
@@ -63,19 +63,19 @@ class (Language cid,
     morMapSublogicSign :: cid -> sublogics1 -> sublogics2
     -- information about the source sublogics corresponding to target sublogics
     morMapSublogicSen :: cid -> sublogics2 -> sublogics1
-    -- the translation functions are partial
-    -- because the target may be a sublanguage
-    -- map_basic_spec :: cid -> basic_spec1 -> Maybe basic_spec2
-    -- we do not cover theoroidal morphisms,
-    --   since there are no relevant examples and they do not compose nicely
-    -- no mapping of theories, since signatures and sentences are mapped
-    --   contravariantly
+    {- the translation functions are partial
+    because the target may be a sublanguage
+    map_basic_spec :: cid -> basic_spec1 -> Maybe basic_spec2
+    we do not cover theoroidal morphisms,
+    since there are no relevant examples and they do not compose nicely
+    no mapping of theories, since signatures and sentences are mapped
+    contravariantly -}
     morMap_sign :: cid -> sign1 -> Maybe sign2
     morMap_morphism :: cid -> morphism1 -> Maybe morphism2
     morMap_sentence :: cid -> sign1 -> sentence2 -> Maybe sentence1
-          -- also covers semi-morphisms ??
-          -- with no sentence translation
-          -- - but these are spans!
+          {- also covers semi-morphisms ??
+          with no sentence translation
+          - but these are spans! -}
     morMap_sign_symbol :: cid -> sign_symbol1 -> Set.Set sign_symbol2
     -- morConstituents not needed, because composition only via lax triangles
 
@@ -107,7 +107,7 @@ instance Logic lid sublogics
            morTargetLogic (IdMorphism lid _sub) = lid
            morSourceSublogic (IdMorphism _lid sub) = sub
            morTargetSublogic (IdMorphism _lid sub) = sub
-           --changed to identities!
+           -- changed to identities!
            morMapSublogicSign _ x = x
            morMapSublogicSen _ x = x
            morMap_sign _ = Just
@@ -133,33 +133,33 @@ class Comorphism cid
     indMorMap_morphism :: cid -> morphism2 -> Maybe morphism1
     epsilon :: cid -> sign2 -> Maybe morphism2
 
---------------------------------------------------------------------------
+-- ------------------------------------------------------------------------
 
 -- Morphisms as spans of comorphisms
 
 
---    if the morphism is (psi, alpha, beta) : I -> J
---    it is replaced with the following span
---    SignI    id     ->     SignI         psi ->        SignJ
---    SenI     alpha  <-     psi;SenJ      id  ->        psi;SenJ
---    ModI     beta   ->     psi^op;ModJ   id  <-        psi^op;ModJ
+{- if the morphism is (psi, alpha, beta) : I -> J
+it is replaced with the following span
+SignI    id     ->     SignI         psi ->        SignJ
+SenI     alpha  <-     psi;SenJ      id  ->        psi;SenJ
+ModI     beta   ->     psi^op;ModJ   id  <-        psi^op;ModJ -}
 
---    1. introduce a new logic for the domain of the span
---       this logic will have
---         * the name (SpanDomain cid) where cid is the name of the morphism
---         * sublogics - pairs (s1, s2) with s1 being a sublogic of I and s2
--- being a sublogic of J; the lattice is the product lattice of the two
--- existing lattices
---         * basic_spec will be () - the unit type, because we mix signatures
--- with sentences in specifications
---         * sentence - sentences of J, wrapped
---         * symb_items - ()
---         * symb_map_items - ()
---         * sign - signatures of I
---         * morphism - morphisms of I
---         * sign_symbol - sign_symbols of I
---         * symbol - symbols of I
---         * proof_tree - proof_tree of J
+{- 1. introduce a new logic for the domain of the span
+this logic will have
+the name (SpanDomain cid) where cid is the name of the morphism
+sublogics - pairs (s1, s2) with s1 being a sublogic of I and s2
+being a sublogic of J; the lattice is the product lattice of the two
+existing lattices
+basic_spec will be () - the unit type, because we mix signatures
+with sentences in specifications
+sentence - sentences of J, wrapped
+symb_items - ()
+symb_map_items - ()
+sign - signatures of I
+morphism - morphisms of I
+sign_symbol - sign_symbols of I
+symbol - symbols of I
+proof_tree - proof_tree of J -}
 
 data SpanDomain cid = SpanDomain cid deriving (Eq, Show)
 
@@ -194,9 +194,9 @@ instance Morphism cid
     => Sentences (SpanDomain cid) (S2 sentence2) sign1 morphism1
        sign_symbol1 where
 
---one has to take care about signature and morphisms
---and translate them to targetLogic
---we get a Maybe sign/morphism
+{- one has to take care about signature and morphisms
+and translate them to targetLogic
+we get a Maybe sign/morphism -}
 
  map_sen (SpanDomain cid) mor1 (S2 sen) =
                         case morMap_morphism cid mor1 of
@@ -256,8 +256,8 @@ instance (MinSublogic sublogics1 alpha, SemiLatticeWithTop sublogics2)
 {- also should have instances of MinSublogic class for Sublogics-pair
 and morphism1, sign_symbol1, sign1 this is why the wrapping is needed -}
 
--- instance SemiLatticeWithTop sublogics => MinSublogic sublogics () where
---     minSublogic _ = top
+{- instance SemiLatticeWithTop sublogics => MinSublogic sublogics () where
+minSublogic _ = top -}
 
 instance (MinSublogic sublogics1 alpha, SemiLatticeWithTop sublogics2)
           => ProjectSublogic (SublogicsPair sublogics1 sublogics2) alpha where
@@ -273,9 +273,9 @@ instance (ShATermConvertible a, ShATermConvertible b)
   toShATermAux att0 (SublogicsPair a b) = do
       (att1, a') <- toShATerm' att0 a
       (att2, b') <- toShATerm' att1 b
-      return $ addATerm (ShAAppl "SublogicsPair" [a',b'] []) att2
+      return $ addATerm (ShAAppl "SublogicsPair" [a', b'] []) att2
   fromShATermAux ix att0 = case getShATerm ix att0 of
-    ShAAppl "SublogicsPair" [a,b] _ ->
+    ShAAppl "SublogicsPair" [a, b] _ ->
       case fromShATerm' a att0 of { (att1, a') ->
       case fromShATerm' b att1 of { (att2, b') ->
       (att2, SublogicsPair a' b') }}

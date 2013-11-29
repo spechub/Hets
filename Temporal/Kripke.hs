@@ -1,4 +1,4 @@
-{-# OPTIONS -fglasgow-exts #-}
+{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies #-}
 {- |
 Module      :  $Header$
 Copyright   :  (c) Klaus Hartke, Uni Bremen 2008
@@ -15,19 +15,15 @@ module Kripke where
 import Data.Set as Set
 
 
-
-{------------------------------------------------------------------------------}
-{-                                                                            -}
-{-  Kripke Structure                                                          -}
-{-                                                                            -}
-{------------------------------------------------------------------------------}
+{- ----------------------------------------------------------------------------
+Kripke Structure
+---------------------------------------------------------------------------- -}
 
 class Kripke k a s | k -> a s where
-    states  :: k -> Set s
+    states :: k -> Set s
     initial :: k -> Set s
-    next    :: k -> s -> Set s
-    labels  :: k -> s -> Set a
+    next :: k -> s -> Set s
+    labels :: k -> s -> Set a
 
 
-
-{------------------------------------------------------------------------------}
+-- ----------------------------------------------------------------------------

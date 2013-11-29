@@ -25,7 +25,7 @@ logicNames = -- IRI -> local name
   [ (logPrefix ++ "CommonLogic", "CommonLogic"),
     (logPrefix ++ "Propositional", "Propositional"),
     (logPrefix ++ "OWL2", "OWL") ]
-  
+
 lookupLogicName :: String -> Maybe String
 lookupLogicName = (`Map.lookup` logicNames)
 
@@ -41,4 +41,4 @@ serializations l
   | otherwise = Map.empty
 
 lookupSerialization :: String -> String -> Maybe String
-lookupSerialization l = (`Map.lookup` (serializations l))
+lookupSerialization l = (`Map.lookup` serializations l)

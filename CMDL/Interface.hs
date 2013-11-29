@@ -57,7 +57,8 @@ shellSettings st =
 {- We need an MVar here because our CmdlState is no Monad
    (and we use IO as Monad). -}
 
-showCmdComplete :: CmdlState -> [String] -> [String] -> String -> IO (String,[Completion])
+showCmdComplete :: CmdlState -> [String] -> [String] -> String ->
+                    IO (String, [Completion])
 showCmdComplete state shortConsCList comps left = do
   let (_, nodes) = case i_state $ intState state of
                      Nothing -> ("", [])
@@ -76,17 +77,18 @@ cmdlComplete st (left, _) = do
   state <- liftIO $ readIORef st
   comps <- liftIO $ cmdlCompletionFn getCommands state $ reverse left
 
-  if isPrefixOf (reverse left) "cons-checker " 
+  if isPrefixOf (reverse left) "cons-checker "
    then
     case i_state $ intState state of
      Just pS ->
        case elements pS of
         Element z _ : _ ->
-          do 
+          do
            let consCheckList = getConsCheckers $ findComorphismPaths
                                   logicGraph $ sublogicOfTheory z
-               shortConsCList =nub $  map (\ (y, _) -> getCcName y) consCheckList
-           showCmdComplete state shortConsCList comps left 
+               shortConsCList = nub $ map (\ (y, _) -> getCcName y)
+                                       consCheckList
+           showCmdComplete state shortConsCList comps left
         [] -> showCmdComplete state [] comps left
      Nothing -> showCmdComplete state [] comps left
    else showCmdComplete state [] comps left

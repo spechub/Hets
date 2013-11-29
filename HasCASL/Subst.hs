@@ -14,7 +14,7 @@ substitution and let-reduction of terms
 
 module HasCASL.Subst where
 
---import qualified Data.Graph.Analysis.Algorithms.Common() as DGAAC
+-- import qualified Data.Graph.Analysis.Algorithms.Common() as DGAAC
 
 import HasCASL.As
 import HasCASL.AsUtils
@@ -37,10 +37,10 @@ data SubstConst = SConst Id TypeScheme
 
 type SubstType = Id
 
--- | Type for the SubstRules.
---   The status entry signals if the use of this substitution will trigger
---   a failure or not. This mechanism is used to detect if variable capturing
---   will occur.
+{- | Type for the SubstRules.
+The status entry signals if the use of this substitution will trigger
+a failure or not. This mechanism is used to detect if variable capturing
+will occur. -}
 data SRule a = Blocked a | Ready a deriving Show
 
 scName :: SubstConst -> String
@@ -48,17 +48,17 @@ scName (SConst n _) = show n
 
 newtype Subst =
     Subst ( Map.Map SubstConst (SRule Term) -- the const->term mapping
-          , Map.Map SubstType (SRule Type) --  the const->type mapping
-                                           --  if a constant c occurs in the term t of a
-          --   const-term mapping (c',t) then c' is entered in the
-          --   by this mapping corresponding set s: (c, insert c' s)
+          , Map.Map SubstType (SRule Type) {- the const->type mapping
+                                           if a constant c occurs in the term t of a
+          const-term mapping (c',t) then c' is entered in the
+          by this mapping corresponding set s: (c, insert c' s) -}
           , Map.Map SubstConst (Set.Set SubstConst)) deriving Show
 
 emptySubstitution :: Subst
 emptySubstitution = Subst (Map.empty, Map.empty, Map.empty)
 
 size :: Subst -> Int
-size (Subst (m,t,_)) = Map.size m + Map.size t
+size (Subst (m, t, _)) = Map.size m + Map.size t
 
 isBlocked :: SRule a -> Bool
 isBlocked (Ready _) = False
@@ -72,10 +72,10 @@ blockRule :: SRule a -> SRule a
 blockRule (Ready x) = Blocked x
 blockRule x = x
 
--- | Mark all mappings to terms which contain a var from the given scope
---   as blocked.
+{- | Mark all mappings to terms which contain a var from the given scope
+as blocked. -}
 inScope :: [SubstConst] -> Subst -> Subst
-inScope scs (Subst (m,t,br)) =
+inScope scs (Subst (m, t, br)) =
     let
         -- constants to block
         cb = Set.unions $ Map.elems $ Map.filterWithKey (\ k _ -> elem k scs) br
@@ -85,8 +85,6 @@ inScope scs (Subst (m,t,br)) =
         -- blockfunction
         blf c v = if Set.member c cb then blockRule v else v
     in Subst (Map.mapWithKey blf m, t, nbr)
-
-
 
 
 mkSConst :: Id -> TypeScheme -> SubstConst
@@ -105,29 +103,29 @@ toSConst _ = Nothing
 
 substFromEqs :: [(Term, Term)] -> Subst
 substFromEqs eqs =
-  let f sb (t1,t2) = case toSConst t1 of
+  let f sb (t1, t2) = case toSConst t1 of
                        Nothing -> sb
                        Just sc -> addTerm sb sc t2
   in foldl f emptySubstitution eqs
 
 substFromTermMap :: [(SubstConst, Term)] -> Subst
-substFromTermMap tmap = foldl (\sb -> uncurry $ addTerm sb) emptySubstitution tmap
+substFromTermMap = foldl (uncurry . addTerm) emptySubstitution
 
 
 termEmpty :: Subst -> Bool
-termEmpty (Subst (m,_,_)) = Map.null m
+termEmpty (Subst (m, _, _)) = Map.null m
 typeEmpty :: Subst -> Bool
-typeEmpty (Subst (_,m,_)) = Map.null m
+typeEmpty (Subst (_, m, _)) = Map.null m
 
 
 lookupTerm :: Subst -> SubstConst -> Maybe (SRule Term)
-lookupTerm (Subst (m,_,_)) k = Map.lookup k m
+lookupTerm (Subst (m, _, _)) k = Map.lookup k m
 
 lookupType :: Subst -> SubstType -> Maybe (SRule Type)
-lookupType (Subst (_,t,_)) k = Map.lookup k t
+lookupType (Subst (_, t, _)) k = Map.lookup k t
 
 addTerm :: Subst -> SubstConst -> Term -> Subst
-addTerm (Subst (m,t,br)) k v =
+addTerm (Subst (m, t, br)) k v =
     let nm = Map.insert k (mkSRule v) m
         f x = (toSC x, Set.singleton k)
         g x = (fromJust $ toSConst x, Set.singleton k)
@@ -136,16 +134,15 @@ addTerm (Subst (m,t,br)) k v =
     in Subst (nm, t, Map.unionWith Set.union br nbr)
 
 removeTerm :: Subst -> SubstConst -> Subst
-removeTerm (Subst (m,t,br)) k =
+removeTerm (Subst (m, t, br)) k =
     Subst ( Map.delete k m, t
           , Map.filter (not . Set.null) $ Map.map (Set.delete k) br)
-                 
+
 addType :: Subst -> SubstType -> Type -> Subst
-addType (Subst (m,t,br)) k v = Subst (m, Map.insert k (mkSRule v) t,br)
+addType (Subst (m, t, br)) k v = Subst (m, Map.insert k (mkSRule v) t, br)
 
 removeType :: Subst -> SubstType -> Subst
-removeType (Subst (m,t,br)) k = Subst (m, Map.delete k t,br)
-                 
+removeType (Subst (m, t, br)) k = Subst (m, Map.delete k t, br)
 
 
 class LookupSubst a b where
@@ -159,7 +156,6 @@ class STLike a where
 
 class Substable a where
     subst :: Subst -> a -> a
-
 
 
 instance LookupSubst Term Term where
@@ -193,29 +189,29 @@ instance STLike TypeArg where
     toST = typevarId
 
 
----- class functions
+-- -- class functions
 
 addC :: SCLike a => Subst -> a -> Term -> Subst
-addC s k v = addTerm s (toSC k) v
+addC s k = addTerm s (toSC k)
 removeC :: SCLike a => Subst -> a -> Subst
 removeC s k = removeTerm s (toSC k)
 removeListC :: SCLike a => Subst -> [a] -> Subst
-removeListC s l = foldl removeC s l
+removeListC = foldl removeC
 
 addT :: STLike a => Subst -> a -> Type -> Subst
-addT s k v = addType s (toST k) v
+addT s k = addType s (toST k)
 removeT :: STLike a => Subst -> a -> Subst
 removeT s k = removeType s (toST k)
 removeListT :: STLike a => Subst -> [a] -> Subst
-removeListT s l = foldl removeT s l
+removeListT = foldl removeT
 
 
 lookupContent :: LookupSubst a b => Subst -> a -> Maybe b
 lookupContent s k = fmap ruleContent $ lookupS s k
 
----- other functions
+-- -- other functions
 typevarId :: TypeArg -> Id
-typevarId (TypeArg n _ _ _ _ _ _)= n
+typevarId (TypeArg n _ _ _ _ _ _) = n
 
 
 -- * Substitution
@@ -224,10 +220,10 @@ typevarId (TypeArg n _ _ _ _ _ _)= n
 
 * VARIABLE CAPTURING
 
-examples: 
+examples:
 
 for let reduction:
-forall x:A. let y:A = x in exists x:A. x = y 
+forall x:A. let y:A = x in exists x:A. x = y
 
    or let expanded
 
@@ -261,23 +257,23 @@ instance Substable Term where
       | otherwise =
           case t of
           qv@(QualVar v) -> substWithDefault s qv v
-          qo@(QualOp _ n typ _ _ _) -> substWithDefault s qo (n,typ)
+          qo@(QualOp _ n typ _ _ _) -> substWithDefault s qo (n, typ)
           ApplTerm t1 t2 rg -> ApplTerm (subst s t1) (subst s t2) rg
           TupleTerm l rg -> TupleTerm (map (subst s) l) rg
           TypedTerm term tq typ rg ->
               TypedTerm (subst s term) tq (subst s typ) rg
-          p@(AsPattern _ _ _) -> p
+          p@(AsPattern {}) -> p
           QuantifiedTerm q vars term rg ->
               let (vds, tvs) = splitVars vars
                   scs = map toSC vds
                   s' = inScope scs $ removeListT (removeListC s scs) tvs
               in QuantifiedTerm q vars (subst s' term) rg
           LambdaTerm varPatts p term rg ->
-              let bvars = map toSC 
+              let bvars = map toSC
                           $ Set.toList $ Set.unions $ map freeVars varPatts
                   s' = inScope bvars $ removeListC s bvars
               in LambdaTerm varPatts p (subst s' term) rg
-          LetTerm lb eqs term rg -> 
+          LetTerm lb eqs term rg ->
               let (eqs', s') = substLetEqs s eqs
               in LetTerm lb eqs' (subst s' term) rg
           CaseTerm term eqs rg ->
@@ -293,10 +289,10 @@ substLetEq (ProgEq lh rh rg) = do
   s <- get
   let scs = map toSC (Set.toList $ freeVars lh)
             ++ mapMaybe toSConst (Set.toList $ opsInTerm lh)
-  -- IMPORTANT REMARK:
-  -- The ops contain also constructors which are used to form patterns.
-  -- These constructors shouldn't be substituted at all, so it should
-  -- be no problem if we remove them from the substitution.
+  {- IMPORTANT REMARK:
+  The ops contain also constructors which are used to form patterns.
+  These constructors shouldn't be substituted at all, so it should
+  be no problem if we remove them from the substitution. -}
   put $ inScope scs $ removeListC s scs
   return (ProgEq lh (subst s rh) rg)
 
@@ -314,16 +310,16 @@ substCaseEq s (ProgEq lh rh rg) =
 
 -- | substitutes the symbols, bound by progeqs, in the term
 substEqs :: Term -> [ProgEq] -> ReductionResult Term
--- evil hack to use the reduction type as it is also for building
--- the substitution. This leads to the fact that a successful reduction
--- will be given a notreduced flag!
--- TODO: remove this evil hack
-substEqs t eqs = toReduced $ (\x -> subst x t) <$>
+{- evil hack to use the reduction type as it is also for building
+the substitution. This leads to the fact that a successful reduction
+will be given a notreduced flag!
+TODO: remove this evil hack -}
+substEqs t eqs = toReduced $ (`subst` t) <$>
                  redFold substFromEq emptySubstitution eqs
---substEqs t eqs = error $ (show t) ++ "\n\n\n"
---                 ++ let redd = redFold substFromEq emptySubstitution eqs
---                    in (show $ getResult redd) ++ (show $ getResultType redd)
---substEqs t eqs = (\x -> error $ show x) <$> redFold substFromEq emptySubstitution eqs
+{- substEqs t eqs = error $ (show t) ++ "\n\n\n"
+++ let redd = redFold substFromEq emptySubstitution eqs
+in (show $ getResult redd) ++ (show $ getResultType redd)
+substEqs t eqs = (\x -> error $ show x) <$> redFold substFromEq emptySubstitution eqs -}
 
 
 substFromEq :: Subst -> ProgEq -> ReductionResult Subst
@@ -338,10 +334,10 @@ substFromEq s (ProgEq lh rh _) =
 
 data ReductionFailure = HasPatternsOrFunctions | HasCycles deriving Show
 
--- | Codes for explaining the success of a reduction.
---   * reduced is a stop-flag and signals success
---   * notreduced is a continue-flag
---   * cannotreduce is a stop-flag and signals failure
+{- | Codes for explaining the success of a reduction.
+reduced is a stop-flag and signals success
+notreduced is a continue-flag
+cannotreduce is a stop-flag and signals failure -}
 data ReductionResult a = Reduced a | NotReduced a
                        | CannotReduce ReductionFailure String a
 
@@ -368,7 +364,6 @@ toReduced rr = case rr of
                   _ -> rr
 
 
-
 -- | intended to unpack the result or to give an error if CannotReduce
 getResult :: ReductionResult a -> a
 getResult rr = case rr of
@@ -390,15 +385,15 @@ getResultType rr = case rr of
 
 redList :: (a -> ReductionResult a) -> [a] -> ReductionResult [a]
 redList _ [] = NotReduced []
-redList f tl@(t:l) = case f t of
-                        NotReduced _ -> (t:) <$> redList f l
-                        Reduced x -> Reduced (x:l)
+redList f tl@(t : l) = case f t of
+                        NotReduced _ -> (t :) <$> redList f l
+                        Reduced x -> Reduced (x : l)
                         x -> const tl <$> x
 
 
 redFold :: (a -> b -> ReductionResult a) -> a -> [b] -> ReductionResult a
 redFold _ s [] = NotReduced s
-redFold f x (t:l) = case f x t of
+redFold f x (t : l) = case f x t of
                       NotReduced y -> redFold f y l
                       y -> y
 
@@ -409,9 +404,9 @@ redUntil f a = case f a of
                  Reduced x -> redUntil f x
                  x -> getResult x
 
----- let-reduction
+-- -- let-reduction
 redLetList :: [Term] -> ReductionResult [Term]
-redLetList  = redList redLet
+redLetList = redList redLet
 
 redLetProg :: ([ProgEq], Term) -> ReductionResult ([ProgEq], Term)
 redLetProg (eqs, t) =
@@ -420,29 +415,28 @@ redLetProg (eqs, t) =
         -- function to recombine the result structure from the list
         recomb tl = (zipWith rhsRepl eqs tl, last tl)
         -- needed for recomb
-        rhsRepl (ProgEq lh _ rg) x = (ProgEq lh x rg)
+        rhsRepl (ProgEq lh _ rg) x = ProgEq lh x rg
     in fmap recomb res
 
 
+{- this function is a nice example where the usage of an abstract functor
+makes the implementation cleaner -}
 
--- this function is a nice example where the usage of an abstract functor
--- makes the implementation cleaner
-
--- | reduce the topleft-most occurence of a let-expression if possible
--- , i.e, if the let doesn't contain function-definitions nor patterns
+{- | reduce the topleft-most occurence of a let-expression if possible
+, i.e, if the let doesn't contain function-definitions nor patterns -}
 redLet :: Term -> ReductionResult Term
 redLet t =
     case t of
       -- LetTerm LetBrand [ProgEq] Term Range
       LetTerm _ eqs term _ -> substEqs term eqs
-      ApplTerm t1 t2 rg -> 
-          (\ [r1,r2] -> ApplTerm r1 r2 rg) <$> redLetList [t1,t2]
-      TupleTerm l rg -> (\x -> TupleTerm x rg) <$> redLetList l
-      TypedTerm term tq typ rg -> (\x -> TypedTerm x tq typ rg) <$> redLet term
+      ApplTerm t1 t2 rg ->
+          (\ [r1, r2] -> ApplTerm r1 r2 rg) <$> redLetList [t1, t2]
+      TupleTerm l rg -> (`TupleTerm` rg) <$> redLetList l
+      TypedTerm term tq typ rg -> (\ x -> TypedTerm x tq typ rg) <$> redLet term
       QuantifiedTerm q vars term rg ->
-          (\x -> QuantifiedTerm q vars x rg) <$> redLet term
+          (\ x -> QuantifiedTerm q vars x rg) <$> redLet term
       LambdaTerm vars p term rg ->
-          (\x -> LambdaTerm vars p x rg) <$> redLet term
+          (\ x -> LambdaTerm vars p x rg) <$> redLet term
       CaseTerm term eqs rg ->
           (\ (xeqs, xt) -> CaseTerm xt xeqs rg) <$> redLetProg (eqs, term)
       _ -> NotReduced t
@@ -454,6 +448,5 @@ letReduceOnce = getResult . redLet
 letReduce :: Term -> Term
 letReduce = redUntil redLet
 
----- beta-reduction
--- TODO!
-
+{- -- beta-reduction
+TODO! -}

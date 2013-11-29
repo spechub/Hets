@@ -24,9 +24,9 @@ import qualified Logic.Prover as LP
 -- | Datatype for the prover state for propositional logic
 data PropProverState = PropProverState
     {
-      initialAxioms    :: [AS_Anno.Named AS.FORMULA]
+      initialAxioms :: [AS_Anno.Named AS.FORMULA]
     , initialSignature :: Sign.Sign
-    , freeDefs         :: [LP.FreeDefMorphism AS.FORMULA PMorphism.Morphism]
+    , freeDefs :: [LP.FreeDefMorphism AS.FORMULA PMorphism.Morphism]
     } deriving (Show)
 
 -- | function to create prover state
@@ -43,7 +43,7 @@ propProverState sign aSens freedefs =
       foldl insertSentence
       PropProverState
       {
-        initialAxioms    = []
+        initialAxioms = []
       , initialSignature = sign
       , freeDefs = freedefs
       } axioms
@@ -53,13 +53,13 @@ insertSentence :: PropProverState
                -> PropProverState
 insertSentence pState frm =
     let
-        sign     = initialSignature pState
-        axs      = initialAxioms    pState
-        freedefs = freeDefs         pState
+        sign = initialSignature pState
+        axs = initialAxioms pState
+        freedefs = freeDefs pState
     in
       PropProverState
       {
-        initialAxioms    = axs ++ [frm]
+        initialAxioms = axs ++ [frm]
       , initialSignature = sign
       , freeDefs = freedefs
       }

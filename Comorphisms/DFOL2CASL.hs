@@ -58,6 +58,6 @@ instance Comorphism DFOL2CASL
                       }
    map_theory DFOL2CASL = wrapInResult . theoryTransl
    map_symbol DFOL2CASL = symbolTransl
-   map_sentence DFOL2CASL sig = wrapInResult . (senTransl sig)
+   map_sentence DFOL2CASL sig = wrapInResult . senTransl sig
    map_morphism DFOL2CASL = wrapInResult . morphTransl
    has_model_expansion DFOL2CASL = True

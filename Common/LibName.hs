@@ -41,6 +41,8 @@ import Data.List
 import Data.Maybe
 import Data.Ord
 
+import Control.Monad (mplus)
+
 import System.FilePath
 
 omTs :: [Token]
@@ -84,7 +86,7 @@ emptyLibName s = LibName (fromMaybe (error "emptyLibName") $ parseIRICurie s)
 
 setFilePath :: FilePath -> LibName -> LibName
 setFilePath fp ln =
-  ln { locIRI = maybe (error "setFilePath") Just $ parseIRICurie fp }
+  ln { locIRI = mplus (parseIRICurie fp) (error "setFilePath") }
 
 getFilePath :: LibName -> FilePath
 getFilePath = maybe "" iriToStringUnsecure . locIRI

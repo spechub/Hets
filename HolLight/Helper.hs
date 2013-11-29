@@ -84,8 +84,8 @@ isVar v = isJust (destVar v)
 
 frees :: Term -> [Term]
 frees tm = case tm of
-  Var _ _ _ -> [tm]
-  Const _ _ _ -> []
+  Var {} -> [tm]
+  Const {} -> []
   Abs bv bod -> frees bod \\ [bv]
   Comb s t -> frees s `union` frees t
 
@@ -104,16 +104,16 @@ variant avoid v = if not (any (vfreeIn v) avoid) then Just v
 vsubst :: [(Term, Term)] -> Term -> Maybe Term
 vsubst =
   let vsubst' ilist tm = case tm of
-                           Var _ _ _ -> Just $ revAssocd tm ilist tm
-                           Const _ _ _ -> Just tm
+                           Var {} -> Just $ revAssocd tm ilist tm
+                           Const {} -> Just tm
                            Comb s t -> case (vsubst' ilist s, vsubst ilist t) of
-                             (Just s', Just t') -> if s' == s && t' == t
-                                                  then Just tm
-                                                  else Just (Comb s' t')
+                             (Just s', Just t') -> Just $ if s' == s && t' == t
+                                                  then tm
+                                                  else Comb s' t'
                              _ -> Nothing
                            Abs v s -> let ilist' = filter (\ (_, x) -> x /= v)
                                                           ilist
-                             in if ilist' == [] then Just tm
+                             in if null ilist' then Just tm
                                 else case vsubst ilist' s of
                                   Just s' | s' == s -> Just tm
                                           | any (\ (t, x) -> vfreeIn v t
@@ -129,11 +129,11 @@ vsubst =
                                           | otherwise -> Just (Abs v s')
                                   _ -> Nothing
   in \ theta ->
-    if theta == [] then Just else
+    if null theta then Just else
     if all (\ (t, x) -> case (typeOf t, destVar x) of
                          (Just t', Just (_, x')) -> t' == x'
                          _ -> False) theta then vsubst' theta
-    else (\ _ -> Nothing)
+    else const Nothing
 
 destComb :: Term -> Maybe (Term, Term)
 destComb c = case c of
@@ -160,10 +160,10 @@ isAbs :: Term -> Bool
 isAbs a = isJust (destAbs a)
 
 rator :: Term -> Maybe Term
-rator tm = maybe Nothing (Just . fst) (destComb tm)
+rator tm = fmap fst (destComb tm)
 
 rand :: Term -> Maybe Term
-rand tm = maybe Nothing (Just . snd) (destComb tm)
+rand tm = fmap snd (destComb tm)
 
 splitlist :: (t -> Maybe (a, t)) -> t -> ([a], t)
 splitlist dest x = case dest x of
@@ -227,23 +227,22 @@ inst =
                                     then Right tm'
                                     else Left tm'
                             Const c ty at -> let ty' = typeSubst tyin ty
-                              in if ty' == ty
-                                 then Right tm
-                                 else Right (Const c ty' at)
+                              in Right $ if ty' == ty
+                                 then tm
+                                 else Const c ty' at
                             Comb f x -> case (inst' env tyin f,
                                               inst' env tyin x) of
-                                          (Right f', Right x') -> if f' == f
-                                            && x' == x then Right tm
-                                                       else Right (Comb f' x')
+                                          (Right f', Right x') ->
+                                           Right $ if f' == f && x' == x
+                                                   then tm else Comb f' x'
                                           (Left c, _) -> Left c
                                           (_, Left c) -> Left c
                             Abs y t -> case inst' [] tyin y of
                               Right y' -> let env' = (y, y') : env
                                 in case inst' env' tyin t of
-                                     Right t' -> if y' == y &&
-                                                    t' == t
-                                       then Right tm
-                                       else Right (Abs y' t')
+                                     Right t' ->
+                                      Right $ if y' == y && t' == t
+                                       then tm else Abs y' t'
                                      Left w' -> if w' /= y'
                                        then Left w'
                                        else let ifrees = map (fromRight .
@@ -253,9 +252,9 @@ inst =
                                                Just y'' ->
                                                 case (destVar y'', destVar y) of
                                                  (Just (v1, _), Just (_, v2)) ->
-                                                  let z = (Var v1 v2
+                                                  let z = Var v1 v2
                                                            (HolTermInfo
-                                                           (Normal, Nothing)))
+                                                           (Normal, Nothing))
                                                   in case vsubst [(z, y)] t of
                                                       Just s -> inst' env tyin
                                                        (Abs z s)
@@ -263,7 +262,7 @@ inst =
                                                  _ -> Left w'
                                                _ -> Left w'
                               _ -> Left tm
-  in (\ tyin -> if tyin == [] then Right else inst' [] tyin)
+  in (\ tyin -> if null tyin then Right else inst' [] tyin)
 
 mkComb :: (Term, Term) -> Maybe Term
 mkComb (f, a) = case typeOf f of
@@ -437,7 +436,7 @@ codeOfTerm t =
      || length tms /= 8
   then Nothing
   else let bools = map boolOfTerm (reverse tms)
-       in if not (any (Nothing ==) bools) then
+       in if notElem Nothing bools then
           Just (foldr (\ b f' -> if b then 1 + 2 * f' else 2 * f')
                 0 (catMaybes bools))
           else Nothing
@@ -448,8 +447,7 @@ randRator v = case rator v of
   _ -> Nothing
 
 destClause :: Term -> Maybe [Term]
-destClause tm = case maybe Nothing (Just . stripExists)
-                      (maybe Nothing body (body tm)) of
+destClause tm = case fmap stripExists (maybe Nothing body (body tm)) of
   Just (_, pbod) -> let (s, args) = stripComb pbod
                    in case (nameOf s, length args) of
                      ("_UNGUARDED_PATTERN", 2) ->

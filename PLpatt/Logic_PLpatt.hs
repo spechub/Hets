@@ -22,9 +22,9 @@ import qualified ATerm.Conversion as AT
 import qualified Data.Typeable.Internal as Tp
 import Common.Result
 import Data.Monoid
-import qualified PLpatt.Parse_PLpatt as LogicParse 
+import qualified PLpatt.Parse_PLpatt as LogicParse
 import PLpatt.StaticAnaPLpatt
-    
+
 -- Logic ID     lid
 data PLpatt = PLpatt deriving Show
 
@@ -116,13 +116,13 @@ instance StaticAnalysis PLpatt
             signatureDiff PLpatt = Sign.sigDiff
             basic_analysis PLpatt = Just basicAna
 
-instance Syntax PLpatt 
+instance Syntax PLpatt
                 AS.Basic_spec -- parse_basic_spec produces a syntax tree
                 AS.Symb
                 ()
                 ()
                     where
-  parse_basic_spec _ = Just (\ _ -> LogicParse.parse1)
+  parse_basic_spec _ = Just $ const LogicParse.parse1
 -- basic_analysis lid = Just (\ ..  )
 
 -- instance of category
@@ -141,9 +141,9 @@ instance Sentences PLpatt
 
 -- Logic instance, see Logic/Logic.hs:867
 instance Logic PLpatt
-    () --  SL.Sublogic -- sublogic
+    () -- SL.Sublogic -- sublogic
     AS.Basic_spec -- basic_spec
-    AS.Bool' 
+    AS.Bool'
     () -- symb_items
     () -- symb_map_items
     Sign.Sigs -- sign
@@ -152,8 +152,8 @@ instance Logic PLpatt
     AS.Symb -- raw Symb
     () -- proof tree
     where
- {-    
- logic_name = show 
+ {-
+ logic_name = show
  id lid = Morphism.id
  comp lid = Morphism.comp
  parse_basic_spec lid = Generic.parseSpec

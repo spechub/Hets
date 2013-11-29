@@ -22,7 +22,7 @@ module CMDL.ConsCommands
 import Interfaces.DataTypes
 import Interfaces.Utils
 
-import CMDL.DataTypes (CmdlState (intState), ProveCmdType(..))
+import CMDL.DataTypes (CmdlState (intState), ProveCmdType (..))
 import CMDL.DataTypesUtils
 import CMDL.Utils
 import CMDL.ProveCommands (cDoLoop)

@@ -75,11 +75,11 @@ convertTypePattern tp = case tp of
       if isPlace t1 then case rp of
                [TypePatternToken inId, TypePatternToken t2] ->
                    if isPlace t2 && isSignChar (head $ tokStr inId)
-                     then return (Id [t1,inId,t2] [] nullRange, [])
+                     then return (Id [t1, inId, t2] [] nullRange, [])
                    else illegalTypePattern tp
                _ -> illegalTypePattern tp
       else case rp of
-         BracketTypePattern Squares as@(_:_) ps : rp2 -> do
+         BracketTypePattern Squares as@(_ : _) ps : rp2 -> do
              is <- mapM convertToId as
              rs <- mapM convertToTypeArg rp2
              return (Id [t1] is ps, rs)
@@ -92,10 +92,10 @@ convertTypePattern tp = case tp of
                tid = Id [Token o ps, Token place $ getRange ap,
                          Token c ps] [] nullRange
            in case ap of
-         TypePatternToken t -> if isPlace t then
-             return (tid, [])
-             else return (tid, [TypeArg (simpleIdToId t) NonVar MissingKind
-                                        rStar 0 Other nullRange])
+         TypePatternToken t -> return $ if isPlace t
+           then (tid, [])
+           else (tid, [TypeArg (simpleIdToId t) NonVar MissingKind
+                        rStar 0 Other nullRange])
          _ -> do a <- convertToTypeArg ap
                  return (tid, [a])
     _ -> illegalTypePattern tp
@@ -105,8 +105,8 @@ convertToTypeArg tp = case tp of
     TypePatternToken t -> if isPlace t then illegalTypePatternArg tp else
         return $ TypeArg (simpleIdToId t)
                NonVar MissingKind rStar 0 Other nullRange
-    TypePatternArg a _ ->  return a
-    BracketTypePattern Parens [stp] _ ->  convertToTypeArg stp
+    TypePatternArg a _ -> return a
+    BracketTypePattern Parens [stp] _ -> convertToTypeArg stp
     _ -> illegalTypePatternArg tp
 
 convertToId :: TypePattern -> Result Id
@@ -118,9 +118,9 @@ convertToId tp = case tp of
          if null tps then convertToId hd
          else do
          let (toks, comps) = break ( \ p ->
-                        case p of BracketTypePattern Squares (_:_) _ -> True
+                        case p of BracketTypePattern Squares (_ : _) _ -> True
                                   _ -> False) tps
-         ts <- mapM convertToToks (hd:toks)
+         ts <- mapM convertToToks (hd : toks)
          (is, ps) <- if null comps then return ([], nullRange)
                      else convertToIds $ head comps
          pls <- if null comps then return []
@@ -142,7 +142,7 @@ convertToToks tp = case tp of
     TypePatternToken t -> return [t]
     BracketTypePattern bk [stp] ps -> case bk of
         Parens -> illegalTypeId stp
-        _ -> let [o,c] = mkBracketToken bk ps in do
+        _ -> let [o, c] = mkBracketToken bk ps in do
             ts <- convertToToks tp
             return (o : ts ++ [c])
     MixfixTypePattern tps -> do

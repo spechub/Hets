@@ -714,16 +714,16 @@ printMorphism isSubSigExt isInclMorExt fE fM mor =
         ops = op_map mor
         prSig s = specBraces (space <> printSign fE s)
         srcD = prSig src
-    in if isInclusionMorphism isInclMorExt mor then
-           if isSubSig isSubSigExt tar src then
-               fsep [text "identity morphism over", srcD]
-           else fsep
-      [ text "inclusion morphism of", srcD
-      , if Map.null ops then empty
-        else fsep
-          [ text "by totalizing"
-          , pretty $ Set.map (uncurry idToOpSymbol) $ Map.keysSet ops ]]
-    else fsep
+    in fsep $ if isInclusionMorphism isInclMorExt mor then
+              if isSubSig isSubSigExt tar src then
+                  [text "identity morphism over", srcD]
+              else
+                  [text "inclusion morphism of", srcD
+                 , if Map.null ops then empty
+                   else fsep
+                   [text "by totalizing",
+                    pretty $ Set.map (uncurry idToOpSymbol) $ Map.keysSet ops]]
+    else
       [ braces $ printMap id sepByCommas pairElems
           (morphismToSymbMapAux True mor) $+$ fM mor
       , colon <+> srcD, mapsto <+> prSig tar ]

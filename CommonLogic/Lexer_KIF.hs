@@ -42,16 +42,16 @@ word :: CharParser st String
 word = satisfy kifInitialChar <:> many (satisfy kifWordChar)
 
 quotedChar :: CharParser st Char
-quotedChar = do
+quotedChar =
   satisfy kifChar <|> satisfy kifUnofficial
   <|> (char '\\' >> char '\"')
 
 quotedString :: CharParser st String
 quotedString = do
   q1 <- char '\"'
-  s  <- many quotedChar
+  s <- many quotedChar
   q2 <- char '\"'
-  return $ q1:s++[q2]
+  return $ q1 : s ++ [q2]
 
 variable :: CharParser st String
 variable = char '?' <:> word

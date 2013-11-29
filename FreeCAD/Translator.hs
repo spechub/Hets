@@ -22,8 +22,8 @@ import System.Directory
 import System.IO
 import System.Process
 import System.FilePath
-import FreeCAD.PrintAs()
-import Control.Monad.Reader (ReaderT(..))
+import FreeCAD.PrintAs ()
+import Control.Monad.Reader (ReaderT (..))
 
 
 getFreshTempDir :: IO FilePath
@@ -38,48 +38,48 @@ processFile :: FilePath -> IO Document
 processFile fp = do
   tempDir <- getFreshTempDir
   readProcess "unzip" ["-o", fp, "-d", tempDir] []
-  xmlInput <- readFile (joinPath[tempDir, "Document.xml"])
+  xmlInput <- readFile (joinPath [tempDir, "Document.xml"])
   let parsed = parseXMLDoc xmlInput
   d <- runReaderT (translate' $ fromJust parsed) tempDir
   removeDirectoryRecursive tempDir
   return d
 
---constants used to find the appropriate subtree in the XML file:
-objListQName::QName
+-- constants used to find the appropriate subtree in the XML file:
+objListQName :: QName
 objListQName = unqual "ObjectData"
 
-objQName::QName
+objQName :: QName
 objQName = unqual "Object"
 
-objListEl:: Element -> Maybe Element
-objListEl mbel = findChild objListQName mbel
+objListEl :: Element -> Maybe Element
+objListEl = findChild objListQName
 
-objList:: Element -> [Element]
-objList mbel= findChildren objQName (fromJust (objListEl mbel))
+objList :: Element -> [Element]
+objList mbel = findChildren objQName (fromJust (objListEl mbel))
 
 firstThree :: String -> String
-firstThree s = take 3 s
+firstThree = take 3
 
-getName:: Element -> String
+getName :: Element -> String
 getName el = fromJust (findAttr (unqual "name") el)
-hasName:: String -> Element -> Bool
-hasName s el = (getName el == s)
+hasName :: String -> Element -> Bool
+hasName s el = getName el == s
 
-childByName:: String -> Element -> Element
+childByName :: String -> Element -> Element
 childByName s el = fromJust (findChild (unqual s) el)
-childByNameAttr:: String -> Element -> Element
-childByNameAttr s el = fromJust (filterChild(hasName s) el)
+childByNameAttr :: String -> Element -> Element
+childByNameAttr s el = fromJust (filterChild (hasName s) el)
 
 -- a Set constant -- TODO: find signature
-setBaseObjs:: Set.Set [Char]
-setBaseObjs = fromList["Box", "Sph", "Cyl", "Con", "Tor", "Cir", "Rec"]
+setBaseObjs :: Set.Set String
+setBaseObjs = fromList ["Box", "Sph", "Cyl", "Con", "Tor", "Cir", "Rec"]
 
-isBaseObject:: Element -> Bool
+isBaseObject :: Element -> Bool
 isBaseObject el = member (firstThree (getName el)) setBaseObjs
-    -- identify (by its name) whether an object is simpe or extended
-    -- returns true if it is a base object and false otherwise
+    {- identify (by its name) whether an object is simpe or extended
+    returns true if it is a base object and false otherwise -}
 
-getObject:: Element -> RIO NamedObject
+getObject :: Element -> RIO NamedObject
 getObject el | tn == "Box" = mkBaseObject $ getBox elc
              | tn == "Sph" = mkBaseObject $ getSph elc
              | tn == "Cyl" = mkBaseObject $ getCyl elc
@@ -87,14 +87,14 @@ getObject el | tn == "Box" = mkBaseObject $ getBox elc
              | tn == "Tor" = mkBaseObject $ getTor elc
              | tn == "Cir" = mkBaseObject $ getCir elc
              | tn == "Rec" = mkRectangle el
-             | tn == "Lin" = mkLine el --TODO
+             | tn == "Lin" = mkLine el -- TODO
              | tn == "Cut" = mkObject $ getCut elc
              | tn == "Com" = mkObject $ getCom elc
              | tn == "Fus" = mkObject $ getFus elc
              | tn == "Sec" = mkObject $ getSec elc
              | tn == "Ext" = mkObject $ getExt elc
     where
-      tn = firstThree(getName el)
+      tn = firstThree (getName el)
       mkObject = return . NamedObject (getName el)
                  . PlacedObject (findPlacement elc)
       mkBaseObject = mkObject . BaseObject
@@ -120,7 +120,7 @@ getObject el | tn == "Box" = mkBaseObject $ getBox elc
 getObject _ = error "undefined object"
 
 
-mkRectangle :: Element ->RIO NamedObject
+mkRectangle :: Element -> RIO NamedObject
 mkRectangle ef = do
         let e = child ef
             el2 = childByNameAttr "Shape" e
@@ -140,32 +140,32 @@ mkLine ef = do
             po = PlacedObject place obj
         return $ NamedObject (getVal "name" ef) po
 
-getVal:: String -> Element -> String
+getVal :: String -> Element -> String
 getVal s el = fromJust (findAttr (unqual s) el)
 
-getFloatVal:: Element -> String
+getFloatVal :: Element -> String
 getFloatVal el = getVal "value" el2
     where
         el2 = childByName "Float" el
 
-getPlacementVals :: Element -> (String ,String ,String ,String ,String ,String
-                               ,String)
+getPlacementVals :: Element -> (String , String , String , String , String , String
+                               , String)
 getPlacementVals el = (m "Px", m "Py", m "Pz", m "Q0", m "Q1", m "Q2", m "Q3")
     where
         m s = getVal s el2
         el2 = childByName "PropertyPlacement" el
 
-getLinkVal:: Element -> String
+getLinkVal :: Element -> String
 getLinkVal el = getVal "value" el2
     where
         el2 = childByName "Link" el
 
-findFloat:: String -> Element -> Double
+findFloat :: String -> Element -> Double
 findFloat s el = read (getFloatVal el2)
     where
         el2 = childByNameAttr s el
 
-findPlacement::Element -> FreeCAD.As.Placement
+findPlacement :: Element -> FreeCAD.As.Placement
 findPlacement el = Placement (Vector3 a b c) (Vector4 d e f g)
     where
         (sa, sb, sc, sd, se, sf, sg) = getPlacementVals el2
@@ -178,24 +178,24 @@ findPlacement el = Placement (Vector3 a b c) (Vector4 d e f g)
         g = read sg
         el2 = childByNameAttr "Placement" el
 
-findRef::String -> Element -> FreeCAD.As.ExtendedObject
+findRef :: String -> Element -> FreeCAD.As.ExtendedObject
 findRef s el = Ref (getLinkVal el2) where
     el2 = childByNameAttr s el
 
-findPropVec::String -> Element -> FreeCAD.As.Vector3
+findPropVec :: String -> Element -> FreeCAD.As.Vector3
 findPropVec s el = Vector3 valueX valueY valueZ where
     el2 = childByNameAttr s el
-    propVec = fromJust( findChild ( unqual "PropertyVector" ) el2)
+    propVec = fromJust ( findChild ( unqual "PropertyVector" ) el2)
     valueX = read $ fromJust $ findAttr (unqual "valueX") propVec
     valueY = read $ fromJust $ findAttr (unqual "valueY") propVec
     valueZ = read $ fromJust $ findAttr (unqual "valueZ") propVec
 
-child:: Element -> Element
-child el = head(elChildren el)
+child :: Element -> Element
+child el = head (elChildren el)
 
---Facade function that translates the parsed XML document
---into Haskell-FreeCAD datatype
+{- Facade function that translates the parsed XML document
+into Haskell-FreeCAD datatype -}
 
 
-translate':: Element -> RIO Document
+translate' :: Element -> RIO Document
 translate' baseElement = mapM getObject $ objList baseElement

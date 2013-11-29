@@ -39,7 +39,7 @@ import Data.List as List
 import Data.Maybe
 
 q2p :: (a, b, c, d) -> (c, d)
-q2p (_, _, c, d) = (c,d)
+q2p (_, _, c, d) = (c, d)
 
 typeNub :: Env -> (a -> (Type, Term)) -> [a] -> [a]
 typeNub e f = let

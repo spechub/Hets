@@ -1,4 +1,5 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleContexts,
+             FlexibleInstances, MultiParamTypeClasses #-}
 {- |
 Module      :  $Header$
 Description :  The AnEven-Tool: an (An)alyzer and (Ev)aluator for (En)CL
@@ -45,7 +46,7 @@ import Static.SpecLoader (getSigSensComplete, SigSens (..))
 
 
 import CSL.MathematicaInterpreter
-import CSL.MapleInterpreter 
+import CSL.MapleInterpreter
 import CSL.Interpreter
 import CSL.Logic_CSL
 
@@ -103,6 +104,8 @@ import System.Console.Shell.ShellMonad
 
 -- import System.Console.Shell.Backend.Readline
 import System.Console.Shell.Backend.Haskeline
+{- FIXME: It seems this module is sometimes (in newer versions?) located
+          in System.Console.Haskeline -}
 
 -- ----------------------------------------------------------------------
 
@@ -114,9 +117,9 @@ data CAS = Maple | Mathematica deriving (Show, Read, Eq)
 
 data CASState = MapleState MITrans | MathematicaState MathState
 
--- ----------------------------------------------------------------------
--- * AnEven-Tool
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+AnEven-Tool
+---------------------------------------------------------------------- -}
 
 versionInfo :: String
 versionInfo = unlines
@@ -133,9 +136,9 @@ shellMessage = unlines
   , "redistribute it under certain conditions (GPLv2)."
   ]
 
--- ----------------------------------------------------------------------
--- ** Utils for Completion
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+Utils for Completion
+---------------------------------------------------------------------- -}
 
 
 {-
@@ -160,10 +163,10 @@ terminalSegEx rel cache el =
     case Map.lookup el rel of
       Nothing -> (cache, Set.empty)
       Just l ->
-          let l' = filter (flip Set.notMember cache) l
+          let l' = filter (`Set.notMember` cache) l
               cache' = foldr Set.insert cache l'
               (cache'', iss) = mapAccumL (terminalSegEx rel) cache' l'
-          in (cache'', Set.unions $ Set.fromList l': iss)
+          in (cache'', Set.unions $ Set.fromList l' : iss)
 
 predecessorsOf :: Ord a => Map.Map a [a] -- the relation
             -> a       -- the element
@@ -185,7 +188,7 @@ getSpecNamesFromFile :: Maybe FilePath -> IO [String]
 getSpecNamesFromFile Nothing = return []
 getSpecNamesFromFile (Just fp) = do
   fe <- doesFileExist fp
-  if fe then readFile fp >>= return . getSpecNames else return []
+  if fe then Control.Monad.liftM getSpecNames (readFile fp) else return []
 
 
 -- use this history file
@@ -194,9 +197,9 @@ historyFilePath = do
   tmp <- getTemporaryDirectory
   return $ joinPath [tmp, "AnEvenHistory.txt"]
 
--- ----------------------------------------------------------------------
--- ** Shell abstraction
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+Shell abstraction
+---------------------------------------------------------------------- -}
 
 type BackendState = ShellacState
 -- type BackendState = ()
@@ -206,9 +209,9 @@ defaultBackend = haskelineBackend
 -- defaultBackend = readlineBackend
 
 
--- ----------------------------------------------------------------------
--- ** Pretty Printing for AnEvenState fields
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+Pretty Printing for AnEvenState fields
+---------------------------------------------------------------------- -}
 
 class PrettyOutput a b where
     showPretty :: a -> b -> Doc
@@ -216,16 +219,16 @@ class PrettyOutput a b where
 data POdefault = POdefault
 
 instance PrettyOutput POdefault (SigSens a b) where
-    showPretty _ sigs = pretty $ sigsensLibname sigs
+    showPretty _ = pretty . sigsensLibname
 
 instance PrettyOutput POdefault [Named CMD] where
-    showPretty _ prog = pretty prog
+    showPretty _ = pretty
 
 instance PrettyOutput POdefault [(String, Guarded EPRange)] where
-    showPretty _ ds = pretty ds
+    showPretty _ = pretty
 
 instance PrettyOutput POdefault (GuardedMap EPRange) where
-    showPretty _ ds = pretty ds
+    showPretty _ = pretty
 
 
 {- TODO: implement it for the other types...
@@ -249,9 +252,9 @@ instance PrettyOutput POdefault (GuardedMap EPRange) where
 visualize :: PrettyOutput POdefault a => a -> Sh AnEvenState ()
 visualize x = shellPutStrLn $ show $ showPretty POdefault x
 
--- ----------------------------------------------------------------------
--- ** Basic Datatypes
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+Basic Datatypes
+---------------------------------------------------------------------- -}
 
 data AnEvenConfig = AnEvenConfig
 
@@ -262,12 +265,12 @@ defaultConfig = AnEvenConfig
 
 -}
 
-data AnEvenState = 
+data AnEvenState =
     AnEvenState
     { stSpec :: Maybe (SigSens Sign CMD) -- current hets environment
     , stProg :: Maybe [Named CMD] -- the current program (derived from spec)
-    , stDS :: Maybe (GuardedMap EPRange) -- the current dependency store
-                                         -- (derived from spec)
+    , stDS :: Maybe (GuardedMap EPRange) {- the current dependency store
+                                         (derived from spec) -}
 
     -- the ordered version of the current dependency store
     , stODS :: Maybe [(String, Guarded EPRange)]
@@ -288,12 +291,10 @@ data AnEvenState =
     }
 
 
-
 initialState :: IO AnEvenState
 initialState = do
   csinit <- newIORef Nothing
-  return $
-    AnEvenState
+  return AnEvenState
     { stSpec = Nothing
     , stProg = Nothing
     , stDS = Nothing
@@ -338,7 +339,8 @@ getStFDS :: Sh AnEvenState [(ConstantName, AssDefinition)]
 getStFDS = getStGeneric stFDS "Flattened Dependency Store not initialized."
 
 getStECRgMap :: Sh AnEvenState (Map.Map ConstantName EPRange)
-getStECRgMap = getStGeneric stECRgMap "Elim constant to eprange mapping not initialized."
+getStECRgMap = getStGeneric stECRgMap
+                "Elim constant to eprange mapping not initialized."
 
 getStCmpEnv :: Sh AnEvenState CMP.VarEnv
 getStCmpEnv = getStGeneric stCmpEnv "Comparer environment not initialized."
@@ -388,7 +390,7 @@ updStCmpEnv ve = let f st = st { stCmpEnv = Just ve } in modifyShellSt f
 -- see completion-logic
 setComplFilepath :: AnEvenState -> Maybe FilePath -> IO ()
 setComplFilepath st mFp =
-    atomicModifyIORef (stCompletionState st) $ \ _ -> (mFp, ())
+    atomicModifyIORef (stCompletionState st) $ const (mFp, ())
 
 getComplFilepath :: AnEvenState -> IO (Maybe FilePath)
 getComplFilepath st = readIORef $ stCompletionState st
@@ -402,7 +404,6 @@ readComplState :: Sh AnEvenState (Maybe FilePath)
 readComplState = do
   nst <- getShellSt
   liftIO $ getComplFilepath nst
-
 
 
 -- Completable dummytypes and completion instances
@@ -438,9 +439,9 @@ instance Completion SpecName AnEvenState where
   completableLabel _ = "<specname>"
 
 
--- ----------------------------------------------------------------------
--- ** Basic Interface Functions
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+Basic Interface Functions
+---------------------------------------------------------------------- -}
 
 {-
 
@@ -450,27 +451,30 @@ sigsensGen :: String -> String -> IO (SigSens Sign CMD)
 2. sentences are split into guarded dependency store and program
 splitAS :: [Named CMD] -> (GuardedMap [EXTPARAM], [Named CMD])
 
-3. guarded dependency is analyzed and made disjoint, to apply it to a dependency store use 'fmap'
+3. guarded dependency is analyzed and made disjoint,
+ to apply it to a dependency store use 'fmap'
 analyzeGuarded :: Guarded [EXTPARAM] -> Guarded EPRange
 
 4. the dependency store is sorted by the dependency relation
 dependencySortAS :: GuardedMap EPRange -> [(String, Guarded EPRange)]
 
 5. we apply extended parameter elimination to the dependency store
-epElimination :: CompareIO m => [(String, Guarded EPRange)] -> m [(String, Guarded EPRange)]
+epElimination :: CompareIO m => [(String, Guarded EPRange)] ->
+                 m [(String, Guarded EPRange)]
 
 6. the guarded dependency store is flattened to an ordinary one
 getElimAS :: [(String, Guarded EPRange)] -> [(ConstantName, AssDefinition)]
 
 6'. as 6, but this one returns in addition a mapping of elim-constants to ranges
-getElimASWithMap :: [(String, Guarded EPRange)] -> ([(ConstantName, AssDefinition)], Map.Map ConstantName EPRange)
+getElimASWithMap :: [(String, Guarded EPRange)] ->
+       ([(ConstantName, AssDefinition)], Map.Map ConstantName EPRange)
 
 -}
 
 
-
--- 1. 
-cmdLoadSpecEnv :: Completable SpecFile -> Completable SpecName -> Sh AnEvenState ()
+-- 1.
+cmdLoadSpecEnv :: Completable SpecFile -> Completable SpecName ->
+                  Sh AnEvenState ()
 cmdLoadSpecEnv (Completable lfn) (Completable spn) = do
   sigs <- liftIO $ sigsensGen lfn spn
   updStSpec sigs
@@ -496,16 +500,14 @@ cmdShowODS = do
   visualize ods
 
 
-
-
-
--- ??. 
+-- ??.
 stateInfo :: Sh AnEvenState ()
 stateInfo = do
   st <- getShellSt
   case stSpec st of
     Just (SigSens { sigsensLibname = ln, sigsensNode = nd }) ->
-        shellPutInfoLn $ show $ text "Library" <+> pretty ln <> text ":" <> pretty nd  <+> text "loaded."
+        shellPutInfoLn $ show $ text "Library" <+> pretty ln <>
+        text ":" <> pretty nd <+> text "loaded."
     _ -> shellPutInfoLn "System not initialized."
   when (isJust $ stProg st) $ shellPutInfoLn "Program loaded."
   when (isJust $ stDS st) $ shellPutInfoLn "Dependency Store loaded."
@@ -514,8 +516,6 @@ stateInfo = do
   when (isJust $ stFDS st) $ shellPutInfoLn "Flattened Dependency Store loaded."
   when (isJust $ stECRgMap st) $ shellPutInfoLn "Elim-constant Map loaded."
   when (isJust $ stCmpEnv st) $ shellPutInfoLn "Comparer Environment loaded."
-
-
 
 
 debugInfo :: Sh AnEvenState ()
@@ -529,13 +529,13 @@ debugInfo = do
           when fe $
                do
                  cont <- liftIO $ readFile fp
-                 shellPutInfoLn "=========================== CONTENT ==========================="
+                 shellPutInfoLn ("=========================== CONTENT " ++
+                                 "===========================")
                  shellPutInfoLn cont
-                 shellPutInfoLn "==============================================================="
+                 shellPutInfoLn ("====================================" ++
+                                 "===========================")
                  shellPutInfoLn $ unlines $ getSpecNames cont
     _ -> shellPutInfoLn "Debug: <EMPTY>"
-
-
 
 
 -- 4.
@@ -550,7 +550,7 @@ alEPElim = do
   ods <- getStODS
   gds <- epElimination ods
   updStGDS gds
-  
+
 -- 6.
 alElimAS :: Sh AnEvenState ()
 alElimAS = do
@@ -566,7 +566,6 @@ alElimASWithMap = do
   updStECRgMap m
 
 
-
 -- A REPL based on Shellac
 
 runToolREPL :: AnEvenState -> IO AnEvenState
@@ -574,9 +573,9 @@ runToolREPL st = do
     hfp <- historyFilePath
     let desc =
             (mkShellDescription cmds evalFun)
-            { greetingText       = Just (versionInfo ++ shellMessage)
-            , commandStyle       = OnlyCommands
-            , historyFile        = Just hfp
+            { greetingText = Just (versionInfo ++ shellMessage)
+            , commandStyle = OnlyCommands
+            , historyFile = Just hfp
             }
 
     -- execute the shell
@@ -596,31 +595,32 @@ cmds =
   [ exitCommand "q"
   , helpCommand "h"
 
-  , cmd "load"       cmdLoadSpecEnv   "Loads an EnCL spec from the given file- and specname"
-  , cmd "ods"        cmdShowODS       "Shows the ordered dependency store"
-  , cmd "ds"         cmdShowDS        "Shows the dependency store"
-  , cmd "prog"       cmdShowProg      "Shows the program"
+  , cmd "load" cmdLoadSpecEnv ("Loads an EnCL spec from the given file-" ++
+                               " and specname")
+  , cmd "ods" cmdShowODS "Shows the ordered dependency store"
+  , cmd "ds" cmdShowDS "Shows the dependency store"
+  , cmd "prog" cmdShowProg "Shows the program"
 
-  , cmd "info"       stateInfo        "Show information on the current state"
-  , cmd "debug"      debugInfo        "Show debug information"
+  , cmd "info" stateInfo "Show information on the current state"
+  , cmd "debug" debugInfo "Show debug information"
   ]
 
 
-
--------- a Readline REPL 
+-- ------ a Readline REPL
 rEPL :: IO ()
 rEPL = do
    maybeLine <- readline "% "
-   case maybeLine of 
-    Nothing     -> return () -- EOF / control-d
+   case maybeLine of
+    Nothing -> return () -- EOF / control-d
     Just "exit" -> return ()
-    Just line -> do addHistory line
-                    putStrLn $ "The user input: " ++ (show line)
+    Just line -> do
+                    addHistory line
+                    putStrLn $ "The user input: " ++ show line
                     rEPL
 
--- ----------------------------------------------------------------------
--- ** CompareIO related stuff
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+CompareIO related stuff
+---------------------------------------------------------------------- -}
 
 instance CompareIO (Sh AnEvenState) where
     logMessage s = do
@@ -634,29 +634,31 @@ instance CompareIO (Sh AnEvenState) where
             let vm = CMP.varmap ve
             liftIO $ CMP.smtCompare ve (boolRange vm r1) $ boolRange vm r2
 
--- ----------------------------------------------------------------------
--- * The functionality for the EvalSpec-Tool
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+The functionality for the EvalSpec-Tool
+---------------------------------------------------------------------- -}
 
 -- TODO: replace it with the AnEven functionality when finished.
 
---------------------------- Shortcuts --------------------------
+-- ------------------------- Shortcuts --------------------------
 
 initFlags :: (StepDebugger m, SymbolicEvaluator m) => Bool -> Bool -> m ()
 initFlags sm dm = do
   setSymbolicMode sm
   setDebugMode dm
-    
+
 evalWithVerification :: Bool -- ^ auto-close connection
                      -> CAS -> Maybe FilePath -> Maybe String -> Bool -> Bool
                      -> PC.DTime -> Int -> String -> String -> IO CASState
 evalWithVerification cl c mFp mN smode dmode to v lb sp =
-  let -- exitWhen s = null s || s == "q" || take 4 s == "quit" || take 4 s == "exit"
-      -- program for initialization
-        
+  let {- exitWhen s = null s || s == "q" ||
+         take 4 s == "quit" || take 4 s == "exit"
+      program for initialization -}
+
       p prog = do
          prettyInfo $ text ""
-         prettyInfo $ text "****************** Assignment store loaded ******************"
+         prettyInfo $ text ("****************** Assignment " ++
+                            "store loaded ******************")
          prettyInfo $ text ""
          mE <- verifyProg prog
          when (isJust mE) $ prettyInfo $ pretty $ fromJust mE
@@ -667,15 +669,15 @@ evalWithVerification cl c mFp mN smode dmode to v lb sp =
               when cl $ mapleExit mit >> return ()
               return $ MapleState mit
        Mathematica -> do
-              (mst, _) <- testWithMathematicaGen v mFp mN (initFlags smode dmode) p lb sp
+              (mst, _) <- testWithMathematicaGen v mFp mN
+                           (initFlags smode dmode) p lb sp
               when cl $ mathematicaExit mst
               return $ MathematicaState mst
 
 
-
-
 -- | Returns sorted assignment store and program without EP elimination
-assStoreAndProgSimple :: [Named CMD] -> IO ([(ConstantName, AssDefinition)], [Named CMD])
+assStoreAndProgSimple :: [Named CMD] -> IO ([(ConstantName, AssDefinition)],
+                         [Named CMD])
 assStoreAndProgSimple ncl = do
   let (asss, prog) = splitAS ncl
       gm = fmap analyzeGuarded asss
@@ -683,34 +685,35 @@ assStoreAndProgSimple ncl = do
   return (getSimpleAS sgl, prog)
 
 
-verifyProg :: (MessagePrinter m, StepDebugger m, VCGenerator m, MonadIO m, MonadError ASError m) =>
+verifyProg :: (MessagePrinter m, StepDebugger m, VCGenerator m,
+               MonadIO m, MonadError ASError m) =>
               [Named CMD] -> m (Maybe ASError)
-verifyProg ncl = do
-  stepwiseSafe verifyingStepper $ Sequence $ map sentence ncl
+verifyProg ncl = stepwiseSafe verifyingStepper $ Sequence $ map sentence ncl
 
-testWithMapleGen :: Int -> PC.DTime -> MapleIO b -> ([Named CMD] -> MapleIO a) -> String -> String
-                 -> IO (MITrans, a)
+testWithMapleGen :: Int -> PC.DTime -> MapleIO b -> ([Named CMD] -> MapleIO a)
+                     -> String -> String -> IO (MITrans, a)
 testWithMapleGen v to = testWithCASGen rf where
-    rf adg prog =
+    rf adg =
         runWithMaple adg v to
            [ "EnCLFunctions"
-           -- , "intpakX" -- Problems with the min,max functions, they are remapped by this package!
-           ] prog
+           {- , "intpakX" -- Problems with the min,max functions,
+                             they are remapped by this package! -}
+           ]
 
 
 testWithMathematicaGen :: Int -> Maybe FilePath -> Maybe String
-                       -> MathematicaIO b -> ([Named CMD] -> MathematicaIO a) -> String -> String
-                       -> IO (MathState, a)
+                       -> MathematicaIO b -> ([Named CMD] -> MathematicaIO a)
+                       -> String -> String -> IO (MathState, a)
 testWithMathematicaGen v mFp mN = testWithCASGen rf where
-    rf adg prog =
+    rf adg =
         runWithMathematica adg v mFp mN
-           [ "/home/ewaryst/Hets/CSL/CAS/Mathematica.m" ] prog
+           [ "/home/ewaryst/Hets/CSL/CAS/Mathematica.m" ]
 
 
-testWithCASGen :: ( AssignmentStore as, MonadState (ASState st) as, MonadIO as) =>
-                  (AssignmentDepGraph () -> as a -> IO (ASState st, a))
-                      -> as b -> ([Named CMD] -> as a)
-                      -> String -> String -> IO (ASState st, a)
+testWithCASGen :: (AssignmentStore as, MonadState (ASState st) as, MonadIO as)
+                  => (AssignmentDepGraph () -> as a -> IO (ASState st, a))
+                     -> as b -> ([Named CMD] -> as a)
+                     -> String -> String -> IO (ASState st, a)
 testWithCASGen rf ip f lb sp = do
   ncl <- fmap sigsensNamedSentences $ sigsensGen lb sp
   -- get ordered assignment store and program
@@ -718,18 +721,19 @@ testWithCASGen rf ip f lb sp = do
   vchdl <- openFile "/tmp/vc.out" WriteMode
   -- build the dependency graph
   let gr = assDepGraphFromDescList (const $ const ()) as
-      -- make sure that the assignment store is loaded into maple before
-      -- the execution of f
-      g x = ip >> loadAS as >> modify (\ mit -> mit {vericondOut = Just vchdl}) >> f x
+      {- make sure that the assignment store is loaded into maple before
+      the execution of f -}
+      g x = ip >> loadAS as >> modify (\ mit -> mit {vericondOut = Just vchdl})
+       >> f x
 
   -- start maple and run g
   res <- rf gr $ (withLogFile "/tmp/evalWV.txt" . g) prog
   hClose vchdl
   return res
 
--- ----------------------------------------------------------------------
--- ** Temp tools
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+Temp tools
+---------------------------------------------------------------------- -}
 
 sigsensGen :: String -> String -> IO (SigSens Sign CMD)
 sigsensGen lb sp = do

@@ -32,9 +32,9 @@ data Record a b = Record
     , foldRat :: EXPRESSION -> APFloat -> Range -> b
     }
 
--- | Produces an error with given message on all entries. Use this if you
--- overwrite only the EXPRESSION part and you do not use the CMD part anyway
--- , e.g., if you use the record in foldTerm
+{- | Produces an error with given message on all entries. Use this if you
+overwrite only the EXPRESSION part and you do not use the CMD part anyway
+, e.g., if you use the record in foldTerm -}
 emptyRecord :: String -> Record a b
 emptyRecord s =
     Record { foldAss = error s
@@ -56,11 +56,11 @@ idRecord :: Record CMD EXPRESSION
 idRecord =
     Record { foldAss = \ v _ _ -> v
            , foldCmd = \ v _ _ -> v
-           , foldSequence = \ v _ -> v
-           , foldCond = \ v _ -> v
+           , foldSequence = const
+           , foldCond = const
            , foldRepeat = \ v _ _ -> v
 
-           , foldVar = \ v _ -> v
+           , foldVar = const
            , foldOp = \ v _ _ _ _ -> v
            , foldList = \ v _ _ -> v
            , foldInterval = \ v _ _ _ -> v
@@ -68,41 +68,41 @@ idRecord =
            , foldRat = \ v _ _ -> v
            }
 
--- | Passes the transformation through the CMD part and is the identity
--- on the EXPRESSION part
+{- | Passes the transformation through the CMD part and is the identity
+on the EXPRESSION part -}
 passRecord :: Record CMD EXPRESSION
 passRecord =
-    idRecord { foldAss = \ _ -> Ass
-             , foldCmd = \ _ -> Cmd
-             , foldSequence = \ _ -> Sequence
-             , foldCond = \ _ -> Cond
-             , foldRepeat = \ _ -> Repeat
+    idRecord { foldAss = const Ass
+             , foldCmd = const Cmd
+             , foldSequence = const Sequence
+             , foldCond = const Cond
+             , foldRepeat = const Repeat
              }
 
 -- | Passes the transformation through both, the CMD and the EXPRESSION part
 passAllRecord :: Record CMD EXPRESSION
 passAllRecord =
-    passRecord { foldVar = \ _ -> Var
-               , foldOp = \ _ -> Op
-               , foldList = \ _ -> List
-               , foldInterval = \ _ -> Interval
-               , foldInt = \ _ -> Int
-               , foldRat = \ _ -> Rat
+    passRecord { foldVar = const Var
+               , foldOp = const Op
+               , foldList = const List
+               , foldInterval = const Interval
+               , foldInt = const Int
+               , foldRat = const Rat
                }
 
--- | Passes the transformation through the 'CMD' part by concatenating the
--- processed list from left to right and identity on expression part
+{- | Passes the transformation through the 'CMD' part by concatenating the
+processed list from left to right and identity on expression part -}
 listCMDRecord :: Record [a] EXPRESSION
 listCMDRecord =
     idRecord { foldAss = \ _ _ _ -> []
              , foldCmd = \ _ _ _ -> []
-             , foldSequence = \ _ -> concat
+             , foldSequence = const concat
              , foldCond = \ _ -> concat . concatMap snd
              , foldRepeat = \ _ _ -> concat
              }
 
--- | Returns the first constant on the CMD part and the second
--- on the EXPRESSION part
+{- | Returns the first constant on the CMD part and the second
+on the EXPRESSION part -}
 constRecord :: a -> b -> Record a b
 constRecord a b =
     Record { foldAss = \ _ _ _ -> a

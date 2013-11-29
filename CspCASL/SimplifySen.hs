@@ -134,17 +134,17 @@ simplifyEvent sigma event =
       ChanRecv cn v s r -> ChanRecv cn v s r
       FQTermEvent t r -> TermEvent (simpCaslTerm t) r
       FQExternalPrefixChoice fqVar r ->
-        let (v,s) = (splitCASLVar fqVar)
+        let (v, s) = splitCASLVar fqVar
         in ExternalPrefixChoice v s r
       FQInternalPrefixChoice fqVar r ->
-        let (v,s) = (splitCASLVar fqVar)
+        let (v, s) = splitCASLVar fqVar
         in InternalPrefixChoice v s r
       FQChanSend (cn, _) t r -> ChanSend cn (simpCaslTerm t) r
       FQChanNonDetSend (cn, _) fqVar r ->
-        let (v,s) = (splitCASLVar fqVar)
+        let (v, s) = splitCASLVar fqVar
         in ChanNonDetSend cn v s r
       FQChanRecv (cn, _) fqVar r ->
-        let (v,s) = (splitCASLVar fqVar)
+        let (v, s) = splitCASLVar fqVar
         in ChanRecv cn v s r
 
 {- I am not really sure what to do with the sorts at the moment, can they be

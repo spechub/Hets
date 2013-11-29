@@ -52,13 +52,13 @@ main = do
         fn = filter (isSuffixOf suf) fs
         ffn = map ( \ s -> take (length s - length suf) s) fn
         ffnn = filter exclude $ filter (elem '.') ffn
-        fln = map (fst . break (== '.')) ffnn
+        fln = map (takeWhile (not . (== '.'))) ffnn
         fln' = nub fln
     lfs <- mapM (readFile . (++ suf)) ffnn
     let ss = map (filter (isPrefixOf "import") . lines) lfs
         sss = getContent6 ss
         ssss' = map (filter exclude) sss
-        ssss = map (map $ fst . break (== '.')) ssss'
+        ssss = map (map $ takeWhile (not . (== '.'))) ssss'
         sss' = map nub ssss
         graphParms = GraphTitle "Dependency Graph" $$
                         OptimiseLayout True $$
@@ -139,7 +139,7 @@ getContent4 :: [String] -> [String]
 getContent4 = map ((!! 1) . words)
 
 getContent5 :: [String] -> [String]
-getContent5 = map $ fst . break (== '(')
+getContent5 = map $ takeWhile (not . (== '('))
 
 getContent6 :: [[String]] -> [[String]]
 getContent6 = map $ filter (elem '.') . getContent5 . getContent4

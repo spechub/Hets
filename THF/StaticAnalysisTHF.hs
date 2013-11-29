@@ -60,9 +60,8 @@ The diagnosis list has a reverted order! -}
 filterBS :: [Diagnosis] -> [TPTP_THF] -> ([Diagnosis], [TPTP_THF])
 filterBS d [] = (d, [])
 filterBS d (t : rt) = case t of
-    TPTP_Include i -> let ds = (mkDiag Warning
-                                            "Include will be ignored." i)
-                               in filterBS (ds : d) rt
+    TPTP_Include i -> let ds = mkDiag Warning "Include will be ignored." i
+                      in filterBS (ds : d) rt
     TPTP_Comment _ -> filterBS d rt
     TPTP_Defined_Comment _ -> filterBS d rt
     TPTP_System_Comment _ -> filterBS d rt
@@ -191,28 +190,28 @@ getSentences (t : rt) dn@(d, ns) = case t of
     TPTP_THF_Annotated_Formula _ fr _ _ -> case fr of
         Type -> getSentences rt dn
         Unknown ->
-            let diag = (mkDiag Warning
-                    "THFFormula with role \'unknown\' will be ignored." t)
+            let diag = mkDiag Warning
+                    "THFFormula with role \'unknown\' will be ignored." t
             in getSentences rt (diag : d, ns)
         Plain ->
-            let diag = (mkDiag Warning
-                    "THFFormula with role \'plain\' will be ignored." t)
+            let diag = mkDiag Warning
+                    "THFFormula with role \'plain\' will be ignored." t
             in getSentences rt (diag : d, ns)
         Fi_Domain ->
-            let diag = (mkDiag Warning
-                    "THFFormula with role \'fi_domain\' will be ignored." t)
+            let diag = mkDiag Warning
+                    "THFFormula with role \'fi_domain\' will be ignored." t
             in getSentences rt (diag : d, ns)
         Fi_Functors ->
-            let diag = (mkDiag Warning
-                    "THFFormula with role \'fi_functors\' will be ignored." t)
+            let diag = mkDiag Warning
+                    "THFFormula with role \'fi_functors\' will be ignored." t
             in getSentences rt (diag : d, ns)
         Fi_Predicates ->
-            let diag = (mkDiag Warning
-                    "THFFormula with role \'fi_predicates\' will be ignored." t)
+            let diag = mkDiag Warning
+                    "THFFormula with role \'fi_predicates\' will be ignored." t
             in getSentences rt (diag : d, ns)
         Assumption ->
-            let diag = (mkDiag Warning
-                    "THFFormula with role \'assumption\' will be ignored." t)
+            let diag = mkDiag Warning
+                    "THFFormula with role \'assumption\' will be ignored." t
             in getSentences rt (diag : d, ns)
         _ ->
             let (d1, ns1) = getSentences rt dn

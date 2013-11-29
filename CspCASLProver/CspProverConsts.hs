@@ -41,8 +41,8 @@ module CspCASLProver.CspProverConsts
 import Isabelle.IsaSign as IsaSign
 import Isabelle.IsaConsts (binVNameAppl, con, termAppl)
 
--- Symbols for CspProver
--- These symbols and priorities have come from the CSP-Prover source code
+{- Symbols for CspProver
+These symbols and priorities have come from the CSP-Prover source code -}
 
 -- | binary junctors
 
@@ -88,7 +88,7 @@ cspProver_action_prefixS = "Action_prefix"
 cspProver_action_prefixAltS :: String
 cspProver_action_prefixAltS = "(_ -> _)"
 cspProver_action_prefixAltArgPrios :: [Int]
-cspProver_action_prefixAltArgPrios = [150,80]
+cspProver_action_prefixAltArgPrios = [150, 80]
 cspProver_action_prefixAltOpPrio :: Int
 cspProver_action_prefixAltOpPrio = 80
 
@@ -98,7 +98,7 @@ cspProver_external_prefix_choiceS = "External_pre_choice"
 cspProver_external_prefix_choiceAltS :: String
 cspProver_external_prefix_choiceAltS = "(? _:_ -> _)"
 cspProver_external_prefix_choiceAltArgPrios :: [Int]
-cspProver_external_prefix_choiceAltArgPrios = [900,900,80]
+cspProver_external_prefix_choiceAltArgPrios = [900, 900, 80]
 cspProver_external_prefix_choiceAltOpPrio :: Int
 cspProver_external_prefix_choiceAltOpPrio = 80
 
@@ -108,7 +108,7 @@ cspProver_internal_prefix_choiceS = "Internal_pre_choice"
 cspProver_internal_prefix_choiceAltS :: String
 cspProver_internal_prefix_choiceAltS = "(! _:_ -> _)"
 cspProver_internal_prefix_choiceAltArgPrios :: [Int]
-cspProver_internal_prefix_choiceAltArgPrios = [900,900,80]
+cspProver_internal_prefix_choiceAltArgPrios = [900, 900, 80]
 cspProver_internal_prefix_choiceAltOpPrio :: Int
 cspProver_internal_prefix_choiceAltOpPrio = 80
 
@@ -118,7 +118,7 @@ cspProver_sequenceS = "Seq_compo"
 cspProver_sequenceAltS :: String
 cspProver_sequenceAltS = "(_ ;; _)"
 cspProver_sequenceAltArgPrios :: [Int]
-cspProver_sequenceAltArgPrios = [79,78]
+cspProver_sequenceAltArgPrios = [79, 78]
 cspProver_sequenceAltOpPrio :: Int
 cspProver_sequenceAltOpPrio = 78
 
@@ -128,7 +128,7 @@ cspProver_external_choiceS = "Ext_choice"
 cspProver_external_choiceAltS :: String
 cspProver_external_choiceAltS = "( _ [+] _)"
 cspProver_external_choiceAltArgPrios :: [Int]
-cspProver_external_choiceAltArgPrios = [72,73]
+cspProver_external_choiceAltArgPrios = [72, 73]
 cspProver_external_choiceAltOpPrio :: Int
 cspProver_external_choiceAltOpPrio = 72
 
@@ -138,7 +138,7 @@ cspProver_internal_choiceS = "Int_choice"
 cspProver_internal_choiceAltS :: String
 cspProver_internal_choiceAltS = "(_ |~| _)"
 cspProver_internal_choiceAltArgPrios :: [Int]
-cspProver_internal_choiceAltArgPrios = [64,65]
+cspProver_internal_choiceAltArgPrios = [64, 65]
 cspProver_internal_choiceAltOpPrio :: Int
 cspProver_internal_choiceAltOpPrio = 64
 
@@ -148,7 +148,7 @@ cspProver_interleavingS = "Interleave"
 cspProver_interleavingAltS :: String
 cspProver_interleavingAltS = "(_ ||| _)"
 cspProver_interleavingAltArgPrios :: [Int]
-cspProver_interleavingAltArgPrios = [76,77]
+cspProver_interleavingAltArgPrios = [76, 77]
 cspProver_interleavingAltOpPrio :: Int
 cspProver_interleavingAltOpPrio = 76
 
@@ -158,17 +158,17 @@ cspProver_synchronousS = "Synchro"
 cspProver_synchronousAltS :: String
 cspProver_synchronousAltS = "(_ || _)"
 cspProver_synchronousAltArgPrios :: [Int]
-cspProver_synchronousAltArgPrios = [76,77]
+cspProver_synchronousAltArgPrios = [76, 77]
 cspProver_synchronousAltOpPrio :: Int
 cspProver_synchronousAltOpPrio = 76
 
 -- | Generalised parallel operator symbols
 cspProver_general_parallelS :: String
-cspProver_general_parallelS =  "Parallel"
+cspProver_general_parallelS = "Parallel"
 cspProver_general_parallelAltS :: String
 cspProver_general_parallelAltS = "(_ |[_]| _)"
 cspProver_general_parallelAltArgPrios :: [Int]
-cspProver_general_parallelAltArgPrios = [76,0,77]
+cspProver_general_parallelAltArgPrios = [76, 0, 77]
 cspProver_general_parallelAltOpPrio :: Int
 cspProver_general_parallelAltOpPrio = 76
 
@@ -178,7 +178,7 @@ cspProver_alphabetised_parallelS = "Alpha_parallel"
 cspProver_alphabetised_parallelAltS :: String
 cspProver_alphabetised_parallelAltS = "(_ |[_,_]| _)"
 cspProver_alphabetised_parallelAltArgPrios :: [Int]
-cspProver_alphabetised_parallelAltArgPrios = [76,0,0,77]
+cspProver_alphabetised_parallelAltArgPrios = [76, 0, 0, 77]
 cspProver_alphabetised_parallelAltOpPrio :: Int
 cspProver_alphabetised_parallelAltOpPrio = 76
 
@@ -188,7 +188,7 @@ cspProver_hidingS = "Hiding"
 cspProver_hidingAltS :: String
 cspProver_hidingAltS = "(_ -- _)"
 cspProver_hidingAltArgPrios :: [Int]
-cspProver_hidingAltArgPrios = [84,85]
+cspProver_hidingAltArgPrios = [84, 85]
 cspProver_hidingAltOpPrio :: Int
 cspProver_hidingAltOpPrio = 85
 
@@ -198,7 +198,7 @@ cspProver_renamingS = "Renaming"
 cspProver_renamingAltS :: String
 cspProver_renamingAltS = "(_ [[_]])"
 cspProver_renamingAltArgPrios :: [Int]
-cspProver_renamingAltArgPrios = [84,0]
+cspProver_renamingAltArgPrios = [84, 0]
 cspProver_renamingAltOpPrio :: Int
 cspProver_renamingAltOpPrio = 84
 
@@ -208,7 +208,7 @@ cspProver_conditionalS = "IF"
 cspProver_conditionalAltS :: String
 cspProver_conditionalAltS = "(IF _ THEN _ ELSE _)"
 cspProver_conditionalAltArgPrios :: [Int]
-cspProver_conditionalAltArgPrios = [900,88,88]
+cspProver_conditionalAltArgPrios = [900, 88, 88]
 cspProver_conditionalAltArgOpPrio :: Int
 cspProver_conditionalAltArgOpPrio = 88
 
@@ -218,7 +218,7 @@ cspProver_chan_nondeterministic_sendS = "Nondet_send_prefix"
 cspProver_chan_nondeterministic_sendAltS :: String
 cspProver_chan_nondeterministic_sendAltS = "(_ !? _ : _ -> _)"
 cspProver_chan_nondeterministic_sendAltArgPrios :: [Int]
-cspProver_chan_nondeterministic_sendAltArgPrios = [900,900,1000,80]
+cspProver_chan_nondeterministic_sendAltArgPrios = [900, 900, 1000, 80]
 cspProver_chan_nondeterministic_sendAltArgOpPrio :: Int
 cspProver_chan_nondeterministic_sendAltArgOpPrio = 80
 
@@ -228,7 +228,7 @@ cspProver_chan_sendS = "Send_prefix"
 cspProver_chan_sendAltS :: String
 cspProver_chan_sendAltS = "(_ ! _ -> _)"
 cspProver_chan_sendAltArgPrios :: [Int]
-cspProver_chan_sendAltArgPrios = [900,1000,80]
+cspProver_chan_sendAltArgPrios = [900, 1000, 80]
 cspProver_chan_sendAltArgOpPrio :: Int
 cspProver_chan_sendAltArgOpPrio = 80
 
@@ -238,7 +238,7 @@ cspProver_chan_recS = "Rec_prefix"
 cspProver_chan_recAltS :: String
 cspProver_chan_recAltS = "(_ ? _ : _ -> _)"
 cspProver_chan_recAltArgPrios :: [Int]
-cspProver_chan_recAltArgPrios = [900,900,1000,80]
+cspProver_chan_recAltArgPrios = [900, 900, 1000, 80]
 cspProver_chan_recAltArgOpPrio :: Int
 cspProver_chan_recAltArgOpPrio = 80
 
@@ -370,7 +370,7 @@ cspProver_renamingOp =
 
 -- | Conditional operator
 cspProver_conditionalOp :: Term -> Term -> Term -> Term
-cspProver_conditionalOp  =
+cspProver_conditionalOp =
     makeTriCspProverOp cspProver_conditionalS
                        cspProver_conditionalAltS
                        cspProver_conditionalAltArgPrios
@@ -378,7 +378,7 @@ cspProver_conditionalOp  =
 
 -- | Channel non-deterministic send operator
 cspProver_chan_nondeterministic_sendOp :: Term -> Term -> Term -> Term -> Term
-cspProver_chan_nondeterministic_sendOp  =
+cspProver_chan_nondeterministic_sendOp =
     makeQuadCspProverOp cspProver_chan_nondeterministic_sendS
                         cspProver_chan_nondeterministic_sendAltS
                         cspProver_chan_nondeterministic_sendAltArgPrios
@@ -386,7 +386,7 @@ cspProver_chan_nondeterministic_sendOp  =
 
 -- | Channel send operator
 cspProver_chan_sendOp :: Term -> Term -> Term -> Term
-cspProver_chan_sendOp  =
+cspProver_chan_sendOp =
     makeTriCspProverOp cspProver_chan_sendS
                        cspProver_chan_sendAltS
                        cspProver_chan_sendAltArgPrios
@@ -394,42 +394,42 @@ cspProver_chan_sendOp  =
 
 -- | Channel receive operator
 cspProver_chan_recOp :: Term -> Term -> Term -> Term -> Term
-cspProver_chan_recOp  =
+cspProver_chan_recOp =
     makeQuadCspProverOp cspProver_chan_recS
                         cspProver_chan_recAltS
                         cspProver_chan_recAltArgPrios
                         cspProver_chan_recAltArgOpPrio
 
--- | Create an Isabelle Term representing a (Unary) CspProver operator
---   with no alternative syntax
+{- | Create an Isabelle Term representing a (Unary) CspProver operator
+with no alternative syntax -}
 makeCspProverOpNoAlt :: String -> Term
 makeCspProverOpNoAlt opName =
-    con $ VName opName $ Nothing
+    con (VName opName Nothing)
 
--- | Create an Isabelle Term representing a CspProver operator with
---   alternative syntax for a single parameter
+{- | Create an Isabelle Term representing a CspProver operator with
+alternative syntax for a single parameter -}
 makeUnaryCspProverOp :: String -> String -> [Int] -> Int -> Term -> Term
 makeUnaryCspProverOp opName altSyntax altArgPrios altOpPrio t1 =
     let vname = VName opName $ Just $ AltSyntax altSyntax altArgPrios altOpPrio
     in termAppl (con vname) t1
 
--- | Create an Isabelle Term representing a CspProver operator with
---   alternative syntax for two parameters
+{- | Create an Isabelle Term representing a CspProver operator with
+alternative syntax for two parameters -}
 makeBinCspProverOp :: String -> String -> [Int] -> Int -> Term -> Term -> Term
 makeBinCspProverOp opName altSyntax altArgPrios altOpPrio t1 t2 =
     let vname = VName opName $ Just $ AltSyntax altSyntax altArgPrios altOpPrio
     in binVNameAppl vname t1 t2
 
--- | Create an Isabelle Term representing a CspProver operator (with 3
---   parameters) with alternative syntax
+{- | Create an Isabelle Term representing a CspProver operator (with 3
+parameters) with alternative syntax -}
 makeTriCspProverOp :: String -> String -> [Int] -> Int -> Term -> Term ->
                       Term -> Term
 makeTriCspProverOp opName altSyntax altArgPrios altOpPrio t1 t2 t3 =
     let vname = VName opName $ Just $ AltSyntax altSyntax altArgPrios altOpPrio
     in termAppl (binVNameAppl vname t1 t2) t3
 
--- | Create an Isabelle Term representing a CspProver operator (with 4
---   parameters) with alternative syntax
+{- | Create an Isabelle Term representing a CspProver operator (with 4
+parameters) with alternative syntax -}
 makeQuadCspProverOp :: String -> String -> [Int] -> Int -> Term -> Term ->
                        Term -> Term -> Term
 makeQuadCspProverOp opName altSyntax altArgPrios altOpPrio t1 t2 t3 t4 =

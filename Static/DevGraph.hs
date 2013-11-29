@@ -528,7 +528,7 @@ equalSigs (UnitSig ls1 ns1 _) (UnitSig ls2 ns2 _) =
 
 namesMatchCtx :: [IRI] -> BStContext -> RefSigMap -> Bool
 namesMatchCtx [] _ _ = True
-namesMatchCtx (un : unitNames) bstc rsmap = --trace ("nMC:" ++ show un)$
+namesMatchCtx (un : unitNames) bstc rsmap = -- trace ("nMC:" ++ show un)$
  case Map.findWithDefault (error "namesMatchCtx")
             un bstc of
   BranchRefSig _ (_usig, mbsig) -> case mbsig of
@@ -631,7 +631,7 @@ data GlobalEntry =
   | UnitEntry UnitSig
     deriving Show
 
-data AlignSig = AlignMor NodeSig GMorphism NodeSig 
+data AlignSig = AlignMor NodeSig GMorphism NodeSig
               | AlignSpan NodeSig GMorphism NodeSig GMorphism NodeSig
   deriving (Show, Eq)
 
@@ -674,7 +674,7 @@ instance Show RTNodeLab where
   let
    name = rtn_name r
    t = rtn_type r
-   d = rtn_diag r 
+   d = rtn_diag r
    t1 = case t of
           RTPlain u -> "plain: " ++ show u
           RTRef n -> show n
@@ -691,8 +691,8 @@ data RTLinkLab = RTLink
 
 -- utility functions for handling refinement tree
 
-addNodeRT :: DGraph -> UnitSig -> String  -> (Node, DGraph)
-addNodeRT dg usig s = 
+addNodeRT :: DGraph -> UnitSig -> String -> (Node, DGraph)
+addNodeRT dg usig s =
  let
   g = refTree dg
   n = Tree.getNewNode g
@@ -712,17 +712,16 @@ addSpecNodeRT dg usig s =
 
 updateNodeNameRT :: DGraph -> Node -> Bool -> String -> DGraph
 -- the Bool flag tells if the diag name should change too
-updateNodeNameRT dg n flag s = 
+updateNodeNameRT dg n flag s =
  let
   g = refTree dg
   l = Graph.lab g n
  in case l of
      Nothing -> dg
-     Just oldL -> 
+     Just oldL ->
       let
-       newL = case flag of 
-                False -> oldL {rtn_name = s}
-                True -> oldL {rtn_name = s, rtn_diag = s}
+       newL = if flag then oldL {rtn_name = s, rtn_diag = s}
+              else oldL {rtn_name = s}
        (g', _) = Tree.labelNode (n, newL) g
       in dg {refTree = g'}
 
@@ -739,7 +738,7 @@ updateSigRT dg n usig =
                   in dg {refTree = g'}
 
 updateNodeNameSpecRT :: DGraph -> Node -> String -> DGraph
-updateNodeNameSpecRT dg n s = 
+updateNodeNameSpecRT dg n s =
  let dg' = updateNodeNameRT dg n False s
  in dg' {specRoots = Map.insert s n $ specRoots dg}
 
@@ -1068,8 +1067,8 @@ lookupGlobalEnvDG sid dg = let
     gEnv = globalEnv dg
     shortIRI = iriToStringShortUnsecure sid
     in case Map.lookup sid gEnv of
-    Nothing -> Map.lookup (nullIRI { abbrevPath = shortIRI }) $ 
-               Map.mapKeys (\x -> nullIRI{abbrevPath = abbrevPath x})
+    Nothing -> Map.lookup (nullIRI { abbrevPath = shortIRI }) $
+               Map.mapKeys (\ x -> nullIRI {abbrevPath = abbrevPath x})
                gEnv
     m -> m
 

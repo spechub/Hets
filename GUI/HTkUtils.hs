@@ -32,19 +32,16 @@ module GUI.HTkUtils
   , enableWids
   , disableWids
   , enableWidsUponSelection
-  , module HTk.Toplevel.HTk
-  , module HTk.Toolkit.ScrollBox
-  , module HTk.Toolkit.SimpleForm
-  , module HTk.Toolkit.TextDisplay
+  , module X
   ) where
 
 import System.Directory
 
 import Util.Messages
-import HTk.Toplevel.HTk hiding (x, y)
-import HTk.Toolkit.ScrollBox
-import HTk.Toolkit.SimpleForm
-import HTk.Toolkit.TextDisplay
+import HTk.Toplevel.HTk as X hiding (x, y)
+import HTk.Toolkit.ScrollBox as X
+import HTk.Toolkit.SimpleForm as X
+import HTk.Toolkit.TextDisplay as X
 import HTk.Toolkit.FileDialog
 
 import Logic.Prover
@@ -65,7 +62,7 @@ listBox :: String -> [String] -> IO (Maybe Int)
 listBox title entries =
   do
     main <- createToplevel [text title]
-    lb  <- newListBox main [value entries, bg "white", size (100, 39)] ::
+    lb <- newListBox main [value entries, bg "white", size (100, 39)] ::
              IO (ListBox String)
     pack lb [Side AtLeft, Expand On, Fill Both]
     scb <- newScrollBar main []
@@ -97,10 +94,10 @@ createTextSaveDisplayExt :: String -- ^ title of the window
                          the text is displayed -}
 createTextSaveDisplayExt title fname txt conf upost =
   do win <- createToplevel [text title]
-     b   <- newFrame win  [relief Groove, borderwidth (cm 0.05)]
-     t   <- newLabel b [text title, font (Helvetica, Roman, 18 :: Int)]
-     q   <- newButton b [text "Close", width 12]
-     s   <- newButton b [text "Save", width 12]
+     b <- newFrame win [relief Groove, borderwidth (cm 0.05)]
+     t <- newLabel b [text title, font (Helvetica, Roman, 18 :: Int)]
+     q <- newButton b [text "Close", width 12]
+     s <- newButton b [text "Save", width 12]
      (sb, ed) <- newScrollBox b (`newEditor` conf) []
      ed # state Disabled
      pack b [Side AtTop, Fill Both, Expand On]
@@ -181,11 +178,11 @@ a 'ListBox' -}
 indicatorString :: LBStatusIndicator
                 -> String
 indicatorString i = case i of
-  LBIndicatorProved      -> "[+]"
+  LBIndicatorProved -> "[+]"
   LBIndicatorProvedInconsistent -> "[*]"
-  LBIndicatorDisproved   -> "[-]"
-  LBIndicatorOpen        -> "[ ]"
-  LBIndicatorGuessed     -> "[.]"
+  LBIndicatorDisproved -> "[-]"
+  LBIndicatorOpen -> "[ ]"
+  LBIndicatorGuessed -> "[.]"
   LBIndicatorConjectured -> "[:]"
   LBIndicatorHandwritten -> "[/]"
 
@@ -216,18 +213,18 @@ populateGoalsListBox lb v = do
 indicatorFromProofStatus :: ProofStatus a
                           -> LBStatusIndicator
 indicatorFromProofStatus st = case goalStatus st of
-  Proved c  -> if c then LBIndicatorProved else LBIndicatorProvedInconsistent
+  Proved c -> if c then LBIndicatorProved else LBIndicatorProvedInconsistent
   Disproved -> LBIndicatorDisproved
-  Open _    -> LBIndicatorOpen
+  Open _ -> LBIndicatorOpen
 
 -- | Converts a 'BasicProof' into a 'LBStatusIndicator'
 indicatorFromBasicProof :: BasicProof
                         -> LBStatusIndicator
 indicatorFromBasicProof p = case p of
   BasicProof _ st -> indicatorFromProofStatus st
-  Guessed         -> LBIndicatorGuessed
-  Conjectured     -> LBIndicatorConjectured
-  Handwritten     -> LBIndicatorHandwritten
+  Guessed -> LBIndicatorGuessed
+  Conjectured -> LBIndicatorConjectured
+  Handwritten -> LBIndicatorHandwritten
 
 -- | existential type for widgets that can be enabled and disabled
 data EnableWid = forall wid . HasEnable wid => EnW wid

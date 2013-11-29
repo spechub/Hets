@@ -39,7 +39,7 @@ main =
    do args <- getArgs
       if elem "--help" args then do
         useMsg
-        exitWith ExitSuccess
+        exitSuccess
         else done
       fileName <- if null args then do
         useMsg

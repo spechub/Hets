@@ -100,9 +100,9 @@ ax_that = makeNamed "Ax_that" $ forceSimp $ mkSen $
   where s = binEqv senTrm
             (binVNameAppl
              relSymb (termAppl (con thatSymb) senTrm) (nilPT NotCont))
-        senTrm = (conDouble "sen")
+        senTrm = conDouble "sen"
         forceSimp sen = sen { isSimp = True }
-                                   
+
 type RENAMES = Map.Map String VName
 
 mkIndName :: String -> VName
@@ -111,8 +111,8 @@ mkIndName name = mkIsaConstT True emptyGlobalAnnos (-1)
 
 addRenames :: RENAMES -> [String] -> RENAMES
 addRenames = foldr
-             (\k m -> let k' = unclash k m
-                          v = mkIndName k' in
+             (\ k m -> let k' = unclash k m
+                           v = mkIndName k' in
                       Map.insert k v $ Map.insert k' v m)
   where unclash k m = if Map.member k m
                       then unclash ("X_" ++ k) m
@@ -126,8 +126,8 @@ basicRenames sig = addRenames
                    (Map.fromList [("rel", relSymb), ("fun", funSymb),
                                   ("that", thatSymb)])
                    (map (Id.tokStr . Id.idToSimpleId)
-                    ((Set.toList $ ClSign.sequenceMarkers sig)
-                     ++ (Set.toList $ ClSign.discourseNames sig)))
+                    ( Set.toList (ClSign.sequenceMarkers sig)
+                     ++ Set.toList (ClSign.discourseNames sig)))
 
 rename :: RENAMES -> String -> VName
 rename rn s = fromMaybe (error $ "Symbol " ++ show s ++ "not found") $
@@ -144,13 +144,13 @@ mapSig sig = emptySign {
              (mkCurryFunType [individualT, mkListType individualT] individualT) $
              Map.insert thatSymb
              (mkCurryFunType [boolType] individualT) $
-             Map.union (Map.fromList $ map
-                        (\name -> (rename rn name, individualT))
-                        (map (Id.tokStr . Id.idToSimpleId) $ Set.toList $
+             Map.union (Map.fromList
+                        (map ((\ name -> (rename rn name, individualT)) .
+                              Id.tokStr . Id.idToSimpleId) $ Set.toList $
                          ClSign.discourseNames sig))
-             (Map.fromList $ map
-              (\name -> (rename rn name, mkListType individualT))
-              (map (Id.tokStr . Id.idToSimpleId) $ Set.toList $
+             (Map.fromList
+              (map ((\ name -> (rename rn name, mkListType individualT)) .
+                    Id.tokStr . Id.idToSimpleId) $ Set.toList $
                ClSign.sequenceMarkers sig))
   }
   where rn = basicRenames sig
@@ -218,12 +218,12 @@ transTermSeq rn ts = case ts of
                           (transTerm rn trm) (nilPT NotCont)
   ClBasic.Seq_marks seqm -> con $ rename rn (Id.tokStr seqm)
 
--- applicable for a non-empty argument list where only the last argument
--- (or none) is a seqmark
+{- applicable for a non-empty argument list where only the last argument
+(or none) is a seqmark -}
 transArgsSimple :: RENAMES -> [ClBasic.TERM_SEQ] -> Maybe Term
 transArgsSimple rn tss =
   foldr
-  (\ts trm ->
+  (\ ts trm ->
     do trm' <- trm
        case ts of
          ClBasic.Term_seq clTrm ->
@@ -234,7 +234,7 @@ transArgsSimple rn tss =
 
 transArgs :: RENAMES -> [ClBasic.TERM_SEQ] -> Term
 transArgs rn tss = case (tss, transArgsSimple rn tss) of
-  ([], _) -> (nilPT NotCont)
+  ([], _) -> nilPT NotCont
   (_, Just trm) -> trm
   (_, Nothing) -> foldr1 (termAppl . termAppl (con appendV))
                   (map (transTermSeq rn) tss)

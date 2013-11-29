@@ -31,7 +31,7 @@ import CSL.GenericInterpreter
 
 
 import Control.Monad
---import Control.Monad.Trans (MonadTrans (..), MonadIO (..))
+-- import Control.Monad.Trans (MonadTrans (..), MonadIO (..))
 import Control.Monad.Error
 import Control.Monad.State
 import Control.Monad.Reader
@@ -45,10 +45,9 @@ import System.IO
 import Prelude hiding (lookup)
 
 
-
--- ----------------------------------------------------------------------
--- * Mathematica Types and Instances
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+Mathematica Types and Instances
+---------------------------------------------------------------------- -}
 
 -- | MathematicaInterpreter with Translator based on the MathLink interface
 type MathState = ASState (MLState, Maybe FilePath)
@@ -68,12 +67,12 @@ liftML = lift . lift
 
 
 instance AssignmentStore MathematicaIO where
-    assign  = genAssign mathematicaAssign
+    assign = genAssign mathematicaAssign
     assigns l = genAssigns mathematicaAssigns l >> return ()
     lookup = genLookup mathematicaLookup
     eval = genEval mathematicaEval
     check = mathematicaCheck
-    names = get >>= return . SMem . getBMap
+    names = liftM (SMem . getBMapget) get
     evalRaw s = get >>= liftIO . mathematicaDirect s
 
     getUndefinedConstants e = do
@@ -90,15 +89,15 @@ instance AssignmentStore MathematicaIO where
     getDepGraph = gets depGraph
     updateConstant n def =
         let f gr = updateGraph gr n
-                   $ DepGraphAnno { annoDef = def
-                                  , annoVal = () } 
+                   DepGraphAnno { annoDef = def
+                                , annoVal = () }
             mf mit = mit { depGraph = f $ depGraph mit }
         in modify mf
 
 instance VCGenerator MathematicaIO where
     addVC ea e = do
       vcHdl <- liftM (fromMaybe stdout) $ gets vericondOut
-      liftIO $ hPutStrLn vcHdl $ show $ printVCForIsabelle ea "lemma1" e
+      liftIO $ hPrint vcHdl $ printVCForIsabelle ea "lemma1" e
 
 instance StepDebugger MathematicaIO where
     setDebugMode b = modify mf where mf mit = mit { debugMode = b }
@@ -112,9 +111,9 @@ instance MessagePrinter MathematicaIO where
     printMessage = liftIO . putStrLn
 
 
--- ----------------------------------------------------------------------
--- * Mathematica syntax and special terms
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+Mathematica syntax and special terms
+---------------------------------------------------------------------- -}
 
 mmShowOPNAME :: OPNAME -> String
 mmShowOPNAME x =
@@ -196,11 +195,10 @@ mathematicaBindInfoMap :: BindInfoMap
 mathematicaBindInfoMap = getBindInfoMap mathematicaOperatorInfo
 
 toFlexFold :: [OPNAME] -> [OpInfo] -> [OpInfo]
-toFlexFold nl oil = map f oil where
+toFlexFold nl = map f where
     ns = Set.fromList nl
     f oi | Set.member (opname oi) ns = oi { arity = -1, foldNAry = True }
          | otherwise = oi
-
 
 
 -- | mathematica term "Set"
@@ -220,9 +218,9 @@ mtCompound = mkOp "CompoundExpression"
 mtIsBlank :: OPID -> Bool
 mtIsBlank oi = mmShowOPID oi == "Blank"
 
--- ----------------------------------------------------------------------
--- * Mathematica pretty printing
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+Mathematica pretty printing
+---------------------------------------------------------------------- -}
 
 data OfMathematica a = OfMathematica { mmValue :: a }
 
@@ -231,11 +229,11 @@ type MathPrinter = Reader (OfMathematica OpInfoNameMap)
 instance ExpressionPrinter MathPrinter where
     getOINM = asks mmValue
     printOpname = return . text . mmShowOPNAME
-    printArgs =  return . brackets . sepByCommas
+    printArgs = return . brackets . sepByCommas
     prefixMode = return True
     printArgPattern s = return $ text s <> text "_"
 
-printMathPretty :: (MathPrinter Doc) -> Doc
+printMathPretty :: MathPrinter Doc -> Doc
 printMathPretty = flip runReader $ OfMathematica mathematicaOpInfoNameMap
 
 class MathPretty a where
@@ -251,12 +249,12 @@ instance MathPretty String where
     mmPretty = text
 
 instance (MathPretty a, MathPretty b) => MathPretty [(a, b)] where
-    mmPretty l = ppPairlist mmPretty mmPretty braces sepBySemis (<>) l
+    mmPretty = ppPairlist mmPretty mmPretty braces sepBySemis (<>)
 
 
--- ----------------------------------------------------------------------
--- * Mathematica over ML Interface
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+Mathematica over ML Interface
+---------------------------------------------------------------------- -}
 
 sendExpressionString :: String -> ML ()
 sendExpressionString s = do
@@ -277,7 +275,7 @@ sendExpression sm e =
            mlPutFunction' (mmShowOPID oi) (length exps)
            mapM_ (sendExpression sm) exps
    Int i _ -> mlPutInteger'' i >> return ()
-   Rat r _ 
+   Rat r _
        | sm -> putRational r
        | otherwise -> mlPutFunction' "N" 1 >> putRational r
        where putRational r' = do
@@ -286,20 +284,20 @@ sendExpression sm e =
                mlPutInteger'' n1
                mlPutInteger'' dn2
                return ()
-               
+
    List _ _ -> error "sendExpression: List not supported"
-   Interval _ _ _ -> error "sendExpression: Interval not supported"
+   Interval {} -> error "sendExpression: Interval not supported"
 
 
 receiveExpression :: ML EXPRESSION
-receiveExpression =  do
+receiveExpression = do
   et <- mlGetNext
   let mkMLOp s args = mkAndAnalyzeOp ( mathematicaOpInfoMap
                                      , mathematicaBindInfoMap )
                       s [] args nullRange
-      pr | et == dfMLTKSYM = liftM (flip mkMLOp []) mlGetSymbol
-         | et == dfMLTKINT = liftM (flip Int nullRange) mlGetInteger''
-         | et == dfMLTKREAL = liftM (flip Rat nullRange . toRational) mlGetReal'
+      pr | et == dfMLTKSYM = liftM (`mkMLOp` []) mlGetSymbol
+         | et == dfMLTKINT = liftM (`Int` nullRange) mlGetInteger''
+         | et == dfMLTKREAL = liftM (`Rat` nullRange . toRational) mlGetReal'
          | et == dfMLTKFUNC =
              do
                ac <- mlGetArgCount
@@ -311,12 +309,12 @@ receiveExpression =  do
                           error $ "receiveExpression: Expecting symbol at "
                                    ++ "function head, but got " ++ show et'
                  if s == "Rational" then
-                    do 
+                    do
                       nn <- mlGetInteger''
                       dn <- mlGetInteger''
                       return $ Rat (fromFraction nn dn) nullRange
                   else
-                    liftM (mkMLOp s) $ forM [1..ac] $ const receiveExpression
+                    liftM (mkMLOp s) $ forM [1 .. ac] $ const receiveExpression
 
          | et == dfMLTKERROR = mlProcError
          | otherwise = mlProcError
@@ -324,15 +322,15 @@ receiveExpression =  do
 
 
 receiveString :: ML String
-receiveString =  do
+receiveString = do
   et <- mlGetNext
   if et == dfMLTKSTR then mlGetString
    else error $ "receiveString: Got " ++ showTK et
 
 
--- ----------------------------------------------------------------------
--- * Methods for Mathematica 'AssignmentStore' Interface
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+Methods for Mathematica 'AssignmentStore' Interface
+---------------------------------------------------------------------- -}
 
 mathematicaSend :: EXPRESSION -> MathematicaIO ()
 mathematicaSend e = do
@@ -349,7 +347,7 @@ mathematicaEval e = do
          >> receiveExpression
   prettyInfo3 $ text "Received expression"
                  <+> braces (mmPretty res)
-  return res 
+  return res
 
 mathematicaAssign :: String -> AssDefinition -> MathematicaIO EXPRESSION
 mathematicaAssign s def = do
@@ -381,9 +379,9 @@ mathematicaDirect s st =
     liftM snd $ withMathematica st $ liftML
               $ sendTextResultPacket s >> waitForAnswer >> receiveString
 
--- ----------------------------------------------------------------------
--- * The Mathematica system via MathLink
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+The Mathematica system via MathLink
+---------------------------------------------------------------------- -}
 
 loadMathematicaModule :: FilePath -> MathematicaIO ()
 loadMathematicaModule fp =
@@ -404,8 +402,8 @@ withMathematica st mprog = do
 mathematicaInit :: AssignmentDepGraph ()
           -> Int -- ^ Verbosity level
           -> Maybe FilePath -- ^ Log MathLink messages into this file
-          -> Maybe String -- ^ Connection name
-                          -- (launches a new kernel if not specified)
+          -> Maybe String {- ^ Connection name
+                          (launches a new kernel if not specified) -}
           -> IO MathState
 mathematicaInit adg v mFp mN = do
   eMLSt <- openLink v mN
@@ -421,12 +419,11 @@ mathematicaExit = closeLink . getMLState
 
 runWithMathematica :: AssignmentDepGraph () -> Int -- ^ Verbosity level
           -> Maybe FilePath -- ^ Log MathLink messages into this file
-          -> Maybe String -- ^ Connection name
-                          -- (launches a new kernel if not specified)
+          -> Maybe String {- ^ Connection name
+                          (launches a new kernel if not specified) -}
           -> [String] -- ^ mathematica modules to load
           -> MathematicaIO a -- ^ the mathematica program to run
           -> IO (MathState, a)
 runWithMathematica adg i mFp mN mods p = do
   mst <- mathematicaInit adg i mFp mN
   withMathematica mst $ mapM_ loadMathematicaModule mods >> p
-

@@ -15,7 +15,8 @@ predefined operator configuration.
 -}
 
 module CSL.AS_BASIC_CSL
-    ( EXPRESSION (..)     -- datatype for numerical expressions (e.g. polynomials)
+    ( EXPRESSION (..)     {- datatype for numerical expressions
+                             (e.g. polynomials) -}
     , EXTPARAM (..)       -- datatype for extended parameters (e.g. [I=0])
     , BASIC_ITEM (..)    -- Items of a Basic Spec
     , BASIC_SPEC (..)     -- Basic Spec
@@ -38,17 +39,16 @@ module CSL.AS_BASIC_CSL
     , GroundConstant (..) -- constants for domain formation
     , cmpFloatToInt       -- comparer for APFloat with APInt
     , AssDefinition (..)  -- A function or constant definition
-    , InstantiatedConstant(..) -- for function constants we need to store the
-                               -- instantiation
+    , InstantiatedConstant (..) {- for function constants we need to store the
+                               instantiation -}
     , CMD (..)            -- Command datatype
     , OperatorState (..)  -- Class providing operator lookup
 
 
-
     , OpInfo (..)         -- Type for Operator information
     , BindInfo (..)       -- Type for Binder information
-    , operatorInfo        -- Operator information for pretty printing
-                          -- and static analysis
+    , operatorInfo        {- Operator information for pretty printing
+                          and static analysis -}
     , operatorInfoMap     -- allows efficient lookup of ops by printname
     , operatorInfoNameMap -- allows efficient lookup of ops by opname
     , operatorBindInfoMap
@@ -78,9 +78,9 @@ import Data.Ratio
 import CSL.TreePO
 
 
--- ---------------------------------------------------------------------------
--- * EnCL Basic Data Structures and utils
--- ---------------------------------------------------------------------------
+{- ---------------------------------------------------------------------------
+EnCL Basic Data Structures and utils
+--------------------------------------------------------------------------- -}
 
 -- Arbitrary precision numbers
 type APInt = Integer
@@ -103,7 +103,7 @@ data OP_ITEM = Op_item [Id.Token] Id.Range
 data VAR_ITEM = Var_item [Id.Token] Domain Id.Range
                 deriving Show
 
-newtype BASIC_SPEC = Basic_spec [AS_Anno.Annoted (BASIC_ITEM)]
+newtype BASIC_SPEC = Basic_spec [AS_Anno.Annoted BASIC_ITEM]
                   deriving Show
 
 data GroundConstant = GCI APInt | GCR APFloat deriving Show
@@ -133,7 +133,8 @@ data InstantiatedConstant = InstantiatedConstant
     { constName :: ConstantName
     , instantiation :: [EXPRESSION] } deriving (Show, Eq, Ord)
 
--- | basic items: an operator, extended parameter or variable declaration or an axiom
+{- | basic items: an operator, extended parameter or variable
+     declaration or an axiom -}
 data BASIC_ITEM =
     Op_decl OP_ITEM
     | EP_decl [(Id.Token, EPDomain)]
@@ -151,8 +152,8 @@ data EPDecl = EPDecl Id.Token -- name
               (Maybe APInt) -- evtl. a default value
               deriving (Eq, Ord, Show)
 
--- | Extended Parameter value may be an integer or a reference to an 'EPDomVal'.
--- This type is used for the domain specification of EPs (see 'EPDomain').
+{- | Extended Parameter value may be an integer or a reference to an 'EPDomVal'.
+This type is used for the domain specification of EPs (see 'EPDomain'). -}
 data EPVal = EPVal APInt | EPConstRef Id.Token deriving (Eq, Ord, Show)
 
 getEPVarRef :: EPVal -> Maybe Id.Token
@@ -254,8 +255,8 @@ showOPNAME x =
 
 data OPID = OpId OPNAME | OpUser ConstantName deriving (Eq, Ord, Show)
 
--- | We differentiate between simple constant names and indexed constant names
--- resulting from the extended parameter elimination.
+{- | We differentiate between simple constant names and indexed constant names
+resulting from the extended parameter elimination. -}
 data ConstantName = SimpleConstant String | ElimConstant String Int
                     deriving (Eq, Ord, Show)
 
@@ -314,21 +315,21 @@ data SYMB_OR_MAP = Symb SYMB
                    -- pos: "|->"
                    deriving (Show, Eq)
 
--- ---------------------------------------------------------------------------
--- * Predefined Operators: info for parsing/printing and static analysis
--- ---------------------------------------------------------------------------
+{- ---------------------------------------------------------------------------
+Predefined Operators: info for parsing/printing and static analysis
+--------------------------------------------------------------------------- -}
 
-data BindInfo = BindInfo { bindingVarPos :: [Int] -- ^ argument positions of
-                                                  -- binding variables
-                         , boundBodyPos :: [Int] -- ^ argument positions of
-                                                 -- bound terms
+data BindInfo = BindInfo { bindingVarPos :: [Int] {- ^ argument positions of
+                                                  binding variables -}
+                         , boundBodyPos :: [Int] {- ^ argument positions of
+                                                 bound terms -}
                          } deriving (Eq, Ord, Show)
 
 data OpInfo = OpInfo { prec :: Int -- ^ precedence between 0 and maxPrecedence
                      , infx :: Bool -- ^ True = infix
                      , arity :: Int -- ^ the operator arity
-                     , foldNAry :: Bool -- ^ True = fold nary-applications
-                                        -- during construction into binary ones
+                     , foldNAry :: Bool {- ^ True = fold nary-applications
+                                        during construction into binary ones -}
                      , opname :: OPNAME -- ^ The actual operator name
                      , bind :: Maybe BindInfo -- ^ More info for binders
                      } deriving (Eq, Ord, Show)
@@ -340,35 +341,35 @@ type OpInfoNameMap = OpInfoArityMap OPNAME
 type BindInfoMap = Map.Map String OpInfo
 
 
--- | Merges two OpInfoArityMaps together with the first map as default map
--- and the second overwriting the default values
+{- | Merges two OpInfoArityMaps together with the first map as default map
+and the second overwriting the default values -}
 mergeOpArityMap :: Ord a => OpInfoArityMap a -> OpInfoArityMap a
                 -> OpInfoArityMap a
 mergeOpArityMap = flip $ Map.unionWith Map.union
 
 
--- | Mapping of operator names to arity-'OpInfo'-maps (an operator may
---   behave differently for different arities).
+{- | Mapping of operator names to arity-'OpInfo'-maps (an operator may
+behave differently for different arities). -}
 getOpInfoMap :: (OpInfo -> String) -> [OpInfo] -> OpInfoMap
-getOpInfoMap pf oinfo = foldl f Map.empty oinfo
+getOpInfoMap pf = foldl f Map.empty
     where f m oi = Map.insertWith Map.union (pf oi)
                    (Map.fromList [(arity oi, oi)]) m
 
 -- | Same as operatorInfoMap but with keys of type OPNAME instead of String
 getOpInfoNameMap :: [OpInfo] -> OpInfoNameMap
-getOpInfoNameMap oinfo = foldl f Map.empty oinfo
+getOpInfoNameMap = foldl f Map.empty
     where f m oi = Map.insertWith Map.union (opname oi)
                    (Map.fromList [(arity oi, oi)]) m
 
--- | a special map for binders which have to be unique for each name
--- (no different arities).
+{- | a special map for binders which have to be unique for each name
+(no different arities). -}
 getBindInfoMap :: [OpInfo] -> BindInfoMap
-getBindInfoMap oinfo = foldl f Map.empty oinfo
-    where f m oi@(OpInfo{bind = Just _}) =
-              Map.insertWith cf (show $ opname  oi) oi m
+getBindInfoMap = foldl f Map.empty
+    where f m oi@(OpInfo {bind = Just _}) =
+              Map.insertWith cf (show $ opname oi) oi m
           f m _ = m
           cf a _ = error $ "operatorBindInfoMap: duplicate entry for "
-                   ++ (show $ opname  a)
+                   ++ show (opname a)
 
 
 -- | opInfoMap for the predefined 'operatorInfo'
@@ -383,8 +384,8 @@ operatorInfoNameMap = getOpInfoNameMap operatorInfo
 operatorBindInfoMap :: BindInfoMap
 operatorBindInfoMap = getBindInfoMap operatorInfo
 
--- | Mapping of operator names to arity-'OpInfo'-maps (an operator may
---   behave differently for different arities).
+{- | Mapping of operator names to arity-'OpInfo'-maps (an operator may
+behave differently for different arities). -}
 operatorInfo :: [OpInfo]
 operatorInfo =
     let -- arity (-1 means flex), precedence, infix
@@ -440,9 +441,9 @@ maxPrecedence :: Int
 maxPrecedence = 120
 
 
--- ---------------------------------------------------------------------------
--- * OpInfo lookup utils
--- ---------------------------------------------------------------------------
+{- ---------------------------------------------------------------------------
+OpInfo lookup utils
+--------------------------------------------------------------------------- -}
 
 class OperatorState a where
     addVar :: a -> String -> a
@@ -466,12 +467,11 @@ instance OperatorState (OpInfoMap, BindInfoMap) where
     lookupBinder = flip Map.lookup . snd
 
 
-
--- | For the given name and arity we lookup an 'OpInfo', where arity=-1
--- means flexible arity. If an operator is registered for the given
--- string but not for the arity we return: Left True.
--- This function is designed for the lookup of operators in not statically
--- analyzed terms. For statically analyzed terms use lookupOpInfo.
+{- | For the given name and arity we lookup an 'OpInfo', where arity=-1
+means flexible arity. If an operator is registered for the given
+string but not for the arity we return: Left True.
+This function is designed for the lookup of operators in not statically
+analyzed terms. For statically analyzed terms use lookupOpInfo. -}
 lookupOpInfoForParsing :: OpInfoMap -- ^ map to be used for lookup
              -> String -- ^ operator name
              -> Int -- ^ operator arity
@@ -487,9 +487,9 @@ lookupOpInfoForParsing oiMap op arit =
                   _ -> Left True
       _ -> Left False
 
--- | For the given name and arity we lookup an 'OpInfo', where arity=-1
--- means flexible arity. If an operator is registered for the given
--- string but not for the arity we return: Left True.
+{- | For the given name and arity we lookup an 'OpInfo', where arity=-1
+means flexible arity. If an operator is registered for the given
+string but not for the arity we return: Left True. -}
 lookupOpInfo :: OpInfoNameMap -> OPID -- ^ operator id
              -> Int -- ^ operator arity
              -> Either Bool OpInfo
@@ -505,8 +505,8 @@ lookupOpInfo oinm (OpId op) arit =
       _ -> error $ "lookupOpInfo: no opinfo for " ++ show op
 lookupOpInfo _ (OpUser _) _ = Left False
 
--- | For the given name and arity we lookup an 'BindInfo', where arity=-1
--- means flexible arity.
+{- | For the given name and arity we lookup an 'BindInfo', where arity=-1
+means flexible arity. -}
 lookupBindInfo :: OpInfoNameMap -> OPID -- ^ operator name
              -> Int -- ^ operator arity
              -> Maybe BindInfo
@@ -518,4 +518,3 @@ lookupBindInfo oinm (OpId op) arit =
             _ -> Nothing
       _ -> error $ "lookupBindInfo: no opinfo for " ++ show op
 lookupBindInfo _ (OpUser _) _ = Nothing
-

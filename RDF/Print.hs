@@ -25,6 +25,7 @@ import RDF.Symbols
 import RDF.Sign
 
 import qualified Data.Set as Set
+import Data.Maybe (isNothing)
 
 sepBySemis :: [Doc] -> Doc
 sepBySemis = vcat . punctuate (text " ;")
@@ -46,32 +47,32 @@ printPredicate (Predicate iri) = pretty iri
 
 instance Pretty RDFLiteral where
     pretty lit = case lit of
-        RDFLiteral b lexi ty -> (if not b
-                then text ('"' : lexi ++ "\"")
-                else text ("\"\"\"" ++ lexi ++ "\"\"\"")) <> case ty of
+        RDFLiteral b lexi ty -> text (if not b
+                then '"' : lexi ++ "\""
+                else "\"\"\"" ++ lexi ++ "\"\"\"") <> case ty of
             Typed u -> keyword cTypeS <> pretty u
-            Untyped tag -> if tag == Nothing then empty
+            Untyped tag -> if isNothing tag then empty
                     else let Just tag2 = tag in text "@" <> text tag2
         RDFNumberLit f -> text (show f)
 
 instance Pretty PredicateObjectList where
     pretty = printPredObjList
-    
+
 printPredObjList :: PredicateObjectList -> Doc
 printPredObjList (PredicateObjectList p ol) = pretty p <+> ppWithCommas ol
 
 instance Pretty Subject where
     pretty = printSubject
-    
+
 printSubject :: Subject -> Doc
 printSubject subj = case subj of
     Subject iri -> pretty iri
     SubjectList ls -> brackets $ ppWithSemis ls
     SubjectCollection c -> parens $ (hsep . map pretty) c
-    
+
 instance Pretty Object where
     pretty = printObject
-   
+
 printObject :: Object -> Doc
 printObject obj = case obj of
     Object s -> pretty s
@@ -79,33 +80,33 @@ printObject obj = case obj of
 
 instance Pretty Triples where
     pretty = printTriples
-    
+
 printTriples :: Triples -> Doc
 printTriples (Triples s ls) = pretty s <+> ppWithSemis ls <+> dot
 
 instance Pretty Statement where
     pretty = printStatement
-    
+
 printStatement :: Statement -> Doc
 printStatement s = case s of
     Statement t -> pretty t
     PrefixStatement (Prefix p iri)
         -> text "@prefix" <+> pretty p <> colon <+> pretty iri <+> dot
     BaseStatement (Base iri) -> text "@base" <+> pretty iri <+> dot
-    
+
 instance Pretty TurtleDocument where
     pretty = printDocument
-    
+
 printDocument :: TurtleDocument -> Doc
 printDocument doc = (vcat . map pretty) (statements doc)
 
 printExpandedIRI :: IRI -> Doc
 printExpandedIRI iri = if iriType iri == NodeID then text $ showQU iri
     else text "<" <> text (expandedIRI iri) <> text ">"
-    
+
 instance Pretty Term where
     pretty = printTerm
-    
+
 printTerm :: Term -> Doc
 printTerm t = case t of
     SubjectTerm iri -> printExpandedIRI iri
@@ -122,7 +123,7 @@ printAxiom (Axiom sub pre obj) = pretty sub <+> pretty pre <+> pretty obj
                                                                     <+> text "."
 
 printAxioms :: [Axiom] -> Doc
-printAxioms al = (vcat . map pretty) al
+printAxioms = vcat . map pretty
 
 -- | RDF signature printing
 printRDFBasicTheory :: (Sign, [Named Axiom]) -> Doc

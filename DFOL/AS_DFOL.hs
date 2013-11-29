@@ -278,21 +278,21 @@ instance Eq TYPE where
 
 eqTerm :: TERM -> TERM -> Bool
 eqTerm (Identifier x1) (Identifier x2) = x1 == x2
-eqTerm (Appl f1 [a1]) (Appl f2 [a2]) = and [f1 == f2, a1 == a2]
+eqTerm (Appl f1 [a1]) (Appl f2 [a2]) = f1 == f2 && a1 == a2
 eqTerm _ _ = False
 
 eqType :: TYPE -> TYPE -> Bool
 eqType Sort Sort = True
 eqType Form Form = True
 eqType (Univ t1) (Univ t2) = t1 == t2
-eqType (Func [t1] s1) (Func [t2] s2) = and [t1 == t2, s1 == s2]
+eqType (Func [t1] s1) (Func [t2] s2) = t1 == t2 && s1 == s2
 eqType (Pi [([n1], t1)] s1) (Pi [([n2], t2)] s2) =
   let syms1 = Set.delete n1 $ getFreeVars s1
       syms2 = Set.delete n2 $ getFreeVars s2
       v = getNewName n1 $ Set.union syms1 syms2
       type1 = translate (Map.singleton n1 (Identifier v)) syms1 s1
       type2 = translate (Map.singleton n2 (Identifier v)) syms2 s2
-      in and [t1 == t2, type1 == type2]
+      in t1 == t2 && type1 == type2
 eqType _ _ = False
 
 -- returns a set of unbound identifiers used within a type

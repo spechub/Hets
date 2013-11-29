@@ -33,7 +33,7 @@ data ApplMode = TopLevel | OnlyArg
 -- | manual mixfix resolution of parsed types
 mkTypeConstrAppls :: ApplMode -> Env -> Type -> Result Type
 mkTypeConstrAppls m e ty = case ty of
-    TypeName _ _ _ -> return ty
+    TypeName {} -> return ty
     TypeToken tt -> return $ toType $ simpleIdToId tt
     BracketType b ts ps -> do
        args <- mapM (mkTypeConstrAppls m e) ts

@@ -14,7 +14,7 @@ theory translation for the embedding comorphism from Haskell to Isabelle.
 module Comorphisms.Hs2HOLCF (transTheory) where
 
 import qualified Data.Map as Map
-import Data.Maybe (catMaybes)
+import Data.Maybe (catMaybes, fromMaybe)
 
 import Common.Utils (number)
 import Common.Result
@@ -46,13 +46,13 @@ import Isabelle.IsaConsts
 
 import Debug.Trace
 
------------------------------- Top level function ------------------------
+-- ---------------------------- Top level function ------------------------
 
 transTheory :: Continuity -> Bool -> HatAna.Sign -> [Named PrDecl]
             -> Result (IsaSign.Sign, [Named IsaSign.Sentence])
 transTheory c m sign sens = do
   sign' <- transSignature c m sign
-  (sign'',sens'') <- transSentencesI c sign' (map sentence sens)
+  (sign'', sens'') <- transSentencesI c sign' (map sentence sens)
   return (sign'', concatMap (\ (t, l) ->
          map (\ (r, ars) -> makeNamed ""
               $ Instance t (map snd ars) [r] [] $ toIsaProof DotDot) l)
@@ -60,60 +60,56 @@ transTheory c m sign sens = do
                    ["unitT", "intT", "integerT", "charT", "ratT"] . fst)
           $ Map.toList $ arities $ tsig sign'') ++ sens'')
 
------------------------------- Theory translation ------------------------
-{- Relevant theories in Programatica: base/Ti/TiClasses (for
-tcTopDecls); property/parse2/Parse/PropPosSyntax (def of HsDecl)  -}
+{- ---------------------------- Theory translation ------------------------
+Relevant theories in Programatica: base/Ti/TiClasses (for
+tcTopDecls); property/parse2/Parse/PropPosSyntax (def of HsDecl) -}
 
 data TSt a = TSt (ISign -> Result (a, ISign))
 
 instance Monad TSt
   where
-  return x = TSt (\w -> return (x,w))
-  (TSt f) >>= g = TSt (\w -> do
-         (d,z) <- f w
-         let (TSt q) = (g d) in q z)
+  return x = TSt (\ w -> return (x, w))
+  (TSt f) >>= g = TSt (\ w -> do
+         (d, z) <- f w
+         let (TSt q) = g d in q z)
 
 transSentencesI :: Continuity -> ISign -> [PrDecl]
                -> Result (IsaSign.Sign, [Named IsaSign.Sentence])
 transSentencesI c sign ls = let TSt f = transSentences c ls
-   in do (a,b) <- f sign
+   in do (a, b) <- f sign
          return (ff b, a)
    where ff x = x {constTab = Map.filter (/= noTypeT) $ constTab x}
 
--------------------------------------------------------------------
+-- -----------------------------------------------------------------
 
 transSentences :: Continuity -> [PrDecl]
                -> TSt [Named IsaSign.Sentence]
 transSentences c ls = do
-    xx0  <- mapM (transSentence c FunDef) ls
-    xs   <- return [[s] | [s] <- xx0, notDummy s]
-    yys  <- insFixpoints c xs
-    zz0  <- mapM (transSentence c InstDef) ls
-    zz1  <- return $ removeEL zz0
-    zz2  <- insFixpoints c zz1
-    zz3  <- return $ filter notDummy (yys ++ zz2)
-    zz   <- return $ filter (\x -> extAxType x /= noTypeT) zz3
-    return zz
+    xx0 <- mapM (transSentence c FunDef) ls
+    let xs = [[s] | [s] <- xx0, notDummy s]
+    yys <- insFixpoints c xs
+    zz0 <- mapM (transSentence c InstDef) ls
+    let zz1 = removeEL zz0
+    zz2 <- insFixpoints c zz1
+    let zz3 = filter notDummy (yys ++ zz2)
+    return $ filter (\ x -> extAxType x /= noTypeT) zz3
 
-notDummy  ::   Named Sentence -> Bool
+notDummy :: Named Sentence -> Bool
 notDummy s = case sentence s of
-  ConstDef (IsaEq t _)     ->
-          if t /= xDummy then True else False
-  RecDef _ _ _ []              -> False
-  RecDef _ _ _ (IsaEq t _ : _) ->
-          if t /= xDummy then True else False
-  _  -> True
+  ConstDef (IsaEq t _) -> t /= xDummy
+  RecDef _ _ _ [] -> False
+  RecDef _ _ _ (IsaEq t _ : _) -> t /= xDummy
+  _ -> True
 
 transSentence :: Continuity -> ExpRole -> PrDecl
               -> TSt [Named IsaSign.Sentence]
 transSentence c a (TiPropDecorate.Dec d) =
  case d of
-   PropSyntaxStruct.Base p -> case (a,p) of
-      (FunDef,  HsDeclStruct.HsFunBind _ ws) -> do
-           k <- case ws of
-                  _   -> transMMatch c ws
+   PropSyntaxStruct.Base p -> case (a, p) of
+      (FunDef, HsDeclStruct.HsFunBind _ ws) -> do
+           k <- transMMatch c ws
            return [k]
-      (FunDef,  HsPatBind _ q (HsBody e) _) -> do
+      (FunDef, HsPatBind _ q (HsBody e) _) -> do
            k <- transCProp FunDef c q e
            case k of
             Just k' -> return [k']
@@ -123,99 +119,99 @@ transSentence c a (TiPropDecorate.Dec d) =
                 [y | TiPropDecorate.Dec (PropSyntaxStruct.Base
                                (HsDeclStruct.HsFunBind _ [y])) <- ds]
            w <-
-              mapM (uncurry $ transCProp InstDef c) [(q,e) |
+              mapM (uncurry $ transCProp InstDef c) [(q, e) |
                  TiPropDecorate.Dec (PropSyntaxStruct.Base
                     (HsDeclStruct.HsPatBind _ q (HsBody e) _)) <- ds]
            return $ catMaybes $ k ++ w
       _ -> return []
    _ -> return []
 
--------------- main functions for sentence translation -------------------
---------------------- inserts fixpoints ----------------------------------
+{- ------------ main functions for sentence translation -------------------
+------------------- inserts fixpoints ---------------------------------- -}
 
 insFixpoints :: Continuity -> [[Named IsaSign.Sentence]]
                 -> TSt [Named IsaSign.Sentence]
-insFixpoints c xs = TSt $ \ssg ->
+insFixpoints c xs = TSt $ \ ssg ->
               let ws = [[s] | s <- concat xs]
                   ys = fixMRec c ws
                   ac = newConstTab c ys
                   nc = Map.union (constTab ssg) ac
                   nssg = ssg {constTab = nc}
-              in return (ys,nssg)
+              in return (ys, nssg)
 
---------------------------- constants -----------------------------------
+-- ------------------------- constants -----------------------------------
 
 constTabM :: TSt ConstTab
-constTabM = TSt $ \sign -> return (constTab sign, sign)
+constTabM = TSt $ \ sign -> return (constTab sign, sign)
 
 transCProp :: ExpRole -> Continuity
             -> PrPat -> PrExp
             -> TSt (Maybe (Named Sentence))
 transCProp j a p e = do
    cs <- constTabM
-   case (transPatBindX True a cs p e) of
-      Just (x,y) -> let k = fst $ extTBody x
-        in case (getTermName k) of
-          Nothing    -> trace (show p) $ error "Hs2HOLCF.transCProp1"
-          Just nm    -> case j of
+   case transPatBindX True a cs p e of
+      Just (x, y) -> let k = fst $ extTBody x
+        in case getTermName k of
+          Nothing -> trace (show p) $ error "Hs2HOLCF.transCProp1"
+          Just nm -> case j of
             InstDef -> case p of
-              TiPSpec (HsVar r) _ _ -> case (extClass r) of
+              TiPSpec (HsVar r) _ _ -> case extClass r of
                  Just c -> case e of
                      (TiPropDecorate.Exp (HsApp
-                          (TiPropDecorate.TiSpec _ _ (g:_)) _)) ->
+                          (TiPropDecorate.TiSpec _ _ (g : _)) _)) ->
                               transInstEx a nm (mkVName nm)
                                    (IsaClass c) (transType a [] g)
                                       (typ $ termType x) [] y
-                     _  -> trace (show p) $ error "Hs2HOLCF.transCProp2"
-                 _      -> trace ("\n ER000: " ++ show j) $
+                     _ -> trace (show p) $ error "Hs2HOLCF.transCProp2"
+                 _ -> trace ("\n ER000: " ++ show j) $
                            trace ("\n ER111: " ++ show p) $
                            trace ("\n ER222: " ++ show e) $
                                      error "Hs2HOLCF.transCProp3"
-              _     -> error "Hs2HOLCF.transCProp4"
-            FunDef  -> return $ Just $ makeNamed nm $ ConstDef $ IsaEq x y
-      _          -> trace ("\n PAT: " ++ show p) $
+              _ -> error "Hs2HOLCF.transCProp4"
+            FunDef -> return $ Just $ makeNamed nm $ ConstDef $ IsaEq x y
+      _ -> trace ("\n PAT: " ++ show p) $
                     trace ("\n EXP: " ++ show e) $
                     error "Hs2HOLCF.transCProp5"
 
------------------- translate pattern matching definitions ---------------
--- Main function. transMultiDef translate the expressions,
--- formCaseExp builds the case expression.
+{- ---------------- translate pattern matching definitions ---------------
+Main function. transMultiDef translate the expressions,
+formCaseExp builds the case expression. -}
 transMMatch :: Show ds => Continuity
             -> [HsDeclStruct.HsMatchI PNT PrExp PrPat ds]
             -> TSt (Named Sentence)
-transMMatch c ds = TSt $ \sign -> case ds of
-   []   -> error "Hs2HOLCF.transMMatch"
-   a:_  -> let
+transMMatch c ds = TSt $ \ sign -> case ds of
+   [] -> error "Hs2HOLCF.transMMatch"
+   a : _ -> let
             cs = constTab sign
             (a1, a2) = extInfo c cs a
             df = mkVName $ showIsaName a1
-            y  = maybe (noTypeT) id $ Map.lookup df cs
+            y = fromMaybe noTypeT $ Map.lookup df cs
             ls = map (snd . extInfo c cs) ds
         in case ls of
-            []        -> error ("Hs2HOLCF.transMMatch 2")
-            [(ps,tx)] -> let
+            [] -> error "Hs2HOLCF.transMMatch 2"
+            [(ps, tx)] -> let
                  qs = wrapWild $ map (transPat c cs) ps
               in mkkSent c df y qs tx sign
-            _         -> let
+            _ -> let
                  ww = transMultiDef c cs ls
                  tx = formCaseExp c ww
                  qs = map (mkVs "qX" . snd) $
-                            zip (fst a2) [(1 :: Int)..]
+                            zip (fst a2) [(1 :: Int) ..]
               in mkkSent c df y qs tx sign
  where
    extInfo c' cs' m = case m of
-     HsDeclStruct.HsMatch _ nm ps (HsGuardsStruct.HsBody x) _   ->
+     HsDeclStruct.HsMatch _ nm ps (HsGuardsStruct.HsBody x) _ ->
            (nm, (elimDic ps, transExp c' cs' x))
      HsDeclStruct.HsMatch _ nm ps (HsGuardsStruct.HsGuard xs) _ ->
         let ys = [(transExp c' cs' x1, transExp c' cs' x2)
-                                            | (_,x1,x2) <- xs]
+                                            | (_, x1, x2) <- xs]
             k = buildIfs c' ys
             ps' = elimDic ps
         in (nm, (ps', k))
    mkkSent c' df' y' qs' tx' sign' = return
        (makeSentence FunDef c' (IsaSign.orig df') y' df' qs' tx', sign')
    wrapWild ls = map wrapW $ number ls
-   wrapW (a,n) = case a of
+   wrapW (a, n) = case a of
         Free x -> case new x of
             "wildcX" -> Free $ mkVName ("wildcX" ++ show n)
             _ -> a
@@ -228,8 +224,8 @@ elimDic ls = case ls of
       TiDecorate.Pat (HsPId (HsVar _)) -> r
       _ -> x : r
 
-------------------------- translates instances --------------------------
-{- translates method definitions -}
+{- ----------------------- translates instances --------------------------
+translates method definitions -}
 transIMatch :: (Show ds) => Continuity -> HsType
             -> HsDeclStruct.HsMatchI PNT PrExp PrPat ds
             -> TSt (Maybe (Named Sentence))
@@ -237,30 +233,30 @@ transIMatch a t s = do
   ct <- constTabM
   case s of
      HsDeclStruct.HsMatch _ nm ps (HsGuardsStruct.HsBody ex) _ ->
-         let nam =  showIsaName nm
-             df  = mkVName $ showIsaName nm
-             tx  = transExp a ct ex
-             qs  = map (transPat a ct) ps
-             gt  = getInstType t      -- instatiating type
-             x   = transType a [] $ gt      -- instatiating type
-             c   = transClass $ getInstClass t
+         let nam = showIsaName nm
+             df = mkVName $ showIsaName nm
+             tx = transExp a ct ex
+             qs = map (transPat a ct) ps
+             gt = getInstType t      -- instatiating type
+             x = transType a [] gt   -- instatiating type
+             c = transClass $ getInstClass t
                                             -- instantiated class
          in transInstEx a nam df c x noTypeT qs tx
-     _  -> error "Hs2HOLCF, transIMatch"
+     _ -> error "Hs2HOLCF, transIMatch"
 
 transInstEx :: Continuity -> String -> VName ->
       IsaClass -> IsaType -> IsaType ->
         [IsaTerm] -> IsaTerm -> TSt (Maybe (Named Sentence))
-transInstEx a nam df c@(IsaClass k) x x2 qs tx = 
+transInstEx a nam df c@(IsaClass k) x x2 qs tx = TSt $
  if and [enElem nam mthEq]
- then TSt (\sig -> return (Nothing,sig))
+ then \ sig -> return (Nothing, sig)
  else
-       TSt $ \sign ->
-         let ct  = constTab sign
-             xx  = typeId x
-             w   = maybe [] id $ Map.lookup xx (arities $ tsig sign)
+       \ sign ->
+         let ct = constTab sign
+             xx = typeId x
+             w = fromMaybe [] $ Map.lookup xx (arities $ tsig sign)
                                            -- all arities of inst. type
-             cs  = maybe [] id $ Map.lookup c (Map.fromList w)
+             cs = fromMaybe [] $ Map.lookup c (Map.fromList w)
                                -- selects the arity for the inst. class
              xdf = new df
              ndf = if enElem nam aweLits
@@ -271,52 +267,48 @@ transInstEx a nam df c@(IsaClass k) x x2 qs tx =
              nsg = if enElem nam ["return"]
                    then addMonOpDecs sign xx
                    else sign
-             mty = if enElem nam ["return"]
-                   then returnType xx
-                   else if enElem nam [">>="]
-                   then bindType xx
-                   else if enElem nam ["fail",">>"]
-                   then noTypeT
-                   else if enElem nam mthAll
-                   then mthTy a k nam
-                   else maybe x2 id $ Map.lookup df ct
+             mty | enElem nam ["return"] = returnType xx
+                 | enElem nam [">>="] = bindType xx
+                 | enElem nam ["fail", ">>"] = noTypeT
+                 | enElem nam mthAll = mthTy a k nam
+                 | otherwise = fromMaybe x2 $ Map.lookup df ct
                                              -- abstract method type
              nty = instTyp mty c x cs
-                 -- in mty, replaces the variable of class c with type x,
-                 -- constraining variables in x with cs
+                 {- in mty, replaces the variable of class c with type x,
+                 constraining variables in x with cs -}
              tst = makeSentence InstDef a ndf nty pdf qs tx
          in return (Just tst, nsg)
 
-instTyp :: IsaType -> IsaClass -> IsaType -> [(IsaType,Sort)] -> IsaType
+instTyp :: IsaType -> IsaClass -> IsaType -> [(IsaType, Sort)] -> IsaType
 instTyp t c x cs = repVarClass t c (constrVarClass x cs)
 
--------------------- theory trans auxiliaries ------------------------
--------------------- transMMatch auxs -------------------------------
+{- ------------------ theory trans auxiliaries ------------------------
+------------------ transMMatch auxs ------------------------------- -}
 
-buildIfs :: Continuity -> [(IsaTerm,IsaTerm)] -> IsaTerm
+buildIfs :: Continuity -> [(IsaTerm, IsaTerm)] -> IsaTerm
 buildIfs c xs = case xs of
-  []  -> bottomPT c
-  (y1,y2):ys -> case (getTermName y1) of
+  [] -> bottomPT c
+  (y1, y2) : ys -> case getTermName y1 of
         Just "otherwise" -> y2
-        _                -> If y1 y2 (buildIfs c ys) c
+        _ -> If y1 y2 (buildIfs c ys) c
 
 makeSentence :: ExpRole -> Continuity -> String -> IsaType ->
     VName -> [IsaPattern] -> IsaTerm -> Named Sentence
 makeSentence k a d y df ps tx =
-  makeNamed d $ ConstDef $ (if tx == xDummy
-    then IsaEq xDummy $ xDummy
+  makeNamed d $ ConstDef (if tx == xDummy
+    then IsaEq xDummy xDummy
     else let w = ( case k of
                InstDef -> dispMN y
-               FunDef  -> hideNN y )
+               FunDef -> hideNN y )
          in IsaEq (Const df w) $ termMAbs a ps tx)
 
-------------------- transIMatch auxs ---------------------------------
+-- ----------------- transIMatch auxs ---------------------------------
 
 returnType :: String -> IsaType
 returnType t = let
     v = TFree "a" holType
     x = IsaSign.Type t holType [v]
- in IsaSign.Type "=>" holType [v,x]
+ in IsaSign.Type "=>" holType [v, x]
 
 bindType :: String -> IsaType
 bindType t = let
@@ -324,8 +316,8 @@ bindType t = let
     vb = TFree "b" holType
     xa = IsaSign.Type t holType [va]
     xb = IsaSign.Type t holType [vb]
-    f  = IsaSign.Type "=>" holType [va, xb]
-    g  = IsaSign.Type "=>" holType [f, xb]
+    f = IsaSign.Type "=>" holType [va, xb]
+    g = IsaSign.Type "=>" holType [f, xb]
  in IsaSign.Type "=>" holType [xa, g]
 
 addMonOpDecs :: ISign -> String -> ISign
@@ -340,35 +332,35 @@ addMonOpDecs sign xx = let
 
 extHead :: IsaType -> IsaType
 extHead t = case t of
-   IsaSign.Type "=>" _ [_,b] -> extHead b
+   IsaSign.Type "=>" _ [_, b] -> extHead b
    _ -> t
 
---------------- other theory trans auxs ----------------------------------
--- annotated translation function.
--- Each parameter pattern - IsaPattern - associated
--- with datatype information - [(String,Int)]
--- case variable name - IsaTerm
--- parameter name before translation - String
+{- ------------- other theory trans auxs ----------------------------------
+annotated translation function.
+Each parameter pattern - IsaPattern - associated
+with datatype information - [(String,Int)]
+case variable name - IsaTerm
+parameter name before translation - String -}
 transMultiDef :: Continuity -> ConstTab -> [([PrPat], IsaTerm)]
-    -> [([([(String, Int)],((IsaTerm, String), IsaPattern))], IsaTerm)]
+    -> [([([(String, Int)], ((IsaTerm, String), IsaPattern))], IsaTerm)]
 transMultiDef c sign ls =
   let
    ws = csAris [fst w | w <- ls]
    ks = [([newInfo v | v <- xs], y) | (xs, y) <- ls]
    ss = map standizeVars ks
- in [(zipNE ws rs, s) | (rs,s) <- ss]
+ in [(zipNE ws rs, s) | (rs, s) <- ss]
  where
   newInfo f = (snd $ extCI f, transPat c sign f)
   zipNE ws rs = case ws of
     [] -> []
     hd : xs -> (case hd of
            [] -> []
-           _ -> if rs == [] then error "Hs2HOLCF, zipNE"
+           _ -> if null rs then error "Hs2HOLCF, zipNE"
                 else [(hd, head rs)]) ++ zipNE xs (tail rs)
 
--- Extract datatype information from a list of patterned parameter lists.
--- Returns the list of constructors and arities for parameter datatypes.
-csAris :: [[PrPat]] -> [[(String,Int)]]
+{- Extract datatype information from a list of patterned parameter lists.
+Returns the list of constructors and arities for parameter datatypes. -}
+csAris :: [[PrPat]] -> [[(String, Int)]]
 csAris ws = let
    ls = removeEL ws
  in case ls of
@@ -377,8 +369,8 @@ csAris ws = let
       [] -> []
       _ : _ -> extCL (map head ls) : csAris [tail a | a <- ls]
 
--- Standardizes parameter names from all the expressions.
--- Associates a case variable name.
+{- Standardizes parameter names from all the expressions.
+Associates a case variable name. -}
 standizeVars :: ([(String, IsaPattern)], IsaTerm)
              -> ([((IsaTerm, String), IsaPattern)], IsaTerm)
 standizeVars k' = let
@@ -400,32 +392,32 @@ mkVs str n = Free (mkVName $ str ++ show n)
 
 -- Forms the nested case expression, using trCase.
 formCaseExp :: Continuity ->
-       [([([(String,Int)],((IsaTerm,String),IsaPattern))],IsaTerm)]
+       [([([(String, Int)], ((IsaTerm, String), IsaPattern))], IsaTerm)]
               -> IsaTerm
 formCaseExp ct ls =
  case ls of
  [] -> error "Hs2HOLCF.formCaseExp"
  m : _ -> case fst m of
-   []    -> snd m
+   [] -> snd m
    h : _ -> let
       k1s = map fst ls
-      xs  = map head (filter (/= []) k1s)
+      xs = map head (filter (/= []) k1s)
       xxs = remove_duplicates [((snd $ fst $ snd x, snd $ snd x),
-                [(us,t) | (u:us,t) <- ls, u == x] ++
-                     [(us,t) | ((_,(_,Free _)):us,t) <- ls]) | x <- xs]
+                [(us, t) | (u : us, t) <- ls, u == x] ++
+                     [(us, t) | ((_, (_, Free _)) : us, t) <- ls]) | x <- xs]
       ws = remove_duplicates
-                 $ [((a,b),formCaseExp ct c) | ((a,b),c) <- xxs]
-    in makeCase (fst $ fst $ snd h) $ map (\z -> trCase ct z ws) (fst h)
+                 [((a, b), formCaseExp ct c) | ((a, b), c) <- xxs]
+    in makeCase (fst $ fst $ snd h) $ map (\ z -> trCase ct z ws) (fst h)
  where
-  makeCase t lst = Case t lst
+  makeCase = Case
 
------------------------- TERM translation --------------------------------
------------------------- Patterns ----------------------------------------
+{- ---------------------- TERM translation --------------------------------
+---------------------- Patterns ---------------------------------------- -}
 
 transPat :: Continuity -> ConstTab -> PrPat -> IsaPattern
 transPat a c t = let
         a' = if a == IsCont True then IsCont False else a
-  in maybe xDummy id $ transMPat a' c t
+  in fromMaybe xDummy $ transMPat a' c t
 
 transMPat :: Continuity -> ConstTab -> PrPat -> Maybe IsaPattern
 transMPat = transMPatX False
@@ -443,29 +435,29 @@ transMPatX bx a' cs t = let
                   return $ foldr (termBAppl a $ consPT a) (nilPT a) ws
        _ -> transP a (mkVName . showIsaName) (transMPat a cs) p
     TiDecorate.TiPSpec w lt bb -> case w of
-         HsVar x -> case (showIsaName x) of
+         HsVar x -> case showIsaName x of
             "errorH" -> Just $ bottomPT a
-            _       -> transHV bx a x bb lt
+            _ -> transHV bx a x bb lt
          HsCon x -> transCN a x
     TiDecorate.TiPTyped x _ -> transMPat a cs x
     TiDecorate.TiPApp w z -> do w1 <- transMPat a cs w
                                 z1 <- transMPat a cs z
-                                return $ (termMAppl a w1 [z1])
+                                return $ termMAppl a w1 [z1]
 
 transP :: IsaName i => Continuity -> (i -> VName) ->
-      (p -> Maybe IsaPattern) -> (PI i p) -> Maybe IsaPattern
+      (p -> Maybe IsaPattern) -> PI i p -> Maybe IsaPattern
 transP a trId trP p =
  case mapPI3 trId trP p of
-   Just (HsPId (HsVar _))  -> return $ conDouble "DIC"
-   Just (HsPTuple _ xs)    -> return $ Tuplex xs a
-   Just (HsPParen x)       -> return x
-   Just HsPWildCard        -> return $ Free $ mkVName "wildcX"
-   _                       -> Nothing
+   Just (HsPId (HsVar _)) -> return $ conDouble "DIC"
+   Just (HsPTuple _ xs) -> return $ Tuplex xs a
+   Just (HsPParen x) -> return x
+   Just HsPWildCard -> return $ Free $ mkVName "wildcX"
+   _ -> Nothing
 
--------------------------- Terms --------------------------------------
+-- ------------------------ Terms --------------------------------------
 
 transExp :: Continuity -> ConstTab -> PrExp -> IsaTerm
-transExp a c t = maybe xDummy id $ transMExp a c t
+transExp a c t = fromMaybe xDummy $ transMExp a c t
 
 transMExp :: Continuity -> ConstTab -> PrExp -> Maybe IsaTerm
 transMExp a cs t = let
@@ -490,27 +482,27 @@ transMExp a cs t = let
        _ -> transE a (mkVName . showIsaName) (transMExp a cs)
                                      (transMPat a cs) e
     TiPropDecorate.TiSpec w st bb -> case w of
-       HsVar x -> case (showIsaName x) of
+       HsVar x -> case showIsaName x of
            "errorH" -> Just $ bottomPT a
-           _       -> transHV False a x bb st
+           _ -> transHV False a x bb st
        HsCon x -> transCN a x
     TiPropDecorate.TiTyped x _ -> transMExp a cs x
 
 transE :: Continuity -> (PNT -> VName) -> (e -> Maybe IsaTerm)
-       -> (p -> Maybe IsaPattern) -> (EI PNT e p j h k) -> Maybe IsaTerm
+       -> (p -> Maybe IsaPattern) -> EI PNT e p j h k -> Maybe IsaTerm
 transE c trId trE trP e =
- case (mapEI5 trId trE trP e) of
-   Just (HsId (HsVar _))              -> return $ conDouble "DIC"
-   Just (HsApp x y)                   -> return $ if x == bottomPT c
+ case mapEI5 trId trE trP e of
+   Just (HsId (HsVar _)) -> return $ conDouble "DIC"
+   Just (HsApp x y) -> return $ if x == bottomPT c
                                             then x
                                             else termMAppl c x [y]
-   Just (HsLambda ps x)               -> return $ termMAbs c ps x
-   Just (HsIf x y z)                  -> return $ If x y z c
-   Just (HsTuple xs)                  -> return $ Tuplex xs c
-   Just (HsParen x)                   -> return x
-   _                                  -> Nothing
+   Just (HsLambda ps x) -> return $ termMAbs c ps x
+   Just (HsIf x y z) -> return $ If x y z c
+   Just (HsTuple xs) -> return $ Tuplex xs c
+   Just (HsParen x) -> return x
+   _ -> Nothing
 
------------------------ TERM auxs ----------------------------------------
+-- --------------------- TERM auxs ----------------------------------------
 
 liftExp :: Continuity -> String -> Typ -> IsaTerm
 liftExp c n t = case c of
@@ -519,49 +511,49 @@ liftExp c n t = case c of
   NotCont -> Const (mkVName n) $ hideNN t
 
 liftStr :: Continuity -> String -> IsaTerm
-liftStr a n  = let
+liftStr a n = let
       st = Const (mkVName n) noType
    in case a of
         NotCont -> st
         IsCont _ -> termAppl liftString st
 
 transCases :: Continuity -> ConstTab ->
-    [(TiPat PNT, TiPropDecorate.TiExp PNT)] -> Maybe [(IsaTerm,IsaTerm)]
+    [(TiPat PNT, TiPropDecorate.TiExp PNT)] -> Maybe [(IsaTerm, IsaTerm)]
 transCases r cs ks = case ks of
  [] -> return []
  _ : _ -> let
      cnn = extCL $ map fst ks -- (cons, arity) list for the case value.
      ys = [((snd $ extCI f, transPat r cs f), transExp r cs g)
-                             | (f,g) <- ks] -- (cons, (ptn, exp)) list.
+                             | (f, g) <- ks] -- (cons, (ptn, exp)) list.
   in if null cnn then trace ("\n CASES: " ++ show ks) $
                       error "Hs2HOLCF.transCases"
-       else return $ map (\h -> trCase r h ys) cnn
+       else return $ map (\ h -> trCase r h ys) cnn
 
 extPE :: HsGuardsStruct.HsAlt (TiPropDecorate.TiExp PNT) (TiPat PNT)
    (TiPropDecorate.TiDecls PNT) -> (TiPat PNT, TiPropDecorate.TiExp PNT)
 extPE k = case k of
-       HsAlt _ p (HsBody e) _ -> (p,e)
+       HsAlt _ p (HsBody e) _ -> (p, e)
        _ -> error "HsHOLCF.extPE"
 
-extCL :: [TiPat PNT] -> [(String,Int)]
+extCL :: [TiPat PNT] -> [(String, Int)]
 extCL ks = case ks of -- ((cons, arity) list, cons).
        [] -> []
-       x:xs -> let p = (fst $ extCI x)
+       x : xs -> let p = (fst $ extCI x)
            in if p /= [] then p else extCL xs
 
-extCI :: (TiPat PNT) -> ([(String,Int)],String)
+extCI :: TiPat PNT -> ([(String, Int)], String)
 extCI k = case k of
   TiPSpec (HsCon (PNT z (ConstrOf _ x) _)) _ _ ->
      ([(gBN $ conName w, conArity w) | w <- constructors x], pp z)
   TiPSpec (HsVar (PNT z _ _)) _ _ -> ([], pp z)
-  TiPApp m _                -> extCI m
-  TiDecorate.Pat u          -> case u of
-     HsPWildCard                -> ([],"wildcX")
-     HsPParen p                 -> extCI p
-     HsPLit _ (HsString "")     ->  ([],"emptyString")
-     _                          -> ([], pp u)
-  TiPTyped p _              ->  ([], pp p)
-  _                         -> error "H2HOLCF.extCI"
+  TiPApp m _ -> extCI m
+  TiDecorate.Pat u -> case u of
+     HsPWildCard -> ([], "wildcX")
+     HsPParen p -> extCI p
+     HsPLit _ (HsString "") -> ([], "emptyString")
+     _ -> ([], pp u)
+  TiPTyped p _ -> ([], pp p)
+  _ -> error "H2HOLCF.extCI"
  where
   gBN (UniqueNames.PN q _) = q
 
@@ -570,17 +562,14 @@ trCase :: Continuity -> (String, Int) ->
 trCase r' h ys = let
      r = case r' of
            IsCont _ -> IsCont False
-           _        -> r'
+           _ -> r'
   in case ys of
     [] -> case r of
        IsCont _ -> (buildPat r h, bottomPT r)
        NotCont -> error "Hs2HOLCF.trCase"
-    ((a, b), c) : as ->
-       if a == fst h
-       then repVsCPt b c (snd h)  -- snd h :: Int
-       else if take 6 a == "wildcX"
-       then (buildPat r h, c)
-       else trCase r h as
+    ((a, b), c) : as | a == fst h -> repVsCPt b c (snd h)  -- snd h :: Int
+                     | take 6 a == "wildcX" -> (buildPat r h, c)
+                     | otherwise -> trCase r h as
  where
   mkpXVs = mkVs "pX"
   repVsCPt a b n = case a of
@@ -588,7 +577,7 @@ trCase r' h ys = let
       IsaSign.App x y@(IsaSign.Free _) z' -> let
              nv = mkpXVs n
              nr = renVars nv [y] b
-             st = repVsCPt x nr (n-1)
+             st = repVsCPt x nr (n - 1)
              nf = termMAppl z' (fst st) [nv]
              ns = renVars nv [y] $ snd st
            in (nf, ns)
@@ -598,24 +587,24 @@ trCase r' h ys = let
   buildPat s (x, n) = let
      hh = string2iterm s x Nothing
      k = Const (mkVName $ showIsaName x) noTypeC
-     j = maybe k id hh
-     sk = termMAppl s j $ reverse $ map mkpXVs [1..n]
+     j = fromMaybe k hh
+     sk = termMAppl s j $ reverse $ map mkpXVs [1 .. n]
    in sk
 
 extClass :: PNT -> Maybe String
-extClass p  = case p of
-  PNT _ (MethodOf (PN x _) _ _) _   -> Just x
-  _                                 -> Nothing
+extClass p = case p of
+  PNT _ (MethodOf (PN x _) _ _) _ -> Just x
+  _ -> Nothing
 
 transPatBindX :: Bool ->
-    Continuity -> ConstTab -> PrPat -> PrExp -> Maybe (IsaTerm,IsaTerm)
+    Continuity -> ConstTab -> PrPat -> PrExp -> Maybe (IsaTerm, IsaTerm)
 transPatBindX b a cs p e = do
               x <- transMPatX b a cs p
               y <- transMExp a cs e
               return (x, y)
 
 transPatBind :: Bool ->
-    Continuity -> ConstTab -> PrDecl -> Maybe (IsaTerm,IsaTerm)
+    Continuity -> ConstTab -> PrDecl -> Maybe (IsaTerm, IsaTerm)
 transPatBind b a cs s = case s of
   TiPropDecorate.Dec (PropSyntaxStruct.Base
       (HsDeclStruct.HsPatBind _ p (HsGuardsStruct.HsBody e) _)) ->
@@ -628,7 +617,7 @@ transCN c x = let
      y = showIsaName x
      w = Const (mkVName y) $ Hide noTypeT TCon (extArity x)
      zz = string2iterm c k Nothing
-  in return $ maybe w id $ zz
+  in return $ fromMaybe w zz
 
 extArity :: PNT -> Maybe Int
 extArity p = case p of
@@ -645,129 +634,129 @@ transHV :: Bool -> Continuity -> PNT -> [HsType] ->
                 HsScheme -> Maybe IsaTerm
 transHV _ a x lt tt = let
       qq = pp x
-      n  = showIsaName x
-      xt = maybe noTypeT id $ transMScheme a tt
-      kt = maybe noTypeT id $ case lt of
-                       r:_ -> transMType a [] r
-                       _   -> Nothing
+      n = showIsaName x
+      xt = fromMaybe noTypeT $ transMScheme a tt
+      kt = fromMaybe noTypeT $ case lt of
+                       r : _ -> transMType a [] r
+                       _ -> Nothing
       zt = replaceTyVar kt xt
       dx = case x of
-         PNT (PN _ (UniqueNames.G _ _ _)) _ _ ->
+         PNT (PN _ (UniqueNames.G {})) _ _ ->
                                     mkConstV n (hideNN zt)
-         PNT (PN _ (UniqueNames.S _)) _ _     -> mkFree n
-         PNT (PN _ (UniqueNames.Sn _ _)) _ _  -> mkFree n
-         _                                    -> error "Hs2HOLCF.transHV"
-      rt = maybe dx id $ string2iterm a qq (Just lt)
+         PNT (PN _ (UniqueNames.S _)) _ _ -> mkFree n
+         PNT (PN _ (UniqueNames.Sn _ _)) _ _ -> mkFree n
+         _ -> error "Hs2HOLCF.transHV"
+      rt = fromMaybe dx $ string2iterm a qq (Just lt)
   in return rt
 
 string2iterm :: Continuity -> String ->
                     Maybe [HsType] -> Maybe IsaTerm
 string2iterm a qq ls =
-   case (showIsaName qq) of
-   "()"        -> return $ unitPT a
-   "(,)"       -> return $ pairPT a
-   "True"      -> return $ truePT a
-   "False"     -> return $ falsePT a
-   "conjH"     -> return $ andPT a
-   "disjH"     -> return $ orPT a
-   "notH"      -> return $ notPT a
-   ":"         -> return $ consPT a
-   "[]"        -> return $ nilPT a
-   "Nothing"   -> return $ nothingPT a
-   "Just"      -> return $ justPT a
-   "fstH"      -> return $ fstPT a
-   "sndH"      -> return $ sndPT a
-   "headH"     -> return $ headPT a
-   "tailH"     -> return $ tailPT a
-   "Left"      -> return $ leftPT a
-   "Right"     -> return $ rightPT a
-   "return"    -> return $ mkTyConst a ls "return"
-   "mbind"     -> return $ mkTyConst a ls "mbind"
-   "mbbind"    -> return $ mkTyConst a ls "mbbind"
-   _           -> Nothing
+   case showIsaName qq of
+   "()" -> return $ unitPT a
+   "(,)" -> return $ pairPT a
+   "True" -> return $ truePT a
+   "False" -> return $ falsePT a
+   "conjH" -> return $ andPT a
+   "disjH" -> return $ orPT a
+   "notH" -> return $ notPT a
+   ":" -> return $ consPT a
+   "[]" -> return $ nilPT a
+   "Nothing" -> return $ nothingPT a
+   "Just" -> return $ justPT a
+   "fstH" -> return $ fstPT a
+   "sndH" -> return $ sndPT a
+   "headH" -> return $ headPT a
+   "tailH" -> return $ tailPT a
+   "Left" -> return $ leftPT a
+   "Right" -> return $ rightPT a
+   "return" -> return $ mkTyConst a ls "return"
+   "mbind" -> return $ mkTyConst a ls "mbind"
+   "mbbind" -> return $ mkTyConst a ls "mbbind"
+   _ -> Nothing
    where
    mkTyConst aa tt s = let
-     ndf = (case tt of
-        Just (x:_) -> (let
+     ndf = case tt of
+        Just (x : _) -> let
                w = typeId $ extHead $ transType aa [] x
-           in s ++ "_" ++ w)
-        _ -> s)
+           in s ++ "_" ++ w
+        _ -> s
      in Const (mkVName ndf) noType
 
------------------------ TERM trans recursive schemes ---------------------
+-- --------------------- TERM trans recursive schemes ---------------------
 
 mapEI5 :: (i1 -> i2) -> (e1 -> Maybe e2) -> (p1 -> Maybe p2)
        -> EI i1 e1 p1 d t c -> Maybe (EI i2 e2 p2 d t c)
 mapEI5 vf ef pf ex =
   case ex of
-    HsId n                 -> return $ HsId (mapHsIdent2 vf vf n)
-    HsApp x y              -> do a <- ef x
-                                 b <- ef y
-                                 return $ HsApp a b
-    HsLambda ps e          -> do xs <- mapM pf ps
-                                 y <- ef e
-                                 return $ HsLambda xs y
-    HsIf x y z             -> do a <- ef x
-                                 b <- ef y
-                                 c <- ef z
-                                 return $ HsIf a b c
-    HsTuple xs             -> do zs <- mapM ef xs
-                                 return $ HsTuple zs
-    HsParen x              -> do a <- ef x
-                                 return $ HsParen a
-    HsList xs              -> do ys <- mapM ef xs
-                                 return $ HsList ys
-    _                      -> Nothing
+    HsId n -> return $ HsId (mapHsIdent2 vf vf n)
+    HsApp x y -> do a <- ef x
+                    b <- ef y
+                    return $ HsApp a b
+    HsLambda ps e -> do xs <- mapM pf ps
+                        y <- ef e
+                        return $ HsLambda xs y
+    HsIf x y z -> do a <- ef x
+                     b <- ef y
+                     c <- ef z
+                     return $ HsIf a b c
+    HsTuple xs -> do zs <- mapM ef xs
+                     return $ HsTuple zs
+    HsParen x -> do a <- ef x
+                    return $ HsParen a
+    HsList xs -> do ys <- mapM ef xs
+                    return $ HsList ys
+    _ -> Nothing
 
 mapPI3 :: (i1 -> i2) -> (p1 -> Maybe p2) -> PI i1 p1 -> Maybe (PI i2 p2)
 mapPI3 vf pf pat =
   case pat of
-    HsPId n                -> return $ HsPId (mapHsIdent2 vf vf n)
-    HsPLit s l             -> return $ HsPLit s l
-    HsPTuple s ps          -> do bs <- mapM pf ps
-                                 return $ HsPTuple s bs
-    HsPParen p             -> do h <- pf p
-                                 return $ HsPParen h
-    HsPWildCard            -> return $ HsPWildCard
-    HsPList  s ps          -> do qs <- mapM pf ps
-                                 return $ HsPList s qs
-    HsPApp nm ps           -> do qs <- mapM pf ps
-                                 return $ HsPApp (vf nm) qs
-    HsPSucc s n l          -> return $ HsPSucc s (vf n) l
-    _                      -> Nothing
+    HsPId n -> return $ HsPId (mapHsIdent2 vf vf n)
+    HsPLit s l -> return $ HsPLit s l
+    HsPTuple s ps -> do bs <- mapM pf ps
+                        return $ HsPTuple s bs
+    HsPParen p -> do h <- pf p
+                     return $ HsPParen h
+    HsPWildCard -> return HsPWildCard
+    HsPList s ps -> do qs <- mapM pf ps
+                       return $ HsPList s qs
+    HsPApp nm ps -> do qs <- mapM pf ps
+                       return $ HsPApp (vf nm) qs
+    HsPSucc s n l -> return $ HsPSucc s (vf n) l
+    _ -> Nothing
 
--------------------------------------------------------------------------
------------------------- SIGNATURE translation --------------------------
--------------------------------------------------------------------------
+{- -----------------------------------------------------------------------
+---------------------- SIGNATURE translation --------------------------
+----------------------------------------------------------------------- -}
 
 transSignature :: Continuity -> Bool -> HatAna.Sign -> Result IsaSign.Sign
-transSignature c m sign =  let
-     tys  = HatAna.types sign
+transSignature c m sign = let
+     tys = HatAna.types sign
      vals = HatAna.values sign
-     xx   = getDomainTab c vals
+     xx = getDomainTab c vals
      nsig = IsaSign.emptySign
-       { baseSig = case (c,m) of
-                   (IsCont _,False) -> HsHOLCF_thy
-                   (NotCont,False) -> HsHOL_thy
-                   (IsCont _,True) -> MHsHOLCF_thy
-                   (NotCont,True) -> MHsHOL_thy,
+       { baseSig = case (c, m) of
+                   (IsCont _, False) -> HsHOLCF_thy
+                   (NotCont, False) -> HsHOL_thy
+                   (IsCont _, True) -> MHsHOLCF_thy
+                   (NotCont, True) -> MHsHOL_thy,
          tsig = emptyTypeSig
            {
              classrel = getClassrel c tys,
              abbrs = getAbbrs c tys,
              arities = getArities c xx (HatAna.instances sign)
            },
-         constTab =  getConstTab c vals,
+         constTab = getConstTab c vals,
          domainTab = xx
        }
    in Result [] $ Just nsig
 
------------------------------- TYPE translation -------------------------
-{- signature translation takes after one to Stratego, relies
+{- ---------------------------- TYPE translation -------------------------
+signature translation takes after one to Stratego, relies
   on Isabelle.Translation to solve naming conflicts. -}
 
 transType :: Continuity -> [HsType] -> HsType -> IsaType
-transType a c t = maybe noTypeT id $ transMType a c t
+transType a c t = fromMaybe noTypeT $ transMType a c t
 
 transMType :: Continuity -> [HsType] -> HsType -> Maybe IsaType
 transMType a c (Typ t) = transT a
@@ -778,7 +767,7 @@ transT :: Show d => Continuity -> (PNT -> Maybe IsaType)
        -> TI PNT d -> Maybe IsaType
 transT c trIdV trIdC trT t =
  case mapTI3 trIdV trIdC trT t of
-    Just (HsTyFun t1 t2) -> return $ (case c of
+    Just (HsTyFun t1 t2) -> return (case c of
               IsCont _ -> mkContFun t1 t2
               NotCont -> mkFunType t1 t2)
     Just (HsTyApp t1 t2) ->
@@ -795,7 +784,7 @@ getSort r c t = case c of
    [] -> case r of
              IsCont _ -> dom
              NotCont -> holType
-   (x@(Typ (HsTyApp _ _))):cs -> let
+   (x@(Typ (HsTyApp _ _))) : cs -> let
                a = getInstType x
                b = getInstClass x
                d = getLitName a
@@ -803,8 +792,8 @@ getSort r c t = case c of
                k = transClass b
                u = showIsaName d
                v = showIsaName t
-           in if u == v then k:s else s
-   _:cs -> getSort r cs t
+           in if u == v then k : s else s
+   _ : cs -> getSort r cs t
 
 transIdV :: Continuity -> [HsType] -> PNT -> Maybe IsaType
 transIdV a c t = return $ TFree (showIsaName t) (getSort a c t)
@@ -818,7 +807,7 @@ transIdC c t = case t of
              IsCont _ -> dom
              NotCont -> holType
   in
-  case (UniqueNames.orig t) of
+  case UniqueNames.orig t of
     UniqueNames.G (PlainModule m) n _ ->
                   IsaSign.Type (transTN c m n) srt tfs
     UniqueNames.G (MainModule m) n _ ->
@@ -841,19 +830,19 @@ mapTI3 :: (Show i1, Show i2, Show t1, Show t2) =>
         (i1 -> Maybe i2) -> (i1 -> Maybe i2) -> (t1 -> Maybe t2)
        -> TI i1 t1 -> Maybe (TI i2 t2)
 mapTI3 vf cf tf hty = case hty of
-     HsTyFun x y        -> do a <- tf x
-                              b <- tf y
-                              return $ HsTyFun a b
-     HsTyApp f x        -> do a <- tf f
-                              b <- tf x
-                              return $ HsTyApp a b
-     HsTyVar nm         -> do a <- vf nm
-                              return $ HsTyVar a
-     HsTyCon nm         -> do a <- cf nm
-                              return $ HsTyCon a
-     _                  -> Nothing
+     HsTyFun x y -> do a <- tf x
+                       b <- tf y
+                       return $ HsTyFun a b
+     HsTyApp f x -> do a <- tf f
+                       b <- tf x
+                       return $ HsTyApp a b
+     HsTyVar nm -> do a <- vf nm
+                      return $ HsTyVar a
+     HsTyCon nm -> do a <- cf nm
+                      return $ HsTyCon a
+     _ -> Nothing
 
------------------------------- Class translation ------------------------
+-- ---------------------------- Class translation ------------------------
 
 transClass :: HsType -> IsaClass
 transClass x = case x of
@@ -861,17 +850,17 @@ transClass x = case x of
     Typ _ -> trace ("\n CLASS: " ++ show x) $
              error "Hs2HOLCF.transClass"
 
--------------------------- SIGN fields translation -----------------------
--------------------------- translation for ConstTab ----------------------
+{- ------------------------ SIGN fields translation -----------------------
+------------------------ translation for ConstTab ---------------------- -}
 
-getConstTab ::  Continuity -> VaMap -> ConstTab
+getConstTab :: Continuity -> VaMap -> ConstTab
 getConstTab c = Map.map fst . Map.filter ((== IsaVal) . snd)
                 . getAConstTab c
 
-getAConstTab ::  Continuity -> VaMap -> AConstTab
-getAConstTab c f =
+getAConstTab :: Continuity -> VaMap -> AConstTab
+getAConstTab c =
     liftMapByListD Map.toList Map.fromList (mkVName . showIsaName . fst)
-         (\ (x, y) -> (transMScheme c y, getValInfo x)) nothingFiOut f
+         (\ (x, y) -> (transMScheme c y, getValInfo x)) nothingFiOut
 
 getValInfo :: HsId -> IsaVT
 getValInfo n = case n of
@@ -882,10 +871,10 @@ transMScheme :: Continuity -> HsScheme -> Maybe IsaType
 transMScheme a s = case s of
     Forall _ _ (c TiTypes.:=> t) -> transMType a c t
 
------------------------- translation of domaintab -----------------------
+-- ---------------------- translation of domaintab -----------------------
 
 getDomainTab :: Continuity -> VaMap -> DomainTab
-getDomainTab c f =  let
+getDomainTab c f = let
   ls = remove_duplicates
      [getDomainEntry (getAConstTab c f) x |
                                  x <- Map.keys f, checkTyCons x]
@@ -897,27 +886,27 @@ getDomainEntry ctab t = case t of
      [(getDomType ctab (mkVName $ showIsaName t),
        [(b, getFieldTypes ctab b)
            | b <- [ mkVName $ showIsaName c
-                     | PN c _ <-  map conName (constructors d)]])]
+                     | PN c _ <- map conName (constructors d)]])]
   _ -> []
 
----------------------- translation for Classrel (from KEnv) ------------
+-- -------------------- translation for Classrel (from KEnv) ------------
 
 getClassrel :: Continuity -> TyMap -> Classrel
-getClassrel c f = liftMapByList Map.toList Map.fromList
-                  (IsaClass . showIsaName) (transClassInfo c) f
+getClassrel c = liftMapByList Map.toList Map.fromList
+                  (IsaClass . showIsaName) (transClassInfo c)
 
 transClassInfo :: Continuity -> (Kind, HsTypeInfo) -> ClassDecl
 transClassInfo c p = case snd p of
-  TiTypes.Class _ _ _ _ ->
-    ((remove_duplicates $ (case c of
+  TiTypes.Class {} ->
+    (remove_duplicates $ case c of
                        IsCont _ -> dom
-                       NotCont -> holType)
-             ++ map transClass (extClassInfo $ snd p)),[],[])
-  _ -> ([],[],[])
+                       NotCont -> holType
+             ++ map transClass (extClassInfo $ snd p), [], [])
+  _ -> ([], [], [])
 
-------------------- translation of Abbrs (from KEnv) --------------------
+-- ----------------- translation of Abbrs (from KEnv) --------------------
 
-getAbbrs ::  Continuity -> TyMap -> Abbrs
+getAbbrs :: Continuity -> TyMap -> Abbrs
 getAbbrs c = Map.foldWithKey (\ k v -> case v of
            Nothing -> id
            Just p -> Map.insert k p) Map.empty
@@ -931,12 +920,12 @@ getAbbrs c = Map.foldWithKey (\ k v -> case v of
 
 transAbbrsInfo :: Continuity -> (Kind, HsTypeInfo) ->
                                    Maybe ([TName], IsaType)
-transAbbrsInfo c p = case (snd p) of
+transAbbrsInfo c p = case snd p of
   TiTypes.Synonym _ _ -> let (x, y) = extAbbrsInfo (snd p) in
       Just (map showIsaName x, transType c [] y)
   _ -> Nothing
 
----------------------- translation of arities ---------------------------
+-- -------------------- translation of arities ---------------------------
 
 getArities :: Continuity -> DomainTab -> HsInstances -> IsaSign.Arities
 getArities c dt db = Map.fromList (groupInst $ getTypeInsts c dt db)
@@ -956,4 +945,4 @@ transInst c i = let (x, y) = prepInst i
   in (transClass x,
       [(transType c [] a, w : map transClass b) | (a, b) <- y])
 
---------------------------------------------------------------------------
+-- ------------------------------------------------------------------------

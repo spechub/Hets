@@ -23,9 +23,9 @@ module Omega.Export
 
 import Logic.Coerce
 import qualified Logic.Prover as P
---import Logic.Logic
---import Logic.Grothendieck
---import Logic.Comorphism
+{- import Logic.Logic
+import Logic.Grothendieck
+import Logic.Comorphism -}
 
 import HasCASL.Logic_HasCASL
 import qualified HasCASL.Le as Le
@@ -49,10 +49,10 @@ import qualified Data.Map as Map
 -- | DGraph to Omega Library translation
 exportDGraph :: LibName -> DGraph -> Library
 exportDGraph ln dg =
-    let libid = (getLibId ln)
+    let libid = getLibId ln
     in
       Library (show libid)
-                  $ catMaybes $ map (exportNodeLab libid dg)
+                  $ mapMaybe (exportNodeLab libid dg)
                   $ topsortedNodes dg
 
 -- | DGNodeLab to Theory translation
@@ -60,7 +60,7 @@ exportNodeLab :: LibId -> DGraph -> LNode DGNodeLab -> Maybe Theory
 exportNodeLab _ dg (n, lb) =
     justWhen (not $ isDGRef lb) $
     case dgn_theory lb of
-      G_theory lid (ExtSign sign _) _ sens _ ->
+      G_theory lid _ (ExtSign sign _) _ sens _ ->
           let theoryname = getDGNodeName lb
               msg = "Omega Export: Try to coerce to HasCASL!"
               e = error msg
@@ -68,17 +68,17 @@ exportNodeLab _ dg (n, lb) =
                   fromMaybe e $
                   coerceBasicTheory lid HasCASL msg (sign, P.toNamedList sens)
           in Theory theoryname
-                 (catMaybes (map (makeImport dg) $ innDG dg n))
+                 (mapMaybe (makeImport dg) $ innDG dg n)
                  $ exportSign signature ++ exportSens sentences
 
 exportSign :: Le.Env -> [TCElement]
 -- need to filter the elements which are not locally defined but imported!
-exportSign Le.Env{ Le.assumps = ops } = map (TCSymbol . show) $ Map.keys ops
+exportSign Le.Env { Le.assumps = ops } = map (TCSymbol . show) $ Map.keys ops
 
 exportSens :: [Named Le.Sentence] -> [TCElement]
-exportSens = catMaybes . (map exportSen)
+exportSens = mapMaybe exportSen
 
-exportSen :: (Named Le.Sentence) -> Maybe TCElement
+exportSen :: Named Le.Sentence -> Maybe TCElement
 exportSen SenAttr
   { senAttr = name
   , isAxiom = isAx
@@ -89,4 +89,3 @@ exportSen _ = Nothing
 makeImport :: DGraph -> LEdge DGLinkLab -> Maybe String
 makeImport dg (from, _, lbl) =
   justWhen (isGlobalDef $ dgl_type lbl) $ getDGNodeName $ labDG dg from
-

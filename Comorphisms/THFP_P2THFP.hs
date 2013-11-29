@@ -47,9 +47,9 @@ instance Comorphism THFP_P2THFP
     map_theory THFP_P2THFP = trans_theory
     has_model_expansion THFP_P2THFP = True
 
-trans_theory :: (SignTHF,[Named THFFormula])
-                -> Result (SignTHF,[Named THFFormula])
+trans_theory :: (SignTHF, [Named THFFormula])
+                -> Result (SignTHF, [Named THFFormula])
 trans_theory (sig, sentences1) = do
- (cs,sentences) <- infer (consts sig) sentences1
+ (cs, sentences) <- infer (consts sig) sentences1
  let sig1 = sig {consts = cs}
- return (recreateSymbols sig1,sentences)
+ return (recreateSymbols sig1, sentences)

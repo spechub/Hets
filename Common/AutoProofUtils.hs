@@ -26,13 +26,13 @@ import Static.DevGraph
 import Static.GTheory
 
 -- | stores each node to be considered along with some further infomation
-data FNode = FNode { name     :: String
-                   , node     :: LNode DGNodeLab
+data FNode = FNode { name :: String
+                   , node :: LNode DGNodeLab
                    , sublogic :: G_sublogics
-                   , goals    :: [String]
+                   , goals :: [String]
                      {- after proving, a new GTheory with the new Proofstatus
                      is computed -}
-                   , results  :: G_theory }
+                   , results :: G_theory }
 
 {- | mostly for the purpose of proper display, the resulting G_theory of each
 FNode can be converted into a list of Goals. -}
@@ -93,4 +93,3 @@ timedout fn = any (\ a -> gStatus a == GTimeout) $ toGtkGoals fn
 -- | returns True only if every goal has been proved
 allProved :: FNode -> Bool
 allProved fn = all (\ a -> gStatus a == GProved) $ toGtkGoals fn
-

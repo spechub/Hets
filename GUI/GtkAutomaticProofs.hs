@@ -56,10 +56,10 @@ import Data.Maybe
 import Interfaces.Utils
 
 -- | Data structure for saving the user-selected prover and comorphism
-data Finder = Finder { fName      :: String
-                     , finder     :: G_prover
+data Finder = Finder { fName :: String
+                     , finder :: G_prover
                      , comorphism :: [AnyComorphism]
-                     , selected   :: Int }
+                     , selected :: Int }
 
 instance Eq Finder where
   f1 == f2 = fName f1 == fName f2 && comorphism f1 == comorphism f2
@@ -75,28 +75,28 @@ showAutomaticProofs ginf@(GInfo { libName = ln }) le = do
 -- | Displays the consistency checker window
 showProverWindow :: GInfo -> MVar LibEnv -> LibName -> LibEnv -> IO ()
 showProverWindow ginf res ln le = postGUIAsync $ do
-  xml               <- getGladeXML ConsistencyChecker.get
+  xml <- getGladeXML ConsistencyChecker.get
   -- get objects
-  window            <- xmlGetWidget xml castToWindow "NodeChecker"
-  btnClose          <- xmlGetWidget xml castToButton "btnClose"
-  btnResults         <- xmlGetWidget xml castToButton "btnResults"
+  window <- xmlGetWidget xml castToWindow "NodeChecker"
+  btnClose <- xmlGetWidget xml castToButton "btnClose"
+  btnResults <- xmlGetWidget xml castToButton "btnResults"
   -- get nodes view and buttons
-  trvNodes          <- xmlGetWidget xml castToTreeView "trvNodes"
-  btnNodesAll       <- xmlGetWidget xml castToButton "btnNodesAll"
-  btnNodesNone      <- xmlGetWidget xml castToButton "btnNodesNone"
-  btnNodesInvert    <- xmlGetWidget xml castToButton "btnNodesInvert"
+  trvNodes <- xmlGetWidget xml castToTreeView "trvNodes"
+  btnNodesAll <- xmlGetWidget xml castToButton "btnNodesAll"
+  btnNodesNone <- xmlGetWidget xml castToButton "btnNodesNone"
+  btnNodesInvert <- xmlGetWidget xml castToButton "btnNodesInvert"
   btnNodesUnchecked <- xmlGetWidget xml castToButton "btnNodesUnchecked"
-  btnNodesTimeout   <- xmlGetWidget xml castToButton "btnNodesTimeout"
-  cbInclThms        <- xmlGetWidget xml castToCheckButton "cbInclThms"
+  btnNodesTimeout <- xmlGetWidget xml castToButton "btnNodesTimeout"
+  cbInclThms <- xmlGetWidget xml castToCheckButton "cbInclThms"
   -- get checker view and buttons
-  cbComorphism      <- xmlGetWidget xml castToComboBox "cbComorphism"
-  lblSublogic       <- xmlGetWidget xml castToLabel "lblSublogic"
-  sbTimeout         <- xmlGetWidget xml castToSpinButton "sbTimeout"
-  btnCheck          <- xmlGetWidget xml castToButton "btnCheck"
-  btnStop           <- xmlGetWidget xml castToButton "btnStop"
+  cbComorphism <- xmlGetWidget xml castToComboBox "cbComorphism"
+  lblSublogic <- xmlGetWidget xml castToLabel "lblSublogic"
+  sbTimeout <- xmlGetWidget xml castToSpinButton "sbTimeout"
+  btnCheck <- xmlGetWidget xml castToButton "btnCheck"
+  btnStop <- xmlGetWidget xml castToButton "btnStop"
   -- btnFineGrained    <- xmlGetWidget xml castToButton "btnFineGrained"
-  trvFinder         <- xmlGetWidget xml castToTreeView "trvFinder"
-  toolLabel         <- xmlGetWidget xml castToLabel "label1"
+  trvFinder <- xmlGetWidget xml castToTreeView "trvFinder"
+  toolLabel <- xmlGetWidget xml castToLabel "label1"
   labelSetLabel toolLabel "Pick prover"
   windowSetTitle window "AutomaticProofs"
   spinButtonSetValue sbTimeout $ fromIntegral guiDefaultTimeLimit
@@ -121,14 +121,14 @@ showProverWindow ginf res ln le = postGUIAsync $ do
   widgetSetSensitive btnCheck False
 
   threadId <- newEmptyMVar
-  wait     <- newEmptyMVar
-  mView    <- newEmptyMVar
+  wait <- newEmptyMVar
+  mView <- newEmptyMVar
 
-  let dg    = lookupDGraph ln le
+  let dg = lookupDGraph ln le
       nodes = initFNodes $ labNodesDG dg
 
   -- setup data
-  listNodes  <- setListData trvNodes show $ sort nodes
+  listNodes <- setListData trvNodes show $ sort nodes
   listFinder <- setListData trvFinder fName []
 
   -- setup comorphism combobox
@@ -146,7 +146,7 @@ showProverWindow ginf res ln le = postGUIAsync $ do
   let upd = updateNodes trvNodes listNodes
               (\ s -> do
                 labelSetLabel lblSublogic $ show s
-                updateFinder  trvFinder listFinder s )
+                updateFinder trvFinder listFinder s )
               (do
                 labelSetLabel lblSublogic "No sublogic"
                 listStoreClear listFinder
@@ -231,7 +231,7 @@ showProverWindow ginf res ln le = postGUIAsync $ do
 
 performAutoProof :: GInfo
                     -- include proven Theorems in subsequent proofs
-                  ->  Bool
+                  -> Bool
                     -- Timeout (sec)
                   -> Int
                     -- Progress bar
@@ -252,9 +252,9 @@ performAutoProof gi inclThms timeout update (Finder _ pr cs i) listNodes nodes =
            postGUISync $ update (count / count') $ name fn
            res <- maybe (return Nothing) (\ g_th -> do
                     Result ds ms <- runResultT
-                      $ (do 
-                          (a,b) <- autoProofAtNode inclThms timeout [] g_th (pr,c)
-                          liftIO $ addCommandHistoryToState (intState gi) (fst b) (Just (pr,c)) (snd b) (name fn) (True,timeout)
+                        (do
+                          (a, b) <- autoProofAtNode inclThms timeout [] g_th (pr, c)
+                          liftIO $ addCommandHistoryToState (intState gi) (fst b) (Just (pr, c)) (snd b) (name fn) (True, timeout)
                           return a)
                     maybe (fail $ showRelDiags 1 ds) (return . Just . fst) ms)
                   $ globalTheory $ snd $ node fn
@@ -347,13 +347,13 @@ setSelectedComorphism view list cbComorphism = do
 showModelViewAux :: MVar (IO ()) -> String -> ListStore FNode -> [FNode]
                  -> IO ()
 showModelViewAux lock title list other = do
-  xml      <- getGladeXML ConsistencyChecker.get
+  xml <- getGladeXML ConsistencyChecker.get
   -- get objects
-  window   <- xmlGetWidget xml castToWindow "ModelView"
+  window <- xmlGetWidget xml castToWindow "ModelView"
   btnClose <- xmlGetWidget xml castToButton "btnResClose"
-  frNodes  <- xmlGetWidget xml castToFrame "frResNodes"
+  frNodes <- xmlGetWidget xml castToFrame "frResNodes"
   trvNodes <- xmlGetWidget xml castToTreeView "trvResNodes"
-  tvModel  <- xmlGetWidget xml castToTextView "tvResModel"
+  tvModel <- xmlGetWidget xml castToTextView "tvResModel"
 
   windowSetTitle window title
 

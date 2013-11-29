@@ -92,7 +92,7 @@ toSId s = Token $ case parse (reserved (casl_reserved_words
 
 kif2CASLTerm :: RangedLL -> TERM ()
 kif2CASLTerm rl@(RangedLL _ x _) = let r = llRange rl in case x of
-    Literal k v| elem k [QWord, AtWord] -> Mixfix_token $ toVar v r
+    Literal k v | elem k [QWord, AtWord] -> Mixfix_token $ toVar v r
     Literal _ s -> varOrConst $ toSId s r
     -- a formula in place of a term; coerce to Booleans
     List (rf@(RangedLL _ (Literal _ f) _) : args) ->

@@ -87,8 +87,8 @@ signColimit graph = let
   in (colimSign, colimMor)
 
 instance SymbolName QName where
- addIntAsSuffix (q, i) = q { namePrefix = show i, 
-                             expandedIRI = expandedIRI q ++ show i 
+ addIntAsSuffix (q, i) = q { namePrefix = show i,
+                             expandedIRI = expandedIRI q ++ show i
                            }
 
 getEntityTypeMap :: EntityType -> (Int, OWLMorphism)

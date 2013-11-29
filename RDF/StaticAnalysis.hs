@@ -46,7 +46,9 @@ resolveAbbreviatedIRI :: RDFPrefixMap -> IRI -> IRI
 resolveAbbreviatedIRI pm new = case Map.lookup (namePrefix new) pm of
     Nothing -> error $ namePrefix new ++ ": prefix not declared"
     Just iri -> let new2 = if null (namePrefix new)
-                                        && length (localPart new) > 0
+                                        {- FIXME: If null (localPart new)
+                                                  then head will fail! -}
+                                        && null (localPart new)
                                         && head (localPart new) == ':'
                             then new {localPart = tail $ localPart new}
                             else new
@@ -66,11 +68,11 @@ resolvePrefix b pm (Prefix s new) = let res = resolveIRI b pm new
     in (Prefix s res, Map.insert s res pm)
 
 resolvePredicate :: Base -> RDFPrefixMap -> Predicate -> Predicate
-resolvePredicate b pm (Predicate p) =
-    if null (namePrefix p) && localPart p == "a" then Predicate $
+resolvePredicate b pm (Predicate p) = Predicate $
+    if null (namePrefix p) && localPart p == "a" then
         p { expandedIRI = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
           , iriType = Full }
-    else Predicate $ resolveIRI b pm p
+    else resolveIRI b pm p
 
 resolveSubject :: Base -> RDFPrefixMap -> Subject -> Subject
 resolveSubject b pm s = case s of

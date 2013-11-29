@@ -425,10 +425,9 @@ isInfix (Id tops _ _) = not (null tops) && isPlace (head tops)
 posOfId :: Id -> Range
 posOfId (Id ts _ (Range ps)) =
    Range $ let l = filter (not . isPlace) ts
-                       in (if null l then
+                       in catPosAux (if null l then ts
                        -- for invisible "__ __" (only places)
-                          catPosAux ts
-                          else catPosAux l) ++ ps
+                          else l) ++ ps
 
 -- | compute start and end position of a Token (or leave it empty)
 tokenRange :: Token -> [Pos]

@@ -385,7 +385,7 @@ anaProcTerm mix proc gVars lVars = case proc of
                fqProc = FQProcess (ConditionalProcess fFQ pFQTerm qFQTerm r)
                         newAlpha r
            return (newAlpha, fqProc)
-    FQProcess _ _ _ ->
+    FQProcess {} ->
         error "CspCASL.StatAnaCSP.anaProcTerm: Unexpected FQProcess"
 
 {- | Statically analyse a CspCASL "named process" term. Return the

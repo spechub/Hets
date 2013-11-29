@@ -23,7 +23,7 @@ totalOrder x = Just . compare x
 
 -- | split a list of elements into equivalence classes
 equivBy :: POrder a -> [a] -> [[a]]
-equivBy order l = equiv0 [] l where
+equivBy order = equiv0 [] where
   equiv0 = foldl add
   add cs x = case cs of
     [] -> [[x]]
@@ -53,10 +53,9 @@ rankBy order l = case l of
 -- | A partial-ordering class.
 class Partial a where
   pCmp :: POrder a
-  pCmp a b =
-    if a <=? b
-    then if b <=? a then Just EQ else Just LT
-    else if b <=? a then Just GT else Nothing
+  pCmp a b | a <=? b = Just $ if b <=? a then EQ else LT
+           | b <=? a = Just GT
+           | otherwise = Nothing
   (<=?) :: a -> a -> Bool
   a <=? b = case pCmp a b of
     Just o -> o <= EQ

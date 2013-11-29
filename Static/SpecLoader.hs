@@ -43,7 +43,7 @@ import Comorphisms.LogicGraph
 proceed' :: HetcatsOpts -> FilePath -> ResultT IO (LibName, LibEnv)
 proceed' hopts = anaSourceFile logicGraph hopts Set.empty emptyLibEnv emptyDG
 
-data SigSens sign sentence = 
+data SigSens sign sentence =
     SigSens
     { sigsensSignature :: sign
     , sigsensNamedSentences :: [Named sentence]
@@ -111,7 +111,7 @@ getSpec b lid ln lenv sp =
                            return SigSens
                                       { sigsensSignature = plainSign sig
                                       , sigsensNamedSentences
-                                          = map (\ (x, y) -> y{senAttr = x})
+                                          = map (\ (x, y) -> y {senAttr = x})
                                             $ OMap.toList sens
                                       , sigsensGlobalAnnos = globalAnnos dg
                                       , sigsensNode = node
@@ -131,4 +131,3 @@ getSpec b lid ln lenv sp =
                  let nL = lab' ctx in f nL $ dgn_theory nL
              _ -> error $ "getSpec: Node " ++ show node
                   ++ " not in development graph"
-

@@ -40,12 +40,12 @@ import System.Exit (ExitCode)
 
 import Prelude hiding (lookup)
 
--- ----------------------------------------------------------------------
--- * Reduce Calculator Instances
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+Reduce Calculator Instances
+---------------------------------------------------------------------- -}
 
 data ReduceInterpreter = ReduceInterpreter { inh :: Handle
-                                           , outh ::Handle
+                                           , outh :: Handle
                                            , ph :: ProcessHandle
                                            , varcounter :: Int }
 
@@ -63,7 +63,7 @@ type RedsIO = ResultT (IOS ReduceInterpreter)
 type RedcIO = ResultT (IOS RITrans)
 
 instance AssignmentStore RedsIO where
-    assign  = redAssign evalRedsString redsTransS return
+    assign = redAssign evalRedsString redsTransS return
     lookup = redLookup evalRedsString redsTransS
     eval = redEval evalRedsString return
     check = redCheck evalRedsString return
@@ -73,26 +73,26 @@ instance VarGen RedsIO where
     genVar = do
       s <- get
       let i = varcounter s
-      put $ s { varcounter =i + 1 }
-      return $ "?" ++ show i
+      put $ s { varcounter = i + 1 }
+      return $ '?' : show i
 
 instance AssignmentStore RedcIO where
-    assign  = redAssign evalRedcString redcTransS redcTransE
+    assign = redAssign evalRedcString redcTransS redcTransE
     lookup = redLookup evalRedcString redcTransS
     eval = redEval evalRedcString redcTransE
     check = redCheck evalRedcString redcTransE
-    names = get >>= return . SMem . getBMap
+    names = liftM (SMem . getBMap) get
 
 instance VarGen RedcIO where
     genVar = do
       s <- get
       let i = newkey $ getBMap s
       put $ s { getBMap = (getBMap s) { newkey = i + 1 } }
-      return $ "?" ++ show i
+      return $ '?' : show i
 
--- ----------------------------------------------------------------------
--- * Reduce syntax functions
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+Reduce syntax functions
+---------------------------------------------------------------------- -}
 
 printAssignment :: String -> EXPRESSION -> String
 printAssignment n e = concat [n, ":=", exportExp e, ";"]
@@ -103,8 +103,8 @@ printEvaluation e = exportExp e ++ ";"
 printLookup :: String -> String
 printLookup n = n ++ ";"
 
--- As reduce does not support boolean expressions as first class citizens
--- we encode them in an if-stmt and transform the numeric response back.
+{- As reduce does not support boolean expressions as first class citizens
+we encode them in an if-stmt and transform the numeric response back. -}
 printBooleanExpr :: EXPRESSION -> String
 printBooleanExpr e = concat [ "on rounded;"
                             , " if "
@@ -119,9 +119,9 @@ getBooleanFromExpr e =
     error $ "getBooleanFromExpr: can't translate expression to boolean: "
               ++ show e
 
--- ----------------------------------------------------------------------
--- * Generic Communication Interface
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+Generic Communication Interface
+---------------------------------------------------------------------- -}
 
 {- |
    The generic interface abstracts over the concrete evaluation function
@@ -151,8 +151,8 @@ redLookup ef trans n = do
   n' <- trans n
   el <- ef $ printLookup n'
   return $ listToMaybe el
--- we don't want to return nothing on id-lookup: "x; --> x"
---  if e == mkOp n [] then return Nothing else return $ Just e
+{- we don't want to return nothing on id-lookup: "x; --> x"
+if e == mkOp n [] then return Nothing else return $ Just e -}
 
 redEval :: (AssignmentStore s, MonadResult s) =>
            (String -> s [EXPRESSION])
@@ -177,9 +177,9 @@ redCheck ef trans e = do
    else return $ getBooleanFromExpr $ head el
 
 
--- ----------------------------------------------------------------------
--- * The Standard Communication Interface
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+The Standard Communication Interface
+---------------------------------------------------------------------- -}
 
 instance Session ReduceInterpreter where
     inp = inh
@@ -204,22 +204,22 @@ redsInit = do
    then error $ "Could not find reduce under " ++ reducecmd
    else do
      (inpt, out, _, pid) <- connectCAS reducecmd
-     return
-        $ ReduceInterpreter { inh = inpt, outh = out, ph = pid, varcounter = 1 }
+     return ReduceInterpreter
+      { inh = inpt, outh = out, ph = pid, varcounter = 1 }
 
 redsExit :: ReduceInterpreter -> IO ()
 redsExit = disconnectCAS
 
--- ----------------------------------------------------------------------
--- * An alternative Communication Interface
--- ----------------------------------------------------------------------
+{- ----------------------------------------------------------------------
+An alternative Communication Interface
+---------------------------------------------------------------------- -}
 
 
 wrapCommand :: IOS PC.CommandState a -> IOS RITrans a
 wrapCommand ios = do
   r <- get
   let map' x = r { getRI = x }
-  stmap map' getRI  ios
+  stmap map' getRI ios
 
 -- | A direct way to communicate with Reduce
 redcDirect :: RITrans -> String -> IO String
@@ -251,8 +251,8 @@ evalRedcString s = do
   r <- get
   let bm = getBMap r
       trans = revtranslateExpr bm
-  -- don't need to skip the reducelinenr here, because the Command-Interface
-  -- cleans the outpipe before sending (hence removes the reduce line nr)
+  {- don't need to skip the reducelinenr here, because the Command-Interface
+  cleans the outpipe before sending (hence removes the reduce line nr) -}
   return $ map trans $ maybeToList $ parseExpression operatorInfoMap
              $ trimLeft res
 
@@ -265,7 +265,7 @@ redcInit v = do
     Left redcmd -> do
             cs <- PC.start redcmd v Nothing
             (_, cs') <- runIOS cs $ PC.send $ "off nat; load redlog; "
-                        ++ "rlset reals; " --on rounded; precision 30;"
+                        ++ "rlset reals; " -- on rounded; precision 30;"
             return RITrans { getBMap = initWithDefault cslReduceDefaultMapping
                            , getRI = cs' }
     _ -> error "Could not find reduce shell command!"

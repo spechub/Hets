@@ -25,6 +25,7 @@ import Common.Lib.Graph
 import Data.Graph.Inductive.Graph
 import Data.Graph.Inductive.Basic
 import Data.Graph.Inductive.Query.DFS
+import qualified Data.Foldable
 
 import qualified Taxonomy.AbstractGraphView as A
 
@@ -38,7 +39,7 @@ displayClassGraph onto startClass = do
             [] -> return $ getPureClassGraph $ getClassGraph onto
             (_, v, l, _) : _ -> return $ ([], v, l, []) & empty
     A.Result gid _ <-
-       A.makegraph  (getOntologyName onto) Nothing Nothing Nothing
+       A.makegraph (getOntologyName onto) Nothing Nothing Nothing
            [GlobalMenu (Button "Button2" (putStrLn "Button2 was pressed"))]
            (map ( \ ( nam, col) -> (getTypeLabel nam, Box $$$ Color col $$$
                  createLocalMenu onto ginfo
@@ -80,9 +81,7 @@ updateDaVinciGraph nGraph gid gv = do
            nodeMap2 <- foldM (createLink gid gv) nodeMap1 $ labEdges nGraph
            A.Result gid' err <- A.writeOntoGraph gid nGraph gv
            A.writeNodeMap gid' nodeMap2 gv
-           case err of
-             Nothing -> return ()
-             Just str -> putStr str
+           Data.Foldable.forM_ err putStr
 
 getTypeLabel :: OntoObjectType -> String
 getTypeLabel t = case t of
@@ -91,39 +90,36 @@ getTypeLabel t = case t of
     OntoPredicate -> "predicate"
 
 createNode :: Int -> A.GraphInfo -> ClassGraph -> A.NodeMapping
-           -> LNode (String, String, OntoObjectType) -> IO (A.NodeMapping)
+           -> LNode (String, String, OntoObjectType) -> IO A.NodeMapping
 createNode gid ginfo _ nMap (nodeID, (name, _, objectType)) =
             case Map.lookup nodeID nMap of
-              Just(_) -> return nMap
+              Just _ -> return nMap
               Nothing ->
                 do A.Result nid err <-
                        A.addnode gid (getTypeLabel objectType) name ginfo
                    case err of
                      Nothing -> return (Map.insert nodeID nid nMap)
-                     Just str  -> do
+                     Just str -> do
                          putStr str
                          return $ Map.insert nodeID nid nMap
 
 createLink :: A.Descr -> A.GraphInfo -> A.NodeMapping -> LEdge String
-           -> IO (A.NodeMapping)
+           -> IO A.NodeMapping
 createLink gid ginfo nMap (node1, node2, edgeLabel) = do
     dNodeID_1 <- case Map.lookup node1 nMap of
                    Nothing -> return (-1)
-                   Just n  -> return n
+                   Just n -> return n
     dNodeID_2 <- case Map.lookup node2 nMap of
                    Nothing -> return (-1)
                    Just n -> return n
     if dNodeID_1 == -1 || dNodeID_2 == -1 then return nMap else do
       A.Result _ err <-
-        if edgeLabel == "isa" || edgeLabel == "instanceOf" ||
-                 edgeLabel == "livesIn" || edgeLabel == "proves"
+        if elem edgeLabel ["isa", "instanceOf", "livesIn", "proves"]
         then A.addlink gid edgeLabel edgeLabel Nothing
              dNodeID_2 dNodeID_1 ginfo
         else A.addlink gid edgeLabel edgeLabel Nothing
              dNodeID_1 dNodeID_2 ginfo
-      case err of
-        Nothing -> return ()
-        Just str -> putStr str
+      Data.Foldable.forM_ err putStr
       return nMap
 
 showRelationsForVisible :: MMiSSOntology -> A.GraphInfo -> (String, Int, Int)
@@ -189,17 +185,17 @@ makeObjectGraph oldGr classGr objectGr =
       newGr3 = foldl insInstanceOfEdge newGr2 (labNodes objectGr)
   in newGr3
   where
-    insEdgeSecurely gr (node1,node2,label) = case match node1 gr of
+    insEdgeSecurely gr (node1, node2, label) = case match node1 gr of
         (Nothing, _) -> gr
         _ -> case match node2 gr of
             (Nothing, _) -> gr
-            _ -> insEdge (node1,node2,label) gr
-    insInstanceOfEdge gr (_,(objectName, className,_)) =
+            _ -> insEdge (node1, node2, label) gr
+    insInstanceOfEdge gr (_, (objectName, className, _)) =
       case findLNode gr className of
         Nothing -> case findLNode classGr className of
           Nothing -> gr
           Just classNodeID -> insInstanceOfEdge1
-              (insNode (classNodeID,(className, "", OntoClass)) gr)
+              (insNode (classNodeID, (className, "", OntoClass)) gr)
                                             classNodeID objectName
         Just classNodeID -> insInstanceOfEdge1 gr classNodeID objectName
     insInstanceOfEdge1 gr classNodeID objectName =
@@ -248,8 +244,8 @@ showAllRelations :: MMiSSOntology -> A.GraphInfo -> Bool -> [String]
                  -> (String, Int, Int) -> IO ()
 showAllRelations onto gv withIncoming rels (name, _, gid) =
   do oldGv <- readIORef gv
-     newGr <- return $ reduceToRelations (getClassGraph onto)
-                       empty withIncoming rels name
+     let newGr = reduceToRelations (getClassGraph onto)
+                  empty withIncoming rels name
      updateDaVinciGraph newGr gid gv
      writeIORef gv oldGv
 
@@ -259,13 +255,13 @@ reduceToRelations wholeGraph g withIncoming forbiddenRels name =
   let g1 = elfilter (not . (`elem` forbiddenRels)) wholeGraph
   in case findLNode g1 name of
        Nothing -> g
-       Just selectedNode  ->
+       Just selectedNode ->
           let nodeList = if withIncoming
                            then udfs [selectedNode] g1
                            else dfs [selectedNode] g1
               toDelete = nodes g1 \\ nodeList
               g1' = delNodes toDelete g1
-              g2 =  mergeGraphs g1' g
+              g2 = mergeGraphs g1' g
               newNodesList = nodeList \\ nodes g
           in if null newNodesList
                then g2
@@ -287,7 +283,7 @@ followRelationOverSubClasses wholeGraph withIncoming forbiddenRels g node =
                 let
                   toDelete = nodes g1 \\ subclasses
                   g2 = mergeGraphs (delNodes toDelete g1) g
-                in  foldl transClosureForNode g2 newNs
+                in foldl transClosureForNode g2 newNs
  where
    transClosureForNode g' n =
      let (name, _, _) = lab' $ context wholeGraph n
@@ -372,7 +368,7 @@ getSubSuperSingle g showSuper newGr name =
     insertInitialNode :: Node -> ClassGraph -> ClassGraph
     insertInitialNode nodeID gr =
       case match nodeID gr of
-        (Nothing, _) -> ([], nodeID, (name,"",OntoClass),[]) & gr
+        (Nothing, _) -> ([], nodeID, (name, "", OntoClass), []) & gr
         _ -> gr
     insPredecessorAndEdge :: ClassGraph -> ClassGraph -> LEdge String
                           -> ClassGraph
@@ -384,7 +380,7 @@ getSubSuperSingle g showSuper newGr name =
              (Nothing, _) ->
                  ([], fromNode, nodeLabel1, [(edgeLabel, toNode)]) & newGr'
              (Just (p, fromNodeID, nodeLabel2, s), newGr2) ->
-                 (p, fromNodeID, nodeLabel2, (edgeLabel, toNode) :s) & newGr2
+                 (p, fromNodeID, nodeLabel2, (edgeLabel, toNode) : s) & newGr2
     insSuccessorAndEdge :: ClassGraph -> ClassGraph -> LEdge String
                         -> ClassGraph
     insSuccessorAndEdge oldGr newGr' (fromNode, toNode, edgeLabel) =
@@ -393,7 +389,7 @@ getSubSuperSingle g showSuper newGr name =
         Just (_, _, (nodeLabel1, _, _), _) ->
            case match toNode newGr' of
              (Nothing, _) ->
-              ([(edgeLabel, fromNode)], toNode, (nodeLabel1,"",OntoClass), [])
+              ([(edgeLabel, fromNode)], toNode, (nodeLabel1, "", OntoClass), [])
               & newGr'
              (Just (p, toNodeID, nodeLabel2, s), newGr2) ->
                  ((edgeLabel, fromNode) : p, toNodeID, nodeLabel2, s) & newGr2
@@ -429,7 +425,7 @@ getSubSuperClosure g showSuper newGr name =
               (Just (inAdj, _, _, outAdj2), ng2) ->
                   (inAdj ++ isaAdj, nodeID, (label, "", OntoClass), outAdj2)
                   & ng2
-{-- subClassClosure hunts transitively all isa-Ajacencies that goes
+{- - subClassClosure hunts transitively all isa-Ajacencies that goes
     into the given node (nodeID).  For all nodes collected, their
     outgoing adjacencies are ignored because we only want to show the
     isa-Relation to the superclass. The given specialNodeID is the ID
@@ -437,7 +433,7 @@ getSubSuperClosure g showSuper newGr name =
     this node is already in the graph, we have to delete and reinsert
     it with its outgoing adjacencies (which consists of the
     isa-relations to it's superclasses, build by superClassClosure
-    beforehand).  --}
+    beforehand).  - -}
     subClassClosure :: ClassGraph -> Node -> ClassGraph
     subClassClosure ng nodeID =
       case fst $ match nodeID g of
@@ -464,7 +460,7 @@ hideObjectsForVisible gv (_, _, gid) =
             A.redisplay gid gv
             return ()
 
-createEdgeTypes ::  ClassGraph -> [(String,DaVinciArcTypeParms A.EdgeValue)]
+createEdgeTypes :: ClassGraph -> [(String, DaVinciArcTypeParms A.EdgeValue)]
 createEdgeTypes g = map createEdgeType
    $ nub (map ( \ (_, _, l) -> l) $ labEdges g) ++ ["instanceOf"]
   where
@@ -541,7 +537,7 @@ myDeleteNode :: A.Descr -> A.GraphInfo -> A.Result
              -> IO A.Result
 myDeleteNode gid gv _ node = A.delnode gid (fst node) gv
 
-purgeGraph :: Int -> A.GraphInfo -> IO (A.Result)
+purgeGraph :: Int -> A.GraphInfo -> IO A.Result
 purgeGraph gid gv =
   do (gs, _) <- readIORef gv
      case lookup gid gs of
@@ -553,7 +549,7 @@ purgeGraph gid gv =
        Nothing -> return $ A.Result 0 $ Just $
                   "Graph id " ++ show gid ++ " not found"
 
-myGetNodes :: Int -> A.GraphInfo -> IO ([String])
+myGetNodes :: Int -> A.GraphInfo -> IO [String]
 myGetNodes gid gv =
   do (gs, _) <- readIORef gv
      case lookup gid gs of
@@ -582,7 +578,7 @@ getTypedNodes :: [OntoObjectType] -> ClassGraph
 getTypedNodes ts = map labNode' . gselType (`elem` ts)
 
 showRelationDialog :: A.GraphInfo -> (String, Int, Int) -> IO ()
-showRelationDialog gv (_ , _,gid) =
+showRelationDialog gv (_ , _, gid) =
   do (gs, _) <- readIORef gv
      case lookup gid gs of
        Nothing -> return ()

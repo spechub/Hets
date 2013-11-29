@@ -50,11 +50,11 @@ data B = B
 data C = C
 type A__s = B
 a___P :: (AT, B) -> C
-a___P = error{-((AT, B) -> C)-} "a___P"
+a___P = error {- ((AT, B) -> C) -} "a___P"
 f_02 :: B -> B
-f_02 = error{-(B -> B)-} "f_02"
+f_02 = error {- (B -> B) -} "f_02"
 f :: C -> C
-f = error{-(C -> C)-} "f"
+f = error {- (C -> C) -} "f"
 s1 :: AT -> Int
 s2 :: AT -> B
 s1 (A (x_11, x_12)) = x_11

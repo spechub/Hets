@@ -201,10 +201,10 @@ printFormula :: FORMULA -> Doc
 printFormula frm =
   let ppf p f = (if p f then id else parens) $ printFormula f
       isJunctForm f = case f of
-        Implication _ _ _ -> False
-        Equivalence _ _ _ -> False
-        ForAll _ _ _ -> False
-        Exists _ _ _ -> False
+        Implication {} -> False
+        Equivalence {} -> False
+        ForAll {} -> False
+        Exists {} -> False
         _ -> True
   in case frm of
   FalseAtom _ -> text falseS

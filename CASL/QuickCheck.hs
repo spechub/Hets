@@ -194,8 +194,7 @@ calculateTerm qm ass trm = case trm of
     Sorted_term term _ _ -> calculateTerm qm ass term
     Conditional t1 fo t2 _ -> do
               res <- calculateFormula False qm ass fo
-              if res then calculateTerm qm ass t1
-                     else calculateTerm qm ass t2
+              calculateTerm qm ass $ if res then t1 else t2
     _ -> fail $ "QuickCheck.calculateTerm: unsupported: " ++ showDoc trm ""
 
 lookupVar :: VAR -> VariableAssignment -> Result CASLTERM

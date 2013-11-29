@@ -13,15 +13,15 @@ Abstract syntax for Relational Schemes
 
 module RelationalScheme.AS
         (
-            RSRelType(..)
-        ,   RSQualId(..)
-        ,   RSRel(..)
-        ,   RSRelationships(..)
-        ,   RSScheme(..)
-        ,   Sentence
-        ,   map_rel
-        ,   getRels
-        ,   getSignature
+            RSRelType (..)
+        , RSQualId (..)
+        , RSRel (..)
+        , RSRelationships (..)
+        , RSScheme (..)
+        , Sentence
+        , map_rel
+        , getRels
+        , getSignature
         )
         where
 
@@ -43,22 +43,22 @@ data RSRelType = RSone_to_one | RSone_to_many | RSmany_to_one | RSmany_to_many
 -- first Id is TableId, second is columnId
 data RSQualId = RSQualId
                 {
-                  table  :: Id
+                  table :: Id
                 , column :: Id
-                , q_pos  :: Range
+                , q_pos :: Range
                 }
                 deriving (Eq, Ord, Show)
 
 data RSRel = RSRel
              {
-               r_lhs  :: [RSQualId]
-             , r_rhs  :: [RSQualId]
+               r_lhs :: [RSQualId]
+             , r_rhs :: [RSQualId]
              , r_type :: RSRelType
-             , r_pos  :: Range
+             , r_pos :: Range
              }
              deriving (Eq, Ord, Show)
 
-data RSRelationships =  RSRelationships [Annoted RSRel] Range
+data RSRelationships = RSRelationships [Annoted RSRel] Range
                         deriving (Eq, Ord, Show)
 
 data RSScheme = RSScheme RSTables RSRelationships Range
@@ -88,9 +88,9 @@ instance Pretty RSQualId where
 
 instance Show RSRelType where
     show r = case r of
-        RSone_to_one   -> rs1to1
-        RSone_to_many  -> rs1tom
-        RSmany_to_one  -> rsmto1
+        RSone_to_one -> rs1to1
+        RSone_to_many -> rs1tom
+        RSmany_to_one -> rsmto1
         RSmany_to_many -> rsmtom
 
 
@@ -98,7 +98,7 @@ map_qualId :: RSMorphism -> RSQualId -> Result RSQualId
 map_qualId mor qid =
     let
         (tid, rid, rn) = case qid of
-            RSQualId i1 i2 rn1 -> (i1, i2,rn1)
+            RSQualId i1 i2 rn1 -> (i1, i2, rn1)
     in maybe (fail "map_qualId") return $ do
             mtid <- Map.lookup tid $ table_map mor
             rmor <- Map.lookup tid $ column_map mor

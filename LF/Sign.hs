@@ -32,14 +32,14 @@ module LF.Sign
        , getDeclaredSyms
        , getDefinedSyms
        , getLocalSyms
-       , getLocalDefs 
+       , getLocalDefs
        , getGlobalSyms
        , getGlobalDefs
        , isConstant
        , isDeclaredSym
        , isDefinedSym
        , isLocalSym
-       , isGlobalSym 
+       , isGlobalSym
        , getSymType
        , getSymValue
        , getSymsOfType
@@ -92,19 +92,19 @@ data EXP = Type
          | Func [EXP] EXP
          | Pi CONTEXT EXP
          | Lamb CONTEXT EXP
-           deriving (Ord,Show)
-           
+           deriving (Ord, Show)
+
 instance GetRange EXP
 
 type Sentence = EXP
 
-type CONTEXT = [(VAR,EXP)]
+type CONTEXT = [(VAR, EXP)]
 
 data DEF = Def
          { getSym :: Symbol
          , getType :: EXP
          , getValue :: Maybe EXP
-         } deriving (Eq,Ord,Show)
+         } deriving (Eq, Ord, Show)
 
 data Sign = Sign
           { sigBase :: BASE
@@ -127,7 +127,7 @@ isSym s =
 
 -- converts a raw symbol to a symbol; must be a valid identifier
 toSym :: RAW_SYM -> Symbol
-toSym s = Symbol gen_base gen_module s
+toSym = Symbol gen_base gen_module
 
 -- get the set of all symbols
 getSymbols :: Sign -> Set.Set Symbol
@@ -140,7 +140,7 @@ isConstant s sig = Set.member s $ getSymbols sig
 -- get the set of declared symbols
 getDeclaredSyms :: Sign -> Set.Set Symbol
 getDeclaredSyms (Sign _ _ ds) =
-  Set.fromList $ map getSym $ filter (\ d -> isNothing $ getValue d) ds
+  Set.fromList $ map getSym $ filter (isNothing . getValue) ds
 
 -- checks if the symbol is declared in the signature
 isDeclaredSym :: Symbol -> Sign -> Bool
@@ -149,7 +149,7 @@ isDeclaredSym s sig = Set.member s $ getDeclaredSyms sig
 -- get the set of declared symbols
 getDefinedSyms :: Sign -> Set.Set Symbol
 getDefinedSyms (Sign _ _ ds) =
-  Set.fromList $ map getSym $ filter (\ d -> isJust $ getValue d) ds
+  Set.fromList $ map getSym $ filter (isJust . getValue) ds
 
 -- checks if the symbol is defined in the signature
 isDefinedSym :: Symbol -> Sign -> Bool
@@ -157,12 +157,11 @@ isDefinedSym s sig = Set.member s $ getDefinedSyms sig
 
 -- get the set of symbols not included from other signatures
 getLocalSyms :: Sign -> Set.Set Symbol
-getLocalSyms sig = Set.filter (\ s -> isLocalSym s sig) $ getSymbols sig
+getLocalSyms sig = Set.filter (`isLocalSym` sig) $ getSymbols sig
 
 -- checks if the symbol is local to the signature
 isLocalSym :: Symbol -> Sign -> Bool
-isLocalSym s sig =
-  and [sigBase sig == symBase s, sigModule sig == symModule s]
+isLocalSym s sig = sigBase sig == symBase s && sigModule sig == symModule s
 
 -- get the list of local definitions
 getLocalDefs :: Sign -> [DEF]
@@ -170,7 +169,7 @@ getLocalDefs sig = filter (\ (Def s _ _) -> isLocalSym s sig) $ getDefs sig
 
 -- get the set of symbols included from other signatures
 getGlobalSyms :: Sign -> Set.Set Symbol
-getGlobalSyms sig = Set.filter (\ s -> isGlobalSym s sig) $ getSymbols sig
+getGlobalSyms sig = Set.filter (`isGlobalSym` sig) $ getSymbols sig
 
 -- checks if the symbol is global
 isGlobalSym :: Symbol -> Sign -> Bool
@@ -233,7 +232,7 @@ printExp (Var n) = text n
 printExp (Appl e es) =
   let f = printExpWithPrec (precAppl + 1) e
       as = map (printExpWithPrec precAppl) es
-      in hsep (f:as)
+      in hsep (f : as)
 printExp (Func es e) =
   let as = map (printExpWithPrec precFunc) es
       val = printExpWithPrec (precFunc + 1) e
@@ -263,22 +262,22 @@ precAppl = 1
 printContext :: CONTEXT -> Doc
 printContext xs = sep $ punctuate comma $ map printVarDecl xs
 
-printVarDecl :: (VAR,EXP) -> Doc
-printVarDecl (n,e) = sep [text n, colon <+> pretty e]
+printVarDecl :: (VAR, EXP) -> Doc
+printVarDecl (n, e) = sep [text n, colon <+> pretty e]
 
 {- converts the expression into a form where each construct takes
    exactly one argument -}
 recForm :: EXP -> EXP
 recForm (Appl f []) = recForm f
-recForm (Appl f as) = Appl (recForm $ Appl f $ init as) $ [recForm $ last as]
+recForm (Appl f as) = Appl (recForm $ Appl f $ init as) [recForm $ last as]
 recForm (Func [] a) = recForm a
-recForm (Func (t:ts) a) = Func [recForm t] $ recForm $ Func ts a
+recForm (Func (t : ts) a) = Func [recForm t] $ recForm $ Func ts a
 recForm (Pi [] t) = recForm t
-recForm (Pi ((n,t):ds) a) =
-  Pi [(n,recForm t)] $ recForm $ Pi ds a
+recForm (Pi ((n, t) : ds) a) =
+  Pi [(n, recForm t)] $ recForm $ Pi ds a
 recForm (Lamb [] t) = recForm t
-recForm (Lamb ((n,t):ds) a) =
-  Lamb [(n,recForm t)] $ recForm $ Lamb ds a
+recForm (Lamb ((n, t) : ds) a) =
+  Lamb [(n, recForm t)] $ recForm $ Lamb ds a
 recForm t = t
 
 {- modifies the given name until it is different from each of the names
@@ -288,10 +287,10 @@ getNewName var names = getNewNameH var names var 0
 
 getNewNameH :: VAR -> Set.Set VAR -> VAR -> Int -> VAR
 getNewNameH var names root i =
-  if (Set.notMember var names)
+  if Set.notMember var names
      then var
-     else let newVar = root ++ (show i)
-              in getNewNameH newVar names root $ i+1
+     else let newVar = root ++ show i
+          in getNewNameH newVar names root $ i + 1
 
 -- returns the set of free Variables used within an expression
 getFreeVars :: EXP -> Set.Set VAR
@@ -305,9 +304,9 @@ getFreeVarsH (Appl f [a]) =
   Set.union (getFreeVarsH f) (getFreeVarsH a)
 getFreeVarsH (Func [t] v) =
   Set.union (getFreeVarsH t) (getFreeVarsH v)
-getFreeVarsH (Pi [(n,t)] a) =
+getFreeVarsH (Pi [(n, t)] a) =
   Set.delete n $ Set.union (getFreeVarsH t) (getFreeVarsH a)
-getFreeVarsH (Lamb [(n,t)] a) =
+getFreeVarsH (Lamb [(n, t)] a) =
   Set.delete n $ Set.union (getFreeVarsH t) (getFreeVarsH a)
 getFreeVarsH _ = Set.empty
 
@@ -323,9 +322,9 @@ getConstantsH (Appl f [a]) =
   Set.union (getConstantsH f) (getConstantsH a)
 getConstantsH (Func [t] v) =
   Set.union (getConstantsH t) (getConstantsH v)
-getConstantsH (Pi [(_,t)] a) =
+getConstantsH (Pi [(_, t)] a) =
   Set.union (getConstantsH t) (getConstantsH a)
-getConstantsH (Lamb [(_,t)] a) =
+getConstantsH (Lamb [(_, t)] a) =
   Set.union (getConstantsH t) (getConstantsH a)
 getConstantsH _ = Set.empty
 
@@ -342,16 +341,16 @@ renameH _ _ (Const n) = Const n
 renameH m _ (Var n) = Var $ Map.findWithDefault n n m
 renameH m s (Appl f [a]) = Appl (rename m s f) [rename m s a]
 renameH m s (Func [t] u) = Func [rename m s t] (rename m s u)
-renameH m s (Pi [(x,t)] a) =
+renameH m s (Pi [(x, t)] a) =
   let t1 = rename m s t
       x1 = getNewName x s
       a1 = rename (Map.insert x x1 m) (Set.insert x1 s) a
-      in Pi [(x1,t1)] a1
-renameH m s (Lamb [(x,t)] a) =
+      in Pi [(x1, t1)] a1
+renameH m s (Lamb [(x, t)] a) =
   let t1 = rename m s t
       x1 = getNewName x s
       a1 = rename (Map.insert x x1 m) (Set.insert x1 s) a
-      in Lamb [(x1,t1)] a1
+      in Lamb [(x1, t1)] a1
 renameH _ _ t = t
 
 -- equality
@@ -362,37 +361,35 @@ eqExp :: EXP -> EXP -> Bool
 eqExp Type Type = True
 eqExp (Const x1) (Const x2) = x1 == x2
 eqExp (Var x1) (Var x2) = x1 == x2
-eqExp (Appl f1 [a1]) (Appl f2 [a2]) = and [f1 == f2, a1 == a2]
-eqExp (Func [t1] s1) (Func [t2] s2) = and [t1 == t2, s1 == s2]
-eqExp (Pi [(n1,t1)] s1) (Pi [(n2,t2)] s2) =
+eqExp (Appl f1 [a1]) (Appl f2 [a2]) = f1 == f2 && a1 == a2
+eqExp (Func [t1] s1) (Func [t2] s2) = t1 == t2 && s1 == s2
+eqExp (Pi [(n1, t1)] s1) (Pi [(n2, t2)] s2) =
   let vars = Set.delete n1 $ getFreeVars s1
       vars1 = Set.delete n2 $ getFreeVars s2
-      in if (vars1 /= vars)
-            then False
-            else let s3 = rename (Map.singleton n2 n1) (Set.insert n1 vars) s2
-                 in and [t1 == t2, s1 == s3]
-eqExp (Lamb [(n1,t1)] s1) (Lamb [(n2,t2)] s2) =
+      in vars1 == vars &&
+          let s3 = rename (Map.singleton n2 n1) (Set.insert n1 vars) s2
+          in t1 == t2 && s1 == s3
+eqExp (Lamb [(n1, t1)] s1) (Lamb [(n2, t2)] s2) =
   let vars = Set.delete n1 $ getFreeVars s1
       vars1 = Set.delete n2 $ getFreeVars s2
-      in if (vars1 /= vars)
-            then False
-            else let s3 = rename (Map.singleton n2 n1) (Set.insert n1 vars) s2
-                 in and [t1 == t2, s1 == s3]
+      in vars1 == vars &&
+          let s3 = rename (Map.singleton n2 n1) (Set.insert n1 vars) s2
+          in t1 == t2 && s1 == s3
 eqExp _ _ = False
 
 -- tests for inclusion of signatures
 isSubsig :: Sign -> Sign -> Bool
 isSubsig (Sign _ _ ds1) (Sign _ _ ds2) =
   Set.isSubsetOf (Set.fromList ds1) (Set.fromList ds2)
- 
+
 -- constructs the union of two signatures
 sigUnion :: Sign -> Sign -> Result Sign
 sigUnion sig1 sig2 = return $
   foldl (\ sig d@(Def s t v) ->
-           if (isConstant s sig)
+           if isConstant s sig
               then let Just t1 = getSymType s sig
                        v1 = getSymValue s sig
-                       in if (t == t1 && v == v1) then sig else
+                       in if t == t1 && v == v1 then sig else
                              error $ conflictDefsError s
               else addDef d sig
         ) sig1 $ getDefs sig2
@@ -416,7 +413,7 @@ genSig syms sig = do
 inclSyms :: Set.Set Symbol -> Sign -> Set.Set Symbol
 inclSyms syms sig =
   foldl (\ syms' (Def s t v) ->
-           if (Set.notMember s syms') then syms' else
+           if Set.notMember s syms' then syms' else
               let syms1 = getConstants t
                   syms2 = case v of
                             Nothing -> Set.empty
@@ -430,24 +427,24 @@ coGenSig syms sig = do
   let syms' = exclSyms syms sig
   let defs' = filter (\ d -> Set.notMember (getSym d) syms') $ getDefs sig
   return $ Sign gen_base gen_module defs'
-  
+
 exclSyms :: Set.Set Symbol -> Sign -> Set.Set Symbol
 exclSyms syms sig =
   foldl (\ syms' (Def s t v) ->
-           if (Set.member s syms') then syms' else
+           if Set.member s syms' then syms' else
               let syms1 = getConstants t
                   syms2 = case v of
                             Nothing -> Set.empty
                             Just v' -> getConstants v'
                   diff = Set.intersection syms' $ Set.union syms1 syms2
-                  in if (Set.null diff) then syms' else Set.insert s syms'
+                  in if Set.null diff then syms' else Set.insert s syms'
         ) syms $ getDefs sig
 
---------------------------------------------------------------------
----------------------------------------------------------------------
+{- ------------------------------------------------------------------
+------------------------------------------------------------------- -}
 
 -- ERROR MESSAGES
 conflictDefsError :: Symbol -> String
 conflictDefsError s =
-  "Symbol " ++ (show $ pretty s) ++ " has conflicting declarations " ++
+  "Symbol " ++ show (pretty s) ++ " has conflicting declarations " ++
   "in the signature union and hence the union is not defined."

@@ -21,39 +21,39 @@ import Common.IRI (IRI)
 
 -- | all global annotations and a field for pretty printing stuff
 data GlobalAnnos = GA
-  { prec_annos     :: PrecedenceGraph -- ^ precedences
-  , assoc_annos    :: AssocMap  -- ^ associativity
-  , display_annos  :: DisplayMap -- ^ display annotations
-  , literal_annos  :: LiteralAnnos -- ^ literal annotations
-  , literal_map    :: LiteralMap -- ^ redundant literal map
-  , prefix_map     :: PrefixMap -- ^ abbreviated IRI prefixes
-  } deriving (Show,Eq)
+  { prec_annos :: PrecedenceGraph -- ^ precedences
+  , assoc_annos :: AssocMap  -- ^ associativity
+  , display_annos :: DisplayMap -- ^ display annotations
+  , literal_annos :: LiteralAnnos -- ^ literal annotations
+  , literal_map :: LiteralMap -- ^ redundant literal map
+  , prefix_map :: PrefixMap -- ^ abbreviated IRI prefixes
+  } deriving (Show, Eq)
 
 -- | empty (or initial) global annotations
 emptyGlobalAnnos :: GlobalAnnos
 emptyGlobalAnnos = GA
-  { prec_annos    = Rel.empty
-  , assoc_annos   = Map.empty
+  { prec_annos = Rel.empty
+  , assoc_annos = Map.empty
   , display_annos = Map.empty
   , literal_annos = emptyLiteralAnnos
-  , literal_map   = Map.empty
-  , prefix_map    = Map.empty }
+  , literal_map = Map.empty
+  , prefix_map = Map.empty }
 
 -- | literal annotations for string, lists, number and floating
 data LiteralAnnos = LA
-  { string_lit :: Maybe (Id,Id)
-  , list_lit   :: Map.Map Id (Id, Id)
+  { string_lit :: Maybe (Id, Id)
+  , list_lit :: Map.Map Id (Id, Id)
   , number_lit :: Maybe Id
-  , float_lit  :: Maybe (Id,Id)
-  } deriving (Show,Eq)
+  , float_lit :: Maybe (Id, Id)
+  } deriving (Show, Eq)
 
 -- | empty literal annotations
 emptyLiteralAnnos :: LiteralAnnos
 emptyLiteralAnnos = LA
   { string_lit = Nothing
-  , list_lit   = Map.empty
+  , list_lit = Map.empty
   , number_lit = Nothing
-  , float_lit  = Nothing }
+  , float_lit = Nothing }
 
 -- | ids to be displayed according to a format
 type DisplayMap = Map.Map Id (Map.Map Display_format [Token])
@@ -74,7 +74,7 @@ data LiteralType =
   | Fraction
   | Floating
   | NoLiteral -- ^ and error value for a 'getLiteralType'
-    deriving (Show,Eq)
+    deriving (Show, Eq)
 
 -- | the 'LiteralType' of an 'Id' (possibly 'NoLiteral')
 getLiteralType :: GlobalAnnos -> Id -> LiteralType
@@ -88,7 +88,7 @@ type AssocMap = Map.Map Id AssocEither
 isAssoc :: AssocEither -> AssocMap -> Id -> Bool
 isAssoc ae amap i =
     case Map.lookup i amap of
-    Nothing  -> False
+    Nothing -> False
     Just ae' -> ae' == ae
 
 -- | a binary relation over ids as precedence graph
@@ -99,13 +99,13 @@ precRel :: PrecedenceGraph -- ^ Graph describing the precedences
         -> Id -- ^ x oID (y iid z) -- outer id
         -> Id -- ^ x oid (y iID z) -- inner id
         -> PrecRel
--- a 'Lower' corresponds to %prec {out_id} < {in_id}
--- BothDirections means <> was given (or derived by transitive closure)
+{- a 'Lower' corresponds to %prec {out_id} < {in_id}
+BothDirections means <> was given (or derived by transitive closure) -}
 precRel pg out_id in_id =
   case (Rel.member in_id out_id pg, Rel.member out_id in_id pg) of
-    (False, True)  -> Lower
-    (True, False)  -> Higher
-    (True, True)   -> BothDirections
+    (False, True) -> Lower
+    (True, False) -> Higher
+    (True, True) -> BothDirections
     (False, False) -> NoDirection
 
 -- | lookup of an display [string] in the GlobalAnnos record

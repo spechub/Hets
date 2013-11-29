@@ -41,7 +41,7 @@ instance Show CSL where
 
 instance Language CSL where
     description _ = "EnCL Logic\n"
---    language_name _ = "EnCL"
+-- language_name _ = "EnCL"
 
 -- | Instance of Category for CSL logic
 instance Category Sign Morphism where
@@ -121,9 +121,9 @@ instance StaticAnalysis CSL
           signature_union CSL = sigUnion
           symbol_to_raw CSL = symbolToRaw
           id_to_raw CSL = idToRaw
--- matches       CSL            = Symbol.matches
--- stat_symb_items CSL          = mkStatSymbItems
--- stat_symb_map_items CSL      = mkStatSymbMapItem
+{- matches       CSL            = Symbol.matches
+stat_symb_items CSL          = mkStatSymbItems
+stat_symb_map_items CSL      = mkStatSymbMapItem -}
           morphism_union CSL = morphismUnion
--- induced_from_morphism CSL    = inducedFromMorphism
--- induced_from_to_morphism CSL = inducedFromToMorphism
+{- induced_from_morphism CSL    = inducedFromMorphism
+induced_from_to_morphism CSL = inducedFromToMorphism -}

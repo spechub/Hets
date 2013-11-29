@@ -41,12 +41,12 @@ import Common.AS_Annotation as AS_Anno
 data PRED_ITEM = Pred_item [Id.Token] Id.Range
                deriving Show
 
-newtype BASIC_SPEC = Basic_spec [AS_Anno.Annoted (BASIC_ITEMS)]
+newtype BASIC_SPEC = Basic_spec [AS_Anno.Annoted BASIC_ITEMS]
                   deriving Show
 
 data BASIC_ITEMS =
     Pred_decl PRED_ITEM
-    | Axiom_items [AS_Anno.Annoted (FORMULA)]
+    | Axiom_items [AS_Anno.Annoted FORMULA]
     -- pos: dots
     deriving Show
 
@@ -87,8 +87,8 @@ data SYMB_OR_MAP = Symb SYMB
                    -- pos: "|->"
                    deriving (Show, Eq)
 
--- All about pretty printing
--- we chose the easy way here :)
+{- All about pretty printing
+we chose the easy way here :) -}
 instance Pretty FORMULA where
     pretty = printFormula
 instance Pretty BASIC_SPEC where
@@ -119,8 +119,8 @@ printFormula :: FORMULA -> Doc
 printFormula frm =
   let ppf p f = (if p f then id else parens) $ printFormula f
       isJunctForm f = case f of
-        Implication _ _ _ -> False
-        Equivalence _ _ _ -> False
+        Implication {} -> False
+        Equivalence {} -> False
         _ -> True
   in case frm of
   False_atom _ -> text falseS
@@ -153,7 +153,7 @@ printSymbItems (Symb_items xs _) = fsep $ map pretty xs
 
 printSymbOrMap :: SYMB_OR_MAP -> Doc
 printSymbOrMap (Symb sym) = pretty sym
-printSymbOrMap (Symb_map source dest  _) =
+printSymbOrMap (Symb_map source dest _) =
   pretty source <+> mapsto <+> pretty dest
 
 printSymbMapItems :: SYMB_MAP_ITEMS -> Doc

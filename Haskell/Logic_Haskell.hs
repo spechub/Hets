@@ -18,7 +18,7 @@ Here is the place where the classes 'Category', 'Syntax',
 -}
 
 module Haskell.Logic_Haskell
-    ( Haskell(..)
+    ( Haskell (..)
     , HaskellMorphism
     , SYMB_ITEMS
     , SYMB_MAP_ITEMS
@@ -35,14 +35,14 @@ import Common.Id
 
 import Data.Monoid
 
-import Haskell.TiPropATC()
+import Haskell.TiPropATC ()
 import Haskell.HatParser
 import Haskell.HatAna
 
 import Logic.Logic
 
--- a dummy datatype for the LogicGraph and for identifying the right
--- instances
+{- a dummy datatype for the LogicGraph and for identifying the right
+instances -}
 
 data Haskell = Haskell deriving Show
 
@@ -80,7 +80,7 @@ type RawSymbol = ()
 instance GetRange (TiDecl PNT)
 
 instance Sentences Haskell (TiDecl PNT) Sign HaskellMorphism Symbol where
-    map_sen Haskell _m s = return s
+    map_sen Haskell _m = return
     print_named Haskell sen =
         pretty (sentence sen) Doc.<>
         case senAttr sen of

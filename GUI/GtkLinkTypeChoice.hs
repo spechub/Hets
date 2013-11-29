@@ -23,7 +23,7 @@ import qualified GUI.Glade.LinkTypeChoice as LinkTypeChoice
 
 import Static.DgUtils
 
-import Control.Monad(filterM)
+import Control.Monad (filterM)
 
 import Data.IORef
 import qualified Data.Map as Map
@@ -36,13 +36,13 @@ mapEdgeTypesToNames = Map.fromList $ map
 -- | Displays the linktype selection window
 showLinkTypeChoice :: IORef [String] -> ([DGEdgeType] -> IO ()) -> IO ()
 showLinkTypeChoice ioRefDeselect updateFunction = postGUIAsync $ do
-  xml      <- getGladeXML LinkTypeChoice.get
-  window   <- xmlGetWidget xml castToWindow "linktypechoice"
-  ok       <- xmlGetWidget xml castToButton "btnOk"
-  cancel   <- xmlGetWidget xml castToButton "btnCancel"
-  select   <- xmlGetWidget xml castToButton "btnSelect"
+  xml <- getGladeXML LinkTypeChoice.get
+  window <- xmlGetWidget xml castToWindow "linktypechoice"
+  ok <- xmlGetWidget xml castToButton "btnOk"
+  cancel <- xmlGetWidget xml castToButton "btnCancel"
+  select <- xmlGetWidget xml castToButton "btnSelect"
   deselect <- xmlGetWidget xml castToButton "btnDeselect"
-  invert   <- xmlGetWidget xml castToButton "btnInvert"
+  invert <- xmlGetWidget xml castToButton "btnInvert"
 
   deselectEdgeTypes <- readIORef ioRefDeselect
   mapM_ (\ name -> do
@@ -53,12 +53,11 @@ showLinkTypeChoice ioRefDeselect updateFunction = postGUIAsync $ do
   let
     edgeMap = mapEdgeTypesToNames
     keys = Map.keys edgeMap
-    setAllTo = (\ to -> mapM_ (\ name -> do
+    setAllTo to = mapM_ (\ name -> do
                                 cb <- xmlGetWidget xml castToCheckButton name
                                 to' <- to cb
                                 toggleButtonSetActive cb to'
                               ) keys
-               )
 
   onClicked select $ setAllTo (\ _ -> return True)
   onClicked deselect $ setAllTo (\ _ -> return False)
@@ -76,7 +75,7 @@ showLinkTypeChoice ioRefDeselect updateFunction = postGUIAsync $ do
                                return $ not selected
                              ) keys
     writeIORef ioRefDeselect edgeTypeNames
-    let edgeTypes =  foldl (\ eList (e, eI) -> e:eI:eList) []
+    let edgeTypes = foldl (\ eList (e, eI) -> e : eI : eList) []
                            $ map (flip (Map.findWithDefault
                                    (error "GtkLinkTypeChoice: lookup error!"))
                                    edgeMap

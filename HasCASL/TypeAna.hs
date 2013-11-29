@@ -92,7 +92,7 @@ addLocalTypeVar warn tvd i = do
 -- | infer all minimal kinds
 inferKinds :: Maybe Bool -> Type -> Env
            -> Result ((RawKind, Set.Set Kind), Type)
-inferKinds b ty te@Env{classMap = cm} = case ty of
+inferKinds b ty te@Env {classMap = cm} = case ty of
     TypeName i _ _ -> getCoVarKind b te i
     TypeAppl t1 t2 -> do
        ((rk, ks), t3) <- inferKinds b t1 te
@@ -118,7 +118,7 @@ inferKinds b ty te@Env{classMap = cm} = case ty of
                   [Set.map (\ j -> FunKind v (toKind k) j q) ks])
                , TypeAbs ta nt ps)
     KindedType kt kind ps -> do
-        let Result ds _ = mapM (flip anaKindM cm) $ Set.toList kind
+        let Result ds _ = mapM (`anaKindM` cm) $ Set.toList kind
         sk <- if null ds then return kind else Result ds Nothing
         ((rk, ks), t) <- inferKinds b kt te
         l <- subKinds Hint cm kt sk ks sk
@@ -153,7 +153,7 @@ lesserType te t1 t2 = case (t1, t2) of
     (ExpandedType _ t, _) -> lesserType te t t2
     (_, KindedType t _ _) -> lesserType te t1 t
     (_, ExpandedType _ t) -> lesserType te t1 t
-    (TypeName _ _ _, TypeAppl (TypeName l _ _) t) | l == lazyTypeId ->
+    (TypeName {}, TypeAppl (TypeName l _ _) t) | l == lazyTypeId ->
        lesserType te t1 t
     (TypeAppl c1 a1, TypeAppl c2 a2) ->
         let b1 = lesserType te a1 a2
@@ -179,9 +179,9 @@ lesserType te t1 t2 = case (t1, t2) of
         Just (TypeVarDefn _ vk _ _) -> case vk of
             Downset t -> lesserType te t t2
             _ -> False
-    (TypeAppl _ _, TypeName _ _ _) -> False
-    (TypeAppl _ _, TypeAbs _ _ _) -> False
-    (TypeAbs _ _ _, TypeName _ _ _) -> False
+    (TypeAppl _ _, TypeName {}) -> False
+    (TypeAppl _ _, TypeAbs {}) -> False
+    (TypeAbs {}, TypeName {}) -> False
     (t3, t4) -> t3 == t4
 
 lesserTypeScheme :: Env -> TypeScheme -> TypeScheme -> Bool

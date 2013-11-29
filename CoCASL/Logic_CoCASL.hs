@@ -74,7 +74,7 @@ instance StaticAnalysis CoCASL C_BASIC_SPEC CoCASLFORMULA
                CoCASLMor
                Symbol RawSymbol where
          basic_analysis CoCASL = Just basicCoCASLAnalysis
-         sen_analysis CoCASL = Just co_sen_analysis 
+         sen_analysis CoCASL = Just co_sen_analysis
          stat_symb_map_items CoCASL = statSymbMapItems
          stat_symb_items CoCASL = statSymbItems
 
@@ -124,7 +124,7 @@ instance Logic CoCASL CoCASL_Sublogics
                CSign
                CoCASLMor
                Symbol RawSymbol () where
-         parse_basic_sen CoCASL = Just $ \_ -> parseSen  
+         parse_basic_sen CoCASL = Just $ const parseSen
          stability CoCASL = Unstable
          proj_sublogic_epsilon CoCASL = pr_epsilon emptyMorExt
          all_sublogics CoCASL = sublogics_all [True]

@@ -67,9 +67,9 @@ text = do
     let (phr, prfxs) = unzip phrPrfxs
     return (Text (concat phr) nullRange, concat prfxs)
 
--- remove the try
--- keys set here to prevent try in more complex parser to get the right
--- error message in ex. the following text
+{- remove the try
+keys set here to prevent try in more complex parser to get the right
+error message in ex. the following text -}
 phrase :: CharParser st ([PHRASE], [PrefixMapping])
 phrase = many white >> (do
     try (oParenT >> clModuleKey)
@@ -117,10 +117,10 @@ comment_txt = try text <|> return (Text [] nullRange, [])
 pModule :: CharParser st (MODULE, [PrefixMapping])
 pModule = do
     t <- identifier <?> "module name after \"cl-module\""
-    (exs,(txt, prfxs)) <- pModExcl <?> "text in module"
+    (exs, (txt, prfxs)) <- pModExcl <?> "text in module"
     case exs of
          [] -> return (Mod t txt nullRange, prfxs)
-         _  -> return (Mod_ex t exs txt nullRange, prfxs)
+         _ -> return (Mod_ex t exs txt nullRange, prfxs)
 
 -- | parser for
 pModExcl :: CharParser st ([NAME], (TEXT, [PrefixMapping]))
@@ -208,7 +208,7 @@ quantsent2 t c mg = do
 
 quantsent3 :: Bool -> Maybe NAME -> [NAME_OR_SEQMARK]
                    -> [(NAME_OR_SEQMARK, TERM)] -> SENTENCE -> Range -> SENTENCE
-quantsent3 t mg bs ((n,trm):nts) s rn = -- Quant_sent using syntactic sugar
+quantsent3 t mg bs ((n, trm) : nts) s rn = -- Quant_sent using syntactic sugar
   let functerm = case n of
        Name nm -> Atom (Funct_term trm [Term_seq $ Name_term nm] nullRange) []
        SeqMark sqm -> Atom (Funct_term trm [Seq_marks sqm] nullRange) []
@@ -229,7 +229,7 @@ quantsent3 t mg bs [] s rn =
       in if t
           then Quant_sent Universal bs (Bool_sent (BinOp Implication
               (Atom_sent functerm nullRange) s) rn) rn
-          else 
+          else
             Quant_sent Existential bs (Bool_sent (Junction Conjunction
               [Atom_sent functerm nullRange, s]) rn) rn
 
@@ -240,7 +240,7 @@ boundlist = many (do
   <|> parens (do
     nos <- intNameOrSeqMark
     t <- term
-    return $ Left (nos,t)
+    return $ Left (nos, t)
     )
   )
 
@@ -301,28 +301,29 @@ rolesetNT :: CharParser st (NAME, TERM)
 rolesetNT = parens $ do
   n <- identifier
   t <- term <?> "term"
-  return (n,t)
-  
+  return (n, t)
+
 rolesetSentence :: TERM -> [(NAME, TERM)] -> SENTENCE
 rolesetSentence t0 nts =
   let x = rolesetFreeName t0 nts
-  in  Quant_sent Existential [Name x] (Bool_sent (Junction Conjunction $
+  in Quant_sent Existential [Name x] (Bool_sent (Junction Conjunction $
           rolesetAddToTerm x t0 : map (rolesetMixTerm x) nts
         ) nullRange) $ Range $ rangeSpan t0
 
 rolesetFreeName :: TERM -> [(NAME, TERM)] -> NAME
 rolesetFreeName trm nts =
   let usedNames = Set.union (Tools.setUnion_list
-                    (\(n,t) -> Set.union (Tools.indvC_term t) (Set.singleton n))
+                    (\ (n, t) -> Set.union (Tools.indvC_term t)
+                                           (Set.singleton n))
                     nts) (Tools.indvC_term trm)
   in fst $ Tools.freeName ("x", 0) usedNames
-  
+
 
 rolesetAddToTerm :: NAME -> TERM -> SENTENCE
 rolesetAddToTerm x trm = Atom_sent (Atom trm [Term_seq $ Name_term x]) nullRange
 
 rolesetMixTerm :: NAME -> (NAME, TERM) -> SENTENCE
-rolesetMixTerm  x (n, t) =
+rolesetMixTerm x (n, t) =
   Atom_sent (Atom (Name_term n) [Term_seq $ Name_term x, Term_seq t]) nullRange
 
 intNameOrSeqMark :: CharParser st NAME_OR_SEQMARK
@@ -343,10 +344,10 @@ symbItems = do
 symbs :: GenParser Char st ([NAME_OR_SEQMARK], [Token])
 symbs = do
        s <- intNameOrSeqMark
-       do   c <- commaT `followedWith` intNameOrSeqMark
-            (is, ps) <- symbs
-            return (s:is, c:ps)
-         <|> return ([s], [])
+       do c <- commaT `followedWith` intNameOrSeqMark
+          (is, ps) <- symbs
+          return (s : is, c : ps)
+        <|> return ([s], [])
 
 -- | parse a list of symbol mappings
 symbMapItems :: GenParser Char st SYMB_MAP_ITEMS
@@ -359,10 +360,10 @@ symbMaps :: GenParser Char st ([SYMB_OR_MAP], [Token])
 symbMaps = do
   s <- symbMap
   many white
-  do  c <- commaT `followedWith` intNameOrSeqMark
-      (is, ps) <- symbMaps
-      return (s:is, c:ps)
-    <|> return ([s], [])
+  do c <- commaT `followedWith` intNameOrSeqMark
+     (is, ps) <- symbMaps
+     return (s : is, c : ps)
+   <|> return ([s], [])
 
 -- | parsing one symbol or a mapping of one to a second symbol
 symbMap :: GenParser Char st SYMB_OR_MAP
@@ -371,18 +372,18 @@ symbMap = symbMapS <|> symbMapN
 symbMapS :: GenParser Char st SYMB_OR_MAP
 symbMapS = do
   s <- seqmark
-  do  f <- pToken $ toKey mapsTo
-      t <- seqmark
-      return (Symb_mapS s t $ tokPos f)
-    <|> return (Symb $ SeqMark s)
+  do f <- pToken $ toKey mapsTo
+     t <- seqmark
+     return (Symb_mapS s t $ tokPos f)
+   <|> return (Symb $ SeqMark s)
 
 symbMapN :: GenParser Char st SYMB_OR_MAP
 symbMapN = do
   s <- identifier
-  do  f <- pToken $ toKey mapsTo
-      t <- identifier
-      return (Symb_mapN s t $ tokPos f)
-    <|> return (Symb $ Name s)
+  do f <- pToken $ toKey mapsTo
+     t <- identifier
+     return (Symb_mapN s t $ tokPos f)
+   <|> return (Symb $ Name s)
 
 
 -- | Toplevel parser for basic specs
@@ -392,9 +393,9 @@ basicSpec pm = parseAxItems pm
     bi <- AnnoState.allAnnoParser $ parseBasicItems pm
     return $ Basic_spec [bi]
 
--- function to parse different syntaxes
--- parsing: axiom items with dots, clif sentences, clif text
--- first getting only the sentences
+{- function to parse different syntaxes
+parsing: axiom items with dots, clif sentences, clif text
+first getting only the sentences -}
 parseBasicItems :: PrefixMap -> AnnoState.AParser st BASIC_ITEMS
 parseBasicItems pm = try (parseSentences pm)
               <|> parseClText pm
@@ -412,13 +413,14 @@ parseClText pm = do
   return $ Axiom_items (textToAn [tx])
 
 textToAn :: [TEXT_META] -> [Annotation.Annoted TEXT_META]
-textToAn = map (\x -> Annotation.Annoted x nullRange [] [])
+textToAn = map (\ x -> Annotation.Annoted x nullRange [] [])
 
 -- | parser for Axiom_items
 parseAxItems :: PrefixMap -> AnnoState.AParser st BASIC_SPEC
 parseAxItems pm = do
        d <- AnnoState.dotT
-       (fs, ds) <- AnnoState.allAnnoParser (parseAx pm) `Lexer.separatedBy` AnnoState.dotT
+       (fs, ds) <- AnnoState.allAnnoParser (parseAx pm) `Lexer.separatedBy`
+                   AnnoState.dotT
        (_, an) <- AnnoState.optSemi
        let _ = Id.catRange (d : ds)
            ns = init fs ++ [Annotation.appendAnno (last fs) an]

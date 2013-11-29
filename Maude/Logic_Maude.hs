@@ -18,12 +18,12 @@ import Logic.Logic
 
 import Maude.AS_Maude (MaudeText (..))
 import Maude.Parse (mStuff)
-import Maude.Symbol   (Symbol)
+import Maude.Symbol (Symbol)
 import Maude.Sentence (Sentence)
-import Maude.Sign     (Sign)
+import Maude.Sign (Sign)
 import Maude.Morphism (Morphism)
-import qualified Maude.Symbol   as Symbol
-import qualified Maude.Sign     as Sign
+import qualified Maude.Symbol as Symbol
+import qualified Maude.Sign as Sign
 import qualified Maude.Morphism as Morphism
 
 import Maude.ATC_Maude ()
@@ -83,9 +83,9 @@ instance Monoid MaudeText where
 
 -- | Instance of Syntax for Maude
 instance Syntax Maude MaudeText Symbol () () where
-    parse_basic_spec Maude = Just (\_ -> fmap MaudeText mStuff)
-    -- parse_symb_items
-    -- parse_symb_map_items
+    parse_basic_spec Maude = Just (\ _ -> fmap MaudeText mStuff)
+    {- parse_symb_items
+    parse_symb_map_items -}
 
 -- | Instance of StaticAnalysis for Maude
 instance StaticAnalysis Maude
@@ -97,17 +97,17 @@ instance StaticAnalysis Maude
             (rsig, sens) = unsafePerformIO $ basicAnalysis sign spec
             in return (spec, mkExtSign rsig, map (makeNamed "") sens)
         in Just analyze
-    -- stat_symb_map_items
-    -- stat_symb_items
-    -- amalgamation --
-    -- ensures_amalgamability
-    -- signature_colimit
-    -- qualify
-    -- symbols and raw symbols --
-    -- symbol_to_raw
-    -- id_to_raw
-    -- matches
-    -- operations on signatures and morphisms --
+    {- stat_symb_map_items
+    stat_symb_items
+    amalgamation --
+    ensures_amalgamability
+    signature_colimit
+    qualify
+    symbols and raw symbols --
+    symbol_to_raw
+    id_to_raw
+    matches
+    operations on signatures and morphisms -- -}
     is_subsig Maude = Sign.isSubsign
     empty_signature Maude = Sign.empty
     signature_union Maude sign1 sign2 = return $ Sign.union sign1 sign2
@@ -115,27 +115,27 @@ instance StaticAnalysis Maude
     -- final_union
     morphism_union Maude mor1 mor2 = return $ Morphism.union mor1 mor2
     subsig_inclusion Maude src tgt = return $ Morphism.inclusion src tgt
-    -- generated_sign
-    -- cogenerated_sign
-    -- induced_from_morphism
-    -- induced_from_to_morphism
-    -- is_transportable
-    -- is_injective
-    -- theory_to_taxonomy
+    {- generated_sign
+    cogenerated_sign
+    induced_from_morphism
+    induced_from_to_morphism
+    is_transportable
+    is_injective
+    theory_to_taxonomy -}
 
 -- | Instance of Logic for Maude
 instance Logic Maude
          () MaudeText Sentence () () Sign Morphism Symbol Symbol ()
   where
     stability Maude = Experimental
-    -- data_logic
-    -- top_sublogic
-    -- all_sublogics
-    -- proj_sublogic_epsilon
-    -- provers --
-    -- provers
-    -- cons_checkers
-    -- conservativityCheck
+    {- data_logic
+    top_sublogic
+    all_sublogics
+    proj_sublogic_epsilon
+    provers --
+    provers
+    cons_checkers
+    conservativityCheck -}
     empty_proof_tree Maude = ()
 
 instance LogicalFramework Maude

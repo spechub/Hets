@@ -77,7 +77,7 @@ printTerm prec tm =
                     case reverseInterface (s0, hop') of
                       (s', Just pt) -> (s', ty0', args', replacePt hop' pt)
                       _ -> (s0, ty0', args', hop') in
- let _5 = case (s, isConst tm, args == []) of
+ let _5 = case (s, isConst tm, null args) of
          ("EMPTY", True, True) -> Just (braces empty)
          ("UNIV", True, True) -> case typeOf tm of
             Just t -> case destFunTy t of
@@ -118,7 +118,7 @@ printTerm prec tm =
  let _6 = case destLet tm of
          Just (e : eqs, _) -> case mkEq e of
            Just e' -> let eqs' = map (\ (v, t) -> mkEq (v, t)) eqs
-             in if any (Nothing ==) eqs' then Nothing else
+             in if elem Nothing eqs' then Nothing else
                 Just (precParens prec
                         (hcat [
                           text "let ",
@@ -168,7 +168,7 @@ printTerm prec tm =
        else Nothing in
  let _11 = if isPrefix hop && length args == 1 then
           Just ((if prec == 1000 then parens else id)
-                (if all Char.isAlphaNum s || s == "--"
+                (hcat $ if all Char.isAlphaNum s || s == "--"
                     || (
                         case destComb (head args) of
                           Just (l, _) -> let (s0, _) = (nameOf l, typeOf l)
@@ -178,9 +178,9 @@ printTerm prec tm =
                                                           "int_of_num"]
                                     _ -> False)
                           _ -> False)
-                    || s == "~" then hcat
+                    || s == "~" then
                         [text s, printTerm 999 (head args), text " "]
-                 else hcat [text s, printTerm 999 (head args)]))
+                 else [text s, printTerm 999 (head args)]))
         else Nothing in
  let _12 = if parsesAsBinder hop && length args == 1 && isGabs (head args)
            then Just (printBinder prec tm)
@@ -195,15 +195,15 @@ printTerm prec tm =
           let (newprec, unspaced_binops) = (getPrec hop, [",", "..", "$"])
           in Just ((if newprec <= prec then parens else id) (hcat
                     (printTerm newprec (head bargs) :
-                     map (\ x ->
-                      if s `elem` unspaced_binops then hcat [text s,
-                                                       printTerm newprec x]
-                      else hcat
+                     map (\ x -> hcat $
+                      if s `elem` unspaced_binops then [text s,
+                                                        printTerm newprec x]
+                      else
                        [text " ", text s, text " ", printTerm newprec x]
                      ) (tail bargs)
                   )))
         else Nothing in
- let _14 = if (isConst hop || isVar hop) && args == [] then
+ let _14 = if (isConst hop || isVar hop) && null args then
              let s' = if parsesAsBinder hop || canGetInfixStatus hop
                          || isPrefix tm then parens (text s) else text s
              in Just s'
@@ -214,18 +214,18 @@ printTerm prec tm =
                                           ["real_of_num", "int_of_num"]
                                         _ -> False
                             in Just ((if prec == 1000 then parens else id)
-                                         (if not mem
-                                          then hcat [printTerm 999 l, text " ",
-                                                     printTerm 1000 r]
-                                          else hcat [printTerm 999 l,
-                                                     printTerm 1000 r]))
+                                         (hcat $ if not mem
+                                          then [printTerm 999 l, text " ",
+                                                printTerm 1000 r]
+                                          else [printTerm 999 l,
+                                                printTerm 1000 r]))
               _ -> Nothing
  in head (catMaybes [_1, _2, _3, _4, _5, _6, _7, _8, _9,
                      _10, _11, _12, _13, _14, _15, Just empty])
 
 printTermSequence :: String -> Int -> [Term] -> Doc
 printTermSequence sep' prec tms =
-  if tms == [] then empty
+  if null tms then empty
   else hcat (punctuate (text sep') (map (printTerm prec) tms))
 
 printBinder :: Int -> Term -> Doc

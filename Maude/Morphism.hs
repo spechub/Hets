@@ -65,6 +65,8 @@ import Common.Result (Result)
 import Common.Doc hiding (empty)
 import Common.DocUtils (Pretty (..))
 
+import Control.Monad (unless)
+
 -- * Types
 
 -- ** Auxiliary types
@@ -139,7 +141,7 @@ partitionRenamings :: [Renaming] -> ([Renaming], [Renaming])
 partitionRenamings = let
     is'op renaming = case renaming of
         OpRenaming1 _ _ -> True
-        OpRenaming2 _ _ _ _ -> True
+        OpRenaming2 {} -> True
         _ -> False
     in partition is'op
 
@@ -292,7 +294,7 @@ isInclusion mor = let
     null'sortMap = Map.null (sortMap mor)
     null'opMap = Map.null (opMap mor)
     null'labelMap = Map.null (labelMap mor)
-    in all id [null'sortMap, null'opMap, null'labelMap]
+    in null'sortMap && null'opMap && null'labelMap
 
 -- | True iff the 'Morphism' is legal
 isLegal :: Morphism -> Result ()
@@ -309,8 +311,8 @@ isLegal mor = let
     lg'opMap = subset omap getOps
     lg'labelMap = subset lmap getLabels
     lg'target = Sign.isLegal tgt
-    in if all id [lg'source, lg'sortMap, lg'opMap, lg'labelMap, lg'target]
-    then return () else fail "illegal Maude morphism"
+    in unless (and [lg'source, lg'sortMap, lg'opMap, lg'labelMap, lg'target]) $
+       fail "illegal Maude morphism"
 
 -- * Conversion
 

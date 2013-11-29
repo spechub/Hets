@@ -86,7 +86,7 @@ post_proc str = '\"' : '[' : concatMap conv str ++ "]\""
 
 -- -------- Parser for Table generated with "width-it-table.tex" ---------
 parseItTable :: String -> IO [Double]
-parseItTable str = case (parse itParser "" str) of
+parseItTable str = case parse itParser "" str of
     Left err -> do
       putStr "parse error at"
       print err; error ""

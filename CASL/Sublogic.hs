@@ -943,15 +943,11 @@ avoid loosing sorts in the projection -}
 pr_sort_item :: CASL_SL a -> SORT_ITEM f -> Maybe (SORT_ITEM f)
 pr_sort_item _ (Sort_decl s p) = Just (Sort_decl s p)
 pr_sort_item l (Subsort_decl sl s p) =
-             if has_sub l then
-               Just (Subsort_decl sl s p)
-             else
-               Just (Sort_decl (s : sl) nullRange)
+             Just $ if has_sub l then Subsort_decl sl s p
+                    else Sort_decl (s : sl) nullRange
 pr_sort_item l (Subsort_defn s1 v s2 f p) =
-             if has_sub l then
-               Just (Subsort_defn s1 v s2 f p)
-             else
-               Just (Sort_decl [s1] nullRange)
+             Just $ if has_sub l then Subsort_defn s1 v s2 f p
+                    else Sort_decl [s1] nullRange
 pr_sort_item _ (Iso_decl s p) = Just (Iso_decl s p)
 
 pr_symb_items :: Lattice a => CASL_SL a -> SYMB_ITEMS

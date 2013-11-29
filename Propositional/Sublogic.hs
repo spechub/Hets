@@ -58,9 +58,9 @@ import qualified Propositional.Symbol as Symbol
 import qualified Propositional.Morphism as Morphism
 import qualified Common.Lib.State as State
 
--------------------------------------------------------------------------------
--- datatyper                                                                 --
--------------------------------------------------------------------------------
+{- -----------------------------------------------------------------------------
+datatyper                                                                 --
+----------------------------------------------------------------------------- -}
 
 -- | types of propositional formulae
 data PropFormulae = PlainFormula      -- Formula without structural constraints
@@ -70,7 +70,7 @@ data PropFormulae = PlainFormula      -- Formula without structural constraints
 -- | sublogics for propositional logic
 data PropSL = PropSL
     {
-      format       :: PropFormulae     -- Structural restrictions
+      format :: PropFormulae     -- Structural restrictions
     } deriving (Show, Eq, Ord)
 
 isProp :: PropSL -> Bool
@@ -86,13 +86,13 @@ compareLE p1 p2 =
         f2 = format p2
     in
       case (f1, f2) of
-        (_,            PlainFormula) -> True
-        (HornClause,   HornClause)   -> True
-        (_,            HornClause)   -> False
+        (_, PlainFormula) -> True
+        (HornClause, HornClause) -> True
+        (_, HornClause) -> False
 
-------------------------------------------------------------------------------
--- Special elements in the Lattice of logics                                --
-------------------------------------------------------------------------------
+{- ----------------------------------------------------------------------------
+Special elements in the Lattice of logics                                --
+---------------------------------------------------------------------------- -}
 
 top :: PropSL
 top = PropSL PlainFormula
@@ -103,37 +103,37 @@ bottom = PropSL HornClause
 need_PF :: PropSL
 need_PF = bottom { format = PlainFormula }
 
--------------------------------------------------------------------------------
--- join and max                                                              --
--------------------------------------------------------------------------------
+{- -----------------------------------------------------------------------------
+join and max                                                              --
+----------------------------------------------------------------------------- -}
 
 sublogics_join :: (PropFormulae -> PropFormulae -> PropFormulae)
                   -> PropSL -> PropSL -> PropSL
 sublogics_join pfF a b = PropSL
                          {
-                           format    = pfF (format a) (format b)
+                           format = pfF (format a) (format b)
                          }
 
 joinType :: PropFormulae -> PropFormulae -> PropFormulae
 joinType HornClause HornClause = HornClause
-joinType _   _   = PlainFormula
+joinType _ _ = PlainFormula
 
 sublogics_max :: PropSL -> PropSL -> PropSL
 sublogics_max = sublogics_join joinType
 
--------------------------------------------------------------------------------
--- Helpers                                                                   --
--------------------------------------------------------------------------------
+{- -----------------------------------------------------------------------------
+Helpers                                                                   --
+----------------------------------------------------------------------------- -}
 
 -- compute sublogics from a list of sublogics
 --
 comp_list :: [PropSL] -> PropSL
-comp_list l = foldl sublogics_max bottom l
+comp_list = foldl sublogics_max bottom
 
-------------------------------------------------------------------------------
--- Functions to compute minimal sublogic for a given element, these work    --
--- by recursing into all subelements                                        --
-------------------------------------------------------------------------------
+{- ----------------------------------------------------------------------------
+Functions to compute minimal sublogic for a given element, these work    --
+by recursing into all subelements                                        --
+---------------------------------------------------------------------------- -}
 
 -- | determines the sublogic for symbol map items
 sl_symmap :: PropSL -> AS_BASIC.SYMB_MAP_ITEMS -> PropSL
@@ -148,7 +148,7 @@ sl_sig :: PropSL -> Sign.Sign -> PropSL
 sl_sig ps _ = ps
 
 -- | determines the sublogic for Symbol items
-sl_symit :: PropSL -> AS_BASIC.SYMB_ITEMS  -> PropSL
+sl_symit :: PropSL -> AS_BASIC.SYMB_ITEMS -> PropSL
 sl_symit ps _ = ps
 
 -- | determines the sublogic for symbols
@@ -161,142 +161,123 @@ sl_form ps f = sl_fl_form ps $ Tools.flatten f
 
 -- | determines sublogic for flattened formula
 sl_fl_form :: PropSL -> [AS_BASIC.FORMULA] -> PropSL
-sl_fl_form ps f = foldl (sublogics_max) ps
-  $ map (\x -> State.evalState (ana_form ps x) 0) f
+sl_fl_form ps f = foldl sublogics_max ps
+  $ map (\ x -> State.evalState (ana_form ps x) 0) f
 
 -- analysis of single "clauses"
 ana_form :: PropSL -> AS_BASIC.FORMULA -> State.State Int PropSL
 ana_form ps f =
     case f of
-      AS_BASIC.Conjunction l _   ->
+      AS_BASIC.Conjunction l _ ->
           do
             st <- State.get
             return $ sublogics_max need_PF $ comp_list $ map
-              (\x -> (State.evalState (ana_form ps x) (st + 1))) l
+              (\ x -> State.evalState (ana_form ps x) (st + 1)) l
       AS_BASIC.Implication l m _ ->
           do
              st <- State.get
              let analyze = sublogics_max need_PF $ sublogics_max
-                   ((\x -> State.evalState (ana_form ps x) (st+1)) l)
-                   ((\x -> State.evalState (ana_form ps x) (st+1)) m)
+                   ((\ x -> State.evalState (ana_form ps x) (st + 1)) l)
+                   ((\ x -> State.evalState (ana_form ps x) (st + 1)) m)
              return $
-                    if st < 1
-                    then
-                        if (format ps == HornClause)
-                        then
-                            if (checkHornPos l m)
-                            then
-                                ps
-                            else
-                                analyze
-                        else
-                            analyze
-                    else
-                        analyze
+                    if st < 1 && format ps == HornClause && checkHornPos l m
+                    then ps else analyze
       AS_BASIC.Equivalence l m _ ->
            do
              st <- State.get
              return $ sublogics_max need_PF $ sublogics_max
-               ((\x -> State.evalState (ana_form ps x) (st+1)) l)
-               ((\x -> State.evalState (ana_form ps x) (st+1)) m)
-      AS_BASIC.Negation l _      ->
-          if (isLiteral l)
-          then
-              do
-                return ps
+               ((\ x -> State.evalState (ana_form ps x) (st + 1)) l)
+               ((\ x -> State.evalState (ana_form ps x) (st + 1)) m)
+      AS_BASIC.Negation l _ ->
+          if isLiteral l
+          then return ps
           else
               do
                 st <- State.get
-                return $ (\x -> State.evalState (ana_form ps x) (st+1)) l
-      AS_BASIC.Disjunction l _   ->
-                    let lprime = concat $ map Tools.flattenDis l in
+                return $ (\ x -> State.evalState (ana_form ps x) (st + 1)) l
+      AS_BASIC.Disjunction l _ ->
+                    let lprime = concatMap Tools.flattenDis l in
                     if all isLiteral lprime
-                    then
-                        do
+                    then return $
                           if moreThanNLit lprime 1
-                             then
-                                 return $ sublogics_max need_PF ps
-                             else
-                                 return ps
+                          then sublogics_max need_PF ps else ps
                     else
                         do
                           st <- State.get
                           return $ sublogics_max need_PF $ comp_list $ map
-                            (\x -> State.evalState (ana_form ps x) (st+1))
+                            (\ x -> State.evalState (ana_form ps x) (st + 1))
                                       lprime
-      AS_BASIC.True_atom  _      -> do return ps
-      AS_BASIC.False_atom _      -> do return ps
-      AS_BASIC.Predication _     -> do return ps
+      AS_BASIC.True_atom _ -> return ps
+      AS_BASIC.False_atom _ -> return ps
+      AS_BASIC.Predication _ -> return ps
 
 moreThanNLit :: [AS_BASIC.FORMULA] -> Int -> Bool
-moreThanNLit form n = foldl (\y x -> if (x == True) then y + 1 else y) 0
+moreThanNLit form n = foldl (\ y x -> if x then y + 1 else y) 0
   (map isPosLiteral form) > n
 
 -- determines wheter a Formula is a literal
 isLiteral :: AS_BASIC.FORMULA -> Bool
-isLiteral (AS_BASIC.Predication _)       = True
+isLiteral (AS_BASIC.Predication _) = True
 isLiteral (AS_BASIC.Negation (AS_BASIC.Predication _) _ ) = True
 isLiteral (AS_BASIC.Negation _ _) = False
 isLiteral (AS_BASIC.Conjunction _ _) = False
-isLiteral (AS_BASIC.Implication _ _ _) = False
-isLiteral (AS_BASIC.Equivalence _ _ _) = False
+isLiteral (AS_BASIC.Implication {}) = False
+isLiteral (AS_BASIC.Equivalence {}) = False
 isLiteral (AS_BASIC.Disjunction _ _) = False
-isLiteral (AS_BASIC.True_atom  _ ) = True
+isLiteral (AS_BASIC.True_atom _ ) = True
 isLiteral (AS_BASIC.False_atom _) = True
 
 -- determines wheter a Formula is a positive literal
 isPosLiteral :: AS_BASIC.FORMULA -> Bool
-isPosLiteral (AS_BASIC.Predication _)       = True
+isPosLiteral (AS_BASIC.Predication _) = True
 isPosLiteral (AS_BASIC.Negation _ _) = False
 isPosLiteral (AS_BASIC.Conjunction _ _) = False
-isPosLiteral (AS_BASIC.Implication _ _ _) = False
-isPosLiteral (AS_BASIC.Equivalence _ _ _) = False
+isPosLiteral (AS_BASIC.Implication {}) = False
+isPosLiteral (AS_BASIC.Equivalence {}) = False
 isPosLiteral (AS_BASIC.Disjunction _ _) = False
-isPosLiteral (AS_BASIC.True_atom  _ ) = True
+isPosLiteral (AS_BASIC.True_atom _ ) = True
 isPosLiteral (AS_BASIC.False_atom _) = True
 
 -- | determines subloig for basic items
 sl_basic_items :: PropSL -> AS_BASIC.BASIC_ITEMS -> PropSL
 sl_basic_items ps bi =
     case bi of
-      AS_BASIC.Pred_decl _    -> ps
-      AS_BASIC.Axiom_items xs -> comp_list $ map (sl_form ps) $
-                                 map AS_Anno.item xs
+      AS_BASIC.Pred_decl _ -> ps
+      AS_BASIC.Axiom_items xs -> comp_list $ map (sl_form ps . AS_Anno.item) xs
 
 -- | determines sublogic for basic spec
 sl_basic_spec :: PropSL -> AS_BASIC.BASIC_SPEC -> PropSL
 sl_basic_spec ps (AS_BASIC.Basic_spec spec) =
-    comp_list $ map (sl_basic_items ps) $
-              map AS_Anno.item spec
+    comp_list $ map (sl_basic_items ps . AS_Anno.item) spec
 
 -- | all sublogics
 sublogics_all :: [PropSL]
 sublogics_all =
     [PropSL
      {
-       format    = HornClause
+       format = HornClause
      }
-    ,PropSL
+    , PropSL
      {
-       format    = PlainFormula
+       format = PlainFormula
      }
     ]
 
--------------------------------------------------------------------------------
--- Conversion functions to String                                            --
--------------------------------------------------------------------------------
+{- -----------------------------------------------------------------------------
+Conversion functions to String                                            --
+----------------------------------------------------------------------------- -}
 
 sublogics_name :: PropSL -> String
 sublogics_name f = case format f of
       HornClause -> "HornClause"
       PlainFormula -> "Prop"
 
--------------------------------------------------------------------------------
--- Projections to sublogics                                                  --
--------------------------------------------------------------------------------
+{- -----------------------------------------------------------------------------
+Projections to sublogics                                                  --
+----------------------------------------------------------------------------- -}
 
 prSymbolM :: PropSL -> Symbol.Symbol -> Maybe Symbol.Symbol
-prSymbolM _ sym = Just sym
+prSymbolM _ = Just
 
 prSig :: PropSL -> Sign.Sign -> Sign.Sign
 prSig _ sig = sig
@@ -307,10 +288,10 @@ prMor _ mor = mor
 prSymMapM :: PropSL
           -> AS_BASIC.SYMB_MAP_ITEMS
           -> Maybe AS_BASIC.SYMB_MAP_ITEMS
-prSymMapM _ sMap = Just sMap
+prSymMapM _ = Just
 
 prSymM :: PropSL -> AS_BASIC.SYMB_ITEMS -> Maybe AS_BASIC.SYMB_ITEMS
-prSymM _ sym = Just sym
+prSymM _ = Just
 
 -- keep an element if its computed sublogic is in the given sublogic
 --
@@ -318,7 +299,7 @@ prSymM _ sym = Just sym
 prFormulaM :: PropSL -> AS_BASIC.FORMULA -> Maybe AS_BASIC.FORMULA
 prFormulaM sl form
            | compareLE (sl_form bottom form) sl = Just form
-           | otherwise                          = Nothing
+           | otherwise = Nothing
 
 prPredItem :: PropSL -> AS_BASIC.PRED_ITEM -> AS_BASIC.PRED_ITEM
 prPredItem _ prI = prI
@@ -327,14 +308,14 @@ prBASIC_items :: PropSL -> AS_BASIC.BASIC_ITEMS -> AS_BASIC.BASIC_ITEMS
 prBASIC_items pSL bI =
     case bI of
       AS_BASIC.Pred_decl pI -> AS_BASIC.Pred_decl $ prPredItem pSL pI
-      AS_BASIC.Axiom_items aIS -> AS_BASIC.Axiom_items $ concat $ map mapH aIS
+      AS_BASIC.Axiom_items aIS -> AS_BASIC.Axiom_items $ concatMap mapH aIS
     where
-      mapH :: AS_Anno.Annoted (AS_BASIC.FORMULA)
-           -> [(AS_Anno.Annoted (AS_BASIC.FORMULA))]
+      mapH :: AS_Anno.Annoted AS_BASIC.FORMULA
+           -> [AS_Anno.Annoted AS_BASIC.FORMULA]
       mapH annoForm = let formP = prFormulaM pSL $ AS_Anno.item annoForm in
                       case formP of
                         Nothing -> []
-                        Just f  -> [ AS_Anno.Annoted
+                        Just f -> [ AS_Anno.Annoted
                                    {
                                      AS_Anno.item = f
                                    , AS_Anno.opt_pos = AS_Anno.opt_pos annoForm
@@ -347,8 +328,8 @@ prBasicSpec :: PropSL -> AS_BASIC.BASIC_SPEC -> AS_BASIC.BASIC_SPEC
 prBasicSpec pSL (AS_BASIC.Basic_spec bS) =
     AS_BASIC.Basic_spec $ map mapH bS
     where
-      mapH :: AS_Anno.Annoted (AS_BASIC.BASIC_ITEMS)
-           -> AS_Anno.Annoted (AS_BASIC.BASIC_ITEMS)
+      mapH :: AS_Anno.Annoted AS_BASIC.BASIC_ITEMS
+           -> AS_Anno.Annoted AS_BASIC.BASIC_ITEMS
       mapH aBI = AS_Anno.Annoted
                  {
                    AS_Anno.item = prBASIC_items pSL $ AS_Anno.item aBI
@@ -361,6 +342,6 @@ checkHornPos :: AS_BASIC.FORMULA -> AS_BASIC.FORMULA -> Bool
 checkHornPos fc fl =
     case fc of
       AS_BASIC.Conjunction _ _ -> all isPosLiteral $ Tools.flatten fc
-      _                        -> False
+      _ -> False
     &&
     isPosLiteral fl

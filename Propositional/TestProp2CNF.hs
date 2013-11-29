@@ -25,7 +25,7 @@ Test cases for Prop2CNF
 module Propositional.TestProp2CNF
     where
 
-import Propositional.Prop2CNF
+import Propositional.Prop2CNF -- FIXME: What happened to Prop2CNF?
 import Propositional.AS_BASIC_Propositional
 import Propositional.Sign
 import Common.Id
@@ -50,16 +50,15 @@ mySig = addToSig (addToSig (addToSig emptySig aId) bId) cId
 
 
 myForm :: FORMULA
-myForm = (Disjunction [(Predication (mkSimpleId "a")),
+myForm = Disjunction [Predication (mkSimpleId "a"),
           Negation (Predication (mkSimpleId "a")) nullRange]
-          nullRange)
+          nullRange
 
 
 myOtherForm :: FORMULA
-myOtherForm = Conjunction [(Equivalence (Predication (mkSimpleId "a"))
+myOtherForm = Conjunction [Equivalence (Predication (mkSimpleId "a"))
                         (Predication (mkSimpleId "c"))
-                        nullRange)
-                     ] nullRange
+                        nullRange] nullRange
 
 {-
 myForm :: FORMULA

@@ -43,7 +43,7 @@ instance Sentences CSMOF
   Morphism
   ()
   where
-    map_sen CSMOF _ sen = return sen
+    map_sen CSMOF _ = return
 
 
 instance Syntax CSMOF
@@ -84,4 +84,4 @@ instance StaticAnalysis CSMOF
     is_subsig CSMOF _ _ = True
     subsig_inclusion CSMOF = defaultInclusion
     induced_from_morphism _ _ sig = return $ MkMorphism sig sig
-    signature_union CSMOF sign1 _ = return sign1 --TODO
+    signature_union CSMOF sign1 _ = return sign1 -- TODO

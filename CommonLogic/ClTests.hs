@@ -21,9 +21,7 @@ import Common.Doc as Doc
 import Common.Id as Id
 
 
-
 import Text.ParserCombinators.Parsec
-
 
 
 -- examples for abstract syntax
@@ -110,6 +108,6 @@ p6 = parseTest sentence "(exists (z) (and (Pet x) (Happy z) (Attr x z)))"
 
 -- | parses the given string
 abstrSyntax :: String -> Either ParseError TEXT_META
-abstrSyntax txt = parse CommonLogic.Parse_CLIF.cltext "" txt
+abstrSyntax = parse CommonLogic.Parse_CLIF.cltext ""
 
-cParse p s = parse p "" s
+cParse p = parse p ""

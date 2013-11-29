@@ -55,7 +55,7 @@ importDecl = do
     a <- opt (symbol "as" >> cap)
     h <- opt (symbol "hiding")
     hs <- opt $ importList (symbol "(") (symbol ")")
-    let add s = if null s then "" else  ' ' : s
+    let add s = if null s then "" else ' ' : s
     return $ (if null q then "" else q ++ " ")
            ++ i ++ (if null a then "" else " as " ++ a)
            ++ add h ++ add hs

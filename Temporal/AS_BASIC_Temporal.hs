@@ -14,7 +14,7 @@ Symb_map_items.
 
 module Temporal.AS_BASIC_Temporal
     (
-      FORMULA(..)
+      FORMULA (..)
     , BASIC_SPEC (..)          -- Basic Spec
     , SYMB_ITEMS (..)          -- List of symbols
     , SYMB (..)                -- Symbols
@@ -49,4 +49,3 @@ data SYMB = Symb_id
 
 data SYMB_MAP_ITEMS = Symb_map_items
                       deriving (Show, Eq)
-

@@ -872,21 +872,21 @@ findComorphismPaths lg (G_sublogics lid sub) =
 
 -- | graph representation of the logic graph
 logicGraph2Graph :: LogicGraph
-                    -> Graph (G_sublogics,Maybe AnyComorphism) AnyComorphism
+                    -> Graph (G_sublogics, Maybe AnyComorphism) AnyComorphism
 logicGraph2Graph lg =
  let relevantMorphisms = filter hasModelExpansion . Map.elems $ comorphisms lg
  in Graph {
-  neighbours = \(G_sublogics lid sl,c1) -> 
+  neighbours = \ (G_sublogics lid sl, c1) ->
   let coerce c = forceCoerceSublogic lid (sourceLogic c)
-  in Data.Maybe.catMaybes $ 
-      map (\(Comorphism c) -> maybe Nothing (\sl1 -> Just (Comorphism c,
+  in Data.Maybe.mapMaybe
+      (\ (Comorphism c) -> maybe Nothing (\ sl1 -> Just (Comorphism c,
        (G_sublogics (targetLogic c) sl1, Just $ Comorphism c)))
                 (mapSublogic c (coerce c sl))) $
-      filter (\(Comorphism c) -> Logic (sourceLogic c) == Logic lid
+      filter (\ (Comorphism c) -> Logic (sourceLogic c) == Logic lid
       && isSubElem (coerce c sl) (sourceSublogic c)
-      && (case c1 of Just (Comorphism c1') -> (show c1') /= (show c)
+      && (case c1 of Just (Comorphism c1') -> show c1' /= show c
                      _ -> True)) relevantMorphisms,
-  weight = \(Comorphism c) -> if Logic (sourceLogic c) == 
+  weight = \ (Comorphism c) -> if Logic (sourceLogic c) ==
                                  Logic (targetLogic c) then 1 else 3
  }
 
