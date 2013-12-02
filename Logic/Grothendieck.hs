@@ -856,7 +856,7 @@ findComorphismPaths lg (G_sublogics lid sub) =
   nubOrd $ map fst $ iterateComp (0 :: Int) [(idc, [idc])]
   where
   idc = Comorphism (mkIdComorphism lid sub)
-  coMors = filter hasModelExpansion . Map.elems $ comorphisms lg
+  coMors = Map.elems $ comorphisms lg
   -- compute possible compositions, but only up to depth 4
   iterateComp n l =
     if n > 2 || l == newL then newL else iterateComp (n + 1) newL
