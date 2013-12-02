@@ -511,7 +511,7 @@ utils/appendHaskellPreludeString: utils/appendHaskellPreludeString.hs
 REV = trunk
 release:
 	$(RM) -r Hets
-	svn co https://svn-agbkb.informatik.uni-bremen.de/Hets/$(REV) Hets
+	svn co -q https://svn-agbkb.informatik.uni-bremen.de/Hets/$(REV) Hets
 	(cd Hets; $(MAKE) derivedSources; $(MAKE) clean; \
             cp Makefile Makefile.orig; \
             cp ReleaseMakefile Makefile; \
@@ -691,7 +691,7 @@ initialize_installer:
 # check out java parts for OWL
 owl_java:
 	$(RM) -r OWL2/java/OwlApi
-	svn export \
+	svn export -q \
   https://github.com/owlcs/owlapi/tags/owlapi-parent-3.4.8 \
   OWL2/java/OwlApi
 
