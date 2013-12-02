@@ -8,13 +8,14 @@ Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  experimental
 Portability :  portable
 
-Definition of signatures for propositional logic
+  Definition of signatures for propositional logic
+
   Ref.
 
-  Till Mossakowski, Joseph Goguen, Razvan Diaconescu, Andrzej Tarlecki.
-  What is a Logic?.
-  In Jean-Yves Beziau (Ed.), Logica Universalis, pp. 113-@133. Birkhaeuser.
-  2005.
+   Till Mossakowski, Joseph Goguen, Razvan Diaconescu, Andrzej Tarlecki.
+   What is a Logic?.
+   In Jean-Yves Beziau (Ed.), Logica Universalis, pp. 113-@133. Birkhaeuser.
+   2005.
 -}
 
 module Temporal.Sign
