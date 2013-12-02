@@ -30,9 +30,6 @@ import Reactor.InfoBus (shutdown)
 import HTk.Toolkit.DialogWin (useHTk)
 import Util.WBFiles
 -- Uni Utils
-import Posixutil.ChildProcess()
-import Posixutil.ProcessClasses()
-import Events.Events()
 import Events.Destructible
 
 import Data.IORef
