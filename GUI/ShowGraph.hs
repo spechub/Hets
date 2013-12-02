@@ -29,7 +29,11 @@ import Graphics.UI.Gtk
 import Reactor.InfoBus (shutdown)
 import HTk.Toolkit.DialogWin (useHTk)
 import Util.WBFiles
-import Common.UniUtils
+-- Uni Utils
+import Posixutil.ChildProcess()
+import Posixutil.ProcessClasses()
+import Events.Events()
+import Events.Destructible
 
 import Data.IORef
 import Control.Concurrent
