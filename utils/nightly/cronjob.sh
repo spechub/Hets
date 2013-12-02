@@ -311,7 +311,7 @@ makeCofiLib ()
 {
 cd /tmp
 rm -rf Hets-lib
-svn export --ignore-externals \
+svn export -q --ignore-externals \
   https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk Hets-lib
 $TAR czvf lib.tgz Hets-lib
 chmod 664 lib.tgz
@@ -396,5 +396,5 @@ svn ci -m "nightly change"
 updateLibForCgi ()
 {
 cd /home/cofi/Hets-lib
-svn update --ignore-externals
+svn update -q --ignore-externals
 }
