@@ -30,6 +30,10 @@ types -}
 class PrintTPTP a where
     printTPTP :: a -> Doc
 
+instance Pretty TPTP where
+    pretty (FormAnno _ _ _ t _) = printTPTP t
+    pretty _ = empty
+
 {- |
   Helper function. Generates a separating comment line.
 -}

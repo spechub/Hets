@@ -33,6 +33,7 @@ import OWL2.ParseOWLAsLibDefn
 #endif
 import CSMOF.ParseXmiAsLibDefn
 import QVTR.ParseQvtAsLibDefn
+import SoftFOL.ParseTPTPAsLibDefn
 
 import Driver.Options
 
@@ -114,6 +115,7 @@ readLibDefnAux lgraph opts file fileForPos input =
 #endif
       Xmi -> liftIO $ parseXmi file
       Qvt -> liftIO $ parseQvt file
+      TPTPIn -> liftIO $ parseTPTP file
 #ifndef NOOWLLOGIC
       _ | elem ty [OWLIn, OwlXmlIn, OBOIn] -> liftIO $ parseOWL file
 #endif

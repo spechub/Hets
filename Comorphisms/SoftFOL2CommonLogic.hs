@@ -55,7 +55,7 @@ instance Language SoftFOL2CommonLogic where
 instance Comorphism SoftFOL2CommonLogic
     FOLLogic.SoftFOL         -- lid domain
     ()                       -- sublogics codomain
-    ()                       -- Basic spec domain
+    [FOLSign.TPTP]          -- Basic spec domain
     FOLSign.Sentence         -- sentence domain
     ()                       -- symbol items domain
     ()                       -- symbol map items domain

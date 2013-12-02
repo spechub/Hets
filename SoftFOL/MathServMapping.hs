@@ -21,7 +21,7 @@ import Common.ProofTree
 import Logic.Prover
 
 import SoftFOL.MathServParsing
-import SoftFOL.Sign
+import SoftFOL.Sign hiding (Theorem)
 
 import Interfaces.GenericATPState
 

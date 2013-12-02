@@ -395,6 +395,7 @@ data InType =
   | RDFIn
   | Xmi
   | Qvt
+  | TPTPIn
   deriving Eq
 
 instance Show InType where
@@ -413,6 +414,7 @@ instance Show InType where
     HolLightIn -> "hol"
     IsaIn -> "isa"
     ThyIn -> "thy"
+    TPTPIn -> "tptp"
     PrfIn -> prfS
     OmdocIn -> omdocS
     ProofCommand -> "hpf"
@@ -446,7 +448,7 @@ plainInTypes =
   , MaudeIn, TwelfIn
   , HolLightIn, IsaIn, ThyIn, PrfIn, OmdocIn, ProofCommand
   , CommonLogicIn False, CommonLogicIn True
-  , DgXml, FreeCADIn, RDFIn, Xmi, Qvt ]
+  , DgXml, FreeCADIn, RDFIn, Xmi, Qvt, TPTPIn ]
 
 aInTypes :: [InType]
 aInTypes = [ ATermIn x | x <- [BAF, NonBAF] ]

@@ -18,6 +18,10 @@ module SoftFOL.Logic_SoftFOL where
 import Common.DefaultMorphism
 import Common.DocUtils
 import Common.ProofTree
+import Common.AS_Annotation (makeNamed, SenAttr(..))
+import Common.ExtSign
+
+import qualified Data.Set (empty)
 
 import ATC.ProofTree ()
 
@@ -28,6 +32,7 @@ import SoftFOL.Sign
 import SoftFOL.Print
 import SoftFOL.Conversions
 import SoftFOL.Morphism
+import SoftFOL.PrintTPTP ()
 
 #ifdef UNI_PACKAGE
 import Common.ProverTools
@@ -59,7 +64,7 @@ instance Language SoftFOL where
   "See http://spass.mpi-sb.mpg.de/\n" ++
   "and http://www.cs.miami.edu/~tptp/TPTP/SyntaxBNF.html"
 
-instance Logic.Logic.Syntax SoftFOL () SFSymbol () ()
+instance Logic.Logic.Syntax SoftFOL [TPTP] SFSymbol () ()
     -- default implementation is fine!
 
 instance Sentences SoftFOL Sentence Sign
@@ -71,15 +76,28 @@ instance Sentences SoftFOL Sentence Sign
       negation _ = negateSentence
     -- other default implementations are fine
 
-instance StaticAnalysis SoftFOL () Sentence
+instance StaticAnalysis SoftFOL [TPTP] Sentence
                () ()
                Sign
                SoftFOLMorphism SFSymbol () where
          empty_signature SoftFOL = emptySign
          is_subsig SoftFOL _ _ = True
          subsig_inclusion SoftFOL = defaultInclusion
+         basic_analysis SoftFOL = Just (\ (sp, sg, _) ->
+          return (sp, ExtSign sg Data.Set.empty, concatMap (\f -> case f of
+           FormAnno _ (Name n) r t _ -> [
+             let sen = makeNamed n t
+             in case r of
+                 Axiom -> sen
+                 Hypothesis -> sen
+                 Definition -> sen { isAxiom = False, isDef = True}
+                 Assumption -> sen
+                 Lemma      -> sen
+                 Theorem    -> sen
+                 _          -> sen { isAxiom = False } ]
+           _ -> []) sp))
 
-instance Logic SoftFOL () () Sentence () ()
+instance Logic SoftFOL () [TPTP] Sentence () ()
                Sign
                SoftFOLMorphism SFSymbol () ProofTree where
          stability _ = Testing

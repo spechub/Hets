@@ -158,7 +158,7 @@ instance Show a => Comorphism (GenSuleCFOL2SoftFOL a)
                CASLSign
                CASLMor
                CSign.Symbol RawSymbol ProofTree
-               SoftFOL () () SPTerm () ()
+               SoftFOL () [SPSign.TPTP] SPTerm () ()
                SPSign.Sign
                SoftFOLMorphism SFSymbol () ProofTree where
     sourceLogic (GenSuleCFOL2SoftFOL _) = CASL

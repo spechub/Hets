@@ -20,7 +20,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Maybe (isNothing)
 import qualified Common.Lib.Rel as Rel
-import Common.AS_Annotation
+import Common.AS_Annotation hiding (Name)
 import Common.Id
 import Common.DefaultMorphism
 
@@ -272,6 +272,65 @@ data SPTerm =
       deriving (Eq, Ord, Show)
 
 instance GetRange SPTerm
+
+data FileName = FileName String deriving Show
+
+data FormKind = FofKind | CnfKind | FotKind
+
+instance Show FormKind where
+    show k = case k of
+        FofKind -> "fof"
+        CnfKind -> "cnf"
+        FotKind -> "fot"
+
+data Role =
+    Axiom
+  | Hypothesis
+  | Definition
+  | Assumption
+  | Lemma
+  | Theorem
+  | Conjecture
+  | Negated_conjecture
+  | Plain
+  | Fi_domain
+  | Fi_functors
+  | Fi_predicates
+  | Type
+  | Unknown
+    deriving Show
+
+data Name = Name String deriving Show
+
+data Annos = Annos Source (Maybe Info) deriving Show
+
+data Source = Source GenTerm deriving Show
+
+data AWord = AWord String deriving Show
+
+data GenTerm =
+    GenTerm GenData (Maybe GenTerm)
+  | GenTermList [GenTerm]
+    deriving Show
+
+data GenData =
+    GenData AWord [GenTerm]
+  | OtherGenData String  -- variable, number, distinct_object
+  | GenFormData FormData
+    deriving Show
+
+data FormData = FormData FormKind SPTerm deriving Show
+
+data Info = Info [GenTerm] deriving Show
+
+data TPTP =
+    FormAnno FormKind Name Role SPTerm (Maybe Annos)
+  | Include FileName [Name]
+  | CommentLine String  -- collect top-level comment lines
+  | EmptyLine -- and blank lines
+    deriving Show
+
+instance GetRange TPTP
 
 -- | Literals for SPASS CNF and DNF (the boolean indicates a negated literal).
 data SPLiteral = SPLiteral Bool SPSymbol deriving (Eq, Ord, Show)

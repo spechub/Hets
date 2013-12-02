@@ -24,7 +24,7 @@ module SoftFOL.ParseTPTP
   , prTPTPs
   , tptpModel
   , ppGenTerm
-  ) where
+ ) where
 
 import Text.ParserCombinators.Parsec
 import SoftFOL.Sign
@@ -38,44 +38,6 @@ import Common.Parsec
 import Control.Monad
 import Data.Char (ord, toLower, isAlphaNum)
 import Data.Maybe
-
-data TPTP =
-    FormAnno FormKind Name Role SPTerm (Maybe Annos)
-  | Include FileName [Name]
-  | CommentLine String  -- collect top-level comment lines
-  | EmptyLine -- and blank lines
-    deriving Show
-
-data Name = Name String deriving Show
-
-data AWord = AWord String deriving Show
-
-data FileName = FileName String deriving Show
-
-data FormKind = FofKind | CnfKind | FotKind
-
-instance Show FormKind where
-    show k = case k of
-        FofKind -> "fof"
-        CnfKind -> "cnf"
-        FotKind -> "fot"
-
-data Role =
-    Axiom
-  | Hypothesis
-  | Definition
-  | Assumption
-  | Lemma
-  | Theorem
-  | Conjecture
-  | Negated_conjecture
-  | Plain
-  | Fi_domain
-  | Fi_functors
-  | Fi_predicates
-  | Type
-  | Unknown
-    deriving Show
 
 showRole :: Role -> String
 showRole = map toLower . show
@@ -96,25 +58,6 @@ allRoles =
   , Fi_predicates
   , Type
   , Unknown ]
-
-data Annos = Annos Source (Maybe Info) deriving Show
-
-data Source = Source GenTerm deriving Show
-
-data GenTerm =
-    GenTerm GenData (Maybe GenTerm)
-  | GenTermList [GenTerm]
-    deriving Show
-
-data GenData =
-    GenData AWord [GenTerm]
-  | OtherGenData String  -- variable, number, distinct_object
-  | GenFormData FormData
-    deriving Show
-
-data FormData = FormData FormKind SPTerm deriving Show
-
-data Info = Info [GenTerm] deriving Show
 
 tptp :: Parser [TPTP]
 tptp = skip >> many (headerLine <|> include <|> formAnno
