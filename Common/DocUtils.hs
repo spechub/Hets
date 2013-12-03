@@ -227,6 +227,6 @@ showGlobalDoc :: Pretty a => GlobalAnnos -> a -> ShowS
 showGlobalDoc ga = shows . useGlobalAnnos ga . pretty
 
 instance Pretty IRI where
-  pretty i = text $ (if hasFullIRI i
+  pretty i = text $ (if hasFullIRI i && not (isAbbrev i)
                        then ('<' :) . (++ ">")
                        else id) $ iriToStringShortUnsecure i
