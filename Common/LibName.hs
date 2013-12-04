@@ -81,7 +81,8 @@ data LibName = LibName
     , libVersion :: Maybe VersionNumber }
 
 emptyLibName :: String -> LibName
-emptyLibName s = LibName (fromMaybe (error $ "emptyLibName: " ++ s) $ parseIRIReference s)
+emptyLibName s = LibName
+  (fromMaybe (error $ "emptyLibName: " ++ s) $ parseIRIManchester s)
   nullRange Nothing Nothing
 
 setFilePath :: FilePath -> LibName -> LibName
