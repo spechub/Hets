@@ -32,7 +32,7 @@ type OMDocRef = IRI.IRI
 type OMDocRefs = [OMDocRef]
 
 showIRI :: IRI.IRI -> String
-showIRI iri = IRI.iriToString id iri ""
+showIRI = IRI.iriToStringUnsecure
 
 -- Try to parse an IRI
 mkOMDocRef :: String -> Maybe OMDocRef

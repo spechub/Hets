@@ -38,7 +38,8 @@ resolveFullIRI :: IRI -> IRI -> IRI
 resolveFullIRI absol rel = if isAbsoluteIRI rel then rel else
     let r = fromJust $ IRI.parseIRIReference $ expandedIRI rel
         a = fromJust $ IRI.parseIRI $ expandedIRI absol
-        resolved = (IRI.iriToString id $ fromJust $ IRI.relativeTo r a) ""
+        Just ra = IRI.relativeTo r a
+        resolved = IRI.iriToStringUnsecure ra
         Right new = parse uriQ "" $ "<" ++ resolved ++ ">"
     in rel {expandedIRI = expandedIRI new}
 
