@@ -83,5 +83,6 @@ convertone :: OntologyDocument -> Annoted LIB_ITEM
 convertone o = makeSpecItem (qNameToIRI $ name $ ontology o) $ createSpec o
 
 convertToLibDefN :: FilePath -> [OntologyDocument] -> LIB_DEFN
-convertToLibDefN filename l = Lib_defn (emptyLibName filename)
+convertToLibDefN filename l = Lib_defn
+  (iriLibName . filePathToIri $ rmSuffix filename)
   (makeLogicItem OWL2 : map convertone l) nullRange []

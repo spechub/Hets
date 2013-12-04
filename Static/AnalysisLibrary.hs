@@ -205,7 +205,7 @@ anaString mln lgraph opts topLns libenv initDG input file = do
           liftR mzero
       _ -> do
           let libstring = show $ getLibId ln
-          unless (isSuffixOf libstring noSuffixFile || isSuffixOf libstring file) $ lift
+          unless (isSuffixOf libstring noSuffixFile) $ lift
               $ putIfVerbose opts 1
               $ "### file name '" ++ file ++ "' does not match library name '"
               ++ libstring ++ "'"

@@ -20,8 +20,10 @@ module Common.LibName
   , isQualName
   , mkQualName
   , unQualName
+  , filePathToIri
   , setFilePath
   , getFilePath
+  , iriLibName
   , emptyLibName
   , convertFileToLibStr
   , mkLibStr
@@ -80,14 +82,20 @@ data LibName = LibName
     , locIRI :: Maybe IRI
     , libVersion :: Maybe VersionNumber }
 
+iriLibName :: IRI -> LibName
+iriLibName i = LibName i nullRange Nothing Nothing
+
 emptyLibName :: String -> LibName
-emptyLibName s = LibName
-  (fromMaybe (error $ "emptyLibName: " ++ s) $ parseIRIManchester s)
-  nullRange Nothing Nothing
+emptyLibName s = iriLibName .
+  fromMaybe (error $ "emptyLibName: " ++ s) $ parseIRIManchester s
+
+filePathToIri :: FilePath -> IRI
+filePathToIri fp = fromMaybe (error $ "filePathToIri: " ++ fp)
+  $ parseIRIReference fp
 
 setFilePath :: FilePath -> LibName -> LibName
 setFilePath fp ln =
-  ln { locIRI = mplus (parseIRIReference fp) (error $ "setFilePath: " ++ fp) }
+  ln { locIRI = Just $ filePathToIri fp }
 
 getFilePath :: LibName -> FilePath
 getFilePath = maybe "" iriToStringUnsecure . locIRI
