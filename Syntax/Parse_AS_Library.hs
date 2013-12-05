@@ -50,7 +50,7 @@ lGAnnos lG = do
 library :: LogicGraph -> AParser st LIB_DEFN
 library lG = do
     (lG1, an1) <- lGAnnos lG
-    (ps, ln) <- option (nullRange, emptyLibName "") $ do
+    (ps, ln) <- option (nullRange, iriLibName nullIRI) $ do
       s1 <- asKey libraryS <|> asKey distributedOntologyS
       n <- libName lG1
       return (tokPos s1, n)
