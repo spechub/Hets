@@ -43,8 +43,6 @@ import Data.List
 import Data.Maybe
 import Data.Ord
 
-import Control.Monad (mplus)
-
 import System.FilePath
 
 omTs :: [Token]
