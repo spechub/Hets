@@ -34,7 +34,7 @@ instance PrettyLG LIB_DEFN where
         let aa' = pretty aa            -- lib name
             ab' = vsep $ printLibItems lg ab -- LIB_ITEMs
             ad' = vcat $ map pretty ad -- global ANNOTATIONs
-        in (if aa == emptyLibName "" then empty else
+        in (if getLibId aa == nullIRI then empty else
                keyword libraryS <+> aa') $++$ ad' $++$ ab'
 
 printLibItems :: LogicGraph -> [Annoted LIB_ITEM] -> [Doc]

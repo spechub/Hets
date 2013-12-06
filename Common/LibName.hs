@@ -85,7 +85,8 @@ iriLibName i = LibName i nullRange Nothing Nothing
 
 emptyLibName :: String -> LibName
 emptyLibName s = iriLibName .
-  fromMaybe (error $ "emptyLibName: " ++ s) $ parseIRIManchester s
+  fromMaybe (if null s then nullIRI else error $ "emptyLibName: " ++ s)
+  $ parseIRIManchester s
 
 filePathToIri :: FilePath -> IRI
 filePathToIri fp = fromMaybe (error $ "filePathToIri: " ++ fp)

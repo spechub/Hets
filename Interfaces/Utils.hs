@@ -60,6 +60,7 @@ import Comorphisms.LogicGraph (logicGraph)
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import Common.IRI
 import Common.Utils (splitOn)
 import Common.Result
 import Common.LibName
@@ -109,7 +110,7 @@ emptyIntIState le ln =
 
 emptyIntState :: IntState
 emptyIntState =
-    IntState { i_state = Just $ emptyIntIState emptyLibEnv $ emptyLibName ""
+    IntState { i_state = Just $ emptyIntIState emptyLibEnv $ iriLibName nullIRI
              , i_hist = IntHistory { undoList = []
                                     , redoList = [] }
              , filename = []
@@ -126,16 +127,17 @@ tryRemoveAbsolutePathComponent f
 
 -- Converts a list of proof-trees to a prove
 proofTreeToProve :: FilePath
-     -> ProofState                   -- current proofstate
-     -> Maybe (G_prover, AnyComorphism)     -- possible used translation
+     -> ProofState                         -- current proofstate
+     -> Maybe (G_prover, AnyComorphism)    -- possible used translation
      -> [ProofStatus proof_tree]           -- goals included in prove
      -> String
      -> (Bool, Int)
      -> [IC.Command]
 proofTreeToProve fn st pcm pt nodeName (useTm, tm) =
     [ IC.SelectCmd IC.Node nodeName', IC.GlobCmd IC.DropTranslation ]
-    ++ maybe [] (\ (Comorphism cid) -> map (IC.SelectCmd IC.ComorphismTranslation)
-            (drop 1 $ splitOn ';' $ language_name cid) ) commorf
+    ++ maybe [] (\ (Comorphism cid) -> map
+                 (IC.SelectCmd IC.ComorphismTranslation)
+                 (drop 1 $ splitOn ';' $ language_name cid)) commorf
     ++ maybe [] ((: []) . IC.SelectCmd IC.Prover) prvr
     ++ concatMap goalToCommands goals
     where
@@ -162,8 +164,10 @@ proofTreeToProve fn st pcm pt nodeName (useTm, tm) =
       -- A goal is a pair of a name as String and time limit as Int
       goalToCommands :: (String, Int) -> [IC.Command]
       goalToCommands (n, t) =
-          [ IC.SelectCmd IC.Goal n, IC.SetAxioms allax, IC.TimeLimit (if useTm then tm else t),
-            IC.GlobCmd IC.ProveCurrent ]
+          [ IC.SelectCmd IC.Goal n
+          , IC.SetAxioms allax
+          , IC.TimeLimit (if useTm then tm else t)
+          , IC.GlobCmd IC.ProveCurrent]
 
 -- Merge goals with the same time-limit
 mergeGoals :: [(String, Int)] -> [(String, Int)]
@@ -203,8 +207,8 @@ addCommandHistoryToState intSt st pcm pt str (useTm, timeout) =
         ost <- readIORef intSt
         fn <- tryRemoveAbsolutePathComponent $ filename ost
         writeIORef intSt $ add2history
-           (IC.GroupCmd $ proofTreeToProve (rmSuffix fn) st pcm pt str (useTm, timeout))
-           ost [ IStateChange $ i_state ost ]
+           (IC.GroupCmd $ proofTreeToProve (rmSuffix fn) st pcm pt str
+            (useTm, timeout)) ost [IStateChange $ i_state ost]
 
 conservativityRule :: DGRule
 conservativityRule = DGRule "ConservativityCheck"

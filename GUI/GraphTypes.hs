@@ -29,6 +29,7 @@ import GUI.GraphAbstraction (GraphInfo, initGraph)
 import GUI.UDGUtils
 
 import Common.LibName
+import Common.IRI
 
 import Driver.Options (HetcatsOpts (uncolored), defaultHetcatsOpts)
 
@@ -124,7 +125,7 @@ emptyGInfo = do
                , libGraphLock = lgl
                , openGraphs = oGraphs
                  -- Local
-               , libName = emptyLibName ""
+               , libName = iriLibName nullIRI
                , graphInfo = gi
                , internalNames = iorIN
                , options = flags
