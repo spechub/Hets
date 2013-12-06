@@ -16,7 +16,6 @@ module OWL2.Extract where
 import OWL2.AS
 import OWL2.MS
 import OWL2.Sign
-import OWL2.StaticAnalysis
 
 import Control.Monad
 import Common.Lib.State

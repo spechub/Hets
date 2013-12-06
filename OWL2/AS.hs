@@ -494,6 +494,11 @@ data ObjectPropertyExpression = ObjectProp ObjectProperty
   | ObjectInverseOf InverseObjectProperty
         deriving (Show, Eq, Ord)
 
+objPropToIRI :: ObjectPropertyExpression -> Individual
+objPropToIRI opExp = case opExp of
+    ObjectProp u -> u
+    ObjectInverseOf objProp -> objPropToIRI objProp
+
 type DataPropertyExpression = DataProperty
 
 -- * DATA RANGES

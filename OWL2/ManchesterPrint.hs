@@ -25,7 +25,6 @@ import OWL2.Theorem
 import OWL2.Print
 import OWL2.Keywords
 import OWL2.ColonKeywords
-import OWL2.StaticAnalysis
 
 import Data.Function
 import Data.List

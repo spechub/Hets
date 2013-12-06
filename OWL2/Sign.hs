@@ -13,9 +13,14 @@ OWL 2 signature and sentences
 module OWL2.Sign where
 
 import OWL2.AS
+
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+
+import Common.Lib.State
 import Common.Result
+
+import Control.Monad
 
 data Sign = Sign
             { concepts :: Set.Set Class
@@ -113,3 +118,21 @@ symOf s = Set.unions
   , Set.map (Entity DataProperty) $ dataProperties s
   , Set.map (Entity NamedIndividual) $ individuals s
   , Set.map (Entity AnnotationProperty) $ annotationRoles s ]
+
+-- | takes an entity and modifies the sign according to the given function
+modEntity :: (IRI -> Set.Set IRI -> Set.Set IRI) -> Entity -> State Sign ()
+modEntity f (Entity ty u) = do
+  s <- get
+  let chg = f u
+  unless (isDatatypeKey u || isThing u) $ put $ case ty of
+    Datatype -> s { datatypes = chg $ datatypes s }
+    Class -> s { concepts = chg $ concepts s }
+    ObjectProperty -> s { objectProperties = chg $ objectProperties s }
+    DataProperty -> s { dataProperties = chg $ dataProperties s }
+    NamedIndividual -> if isAnonymous u then s
+         else s { individuals = chg $ individuals s }
+    AnnotationProperty -> s {annotationRoles = chg $ annotationRoles s}
+
+-- | adding entities to the signature
+addEntity :: Entity -> State Sign ()
+addEntity = modEntity Set.insert

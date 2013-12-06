@@ -40,24 +40,6 @@ failMsg (Entity ty e) desc =
           ++ " " ++ showQN e ++ "` in the following ClassExpression:\n"
           ++ showDoc desc "") $ iriPos e
 
--- | takes an entity and modifies the sign according to the given function
-modEntity :: (IRI -> Set.Set IRI -> Set.Set IRI) -> Entity -> State Sign ()
-modEntity f (Entity ty u) = do
-  s <- get
-  let chg = f u
-  unless (isDatatypeKey u || isThing u) $ put $ case ty of
-    Datatype -> s { datatypes = chg $ datatypes s }
-    Class -> s { concepts = chg $ concepts s }
-    ObjectProperty -> s { objectProperties = chg $ objectProperties s }
-    DataProperty -> s { dataProperties = chg $ dataProperties s }
-    NamedIndividual -> if isAnonymous u then s
-         else s { individuals = chg $ individuals s }
-    AnnotationProperty -> s {annotationRoles = chg $ annotationRoles s}
-
--- | adding entities to the signature
-addEntity :: Entity -> State Sign ()
-addEntity = modEntity Set.insert
-
 -- | checks if an entity is in the signature
 checkEntity :: Sign -> Entity -> Result ()
 checkEntity s t@(Entity ty e) =
@@ -85,11 +67,6 @@ checkLiteral :: Sign -> Literal -> Result ()
 checkLiteral s l = case l of
     Literal _ (Typed dt) -> checkEntity s $ Entity Datatype dt
     _ -> return ()
-
-objPropToIRI :: ObjectPropertyExpression -> Individual
-objPropToIRI opExp = case opExp of
-    ObjectProp u -> u
-    ObjectInverseOf objProp -> objPropToIRI objProp
 
 isDeclObjProp :: Sign -> ObjectPropertyExpression -> Bool
 isDeclObjProp s ope = let op = objPropToIRI ope in
