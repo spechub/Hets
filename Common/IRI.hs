@@ -111,6 +111,7 @@ data IRI = IRI
     , abbrevPath :: String        -- ^ @abbrevPath@
     , abbrevQuery :: String       -- ^ @abbrevQueryh@
     , abbrevFragment :: String    -- ^ @abbrevFragment@
+    , hasAnkles :: Bool           -- ^ IRI in ankle brackets
     , iriPos :: Range             -- ^ position
     }
 
@@ -133,6 +134,7 @@ nullIRI = IRI
     , abbrevPath = ""
     , abbrevQuery = ""
     , abbrevFragment = ""
+    , hasAnkles = False
     , iriPos = nullRange
     }
 
@@ -284,7 +286,7 @@ brackets :: IRIParser st IRI -> IRIParser st IRI
 brackets p = ankles p << skipSmart
 
 ankles :: IRIParser st IRI -> IRIParser st IRI
-ankles p = char '<' >> p << char '>'
+ankles p = char '<' >> fmap (\ i -> i { hasAnkles = True }) p << char '>'
 
 -- | Parses a CURIE <http://www.w3.org/TR/rdfa-core/#s_curies>
 curie :: IRIParser st IRI
@@ -307,17 +309,10 @@ reference = iriWithPos $ do
   up <- ihierPartNoAuth
   uq <- option "" uiquery
   uf <- option "" uifragment
-  return IRI
-          { iriScheme = ""
-          , iriAuthority = Nothing
-          , iriPath = ""
-          , iriQuery = ""
-          , iriFragment = ""
-          , prefixName = ""
-          , abbrevPath = up
+  return nullIRI
+          { abbrevPath = up
           , abbrevQuery = uq
           , abbrevFragment = uf
-          , iriPos = nullRange
           }
 
 {- | Prefix part of CURIE in @prefix_part:reference@
@@ -405,32 +400,13 @@ iriManchester :: IRIParser st IRI
 iriManchester = iriWithPos $ ankles iriReference
   <|> do
     PNameLn prefix loc <- try pnameLn
-    return IRI
-            { iriScheme = ""
-            , iriAuthority = Nothing
-            , iriPath = ""
-            , iriQuery = ""
-            , iriFragment = ""
-            , prefixName = prefix
+    return nullIRI
+            { prefixName = prefix
             , abbrevPath = loc
-            , abbrevQuery = ""
-            , abbrevFragment = ""
-            , iriPos = nullRange
             }
   <|> do
     loc <- pnLocal
-    return IRI
-            { iriScheme = ""
-            , iriAuthority = Nothing
-            , iriPath = ""
-            , iriQuery = ""
-            , iriFragment = ""
-            , prefixName = ""
-            , abbrevPath = loc
-            , abbrevQuery = ""
-            , abbrevFragment = ""
-            , iriPos = nullRange
-            }
+    return nullIRI { abbrevPath = loc }
 
 data PNameLn = PNameLn PNameNs PnLocal deriving (Show, Eq, Ord)
 type PNameNs = String
@@ -490,17 +466,12 @@ iri = iriWithPos $ do
   (ua, up) <- ihierPart
   uq <- option "" uiquery
   uf <- option "" uifragment
-  return IRI
+  return nullIRI
             { iriScheme = us
             , iriAuthority = ua
             , iriPath = up
             , iriQuery = uq
             , iriFragment = uf
-            , prefixName = ""
-            , abbrevPath = ""
-            , abbrevQuery = ""
-            , abbrevFragment = ""
-            , iriPos = nullRange
             }
 
 
@@ -693,17 +664,11 @@ irelativeRef = iriWithPos $ do
   (ua, up) <- irelativePart
   uq <- option "" uiquery
   uf <- option "" uifragment
-  return IRI
-            { iriScheme = ""
-            , iriAuthority = ua
+  return nullIRI
+            { iriAuthority = ua
             , iriPath = up
             , iriQuery = uq
             , iriFragment = uf
-            , prefixName = ""
-            , abbrevPath = ""
-            , abbrevQuery = ""
-            , abbrevFragment = ""
-            , iriPos = nullRange
             }
 
 irelativePart :: IRIParser st (Maybe IRIAuth, String)
@@ -796,8 +761,10 @@ iriToStringFull iuserinfomap (IRI { iriScheme = scheme
                                   , iriPath = path
                                   , iriQuery = query
                                   , iriFragment = fragment
+                                  , hasAnkles = b
                                   }) =
-  (scheme ++) . iriAuthToString iuserinfomap authority
+  (if b then ('<' :) . (++ ">") else id)
+  . (scheme ++) . iriAuthToString iuserinfomap authority
               . (path ++) . (query ++) . (fragment ++)
 
 iriToStringAbbrev :: IRI -> ShowS
