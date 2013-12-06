@@ -269,7 +269,7 @@ checkExtended s e = case e of
 
 -- | corrects the axiom according to the signature
 checkAxiom :: Sign -> Axiom -> Result [Axiom]
-checkAxiom s (PlainAxiom ext fb) = case fb of
+checkAxiom s ax@(PlainAxiom ext fb) = case fb of
     ListFrameBit mr lfb -> do
       next <- checkExtended s ext
       nfb <- fmap (ListFrameBit mr) $ checkListBit s mr lfb
@@ -289,6 +289,7 @@ checkAxiom s (PlainAxiom ext fb) = case fb of
                   next <- checkExtended s ext
                   -- could rarely happen, and only in our extended syntax
                   return [PlainAxiom next ab]
+            Declaration -> return [ax]
             _ -> return []
         _ -> do
             next <- checkExtended s ext
@@ -319,11 +320,16 @@ createSign f = do
   pm <- gets prefixMap
   mapM_ (collectEntities . function Expand (StringMap pm)) f
 
+noDecl :: Axiom -> Bool
+noDecl ax = case ax of
+  PlainAxiom _ (AnnFrameBit _ (AnnotationFrameBit Declaration)) -> False
+  _ -> True
+
 -- | corrects the axioms according to the signature
 createAxioms :: Sign -> [Frame] -> Result ([Named Axiom], [Frame])
 createAxioms s fl = do
     cf <- correctFrames s $ map (function Expand $ StringMap $ prefixMap s) fl
-    return (map anaAxiom $ concatMap getAxioms cf, cf)
+    return (map anaAxiom . filter noDecl $ concatMap getAxioms cf, cf)
 
 check1Prefix :: Maybe String -> String -> Bool
 check1Prefix ms s = case ms of
