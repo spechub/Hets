@@ -72,8 +72,8 @@ parseProc filename str =
         $ concatMap (filterElementsName $ isSmth "Ontology") es
 
 qNameToIRI :: QName -> SPEC_NAME
-qNameToIRI qn = let s = showQU qn in
-  fromMaybe (error $ "qNameToIRI " ++ s) $ parseIRIReference s
+qNameToIRI qn = let s = showQN qn in
+  fromMaybe (error $ "qNameToIRI " ++ s) $ parseIRIManchester s
 
 createSpec :: OntologyDocument -> Annoted SPEC
 createSpec o = addImports (map qNameToIRI . imports $ ontology o)
