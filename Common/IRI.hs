@@ -1046,7 +1046,8 @@ expandCurie prefixMap c =
 representations -}
 mergeCurie :: IRI -> IRI -> Maybe IRI
 mergeCurie c i =
-  parseIRIReference $ iriToStringFull id i "" ++ iriToStringAbbrevMerge c ""
+  parseIRIManchester $ '<' : iriToStringFull id i { hasAnkles = False } ""
+    ++ iriToStringAbbrevMerge c ">"
 
 deleteQuery :: IRI -> IRI
 deleteQuery i = i { iriQuery = "" }
