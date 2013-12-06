@@ -83,12 +83,11 @@ gmorph ga gm@(GMorphism cid (ExtSign ssig _) _ tmor _) =
       Just (tsig, tsens) -> let
         tid = targetLogic cid
         sl = Map.toList . Map.filterWithKey (/=) $ symmap_of tid tmor
-        psym = prettyElem "Symbol" ga
         in add_attr (mkNameAttr $ language_name cid)
            $ unode "GMorphism" $
              subnodes "Axioms"
              (map (showSen (targetLogic cid) ga Nothing tsig) tsens)
-             ++ map (\ (s, t) -> unode "map" [psym s, psym t]) sl
+             ++ map (\ (s, t) -> unode "map" [showSym tid s, showSym tid t]) sl
 
 prettyRangeElem :: (GetRange a, Pretty a) => String -> GlobalAnnos -> a
                 -> Element
