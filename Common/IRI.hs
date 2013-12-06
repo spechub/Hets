@@ -7,35 +7,22 @@ Maintainer  :  Eugen Kuksa <eugenk@informatik.uni-bremen.de>
 Stability   :  provisional
 Portability :  portable
 
-This module defines functions for handling IRIs.  It is substantially the
-same as the Network.URI module by Graham Klyne, but is extended to IRI
+This module defines functions for handling IRIs.  It was adopted
+from the Network.URI module by Graham Klyne, but is extended to IRI
 support [2] and even Manchester-Syntax-IRI [3], [4] and CURIE [5].
 
 Four methods are provided for parsing different
 kinds of IRI string (as noted in [1], [2]):
-'parseIRI',
-'parseIRIReference',
-'parseRelativeReference' and
-'parseAbsoluteIRI'.
+'parseIRI'
+'parseIRIReference'
+
 
 An additional method is provided for parsing an abbreviated IRI according to
 [3], [4]: 'parseIRIManchester' and according to [5]: 'parseIRICurie'
 
-Further, four methods are provided for classifying different
-kinds of IRI string (as noted in  [1], [2]):
-'isIRI',
-'isIRIReference',
-'isRelativeReference' and
-'isAbsoluteIRI'.
+Additionally, classification of full, abbreviated and simple IRI is provided.
 
-Additionally, classification of full, abbreviated and simple IRI is provided
-by 'isIRIManchester', isIRICurie.
-
-The abbreviated syntaxes  [3], [4], [5] provide three different kinds of IRI.
-An existing element of type IRI can be classified in one of those kinds.
-
-Most of the code has been copied from the Network.URI implementation,
-but it is extended to IRI, Manchester-syntax and CURIE.
+The abbreviated syntaxes [3], [4], [5] provide three different kinds of IRI.
 
 References
 
@@ -52,82 +39,36 @@ References
 -}
 
 module Common.IRI
-    (
-    -- * The IRI type
-      IRI (..)
-    , IRIAuth (..)
-    , PNameLn (..)
+    ( IRI (..)
+    , IRIAuth (IRIAuth)
+    , PNameLn (PNameLn)
     , nullIRI
+    , iriToStringUnsecure
+    , iriToStringShortUnsecure
     , hasFullIRI
     , isAbbrev
+    , isUnescapedInIRI
     , isSimple
-    , isExpanded
+
+    -- * Parsing
+    , iriManchester
+    , parseIRIManchester
+    , iriCurie
+    , parseCurie
+    , parseIRICurie
+    , parseIRIReference
+    , parseIRI
+    , ncname
+
+    , escapeIRIString
+    , unEscapeString
+    , expandCurie
+    , relativeTo
+    , relativeFrom
 
     -- * Conversion
     , simpleIdToIRI
-    , deleteFragment
-
-    -- * Extraction
-    , getFragment
-    , localname
-
-    -- * Parsing
-    , parseIRI
-    , parseIRIReference
-    , parseRelativeReference
-    , parseAbsoluteIRI
-    , parseCurie
-    , parseIRICurie
-    , parseIRIReferenceCurie
-    , parseIRIManchester
-
-    -- * Test for strings containing various kinds of IRI
-    , isIRI
-    , isIRIReference
-    , isRelativeReference
-    , isAbsoluteIRI
-    , isCurie
-    , isIRICurie
-    , isIRIReferenceCurie
-    , isIRIManchester
-    , isIPv6address
-    , isIPv4address
-
-    -- * Relative IRIs
-    , relativeTo
-    , nonStrictRelativeTo
-    , relativeFrom
-
-    -- * Operations on IRI strings
-
-    {- | Support for putting strings into IRI-friendly
-    escaped format and getting them back again. -}
-    , iriToString
-    , iriToStringUnsecure
-    , iriToStringShort
-    , iriToStringShortUnsecure
-    , isReserved, isUnreserved
-    , isAllowedInIRI, isUnescapedInIRI
-    , escapeIRIChar
-    , escapeIRIString
-    , unEscapeString
-
-    -- * Parser combinators, special additions to export list
-    , iri
-    , iriReference
-    , irelativeRef
-    , absoluteIRI
-    , iriCurie
-    , iriReferenceCurie
-    , curie
-    , ncname
-    , iriManchester
-
-    -- * IRI Normalization functions
-    , expandCurie
-    , normalizeCase
-    , normalizeEscape
-    , normalizePathSegments
+    , deleteQuery
     ) where
 
 import Text.ParserCombinators.Parsec
@@ -203,27 +144,17 @@ hasFullIRI i = not . null $ iriScheme i ++ iriPath i
 isAbbrev :: IRI -> Bool
 isAbbrev i = not . null $ prefixName i ++ abbrevPath i
 
--- | do we have an expanded IRI with a full and an abbreviated IRI
-isExpanded :: IRI -> Bool
-isExpanded i = hasFullIRI i && isAbbrev i
-
 {- | do we have a simple IRI that is a (possibly expanded) abbreviated IRI
 without prefix -}
 isSimple :: IRI -> Bool
 isSimple i = null (prefixName i) && isAbbrev i
 
 {- IRI as instance of Show.  Note that for security reasons, the default
-behaviour is to suppress any iuserinfo field (see RFC3986, section 7.5).
-This can be overridden by using iriToString directly with first
-argument @id@ (noting that this returns a ShowS value rather than a string).
-
-[[[Another design would be to embed the iuserinfo mapping function in
-the IRIAuth value, with the default value suppressing iuserinfo formatting,
-but providing a function to return a new IRI value with iuserinfo
-data exposed by show.]]]
--}
+behaviour should suppress any iuserinfo field (see RFC3986, section 7.5).
+But we don't do this since we use iriToStringUnsecure all over the place
+anyway. -}
 instance Show IRI where
-    showsPrec _ = iriToString defaultUserInfoMap
+    showsPrec _ = iriToString id
 
 -- equal iff expansion is equal or abbreviation is equal
 instance Eq IRI where
@@ -248,14 +179,6 @@ Also showing Auth info. -}
 iriToStringShortUnsecure :: IRI -> String
 iriToStringShortUnsecure i = iriToStringShort id i ""
 
-defaultUserInfoMap :: String -> String
-defaultUserInfoMap uinf = user ++ newpass
-    where
-        (user, pass) = break (== ':') uinf
-        newpass = if null pass || pass `elem` ["@", ":@"]
-                        then pass
-                        else ":...@"
-
 instance GetRange IRI where
     getRange = iriPos
 
@@ -279,18 +202,6 @@ Returns 'Nothing' if the string is not a valid IRI reference.
 parseIRIReference :: String -> Maybe IRI
 parseIRIReference = parseIRIAny iriReference
 
-{- | Parse a relative IRI to an 'IRI' value.
-Returns 'Nothing' if the string is not a valid relative IRI.
-(a relative IRI with optional fragment identifier). -}
-parseRelativeReference :: String -> Maybe IRI
-parseRelativeReference = parseIRIAny irelativeRef
-
-{- | Parse an absolute IRI to an 'IRI' value.
-Returns 'Nothing' if the string is not a valid absolute IRI.
-(an absolute IRI without a fragment identifier). -}
-parseAbsoluteIRI :: String -> Maybe IRI
-parseAbsoluteIRI = parseIRIAny absoluteIRI
-
 -- | Turn a string containing a CURIE into an 'IRI'
 parseCurie :: String -> Maybe IRI
 parseCurie = parseIRIAny curie
@@ -302,12 +213,6 @@ or a CURIE). -}
 parseIRICurie :: String -> Maybe IRI
 parseIRICurie = parseIRIAny iriCurie
 
-{- | Parse an absolute or relative IRI enclosed in '<', '>' or a CURIE
-to an 'IRI' value.
-Returns 'Nothing' if the string is not a valid IRI reference or CURIE. -}
-parseIRIReferenceCurie :: String -> Maybe IRI
-parseIRIReferenceCurie = parseIRIAny iriReferenceCurie
-
 {- | Turn a string containing an IRI (by Manchester-syntax) into an 'IRI'.
 Returns 'Nothing' if the string is not a valid IRI;
 (an absolute IRI enclosed in '<' and '>' with optional fragment identifier,
@@ -315,64 +220,11 @@ an abbreviated IRI or a simple IRI). -}
 parseIRIManchester :: String -> Maybe IRI
 parseIRIManchester = parseIRIAny iriManchester
 
-{- |Test if string contains a valid IRI
-(an absolute IRI with optional fragment identifier). -}
-isIRI :: String -> Bool
-isIRI = isValidParse iri
-
-{- | Test if string contains a valid IRI reference
-(an absolute or relative IRI with optional fragment identifier). -}
-isIRIReference :: String -> Bool
-isIRIReference = isValidParse iriReference
-
-{- |Test if string contains a valid relative IRI
-(a relative IRI with optional fragment identifier). -}
-isRelativeReference :: String -> Bool
-isRelativeReference = isValidParse irelativeRef
-
-{- | Test if string contains a valid absolute IRI
-(an absolute IRI without a fragment identifier). -}
-isAbsoluteIRI :: String -> Bool
-isAbsoluteIRI = isValidParse absoluteIRI
-
-{- | Test if string contains a valid IRI or CURIE
-(an absolute IRI enclosed in '<' and '>' with optional fragment identifier
-or a CURIE). -}
-isIRICurie :: String -> Bool
-isIRICurie = isValidParse iriCurie
-
-{- | Test if string contains a valid absolute or relative IRI
-enclosed in '<', '>' or a CURIE -}
-isIRIReferenceCurie :: String -> Bool
-isIRIReferenceCurie = isValidParse iriReferenceCurie
-
--- | Test if string contains a valid CURIE
-isCurie :: String -> Bool
-isCurie = isValidParse curie
-
-{- | Test if string contains a valid IRI by Manchester-syntax
-(an absolute IRI enclosed in '<' and '>' with optional fragment identifier,
-an abbreviated IRI or a simple IRI). -}
-isIRIManchester :: String -> Bool
-isIRIManchester = isValidParse iriManchester
-
--- | Test if string contains a valid IPv6 address
-isIPv6address :: String -> Bool
-isIPv6address = isValidParse ipv6address
-
--- | Test if string contains a valid IPv4 address
-isIPv4address :: String -> Bool
-isIPv4address = isValidParse ipv4address
-
 -- Helper function for turning a string into a IRI
 parseIRIAny :: IRIParser () a -> String -> Maybe a
 parseIRIAny parser iristr = case parse (parser << eof) "" iristr of
         Left _ -> Nothing
         Right u -> Just u
-
--- Helper function to test a string match to a parser
-isValidParse :: IRIParser () a -> String -> Bool
-isValidParse parser = isJust . parseIRIAny parser
 
 -- * IRI parser body based on Parsec elements and combinators
 
@@ -427,11 +279,6 @@ iriWithPos parser = do
 -- | Parses an absolute IRI enclosed in '<', '>' or a CURIE
 iriCurie :: IRIParser st IRI
 iriCurie = brackets iri <|> curie
-
-{- | Parses an absolute or relative IRI enclosed in '<', '>' or a CURIE
-see @iriReference@ -}
-iriReferenceCurie :: IRIParser st IRI
-iriReferenceCurie = brackets iriReference <|> curie
 
 brackets :: IRIParser st IRI -> IRIParser st IRI
 brackets p = ankles p << skipSmart
@@ -493,9 +340,6 @@ nameStartCharP c =
 
 nameCharP :: Char -> Bool
 nameCharP c = nameStartCharP c || c `elem` "-." || pnCharsPAux c
-
-nameCharW3CP :: Char -> Bool
-nameCharW3CP c = c == ':' || nameCharP c
 
 -- END CURIE
 
@@ -866,26 +710,7 @@ irelativePart :: IRIParser st (Maybe IRIAuth, String)
 irelativePart = ihierOrIrelativePart
   <|> fmap (\ s -> (Nothing, s)) (ipathAbs <|> ipathNoScheme <|> return "")
 
--- RFC3987, section 2.2
-
-absoluteIRI :: IRIParser st IRI
-absoluteIRI = iriWithPos $ do
-  us <- uscheme
-  -- stuff deleted
-  (ua, up) <- ihierPart
-  uq <- option "" uiquery
-  return IRI
-            { iriScheme = us
-            , iriAuthority = ua
-            , iriPath = up
-            , iriQuery = uq
-            , iriFragment = ""
-            , prefixName = ""
-            , abbrevPath = ""
-            , abbrevQuery = ""
-            , abbrevFragment = ""
-            , iriPos = nullRange
-            }
+-- RFC3987, section 2.2 omitted absoluteIRI
 
 -- Imports from RFC 2234
 
@@ -1003,10 +828,6 @@ iriAuthToString iuserinfomap
 
 -- * Character classes
 
--- | Returns 'True' if the character is allowed in a IRI.
-isAllowedInIRI :: Char -> Bool
-isAllowedInIRI c = isReserved c || isUnreserved c || c == '%' -- escape char
-
 -- | Returns 'True' if the character is allowed unescaped in a IRI.
 isUnescapedInIRI :: Char -> Bool
 isUnescapedInIRI c = isReserved c || isUnreserved c
@@ -1044,26 +865,16 @@ unEscapeString (c : s) = c : unEscapeString s
 
 -- * Resolving a relative IRI relative to a base IRI
 
+isDefined :: String -> Bool
+isDefined = not . null
+
 {- | Returns a new 'IRI' which represents the value of the
 first 'IRI' interpreted as relative to the second 'IRI'.
 For example:
 
 > "foo" `relativeTo` "http://bar.org/" = "http://bar.org/foo"
-> "http:foo" `nonStrictRelativeTo` "http://bar.org/" = "http://bar.org/foo"
 
-Algorithm from RFC3986 [3], section 5.2.2 -}
-nonStrictRelativeTo :: IRI -> IRI -> Maybe IRI
-nonStrictRelativeTo ref base = relativeTo ref' base
-    where
-        ref' = if iriScheme ref == iriScheme base
-               then ref { iriScheme = "" }
-               else ref
-
-isDefined :: String -> Bool
-isDefined = not . null
-
-{- | Compute an absolute 'IRI' for a supplied IRI
-relative to a given base. -}
+-}
 relativeTo :: IRI -> IRI -> Maybe IRI
 relativeTo ref base
     | isDefined ( iriScheme ref ) =
@@ -1270,56 +1081,5 @@ mergeCurie :: IRI -> IRI -> Maybe IRI
 mergeCurie c i =
   parseIRIReference $ iriToStringFull id i "" ++ iriToStringAbbrevMerge c ""
 
-deleteFragment :: IRI -> IRI
-deleteFragment i = i { iriFragment = "" }
-
-getFragment :: IRI -> String
-getFragment = iriFragment
-
-localname :: IRI -> String
-localname i@(IRI { iriPath = path
-                 , iriQuery = query
-                 , iriFragment = fragment
-                 , abbrevPath = aPath
-                 })
-  | hasFullIRI i =
-      if not $ null fragment then fragment else
-      nmTokenSuffix $ if not $ null query then query else path
-  | otherwise =
-      if not $ null fragment then fragment else
-      nmTokenSuffix $ if not $ null query then query else aPath
-
-nmTokenSuffix :: String -> String
-nmTokenSuffix = reverse . takeWhile nameCharW3CP . reverse
-
-{- | Case normalization; cf. RFC3986 section 6.2.2.1
-NOTE:  authority case normalization is not performed -}
-normalizeCase :: String -> String
-normalizeCase iristr = ncScheme iristr
-    where
-        ncScheme (':' : cs) = ':' : ncEscape cs
-        ncScheme (c : cs) | isSchemeChar c = toLower c : ncScheme cs
-        ncScheme _ = ncEscape iristr -- no scheme present
-        ncEscape ('%' : h1 : h2 : cs) =
-            '%' : toUpper h1 : toUpper h2 : ncEscape cs
-        ncEscape (c : cs) = c : ncEscape cs
-        ncEscape [] = []
-
--- | Encoding normalization; cf. RFC3986 section 6.2.2.2
-normalizeEscape :: String -> String
-normalizeEscape ('%' : h1 : h2 : cs)
-    | isHexDigit h1 && isHexDigit h2 && isUnreserved escval =
-        escval : normalizeEscape cs
-    where
-        escval = chr (digitToInt h1 * 16 + digitToInt h2)
-normalizeEscape (c : cs) = c : normalizeEscape cs
-normalizeEscape [] = []
-
--- | Path isegment normalization; cf. RFC3986 section 6.2.2.4
-normalizePathSegments :: String -> String
-normalizePathSegments iristr = normstr jiri
-    where
-        jiri = parseIRI iristr
-        normstr Nothing = iristr
-        normstr (Just u) = show (normiri u)
-        normiri u = u { iriPath = removeDotSegments (iriPath u) }
+deleteQuery :: IRI -> IRI
+deleteQuery i = i { iriQuery = "" }

@@ -229,12 +229,12 @@ libItem l =
 
 useItem :: Monad m => IRI -> m LIB_ITEM
 useItem i = do
-  let libPath = deleteFragment i
-      fragment = getFragment i
-  libNameIri <- if null fragment || null (tail fragment)
-    then return libPath else case parseIRIManchester $ tail fragment of
+  let libPath = deleteQuery i
+      query = iriQuery i -- this used to be the fragment
+  libNameIri <- if null query || null (tail query)
+    then return libPath else case parseIRIManchester $ tail query of
     Just i' -> return i'
-    Nothing -> fail $ "could not read " ++ fragment ++ " into IRI"
+    Nothing -> fail $ "could not read " ++ query ++ " into IRI"
   return $ Download_items
     (LibName libPath nullRange (Just libPath) Nothing)
     (ItemMaps [ItemNameMap libNameIri (Just i)]) nullRange
