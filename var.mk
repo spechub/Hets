@@ -87,6 +87,11 @@ ifneq ($(findstring 1., $(WARPVERSION)),)
   SERVER_FLAG = -DSERVER
   endif
 endif
+ifneq ($(findstring 2., $(WARPVERSION)),)
+  ifneq ($(findstring 2., $(WAIEXTVERSION)),)
+  SERVER_FLAG = -DSERVER
+  endif
+endif
 
 PARSEC1VERSION = $(shell $(HCPKG) latest parsec1)
 ifneq ($(findstring 1.0., $(PARSEC1VERSION)),)
