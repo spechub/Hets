@@ -55,6 +55,7 @@ public class OWL2Parser {
                     else
                         out = new BufferedWriter(new FileWriter(filename));
             }
+            out.write("<Ontologies>\n");
             /* Load an ontology from a physical IRI */
             URL physicalUrl = new URL(args[0]);
             URLConnection con = physicalUrl.openConnection();
@@ -85,6 +86,9 @@ public class OWL2Parser {
                 ontologies.add(ontology);
                 exportImports(out);
             }
+            out.write("\n</Ontologies>\n");
+            out.flush();
+            out.close();
         } catch (Exception ex) {
             System.err.println("OWL parse error: " + ex.getMessage());
             ex.printStackTrace();
