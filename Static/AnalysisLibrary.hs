@@ -181,9 +181,15 @@ anaString mln lgraph opts topLns libenv initDG input file = do
       posFileName = case mln of
           Just gLn | useLibPos opts -> show $ getLibId gLn
           _ -> if checkUri file then file else realFileName
+  libdefns <- readLibDefnAux lgraph opts file posFileName input
+  foldM (anaStringAux mln lgraph opts topLns initDG file posFileName) 
+        (undefined,libenv) libdefns
 
-  Lib_defn pln is ps ans <- readLibDefnAux lgraph opts file posFileName input
-
+anaStringAux :: Maybe LibName -- ^ suggested library name
+  -> LogicGraph -> HetcatsOpts -> LNS -> DGraph -> FilePath
+  -> FilePath -> (LibName, LibEnv) -> LIB_DEFN -> ResultT IO (LibName, LibEnv)
+anaStringAux mln lgraph opts topLns initDG file posFileName (_,libenv)
+             (Lib_defn pln is ps ans) = do
   let noSuffixFile = rmSuffix file
       spN = convertFileToLibStr file
       noLibName = null $ show $ getLibId pln

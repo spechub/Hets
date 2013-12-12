@@ -44,7 +44,7 @@ import Text.XML.Light
 
 -- | call for owl parser (env. variable $HETS_OWL_TOOLS muss be defined)
 parseOWL :: FilePath              -- ^ local filepath or uri
-         -> IO LIB_DEFN        -- ^ map: uri -> OntologyFile
+         -> IO [LIB_DEFN]         -- ^ map: uri -> OntologyFile
 parseOWL filename = do
     let jar = "OWL2Parser.jar"
     absfile <- if checkUri filename then return filename else
@@ -60,14 +60,14 @@ parseOWL filename = do
       else error $ jar
         ++ " not found, check your environment variable: " ++ hetsOWLenv
 
-parseProc :: FilePath -> String -> LIB_DEFN
+parseProc :: FilePath -> String -> [LIB_DEFN]
 parseProc filename str =
   let es = onlyElems $ parseXML str
       imap = Map.fromList . mapMaybe (\ e -> do
         imp <- findAttr (unqual "name") e
         ont <- findAttr (unqual "ontiri") e
         return (imp, ont)) $ concatMap (filterElementsName $ isSmth "Loaded") es
-  in convertToLibDefN filename
+  in map (convertToLibDefN filename)
         . unifyDocs . map (xmlBasicSpec imap)
         $ concatMap (filterElementsName $ isSmth "Ontology") es
 
@@ -75,14 +75,16 @@ qNameToIRI :: QName -> SPEC_NAME
 qNameToIRI qn = let s = showQN qn in
   fromMaybe (error $ "qNameToIRI " ++ s) $ parseIRIManchester s
 
-createSpec :: OntologyDocument -> Annoted SPEC
-createSpec o = addImports (map qNameToIRI . imports $ ontology o)
-  . makeSpec $ G_basic_spec OWL2 o
+createSpec :: OntologyDocument -> [SPEC_NAME] -> Annoted SPEC
+createSpec o imps = addImports imps . makeSpec $ G_basic_spec OWL2 o
 
-convertone :: OntologyDocument -> Annoted LIB_ITEM
-convertone o = makeSpecItem (qNameToIRI $ name $ ontology o) $ createSpec o
+convertone :: OntologyDocument -> SPEC_NAME -> [SPEC_NAME] -> Annoted LIB_ITEM
+convertone o oname i = makeSpecItem oname $ createSpec o i
 
-convertToLibDefN :: FilePath -> [OntologyDocument] -> LIB_DEFN
-convertToLibDefN filename l = Lib_defn
-  (iriLibName . filePathToIri $ rmSuffix filename)
-  (makeLogicItem OWL2 : map convertone l) nullRange []
+convertToLibDefN :: FilePath -> OntologyDocument -> LIB_DEFN
+convertToLibDefN filename o = Lib_defn
+  (iriLibName oname) -- . filePathToIri $ rmSuffix filename)
+    (makeLogicItem OWL2 : imp_libs ++ [convertone o oname imps]) nullRange []
+  where imps = map qNameToIRI . imports $ ontology o
+        oname = (qNameToIRI $ name $ ontology o)
+        imp_libs = map addDownload imps

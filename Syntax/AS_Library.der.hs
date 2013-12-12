@@ -75,6 +75,10 @@ data DownloadItems =
   | UniqueItem IRI
     deriving Show
 
+addDownload :: SPEC_NAME -> Annoted LIB_ITEM
+addDownload is = emptyAnno $ Download_items ln (UniqueItem is) nullRange
+      where ln = LibName is nullRange Nothing Nothing
+
 data GENERICITY = Genericity PARAMS IMPORTED Range deriving Show
                   -- pos: many of "[","]" opt ("given", commas)
 

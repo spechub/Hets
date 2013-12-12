@@ -1118,7 +1118,7 @@ expCurie ga eo i =
 
 expandCurieByPath :: FilePath -> IRI -> Maybe IRI
 expandCurieByPath path i = case parseIRIReference $ path ++ "?" of
-          Nothing -> Nothing
+          Nothing -> Just i -- this is a hack!!!
           Just p -> expandCurie (Map.singleton "" p) i
 
 prefixErrorIRI :: IRI -> Result a

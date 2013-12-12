@@ -95,33 +95,33 @@ quessInput opts file input = let fty = guess file (intype opts) in
   else return fty
 
 readLibDefnM :: MonadIO m => LogicGraph -> HetcatsOpts -> FilePath -> String
-  -> m LIB_DEFN
+  -> m [LIB_DEFN]
 readLibDefnM lgraph opts file = readLibDefnAux lgraph opts file file
 
 readLibDefnAux :: MonadIO m => LogicGraph -> HetcatsOpts -> FilePath
-  -> FilePath -> String -> m LIB_DEFN
+  -> FilePath -> String -> m [LIB_DEFN]
 readLibDefnAux lgraph opts file fileForPos input =
     if null input then fail ("empty input file: " ++ file) else
     case intype opts of
-    ATermIn _ -> return $ from_sml_ATermString input
+    ATermIn _ -> return [from_sml_ATermString input]
     FreeCADIn ->
-      liftIO $ readFreeCADLib file $ fileToLibName opts file
+      liftIO $ fmap (:[]) . readFreeCADLib file $ fileToLibName opts file
     _ -> do
      ty <- quessInput opts file input
      case ty of
-      CommonLogicIn _ -> liftIO $ parseCL_CLIF file opts
+      CommonLogicIn _ -> liftIO $ fmap (:[]) $ parseCL_CLIF file opts
 #ifdef RDFLOGIC
  -- - RDFIn -> liftIO $ parseRDF file
 #endif
-      Xmi -> liftIO $ parseXmi file
-      Qvt -> liftIO $ parseQvt file
-      TPTPIn -> liftIO $ parseTPTP file
+      Xmi -> liftIO $ fmap (:[]) $ parseXmi file
+      Qvt -> liftIO $ fmap (:[]) $ parseQvt file
+      TPTPIn -> liftIO $ fmap (:[]) $ parseTPTP file
 #ifndef NOOWLLOGIC
       _ | elem ty [OWLIn, OwlXmlIn, OBOIn] -> liftIO $ parseOWL file
 #endif
       _ -> case runParser (library lgraph) (emptyAnnos ()) fileForPos input of
          Left err -> fail (showErr err)
-         Right ast -> return ast
+         Right ast -> return [ast]
 
 readShATermFile :: ShATermLG a => LogicGraph -> FilePath -> IO (Result a)
 readShATermFile lg fp = do
