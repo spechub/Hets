@@ -503,8 +503,8 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
             ++ show ln' ++ " available: " ++ show (Map.keys libenv')
           Just dg' -> do
             let dg0 = cpIndexMaps dg' dg
-                fn = show $ getLibId ln'
-                currFn = show $ getLibId currLn
+                fn = show . setAnkles False $ getLibId ln'
+                currFn = show . setAnkles False $ getLibId currLn
                 (realItems, errs, origItems) = case items of
                   ItemMaps rawIms ->
                     let (ims, warns) = foldr (\ im@(ItemNameMap i mi)
