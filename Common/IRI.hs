@@ -70,6 +70,7 @@ module Common.IRI
     , simpleIdToIRI
     , deleteQuery
     , setAnkles
+    , unsetIriPos
     ) where
 
 import Text.ParserCombinators.Parsec
@@ -1042,6 +1043,9 @@ expandCurie prefixMap c =
                 Just j -> Just $ j { prefixName = prefixName c
                                    , abbrevPath = abbrevPath c
                                    , iriPos = iriPos c }
+
+unsetIriPos :: IRI -> IRI
+unsetIriPos i = i { iriPos = nullRange }
 
 setAnkles :: Bool -> IRI -> IRI
 setAnkles b i = i { hasAnkles = b }

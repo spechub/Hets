@@ -73,7 +73,7 @@ parseProc str =
 
 qNameToIRI :: QName -> SPEC_NAME
 qNameToIRI qn = let s = showQN qn in
-  fromMaybe (error $ "qNameToIRI " ++ s) $ parseIRIManchester s
+  unsetIriPos . fromMaybe (error $ "qNameToIRI " ++ s) $ parseIRIManchester s
 
 createSpec :: OntologyDocument -> [SPEC_NAME] -> Annoted SPEC
 createSpec o imps = addImports imps . makeSpec $ G_basic_spec OWL2 o
