@@ -87,8 +87,8 @@ guessXmlContent str = case parseXMLDoc str of
     else if isDMU q then Left "DMU" else
        if isPpXml q then Left ".pp.xml" else Right GuessIn
 
-quessInput :: MonadIO m => HetcatsOpts -> FilePath -> String -> m InType
-quessInput opts file input = let fty = guess file (intype opts) in
+guessInput :: MonadIO m => HetcatsOpts -> FilePath -> String -> m InType
+guessInput opts file input = let fty = guess file (intype opts) in
   if elem fty [GuessIn, RDFIn] then case guessXmlContent input of
     Left ty -> fail $ "unexpected xml format: " ++ ty
     Right ty -> return ty
@@ -107,7 +107,7 @@ readLibDefnAux lgraph opts file fileForPos input =
     FreeCADIn ->
       liftIO $ fmap (:[]) . readFreeCADLib file $ fileToLibName opts file
     _ -> do
-     ty <- quessInput opts file input
+     ty <- guessInput opts file input
      case ty of
       CommonLogicIn _ -> liftIO $ fmap (:[]) $ parseCL_CLIF file opts
 #ifdef RDFLOGIC
