@@ -207,7 +207,7 @@ anaInput contents selectedBoxes outputfiles =
               readLibDefnM logicGraph webOpts "<stdin>" contents
 -}
 anaInput contents selectedBoxes outputfiles = do
-  ast <- readLibDefnM logicGraph webOpts "<stdin>" contents
+  ast : _ <- readLibDefnM logicGraph webOpts "<stdin>" contents
   CRes.Result ds mres <- runResultT
       $ anaLibDefn logicGraph webOpts Set.empty emptyLibEnv emptyDG ast ""
   let ds1 = filter diagFilter ds
