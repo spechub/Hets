@@ -70,7 +70,6 @@ module Common.IRI
     , simpleIdToIRI
     , deleteQuery
     , setAnkles
-    , unsetIriPos
     ) where
 
 import Text.ParserCombinators.Parsec
@@ -225,10 +224,10 @@ parseIRIManchester :: String -> Maybe IRI
 parseIRIManchester = parseIRIAny iriManchester
 
 -- Helper function for turning a string into a IRI
-parseIRIAny :: IRIParser () a -> String -> Maybe a
+parseIRIAny :: IRIParser () IRI -> String -> Maybe IRI
 parseIRIAny parser iristr = case parse (parser << eof) "" iristr of
         Left _ -> Nothing
-        Right u -> Just u
+        Right u -> Just u { iriPos = nullRange }
 
 -- * IRI parser body based on Parsec elements and combinators
 
@@ -1043,9 +1042,6 @@ expandCurie prefixMap c =
                 Just j -> Just $ j { prefixName = prefixName c
                                    , abbrevPath = abbrevPath c
                                    , iriPos = iriPos c }
-
-unsetIriPos :: IRI -> IRI
-unsetIriPos i = i { iriPos = nullRange }
 
 setAnkles :: Bool -> IRI -> IRI
 setAnkles b i = i { hasAnkles = b }

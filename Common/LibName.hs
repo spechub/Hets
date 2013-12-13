@@ -89,8 +89,8 @@ emptyLibName s = iriLibName .
   $ parseIRIManchester s
 
 filePathToIri :: FilePath -> IRI
-filePathToIri fp = fromMaybe (error $ "filePathToIri: " ++ fp)
-  . parseIRIManchester $ '<' : escapeIRIString isUnescapedInIRI fp ++ ">"
+filePathToIri fp = maybe (error $ "filePathToIri: " ++ fp) (setAnkles True)
+  . parseIRIReference $ escapeIRIString isUnescapedInIRI fp
 
 setFilePath :: FilePath -> LibName -> LibName
 setFilePath fp ln =
