@@ -54,20 +54,20 @@ parseOWL filename = do
        (exitCode, result, errStr) <- executeProcess "java"
          ["-jar", toolPath </> jar, absfile, "xml"] ""
        case (exitCode, errStr) of
-         (ExitSuccess, "") -> return $ parseProc filename result
+         (ExitSuccess, "") -> return $ parseProc result
          _ -> error $ "process stop! " ++ shows exitCode "\n"
               ++ errStr
       else error $ jar
         ++ " not found, check your environment variable: " ++ hetsOWLenv
 
-parseProc :: FilePath -> String -> [LIB_DEFN]
-parseProc filename str =
+parseProc :: String -> [LIB_DEFN]
+parseProc str =
   let es = onlyElems $ parseXML str
       imap = Map.fromList . mapMaybe (\ e -> do
         imp <- findAttr (unqual "name") e
         ont <- findAttr (unqual "ontiri") e
         return (imp, ont)) $ concatMap (filterElementsName $ isSmth "Loaded") es
-  in map (convertToLibDefN filename)
+  in map convertToLibDefN
         . unifyDocs . map (xmlBasicSpec imap)
         $ concatMap (filterElementsName $ isSmth "Ontology") es
 
@@ -81,10 +81,10 @@ createSpec o imps = addImports imps . makeSpec $ G_basic_spec OWL2 o
 convertone :: OntologyDocument -> SPEC_NAME -> [SPEC_NAME] -> Annoted LIB_ITEM
 convertone o oname i = makeSpecItem oname $ createSpec o i
 
-convertToLibDefN :: FilePath -> OntologyDocument -> LIB_DEFN
-convertToLibDefN filename o = Lib_defn
-  (iriLibName oname) -- . filePathToIri $ rmSuffix filename)
+convertToLibDefN :: OntologyDocument -> LIB_DEFN
+convertToLibDefN o = Lib_defn (iriLibName oname)
     (makeLogicItem OWL2 : imp_libs ++ [convertone o oname imps]) nullRange []
-  where imps = map qNameToIRI . imports $ ontology o
-        oname = (qNameToIRI $ name $ ontology o)
+  where ont = ontology o
+        imps = map qNameToIRI $ imports ont
+        oname = qNameToIRI $ name ont
         imp_libs = map addDownload imps
