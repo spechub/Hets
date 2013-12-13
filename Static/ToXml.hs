@@ -49,6 +49,7 @@ import Data.Graph.Inductive.Graph as Graph
 import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set (toList)
+import Data.Char (toLower)
 
 dGraph :: LibEnv -> LibName -> DGraph -> Element
 dGraph = dGraphAux False
@@ -104,6 +105,7 @@ lnode full ga lenv (_, lbl) =
           ElemName s : t -> (s, showXPath t)
           l -> ("?", showXPath l)
   in add_attrs (mkNameAttr (showName nm)
+    : (mkAttr "reference" $ map toLower $ show $ isDGRef lbl) 
     : if not (isDGRef lbl) then case signOf $ dgn_theory lbl of
         G_sign slid _ _ -> mkAttr "logic" (show slid)
           : if dgn_origin lbl < DGProof then
