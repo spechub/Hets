@@ -67,7 +67,7 @@ parseProc str =
         imp <- findAttr (unqual "name") e
         ont <- findAttr (unqual "ontiri") e
         return (imp, ont)) $ concatMap (filterElementsName $ isSmth "Loaded") es
-  in map convertToLibDefN
+  in map (convertToLibDefN imap)
         . unifyDocs . map (xmlBasicSpec imap)
         $ concatMap (filterElementsName $ isSmth "Ontology") es
 
@@ -81,10 +81,12 @@ createSpec o imps = addImports imps . makeSpec $ G_basic_spec OWL2 o
 convertone :: OntologyDocument -> SPEC_NAME -> [SPEC_NAME] -> Annoted LIB_ITEM
 convertone o oname i = makeSpecItem oname $ createSpec o i
 
-convertToLibDefN :: OntologyDocument -> LIB_DEFN
-convertToLibDefN o = Lib_defn (iriLibName oname)
+convertToLibDefN :: Map.Map String String -> OntologyDocument -> LIB_DEFN
+convertToLibDefN imap o = Lib_defn (iriLibName oname)
     (makeLogicItem OWL2 : imp_libs ++ [convertone o oname imps]) nullRange []
   where ont = ontology o
+        is = map snd $ Map.toList imap
         imps = map qNameToIRI $ imports ont
         oname = qNameToIRI $ name ont
-        imp_libs = map addDownload imps
+        imp_libs = map addDownload
+          $ filter ((`elem` is) . show . setAnkles False) imps

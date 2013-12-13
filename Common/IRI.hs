@@ -69,6 +69,7 @@ module Common.IRI
     -- * Conversion
     , simpleIdToIRI
     , deleteQuery
+    , setAnkles
     ) where
 
 import Text.ParserCombinators.Parsec
@@ -1042,11 +1043,14 @@ expandCurie prefixMap c =
                                    , abbrevPath = abbrevPath c
                                    , iriPos = iriPos c }
 
+setAnkles :: Bool -> IRI -> IRI
+setAnkles b i = i { hasAnkles = b }
+
 {- |'mergeCurie' merges the CURIE @c@ into IRI @i@, appending their string
 representations -}
 mergeCurie :: IRI -> IRI -> Maybe IRI
 mergeCurie c i =
-  parseIRIManchester $ '<' : iriToStringFull id i { hasAnkles = False } ""
+  parseIRIManchester $ '<' : iriToStringFull id (setAnkles False i) ""
     ++ iriToStringAbbrevMerge c ">"
 
 deleteQuery :: IRI -> IRI
