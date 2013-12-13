@@ -182,13 +182,13 @@ anaString mln lgraph opts topLns libenv initDG input file = do
           Just gLn | useLibPos opts -> show $ getLibId gLn
           _ -> if checkUri file then file else realFileName
   libdefns <- readLibDefnAux lgraph opts file posFileName input
-  foldM (anaStringAux mln lgraph opts topLns initDG file posFileName) 
-        (undefined,libenv) libdefns
+  foldM (anaStringAux mln lgraph opts topLns initDG file posFileName)
+        (undefined, libenv) libdefns
 
 anaStringAux :: Maybe LibName -- ^ suggested library name
   -> LogicGraph -> HetcatsOpts -> LNS -> DGraph -> FilePath
   -> FilePath -> (LibName, LibEnv) -> LIB_DEFN -> ResultT IO (LibName, LibEnv)
-anaStringAux mln lgraph opts topLns initDG file posFileName (_,libenv)
+anaStringAux mln lgraph opts topLns initDG file posFileName (_, libenv)
              (Lib_defn pln is ps ans) = do
   let noSuffixFile = rmSuffix file
       spN = convertFileToLibStr file
@@ -516,7 +516,7 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
                         expIms = map (expandCurieItemNameMap fn currFn) ims
                         leftExpIms = lefts expIms
                     in if not $ null leftExpIms
-                        then ([], map fail leftExpIms, itemNameMapsToIRIs ims)
+                        then ([], leftExpIms, itemNameMapsToIRIs ims)
                         else (rights expIms, warns, itemNameMapsToIRIs ims)
                   UniqueItem i -> case Map.keys $ globalEnv dg' of
                     [j] -> case expCurie (globalAnnos dg) eo i of
@@ -893,26 +893,16 @@ refViewsig libenv ln refDG dg name (ExtViewSig src mor extsig) = let
 
 -- BEGIN CURIE expansion
 
-failPrefixIRI :: IRI -> String
-failPrefixIRI i =
-  let pos = iriPos i
-      posStr = if pos == nullRange then "" else "(" ++ show pos ++ ") "
-  in failPrefixStr posStr $ iriToStringShortUnsecure i
-
-failPrefixStr :: String -> String -> String
-failPrefixStr pos s = "No prefix found for CURIE \"" ++ s ++
-    "\" " ++ pos ++ "or expansion does not yield a valid IRI."
-
 expandCurieItemNameMap :: FilePath -> FilePath -> ItemNameMap
-  -> Either String ItemNameMap
+  -> Either (Result ()) ItemNameMap
 expandCurieItemNameMap fn newFn (ItemNameMap i1 mi2) =
     case expandCurieByPath fn i1 of
         Just i -> case mi2 of
             Nothing -> Right $ ItemNameMap i mi2
             Just j -> case expandCurieByPath newFn j of
-                Nothing -> Left $ failPrefixIRI j
+                Nothing -> Left $ prefixErrorIRI j
                 mj -> Right $ ItemNameMap i mj
-        Nothing -> Left $ failPrefixIRI i1
+        Nothing -> Left $ prefixErrorIRI i1
 
 itemNameMapsToIRIs :: [ItemNameMap] -> [IRI]
 itemNameMapsToIRIs = concatMap (\ (ItemNameMap i mi) -> [i | isNothing mi])
