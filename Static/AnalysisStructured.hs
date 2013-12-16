@@ -73,6 +73,8 @@ import Data.Function
 import Control.Monad
 import Proofs.ComputeColimit (insertColimitInGraph)
 
+import Common.Lib.Graph
+
 -- overrides CUIRIE expansion for Download_items
 type ExpOverrides = Map.Map IRI FilePath
 
@@ -573,29 +575,33 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp = case sp of
                              [] -> error "No edge found"
                              lE : _ -> lE
            in case cEntry of
-               SpecEntry extGenSig -> (getNode (extGenBody extGenSig) : cN, cE)
+               SpecEntry extGenSig -> let 
+                   n = getNode $ extGenBody extGenSig
+                  in if elem n cN then (cN, cE) else (n: cN, cE)
                ViewOrStructEntry True (ExtViewSig ns _gm eGS) -> let
                    s = getNode ns
                    t = getNode $ extGenBody eGS
-                 in (cN, lEdge s t : cE)
+                 in (nub $ s:t:cN, lEdge s t : cE)
                AlignEntry asig ->
                   case asig of
                    AlignMor src _gmor tar -> let
                      s = getNode src
                      t = getNode tar
-                    in ([s, t] ++ cN, lEdge s t : cE)
+                    in (nub $ s:t:cN, lEdge s t : cE)
                    AlignSpan src _phi1 tar1 _phi2 tar2 -> let
                      s = getNode src
                      t1 = getNode tar1
                      t2 = getNode tar2
-                    in ([s, t1, t2] ++ cN, [lEdge s t1, lEdge s t2] ++ cE)
+                    in (nub $ [s, t1, t2] ++ cN, [lEdge s t1, lEdge s t2] ++ cE)
                _ -> error $ show cItem
                     ++ "is not an ontology, a view or an alignment"
         addGDefLinks (cN, cE) n = let
-           oEdges = filter (\ (_, y, l) -> elem y cN
-                              && isGlobalDef (dgl_type l))
-                     $ out (dgBody dg) n
-           in (nub cN, nub $ oEdges ++ cE)
+           g = dgBody dg
+           allGDef p = all (\ (_,_,l) -> isGlobalDef $ dgl_type l) p
+           gDefPaths x y = filter allGDef $ getPathsTo x y g
+           nPaths = concat $ concatMap (gDefPaths n) cN
+           nNodes = concatMap (\(x, y, _) -> [x, y]) nPaths
+           in (nub $ nNodes ++ cN, nub $ nPaths ++ cE)
         addLinks (cN, cE) = foldl addGDefLinks (cN, cE) cN
         (cNodes, cEdges) = addLinks . foldl getNodes ([], []) $ getItems cItems
         (eNodes, eEdges) = foldl getNodes ([], []) eItems
