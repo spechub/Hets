@@ -105,17 +105,17 @@ readLibDefnAux lgraph opts file fileForPos input =
     case intype opts of
     ATermIn _ -> return [from_sml_ATermString input]
     FreeCADIn ->
-      liftIO $ fmap (:[]) . readFreeCADLib file $ fileToLibName opts file
+      liftIO $ fmap (: []) . readFreeCADLib file $ fileToLibName opts file
     _ -> do
      ty <- guessInput opts file input
      case ty of
-      CommonLogicIn _ -> liftIO $ fmap (:[]) $ parseCL_CLIF file opts
+      CommonLogicIn _ -> liftIO $ fmap (: []) $ parseCL_CLIF file opts
 #ifdef RDFLOGIC
  -- - RDFIn -> liftIO $ parseRDF file
 #endif
-      Xmi -> liftIO $ fmap (:[]) $ parseXmi file
-      Qvt -> liftIO $ fmap (:[]) $ parseQvt file
-      TPTPIn -> liftIO $ fmap (:[]) $ parseTPTP file
+      Xmi -> liftIO $ fmap (: []) $ parseXmi file
+      Qvt -> liftIO $ fmap (: []) $ parseQvt file
+      TPTPIn -> liftIO $ fmap (: []) $ parseTPTP file
 #ifndef NOOWLLOGIC
       _ | elem ty [OWLIn, OwlXmlIn, OBOIn] -> liftIO $ parseOWL file
 #endif
@@ -162,7 +162,7 @@ readVerbose lg opts ln file = do
 
 -- | create a file name without suffix from a library name
 libNameToFile :: LibName -> FilePath
-libNameToFile ln = maybe (iriToStringUnsecure $ getLibId ln)
+libNameToFile ln = maybe (iriToStringUnsecure . setAnkles False $ getLibId ln)
   (rmSuffix . iriToStringUnsecure) $ locIRI ln
 
 findFileOfLibNameAux :: HetcatsOpts -> FilePath -> IO (Maybe FilePath)
