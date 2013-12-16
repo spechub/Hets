@@ -71,7 +71,7 @@ computeColimitSet :: (Ord a) =>
 computeColimitSet graph = let
    unionSet = foldl Set.union Set.empty $
                map (\ (n, s) -> Set.map (\ x -> (x, n)) s) $ labNodes graph
-   inclMap = Map.fromAscList $ map (\ (n, _) -> (n, Map.empty)) $ labNodes graph
+   inclMap = Map.fromAscList $ map (\ (n, s) -> (n, Map.fromList $ map (\x -> ((x,n),(x,n))) $ Set.toList s)) $ labNodes graph
    (colim, morMap) = computeCoeqs graph (unionSet, inclMap) $ labEdges graph
    morMap' = Map.map
                (Map.fromAscList . map (\ ((x, _), z) -> (x, z)) . Map.toList)
