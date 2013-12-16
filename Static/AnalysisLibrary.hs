@@ -192,7 +192,7 @@ anaStringAux mln lgraph opts topLns initDG file posFileName (_, libenv)
              (Lib_defn pln is' ps ans) = do
   let filt = Set.filter hasFullIRI
       spNs = filt . Set.unions . map getSpecNames
-        $ mapMaybe (getSpecDef . item) is'
+        $ concatMap (getSpecDef . item) is'
       declNs = filt . Set.fromList $ concatMap (getDeclSpecNames . item) is'
       unDecls = map
         (\ i -> emptyAnno $ Download_items (iriLibName i) (UniqueItem i)

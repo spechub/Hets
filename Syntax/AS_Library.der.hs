@@ -21,6 +21,8 @@ import Common.IRI
 import Common.AS_Annotation
 import Common.LibName
 
+import Data.Maybe
+
 import Logic.Grothendieck (G_basic_spec)
 import Logic.Logic
 
@@ -136,10 +138,14 @@ getDeclSpecNames li = case li of
 
 getImportNames :: DownloadItems -> [IRI]
 getImportNames di = case di of
-  ItemMaps im -> map (\ (ItemNameMap i mi) -> maybe i id mi) im
+  ItemMaps im -> map (\ (ItemNameMap i mi) -> fromMaybe i mi) im
   UniqueItem i -> [i]
 
-getSpecDef :: LIB_ITEM -> Maybe SPEC
+getSpecDef :: LIB_ITEM -> [SPEC]
 getSpecDef li = case li of
-  Spec_defn _ _ as _ -> Just $ item as
-  _ -> Nothing
+  Spec_defn _ _ as _ -> [item as]
+  View_defn _ _ (View_type s1 s2 _) _ _ -> [item s1, item s2]
+  Equiv_defn _ (Equiv_type s1 s2 _) as _ -> [s1, s2, item as]
+  Align_defn _ _ (Align_type s1 s2 _) _ _ -> [item s1, item s2]
+  Module_defn _ (Module_type s1 s2 _) _ _ -> [item s1, item s2]
+  _ -> []
