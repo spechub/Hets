@@ -217,8 +217,8 @@ getSpecNames sp = let f = getSpecNames . item in case sp of
   Local_spec s1 s2 _ -> Set.union (f s1) $ f s2
   Closed_spec as _ -> f as
   Group as _ -> f as
-  Spec_inst _ fas _ ->
-    Set.unions . map f $ concatMap (getSpecs . item) fas
+  Spec_inst sn fas _ -> Set.insert sn
+    . Set.unions . map f $ concatMap (getSpecs . item) fas
   Qualified_spec _ as _ -> f as
   Data _ _ s1 s2 _ -> Set.union (f s1) $ f s2
   _ -> Set.empty

@@ -189,8 +189,16 @@ anaStringAux :: Maybe LibName -- ^ suggested library name
   -> LogicGraph -> HetcatsOpts -> LNS -> DGraph -> FilePath
   -> FilePath -> (LibName, LibEnv) -> LIB_DEFN -> ResultT IO (LibName, LibEnv)
 anaStringAux mln lgraph opts topLns initDG file posFileName (_, libenv)
-             (Lib_defn pln is ps ans) = do
-  let noSuffixFile = rmSuffix file
+             (Lib_defn pln is' ps ans) = do
+  let filt = Set.filter hasFullIRI
+      spNs = filt . Set.unions . map getSpecNames
+        $ mapMaybe (getSpecDef . item) is'
+      declNs = filt . Set.fromList $ concatMap (getDeclSpecNames . item) is'
+      unDecls = map
+        (\ i -> emptyAnno $ Download_items (iriLibName i) (UniqueItem i)
+                $ iriPos i) . Set.toList $ spNs Set.\\ declNs
+      is = unDecls ++ is'
+      noSuffixFile = rmSuffix file
       spN = convertFileToLibStr file
       noLibName = null $ show $ getLibId pln
       nIs = case is of
@@ -202,6 +210,9 @@ anaStringAux mln lgraph opts topLns initDG file posFileName (_, libenv)
       ln = setFilePath posFileName
             $ if noLibName then fromMaybe (emptyLibName spN) mln else pln
       ast = Lib_defn ln nIs ps ans
+  lift $ print spNs
+  lift $ print declNs
+  lift $ print unDecls
   case analysis opts of
       Skip -> do
           lift $ putIfVerbose opts 1 $

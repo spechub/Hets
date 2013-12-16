@@ -127,3 +127,19 @@ makeSpecItem sn as =
 fromBasicSpec :: LibName -> SPEC_NAME -> G_basic_spec -> LIB_DEFN
 fromBasicSpec ln sn gbs =
     Lib_defn ln [makeSpecItem sn $ makeSpec gbs] nullRange []
+
+getDeclSpecNames :: LIB_ITEM -> [IRI]
+getDeclSpecNames li = case li of
+  Spec_defn sn _ _ _ -> [sn]
+  Download_items _ di _ -> getImportNames di
+  _ -> []
+
+getImportNames :: DownloadItems -> [IRI]
+getImportNames di = case di of
+  ItemMaps im -> map (\ (ItemNameMap i mi) -> maybe i id mi) im
+  UniqueItem i -> [i]
+
+getSpecDef :: LIB_ITEM -> Maybe SPEC
+getSpecDef li = case li of
+  Spec_defn _ _ as _ -> Just $ item as
+  _ -> Nothing
