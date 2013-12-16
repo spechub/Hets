@@ -106,7 +106,7 @@ libItem l =
                (catRange ([s, e] ++ maybeToList q)))
   <|> -- view defn
     do s1 <- asKey viewS <|> asKey interpretationS
-       vn <- liftM simpleIdToIRI simpleId
+       vn <- hetIRI l
        g <- generics l
        s2 <- asKey ":"
        vt <- viewType l
@@ -155,7 +155,7 @@ libItem l =
   <|> -- unit spec
     do kUnit <- asKey unitS
        kSpec <- asKey specS
-       name <- liftM simpleIdToIRI simpleId
+       name <- hetIRI l
        kEqu <- equalT
        usp <- unitSpec l
        kEnd <- optEnd
@@ -163,8 +163,7 @@ libItem l =
                 (catRange ([kUnit, kSpec, kEqu] ++ maybeToList kEnd)))
   <|> -- ref spec
     do kRef <- asKey refinementS
-       name' <- simpleId
-       let name = simpleIdToIRI name'
+       name <- hetIRI l
        kEqu <- equalT
        rsp <- refSpec l
        kEnd <- optEnd
@@ -183,7 +182,7 @@ libItem l =
     do s1 <- asKey fromS
        iln <- libName l
        s2 <- asKey getS
-       (il, ps) <- downloadItems
+       (il, ps) <- downloadItems l
        q <- optEnd
        return (Download_items iln il
                 (catRange ([s1, s2] ++ ps ++ maybeToList q)))
@@ -242,13 +241,13 @@ useItem i = do
 useItems :: Monad m => [IRI] -> m [LIB_ITEM]
 useItems = mapM useItem
 
-downloadItems :: AParser st (DownloadItems, [Token])
-downloadItems = do
-    (il, ps) <- separatedBy itemNameOrMap anSemiOrComma
+downloadItems :: LogicGraph -> AParser st (DownloadItems, [Token])
+downloadItems l = do
+    (il, ps) <- separatedBy (itemNameOrMap l) anSemiOrComma
     return (ItemMaps il, ps)
   <|> do
     s <- asKey mapsTo
-    i <- liftM simpleIdToIRI simpleId
+    i <- hetIRI l
     return (UniqueItem i, [s])
 
 
@@ -306,14 +305,14 @@ simpleIdOrDDottedId = pToken $ liftM2 (++)
   $ optionL $ try $ string ".." <++> scanAnyWords
 
 -- | Parse item name or name map
-itemNameOrMap :: AParser st ItemNameMap
-itemNameOrMap = do
-    i1 <- liftM simpleIdToIRI simpleIdOrDDottedId
-    i2 <- optionMaybe $ liftM simpleIdToIRI $ do
+itemNameOrMap :: LogicGraph -> AParser st ItemNameMap
+itemNameOrMap l = do
+    i1 <- liftM simpleIdToIRI simpleIdOrDDottedId <|> hetIRI l
+    i2 <- optionMaybe $ do
         _ <- asKey mapsTo
         if isInfixOf ".." $ iriToStringUnsecure i1
-            then simpleIdOrDDottedId
-            else simpleId
+            then liftM simpleIdToIRI simpleIdOrDDottedId
+            else hetIRI l
     return $ ItemNameMap i1 i2
 
 optEnd :: AParser st (Maybe Token)
