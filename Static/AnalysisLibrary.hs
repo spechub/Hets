@@ -210,9 +210,6 @@ anaStringAux mln lgraph opts topLns initDG file posFileName (_, libenv)
       ln = setFilePath posFileName
             $ if noLibName then fromMaybe (emptyLibName spN) mln else pln
       ast = Lib_defn ln nIs ps ans
-  lift $ print spNs
-  lift $ print declNs
-  lift $ print unDecls
   case analysis opts of
       Skip -> do
           lift $ putIfVerbose opts 1 $
