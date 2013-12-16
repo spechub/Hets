@@ -36,6 +36,7 @@
       (append
        '(("\\.casl\\'" . casl-mode))
        '(("\\.het\\'"  . casl-mode))
+       '(("\\.dol\\'"  . casl-mode))
        auto-mode-alist))
 (autoload 'casl-mode "casl-mode" "Entering CASL mode..." t)
 (add-hook 'casl-mode-hook 'turn-on-casl-indent)
