@@ -20,6 +20,8 @@ import Common.Id
 import Common.IRI
 import Common.AS_Annotation
 
+import qualified Data.Set as Set
+
 import Logic.Logic (AnyLogic)
 import Logic.Grothendieck
     ( G_basic_spec
@@ -200,3 +202,28 @@ type CONFIDENCE = Double -- NOTE: will be revised
 
 instance GetRange Double where
   getRange = const nullRange
+
+getSpecNames :: SPEC -> Set.Set SPEC_NAME
+getSpecNames sp = let f = getSpecNames . item in case sp of
+  Translation as _ -> f as
+  Reduction as _ -> f as
+  Approximation as _ -> f as
+  Minimization as _ -> f as
+  Union as _ -> Set.unions $ map f as
+  Extension as _ -> Set.unions $ map f as
+  Free_spec as _ -> f as
+  Cofree_spec as _ -> f as
+  Minimize_spec as _ -> f as
+  Local_spec s1 s2 _ -> Set.union (f s1) $ f s2
+  Closed_spec as _ -> f as
+  Group as _ -> f as
+  Spec_inst _ fas _ ->
+    Set.unions . map f $ concatMap (getSpecs . item) fas
+  Qualified_spec _ as _ -> f as
+  Data _ _ s1 s2 _ -> Set.union (f s1) $ f s2
+  _ -> Set.empty
+
+getSpecs :: FIT_ARG -> [Annoted SPEC]
+getSpecs fa = case fa of
+  Fit_spec as _ _ -> [as]
+  Fit_view _ fas _ -> concatMap (getSpecs . item) fas
