@@ -522,12 +522,13 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp = case sp of
        dg5 <- createConsLink DefLink conser lg dg4 nsig ns SeeTarget
        return (Spec_inst spname ffitargs pos, ns, dg5)
        | otherwise -> instMismatchError spname lp la pos
-    _ | null afitargs -> case nsig of
+    _ | null afitargs -> do
+     warning () ("ignoring missing spec " ++ showDoc spname' "") pos
+     case nsig of
       EmptyNode _ -> do -- copied from EmptySpec case
-        warning () ("ignoring missing spec " ++ showDoc spname' "") pos
         let (ns, dg') = insGSig dg name DGEmpty (getMaybeSig nsig)
         return (sp, ns, dg')
-      JustNode ns -> return (sp, ns , dg) -- ignore
+      JustNode ns -> return (sp, ns , dg)
     _ -> notFoundError "structured spec" spname
 
   -- analyse "data SPEC1 SPEC2"
