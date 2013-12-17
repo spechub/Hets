@@ -595,17 +595,19 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp = case sp of
                     in (nub $ [s, t1, t2] ++ cN, [lEdge s t1, lEdge s t2] ++ cE)
                _ -> error $ show cItem
                     ++ "is not an ontology, a view or an alignment"
-        addGDefLinks (cN, cE) n = let
+        addGDefLinks (cN, iN, cE) n = let
            g = dgBody dg
            allGDef p = all (\ (_,_,l) -> isGlobalDef $ dgl_type l) p
            gDefPaths x y = filter allGDef $ getPathsTo x y g
            nPaths = concat $ concatMap (gDefPaths n) cN
            nNodes = concatMap (\(x, y, _) -> [x, y]) nPaths
-           in (nub $ nNodes ++ cN, nub $ nPaths ++ cE)
-        addLinks (cN, cE) = foldl addGDefLinks (cN, cE) cN
-        (cNodes, cEdges) = addLinks . foldl getNodes ([], []) $ getItems cItems
+           in (cN, nub $ iN ++ nNodes, nub $ nPaths ++ cE)
+        addLinks (cN, cE) = foldl addGDefLinks (cN, [], cE) cN
+        (cNodes, iNodes, cEdges) = 
+           addLinks . foldl getNodes ([], []) $ getItems cItems
         (eNodes, eEdges) = foldl getNodes ([], []) eItems
-        (cNodes', cEdges') = (cNodes \\ eNodes, cEdges \\ eEdges)
+        (cNodes', cEdges') = ((nub $ cNodes++iNodes) \\ eNodes, 
+                              cEdges \\ eEdges)
         le = Map.insert ln dg Map.empty -- cheating!!!
     (ns, dg') <- insertColimitInGraph le dg cNodes' cEdges' name
     return (sp, ns, dg')
