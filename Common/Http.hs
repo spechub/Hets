@@ -14,7 +14,10 @@ module Common.Http where
 
 import Network.HTTP
 import Network.Stream
+import Network.Browser
 
 loadFromUri :: String -> IO (Result (Response String))
-loadFromUri =
-  simpleHTTP . replaceHeader HdrAccept "text/plain" . getRequest
+loadFromUri str = fmap (Right . snd) . browse $ do
+    setOutHandler . const $ return ()
+    setAllowRedirects True
+    request . replaceHeader HdrAccept "text/plain" $ getRequest str
