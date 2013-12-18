@@ -94,7 +94,7 @@ basicInferenceNode lg ln dGraph (node, lbl) libEnv intSt =
   runResultT $ do
     -- compute the theory (that may contain proved theorems) and its name
     thForProof <- liftR $ getGlobalTheory lbl
-    let thName = shows (getLibId ln) "_" ++ getDGNodeName lbl
+    let thName = libToFileName ln ++ "_" ++ getDGNodeName lbl
         freedefs = getCFreeDefMorphs libEnv ln dGraph node
     let ps = getAllProvers ProveGUI (sublogicOfTh thForProof) lg
     kpMap <- liftR knownProversGUI

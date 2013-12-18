@@ -20,8 +20,8 @@ module Common.LibName
   , isQualName
   , mkQualName
   , unQualName
-  , filePathToIri
   , setFilePath
+  , libToFileName
   , getFilePath
   , iriLibName
   , emptyLibName
@@ -70,7 +70,7 @@ unQualName j@(Id _ cs _) = case cs of
 
 libNameToId :: LibName -> Id
 libNameToId ln = let
-  path = splitOn '/' . show $ getLibId ln
+  path = splitOn '/' $ libToFileName ln
   toTok s = Token s $ getRange ln
   in mkId $ map toTok $ intersperse "/" path
 
@@ -89,12 +89,15 @@ emptyLibName s = iriLibName .
   $ parseIRIManchester s
 
 filePathToIri :: FilePath -> IRI
-filePathToIri fp = maybe (error $ "filePathToIri: " ++ fp) (setAnkles True)
+filePathToIri fp = fromMaybe (error $ "filePathToIri: " ++ fp)
   . parseIRIReference $ escapeIRIString isUnescapedInIRI fp
 
 setFilePath :: FilePath -> LibName -> LibName
 setFilePath fp ln =
   ln { locIRI = Just $ filePathToIri fp }
+
+libToFileName :: LibName -> FilePath
+libToFileName = iriToStringUnsecure . setAnkles False . getLibId
 
 getFilePath :: LibName -> FilePath
 getFilePath = maybe "" iriToStringUnsecure . locIRI

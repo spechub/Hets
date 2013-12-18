@@ -52,7 +52,7 @@ import Logic.Prover (ProverKind (ProveCMDLautomatic))
 import Syntax.AS_Structured
 import Syntax.AS_Library
 
-import Common.LibName (LibName (getLibId))
+import Common.LibName
 import Common.Utils (trim)
 import Common.Result
 import Common.ResultT
@@ -199,7 +199,7 @@ selectANode x dgState = let
        -- le not used and should be
          let sl = sublogicOfTh th
              tmp = (initialState
-                (shows (getLibId $ i_ln dgState) "_" ++ nodeName x)
+                (libToFileName (i_ln dgState) ++ "_" ++ nodeName x)
                 th
                 (shrinkKnownProvers sl kpMap))
                 { comorphismsToProvers =

@@ -125,7 +125,7 @@ consistencyCheck includeTheorems (G_cons_checker lid4 cc) (Comorphism cid) ln
   le dg (n', lbl) t'' = do
   let lidS = sourceLogic cid
       lidT = targetLogic cid
-      thName = shows (getLibId ln) "_" ++ getDGNodeName lbl
+      thName = libToFileName ln ++ "_" ++ getDGNodeName lbl
       t' = timeToTimeOfDay $ secondsToDiffTime $ toInteger t''
       ts = TacticScript $ if ccNeedsTimer cc then "" else show t''
       mTimeout = "No results within: " ++ show t'

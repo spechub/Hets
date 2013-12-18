@@ -62,7 +62,7 @@ import Control.Monad.Trans
 
 thName :: LibName -> LNode DGNodeLab -> String
 thName ln (n, lbl) = map (\ c -> if elem c "/,[]: " then '-' else c)
-           $ shows (getLibId ln) "_" ++ getDGNodeName lbl ++ "_" ++ show n
+           $ libToFileName ln ++ "_" ++ getDGNodeName lbl ++ "_" ++ show n
 
 getSubGraph :: Node -> DGraph -> DGraph
 getSubGraph n dg =

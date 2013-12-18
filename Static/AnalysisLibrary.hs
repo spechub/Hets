@@ -179,7 +179,7 @@ anaString mln lgraph opts topLns libenv initDG input file = do
   curDir <- lift getCurrentDirectory -- get full path for parser positions
   let realFileName = curDir </> file
       posFileName = case mln of
-          Just gLn | useLibPos opts -> show $ getLibId gLn
+          Just gLn | useLibPos opts -> libToFileName gLn
           _ -> if checkUri file then file else realFileName
   libdefns <- readLibDefnAux lgraph opts file posFileName input
   foldM (anaStringAux mln lgraph opts topLns initDG file posFileName)
@@ -200,7 +200,7 @@ anaStringAux mln lgraph opts topLns initDG file posFileName (_, libenv)
       is = unDecls ++ is'
       noSuffixFile = rmSuffix file
       spN = convertFileToLibStr file
-      noLibName = null $ show $ getLibId pln
+      noLibName = getLibId pln == nullIRI
       nIs = case is of
         [Annoted (Spec_defn spn gn as qs) rs [] []]
             | noLibName && null (iriToStringUnsecure spn)
@@ -218,7 +218,7 @@ anaStringAux mln lgraph opts topLns initDG file posFileName (_, libenv)
           lift $ writeLibDefn lgraph ga file opts ast
           liftR mzero
       _ -> do
-          let libstring = show $ getLibId ln
+          let libstring = libToFileName ln
           unless (isSuffixOf libstring noSuffixFile) $ lift
               $ putIfVerbose opts 1
               $ "### file name '" ++ file ++ "' does not match library name '"
@@ -300,7 +300,7 @@ anaLibDefn :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph -> LIB_DEFN
   -> FilePath -> ResultT IO (LibName, LIB_DEFN, GlobalAnnos, LibEnv)
 anaLibDefn lgraph opts topLns libenv dg (Lib_defn ln alibItems pos ans) file
   = do
-  let libStr = show (getLibId ln)
+  let libStr = libToFileName ln
       isDOLlib = elem ':' libStr
   gannos <- showDiags1 opts $ liftR $ addGlobalAnnos
     (defPrefixGlobalAnnos $ if isDOLlib then file else libStr) ans
@@ -511,8 +511,8 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
             ++ show ln' ++ " available: " ++ show (Map.keys libenv')
           Just dg' -> do
             let dg0 = cpIndexMaps dg' dg
-                fn = show . setAnkles False $ getLibId ln'
-                currFn = show . setAnkles False $ getLibId currLn
+                fn = libToFileName ln'
+                currFn = libToFileName currLn
                 (realItems, errs, origItems) = case items of
                   ItemMaps rawIms ->
                     let (ims, warns) = foldr (\ im@(ItemNameMap i mi)

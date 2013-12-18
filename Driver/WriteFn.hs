@@ -174,7 +174,7 @@ writeIsaFile opts filePrefix raw_gTh ln i = do
       putIfVerbose opts 0 $ "could not translate to Isabelle theory: " ++ fp
     Just (sign, sens) -> do
       let tn = addThn . reverse . takeWhile (/= '/') . reverse $ case
-               show $ getLibId ln of
+               libToFileName ln of
                    [] -> filePrefix
                    lstr -> lstr
           sf = shows (printIsaTheory tn sign sens) "\n"

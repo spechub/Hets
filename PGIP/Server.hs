@@ -107,7 +107,7 @@ randomKey = randomRIO (100000000, 999999999)
 sessGraph :: DGQuery -> Session -> Maybe (LibName, DGraph)
 sessGraph dgQ (Session le ln _ _) = case dgQ of
   DGQuery _ (Just path) ->
-      find (\ (n, _) -> show (getLibId n) == path)
+      find (\ (n, _) -> libToFileName n == path)
         $ Map.toList le
   _ -> fmap (\ dg -> (ln, dg)) $ Map.lookup ln le
 
@@ -592,7 +592,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
       let libEnv = sessLibEnv sess
       (ln, dg) <- maybe (fail "unknown development graph") return
         $ sessGraph dgQ sess
-      let title = show $ getLibId ln
+      let title = libToFileName ln
       svg <- getSVG title ('/' : show k) dg
       case qk of
             DisplayQuery ms -> case ms of
@@ -1095,7 +1095,7 @@ formatResultsAux xF pm nm sens = unode nm $ case (sens, pm) of
 
 mkPath :: Session -> LibName -> Int -> String
 mkPath sess l k =
-        '/' : concat [ show (getLibId l) ++ "?session="
+        '/' : concat [ libToFileName l ++ "?session="
                      | l /= sessLibName sess ]
         ++ show k
 
@@ -1109,9 +1109,9 @@ globalCommands = map (cmdlGlobCmd . fst) allGlobLibAct
 sessAns :: LibName -> String -> (Session, Int) -> String
 sessAns libName svg (sess, k) =
   let libEnv = sessLibEnv sess
-      ln = show $ getLibId libName
+      ln = libToFileName libName
       libref l =
-        aRef (mkPath sess l k) (show $ getLibId l) : map (\ d ->
+        aRef (mkPath sess l k) (libToFileName l) : map (\ d ->
          aRef (extPath sess l k ++ d) d) displayTypes
       libPath = extPath sess libName k
       ref d = aRef (libPath ++ d) d

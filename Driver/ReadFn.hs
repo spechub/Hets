@@ -162,7 +162,7 @@ readVerbose lg opts ln file = do
 
 -- | create a file name without suffix from a library name
 libNameToFile :: LibName -> FilePath
-libNameToFile ln = maybe (iriToStringUnsecure . setAnkles False $ getLibId ln)
+libNameToFile ln = maybe (libToFileName ln)
   (rmSuffix . iriToStringUnsecure) $ locIRI ln
 
 findFileOfLibNameAux :: HetcatsOpts -> FilePath -> IO (Maybe FilePath)
