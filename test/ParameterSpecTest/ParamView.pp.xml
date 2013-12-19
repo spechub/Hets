@@ -1,6 +1,6 @@
 <?xml version='1.0' ?>
 <Lib name="ParamView" range="1.1">
-  <SpecDefn name="ParamView?s" range="3.1-3.32">
+  <SpecDefn name="s" range="3.1-3.32">
     <Parameters>
       <Union range="3.8-3.17">
         <Spec>
@@ -37,7 +37,7 @@
       </Sort_items>
     </Basicspec>
   </SpecDefn>
-  <ViewDefn name="ParamView?v" range="5.1-5.54">
+  <ViewDefn name="v" range="5.1-5.54">
     <Parameters>
       <Union range="5.7-5.16">
         <Spec>
@@ -92,7 +92,7 @@
       <SymbMapItems>p |-&gt; q</SymbMapItems>
     </Mapping>
   </ViewDefn>
-  <SpecDefn name="ParamView?s2" range="8.1-8.19">
+  <SpecDefn name="s2" range="8.1-8.19">
     <Parameters>
       <Union range="8.9-8.17">
         <Spec>
@@ -106,8 +106,8 @@
         </Spec>
       </Union>
     </Parameters>
-    <Actuals name="ParamView?s" range="8.22-8.37">
-      <Spec name="ParamView?v" range="8.23-8.36">
+    <Actuals name="s" range="8.22-8.37">
+      <Spec name="v" range="8.23-8.36">
         <Actuals>
           <Spec>
             <Basicspec range="8.30-8.36">
