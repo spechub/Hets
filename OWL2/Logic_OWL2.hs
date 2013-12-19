@@ -53,12 +53,14 @@ import OWL2.Symbols
 import OWL2.Taxonomy
 import OWL2.Theorem
 
-data OWL2 = OWL2 deriving Show
+data OWL2 = OWL2
+
+instance Show OWL2 where
+  show _ = "OWL"
 
 instance Language OWL2 where
-  language_name _ = "OWL"
   description _ =
-    "OWL2 DL -- Web Ontology Language Description Logic http://wwww.w3c.org/"
+    "OWL -- Web Ontology Language http://www.w3.org/TR/owl2-overview/"
 
 instance Category Sign OWLMorphism where
     ide sig = inclOWLMorphism sig sig
