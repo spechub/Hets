@@ -575,19 +575,19 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp = case sp of
                              [] -> error "No edge found"
                              lE : _ -> lE
            in case cEntry of
-               SpecEntry extGenSig -> let 
+               SpecEntry extGenSig -> let
                    n = getNode $ extGenBody extGenSig
-                  in if elem n cN then (cN, cE) else (n: cN, cE)
+                  in if elem n cN then (cN, cE) else (n : cN, cE)
                ViewOrStructEntry True (ExtViewSig ns _gm eGS) -> let
                    s = getNode ns
                    t = getNode $ extGenBody eGS
-                 in (nub $ s:t:cN, lEdge s t : cE)
+                 in (nub $ s : t : cN, lEdge s t : cE)
                AlignEntry asig ->
                   case asig of
                    AlignMor src _gmor tar -> let
                      s = getNode src
                      t = getNode tar
-                    in (nub $ s:t:cN, lEdge s t : cE)
+                    in (nub $ s : t : cN, lEdge s t : cE)
                    AlignSpan src _phi1 tar1 _phi2 tar2 -> let
                      s = getNode src
                      t1 = getNode tar1
@@ -597,16 +597,16 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp = case sp of
                     ++ "is not an ontology, a view or an alignment"
         addGDefLinks (cN, iN, cE) n = let
            g = dgBody dg
-           allGDef p = all (\ (_,_,l) -> isGlobalDef $ dgl_type l) p
+           allGDef = all $ \ (_, _, l) -> isGlobalDef $ dgl_type l
            gDefPaths x y = filter allGDef $ getPathsTo x y g
            nPaths = concat $ concatMap (gDefPaths n) cN
-           nNodes = concatMap (\(x, y, _) -> [x, y]) nPaths
+           nNodes = concatMap (\ (x, y, _) -> [x, y]) nPaths
            in (cN, nub $ iN ++ nNodes, nub $ nPaths ++ cE)
         addLinks (cN, cE) = foldl addGDefLinks (cN, [], cE) cN
-        (cNodes, iNodes, cEdges) = 
+        (cNodes, iNodes, cEdges) =
            addLinks . foldl getNodes ([], []) $ getItems cItems
         (eNodes, eEdges) = foldl getNodes ([], []) eItems
-        (cNodes', cEdges') = ((nub $ cNodes++iNodes) \\ eNodes, 
+        (cNodes', cEdges') = (nub (cNodes ++ iNodes) \\ eNodes,
                               cEdges \\ eEdges)
         le = Map.insert ln dg Map.empty -- cheating!!!
     (ns, dg') <- insertColimitInGraph le dg cNodes' cEdges' name
