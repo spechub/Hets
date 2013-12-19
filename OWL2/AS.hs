@@ -17,6 +17,7 @@ References:
 module OWL2.AS where
 
 import Common.Id
+import Common.Keywords (stringS)
 import OWL2.ColonKeywords
 import OWL2.Keywords
 
@@ -237,15 +238,15 @@ isPredefPropOrClass iri = isPredefAnnoProp iri || isPredefDataProp iri
 predefIRIs :: [IRI]
 predefIRIs = map (setPrefix "xsd" . mkQName) xsdKeys
     ++ map (setPrefix "owl" . mkQName) owlNumbers
-    ++ [setPrefix "rdf" (mkQName rdfsLiteral),
-        setPrefix "rdfs" $ mkQName xmlLiteral]
+    ++ map (setPrefix "rdf" . mkQName) [rdfsLiteral, stringS]
+    ++ [setPrefix "rdfs" $ mkQName xmlLiteral]
 
 isDatatypeKey :: IRI -> Bool
 isDatatypeKey = not . null . isDatatypeKeyAux
 
 isDatatypeKeyAux :: IRI -> [(String, String)]
 isDatatypeKeyAux iri = mapMaybe (\ (l, p) -> checkPredefAux l p iri)
-  [ (xsdKeys, "xsd"), (owlNumbers, "owl"), ([xmlLiteral], "rdf")
+  [ (xsdKeys, "xsd"), (owlNumbers, "owl"), ([xmlLiteral, stringS], "rdf")
   , ([rdfsLiteral], "rdfs")]
 
 checkPredefAux :: [String] -> String -> IRI -> Maybe (String, String)
