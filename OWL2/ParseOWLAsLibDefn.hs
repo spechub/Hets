@@ -23,7 +23,7 @@ import Common.Id
 import Common.IRI
 import Common.LibName
 import Common.ProverTools
-import Common.AS_Annotation hiding (isAxiom, isDef)
+import Common.AS_Annotation
 import Common.Utils (executeProcess)
 
 import Logic.Grothendieck
@@ -39,8 +39,7 @@ import System.Directory
 import System.Exit
 import System.FilePath
 
-import Text.XML.Light
-  (parseXML, onlyElems, filterElementsName, findAttr, unqual)
+import Text.XML.Light hiding (QName)
 
 -- | call for owl parser (env. variable $HETS_OWL_TOOLS muss be defined)
 parseOWL :: FilePath              -- ^ local filepath or uri
