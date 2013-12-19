@@ -82,7 +82,7 @@ instance PrettyLG UNIT_EXPRESSION where
 
 instance PrettyLG UNIT_BINDING where
     prettyLG lg (Unit_binding aa ab _) =
-        let aa' = pretty aa
+        let aa' = structIRI aa
             ab' = prettyLG lg ab
         in fsep [aa', colon, ab']
 

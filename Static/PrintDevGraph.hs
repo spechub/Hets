@@ -28,7 +28,7 @@ module Static.PrintDevGraph
     , dgRuleEdges
     ) where
 
-import Syntax.Print_AS_Structured ()
+import Syntax.Print_AS_Structured
 import Syntax.AS_Structured
 
 import Static.DgUtils
@@ -39,7 +39,7 @@ import Static.History
 import Common.GlobalAnnotations
 import Common.LibName
 import Common.Id
-import Common.IRI (IRI, iriToStringUnsecure)
+import Common.IRI
 import Common.Consistency
 import Common.Doc as Doc
 import Common.DocUtils
@@ -61,8 +61,8 @@ printTh :: GlobalAnnos -> IRI -> G_theory -> Doc
 printTh oga sn g =
     let ga = removeProblematicListAnnos oga in
     useGlobalAnnos ga $ pretty ga $+$ prettyGTheorySL g $+$
-    sep [ if null (iriToStringUnsecure sn) then Doc.empty else
-             keyword specS <+> pretty sn <+> equals
+    sep [ if sn == nullIRI then Doc.empty else
+             keyword specS <+> structIRI sn <+> equals
         , prettyGTheory (gTheorySyntax g) g]
 
 removeProblematicListAnnos :: GlobalAnnos -> GlobalAnnos
