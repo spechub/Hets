@@ -83,6 +83,11 @@ data NodeSig = NodeSig { getNode :: Node, getSig :: G_sign }
      we do not assign a real node in the DG here) -}
 data MaybeNode = JustNode NodeSig | EmptyNode AnyLogic deriving (Show, Eq)
 
+getMaybeNodes :: MaybeNode -> Set.Set Node
+getMaybeNodes m = case m of
+  EmptyNode _ -> Set.empty
+  JustNode n -> Set.singleton $ getNode n
+
 -- | a wrapper for renamings with a trivial Ord instance
 newtype Renamed = Renamed RENAMING deriving Show
 
@@ -426,14 +431,27 @@ isCofreeEdge edge = case edge of
 -- | import, formal parameters and united signature of formal params
 data GenSig = GenSig MaybeNode [NodeSig] MaybeNode deriving Show
 
+getGenSigNodes :: GenSig -> Set.Set Node
+getGenSigNodes (GenSig m1 ns m2) = Set.unions
+  [ getMaybeNodes m1
+  , Set.fromList $ map getNode ns
+  , getMaybeNodes m2 ]
+
 -- | genericity and body
 data ExtGenSig = ExtGenSig
   { genericity :: GenSig
   , extGenBody :: NodeSig }
   deriving Show
 
+getExtGenSigNodes :: ExtGenSig -> Set.Set Node
+getExtGenSigNodes (ExtGenSig g n) = Set.insert (getNode n) $ getGenSigNodes g
+
 -- | source, morphism, parameterized target
 data ExtViewSig = ExtViewSig NodeSig GMorphism ExtGenSig deriving Show
+
+getExtViewSigNodes :: ExtViewSig -> Set.Set Node
+getExtViewSigNodes (ExtViewSig n _ e) =
+  Set.insert (getNode n) $ getExtGenSigNodes e
 
 {- ** types for architectural and unit specification analysis
     (as defined for basic static semantics in Chap. III:5.1) -}
@@ -441,6 +459,10 @@ data ExtViewSig = ExtViewSig NodeSig GMorphism ExtGenSig deriving Show
 data UnitSig = UnitSig [NodeSig] NodeSig (Maybe NodeSig) deriving (Show, Eq)
 {- Maybe NodeSig stores the union of the parameters
 the node is needed for consistency checks -}
+
+getUnitSigNodes :: UnitSig -> Set.Set Node
+getUnitSigNodes (UnitSig ns n m) =
+  Set.fromList $ map getNode (n : ns ++ maybeToList m)
 
 data ImpUnitSigOrSig = ImpUnitSig MaybeNode UnitSig | Sig NodeSig
    deriving (Show, Eq)
@@ -454,12 +476,26 @@ emptyStUnitCtx = Map.empty
 this type is superseeded by RefSig -}
 
 type RefSigMap = Map.Map IRI RefSig
+
+getSigMapNodes :: RefSigMap -> Set.Set Node
+getSigMapNodes = Set.unions . map getRefSigNodes . Map.elems
+
 type BStContext = Map.Map IRI RefSig
+
+getBStContextNodes :: BStContext -> Set.Set Node
+getBStContextNodes = Set.unions . map getRefSigNodes . Map.elems
+
 -- there should be only BranchRefSigs
 
 data RefSig = BranchRefSig RTPointer (UnitSig, Maybe BranchSig)
             | ComponentRefSig RTPointer RefSigMap
               deriving (Eq)
+
+getRefSigNodes :: RefSig -> Set.Set Node
+getRefSigNodes rs = case rs of
+  BranchRefSig _ (u, m) -> Set.union (getUnitSigNodes u)
+    $ maybe Set.empty getBranchSigNodes m
+  ComponentRefSig _ m -> getSigMapNodes m
 
 instance Show RefSig where
 -- made this instance for debugging purposes
@@ -508,6 +544,11 @@ mkBotSigFromUnit usig = BranchRefSig RTNone (usig, Nothing)
 data BranchSig = UnitSigAsBranchSig UnitSig
                | BranchStaticContext BStContext
                  deriving (Show, Eq)
+
+getBranchSigNodes :: BranchSig -> Set.Set Node
+getBranchSigNodes bs = case bs of
+  UnitSigAsBranchSig u -> getUnitSigNodes u
+  BranchStaticContext b -> getBStContextNodes b
 
 type RefStUnitCtx = Map.Map IRI RefSig
 -- only BranchRefSigs allowed
@@ -631,11 +672,22 @@ data GlobalEntry =
   | UnitEntry UnitSig
     deriving Show
 
+getGlobEntryNodes :: GlobalEntry -> Set.Set Node
+getGlobEntryNodes g = case g of
+  SpecEntry e -> getExtGenSigNodes e
+  ViewOrStructEntry _ e -> getExtViewSigNodes e
+  UnitEntry u -> getUnitSigNodes u
+  ArchOrRefEntry _ r -> getRefSigNodes r
+  _ -> Set.empty
+
 data AlignSig = AlignMor NodeSig GMorphism NodeSig
               | AlignSpan NodeSig GMorphism NodeSig GMorphism NodeSig
   deriving (Show, Eq)
 
 type GlobalEnv = Map.Map IRI GlobalEntry
+
+getGlobNodes :: GlobalEnv -> Set.Set Node
+getGlobNodes = Set.unions . map getGlobEntryNodes . Map.elems
 
 -- ** change and history types
 
@@ -1187,7 +1239,7 @@ nodesDG = nodes . dgBody
 
 -- | tries to get the label of the given node in a given DG
 labDG :: DGraph -> Node -> DGNodeLab
-labDG dg = fromMaybe (error "labDG") . lab (dgBody dg)
+labDG dg n = fromMaybe (error $ "labDG " ++ show n) $ lab (dgBody dg) n
 
 -- | tries to get the label of the given node in a given RT
 labRT :: DGraph -> Node -> RTNodeLab

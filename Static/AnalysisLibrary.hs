@@ -64,14 +64,13 @@ import Common.Http
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import Data.List
 import Data.Either (lefts, rights)
+import Data.List
+import Data.Maybe
 
 import Control.Monad
 import Control.Monad.Trans
 import Control.Exception as Ex (catch)
-
-import Data.Maybe
 
 import System.Directory
 import System.FilePath
@@ -314,13 +313,13 @@ anaLibDefn lgraph opts topLns libenv dg (Lib_defn ln alibItems pos ans) file
   return (ln, newLD, globalAnnos dg2, Map.insert ln dg2 libenv')
 
 shortcutUnions :: DGraph -> Result DGraph
-shortcutUnions dgraph = let spNs = Map.elems $ specRoots dgraph in
+shortcutUnions dgraph = let spNs = getGlobNodes $ globalEnv dgraph in
   foldM (\ dg (n, nl) -> let
   locTh = dgn_theory nl
   innNs = innDG dg n
   in case outDG dg n of
        [(_, t, et@DGLink {dgl_type = lt})]
-         | notElem n spNs && null (getThSens locTh) && isDefEdge lt
+         | Set.notMember n spNs && null (getThSens locTh) && isDefEdge lt
            && isInternal (dgn_name nl) && length innNs > 1
            && all (\ (_, _, el) -> case dgl_type el of
                 ScopedLink Global DefLink (ConsStatus cs _ _)
