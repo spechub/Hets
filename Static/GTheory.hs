@@ -128,6 +128,9 @@ getThAxioms (G_theory _ _ _ _ sens _) = map
     (\ (k, s) -> (k, wasTheorem s))
     $ OMap.toList $ OMap.filter isAxiom sens
 
+-- | get sentence names
+getThSens :: G_theory -> [String]
+getThSens (G_theory _ _ _ _ sens _) = map fst $ OMap.toList sens
 
 -- | simplify a theory (throw away qualifications)
 simplifyTh :: G_theory -> G_theory

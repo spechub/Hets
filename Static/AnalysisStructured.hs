@@ -145,12 +145,31 @@ insLink dg (GMorphism cid sign si mor mi) ty orig n t =
         (G_sign (sourceLogic cid) sign nsi) sgMap else id)
        $ insLEdgeNubDG (n, t, link) dg
 
+shortcutUnions :: LogicGraph -> DGraph -> NodeSig -> [LEdge DGLinkLab]
+  -> NodeSig -> Result DGraph
+shortcutUnions lg dg (NodeSig n sig) innNs (NodeSig node gsig) = do
+  incl <- ginclusion lg sig gsig
+  foldM (\ dg' (s, _, el) -> do
+    newMor <- composeMorphisms (dgl_morphism el) incl
+    return $ insLink dg' newMor
+              (dgl_type el) (dgl_origin el) s node) (delNodeDG n dg) innNs
+
 createConsLink :: LinkKind -> Conservativity -> LogicGraph -> DGraph
   -> MaybeNode -> NodeSig -> DGLinkOrigin -> Result DGraph
-createConsLink lk conser lg dg nsig (NodeSig node gsig) orig = case nsig of
+createConsLink lk conser lg dg nsig tar@(NodeSig node gsig) orig = case nsig of
     EmptyNode _ | conser == None -> return dg
     _ -> case nsig of
-      JustNode (NodeSig n sig) -> do
+      JustNode ns@(NodeSig n sig) ->
+        let nl = labDG dg n
+            locTh = dgn_theory nl
+            innNs = innDG dg n
+            outNs = outDG dg n
+        in if null outNs && null (getThSens locTh) && length innNs > 1
+           && all (\ (_, _, el) -> case dgl_type el of
+                ScopedLink Global DefLink (ConsStatus cs _ _)
+                  | cs == conser -> True
+                _ -> False) innNs
+        then shortcutUnions lg dg ns innNs tar else do
         incl <- ginclusion lg sig gsig
         return $ insLink dg incl
               (ScopedLink Global lk $ mkConsStatus conser) orig n node
