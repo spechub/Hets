@@ -305,12 +305,35 @@ anaLibDefn lgraph opts topLns libenv dg (Lib_defn ln alibItems pos ans) file
   (libItems', dg', libenv', _, _) <- foldM (anaLibItemAux opts topLns ln)
       ([], dg { globalAnnos = gannos }, libenv
       , lgraph, Map.empty) (map item alibItems)
-  let dg1 = computeDGraphTheories libenv' $ markFree libenv' $
-            markHiding libenv' dg'
+  let dg1 = computeDGraphTheories libenv' $ markFree libenv'
+        $ markHiding libenv' $ fromMaybe dg' $ maybeResult
+        $ shortcutUnions dg'
       newLD = Lib_defn ln
         (zipWith replaceAnnoted (reverse libItems') alibItems) pos ans
       dg2 = dg1 { optLibDefn = Just newLD }
   return (ln, newLD, globalAnnos dg2, Map.insert ln dg2 libenv')
+
+shortcutUnions :: DGraph -> Result DGraph
+shortcutUnions dgraph = let spNs = Map.elems $ specRoots dgraph in
+  foldM (\ dg (n, nl) -> let
+  locTh = dgn_theory nl
+  innNs = innDG dg n
+  in case outDG dg n of
+       [(_, t, et@DGLink {dgl_type = lt})]
+         | notElem n spNs && null (getThSens locTh) && isDefEdge lt
+           && isInternal (dgn_name nl) && length innNs > 1
+           && all (\ (_, _, el) -> case dgl_type el of
+                ScopedLink Global DefLink (ConsStatus cs _ _)
+                  | cs == getCons lt -> True
+                _ -> False) innNs
+           && case nodeInfo nl of
+                DGNode DGUnion _ -> True
+                _ -> False
+         -> foldM (\ dg' (s, _, el) -> do
+             newMor <- composeMorphisms (dgl_morphism el) $ dgl_morphism et
+             return $ insLink dg' newMor
+              (dgl_type el) (dgl_origin el) s t) (delNodeDG n dg) innNs
+       _ -> return dg) dgraph $ topsortedNodes dgraph
 
 defPrefixGlobalAnnos :: FilePath -> GlobalAnnos
 defPrefixGlobalAnnos file = emptyGlobalAnnos
