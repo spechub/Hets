@@ -42,6 +42,7 @@ import Static.AnalysisArchitecture
 import Static.ArchDiagram (emptyExtStUnitCtx)
 
 import Common.AS_Annotation hiding (isAxiom, isDef)
+import Common.Consistency
 import Common.GlobalAnnotations
 import Common.ConvertGlobalAnnos
 import Common.AnalyseAnnos
@@ -319,15 +320,12 @@ shortcutUnions dgraph = let spNs = getGlobNodes $ globalEnv dgraph in
   innNs = innDG dg n
   in case outDG dg n of
        [(_, t, et@DGLink {dgl_type = lt})]
-         | Set.notMember n spNs && null (getThSens locTh) && isDefEdge lt
-           && isInternal (dgn_name nl) && length innNs > 1
+         | Set.notMember n spNs && null (getThSens locTh) && isGlobalDef lt
+           && length innNs > 1
            && all (\ (_, _, el) -> case dgl_type el of
-                ScopedLink Global DefLink (ConsStatus cs _ _)
+                ScopedLink Global DefLink (ConsStatus cs None LeftOpen)
                   | cs == getCons lt -> True
                 _ -> False) innNs
-           && case nodeInfo nl of
-                DGNode DGUnion _ -> True
-                _ -> False
          -> foldM (\ dg' (s, _, el) -> do
              newMor <- composeMorphisms (dgl_morphism el) $ dgl_morphism et
              return $ insLink dg' newMor
