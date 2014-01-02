@@ -82,10 +82,10 @@ convertone o oname i = makeSpecItem oname $ createSpec o i
 
 convertToLibDefN :: Map.Map String String -> OntologyDocument -> LIB_DEFN
 convertToLibDefN imap o = Lib_defn (iriLibName oname)
-    (makeLogicItem OWL2 : imp_libs ++ [convertone o oname imps]) nullRange []
+    (makeLogicItem OWL2 : imp_libs ++ [convertone o oname imps2]) nullRange []
   where ont = ontology o
         is = map snd $ Map.toList imap
         imps = map qNameToIRI $ imports ont
+        imps2 = filter ((`elem` is) . show . setAnkles False) imps
         oname = qNameToIRI $ name ont
-        imp_libs = map addDownload
-          $ filter ((`elem` is) . show . setAnkles False) imps
+        imp_libs = map addDownload imps2
