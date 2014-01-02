@@ -326,6 +326,9 @@ shortcutUnions dgraph = let spNs = getGlobNodes $ globalEnv dgraph in
                 ScopedLink Global DefLink (ConsStatus cs None LeftOpen)
                   | cs == getCons lt -> True
                 _ -> False) innNs
+           && case nodeInfo nl of
+                DGNode DGUnion _ -> True
+                _ -> False
          -> foldM (\ dg' (s, _, el) -> do
              newMor <- composeMorphisms (dgl_morphism el) $ dgl_morphism et
              return $ insLink dg' newMor
