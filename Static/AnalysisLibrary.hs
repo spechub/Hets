@@ -704,29 +704,12 @@ downloadMissingSpecs :: VIEW_TYPE -> LogicGraph -> HetcatsOpts -> LNS
   -> ResultT IO (LIB_ITEM, DGraph, LibEnv, LogicGraph, ExpOverrides)
 downloadMissingSpecs (View_type sp1 sp2 _)
   lg opts topLns currLn libenv dg eo itm = do
-  let iris = filter (\ i -> isNothing $ expCurie (globalAnnos dg) eo i
-                                >>= (`lookupGlobalEnvDG` dg))
-             $ concatMap extractSpecnames (map item [sp1, sp2])
+  let iris = Set.toList . Set.filter
+        (\ i -> isNothing $ expCurie (globalAnnos dg) eo i
+         >>= (`lookupGlobalEnvDG` dg))
+        . Set.unions $ map (getSpecNames . item) [sp1, sp2]
   itms <- useItems iris
   chainAnaLibItems lg opts topLns currLn libenv dg eo itms itm
-
-extractSpecnames :: SPEC -> [SPEC_NAME]
-extractSpecnames spec =
-  case spec of
-    Translation asp _ -> (extractSpecnames . item) asp
-    Reduction asp _ -> (extractSpecnames . item) asp
-    Union asps _ -> concatMap (extractSpecnames . item) asps
-    Extension asps _ -> concatMap (extractSpecnames . item) asps
-    Free_spec asp _ -> (extractSpecnames . item) asp
-    Cofree_spec asp _ -> (extractSpecnames . item) asp
-    Minimize_spec asp _ -> (extractSpecnames . item) asp
-    Local_spec asp1 asp2 _ -> concatMap (extractSpecnames . item) [asp1, asp2]
-    Closed_spec asp _ -> (extractSpecnames . item) asp
-    Group asp _ -> (extractSpecnames . item) asp
-    Spec_inst specname _ _ -> [specname]
-    Qualified_spec _ asp _ -> (extractSpecnames . item) asp
-    Data _ _ asp1 asp2 _ -> concatMap (extractSpecnames . item) [asp1, asp2]
-    _ -> []
 
 chainAnaLibItems :: LogicGraph -> HetcatsOpts -> LNS -> LibName -> LibEnv
   -> DGraph -> ExpOverrides -> [LIB_ITEM] -> LIB_ITEM
