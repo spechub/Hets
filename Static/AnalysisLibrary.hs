@@ -573,10 +573,10 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
    case expCurie (globalAnnos dg) eo an' of
    Nothing -> liftR $ prefixErrorIRI an'
    Just an -> do
-     -- l <- lookupCurrentLogic "Align_defn" lg
+     l <- lookupCurrentLogic "Align_defn" lg
      let anstr = iriToStringUnsecure an
      (_atype', (src, tar), dg') <- liftR
-       $ anaAlignType lg currLn dg opts eo (makeName an) atype
+       $ anaViewType lg currLn dg (EmptyNode l) opts eo (makeName an) atype
      let gsig1 = getSig src
          gsig2 = getSig tar
      case (gsig1, gsig2) of
@@ -812,27 +812,6 @@ anaViewType lg ln dg parSig opts eo name (View_type aspSrc aspTar pos) = do
                     (replaceAnnoted spTar' aspTar)
                     pos,
           (srcNsig, tarNsig), dg'')
-
-{- | analyze a ALIGN_TYPE
-The first three arguments give the global context
-The AnyLogic is the current logic
-The NodeSig is the signature of the parameter of the view
-flag, whether just the structure shall be analysed -}
-anaAlignType :: LogicGraph -> LibName -> DGraph -> HetcatsOpts
-  -> ExpOverrides
-  -> NodeName -> ALIGN_TYPE -> Result (ALIGN_TYPE, (NodeSig, NodeSig), DGraph)
-anaAlignType lg ln dg opts eo name (Align_type aspSrc aspTar pos) = do
-  l <- lookupCurrentLogic "VIEW_TYPE" lg
-  (spSrc', srcNsig, dg') <- adjustPos pos $ anaSpec False lg ln dg (EmptyNode l)
-    (extName "Source" name) opts eo (item aspSrc)
-  (spTar', tarNsig, dg'') <- adjustPos pos
-    $ anaSpec False lg ln dg' (EmptyNode l)
-    (extName "Target" name) opts eo (item aspTar)
-  return (Align_type (replaceAnnoted spSrc' aspSrc)
-                    (replaceAnnoted spTar' aspTar)
-                    pos,
-          (srcNsig, tarNsig), dg'')
-
 
 anaItemNameOrMap :: LibEnv -> LibName -> DGraph -> (GlobalEnv, DGraph)
   -> ItemNameMap -> Result (GlobalEnv, DGraph)

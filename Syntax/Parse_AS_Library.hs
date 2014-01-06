@@ -135,7 +135,7 @@ libItem l =
        an <- hetIRI l
        ar <- optionMaybe alignArities
        s2 <- asKey ":"
-       at <- alignType l
+       at <- viewType l
        (corresps, ps) <- option ([], []) $ do
          s <- equalT
          cs <- parseCorrespondences l
@@ -251,24 +251,12 @@ downloadItems l = do
     return (UniqueItem i, [s])
 
 
--- | Parse view type
-viewType :: LogicGraph -> AParser st VIEW_TYPE
-viewType l = do
-    (sp1, sp2, r) <- viewOrAlignType l
-    return (View_type sp1 sp2 r)
-
 equivType :: LogicGraph -> AParser st EQUIV_TYPE
 equivType l = do
     sp1 <- groupSpec l
     r <- equiT
     sp2 <- groupSpec l
     return $ Equiv_type sp1 sp2 $ tokPos r
-
--- | Parse align type
-alignType :: LogicGraph -> AParser st ALIGN_TYPE
-alignType l = do
-    (sp1, sp2, r) <- viewOrAlignType l
-    return (Align_type sp1 sp2 r)
 
 alignArities :: AParser st ALIGN_ARITIES
 alignArities = do
@@ -282,12 +270,13 @@ alignArity :: AParser st ALIGN_ARITY
 alignArity = choice $ map (\ a -> asKey (showAlignArity a) >> return a)
   [minBound .. maxBound]
 
-viewOrAlignType :: LogicGraph -> AParser st (Annoted SPEC, Annoted SPEC, Range)
-viewOrAlignType l = do
+-- | Parse view type also used in alignments
+viewType :: LogicGraph -> AParser st VIEW_TYPE
+viewType l = do
     sp1 <- annoParser (groupSpec l)
     s <- asKey toS
     sp2 <- annoParser (groupSpec l)
-    return (sp1, sp2, tokPos s)
+    return $ View_type sp1 sp2 $ tokPos s
 
 moduleType :: LogicGraph -> AParser st MODULE_TYPE
 moduleType l = do

@@ -44,6 +44,12 @@ printLibItems lg is = case is of
     Logic_decl aa _ -> setLogicName aa lg
     _ -> lg) rs
 
+prettyViewType :: [a] -> LogicGraph -> VIEW_TYPE -> Doc
+prettyViewType ad lg (View_type frm to _) =
+  sep [ printGroupSpec lg frm <+> keyword toS
+      , (if null ad then id else (<+> equals))
+      $ printGroupSpec lg to]
+
 instance PrettyLG LIB_ITEM where
     prettyLG lg li = case li of
         Spec_defn si (Genericity aa@(Params pl) ab@(Imported il) _) ac' _ ->
@@ -69,7 +75,7 @@ instance PrettyLG LIB_ITEM where
                     vcat $ (topKey specS <+> vcat [sphead, x]) : r
                     ++ [keyword endS]
         View_defn si (Genericity aa@(Params pl) ab@(Imported il) _)
-                      (View_type frm to _) ad _ ->
+                      vt ad _ ->
             let spid = structIRI si
                 sphead = if null il then
                              if null pl then spid <+> colon
@@ -77,11 +83,8 @@ instance PrettyLG LIB_ITEM where
                          else sep [ cat [spid, printPARAMS lg aa]
                                   , printIMPORTED lg ab <+> colon]
             in topKey viewS <+>
-               sep ([sphead, sep [ printGroupSpec lg frm <+> keyword toS
-                                  , (if null ad then id else (<+> equals))
-                                    $ printGroupSpec lg to]]
-                       ++ [ppWithCommas ad])
-                          $+$ keyword endS
+               sep [sphead, prettyViewType ad lg vt, ppWithCommas ad]
+               $+$ keyword endS
         Equiv_defn si (Equiv_type as1 as2 _) sp _ -> topKey equivalenceS <+>
             sep [structIRI si <+> colon, sep
                 [ printGroupSpec lg $ emptyAnno as1
@@ -89,15 +92,14 @@ instance PrettyLG LIB_ITEM where
                 , printGroupSpec lg $ emptyAnno as2]
                 <+> equals, prettyLG lg sp]
             $+$ keyword endS
-        Align_defn si ar (Align_type frm to _) corresps _ ->
+        Align_defn si ar vt corresps _ ->
             let spid = indexed (iriToStringShortUnsecure si)
                 sphead = case ar of
                   Nothing -> spid <+> colon
                   Just alignArities -> sep
                     [spid, printAlignArities alignArities <+> colon ]
             in topKey alignmentS <+>
-               sep ([sphead, sep [ printGroupSpec lg frm <+> keyword toS,
-                                    printGroupSpec lg to]]
+               sep ([sphead, prettyViewType [] lg vt]
                      ++ if null corresps then []
                         else [equals,
                               printCorrespondences corresps])

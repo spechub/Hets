@@ -48,7 +48,7 @@ data LIB_ITEM = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) Range
               -- pos: "view", ":", opt "=", opt "end"
               | Equiv_defn EQUIV_NAME EQUIV_TYPE (Annoted SPEC) Range
               -- pos: "equivalence", ":", "=", opt "end"
-              | Align_defn ALIGN_NAME (Maybe ALIGN_ARITIES) ALIGN_TYPE
+              | Align_defn ALIGN_NAME (Maybe ALIGN_ARITIES) VIEW_TYPE
                 [CORRESPONDENCE] Range
               | Module_defn MODULE_NAME MODULE_TYPE RESTRICTION_SIGNATURE Range
               {- G_symb_items_list is RESTRICTION-SIGNATURE
@@ -95,8 +95,6 @@ data IMPORTED = Imported [Annoted SPEC] deriving Show
 data VIEW_TYPE = View_type (Annoted SPEC) (Annoted SPEC) Range deriving Show
                  -- pos: "to"
 data EQUIV_TYPE = Equiv_type SPEC SPEC Range deriving Show
-
-data ALIGN_TYPE = Align_type (Annoted SPEC) (Annoted SPEC) Range deriving Show
 
 data MODULE_TYPE = Module_type (Annoted SPEC) (Annoted SPEC) Range
   deriving Show
@@ -147,6 +145,6 @@ getSpecDef li = case li of
   Spec_defn _ _ as _ -> [item as]
   View_defn _ _ (View_type s1 s2 _) _ _ -> [item s1, item s2]
   Equiv_defn _ (Equiv_type s1 s2 _) as _ -> [s1, s2, item as]
-  Align_defn _ _ (Align_type s1 s2 _) _ _ -> [item s1, item s2]
+  Align_defn _ _ (View_type s1 s2 _) _ _ -> [item s1, item s2]
   Module_defn _ (Module_type s1 s2 _) _ _ -> [item s1, item s2]
   _ -> []
