@@ -566,12 +566,119 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
   Newcomorphism_defn com _ -> ResultT $ do
     dg' <- anaComorphismDef com dg
     return $ Result [] $ Just (itm, dg', libenv, lg, eo)
-  Align_defn an' arities atype acorresps pos -> do
+  Align_defn an' arities atype acorresps pos ->
+    anaAlignDefn lg currLn libenv dg opts eo an' arities atype acorresps pos
+  _ -> return (itm, dg, libenv, lg, eo)
+
+symbolsOf :: G_sign -> G_sign -> Set.Set (G_symbol, G_symbol)
+  -> [CORRESPONDENCE] -> Set.Set (G_symbol, G_symbol)
+symbolsOf gs1 gs2 sPairs corresps =
+ case corresps of
+  [] -> sPairs
+  c : corresps' -> case c of
+    Default_correspondence -> symbolsOf gs1 gs2 sPairs corresps' -- TO DO
+    Correspondence_block _ _ cs -> let
+      sPairs' = symbolsOf gs1 gs2 sPairs cs
+     in symbolsOf gs1 gs2 sPairs' corresps'
+    Single_correspondence _ a b _ _ ->
+      symbolsOf gs1 gs2 (Set.union (Set.singleton (a, b)) sPairs) corresps'
+
+downloadMissingSpecs :: VIEW_TYPE -> LogicGraph -> HetcatsOpts -> LNS
+  -> LibName -> LibEnv -> DGraph -> ExpOverrides -> LIB_ITEM
+  -> ResultT IO (LIB_ITEM, DGraph, LibEnv, LogicGraph, ExpOverrides)
+downloadMissingSpecs (View_type sp1 sp2 _)
+  lg opts topLns currLn libenv dg eo itm = do
+  let iris = Set.toList . Set.filter
+        (\ i -> isNothing $ expCurie (globalAnnos dg) eo i
+         >>= (`lookupGlobalEnvDG` dg))
+        . Set.unions $ map (getSpecNames . item) [sp1, sp2]
+  itms <- useItems iris
+  chainAnaLibItems lg opts topLns currLn libenv dg eo itms itm
+
+chainAnaLibItems :: LogicGraph -> HetcatsOpts -> LNS -> LibName -> LibEnv
+  -> DGraph -> ExpOverrides -> [LIB_ITEM] -> LIB_ITEM
+  -> ResultT IO (LIB_ITEM, DGraph, LibEnv, LogicGraph, ExpOverrides)
+chainAnaLibItems lg opts topLns currLn libenv dg eo itms defItm =
+  case itms of
+    [] -> return (defItm, dg, libenv, lg, eo)
+    [itm] -> anaLibItem lg opts topLns currLn libenv dg eo itm
+    itm : itms' -> do
+      (_, dg', libenv', lg', eo') <-
+        chainAnaLibItems lg opts topLns currLn libenv dg eo itms' defItm
+      anaLibItem lg' opts topLns currLn libenv' dg' eo' itm
+
+-- | analyse genericity and view type and construct gmorphism
+anaViewDefn :: LogicGraph -> LibName -> LibEnv -> DGraph -> HetcatsOpts
+  -> ExpOverrides -> IRI -> GENERICITY -> VIEW_TYPE
+  -> [G_mapping] -> Range
+  -> Result (LIB_ITEM, DGraph, LibEnv, LogicGraph, ExpOverrides)
+anaViewDefn lg ln libenv dg opts eo vn gen vt gsis pos = do
+  let vName = makeName vn
+  (gen', gsig@(GenSig _ _ allparams), dg') <-
+       anaGenericity lg ln dg opts eo vName gen
+  (vt', (src@(NodeSig nodeS gsigmaS)
+        , tar@(NodeSig nodeT gsigmaT@(G_sign lidT _ _))), dg'') <-
+       anaViewType lg ln dg' allparams opts eo vName vt
+  let genv = globalEnv dg''
+  if Map.member vn genv
+    then plain_error (View_defn vn gen' vt' gsis pos, dg'', libenv, lg, eo)
+                    (alreadyDefined $ iriToStringUnsecure vn) pos
+    else do
+      let (tsis, hsis) = partitionGmaps gsis
+      (gsigmaS', tmor) <- if null tsis then do
+          (gsigmaS', imor) <- gSigCoerce lg gsigmaS (Logic lidT)
+          tmor <- gEmbedComorphism imor gsigmaS
+          return (gsigmaS', tmor)
+        else do
+          mor <- anaRenaming lg allparams gsigmaS opts (Renaming tsis pos)
+          let gsigmaS'' = cod mor
+          (gsigmaS', imor) <- gSigCoerce lg gsigmaS'' (Logic lidT)
+          tmor <- gEmbedComorphism imor gsigmaS''
+          fmor <- comp mor tmor
+          return (gsigmaS', fmor)
+      emor <- fmap gEmbed $ anaGmaps lg opts pos gsigmaS' gsigmaT hsis
+      gmor <- comp tmor emor
+      let vsig = ExtViewSig src gmor $ ExtGenSig gsig tar
+          voidView = nodeS == nodeT && isInclusion gmor
+      when voidView $ warning ()
+        ("identity mapping of source to same target for view: " ++
+            iriToStringUnsecure vn) pos
+      return (View_defn vn gen' vt' gsis pos,
+                (if voidView then dg'' else insLink dg'' gmor globalThm
+                 (DGLinkView vn $ Fitted gsis) nodeS nodeT)
+                -- 'LeftOpen' for conserv correct?
+                { globalEnv = Map.insert vn (ViewOrStructEntry True vsig) genv }
+               , libenv, lg, eo)
+
+{- | analyze a VIEW_TYPE
+The first three arguments give the global context
+The AnyLogic is the current logic
+The NodeSig is the signature of the parameter of the view
+flag, whether just the structure shall be analysed -}
+anaViewType :: LogicGraph -> LibName -> DGraph -> MaybeNode -> HetcatsOpts
+  -> ExpOverrides
+  -> NodeName -> VIEW_TYPE -> Result (VIEW_TYPE, (NodeSig, NodeSig), DGraph)
+anaViewType lg ln dg parSig opts eo name (View_type aspSrc aspTar pos) = do
+  l <- lookupCurrentLogic "VIEW_TYPE" lg
+  (spSrc', srcNsig, dg') <- adjustPos pos $ anaSpec False lg ln dg (EmptyNode l)
+    (extName "Source" name) opts eo (item aspSrc)
+  (spTar', tarNsig, dg'') <- adjustPos pos $ anaSpec True lg ln dg' parSig
+    (extName "Target" name) opts eo (item aspTar)
+  return (View_type (replaceAnnoted spSrc' aspSrc)
+                    (replaceAnnoted spTar' aspTar)
+                    pos,
+          (srcNsig, tarNsig), dg'')
+
+anaAlignDefn :: LogicGraph -> LibName -> LibEnv -> DGraph -> HetcatsOpts
+  -> ExpOverrides -> IRI -> Maybe ALIGN_ARITIES -> VIEW_TYPE
+  -> [CORRESPONDENCE] -> Range
+  -> ResultT IO (LIB_ITEM, DGraph, LibEnv, LogicGraph, ExpOverrides)
+anaAlignDefn lg ln libenv dg opts eo an' arities atype acorresps pos = do
      an <- expCurieT (globalAnnos dg) eo an'
      l <- lookupCurrentLogic "Align_defn" lg
      let anstr = iriToStringUnsecure an
-     (_atype', (src, tar), dg') <- liftR
-       $ anaViewType lg currLn dg (EmptyNode l) opts eo (makeName an) atype
+     (atype', (src, tar), dg') <- liftR
+       $ anaViewType lg ln dg (EmptyNode l) opts eo (makeName an) atype
      let gsig1 = getSig src
          gsig2 = getSig tar
      case (gsig1, gsig2) of
@@ -669,53 +776,15 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
                dg4 = insLink dg3 gmor2 globalDef
                      (DGLinkAlign an) (getNode sspan) (getNode tar)
                asign = AlignSpan sspan gmor1 src gmor2 tar
-               dg5 = dg4 { globalEnv = Map.insert an (AlignEntry asign)
+           return dg4 { globalEnv = Map.insert an (AlignEntry asign)
                            $ globalEnv dg4 }
-           return dg5
+         let itm = Align_defn an arities atype' acorresps pos
          if Map.member an $ globalEnv dg
           then liftR $ plain_error (itm, dg, libenv, lg, eo)
                 (alreadyDefined anstr) pos
           else return (itm, newDg, libenv, lg, eo)
                -- error "Analysis of alignments nyi"
        else fail "Alignments only work between ontologies in the same logic"
-  _ -> return (itm, dg, libenv, lg, eo)
-
-symbolsOf :: G_sign -> G_sign -> Set.Set (G_symbol, G_symbol)
-  -> [CORRESPONDENCE] -> Set.Set (G_symbol, G_symbol)
-symbolsOf gs1 gs2 sPairs corresps =
- case corresps of
-  [] -> sPairs
-  c : corresps' -> case c of
-    Default_correspondence -> symbolsOf gs1 gs2 sPairs corresps' -- TO DO
-    Correspondence_block _ _ cs -> let
-      sPairs' = symbolsOf gs1 gs2 sPairs cs
-     in symbolsOf gs1 gs2 sPairs' corresps'
-    Single_correspondence _ a b _ _ ->
-      symbolsOf gs1 gs2 (Set.union (Set.singleton (a, b)) sPairs) corresps'
-
-downloadMissingSpecs :: VIEW_TYPE -> LogicGraph -> HetcatsOpts -> LNS
-  -> LibName -> LibEnv -> DGraph -> ExpOverrides -> LIB_ITEM
-  -> ResultT IO (LIB_ITEM, DGraph, LibEnv, LogicGraph, ExpOverrides)
-downloadMissingSpecs (View_type sp1 sp2 _)
-  lg opts topLns currLn libenv dg eo itm = do
-  let iris = Set.toList . Set.filter
-        (\ i -> isNothing $ expCurie (globalAnnos dg) eo i
-         >>= (`lookupGlobalEnvDG` dg))
-        . Set.unions $ map (getSpecNames . item) [sp1, sp2]
-  itms <- useItems iris
-  chainAnaLibItems lg opts topLns currLn libenv dg eo itms itm
-
-chainAnaLibItems :: LogicGraph -> HetcatsOpts -> LNS -> LibName -> LibEnv
-  -> DGraph -> ExpOverrides -> [LIB_ITEM] -> LIB_ITEM
-  -> ResultT IO (LIB_ITEM, DGraph, LibEnv, LogicGraph, ExpOverrides)
-chainAnaLibItems lg opts topLns currLn libenv dg eo itms defItm =
-  case itms of
-    [] -> return (defItm, dg, libenv, lg, eo)
-    [itm] -> anaLibItem lg opts topLns currLn libenv dg eo itm
-    itm : itms' -> do
-      (_, dg', libenv', lg', eo') <-
-        chainAnaLibItems lg opts topLns currLn libenv dg eo itms' defItm
-      anaLibItem lg' opts topLns currLn libenv' dg' eo' itm
 
 -- the first DGraph dg' is that of the imported library
 anaItemNamesOrMaps :: LibEnv -> LibName -> DGraph -> DGraph
@@ -727,68 +796,6 @@ anaItemNamesOrMaps libenv' ln refDG dg items = do
   return dg1
     { globalAnnos = gannos''
     , globalEnv = genv1 }
-
--- | analyse genericity and view type and construct gmorphism
-anaViewDefn :: LogicGraph -> LibName -> LibEnv -> DGraph -> HetcatsOpts
-  -> ExpOverrides -> IRI -> GENERICITY -> VIEW_TYPE
-  -> [G_mapping] -> Range
-  -> Result (LIB_ITEM, DGraph, LibEnv, LogicGraph, ExpOverrides)
-anaViewDefn lg ln libenv dg opts eo vn gen vt gsis pos = do
-  let vName = makeName vn
-  (gen', gsig@(GenSig _ _ allparams), dg') <-
-       anaGenericity lg ln dg opts eo vName gen
-  (vt', (src@(NodeSig nodeS gsigmaS)
-        , tar@(NodeSig nodeT gsigmaT@(G_sign lidT _ _))), dg'') <-
-       anaViewType lg ln dg' allparams opts eo vName vt
-  let genv = globalEnv dg''
-  if Map.member vn genv
-    then plain_error (View_defn vn gen' vt' gsis pos, dg'', libenv, lg, eo)
-                    (alreadyDefined $ iriToStringUnsecure vn) pos
-    else do
-      let (tsis, hsis) = partitionGmaps gsis
-      (gsigmaS', tmor) <- if null tsis then do
-          (gsigmaS', imor) <- gSigCoerce lg gsigmaS (Logic lidT)
-          tmor <- gEmbedComorphism imor gsigmaS
-          return (gsigmaS', tmor)
-        else do
-          mor <- anaRenaming lg allparams gsigmaS opts (Renaming tsis pos)
-          let gsigmaS'' = cod mor
-          (gsigmaS', imor) <- gSigCoerce lg gsigmaS'' (Logic lidT)
-          tmor <- gEmbedComorphism imor gsigmaS''
-          fmor <- comp mor tmor
-          return (gsigmaS', fmor)
-      emor <- fmap gEmbed $ anaGmaps lg opts pos gsigmaS' gsigmaT hsis
-      gmor <- comp tmor emor
-      let vsig = ExtViewSig src gmor $ ExtGenSig gsig tar
-          voidView = nodeS == nodeT && isInclusion gmor
-      when voidView $ warning ()
-        ("identity mapping of source to same target for view: " ++
-            iriToStringUnsecure vn) pos
-      return (View_defn vn gen' vt' gsis pos,
-                (if voidView then dg'' else insLink dg'' gmor globalThm
-                 (DGLinkView vn $ Fitted gsis) nodeS nodeT)
-                -- 'LeftOpen' for conserv correct?
-                { globalEnv = Map.insert vn (ViewOrStructEntry True vsig) genv }
-               , libenv, lg, eo)
-
-{- | analyze a VIEW_TYPE
-The first three arguments give the global context
-The AnyLogic is the current logic
-The NodeSig is the signature of the parameter of the view
-flag, whether just the structure shall be analysed -}
-anaViewType :: LogicGraph -> LibName -> DGraph -> MaybeNode -> HetcatsOpts
-  -> ExpOverrides
-  -> NodeName -> VIEW_TYPE -> Result (VIEW_TYPE, (NodeSig, NodeSig), DGraph)
-anaViewType lg ln dg parSig opts eo name (View_type aspSrc aspTar pos) = do
-  l <- lookupCurrentLogic "VIEW_TYPE" lg
-  (spSrc', srcNsig, dg') <- adjustPos pos $ anaSpec False lg ln dg (EmptyNode l)
-    (extName "Source" name) opts eo (item aspSrc)
-  (spTar', tarNsig, dg'') <- adjustPos pos $ anaSpec True lg ln dg' parSig
-    (extName "Target" name) opts eo (item aspTar)
-  return (View_type (replaceAnnoted spSrc' aspSrc)
-                    (replaceAnnoted spTar' aspTar)
-                    pos,
-          (srcNsig, tarNsig), dg'')
 
 anaItemNameOrMap :: LibEnv -> LibName -> DGraph -> (GlobalEnv, DGraph)
   -> ItemNameMap -> Result (GlobalEnv, DGraph)
