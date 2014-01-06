@@ -313,7 +313,7 @@ cd /tmp
 rm -rf Hets-lib
 svn export -q --ignore-externals \
   https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk Hets-lib
-$TAR czvf lib.tgz Hets-lib
+$TAR zcf lib.tgz Hets-lib
 chmod 664 lib.tgz
 chgrp agcofi lib.tgz
 \cp -fp lib.tgz /home/www.informatik.uni-bremen.de/cofi/Libraries/daily/
