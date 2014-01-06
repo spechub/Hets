@@ -518,7 +518,7 @@ release:
             ./clean.sh; \
             find . -name .svn -o -name \*.o -o -name \*.hi | xargs $(RM) -r; \
             $(RM) clean.*; utils/replaceAllHeaders.sh)
-	$(TAR) cvf Hets.tar Hets
+	$(TAR) cf Hets.tar Hets
 
 # Common/LaTeX_maps.hs generation
 utils/genItCorrections: $(GENITCORRECTIONS_deps)
