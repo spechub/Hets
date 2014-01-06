@@ -401,18 +401,19 @@ anaGenericity lg ln dg opts eo name
    return (Genericity (Params ps') (Imported imps') pos,
      GenSig nsigI nsigPs $ JustNode ns, dg'')
 
+expCurieT :: GlobalAnnos -> ExpOverrides -> IRI -> ResultT IO IRI
+expCurieT ga eo = liftR . expCurieR ga eo
+
 -- | analyse a LIB_ITEM
 anaLibItem :: LogicGraph -> HetcatsOpts -> LNS -> LibName -> LibEnv -> DGraph
   -> ExpOverrides -> LIB_ITEM
   -> ResultT IO (LIB_ITEM, DGraph, LibEnv, LogicGraph, ExpOverrides)
 anaLibItem lg opts topLns currLn libenv dg eo itm =
  case itm of
-  Spec_defn spn2 gen asp pos -> let
-    spn' = if null (iriToStringUnsecure spn2) then
+  Spec_defn spn2 gen asp pos -> do
+    let spn' = if null (iriToStringUnsecure spn2) then
          simpleIdToIRI $ mkSimpleId "Spec" else spn2
-    in case expCurie (globalAnnos dg) eo spn' of
-   Nothing -> liftR $ prefixErrorIRI spn'
-   Just spn -> do
+    spn <- expCurieT (globalAnnos dg) eo spn'
     let spstr = iriToStringUnsecure spn
         nName = makeName spn
     analyzing opts $ "spec " ++ spstr
@@ -436,16 +437,14 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
         , dg'' { globalEnv = Map.insert spn (SpecEntry
                   $ ExtGenSig gsig body) genv }
         , libenv, lg, eo)
-  View_defn vn' gen vt gsis pos -> case expCurie (globalAnnos dg) eo vn' of
-   Nothing -> liftR $ prefixErrorIRI vn'
-   Just vn -> do
+  View_defn vn' gen vt gsis pos -> do
+    vn <- expCurieT (globalAnnos dg) eo vn'
     (_, dg', libenv', lg', eo') <- downloadMissingSpecs
                                    vt lg opts topLns currLn libenv dg eo itm
     analyzing opts $ "view " ++ iriToStringUnsecure vn
     liftR $ anaViewDefn lg' currLn libenv' dg' opts eo' vn gen vt gsis pos
-  Arch_spec_defn asn' asp pos -> case expCurie (globalAnnos dg) eo asn' of
-   Nothing -> liftR $ prefixErrorIRI asn'
-   Just asn -> do
+  Arch_spec_defn asn' asp pos -> do
+    asn <- expCurieT (globalAnnos dg) eo asn'
     let asstr = iriToStringUnsecure asn
     analyzing opts $ "arch spec " ++ asstr
     (_, _, diag, archSig, dg', asp') <- liftR $ anaArchSpec lg currLn dg
@@ -467,9 +466,8 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
               { globalEnv = Map.insert asn
                             (ArchOrRefEntry True archSig) genv }
               , libenv, lg, eo)
-  Unit_spec_defn usn' usp pos -> case expCurie (globalAnnos dg) eo usn' of
-   Nothing -> liftR $ prefixErrorIRI usn'
-   Just usn -> do
+  Unit_spec_defn usn' usp pos -> do
+    usn <- expCurieT (globalAnnos dg) eo usn'
     let usstr = iriToStringUnsecure usn
     analyzing opts $ "unit spec " ++ usstr
     l <- lookupCurrentLogic "Unit_spec_defn" lg
@@ -484,9 +482,8 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
       else return (usd', dg'
              { globalEnv = Map.insert usn (UnitEntry unitSig) genv },
              libenv, lg, eo)
-  Ref_spec_defn rn' rsp pos -> case expCurie (globalAnnos dg) eo rn' of
-   Nothing -> liftR $ prefixErrorIRI rn'
-   Just rn -> do
+  Ref_spec_defn rn' rsp pos -> do
+    rn <- expCurieT (globalAnnos dg) eo rn'
     let rnstr = iriToStringUnsecure rn
     l <- lookupCurrentLogic "Ref_spec_defn" lg
     (_, _, _, rsig, dg', rsp') <- liftR $ anaRefSpec lg currLn dg opts eo
@@ -569,10 +566,8 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
   Newcomorphism_defn com _ -> ResultT $ do
     dg' <- anaComorphismDef com dg
     return $ Result [] $ Just (itm, dg', libenv, lg, eo)
-  Align_defn an' arities atype acorresps pos ->
-   case expCurie (globalAnnos dg) eo an' of
-   Nothing -> liftR $ prefixErrorIRI an'
-   Just an -> do
+  Align_defn an' arities atype acorresps pos -> do
+     an <- expCurieT (globalAnnos dg) eo an'
      l <- lookupCurrentLogic "Align_defn" lg
      let anstr = iriToStringUnsecure an
      (_atype', (src, tar), dg') <- liftR
@@ -581,8 +576,7 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
          gsig2 = getSig tar
      case (gsig1, gsig2) of
       (G_sign lid1 gsign1 ind1, G_sign lid2 gsign2 _) ->
-       case compare (Logic lid1) (Logic lid2) of
-       EQ -> do
+       if Logic lid1 == Logic lid2 then do
         -- arities TO DO
         let pairsSet = symbolsOf gsig1 gsig2 Set.empty acorresps
             leftList = map fst $ Set.toList pairsSet
@@ -683,7 +677,7 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
                 (alreadyDefined anstr) pos
           else return (itm, newDg, libenv, lg, eo)
                -- error "Analysis of alignments nyi"
-       _ -> error "Alignments only work between ontologies in the same logic"
+       else fail "Alignments only work between ontologies in the same logic"
   _ -> return (itm, dg, libenv, lg, eo)
 
 symbolsOf :: G_sign -> G_sign -> Set.Set (G_symbol, G_symbol)
