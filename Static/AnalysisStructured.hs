@@ -29,6 +29,7 @@ module Static.AnalysisStructured
     , extendMorphism
     , insGTheory
     , expCurie
+    , expCurieR
     , expandCurieByPath
     , ExpOverrides
     , notFoundError
@@ -478,12 +479,10 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp = case sp of
       (sp', nsig', dg') <-
           anaSpecTop conser addSyms lg ln dg nsig name opts eo (item asp)
       return (Group (replaceAnnoted sp' asp) pos, nsig', dg')
-  Spec_inst spname' afitargs pos0 ->
-      case expCurie (globalAnnos dg) eo spname' of
-   Nothing -> prefixErrorIRI spname'
-   Just spname ->
-    let pos = if null afitargs then iriPos spname else pos0
-    in adjustPos pos $ case lookupGlobalEnvDG spname dg of
+  Spec_inst spname' afitargs pos0 -> do
+   spname <- expCurieR (globalAnnos dg) eo spname'
+   let pos = if null afitargs then iriPos spname else pos0
+   adjustPos pos $ case lookupGlobalEnvDG spname dg of
     Just (SpecEntry gs@(ExtGenSig (GenSig _ params _)
                         body@(NodeSig nB gsigmaB))) ->
      case (length afitargs, length params) of
@@ -859,9 +858,9 @@ anaFitArg lg ln dg spname nsigI nsigP@(NodeSig nP gsigmaP) opts name eo fv =
                 insLink dg'' eGmor globalThm
                    (DGLinkInst spname $ Fitted gsis) nP nA'
           , (gmor, nsigA'))
-  Fit_view vn' afitargs pos -> case expCurie ga eo vn' of
-   Nothing -> prefixErrorIRI vn'
-   Just vn -> case lookupGlobalEnvDG vn dg of
+  Fit_view vn' afitargs pos -> do
+   vn <- expCurieR ga eo vn'
+   case lookupGlobalEnvDG vn dg of
     Just (ViewOrStructEntry _ (ExtViewSig (NodeSig nSrc gsigmaS) mor
       gs@(ExtGenSig (GenSig _ params _) target@(NodeSig nTar _))))
         -> adjustPos pos $ do
@@ -1117,6 +1116,9 @@ anaExtension lg opts eo ln pos (sps', nsig', dg', conser, addSyms) (name', asp')
 
 
 -- BEGIN CURIE expansion
+
+expCurieR :: GlobalAnnos -> ExpOverrides -> IRI -> Result IRI
+expCurieR ga eo i = maybe (prefixErrorIRI i) return $ expCurie ga eo i
 
 expCurie :: GlobalAnnos -> ExpOverrides -> IRI -> Maybe IRI
 expCurie ga eo i =

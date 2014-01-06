@@ -99,9 +99,9 @@ anaArchSpec lgraph ln dg opts eo sharedCtx nP archSp = case archSp of
                            (replaceAnnoted uexpr' uexpr) pos)
   Group_arch_spec asp _ ->
       anaArchSpec lgraph ln dg opts eo sharedCtx nP (item asp)
-  Arch_spec_name un' -> case expCurie (globalAnnos dg) eo un' of
-    Nothing -> prefixErrorIRI un'
-    Just asi -> case lookupGlobalEnvDG asi dg of
+  Arch_spec_name un' -> do
+    asi <- expCurieR (globalAnnos dg) eo un'
+    case lookupGlobalEnvDG asi dg of
             Just (ArchOrRefEntry True asig@(BranchRefSig
                         (NPBranch n f) (UnitSig nsList resNs _, _))) -> do
               let (rN, dg', asig') =
@@ -194,9 +194,8 @@ anaUnitDeclDefn :: LogicGraph -> LibName -> DGraph -> HetcatsOpts
 {- ^ returns 1. extended static unit context 2. possibly modified
 development graph 3. possibly modified UNIT_DECL_DEFN -}
 anaUnitDeclDefn lgraph ln dg opts eo uctx@(buc, _) udd = case udd of
-  Unit_decl un' usp uts pos -> case expCurie (globalAnnos dg) eo un' of
-    Nothing -> prefixErrorIRI un'
-    Just unIRI -> do
+  Unit_decl un' usp uts pos -> do
+       unIRI <- expCurieR (globalAnnos dg) eo un'
        let ustr = iriToStringShortUnsecure unIRI
        (dns, diag', dg', uts') <-
            anaUnitImported lgraph ln dg opts eo uctx pos uts
@@ -288,9 +287,8 @@ ANSWER: when it's just a unit sig -}
                       return (Map.fromList [(unIRI, getPointerFromRef rsig)],
                        (Map.insert unIRI basedParUSig buc, diag'''),
                                   dg'', ud')
-  Unit_defn un' uexp poss -> case expCurie (globalAnnos dg) eo un' of
-    Nothing -> prefixErrorIRI un'
-    Just un -> do
+  Unit_defn un' uexp poss -> do
+       un <- expCurieR (globalAnnos dg) eo un'
        (nodes, usig, diag, dg'', uexp') <-
          anaUnitExpression lgraph ln dg opts eo uctx uexp
        let ud' = Unit_defn un uexp' poss
@@ -326,9 +324,8 @@ anaUnitRef :: LogicGraph -> LibName -> DGraph -> HetcatsOpts
 {- ^ returns 1. extended static unit context 2. possibly modified
 development graph 3. possibly modified UNIT_DECL_DEFN -}
 anaUnitRef lgraph ln dg opts eo _uctx@(_ggbuc, _diag') rN
-    (Unit_ref un' usp pos) = case expCurie (globalAnnos dg) eo un' of
- Nothing -> prefixErrorIRI un'
- Just un -> do
+    (Unit_ref un' usp pos) = do
+  un <- expCurieR (globalAnnos dg) eo un'
   let n = case rN of
            Nothing -> Nothing
            Just (NPComp f) -> Just $ Map.findWithDefault
@@ -459,10 +456,8 @@ anaUnitBindings :: LogicGraph -> LibName -> DGraph
     -> Result ([(IRI, NodeSig)], DGraph, [UNIT_BINDING])
 anaUnitBindings lgraph ln dg opts eo uctx@(buc, _) bs = case bs of
           [] -> return ([], dg, [])
-          Unit_binding un' usp poss : ubs ->
-              case expCurie (globalAnnos dg) eo un' of
-            Nothing -> prefixErrorIRI un'
-            Just un -> do
+          Unit_binding un' usp poss : ubs -> do
+               un <- expCurieR (globalAnnos dg) eo un'
                let unpos = iriPos un
                curl <- lookupCurrentLogic "UNIT_BINDINGS" lgraph
                (BranchRefSig _ (UnitSig argSigs nsig _, _), dg', usp') <-
@@ -570,9 +565,8 @@ anaUnitTerm lgraph ln dg opts eo uctx@(buc, diag) utrm =
            anaUnitTerm lgraph ln dg1 opts eo uctx' (item ut)
        return (dnsig, diag', dg',
                Local_unit udds' (replaceAnnoted ut' ut) poss)
-  Unit_appl un' fargus _ -> case expCurie (globalAnnos dg) eo un' of
-    Nothing -> prefixErrorIRI un'
-    Just un -> do
+  Unit_appl un' fargus _ -> do
+       un <- expCurieR (globalAnnos dg) eo un'
        let ustr = iriToStringUnsecure un
            argStr = show . sepByCommas $ map (prettyLG lgraph) fargus
        case Map.lookup un buc of
@@ -611,23 +605,13 @@ anaUnitTerm lgraph ln dg opts eo uctx@(buc, diag) utrm =
                        extendDiagramIncl lgraph diagA pIL resultSig ""
                    -- insert nodes p^F_i and appropriate edges to the diagram
                    let ins diag0 dg0 [] = return (diag0, dg0)
-                       ins diag0 dg0 ((fpi, (morph, _, targetNode)) : morphNodes) =
-                           do {- (dnsig, diag1, dg1) <-
-                              extendDiagramWithMorphismRevHide pos lgraph diag0
-                              dg0 targetNode (gEmbed morph) argStr
-                              DGTest
-                              let tsig  = getSigFromDiag dnsig
-                              incl <- ginclusion lgraph (getSig fpi) (getSig tsig)
-                              -- insert verification condition: dnsig |= SP_i
-                              let linkLabel = defDGLink incl globalThm DGLinkVerif
-                              (_, dg2) = insLEdgeDG (getNode fpi, getNode tsig, linkLabel) dg1
-                              diag'' <- insInclusionEdges lgraph diag1 [dnsig]
-                              qB -}
+                       ins diag0 dg0 ((fpi, (morph, _, tar)) : morphNodes) =
+                           do
                               (diag'', dg2) <-
                                 insertFormalParamAndVerifCond
                                  pos lgraph
                                  diag0 dg0
-                                 targetNode fpi qB
+                                 tar fpi qB
                                  (gEmbed morph)
                                  argStr DGTest
                               ins diag'' dg2 morphNodes
@@ -637,14 +621,14 @@ anaUnitTerm lgraph ln dg opts eo uctx@(buc, diag) utrm =
                                   sigMorExt DGExtension
                    -- make the union of sigR with all specs of arguments
                    let nsigs' = reverse $ map (getSigFromDiag . third) morphSigs
-                   gbigSigma <- gsigManyUnion lgraph $ map getSig $ sigR : nsigs'
+                   gbigSigma <- gsigManyUnion lgraph $ map getSig
+                     $ sigR : nsigs'
                    let (ns@(NodeSig node _), dg6) = insGSig dg5 emptyNodeName
                                                      DGUnion gbigSigma
                        insE dgl (NodeSig n gsigma) = do
                          incl <- ginclusion lgraph gsigma gbigSigma
                          return $ insLink dgl incl globalDef SeeTarget n node
                    dg7 <- foldM insE dg6 $ sigR : nsigs'
-                   --
                    incSink <- inclusionSink lgraph (map third morphSigs) sigR
                    let sink' = (nqB, sigMorExt) : incSink
                    assertAmalgamability opts pos diag'' sink' utStr
@@ -817,9 +801,9 @@ anaUnitSpec lgraph ln dg opts eo impsig rN usp = case usp of
            rsig = mkRefSigFromUnit usig
        return (rsig, dg3, Unit_type argSpecs'
                                 (replaceAnnoted resultSpec' resultSpec) poss)
-  Spec_name un' -> case expCurie (globalAnnos dg) eo un' of
-   Nothing -> prefixErrorIRI un'
-   Just usn -> case lookupGlobalEnvDG usn dg of
+  Spec_name un' -> do
+   usn <- expCurieR (globalAnnos dg) eo un'
+   case lookupGlobalEnvDG usn dg of
     Just (UnitEntry usig) -> return (mkRefSigFromUnit usig, dg, usp)
     Just (SpecEntry (ExtGenSig _gsig@(GenSig _ args unSig) nsig) ) -> do
       let uSig = case unSig of
@@ -1015,45 +999,46 @@ anaArgSpecs lgraph ln dg opts eo args = case args of
 
 {- | Check that given diagram ensures amalgamability along given set
 of morphisms -}
-assertAmalgamability :: HetcatsOpts          -- ^ the program options
-                     -> Range               -- ^ the position (for diagnostics)
-                     -> Diag                -- ^ the diagram to be checked
-                     -> [(Node, GMorphism)] -- ^ the sink
-                     -> String              -- ^ the unit expr as a string
-                     -> Result ()
-assertAmalgamability opts pos diag sink uexp =
-    do ensAmalg <- homogeneousEnsuresAmalgamability opts pos diag sink
-       case ensAmalg of
-                     Amalgamates -> return ()
-                     NoAmalgamation msg -> plain_error ()
-                             ("Amalgamability is not ensured: " ++ msg ++ "\n for " ++ uexp ) pos
-                     DontKnow msg -> warning () msg pos
+assertAmalgamability
+  :: HetcatsOpts         -- ^ the program options
+  -> Range               -- ^ the position (for diagnostics)
+  -> Diag                -- ^ the diagram to be checked
+  -> [(Node, GMorphism)] -- ^ the sink
+  -> String              -- ^ the unit expr as a string
+  -> Result ()
+assertAmalgamability opts pos diag sink uexp = do
+  ensAmalg <- homogeneousEnsuresAmalgamability opts pos diag sink
+  case ensAmalg of
+    Amalgamates -> return ()
+    NoAmalgamation msg -> plain_error ()
+      ("Amalgamability is not ensured: " ++ msg ++ "\n for " ++ uexp) pos
+    DontKnow msg -> warning () msg pos
 
 -- | Check the amalgamability assuming common logic for whole diagram
-homogeneousEnsuresAmalgamability :: HetcatsOpts  -- ^ the program options
-                                 -> Range  -- ^ the position (for diagnostics)
-                                 -> Diag   -- ^ the diagram to be checked
-                                 -> [(Node, GMorphism)] -- ^ the sink
-                                 -> Result Amalgamates
+homogeneousEnsuresAmalgamability
+  :: HetcatsOpts  -- ^ the program options
+  -> Range  -- ^ the position (for diagnostics)
+  -> Diag   -- ^ the diagram to be checked
+  -> [(Node, GMorphism)] -- ^ the sink
+  -> Result Amalgamates
 homogeneousEnsuresAmalgamability opts pos diag sink = case sink of
-                 [] -> plain_error defaultDontKnow
-                       "homogeneousEnsuresAmalgamability: Empty sink" pos
-                 lab' : _ -> do
-                             let (_, mor) = lab'
-                                 sig = cod mor
-                             G_sign lid _ _ <- return sig
-                             hDiag <- homogeniseDiagram lid diag
-                             hSink <- homogeniseSink lid sink
-                             ensures_amalgamability lid (caslAmalg opts,
-                                        hDiag, hSink, diagDesc diag)
+  [] -> plain_error defaultDontKnow
+        "homogeneousEnsuresAmalgamability: Empty sink" pos
+  lab' : _ -> do
+    let (_, mor) = lab'
+        sig = cod mor
+    G_sign lid _ _ <- return sig
+    hDiag <- homogeniseDiagram lid diag
+    hSink <- homogeniseSink lid sink
+    ensures_amalgamability lid (caslAmalg opts, hDiag, hSink, diagDesc diag)
 
 -- | Get a position within the source file of a UNIT-TERM
 getPosUnitTerm :: UNIT_TERM -> Range
 getPosUnitTerm ut = case ut of
   Unit_reduction _ restr -> case restr of
     -- obtain position from RESTRICTION
-               Hidden _ poss -> poss
-               Revealed _ poss -> poss
+    Hidden _ poss -> poss
+    Revealed _ poss -> poss
   Unit_translation _ (Renaming _ poss) -> poss
   Amalgamation _ poss -> poss
   Local_unit _ _ poss -> poss
@@ -1063,8 +1048,8 @@ getPosUnitTerm ut = case ut of
 -- | Get a position within the source file of UNIT-IMPORTED
 getPosUnitImported :: Range -> Range
 getPosUnitImported (Range ps) = Range $ case ps of
-                          [] -> []
-                          _ : qs -> if null qs then ps else qs
+  [] -> []
+  _ : qs -> if null qs then ps else qs
 
 -- | Get a position within the source file of UNIT-EXPRESSION
 getPosUnitExpression :: UNIT_EXPRESSION -> Range
