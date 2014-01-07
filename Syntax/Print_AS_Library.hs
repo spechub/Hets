@@ -44,6 +44,9 @@ printLibItems lg is = case is of
     Logic_decl aa _ -> setLogicName aa lg
     _ -> lg) rs
 
+instance PrettyLG VIEW_TYPE where
+  prettyLG = prettyViewType []
+
 prettyViewType :: [a] -> LogicGraph -> VIEW_TYPE -> Doc
 prettyViewType ad lg (View_type frm to _) =
   sep [ printGroupSpec lg frm <+> keyword toS
@@ -143,6 +146,9 @@ printIMPORTED :: LogicGraph -> IMPORTED -> Doc
 printIMPORTED lg (Imported aa) = case aa of
     [] -> empty
     _ -> sep [keyword givenS, sepByCommas $ map (printGroupSpec lg) aa]
+
+instance Pretty ALIGN_ARITIES where
+  pretty = printAlignArities
 
 printAlignArities :: ALIGN_ARITIES -> Doc
 printAlignArities (Align_arities f b) =

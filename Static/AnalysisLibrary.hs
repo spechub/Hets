@@ -32,7 +32,6 @@ import Syntax.AS_Structured
 import Syntax.Print_AS_Structured
 import Syntax.Print_AS_Library ()
 import Syntax.AS_Library
-import Syntax.Parse_AS_Library (useItems)
 
 import Static.GTheory
 import Static.DevGraph
@@ -192,10 +191,9 @@ anaStringAux :: Maybe LibName -- ^ suggested library name
   -> FilePath -> (LibName, LibEnv) -> LIB_DEFN -> ResultT IO (LibName, LibEnv)
 anaStringAux mln lgraph opts topLns initDG file posFileName (_, libenv)
              (Lib_defn pln is' ps ans) = do
-  let filt = Set.filter hasFullIRI
-      spNs = filt . Set.unions . map getSpecNames
+  let spNs = Set.unions . map getSpecNames
         $ concatMap (getSpecDef . item) is'
-      declNs = filt . Set.fromList $ concatMap (getDeclSpecNames . item) is'
+      declNs = Set.fromList $ concatMap (getDeclSpecNames . item) is'
       unDecls = map addDownload . Set.toList $ spNs Set.\\ declNs
       is = unDecls ++ is'
       noSuffixFile = rmSuffix file
@@ -441,10 +439,12 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
         , libenv, lg, eo)
   View_defn vn' gen vt gsis pos -> do
     vn <- expCurieT (globalAnnos dg) eo vn'
-    (_, dg', libenv', lg', eo') <- downloadMissingSpecs
-                                   vt lg opts topLns currLn libenv dg eo itm
     analyzing opts $ "view " ++ iriToStringUnsecure vn
-    liftR $ anaViewDefn lg' currLn libenv' dg' opts eo' vn gen vt gsis pos
+    liftR $ anaViewDefn lg currLn libenv dg opts eo vn gen vt gsis pos
+  Align_defn an' arities atype acorresps pos -> do
+    an <- expCurieT (globalAnnos dg) eo an'
+    analyzing opts $ "alignment " ++ iriToStringUnsecure an
+    anaAlignDefn lg currLn libenv dg opts eo an arities atype acorresps pos
   Arch_spec_defn asn' asp pos -> do
     asn <- expCurieT (globalAnnos dg) eo asn'
     let asstr = iriToStringUnsecure asn
@@ -568,8 +568,6 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
   Newcomorphism_defn com _ -> ResultT $ do
     dg' <- anaComorphismDef com dg
     return $ Result [] $ Just (itm, dg', libenv, lg, eo)
-  Align_defn an' arities atype acorresps pos ->
-    anaAlignDefn lg currLn libenv dg opts eo an' arities atype acorresps pos
   _ -> return (itm, dg, libenv, lg, eo)
 
 symbolsOf :: LogicGraph -> G_sign -> G_sign -> [CORRESPONDENCE]
@@ -600,30 +598,6 @@ symbolsOf lg gs1@(G_sign l1 (ExtSign sig1 sys1) _)
         _ -> mkError "non-unique raw symbols" c
       ps <- symbolsOf lg gs1 gs2 corresps'
       return $ Set.insert p ps
-
-downloadMissingSpecs :: VIEW_TYPE -> LogicGraph -> HetcatsOpts -> LNS
-  -> LibName -> LibEnv -> DGraph -> ExpOverrides -> LIB_ITEM
-  -> ResultT IO (LIB_ITEM, DGraph, LibEnv, LogicGraph, ExpOverrides)
-downloadMissingSpecs (View_type sp1 sp2 _)
-  lg opts topLns currLn libenv dg eo itm = do
-  let iris = Set.toList . Set.filter
-        (\ i -> isNothing $ expCurie (globalAnnos dg) eo i
-         >>= (`lookupGlobalEnvDG` dg))
-        . Set.unions $ map (getSpecNames . item) [sp1, sp2]
-  itms <- useItems iris
-  chainAnaLibItems lg opts topLns currLn libenv dg eo itms itm
-
-chainAnaLibItems :: LogicGraph -> HetcatsOpts -> LNS -> LibName -> LibEnv
-  -> DGraph -> ExpOverrides -> [LIB_ITEM] -> LIB_ITEM
-  -> ResultT IO (LIB_ITEM, DGraph, LibEnv, LogicGraph, ExpOverrides)
-chainAnaLibItems lg opts topLns currLn libenv dg eo itms defItm =
-  case itms of
-    [] -> return (defItm, dg, libenv, lg, eo)
-    [itm] -> anaLibItem lg opts topLns currLn libenv dg eo itm
-    itm : itms' -> do
-      (_, dg', libenv', lg', eo') <-
-        chainAnaLibItems lg opts topLns currLn libenv dg eo itms' defItm
-      anaLibItem lg' opts topLns currLn libenv' dg' eo' itm
 
 -- | analyse genericity and view type and construct gmorphism
 anaViewDefn :: LogicGraph -> LibName -> LibEnv -> DGraph -> HetcatsOpts
@@ -691,10 +665,8 @@ anaAlignDefn :: LogicGraph -> LibName -> LibEnv -> DGraph -> HetcatsOpts
   -> ExpOverrides -> IRI -> Maybe ALIGN_ARITIES -> VIEW_TYPE
   -> [CORRESPONDENCE] -> Range
   -> ResultT IO (LIB_ITEM, DGraph, LibEnv, LogicGraph, ExpOverrides)
-anaAlignDefn lg ln libenv dg opts eo an' arities atype acorresps pos = do
-     an <- expCurieT (globalAnnos dg) eo an'
+anaAlignDefn lg ln libenv dg opts eo an arities atype acorresps pos = do
      l <- lookupCurrentLogic "Align_defn" lg
-     let anstr = iriToStringUnsecure an
      (atype', (src, tar), dg') <- liftR
        $ anaViewType lg ln dg (EmptyNode l) opts eo (makeName an) atype
      let gsig1 = getSig src
@@ -720,7 +692,7 @@ anaAlignDefn lg ln libenv dg opts eo an' arities atype acorresps pos = do
                        checkArity leftList rightList gsig1 aleft &&
                        checkArity rightList leftList gsig2 aright
         if not aCheck then
-          error "Arities do not check" -- TO DO: improve
+          liftR $ mkError "Arities do not check" arities
          else do
          -- correspondence
          let isMorphism = isTotal gsig1 leftList &&
@@ -774,9 +746,6 @@ anaAlignDefn lg ln libenv dg opts eo an' arities atype acorresps pos = do
                             $ Set.toList pairsSet
            sigma0 <- liftR $ foldM (add_symb_to_sign lid1)
              (empty_signature lid1) $ Set.toList pairedSymSet
-           {- case maybeResult $ legal_mor $ ide sigma0 of
-           Nothing -> error "Could not construct a legal signature"
-           _ -> do -}
            let eSigma0 = makeExtSign lid1 sigma0
            pi1 <- liftR $ induced_from_to_morphism lid1 eMap1 eSigma0 gsign1
            gsign2' <- liftR $ coerceSign lid2 lid1 "coerce sign" gsign2
@@ -797,12 +766,15 @@ anaAlignDefn lg ln libenv dg opts eo an' arities atype acorresps pos = do
            return dg4 { globalEnv = Map.insert an (AlignEntry asign)
                            $ globalEnv dg4 }
          let itm = Align_defn an arities atype' acorresps pos
+             anstr = iriToStringUnsecure an
          if Map.member an $ globalEnv dg
           then liftR $ plain_error (itm, dg, libenv, lg, eo)
                 (alreadyDefined anstr) pos
           else return (itm, newDg, libenv, lg, eo)
                -- error "Analysis of alignments nyi"
-       else fail "Alignments only work between ontologies in the same logic"
+       else liftR $ fatal_error
+         ("Alignments only work between ontologies in the same logic\n"
+         ++ show (prettyLG lg atype)) pos
 
 -- the first DGraph dg' is that of the imported library
 anaItemNamesOrMaps :: LibEnv -> LibName -> DGraph -> DGraph

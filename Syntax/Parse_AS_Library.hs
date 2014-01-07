@@ -11,7 +11,7 @@ Parser for CASL specification librariess
    Follows Sect. II:3.1.5 of the CASL Reference Manual.
 -}
 
-module Syntax.Parse_AS_Library (library, useItem, useItems) where
+module Syntax.Parse_AS_Library (library) where
 
 import Logic.Grothendieck (LogicGraph, prefixes)
 import Syntax.AS_Structured
@@ -188,8 +188,7 @@ libItem l =
                 (catRange ([s1, s2] ++ ps ++ maybeToList q)))
   <|> -- use (to be removed eventually)
     do asKey "use"
-       i <- hetIRI l
-       useItem i
+       fmap addDownloadAux $ hetIRI l
   <|> -- logic
     do s <- asKey logicS
        logD <- logicDescr l
@@ -225,21 +224,6 @@ libItem l =
         if p1 == p2 then fail "cannot parse spec" else
           return (Syntax.AS_Library.Spec_defn nullIRI
                (Genericity (Params []) (Imported []) nullRange) a nullRange)
-
-useItem :: Monad m => IRI -> m LIB_ITEM
-useItem i = do
-  let libPath = deleteQuery i
-      query = iriQuery i -- this used to be the fragment
-  libNameIri <- if null query || null (tail query)
-    then return libPath else case parseIRIManchester $ tail query of
-    Just i' -> return i'
-    Nothing -> fail $ "could not read " ++ query ++ " into IRI"
-  return $ Download_items
-    (LibName libPath nullRange (Just libPath) Nothing)
-    (ItemMaps [ItemNameMap libNameIri (Just i)]) nullRange
-
-useItems :: Monad m => [IRI] -> m [LIB_ITEM]
-useItems = mapM useItem
 
 downloadItems :: LogicGraph -> AParser st (DownloadItems, [Token])
 downloadItems l = do

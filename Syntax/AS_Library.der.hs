@@ -78,7 +78,17 @@ data DownloadItems =
     deriving Show
 
 addDownload :: SPEC_NAME -> Annoted LIB_ITEM
-addDownload i = emptyAnno $ Download_items (iriLibName i)
+addDownload = emptyAnno . addDownloadAux
+
+addDownloadAux :: SPEC_NAME -> LIB_ITEM
+addDownloadAux j =
+  let libPath = deleteQuery i
+      query = iriQuery i -- this used to be the fragment
+      i = case query of
+        "" -> j
+        ['?'] -> libPath
+        _ : r -> fromMaybe libPath $ parseIRIManchester r
+  in Download_items (iriLibName i)
                 (ItemMaps [ItemNameMap i Nothing])
                 $ iriPos i
 
