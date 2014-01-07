@@ -179,19 +179,6 @@ parseOptLogTarget lG e s l =
 plainComma :: AParser st Token
 plainComma = anComma `notFollowedWith` asKey logicS
 
--- * parse G_symbol
-
-parseSymbolAux :: AnyLogic -> AParser st G_symbol
-parseSymbolAux (Logic lid) =
-   case parse_symbol lid of
-    Nothing ->
-        fail $ "no symbol parser for language " ++ language_name lid
-    Just pa -> do s <- pa
-                  return (G_symbol lid s)
-
-parseSymbol :: LogicGraph -> AParser st G_symbol
-parseSymbol l = lookupCurrentLogic "symbol" l >>= parseSymbolAux
-
 -- * parse G_mapping
 
 callSymParser :: Maybe (AParser st a) -> String -> String ->
@@ -524,10 +511,11 @@ correspondence l = do
     return $ Single_correspondence mcid eRef toer mrRef mconf
 
 corr1 :: LogicGraph
-      -> AParser st ( Maybe CORRESPONDENCE_ID, G_symbol
-                    , Maybe RELATION_REF, Maybe CONFIDENCE, G_symbol)
+      -> AParser st ( Maybe CORRESPONDENCE_ID, G_symb_items_list
+                    , Maybe RELATION_REF, Maybe CONFIDENCE, G_symb_items_list)
 corr1 l = do
-    eRef <- parseSymbol l
+    al <- lookupCurrentLogic "correspondence" l
+    (eRef, _) <- parseItemsList al
     (mrRef, mconf, toer) <- corr2 l
     cids <- annotations
     if not (null cids || null (tail cids))
@@ -535,23 +523,18 @@ corr1 l = do
       else return (listToMaybe cids, eRef, mrRef, mconf, toer)
 
 corr2 :: LogicGraph
-      -> AParser st (Maybe RELATION_REF, Maybe CONFIDENCE, G_symbol)
+      -> AParser st (Maybe RELATION_REF, Maybe CONFIDENCE, G_symb_items_list)
 corr2 l = do
-    rRef <- try $ relationRefWithLookAhead l
+    rRef <- optionMaybe . try $ relationRefWithLookAhead l
     (mconf, toer) <- corr3 l
-    return (Just rRef, mconf, toer)
-  <|> do
-    (mconf, toer) <- corr3 l
-    return (Nothing, mconf, toer)
+    return (rRef, mconf, toer)
 
-corr3 :: LogicGraph -> AParser st (Maybe CONFIDENCE, G_symbol)
+corr3 :: LogicGraph -> AParser st (Maybe CONFIDENCE, G_symb_items_list)
 corr3 l = do
-    conf <- try confidence
-    sym <- parseSymbol l
-    return (Just conf, sym)
-  <|> do
-    sym <- parseSymbol l
-    return (Nothing, sym)
+    al <- lookupCurrentLogic "corr3" l
+    conf <- optionMaybe $ try confidence
+    (sym, _) <- parseItemsList al
+    return (conf, sym)
 
 relationRefWithLookAhead :: LogicGraph -> AParser st RELATION_REF
 relationRefWithLookAhead lG = do

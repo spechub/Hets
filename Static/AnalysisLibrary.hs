@@ -30,6 +30,7 @@ import Logic.ExtSign
 
 import Syntax.AS_Structured
 import Syntax.Print_AS_Structured
+import Syntax.Print_AS_Library ()
 import Syntax.AS_Library
 import Syntax.Parse_AS_Library (useItems)
 
@@ -46,6 +47,7 @@ import Common.Consistency
 import Common.GlobalAnnotations
 import Common.ConvertGlobalAnnos
 import Common.AnalyseAnnos
+import Common.ExtSign
 import Common.Result
 import Common.ResultT
 import Common.LibName
@@ -570,18 +572,34 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
     anaAlignDefn lg currLn libenv dg opts eo an' arities atype acorresps pos
   _ -> return (itm, dg, libenv, lg, eo)
 
-symbolsOf :: G_sign -> G_sign -> Set.Set (G_symbol, G_symbol)
-  -> [CORRESPONDENCE] -> Set.Set (G_symbol, G_symbol)
-symbolsOf gs1 gs2 sPairs corresps =
+symbolsOf :: LogicGraph -> G_sign -> G_sign -> [CORRESPONDENCE]
+  -> Result (Set.Set (G_symbol, G_symbol))
+symbolsOf lg gs1@(G_sign l1 (ExtSign sig1 sys1) _)
+ gs2@(G_sign l2 (ExtSign sig2 sys2) _) corresps =
  case corresps of
-  [] -> sPairs
+  [] -> return Set.empty
   c : corresps' -> case c of
-    Default_correspondence -> symbolsOf gs1 gs2 sPairs corresps' -- TO DO
-    Correspondence_block _ _ cs -> let
-      sPairs' = symbolsOf gs1 gs2 sPairs cs
-     in symbolsOf gs1 gs2 sPairs' corresps'
-    Single_correspondence _ a b _ _ ->
-      symbolsOf gs1 gs2 (Set.union (Set.singleton (a, b)) sPairs) corresps'
+    Default_correspondence -> symbolsOf lg gs1 gs2 corresps' -- TO DO
+    Correspondence_block _ _ cs -> do
+      sPs1 <- symbolsOf lg gs1 gs2 cs
+      sPs2 <- symbolsOf lg gs1 gs2 corresps'
+      return $ Set.union sPs1 sPs2
+    Single_correspondence _ (G_symb_items_list lid1 sis1)
+        (G_symb_items_list lid2 sis2) _ _ -> do
+      ss1 <- coerceSymbItemsList lid1 l1 "symbolsOf1" sis1
+      rs1 <- stat_symb_items l1 sig1 ss1
+      ss2 <- coerceSymbItemsList lid2 l2 "symbolsOf1" sis2
+      rs2 <- stat_symb_items l2 sig2 ss2
+      p <- case (rs1, rs2) of
+        ([r1], [r2]) -> case
+            ( filter (\ sy -> matches l1 sy r1) $ Set.toList sys1
+            , filter (\ sy -> matches l2 sy r2) $ Set.toList sys2) of
+          ([s1], [s2]) ->
+            return (G_symbol l1 s1, G_symbol l2 s2)
+          _ -> mkError "non-unique symbol match" c
+        _ -> mkError "non-unique raw symbols" c
+      ps <- symbolsOf lg gs1 gs2 corresps'
+      return $ Set.insert p ps
 
 downloadMissingSpecs :: VIEW_TYPE -> LogicGraph -> HetcatsOpts -> LNS
   -> LibName -> LibEnv -> DGraph -> ExpOverrides -> LIB_ITEM
@@ -685,8 +703,8 @@ anaAlignDefn lg ln libenv dg opts eo an' arities atype acorresps pos = do
       (G_sign lid1 gsign1 ind1, G_sign lid2 gsign2 _) ->
        if Logic lid1 == Logic lid2 then do
         -- arities TO DO
-        let pairsSet = symbolsOf gsig1 gsig2 Set.empty acorresps
-            leftList = map fst $ Set.toList pairsSet
+        pairsSet <- liftR $ symbolsOf lg gsig1 gsig2 acorresps
+        let leftList = map fst $ Set.toList pairsSet
             rightList = map snd $ Set.toList pairsSet
             isTotal gsig sList = Set.fromList sList == symsOfGsign gsig
             isInjective sList = length sList == length (nub sList)

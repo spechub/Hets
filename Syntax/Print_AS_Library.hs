@@ -174,6 +174,9 @@ printCorrespondence (Single_correspondence mcid eRef toer mrRef mconf) =
    [pretty toer],
    map pretty $ maybeToList mcid]
 
+instance Pretty CORRESPONDENCE where
+  pretty = printCorrespondence
+
 printConfidence :: CONFIDENCE -> Doc
    -- "show" should work in [0,1]
 printConfidence = text . ('(' :) . (++ ")") . show

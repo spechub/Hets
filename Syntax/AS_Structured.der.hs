@@ -178,8 +178,8 @@ data CORRESPONDENCE = Correspondence_block
                         [CORRESPONDENCE]
                     | Single_correspondence
                         (Maybe CORRESPONDENCE_ID)
-                        G_symbol -- was ENTITY_REF
-                        G_symbol -- was TERM_OR_ENTITY_REF
+                        G_symb_items_list -- was ENTITY_REF
+                        G_symb_items_list -- was TERM_OR_ENTITY_REF
                         (Maybe RELATION_REF)
                         (Maybe CONFIDENCE)
                     | Default_correspondence
