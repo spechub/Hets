@@ -251,8 +251,6 @@ class (Language lid, PrintTypeConv basic_spec, GetRange basic_spec,
             Just p -> makeDefault (p, pretty)
          -- | parser for basic specifications
          parse_basic_spec :: lid -> Maybe (PrefixMap -> AParser st basic_spec)
-         -- | parser for symbols
-         parse_symbol :: lid -> Maybe (AParser st symbol)
          -- | parser for symbol lists
          parse_symb_items :: lid -> Maybe (AParser st symb_items)
          -- | parser for symbol maps
@@ -260,7 +258,6 @@ class (Language lid, PrintTypeConv basic_spec, GetRange basic_spec,
          toItem :: lid -> basic_spec -> Item
          -- default implementations
          parse_basic_spec _ = Nothing
-         parse_symbol _ = Nothing
          parse_symb_items _ = Nothing
          parse_symb_map_items _ = Nothing
          toItem _ bs = mkFlatItem ("Basicspec", pretty bs) $ getRangeSpan bs

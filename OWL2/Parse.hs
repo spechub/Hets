@@ -197,13 +197,6 @@ symbItems = do
     iris <- symbs
     return $ SymbItems ext iris
 
--- | parse a symbol
-parseSymb :: GenParser Char st Entity
-parseSymb = do
-    e <- entityType
-    iri <- uriP
-    return $ Entity e iri
-
 -- | parse a comma separated list of uris
 symbs :: GenParser Char st [IRI]
 symbs = uriP >>= \ u -> do

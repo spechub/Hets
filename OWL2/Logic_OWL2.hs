@@ -84,7 +84,6 @@ instance Syntax OWL2 OntologyDocument Entity SymbItems SymbMapItems where
     parsersAndPrinters OWL2 = addSyntax "Ship" (basicSpec, ppShipOnt)
       $ addSyntax "Manchester" (basicSpec, pretty)
       $ makeDefault (basicSpec, pretty)
-    parse_symbol OWL2 = Just parseSymb
     parse_symb_items OWL2 = Just symbItems
     parse_symb_map_items OWL2 = Just symbMapItems
 

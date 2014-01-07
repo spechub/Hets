@@ -12,8 +12,7 @@ Parsing symbols for translations and reductions
 -}
 
 module CASL.SymbolParser
-  ( parseSymb
-  , symbItems
+  ( symbItems
   , symbMapItems
   , opOrPredType
   , symbKind
@@ -134,8 +133,3 @@ symbMaps ks k =
          (is, ps) <- symbMaps ks k
          return (s : is, c : ps)
         <|> return ([s], [])
-
-parseSymb :: [String] -> AParser st SYMB
-parseSymb ks = do
-                  k <- option Implicit $ fmap fst symbKind
-                  symb ks k
