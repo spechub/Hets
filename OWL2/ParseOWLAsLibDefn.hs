@@ -88,4 +88,4 @@ convertToLibDefN imap o = Lib_defn (iriLibName oname)
         imps = map qNameToIRI $ imports ont
         imps2 = filter ((`elem` is) . show . setAnkles False) imps
         oname = qNameToIRI $ name ont
-        imp_libs = map addDownload imps2
+        imp_libs = map (addDownload False) imps2

@@ -77,11 +77,11 @@ data DownloadItems =
   | UniqueItem IRI
     deriving Show
 
-addDownload :: SPEC_NAME -> Annoted LIB_ITEM
-addDownload = emptyAnno . addDownloadAux
+addDownload :: Bool -> SPEC_NAME -> Annoted LIB_ITEM
+addDownload unique = emptyAnno . addDownloadAux unique
 
-addDownloadAux :: SPEC_NAME -> LIB_ITEM
-addDownloadAux j =
+addDownloadAux :: Bool -> SPEC_NAME -> LIB_ITEM
+addDownloadAux unique j =
   let libPath = deleteQuery j
       query = iriQuery j -- this used to be the fragment
       i = case query of
@@ -89,8 +89,8 @@ addDownloadAux j =
         ['?'] -> libPath
         _ : r -> fromMaybe libPath $ parseIRIManchester r
   in Download_items (iriLibName i)
-                (ItemMaps [ItemNameMap i Nothing])
-                $ iriPos i
+    (if unique then UniqueItem i else ItemMaps [ItemNameMap i Nothing])
+    $ iriPos i
 
 data GENERICITY = Genericity PARAMS IMPORTED Range deriving Show
                   -- pos: many of "[","]" opt ("given", commas)

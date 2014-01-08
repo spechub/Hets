@@ -188,7 +188,7 @@ libItem l =
                 (catRange ([s1, s2] ++ ps ++ maybeToList q)))
   <|> -- use (to be removed eventually)
     do asKey "use"
-       fmap addDownloadAux $ hetIRI l
+       fmap (addDownloadAux False) $ hetIRI l
   <|> -- logic
     do s <- asKey logicS
        logD <- logicDescr l
