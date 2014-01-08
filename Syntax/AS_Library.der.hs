@@ -82,8 +82,8 @@ addDownload = emptyAnno . addDownloadAux
 
 addDownloadAux :: SPEC_NAME -> LIB_ITEM
 addDownloadAux j =
-  let libPath = deleteQuery i
-      query = iriQuery i -- this used to be the fragment
+  let libPath = deleteQuery j
+      query = iriQuery j -- this used to be the fragment
       i = case query of
         "" -> j
         ['?'] -> libPath
