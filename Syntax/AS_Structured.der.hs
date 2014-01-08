@@ -25,7 +25,6 @@ import qualified Data.Set as Set
 import Logic.Logic (AnyLogic)
 import Logic.Grothendieck
     ( G_basic_spec
-    , G_symbol
     , G_symb_items_list
     , G_symb_map_items_list
     , LogicGraph
