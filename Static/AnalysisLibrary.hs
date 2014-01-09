@@ -194,7 +194,9 @@ anaStringAux mln lgraph opts topLns initDG file posFileName (_, libenv)
   let spNs = Set.unions . map getSpecNames
         $ concatMap (getSpecDef . item) is'
       declNs = Set.fromList $ concatMap (getDeclSpecNames . item) is'
-      unDecls = map (addDownload True) . Set.toList $ spNs Set.\\ declNs
+      missNames = Set.toList $ spNs Set.\\ declNs
+      unDecls = map (addDownload True) $ filter
+          (isNothing . (`lookupGlobalEnvDG` initDG)) missNames
       is = unDecls ++ is'
       noSuffixFile = rmSuffix file
       spN = convertFileToLibStr file
