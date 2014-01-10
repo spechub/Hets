@@ -181,16 +181,19 @@ plainComma = anComma `notFollowedWith` asKey logicS
 
 -- * parse G_mapping
 
-callSymParser :: Maybe (AParser st a) -> String -> String ->
+callSymParser :: Bool -> Maybe (AParser st a) -> String -> String ->
                  AParser st ([a], [Token])
-callSymParser p name itemType = case p of
+callSymParser oneOnly p name itemType = case p of
     Nothing ->
         fail $ "no symbol" ++ itemType ++ " parser for language " ++ name
-    Just pa -> separatedBy pa plainComma
+    Just pa -> if oneOnly then do
+        s <- pa
+        return ([s], [])
+      else separatedBy pa plainComma
 
 parseItemsMap :: AnyLogic -> AParser st (G_symb_map_items_list, [Token])
 parseItemsMap (Logic lid) = do
-      (cs, ps) <- callSymParser (parse_symb_map_items lid)
+      (cs, ps) <- callSymParser False (parse_symb_map_items lid)
                   (language_name lid) " maps"
       return (G_symb_map_items_list lid cs, ps)
 
@@ -219,7 +222,13 @@ parseMapOrHide constrLogic constrMap pa lG =
 
 parseItemsList :: AnyLogic -> AParser st (G_symb_items_list, [Token])
 parseItemsList (Logic lid) = do
-      (cs, ps) <- callSymParser (parse_symb_items lid)
+      (cs, ps) <- callSymParser False (parse_symb_items lid)
+                  (language_name lid) ""
+      return (G_symb_items_list lid cs, ps)
+
+parseSingleSymb :: AnyLogic -> AParser st (G_symb_items_list, [Token])
+parseSingleSymb (Logic lid) = do
+      (cs, ps) <- callSymParser True (parseSingleSymbItem lid)
                   (language_name lid) ""
       return (G_symb_items_list lid cs, ps)
 
@@ -515,7 +524,7 @@ corr1 :: LogicGraph
                     , Maybe RELATION_REF, Maybe CONFIDENCE, G_symb_items_list)
 corr1 l = do
     al <- lookupCurrentLogic "correspondence" l
-    (eRef, _) <- parseItemsList al
+    (eRef, _) <- parseSingleSymb al
     (mrRef, mconf, toer) <- corr2 l
     cids <- annotations
     if not (null cids || null (tail cids))
@@ -533,7 +542,7 @@ corr3 :: LogicGraph -> AParser st (Maybe CONFIDENCE, G_symb_items_list)
 corr3 l = do
     al <- lookupCurrentLogic "corr3" l
     conf <- optionMaybe $ try confidence
-    (sym, _) <- parseItemsList al
+    (sym, _) <- parseSingleSymb al
     return (conf, sym)
 
 relationRefWithLookAhead :: LogicGraph -> AParser st RELATION_REF

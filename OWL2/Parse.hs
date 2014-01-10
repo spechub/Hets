@@ -191,6 +191,12 @@ extEntity =
     fmap EntityType entityType
    <|> option AnyEntity (pkeyword "Prefix" >> return Prefix)
 
+symbItem :: GenParser Char st SymbItems
+symbItem = do
+    ext <- extEntity
+    i <- uriP
+    return $ SymbItems ext [i]
+
 symbItems :: GenParser Char st SymbItems
 symbItems = do
     ext <- extEntity

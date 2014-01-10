@@ -13,6 +13,7 @@ Parsing symbols for translations and reductions
 
 module CASL.SymbolParser
   ( symbItems
+  , symbItem
   , symbMapItems
   , opOrPredType
   , symbKind
@@ -103,6 +104,16 @@ symbItems ks =
     do (k, p) <- symbKind
        (is, ps) <- symbs ks k
        return (Symb_items k is $ catRange $ p : ps)
+
+-- | Parse a possible kinded CASL symbol.
+symbItem :: [String] -> AParser st SYMB_ITEMS
+symbItem ks = do
+    i <- symb ks Implicit
+    return $ Symb_items Implicit [i] $ getRange i
+  <|> do
+    (k, p) <- symbKind
+    i <- symb ks k
+    return $ Symb_items k [i] $ catRange [p]
 
 -- | parse a comma separated list of symbols
 symbs :: [String] -> SYMB_KIND -> AParser st ([SYMB], [Token])

@@ -126,6 +126,7 @@ instance Syntax CASL CASLBasicSpec
          parsersAndPrinters CASL = addSyntax "KIF"
            (const $ fmap kif2CASL kifBasic, pretty)
            $ makeDefault (basicSpec [], pretty)
+         parseSingleSymbItem CASL = Just $ symbItem []
          parse_symb_items CASL = Just $ symbItems []
          parse_symb_map_items CASL = Just $ symbMapItems []
          toItem CASL = bsToItem
