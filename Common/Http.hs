@@ -12,12 +12,14 @@ Portability :  non-portable (uses package HTTP)
 
 module Common.Http where
 
-import Network.HTTP
-import Network.Stream
-import Network.Browser
+import Common.Utils
 
-loadFromUri :: String -> IO (Result (Response String))
-loadFromUri str = fmap (Right . snd) . browse $ do
-    setOutHandler . const $ return ()
-    setAllowRedirects True
-    request . replaceHeader HdrAccept "text/plain" $ getRequest str
+import System.Exit
+
+loadFromUri :: String -> IO (Either String String)
+loadFromUri str = do
+  (code, out, err) <- executeProcess "wget"
+     ["-O", "-", str] ""
+  return $ case code of
+    ExitSuccess -> Right out
+    _ -> Left err

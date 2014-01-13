@@ -53,16 +53,12 @@ import Common.LibName
 import Common.Id
 import Common.IRI
 import Common.IO
+import Common.Http
 import qualified Common.Unlit as Unlit
 
 import Driver.Options
 import Driver.ReadFn
 import Driver.WriteLibDefn
-
-#ifndef NOHTTP
-import Network.HTTP
-import Common.Http
-#endif
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -91,25 +87,14 @@ anaSourceFile :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph
   -> FilePath -> ResultT IO (LibName, LibEnv)
 anaSourceFile = anaSource Nothing
 
-#ifndef NOHTTP
 downloadSource :: HetcatsOpts -> FilePath -> ResultT IO (FilePath, String)
 downloadSource opts fname = ResultT $ do
   putIfVerbose opts 3 $ "Downloading file " ++ fname
   resp <- loadFromUri fname
   case resp of
-    Right r -> case rspCode r of
-      (2, 0, 0) -> do
-        putIfVerbose opts 3 "Successful"
-        input <- getResponseBody resp
-        return $ return (fname, input)
-      (x, y, z) -> do
-        let errmsg = "Download of file " ++ fname
-                     ++ " yields HTTP error " ++ show x ++ show y ++ show z
-                     ++ ": " ++ rspReason r
-        putIfVerbose opts 3 errmsg
-        return $ fail errmsg
+    Right r -> return $ return (fname, r)
     Left err -> do
-      let errmsg = "Download of file " ++ fname ++ " failed: " ++ show err
+      let errmsg = "Download of file " ++ fname ++ " failed:\n" ++ err
       putIfVerbose opts 3 errmsg
       return $ fail errmsg
 
@@ -122,7 +107,6 @@ tryDownloadSources opts fnames origname = case fnames of
     $ \ (err :: IOError) -> do
       putIfVerbose opts 3 $ show err
       runResultT $ tryDownloadSources opts fnames' origname
-#endif
 
 anaSource :: Maybe LibName -- ^ suggested library name
   -> LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph
@@ -134,13 +118,11 @@ anaSource mln lg opts topLns libenv initDG origName =
         "" -> Nothing
         s -> Just $ simpleIdToIRI $ mkSimpleId s
       lgraph = setSyntax syn $ setCurLogic (defLogic opts) lg in ResultT $
-#ifndef NOHTTP
   if checkUri fname then runResultT $ do
     (fname', input) <-
       tryDownloadSources opts (getOntoFileNames opts fname) fname
     anaString mln lgraph opts topLns libenv initDG input fname'
   else
-#endif
   do
   fname' <- findFileOfLibName opts fname
   case fname' of

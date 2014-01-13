@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {- |
 Module      :  $Header$
 Copyright   :  Eugen Kuksa 2011
@@ -44,11 +43,7 @@ import Data.List
 import System.FilePath (combine, splitFileName, addExtension)
 import System.Directory (doesFileExist)
 
-#ifndef NOHTTP
 import Common.Http
-import Network.HTTP
-import Network.Stream (Result)
-#endif
 
 type SpecMap = Map String SpecInfo
 type SpecInfo = (BASIC_SPEC, Set String, Set String)
@@ -161,29 +156,19 @@ getCLIFContents opts dirFile baseDir =
         $ if checkUri baseDir then httpCombine baseDir fn else fn
       uStr = fromMaybe uStr1 $ stripPrefix "file://" uStr1
   in
-#ifndef NOHTTP
   if checkUri uStr then getCLIFContentsHTTP uStr "" else
-#endif
   localFileContents opts uStr baseDir
 
-#ifndef NOHTTP
 getCLIFContentsHTTP :: String -> String -> IO String
 getCLIFContentsHTTP uriS extension = do
     res <- loadFromUri $ uriS ++ extension
-    rb <- getResponseBody res
-    case httpResponseCode res of
-        (2, 0, 0) -> return rb
-        (x, y, z) -> case extension of
+    case res of
+        Right rb -> return rb
+        Left err -> case extension of
           "" -> getCLIFContentsHTTP uriS ".clf"
           ".clf" -> getCLIFContentsHTTP uriS ".clif"
           _ -> error $ "File not found via HTTP: " ++ uriS
-             ++ "[.clf | .clif]\nHTTP-code " ++ show x ++ show y ++ show z
-
-httpResponseCode :: Result (Response a) -> (Int, Int, Int)
-httpResponseCode res = case res of
-    Left _ -> (0, 0, 0)
-    Right r -> rspCode r
-#endif
+             ++ "[.clf | .clif]\n" ++ err
 
 localFileContents :: HetcatsOpts -> String -> String -> IO String
 localFileContents opts filename baseDir = do
