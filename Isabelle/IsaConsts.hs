@@ -664,6 +664,9 @@ oopsS = "oops"
 mlS :: String
 mlS = "ML"
 
+mlFileS :: String
+mlFileS = mlS ++ "_file"
+
 andS :: String
 andS = "and"
 
@@ -802,7 +805,7 @@ markups =
 ignoredKeys :: [String]
 ignoredKeys =
     [ domainS, oopsS, refuteS, fixrecS, primrecS, declareS, usingS
-    , dotDot, typedefS
+    , dotDot, typedefS, mlFileS
     , "open", "sorry", "done", "by", "proof", "apply", "qed"
     , "classrel", "defaultsort", "nonterminls", "arities"
     , "syntax", "no_syntax", "translations"

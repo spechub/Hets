@@ -154,8 +154,9 @@ theoryHead = do
     is <- lexS importsS >> many1 nameP
     us <- optionL (lexS usesS >> many1 (nameP <|> parname))
     lexS beginS
+    us2 <- optionL (lexS mlFileS >> many1 nameP)
     oc <- optionMaybe nameP
-    return $ TheoryHead th is us oc
+    return $ TheoryHead th is (us ++ us2) oc
 
 commalist :: Parser a -> Parser [a]
 commalist = flip sepBy1 (lexS ",")
