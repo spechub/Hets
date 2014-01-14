@@ -53,7 +53,8 @@ parseCL_CLIF filename opts = do
   let dirFile@(dir, _) = splitFileName filename
   specMap <- downloadSpec opts Map.empty Set.empty Set.empty False dirFile dir
   return $ map convertToLibDefN $ topSortSpecs
-    $ Map.map (\ (b, _, _) -> (b, Set.map tokStr $ directImports b)) specMap
+    $ Map.map (\ (b, _, _) ->
+               (b, Set.map (rmSuffix . tokStr) $ directImports b)) specMap
 
 -- call for CommonLogic CLIF-parser for a single file
 parseCL_CLIF_contents :: FilePath -> String -> Either ParseError [BASIC_SPEC]
@@ -64,7 +65,7 @@ parseCL_CLIF_contents = runParser (many $ CLIF.basicSpec Map.empty)
 development graph -}
 convertToLibDefN :: (BASIC_SPEC, FilePath) -> LIB_DEFN
 convertToLibDefN (spec, fp) = let
-  i = filePathToLibId fp
+  i = filePathToLibId $ rmSuffix fp
   in Lib_defn (iriLibName i)
     (makeLogicItem CommonLogic
     : map (addDownload False) (importsAsIris spec)
@@ -75,7 +76,8 @@ convertToLibItem :: BASIC_SPEC -> IRI -> Anno.Annoted LIB_ITEM
 convertToLibItem b i = makeSpecItem i $ createSpec b
 
 importsAsIris :: BASIC_SPEC -> [IRI]
-importsAsIris = map (filePathToLibId . tokStr) . Set.toList . directImports
+importsAsIris =
+  map (filePathToLibId . rmSuffix . tokStr) . Set.toList . directImports
 
 createSpec :: BASIC_SPEC -> Anno.Annoted SPEC
 createSpec b = addImports (importsAsIris b)
@@ -110,7 +112,7 @@ collectDownloads opts baseDir specMap (n, (b, topTexts, importedBy)) = do
 downloadSpec :: HetcatsOpts -> SpecMap -> Set.Set String -> Set.Set String
                 -> Bool -> (String, String) -> String -> IO SpecMap
 downloadSpec opts specMap topTexts importedBy isImport dirFile baseDir = do
-  let fn = uncurry combine dirFile
+  let fn = rmSuffix $ uncurry combine dirFile
   case Map.lookup fn specMap of
       Just info@(b, t, _)
         | isImport && Set.member fn importedBy
