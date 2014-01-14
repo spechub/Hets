@@ -109,7 +109,7 @@ readLibDefnAux lgraph opts file fileForPos input =
     _ -> do
      ty <- guessInput opts file input
      case ty of
-      CommonLogicIn _ -> liftIO $ fmap (: []) $ parseCL_CLIF file opts
+      CommonLogicIn _ -> liftIO $ parseCL_CLIF file opts
 #ifdef RDFLOGIC
  -- - RDFIn -> liftIO $ parseRDF file
 #endif

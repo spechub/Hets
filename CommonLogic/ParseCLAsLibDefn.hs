@@ -13,7 +13,7 @@ Analyses CommonLogic files.
 module CommonLogic.ParseCLAsLibDefn (parseCL_CLIF) where
 
 import Common.Id
-import Common.IRI (simpleIdToIRI)
+import Common.IRI
 import Common.LibName
 import Common.AS_Annotation as Anno
 import Common.AnnoState
@@ -33,9 +33,7 @@ import Syntax.AS_Library
 import Syntax.AS_Structured
 
 import Control.Monad (foldM)
-import Data.Set (Set)
 import qualified Data.Set as Set
-import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe
 import Data.List
@@ -45,18 +43,17 @@ import System.Directory (doesFileExist)
 
 import Common.Http
 
-type SpecMap = Map String SpecInfo
-type SpecInfo = (BASIC_SPEC, Set String, Set String)
+type SpecMap = Map.Map FilePath SpecInfo
+type SpecInfo = (BASIC_SPEC, Set.Set String, Set.Set FilePath)
                 -- (spec, topTexts, importedBy)
 
 -- | call for CommonLogic CLIF-parser with recursive inclusion of importations
-parseCL_CLIF :: FilePath -> HetcatsOpts -> IO LIB_DEFN
+parseCL_CLIF :: FilePath -> HetcatsOpts -> IO [LIB_DEFN]
 parseCL_CLIF filename opts = do
   let dirFile@(dir, _) = splitFileName filename
   specMap <- downloadSpec opts Map.empty Set.empty Set.empty False dirFile dir
-  specs <- anaImports opts dir specMap
-  return $ convertToLibDefN (convertFileToLibStr filename) specs
-
+  return $ map convertToLibDefN $ topSortSpecs
+    $ Map.map (\ (b, _, _) -> (b, Set.map tokStr $ directImports b)) specMap
 
 -- call for CommonLogic CLIF-parser for a single file
 parseCL_CLIF_contents :: FilePath -> String -> Either ParseError [BASIC_SPEC]
@@ -65,17 +62,23 @@ parseCL_CLIF_contents = runParser (many $ CLIF.basicSpec Map.empty)
 
 {- maps imports in basic spec to global definition links (extensions) in
 development graph -}
-convertToLibDefN :: String -> [(BASIC_SPEC, NAME)] -> LIB_DEFN
-convertToLibDefN fn specs = Lib_defn (emptyLibName fn)
-    (makeLogicItem CommonLogic : map convertToLibItems specs)
+convertToLibDefN :: (BASIC_SPEC, FilePath) -> LIB_DEFN
+convertToLibDefN (spec, fp) = let
+  i = filePathToLibId fp
+  in Lib_defn (iriLibName i)
+    (makeLogicItem CommonLogic
+    : map (addDownload False) (importsAsIris spec)
+    ++ [convertToLibItem spec i])
     nullRange []
 
-convertToLibItems :: (BASIC_SPEC, NAME) -> Anno.Annoted LIB_ITEM
-convertToLibItems (b, n) = makeSpecItem (simpleIdToIRI n) $ createSpec b
+convertToLibItem :: BASIC_SPEC -> IRI -> Anno.Annoted LIB_ITEM
+convertToLibItem b i = makeSpecItem i $ createSpec b
+
+importsAsIris :: BASIC_SPEC -> [IRI]
+importsAsIris = map (filePathToLibId . tokStr) . Set.toList . directImports
 
 createSpec :: BASIC_SPEC -> Anno.Annoted SPEC
-createSpec b = addImports
-  (map (simpleIdToIRI . cnvImportName) . Set.elems $ directImports b)
+createSpec b = addImports (importsAsIris b)
   . makeSpec $ G_basic_spec CommonLogic b
 
 specNameL :: [BASIC_SPEC] -> String -> [String]
@@ -87,34 +90,30 @@ specNameL bs def = case bs of
 specName :: String -> Int -> String
 specName def i = def ++ "_" ++ show i
 
-cnvImportName :: NAME -> NAME
-cnvImportName = mkSimpleId . convertFileToLibStr . tokStr
-
 httpCombine :: FilePath -> FilePath -> FilePath
 httpCombine d f = if checkUri f then f else combine d f
 
 collectDownloads :: HetcatsOpts -> String -> SpecMap -> (String, SpecInfo)
                     -> IO SpecMap
-collectDownloads opts baseDir specMap (n, (b, topTexts, importedBy)) =
+collectDownloads opts baseDir specMap (n, (b, topTexts, importedBy)) = do
   let directImps = Set.elems $ Set.map tokStr $ directImports b
       newTopTexts = Set.insert n topTexts
       newImportedBy = Set.insert n importedBy
-  in foldM (\ sm d -> do
-          let (ddir, df) = splitFileName d
+  foldM (\ sm d -> do
+          let p@(ddir, _) = splitFileName d
               baseDir' = httpCombine baseDir ddir
           newDls <- downloadSpec opts sm newTopTexts newImportedBy True
-              ("", df) baseDir'
+              p baseDir'
           return (Map.unionWith unify newDls sm)
         ) specMap directImps -- imports get @n@ as new "importedBy"
 
-downloadSpec :: HetcatsOpts -> SpecMap -> Set String -> Set String
+downloadSpec :: HetcatsOpts -> SpecMap -> Set.Set String -> Set.Set String
                 -> Bool -> (String, String) -> String -> IO SpecMap
-downloadSpec opts specMap topTexts importedBy isImport dirFile baseDir =
-  let filename = uncurry combine dirFile in
-  let fn = convertFileToLibStr filename in
+downloadSpec opts specMap topTexts importedBy isImport dirFile baseDir = do
+  let fn = uncurry combine dirFile
   case Map.lookup fn specMap of
-      Just (b, t, i)
-        | isImport && Set.member (convertFileToLibStr filename) importedBy
+      Just info@(b, t, _)
+        | isImport && Set.member fn importedBy
           -> error (concat [
                     "Illegal cyclic import: ", show (pretty importedBy), "\n"
                   , "Hets currently cannot handle cyclic imports "
@@ -124,15 +123,13 @@ downloadSpec opts specMap topTexts importedBy isImport dirFile baseDir =
                 ])
         | t == topTexts
           -> return specMap
-        | otherwise -> do
-          let newTopTexts = t `Set.union` topTexts
-          let newImportedBy = i `Set.union` importedBy
-          let newSpecMap = Map.insert fn (b, newTopTexts, newImportedBy) specMap
-          collectDownloads opts baseDir newSpecMap
-                       (fn, (b, newTopTexts, newImportedBy))
+        | otherwise ->
+          let newInfo = unify info (b, topTexts, importedBy)
+              newSpecMap = Map.insert fn newInfo specMap
+          in collectDownloads opts baseDir newSpecMap (fn, newInfo)
       Nothing -> do
           contents <- getCLIFContents opts dirFile baseDir
-          case parseCL_CLIF_contents filename contents of
+          case parseCL_CLIF_contents fn contents of
               Left err -> error $ show err
               Right bs ->
                 let nbs = zip (specNameL bs fn) bs
@@ -157,17 +154,21 @@ getCLIFContents opts dirFile baseDir =
         $ if checkUri baseDir then httpCombine baseDir fn else fn
       uStr = fromMaybe uStr1 $ stripPrefix "file://" uStr1
   in
-  if checkUri uStr then getCLIFContentsHTTP uStr "" else
+  if checkUri uStr then getCLIFContentsHTTP opts uStr "" else
   localFileContents opts uStr baseDir
 
-getCLIFContentsHTTP :: String -> String -> IO String
-getCLIFContentsHTTP uriS extension = do
-    res <- loadFromUri $ uriS ++ extension
+getCLIFContentsHTTP :: HetcatsOpts -> String -> String -> IO String
+getCLIFContentsHTTP opts uriS extension = do
+    let extUri = uriS ++ extension
+    putIfVerbose opts 3 $ "Trying to download " ++ extUri
+    res <- loadFromUri extUri
     case res of
-        Right rb -> return rb
+        Right rb -> do
+          putIfVerbose opts 2 $ "Downloaded " ++ extUri
+          return rb
         Left err -> case extension of
-          "" -> getCLIFContentsHTTP uriS ".clf"
-          ".clf" -> getCLIFContentsHTTP uriS ".clif"
+          "" -> getCLIFContentsHTTP opts uriS ".clf"
+          ".clf" -> getCLIFContentsHTTP opts uriS ".clif"
           _ -> error $ "File not found via HTTP: " ++ uriS
              ++ "[.clf | .clif]\n" ++ err
 
@@ -194,17 +195,17 @@ findLibFileAux fps f = case fps of
   [] -> error $ "Could not find Common Logic Library " ++ f
 
 -- retrieves all importations from the text
-directImports :: BASIC_SPEC -> Set NAME
+directImports :: BASIC_SPEC -> Set.Set NAME
 directImports (CL.Basic_spec items) = Set.unions
   $ map (getImports_textMetas . textsFromBasicItems . Anno.item) items
 
 textsFromBasicItems :: BASIC_ITEMS -> [TEXT_META]
 textsFromBasicItems (Axiom_items axs) = map Anno.item axs
 
-getImports_textMetas :: [TEXT_META] -> Set NAME
+getImports_textMetas :: [TEXT_META] -> Set.Set NAME
 getImports_textMetas tms = Set.unions $ map (getImports_text . getText) tms
 
-getImports_text :: TEXT -> Set NAME
+getImports_text :: TEXT -> Set.Set NAME
 getImports_text txt = case txt of
   Text p _ -> Set.fromList $ map impName $ filter isImportation p
   Named_text _ t _ -> getImports_text t
@@ -219,22 +220,10 @@ impName ph = case ph of
   Importation (Imp_name n) -> n
   _ -> error "CL.impName"
 
-anaImports :: HetcatsOpts -> String -> SpecMap -> IO [(BASIC_SPEC, NAME)]
-anaImports opts baseDir specMap = do
-  downloads <- foldM
-    (\ sm nbt -> do
-      newSpecs <- collectDownloads opts baseDir sm nbt
-      return (Map.unionWith unify newSpecs sm)
-    ) specMap $ Map.assocs specMap
-  let specAssocs = Map.assocs downloads
-  let sortedSpecs = sortBy usingImportedByCount specAssocs
-      -- sort by putting the latest imported specs to the beginning
-  return $ bsNamePairs sortedSpecs
-
--- not fast (O(n+m)), but reliable
-usingImportedByCount :: (String, SpecInfo) -> (String, SpecInfo) -> Ordering
-usingImportedByCount (_, (_, _, importedBy1)) (_, (_, _, importedBy2)) =
-  compare (Set.size importedBy2) (Set.size importedBy1)
-
-bsNamePairs :: [(String, SpecInfo)] -> [(BASIC_SPEC, NAME)]
-bsNamePairs = foldr (\ (n, (b, _, _)) r -> (b, mkSimpleId n) : r) []
+topSortSpecs :: Map.Map FilePath (BASIC_SPEC, Set.Set FilePath)
+  -> [(BASIC_SPEC, FilePath)]
+topSortSpecs specMap =
+  let (fm, rm) = Map.partition (Set.null . snd) specMap
+  in if Map.null fm then [] else
+     map (\ (n, (b, _)) -> (b, n)) (Map.toList fm) ++ topSortSpecs
+         (Map.map (\ (b, is) -> (b, is Set.\\ Map.keysSet fm)) rm)

@@ -24,6 +24,7 @@ module Common.LibName
   , libToFileName
   , getFilePath
   , iriLibName
+  , filePathToLibId
   , emptyLibName
   , convertFileToLibStr
   , mkLibStr
@@ -91,6 +92,9 @@ emptyLibName s = iriLibName .
 filePathToIri :: FilePath -> IRI
 filePathToIri fp = fromMaybe (error $ "filePathToIri: " ++ fp)
   . parseIRIReference $ escapeIRIString isUnescapedInIRI fp
+
+filePathToLibId :: FilePath -> IRI
+filePathToLibId = setAnkles True . filePathToIri
 
 setFilePath :: FilePath -> LibName -> LibName
 setFilePath fp ln =
