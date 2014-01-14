@@ -79,8 +79,9 @@ createSpec b = addImports
   . makeSpec $ G_basic_spec CommonLogic b
 
 specNameL :: [BASIC_SPEC] -> String -> [String]
-specNameL [_] def = [def]
-specNameL bs def = map (specName def) [0 .. (length bs)]
+specNameL bs def = case bs of
+  [_] -> [def]
+  _ -> map (specName def) [0 .. (length bs)]
 
 -- returns a unique name for a node
 specName :: String -> Int -> String
@@ -182,14 +183,15 @@ findLibFile ds f = if checkUri f then return f else do
   if e then return f else findLibFileAux ds f
 
 findLibFileAux :: [FilePath] -> String -> IO FilePath
-findLibFileAux [] f = error $ "Could not find Common Logic Library " ++ f
-findLibFileAux (d : ds) f = do
-  let fs = [ combine d $ addExtension f $ show $ CommonLogicIn b
-           | b <- [False, True]]
-  es <- mapM doesFileExist fs
-  case filter fst $ zip es fs of
+findLibFileAux fps f = case fps of
+  d : ds -> do
+    let fs = [ combine d $ addExtension f $ show $ CommonLogicIn b
+             | b <- [False, True]]
+    es <- mapM doesFileExist fs
+    case filter fst $ zip es fs of
         [] -> findLibFileAux ds f
         (_, f0) : _ -> return f0
+  [] -> error $ "Could not find Common Logic Library " ++ f
 
 -- retrieves all importations from the text
 directImports :: BASIC_SPEC -> Set NAME
@@ -203,16 +205,19 @@ getImports_textMetas :: [TEXT_META] -> Set NAME
 getImports_textMetas tms = Set.unions $ map (getImports_text . getText) tms
 
 getImports_text :: TEXT -> Set NAME
-getImports_text (Named_text _ t _) = getImports_text t
-getImports_text (Text p _) = Set.fromList $ map impName $ filter isImportation p
+getImports_text txt = case txt of
+  Text p _ -> Set.fromList $ map impName $ filter isImportation p
+  Named_text _ t _ -> getImports_text t
 
 isImportation :: PHRASE -> Bool
-isImportation (Importation _) = True
-isImportation _ = False
+isImportation ph = case ph of
+  Importation _ -> True
+  _ -> False
 
 impName :: PHRASE -> NAME
-impName (Importation (Imp_name n)) = n
-impName _ = undefined -- not necessary because filtered out
+impName ph = case ph of
+  Importation (Imp_name n) -> n
+  _ -> error "CL.impName"
 
 anaImports :: HetcatsOpts -> String -> SpecMap -> IO [(BASIC_SPEC, NAME)]
 anaImports opts baseDir specMap = do
