@@ -40,7 +40,7 @@ printIsaTheory tn sign sens = let
     b = baseSig sign
     bs = showBaseSig b
     ld = "$HETS_ISABELLE_LIB/"
-    mlFileUse = text mlFileS <+> doubleQuotes (text $ ld ++ "prelude.ML")
+    use = text usesS <+> doubleQuotes (text $ ld ++ "prelude.ML")
     in text theoryS <+> text tn
     $+$ text importsS <+> fsep (case b of
         Custom_thy -> []
@@ -50,8 +50,8 @@ printIsaTheory tn sign sens = let
                 Custom_thy -> True
                 _ -> True then [doubleQuotes $ text $ ld ++ bs] else [text bs]
       ++ map (doubleQuotes . text) (imports sign))
+    $+$ use
     $+$ text beginS
-    $++$ mlFileUse
     $++$ printTheoryBody sign sens
     $++$ text endS
 
