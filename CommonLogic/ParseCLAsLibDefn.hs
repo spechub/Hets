@@ -38,7 +38,7 @@ import qualified Data.Map as Map
 import Data.Maybe
 import Data.List
 
-import System.FilePath (combine, splitFileName, addExtension)
+import System.FilePath
 import System.Directory (doesFileExist)
 
 import Common.Http
@@ -92,8 +92,11 @@ specNameL bs def = case bs of
 specName :: String -> Int -> String
 specName def i = def ++ "_" ++ show i
 
+fileCombine :: FilePath -> FilePath -> FilePath
+fileCombine d = normalise . combine d
+
 httpCombine :: FilePath -> FilePath -> FilePath
-httpCombine d f = if checkUri f then f else combine d f
+httpCombine d f = if checkUri f then f else fileCombine d f
 
 collectDownloads :: HetcatsOpts -> String -> SpecMap -> (String, SpecInfo)
                     -> IO SpecMap
@@ -112,7 +115,7 @@ collectDownloads opts baseDir specMap (n, (b, topTexts, importedBy)) = do
 downloadSpec :: HetcatsOpts -> SpecMap -> Set.Set String -> Set.Set String
                 -> Bool -> (String, String) -> String -> IO SpecMap
 downloadSpec opts specMap topTexts importedBy isImport dirFile baseDir = do
-  let fn = rmSuffix $ uncurry combine dirFile
+  let fn = rmSuffix $ uncurry fileCombine dirFile
   case Map.lookup fn specMap of
       Just info@(b, t, _)
         | isImport && Set.member fn importedBy
@@ -151,7 +154,7 @@ unify (_, s, p) (a, t, q) = (a, s `Set.union` t, p `Set.union` q)
 (perhaps select a text from the file) -}
 getCLIFContents :: HetcatsOpts -> (String, String) -> String -> IO String
 getCLIFContents opts dirFile baseDir =
-  let fn = uncurry combine dirFile
+  let fn = uncurry fileCombine dirFile
       uStr1 = useCatalogURL opts
         $ if checkUri baseDir then httpCombine baseDir fn else fn
       uStr = fromMaybe uStr1 $ stripPrefix "file://" uStr1
@@ -188,7 +191,7 @@ findLibFile ds f = if checkUri f then return f else do
 findLibFileAux :: [FilePath] -> String -> IO FilePath
 findLibFileAux fps f = case fps of
   d : ds -> do
-    let fs = [ combine d $ addExtension f $ show $ CommonLogicIn b
+    let fs = [ fileCombine d $ addExtension f $ show $ CommonLogicIn b
              | b <- [False, True]]
     es <- mapM doesFileExist fs
     case filter fst $ zip es fs of
