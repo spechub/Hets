@@ -93,7 +93,9 @@ specName :: String -> Int -> String
 specName def i = def ++ "_" ++ show i
 
 fileCombine :: FilePath -> FilePath -> FilePath
-fileCombine d = normalise . combine d
+fileCombine d = (\ s -> case s of
+   '.' : p : r | isPathSeparator p -> r
+   _ -> s) . combine d
 
 httpCombine :: FilePath -> FilePath -> FilePath
 httpCombine d f = if checkUri f then f else fileCombine d f
