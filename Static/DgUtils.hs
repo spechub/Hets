@@ -12,12 +12,11 @@ Portability :  portable
 module Static.DgUtils where
 
 import qualified Common.Lib.Rel as Rel
-import Common.IRI (IRI, nullIRI, iriToStringShortUnsecure, parseCurie)
-import Common.Utils (numberSuffix, splitByList, splitOn, readMaybe)
+import Common.IRI
+import Common.Utils
 import Common.LibName
 import Common.Consistency
 
-import Data.Graph.Inductive.Graph (Node)
 import Data.List
 import Data.Maybe
 
@@ -308,10 +307,10 @@ isDefEdgeType edgeTp = case edgeTypeModInc edgeTp of
 
 data RTPointer =
    RTNone
- | NPUnit Node
- | NPBranch Node (Map.Map IRI RTPointer)
+ | NPUnit Int
+ | NPBranch Int (Map.Map IRI RTPointer)
         -- here the leaves can be either NPUnit or NPComp
- | NPRef Node Node
+ | NPRef Int Int
  | NPComp (Map.Map IRI RTPointer)
          {- here the leaves can be NPUnit or NPComp
          and roots are needed for inserting edges -}
@@ -319,7 +318,7 @@ data RTPointer =
 
 -- map nodes
 
-mapRTNodes :: Map.Map Node Node -> RTPointer -> RTPointer
+mapRTNodes :: Map.Map Int Int -> RTPointer -> RTPointer
 mapRTNodes f rtp = let app = flip $ Map.findWithDefault (error "mapRTNodes")
   in case rtp of
   RTNone -> RTNone
@@ -344,13 +343,13 @@ compPointer x y = error $ "compPointer:" ++ show x ++ " " ++ show y
 
 -- sources
 
-refSource :: RTPointer -> Node
+refSource :: RTPointer -> Int
 refSource (NPUnit n) = n
 refSource (NPBranch n _) = n
 refSource (NPRef n _) = n
 refSource x = error ("refSource:" ++ show x)
 
-data RTLeaves = RTLeaf Node | RTLeaves (Map.Map IRI RTLeaves)
+data RTLeaves = RTLeaf Int | RTLeaves (Map.Map IRI RTLeaves)
  deriving Show
 
 refTarget :: RTPointer -> RTLeaves
@@ -370,7 +369,7 @@ showExt n = let i = extIndex n in extString n ++ if i == 0 then "" else show i
 
 showName :: NodeName -> String
 showName n = let ext = showExt n in
-    iriToStringShortUnsecure (getName n)
+    iriToStringShortUnsecure (setAnkles False $ getName n)
     ++ if null ext then ext else "__" ++ ext
 
 makeName :: IRI -> NodeName

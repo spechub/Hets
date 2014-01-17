@@ -19,7 +19,7 @@ import Syntax.Print_AS_Library ()
 
 import Common.AS_Annotation
 import Common.Id
-import Common.IRI (iriToStringShortUnsecure)
+import Common.IRI
 import Common.Item
 import Common.LibName
 import Common.Result
@@ -35,9 +35,12 @@ import Text.XML.Light
 
 import Data.Maybe
 
+iriToStr :: IRI -> String
+iriToStr = iriToStringShortUnsecure . setAnkles False
+
 xmlLibDefn :: LogicGraph -> GlobalAnnos -> LIB_DEFN -> Element
 xmlLibDefn lg ga (Lib_defn n il rg an) =
-  add_attrs (mkNameAttr (show $ getLibId n) : rgAttrs rg)
+  add_attrs (mkNameAttr (show $ setAnkles False $ getLibId n) : rgAttrs rg)
      $ unode "Lib" $ annos "Global" ga an ++ libItems lg ga il
 
 libItems :: LogicGraph -> GlobalAnnos -> [Annoted LIB_ITEM] -> [Element]
@@ -54,10 +57,10 @@ unsupported lg ga =
 libItem :: LogicGraph -> GlobalAnnos -> LIB_ITEM -> Element
 libItem lg ga li = case li of
   Spec_defn n g as rg ->
-    add_attrs (mkNameAttr (iriToStringShortUnsecure n) : rgAttrs rg)
+    add_attrs (mkNameAttr (iriToStr n) : rgAttrs rg)
       $ unode "SpecDefn" $ genericity lg ga g ++ [annoted spec lg ga as]
   View_defn n g (View_type from to _) mapping rg ->
-    add_attrs (mkNameAttr (iriToStringShortUnsecure n) : rgAttrs rg)
+    add_attrs (mkNameAttr (iriToStr n) : rgAttrs rg)
       $ unode "ViewDefn" $ genericity lg ga g
         ++ [ unode "Source" $ annoted spec lg ga from
            , unode "Target" $ annoted spec lg ga to ]
@@ -73,7 +76,7 @@ libItem lg ga li = case li of
 downloadItems :: DownloadItems -> [Element]
 downloadItems d = case d of
   ItemMaps l -> map itemNameOrMap l
-  UniqueItem i -> [add_attr (mkAttr "as" $ iriToStringShortUnsecure i)
+  UniqueItem i -> [add_attr (mkAttr "as" $ iriToStr i)
     $ unode "Item" ()]
 
 spec :: LogicGraph -> GlobalAnnos -> SPEC -> Element
@@ -84,14 +87,6 @@ spec lg ga s = case s of
     unode "Translation" $ annoted spec lg ga as : concatMap (gmapping ga) m
   Reduction as m ->
     unode "Restriction" $ annoted spec lg ga as : restriction ga m
-{- Approximation as (Named_Approx n rg) ->
-    unode "Approximation" $ annoted spec lg ga as
-      : mkAttr "approx" (iriToStringUnsecure n) : rgAttrs rg
-   Approximation as (Qual_Approx n1 n2 rg) ->
-    unode "Approximation" $ annoted spec lg ga as
-      : add_attrs (mkNameAttr (iriToStringUnsecure n1) : rgAttrs rg)
-      ++ add_attrs (mkNameAttr (iriToStringUnsecure n2) : rgAttrs rg)
--}
   Union asl rg -> withRg rg $ unode "Union"
     $ map (unode "Spec" . annoted spec lg ga) asl
   Extension asl rg -> withRg rg $ unode "Extension"
@@ -105,7 +100,7 @@ spec lg ga s = case s of
   Closed_spec as rg -> withRg rg $ unode "Closed" $ annoted spec lg ga as
   Group as rg -> withRg rg $ unode "Group" $ annoted spec lg ga as
   Spec_inst n fa rg ->
-    add_attrs (mkNameAttr (iriToStringShortUnsecure n) : rgAttrs rg)
+    add_attrs (mkNameAttr (iriToStr n) : rgAttrs rg)
     $ unode "Actuals" $ map (annoted fitArg lg ga) fa
   Qualified_spec ln as rg -> withRg rg $ unode "Qualified"
     [prettyElem "Logic" ga ln, annoted spec (setLogicName ln lg) ga as]
@@ -120,14 +115,14 @@ fitArg lg ga fa = case fa of
   Fit_spec as m rg -> withRg rg $ unode "Spec"
     $ annoted spec lg ga as : concatMap (gmapping ga) m
   Fit_view n fargs rg ->
-    add_attrs (mkNameAttr (iriToStringShortUnsecure n) : rgAttrs rg)
+    add_attrs (mkNameAttr (iriToStr n) : rgAttrs rg)
     $ unode "Spec" $ unode "Actuals" $ map (annoted fitArg lg ga) fargs
 
 itemNameOrMap :: ItemNameMap -> Element
 itemNameOrMap (ItemNameMap name m) =
-  add_attrs (mkNameAttr (iriToStringShortUnsecure name) : case m of
+  add_attrs (mkNameAttr (iriToStr name) : case m of
     Nothing -> []
-    Just as -> [mkAttr "as" $ iriToStringShortUnsecure as])
+    Just as -> [mkAttr "as" $ iriToStr as])
   $ unode "Item" ()
 
 gmapping :: GlobalAnnos -> G_mapping -> [Element]
