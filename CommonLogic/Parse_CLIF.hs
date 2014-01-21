@@ -11,9 +11,7 @@ Portability :  portable
 Parser of common logic interchange format
 -}
 
-{-
-  Ref. Common Logic ISO/IEC IS 24707:2007(E)
--}
+-- Ref. Common Logic ISO/IEC IS 24707:2007(E)
 
 module CommonLogic.Parse_CLIF where
 
@@ -55,11 +53,8 @@ cltext pm = many white >> (do
 namedtext :: CharParser st (TEXT, [PrefixMapping])
 namedtext = do
     n <- identifier <?> "name after \"cl-text\""
-    (t, prfxs) <- text
+    (t, prfxs) <- option (Text [] nullRange, []) text
     return (Named_text n t nullRange, prfxs)
-  <|> do
-    n <- identifier <?> "name after \"cl-text\""
-    return (Named_text n (Text [] nullRange) nullRange, [])
 
 text :: CharParser st (TEXT, [PrefixMapping])
 text = do
