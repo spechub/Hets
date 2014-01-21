@@ -408,7 +408,7 @@ parseClText pm = do
   return $ Axiom_items (textToAn [tx])
 
 textToAn :: [TEXT_META] -> [Annotation.Annoted TEXT_META]
-textToAn = map (\ x -> Annotation.Annoted x nullRange [] [])
+textToAn = map Annotation.emptyAnno
 
 -- | parser for Axiom_items
 parseAxItems :: PrefixMap -> AnnoState.AParser st BASIC_SPEC
