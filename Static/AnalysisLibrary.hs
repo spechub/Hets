@@ -94,8 +94,9 @@ downloadSource opts fname = ResultT $ do
   case resp of
     Right r -> return $ return (fname, r)
     Left err -> do
-      let errmsg = "Download of file " ++ fname ++ " failed:\n" ++ err
+      let errmsg = "Download of file " ++ fname ++ " failed:"
       putIfVerbose opts 3 errmsg
+      putIfVerbose opts 4 err
       return $ fail errmsg
 
 tryDownloadSources :: HetcatsOpts -> [FilePath] -> FilePath
@@ -103,7 +104,12 @@ tryDownloadSources :: HetcatsOpts -> [FilePath] -> FilePath
 tryDownloadSources opts fnames origname = case fnames of
   [] -> fail $ "Unable to download file " ++ origname
   fname : fnames' -> ResultT $ Ex.catch
-    (runResultT $ downloadSource opts fname)
+    (do
+       mRes <- runResultT $ downloadSource opts fname
+       if isNothing $ maybeResult mRes then
+           runResultT $ tryDownloadSources opts fnames' origname
+         else return mRes
+    )
     $ \ (err :: IOError) -> do
       putIfVerbose opts 3 $ show err
       runResultT $ tryDownloadSources opts fnames' origname
