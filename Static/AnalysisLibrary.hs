@@ -127,7 +127,13 @@ anaSource mln lg opts topLns libenv initDG origName =
   if checkUri fname then runResultT $ do
     (fname', input) <-
       tryDownloadSources opts (getOntoFileNames opts fname) fname
-    anaString mln lgraph opts topLns libenv initDG input fname'
+    let iTypes = intype opts
+        fn2 = case guess fname' iTypes of
+                ext@(CommonLogicIn _) -> case guess origName iTypes of
+                  CommonLogicIn _ -> origName
+                  _ -> origName ++ '.' : show ext
+                _ -> fname'
+    anaString mln lgraph opts topLns libenv initDG input fn2
   else
   do
   fname' <- findFileOfLibName opts fname
