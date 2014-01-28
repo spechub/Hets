@@ -401,9 +401,10 @@ do
   cd $DATA_DIR
   tar -xf $RESULTS_DIR/hets_$HETS_FULL_VERSION.orig.tar.gz
   cd $OLD_PWD
-  echo ::Creating debian folder and changelog
-  cp -rf $OLD_PWD/debian/$DIST $HETS_FOLDER/debian
+  echo ::Creating debian folder $HETS_FOLDER and changelog
+  mkdir -p $HETS_FOLDER/debian
   cp -rf $OLD_PWD/debian-common/* $HETS_FOLDER/debian
+  cp -rf $OLD_PWD/debian/$DIST/* $HETS_FOLDER/debian
   rm -rf $HETS_FOLDER/debian/.svn
 
   # Creating the changelog
@@ -461,7 +462,7 @@ do
     exit
   fi
   echo :: Upload hets_"$HETS_FULL_VERSION"-0ubuntu1"$ADDITIONAL"_source.changes
-  dput ppa:hets/hets $RESULTS_DIR/hets_"$HETS_FULL_VERSION"-0ubuntu1"$ADDITIONAL"_source.changes
+  # dput ppa:hets/hets $RESULTS_DIR/hets_"$HETS_FULL_VERSION"-0ubuntu1"$ADDITIONAL"_source.changes
 done
 
 fi
