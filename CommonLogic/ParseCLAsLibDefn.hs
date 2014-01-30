@@ -17,7 +17,6 @@ import Common.IRI
 import Common.LibName
 import Common.AS_Annotation as Anno
 import Common.AnnoState
-import Common.DocUtils
 
 import Driver.Options
 
@@ -121,13 +120,8 @@ downloadSpec opts specMap topTexts importedBy isImport dirFile baseDir = do
   case Map.lookup fn specMap of
       Just info@(b, t, _)
         | isImport && Set.member fn importedBy
-          -> error (concat [
-                    "Illegal cyclic import: ", show (pretty importedBy), "\n"
-                  , "Hets currently cannot handle cyclic imports "
-                  , "of Common Logic files. "
-                  , "If you really need them, send us a message at "
-                  , "hets@informatik.uni-bremen.de, and we will fix it."
-                ])
+          -> error . intercalate "\n "
+                    $ "Unsupported cyclic imports:" : Set.toList importedBy
         | t == topTexts
           -> return specMap
         | otherwise ->
