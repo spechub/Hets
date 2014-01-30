@@ -1,4 +1,3 @@
-{-# LANGUAGE TypeSynonymInstances #-}
 {- |
 Module      :  $Header$
 Description :  Abstract syntax for common logic
