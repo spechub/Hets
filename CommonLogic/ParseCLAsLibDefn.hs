@@ -138,13 +138,28 @@ downloadSpec opts specMap topTexts importedBy isImport dirFile baseDir = do
           contents <- getCLIFContents opts dirFile baseDir
           case parseCL_CLIF_contents fn contents of
               Left err -> error $ show err
-              Right bs ->
+              Right bs -> do
                 let nbs = zip (specNameL bs fn) bs
-                    nbtis = map (\ (n, b) -> (n, (b, topTexts, importedBy))) nbs
+                nbs2 <- mapM (\ (n, b) -> case
+                    map (rmSuffix . tokStr) $ clTexts b of
+                  [txt] -> if txt == fn then return (n, b) else do
+                    putIfVerbose opts 2 $ "filename " ++ show fn
+                      ++ " does not match cl-text " ++ show txt
+                    return (txt, b)
+                  [] -> do
+                    putIfVerbose opts 2 $ "missing cl-text in "
+                      ++ show fn
+                    return (n, b)
+                  ts -> do
+                    putIfVerbose opts 2 $ "multiple cl-text entries in "
+                      ++ show fn ++ "\n" ++ unlines (map show ts)
+                    return (n, b)) nbs
+                let nbtis = map (\ (n, b) -> (n, (b, topTexts, importedBy)))
+                      nbs2
                     newSpecMap = foldr (\ (n, bti) sm ->
                         Map.insertWith unify n bti sm
                       ) specMap nbtis
-                in foldM (\ sm nbt -> do
+                foldM (\ sm nbt -> do
                           newDls <- collectDownloads opts baseDir sm nbt
                           return (Map.unionWith unify newDls sm)
                       ) newSpecMap nbtis
@@ -206,11 +221,23 @@ directImports :: BASIC_SPEC -> Set.Set NAME
 directImports (CL.Basic_spec items) = Set.unions
   $ map (getImports_textMetas . textsFromBasicItems . Anno.item) items
 
+clTexts :: BASIC_SPEC -> [NAME]
+clTexts (CL.Basic_spec items) =
+  concatMap (getClTexts . textsFromBasicItems . Anno.item) items
+
 textsFromBasicItems :: BASIC_ITEMS -> [TEXT_META]
 textsFromBasicItems (Axiom_items axs) = map Anno.item axs
 
 getImports_textMetas :: [TEXT_META] -> Set.Set NAME
-getImports_textMetas tms = Set.unions $ map (getImports_text . getText) tms
+getImports_textMetas = Set.unions . map (getImports_text . getText)
+
+getClTexts :: [TEXT_META] -> [NAME]
+getClTexts = concatMap (getClTextTexts . getText)
+
+getClTextTexts :: TEXT -> [NAME]
+getClTextTexts txt = case txt of
+  Named_text n t _ -> n : getClTextTexts t
+  _ -> []
 
 getImports_text :: TEXT -> Set.Set NAME
 getImports_text txt = case txt of
