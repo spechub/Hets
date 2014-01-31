@@ -1,5 +1,5 @@
 name: Hets
-version: 0.98
+version: 0.99
 Description: The Heterogeneous Tool Set
 homepage: http://www.dfki.de/sks/hets
 bug-reports: http://trac.informatik.uni-bremen.de:8080/hets
@@ -113,7 +113,7 @@ Executable hets
 
   if flag(haskeline)
     build-depends:
-        haskeline >= 0.6 && < 0.7
+        haskeline >= 0.6 && < 0.8
     cpp-options: -DHASKELINE
 
   if flag(hexpat)
@@ -133,7 +133,7 @@ Executable hets
       , wai >= 0.4
       , warp >= 0.4
       , http-types >= 0.6 && < 0.9
-      , text >= 0.5 && < 1.0
+      , text >= 0.5 && < 2.0
       , bytestring >= 0.9
       , random >= 1.0
     cpp-options: -DSERVER
