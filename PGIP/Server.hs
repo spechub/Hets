@@ -166,7 +166,7 @@ hetsServer opts1 = do
            -- AUTOMATIC PROOFS E.N.D.
            else getHetsResponse opts [] sessRef pathBits splitQuery
       "POST" -> do
-        (params, files) <- parseRequestBody tempFileBackEnd re
+        (params, files) <- parseRequestBody lbsBackEnd re
         mTmpFile <- liftIO $ case lookup "content"
                    $ map (\ (a, b) -> (B8.unpack a, b)) params of
               Nothing -> return Nothing
@@ -189,7 +189,7 @@ hetsServer opts1 = do
            let fn = takeFileName $ B8.unpack $ fileName f
            if any isAlphaNum fn then do
              let tmpFile = tempHetsLib </> fn
-                 snkFile = fileContent f
+                 snkFile = BS.unpack $ fileContent f
              copyPermissions permFile snkFile
              copyFile snkFile tmpFile
              maybe (res tmpFile) res mTmpFile
@@ -574,7 +574,7 @@ cmpFilePath f1 f2 = case comparing hasTrailingPathSeparator f2 f1 of
   c -> c
 
 -- | with the 'old' call of getHetsResponse, anaUri is called upon the path
-getHetsResponse :: HetcatsOpts -> [FileInfo FilePath]
+getHetsResponse :: HetcatsOpts -> [FileInfo BS.ByteString]
   -> Cache -> [String] -> [QueryPair] -> IO Response
 getHetsResponse opts updates sessRef pathBits query = do
   Result ds ms <- runResultT $ case anaUri pathBits query
@@ -585,7 +585,7 @@ getHetsResponse opts updates sessRef pathBits query = do
     Nothing -> mkResponse status400 $ showRelDiags 1 ds
     Just s -> mkOkResponse s
 
-getHetsResult :: HetcatsOpts -> [FileInfo FilePath]
+getHetsResult :: HetcatsOpts -> [FileInfo BS.ByteString]
   -> Cache -> Query -> ResultT IO String
 getHetsResult opts updates sessRef (Query dgQ qk) = do
       sk@(sess, k) <- getDGraph opts sessRef dgQ
@@ -622,7 +622,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
                 case filter ((== ".xupdate") . takeExtension . B8.unpack
                             . fileName) updates of
                 ch : _ -> do
-                  str <- lift $ readFile $ fileContent ch
+                  str <- lift $ readFile $ BS.unpack $ fileContent ch
                   (newLn, newLib) <- dgXUpdate opts str libEnv ln dg
                   newSess <- lift $ nextSess sess sessRef newLib k
                   liftR $ return $ sessAns newLn svg (newSess, k)
