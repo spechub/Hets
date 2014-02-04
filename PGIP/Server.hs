@@ -581,8 +581,8 @@ getHetsResponse opts updates sessRef pathBits query = do
     Left err -> fail err
     Right q -> getHetsResult opts updates sessRef q
   return $ case ms of
-    Nothing -> mkResponse status400 $ showRelDiags 1 ds
-    Just s -> mkOkResponse s
+    Just s | not $ hasErrors ds -> mkOkResponse s
+    _ -> mkResponse status400 $ showRelDiags 1 ds
 
 getHetsResult :: HetcatsOpts -> [FileInfo BS.ByteString]
   -> Cache -> Query -> ResultT IO String
