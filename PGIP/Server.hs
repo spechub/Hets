@@ -189,9 +189,8 @@ hetsServer opts1 = do
            let fn = takeFileName $ B8.unpack $ fileName f
            if any isAlphaNum fn then do
              let tmpFile = tempHetsLib </> fn
-                 snkFile = BS.unpack $ fileContent f
-             copyPermissions permFile snkFile
-             copyFile snkFile tmpFile
+             BS.writeFile tmpFile $ fileContent f
+             copyPermissions permFile tmpFile
              maybe (res tmpFile) res mTmpFile
             else mRes
           _ -> getHetsResponse
