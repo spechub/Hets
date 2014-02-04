@@ -621,7 +621,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
                 case filter ((== ".xupdate") . takeExtension . B8.unpack
                             . fileName) updates of
                 ch : _ -> do
-                  str <- lift $ readFile $ BS.unpack $ fileContent ch
+                  let str = BS.unpack $ fileContent ch
                   (newLn, newLib) <- dgXUpdate opts str libEnv ln dg
                   newSess <- lift $ nextSess sess sessRef newLib k
                   liftR $ return $ sessAns newLn svg (newSess, k)
