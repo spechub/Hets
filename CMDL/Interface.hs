@@ -18,6 +18,9 @@ module CMDL.Interface where
 #ifdef HASKELINE
 import System.Console.Haskeline
 import Interfaces.DataTypes
+import Comorphisms.LogicGraph (logicGraph)
+import Proofs.AbstractState (getConsCheckers, sublogicOfTheory, getCcName )
+import Logic.Grothendieck
 #endif
 
 import System.IO
@@ -38,12 +41,6 @@ import Data.List
 import Data.IORef
 import Control.Monad
 import Control.Monad.Trans (MonadIO (..))
-
-import Comorphisms.LogicGraph (logicGraph)
-
-import Proofs.AbstractState (getConsCheckers, sublogicOfTheory, getCcName )
-
-import Logic.Grothendieck
 
 #ifdef HASKELINE
 shellSettings :: IORef CmdlState -> Settings IO
