@@ -600,7 +600,10 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp = case sp of
            gDefPaths x y = filter allGDef $ getPathsTo x y g
            nPaths = concat $ concatMap (gDefPaths n) cN
            nNodes = concatMap (\ (x, y, _) -> [x, y]) nPaths
-           in (cN, nub $ iN ++ nNodes, nub $ nPaths ++ cE)
+           hideLinks = filter (\(_,_,l) -> dgl_type l == HidingDefLink) $ 
+                        concatMap (\x -> inn g x) $ cN ++ nNodes
+           hNodes = map (\(x, _, _) -> x) hideLinks
+           in (cN, nub $ iN ++ nNodes ++ hNodes, nub $ nPaths ++ cE ++ hideLinks)
         addLinks (cN, cE) = foldl addGDefLinks (cN, [], cE) cN
         (cNodes, iNodes, cEdges) =
            addLinks . foldl getNodes ([], []) $ getItems cItems
