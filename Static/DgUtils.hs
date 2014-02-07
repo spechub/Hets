@@ -378,7 +378,7 @@ makeName n = NodeName n "" 0 [ElemName $ iriToStringShortUnsecure n]
 parseNodeName :: String -> NodeName
 parseNodeName s =
   let err msg = error $ "parseNodeName: malformed NodeName" ++ msg ++ s
-      mkName = makeName . fromMaybe (err ": ") . parseIRIReference
+      mkName = makeName . fromMaybe (err ": ") . parseCurie
   in case splitByList "__" s of
     [i] -> mkName i
     [i, e] ->
