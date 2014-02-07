@@ -43,7 +43,7 @@ import System.Directory (doesFileExist)
 import Common.Http
 
 type SpecMap = Map.Map FilePath SpecInfo
-type SpecInfo = (BASIC_SPEC, Set.Set String, Set.Set FilePath)
+type SpecInfo = (BASIC_SPEC, FilePath, Set.Set String, Set.Set FilePath)
                 -- (spec, topTexts, importedBy)
 
 -- | call for CommonLogic CLIF-parser with recursive inclusion of importations
@@ -52,8 +52,8 @@ parseCL_CLIF filename opts = do
   let dirFile@(dir, _) = splitFileName filename
   specMap <- downloadSpec opts Map.empty Set.empty Set.empty False dirFile dir
   return $ map convertToLibDefN $ topSortSpecs
-    $ Map.map (\ (b, _, _) ->
-               (b, Set.map (rmSuffix . tokStr) $ directImports b)) specMap
+    $ Map.map (\ (b, f, _, _) ->
+               (b, f, Set.map (rmSuffix . tokStr) $ directImports b)) specMap
 
 -- call for CommonLogic CLIF-parser for a single file
 parseCL_CLIF_contents :: FilePath -> String -> Either ParseError [BASIC_SPEC]
@@ -62,10 +62,10 @@ parseCL_CLIF_contents = runParser (many $ CLIF.basicSpec Map.empty)
 
 {- maps imports in basic spec to global definition links (extensions) in
 development graph -}
-convertToLibDefN :: (BASIC_SPEC, FilePath) -> LIB_DEFN
-convertToLibDefN (spec, fp) = let
+convertToLibDefN :: (FilePath, BASIC_SPEC, FilePath) -> LIB_DEFN
+convertToLibDefN (fp, spec, realFp) = let
   i = filePathToLibId $ rmSuffix fp
-  in Lib_defn (setFilePath fp $ iriLibName i)
+  in Lib_defn (setFilePath realFp $ iriLibName i)
     (makeLogicItem CommonLogic
     : map (addDownload False) (importsAsIris spec)
     ++ [convertToLibItem spec i])
@@ -101,7 +101,7 @@ httpCombine d f = if checkUri f then f else fileCombine d f
 
 collectDownloads :: HetcatsOpts -> String -> SpecMap -> (String, SpecInfo)
                     -> IO SpecMap
-collectDownloads opts baseDir specMap (n, (b, topTexts, importedBy)) = do
+collectDownloads opts baseDir specMap (n, (b, _, topTexts, importedBy)) = do
   let directImps = Set.elems $ Set.map tokStr $ directImports b
       newTopTexts = Set.insert n topTexts
       newImportedBy = Set.insert n importedBy
@@ -116,22 +116,29 @@ collectDownloads opts baseDir specMap (n, (b, topTexts, importedBy)) = do
 downloadSpec :: HetcatsOpts -> SpecMap -> Set.Set String -> Set.Set String
                 -> Bool -> (String, String) -> String -> IO SpecMap
 downloadSpec opts specMap topTexts importedBy isImport dirFile baseDir = do
-  let fn = rmSuffix $ uncurry fileCombine dirFile
+  let fn = rmSuffix $ uncurry httpCombine dirFile
   case Map.lookup fn specMap of
-      Just info@(b, t, _)
-        | isImport && Set.member fn importedBy
-          -> error . intercalate "\n "
+      Just info@(b, f, t, _)
+        | isImport && Set.member fn importedBy -> do
+           putIfVerbose opts 0 . intercalate "\n "
                     $ "Unsupported cyclic imports:" : Set.toList importedBy
+           return specMap
         | t == topTexts
           -> return specMap
         | otherwise ->
-          let newInfo = unify info (b, topTexts, importedBy)
+          let newInfo = unify info (b, f, topTexts, importedBy)
               newSpecMap = Map.insert fn newInfo specMap
           in collectDownloads opts baseDir newSpecMap (fn, newInfo)
       Nothing -> do
-          contents <- getCLIFContents opts dirFile baseDir
-          case parseCL_CLIF_contents fn contents of
-              Left err -> error $ show err
+        mCont <- getCLIFContents opts dirFile baseDir
+        case mCont of
+          Left err -> do
+            putIfVerbose opts 0 $ show err
+            return specMap
+          Right (file, contents) -> case parseCL_CLIF_contents fn contents of
+              Left err -> do
+                putIfVerbose opts 0 $ show err
+                return specMap
               Right bs -> do
                 let nbs = zip (specNameL bs fn) bs
                 nbs2 <- mapM (\ (n, b) -> case
@@ -148,8 +155,8 @@ downloadSpec opts specMap topTexts importedBy isImport dirFile baseDir = do
                     putIfVerbose opts 2 $ "multiple cl-text entries in "
                       ++ show fn ++ "\n" ++ unlines (map show ts)
                     return (n, b)) nbs
-                let nbtis = map (\ (n, b) -> (n, (b, topTexts, importedBy)))
-                      nbs2
+                let nbtis = map (\ (n, b) ->
+                                 (n, (b, file, topTexts, importedBy))) nbs2
                     newSpecMap = foldr (\ (n, bti) sm ->
                         Map.insertWith unify n bti sm
                       ) specMap nbtis
@@ -159,11 +166,12 @@ downloadSpec opts specMap topTexts importedBy isImport dirFile baseDir = do
                       ) newSpecMap nbtis
 
 unify :: SpecInfo -> SpecInfo -> SpecInfo
-unify (_, s, p) (a, t, q) = (a, s `Set.union` t, p `Set.union` q)
+unify (_, _, s, p) (a, b, t, q) = (a, b, s `Set.union` t, p `Set.union` q)
 
 {- one could add support for uri fragments/query
 (perhaps select a text from the file) -}
-getCLIFContents :: HetcatsOpts -> (String, String) -> String -> IO String
+getCLIFContents :: HetcatsOpts -> (String, String) -> String
+  -> IO (Either String (FilePath, String))
 getCLIFContents opts dirFile baseDir =
   let fn = uncurry fileCombine dirFile
       uStr1 = useCatalogURL opts
@@ -173,7 +181,8 @@ getCLIFContents opts dirFile baseDir =
   if checkUri uStr then getCLIFContentsHTTP opts uStr "" else
   localFileContents opts uStr baseDir
 
-getCLIFContentsHTTP :: HetcatsOpts -> String -> String -> IO String
+getCLIFContentsHTTP :: HetcatsOpts -> String -> String
+  -> IO (Either String (FilePath, String))
 getCLIFContentsHTTP opts uriS extension = do
     let extUri = uriS ++ extension
     putIfVerbose opts 3 $ "Trying to download " ++ extUri
@@ -181,25 +190,30 @@ getCLIFContentsHTTP opts uriS extension = do
     case res of
         Right rb -> do
           putIfVerbose opts 2 $ "Downloaded " ++ extUri
-          return rb
+          return $ Right (extUri, rb)
         Left err -> case extension of
           "" -> getCLIFContentsHTTP opts uriS ".clf"
           ".clf" -> getCLIFContentsHTTP opts uriS ".clif"
-          _ -> error $ "File not found via HTTP: " ++ uriS
-             ++ "[.clf | .clif]\n" ++ err
+          _ -> return . Left $ "File not found via HTTP: " ++ uriS
+             ++ "\n" ++ err
 
-localFileContents :: HetcatsOpts -> String -> String -> IO String
-localFileContents opts filename baseDir = do
-  file <- findLibFile (baseDir : libdirs opts) filename
-  putIfVerbose opts 2 $ "Reading CLIF file " ++ file
-  readFile file
+localFileContents :: HetcatsOpts -> FilePath -> FilePath
+  -> IO (Either String (FilePath, String))
+localFileContents opts fn baseDir = do
+  mFile <- findLibFile (baseDir : libdirs opts) fn
+  case mFile of
+    Nothing -> return . Left $ "Could not find Common Logic Library " ++ fn
+    Just file -> do
+      putIfVerbose opts 2 $ "Reading CLIF file " ++ file
+      cont <- readFile file
+      return $ Right (file, cont)
 
-findLibFile :: [FilePath] -> String -> IO FilePath
-findLibFile ds f = if checkUri f then return f else do
+findLibFile :: [FilePath] -> String -> IO (Maybe FilePath)
+findLibFile ds f = do
   e <- doesFileExist f
-  if e then return f else findLibFileAux ds f
+  if e then return $ Just f else findLibFileAux ds f
 
-findLibFileAux :: [FilePath] -> String -> IO FilePath
+findLibFileAux :: [FilePath] -> String -> IO (Maybe FilePath)
 findLibFileAux fps f = case fps of
   d : ds -> do
     let fs = [ fileCombine d $ addExtension f $ show $ CommonLogicIn b
@@ -207,8 +221,8 @@ findLibFileAux fps f = case fps of
     es <- mapM doesFileExist fs
     case filter fst $ zip es fs of
         [] -> findLibFileAux ds f
-        (_, f0) : _ -> return f0
-  [] -> error $ "Could not find Common Logic Library " ++ f
+        (_, f0) : _ -> return $ Just f0
+  [] -> return Nothing
 
 -- retrieves all importations from the text
 directImports :: BASIC_SPEC -> Set.Set NAME
@@ -248,10 +262,10 @@ impName ph = case ph of
   Importation (Imp_name n) -> n
   _ -> error "CL.impName"
 
-topSortSpecs :: Map.Map FilePath (BASIC_SPEC, Set.Set FilePath)
-  -> [(BASIC_SPEC, FilePath)]
+topSortSpecs :: Map.Map FilePath (BASIC_SPEC, FilePath, Set.Set FilePath)
+  -> [(FilePath, BASIC_SPEC, FilePath)]
 topSortSpecs specMap =
-  let (fm, rm) = Map.partition (Set.null . snd) specMap
+  let (fm, rm) = Map.partition (\ (_, _, is) -> Set.null is) specMap
   in if Map.null fm then [] else
-     map (\ (n, (b, _)) -> (b, n)) (Map.toList fm) ++ topSortSpecs
-         (Map.map (\ (b, is) -> (b, is Set.\\ Map.keysSet fm)) rm)
+     map (\ (n, (b, f, _)) -> (n, b, f)) (Map.toList fm) ++ topSortSpecs
+         (Map.map (\ (b, f, is) -> (b, f, is Set.\\ Map.keysSet fm)) rm)
