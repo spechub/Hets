@@ -62,7 +62,7 @@ guessXmlContent :: String -> Either String InType
 guessXmlContent str = case parseXMLDoc str of
   Nothing -> Right GuessIn
   Just e -> let q = elName e in
-    if isDgXml q then Left ".xml" else
+    if isDgXml q then Right DgXml else
     if isRDF q then
       Right $ if any (isOWLOnto . elName) $ elChildren e then OWLIn else RDFIn
     else if isDMU q then Left "DMU" else
@@ -70,10 +70,15 @@ guessXmlContent str = case parseXMLDoc str of
 
 guessInput :: MonadIO m => HetcatsOpts -> FilePath -> String -> m InType
 guessInput opts file input = let fty = guess file (intype opts) in
-  if elem fty [GuessIn, RDFIn] then case guessXmlContent input of
+  if elem fty [GuessIn, DgXml, RDFIn] then case guessXmlContent input of
     Left ty -> fail $ "unexpected xml format: " ++ ty
-    Right ty -> return ty
+    Right ty -> if ty == DgXml then fail "unexpected DGraph xml"
+      else return ty
   else return fty
+
+isDgXmlFile :: HetcatsOpts -> FilePath -> String -> Bool
+isDgXmlFile opts file content = guess file (intype opts) == DgXml
+        && guessXmlContent content == Right DgXml
 
 readShATermFile :: ShATermLG a => LogicGraph -> FilePath -> IO (Result a)
 readShATermFile lg fp = do

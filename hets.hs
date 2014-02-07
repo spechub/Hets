@@ -26,7 +26,6 @@ import Driver.AnaLib
 import Driver.WriteFn
 
 import Static.DevGraph
-import Static.FromXml
 
 #ifdef UNI_PACKAGE
 import GUI.ShowGraph
@@ -111,7 +110,6 @@ processFile opts file = do
       MaudeIn -> anaMaudeFile opts file
       TwelfIn -> anaTwelfFile opts file
       OmdocIn -> anaOMDocFile opts file
-      DgXml | not (defLogicIsDMU opts) -> readDGXml opts file
       _ -> anaLib opts file
     case res of
       Just (ln, nEnv) ->

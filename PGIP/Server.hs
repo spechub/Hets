@@ -494,15 +494,13 @@ getDGraph opts sessRef dgQ = do
    in case Map.lookup (file, cl) lm of
    Just sess -> return (sess, sessKey sess)
    Nothing -> do
-    (ln, le1) <- case guess file GuessIn of
-      DgXml -> do
-        mf <- lift $ findFileOfLibName opts file
+    (ln, le1) <- do
+        mf <- lift $ getContent opts file
         case mf of
-          Just f -> readDGXmlR opts f Map.empty
-          Nothing -> fail "xml file not found"
-      _ -> anaSourceFile logicGraph opts
-        { outputToStdout = False, useLibPos = True }
-        Set.empty emptyLibEnv emptyDG file
+          Right (f, c) | isDgXmlFile opts f c -> readDGXmlR opts f Map.empty
+          _ -> anaSourceFile logicGraph opts
+            { outputToStdout = False, useLibPos = True }
+            Set.empty emptyLibEnv emptyDG file
     le2 <- foldM (\ e c -> liftR
                   $ fromJust (lookup c allGlobLibAct) ln e) le1 cl
     time <- lift getCurrentTime

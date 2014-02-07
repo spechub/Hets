@@ -23,6 +23,7 @@ import Static.DevGraph
 import Static.History
 import Static.AnalysisLibrary
 import Static.ApplyChanges
+import Static.FromXml
 
 import Comorphisms.LogicGraph
 
@@ -57,16 +58,17 @@ anaLibReadPrfs opts file = do
 anaLib :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
 anaLib opts fname = do
   let isPrfFile = isSuffixOf prfSuffix
-  fname' <- existsAnSource opts {intype = GuessIn}
-     $ if isPrfFile fname then rmSuffix fname else fname
-  case fname' of
-    Nothing -> anaLibExt opts fname emptyLibEnv emptyDG
-    Just file ->
-        if isPrfFile file then do
+  ep <- getContent opts {intype = GuessIn}
+    $ if isPrfFile fname then rmSuffix fname else fname
+  case ep of
+    Left _ -> anaLibExt opts fname emptyLibEnv emptyDG
+    Right (file, content)
+      | isPrfFile file -> do
             putIfVerbose opts 0 $ "a matching source file for proof history '"
                              ++ file ++ "' not found."
             return Nothing
-        else anaLibExt opts file emptyLibEnv emptyDG
+      | isDgXmlFile opts file content -> readDGXml opts file
+      | otherwise -> anaLibExt opts file emptyLibEnv emptyDG
 
 -- | read a file and extended the current library environment
 anaLibExt :: HetcatsOpts -> FilePath -> LibEnv -> DGraph
