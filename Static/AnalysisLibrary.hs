@@ -163,7 +163,8 @@ anaStringAux mln lgraph opts topLns initDG file posFileName (_, libenv)
                 -> [Annoted (Spec_defn (simpleIdToIRI $ mkSimpleId spN)
                              gn as qs) rs [] []]
         _ -> is
-      ln = if null $ getFilePath pln then setFilePath posFileName
+      emptyFilePath = null $ getFilePath pln
+      ln = if emptyFilePath then setFilePath posFileName
             $ if noLibName then fromMaybe (emptyLibName spN) mln else pln
            else pln
       ast = Lib_defn ln nIs ps ans
@@ -176,7 +177,7 @@ anaStringAux mln lgraph opts topLns initDG file posFileName (_, libenv)
           liftR mzero
       _ -> do
           let libstring = libToFileName ln
-          unless (isSuffixOf libstring noSuffixFile) $ lift
+          unless (isSuffixOf libstring noSuffixFile || not emptyFilePath) $ lift
               $ putIfVerbose opts 1
               $ "### file name '" ++ file ++ "' does not match library name '"
               ++ libstring ++ "'"
