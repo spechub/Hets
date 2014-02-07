@@ -65,7 +65,7 @@ development graph -}
 convertToLibDefN :: (BASIC_SPEC, FilePath) -> LIB_DEFN
 convertToLibDefN (spec, fp) = let
   i = filePathToLibId $ rmSuffix fp
-  in Lib_defn (iriLibName i)
+  in Lib_defn (setFilePath fp $ iriLibName i)
     (makeLogicItem CommonLogic
     : map (addDownload False) (importsAsIris spec)
     ++ [convertToLibItem spec i])

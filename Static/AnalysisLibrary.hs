@@ -163,8 +163,9 @@ anaStringAux mln lgraph opts topLns initDG file posFileName (_, libenv)
                 -> [Annoted (Spec_defn (simpleIdToIRI $ mkSimpleId spN)
                              gn as qs) rs [] []]
         _ -> is
-      ln = setFilePath posFileName
+      ln = if null $ getFilePath pln then setFilePath posFileName
             $ if noLibName then fromMaybe (emptyLibName spN) mln else pln
+           else pln
       ast = Lib_defn ln nIs ps ans
   case analysis opts of
       Skip -> do
@@ -196,10 +197,10 @@ anaStringAux mln lgraph opts topLns initDG file posFileName (_, libenv)
 anaLibFile :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph -> LibName
            -> ResultT IO (LibName, LibEnv)
 anaLibFile lgraph opts topLns libenv initDG ln =
-    let lnstr = show ln in case Map.lookup ln libenv of
-    Just _ -> do
+    let lnstr = show ln in case find (== ln) $ Map.keys libenv of
+    Just ln' -> do
         analyzing opts $ "from " ++ lnstr
-        return (ln, libenv)
+        return (ln', libenv)
     Nothing ->
             do
             putMessageIORes opts 1 $ "Downloading " ++ lnstr ++ " ..."
