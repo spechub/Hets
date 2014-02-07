@@ -116,6 +116,7 @@ lnode full ga lenv (_, lbl) =
           DGRef li rf ->
             [ add_attrs
               [ mkAttr "library" $ show $ setAnkles False $ getLibId li
+              , mkAttr "location" $ getFilePath li
               , mkAttr "node" $ getNameOfNode rf $ lookupDGraph li lenv ]
             $ unode "Reference" () ]
           DGNode orig cs -> consStatus cs ++ case orig of
