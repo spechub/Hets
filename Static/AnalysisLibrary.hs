@@ -178,7 +178,7 @@ anaString mln lgraph opts topLns libenv initDG input file = do
           _ -> if checkUri file then file else realFileName
   libdefns <- readLibDefnAux lgraph opts file posFileName input
   foldM (anaStringAux mln lgraph opts topLns initDG file posFileName)
-        (undefined, libenv) libdefns
+        (error "Static.AnalysisLibrary.anaString", libenv) libdefns
 
 anaStringAux :: Maybe LibName -- ^ suggested library name
   -> LogicGraph -> HetcatsOpts -> LNS -> DGraph -> FilePath
