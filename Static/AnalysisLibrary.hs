@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP, ScopedTypeVariables #-}
 {- |
 Module      :  $Header$
 Description :  static analysis of CASL specification libraries
@@ -52,8 +51,6 @@ import Common.ResultT
 import Common.LibName
 import Common.Id
 import Common.IRI
-import Common.IO
-import Common.Http
 import qualified Common.Unlit as Unlit
 
 import Driver.Options
@@ -69,7 +66,6 @@ import Data.Maybe
 
 import Control.Monad
 import Control.Monad.Trans
-import Control.Exception as Ex (catch)
 
 import System.Directory
 import System.FilePath
@@ -88,83 +84,47 @@ anaSourceFile :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph
   -> FilePath -> ResultT IO (LibName, LibEnv)
 anaSourceFile = anaSource Nothing
 
-downloadSource :: HetcatsOpts -> FilePath -> ResultT IO (FilePath, String)
-downloadSource opts fname = ResultT $ do
-  putIfVerbose opts 3 $ "Downloading file " ++ fname
-  resp <- loadFromUri fname
-  case resp of
-    Right r -> return $ return (fname, r)
-    Left err -> do
-      let errmsg = "Download of file " ++ fname ++ " failed:"
-      putIfVerbose opts 3 errmsg
-      putIfVerbose opts 4 err
-      return $ fail errmsg
-
-tryDownloadSources :: HetcatsOpts -> [FilePath] -> FilePath
-                      -> ResultT IO (FilePath, String)
-tryDownloadSources opts fnames origname = case fnames of
-  [] -> fail $ "Unable to download file " ++ origname
-  fname : fnames' -> ResultT $ Ex.catch
-    (do
-       mRes <- runResultT $ downloadSource opts fname
-       if isNothing $ maybeResult mRes then
-           runResultT $ tryDownloadSources opts fnames' origname
-         else return mRes
-    )
-    $ \ (err :: IOError) -> do
-      putIfVerbose opts 3 $ show err
-      runResultT $ tryDownloadSources opts fnames' origname
-
 anaSource :: Maybe LibName -- ^ suggested library name
   -> LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph
   -> FilePath -> ResultT IO (LibName, LibEnv)
-anaSource mln lg opts topLns libenv initDG origName =
+anaSource mln lg opts topLns libenv initDG origName = ResultT $ do
   let mName = useCatalogURL opts origName
       fname = fromMaybe mName $ stripPrefix "file://" mName
       syn = case defSyntax opts of
         "" -> Nothing
         s -> Just $ simpleIdToIRI $ mkSimpleId s
-      lgraph = setSyntax syn $ setCurLogic (defLogic opts) lg in ResultT $
-  if checkUri fname then runResultT $ do
-    (fname', input) <-
-      tryDownloadSources opts (getOntoFileNames opts fname) fname
-    let iTypes = intype opts
-        fn2 = case guess fname' iTypes of
+      lgraph = setSyntax syn $ setCurLogic (defLogic opts) lg
+  fname' <- getContent opts fname
+  case fname' of
+    Left err -> return $ fail err
+    Right (file, inputLit) ->
+        if any (`isSuffixOf` file) [envSuffix, prfSuffix] then
+          return . fail $ "no matching source file for '" ++ fname ++ "' found."
+        else let
+        input = (if unlit opts then Unlit.unlit else id) inputLit
+        libStr = if isAbsolute fname
+              then convertFileToLibStr fname
+              else dropExtensions fname
+        nLn = case mln of
+              Nothing | useLibPos opts && not (checkUri fname) ->
+                Just $ emptyLibName libStr
+              _ -> mln
+        iTypes = intype opts
+        fn2 = case guess file iTypes of
                 ext@(CommonLogicIn _) -> case guess origName iTypes of
                   CommonLogicIn _ -> origName
                   _ -> origName ++ '.' : show ext
-                _ -> fname'
-    anaString mln lgraph opts topLns libenv initDG input fn2
-  else
-  do
-  fname' <- findFileOfLibName opts fname
-  case fname' of
-    Nothing ->
-        return $ fail $ "no file for library '" ++ fname ++ "' found."
-    Just file ->
-        if any (`isSuffixOf` file) [envSuffix, prfSuffix] then
-          return $ fail $ "no matching source file for '" ++ fname ++ "' found."
-        else do
-        inputLit <- readEncFile (ioEncoding opts) file
-        let input = (if unlit opts then Unlit.unlit else id) inputLit
-            libStr = if isAbsolute fname
-              then convertFileToLibStr fname
-              else dropExtensions fname
-            nLn = case mln of
-              Nothing | useLibPos opts ->
-                Just $ emptyLibName libStr
-              _ -> mln
-        putIfVerbose opts 2 $ "Reading file " ++ file
+                _ -> file
+        in
         if runMMT opts then mmtRes fname else
             if takeExtension file /= ('.' : show TwelfIn)
-                 then runResultT $
-                      anaString nLn lgraph opts topLns libenv initDG input file
-                  else do
-                      res <- anaTwelfFile opts file
-                      case res of
-                        Nothing -> fail $ "failed to analyse file " ++ file
-                        Just (lname, lenv) -> return $ Result [] $
-                          Just (lname, Map.union lenv libenv)
+            then runResultT $
+                 anaString nLn lgraph opts topLns libenv initDG input fn2
+            else do
+              res <- anaTwelfFile opts file
+              return $ case res of
+                Nothing -> fail $ "failed to analyse file: " ++ file
+                Just (lname, lenv) -> return (lname, Map.union lenv libenv)
 
 {- | parsing and static analysis for string (=contents of file)
 Parameters: logic graph, default logic, contents of file, filename -}
@@ -177,6 +137,7 @@ anaString mln lgraph opts topLns libenv initDG input file = do
       posFileName = case mln of
           Just gLn | useLibPos opts -> libToFileName gLn
           _ -> if checkUri file then file else realFileName
+  lift $ putIfVerbose opts 2 $ "Reading file " ++ file
   libdefns <- readLibDefn lgraph opts file posFileName input
   foldM (anaStringAux mln lgraph opts topLns initDG file posFileName)
         (error "Static.AnalysisLibrary.anaString", libenv) libdefns

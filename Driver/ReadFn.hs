@@ -23,7 +23,9 @@ import Driver.Options
 import ATerm.AbstractSyntax
 import ATerm.ReadWrite
 
+import Common.Http
 import Common.Id
+import Common.IO
 import Common.IRI
 import Common.Result
 import Common.DocUtils
@@ -137,3 +139,31 @@ fileToLibName opts efile =
             else mkLibStr file
          (path, _) : _ -> mkLibStr $ drop (length path) file
                    -- cut off libdir prefix
+
+downloadSource :: FilePath -> IO (Either String (FilePath, String))
+downloadSource fname = do
+  resp <- loadFromUri fname
+  return $ case resp of
+    Right r -> Right (fname, r)
+    Left err -> Left err
+
+tryDownload :: [FilePath] -> FilePath -> IO (Either String (FilePath, String))
+tryDownload fnames fn = case fnames of
+  [] -> downloadSource fn -- try to reproduce original error message
+  fname : fnames' -> do
+       mRes <- downloadSource fname
+       case mRes of
+         Left _ -> tryDownload fnames' fn
+         _ -> return mRes
+
+getContent :: HetcatsOpts -> FilePath -> IO (Either String (FilePath, String))
+getContent opts fn =
+  if checkUri fn then tryDownload (getOntoFileNames opts fn) fn
+  else do
+  fname' <- findFileOfLibName opts fn
+  case fname' of
+    Nothing -> return $ Left $ "no file found for: " ++ fn
+    Just file ->
+      catchIOException (Left $ "could not read file: " ++ file) $ do
+        cont <- readEncFile (ioEncoding opts) file
+        return $ Right (file, cont)
