@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {- |
 Module      :  $Header$
 Description :  reading and parsing ATerms, CASL, HetCASL files
