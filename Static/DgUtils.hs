@@ -376,19 +376,18 @@ makeName :: IRI -> NodeName
 makeName n = NodeName n "" 0 [ElemName $ iriToStringShortUnsecure n]
 
 parseNodeName :: String -> NodeName
-parseNodeName s = case splitByList "__" s of
-                    [i] ->
-                        makeName $ fromJust $ parseCurie i
-                    [i, e] ->
-                        let n = makeName $ fromJust $ parseCurie i
-                            mSf = numberSuffix e
-                            (es, sf) = fromMaybe (e, 0) mSf
-                        in n { extString = es
-                             , extIndex = sf }
-                    _ ->
-                        error
-                        $ "parseNodeName: malformed NodeName, too many __: "
-                              ++ s
+parseNodeName s =
+  let err msg = error $ "parseNodeName: malformed NodeName" ++ msg ++ s
+      mkName = makeName . fromMaybe (err ": ") . parseIRIReference
+  in case splitByList "__" s of
+    [i] -> mkName i
+    [i, e] ->
+        let n = mkName i
+            mSf = numberSuffix e
+            (es, sf) = fromMaybe (e, 0) mSf
+        in n { extString = es
+             , extIndex = sf }
+    _ -> err ", too many __: "
 
 incBy :: Int -> NodeName -> NodeName
 incBy i n = n
