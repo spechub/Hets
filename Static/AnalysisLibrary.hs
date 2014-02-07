@@ -58,6 +58,7 @@ import qualified Common.Unlit as Unlit
 
 import Driver.Options
 import Driver.ReadFn
+import Driver.ReadLibDefn
 import Driver.WriteLibDefn
 
 import qualified Data.Map as Map
@@ -176,7 +177,7 @@ anaString mln lgraph opts topLns libenv initDG input file = do
       posFileName = case mln of
           Just gLn | useLibPos opts -> libToFileName gLn
           _ -> if checkUri file then file else realFileName
-  libdefns <- readLibDefnAux lgraph opts file posFileName input
+  libdefns <- readLibDefn lgraph opts file posFileName input
   foldM (anaStringAux mln lgraph opts topLns initDG file posFileName)
         (error "Static.AnalysisLibrary.anaString", libenv) libdefns
 

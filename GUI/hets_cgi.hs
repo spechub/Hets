@@ -16,7 +16,7 @@ import WASH.CGI.CGI as CGI
 
 import Driver.Options
 import Driver.WriteLibDefn
-import Driver.ReadFn
+import Driver.ReadLibDefn
 import Driver.Version
 
 import qualified Data.Set as Set
@@ -199,15 +199,8 @@ handle (F5 input box1 box2 box3 box4) = do
 -- Analyze the input
 anaInput :: String -> SelectedBoxes -> FilePath
          -> IO (CRes.Result Output)
-{-
-anaInput contents selectedBoxes outputfiles =
-      maybe (return $ CRes.Result parseErrors Nothing) ana_ast mast
-   where
-      CRes.Result parseErrors mast =
-              readLibDefnM logicGraph webOpts "<stdin>" contents
--}
 anaInput contents selectedBoxes outputfiles = do
-  ast : _ <- readLibDefnM logicGraph webOpts "<stdin>" contents
+  ast : _ <- readLibDefn logicGraph webOpts "<stdin>" "<stdin>" contents
   CRes.Result ds mres <- runResultT
       $ anaLibDefn logicGraph webOpts Set.empty emptyLibEnv emptyDG ast ""
   let ds1 = filter diagFilter ds

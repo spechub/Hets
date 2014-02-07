@@ -17,37 +17,19 @@ module Driver.ReadFn where
 
 import Logic.Grothendieck
 
-import Syntax.AS_Library
-import Syntax.Parse_AS_Library
-
 import ATC.Grothendieck
-import ATC.Sml_cats
-import ATC.LibName ()
-
-import CommonLogic.ParseCLAsLibDefn
-#ifndef NOOWLLOGIC
-import OWL2.ParseOWLAsLibDefn
-#endif
-#ifdef RDFLOGIC
--- import RDF.ParseRDFAsLibDefn
-#endif
-import CSMOF.ParseXmiAsLibDefn
-import QVTR.ParseQvtAsLibDefn
-import SoftFOL.ParseTPTPAsLibDefn
 
 import Driver.Options
 
 import ATerm.AbstractSyntax
 import ATerm.ReadWrite
 
-import Common.AnnoState
 import Common.Id
 import Common.IRI
 import Common.Result
 import Common.DocUtils
 import Common.LibName
 
-import Text.ParserCombinators.Parsec
 import Text.XML.Light
 
 import System.FilePath
@@ -56,8 +38,6 @@ import Control.Monad.Trans (MonadIO (..))
 
 import Data.List (isPrefixOf)
 import Data.Maybe
-
-import FreeCAD.Logic_FreeCAD
 
 noPrefix :: QName -> Bool
 noPrefix = isNothing . qPrefix
@@ -93,35 +73,6 @@ guessInput opts file input = let fty = guess file (intype opts) in
     Left ty -> fail $ "unexpected xml format: " ++ ty
     Right ty -> return ty
   else return fty
-
-readLibDefnM :: MonadIO m => LogicGraph -> HetcatsOpts -> FilePath -> String
-  -> m [LIB_DEFN]
-readLibDefnM lgraph opts file = readLibDefnAux lgraph opts file file
-
-readLibDefnAux :: MonadIO m => LogicGraph -> HetcatsOpts -> FilePath
-  -> FilePath -> String -> m [LIB_DEFN]
-readLibDefnAux lgraph opts file fileForPos input =
-    if null input then fail ("empty input file: " ++ file) else
-    case intype opts of
-    ATermIn _ -> return [from_sml_ATermString input]
-    FreeCADIn ->
-      liftIO $ fmap (: []) . readFreeCADLib file $ fileToLibName opts file
-    _ -> do
-     ty <- guessInput opts file input
-     case ty of
-      CommonLogicIn _ -> liftIO $ parseCL_CLIF file opts
-#ifdef RDFLOGIC
- -- - RDFIn -> liftIO $ parseRDF file
-#endif
-      Xmi -> liftIO $ fmap (: []) $ parseXmi file
-      Qvt -> liftIO $ fmap (: []) $ parseQvt file
-      TPTPIn -> liftIO $ fmap (: []) $ parseTPTP file
-#ifndef NOOWLLOGIC
-      _ | elem ty [OWLIn, OwlXmlIn, OBOIn] -> liftIO $ parseOWL file
-#endif
-      _ -> case runParser (library lgraph) (emptyAnnos ()) fileForPos input of
-         Left err -> fail (showErr err)
-         Right ast -> return [ast]
 
 readShATermFile :: ShATermLG a => LogicGraph -> FilePath -> IO (Result a)
 readShATermFile lg fp = do
