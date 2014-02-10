@@ -209,28 +209,30 @@ anaLibFile lgraph opts topLns libenv initDG ln =
               (if recurse opts then opts else opts
                       { outtypes = []
                       , unlit = False })
-              (Set.insert ln topLns) libenv initDG ln $ libNameToFile ln
+              (Set.insert ln topLns) libenv initDG (Just ln) $ libNameToFile ln
             putMessageIORes opts 1 $ "... loaded " ++ lnstr
             return res
 
 -- | lookup or read a library
 anaLibFileOrGetEnv :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph
-                   -> LibName -> FilePath -> ResultT IO (LibName, LibEnv)
-anaLibFileOrGetEnv lgraph opts topLns libenv initDG ln file = ResultT $ do
+                   -> Maybe LibName -> FilePath -> ResultT IO (LibName, LibEnv)
+anaLibFileOrGetEnv lgraph opts topLns libenv initDG mln file = case mln of
+  Nothing -> anaSource mln lgraph opts topLns libenv initDG file
+  Just ln -> do
      let envFile = rmSuffix file ++ envSuffix
-     recent_envFile <- checkRecentEnv opts envFile file
+     recent_envFile <- lift $ checkRecentEnv opts envFile file
      if recent_envFile
         then do
-             mgc <- readVerbose lgraph opts ln envFile
+             mgc <- lift $ readVerbose lgraph opts ln envFile
              case mgc of
-                 Nothing -> runResultT $ do
+                 Nothing -> do
                      lift $ putIfVerbose opts 1 $ "Deleting " ++ envFile
                      lift $ removeFile envFile
-                     anaSource (Just ln) lgraph opts topLns libenv initDG file
+                     anaSource mln lgraph opts topLns libenv initDG file
                  Just (ld, gc) -> do
-                     writeLibDefn lgraph (globalAnnos gc) file opts ld
+                     lift $ writeLibDefn lgraph (globalAnnos gc) file opts ld
                           -- get all DGRefs from DGraph
-                     Result ds mEnv <- runResultT $ foldl
+                     mEnv <- foldl
                          ( \ ioLibEnv labOfDG -> let node = snd labOfDG in
                                if isDGRef node then do
                                  let ln2 = dgn_libname node
@@ -242,10 +244,8 @@ anaLibFileOrGetEnv lgraph opts topLns libenv initDG ln file = ResultT $ do
                                else ioLibEnv)
                          (return $ Map.insert ln gc libenv)
                          $ labNodesDG gc
-                     return $ Result ds $ fmap
-                                ( \ rEnv -> (ln, rEnv)) mEnv
-        else runResultT
-          $ anaSource (Just ln) lgraph opts topLns libenv initDG file
+                     return (ln, mEnv)
+        else anaSource mln lgraph opts topLns libenv initDG file
 
 {- | analyze a LIB_DEFN.
   Parameters: logic graph, default logic, opts, library env, LIB_DEFN.
