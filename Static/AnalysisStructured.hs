@@ -570,28 +570,31 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp = case sp of
             cEntry = fromMaybe (error $ "No entry for " ++ show cItem)
                      $ lookupGlobalEnvDG cItem dg
             bgraph = dgBody dg
-            lEdge x y = case filter (\ (_, z, _) -> z == y) $ out bgraph x of
+            lEdge x y m = case filter (\ (_, z, l) -> (z == y) &&
+                                         (dgl_morphism l == m) ) $ 
+                               out bgraph x of
                              [] -> error "No edge found"
                              lE : _ -> lE
            in case cEntry of
                SpecEntry extGenSig -> let
                    n = getNode $ extGenBody extGenSig
                   in if elem n cN then (cN, cE) else (n : cN, cE)
-               ViewOrStructEntry True (ExtViewSig ns _gm eGS) -> let
+               ViewOrStructEntry True (ExtViewSig ns gm eGS) -> let
                    s = getNode ns
                    t = getNode $ extGenBody eGS
-                 in (nub $ s : t : cN, lEdge s t : cE)
+                 in (nub $ s : t : cN, lEdge s t gm: cE)
                AlignEntry asig ->
                   case asig of
-                   AlignMor src _gmor tar -> let
+                   AlignMor src gmor tar -> let
                      s = getNode src
                      t = getNode tar
-                    in (nub $ s : t : cN, lEdge s t : cE)
-                   AlignSpan src _phi1 tar1 _phi2 tar2 -> let
+                    in (nub $ s : t : cN, lEdge s t gmor: cE)
+                   AlignSpan src phi1 tar1 phi2 tar2 -> let
                      s = getNode src
                      t1 = getNode tar1
                      t2 = getNode tar2
-                    in (nub $ [s, t1, t2] ++ cN, [lEdge s t1, lEdge s t2] ++ cE)
+                    in (nub $ [s, t1, t2] ++ cN, 
+                              [lEdge s t1 phi1, lEdge s t2 phi2] ++ cE)
                _ -> error $ show cItem
                     ++ "is not an ontology, a view or an alignment"
         addGDefLinks (cN, iN, cE) n = let
