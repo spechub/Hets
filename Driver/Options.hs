@@ -33,8 +33,9 @@ module Driver.Options
   , removePrfOut
   , hasEnvOut
   , hasPrfOut
-  , getOntoFileNames
+  , getFileNames
   , existsAnSource
+  , getExtensions
   , checkRecentEnv
   , downloadExtensions
   , defaultHetcatsOpts
@@ -322,7 +323,7 @@ makeOpts opts flg = case flg of
     Analysis x -> opts { analysis = x }
     Gui x -> opts { guiType = x }
     InType x -> opts { intype = x }
-    LibDirs x -> opts { libdirs = splitPaths x }
+    LibDirs x -> opts { libdirs = joinHttpLibPath $ splitPaths x }
     ModelSparQ x -> opts { modelSparQ = x }
     CounterSparQ x -> opts { counterSparQ = x }
     OutDir x -> opts { outdir = x }
@@ -731,18 +732,23 @@ isDefLogic s = (s ==) . defLogic
 defLogicIsDMU :: HetcatsOpts -> Bool
 defLogicIsDMU = isDefLogic "DMU"
 
-getOntoFileNames :: HetcatsOpts -> FilePath -> [FilePath]
-getOntoFileNames opts file =
-  let base = rmSuffix file
-      exts = case intype opts of
+getExtensions :: HetcatsOpts -> [String]
+getExtensions opts = case intype opts of
         GuessIn
           | defLogicIsDMU opts -> [".xml"]
           | isDefLogic "Framework" opts
             -> [".elf", ".thy", ".maude", ".het"]
         GuessIn -> downloadExtensions
         e@(ATermIn _) -> ['.' : show e, '.' : treeS ++ show e]
-        e -> ['.' : show e] in
-  file : map (base ++) (exts ++ [envSuffix])
+        e -> ['.' : show e]
+  ++ [envSuffix]
+
+getFileNames :: [String] -> FilePath -> [FilePath]
+getFileNames exts file =
+  file : map (rmSuffix file ++) exts
+
+getOntoFileNames :: HetcatsOpts -> FilePath -> [FilePath]
+getOntoFileNames = getFileNames . getExtensions
 
 {- |
 checks if a source file for the given file name exists -}
@@ -909,14 +915,21 @@ checkLibDirs fs =
                 let d = LibDirs s
                 checkLibDirs [d]
                 return [d]
-        [LibDirs f] -> mapM_ checkLibDir (splitPaths f) >> return fs
+        [LibDirs f] -> mapM_ checkLibDir (joinHttpLibPath $ splitPaths f)
+          >> return fs
         _ -> hetsIOError
             "Only one library path may be specified on the command line"
+
+joinHttpLibPath :: [String] -> [String]
+joinHttpLibPath l = case l of
+  p : f : r | elem p ["http", "https"] -> (p ++ ':' : f) : joinHttpLibPath r
+  f : r -> f : joinHttpLibPath r
+  [] -> []
 
 -- | 'checkLibDir' checks a single LibDir for sanity
 checkLibDir :: FilePath -> IO ()
 checkLibDir file = do
-    exists <- doesDirectoryExist file
+    exists <- if checkUri file then return True else doesDirectoryExist file
     unless exists . hetsIOError $ "Not a valid library directory: " ++ file
 
 -- | 'checkOutDir' checks a single OutDir for sanity

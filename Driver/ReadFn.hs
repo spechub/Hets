@@ -34,10 +34,11 @@ import Common.LibName
 import Text.XML.Light
 
 import System.FilePath
+import System.Directory
 
 import Control.Monad.Trans (MonadIO (..))
 
-import Data.List (isPrefixOf)
+import Data.List (isPrefixOf, stripPrefix)
 import Data.Maybe
 
 noPrefix :: QName -> Bool
@@ -145,30 +146,33 @@ fileToLibName opts efile =
          (path, _) : _ -> mkLibStr $ drop (length path) file
                    -- cut off libdir prefix
 
-downloadSource :: FilePath -> IO (Either String (FilePath, String))
-downloadSource fname = do
-  resp <- loadFromUri fname
-  return $ case resp of
-    Right r -> Right (fname, r)
-    Left err -> Left err
+downloadSource :: HetcatsOpts -> FilePath -> IO (Either String String)
+downloadSource opts fn =
+  if checkUri fn then loadFromUri fn else do
+    b <- doesFileExist fn
+    if b then catchIOException (Left $ "could not read file: " ++ fn)
+        . fmap Right $ readEncFile (ioEncoding opts) fn
+      else return $ Left $ "file does not exist: " ++ fn
 
-tryDownload :: [FilePath] -> FilePath -> IO (Either String (FilePath, String))
-tryDownload fnames fn = case fnames of
-  [] -> downloadSource fn -- try to reproduce original error message
+tryDownload :: HetcatsOpts -> [FilePath] -> FilePath
+  -> IO (Either String (FilePath, String))
+tryDownload opts fnames fn = case fnames of
+  [] -> return $ Left $ "no input found for: " ++ fn
   fname : fnames' -> do
-       mRes <- downloadSource fname
+       mRes <- downloadSource opts fname
        case mRes of
-         Left _ -> tryDownload fnames' fn
-         _ -> return mRes
+         Left _ -> tryDownload opts fnames' fn
+         Right cont -> return $ Right (fname, cont)
 
-getContent :: HetcatsOpts -> FilePath -> IO (Either String (FilePath, String))
-getContent opts fn =
-  if checkUri fn then tryDownload (getOntoFileNames opts fn) fn
-  else do
-  fname' <- findFileOfLibName opts fn
-  case fname' of
-    Nothing -> return $ Left $ "no file found for: " ++ fn
-    Just file ->
-      catchIOException (Left $ "could not read file: " ++ file) $ do
-        cont <- readEncFile (ioEncoding opts) file
-        return $ Right (file, cont)
+getContent :: HetcatsOpts -> FilePath
+  -> IO (Either String (FilePath, String))
+getContent opts = getExtContent opts (getExtensions opts)
+
+getExtContent :: HetcatsOpts -> [String] -> FilePath
+  -> IO (Either String (FilePath, String))
+getExtContent opts exts fp =
+  let fn = fromMaybe fp $ stripPrefix "file://" fp
+      fs = getFileNames exts fn
+      ffs = if checkUri fn || isAbsolute fn then fs else
+           concatMap (\ d -> map (d </>) fs) $ "" : libdirs opts
+  in tryDownload opts ffs fn

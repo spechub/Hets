@@ -19,6 +19,7 @@ import Common.AS_Annotation as Anno
 import Common.AnnoState
 
 import Driver.Options
+import Driver.ReadFn
 
 import Text.ParserCombinators.Parsec
 
@@ -34,13 +35,9 @@ import Syntax.AS_Structured
 import Control.Monad (foldM)
 import qualified Data.Set as Set
 import qualified Data.Map as Map
-import Data.Maybe
 import Data.List
 
 import System.FilePath
-import System.Directory (doesFileExist)
-
-import Common.Http
 
 type SpecMap = Map.Map FilePath SpecInfo
 type SpecInfo = (BASIC_SPEC, FilePath, Set.Set String, Set.Set FilePath)
@@ -135,7 +132,9 @@ downloadSpec opts specMap topTexts importedBy isImport dirFile baseDir = do
           Left err -> do
             putIfVerbose opts 0 $ show err
             return specMap
-          Right (file, contents) -> case parseCL_CLIF_contents fn contents of
+          Right (file, contents) -> do
+            putIfVerbose opts 2 $ "Downloaded " ++ file
+            case parseCL_CLIF_contents fn contents of
               Left err -> do
                 putIfVerbose opts 0 $ show err
                 return specMap
@@ -173,56 +172,11 @@ unify (_, _, s, p) (a, b, t, q) = (a, b, s `Set.union` t, p `Set.union` q)
 getCLIFContents :: HetcatsOpts -> (String, String) -> String
   -> IO (Either String (FilePath, String))
 getCLIFContents opts dirFile baseDir =
-  let fn = uncurry fileCombine dirFile
-      uStr1 = useCatalogURL opts
+  let fn = uncurry httpCombine dirFile
+      uStr = useCatalogURL opts
         $ if checkUri baseDir then httpCombine baseDir fn else fn
-      uStr = fromMaybe uStr1 $ stripPrefix "file://" uStr1
-  in
-  if checkUri uStr then getCLIFContentsHTTP opts uStr "" else
-  localFileContents opts uStr baseDir
-
-getCLIFContentsHTTP :: HetcatsOpts -> String -> String
-  -> IO (Either String (FilePath, String))
-getCLIFContentsHTTP opts uriS extension = do
-    let extUri = uriS ++ extension
-    putIfVerbose opts 3 $ "Trying to download " ++ extUri
-    res <- loadFromUri extUri
-    case res of
-        Right rb -> do
-          putIfVerbose opts 2 $ "Downloaded " ++ extUri
-          return $ Right (extUri, rb)
-        Left err -> case extension of
-          "" -> getCLIFContentsHTTP opts uriS ".clf"
-          ".clf" -> getCLIFContentsHTTP opts uriS ".clif"
-          _ -> return . Left $ "File not found via HTTP: " ++ uriS
-             ++ "\n" ++ err
-
-localFileContents :: HetcatsOpts -> FilePath -> FilePath
-  -> IO (Either String (FilePath, String))
-localFileContents opts fn baseDir = do
-  mFile <- findLibFile (baseDir : libdirs opts) fn
-  case mFile of
-    Nothing -> return . Left $ "Could not find Common Logic Library " ++ fn
-    Just file -> do
-      putIfVerbose opts 2 $ "Reading CLIF file " ++ file
-      cont <- readFile file
-      return $ Right (file, cont)
-
-findLibFile :: [FilePath] -> String -> IO (Maybe FilePath)
-findLibFile ds f = do
-  e <- doesFileExist f
-  if e then return $ Just f else findLibFileAux ds f
-
-findLibFileAux :: [FilePath] -> String -> IO (Maybe FilePath)
-findLibFileAux fps f = case fps of
-  d : ds -> do
-    let fs = [ fileCombine d $ addExtension f $ show $ CommonLogicIn b
-             | b <- [False, True]]
-    es <- mapM doesFileExist fs
-    case filter fst $ zip es fs of
-        [] -> findLibFileAux ds f
-        (_, f0) : _ -> return $ Just f0
-  [] -> return Nothing
+  in getExtContent opts { libdirs = baseDir : libdirs opts }
+         [".clif", ".clf"] uStr
 
 -- retrieves all importations from the text
 directImports :: BASIC_SPEC -> Set.Set NAME
