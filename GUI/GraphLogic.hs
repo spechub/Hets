@@ -340,7 +340,7 @@ openProofStatus gInfo@(GInfo { hetcatsOpts = opts
   case i_state ost of
     Nothing -> return ()
     Just ist -> do
-      mh <- readVerbose logicGraph opts ln file
+      mh <- readVerbose logicGraph opts (Just ln) file
       case mh of
         Nothing -> errorDialog "Error" $
                      "Could not read proof status from file '" ++ file ++ "'"

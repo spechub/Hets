@@ -104,19 +104,21 @@ fromShATermString lg str = if null str then
     Result [Diag Warning "got empty string from file" nullRange] Nothing
     else fromVersionedATT lg $ readATerm str
 
-readVerbose :: ShATermLG a => LogicGraph -> HetcatsOpts -> LibName -> FilePath
-            -> IO (Maybe a)
-readVerbose lg opts ln file = do
+readVerbose :: ShATermLG a => LogicGraph -> HetcatsOpts -> Maybe LibName
+  -> FilePath -> IO (Maybe a)
+readVerbose lg opts mln file = do
     putIfVerbose opts 2 $ "Reading " ++ file
     Result ds mgc <- readShATermFile lg file
     showDiags opts ds
     case mgc of
       Nothing -> return Nothing
-      Just (ln2, a) -> if ln2 == ln then return $ Just a else do
-        putIfVerbose opts 0 $ "incompatible library names: "
+      Just (ln2, a) -> case mln of
+        Just ln | ln2 /= ln -> do
+          putIfVerbose opts 0 $ "incompatible library names: "
                ++ showDoc ln " (requested) vs. "
                ++ showDoc ln2 " (found)"
-        return Nothing
+          return Nothing
+        _ -> return $ Just a
 
 -- | create a file name without suffix from a library name
 libNameToFile :: LibName -> FilePath

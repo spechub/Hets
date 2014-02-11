@@ -216,20 +216,18 @@ anaLibFile lgraph opts topLns libenv initDG ln =
 -- | lookup or read a library
 anaLibFileOrGetEnv :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph
                    -> Maybe LibName -> FilePath -> ResultT IO (LibName, LibEnv)
-anaLibFileOrGetEnv lgraph opts topLns libenv initDG mln file = case mln of
-  Nothing -> anaSource mln lgraph opts topLns libenv initDG file
-  Just ln -> do
+anaLibFileOrGetEnv lgraph opts topLns libenv initDG mln file = do
      let envFile = rmSuffix file ++ envSuffix
      recent_envFile <- lift $ checkRecentEnv opts envFile file
      if recent_envFile
         then do
-             mgc <- lift $ readVerbose lgraph opts ln envFile
+             mgc <- lift $ readVerbose lgraph opts mln envFile
              case mgc of
                  Nothing -> do
                      lift $ putIfVerbose opts 1 $ "Deleting " ++ envFile
                      lift $ removeFile envFile
                      anaSource mln lgraph opts topLns libenv initDG file
-                 Just (ld, gc) -> do
+                 Just (ld@(Lib_defn ln _ _ _), gc) -> do
                      lift $ writeLibDefn lgraph (globalAnnos gc) file opts ld
                           -- get all DGRefs from DGraph
                      mEnv <- foldl
