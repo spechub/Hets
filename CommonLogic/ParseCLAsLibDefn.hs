@@ -118,7 +118,7 @@ downloadSpec opts specMap topTexts importedBy isImport dirFile baseDir = do
       Just info@(b, f, t, _)
         | isImport && Set.member fn importedBy -> do
            putIfVerbose opts 0 . intercalate "\n "
-                    $ "Unsupported cyclic imports:" : Set.toList importedBy
+             $ "**** unsupported cyclic imports:" : Set.toList importedBy
            return specMap
         | t == topTexts
           -> return specMap
@@ -130,28 +130,28 @@ downloadSpec opts specMap topTexts importedBy isImport dirFile baseDir = do
         mCont <- getCLIFContents opts dirFile baseDir
         case mCont of
           Left err -> do
-            putIfVerbose opts 0 $ show err
+            putIfVerbose opts 0 $ "**** " ++ show err
             return specMap
           Right (file, contents) -> do
             putIfVerbose opts 2 $ "Downloaded " ++ file
             case parseCL_CLIF_contents fn contents of
               Left err -> do
-                putIfVerbose opts 0 $ show err
+                putIfVerbose opts 0 $ "**** " ++ show err
                 return specMap
               Right bs -> do
                 let nbs = zip (specNameL bs fn) bs
                 nbs2 <- mapM (\ (n, b) -> case
                     map (rmSuffix . tokStr) $ clTexts b of
                   [txt] -> if txt == fn then return (n, b) else do
-                    putIfVerbose opts 2 $ "filename " ++ show fn
+                    putIfVerbose opts 2 $ "#### filename " ++ show fn
                       ++ " does not match cl-text " ++ show txt
                     return (txt, b)
                   [] -> do
-                    putIfVerbose opts 2 $ "missing cl-text in "
+                    putIfVerbose opts 2 $ "#### missing cl-text in "
                       ++ show fn
                     return (n, b)
                   ts -> do
-                    putIfVerbose opts 2 $ "multiple cl-text entries in "
+                    putIfVerbose opts 2 $ "#### multiple cl-text entries in "
                       ++ show fn ++ "\n" ++ unlines (map show ts)
                     return (n, b)) nbs
                 let nbtis = map (\ (n, b) ->
