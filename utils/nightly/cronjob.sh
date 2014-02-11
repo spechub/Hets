@@ -101,6 +101,22 @@ date
 for i in Examples/*.casl CASL/*.casl;  do ./hets -v2 $i; done
 }
 
+checkHttpsBasicLib ()
+{
+date
+cd Basic
+mkdir -p Basic
+for i in *.casl; do ../hets -v2 -o th \
+  -L https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk/ \
+  Basic/$i; done
+cd ..
+}
+
+checkColore ()
+{
+cd CommonLogic/colore
+}
+
 checkUserManual ()
 {
 date
@@ -174,7 +190,7 @@ for i in Basic/*.xml;
 makeLibCheck ()
 {
 rm -rf Hets-lib
-svn co -q --ignore-externals \
+svn co -q \
   https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk Hets-lib
 cd Hets-lib
 mv ../Hets/Hets/hets .
@@ -188,6 +204,17 @@ reCheckBasicCASLThs
 checkHasCASL $1
 checkCspCASL
 date
+}
+
+checkColore ()
+{
+date
+cd CommonLogic/colore
+for i in `find . -name \*.clif`; do ../../hets -v2 -C \
+  http://colore.oor.net=http://colore.googlecode.com/svn/trunk/ontologies \
+  http://colore.oor.net/`echo $i | sed -e 's+\./++g'`; done \
+  > ../../../clif.log 2>&1
+cd ../..
 }
 
 installHetsBinary ()
