@@ -747,14 +747,10 @@ getFileNames :: [String] -> FilePath -> [FilePath]
 getFileNames exts file =
   file : map (rmSuffix file ++) exts
 
-getOntoFileNames :: HetcatsOpts -> FilePath -> [FilePath]
-getOntoFileNames = getFileNames . getExtensions
-
-{- |
-checks if a source file for the given file name exists -}
+-- | checks if a source file for the given file name exists
 existsAnSource :: HetcatsOpts -> FilePath -> IO (Maybe FilePath)
 existsAnSource opts file = do
-  let names = getOntoFileNames opts file
+  let names = getFileNames (getExtensions opts) file
   -- look for the first existing file
   validFlags <- mapM doesFileExist names
   return . fmap snd . find fst $ zip validFlags names
@@ -854,11 +850,10 @@ hetcatsOpts argv =
   let argv' = filter (not . isUni) argv
       isUni = isPrefixOf "--uni"
    in case getOpt Permute options argv' of
-        (opts, non_opts, []) ->
+        (opts, nonOpts, []) ->
             do flags <- checkFlags opts
-               infs <- checkInFiles non_opts
                return (foldr (flip makeOpts) defaultHetcatsOpts flags)
-                            { infiles = infs }
+                            { infiles = nonOpts }
         (_, _, errs) -> hetsIOError (concat errs)
 
 -- | 'checkFlags' checks all parsed Flags for sanity
@@ -875,18 +870,6 @@ checkFlags fs = do
     unless v $ putStrLn ("version of hets: " ++ hetcats_version)
     unless (v && h) exitSuccess
     collectFlags fs
-
--- | 'checkInFiles' checks all given input files for sanity
-checkInFiles :: [String] -> IO [FilePath]
-checkInFiles fs = do
-    let ifs = filter (not . checkUri) fs
-        efs = filter hasExtension ifs
-        hasExtension f = any (`isSuffixOf` f) downloadExtensions
-    bs <- mapM doesFileExist efs
-    if and bs
-      then return fs
-      else hetsIOError $ "invalid input files: " ++
-             unwords (map snd . filter (not . fst) $ zip bs efs)
 
 -- auxiliary functions: FileSystem interaction --
 
