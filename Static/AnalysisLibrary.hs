@@ -154,7 +154,6 @@ anaStringAux mln lgraph opts topLns initDG file posFileName (_, libenv)
       unDecls = map (addDownload True) $ filter
           (isNothing . (`lookupGlobalEnvDG` initDG)) missNames
       is = unDecls ++ is'
-      noSuffixFile = rmSuffix file
       spN = convertFileToLibStr file
       noLibName = getLibId pln == nullIRI
       nIs = case is of
@@ -177,8 +176,8 @@ anaStringAux mln lgraph opts topLns initDG file posFileName (_, libenv)
           liftR mzero
       _ -> do
           let libstring = libToFileName ln
-          unless (isSuffixOf libstring noSuffixFile || not emptyFilePath) $ lift
-              $ putIfVerbose opts 1
+          unless (isSuffixOf libstring (takeBaseName file)
+              || not emptyFilePath) . lift . putIfVerbose opts 1
               $ "### file name '" ++ file ++ "' does not match library name '"
               ++ libstring ++ "'"
           lift $ putIfVerbose opts 1 $ "Analyzing "
