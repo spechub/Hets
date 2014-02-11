@@ -12,7 +12,16 @@ reading and parsing ATerms, CASL, HetCASL files as much as is needed for the
 static analysis
 -}
 
-module Driver.ReadFn where
+module Driver.ReadFn
+  ( findFileOfLibNameAux
+  , libNameToFile
+  , fileToLibName
+  , readVerbose
+  , guessInput
+  , isDgXmlFile
+  , getContent
+  , getExtContent
+  ) where
 
 import Logic.Grothendieck
 
@@ -132,9 +141,6 @@ findFileOfLibNameAux opts file = do
           return $ case catMaybes ms of
             [] -> Nothing
             f : _ -> Just f
-
-findFileOfLibName :: HetcatsOpts -> FilePath -> IO (Maybe FilePath)
-findFileOfLibName opts = findFileOfLibNameAux opts { intype = GuessIn }
 
 -- | convert a file name that may have a suffix to a library name
 fileToLibName :: HetcatsOpts -> FilePath -> LibName
