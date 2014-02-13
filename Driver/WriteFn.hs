@@ -12,7 +12,11 @@ Portability :  non-portable(DevGraph)
 Writing various formats, according to Hets options
 -}
 
-module Driver.WriteFn (writeSpecFiles, writeVerbFile, writeLG) where
+module Driver.WriteFn
+  ( writeSpecFiles
+  , writeVerbFile
+  , writeLG
+  ) where
 
 import Text.ParserCombinators.Parsec
 import Text.XML.Light
