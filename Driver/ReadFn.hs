@@ -21,6 +21,7 @@ module Driver.ReadFn
   , isDgXmlFile
   , getContent
   , getExtContent
+  , fromShATermString
   ) where
 
 import Logic.Grothendieck
