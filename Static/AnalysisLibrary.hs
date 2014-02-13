@@ -176,7 +176,7 @@ anaStringAux mln lgraph opts topLns initDG file posFileName (_, libenv)
           liftR mzero
       _ -> do
           let libstring = libToFileName ln
-          unless (isSuffixOf libstring (takeBaseName file)
+          unless (isSuffixOf libstring (dropExtension file)
               || not emptyFilePath) . lift . putIfVerbose opts 1
               $ "### file name '" ++ file ++ "' does not match library name '"
               ++ libstring ++ "'"
