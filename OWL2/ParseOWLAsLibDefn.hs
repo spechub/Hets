@@ -18,6 +18,7 @@ import OWL2.Rename
 
 import Data.Maybe
 import qualified Data.Map as Map
+import Data.Tuple
 
 import Common.Id
 import Common.IRI
@@ -53,20 +54,20 @@ parseOWL filename = do
        (exitCode, result, errStr) <- executeProcess "java"
          ["-jar", toolPath </> jar, absfile, "xml"] ""
        case (exitCode, errStr) of
-         (ExitSuccess, "") -> return $ parseProc result
+         (ExitSuccess, "") -> return $ parseProc absfile result
          _ -> error $ "process stop! " ++ shows exitCode "\n"
               ++ errStr
       else error $ jar
         ++ " not found, check your environment variable: " ++ hetsOWLenv
 
-parseProc :: String -> [LIB_DEFN]
-parseProc str =
+parseProc :: FilePath -> String -> [LIB_DEFN]
+parseProc fp str =
   let es = onlyElems $ parseXML str
       imap = Map.fromList . mapMaybe (\ e -> do
         imp <- findAttr (unqual "name") e
         ont <- findAttr (unqual "ontiri") e
         return (imp, ont)) $ concatMap (filterElementsName $ isSmth "Loaded") es
-  in map (convertToLibDefN imap)
+  in map (convertToLibDefN fp imap)
         . unifyDocs . map (xmlBasicSpec imap)
         $ concatMap (filterElementsName $ isSmth "Ontology") es
 
@@ -80,12 +81,18 @@ createSpec o imps = addImports imps . makeSpec $ G_basic_spec OWL2 o
 convertone :: OntologyDocument -> SPEC_NAME -> [SPEC_NAME] -> Annoted LIB_ITEM
 convertone o oname i = makeSpecItem oname $ createSpec o i
 
-convertToLibDefN :: Map.Map String String -> OntologyDocument -> LIB_DEFN
-convertToLibDefN imap o = Lib_defn (iriLibName oname)
+convertToLibDefN :: FilePath -> Map.Map String String -> OntologyDocument
+  -> LIB_DEFN
+convertToLibDefN fp imap o = Lib_defn ln
     (makeLogicItem OWL2 : imp_libs ++ [convertone o oname imps2]) nullRange []
   where ont = ontology o
-        is = map snd $ Map.toList imap
+        il = Map.toList imap
+        is = map snd il
+        ln = setFilePath (maybe fp (\ e ->
+             if checkUri e then e else fp)
+             $ lookup libstr $ map swap il) $ iriLibName oname
         imps = map qNameToIRI $ imports ont
         imps2 = filter ((`elem` is) . show . setAnkles False) imps
         oname = qNameToIRI $ name ont
+        libstr = show $ setAnkles False oname
         imp_libs = map (addDownload False) imps2
