@@ -18,7 +18,6 @@ import OWL2.Rename
 
 import Data.Maybe
 import qualified Data.Map as Map
-import Data.Tuple
 
 import Common.Id
 import Common.IRI
@@ -88,9 +87,10 @@ convertToLibDefN fp imap o = Lib_defn ln
   where ont = ontology o
         il = Map.toList imap
         is = map snd il
-        ln = setFilePath (maybe fp (\ e ->
-             if checkUri e then e else fp)
-             $ lookup libstr $ map swap il) $ iriLibName oname
+        ln = setFilePath
+          (maybe fp (\ e -> if checkUri e then e else fp)
+            $ lookup libstr $ map (\ (a, b) -> (b, a)) il)
+          $ iriLibName oname
         imps = map qNameToIRI $ imports ont
         imps2 = filter ((`elem` is) . show . setAnkles False) imps
         oname = qNameToIRI $ name ont
