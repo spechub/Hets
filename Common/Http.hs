@@ -19,7 +19,7 @@ import System.Exit
 loadFromUri :: String -> IO (Either String String)
 loadFromUri str = do
   (code, out, err) <- executeProcess "wget"
-     ["-O", "-", str] ""
+     ["--no-check-certificate", "-O", "-", str] ""
   return $ case code of
     ExitSuccess -> Right out
     _ -> Left err
