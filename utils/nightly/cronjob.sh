@@ -112,11 +112,6 @@ for i in *.casl; do ../hets -v2 -o th \
 cd ..
 }
 
-checkColore ()
-{
-cd CommonLogic/colore
-}
-
 checkUserManual ()
 {
 date
