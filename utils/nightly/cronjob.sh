@@ -212,6 +212,15 @@ for i in `find . -name \*.clif`; do ../../hets -v2 -C \
 cd ../..
 }
 
+checkBioPortal ()
+{
+cd ../bioportal
+git fetch
+for i in `find . -name \*.owl`; do ../Hets-lib/hets -v2 -O . -o xml $i; done \
+  > ../bioportal.log 2>&1
+cd ../Hets-lib
+}
+
 installHetsBinary ()
 {
 chmod 775 hets
