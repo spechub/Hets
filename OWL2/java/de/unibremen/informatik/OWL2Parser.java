@@ -150,7 +150,9 @@ public class OWL2Parser {
     private static void renderAsXml(OWLOntology onto, BufferedWriter out) {
         try {
             OWLXMLRenderer ren = new OWLXMLRenderer();
-            ren.render(onto, out);
+            StringWriter buf = new StringWriter();
+            ren.render(onto, buf);
+            out.append(buf.getBuffer().substring(22)); // strip off leading <?xml version="1.0"?>
             out.append("<Loaded name=\"").append(manager.getOntologyDocumentIRI(onto));
             out.append("\" ontiri=\"").append(onto.getOntologyID().getOntologyIRI()).append("\"/>\n");
         } catch (Exception ex) {
