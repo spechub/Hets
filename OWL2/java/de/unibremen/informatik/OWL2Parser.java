@@ -100,7 +100,7 @@ public class OWL2Parser {
         Set<OWLOntology> next = new HashSet<OWLOntology>(stop);
         next.add(ontology);
         for (OWLOntology imported : ontology.getDirectImports())
-            if (next.contains(imported)) cyclic = true;
+            if (cyclic || next.contains(imported)) cyclic = true;
             else if (!s.contains(imported)) {
                 Set<OWLOntology> i = getImports(imported, next);
                 s.add(imported);
