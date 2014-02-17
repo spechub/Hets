@@ -45,29 +45,31 @@ import Text.XML.Light hiding (QName)
 -- | call for owl parser (env. variable $HETS_OWL_TOOLS muss be defined)
 parseOWL :: FilePath              -- ^ local filepath or uri
          -> IO [LIB_DEFN]         -- ^ map: uri -> OntologyFile
-parseOWL filename = do
+parseOWL fn = do
     let jar = "OWL2Parser.jar"
-    absfile <- if checkUri filename then return filename else
-      fmap ("file://" ++) $ canonicalizePath filename
+    absfile <- if checkUri fn then return fn else
+      fmap ("file://" ++) $ canonicalizePath fn
     (hasJar, toolPath) <- check4HetsOWLjar jar
     if hasJar then do
        (exitCode, result, errStr) <- executeProcess "java"
          ["-jar", toolPath </> jar, absfile, "xml"] ""
        case (exitCode, errStr) of
-         (ExitSuccess, "") -> return $ parseProc result
+         (ExitSuccess, "") -> do
+           writeFile "text.xml" result
+           return $ parseProc fn result
          _ -> error $ "process stop! " ++ shows exitCode "\n"
               ++ errStr
       else error $ jar
         ++ " not found, check your environment variable: " ++ hetsOWLenv
 
-parseProc :: String -> [LIB_DEFN]
-parseProc str =
+parseProc :: FilePath -> String -> [LIB_DEFN]
+parseProc fp str =
   let es = onlyElems $ parseXML str
       imap = Map.fromList . mapMaybe (\ e -> do
         imp <- findAttr (unqual "name") e
         ont <- findAttr (unqual "ontiri") e
         return (imp, ont)) $ concatMap (filterElementsName $ isSmth "Loaded") es
-  in map (convertToLibDefN imap)
+  in map (convertToLibDefN fp imap)
         . unifyDocs . map (xmlBasicSpec imap)
         $ concatMap (filterElementsName $ isSmth "Ontology") es
 
@@ -81,19 +83,22 @@ createSpec o imps = addImports imps . makeSpec $ G_basic_spec OWL2 o
 convertone :: OntologyDocument -> SPEC_NAME -> [SPEC_NAME] -> Annoted LIB_ITEM
 convertone o oname i = makeSpecItem oname $ createSpec o i
 
-convertToLibDefN :: Map.Map String String -> OntologyDocument -> LIB_DEFN
-convertToLibDefN imap o = Lib_defn ln
+convertToLibDefN :: FilePath -> Map.Map String String -> OntologyDocument
+  -> LIB_DEFN
+convertToLibDefN fp imap o = Lib_defn ln
     (makeLogicItem OWL2 : imp_libs ++ [convertone o oname imps2]) nullRange []
   where ont = ontology o
+        isGenPrefix = isPrefixOf "inputstream:ontology"
         il = Map.toList imap
         is = map snd il
         ln = case lookup libstr $ map (\ (a, b) -> (b, a)) il of
-            Just s | isPrefixOf "inputstream:ontology" s -> id
+            Just s | isGenPrefix s -> id
             Just s -> setFilePath s
             Nothing -> setFilePath libstr
           $ iriLibName oname
         imps = map qNameToIRI $ imports ont
         imps2 = filter ((`elem` is) . show . setAnkles False) imps
-        oname = qNameToIRI $ name ont
-        libstr = show $ setAnkles False oname
+        oname1 = qNameToIRI $ name ont
+        libstr = show $ setAnkles False oname1
+        oname = if isGenPrefix libstr then filePathToLibId fp else oname1
         imp_libs = map (addDownload False) imps2
