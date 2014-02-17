@@ -25,7 +25,7 @@ import Common.IRI
 import Common.LibName
 import Common.ProverTools
 import Common.AS_Annotation
-import Common.Utils (executeProcess)
+import Common.Utils
 
 import Logic.Grothendieck
 import OWL2.Logic_OWL2
@@ -51,13 +51,11 @@ parseOWL fn = do
       fmap ("file://" ++) $ canonicalizePath fn
     (hasJar, toolPath) <- check4HetsOWLjar jar
     if hasJar then do
-       (exitCode, result, errStr) <- executeProcess "java"
-         ["-jar", toolPath </> jar, absfile, "xml"] ""
-       case (exitCode, errStr) of
-         (ExitSuccess, "") -> do
-           writeFile "text.xml" result
-           return $ parseProc fn result
-         _ -> error $ "process stop! " ++ shows exitCode "\n"
+        (exitCode, result, errStr) <- executeProcess "java"
+          ["-jar", toolPath </> jar, absfile, "xml"] ""
+        case (exitCode, errStr) of
+          (ExitSuccess, "") -> return $ parseProc fn result
+          _ -> error $ "process stop! " ++ shows exitCode "\n"
               ++ errStr
       else error $ jar
         ++ " not found, check your environment variable: " ++ hetsOWLenv
