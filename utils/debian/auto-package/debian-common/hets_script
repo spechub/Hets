@@ -32,6 +32,15 @@ class UpdateFailure(Exception):
 try:
     f = open("/var/lib/dpkg/lock", 'w')
     fcntl.lockf(f, fcntl.LOCK_EX|fcntl.LOCK_NB)
+    print "Retrieving latest Hets OWL2Parser.jar...",
+    subprocess.call("rm -r -f /tmp/OWL2Parser.jar",shell=True,stderr=subprocess.DEVNULL)
+    sys.stdout.flush()
+    try:
+        subprocess.check_call("curl -sG http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/src-distribution/OWL2Parser.jar \
+                         > /tmp/OWL2Parser.jar",shell=True,stdout=sys.stdout,stderr=sys.stderr)
+    except subprocess.CalledProcessError:
+        raise UpdateFailure("Failed to retrieve Hets OWL2Parser.jar!")
+    print "Done"
     print "Retrieving latest Hets library...",
     sys.stdout.flush()
     subprocess.call("rm -r -f /tmp/hets*",shell=True,stderr=subprocess.DEVNULL)
@@ -78,6 +87,8 @@ try:
         subprocess.check_call(["install", "-m", "755", "/tmp/hets-$HETS_DAILY_VERSION",
                                "/usr/lib/hets/hets"],stderr=subprocess.DEVNULL)
         subprocess.check_call(["cp", "-r", "/tmp/hets-lib", "/usr/lib/hets/hets-lib"])
+        subprocess.check_call(["install", "-m", "644", /tmp/OWL2Parser.jar",
+                               "/usr/lib/hets/hets-owl-tools"],stderr=subprocess.DEVNULL)
     except subprocess.CalledProcessError:
         subprocess.call(["rm", "-r", "-f", "/usr/lib/hets/hets",
          "/usr/lib/hets/hets-lib"],stderr=subprocess.DEVNULL)
