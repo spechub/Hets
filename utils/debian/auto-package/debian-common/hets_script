@@ -147,6 +147,8 @@ try:
     fcntl.lockf(f, fcntl.LOCK_EX|fcntl.LOCK_NB)
     print "Reverting to previous Hets binary... ",
     try:
+        subprocess.check_call(["mv", "/usr/lib/hets/hets-owl-tools/OWL2Parser.jar.bak",
+         "/usr/lib/hets/hets-owl-tools/OWL2Parser.jar"],stderr=subprocess.DEVNULL);
         subprocess.check_call(["mv", "/usr/lib/hets/hets.bak",
          "/usr/lib/hets/hets"],stderr=subprocess.DEVNULL);
         if os.path.exists("/usr/lib/hets/hets-lib.bak"):
