@@ -74,6 +74,8 @@ try:
     print "Creating Backups ...",
     sys.stdout.flush()
     try:
+        subprocess.check_call(["mv", "/usr/lib/hets/hets-owl-tools/OWL2Parser.jar",
+         "/usr/lib/hets/hets-owl-tools/OWL2Parser.jar.bak"],stderr=subprocess.DEVNULL)
         subprocess.check_call(["mv", "/usr/lib/hets/hets",
          "/usr/lib/hets/hets.bak"],stderr=subprocess.DEVNULL)
         subprocess.check_call(["mv","/usr/lib/hets/hets-lib",
@@ -87,17 +89,19 @@ try:
         subprocess.check_call(["install", "-m", "755", "/tmp/hets-$HETS_DAILY_VERSION",
                                "/usr/lib/hets/hets"],stderr=subprocess.DEVNULL)
         subprocess.check_call(["cp", "-r", "/tmp/hets-lib", "/usr/lib/hets/hets-lib"])
-        subprocess.check_call(["install", "-m", "644", /tmp/OWL2Parser.jar",
+        subprocess.check_call(["install", "-m", "644", "/tmp/OWL2Parser.jar",
                                "/usr/lib/hets/hets-owl-tools"],stderr=subprocess.DEVNULL)
     except subprocess.CalledProcessError:
-        subprocess.call(["rm", "-r", "-f", "/usr/lib/hets/hets",
-         "/usr/lib/hets/hets-lib"],stderr=subprocess.DEVNULL)
+        subprocess.call(["rm", "-r", "-f", "/usr/lib/hets/hets-owl-tools/OWL2Parser.jar",
+         "/usr/lib/hets/hets", "/usr/lib/hets/hets-lib"],stderr=subprocess.DEVNULL)
     print "Done"
 except IOError:
     print "Could not acquire lock \"/var/lib/dpkg/lock\""
     sys.exit(0)
 except UpdateFailure as e:
     print "Experienced update failure: ", e.value
+    subprocess.call(["mv", "/usr/lib/hets/hets-owl-tools/OWL2Parser.jar.bak",
+         "/usr/lib/hets/hets-owl-tools/OWL2Parser.jar"],stderr=subprocess.DEVNULL)
     subprocess.call(["mv", "/usr/lib/hets/hets.bak",
          "/usr/lib/hets/hets"],stderr=subprocess.DEVNULL)
     subprocess.call(["mv","/usr/lib/hets/hets-lib.bak",
@@ -107,7 +111,11 @@ finally:
       subprocess.call(["mv","/usr/lib/hets/hets-lib.bak","/usr/lib/hets/hets-lib"],stderr=subprocess.DEVNULL)
     if not os.path.exists("/usr/lib/hets/hets"):
       subprocess.call(["mv","/usr/lib/hets/hets.bak","/usr/lib/hets/hets"],stderr=subprocess.DEVNULL)
+    if not os.path.exists("/usr/lib/hets/hets-owl-tools/OWL2Parser.jar"):
+      subprocess.call(["mv","/usr/lib/hets/hets-owl-tools/OWL2Parser.jar.bak",
+           "/usr/lib/hets/hets-owl-tools/OWL2Parser.jar"],stderr=subprocess.DEVNULL)
     subprocess.call("rm -r -f /tmp/hets*",shell=True,stderr=subprocess.DEVNULL)
+    subprocess.call("rm -r -f /tmp/OWL2Parser.jar",shell=True,stderr=subprocess.DEVNULL)
     sys.exit(0)
 __END__
             echo "Updated to `hets -V`."
