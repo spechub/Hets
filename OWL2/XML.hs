@@ -136,11 +136,13 @@ contentIRI b e =
 -- | gets the name of an axiom in XML Syntax
 getName :: Element -> String
 getName e =
-  let n = (qName . elName) e
-      q = (qURI . elName) e
+  let u = elName e
+      n = qName u
+      q = qURI u
+      p = qPrefix u
   in case q of
     Just "http://www.w3.org/2002/07/owl#" -> n
-    _ -> ""
+    _ -> if isNothing p then n else ""
 
 -- | gets the cardinality
 getInt :: Element -> Int
@@ -264,7 +266,8 @@ getDataRange b e =
 
 getClassExpression :: XMLBase -> Element -> ClassExpression
 getClassExpression b e =
-  let ch@(ch1 : _) = elChildren e
+  let ch = elChildren e
+      ch1 : _ = ch
       rch1 : _ = reverse ch
   in case getName e of
     "Class" -> Expression $ getIRI b e
