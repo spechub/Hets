@@ -16,10 +16,12 @@ import OWL2.AS
 import OWL2.MS
 import OWL2.Rename
 
+import qualified Data.ByteString.Lazy as L
 import Data.List
 import Data.Maybe
 import qualified Data.Map as Map
 
+import Common.XmlExpat
 import Common.Id
 import Common.IRI
 import Common.LibName
@@ -51,18 +53,22 @@ parseOWL fn = do
       fmap ("file://" ++) $ canonicalizePath fn
     (hasJar, toolPath) <- check4HetsOWLjar jar
     if hasJar then do
-        (exitCode, result, errStr) <- executeProcess "java"
-          ["-jar", toolPath </> jar, absfile, "xml"] ""
+        tmpFile <- getTempFile "" "owlTemp.xml"
+        (exitCode, _, errStr) <- executeProcess "java"
+          ["-jar", toolPath </> jar, absfile, tmpFile, "xml"] ""
         case (exitCode, errStr) of
-          (ExitSuccess, "") -> return $ parseProc fn result
+          (ExitSuccess, "") -> do
+            cont <- L.readFile tmpFile
+            removeFile tmpFile
+            return $ parseProc fn cont
           _ -> error $ "process stop! " ++ shows exitCode "\n"
               ++ errStr
       else error $ jar
         ++ " not found, check your environment variable: " ++ hetsOWLenv
 
-parseProc :: FilePath -> String -> [LIB_DEFN]
+parseProc :: FilePath -> L.ByteString -> [LIB_DEFN]
 parseProc fp str =
-  let es = onlyElems $ parseXML str
+  let es = elChildren . either error id $ parseXml str
       imap = Map.fromList . mapMaybe (\ e -> do
         imp <- findAttr (unqual "name") e
         ont <- findAttr (unqual "ontiri") e
