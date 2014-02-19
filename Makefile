@@ -621,7 +621,7 @@ check: $(TESTTARGETS)
 Driver/Version.hs: Driver/Version.in version_nr checkversion
 	$(RM) $@
 	cp Driver/Version.in $@
-	echo "  ++ \"$(shell cat version_nr), $(shell date +"%Y-%m-%d")\"" >> $@
+	echo "  ++ \"$(shell cat version_nr), r$(shell svnversion .)\"" >> $@
 	chmod 444 $@
 
 checkversion:
