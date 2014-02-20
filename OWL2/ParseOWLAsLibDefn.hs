@@ -17,7 +17,6 @@ import OWL2.MS
 import OWL2.Rename
 
 import qualified Data.ByteString.Lazy as L
-import Data.List
 import Data.Maybe
 import qualified Data.Map as Map
 
@@ -61,20 +60,20 @@ parseOWL quick fn = do
           (ExitSuccess, "") -> do
             cont <- L.readFile tmpFile
             removeFile tmpFile
-            return $ parseProc fn cont
+            return $ parseProc cont
           _ -> error $ "process stop! " ++ shows exitCode "\n"
               ++ errStr
       else error $ jar
         ++ " not found, check your environment variable: " ++ hetsOWLenv
 
-parseProc :: FilePath -> L.ByteString -> [LIB_DEFN]
-parseProc fp str =
+parseProc :: L.ByteString -> [LIB_DEFN]
+parseProc str =
   let es = elChildren . either error id $ parseXml str
       imap = Map.fromList . mapMaybe (\ e -> do
         imp <- findAttr (unqual "name") e
         ont <- findAttr (unqual "ontiri") e
         return (imp, ont)) $ concatMap (filterElementsName $ isSmth "Loaded") es
-  in map (convertToLibDefN fp imap)
+  in map (convertToLibDefN imap)
         . unifyDocs . map (xmlBasicSpec imap)
         $ concatMap (filterElementsName $ isSmth "Ontology") es
 
@@ -88,22 +87,18 @@ createSpec o imps = addImports imps . makeSpec $ G_basic_spec OWL2 o
 convertone :: OntologyDocument -> SPEC_NAME -> [SPEC_NAME] -> Annoted LIB_ITEM
 convertone o oname i = makeSpecItem oname $ createSpec o i
 
-convertToLibDefN :: FilePath -> Map.Map String String -> OntologyDocument
-  -> LIB_DEFN
-convertToLibDefN fp imap o = Lib_defn ln
+convertToLibDefN :: Map.Map String String -> OntologyDocument -> LIB_DEFN
+convertToLibDefN imap o = Lib_defn ln
     (makeLogicItem OWL2 : imp_libs ++ [convertone o oname imps2]) nullRange []
   where ont = ontology o
-        isGenPrefix = isPrefixOf "inputstream:ontology"
         il = Map.toList imap
         is = map snd il
         ln = case lookup libstr $ map (\ (a, b) -> (b, a)) il of
-            Just s | isGenPrefix s -> id
             Just s -> setFilePath s
             Nothing -> setFilePath libstr
           $ iriLibName oname
         imps = map qNameToIRI $ imports ont
         imps2 = filter ((`elem` is) . show . setAnkles False) imps
-        oname1 = qNameToIRI $ name ont
-        libstr = show $ setAnkles False oname1
-        oname = if isGenPrefix libstr then filePathToLibId fp else oname1
+        oname = qNameToIRI $ name ont
+        libstr = show $ setAnkles False oname
         imp_libs = map (addDownload False) imps2

@@ -63,7 +63,7 @@ public class OWL2Parser {
             URL physicalUrl = new URL(args[0]);
             URLConnection con = physicalUrl.openConnection();
             con.addRequestProperty("Accept", "text/plain");
-            StreamDocumentSource sds = new StreamDocumentSource(con.getInputStream());
+            StreamDocumentSource sds = new StreamDocumentSource(con.getInputStream(), IRI.create(physicalUrl));
             OWLOntologyLoaderConfiguration config = new OWLOntologyLoaderConfiguration();
             config = config.setMissingImportHandlingStrategy(MissingImportHandlingStrategy.SILENT);
             OWLOntology ontology = manager.loadOntologyFromOntologyDocument(sds, config);
