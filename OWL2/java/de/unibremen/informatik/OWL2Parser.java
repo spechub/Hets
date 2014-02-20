@@ -10,10 +10,11 @@ import uk.ac.manchester.cs.owl.owlapi.mansyntaxrenderer.ManchesterOWLSyntaxRende
 import java.io.*;
 import java.net.URL;
 import java.net.URLConnection;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Set;
 
 public class OWL2Parser {
-    private static enum OPTION {OWL_XML, MANCHESTER, RDF_XML}
+    private static enum OPTION {QUICK_OWL_XML, OWL_XML, MANCHESTER, RDF_XML}
 
     private static OPTION op;
     private static Boolean cyclic = false;
@@ -39,6 +40,8 @@ public class OWL2Parser {
                     out = new BufferedWriter(new FileWriter(filename));
                     if (args[2].equals("xml"))
                         op = OPTION.OWL_XML;
+                    else if (args[2].equals("quick"))
+                        op = OPTION.QUICK_OWL_XML;
                     else if (args[2].equals("rdf"))
                         op = OPTION.RDF_XML;
                 } else
@@ -66,7 +69,6 @@ public class OWL2Parser {
             OWLOntology ontology = manager.loadOntologyFromOntologyDocument(sds, config);
             ontologies = getImports(ontology, new HashSet<OWLOntology>());
             if (cyclic) {
-                OWLOntologyMerger merger = new OWLOntologyMerger(manager);
                 String str = ontology.getOntologyID().getOntologyIRI().toString();
                 String merged_name = "";
                 for (OWLOntology aux_ont : ontologies) {
@@ -80,7 +82,13 @@ public class OWL2Parser {
                 // System.out.println("NAME: " + merged_name + "\n");
                 IRI mergedOntologyIRI = IRI.create(merged_name);
                 // System.out.println("MERGED_IRI " + mergedOntologyIRI + "\n");
-                OWLOntology merged = merger.createMergedOntology(manager, mergedOntologyIRI);
+                OWLOntology merged;
+                if (op == OPTION.QUICK_OWL_XML)
+                    merged = manager.createOntology(mergedOntologyIRI);
+                else {
+                    OWLOntologyMerger merger = new OWLOntologyMerger(manager);
+                    merged = merger.createMergedOntology(manager, mergedOntologyIRI);
+                }
                 renderUsingOption(merged, out);
             } else {
                 ontologies.add(ontology);
@@ -125,8 +133,11 @@ public class OWL2Parser {
 
     private static void renderUsingOption(OWLOntology onto, BufferedWriter out) {
         switch (op) {
+            case QUICK_OWL_XML:
+                renderAsXml(true, onto, out);
+                break;
             case OWL_XML:
-                renderAsXml(onto, out);
+                renderAsXml(false, onto, out);
                 break;
             case MANCHESTER:
                 renderAsOmn(onto, out);
@@ -147,11 +158,14 @@ public class OWL2Parser {
         }
     }
 
-    private static void renderAsXml(OWLOntology onto, BufferedWriter out) {
+    private static void renderAsXml(boolean quick, OWLOntology onto, BufferedWriter out) {
         try {
             OWLXMLRenderer ren = new OWLXMLRenderer();
             File tempFile = File.createTempFile("owlTemp", ".xml");
             FileWriter buf = new FileWriter(tempFile);
+            if (quick) {
+                onto.getOWLOntologyManager().removeAxioms(onto, onto.getAxioms());
+            }
             ren.render(onto, buf);
             buf.flush();
             buf.close();

@@ -18,7 +18,6 @@ module Static.AnalysisStructured
     , anaUnion
     , anaSublogic
     , getSpecAnnos
-    , isStructured
     , anaRenaming
     , anaRestriction
     , partitionGmaps
@@ -571,7 +570,7 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp = case sp of
                      $ lookupGlobalEnvDG cItem dg
             bgraph = dgBody dg
             lEdge x y m = case filter (\ (_, z, l) -> (z == y) &&
-                                         (dgl_morphism l == m) ) $ 
+                                         (dgl_morphism l == m) ) $
                                out bgraph x of
                              [] -> error "No edge found"
                              lE : _ -> lE
@@ -582,18 +581,18 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp = case sp of
                ViewOrStructEntry True (ExtViewSig ns gm eGS) -> let
                    s = getNode ns
                    t = getNode $ extGenBody eGS
-                 in (nub $ s : t : cN, lEdge s t gm: cE)
+                 in (nub $ s : t : cN, lEdge s t gm : cE)
                AlignEntry asig ->
                   case asig of
                    AlignMor src gmor tar -> let
                      s = getNode src
                      t = getNode tar
-                    in (nub $ s : t : cN, lEdge s t gmor: cE)
+                    in (nub $ s : t : cN, lEdge s t gmor : cE)
                    AlignSpan src phi1 tar1 phi2 tar2 -> let
                      s = getNode src
                      t1 = getNode tar1
                      t2 = getNode tar2
-                    in (nub $ [s, t1, t2] ++ cN, 
+                    in (nub $ [s, t1, t2] ++ cN,
                               [lEdge s t1 phi1, lEdge s t2 phi2] ++ cE)
                _ -> error $ show cItem
                     ++ "is not an ontology, a view or an alignment"
@@ -603,10 +602,11 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp = case sp of
            gDefPaths x y = filter allGDef $ getPathsTo x y g
            nPaths = concat $ concatMap (gDefPaths n) cN
            nNodes = concatMap (\ (x, y, _) -> [x, y]) nPaths
-           hideLinks = filter (\(_,_,l) -> dgl_type l == HidingDefLink) $ 
-                        concatMap (\x -> inn g x) $ cN ++ nNodes
-           hNodes = map (\(x, _, _) -> x) hideLinks
-           in (cN, nub $ iN ++ nNodes ++ hNodes, nub $ nPaths ++ cE ++ hideLinks)
+           hideLinks = filter (\ (_, _, l) -> dgl_type l == HidingDefLink)
+              $ concatMap (inn g) $ cN ++ nNodes
+           hNodes = map (\ (x, _, _) -> x) hideLinks
+           in ( cN, nub $ iN ++ nNodes ++ hNodes
+              , nub $ nPaths ++ cE ++ hideLinks)
         addLinks (cN, cE) = foldl addGDefLinks (cN, [], cE) cN
         (cNodes, iNodes, cEdges) =
            addLinks . foldl getNodes ([], []) $ getItems cItems
@@ -1077,12 +1077,6 @@ homogenizeGM (Logic lid) =
          return $ G_symb_map_items_list lid2 $ sis ++ sis1'
     G_logic_translation lc ->
          fail $ "translation not supported by " ++ showDoc lc ""
-
--- | check if structured analysis should be performed
-isStructured :: HetcatsOpts -> Bool
-isStructured a = case analysis a of
-    Structured -> True
-    _ -> False
 
 getSpecAnnos :: Range -> Annoted a -> Result (Conservativity, Bool)
 getSpecAnnos pos a = do

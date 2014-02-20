@@ -45,9 +45,9 @@ import System.FilePath
 import Text.XML.Light hiding (QName)
 
 -- | call for owl parser (env. variable $HETS_OWL_TOOLS muss be defined)
-parseOWL :: FilePath              -- ^ local filepath or uri
+parseOWL :: Bool -> FilePath      -- ^ local filepath or uri
          -> IO [LIB_DEFN]         -- ^ map: uri -> OntologyFile
-parseOWL fn = do
+parseOWL quick fn = do
     let jar = "OWL2Parser.jar"
     absfile <- if checkUri fn then return fn else
       fmap ("file://" ++) $ canonicalizePath fn
@@ -55,7 +55,8 @@ parseOWL fn = do
     if hasJar then do
         tmpFile <- getTempFile "" "owlTemp.xml"
         (exitCode, _, errStr) <- executeProcess "java"
-          ["-jar", toolPath </> jar, absfile, tmpFile, "xml"] ""
+          ["-jar", toolPath </> jar, absfile, tmpFile
+          , if quick then "quick" else "xml"] ""
         case (exitCode, errStr) of
           (ExitSuccess, "") -> do
             cont <- L.readFile tmpFile

@@ -26,6 +26,7 @@ module Driver.Options
   , ATType
   , Delta
   , hetcatsOpts
+  , isStructured
   , guess
   , rmSuffix
   , envSuffix
@@ -360,6 +361,12 @@ instance Show AnaType where
     Basic -> ""
     Structured -> showOpt justStructuredS
     Skip -> showOpt skipS
+
+-- | check if structured analysis should be performed
+isStructured :: HetcatsOpts -> Bool
+isStructured a = case analysis a of
+    Structured -> True
+    _ -> False
 
 -- | 'GuiType' determines if we want the GUI shown
 data GuiType = UseGui | NoGui
