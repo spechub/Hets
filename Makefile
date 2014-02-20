@@ -440,6 +440,8 @@ derived_sources += $(drifted_files) Driver/Version.hs $(hs_der_files)
 ####################################################################
 ### targets
 
+.NOTPARALLEL : genRules
+
 .PHONY : all hets-opt hets-optimized clean o_clean clean_pretty \
     real_clean bin_clean distclean annos checkversion \
     check capa hacapa h2h h2hf showKP clean_genRules genRules \
