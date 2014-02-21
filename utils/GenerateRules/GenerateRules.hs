@@ -63,7 +63,7 @@ genRules flags files =
        if null ds then fail "no data types left" else
            writeFile outf . unlines $
              [ "{-# OPTIONS -w -O0 #-}"
-             , "{-# LANGUAGE StandaloneDeriving, DeriveDataTypeable #-}"
+             , "{-# LANGUAGE CPP, StandaloneDeriving, DeriveDataTypeable #-}"
              , "{- |"
              , "Module      :  " ++ outf
              , "Description :  generated " ++ rule ++ " instances"

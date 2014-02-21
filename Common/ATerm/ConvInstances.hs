@@ -25,7 +25,11 @@ import Data.Fixed (Pico)
 import Data.Ratio (Ratio)
 import System.Time
 
+#if __GLASGOW_HASKELL__ < 708
 deriving instance Typeable1 SizedList
+#else
+deriving instance Typeable SizedList
+#endif
 
 instance ShATermConvertible a => ShATermConvertible (SizedList.SizedList a)
     where
@@ -33,7 +37,11 @@ instance ShATermConvertible a => ShATermConvertible (SizedList.SizedList a)
   fromShATermAux ix att0 = case fromShATermAux ix att0 of
     (att, l) -> (att, SizedList.fromList l)
 
+#if __GLASGOW_HASKELL__ < 708
 deriving instance Typeable2 InjMap.InjMap
+#else
+deriving instance Typeable InjMap.InjMap
+#endif
 
 instance (Ord a, ShATermConvertible a, Ord b, ShATermConvertible b)
      => ShATermConvertible (InjMap.InjMap a b) where
@@ -48,7 +56,11 @@ instance (Ord a, ShATermConvertible a, Ord b, ShATermConvertible b)
         (att2, InjMap.unsafeConstructInjMap a' b') }}
     u -> fromShATermError "InjMap" u
 
+#if __GLASGOW_HASKELL__ < 708
 deriving instance Typeable2 MapSet.MapSet
+#else
+deriving instance Typeable MapSet.MapSet
+#endif
 
 instance (Ord a, ShATermConvertible a, Ord b, ShATermConvertible b)
   => ShATermConvertible (MapSet.MapSet a b) where
@@ -61,7 +73,11 @@ instance (Ord a, ShATermConvertible a, Ord b, ShATermConvertible b)
         (att1, MapSet.fromDistinctMap a') }
     u -> fromShATermError "MapSet" u
 
+#if __GLASGOW_HASKELL__ < 708
 deriving instance Typeable1 Rel.Rel
+#else
+deriving instance Typeable Rel.Rel
+#endif
 
 instance (Ord a, ShATermConvertible a) => ShATermConvertible (Rel.Rel a) where
   toShATermAux att0 r = do

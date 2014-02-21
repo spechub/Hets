@@ -358,4 +358,8 @@ typeablefn dat =
     let vs = vars dat
         dn = strippedName dat
         ntext str = str ++ if null vs then "" else show $ length vs
-    in text ("deriving instance " ++ ntext "Typeable" ++ " " ++ dn)
+        stext = text ("deriving instance Typeable " ++ dn)
+    in if null vs then stext else
+       text "#if __GLASGOW_HASKELL__ < 708" $$
+       text ("deriving instance " ++ ntext "Typeable" ++ " " ++ dn)
+       $$ text "#else" $$ stext $$ text "#endif"
