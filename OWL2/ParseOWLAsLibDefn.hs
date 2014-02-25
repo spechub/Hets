@@ -20,7 +20,7 @@ import qualified Data.ByteString.Lazy as L
 import Data.Maybe
 import qualified Data.Map as Map
 
-import Common.XmlExpat
+import Common.XmlParser
 import Common.Id
 import Common.IRI
 import Common.LibName
