@@ -40,6 +40,8 @@ makeSources
 
 checkMoreBins
 makeOWLTools
+cp /home/linux-bkb/hets-owl-tools/OWL2Parser.jar \
+  /home/www/agbkb/forschung/formal_methods/CoFI/hets/src-distribution/
 runIsaHS
 
 makeCofiLib
