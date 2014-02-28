@@ -66,8 +66,7 @@ public class OWL2Parser {
             } catch (Exception ex) {
                 uri = new File(inp).toURI();
             }
-            URL url = uri.toURL();
-            URLConnection con = url.openConnection();
+            URLConnection con = uri.toURL().openConnection();
             con.addRequestProperty("Accept", "text/plain");
             StreamDocumentSource sds = new StreamDocumentSource(con.getInputStream(), IRI.create(uri));
             OWLOntologyLoaderConfiguration config = new OWLOntologyLoaderConfiguration();
