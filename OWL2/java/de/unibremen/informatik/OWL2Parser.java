@@ -61,10 +61,10 @@ public class OWL2Parser {
             /* Load an ontology from a physical IRI */
             String inp = args[0];
             URI uri;
-            try { uri = new URI(inp);
-            } catch (Exception ex)
-            {
-              uri = new File(inp).toURI();
+            try {
+                uri = new URI(inp);
+            } catch (Exception ex) {
+                uri = new File(inp).toURI();
             }
             URL url = uri.toURL();
             URLConnection con = url.openConnection();
