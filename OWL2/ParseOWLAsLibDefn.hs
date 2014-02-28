@@ -32,8 +32,6 @@ import Logic.Grothendieck
 import OWL2.Logic_OWL2
 import OWL2.XML
 
-import Driver.Options
-
 import Syntax.AS_Library
 import Syntax.AS_Structured
 
