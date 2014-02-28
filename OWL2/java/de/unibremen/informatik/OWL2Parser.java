@@ -8,8 +8,7 @@ import org.semanticweb.owlapi.util.OWLOntologyMerger;
 import uk.ac.manchester.cs.owl.owlapi.mansyntaxrenderer.ManchesterOWLSyntaxRenderer;
 
 import java.io.*;
-import java.net.URL;
-import java.net.URLConnection;
+import java.net.*;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -60,10 +59,17 @@ public class OWL2Parser {
             }
             out.write("<Ontologies>\n");
             /* Load an ontology from a physical IRI */
-            URL physicalUrl = new URL(args[0]);
-            URLConnection con = physicalUrl.openConnection();
+            String inp = args[0];
+            URI uri;
+            try { uri = new URI(inp);
+            } catch (Exception ex)
+            {
+              uri = new File(inp).toURI();
+            }
+            URL url = uri.toURL();
+            URLConnection con = url.openConnection();
             con.addRequestProperty("Accept", "text/plain");
-            StreamDocumentSource sds = new StreamDocumentSource(con.getInputStream(), IRI.create(physicalUrl));
+            StreamDocumentSource sds = new StreamDocumentSource(con.getInputStream(), IRI.create(url));
             OWLOntologyLoaderConfiguration config = new OWLOntologyLoaderConfiguration();
             config = config.setMissingImportHandlingStrategy(MissingImportHandlingStrategy.SILENT);
             OWLOntology ontology = manager.loadOntologyFromOntologyDocument(sds, config);

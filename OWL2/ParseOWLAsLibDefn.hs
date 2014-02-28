@@ -48,13 +48,11 @@ parseOWL :: Bool -> FilePath      -- ^ local filepath or uri
          -> IO [LIB_DEFN]         -- ^ map: uri -> OntologyFile
 parseOWL quick fn = do
     let jar = "OWL2Parser.jar"
-    absfile <- if checkUri fn then return fn else
-      fmap ("file://" ++) $ canonicalizePath fn
     (hasJar, toolPath) <- check4HetsOWLjar jar
     if hasJar then do
         tmpFile <- getTempFile "" "owlTemp.xml"
         (exitCode, _, errStr) <- executeProcess "java"
-          ["-jar", toolPath </> jar, absfile, tmpFile
+          ["-jar", toolPath </> jar, fn, tmpFile
           , if quick then "quick" else "xml"] ""
         case (exitCode, errStr) of
           (ExitSuccess, "") -> do
