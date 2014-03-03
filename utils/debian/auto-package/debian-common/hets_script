@@ -198,4 +198,4 @@ export PELLET_PATH=/usr/share/pellet
 export TWELF_LIB=/usr/share/twelf/bin
 export MAUDE_LIB=/usr/share/maude
 
-/usr/lib/hets/hets "$@"
+exec /usr/lib/hets/hets ${1+"$@"}
