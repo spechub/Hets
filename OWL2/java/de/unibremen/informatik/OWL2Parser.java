@@ -61,11 +61,9 @@ public class OWL2Parser {
             /* Load an ontology from a physical IRI */
             String inp = args[0];
             URI uri;
-            try {
+            if (inp.startsWith("http:") || inp.startsWith("https:"))
                 uri = new URI(inp);
-            } catch (Exception ex) {
-                uri = new File(inp).toURI();
-            }
+            else uri = new File(inp).toURI();
             URLConnection con = uri.toURL().openConnection();
             con.addRequestProperty("Accept", "text/plain");
             StreamDocumentSource sds = new StreamDocumentSource(con.getInputStream(), IRI.create(uri));
