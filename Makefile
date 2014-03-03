@@ -694,6 +694,8 @@ initialize_installer:
 owl_java:
 	$(RM) -r OWL2/java/OwlApi
 	svn export -q \
+	--non-interactive \
+	--trust-server-cert \
   https://github.com/owlcs/owlapi/tags/owlapi-parent-3.4.8 \
   OWL2/java/OwlApi
 
