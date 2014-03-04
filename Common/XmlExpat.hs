@@ -49,18 +49,18 @@ strToCData s = Text $ blank_cdata { cdData = s }
 
 elemToElem :: B.ByteString -> Expat.UAttributes B.ByteString
   -> [Expat.UNode B.ByteString] -> Content
-elemToElem n al cl = Elem $ blank_element { elName = strToQName $ toString n
+elemToElem n al cl = Elem $ blank_element { elName = strToQName n
                                           , elAttribs = map attrToAttr al
                                           , elContent = nodesToContent cl }
 
 
 attrToAttr :: (B.ByteString, B.ByteString) -> Attr
-attrToAttr (n, v) = Attr { attrKey = strToQName $ toString n
+attrToAttr (n, v) = Attr { attrKey = strToQName n
                          , attrVal = toString v }
 
-strToQName :: String -> QName
-strToQName s = case break (':' ==) s of
-                 (_, []) -> unqual s
+strToQName :: B.ByteString -> QName
+strToQName s = case break (':' ==) $ toString s of
+                 (n, []) -> unqual n
                  (pr, _ : n) -> blank_name { qName = n, qPrefix = Just pr }
 
 
