@@ -57,7 +57,8 @@ readDGXmlR :: HetcatsOpts -> FilePath -> LibEnv -> ResultT IO (LibName, LibEnv)
 readDGXmlR opts path lv = do
   lift $ putIfVerbose opts 2 $ "Reading " ++ path
   xml' <- lift $ readXmlFile path
-  case parseXml xml' of
+  res <- lift $ parseXml xml'
+  case res of
     Right xml -> rebuiltDgXml opts lv xml
     Left err -> fail $ "failed to parse XML file: " ++ path ++ "\n" ++ err
 

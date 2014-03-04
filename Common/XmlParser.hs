@@ -34,16 +34,16 @@ readXmlFile fp = do
 by using the hexpat or the XML.Light library, dependent on the haskell
 environment. -}
 class XmlParseable a where
-    parseXml :: a -> Either String Element
+    parseXml :: a -> IO (Either String Element)
 
 #ifdef HEXPAT
 instance XmlParseable BS.ByteString where
-    parseXml = XE.parseXml
+    parseXml = return . XE.parseXml
 
 -- 169MB on Basic/Algebra_I
 #else
 instance XmlParseable BS.ByteString where
-    parseXml s = case parseXMLDoc $ toString s of
+    parseXml s = return $ case parseXMLDoc $ toString s of
                    Just x -> Right x
                    _ -> Left "parseXMLDoc: parse error"
 

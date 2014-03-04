@@ -256,7 +256,7 @@ readLib :: ImpEnv -- ^ The import environment
 readLib e u = do
   rPut e $ "Downloading " ++ show u ++ " ..."
   xmlString <- lift $ readFromURL readXmlFile u
-  OMDoc n l <- liftR $ xmlIn xmlString
+  OMDoc n l <- ResultT $ xmlIn xmlString
   {- the name of the omdoc is used as the libname, no relationship between the
   libname and the filepath! -}
   let ln = libNameFromURL n u

@@ -56,20 +56,21 @@ parseOWL quick fn = do
           (ExitSuccess, "") -> do
             cont <- L.readFile tmpFile
             removeFile tmpFile
-            return $ parseProc cont
+            parseProc cont
           _ -> error $ "process stop! " ++ shows exitCode "\n"
               ++ errStr
       else error $ jar
         ++ " not found, check your environment variable: " ++ hetsOWLenv
 
-parseProc :: L.ByteString -> [LIB_DEFN]
-parseProc str =
-  let es = elChildren . either error id $ parseXml str
+parseProc :: L.ByteString -> IO [LIB_DEFN]
+parseProc str = do
+  res <- parseXml str
+  let es = elChildren $ either error id res
       imap = Map.fromList . mapMaybe (\ e -> do
         imp <- findAttr (unqual "name") e
         ont <- findAttr (unqual "ontiri") e
         return (imp, ont)) $ concatMap (filterElementsName $ isSmth "Loaded") es
-  in map (convertToLibDefN imap)
+  return . map (convertToLibDefN imap)
         . unifyDocs . map (xmlBasicSpec imap)
         $ concatMap (filterElementsName $ isSmth "Ontology") es
 

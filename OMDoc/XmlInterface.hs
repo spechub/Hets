@@ -25,7 +25,6 @@ import OMDoc.DataTypes
 
 import Common.Utils (splitBy)
 import Common.Result
-import Common.Id
 import Common.IRI (isUnescapedInIRI, escapeIRIString, unEscapeString)
 
 import Data.Maybe
@@ -133,11 +132,14 @@ xmlIn = return . read
 -}
 
 xmlOut :: XmlRepresentable a => a -> String
-xmlOut obj = case toXml obj of (Elem e) -> ppTopElement e
-                               c -> ppContent c
+xmlOut obj = case toXml obj of
+ Elem e -> ppTopElement e
+ c -> ppContent c
 
-xmlIn :: XmlParseable a => a -> Result OMDoc
-xmlIn s = case parseXml s of
+xmlIn :: XmlParseable a => a -> IO (Result OMDoc)
+xmlIn s = do
+  res <- parseXml s
+  return $ case res of
             Right e -> fromXml e >>= maybe (fail "xmlIn") return
             Left msg -> fail msg
 
@@ -236,12 +238,12 @@ tripleDecodeOMS cd base nm =
 
 
 warnIfNothing :: String -> (Maybe a -> b) -> Maybe a -> Result b
-warnIfNothing s f v = let o = f v in
-                      case v of Nothing -> warning () s nullRange >> return o
-                                _ -> return o
+warnIfNothing s f v = do
+  warnIf s $ isNothing v
+  return $ f v
 
 warnIf :: String -> Bool -> Result ()
-warnIf s b = when b $ warning () s nullRange
+warnIf s b = when b $ justWarn () s
 
 elemIsOf :: Element -> QName -> Bool
 elemIsOf e qn = let en = elName e in
@@ -307,11 +309,10 @@ instance XmlRepresentable OMDoc where
 instance XmlRepresentable TLElement where
     toXml (TLTheory tname meta elms) =
         mkElement
-        el_theory (Attr at_name tname
-                   : case meta of Nothing -> []
-                                  Just mtcd ->
-                                      [Attr at_meta $ urlEscape $ showCD mtcd])
-                      $ listToXml elms
+        el_theory (Attr at_name tname : case meta of
+          Nothing -> []
+          Just mtcd -> [Attr at_meta $ urlEscape $ showCD mtcd])
+        $ listToXml elms
     toXml (TLView nm from to morph) =
         mkElement
         el_view [Attr at_name nm, Attr at_from $ urlEscape $ showCD from,
@@ -412,10 +413,9 @@ instance XmlRepresentable OmdADT where
     toXml (ADTConstr n args) =
         mkElement el_constructor [Attr at_name n] $ listToXml args
     toXml (ADTArg t sel) =
-        mkElement el_argument []
-                      $ typeToXml t :
-                        case sel of Nothing -> []
-                                    Just s -> [toXml s]
+        mkElement el_argument [] $ typeToXml t : case sel of
+          Nothing -> []
+          Just s -> [toXml s]
     toXml (ADTSelector n total) =
         mkElement el_selector [Attr at_name n, Attr at_total $ show total] []
     toXml (ADTInsort (d, n)) =
