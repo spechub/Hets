@@ -239,7 +239,7 @@ prefixAnno :: Range -> GenParser Char st Annotation
 prefixAnno ps = do
     prefixes <- many $ do
         p <- (string colonS >> return "") <|>
-             (IRI.ncname <++> string colonS)
+             (IRI.ncname << string colonS)
         spaces
         i <- iriManchester
         spaces

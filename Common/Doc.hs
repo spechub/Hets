@@ -1050,9 +1050,9 @@ codeOutAnno (StripComment stripCs) m a = case a of
                   [x] -> if isLegalLabel x then HetsLabel else Comment
                   _ -> Comment) (percent <> lparen) l annoRparen
     Prefix_anno pm _ -> annoLparen prefixS <> vcat
-        ( map ( \ (s, i) -> text (if null s then ":" else s)
-                <+> text "<" <> text (iriToStringUnsecure i)
-                 <> text ">") pm) <> annoRparen
+        (map ( \ (s, i) -> text (s ++ ":")
+                <+> text (iriToStringUnsecure $ setAnkles True i)) pm)
+        <> annoRparen
     Semantic_anno sa _ -> annoLine $ lookupSemanticAnno sa
 
 isLegalLabel :: String -> Bool
