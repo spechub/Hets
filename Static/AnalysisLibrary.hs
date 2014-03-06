@@ -259,8 +259,9 @@ anaLibDefn lgraph opts topLns libenv dg (Lib_defn ln alibItems pos ans) file
       isDOLlib = elem ':' libStr
   gannos <- showDiags1 opts $ liftR $ addGlobalAnnos
     (defPrefixGlobalAnnos $ if isDOLlib then file else libStr) ans
+  allAnnos <- liftR $ mergeGlobalAnnos gannos $ globalAnnos dg
   (libItems', dg', libenv', _, _) <- foldM (anaLibItemAux opts topLns ln)
-      ([], dg { globalAnnos = gannos }, libenv
+      ([], dg { globalAnnos = allAnnos }, libenv
       , lgraph, Map.empty) (map item alibItems)
   let dg1 = computeDGraphTheories libenv' $ markFree libenv'
         $ markHiding libenv' $ fromMaybe dg' $ maybeResult
@@ -478,7 +479,8 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
        $ Set.map getLibId topLns
     else do
         (ln', libenv') <- anaLibFile lg opts topLns libenv
-          (cpIndexMaps dg emptyDG) ln
+          (cpIndexMaps dg emptyDG { globalAnnos = globalAnnos dg }) ln
+        lift $ print $ prefix_map $ globalAnnos dg
         unless (ln == ln')
           $ liftR $ warning ()
               (shows ln " does not match internal name " ++ shows ln' "")

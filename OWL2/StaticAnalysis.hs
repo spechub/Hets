@@ -29,6 +29,7 @@ import Common.Result
 import Common.GlobalAnnotations hiding (PrefixMap)
 import Common.ExtSign
 import Common.Lib.State
+import Common.IRI (iriToStringUnsecure, setAnkles)
 
 import Control.Monad
 
@@ -352,11 +353,14 @@ newODoc OntologyDocument {ontology = mo, prefixDeclaration = pd} fl =
 -- | static analysis of ontology with incoming sign.
 basicOWL2Analysis :: (OntologyDocument, Sign, GlobalAnnos)
     -> Result (OntologyDocument, ExtSign Sign Entity, [Named Axiom])
-basicOWL2Analysis (odoc, inSign, _) = do
-    let fs = ontFrames $ ontology odoc
+basicOWL2Analysis (inOnt, inSign, ga) = do
+    let pm = Map.union (prefixDeclaration inOnt)
+          . Map.map (iriToStringUnsecure . setAnkles False)
+          $ prefix_map ga
+        odoc = inOnt { prefixDeclaration = pm }
+        fs = ontFrames $ ontology odoc
+        accSign = execState (createSign fs) inSign { prefixMap = pm }
         syms = Set.difference (symOf accSign) $ symOf inSign
-        accSign = execState (createSign fs)
-          inSign {prefixMap = prefixDeclaration odoc}
     (axl, nfl) <- createAxioms accSign fs
     newdoc <- newODoc odoc nfl
     return (newdoc , ExtSign accSign syms, axl)
