@@ -480,7 +480,6 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
     else do
         (ln', libenv') <- anaLibFile lg opts topLns libenv
           (cpIndexMaps dg emptyDG { globalAnnos = globalAnnos dg }) ln
-        lift $ print $ prefix_map $ globalAnnos dg
         unless (ln == ln')
           $ liftR $ warning ()
               (shows ln " does not match internal name " ++ shows ln' "")
