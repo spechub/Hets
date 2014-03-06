@@ -104,8 +104,8 @@ instance StaticAnalysis OWL2 OntologyDocument Axiom
                OWLMorphism
                Entity RawSymb where
       basic_analysis OWL2 = Just basicOWL2Analysis
-      stat_symb_items OWL2 _ = return . statSymbItems
-      stat_symb_map_items OWL2 _ _ = statSymbMapItems
+      stat_symb_items OWL2 s = return . statSymbItems s
+      stat_symb_map_items OWL2 = statSymbMapItems
       convertTheory OWL2 = Just convertBasicTheory
       empty_signature OWL2 = emptySign
       signature_union OWL2 = uniteSign

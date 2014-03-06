@@ -149,16 +149,23 @@ matchesSym e@(Entity _ u) r = case r of
   AnUri s -> s == u || namePrefix u == localPart s && null (namePrefix s)
   APrefix p -> p == namePrefix u
 
-statSymbItems :: [SymbItems] -> [RawSymb]
-statSymbItems = concatMap
-  $ \ (SymbItems m us) -> case m of
+statSymbItems :: Sign -> [SymbItems] -> [RawSymb]
+statSymbItems sig = map (function Expand . StringMap $ prefixMap sig)
+  . concatMap
+  (\ (SymbItems m us) -> case m of
                AnyEntity -> map AnUri us
                EntityType ty -> map (ASymbol . Entity ty) us
-               Prefix -> map (APrefix . showQN) us
+               Prefix -> map (APrefix . showQN) us)
 
-statSymbMapItems :: [SymbMapItems] -> Result (Map.Map RawSymb RawSymb)
-statSymbMapItems =
-  foldM (\ m (s, t) -> case Map.lookup s m of
+statSymbMapItems :: Sign -> Maybe Sign -> [SymbMapItems]
+  -> Result (Map.Map RawSymb RawSymb)
+statSymbMapItems sig mtsig =
+  fmap (Map.fromList . map (\ (r1, r2) ->
+        let f = function Expand . StringMap . prefixMap
+            f1 = f sig
+            f2 = f $ fromMaybe sig mtsig
+        in (f1 r1, f2 r2)) . Map.toList)
+  . foldM (\ m (s, t) -> case Map.lookup s m of
     Nothing -> return $ Map.insert s t m
     Just u -> case (u, t) of
       (AnUri su, ASymbol (Entity _ tu)) | su == tu ->

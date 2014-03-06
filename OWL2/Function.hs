@@ -17,6 +17,7 @@ module OWL2.Function where
 import OWL2.AS
 import OWL2.MS
 import OWL2.Sign
+import OWL2.Symbols
 
 import Data.Maybe
 import qualified Data.Map as Map
@@ -209,10 +210,16 @@ instance Function Axiom where
         (function t mp fb)
 
 instance Function Ontology where
-  function t mp ( Ontology ouri impList anList f) =
+  function t mp (Ontology ouri impList anList f) =
       Ontology (function t mp ouri) (map (function t mp) impList)
          (map (function t mp) anList) (map (function t mp) f)
 
 instance Function OntologyDocument where
-  function t mp ( OntologyDocument pm onto) =
+  function t mp (OntologyDocument pm onto) =
       OntologyDocument (function t mp pm) (function t mp onto)
+
+instance Function RawSymb where
+  function t mp rs = case rs of
+     ASymbol e -> ASymbol $ function t mp e
+     AnUri i -> AnUri $ function t mp i
+     p -> p
