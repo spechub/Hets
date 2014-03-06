@@ -763,10 +763,10 @@ iriToStringFull iuserinfomap (IRI { iriScheme = scheme
                                   , iriQuery = query
                                   , iriFragment = fragment
                                   , hasAnkles = b
-                                  }) =
-  (if b then ('<' :) . (++ ">") else id)
-  . (scheme ++) . iriAuthToString iuserinfomap authority
-              . (path ++) . (query ++) . (fragment ++)
+                                  }) s =
+  (if b then "<" else "") ++ scheme
+  ++ iriAuthToString iuserinfomap authority ""
+  ++ path ++ query ++ fragment ++ (if b then ">" else "") ++ s
 
 iriToStringAbbrev :: IRI -> ShowS
 iriToStringAbbrev (IRI { prefixName = pname
