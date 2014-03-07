@@ -356,7 +356,7 @@ basicOWL2Analysis :: (OntologyDocument, Sign, GlobalAnnos)
 basicOWL2Analysis (inOnt, inSign, ga) = do
     let pm = Map.union (prefixDeclaration inOnt)
           . Map.map (iriToStringUnsecure . setAnkles False)
-          $ prefix_map ga
+          . Map.delete "" $ prefix_map ga
         odoc = inOnt { prefixDeclaration = pm }
         fs = ontFrames $ ontology odoc
         accSign = execState (createSign fs) inSign { prefixMap = pm }
