@@ -1035,7 +1035,7 @@ is not a valid IRI. -}
 expandCurie :: Map String IRI -> IRI -> Maybe IRI
 expandCurie prefixMap c =
   if hasFullIRI c then Just c else
-  case Map.lookup (prefixName c) prefixMap of
+  case Map.lookup (filter (/= ':') $ prefixName c) prefixMap of
        Nothing -> Nothing
        Just i -> case mergeCurie c i of
                 Nothing -> Nothing
