@@ -254,9 +254,9 @@ mapTheory :: (OS.Sign, [Named Axiom]) -> Result (CASLSign, [Named CASLFORMULA])
 mapTheory (owlSig, owlSens) = let sl = topS in do
     cSig <- mapSign owlSig
     let pSig = loadDataInformation sl
-        dTypes = (emptySign ()) {sortRel = Rel.transClosure . Rel.fromList
-                    . map (\ d -> (uriToCaslId d, dataS))
-                    . Set.toList . Set.union predefIRIs $ OS.datatypes owlSig}
+        dTypes = (emptySign ()) {sortRel = Rel.transClosure . Rel.fromSet
+                    . Set.map (\ d -> (uriToCaslId d, dataS))
+                    . Set.union predefIRIs $ OS.datatypes owlSig}
     (cSens, nSig) <- foldM (\ (x, y) z -> do
             (sen, sig) <- mapSentence y z
             return (sen ++ x, uniteCASLSign sig y)) ([], cSig) owlSens
