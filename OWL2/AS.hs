@@ -18,6 +18,8 @@ module OWL2.AS where
 
 import Common.Id
 import Common.Keywords (stringS)
+import Common.Lib.MapSet (setToMap)
+
 import OWL2.ColonKeywords
 import OWL2.Keywords
 
@@ -25,6 +27,7 @@ import Data.Char (intToDigit)
 import Data.List
 import Data.Maybe
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 data IRIType = Full | Abbreviated | NodeID
     deriving (Show, Eq, Ord)
@@ -81,10 +84,11 @@ isNullQName qn = case qn of
     QN "" "" _ "" _ -> True
     _ -> False
 
+unamedS :: String
+unamedS = "//www.dfki.de/sks/hets/ontology/unamed"
+
 dummyQName :: QName
-dummyQName =
-  QN "http" "//www.dfki.de/sks/hets/ontology/unamed" Full
-            "http://www.dfki.de/sks/hets/ontology/unamed" nullRange
+dummyQName = QN "http" unamedS Full ("http:" ++ unamedS) nullRange
 
 mkQName :: String -> QName
 mkQName s = nullQName { localPart = s }
@@ -235,35 +239,44 @@ isPredefPropOrClass :: IRI -> Bool
 isPredefPropOrClass iri = isPredefAnnoProp iri || isPredefDataProp iri
     || isPredefObjProp iri || isThing iri
 
-predefIRIs :: [IRI]
-predefIRIs = map (setPrefix "xsd" . mkQName) xsdKeys
-    ++ map (setPrefix "owl" . mkQName) owlNumbers
-    ++ map (setPrefix "rdf" . mkQName) [rdfsLiteral, stringS]
-    ++ [setPrefix "rdfs" $ mkQName xmlLiteral]
+predefIRIs :: Set.Set IRI
+predefIRIs = Set.map (setPrefix "xsd" . mkQName) xsdKeys
+    `Set.union` Set.map (setPrefix "owl" . mkQName) owlNumbers
+    `Set.union` Set.fromList
+        (map (setPrefix "rdf" . mkQName) [rdfsLiteral, stringS])
+    `Set.union` Set.fromList [setPrefix "rdfs" $ mkQName xmlLiteral]
 
 isDatatypeKey :: IRI -> Bool
 isDatatypeKey = not . null . isDatatypeKeyAux
 
 isDatatypeKeyAux :: IRI -> [(String, String)]
 isDatatypeKeyAux iri = mapMaybe (\ (l, p) -> checkPredefAux l p iri)
-  [ (xsdKeys, "xsd"), (owlNumbers, "owl"), ([xmlLiteral, stringS], "rdf")
-  , ([rdfsLiteral], "rdfs")]
+  [ (xsdKeys, "xsd"), (owlNumbers, "owl")
+  , (Set.fromList [xmlLiteral, stringS], "rdf")
+  , (Set.singleton rdfsLiteral, "rdfs")]
 
-checkPredefAux :: [String] -> String -> IRI -> Maybe (String, String)
-checkPredefAux sl pref u =
-   let m1 = if elem (namePrefix u) ["", pref] then
-              lookup (localPart u) $ map (\ a -> (a, (pref, a))) sl
-            else Nothing
-   in case m1 of
-        Nothing -> lookup (showQU u) $ concatMap (\ a ->
-           [ (Map.findWithDefault "" pref predefPrefixes ++ a, (pref, a))
-           , (showQU dummyQName ++ "#" ++ a, (pref, a))]) sl
-        _ -> m1
+checkPredefAux :: Set.Set String -> String -> IRI -> Maybe (String, String)
+checkPredefAux sl pref u = let
+    lp = localPart u
+    pu = namePrefix u
+    dummy = unamedS ++ "#"
+    m1 = Map.map (\ a -> (pref, a)) $ setToMap sl
+    l = Set.toList sl
+    m2 = Map.fromList $ map (\ a -> (dummy ++ a, (pref, a))) l
+    m3 = Map.fromList $ map (\ a ->
+             (Map.findWithDefault "" pref predefPrefixes ++ a, (pref, a))) l
+    r1 = if elem pu ["", pref] then Map.lookup lp m1 else Nothing
+    in case r1 of
+         Nothing ->
+           if pu == "http" && isPrefixOf dummy lp
+           then Map.lookup lp m2
+           else Map.lookup (showQU u) m3
+         _ -> r1
 
-checkPredef :: [String] -> String -> IRI -> Bool
+checkPredef :: Set.Set String -> String -> IRI -> Bool
 checkPredef sl pref = isJust . checkPredefAux sl pref
 
-isOWLPredef :: [String] -> IRI -> Bool
+isOWLPredef :: Set.Set String -> IRI -> Bool
 isOWLPredef sl = checkPredef sl "owl"
 
 -- | sets the correct prefix for the predefined datatypes
@@ -317,14 +330,14 @@ data DatatypeCat = OWL2Number | OWL2String | OWL2Bool | Other
 getDatatypeCat :: IRI -> DatatypeCat
 getDatatypeCat iri = case isDatatypeKey iri of
     True
-        | hasPrefXSD [booleanS] iri -> OWL2Bool
+        | hasPrefXSD (Set.singleton booleanS) iri -> OWL2Bool
         | hasPrefXSD xsdNumbers iri || checkPredef owlNumbers "owl" iri
             -> OWL2Number
         | hasPrefXSD xsdStrings iri -> OWL2String
         | otherwise -> Other
     False -> Other
 
-hasPrefXSD :: [String] -> IRI -> Bool
+hasPrefXSD :: Set.Set String -> IRI -> Bool
 hasPrefXSD sl = checkPredef sl "xsd"
 
 facetToIRI :: DatatypeFacet -> ConstrainingFacet

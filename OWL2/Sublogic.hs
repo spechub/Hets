@@ -27,7 +27,7 @@ data NumberRestrictions = None | Unqualified | Qualified
     deriving (Show, Eq, Ord)
 
 owlDatatypes :: Set.Set Datatype
-owlDatatypes = Set.fromList predefIRIs
+owlDatatypes = predefIRIs
 
 data OWLSub = OWLSub
     { numberRestrictions :: NumberRestrictions
