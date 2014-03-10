@@ -18,7 +18,6 @@ module OWL2.AS where
 
 import Common.Id
 import Common.Keywords (stringS)
-import Common.Lib.MapSet (setToMap)
 
 import OWL2.ColonKeywords
 import OWL2.Keywords
@@ -85,7 +84,10 @@ isNullQName qn = case qn of
     _ -> False
 
 unamedS :: String
-unamedS = "//www.dfki.de/sks/hets/ontology/unamed"
+unamedS = "//www." ++ dnamedS
+
+dnamedS :: String
+dnamedS = "dfki.de/sks/hets/ontology/unamed"
 
 dummyQName :: QName
 dummyQName = QN "http" unamedS Full ("http:" ++ unamedS) nullRange
@@ -280,31 +282,28 @@ isDatatypeKeyAux :: IRI -> [(String, String)]
 isDatatypeKeyAux iri = mapMaybe (`checkPredefAux` iri)
   [ xsdMap, owlNumbersMap, rdfMap, rdfsMap ]
 
-type PreDefMap = Map.Map String (String, String)
-type PreDefMaps = (PreDefMap, PreDefMap, PreDefMap)
+type PreDefMaps = (Set.Set String, String, String)
 
 preDefMaps :: Set.Set String -> String -> PreDefMaps
 preDefMaps sl pref = let
-    m1 = Map.map (\ a -> (pref, a)) $ setToMap sl
-    l = Set.toList sl
-    m2 = Map.fromList $ map (\ a -> (unamedS ++ "#" ++ a, (pref, a))) l
-    m3 = Map.fromList $ map (\ a ->
-             (Map.findWithDefault "" pref predefPrefixes ++ a, (pref, a))) l
-    in (m1, m2, m3)
+  Just puri = Map.lookup pref predefPrefixes
+  Just sp = stripPrefix "http://www.w3.org/" puri
+ in (sl, pref, sp)
 
 checkPredefAux :: PreDefMaps -> IRI -> Maybe (String, String)
-checkPredefAux (m1, m2, m3) u = let
-    lp = localPart u
-    pu = namePrefix u
-    pref = fst . snd $ Map.findMin m3
-    r1 = if elem pu ["", pref] then Map.lookup lp m1 else Nothing
-    in case r1 of
-         Nothing -> let r3 = Map.lookup (showQU u) m3 in
-           if pu == "http" then case Map.lookup lp m2 of
-             Nothing -> r3
-             r2 -> r2
-           else r3
-         _ -> r1
+checkPredefAux (sl, pref, exPref) u = let lp = localPart u in
+  case namePrefix u of
+    "http" -> case stripPrefix "//www." lp of
+        Just q -> case stripPrefix "w3.org/" q of
+            Just r -> case stripPrefix exPref r of
+              Just s | Set.member s sl -> Just (pref, s)
+              _ -> Nothing
+            Nothing -> case stripPrefix (dnamedS ++ "#") q of
+              Just s | Set.member s sl -> Just (pref, s)
+              _ -> Nothing
+        Nothing -> Nothing
+    pu | elem pu ["", pref] && Set.member lp sl -> Just (pref, lp)
+    _ -> Nothing
 
 checkPredef :: PreDefMaps -> IRI -> Bool
 checkPredef ms = isJust . checkPredefAux ms
