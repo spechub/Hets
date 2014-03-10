@@ -72,9 +72,16 @@ data Frame = Frame Extended [FrameBit]
     deriving (Show, Eq, Ord)
 
 data Axiom = PlainAxiom
-  { axiomTopic :: Extended
-  , axiomBit :: FrameBit
+  { axiomTopic :: Extended -- the Class or Individual
+  , axiomBit :: FrameBit -- the property expressed by the sentence
   } deriving (Show, Eq, Ord)
+
+{-
+ 
+ Individual: alex           <------ axiomTopic
+   Facts: hasParent john    <------ axiomBit
+
+-}
 
 mkExtendedEntity :: Entity -> Extended
 mkExtendedEntity e@(Entity ty iri) = case ty of

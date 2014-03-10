@@ -13,11 +13,13 @@ Static analysis for OWL 2
 module OWL2.StaticAnalysis where
 
 import OWL2.Sign
+import OWL2.Morphism
 import OWL2.AS
 import OWL2.MS
 import OWL2.Print ()
 import OWL2.Theorem
 import OWL2.Function
+import OWL2.Symbols
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -29,9 +31,17 @@ import Common.Result
 import Common.GlobalAnnotations hiding (PrefixMap)
 import Common.ExtSign
 import Common.Lib.State
+
+import qualified Common.Id as Id
+--import qualified Common.IRI as IRI
+
 import Common.IRI (iriToStringUnsecure, setAnkles)
 
+
+
 import Control.Monad
+
+import Logic.Logic
 
 -- | Error messages for static analysis
 failMsg :: Entity -> ClassExpression -> Result a
@@ -376,3 +386,123 @@ findImplied ax sent =
          , isDef = False
          , wasTheorem = False }
    else sent { isAxiom = True }
+
+
+addEquiv :: Sign -> Sign  -> [SymbItems] -> [SymbItems] ->
+            Result (Sign, Sign, Sign, 
+                     EndoMap Entity, EndoMap Entity)
+addEquiv ssig tsig l1 l2 = do
+  let l1' = statSymbItems ssig l1
+      l2' = statSymbItems tsig l2
+  case (l1', l2') of
+    ([rs1], [rs2]) -> do
+      let match1 = filter (\sy -> matchesSym sy rs1) $ Set.toList $ symOf ssig 
+          match2 = filter (\sy -> matchesSym sy rs2) $ Set.toList $ symOf tsig
+      case
+       (match1, match2) of
+          ([e1], [e2]) -> do 
+           if entityKind e1 == entityKind e2 then do
+              s <- pairSymbols e1 e2
+              sig <- addSymbToSign emptySign s
+              sig1 <- addSymbToSign emptySign e1
+              sig2 <- addSymbToSign emptySign e2
+              return (sig, sig1, sig2, 
+                         Map.insert e1 s Map.empty, 
+                         Map.insert e2 s Map.empty)
+             else 
+              error "only symbols of same kind can be equivalent in an alignment"
+          _ -> error  $ "non-unique symbol match:" ++ show l1 ++ " " ++ show l2
+    _ -> error "terms not yet supported in alignments"  
+
+corr2theo :: Sign -> Sign -> [SymbItems] -> [SymbItems] -> 
+             EndoMap Entity -> EndoMap Entity -> REL_REF -> 
+             Result (Sign, [Named Axiom], Sign, Sign, 
+                     EndoMap Entity, EndoMap Entity)
+corr2theo ssig tsig l1 l2 eMap1 eMap2 rref = do
+  let l1' = statSymbItems ssig l1
+      l2' = statSymbItems tsig l2
+  case (l1', l2') of
+    ([rs1], [rs2]) -> do
+      let match1 = filter (\sy -> matchesSym sy rs1) $ Set.toList $ symOf ssig 
+          match2 = filter (\sy -> matchesSym sy rs2) $ Set.toList $ symOf tsig
+      case
+       (match1, match2) of
+          ([e1], [e2]) -> do
+           let e1' = Map.findWithDefault e1 e1 eMap1
+               e2' = Map.findWithDefault e2 e2 eMap2
+               sig = emptySign
+               eMap1' = Map.union eMap1 $ Map.fromAscList [(e1, e1)]
+               eMap2' = Map.union eMap2 $ Map.fromAscList [(e2, e2)]
+           sig1 <- addSymbToSign sig e1
+           sig2 <- addSymbToSign sig e2
+           sigI <- addSymbToSign sig e1'
+           sigB <- addSymbToSign sigI e2'
+           case rref of
+            Subs -> do 
+             let extPart = mkExtendedEntity e2'
+                 axiom = PlainAxiom extPart $ 
+                           ListFrameBit (Just $ 
+                              case (entityKind e1, entityKind e2) of 
+                                (Class, Class) -> SubClass
+                                (ObjectProperty, ObjectProperty)-> SubPropertyOf
+                                _ -> error $ "use subsumption only between"
+                                              ++ "classes or roles:" ++ 
+                                              show l1 ++ " " ++ show l2) $ 
+                           ExpressionBit [([], Expression $ cutIRI e1')]
+             return (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2') 
+            Incomp -> do
+             let extPart = mkExtendedEntity e1'
+                 axiom = PlainAxiom extPart $ 
+                           ListFrameBit (Just $ EDRelation Disjoint) $ 
+                           ExpressionBit [([], Expression $ cutIRI e2')]
+             return (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2')  
+            IsSubs -> do
+             let extPart = mkExtendedEntity e1'
+                 axiom = PlainAxiom extPart $ 
+                           ListFrameBit (Just SubClass) $ 
+                           ExpressionBit [([], Expression $ cutIRI e2')]
+             return (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2')
+            InstOf -> do
+             let extPart = mkExtendedEntity e1'
+                 axiom = PlainAxiom extPart $ 
+                           ListFrameBit (Just Types) $ 
+                           ExpressionBit [([], Expression $ cutIRI e2')]
+             return
+                 (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2')
+            HasInst -> do
+             let extPart = mkExtendedEntity e2'
+                 axiom = PlainAxiom extPart $ 
+                           ListFrameBit (Just Types) $ 
+                           ExpressionBit [([], Expression $ cutIRI e1')]
+             return
+                 (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2')
+            RelName r -> do
+             let extPart = mkExtendedEntity e1'
+                 rQName = QN "" (iriToStringUnsecure r)  
+                             Abbreviated (iriToStringUnsecure r) Id.nullRange
+                 sym  = Entity ObjectProperty rQName
+                 rSyms = filter (\x -> x == sym) $
+                            Set.toList $ symOf tsig
+             case rSyms of
+               [] -> error $ "relation " ++ show rQName ++ 
+                                " not in " ++ show tsig
+               [rsym] -> do
+                 let sym'@(Entity ObjectProperty rQName') = 
+                             Map.findWithDefault rsym rsym eMap2'
+                     axiom = PlainAxiom extPart $ 
+                              ListFrameBit (Just SubClass) $ 
+                               ExpressionBit [([], 
+                                ObjectValuesFrom
+                                 SomeValuesFrom 
+                                 (ObjectProp rQName') 
+                                 (Expression $ cutIRI e2'))]
+                 sigB' <- addSymbToSign sigB sym'
+                 sig2' <- addSymbToSign sig2 rsym
+                 --trace ("\n\n" ++ show sigB' ++ "\n" ++ show axiom) $ 
+                 return
+                   (sigB', [makeNamed "" axiom], sig1, sig2', eMap1', 
+                      Map.union eMap2' $ Map.fromAscList [(rsym, sym')])
+               _ -> error $ "too many matches for " ++ show rQName
+            _ -> error $ "nyi:" ++ show rref
+          _ -> error  $ "non-unique symbol match:" ++ show l1 ++ " " ++ show l2
+    _ -> error "terms not yet supported in alignments"  

@@ -19,6 +19,8 @@ module OWL2.AS where
 import Common.Id
 import Common.Keywords (stringS)
 
+import Common.Result
+
 import OWL2.ColonKeywords
 import OWL2.Keywords
 
@@ -45,7 +47,7 @@ data QName = QN
   } deriving Show
 
 instance Eq QName where
-    p == q = compare p q == EQ
+    p == q = localPart p == localPart q  --compare p q == EQ
 
 instance Ord QName where
   compare (QN p1 l1 b1 n1 _) (QN p2 l2 b2 n2 _) =
@@ -435,6 +437,24 @@ showEntityType e = case e of
 
 entityTypes :: [EntityType]
 entityTypes = [minBound .. maxBound]
+
+pairSymbols :: Entity -> Entity -> Result Entity -- TO DO: this needs improvements!
+pairSymbols (Entity k1 i1) (Entity k2 i2) =
+  if k1 /= k2 then 
+    error "can't pair symbols of different kind"
+   else do 
+    let 
+        rest x = drop 1 $ dropWhile (/= '#') x
+        pairIRIs (QN p1 l1 t1 _e1 r1)
+                 (QN _p2 l2 _t2 _e2 _r2) = 
+         QN
+          { namePrefix = p1
+          , localPart = if rest l1 == rest l2 then l1 else l1 ++ "_" ++ (rest l2)
+          , iriType = t1
+          , expandedIRI = ""
+          , iriPos = r1
+          }
+    return $ Entity k1 $ pairIRIs i1 i2
 
 -- * LITERALS
 

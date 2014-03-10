@@ -371,8 +371,8 @@ class (Language lid, Category sign morphism, Ord sentence,
       symsOfSen _ _ = []
       -- | combine two symbols into another one
       pair_symbols :: lid -> symbol -> symbol -> Result symbol
-      pair_symbols _ s1 _ = return s1
-
+      pair_symbols lid _ _ = error $ "pair_symbols nyi for logic "++ show lid 
+ 
 -- | makes a singleton list from the given value
 singletonList :: a -> [a]
 singletonList x = [x]
@@ -418,6 +418,12 @@ statErrMsg lid str =
    In the CASL reference manual, our symbols are called "signature symbols",
    and our raw symbols are called "symbols". (Terminology should be adapted.)
 -}
+
+data REL_REF = Subs | IsSubs | Equiv | Incomp
+                  | HasInst | InstOf | DefRel
+                  | RelName IRI
+                    deriving (Show, Eq)
+
 class ( Syntax lid basic_spec symbol symb_items symb_map_items
       , Sentences lid sentence sign morphism symbol
       , GetRange raw_symbol, Ord raw_symbol, Pretty raw_symbol
@@ -582,6 +588,23 @@ class ( Syntax lid basic_spec symbol symb_items symb_map_items
                             -> sign -> [Named sentence]
                             -> Result MMiSSOntology
          theory_to_taxonomy l _ _ _ _ = statFail l "theory_to_taxonomy"
+         -- | create a theory from a correspondence
+         corresp2th :: lid
+                    -> sign
+                    -> sign
+                    -> [symb_items] 
+                    -> [symb_items]
+                    -> EndoMap symbol
+                    -> EndoMap symbol
+                    -> REL_REF
+                    -> Result (sign, [Named sentence], sign, sign, 
+                               EndoMap symbol, EndoMap symbol)
+         corresp2th _ _ _ _ _ _ _ _ = error "c2th nyi"
+         -- | create a co-span fragment from an equivalence
+         equiv2cospan :: lid -> sign -> sign  -> [symb_items] -> [symb_items] -> 
+                       Result (sign, sign, sign, EndoMap symbol, EndoMap symbol)
+         equiv2cospan _ _ _ _ _ = error "equiv2cospan nyi"
+                       
 
 -- | print a whole theory
 printTheory :: StaticAnalysis lid basic_spec sentence symb_items symb_map_items

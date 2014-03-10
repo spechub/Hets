@@ -682,6 +682,11 @@ getGlobEntryNodes g = case g of
 
 data AlignSig = AlignMor NodeSig GMorphism NodeSig
               | AlignSpan NodeSig GMorphism NodeSig GMorphism NodeSig
+              | WAlign    NodeSig GMorphism GMorphism -- s1, i1, sig1
+                          NodeSig GMorphism GMorphism -- s2, i2, sig2
+                          NodeSig                     -- t1
+                          NodeSig                     -- t2
+                          NodeSig                     -- b
   deriving (Show, Eq)
 
 type GlobalEnv = Map.Map IRI GlobalEntry

@@ -594,6 +594,15 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp = case sp of
                      t2 = getNode tar2
                     in (nub $ [s, t1, t2] ++ cN,
                               [lEdge s t1 phi1, lEdge s t2 phi2] ++ cE)
+                   WAlign src1 i1 sig1 src2 i2 sig2 tar1 tar2 bri -> let
+                      s1 = getNode src1 
+                      s2 = getNode src2
+                      t1 = getNode tar1
+                      t2 = getNode tar2 
+                      b  = getNode bri
+                     in (nub $ s1 : s2 : t1 : t2 : b : cN,
+                         [lEdge s1 t1 i1, lEdge s1 b sig1,
+                          lEdge s2 t2 i2, lEdge s2 b sig2] ++ cE) 
                _ -> error $ show cItem
                     ++ "is not an ontology, a view or an alignment"
         addGDefLinks (cN, iN, cE) n = let

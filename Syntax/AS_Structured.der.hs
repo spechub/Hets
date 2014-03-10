@@ -22,7 +22,7 @@ import Common.AS_Annotation
 
 import qualified Data.Set as Set
 
-import Logic.Logic (AnyLogic)
+import Logic.Logic --(AnyLogic,REL_REF)
 import Logic.Grothendieck
     ( G_basic_spec
     , G_symb_items_list
@@ -196,6 +196,16 @@ data RELATION_REF = Subsumes | IsSubsumed | Equivalent | Incompatible
                   | HasInstance | InstanceOf | DefaultRelation
                   | Iri IRI
                     deriving (Show, Eq)
+
+refToRel :: RELATION_REF -> REL_REF
+refToRel Subsumes = Subs
+refToRel IsSubsumed = IsSubs
+refToRel Equivalent = Equiv
+refToRel Incompatible = Incomp
+refToRel HasInstance = HasInst
+refToRel InstanceOf = InstOf
+refToRel DefaultRelation = DefRel
+refToRel (Iri i) = RelName i
 
 type CONFIDENCE = Double -- NOTE: will be revised
 

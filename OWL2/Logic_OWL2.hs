@@ -96,6 +96,7 @@ instance Sentences OWL2 Axiom Sign OWLMorphism Entity where
     sym_name OWL2 = entityToId
     symKind OWL2 = takeWhile isAlpha . showEntityType . entityKind
     symsOfSen OWL2 = Set.toList . symsOfAxiom
+    pair_symbols OWL2 = pairSymbols
 
 
 instance StaticAnalysis OWL2 OntologyDocument Axiom
@@ -120,6 +121,8 @@ instance StaticAnalysis OWL2 OntologyDocument Axiom
       cogenerated_sign OWL2 = cogeneratedSign
       generated_sign OWL2 = generatedSign
       signature_colimit OWL2 = return . signColimit
+      corresp2th OWL2 = corr2theo
+      equiv2cospan OWL2 = addEquiv
 #ifdef UNI_PACKAGE
       theory_to_taxonomy OWL2 = onto2Tax
 #endif
