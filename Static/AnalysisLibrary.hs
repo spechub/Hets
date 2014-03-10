@@ -262,7 +262,7 @@ anaLibDefn lgraph opts topLns libenv dg (Lib_defn ln alibItems pos ans) file
       isDOLlib = elem ':' libStr
   gannos <- showDiags1 opts $ liftR $ addGlobalAnnos
     (defPrefixGlobalAnnos $ if isDOLlib then file else libStr) ans
-  allAnnos <- liftR $ mergeGlobalAnnos gannos $ globalAnnos dg
+  allAnnos <- liftR $ mergeGlobalAnnos (globalAnnos dg) gannos
   (libItems', dg', libenv', _, _) <- foldM (anaLibItemAux opts topLns ln)
       ([], dg { globalAnnos = allAnnos }, libenv
       , lgraph, Map.empty) (map item alibItems)
