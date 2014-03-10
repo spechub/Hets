@@ -47,7 +47,7 @@ data QName = QN
   } deriving Show
 
 instance Eq QName where
-    p == q = localPart p == localPart q  --compare p q == EQ
+    p == q = compare p q == EQ
 
 instance Ord QName where
   compare (QN p1 l1 b1 n1 _) (QN p2 l2 b2 n2 _) =
