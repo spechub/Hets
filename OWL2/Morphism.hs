@@ -28,6 +28,7 @@ import Common.Lib.State (execState)
 import Common.Lib.MapSet (setToMap)
 
 import Control.Monad
+import Data.List (stripPrefix)
 import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -145,9 +146,12 @@ generatedSign s sign = cogeneratedSign (Set.difference (symOf sign) s) sign
 
 matchesSym :: Entity -> RawSymb -> Bool
 matchesSym e@(Entity _ u) r = case r of
-  ASymbol s -> s == e
-  AnUri s -> s == u || namePrefix u == localPart s && null (namePrefix s)
-  APrefix p -> p == namePrefix u
+       ASymbol s -> s == e
+       AnUri s -> s == u || expandedIRI s == expandedIRI u || case
+         stripPrefix (reverse $ localPart s) (reverse $ localPart u) of
+           Just (c : _) | null (namePrefix s) -> elem c "/#"
+           _ -> False
+       APrefix p -> p == namePrefix u
 
 statSymbItems :: Sign -> [SymbItems] -> [RawSymb]
 statSymbItems sig = map (function Expand . StringMap $ prefixMap sig)
