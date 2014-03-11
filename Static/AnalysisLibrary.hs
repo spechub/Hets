@@ -752,19 +752,19 @@ anaAlignDefn lg ln libenv dg opts eo an arities atype acorresps pos = do
                 generateWAlign gsig1 gsig2 acorresps
             let n1 = getNewNodeDG dg'
                 labN1 = newInfoNodeLab 
-                         emptyNodeName --(makeName an) 
+                         (makeName an{abbrevFragment = abbrevFragment an ++ "_source"}) 
                          (newNodeInfo DGAlignment) 
                          gt1 
                 dg1 = insLNodeDG (n1, labN1) dg'
                 n2 = getNewNodeDG dg1
                 labN2 = newInfoNodeLab 
-                         emptyNodeName --(makeName an) 
+                         (makeName an{abbrevFragment = abbrevFragment an ++ "_target"}) 
                          (newNodeInfo DGAlignment) 
                          gt2 
                 dg2 = insLNodeDG (n2, labN2) dg1
                 n = getNewNodeDG dg2
                 labN = newInfoNodeLab 
-                         emptyNodeName --(makeName an) 
+                         (makeName an{abbrevFragment = abbrevFragment an ++ "_bridge"})  
                          (newNodeInfo DGAlignment) 
                          gt 
                 dg3 = insLNodeDG (n, labN) dg2
