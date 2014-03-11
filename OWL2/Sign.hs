@@ -82,6 +82,10 @@ addSymbToSign sig ent =
  case ent of
    Entity Class eIri ->
     return sig {concepts = Set.insert eIri $ concepts sig}
+   Entity ObjectProperty eIri ->
+    return sig {objectProperties = Set.insert eIri $ objectProperties sig}
+   Entity NamedIndividual eIri ->
+    return sig {individuals = Set.insert eIri $ individuals sig}
    _ -> return sig
 
 addSign :: Sign -> Sign -> Sign
