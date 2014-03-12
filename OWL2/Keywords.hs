@@ -16,10 +16,9 @@ plus owl, xsd, rdf and rdfs reserved keywords. All identifiers are mixed case
 module OWL2.Keywords where
 
 import Common.Keywords
-import qualified Data.Set as Set
 
-keywords :: Set.Set String
-keywords = Set.fromList
+keywords :: [String]
+keywords =
   [ digitsS
   , exactlyS
   , fractionS
@@ -41,7 +40,7 @@ keywords = Set.fromList
   , thatS
   , valueS
   , xorS
-  ] `Set.union` datatypeKeys
+  ] ++ datatypeKeys
 
 base64BinaryS :: String
 base64BinaryS = "base64Binary"
@@ -256,49 +255,46 @@ incompatibleWith = "incompatibleWith"
 implied :: String
 implied = "Implied"
 
-predefClass :: Set.Set String
-predefClass = Set.fromList [thingS, nothingS]
+predefClass :: [String]
+predefClass = [thingS, nothingS]
 
-predefObjProp :: Set.Set String
-predefObjProp = Set.fromList [topObjProp, bottomObjProp]
+predefObjProp :: [String]
+predefObjProp = [topObjProp, bottomObjProp]
 
-predefDataProp :: Set.Set String
-predefDataProp = Set.fromList [topDataProp, bottomDataProp]
+predefDataProp :: [String]
+predefDataProp = [topDataProp, bottomDataProp]
 
-predefRDFSAnnoProps :: Set.Set String
-predefRDFSAnnoProps = Set.fromList [label, comment, seeAlso, isDefinedBy]
+predefRDFSAnnoProps :: [String]
+predefRDFSAnnoProps = [label, comment, seeAlso, isDefinedBy]
 
-predefOWLAnnoProps :: Set.Set String
-predefOWLAnnoProps = Set.fromList [deprecated, versionInfo, priorVersion,
+predefOWLAnnoProps :: [String]
+predefOWLAnnoProps = [deprecated, versionInfo, priorVersion,
     backwardCompatibleWith, incompatibleWith, implied]
 
-xsdNumbers :: Set.Set String
-xsdNumbers = Set.fromList [integerS, negativeIntegerS, nonNegativeIntegerS,
+xsdNumbers :: [String]
+xsdNumbers = [integerS, negativeIntegerS, nonNegativeIntegerS,
     nonPositiveIntegerS, positiveIntegerS, decimalS, doubleS, floatS,
     longS, intS, shortS, byteS, unsignedLongS, unsignedIntS, unsignedShortS,
     unsignedByteS]
 
-owlNumbers :: Set.Set String
-owlNumbers = Set.fromList [realS, rationalS]
+owlNumbers :: [String]
+owlNumbers = [realS, rationalS]
 
-xsdStrings :: Set.Set String
-xsdStrings = Set.fromList
-  [ stringS, ncNameS, "QName", nameS, nmTokenS, "NMTOKENS", tokenS
+xsdStrings :: [String]
+xsdStrings = [stringS, ncNameS, "QName", nameS, nmTokenS, "NMTOKENS", tokenS
   , languageS, normalizedStringS, "NOTATION", "ENTITY", "ENTITIES"
   , "ID", "IDREF", "IDREFS" ]
 
-xsdKeys :: Set.Set String
-xsdKeys = Set.fromList
-  [ booleanS, dATAS, hexBinaryS, base64BinaryS, "date", "time"
+xsdKeys :: [String]
+xsdKeys = [booleanS, dATAS, hexBinaryS, base64BinaryS, "date", "time"
   , "gYearMonth", "gYear", "gMonthDay", "gDay", "gMonth", "duration"
-  , dateTimeS, dateTimeStampS, anyURI]
-  `Set.union` xsdNumbers `Set.union` xsdStrings
+  , dateTimeS, dateTimeStampS, anyURI] ++ xsdNumbers ++ xsdStrings
 
-nonXSDKeys :: Set.Set String
-nonXSDKeys = owlNumbers `Set.union` Set.fromList [xmlLiteral, rdfsLiteral]
+nonXSDKeys :: [String]
+nonXSDKeys = owlNumbers ++ [xmlLiteral, rdfsLiteral]
 
-datatypeKeys :: Set.Set String
-datatypeKeys = xsdKeys `Set.union` nonXSDKeys
+datatypeKeys :: [String]
+datatypeKeys = xsdKeys ++ nonXSDKeys
 
 data DatatypeFacet =
     LENGTH

@@ -259,11 +259,10 @@ isPredefPropOrClass iri = isPredefAnnoProp iri || isPredefDataProp iri
     || isPredefObjProp iri || isThing iri
 
 predefIRIs :: Set.Set IRI
-predefIRIs = Set.map (setPrefix "xsd" . mkQName) xsdKeys
-    `Set.union` Set.map (setPrefix "owl" . mkQName) owlNumbers
-    `Set.union` Set.fromList
-        (map (setPrefix "rdf" . mkQName) [rdfsLiteral, stringS])
-    `Set.union` Set.fromList [setPrefix "rdfs" $ mkQName xmlLiteral]
+predefIRIs = Set.fromList $ map (setPrefix "xsd" . mkQName) xsdKeys
+    ++ map (setPrefix "owl" . mkQName) owlNumbers
+    ++ map (setPrefix "rdf" . mkQName) [rdfsLiteral, stringS]
+    ++ [setPrefix "rdfs" $ mkQName xmlLiteral]
 
 isDatatypeKey :: IRI -> Bool
 isDatatypeKey = not . null . isDatatypeKeyAux
@@ -275,18 +274,18 @@ owlNumbersMap :: PreDefMaps
 owlNumbersMap = makeOWLPredefMaps owlNumbers
 
 rdfMap :: PreDefMaps
-rdfMap = preDefMaps (Set.fromList [xmlLiteral, stringS]) "rdf"
+rdfMap = preDefMaps [xmlLiteral, stringS] "rdf"
 
 rdfsMap :: PreDefMaps
-rdfsMap = preDefMaps (Set.singleton rdfsLiteral) "rdfs"
+rdfsMap = preDefMaps [rdfsLiteral] "rdfs"
 
 isDatatypeKeyAux :: IRI -> [(String, String)]
 isDatatypeKeyAux iri = mapMaybe (`checkPredefAux` iri)
   [ xsdMap, owlNumbersMap, rdfMap, rdfsMap ]
 
-type PreDefMaps = (Set.Set String, String, String)
+type PreDefMaps = ([String], String, String)
 
-preDefMaps :: Set.Set String -> String -> PreDefMaps
+preDefMaps :: [String] -> String -> PreDefMaps
 preDefMaps sl pref = let
   Just puri = Map.lookup pref predefPrefixes
   Just sp = stripPrefix "http://www.w3.org/" puri
@@ -298,19 +297,19 @@ checkPredefAux (sl, pref, exPref) u = let lp = localPart u in
     "http" -> case stripPrefix "//www." lp of
         Just q -> case stripPrefix "w3.org/" q of
             Just r -> case stripPrefix exPref r of
-              Just s | Set.member s sl -> Just (pref, s)
+              Just s | elem s sl -> Just (pref, s)
               _ -> Nothing
             Nothing -> case stripPrefix (dnamedS ++ "#") q of
-              Just s | Set.member s sl -> Just (pref, s)
+              Just s | elem s sl -> Just (pref, s)
               _ -> Nothing
         Nothing -> Nothing
-    pu | elem pu ["", pref] && Set.member lp sl -> Just (pref, lp)
+    pu | elem pu ["", pref] && elem lp sl -> Just (pref, lp)
     _ -> Nothing
 
 checkPredef :: PreDefMaps -> IRI -> Bool
 checkPredef ms = isJust . checkPredefAux ms
 
-makeOWLPredefMaps :: Set.Set String -> PreDefMaps
+makeOWLPredefMaps :: [String] -> PreDefMaps
 makeOWLPredefMaps sl = preDefMaps sl "owl"
 
 -- | sets the correct prefix for the predefined datatypes
@@ -371,11 +370,11 @@ getDatatypeCat iri = case isDatatypeKey iri of
         | otherwise -> Other
     False -> Other
 
-makeXsdMap :: Set.Set String -> PreDefMaps
+makeXsdMap :: [String] -> PreDefMaps
 makeXsdMap sl = preDefMaps sl "xsd"
 
 xsdBooleanMap :: PreDefMaps
-xsdBooleanMap = makeXsdMap $ Set.singleton booleanS
+xsdBooleanMap = makeXsdMap [booleanS]
 
 xsdNumbersMap :: PreDefMaps
 xsdNumbersMap = makeXsdMap xsdNumbers
@@ -438,18 +437,18 @@ showEntityType e = case e of
 entityTypes :: [EntityType]
 entityTypes = [minBound .. maxBound]
 
-pairSymbols :: Entity -> Entity -> Result Entity -- TO DO: this needs improvements!
+pairSymbols :: Entity -> Entity -> Result Entity -- TODO: improve!
 pairSymbols (Entity k1 i1) (Entity k2 i2) =
-  if k1 /= k2 then 
+  if k1 /= k2 then
     error "can't pair symbols of different kind"
-   else do 
-    let 
+   else do
+    let
         rest x = drop 1 $ dropWhile (/= '#') x
         pairIRIs (QN p1 l1 t1 _e1 r1)
-                 (QN _p2 l2 _t2 _e2 _r2) = 
+                 (QN _p2 l2 _t2 _e2 _r2) =
          QN
           { namePrefix = p1
-          , localPart = if rest l1 == rest l2 then l1 else l1 ++ "_" ++ (rest l2)
+          , localPart = if rest l1 == rest l2 then l1 else l1 ++ "_" ++ rest l2
           , iriType = t1
           , expandedIRI = ""
           , iriPos = r1

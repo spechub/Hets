@@ -293,8 +293,7 @@ declarations s =
         dp = Set.toList $ OS.dataProperties s
         op = Set.toList $ OS.objectProperties s
     in map thingIncl c
-        ++ map dataIncl (map (setPrefix "xsd" . mkQName)
-                             (Set.toList datatypeKeys) ++ dt)
+        ++ map dataIncl (map (setPrefix "xsd" . mkQName) datatypeKeys ++ dt)
         ++ map (propertyIncl topDataProp) dp
         ++ map (propertyIncl bottomDataProp) dp
         ++ map (propertyIncl topObjProp) op
@@ -314,9 +313,9 @@ mapTheory (owlSig, owlSens) = do
                 return (x ++ sen, unite sig y)
                 ) ([], cSig) owlSens
     let sig = unite (emptySig {discourseNames = Set.fromList $ map (uriToId .
-            setReservedPrefix . mkQName) $ "Datatype" : Set.toList predefClass
+            setReservedPrefix . mkQName) $ "Datatype" : predefClass
             ++ [topDataProp, bottomDataProp, topObjProp, bottomObjProp]
-            ++ Set.toList datatypeKeys}) nSig
+            ++ datatypeKeys}) nSig
         cSens = nothingSent : thingDataDisjoint : declarations owlSig ++ cSensI
     return (sig, map (CommonAnno.mapNamed addMrs) cSens)
 

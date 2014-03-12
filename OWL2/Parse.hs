@@ -34,15 +34,14 @@ import Text.ParserCombinators.Parsec
 import Control.Monad (liftM2)
 import Data.Char
 import qualified Data.Map as Map
-import qualified Data.Set as Set
 
 characters :: [Character]
 characters = [minBound .. maxBound]
 
 -- | OWL and CASL structured keywords including 'andS' and 'notS'
-owlKeywords :: Set.Set String
-owlKeywords = Set.fromList (notS : stringS : map show entityTypes
-  ++ map show characters ++ criticalKeywords) `Set.union` keywords
+owlKeywords :: [String]
+owlKeywords = notS : stringS : map show entityTypes
+  ++ map show characters ++ keywords ++ criticalKeywords
 
 ncNameStart :: Char -> Bool
 ncNameStart c = isAlpha c || c == '_'
@@ -182,7 +181,7 @@ uriQ = fullIri <|> abbrIri
 uriP :: CharParser st QName
 uriP =
   skips $ try $ checkWithUsing showQN uriQ $ \ q -> let p = namePrefix q in
-  if null p then not $ Set.member (localPart q) owlKeywords
+  if null p then notElem (localPart q) owlKeywords
    else notElem p $ map (takeWhile (/= ':'))
         $ colonKeywords
         ++ [ show d ++ e | d <- equivOrDisjointL, e <- [classesC, propertiesC]]
@@ -235,8 +234,7 @@ uriPair = uriP >>= \ u -> do
   <|> return (u, Nothing)
 
 datatypeUri :: CharParser st QName
-datatypeUri = fmap mkQName (choice . map keyword $ Set.toList datatypeKeys)
-  <|> uriP
+datatypeUri = fmap mkQName (choice $ map keyword datatypeKeys) <|> uriP
 
 optSign :: CharParser st Bool
 optSign = option False $ fmap (== '-') (oneOf "+-")

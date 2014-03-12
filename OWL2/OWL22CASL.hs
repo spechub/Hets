@@ -247,7 +247,7 @@ mapSign sig =
              }
 
 loadDataInformation :: ProfSub -> Sign f ()
-loadDataInformation _ = let dts = Set.map stringToId datatypeKeys
+loadDataInformation _ = let dts = Set.fromList $ map stringToId datatypeKeys
     in (emptySign ()) { sortRel = Rel.fromKeysSet dts }
 
 mapTheory :: (OS.Sign, [Named Axiom]) -> Result (CASLSign, [Named CASLFORMULA])
