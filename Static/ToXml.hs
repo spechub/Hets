@@ -128,15 +128,25 @@ lnode full ga lenv (_, lbl) =
                    _ -> []
       ++ case dgn_theory lbl of
         G_theory lid _ (ExtSign sig _) _ thsens _ -> let
-                 (axs, thms) = OMap.partition isAxiom thsens
-                 in (if fullSign full then subnodes "Symbols"
-                     (map (showSym lid) $ symlist_of lid sig)
-                    else []) ++ subnodes "Axioms"
+          (axs, thms) = OMap.partition isAxiom thsens in
+          (if fullSign full
+           then subnodes "Symbols" (map (showSym lid) $ symlist_of lid sig)
+           else [])
+          ++ subnodes "Axioms"
                     (map (showSen lid ga Nothing sig) $ toNamedList axs)
-                    ++ subnodes "Theorems"
+          ++ subnodes "Theorems"
                     (map (\ (s, t) -> showSen lid ga
                          (Just $ isProvenSenStatus t) sig $ toNamed s t)
                          $ OMap.toList thms)
+          ++ if fullTheories full then case globalTheory lbl of
+               Just (G_theory glid _ _ _ allSens _) -> case
+                   coerceThSens glid lid "xml-lnode" allSens of
+                 Just gsens -> subnodes "ImpAxioms"
+                    $ map (showSen lid ga Nothing sig) $ toNamedList
+                     $ Map.difference gsens thsens
+                 _ -> []
+               _ -> []
+             else []
 
 -- | a status may be open, proven or outdated
 mkStatusAttr :: String -> Attr
