@@ -595,7 +595,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
             DisplayQuery ms -> case ms of
               Just "svg" -> return svg
               Just "xml" -> liftR $ return $ ppTopElement
-                $ ToXml.dGraph libEnv ln dg
+                $ ToXml.dGraph opts libEnv ln dg
               Just "dot" -> liftR $ return $ dotGraph title False title dg
               Just "symbols" -> liftR $ return $ ppTopElement
                 $ ToXml.dgSymbols dg

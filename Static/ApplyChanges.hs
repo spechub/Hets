@@ -70,7 +70,7 @@ dgXUpdate opts xs le ln dg = case parseXMLDoc xs of
       -- we assume that the diff refers to an unchanged dg..
       dgOld = undoAllChanges dg
       oldLId = getNewEdgeId dgOld
-      xorig = dGraph le ln dgOld
+      xorig = dGraph opts le ln dgOld
       in dgXUpdateMods opts xorig oldLId diff le ln dg
 
 {- | updates a dgraph partially in accordance with changelist data from a .diff

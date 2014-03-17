@@ -12,12 +12,13 @@ Xml of Hets DGs
 
 module Static.ToXml
   ( dGraph
-  , dGraphAux
   , lnode
   , dgSymbols
   , showSymbols
   , showSymbolsTh
   ) where
+
+import Driver.Options
 
 import Static.DgUtils
 import Static.DevGraph
@@ -51,16 +52,13 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set (toList)
 import Data.Char (toLower)
 
-dGraph :: LibEnv -> LibName -> DGraph -> Element
-dGraph = dGraphAux False
-
 {- |
 Export the development graph as xml. If the flag full is True then
 symbols for all nodes are shown as declarations, otherwise (the
 default) only declaration for basic spec nodes are shown that are
 sufficient to reconstruct the development from the xml output. -}
-dGraphAux :: Bool -> LibEnv -> LibName -> DGraph -> Element
-dGraphAux full lenv ln dg =
+dGraph :: HetcatsOpts -> LibEnv -> LibName -> DGraph -> Element
+dGraph full lenv ln dg =
   let body = dgBody dg
       ga = globalAnnos dg
       lnodes = labNodes body
@@ -98,7 +96,7 @@ prettyRangeElem s ga a =
 prettySymbol :: (GetRange a, Pretty a) => GlobalAnnos -> a -> Element
 prettySymbol = prettyRangeElem "Symbol"
 
-lnode :: Bool -> GlobalAnnos -> LibEnv -> LNode DGNodeLab -> Element
+lnode :: HetcatsOpts -> GlobalAnnos -> LibEnv -> LNode DGNodeLab -> Element
 lnode full ga lenv (_, lbl) =
   let nm = dgn_name lbl
       (spn, xp) = case reverse $ xpath nm of
@@ -131,7 +129,7 @@ lnode full ga lenv (_, lbl) =
       ++ case dgn_theory lbl of
         G_theory lid _ (ExtSign sig _) _ thsens _ -> let
                  (axs, thms) = OMap.partition isAxiom thsens
-                 in (if full then subnodes "Symbols"
+                 in (if fullSign full then subnodes "Symbols"
                      (map (showSym lid) $ symlist_of lid sig)
                     else []) ++ subnodes "Axioms"
                     (map (showSen lid ga Nothing sig) $ toNamedList axs)

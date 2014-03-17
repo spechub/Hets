@@ -234,21 +234,23 @@ postProcessCmd pl nwSt0 pgSt mCmd = let
   return (nwSt, addPGIPReady pgSt1)
 
 informCmd :: CmdlState -> Maybe Command -> CmdlPgipState -> CmdlPgipState
-informCmd nwSt mCmd pgSt1 = case (getMaybeLib $ intState nwSt, mCmd) of
+informCmd nwSt mCmd pgSt1 = let opts = hetsOpts nwSt in
+  case (getMaybeLib $ intState nwSt, mCmd) of
           (Just (lN, lEnv), Just cmd) -> case cmd of
             SelectCmd LibFile _ ->
-              informDGraph lN lEnv $ addPGIPElement pgSt1
+              informDGraph opts lN lEnv $ addPGIPElement pgSt1
                 $ add_attr (mkAttr "url" $ libNameToFile lN)
                 $ unode "informfileloaded" ()
             GlobCmd g | g < ProveCurrent ->
-              informDGraph lN lEnv pgSt1
+              informDGraph opts lN lEnv pgSt1
             _ -> pgSt1
           _ -> pgSt1
 
-informDGraph :: LibName -> LibEnv -> CmdlPgipState -> CmdlPgipState
-informDGraph lN lEnv pgSt =
+informDGraph :: HetcatsOpts -> LibName -> LibEnv -> CmdlPgipState
+  -> CmdlPgipState
+informDGraph opts lN lEnv pgSt =
   addPGIPElement pgSt $ unode "informdevelopmentgraph"
-    $ ToXml.dGraph lEnv lN
+    $ ToXml.dGraph opts lEnv lN
     $ lookupDGraph lN lEnv
 
 -- | Executes given commands and returns output message and the new state

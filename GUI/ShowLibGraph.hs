@@ -140,13 +140,13 @@ changeLibGraph gi graph nodesEdges = do
           dg = lookupDGraph ln le
           fn = libNameToFile ln
           dgold = undoAllChanges dg
-          c2 = ToXml.dGraph le ln dgold
+          c2 = ToXml.dGraph opts le ln dgold
       m <- anaLib opts { outtypes = [] } fn
       case m of
         Just (nln, nle) | nln == ln -> do
           let dg2 = lookupDGraph nln nle
               ndg = undoAllChanges dg2
-              c3 = ToXml.dGraph nle ln ndg
+              c3 = ToXml.dGraph opts nle ln ndg
               xs = hetsXmlDiff c2 c3
           writeVerbFile opts (libNameToFile ln ++ ".xupdate")
             $ ppTopElement xs
