@@ -123,6 +123,9 @@ relposS = "relative-positions"
 fullSignS :: String
 fullSignS = "full-signatures"
 
+fullTheoriesS :: String
+fullTheoriesS = "full-theories"
+
 genTermS, treeS, bafS :: String
 genTermS = "gen_trm"
 treeS = "tree."
@@ -188,6 +191,7 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , serve :: Bool
   , listen :: Int
   , runMMT :: Bool
+  , fullTheories :: Bool
   , fullSign :: Bool }
 
 {- | 'defaultHetcatsOpts' defines the default HetcatsOpts, which are used as
@@ -228,6 +232,7 @@ defaultHetcatsOpts = HcOpt
   , serve = False
   , listen = -1
   , runMMT = False
+  , fullTheories = False
   , fullSign = False }
 
 instance Show HetcatsOpts where
@@ -257,6 +262,7 @@ instance Show HetcatsOpts where
     ++ (if unlit opts then showOpt unlitS else "")
     ++ (if useLibPos opts then showOpt relposS else "")
     ++ (if fullSign opts then showOpt fullSignS else "")
+    ++ (if fullTheories opts then showOpt fullTheoriesS else "")
     ++ case urlCatalog opts of
          [] -> ""
          cs -> showEqOpt urlCatalogS $ intercalate ","
@@ -311,6 +317,7 @@ data Flag =
   | Serve
   | Listen Int
   | UseMMT
+  | FullTheories
   | FullSign
   | UrlCatalog [(String, String)]
 
@@ -348,6 +355,7 @@ makeOpts opts flg = case flg of
     Unlit -> opts { unlit = True }
     RelPos -> opts { useLibPos = True }
     UseMMT -> opts { runMMT = True}
+    FullTheories -> opts { fullTheories = True}
     FullSign -> opts { fullSign = True}
     UrlCatalog m -> opts { urlCatalog = m ++ urlCatalog opts }
     Help -> opts -- skipped
@@ -637,6 +645,7 @@ options = let
     , Option "" [unlitS] (NoArg Unlit) "unlit input source"
     , Option "" [relposS] (NoArg RelPos) "use relative file positions"
     , Option "" [fullSignS] (NoArg FullSign) "xml output full signatures"
+    , Option "" [fullTheoriesS] (NoArg FullTheories) "xml output full theories"
     , Option "O" [outdirS] (ReqArg OutDir "DIR")
       "destination directory for output files"
     , Option "o" [outtypesS] (ReqArg parseOutTypes "OTYPES")
