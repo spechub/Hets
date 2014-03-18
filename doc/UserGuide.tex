@@ -280,6 +280,8 @@ HolLight & x & x & - \\\hline
 Adl & x & x & - \\\hline
 Fpl & x & x & - \\\hline
 EnCL & x & x & x \\\hline
+Hybrid & x & x & - \\\hline
+Hybridize & x & - & -\\\hline
 \end{tabular}
 \end{center}
 \caption{Current degree of \Hets support for the different languages. Languages without prover can still ``borrow'' provers
@@ -446,6 +448,16 @@ see \url{http://www.tptp.org}.
   specifications of engineering calculation methods. For the execution
   of these specifications Hets provides connections to the computer
   algebra systems Mathematica, Maple and Reduce.
+\item[Hybrid] HybridCASL \cite{DBLP:conf/calco/NevesMMB13} extends ModalCASL by implementing
+the characteristic features of hybrid logic, both at the level of syntax and semantics. A comorphism from HybridCASL 
+to CASL is provided.
+
+The method of hybridisation of arbitrary institutions documented in \cite{DBLP:conf/calco/MartinsMDB11}, providing a method to automatically 
+combine the standard properties of hybrid logics with any logic already integrated in Hets.
+Some manual intervention is still required: a parser and a semantics analyser for the sentences of the base
+logic need to be declared at source code level. 
+Currently, the hybridised versions of the following logics may be used in a fully automatic way:
+Propositional, CASL, CoCASL, and any other logic already hybridised.
 \end{description}
 
 Various logics are supported with proof tools. Proof support for the
