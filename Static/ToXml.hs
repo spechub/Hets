@@ -84,7 +84,7 @@ gmorph ga gm@(GMorphism cid (ExtSign ssig _) _ tmor _) =
         sl = Map.toList . Map.filterWithKey (/=) $ symmap_of tid tmor
         in add_attr (mkNameAttr $ language_name cid)
            $ unode "GMorphism" $
-             subnodes "Axioms"
+             subnodes "ComorphismAxioms"
              (map (showSen (targetLogic cid) ga Nothing tsig) tsens)
              ++ map (\ (s, t) -> unode "map" [showSym tid s, showSym tid t]) sl
 
