@@ -72,20 +72,20 @@ isOWLOnto q = qName q == "Ontology" && qPrefix q == Just "owl"
 guessXmlContent :: String -> Either String InType
 guessXmlContent str = case parseXMLDoc str of
   Nothing -> Right GuessIn
-  Just e -> let q = elName e in
-    if isDgXml q then Right DgXml else
-    if isRDF q then
-      Right $ if any (isOWLOnto . elName) $ elChildren e then OWLIn else RDFIn
-    else if isDMU q then Left "DMU" else
-       if isPpXml q then Left ".pp.xml" else Right GuessIn
+  Just e -> case elName e of
+    q | isDgXml q -> Right DgXml
+      | isRDF q -> Right
+         $ if any (isOWLOnto . elName) $ elChildren e then OWLIn else RDFIn
+      | isDMU q -> Left "unexpected DMU xml format"
+      | isPpXml q -> Left "unexpected pp.xml format"
+    _ -> Left "unkown XML format"
 
 guessInput :: MonadIO m => HetcatsOpts -> FilePath -> String -> m InType
 guessInput opts file input = let fty = guess file (intype opts) in
   if elem fty [GuessIn, DgXml, RDFIn] then case guessXmlContent input of
-    Left ty -> fail $ "unexpected xml format: " ++ ty
+    Left ty -> fail ty
     Right ty -> case ty of
       DgXml -> fail "unexpected DGraph xml"
-      GuessIn -> fail "unknown XML format"
       _ -> return ty
   else return fty
 
