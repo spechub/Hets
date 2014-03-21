@@ -83,8 +83,10 @@ guessInput :: MonadIO m => HetcatsOpts -> FilePath -> String -> m InType
 guessInput opts file input = let fty = guess file (intype opts) in
   if elem fty [GuessIn, DgXml, RDFIn] then case guessXmlContent input of
     Left ty -> fail $ "unexpected xml format: " ++ ty
-    Right ty -> if ty == DgXml then fail "unexpected DGraph xml"
-      else return ty
+    Right ty -> case ty of
+      DgXml -> fail "unexpected DGraph xml"
+      GuessIn -> fail "unknown XML format"
+      _ -> return ty
   else return fty
 
 isDgXmlFile :: HetcatsOpts -> FilePath -> String -> Bool
