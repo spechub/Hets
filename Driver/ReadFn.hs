@@ -78,6 +78,7 @@ guessXmlContent str = case parseXMLDoc str of
          $ if any (isOWLOnto . elName) $ elChildren e then OWLIn else RDFIn
       | isDMU q -> Left "unexpected DMU xml format"
       | isPpXml q -> Left "unexpected pp.xml format"
+      | null (qName q) -> Right GuessIn
     _ -> Left "unkown XML format"
 
 guessInput :: MonadIO m => HetcatsOpts -> FilePath -> String -> m InType
