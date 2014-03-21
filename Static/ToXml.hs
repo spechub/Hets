@@ -143,7 +143,8 @@ lnode full ga lenv (_, lbl) =
                    coerceThSens glid lid "xml-lnode" allSens of
                  Just gsens -> subnodes "ImpAxioms"
                     $ map (showSen lid ga Nothing sig) $ toNamedList
-                     $ OMap.filter (`notElem` OMap.elems thsens) gsens
+                     $ OMap.filter ((`notElem` map sentence
+                                    (OMap.elems thsens)) . sentence) gsens
                  _ -> []
                _ -> []
              else []
