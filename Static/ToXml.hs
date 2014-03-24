@@ -72,10 +72,10 @@ dGraph full lenv ln dg =
          subnodes "Global" (annotations ga . convertGlobalAnnos
                             $ removeHetCASLprefixes ga)
          ++ map (lnode full ga lenv) lnodes
-         ++ map (ledge ga dg) ledges
+         ++ map (ledge full ga dg) ledges
 
-gmorph :: GlobalAnnos -> GMorphism -> Element
-gmorph ga gm@(GMorphism cid (ExtSign ssig _) _ tmor _) =
+gmorph :: HetcatsOpts -> GlobalAnnos -> GMorphism -> Element
+gmorph opts ga gm@(GMorphism cid (ExtSign ssig _) _ tmor _) =
   case map_sign cid ssig of
     Result _ mr -> case mr of
       Nothing -> error $ "Static.ToXml.gmorph: " ++ showGlobalDoc ga gm ""
@@ -84,8 +84,8 @@ gmorph ga gm@(GMorphism cid (ExtSign ssig _) _ tmor _) =
         sl = Map.toList . Map.filterWithKey (/=) $ symmap_of tid tmor
         in add_attr (mkNameAttr $ language_name cid)
            $ unode "GMorphism" $
-             subnodes "ComorphismAxioms"
-             (map (showSen (targetLogic cid) ga Nothing tsig) tsens)
+             (if fullTheories opts then [] else subnodes "ComorphismAxioms"
+             $ map (showSen (targetLogic cid) ga Nothing tsig) tsens)
              ++ map (\ (s, t) -> unode "map" [showSym tid s, showSym tid t]) sl
 
 prettyRangeElem :: (GetRange a, Pretty a) => String -> GlobalAnnos -> a
@@ -161,10 +161,10 @@ consStatus cs = case getConsOfStatus cs of
   None -> []
   cStat -> [unode "ConsStatus" $ show cStat]
 
-ledge :: GlobalAnnos -> DGraph -> LEdge DGLinkLab -> Element
-ledge ga dg (f, t, lbl) = let
+ledge :: HetcatsOpts -> GlobalAnnos -> DGraph -> LEdge DGLinkLab -> Element
+ledge opts ga dg (f, t, lbl) = let
   typ = dgl_type lbl
-  mor = gmorph ga $ dgl_morphism lbl
+  mor = gmorph opts ga $ dgl_morphism lbl
   mkMor n = add_attr (mkAttr "morphismsource" $ getNameOfNode n dg) mor
   lnkSt = case thmLinkStatus typ of
          Nothing -> []
