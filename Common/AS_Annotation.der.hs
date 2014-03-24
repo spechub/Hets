@@ -195,6 +195,12 @@ makeNamed a s = SenAttr
 
 type Named s = SenAttr s String
 
+markSen :: String -> Named s -> Named s
+markSen m n = n { senMark = m }
+
+unmark :: Named s -> Named s
+unmark = markSen ""
+
 reName :: (a -> b) -> SenAttr s a -> SenAttr s b
 reName f x = x { senAttr = f $ senAttr x }
 
