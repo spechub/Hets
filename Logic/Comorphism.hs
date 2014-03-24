@@ -88,6 +88,12 @@ class (Language cid,
     cover theoroidal comorphisms as well -}
     map_theory :: cid -> (sign1, [Named sentence1])
                       -> Result (sign2, [Named sentence2])
+    -- map_theory but also consider sentence marks
+    mapMarkedTheory :: cid -> (sign1, [Named sentence1])
+                      -> Result (sign2, [Named sentence2])
+    mapMarkedTheory cid (sig, sens) = do
+      (sig2, sens2) <- map_theory cid (sig, map unmark sens)
+      return (sig2, map (markSen $ language_name cid) sens2)
     map_morphism :: cid -> morphism1 -> Result morphism2
     map_morphism = mapDefaultMorphism
     map_sentence :: cid -> sign1 -> sentence1 -> Result sentence2
@@ -128,7 +134,7 @@ targetSublogic :: Comorphism cid
 targetSublogic cid = fromMaybe (top_sublogic $ targetLogic cid)
                            $ mapSublogic cid $ sourceSublogic cid
 
--- | this function is base on 'map_theory' using no sentences as input
+-- | this function is based on 'map_theory' using no sentences as input
 map_sign :: Comorphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1
@@ -165,7 +171,7 @@ errMapSymbol :: Comorphism cid
          => cid -> sign1 -> symbol1 -> Set.Set symbol2
 errMapSymbol cid _ _ = error $ "no symbol mapping for " ++ show cid
 
--- | use this function instead of 'map_theory'
+-- | use this function instead of 'mapMarkedTheory'
 wrapMapTheory :: Comorphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1
@@ -174,7 +180,7 @@ wrapMapTheory :: Comorphism cid
             => cid -> (sign1, [Named sentence1])
                    -> Result (sign2, [Named sentence2])
 wrapMapTheory cid (sign, sens) =
-  let res = map_theory cid (sign, sens)
+  let res = mapMarkedTheory cid (sign, sens)
       lid1 = sourceLogic cid
       thDoc = show (vcat $ pretty sign : map (print_named lid1) sens)
   in
@@ -202,8 +208,9 @@ mkTheoryMapping :: Monad m => (sign1 -> m (sign2, [Named sentence2]))
                    -> m (sign2, [Named sentence2])
 mkTheoryMapping mapSig mapSen (sign, sens) = do
        (sign', sens') <- mapSig sign
-       sens'' <- mapM (mapNamedM $ mapSen sign) sens
-       return (sign', nameAndDisambiguate $ sens' ++ sens'')
+       sens'' <- mapM (mapNamedM (mapSen sign) . unmark) sens
+       return (sign', nameAndDisambiguate
+         $ map (markSen "SignatureProperty") sens' ++ sens'')
 
 data InclComorphism lid sublogics = InclComorphism
   { inclusion_logic :: lid
