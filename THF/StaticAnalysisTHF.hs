@@ -222,33 +222,18 @@ getSentences (t : rt) dn@(d, ns) = case t of
 Fi_Functors, Fi_Predicates or Assumption
 (They are filtered out in getSentences) -}
 tptpthfToNS :: TPTP_THF -> Named THFFormula
-tptpthfToNS t = case formulaRoleAF t of
-    Definition ->
-           SenAttr { senAttr = show $ pretty $ nameAF t , isAxiom = True
-                   , isDef = True, wasTheorem = False, simpAnno = Nothing
-                   , attrOrigin = Nothing, sentence = thfFormulaAF t }
-    Conjecture ->
-           SenAttr { senAttr = show $ pretty $ nameAF t, isAxiom = False
-                   , isDef = False, wasTheorem = False, simpAnno = Nothing
-                   , attrOrigin = Nothing, sentence = thfFormulaAF t }
-    Negated_Conjecture ->
-           SenAttr { senAttr = show $ pretty $ nameAF t, isAxiom = False
-                   , isDef = False, wasTheorem = False, simpAnno = Nothing
-                   , attrOrigin = Nothing, sentence = thfFormulaAF t }
-    Theorem ->
-           SenAttr { senAttr = show $ pretty $ nameAF t , isAxiom = True
-                   , isDef = False, wasTheorem = True, simpAnno = Nothing
-                   , attrOrigin = Nothing, sentence = thfFormulaAF t }
-    Lemma ->
-           SenAttr { senAttr = show $ pretty $ nameAF t , isAxiom = True
-                   , isDef = False, wasTheorem = True, simpAnno = Nothing
-                   , attrOrigin = Nothing, sentence = thfFormulaAF t }
-    Hypothesis -> -- isAxiom = false
-           SenAttr { senAttr = show $ pretty $ nameAF t , isAxiom = False
-                   , isDef = False, wasTheorem = False, simpAnno = Nothing
-                   , attrOrigin = Nothing, sentence = thfFormulaAF t }
-    _ -> -- Axiom
-           makeNamed (show $ pretty $ nameAF t) (thfFormulaAF t)
+tptpthfToNS f =
+  let s = makeNamed (show $ pretty $ nameAF f) (thfFormulaAF f)
+      t = s { isAxiom = False }
+      w = s { wasTheorem = True }
+  in case formulaRoleAF f of
+    Definition -> s { isDef = True }
+    Conjecture -> t
+    Negated_Conjecture -> t
+    Theorem -> w
+    Lemma -> w
+    Hypothesis -> t
+    _ -> s -- { isAxiom = True, isDef = False, wasTheorem = False }
 
 
 {- -----------------------------------------------------------------------------

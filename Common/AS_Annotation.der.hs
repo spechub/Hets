@@ -178,6 +178,7 @@ data SenAttr s a = SenAttr
          changes from False to True -}
     , simpAnno :: Maybe Bool -- for %simp or %nosimp annotations
     , attrOrigin :: Maybe Id
+    , senMark :: String -- a marker for theoroidal comorphisms
     , sentence :: s } deriving (Eq, Ord, Show)
 
 -- | equip a sentence with a name
@@ -189,6 +190,7 @@ makeNamed a s = SenAttr
   , wasTheorem = False
   , simpAnno = Nothing
   , attrOrigin = Nothing
+  , senMark = ""
   , sentence = s }
 
 type Named s = SenAttr s String

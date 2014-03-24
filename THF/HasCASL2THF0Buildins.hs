@@ -135,14 +135,8 @@ preDefAxioms ids =
            (filter (\ (i, _) -> Set.member i ids) axl)
 
 mkNSD :: Constant -> (Constant -> String) -> Named THFFormula
-mkNSD c f = SenAttr
-        { senAttr = (show . pretty . mkDefName) c
-        , isAxiom = True
-        , isDef = True
-        , wasTheorem = False
-        , simpAnno = Nothing
-        , attrOrigin = Nothing
-        , sentence = genTHFFormula c f }
+mkNSD c f = (makeNamed (show . pretty . mkDefName $ c) $ genTHFFormula c f)
+        { isDef = True }
 
 genTHFFormula :: Constant -> (Constant -> String) -> THFFormula
 genTHFFormula c f = case parse parseTHF "" (f c) of
