@@ -236,6 +236,9 @@ showSen lid ga mt sig ns = let s = sentence ns in add_attrs
           (show . useGlobalAnnos ga . print_named lid
                             . makeNamed "" $ simplify_sen lid sig s)
           : map (showSym lid) (symsOfSen lid s)
+          ++ case senMark ns of
+               "" -> []
+               m -> [unode "ComorphismOrigin" m]
 
 showSym :: (Sentences lid sentence sign morphism symbol) =>
            lid -> symbol -> Element
