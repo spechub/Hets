@@ -204,12 +204,12 @@ date
 checkColore ()
 {
 date
-cd CommonLogic/colore
+pushd CommonLogic/colore
 for i in `find . -name \*.clif`; do ../../hets -v2 -C \
   http://colore.oor.net=http://colore.googlecode.com/svn/trunk/ontologies \
   http://colore.oor.net/`echo $i | sed -e 's+\./++g'`; done \
   > ../../../clif.log 2>&1
-cd ../..
+popd
 }
 
 checkBioPortal ()

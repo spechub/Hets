@@ -1,6 +1,6 @@
 #!/bin/bash -x
 
-export PATH=/home/pub-bkb/bin:/bin:/usr/bin:/opt/local/bin
+export PATH=/home/mac-bkb/bin:/home/mac-bkb/intel/Isabelle/Isabelle/bin:/bin:/usr/bin:/opt/local/bin
 export UDG_HOME=/home/mac-bkb/uDrawGraph-3.1
 export HETS_LIB=/Users/Shared/maeder/haskell/Hets-lib
 
