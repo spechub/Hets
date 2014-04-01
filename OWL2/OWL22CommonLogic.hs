@@ -79,7 +79,9 @@ instance Comorphism
       sourceSublogic OWL22CommonLogic = topS
       targetLogic OWL22CommonLogic = CommonLogic
       mapSublogic OWL22CommonLogic _ = Just ClSl.top
-      map_theory OWL22CommonLogic = mapTheory
+      -- map_theory is not needed when mapMarkedTheory is defined
+      map_theory OWL22CommonLogic = error "map_theory OWL22CommonLogic"
+      mapMarkedTheory OWL22CommonLogic = mapTheory
       map_morphism OWL22CommonLogic = mapMorphism
       map_symbol OWL22CommonLogic _ = mapSymbol
       isInclusionComorphism OWL22CommonLogic = True
@@ -316,7 +318,10 @@ mapTheory (owlSig, owlSens) = do
             setReservedPrefix . mkQName) $ "Datatype" : predefClass
             ++ [topDataProp, bottomDataProp, topObjProp, bottomObjProp]
             ++ datatypeKeys}) nSig
-        cSens = nothingSent : thingDataDisjoint : declarations owlSig ++ cSensI
+        cSens = map (CommonAnno.markSen "OWLbuiltin")
+                  [nothingSent, thingDataDisjoint]
+                ++ map (CommonAnno.markSen "OWLsign") (declarations owlSig)
+                ++ map (CommonAnno.markSen "OWLsen") cSensI
     return (sig, map (CommonAnno.mapNamed addMrs) cSens)
 
 -- | mapping of OWL to CommonLogic_DL formulae
