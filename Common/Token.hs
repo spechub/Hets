@@ -117,17 +117,20 @@ terminatingKeywords =
 -- | keywords starting a library item
 startingKeywords :: [String]
 startingKeywords =
-    [archS, fromS, logicS, newlogicS, refinementS, specS, unitS, viewS]
+    [ archS, fromS, logicS, newlogicS, refinementS, specS, unitS, viewS
+    , ontologyS, alignmentS, diagramS, equivalenceS, newcomorphismS
+    , interpretationS ]
 
 -- | keywords that may follow a defining equal sign
 otherStartKeywords :: [String]
 otherStartKeywords =
-    [closedS, cofreeS, freeS, localS, unitS ++ sS]
+    [closedS, cofreeS, freeS, localS, unitS ++ sS, combineS]
 
 -- | other intermediate keywords
 continuationKeywords :: [String]
 continuationKeywords =
-    [behaviourallyS, getS, givenS, lambdaS, refinedS, resultS, toS, versionS]
+    [ behaviourallyS, getS, givenS, lambdaS, refinedS, resultS, toS, versionS
+    , excludingS ]
 
 -- | reserved keywords
 casl_reserved_words :: [String]

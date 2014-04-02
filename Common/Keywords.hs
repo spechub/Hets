@@ -309,6 +309,9 @@ moduleS = "module"
 ontologyS :: String
 ontologyS = "ontology"
 
+diagramS :: String
+diagramS = "diagram"
+
 relationS :: String
 relationS = "relation"
 

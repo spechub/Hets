@@ -58,7 +58,9 @@ data LIB_ITEM = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) Range
               | Unit_spec_defn SPEC_NAME UNIT_SPEC Range
               -- pos: "unit", "spec", "=", opt "end"
               | Ref_spec_defn SPEC_NAME REF_SPEC Range
-              -- pos: "ref", "spec", "=", opt "end"
+              -- pos: "refinement", "=", opt "end"
+              | Diagram_defn IRI [IRI] [IRI] Range
+              -- pos: "diagram", "=", commas, "excluding", commas, opt "end"
               | Download_items LibName DownloadItems Range
               -- pos: "from", "get", "|->", commas, opt "end"
               | Logic_decl LogicDescr Range
