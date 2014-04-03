@@ -35,7 +35,7 @@ import Common.Lib.State
 import qualified Common.Id as Id
 --import qualified Common.IRI as IRI
 
-import Common.IRI (iriToStringUnsecure, setAnkles)
+import Common.IRI (iriToStringUnsecure, setAngles)
 
 
 
@@ -365,7 +365,7 @@ basicOWL2Analysis :: (OntologyDocument, Sign, GlobalAnnos)
     -> Result (OntologyDocument, ExtSign Sign Entity, [Named Axiom])
 basicOWL2Analysis (inOnt, inSign, ga) = do
     let pm = Map.union (prefixDeclaration inOnt)
-          . Map.map (iriToStringUnsecure . setAnkles False)
+          . Map.map (iriToStringUnsecure . setAngles False)
           . Map.delete "" $ prefix_map ga
         odoc = inOnt { prefixDeclaration = pm }
         fs = ontFrames $ ontology odoc
@@ -389,41 +389,41 @@ findImplied ax sent =
 
 
 addEquiv :: Sign -> Sign  -> [SymbItems] -> [SymbItems] ->
-            Result (Sign, Sign, Sign, 
+            Result (Sign, Sign, Sign,
                      EndoMap Entity, EndoMap Entity)
 addEquiv ssig tsig l1 l2 = do
   let l1' = statSymbItems ssig l1
       l2' = statSymbItems tsig l2
   case (l1', l2') of
     ([rs1], [rs2]) -> do
-      let match1 = filter (\sy -> matchesSym sy rs1) $ Set.toList $ symOf ssig 
+      let match1 = filter (\sy -> matchesSym sy rs1) $ Set.toList $ symOf ssig
           match2 = filter (\sy -> matchesSym sy rs2) $ Set.toList $ symOf tsig
       case
        (match1, match2) of
-          ([e1], [e2]) -> do 
+          ([e1], [e2]) -> do
            if entityKind e1 == entityKind e2 then do
               s <- pairSymbols e1 e2
               sig <- addSymbToSign emptySign s
               sig1 <- addSymbToSign emptySign e1
               sig2 <- addSymbToSign emptySign e2
-              return (sig, sig1, sig2, 
-                         Map.insert e1 s Map.empty, 
+              return (sig, sig1, sig2,
+                         Map.insert e1 s Map.empty,
                          Map.insert e2 s Map.empty)
-             else 
+             else
               error "only symbols of same kind can be equivalent in an alignment"
           _ -> error  $ "non-unique symbol match:" ++ show l1 ++ " " ++ show l2
-    _ -> error "terms not yet supported in alignments"  
+    _ -> error "terms not yet supported in alignments"
 
-corr2theo :: Sign -> Sign -> [SymbItems] -> [SymbItems] -> 
-             EndoMap Entity -> EndoMap Entity -> REL_REF -> 
-             Result (Sign, [Named Axiom], Sign, Sign, 
+corr2theo :: Sign -> Sign -> [SymbItems] -> [SymbItems] ->
+             EndoMap Entity -> EndoMap Entity -> REL_REF ->
+             Result (Sign, [Named Axiom], Sign, Sign,
                      EndoMap Entity, EndoMap Entity)
 corr2theo ssig tsig l1 l2 eMap1 eMap2 rref = do
   let l1' = statSymbItems ssig l1
       l2' = statSymbItems tsig l2
   case (l1', l2') of
     ([rs1], [rs2]) -> do
-      let match1 = filter (\sy -> matchesSym sy rs1) $ Set.toList $ symOf ssig 
+      let match1 = filter (\sy -> matchesSym sy rs1) $ Set.toList $ symOf ssig
           match2 = filter (\sy -> matchesSym sy rs2) $ Set.toList $ symOf tsig
       case
        (match1, match2) of
@@ -438,71 +438,71 @@ corr2theo ssig tsig l1 l2 eMap1 eMap2 rref = do
            sigI <- addSymbToSign sig e1'
            sigB <- addSymbToSign sigI e2'
            case rref of
-            Subs -> do 
+            Subs -> do
              let extPart = mkExtendedEntity e2'
-                 axiom = PlainAxiom extPart $ 
-                           ListFrameBit (Just $ 
-                              case (entityKind e1, entityKind e2) of 
+                 axiom = PlainAxiom extPart $
+                           ListFrameBit (Just $
+                              case (entityKind e1, entityKind e2) of
                                 (Class, Class) -> SubClass
                                 (ObjectProperty, ObjectProperty)-> SubPropertyOf
                                 _ -> error $ "use subsumption only between"
-                                              ++ "classes or roles:" ++ 
-                                              show l1 ++ " " ++ show l2) $ 
+                                              ++ "classes or roles:" ++
+                                              show l1 ++ " " ++ show l2) $
                            ExpressionBit [([], Expression $ cutIRI e1')]
-             return (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2') 
+             return (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2')
             Incomp -> do
              let extPart = mkExtendedEntity e1'
-                 axiom = PlainAxiom extPart $ 
-                           ListFrameBit (Just $ EDRelation Disjoint) $ 
+                 axiom = PlainAxiom extPart $
+                           ListFrameBit (Just $ EDRelation Disjoint) $
                            ExpressionBit [([], Expression $ cutIRI e2')]
-             return (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2')  
+             return (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2')
             IsSubs -> do
              let extPart = mkExtendedEntity e1'
-                 axiom = PlainAxiom extPart $ 
-                           ListFrameBit (Just SubClass) $ 
+                 axiom = PlainAxiom extPart $
+                           ListFrameBit (Just SubClass) $
                            ExpressionBit [([], Expression $ cutIRI e2')]
              return (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2')
             InstOf -> do
              let extPart = mkExtendedEntity e1'
-                 axiom = PlainAxiom extPart $ 
-                           ListFrameBit (Just Types) $ 
+                 axiom = PlainAxiom extPart $
+                           ListFrameBit (Just Types) $
                            ExpressionBit [([], Expression $ cutIRI e2')]
              return
                  (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2')
             HasInst -> do
              let extPart = mkExtendedEntity e2'
-                 axiom = PlainAxiom extPart $ 
-                           ListFrameBit (Just Types) $ 
+                 axiom = PlainAxiom extPart $
+                           ListFrameBit (Just Types) $
                            ExpressionBit [([], Expression $ cutIRI e1')]
              return
                  (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2')
             RelName r -> do
              let extPart = mkExtendedEntity e1'
-                 rQName = QN "" (iriToStringUnsecure r)  
+                 rQName = QN "" (iriToStringUnsecure r)
                              Abbreviated (iriToStringUnsecure r) Id.nullRange
                  sym  = Entity ObjectProperty rQName
                  rSyms = filter (\x -> x == sym) $
                             Set.toList $ symOf tsig
              case rSyms of
-               [] -> error $ "relation " ++ show rQName ++ 
+               [] -> error $ "relation " ++ show rQName ++
                                 " not in " ++ show tsig
                [rsym] -> do
-                 let sym'@(Entity ObjectProperty rQName') = 
+                 let sym'@(Entity ObjectProperty rQName') =
                              Map.findWithDefault rsym rsym eMap2'
-                     axiom = PlainAxiom extPart $ 
-                              ListFrameBit (Just SubClass) $ 
-                               ExpressionBit [([], 
+                     axiom = PlainAxiom extPart $
+                              ListFrameBit (Just SubClass) $
+                               ExpressionBit [([],
                                 ObjectValuesFrom
-                                 SomeValuesFrom 
-                                 (ObjectProp rQName') 
+                                 SomeValuesFrom
+                                 (ObjectProp rQName')
                                  (Expression $ cutIRI e2'))]
                  sigB' <- addSymbToSign sigB sym'
                  sig2' <- addSymbToSign sig2 rsym
-                 --trace ("\n\n" ++ show sigB' ++ "\n" ++ show axiom) $ 
+                 --trace ("\n\n" ++ show sigB' ++ "\n" ++ show axiom) $
                  return
-                   (sigB', [makeNamed "" axiom], sig1, sig2', eMap1', 
+                   (sigB', [makeNamed "" axiom], sig1, sig2', eMap1',
                       Map.union eMap2' $ Map.fromAscList [(rsym, sym')])
                _ -> error $ "too many matches for " ++ show rQName
             _ -> error $ "nyi:" ++ show rref
           _ -> error  $ "non-unique symbol match:" ++ show l1 ++ " " ++ show l2
-    _ -> error "terms not yet supported in alignments"  
+    _ -> error "terms not yet supported in alignments"

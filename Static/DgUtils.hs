@@ -369,7 +369,7 @@ showExt n = let i = extIndex n in extString n ++ if i == 0 then "" else show i
 
 showName :: NodeName -> String
 showName n = let ext = showExt n in
-    iriToStringShortUnsecure (setAnkles False $ getName n)
+    iriToStringShortUnsecure (setAngles False $ getName n)
     ++ if null ext then ext else "__" ++ ext
 
 makeName :: IRI -> NodeName

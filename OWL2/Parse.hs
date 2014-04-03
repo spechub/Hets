@@ -599,4 +599,4 @@ importEntry :: CharParser st QName
 importEntry = pkeyword importC >> uriP
 
 convertPrefixMap :: GA.PrefixMap -> Map.Map String String
-convertPrefixMap = Map.map $ IRI.iriToStringUnsecure . IRI.setAnkles False
+convertPrefixMap = Map.map $ IRI.iriToStringUnsecure . IRI.setAngles False

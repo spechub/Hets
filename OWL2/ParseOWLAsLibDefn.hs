@@ -95,7 +95,7 @@ convertToLibDefN imap o = Lib_defn ln
             Nothing -> setFilePath libstr
           $ iriLibName oname
         imps = map qNameToIRI $ imports ont
-        imps2 = filter ((`elem` is) . show . setAnkles False) imps
+        imps2 = filter ((`elem` is) . show . setAngles False) imps
         oname = qNameToIRI $ name ont
-        libstr = show $ setAnkles False oname
+        libstr = show $ setAngles False oname
         imp_libs = map (addDownload False) imps2

@@ -1051,7 +1051,7 @@ codeOutAnno (StripComment stripCs) m a = case a of
                   _ -> Comment) (percent <> lparen) l annoRparen
     Prefix_anno pm _ -> annoLparen prefixS <> vcat
         (map ( \ (s, i) -> text (s ++ ":")
-                <+> text (iriToStringUnsecure $ setAnkles True i)) pm)
+                <+> text (iriToStringUnsecure $ setAngles True i)) pm)
         <> annoRparen
     Semantic_anno sa _ -> annoLine $ lookupSemanticAnno sa
 

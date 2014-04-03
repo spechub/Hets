@@ -64,7 +64,7 @@ dGraph full lenv ln dg =
       lnodes = labNodes body
       ledges = labEdges body
   in add_attrs [ mkAttr "filename" $ getFilePath ln
-               , mkAttr "libname" . show $ setAnkles False $ getLibId ln
+               , mkAttr "libname" . show $ setAngles False $ getLibId ln
                , mkAttr "dgnodes" . show $ length lnodes
                , mkAttr "dgedges" . show $ length ledges
                , mkAttr "nextlinkid" . showEdgeId $ getNewEdgeId dg ]
@@ -113,7 +113,7 @@ lnode full ga lenv (_, lbl) =
     $ case nodeInfo lbl of
           DGRef li rf ->
             [ add_attrs
-              [ mkAttr "library" $ show $ setAnkles False $ getLibId li
+              [ mkAttr "library" $ show $ setAngles False $ getLibId li
               , mkAttr "location" $ getFilePath li
               , mkAttr "node" $ getNameOfNode rf $ lookupDGraph li lenv ]
             $ unode "Reference" () ]
@@ -179,7 +179,7 @@ ledge opts ga dg (f, t, lbl) = let
   , mkAttr "linkid" $ showEdgeId $ dgl_id lbl
   ] ++ case dgl_origin lbl of
          DGLinkView i _ ->
-           [mkNameAttr . iriToStringShortUnsecure $ setAnkles False i]
+           [mkNameAttr . iriToStringShortUnsecure $ setAngles False i]
          _ -> [])
   $ unode "DGLink"
     $ unode "Type" (getDGLinkType lbl) : lnkSt

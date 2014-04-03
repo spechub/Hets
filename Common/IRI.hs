@@ -69,7 +69,7 @@ module Common.IRI
     -- * Conversion
     , simpleIdToIRI
     , deleteQuery
-    , setAnkles
+    , setAngles
     ) where
 
 import Text.ParserCombinators.Parsec
@@ -112,7 +112,7 @@ data IRI = IRI
     , abbrevPath :: String        -- ^ @abbrevPath@
     , abbrevQuery :: String       -- ^ @abbrevQueryh@
     , abbrevFragment :: String    -- ^ @abbrevFragment@
-    , hasAnkles :: Bool           -- ^ IRI in ankle brackets
+    , hasAngles :: Bool           -- ^ IRI in angle brackets
     , iriPos :: Range             -- ^ position
     }
 
@@ -135,7 +135,7 @@ nullIRI = IRI
     , abbrevPath = ""
     , abbrevQuery = ""
     , abbrevFragment = ""
-    , hasAnkles = False
+    , hasAngles = False
     , iriPos = nullRange
     }
 
@@ -284,10 +284,10 @@ iriCurie :: IRIParser st IRI
 iriCurie = brackets iri <|> curie
 
 brackets :: IRIParser st IRI -> IRIParser st IRI
-brackets p = ankles p << skipSmart
+brackets p = angles p << skipSmart
 
-ankles :: IRIParser st IRI -> IRIParser st IRI
-ankles p = char '<' >> fmap (\ i -> i { hasAnkles = True }) p << char '>'
+angles :: IRIParser st IRI -> IRIParser st IRI
+angles p = char '<' >> fmap (\ i -> i { hasAngles = True }) p << char '>'
 
 -- | Parses a CURIE <http://www.w3.org/TR/rdfa-core/#s_curies>
 curie :: IRIParser st IRI
@@ -398,7 +398,7 @@ simpleIRI := a finite sequence of characters matching the PN_LOCAL production
 IRI := fullIRI | abbreviatedIRI | simpleIRI -}
 
 iriManchester :: IRIParser st IRI
-iriManchester = iriWithPos $ ankles iriReference
+iriManchester = iriWithPos $ angles iriReference
   <|> do
     PNameLn prefix loc <- try pnameLn
     return nullIRI
@@ -762,7 +762,7 @@ iriToStringFull iuserinfomap (IRI { iriScheme = scheme
                                   , iriPath = path
                                   , iriQuery = query
                                   , iriFragment = fragment
-                                  , hasAnkles = b
+                                  , hasAngles = b
                                   }) s =
   (if b then "<" else "") ++ scheme
   ++ iriAuthToString iuserinfomap authority ""
@@ -1043,14 +1043,14 @@ expandCurie prefixMap c =
                                    , abbrevPath = abbrevPath c
                                    , iriPos = iriPos c }
 
-setAnkles :: Bool -> IRI -> IRI
-setAnkles b i = i { hasAnkles = b }
+setAngles :: Bool -> IRI -> IRI
+setAngles b i = i { hasAngles = b }
 
 {- |'mergeCurie' merges the CURIE @c@ into IRI @i@, appending their string
 representations -}
 mergeCurie :: IRI -> IRI -> Maybe IRI
 mergeCurie c i =
-  parseIRIManchester $ '<' : iriToStringFull id (setAnkles False i) ""
+  parseIRIManchester $ '<' : iriToStringFull id (setAngles False i) ""
     ++ iriToStringAbbrevMerge c ">"
 
 deleteQuery :: IRI -> IRI

@@ -94,14 +94,14 @@ filePathToIri fp = fromMaybe (error $ "filePathToIri: " ++ fp)
   . parseIRIReference $ escapeIRIString isUnescapedInIRI fp
 
 filePathToLibId :: FilePath -> IRI
-filePathToLibId = setAnkles True . filePathToIri
+filePathToLibId = setAngles True . filePathToIri
 
 setFilePath :: FilePath -> LibName -> LibName
 setFilePath fp ln =
   ln { locIRI = Just $ filePathToIri fp }
 
 libToFileName :: LibName -> FilePath
-libToFileName = iriToStringUnsecure . setAnkles False . getLibId
+libToFileName = iriToStringUnsecure . setAngles False . getLibId
 
 getFilePath :: LibName -> FilePath
 getFilePath = maybe "" iriToStringUnsecure . locIRI

@@ -36,11 +36,11 @@ import Text.XML.Light
 import Data.Maybe
 
 iriToStr :: IRI -> String
-iriToStr = iriToStringShortUnsecure . setAnkles False
+iriToStr = iriToStringShortUnsecure . setAngles False
 
 xmlLibDefn :: LogicGraph -> GlobalAnnos -> LIB_DEFN -> Element
 xmlLibDefn lg ga (Lib_defn n il rg an) =
-  add_attrs (mkNameAttr (show $ setAnkles False $ getLibId n) : rgAttrs rg)
+  add_attrs (mkNameAttr (show $ setAngles False $ getLibId n) : rgAttrs rg)
      $ unode "Lib" $ annos "Global" ga an ++ libItems lg ga il
 
 libItems :: LogicGraph -> GlobalAnnos -> [Annoted LIB_ITEM] -> [Element]
