@@ -31,13 +31,8 @@ import Common.Result
 import Common.GlobalAnnotations hiding (PrefixMap)
 import Common.ExtSign
 import Common.Lib.State
-
 import qualified Common.Id as Id
---import qualified Common.IRI as IRI
-
 import Common.IRI (iriToStringUnsecure, setAngles)
-
-
 
 import Control.Monad
 
@@ -388,7 +383,7 @@ findImplied ax sent =
    else sent { isAxiom = True }
 
 
-addEquiv :: Sign -> Sign  -> [SymbItems] -> [SymbItems] ->
+addEquiv :: Sign -> Sign -> [SymbItems] -> [SymbItems] ->
             Result (Sign, Sign, Sign,
                      EndoMap Entity, EndoMap Entity)
 addEquiv ssig tsig l1 l2 = do
@@ -396,11 +391,11 @@ addEquiv ssig tsig l1 l2 = do
       l2' = statSymbItems tsig l2
   case (l1', l2') of
     ([rs1], [rs2]) -> do
-      let match1 = filter (\sy -> matchesSym sy rs1) $ Set.toList $ symOf ssig
-          match2 = filter (\sy -> matchesSym sy rs2) $ Set.toList $ symOf tsig
+      let match1 = filter (`matchesSym` rs1) $ Set.toList $ symOf ssig
+          match2 = filter (`matchesSym` rs2) $ Set.toList $ symOf tsig
       case
        (match1, match2) of
-          ([e1], [e2]) -> do
+          ([e1], [e2]) ->
            if entityKind e1 == entityKind e2 then do
               s <- pairSymbols e1 e2
               sig <- addSymbToSign emptySign s
@@ -410,9 +405,9 @@ addEquiv ssig tsig l1 l2 = do
                          Map.insert e1 s Map.empty,
                          Map.insert e2 s Map.empty)
              else
-              error "only symbols of same kind can be equivalent in an alignment"
-          _ -> error  $ "non-unique symbol match:" ++ show l1 ++ " " ++ show l2
-    _ -> error "terms not yet supported in alignments"
+              fail "only symbols of same kind can be equivalent in an alignment"
+          _ -> fail $ "non-unique symbol match:" ++ show l1 ++ " " ++ show l2
+    _ -> fail "terms not yet supported in alignments"
 
 corr2theo :: Sign -> Sign -> [SymbItems] -> [SymbItems] ->
              EndoMap Entity -> EndoMap Entity -> REL_REF ->
@@ -423,8 +418,8 @@ corr2theo ssig tsig l1 l2 eMap1 eMap2 rref = do
       l2' = statSymbItems tsig l2
   case (l1', l2') of
     ([rs1], [rs2]) -> do
-      let match1 = filter (\sy -> matchesSym sy rs1) $ Set.toList $ symOf ssig
-          match2 = filter (\sy -> matchesSym sy rs2) $ Set.toList $ symOf tsig
+      let match1 = filter (`matchesSym` rs1) $ Set.toList $ symOf ssig
+          match2 = filter (`matchesSym` rs2) $ Set.toList $ symOf tsig
       case
        (match1, match2) of
           ([e1], [e2]) -> do
@@ -444,7 +439,8 @@ corr2theo ssig tsig l1 l2 eMap1 eMap2 rref = do
                            ListFrameBit (Just $
                               case (entityKind e1, entityKind e2) of
                                 (Class, Class) -> SubClass
-                                (ObjectProperty, ObjectProperty)-> SubPropertyOf
+                                (ObjectProperty, ObjectProperty) ->
+                                    SubPropertyOf
                                 _ -> error $ "use subsumption only between"
                                               ++ "classes or roles:" ++
                                               show l1 ++ " " ++ show l2) $
@@ -480,11 +476,11 @@ corr2theo ssig tsig l1 l2 eMap1 eMap2 rref = do
              let extPart = mkExtendedEntity e1'
                  rQName = QN "" (iriToStringUnsecure r)
                              Abbreviated (iriToStringUnsecure r) Id.nullRange
-                 sym  = Entity ObjectProperty rQName
-                 rSyms = filter (\x -> x == sym) $
+                 sym = Entity ObjectProperty rQName
+                 rSyms = filter (== sym) $
                             Set.toList $ symOf tsig
              case rSyms of
-               [] -> error $ "relation " ++ show rQName ++
+               [] -> fail $ "relation " ++ show rQName ++
                                 " not in " ++ show tsig
                [rsym] -> do
                  let sym'@(Entity ObjectProperty rQName') =
@@ -498,11 +494,10 @@ corr2theo ssig tsig l1 l2 eMap1 eMap2 rref = do
                                  (Expression $ cutIRI e2'))]
                  sigB' <- addSymbToSign sigB sym'
                  sig2' <- addSymbToSign sig2 rsym
-                 --trace ("\n\n" ++ show sigB' ++ "\n" ++ show axiom) $
                  return
                    (sigB', [makeNamed "" axiom], sig1, sig2', eMap1',
                       Map.union eMap2' $ Map.fromAscList [(rsym, sym')])
-               _ -> error $ "too many matches for " ++ show rQName
-            _ -> error $ "nyi:" ++ show rref
-          _ -> error  $ "non-unique symbol match:" ++ show l1 ++ " " ++ show l2
-    _ -> error "terms not yet supported in alignments"
+               _ -> fail $ "too many matches for " ++ show rQName
+            _ -> fail $ "nyi:" ++ show rref
+          _ -> fail $ "non-unique symbol match:" ++ show l1 ++ " " ++ show l2
+    _ -> fail "terms not yet supported in alignments"
