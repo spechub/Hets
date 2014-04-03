@@ -73,7 +73,7 @@ showQU :: QName -> String
 showQU (QN pre local _ _ _) =
     if null pre then local else pre ++ ":" ++ local
 
--- | show QName in ankle brackets as full iris
+-- | show QName in angle brackets as full iris
 showQI :: QName -> String
 showQI = ('<' :) . (++ ">") . showQU
 
