@@ -151,7 +151,7 @@ instance Logic OWL2 ProfSub OntologyDocument Axiom SymbItems SymbMapItems
 #endif
 
 instance SemiLatticeWithTop ProfSub where
-    join = maxS
+    lub = maxS
     top = topS
 
 instance SublogicName ProfSub where

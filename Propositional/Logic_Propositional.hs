@@ -173,7 +173,7 @@ instance StaticAnalysis Propositional
 
 -- | Sublogics
 instance SemiLatticeWithTop PropSL where
-    join = sublogics_max
+    lub = sublogics_max
     top = Sublogic.top
 
 instance MinSublogic PropSL BASIC_SPEC where

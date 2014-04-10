@@ -54,7 +54,7 @@ instance Sentences HolLight Sentence Sign HolLightMorphism () where
 
 -- | Sublogics
 instance SemiLatticeWithTop HolLightSL where
-    join _ _ = Top
+    lub _ _ = Top
     top = Top
 
 instance MinSublogic HolLightSL () where

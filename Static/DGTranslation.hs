@@ -134,7 +134,7 @@ testAndGetSublogicFromEdge l@(_, _, lbl) =
       let tlid = targetLogic cid'
       lsign' <- coercePlainSign (sourceLogic cid') tlid
         (showLEdge l ++ " is not homogeneous.") lsign
-      return $ G_sublogics tlid $ join (minSublogic lsign' )
+      return $ G_sublogics tlid $ lub (minSublogic lsign' )
         $ minSublogic lmorphism
 
 getSubLogicsFromNodes :: AnyLogic -> LNode DGNodeLab -> Result G_sublogics

@@ -186,7 +186,7 @@ wrapMapTheory cid (sign, sens) =
   in
   if isIdComorphism $ Comorphism cid then res else case sourceSublogic cid of
         sub -> case minSublogic sign of
-          sigLog -> case foldl join sigLog
+          sigLog -> case foldl lub sigLog
                     $ map (minSublogic . sentence) sens of
             senLog ->
               if isSubElem senLog sub

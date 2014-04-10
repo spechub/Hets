@@ -122,7 +122,7 @@ instance StaticAnalysis HasCASL BasicSpec Sentence
     final_union HasCASL = merge
 
 instance SemiLatticeWithTop Sublogic where
-    join s = sublogicUp . sublogic_max s
+    lub s = sublogicUp . sublogic_max s
     top = topLogic
 
 instance SublogicName Sublogic where

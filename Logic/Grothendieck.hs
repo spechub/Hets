@@ -375,7 +375,7 @@ isProperSublogic a b = isSublogic a b && a /= b
 joinSublogics :: G_sublogics -> G_sublogics -> Maybe G_sublogics
 joinSublogics (G_sublogics lid1 l1) (G_sublogics lid2 l2) =
     case coerceSublogic lid1 lid2 "coerce Sublogic" l1 of
-      Just sl -> Just (G_sublogics lid2 (join sl l2))
+      Just sl -> Just (G_sublogics lid2 (lub sl l2))
       Nothing -> Nothing
 
 -- | index for morphisms

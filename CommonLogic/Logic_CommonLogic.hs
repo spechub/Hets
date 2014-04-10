@@ -138,7 +138,7 @@ instance StaticAnalysis CommonLogic
 
 -- | Sublogics
 instance SemiLatticeWithTop CommonLogicSL where
-    join = sublogics_max
+    lub = sublogics_max
     top = CommonLogic.Sublogic.top
 
 instance MinSublogic CommonLogicSL BASIC_SPEC where

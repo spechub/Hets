@@ -177,7 +177,7 @@ instance SublogicName CASL_DL_SL where
     sublogicName SROIQ = show SROIQ
 
 instance SemiLatticeWithTop CASL_DL_SL where
-    join _ _ = SROIQ
+    lub _ _ = SROIQ
     top = SROIQ
 
 instance ProjectSublogic CASL_DL_SL Symbol where

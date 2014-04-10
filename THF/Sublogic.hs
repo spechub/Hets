@@ -15,7 +15,7 @@ Sublogics for THF
 module THF.Sublogic where
 
 import THF.As
-import Logic.Logic hiding (join)
+import Logic.Logic
 
 data THFCoreSl = THF | THFP | THF0 deriving (Ord, Show, Eq)
 
@@ -36,8 +36,8 @@ joinCoreSl THFP _ = THFP
 joinCoreSl _ THFP = THFP
 joinCoreSl _ _ = THF0
 
-join :: THFSl -> THFSl -> THFSl
-join sl1 sl2 = THFSl {
+joinSL :: THFSl -> THFSl -> THFSl
+joinSL sl1 sl2 = THFSl {
  core = joinCoreSl (core sl1) (core sl2),
  ext_Poly = ext_Poly sl1 || ext_Poly sl2 }
 
@@ -58,16 +58,16 @@ sublogics_all = [tHF0, tHF0_P,
 
 instance MinSublogic THFSl THFFormula where
  minSublogic f = case f of
-   TF_THF_Logic_Formula f' -> join tHF0 $ minSublogic f'
-   TF_THF_Sequent s -> join tHF $ minSublogic s
-   T0F_THF_Typed_Const tc -> join tHF0 $ minSublogic tc -- fixme: Not in THF?
+   TF_THF_Logic_Formula f' -> joinSL tHF0 $ minSublogic f'
+   TF_THF_Sequent s -> joinSL tHF $ minSublogic s
+   T0F_THF_Typed_Const tc -> joinSL tHF0 $ minSublogic tc -- fixme: Not in THF?
 
 instance MinSublogic THFSl THFLogicFormula where
  minSublogic f = case f of
-   TLF_THF_Binary_Formula b -> join tHF0 $ minSublogic b
-   TLF_THF_Unitary_Formula u -> join tHF0 $ minSublogic u
-   TLF_THF_Type_Formula tf -> join tHF $ minSublogic tf
-   TLF_THF_Sub_Type st -> join tHF $ minSublogic st
+   TLF_THF_Binary_Formula b -> joinSL tHF0 $ minSublogic b
+   TLF_THF_Unitary_Formula u -> joinSL tHF0 $ minSublogic u
+   TLF_THF_Type_Formula tf -> joinSL tHF $ minSublogic tf
+   TLF_THF_Sub_Type st -> joinSL tHF $ minSublogic st
 
 instance MinSublogic THFSl THFSequent where
  minSublogic _ = tHF
@@ -79,29 +79,29 @@ instance MinSublogic THFSl THFTypedConst where
 
 instance MinSublogic THFSl THFBinaryFormula where
  minSublogic b = case b of
-   TBF_THF_Binary_Pair f1 c f2 -> join tHF0 (join (minSublogic f1)
-    (join (minSublogic c) (minSublogic f2)))
-   TBF_THF_Binary_Tuple bt -> join tHF0 $ minSublogic bt
-   TBF_THF_Binary_Type bt -> join tHF $ minSublogic bt
+   TBF_THF_Binary_Pair f1 c f2 -> joinSL tHF0 (joinSL (minSublogic f1)
+    (joinSL (minSublogic c) (minSublogic f2)))
+   TBF_THF_Binary_Tuple bt -> joinSL tHF0 $ minSublogic bt
+   TBF_THF_Binary_Type bt -> joinSL tHF $ minSublogic bt
 
 instance MinSublogic THFSl THFUnitaryFormula where
  minSublogic u = case u of
-   TUF_THF_Quantified_Formula qf -> join tHF0 $ minSublogic qf
-   TUF_THF_Unary_Formula uc f -> join tHF0 $ join (minSublogic uc)
+   TUF_THF_Quantified_Formula qf -> joinSL tHF0 $ minSublogic qf
+   TUF_THF_Unary_Formula uc f -> joinSL tHF0 $ joinSL (minSublogic uc)
                                                   (minSublogic f)
-   TUF_THF_Atom a -> join tHF0 $ minSublogic a
-   TUF_THF_Tuple uts -> foldr (join . minSublogic) tHFP uts
-   TUF_THF_Conditional f1 f2 f3 -> join tHF $ join (minSublogic f1)
-                                 (join (minSublogic f2) (minSublogic f3))
-   TUF_THF_Logic_Formula_Par f -> join tHF0 $ minSublogic f
-   T0UF_THF_Abstraction vs u' -> join (foldr (join . minSublogic) tHF0 vs) $
+   TUF_THF_Atom a -> joinSL tHF0 $ minSublogic a
+   TUF_THF_Tuple uts -> foldr (joinSL . minSublogic) tHFP uts
+   TUF_THF_Conditional f1 f2 f3 -> joinSL tHF $ joinSL (minSublogic f1)
+                                 (joinSL (minSublogic f2) (minSublogic f3))
+   TUF_THF_Logic_Formula_Par f -> joinSL tHF0 $ minSublogic f
+   T0UF_THF_Abstraction vs u' -> joinSL (foldr (joinSL . minSublogic) tHF0 vs) $
                                        minSublogic u'
 
 instance MinSublogic THFSl THFTypeFormula where
  minSublogic tf = case tf of
-   TTF_THF_Type_Formula tf' tp -> join tHF $ join (minSublogic tf')
+   TTF_THF_Type_Formula tf' tp -> joinSL tHF $ joinSL (minSublogic tf')
                                                   (minSublogic tp)
-   TTF_THF_Typed_Const _ tp -> join tHF $ minSublogic tp
+   TTF_THF_Typed_Const _ tp -> joinSL tHF $ minSublogic tp
 
 instance MinSublogic THFSl THFSubType where
  minSublogic _ = tHF
@@ -111,34 +111,34 @@ instance MinSublogic THFSl THFPairConnective where
 
 instance MinSublogic THFSl THFBinaryTuple where
  minSublogic bt = case bt of
-   TBT_THF_Or_Formula ufs -> foldr (join . minSublogic) tHF0 ufs
-   TBT_THF_And_Formula ufs -> foldr (join . minSublogic) tHF0 ufs
-   TBT_THF_Apply_Formula ufs -> foldr (join . minSublogic) tHF0 ufs
+   TBT_THF_Or_Formula ufs -> foldr (joinSL . minSublogic) tHF0 ufs
+   TBT_THF_And_Formula ufs -> foldr (joinSL . minSublogic) tHF0 ufs
+   TBT_THF_Apply_Formula ufs -> foldr (joinSL . minSublogic) tHF0 ufs
 
 instance MinSublogic THFSl THFBinaryType where
  minSublogic bt = case bt of
    TBT_THF_Mapping_Type uts ->
-    join tHF0 $ foldr (join . minSublogic) tHF0 uts
+    joinSL tHF0 $ foldr (joinSL . minSublogic) tHF0 uts
    TBT_THF_Xprod_Type uts ->
-    foldr (join . minSublogic) tHFP uts
+    foldr (joinSL . minSublogic) tHFP uts
    TBT_THF_Union_Type uts ->
-    foldr (join . minSublogic) tHF uts
+    foldr (joinSL . minSublogic) tHF uts
    T0BT_THF_Binary_Type_Par bt' -> minSublogic bt'
   {- fixme: maybe we need to check TUT_THF_Unitary_Formula for ShortTypes
   fixme: how does this differ from THF? -}
 
 instance MinSublogic THFSl THFQuantifiedFormula where
  minSublogic qf = case qf of
-   TQF_THF_Quantified_Formula qf' vs u -> join (minSublogic u) $
-                                         join (minSublogic qf')
-                                          (foldr (join . minSublogic) tHF0 vs)
-   T0QF_THF_Quantified_Var qf' vs u -> join (minSublogic u) $
-                                         join (minSublogic qf')
-                                          (foldr (join . minSublogic) tHF0 vs)
+   TQF_THF_Quantified_Formula qf' vs u -> joinSL (minSublogic u) $
+                                         joinSL (minSublogic qf')
+                                          (foldr (joinSL . minSublogic) tHF0 vs)
+   T0QF_THF_Quantified_Var qf' vs u -> joinSL (minSublogic u) $
+                                         joinSL (minSublogic qf')
+                                          (foldr (joinSL . minSublogic) tHF0 vs)
  {- note: T0QF_THF_Quantified_Var in THF0 is pretty much the same as
  TQF_THF_Quantified_Formula in THF (cf. As.hs 190 ff.)
  Maybe we should merge the two constructors? -}
-   T0QF_THF_Quantified_Novar qf' u -> join (minSublogic qf')
+   T0QF_THF_Quantified_Novar qf' u -> joinSL (minSublogic qf')
                                            (minSublogic u)
  -- fixme: not in THF?!?
 
@@ -153,11 +153,11 @@ instance MinSublogic THFSl THFAtom where
    TA_Term _ -> tHF
    TA_THF_Conn_Term conn ->
      case conn of
-       TCT_THF_Pair_Connective pc -> join tHF $ minSublogic pc
+       TCT_THF_Pair_Connective pc -> joinSL tHF $ minSublogic pc
        TCT_Assoc_Connective _ -> tHF0
-       TCT_THF_Unary_Connective uc -> join tHF0 $ minSublogic uc
-       T0CT_THF_Quantifier qf -> join tHF0 $ minSublogic qf
-   TA_Defined_Type df -> join tHF $ minSublogic df
+       TCT_THF_Unary_Connective uc -> joinSL tHF0 $ minSublogic uc
+       T0CT_THF_Quantifier qf -> joinSL tHF0 $ minSublogic qf
+   TA_Defined_Type df -> joinSL tHF $ minSublogic df
    TA_Defined_Plain_Formula _ -> tHF
    TA_System_Type _ -> tHF
    TA_System_Atomic_Formula _ -> tHF
@@ -169,7 +169,7 @@ instance MinSublogic THFSl THFAtom where
 
 instance MinSublogic THFSl THFVariable where
  minSublogic v = case v of
-   TV_THF_Typed_Variable _ t -> join tHF0 $ minSublogic t
+   TV_THF_Typed_Variable _ t -> joinSL tHF0 $ minSublogic t
    _ -> tHF0
 
 instance MinSublogic THFSl THFQuantifier where
@@ -183,20 +183,20 @@ instance MinSublogic THFSl Quantifier where
 
 instance MinSublogic THFSl THFTopLevelType where
  minSublogic tp = case tp of
-   TTLT_THF_Logic_Formula f -> join tHF $ minSublogic f
+   TTLT_THF_Logic_Formula f -> joinSL tHF $ minSublogic f
    -- fixme: maybe we need to check for ShortTypes extension?
    T0TLT_Constant _ -> tHF0
    T0TLT_Variable _ -> tHF0_P
-   T0TLT_Defined_Type df -> join tHF0 $ minSublogic df
+   T0TLT_Defined_Type df -> joinSL tHF0 $ minSublogic df
    T0TLT_System_Type _ -> tHF0
-   T0TLT_THF_Binary_Type bt -> join tHF0 $ minSublogic bt
+   T0TLT_THF_Binary_Type bt -> joinSL tHF0 $ minSublogic bt
  -- fixme: how do all these THF0 types differ from THF?
 
 instance MinSublogic THFSl THFTypeableFormula where
  minSublogic tf = case tf of
-   TTyF_THF_Atom a -> join tHF $ minSublogic a
-   TTyF_THF_Tuple ts -> foldr (join . minSublogic) tHFP ts
-   TTyF_THF_Logic_Formula f -> join tHF $ minSublogic f
+   TTyF_THF_Atom a -> joinSL tHF $ minSublogic a
+   TTyF_THF_Tuple ts -> foldr (joinSL . minSublogic) tHFP ts
+   TTyF_THF_Logic_Formula f -> joinSL tHF $ minSublogic f
 
 instance MinSublogic THFSl DefinedType where
  minSublogic df = case df of
@@ -211,10 +211,10 @@ instance MinSublogic THFSl DefinedType where
 
 instance MinSublogic THFSl THFUnitaryType where
  minSublogic ut = case ut of
-   TUT_THF_Unitary_Formula f -> join tHF $ minSublogic f
+   TUT_THF_Unitary_Formula f -> joinSL tHF $ minSublogic f
    T0UT_Constant _ -> tHF0
    T0UT_Variable _ -> tHF0
-   T0UT_Defined_Type df -> join tHF0 $ minSublogic df
+   T0UT_Defined_Type df -> joinSL tHF0 $ minSublogic df
    T0UT_System_Type _ -> tHF0
-   T0UT_THF_Binary_Type_Par bt -> join tHF0 $ minSublogic bt
+   T0UT_THF_Binary_Type_Par bt -> joinSL tHF0 $ minSublogic bt
  -- fixme: how do all these THF0 types differ from THF?

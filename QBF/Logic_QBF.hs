@@ -150,7 +150,7 @@ instance StaticAnalysis QBF
 
 -- | Sublogics
 instance SemiLatticeWithTop QBFSL where
-    join = sublogicsMax
+    lub = sublogicsMax
     top = Sublogic.top
 
 instance MinSublogic QBFSL BASICSPEC where

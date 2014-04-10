@@ -93,11 +93,11 @@ instance Logic THF SL.THFSl BasicSpecTHF THFFormula () ()
 -- Sublogics
 
 instance SemiLatticeWithTop SL.THFSl where
- join = SL.join
+ lub = SL.joinSL
  top = SL.tHF
 
 instance MinSublogic SL.THFSl BasicSpecTHF where
- minSublogic (BasicSpecTHF xs) = foldr (SL.join .
+ minSublogic (BasicSpecTHF xs) = foldr (SL.joinSL .
     (\ x -> case x of
      TPTP_THF_Annotated_Formula _ _ f _ -> minSublogic f
      _ -> SL.tHF0
@@ -113,19 +113,19 @@ instance MinSublogic SL.THFSl () where
  minSublogic _ = SL.tHF0
 
 instance MinSublogic SL.THFSl SignTHF where
- minSublogic (Sign tp c _) = join (Data.Map.fold
-   (\ t sl -> join sl $ minSublogic $ typeKind t)
+ minSublogic (Sign tp c _) = lub (Data.Map.fold
+   (\ t sl -> lub sl $ minSublogic $ typeKind t)
    SL.tHF0 tp)
   (Data.Map.fold
-   (\ cs sl -> join sl $ minSublogic $ constType cs)
+   (\ cs sl -> lub sl $ minSublogic $ constType cs)
    SL.tHF0 c)
 
 instance MinSublogic SL.THFSl Type where
- minSublogic (ProdType tps) = foldr (SL.join . minSublogic) SL.tHFP tps
+ minSublogic (ProdType tps) = foldr (SL.joinSL . minSublogic) SL.tHFP tps
  minSublogic TType = SL.tHF0
  minSublogic OType = SL.tHF0
  minSublogic IType = SL.tHF0
- minSublogic (MapType t1 t2) = SL.join (minSublogic t1) (minSublogic t2)
+ minSublogic (MapType t1 t2) = SL.joinSL (minSublogic t1) (minSublogic t2)
  minSublogic (CType _) = SL.tHF0
  minSublogic (SType _) = SL.tHF0
  minSublogic (VType _) = SL.tHF0_P
@@ -135,7 +135,7 @@ instance MinSublogic SL.THFSl Kind where
  minSublogic Kind = SL.tHF0
 
 instance MinSublogic SL.THFSl MorphismTHF where
- minSublogic (MkMorphism s1 s2) = join (minSublogic s1)
+ minSublogic (MkMorphism s1 s2) = lub (minSublogic s1)
                                             (minSublogic s2)
 
 instance ProjectSublogicM SL.THFSl SymbolTHF where

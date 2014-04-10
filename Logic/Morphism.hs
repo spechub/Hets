@@ -239,8 +239,8 @@ instance (Morphism cid
 instance (SemiLatticeWithTop sublogics1, SemiLatticeWithTop sublogics2)
          => SemiLatticeWithTop (SublogicsPair sublogics1 sublogics2) where
             top = SublogicsPair top top
-            join (SublogicsPair x1 y1) (SublogicsPair x2 y2) =
-                SublogicsPair (join x1 x2) (join y1 y2)
+            lub (SublogicsPair x1 y1) (SublogicsPair x2 y2) =
+                SublogicsPair (lub x1 x2) (lub y1 y2)
 
 instance (SemiLatticeWithTop sublogics1, MinSublogic sublogics2 sentence2)
   => MinSublogic (SublogicsPair sublogics1 sublogics2) (S2 sentence2) where

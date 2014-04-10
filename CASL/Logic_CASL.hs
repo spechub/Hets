@@ -134,7 +134,7 @@ instance Syntax CASL CASLBasicSpec
 -- lattices (for sublogics)
 
 instance Lattice a => SemiLatticeWithTop (CASL_SL a) where
-    join = sublogics_max
+    lub = sublogics_max
     top = SL.top
 
 class Lattice a => MinSL a f where

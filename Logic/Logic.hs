@@ -371,8 +371,8 @@ class (Language lid, Category sign morphism, Ord sentence,
       symsOfSen _ _ = []
       -- | combine two symbols into another one
       pair_symbols :: lid -> symbol -> symbol -> Result symbol
-      pair_symbols lid _ _ = error $ "pair_symbols nyi for logic "++ show lid 
- 
+      pair_symbols lid _ _ = error $ "pair_symbols nyi for logic "++ show lid
+
 -- | makes a singleton list from the given value
 singletonList :: a -> [a]
 singletonList x = [x]
@@ -592,19 +592,19 @@ class ( Syntax lid basic_spec symbol symb_items symb_map_items
          corresp2th :: lid
                     -> sign
                     -> sign
-                    -> [symb_items] 
+                    -> [symb_items]
                     -> [symb_items]
                     -> EndoMap symbol
                     -> EndoMap symbol
                     -> REL_REF
-                    -> Result (sign, [Named sentence], sign, sign, 
+                    -> Result (sign, [Named sentence], sign, sign,
                                EndoMap symbol, EndoMap symbol)
          corresp2th _ _ _ _ _ _ _ _ = error "c2th nyi"
          -- | create a co-span fragment from an equivalence
-         equiv2cospan :: lid -> sign -> sign  -> [symb_items] -> [symb_items] -> 
+         equiv2cospan :: lid -> sign -> sign  -> [symb_items] -> [symb_items] ->
                        Result (sign, sign, sign, EndoMap symbol, EndoMap symbol)
          equiv2cospan _ _ _ _ _ = error "equiv2cospan nyi"
-                       
+
 
 -- | print a whole theory
 printTheory :: StaticAnalysis lid basic_spec sentence symb_items symb_map_items
@@ -629,16 +629,16 @@ inclusion l s1 s2 = if is_subsig l s1 s2 then subsig_inclusion l s1 s2
 only used for efficiency and is not related to the /partial/ order given
 by the lattice. Only `Eq` is used to define `isSubElem` -}
 class (Ord l, Show l) => SemiLatticeWithTop l where
-  join :: l -> l -> l
+  lub :: l -> l -> l -- least upper bound or "join"
   top :: l
 
 instance SemiLatticeWithTop () where
-  join _ _ = ()
+  lub _ _ = ()
   top = ()
 
 -- | less or equal for semi lattices
 isSubElem :: SemiLatticeWithTop l => l -> l -> Bool
-isSubElem a b = join a b == b
+isSubElem a b = lub a b == b
 
 -- | class providing the minimal sublogic of an item
 class MinSublogic sublogic item where
