@@ -61,7 +61,7 @@ import Text.XML.Light.Cursor hiding (findChild)
 
 import Common.AutoProofUtils
 import Common.Doc
-import Common.DocUtils (Pretty, pretty, showGlobalDoc, showDoc)
+import Common.DocUtils (pretty, showGlobalDoc, showDoc)
 import Common.ExtSign (ExtSign (..))
 import Common.GtkGoal
 import Common.LibName
