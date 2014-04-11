@@ -73,15 +73,7 @@ public class OWL2Parser {
             ontologies = getImports(ontology, new HashSet<OWLOntology>());
             if (cyclic) {
                 String str = ontology.getOntologyID().getOntologyIRI().toString();
-                String merged_name = "";
-                for (OWLOntology aux_ont : ontologies) {
-                    String mrg = aux_ont.getOntologyID().getOntologyIRI().toString();
-                    mrg = mrg.replaceAll("[<>\\(\\) ]", "");
-                    mrg = mrg.replaceAll(".*/", "");
-                    mrg = mrg.replaceAll("\\[.*]", "");
-                    merged_name = merged_name + mrg;
-                }
-                merged_name = str + merged_name;
+                String merged_name = str + ".merged.owl"; // we must make a new name!
                 // System.out.println("NAME: " + merged_name + "\n");
                 IRI mergedOntologyIRI = IRI.create(merged_name);
                 // System.out.println("MERGED_IRI " + mergedOntologyIRI + "\n");
