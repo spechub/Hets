@@ -17,6 +17,7 @@ public class OWL2Parser {
 
     private static OPTION op;
     private static Boolean cyclic = false;
+    private static final Set<IRI> missingImports = new HashSet<IRI>();
     private static Set<OWLOntology> ontologies;
     private static final Set<OWLOntology> exported = new HashSet<OWLOntology>();
     private static final OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
@@ -69,7 +70,10 @@ public class OWL2Parser {
             StreamDocumentSource sds = new StreamDocumentSource(con.getInputStream(), IRI.create(uri));
             OWLOntologyLoaderConfiguration config = new OWLOntologyLoaderConfiguration();
             config = config.setMissingImportHandlingStrategy(MissingImportHandlingStrategy.SILENT);
+            manager.addMissingImportListener(new HasMissingImports());
             OWLOntology ontology = manager.loadOntologyFromOntologyDocument(sds, config);
+            for (IRI mi : missingImports)
+                out.write("<Missing>" + mi + "</Missing>\n");
             ontologies = getImports(ontology, new HashSet<OWLOntology>());
             if (cyclic) {
                 String str = ontology.getOntologyID().getOntologyIRI().toString();
@@ -95,6 +99,13 @@ public class OWL2Parser {
         } catch (Exception ex) {
             System.err.println("OWL parse error: " + ex.getMessage());
             ex.printStackTrace();
+        }
+    }
+
+    private static class HasMissingImports implements MissingImportListener {
+        @Override
+        public void importMissing(MissingImportEvent event) {
+            missingImports.add(event.getImportedOntologyURI());
         }
     }
 

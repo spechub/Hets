@@ -17,6 +17,7 @@ import OWL2.MS
 import OWL2.Rename
 
 import qualified Data.ByteString.Lazy as L
+import Data.List
 import Data.Maybe
 import qualified Data.Map as Map
 
@@ -27,6 +28,8 @@ import Common.LibName
 import Common.ProverTools
 import Common.AS_Annotation
 import Common.Utils
+
+import Control.Monad
 
 import Logic.Grothendieck
 import OWL2.Logic_OWL2
@@ -66,10 +69,13 @@ parseProc :: L.ByteString -> IO [LIB_DEFN]
 parseProc str = do
   res <- parseXml str
   let es = elChildren $ either error id res
+      mis = concatMap (filterElementsName $ isSmth "Missing") es
       imap = Map.fromList . mapMaybe (\ e -> do
         imp <- findAttr (unqual "name") e
         ont <- findAttr (unqual "ontiri") e
         return (imp, ont)) $ concatMap (filterElementsName $ isSmth "Loaded") es
+  unless (null mis) . putStrLn $ "Missing imports: "
+    ++ intercalate ", " (map strContent mis)
   return . map (convertToLibDefN imap)
         . unifyDocs . map (xmlBasicSpec imap)
         $ concatMap (filterElementsName $ isSmth "Ontology") es
