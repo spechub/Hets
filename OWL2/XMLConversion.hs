@@ -97,7 +97,7 @@ mwText s = setText s nullElem
 -- | makes a new element with the IRI as the text content
 mwSimpleIRI :: IRI -> Element
 mwSimpleIRI s = setName (if iriType s /= Abbreviated then iriK
-                          else "abbreviatedIRI") $ mwText $ showIRI
+                          else abbreviatedIRI) $ mwText $ showIRI
                           $ setReservedPrefix s
 
 {- | generates a list of elements, all with the first string as name,
