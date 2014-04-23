@@ -14,7 +14,7 @@ its CASC-mode, aka tptp-input. It works for single input files and
 fof-style.
 -}
 
-module SoftFOL.ProveHyperHyper (hyperProver, hyperConsChecker)
+module SoftFOL.ProveHyperHyper (hyperS, hyperProver, hyperConsChecker)
     where
 
 import Logic.Prover
@@ -47,12 +47,12 @@ import Data.Time.LocalTime (TimeOfDay, midnight)
 
 -- Prover
 
-ekrhyperS :: String
-ekrhyperS = "ekrhyper"
+hyperS :: String
+hyperS = "ekrh"
 
 -- | The Prover implementation.
 hyperProver :: Prover Sign Sentence SoftFOLMorphism () ProofTree
-hyperProver = mkAutomaticProver ekrhyperS () hyperGUI hyperCMDLautomaticBatch
+hyperProver = mkAutomaticProver hyperS () hyperGUI hyperCMDLautomaticBatch
 
 {- |
   Record for prover specific functions. This is used by both GUI and command
@@ -85,7 +85,7 @@ hyperGUI :: String -- ^ theory name
            -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
            -> IO [ProofStatus ProofTree] -- ^ proof status for each goal
 hyperGUI thName th freedefs =
-    genericATPgui (atpFun thName) True ekrhyperS thName th
+    genericATPgui (atpFun thName) True hyperS thName th
                   freedefs emptyProofTree
 
 {- |
@@ -108,7 +108,7 @@ hyperCMDLautomaticBatch ::
 hyperCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
                         thName defTS th freedefs =
     genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
-        resultMVar ekrhyperS thName
+        resultMVar hyperS thName
         (parseTacticScript batchTimeLimit [] defTS) th freedefs emptyProofTree
 
 prelTxt :: String -> String
@@ -178,7 +178,7 @@ runHyper sps cfg saveTPTP thName nGoal =
           { goalName = senAttr nGoal
           , goalStatus = openGoalStatus
           , usedAxioms = []
-          , usedProver = ekrhyperS
+          , usedProver = hyperS
           , proofTree = emptyProofTree
           , usedTime = midnight
           , tacticScript = tScript }
@@ -219,7 +219,7 @@ runHyperProcess prob saveFile tl opts runTxtA = do
   writeFile stpPrelFile $ prelTxt tl ++ opts
   writeFile stpRunFile runTxtA
   t_start <- getHetsTime
-  (_, stdoutC, stderrC) <- executeProcess "ekrh"
+  (_, stdoutC, stderrC) <- executeProcess hyperS
     [stpPrelFile, stpTmpFile, stpRunFile] ""
   t_end <- getHetsTime
   removeFile stpPrelFile
@@ -261,7 +261,7 @@ examineProof sps stdoutC stderrC defStatus =
 -- Consistency Checker
 
 hyperConsChecker :: ConsChecker Sign Sentence () SoftFOLMorphism ProofTree
-hyperConsChecker = (mkConsChecker ekrhyperS () consCheck)
+hyperConsChecker = (mkConsChecker hyperS () consCheck)
   { ccNeedsTimer = False }
 
 {- |
@@ -273,7 +273,7 @@ runTxtC :: String
 runTxtC =
     "% start derivation with the input received so far\n" ++
     "#(run).\n\n" ++
-    "% print normal E-KRHyper proof\n" ++
+    "% print Hyper proof\n" ++
     "%#(print_proof).\n\n" ++
     "% print result and proof using SZS terminology;\n" ++
     "% requires postprocessing with post_szs script for proper legibility\n" ++

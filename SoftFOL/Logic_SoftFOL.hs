@@ -111,9 +111,9 @@ instance Logic SoftFOL () [TPTP] Sentence () ()
               (\ b -> unsafeProverCheck (darwinExe b) "PATH" $ darwinProver b)
               tptpProvers
            ++ unsafeProverCheck "metis" "PATH" metisProver
-           ++ unsafeProverCheck "ekrh" "PATH" hyperProver
+           ++ unsafeProverCheck hyperS "PATH" hyperProver
          cons_checkers SoftFOL = concatMap
               (\ b -> unsafeProverCheck (darwinExe b) "PATH"
                $ darwinConsChecker b) tptpProvers
-           ++ unsafeProverCheck "ekrh" "PATH" hyperConsChecker
+           ++ unsafeProverCheck hyperS "PATH" hyperConsChecker
 #endif
