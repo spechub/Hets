@@ -69,7 +69,7 @@ time $MAKE
 time $MAKE check
 $MAKE release
 date
-(cd Hets; $MAKE depend; time $MAKE; $MAKE; $MAKE)
+(cd Hets; time $MAKE)
 cd ..
 }
 
