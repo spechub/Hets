@@ -45,7 +45,7 @@ Description: Package containing the core of Hets - the Heterogeneous Tool Set.
 
 Package: hets-ontology
 Architecture: all
-Depends: hets-core, pellet ${misc:Depends}
+Depends: hets-core, pellet, ${misc:Depends}
 Description: Package containing the Hets-Ontology system.
  This is a meta-package containing the Hets-Ontology system.
 
@@ -59,6 +59,6 @@ Description: Package containing the documentation for Heterogeneous Tool Set.
 
 Package: hets
 Architecture: all
-Depends: hets-core, hets-ontology, hets-doc, isabelle ${misc:Depends}
+Depends: hets-core, hets-ontology, hets-doc, isabelle, ${misc:Depends}
 Description: Package containing the full Hets - the Heterogeneous Tool Set.
  This is a meta-package containing the full Hets system.
