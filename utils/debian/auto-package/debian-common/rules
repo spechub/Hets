@@ -11,7 +11,7 @@ override_dh_auto_clean:
 override_dh_auto_build:
 	make derivedSources
 	cp Makefile Makefile.orig
-	cp ReleaseMakefile Makefile
+	cp UbuntuMakefile Makefile
 	make depend
 	make hets
 	cp Makefile.orig Makefile
