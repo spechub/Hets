@@ -621,10 +621,10 @@ check: $(TESTTARGETS)
 	for i in $(TESTDIRS); do $(MAKE) -C $$i check; done
 
 ## Preparing the version of Hets
-Driver/Version.hs: Driver/Version.in version_nr checkversion
+Driver/Version.hs: Driver/Version.in version_nr
 	$(RM) $@
 	cp Driver/Version.in $@
-	echo "  ++ \"$(shell cat version_nr), $(shell date +"%Y-%m-%d")\"" >> $@
+	echo "  ++ \"$(shell cat version_nr), r$(shell svnversion .)\"" >> $@
 	chmod 444 $@
 
 checkversion:
