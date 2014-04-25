@@ -435,7 +435,7 @@ genRules: $(generated_rule_files)
 gendrifted_files = $(patsubst %.der.hs, %.hs, $(generated_rule_files))
 
 # all sources that need to be created before ghc can be called
-derived_sources += $(drifted_files) rev.txt Driver/Version.hs $(hs_der_files)
+derived_sources += $(drifted_files) Driver/Version.hs $(hs_der_files)
 
 ####################################################################
 ### targets
