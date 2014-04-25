@@ -435,7 +435,7 @@ genRules: $(generated_rule_files)
 gendrifted_files = $(patsubst %.der.hs, %.hs, $(generated_rule_files))
 
 # all sources that need to be created before ghc can be called
-derived_sources += $(drifted_files) Driver/Version.hs $(hs_der_files)
+derived_sources += $(drifted_files) rev.txt Driver/Version.hs $(hs_der_files)
 
 ####################################################################
 ### targets
@@ -621,11 +621,15 @@ check: $(TESTTARGETS)
 	for i in $(TESTDIRS); do $(MAKE) -C $$i check; done
 
 ## Preparing the version of Hets
-Driver/Version.hs: Driver/Version.in version_nr
+Driver/Version.hs: Driver/Version.in version_nr rev.txt
 	$(RM) $@
 	cp Driver/Version.in $@
-	echo "  ++ \"$(shell cat version_nr), r$(shell svnversion .)\"" >> $@
+	echo "  ++ \"$(shell cat version_nr), $(shell cat rev.txt)\"" >> $@
 	chmod 444 $@
+
+rev.txt:
+	$(RM) $@
+	echo "r$(shell svnversion .)" >> $@
 
 checkversion:
 
