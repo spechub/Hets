@@ -13,12 +13,7 @@ is able to analyse heterogeneous and in particular CASL
 specifications.
 
 The sources need to be compiled using ghc Glasgow Haskell Compiler
-(www.haskell.org/ghc) version 6.12.1, 6.12.3 or 7.0.2!
-
-Version 6.10.x does not support the wai-extra-0.2.4.2 package for hets as
-server. Version 6.12.2 is broken for gtk, see
-http://hackage.haskell.org/trac/ghc/ticket/4038. Version 7.0.1 loops for
-programatica, see http://hackage.haskell.org/trac/ghc/ticket/4527.
+(www.haskell.org/ghc) version 7!
 
 Haskell as a logic is an optional part of Hets via "Programatica"
 (http://programatica.cs.pdx.edu/).
@@ -36,14 +31,17 @@ A typical call of hets is then: hets -g Basic/Numbers.casl
 Example specifications can be found under:
 https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk
 
+HETS_LIB should point to such library directories.
+
 For proving users may set HETS_ISABELLE, if "isabelle emacs" is not the right
-call for their system. Isabelle versions 2009 and 2011 are supported.
+call for their system. Isabelle version 2012 is supported.
 
 Further environment variables for provers are:
 
   PELLET_PATH
   HETS_OWL_TOOLS
   HETS_APROVE
+  HETS_ISABELLE_LIB
 
 If you need to build the hets binary follow the instructions in
 INSTALL, alternatively try to get a binary or a complete installer from:
