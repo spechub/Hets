@@ -6,7 +6,7 @@ The original svn sources can be obtained by:
 svn co https://svn-agbkb.informatik.uni-bremen.de/Hets/trunk Hets
 
 Information not contained here can be found in the Hets user guide
-(doc/UserGuide.pdf) or on the Hets web page www.dfki.de/sks/hets.
+(doc/UserGuide.pdf) or on the Hets web page www.dfki.de/cps/hets.
 
 The subject of this source release is to create a binary "hets" that
 is able to analyse heterogeneous and in particular CASL
@@ -47,10 +47,10 @@ Further environment variables for provers are:
 
 If you need to build the hets binary follow the instructions in
 INSTALL, alternatively try to get a binary or a complete installer from:
-www.dfki.de/sks/hets/installation_e.htm
+www.dfki.de/cps/hets/installation_e.htm
 
 The heterogeneous tool set (Hets) is mainly maintained by
 Christian Maeder (Christian.Maeder@dfki.de) and
-Till Mossakowski (Till.Mossakowski@dfki.de).
+Till Mossakowski (mossakow@iws.cs.uni-magdeburg.de).
 
 The mailing list is hets-devel@informatik.uni-bremen.de.
