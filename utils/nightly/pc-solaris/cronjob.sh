@@ -14,6 +14,8 @@ cd /local/home/maeder/haskell
 
 makeHets
 cd Hets/Hets
+gmake clean
+gmake hets.cgi
 gmake hets.cgi
 \cp hets.cgi /home/wwwuser/maeder/cgi-bin/hets.cgi
 cd ../..
