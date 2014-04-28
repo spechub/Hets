@@ -14,7 +14,7 @@ OPTERR=0
 HETS_REPO=https://svn-agbkb.informatik.uni-bremen.de/Hets/trunk
 HETS_LIB_REPO=https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk
 
-PROGRAMATICA=programatica-1.0.0.4
+PROGRAMATICA=programatica-1.0.0.5
 
 DIRNAME="`dirname "$0"`"
 OLD_PWD="`cd $DIRNAME && pwd`"
@@ -387,6 +387,7 @@ if [ $OPT_CREATE -eq 0 ]; then
   if [ ! -f $DATA_DIR/orig.done ]; then
     echo ":: Creating orig.tar.gz"
     cd $HETS_FOLDER
+    echo "r$HETS_REVISION" >> rev.txt
     cd ..
     tar -czf $RESULTS_DIR/hets_$HETS_FULL_VERSION.orig.tar.gz hets
     cd $OLD_PWD
