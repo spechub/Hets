@@ -1,3 +1,4 @@
+{-# OPTIONS -O0 #-}
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
 Module      :  $Header$
