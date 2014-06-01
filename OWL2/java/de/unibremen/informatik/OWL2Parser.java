@@ -8,8 +8,6 @@ import org.semanticweb.owlapi.util.OWLOntologyMerger;
 import org.semanticweb.owlapi.model.OWLOntologyLoaderConfiguration;
 import uk.ac.manchester.cs.owl.owlapi.mansyntaxrenderer.ManchesterOWLSyntaxRenderer;
 import uk.ac.manchester.cs.owl.owlapi.OWLOntologyIRIMapperImpl;
-import org.semanticweb.owlapi.model.ImportChange;
-import uk.ac.manchester.cs.owl.owlapi.OWLImportsDeclarationImpl;
 
 import java.io.*;
 import java.net.*;
@@ -76,25 +74,21 @@ public class OWL2Parser {
             OWLOntologyLoaderConfiguration config = new OWLOntologyLoaderConfiguration();
             config = config.setMissingImportHandlingStrategy(MissingImportHandlingStrategy.SILENT);
             manager.addMissingImportListener(new HasMissingImports());
-            OWLOntology ontology = manager.loadOntologyFromOntologyDocument(sds, config);
-              
-            if (!missingImports.isEmpty())
-            {
-              IRI ontohub = IRI.create("https://ontohub.org/external/");
-              for (IRI mi : missingImports)
-              {   
-                mapper.addMapping(mi, ontohub.resolve(mi.toURI().getHost() + mi.toURI().getPath()));
-              }
-              manager = OWLManager.createOWLOntologyManager();
-              manager.addIRIMapper(mapper);
-              // collect and report missing imports again.
-              missingImports.clear();
-              manager.addMissingImportListener(new HasMissingImports());
-              ontology = manager.loadOntologyFromOntologyDocument(sds, config);
-              for (IRI mi : missingImports)
-              {
-                out.write("<Missing>" + mi + "</Missing>\n");
-              }
+            OWLOntology ontology = manager.loadOntologyFromOntologyDocument(sds, config);              
+            if (!missingImports.isEmpty()) {
+                IRI ontohub = IRI.create("https://ontohub.org/external/");
+                for (IRI mi : missingImports) {   
+                    mapper.addMapping(mi, ontohub.resolve(mi.toURI().getHost() + mi.toURI().getPath()));
+                }
+                manager = OWLManager.createOWLOntologyManager();
+                manager.addIRIMapper(mapper);
+                // collect and report missing imports again.
+                missingImports.clear();
+                manager.addMissingImportListener(new HasMissingImports());
+                ontology = manager.loadOntologyFromOntologyDocument(sds, config);
+                for (IRI mi : missingImports) {
+                    out.write("<Missing>" + mi + "</Missing>\n");
+                }
             }
             ontologies = getImports(ontology, new HashSet<OWLOntology>());
             if (cyclic) {
