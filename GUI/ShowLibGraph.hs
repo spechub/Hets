@@ -76,7 +76,7 @@ showLibGraph gi = do
           , Button "Show Logic Graph" showLG
           ])
       graphParms = globalMenu $$
-                   GraphTitle "Library Graph" $$
+                   GraphTitle "Hets Library Graph" $$
                    OptimiseLayout True $$
                    AllowClose (closeGInfo gi) $$
                    FileMenuAct ExitMenuOption (Just (exitGInfo gi)) $$

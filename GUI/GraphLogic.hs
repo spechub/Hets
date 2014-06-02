@@ -654,7 +654,7 @@ showDGraph gi ln convGraph showLib = do
     Nothing -> do
       updateWindowCount gi succ
       gi' <- copyGInfo gi ln
-      convGraph gi' "Development Graph" showLib
+      convGraph gi' "Hets Development Graph" showLib
       GA.showTemporaryMessage (graphInfo gi') "Development Graph initialized."
     Just gi' ->
       GA.showTemporaryMessage (graphInfo gi') "Development Graph requested."
