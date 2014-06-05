@@ -1,5 +1,7 @@
 *.hi
 *.o
+*.dyn_hi
+*.dyn_o
 
 ATC/AS_Annotation.der.hs
 ATC/AS_Annotation.hs
@@ -135,6 +137,7 @@ Temporal/ATC_Temporal.hs
 VSE/ATC_VSE.der.hs
 VSE/ATC_VSE.hs
 hets
+rev.txt
 utils/DrIFT
 utils/DtdToHaskell
 utils/DtdToHaskell-src/DtdToHaskell/
