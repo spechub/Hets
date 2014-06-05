@@ -629,7 +629,7 @@ Driver/Version.hs: Driver/Version.in version_nr rev.txt
 
 rev.txt:
 	$(RM) $@
-	echo "r$(shell svnversion .)" >> $@
+	echo $(shell date +"%Y-%m-%d") >> $@
 
 checkversion:
 
