@@ -1,3 +1,5 @@
+.gitignore
+.git
 Search
 GMP
 CspCASL/test
