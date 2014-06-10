@@ -627,7 +627,7 @@ Driver/Version.hs: Driver/Version.in version_nr rev.txt
 
 rev.txt:
 	$(RM) $@
-	echo $(shell git log -1 --format=%ci) >> $@
+	echo $(shell git log -1 --format=%ct) >> $@
 
 checkversion:
 
