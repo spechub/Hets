@@ -108,7 +108,7 @@ hets --help
 ```
 
 ### Restful Interface
-See [[RESTful Interface]]
+See [RESTful Interface](https://github.com/spechub/Hets/wiki/RESTful-Interface)
 
 ### User Documentation
 
@@ -133,7 +133,7 @@ With the option "-o pp.tex" hets can produce nice LaTeX output from your specifi
 
 A good starting point is the code documentation for [Hets - the Heterogeneous Tool Set](http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/src-distribution/versions/Hets/docs/).
 
-Since Hets is rather large and complex we recommend following the interactive session in [[Debugging and Testing Hets]] to get familiar with the central datastructures of Hets.
+Since Hets is rather large and complex we recommend following the interactive session in [Debugging and Testing Hets](https://github.com/spechub/Hets/wiki/Debugging-and-Testing-Hets) to get familiar with the central datastructures of Hets.
 
 The formal background and the general structure of Hets is described in chapter 7 of [Heterogeneous specification and the heterogeneous tool set](http://www.informatik.uni-bremen.de/~till/papers/habil.ps).
 
@@ -155,7 +155,7 @@ Before committing haskell source files you may check compliance to the programmi
 * The comments in your haskell sources should not cause `haddock` to fail. After `make` (for re-compiling changed sources) `make doc` will call `haddock`.
 * Also check your source with [hlint](http://community.haskell.org/~ndm/hlint/) which you may be able to install by `cabal install hlint`.
 
-Also have a look at the current [Release Notes](https://github.com/spechub/Hets/releases/latest) and [[Debugging and Testing Hets]],
+Also have a look at the current [Release Notes](https://github.com/spechub/Hets/releases/latest) and [Debugging and Testing Hets](https://github.com/spechub/Hets/wiki/Debugging-and-Testing-Hets).
 
 If you want to participate in the Hets development feel free tell us via our [mailing list](http://www.informatik.uni-bremen.de/mailman/listinfo/hets-devel) for Hets developers. This mailing list can also be read via http://news.gmane.org/gmane.comp.lang.hets.devel.
 
