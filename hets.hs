@@ -68,24 +68,24 @@ main =
        then cmdlRun opts >>= displayGraph "" opts . getMaybeLib . intState
        else do
          putIfVerbose opts 3 $ "Options: " ++ show opts
-         case infiles opts of
-           [] | not imode -> displayLogicGraphInfo opts
-           fs -> mapM_ (processFile opts) fs
+         case (infiles opts, outputLogicGraph opts) of
+           ([], lg) -> case guiType opts of
+             UseGui ->
+#ifdef UNI_PACKAGE
+               showPlainLG
+#else
+               noUniPkg
+#endif
+             NoGui | lg -> writeLG opts
+             _ -> hetsIOError "supply option -G or -g and/or file arguments"
+           (fs, False) -> mapM_ (processFile opts) fs
+           _ -> hetsIOError
+             "option -G is illegal together with file arguments (use -g)"
 
 noUniPkg :: IO ()
 noUniPkg = fail $ "No graph display interface; \n"
             ++ "UNI_PACKAGE option has been "
             ++ "disabled during compilation of Hets"
-
-displayLogicGraphInfo :: HetcatsOpts -> IO ()
-displayLogicGraphInfo opts = case guiType opts of
-    NoGui -> writeLG opts
-    UseGui ->
-#ifdef UNI_PACKAGE
-      showPlainLG
-#else
-      noUniPkg
-#endif
 
 processFile :: HetcatsOpts -> FilePath -> IO ()
 processFile opts file = do

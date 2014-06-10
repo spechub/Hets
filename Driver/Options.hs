@@ -48,6 +48,7 @@ module Driver.Options
   , checkUri
   , defLogicIsDMU
   , useCatalogURL
+  , hetsIOError
   ) where
 
 import Driver.Version
@@ -126,6 +127,9 @@ fullSignS = "full-signatures"
 fullTheoriesS :: String
 fullTheoriesS = "full-theories"
 
+logicGraphS :: String
+logicGraphS = "logic-graph"
+
 genTermS, treeS, bafS :: String
 genTermS = "gen_trm"
 treeS = "tree."
@@ -192,6 +196,7 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , listen :: Int
   , runMMT :: Bool
   , fullTheories :: Bool
+  , outputLogicGraph :: Bool
   , fullSign :: Bool }
 
 {- | 'defaultHetcatsOpts' defines the default HetcatsOpts, which are used as
@@ -233,6 +238,7 @@ defaultHetcatsOpts = HcOpt
   , listen = -1
   , runMMT = False
   , fullTheories = False
+  , outputLogicGraph = False
   , fullSign = False }
 
 instance Show HetcatsOpts where
@@ -319,6 +325,7 @@ data Flag =
   | UseMMT
   | FullTheories
   | FullSign
+  | OutputLogicGraph
   | UrlCatalog [(String, String)]
 
 -- | 'makeOpts' includes a parsed Flag in a set of HetcatsOpts
@@ -356,6 +363,7 @@ makeOpts opts flg = case flg of
     RelPos -> opts { useLibPos = True }
     UseMMT -> opts { runMMT = True}
     FullTheories -> opts { fullTheories = True}
+    OutputLogicGraph -> opts { outputLogicGraph = True}
     FullSign -> opts { fullSign = True}
     UrlCatalog m -> opts { urlCatalog = m ++ urlCatalog opts }
     Help -> opts -- skipped
@@ -603,6 +611,8 @@ options = let
     , Option "u" ["uncolored"] (NoArg Uncolored)
       "no colors in shown graphs"
 #endif
+    , Option "G" [logicGraphS] (NoArg OutputLogicGraph)
+      "output logic graph (as xml) or as graph (-g)"
     , Option "I" [interactiveS] (NoArg Interactive)
       "run in interactive (console) mode"
     , Option "p" [skipS] (NoArg $ Analysis Skip)
