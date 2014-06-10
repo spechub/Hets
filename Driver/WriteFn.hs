@@ -21,6 +21,8 @@ module Driver.WriteFn
 import Text.ParserCombinators.Parsec
 import Text.XML.Light
 
+import System.FilePath
+
 import Control.Monad
 
 import Data.List (partition, (\\))
@@ -401,5 +403,5 @@ writeSpecFiles opts file lenv ln dg = do
 writeLG :: HetcatsOpts -> IO ()
 writeLG opts = do
     doDump opts "LogicGraph" $ putStrLn $ showDoc logicGraph ""
-    writeVerbFile opts { verbose = 2 } "LogicGraph.xml" $ ppTopElement
-      $ lGToXml logicGraph
+    writeVerbFile opts { verbose = 2 } (outdir opts </> "LogicGraph.xml")
+      . ppTopElement $ lGToXml logicGraph
