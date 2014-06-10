@@ -510,15 +510,13 @@ utils/appendHaskellPreludeString: utils/appendHaskellPreludeString.hs
 	$(HC) --make -o $@ $<
 
 # release management
-REV = trunk
 release:
 	$(RM) -r Hets
-	svn co -q https://svn-agbkb.informatik.uni-bremen.de/Hets/$(REV) Hets
+	git clone https://github.com/spechub/Hets
 	(cd Hets; $(MAKE) derivedSources; $(MAKE) clean; \
             cp Makefile Makefile.orig; \
             cp ReleaseMakefile Makefile; \
             ./clean.sh; \
-            find . -name .svn -o -name \*.o -o -name \*.hi | xargs $(RM) -r; \
             $(RM) clean.*; utils/replaceAllHeaders.sh)
 	$(TAR) cf Hets.tar Hets
 
@@ -572,7 +570,7 @@ real_clean: clean
 
 ### additionally removes generated files not in the repository tree
 distclean: clean clean_genRules
-	$(RM) $(derived_sources)
+	$(RM) $(derived_sources) rev.txt
 	$(RM) utils/appendHaskellPreludeString
 	$(RM) utils/DrIFT utils/genRules
 	$(RM) $(DTD2HS)
@@ -629,7 +627,7 @@ Driver/Version.hs: Driver/Version.in version_nr rev.txt
 
 rev.txt:
 	$(RM) $@
-	echo $(shell date +"%Y-%m-%d") >> $@
+	echo $(shell git log -1 --format=%ci) >> $@
 
 checkversion:
 
