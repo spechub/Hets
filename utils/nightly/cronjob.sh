@@ -62,8 +62,7 @@ makeHets ()
 {
 date
 rm -rf Hets
-svn co -q --ignore-externals \
-  https://svn-agbkb.informatik.uni-bremen.de/Hets/trunk Hets
+git clone https://github.com/spechub/Hets
 cd Hets
 time $MAKE
 time $MAKE check
