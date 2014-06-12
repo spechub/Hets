@@ -91,7 +91,7 @@ showLogicGraph plain = do
                 $ (if plain then (GlobalMenu (UDG.Menu Nothing [
                 Button "Show detailed logic graph" showHSG ]) $$)
                 else id)
-                $ graphParms daVinciSort $ if plain then "Logic Graph" else
+                $ graphParms daVinciSort $ if plain then "Hets Logic Graph" else
                   "Heterogeneous Sublogic Graph"
        let logicNodeMenu = LocalMenu $ UDG.Menu (Just "Info")
                 $ [Button "Tools" $ \ slg -> let lg = toAnyLogic slg in
