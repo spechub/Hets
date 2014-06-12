@@ -130,6 +130,9 @@ fullTheoriesS = "full-theories"
 logicGraphS :: String
 logicGraphS = "logic-graph"
 
+fileTypeS :: String
+fileTypeS = "file-type"
+
 genTermS, treeS, bafS :: String
 genTermS = "gen_trm"
 treeS = "tree."
@@ -197,6 +200,7 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , runMMT :: Bool
   , fullTheories :: Bool
   , outputLogicGraph :: Bool
+  , fileType :: Bool
   , fullSign :: Bool }
 
 {- | 'defaultHetcatsOpts' defines the default HetcatsOpts, which are used as
@@ -239,12 +243,16 @@ defaultHetcatsOpts = HcOpt
   , runMMT = False
   , fullTheories = False
   , outputLogicGraph = False
+  , fileType = False
   , fullSign = False }
 
 instance Show HetcatsOpts where
-  show opts = showEqOpt verboseS (show $ verbose opts)
+  show opts = let showFlag p o = if p opts then showOpt o else "" in
+    showEqOpt verboseS (show $ verbose opts)
     ++ show (guiType opts)
-    ++ (if interactive opts then showOpt interactiveS else "")
+    ++ showFlag outputLogicGraph logicGraphS
+    ++ showFlag fileType fileTypeS
+    ++ showFlag interactive interactiveS
     ++ show (analysis opts)
     ++ case defLogic opts of
           s | s /= defLogic defaultHetcatsOpts -> showEqOpt logicS s
@@ -260,15 +268,15 @@ instance Show HetcatsOpts where
           n | n /= counterSparQ defaultHetcatsOpts
               -> showEqOpt counterSparQS $ show n
           _ -> ""
-    ++ (if xmlFlag opts then showOpt xmlS else "")
-    ++ (if connectP opts /= -1 then showOpt connectS else "")
-    ++ (if listen opts /= -1 then showOpt listenS else "")
+    ++ showFlag xmlFlag xmlS
+    ++ showFlag ((/= -1) . connectP) connectS
+    ++ showFlag ((/= -1) . listen) listenS
     ++ concatMap (showEqOpt "dump") (dumpOpts opts)
     ++ showEqOpt "encoding" (map toLower $ show $ ioEncoding opts)
-    ++ (if unlit opts then showOpt unlitS else "")
-    ++ (if useLibPos opts then showOpt relposS else "")
-    ++ (if fullSign opts then showOpt fullSignS else "")
-    ++ (if fullTheories opts then showOpt fullTheoriesS else "")
+    ++ showFlag unlit unlitS
+    ++ showFlag useLibPos relposS
+    ++ showFlag fullSign fullSignS
+    ++ showFlag fullTheories fullTheoriesS
     ++ case urlCatalog opts of
          [] -> ""
          cs -> showEqOpt urlCatalogS $ intercalate ","
@@ -276,9 +284,9 @@ instance Show HetcatsOpts where
     ++ showEqOpt intypeS (show $ intype opts)
     ++ showEqOpt outdirS (outdir opts)
     ++ showEqOpt outtypesS (intercalate "," $ map show $ outtypes opts)
-    ++ (if recurse opts then showOpt recursiveS else "")
-    ++ (if applyAutomatic opts then showOpt applyAutomaticRuleS else "")
-    ++ (if computeNormalForm opts then showOpt normalFormS else "")
+    ++ showFlag recurse recursiveS
+    ++ showFlag applyAutomatic applyAutomaticRuleS
+    ++ showFlag computeNormalForm normalFormS
     ++ showEqOpt namedSpecsS (intercalate "," $ map show $ specNames opts)
     ++ showEqOpt transS (intercalate ":" $ map show $ transNames opts)
     ++ showEqOpt viewS (intercalate "," $ map show $ viewNames opts)
@@ -326,6 +334,7 @@ data Flag =
   | FullTheories
   | FullSign
   | OutputLogicGraph
+  | FileType
   | UrlCatalog [(String, String)]
 
 -- | 'makeOpts' includes a parsed Flag in a set of HetcatsOpts
@@ -361,10 +370,11 @@ makeOpts opts flg = case flg of
     Serve -> opts { serve = True }
     Unlit -> opts { unlit = True }
     RelPos -> opts { useLibPos = True }
-    UseMMT -> opts { runMMT = True}
-    FullTheories -> opts { fullTheories = True}
-    OutputLogicGraph -> opts { outputLogicGraph = True}
-    FullSign -> opts { fullSign = True}
+    UseMMT -> opts { runMMT = True }
+    FullTheories -> opts { fullTheories = True }
+    OutputLogicGraph -> opts { outputLogicGraph = True }
+    FileType -> opts { fileType = True }
+    FullSign -> opts { fullSign = True }
     UrlCatalog m -> opts { urlCatalog = m ++ urlCatalog opts }
     Help -> opts -- skipped
     Version -> opts -- skipped
@@ -613,6 +623,8 @@ options = let
 #endif
     , Option "G" [logicGraphS] (NoArg OutputLogicGraph)
       "output logic graph (as xml) or as graph (-g)"
+    , Option "F" [fileTypeS] (NoArg FileType)
+      "only display file type"
     , Option "I" [interactiveS] (NoArg Interactive)
       "run in interactive (console) mode"
     , Option "p" [skipS] (NoArg $ Analysis Skip)
