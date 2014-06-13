@@ -19,6 +19,7 @@ import OWL2.MS
 import OWL2.Sign
 import OWL2.Symbols
 
+import Data.List (stripPrefix)
 import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -70,7 +71,19 @@ instance Function IRI where
             let np = namePrefix qn
                 lp = localPart qn
                 iri = case iriType qn of
-                    Full -> qn {expandedIRI = np ++ ":" ++ lp}
+                    Full -> let
+                      ex = np ++ ":" ++ lp
+                      res = qn {expandedIRI = ex}
+                      in if elem np ["http", "https"] then -- abbreviate
+                        case Map.lookup "" pm of
+                          Just ep | length ep > 5 -> case stripPrefix ep ex of
+                            Just rl@(_ : _) -> res
+                              { namePrefix = ""
+                              , localPart = rl
+                              , iriType = Abbreviated }
+                            _ -> res
+                          _ -> res
+                      else res
                     NodeID -> qn {expandedIRI = lp}
                     _ -> let miri = Map.lookup np $ Map.union pm predefPrefixes
                          in case miri of
