@@ -6,7 +6,7 @@ else
 fi
 IMAGE=Hets-$VERSION.dmg
 RES=Hets.app/Contents/Resources
-/Users/Shared/maeder/Platypus-4.7/Platypus.app/Contents/Resources/platypus_clt \
+/Users/Shared/maeder/Platypus-4.8/Platypus.app/Contents/Resources/platypus_clt \
  -P ../Hets/utils/macports/hets.platypus Hets.app
 cp hets $RES/
 cp -r /Users/Shared/maeder/uDrawGraph-3.1 $RES/
@@ -18,7 +18,6 @@ cp $OWLSRC/OntoDMU.jar $OWLSRC/OWL2Parser.jar $OWLSRC/OWLLocality.jar  $RES/hets
 cp $OWLSRC/AProVE.jar.old $RES/hets-owl-tools/AProVE.jar 
 cp $OWLSRC/lib/owl2api-bin.jar $RES/hets-owl-tools/lib/
 cp -RH /home/linux-bkb/pellet $RES
-
-hdiutil create -srcfolder Hets.app $IMAGE
+hdiutil create -srcfolder Hets.app -fs HFS+ $IMAGE
 cp $IMAGE /home/www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/intel-mac/dmgs/
 
