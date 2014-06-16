@@ -244,5 +244,6 @@ showSym :: (Sentences lid sentence sign morphism symbol) =>
            lid -> symbol -> Element
 showSym lid s = add_attrs
             [ mkAttr "kind" $ symKind lid s
-            , mkNameAttr . show $ sym_name lid s ]
+            , mkNameAttr . show $ sym_name lid s
+            , mkAttr "iri" $ fullSymName lid s ]
             $ prettySymbol emptyGlobalAnnos s
