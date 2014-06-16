@@ -75,7 +75,7 @@ showQU (QN pre local _ _ _) =
 
 -- | show QName in angle brackets as full iris
 showQI :: QName -> String
-showQI = ('<' :) . (++ ">") . showQU
+showQI n = '<' : showQU n ++ ">"
 
 nullQName :: QName
 nullQName = QN "" "" Abbreviated "" nullRange
