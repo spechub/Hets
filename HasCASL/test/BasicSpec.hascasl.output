@@ -133,7 +133,7 @@ type Data4 ::=
 11.19: ### Warning: refined class 'a'
 16.7: ### Hint: not a class 's'
 18.15: ### Hint: rebound variable 'x'
-15.9-15.11: ### Hint:
+15.9-15.12: ### Hint:
 repeated declaration of 'tt' with type 's ->? Unit'
 20.19: ### Hint: rebound variable 'x'
 20.19: ### Hint: rebound variable 'x'
@@ -160,17 +160,17 @@ no kind found for 's'
   expected: {Cppo}
      found: {c}
 26.6: ### Hint: redeclared type 's'
-28.41: ### Hint:
+28.41-28.42: ### Hint:
 in type of '(pred tt : s)'
   typename 's' (24.15)
-  is not unifiable with type 's ->? Unit' (15.11)
-28.38-28.41: ### Hint: untypeable term (with type: s * s) '(p, tt)'
+  is not unifiable with type 's ->? Unit' (15.12)
+28.38-28.42: ### Hint: untypeable term (with type: s * s) '(p, tt)'
 28.33: *** Error:
 no typing for 'program all (p : ? s) : ? Unit = eq (p, tt)'
 30.14: ### Hint: rebound variable 'x'
 30.40-30.41: ### Hint: no type found for 't1'
-30.40: ### Hint: untypeable term 't1'
-30.40-30.49: ### Hint:
+30.40-30.41: ### Hint: untypeable term 't1'
+30.40-30.50: ### Hint:
 untypeable term (with type: ? _v35_a * ? _v36_b) '(t1 (), t2 ())'
 30.38: *** Error:
 no typing for
@@ -178,26 +178,26 @@ no typing for
 32.12: *** Error: unexpected mixfix token: impl
 34.12: *** Error: unexpected mixfix token: or
 37.27-37.29: ### Hint: no type found for 'all'
-37.27: ### Hint: untypeable term 'all'
+37.27-37.29: ### Hint: untypeable term 'all'
 37.25: *** Error:
 no typing for
 'program ex (p : ? s) : ? Unit
          = all \ r : ? Unit . (all \ x : s . p x impl r) impl r'
 40.20-40.22: ### Hint: no type found for 'all'
-40.20: ### Hint: untypeable term 'all'
+40.20-40.22: ### Hint: untypeable term 'all'
 40.18: *** Error:
 no typing for 'program ff () : ? Unit = all \ r : ? Unit . r ()'
 45.9: ### Hint: not a class 't'
 45.8: ### Hint: rebound variable 'x'
 45.16: ### Hint: not a class 't'
 57.11: ### Hint: redeclared type 's'
-62.11-62.70: ### Hint:
+62.11-62.74: ### Hint:
 repeated declaration of 'sel2' with type 'Data3 ->? Data2'
-62.11-63.1: ### Hint:
+62.11-63.5: ### Hint:
 repeated declaration of 'sel1' with type 'Data3 ->? Data1'
-64.11-64.71: ### Hint:
+64.11-64.75: ### Hint:
 repeated declaration of 'sel2' with type 'Data4 ->? Data2'
-64.11-64.84: ### Hint:
+64.11-64.88: ### Hint:
 repeated declaration of 'sel1' with type 'Data4 ->? Data1'
 66.22: ### Hint: not a class 's'
 66.21: ### Hint: rebound variable 'x'

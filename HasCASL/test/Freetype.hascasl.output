@@ -34,8 +34,8 @@ forall x_1 : Logical -> Unit
   ((op c : (Logical -> Unit) -> t3) x_1)
   = x_1                                            %(ga_select_s)%
 type t3 ::= c (s : Logical -> Unit) %(ga_t3)%
-3.6-3.25: ### Hint:
+3.6-3.28: ### Hint:
 repeated declaration of 'c' with type '(? Unit -> Unit) -> t2'
-3.6-3.25: ### Hint:
+3.6-3.28: ### Hint:
 repeated declaration of 's' with type 't2 -> ? Unit -> Unit'
 3.6-3.7: ### Hint: redeclared type 't2'

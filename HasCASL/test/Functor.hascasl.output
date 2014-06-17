@@ -133,7 +133,7 @@ no kind found for 'a -> b'
 33.22: ### Hint: rebound variable 'f'
 34.9: ### Hint:
 in type of '(var l : ParamDT G a)'
-  type 'InitialCarrier' (30.21)
+  type 'InitialCarrier' (30.34)
   is not unifiable with differently kinded type '_v82_F' (9.21)
 34.9: ### Hint: untypeable term (with type: _v82_F _v80_a) 'l'
 34.3-34.29: ### Hint:

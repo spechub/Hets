@@ -194,7 +194,7 @@ rejected '__->?__ < __->__' of '((var p : m a),
    ((op ret : forall m : Monad; a : Type . a -> m a)
     ((var f : a ->? b) (var x : a)),
     (var r : b ->? m c)))'
-15.3-15.29: ### Hint:
+15.3-15.31: ### Hint:
 untypeable term (with type: _v46_m _v47_a * (_v47_a -> _v46_m _v48_b))
 '(p, \ x : a . ret (f x) >>= r)'
 15.12: ### Hint: rebound variable 'x'
@@ -243,7 +243,7 @@ rejected '__->?__ < __->__' of '((var p : m a),
  . (op __>>=__ :
     forall m : Monad; a : Type; b : Type . m a * (a ->? m b) ->? m b)
    ((var q : a ->? m b) (var x : a), (var r : b ->? m c)))'
-18.21-18.40: ### Hint:
+18.21-18.42: ### Hint:
 untypeable term (with type: _v114_m _v115_a * (_v115_a -> _v114_m _v116_b))
 '(p, \ x : a . q x >>= r)'
 18.29: ### Hint: rebound variable 'x'
@@ -335,7 +335,7 @@ in type of '((var p : ST state a), (var q : a ->? ST state b))'
 37.3-37.9: ### Hint:
 untypeable term (with type: _v257_m _v258_a * (_v258_a ->? _v257_m _v259_b))
 '(p, q)'
-37.5-37.54: ### Hint:
+37.5-37.55: ### Hint:
 untypeable term (with type: ? _v253_a * ? _v253_a)
 '(p >>= q, \ s1 : state . let (z, s2) = p s1 in q z s2)'
 37.11: *** Error:

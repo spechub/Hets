@@ -119,7 +119,7 @@ isSimpleToken t = case tokStr t of
 
 -- | collect positions
 catPosAux :: [Token] -> [Pos]
-catPosAux = concatMap (rangeToList . tokPos)
+catPosAux = concatMap (rangeToList . getRange)
 
 -- | collect positions as range
 catRange :: [Token] -> Range
@@ -432,9 +432,12 @@ posOfId (Id ts _ (Range ps)) =
 -- | compute start and end position of a Token (or leave it empty)
 tokenRange :: Token -> [Pos]
 tokenRange (Token str (Range ps)) = case ps of
-    [p] -> let l = length str in
-      if l > 1 then [p, incSourceColumn p $ length str - 1] else [p]
+    [p] -> mkTokPos str p
     _ -> ps
+
+mkTokPos :: String -> Pos -> [Pos]
+mkTokPos str p = let l = length str in
+      if l > 1 then [p, incSourceColumn p $ length str - 1] else [p]
 
 outerRange :: Range -> [Pos]
 outerRange (Range qs) = case qs of
@@ -481,7 +484,7 @@ getRangeSpan :: GetRange a => a -> Range
 getRangeSpan = Range . rangeSpan
 
 instance GetRange Token where
-    getRange (Token _ p) = p
+    getRange = Range . tokenRange
     rangeSpan = tokenRange
 
 instance GetRange Id where

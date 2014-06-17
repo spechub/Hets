@@ -136,8 +136,8 @@ no kind found for 'b -> c'
 25.51: ### Hint: not a kind 'b -> List (Tree a b)'
 26.13-26.18: ### Hint:
 in type of '(op leaf : forall a : Type . a -> CTree a) (var x : a)'
-  typename 'CTree' (7.16)
-  is not unifiable with type 'Tree _v15_a' (21.47)
+  typename 'CTree' (7.20)
+  is not unifiable with type 'Tree _v15_a' (21.50)
 26.3-26.18: ### Hint:
 unable to prove: b < a of '(((op fold :
    forall a : Type; b : Type; c : Type
@@ -153,7 +153,7 @@ rejected 'Nat < b' of '(var s : b -> List (Tree a b))'
 untypeable term (with type: Nat ->? CTree _v27_a) 's'
 27.25: ### Hint:
 in type of '(var s : b -> List (Tree a b))'
-  typename 'List' (25.58)
+  typename 'List' (25.61)
   is not unifiable with type 'Tree b' (25.53)
 27.25: ### Hint:
 untypeable term (with type: _v30_a -> Tree _v30_a _v31_b) 's'
@@ -165,7 +165,7 @@ rejected 'Nat < b' of '(var s : b -> List (Tree a b))'
 untypeable term (with type: Nat ->? CTree _v39_a) 's'
 28.20: ### Hint:
 in type of '(var s : b -> List (Tree a b))'
-  typename 'List' (25.58)
+  typename 'List' (25.61)
   is not unifiable with type 'Tree b' (25.53)
 28.20: ### Hint:
 untypeable term (with type: _v42_a -> Tree _v42_a _v43_b) 's'
@@ -187,24 +187,24 @@ untypeable term (with type: _v42_a -> Tree _v42_a _v43_b) 's'
 38.11: ### Hint: rebound variable 'x'
 38.22-38.27: ### Hint:
 in type of '(op leaf : forall a : Type; b : Type . b -> Tree a b) (var x : a)'
-  typename 'CTree' (37.14)
+  typename 'CTree' (37.18)
   is not unifiable with type 'Tree _v73_a' (11.16)
 38.22-38.27: ### Hint:
 in type of '(op leaf : forall a : Type; b : Type . a -> Tree a b) (var x : a)'
-  typename 'CTree' (37.14)
+  typename 'CTree' (37.18)
   is not unifiable with type 'Tree a' (38.15)
 39.14: ### Hint: rebound variable 'f'
 40.13: ### Hint: rebound variable 'x'
 40.56: ### Hint:
 in type of '(var f : Nat ->? CTree a)'
   typename 'a' (39.32)
-  is not unifiable with type 'Tree _v81_a Nat' (39.18)
+  is not unifiable with type 'Tree _v81_a Nat' (39.20)
 40.56: ### Hint:
 untypeable term (with type: _v80_b -> List (Tree _v81_a _v80_b))
 'f'
 40.56: ### Hint:
 in type of '(var f : Nat ->? CTree a)'
-  typename 'CTree' (39.26)
-  is not unifiable with type 'Tree Nat' (39.18)
+  typename 'CTree' (39.30)
+  is not unifiable with type 'Tree Nat' (39.20)
 40.56: ### Hint:
 untypeable term (with type: _v82_a -> Tree _v82_a _v83_b) 'f'

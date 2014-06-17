@@ -280,42 +280,42 @@ no kind found for 's'
 75.35: ### Hint: rebound variable 'x'
 85.6: ### Warning: new type shadows type variable 's'
 85.11: *** Error: illegal type variable as supertype 's'
-87.40-87.46: ### Hint:
+87.40-87.47: ### Hint:
 in type of '(pred eq : forall s : Type . s * s)
 ((var p : Pred s), (op tt : forall s : Type . Pred s))'
-  typename 'Unit' (72.9)
-  is not unifiable with type 'Unit ->? Unit' (87.33)
+  typename 'Unit' (72.12)
+  is not unifiable with type 'Unit ->? Unit' (87.36)
 87.38: *** Error:
 no typing for 'program all (p : Pred s) : Pred Unit = eq (p, tt)'
 90.14: ### Hint: rebound variable 'x'
 90.45-90.46: ### Hint: no type found for 't1'
-90.45: ### Hint: untypeable term 't1'
-90.45: ### Hint: untypeable term 't1 ()'
-90.45-90.50: ### Hint: untypeable term 't1 () und'
-90.45-90.54: ### Hint: untypeable term 't1 () und t2'
+90.45-90.46: ### Hint: untypeable term 't1'
+90.45-90.46: ### Hint: untypeable term 't1 ()'
+90.45-90.52: ### Hint: untypeable term 't1 () und'
+90.45-90.55: ### Hint: untypeable term 't1 () und t2'
 90.43: *** Error:
 no typing for
 'program And (x, y : Pred Unit) : Pred Unit = t1 () und t2 ()'
 93.11: *** Error: unexpected mixfix token: impl
 95.11: *** Error: unexpected mixfix token: or
 98.39-98.41: ### Hint: no type found for 'all'
-98.39: ### Hint: untypeable term 'all'
+98.39-98.41: ### Hint: untypeable term 'all'
 98.37: *** Error:
 no typing for
 'program ex (p : Pred s) : Pred Unit
          = all \ r : Pred Unit . (all \ x : s . p x impl r) impl r'
 101.29-101.31: ### Hint: no type found for 'all'
-101.29: ### Hint: untypeable term 'all'
+101.29-101.31: ### Hint: untypeable term 'all'
 101.27: *** Error:
 no typing for
 'program ff () : Pred Unit = all \ r : Pred Unit . r ()'
 103.44-103.47: ### Hint: no type found for 'impl'
-103.44: ### Hint: untypeable term (with type: Unit) 'impl'
-103.42-103.44: ### Hint: untypeable term 'r impl'
+103.44-103.47: ### Hint: untypeable term (with type: Unit) 'impl'
+103.42-103.47: ### Hint: untypeable term 'r impl'
 103.40: *** Error:
 no typing for 'program neg (r : Pred Unit) : Pred Unit = r impl ff'
 108.3-108.5: ### Hint: no type found for 'all'
-108.3: ### Hint: untypeable term 'all'
+108.3-108.5: ### Hint: untypeable term 'all'
 108.3-108.62: *** Error:
 no typing for
 'all
@@ -328,26 +328,26 @@ no kind found for 'c'
   expected: {Cppo}
      found: {Cpo}
 121.3-121.5: ### Hint: no type found for 'all'
-121.3: ### Hint: untypeable term 'all'
-121.3-121.16: *** Error: no typing for 'all \ x : c . x <<= x'
+121.3-121.5: ### Hint: untypeable term 'all'
+121.3-121.18: *** Error: no typing for 'all \ x : c . x <<= x'
 122.3-122.5: ### Hint: no type found for 'all'
-122.3: ### Hint: untypeable term 'all'
-122.3-122.53: *** Error:
+122.3-122.5: ### Hint: untypeable term 'all'
+122.3-122.55: *** Error:
 no typing for
 'all \ (x, y, z : c) . (x <<= y) und (y <<= z) impl x <<= z'
 123.3-123.5: ### Hint: no type found for 'all'
-123.3: ### Hint: untypeable term 'all'
+123.3-123.5: ### Hint: untypeable term 'all'
 123.3-123.56: *** Error:
 no typing for
 'all \ (x, y, z : c) . (x <<= y) und (y <<= x) impl eq (x, y)'
 125.32-125.34: ### Hint: no type found for 'all'
-125.32: ### Hint: untypeable term 'all'
-125.14-125.49: *** Error:
+125.32-125.34: ### Hint: untypeable term 'all'
+125.14-125.51: *** Error:
 no typing for '(all \ n : nat . s n <<= s (Suc n)) as Unit'
 126.15: ### Hint: rebound variable 'x'
 126.38-126.40: ### Hint: no type found for 'all'
-126.38: ### Hint: untypeable term 'all'
-126.14-126.55: *** Error:
+126.38-126.40: ### Hint: untypeable term 'all'
+126.14-126.57: *** Error:
 no typing for '(all \ n : nat . s n <<= x) as Unit'
 130.21-131.74: *** Error:
 ambiguous mixfix term
@@ -358,7 +358,7 @@ ambiguous mixfix term
 ((((isBound (sup s, s)) und) all)
  (\ x : c . ((((isBound (x, s)) impl) sup) s) <<= x))
 130.3-130.5: ### Hint: no type found for 'all'
-130.3: ### Hint: untypeable term 'all'
+130.3-130.5: ### Hint: untypeable term 'all'
 130.3-131.74: *** Error:
 no typing for
 'all
@@ -367,15 +367,15 @@ no typing for
    (isBound (sup s, s) und all
     (\ x : c . isBound (x, s) impl sup (s) <<= x))'
 134.3-134.5: ### Hint: no type found for 'all'
-134.3: ### Hint: untypeable term 'all'
+134.3-134.5: ### Hint: untypeable term 'all'
 134.3-134.44: *** Error:
 no typing for 'all \ s : nat -> c . isChain s impl def (sup s)'
 139.5: ### Hint: is type variable 'p'
 141.4-141.9: ### Warning:
 ignoring declaration for builtin identifier 'bottom'
 143.3-143.5: ### Hint: no type found for 'all'
-143.3: ### Hint: untypeable term 'all'
-143.3-143.22: *** Error: no typing for 'all \ x : p . bottom <<= x'
+143.3-143.5: ### Hint: untypeable term 'all'
+143.3-143.24: *** Error: no typing for 'all \ x : p . bottom <<= x'
 148.6: ### Hint: is type variable 'f'
 150.15-150.17: ### Hint: is type list '[f]'
 119.14-119.18: ### Hint:
@@ -392,7 +392,7 @@ repeated declaration of '__<<=__' with type 'c * c ->? Unit'
 159.14-159.15: ### Hint: rebound variable 'y1'
 159.23-159.24: ### Hint: rebound variable 'x2'
 159.27-159.28: ### Hint: rebound variable 'y2'
-159.37-159.45: ### Hint: untypeable term '(x1 <<= x2) und'
+159.37-159.47: ### Hint: untypeable term '(x1 <<= x2) und'
 159.31: *** Error:
 no typing for
 'program (x1, y1) <<= (x2, y2) = (x1 <<= x2) und (y1 <<= y2)'
@@ -417,7 +417,7 @@ ambiguous mixfix term
   ((((def (f x)) impl) f) x) <<= (g x)
 176.11: ### Warning: variable also known as type variable 'f'
 176.31-176.33: ### Hint: no type found for 'all'
-176.31: ### Hint: untypeable term 'all'
+176.31-176.33: ### Hint: untypeable term 'all'
 176.29: *** Error:
 no typing for
 'program f <<=[c -->? d] g
@@ -464,8 +464,8 @@ no kind found for 'p'
   expected: {Cppo}
      found: {Pcpo}
 192.3-192.5: ### Hint: no type found for 'all'
-192.3: ### Hint: untypeable term 'all'
-192.3-193.42: *** Error:
+192.3-192.5: ### Hint: untypeable term 'all'
+192.3-193.44: *** Error:
 no typing for
 'all
  \ f : p -->? p

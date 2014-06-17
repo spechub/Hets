@@ -73,7 +73,7 @@ forall a : Type; p : Bool; w : a; x : a
 7.31: ### Hint: not a kind 'Sum a b ->? c'
 9.11: ### Hint: not a class 'a'
 9.17: ### Hint: not a class 'b'
-10.3: *** Error:
+10.3-10.5: *** Error:
 in term 'not def (op bot : forall a : Type . ? a)'
  are uninstantiated type variables
 '[_v21_a]'
@@ -88,11 +88,11 @@ in term 'not def (op bot : forall a : Type . ? a)'
 20.16: ### Hint: not a class 'a'
 20.15: ### Hint: rebound variable 'x'
 20.18: ### Hint: not a class 'a'
-22.25: ### Hint:
+22.25-22.28: ### Hint:
 no kind found for 'Bool'
   expected: {Cpo}
      found: {Type}
-22.25: ### Hint:
+22.25-22.28: ### Hint:
 no kind found for 'Bool'
   expected: {Cppo}
      found: {Type}

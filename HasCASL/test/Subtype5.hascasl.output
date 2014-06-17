@@ -12,7 +12,7 @@ a : Type %(var_1)%
 op coerce : forall a : Type . Ref a -> Loc
 1.5: ### Hint: is type variable 'a'
 2.11: ### Hint: rebound type variable 'a'
-2.7: *** Error:
+2.7-2.9: *** Error:
 incompatible kind of: Ref
   expected: Type -> Type
      found: Type

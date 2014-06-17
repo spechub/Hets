@@ -38,11 +38,11 @@ forall a : Cpo; c : Chain a; x : ? a
 no kind found for 'a'
   expected: {Cppo}
      found: {Cpo}
-5.27: ### Hint:
+5.27-5.29: ### Hint:
 no kind found for 'Nat'
   expected: {Cpo}
      found: {Type}
-5.27: ### Hint:
+5.27-5.29: ### Hint:
 no kind found for 'Nat'
   expected: {Cppo}
      found: {Type}
