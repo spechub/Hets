@@ -13,6 +13,7 @@ module Static.DgUtils where
 
 import qualified Common.Lib.Rel as Rel
 import Common.IRI
+import Common.Id
 import Common.Utils
 import Common.LibName
 import Common.Consistency
@@ -34,6 +35,7 @@ data NodeName = NodeName
   , extString :: String
   , extIndex :: Int
   , xpath :: [XPathPart]
+  , srcRange :: Range
   } deriving Show
 
 instance Ord NodeName where
@@ -362,7 +364,7 @@ refTarget x = error ("refTarget:" ++ show x)
 -- ** for node names
 
 emptyNodeName :: NodeName
-emptyNodeName = NodeName nullIRI "" 0 []
+emptyNodeName = NodeName nullIRI "" 0 [] nullRange
 
 showExt :: NodeName -> String
 showExt n = let i = extIndex n in extString n ++ if i == 0 then "" else show i
@@ -372,8 +374,14 @@ showName n = let ext = showExt n in
     iriToStringShortUnsecure (setAngles False $ getName n)
     ++ if null ext then ext else "__" ++ ext
 
+makeRgName :: IRI -> Range -> NodeName
+makeRgName n = NodeName n "" 0 [ElemName $ iriToStringShortUnsecure n]
+
 makeName :: IRI -> NodeName
-makeName n = NodeName n "" 0 [ElemName $ iriToStringShortUnsecure n]
+makeName n = makeRgName n $ iriPos n
+
+setSrcRange :: Range -> NodeName -> NodeName
+setSrcRange r n = n { srcRange = r }
 
 parseNodeName :: String -> NodeName
 parseNodeName s =

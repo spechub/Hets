@@ -784,7 +784,7 @@ anaUnitSpec lgraph ln dg opts eo impsig rN usp = case usp of
         anaUnitSpec lgraph ln dg opts eo impsig rN (Spec_name spn)
       _ -> do -- a trivial unit type
        (resultSpec', resultSig, dg') <- anaSpec False lgraph ln
-           dg impsig emptyNodeName opts eo (item resultSpec)
+           dg impsig emptyNodeName opts eo (item resultSpec) poss
        let usig = UnitSig [] resultSig Nothing
        return (mkRefSigFromUnit usig , dg', Unit_type []
                             (replaceAnnoted resultSpec' resultSpec) poss)
@@ -796,7 +796,7 @@ anaUnitSpec lgraph ln dg opts eo impsig rN usp = case usp of
         in that case, an identity morphism is introduced -}
        (resultSpec', resultSig, dg3) <- anaSpec True lgraph ln
            dg2 (JustNode sigUnion)
-                emptyNodeName opts eo (item resultSpec)
+                emptyNodeName opts eo (item resultSpec) poss
        let usig = UnitSig argSigs resultSig $ Just sigUnion
            rsig = mkRefSigFromUnit usig
        return (rsig, dg3, Unit_type argSpecs'
@@ -989,9 +989,10 @@ anaArgSpecs lgraph ln dg opts eo args = case args of
   [] -> return ([], dg, [])
   argSpec : argSpecs -> do
        l <- lookupLogic "anaArgSpecs " (currentLogic lgraph) lgraph
+       let sp = item argSpec
        (argSpec', argSig, dg') <-
            anaSpec False lgraph ln dg (EmptyNode l) emptyNodeName
-                                           opts eo (item argSpec)
+                                           opts eo sp $ getRange sp
        (argSigs, dg'', argSpecs') <-
            anaArgSpecs lgraph ln dg' opts eo argSpecs
        return (argSig : argSigs, dg'', replaceAnnoted argSpec' argSpec

@@ -357,10 +357,10 @@ anaGenericity lg ln dg opts eo name
      [] -> return ([], baseNode, dg)
      _ -> do
       (is', _, nsig', dgI) <- anaUnion False lg ln dg baseNode
-          (extName "Imports" name) opts eo isps
+          (extName "Imports" name) opts eo isps $ getRange isps
       return (is', JustNode nsig', dgI)
    (ps', nsigPs, ns, dg'') <- anaUnion False lg ln dg' nsigI
-          (extName "Parameters" name) opts eo psps
+          (extName "Parameters" name) opts eo psps $ getRange psps
    return (Genericity (Params ps') (Imported imps') pos,
      GenSig nsigI nsigPs $ JustNode ns, dg'')
 
@@ -387,7 +387,7 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
       "unexpected initial %implies in spec-defn" pos
     (sp', body, dg'') <-
       liftR (anaSpecTop sanno1 True lg currLn dg'
-            allparams nName opts eo (item asp))
+            allparams nName opts eo (item asp) pos)
     let libItem' = Spec_defn spn gen' (replaceAnnoted sp' asp) pos
         genv = globalEnv dg
     if Map.member spn genv
@@ -623,10 +623,12 @@ anaViewType :: LogicGraph -> LibName -> DGraph -> MaybeNode -> HetcatsOpts
 anaViewType lg ln dg parSig opts eo name (View_type aspSrc aspTar pos) = do
   --trace "called anaViewType" $ do
   l <- lookupCurrentLogic "VIEW_TYPE" lg
-  (spSrc', srcNsig, dg') <- adjustPos pos $ anaSpec False lg ln dg (EmptyNode l)
-    (extName "Source" name) opts eo (item aspSrc)
-  (spTar', tarNsig, dg'') <- adjustPos pos $ anaSpec True lg ln dg' parSig
-    (extName "Target" name) opts eo (item aspTar)
+  let spS = item aspSrc
+      spT = item aspTar
+  (spSrc', srcNsig, dg') <- anaSpec False lg ln dg (EmptyNode l)
+    (extName "Source" name) opts eo spS $ getRange spS
+  (spTar', tarNsig, dg'') <- anaSpec True lg ln dg' parSig
+    (extName "Target" name) opts eo spT $ getRange spT
   return (View_type (replaceAnnoted spSrc' aspSrc)
                     (replaceAnnoted spTar' aspTar)
                     pos,

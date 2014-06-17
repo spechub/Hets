@@ -103,7 +103,8 @@ lnode full ga lenv (_, lbl) =
           ElemName s : t -> (s, showXPath t)
           l -> ("?", showXPath l)
   in add_attrs (mkNameAttr (showName nm)
-    : mkAttr "reference" (map toLower $ show $ isDGRef lbl)
+    : rangeAttrs (srcRange nm)
+    ++ mkAttr "reference" (map toLower $ show $ isDGRef lbl)
     : case signOf $ dgn_theory lbl of
         G_sign slid _ _ -> mkAttr "logic" (show slid)
           : if not (isDGRef lbl) && dgn_origin lbl < DGProof then
