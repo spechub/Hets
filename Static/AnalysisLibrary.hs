@@ -553,18 +553,18 @@ symbolsOf lg gs1@(G_sign l1 (ExtSign sig1 sys1) _)
       ss2 <- coerceSymbItemsList lid2 l2 "symbolsOf1" sis2
       rs2 <- stat_symb_items l2 sig2 ss2
       p <- case (rs1, rs2) of
-        ([r1], [r2]) -> --trace (show r1 ++ " " ++ show (Set.toList sys1)) $
+        ([r1], [r2]) -> -- trace (show r1 ++ " " ++ show (Set.toList sys1)) $
          case
             ( filter (\ sy -> matches l1 sy r1) $ Set.toList sys1
             , filter (\ sy -> matches l2 sy r2) $ Set.toList sys2) of
           ([s1], [s2]) ->
             return (G_symbol l1 s1, G_symbol l2 s2)
-          (ll1, ll2) -> --trace
-               -- ("sys1:" ++ (show $
-               --   Set.toList sys1
-               -- ))  $
+          (ll1, ll2) -> {- trace
+               ("sys1:" ++ (show $
+               Set.toList sys1
+               ))  $ -}
                  error
-                  $"non-unique symbol match: " ++ show ll1 ++ "\n" ++ show ll2
+                  $ "non-unique symbol match: " ++ show ll1 ++ "\n" ++ show ll2
         _ -> mkError "non-unique raw symbols" c
       ps <- symbolsOf lg gs1 gs2 corresps'
       return $ Set.insert p ps
@@ -621,7 +621,7 @@ anaViewType :: LogicGraph -> LibName -> DGraph -> MaybeNode -> HetcatsOpts
   -> ExpOverrides
   -> NodeName -> VIEW_TYPE -> Result (VIEW_TYPE, (NodeSig, NodeSig), DGraph)
 anaViewType lg ln dg parSig opts eo name (View_type aspSrc aspTar pos) = do
-  --trace "called anaViewType" $ do
+  -- trace "called anaViewType" $ do
   l <- lookupCurrentLogic "VIEW_TYPE" lg
   let spS = item aspSrc
       spT = item aspTar
@@ -671,7 +671,7 @@ anaAlignDefn lg ln libenv dg opts eo an arities atype acorresps pos = do
          let isFunctional = isTotal gsig1 leftList &&
                           isInjective leftList
              allEquiv = all
-                         (\c ->
+                         (\ c ->
                            case c of
                             Single_correspondence
                                _ _ _ (Just Equivalent) _ -> True
@@ -755,19 +755,22 @@ anaAlignDefn lg ln libenv dg opts eo an arities atype acorresps pos = do
                 generateWAlign gsig1 gsig2 acorresps
             let n1 = getNewNodeDG dg'
                 labN1 = newInfoNodeLab
-                         (makeName an{abbrevFragment = abbrevFragment an ++ "_source"})
+                         (makeName an
+                          {abbrevFragment = abbrevFragment an ++ "_source"})
                          (newNodeInfo DGAlignment)
                          gt1
                 dg1 = insLNodeDG (n1, labN1) dg'
                 n2 = getNewNodeDG dg1
                 labN2 = newInfoNodeLab
-                         (makeName an{abbrevFragment = abbrevFragment an ++ "_target"})
+                         (makeName an
+                          {abbrevFragment = abbrevFragment an ++ "_target"})
                          (newNodeInfo DGAlignment)
                          gt2
                 dg2 = insLNodeDG (n2, labN2) dg1
                 n = getNewNodeDG dg2
                 labN = newInfoNodeLab
-                         (makeName an{abbrevFragment = abbrevFragment an ++ "_bridge"})
+                         (makeName an
+                          {abbrevFragment = abbrevFragment an ++ "_bridge"})
                          (newNodeInfo DGAlignment)
                          gt
                 dg3 = insLNodeDG (n, labN) dg2
@@ -789,9 +792,9 @@ anaAlignDefn lg ln libenv dg opts eo an arities atype acorresps pos = do
                 asign = WAlign (NodeSig n1 $ signOf gt1) incl1 gmor1
                               (NodeSig n2 $ signOf gt2) incl2 gmor2
                               src tar (NodeSig n $ signOf gt)
-            return dg7{globalEnv = Map.insert an (AlignEntry asign)
+            return dg7 {globalEnv = Map.insert an (AlignEntry asign)
                             $ globalEnv dg7}
-            --error "nyi"
+            -- error "nyi"
          let itm = Align_defn an arities atype' acorresps pos
              anstr = iriToStringUnsecure an
          if Map.member an $ globalEnv dg
@@ -809,22 +812,22 @@ generateWAlign (G_sign lid1 (ExtSign ssig _) _)
                (G_sign lid2 (ExtSign tsig _) _)
                corrs = do
  tsig' <- coercePlainSign lid2 lid1 "coercePlainSign" tsig
- let (eSymbs, cSymbs) = foldl (\(l1, l2) c -> case c of
+ let (eSymbs, cSymbs) = foldl (\ (l1, l2) c -> case c of
                       Single_correspondence _ s1 s2 (Just Equivalent) _ ->
-                        ((s1, s2):l1, l2)
+                        ((s1, s2) : l1, l2)
                       Single_correspondence _ s1 s2 (Just rref) _ ->
-                        (l1,(s1, s2, refToRel rref):l2)
-                      _ -> error "only single correspondences") ([],[]) corrs
+                        (l1, (s1, s2, refToRel rref) : l2)
+                      _ -> error "only single correspondences") ([], []) corrs
  -- 1. initialize
      sig1 = empty_signature lid1
      sig2 = empty_signature lid1
-     sig  = empty_signature lid1
+     sig = empty_signature lid1
      phi1 = Map.empty
      phi2 = Map.empty
--- for each equivalence in eSymbs
- --  put s1 in gth1, sigma_1(s1) = s1_s2
- --  put s2 in gth2, sigma_2(s2) = s1_s2
- --  put s1_s2 in gth
+{- for each equivalence in eSymbs
+ put s1 in gth1, sigma_1(s1) = s1_s2
+ put s2 in gth2, sigma_2(s2) = s1_s2
+ put s1_s2 in gth -}
      addEquiv (s1, s2, s, p1, p2) (G_symb_items_list lids1 l1,
                             G_symb_items_list lids2 l2) = do
        l1' <- coerceSymbItemsList lids1 lid1 "coerceSymbItemsList" l1
@@ -833,18 +836,18 @@ generateWAlign (G_sign lid1 (ExtSign ssig _) _)
           equiv2cospan lid1 ssig tsig' l1' l2'
        s1' <- signature_union lid1 s1 cssig1
        s2' <- signature_union lid1 s2 cssig2
-       s'  <- signature_union lid1 s ctsig
+       s' <- signature_union lid1 s ctsig
        let p1' = Map.union cmap1 p1
            p2' = Map.union cmap2 p2
        return (s1', s2', s', p1', p2')
  (sig1', sig2', sig', phi1', phi2') <- foldM addEquiv
        (sig1, sig2, sig, phi1, phi2) eSymbs
- -- for each other correspondence in cSymbs
- --  put s1 in gth1, sigma_1(s1) = s1 if undefined
- --  put s2 in gth2, sigma_2(s2) = s2 if undefined
- --  gtI = corresp2th s1 s2 rref
- --  make the union of gtI with gth,
- --  possibly renaming symbols in gtI according to sigma_1,2
+ {- for each other correspondence in cSymbs
+ put s1 in gth1, sigma_1(s1) = s1 if undefined
+ put s2 in gth2, sigma_2(s2) = s2 if undefined
+ gtI = corresp2th s1 s2 rref
+ make the union of gtI with gth,
+ possibly renaming symbols in gtI according to sigma_1,2 -}
  let addCorresp (s1, s2, s, sens, p1, p2) (G_symb_items_list lids1 l1,
                             G_symb_items_list lids2 l2, rrel) = do
        l1' <- coerceSymbItemsList lids1 lid1 "coerceSymbItemsList" l1
@@ -862,20 +865,20 @@ generateWAlign (G_sign lid1 (ExtSign ssig _) _)
  -- make G_ results
  let gth1 = noSensGTheory lid1 (mkExtSign sig1'') startSigId
      gth2 = noSensGTheory lid1 (mkExtSign sig2'') startSigId
-     gth = G_theory lid1 Nothing (mkExtSign  sig'') startSigId
+     gth = G_theory lid1 Nothing (mkExtSign sig'') startSigId
                                  (toThSens sens'') startThId
      rsMap1 = Map.mapKeys (symbol_to_raw lid1) $
               Map.map (symbol_to_raw lid1) sMap1
      rsMap2 = Map.mapKeys (symbol_to_raw lid1) $
               Map.map (symbol_to_raw lid1) sMap2
  mor1 <- induced_from_to_morphism
-            lid1 rsMap1 (mkExtSign sig1'') (mkExtSign  sig'')
+            lid1 rsMap1 (mkExtSign sig1'') (mkExtSign sig'')
  let gmor1 = gEmbed2 (signOf gth1) $ mkG_morphism lid1 mor1
- mor2 <- --trace "mor2:" $
-         --trace ("source: " ++ (show sig2'')) $
-         --trace ("target: " ++ (show sig''))  $
+ mor2 <- {- trace "mor2:" $
+         trace ("source: " ++ (show sig2'')) $
+         trace ("target: " ++ (show sig''))  $ -}
          induced_from_to_morphism
-            lid1 rsMap2 (mkExtSign sig2'') (mkExtSign  sig'')
+            lid1 rsMap2 (mkExtSign sig2'') (mkExtSign sig'')
  let gmor2 = gEmbed2 (signOf gth2) $ mkG_morphism lid1 mor2
  return (gth1, gth2, gth, gmor1, gmor2)
 
