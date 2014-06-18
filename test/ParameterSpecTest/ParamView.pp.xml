@@ -2,7 +2,7 @@
 <Lib name="ParamView" range="1.1">
   <SpecDefn name="s" range="3.1-3.32">
     <Parameters>
-      <Union range="3.8-3.17">
+      <Union range="3.8-3.21">
         <Spec>
           <Basicspec range="3.9-3.15">
             <Sort_items SortsKind="NonEmptySorts" range="3.9-3.14">
@@ -15,7 +15,7 @@
       </Union>
     </Parameters>
     <Imports>
-      <Union range="3.8-3.17">
+      <Union range="3.8-3.21">
         <Spec>
           <Group range="3.23-3.30">
             <Basicspec range="3.24-3.30">
@@ -39,7 +39,7 @@
   </SpecDefn>
   <ViewDefn name="v" range="5.1-5.54">
     <Parameters>
-      <Union range="5.7-5.16">
+      <Union range="5.7-5.20">
         <Spec>
           <Basicspec range="5.8-5.14">
             <Sort_items SortsKind="NonEmptySorts" range="5.8-5.13">
@@ -52,7 +52,7 @@
       </Union>
     </Parameters>
     <Imports>
-      <Union range="5.7-5.16">
+      <Union range="5.7-5.20">
         <Spec>
           <Group range="5.22-5.29">
             <Basicspec range="5.23-5.29">
