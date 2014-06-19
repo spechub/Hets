@@ -26,9 +26,11 @@ getMagicFileType :: Maybe String -> FilePath -> ResultT IO String
 getMagicFileType mp fn = ResultT $ do
   res <- runResultT $ getFileType Nothing (Just "--mime-encoding") fn
   runResultT $ case maybeResult res of
-    Just s -> if isInfixOf "binary" s
+    Just s -> do
+      liftR $ justHint () $ "mime-encoding: " ++ s
+      if any (`isInfixOf` s) ["binary", "unknown"]
       then do
-        liftR $ justWarn () $ "no support for binary file: " ++ fn
+        liftR $ justWarn () $ "no support for " ++ s ++ " file: " ++ fn
         getFileType Nothing mp fn
       else getMagicFileTypeAux mp fn
     _ -> liftR res
