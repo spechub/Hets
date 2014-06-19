@@ -23,6 +23,7 @@ import Control.Monad
 
 import Driver.Options
 import Driver.AnaLib
+import Driver.ReadFn (showFileType)
 import Driver.WriteFn
 
 import Static.DevGraph
@@ -36,7 +37,6 @@ import GUI.ShowLogicGraph
 import Haskell.Haskell2DG
 #endif
 
-import Common.FileType
 import Common.LibName
 import Interfaces.DataTypes
 import CMDL.ProcessScript
@@ -90,7 +90,7 @@ noUniPkg = fail $ "No graph display interface; \n"
 
 processFile :: HetcatsOpts -> FilePath -> IO ()
 processFile opts file =
-  if fileType opts then showFileType file else do
+  if fileType opts then showFileType opts file else do
     putIfVerbose opts 3 ("Processing input: " ++ file)
     let doExit = guiType opts == UseGui
     res <- case guess file (intype opts) of

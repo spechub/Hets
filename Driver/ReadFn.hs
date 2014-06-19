@@ -22,6 +22,7 @@ module Driver.ReadFn
   , getContent
   , getExtContent
   , fromShATermString
+  , showFileType
   ) where
 
 import Logic.Grothendieck
@@ -34,18 +35,24 @@ import ATerm.AbstractSyntax
 import ATerm.ReadWrite
 
 import Common.Http
+import Common.FileType
 import Common.Id
 import Common.IO
 import Common.IRI
 import Common.Result
+import Common.ResultT
 import Common.DocUtils
 import Common.LibName
+import Common.Utils
 
 import Text.XML.Light
 
+import System.Exit
 import System.FilePath
+import System.IO
 import System.Directory
 
+import Control.Monad
 import Control.Monad.Trans (MonadIO (..))
 
 import Data.Char (isSpace)
@@ -86,7 +93,8 @@ guessXmlContent isXml str = case dropWhile isSpace str of
 
 guessInput :: MonadIO m => HetcatsOpts -> FilePath -> String -> m InType
 guessInput opts file input = let fty = guess file (intype opts) in
-  if elem fty [GuessIn, DgXml, RDFIn] then case guessXmlContent (fty == DgXml) input of
+  if elem fty [GuessIn, DgXml, RDFIn] then
+    case guessXmlContent (fty == DgXml) input of
     Left ty -> fail ty
     Right ty -> case ty of
       DgXml -> fail "unexpected DGraph xml"
@@ -191,3 +199,27 @@ getExtContent opts exts fp =
       ffs = if checkUri fn || isAbsolute fn then fs else
            concatMap (\ d -> map (d </>) fs) $ "" : libdirs opts
   in tryDownload opts ffs fn
+
+exitHets :: String -> IO ()
+exitHets err = do
+  hPutStrLn stderr err
+  exitWith $ ExitFailure 2
+
+showFileType :: HetcatsOpts -> FilePath -> IO ()
+showFileType opts fn = do
+  eith <- getContent opts fn
+  case eith of
+    Left err -> exitHets err
+    Right (nFn, cont) -> do
+      let isUri = checkUri nFn
+      f <- if isUri then getTempFile cont "hets-file.tmp" else return nFn
+      Result ds mr <- runResultT $ getMagicFileType Nothing f
+      when isUri $ do
+        putStrLn nFn
+        removeFile f
+      let fstr = if nFn == fn then fn else nFn ++ " (via " ++ fn ++ ")"
+      case mr of
+        Just s -> do
+          showDiags opts ds
+          putStrLn $ fstr ++ ": " ++ s
+        _ -> exitHets $ fstr ++ ":\n" ++ showRelDiags 2 ds
