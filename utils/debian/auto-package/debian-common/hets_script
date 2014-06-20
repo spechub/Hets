@@ -32,15 +32,6 @@ class UpdateFailure(Exception):
 try:
     f = open("/var/lib/dpkg/lock", 'w')
     fcntl.lockf(f, fcntl.LOCK_EX|fcntl.LOCK_NB)
-    print "Retrieving latest Hets OWL2Parser.jar...",
-    subprocess.call("rm -r -f /tmp/OWL2Parser.jar",shell=True,stderr=subprocess.DEVNULL)
-    sys.stdout.flush()
-    try:
-        subprocess.check_call("curl -sG http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/src-distribution/OWL2Parser.jar \
-                         > /tmp/OWL2Parser.jar",shell=True,stdout=sys.stdout,stderr=sys.stderr)
-    except subprocess.CalledProcessError:
-        raise UpdateFailure("Failed to retrieve Hets OWL2Parser.jar!")
-    print "Done"
     print "Retrieving latest Hets library...",
     sys.stdout.flush()
     subprocess.call("rm -r -f /tmp/hets*",shell=True,stderr=subprocess.DEVNULL)
@@ -53,7 +44,6 @@ try:
     print "Done"
     print "Retrieving latest Hets binary...",
     sys.stdout.flush()
-    subprocess.call(["rm", "-f", "/tmp/hets-$HETS_DAILY_VERSION*"],stderr=subprocess.DEVNULL)
     try:
         if os.uname()[4] == "x86_64":
             subprocess.check_call("curl -sG http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/linux64/daily/hets.bz2 \
@@ -67,21 +57,42 @@ try:
         subprocess.check_call(["bunzip2", "/tmp/hets-$HETS_DAILY_VERSION.bz2"],
          stdout=subprocess.STDOUT,stderr=subprocess.STDERR)
         subprocess.call(["chmod","+x","/tmp/hets-$HETS_DAILY_VERSION"])
-        subprocess.check_call(["/tmp/hets-$HETS_DAILY_VERSION","-V"],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+        subprocess.check_call(["/tmp/hets-$HETS_DAILY_VERSION","-V"],
+         stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
     except subprocess.CalledProcessError:
         raise UpdateFailure("Retrieved Hets binary seems broken. Please try again later!")
+    print "Done"
+    print "Retrieving latest hets.magic file...",
+    sys.stdout.flush()
+    try:
+        subprocess.check_call("curl -sG http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/src-distribution/hets.magic \
+                         > /tmp/hets.magic",shell=True,stdout=sys.stdout,stderr=sys.stderr)
+    except subprocess.CalledProcessError:
+        raise UpdateFailure("Failed to retrieve hets.magic!")
+    print "Done"
+    print "Retrieving latest Hets OWL2Parser.jar...",
+    sys.stdout.flush()
+    subprocess.call("rm -r -f /tmp/OWL2Parser.jar",shell=True,stderr=subprocess.DEVNULL)
+    try:
+        subprocess.check_call("curl -sG http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/src-distribution/OWL2Parser.jar \
+                         > /tmp/OWL2Parser.jar",shell=True,stdout=sys.stdout,stderr=sys.stderr)
+    except subprocess.CalledProcessError:
+        raise UpdateFailure("Failed to retrieve Hets OWL2Parser.jar!")
     print "Done"
     print "Creating Backups ...",
     sys.stdout.flush()
     try:
+        subprocess.check_call(["mv", "/usr/lib/hets/hets.magic",
+         "/usr/lib/hets/hets.magic.bak"],stderr=subprocess.DEVNULL)
         subprocess.check_call(["mv", "/usr/lib/hets/hets-owl-tools/OWL2Parser.jar",
          "/usr/lib/hets/hets-owl-tools/OWL2Parser.jar.bak"],stderr=subprocess.DEVNULL)
         subprocess.check_call(["mv", "/usr/lib/hets/hets",
          "/usr/lib/hets/hets.bak"],stderr=subprocess.DEVNULL)
+        subprocess.check_call(["rm", "-r", "-f", "/usr/lib/hets/hets-lib.bak",stderr=subprocess.DEVNULL)
         subprocess.check_call(["mv","/usr/lib/hets/hets-lib",
          "/usr/lib/hets/hets-lib.bak"],stderr=subprocess.DEVNULL)
     except subprocess.CalledProcessError:
-        raise UpdateFailure("Couldn't create backups. Please make sure the package hets-core is properly installed!")
+        raise UpdateFailure ("Couldn't create backups. Please make sure the package hets-core is properly installed!")
     print "Done"
     print "Installing new files ...",
     sys.stdout.flush()
@@ -90,22 +101,17 @@ try:
                                "/usr/lib/hets/hets"],stderr=subprocess.DEVNULL)
         subprocess.check_call(["cp", "-r", "/tmp/hets-lib", "/usr/lib/hets/hets-lib"])
         subprocess.check_call(["install", "-m", "644", "/tmp/OWL2Parser.jar",
-                               "/usr/lib/hets/hets-owl-tools"],stderr=subprocess.DEVNULL)
+                               "/usr/lib/hets/hets-owl-tools/"],stderr=subprocess.DEVNULL)
+        subprocess.check_call(["install", "-m", "644", "/tmp/hets.magic",
+                               "/usr/lib/hets/"],stderr=subprocess.DEVNULL)
     except subprocess.CalledProcessError:
-        subprocess.call(["rm", "-r", "-f", "/usr/lib/hets/hets-owl-tools/OWL2Parser.jar",
-         "/usr/lib/hets/hets", "/usr/lib/hets/hets-lib"],stderr=subprocess.DEVNULL)
+         print "Installation possibly incomplete please try again later or revert"
     print "Done"
 except IOError:
     print "Could not acquire lock \"/var/lib/dpkg/lock\""
     sys.exit(0)
 except UpdateFailure as e:
     print "Experienced update failure: ", e.value
-    subprocess.call(["mv", "/usr/lib/hets/hets-owl-tools/OWL2Parser.jar.bak",
-         "/usr/lib/hets/hets-owl-tools/OWL2Parser.jar"],stderr=subprocess.DEVNULL)
-    subprocess.call(["mv", "/usr/lib/hets/hets.bak",
-         "/usr/lib/hets/hets"],stderr=subprocess.DEVNULL)
-    subprocess.call(["mv","/usr/lib/hets/hets-lib.bak",
-         "/usr/lib/hets/hets-lib"],stderr=subprocess.DEVNULL)
 finally:
     if not os.path.exists("/usr/lib/hets/hets-lib"):
       subprocess.call(["mv","/usr/lib/hets/hets-lib.bak","/usr/lib/hets/hets-lib"],stderr=subprocess.DEVNULL)
@@ -114,6 +120,9 @@ finally:
     if not os.path.exists("/usr/lib/hets/hets-owl-tools/OWL2Parser.jar"):
       subprocess.call(["mv","/usr/lib/hets/hets-owl-tools/OWL2Parser.jar.bak",
            "/usr/lib/hets/hets-owl-tools/OWL2Parser.jar"],stderr=subprocess.DEVNULL)
+    if not os.path.exists("/usr/lib/hets/hets.magic"):
+      subprocess.call(["mv","/usr/lib/hets/hets.magic.bak",
+           "/usr/lib/hets/hets.magic"],stderr=subprocess.DEVNULL)
     subprocess.call("rm -r -f /tmp/hets*",shell=True,stderr=subprocess.DEVNULL)
     subprocess.call("rm -r -f /tmp/OWL2Parser.jar",shell=True,stderr=subprocess.DEVNULL)
     sys.exit(0)
@@ -147,10 +156,14 @@ try:
     fcntl.lockf(f, fcntl.LOCK_EX|fcntl.LOCK_NB)
     print "Reverting to previous Hets binary... ",
     try:
-        subprocess.check_call(["mv", "/usr/lib/hets/hets-owl-tools/OWL2Parser.jar.bak",
-         "/usr/lib/hets/hets-owl-tools/OWL2Parser.jar"],stderr=subprocess.DEVNULL);
         subprocess.check_call(["mv", "/usr/lib/hets/hets.bak",
          "/usr/lib/hets/hets"],stderr=subprocess.DEVNULL);
+        if os.path.exists("/usr/lib/hets/hets.magic.bak"):
+           subprocess.check_call(["mv", "/usr/lib/hets/hets.magic.bak",
+            "/usr/lib/hets/hets.magic"],stderr=subprocess.DEVNULL);
+        if os.path.exists("/usr/lib/hets/hets-owl-tools/OWL2Parser.jar.bak"):
+           subprocess.check_call(["mv", "/usr/lib/hets/hets-owl-tools/OWL2Parser.jar.bak",
+            "/usr/lib/hets/hets-owl-tools/OWL2Parser.jar"],stderr=subprocess.DEVNULL);
         if os.path.exists("/usr/lib/hets/hets-lib.bak"):
            subprocess.check_call(["rm", "-r", "-f", "/usr/lib/hets/hets-lib"],
             stderr=subprocess.DEVNULL)
@@ -184,6 +197,7 @@ fi
 # and starting Hets
 #
 
+export HETS_MAGIC=/usr/lib/hets/hets.magic
 export HETS_LIB=/usr/lib/hets/hets-lib
 export HETS_OWL_TOOLS=/usr/lib/hets/hets-owl-tools
 export HETS_ISABELLE_LIB=/usr/lib/hets/hets-lib/Isabelle
