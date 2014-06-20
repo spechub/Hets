@@ -22,6 +22,7 @@ module Driver.ReadFn
   , getContent
   , getExtContent
   , fromShATermString
+  , getContentAndFileType
   , showFileType
   ) where
 
@@ -205,21 +206,28 @@ exitHets err = do
   hPutStrLn stderr err
   exitWith $ ExitFailure 2
 
-showFileType :: HetcatsOpts -> FilePath -> IO ()
-showFileType opts fn = do
+getContentAndFileType :: HetcatsOpts -> Maybe String -> FilePath
+  -> IO (Either String (Maybe String, FilePath, String))
+getContentAndFileType opts mp fn = do
   eith <- getContent opts fn
   case eith of
-    Left err -> exitHets err
+    Left err -> return $ Left err
     Right (nFn, cont) -> do
       let isUri = checkUri nFn
       f <- if isUri then getTempFile cont "hets-file.tmp" else return nFn
-      Result ds mr <- runResultT $ getMagicFileType Nothing f
-      when isUri $ do
-        putStrLn nFn
-        removeFile f
-      let fstr = if nFn == fn then fn else nFn ++ " (via " ++ fn ++ ")"
-      case mr of
-        Just s -> do
-          showDiags opts ds
-          putStrLn $ fstr ++ ": " ++ s
-        _ -> exitHets $ fstr ++ ":\n" ++ showRelDiags 2 ds
+      Result ds mr <- runResultT $ getMagicFileType mp f
+      showDiags opts ds
+      when isUri $ removeFile f
+      return $ Right (mr, nFn, cont)
+
+showFileType :: HetcatsOpts -> FilePath -> IO ()
+showFileType opts fn = do
+  eith <- getContentAndFileType opts Nothing fn
+  case eith of
+    Left err -> exitHets err
+    Right (mr, nFn, _) ->
+      let fstr = (if nFn == fn then fn else nFn ++ " (via " ++ fn ++ ")")
+             ++ ": "
+      in case mr of
+        Just s -> putStrLn $ fstr ++ s
+        Nothing -> exitHets $ fstr ++ "could not determine file type."
