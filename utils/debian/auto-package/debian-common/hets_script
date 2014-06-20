@@ -88,7 +88,7 @@ try:
          "/usr/lib/hets/hets-owl-tools/OWL2Parser.jar.bak"],stderr=subprocess.DEVNULL)
         subprocess.check_call(["mv", "/usr/lib/hets/hets",
          "/usr/lib/hets/hets.bak"],stderr=subprocess.DEVNULL)
-        subprocess.check_call(["rm", "-r", "-f", "/usr/lib/hets/hets-lib.bak",stderr=subprocess.DEVNULL)
+        subprocess.check_call(["rm", "-r", "-f", "/usr/lib/hets/hets-lib.bak"],stderr=subprocess.DEVNULL)
         subprocess.check_call(["mv","/usr/lib/hets/hets-lib",
          "/usr/lib/hets/hets-lib.bak"],stderr=subprocess.DEVNULL)
     except subprocess.CalledProcessError:
