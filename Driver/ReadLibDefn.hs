@@ -12,7 +12,7 @@ Portability :  non-portable(DevGraph)
 reading Lib-Defns for various logics, OWL and CL return several Lib-Defns
 -}
 
-module Driver.ReadLibDefn where
+module Driver.ReadLibDefn (readLibDefn) where
 
 import Logic.Grothendieck
 
@@ -43,10 +43,42 @@ import Common.Result
 import Text.ParserCombinators.Parsec
 
 import Control.Monad.Trans (MonadIO (..))
+import Data.List
 
-guessInput :: MonadIO m => HetcatsOpts -> FilePath -> String -> m InType
-guessInput opts file input = let fty = guess file (intype opts) in
-  if elem fty [GuessIn, DgXml, RDFIn] then
+mimeTypeMap :: [(String, InType)]
+mimeTypeMap =
+  [ ("xml", DgXml)
+  , ("html", HtmlIn)
+  , ("rdf", RDFIn)
+  , ("owl", OwlXmlIn)
+  , ("obo", OBOIn)
+  , ("ttl", OWLIn)
+  , ("omn", OWLIn)
+  , ("clif", CommonLogicIn True)
+  , ("dol", DOLIn)
+  , ("het", HetCASLIn)
+  , ("casl", CASLIn) ]
+
+joinFileTypes :: InType -> InType -> InType
+joinFileTypes ext magic = case (ext, magic) of
+  (GuessIn, _) -> magic
+  (_, GuessIn) -> ext
+  (DgXml, _) | elem magic [DgXml, RDFIn, OwlXmlIn] -> magic
+  (_, HtmlIn) -> magic
+  -- (_, DgXml) | elem ext [DgXml, RDFIn, OWLIn, OwlXmlIn, OBOIn, Xmi] -> ext
+  _ -> ext -- ignore contradictions
+
+findFiletype :: String -> InType
+findFiletype s =
+  maybe GuessIn snd $ find (\ (r, _) -> isInfixOf ('/' : r) s) mimeTypeMap
+
+guessInput :: MonadIO m => HetcatsOpts -> Maybe String -> FilePath -> String
+  -> m InType
+guessInput opts mr file input =
+  let fty1 = guess file (intype opts)
+      fty2 = maybe GuessIn findFiletype mr
+      fty = joinFileTypes fty1 fty2
+  in if elem fty [GuessIn, DgXml, RDFIn, OwlXmlIn] then
     case guessXmlContent (fty == DgXml) input of
     Left ty -> fail ty
     Right ty -> case ty of
@@ -54,17 +86,18 @@ guessInput opts file input = let fty = guess file (intype opts) in
       _ -> return ty
   else return fty
 
-readLibDefn :: MonadIO m => LogicGraph -> HetcatsOpts -> FilePath
-  -> FilePath -> String -> m [LIB_DEFN]
-readLibDefn lgraph opts file fileForPos input =
+readLibDefn :: MonadIO m => LogicGraph -> HetcatsOpts -> Maybe String
+  -> FilePath -> FilePath -> String -> m [LIB_DEFN]
+readLibDefn lgraph opts mr file fileForPos input =
     if null input then fail ("empty input file: " ++ file) else
     case intype opts of
     ATermIn _ -> return [from_sml_ATermString input]
     FreeCADIn ->
       liftIO $ fmap (: []) . readFreeCADLib file $ fileToLibName opts file
     _ -> do
-     ty <- guessInput opts file input
+     ty <- guessInput opts mr file input
      case ty of
+      HtmlIn -> fail "unexpected html input"
       CommonLogicIn _ -> liftIO $ parseCL_CLIF file opts
 #ifdef RDFLOGIC
  -- - RDFIn -> liftIO $ parseRDF file
@@ -73,7 +106,7 @@ readLibDefn lgraph opts file fileForPos input =
       Qvt -> liftIO $ fmap (: []) $ parseQvt file
       TPTPIn -> liftIO $ fmap (: []) $ parseTPTP file
 #ifndef NOOWLLOGIC
-      _ | elem ty [OWLIn, OwlXmlIn, OBOIn] -> liftIO
+      _ | elem ty [OWLIn, OwlXmlIn, OBOIn, RDFIn] -> liftIO
         $ parseOWL (isStructured opts) file
 #endif
       _ -> case runParser (library lgraph) (emptyAnnos ()) fileForPos input of

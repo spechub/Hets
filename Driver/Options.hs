@@ -430,6 +430,7 @@ data InType =
   | Xmi
   | Qvt
   | TPTPIn
+  | HtmlIn -- just to complain
   deriving Eq
 
 instance Show InType where
@@ -459,6 +460,7 @@ instance Show InType where
     RDFIn -> "rdf"
     Xmi -> "xmi"
     Qvt -> "qvt"
+    HtmlIn -> "html"
 
 -- maybe this optional tree prefix can be omitted
 instance Read InType where

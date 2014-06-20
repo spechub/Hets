@@ -95,10 +95,10 @@ anaSource mln lg opts topLns libenv initDG origName = ResultT $ do
         "" -> Nothing
         s -> Just $ simpleIdToIRI $ mkSimpleId s
       lgraph = setSyntax syn $ setCurLogic (defLogic opts) lg
-  fname' <- getContent opts fname
+  fname' <- getContentAndFileType opts (Just "--mime-type") fname
   case fname' of
     Left err -> return $ fail err
-    Right (file, inputLit) ->
+    Right (mr, file, inputLit) ->
         if any (`isSuffixOf` file) [envSuffix, prfSuffix] then
           return . fail $ "no matching source file for '" ++ fname ++ "' found."
         else let
@@ -120,7 +120,7 @@ anaSource mln lg opts topLns libenv initDG origName = ResultT $ do
         if runMMT opts then mmtRes fname else
             if takeExtension file /= ('.' : show TwelfIn)
             then runResultT $
-                 anaString nLn lgraph opts topLns libenv initDG input fn2
+                 anaString nLn lgraph opts topLns libenv initDG input fn2 mr
             else do
               res <- anaTwelfFile opts file
               return $ case res of
@@ -131,15 +131,15 @@ anaSource mln lg opts topLns libenv initDG origName = ResultT $ do
 Parameters: logic graph, default logic, contents of file, filename -}
 anaString :: Maybe LibName -- ^ suggested library name
   -> LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph -> String
-  -> FilePath -> ResultT IO (LibName, LibEnv)
-anaString mln lgraph opts topLns libenv initDG input file = do
+  -> FilePath -> Maybe String -> ResultT IO (LibName, LibEnv)
+anaString mln lgraph opts topLns libenv initDG input file mr = do
   curDir <- lift getCurrentDirectory -- get full path for parser positions
   let realFileName = curDir </> file
       posFileName = case mln of
           Just gLn | useLibPos opts -> libToFileName gLn
           _ -> if checkUri file then file else realFileName
   lift $ putIfVerbose opts 2 $ "Reading file " ++ file
-  libdefns <- readLibDefn lgraph opts file posFileName input
+  libdefns <- readLibDefn lgraph opts mr file posFileName input
   when (null libdefns) . fail $ "failed to read contents of file: " ++ file
   foldM (anaStringAux mln lgraph opts topLns initDG file posFileName)
         (error "Static.AnalysisLibrary.anaString", libenv) libdefns
