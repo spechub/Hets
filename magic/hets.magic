@@ -26,34 +26,87 @@
 # further magic file entries by Christian.Maeder@dfki.de
 # RDF 1.1 XML Syntax http://www.w3.org/TR/rdf-syntax-grammar/
 0       string/t        \<rdf:RDF               RDF document
-!:mime application/rdf
+!:mime  application/rdf
 
 0       string/t        \<?xml\ version
 >15     string          >\0
 >>19    search/4096/t   \<rdf:RDF               RDF document
-!:mime application/rdf
+!:mime  application/rdf
 
 0       string/t        \<?xml\ version
 >15     string          >\0
 >>19    search/4096/cWt \<!doctype\ rdf:RDF     RDF document
-!:mime application/rdf
+!:mime  application/rdf
 
 # OWL XML
 0       string/t        \<Ontology              OWL document
-!:mime application/owl
+!:mime  application/owl
 
 0       string/Wt       \<?xml\ version
 >15     string          >\0
 >>19    search/4096/t   \<Ontology              OWL document
-!:mime application/owl
+!:mime  application/owl
 
 0       string/t        \<?xml\ version
 >15     string          >\0
 >>19    search/4096/cWt \<!doctype\ Ontology    OWL document
-!:mime application/owl
+!:mime  application/owl
 
+# OBO
 0       string/t        format-version:         OBO document
-!:mime application/obo
+!:mime  text/obo
 
-0       search/4096/t   \@prefix                TTL document
-!:mime application/ttl
+# TTL
+0       search/4096/t   \@prefix\               TTL document
+!:mime  text/ttl
+
+# OMN
+0       search/4096/t   Prefix:                 OWL Manchester Notation
+!:mime  text/omn
+
+# OMN
+0       search/4096/t   Ontology:               OWL Manchester Notation
+!:mime  text/omn
+
+# CLIF
+0       search/4096/t   \(cl-text\              CLIF document
+!:mime  text/clif
+
+0       search/4096/t   \(cl-imports\           CLIF document
+!:mime  text/clif
+
+0       search/4096/t   \(cl-module\            CLIF document
+!:mime  text/clif
+
+0       search/4096/t   \(cl-comment\           CLIF document
+!:mime  text/clif
+
+# DOL
+0       search/4096/t   distributed-ontology\   DOL document
+!:mime  text/dol
+
+0       search/4096/t   ontology\               DOL document
+!:mime  text/dol
+
+0       search/4096/t   interpretation\         DOL document
+!:mime  text/dol
+
+# HetCASL
+0       search/4096/t   spec\                   HetCASL document
+!:mime  text/het
+
+0       search/4096/t   library\                HetCASL document
+!:mime  text/het
+
+0       search/4096/t   view\                   HetCASL document
+!:mime  text/het
+
+0       search/4096/t   logic\                  HetCASL document
+!:mime  text/het
+
+# CASL
+0       search/4096/t   sort\                   CASL document
+!:mime  text/casl
+
+0       search/4096/t   sorts\                  CASL document
+!:mime  text/casl
