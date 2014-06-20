@@ -44,6 +44,16 @@ import Text.ParserCombinators.Parsec
 
 import Control.Monad.Trans (MonadIO (..))
 
+guessInput :: MonadIO m => HetcatsOpts -> FilePath -> String -> m InType
+guessInput opts file input = let fty = guess file (intype opts) in
+  if elem fty [GuessIn, DgXml, RDFIn] then
+    case guessXmlContent (fty == DgXml) input of
+    Left ty -> fail ty
+    Right ty -> case ty of
+      DgXml -> fail "unexpected DGraph xml"
+      _ -> return ty
+  else return fty
+
 readLibDefn :: MonadIO m => LogicGraph -> HetcatsOpts -> FilePath
   -> FilePath -> String -> m [LIB_DEFN]
 readLibDefn lgraph opts file fileForPos input =

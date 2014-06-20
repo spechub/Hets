@@ -17,7 +17,7 @@ module Driver.ReadFn
   , libNameToFile
   , fileToLibName
   , readVerbose
-  , guessInput
+  , guessXmlContent
   , isDgXmlFile
   , getContent
   , getExtContent
@@ -54,7 +54,6 @@ import System.IO
 import System.Directory
 
 import Control.Monad
-import Control.Monad.Trans (MonadIO (..))
 
 import Data.Char (isSpace)
 import Data.List (isPrefixOf, stripPrefix)
@@ -91,16 +90,6 @@ guessXmlContent isXml str = case dropWhile isSpace str of
       | null (qName q) || not isXml -> Right GuessIn
       | otherwise -> Left $ "unknown XML format: " ++ tagEnd q ""
  _ -> Right GuessIn  -- assume that it is no xml content
-
-guessInput :: MonadIO m => HetcatsOpts -> FilePath -> String -> m InType
-guessInput opts file input = let fty = guess file (intype opts) in
-  if elem fty [GuessIn, DgXml, RDFIn] then
-    case guessXmlContent (fty == DgXml) input of
-    Left ty -> fail ty
-    Right ty -> case ty of
-      DgXml -> fail "unexpected DGraph xml"
-      _ -> return ty
-  else return fty
 
 isDgXmlFile :: HetcatsOpts -> FilePath -> String -> Bool
 isDgXmlFile opts file content = guess file (intype opts) == DgXml
