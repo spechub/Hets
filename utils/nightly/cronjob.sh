@@ -310,6 +310,7 @@ gzip Hets.tar
 chmod 664 Hets.tar.gz
 chgrp wwwbkb Hets.tar.gz
 \cp -fp Hets.tar.gz $destdir
+\cp -fp magic/hets.magic $destdir
 }
 
 checkMoreBins ()
