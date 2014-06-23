@@ -120,10 +120,12 @@ hetsServer opts1 = do
   let tempHetsLib = tempDir </> "MyHetsLib"
       permFile = tempDir </> "empty.txt"
       opts = opts1 { libdirs = tempHetsLib : libdirs opts1 }
+      port1 = listen opts1
+      port = if port1 < 0 then 8000 else port1
   createDirectoryIfMissing False tempHetsLib
   writeFile permFile ""
   sessRef <- newIORef (IntMap.empty, Map.empty)
-  run 8000 $ \ re -> do
+  run port $ \ re -> do
    let rhost = shows (remoteHost re) "\n"
        bots = ["180.76.", "77.75.77.", "66.249.", "141.8.147."]
        splitQuery = map (\ (bs, ms) -> (B8.unpack bs, fmap B8.unpack ms))
