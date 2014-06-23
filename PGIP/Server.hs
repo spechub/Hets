@@ -114,6 +114,19 @@ sessGraph dgQ (Session le ln _ _) = case dgQ of
 getVal :: [QueryPair] -> String -> Maybe String
 getVal qs = fromMaybe Nothing . (`lookup` qs)
 
+getIP4 :: String -> [String]
+getIP4 = splitOn '.' . takeWhile (\ c -> isDigit c || c == '.')
+
+matchIP4 :: [String] -> [String] -> Bool
+matchIP4 ip mask = case mask of
+  [] -> True
+  ft : rt -> case ip of
+    [] -> False -- mask too long or IP too short
+    d : s -> (null ft || ft == d) && matchIP4 rt s
+
+matchWhite :: [String] -> [[String]] -> Bool
+matchWhite ip l = null l || any (matchIP4 ip) l
+
 hetsServer :: HetcatsOpts -> IO ()
 hetsServer opts1 = do
   tempDir <- getTemporaryDirectory
@@ -122,12 +135,17 @@ hetsServer opts1 = do
       opts = opts1 { libdirs = tempHetsLib : libdirs opts1 }
       port1 = listen opts1
       port = if port1 < 0 then 8000 else port1
+      wl = whitelist opts1
+      bots = ["180.76", "77.75.77", "66.249", "141.8.147"]
+      bl = blacklist opts1 ++ map (splitBy '.') bots
   createDirectoryIfMissing False tempHetsLib
   writeFile permFile ""
   sessRef <- newIORef (IntMap.empty, Map.empty)
   run port $ \ re -> do
    let rhost = shows (remoteHost re) "\n"
-       bots = ["180.76.", "77.75.77.", "66.249.", "141.8.147."]
+       ip = getIP4 rhost
+       white = matchWhite ip wl
+       black = any (matchIP4 ip) bl
        splitQuery = map (\ (bs, ms) -> (B8.unpack bs, fmap B8.unpack ms))
          $ queryString re
        pathBits = map T.unpack $ pathInfo re
@@ -145,7 +163,7 @@ hetsServer opts1 = do
        appendFile permFile rhost
        appendFile permFile $ shows (requestHeaders re) "\n"
    -- better try to read hosts to exclude from a file
-   if any (`isInfixOf` rhost) bots then return $ mkResponse status403 ""
+   if not white || black then return $ mkResponse status403 ""
     -- if path could be a RESTfull request, try to parse it
     else if isRESTfull pathBits then liftIO $
       parseRESTfull opts sessRef pathBits splitQuery meth

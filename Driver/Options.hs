@@ -133,6 +133,12 @@ logicGraphS = "logic-graph"
 fileTypeS :: String
 fileTypeS = "file-type"
 
+blacklistS :: String
+blacklistS = "blacklist"
+
+whitelistS :: String
+whitelistS = "whitelist"
+
 genTermS, treeS, bafS :: String
 genTermS = "gen_trm"
 treeS = "tree."
@@ -197,6 +203,8 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , unlit :: Bool
   , serve :: Bool
   , listen :: Int
+  , whitelist :: [[String]]
+  , blacklist :: [[String]]
   , runMMT :: Bool
   , fullTheories :: Bool
   , outputLogicGraph :: Bool
@@ -240,6 +248,8 @@ defaultHetcatsOpts = HcOpt
   , unlit = False
   , serve = False
   , listen = -1
+  , whitelist = []
+  , blacklist = []
   , runMMT = False
   , fullTheories = False
   , outputLogicGraph = False
@@ -247,7 +257,11 @@ defaultHetcatsOpts = HcOpt
   , fullSign = False }
 
 instance Show HetcatsOpts where
-  show opts = let showFlag p o = if p opts then showOpt o else "" in
+  show opts =
+    let showFlag p o = if p opts then showOpt o else ""
+        showIPLists p s = let ll = p opts in if null ll then "" else
+          showEqOpt s . intercalate "," $ map (intercalate ".") ll
+    in
     showEqOpt verboseS (show $ verbose opts)
     ++ show (guiType opts)
     ++ showFlag outputLogicGraph logicGraphS
@@ -271,6 +285,8 @@ instance Show HetcatsOpts where
     ++ showFlag xmlFlag xmlS
     ++ showFlag ((/= -1) . connectP) connectS
     ++ showFlag ((/= -1) . listen) listenS
+    ++ showIPLists whitelist whitelistS
+    ++ showIPLists blacklist blacklistS
     ++ concatMap (showEqOpt "dump") (dumpOpts opts)
     ++ showEqOpt "encoding" (map toLower $ show $ ioEncoding opts)
     ++ showFlag unlit unlitS
@@ -330,6 +346,8 @@ data Flag =
   | RelPos
   | Serve
   | Listen Int
+  | Whitelist String
+  | Blacklist String
   | UseMMT
   | FullTheories
   | FullSign
@@ -339,10 +357,14 @@ data Flag =
 
 -- | 'makeOpts' includes a parsed Flag in a set of HetcatsOpts
 makeOpts :: HetcatsOpts -> Flag -> HetcatsOpts
-makeOpts opts flg = case flg of
+makeOpts opts flg =
+  let splitIPs = map (splitBy '.') . splitOn ','
+  in case flg of
     Interactive -> opts { interactive = True }
     XML -> opts { xmlFlag = True }
     Listen x -> opts { listen = x }
+    Blacklist x -> opts { blacklist = splitIPs x }
+    Whitelist x -> opts { whitelist = splitIPs x }
     Connect x y -> opts { connectP = x, connectH = y }
     Analysis x -> opts { analysis = x }
     Gui x -> opts { guiType = x }
@@ -655,6 +677,12 @@ options = let
        ++ crS ++ "to given host and port")
     , Option "S" [listenS] (ReqArg parseListen "PORT")
       "run interface by listening to the port"
+    , Option "" [whitelistS] (ReqArg Whitelist "IP4s")
+      $ "comma-separated list of IP4 addresses"
+      ++ crS ++ "(missing numbers at dots are wildcards)"
+    , Option "" [blacklistS] (ReqArg Blacklist "IP4s")
+      $ "comma-separated list of IP4 addresses"
+      ++ crS ++ "(example: 77.75.77.)"
     , Option "C" [urlCatalogS] (ReqArg parseCatalog "URLS")
       "comma-separated list of URL pairs: srcURL=tarURL"
     , Option "i" [intypeS] (ReqArg parseInType "ITYPE")
