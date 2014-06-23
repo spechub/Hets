@@ -221,7 +221,7 @@ isRESTfull pathBits = case pathBits of
 
 listRESTfullIdentifiers :: [String]
 listRESTfullIdentifiers =
-  [ "libraries", "sessions", "menus", "hets-lib", "dir"]
+  [ "libraries", "sessions", "menus", "filetype", "hets-lib", "dir"]
   ++ nodeEdgeIdes ++ newRESTIdes
 
 nodeEdgeIdes :: [String]
@@ -273,6 +273,7 @@ parseRESTfull opts sessRef pathBits splitQuery meth = let
       "dir" : r -> let path' = intercalate "/" r in
         getHetsLibContent opts path' splitQuery >>= mkHtmlPage path'
       -- get dgraph from file
+      "filetype" : libIri : _ -> mkFiletypeResponse opts libIri
       "hets-lib" : r -> let file = intercalate "/" r in
         getResponse $ Query (NewDGQuery file []) $ DisplayQuery format
       -- get library (complies with get/hets-lib for now)
@@ -392,6 +393,15 @@ mkMenus = menuTriple "" "Get menu triples" "menus"
     allGlobLibAct
   ++ map (\ nc -> menuTriple "/DGraph/DGNode" ("Show " ++ nc) nc) nodeCommands
   ++ [menuTriple "/DGraph/DGLink" "Show edge info" "edge"]
+
+mkFiletypeResponse :: HetcatsOpts -> String -> IO Response
+mkFiletypeResponse opts libIri = do
+  res <- getContentAndFileType opts Nothing libIri
+  return $ case res of
+    Left err -> mkResponse status400 err
+    Right (mr, fn, _) -> case mr of
+      Nothing -> mkResponse status400 $ fn ++ ": unknown file type"
+      Just r -> mkOkResponse $ fn ++ ": " ++ r
 
 menuTriple :: String -> String -> String -> Element
 menuTriple q d c = unode "triple"
