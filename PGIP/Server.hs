@@ -136,10 +136,14 @@ hetsServer opts1 = do
       port1 = listen opts1
       port = if port1 < 0 then 8000 else port1
       wl = whitelist opts1
-      bots = ["180.76", "77.75.77", "66.249", "141.8.147"]
-      bl = blacklist opts1 ++ map (splitBy '.') bots
+      bl = blacklist opts1
+      prList ll = intercalate ", " $ map (intercalate ".") ll
   createDirectoryIfMissing False tempHetsLib
   writeFile permFile ""
+  unless (null wl) . appendFile permFile
+    $ "white list: " ++ prList wl ++ "\n"
+  unless (null bl) . appendFile permFile
+    $ "black list: " ++ prList bl ++ "\n"
   sessRef <- newIORef (IntMap.empty, Map.empty)
   run port $ \ re -> do
    let rhost = shows (remoteHost re) "\n"
@@ -155,14 +159,12 @@ hetsServer opts1 = do
      time <- getCurrentTime
      createDirectoryIfMissing False tempHetsLib
      (m, _) <- readIORef sessRef
-     if isPrefixOf "134.102.204.54" rhost -- nagios-plugins 1.4.15
-       then appendFile permFile "."
-       else do
-       appendFile permFile $ shows time " sessions: "
+     appendFile permFile rhost
+     unless black $ if white then do
+         appendFile permFile $ shows time " sessions: "
                     ++ shows (IntMap.size m) "\n"
-       appendFile permFile rhost
-       appendFile permFile $ shows (requestHeaders re) "\n"
-   -- better try to read hosts to exclude from a file
+         appendFile permFile $ shows (requestHeaders re) "\n"
+       else appendFile permFile "not white listed\n"
    if not white || black then return $ mkResponse status403 ""
     -- if path could be a RESTfull request, try to parse it
     else if isRESTfull pathBits then liftIO $
