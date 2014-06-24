@@ -27,6 +27,7 @@ export PELLET_PATH
 export HETS_HOL_DIR
 export HETS_HOLLIGHT_TOOLS
 export HETS_OCAML_LIB_DIR
+export HETS_MAGIC
 
 hetsdir=\
 /home/www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets
