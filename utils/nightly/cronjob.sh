@@ -15,6 +15,7 @@ PELLET_PATH=/home/linux-bkb/pellet
 HETS_HOL_DIR=/home/linux-bkb/hol-light-20100110/hol_light
 HETS_HOLLIGHT_TOOLS=/home/linux-bkb/hets-hollight-tools
 HETS_OCAML_LIB_DIR=/home/linux-bkb/ocaml-3.11.2/lib/ocaml/compiler-libs
+HETS_MAGIC=/home/linux-bkb/hets-owl-tools/hets.magic
 
 export GHCRTS
 export LANG
@@ -326,6 +327,7 @@ cp -p OWL2/lib/*.jar $HETS_OWL_TOOLS/lib/
 cp -p OWL2/lib/native/i686/*.so $HETS_OWL_TOOLS/lib/native/i686
 cp -p OWL2/lib/native/x86_64/*.so $HETS_OWL_TOOLS/lib/native/x86_64
 cp -p CASL/Termination/AProVE.jar $HETS_OWL_TOOLS/
+cp -p magic/hets.magic $HETS_OWL_TOOLS/
 }
 
 makeHOLTools ()
