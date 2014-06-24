@@ -570,7 +570,7 @@ real_clean: clean
 
 ### additionally removes generated files not in the repository tree
 distclean: clean clean_genRules
-	$(RM) $(derived_sources) rev.txt
+	$(RM) $(derived_sources)
 	$(RM) utils/appendHaskellPreludeString
 	$(RM) utils/DrIFT utils/genRules
 	$(RM) $(DTD2HS)
