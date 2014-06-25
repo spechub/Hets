@@ -431,6 +431,11 @@ menuTriple q d c = unode "triple"
                 , unode "displayname" d
                 , unode "command" c ]
 
+metaRobots :: Element
+metaRobots = add_attrs
+  [mkNameAttr "robots", mkAttr "content" "noindex,nofollow"]
+  $ unode "meta" ()
+
 mkHtmlString :: FilePath -> [Element] -> String
 mkHtmlString path dirs = htmlHead ++ mkHtmlElem
   ("Listing of" ++ if null path then " repository" else ": " ++ path)
@@ -443,15 +448,18 @@ mkHtmlString path dirs = htmlHead ++ mkHtmlElem
    : headElems path ++ [unode "ul" dirs])
 
 mkHtmlElem :: String -> [Element] -> String
-mkHtmlElem title body = ppElement $ unode "html"
-      [ unode "head" $ unode "title" title, unode "body" body ]
+mkHtmlElem title = mkHtmlElemAux title [metaRobots]
 
--- include a script within page (manual tags to avoid encoding)
+mkHtmlElemAux :: String -> [Element] -> [Element] -> String
+mkHtmlElemAux title headers body = ppElement $ unode "html"
+      [ unode "head" $ unode "title" title : headers, unode "body" body ]
+
+-- include a script within page
 mkHtmlElemScript :: String -> String -> [Element] -> String
-mkHtmlElemScript title scr body = "<html>\n<head>\n"
-  ++ ppElement (unode "title" title) ++ "\n<script type=text/javascript>"
-  ++ scr ++ "</script>\n</head>\n" ++ ppElement (unode "body" body)
-  ++ "</html>"
+mkHtmlElemScript title scr =
+  mkHtmlElemAux title [ metaRobots
+  , add_attr (mkAttr "type" "text/javascript") . unode "script"
+    . Text $ CData CDataRaw scr Nothing] -- scr must not be encoded!
 
 mkHtmlPage :: FilePath -> [Element] -> IO Response
 mkHtmlPage path = return . mkOkResponse . mkHtmlString path
