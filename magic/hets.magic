@@ -1,27 +1,33 @@
 # Magic data for file(1) command.
 0       string/t        #\ Magic\               magic text file for file(1) cmd
 
+# shell commands:
+0       string/wt       #!\ /bin/               script text executable
+!:mime  text/x-shellscript
+0       string/wt       #!\ /usr/               script text executable
+!:mime  text/x-shellscript
+
 # XML version tag
 0       string/t        \<?xml\ version         XML Document
 !:mime  application/xml
 
 # HTML (copied)
-0	search/4096/cWt \<!doctype\ html	HTML document
-!:mime	text/html
-0	search/4096/ct	\<head			HTML document
-!:mime	text/html
-0	search/4096/ct	\<title			HTML document
-!:mime	text/html
-0	search/4096/ct	\<html			HTML document
-!:mime	text/html
-0	search/4096/ct	\<script 		HTML document
-!:mime	text/html
-0	search/4096/ct	\<style 		HTML document
-!:mime	text/html
-0	search/4096/ct	\<table			HTML document
-!:mime	text/html
-0	search/4096/cWt	\<a\ href=		HTML document
-!:mime	text/html
+0       search/4096/cWt \<!doctype\ html        HTML document
+!:mime  text/html
+0       search/4096/ct  \<head                  HTML document
+!:mime  text/html
+0       search/4096/ct  \<title                 HTML document
+!:mime  text/html
+0       search/4096/ct  \<html                  HTML document
+!:mime  text/html
+0       search/4096/ct  \<script                HTML document
+!:mime  text/html
+0       search/4096/ct  \<style                 HTML document
+!:mime  text/html
+0       search/4096/ct  \<table                 HTML document
+!:mime  text/html
+0       search/4096/cWt \<a\ href=              HTML document
+!:mime  text/html
 
 # further magic file entries by Christian.Maeder@dfki.de
 # RDF 1.1 XML Syntax http://www.w3.org/TR/rdf-syntax-grammar/
@@ -110,3 +116,6 @@
 
 0       search/4096/t   sorts\                  CASL document
 !:mime  text/casl
+
+0       search/4096/t   module\                 Haskell document
+!:mime  text/haskell
