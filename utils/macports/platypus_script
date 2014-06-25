@@ -6,4 +6,5 @@ export HETS_OWL_TOOLS=$hetsdir/hets-owl-tools
 export HETS_APROVE=$HETS_OWL_TOOLS/AProVE.jar
 export HETS_ONTODMU=$HETS_OWL_TOOLS/OntoDMU.jar
 export PELLET_PATH=$hetsdir/pellet
+export HETS_MAGIC=$HETS_OWL_TOOLS/hets.magic
 "$hetsdir/hets" "$@"
