@@ -29,10 +29,10 @@ getMagicFileType mp fn = ResultT $ do
     Just s -> do
       liftR $ justHint () $ "mime-encoding: " ++ s
       if any (`isInfixOf` s) ["binary", "unknown"]
-      then do
-        liftR $ justWarn () $ "no support for " ++ s ++ " file: " ++ fn
-        getFileType Nothing mp fn
-      else getMagicFileTypeAux mp fn
+        then do
+          liftR $ justWarn () $ "no support for " ++ s ++ " file: " ++ fn
+          getFileType Nothing mp fn
+        else getMagicFileTypeAux mp fn
     _ -> liftR res
 
 getMagicFileTypeAux :: Maybe String -> FilePath -> ResultT IO String
