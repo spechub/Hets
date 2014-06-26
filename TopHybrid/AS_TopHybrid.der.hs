@@ -1,5 +1,4 @@
-{-# LANGUAGE StandaloneDeriving, ExistentialQuantification,
-             DeriveDataTypeable #-}
+{-# LANGUAGE ExistentialQuantification, DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -67,27 +66,28 @@ identify the underlying logic, by only looking to the sentence. -}
 data Frm_Wrap = forall l sub bs f s sm si mo sy rw pf .
                         (Logic l sub bs f s sm si mo sy rw pf) =>
                         Frm_Wrap l (TH_FORMULA f)
+  deriving Typeable
+
+instance Show Frm_Wrap where
+  show (Frm_Wrap l f) = "Frm_Wrap " ++ show l ++ " (" ++ show f ++ ")"
 
 {- An hybridized specification has the basic specification; The declararation
 of nominals and modalities, and the axioms; -}
 data Spc_Wrap = forall l sub bs sen si smi sign mor symb raw pf .
                         (Logic l sub bs sen si smi sign mor symb raw pf) =>
                         Spc_Wrap l (TH_BSPEC bs) [Annoted Frm_Wrap]
+  deriving Typeable
+
+instance Show Spc_Wrap where
+  show (Spc_Wrap l b a) =
+    "Spc_Wrap " ++ show l ++ " (" ++ show b ++ ") " ++ show a
 
 instance Monoid Spc_Wrap where
  mempty = error "Not implemented!"
  mappend _ _ = error "Not implemented!"
 
 -- --- instances
-data Mor = Mor
-deriving instance Ord Mor
-deriving instance Eq Mor
-deriving instance Show Mor
-
-deriving instance Show Frm_Wrap
-deriving instance Show Spc_Wrap
-deriving instance Typeable Frm_Wrap
-deriving instance Typeable Spc_Wrap
+data Mor = Mor deriving (Eq, Ord, Show)
 
 -- Why do we need to compare specifications ?
 instance Ord Spc_Wrap where

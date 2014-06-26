@@ -1,5 +1,4 @@
-{-# LANGUAGE ExistentialQuantification, StandaloneDeriving,
-             DeriveDataTypeable #-}
+{-# LANGUAGE ExistentialQuantification, DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -35,6 +34,12 @@ data Sgn_Wrap = forall l sub bs f s sm sign mo sy rw pf .
                         (Logic l sub bs f s sm sign mo sy rw pf) =>
                         Sgn_Wrap l (THybridSign sign)
                 | EmptySign
+  deriving Typeable
+
+instance Show Sgn_Wrap where
+  show c = case c of
+    Sgn_Wrap l s -> "Sgn_Wrap " ++ show l ++ " (" ++ show s ++ ")"
+    EmptySign -> "EmptySign"
 
 data THybridSign s = THybridSign
   {
@@ -84,8 +89,6 @@ sgnDiff (Sgn_Wrap l s) (Sgn_Wrap l' s') =
                               (extended s) (unsafeCoerce $ extended s')
 
 -- --- instances needed
-deriving instance Show Sgn_Wrap
-deriving instance Typeable Sgn_Wrap
 
 instance Eq Sgn_Wrap where
         (==) a b = isSubTHybSgn a b && isSubTHybSgn b a
