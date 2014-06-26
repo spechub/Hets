@@ -43,7 +43,7 @@ import Data.Time (midnight)
 
 import System.Directory
 import System.Exit
-import System.Cmd
+import System.Process
 
 isabelleS :: String
 isabelleS = "Isabelle"
