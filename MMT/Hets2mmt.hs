@@ -14,7 +14,7 @@ module MMT.Hets2mmt (
     where
 
 import System.Process
-import GHC.IO.Handle
+import System.IO
 import Common.Result
 import Common.Id
 import Static.DevGraph
