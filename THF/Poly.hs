@@ -26,7 +26,7 @@ import Common.DocUtils
 
 import Control.Monad.State
 import qualified Data.Map (Map, lookup, insert, empty,
-                           mapAccumWithKey, foldrWithKey,
+                           mapAccumWithKey, foldWithKey,
                            mapWithKey)
 import qualified Data.List (mapAccumL, elemIndex)
 
@@ -353,7 +353,7 @@ intToStr 0 = ""
 intToStr i = '_' : show i
 
 flattenMap :: Data.Map.Map Constant [a] -> Data.Map.Map Constant a
-flattenMap = Data.Map.foldrWithKey
+flattenMap = Data.Map.foldWithKey
  (\ k v new_m ->
   let ks = evalUnique $ replicateM (length v) $ do
        f <- fresh
