@@ -15,7 +15,6 @@ import CSMOF.XMLKeywords
 
 import Text.XML.Light
 import qualified Data.Map as Map
-import qualified Data.Text as Text
 import Data.Maybe (fromMaybe)
 
 parseCSMOF :: Element -> Metamodel
@@ -330,7 +329,7 @@ isModel keyMap key mode =
   in modelName mode == el
 
 getModelKey :: String -> String
-getModelKey key = Text.unpack (Text.dropWhileEnd (/= '/') (Text.pack key))
+getModelKey = reverse . dropWhile (/= '/') . reverse
 
 
 findElementInMap :: String -> Map.Map String String -> String
