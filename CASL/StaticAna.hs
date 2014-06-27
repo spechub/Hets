@@ -211,6 +211,20 @@ anaLocalVarForms anaFrm il afs ps = do
            addDiags es
            return (resFs, fufs)
 
+anaDatatypeDecls :: GenKind -> SortsKind -> [Annoted DATATYPE_DECL]
+  -> State (Sign f e) ()
+anaDatatypeDecls gk sk al = do
+           let ts = map (\ i -> case item i of
+                        Datatype_decl s _ _ -> (i, s)) al
+           addDiags . map (\ l -> case l of
+              _ : t : _ -> mkDiag (if gk == Free then Error else Warning)
+               "duplicate type name in mutually recursive type definition" t
+              _ -> error "anaDatatypeDecls")
+               . filter ((> 1) . length) . group . sort $ map snd ts
+           mapM_ (uncurry $ addSort sk) ts
+           mapAnM (ana_DATATYPE_DECL gk) al
+           closeSubsortRel
+
 ana_BASIC_ITEMS :: (FormExtension f, TermExtension f)
   => Min f e -> Ana b b s f e -> Ana s b s f e -> Mix b s f e
     -> BASIC_ITEMS b s f -> State (Sign f e) (BASIC_ITEMS b s f)
@@ -219,11 +233,8 @@ ana_BASIC_ITEMS mef ab anas mix bi =
     Sig_items sis -> fmap Sig_items $
                      ana_SIG_ITEMS mef anas mix Loose sis
     Free_datatype sk al ps -> do
-           mapM_ (\ i -> case item i of
-                  Datatype_decl s _ _ -> addSort sk i s) al
-           mapAnM (ana_DATATYPE_DECL Free) al
+           anaDatatypeDecls Free sk al
            toSortGenAx ps True $ getDataGenSig al
-           closeSubsortRel
            return bi
     Sort_gen al ps -> do
            (gs, ul) <- ana_Generated mef anas mix al
@@ -301,10 +312,7 @@ ana_SIG_ITEMS mef anas mix gk si =
         do ul <- mapM (ana_PRED_ITEM mef mix) al
            return $ Pred_items ul ps
     Datatype_items sk al _ ->
-        do mapM_ (\ i -> case item i of
-                  Datatype_decl s _ _ -> addSort sk i s) al
-           mapAnM (ana_DATATYPE_DECL gk) al
-           closeSubsortRel
+        do anaDatatypeDecls gk sk al
            return si
     Ext_SIG_ITEMS s -> fmap Ext_SIG_ITEMS $ anas mix s
 
