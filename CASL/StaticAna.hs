@@ -217,7 +217,7 @@ anaDatatypeDecls gk sk al = do
            let ts = map (\ i -> case item i of
                         Datatype_decl s _ _ -> (i, s)) al
            addDiags . map (\ l -> case l of
-              _ : t : _ -> mkDiag (if gk == Free then Error else Warning)
+              _ : t : _ -> mkDiag (if gk == Loose then Warning else Error)
                "duplicate type name in mutually recursive type definition" t
               _ -> error "anaDatatypeDecls")
                . filter ((> 1) . length) . group . sort $ map snd ts
