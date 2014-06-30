@@ -54,7 +54,6 @@ import Common.GlobalAnnotations
 import Common.Id
 import Common.Lexer
 
-import Control.Monad
 import Control.Monad.Identity
 
 import Data.Function
