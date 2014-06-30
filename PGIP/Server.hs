@@ -98,7 +98,7 @@ data Session = Session
   , sessKey :: Int
   , _sessStart :: UTCTime }
 
-type SessMap = Map.Map (String, [GlobCmd]) Session
+type SessMap = Map.Map (String, [String]) Session
 type Cache = IORef (IntMap.IntMap Session, SessMap)
 
 randomKey :: IO Int
@@ -341,7 +341,8 @@ parseRESTfull opts sessRef pathBits splitQuery meth = let
             newOpts = foldl makeOpts opts $ mapMaybe (`lookup` optionFlags)
               optFlags
         in if elem newIde newRESTIdes && all (`elem` globalCommands) cmdList
-        then getResponseAux newOpts . Query (NewDGQuery libIri cmdList)
+        then getResponseAux newOpts . Query (NewDGQuery libIri $ cmdList
+           ++ Set.toList (Set.fromList optFlags))
          $ case newIde of
            "translate" -> case nodeM of
              Nothing -> GlTranslations
@@ -477,7 +478,7 @@ mkResponse st = responseLBS st [] . BS.pack
 mkOkResponse :: String -> Response
 mkOkResponse = mkResponse status200
 
-addNewSess :: String -> [GlobCmd] -> Cache -> Session -> IO Int
+addNewSess :: String -> [String] -> Cache -> Session -> IO Int
 addNewSess file cl sessRef sess = do
   k <- randomKey
   let s = sess { sessKey = k }
@@ -536,9 +537,9 @@ getDGraph opts sessRef dgQ = do
  (m, lm) <- lift $ readIORef sessRef
  case dgQ of
   NewDGQuery file cmdList ->
-   let cl = map (\ s -> fromJust . find ((== s) . cmdlGlobCmd)
+   let cl = mapMaybe (\ s -> find ((== s) . cmdlGlobCmd)
                   $ map fst allGlobLibAct) cmdList
-   in case Map.lookup (file, cl) lm of
+   in case Map.lookup (file, cmdList) lm of
    Just sess -> return (sess, sessKey sess)
    Nothing -> do
     (ln, le1) <- do
@@ -546,13 +547,13 @@ getDGraph opts sessRef dgQ = do
         case mf of
           Right (f, c) | isDgXmlFile opts f c -> readDGXmlR opts f Map.empty
           _ -> anaSourceFile logicGraph opts
-            { outputToStdout = False, useLibPos = True }
+            { outputToStdout = False }
             Set.empty emptyLibEnv emptyDG file
     le2 <- foldM (\ e c -> liftR
                   $ fromJust (lookup c allGlobLibAct) ln e) le1 cl
     time <- lift getCurrentTime
     let sess = Session le2 ln 0 time
-    k <- lift $ addNewSess file cl sessRef sess
+    k <- lift $ addNewSess file cmdList sessRef sess
     return (sess, k)
   DGQuery k _ -> case IntMap.lookup k m of
       Nothing -> fail "unknown development graph"
