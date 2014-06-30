@@ -11,7 +11,7 @@ Portability :  portable
 check the file content by using the unix tool file
 -}
 
-module Common.FileType (getMagicFileType) where
+module Common.FileType (getMagicFileType, getChecksum) where
 
 import System.Exit
 
@@ -21,6 +21,19 @@ import Common.ResultT
 
 import Data.List
 import Data.Maybe
+
+getChecksum :: FilePath -> ResultT IO String
+getChecksum fn = ResultT $ do
+  ckprg <- getEnvDef "HETS_CHECKSUM" "sha256sum"
+  case words ckprg of  -- no support for options with spaces
+    [] -> return $ fail "set HETS_CHECKSUM to a proper command"
+    cmd : args -> do
+      (ex, out, err) <- executeProcess cmd (args ++ [fn]) ""
+      return $ case (ex, map words $ lines out) of
+        (ExitSuccess, (h : _) : _) | null err -> return h
+        _ -> fail $ "could not determine checksum: "
+          ++ shows ex "\n" ++ out
+          ++ if null err then "" else "\nerror\n" ++ err
 
 getMagicFileType :: Maybe String -> FilePath -> ResultT IO String
 getMagicFileType mp fn = ResultT $ do

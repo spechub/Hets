@@ -196,7 +196,7 @@ exitHets err = do
   exitWith $ ExitFailure 2
 
 getContentAndFileType :: HetcatsOpts -> Maybe String -> FilePath
-  -> IO (Either String (Maybe String, FilePath, String))
+  -> IO (Either String (Maybe String, Maybe String, FilePath, String))
 getContentAndFileType opts mp fn = do
   eith <- getContent opts fn
   case eith of
@@ -205,16 +205,17 @@ getContentAndFileType opts mp fn = do
       let isUri = checkUri nFn
       f <- if isUri then getTempFile cont "hets-file.tmp" else return nFn
       Result ds mr <- runResultT $ getMagicFileType mp f
-      showDiags opts ds
+      Result es mc <- runResultT $ getChecksum f
+      showDiags opts (ds ++ es)
       when isUri $ removeFile f
-      return $ Right (mr, nFn, cont)
+      return $ Right (mr, mc, nFn, cont)
 
 showFileType :: HetcatsOpts -> FilePath -> IO ()
 showFileType opts fn = do
   eith <- getContentAndFileType opts Nothing fn
   case eith of
     Left err -> exitHets err
-    Right (mr, nFn, _) ->
+    Right (mr, _, nFn, _) ->
       let fstr = (if nFn == fn then fn else nFn ++ " (via " ++ fn ++ ")")
              ++ ": "
       in case mr of

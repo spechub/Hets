@@ -98,7 +98,7 @@ anaSource mln lg opts topLns libenv initDG origName = ResultT $ do
   fname' <- getContentAndFileType opts (Just "--mime-type") fname
   case fname' of
     Left err -> return $ fail err
-    Right (mr, file, inputLit) ->
+    Right (mr, _, file, inputLit) ->
         if any (`isSuffixOf` file) [envSuffix, prfSuffix] then
           return . fail $ "no matching source file for '" ++ fname ++ "' found."
         else let

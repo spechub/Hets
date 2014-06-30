@@ -429,7 +429,7 @@ mkFiletypeResponse opts libIri = do
   res <- getContentAndFileType opts Nothing libIri
   return $ case res of
     Left err -> mkResponse status400 err
-    Right (mr, fn, _) -> case mr of
+    Right (mr, _, fn, _) -> case mr of
       Nothing -> mkResponse status400 $ fn ++ ": unknown file type"
       Just r -> mkOkResponse $ fn ++ ": " ++ r
 
@@ -534,28 +534,31 @@ ppDGraph dg mt = let ga = globalAnnos dg in case optLibDefn dg of
 getDGraph :: HetcatsOpts -> Cache -> DGQuery
   -> ResultT IO (Session, Int)
 getDGraph opts sessRef dgQ = do
- (m, lm) <- lift $ readIORef sessRef
- case dgQ of
-  NewDGQuery file cmdList ->
-   let cl = mapMaybe (\ s -> find ((== s) . cmdlGlobCmd)
+  (m, lm) <- lift $ readIORef sessRef
+  case dgQ of
+    NewDGQuery file cmdList -> do
+      let cl = mapMaybe (\ s -> find ((== s) . cmdlGlobCmd)
                   $ map fst allGlobLibAct) cmdList
-   in case Map.lookup (file, cmdList) lm of
-   Just sess -> return (sess, sessKey sess)
-   Nothing -> do
-    (ln, le1) <- do
-        mf <- lift $ getContent opts file
-        case mf of
-          Right (f, c) | isDgXmlFile opts f c -> readDGXmlR opts f Map.empty
-          _ -> anaSourceFile logicGraph opts
-            { outputToStdout = False }
-            Set.empty emptyLibEnv emptyDG file
-    le2 <- foldM (\ e c -> liftR
+      mf <- lift $ getContentAndFileType opts Nothing file
+      case mf of
+        Left err -> fail err
+        Right (_, mh, f, cont) -> case mh of
+          Nothing -> fail $ "could determine checksum for: " ++ file
+          Just h -> case Map.lookup (file, h : cmdList) lm of
+            Just sess -> return (sess, sessKey sess)
+            Nothing -> do
+              (ln, le1) <- if isDgXmlFile opts f cont
+                then readDGXmlR opts f Map.empty
+                else anaSourceFile logicGraph opts
+                  { outputToStdout = False }
+                  Set.empty emptyLibEnv emptyDG file
+              le2 <- foldM (\ e c -> liftR
                   $ fromJust (lookup c allGlobLibAct) ln e) le1 cl
-    time <- lift getCurrentTime
-    let sess = Session le2 ln 0 time
-    k <- lift $ addNewSess file cmdList sessRef sess
-    return (sess, k)
-  DGQuery k _ -> case IntMap.lookup k m of
+              time <- lift getCurrentTime
+              let sess = Session le2 ln 0 time
+              k <- lift $ addNewSess file (h : cmdList) sessRef sess
+              return (sess, k)
+    DGQuery k _ -> case IntMap.lookup k m of
       Nothing -> fail "unknown development graph"
       Just sess -> return (sess, k)
 
