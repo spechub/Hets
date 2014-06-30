@@ -737,7 +737,7 @@ options = let
       "use MMT" ]
 
 optionFlags :: [(String, Flag)]
-optionFlags = drop 9 $ foldr (\ o l -> case o of
+optionFlags = drop 11 $ foldr (\ o l -> case o of
   Option _ (s : _) (NoArg f) _ -> (s, f) : l
   _ -> l) [] options
 
