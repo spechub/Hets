@@ -281,11 +281,12 @@ parseRESTfull opts sessRef pathBits splitQuery meth = let
   parseNodeQuery p sId ncmd = ncmd >>= let
       in return . Query (DGQuery sId (Just p)) . nodeQuery (getFragment p)
   -- call getHetsResult with the properly generated query (Final Result)
-  getResponse qr = do
-    Result ds ms <- runResultT $ getHetsResult opts [] sessRef qr
+  getResponseAux myOpts qr = do
+    Result ds ms <- runResultT $ getHetsResult myOpts [] sessRef qr
     return $ case ms of
       Nothing -> mkResponse status400 $ showRelDiags 1 ds
       Just s -> mkOkResponse s
+  getResponse = getResponseAux opts
   -- respond depending on request Method
   in case meth of
     rm | elem rm ["GET", "POST"] -> case pathBits of
@@ -333,9 +334,15 @@ parseRESTfull opts sessRef pathBits splitQuery meth = let
             Just i -> getResponse $ Query dgQ $ EdgeQuery i "edge"
             Nothing -> fail $ "failed to read edgeId from " ++ f
           _ -> error $ "PGIP.Server.elemIndex " ++ nodeOrEdge
-      newIde : libIri : rest -> let cmdList = filter (/= "") rest in
-        if elem newIde newRESTIdes && all (`elem` globalCommands) cmdList
-        then getResponse . Query (NewDGQuery libIri cmdList) $ case newIde of
+      newIde : libIri : rest ->
+        let cmdOptList = filter (/= "") rest
+            (optFlags, cmdList) = partition (`elem` map fst optionFlags)
+              cmdOptList
+            newOpts = foldl makeOpts opts $ mapMaybe (`lookup` optionFlags)
+              optFlags
+        in if elem newIde newRESTIdes && all (`elem` globalCommands) cmdList
+        then getResponseAux newOpts . Query (NewDGQuery libIri cmdList)
+         $ case newIde of
            "translate" -> case nodeM of
              Nothing -> GlTranslations
              Just n -> nodeQuery n $ NcTranslations Nothing

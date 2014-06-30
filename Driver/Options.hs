@@ -15,6 +15,8 @@ Datatypes for options that hets understands.
 
 module Driver.Options
   ( HetcatsOpts (..)
+  , optionFlags
+  , makeOpts
   , AnaType (..)
   , GuiType (..)
   , InType (..)
@@ -645,12 +647,18 @@ options = let
     , Option "u" ["uncolored"] (NoArg Uncolored)
       "no colors in shown graphs"
 #endif
+    , Option "x" [xmlS] (NoArg XML)
+       "use xml packets to communicate"
+#ifdef SERVER
+    , Option "X" ["server"] (NoArg Serve)
+       "start hets as web-server"
+#endif
     , Option "G" [logicGraphS] (NoArg OutputLogicGraph)
       "output logic graph (as xml) or as graph (-g)"
-    , Option "F" [fileTypeS] (NoArg FileType)
-      "only display file type"
     , Option "I" [interactiveS] (NoArg Interactive)
       "run in interactive (console) mode"
+    , Option "F" [fileTypeS] (NoArg FileType)
+      "only display file type"
     , Option "p" [skipS] (NoArg $ Analysis Skip)
       "skip static analysis, only parse"
     , Option "s" [justStructuredS] (NoArg $ Analysis Structured)
@@ -666,17 +674,11 @@ options = let
       "lisp file for SparQ definitions"
     , Option "" [counterSparQS] (ReqArg parseCounter "0-99")
       "maximal number of counter examples"
-    , Option "x" [xmlS] (NoArg XML)
-       "use xml packets to communicate"
-#ifdef SERVER
-    , Option "X" ["server"] (NoArg Serve)
-       "start hets as web-server"
-#endif
     , Option "c" [connectS] (ReqArg parseConnect "HOST:PORT")
       ("run (console) interface via connection"
        ++ crS ++ "to given host and port")
     , Option "S" [listenS] (ReqArg parseListen "PORT")
-      "run interface by listening to the port"
+      "run interface/server by listening to the port"
     , Option "" [whitelistS] (ReqArg Whitelist "IP4s")
       $ "comma-separated list of IP4 addresses"
       ++ crS ++ "(missing numbers at dots are wildcards)"
@@ -733,6 +735,11 @@ options = let
        crS ++ joinBar (map show caslAmalgOpts)),
       Option "M" ["MMT"] (NoArg UseMMT)
       "use MMT" ]
+
+optionFlags :: [(String, Flag)]
+optionFlags = drop 9 $ foldr (\ o l -> case o of
+  Option _ (s : _) (NoArg f) _ -> (s, f) : l
+  _ -> l) [] options
 
 -- parser functions returning Flags --
 
