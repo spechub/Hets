@@ -12,14 +12,14 @@ import Utils
 
 main :: IO()
 main = do 
-	handle <- openFile "uml.xmi" ReadMode 
+	handle <- openFile "data/uml.xmi" ReadMode 
 	contents <- hGetContents handle 
 	putStr (show  (case parseXMLDoc contents of
 		Nothing -> [Err contents]
 		Just el -> (parseModels (findChildren packagedElementName el))))
 
 parseModels::[Element] -> [Model]
-parseModels lis = (ClassModel (parsePackages lis)):(parseModelsWOClass lis)
+parseModels lis = (ClassModel (parse "uml:Package" processPackage lis)):(parseModelsWOClass lis)
 
 parseModelsWOClass::[Element] -> [Model]
 parseModelsWOClass [] = []

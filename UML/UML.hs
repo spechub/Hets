@@ -10,8 +10,13 @@ data Package = Package{
 	classes::(Map.Map Id Class), 
 	associations::[Association], 
 	interfaces::(Map.Map Id Interface),
-	packageMerges::[Id]} deriving Show
+	packageMerges::[Id],
+	signals :: (Map.Map Id Signal),
+	assoClasses::(Map.Map Id AssociationClass)} deriving Show
 
+data AssociationClass = AssociationClass{
+	acClass::Class,
+	acAsso::Association} deriving Show
 data Class = Class {	
 	super::[Id],
 	className::String,
@@ -21,7 +26,10 @@ data Class = Class {
 
 data Attribute = Attribute{
 	attrName::String,
-	attrType::Type	
+	attrType::Type,
+	attrUpperValue::String,
+	attrLowerValue::String,
+	attrVisibility::String
 } deriving Show
 
 data Procedure = Procedure{
@@ -29,10 +37,12 @@ data Procedure = Procedure{
 	procPara::[(String,Type)],
 	procReturnType::Maybe Type,
 	procPackImports::[Id],
-	procElemImports::[Id]
+	procElemImports::[Id],
+	procVisibility::String
 } deriving Show
 
 data Association = Association{
+	assoId :: Id,
 	ends::[End]
 } deriving Show
 
@@ -51,7 +61,12 @@ type Type = String
 data Label = Label{upperValue::String,
 lowerValue::String} deriving Show
 
-
+data Signal = Signal{
+	sigSuper::[Id],
+	signalName::String,
+	sigAttr::[Attribute],
+	sigProc::[Procedure]
+} deriving Show
 --begin:StateMachines
 
 data Region = Region{
