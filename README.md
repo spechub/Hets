@@ -146,7 +146,7 @@ For searching or looking up any [library functions](http://www.haskell.org/ghc/d
 Also look into [programming guidelines](http://www.haskell.org/haskellwiki/Programming_guidelines) and [things to avoid in Haskell](http://www.haskell.org/haskellwiki/Things_to_avoid).
 
 ### Dependencies
-Dependencies can be installed as specified in [Hets Developtment](#hets-development)
+Dependencies can be installed as specified in [Hets Development](#hets-development)
 
 ### Contributing changes
 
