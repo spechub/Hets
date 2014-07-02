@@ -15,51 +15,43 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class OWL2Parser {
-    private static enum OPTION {QUICK_OWL_XML, OWL_XML, MANCHESTER, RDF_XML}
+    private static enum OPTION {QUICK_OWL_XML, OWL_XML, MANCHESTER, RDF_XML, OBO}
 
     private static OPTION op;
     private static Boolean cyclic = false;
     private static final Set<IRI> missingImports = new HashSet<IRI>();
     private static Set<OWLOntology> ontologies;
     private static final Set<OWLOntology> exported = new HashSet<OWLOntology>();
-    private static OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
+    private static OWLOntologyManager manager = setupManagerWithMissingImportListener();
     private static OWLOntologyIRIMapperImpl mapper = new OWLOntologyIRIMapperImpl();
  
     public static void main(String[] args) {
-        if (args.length < 1) {
-            System.out.println("Usage: processor <URI> [FILENAME] <OPTION>");
-            System.exit(1);
-        }
         // A simple example of how to load and save an ontology
         try {
             op = OPTION.MANCHESTER;
             BufferedWriter out = new BufferedWriter(new OutputStreamWriter(System.out));
-            if (args.length > 1) {
+            switch (args.length) {
+                default : 
+                    System.out.println("Usage: processor <URI> [FILENAME] <OPTION>");
+                    System.exit(1);
+                    break;
+                // args[0]: IRI
+                case 1 :
+                    break;
+                // args[0]: IRI
+                // args[1]: type of output, or otherwise use argument as file name
+                // with Manchester syntax
+                case 2 :
+                    if (!parseOption(args[1]))
+                        out = new BufferedWriter(new FileWriter(args[1]));
+                    break;
                 // args[0]: IRI
                 // args[1]: name of output file
                 // args[2]: type of output file: xml, rdf, or otherwise assume Manchester syntax
-                String filename = args[1];
-                if (args.length == 3) {
-                    out = new BufferedWriter(new FileWriter(filename));
-                    if (args[2].equals("xml"))
-                        op = OPTION.OWL_XML;
-                    else if (args[2].equals("quick"))
-                        op = OPTION.QUICK_OWL_XML;
-                    else if (args[2].equals("rdf"))
-                        op = OPTION.RDF_XML;
-                } else
-                    // args[0]: IRI
-                    // args[1]: type of output (or output file for  Manchester syntax)
-                    //   xml (OWL XML),
-                    //   rdf (RDF/XML),
-                    //   or otherwise use argument as file name for Manchester syntax
-                    // for xml and rdf output goes to standard output, i.e. System.out
-                    if (args[1].equals("xml"))
-                        op = OPTION.OWL_XML;
-                    else if (args[1].equals("rdf"))
-                        op = OPTION.RDF_XML;
-                    else
-                        out = new BufferedWriter(new FileWriter(filename));
+                case 3 :
+                    out = new BufferedWriter(new FileWriter(args[1]));
+                    parseOption(args[2]);
+                    break;
             }
             out.write("<Ontologies>\n");
             /* Load an ontology from a physical IRI */
@@ -73,18 +65,17 @@ public class OWL2Parser {
             StreamDocumentSource sds = new StreamDocumentSource(con.getInputStream(), IRI.create(uri));
             OWLOntologyLoaderConfiguration config = new OWLOntologyLoaderConfiguration();
             config = config.setMissingImportHandlingStrategy(MissingImportHandlingStrategy.SILENT);
-            manager.addMissingImportListener(new HasMissingImports());
             OWLOntology ontology = manager.loadOntologyFromOntologyDocument(sds, config);              
             if (!missingImports.isEmpty()) {
                 IRI ontohub = IRI.create("https://ontohub.org/external/");
                 for (IRI mi : missingImports) {   
                     mapper.addMapping(mi, ontohub.resolve(mi.toURI().getHost() + mi.toURI().getPath()));
                 }
-                manager = OWLManager.createOWLOntologyManager();
+                // reset the manager. clear out imports to avoid duplicates 
+                manager = setupManagerWithMissingImportListener();
                 manager.addIRIMapper(mapper);
                 // collect and report missing imports again.
                 missingImports.clear();
-                manager.addMissingImportListener(new HasMissingImports());
                 ontology = manager.loadOntologyFromOntologyDocument(sds, config);
                 for (IRI mi : missingImports) {
                     out.write("<Missing>" + mi + "</Missing>\n");
@@ -116,6 +107,22 @@ public class OWL2Parser {
             System.err.println("OWL parse error: " + ex.getMessage());
             ex.printStackTrace();
         }
+    }
+
+    private static boolean parseOption (String option) {
+        if(option.equals("quick")) op = OPTION.QUICK_OWL_XML;
+        else if(option.equals("xml")) op = OPTION.OWL_XML;
+        else if(option.equals("rdf")) op = OPTION.RDF_XML;
+        else if(option.equals("obo")) op = OPTION.OBO;
+        else if(option.equals("omn")) op = OPTION.MANCHESTER;
+        else return false;
+        return true;
+    }
+        
+    private static OWLOntologyManager setupManagerWithMissingImportListener () {
+        OWLOntologyManager mgr = OWLManager.createOWLOntologyManager();
+        mgr.addMissingImportListener(new HasMissingImports());
+        return mgr;
     }
 
     private static class HasMissingImports implements MissingImportListener {
