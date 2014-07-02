@@ -30,7 +30,8 @@ getChecksum fn = ResultT $ do
     cmd : args -> do
       (ex, out, err) <- executeProcess cmd (args ++ [fn]) ""
       return $ case (ex, map words $ lines out) of
-        (ExitSuccess, (h : _) : _) | null err -> return h
+        (ExitSuccess, (h : _) : _) | null err ->
+          justHint h $ h ++ "  " ++ fn
         _ -> fail $ "could not determine checksum: "
           ++ shows ex "\n" ++ out
           ++ if null err then "" else "\nerror\n" ++ err
