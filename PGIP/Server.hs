@@ -95,17 +95,23 @@ import System.IO
 data Session = Session
   { sessLibEnv :: LibEnv
   , sessLibName :: LibName
+  , sessPath :: [String]
   , sessKey :: Int
-  , _sessStart :: UTCTime }
+  , sessStart :: UTCTime
+  , lastAccess :: UTCTime
+  , usage :: Int }
 
-type SessMap = Map.Map (String, [String]) Session
+type SessMap = Map.Map [String] Session
 type Cache = IORef (IntMap.IntMap Session, SessMap)
 
 randomKey :: IO Int
 randomKey = randomRIO (100000000, 999999999)
 
 sessGraph :: DGQuery -> Session -> Maybe (LibName, DGraph)
-sessGraph dgQ (Session le ln _ _) = case dgQ of
+sessGraph dgQ s =
+  let le = sessLibEnv s
+      ln = sessLibName s
+  in case dgQ of
   DGQuery _ (Just path) ->
       find (\ (n, _) -> libToFileName n == path)
         $ Map.toList le
@@ -478,12 +484,43 @@ mkResponse st = responseLBS st [] . BS.pack
 mkOkResponse :: String -> Response
 mkOkResponse = mkResponse status200
 
-addNewSess :: String -> [String] -> Cache -> Session -> IO Int
-addNewSess file cl sessRef sess = do
+addSess :: Cache -> Session -> IO Int
+addSess sessRef s = do
+  let k = sessKey s
+  atomicModifyIORef sessRef $ \ (m, lm) ->
+       ((IntMap.insert k s m, Map.insert (sessPath s) s lm), k)
+
+cleanUpCache :: Cache -> IO ()
+cleanUpCache sessRef = do
+  let mSize = 20
+  time <- getCurrentTime
+  atomicModifyIORef sessRef $ \ (m, lm) ->
+    if Map.size lm < mSize then ((m, lm), ()) else
+    let ss = drop (div mSize 2) . sortBy (cmpSess time) $ Map.elems lm
+    in ((IntMap.fromList $ map (\ s -> (sessKey s, s)) ss
+       , Map.fromList $ map (\ s -> (sessPath s, s)) ss), ())
+
+cmpSess :: UTCTime -> Session -> Session -> Ordering
+cmpSess curTime =
+  let f s = let
+        l = lastAccess s
+        b = sessStart s
+        d2 = utctDay curTime
+        s2 = utctDayTime curTime
+        d1 = utctDay l
+        s1 = utctDayTime l
+        u = usage s
+        in if u <= 1 && d1 == d2 && s2 > secondsToDiffTime 3600 + s1
+           then (u + 100, diffUTCTime l curTime)
+           else (u, diffUTCTime b l)
+  in on compare f
+
+addNewSess :: Cache -> Session -> IO Int
+addNewSess sessRef sess = do
+  cleanUpCache sessRef
   k <- randomKey
   let s = sess { sessKey = k }
-  atomicModifyIORef sessRef $ \ (m, lm) ->
-       ((IntMap.insert k s m, Map.insert (file, cl) s lm), k)
+  addSess sessRef s
 
 nextSess :: Session -> Cache -> LibEnv -> Int -> IO Session
 nextSess sess sessRef newLib k = if k <= 0 then return sess else
@@ -531,6 +568,13 @@ ppDGraph dg mt = let ga = globalAnnos dg in case optLibDefn dg of
              else return $ "could not create pdf:\n"
                   ++ unlines [out1, err1, out2, err2]
 
+increaseUsage :: Cache -> Session -> ResultT IO (Session, Int)
+increaseUsage sessRef sess = do
+  time <- lift getCurrentTime
+  let s2 = sess { usage = usage sess + 1, lastAccess = time }
+  k <- lift $ addSess sessRef s2
+  return (s2, k)
+
 getDGraph :: HetcatsOpts -> Cache -> DGQuery
   -> ResultT IO (Session, Int)
 getDGraph opts sessRef dgQ = do
@@ -544,8 +588,9 @@ getDGraph opts sessRef dgQ = do
         Left err -> fail err
         Right (_, mh, f, cont) -> case mh of
           Nothing -> fail $ "could determine checksum for: " ++ file
-          Just h -> case Map.lookup (file, h : cmdList) lm of
-            Just sess -> return (sess, sessKey sess)
+          Just h -> let q = file : h : cmdList in
+            case Map.lookup q lm of
+            Just sess -> increaseUsage sessRef sess
             Nothing -> do
               (ln, le1) <- if isDgXmlFile opts f cont
                 then readDGXmlR opts f Map.empty
@@ -555,12 +600,19 @@ getDGraph opts sessRef dgQ = do
               le2 <- foldM (\ e c -> liftR
                   $ fromJust (lookup c allGlobLibAct) ln e) le1 cl
               time <- lift getCurrentTime
-              let sess = Session le2 ln 0 time
-              k <- lift $ addNewSess file (h : cmdList) sessRef sess
+              let sess = Session
+                    { sessLibEnv = le2
+                    , sessLibName = ln
+                    , sessPath = q
+                    , sessKey = 0  -- to be updated by addNewSess
+                    , sessStart = time
+                    , lastAccess = time
+                    , usage = 1 }
+              k <- lift $ addNewSess sessRef sess
               return (sess, k)
     DGQuery k _ -> case IntMap.lookup k m of
       Nothing -> fail "unknown development graph"
-      Just sess -> return (sess, k)
+      Just sess -> increaseUsage sessRef sess
 
 getSVG :: String -> String -> DGraph -> ResultT IO String
 getSVG title url dg = do
