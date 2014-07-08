@@ -7,4 +7,9 @@ install:
  - cabal install http://www.dfki.de/cps/hets/src-distribution/programatica-1.0.0.5.tar.gz
  - cabal install --only-dependencies
  - ghc-pkg hide programatica
+ - rm -f programatica
+ - mkdir -p programatica
+ - wget http://www.dfki.de/cps/hets/src-distribution/programatica-1.0.0.5.tar.gz
+ - tar -xf programatica-1.0.0.5.tar.gz
+ - mv programatica-1.0.0.5 programatica/tools
  - make derivedSources
