@@ -447,6 +447,8 @@ derived_sources += $(drifted_files) Driver/Version.hs $(hs_der_files)
     check capa hacapa h2h h2hf showKP clean_genRules genRules \
     count doc fromKif derivedSources release cgi ghci build callghc
 
+.FORCE :
+
 .SECONDARY : %.hs %.d $(generated_rule_files)
 
 # dummy target to force ghc invocation
@@ -488,6 +490,13 @@ docs/index.html:
              $(filter-out Scratch.hs, $(wildcard *.hs))
 
 derivedSources: $(derived_sources)
+
+deps: .FORCE $(derived_sources)
+	$(HC) -M -dep-makefile Makefile.deps hets.hs $(HC_OPTS)
+	cat Makefile.deps | grep .hs | awk '{print $$3}' > deps
+
+compile_in_steps: deps
+	cat deps | xargs -L 200 $(HC) --make -odir=.objs $(HC_OPTS)
 
 $(DRIFT): $(DRIFT_deps)
 	(cd utils/DrIFT-src; $(HC) --make DrIFT.hs -o ../DrIFT)

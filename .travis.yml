@@ -12,4 +12,9 @@ install:
  - wget http://www.dfki.de/cps/hets/src-distribution/programatica-1.0.0.5.tar.gz
  - tar -xf programatica-1.0.0.5.tar.gz
  - mv programatica-1.0.0.5 programatica/tools
- - make derivedSources
+script:
+ - make compile_in_steps
+ - ./hets -V
+cache:
+  directories:
+  - .objs
