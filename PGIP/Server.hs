@@ -170,6 +170,7 @@ hetsServer opts1 = do
          appendFile permFile $ shows time " sessions: "
                     ++ shows (IntMap.size m) "\n"
          appendFile permFile $ shows (requestHeaders re) "\n"
+         appendFile permFile $ showPathQuery pathBits splitQuery ++ "\n"
        else appendFile permFile "not white listed\n"
    if not white || black then return $ mkResponse status403 ""
     -- if path could be a RESTfull request, try to parse it
@@ -280,7 +281,7 @@ parseRESTfull opts sessRef pathBits splitQuery meth = let
   timeout = lookup2 "timeout" >>= readMaybe
   queryFailure = return . mkResponse status400
     $ "this query does not comply with RESTfull interface: "
-    ++ intercalate "/" (map encodeForQuery pathBits)
+    ++ showPathQuery pathBits splitQuery
   -- since used more often, generate full query out of nodeIRI and nodeCmd
   nodeQuery s = NodeQuery $ maybe (Right s) Left (readMaybe s :: Maybe Int)
   parseNodeQuery :: Monad m => String -> Int -> m NodeCommand -> m Query
