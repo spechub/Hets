@@ -109,6 +109,16 @@ type NodeIdOrName = Either Int String
 
 type QueryPair = (String, Maybe String)
 
+showQuery :: [QueryPair] -> String
+showQuery = ('?' :) . intercalate "&" . map (\ (s, ms) ->
+  encodeForQuery s ++ maybe "" (('=' :) . encodeForQuery) ms)
+
+showPath :: [String] -> String
+showPath = intercalate "/" . map encodeForQuery
+
+showPathQuery :: [String] -> [QueryPair] -> String
+showPathQuery p q = showPath p ++ showQuery q
+
 data QueryKind =
     DisplayQuery (Maybe String)
   | GlobCmdQuery String
