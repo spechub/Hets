@@ -1,0 +1,20 @@
+language: haskell
+before_install:
+ - sudo apt-get update -qq
+ - sudo apt-get install -qq zlib1g-dev libncurses-dev libcairo2-dev libglib2.0-dev libpango1.0-dev libgtk2.0-dev libglade2-dev
+install:
+ - cabal install gtk2hs-buildtools
+ - cabal install http://www.dfki.de/cps/hets/src-distribution/programatica-1.0.0.5.tar.gz
+ - cabal install --only-dependencies
+ - ghc-pkg hide programatica
+ - rm -f programatica
+ - mkdir -p programatica
+ - wget http://www.dfki.de/cps/hets/src-distribution/programatica-1.0.0.5.tar.gz
+ - tar -xf programatica-1.0.0.5.tar.gz
+ - mv programatica-1.0.0.5 programatica/tools
+script:
+ - make compile_in_steps
+ - ./hets -V
+cache:
+  directories:
+  - .objs
