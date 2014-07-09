@@ -11,7 +11,7 @@ MAIN_DISTRO="oneiric"
 AUTO_INSTALL=1
 OPTERR=0
 
-HETS_REPO=https://svn-agbkb.informatik.uni-bremen.de/Hets/trunk
+HETS_REPO=https://github.com/spechub/Hets.git
 HETS_LIB_REPO=https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk
 
 PROGRAMATICA=programatica-1.0.0.5
@@ -123,7 +123,7 @@ ensure_package_installed()
   fi
 }
 
-export_repo()
+export_git_repo()
 {
   local SUFF="$1"
   local REPO="$2"
@@ -136,7 +136,7 @@ export_repo()
     (cd $REPO_FOLDER && git status 1>/dev/null 2>/dev/null)
     if [ $? -eq 0 ]; then
       echo ":: Updating previous checkout of $REPO"
-      (cd $REPO_FOLDER && git svn rebase)
+      (cd $REPO_FOLDER && git pull)
       if [ $? -eq 0 ]; then
         UPTODATE=0
       fi
@@ -151,21 +151,21 @@ export_repo()
   if [ $UPTODATE -eq 1 ]; then
     echo ":: Checking out $REPO ..."
     mkdir -p $REPO_FOLDER
-    git svn clone $REPO $REPO_FOLDER -r HEAD 1>/dev/null
+    git clone $REPO $REPO_FOLDER >/dev/null
     if [ $? -eq 1 ]; then
       echo "Check out failed ..."
       echo "Giving up."
       exit 1
     fi
   fi
- REVISION=`git --git-dir=$HETS_REPO_FOLDER/.git svn info | grep "Last Changed Rev: " | cut -d':' -f2 | cut -d' ' -f2`
+ REVISION=`git --git-dir=$HETS_REPO_FOLDER/.git log -1 --format=%ct`
   if [ ! $? -eq 0 ]; then
     echo "Couldn't detect revision ..."
     echo "Giving up."
     exit 1
   fi
  if [ "$TARGET_REV" != "" ]; then
-   GIT_TARGET_REV=`git --git-dir=$HETS_REPO_FOLDER/.git svn find-rev r$TARGET_REV`
+   GIT_TARGET_REV=$TARGET_REV
    if [ ! $? -eq 0 ]; then
      echo "Couldn't find revision $TARGET_REV ..."
      echo "Giving up."
@@ -193,7 +193,7 @@ export_repo()
      echo "Giving up."
      exit 1
    fi
-   git --git-dir=$HETS_REPO_FOLDER/.git svn info | grep "Last Changed Rev: " | cut -d':' -f2 | cut -d' ' -f2 > $DATA_DIR/revision_$SUFF
+   git --git-dir=$HETS_REPO_FOLDER/.git log -1 --format=%ct > $DATA_DIR/revision_$SUFF
  else
    echo "Export of $REPO is up to date"
  fi
@@ -327,9 +327,9 @@ if [ $OPT_CREATE -eq 0 ]; then
   ensure_package_installed git
   ensure_package_installed "git-svn"
   ensure_package_installed ant
-  ensure_package_installed "openjdk-6-jdk"
+  ensure_package_installed "openjdk-7-jdk"
 
-  export_repo "hets" "$HETS_REPO" "$HETS_REPO_FOLDER" "$HETS_FOLDER" "$HETS_REV"
+  export_git_repo "hets" "$HETS_REPO" "$HETS_REPO_FOLDER" "$HETS_FOLDER" "$HETS_REV"
 
   if [ $EXPORT_UPTODATE -eq 1 ]; then
     rm -f $DATA_DIR/*.done 2> /dev/null
@@ -350,7 +350,7 @@ if [ $OPT_CREATE -eq 0 ]; then
   HETS_FULL_VERSION="$HETS_VERSION"r"$HETS_REVISION"
   echo ":: Full version is: $HETS_FULL_VERSION"
 
-  export_repo "lib" "$HETS_LIB_REPO" "$HETS_LIB_REPO_FOLDER" "$HETS_FOLDER/hets-lib"
+  svn export -q --ignore-externals $HETS_LIB_REPO $HETS_FOLDER/hets-lib
 
   echo ":: Compiling Hets OWL Tools"
   if [ ! -f "$DATA_DIR/owl.done" ]; then
@@ -359,7 +359,7 @@ if [ $OPT_CREATE -eq 0 ]; then
     cd $OLD_PWD
     mkdir -p $HETS_OWL_TOOLS_FOLDER
     cd $HETS_FOLDER/OWL2
-    cp -r tests OWL*.jar $HETS_OWL_TOOLS_FOLDER
+    cp -r OWL*.jar $HETS_OWL_TOOLS_FOLDER
     cd $OLD_PWD
     mkdir -p $HETS_OWL_TOOLS_FOLDER/lib
     cp $HETS_FOLDER/OWL2/lib/*.jar $HETS_OWL_TOOLS_FOLDER/lib
@@ -377,7 +377,7 @@ if [ $OPT_CREATE -eq 0 ]; then
     rm programatica 2>/dev/null
     rm -rf GMP mini
     mkdir -p programatica
-    wget http://www.dfki.de/sks/hets/src-distribution/$PROGRAMATICA.tar.gz
+    wget http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/src-distribution/$PROGRAMATICA.tar.gz
     tar -xf $PROGRAMATICA.tar.gz
     mv $PROGRAMATICA programatica/tools
     rm -r $PROGRAMATICA.tar.gz
@@ -387,7 +387,13 @@ if [ $OPT_CREATE -eq 0 ]; then
   if [ ! -f $DATA_DIR/orig.done ]; then
     echo ":: Creating orig.tar.gz"
     cd $HETS_FOLDER
-    echo "r$HETS_REVISION" >> rev.txt
+    echo $HETS_REVISION >> rev.txt
+    rm -rf $HETS_FOLDER/.gitignore
+    rm -rf $HETS_FOLDER/OWL2/java/OwlApi
+    rm -rf $HETS_FOLDER/utils/nightly
+    rm -rf $HETS_FOLDER/utils/debian
+    rm -rf $HETS_FOLDER/utils/macports
+    rm -rf $HETS_FOLDER/utils/ubuntu
     cd ..
     tar -czf $RESULTS_DIR/hets_$HETS_FULL_VERSION.orig.tar.gz hets
     cd $OLD_PWD
@@ -406,7 +412,6 @@ do
   mkdir -p $HETS_FOLDER/debian
   cp -rf $OLD_PWD/debian-common/* $HETS_FOLDER/debian
   cp -rf $OLD_PWD/debian/$DIST/* $HETS_FOLDER/debian
-  rm -rf $HETS_FOLDER/debian/.svn
 
   # Creating the changelog
   if [ "$DIST" = "$MAIN_DISTRO" ]; then
