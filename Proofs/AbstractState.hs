@@ -444,9 +444,9 @@ getAllProvers pk start lg =
    -> [(t2, AnyComorphism)]
   mkComorphism kp path@(_, (end, _)) =
    let fullComorphism = pathToComorphism path
-   in case Map.toList $ Map.filterWithKey (\ l _ -> isSubElemG end l) kp of
-        [(_, ps)] -> map (\ p -> (p, fullComorphism)) ps
-        _ -> error "error1"
+       cs = Map.toList $ Map.filterWithKey (\ l _ -> isSubElemG end l) kp
+   in concatMap (\ x -> case x of
+                        (_, ps) -> map (\ p -> (p, fullComorphism)) ps) cs
 
 {- | the list of proof statuses is integrated into the goalMap of the state
 after validation of the Disproved Statuses -}
