@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {- |
 Module      :  $Header$
 Description :  run hets as server
@@ -20,6 +21,9 @@ import Driver.Version
 import Network.Wai.Handler.Warp
 import Network.HTTP.Types (Status, status200, status400, status403, status405)
 import Control.Monad.Trans (lift, liftIO)
+#ifdef WARP1
+import Control.Monad.Trans.Resource
+#endif
 import qualified Data.Text as T
 
 import Network.Wai
@@ -133,6 +137,16 @@ matchIP4 ip mask = case mask of
 matchWhite :: [String] -> [[String]] -> Bool
 matchWhite ip l = null l || any (matchIP4 ip) l
 
+#ifdef WARP3
+type WebResponse = (Response -> IO ResponseReceived) -> IO ResponseReceived
+#else
+#ifdef WARP1
+type WebResponse = (Response -> ResourceT IO Response) -> ResourceT IO Response
+#else
+type WebResponse = (Response -> IO Response) -> IO Response
+#endif
+#endif
+
 hetsServer :: HetcatsOpts -> IO ()
 hetsServer opts1 = do
   tempDir <- getTemporaryDirectory
@@ -151,7 +165,12 @@ hetsServer opts1 = do
   unless (null bl) . appendFile permFile
     $ "black list: " ++ prList bl ++ "\n"
   sessRef <- newIORef (IntMap.empty, Map.empty)
+#ifdef WARP3
+  run port $ \ re respond -> do
+#else
   run port $ \ re -> do
+   let respond = liftIO . return
+#endif
    let rhost = shows (remoteHost re) "\n"
        ip = getIP4 rhost
        white = matchWhite ip wl
@@ -172,59 +191,60 @@ hetsServer opts1 = do
          appendFile permFile $ shows (requestHeaders re) "\n"
          appendFile permFile $ showPathQuery pathBits splitQuery ++ "\n"
        else appendFile permFile "not white listed\n"
-   if not white || black then return $ mkResponse status403 ""
+   if not white || black then respond $ mkResponse status403 ""
     -- if path could be a RESTfull request, try to parse it
-    else if isRESTfull pathBits then liftIO $
-      parseRESTfull opts sessRef pathBits splitQuery meth
+    else if isRESTfull pathBits then
+      parseRESTfull opts sessRef pathBits splitQuery meth respond
     -- only otherwise stick to the old response methods
     else case meth of
-      "GET" -> liftIO $ if isJust $ lookup "menus" splitQuery
-         then mkMenuResponse else do
-         dirs@(_ : cs) <- getHetsLibContent opts path splitQuery
-         if not (null cs) || null path then mkHtmlPage path dirs
+      "GET" -> if isJust $ lookup "menus" splitQuery
+         then mkMenuResponse respond else do
+         dirs@(_ : cs) <- liftIO $ getHetsLibContent opts path splitQuery
+         if not (null cs) || null path then mkHtmlPage path dirs respond
            -- AUTOMATIC PROOFS (parsing)
            else if isJust $ getVal splitQuery "autoproof" then
              let qr k = Query (DGQuery k Nothing) $
                    anaAutoProofQuery splitQuery in do
-               Result ds ms <- runResultT $ case readMaybe $ head pathBits of
+               Result ds ms <- liftIO $ runResultT
+                 $ case readMaybe $ head pathBits of
                  Nothing -> fail "cannot read session id for automatic proofs"
                  Just k' -> getHetsResult opts [] sessRef (qr k')
-               return $ case ms of
+               respond $ case ms of
                  Nothing -> mkResponse status400 $ showRelDiags 1 ds
                  Just s -> mkOkResponse s
            -- AUTOMATIC PROOFS E.N.D.
-           else getHetsResponse opts [] sessRef pathBits splitQuery
+           else getHetsResponse opts [] sessRef pathBits splitQuery respond
       "POST" -> do
         (params, files) <- parseRequestBody lbsBackEnd re
-        mTmpFile <- liftIO $ case lookup "content"
+        mTmpFile <- case lookup "content"
                    $ map (\ (a, b) -> (B8.unpack a, b)) params of
               Nothing -> return Nothing
               Just areatext -> let content = B8.unpack areatext in
-                if all isSpace content then return Nothing else do
+                if all isSpace content then return Nothing else liftIO $ do
                    tmpFile <- getTempFile content "temp.het"
                    copyPermissions permFile tmpFile
                    return $ Just tmpFile
         let res tmpFile =
-              getHetsResponse opts [] sessRef [tmpFile] splitQuery
-            mRes = maybe (return $ mkResponse status400 "nothing submitted")
+              getHetsResponse opts [] sessRef [tmpFile] splitQuery respond
+            mRes = maybe (respond $ mkResponse status400 "nothing submitted")
               res mTmpFile
-        liftIO $ case files of
+        case files of
           [] -> if isJust $ getVal splitQuery "prove" then
                getHetsResponse opts [] sessRef pathBits
-                 $ splitQuery ++ map (\ (a, b)
-                 -> (B8.unpack a, Just $ B8.unpack b)) params
+                 (splitQuery ++ map (\ (a, b)
+                 -> (B8.unpack a, Just $ B8.unpack b)) params) respond
             else mRes
           [(_, f)] | isNothing $ lookup updateS splitQuery -> do
            let fn = takeFileName $ B8.unpack $ fileName f
            if any isAlphaNum fn then do
              let tmpFile = tempHetsLib </> fn
-             BS.writeFile tmpFile $ fileContent f
-             copyPermissions permFile tmpFile
+             liftIO $ BS.writeFile tmpFile $ fileContent f
+             liftIO $ copyPermissions permFile tmpFile
              maybe (res tmpFile) res mTmpFile
             else mRes
           _ -> getHetsResponse
-                 opts (map snd files) sessRef pathBits splitQuery
-      _ -> return $ mkResponse status405 ""
+                 opts (map snd files) sessRef pathBits splitQuery respond
+      _ -> respond $ mkResponse status405 ""
 
 -- extract what we need to know from an autoproof request
 anaAutoProofQuery :: [QueryPair] -> QueryKind
@@ -263,8 +283,8 @@ newRESTIdes =
 
 -- query is analysed and processed in accordance with RESTfull interface
 parseRESTfull :: HetcatsOpts -> Cache -> [String] -> [QueryPair]
-  -> String -> IO Response
-parseRESTfull opts sessRef pathBits splitQuery meth = let
+  -> String -> WebResponse
+parseRESTfull opts sessRef pathBits splitQuery meth respond = let
   {- some parameters from the paths query part might be needed more than once
   (when using lookup upon querybits, you need to unpack Maybe twice) -}
   lookup2 = getVal splitQuery
@@ -279,7 +299,7 @@ parseRESTfull opts sessRef pathBits splitQuery meth = let
   incl = maybe False (\ s ->
               notElem (map toLower s) ["f", "false"]) inclM
   timeout = lookup2 "timeout" >>= readMaybe
-  queryFailure = return . mkResponse status400
+  queryFailure = respond . mkResponse status400
     $ "this query does not comply with RESTfull interface: "
     ++ showPathQuery pathBits splitQuery
   -- since used more often, generate full query out of nodeIRI and nodeCmd
@@ -289,8 +309,8 @@ parseRESTfull opts sessRef pathBits splitQuery meth = let
       in return . Query (DGQuery sId (Just p)) . nodeQuery (getFragment p)
   -- call getHetsResult with the properly generated query (Final Result)
   getResponseAux myOpts qr = do
-    Result ds ms <- runResultT $ getHetsResult myOpts [] sessRef qr
-    return $ case ms of
+    Result ds ms <- liftIO $ runResultT $ getHetsResult myOpts [] sessRef qr
+    respond $ case ms of
       Nothing -> mkResponse status400 $ showRelDiags 1 ds
       Just s -> mkOkResponse s
   getResponse = getResponseAux opts
@@ -298,12 +318,14 @@ parseRESTfull opts sessRef pathBits splitQuery meth = let
   in case meth of
     rm | elem rm ["GET", "POST"] -> case pathBits of
       -- show all menu options
-      "menus" : [] -> mkMenuResponse
+      "menus" : [] -> mkMenuResponse respond
       -- list files from directory
-      "dir" : r -> let path' = intercalate "/" r in
-        getHetsLibContent opts path' splitQuery >>= mkHtmlPage path'
+      "dir" : r -> do
+        let path' = intercalate "/" r
+        dirs <- liftIO $ getHetsLibContent opts path' splitQuery
+        mkHtmlPage path' dirs respond
       -- get dgraph from file
-      "filetype" : libIri : _ -> mkFiletypeResponse opts libIri
+      "filetype" : libIri : _ -> mkFiletypeResponse opts libIri respond
       "hets-lib" : r -> let file = intercalate "/" r in
         getResponse $ Query (NewDGQuery file []) $ DisplayQuery format
       -- get library (complies with get/hets-lib for now)
@@ -417,11 +439,11 @@ parseRESTfull opts sessRef pathBits splitQuery meth = let
       _ -> queryFailure
     {- create failure response if request method is not known
     (should never happen) -}
-    _ -> return $ mkResponse status405 ""
+    _ -> respond $ mkResponse status405 ""
 
-
-mkMenuResponse :: IO Response
-mkMenuResponse = return $ mkOkResponse $ ppTopElement $ unode "menus" mkMenus
+mkMenuResponse :: WebResponse
+mkMenuResponse respond =
+  respond $ mkOkResponse $ ppTopElement $ unode "menus" mkMenus
 
 mkMenus :: [Element]
 mkMenus = menuTriple "" "Get menu triples" "menus"
@@ -431,10 +453,10 @@ mkMenus = menuTriple "" "Get menu triples" "menus"
   ++ map (\ nc -> menuTriple "/DGraph/DGNode" ("Show " ++ nc) nc) nodeCommands
   ++ [menuTriple "/DGraph/DGLink" "Show edge info" "edge"]
 
-mkFiletypeResponse :: HetcatsOpts -> String -> IO Response
-mkFiletypeResponse opts libIri = do
-  res <- getContentAndFileType opts Nothing libIri
-  return $ case res of
+mkFiletypeResponse :: HetcatsOpts -> String -> WebResponse
+mkFiletypeResponse opts libIri respond = do
+  res <- liftIO $ getContentAndFileType opts Nothing libIri
+  respond $ case res of
     Left err -> mkResponse status400 err
     Right (mr, _, fn, _) -> case mr of
       Nothing -> mkResponse status400 $ fn ++ ": unknown file type"
@@ -476,8 +498,8 @@ mkHtmlElemScript title scr =
   , add_attr (mkAttr "type" "text/javascript") . unode "script"
     . Text $ CData CDataRaw scr Nothing] -- scr must not be encoded!
 
-mkHtmlPage :: FilePath -> [Element] -> IO Response
-mkHtmlPage path = return . mkOkResponse . mkHtmlString path
+mkHtmlPage :: FilePath -> [Element] -> WebResponse
+mkHtmlPage path es respond = respond . mkOkResponse $ mkHtmlString path es
 
 mkResponse :: Status -> String -> Response
 mkResponse st = responseLBS st [] . BS.pack
@@ -676,13 +698,13 @@ cmpFilePath f1 f2 = case comparing hasTrailingPathSeparator f2 f1 of
 
 -- | with the 'old' call of getHetsResponse, anaUri is called upon the path
 getHetsResponse :: HetcatsOpts -> [FileInfo BS.ByteString]
-  -> Cache -> [String] -> [QueryPair] -> IO Response
-getHetsResponse opts updates sessRef pathBits query = do
-  Result ds ms <- runResultT $ case anaUri pathBits query
+  -> Cache -> [String] -> [QueryPair] -> WebResponse
+getHetsResponse opts updates sessRef pathBits query respond = do
+  Result ds ms <- liftIO $ runResultT $ case anaUri pathBits query
     $ updateS : globalCommands of
     Left err -> fail err
     Right q -> getHetsResult opts updates sessRef q
-  return $ case ms of
+  respond $ case ms of
     Just s | not $ hasErrors ds -> mkOkResponse s
     _ -> mkResponse status400 $ showRelDiags 1 ds
 
