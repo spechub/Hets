@@ -17,7 +17,12 @@ Interface for Isabelle theorem prover.
    Hets reads in created *.deps files
 -}
 
-module Isabelle.IsaProve where
+module Isabelle.IsaProve
+  ( isabelleConsChecker
+  , isabelleBatchProver
+  , isabelleProver
+  , isaProve
+  ) where
 
 import Logic.Prover
 import Isabelle.IsaSign
@@ -31,7 +36,7 @@ import Common.AS_Annotation
 import Common.DocUtils
 import Common.DefaultMorphism
 import Common.ProofUtils
-import Common.Utils (getEnvDef)
+import Common.Utils (getEnvDef, executeProcess)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -53,6 +58,9 @@ openIsaProofStatus n = openProofStatus n isabelleS ()
 
 isabelleProver :: Prover Sign Sentence (DefaultMorphism Sign) () ()
 isabelleProver = mkProverTemplate isabelleS () isaProve
+
+isabelleBatchProver :: Prover Sign Sentence (DefaultMorphism Sign) () ()
+isabelleBatchProver = mkProverTemplate "isabelle-process" () (isaProveAux True)
 
 isabelleConsChecker :: ConsChecker Sign Sentence () (DefaultMorphism Sign) ()
 isabelleConsChecker = (mkConsChecker "Isabelle-refute" () consCheck)
@@ -191,7 +199,11 @@ callSystem :: String -> IO ExitCode
 callSystem s = putStrLn s >> system s
 
 isaProve :: String -> Theory Sign Sentence () -> a -> IO [ProofStatus ()]
-isaProve thName th _freedefs = do
+isaProve = isaProveAux False
+
+isaProveAux :: Bool -> String -> Theory Sign Sentence () -> a
+  -> IO [ProofStatus ()]
+isaProveAux batch thName th _freedefs = do
   let (sig, axs, ths, m) = prepareTheory th
       thms = map senAttr ths
       thBaseName = reverse . takeWhile (/= '/') $ reverse thName
@@ -211,8 +223,17 @@ isaProve thName th _freedefs = do
     Right (ho, bo) -> do
       prepareThyFiles (ho, bo) thyFile thy
       removeDepFiles thBaseName thms
-      isabelle <- getEnvDef "HETS_ISABELLE" "isabelle emacs"
-      callSystem $ isabelle ++ " " ++ thyFile
+      if batch then do
+          (ex, out, err) <- executeProcess "isabelle-process" []
+            $ " use_thy \"" ++ thBaseName ++ "\";\x04"
+          putStrLn out
+          case ex of
+            ExitSuccess -> return ()
+            _ -> putStrLn err
+          return ex
+        else do
+          isabelle <- getEnvDef "HETS_ISABELLE" "isabelle emacs"
+          callSystem $ isabelle ++ " " ++ thyFile
       ok <- checkFinalThyFile (ho, bo) thyFile
       if ok then getAllProofDeps m thBaseName thms
           else return []
