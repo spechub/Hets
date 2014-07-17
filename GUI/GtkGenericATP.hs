@@ -300,9 +300,9 @@ genericATPgui atpFun hasEOptions prName thName th freedefs pt = do
         else (g, prS)
 
 saveConfigCurrent :: (Ord proof_tree)
-                  => GenericState sign sentence proof_tree pst -> proof_tree
+                  => GenericState sentence proof_tree pst -> proof_tree
                   -> String -> SpinButton -> Entry
-                  -> IO (GenericState sign sentence proof_tree pst)
+                  -> IO (GenericState sentence proof_tree pst)
 saveConfigCurrent s pt prName sbTimeout entryOptions = do
   -- saving options for previous selected goal
   timeout <- spinButtonGetValueAsInt sbTimeout
@@ -314,7 +314,7 @@ saveConfigCurrent s pt prName sbTimeout entryOptions = do
                 $ configsMap s) mn
   return $ s { configsMap = cfg }
 
-updateGoals :: GenericState sign sentence proof_tree pst -> TreeView
+updateGoals :: GenericState sentence proof_tree pst -> TreeView
             -> ListStore Goal -> IO ()
 updateGoals s trvGoals listGoals = do
   let ng = toGoals s
@@ -328,7 +328,7 @@ updateGoals s trvGoals listGoals = do
     Nothing -> return ()
 
 -- | Updates the display of the status of the current goal.
-update :: GenericState sign sentence proof_tree pst -> TreeView
+update :: GenericState sentence proof_tree pst -> TreeView
        -> ListStore Goal -> ListStore String -> Label -> SpinButton -> Entry
        -> IO ()
 update s trvGoals listGoals listAxioms lblStatus sbTimeout entryOptions = do
@@ -353,7 +353,7 @@ setTimeLimit n c = c { timeLimit = if n > 0 then Just n else Nothing }
 setExtraOpts :: [String] -> GenericConfig proof_tree -> GenericConfig proof_tree
 setExtraOpts opts c = c { extraOpts = opts }
 
-toGoals :: GenericState sign sentence proof_tree pst -> [Goal]
+toGoals :: GenericState sentence proof_tree pst -> [Goal]
 toGoals s = sort $ map (\ g ->
   let n = AS_Anno.senAttr g
       c = Map.findWithDefault (error "Config not found!") n $ configsMap s

@@ -98,7 +98,7 @@ checkGoal cfgMap goal =
 -}
 
 goalProcessed :: (Ord proof_tree) =>
-                 Conc.MVar (GenericState sign sentence proof_tree pst)
+                 Conc.MVar (GenericState sentence proof_tree pst)
                  -- ^ IORef pointing to the backing State data structure
               -> Int -- ^ batch time limit
               -> [String] -- ^ extra options
@@ -118,7 +118,7 @@ goalProcessed stateMVar tLimit extOpts numGoals prName processedGoalsSoFar
 
 -- same function as goalProcessed but it also returnes the goalStatus
 goalProcRetVal :: (Ord proof_tree) =>
-                 Conc.MVar (GenericState sign sentence proof_tree pst)
+                 Conc.MVar (GenericState sentence proof_tree pst)
                  -- ^ IORef pointing to the backing State data structure
               -> Int -- ^ batch time limit
               -> [String] -- ^ extra options
@@ -177,7 +177,7 @@ genericProveBatch :: (Ord sentence, Ord proof_tree) =>
                   -> RunProver sentence proof_tree pst -- prover to run batch
                   -> String -- ^ prover name
                   -> String -- ^ theory name
-                  -> GenericState sign sentence proof_tree pst
+                  -> GenericState sentence proof_tree pst
                   -> Maybe (Conc.MVar (Result [ProofStatus proof_tree]))
                      -- ^ empty MVar to be filled after each proof attempt
                   -> IO [ProofStatus proof_tree]
