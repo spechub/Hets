@@ -36,14 +36,19 @@ import Common.AS_Annotation
 import Common.DocUtils
 import Common.DefaultMorphism
 import Common.ProofUtils
+import Common.Result
 import Common.Utils (getEnvDef, executeProcess)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import Text.ParserCombinators.Parsec
+
+import Control.Monad
+import Control.Concurrent
+import Control.Exception (finally)
+
 import Data.Char
 import Data.List (isSuffixOf)
-import Control.Monad
 import Data.Time (midnight)
 
 import System.Directory
@@ -57,10 +62,11 @@ openIsaProofStatus :: String -> ProofStatus ()
 openIsaProofStatus n = openProofStatus n isabelleS ()
 
 isabelleProver :: Prover Sign Sentence (DefaultMorphism Sign) () ()
-isabelleProver = mkProverTemplate isabelleS () isaProve
+isabelleProver = mkAutomaticProver isabelleS () isaProve isaBatchProve
 
 isabelleBatchProver :: Prover Sign Sentence (DefaultMorphism Sign) () ()
-isabelleBatchProver = mkProverTemplate "isabelle-process" () (isaProveAux True)
+isabelleBatchProver = mkAutomaticProver "isabelle-process" () (isaProveAux True)
+  isaBatchProve
 
 isabelleConsChecker :: ConsChecker Sign Sentence () (DefaultMorphism Sign) ()
 isabelleConsChecker = (mkConsChecker "Isabelle-refute" () consCheck)
@@ -243,3 +249,20 @@ isaProveAux batch thName th _freedefs = do
       writeFile thyFile thy
       putStrLn "aborting Isabelle proof attempt"
       return []
+
+isaBatchProve :: Bool -- 1.
+                 -> Bool -- 2.
+                 -> MVar (Result [ProofStatus ()]) -- 3.
+                 -> String -- 4.
+                 -> TacticScript  -- 5.
+                 -> Theory Sign Sentence ()  -- 6.
+                 -> a
+                 -> IO (ThreadId, MVar ())
+isaBatchProve _incl _save resMVar thName _tac th freedefs = do
+    mvar <- newEmptyMVar
+    threadID <- forkIO (do
+        ps <- isaProveAux True thName th freedefs
+        _ <- swapMVar resMVar $ return ps
+        return ()
+      `finally` putMVar mvar ())
+    return (threadID, mvar)
