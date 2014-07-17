@@ -231,7 +231,7 @@ isaProveAux batch thName th _freedefs = do
       removeDepFiles thBaseName thms
       if batch then do
           (ex, out, err) <- executeProcess "isabelle-process" []
-            $ " use_thy \"" ++ thBaseName ++ "\";\x04"
+            $ " use_thy \"" ++ thBaseName ++ "\";"
           putStrLn out
           case ex of
             ExitSuccess -> return ()
