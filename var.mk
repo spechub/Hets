@@ -105,7 +105,6 @@ PARSEC_FLAG = -hide-package parsec -package parsec1
 endif
 
 ifneq ($(strip $(UNI_PACKAGE)),)
-TESTTARGETFILES += Taxonomy/taxonomyTool.hs
   ifeq ($(strip $(HTTP_PACKAGE)),)
   TESTTARGETFILES += SoftFOL/tests/CMDL_tests.hs
   endif
