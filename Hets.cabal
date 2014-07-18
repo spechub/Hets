@@ -95,7 +95,6 @@ Executable hets
         uni-events
       , uni-graphs >= 2.0 && < 3.0
       , uni-htk >= 2.0 && < 3.0
-      , uni-posixutil
       , uni-reactor
       , uni-uDrawGraph >= 2.0 && < 3.0
       , uni-util >= 2.0 && < 3.0
@@ -140,6 +139,5 @@ Executable hets
       , warp >= 2.0 && < 3.0
       , http-types >= 0.6 && < 0.9
       , text >= 0.5 && < 2.0
-      , bytestring >= 0.9
       , random >= 1.0
     cpp-options: -DSERVER
