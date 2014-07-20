@@ -119,7 +119,7 @@ resolveDocument doc = let newStatements = resolveStatements
 -- * Axiom extraction
 
 generateBNode :: Int -> IRI
-generateBNode i = QN "_" ("bnode" ++ show i) NodeID ("_:bnode" ++ show i) nullRange
+generateBNode i = QN "_" ("genid" ++ show i) NodeID ("_:genid" ++ show i) nullRange
 
 collectionToPOList :: [Object] -> [PredicateObjectList]
 collectionToPOList objs = case objs of
