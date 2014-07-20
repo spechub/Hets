@@ -1,18 +1,25 @@
 #!/bin/bash
 
-for i in *.rdf *.nt
-do
-    hets -i rdf $i -o th,pp.het
-done
+GOOD=`ls | egrep 'test-[0-9]+.ttl'`
+BAD=`ls | egrep 'bad-[0-9]+.ttl'`
+BASE="@base <http://www.w3.org/2001/sw/DataAccess/df1/tests/> ."
 
-for i in *.pp.het *.th
-do
-    hets -l RDF $i -o th,pp.het
-done
+HETS="../../hets"
 
-for i in *pp* *th*
-do
-    hets -l RDF $i
-done
+function clean {
+	cat /tmp/test.ttl_test.th | grep -v "logic RDF" | \
+         grep -v "spec <tmp/testttl?test> =" | \
+         grep -v "^\#" | grep -v "^$"
+}
 
-rm *th* *pp*
+for f in $GOOD
+do
+	echo "logic RDF" > /tmp/test.ttl
+	echo "spec test =" >> /tmp/test.ttl
+        echo $BASE >> /tmp/test.ttl
+        cat $f >> /tmp/test.ttl
+	$HETS /tmp/test.ttl -o th > /dev/null
+        clean > /tmp/test.out
+	OUTFILE="`dirname $f`/`basename $f .ttl`.out"
+	diff -q /tmp/test.out $OUTFILE
+done
