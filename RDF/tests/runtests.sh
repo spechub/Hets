@@ -7,19 +7,22 @@ BASE="@base <http://www.w3.org/2001/sw/DataAccess/df1/tests/> ."
 HETS="../../hets"
 
 function clean {
-	cat /tmp/test.ttl_test.th | grep -v "logic RDF" | \
-         grep -v "spec <tmp/testttl?test> =" | \
+	cat ./out/${BASENAME}.ttl_test.th 2> /dev/null | \
+         grep -v "logic RDF" | \
+         grep -v "spec <out/.*> =" | \
          grep -v "^\#" | grep -v "^$"
 }
 
+mkdir -p out
+
 for f in $GOOD
 do
-	echo "logic RDF" > /tmp/test.ttl
-	echo "spec test =" >> /tmp/test.ttl
-        echo $BASE >> /tmp/test.ttl
-        cat $f >> /tmp/test.ttl
-	$HETS /tmp/test.ttl -o th > /dev/null
-        clean > /tmp/test.out
-	OUTFILE="`dirname $f`/`basename $f .ttl`.out"
-	diff -q /tmp/test.out $OUTFILE
+	BASENAME=`basename $f .ttl`
+	echo "logic RDF" > ./out/${BASENAME}.ttl
+	echo "spec test =" >> ./out/${BASENAME}.ttl
+        echo $BASE >> ./out/${BASENAME}.ttl
+        cat $f >> ./out/${BASENAME}.ttl
+	$HETS ./out/${BASENAME}.ttl -o th > ./out/${BASENAME}.hetsout
+        clean > ./out/${BASENAME}.out
+	diff -q ./out/${BASENAME}.out ./${BASENAME}.out
 done
