@@ -126,5 +126,9 @@ xmlBoolean :: IRI
 xmlBoolean = QN "xsd" "boolean" Abbreviated
     "http://www.w3.org/2001/XMLSchema#boolean" nullRange
 
+xmlInteger :: IRI
+xmlInteger = QN "xsd" "integer" Abbreviated
+    "http://www.w3.org/2001/XMLSchema#integer" nullRange
+
 isAbsoluteIRI :: IRI -> Bool
 isAbsoluteIRI iri = iriType iri == Full && isPrefixOf "//" (localPart iri)
