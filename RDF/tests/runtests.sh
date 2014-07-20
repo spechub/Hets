@@ -24,5 +24,7 @@ do
         cat $f >> ./out/${BASENAME}.ttl
 	$HETS ./out/${BASENAME}.ttl -o th > ./out/${BASENAME}.hetsout
         clean > ./out/${BASENAME}.out
-	diff -q ./out/${BASENAME}.out ./${BASENAME}.out
+	sort -k1,4 ./out/${BASENAME}.out > ./out/${BASENAME}.out.sorted
+        sort -k1,4 ./${BASENAME}.out > ./${BASENAME}.out.sorted
+	diff -q ./out/${BASENAME}.out.sorted ./${BASENAME}.out.sorted
 done

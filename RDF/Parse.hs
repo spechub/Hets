@@ -91,7 +91,7 @@ resource  = try (uriRef <|> qname)
                   char ':'
                   optional (try name)
                   return ()
-       prefixName = many $ noneOf " :._"
+       prefixName = many $ noneOf " :."
        name = many $ noneOf " :"
 
 resourceP :: CharParser st QName
