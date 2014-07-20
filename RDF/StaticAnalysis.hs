@@ -46,14 +46,7 @@ resolveFullIRI absol rel = if isAbsoluteIRI rel then rel else
 resolveAbbreviatedIRI :: RDFPrefixMap -> IRI -> IRI
 resolveAbbreviatedIRI pm new = case Map.lookup (namePrefix new) pm of
     Nothing -> error $ namePrefix new ++ ": prefix not declared"
-    Just iri -> let new2 = if null (namePrefix new)
-                                        {- FIXME: If null (localPart new)
-                                                  then head will fail! -}
-                                        && null (localPart new)
-                                        && head (localPart new) == ':'
-                            then new {localPart = tail $ localPart new}
-                            else new
-                in new2 {expandedIRI = expandedIRI iri ++ localPart new2}
+    Just iri -> new {expandedIRI = expandedIRI iri ++ localPart new}
 
 resolveIRI :: Base -> RDFPrefixMap -> IRI -> IRI
 resolveIRI (Base current) pm new = case iriType new of
