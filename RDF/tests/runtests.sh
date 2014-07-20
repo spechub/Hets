@@ -9,7 +9,7 @@ HETS="../../hets"
 function clean {
 	cat ./out/${BASENAME}.ttl_test.th 2> /dev/null | \
          grep -v "logic RDF" | \
-         grep -v "spec <out/.*> =" | \
+         grep -v "spec test =" | \
          grep -v "^\#" | grep -v "^$"
 }
 
