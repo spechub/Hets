@@ -2,7 +2,6 @@
 
 GOOD=`ls | egrep 'test-[0-9]+.ttl'`
 BAD=`ls | egrep 'bad-[0-9]+.ttl'`
-BASE="@base <http://www.w3.org/2001/sw/DataAccess/df1/tests/> ."
 
 HETS="../../hets"
 
@@ -20,7 +19,7 @@ do
 	BASENAME=`basename $f .ttl`
 	echo "logic RDF" > ./out/${BASENAME}.ttl
 	echo "spec test =" >> ./out/${BASENAME}.ttl
-        echo $BASE >> ./out/${BASENAME}.ttl
+        echo "@base <http://www.w3.org/2001/sw/DataAccess/df1/tests/$BASENAME.ttl> ." >> ./out/${BASENAME}.ttl
         cat $f >> ./out/${BASENAME}.ttl
 	$HETS ./out/${BASENAME}.ttl -o th > ./out/${BASENAME}.hetsout
         clean > ./out/${BASENAME}.out
