@@ -62,11 +62,7 @@ resolvePrefix b pm (Prefix s new) = let res = resolveIRI b pm new
     in (Prefix s res, Map.insert s res pm)
 
 resolvePredicate :: Base -> RDFPrefixMap -> Predicate -> Predicate
-resolvePredicate b pm (Predicate p) = Predicate $
-    if null (namePrefix p) && localPart p == "a" then
-        p { expandedIRI = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
-          , iriType = Full }
-    else resolveIRI b pm p
+resolvePredicate b pm (Predicate p) = Predicate $ resolveIRI b pm p
 
 resolveSubject :: Base -> RDFPrefixMap -> Subject -> Subject
 resolveSubject b pm s = case s of
