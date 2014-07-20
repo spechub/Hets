@@ -69,6 +69,7 @@ printSubject subj = case subj of
     Subject iri -> pretty iri
     SubjectList ls -> brackets $ ppWithSemis ls
     SubjectCollection c -> parens $ (hsep . map pretty) c
+    BlankNode s -> text $ "_:" ++ s
 
 instance Pretty Object where
     pretty = printObject

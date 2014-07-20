@@ -87,12 +87,11 @@ resource  = try (uriRef <|> qname)
        relativeURI = many (escapeChar <|> many1 (noneOf ">"))
        qname = do
                   many space
-                  optional (try prefixName)
+                  optional (try name)
                   char ':'
                   optional (try name)
                   return ()
-       prefixName = many $ noneOf " :."
-       name = many $ noneOf " :"
+       name = many $ noneOf " :."
 
 resourceP :: CharParser st QName
 resourceP = skips ((lookAhead resource >> uriP) <|>
@@ -135,6 +134,9 @@ literal = do
     f <- skips $ try floatingPointLit
          <|> fmap decToFloat decimalLit
     return $ RDFNumberLit f
+  <|> (do
+          b <- try $ skips $ string "true" <|> string "false"
+          return $ RDFLiteral False b (Typed xmlBoolean))
   <|> stringLiteral
 
 parseBase :: CharParser st Base

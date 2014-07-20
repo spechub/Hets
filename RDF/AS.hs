@@ -122,5 +122,9 @@ rdfType :: IRI
 rdfType = QN "rdf" "type" Abbreviated
     "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" nullRange
 
+xmlBoolean :: IRI
+xmlBoolean = QN "xsd" "boolean" Abbreviated
+    "http://www.w3.org/2001/XMLSchema#boolean" nullRange
+
 isAbsoluteIRI :: IRI -> Bool
 isAbsoluteIRI iri = iriType iri == Full && isPrefixOf "//" (localPart iri)
