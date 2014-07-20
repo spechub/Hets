@@ -30,8 +30,15 @@ import Text.ParserCombinators.Parsec
 
 uriP :: CharParser st QName
 uriP =
-  skips $ try $ checkWithUsing showQN uriQ $ \ q ->
-    not (null $ namePrefix q) || notElem (localPart q) criticalKeywords
+  (skips $ try $ checkWithUsing showQN uriQ $ \ q ->
+     not (null $ namePrefix q) || notElem (localPart q) criticalKeywords)
+  >>= \v -> return $ if null (namePrefix v)
+                     then v { localPart = case localPart v of
+                               ':':v' -> v'
+                               _ -> if iriType v /= Full then
+                                     error $ "RDF.Parse.uriP " ++ show v
+                                    else localPart v }
+                     else v
 
 -- * hets symbols parser
 
@@ -72,6 +79,25 @@ rdfSymbPairs = uriPair >>= \ u -> do
 
 -- * turtle syntax parser
 
+resource :: CharParser st ()
+resource  = try (uriRef <|> qname)
+ where uriRef = char '<' >>
+                relativeURI >>
+                char '>' >> return ()
+       relativeURI = many (escapeChar <|> many1 (noneOf ">"))
+       qname = do
+                  many space
+                  optional (try prefixName)
+                  char ':'
+                  optional (try name)
+                  return ()
+       prefixName = many $ noneOf " :._"
+       name = many $ noneOf " :"
+
+resourceP :: CharParser st QName
+resourceP = skips ((lookAhead resource >> uriP) <|>
+                   (many space >> string "a" >> return rdfType))
+
 skips :: CharParser st a -> CharParser st a
 skips = (<< skipMany
         (forget space <|> parseComment <|> nestCommentOut <?> ""))
@@ -102,7 +128,7 @@ stringLiteral = do
         string "@"
         t <- skips $ optionMaybe languageTag
         return $ RDFLiteral b s $ Untyped t
-    <|> skips (return $ RDFLiteral b s $ Typed $ mkQName "string")
+    <|> skips (return $ RDFLiteral b s $ Untyped Nothing)
 
 literal :: CharParser st RDFLiteral
 literal = do
@@ -127,15 +153,16 @@ parsePrefix = do
     return $ Prefix p i
 
 parsePredicate :: CharParser st Predicate
-parsePredicate = fmap Predicate $ skips uriP
+parsePredicate = fmap Predicate $ skips resourceP
 
 parseSubject :: CharParser st Subject
 parseSubject =
-    fmap Subject (skips uriP)
+    fmap Subject (skips resourceP)
   <|> fmap SubjectList
             (between (skips $ char '[') (skips $ char ']') $ skips parsePredObjList)
   <|> fmap SubjectCollection
             (between (skips $ char '(') (skips $ char ')') $ many parseObject)
+  <|> (string "_:" >> fmap BlankNode (skips $ many $ noneOf " :"))
 
 parseObject :: CharParser st Object
 parseObject = fmap ObjectLiteral literal <|> fmap Object parseSubject

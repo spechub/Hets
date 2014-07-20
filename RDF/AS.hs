@@ -52,6 +52,7 @@ data Subject =
     Subject IRI
   | SubjectList [PredicateObjectList]
   | SubjectCollection [Object]
+  | BlankNode String
     deriving (Show, Eq, Ord)
 
 data Predicate = Predicate IRI
@@ -116,6 +117,10 @@ rdfRest = QN "rdf" "rest" Abbreviated
 rdfNil :: IRI
 rdfNil = QN "rdf" "nil" Abbreviated
     "http://www.w3.org/1999/02/22-rdf-syntax-ns#nil" nullRange
+
+rdfType :: IRI
+rdfType = QN "rdf" "type" Abbreviated
+    "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" nullRange
 
 isAbsoluteIRI :: IRI -> Bool
 isAbsoluteIRI iri = iriType iri == Full && isPrefixOf "//" (localPart iri)

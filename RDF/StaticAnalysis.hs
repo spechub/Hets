@@ -80,6 +80,7 @@ resolveSubject b pm s = case s of
     Subject iri -> Subject $ resolveIRI b pm iri
     SubjectList ls -> SubjectList $ map (resolvePOList b pm) ls
     SubjectCollection ls -> SubjectCollection $ map (resolveObject b pm) ls
+    BlankNode _ -> s
 
 resolvePOList :: Base -> RDFPrefixMap -> PredicateObjectList
     -> PredicateObjectList
@@ -153,6 +154,9 @@ expandObject1 :: Int -> Triples -> (Int, [Triples])
 expandObject1 i t@(Triples s ls) = case ls of
     [PredicateObjectList p [obj]] -> case obj of
         ObjectLiteral _ -> (i, [t])
+        Object (BlankNode n) ->
+         let bnode = Subject $ QN "_" n NodeID ("_:" ++ n) nullRange
+         in (i,[Triples s [PredicateObjectList p [Object bnode]]])
         Object (Subject _) -> (i, [t])
         Object (SubjectList pol) ->
             let bnode = Subject $ generateBNode i
@@ -180,6 +184,8 @@ expandObject i t = expandObject2 i $ expandPOList t
 expandSubject :: Int -> Triples -> (Int, [Triples])
 expandSubject i t@(Triples s ls) = case s of
     Subject _ -> (i, [t])
+    BlankNode n -> let bnode = Subject $ QN "_" n NodeID ("_:" ++ n) nullRange
+        in (i,[Triples bnode ls])
     SubjectList pol -> let bnode = Subject $ generateBNode i
         in (i + 1, map (Triples bnode) [ls, pol])
     SubjectCollection col -> let pol = collectionToPOList col
