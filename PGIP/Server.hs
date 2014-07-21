@@ -180,6 +180,7 @@ hetsServer opts1 = do
        pathBits = map T.unpack $ pathInfo re
        path = intercalate "/" pathBits
        meth = B8.unpack (requestMethod re)
+       query = showPathQuery pathBits splitQuery
    liftIO $ do
      time <- getCurrentTime
      createDirectoryIfMissing False tempHetsLib
@@ -189,7 +190,7 @@ hetsServer opts1 = do
          appendFile permFile $ shows time " sessions: "
                     ++ shows (IntMap.size m) "\n"
          appendFile permFile $ shows (requestHeaders re) "\n"
-         appendFile permFile $ showPathQuery pathBits splitQuery ++ "\n"
+         unless (null query) $ appendFile permFile $ query ++ "\n"
        else appendFile permFile "not white listed\n"
    if not white || black then respond $ mkResponse status403 ""
     -- if path could be a RESTfull request, try to parse it
@@ -266,6 +267,7 @@ anaAutoProofQuery splitQuery = let
 isRESTfull :: [String] -> Bool
 isRESTfull pathBits = case pathBits of
   [] -> False
+  [h] | elem h ["version", "robots.txt"] -> True
   h : _ -> elem h listRESTfullIdentifiers
 
 listRESTfullIdentifiers :: [String]
@@ -317,13 +319,16 @@ parseRESTfull opts sessRef pathBits splitQuery meth respond = let
   -- respond depending on request Method
   in case meth of
     rm | elem rm ["GET", "POST"] -> case pathBits of
+      ["robots.txt"] -> respond $ mkOkResponse
+        $ unlines ["User-agent: *", "Disallow: /"]
       -- show all menu options
-      "menus" : [] -> mkMenuResponse respond
+      ["menus"] -> mkMenuResponse respond
       -- list files from directory
       "dir" : r -> do
         let path' = intercalate "/" r
         dirs <- liftIO $ getHetsLibContent opts path' splitQuery
         mkHtmlPage path' dirs respond
+      ["version"] -> respond $ mkOkResponse hetcats_version
       -- get dgraph from file
       "filetype" : libIri : _ -> mkFiletypeResponse opts libIri respond
       "hets-lib" : r -> let file = intercalate "/" r in
