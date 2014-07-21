@@ -117,7 +117,7 @@ showPath :: [String] -> String
 showPath = intercalate "/" . map encodeForQuery
 
 showPathQuery :: [String] -> [QueryPair] -> String
-showPathQuery p q = showPath p ++ showQuery q
+showPathQuery p q = showPath p ++ if null q then "" else showQuery q
 
 data QueryKind =
     DisplayQuery (Maybe String)
