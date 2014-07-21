@@ -24,6 +24,7 @@ module Driver.ReadFn
   , fromShATermString
   , getContentAndFileType
   , showFileType
+  , keepOrigClifName
   ) where
 
 import Logic.Grothendieck
@@ -221,3 +222,12 @@ showFileType opts fn = do
       in case mr of
         Just s -> putStrLn $ fstr ++ s
         Nothing -> exitHets $ fstr ++ "could not determine file type."
+
+keepOrigClifName :: HetcatsOpts -> FilePath -> FilePath -> FilePath
+keepOrigClifName opts origName file =
+  let iTypes = intype opts
+  in case guess file iTypes of
+       ext@(CommonLogicIn _) -> case guess origName iTypes of
+         CommonLogicIn _ -> origName
+         _ -> origName ++ '.' : show ext
+       _ -> file

@@ -110,12 +110,7 @@ anaSource mln lg opts topLns libenv initDG origName = ResultT $ do
               Nothing | useLibPos opts && not (checkUri fname) ->
                 Just $ emptyLibName libStr
               _ -> mln
-        iTypes = intype opts
-        fn2 = case guess file iTypes of
-                ext@(CommonLogicIn _) -> case guess origName iTypes of
-                  CommonLogicIn _ -> origName
-                  _ -> origName ++ '.' : show ext
-                _ -> file
+        fn2 = keepOrigClifName opts origName file
         in
         if runMMT opts then mmtRes fname else
             if takeExtension file /= ('.' : show TwelfIn)

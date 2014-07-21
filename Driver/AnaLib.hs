@@ -69,7 +69,8 @@ anaLib opts origName = do
                              ++ file ++ "' not found."
             return Nothing
       | isDgXmlFile opts file content -> readDGXml opts file
-      | otherwise -> anaLibExt opts file emptyLibEnv emptyDG
+      | otherwise -> anaLibExt opts (keepOrigClifName opts origName file)
+            emptyLibEnv emptyDG
 
 -- | read a file and extended the current library environment
 anaLibExt :: HetcatsOpts -> FilePath -> LibEnv -> DGraph
