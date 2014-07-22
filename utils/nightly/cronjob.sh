@@ -64,7 +64,7 @@ makeHets ()
 {
 date
 rm -rf Hets
-git clone https://github.com/spechub/Hets
+git clone --depth=50 https://github.com/spechub/Hets
 cd Hets
 time $MAKE
 time $MAKE check
@@ -215,8 +215,10 @@ popd
 
 checkBioPortal ()
 {
-cd ../bioportal
-git fetch
+cd ..
+rm -rf bioportal
+git clone --depth=50 git://ontohub.org/bioportal
+cd bioportal
 for i in `find . -name \*.owl`; do ../Hets-lib/hets -v2 -O . -o xml $i; done \
   > ../bioportal.log 2>&1
 cd ../Hets-lib
