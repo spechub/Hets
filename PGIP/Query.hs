@@ -53,6 +53,8 @@ The default display for a LibEnv should be:
 
 import Common.Utils
 
+import Control.Exception
+
 import Data.Char
 import Data.List
 import Data.Maybe
@@ -161,6 +163,44 @@ anaUri pathBits query globals = case anaQuery query globals of
 
 isNat :: String -> Bool
 isNat s = all isDigit s && not (null s) && length s < 11
+
+getSwitches :: [QueryPair] -> Either String ([QueryPair], [(String, Flag)])
+getSwitches qs = case qs of
+  [] -> Right ([], [])
+  q@(s, mv) : r ->
+    let eith = getSwitches r
+    in case lookup s optionFlags of
+      Just f -> case mv of
+        Just v | notElem (map toLower v) ["on", "t", "true", "1"] ->
+          Left $ "query flag can only be switched on: " ++ s ++ "=" ++ v
+        _ -> case eith of
+          Right (qr, ps) -> Right (qr, (s, f) : ps)
+          err -> err
+      Nothing -> case eith of
+        Right (qr, ps) -> Right (q : qr, ps)
+        err -> err
+
+-- due to the error calls in the option parsers this needs to be in the IO monad
+getArgFlags :: [QueryPair]
+  -> IO (Either String ([QueryPair], [(String, String)], [Flag]))
+getArgFlags qs = case qs of
+  [] -> return $ Right ([], [], [])
+  q@(s, mv) : r -> do
+    eith <- getArgFlags r
+    case lookup s optionArgs of
+     Just p -> case mv of
+       Nothing -> return . Left $ "missing value for query argument: " ++ s
+       Just v -> do
+         eith2 <- try $ evaluate $ p v
+         case eith2 :: Either ErrorCall Flag of
+           Right f -> case eith of
+               Right (qr, vs, fs) -> return $ Right (qr, (s, v) : vs, f : fs)
+               err -> return err
+           Left _ ->
+             return . Left $ "illegal value for option: " ++ s ++ "=" ++ v
+     Nothing -> case eith of
+       Right (qr, vs, fs) -> return $ Right (q : qr, vs, fs)
+       err -> return err
 
 -- | a leading question mark is removed, possibly a session id is returned
 anaQuery :: [QueryPair] -> [String] -> Either String (Maybe Int, QueryKind)

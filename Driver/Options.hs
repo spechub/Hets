@@ -15,6 +15,8 @@ Datatypes for options that hets understands.
 
 module Driver.Options
   ( HetcatsOpts (..)
+  , Flag
+  , optionArgs
   , optionFlags
   , makeOpts
   , AnaType (..)
@@ -736,6 +738,13 @@ options = let
       Option "M" ["MMT"] (NoArg UseMMT)
       "use MMT" ]
 
+-- | options that require arguments for the wep-api excluding \"translation\"
+optionArgs :: [(String, String -> Flag)]
+optionArgs = foldr (\ o l -> case o of
+  Option _ (s : _) (ReqArg f _) _ | s /= transS -> (s, f) : l
+  _ -> l) [] options
+
+-- | command line switches for the wep-api excluding non-dev-graph related ones
 optionFlags :: [(String, Flag)]
 optionFlags = drop 11 $ foldr (\ o l -> case o of
   Option _ (s : _) (NoArg f) _ -> (s, f) : l
