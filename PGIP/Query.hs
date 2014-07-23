@@ -92,6 +92,10 @@ proveParams = ["timeout", "include", "prover", "translation", "theorems"]
 edgeCommands :: [String]
 edgeCommands = ["edge"]
 
+knownQueryKeys :: [String]
+knownQueryKeys = displayTypes ++ nodeCommands ++ proveParams ++ edgeCommands
+  ++ ["format", "autoproof", "consistency", "dg", "name", "id"]
+
 -- Lib- and node name can be IRIs now (the query id is the session number)
 data DGQuery = DGQuery
   { queryId :: Int
