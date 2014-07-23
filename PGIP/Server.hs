@@ -150,15 +150,15 @@ type WebResponse = (Response -> IO Response) -> IO Response
 hetsServer :: HetcatsOpts -> IO ()
 hetsServer opts1 = do
   tempDir <- getTemporaryDirectory
-  let tempHetsLib = tempDir </> "MyHetsLib"
+  let tempLib = tempDir </> "MyHetsLib"
       permFile = tempDir </> "empty.txt"
-      opts = opts1 { libdirs = tempHetsLib : libdirs opts1 }
+      opts = opts1 { libdirs = tempLib : libdirs opts1 }
       port1 = listen opts1
       port = if port1 < 0 then 8000 else port1
       wl = whitelist opts1
       bl = blacklist opts1
       prList ll = intercalate ", " $ map (intercalate ".") ll
-  createDirectoryIfMissing False tempHetsLib
+  createDirectoryIfMissing False tempLib
   writeFile permFile ""
   unless (null wl) . appendFile permFile
     $ "white list: " ++ prList wl ++ "\n"
@@ -178,12 +178,11 @@ hetsServer opts1 = do
        splitQuery = map (\ (bs, ms) -> (B8.unpack bs, fmap B8.unpack ms))
          $ queryString re
        pathBits = map T.unpack $ pathInfo re
-       path = intercalate "/" pathBits
        meth = B8.unpack (requestMethod re)
        query = showPathQuery pathBits splitQuery
    liftIO $ do
      time <- getCurrentTime
-     createDirectoryIfMissing False tempHetsLib
+     createDirectoryIfMissing False tempLib
      (m, _) <- readIORef sessRef
      appendFile permFile rhost
      unless black $ if white then do
@@ -194,12 +193,35 @@ hetsServer opts1 = do
        else appendFile permFile "not white listed\n"
    if not white || black then respond $ mkResponse status403 ""
     -- if path could be a RESTfull request, try to parse it
-    else if isRESTfull pathBits then
-      parseRESTfull opts sessRef pathBits splitQuery meth respond
-    -- only otherwise stick to the old response methods
-    else case meth of
+    else do
+     eith <- liftIO $ getArgFlags splitQuery
+     case eith of
+       Left err -> queryFail err respond
+       Right (qr, vs, fs) ->
+         let eith2 = getSwitches qr
+         in case eith2 of
+         Left err -> queryFail err respond
+         Right (qr2, fs2) ->
+          let unknown = filter (`notElem` allQueryKeys) $ map fst qr2
+          in if null unknown then
+           let newOpts = foldl makeOpts opts $ fs ++ map snd fs2
+           in if isRESTfull pathBits then
+              parseRESTfull newOpts sessRef pathBits
+              (map fst fs2 ++ map (\ (a, b) -> a ++ "=" ++ b) vs)
+              qr2 meth respond
+           -- only otherwise stick to the old response methods
+           else oldWebApi newOpts tempLib permFile sessRef re pathBits qr2
+             meth respond
+          else queryFail ("unknown query key(s): " ++ show unknown) respond
+
+-- | the old API that supports downloading files and interactive stuff
+oldWebApi :: HetcatsOpts -> FilePath -> FilePath -> Cache -> Request -> [String]
+  -> [QueryPair] -> String -> WebResponse
+oldWebApi opts tempLib permFile sessRef re pathBits splitQuery meth respond
+  = case meth of
       "GET" -> if isJust $ lookup "menus" splitQuery
          then mkMenuResponse respond else do
+         let path = intercalate "/" pathBits
          dirs@(_ : cs) <- liftIO $ getHetsLibContent opts path splitQuery
          if not (null cs) || null path then mkHtmlPage path dirs respond
            -- AUTOMATIC PROOFS (parsing)
@@ -227,7 +249,7 @@ hetsServer opts1 = do
                    return $ Just tmpFile
         let res tmpFile =
               getHetsResponse opts [] sessRef [tmpFile] splitQuery respond
-            mRes = maybe (respond $ mkResponse status400 "nothing submitted")
+            mRes = maybe (queryFail "nothing submitted" respond)
               res mTmpFile
         case files of
           [] -> if isJust $ getVal splitQuery "prove" then
@@ -238,7 +260,7 @@ hetsServer opts1 = do
           [(_, f)] | isNothing $ lookup updateS splitQuery -> do
            let fn = takeFileName $ B8.unpack $ fileName f
            if any isAlphaNum fn then do
-             let tmpFile = tempHetsLib </> fn
+             let tmpFile = tempLib </> fn
              liftIO $ BS.writeFile tmpFile $ fileContent f
              liftIO $ copyPermissions permFile tmpFile
              maybe (res tmpFile) res mTmpFile
@@ -283,10 +305,17 @@ newRESTIdes =
   [ "dg", "translate", "provers", "consistency-checkers", "prove"
   , "consistency-check" ]
 
+queryFail :: String -> WebResponse
+queryFail msg respond = respond $ mkResponse status400 msg
+
+allQueryKeys :: [String]
+allQueryKeys = [updateS, "library", "consistency-checker"]
+  ++ globalCommands ++ knownQueryKeys
+
 -- query is analysed and processed in accordance with RESTfull interface
-parseRESTfull :: HetcatsOpts -> Cache -> [String] -> [QueryPair]
+parseRESTfull :: HetcatsOpts -> Cache -> [String] -> [String] -> [QueryPair]
   -> String -> WebResponse
-parseRESTfull opts sessRef pathBits splitQuery meth respond = let
+parseRESTfull opts sessRef pathBits qOpts splitQuery meth respond = let
   {- some parameters from the paths query part might be needed more than once
   (when using lookup upon querybits, you need to unpack Maybe twice) -}
   lookup2 = getVal splitQuery
@@ -301,9 +330,9 @@ parseRESTfull opts sessRef pathBits splitQuery meth respond = let
   incl = maybe False (\ s ->
               notElem (map toLower s) ["f", "false"]) inclM
   timeout = lookup2 "timeout" >>= readMaybe
-  queryFailure = respond . mkResponse status400
-    $ "this query does not comply with RESTfull interface: "
-    ++ showPathQuery pathBits splitQuery
+  queryFailure = queryFail
+    ("this query does not comply with RESTfull interface: "
+    ++ showPathQuery pathBits splitQuery) respond
   -- since used more often, generate full query out of nodeIRI and nodeCmd
   nodeQuery s = NodeQuery $ maybe (Right s) Left (readMaybe s :: Maybe Int)
   parseNodeQuery :: Monad m => String -> Int -> m NodeCommand -> m Query
@@ -338,7 +367,8 @@ parseRESTfull opts sessRef pathBits splitQuery meth respond = let
         getResponse $ Query (NewDGQuery libIri []) $ DisplayQuery format
       -- get previously created session
       "sessions" : sessId : cmd -> case readMaybe sessId of
-          Nothing -> fail $ "failed to read session number from " ++ sessId
+          Nothing -> queryFail ("failed to read session number from " ++ sessId)
+            respond
           Just sId ->
             (case nodeM of
               Just ndIri -> parseNodeQuery ndIri sId $ case cmd of
@@ -366,7 +396,7 @@ parseRESTfull opts sessRef pathBits splitQuery meth respond = let
                 _ -> NcCmd Query.Info
           Just 1 -> case readMaybe f of
             Just i -> getResponse $ Query dgQ $ EdgeQuery i "edge"
-            Nothing -> fail $ "failed to read edgeId from " ++ f
+            Nothing -> queryFail ("failed to read edgeId from " ++ f) respond
           _ -> error $ "PGIP.Server.elemIndex " ++ nodeOrEdge
       newIde : libIri : rest ->
         let cmdOptList = filter (/= "") rest
@@ -376,7 +406,7 @@ parseRESTfull opts sessRef pathBits splitQuery meth respond = let
               optFlags
         in if elem newIde newRESTIdes && all (`elem` globalCommands) cmdList
         then getResponseAux newOpts . Query (NewDGQuery libIri $ cmdList
-           ++ Set.toList (Set.fromList optFlags))
+            ++ Set.toList (Set.fromList $ optFlags ++ qOpts))
          $ case newIde of
            "translate" -> case nodeM of
              Nothing -> GlTranslations
@@ -403,13 +433,15 @@ parseRESTfull opts sessRef pathBits splitQuery meth respond = let
          TODO load other library ??? -}
       "libraries" : libIri : "proofs" : prId : cmd : [] ->
          case readMaybe prId of
-           Nothing -> fail $ "failed to read sessionId from " ++ prId
+           Nothing -> queryFail ("failed to read sessionId from " ++ prId)
+             respond
            Just sessId -> let
              dgQ = DGQuery sessId $ Just libIri in
              getResponse $ Query dgQ $ GlobCmdQuery cmd
       -- execute a proof or calculus request
       "sessions" : sessId : cmd : [] -> case readMaybe sessId of
-        Nothing -> fail $ "failed to read sessionId from " ++ sessId
+        Nothing -> queryFail ("failed to read sessionId from " ++ sessId)
+          respond
         Just sId -> case cmd of
           "prove" ->
             let pc = ProveCmd GlProofs incl proverM transM timeout [] False
@@ -701,7 +733,6 @@ cmpFilePath f1 f2 = case comparing hasTrailingPathSeparator f2 f1 of
   EQ -> compare f1 f2
   c -> c
 
--- | with the 'old' call of getHetsResponse, anaUri is called upon the path
 getHetsResponse :: HetcatsOpts -> [FileInfo BS.ByteString]
   -> Cache -> [String] -> [QueryPair] -> WebResponse
 getHetsResponse opts updates sessRef pathBits query respond = do
