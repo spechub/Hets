@@ -143,6 +143,9 @@ blacklistS = "blacklist"
 whitelistS :: String
 whitelistS = "whitelist"
 
+accessTokenS :: String
+accessTokenS = "access_token"
+
 genTermS, treeS, bafS :: String
 genTermS = "gen_trm"
 treeS = "tree."
@@ -213,6 +216,7 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , fullTheories :: Bool
   , outputLogicGraph :: Bool
   , fileType :: Bool
+  , accessToken :: String
   , fullSign :: Bool }
 
 {- | 'defaultHetcatsOpts' defines the default HetcatsOpts, which are used as
@@ -258,6 +262,7 @@ defaultHetcatsOpts = HcOpt
   , fullTheories = False
   , outputLogicGraph = False
   , fileType = False
+  , accessToken = ""
   , fullSign = False }
 
 instance Show HetcatsOpts where
@@ -278,6 +283,9 @@ instance Show HetcatsOpts where
     ++ case defSyntax opts of
           s | s /= defSyntax defaultHetcatsOpts -> showEqOpt serializationS s
           _ -> ""
+    ++ case accessToken opts of
+          "" -> ""
+          t -> showEqOpt accessTokenS t
     ++ showEqOpt libdirsS (intercalate ":" $ libdirs opts)
     ++ case modelSparQ opts of
           "" -> ""
@@ -357,6 +365,7 @@ data Flag =
   | FullSign
   | OutputLogicGraph
   | FileType
+  | AccessToken String
   | UrlCatalog [(String, String)]
 
 -- | 'makeOpts' includes a parsed Flag in a set of HetcatsOpts
@@ -402,6 +411,7 @@ makeOpts opts flg =
     FileType -> opts { fileType = True }
     FullSign -> opts { fullSign = True }
     UrlCatalog m -> opts { urlCatalog = m ++ urlCatalog opts }
+    AccessToken s -> opts { accessToken = s }
     Help -> opts -- skipped
     Version -> opts -- skipped
 
@@ -702,6 +712,8 @@ options = let
     , Option "" [relposS] (NoArg RelPos) "use relative file positions"
     , Option "" [fullSignS] (NoArg FullSign) "xml output full signatures"
     , Option "" [fullTheoriesS] (NoArg FullTheories) "xml output full theories"
+    , Option "" [accessTokenS] (ReqArg AccessToken "TOKEN")
+      "add access token to URLs (for ontohub)"
     , Option "O" [outdirS] (ReqArg OutDir "DIR")
       "destination directory for output files"
     , Option "o" [outtypesS] (ReqArg parseOutTypes "OTYPES")
