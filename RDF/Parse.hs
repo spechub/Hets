@@ -106,9 +106,10 @@ resource  = try (uriRef <|> qname)
                   return ()
        name = many $ noneOf " :."
 
-resourceP :: CharParser st QName
-resourceP = skips ((lookAhead resource >> uriP) <|>
-                   (many space >> string "a" >> return rdfType))
+resourceP :: Bool -> CharParser st QName
+resourceP b = skips ((lookAhead resource >> uriP) <|>
+                   (if b then many space >> string "a" >> return rdfType
+                    else fail "'a' not allowed here!"))
 
 skips :: CharParser st a -> CharParser st a
 skips = (<< skipMany
@@ -209,11 +210,11 @@ parsePrefix = do
     return $ Prefix p i
 
 parsePredicate :: CharParser st Predicate
-parsePredicate = fmap Predicate $ skips resourceP
+parsePredicate = fmap Predicate $ skips (resourceP True)
 
 parseSubject :: CharParser st Subject
 parseSubject =
-    fmap Subject (skips resourceP)
+    fmap Subject (skips (resourceP False))
   <|> fmap SubjectList
             (between (skips $ char '[') (skips $ char ']') $ skips parsePredObjList)
   <|> fmap SubjectCollection
