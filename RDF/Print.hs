@@ -55,7 +55,7 @@ escape _ []         = []
 instance Pretty RDFLiteral where
     pretty lit = case lit of
         RDFLiteral _ lexi ty -> text ('"' : escape False lexi ++ "\"") <> case ty of
-            Typed u -> keyword cTypeS <> pretty u
+            Typed u -> keyword cTypeS <> text ("<" ++ expandedIRI u ++ ">")
             Untyped tag -> if isNothing tag then empty
                     else let Just tag2 = tag in text "@" <> text tag2
         RDFNumberLit f@(FloatLit b e) -> text ("\"" ++ show b ++
