@@ -21,6 +21,7 @@ do
 	echo "spec test =" >> ./out/${BASENAME}.ttl
         echo "@base <http://www.w3.org/2001/sw/DataAccess/df1/tests/$BASENAME.ttl> ." >> ./out/${BASENAME}.ttl
         cat $f >> ./out/${BASENAME}.ttl
+	rm -f ./out/${BASENAME}.ttl_test.th
 	$HETS ./out/${BASENAME}.ttl -o th > ./out/${BASENAME}.hetsout
         clean > ./out/${BASENAME}.out
 	sort -k1,4 ./out/${BASENAME}.out > ./out/${BASENAME}.out.sorted
