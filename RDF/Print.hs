@@ -26,6 +26,7 @@ import RDF.Sign
 
 import qualified Data.Set as Set
 import Data.Maybe (isNothing)
+import Data.Char (showLitChar)
 
 sepBySemis :: [Doc] -> Doc
 sepBySemis = vcat . punctuate (text " ;")
@@ -45,11 +46,14 @@ instance Pretty Predicate where
 printPredicate :: Predicate -> Doc
 printPredicate (Predicate iri) = pretty iri
 
+escapeNonprintables :: String -> String
+escapeNonprintables = concatMap (\c -> case c of
+    '\\' -> [c]
+    _ -> showLitChar c "")
+
 instance Pretty RDFLiteral where
     pretty lit = case lit of
-        RDFLiteral b lexi ty -> text (if not b
-                then '"' : lexi ++ "\""
-                else "\"\"\"" ++ lexi ++ "\"\"\"") <> case ty of
+        RDFLiteral _ lexi ty -> text ('"' : escapeNonprintables lexi ++ "\"") <> case ty of
             Typed u -> keyword cTypeS <> pretty u
             Untyped tag -> if isNothing tag then empty
                     else let Just tag2 = tag in text "@" <> text tag2
