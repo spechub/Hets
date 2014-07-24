@@ -57,10 +57,13 @@ instance Pretty RDFLiteral where
             Typed u -> keyword cTypeS <> pretty u
             Untyped tag -> if isNothing tag then empty
                     else let Just tag2 = tag in text "@" <> text tag2
-        RDFNumberLit f -> text ("\"" ++ show f ++ "\"") <> if isFloatInt f
-                          then keyword cTypeS <>
-                                text ("<" ++ expandedIRI xmlInteger ++ ">")
-                          else empty
+        RDFNumberLit f@(FloatLit b e) -> text ("\"" ++ show b ++
+            (if isZeroInt e then "" else 'e' : show e) ++ "\"")
+            <> keyword cTypeS <> if isFloatInt f
+                          then text ("<" ++ expandedIRI xmlInteger ++ ">")
+                          else if isZeroInt e
+                            then text ("<" ++ expandedIRI xmlDecimal ++ ">")
+                            else text ("<" ++ expandedIRI xmlDouble ++ ">")
 
 instance Pretty PredicateObjectList where
     pretty = printPredObjList
