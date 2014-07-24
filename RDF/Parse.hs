@@ -16,7 +16,7 @@ import Common.Parsec
 import Common.Lexer
 import Common.AnnoParser (newlineOrEof)
 import Common.Token (criticalKeywords)
-import Common.Id
+import Common.Id hiding (sourceLine, incSourceColumn)
 import qualified Common.GlobalAnnotations as GA (PrefixMap)
 
 import OWL2.AS
@@ -29,16 +29,29 @@ import qualified Data.Map as Map
 import Text.ParserCombinators.Parsec
 
 uriP :: CharParser st QName
-uriP =
-  (skips $ try $ checkWithUsing showQN uriQ $ \ q ->
-     not (null $ namePrefix q) || notElem (localPart q) criticalKeywords)
-  >>= \v -> return $ if null (namePrefix v)
+uriP = do
+  pos <- getPosition
+  ret <- (skips $ try $ checkWithUsing showQN uriQ $ \ q ->
+    not (null $ namePrefix q) || notElem (localPart q) criticalKeywords)
+   >>= \v -> return $ if null (namePrefix v)
                      then v { localPart = case localPart v of
                                ':':v' -> v'
                                _ -> if iriType v /= Full then
                                      error $ "RDF.Parse.uriP " ++ show v
                                     else localPart v }
                      else v
+  case reverse $ localPart ret of
+          c:l -> do
+                    pos1 <- getPosition
+                    if sourceLine pos /= sourceLine pos1 && elem c ".;" then
+                      do
+                        let pos2 = incSourceColumn pos (length l+1)
+                        setPosition pos2
+                        i <- getInput
+                        setInput $ c:'\n':i
+                        return $ ret {localPart = reverse l}
+                    else return ret
+          _ -> return ret
 
 -- * hets symbols parser
 
