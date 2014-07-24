@@ -46,24 +46,25 @@ instance Pretty Predicate where
 printPredicate :: Predicate -> Doc
 printPredicate (Predicate iri) = pretty iri
 
-escapeNonprintables :: String -> String
-escapeNonprintables = concatMap (\c -> case c of
-    '\\' -> [c]
-    _ -> showLitChar c "")
+escape :: Bool -> String -> String
+escape False ('"':s) = '\\':'"':escape False s
+escape _ ('\\':s)   = '\\':escape True s
+escape _ (c:s)      = showLitChar c "" ++ escape False s
+escape _ []         = []
 
 instance Pretty RDFLiteral where
     pretty lit = case lit of
-        RDFLiteral _ lexi ty -> text ('"' : escapeNonprintables lexi ++ "\"") <> case ty of
+        RDFLiteral _ lexi ty -> text ('"' : escape False lexi ++ "\"") <> case ty of
             Typed u -> keyword cTypeS <> pretty u
             Untyped tag -> if isNothing tag then empty
                     else let Just tag2 = tag in text "@" <> text tag2
         RDFNumberLit f@(FloatLit b e) -> text ("\"" ++ show b ++
             (if isZeroInt e then "" else 'e' : show e) ++ "\"")
-            <> keyword cTypeS <> if isFloatInt f
-                          then text ("<" ++ expandedIRI xmlInteger ++ ">")
+            <> keyword cTypeS <> text ("<" ++ expandedIRI (if isFloatInt f
+                          then xmlInteger
                           else if isZeroInt e
-                            then text ("<" ++ expandedIRI xmlDecimal ++ ">")
-                            else text ("<" ++ expandedIRI xmlDouble ++ ">")
+                            then xmlDecimal
+                            else xmlDouble) ++ ">")
 
 instance Pretty PredicateObjectList where
     pretty = printPredObjList
