@@ -131,11 +131,11 @@ xmlInteger = QN "xsd" "integer" Abbreviated
     "http://www.w3.org/2001/XMLSchema#integer" nullRange
 
 xmlDecimal :: IRI
-xmlDecimal = QN "xsd" "integer" Abbreviated
+xmlDecimal = QN "xsd" "decimal" Abbreviated
     "http://www.w3.org/2001/XMLSchema#decimal" nullRange
 
 xmlDouble :: IRI
-xmlDouble = QN "xsd" "integer" Abbreviated
+xmlDouble = QN "xsd" "double" Abbreviated
     "http://www.w3.org/2001/XMLSchema#double" nullRange
 
 isAbsoluteIRI :: IRI -> Bool

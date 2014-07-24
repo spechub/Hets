@@ -142,11 +142,52 @@ stringLiteral = do
         return $ RDFLiteral b s $ Untyped t
     <|> skips (return $ RDFLiteral b s $ Untyped Nothing)
 
+intLitToInt :: IntLit -> Int
+intLitToInt (IntLit (NNInt l) b) =
+  let toInt _ []    = 0
+      toInt e (i:l') = i*10^e + toInt (e-1) l'
+  in (if b then -1 else 1) * toInt (length l) l
+
+floatToDec :: FloatLit -> DecLit
+floatToDec (FloatLit (DecLit t f) e) =
+  let e' = intLitToInt e
+      NNInt t' = absInt t
+      NNInt f' = f
+  in if e' >= 0
+     then DecLit (t {absInt = NNInt (t' ++ take e' (f' ++ repeat 0))})
+                 (NNInt (drop e' f'))
+     else DecLit (t {absInt = NNInt (reverse (drop (abs e') (reverse t')))})
+                 (NNInt (f' ++ reverse (take (abs e') ((reverse t') ++ repeat 0))))
+
 literal :: CharParser st RDFLiteral
-literal = do
+literal = (try $ do
+    c <- optionMaybe $ char '"'
     f <- skips $ try floatingPointLit
          <|> fmap decToFloat decimalLit
-    return $ RDFNumberLit f
+    case c of
+      Just _  -> char '"'
+      Nothing -> return '"'
+    uri <- skips $ case c of
+                     Just  _ -> do
+                            string cTypeS
+                            iri <- datatypeUri
+                            return . Just $ iri
+                     Nothing -> return Nothing
+    f1  <- case uri of
+        Nothing -> return f
+        Just iri | iri == xmlInteger -> return . intToFloat . floatToInt $ f
+        Just iri | iri == xmlDecimal -> let b = floatBase f
+                                            frac = case fracDec b of
+                                                    NNInt [] -> NNInt [0]
+                                                    frac'-> frac'
+                                        in return . decToFloat . floatToDec $ f { floatBase = b { fracDec = frac } }
+        Just iri | iri == xmlDouble  -> let b = floatBase f
+                                            frac = case fracDec b of
+                                                    NNInt [] -> NNInt [0]
+                                                    frac'-> frac'
+                                        in return . decToFloat . floatToDec $ f { floatBase = b { fracDec = frac } }
+        Just iri -> fail $ "Not a recognized numeric literal type " ++ showQU iri
+    return $ RDFNumberLit f1)
   <|> (do
           b <- try $ skips $ string "true" <|> string "false"
           return $ RDFLiteral False b (Typed xmlBoolean))
