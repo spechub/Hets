@@ -160,9 +160,18 @@ fileToLibName opts efile =
          (path, _) : _ -> mkLibStr $ drop (length path) file
                    -- cut off libdir prefix
 
+-- | add query string for an access token before loading an URI
+loadAccessUri :: HetcatsOpts -> FilePath -> IO (Either String String)
+loadAccessUri opts fn = do
+  let u = fn ++ case accessToken opts of
+        "" -> ""
+        t -> "?access_token=" ++ t
+  putIfVerbose opts 4 $ "downloading " ++ u
+  loadFromUri u
+
 downloadSource :: HetcatsOpts -> FilePath -> IO (Either String String)
 downloadSource opts fn =
-  if checkUri fn then loadFromUri fn else do
+  if checkUri fn then loadAccessUri opts fn else do
     b <- doesFileExist fn
     if b then catchIOException (Left $ "could not read file: " ++ fn)
         . fmap Right $ readEncFile (ioEncoding opts) fn
@@ -182,6 +191,7 @@ getContent :: HetcatsOpts -> FilePath
   -> IO (Either String (FilePath, String))
 getContent opts = getExtContent opts (getExtensions opts)
 
+-- URIs must not have queries or fragments as possible extensions are appended
 getExtContent :: HetcatsOpts -> [String] -> FilePath
   -> IO (Either String (FilePath, String))
 getExtContent opts exts fp =
