@@ -1292,7 +1292,7 @@ sessAns libName svg (sess, k) =
 getHetsLibContent :: HetcatsOpts -> String -> [QueryPair] -> IO [Element]
 getHetsLibContent opts dir query = do
   let hlibs = libdirs opts
-  ds <- if null dir then return hlibs else
+  ds <- if null dir || isAbsolute dir then return hlibs else
        filterM doesDirectoryExist $ map (</> dir) hlibs
   fs <- fmap (sortBy cmpFilePath . filter (not . isPrefixOf ".") . concat)
     $ mapM getDirContents ds
