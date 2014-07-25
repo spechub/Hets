@@ -18,6 +18,7 @@ module Driver.Options
   , Flag
   , optionArgs
   , optionFlags
+  , accessTokenS
   , makeOpts
   , AnaType (..)
   , GuiType (..)
@@ -144,7 +145,7 @@ whitelistS :: String
 whitelistS = "whitelist"
 
 accessTokenS :: String
-accessTokenS = "access_token"
+accessTokenS = "access-token"
 
 genTermS, treeS, bafS :: String
 genTermS = "gen_trm"

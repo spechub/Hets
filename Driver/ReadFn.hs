@@ -165,7 +165,7 @@ loadAccessUri :: HetcatsOpts -> FilePath -> IO (Either String String)
 loadAccessUri opts fn = do
   let u = fn ++ case accessToken opts of
         "" -> ""
-        t -> "?access_token=" ++ t
+        t -> '?' : accessTokenS ++ "=" ++ t
   putIfVerbose opts 4 $ "downloading " ++ u
   loadFromUri u
 
