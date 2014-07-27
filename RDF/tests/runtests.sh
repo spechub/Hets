@@ -6,10 +6,7 @@ BAD=`ls | egrep 'bad-[0-9]+.ttl'`
 HETS="../../hets"
 
 function clean {
-	cat ./out/${BASENAME}.ttl_test.th 2> /dev/null | \
-         grep -v "logic RDF" | \
-         grep -v "spec test =" | \
-         grep -v "^\#" | grep -v "^$"
+	grep -v '^$' ./out/${BASENAME}.ttl_test.nt 2> /dev/null
 }
 
 mkdir -p out
@@ -22,7 +19,7 @@ do
         echo "@base <http://www.w3.org/2001/sw/DataAccess/df1/tests/$BASENAME.ttl> ." >> ./out/${BASENAME}.ttl
         cat $f >> ./out/${BASENAME}.ttl
 	rm -f ./out/${BASENAME}.ttl_test.th
-	$HETS ./out/${BASENAME}.ttl -o th > ./out/${BASENAME}.hetsout
+	$HETS ./out/${BASENAME}.ttl -o nt > ./out/${BASENAME}.hetsout
         clean > ./out/${BASENAME}.out
 	sort -k1,4 ./out/${BASENAME}.out > ./out/${BASENAME}.out.sorted
         sort -k1,4 ./${BASENAME}.out > ./${BASENAME}.out.sorted

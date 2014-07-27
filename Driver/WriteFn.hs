@@ -358,6 +358,7 @@ writeSpecFiles opts file lenv ln dg = do
             TheoryFile _ -> True
             SigFile _ -> True
             OWLOut -> True
+            RDFOut -> True
             CLIFOut -> True
             KIFOut -> True
             FreeCADOut -> True
