@@ -20,39 +20,30 @@ import Common.Id hiding (sourceLine, incSourceColumn)
 import qualified Common.GlobalAnnotations as GA (PrefixMap)
 
 import OWL2.AS
-import OWL2.Parse hiding (stringLiteral, literal, skips, uriP)
+import OWL2.Parse hiding (stringLiteral, literal, skips, uriP, uriPair)
 import RDF.AS
 import RDF.Symbols
 
 import Data.Either
 import qualified Data.Map as Map
 import Text.ParserCombinators.Parsec
+import Text.Parsec.Prim (mkPT,Consumed(Empty),Reply(Error))
+import Common.Keywords
 
-uriP :: CharParser st QName
-uriP = do
-  pos <- getPosition
-  ret <- (skips $ try $ checkWithUsing showQN uriQ $ \ q ->
-    not (null $ namePrefix q) || notElem (localPart q) criticalKeywords)
-   >>= \v -> return $ if null (namePrefix v)
-                     then v { localPart = case localPart v of
-                               ':':v' -> v'
-                               _ -> if iriType v /= Full then
-                                     error $ "RDF.Parse.uriP " ++ show v
-                                    else localPart v }
-                     else v
-  case reverse $ localPart ret of
-          c:l -> do
-                    pos1 <- getPosition
-                    if sourceLine pos /= sourceLine pos1 && elem c ".;" then
-                      do
-                        let pos2 = incSourceColumn pos (length l+1)
-                        setPosition pos2
-                        i <- getInput
-                        setInput $ c:'\n':i
-                        return $ ret {localPart = reverse l}
-                    else return ret
-          _ -> return ret
-
+uriP :: SourcePos -> String -> CharParser st QName
+uriP pos s =
+  let p = (skips $ try $ checkWithUsing showQN uriQ $ \ q ->
+       not (null $ namePrefix q) || notElem (localPart q) criticalKeywords)
+         >>= \v -> return $ if null (namePrefix v)
+                           then v { localPart = case localPart v of
+                                     ':':v' -> v'
+                                     _ -> if iriType v /= Full then
+                                           error $ "RDF.Parse.uriP " ++ show v
+                                          else localPart v }
+                           else v
+  in case parse (setPosition pos >>= (\_ -> p << eof)) "<turtle-resource>" s of
+      Left e -> mkPT $ \_ -> return . Empty . return . Error $ e
+      Right res -> return res
 -- * hets symbols parser
 
 rdfEntityType :: CharParser st RDFEntityType
@@ -69,8 +60,8 @@ rdfSymbItems = do
 
 -- | parse a comma separated list of uris
 rdfSymbs :: GenParser Char st [IRI]
-rdfSymbs = uriP >>= \ u -> do
-    commaP `followedWith` uriP
+rdfSymbs = resourceP False >>= \ u -> do
+    commaP `followedWith` (resourceP False)
     us <- rdfSymbs
     return $ u : us
   <|> return [u]
@@ -82,32 +73,39 @@ rdfSymbMapItems = do
   iris <- rdfSymbPairs
   return $ SymbMapItems ext iris
 
+uriPair :: GenParser Char st (IRI, Maybe IRI)
+uriPair = resourceP False >>= \ u -> do
+    pToken $ toKey mapsTo
+    u2 <- (resourceP False)
+    return (u, Just u2)
+  <|> return (u, Nothing)
+
 -- | parse a comma separated list of uri pairs
 rdfSymbPairs :: GenParser Char st [(IRI, Maybe IRI)]
 rdfSymbPairs = uriPair >>= \ u -> do
-    commaP `followedWith` uriP
+    commaP `followedWith` (resourceP False)
     us <- rdfSymbPairs
     return $ u : us
   <|> return [u]
 
 -- * turtle syntax parser
 
-resource :: CharParser st ()
+resource :: CharParser st String
 resource  = try (uriRef <|> qname)
- where uriRef = char '<' >>
-                relativeURI >>
-                char '>' >> return ()
-       relativeURI = many (escapeChar <|> many1 (noneOf ">"))
-       qname = do
-                  many space
-                  optional (try name)
-                  char ':'
-                  optional (try name)
-                  return ()
+ where uriRef = char '<' <:>
+                relativeURI <++>
+                string ">"
+       relativeURI = many (unescapeTurtle [('>','>')] <|> noneOf ">")
+       qname = many space >>
+                   optionL (try name) <++>
+                   string ":" <++>
+                   optionL (try name)
        name = many $ noneOf " :."
 
 resourceP :: Bool -> CharParser st QName
-resourceP b = skips ((lookAhead resource >> uriP) <|>
+resourceP b = skips ((do
+                        pos <- getPosition
+                        resource >>= uriP pos) <|>
                    (if b then many space >> string "a" >> return rdfType
                     else fail "'a' not allowed here!"))
 
@@ -121,13 +119,13 @@ charOrQuoteEscape = try (string "\\\"") <|> fmap return anyChar
 longLiteral :: CharParser st (String, Bool)
 longLiteral = do
     string "\"\"\""
-    ls <- flat $ manyTill charOrQuoteEscape $ try $ string "\"\"\""
+    ls <- manyTill (unescapeTurtle [('"','"')]) $ try $ string "\"\"\""
     return (ls, True)
 
 shortLiteral :: CharParser st (String, Bool)
 shortLiteral = do
     char '"'
-    ls <- flat $ manyTill charOrQuoteEscape $ try $ string "\""
+    ls <- manyTill (unescapeTurtle [('"','"')]) $ try $ string "\""
     return (ls, False)
 
 stringLiteral :: CharParser st RDFLiteral
@@ -197,7 +195,7 @@ literal = (try $ do
 parseBase :: CharParser st Base
 parseBase = do
     pkeyword "@base"
-    base <- skips uriP
+    base <- skips (resourceP False)
     skips $ char '.'
     return $ Base base
 
@@ -205,7 +203,7 @@ parsePrefix :: CharParser st Prefix
 parsePrefix = do
     pkeyword "@prefix"
     p <- skips (option "" prefix << char ':')
-    i <- skips uriP
+    i <- skips (resourceP False)
     skips $ char '.'
     return $ Prefix p i
 

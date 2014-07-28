@@ -22,6 +22,8 @@ import qualified Text.ParserCombinators.Parsec.Pos as Pos
 import Control.Monad
 import Data.Char
 import Data.List
+import Numeric (readHex)
+import Data.Maybe (fromJust)
 
 -- * positions from "Text.ParserCombinators.Parsec.Pos" starting at (1,1)
 
@@ -145,6 +147,29 @@ octEscape = char 'o' <:> many1 octDigit `checkWith` valueCheck 8
 escapeChar :: CharParser st String
 escapeChar = char '\\' <:>
              (simpleEscape <|> decEscape <|> hexEscape <|> octEscape)
+
+-- * turtle escape chars
+
+unescapeHexEscape :: CharParser st Char
+unescapeHexEscape = do
+                        char 'u'
+                        toChar $ count 4 hexDigit
+                <|> do
+                        char 'U'
+                        toChar $ count 8 hexDigit
+        where toChar p = do
+                   hex <- p
+                   case readHex hex of
+                        [(i,"")] -> return . toEnum $ i
+                        _ -> fail "Failed to decode unicode escape sequence"
+
+unescapeTurtle :: [(Char,Char)] -> CharParser st Char
+unescapeTurtle extra = char '\\' >>
+             (unescapeSimple <|>
+              unescapeHexEscape)
+        where escapes = [('t','\t'),('n','\n'),('r','\r'),('\\','\\')] ++ extra
+              unescapeSimple = oneOf (map fst escapes) >>=
+               (\c -> return . fromJust . lookup c $ escapes)
 
 -- * chars for quoted chars and literal strings
 
