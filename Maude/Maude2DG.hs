@@ -733,28 +733,24 @@ getImportsSortsStmnts (SortStmnt s : stmts) (is, ss) =
 getImportsSortsStmnts (_ : stmts) p = getImportsSortsStmnts stmts p
 
 -- | builds the development graph of the specified Maude file
-directMaudeParsing :: FilePath -> IO (DGraph, DGraph)
-directMaudeParsing fp = do
+directMaudeParsing :: HetcatsOpts -> FilePath -> IO (DGraph, DGraph)
+directMaudeParsing opts fp = do
+    putIfVerbose opts 2 $ "Reading file " ++ fp
     ns <- parse fp
     let ns' = either (const []) id ns
     (inString, hIn, hOut, hErr, procH) <- runMaude
     exitCode <- getProcessExitCode procH
     case exitCode of
       Nothing -> do
-              hPutStrLn hIn $ "load " ++ fp
-              hFlush hIn
-              hPutStrLn hIn "."
-              hFlush hIn
-              hPutStrLn hIn inString
-              psps <- predefinedSpecs hIn hOut
-              sps <- traverseSpecs hIn hOut ns'
+              maudePutStrLn hIn $ "load " ++ fp
+              maudePutStrLn hIn inString
+              psps <- predefinedSpecs opts hIn hOut
+              sps <- traverseSpecs opts hIn hOut ns'
               (ok, errs) <- getErrors hErr
-              hClose hIn
-              hClose hOut
-              hClose hErr
+              terminateProcess procH
               if ok
                   then return $ maude2DG psps sps
-                  else fail errs
+                  else error errs
       Just ExitSuccess -> error "maude terminated immediately"
       Just (ExitFailure i) ->
           error $ "calling maude failed with exitCode: " ++ show i
@@ -842,21 +838,21 @@ predefined =
 
 {- | returns the specifications of the predefined modules by passing as
 parameter the list of names -}
-predefinedSpecs :: Handle -> Handle -> IO [Spec]
-predefinedSpecs hIn hOut = traverseSpecs hIn hOut predefined
+predefinedSpecs :: HetcatsOpts -> Handle -> Handle -> IO [Spec]
+predefinedSpecs opts hIn hOut = traverseSpecs opts hIn hOut predefined
 
-traverseSpecs :: Handle -> Handle -> [NamedSpec] -> IO [Spec]
-traverseSpecs hIn hOut = fmap catMaybes . mapM (traverseSpec hIn hOut)
+traverseSpecs :: HetcatsOpts -> Handle -> Handle -> [NamedSpec] -> IO [Spec]
+traverseSpecs opts hIn hOut = fmap catMaybes . mapM (traverseSpec opts hIn hOut)
 
 -- | returns the specifications of the predefined modules
-traverseSpec :: Handle -> Handle -> NamedSpec -> IO (Maybe Spec)
-traverseSpec hIn hOut ns = do
+traverseSpec :: HetcatsOpts -> Handle -> Handle -> NamedSpec -> IO (Maybe Spec)
+traverseSpec opts hIn hOut ns = do
   let args = case ns of
           ModName n -> "(hets " ++ n
           ViewName n -> "(hetsView " ++ n
         ++ " .)"
-  hPutStrLn hIn args
-  hFlush hIn
+  putIfVerbose opts 4 $ "maude input: " ++ args
+  maudePutStrLn hIn args
   sOutput <- getAllSpec hOut "" False
   let stringSpec = findSpec sOutput
   case readMaybe stringSpec of
@@ -1074,8 +1070,8 @@ preludeLib = emptyLibName "Maude_Prelude"
 {- | generates the library and the development graph from the path of the
 maude file -}
 anaMaudeFile :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
-anaMaudeFile _ file = do
-    (dg1, dg2) <- directMaudeParsing file
+anaMaudeFile opts file = do
+    (dg1, dg2) <- directMaudeParsing opts file
     let ln = emptyLibName file
         lib1 = Map.singleton preludeLib $
                  computeDGraphTheories Map.empty $ markFree Map.empty $
