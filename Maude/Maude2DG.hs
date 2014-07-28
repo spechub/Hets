@@ -11,7 +11,7 @@ Portability :  portable
 Conversion of Maude to Development Graphs.
 -}
 
-module Maude.Maude2DG where
+module Maude.Maude2DG (anaMaudeFile) where
 
 import System.Exit
 import System.IO
@@ -75,6 +75,15 @@ type ProcInfo = (Node, Sign, Symbols, [(Token, Token, Symbols)], [ParamSort])
 
 -- | map from module expression identifiers to ProcInfo
 type TokenInfoMap = Map.Map Token ProcInfo
+
+getProcInfo :: Token -> TokenInfoMap -> ProcInfo
+getProcInfo t m = Map.findWithDefault
+  (error $ "Maude2DG.TokenInfo: " ++ show t ++ " not found in "
+   ++ show (Map.keys m)) t m
+
+tokenNode :: Token -> TokenInfoMap -> Node
+tokenNode t m = n where
+  (n, _, _, _, _) = getProcInfo t m
 
 {- | Data structure used to parse module expressions, it keeps:
 The identifier of the module expression.
@@ -182,10 +191,10 @@ insertSpec (SpecView sp_v) pdg ptim tim vm ths dg =
     tok_name = HasName.getName name
     (tok1, tim1, morph1, _, dg1) = processModExp timUp vm dgUp from
     (tok2, tim2, morph2, _, dg2) = processModExp tim1 vm dg1 to
-    (n1, _, _, _, _) = fromJust $ Map.lookup tok1 tim2
-    (n2, _, _, _, _) = fromJust $ Map.lookup tok2 tim2
+    n1 = tokenNode tok1 tim2
+    n2 = tokenNode tok2 tim2
     morph = fromSignsRenamings (target morph1) (target morph2) rnms
-    morph' = fromJust $ maybeResult $ compose morph1 morph
+    Just morph' = maybeResult $ compose morph1 morph
     (new_sign, new_sens) = sign4renamings (target morph1) (sortMap morph) rnms
     (n3, tim3, dg3) = insertInnerNode n2 tim2 tok2 morph2 new_sign new_sens dg2
     vm' = Map.insert (HasName.getName name) (n3, tok2, morph', rnms, inst) vm
@@ -294,12 +303,17 @@ last_da _ p = p
 createEdgesParams :: Token -> [(Token, Token, Symbols)] -> [Morphism] -> Sign
                      -> TokenInfoMap -> DGraph -> DGraph
 createEdgesParams tok1 ((_, tok2, _) : toks) (morph : morphs) sg tim dg =
-    createEdgesParams tok1 toks morphs sg tim dg'
-               where morph' = setTarget sg morph
-                     (n1, _, _, _, _) = fromJust $ Map.lookup tok1 tim
-                     (n2, _, _, _, _) = fromJust $ Map.lookup tok2 tim
-                     dg' = insertDefEdgeMorphism n1 n2 morph' dg
+    createEdgesParams tok1 toks morphs sg tim
+      $ createEdgeMorphism tok1 tok2 globalDef morph sg tim dg
 createEdgesParams _ _ _ _ _ dg = dg
+
+createEdgeMorphism :: Token -> Token -> DGLinkType -> Morphism -> Sign
+  -> TokenInfoMap -> DGraph -> DGraph
+createEdgeMorphism tok1 tok2 lt morph sg tim =
+  insertEdgeMorphism n1 n2 lt morph' where
+  morph' = setTarget sg morph
+  n1 = tokenNode tok1 tim
+  n2 = tokenNode tok2 tim
 
 -- | generates the edges required by the importations
 createEdgesImports :: Token -> [ImportProc] -> Sign -> TokenInfoMap -> DGraph
@@ -312,22 +326,14 @@ createEdgesImports tok (ip : ips) sg tim dg =
 -- | generates the edge for a concrete importation
 createEdgeImport :: Token -> ImportProc -> Sign -> TokenInfoMap -> DGraph
                     -> (TokenInfoMap, DGraph)
-createEdgeImport tok1 (Pr, tok2, _, morph, _, _) sg tim dg = (tim', dg'')
-               where morph' = setTarget sg morph
-                     (tok2', tim', dg') = insertFreeNode tok2 tim [] dg
-                     (n1, _, _, _, _) = fromJust $ Map.lookup tok1 tim'
-                     (n2, _, _, _, _) = fromJust $ Map.lookup tok2' tim'
-                     dg'' = insertDefEdgeMorphism n1 n2 morph' dg'
-createEdgeImport tok1 (Ex, tok2, _, morph, _, _) sg tim dg = (tim, dg')
-               where morph' = setTarget sg morph
-                     (n1, _, _, _, _) = fromJust $ Map.lookup tok1 tim
-                     (n2, _, _, _, _) = fromJust $ Map.lookup tok2 tim
-                     dg' = insertConsEdgeMorphism n1 n2 morph' dg
-createEdgeImport tok1 (Inc, tok2, _, morph, _, _) sg tim dg = (tim, dg')
-               where morph' = setTarget sg morph
-                     (n1, _, _, _, _) = fromJust $ Map.lookup tok1 tim
-                     (n2, _, _, _, _) = fromJust $ Map.lookup tok2 tim
-                     dg' = insertDefEdgeMorphism n1 n2 morph' dg
+createEdgeImport tok1 (ip, tok2, _, morph, _, _) sg tim dg =
+  let (tok2', tim', dg') = case ip of
+        Pr -> insertFreeNode tok2 tim [] dg
+        _ -> (tok2, tim, dg)
+  in (tim', createEdgeMorphism tok1 tok2'
+      (case ip of
+         Ex -> globalConsThm PCons -- a PCons link
+         _ -> globalDef) morph sg tim dg')
 
 -- | extracts the sorts provided by the theories
 getThSorts :: [ImportProc] -> Symbols
@@ -336,7 +342,7 @@ getThSorts = concatMap getThSortsAux
 -- | extracts the not-bounded-yet sorts related to the given identifier
 getThSortsAux :: ImportProc -> Symbols
 getThSortsAux (_, tok, tim, _, _, _) = srts
-         where (_, _, srts, _, _) = fromJust $ Map.lookup tok tim
+         where (_, _, srts, _, _) = getProcInfo tok tim
 
 {- | generates the extra signature needed when using term to term renaming in
 views -}
@@ -356,7 +362,7 @@ from the renaming given in the mapping -}
 newOp :: Sign -> Token -> Symbols -> SymbolMap -> Sign
 newOp sg op ss sm = Maude.Sign.empty {ops = Map.singleton op ods'}
          where om = ops sg
-               ods = fromJust $ Map.lookup op om
+               Just ods = Map.lookup op om
                ods' = getOpDeclSet ods ss sm
 
 -- | renames the profile with the given map
@@ -436,7 +442,7 @@ processParameter (Parameter sort modExp) (toks, tim, morphs, dg) =
     (toks', tim', morphs', dg')
          where (tok, tim', morph, _, dg') =
                    processModExp tim Map.empty dg modExp
-               (_, _, fs, _, _) = fromJust $ Map.lookup tok tim'
+               (_, _, fs, _, _) = getProcInfo tok tim'
                fs' = translateSorts morph fs
                morph' = qualifySorts morph (HasName.getName sort) fs'
                toks' = (HasName.getName sort, tok, fs') : toks
@@ -447,7 +453,7 @@ the morphisms and update the development graph -}
 processModExp :: TokenInfoMap -> ViewMap -> DGraph -> ModExp -> ModExpProc
 processModExp tim _ dg (ModExp modId) = (tok, tim, morph, ps, dg)
                      where tok = HasName.getName modId
-                           (_, sg, _, _, ps) = fromJust $ Map.lookup tok tim
+                           (_, sg, _, _, ps) = getProcInfo tok tim
                            morph = Maude.Morphism.inclusion sg sg
 processModExp tim vm dg (SummationModExp modExp1 modExp2) =
   (tok, tim3, morph, ps', dg5) where
@@ -455,8 +461,8 @@ processModExp tim vm dg (SummationModExp modExp1 modExp2) =
     (tok2, tim2, morph2, ps2, dg2) = processModExp tim1 vm dg1 modExp2
     ps' = nubOrd $ ps1 ++ ps2
     tok = mkSimpleId $ concat ["{", show tok1, " + ", show tok2, "}"]
-    (n1, _, ss1, _, _) = fromJust $ Map.lookup tok1 tim2
-    (n2, _, ss2, _, _) = fromJust $ Map.lookup tok2 tim2
+    (n1, _, ss1, _, _) = getProcInfo tok1 tim2
+    (n2, _, ss2, _, _) = getProcInfo tok2 tim2
     ss1' = translateSorts morph1 ss1
     ss2' = translateSorts morph1 ss2
     sg1 = target morph1
@@ -466,7 +472,7 @@ processModExp tim vm dg (SummationModExp modExp1 modExp2) =
     morph1' = setTarget sg morph1
     morph2' = setTarget sg morph2
     (tim3, dg3) = insertNode tok sg tim2 (ss1' ++ ss2') [] dg2
-    (n3, _, _, _, _) = fromJust $ Map.lookup tok tim3
+    n3 = tokenNode tok tim3
     dg4 = insertDefEdgeMorphism n3 n1 morph1' dg3
     dg5 = insertDefEdgeMorphism n3 n2 morph2' dg4
 processModExp tim vm dg (RenamingModExp modExp rnms) =
@@ -474,11 +480,11 @@ processModExp tim vm dg (RenamingModExp modExp rnms) =
     (tok, tim', morph, ps, dg') = processModExp tim vm dg modExp
     morph' = fromSignRenamings (target morph) rnms
     ps' = applyRenamingParamSorts (sortMap morph') ps
-    comp_morph = fromJust $ maybeResult $ compose morph morph'
+    Just comp_morph = maybeResult $ compose morph morph'
 processModExp tim vm dg (InstantiationModExp modExp views) =
   (tok'', tim'', final_morph, new_param_sorts, dg'') where
     (tok, tim', morph, paramSorts, dg') = processModExp tim vm dg modExp
-    (_, _, _, ps, _) = fromJust $ Map.lookup tok tim'
+    (_, _, _, ps, _) = getProcInfo tok tim'
     param_names = map fstTpl ps
     view_names = map HasName.getName views
     (new_param_sorts, ps_morph) = instantiateSorts param_names view_names vm
@@ -498,10 +504,10 @@ updateGraphViews :: Token -> Token -> Sign -> Morphism -> [(Node, Morphism)]
   -> TokenInfoMap -> [(Token, Token, Symbols)] -> DGraph
   -> (TokenInfoMap, DGraph)
 updateGraphViews tok1 tok2 sg morph views tim deps dg = (tim', dg''')
-                     where (n1, _, _, _, _) = fromJust $ Map.lookup tok1 tim
+                     where n1 = tokenNode tok1 tim
                            morph' = setTarget sg morph
                            (tim', dg') = insertNode tok2 sg tim [] deps dg
-                           (n2, _, _, _, _) = fromJust $ Map.lookup tok2 tim'
+                           n2 = tokenNode tok2 tim'
                            dg'' = insertDefEdgeMorphism n2 n1 morph' dg'
                            dg''' = insertDefEdgesMorphism n2 views sg dg''
 
@@ -530,7 +536,8 @@ processView :: ViewId -> TokenInfoMap -> ViewMap -> (Token, Token, Symbols)
   -> Morphism -> (Token, Morphism, Morphism, Node, [(Token, Token, Symbols)])
 processView vi tim vm (p, theory, ss) morph =
   if Map.member name vm
-  then morphismView name p ss (fromJust $ Map.lookup name vm) morph
+  then morphismView name p ss (Map.findWithDefault
+         (error "Maude2DG.processView") name vm) morph
   else paramBinding theory name p ss morph tim
     where name = HasName.getName vi
 
@@ -573,7 +580,7 @@ paramBinding :: Token -> Token -> Token -> Symbols -> Morphism -> TokenInfoMap
 paramBinding th view p ss morph tim = (view, morph', vmorph', n, [])
         where rnms = createQualifiedSortRenaming p view ss
               morph' = applyRenamings morph rnms
-              (n, sg, _, _, _) = fromJust $ Map.lookup th tim
+              (n, sg, _, _, _) = getProcInfo th tim
               vmorph = Maude.Morphism.inclusion sg sg
               rnms' = createQualificationTh2Mod p ss
               vmorph' = applyRenamings vmorph rnms'
@@ -599,7 +606,7 @@ insertInnerNode nod tim tok morph sg sens dg =
   if isIdentity morph && null sens
   then let
     (fn, tim', dg') = insertFreeNode tok tim [] dg
-    (n2, _, _, _, _) = fromJust $ Map.lookup fn tim'
+    n2 = tokenNode fn tim'
     in (n2, tim', dg')
   else let
     nm = makeName $ simpleIdToIRI tok
@@ -635,9 +642,7 @@ insertDefEdgesMorphism n1 ((n2, morph) : views) sg2 dg =
 
 -- | inserts a definition link between the nodes with the given morphism
 insertDefEdgeMorphism :: Node -> Node -> Morphism -> DGraph -> DGraph
-insertDefEdgeMorphism n1 n2 morph dg = snd $ insLEdgeDG (n2, n1, edg) dg
-                     where mor = G_morphism Maude morph startMorId
-                           edg = globDefLink (gEmbed mor) SeeTarget
+insertDefEdgeMorphism n1 n2 = insertEdgeMorphism n1 n2 globalDef
 
 {- | inserts a theorem link, labeled with the name of the view, between the
 nodes with the given morphism in the development graph -}
@@ -647,22 +652,20 @@ insertThmEdgeMorphism name n1 n2 morph dg = snd $ insLEdgeDG (n2, n1, edg) dg
                            edg = defDGLink (gEmbed mor) globalThm
                                  (DGLinkView (simpleIdToIRI name) $ Fitted [])
 
--- | inserts a PCons link between the nodes with the given morphism
-insertConsEdgeMorphism :: Node -> Node -> Morphism -> DGraph -> DGraph
-insertConsEdgeMorphism n1 n2 morph dg = snd $ insLEdgeDG (n2, n1, edg) dg
+-- | inserts a link between the nodes with the given morphism
+insertEdgeMorphism :: Node -> Node -> DGLinkType -> Morphism -> DGraph -> DGraph
+insertEdgeMorphism n1 n2 lt morph dg = snd $ insLEdgeDG (n2, n1, edg) dg
     where mor = G_morphism Maude morph startMorId
-          edg = defDGLink (gEmbed mor) (globalConsThm PCons) SeeTarget
+          edg = defDGLink (gEmbed mor) lt SeeTarget
 
 -- | inserts a free definition link between the nodes with the given name
 insertFreeEdge :: Token -> Token -> TokenInfoMap -> DGraph -> DGraph
-insertFreeEdge tok1 tok2 tim dg = snd $ insLEdgeDG (n2, n1, edg) dg
+insertFreeEdge tok1 tok2 tim = insertEdgeMorphism n1 n2
+  (FreeOrCofreeDefLink NPFree $ EmptyNode $ Logic Maude)
+  (Maude.Morphism.inclusion Maude.Sign.empty sg2)
     -- currently, the empty sign is used in the inclusion instead of sg1
-    where (n1, _, _, _, _) = fromJust $ Map.lookup tok1 tim
-          (n2, sg2, _, _, _) = fromJust $ Map.lookup tok2 tim
-          mor = G_morphism Maude
-            (Maude.Morphism.inclusion Maude.Sign.empty sg2) startMorId
-          dgt = FreeOrCofreeDefLink NPFree $ EmptyNode (Logic Maude)
-          edg = defDGLink (gEmbed mor) dgt SeeTarget
+    where n1 = tokenNode tok1 tim
+          (n2, sg2, _, _, _) = getProcInfo tok2 tim
 
 {- | inserts a free definition link between the nodes with the given
 name. This function is used to create free links when a module is
@@ -671,8 +674,8 @@ morphism, obtained from the parameters. -}
 insertFreeEdgeMor :: Token -> Token -> TokenInfoMap -> Morphism -> DGraph
   -> DGraph
 insertFreeEdgeMor tok1 tok2 tim mor dg = snd $ insLEdgeDG (n2, n1, edg) dg
-    where (n1, _, _, _, _) = fromJust $ Map.lookup tok1 tim
-          (n2, _, _, _, _) = fromJust $ Map.lookup tok2 tim
+    where n1 = tokenNode tok1 tim
+          n2 = tokenNode tok2 tim
           mor' = G_morphism Maude mor startMorId
           dgt = FreeOrCofreeDefLink NPFree $ EmptyNode (Logic Maude)
           edg = defDGLink (gEmbed mor') dgt SeeTarget
@@ -682,19 +685,14 @@ between M and M'. This function is in charge of creating such M' if it does not
 exist -}
 insertFreeNode :: Token -> TokenInfoMap -> [Morphism] -> DGraph
   -> (Token, TokenInfoMap, DGraph)
-insertFreeNode t tim [] dg = (t', tim', dg'') where
+insertFreeNode t tim morphs dg = (t', tim', dg'') where
     t' = mkFreeName t
     b = Map.member t' tim
     (tim', dg') = if b then (tim, dg) else
-      insertFreeNode2 t' tim (fromJust $ Map.lookup t tim) dg
-    dg'' = if b then dg' else insertFreeEdge t' t tim' dg'
-insertFreeNode t tim morphs@(_ : _) dg = (t', tim', dg'') where
-    t' = mkFreeName t
-    b = Map.member t' tim
-    (tim', dg') = if b then (tim, dg) else
-      insertFreeNode2 t' tim (fromJust $ Map.lookup t tim) dg
-    morph = morphismUnion morphs
-    dg'' = if b then dg' else insertFreeEdgeMor t' t tim' morph dg'
+      insertFreeNode2 t' tim (getProcInfo t tim) dg
+    dg'' | b = dg'
+         | null morphs = insertFreeEdge t' t tim' dg'
+         | otherwise = insertFreeEdgeMor t' t tim' (morphismUnion morphs) dg'
 
 morphismUnion :: [Morphism] -> Morphism
 morphismUnion = foldr Maude.Morphism.union Maude.Morphism.empty
@@ -864,8 +862,7 @@ traverseSpec opts hIn hOut ns = do
 
 -- | returns the parameter names
 paramNames :: [Parameter] -> [Token]
-paramNames = map f
-         where f (Parameter s _) = HasName.getName s
+paramNames = map $ \ (Parameter s _) -> HasName.getName s
 
 {- | returns the sorts (second argument of the pair) that contain any of the
 parameters given as first argument -}
