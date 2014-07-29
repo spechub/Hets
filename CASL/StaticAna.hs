@@ -51,6 +51,7 @@ import Control.Monad
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import Data.Function
 import Data.Maybe
 import Data.List
 
@@ -259,6 +260,14 @@ type GenAx = (Set.Set SORT, Rel.Rel SORT, Set.Set Component)
 emptyGenAx :: GenAx
 emptyGenAx = (Set.empty, Rel.empty, Set.empty)
 
+data ConAux = ConAux OP_NAME OP_TYPE Range [Maybe SORT]
+
+instance Ord ConAux where
+  compare (ConAux n1 _ _ a1) (ConAux n2 _ _ a2) = compare (n1, a1) (n2, a2)
+
+instance Eq ConAux where
+  c1 == c2 = compare c1 c2 == EQ
+
 toSortGenAx :: Range -> Bool -> GenAx -> State (Sign f e) ()
 toSortGenAx ps isFree (sorts, rel, ops) = do
     let sortList = Set.toList sorts
@@ -271,14 +280,25 @@ toSortGenAx ps isFree (sorts, rel, ops) = do
         allSyms = opSyms ++ injSyms
         resType _ (Op_name _) = False
         resType s (Qual_op_name _ t _) = res_OP_TYPE t == s
-        getIndex s = fromMaybe (-1) $ elemIndex s sortList
         addIndices (Op_name _) =
           error "CASL.StaticAna.addIndices"
-        addIndices os@(Qual_op_name _ t _) =
-            (os, map getIndex $ args_OP_TYPE t)
+        addIndices (Qual_op_name n t p) =
+            ConAux n t p
+              $ map (\ s -> if elem s sortList then Nothing else Just s)
+                $ args_OP_TYPE t
         collectOps s =
-          Constraint s (map addIndices $ filter (resType s) allSyms) s
-        constrs = map collectOps sortList
+          (s, sort $ map addIndices $ filter (resType s) allSyms)
+        constrs0 = sortBy (on compare snd) $ map collectOps sortList
+        l1 = map fst constrs0
+        l2 = zip l1 [0 :: Int ..]
+        m2 = Map.fromList $ map (\ (s, i) -> (s, genName $ 's' : show i)) l2
+        mapS s = Map.findWithDefault s s m2
+        mapOT (Op_type k a r p) = Op_type k (map mapS a) (mapS r) p
+        getIndex s = fromMaybe (-1) $ elemIndex s l1
+        constrs = map (\ (s, cs) ->
+          Constraint s (map (\ (ConAux n t r _) -> let nt = mapOT t in
+             (Qual_op_name n nt r, map getIndex $ args_OP_TYPE nt)) cs)
+             $ mapS s) constrs0
         resList = Set.fromList $ map (\ o -> case o of
                     Qual_op_name _ t _ -> res_OP_TYPE t
                     Op_name _ -> error "CASL.StaticAna.resList")
