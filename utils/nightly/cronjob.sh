@@ -64,7 +64,7 @@ makeHets ()
 {
 date
 rm -rf Hets
-git clone --depth=50 https://github.com/spechub/Hets
+git clone --depth=50 $HETSBRANCH https://github.com/spechub/Hets
 cd Hets
 time $MAKE
 time $MAKE check
