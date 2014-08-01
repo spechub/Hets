@@ -333,7 +333,7 @@ createEdgeImport tok1 (ip, tok2, _, morph, _, _) sg tim dg =
   in (tim', createEdgeMorphism tok1 tok2'
       (case ip of
          Ex -> globalConsThm PCons -- a PCons link
-         _ -> globalDef) morph sg tim dg')
+         _ -> globalDef) morph sg tim' dg')
 
 -- | extracts the sorts provided by the theories
 getThSorts :: [ImportProc] -> Symbols
