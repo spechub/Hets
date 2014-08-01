@@ -217,7 +217,14 @@ and the coding into second order logic (p. 429 of Theoret. Comp. Sci. 286).
 data Constraint = Constraint { newSort :: SORT,
                                opSymbs :: [(OP_SYMB, [Int])],
                                origSort :: SORT }
-                  deriving (Show, Eq, Ord)
+                  deriving Show
+
+instance Ord Constraint where
+  compare (Constraint s1 cs1 _) (Constraint s2 cs2 _) =
+      compare (s1, cs1) (s2, cs2)
+
+instance Eq Constraint where
+  a == b = compare a b == EQ
 
 -- | no duplicate sorts, i.e. injective sort map?
 isInjectiveList :: Ord a => [a] -> Bool
