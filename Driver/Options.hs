@@ -547,6 +547,7 @@ data OutType =
   | KIFOut
   | OmdocOut
   | XmlOut -- ^ development graph xml output
+  | JsonOut -- ^ development graph json output
   | ExperimentalOut -- ^ for testing new functionality
   | HaskellOut
   | FreeCADOut
@@ -571,6 +572,7 @@ instance Show OutType where
     KIFOut -> "kif"
     OmdocOut -> omdocS
     XmlOut -> xmlS
+    JsonOut -> "json"
     ExperimentalOut -> experimentalS
     HaskellOut -> hsS
     FreeCADOut -> "fcxml"
@@ -586,8 +588,9 @@ instance Show OutType where
 
 plainOutTypeList :: [OutType]
 plainOutTypeList =
-  [Prf, EnvOut, OWLOut, CLIFOut, KIFOut, OmdocOut, XmlOut, ExperimentalOut,
-      HaskellOut, ThyFile, ComptableXml, FreeCADOut, RDFOut, SymXml, SymsXml]
+  [Prf, EnvOut, OWLOut, CLIFOut, KIFOut, OmdocOut, XmlOut, JsonOut
+  , ExperimentalOut, HaskellOut, ThyFile, ComptableXml, FreeCADOut
+  , RDFOut, SymXml, SymsXml]
 
 outTypeList :: [OutType]
 outTypeList = let dl = [Delta, Fully] in

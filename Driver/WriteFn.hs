@@ -31,6 +31,7 @@ import Data.Maybe
 import Common.AS_Annotation
 import Common.Id
 import Common.IRI (IRI, simpleIdToIRI, iriToStringShortUnsecure)
+import Common.Json (ppJson)
 import Common.DocUtils
 import Common.ExtSign
 import Common.LibName
@@ -59,6 +60,7 @@ import Static.DotGraph
 import qualified Static.PrintDevGraph as DG
 import Static.ComputeTheory
 import qualified Static.ToXml as ToXml
+import qualified Static.ToJson as ToJson
 
 import CASL.Logic_CASL
 import CASL.CompositionTable.Pretty2
@@ -131,6 +133,8 @@ writeLibEnv opts filePrefix lenv ln ot =
              >>= writeVerbFile opts f
       XmlOut -> writeVerbFile opts f $ ppTopElement
           $ ToXml.dGraph opts lenv ln dg
+      JsonOut -> writeVerbFile opts f $ ppJson
+          $ ToJson.dGraph opts lenv ln dg
       SymsXml -> writeVerbFile opts f $ ppTopElement
           $ ToXml.dgSymbols dg
       OmdocOut -> do
@@ -354,6 +358,7 @@ writeSpecFiles opts file lenv ln dg = do
             DfgFile _ -> True
             TPTPFile _ -> True
             XmlOut -> True
+            JsonOut -> True
             OmdocOut -> True
             TheoryFile _ -> True
             SigFile _ -> True

@@ -69,7 +69,7 @@ ppList = map (show . PrettyOut) prettyList ++ ["pdf"]
 
 displayTypes :: [String]
 displayTypes =
-  ["svg", "xml", "dot", "symbols", "session"] ++ ppList
+  ["svg", "xml", "json", "dot", "symbols", "session"] ++ ppList
 
 comorphs :: [String]
 comorphs = ["provers", "translations"]
