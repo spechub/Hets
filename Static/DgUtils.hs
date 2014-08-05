@@ -144,7 +144,10 @@ mergeNodeMod NodeMod
 -- ** edge types
 
 -- | unique number for edges
-newtype EdgeId = EdgeId Int deriving (Show, Eq, Ord)
+newtype EdgeId = EdgeId { getEdgeNum :: Int } deriving (Eq, Ord)
+
+instance Show EdgeId where
+  show = show . getEdgeNum
 
 -- | next edge id
 incEdgeId :: EdgeId -> EdgeId
@@ -159,7 +162,10 @@ showEdgeId (EdgeId i) = show i
 
 -- | a set of used edges
 newtype ProofBasis = ProofBasis { proofBasis :: Set.Set EdgeId }
-    deriving (Show, Eq, Ord)
+    deriving (Eq, Ord)
+
+instance Show ProofBasis where
+  show = show . Set.toList . proofBasis
 
 {- | Rules in the development graph calculus,
    Sect. IV:4.4 of the CASL Reference Manual explains them in depth

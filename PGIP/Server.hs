@@ -42,6 +42,7 @@ import Static.FromXml
 import Static.GTheory
 import Static.History (changeDGH)
 import Static.PrintDevGraph
+import qualified Static.ToJson as ToJson
 import Static.ToXml as ToXml
 
 import Syntax.ToXml
@@ -67,6 +68,7 @@ import Common.AutoProofUtils
 import Common.Doc
 import Common.DocUtils (pretty, showGlobalDoc, showDoc)
 import Common.ExtSign (ExtSign (..))
+import Common.Json (ppJson)
 import Common.GtkGoal
 import Common.LibName
 import Common.PrintLaTeX
@@ -758,6 +760,8 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
               Just "svg" -> return svg
               Just "xml" -> liftR $ return $ ppTopElement
                 $ ToXml.dGraph opts libEnv ln dg
+              Just "json" -> liftR $ return $ ppJson
+                $ ToJson.dGraph opts libEnv ln dg
               Just "dot" -> liftR $ return $ dotGraph title False title dg
               Just "symbols" -> liftR $ return $ ppTopElement
                 $ ToXml.dgSymbols dg
