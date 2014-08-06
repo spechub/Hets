@@ -134,10 +134,10 @@ Executable hets
 
   if flag(server)
     build-depends:
-        wai-extra >= 2.0 && < 3.0
-      , wai >= 2.0 && < 3.0
-      , warp >= 2.0 && < 3.0
+        wai-extra >= 3.0 && < 4.0
+      , wai >= 3.0 && < 4.0
+      , warp >= 3.0 && < 4.0
       , http-types >= 0.6 && < 0.9
       , text >= 0.5 && < 2.0
       , random >= 1.0
-    cpp-options: -DSERVER
+    cpp-options: -DSERVER -DWARP3
