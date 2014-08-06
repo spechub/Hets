@@ -278,11 +278,11 @@ makeImportMapping :: forall lid sublogics
                                  , Set.Set symbol))
 makeImportMapping le ln dg toInfo s (from, _, lbl)
     | isHidingEdge $ dgl_type lbl =
-        warning () (concat [ "Hiding link with ", show (dgl_id lbl)
+        warning () (concat [ "Hiding link id ", showEdgeId (dgl_id lbl)
                            , " not exported."]) nullRange
                     >> return (s, Nothing)
     | isLocalDef $ dgl_type lbl =
-        warning () (concat [ "Local def-link with ", show (dgl_id lbl)
+        warning () (concat [ "Local def-link id ", showEdgeId (dgl_id lbl)
                            , " not exported."]) nullRange
                     >> return (s, Nothing)
     | isGlobalDef $ dgl_type lbl =
