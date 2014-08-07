@@ -168,7 +168,7 @@ ga_cons_append = makeNamed "ga_cons_append"
 
 ga_generated_list :: Named CASLFORMULA
 ga_generated_list = makeNamed "ga_generated_list" $
-  Sort_gen_ax
+  mkSort_gen_ax
     [ Constraint
       { newSort = list
       , opSymbs =

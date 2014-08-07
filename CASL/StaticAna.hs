@@ -287,7 +287,7 @@ toSortGenAx ps isFree (sorts, rel, ops) = do
         mkConstr ss =
             let sl = Set.toList ss in
             toSortGenNamed
-            (Sort_gen_ax
+            (mkSort_gen_ax
             (map (\ s -> Constraint s
                    (map (addIndices sl)
                     $ Map.findWithDefault (error "CASL.StaticAna.mkConstr")

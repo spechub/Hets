@@ -17,6 +17,9 @@ module CASL.AS_Basic_CASL where
 
 import Common.Id
 import Common.AS_Annotation
+
+import Data.Function
+import Data.List
 import qualified Data.Set as Set
 
 -- DrIFT command
@@ -173,6 +176,8 @@ data FORMULA f = Quantification QUANTIFIER [VAR_DECL] (FORMULA f) Range
              -- needed for CASL extensions
                deriving (Show, Eq, Ord)
 
+mkSort_gen_ax :: [Constraint] -> Bool -> FORMULA f
+mkSort_gen_ax = Sort_gen_ax . sortConstraints
 
 is_True_atom :: FORMULA f -> Bool
 is_True_atom f = case f of
@@ -221,10 +226,21 @@ data Constraint = Constraint { newSort :: SORT,
 
 instance Ord Constraint where
   compare (Constraint s1 cs1 _) (Constraint s2 cs2 _) =
-      compare (s1, cs1) (s2, cs2)
+      compare (s1, map fst cs1) (s2, map fst cs2)
 
 instance Eq Constraint where
   a == b = compare a b == EQ
+
+sortConstraints :: [Constraint] -> [Constraint]
+sortConstraints cs = let
+  nCs = sort cs
+  iS = map(\ c -> let
+               Just j = findIndex ((origSort c ==) . origSort) nCs in j) cs
+  updInd i = if i < 0 then i else iS !! i
+  in
+  map (\ (Constraint s os o) ->
+    Constraint s (sortBy (on compare fst)
+                 $ map (\ (c, is) -> (c, map updInd is)) os) o) nCs
 
 -- | no duplicate sorts, i.e. injective sort map?
 isInjectiveList :: Ord a => [a] -> Bool
@@ -246,8 +262,8 @@ recover_Sort_gen_ax constrs =
   origSorts = map origSort constrs
   indSort s i = if i < 0 then s else origSorts !! i
   indOps = concatMap (\ c -> map (indOp $ origSort c) $ opSymbs c) constrs
-  indOp res (Qual_op_name on (Op_type k args1 _ pos1) pos, args) =
-     Qual_op_name on
+  indOp res (Qual_op_name opn (Op_type k args1 _ pos1) pos, args) =
+     Qual_op_name opn
          (Op_type k (zipWith indSort args1 args) res pos1) pos
   indOp _ _ = error
       "CASL/AS_Basic_CASL: Internal error: Unqualified OP_SYMB in Sort_gen_ax"
