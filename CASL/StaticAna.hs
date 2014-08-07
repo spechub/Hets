@@ -269,23 +269,32 @@ toSortGenAx ps isFree (sorts, rel, ops) = do
                         (Op_type Total [s] t p) p) $ Rel.toList
                   $ Rel.irreflex rel
         allSyms = opSyms ++ injSyms
-        resType _ (Op_name _) = False
-        resType s (Qual_op_name _ t _) = res_OP_TYPE t == s
-        getIndex s = fromMaybe (-1) $ elemIndex s sortList
-        addIndices (Op_name _) =
-          error "CASL.StaticAna.addIndices"
-        addIndices os@(Qual_op_name _ t _) =
-            (os, map getIndex $ args_OP_TYPE t)
-        collectOps s =
-          Constraint s (map addIndices $ filter (resType s) allSyms) s
-        constrs = map collectOps sortList
-        resList = Set.fromList $ map (\ o -> case o of
-                    Qual_op_name _ t _ -> res_OP_TYPE t
-                    Op_name _ -> error "CASL.StaticAna.resList")
-                  allSyms
+        resType (Op_name _) = error "CASL.StaticAna.resType"
+        resType (Qual_op_name _ t _) = res_OP_TYPE t
+        argTypes (Op_name _) = error "CASL.StaticAna.argTypes"
+        argTypes (Qual_op_name _ t _) = args_OP_TYPE t
+        getIndex l s = fromMaybe (-1) $ elemIndex s l
+        addIndices l os =
+            (os, map (getIndex l) $ argTypes os)
+        collectOps s = (s, filter ((== s) . resType) allSyms)
+        constrs0 = map collectOps sortList
+        dRel = Rel.depSort . Rel.transClosure $ foldr (\ (s, os) r ->
+               Set.fold (`Rel.insertDiffPair` s) (Rel.insertKey s r)
+               $ Set.unions
+               $ map (Set.intersection sorts . Set.fromList . argTypes) os)
+               Rel.empty constrs0
+        m2 = Map.fromList constrs0
+        mkConstr ss =
+            let sl = Set.toList ss in
+            toSortGenNamed
+            (Sort_gen_ax
+            (map (\ s -> Constraint s
+                   (map (addIndices sl)
+                    $ Map.findWithDefault (error "CASL.StaticAna.mkConstr")
+                    s m2) s) sl) isFree) sl
+        resList = Set.fromList $ map resType allSyms
         noConsList = Set.difference sorts resList
         voidOps = Set.difference resList sorts
-        f = Sort_gen_ax constrs isFree
     when (null sortList)
       $ addDiags [Diag Error "missing generated sort" ps]
     unless (Set.null noConsList)
@@ -294,7 +303,7 @@ toSortGenAx ps isFree (sorts, rel, ops) = do
     unless (Set.null voidOps)
       $ addDiags [mkDiag Warning "non-generated sorts as constructor result"
                   voidOps]
-    addSentences [toSortGenNamed f sortList]
+    addSentences $ map mkConstr dRel
 
 ana_SIG_ITEMS :: (FormExtension f, TermExtension f)
   => Min f e -> Ana s b s f e -> Mix b s f e -> GenKind -> SIG_ITEMS s f
