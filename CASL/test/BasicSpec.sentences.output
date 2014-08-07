@@ -2208,6 +2208,8 @@ total selectors 'a : s -> t, b : s -> t, d : s -> t'
 293.9: ### Warning: generated sorts without constructor '{t}'
 292.13: ### Warning:
 non-generated sorts as constructor result '{b}'
+293.6-293.9: ### Warning:
+splittable groups of generated sorts '[{t}, {s}]'
 300.6: ### Hint: redeclared sort 's'
 301.6: ### Hint: redeclared sort 't'
 304.6: *** Error: unknown sort 'b'

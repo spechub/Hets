@@ -295,6 +295,7 @@ toSortGenAx ps isFree (sorts, rel, ops) = do
         resList = Set.fromList $ map resType allSyms
         noConsList = Set.difference sorts resList
         voidOps = Set.difference resList sorts
+        sens = map mkConstr dRel
     when (null sortList)
       $ addDiags [Diag Error "missing generated sort" ps]
     unless (Set.null noConsList)
@@ -303,7 +304,9 @@ toSortGenAx ps isFree (sorts, rel, ops) = do
     unless (Set.null voidOps)
       $ addDiags [mkDiag Warning "non-generated sorts as constructor result"
                   voidOps]
-    addSentences $ map mkConstr dRel
+    when (length dRel > 1)
+      $ addDiags [mkDiag Warning "splittable groups of generated sorts" dRel]
+    addSentences sens
 
 ana_SIG_ITEMS :: (FormExtension f, TermExtension f)
   => Min f e -> Ana s b s f e -> Mix b s f e -> GenKind -> SIG_ITEMS s f

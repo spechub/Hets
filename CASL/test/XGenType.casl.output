@@ -29,3 +29,5 @@
   ::= c(A;
         B;
         L)                                        %(ga_generated_C)%])
+1.11-5.11: ### Warning:
+splittable groups of generated sorts '[{A}, {B}, {L, R}, {C}]'
