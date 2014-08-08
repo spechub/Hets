@@ -492,14 +492,17 @@ pairs ps = case ps of
 
 -- | get the patterns of a axiom
 patternsOfAxiom :: FORMULA f -> [TERM f]
-patternsOfAxiom f = case quanti f of
-    Negation f' _ -> patternsOfAxiom f'
-    Relation _ c f' _ | c /= Equivalence -> patternsOfAxiom f'
-    Relation f' Equivalence _ _ -> patternsOfAxiom f'
-    Predication _ ts _ -> ts
-    Equation t _ _ _ -> arguOfTerm t
-    Definedness t _ -> arguOfTerm t
-    _ -> []
+patternsOfAxiom = snd . topIdOfAxiom
+
+topIdOfAxiom :: FORMULA f -> ((Id, Int), [TERM f])
+topIdOfAxiom f = case quanti f of
+    Negation f' _ -> topIdOfAxiom f'
+    Relation _ c f' _ | c /= Equivalence -> topIdOfAxiom f'
+    Relation f' Equivalence _ _ -> topIdOfAxiom f'
+    Predication p ts _ -> ((predSymbName p, length ts), ts)
+    Equation t _ _ _ -> topIdOfTerm t
+    Definedness t _ -> topIdOfTerm t
+    _ -> nullId
 
 -- | check whether two patterns are overlapped
 checkPatterns :: Eq f => Sign f e -> ([TERM f], [TERM f]) -> Bool
@@ -587,8 +590,14 @@ getNotComplete osens m fsn =
       sig = mtarget m
   in
   filter (not . null . fst)
-  $ map (\ g -> (diags . completePatterns sig consMap consMap2
-                $ map patternsOfAxiom g, g)) $ getAxGroup sig fsn
+  $ map (\ g ->
+         (diags $ let l = map topIdOfAxiom g in
+                  case Set.toList . Set.fromList $ map fst l of
+                    [p] -> completePatterns sig consMap consMap2
+                      ([Left p], map snd l)
+                    l2 -> fail $ "wrongly grouped leading terms "
+                      ++ show l2
+         , g)) $ getAxGroup sig fsn
 
 varToPat :: TERM f -> TERM f
 varToPat t = case t of
@@ -597,25 +606,48 @@ varToPat t = case t of
   Qual_var _ s r -> Qual_var (mkSimpleId "_") s r
   _ -> t
 
+type LeadArgs f = [Either (Id, Int) (TERM f)]
+
+getNextArg :: (FormExtension f, TermExtension f)
+  => Bool -> String -> LeadArgs f -> (Bool, String, LeadArgs f)
+getNextArg b p l = case l of
+  [] -> (False, if b then p else "_", [])
+  h : r -> case h of
+    Right t -> (b, showDoc t "", r)
+    Left (i, c) -> if c == 0 then (b, showId i "", r) else
+      let (b1, sl, r2) = getNextN c b p r
+      in (b1, showId i "(" ++ intercalate ", " sl ++ ")", r2)
+
+getNextN :: (FormExtension f, TermExtension f)
+  => Int -> Bool -> String -> LeadArgs f -> (Bool, [String], LeadArgs f)
+getNextN c b p l = if c <= 0 then (b, [], l) else
+  let (b1, s, r) = getNextArg b p l
+      (b2, sl, r2) = getNextN (c - 1) b1 p r
+  in (b2, s : sl, r2)
+
+showLeadingArgs :: (FormExtension f, TermExtension f)
+  => String -> LeadArgs f -> String
+showLeadingArgs p l = let (_, r, _) = getNextArg True p $ reverse l in r
+
 -- | check whether the patterns of a function or predicate are complete
 completePatterns :: (FormExtension f, TermExtension f) => Sign f e
   -> MapSet.MapSet SORT (OP_NAME, OP_TYPE)
-  -> MapSet.MapSet OP_NAME OP_TYPE -> [[TERM f]] -> Result ()
-completePatterns tsig consMap consMap2 pas
+  -> MapSet.MapSet OP_NAME OP_TYPE -> (LeadArgs f, [[TERM f]])
+  -> Result ()
+completePatterns tsig consMap consMap2 (leadingArgs, pas)
     | all null pas = return ()
     | any null pas = fail "wrongly grouped leading terms"
     | otherwise = let
-          pa_group allCons ps = let
-              p_g p = map (\ (h : t) ->
+          pa_group allCons = let
+              p_g c@(_, l) p = (Left c : leadingArgs, map (\ (h : t) ->
                 if isVar h
-                then replicate (maximum $ map
-                   (length . arguOfTerm . head) p) (varToPat h) ++ t
-                else arguOfTerm h ++ t) p
-              in map (p_g
-                     . \ (c, ct) -> filter (\ (h : _) -> case unsortedTerm h of
+                then replicate l (varToPat h) ++ t
+                else arguOfTerm h ++ t) p)
+              in map (\ (c, ct) -> p_g (c, length $ args_OP_TYPE ct)
+                     $ filter (\ (h : _) -> case unsortedTerm h of
                            Application (Qual_op_name o ot _) _ _ ->
                              c == o && on (leqF tsig) toOpType ct ot
-                           _ -> True) ps)
+                           _ -> True) pas)
                  $ Set.toList allCons
           (hds, tls) = unzip $ map (\ (hd : tl) -> (hd, tl)) pas
           consAppls@(_ : _) = mapMaybe (\ t -> case unsortedTerm t of
@@ -625,9 +657,10 @@ completePatterns tsig consMap consMap2 pas
             _ -> Nothing) hds
           consSrt = foldr1 Set.intersection $ map (Set.map res_OP_TYPE . snd)
             consAppls
-         in if all isVar hds then completePatterns tsig consMap consMap2 tls
-            else
-                case Set.toList consSrt of
+         in if all isVar hds
+            then completePatterns tsig consMap consMap2
+                     (Right (head hds) : leadingArgs, tls)
+            else case Set.toList consSrt of
                   [] -> fail $
                     "no common result type for constructors found: "
                        ++ showDoc consAppls ""
@@ -637,12 +670,17 @@ completePatterns tsig consMap consMap2 pas
                           $ concatMap (\ (o, cs)
                                        -> map (\ s -> (o, s)) $ Set.toList cs)
                           consAppls
-                        missCons = Set.map
+                        missCons = map
                           (\ (o, ot) -> idToOpSymbol o $ toOpType ot)
-                          $ Set.difference allCons conpats
+                          . Set.toList $ Set.difference allCons conpats
                     when (Set.null allCons) . fail
                       $ "no constructors for result type found: " ++ show cSrt
-                    unless (Set.null missCons || any isVar hds) . justWarn ()
-                      $ "missing pattern(s) for: " ++ showDoc missCons ""
+                    unless (null missCons || any isVar hds) . justWarn ()
+                      $ "missing pattern"
+                      ++ (if null $ tail missCons then "" else "s")
+                      ++ " for: "
+                      ++ intercalate "  \n"
+                         (map (\ s -> showLeadingArgs (showDoc s "")
+                               leadingArgs) missCons)
                     mapM_ (completePatterns tsig consMap consMap2)
-                              (pa_group allCons pas)
+                              (pa_group allCons)
