@@ -521,7 +521,7 @@ utils/appendHaskellPreludeString: utils/appendHaskellPreludeString.hs
 # release management
 release:
 	$(RM) -r Hets
-	git clone https://github.com/spechub/Hets
+	git clone --depth=50 $(HETSBRANCH) https://github.com/spechub/Hets
 	(cd Hets; $(MAKE) derivedSources; $(MAKE) clean; \
             cp Makefile Makefile.orig; \
             cp ReleaseMakefile Makefile; \
