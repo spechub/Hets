@@ -32,7 +32,7 @@ export HETS_MAGIC
 hetsdir=\
 /home/www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets
 destdir=$hetsdir/src-distribution/daily
-outtypes=env,thy,th,dfg,dfg.c,tptp,tptp.c,pp.het,pp.tex,pp.html,pp.xml,xml
+outtypes=env,thy,th,dfg,dfg.c,tptp,tptp.c,pp.het,pp.tex,pp.html,pp.xml,xml,json
 
 export hetsdir
 export destdir
@@ -186,8 +186,7 @@ for i in Basic/*.xml;
 makeLibCheck ()
 {
 rm -rf Hets-lib
-svn co -q \
-  https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk Hets-lib
+git clone --depth=50 $HETSLIBBRANCH https://github.com/spechub/Hets-lib
 cd Hets-lib
 mv ../Hets/Hets/hets .
 \cp ../Hets/utils/hetcasl.sty .
@@ -205,12 +204,16 @@ date
 checkColore ()
 {
 date
-pushd CommonLogic/colore
+cd CommonLogic
+svn co -q --non-interactive --trust-server-cert \
+  https://colore.googlecode.com/svn/trunk/ontologies colore
+pushd colore
 for i in `find . -name \*.clif`; do ../../hets -v2 -C \
   http://colore.oor.net=http://colore.googlecode.com/svn/trunk/ontologies \
   http://colore.oor.net/`echo $i | sed -e 's+\./++g'`; done \
   > ../../../clif.log 2>&1
 popd
+cd ..
 }
 
 checkBioPortal ()
@@ -347,8 +350,8 @@ makeCofiLib ()
 {
 cd /tmp
 rm -rf Hets-lib
-svn export -q --ignore-externals \
-  https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk Hets-lib
+git clone --depth=50 $HETSLIBBRANCH https://github.com/spechub/Hets-lib
+rm -rf Hets-lib/.git
 $TAR zcf lib.tgz Hets-lib
 chmod 664 lib.tgz
 chgrp agcofi lib.tgz
