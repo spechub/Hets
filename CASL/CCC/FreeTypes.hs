@@ -606,33 +606,30 @@ varToPat t = case t of
   Qual_var _ s r -> Qual_var (mkSimpleId "_") s r
   _ -> t
 
-type LeadArgs f = [Either (Id, Int) (TERM f)]
+type LeadArgs = [Either (Id, Int) String]
 
-getNextArg :: (FormExtension f, TermExtension f)
-  => Bool -> String -> LeadArgs f -> (Bool, String, LeadArgs f)
+getNextArg :: Bool -> String -> LeadArgs -> (Bool, String, LeadArgs)
 getNextArg b p l = case l of
   [] -> (False, if b then p else "_", [])
   h : r -> case h of
-    Right t -> (b, showDoc t "", r)
+    Right t -> (b, t, r)
     Left (i, c) -> if c == 0 then (b, showId i "", r) else
       let (b1, sl, r2) = getNextN c b p r
       in (b1, showId i "(" ++ intercalate ", " sl ++ ")", r2)
 
-getNextN :: (FormExtension f, TermExtension f)
-  => Int -> Bool -> String -> LeadArgs f -> (Bool, [String], LeadArgs f)
+getNextN :: Int -> Bool -> String -> LeadArgs -> (Bool, [String], LeadArgs)
 getNextN c b p l = if c <= 0 then (b, [], l) else
   let (b1, s, r) = getNextArg b p l
       (b2, sl, r2) = getNextN (c - 1) b1 p r
   in (b2, s : sl, r2)
 
-showLeadingArgs :: (FormExtension f, TermExtension f)
-  => String -> LeadArgs f -> String
+showLeadingArgs :: String -> LeadArgs -> String
 showLeadingArgs p l = let (_, r, _) = getNextArg True p $ reverse l in r
 
 -- | check whether the patterns of a function or predicate are complete
 completePatterns :: (FormExtension f, TermExtension f) => Sign f e
   -> MapSet.MapSet SORT (OP_NAME, OP_TYPE)
-  -> MapSet.MapSet OP_NAME OP_TYPE -> (LeadArgs f, [[TERM f]])
+  -> MapSet.MapSet OP_NAME OP_TYPE -> (LeadArgs, [[TERM f]])
   -> Result ()
 completePatterns tsig consMap consMap2 (leadingArgs, pas)
     | all null pas = return ()
@@ -659,7 +656,7 @@ completePatterns tsig consMap consMap2 (leadingArgs, pas)
             consAppls
          in if all isVar hds
             then completePatterns tsig consMap consMap2
-                     (Right (head hds) : leadingArgs, tls)
+                     (Right "_" : leadingArgs, tls)
             else case Set.toList consSrt of
                   [] -> fail $
                     "no common result type for constructors found: "
@@ -670,9 +667,7 @@ completePatterns tsig consMap consMap2 (leadingArgs, pas)
                           $ concatMap (\ (o, cs)
                                        -> map (\ s -> (o, s)) $ Set.toList cs)
                           consAppls
-                        missCons = map
-                          (\ (o, ot) -> idToOpSymbol o $ toOpType ot)
-                          . Set.toList $ Set.difference allCons conpats
+                        missCons = Set.toList $ Set.difference allCons conpats
                     when (Set.null allCons) . fail
                       $ "no constructors for result type found: " ++ show cSrt
                     unless (null missCons || any isVar hds) . justWarn ()
@@ -680,7 +675,12 @@ completePatterns tsig consMap consMap2 (leadingArgs, pas)
                       ++ (if null $ tail missCons then "" else "s")
                       ++ " for: "
                       ++ intercalate "  \n"
-                         (map (\ s -> showLeadingArgs (showDoc s "")
+                         (map (\ (o, ot) -> showLeadingArgs
+                               (case args_OP_TYPE ot of
+                                 [] -> showId o ""
+                                 l -> showId o "("
+                                   ++ intercalate "," (map (const "_") l)
+                                   ++ ")")
                                leadingArgs) missCons)
                     mapM_ (completePatterns tsig consMap consMap2)
                               (pa_group allCons)
