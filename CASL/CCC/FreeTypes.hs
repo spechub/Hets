@@ -593,8 +593,8 @@ getNotComplete osens m fsn =
   $ map (\ g ->
          (diags $ let l = map topIdOfAxiom g in
                   case Set.toList . Set.fromList $ map fst l of
-                    [p] -> completePatterns sig consMap consMap2
-                      ([Left p], map snd l)
+                    [(p, i)] -> completePatterns sig consMap consMap2
+                      ([(showId p "", i)], map snd l)
                     l2 -> fail $ "wrongly grouped leading terms "
                       ++ show l2
          , g)) $ getAxGroup sig fsn
@@ -606,16 +606,15 @@ varToPat t = case t of
   Qual_var _ s r -> Qual_var (mkSimpleId "_") s r
   _ -> t
 
-type LeadArgs = [Either (Id, Int) String]
+type LeadArgs = [(String, Int)]
 
 getNextArg :: Bool -> String -> LeadArgs -> (Bool, String, LeadArgs)
 getNextArg b p l = case l of
   [] -> (False, if b then p else "_", [])
   h : r -> case h of
-    Right t -> (b, t, r)
-    Left (i, c) -> if c == 0 then (b, showId i "", r) else
+    (i, c) -> if c == 0 then (b, i, r) else
       let (b1, sl, r2) = getNextN c b p r
-      in (b1, showId i "(" ++ intercalate ", " sl ++ ")", r2)
+      in (b1, i ++ "(" ++ intercalate ", " sl ++ ")", r2)
 
 getNextN :: Int -> Bool -> String -> LeadArgs -> (Bool, [String], LeadArgs)
 getNextN c b p l = if c <= 0 then (b, [], l) else
@@ -636,11 +635,11 @@ completePatterns tsig consMap consMap2 (leadingArgs, pas)
     | any null pas = fail "wrongly grouped leading terms"
     | otherwise = let
           pa_group allCons = let
-              p_g c@(_, l) p = (Left c : leadingArgs, map (\ (h : t) ->
+              p_g c@(_, l) p = (c : leadingArgs, map (\ (h : t) ->
                 if isVar h
                 then replicate l (varToPat h) ++ t
                 else arguOfTerm h ++ t) p)
-              in map (\ (c, ct) -> p_g (c, length $ args_OP_TYPE ct)
+              in map (\ (c, ct) -> p_g (showId c "", length $ args_OP_TYPE ct)
                      $ filter (\ (h : _) -> case unsortedTerm h of
                            Application (Qual_op_name o ot _) _ _ ->
                              c == o && on (leqF tsig) toOpType ct ot
@@ -656,7 +655,7 @@ completePatterns tsig consMap consMap2 (leadingArgs, pas)
             consAppls
          in if all isVar hds
             then completePatterns tsig consMap consMap2
-                     (Right "_" : leadingArgs, tls)
+                     (("_", 0) : leadingArgs, tls)
             else case Set.toList consSrt of
                   [] -> fail $
                     "no common result type for constructors found: "
