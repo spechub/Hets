@@ -1,5 +1,4 @@
 #!/bin/sh
 
-../../hets -v2 -o thy *.het
+../../hets -v2 -A -o thy *.het
 ../../utils/nightly/runisabelle.sh *.thy
-

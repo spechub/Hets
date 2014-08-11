@@ -153,7 +153,7 @@ omdocToSortGenConstraint e sortdefs = do
   -- take the last type as the type of all constraints
   let (t, cs) = mapAccumL (const $ mkConstraint e) Generated sortdefs
   -- TODO: do we take newSort or origSort?
-  return $ toSortGenNamed (Sort_gen_ax cs $ t == Free) $ map newSort cs
+  return $ toSortGenNamed (mkSort_gen_ax cs $ t == Free) $ map newSort cs
 
 mkConstraint :: Env -> OmdADT -> (ADTType, Constraint)
 mkConstraint e (ADTSortDef nm t constrs) =

@@ -494,7 +494,7 @@ freeCons (sorts, rel, ops) =
         collectOps s =
           Constraint s (map addIndices $ filter (resType s) allSyms) s
         constrs = map collectOps sortList
-        f = Sort_gen_ax constrs True
+        f = mkSort_gen_ax constrs True
  -- added by me:
         nonSub (Qual_op_name n _ _) = not $ isInjName n
         nonSub _ = error "use qualified names"

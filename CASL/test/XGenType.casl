@@ -1,0 +1,5 @@
+free type L ::= la(A) | l(R)
+          R ::= r | r(L)
+          C ::= c(A;B;L)
+          A ::= a
+          B ::= b

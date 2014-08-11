@@ -308,7 +308,7 @@ codeRecord uniBot bsrts mf = (mapRecord mf)
     , foldMembership = \ _ t s ps ->
           defined bsrts (projectUnique Total ps t s) ps
     , foldSort_gen_ax = \ _ cs b -> if uniBot then
-          Sort_gen_ax (map (totalizeConstraint bsrts) cs)
+          mkSort_gen_ax (map (totalizeConstraint bsrts) cs)
               $ Set.null (Set.intersection bsrts
                 $ Set.fromList $ map newSort cs) && b
           else error "SubPFOL2SubFOL: unexpected Sort_gen_ax"

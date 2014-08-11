@@ -1071,7 +1071,7 @@ ctorSen isFree (sorts, _, ops) =
         collectOps s =
           CAS.Constraint s (map addIndices $ filter (resType s) allSyms) s
         constrs = map collectOps sortList
-        f = CAS.Sort_gen_ax constrs isFree
+        f = CAS.mkSort_gen_ax constrs isFree
     in makeNamed
       ("ga_generated_" ++ showSepList (showString "_") showId sortList "") f
 

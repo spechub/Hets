@@ -35,7 +35,8 @@ mapMorphism mf m = (mapRecord $ mf m)
      , foldPredication = \ _ -> Predication . mapPrSymb m
      , foldMembership = \ _ t -> Membership t . mapSrt m
      , foldSort_gen_ax = \ _ constrs isFree -> let
-       newConstrs = map (mapConstr m) constrs in Sort_gen_ax newConstrs isFree
+       newConstrs = map (mapConstr m) constrs in
+       mkSort_gen_ax newConstrs isFree
      }
 
 mapTerm :: MapSen f e m -> Morphism f e m -> TERM f -> TERM f
