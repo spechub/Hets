@@ -23,6 +23,9 @@ module Driver.Options
   , AnaType (..)
   , GuiType (..)
   , InType (..)
+  , OWLFormat (..)
+  , parseOwlFormat
+  , listOwlInTypes
   , OutType (..)
   , PrettyType (..)
   , prettyList
@@ -445,10 +448,7 @@ data InType =
     ATermIn ATType
   | CASLIn
   | HetCASLIn
-  | DOLIn
-  | OWLIn
-  | OwlXmlIn
-  | OBOIn
+  | OWLIn OWLFormat
   | HaskellIn
   | MaudeIn
   | TwelfIn
@@ -463,7 +463,6 @@ data InType =
   | FreeCADIn
   | CommonLogicIn Bool  -- ^ "clf" or "clif" ('True' is long version)
   | DgXml
-  | RDFIn
   | Xmi
   | Qvt
   | TPTPIn
@@ -475,10 +474,7 @@ instance Show InType where
     ATermIn at -> genTermS ++ show at
     CASLIn -> "casl"
     HetCASLIn -> "het"
-    DOLIn -> "dol"
-    OwlXmlIn -> "owl.xml"
-    OWLIn -> "owl"
-    OBOIn -> "obo"
+    OWLIn oty -> show oty
     HaskellIn -> hsS
     ExperimentalIn -> "exp"
     MaudeIn -> "maude"
@@ -494,7 +490,6 @@ instance Show InType where
     FreeCADIn -> "fcstd"
     CommonLogicIn isLong -> if isLong then "clif" else "clf"
     DgXml -> xmlS
-    RDFIn -> "rdf"
     Xmi -> "xmi"
     Qvt -> "qvt"
     HtmlIn -> "html"
@@ -514,14 +509,52 @@ instance Show ATType where
     BAF -> bafS
     NonBAF -> ""
 
+-- | 'OWLFormat' lists possibilities for OWL syntax (in + out)
+data OWLFormat =
+    Manchester
+  | OwlXml
+  | RdfXml
+  | OBO
+  | DOL
+  | Turtle
+  deriving Eq
+
+instance Show OWLFormat where
+  show ty = case ty of
+    Manchester -> "omn"
+    OwlXml -> "owl.xml"
+    RdfXml -> "rdf"
+    OBO -> "obo"
+    DOL -> "dol"
+    Turtle -> "ttl"
+
+plainOwlFormats :: [OWLFormat]
+plainOwlFormats = [ Manchester, OwlXml, RdfXml, OBO, DOL, Turtle ]
+
+listOwlInTypes :: [InType]
+listOwlInTypes = map OWLIn plainOwlFormats
+
+parseOwlFormat :: String -> InType
+parseOwlFormat s = OWLIn $ case map toLower s of
+  "omn" -> Manchester
+  "owl.xml" -> OwlXml
+  "rdf" -> RdfXml
+  "obo" -> OBO
+  "dol" -> DOL
+  "ttl" -> Turtle
+  _ -> Manchester -- default to manchester syntax
+
+  
 -- OwlXmlIn needs to be before OWLIn to avoid a read error in parseInType1
 plainInTypes :: [InType]
 plainInTypes =
-  [ CASLIn, HetCASLIn, DOLIn, OwlXmlIn, OWLIn, OBOIn, HaskellIn, ExperimentalIn
+  [ CASLIn, HetCASLIn ]
+  ++ map OWLIn plainOwlFormats ++
+  [ HaskellIn, ExperimentalIn
   , MaudeIn, TwelfIn
   , HolLightIn, IsaIn, ThyIn, PrfIn, OmdocIn, ProofCommand
   , CommonLogicIn False, CommonLogicIn True
-  , DgXml, FreeCADIn, RDFIn, Xmi, Qvt, TPTPIn ]
+  , DgXml, FreeCADIn, Xmi, Qvt, TPTPIn ]
 
 aInTypes :: [InType]
 aInTypes = [ ATermIn x | x <- [BAF, NonBAF] ]
@@ -542,7 +575,7 @@ data OutType =
   | GraphOut GraphType
   | Prf
   | EnvOut
-  | OWLOut
+  | OWLOut OWLFormat
   | CLIFOut
   | KIFOut
   | OmdocOut
@@ -557,7 +590,6 @@ data OutType =
   | ComptableXml
   | SigFile Delta -- ^ signature as text
   | TheoryFile Delta -- ^ signature with sentences as text
-  | RDFOut
   | SymXml
   | SymsXml
 
@@ -567,7 +599,7 @@ instance Show OutType where
     GraphOut f -> graphE ++ show f
     Prf -> prfS
     EnvOut -> envS
-    OWLOut -> "omn"
+    OWLOut oty -> show oty
     CLIFOut -> "clif"
     KIFOut -> "kif"
     OmdocOut -> omdocS
@@ -582,15 +614,14 @@ instance Show OutType where
     ComptableXml -> "comptable.xml"
     SigFile d -> "sig" ++ show d
     TheoryFile d -> "th" ++ show d
-    RDFOut -> "nt"
     SymXml -> "sym.xml"
     SymsXml -> "syms.xml"
 
 plainOutTypeList :: [OutType]
 plainOutTypeList =
-  [Prf, EnvOut, OWLOut, CLIFOut, KIFOut, OmdocOut, XmlOut, JsonOut
-  , ExperimentalOut, HaskellOut, ThyFile, ComptableXml, FreeCADOut
-  , RDFOut, SymXml, SymsXml]
+  [ Prf, EnvOut ] ++ map OWLOut plainOwlFormats ++
+  [ CLIFOut, KIFOut, OmdocOut, XmlOut, JsonOut, ExperimentalOut
+  , HaskellOut, ThyFile, ComptableXml, FreeCADOut, SymXml, SymsXml]
 
 outTypeList :: [OutType]
 outTypeList = let dl = [Delta, Fully] in

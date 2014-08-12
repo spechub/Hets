@@ -250,8 +250,16 @@ writeTheory ins nam opts filePrefix ga
             Just td -> writeVerbFile opts f $ tableXmlStr td
             Nothing -> return ()
         else putIfVerbose opts 0 $ "expected CASL theory for: " ++ f
+#ifdef RDFLOGIC
+    OWLOut RdfXml
+        | lang == language_name RDF -> do
+            th2 <- coerceBasicTheory lid RDF "" th
+            let rdftext = shows (RDF.printRDFBasicTheory th2) "\n"
+            writeVerbFile opts f rdftext
+        | otherwise -> putIfVerbose opts 0 $ "expected RDF theory for: " ++ f
+#endif
 #ifndef NOOWLLOGIC
-    OWLOut -> case createOWLTheory raw_gTh of
+    OWLOut oty -> case createOWLTheory raw_gTh of
       Result _ Nothing ->
         putIfVerbose opts 0 $ "expected OWL theory for: " ++ f
       Result ds (Just th2) -> do
@@ -266,14 +274,6 @@ writeTheory ins nam opts filePrefix ga
               Left err -> putIfVerbose opts 0 $ show err
               _ -> putIfVerbose opts 3 $ "reparsed: " ++ f
             writeVerbFile opts f owltext
-#endif
-#ifdef RDFLOGIC
-    RDFOut
-        | lang == language_name RDF -> do
-            th2 <- coerceBasicTheory lid RDF "" th
-            let rdftext = shows (RDF.printRDFBasicTheory th2) "\n"
-            writeVerbFile opts f rdftext
-        | otherwise -> putIfVerbose opts 0 $ "expected RDF theory for: " ++ f
 #endif
     CLIFOut
       | lang == language_name CommonLogic -> do
@@ -363,7 +363,7 @@ writeSpecFiles opts file lenv ln dg = do
             OmdocOut -> True
             TheoryFile _ -> True
             SigFile _ -> True
-            OWLOut -> True
+            OWLOut _ -> True
             CLIFOut -> True
             KIFOut -> True
             FreeCADOut -> True
