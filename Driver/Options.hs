@@ -519,14 +519,15 @@ data OWLFormat =
   | Turtle
   deriving Eq
 
+defaultOwlFormat :: OWLFormat
+defaultOwlFormat = Manchester
+
+instance Read OWLFormat where
+  readsPrec _ s = filter ((== s) . snd) owlExtensionsMap1
+
 instance Show OWLFormat where
-  show ty = case ty of
-    Manchester -> "omn"
-    OwlXml -> "owl.xml"
-    RdfXml -> "rdf"
-    OBO -> "obo"
-    DOL -> "dol"
-    Turtle -> "ttl"
+  show ty = maybe "owl.?" fst
+    $ find ((== ty) . snd) owlExtensionsMap
 
 plainOwlFormats :: [OWLFormat]
 plainOwlFormats = [ Manchester, OwlXml, RdfXml, OBO, DOL, Turtle ]
@@ -534,17 +535,23 @@ plainOwlFormats = [ Manchester, OwlXml, RdfXml, OBO, DOL, Turtle ]
 listOwlInTypes :: [InType]
 listOwlInTypes = map OWLIn plainOwlFormats
 
-parseOwlFormat :: String -> InType
-parseOwlFormat s = OWLIn $ case map toLower s of
-  "omn" -> Manchester
-  "owl.xml" -> OwlXml
-  "rdf" -> RdfXml
-  "obo" -> OBO
-  "dol" -> DOL
-  "ttl" -> Turtle
-  _ -> Manchester -- default to manchester syntax
+owlExtensionsMap :: [(String, OWLFormat)]
+owlExtensionsMap =
+  [ ("omn", Manchester)
+  , ("owl", OwlXml)
+  , ("xml", OwlXml)
+  , ("rdf", RdfXml)
+  , ("obo", OBO)
+  , ("dol", DOL)
+  , ("ttl", Turtle) ]
 
-  
+owlExtensionsMap1 :: [(OWLFormat, String)]
+owlExtensionsMap1 = map (\(a,b) -> (b,a)) owlExtensionsMap
+
+parseOwlFormat :: String -> InType
+parseOwlFormat s = OWLIn $
+  maybe defaultOwlFormat id $ lookup s owlExtensionsMap
+
 -- OwlXmlIn needs to be before OWLIn to avoid a read error in parseInType1
 plainInTypes :: [InType]
 plainInTypes =
@@ -823,13 +830,13 @@ parseConnect :: String -> Flag
 parseConnect s
  = let (sP, sH) = divideIntoPortHost s False ([], [])
    in case reads sP of
-                [(i, "")] -> Connect i sH
+                (i, "") : _ -> Connect i sH
                 _ -> Connect (-1) sH
 
 parseListen :: String -> Flag
 parseListen s
  = case reads s of
-                [(i, "")] -> Listen i
+                (i, "") : _ -> Listen i
                 _ -> Listen (-1)
 
 parseEncoding :: String -> Flag
@@ -932,7 +939,7 @@ parseInType = InType . parseInType1
 parseInType1 :: String -> InType
 parseInType1 str =
   case reads str of
-    [(t, "")] -> t
+    (t, "") : _ -> t
     _ -> hetsError (str ++ " is not a valid ITYPE")
       {- the mere typo read instead of reads caused the runtime error:
          Fail: Prelude.read: no parse -}
@@ -940,7 +947,7 @@ parseInType1 str =
 -- 'parseOutTypes' parses an 'OutTypes' Flag from user input
 parseOutTypes :: String -> Flag
 parseOutTypes str = case reads $ bracket str of
-    [(l, "")] -> OutTypes l
+    (l, "") : _ -> OutTypes l
     _ -> hetsError (str ++ " is not a valid OTYPES")
 
 -- | parses a comma separated list from user input
@@ -967,7 +974,7 @@ guessInType file = case fileparse downloadExtensions file of
 parseCASLAmalg :: String -> Flag
 parseCASLAmalg str =
     case reads $ bracket str of
-    [(l, "")] -> CASLAmalg $ filter ( \ o -> case o of
+    (l, "") : _ -> CASLAmalg $ filter ( \ o -> case o of
                                       NoAnalysis -> False
                                       _ -> True ) l
     _ -> hetsError $ str ++
