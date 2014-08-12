@@ -17,45 +17,34 @@ import java.util.Set;
 public class OWL2Parser {
     private static enum OPTION {QUICK_OWL_XML, OWL_XML, MANCHESTER, RDF_XML, OBO}
 
-    private static OPTION op;
+    private static OPTION input_type;
+    private static OPTION output_type;
+    private static Boolean quick = false;
     private static Boolean cyclic = false;
     private static final Set<IRI> missingImports = new HashSet<IRI>();
     private static Set<OWLOntology> ontologies;
     private static final Set<OWLOntology> exported = new HashSet<OWLOntology>();
     private static OWLOntologyManager manager = setupManagerWithMissingImportListener();
     private static OWLOntologyIRIMapperImpl mapper = new OWLOntologyIRIMapperImpl();
- 
+    private static String inp = "";
+    private static BufferedWriter wrt_out = null;
+    
     public static void main(String[] args) {
         // A simple example of how to load and save an ontology
         try {
-            op = OPTION.MANCHESTER;
-            BufferedWriter out = new BufferedWriter(new OutputStreamWriter(System.out));
-            switch (args.length) {
-                default : 
-                    System.out.println("Usage: processor <URI> [FILENAME] <OPTION>");
-                    System.exit(1);
-                    break;
-                // args[0]: IRI
-                case 1 :
-                    break;
-                // args[0]: IRI
-                // args[1]: type of output, or otherwise use argument as file name
-                // with Manchester syntax
-                case 2 :
-                    if (!parseOption(args[1]))
-                        out = new BufferedWriter(new FileWriter(args[1]));
-                    break;
-                // args[0]: IRI
-                // args[1]: name of output file
-                // args[2]: type of output file: xml, rdf, or otherwise assume Manchester syntax
-                case 3 :
-                    out = new BufferedWriter(new FileWriter(args[1]));
-                    parseOption(args[2]);
-                    break;
+/*            String errStr = "";
+            for (String arg : args)
+            {
+                errStr += arg + " ";
             }
-            out.write("<Ontologies>\n");
-            /* Load an ontology from a physical IRI */
-            String inp = args[0];
+            System.err.print( "Arguments:\n" + errStr );*/
+            // give out and inp so they can be set in parseFun
+            if (!parseARGuments(args))
+            {
+                failWithHelpScreen();
+                return;
+            }
+            wrt_out.write("<Ontologies>\n");
             URI uri;
             if (inp.startsWith("http:") || inp.startsWith("https:"))
                 uri = new URI(inp);
@@ -78,7 +67,7 @@ public class OWL2Parser {
                 missingImports.clear();
                 ontology = manager.loadOntologyFromOntologyDocument(sds, config);
                 for (IRI mi : missingImports) {
-                    out.write("<Missing>" + mi + "</Missing>\n");
+                    wrt_out.write("<Missing>" + mi + "</Missing>\n");
                 }
             }
             ontologies = getImports(ontology, new HashSet<OWLOntology>());
@@ -89,34 +78,93 @@ public class OWL2Parser {
                 IRI mergedOntologyIRI = IRI.create(merged_name);
                 // System.out.println("MERGED_IRI " + mergedOntologyIRI + "\n");
                 OWLOntology merged;
-                if (op == OPTION.QUICK_OWL_XML)
+                // Axioms can be excluded when 'quick' Option selected
+                if (quick)
                     merged = manager.createOntology(mergedOntologyIRI);
                 else {
                     OWLOntologyMerger merger = new OWLOntologyMerger(manager);
                     merged = merger.createMergedOntology(manager, mergedOntologyIRI);
                 }
-                renderUsingOption(merged, out);
+                renderUsingOption(merged, wrt_out);
             } else {
                 ontologies.add(ontology);
-                exportImports(out);
+                exportImports(wrt_out);
             }
-            out.write("\n</Ontologies>\n");
-            out.flush();
-            out.close();
+            wrt_out.write("\n</Ontologies>\n");
+            wrt_out.flush();
+            wrt_out.close();
         } catch (Exception ex) {
             System.err.println("OWL parse error: " + ex.getMessage());
             ex.printStackTrace();
         }
     }
 
-    private static boolean parseOption (String option) {
-        if(option.equals("quick")) op = OPTION.QUICK_OWL_XML;
-        else if(option.equals("xml")) op = OPTION.OWL_XML;
-        else if(option.equals("rdf")) op = OPTION.RDF_XML;
-        else if(option.equals("obo")) op = OPTION.OBO;
-        else if(option.equals("omn")) op = OPTION.MANCHESTER;
-        else return false;
+    private static void failWithHelpScreen()
+    {
+        String helpText = "Usage: "
+         + " -o <t> : output-type -i <t>: input-type"
+         + " -f <t> : Filename -qk : quick"
+         + "\n << OLD >> processor <URI> [FILENAME] <OPTION>";
+        System.out.println( helpText );
+    }
+
+    // parse arguments according to option set
+    // return false for unknown stuff, or when IRI is not set
+    private static Boolean parseARGuments( String[] args )
+        throws Exception
+    {
+        if (args.length == 0) return false;
+
+        input_type = OPTION.MANCHESTER;
+        output_type = OPTION.MANCHESTER;
+        String tmpFileName = "";
+        for (int i = 0; i < args.length; i++) {
+            String arg = args[i].toLowerCase();
+            if (arg.startsWith("-")) {
+                Boolean hasNext = i < args.length-1;
+                if (arg.equals("-i") && hasNext) {
+                    i += 1;
+                    input_type = parseOption(args[i]);
+                }
+                else if (arg.equals("-o") && hasNext) {
+                    i += 1;
+                    output_type = parseOption(args[i]);
+                }
+                else if (arg.equals("-f") && hasNext) {
+                    i += 1;
+                    tmpFileName = args[i];
+                }
+                else if (arg.equals("-qk") || arg.equals("-q")) {
+                    quick = true;
+                }
+                else if (arg.equals("-h") || arg.equals("--help")) {
+                    failWithHelpScreen();
+                }
+                else return false;
+            } else {
+                // TODO: could test here if actually is an IRI
+                // .. and test if it's only set once.
+                inp = args[i]; // read again to avoid earlier 'toLowerCase'
+        }  }
+        if (inp.equals("")) return false;
+        try {
+            if (tmpFileName.equals("")) {
+                wrt_out =
+                    new BufferedWriter(new OutputStreamWriter(System.out));
+            }
+            else wrt_out = new BufferedWriter(new FileWriter(tmpFileName));
+        }
+        catch (Exception e) { throw (e); }
         return true;
+    }
+
+    private static OPTION parseOption (String option) {
+        if(option.equals("quick")) return OPTION.QUICK_OWL_XML;
+        else if(option.equals("xml")) return OPTION.OWL_XML;
+        else if(option.equals("rdf")) return OPTION.RDF_XML;
+        else if(option.equals("obo")) return OPTION.OBO;
+        else if(option.equals("omn")) return OPTION.MANCHESTER;
+        return OPTION.MANCHESTER; // DEFAULT
     }
         
     private static OWLOntologyManager setupManagerWithMissingImportListener () {
@@ -161,7 +209,7 @@ public class OWL2Parser {
     }
 
     private static void renderUsingOption(OWLOntology onto, BufferedWriter out) {
-        switch (op) {
+        switch (output_type) {
             case QUICK_OWL_XML:
                 renderAsXml(true, onto, out);
                 break;
