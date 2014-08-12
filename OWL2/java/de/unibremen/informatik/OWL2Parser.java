@@ -212,7 +212,7 @@ public class OWL2Parser {
             case RDF_XML :
                 renderAsRdf(onto, out);
                 break;
-            
+            // TODO: the below still need implementation!
             case OBO :
                 renderAsXml(onto, out);
                 break;
