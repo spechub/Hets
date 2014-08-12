@@ -49,12 +49,8 @@ mimeTypeMap :: [(String, InType)]
 mimeTypeMap =
   [ ("xml", DgXml)
   , ("html", HtmlIn)
-  , ("rdf", OWLIn RdfXml)
-  , ("owl", OWLIn OwlXml)     -- (TODO) maybe use map (\a -> (show a, a))
-  , ("obo", OWLIn OBO)
-  , ("ttl", OWLIn Turtle)
-  , ("omn", OWLIn Manchester)
-  , ("clif", CommonLogicIn True)
+  ] ++ map (\tp -> (show tp, tp)) listOwlInTypes ++
+  [ ("clif", CommonLogicIn True)
   , ("dol", OWLIn DOL)
   , ("het", HetCASLIn)
   , ("casl", CASLIn) ]
