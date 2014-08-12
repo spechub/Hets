@@ -45,20 +45,28 @@ import System.FilePath
 import Text.XML.Light hiding (QName)
 
 -- | call for owl parser (env. variable $HETS_OWL_TOOLS muss be defined)
-parseOWL :: Bool -> FilePath      -- ^ local filepath or uri
+parseOWL :: Bool                  -- ^ Sets Option.quick
+         -> String                -- ^ Input-Type (Manchester, RDF, OBO, ..)
+         -> Maybe String          -- ^ Output-Type
+         -> FilePath              -- ^ local filepath or uri
          -> IO [LIB_DEFN]         -- ^ map: uri -> OntologyFile
-parseOWL quick fn = do
+parseOWL quick itype otype fn = do
     let jar = "OWL2Parser.jar"
     (hasJar, toolPath) <- check4HetsOWLjar jar
     if hasJar then do
+        -- TODO parse output type here already ??
         tmpFile <- getTempFile "" "owlTemp.xml"
+        let args = nub $ ["-o", "xml"] -- maybe [] (\a -> ["-o", a]) otype
+                 ++ if quick then ["-qk"] else []
+                 ++ [ "-i", itype, "-f", tmpFile, fn ]
+        print $ intercalate " | " args
         (exitCode, _, errStr) <- executeProcess "java"
-          ["-jar", toolPath </> jar, fn, tmpFile
-          , if quick then "quick" else "xml"] ""
+          (["-jar", toolPath </> jar] ++ args) ""
         case (exitCode, errStr) of
           (ExitSuccess, "") -> do
             cont <- L.readFile tmpFile
-            removeFile tmpFile
+            -- TODO looking @ it for debug only
+            --removeFile tmpFile
             parseProc cont
           _ -> error $ "process stop! " ++ shows exitCode "\n"
               ++ errStr

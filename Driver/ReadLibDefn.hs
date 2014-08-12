@@ -107,7 +107,9 @@ readLibDefn lgraph opts mr file fileForPos input =
       TPTPIn -> liftIO $ fmap (: []) $ parseTPTP file
 #ifndef NOOWLLOGIC
       _ | elem ty [OWLIn, OwlXmlIn, OBOIn, RDFIn] -> liftIO
-        $ parseOWL (isStructured opts) file
+        $ parseOWL (isStructured opts) inp_type out_type file where
+            inp_type = maybe "xml" fst $ find ((== ty) . snd) mimeTypeMap
+            out_type = Nothing -- TODO: read (maybe) outtype from opts 
 #endif
       _ -> case runParser (library lgraph) (emptyAnnos ()) fileForPos input of
          Left err -> fail (showErr err)
