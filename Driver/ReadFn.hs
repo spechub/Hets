@@ -85,7 +85,8 @@ guessXmlContent isXml str = case dropWhile isSpace str of
   Just e -> case elName e of
     q | isDgXml q -> Right DgXml
       | isRDF q -> Right
-         $ if any (isOWLOnto . elName) $ elChildren e then OWLIn else RDFIn
+         $ parseOwlFormat $ if any (isOWLOnto . elName) $ elChildren e
+             then "owl.xml" else "rdf"
       | isDMU q -> Left "unexpected DMU xml format"
       | isPpXml q -> Left "unexpected pp.xml format"
       | null (qName q) || not isXml -> Right GuessIn

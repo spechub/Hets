@@ -49,13 +49,13 @@ mimeTypeMap :: [(String, InType)]
 mimeTypeMap =
   [ ("xml", DgXml)
   , ("html", HtmlIn)
-  , ("rdf", RDFIn)
-  , ("owl", OwlXmlIn)
-  , ("obo", OBOIn)
-  , ("ttl", OWLIn)
-  , ("omn", OWLIn)
+  , ("rdf", OWLIn RdfXml)
+  , ("owl", OWLIn OwlXml)     -- (TODO) maybe use map (\a -> (show a, a))
+  , ("obo", OWLIn OBO)
+  , ("ttl", OWLIn Turtle)
+  , ("omn", OWLIn Manchester)
   , ("clif", CommonLogicIn True)
-  , ("dol", DOLIn)
+  , ("dol", OWLIn DOL)
   , ("het", HetCASLIn)
   , ("casl", CASLIn) ]
 
@@ -63,7 +63,7 @@ joinFileTypes :: InType -> InType -> InType
 joinFileTypes ext magic = case (ext, magic) of
   (GuessIn, _) -> magic
   (_, GuessIn) -> ext
-  (DgXml, _) | elem magic [DgXml, RDFIn, OwlXmlIn] -> magic
+  (DgXml, _) | elem magic $ DgXml : map OWLIn [RdfXml, OwlXml] -> magic
   (_, HtmlIn) -> magic
   -- (_, DgXml) | elem ext [DgXml, RDFIn, OWLIn, OwlXmlIn, OBOIn, Xmi] -> ext
   _ -> ext -- ignore contradictions
@@ -78,7 +78,7 @@ guessInput opts mr file input =
   let fty1 = guess file (intype opts)
       fty2 = maybe GuessIn findFiletype mr
       fty = joinFileTypes fty1 fty2
-  in if elem fty [GuessIn, DgXml, RDFIn, OwlXmlIn] then
+  in if elem fty $ GuessIn : DgXml : map OWLIn [RdfXml, OwlXml] then
     case guessXmlContent (fty == DgXml) input of
     Left ty -> fail ty
     Right ty -> case ty of
@@ -106,7 +106,7 @@ readLibDefn lgraph opts mr file fileForPos input =
       Qvt -> liftIO $ fmap (: []) $ parseQvt file
       TPTPIn -> liftIO $ fmap (: []) $ parseTPTP file
 #ifndef NOOWLLOGIC
-      _ | elem ty [OWLIn, OwlXmlIn, OBOIn, RDFIn] -> liftIO
+      _ | elem ty listOwlInTypes -> liftIO
         $ parseOWL (isStructured opts) inp_type out_type file where
             inp_type = maybe "xml" fst $ find ((== ty) . snd) mimeTypeMap
             out_type = Nothing -- TODO: read (maybe) outtype from opts 
