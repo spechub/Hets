@@ -145,7 +145,7 @@ downloadSpec opts specMap topTexts importedBy isImport dirFile baseDir = do
                   [txt] -> if txt == fn then return (n, b) else do
                     putIfVerbose opts 2 $ "#### filename " ++ show fn
                       ++ " does not match cl-text " ++ show txt
-                    return (txt, b)
+                    return (if isImport then n else txt, b)
                   [] -> do
                     putIfVerbose opts 2 $ "#### missing cl-text in "
                       ++ show fn
