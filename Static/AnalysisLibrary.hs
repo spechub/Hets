@@ -137,7 +137,10 @@ anaString mln lgraph opts topLns libenv initDG input file mr = do
   libdefns <- readLibDefn lgraph opts mr file posFileName input
   when (null libdefns) . fail $ "failed to read contents of file: " ++ file
   foldM (anaStringAux mln lgraph opts topLns initDG file posFileName)
-        (error "Static.AnalysisLibrary.anaString", libenv) libdefns
+        (error "Static.AnalysisLibrary.anaString", libenv)
+    $ case analysis opts of
+      Skip -> [last libdefns]
+      _ -> libdefns
 
 anaStringAux :: Maybe LibName -- ^ suggested library name
   -> LogicGraph -> HetcatsOpts -> LNS -> DGraph -> FilePath
