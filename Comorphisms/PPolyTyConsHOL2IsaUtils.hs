@@ -234,11 +234,12 @@ transTypeArg ta = TFree (showIsaTypeT (getTypeVar ta) baseSign) []
 -- datatype alternatives/constructors
 transAltDefn :: Env -> Set.Set String -> DataPat -> AltDefn
              -> Result (VName, [Typ])
-transAltDefn env tyToks dp alt = case alt of
-  Construct mi ts p _ -> case mi of
+transAltDefn env tyToks dp@(DataPat dm _ _ _ _) alt = case alt of
+  Construct mi origTs p _ -> let ts = map (mapType dm) origTs in
+    case mi of
     Just opId -> case p of
       Total -> do
-        let sc = getConstrScheme dp p ts
+        let sc = getConstrScheme dp p origTs
         nts <- mapM funType ts
         -- extract overloaded opId number
         return (transOpId env tyToks opId sc, case nts of

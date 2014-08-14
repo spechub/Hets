@@ -2,3 +2,6 @@
 
 ../../hets -v2 -A -o thy *.het
 ../../utils/nightly/runisabelle.sh *.thy
+
+../../hets -l HasCASL -v2 -A -o thy *.het
+../../utils/nightly/runisabelle.sh *.thy
