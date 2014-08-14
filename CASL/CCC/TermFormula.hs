@@ -18,7 +18,7 @@ import CASL.Fold
 import CASL.Overload (leqF)
 import CASL.Sign
 
-import Common.Id (Range, GetRange (..))
+import Common.Id
 import qualified Common.Lib.MapSet as MapSet
 
 import Data.Function
@@ -89,9 +89,15 @@ varOfTerm t = case unsortedTerm t of
 
 -- | extract all arguments of a term
 arguOfTerm :: TERM f -> [TERM f]
-arguOfTerm t = case unsortedTerm t of
-  Application _ ts _ -> ts
-  _ -> []
+arguOfTerm = snd . topIdOfTerm
+
+nullId :: ((Id, Int), [TERM f])
+nullId = ((stringToId "", 0), [])
+
+topIdOfTerm :: TERM f -> ((Id, Int), [TERM f])
+topIdOfTerm t = case unsortedTerm t of
+  Application o ts _ -> ((opSymbName o, length ts), ts)
+  _ -> nullId
 
 -- | create the obligation of subsort
 infoSubsort :: [SORT] -> FORMULA f -> [FORMULA f]
