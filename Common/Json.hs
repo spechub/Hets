@@ -36,7 +36,6 @@ import Common.GlobalAnnotations
 import Common.Id
 import Common.Result
 
-import qualified Data.Map as Map
 import Data.Char
 import Data.List
 import Data.Ratio
@@ -47,7 +46,7 @@ data Json
   | JBool Bool
   | JNull
   | JArray [Json]
-  | JObject (Map.Map String Json)
+  | JObject [JPair]
     deriving (Eq, Ord)
 
 type JPair = (String, Json)
@@ -67,7 +66,7 @@ instance Show Json where
     JObject m -> '{'
       : intercalate ","
         (map (\ (k, v) -> show k ++ ":" ++ show v)
-        $ Map.toList m)
+        m)
       ++ "}"
 
 ppJson :: Json -> String
@@ -76,8 +75,8 @@ ppJson = show . pJ
 pJ :: Json -> Doc
 pJ j = case j of
   JArray js -> brackets . sep . punctuate comma $ map pJ js
-  JObject m -> specBraces . sep . punctuate comma .
-    map (\ (k, v) -> sep [text (show k), colon <+> pJ v]) $ Map.toList m
+  JObject m -> specBraces . sep . punctuate comma
+    $ map (\ (k, v) -> sep [text (show k), colon <+> pJ v]) m
   _ -> text (show j)
 
 mkJStr :: String -> Json
@@ -99,7 +98,7 @@ toJson :: Pretty a => GlobalAnnos -> a -> Json
 toJson ga a = mkJStr $ showGlobalDoc ga a ""
 
 mkJObj :: [JPair] -> Json
-mkJObj l = if null l then JNull else JObject $ Map.fromList l
+mkJObj l = if null l then JNull else JObject l
 
 mkJArr :: [Json] -> Json
 mkJArr l = if null l then JNull else JArray l
