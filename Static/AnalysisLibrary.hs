@@ -530,7 +530,11 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
   Newcomorphism_defn com _ -> ResultT $ do
     dg' <- anaComorphismDef com dg
     return $ Result [] $ Just (itm, dg', libenv, lg, eo)
-  _ -> return (itm, dg, libenv, lg, eo)
+  _ -> do
+    liftR . warning ()
+      ("not analysed:\n'" ++ shows (prettyLG lg itm) "'")
+      $ getRange itm
+    return (itm, dg, libenv, lg, eo)
 
 symbolsOf :: LogicGraph -> G_sign -> G_sign -> [CORRESPONDENCE]
   -> Result (Set.Set (G_symbol, G_symbol))
