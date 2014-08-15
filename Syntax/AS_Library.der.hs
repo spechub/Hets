@@ -59,7 +59,7 @@ data LIB_ITEM = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) Range
               -- pos: "unit", "spec", "=", opt "end"
               | Ref_spec_defn SPEC_NAME REF_SPEC Range
               -- pos: "refinement", "=", opt "end"
-              | Diagram_defn IRI [IRI] [IRI] Range
+              | Diagram_defn IRI [IRI] [NodeOrLink] Range
               -- pos: "diagram", "=", commas, "excluding", commas, opt "end"
               | Download_items LibName DownloadItems Range
               -- pos: "from", "get", "|->", commas, opt "end"
@@ -70,6 +70,13 @@ data LIB_ITEM = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) Range
               | Newcomorphism_defn ComorphismDef Range
               -- pos: "newcomorphism", Comorphism_name, "=", opt "end"
                 deriving Show
+
+data NodeOrLink
+  = NodeIri { nodeIri :: IRI }
+  | LinkName
+    { srcIri :: IRI
+    , tarIri :: IRI }
+  deriving Show
 
 {- Item maps are the documented CASL renamed entities whereas a unique item
 contains the new target name of the single arbitrarily named item from the

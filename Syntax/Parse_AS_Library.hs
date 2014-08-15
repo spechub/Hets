@@ -176,7 +176,7 @@ libItem l =
        (is, ps) <- separatedBy (hetIRI l) anComma
        (es, qs) <- option ([], []) $ do
          kEx <- asKey excludingS
-         (es, qs) <- separatedBy (hetIRI l) anComma
+         (es, qs) <- separatedBy (nodeOrLink l) anComma
          return (es, kEx : qs)
        kEnd <- optEnd
        return . Diagram_defn name is es
@@ -246,6 +246,11 @@ downloadItems l = do
     i <- hetIRI l
     return (UniqueItem i, [s])
 
+nodeOrLink :: LogicGraph -> AParser st NodeOrLink
+nodeOrLink l = do
+  i <- hetIRI l
+  option (NodeIri i) .
+    fmap (LinkName i) $ asKey funS >> hetIRI l
 
 equivType :: LogicGraph -> AParser st EQUIV_TYPE
 equivType l = do
