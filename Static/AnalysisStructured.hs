@@ -574,34 +574,44 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp rg = case sp of
                    (replaceAnnoted sp2' asp2)
                    pos, nsig3, udg3)
   Combination cItems eItems pos -> adjustPos pos $ do
-    let getNodes (cN, cE) cItem = let
+    let getNodes (cN, cE) nodeOrLink =
+           let
+            (cItem, isLink) = case nodeOrLink of
+              NodeIri i -> (i, False)
+              LinkName s _ -> (s, True)
+            mkNodes l = if isLink then cN else nub $ l ++ cN
             cEntry = fromMaybe (error $ "No entry for " ++ show cItem)
                      $ lookupGlobalEnvDG cItem dg
             bgraph = dgBody dg
-            lEdge x y m = case filter (\ (_, z, l) -> (z == y) &&
-                                         (dgl_morphism l == m) ) $
-                               out bgraph x of
+            lEdge x y m = case filter (\ (_, z, l) ->
+                              case nodeOrLink of
+                                NodeIri _ -> z == y && dgl_morphism l == m
+                                LinkName _ t -> isDefEdge (dgl_type l) &&
+                                  elem z (map fst
+                                  $ lookupNodeByName
+                                  (iriToStringShortUnsecure t) dg))
+                            $ out bgraph x of
                              [] -> error "No edge found"
                              lE : _ -> lE
            in case cEntry of
                SpecEntry extGenSig -> let
                    n = getNode $ extGenBody extGenSig
-                  in if elem n cN then (cN, cE) else (n : cN, cE)
+                  in (mkNodes [n], cE)
                ViewOrStructEntry True (ExtViewSig ns gm eGS) -> let
                    s = getNode ns
                    t = getNode $ extGenBody eGS
-                 in (nub $ s : t : cN, lEdge s t gm : cE)
+                 in (mkNodes [s, t], lEdge s t gm : cE)
                AlignEntry asig ->
                   case asig of
                    AlignMor src gmor tar -> let
                      s = getNode src
                      t = getNode tar
-                    in (nub $ s : t : cN, lEdge s t gmor : cE)
+                    in (mkNodes [s, t], lEdge s t gmor : cE)
                    AlignSpan src phi1 tar1 phi2 tar2 -> let
                      s = getNode src
                      t1 = getNode tar1
                      t2 = getNode tar2
-                    in (nub $ [s, t1, t2] ++ cN,
+                    in (mkNodes [s, t1, t2],
                               [lEdge s t1 phi1, lEdge s t2 phi2] ++ cE)
                    WAlign src1 i1 sig1 src2 i2 sig2 tar1 tar2 bri -> let
                       s1 = getNode src1
@@ -609,7 +619,7 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp rg = case sp of
                       t1 = getNode tar1
                       t2 = getNode tar2
                       b = getNode bri
-                     in (nub $ s1 : s2 : t1 : t2 : b : cN,
+                     in (mkNodes $ s1 : s2 : t1 : t2 : [b],
                          [lEdge s1 t1 i1, lEdge s1 b sig1,
                           lEdge s2 t2 i2, lEdge s2 b sig2] ++ cE)
                _ -> error $ show cItem
@@ -626,18 +636,14 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp rg = case sp of
            in ( cN, nub $ iN ++ nNodes ++ hNodes
               , nub $ nPaths ++ cE ++ hideLinks)
         addLinks (cN, cE) = foldl addGDefLinks (cN, [], cE) cN
-        (cNodes, iNodes, cEdges) =
-           addLinks . foldl getNodes ([], []) $ getItems cItems
+        (cNodes, iNodes, cEdges) = addLinks . foldl getNodes ([], [])
+          $ map (NodeIri . getIntrRef) cItems
         (eNodes, eEdges) = foldl getNodes ([], []) eItems
         (cNodes', cEdges') = (nub (cNodes ++ iNodes) \\ eNodes,
                               cEdges \\ eEdges)
         le = Map.insert ln dg Map.empty -- cheating!!!
     (ns, dg') <- insertColimitInGraph le dg cNodes' cEdges' name
     return (sp, ns, dg')
-
-getItems :: [LABELED_ONTO_OR_INTPR_REF] -> [IRI]
-getItems [] = []
-getItems (Labeled _ i : r) = i : getItems r
 
 instMismatchError :: IRI -> Int -> Int -> Range -> Result a
 instMismatchError spname lp la = fatal_error $ iriToStringUnsecure spname

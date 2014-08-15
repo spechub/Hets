@@ -134,11 +134,6 @@ instance PrettyLG LIB_ITEM where
         Newlogic_defn nl _ -> pretty nl
         Newcomorphism_defn nc _ -> pretty nc
 
-instance Pretty NodeOrLink where
-  pretty e = case e of
-    NodeIri i -> pretty i
-    LinkName s t -> fsep [pretty s, funArrow, pretty t]
-
 prettyDownloadItems :: DownloadItems -> [Doc]
 prettyDownloadItems d = case d of
   ItemMaps l -> punctuate comma $ map pretty l

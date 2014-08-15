@@ -21,6 +21,7 @@ module Syntax.Parse_AS_Structured
     , parseCorrespondences
     , translationList
     , hetIRI
+    , nodeOrLink
     ) where
 
 import Logic.Logic
@@ -433,9 +434,15 @@ combineSpec lG = do
     (oir, ps1) <- separatedBy (parseLabeled lG) commaT
     (exl, ps) <- option ([], []) $ do
           s2 <- asKey excludingS
-          (e, ps2) <- separatedBy (hetIRI lG) commaT
+          (e, ps2) <- separatedBy (nodeOrLink lG) commaT
           return (e, s2 : ps2)
     return $ Combination oir exl $ catRange $ s1 : ps1 ++ ps
+
+nodeOrLink :: LogicGraph -> AParser st NodeOrLink
+nodeOrLink l = do
+  i <- hetIRI l
+  option (NodeIri i) .
+    fmap (LinkName i) $ asKey funS >> hetIRI l
 
 parseLabeled :: LogicGraph -> AParser st LABELED_ONTO_OR_INTPR_REF
 parseLabeled lG = do

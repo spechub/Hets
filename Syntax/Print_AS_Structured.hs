@@ -108,6 +108,11 @@ printSPEC lg spec = case spec of
     Combination cs es _ -> fsep $ keyword combineS : ppWithCommas cs
       : if null es then [] else [keyword excludingS, ppWithCommas es]
 
+instance Pretty NodeOrLink where
+  pretty e = case e of
+    NodeIri i -> pretty i
+    LinkName s t -> fsep [pretty s, funArrow, pretty t]
+
 instance Pretty RENAMING where
     pretty = printRENAMING
 

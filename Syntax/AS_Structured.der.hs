@@ -22,7 +22,7 @@ import Common.AS_Annotation
 
 import qualified Data.Set as Set
 
-import Logic.Logic --(AnyLogic,REL_REF)
+import Logic.Logic -- (AnyLogic,REL_REF)
 import Logic.Grothendieck
     ( G_basic_spec
     , G_symb_items_list
@@ -61,10 +61,17 @@ data SPEC = Basic_spec G_basic_spec Range
             -- pos: "logic", Logic_name,":"
           | Data AnyLogic AnyLogic (Annoted SPEC) (Annoted SPEC) Range
             -- pos: "data"
-          | Combination [LABELED_ONTO_OR_INTPR_REF] [EXTENSION_REF] Range
+          | Combination [LABELED_ONTO_OR_INTPR_REF] [NodeOrLink] Range
             {- pos: combine ONTO_OR_INTPR_REF, ...,  ONTO_OR_INTPR_REF
             excluding EXTENSION_REF, ..., EXTENSION_REF -}
             deriving Show
+
+data NodeOrLink
+  = NodeIri { nodeIri :: EXTENSION_REF }
+  | LinkName
+    { srcIri :: IRI
+    , tarIri :: IRI }
+  deriving Show
 
 {- Renaming and Hiding can be performend with intermediate Logic
    mappings / Logic projections.
@@ -138,8 +145,10 @@ data Logic_code = Logic_code (Maybe String)
 data Logic_name = Logic_name String (Maybe Token) (Maybe SPEC_NAME)
   deriving (Show, Eq)
 
-data LABELED_ONTO_OR_INTPR_REF = Labeled (Maybe CombineID) ONTO_OR_INTPR_REF
-  deriving (Show, Eq)
+data LABELED_ONTO_OR_INTPR_REF = Labeled
+  { combineID :: Maybe CombineID
+  , getIntrRef :: ONTO_OR_INTPR_REF
+  } deriving (Show, Eq)
 
 type ONTO_NAME = IRI
 type EXTENSION_NAME = IRI
