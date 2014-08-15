@@ -118,7 +118,7 @@ terminatingKeywords =
 startingKeywords :: [String]
 startingKeywords =
     [ archS, fromS, logicS, newlogicS, refinementS, specS, unitS, viewS
-    , ontologyS, alignmentS, diagramS, equivalenceS, newcomorphismS
+    , ontologyS, alignmentS, graphS, equivalenceS, newcomorphismS
     , interpretationS ]
 
 -- | keywords that may follow a defining equal sign

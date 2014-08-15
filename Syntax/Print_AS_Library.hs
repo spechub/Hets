@@ -124,7 +124,7 @@ instance PrettyLG LIB_ITEM where
         Ref_spec_defn si ab _ -> keyword refinementS <+>
             fsep [structIRI si <+> equals, prettyLG lg ab]
             $+$ keyword endS
-        Diagram_defn si is es _ -> keyword diagramS <+>
+        Diagram_defn si is es _ -> keyword graphS <+>
             fsep ([structIRI si <+> equals, ppWithCommas is]
               ++ if null es then [] else [keyword excludingS, ppWithCommas es])
             $+$ keyword endS

@@ -170,7 +170,7 @@ libItem l =
        return (Syntax.AS_Library.Ref_spec_defn name rsp
                    (catRange ([kRef, kEqu] ++ maybeToList kEnd)))
   <|> -- diagram
-    do kDiag <- asKey diagramS
+    do kDiag <- asKey graphS
        name <- hetIRI l
        kEqu <- equalT
        (is, ps) <- separatedBy (hetIRI l) anComma
