@@ -576,9 +576,13 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp rg = case sp of
   Combination cItems eItems pos -> adjustPos pos $ do
     let getNodes (cN, cE) nodeOrLink =
            let
-            (cItem, isLink) = case nodeOrLink of
-              NodeIri i -> (i, False)
-              LinkName s _ -> (s, True)
+            (cItem, isLink, tarNodes) = case nodeOrLink of
+              NodeIri i -> (i, False, [])
+              LinkName s t -> (s, True,
+                case map fst $ lookupNodeByName
+                         (iriToStringShortUnsecure t) dg of
+                  [] -> error $ "No target node found for " ++ show t
+                  l -> l)
             mkNodes l = if isLink then cN else nub $ l ++ cN
             cEntry = fromMaybe (error $ "No entry for " ++ show cItem)
                      $ lookupGlobalEnvDG cItem dg
@@ -586,17 +590,18 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp rg = case sp of
             lEdge x y m = case filter (\ (_, z, l) ->
                               case nodeOrLink of
                                 NodeIri _ -> z == y && dgl_morphism l == m
-                                LinkName _ t -> isDefEdge (dgl_type l) &&
-                                  elem z (map fst
-                                  $ lookupNodeByName
-                                  (iriToStringShortUnsecure t) dg))
+                                LinkName {} -> isDefEdge (dgl_type l) &&
+                                  elem z tarNodes)
                             $ out bgraph x of
                              [] -> error "No edge found"
                              lE : _ -> lE
            in case cEntry of
                SpecEntry extGenSig -> let
                    n = getNode $ extGenBody extGenSig
-                  in (mkNodes [n], cE)
+                  in (mkNodes [n]
+                     , if isLink
+                       then lEdge n (error "unused1") (error "unused2") : cE
+                       else cE)
                ViewOrStructEntry True (ExtViewSig ns gm eGS) -> let
                    s = getNode ns
                    t = getNode $ extGenBody eGS
