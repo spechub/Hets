@@ -54,10 +54,13 @@ parseOWL quick itype fn = do
     (hasJar, toolPath) <- check4HetsOWLjar jar
     if hasJar then do
         tmpFile <- getTempFile "" "owlTemp.xml"
-        let args = nub $ ["-o", "xml"]
-                 ++ if quick then ["-qk"] else []
-                 ++ [ "-i", itype, "-f", tmpFile, fn ]
-        print $ intercalate " | " args
+        let args = (if quick then (++["-qk"]) else id)
+                  $ [fn]
+                 ++ [ "-o", "xml", tmpFile ]
+               --  ++ [ "-o", "obo", tmpFile ++ ".obo" ]
+               --  ++ [ "-o", "omn", tmpFile ++ ".omn" ]
+               --  ++ [ "-o", "rdf", tmpFile ++ ".rdf" ]
+       -- print $ intercalate " " args
         (exitCode, _, errStr) <- executeProcess "java"
           (["-jar", toolPath </> jar] ++ args) ""
         case (exitCode, errStr) of
