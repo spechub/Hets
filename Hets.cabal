@@ -67,7 +67,7 @@ flag haxml
 Executable hets
   Main-is: hets.hs
   build-depends:
-      HTTP >= 4000.0.5
+      HTTP >= 4000.2.4
     , array >= 0.1.0.0
     , aterm >= 0.1.0.1
     , base >= 4.0.0.0
@@ -78,7 +78,7 @@ Executable hets
     , ghc-prim
     , transformers >= 0.2.0.0
     , mtl >= 2.0.0.0
-    , network >= 2.1.0.0
+    , network >= 2.1.0.0 && < 2.6
     , old-time >= 1.0.0.0
     , parsec >= 2.1.0.0
     , pretty >= 1.0.0.0
