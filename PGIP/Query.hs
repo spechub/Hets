@@ -60,9 +60,9 @@ import Data.List
 import Data.Maybe
 import qualified Data.Map as Map
 
-import Driver.Options
+import Common.Percent
 
-import Numeric
+import Driver.Options
 
 ppList :: [String]
 ppList = map (show . PrettyOut) prettyList ++ ["pdf"]
@@ -117,10 +117,10 @@ type QueryPair = (String, Maybe String)
 
 showQuery :: [QueryPair] -> String
 showQuery = ('?' :) . intercalate "&" . map (\ (s, ms) ->
-  encodeForQuery s ++ maybe "" (('=' :) . encodeForQuery) ms)
+  encode s ++ maybe "" (('=' :) . encode) ms)
 
 showPath :: [String] -> String
-showPath = intercalate "/" . map encodeForQuery
+showPath = intercalate "/" . map encode
 
 showPathQuery :: [String] -> [QueryPair] -> String
 showPathQuery p q = showPath p ++ if null q then "" else showQuery q
@@ -305,24 +305,11 @@ unEsc s = let m = Map.fromList $ map (\ (a, b) -> (b, a)) escMap
   'X' : c : r -> Map.findWithDefault c c m : unEsc r
   c : r -> c : unEsc r
 
-encodeForQuery :: String -> String
-encodeForQuery = concatMap (\ c -> let n = ord c in case c of
-  _ | isAscii c && isAlphaNum c || elem c "_.-" -> [c]
-  ' ' -> "+"
-  _ | n <= 255 -> '%' : (if n < 16 then "0" else "") ++ showHex n ""
-  _ -> "") -- ignore real unicode stuff
-
 decodePlus :: Char -> Char
 decodePlus c = if c == '+' then ' ' else c
 
 decodeQuery :: String -> String
-decodeQuery s = case s of
-  "" -> ""
-  '%' : h1 : h2 : r -> case readHex [h1, h2] of
-      (i, "") : _ -> [decodePlus $ chr i]
-      _ -> ['%', h1, h2]
-    ++ decodeQuery r
-  c : r -> decodePlus c : decodeQuery r
+decodeQuery = map decodePlus . decode
 
 getFragOfCode :: String -> String
 getFragOfCode = getFragment . decodeQuery

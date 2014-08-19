@@ -47,7 +47,6 @@ module Common.IRI
     , iriToStringShortUnsecure
     , hasFullIRI
     , isAbbrev
-    , isUnescapedInIRI
     , isSimple
 
     -- * Parsing
@@ -60,8 +59,6 @@ module Common.IRI
     , parseIRI
     , ncname
 
-    , escapeIRIString
-    , unEscapeString
     , expandCurie
     , relativeTo
     , relativeFrom
@@ -82,8 +79,7 @@ import Data.Maybe
 import Common.Id
 import Common.Lexer
 import Common.Parsec
-
-import Numeric (showHex)
+import Common.Percent
 
 -- * The IRI datatype
 
@@ -242,18 +238,6 @@ escaped = char '%' <:> hexDigit <:> single hexDigit
 
 -- RFC3986, section 2.2
 
-{- | Returns 'True' if the character is a \"reserved\" character in a
-IRI.  To include a literal instance of one of these characters in a
-component of a IRI, it must be escaped. -}
-isReserved :: Char -> Bool
-isReserved c = isGenDelims c || isSubDelims c
-
-isGenDelims :: Char -> Bool
-isGenDelims c = c `elem` ":/?#[]@"
-
-isSubDelims :: Char -> Bool
-isSubDelims c = c `elem` "!$&'()*+,;="
-
 subDelims :: IRIParser st String
 subDelims = single $ satisfy isSubDelims
 
@@ -263,11 +247,11 @@ subDelims = single $ satisfy isSubDelims
 a IRI.  These characters do not need to be escaped in a IRI.  The
 only characters allowed in a IRI are either \"reserved\",
 \"unreserved\", or an escape sequence (@%@ followed by two hex digits). -}
-isUnreserved :: Char -> Bool
-isUnreserved c = isAlphaNumChar c || c `elem` "-_.~" || isUcsChar c
+isIUnreserved :: Char -> Bool
+isIUnreserved c = isUnreserved c || isUcsChar c
 
 iunreservedChar :: IRIParser st String
-iunreservedChar = single $ satisfy isUnreserved
+iunreservedChar = single $ satisfy isIUnreserved
 
 iriWithPos :: IRIParser st IRI -> IRIParser st IRI
 iriWithPos parser = do
@@ -793,43 +777,6 @@ iriAuthToString iuserinfomap
     ("//" ++) . (if null uinfo then id else (iuserinfomap uinfo ++))
              . (regname ++)
              . (iport ++)
-
--- * Character classes
-
--- | Returns 'True' if the character is allowed unescaped in a IRI.
-isUnescapedInIRI :: Char -> Bool
-isUnescapedInIRI c = isReserved c || isUnreserved c
-
--- * Escape sequence handling
-
-{- | Escape character if supplied predicate is not satisfied,
-otherwise return character as singleton string. -}
-escapeIRIChar :: (Char -> Bool) -> Char -> String
-escapeIRIChar p c
-    | p c = [c]
-    | otherwise = '%' : myShowHex (ord c)
-    where
-        myShowHex :: Int -> String
-        myShowHex n = case map toUpper $ showHex n "" of
-            [] -> "00"
-            [d] -> ['0', d]
-            cs -> cs
-
--- | Can be used to make a string valid for use in a IRI.
-escapeIRIString
-    :: (Char -> Bool)     {- ^ a predicate which returns 'False'
-                        if the character should be escaped -}
-    -> String           -- ^ the string to process
-    -> String           -- ^ the resulting IRI string
-escapeIRIString p = concatMap (escapeIRIChar p)
-
-{- | Turns all instances of escaped characters in the string back
-into literal characters. -}
-unEscapeString :: String -> String
-unEscapeString [] = ""
-unEscapeString ('%' : x1 : x2 : s) | isHexDigit x1 && isHexDigit x2 =
-    chr (digitToInt x1 * 16 + digitToInt x2) : unEscapeString s
-unEscapeString (c : s) = c : unEscapeString s
 
 -- * Resolving a relative IRI relative to a base IRI
 

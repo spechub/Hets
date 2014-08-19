@@ -12,8 +12,12 @@ http://tools.ietf.org/html/rfc3986
 -}
 
 module Common.Percent
-  ( encode
-  , encodeBut
+  ( encodeBut
+  , isReserved
+  , isGenDelims
+  , isSubDelims
+  , isUnreserved
+  , encode
   , decode
   ) where
 
@@ -32,10 +36,26 @@ encodeChar8 keep = concatMap $ \ c -> case c of
 encodeBut :: (Char -> Bool) -> String -> String
 encodeBut keep = encodeChar8 keep . Char8.unpack . UTF8.fromString
 
+-- http://tools.ietf.org/html/rfc3986#section-2.2
+isReserved :: Char -> Bool
+isReserved c = isGenDelims c || isSubDelims c
+
+isGenDelims :: Char -> Bool
+isGenDelims c = c `elem` ":/?#[]@"
+
+isSubDelims :: Char -> Bool
+isSubDelims c = c `elem` "!$&'()*+,;="
+
+-- http://tools.ietf.org/html/rfc3986#section-2.3
+isUnreserved :: Char -> Bool
+isUnreserved c = isAlphaNum c && isAscii c || elem c "_.-~"
+
 {- according to http://tools.ietf.org/html/rfc3986#section-2.3
 unreserved characters should not be encoded -}
+
+-- | encode all chars but not the unreserved (ascii) ones
 encode :: String -> String
-encode = encodeBut $ \ c -> isAlphaNum c && isAscii c || elem c "_.-~"
+encode = encodeBut isUnreserved
 
 decodeChar8 :: String -> String
 decodeChar8 s = case s of
@@ -44,5 +64,6 @@ decodeChar8 s = case s of
     -> chr (digitToInt x1 * 16 + digitToInt x2) : decodeChar8 r
   c : r -> c : decodeChar8 r
 
+-- | decode percent signs followed by two hex-digits
 decode :: String -> String
 decode = UTF8.toString . Char8.pack . decodeChar8
