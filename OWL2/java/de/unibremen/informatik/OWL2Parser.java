@@ -26,21 +26,14 @@ public class OWL2Parser {
     private static final Set<OWLOntology> exported = new HashSet<OWLOntology>();
     private static OWLOntologyManager manager = setupManagerWithMissingImportListener();
     private static OWLOntologyIRIMapperImpl mapper = new OWLOntologyIRIMapperImpl();
-    private static String inp = "";
-    private static BufferedWriter wrt_out = null;
+    private static URI uri = null;
     
     public static void main(String[] args) {
         // A simple example of how to load and save an ontology
         try {
-            if (!parseARGuments(args)) {
-                showHelpScreen();
-                return;
-            }
-            wrt_out.write("<Ontologies>\n");
-            URI uri;
-            if (inp.startsWith("http:") || inp.startsWith("https:"))
-                uri = new URI(inp);
-            else uri = new File(inp).toURI();
+            BufferedWriter out = parseARGuments(args);
+            
+            out.write("<Ontologies>\n");
             URLConnection con = uri.toURL().openConnection();
             con.addRequestProperty("Accept", "text/plain");
             StreamDocumentSource sds = new StreamDocumentSource(con.getInputStream(), IRI.create(uri));
@@ -59,7 +52,7 @@ public class OWL2Parser {
                 missingImports.clear();
                 ontology = manager.loadOntologyFromOntologyDocument(sds, config);
                 for (IRI mi : missingImports) {
-                    wrt_out.write("<Missing>" + mi + "</Missing>\n");
+                    out.write("<Missing>" + mi + "</Missing>\n");
                 }
             }
             ontologies = getImports(ontology, new HashSet<OWLOntology>());
@@ -77,14 +70,14 @@ public class OWL2Parser {
                     OWLOntologyMerger merger = new OWLOntologyMerger(manager);
                     merged = merger.createMergedOntology(manager, mergedOntologyIRI);
                 }
-                renderUsingOption(merged, wrt_out);
+                renderUsingOption(merged, out);
             } else {
                 ontologies.add(ontology);
-                exportImports(wrt_out);
+                exportImports(out);
             }
-            wrt_out.write("\n</Ontologies>\n");
-            wrt_out.flush();
-            wrt_out.close();
+            out.write("\n</Ontologies>\n");
+            out.flush();
+            out.close();
         } catch (Exception ex) {
             System.err.println("OWL parse error: " + ex.getMessage());
             ex.printStackTrace();
@@ -96,8 +89,8 @@ public class OWL2Parser {
         String helpText =
            "Usage: processor [<options..>] <URI>\n"
          + "_>_options_<______________\n"
-         + " | -o <tp>  ..input type\n"
-         + " | -i <tp>  ..output type\n"
+         + " | -i <tp>  ..input type\n"
+         + " | -o <tp>  ..output type\n"
          + " - - - tp  <- [owl xml omn rdf obo dol ttl]\n"
          + " | -f <nm>  ..write output file\n"
          + " - - - nm  <- name of output file\n"
@@ -107,46 +100,44 @@ public class OWL2Parser {
     }
 
     // parse arguments according to option set
-    // return false for unknown stuff, or when IRI is not set
-    private static Boolean parseARGuments( String[] args )
+    // fails for unknown or incomplete arguments, or when IRI is not set
+    private static BufferedWriter parseARGuments( String[] args )
         throws Exception
     {
-        if (args.length == 0) return false;
-
+        String msg = "OWL2Parser.parseARGuments: ";
+        if (args.length == 0)
+            throw new Exception (msg + "no arguments provided");
         input_type = OPTION.MANCHESTER;
         output_type = OPTION.MANCHESTER;
-        String tmpFileName = "";
+        String tmpFileName = "", inp = "";
         for (int i = 0; i < args.length; i++) {
             String arg = args[i].toLowerCase();
             if (arg.startsWith("-")) {
                 Boolean hasNext = i < args.length-1;
                 if (arg.equals("-i") && hasNext) {
-                    i += 1;
-                    input_type = parseOption(args[i]);
+                    input_type = parseOption(args[++i]);
                 } else if (arg.equals("-o") && hasNext) {
-                    i += 1;
-                    output_type = parseOption(args[i]);
+                    output_type = parseOption(args[++i]);
                 } else if (arg.equals("-f") && hasNext) {
-                    i += 1;
-                    tmpFileName = args[i];
+                    tmpFileName = args[++i];
                 } else if (arg.equals("-qk") || arg.equals("-q")) {
                     quick = true;
                 } else if (arg.equals("-h") || arg.equals("--help")) {
                     showHelpScreen();
-                } else
-                    return false;
+                } else throw new Exception (msg + "unknown command, "
+                    + "or missing second argument for: <" + arg + ">");
             } else {
-                // TODO: could test here if actually is an IRI
-                // .. and test if it's only set once.
-                inp = args[i]; // read again to avoid earlier 'toLowerCase'
+                if (!inp.equals(""))
+                    throw new Exception (msg + "ambigious IRI");
+                inp = args[i]; // read again to undo earlier 'toLowerCase'
+                if (inp.startsWith("http:") || inp.startsWith("https:"))
+                    uri = new URI(inp);
+                else uri = new File(inp).toURI();
         }  }
-        if (inp.equals("")) return false;
-        try {
-          if (tmpFileName.equals("")) {
-              wrt_out = new BufferedWriter(new OutputStreamWriter(System.out));
-          } else wrt_out = new BufferedWriter(new FileWriter(tmpFileName));
-        } catch (Exception e) { throw (e); }
-        return true;
+        if (inp.equals("")) throw new Exception (msg + "IRI not set");
+        if (tmpFileName.equals(""))
+            return new BufferedWriter(new OutputStreamWriter(System.out));
+        else return new BufferedWriter(new FileWriter(tmpFileName));
     }
 
     private static OPTION parseOption (String opt) {
