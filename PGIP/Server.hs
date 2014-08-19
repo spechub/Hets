@@ -204,17 +204,17 @@ hetsServer opts1 = do
          in case eith2 of
          Left err -> queryFail err respond
          Right (qr2, fs2) ->
-          let unknown = filter (`notElem` allQueryKeys) $ map fst qr2
-          in if null unknown then
            let newOpts = foldl makeOpts opts $ fs ++ map snd fs2
            in if isRESTfull pathBits then
+              let unknown = filter (`notElem` allQueryKeys) $ map fst qr2
+              in if null unknown then
               parseRESTfull newOpts sessRef pathBits
               (map fst fs2 ++ map (\ (a, b) -> a ++ "=" ++ b) vs)
               qr2 meth respond
+              else queryFail ("unknown query key(s): " ++ show unknown) respond
            -- only otherwise stick to the old response methods
            else oldWebApi newOpts tempLib permFile sessRef re pathBits qr2
              meth respond
-          else queryFail ("unknown query key(s): " ++ show unknown) respond
 
 -- | the old API that supports downloading files and interactive stuff
 oldWebApi :: HetcatsOpts -> FilePath -> FilePath -> Cache -> Request -> [String]
