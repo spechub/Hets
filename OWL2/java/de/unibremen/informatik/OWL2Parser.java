@@ -7,18 +7,19 @@ import org.semanticweb.owlapi.model.*;
 import org.semanticweb.owlapi.util.OWLOntologyMerger;
 import org.semanticweb.owlapi.model.OWLOntologyLoaderConfiguration;
 import uk.ac.manchester.cs.owl.owlapi.mansyntaxrenderer.ManchesterOWLSyntaxRenderer;
+//import org.coode.owlapi.manchesterowlsyntax.ManchesterOWLSyntaxEditorParser;
+//import org.coode.manchesterowlsyntax.ManchesterOWLSyntaxOntologyFormat;
 import uk.ac.manchester.cs.owl.owlapi.OWLOntologyIRIMapperImpl;
 
 import java.io.*;
 import java.net.*;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.ArrayList;
 
 public class OWL2Parser {
     private static enum OPTION {OWL_XML, MANCHESTER, RDF_XML, OBO, TURTLE, DOL}
 
-    private static OPTION input_type;
-    private static OPTION output_type;
     private static Boolean quick = false;
     private static Boolean cyclic = false;
     private static final Set<IRI> missingImports = new HashSet<IRI>();
@@ -27,13 +28,14 @@ public class OWL2Parser {
     private static OWLOntologyManager manager = setupManagerWithMissingImportListener();
     private static OWLOntologyIRIMapperImpl mapper = new OWLOntologyIRIMapperImpl();
     private static URI uri = null;
-    
+
     public static void main(String[] args) {
         // A simple example of how to load and save an ontology
         try {
-            BufferedWriter out = parseARGuments(args);
+            OWLOutputHandler out = new OWLOutputHandler();
+            parseArgs (args, out);
             
-            out.write("<Ontologies>\n");
+            out.writeXml("<Ontologies>\n");
             URLConnection con = uri.toURL().openConnection();
             con.addRequestProperty("Accept", "text/plain");
             StreamDocumentSource sds = new StreamDocumentSource(con.getInputStream(), IRI.create(uri));
@@ -52,7 +54,7 @@ public class OWL2Parser {
                 missingImports.clear();
                 ontology = manager.loadOntologyFromOntologyDocument(sds, config);
                 for (IRI mi : missingImports) {
-                    out.write("<Missing>" + mi + "</Missing>\n");
+                    out.writeXml("<Missing>" + mi + "</Missing>\n");
                 }
             }
             ontologies = getImports(ontology, new HashSet<OWLOntology>());
@@ -75,7 +77,7 @@ public class OWL2Parser {
                 ontologies.add(ontology);
                 exportImports(out);
             }
-            out.write("\n</Ontologies>\n");
+            out.writeXml("\n</Ontologies>\n");
             out.flush();
             out.close();
         } catch (Exception ex) {
@@ -84,73 +86,107 @@ public class OWL2Parser {
         }
     }
 
-    private static void showHelpScreen()
-    {
-        String helpText =
-           "Usage: processor [<options..>] <URI>\n"
+    // print usage information screen
+    private static void showHelpScreen() {
+        System.out.println ("Usage: processor [<options..>] <URI>\n"
          + "_>_options_<______________\n"
-         + " | -i <tp>  ..input type\n"
-         + " | -o <tp>  ..output type\n"
-         + " - - - tp  <- [owl xml omn rdf obo dol ttl]\n"
-         + " | -f <nm>  ..write output file\n"
-         + " - - - nm  <- name of output file\n"
+         + " | -o <tp> <fn>  ..write output to file\n"
+         + " - - - tp  <- type [: owl xml omn rdf obo dol ttl]\n"
+         + " - - - fn  <- filename\n"
+         + " | -o-sys <tp> ..write output to system.out\n"
+         + " - - - - - tp  <- type\n"
          + " | -qk  ..internal(!) sets 'quick' option\n"
-         + " | -h  ..this helptext";
-        System.out.println( helpText );
-    }
+         + " | -h  ..this helptext"
+    ); }
 
     // parse arguments according to option set
     // fails for unknown or incomplete arguments, or when IRI is not set
-    private static BufferedWriter parseARGuments( String[] args )
-        throws Exception
+    private static void parseArgs
+        (String[] args, OWLOutputHandler out) throws Exception
     {
-        String msg = "OWL2Parser.parseARGuments: ";
+        String inp = "", msg = "OWL2Parser.parseArgs: ";
         if (args.length == 0)
             throw new Exception (msg + "no arguments provided");
-        input_type = OPTION.MANCHESTER;
-        output_type = OPTION.MANCHESTER;
-        String tmpFileName = "", inp = "";
         for (int i = 0; i < args.length; i++) {
             String arg = args[i].toLowerCase();
             if (arg.startsWith("-")) {
-                Boolean hasNext = i < args.length-1;
-                if (arg.equals("-i") && hasNext) {
-                    input_type = parseOption(args[++i]);
-                } else if (arg.equals("-o") && hasNext) {
-                    output_type = parseOption(args[++i]);
-                } else if (arg.equals("-f") && hasNext) {
-                    tmpFileName = args[++i];
+                if (arg.equals("-o")){
+                    if ( ! (i < args.length-2)) throw new Exception (msg
+                      + "insufficient arguments (-o [format] [filename])");
+                    out.add (parseOption (args[++i].toLowerCase(), msg), args[++i]);
+                } else if (arg.equals("-o-sys")){
+                    if ( ! (i < args.length-1)) throw new Exception (msg
+                      + "insufficient arguments (-o-sys [format])");
+                    out.add (parseOption (args[++i].toLowerCase(), msg));
                 } else if (arg.equals("-qk") || arg.equals("-q")) {
                     quick = true;
                 } else if (arg.equals("-h") || arg.equals("--help")) {
                     showHelpScreen();
-                } else throw new Exception (msg + "unknown command, "
-                    + "or missing second argument for: <" + arg + ">");
+                } else throw new Exception (msg + "unknown command <"+arg+">");
             } else {
                 if (!inp.equals(""))
                     throw new Exception (msg + "ambigious IRI");
                 inp = args[i]; // read again to undo earlier 'toLowerCase'
-                if (inp.startsWith("http:") || inp.startsWith("https:"))
+                if (arg.startsWith("http:") || arg.startsWith("https:"))
                     uri = new URI(inp);
                 else uri = new File(inp).toURI();
         }  }
         if (inp.equals("")) throw new Exception (msg + "IRI not set");
-        if (tmpFileName.equals(""))
-            return new BufferedWriter(new OutputStreamWriter(System.out));
-        else return new BufferedWriter(new FileWriter(tmpFileName));
     }
 
-    private static OPTION parseOption (String opt) {
-        opt = opt.toLowerCase();
-        if(opt.equals("xml") || opt.equals("owl")) return OPTION.OWL_XML;
-        else if(opt.equals("omn")) return OPTION.MANCHESTER;
-        else if(opt.equals("rdf")) return OPTION.RDF_XML;
-        else if(opt.equals("obo")) return OPTION.OBO;
-        else if(opt.equals("dol")) return OPTION.DOL;
-        else if(opt.equals("ttl")) return OPTION.TURTLE;
-        return OPTION.MANCHESTER; // use omn as default
+    private static OPTION parseOption (String opt, String err) throws Exception {
+        if (opt.equals("xml") || opt.equals("owl")) return OPTION.OWL_XML;
+        else if (opt.equals("omn")) return OPTION.MANCHESTER;
+        else if (opt.equals("rdf")) return OPTION.RDF_XML;
+        else if (opt.equals("obo")) return OPTION.OBO;
+        else if (opt.equals("dol")) return OPTION.DOL;
+        else if (opt.equals("ttl")) return OPTION.TURTLE;
+        throw new Exception (err + "unrecognized owl-format: " + opt);
     }
-        
+
+    // custem OntolgyWriter bundles a BufferedWriter with an OWL output format
+    protected static class OWLOntologyWriter extends BufferedWriter {
+        protected static OPTION option;
+
+        OWLOntologyWriter (String fn, OPTION op) throws Exception {
+                super (new FileWriter (fn));
+                option = op;
+        }
+        OWLOntologyWriter (OPTION op) throws Exception {
+            super (new OutputStreamWriter (System.out));
+            option = op;
+        }
+        // conveinience method to avoid xml-tags in other-format output
+        void writeXml( String s ) throws Exception {
+            if (option == OPTION.OWL_XML) super.write( s );
+        }
+    }
+
+   // output handler allows and handles a list of output-requests
+   protected static class OWLOutputHandler {
+        static ArrayList<OWLOntologyWriter> writer
+            = new ArrayList<OWLOntologyWriter>();
+
+        void add (OPTION op) throws Exception {
+          writer.add (new OWLOntologyWriter (op));
+        }
+        void add (OPTION op, String filename) throws Exception {
+          writer.add (new OWLOntologyWriter (filename, op));
+        }
+        void writeXml (String s) throws Exception {
+            for (OWLOntologyWriter out : writer) {
+                out.writeXml (s);
+        }   }
+        void flush () throws Exception {
+            for (OWLOntologyWriter out : writer) {
+                out.flush ();
+        }   }
+        void close () throws Exception {
+            for (OWLOntologyWriter out : writer) {
+                out.close ();
+        }   }
+    }
+
     private static OWLOntologyManager setupManagerWithMissingImportListener () {
         OWLOntologyManager mgr = OWLManager.createOWLOntologyManager();
         mgr.addMissingImportListener(new HasMissingImports());
@@ -178,7 +214,7 @@ public class OWL2Parser {
         return s;
     }
 
-    private static void exportImports (BufferedWriter out) {
+    private static void exportImports (OWLOutputHandler out) {
         Boolean changed;
         do {
             changed = false;
@@ -192,8 +228,9 @@ public class OWL2Parser {
         } while (changed);
     }
 
-    private static void renderUsingOption (OWLOntology onto, BufferedWriter out) {
-        switch (output_type) {
+    private static void renderUsingOption (OWLOntology onto, OWLOutputHandler outmgr) {
+      for (OWLOntologyWriter out : outmgr.writer)
+        switch (out.option) {
             case OWL_XML :
                 renderAsXml(onto, out);
                 break;
@@ -218,6 +255,9 @@ public class OWL2Parser {
 
     private static void renderAsOmn (OWLOntology onto, BufferedWriter out) {
         try {
+  //          ManchesterOWLSyntaxOntologyFormat omn = new ManchesterOWLSyntaxOntologyFormat();
+  //          manager.setOntologyFormat(onto, omn);
+  //          manager.saveOntology(onto, omn, out);
             ManchesterOWLSyntaxRenderer rendi = new ManchesterOWLSyntaxRenderer();
             rendi.render(onto, out);
         } catch (OWLRendererException ex) {
