@@ -79,6 +79,7 @@ import Control.Monad.Trans
 import Data.Char
 import Data.List
 import Data.Maybe
+import Data.Tuple (swap)
 
 -- | short version without date for ATC files
 hetsVersion :: String
@@ -496,10 +497,9 @@ instance Show InType where
 
 -- maybe this optional tree prefix can be omitted
 instance Read InType where
-    readsPrec _ = readShowAux $ map ( \ i -> (show i, i))
-                  (plainInTypes ++ aInTypes)
-                  ++ [(treeS ++ genTermS ++ show at, ATermIn at)
-                           | at <- [BAF, NonBAF]]
+    readsPrec _ = readShowAux $ concatMap showAll (plainInTypes ++ aInTypes)
+      where showAll i@(ATermIn _) = [(show i, i), (treeS ++ show i, i)]
+            showAll i = [(show i, i)]
 
 -- | 'ATType' describes distinct types of ATerms
 data ATType = BAF | NonBAF deriving Eq
@@ -508,6 +508,20 @@ instance Show ATType where
   show a = case a of
     BAF -> bafS
     NonBAF -> ""
+
+-- OwlXmlIn needs to be before OWLIn to avoid a read error in parseInType1
+plainInTypes :: [InType]
+plainInTypes =
+  [ CASLIn, HetCASLIn ]
+  ++ map OWLIn plainOwlFormats ++
+  [ HaskellIn, ExperimentalIn
+  , MaudeIn, TwelfIn
+  , HolLightIn, IsaIn, ThyIn, PrfIn, OmdocIn, ProofCommand
+  , CommonLogicIn False, CommonLogicIn True
+  , DgXml, FreeCADIn, Xmi, Qvt, TPTPIn ]
+
+aInTypes :: [InType]
+aInTypes = [ ATermIn x | x <- [BAF, NonBAF] ]
 
 -- | 'OWLFormat' lists possibilities for OWL syntax (in + out)
 data OWLFormat =
@@ -523,11 +537,10 @@ defaultOwlFormat :: OWLFormat
 defaultOwlFormat = Manchester
 
 instance Read OWLFormat where
-  readsPrec _ s = filter ((== s) . snd) owlExtensionsMap1
+  readsPrec _ = readShowAux owlExtensionsMap
 
 instance Show OWLFormat where
-  show ty = maybe "owl.?" fst
-    $ find ((== ty) . snd) owlExtensionsMap
+  show ty = maybe "owl.?" id $ lookup ty owlExtensionsMap1
 
 plainOwlFormats :: [OWLFormat]
 plainOwlFormats = [ Manchester, OwlXml, RdfXml, OBO, DOL, Turtle ]
@@ -539,32 +552,18 @@ owlExtensionsMap :: [(String, OWLFormat)]
 owlExtensionsMap =
   [ ("omn", Manchester)
   , ("owl", OwlXml)
-  , ("xml", OwlXml)
+  , ("xml", OwlXml) -- should this be reserved for dgxml?
   , ("rdf", RdfXml)
   , ("obo", OBO)
   , ("dol", DOL)
   , ("ttl", Turtle) ]
 
 owlExtensionsMap1 :: [(OWLFormat, String)]
-owlExtensionsMap1 = map (\(a,b) -> (b,a)) owlExtensionsMap
+owlExtensionsMap1 = map swap owlExtensionsMap
 
 parseOwlFormat :: String -> InType
 parseOwlFormat s = OWLIn $
   maybe defaultOwlFormat id $ lookup s owlExtensionsMap
-
--- OwlXmlIn needs to be before OWLIn to avoid a read error in parseInType1
-plainInTypes :: [InType]
-plainInTypes =
-  [ CASLIn, HetCASLIn ]
-  ++ map OWLIn plainOwlFormats ++
-  [ HaskellIn, ExperimentalIn
-  , MaudeIn, TwelfIn
-  , HolLightIn, IsaIn, ThyIn, PrfIn, OmdocIn, ProofCommand
-  , CommonLogicIn False, CommonLogicIn True
-  , DgXml, FreeCADIn, Xmi, Qvt, TPTPIn ]
-
-aInTypes :: [InType]
-aInTypes = [ ATermIn x | x <- [BAF, NonBAF] ]
 
 data SPFType = ConsistencyCheck | ProveTheory
 
@@ -641,7 +640,7 @@ outTypeList = let dl = [Delta, Fully] in
     ++ [ GraphOut f | f <- graphList ]
 
 instance Read OutType where
-    readsPrec _ = readShowAux $ map ( \ o -> (show o, o)) outTypeList
+    readsPrec _ = readShow outTypeList
 
 data Delta = Delta | Fully
 
