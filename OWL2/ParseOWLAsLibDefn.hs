@@ -47,16 +47,14 @@ import Text.XML.Light hiding (QName)
 -- | call for owl parser (env. variable $HETS_OWL_TOOLS muss be defined)
 parseOWL :: Bool                  -- ^ Sets Option.quick
          -> String                -- ^ Input-Type (OMN, OWL-Xml, RDF, OBO, ..)
-         -> Maybe String          -- ^ Output-Type
          -> FilePath              -- ^ local filepath or uri
          -> IO [LIB_DEFN]         -- ^ map: uri -> OntologyFile
-parseOWL quick itype otype fn = do
+parseOWL quick itype fn = do
     let jar = "OWL2Parser.jar"
     (hasJar, toolPath) <- check4HetsOWLjar jar
     if hasJar then do
-        -- TODO parse output type here already ??
         tmpFile <- getTempFile "" "owlTemp.xml"
-        let args = nub $ maybe [] (\a -> ["-o", a]) otype
+        let args = nub $ ["-o", "xml"]
                  ++ if quick then ["-qk"] else []
                  ++ [ "-i", itype, "-f", tmpFile, fn ]
         print $ intercalate " | " args
@@ -65,7 +63,6 @@ parseOWL quick itype otype fn = do
         case (exitCode, errStr) of
           (ExitSuccess, "") -> do
             cont <- L.readFile tmpFile
-            -- TODO looking @ it for debug only
             removeFile tmpFile
             parseProc cont
           _ -> error $ "process stop! " ++ shows exitCode "\n"
