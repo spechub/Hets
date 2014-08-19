@@ -152,8 +152,8 @@ genTermS = "gen_trm"
 treeS = "tree."
 bafS = ".baf"
 
-graphS, ppS, envS, deltaS, prfS, omdocS, hsS, experimentalS :: String
-graphS = "graph."
+graphE, ppS, envS, deltaS, prfS, omdocS, hsS, experimentalS :: String
+graphE = "graph."
 ppS = "pp."
 envS = "env"
 deltaS = ".delta"
@@ -564,7 +564,7 @@ data OutType =
 instance Show OutType where
   show o = case o of
     PrettyOut p -> ppS ++ show p
-    GraphOut f -> graphS ++ show f
+    GraphOut f -> graphE ++ show f
     Prf -> prfS
     EnvOut -> envS
     OWLOut -> "omn"
@@ -729,7 +729,7 @@ options = let
               ++ bracket deltaS ++ crS
        ++ bS ++ ppS ++ joinBar (map show prettyList) ++ crS
        ++ bS ++ ppS ++ joinBar (map show prettyList2) ++ crS
-       ++ bS ++ graphS ++ joinBar (map show graphList) ++ crS
+       ++ bS ++ graphE ++ joinBar (map show graphList) ++ crS
        ++ bS ++ dfgS ++ bracket cS ++ crS
        ++ bS ++ tptpS ++ bracket cS)
     , Option "U" ["xupdate"] (ReqArg XUpdate "FILE")

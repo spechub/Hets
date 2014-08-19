@@ -169,8 +169,8 @@ libItem l =
        kEnd <- optEnd
        return (Syntax.AS_Library.Ref_spec_defn name rsp
                    (catRange ([kRef, kEqu] ++ maybeToList kEnd)))
-  <|> -- diagram
-    do kDiag <- asKey diagramS
+  <|> -- graph
+    do kGraph <- asKey graphS
        name <- hetIRI l
        kEqu <- equalT
        (is, ps) <- separatedBy (hetIRI l) anComma
@@ -179,8 +179,8 @@ libItem l =
          (es, qs) <- separatedBy (hetIRI l) anComma
          return (es, kEx : qs)
        kEnd <- optEnd
-       return . Diagram_defn name is es
-         . catRange $ [kDiag, kEqu] ++ ps ++ qs ++ maybeToList kEnd
+       return . Graph_defn name is es
+         . catRange $ [kGraph, kEqu] ++ ps ++ qs ++ maybeToList kEnd
   <|> -- arch spec
     do kArch <- asKey archS
        kASpec <- asKey specS
