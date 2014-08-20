@@ -25,7 +25,7 @@ import OMDoc.DataTypes
 
 import Common.Utils (splitBy)
 import Common.Result
-import Common.IRI (isUnescapedInIRI, escapeIRIString, unEscapeString)
+import Common.Percent
 
 import Data.Maybe
 import Data.List
@@ -170,10 +170,10 @@ toOmobj c = inAContent el_omobj [attr_om] $ Just c
 {- url escaping and unescaping.
 We use ? and / as special characters, so we need them to be encoded in names -}
 urlEscape :: String -> String
-urlEscape = escapeIRIString isUnescapedInIRI
+urlEscape = encodeBut (`notElem` "%/?")
 
 urlUnescape :: String -> String
-urlUnescape = unEscapeString
+urlUnescape = decode
 
 
 -- to- and from-string functions

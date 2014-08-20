@@ -37,6 +37,7 @@ import Common.DocUtils
 import Common.Id
 import Common.IRI
 import Common.Keywords
+import Common.Percent
 import Common.Utils
 
 import Data.Char
@@ -91,7 +92,7 @@ emptyLibName s = iriLibName .
 
 filePathToIri :: FilePath -> IRI
 filePathToIri fp = fromMaybe (error $ "filePathToIri: " ++ fp)
-  . parseIRIReference $ escapeIRIString isUnescapedInIRI fp
+  . parseIRIReference $ encodeBut (\ c -> isUnreserved c || isReserved c) fp
 
 filePathToLibId :: FilePath -> IRI
 filePathToLibId = setAngles True . filePathToIri
