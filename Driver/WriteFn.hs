@@ -90,6 +90,7 @@ import VSE.ToSExpr
 #ifndef NOOWLLOGIC
 import OWL2.CreateOWL
 import OWL2.Logic_OWL2
+import OWL2.ParseOWLAsLibDefn (writeOWLFile)
 import qualified OWL2.ManchesterPrint as OWL2 (prepareBasicTheory)
 import qualified OWL2.ManchesterParser as OWL2 (basicSpec)
 #endif
@@ -274,6 +275,9 @@ writeTheory ins nam opts filePrefix ga
               Left err -> putIfVerbose opts 0 $ show err
               _ -> putIfVerbose opts 3 $ "reparsed: " ++ f
             writeVerbFile opts f owltext
+            case oty of
+              Manchester -> return()
+              _ -> writeOWLFile False [(show oty, f ++ (':' : show oty))] f
 #endif
     CLIFOut
       | lang == language_name CommonLogic -> do
