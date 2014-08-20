@@ -7,8 +7,6 @@ import org.semanticweb.owlapi.model.*;
 import org.semanticweb.owlapi.util.OWLOntologyMerger;
 import org.semanticweb.owlapi.model.OWLOntologyLoaderConfiguration;
 import uk.ac.manchester.cs.owl.owlapi.mansyntaxrenderer.ManchesterOWLSyntaxRenderer;
-//import org.coode.owlapi.manchesterowlsyntax.ManchesterOWLSyntaxEditorParser;
-//import org.coode.manchesterowlsyntax.ManchesterOWLSyntaxOntologyFormat;
 import uk.ac.manchester.cs.owl.owlapi.OWLOntologyIRIMapperImpl;
 
 import java.io.*;
@@ -22,7 +20,7 @@ public class OWL2Parser {
 
     private static Boolean quick = false;
     private static Boolean cyclic = false;
-    private static final Set<IRI> missingImports = new HashSet<IRI>();
+    protected static final Set<IRI> missingImports = new HashSet<IRI>();
     private static Set<OWLOntology> ontologies;
     private static final Set<OWLOntology> exported = new HashSet<OWLOntology>();
     private static OWLOntologyManager manager = setupManagerWithMissingImportListener();
@@ -34,28 +32,27 @@ public class OWL2Parser {
         try {
             OWLOutputHandler out = new OWLOutputHandler();
             parseArgs (args, out);
-            
-            out.writeXml("<Ontologies>\n");
+
             URLConnection con = uri.toURL().openConnection();
             con.addRequestProperty("Accept", "text/plain");
-            StreamDocumentSource sds = new StreamDocumentSource(con.getInputStream(), IRI.create(uri));
+            StreamDocumentSource sds = new StreamDocumentSource
+                                   (con.getInputStream(), IRI.create(uri));
             OWLOntologyLoaderConfiguration config = new OWLOntologyLoaderConfiguration();
-            config = config.setMissingImportHandlingStrategy(MissingImportHandlingStrategy.SILENT);
+            config = config.setMissingImportHandlingStrategy
+                 (MissingImportHandlingStrategy.SILENT);
             OWLOntology ontology = manager.loadOntologyFromOntologyDocument(sds, config);              
             if (!missingImports.isEmpty()) {
                 IRI ontohub = IRI.create("https://ontohub.org/external/");
                 for (IRI mi : missingImports) {   
-                    mapper.addMapping(mi, ontohub.resolve(mi.toURI().getHost() + mi.toURI().getPath()));
+                    mapper.addMapping(mi,
+                      ontohub.resolve(mi.toURI().getHost() + mi.toURI().getPath()));
                 }
                 // reset the manager. clear out imports to avoid duplicates 
                 manager = setupManagerWithMissingImportListener();
                 manager.addIRIMapper(mapper);
-                // collect and report missing imports again.
+                // collect missing imports again to report them in output file.
                 missingImports.clear();
                 ontology = manager.loadOntologyFromOntologyDocument(sds, config);
-                for (IRI mi : missingImports) {
-                    out.writeXml("<Missing>" + mi + "</Missing>\n");
-                }
             }
             ontologies = getImports(ontology, new HashSet<OWLOntology>());
             if (cyclic) {
@@ -72,14 +69,11 @@ public class OWL2Parser {
                     OWLOntologyMerger merger = new OWLOntologyMerger(manager);
                     merged = merger.createMergedOntology(manager, mergedOntologyIRI);
                 }
-                renderUsingOption(merged, out);
+                out.renderUsingOption(merged);
             } else {
                 ontologies.add(ontology);
                 exportImports(out);
             }
-            out.writeXml("\n</Ontologies>\n");
-            out.flush();
-            out.close();
         } catch (Exception ex) {
             System.err.println("OWL parse error: " + ex.getMessage());
             ex.printStackTrace();
@@ -144,49 +138,6 @@ public class OWL2Parser {
         throw new Exception (err + "unrecognized owl-format: " + opt);
     }
 
-    // custem OntolgyWriter bundles a BufferedWriter with an OWL output format
-    protected static class OWLOntologyWriter extends BufferedWriter {
-        protected static OPTION option;
-
-        OWLOntologyWriter (String fn, OPTION op) throws Exception {
-                super (new FileWriter (fn));
-                option = op;
-        }
-        OWLOntologyWriter (OPTION op) throws Exception {
-            super (new OutputStreamWriter (System.out));
-            option = op;
-        }
-        // conveinience method to avoid xml-tags in other-format output
-        void writeXml( String s ) throws Exception {
-            if (option == OPTION.OWL_XML) super.write( s );
-        }
-    }
-
-   // output handler allows and handles a list of output-requests
-   protected static class OWLOutputHandler {
-        static ArrayList<OWLOntologyWriter> writer
-            = new ArrayList<OWLOntologyWriter>();
-
-        void add (OPTION op) throws Exception {
-          writer.add (new OWLOntologyWriter (op));
-        }
-        void add (OPTION op, String filename) throws Exception {
-          writer.add (new OWLOntologyWriter (filename, op));
-        }
-        void writeXml (String s) throws Exception {
-            for (OWLOntologyWriter out : writer) {
-                out.writeXml (s);
-        }   }
-        void flush () throws Exception {
-            for (OWLOntologyWriter out : writer) {
-                out.flush ();
-        }   }
-        void close () throws Exception {
-            for (OWLOntologyWriter out : writer) {
-                out.close ();
-        }   }
-    }
-
     private static OWLOntologyManager setupManagerWithMissingImportListener () {
         OWLOntologyManager mgr = OWLManager.createOWLOntologyManager();
         mgr.addMissingImportListener(new HasMissingImports());
@@ -214,7 +165,7 @@ public class OWL2Parser {
         return s;
     }
 
-    private static void exportImports (OWLOutputHandler out) {
+    private static void exportImports (OWLOutputHandler out) throws IOException {
         Boolean changed;
         do {
             changed = false;
@@ -222,81 +173,115 @@ public class OWL2Parser {
                 if (exported.containsAll(onto.getDirectImports())) {
                     if (!exported.contains(onto)) {
                         changed = exported.add(onto);
-                        renderUsingOption(onto, out);
+                        out.renderUsingOption(onto);
                     }
                 }
         } while (changed);
     }
 
-    private static void renderUsingOption (OWLOntology onto, OWLOutputHandler outmgr) {
-      for (OWLOntologyWriter out : outmgr.writer)
-        switch (out.option) {
-            case OWL_XML :
-                renderAsXml(onto, out);
-                break;
-            case MANCHESTER :
-                renderAsOmn(onto, out);
-                break;
-            case RDF_XML :
-                renderAsRdf(onto, out);
-                break;
-            // TODO: the below still need implementation!
-            case OBO :
-                renderAsXml(onto, out);
-                break;
-            case DOL :
-                renderAsXml(onto, out);
-                break;
-            case TURTLE :
-                renderAsXml(onto, out);
-                break;
-        }
-    }
+   // output handler allows and handles a list of output-requests
+   protected static class OWLOutputHandler {
+        static ArrayList<OWLOntologyWriter> writer
+            = new ArrayList<OWLOntologyWriter>();
 
-    private static void renderAsOmn (OWLOntology onto, BufferedWriter out) {
-        try {
-  //          ManchesterOWLSyntaxOntologyFormat omn = new ManchesterOWLSyntaxOntologyFormat();
-  //          manager.setOntologyFormat(onto, omn);
-  //          manager.saveOntology(onto, omn, out);
-            ManchesterOWLSyntaxRenderer rendi = new ManchesterOWLSyntaxRenderer();
-            rendi.render(onto, out);
-        } catch (OWLRendererException ex) {
-            System.err.println("Error by ManchesterParser!");
-            ex.printStackTrace();
+        void add (OPTION op) throws Exception {
+          writer.add (new OWLOntologyWriter (op));
         }
+        void add (OPTION op, String filename) throws Exception {
+          writer.add (new OWLOntologyWriter (filename, op));
+        }
+        // function need to be called once to render and close every output
+        void renderUsingOption (OWLOntology onto)
+                throws IOException {
+            for (OWLOntologyWriter out : writer) {
+                out.renderUsingOption (onto);
+                out._close ();
+        }   }
     }
+    // custem OntolgyWriter bundles a BufferedWriter with an OWL output format
+    protected static class OWLOntologyWriter extends BufferedWriter {
+        protected static OPTION option;
 
-    private static void renderAsXml (OWLOntology onto, BufferedWriter out) {
-        try {
-            OWLXMLRenderer ren = new OWLXMLRenderer();
-            File tempFile = File.createTempFile("owlTemp", ".xml");
-            FileWriter buf = new FileWriter(tempFile);
-            if (quick) {
-                onto.getOWLOntologyManager().removeAxioms(onto, onto.getAxioms());
-            }
-            ren.render(onto, buf);
-            buf.flush();
-            buf.close();
-            BufferedReader rBuf = new BufferedReader(new FileReader(tempFile));
-            rBuf.readLine();   // ignore the first line containing <?xml version="1.0"?>
-            while (rBuf.ready()) out.append(rBuf.readLine()).append("\n");
-            rBuf.close();
-            tempFile.deleteOnExit();
-            out.append("<Loaded name=\"").append(manager.getOntologyDocumentIRI(onto));
-            out.append("\" ontiri=\"").append(onto.getOntologyID().getOntologyIRI()).append("\"/>\n");
-        } catch (Exception ex) {
-            System.err.println("Error by XMLParser!");
-            ex.printStackTrace();
+        OWLOntologyWriter (String fn, OPTION op) throws Exception {
+                super (new FileWriter (fn));
+                option = op;
         }
-    }
+        OWLOntologyWriter (OPTION op) throws Exception {
+            super (new OutputStreamWriter (System.out));
+            option = op;
+        }
+        void writeMissingImports () throws IOException {
+            for (IRI mi : missingImports) {
+                write("<Missing>" + mi + "</Missing>\n");
+        }   }
+        void _close () throws IOException {
+            _close (this);
+        }
+        void _close (Writer pointer) throws IOException {
+            pointer.flush();
+            pointer.close();
+        }   
+        void renderUsingOption (OWLOntology onto)
+                throws IOException {
+            switch (this.option) {
+                case OWL_XML :
+                    write("<Ontologies>\n");
+                    writeMissingImports ();
+                    renderAsXml(onto);
+                    write("<\n/Ontologies>\n");
+                    break;
+                case MANCHESTER :
+                    renderAsOmn(onto); break;
+                case RDF_XML :
+                    renderAsRdf(onto); break;
+                // TODO: the below still need implementation!
+                case OBO :
+                    renderAsXml(onto); break;
+                case DOL :
+                    renderAsXml(onto); break;
+                case TURTLE :
+                    renderAsXml(onto); break;
+        }   }
+        
+        void renderAsOmn (OWLOntology onto) {
+           try {
+                ManchesterOWLSyntaxRenderer omnrend = new ManchesterOWLSyntaxRenderer();
+                omnrend.render(onto, this);
+            } catch (OWLRendererException ex) {
+                System.err.println("Error by ManchesterParser!");
+                ex.printStackTrace();
+        }   }
 
-    private static void renderAsRdf (OWLOntology onto, BufferedWriter out) {
-        try {
-            RDFXMLRenderer rdfrend = new RDFXMLRenderer(onto, out);
-            rdfrend.render();
-        } catch (IOException ex) {
-            System.err.println("Error by RDFParser!");
-            ex.printStackTrace();
-        }
+        void renderAsXml (OWLOntology onto) {
+            try {
+                OWLXMLRenderer xmlren = new OWLXMLRenderer();
+                File tempFile = File.createTempFile("owlTemp", ".xml");
+                FileWriter buf = new FileWriter(tempFile);
+                if (quick) {
+                    onto.getOWLOntologyManager().removeAxioms(onto, onto.getAxioms());
+                }
+                xmlren.render(onto, buf);
+                _close (buf);
+                BufferedReader rBuf = new BufferedReader(new FileReader(tempFile));
+                rBuf.readLine();   // ignore the first line containing <?xml version="1.0"?>
+                while (rBuf.ready()) append(rBuf.readLine()).append("\n");
+                rBuf.close();
+                tempFile.deleteOnExit();
+                append("<Loaded name=\"").append(manager.getOntologyDocumentIRI(onto));
+                append("\" ontiri=\"").append(onto.getOntologyID().getOntologyIRI());
+                append("\"/>\n");
+            } catch (Exception ex) {
+                System.err.println("Error by XMLParser!");
+                ex.printStackTrace();
+        }   }
+
+        void renderAsRdf (OWLOntology onto) {
+            try {
+                RDFXMLRenderer rdfrend = new RDFXMLRenderer(onto, this);
+                rdfrend.render();
+            } catch (IOException ex) {
+                System.err.println("Error by RDFParser!");
+                ex.printStackTrace();
+        }   }
     }
 }
