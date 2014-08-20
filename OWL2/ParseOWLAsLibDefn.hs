@@ -55,12 +55,8 @@ parseOWL quick itype fn = do
     if hasJar then do
         tmpFile <- getTempFile "" "owlTemp.xml"
         let args = (if quick then (++["-qk"]) else id)
-                  $ [fn]
-                 ++ [ "-o", "xml", tmpFile ]
-               --  ++ [ "-o", "obo", tmpFile ++ ".obo" ]
-               --  ++ [ "-o", "omn", tmpFile ++ ".omn" ]
-               --  ++ [ "-o", "rdf", tmpFile ++ ".rdf" ]
-       -- print $ intercalate " " args
+                  [ "-o", "rdf", tmpFile, fn ] -- Expat.parse actually chokes
+                  -- on owl.xml. rdf seems to be fine.
         (exitCode, _, errStr) <- executeProcess "java"
           (["-jar", toolPath </> jar] ++ args) ""
         case (exitCode, errStr) of
@@ -68,6 +64,27 @@ parseOWL quick itype fn = do
             cont <- L.readFile tmpFile
             removeFile tmpFile
             parseProc cont
+          _ -> error $ "process stop! " ++ shows exitCode "\n"
+              ++ errStr
+      else error $ jar
+        ++ " not found, check your environment variable: " ++ hetsOWLenv
+
+writeOWLFileType :: Bool          -- ^ Sets Option.quick
+         -> [(String, FilePath)]  -- ^ Ouput-Types (OMN, OWL-Xml, RDF, OBO, ..)
+         -> FilePath              -- ^ local filepath or uri
+         -> IO ()                 -- ^ map: uri -> OntologyFile
+writeOWLFileType _ [] _ = return ()
+writeOWLFileType quick otypes fn = do
+    -- new usage: use multiple -o <owlformat> <filename> to write output files
+    let jar = "OWL2Parser.jar"
+    (hasJar, toolPath) <- check4HetsOWLjar jar
+    if hasJar then do
+        let args = (if quick then (++["-qk"]) else id)
+                  $ fn : foldr (\(a,b) c -> ["-o", a, b] ++ c) [] otypes
+        (exitCode, _, errStr) <- executeProcess "java"
+          (["-jar", toolPath </> jar] ++ args) ""
+        case (exitCode, errStr) of
+          (ExitSuccess, "") -> return ()
           _ -> error $ "process stop! " ++ shows exitCode "\n"
               ++ errStr
       else error $ jar
