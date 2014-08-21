@@ -513,11 +513,22 @@ checkPatterns sig (ps1, ps2) = case (ps1, ps2) of
                (arguOfTerm hd1 ++ tl1, arguOfTerm hd2 ++ tl2)
   _ -> True
 
+-- flat conjunctions
+mkConj :: Ord f => [FORMULA f] -> FORMULA f
+mkConj fs = case nubOrd $ concatMap (\ f -> case f of
+  Junction Con ffs _ -> ffs
+  Atom True _ -> []
+  _ -> [f]) fs of
+    flat ->
+      if any (\ f -> is_False_atom f || elem (mkNeg f) flat) flat
+      then falseForm else conjunct flat
+
 {- | get the axiom from left hand side of a implication,
 if there is no implication, then return atomic formula true -}
-conditionAxiom :: FORMULA f -> FORMULA f
+conditionAxiom :: Ord f => FORMULA f -> FORMULA f
 conditionAxiom f = case quanti f of
-                     Relation f' c _ _ | c /= Equivalence -> f'
+                     Relation f' c f2 _ | c /= Equivalence ->
+                       mkConj [f', conditionAxiom f2]
                      _ -> trueForm
 
 {- | get the axiom from right hand side of a equivalence,
@@ -539,33 +550,33 @@ resultTerm f = case quanti f of
                  _ -> varOrConst (mkSimpleId "unknown")
 
 -- | create the proof obligation for a pair of overlapped formulas
-overlapQuery :: (GetRange f, Eq f)
+overlapQuery :: (GetRange f, Ord f)
   => ((FORMULA f, [(TERM f, TERM f)]), (FORMULA f, [(TERM f, TERM f)]))
     -> FORMULA f
 overlapQuery ((a1, s1), (a2, s2)) =
         case leadingSym a1 of
           Just (Left _)
             | containNeg a1 && not (containNeg a2) ->
-                mkImpl (conjunct [con1, con2])
+                imply (mkConj [con1, con2])
                             (mkNeg (Definedness resT2 nullRange))
             | containNeg a2 && not (containNeg a1) ->
-                mkImpl (conjunct [con1, con2])
+                imply (mkConj [con1, con2])
                             (mkNeg (Definedness resT1 nullRange))
             | containNeg a1 && containNeg a2 -> trueForm
             | otherwise ->
-                mkImpl (conjunct [con1, con2])
+                imply (mkConj [con1, con2])
                             (mkStEq resT1 resT2)
           Just (Right _)
             | containNeg a1 && not (containNeg a2) ->
-                mkImpl (conjunct [con1, con2])
+                imply (mkConj [con1, con2])
                             (mkNeg resA2)
             | containNeg a2 && not (containNeg a1) ->
-                mkImpl (conjunct [con1, con2])
+                imply (mkConj [con1, con2])
                             (mkNeg resA1)
             | containNeg a1 && containNeg a2 -> trueForm
             | otherwise ->
-                mkImpl (conjunct [con1, con2])
-                            (conjunct [resA1, resA2])
+                imply (mkConj [con1, con2])
+                            (mkConj [resA1, resA2])
           _ -> error "CASL.CCC.FreeTypes.<overlapQuery>"
       where [c1, c2] = map conditionAxiom [a1, a2]
             [t1, t2] = map resultTerm [a1, a2]
@@ -576,7 +587,11 @@ overlapQuery ((a1, s1), (a2, s2)) =
             resT2 = substitute s2 t2
             resA1 = substiF s1 r1
             resA2 = substiF s2 r2
-
+            imply b1 b2
+              | is_True_atom b1 = b2
+              | is_False_atom b1 || is_True_atom b2 = trueForm
+              | is_False_atom b2 = mkNeg b1
+              | otherwise = mkImpl b1 b2
 
 getNotComplete :: (GetRange f, FormExtension f, TermExtension f)
   => [Named (FORMULA f)] -> Morphism f e m -> [Named (FORMULA f)]
