@@ -515,13 +515,7 @@ checkPatterns sig (ps1, ps2) = case (ps1, ps2) of
 
 -- flat conjunctions
 mkConj :: Ord f => [FORMULA f] -> FORMULA f
-mkConj fs = case nubOrd $ concatMap (\ f -> case f of
-  Junction Con ffs _ -> ffs
-  Atom True _ -> []
-  _ -> [f]) fs of
-    flat ->
-      if any (\ f -> is_False_atom f || elem (mkNeg f) flat) flat
-      then falseForm else conjunct flat
+mkConj fs = mkJunction Con fs nullRange
 
 {- | get the axiom from left hand side of a implication,
 if there is no implication, then return atomic formula true -}
@@ -587,11 +581,7 @@ overlapQuery ((a1, s1), (a2, s2)) =
             resT2 = substitute s2 t2
             resA1 = substiF s1 r1
             resA2 = substiF s2 r2
-            imply b1 b2
-              | is_True_atom b1 = b2
-              | is_False_atom b1 || is_True_atom b2 = trueForm
-              | is_False_atom b2 = mkNeg b1
-              | otherwise = mkImpl b1 b2
+            imply b1 b2 = mkRelation b1 Implication b2 nullRange
 
 getNotComplete :: (GetRange f, FormExtension f, TermExtension f)
   => [Named (FORMULA f)] -> Morphism f e m -> [Named (FORMULA f)]
