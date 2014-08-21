@@ -108,7 +108,7 @@ getOverlapQuery sig fsn = filter (not . is_True_atom) overlap_query where
                                        (arguOfTerm hd2 ++ tl2, s2))
                   _ -> (s1, s2)
         quant f = mkForall (varDeclOfF f) f
-        overlap_query = map (quant . simplifyFormula id . overlapQuery . subst)
+        overlap_query = map (quant . overlapQuery . subst)
           olPairs
 {-
   check if leading symbols are new (not in the image of morphism),
@@ -522,25 +522,25 @@ if there is no implication, then return atomic formula true -}
 conditionAxiom :: Ord f => FORMULA f -> FORMULA f
 conditionAxiom f = case quanti f of
                      Relation f' c f2 _ | c /= Equivalence ->
-                       mkConj [f', conditionAxiom f2]
+                       mkConj [simplifyFormula id f', conditionAxiom f2]
                      _ -> trueForm
 
 {- | get the axiom from right hand side of a equivalence,
 if there is no equivalence, then return atomic formula true -}
-resultAxiom :: FORMULA f -> FORMULA f
+resultAxiom :: Ord f => FORMULA f -> FORMULA f
 resultAxiom f = case quanti f of
                   Relation _ c f' _ | c /= Equivalence -> resultAxiom f'
-                  Relation _ Equivalence f' _ -> f'
+                  Relation _ Equivalence f' _ -> simplifyFormula id f'
                   _ -> trueForm
 
 {- | get the term from right hand side of a equation in a formula,
 if there is no equation, then return a simple id -}
-resultTerm :: FORMULA f -> TERM f
+resultTerm :: Ord f => FORMULA f -> TERM f
 resultTerm f = case quanti f of
                  Relation _ c f' _ | c /= Equivalence -> resultTerm f'
                  Negation (Definedness _ _) _ ->
                    varOrConst (mkSimpleId "undefined")
-                 Equation _ _ t _ -> t
+                 Equation _ _ t _ -> CASL.Simplify.simplifyTerm id t
                  _ -> varOrConst (mkSimpleId "unknown")
 
 -- | create the proof obligation for a pair of overlapped formulas
@@ -559,7 +559,7 @@ overlapQuery ((a1, s1), (a2, s2)) =
             | containNeg a1 && containNeg a2 -> trueForm
             | otherwise ->
                 imply (mkConj [con1, con2])
-                            (mkStEq resT1 resT2)
+                            (mkEquation resT1 Strong resT2 nullRange)
           Just (Right _)
             | containNeg a1 && not (containNeg a2) ->
                 imply (mkConj [con1, con2])

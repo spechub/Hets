@@ -55,6 +55,10 @@ mkRelation f1 c f2 ps =
              | nf1 == f2 -> if equiv then Atom False ps else f1
            _ -> Relation f1 c f2 ps
 
+mkEquation :: Ord f => TERM f -> Equality -> TERM f -> Range -> FORMULA f
+mkEquation t1 e t2 ps =
+  if e == Strong && t1 == t2 then Atom True ps else Equation t1 e t2 ps
+
 simplifyRecord :: Ord f => (f -> f) -> Record f (FORMULA f) (TERM f)
 simplifyRecord mf = (mapRecord mf)
     { foldConditional = \ _ t1 f t2 ps -> case f of
@@ -70,9 +74,8 @@ simplifyRecord mf = (mapRecord mf)
            _ -> nf
     , foldJunction = const mkJunction
     , foldRelation = const mkRelation
-    , foldNegation = \ _ nf ps -> negateForm nf ps
-    , foldEquation = \ _ t1 e t2 ps ->
-      if e == Strong && t1 == t2 then Atom True ps else Equation t1 e t2 ps
+    , foldNegation = const negateForm
+    , foldEquation = const mkEquation
     }
 
 simplifyTerm :: Ord f => (f -> f) -> TERM f -> TERM f
