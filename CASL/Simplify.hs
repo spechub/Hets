@@ -38,11 +38,17 @@ simplifyRecord mf = (mapRecord mf)
            (Atom False _, Existential) -> qf
            _ -> nf
     , foldJunction = \ _ j fs ps -> let
-        (isTop, top, join, isBot) = case j of
-          Con -> (is_False_atom, False, conjunctRange, is_True_atom)
-          Dis -> (is_True_atom, True, disjunctRange, is_False_atom)
-        in if any isTop fs then Atom top ps else join
-           (nubOrd $ filter (not . isBot) fs) ps
+        (isTop, top, join) = case j of
+          Con -> (is_False_atom, False, conjunctRange)
+          Dis -> (is_True_atom, True, disjunctRange)
+        in case nubOrd $ concatMap (\ f -> case f of
+                        Junction j2 ffs _ | j == j2 -> ffs
+                        Atom b _ | b /= top -> []
+                        _ -> [f]) fs
+           of flat ->
+                 if any (\ f -> isTop f || elem (mkNeg f) flat) flat
+                 then Atom top ps
+                 else join flat ps
     , foldRelation = \ _ f1 c f2 ps ->
       let nf1 = negateForm f1 ps
           tf = Atom True ps
