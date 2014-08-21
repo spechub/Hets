@@ -68,8 +68,8 @@ simplifyRecord mf = (mapRecord mf)
            (Atom True _, Universal) -> qf
            (Atom False _, Existential) -> qf
            _ -> nf
-    , foldJunction = \ _ -> mkJunction
-    , foldRelation = \ _ -> mkRelation
+    , foldJunction = const mkJunction
+    , foldRelation = const mkRelation
     , foldNegation = \ _ nf ps -> negateForm nf ps
     , foldEquation = \ _ t1 e t2 ps ->
       if e == Strong && t1 == t2 then Atom True ps else Equation t1 e t2 ps
