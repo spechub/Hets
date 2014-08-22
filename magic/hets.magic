@@ -8,7 +8,7 @@
 !:mime  text/x-shellscript
 
 # XML version tag
-0       string/t        \<?xml\ version         XML Document
+0       string/cWt      \<?xml\ version         XML Document
 !:mime  application/xml
 
 # HTML (copied)
@@ -34,12 +34,17 @@
 0       string/t        \<rdf:RDF               RDF document
 !:mime  application/rdf
 
-0       string/t        \<?xml\ version
+0       string/t        \<!--
 >15     string          >\0
 >>19    search/4096/t   \<rdf:RDF               RDF document
 !:mime  application/rdf
 
-0       string/t        \<?xml\ version
+0       string/cWt      \<?xml\ version
+>15     string          >\0
+>>19    search/4096/t   \<rdf:RDF               RDF document
+!:mime  application/rdf
+
+0       string/cWt      \<?xml\ version
 >15     string          >\0
 >>19    search/4096/cWt \<!doctype\ rdf:RDF     RDF document
 !:mime  application/rdf
@@ -48,12 +53,17 @@
 0       string/t        \<Ontology              OWL document
 !:mime  application/owl
 
-0       string/Wt       \<?xml\ version
+0       string/t        \<!--
 >15     string          >\0
 >>19    search/4096/t   \<Ontology              OWL document
 !:mime  application/owl
 
-0       string/t        \<?xml\ version
+0       string/cWt      \<?xml\ version
+>15     string          >\0
+>>19    search/4096/t   \<Ontology              OWL document
+!:mime  application/owl
+
+0       string/cWt      \<?xml\ version
 >15     string          >\0
 >>19    search/4096/cWt \<!doctype\ Ontology    OWL document
 !:mime  application/owl
