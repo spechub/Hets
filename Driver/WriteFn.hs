@@ -277,7 +277,7 @@ writeTheory ins nam opts filePrefix ga
             writeVerbFile opts f owltext
             case oty of
               Manchester -> return()
-              _ -> writeOWLFile False [(show oty, f ++ (':' : show oty))] f
+              _ -> writeOWLFile False [(show oty, f ++ ('.' : show oty))] f
 #endif
     CLIFOut
       | lang == language_name CommonLogic -> do
