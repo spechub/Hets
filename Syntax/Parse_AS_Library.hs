@@ -60,11 +60,7 @@ library lG = do
 
 -- | Parse library name
 libName :: LogicGraph -> AParser st LibName
-libName lG = do
-    p <- getPos
-    i <- hetIRI lG
-    v <- optionMaybe version
-    return $ LibName i (Range [p]) Nothing v
+libName lG = liftM2 mkLibName (hetIRI lG) $ optionMaybe version
 
 -- | Parse the library version
 version :: AParser st VersionNumber

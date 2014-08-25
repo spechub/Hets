@@ -64,6 +64,7 @@ dGraph full lenv ln dg =
       lnodes = labNodes body
       ledges = labEdges body
   in add_attrs [ mkAttr "filename" $ getFilePath ln
+               , mkAttr "mime-type" . fromMaybe "unknown" $ mimeType ln
                , mkAttr "libname" . show $ setAngles False $ getLibId ln
                , mkAttr "dgnodes" . show $ length lnodes
                , mkAttr "dgedges" . show $ length ledges
