@@ -55,6 +55,7 @@ public class OWL2Parser {
                 ontology = manager.loadOntologyFromOntologyDocument(sds, config);
             }
             ontologies = getImports(ontology, new HashSet<OWLOntology>());
+            out._open();
             if (cyclic) {
                 String str = ontology.getOntologyID().getOntologyIRI().toString();
                 String merged_name = str + ".merged.owl"; // we must make a new name!
@@ -74,6 +75,7 @@ public class OWL2Parser {
                 ontologies.add(ontology);
                 exportImports(out);
             }
+            out._close();
         } catch (Exception ex) {
             System.err.println("OWL parse error: " + ex.getMessage());
             ex.printStackTrace();
@@ -190,12 +192,19 @@ public class OWL2Parser {
         void add (OPTION op, String filename) throws Exception {
           writer.add (new OWLOntologyWriter (filename, op));
         }
+        void _open () throws IOException {
+            for (OWLOntologyWriter out : writer) {
+                out._open ();
+        }   }
+        void _close () throws IOException {
+            for (OWLOntologyWriter out : writer) {
+                out._close ();
+        }   }
         // function need to be called once to render and close every output
         void renderUsingOption (OWLOntology onto)
                 throws IOException {
             for (OWLOntologyWriter out : writer) {
                 out.renderUsingOption (onto);
-                out._close ();
         }   }
     }
     // custem OntolgyWriter bundles a BufferedWriter with an OWL output format
@@ -214,7 +223,14 @@ public class OWL2Parser {
             for (IRI mi : missingImports) {
                 write("<Missing>" + mi + "</Missing>\n");
         }   }
+        void _open () throws IOException {
+            if (option == OPTION.OWL_XML) write("<Ontologies>\n");
+        }
         void _close () throws IOException {
+            if (option == OPTION.OWL_XML) {
+                writeMissingImports ();
+                write("\n</Ontologies>\n");
+            }
             _close (this);
         }
         void _close (Writer pointer) throws IOException {
@@ -225,10 +241,7 @@ public class OWL2Parser {
                 throws IOException {
             switch (this.option) {
                 case OWL_XML :
-                    write("<Ontologies>\n");
-                    writeMissingImports ();
                     renderAsXml(onto);
-                    write("\n</Ontologies>\n");
                     break;
                 case MANCHESTER :
                     renderAsOmn(onto); break;
