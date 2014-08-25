@@ -51,12 +51,7 @@ parseOWL :: Bool                  -- ^ Sets Option.quick
          -> IO [LIB_DEFN]         -- ^ map: uri -> OntologyFile
 parseOWL quick itype fn = do
     tmpFile <- getTempFile "" "owlTemp.xml"
-    (exitCode, _, errStr) <- parseOWLAux quick ("rdf", tmpFile) fn
--- DEBUGGING
-    parseOWLAux False ("omn", tmpFile ++ ".omn") fn
-    parseOWLAux False ("rdf", tmpFile ++ ".rdf") fn
-    parseOWLAux False ("owl", tmpFile ++ ".owl") fn
-
+    (exitCode, _, errStr) <- parseOWLAux quick ("xml", tmpFile) fn
     case (exitCode, errStr) of
       (ExitSuccess, "") -> do
           cont <- L.readFile tmpFile
