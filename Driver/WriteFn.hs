@@ -30,13 +30,14 @@ import Data.Maybe
 
 import Common.AS_Annotation
 import Common.Id
-import Common.IRI (IRI, simpleIdToIRI, iriToStringShortUnsecure)
+import Common.IRI (IRI, simpleIdToIRI, iriToStringShortUnsecure, setAngles)
 import Common.Json (ppJson)
 import Common.DocUtils
 import Common.ExtSign
 import Common.LibName
 import Common.Result
 import Common.Parsec (forget)
+import Common.Percent
 import Common.GlobalAnnotations (GlobalAnnos)
 import qualified Data.Map as Map
 import Common.SExpr
@@ -205,7 +206,8 @@ writeTheory :: [String] -> String -> HetcatsOpts -> FilePath -> GlobalAnnos
   -> G_theory -> LibName -> IRI -> OutType -> IO ()
 writeTheory ins nam opts filePrefix ga
   raw_gTh@(G_theory lid _ (ExtSign sign0 _) _ sens0 _) ln i ot =
-    let fp = filePrefix ++ "_" ++ iriToStringShortUnsecure i
+    let fp = filePrefix ++ "_"
+             ++ encode (iriToStringShortUnsecure $ setAngles False i)
         f = fp ++ "." ++ show ot
         th = (sign0, toNamedList sens0)
         lang = language_name lid
