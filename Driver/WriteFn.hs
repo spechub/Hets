@@ -30,11 +30,7 @@ import Data.Maybe
 
 import Common.AS_Annotation
 import Common.Id
-<<<<<<< HEAD
-import Common.IRI
-=======
 import Common.IRI (IRI, simpleIdToIRI, iriToStringShortUnsecure, setAngles)
->>>>>>> origin/encode-spec-name
 import Common.Json (ppJson)
 import Common.DocUtils
 import Common.ExtSign
