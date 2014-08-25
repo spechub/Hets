@@ -228,7 +228,7 @@ public class OWL2Parser {
                     write("<Ontologies>\n");
                     writeMissingImports ();
                     renderAsXml(onto);
-                    write("<\n/Ontologies>\n");
+                    write("\n</Ontologies>\n");
                     break;
                 case MANCHESTER :
                     renderAsOmn(onto); break;
@@ -255,7 +255,7 @@ public class OWL2Parser {
         void renderAsXml (OWLOntology onto) {
             try {
                 OWLXMLRenderer xmlren = new OWLXMLRenderer();
-                File tempFile = File.createTempFile("owlTemp", ".xml");
+                File tempFile = File.createTempFile("owlTemp_1", ".xml");
                 FileWriter buf = new FileWriter(tempFile);
                 if (quick) {
                     onto.getOWLOntologyManager().removeAxioms(onto, onto.getAxioms());
