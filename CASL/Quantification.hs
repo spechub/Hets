@@ -108,7 +108,8 @@ stripAllQuant f = case f of
 -- | get top-level variables
 getQuantVars :: FORMULA f -> VarSet
 getQuantVars f = case f of
-  Quantification Universal vds _ _ -> Set.fromList $ flatVAR_DECLs vds
+  Quantification Universal vds phi _ -> Set.union
+     (Set.fromList $ flatVAR_DECLs vds) $ getQuantVars phi
   _ -> Set.empty
 
 -- | get top-level variables for all sentences
