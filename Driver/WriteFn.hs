@@ -253,12 +253,12 @@ writeTheory ins nam opts filePrefix ga
             Nothing -> return ()
         else putIfVerbose opts 0 $ "expected CASL theory for: " ++ f
 #ifdef RDFLOGIC
-    OWLOut RdfXml
+{-    OWLOut RdfXml
         | lang == language_name RDF -> do
             th2 <- coerceBasicTheory lid RDF "" th
             let rdftext = shows (RDF.printRDFBasicTheory th2) "\n"
             writeVerbFile opts f rdftext
-        | otherwise -> putIfVerbose opts 0 $ "expected RDF theory for: " ++ f
+        | otherwise -> putIfVerbose opts 0 $ "expected RDF theory for: " ++ f-}
 #endif
 #ifndef NOOWLLOGIC
     OWLOut oty -> case createOWLTheory raw_gTh of
@@ -275,10 +275,13 @@ writeTheory ins nam opts filePrefix ga
                 $ case parse (OWL2.basicSpec Map.empty >> eof) f owltext of
               Left err -> putIfVerbose opts 0 $ show err
               _ -> putIfVerbose opts 3 $ "reparsed: " ++ f
-            writeVerbFile opts f owltext
             case oty of
-              Manchester -> return()
-              _ -> writeOWLFile False [(show oty, f ++ ('.' : show oty))] f
+              Manchester -> writeVerbFile opts f owltext
+              -- dirty workaround; because java-parser expects to read lib
+              -- from file, it is stored by hets in Omn format first..
+              _ -> let ftmp = fp ++ ".tmp.omn" in do
+                writeVerbFile opts ftmp owltext
+                writeOWLFile False [(show oty, f)] ftmp
 #endif
     CLIFOut
       | lang == language_name CommonLogic -> do
