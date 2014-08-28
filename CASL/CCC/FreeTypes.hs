@@ -116,11 +116,12 @@ retrySubstForm sig (f1, f2) =
                    Just s2 -> Just . stripQuant sig . convertFormula 1 id
                      $ mkOverlapEq s2 f3 f4
 
+quant :: Ord f => FORMULA f -> FORMULA f
+quant f = mkForall (varDeclOfF f) f
+
 mkOverlapEq :: (GetRange f, Ord f) => (Subst f, Subst f) -> FORMULA f
   -> FORMULA f -> FORMULA f
-mkOverlapEq (s1, s2) f1 f2 =
-  let quant f = mkForall (varDeclOfF f) f
-  in quant . simplifyFormula id
+mkOverlapEq (s1, s2) f1 f2 = quant . simplifyFormula id
      . overlapQuery (replaceVarsF s1 id $ stripAllQuant f1)
      . replaceVarsF s2 id $ stripAllQuant f2
 
@@ -420,7 +421,7 @@ checkIncomplete :: (FormExtension f, TermExtension f, Ord f)
 checkIncomplete osens m fsn = case getNotComplete osens m fsn of
   [] -> Nothing
   incomplete -> let obligations = getObligations m fsn in Just $ Result
-      (map (\ (ds, fs@(hd : _)) -> let
+      (map (\ (Result ds mfs, fs@(hd : _)) -> let
         (lSym, pos) = leadingSymPos hd
         sname = case fmap extractLeadingSymb lSym of
                       Just (Left opS) -> opSymbName opS
@@ -431,7 +432,11 @@ checkIncomplete osens m fsn = case getNotComplete osens m fsn of
              : "the defining formula group is:"
              : map (\ (f, n) -> "  " ++ shows n ". "
                     ++ showDoc (simplifyCASLSen (mtarget m) f) "") (number fs)
-             ++ map diagString ds) pos)
+             ++ map diagString ds
+             ++ maybe []
+                 (map (\ f -> "  " ++
+                   showDoc (simplifyCASLSen (mtarget m) f) "")) mfs
+             ) pos)
        incomplete) $ Just (Cons, obligations)
 
 checkTerminal :: (FormExtension f, TermExtension f, Ord f)
@@ -626,9 +631,9 @@ overlapQuery a1 a2 =
             [resT1, resT2] = map resultTerm [a1, a2]
             [resA1, resA2] = map resultAxiom [a1, a2]
 
-getNotComplete :: (GetRange f, FormExtension f, TermExtension f)
+getNotComplete :: (Ord f, FormExtension f, TermExtension f)
   => [Named (FORMULA f)] -> Morphism f e m -> [Named (FORMULA f)]
-  -> [([Diagnosis], [FORMULA f])]
+  -> [(Result [FORMULA f], [FORMULA f])]
 getNotComplete osens m fsn =
   let constructors = snd $ recoverSortsAndConstructors osens fsn
       consMap = foldr (\ (Qual_op_name o ot _) ->
@@ -637,22 +642,18 @@ getNotComplete osens m fsn =
         MapSet.insert o ot) MapSet.empty constructors
       sig = mtarget m
   in
-  filter (not . null . fst)
+  filter (\ (Result ds mfs, _) -> not (null ds)
+      || maybe False (not . null) mfs)
   $ map (\ g ->
-         (diags $ let l = map topIdOfAxiom g in
+         (let l = map topIdOfAxiom g in
                   case Set.toList . Set.fromList $ map fst l of
                     [(p, i)] -> completePatterns sig consMap consMap2
-                      ([(showId p "", i)], map snd l)
+                      ([(showId p "", i)]
+                      , zip (map (\ f -> (f, Map.empty)) g)
+                            $ map snd l)
                     l2 -> fail $ "wrongly grouped leading terms "
                       ++ show l2
          , g)) $ getAxGroup sig fsn
-
-varToPat :: TERM f -> TERM f
-varToPat t = case t of
-  Sorted_term t' _ _ -> varToPat t'
-  Cast t' _ _ -> varToPat t'
-  Qual_var _ s r -> Qual_var (mkSimpleId "_") s r
-  _ -> t
 
 type LeadArgs = [(String, Int)]
 
@@ -674,60 +675,100 @@ showLeadingArgs :: String -> LeadArgs -> String
 showLeadingArgs p l = let (_, r, _) = getNextArg True p $ reverse l in r
 
 -- | check whether the patterns of a function or predicate are complete
-completePatterns :: (FormExtension f, TermExtension f) => Sign f e
+completePatterns :: (Ord f, FormExtension f, TermExtension f) => Sign f e
   -> MapSet.MapSet SORT (OP_NAME, OP_TYPE)
-  -> MapSet.MapSet OP_NAME OP_TYPE -> (LeadArgs, [[TERM f]])
-  -> Result ()
+  -> MapSet.MapSet OP_NAME OP_TYPE
+  -> (LeadArgs, [((FORMULA f, Subst f), [TERM f])])
+  -> Result [FORMULA f]
 completePatterns tsig consMap consMap2 (leadingArgs, pas)
-    | all null pas = return ()
-    | any null pas = fail "wrongly grouped leading terms"
-    | otherwise = let
-          pa_group allCons = let
-              p_g c@(_, l) p = (c : leadingArgs, map (\ (h : t) ->
-                if isVar h
-                then replicate l (varToPat h) ++ t
-                else arguOfTerm h ++ t) p)
-              in map (\ (c, ct) -> p_g (showId c "", length $ args_OP_TYPE ct)
-                     $ filter (\ (h : _) -> case unsortedTerm h of
-                           Application (Qual_op_name o ot _) _ _ ->
-                             c == o && on (leqF tsig) toOpType ct ot
-                           _ -> True) pas)
-                 $ Set.toList allCons
-          (hds, tls) = unzip $ map (\ (hd : tl) -> (hd, tl)) pas
-          consAppls@(_ : _) = mapMaybe (\ t -> case unsortedTerm t of
-            Application (Qual_op_name o ot _) _ _ ->
-                Just (o, Set.filter (on (leqF tsig) toOpType ot)
-                   $ MapSet.lookup o consMap2)
-            _ -> Nothing) hds
-          consSrt = foldr1 Set.intersection $ map (Set.map res_OP_TYPE . snd)
-            consAppls
-         in if all isVar hds
-            then completePatterns tsig consMap consMap2
-                     (("_", 0) : leadingArgs, tls)
-            else case Set.toList consSrt of
+    | all (null . snd) pas = return []
+    | any (null . snd) pas = fail "wrongly grouped leading terms"
+    | otherwise = let hds = map (\ (f, hd : _) -> (f, hd)) pas in
+            if all (isVar . snd) hds
+            then let
+              (_, hd1) : _ = hds
+              tls = map (\ (f, hd : tl) -> (addSubst hd1 f hd, tl)) pas
+              in completePatterns tsig consMap consMap2
+                      (("_", 0) : leadingArgs, tls)
+            else let
+              consAppls@(_ : _) = mapMaybe (\ (f, t) -> case unsortedTerm t of
+                Application (Qual_op_name o ot _) _ _ ->
+                  Just (f, o, Set.filter (on (leqF tsig) toOpType ot)
+                    $ MapSet.lookup o consMap2)
+                _ -> Nothing) hds
+              consSrt = foldr1 Set.intersection
+                $ map (\ (_, _, os) -> Set.map res_OP_TYPE os) consAppls
+              in case filter (not . Set.null . (`MapSet.lookup` consMap))
+                     $ Set.toList consSrt of
                   [] -> fail $
                     "no common result type for constructors found: "
-                       ++ showDoc consAppls ""
+                       ++ showDoc (map snd hds) ""
                   cSrt : _ -> do
                     let allCons = MapSet.lookup cSrt consMap
-                        conpats = Set.fromList
-                          $ concatMap (\ (o, cs)
-                                       -> map (\ s -> (o, s)) $ Set.toList cs)
-                          consAppls
-                        missCons = Set.toList $ Set.difference allCons conpats
                     when (Set.null allCons) . fail
                       $ "no constructors for result type found: " ++ show cSrt
-                    unless (null missCons || any isVar hds) . justWarn ()
-                      $ "missing pattern"
-                      ++ (if null $ tail missCons then "" else "s")
-                      ++ " for: "
-                      ++ intercalate "  \n"
-                         (map (\ (o, ot) -> showLeadingArgs
-                               (case args_OP_TYPE ot of
-                                 [] -> showId o ""
-                                 l -> showId o "("
-                                   ++ intercalate "," (map (const "_") l)
-                                   ++ ")")
-                               leadingArgs) missCons)
-                    mapM_ (completePatterns tsig consMap consMap2)
-                              (pa_group allCons)
+                    let cons_group = map (\ (c, ct) -> (c, ct,
+                          filter (\ (_, h : _) -> case unsortedTerm h of
+                            Application (Qual_op_name o ot _) _ _ ->
+                              c == o && on (leqF tsig) toOpType ct ot
+                            _ -> False) pas)) $ Set.toList allCons
+                        vars = filter (\ (_, h : _) -> isVar h) pas
+                    pa_group <- mapM (checkConstructor tsig leadingArgs vars)
+                      cons_group
+                    ffs <- mapM (completePatterns tsig consMap consMap2 . snd)
+                      pa_group
+                    return $ concatMap fst pa_group ++ concat ffs
+
+mkVars :: Int -> [SORT] -> [TERM f]
+mkVars c = zipWith (\ i -> mkVarTerm (mkSimpleId $ 'c' : show i)) [c ..]
+
+addSubst :: Ord f => TERM f -> (FORMULA f, Subst f) -> TERM f
+  -> (FORMULA f, Subst f)
+addSubst n (f, s) h = case unsortedTerm h of
+    Qual_var v _ _ -> (f, Map.insert v n s)
+    _ -> error "addSubst"
+
+checkConstructor :: (Ord f, FormExtension f, TermExtension f)
+  => Sign f e -> LeadArgs -> [((FORMULA f, Subst f), [TERM f])]
+  -> (Id, OP_TYPE, [((FORMULA f, Subst f), [TERM f])])
+  -> Result ([FORMULA f], (LeadArgs, [((FORMULA f, Subst f), [TERM f])]))
+checkConstructor sig leadingArgs vars (c, ct, es) = do
+  let args = args_OP_TYPE ct
+      nL = (showId c "", length args) : leadingArgs
+      hd = mkAppl (mkQualOp c ct) $ mkVars 1 args
+      varEqs = map (\ (f, h : t) -> (addSubst hd f h, arguOfTerm hd ++ t)) vars
+  case es of
+    [] -> do
+      when (null vars) $ justWarn ()
+         $ "missing pattern for: " ++ showLeadingArgs
+           (showId c "" ++ case args of
+             [] -> ""
+             l -> "(" ++ intercalate "," (map (const "_") l) ++ ")")
+           leadingArgs
+      return ([], (nL, varEqs))
+    _ -> do
+    fs <- checkExhaustive sig es
+    return (fs, (nL, map (\ (f, h : t) -> (f, arguOfTerm h ++ t)) es ++ varEqs))
+
+restAxiom :: FORMULA f -> FORMULA f
+restAxiom f = case stripAllQuant f of
+                     Relation _ c f' _ | c /= Equivalence -> f'
+                     f' -> f'
+
+checkExhaustive :: (Ord f, FormExtension f, TermExtension f)
+  => Sign f e -> [((FORMULA f, Subst f), [TERM f])] -> Result [FORMULA f]
+checkExhaustive sig es = case es of
+  e1@((f1, _), _) : e2@((f2, _), _) : rs ->
+    let Result _ m = getSubstForm sig f1 f2
+    in case m of
+       Nothing -> do
+         ffs1 <- checkExhaustive sig $ e1 : rs
+         ffs2 <- checkExhaustive sig $ e2 : rs
+         return $ ffs1 ++ ffs2
+       Just (s3, s4) -> checkExhaustive sig
+         $ ((quant . simplifyFormula id
+         . mkImpl (disjunct [ replaceVarsF s3 id $ conditionAxiom f1
+                            , replaceVarsF s4 id $ conditionAxiom f2 ])
+           . replaceVarsF s3 id $ restAxiom f1, Map.empty), []) : rs
+  _ -> return . filter (not . is_True_atom) $ map (\ ((f, s), _) ->
+                     quant $ replaceVarsF s id $ conditionAxiom f) es
