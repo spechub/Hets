@@ -42,7 +42,8 @@ import Common.Result
 
 import Text.ParserCombinators.Parsec
 
-import Control.Monad.Trans (MonadIO (..))
+import Control.Monad.Trans (MonadIO (..), lift)
+import Control.Monad (liftM)
 import Data.List
 
 mimeTypeMap :: [(String, InType)]
@@ -51,7 +52,6 @@ mimeTypeMap =
   , ("html", HtmlIn)
   ] ++ map (\tp -> (show tp, tp)) listOwlInTypes ++
   [ ("clif", CommonLogicIn True)
-  , ("dol", OWLIn DOL)
   , ("het", HetCASLIn)
   , ("casl", CASLIn) ]
 
@@ -92,6 +92,7 @@ readLibDefn lgraph opts mr file fileForPos input =
       liftIO $ fmap (: []) . readFreeCADLib file $ fileToLibName opts file
     _ -> do
      ty <- guessInput opts mr file input
+     liftIO $ putIfVerbose opts 2 $ "parsing " ++ show ty ++ " file"
      case ty of
       HtmlIn -> fail "unexpected html input"
       CommonLogicIn _ -> liftIO $ parseCL_CLIF file opts
@@ -102,8 +103,9 @@ readLibDefn lgraph opts mr file fileForPos input =
       Qvt -> liftIO $ fmap (: []) $ parseQvt file
       TPTPIn -> liftIO $ fmap (: []) $ parseTPTP file
 #ifndef NOOWLLOGIC
-      _ | elem ty listOwlInTypes -> liftIO
-        $ parseOWL (isStructured opts) (show ty) file
+      OWLIn _ -> liftIO $ do
+        putIfVerbose opts 2 $ "parsing " ++ show ty ++ " file"
+        parseOWL (isStructured opts) (show ty) file
 #endif
       _ -> case runParser (library lgraph) (emptyAnnos ()) fileForPos input of
          Left err -> fail (showErr err)

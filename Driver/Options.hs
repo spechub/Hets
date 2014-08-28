@@ -534,7 +534,7 @@ data OWLFormat =
   deriving Eq
 
 defaultOwlFormat :: OWLFormat
-defaultOwlFormat = Manchester
+defaultOwlFormat = OwlXml --Manchester
 
 instance Read OWLFormat where
   readsPrec _ = readShowAux owlExtensionsMap
@@ -552,7 +552,7 @@ owlExtensionsMap :: [(String, OWLFormat)]
 owlExtensionsMap =
   [ ("omn", Manchester)
   , ("owl", OwlXml)
-  , ("xml", OwlXml) -- should this be reserved for dgxml?
+  , ("owl.xml", OwlXml) -- should this be reserved for dgxml?
   , ("rdf", RdfXml)
   , ("obo", OBO)
   , ("dol", DOL)
@@ -829,13 +829,13 @@ parseConnect :: String -> Flag
 parseConnect s
  = let (sP, sH) = divideIntoPortHost s False ([], [])
    in case reads sP of
-                (i, "") : _ -> Connect i sH
+                [(i, "")] -> Connect i sH
                 _ -> Connect (-1) sH
 
 parseListen :: String -> Flag
 parseListen s
  = case reads s of
-                (i, "") : _ -> Listen i
+                [(i, "")] -> Listen i
                 _ -> Listen (-1)
 
 parseEncoding :: String -> Flag
@@ -938,7 +938,7 @@ parseInType = InType . parseInType1
 parseInType1 :: String -> InType
 parseInType1 str =
   case reads str of
-    (t, "") : _ -> t
+    [(t, "")] -> t
     _ -> hetsError (str ++ " is not a valid ITYPE")
       {- the mere typo read instead of reads caused the runtime error:
          Fail: Prelude.read: no parse -}
@@ -946,7 +946,7 @@ parseInType1 str =
 -- 'parseOutTypes' parses an 'OutTypes' Flag from user input
 parseOutTypes :: String -> Flag
 parseOutTypes str = case reads $ bracket str of
-    (l, "") : _ -> OutTypes l
+    [(l, "")] -> OutTypes l
     _ -> hetsError (str ++ " is not a valid OTYPES")
 
 -- | parses a comma separated list from user input
@@ -973,7 +973,7 @@ guessInType file = case fileparse downloadExtensions file of
 parseCASLAmalg :: String -> Flag
 parseCASLAmalg str =
     case reads $ bracket str of
-    (l, "") : _ -> CASLAmalg $ filter ( \ o -> case o of
+    [(l, "")] -> CASLAmalg $ filter ( \ o -> case o of
                                       NoAnalysis -> False
                                       _ -> True ) l
     _ -> hetsError $ str ++
