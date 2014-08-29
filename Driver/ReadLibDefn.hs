@@ -42,8 +42,7 @@ import Common.Result
 
 import Text.ParserCombinators.Parsec
 
-import Control.Monad.Trans (MonadIO (..), lift)
-import Control.Monad (liftM)
+import Control.Monad.Trans (MonadIO (..))
 import Data.List
 
 mimeTypeMap :: [(String, InType)]
@@ -55,13 +54,16 @@ mimeTypeMap =
   , ("het", HetCASLIn)
   , ("casl", CASLIn) ]
 
+owlXmlTypes :: [InType]
+owlXmlTypes = map OWLIn [OwlXml, RdfXml, Turtle]
+
 joinFileTypes :: InType -> InType -> InType
 joinFileTypes ext magic = case (ext, magic) of
   (GuessIn, _) -> magic
   (_, GuessIn) -> ext
-  (DgXml, _) | elem magic $ DgXml : map OWLIn [RdfXml, OwlXml] -> magic
+  (DgXml, _) | elem magic owlXmlTypes -> magic
+  (_, DgXml) | elem ext owlXmlTypes -> ext
   (_, HtmlIn) -> magic
-  -- (_, DgXml) | elem ext [DgXml, RDFIn, OWLIn, OwlXmlIn, OBOIn, Xmi] -> ext
   _ -> ext -- ignore contradictions
 
 findFiletype :: String -> InType
@@ -74,12 +76,12 @@ guessInput opts mr file input =
   let fty1 = guess file (intype opts)
       fty2 = maybe GuessIn findFiletype mr
       fty = joinFileTypes fty1 fty2
-  in if elem fty $ GuessIn : DgXml : map OWLIn [RdfXml, OwlXml] then
+  in if elem fty $ GuessIn : DgXml : owlXmlTypes then
     case guessXmlContent (fty == DgXml) input of
     Left ty -> fail ty
     Right ty -> case ty of
       DgXml -> fail "unexpected DGraph xml"
-      _ -> return ty
+      _ -> return $ joinFileTypes fty ty
   else return fty
 
 readLibDefn :: MonadIO m => LogicGraph -> HetcatsOpts -> Maybe String
@@ -103,9 +105,7 @@ readLibDefn lgraph opts mr file fileForPos input =
       Qvt -> liftIO $ fmap (: []) $ parseQvt file
       TPTPIn -> liftIO $ fmap (: []) $ parseTPTP file
 #ifndef NOOWLLOGIC
-      OWLIn _ -> liftIO $ do
-        putIfVerbose opts 2 $ "parsing " ++ show ty ++ " file"
-        parseOWL (isStructured opts) (show ty) file
+      OWLIn _ -> liftIO $ parseOWL (isStructured opts) (show ty) file
 #endif
       _ -> case runParser (library lgraph) (emptyAnnos ()) fileForPos input of
          Left err -> fail (showErr err)
