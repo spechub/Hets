@@ -78,7 +78,6 @@ import Control.Monad.Trans
 import Data.Char
 import Data.List
 import Data.Maybe
-import Data.Tuple (swap)
 
 -- | short version without date for ATC files
 hetsVersion :: String

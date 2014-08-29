@@ -94,7 +94,6 @@ readLibDefn lgraph opts mr file fileForPos input =
       liftIO $ fmap (: []) . readFreeCADLib file $ fileToLibName opts file
     _ -> do
      ty <- guessInput opts mr file input
-     liftIO $ putIfVerbose opts 2 $ "parsing " ++ show ty ++ " file"
      case ty of
       HtmlIn -> fail "unexpected html input"
       CommonLogicIn _ -> liftIO $ parseCL_CLIF file opts
