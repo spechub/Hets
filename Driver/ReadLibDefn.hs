@@ -50,7 +50,7 @@ mimeTypeMap :: [(String, InType)]
 mimeTypeMap =
   [ ("xml", DgXml)
   , ("html", HtmlIn)
-  ] ++ map (\tp -> (show tp, tp)) listOwlInTypes ++
+  ] ++ [(show t, OWLIn t) | t <- plainOwlFormats] ++
   [ ("clif", CommonLogicIn True)
   , ("het", HetCASLIn)
   , ("casl", CASLIn) ]

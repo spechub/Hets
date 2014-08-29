@@ -24,8 +24,7 @@ module Driver.Options
   , GuiType (..)
   , InType (..)
   , OWLFormat (..)
-  , parseOwlFormat
-  , listOwlInTypes
+  , plainOwlFormats
   , OutType (..)
   , PrettyType (..)
   , prettyList
@@ -536,34 +535,18 @@ data OWLFormat =
 defaultOwlFormat :: OWLFormat
 defaultOwlFormat = OwlXml --Manchester
 
-instance Read OWLFormat where
-  readsPrec _ = readShowAux owlExtensionsMap
-
-instance Show OWLFormat where
-  show ty = maybe "owl.?" id $ lookup ty owlExtensionsMap1
-
 plainOwlFormats :: [OWLFormat]
 plainOwlFormats = [ Manchester, OwlXml, RdfXml, OBO, DOL, Turtle ]
 
-listOwlInTypes :: [InType]
-listOwlInTypes = map OWLIn plainOwlFormats
-
-owlExtensionsMap :: [(String, OWLFormat)]
-owlExtensionsMap =
-  [ ("omn", Manchester)
-  , ("owl", OwlXml)
-  , ("owl.xml", OwlXml) -- should this be reserved for dgxml?
-  , ("rdf", RdfXml)
-  , ("obo", OBO)
-  , ("dol", DOL)
-  , ("ttl", Turtle) ]
-
-owlExtensionsMap1 :: [(OWLFormat, String)]
-owlExtensionsMap1 = map swap owlExtensionsMap
-
-parseOwlFormat :: String -> InType
-parseOwlFormat s = OWLIn $
-  maybe defaultOwlFormat id $ lookup s owlExtensionsMap
+instance Show OWLFormat where
+  show ty = case ty of
+    Manchester -> "omn"
+    OwlXml -> "owl"
+    -- "owl.xml" ?? might occur but conflicts with dgxml
+    RdfXml -> "rdf"
+    OBO -> "obo"
+    DOL -> "dol"
+    Turtle -> "ttl"
 
 data SPFType = ConsistencyCheck | ProveTheory
 
