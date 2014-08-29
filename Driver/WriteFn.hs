@@ -22,6 +22,7 @@ import Text.ParserCombinators.Parsec
 import Text.XML.Light
 
 import System.FilePath
+import System.Directory (removeFile)
 
 import Control.Monad
 
@@ -37,6 +38,7 @@ import Common.ExtSign
 import Common.LibName
 import Common.Result
 import Common.Parsec (forget)
+import Common.Utils (getTempFile)
 import Common.Percent
 import Common.GlobalAnnotations (GlobalAnnos)
 import qualified Data.Map as Map
@@ -91,7 +93,7 @@ import VSE.ToSExpr
 #ifndef NOOWLLOGIC
 import OWL2.CreateOWL
 import OWL2.Logic_OWL2
-import OWL2.ParseOWLAsLibDefn (writeOWLFile)
+import OWL2.ParseOWLAsLibDefn (convertOWL)
 import qualified OWL2.ManchesterPrint as OWL2 (prepareBasicTheory)
 import qualified OWL2.ManchesterParser as OWL2 (basicSpec)
 #endif
@@ -207,8 +209,8 @@ writeTheory :: [String] -> String -> HetcatsOpts -> FilePath -> GlobalAnnos
   -> G_theory -> LibName -> IRI -> OutType -> IO ()
 writeTheory ins nam opts filePrefix ga
   raw_gTh@(G_theory lid _ (ExtSign sign0 _) _ sens0 _) ln i ot =
-    let fp = filePrefix ++ "_"
-             ++ encode (iriToStringShortUnsecure $ setAngles False i)
+    let fp = filePrefix ++ "_" ++ i'
+        i' = encode (iriToStringShortUnsecure $ setAngles False i)
         f = fp ++ "." ++ show ot
         th = (sign0, toNamedList sens0)
         lang = language_name lid
@@ -261,7 +263,7 @@ writeTheory ins nam opts filePrefix ga
         | otherwise -> putIfVerbose opts 0 $ "expected RDF theory for: " ++ f-}
 #endif
 #ifndef NOOWLLOGIC
-    OWLOut oty -> case createOWLTheory raw_gTh of
+    OWLOut ty -> case createOWLTheory raw_gTh of
       Result _ Nothing ->
         putIfVerbose opts 0 $ "expected OWL theory for: " ++ f
       Result ds (Just th2) -> do
@@ -275,13 +277,14 @@ writeTheory ins nam opts filePrefix ga
                 $ case parse (OWL2.basicSpec Map.empty >> eof) f owltext of
               Left err -> putIfVerbose opts 0 $ show err
               _ -> putIfVerbose opts 3 $ "reparsed: " ++ f
-            case oty of
+            case ty of
               Manchester -> writeVerbFile opts f owltext
               -- dirty workaround; because java-parser expects to read lib
               -- from file, it is stored by hets in Omn format first..
-              _ -> let ftmp = fp ++ ".tmp.omn" in do
-                writeVerbFile opts ftmp owltext
-                writeOWLFile False [(show oty, f)] ftmp
+              _ -> do
+                tmpFile <- getTempFile owltext $ i' ++ ".omn"
+                writeVerbFile opts f =<< convertOWL tmpFile (show ty)
+                removeFile tmpFile
 #endif
     CLIFOut
       | lang == language_name CommonLogic -> do

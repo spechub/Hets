@@ -10,7 +10,7 @@ Portability :  non-portable (imports Logic.Logic)
 analyse OWL files by calling the external Java parser.
 -}
 
-module OWL2.ParseOWLAsLibDefn (parseOWL, writeOWLFile) where
+module OWL2.ParseOWLAsLibDefn (parseOWL, convertOWL, writeOWLFile) where
 
 import OWL2.AS
 import OWL2.MS
@@ -51,7 +51,7 @@ parseOWL :: Bool                  -- ^ Sets Option.quick
          -> IO [LIB_DEFN]         -- ^ map: uri -> OntologyFile
 parseOWL quick itype fn = do
     tmpFile <- getTempFile "" "owlTemp.xml"
-    (exitCode, _, errStr) <- parseOWLAux quick ("xml", tmpFile) fn
+    (exitCode, _, errStr) <- parseOWLAux quick fn ["-o", "xml", tmpFile]
     case (exitCode, errStr) of
       (ExitSuccess, "") -> do
           cont <- L.readFile tmpFile
@@ -59,30 +59,33 @@ parseOWL quick itype fn = do
           parseProc cont
       _-> error $ "process stop! " ++ shows exitCode "\n" ++ errStr
 
-parseOWLAux :: Bool            -- ^ Sets Option.quick
-         -> (String, FilePath)    -- ^ Output type and filename
-         -> FilePath              -- ^ local filepath or uri
+parseOWLAux :: Bool         -- ^ Sets Option.quick
+         -> FilePath        -- ^ local filepath or uri
+         -> [String]        -- ^ arguments for java parser 
          -> IO (ExitCode, String, String)
-parseOWLAux quick (otype, ofn) fn = do
+parseOWLAux quick fn args = do
     let jar = "OWL2Parser.jar"
     (hasJar, toolPath) <- check4HetsOWLjar jar
-    if hasJar then do
-        let args = (if quick then (++["-qk"]) else id)
-                 ["-o", otype, ofn, fn]
-        executeProcess "java" (["-jar", toolPath </> jar] ++ args) ""
+    if hasJar then executeProcess "java" (["-jar", toolPath </> jar]
+        ++ args ++ [fn] ++ if quick then ["-qk"] else []) ""
     else error $ jar
         ++ " not found, check your environment variable: " ++ hetsOWLenv
 
-writeOWLFile :: Bool              -- ^ Sets Option.quick
-         -> [(String, FilePath)]  -- ^ Ouput-Types (OMN, OWL-Xml, RDF, OBO, ..)
-         -> FilePath              -- ^ local filepath or uri
-         -> IO ()                 -- ^ map: uri -> OntologyFile
-writeOWLFile _ [] _ = return ()
-writeOWLFile quick otypes fn = do
-  (exitCode, _, errStr) <- parseOWLAux quick (head otypes) fn
+convertOWL :: FilePath -> String -> IO (String)
+convertOWL fn tp = do
+  (exitCode, content, errStr) <- parseOWLAux False fn ["-o-sys", tp]
   case (exitCode, errStr) of
-    (ExitSuccess, "") -> return ()
-    _ -> error $ "process stop! " ++ shows exitCode "\n" ++ errStr
+    (ExitSuccess, "") -> return content
+    _-> error $ "process stop! " ++ shows exitCode "\n" ++ errStr
+
+writeOWLFile :: Bool              -- ^ Sets Option.quick
+         -> FilePath              -- ^ local filepath or uri
+         -> [(String, FilePath)]  -- ^ Ouput-Type (OMN, OWL-Xml, RDF, OBO, ..)
+         -> IO ()                 -- ^ map: uri -> OntologyFile
+writeOWLFile quick f = mapM_ (\(t,fn) -> let args = ["-o", t, fn] in do
+  (exitCode, _, errStr) <- parseOWLAux quick f args
+  unless ((exitCode, errStr) == (ExitSuccess, ""))
+    $ error $ "process stop! " ++ shows exitCode "\n" ++ errStr)
 
 parseProc :: L.ByteString -> IO [LIB_DEFN]
 parseProc str = do
