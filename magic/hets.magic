@@ -72,9 +72,9 @@
 0       string/t        format-version:         OBO document
 !:mime  text/obo
 
-# TTL
-0       search/4096/t   \@prefix\               TTL document
-!:mime  text/ttl
+# Turtle (.ttl extension)
+0       search/4096/t   \@prefix\               Turtle document
+!:mime  text/turtle
 
 # OMN
 0       search/4096/t   Prefix:                 OWL Manchester Notation

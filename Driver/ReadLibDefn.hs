@@ -52,7 +52,8 @@ mimeTypeMap =
   , ("rdf", RDFIn)
   , ("owl", OwlXmlIn)
   , ("obo", OBOIn)
-  , ("ttl", OWLIn)
+  , ("ttl", OWLIn) -- keep for some time for compatibility reasons
+  , ("turtle", OWLIn)
   , ("omn", OWLIn)
   , ("clif", CommonLogicIn True)
   , ("dol", DOLIn)
@@ -65,7 +66,6 @@ joinFileTypes ext magic = case (ext, magic) of
   (_, GuessIn) -> ext
   (DgXml, _) | elem magic [DgXml, RDFIn, OwlXmlIn] -> magic
   (_, HtmlIn) -> magic
-  -- (_, DgXml) | elem ext [DgXml, RDFIn, OWLIn, OwlXmlIn, OBOIn, Xmi] -> ext
   _ -> ext -- ignore contradictions
 
 findFiletype :: String -> InType
