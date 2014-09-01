@@ -26,7 +26,8 @@ import CommonLogic.ParseCLAsLibDefn
 #ifndef NOOWLLOGIC
 import OWL2.ParseOWLAsLibDefn
 #endif
-#ifdef RDFLOGIC
+#ifdef RDFLOGIC 
+-- MODULE RDF IS BROKEN AT THE MOMENT
 -- import RDF.ParseRDFAsLibDefn
 #endif
 import CSMOF.ParseXmiAsLibDefn
@@ -98,7 +99,7 @@ readLibDefn lgraph opts mr file fileForPos input =
       HtmlIn -> fail "unexpected html input"
       CommonLogicIn _ -> liftIO $ parseCL_CLIF file opts
 #ifdef RDFLOGIC
- -- - RDFIn -> liftIO $ parseRDF file
+     -- RDFIn -> liftIO $ parseRDF file
 #endif
       Xmi -> liftIO $ fmap (: []) $ parseXmi file
       Qvt -> liftIO $ fmap (: []) $ parseQvt file

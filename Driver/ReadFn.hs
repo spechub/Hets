@@ -76,7 +76,7 @@ isRDF :: QName -> Bool
 isRDF q = qName q == "RDF" && qPrefix q == Just "rdf"
 
 isOWLOnto :: QName -> Bool
-isOWLOnto q = qName q == "Ontology" -- && qPrefix q == Just "owl"
+isOWLOnto q = qName q == "Ontology" && qPrefix q == Just "owl"
 
 guessXmlContent :: Bool -> String -> Either String InType
 guessXmlContent isXml str = case dropWhile isSpace str of

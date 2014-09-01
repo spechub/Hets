@@ -255,12 +255,12 @@ writeTheory ins nam opts filePrefix ga
             Nothing -> return ()
         else putIfVerbose opts 0 $ "expected CASL theory for: " ++ f
 #ifdef RDFLOGIC
-{-    OWLOut RdfXml
+    RDFOut
         | lang == language_name RDF -> do
             th2 <- coerceBasicTheory lid RDF "" th
             let rdftext = shows (RDF.printRDFBasicTheory th2) "\n"
             writeVerbFile opts f rdftext
-        | otherwise -> putIfVerbose opts 0 $ "expected RDF theory for: " ++ f-}
+        | otherwise -> putIfVerbose opts 0 $ "expected RDF theory for: " ++ f
 #endif
 #ifndef NOOWLLOGIC
     OWLOut ty -> case createOWLTheory raw_gTh of

@@ -447,6 +447,7 @@ data InType =
     ATermIn ATType
   | CASLIn
   | HetCASLIn
+  | DOLIn
   | OWLIn OWLFormat
   | HaskellIn
   | MaudeIn
@@ -459,6 +460,7 @@ data InType =
   | ExperimentalIn -- ^ for testing new functionality
   | ProofCommand
   | GuessIn
+  | RDFIn
   | FreeCADIn
   | CommonLogicIn Bool  -- ^ "clf" or "clif" ('True' is long version)
   | DgXml
@@ -473,6 +475,7 @@ instance Show InType where
     ATermIn at -> genTermS ++ show at
     CASLIn -> "casl"
     HetCASLIn -> "het"
+    DOLIn -> "dol"
     OWLIn oty -> show oty
     HaskellIn -> hsS
     ExperimentalIn -> "exp"
@@ -486,6 +489,7 @@ instance Show InType where
     OmdocIn -> omdocS
     ProofCommand -> "hpf"
     GuessIn -> ""
+    RDFIn -> "rdf"
     FreeCADIn -> "fcstd"
     CommonLogicIn isLong -> if isLong then "clif" else "clf"
     DgXml -> xmlS
@@ -507,10 +511,10 @@ instance Show ATType where
     BAF -> bafS
     NonBAF -> ""
 
--- OwlXmlIn needs to be before OWLIn to avoid a read error in parseInType1
+-- RDFIn is on purpose not listed; must be added manually if neccessary
 plainInTypes :: [InType]
 plainInTypes =
-  [ CASLIn, HetCASLIn ]
+  [ CASLIn, HetCASLIn, DOLIn ]
   ++ map OWLIn plainOwlFormats ++
   [ HaskellIn, ExperimentalIn
   , MaudeIn, TwelfIn
@@ -527,7 +531,6 @@ data OWLFormat =
   | OwlXml
   | RdfXml
   | OBO
-  | DOL
   | Turtle
   deriving Eq
 
@@ -535,7 +538,7 @@ defaultOwlFormat :: OWLFormat
 defaultOwlFormat = OwlXml --Manchester
 
 plainOwlFormats :: [OWLFormat]
-plainOwlFormats = [ Manchester, OwlXml, RdfXml, OBO, DOL, Turtle ]
+plainOwlFormats = [ Manchester, OwlXml, RdfXml, OBO, Turtle ]
 
 instance Show OWLFormat where
   show ty = case ty of
@@ -544,7 +547,6 @@ instance Show OWLFormat where
     -- "owl.xml" ?? might occur but conflicts with dgxml
     RdfXml -> "rdf"
     OBO -> "obo"
-    DOL -> "dol"
     Turtle -> "ttl"
 
 data SPFType = ConsistencyCheck | ProveTheory
@@ -576,6 +578,7 @@ data OutType =
   | DfgFile SPFType -- ^ SPASS input file
   | TPTPFile SPFType
   | ComptableXml
+  | RDFOut
   | SigFile Delta -- ^ signature as text
   | TheoryFile Delta -- ^ signature with sentences as text
   | SymXml
@@ -600,11 +603,13 @@ instance Show OutType where
     DfgFile t -> dfgS ++ show t
     TPTPFile t -> tptpS ++ show t
     ComptableXml -> "comptable.xml"
+    RDFOut -> "rdf"
     SigFile d -> "sig" ++ show d
     TheoryFile d -> "th" ++ show d
     SymXml -> "sym.xml"
     SymsXml -> "syms.xml"
 
+-- RDFOut is on purpose not listed; must be added manually if neccessary
 plainOutTypeList :: [OutType]
 plainOutTypeList =
   [ Prf, EnvOut ] ++ map OWLOut plainOwlFormats ++
