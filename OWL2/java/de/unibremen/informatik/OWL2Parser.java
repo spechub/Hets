@@ -16,7 +16,7 @@ import java.util.Set;
 import java.util.ArrayList;
 
 public class OWL2Parser {
-    private static enum OPTION {OWL_XML, MANCHESTER, RDF_XML, OBO, TURTLE, DOL}
+    private static enum OPTION {OWL_XML, MANCHESTER, RDF_XML, OBO, TURTLE}
 
     private static Boolean quick = false;
     private static Boolean cyclic = false;
@@ -135,7 +135,6 @@ public class OWL2Parser {
         else if (opt.equals("omn")) return OPTION.MANCHESTER;
         else if (opt.equals("rdf")) return OPTION.RDF_XML;
         else if (opt.equals("obo")) return OPTION.OBO;
-        else if (opt.equals("dol")) return OPTION.DOL;
         else if (opt.equals("ttl")) return OPTION.TURTLE;
         throw new Exception (err + "unrecognized owl-format: " + opt);
     }
@@ -249,8 +248,6 @@ public class OWL2Parser {
                     renderAsRdf(onto); break;
                 // TODO: the below still need implementation!
                 case OBO :
-                    renderAsXml(onto); break;
-                case DOL :
                     renderAsXml(onto); break;
                 case TURTLE :
                     renderAsXml(onto); break;
