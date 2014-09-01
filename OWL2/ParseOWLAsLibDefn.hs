@@ -71,21 +71,13 @@ parseOWLAux quick fn args = do
     else error $ jar
         ++ " not found, check your environment variable: " ++ hetsOWLenv
 
+-- | converts owl file to desired syntax using owl-api
 convertOWL :: FilePath -> String -> IO (String)
 convertOWL fn tp = do
   (exitCode, content, errStr) <- parseOWLAux False fn ["-o-sys", tp]
   case (exitCode, errStr) of
     (ExitSuccess, "") -> return content
     _-> error $ "process stop! " ++ shows exitCode "\n" ++ errStr
-
-writeOWLFile :: Bool              -- ^ Sets Option.quick
-         -> FilePath              -- ^ local filepath or uri
-         -> [(String, FilePath)]  -- ^ Ouput-Type (OMN, OWL-Xml, RDF, OBO, ..)
-         -> IO ()                 -- ^ map: uri -> OntologyFile
-writeOWLFile quick f = mapM_ (\(t,fn) -> let args = ["-o", t, fn] in do
-  (exitCode, _, errStr) <- parseOWLAux quick f args
-  unless ((exitCode, errStr) == (ExitSuccess, ""))
-    $ error $ "process stop! " ++ shows exitCode "\n" ++ errStr)
 
 parseProc :: L.ByteString -> IO [LIB_DEFN]
 parseProc str = do
