@@ -50,8 +50,13 @@ mimeTypeMap :: [(String, InType)]
 mimeTypeMap =
   [ ("xml", DgXml)
   , ("html", HtmlIn)
-  ] ++ [(show t, OWLIn t) | t <- plainOwlFormats] ++
-  [ ("clif", CommonLogicIn True)
+  , ("rdf", OWLIn RdfXml)
+  , ("owl", OWLIn OwlXml)
+  , ("obo", OWLIn OBO)
+  , ("ttl", OWLIn Turtle)
+  , ("turtle", OWLIn Turtle)
+  , ("dol", DOLIn)
+  , ("clif", CommonLogicIn True)
   , ("het", HetCASLIn)
   , ("casl", CASLIn) ]
 
