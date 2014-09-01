@@ -73,7 +73,13 @@
 !:mime  text/obo
 
 # Turtle (.ttl extension)
-0       search/4096/t   \@prefix\               Turtle document
+0       search/4096/t   \@prefix\ owl:          Turtle document
+!:mime  text/turtle
+
+0       search/4096/t   \@prefix\ rdfs:         Turtle document
+!:mime  text/turtle
+
+0       search/4096/t   \@prefix\ xsd:          Turtle document
 !:mime  text/turtle
 
 # OMN
