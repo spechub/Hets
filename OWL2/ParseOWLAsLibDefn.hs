@@ -10,7 +10,7 @@ Portability :  non-portable (imports Logic.Logic)
 analyse OWL files by calling the external Java parser.
 -}
 
-module OWL2.ParseOWLAsLibDefn (parseOWL, convertOWL, writeOWLFile) where
+module OWL2.ParseOWLAsLibDefn (parseOWL, convertOWL) where
 
 import OWL2.AS
 import OWL2.MS
