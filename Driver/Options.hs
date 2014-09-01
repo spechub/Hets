@@ -534,9 +534,6 @@ data OWLFormat =
   | Turtle
   deriving Eq
 
-defaultOwlFormat :: OWLFormat
-defaultOwlFormat = OwlXml --Manchester
-
 plainOwlFormats :: [OWLFormat]
 plainOwlFormats = [ Manchester, OwlXml, RdfXml, OBO, Turtle ]
 

@@ -110,7 +110,7 @@ readLibDefn lgraph opts mr file fileForPos input =
       Qvt -> liftIO $ fmap (: []) $ parseQvt file
       TPTPIn -> liftIO $ fmap (: []) $ parseTPTP file
 #ifndef NOOWLLOGIC
-      OWLIn _ -> liftIO $ parseOWL (isStructured opts) (show ty) file
+      OWLIn _ -> liftIO $ parseOWL (isStructured opts) file
 #endif
       _ -> case runParser (library lgraph) (emptyAnnos ()) fileForPos input of
          Left err -> fail (showErr err)

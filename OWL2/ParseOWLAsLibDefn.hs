@@ -46,10 +46,9 @@ import Text.XML.Light hiding (QName)
 
 -- | call for owl parser (env. variable $HETS_OWL_TOOLS muss be defined)
 parseOWL :: Bool                  -- ^ Sets Option.quick
-         -> String                -- ^ Input-Type (OMN, OWL-Xml, RDF, OBO, ..)
          -> FilePath              -- ^ local filepath or uri
          -> IO [LIB_DEFN]         -- ^ map: uri -> OntologyFile
-parseOWL quick itype fn = do
+parseOWL quick fn = do
     tmpFile <- getTempFile "" "owlTemp.xml"
     (exitCode, _, errStr) <- parseOWLAux quick fn ["-o", "xml", tmpFile]
     case (exitCode, errStr) of
