@@ -122,11 +122,11 @@ anaSource mln lg opts topLns libenv initDG origName = ResultT $ do
                 Nothing -> fail $ "failed to analyse file: " ++ file
                 Just (lname, lenv) -> return (lname, Map.union lenv libenv)
 
-{- | parsing and static analysis for string (=contents of file)
-Parameters: logic graph, default logic, contents of file, filename -}
+-- | parsing of input string (content of file)
 anaString :: Maybe LibName -- ^ suggested library name
   -> LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph -> String
-  -> FilePath -> Maybe String -> ResultT IO (LibName, LibEnv)
+  -> FilePath -> Maybe String -- ^ mime-type of file
+  -> ResultT IO (LibName, LibEnv)
 anaString mln lgraph opts topLns libenv initDG input file mr = do
   curDir <- lift getCurrentDirectory -- get full path for parser positions
   let realFileName = curDir </> file
@@ -136,16 +136,17 @@ anaString mln lgraph opts topLns libenv initDG input file mr = do
   lift $ putIfVerbose opts 2 $ "Reading file " ++ file
   libdefns <- readLibDefn lgraph opts mr file posFileName input
   when (null libdefns) . fail $ "failed to read contents of file: " ++ file
-  foldM (anaStringAux mln lgraph opts topLns initDG file posFileName)
+  foldM (anaStringAux mln lgraph opts topLns initDG mr file posFileName)
         (error "Static.AnalysisLibrary.anaString", libenv)
     $ case analysis opts of
       Skip -> [last libdefns]
       _ -> libdefns
 
+-- | calling static analysis for parsed library-defn
 anaStringAux :: Maybe LibName -- ^ suggested library name
-  -> LogicGraph -> HetcatsOpts -> LNS -> DGraph -> FilePath
+  -> LogicGraph -> HetcatsOpts -> LNS -> DGraph -> Maybe String -> FilePath
   -> FilePath -> (LibName, LibEnv) -> LIB_DEFN -> ResultT IO (LibName, LibEnv)
-anaStringAux mln lgraph opts topLns initDG file posFileName (_, libenv)
+anaStringAux mln lgraph opts topLns initDG mt file posFileName (_, libenv)
              (Lib_defn pln is' ps ans) = do
   let pm = fst $ partPrefixes ans
       expnd i = fromMaybe i $ expandCurie pm i
@@ -166,7 +167,7 @@ anaStringAux mln lgraph opts topLns initDG file posFileName (_, libenv)
                              gn as qs) rs [] []]
         _ -> is
       emptyFilePath = null $ getFilePath pln
-      ln = if emptyFilePath then setFilePath posFileName
+      ln = setMimeType mt $ if emptyFilePath then setFilePath posFileName
             $ if noLibName then fromMaybe (emptyLibName spN) mln else pln
            else pln
       ast = Lib_defn ln nIs ps ans

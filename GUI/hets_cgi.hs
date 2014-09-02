@@ -42,7 +42,7 @@ import Text.XML.Light
 import System.Random
 import System.IO
 import System.Time
-import System.Cmd
+import System.Process
 import System.Posix.IO
 import System.Posix.Types
 import System.Posix.Files

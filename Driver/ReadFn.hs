@@ -1,12 +1,12 @@
 {- |
 Module      :  $Header$
 Description :  reading and parsing ATerms, CASL, HetCASL files
-Copyright   :  (c) Klaus Luettich, C. Maeder, Uni Bremen 2002-2006
+Copyright   :  (c) Klaus Luettich, C. Maeder, Uni Bremen 2002-2014
 License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
-Portability :  non-portable(DevGraph)
+Portability :  non-portable(Grothendieck)
 
 reading and parsing ATerms, CASL, HetCASL files as much as is needed for the
 static analysis
@@ -206,6 +206,9 @@ exitHets err = do
   hPutStrLn stderr err
   exitWith $ ExitFailure 2
 
+{- | output file type, checksum, real file name and file content.
+inputs are hets options, optional argument for the file program,
+and the library or file name. -}
 getContentAndFileType :: HetcatsOpts -> Maybe String -> FilePath
   -> IO (Either String (Maybe String, Maybe String, FilePath, String))
 getContentAndFileType opts mp fn = do

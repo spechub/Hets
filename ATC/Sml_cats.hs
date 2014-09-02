@@ -41,7 +41,7 @@ import Common.AS_Annotation
 import Common.LibName
 import Common.IO
 
-import Common.IRI (IRI, parseIRICurie)
+import Common.IRI (IRI, parseIRICurie, iriPos)
 
 import CASL.AS_Basic_CASL
 
@@ -1830,12 +1830,11 @@ instance ATermConvertibleSML LibName where
         case aterm of
             (ShAAppl "versioned-lib" [ aa, ab ] _) ->
                 let
-                (aa', r) = fromSmlShATermToLibId (getATermByIndex1 aa att)
+                aa' = fromSmlShATermToLibId (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
-                in (LibName aa' r Nothing $ Just ab')
+                in mkLibName aa' $ Just ab'
             (ShAAppl "lib" [ aa ] _) ->
-                let (aa', r) = fromSmlShATermToLibId (getATermByIndex1 aa att)
-                in LibName aa' r Nothing Nothing
+                iriLibName . fromSmlShATermToLibId $ getATermByIndex1 aa att
             _ -> from_sml_ShATermError "LibName" aterm
         where
             aterm = getATerm att'
@@ -1845,7 +1844,7 @@ instance ATermConvertibleSML LibName where
                     getATermByIndex1 item_i att
                 _ -> att
 
-fromSmlShATermToLibId :: ATermTable -> (IRI, Range)
+fromSmlShATermToLibId :: ATermTable -> IRI
 fromSmlShATermToLibId att =
         case aterm of
             (ShAAppl str [ aa ] _) | elem str ["path-name", "url"] ->
@@ -1853,7 +1852,7 @@ fromSmlShATermToLibId att =
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = pos_l
                 in (fromMaybe (error "fromSmlShATermToLibId")
-                   $ parseIRICurie aa', ab')
+                   $ parseIRICurie aa') { iriPos = ab' }
             _ -> from_sml_ShATermError "LibId" aterm
         where
             aterm = getATerm att'
