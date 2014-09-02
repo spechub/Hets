@@ -50,10 +50,10 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set (toList)
 
 {- |
-Export the development graph as xml. If the flag full is True then
+Export the development graph as json. If the flag full is True then
 symbols for all nodes are shown as declarations, otherwise (the
-default) only declaration for basic spec nodes are shown that are
-sufficient to reconstruct the development from the xml output. -}
+default) only declaration for basic spec nodes are shown as is done
+for the corresponding xml output. -}
 dGraph :: HetcatsOpts -> LibEnv -> LibName -> DGraph -> Json
 dGraph full lenv ln dg =
   let body = dgBody dg
@@ -62,6 +62,7 @@ dGraph full lenv ln dg =
       ledges = labEdges body
   in tagJson "DGraph" $ mkJObj
          [ mkJPair "filename" $ getFilePath ln
+         , mkJPair "mime-type" . fromMaybe "unknown" $ mimeType ln
          , mkJPair "libname" . show $ setAngles False $ getLibId ln
          , ("dgnodes", mkJNum $ length lnodes)
          , ("dgedges", mkJNum $ length ledges)
@@ -203,7 +204,7 @@ dgrule r =
       DGRuleWithEdge _ e -> [("RuleTarget", mkJNum $ getEdgeNum e)]
       _ -> []
 
--- | collects all symbols from dg and displays them as xml
+-- | collects all symbols from dg and displays them as json
 dgSymbols :: DGraph -> Json
 dgSymbols dg = let ga = globalAnnos dg in tagJson "Ontologies"
   $ mkJArr $ map (\ (i, lbl) -> let ins = getImportNames dg i in
