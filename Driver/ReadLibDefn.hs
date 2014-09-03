@@ -26,9 +26,8 @@ import CommonLogic.ParseCLAsLibDefn
 #ifndef NOOWLLOGIC
 import OWL2.ParseOWLAsLibDefn
 #endif
-#ifdef RDFLOGIC 
--- MODULE RDF IS BROKEN AT THE MOMENT
--- import RDF.ParseRDFAsLibDefn
+#ifdef RDFLOGIC
+-- import RDF.ParseRDFAsLibDefn -- MODULE RDF IS BROKEN AT THE MOMENT
 #endif
 import CSMOF.ParseXmiAsLibDefn
 import QVTR.ParseQvtAsLibDefn
@@ -55,6 +54,7 @@ mimeTypeMap =
   , ("obo", OWLIn OBO)
   , ("ttl", OWLIn Turtle)
   , ("turtle", OWLIn Turtle)
+  , ("omn", OWLIn Manchester)
   , ("dol", DOLIn)
   , ("clif", CommonLogicIn True)
   , ("het", HetCASLIn)
