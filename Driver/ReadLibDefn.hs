@@ -26,7 +26,8 @@ import CommonLogic.ParseCLAsLibDefn
 #ifndef NOOWLLOGIC
 import OWL2.ParseOWLAsLibDefn
 #endif
-#ifdef RDFLOGIC
+#ifdef RDFLOGIC 
+-- MODULE RDF IS BROKEN AT THE MOMENT
 -- import RDF.ParseRDFAsLibDefn
 #endif
 import CSMOF.ParseXmiAsLibDefn
@@ -49,23 +50,26 @@ mimeTypeMap :: [(String, InType)]
 mimeTypeMap =
   [ ("xml", DgXml)
   , ("html", HtmlIn)
-  , ("rdf", RDFIn)
-  , ("owl", OwlXmlIn)
-  , ("obo", OBOIn)
-  , ("ttl", OWLIn)
-  , ("omn", OWLIn)
-  , ("clif", CommonLogicIn True)
+  , ("rdf", OWLIn RdfXml)
+  , ("owl", OWLIn OwlXml)
+  , ("obo", OWLIn OBO)
+  , ("ttl", OWLIn Turtle)
+  , ("turtle", OWLIn Turtle)
   , ("dol", DOLIn)
+  , ("clif", CommonLogicIn True)
   , ("het", HetCASLIn)
   , ("casl", CASLIn) ]
+
+owlXmlTypes :: [InType]
+owlXmlTypes = map OWLIn [OwlXml, RdfXml, Turtle]
 
 joinFileTypes :: InType -> InType -> InType
 joinFileTypes ext magic = case (ext, magic) of
   (GuessIn, _) -> magic
   (_, GuessIn) -> ext
-  (DgXml, _) | elem magic [DgXml, RDFIn, OwlXmlIn] -> magic
+  (DgXml, _) | elem magic owlXmlTypes -> magic
+  (_, DgXml) | elem ext owlXmlTypes -> ext
   (_, HtmlIn) -> magic
-  -- (_, DgXml) | elem ext [DgXml, RDFIn, OWLIn, OwlXmlIn, OBOIn, Xmi] -> ext
   _ -> ext -- ignore contradictions
 
 findFiletype :: String -> InType
@@ -78,12 +82,12 @@ guessInput opts mr file input =
   let fty1 = guess file (intype opts)
       fty2 = maybe GuessIn findFiletype mr
       fty = joinFileTypes fty1 fty2
-  in if elem fty [GuessIn, DgXml, RDFIn, OwlXmlIn] then
+  in if elem fty $ GuessIn : DgXml : owlXmlTypes then
     case guessXmlContent (fty == DgXml) input of
     Left ty -> fail ty
     Right ty -> case ty of
       DgXml -> fail "unexpected DGraph xml"
-      _ -> return ty
+      _ -> return $ joinFileTypes fty ty
   else return fty
 
 readLibDefn :: MonadIO m => LogicGraph -> HetcatsOpts -> Maybe String
@@ -100,14 +104,13 @@ readLibDefn lgraph opts mr file fileForPos input =
       HtmlIn -> fail "unexpected html input"
       CommonLogicIn _ -> liftIO $ parseCL_CLIF file opts
 #ifdef RDFLOGIC
- -- - RDFIn -> liftIO $ parseRDF file
+     -- RDFIn -> liftIO $ parseRDF file
 #endif
       Xmi -> liftIO $ fmap (: []) $ parseXmi file
       Qvt -> liftIO $ fmap (: []) $ parseQvt file
       TPTPIn -> liftIO $ fmap (: []) $ parseTPTP file
 #ifndef NOOWLLOGIC
-      _ | elem ty [OWLIn, OwlXmlIn, OBOIn, RDFIn] -> liftIO
-        $ parseOWL (isStructured opts) file
+      OWLIn _ -> liftIO $ parseOWL (isStructured opts) file
 #endif
       _ -> case runParser (library lgraph) (emptyAnnos ()) fileForPos input of
          Left err -> fail (showErr err)

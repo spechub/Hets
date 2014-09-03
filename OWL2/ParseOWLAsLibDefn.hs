@@ -10,7 +10,7 @@ Portability :  non-portable (imports Logic.Logic)
 analyse OWL files by calling the external Java parser.
 -}
 
-module OWL2.ParseOWLAsLibDefn (parseOWL) where
+module OWL2.ParseOWLAsLibDefn (parseOWL, convertOWL) where
 
 import OWL2.AS
 import OWL2.MS
@@ -45,25 +45,38 @@ import System.FilePath
 import Text.XML.Light hiding (QName)
 
 -- | call for owl parser (env. variable $HETS_OWL_TOOLS muss be defined)
-parseOWL :: Bool -> FilePath      -- ^ local filepath or uri
+parseOWL :: Bool                  -- ^ Sets Option.quick
+         -> FilePath              -- ^ local filepath or uri
          -> IO [LIB_DEFN]         -- ^ map: uri -> OntologyFile
 parseOWL quick fn = do
+    tmpFile <- getTempFile "" "owlTemp.xml"
+    (exitCode, _, errStr) <- parseOWLAux quick fn ["-o", "xml", tmpFile]
+    case (exitCode, errStr) of
+      (ExitSuccess, "") -> do
+          cont <- L.readFile tmpFile
+          removeFile tmpFile
+          parseProc cont
+      _-> error $ "process stop! " ++ shows exitCode "\n" ++ errStr
+
+parseOWLAux :: Bool         -- ^ Sets Option.quick
+         -> FilePath        -- ^ local filepath or uri
+         -> [String]        -- ^ arguments for java parser 
+         -> IO (ExitCode, String, String)
+parseOWLAux quick fn args = do
     let jar = "OWL2Parser.jar"
     (hasJar, toolPath) <- check4HetsOWLjar jar
-    if hasJar then do
-        tmpFile <- getTempFile "" "owlTemp.xml"
-        (exitCode, _, errStr) <- executeProcess "java"
-          ["-jar", toolPath </> jar, fn, tmpFile
-          , if quick then "quick" else "xml"] ""
-        case (exitCode, errStr) of
-          (ExitSuccess, "") -> do
-            cont <- L.readFile tmpFile
-            removeFile tmpFile
-            parseProc cont
-          _ -> error $ "process stop! " ++ shows exitCode "\n"
-              ++ errStr
-      else error $ jar
+    if hasJar then executeProcess "java" (["-jar", toolPath </> jar]
+        ++ args ++ [fn] ++ if quick then ["-qk"] else []) ""
+    else error $ jar
         ++ " not found, check your environment variable: " ++ hetsOWLenv
+
+-- | converts owl file to desired syntax using owl-api
+convertOWL :: FilePath -> String -> IO (String)
+convertOWL fn tp = do
+  (exitCode, content, errStr) <- parseOWLAux False fn ["-o-sys", tp]
+  case (exitCode, errStr) of
+    (ExitSuccess, "") -> return content
+    _-> error $ "process stop! " ++ shows exitCode "\n" ++ errStr
 
 parseProc :: L.ByteString -> IO [LIB_DEFN]
 parseProc str = do

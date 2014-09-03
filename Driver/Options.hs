@@ -23,6 +23,8 @@ module Driver.Options
   , AnaType (..)
   , GuiType (..)
   , InType (..)
+  , OWLFormat (..)
+  , plainOwlFormats
   , OutType (..)
   , PrettyType (..)
   , prettyList
@@ -446,9 +448,7 @@ data InType =
   | CASLIn
   | HetCASLIn
   | DOLIn
-  | OWLIn
-  | OwlXmlIn
-  | OBOIn
+  | OWLIn OWLFormat
   | HaskellIn
   | MaudeIn
   | TwelfIn
@@ -460,10 +460,10 @@ data InType =
   | ExperimentalIn -- ^ for testing new functionality
   | ProofCommand
   | GuessIn
+  | RDFIn
   | FreeCADIn
   | CommonLogicIn Bool  -- ^ "clf" or "clif" ('True' is long version)
   | DgXml
-  | RDFIn
   | Xmi
   | Qvt
   | TPTPIn
@@ -476,9 +476,7 @@ instance Show InType where
     CASLIn -> "casl"
     HetCASLIn -> "het"
     DOLIn -> "dol"
-    OwlXmlIn -> "owl.xml"
-    OWLIn -> "owl"
-    OBOIn -> "obo"
+    OWLIn oty -> show oty
     HaskellIn -> hsS
     ExperimentalIn -> "exp"
     MaudeIn -> "maude"
@@ -491,20 +489,19 @@ instance Show InType where
     OmdocIn -> omdocS
     ProofCommand -> "hpf"
     GuessIn -> ""
+    RDFIn -> "rdf"
     FreeCADIn -> "fcstd"
     CommonLogicIn isLong -> if isLong then "clif" else "clf"
     DgXml -> xmlS
-    RDFIn -> "rdf"
     Xmi -> "xmi"
     Qvt -> "qvt"
     HtmlIn -> "html"
 
 -- maybe this optional tree prefix can be omitted
 instance Read InType where
-    readsPrec _ = readShowAux $ map ( \ i -> (show i, i))
-                  (plainInTypes ++ aInTypes)
-                  ++ [(treeS ++ genTermS ++ show at, ATermIn at)
-                           | at <- [BAF, NonBAF]]
+    readsPrec _ = readShowAux $ concatMap showAll (plainInTypes ++ aInTypes)
+      where showAll i@(ATermIn _) = [(show i, i), (treeS ++ show i, i)]
+            showAll i = [(show i, i)]
 
 -- | 'ATType' describes distinct types of ATerms
 data ATType = BAF | NonBAF deriving Eq
@@ -514,17 +511,40 @@ instance Show ATType where
     BAF -> bafS
     NonBAF -> ""
 
--- OwlXmlIn needs to be before OWLIn to avoid a read error in parseInType1
+-- RDFIn is on purpose not listed; must be added manually if neccessary
 plainInTypes :: [InType]
 plainInTypes =
-  [ CASLIn, HetCASLIn, DOLIn, OwlXmlIn, OWLIn, OBOIn, HaskellIn, ExperimentalIn
+  [ CASLIn, HetCASLIn, DOLIn ]
+  ++ map OWLIn plainOwlFormats ++
+  [ HaskellIn, ExperimentalIn
   , MaudeIn, TwelfIn
   , HolLightIn, IsaIn, ThyIn, PrfIn, OmdocIn, ProofCommand
   , CommonLogicIn False, CommonLogicIn True
-  , DgXml, FreeCADIn, RDFIn, Xmi, Qvt, TPTPIn ]
+  , DgXml, FreeCADIn, Xmi, Qvt, TPTPIn ]
 
 aInTypes :: [InType]
 aInTypes = [ ATermIn x | x <- [BAF, NonBAF] ]
+
+-- | 'OWLFormat' lists possibilities for OWL syntax (in + out)
+data OWLFormat =
+    Manchester
+  | OwlXml
+  | RdfXml
+  | OBO
+  | Turtle
+  deriving Eq
+
+plainOwlFormats :: [OWLFormat]
+plainOwlFormats = [ Manchester, OwlXml, RdfXml, OBO, Turtle ]
+
+instance Show OWLFormat where
+  show ty = case ty of
+    Manchester -> "omn"
+    OwlXml -> "owl"
+    -- "owl.xml" ?? might occur but conflicts with dgxml
+    RdfXml -> "rdf"
+    OBO -> "obo"
+    Turtle -> "ttl"
 
 data SPFType = ConsistencyCheck | ProveTheory
 
@@ -542,7 +562,7 @@ data OutType =
   | GraphOut GraphType
   | Prf
   | EnvOut
-  | OWLOut
+  | OWLOut OWLFormat
   | CLIFOut
   | KIFOut
   | OmdocOut
@@ -555,9 +575,9 @@ data OutType =
   | DfgFile SPFType -- ^ SPASS input file
   | TPTPFile SPFType
   | ComptableXml
+  | RDFOut
   | SigFile Delta -- ^ signature as text
   | TheoryFile Delta -- ^ signature with sentences as text
-  | RDFOut
   | SymXml
   | SymsXml
 
@@ -567,7 +587,7 @@ instance Show OutType where
     GraphOut f -> graphE ++ show f
     Prf -> prfS
     EnvOut -> envS
-    OWLOut -> "omn"
+    OWLOut oty -> show oty
     CLIFOut -> "clif"
     KIFOut -> "kif"
     OmdocOut -> omdocS
@@ -580,17 +600,18 @@ instance Show OutType where
     DfgFile t -> dfgS ++ show t
     TPTPFile t -> tptpS ++ show t
     ComptableXml -> "comptable.xml"
+    RDFOut -> "rdf"
     SigFile d -> "sig" ++ show d
     TheoryFile d -> "th" ++ show d
-    RDFOut -> "nt"
     SymXml -> "sym.xml"
     SymsXml -> "syms.xml"
 
+-- RDFOut is on purpose not listed; must be added manually if neccessary
 plainOutTypeList :: [OutType]
 plainOutTypeList =
-  [Prf, EnvOut, OWLOut, CLIFOut, KIFOut, OmdocOut, XmlOut, JsonOut
-  , ExperimentalOut, HaskellOut, ThyFile, ComptableXml, FreeCADOut
-  , RDFOut, SymXml, SymsXml]
+  [ Prf, EnvOut ] ++ map OWLOut plainOwlFormats ++
+  [ CLIFOut, KIFOut, OmdocOut, XmlOut, JsonOut, ExperimentalOut
+  , HaskellOut, ThyFile, ComptableXml, FreeCADOut, SymXml, SymsXml]
 
 outTypeList :: [OutType]
 outTypeList = let dl = [Delta, Fully] in
@@ -603,7 +624,7 @@ outTypeList = let dl = [Delta, Fully] in
     ++ [ GraphOut f | f <- graphList ]
 
 instance Read OutType where
-    readsPrec _ = readShowAux $ map ( \ o -> (show o, o)) outTypeList
+    readsPrec _ = readShow outTypeList
 
 data Delta = Delta | Fully
 
