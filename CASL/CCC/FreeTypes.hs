@@ -426,7 +426,11 @@ checkIncomplete :: (FormExtension f, TermExtension f, Ord f)
   -> Maybe (Result (Conservativity, [FORMULA f]))
 checkIncomplete osens m fsn = case getNotComplete osens m fsn of
   [] -> Nothing
-  incomplete -> let obligations = getObligations m fsn in Just $ Result
+  incomplete -> let
+    exhaustives = map snd . concat $ mapMaybe (maybeResult . fst) incomplete
+    isPatComplete = null $ concatMap (diags . fst) incomplete
+    obligations = getObligations m fsn ++ exhaustives
+    in Just $ Result
       (map (\ (Result ds mfs, fs@(hd : _)) -> let
         (lSym, pos) = leadingSymPos hd
         sname = case fmap extractLeadingSymb lSym of
@@ -434,16 +438,18 @@ checkIncomplete osens m fsn = case getNotComplete osens m fsn of
                       Just (Right pS) -> predSymbName pS
                       _ -> error "CASL.CCC.FreeTypes.<Symb_Name>"
         in Diag Warning (intercalate "\n" $
-             ("the definition of " ++ show sname ++ " is not complete")
+             ("the definition of " ++ show sname
+              ++ (if null ds then " may not be" else " is not") ++ " complete")
              : "the defining formula group is:"
              : map (\ (f, n) -> "  " ++ shows n ". "
                     ++ showDoc (simplifyCASLSen (mtarget m) f) "") (number fs)
              ++ map diagString ds
              ++ maybe []
-                 (map (\ (p, f) -> "  " ++ p ++ ": "
+                 (map (\ (p, f) -> "possibly incomplete pattern for: " ++ p
+                   ++ "\n  with completeness condition: "
                    ++ showDoc (simplifyCASLSen (mtarget m) f) "")) mfs
              ) pos)
-       incomplete) $ Just (Cons, obligations)
+       incomplete) $ Just (if isPatComplete then Def else Cons, obligations)
 
 checkTerminal :: (FormExtension f, TermExtension f, Ord f)
   => (Sign f e, [Named (FORMULA f)]) -> Morphism f e m -> [Named (FORMULA f)]
