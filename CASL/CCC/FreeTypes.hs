@@ -300,7 +300,7 @@ checkDefinitional tsig fsn = let
        (domainDefs, otherPartials) = partition (isDomainDef . fst) partialLSyms
        (withDefs, withOutDefs) = partition (containDef . fst) otherPartials
        (correctDefs, wrongDefs) = partition (correctDef . fst) withDefs
-       grDomainDefs = groupBy (on (==) snd) $ sortBy (on compare snd) domainDefs
+       grDomainDefs = Rel.partList (on (sameOpSymbs tsig) snd) domainDefs
        (multDomainDefs, oneDomainDefs) = partition (\ l -> case l of
           [_] -> False
           _ -> True) grDomainDefs
