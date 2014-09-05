@@ -427,9 +427,7 @@ checkIncomplete :: (FormExtension f, TermExtension f, Ord f)
 checkIncomplete osens m fsn = case getNotComplete osens m fsn of
   [] -> Nothing
   incomplete -> let
-    exhaustives = map snd . concat $ mapMaybe (maybeResult . fst) incomplete
-    isPatComplete = null $ concatMap (diags . fst) incomplete
-    obligations = getObligations m fsn ++ exhaustives
+    obligations = getObligations m fsn
     in Just $ Result
       (map (\ (Result ds mfs, fs@(hd : _)) -> let
         (lSym, pos) = leadingSymPos hd
@@ -449,7 +447,7 @@ checkIncomplete osens m fsn = case getNotComplete osens m fsn of
                    ++ "\n  with completeness condition: "
                    ++ showDoc (simplifyCASLSen (mtarget m) f) "")) mfs
              ) pos)
-       incomplete) $ Just (if isPatComplete then Def else Cons, obligations)
+       incomplete) $ Just (Cons, obligations)
 
 checkTerminal :: (FormExtension f, TermExtension f, Ord f)
   => (Sign f e, [Named (FORMULA f)]) -> Morphism f e m -> [Named (FORMULA f)]
