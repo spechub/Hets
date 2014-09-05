@@ -22,7 +22,7 @@ import CASL.Simplify
 import CASL.SimplifySen
 import CASL.CCC.TermFormula
 import CASL.CCC.TerminationProof (terminationProof)
-import CASL.Overload (leqF, leqP)
+import CASL.Overload (leqP)
 import CASL.Quantification
 import CASL.ToDoc
 import CASL.Utils
@@ -538,8 +538,7 @@ output Nothing if there is some axiom in incorrect form -}
 groupAxioms :: GetRange f => Sign f e -> [FORMULA f] -> [[FORMULA f]]
 groupAxioms sig phis = map (map snd)
    $ Rel.partList (\ (e1, _) (e2, _) -> case (e1, e2) of
-       (Left (Qual_op_name o1 t1 _), Left (Qual_op_name o2 t2 _)) ->
-           o1 == o2 && on (leqF sig) toOpType t1 t2
+       (Left o1, Left o2) -> sameOpSymbs sig o1 o2
        (Right (Qual_pred_name p1 t1 _), Right (Qual_pred_name p2 t2 _)) ->
            p1 == p2 && on (leqP sig) toPredType t1 t2
        _ -> False)
@@ -559,10 +558,7 @@ checkTerms sig cons = concatMap checkT
 {- | check whether the operation symbol is a constructor
 (or a related overloaded variant). -}
 isCons :: Sign f e -> [OP_SYMB] -> OP_SYMB -> Bool
-isCons s cons os = any (is_Cons os) cons
-    where is_Cons (Qual_op_name on1 ot1 _) (Qual_op_name on2 ot2 _) =
-            on1 == on2 && on (leqF s) toOpType ot1 ot2
-          is_Cons _ _ = False
+isCons sig cons os = any (sameOpSymbs sig os) cons
 
 -- | create all possible pairs from a list
 pairs :: [a] -> [(a, a)]
@@ -702,7 +698,7 @@ completePatterns tsig consMap consMap2 (leadingArgs, pas)
             else let
               consAppls@(_ : _) = mapMaybe (\ (f, t) -> case unsortedTerm t of
                 Application (Qual_op_name o ot _) _ _ ->
-                  Just (f, o, Set.filter (on (leqF tsig) toOpType ot)
+                  Just (f, o, Set.filter (sameOpTypes tsig ot)
                     $ MapSet.lookup o consMap2)
                 _ -> Nothing) hds
               consSrt = foldr1 Set.intersection
@@ -719,7 +715,7 @@ completePatterns tsig consMap consMap2 (leadingArgs, pas)
                     let cons_group = map (\ (c, ct) -> (c, ct,
                           filter (\ (_, h : _) -> case unsortedTerm h of
                             Application (Qual_op_name o ot _) _ _ ->
-                              c == o && on (leqF tsig) toOpType ct ot
+                              c == o && sameOpTypes tsig ct ot
                             _ -> False) pas)) $ Set.toList allCons
                         vars = filter (\ (_, h : _) -> isVar h) pas
                     ffs <- mapM (\ f -> checkConstructor leadingArgs vars f

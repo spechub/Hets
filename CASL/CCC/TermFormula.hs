@@ -154,12 +154,18 @@ substitute = foldTerm . substRec
 substiF :: Eq f => [(TERM f, TERM f)] -> FORMULA f -> FORMULA f
 substiF = foldFormula . substRec
 
+sameOpTypes :: Sign f e -> OP_TYPE -> OP_TYPE -> Bool
+sameOpTypes sig = on (leqF sig) toOpType
+
+sameOpSymbs :: Sign f e -> OP_SYMB -> OP_SYMB -> Bool
+sameOpSymbs sig o1 o2 = on (==) opSymbName o1 o2 && case (o1, o2) of
+  (Qual_op_name _ t1 _, Qual_op_name _ t2 _) -> sameOpTypes sig t1 t2
+  _ -> False
+
 -- | check whether two terms are the terms of same application symbol
 sameOpsApp :: Sign f e -> TERM f -> TERM f -> Bool
 sameOpsApp sig app1 app2 = case (unsortedTerm app1, unsortedTerm app2) of
-  (Application (Qual_op_name ops1 t1 _) _ _
-    , Application (Qual_op_name ops2 t2 _) _ _)
-    -> ops1 == ops2 && on (leqF sig) toOpType t1 t2
+  (Application o1 _ _, Application o2 _ _) -> sameOpSymbs sig o1 o2
   _ -> False
 
 eqPattern :: Sign f e -> TERM f -> TERM f -> Bool
