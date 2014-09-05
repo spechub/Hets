@@ -105,9 +105,8 @@ convert2Forms :: (TermExtension f, FormExtension f, Ord f) => Sign f e
   -> (FORMULA f, FORMULA f, (Subst f, Subst f))
 convert2Forms sig f1 f2 (Result ds m) =
   if null ds then let Just r = m in (f1, f2, r) else let
-  f3 = convertFormula 1 id f1
-  c = Set.size $ getQuantVars f3
-  f4 = convertFormula (c + 2) id f2
+  (f3, c) = alphaConvert 1 id f1
+  f4 = convertFormula c id f2
   Result _ (Just p) = getSubstForm sig f3 f4
   in (f3, f4, p)
 
@@ -723,10 +722,8 @@ completePatterns tsig consMap consMap2 (leadingArgs, pas)
                               c == o && on (leqF tsig) toOpType ct ot
                             _ -> False) pas)) $ Set.toList allCons
                         vars = filter (\ (_, h : _) -> isVar h) pas
-                    pa_group <- mapM (checkConstructor leadingArgs vars)
-                      cons_group
-                    ffs <- mapM (completePatterns tsig consMap consMap2)
-                      pa_group
+                    ffs <- mapM (\ f -> checkConstructor leadingArgs vars f
+                      >>= completePatterns tsig consMap consMap2) cons_group
                     return $ concat ffs
 
 mkVars :: [SORT] -> [TERM f]

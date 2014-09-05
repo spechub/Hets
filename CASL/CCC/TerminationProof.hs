@@ -14,11 +14,11 @@ Termination proofs for equation systems, using AProVE
 module CASL.CCC.TerminationProof (terminationProof) where
 
 import CASL.AS_Basic_CASL
+import CASL.Quantification (stripAllQuant)
 import CASL.Sign
 import CASL.ToDoc
 import CASL.CCC.TermFormula
   ( unsortedTerm
-  , quanti
   , arguOfTerm
   , substiF
   , sameOpsApp)
@@ -168,7 +168,7 @@ follow the conditions after the symbol "|".
 For example : "A -> B | C -> D, E -> F, ..." -}
 axiom2TRS :: (FormExtension f, Eq f, Monad m) => Sign f e
   -> [(TERM f, FORMULA f)] -> FORMULA f -> m String
-axiom2TRS sig doms f = case quanti f of
+axiom2TRS sig doms f = case stripAllQuant f of
   Relation f1 c f2 _ | c /= Equivalence -> do
     a1 <- axiom2Cond f1
     t2 <- axiom2Rule f2
@@ -195,7 +195,7 @@ axiom2Cond :: (Monad m, FormExtension f) => FORMULA f -> m String
 axiom2Cond = axiom2Rule
 
 axiom2Rule :: (Monad m, FormExtension f) => FORMULA f -> m String
-axiom2Rule f = case quanti f of
+axiom2Rule f = case stripAllQuant f of
   Negation f' _ -> case f' of
     Quantification {} ->
       fail "CASL.CCC.TerminationProof.<axiom2TRS_Negation>"
@@ -228,7 +228,7 @@ isApp t = case unsortedTerm t of
 
 -- | translate a casl axiom (without conditions) to a term of TRS,
 axiomSub :: (Monad m, FormExtension f) => FORMULA f -> m String
-axiomSub f = case quanti f of
+axiomSub f = case stripAllQuant f of
   Junction j fs@(_ : _) _ -> do
     as <- mapM axiomSub fs
     return $ foldr1 (applyBin $ if j == Con then "and" else "or") as

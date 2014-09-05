@@ -16,6 +16,7 @@ module CASL.CCC.TermFormula where
 import CASL.AS_Basic_CASL
 import CASL.Fold
 import CASL.Overload (leqF)
+import CASL.Quantification
 import CASL.Sign
 
 import Common.Id
@@ -29,12 +30,6 @@ unsortedTerm t = case t of
   Sorted_term t' _ _ -> unsortedTerm t'
   Cast t' _ _ -> unsortedTerm t'
   _ -> t
-
--- | the quantifier of term is always ignored
-quanti :: FORMULA f -> FORMULA f
-quanti f = case f of
-  Quantification _ _ f' _ -> quanti f'
-  _ -> f
 
 -- | check whether it exist a (unique)existent quantification
 isExQuanti :: FORMULA f -> Bool
@@ -119,7 +114,7 @@ leadingSymPos f = leading (f, False, False, False) where
   leadTerm t q = case unsortedTerm t of
     a@(Application _ _ p) -> (Just (Left a), p)
     _ -> (Nothing, q)
-  leading (f1, b1, b2, b3) = case (quanti f1, b1, b2, b3) of
+  leading (f1, b1, b2, b3) = case (stripAllQuant f1, b1, b2, b3) of
     (Negation f' _, _, _, False) ->
         leading (f', b1, b2, True)
     (Relation _ c f' _, False, False, False)
