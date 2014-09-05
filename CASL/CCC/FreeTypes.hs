@@ -135,8 +135,8 @@ getSubstForm :: (FormExtension f, TermExtension f, Ord f) => Sign f e
 getSubstForm sig f1 f2 =
   let p1 = patternsOfAxiom f1
       p2 = patternsOfAxiom f2
-      getVars = Set.map fst . Set.unions . map (freeTermVars sig)
-  in getSubst sig (p1, getVars p1) (p2, getVars p2)
+      getVars = Set.map fst . freeVars sig . stripAllQuant
+  in getSubst sig (p1, getVars f1) (p2, getVars f2)
 
 getSubst :: (FormExtension f, TermExtension f, Ord f) => Sign f e
   -> ([TERM f], Set.Set VAR) -> ([TERM f], Set.Set VAR)
