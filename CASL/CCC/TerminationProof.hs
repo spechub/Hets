@@ -28,7 +28,6 @@ import Common.Utils
 
 import Control.Monad
 
-import System.Process
 import System.Directory
 
 import Data.List (intercalate, partition)
@@ -79,14 +78,16 @@ terminationProof sig fs dms =
   if null ls then do
       tmpFile <- getTempFile (unlines $ c_vars : c_axms) "Input.trs"
       aprovePath <- getEnvDef "HETS_APROVE" "CASL/Termination/AProVE.jar"
-      (_, proof, _) <- readProcessWithExitCode "java"
+      mr <- timeoutCommand 20 "java"
         ("-ea" : "-jar" : aprovePath : words "-u cli -m wst -p plain"
-         ++ [tmpFile]) ""
+         ++ [tmpFile])
       removeFile tmpFile
-      return (case words proof of
-        "YES" : _ -> Just True
-        "NO" : _ -> Just False
-        _ -> Nothing, proof)
+      return $ case mr of
+        Nothing -> (Nothing, "timeout")
+        Just (_, proof, _) -> (case words proof of
+          "YES" : _ -> Just True
+          "NO" : _ -> Just False
+          _ -> Nothing, proof)
     else return (Nothing, unlines . map show $ concatMap diags ls)
 
 keywords :: [String]
