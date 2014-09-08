@@ -15,7 +15,6 @@ module CASL.CCC.FreeTypes (checkFreeType) where
 
 import CASL.AlphaConvert
 import CASL.AS_Basic_CASL
-import CASL.Fold
 import CASL.Morphism
 import CASL.Sign
 import CASL.Simplify
@@ -42,7 +41,6 @@ import Data.Function
 import Data.List
 import Data.Maybe
 
-import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 -- | check values of constructors (free types have only total ones)
@@ -130,58 +128,6 @@ mkOverlapEq (s1, s2) f1 f2 = quant . simplifyFormula id
      . overlapQuery (replaceVarsF s1 id $ stripAllQuant f1)
      . replaceVarsF s2 id $ stripAllQuant f2
 
-getSubstForm :: (FormExtension f, TermExtension f, Ord f) => Sign f e
-  -> FORMULA f -> FORMULA f -> Result (Subst f, Subst f)
-getSubstForm sig f1 f2 =
-  let p1 = patternsOfAxiom f1
-      p2 = patternsOfAxiom f2
-      getVars = Set.map fst . freeVars sig . stripAllQuant
-  in getSubst sig (p1, getVars f1) (p2, getVars f2)
-
-getSubst :: (FormExtension f, TermExtension f, Ord f) => Sign f e
-  -> ([TERM f], Set.Set VAR) -> ([TERM f], Set.Set VAR)
-  -> Result (Subst f, Subst f)
-getSubst sig (p1, vs1) (p2, vs2) =
-  let substT v t = foldTerm $ replaceVarsRec (Map.singleton v t) id
-      getVars = Set.map fst . freeTermVars sig
-  in case (p1, p2) of
-    ([], []) -> return (Map.empty, Map.empty)
-    (hd1 : tl1, hd2 : tl2) ->
-      let r = getSubst sig (tl1, vs1) (tl2, vs2)
-          mkS1 v1 = do
-              (m1, m2) <- getSubst sig
-                (map (substT v1 hd2) tl1, Set.delete v1 vs1) (tl2, vs2)
-              return (Map.insert v1 hd2 m1, m2)
-          mkS2 v2 = do
-              (m1, m2) <- getSubst sig (tl1, vs1)
-                (map (substT v2 hd1) tl2, Set.delete v2 vs2)
-              return (m1, Map.insert v2 hd1 m2)
-          cond v vs hd = Set.member v vs && Set.notMember v (getVars hd)
-          diag v = appendDiags [mkDiag Warning
-                            "unsupported occurrence of variable" v] >> r
-      in case (unsortedTerm hd1, unsortedTerm hd2) of
-        (Qual_var v1 _ _, Qual_var v2 _ _)
-          | v1 == v2 -> getSubst sig (tl1, Set.delete v1 vs1)
-               (tl2, Set.delete v2 vs2)
-          | Set.member v1 vs2 ->
-            if Set.member v2 vs1
-            then appendDiags [mkDiag Warning
-                            ("unsupported mix of variables '"
-                             ++ show v1 ++ "' and") v2] >> r
-            else mkS1 v1
-          | otherwise -> mkS2 v2
-        (Qual_var v1 _ _, _) ->
-            if cond v1 vs2 hd2 then diag v1
-            else mkS1 v1
-        (_, Qual_var v2 _ _) ->
-            if cond v2 vs1 hd1 then diag v2
-            else mkS2 v2
-        (_, _) | sameOpsApp sig hd1 hd2 ->
-             getSubst sig (arguOfTerm hd1 ++ tl1, vs1)
-                          (arguOfTerm hd2 ++ tl2, vs2)
-        _ -> mkError "no overlap at" hd1
-    _ -> error "non-matching leading terms"
-
 {-
   check if leading symbols are new (not in the image of morphism),
         if not, return it as proof obligation
@@ -267,15 +213,6 @@ isDomain f = case stripAllQuant f of
 
 isDomainDef :: FORMULA f -> Bool
 isDomainDef f = isJust (domainDef f) && isDomain f
-
-domainDef :: FORMULA f -> Maybe (TERM f, FORMULA f)
-domainDef f = case stripAllQuant f of
-  Relation (Definedness t _) Equivalence f' _ -> Just (t, f')
-  _ -> Nothing
-
--- | extract the domain-list of partial functions
-domainList :: [FORMULA f] -> [(TERM f, FORMULA f)]
-domainList = mapMaybe domainDef
 
 -- | check whether it contains a definedness formula in correct form
 correctDef :: FORMULA f -> Bool
@@ -448,15 +385,18 @@ checkIncomplete osens m fsn = case getNotComplete osens m fsn of
              ) pos)
        incomplete) $ Just (Cons, obligations)
 
+renameVars :: [FORMULA f] -> [FORMULA f]
+renameVars = snd . foldr (\ f (c, l) ->
+   let (f2, c2) = alphaConvert c id f in
+   (c2, f2 : l)) (1, [])
+
 checkTerminal :: (FormExtension f, TermExtension f, Ord f)
   => (Sign f e, [Named (FORMULA f)]) -> Morphism f e m -> [Named (FORMULA f)]
   -> IO (Maybe (Result (Conservativity, [FORMULA f])))
 checkTerminal oTh m fsn = do
-    let fs = getFs fsn
-        fs_terminalProof = filter (\ f ->
-          not $ isSortGen f || isMembership f || isExQuanti f || isDomain f
-          ) fs
-        domains = domainList fs
+    let fs = renameVars $ getAxioms fsn
+        (domains, restFs) = partition (isJust . domainDef) fs
+        fs_terminalProof = filter (not . isDomain) restFs
         obligations = getObligations m fsn
         conStatus = getConStatus oTh m fsn
         res = if null obligations then Nothing else
@@ -565,50 +505,6 @@ pairs :: [a] -> [(a, a)]
 pairs ps = case ps of
   hd : tl@(_ : _) -> map (\ x -> (hd, x)) tl ++ pairs tl
   _ -> []
-
--- | get the patterns of a axiom
-patternsOfAxiom :: FORMULA f -> [TERM f]
-patternsOfAxiom = snd . topIdOfAxiom
-
-topIdOfAxiom :: FORMULA f -> ((Id, Int), [TERM f])
-topIdOfAxiom f = case stripAllQuant f of
-    Negation f' _ -> topIdOfAxiom f'
-    Relation _ c f' _ | c /= Equivalence -> topIdOfAxiom f'
-    Relation f' Equivalence _ _ -> topIdOfAxiom f'
-    Predication p ts _ -> ((predSymbName p, length ts), ts)
-    Equation t _ _ _ -> topIdOfTerm t
-    Definedness t _ -> topIdOfTerm t
-    _ -> nullId
-
--- | split the axiom into condition and rest axiom
-splitAxiom :: FORMULA f -> (FORMULA f, FORMULA f)
-splitAxiom f = case stripAllQuant f of
-                     Relation f1 c f2 _ | c /= Equivalence ->
-                       -- let (f3, f4) = splitAxiom f2 in (conjunct f1 f3, f4)
-                       (f1, f2) -- without nesting yet
-                     f' -> (trueForm, f')
-
--- | get the premise of a formula, without implication return true
-conditionAxiom :: FORMULA f -> FORMULA f
-conditionAxiom = fst . splitAxiom
-
--- | get the conclusion of a formula, without implication return the formula
-restAxiom :: FORMULA f -> FORMULA f
-restAxiom = snd . splitAxiom
-
--- | get right hand side of an equivalence, without equivalence return true
-resultAxiom :: FORMULA f -> FORMULA f
-resultAxiom f = case restAxiom f of
-                  Relation _ Equivalence f' _ -> f'
-                  _ -> trueForm
-
--- | get right hand side of an equation, without equation return dummy term
-resultTerm :: FORMULA f -> TERM f
-resultTerm f = case restAxiom f of
-                 Negation (Definedness _ _) _ ->
-                   varOrConst (mkSimpleId "undefined")
-                 Equation _ _ t _ -> t
-                 _ -> varOrConst (mkSimpleId "unknown")
 
 -- | create the proof obligation for a pair of overlapped formulas
 overlapQuery :: GetRange f => FORMULA f -> FORMULA f -> FORMULA f

@@ -14,14 +14,11 @@ Termination proofs for equation systems, using AProVE
 module CASL.CCC.TerminationProof (terminationProof) where
 
 import CASL.AS_Basic_CASL
-import CASL.Quantification (stripAllQuant)
+import CASL.Quantification
 import CASL.Sign
 import CASL.ToDoc
+import CASL.Utils
 import CASL.CCC.TermFormula
-  ( unsortedTerm
-  , arguOfTerm
-  , substiF
-  , sameOpsApp)
 
 import Common.DocUtils
 import Common.Id
@@ -36,9 +33,9 @@ import System.Directory
 
 import Data.List (intercalate, partition)
 import Data.Maybe
-import Data.Function (on)
 
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 {-
    Automatic termination proof
@@ -52,8 +49,8 @@ import qualified Data.Map as Map
    if a equation system is terminal, then it is computable.
 -}
 
-terminationProof :: (FormExtension f, Ord f) => Sign f e -> [FORMULA f]
-  -> [(TERM f, FORMULA f)] -> IO (Maybe Bool, String)
+terminationProof :: (FormExtension f, TermExtension f, Ord f) => Sign f e
+  -> [FORMULA f] -> [FORMULA f] -> IO (Maybe Bool, String)
 terminationProof sig fs dms =
   if null fs then return (Just True, "no formulas") else do
   let
@@ -73,8 +70,10 @@ terminationProof sig fs dms =
       , "not(false) -> true"
       , "when_else(t1,true,t2) -> t1"
       , "when_else(t1,false,t2) -> t2" ]
+    allVars = Set.toList . Set.map fst . Set.unions
+      . map getQuantVars $ dms ++ fs
     c_vars = "(VAR t t1 t2 "
-      ++ unwords (map transToken . nubOrd $ concatMap varOfAxiom fs) ++ ")"
+      ++ unwords (map transToken allVars) ++ ")"
     (rs, ls) = partition (isJust . maybeResult) $ map (axiom2TRS sig dms) fs
     c_axms = axhead ++ map (fromJust . maybeResult) rs ++ [")"]
   if null ls then do
@@ -89,13 +88,6 @@ terminationProof sig fs dms =
         "NO" : _ -> Just False
         _ -> Nothing, proof)
     else return (Nothing, unlines . map show $ concatMap diags ls)
-
--- | extract all variables of a axiom
-varOfAxiom :: FORMULA f -> [VAR]
-varOfAxiom f = case f of
-    Quantification _ vd _ _ ->
-        concatMap (\ (Var_decl vs _ _) -> vs) vd
-    _ -> []
 
 keywords :: [String]
 keywords = ["eq", "or", "implies", "equiv", "when_else"]
@@ -166,8 +158,8 @@ a rule without condition is represented by "A -> B" in
 Term Rewrite Systems; if there are some conditions, then
 follow the conditions after the symbol "|".
 For example : "A -> B | C -> D, E -> F, ..." -}
-axiom2TRS :: (FormExtension f, Eq f, Monad m) => Sign f e
-  -> [(TERM f, FORMULA f)] -> FORMULA f -> m String
+axiom2TRS :: (FormExtension f, TermExtension f, Ord f, Monad m) => Sign f e
+  -> [FORMULA f] -> FORMULA f -> m String
 axiom2TRS sig doms f = case stripAllQuant f of
   Relation f1 c f2 _ | c /= Equivalence -> do
     a1 <- axiom2Cond f1
@@ -178,12 +170,17 @@ axiom2TRS sig doms f = case stripAllQuant f of
         a4 <- axiom2Cond f4
         return $ a3 ++ " | " ++ a1 ++ ", " ++ a4
       _ -> case f1 of
-        Definedness t _ -> case filter (sameOpsApp sig t . fst) doms of
+        Definedness t _ -> case filter (sameOpsApp sig t . fst . fromJust
+                                        . domainDef) doms of
+          phi : _ ->
+            let Result _ st = getSubstForm sig f phi
+            in case st of
+                 Just (s1, s2) -> do
+                    t3 <- axiom2Rule $ replaceVarsF s1 id f2
+                    sc <- axiom2Cond . replaceVarsF s2 id $ resultAxiom phi
+                    return $ t3 ++ " | " ++ sc
+                 Nothing -> error "TerminationProof.axiom2TRS"
           [] -> return $ t2 ++ " | " ++ a1
-          (te, phi) : _ -> do
-            let st = on zip arguOfTerm t te
-            sc <- axiom2Cond (substiF st phi)
-            return $ t2 ++ " | " ++ sc
         _ -> return $ t2 ++ " | " ++ a1
   Relation f1 Equivalence f2 _ -> do
     r1 <- axiom2Rule f1
