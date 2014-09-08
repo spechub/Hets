@@ -246,7 +246,7 @@ checkDefinitional tsig fsn = let
          Just (ta, _) | all isVar $ arguOfTerm ta -> False
          _ -> True) singleDomainDefs
        domainObls = concatMap (\ (da, dt) -> map (\ (de, _) -> (da, de))
-           $ filter ((== dt) . snd) correctDefs) singleDomainDefs
+           $ filter (sameOpSymbs tsig dt . snd) correctDefs) singleDomainDefs
        nonEqDoms = filter (\ (da, de) ->
          case (domainDef da, stripAllQuant de) of
            (Just (ta, _), Relation (Definedness te _) c _ _)
