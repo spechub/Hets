@@ -580,26 +580,31 @@ topIdOfAxiom f = case stripAllQuant f of
     Definedness t _ -> topIdOfTerm t
     _ -> nullId
 
-{- | get the axiom from left hand side of a implication,
-if there is no implication, then return atomic formula true -}
-conditionAxiom :: FORMULA f -> FORMULA f
-conditionAxiom f = case stripAllQuant f of
-                     Relation f' c _ _ | c /= Equivalence -> f'
-                     _ -> trueForm
+-- | split the axiom into condition and rest axiom
+splitAxiom :: FORMULA f -> (FORMULA f, FORMULA f)
+splitAxiom f = case stripAllQuant f of
+                     Relation f1 c f2 _ | c /= Equivalence ->
+                       -- let (f3, f4) = splitAxiom f2 in (conjunct f1 f3, f4)
+                       (f1, f2) -- without nesting yet
+                     f' -> (trueForm, f')
 
-{- | get the axiom from right hand side of a equivalence,
-if there is no equivalence, then return atomic formula true -}
+-- | get the premise of a formula, without implication return true
+conditionAxiom :: FORMULA f -> FORMULA f
+conditionAxiom = fst . splitAxiom
+
+-- | get the conclusion of a formula, without implication return the formula
+restAxiom :: FORMULA f -> FORMULA f
+restAxiom = snd . splitAxiom
+
+-- | get right hand side of an equivalence, without equivalence return true
 resultAxiom :: FORMULA f -> FORMULA f
-resultAxiom f = case stripAllQuant f of
-                  Relation _ c f' _ | c /= Equivalence -> resultAxiom f'
+resultAxiom f = case restAxiom f of
                   Relation _ Equivalence f' _ -> f'
                   _ -> trueForm
 
-{- | get the term from right hand side of a equation in a formula,
-if there is no equation, then return a simple id -}
+-- | get right hand side of an equation, without equation return dummy term
 resultTerm :: FORMULA f -> TERM f
-resultTerm f = case stripAllQuant f of
-                 Relation _ c f' _ | c /= Equivalence -> resultTerm f'
+resultTerm f = case restAxiom f of
                  Negation (Definedness _ _) _ ->
                    varOrConst (mkSimpleId "undefined")
                  Equation _ _ t _ -> t
@@ -745,11 +750,6 @@ checkConstructor leadingArgs vars (c, ct, es) = do
       return (nL, varEqs)
     _ ->
       return (nL, map (\ (f, h : t) -> (f, arguOfTerm h ++ t)) es ++ varEqs)
-
-restAxiom :: FORMULA f -> FORMULA f
-restAxiom f = case stripAllQuant f of
-                     Relation _ c f' _ | c /= Equivalence -> f'
-                     f' -> f'
 
 checkExhaustive :: (Ord f, FormExtension f, TermExtension f)
   => Sign f e -> [FORMULA f] -> [FORMULA f]
