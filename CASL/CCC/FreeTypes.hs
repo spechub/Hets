@@ -99,8 +99,9 @@ getOverlapQuery sig fsn = filter (not . is_True_atom)
   . mapMaybe (retrySubstForm sig) . concatMap pairs $ getAxGroup sig fsn
 
 convert2Forms :: (TermExtension f, FormExtension f, Ord f) => Sign f e
-  -> FORMULA f -> FORMULA f -> Result (Subst f, Subst f)
-  -> (FORMULA f, FORMULA f, (Subst f, Subst f))
+  -> FORMULA f -> FORMULA f
+  -> Result ((Subst f, [FORMULA f]), (Subst f, [FORMULA f]))
+  -> (FORMULA f, FORMULA f, ((Subst f, [FORMULA f]), (Subst f, [FORMULA f])))
 convert2Forms sig f1 f2 (Result ds m) =
   if null ds then let Just r = m in (f1, f2, r) else let
   (f3, c) = alphaConvert 1 id f1
@@ -122,9 +123,12 @@ retrySubstForm sig (f1, f2) =
 quant :: Ord f => FORMULA f -> FORMULA f
 quant f = mkForall (varDeclOfF f) f
 
-mkOverlapEq :: (GetRange f, Ord f) => (Subst f, Subst f) -> FORMULA f
-  -> FORMULA f -> FORMULA f
-mkOverlapEq (s1, s2) f1 f2 = quant . simplifyFormula id
+mkOverlapEq :: (GetRange f, Ord f) =>
+  ((Subst f, [FORMULA f]), (Subst f, [FORMULA f]))
+  -> FORMULA f -> FORMULA f -> FORMULA f
+mkOverlapEq ((s1, fs1), (s2, fs2)) f1 f2 = quant . simplifyFormula id
+     . mkImpl (conjunct $ map (replaceVarsF s1 id) fs2
+               ++ map (replaceVarsF s2 id) fs1)
      . overlapQuery (replaceVarsF s1 id $ stripAllQuant f1)
      . replaceVarsF s2 id $ stripAllQuant f2
 
@@ -662,7 +666,7 @@ checkExhaustive sig es = case es of
           (map (quant . simplifyFormula id . conditionAxiom) [f1])
           ++ checkExhaustive sig rs
        (r, f2) : rrs -> let
-          (f3, f4, (s3, s4)) = convert2Forms sig f1 f2 r
+          (f3, f4, ((s3, _), (s4, _))) = convert2Forms sig f1 f2 r
           in checkExhaustive sig
          $ (quant . simplifyFormula id
          . mkImpl (disjunct [ replaceVarsF s3 id $ conditionAxiom f3

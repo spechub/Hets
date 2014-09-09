@@ -176,7 +176,7 @@ axiom2TRS sig doms f = case stripAllQuant f of
           phi : _ ->
             let Result _ st = getSubstForm sig f phi
             in case st of
-                 Just (s1, s2) -> do
+                 Just ((s1, _), (s2, _)) -> do
                     t3 <- axiom2Rule $ replaceVarsF s1 id f2
                     sc <- axiom2Cond . replaceVarsF s2 id $ resultAxiom phi
                     return $ t3 ++ " | " ++ sc

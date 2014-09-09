@@ -15,7 +15,7 @@ module CASL.CCC.TermFormula where
 
 import CASL.AS_Basic_CASL
 import CASL.Fold
-import CASL.Overload (leqF)
+import CASL.Overload
 import CASL.Quantification
 import CASL.Sign
 import CASL.ToDoc
@@ -25,7 +25,11 @@ import Common.Id
 import Common.Result
 import qualified Common.Lib.MapSet as MapSet
 
+import Control.Monad
+
 import Data.Function
+import Data.List
+import Data.Maybe
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -150,51 +154,90 @@ resultTerm f = case restAxiom f of
                  _ -> varOrConst (mkSimpleId "unknown")
 
 getSubstForm :: (FormExtension f, TermExtension f, Ord f) => Sign f e
-  -> FORMULA f -> FORMULA f -> Result (Subst f, Subst f)
-getSubstForm sig f1 f2 =
+  -> FORMULA f -> FORMULA f
+  -> Result ((Subst f, [FORMULA f]), (Subst f, [FORMULA f]))
+getSubstForm sig f1 f2 = do
   let p1 = patternsOfAxiom f1
       p2 = patternsOfAxiom f2
       getVars = Set.map fst . freeVars sig . stripAllQuant
-  in getSubst sig (p1, getVars f1) (p2, getVars f2)
+  getSubst sig (p1, getVars f1) (p2, getVars f2)
+
+mkCast :: SORT -> TERM f -> SORT -> (TERM f, [FORMULA f])
+mkCast s2 t s1 = if s1 == s2 then (t, []) else
+  case unsortedTerm t of
+    Qual_var v _ r -> (Qual_var v s1 r, [])
+    _ -> (Cast t s1 nullRange, [Membership t s1 nullRange])
+
+mkSortedTerm :: SORT -> TERM f -> SORT -> TERM f
+mkSortedTerm s1 t s2 = if s1 == s2 then t else
+  case unsortedTerm t of
+    Qual_var v _ r -> Qual_var v s2 r
+    _ -> Sorted_term t s2 nullRange
+
+minSortTerm :: TermExtension f => TERM f -> TERM f
+minSortTerm t = case t of
+  Sorted_term st _ _ -> case optTermSort st of
+    Nothing -> t
+    Just _ -> minSortTerm st
+  _ -> t
+
+mkSTerm :: TermExtension f => Sign f e -> SORT -> TERM f
+  -> (TERM f, [FORMULA f])
+mkSTerm sig s t =
+  let s2 = fromMaybe s $ optTermSort t
+      t0 = minSortTerm t
+      s0 = fromMaybe s $ optTermSort t0
+  in case maximalSubs sig s s2 of
+    l@(s1 : _) -> let
+      s3 = if s0 == s2 then s1 else
+           fromMaybe s1 $ find (leqSort sig s0) l
+      (s4, fs) = mkCast s2 t s3
+      in (mkSortedTerm s3 s4 s, fs)
+    _ -> error $ "CCC.mkSTerm " ++ show (s0, s, s2)
 
 getSubst :: (FormExtension f, TermExtension f, Ord f) => Sign f e
   -> ([TERM f], Set.Set VAR) -> ([TERM f], Set.Set VAR)
-  -> Result (Subst f, Subst f)
+  -> Result ((Subst f, [FORMULA f]), (Subst f, [FORMULA f]))
 getSubst sig (p1, vs1) (p2, vs2) =
-  let substT v t = foldTerm $ replaceVarsRec (Map.singleton v t) id
-      getVars = Set.map fst . freeTermVars sig
+  let getVars = Set.map fst . freeTermVars sig
   in case (p1, p2) of
-    ([], []) -> return (Map.empty, Map.empty)
+    ([], []) -> do
+      let i = Set.intersection vs1 vs2
+      unless (Set.null i)
+        $ appendDiags [mkDiag Warning "possibly conflicting variables" i]
+      return ((Map.empty, []), (Map.empty, []))
     (hd1 : tl1, hd2 : tl2) ->
       let r = getSubst sig (tl1, vs1) (tl2, vs2)
-          mkS1 v1 = do
-              (m1, m2) <- getSubst sig
-                (map (substT v1 hd2) tl1, Set.delete v1 vs1) (tl2, vs2)
-              return (Map.insert v1 hd2 m1, m2)
-          mkS2 v2 = do
-              (m1, m2) <- getSubst sig (tl1, vs1)
-                (map (substT v2 hd1) tl2, Set.delete v2 vs2)
-              return (m1, Map.insert v2 hd1 m2)
+          mkS1 v1 s1 = do
+              let (hd3, fs) = mkSTerm sig s1 hd2
+              ((m1, fs1), m2) <- getSubst sig
+                (tl1, Set.delete v1 vs1) (tl2, vs2)
+              return ((Map.insert v1 hd3 m1, fs ++ fs1), m2)
+          mkS2 v2 s2 = do
+              let (hd3, fs) = mkSTerm sig s2 hd1
+              (m1, (m2, fs2)) <- getSubst sig (tl1, vs1)
+                (tl2, Set.delete v2 vs2)
+              return (m1, (Map.insert v2 hd3 m2, fs ++ fs2))
           cond v vs hd = Set.member v vs && Set.notMember v (getVars hd)
           diag v = appendDiags [mkDiag Warning
                             "unsupported occurrence of variable" v] >> r
       in case (unsortedTerm hd1, unsortedTerm hd2) of
-        (Qual_var v1 _ _, Qual_var v2 _ _)
-          | v1 == v2 -> getSubst sig (tl1, Set.delete v1 vs1)
+        (Qual_var v1 s1 _, Qual_var v2 s2 _)
+          | v1 == v2 && s1 == s2 -> getSubst sig (tl1, Set.delete v1 vs1)
                (tl2, Set.delete v2 vs2)
           | Set.member v1 vs2 ->
             if Set.member v2 vs1
             then appendDiags [mkDiag Warning
                             ("unsupported mix of variables '"
                              ++ show v1 ++ "' and") v2] >> r
-            else mkS1 v1
-          | otherwise -> mkS2 v2
-        (Qual_var v1 _ _, _) ->
+            else mkS1 v1 s1
+          | otherwise -> mkS2 v2 s2
+        (Qual_var v1 s1 _, _) ->
             if cond v1 vs2 hd2 then diag v1
-            else mkS1 v1
-        (_, Qual_var v2 _ _) ->
+            else mkS1 v1 s1
+        (_, Qual_var v2 s2 _) ->
             if cond v2 vs1 hd1 then diag v2
-            else mkS2 v2
+            else mkS2 v2 s2
         (_, _) | sameOpsApp sig hd1 hd2 ->
              getSubst sig (arguOfTerm hd1 ++ tl1, vs1)
                           (arguOfTerm hd2 ++ tl2, vs2)
