@@ -459,19 +459,23 @@ checkFreeType :: (FormExtension f, TermExtension f, Ord f)
   => (Sign f e, [Named (FORMULA f)]) -> Morphism f e m
   -> [Named (FORMULA f)] -> IO (Result (Conservativity, [FORMULA f]))
 checkFreeType oTh@(_, osens) m axs = do
-  ms <- mapM ($ axs)
-    [ return . checkDefinitional (mtarget m)
-    , return . checkSort oTh m
-    , return . checkLeadingTerms osens m
-    , return . checkIncomplete osens m
-    , checkTerminal oTh m ]
-  return $ case catMaybes ms of
-    [] -> return (getConStatus oTh m axs, [])
-    a : _ -> case a of
-      Result _ Nothing -> if checkPositive osens axs then
+  let ms = map ($ axs)
+        [ checkDefinitional (mtarget m)
+        , checkSort oTh m
+        , checkLeadingTerms osens m
+        , checkIncomplete osens m ]
+  r <- case catMaybes ms of
+    [] -> do
+      m5 <- checkTerminal oTh m axs
+      case m5 of
+        Nothing -> return $ return (getConStatus oTh m axs, [])
+        Just t -> return t
+    a : _ -> return a
+  return $ case r of
+     Result _ Nothing -> if checkPositive osens axs then
         justHint (Cons, []) "theory is positive!"
-        else a
-      _ -> a
+        else r
+     _ -> r
 
 {- | group the axioms according to their leading symbol,
 output Nothing if there is some axiom in incorrect form -}
