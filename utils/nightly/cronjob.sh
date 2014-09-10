@@ -205,7 +205,7 @@ checkConservativity ()
 {
 date
 for i in {Basic,UserManual}/*.casl
-  do echo globally-check-conservativity | hets -I $i
+  do echo globally-check-conservativity | ./hets -I $i
   done > ../cons.log 2>&1
 date
 }
