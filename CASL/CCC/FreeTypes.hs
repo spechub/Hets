@@ -226,12 +226,16 @@ correctDef f = case stripAllQuant f of
   Definedness _ _ -> True
   _ -> False
 
+showForm :: (TermExtension f, FormExtension f) => Sign f e -> FORMULA f
+  -> String
+showForm s = flip showDoc "" . simplifyCASLSen s
+
 -- check the definitional form of the partial axioms
 checkDefinitional :: (FormExtension f, TermExtension f)
   => Sign f e -> [Named (FORMULA f)]
   -> Maybe (Result (Conservativity, [FORMULA f]))
 checkDefinitional tsig fsn = let
-       formatAxiom = flip showDoc "" . simplifyCASLSen tsig
+       formatAxiom = showForm tsig
        (noLSyms, withLSyms) = partition (isNothing . fst . snd)
          $ map (\ a -> (a, leadingSymPos a)) $ getAxioms fsn
        partialLSyms = foldr (\ (a, (ma, _)) -> case ma of
@@ -368,6 +372,7 @@ checkIncomplete osens m fsn = case getNotComplete osens m fsn of
   [] -> Nothing
   incomplete -> let
     obligations = getObligations m fsn
+    formatAxiom = showForm $ mtarget m
     in Just $ Result
       (map (\ (Result ds mfs, fs@(hd : _)) -> let
         (lSym, pos) = leadingSymPos hd
@@ -380,12 +385,12 @@ checkIncomplete osens m fsn = case getNotComplete osens m fsn of
               ++ (if null ds then " may not be" else " is not") ++ " complete")
              : "the defining formula group is:"
              : map (\ (f, n) -> "  " ++ shows n ". "
-                    ++ showDoc (simplifyCASLSen (mtarget m) f) "") (number fs)
+                    ++ formatAxiom f) (number fs)
              ++ map diagString ds
              ++ maybe []
                  (map (\ (p, f) -> "possibly incomplete pattern for: " ++ p
                    ++ "\n  with completeness condition: "
-                   ++ showDoc (simplifyCASLSen (mtarget m) f) "")) mfs
+                   ++ formatAxiom f)) mfs
              ) pos)
        incomplete) $ Just (Cons, obligations)
 
@@ -653,7 +658,7 @@ checkConstructor leadingArgs vars (c, ct, es) = do
          $ "missing pattern for: " ++ pat
       return (nL, varEqs)
     _ ->
-      return (nL, map (\ (f, h : t) -> (f, arguOfTerm h ++ t)) es ++ varEqs)
+      return (nL, varEqs ++ map (\ (f, h : t) -> (f, arguOfTerm h ++ t)) es)
 
 checkExhaustive :: (Ord f, FormExtension f, TermExtension f)
   => Sign f e -> [FORMULA f] -> [FORMULA f]
@@ -661,14 +666,15 @@ checkExhaustive sig es = case es of
   f1 : rs ->
     let sfs = map (\ f -> (getSubstForm sig f1 f, f)) rs
         overlap = filter (isJust . maybeResult . fst) sfs
+        simpAndQuant = quant . simplifyFormula id
     in case overlap of
        [] -> filter (not . is_True_atom)
-          (map (quant . simplifyFormula id . conditionAxiom) [f1])
+          (map (simpAndQuant . conditionAxiom) [f1])
           ++ checkExhaustive sig rs
        (r, f2) : rrs -> let
           (f3, f4, ((s3, _), (s4, _))) = convert2Forms sig f1 f2 r
           in checkExhaustive sig
-         $ (quant . simplifyFormula id
+         $ (simpAndQuant
          . mkImpl (disjunct [ replaceVarsF s3 id $ conditionAxiom f3
                             , replaceVarsF s4 id $ conditionAxiom f4 ])
            . replaceVarsF s3 id $ restAxiom f3) : map snd rrs
