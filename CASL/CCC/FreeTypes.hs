@@ -268,24 +268,27 @@ checkDefinitional tsig fsn = let
        wrongWithoutDefs = filter ((`Set.notMember` defOpSymbs) . snd)
          withOutDefs
        ds = map (\ (a, (_, pos)) -> Diag
-         Warning ("missing leading symbol in:\n" ++ formatAxiom a) pos) noLSyms
+         Warning ("missing leading symbol in:\n  " ++ formatAxiom a) pos)
+           noLSyms
          ++ map (\ (a, t) -> Diag
-         Warning ("definedness is not definitional:\n" ++ formatAxiom a)
+         Warning ("definedness is not definitional:\n  " ++ formatAxiom a)
                 $ getRange t) wrongDefs
          ++ map (\ l@((_, t) : _) -> Diag Warning (unlines $
-             ("multiple definedness definitions for: " ++ showDoc t "")
-             : map (formatAxiom . fst) l) $ getRange t) multDomainDefs
+             ("multiple domain axioms for: " ++ showDoc t "")
+             : map (("  " ++) . formatAxiom . fst) l) $ getRange t)
+           multDomainDefs
          ++ map (\ (a, t) -> Diag
          Warning ("missing definedness condition for partial '"
-                      ++ showDoc t "' in\n" ++ formatAxiom a)
+                      ++ showDoc t "' in:\n  " ++ formatAxiom a)
              $ getRange t) wrongWithoutDefs
          ++ map (\ (da, _) -> Diag
-         Warning ("non-complete domain axiom: " ++ formatAxiom da)
+         Warning ("non-complete domain axiom:\n  " ++ formatAxiom da)
              $ getRange da) nonCompleteDomainDefs
-         ++ map (\ (_, de) -> Diag
-         Warning ("unexpected domain condition for partial definition: "
-                  ++ formatAxiom de)
-             $ getRange de) nonEqDoms
+         ++ map (\ (da, de) -> Diag
+         Warning ("unexpected definedness condition:\n  "
+                  ++ formatAxiom de
+                  ++ "\nin the presence of domain axiom:\n  "
+                  ++ formatAxiom da) $ getRange de) nonEqDoms
        in if null ds then Nothing else Just $ Result ds Nothing
 
 {-
