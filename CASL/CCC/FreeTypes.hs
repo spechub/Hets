@@ -404,19 +404,17 @@ renameVars = snd . foldr (\ f (c, l) ->
 
 checkTerminal :: (FormExtension f, TermExtension f, Ord f)
   => (Sign f e, [Named (FORMULA f)]) -> Morphism f e m -> [Named (FORMULA f)]
-  -> IO (Maybe (Result (Conservativity, [FORMULA f])))
+  -> IO (Result (Conservativity, [FORMULA f]))
 checkTerminal oTh m fsn = do
     let fs = renameVars $ getAxioms fsn
         (domains, restFs) = partition (isJust . domainDef) fs
         fs_terminalProof = filter (not . isDomain) restFs
         obligations = getObligations m fsn
         conStatus = getConStatus oTh m fsn
-        res = if null obligations then Nothing else
-                  Just $ return (conStatus, obligations)
     (proof, str) <- terminationProof (mtarget m) fs_terminalProof domains
     return $ case proof of
-        Just True -> res
-        _ -> Just $ warning (Cons, obligations)
+        Just True -> justHint (conStatus, obligations) "termination succeeded"
+        _ -> warning (Cons, obligations)
              (if isJust proof then "not terminating"
               else "cannot prove termination: " ++ str) nullRange
 
@@ -477,11 +475,7 @@ checkFreeType oTh@(_, osens) m axs = do
         , checkLeadingTerms osens m
         , checkIncomplete osens m ]
   r <- case catMaybes ms of
-    [] -> do
-      m5 <- checkTerminal oTh m axs
-      case m5 of
-        Nothing -> return $ return (getConStatus oTh m axs, [])
-        Just t -> return t
+    [] -> checkTerminal oTh m axs
     a : _ -> return a
   return $ case r of
      Result _ Nothing -> if checkPositive osens axs then
