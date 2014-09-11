@@ -56,14 +56,14 @@ inhabited sorts cons = iterateInhabited sorts where
         then (Set.insert rs l', True) else p) (l, False) argsRes
 
 -- | just filter out the axioms generated for free types
-isUserOrSortGen :: Named (FORMULA f) -> Bool
-isUserOrSortGen ax = case stripPrefix "ga_" $ senAttr ax of
+isGenAx :: Named (FORMULA f) -> Bool
+isGenAx ax = case stripPrefix "ga_" $ senAttr ax of
   Nothing -> True
   Just rname -> all (not . (`isPrefixOf` rname))
     ["disjoint_", "injective_", "selector_"]
 
 getFs :: [Named (FORMULA f)] -> [FORMULA f]
-getFs = map sentence . filter isUserOrSortGen
+getFs = map sentence . filter isGenAx
 
 getExAxioms :: [Named (FORMULA f)] -> [FORMULA f]
 getExAxioms = filter isExQuanti . getFs
