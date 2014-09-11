@@ -88,7 +88,7 @@ terminationProof sig fs dms =
           "YES" : _ -> Just True
           "NO" : _ -> Just False
           _ -> Nothing, proof)
-    else return (Nothing, unlines . map show $ concatMap diags ls)
+    else return (Nothing, unlines . map diagString $ concatMap diags ls)
 
 keywords :: [String]
 keywords = ["eq", "or", "implies", "equiv", "when_else"]
@@ -147,7 +147,7 @@ term2TRS t = case unsortedTerm t of
     c <- axiomSub f
     b2 <- term2TRS t2
     return $ apply "when_else" $ b1 ++ "," ++ c ++ "," ++ b2
-  _ -> fail "CASL.CCC.TerminationProof.<term2TRS>"
+  _ -> fail $ "no support for: " ++ showDoc t ""
 
 -- | translate a list of casl terms to the patterns of a term in TRS
 termsPA :: (Monad m, FormExtension f) => [TERM f] -> m String
@@ -196,7 +196,7 @@ axiom2Rule :: (Monad m, FormExtension f) => FORMULA f -> m String
 axiom2Rule f = case stripAllQuant f of
   Negation f' _ -> case f' of
     Quantification {} ->
-      fail "CASL.CCC.TerminationProof.<axiom2TRS_Negation>"
+      fail "no support for negated quantification"
     Definedness t _ -> liftM (++ " -> undefined") $ term2TRS t
     _ -> liftM (++ " -> false") $ axiomSub f'
   Definedness t _ -> liftM ((++ " -> open") . apply "def") $ term2TRS t
@@ -242,4 +242,6 @@ axiomSub f = case stripAllQuant f of
     s1 <- axiomSub f1
     s2 <- axiomSub f2
     return $ applyBin (if c == Equivalence then "equiv" else "implies") s1 s2
-  _ -> fail $ "CASL.CCC.TerminationProof.axiomSub.<axiomSub> " ++ showDoc f ""
+  Quantification {} -> fail "no support for local quantifications"
+  Membership {} -> fail "no support for membership tests"
+  _ -> fail $ "no support for: " ++ showDoc f ""
