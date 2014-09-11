@@ -418,11 +418,9 @@ checkTerminal oTh m fsn = do
              (if isJust proof then "not terminating"
               else "cannot prove termination: " ++ str) nullRange
 
-checkPositive :: [Named (FORMULA f)] -> [Named (FORMULA f)] -> Bool
-checkPositive osens fsn = all checkPos $ map sentence $ osens ++ fsn
-
 checkPos :: FORMULA f -> Bool
-checkPos f = case stripAllQuant f of
+checkPos f = case f of
+      Quantification _ _ f' _ -> checkPos f'
       Junction _ cs _ -> all checkPos cs
       Relation i1 c i2 _ -> let
         c1 = checkPos i1
@@ -431,9 +429,16 @@ checkPos f = case stripAllQuant f of
       Negation n _ -> not $ checkPos n
       Atom b _ -> b
       Predication {} -> True
+      Membership {} -> True
       Definedness {} -> True
       Equation {} -> True
-      Sort_gen_ax {} -> True -- ignore
+      Sort_gen_ax cs _ -> case cs of
+        [c] -> case opSymbs c of
+          [_] -> True
+            {- just a single constructor creates a unique value
+            even for multiple one-point components -}
+          _ -> False
+        _ -> False
       _ -> False
 
 {- -----------------------------------------------------------------------
@@ -469,8 +474,9 @@ checkFreeType :: (FormExtension f, TermExtension f, Ord f)
   => (Sign f e, [Named (FORMULA f)]) -> Morphism f e m
   -> [Named (FORMULA f)] -> IO (Result (Conservativity, [FORMULA f]))
 checkFreeType oTh@(_, osens) m axs = do
-  let ms = map ($ axs)
-        [ checkDefinitional (mtarget m)
+  let sig = mtarget m
+      ms = map ($ axs)
+        [ checkDefinitional sig
         , checkSort oTh m
         , checkLeadingTerms osens m
         , checkIncomplete osens m ]
@@ -478,10 +484,15 @@ checkFreeType oTh@(_, osens) m axs = do
     [] -> checkTerminal oTh m axs
     a : _ -> return a
   return $ case r of
-     Result _ Nothing -> if checkPositive osens axs then
-        justHint (Cons, []) "theory is positive!"
-        else r
-     _ -> r
+    Result ds Nothing ->
+      case filter (not . checkPos . sentence) $ axs ++ osens of
+        [] -> justHint (Cons, []) "theory is positive!"
+        l -> let
+          ps = map (\ f -> Diag Hint ("formula is not positive:\n  "
+            ++ show (printTheoryFormula $ mapNamed (simplifyCASLSen sig) f))
+            $ getRange f) $ take 2 l
+          in Result (ps ++ ds) Nothing
+    _ -> r
 
 {- | group the axioms according to their leading symbol,
 output Nothing if there is some axiom in incorrect form -}
