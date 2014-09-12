@@ -161,72 +161,72 @@ follow the conditions after the symbol "|".
 For example : "A -> B | C -> D, E -> F, ..." -}
 axiom2TRS :: (FormExtension f, TermExtension f, Ord f, Monad m) => Sign f e
   -> [FORMULA f] -> FORMULA f -> m String
-axiom2TRS sig doms f = case stripAllQuant f of
-  Relation f1 c f2 _ | c /= Equivalence -> do
-    a1 <- axiom2Cond f1
-    t2 <- axiom2Rule f2
-    case f2 of
-      Relation f3 Equivalence f4 _ -> do
-        a3 <- axiom2Rule f3
-        a4 <- axiom2Cond f4
-        return $ a3 ++ " | " ++ a1 ++ ", " ++ a4
-      _ -> case f1 of
-        Definedness t _ -> case filter (sameOpsApp sig t . fst . fromJust
-                                        . domainDef) doms of
-          phi : _ ->
-            let Result _ st = getSubstForm sig f phi
-            in case st of
-                 Just ((s1, _), (s2, _)) -> do
-                    t3 <- axiom2Rule $ replaceVarsF s1 id f2
-                    sc <- axiom2Cond . replaceVarsF s2 id $ resultAxiom phi
-                    return $ t3 ++ " | " ++ sc
-                 Nothing -> error "TerminationProof.axiom2TRS"
-          [] -> return $ t2 ++ " | " ++ a1
-        _ -> return $ t2 ++ " | " ++ a1
-  Relation f1 Equivalence f2 _ -> do
-    r1 <- axiom2Rule f1
-    c2 <- axiom2Cond f2
-    return $ r1 ++ " | " ++ c2
-  _ -> axiom2Rule f
+axiom2TRS sig doms f = case splitAxiom f of
+  (cs, f') -> do
+    r <- axiom2Rule f'
+    s <- mapM (axiom2Cond sig doms) cs
+    let a c = case s of
+          [] -> ""
+          _ -> c ++ intercalate ", " s
+        t = return $ r ++ a " | "
+        g = a ", "
+    case f' of
+      Equation t1 Strong t2 _ -> case unsortedTerm t2 of
+        Conditional tt1 ff tt2 _ -> do
+          e1 <- term2TRS t1
+          c <- axiomSub ff
+          b1 <- term2TRS tt1
+          b2 <- term2TRS tt2
+          return $ e1 ++ " -> " ++ b1 ++ " | "
+            ++ c ++ " -> true" ++ g ++ "\n"
+            ++ e1 ++ " -> " ++ b2 ++ " | "
+            ++ c ++ " -> false" ++ g
+        _ -> t
+      _ -> t
 
-axiom2Cond :: (Monad m, FormExtension f) => FORMULA f -> m String
-axiom2Cond = axiom2Rule
+axiom2Cond :: (FormExtension f, TermExtension f, Ord f, Monad m) => Sign f e
+  -> [FORMULA f] -> FORMULA f -> m String
+axiom2Cond sig doms f = let s = liftM (++ " -> true") $ axiomSub f in
+  case f of
+  Definedness t _ | isApp t ->
+    case filter (sameOpsApp sig t . fst . fromJust . domainDef) doms of
+      phi : _ ->
+        let Result _ st = getSubstForm sig (quant f) phi
+        in case st of
+             Just ((_, _), (s2, _)) ->
+               let Just (_, c) = domainDef phi
+               in axiom2Cond sig doms $ replaceVarsF s2 id c
+             Nothing -> s
+      [] -> s
+  _ -> s
+
+-- | check whether it is an application term only applied to variables
+isApp :: TERM t -> Bool
+isApp t = case unsortedTerm t of
+  Application _ ts _ -> all isVar ts
+  _ -> False
 
 axiom2Rule :: (Monad m, FormExtension f) => FORMULA f -> m String
-axiom2Rule f = case stripAllQuant f of
+axiom2Rule f = case f of
   Negation f' _ -> case f' of
     Quantification {} ->
       fail "no support for negated quantification"
     Definedness t _ -> liftM (++ " -> undefined") $ term2TRS t
     _ -> liftM (++ " -> false") $ axiomSub f'
-  Definedness t _ -> liftM ((++ " -> open") . apply "def") $ term2TRS t
+  Definedness {} -> liftM (++ " -> open") $ axiomSub f
   Equation t1 Strong t2 _ -> do
     e1 <- term2TRS t1
-    case t2 of
-      Conditional tt1 ff tt2 _ -> do
-        c <- axiomSub ff
-        b1 <- term2TRS tt1
-        b2 <- term2TRS tt2
-        return $ e1 ++ " -> " ++ b1 ++ " | "
-          ++ c ++ " -> true\n"
-          ++ e1 ++ " -> " ++ b2 ++ " | "
-          ++ c ++ " -> false"
-      _ -> do
-        e2 <- term2TRS t2
-        return $ if isApp t1 then e1 ++ " -> " ++ e2 else
-          applyBin "eq" e1 e2 ++ " -> true"
-  Atom False _ -> return "false -> false"
+    e2 <- term2TRS t2
+    return $ e1 ++ " -> " ++ e2
+  Relation f1 Equivalence f2 _ -> do
+    f3 <- axiomSub f1
+    f4 <- axiomSub f2
+    return $ f3 ++ " -> " ++ f4
   _ -> liftM (++ " -> true") $ axiomSub f
-
--- | check whether it is a application term
-isApp :: TERM t -> Bool
-isApp t = case unsortedTerm t of
-  Application {} -> True
-  _ -> False
 
 -- | translate a casl axiom (without conditions) to a term of TRS,
 axiomSub :: (Monad m, FormExtension f) => FORMULA f -> m String
-axiomSub f = case stripAllQuant f of
+axiomSub f = case f of
   Junction j fs@(_ : _) _ -> do
     as <- mapM axiomSub fs
     return $ foldr1 (applyBin $ if j == Con then "and" else "or") as
