@@ -120,9 +120,6 @@ retrySubstForm sig (f1, f2) =
               in Just . stripQuant sig . convertFormula 1 id
                      $ mkOverlapEq s2 f3 f4
 
-quant :: Ord f => FORMULA f -> FORMULA f
-quant f = mkForall (varDeclOfF f) f
-
 mkOverlapEq :: (GetRange f, Ord f) =>
   ((Subst f, [FORMULA f]), (Subst f, [FORMULA f]))
   -> FORMULA f -> FORMULA f -> FORMULA f

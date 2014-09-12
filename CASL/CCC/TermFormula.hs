@@ -324,6 +324,9 @@ eqPattern sig t1 t2 = case (unsortedTerm t1, unsortedTerm t2) of
     and $ on (zipWith $ eqPattern sig) arguOfTerm t1 t2
   _ -> False
 
+quant :: Ord f => FORMULA f -> FORMULA f
+quant f = mkForall (varDeclOfF f) f
+
 -- | get or create a variable declaration for a formula
 varDeclOfF :: Ord f => FORMULA f -> [VAR_DECL]
 varDeclOfF = let
