@@ -124,16 +124,15 @@ topIdOfAxiom f = case stripAllQuant f of
     _ -> nullId
 
 -- | split the axiom into condition and rest axiom
-splitAxiom :: FORMULA f -> (FORMULA f, FORMULA f)
+splitAxiom :: FORMULA f -> ([FORMULA f], FORMULA f)
 splitAxiom f = case stripAllQuant f of
                      Relation f1 c f2 _ | c /= Equivalence ->
-                       -- let (f3, f4) = splitAxiom f2 in (conjunct f1 f3, f4)
-                       (f1, f2) -- without nesting yet
-                     f' -> (trueForm, f')
+                       let (f3, f4) = splitAxiom f2 in (f1 : f3, f4)
+                     f' -> ([], f')
 
 -- | get the premise of a formula, without implication return true
 conditionAxiom :: FORMULA f -> FORMULA f
-conditionAxiom = fst . splitAxiom
+conditionAxiom = conjunct . fst . splitAxiom
 
 -- | get the conclusion of a formula, without implication return the formula
 restAxiom :: FORMULA f -> FORMULA f
