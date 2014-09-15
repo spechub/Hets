@@ -15,6 +15,7 @@ module CASL.CCC.FreeTypes (checkFreeType) where
 
 import CASL.AlphaConvert
 import CASL.AS_Basic_CASL
+import CASL.MapSentence
 import CASL.Morphism
 import CASL.Sign
 import CASL.Simplify
@@ -31,7 +32,7 @@ import Common.Consistency (Conservativity (..))
 import Common.DocUtils
 import Common.Id
 import Common.Result
-import Common.Utils (nubOrd, number)
+import Common.Utils (number)
 import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
 
@@ -74,11 +75,11 @@ constraintOfAxiom = foldr (\ f -> case f of
   Sort_gen_ax constrs _ -> (constrs :)
   _ -> id) []
 
-recoverSortsAndConstructors :: [FORMULA f] -> (Set.Set SORT, [OP_SYMB])
+recoverSortsAndConstructors :: [FORMULA f] -> (Set.Set SORT, Set.Set OP_SYMB)
 recoverSortsAndConstructors fs = let
   (srts, cons, _) = unzip3 . map recover_Sort_gen_ax
     $ constraintOfAxiom fs
-  in (Set.unions $ map Set.fromList srts, nubOrd $ concat cons)
+  in (Set.unions $ map Set.fromList srts, Set.unions $ map Set.fromList cons)
 
 -- check that patterns do not overlap, if not, return proof obligation.
 getOverlapQuery :: (FormExtension f, TermExtension f, Ord f) => Sign f e
@@ -418,17 +419,22 @@ free datatypes and recursive equations are consistent -}
 checkFreeType :: (FormExtension f, TermExtension f, Ord f)
   => (Sign f e, [Named (FORMULA f)]) -> Morphism f e m
   -> [Named (FORMULA f)] -> IO (Result (Conservativity, [FORMULA f]))
-checkFreeType (osig, osens) m axs = do
+checkFreeType (_, osens) m axs = do
   let sig = mtarget m
+      sSig = imageOfMorphism m
       fs = getFs axs -- strip labels and generated sentences
       (exQuants, fs2) = partition isExQuanti fs
       (memShips, fs3) = partition isMembership fs2
       (sortGens1, axioms) = partition isSortGen fs3
       (domains, axLessDoms) = partition isDomain axioms
+      (genSorts1, cons1) =
+        recoverSortsAndConstructors $ getFs osens
+      (genSorts2, cons2) =
+        recoverSortsAndConstructors sortGens1
       sortCons@(genSorts, cons) =
-        recoverSortsAndConstructors $ sortGens1 ++ getFs osens
-      oldSorts = sortSet osig
-      -- check if this only works for inclusion morphisms
+        (Set.union genSorts2 $ Set.map (mapSort $ sort_map m) genSorts1
+        , Set.toList $ Set.union cons2 $ Set.map (mapOpSymb m) cons1)
+      oldSorts = sortSet sSig
       newSorts = Set.difference (sortSet sig) oldSorts
       emptySorts = emptySortSet sig
       subSorts = Rel.keysSet . Rel.rmNullSets $ sortRel sig
