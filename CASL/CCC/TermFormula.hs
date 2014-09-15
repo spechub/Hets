@@ -81,7 +81,8 @@ containNeg f = case f of
 
 domainDef :: FORMULA f -> Maybe (TERM f, FORMULA f)
 domainDef f = case stripAllQuant f of
-  Relation (Definedness t _) Equivalence f' _ -> Just (t, f')
+  Relation (Definedness t _) Equivalence f' _
+    | not (containDef f') -> Just (t, f')
   _ -> Nothing
 
 -- | check whether it is a Variable
