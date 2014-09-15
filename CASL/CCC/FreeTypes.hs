@@ -350,7 +350,10 @@ renameVars c = foldr (\ f (c1, l) ->
 checkTerminal :: (FormExtension f, TermExtension f, Ord f)
   => Sign f e -> Conservativity -> [FORMULA f] -> [FORMULA f] -> [FORMULA f]
   -> IO (Result (Conservativity, [FORMULA f]))
-checkTerminal sig conStatus obligations doms fsn = do
+checkTerminal sig conStatus obligations doms fsn =
+    if null fsn then return $ justHint (conStatus, obligations)
+      "no defining sentences"
+    else do
     let (c, domains) = renameVars 1 doms
         fs_terminalProof = snd $ renameVars c fsn
     (proof, str) <- terminationProof sig fs_terminalProof domains
