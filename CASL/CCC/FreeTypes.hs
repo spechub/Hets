@@ -38,6 +38,7 @@ import qualified Common.Lib.Rel as Rel
 
 import Control.Monad
 
+import Data.Either
 import Data.Function
 import Data.List
 import Data.Maybe
@@ -315,9 +316,10 @@ checkLeadingTerms tsig fsn constructors = let
 
 -- check the sufficient completeness
 checkIncomplete :: (FormExtension f, TermExtension f, Ord f)
-  => Sign f e -> [FORMULA f] -> [[FORMULA f]] -> [OP_SYMB]
+  => Sign f e -> [FORMULA f] -> [OP_SYMB] -> [[FORMULA f]] -> [OP_SYMB]
   -> Maybe (Result (Conservativity, [FORMULA f]))
-checkIncomplete sig obligations fsn cons = case getNotComplete sig fsn cons of
+checkIncomplete sig obligations doms fsn cons =
+  case getNotComplete sig doms fsn cons of
   [] -> Nothing
   incomplete -> let
     formatAxiom = showForm sig
@@ -445,12 +447,13 @@ checkFreeType (_, osens) m axs = do
       axGroup = groupAxioms sig axLessDoms
       overLaps = getOverlapQuery sig axGroup
       obligations = opsPredsAndExAxioms ++ memObl ++ overLaps
+      domSyms = lefts $ mapMaybe leadingSym domains
       ms =
         [ checkDefinitional sig axioms
         , checkSort (null axs) oldSorts newSorts emptySorts sSig sig
             sortGens1 sortCons
         , checkLeadingTerms sig axioms cons
-        , checkIncomplete sig obligations axGroup cons ]
+        , checkIncomplete sig obligations domSyms axGroup cons ]
   r <- case catMaybes ms of
     [] -> checkTerminal sig conStatus obligations domains axLessDoms
     a : _ -> return a
@@ -530,9 +533,9 @@ overlapQuery a1 a2 =
             [resA1, resA2] = map resultAxiom [a1, a2]
 
 getNotComplete :: (Ord f, FormExtension f, TermExtension f)
-  => Sign f e -> [[FORMULA f]] -> [OP_SYMB]
+  => Sign f e -> [OP_SYMB] -> [[FORMULA f]] -> [OP_SYMB]
   -> [(Result [(String, FORMULA f)], [FORMULA f])]
-getNotComplete sig fsn constructors =
+getNotComplete sig doms fsn constructors =
   let consMap = foldr (\ (Qual_op_name o ot _) ->
         MapSet.insert (res_OP_TYPE ot) (o, ot)) MapSet.empty constructors
       consMap2 = foldr (\ (Qual_op_name o ot _) ->
@@ -543,7 +546,7 @@ getNotComplete sig fsn constructors =
   $ map (\ g ->
          (let l = map topIdOfAxiom g in
                   case Set.toList . Set.fromList $ map fst l of
-                    [(p, i)] -> completePatterns sig consMap consMap2
+                    [(p, i)] -> completePatterns sig doms consMap consMap2
                       ([(showId p "", i)]
                       , zip g $ map snd l)
                     l2 -> fail $ "wrongly grouped leading terms "
@@ -571,20 +574,20 @@ showLeadingArgs p l = let (_, r, _) = getNextArg True p $ reverse l in r
 
 -- | check whether the patterns of a function or predicate are complete
 completePatterns :: (Ord f, FormExtension f, TermExtension f) => Sign f e
-  -> MapSet.MapSet SORT (OP_NAME, OP_TYPE)
+  -> [OP_SYMB] -> MapSet.MapSet SORT (OP_NAME, OP_TYPE)
   -> MapSet.MapSet OP_NAME OP_TYPE
   -> (LeadArgs, [(FORMULA f, [TERM f])])
   -> Result [(String, FORMULA f)]
-completePatterns tsig consMap consMap2 (leadingArgs, pas)
+completePatterns tsig doms consMap consMap2 (leadingArgs, pas)
     | all (null . snd) pas =
-       let fs = checkExhaustive tsig $ map fst pas
+       let fs = checkExhaustive tsig doms $ map fst pas
        in return $ map (\ f -> (showLeadingArgs "" leadingArgs, f)) fs
     | any (null . snd) pas = fail "wrongly grouped leading terms"
     | otherwise = let hds = map (\ (f, hd : _) -> (f, hd)) pas in
             if all (isVar . snd) hds
             then let
               tls = map (\ (f, _ : tl) -> (f, tl)) pas
-              in completePatterns tsig consMap consMap2
+              in completePatterns tsig doms consMap consMap2
                       (("_", 0) : leadingArgs, tls)
             else let
               consAppls@(_ : _) = mapMaybe (\ (f, t) -> case unsortedTerm t of
@@ -610,7 +613,8 @@ completePatterns tsig consMap consMap2 (leadingArgs, pas)
                             _ -> False) pas)) $ Set.toList allCons
                         vars = filter (\ (_, h : _) -> isVar h) pas
                     ffs <- mapM (\ f -> checkConstructor leadingArgs vars f
-                      >>= completePatterns tsig consMap consMap2) cons_group
+                        >>= completePatterns tsig doms consMap consMap2)
+                      cons_group
                     return $ concat ffs
 
 mkVars :: [SORT] -> [TERM f]
@@ -637,22 +641,34 @@ checkConstructor leadingArgs vars (c, ct, es) = do
     _ ->
       return (nL, varEqs ++ map (\ (f, h : t) -> (f, arguOfTerm h ++ t)) es)
 
+-- | get condition axiom without matching definedness condition
+getCond :: (GetRange f, Eq f) => Sign f e -> [OP_SYMB] -> FORMULA f -> FORMULA f
+getCond sig doms f =
+  let (cs, e) = splitAxiom f
+  in conjunct $ filter (\ c -> case leadingTermPredication e of
+       l@(Just (Left (Application os _ _)))
+         | any (sameOpSymbs sig os) doms
+         -> case c of  -- pattern term must be identical
+              Definedness {} | leadingTermPredication c == l -> False
+              _ -> True
+       _ -> True) cs
+
 checkExhaustive :: (Ord f, FormExtension f, TermExtension f)
-  => Sign f e -> [FORMULA f] -> [FORMULA f]
-checkExhaustive sig es = case es of
+  => Sign f e -> [OP_SYMB] -> [FORMULA f] -> [FORMULA f]
+checkExhaustive sig doms es = case es of
   f1 : rs ->
     let sfs = map (\ f -> (getSubstForm sig f1 f, f)) rs
         overlap = filter (isJust . maybeResult . fst) sfs
         simpAndQuant = quant . simplifyFormula id
     in case overlap of
        [] -> filter (not . is_True_atom)
-          (map (simpAndQuant . conditionAxiom) [f1])
-          ++ checkExhaustive sig rs
+          (map (simpAndQuant . getCond sig doms) [f1])
+          ++ checkExhaustive sig doms rs
        (r, f2) : rrs -> let
           (f3, f4, ((s3, _), (s4, _))) = convert2Forms sig f1 f2 r
-          in checkExhaustive sig
+          in checkExhaustive sig doms
          $ (simpAndQuant
-         . mkImpl (disjunct [ replaceVarsF s3 id $ conditionAxiom f3
-                            , replaceVarsF s4 id $ conditionAxiom f4 ])
+         . mkImpl (disjunct [ replaceVarsF s3 id $ getCond sig doms f3
+                            , replaceVarsF s4 id $ getCond sig doms f4 ])
            . replaceVarsF s3 id $ restAxiom f3) : map snd rrs
   [] -> []
