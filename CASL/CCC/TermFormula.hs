@@ -267,7 +267,7 @@ leadingSymPos f = leading (f, False, False, False) where
   leading (f1, b1, b2, b3) = case (stripAllQuant f1, b1, b2, b3) of
     (Negation f' _, _, _, False) ->
         leading (f', b1, b2, True)
-    (Relation _ c f' _, False, False, False)
+    (Relation _ c f' _, _, False, False)
         | c /= Equivalence ->
         leading (f', True, False, False)
     (Relation f' Equivalence _ _, _, False, False) ->
