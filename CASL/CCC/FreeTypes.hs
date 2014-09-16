@@ -135,18 +135,10 @@ getDefsForOld sig axioms = let
            | MapSet.member ident (toPredType pt) oldPredMap -> True
          _ -> False) axioms
 
--- | all only generated sorts
-getNotFreeSorts :: Set.Set SORT -> Set.Set SORT -> [FORMULA f] -> Set.Set SORT
-getNotFreeSorts nSorts gSorts = Set.intersection nSorts
-  . Set.difference gSorts . getGenSorts . filter isFreeSortGen
-
 isFreeSortGen :: FORMULA f -> Bool
 isFreeSortGen f = case f of
   Sort_gen_ax _ True -> True
   _ -> False
-
-getGenSorts :: [FORMULA f] -> Set.Set SORT
-getGenSorts = fst . recoverSortsAndConstructors
 
 -- | non-inhabited non-empty sorts
 getNefsorts :: Set.Set SORT -> Set.Set SORT -> Set.Set SORT
@@ -265,9 +257,9 @@ checkDefinitional tsig fs = let
   if there are axioms not being of this form, output "don't know"
 -}
 checkSort :: Bool -> Set.Set SORT -> Set.Set SORT -> Set.Set SORT
-    -> Sign f e -> Sign f e -> [FORMULA f] -> (Set.Set SORT, [OP_SYMB])
-    -> Maybe (Result (Conservativity, [FORMULA f]))
-checkSort noSentence oldSorts nSorts esorts sSig tSig fsn (srts, cons)
+  -> Set.Set SORT -> Sign f e -> Sign f e
+  -> Maybe (Result (Conservativity, [FORMULA f]))
+checkSort noSentence nSorts gSorts fSorts nefsorts sSig tSig
     | noSentence && Set.null nSorts =
         let cond = MapSet.null (diffOpMapSet (opMap tSig) $ opMap sSig)
               && MapSet.null (diffMapSet (predMap tSig) $ predMap sSig)
@@ -282,10 +274,9 @@ checkSort noSentence oldSorts nSorts esorts sSig tSig fsn (srts, cons)
         genNotNew
     | otherwise = Nothing
     where
-        gSorts = getGenSorts fsn
-        notFreeSorts = getNotFreeSorts nSorts gSorts fsn
-        nefsorts = getNefsorts oldSorts nSorts esorts (srts, cons)
-        genNotNew = Set.difference gSorts nSorts
+        notFreeSorts = Set.intersection nSorts
+          $ Set.difference gSorts fSorts
+        genNotNew = Set.difference (Set.union gSorts fSorts) nSorts
         mkWarn s i r = Just $ Result [mkDiag Warning s i] $ Just r
         mkUnknown s i = mkWarn s i (Unknown s, [])
 
@@ -427,17 +418,22 @@ checkFreeType (_, osens) m axs = do
       (exQuants, fs2) = partition isExQuanti fs
       (memShips, fs3) = partition isMembership fs2
       (sortGens1, axioms) = partition isSortGen fs3
+      (freeSortGens, sortGens) = partition isFreeSortGen sortGens1
       (domains, axLessDoms) = partition isDomain axioms
       (genSorts1, cons1) =
         recoverSortsAndConstructors $ getFs osens
-      (genSorts2, cons2) =
-        recoverSortsAndConstructors sortGens1
+      (freeSorts, cons2) =
+        recoverSortsAndConstructors freeSortGens
+      (genSorts2, cons3) =
+        recoverSortsAndConstructors sortGens
       sortCons@(genSorts, cons) =
-        (Set.union genSorts2 $ Set.map (mapSort $ sort_map m) genSorts1
-        , Set.toList $ Set.union cons2 $ Set.map (mapOpSymb m) cons1)
+        (Set.unions
+         [freeSorts, genSorts2, Set.map (mapSort $ sort_map m) genSorts1]
+        , Set.toList $ Set.unions [cons2, cons3, Set.map (mapOpSymb m) cons1])
       oldSorts = sortSet sSig
       newSorts = Set.difference (sortSet sig) oldSorts
       emptySorts = emptySortSet sig
+      nonInhabitedSorts = getNefsorts oldSorts newSorts emptySorts sortCons
       subSorts = Rel.keysSet . Rel.rmNullSets $ sortRel sig
       dataStatus = getDataStatus newSorts subSorts genSorts
       defsForOld = getDefsForOld sSig axioms
@@ -450,8 +446,8 @@ checkFreeType (_, osens) m axs = do
       domSyms = lefts $ mapMaybe leadingSym domains
       ms =
         [ checkDefinitional sig axioms
-        , checkSort (null axs) oldSorts newSorts emptySorts sSig sig
-            sortGens1 sortCons
+        , checkSort (null axs) newSorts genSorts2 freeSorts nonInhabitedSorts
+            sSig sig
         , checkLeadingTerms sig axioms cons
         , checkIncomplete sig obligations domSyms axGroup cons ]
   r <- case catMaybes ms of
