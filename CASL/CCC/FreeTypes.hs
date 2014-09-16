@@ -122,10 +122,9 @@ mkOverlapEq ((s1, fs1), (s2, fs2)) f1 f2 = quant . simplifyFormula id
   check if leading symbols are new (not in the image of morphism),
         if not, return it as proof obligation
 -}
-getDefsForOld :: GetRange f => Morphism f e m -> [FORMULA f]
+getDefsForOld :: GetRange f => Sign f e -> [FORMULA f]
   -> [FORMULA f]
-getDefsForOld m axioms = let
-        sig = imageOfMorphism m
+getDefsForOld sig axioms = let
         oldOpMap = opMap sig
         oldPredMap = predMap sig
     in filter (\ f -> case leadingSym f of
@@ -137,11 +136,13 @@ getDefsForOld m axioms = let
 
 -- | all only generated sorts
 getNotFreeSorts :: Set.Set SORT -> Set.Set SORT -> [FORMULA f] -> Set.Set SORT
-getNotFreeSorts nSorts gSorts fs = Set.intersection nSorts
-    $ Set.difference gSorts freeSorts where
-        freeSorts = foldr (\ f -> case f of
-          Sort_gen_ax csts True -> Set.union . Set.fromList $ map newSort csts
-          _ -> id) Set.empty fs
+getNotFreeSorts nSorts gSorts = Set.intersection nSorts
+  . Set.difference gSorts . getGenSorts . filter isFreeSortGen
+
+isFreeSortGen :: FORMULA f -> Bool
+isFreeSortGen f = case f of
+  Sort_gen_ax _ True -> True
+  _ -> False
 
 getGenSorts :: [FORMULA f] -> Set.Set SORT
 getGenSorts = fst . recoverSortsAndConstructors
@@ -263,13 +264,11 @@ checkDefinitional tsig fs = let
   if there are axioms not being of this form, output "don't know"
 -}
 checkSort :: Bool -> Set.Set SORT -> Set.Set SORT -> Set.Set SORT
-    -> Morphism f e m -> [FORMULA f] -> (Set.Set SORT, [OP_SYMB])
+    -> Sign f e -> Sign f e -> [FORMULA f] -> (Set.Set SORT, [OP_SYMB])
     -> Maybe (Result (Conservativity, [FORMULA f]))
-checkSort noSentence oldSorts nSorts esorts m fsn (srts, cons)
+checkSort noSentence oldSorts nSorts esorts sSig tSig fsn (srts, cons)
     | noSentence && Set.null nSorts =
-        let sSig = imageOfMorphism m
-            tSig = mtarget m
-            cond = MapSet.null (diffOpMapSet (opMap tSig) $ opMap sSig)
+        let cond = MapSet.null (diffOpMapSet (opMap tSig) $ opMap sSig)
               && MapSet.null (diffMapSet (predMap tSig) $ predMap sSig)
         in Just $ justHint (if cond then Def else Cons, [])
         $ (if cond then "neither symbols"
@@ -439,7 +438,7 @@ checkFreeType (_, osens) m axs = do
       emptySorts = emptySortSet sig
       subSorts = Rel.keysSet . Rel.rmNullSets $ sortRel sig
       dataStatus = getDataStatus newSorts subSorts genSorts
-      defsForOld = getDefsForOld m axioms
+      defsForOld = getDefsForOld sSig axioms
       opsPredsAndExAxioms = defsForOld ++ exQuants
       conStatus = getConStatus dataStatus opsPredsAndExAxioms
       memObl = getInfoSubsort emptySorts memShips
@@ -448,7 +447,8 @@ checkFreeType (_, osens) m axs = do
       obligations = opsPredsAndExAxioms ++ memObl ++ overLaps
       ms =
         [ checkDefinitional sig axioms
-        , checkSort (null axs) oldSorts newSorts emptySorts m sortGens1 sortCons
+        , checkSort (null axs) oldSorts newSorts emptySorts sSig sig
+            sortGens1 sortCons
         , checkLeadingTerms sig axioms cons
         , checkIncomplete sig obligations axGroup cons ]
   r <- case catMaybes ms of
