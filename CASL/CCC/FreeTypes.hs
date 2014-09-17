@@ -67,9 +67,6 @@ isGenAx ax = case stripPrefix "ga_" $ senAttr ax of
 getFs :: [Named (FORMULA f)] -> [FORMULA f]
 getFs = map sentence . filter isGenAx
 
-getInfoSubsort :: Set.Set SORT -> [FORMULA f] -> [FORMULA f]
-getInfoSubsort = concatMap . infoSubsort . Set.toList
-
 -- | get the constraints from sort generation axioms
 constraintOfAxiom :: [FORMULA f] -> [[Constraint]]
 constraintOfAxiom = foldr (\ f -> case f of
@@ -148,13 +145,10 @@ getNefsorts oldSorts nSorts esorts (srts, cons) =
     fsorts = Set.difference (Set.intersection nSorts srts) esorts
 
 getDataStatus :: Set.Set SORT -> Set.Set SORT -> Set.Set SORT -> Conservativity
-getDataStatus nSorts subs genSorts = dataStatus where
-        gens = Set.intersection nSorts genSorts
-        dataStatus
-          | Set.null nSorts = Def
-          | not $ Set.null $ Set.difference (Set.difference nSorts gens) subs
-              = Cons
-          | otherwise = Mono
+getDataStatus nSorts defSubs genSorts
+  | Set.null nSorts = Def
+  | Set.null $ Set.difference nSorts $ Set.union genSorts defSubs = Mono
+  | otherwise = Cons
 
 getConStatus :: Conservativity -> [FORMULA f] -> Conservativity
 getConStatus dataStatus fs = min dataStatus $ if null fs then Def else Cons
@@ -379,6 +373,11 @@ checkPos f = case f of
         _ -> False
       _ -> False
 
+partitionMaybe :: (a -> Maybe b) -> [a] -> ([b], [a])
+partitionMaybe f = foldr (\ a (bs, as) ->
+  maybe (bs, a : as) (\ b -> (b : bs, as)) $ f a) ([], [])
+
+
 {- -----------------------------------------------------------------------
    function checkFreeType:
    - check if leading symbols are new (not in the image of morphism),
@@ -434,12 +433,13 @@ checkFreeType (_, osens) m axs = do
       newSorts = Set.difference (sortSet sig) oldSorts
       emptySorts = emptySortSet sig
       nonInhabitedSorts = getNefsorts oldSorts newSorts emptySorts sortCons
-      subSorts = Rel.keysSet . Rel.rmNullSets $ sortRel sig
-      dataStatus = getDataStatus newSorts subSorts genSorts
+      (subsortDefns, memShips2) = partitionMaybe isSubsortDef memShips
+      defSubsorts = Set.fromList $ map (\ (s, _, _) -> s) subsortDefns
+      dataStatus = getDataStatus newSorts defSubsorts genSorts
       defsForOld = getDefsForOld sSig axioms
-      opsPredsAndExAxioms = defsForOld ++ exQuants
+      opsPredsAndExAxioms = defsForOld ++ exQuants ++ memShips2
       conStatus = getConStatus dataStatus opsPredsAndExAxioms
-      memObl = getInfoSubsort emptySorts memShips
+      memObl = infoSubsorts emptySorts subsortDefns
       axGroup = groupAxioms sig axLessDoms
       overLaps = getOverlapQuery sig axGroup
       obligations = opsPredsAndExAxioms ++ memObl ++ overLaps

@@ -244,13 +244,18 @@ getSubst sig (p1, vs1) (p2, vs2) =
         _ -> mkError "no overlap at" hd1
     _ -> error "non-matching leading terms"
 
--- | create the obligation of subsort
-infoSubsort :: [SORT] -> FORMULA f -> [FORMULA f]
-infoSubsort sts f = case f of
-  Quantification Universal v
-    (Relation (Membership _ s _) Equivalence f1 _) r ->
-      [Quantification Existential v f1 r | notElem s sts]
-  _ -> []
+-- | extract defined subsorts
+isSubsortDef :: FORMULA f -> Maybe (SORT, VAR_DECL, FORMULA f)
+isSubsortDef f = case f of
+  Quantification Universal [vd@(Var_decl [v] super _)]
+    (Relation (Membership (Qual_var v2 super2 _) sub _) Equivalence f1 _) _
+     | (v, super) == (v2, super2) -> Just (sub, vd, f1)
+  _ -> Nothing
+
+-- | create the obligations for subsorts
+infoSubsorts :: Set.Set SORT -> [(SORT, VAR_DECL, FORMULA f)] -> [FORMULA f]
+infoSubsorts emptySorts = map (\ (_, v, f) -> mkExist [v] f)
+  . filter (\ (s, _, _) -> not $ Set.member s emptySorts)
 
 -- | extract the leading symbol from a formula
 leadingSym :: GetRange f => FORMULA f -> Maybe (Either OP_SYMB PRED_SYMB)
