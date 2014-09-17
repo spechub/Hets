@@ -251,9 +251,9 @@ checkDefinitional tsig fs = let
   if there are axioms not being of this form, output "don't know"
 -}
 checkSort :: Bool -> Set.Set SORT -> Set.Set SORT -> Set.Set SORT
-  -> Set.Set SORT -> Sign f e -> Sign f e
+  -> Set.Set SORT -> Set.Set SORT -> Sign f e -> Sign f e
   -> Maybe (Result (Conservativity, [FORMULA f]))
-checkSort noSentence nSorts gSorts fSorts nefsorts sSig tSig
+checkSort noSentence nSorts defSubsorts gSorts fSorts nefsorts sSig tSig
     | noSentence && Set.null nSorts =
         let cond = MapSet.null (diffOpMapSet (opMap tSig) $ opMap sSig)
               && MapSet.null (diffMapSet (predMap tSig) $ predMap sSig)
@@ -264,13 +264,14 @@ checkSort noSentence nSorts gSorts fSorts nefsorts sSig tSig
         mkUnknown "some types are not freely generated" notFreeSorts
     | not $ Set.null nefsorts = mkWarn "some sorts are not inhabited"
         nefsorts (Inconsistent, [])
-    | not $ Set.null genNotNew = mkUnknown "some free types are not new"
+    | not $ Set.null genNotNew = mkUnknown "some defined sorts are not new"
         genNotNew
     | otherwise = Nothing
     where
         notFreeSorts = Set.intersection nSorts
           $ Set.difference gSorts fSorts
-        genNotNew = Set.difference (Set.union gSorts fSorts) nSorts
+        genNotNew = Set.difference
+          (Set.unions [defSubsorts, gSorts, fSorts]) nSorts
         mkWarn s i r = Just $ Result [mkDiag Warning s i] $ Just r
         mkUnknown s i = mkWarn s i (Unknown s, [])
 
@@ -446,8 +447,8 @@ checkFreeType (_, osens) m axs = do
       domSyms = lefts $ mapMaybe leadingSym domains
       ms =
         [ checkDefinitional sig axioms
-        , checkSort (null axs) newSorts genSorts2 freeSorts nonInhabitedSorts
-            sSig sig
+        , checkSort (null axs) newSorts defSubsorts genSorts2 freeSorts
+            nonInhabitedSorts sSig sig
         , checkLeadingTerms sig axioms cons
         , checkIncomplete sig obligations domSyms axGroup cons ]
   r <- case catMaybes ms of
