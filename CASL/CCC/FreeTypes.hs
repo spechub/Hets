@@ -263,7 +263,7 @@ checkSort noSentence nSorts defSubsorts gSorts fSorts nefsorts sSig tSig
     | not $ Set.null notFreeSorts =
         mkUnknown "some types are not freely generated" notFreeSorts
     | not $ Set.null nefsorts = mkWarn "some sorts are not inhabited"
-        nefsorts (Inconsistent, [])
+        nefsorts $ Just (Inconsistent, [])
     | not $ Set.null genNotNew = mkUnknown "some defined sorts are not new"
         genNotNew
     | otherwise = Nothing
@@ -272,8 +272,8 @@ checkSort noSentence nSorts defSubsorts gSorts fSorts nefsorts sSig tSig
           $ Set.difference gSorts fSorts
         genNotNew = Set.difference
           (Set.unions [defSubsorts, gSorts, fSorts]) nSorts
-        mkWarn s i r = Just $ Result [mkDiag Warning s i] $ Just r
-        mkUnknown s i = mkWarn s i (Unknown s, [])
+        mkWarn s i r = Just $ Result [mkDiag Warning s i] r
+        mkUnknown s i = mkWarn s i Nothing
 
 checkLeadingTerms :: (FormExtension f, TermExtension f, Ord f)
   => Sign f e -> [FORMULA f] -> [OP_SYMB]
