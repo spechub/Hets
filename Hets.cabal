@@ -138,6 +138,6 @@ Executable hets
       , wai >= 3.0 && < 4.0
       , warp >= 3.0 && < 4.0
       , http-types >= 0.6 && < 0.9
-      , text >= 0.5 && < 2.0
+      , text >= 0.5 && < 1.2
       , random >= 1.0
     cpp-options: -DSERVER -DWARP3
