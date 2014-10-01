@@ -58,6 +58,9 @@ import System.Process
 isabelleS :: String
 isabelleS = "Isabelle"
 
+isabelleProcessS :: String
+isabelleProcessS = "isabelle_process"
+
 openIsaProofStatus :: String -> ProofStatus ()
 openIsaProofStatus n = openProofStatus n isabelleS ()
 
@@ -65,7 +68,7 @@ isabelleProver :: Prover Sign Sentence (DefaultMorphism Sign) () ()
 isabelleProver = mkAutomaticProver isabelleS () isaProve isaBatchProve
 
 isabelleBatchProver :: Prover Sign Sentence (DefaultMorphism Sign) () ()
-isabelleBatchProver = mkAutomaticProver "isabelle-process" () (isaProveAux True)
+isabelleBatchProver = mkAutomaticProver isabelleProcessS () (isaProveAux True)
   isaBatchProve
 
 isabelleConsChecker :: ConsChecker Sign Sentence () (DefaultMorphism Sign) ()
@@ -230,7 +233,7 @@ isaProveAux batch thName th _freedefs = do
       prepareThyFiles (ho, bo) thyFile thy
       removeDepFiles thBaseName thms
       if batch then do
-          (ex, out, err) <- executeProcess "isabelle-process" []
+          (ex, out, err) <- executeProcess isabelleProcessS []
             $ " use_thy \"" ++ thBaseName ++ "\";"
           putStrLn out
           case ex of
