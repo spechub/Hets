@@ -269,7 +269,7 @@ oldWebApi opts tempLib permFile sessRef re pathBits splitQuery meth respond
             else mRes
           _ -> getHetsResponse
                  opts (map snd files) sessRef pathBits splitQuery respond
-      _ -> respond $ mkResponse "" status405 ""
+      _ -> respond $ mkResponse "" status400 ""
 
 -- extract what we need to know from an autoproof request
 anaAutoProofQuery :: [QueryPair] -> QueryKind
@@ -478,7 +478,7 @@ parseRESTfull opts sessRef pathBits qOpts splitQuery meth respond = let
       _ -> queryFailure
     {- create failure response if request method is not known
     (should never happen) -}
-    _ -> respond $ mkResponse "" status405 ""
+    _ -> respond $ mkResponse "" status400 ""
 
 mkMenuResponse :: WebResponse
 mkMenuResponse respond =
