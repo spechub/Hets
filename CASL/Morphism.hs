@@ -1,5 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies
-  , FlexibleInstances #-}
+  , FlexibleInstances, DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  Symbols and signature morphisms for the CASL logic
@@ -69,8 +69,10 @@ module CASL.Morphism
 import CASL.Sign
 import CASL.AS_Basic_CASL
 
+import Data.Data
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+
 import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
 import Common.Doc
@@ -85,7 +87,7 @@ type SymbolSet = Set.Set Symbol
 type SymbolMap = Map.Map Symbol Symbol
 
 data RawSymbol = ASymbol Symbol | AKindedSymb SYMB_KIND Id
-                 deriving (Show, Eq, Ord)
+                 deriving (Show, Eq, Ord, Typeable, Data)
 
 instance GetRange RawSymbol where
     getRange rs = case rs of
@@ -106,9 +108,9 @@ data Morphism f e m = Morphism
   , op_map :: Op_map
   , pred_map :: Pred_map
   , extended_map :: m
-  } deriving (Show, Eq, Ord)
+  } deriving (Show, Eq, Ord, Typeable, Data)
 
-data DefMorExt e = DefMorExt e
+data DefMorExt e = DefMorExt e deriving (Typeable, Data)
 
 instance Show (DefMorExt e) where
   show = const ""

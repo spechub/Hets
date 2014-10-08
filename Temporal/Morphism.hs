@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  Morphisms in Temporal logic
@@ -32,15 +33,19 @@ module Temporal.Morphism
   , applyMorphism               -- application function for morphism
   ) where
 
+import Data.Data
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+
 import Temporal.Sign as Sign
-import qualified Common.Result as Result
 import qualified Temporal.AS_BASIC_Temporal as AS_BASIC
-import Common.Id as Id
+
+import qualified Common.Result as Result
 import Common.Result
+import Common.Id as Id
 import Common.Doc
 import Common.DocUtils
+
 import Control.Monad (unless)
 
 {- | The datatype for morphisms in temporal logic as
@@ -49,7 +54,7 @@ data Morphism = Morphism
   { source :: Sign
   , target :: Sign
   , propMap :: Map.Map Id Id
-  } deriving (Eq, Ord, Show)
+  } deriving (Eq, Ord, Show, Typeable)
 
 instance Pretty Morphism where
     pretty = printMorphism

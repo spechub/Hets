@@ -65,8 +65,8 @@ resolveBase :: Base -> RDFPrefixMap -> Base -> Base
 resolveBase b pm (Base new) = Base $ resolveIRI b pm new
 
 resolvePrefix :: Base -> RDFPrefixMap -> Prefix -> (Prefix, RDFPrefixMap)
-resolvePrefix b pm (Prefix s new) = let res = resolveIRI b pm new
-    in (Prefix s res, Map.insert s res pm)
+resolvePrefix b pm (PrefixR s new) = let res = resolveIRI b pm new
+    in (PrefixR s res, Map.insert s res pm)
 
 resolvePredicate :: Base -> RDFPrefixMap -> Predicate -> Predicate
 resolvePredicate b pm (Predicate p) = Predicate $
@@ -112,7 +112,7 @@ extractPrefixMap :: RDFPrefixMap -> [Statement] -> RDFPrefixMap
 extractPrefixMap pm ls = case ls of
     [] -> pm
     h : t -> case h of
-        PrefixStatement (Prefix p iri) -> extractPrefixMap (Map.insert p iri pm) t
+        PrefixStatement (PrefixR p iri) -> extractPrefixMap (Map.insert p iri pm) t
         _ -> extractPrefixMap pm t
 
 resolveDocument :: TurtleDocument -> TurtleDocument

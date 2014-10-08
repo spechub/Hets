@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  Morphisms in Propositional logic
@@ -33,15 +34,19 @@ module Propositional.Morphism
   , morphismUnion
   ) where
 
+import Data.Data
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+
 import Propositional.Sign as Sign
-import qualified Common.Result as Result
 import qualified Propositional.AS_BASIC_Propositional as AS_BASIC
+
 import Common.Id as Id
 import Common.Result
 import Common.Doc
 import Common.DocUtils
+import qualified Common.Result as Result
+
 import Control.Monad (unless)
 
 {- | The datatype for morphisms in propositional logic as
@@ -50,7 +55,7 @@ data Morphism = Morphism
   { source :: Sign
   , target :: Sign
   , propMap :: Map.Map Id Id
-  } deriving (Eq, Ord, Show)
+  } deriving (Show, Eq, Ord, Typeable, Data)
 
 instance Pretty Morphism where
     pretty = printMorphism

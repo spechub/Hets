@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  Abstract syntax for COL extension of CASL
@@ -14,8 +15,11 @@ Abstract syntax for COL extension of CASL
 
 module COL.AS_COL where
 
+import Data.Data
+
 import Common.Id
 import Common.AS_Annotation
+
 import CASL.AS_Basic_CASL
 
 -- DrIFT command
@@ -28,7 +32,7 @@ data COL_SIG_ITEM =
                  -- pos: ids
         | Observer_items [Annoted (Id, Maybe Int)] Range
                  -- pos: ids
-             deriving (Eq, Show)
+             deriving (Show, Eq, Typeable, Data)
 
 
 constructorS, constructorsS :: String

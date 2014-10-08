@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Copyright   :  (c) C. Maeder, Felix Gabriel Mance
@@ -25,13 +26,14 @@ import OWL2.ColonKeywords
 import OWL2.Keywords
 
 import Data.Char (intToDigit)
+import Data.Data
 import Data.List
 import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 data IRIType = Full | Abbreviated | NodeID
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 {- | full or abbreviated IRIs with a possible uri for the prefix
      or a local part following a hash sign -}
@@ -44,7 +46,7 @@ data QName = QN
   , expandedIRI :: String
   -- ^ the associated namespace uri (not printed)
   , iriPos :: Range
-  } deriving Show
+  } deriving (Show, Typeable, Data)
 
 instance Eq QName where
     p == q = compare p q == EQ
@@ -139,7 +141,7 @@ type AnnotationProperty = IRI
 type Individual = IRI
 
 data EquivOrDisjoint = Equivalent | Disjoint
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 showEquivOrDisjoint :: EquivOrDisjoint -> String
 showEquivOrDisjoint ed = case ed of
@@ -147,7 +149,7 @@ showEquivOrDisjoint ed = case ed of
     Disjoint -> disjointWithC
 
 data DomainOrRange = ADomain | ARange
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 showDomainOrRange :: DomainOrRange -> String
 showDomainOrRange dr = case dr of
@@ -155,7 +157,7 @@ showDomainOrRange dr = case dr of
     ARange -> rangeC
 
 data SameOrDifferent = Same | Different
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 showSameOrDifferent :: SameOrDifferent -> String
 showSameOrDifferent sd = case sd of
@@ -170,7 +172,7 @@ data Relation =
   | Types
   | DRRelation DomainOrRange
   | SDRelation SameOrDifferent
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 showRelation :: Relation -> String
 showRelation r = case r of
@@ -206,13 +208,13 @@ data Character =
   | Asymmetric
   | Antisymmetric
   | Transitive
-    deriving (Enum, Bounded, Show, Eq, Ord)
+    deriving (Enum, Bounded, Show, Eq, Ord, Typeable, Data)
 
 data PositiveOrNegative = Positive | Negative
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 data QuantifierType = AllValuesFrom | SomeValuesFrom
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 showQuantifierType :: QuantifierType -> String
 showQuantifierType ty = case ty of
@@ -358,7 +360,7 @@ printDatatype dt = showQU $
     if isDatatypeKey dt then stripReservedPrefix dt else dt
 
 data DatatypeCat = OWL2Number | OWL2String | OWL2Bool | Other
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 getDatatypeCat :: IRI -> DatatypeCat
 getDatatypeCat iri = case isDatatypeKey iri of
@@ -388,7 +390,7 @@ facetToIRI = setPrefix "xsd" . mkQName . showFacet
 -- * Cardinalities
 
 data CardinalityType = MinCardinality | MaxCardinality | ExactCardinality
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 showCardinalityType :: CardinalityType -> String
 showCardinalityType ty = case ty of
@@ -397,10 +399,10 @@ showCardinalityType ty = case ty of
     ExactCardinality -> exactlyS
 
 data Cardinality a b = Cardinality CardinalityType Int a (Maybe b)
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 data JunctionType = UnionOf | IntersectionOf
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 type ConstrainingFacet = IRI
 type RestrictionValue = Literal
@@ -410,7 +412,7 @@ type RestrictionValue = Literal
 data Entity = Entity
   { entityKind :: EntityType
   , cutIRI :: IRI }
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 instance GetRange Entity where
   getRange = iriPos . cutIRI
@@ -423,7 +425,7 @@ data EntityType =
   | DataProperty
   | AnnotationProperty
   | NamedIndividual
-    deriving (Enum, Bounded, Show, Read, Eq, Ord)
+    deriving (Enum, Bounded, Show, Read, Eq, Ord, Typeable, Data)
 
 showEntityType :: EntityType -> String
 showEntityType e = case e of
@@ -458,13 +460,13 @@ pairSymbols (Entity k1 i1) (Entity k2 i2) =
 -- * LITERALS
 
 data TypedOrUntyped = Typed Datatype | Untyped (Maybe LanguageTag)
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 data Literal = Literal LexicalForm TypedOrUntyped | NumberLit FloatLit
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | non-negative integers given by the sequence of digits
-data NNInt = NNInt [Int] deriving (Eq, Ord)
+data NNInt = NNInt [Int] deriving (Eq, Ord, Typeable, Data)
 
 instance Show NNInt where
   show (NNInt l) = map intToDigit l
@@ -478,7 +480,7 @@ isZeroNNInt (NNInt l) = null l
 data IntLit = IntLit
   { absInt :: NNInt
   , isNegInt :: Bool }
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Typeable, Data)
 
 instance Show IntLit where
   show (IntLit n b) = (if b then ('-' :) else id) $ show n
@@ -498,7 +500,7 @@ negInt (IntLit n b) = IntLit n $ not b
 data DecLit = DecLit
   { truncDec :: IntLit
   , fracDec :: NNInt }
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Typeable, Data)
 
 instance Show DecLit where
   show (DecLit t f) = show t
@@ -514,7 +516,7 @@ negDec b (DecLit t f) = DecLit (if b then negInt t else t) f
 data FloatLit = FloatLit
   { floatBase :: DecLit
   , floatExp :: IntLit }
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Typeable, Data)
 
 instance Show FloatLit where
   show (FloatLit b e) = show b
@@ -566,7 +568,7 @@ type InverseObjectProperty = ObjectPropertyExpression
 
 data ObjectPropertyExpression = ObjectProp ObjectProperty
   | ObjectInverseOf InverseObjectProperty
-        deriving (Show, Eq, Ord)
+        deriving (Show, Eq, Ord, Typeable, Data)
 
 objPropToIRI :: ObjectPropertyExpression -> Individual
 objPropToIRI opExp = case opExp of
@@ -582,7 +584,7 @@ data DataRange =
   | DataJunction JunctionType [DataRange]
   | DataComplementOf DataRange
   | DataOneOf [Literal]
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 -- * CLASS EXPERSSIONS
 
@@ -598,12 +600,12 @@ data ClassExpression =
   | DataValuesFrom QuantifierType DataPropertyExpression DataRange
   | DataHasValue DataPropertyExpression Literal
   | DataCardinality (Cardinality DataPropertyExpression DataRange)
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 -- * ANNOTATIONS
 
 data Annotation = Annotation [Annotation] AnnotationProperty AnnotationValue
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 data AnnotationValue = AnnValue IRI | AnnValLit Literal
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)

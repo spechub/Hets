@@ -27,9 +27,12 @@ module Logic.Morphism where
 
 import Logic.Logic
 import Logic.Comorphism
+
+import Data.Data
 import qualified Data.Set as Set
-import Data.Typeable
+
 import ATerm.Lib -- (ShATermConvertible)
+
 import Common.DocUtils
 import Common.AS_Annotation
 import Common.Id
@@ -180,7 +183,7 @@ instance Morphism cid
 -- default is ok
 
 newtype S2 s = S2 { sentence2 :: s }
-  deriving (Eq, Ord, Show, Typeable, ShATermConvertible, Pretty)
+  deriving (Eq, Ord, Show, Typeable, Data, ShATermConvertible, Pretty)
 
 instance GetRange s => GetRange (S2 s) where
   getRange (S2 s) = getRange s

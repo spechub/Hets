@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  Result monad for accumulating Diagnosis messages
@@ -55,6 +56,7 @@ import Common.Id
 import Common.Lexer
 
 import Control.Monad.Identity
+import Data.Data
 
 import Data.Function
 import Data.List
@@ -66,13 +68,13 @@ import Text.ParserCombinators.Parsec (parse)
 -- | severness of diagnostic messages
 data DiagKind = Error | Warning | Hint | Debug
               | MessageW -- ^ used for messages in the web interface
-                deriving (Eq, Ord, Show)
+                deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | a diagnostic message with 'Pos'
 data Diagnosis = Diag { diagKind :: DiagKind
                       , diagString :: String
                       , diagPos :: Range
-                      } deriving Eq
+                      } deriving (Eq, Typeable, Data)
 
 -- | construct a message for a printable item that carries a position
 mkDiag :: (GetRange a, Pretty a) => DiagKind -> String -> a -> Diagnosis
@@ -126,7 +128,7 @@ checkUniqueness l =
 -- | The result monad. A failing result should include an error message.
 data Result a = Result { diags :: [Diagnosis]
                        , maybeResult :: Maybe a
-                       } deriving Show
+                       } deriving (Show, Typeable, Data)
 
 instance Functor Result where
     fmap f (Result errs m) = Result errs $ fmap f m

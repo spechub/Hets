@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  Maps of sets
@@ -59,6 +60,8 @@ module Common.Lib.MapSet
   ) where
 
 import Prelude hiding (all, filter, map, null, lookup)
+
+import Data.Data
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Data.List as List
@@ -121,7 +124,7 @@ imageSet m = Set.fromList . imageList m
 
 -- | a map to non-empty sets
 newtype MapSet a b = MapSet { toMap :: Map.Map a (Set.Set b) }
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Typeable, Data)
 
 instance (Show a, Show b) => Show (MapSet a b) where
     show = show . toMap

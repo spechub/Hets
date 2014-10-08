@@ -51,7 +51,7 @@ instance Pretty ExtEntityType where
     pretty ety = case ety of
         AnyEntity -> empty
         EntityType ty -> keyword $ show ty
-        Prefix -> keyword "Prefix"
+        PrefixO -> keyword "Prefix"
 
 instance Pretty SymbItems where
     pretty (SymbItems m us) = pretty m

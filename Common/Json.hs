@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances, UndecidableInstances #-}
 {- |
 Module      :  $Header$
 Description :  Json utilities
@@ -28,6 +29,8 @@ module Common.Json
   , anToJson
   , tagJson
   , pJson
+  , dataToJson
+  , ToJson (..)
   ) where
 
 import Common.AS_Annotation
@@ -39,6 +42,7 @@ import Common.Parsec
 import Common.Result
 
 import Data.Char
+import Data.Data
 import Data.List
 import Data.Maybe
 import Data.Ratio
@@ -185,3 +189,31 @@ pJObj = cTok '{' >> fmap JObject (sepBy1 pJPair commaTok) << cTok '}'
 
 pJPair :: CharParser st JPair
 pJPair = pair (tok pStr << cTok ':') pJson
+
+dataToJson :: Data a => a -> Json
+dataToJson a = let
+    l = gmapQ dataToJson a
+    c = toConstr a
+    s = showConstr c
+  in case dataTypeRep $ dataTypeOf a of
+  r | elem r [IntRep, FloatRep] -> case readSigned readFloat s of
+    [(n, "")] -> JNumber n
+    _ -> error "dataToJson1"
+  _ -> maybe
+       (case (s, l) of
+          ("[]", []) -> JNull
+          ("(:)", [hd, tl]) -> case tl of
+            JNull -> JArray [hd]
+            JArray rt -> JArray $ hd : rt
+            _ -> error "dataToJson2"
+          _ -> case l of
+                 [] -> JString s
+                 [e] -> JObject [(s, e)]
+                 _ -> JObject [(s, JArray l)])
+       JBool $ cast a
+
+class ToJson a where
+  asJson :: a -> Json
+
+instance Data a => ToJson a where
+  asJson = dataToJson

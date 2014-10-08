@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  sublogic analysis for CASL
@@ -75,6 +76,7 @@ module CASL.Sublogic
     , pr_symbol
     ) where
 
+import Data.Data
 import Data.List
 import Data.Maybe
 import qualified Data.Map as Map
@@ -102,12 +104,12 @@ data CASL_Formulas = Atomic  -- ^ atomic logic
                    | GHorn   -- ^ generalized positive conditional logic
                    | FOL     -- ^ first-order logic
                    | SOL     -- ^ second-order logic
-                   deriving (Show, Eq, Ord)
+                   deriving (Show, Eq, Ord, Typeable, Data)
 
 data SubsortingFeatures = NoSub
                         | LocFilSub
                         | Sub
-                          deriving (Show, Eq, Ord)
+                          deriving (Show, Eq, Ord, Typeable, Data)
 
 data SortGenerationFeatures =
           NoSortGen
@@ -115,7 +117,7 @@ data SortGenerationFeatures =
                     -- ^ Mapping of indexed sorts is empty
                   , onlyInjConstrs :: Bool
                     -- ^ only constructors that are subsort injections
-                  } deriving (Show, Eq, Ord)
+                  } deriving (Show, Eq, Ord, Typeable, Data)
 
 joinSortGenFeature :: (Bool -> Bool -> Bool)
                    -> SortGenerationFeatures -> SortGenerationFeatures
@@ -136,7 +138,7 @@ data CASL_SL a = CASL_SL
       which_logic :: CASL_Formulas, -- ^ first order sublogics
       has_empty_sorts :: Bool, -- ^ may sorts be empty
       ext_features :: a  -- ^ features of extension
-    } deriving (Show, Eq, Ord)
+    } deriving (Show, Eq, Ord, Typeable, Data)
 
 updExtFeature :: (a -> a) -> CASL_SL a -> CASL_SL a
 updExtFeature f s = s { ext_features = f $ ext_features s }

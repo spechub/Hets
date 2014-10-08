@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  signaturefor Relational Schemes
@@ -40,6 +41,7 @@ import Common.Id
 import Common.Result
 import Common.Utils
 
+import Data.Data
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -49,7 +51,7 @@ data RSDatatype
   = RSboolean | RSbinary | RSdate | RSdatetime | RSdecimal | RSfloat
   | RSinteger | RSstring | RStext | RStime | RStimestamp | RSdouble
   | RSnonPosInteger | RSnonNegInteger | RSlong | RSPointer
-    deriving (Eq, Ord)
+    deriving (Eq, Ord, Typeable, Data)
 
 type RSRawSymbol = Id
 
@@ -59,7 +61,7 @@ data RSSymbol = STable Id |     -- id of a table
                     Id          -- id of the table
                     RSDatatype  -- datatype of the symbol
                     RSIsKey     -- is it a key?
-                deriving (Eq, Ord, Show)
+                deriving (Eq, Ord, Show, Typeable, Data)
 
 instance GetRange RSSymbol
 
@@ -68,7 +70,7 @@ data RSColumn = RSColumn
                     , c_data :: RSDatatype
                     , c_key :: RSIsKey
                     }
-                deriving (Eq, Ord, Show)
+                deriving (Eq, Ord, Show, Typeable, Data)
 
 data RSTable = RSTable
                 { t_name :: Id
@@ -76,13 +78,13 @@ data RSTable = RSTable
                 , rsannos :: [Annotation]
                 , t_keys :: Set.Set (Id, RSDatatype)
                 }
-                deriving Show
+                deriving (Show, Typeable, Data)
 
 data RSTables = RSTables
                     {
                         tables :: Set.Set RSTable
                     }
-                deriving (Eq, Ord, Show)
+                deriving (Eq, Ord, Show, Typeable, Data)
 
 instance GetRange RSTables
 
@@ -102,7 +104,7 @@ data RSTMap = RSTMap
                 {
                    col_map :: Map.Map Id Id
                 }
-                deriving (Eq, Ord, Show)
+                deriving (Eq, Ord, Show, Typeable, Data)
 
 data RSMorphism = RSMorphism
                     { domain :: RSTables
@@ -110,7 +112,7 @@ data RSMorphism = RSMorphism
                     , table_map :: Map.Map Id Id
                     , column_map :: Map.Map Id RSTMap
                     }
-                    deriving (Eq, Ord, Show)
+                    deriving (Eq, Ord, Show, Typeable, Data)
 
 -- I hope that this works right, I do not want to debug this
 apply_comp_c_map :: RSTable -> Map.Map Id Id -> RSMorphism -> RSMorphism

@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Copyright   :  (c) Felix Gabriel Mance
@@ -16,6 +17,8 @@ module OWL2.MS where
 
 import Common.Id
 import OWL2.AS
+
+import Data.Data
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -31,7 +34,7 @@ data Extended =
   | ClassEntity ClassExpression
   | ObjectEntity ObjectPropertyExpression
   | SimpleEntity Entity
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | frames with annotated lists
 data ListFrameBit =
@@ -43,10 +46,10 @@ data ListFrameBit =
   | ObjectCharacteristics (AnnotatedList Character)
   | DataPropRange (AnnotatedList DataRange)
   | IndividualFacts (AnnotatedList Fact)
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 data AnnoType = Declaration | Assertion | XmlError String
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | frames which start with annotations
 data AnnFrameBit =
@@ -56,28 +59,28 @@ data AnnFrameBit =
   | ClassDisjointUnion [ClassExpression]
   | ClassHasKey [ObjectPropertyExpression] [DataPropertyExpression]
   | ObjectSubPropertyChain [ObjectPropertyExpression]
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 data Fact =
     ObjectPropertyFact PositiveOrNegative ObjectPropertyExpression Individual
   | DataPropertyFact PositiveOrNegative DataPropertyExpression Literal
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 data FrameBit =
     ListFrameBit (Maybe Relation) ListFrameBit
   | AnnFrameBit Annotations AnnFrameBit
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 data Frame = Frame Extended [FrameBit]
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 data Axiom = PlainAxiom
   { axiomTopic :: Extended -- the Class or Individual
   , axiomBit :: FrameBit -- the property expressed by the sentence
-  } deriving (Show, Eq, Ord)
+  } deriving (Show, Eq, Ord, Typeable, Data)
 
 {-
- 
+
  Individual: alex           <------ axiomTopic
    Facts: hasParent john    <------ axiomBit
 
@@ -103,12 +106,12 @@ data Ontology = Ontology
     , imports :: [ImportIRI]
     , ann :: [Annotations]
     , ontFrames :: [Frame]
-    } deriving (Show, Eq, Ord)
+    } deriving (Show, Eq, Ord, Typeable, Data)
 
 data OntologyDocument = OntologyDocument
     { prefixDeclaration :: PrefixMap
     , ontology :: Ontology
-    } deriving (Show, Eq, Ord)
+    } deriving (Show, Eq, Ord, Typeable, Data)
 
 instance GetRange OntologyDocument
 

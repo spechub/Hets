@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  Maude Sentences
@@ -29,13 +30,15 @@ import Common.Id (mkSimpleId, GetRange)
 import Common.Doc (vcat)
 import Common.DocUtils (Pretty (..))
 
+import Data.Data
+
 -- * The Sentence type
 
 -- | A 'Membership', 'Equation' or 'Rule'.
 data Sentence = Membership Membership
               | Equation Equation
               | Rule Rule
-              deriving (Show, Read, Ord, Eq)
+              deriving (Show, Read, Ord, Eq, Typeable, Data)
 
 -- ** Sentence Instances
 

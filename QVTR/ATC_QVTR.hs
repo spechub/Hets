@@ -57,25 +57,6 @@ import qualified CSMOF.As as CSMOF
 import qualified CSMOF.Sign as CSMOF
 import qualified Data.Map as Map
 
-{-! for QVTR.As.Transformation derive : Typeable !-}
-{-! for QVTR.As.Key derive : Typeable !-}
-{-! for QVTR.As.PropKey derive : Typeable !-}
-{-! for QVTR.As.Relation derive : Typeable !-}
-{-! for QVTR.As.RelVar derive : Typeable !-}
-{-! for QVTR.As.PrimitiveDomain derive : Typeable !-}
-{-! for QVTR.As.Domain derive : Typeable !-}
-{-! for QVTR.As.ObjectTemplate derive : Typeable !-}
-{-! for QVTR.As.PropertyTemplate derive : Typeable !-}
-{-! for QVTR.As.WhenWhere derive : Typeable !-}
-{-! for QVTR.As.RelInvok derive : Typeable !-}
-{-! for QVTR.As.OCL derive : Typeable !-}
-{-! for QVTR.As.STRING derive : Typeable !-}
-{-! for QVTR.Sign.RuleDef derive : Typeable !-}
-{-! for QVTR.Sign.Sign derive : Typeable !-}
-{-! for QVTR.Sign.Sen derive : Typeable !-}
-{-! for QVTR.Sign.RelationSen derive : Typeable !-}
-{-! for QVTR.Sign.Pattern derive : Typeable !-}
-
 {-! for QVTR.As.Transformation derive : ShATermConvertible !-}
 {-! for QVTR.As.Key derive : ShATermConvertible !-}
 {-! for QVTR.As.PropKey derive : ShATermConvertible !-}
@@ -403,32 +384,6 @@ instance ShATermConvertible Transformation where
       (att5, Transformation a' b' c' d' e') }}}}}
     u -> fromShATermError "Transformation" u
 
-deriving instance Typeable STRING
-
-deriving instance Typeable OCL
-
-deriving instance Typeable RelInvok
-
-deriving instance Typeable WhenWhere
-
-deriving instance Typeable PropertyTemplate
-
-deriving instance Typeable ObjectTemplate
-
-deriving instance Typeable Domain
-
-deriving instance Typeable PrimitiveDomain
-
-deriving instance Typeable RelVar
-
-deriving instance Typeable Relation
-
-deriving instance Typeable PropKey
-
-deriving instance Typeable Key
-
-deriving instance Typeable Transformation
-
 instance ShATermConvertible Pattern where
   toShATermAux att0 xv = case xv of
     Pattern a b c -> do
@@ -538,13 +493,3 @@ instance ShATermConvertible RuleDef where
       { (att3, c') ->
       (att3, RuleDef a' b' c') }}}
     u -> fromShATermError "RuleDef" u
-
-deriving instance Typeable Pattern
-
-deriving instance Typeable RelationSen
-
-deriving instance Typeable Sen
-
-deriving instance Typeable Sign
-
-deriving instance Typeable RuleDef

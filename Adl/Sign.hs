@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  ADL signature and sentences
@@ -22,6 +23,7 @@ import Common.Id
 import Common.Result
 import qualified Common.Lib.Rel as Rel
 
+import Data.Data
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -30,7 +32,7 @@ type RelMap = Map.Map Id (Set.Set RelType)
 data Sign = Sign
   { rels :: RelMap
   , isas :: Rel.Rel Concept
-  } deriving (Eq, Ord, Show)
+  } deriving (Eq, Ord, Show, Typeable, Data)
 
 emptySign :: Sign
 emptySign = Sign
@@ -53,7 +55,7 @@ signUnion s1 s2 = return s1
 data Symbol
   = Con Concept
   | Rel Relation
-    deriving (Eq, Ord, Show)
+    deriving (Eq, Ord, Show, Typeable, Data)
 
 instance GetRange Symbol where
   getRange s = case s of
@@ -81,7 +83,7 @@ symName s = case s of
 data RawSymbol
   = Symbol Symbol
   | AnId Id
-    deriving (Eq, Ord, Show)
+    deriving (Eq, Ord, Show, Typeable, Data)
 
 instance GetRange RawSymbol where
   getRange r = case r of
@@ -127,7 +129,7 @@ instance Pretty Sign where
 data Sen
   = DeclProp Relation RangedProp
   | Assertion (Maybe RuleKind) Rule
-    deriving (Eq, Ord, Show)
+    deriving (Eq, Ord, Show, Typeable, Data)
 
 instance GetRange Sen where
   getRange s = case s of

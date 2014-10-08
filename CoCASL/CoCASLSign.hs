@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  Signatures for CoCASL, as extension of CASL signatures
@@ -18,11 +19,13 @@ import CASL.AS_Basic_CASL (SORT)
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.MapSet as MapSet
 
+import Data.Data
+
 data CoCASLSign = CoCASLSign
   { sees :: Rel.Rel SORT
   , constructs :: Rel.Rel SORT
   , constructors :: OpMap
-  } deriving (Show, Eq, Ord)
+  } deriving (Show, Eq, Ord, Typeable, Data)
 
 emptyCoCASLSign :: CoCASLSign
 emptyCoCASLSign = CoCASLSign Rel.empty Rel.empty MapSet.empty

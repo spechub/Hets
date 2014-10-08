@@ -49,9 +49,9 @@ import Common.LibName
 import Common.ProofUtils
 import Common.Result
 
+import Data.Data
 import Data.Maybe
 import qualified Data.Set as Set
-import Data.Typeable
 
 class (Language cid,
        Logic lid1 sublogics1
@@ -216,7 +216,7 @@ data InclComorphism lid sublogics = InclComorphism
   { inclusion_logic :: lid
   , inclusion_source_sublogic :: sublogics
   , inclusion_target_sublogic :: sublogics }
-  deriving Show
+  deriving (Show, Typeable, Data)
 
 -- | construction of an identity comorphism
 mkIdComorphism :: (Logic lid sublogics
@@ -287,7 +287,8 @@ instance Logic lid sublogics
            is_weakly_amalgamable _ = True
            isInclusionComorphism _ = True
 
-data CompComorphism cid1 cid2 = CompComorphism cid1 cid2 deriving Show
+data CompComorphism cid1 cid2 = CompComorphism cid1 cid2
+  deriving (Show, Typeable, Data)
 
 instance (Language cid1, Language cid2)
           => Language (CompComorphism cid1 cid2) where

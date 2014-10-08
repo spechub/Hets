@@ -150,7 +150,7 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Data.Monoid
 import Data.Ord
-import Data.Typeable
+import Data.Data
 import Control.Monad (unless)
 
 -- | Stability of logic implementations
@@ -173,7 +173,7 @@ instance (Eq a, PrintTypeConv a) => EqPrintTypeConv a
 type EndoMap a = Map.Map a a
 
 {- | the name of a logic.
-     Define instances like "data CASL = CASL deriving Show"
+     Define instances like "data CASL = CASL deriving (Show, Typeable, Data)"
 -}
 class Show lid => Language lid where
     language_name :: lid -> String
@@ -315,7 +315,7 @@ class (Language lid, Category sign morphism, Ord sentence,
        Ord symbol, -- for efficient lookup
        PrintTypeConv sign, PrintTypeConv morphism,
        GetRange sentence, GetRange symbol,
-       PrintTypeConv sentence, PrintTypeConv symbol)
+       PrintTypeConv sentence, Data sentence, PrintTypeConv symbol)
     => Sentences lid sentence sign morphism symbol
         | lid -> sentence sign morphism symbol
       where

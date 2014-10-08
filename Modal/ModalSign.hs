@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Copyright   :  (c) Till Mossakowski, C. Maeder, Uni Bremen 2004
@@ -19,6 +20,7 @@ import CASL.Sign
 import qualified Common.Lib.MapSet as MapSet
 import Common.Id
 
+import Data.Data
 import qualified Data.List as List
 import qualified Data.Map as Map
 
@@ -27,7 +29,7 @@ data ModalSign = ModalSign
   , flexPreds :: PredMap
   , modies :: Map.Map SIMPLE_ID [AnModFORM]
   , termModies :: Map.Map Id [AnModFORM] -- SORT
-  } deriving (Show, Eq, Ord)
+  } deriving (Show, Eq, Ord, Typeable, Data)
 
 emptyModalSign :: ModalSign
 emptyModalSign = ModalSign MapSet.empty MapSet.empty Map.empty Map.empty

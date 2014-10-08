@@ -24,7 +24,7 @@ GENITCORRECTIONS_deps = utils/itcor/GenItCorrections.hs
 
 PERL = perl
 GENRULES = utils/genRules
-GENRULECALL = $(GENRULES) -r Typeable -r ShATermConvertible \
+GENRULECALL = $(GENRULES) -r ShATermConvertible \
     -i Data.Typeable -i ATerm.Lib
 
 GENRULECALL2 = $(GENRULES) -r Typeable -r ShATermLG \

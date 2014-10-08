@@ -56,12 +56,6 @@ instance (Ord a, ShATermConvertible a, Ord b, ShATermConvertible b)
         (att2, InjMap.unsafeConstructInjMap a' b') }}
     u -> fromShATermError "InjMap" u
 
-#if __GLASGOW_HASKELL__ < 708
-deriving instance Typeable2 MapSet.MapSet
-#else
-deriving instance Typeable MapSet.MapSet
-#endif
-
 instance (Ord a, ShATermConvertible a, Ord b, ShATermConvertible b)
   => ShATermConvertible (MapSet.MapSet a b) where
   toShATermAux att0 r = do
@@ -72,12 +66,6 @@ instance (Ord a, ShATermConvertible a, Ord b, ShATermConvertible b)
         case fromShATerm' a att0 of { (att1, a') ->
         (att1, MapSet.fromDistinctMap a') }
     u -> fromShATermError "MapSet" u
-
-#if __GLASGOW_HASKELL__ < 708
-deriving instance Typeable1 Rel.Rel
-#else
-deriving instance Typeable Rel.Rel
-#endif
 
 instance (Ord a, ShATermConvertible a) => ShATermConvertible (Rel.Rel a) where
   toShATermAux att0 r = do

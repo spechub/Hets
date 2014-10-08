@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -17,6 +18,7 @@ import CASL.Sign
 import qualified Common.Lib.MapSet as MapSet
 import Common.Id
 
+import Data.Data
 import qualified Data.List as List
 import qualified Data.Map as Map
 
@@ -26,7 +28,7 @@ data HybridSign = HybridSign
   , modies :: Map.Map SIMPLE_ID [AnHybFORM]
   , nomies :: Map.Map SIMPLE_ID [AnHybFORM]
   , termModies :: Map.Map Id [AnHybFORM] -- SORT
-  } deriving (Show, Eq, Ord)
+  } deriving (Show, Eq, Ord, Typeable, Data)
 
 emptyHybridSign :: HybridSign
 emptyHybridSign = HybridSign MapSet.empty MapSet.empty

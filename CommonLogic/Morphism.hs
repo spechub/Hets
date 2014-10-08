@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  Morphism of Common Logic
@@ -39,12 +40,14 @@ import CommonLogic.Sign as Sign
 
 import Control.Monad (unless)
 
+import Data.Data
+
 -- maps of sets
 data Morphism = Morphism
   { source :: Sign
   , target :: Sign
   , propMap :: Map.Map Id Id
-  } deriving (Eq, Ord, Show)
+  } deriving (Eq, Ord, Show, Typeable)
 
 instance Pretty Morphism where
     pretty = printMorphism

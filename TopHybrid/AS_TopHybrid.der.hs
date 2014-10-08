@@ -17,7 +17,7 @@ module TopHybrid.AS_TopHybrid where
 
 import Common.Id
 import Common.AS_Annotation
-import Data.Typeable
+import Data.Data
 import Logic.Logic
 import Unsafe.Coerce
 import Data.Monoid
@@ -26,12 +26,13 @@ import Data.Monoid
 
 {- Union of the the declaration of nominals/modalities and the
    spec correspondent to the underlying logic -}
-data TH_BSPEC s = Bspec { bitems :: [TH_BASIC_ITEM], und :: s } deriving Show
+data TH_BSPEC s = Bspec { bitems :: [TH_BASIC_ITEM], und :: s }
+  deriving (Show, Typeable, Data)
 
 -- Declaration of nominals/modalities
 data TH_BASIC_ITEM = Simple_mod_decl [MODALITY]
                    | Simple_nom_decl [NOMINAL]
-                     deriving Show
+                     deriving (Show, Typeable, Data)
 
 type MODALITY = SIMPLE_ID
 type NOMINAL = SIMPLE_ID
@@ -53,7 +54,7 @@ data TH_FORMULA f = At NOMINAL (TH_FORMULA f)
                   | Par (TH_FORMULA f)
                   | TrueA
                   | FalseA
-                    deriving (Show, Eq, Ord)
+                    deriving (Show, Eq, Ord, Typeable, Data)
 
 {- Existential quantification is used, in the Sentences, Spec and Signature
 because, we need to hide that these datatypes are polymorphic, or else,
@@ -71,6 +72,18 @@ data Frm_Wrap = forall l sub bs f s sm si mo sy rw pf .
 instance Show Frm_Wrap where
   show (Frm_Wrap l f) = "Frm_Wrap " ++ show l ++ " (" ++ show f ++ ")"
 
+frmWarpConstr :: Constr
+frmWarpConstr = mkConstr frmWrapDT "Frm_Wrap" [] Prefix
+
+frmWrapDT :: DataType
+frmWrapDT = mkDataType "TopHybrid.AS_TopHybrid.Frm_Wrap" [frmWarpConstr]
+
+instance Data Frm_Wrap where
+  gfoldl = error "AS_TopHybrid.Frm_Wrap.gfoldl"
+  toConstr _ = frmWarpConstr
+  dataTypeOf _ = frmWrapDT
+  gunfold = error "AS_TopHybrid.Frm_Wrap.gunfold"
+
 {- An hybridized specification has the basic specification; The declararation
 of nominals and modalities, and the axioms; -}
 data Spc_Wrap = forall l sub bs sen si smi sign mor symb raw pf .
@@ -87,7 +100,7 @@ instance Monoid Spc_Wrap where
  mappend _ _ = error "Not implemented!"
 
 -- --- instances
-data Mor = Mor deriving (Eq, Ord, Show)
+data Mor = Mor deriving (Show, Eq, Ord, Typeable, Data)
 
 -- Why do we need to compare specifications ?
 instance Ord Spc_Wrap where

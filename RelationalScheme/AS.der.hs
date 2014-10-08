@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  abstract syntax for Relational Schemes
@@ -12,8 +13,7 @@ Abstract syntax for Relational Schemes
 -}
 
 module RelationalScheme.AS
-        (
-            RSRelType (..)
+        ( RSRelType (..)
         , RSQualId (..)
         , RSRel (..)
         , RSRelationships (..)
@@ -22,23 +22,26 @@ module RelationalScheme.AS
         , map_rel
         , getRels
         , getSignature
-        )
-        where
+        ) where
+
+import Data.Data
+import qualified Data.Map as Map
 
 import Common.Id
 import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
+import Common.Result
+
 import RelationalScheme.Keywords
 import RelationalScheme.Sign
-import qualified Data.Map as Map
-import Common.Result
+
 
 -- DrIFT command
 {-! global: GetRange !-}
 
 data RSRelType = RSone_to_one | RSone_to_many | RSmany_to_one | RSmany_to_many
-                 deriving (Eq, Ord)
+                 deriving (Eq, Ord, Typeable, Data)
 
 -- first Id is TableId, second is columnId
 data RSQualId = RSQualId
@@ -47,7 +50,7 @@ data RSQualId = RSQualId
                 , column :: Id
                 , q_pos :: Range
                 }
-                deriving (Eq, Ord, Show)
+                deriving (Eq, Ord, Show, Typeable, Data)
 
 data RSRel = RSRel
              {
@@ -56,13 +59,13 @@ data RSRel = RSRel
              , r_type :: RSRelType
              , r_pos :: Range
              }
-             deriving (Eq, Ord, Show)
+             deriving (Eq, Ord, Show, Typeable, Data)
 
 data RSRelationships = RSRelationships [Annoted RSRel] Range
-                        deriving (Eq, Ord, Show)
+                        deriving (Eq, Ord, Show, Typeable, Data)
 
 data RSScheme = RSScheme RSTables RSRelationships Range
-                deriving (Eq, Ord, Show)
+                deriving (Eq, Ord, Show, Typeable, Data)
 
 type Sentence = RSRel
 

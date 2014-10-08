@@ -124,7 +124,7 @@ parsePrefix = do
     p <- skips (option "" prefix << char ':')
     i <- skips uriP
     skips $ char '.'
-    return $ Prefix p i
+    return $ PrefixR p i
 
 parsePredicate :: CharParser st Predicate
 parsePredicate = fmap Predicate $ skips uriP

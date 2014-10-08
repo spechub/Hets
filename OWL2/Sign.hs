@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Copyright   :  Heng Jiang, Uni Bremen 2007
@@ -22,6 +23,8 @@ import Common.Result
 
 import Control.Monad
 
+import Data.Data
+
 data Sign = Sign
             { concepts :: Set.Set Class
               -- classes
@@ -34,26 +37,27 @@ data Sign = Sign
               -- annotation properties
             , individuals :: Set.Set Individual  -- named individuals
             , prefixMap :: PrefixMap
-            } deriving (Show, Eq, Ord)
+            } deriving (Show, Eq, Ord, Typeable, Data)
 
 data SignAxiom =
     Subconcept ClassExpression ClassExpression   -- subclass, superclass
   | Role (DomainOrRangeOrFunc (RoleKind, RoleType)) ObjectPropertyExpression
   | Data (DomainOrRangeOrFunc ()) DataPropertyExpression
   | Conceptmembership Individual ClassExpression
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
-data RoleKind = FuncRole | RefRole deriving (Show, Eq, Ord)
+data RoleKind = FuncRole | RefRole deriving (Show, Eq, Ord, Typeable, Data)
 
-data RoleType = IRole | DRole deriving (Show, Eq, Ord)
+data RoleType = IRole | DRole deriving (Show, Eq, Ord, Typeable, Data)
 
-data DesKind = RDomain | DDomain | RIRange deriving (Show, Eq, Ord)
+data DesKind = RDomain | DDomain | RIRange
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 data DomainOrRangeOrFunc a =
     DomainOrRange DesKind ClassExpression
   | RDRange DataRange
   | FuncProp a
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 emptySign :: Sign
 emptySign = Sign

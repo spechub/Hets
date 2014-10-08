@@ -58,10 +58,11 @@ instance Show DataTypeOrClass where
   show m = show $ pretty m
 
 
-instance Pretty DataType where
-  pretty (DataType sup) = text "datatype" <+> text (namedElementName (typeSuper sup))
+instance Pretty Datatype where
+  pretty (Datatype sup) =
+      text "datatype" <+> text (namedElementName (typeSuper sup))
 
-instance Show DataType where
+instance Show Datatype where
   show m = show $ pretty m
 
 

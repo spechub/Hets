@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  Signature for propositional logic
@@ -31,7 +32,9 @@ module Propositional.Sign
     , sigUnion                      -- Union for Logic.Logic
     ) where
 
+import Data.Data
 import qualified Data.Set as Set
+
 import Common.Id
 import Common.Result
 import Common.Doc
@@ -39,7 +42,8 @@ import Common.DocUtils
 
 {- | Datatype for propositional Signatures
 Signatures are just sets -}
-newtype Sign = Sign {items :: Set.Set Id} deriving (Eq, Ord, Show)
+newtype Sign = Sign {items :: Set.Set Id}
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 instance Pretty Sign where
     pretty = printSign
