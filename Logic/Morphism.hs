@@ -187,11 +187,11 @@ newtype S2 s = S2 { sentence2 :: s }
   deriving (Eq, Ord, Show, Typeable, Data, ShATermConvertible, Pretty
            , GetRange, ToJson)
 
-instance (Morphism cid
+instance Morphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                 sign1 morphism1 sign_symbol1 symbol1 proof_tree1
             lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
-                sign2 morphism2 sign_symbol2 symbol2 proof_tree2)
+                sign2 morphism2 sign_symbol2 symbol2 proof_tree2
     => Sentences (SpanDomain cid) (S2 sentence2) sign1 morphism1
        sign_symbol1 where
 
