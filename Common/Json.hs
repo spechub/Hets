@@ -200,6 +200,7 @@ dataToJson a = let
     [(n, "")] -> JNumber n
     _ -> error "dataToJson1"
   _ -> maybe
+       (maybe
        (case (s, l) of
           ("[]", []) -> JNull
           ("(:)", [hd, tl]) -> case tl of
@@ -210,6 +211,7 @@ dataToJson a = let
                  [] -> JString s
                  [e] -> JObject [(s, e)]
                  _ -> JObject [(s, JArray l)])
+       JString $ cast a)
        JBool $ cast a
 
 class ToJson a where
