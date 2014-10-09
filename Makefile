@@ -25,10 +25,10 @@ GENITCORRECTIONS_deps = utils/itcor/GenItCorrections.hs
 PERL = perl
 GENRULES = utils/genRules
 GENRULECALL = $(GENRULES) -r ShATermConvertible \
-    -i Data.Typeable -i ATerm.Lib
+    -i ATerm.Lib
 
 GENRULECALL2 = $(GENRULES) -r ShATermLG \
-    -i Data.Typeable -i ATerm.Lib -i ATC.Grothendieck
+    -i ATerm.Lib -i ATC.Grothendieck
 DRIFT = utils/DrIFT
 HADDOCK = haddock
 
