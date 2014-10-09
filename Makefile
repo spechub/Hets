@@ -56,7 +56,7 @@ logics = CASL HasCASL Isabelle Modal Hybrid TopHybrid Temporal \
     CoCASL COL CspCASL CASL_DL \
     SoftFOL ConstraintCASL Propositional RelationalScheme VSE OMDoc DFOL \
     LF Framework Maude ExtModal CommonLogic CSL QBF Adl HolLight Fpl THF \
-    FreeCAD OWL2 RDF CSMOF # QVTR
+    FreeCAD OWL2 RDF CSMOF QVTR
 
 TESTTARGETFILES += Scratch.hs CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     Haskell/wrap.hs Isabelle/isa.hs Syntax/hetpa.hs \
@@ -317,7 +317,7 @@ RDF_files = RDF/AS.hs OWL2/AS.hs RDF/Symbols.hs RDF/Sign.hs RDF/Morphism.hs \
 
 CSMOF_files = CSMOF/As.hs CSMOF/Sign.hs
 
-#QVTR_files = QVTR/As.hs QVTR/Sign.hs
+QVTR_files = QVTR/As.hs QVTR/Sign.hs
 
 # ATC DrIFT-rule generation for logics
 CASL/ATC_CASL.der.hs: $(CASL_files) $(GENRULES)
@@ -420,8 +420,9 @@ RDF/ATC_RDF.der.hs: $(RDF_files) $(GENRULES)
 CSMOF/ATC_CSMOF.der.hs: $(CSMOF_files) $(GENRULES)
 	$(GENRULECALL) -i Common.ATerm.ConvInstances -o $@ $(CSMOF_files)
 
-#QVTR/ATC_QVTR.der.hs: $(QVTR_files) $(GENRULES)
-#	$(GENRULECALL) -i Common.ATerm.ConvInstances -o $@ $(QVTR_files)
+QVTR/ATC_QVTR.der.hs: $(QVTR_files) CSMOF/ATC_CSMOF.hs $(GENRULES)
+	$(GENRULECALL) -i CSMOF.ATC_CSMOF -i Common.ATerm.ConvInstances \
+ -o $@ $(QVTR_files)
 
 # all ATC .der.hs files for all logics
 atc_logic_files = $(foreach logic, $(logics), $(logic)/ATC_$(logic).der.hs)
