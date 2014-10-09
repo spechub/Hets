@@ -118,7 +118,8 @@ Haskell_files = $(addsuffix .hs, \
 
 ## rule for ATC generation
 Haskell/ATC_Haskell.der.hs: $(Haskell_files) $(GENRULES)
-	$(GENRULECALL) -i Haskell.BaseATC -o $@ $(Haskell_files)
+	$(GENRULECALL) -r Typeable -i Data.Typeable -i Haskell.BaseATC \
+  -o $@ $(Haskell_files)
 
 hs_der_files += $(hs_clean_files)
 ifneq ($(strip $(PFE_FLAGS)),)

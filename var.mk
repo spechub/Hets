@@ -72,7 +72,7 @@ endif
 
 PROGRAMATICAVERSION = $(shell $(HCPKG) latest programatica)
 ifneq ($(findstring 1.0, $(PROGRAMATICAVERSION)),)
-#PFE_FLAGS = -package programatica -DPROGRAMATICA
+PFE_FLAGS = -package programatica -DPROGRAMATICA
 endif
 
 WAIEXTVERSION = $(shell $(HCPKG) latest wai-extra)
