@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  lists with their size similar to Data.Edison.Seq.SizedSeq
@@ -32,9 +33,10 @@ module Common.Lib.SizedList
 
 import Prelude hiding (null, head, tail, reverse, take, drop, map)
 
+import Data.Data
 import qualified Data.List as List
 
-data SizedList a = N !Int [a] deriving (Show, Eq, Ord)
+data SizedList a = N !Int [a] deriving (Show, Eq, Ord, Typeable, Data)
 
 fromList :: [a] -> SizedList a
 fromList xs = N (length xs) xs

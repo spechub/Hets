@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  injective maps
@@ -28,13 +29,14 @@ module Common.InjMap
     , updateAWithB
     ) where
 
+import Data.Data
 import qualified Data.Map as Map
 
 -- | the data type of injective maps
 data InjMap a b = InjMap
     { getAToB :: Map.Map a b -- ^ the actual injective map
     , getBToA :: Map.Map b a -- ^ the inverse map
-    } deriving (Show, Eq, Ord)
+    } deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | for serialization only
 unsafeConstructInjMap :: Map.Map a b -> Map.Map b a -> InjMap a b

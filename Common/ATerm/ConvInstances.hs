@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, StandaloneDeriving, DeriveDataTypeable #-}
+{-# LANGUAGE StandaloneDeriving, DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  special ShATermConvertible instances
@@ -25,23 +25,11 @@ import Data.Fixed (Pico)
 import Data.Ratio (Ratio)
 import System.Time
 
-#if __GLASGOW_HASKELL__ < 708
-deriving instance Typeable1 SizedList
-#else
-deriving instance Typeable SizedList
-#endif
-
 instance ShATermConvertible a => ShATermConvertible (SizedList.SizedList a)
     where
   toShATermAux att0 = toShATermAux att0 . SizedList.toList
   fromShATermAux ix att0 = case fromShATermAux ix att0 of
     (att, l) -> (att, SizedList.fromList l)
-
-#if __GLASGOW_HASKELL__ < 708
-deriving instance Typeable2 InjMap.InjMap
-#else
-deriving instance Typeable InjMap.InjMap
-#endif
 
 instance (Ord a, ShATermConvertible a, Ord b, ShATermConvertible b)
      => ShATermConvertible (InjMap.InjMap a b) where
@@ -90,10 +78,6 @@ instance ShATermConvertible ClockTime where
                     case fromShATerm' b att1 of { (att2, b') ->
                     (att2, TOD a' b') }}
             u -> fromShATermError "ClockTime" u
-
-#ifdef TIME_WITHOUT_TYPEABLE
-deriving instance Typeable TimeOfDay
-#endif
 
 instance ShATermConvertible Double where
     toShATermAux att = toShATermAux att . toRational

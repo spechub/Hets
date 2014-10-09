@@ -28,11 +28,6 @@ ifneq ($(findstring HaXml-1.20, $(HAXMLVERSION)),)
 HAXML_PACKAGE_COMPAT = -DHAXML_COMPAT
 endif
 
-TIMEVERSION = $(shell $(HCPKG) latest time)
-ifneq ($(findstring time-1.1.2, $(TIMEVERSION)),)
-TIME_PACKAGE = -DTIME_WITHOUT_TYPEABLE
-endif
-
 TARVERSION = $(shell $(HCPKG) latest tar)
 ifneq ($(findstring 0., $(TARVERSION)),)
 TAR_PACKAGE = -DTAR_PACKAGE
