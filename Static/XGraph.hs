@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  xml input for Hets development graphs
@@ -24,6 +25,7 @@ import Common.XUpdate (getAttrVal, readAttrVal)
 
 import Control.Monad
 
+import Data.Data
 import Data.List
 import Data.Maybe (fromMaybe)
 
@@ -42,6 +44,7 @@ data XGraph = XGraph { libName :: LibName
                      , thmLinks :: [XLink]
                      , startNodes :: [XNode]
                      , xg_body :: XTree }
+  deriving (Typeable, Data)
 
 {- outer list must be executed in order; inner lists represent all def-links
 -node bundles that can be processed in one step -}
@@ -58,6 +61,7 @@ data XNode = XNode { nodeName :: NodeName
                   , refNode :: String
                   , refLib :: String
                   , specs :: String }
+  deriving (Typeable, Data)
 
 data XLink = XLink { source :: String
                    , target :: String
@@ -69,6 +73,7 @@ data XLink = XLink { source :: String
                    , mr_name :: String
                    , mr_source :: Maybe String
                    , mapping :: String }
+  deriving (Typeable, Data)
 
 instance Show XNode where
   show xn = showName (nodeName xn)

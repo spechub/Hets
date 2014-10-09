@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  abstract syntax of CASL specification libraries
@@ -22,6 +23,7 @@ import Common.AS_Annotation
 import Common.LibName
 
 import Data.Maybe
+import Data.Typeable
 
 import Logic.Grothendieck (G_basic_spec)
 import Logic.Logic
@@ -37,7 +39,7 @@ data LIB_DEFN = Lib_defn LibName [Annoted LIB_ITEM] Range [Annotation]
                 list of annotations is parsed preceding the first LIB_ITEM
                 the last LIB_ITEM may be annotated with a following comment
                 the first LIB_ITEM cannot be annotated -}
-                deriving Show
+                deriving (Show, Typeable)
 
 {- for information on the list of Pos see the documentation in
    AS_Structured.hs and AS_Architecture.hs -}
@@ -69,7 +71,7 @@ data LIB_ITEM = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) Range
               -- pos:  "newlogic", Logic_name, "=", opt "end"
               | Newcomorphism_defn ComorphismDef Range
               -- pos: "newcomorphism", Comorphism_name, "=", opt "end"
-                deriving Show
+                deriving (Show, Typeable)
 
 {- Item maps are the documented CASL renamed entities whereas a unique item
 contains the new target name of the single arbitrarily named item from the
@@ -77,7 +79,7 @@ downloaded library. -}
 data DownloadItems =
     ItemMaps [ItemNameMap]
   | UniqueItem IRI
-    deriving Show
+    deriving (Show, Typeable)
 
 addDownload :: Bool -> SPEC_NAME -> Annoted LIB_ITEM
 addDownload unique = emptyAnno . addDownloadAux unique
@@ -94,28 +96,28 @@ addDownloadAux unique j =
     (if unique then UniqueItem i else ItemMaps [ItemNameMap i Nothing])
     $ iriPos i
 
-data GENERICITY = Genericity PARAMS IMPORTED Range deriving Show
+data GENERICITY = Genericity PARAMS IMPORTED Range deriving (Show, Typeable)
                   -- pos: many of "[","]" opt ("given", commas)
 
 emptyGenericity :: GENERICITY
 emptyGenericity = Genericity (Params []) (Imported []) nullRange
 
-data PARAMS = Params [Annoted SPEC] deriving Show
+data PARAMS = Params [Annoted SPEC] deriving (Show, Typeable)
 
-data IMPORTED = Imported [Annoted SPEC] deriving Show
+data IMPORTED = Imported [Annoted SPEC] deriving (Show, Typeable)
 
-data VIEW_TYPE = View_type (Annoted SPEC) (Annoted SPEC) Range deriving Show
+data VIEW_TYPE = View_type (Annoted SPEC) (Annoted SPEC) Range deriving (Show, Typeable)
                  -- pos: "to"
-data EQUIV_TYPE = Equiv_type SPEC SPEC Range deriving Show
+data EQUIV_TYPE = Equiv_type SPEC SPEC Range deriving (Show, Typeable)
 
 data MODULE_TYPE = Module_type (Annoted SPEC) (Annoted SPEC) Range
-  deriving Show
+  deriving (Show, Typeable)
 
-data ALIGN_ARITIES = Align_arities ALIGN_ARITY ALIGN_ARITY deriving Show
+data ALIGN_ARITIES = Align_arities ALIGN_ARITY ALIGN_ARITY deriving (Show, Typeable)
 
 data ALIGN_ARITY = AA_InjectiveAndTotal | AA_Injective | AA_Total
                  | AA_NeitherInjectiveNorTotal
-                   deriving (Show, Enum, Bounded)
+                   deriving (Show, Enum, Bounded, Typeable)
 
 showAlignArity :: ALIGN_ARITY -> String
 showAlignArity ar = case ar of
@@ -126,7 +128,7 @@ showAlignArity ar = case ar of
 
 data ItemNameMap =
     ItemNameMap IRI (Maybe IRI)
-    deriving (Show, Eq)
+    deriving (Show, Eq, Typeable)
 
 makeLogicItem :: Language lid => lid -> Annoted LIB_ITEM
 makeLogicItem lid = emptyAnno $ Logic_decl

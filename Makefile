@@ -27,7 +27,7 @@ GENRULES = utils/genRules
 GENRULECALL = $(GENRULES) -r ShATermConvertible \
     -i Data.Typeable -i ATerm.Lib
 
-GENRULECALL2 = $(GENRULES) -r Typeable -r ShATermLG \
+GENRULECALL2 = $(GENRULES) -r ShATermLG \
     -i Data.Typeable -i ATerm.Lib -i ATC.Grothendieck
 DRIFT = utils/DrIFT
 HADDOCK = haddock

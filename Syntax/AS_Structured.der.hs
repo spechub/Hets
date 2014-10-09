@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  abstract syntax of CASL structured specifications
@@ -20,6 +21,7 @@ import Common.Id
 import Common.IRI
 import Common.AS_Annotation
 
+import Data.Typeable
 import qualified Data.Set as Set
 
 import Logic.Logic --(AnyLogic,REL_REF)
@@ -64,7 +66,7 @@ data SPEC = Basic_spec G_basic_spec Range
           | Combination [LABELED_ONTO_OR_INTPR_REF] [EXTENSION_REF] Range
             {- pos: combine ONTO_OR_INTPR_REF, ...,  ONTO_OR_INTPR_REF
             excluding EXTENSION_REF, ..., EXTENSION_REF -}
-            deriving Show
+            deriving (Show, Typeable)
 
 {- Renaming and Hiding can be performend with intermediate Logic
    mappings / Logic projections.
@@ -72,35 +74,35 @@ data SPEC = Basic_spec G_basic_spec Range
 -}
 data RENAMING = Renaming [G_mapping] Range
                 -- pos: "with", list of comma pos
-                 deriving (Show, Eq)
+                 deriving (Show, Eq, Typeable)
 
 data RESTRICTION = Hidden [G_hiding] Range
                    -- pos: "hide", list of comma pos
                  | Revealed G_symb_map_items_list Range
                    -- pos: "reveal", list of comma pos
-                   deriving (Show, Eq)
+                   deriving (Show, Eq, Typeable)
 
 data APPROXIMATION = Named_Approx APPROX_METHOD_REF Range
                    | Qual_Approx APPROX_METHOD_REF LOGIC_REF Range
-                     deriving (Show, Eq)
+                     deriving (Show, Eq, Typeable)
 
 data MINIMIZATION = Mini CircMin CircVars Range
-                    deriving (Show, Eq)
+                    deriving (Show, Eq, Typeable)
 
 
 data G_mapping = G_symb_map G_symb_map_items_list
                | G_logic_translation Logic_code
-                 deriving (Show, Eq)
+                 deriving (Show, Eq, Typeable)
 
 data G_hiding = G_symb_list G_symb_items_list
                | G_logic_projection Logic_code
-                 deriving (Show, Eq)
+                 deriving (Show, Eq, Typeable)
 
 data FIT_ARG = Fit_spec (Annoted SPEC) [G_mapping] Range
                -- pos: opt "fit"
              | Fit_view VIEW_NAME [Annoted FIT_ARG] Range
                -- annotations before the view keyword are stored in Spec_inst
-               deriving Show
+               deriving (Show, Typeable)
 
 type SPEC_NAME = IRI
 type VIEW_NAME = IRI
@@ -117,7 +119,7 @@ type Symb = IRI
 -- | a logic with serialization
 data LogicDescr = LogicDescr Logic_name (Maybe IRI) Range
   -- pos: "serialization"
-  deriving Show
+  deriving (Show, Typeable)
 
 data Logic_code = Logic_code (Maybe String)
                              (Maybe Logic_name)
@@ -133,13 +135,13 @@ data Logic_code = Logic_code (Maybe String)
                  this notation is not very useful and is not maintained
                  "logic bla1:bla2 ->" => <encoding> and <src-logic> (!)
                  "logic bla1: ->bla2" => <encoding> and <targ-logic> -}
-                  deriving (Show, Eq)
+                  deriving (Show, Eq, Typeable)
 
 data Logic_name = Logic_name String (Maybe Token) (Maybe SPEC_NAME)
-  deriving (Show, Eq)
+  deriving (Show, Eq, Typeable)
 
 data LABELED_ONTO_OR_INTPR_REF = Labeled (Maybe CombineID) ONTO_OR_INTPR_REF
-  deriving (Show, Eq)
+  deriving (Show, Eq, Typeable)
 
 type ONTO_NAME = IRI
 type EXTENSION_NAME = IRI
@@ -182,7 +184,7 @@ data CORRESPONDENCE = Correspondence_block
                         (Maybe RELATION_REF)
                         (Maybe CONFIDENCE)
                     | Default_correspondence
-                      deriving (Show, Eq)
+                      deriving (Show, Eq, Typeable)
 
 type CORRESPONDENCE_ID = Annotation
 
@@ -190,12 +192,12 @@ type ENTITY_REF = IRI
 
 data TERM_OR_ENTITY_REF = Term G_symb_items_list Range
                         | Entity_ref ENTITY_REF
-                          deriving (Show, Eq)
+                          deriving (Show, Eq, Typeable)
 
 data RELATION_REF = Subsumes | IsSubsumed | Equivalent | Incompatible
                   | HasInstance | InstanceOf | DefaultRelation
                   | Iri IRI
-                    deriving (Show, Eq)
+                    deriving (Show, Eq, Typeable)
 
 refToRel :: RELATION_REF -> REL_REF
 refToRel Subsumes = Subs
