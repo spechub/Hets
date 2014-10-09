@@ -1,4 +1,5 @@
-{-# LANGUAGE ExistentialQuantification, DeriveDataTypeable #-}
+{-# LANGUAGE ExistentialQuantification, DeriveDataTypeable
+  , OverlappingInstances #-}
 {- |
 Module      :  $Header$
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -16,11 +17,15 @@ of nominals and modalities, and axioms.
 module TopHybrid.AS_TopHybrid where
 
 import Common.Id
+import Common.Json
 import Common.AS_Annotation
-import Data.Data
+
 import Logic.Logic
 import Unsafe.Coerce
+
+import Data.Data
 import Data.Monoid
+
 -- DrIFT command
 {-! global: GetRange !-}
 
@@ -56,6 +61,9 @@ data TH_FORMULA f = At NOMINAL (TH_FORMULA f)
                   | FalseA
                     deriving (Show, Eq, Ord, Typeable, Data)
 
+instance ToJson f => ToJson (TH_FORMULA f) where
+  asJson = error "nyi instance ToJson f => ToJson (TH_FORMULA f)"
+
 {- Existential quantification is used, in the Sentences, Spec and Signature
 because, we need to hide that these datatypes are polymorphic, or else,
 haskell will complain that their types will vary with the same logic. Which
@@ -65,30 +73,21 @@ is forbidden in Logic class by using functional dependencies. -}
 of the hybridized logic and the logic identifier, so that we can
 identify the underlying logic, by only looking to the sentence. -}
 data Frm_Wrap = forall l sub bs f s sm si mo sy rw pf .
-                        (Logic l sub bs f s sm si mo sy rw pf) =>
-                        Frm_Wrap l (TH_FORMULA f)
+    (Logic l sub bs f s sm si mo sy rw pf)
+    => Frm_Wrap l (TH_FORMULA f)
   deriving Typeable
 
 instance Show Frm_Wrap where
   show (Frm_Wrap l f) = "Frm_Wrap " ++ show l ++ " (" ++ show f ++ ")"
 
-frmWarpConstr :: Constr
-frmWarpConstr = mkConstr frmWrapDT "Frm_Wrap" [] Prefix
-
-frmWrapDT :: DataType
-frmWrapDT = mkDataType "TopHybrid.AS_TopHybrid.Frm_Wrap" [frmWarpConstr]
-
-instance Data Frm_Wrap where
-  gfoldl = error "AS_TopHybrid.Frm_Wrap.gfoldl"
-  toConstr _ = frmWarpConstr
-  dataTypeOf _ = frmWrapDT
-  gunfold = error "AS_TopHybrid.Frm_Wrap.gunfold"
+instance ToJson Frm_Wrap where
+  asJson (Frm_Wrap l f) = mkJObj [("Frm_Wrap:" ++ show l, asJson f)]
 
 {- An hybridized specification has the basic specification; The declararation
 of nominals and modalities, and the axioms; -}
 data Spc_Wrap = forall l sub bs sen si smi sign mor symb raw pf .
-                        (Logic l sub bs sen si smi sign mor symb raw pf) =>
-                        Spc_Wrap l (TH_BSPEC bs) [Annoted Frm_Wrap]
+    (Logic l sub bs sen si smi sign mor symb raw pf)
+    => Spc_Wrap l (TH_BSPEC bs) [Annoted Frm_Wrap]
   deriving Typeable
 
 instance Show Spc_Wrap where

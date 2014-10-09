@@ -140,6 +140,7 @@ import Common.GlobalAnnotations
 import Common.Id
 import Common.IRI
 import Common.Item
+import Common.Json
 import Common.Lib.Graph
 import Common.LibName
 import Common.Prec (PrecMap)
@@ -150,7 +151,7 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Data.Monoid
 import Data.Ord
-import Data.Data
+import Data.Typeable
 import Control.Monad (unless)
 
 -- | Stability of logic implementations
@@ -315,7 +316,7 @@ class (Language lid, Category sign morphism, Ord sentence,
        Ord symbol, -- for efficient lookup
        PrintTypeConv sign, PrintTypeConv morphism,
        GetRange sentence, GetRange symbol,
-       PrintTypeConv sentence, Data sentence, PrintTypeConv symbol)
+       PrintTypeConv sentence, ToJson sentence, PrintTypeConv symbol)
     => Sentences lid sentence sign morphism symbol
         | lid -> sentence sign morphism symbol
       where
