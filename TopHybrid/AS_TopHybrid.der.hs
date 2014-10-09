@@ -62,7 +62,7 @@ data TH_FORMULA f = At NOMINAL (TH_FORMULA f)
                     deriving (Show, Eq, Ord, Typeable, Data)
 
 instance ToJson f => ToJson (TH_FORMULA f) where
-  asJson = error "nyi instance ToJson f => ToJson (TH_FORMULA f)"
+  asJson _ = mkJObj []
 
 {- Existential quantification is used, in the Sentences, Spec and Signature
 because, we need to hide that these datatypes are polymorphic, or else,
