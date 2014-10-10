@@ -45,7 +45,7 @@ import CspCASLProver.Utils
 import qualified Data.Maybe as Maybe
 import qualified Data.Set as Set
 
-import Isabelle.IsaProve (isaProve)
+import Isabelle.IsaProve
 import qualified Isabelle.IsaSign as Isa
 
 import Logic.Prover
@@ -98,8 +98,8 @@ cspCASLProverProve thName (Theory ccSign ccSensThSens) _freedefs =
                          (produceIntegrationTheorems thName caslSign)
       {- Generate and Isabelle to prove the process refinements (also produces
       the processes) -}
-      isaProve thName (produceProcesses thName ccSign ccNamedSens pcfolSign
-                                        cfolSign) ()
+      isaProve JEdit thName
+        (produceProcesses thName ccSign ccNamedSens pcfolSign cfolSign) ()
 
 {- |Produce the Isabelle theory of the data part of a CspCASL
 specification. The data transalation can fail. If it does fail there will

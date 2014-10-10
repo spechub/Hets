@@ -21,8 +21,9 @@ module Isabelle.IsaProve
   ( isabelleConsChecker
   , isabelleBatchProver
   , isabelleProver
+  , IsaEditor (..)
   , isaProve
-  ) where
+    ) where
 
 import Logic.Prover
 import Isabelle.IsaSign
@@ -58,18 +59,26 @@ import System.Process
 isabelleS :: String
 isabelleS = "Isabelle"
 
+data IsaEditor = Emacs | JEdit
+
+instance Show IsaEditor where
+  show e = case e of
+    Emacs -> "emacs"
+    JEdit -> "jedit"
+
 isabelleProcessS :: String
 isabelleProcessS = "isabelle_process"
 
 openIsaProofStatus :: String -> ProofStatus ()
 openIsaProofStatus n = openProofStatus n isabelleS ()
 
-isabelleProver :: Prover Sign Sentence (DefaultMorphism Sign) () ()
-isabelleProver = mkAutomaticProver isabelleS () isaProve isaBatchProve
+isabelleProver :: IsaEditor -> Prover Sign Sentence (DefaultMorphism Sign) () ()
+isabelleProver e = mkAutomaticProver (isabelleS ++ "-" ++ show e) ()
+  (isaProve e) isaBatchProve
 
 isabelleBatchProver :: Prover Sign Sentence (DefaultMorphism Sign) () ()
-isabelleBatchProver = mkAutomaticProver isabelleProcessS () (isaProveAux True)
-  isaBatchProve
+isabelleBatchProver = mkAutomaticProver isabelleProcessS ()
+  (isaProveAux Nothing) isaBatchProve
 
 isabelleConsChecker :: ConsChecker Sign Sentence () (DefaultMorphism Sign) ()
 isabelleConsChecker = (mkConsChecker "Isabelle-refute" () consCheck)
@@ -93,7 +102,7 @@ consCheck :: String -> b
 consCheck thName _tac tm freedefs = case tTarget tm of
     Theory sig nSens -> do
       let (axs, _) = getAxioms $ toNamedList nSens
-      l <- isaProve (thName ++ "_c")
+      l <- isaProve JEdit (thName ++ "_c")
            (Theory sig
                $ markAsGoal $ toThSens $ if null axs then [] else
                    [ makeNamed inconsistentS $ mkRefuteSen $ termAppl notOp
@@ -207,12 +216,13 @@ revertThyFile thyFile thy = do
 callSystem :: String -> IO ExitCode
 callSystem s = putStrLn s >> system s
 
-isaProve :: String -> Theory Sign Sentence () -> a -> IO [ProofStatus ()]
-isaProve = isaProveAux False
-
-isaProveAux :: Bool -> String -> Theory Sign Sentence () -> a
+isaProve :: IsaEditor -> String -> Theory Sign Sentence () -> a
   -> IO [ProofStatus ()]
-isaProveAux batch thName th _freedefs = do
+isaProve = isaProveAux . Just
+
+isaProveAux :: Maybe IsaEditor -> String -> Theory Sign Sentence () -> a
+  -> IO [ProofStatus ()]
+isaProveAux meditor thName th _freedefs = do
   let (sig, axs, ths, m) = prepareTheory th
       thms = map senAttr ths
       thBaseName = reverse . takeWhile (/= '/') $ reverse thName
@@ -232,7 +242,8 @@ isaProveAux batch thName th _freedefs = do
     Right (ho, bo) -> do
       prepareThyFiles (ho, bo) thyFile thy
       removeDepFiles thBaseName thms
-      if batch then do
+      case meditor of
+        Nothing -> do
           (ex, out, err) <- executeProcess isabelleProcessS []
             $ " use_thy \"" ++ thBaseName ++ "\";"
           putStrLn out
@@ -240,8 +251,8 @@ isaProveAux batch thName th _freedefs = do
             ExitSuccess -> return ()
             _ -> putStrLn err
           return ex
-        else do
-          isabelle <- getEnvDef "HETS_ISABELLE" "isabelle emacs"
+        Just editor -> do
+          isabelle <- getEnvDef "HETS_ISABELLE" $ "isabelle " ++ show editor
           callSystem $ isabelle ++ " " ++ thyFile
       ok <- checkFinalThyFile (ho, bo) thyFile
       if ok then getAllProofDeps m thBaseName thms
@@ -264,7 +275,7 @@ isaBatchProve :: Bool -- 1.
 isaBatchProve _incl _save resMVar thName _tac th freedefs = do
     mvar <- newEmptyMVar
     threadID <- forkIO (do
-        ps <- isaProveAux True thName th freedefs
+        ps <- isaProveAux Nothing thName th freedefs
         _ <- swapMVar resMVar $ return ps
         return ()
       `finally` putMVar mvar ())
