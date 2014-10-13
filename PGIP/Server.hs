@@ -167,6 +167,8 @@ hetsServer opts1 = do
   unless (null bl) . appendFile permFile
     $ "black list: " ++ prList bl ++ "\n"
   sessRef <- newIORef (IntMap.empty, Map.empty)
+  putIfVerbose opts 1 $ "hets server is listening on port " ++ show port
+  putIfVerbose opts 2 $ "for more information look into file: " ++ permFile
 #ifdef WARP3
   run port $ \ re respond -> do
 #else
