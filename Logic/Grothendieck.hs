@@ -438,6 +438,7 @@ data LogicGraph = LogicGraph
     , squares :: Map.Map (AnyComorphism, AnyComorphism) [Square]
     , qTATranslations :: Map.Map String AnyComorphism
     , prefixes :: Map.Map String IRI
+    , dolOnly :: Bool
     } deriving Show
 
 emptyLogicGraph :: LogicGraph
@@ -455,7 +456,9 @@ emptyLogicGraph = LogicGraph
     , modifications = Map.empty
     , squares = Map.empty
     , qTATranslations = Map.empty
-    , prefixes = Map.empty }
+    , prefixes = Map.empty
+    , dolOnly = False
+    }
 
 setCurLogicAux :: String -> LogicGraph -> LogicGraph
 setCurLogicAux s lg = lg { currentLogic = s }
