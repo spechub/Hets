@@ -190,29 +190,27 @@ pJObj = cTok '{' >> fmap JObject (sepBy1 pJPair commaTok) << cTok '}'
 pJPair :: CharParser st JPair
 pJPair = pair (tok pStr << cTok ':') pJson
 
+{- | convert to json with special treatment for numbers, booleans, strings
+and other lists. -}
 dataToJson :: Data a => a -> Json
 dataToJson a = let
     l = gmapQ dataToJson a
     c = toConstr a
     s = showConstr c
+    jRes = case (s, l) of
+      ("[]", []) -> JNull
+      ("(:)", [hd, tl]) -> case tl of
+            JNull -> JArray [hd]
+            JArray rt -> JArray $ hd : rt
+            _ -> error "dataToJson2"
+      (_, []) -> JString s -- this also turns characters into strings "'a'"
+      (_, [e]) -> JObject [(s, e)]
+      _ -> JObject [(s, JArray l)]
   in case dataTypeRep $ dataTypeOf a of
   r | elem r [IntRep, FloatRep] -> case readSigned readFloat s of
     [(n, "")] -> JNumber n
     _ -> error "dataToJson1"
-  _ -> maybe
-       (maybe
-       (case (s, l) of
-          ("[]", []) -> JNull
-          ("(:)", [hd, tl]) -> case tl of
-            JNull -> JArray [hd]
-            JArray rt -> JArray $ hd : rt
-            _ -> error "dataToJson2"
-          _ -> case l of
-                 [] -> JString s
-                 [e] -> JObject [(s, e)]
-                 _ -> JObject [(s, JArray l)])
-       JString $ cast a)
-       JBool $ cast a
+  _ -> maybe (maybe jRes JString $ cast a) JBool $ cast a
 
 class ToJson a where
   asJson :: a -> Json
