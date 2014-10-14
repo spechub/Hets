@@ -42,9 +42,6 @@ UNIXVERSION = $(shell $(HCPKG) latest unix)
 ifneq ($(findstring 2., $(UNIXVERSION)),)
 UNIX_PACKAGE = -DUNIX
 endif
-ifneq ($(findstring 2.4, $(UNIXVERSION)),)
-UNIX_PACKAGE = -DUNIX
-endif
 
 GLADEVERSION = $(shell $(HCPKG) latest glade)
 ifneq ($(findstring 0.1, $(GLADEVERSION)),)
