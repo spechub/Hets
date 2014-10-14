@@ -60,14 +60,14 @@ parseOWL quick fn = do
 
 parseOWLAux :: Bool         -- ^ Sets Option.quick
          -> FilePath        -- ^ local filepath or uri
-         -> [String]        -- ^ arguments for java parser 
+         -> [String]        -- ^ arguments for java parser
          -> IO (ExitCode, String, String)
 parseOWLAux quick fn args = do
     let jar = "OWL2Parser.jar"
     (hasJar, toolPath) <- check4HetsOWLjar jar
     if hasJar then executeProcess "java" (["-jar", toolPath </> jar]
         ++ args ++ [fn] ++ if quick then ["-qk"] else []) ""
-    else error $ jar
+      else error $ jar
         ++ " not found, check your environment variable: " ++ hetsOWLenv
 
 -- | converts owl file to desired syntax using owl-api
