@@ -887,8 +887,9 @@ logicGraph2Graph lg =
                 (mapSublogic c (coerce c sl))) $
       filter (\ (Comorphism c) -> Logic (sourceLogic c) == Logic lid
       && isSubElem (coerce c sl) (sourceSublogic c)
-      && (case c1 of Just (Comorphism c1') -> show c1' /= show c
-                     _ -> True)) relevantMorphisms,
+      && (case c1 of
+            Just (Comorphism c1') -> show c1' /= show c
+            _ -> True)) relevantMorphisms,
   weight = \ (Comorphism c) -> if Logic (sourceLogic c) ==
                                  Logic (targetLogic c) then 1 else 3
  }
