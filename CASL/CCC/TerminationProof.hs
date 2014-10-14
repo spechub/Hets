@@ -191,7 +191,7 @@ axiom2Cond sig doms f = let s = liftM (++ " -> true") $ axiomSub f in
   Definedness t _ | isApp t ->
     case filter (sameOpsApp sig t . fst . fromJust . domainDef) doms of
       phi : _ ->
-        let Result _ st = getSubstForm sig (quant f) phi
+        let Result _ st = getSubstForm sig (quantFreeVars sig f nullRange) phi
         in case st of
              Just ((_, _), (s2, _)) ->
                let Just (_, c) = domainDef phi

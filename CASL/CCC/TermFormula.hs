@@ -23,7 +23,6 @@ import CASL.Utils
 
 import Common.Id
 import Common.Result
-import qualified Common.Lib.MapSet as MapSet
 
 import Control.Monad
 
@@ -329,26 +328,3 @@ eqPattern sig t1 t2 = case (unsortedTerm t1, unsortedTerm t2) of
   _ | sameOpsApp sig t1 t2 ->
     and $ on (zipWith $ eqPattern sig) arguOfTerm t1 t2
   _ -> False
-
-quant :: Ord f => FORMULA f -> FORMULA f
-quant f = mkForall (varDeclOfF f) f
-
--- | get or create a variable declaration for a formula
-varDeclOfF :: Ord f => FORMULA f -> [VAR_DECL]
-varDeclOfF = let
-  qualVarToDecl t = case t of
-    Qual_var v s r -> MapSet.insert (s, r) v MapSet.empty
-    _ -> MapSet.empty
-  varDeclToDecl (Var_decl vs s r) = MapSet.fromList [((s, r), vs)]
-  unions = foldr MapSet.union MapSet.empty
-  termMap = unions . map qualVarToDecl . varOfTerm
-  declMap f = case f of
-    Quantification _ vds _ _ -> unions $ map varDeclToDecl vds
-    Junction _ fs _ -> unions $ map declMap fs
-    Relation f1 _ f2 _ -> on MapSet.union declMap f1 f2
-    Negation f' _ -> declMap f'
-    Predication _ ts _ -> unions $ map termMap ts
-    Definedness t _ -> termMap t
-    Equation t1 _ t2 _ -> on MapSet.union termMap t1 t2
-    _ -> MapSet.empty
-  in map (\ ((s, r), vs) -> Var_decl vs s r) . MapSet.toList . declMap
