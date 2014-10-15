@@ -197,14 +197,13 @@ dataToJson a = let
     l = gmapQ dataToJson a
     c = toConstr a
     s = showConstr c
-    jRes = case (s, l) of
-      ("[]", []) -> JNull
-      ("(:)", [hd, tl]) -> case tl of
+    jRes = case l of
+      [] -> if s == "[]" then JNull else JString s
+      [e] -> JObject [(s, e)]
+      [hd, tl] | s == "(:)" -> case tl of
             JNull -> JArray [hd]
             JArray rt -> JArray $ hd : rt
             _ -> error "dataToJson2"
-      (_, []) -> JString s -- this also turns characters into strings "'a'"
-      (_, [e]) -> JObject [(s, e)]
       _ -> JObject [(s, JArray l)]
   in case dataTypeRep $ dataTypeOf a of
   r | elem r [IntRep, FloatRep] -> case readSigned readFloat s of
