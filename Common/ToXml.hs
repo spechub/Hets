@@ -92,8 +92,7 @@ dataToMyData a = let
   CharRep -> B BChar s
   _ -> maybe
        (maybe
-        (maybe
-         (maybe res (B BStr . tokStr) $ cast a)
+        (maybe res
          (B BStr . show . prettyRange) $ cast a)
        (B BStr) $ cast a) bool $ cast a
 
@@ -108,7 +107,8 @@ myDataToXml d = case d of
   Cons s mfs l -> maybe (unode s $ map myDataToXml l)
     (eitherToElem s . zipWith (\ m f -> case m of
        B _ v -> Left $ mkAttr f v
-       _ -> Right . unode f $ myDataToXml m) l) mfs
+       _ -> Right $ myDataToXml m)
+     l) mfs
 
 class ToXml a where
   asXml :: a -> Element
