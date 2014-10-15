@@ -202,7 +202,7 @@ anaLocalVarForms anaFrm il afs ps = do
                              (ds ++ dss, f {item = resF} : ress,
                                  f {item = anaF} : ranas))
                      ([], [], []) afs
-               fufs = map (mapAn (\ f -> stripQuant sign $ quantFreeVars sign
+               fufs = map (mapAn (\ f -> quantFreeVars sign
                             (mkForallRange il f ps) ps))
                       anaFs
            addDiags es
