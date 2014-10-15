@@ -16,15 +16,19 @@ of nominals and modalities, and axioms.
 
 module TopHybrid.AS_TopHybrid where
 
+import Common.AS_Annotation
 import Common.Id
 import Common.Json
-import Common.AS_Annotation
+import Common.ToXml
 
 import Logic.Logic
+
 import Unsafe.Coerce
 
 import Data.Data
 import Data.Monoid
+
+import Text.XML.Light
 
 -- DrIFT command
 {-! global: GetRange !-}
@@ -64,6 +68,9 @@ data TH_FORMULA f = At NOMINAL (TH_FORMULA f)
 instance ToJson f => ToJson (TH_FORMULA f) where
   asJson _ = mkJObj []
 
+instance ToXml f => ToXml (TH_FORMULA f) where
+  asXml _ = unode "missing" ()
+
 {- Existential quantification is used, in the Sentences, Spec and Signature
 because, we need to hide that these datatypes are polymorphic, or else,
 haskell will complain that their types will vary with the same logic. Which
@@ -82,6 +89,10 @@ instance Show Frm_Wrap where
 
 instance ToJson Frm_Wrap where
   asJson (Frm_Wrap l f) = mkJObj [("Frm_Wrap:" ++ show l, asJson f)]
+
+instance ToXml Frm_Wrap where
+  asXml (Frm_Wrap l f) =
+    add_attr (mkAttr "language" $ show l) $ unode "Frm_Wrap" $ asXml f
 
 {- An hybridized specification has the basic specification; The declararation
 of nominals and modalities, and the axioms; -}

@@ -37,6 +37,7 @@ import Common.DocUtils
 import Common.AS_Annotation
 import Common.Id
 import Common.Json
+import Common.ToXml
 
 class (Language cid,
        Logic lid1 sublogics1
@@ -185,7 +186,7 @@ instance Morphism cid
 
 newtype S2 s = S2 { sentence2 :: s }
   deriving (Eq, Ord, Show, Typeable, Data, ShATermConvertible, Pretty
-           , GetRange, ToJson)
+           , GetRange, ToJson, ToXml)
 
 instance Morphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1

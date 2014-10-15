@@ -146,6 +146,7 @@ import Common.LibName
 import Common.Prec (PrecMap)
 import Common.Result
 import Common.Taxonomy
+import Common.ToXml
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
@@ -316,7 +317,8 @@ class (Language lid, Category sign morphism, Ord sentence,
        Ord symbol, -- for efficient lookup
        PrintTypeConv sign, PrintTypeConv morphism,
        GetRange sentence, GetRange symbol,
-       PrintTypeConv sentence, ToJson sentence, PrintTypeConv symbol)
+       PrintTypeConv sentence, ToJson sentence,
+       ToXml sentence, PrintTypeConv symbol)
     => Sentences lid sentence sign morphism symbol
         | lid -> sentence sign morphism symbol
       where
