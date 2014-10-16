@@ -63,7 +63,8 @@ varSetToDecls :: VarSet -> [VAR_DECL]
 varSetToDecls = map (\ (v, s) -> Var_decl [v] s $ tokPos v) . Set.toList
 
 quantFreeVars :: TermExtension f => Sign f e -> FORMULA f -> Range -> FORMULA f
-quantFreeVars sig f = mkForallRange (varSetToDecls $ freeVars sig f) f
+quantFreeVars sig f =
+  stripQuant sig . mkForallRange (varSetToDecls $ freeVars sig f) f
 
 -- | quantify only over free variables (and only once)
 effQuantify :: TermExtension f => Sign f e -> QUANTIFIER -> [VAR_DECL]

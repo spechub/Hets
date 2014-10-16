@@ -102,15 +102,18 @@ retrySubstForm sig (f1, f2) =
   let r@(Result ds m) = getSubstForm sig f1 f2
   in case m of
        Nothing -> Nothing
-       Just s -> if null ds then Just $ mkOverlapEq s f1 f2
+       Just s -> if null ds then Just $ mkOverlapEq sig s f1 f2
          else let (f3, f4, s2) = convert2Forms sig f1 f2 r
               in Just . stripQuant sig . convertFormula 1 id
-                     $ mkOverlapEq s2 f3 f4
+                     $ mkOverlapEq sig s2 f3 f4
 
-mkOverlapEq :: (GetRange f, Ord f) =>
-  ((Subst f, [FORMULA f]), (Subst f, [FORMULA f]))
+quant :: TermExtension f => Sign f e -> FORMULA f -> FORMULA f
+quant sig f = quantFreeVars sig f nullRange
+
+mkOverlapEq :: (TermExtension f, GetRange f, Ord f) => Sign f e
+  -> ((Subst f, [FORMULA f]), (Subst f, [FORMULA f]))
   -> FORMULA f -> FORMULA f -> FORMULA f
-mkOverlapEq ((s1, fs1), (s2, fs2)) f1 f2 = quant . simplifyFormula id
+mkOverlapEq sig ((s1, fs1), (s2, fs2)) f1 f2 = quant sig . simplifyFormula id
      . mkImpl (conjunct $ map (replaceVarsF s1 id) fs2
                ++ map (replaceVarsF s2 id) fs1)
      . overlapQuery (replaceVarsF s1 id $ stripAllQuant f1)
@@ -656,7 +659,7 @@ checkExhaustive sig doms es = case es of
   f1 : rs ->
     let sfs = map (\ f -> (getSubstForm sig f1 f, f)) rs
         overlap = filter (isJust . maybeResult . fst) sfs
-        simpAndQuant = quant . simplifyFormula id
+        simpAndQuant = quant sig . simplifyFormula id
     in case overlap of
        [] -> filter (not . is_True_atom)
           (map (simpAndQuant . getCond sig doms) [f1])
