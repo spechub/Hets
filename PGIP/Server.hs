@@ -756,10 +756,10 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
       (ln, dg) <- maybe (fail "unknown development graph") return
         $ sessGraph dgQ sess
       let title = libToFileName ln
-      svg <- getSVG title ('/' : show k) dg
+      let svg = getSVG title ('/' : show k) dg
       case qk of
             DisplayQuery ms -> case ms of
-              Just "svg" -> return svg
+              Just "svg" -> svg
               Just "xml" -> liftR $ return $ ppTopElement
                 $ ToXml.dGraph opts libEnv ln dg
               Just "json" -> liftR $ return $ ppJson
@@ -771,7 +771,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
                 $ aRef (mkPath sess ln k) (show k)
               Just str | elem str ppList
                 -> ppDGraph dg $ lookup str $ zip ppList prettyList
-              _ -> liftR $ return $ sessAns ln svg sk
+              _ -> sessAns ln svg sk
             GlProvers mp mt -> return $ getFullProverList mp mt dg
             GlTranslations -> return $ getFullComorphList dg
             GlShowProverWindow prOrCons -> showAutoProofWindow dg k prOrCons
@@ -790,15 +790,16 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
                   let str = BS.unpack $ fileContent ch
                   (newLn, newLib) <- dgXUpdate opts str libEnv ln dg
                   newSess <- lift $ nextSess sess sessRef newLib k
-                  liftR $ return $ sessAns newLn svg (newSess, k)
-                [] -> liftR $ return $ sessAns ln svg sk
+                  sessAns newLn svg (newSess, k)
+                [] -> sessAns ln svg sk
                 else fail "getHetsResult.GlobCmdQuery"
               Just (_, act) -> do
                 newLib <- liftR $ act ln libEnv
                 newSess <- lift $ nextSess sess sessRef newLib k
                 -- calculate updated SVG-view from modified development graph
-                newSvg <- getSVG title ('/' : show k) $ lookupDGraph ln newLib
-                liftR $ return $ sessAns ln newSvg (newSess, k)
+                let newSvg = getSVG title ('/' : show k)
+                      $ lookupDGraph ln newLib
+                sessAns ln newSvg (newSess, k)
             NodeQuery ein nc -> do
               nl@(i, dgnode) <- case ein of
                 Right n -> case lookupNodeByName n dg of
@@ -1271,8 +1272,12 @@ extPath sess l k = mkPath sess l k ++
 globalCommands :: [String]
 globalCommands = map (cmdlGlobCmd . fst) allGlobLibAct
 
-sessAns :: LibName -> String -> (Session, Int) -> String
-sessAns libName svg (sess, k) =
+sessAns :: LibName -> ResultT IO String -> (Session, Int) -> ResultT IO String
+sessAns libName svgComp (sess, k) =
+  svgComp >>= \ svg -> return $ sessAnsAux libName svg (sess, k)
+
+sessAnsAux :: LibName -> String -> (Session, Int) -> String
+sessAnsAux libName svg (sess, k) =
   let libEnv = sessLibEnv sess
       ln = libToFileName libName
       libref l =
