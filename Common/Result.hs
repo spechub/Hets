@@ -265,7 +265,6 @@ prettyRange :: [Pos] -> Doc
 prettyRange = sepByCommas . map prettySingleSourceRange
     . groupBy (on (==) sourceName) . sort
 
--- Added this instance because prettyRange is not exported
 instance Pretty Range where
     pretty = prettyRange . rangeToList
 
