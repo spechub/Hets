@@ -6,7 +6,7 @@ Copyright   :  (c) Christian Maeder, DFKI GmbH 2014
 License     :  GPLv2 or higher, see LICENSE.txt
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
-Portability :  portable
+Portability :  non-portable
 
 inspired by Yuriy Iskra's json2-types hackage package
 
@@ -29,11 +29,11 @@ module Common.Json
   , anToJson
   , tagJson
   , pJson
-  , dataToJson
   , ToJson (..)
   ) where
 
 import Common.AS_Annotation
+import Common.Data
 import Common.Doc as Doc
 import Common.DocUtils
 import Common.GlobalAnnotations
@@ -192,27 +192,26 @@ pJPair = pair (tok pStr << cTok ':') pJson
 
 {- | convert to json with special treatment for numbers, booleans, strings
 and other lists. -}
-dataToJson :: Data a => a -> Json
-dataToJson a = let
-    l = gmapQ dataToJson a
-    c = toConstr a
-    s = showConstr c
-    jRes = case l of
-      [] -> if s == "[]" then JNull else JString s
-      [e] -> JObject [(s, e)]
-      [hd, tl] | s == "(:)" -> case tl of
-            JNull -> JArray [hd]
-            JArray rt -> JArray $ hd : rt
-            _ -> error "dataToJson2"
-      _ -> JObject [(s, JArray l)]
-  in case dataTypeRep $ dataTypeOf a of
-  r | elem r [IntRep, FloatRep] -> case readSigned readFloat s of
-    [(n, "")] -> JNumber n
-    _ -> error "dataToJson1"
-  _ -> maybe (maybe jRes JString $ cast a) JBool $ cast a
+myDataToJson :: MyData -> Json
+myDataToJson d = case d of
+  Builtin ty v -> case ty of
+    "number" -> case readSigned readFloat v of
+      [(n, "")] -> JNumber n
+      _ -> JObject [(ty, JString v)]
+    "bool" | v == "True" -> JBool True
+           | v == "False" -> JBool False
+    "string" -> JString v
+    _ -> JObject [(ty, JString v)]
+  ListOrTuple b l ->
+    let j = if null l then JNull else JArray $ map myDataToJson l
+    in if b then j else JObject [("tuple", j)]
+  Cons s _ l -> case map myDataToJson l of
+    [] -> JString s
+    [e] -> JObject [(s, e)]
+    js -> JObject [(s, JArray js)]
 
 class ToJson a where
   asJson :: a -> Json
 
 instance Data a => ToJson a where
-  asJson = dataToJson
+  asJson = myDataToJson . dataToMyData
