@@ -19,7 +19,7 @@ import Driver.ReadFn
 import Driver.Version
 
 import Network.Wai.Handler.Warp
-import Network.HTTP.Types (Status, status200, status400, status403, status405)
+import Network.HTTP.Types
 import Control.Monad.Trans (lift, liftIO)
 #ifdef WARP1
 import Control.Monad.Trans.Resource
@@ -195,7 +195,7 @@ hetsServer opts1 = do
          appendFile permFile $ shows (requestHeaders re) "\n"
          unless (null query) $ appendFile permFile $ query ++ "\n"
        else appendFile permFile "not white listed\n"
-   if not white || black then respond $ mkResponse status403 ""
+   if not white || black then respond $ mkResponse "" status403 ""
     -- if path could be a RESTfull request, try to parse it
     else do
      eith <- liftIO $ getArgFlags splitQuery
@@ -237,8 +237,8 @@ oldWebApi opts tempLib permFile sessRef re pathBits splitQuery meth respond
                  Nothing -> fail "cannot read session id for automatic proofs"
                  Just k' -> getHetsResult opts [] sessRef (qr k')
                respond $ case ms of
-                 Nothing -> mkResponse status400 $ showRelDiags 1 ds
-                 Just s -> mkOkResponse s
+                 Nothing -> mkResponse textC status422 $ showRelDiags 1 ds
+                 Just (t, s) -> mkOkResponse t s
            -- AUTOMATIC PROOFS E.N.D.
            else getHetsResponse opts [] sessRef pathBits splitQuery respond
       "POST" -> do
@@ -271,7 +271,7 @@ oldWebApi opts tempLib permFile sessRef re pathBits splitQuery meth respond
             else mRes
           _ -> getHetsResponse
                  opts (map snd files) sessRef pathBits splitQuery respond
-      _ -> respond $ mkResponse status405 ""
+      _ -> respond $ mkResponse "" status400 ""
 
 -- extract what we need to know from an autoproof request
 anaAutoProofQuery :: [QueryPair] -> QueryKind
@@ -310,7 +310,7 @@ newRESTIdes =
   , "consistency-check" ]
 
 queryFail :: String -> WebResponse
-queryFail msg respond = respond $ mkResponse status400 msg
+queryFail msg respond = respond $ mkResponse textC status400 msg
 
 allQueryKeys :: [String]
 allQueryKeys = [updateS, "library", "consistency-checker"]
@@ -339,20 +339,20 @@ parseRESTfull opts sessRef pathBits qOpts splitQuery meth respond = let
     ++ showPathQuery pathBits splitQuery) respond
   -- since used more often, generate full query out of nodeIRI and nodeCmd
   nodeQuery s = NodeQuery $ maybe (Right s) Left (readMaybe s :: Maybe Int)
-  parseNodeQuery :: Monad m => String -> Int -> m NodeCommand -> m Query
+  parseNodeQuery :: Monad m => String -> Int -> m NodeCommand -> m Query.Query
   parseNodeQuery p sId ncmd = ncmd >>= let
       in return . Query (DGQuery sId (Just p)) . nodeQuery (getFragment p)
   -- call getHetsResult with the properly generated query (Final Result)
   getResponseAux myOpts qr = do
     Result ds ms <- liftIO $ runResultT $ getHetsResult myOpts [] sessRef qr
     respond $ case ms of
-      Nothing -> mkResponse status400 $ showRelDiags 1 ds
-      Just s -> mkOkResponse s
+      Nothing -> mkResponse textC status422 $ showRelDiags 1 ds
+      Just (t, s) -> mkOkResponse t s
   getResponse = getResponseAux opts
   -- respond depending on request Method
   in case meth of
     rm | elem rm ["GET", "POST"] -> case pathBits of
-      ["robots.txt"] -> respond $ mkOkResponse
+      ["robots.txt"] -> respond $ mkOkResponse textC
         $ unlines ["User-agent: *", "Disallow: /"]
       -- show all menu options
       ["menus"] -> mkMenuResponse respond
@@ -361,13 +361,13 @@ parseRESTfull opts sessRef pathBits qOpts splitQuery meth respond = let
         let path' = intercalate "/" r
         dirs <- liftIO $ getHetsLibContent opts path' splitQuery
         mkHtmlPage path' dirs respond
-      ["version"] -> respond $ mkOkResponse hetcats_version
+      ["version"] -> respond $ mkOkResponse textC hetcats_version
       -- get dgraph from file
       "filetype" : libIri : _ -> mkFiletypeResponse opts libIri respond
       "hets-lib" : r -> let file = intercalate "/" r in
         getResponse $ Query (NewDGQuery file []) $ DisplayQuery format
       -- get library (complies with get/hets-lib for now)
-      "libraries" : libIri : "development_graph" : [] ->
+      ["libraries", libIri, "development_graph"] ->
         getResponse $ Query (NewDGQuery libIri []) $ DisplayQuery format
       -- get previously created session
       "sessions" : sessId : cmd -> case readMaybe sessId of
@@ -435,7 +435,7 @@ parseRESTfull opts sessRef pathBits qOpts splitQuery meth respond = let
     "PUT" -> case pathBits of
       {- execute global commands
          TODO load other library ??? -}
-      "libraries" : libIri : "proofs" : prId : cmd : [] ->
+      ["libraries", libIri, "proofs", prId, cmd] ->
          case readMaybe prId of
            Nothing -> queryFail ("failed to read sessionId from " ++ prId)
              respond
@@ -443,7 +443,7 @@ parseRESTfull opts sessRef pathBits qOpts splitQuery meth respond = let
              dgQ = DGQuery sessId $ Just libIri in
              getResponse $ Query dgQ $ GlobCmdQuery cmd
       -- execute a proof or calculus request
-      "sessions" : sessId : cmd : [] -> case readMaybe sessId of
+      ["sessions", sessId, cmd] -> case readMaybe sessId of
         Nothing -> queryFail ("failed to read sessionId from " ++ sessId)
           respond
         Just sId -> case cmd of
@@ -480,11 +480,11 @@ parseRESTfull opts sessRef pathBits qOpts splitQuery meth respond = let
       _ -> queryFailure
     {- create failure response if request method is not known
     (should never happen) -}
-    _ -> respond $ mkResponse status405 ""
+    _ -> respond $ mkResponse "" status400 ""
 
 mkMenuResponse :: WebResponse
 mkMenuResponse respond =
-  respond $ mkOkResponse $ ppTopElement $ unode "menus" mkMenus
+  respond $ mkOkResponse xmlC $ ppTopElement $ unode "menus" mkMenus
 
 mkMenus :: [Element]
 mkMenus = menuTriple "" "Get menu triples" "menus"
@@ -494,14 +494,17 @@ mkMenus = menuTriple "" "Get menu triples" "menus"
   ++ map (\ nc -> menuTriple "/DGraph/DGNode" ("Show " ++ nc) nc) nodeCommands
   ++ [menuTriple "/DGraph/DGLink" "Show edge info" "edge"]
 
+status422 :: Status
+status422 = mkStatus 422 $ B8.pack "Unprocessable Entity"
+
 mkFiletypeResponse :: HetcatsOpts -> String -> WebResponse
 mkFiletypeResponse opts libIri respond = do
   res <- liftIO $ getContentAndFileType opts Nothing libIri
   respond $ case res of
-    Left err -> mkResponse status400 err
+    Left err -> mkResponse textC status422 err
     Right (mr, _, fn, _) -> case mr of
-      Nothing -> mkResponse status400 $ fn ++ ": unknown file type"
-      Just r -> mkOkResponse $ fn ++ ": " ++ r
+      Nothing -> mkResponse textC status422 $ fn ++ ": unknown file type"
+      Just r -> mkOkResponse textC $ fn ++ ": " ++ r
 
 menuTriple :: String -> String -> String -> Element
 menuTriple q d c = unode "triple"
@@ -540,13 +543,36 @@ mkHtmlElemScript title scr =
     . Text $ CData CDataRaw scr Nothing] -- scr must not be encoded!
 
 mkHtmlPage :: FilePath -> [Element] -> WebResponse
-mkHtmlPage path es respond = respond . mkOkResponse $ mkHtmlString path es
+mkHtmlPage path es respond = respond . mkOkResponse htmlC
+  $ mkHtmlString path es
 
-mkResponse :: Status -> String -> Response
-mkResponse st = responseLBS st [] . BS.pack
+textC :: String
+textC = "text/plain"
 
-mkOkResponse :: String -> Response
-mkOkResponse = mkResponse status200
+xmlC :: String
+xmlC = "application/xml"
+
+jsonC :: String
+jsonC = "text/json"
+
+pdfC :: String
+pdfC = "application/pdf"
+
+dotC :: String
+dotC = "text/vnd.graphviz"
+
+svgC :: String
+svgC = "image/svg+xml"
+
+htmlC :: String
+htmlC = "text/html"
+
+mkResponse :: String -> Status -> String -> Response
+mkResponse ty st = responseLBS st
+ (if null ty then [] else [(hContentType, B8.pack ty)]) . BS.pack
+
+mkOkResponse :: String -> String -> Response
+mkOkResponse ty = mkResponse ty status200
 
 addSess :: Cache -> Session -> IO Int
 addSess sessRef s = do
@@ -594,7 +620,7 @@ nextSess sess sessRef newLib k = if k <= 0 then return sess else
       Just s -> let newSess = s { sessLibEnv = newLib }
         in ((IntMap.insert k newSess m, lm), newSess))
 
-ppDGraph :: DGraph -> Maybe PrettyType -> ResultT IO String
+ppDGraph :: DGraph -> Maybe PrettyType -> ResultT IO (String, String)
 ppDGraph dg mt = let ga = globalAnnos dg in case optLibDefn dg of
     Nothing -> fail "parsed LIB-DEFN not avaible"
     Just ld ->
@@ -602,10 +628,11 @@ ppDGraph dg mt = let ga = globalAnnos dg in case optLibDefn dg of
           latex = renderLatex Nothing $ toLatex ga d
       in case mt of
       Just pty -> case pty of
-        PrettyXml -> return $ ppTopElement $ xmlLibDefn logicGraph ga ld
-        PrettyAscii _ -> return $ renderText ga d ++ "\n"
-        PrettyHtml -> return $ htmlHead ++ renderHtml ga d
-        PrettyLatex _ -> return latex
+        PrettyXml -> return
+          (xmlC, ppTopElement $ xmlLibDefn logicGraph ga ld)
+        PrettyAscii _ -> return (textC, renderText ga d ++ "\n")
+        PrettyHtml -> return (htmlC, htmlHead ++ renderHtml ga d)
+        PrettyLatex _ -> return ("application/latex", latex)
       Nothing -> lift $ do
          tmpDir <- getTemporaryDirectory
          tmpFile <- writeTempFile (latexHeader ++ latex ++ latexFooter)
@@ -628,9 +655,9 @@ ppDGraph dg mt = let ga = globalAnnos dg in case optLibDefn dg of
              str <- hGetContents pdfHdl
              when (length str < 0) $ putStrLn "pdf file too large"
              hClose pdfHdl
-             return str
-             else return $ "could not create pdf:\n"
-                  ++ unlines [out1, err1, out2, err2]
+             return (pdfC, str)
+             else return (textC, "could not create pdf:\n"
+                  ++ unlines [out1, err1, out2, err2])
 
 increaseUsage :: Cache -> Session -> ResultT IO (Session, Int)
 increaseUsage sessRef sess = do
@@ -745,11 +772,11 @@ getHetsResponse opts updates sessRef pathBits query respond = do
     Left err -> fail err
     Right q -> getHetsResult opts updates sessRef q
   respond $ case ms of
-    Just s | not $ hasErrors ds -> mkOkResponse s
-    _ -> mkResponse status400 $ showRelDiags 1 ds
+    Just (t, s) | not $ hasErrors ds -> mkOkResponse t s
+    _ -> mkResponse textC status422 $ showRelDiags 1 ds
 
 getHetsResult :: HetcatsOpts -> [FileInfo BS.ByteString]
-  -> Cache -> Query -> ResultT IO String
+  -> Cache -> Query.Query -> ResultT IO (String, String)
 getHetsResult opts updates sessRef (Query dgQ qk) = do
       sk@(sess, k) <- getDGraph opts sessRef dgQ
       let libEnv = sessLibEnv sess
@@ -759,28 +786,29 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
       let svg = getSVG title ('/' : show k) dg
       case qk of
             DisplayQuery ms -> case ms of
-              Just "svg" -> svg
-              Just "xml" -> liftR $ return $ ppTopElement
-                $ ToXml.dGraph opts libEnv ln dg
-              Just "json" -> liftR $ return $ ppJson
-                $ ToJson.dGraph opts libEnv ln dg
-              Just "dot" -> liftR $ return $ dotGraph title False title dg
-              Just "symbols" -> liftR $ return $ ppTopElement
-                $ ToXml.dgSymbols dg
-              Just "session" -> liftR $ return $ ppElement
-                $ aRef (mkPath sess ln k) (show k)
+              Just "svg" -> fmap (\ s -> (svgC, s)) svg
+              Just "xml" -> liftR $ return (xmlC, ppTopElement
+                $ ToXml.dGraph opts libEnv ln dg)
+              Just "json" -> liftR $ return (jsonC, ppJson
+                $ ToJson.dGraph opts libEnv ln dg)
+              Just "dot" -> liftR $ return
+                (dotC, dotGraph title False title dg)
+              Just "symbols" -> liftR $ return (xmlC, ppTopElement
+                $ ToXml.dgSymbols dg)
+              Just "session" -> liftR $ return (htmlC, ppElement
+                $ aRef (mkPath sess ln k) $ show k)
               Just str | elem str ppList
                 -> ppDGraph dg $ lookup str $ zip ppList prettyList
               _ -> sessAns ln svg sk
-            GlProvers mp mt -> return $ getFullProverList mp mt dg
-            GlTranslations -> return $ getFullComorphList dg
+            GlProvers mp mt -> return (xmlC, getFullProverList mp mt dg)
+            GlTranslations -> return (xmlC, getFullComorphList dg)
             GlShowProverWindow prOrCons -> showAutoProofWindow dg k prOrCons
             GlAutoProve (ProveCmd prOrCons incl mp mt tl nds xForm) -> do
                (newLib, sens) <-
                  proveMultiNodes xForm prOrCons libEnv ln dg incl mp mt tl nds
-               if null sens then return "nothing to prove" else do
+               if null sens then return (textC, "nothing to prove") else do
                   lift $ nextSess sess sessRef newLib k
-                  return $ formatResultsMultiple xForm k sens prOrCons
+                  return (htmlC, formatResultsMultiple xForm k sens prOrCons)
             GlobCmdQuery s ->
               case find ((s ==) . cmdlGlobCmd . fst) allGlobLibAct of
               Nothing -> if s == updateS then
@@ -816,9 +844,9 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
               case nc of
                 NcCmd cmd | elem cmd [Query.Node, Info, Symbols]
                   -> case cmd of
-                   Symbols -> return $ ppTopElement
-                           $ showSymbols ins (globalAnnos dg) dgnode
-                   _ -> return $ fstLine ++ showN dgnode
+                   Symbols -> return (xmlC, ppTopElement
+                           $ showSymbols ins (globalAnnos dg) dgnode)
+                   _ -> return (textC, fstLine ++ showN dgnode)
                 _ -> case maybeResult $ getGlobalTheory dgnode of
                   Nothing -> fail $
                     "cannot compute global theory of:\n" ++ fstLine
@@ -828,29 +856,33 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
                       GlProofs -> do
                         (newLib, sens) <- proveNode libEnv ln dg nl
                           gTh subL incl mp mt tl thms
-                        if null sens then return "nothing to prove" else do
+                        if null sens then return (textC, "nothing to prove")
+                        else do
                           lift $ nextSess sess sessRef newLib k
-                          return . formatResults xForm k i . unode "results"
+                          return (htmlC,
+                            formatResults xForm k i . unode "results"
                             $ map (\ (n, e, d) -> unode "goal"
                               [ unode "name" n
                               , unode "result" e
-                              , unode "details" d]) sens
+                              , unode "details" d]) sens)
                       GlConsistency -> do
                         (newLib, [(_, res, txt)]) <- consNode libEnv ln dg nl
                           subL incl mp mt tl
                         lift $ nextSess sess sessRef newLib k
-                        return . ppTopElement $ formatConsNode res txt
-                    _ -> return $ case nc of
-                      NcCmd Query.Theory ->
-                          showGlobalTh dg i gTh k fstLine
-                      NcProvers mp mt -> formatProvers mp $ case mp of
+                        return (xmlC, ppTopElement $ formatConsNode res txt)
+                    _ -> case nc of
+                      NcCmd Query.Theory -> return (htmlC,
+                          showGlobalTh dg i gTh k fstLine)
+                      NcProvers mp mt -> return (xmlC,
+                        formatProvers mp $ case mp of
                         GlProofs -> getProversAux mt subL
-                        GlConsistency -> getConsCheckersAux mt subL
-                      NcTranslations mp -> getComorphs mp subL
+                        GlConsistency -> getConsCheckersAux mt subL)
+                      NcTranslations mp -> return (xmlC, getComorphs mp subL)
                       _ -> error "getHetsResult.NodeQuery."
             EdgeQuery i _ ->
               case getDGLinksById (EdgeId i) dg of
-              [e@(_, _, l)] -> return $ showLEdge e ++ "\n" ++ showDoc l ""
+              [e@(_, _, l)] ->
+                return (textC, showLEdge e ++ "\n" ++ showDoc l "")
               [] -> fail $ "no edge found with id: " ++ show i
               _ -> fail $ "multiple edges found with id: " ++ show i
 
@@ -937,7 +969,8 @@ showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
           , thmMenu, unode "h4" "Theory" ] ++ sbShow ++ "\n<br />" ++ thShow
 
 -- | show window of the autoproof function
-showAutoProofWindow :: DGraph -> Int -> ProverMode -> ResultT IO String
+showAutoProofWindow :: DGraph -> Int -> ProverMode
+  -> ResultT IO (String, String)
 showAutoProofWindow dg sessId prOrCons = let
   dgnodes = labNodesDG dg
   -- some parameters need to be different for consistency and autoproof mode
@@ -981,8 +1014,8 @@ showAutoProofWindow dg sessId prOrCons = let
           . unode "form" $
           [ hidStr, prSel, cmSel, br, btAll, btNone, btUnpr, timeout, include ]
           ++ intersperse br (prBt : nodeSel))
-    return $ mkHtmlElemScript title (jvScr1 ++ jvScr2)
-               [ goBack, plain " ", nodeMenu ]
+    return (htmlC, mkHtmlElemScript title (jvScr1 ++ jvScr2)
+               [ goBack, plain " ", nodeMenu ])
 
 showProveButton :: Bool -> (Element, Element)
 showProveButton isProver = (prBt, timeout) where
@@ -1272,11 +1305,12 @@ extPath sess l k = mkPath sess l k ++
 globalCommands :: [String]
 globalCommands = map (cmdlGlobCmd . fst) allGlobLibAct
 
-sessAns :: LibName -> ResultT IO String -> (Session, Int) -> ResultT IO String
+sessAns :: LibName -> ResultT IO String -> (Session, Int)
+  -> ResultT IO (String, String)
 sessAns libName svgComp (sess, k) =
   svgComp >>= \ svg -> return $ sessAnsAux libName svg (sess, k)
 
-sessAnsAux :: LibName -> String -> (Session, Int) -> String
+sessAnsAux :: LibName -> String -> (Session, Int) -> (String, String)
 sessAnsAux libName svg (sess, k) =
   let libEnv = sessLibEnv sess
       ln = libToFileName libName
@@ -1288,7 +1322,7 @@ sessAnsAux libName svg (sess, k) =
       autoProofBt = aRef ('/' : show k ++ "?autoproof") "automatic proofs"
       consBt = aRef ('/' : show k ++ "?consistency") "consistency checker"
 -- the html quicklinks to nodes and edges have been removed with R.16827
-  in htmlHead ++ mkHtmlElem
+  in (htmlC, htmlHead ++ mkHtmlElem
            ('(' : shows k ")" ++ ln)
            (bold ("library " ++ ln)
             : map ref displayTypes
@@ -1298,7 +1332,7 @@ sessAnsAux libName svg (sess, k) =
             : mkUnorderedList (map ref globalCommands)
             : plain "imported libraries:"
             : [mkUnorderedList $ map libref $ Map.keys libEnv]
-           ) ++ svg
+           ) ++ svg)
 
 getHetsLibContent :: HetcatsOpts -> String -> [QueryPair] -> IO [Element]
 getHetsLibContent opts dir query = do
