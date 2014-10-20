@@ -16,7 +16,7 @@ sed -i~ '128iinit_component \"\$ISABELLE_HOME/contrib/ProofGeneral-4.2-2\"' \
 
 $ISABELLE_DIR/bin/isabelle components -a
 $ISABELLE_DIR/bin/isabelle install /usr/bin
-$ISABELLE_DIR/bin/isabelle build -s -v HOL
+$ISABELLE_DIR/bin/isabelle build -s -b -v HOL
 
 ISABELLE_UNINST=/usr/bin/isabelle_uninstall.sh 
 
