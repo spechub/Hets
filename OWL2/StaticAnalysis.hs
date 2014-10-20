@@ -40,7 +40,7 @@ import Logic.Logic
 
 -- | Error messages for static analysis
 failMsg :: Entity -> ClassExpression -> Result a
-failMsg (Entity ty e) desc =
+failMsg (Entity _ ty e) desc =
   fatal_error
     ("undeclared `" ++ showEntityType ty
           ++ " " ++ showQN e ++ "` in the following ClassExpression:\n"
@@ -48,7 +48,7 @@ failMsg (Entity ty e) desc =
 
 -- | checks if an entity is in the signature
 checkEntity :: Sign -> Entity -> Result ()
-checkEntity s t@(Entity ty e) =
+checkEntity s t@(Entity _ ty e) =
   let errMsg = mkError ("unknown " ++ showEntityType ty) e
   in case ty of
    Datatype -> unless (Set.member e (datatypes s) || isDatatypeKey e) errMsg
@@ -62,16 +62,16 @@ checkEntity s t@(Entity ty e) =
 -- | takes an iri and finds out what entities it belongs to
 correctEntity :: Sign -> IRI -> [Entity]
 correctEntity s iri =
-    [Entity AnnotationProperty iri | Set.member iri (annotationRoles s)] ++
-    [Entity Class iri | Set.member iri (concepts s)] ++
-    [Entity ObjectProperty iri | Set.member iri (objectProperties s)] ++
-    [Entity DataProperty iri | Set.member iri (dataProperties s)] ++
-    [Entity Datatype iri | Set.member iri (datatypes s)] ++
-    [Entity NamedIndividual iri | Set.member iri (individuals s)]
+    [mkEntity AnnotationProperty iri | Set.member iri (annotationRoles s)] ++
+    [mkEntity Class iri | Set.member iri (concepts s)] ++
+    [mkEntity ObjectProperty iri | Set.member iri (objectProperties s)] ++
+    [mkEntity DataProperty iri | Set.member iri (dataProperties s)] ++
+    [mkEntity Datatype iri | Set.member iri (datatypes s)] ++
+    [mkEntity NamedIndividual iri | Set.member iri (individuals s)]
 
 checkLiteral :: Sign -> Literal -> Result ()
 checkLiteral s l = case l of
-    Literal _ (Typed dt) -> checkEntity s $ Entity Datatype dt
+    Literal _ (Typed dt) -> checkEntity s $ mkEntity Datatype dt
     _ -> return ()
 
 isDeclObjProp :: Sign -> ObjectPropertyExpression -> Bool
@@ -103,7 +103,7 @@ checkDataPropList s dl = do
 checkDataRange :: Sign -> DataRange -> Result ()
 checkDataRange s dr = case dr of
     DataType dt rl -> do
-        checkEntity s $ Entity Datatype dt
+        checkEntity s $ mkEntity Datatype dt
         mapM_ (checkLiteral s . snd) rl
     DataJunction _ drl -> mapM_ (checkDataRange s) drl
     DataComplementOf r -> checkDataRange s r
@@ -113,7 +113,7 @@ checkDataRange s dr = case dr of
      DataProperties may be parsed as ObjectProperties -}
 classExpressionToDataRange :: Sign -> ClassExpression -> Result DataRange
 classExpressionToDataRange s ce = case ce of
-    Expression u -> checkEntity s (Entity Datatype u) >> return (DataType u [])
+    Expression u -> checkEntity s (mkEntity Datatype u) >> return (DataType u [])
     ObjectJunction jt cel -> fmap (DataJunction jt)
         $ mapM (classExpressionToDataRange s) cel
     ObjectComplementOf c -> fmap DataComplementOf
@@ -126,12 +126,12 @@ classExpressionToDataRange s ce = case ce of
 checkClassExpression :: Sign -> ClassExpression -> Result ClassExpression
 checkClassExpression s desc =
     let errMsg i = failMsg i desc
-        objErr i = errMsg $ Entity ObjectProperty i
-        datErr i = errMsg $ Entity DataProperty i
+        objErr i = errMsg $ mkEntity ObjectProperty i
+        datErr i = errMsg $ mkEntity DataProperty i
     in case desc of
     Expression u -> if isThing u
         then return $ Expression $ setReservedPrefix u
-        else checkEntity s (Entity Class u) >> return desc
+        else checkEntity s (mkEntity Class u) >> return desc
     ObjectJunction ty ds -> fmap (ObjectJunction ty)
         $ mapM (checkClassExpression s) ds
     ObjectComplementOf d -> fmap ObjectComplementOf $ checkClassExpression s d
@@ -201,7 +201,7 @@ checkHasKey s ol dl = do
 checkAnnotation :: Sign -> Annotation -> Result ()
 checkAnnotation s (Annotation ans apr av) = do
     checkAnnos s [ans]
-    checkEntity s (Entity AnnotationProperty apr)
+    checkEntity s (mkEntity AnnotationProperty apr)
     case av of
         AnnValLit lit -> checkLiteral s lit
         _ -> return ()
@@ -219,7 +219,7 @@ checkListBit s r fb = case fb of
     AnnotationBit anl -> case r of
         Just (DRRelation _) -> checkAnnos s (map fst anl) >> return fb
         _ -> checkAnnoList s (mapM_ $ checkEntity s .
-                    Entity AnnotationProperty) anl >> return fb
+                    mkEntity AnnotationProperty) anl >> return fb
     ExpressionBit anl -> do
         let annos = map fst anl
         checkAnnos s annos
@@ -288,7 +288,7 @@ checkAxiom s ax@(PlainAxiom ext fb) = case fb of
                     -- this can only come from XML
                 Misc [Annotation _ iri _] -> checkAssertion s iri ans
                     -- these can only come from Manchester Syntax
-                SimpleEntity (Entity _ iri) -> checkAssertion s iri ans
+                SimpleEntity (Entity _ _ iri) -> checkAssertion s iri ans
                 ClassEntity (Expression iri) -> checkAssertion s iri ans
                 ObjectEntity (ObjectProp iri) -> checkAssertion s iri ans
                 _ -> do
@@ -315,9 +315,9 @@ correctFrames s = fmap concat . mapM (checkFrame s)
 collectEntities :: Frame -> State Sign ()
 collectEntities f = case f of
     Frame (SimpleEntity e) _ -> addEntity e
-    Frame (ClassEntity (Expression e)) _ -> addEntity $ Entity Class e
+    Frame (ClassEntity (Expression e)) _ -> addEntity $ mkEntity Class e
     Frame (ObjectEntity (ObjectProp e)) _ ->
-        addEntity $ Entity ObjectProperty e
+        addEntity $ mkEntity ObjectProperty e
     _ -> return ()
 
 -- | collects all entites from the frames
@@ -476,14 +476,14 @@ corr2theo ssig tsig l1 l2 eMap1 eMap2 rref = do
              let extPart = mkExtendedEntity e1'
                  rQName = QN "" (iriToStringUnsecure r)
                              Abbreviated (iriToStringUnsecure r) Id.nullRange
-                 sym = Entity ObjectProperty rQName
+                 sym = mkEntity ObjectProperty rQName
                  rSyms = filter (== sym) $
                             Set.toList $ symOf tsig
              case rSyms of
                [] -> fail $ "relation " ++ show rQName ++
                                 " not in " ++ show tsig
                [rsym] -> do
-                 let sym'@(Entity ObjectProperty rQName') =
+                 let sym'@(Entity _ ObjectProperty rQName') =
                              Map.findWithDefault rsym rsym eMap2'
                      axiom = PlainAxiom extPart $
                               ListFrameBit (Just SubClass) $

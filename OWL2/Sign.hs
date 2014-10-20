@@ -84,11 +84,11 @@ diffSig a b =
 addSymbToSign :: Sign -> Entity -> Result Sign
 addSymbToSign sig ent =
  case ent of
-   Entity Class eIri ->
+   Entity _ Class eIri ->
     return sig {concepts = Set.insert eIri $ concepts sig}
-   Entity ObjectProperty eIri ->
+   Entity _ ObjectProperty eIri ->
     return sig {objectProperties = Set.insert eIri $ objectProperties sig}
-   Entity NamedIndividual eIri ->
+   Entity _ NamedIndividual eIri ->
     return sig {individuals = Set.insert eIri $ individuals sig}
    _ -> return sig
 
@@ -120,16 +120,16 @@ isSubSign a b =
 
 symOf :: Sign -> Set.Set Entity
 symOf s = Set.unions
-  [ Set.map (Entity Class) $ concepts s
-  , Set.map (Entity Datatype) $ datatypes s
-  , Set.map (Entity ObjectProperty) $ objectProperties s
-  , Set.map (Entity DataProperty) $ dataProperties s
-  , Set.map (Entity NamedIndividual) $ individuals s
-  , Set.map (Entity AnnotationProperty) $ annotationRoles s ]
+  [ Set.map (mkEntity Class) $ concepts s
+  , Set.map (mkEntity Datatype) $ datatypes s
+  , Set.map (mkEntity ObjectProperty) $ objectProperties s
+  , Set.map (mkEntity DataProperty) $ dataProperties s
+  , Set.map (mkEntity NamedIndividual) $ individuals s
+  , Set.map (mkEntity AnnotationProperty) $ annotationRoles s ]
 
 -- | takes an entity and modifies the sign according to the given function
 modEntity :: (IRI -> Set.Set IRI -> Set.Set IRI) -> Entity -> State Sign ()
-modEntity f (Entity ty u) = do
+modEntity f (Entity _ ty u) = do
   s <- get
   let chg = f u
   unless (isDatatypeKey u || isThing u) $ put $ case ty of

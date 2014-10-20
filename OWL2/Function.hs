@@ -44,10 +44,10 @@ maybeDo :: (Function a) => Action -> AMap -> Maybe a -> Maybe a
 maybeDo t mp = fmap $ function t mp
 
 getIri :: EntityType -> IRI -> Map.Map Entity IRI -> IRI
-getIri ty u = fromMaybe u . Map.lookup (Entity ty u)
+getIri ty u = fromMaybe u . Map.lookup (mkEntity ty u)
 
 cutWith :: EntityType -> Action -> AMap -> IRI -> IRI
-cutWith ty t s iri = cutIRI $ function t s $ Entity ty iri
+cutWith ty t s iri = cutIRI $ function t s $ mkEntity ty iri
 
 err :: t
 err = error "operation not allowed"
@@ -105,9 +105,9 @@ instance Function Sign where
     _ -> err
 
 instance Function Entity where
-    function t pm (Entity ty ent) = case pm of
-        StringMap _ -> Entity ty $ function t pm ent
-        MorphMap m -> Entity ty $ getIri ty ent m
+    function t pm (Entity _ ty ent) = case pm of
+        StringMap _ -> mkEntity ty $ function t pm ent
+        MorphMap m -> mkEntity ty $ getIri ty ent m
 
 instance Function Literal where
     function t pm l = case l of

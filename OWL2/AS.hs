@@ -410,9 +410,22 @@ type RestrictionValue = Literal
 -- * ENTITIES
 
 data Entity = Entity
-  { entityKind :: EntityType
+  { label :: Maybe String
+  , entityKind :: EntityType
   , cutIRI :: IRI }
-  deriving (Show, Eq, Ord, Typeable, Data)
+  deriving (Show, Typeable, Data)
+
+mkEntity :: EntityType -> IRI -> Entity
+mkEntity = Entity Nothing
+
+mkEntityLbl :: String -> EntityType -> IRI -> Entity
+mkEntityLbl = Entity . Just
+
+instance Ord Entity where
+  compare (Entity _ ek1 ir1) (Entity _ ek2 ir2) = compare (ek1, ir1) (ek2, ir2)
+
+instance Eq Entity where
+  e1 == e2 = compare e1 e2 == EQ
 
 instance GetRange Entity where
   getRange = iriPos . cutIRI
@@ -440,12 +453,13 @@ entityTypes :: [EntityType]
 entityTypes = [minBound .. maxBound]
 
 pairSymbols :: Entity -> Entity -> Result Entity -- TODO: improve!
-pairSymbols (Entity k1 i1) (Entity k2 i2) =
+pairSymbols (Entity lb1 k1 i1) (Entity lb2 k2 i2) =
   if k1 /= k2 then
     error "can't pair symbols of different kind"
    else do
     let
         rest x = drop 1 $ dropWhile (/= '#') x
+        pairLables lbl1 lbl2 = lbl1 -- TODO implement!
         pairIRIs (QN p1 l1 t1 _e1 r1)
                  (QN _p2 l2 _t2 _e2 _r2) =
          QN
@@ -455,7 +469,7 @@ pairSymbols (Entity k1 i1) (Entity k2 i2) =
           , expandedIRI = ""
           , iriPos = r1
           }
-    return $ Entity k1 $ pairIRIs i1 i2
+    return $ Entity (pairLables lb1 lb2) k1 $ pairIRIs i1 i2
 
 -- * LITERALS
 
