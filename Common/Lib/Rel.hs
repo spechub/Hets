@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  Relations, based on maps
@@ -48,6 +49,7 @@ module Common.Lib.Rel
     ) where
 
 import Prelude hiding (map, null)
+import Data.Data
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Data.List as List
@@ -55,7 +57,8 @@ import qualified Data.List as List
 import qualified Common.Lib.MapSet as MapSet
 
 -- | no invariant is ensured for relations!
-newtype Rel a = Rel { toMap :: Map.Map a (Set.Set a) } deriving (Eq, Ord)
+newtype Rel a = Rel { toMap :: Map.Map a (Set.Set a) }
+  deriving (Eq, Ord, Typeable, Data)
 
 instance Show a => Show (Rel a) where
     show = show . toMap

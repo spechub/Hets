@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  Tern for HolLight logic
@@ -18,18 +19,21 @@ Definition of terms for HolLight logic
 
 module HolLight.Term where
 
+import Data.Data
+
 data HolType = TyVar String | TyApp String [HolType]
-  deriving (Eq, Ord, Show, Read)
+  deriving (Eq, Ord, Show, Read, Typeable, Data)
 
-data HolProof = NoProof deriving (Eq, Ord, Show)
+data HolProof = NoProof deriving (Eq, Ord, Show, Typeable, Data)
 
-data HolParseType = Normal | Prefix
- | InfixL Int | InfixR Int | Binder deriving (Eq, Ord, Show, Read)
+data HolParseType = Normal | PrefixT
+ | InfixL Int | InfixR Int | Binder
+ deriving (Eq, Ord, Show, Read, Typeable, Data)
 
 data HolTermInfo = HolTermInfo (HolParseType, Maybe (String, HolParseType))
-  deriving (Eq, Ord, Show, Read)
+  deriving (Eq, Ord, Show, Read, Typeable, Data)
 
 data Term = Var String HolType HolTermInfo
      | Const String HolType HolTermInfo
      | Comb Term Term
-     | Abs Term Term deriving (Eq, Ord, Show, Read)
+     | Abs Term Term deriving (Eq, Ord, Show, Read, Typeable, Data)

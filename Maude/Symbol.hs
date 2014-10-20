@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  Maude Symbols
@@ -38,6 +39,7 @@ module Maude.Symbol (
 import Maude.AS_Maude
 import Maude.Meta.HasName
 
+import Data.Data
 import Data.Set (Set)
 import Data.Map (Map)
 import Common.Lib.Rel (Rel)
@@ -59,7 +61,7 @@ data Symbol = Sort Qid                      -- ^ A 'Sort' Symbol
             | Labl Qid                      -- ^ A 'Label' Symbol
             | Operator Qid Symbols Symbol   -- ^ A qualified 'Operator' Symbol
             | OpWildcard Qid                -- ^ A wildcard 'Operator' Symbol
-            deriving (Show, Read, Ord, Eq)
+            deriving (Show, Read, Ord, Eq, Typeable)
 -- ** Auxiliary types
 type Symbols = [Symbol]
 type SymbolSet = Set Symbol

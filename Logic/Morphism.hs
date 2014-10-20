@@ -1,5 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, DeriveDataTypeable
-  , FlexibleInstances, UndecidableInstances, IncoherentInstances
+  , FlexibleInstances, UndecidableInstances, OverlappingInstances
   , ExistentialQuantification, GeneralizedNewtypeDeriving #-}
 {- |
 Module      :  $Header$
@@ -27,12 +27,17 @@ module Logic.Morphism where
 
 import Logic.Logic
 import Logic.Comorphism
+
+import Data.Data
 import qualified Data.Set as Set
-import Data.Typeable
-import ATerm.Lib -- (ShATermConvertible)
+
+import ATerm.Lib
+
 import Common.DocUtils
 import Common.AS_Annotation
 import Common.Id
+import Common.Json
+import Common.ToXml
 
 class (Language cid,
        Logic lid1 sublogics1
@@ -180,11 +185,8 @@ instance Morphism cid
 -- default is ok
 
 newtype S2 s = S2 { sentence2 :: s }
-  deriving (Eq, Ord, Show, Typeable, ShATermConvertible, Pretty)
-
-instance GetRange s => GetRange (S2 s) where
-  getRange (S2 s) = getRange s
-  rangeSpan (S2 s) = rangeSpan s
+  deriving (Eq, Ord, Show, Typeable, Data, ShATermConvertible, Pretty
+           , GetRange, ToJson, ToXml)
 
 instance Morphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1

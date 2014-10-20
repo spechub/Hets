@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  library names for HetCASL and development graphs
@@ -41,6 +42,7 @@ import Common.Percent
 import Common.Utils
 
 import Data.Char
+import Data.Data
 import Data.List
 import Data.Maybe
 import Data.Ord
@@ -81,6 +83,7 @@ data LibName = LibName
     , locIRI :: Maybe IRI
     , mimeType :: Maybe String
     , libVersion :: Maybe VersionNumber }
+  deriving (Typeable, Data)
 
 iriLibName :: IRI -> LibName
 iriLibName i = LibName i Nothing Nothing Nothing
@@ -119,7 +122,8 @@ getFilePath :: LibName -> FilePath
 getFilePath = maybe "" iriToStringUnsecure . locIRI
 
 data VersionNumber = VersionNumber [String] Range
-                      -- pos: "version", start of first string
+  deriving (Typeable, Data)
+                    -- pos: "version", start of first string
 
 instance GetRange LibName where
   getRange = getRange . getLibId
@@ -144,7 +148,7 @@ instance Ord LibName where
 instance Pretty LibName where
     pretty = fsep . prettyLibName
 
-data LinkPath a = LinkPath a [(LibName, Int)] deriving (Ord, Eq)
+data LinkPath a = LinkPath a [(LibName, Int)] deriving (Eq, Ord, Typeable, Data)
 
 type SLinkPath = LinkPath String
 

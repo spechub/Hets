@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  Definition of signature morphisms for the Edinburgh
@@ -32,12 +33,14 @@ import Common.DocUtils
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import Data.Data
 import Data.Maybe (isNothing, fromMaybe)
 
 gen_morph :: String
 gen_morph = "GEN_MORPH"
 
-data MorphType = Definitional | Postulated | Unknown deriving (Ord, Eq, Show)
+data MorphType = Definitional | Postulated | Unknown
+  deriving (Ord, Eq, Show, Typeable)
 
 -- LF morphism cannot map defined symbols, only declared ones
 data Morphism = Morphism
@@ -48,7 +51,7 @@ data Morphism = Morphism
   , target :: Sign
   , morphType :: MorphType
   , symMap :: Map.Map Symbol EXP
-  } deriving (Ord, Show)
+  } deriving (Ord, Show, Typeable)
 
 -- constructs an identity morphism
 idMorph :: Sign -> Morphism

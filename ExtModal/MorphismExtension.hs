@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE MultiParamTypeClasses, DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  Morphism extension for modal signature morphisms
@@ -12,6 +12,7 @@ Portability :  portable
 
 module ExtModal.MorphismExtension where
 
+import Data.Data
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -32,7 +33,7 @@ import ExtModal.Print_AS ()
 data MorphExtension = MorphExtension
         { mod_map :: Map.Map Id Id
         , nom_map :: Map.Map Id Id
-        } deriving (Show, Eq, Ord)
+        } deriving (Show, Eq, Ord, Typeable, Data)
 
 emptyMorphExtension :: MorphExtension
 emptyMorphExtension = MorphExtension Map.empty Map.empty

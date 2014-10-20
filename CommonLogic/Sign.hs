@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  Signature for common logic
@@ -30,6 +31,8 @@ import Common.Id
 import Common.Result
 import Common.Doc
 import Common.DocUtils
+
+import Data.Data
 import Data.List (isPrefixOf)
 
 -- | Datatype for common logic Signatures
@@ -37,7 +40,7 @@ import Data.List (isPrefixOf)
 data Sign = Sign { discourseNames :: Set.Set Id
                  , nondiscourseNames :: Set.Set Id
                  , sequenceMarkers :: Set.Set Id
-                 } deriving (Eq, Ord, Show)
+                 } deriving (Eq, Ord, Show, Typeable)
 
 instance Pretty Sign where
     pretty = printSign

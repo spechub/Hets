@@ -41,7 +41,8 @@ thmStatus :: SenStatus a tStatus -> [tStatus]
 thmStatus = getThmStatus . senAttr
 
 -- | the wrapped list of proof scripts or (AnyComorphism, BasicProof) pairs
-data ThmStatus a = ThmStatus { getThmStatus :: [a] } deriving (Show, Eq, Ord)
+data ThmStatus a = ThmStatus { getThmStatus :: [a] }
+  deriving (Show, Eq, Ord, Typeable)
 
 emptySenStatus :: SenStatus a b
 emptySenStatus = makeNamed (ThmStatus []) $ error "emptySenStatus"
@@ -134,12 +135,13 @@ toThSens = OMap.fromList . map
 -- | theories with a signature and sentences with proof states
 data Theory sign sen proof_tree =
      Theory sign (ThSens sen (ProofStatus proof_tree))
+  deriving Typeable
 
 -- e.g. the file name, or the script itself, or a configuration string
-data TacticScript = TacticScript String deriving (Eq, Ord, Show)
+data TacticScript = TacticScript String deriving (Eq, Ord, Show, Typeable)
 
 -- | failure reason
-data Reason = Reason [String]
+data Reason = Reason [String] deriving Typeable
 
 instance Ord Reason where
   compare _ _ = EQ
@@ -152,7 +154,7 @@ data GoalStatus =
     Open Reason -- ^ failure reason
   | Disproved
   | Proved Bool -- ^ True means consistent; False inconsistent
-    deriving (Eq, Ord)
+    deriving (Eq, Ord, Typeable)
 
 instance Show GoalStatus where
     show gs = case gs of
@@ -177,7 +179,7 @@ data ProofStatus proof_tree = ProofStatus
     , proofTree :: proof_tree
     , usedTime :: TimeOfDay
     , tacticScript :: TacticScript }
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable)
 
 {- | constructs an open proof status with basic information filled in;
      make sure to set proofTree to a useful value before you access it. -}
@@ -202,7 +204,7 @@ isProvedGStat gs = case gs of
     _ -> False
 
 -- | different kinds of prover interfaces
-data ProverKind = ProveGUI | ProveCMDLautomatic
+data ProverKind = ProveGUI | ProveCMDLautomatic deriving Typeable
 
 -- | determine if a prover kind is implemented
 hasProverKind :: ProverKind -> ProverTemplate x s m y z -> Bool
@@ -215,7 +217,7 @@ data FreeDefMorphism sentence morphism = FreeDefMorphism
   , pathFromFreeDef :: morphism
   , freeTheory :: [AS_Anno.Named sentence]
   , isCofree :: Bool }
-  deriving (Eq, Show)
+  deriving (Show, Eq, Ord, Typeable)
 
 -- | prover or consistency checker
 data ProverTemplate theory sentence morphism sublogics proof_tree = Prover
@@ -285,11 +287,13 @@ data TheoryMorphism sign sen mor proof_tree = TheoryMorphism
     { tSource :: Theory sign sen proof_tree
     , tTarget :: Theory sign sen proof_tree
     , tMorphism :: mor }
+    deriving Typeable
 
 data CCStatus proof_tree = CCStatus
   { ccProofTree :: proof_tree
   , ccUsedTime :: TimeOfDay
   , ccResult :: Maybe Bool }
+  deriving Typeable
 
 data ConsChecker sign sentence sublogics morphism proof_tree = ConsChecker
   { ccName :: String

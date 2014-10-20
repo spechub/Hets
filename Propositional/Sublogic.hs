@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  Sublogics for propositional logic
@@ -50,28 +51,32 @@ module Propositional.Sublogic
     )
     where
 
+import Data.Data
+
 import qualified Propositional.Tools as Tools
 import qualified Propositional.AS_BASIC_Propositional as AS_BASIC
-import qualified Common.AS_Annotation as AS_Anno
+
 import qualified Propositional.Sign as Sign
 import qualified Propositional.Symbol as Symbol
 import qualified Propositional.Morphism as Morphism
+
 import qualified Common.Lib.State as State
+import qualified Common.AS_Annotation as AS_Anno
 
 {- -----------------------------------------------------------------------------
-datatyper                                                                 --
+datatypes                                                                 --
 ----------------------------------------------------------------------------- -}
 
 -- | types of propositional formulae
 data PropFormulae = PlainFormula      -- Formula without structural constraints
                   | HornClause        -- Horn Clause Formulae
-                  deriving (Show, Eq, Ord)
+                  deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | sublogics for propositional logic
 data PropSL = PropSL
     {
       format :: PropFormulae     -- Structural restrictions
-    } deriving (Show, Eq, Ord)
+    } deriving (Show, Eq, Ord, Typeable, Data)
 
 isProp :: PropSL -> Bool
 isProp sl = format sl == PlainFormula

@@ -241,6 +241,7 @@ showSen lid ga mt sig ns = let s = sentence ns in add_attrs
           ++ case senMark ns of
                "" -> []
                m -> [unode "ComorphismOrigin" m]
+          ++ [unode "AST" $ asXml s]
 
 showSym :: (Sentences lid sentence sign morphism symbol) =>
            lid -> symbol -> Element

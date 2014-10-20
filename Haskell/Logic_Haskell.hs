@@ -1,4 +1,5 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances
+  , OverlappingInstances #-}
 {- |
 Module      :  $Header$
 Description :  Instance of class Logic for the Haskell logic
@@ -32,6 +33,8 @@ import Common.DefaultMorphism
 import Common.Doc as Doc
 import Common.DocUtils
 import Common.Id
+import Common.Json
+import Common.ToXml
 
 import Data.Monoid
 
@@ -40,6 +43,8 @@ import Haskell.HatParser
 import Haskell.HatAna
 
 import Logic.Logic
+
+import Text.XML.Light
 
 {- a dummy datatype for the LogicGraph and for identifying the right
 instances -}
@@ -78,6 +83,12 @@ type Symbol = ()
 type RawSymbol = ()
 
 instance GetRange (TiDecl PNT)
+
+instance ToJson (TiDecl PNT) where
+  asJson _ = mkJObj []
+
+instance ToXml (TiDecl PNT) where
+  asXml _ = unode "undefined" ()
 
 instance Sentences Haskell (TiDecl PNT) Sign HaskellMorphism Symbol where
     map_sen Haskell _m = return

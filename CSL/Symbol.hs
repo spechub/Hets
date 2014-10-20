@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  symbols for CSL
@@ -15,14 +16,17 @@ module CSL.Symbol where
 import Common.Id
 import Common.Doc
 import Common.DocUtils
+
+import Data.Data
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+
 import CSL.Sign
 import CSL.Morphism
 
 -- | Datatype for symbols
 newtype Symbol = Symbol {symName :: Id}
-            deriving (Show, Eq, Ord)
+            deriving (Show, Eq, Ord, Typeable, Data)
 
 instance GetRange Symbol where
     getRange = getRange . symName

@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances, UndecidableInstances #-}
 {- |
 Module      :  $Header$
 Description :  Json utilities
@@ -5,7 +6,7 @@ Copyright   :  (c) Christian Maeder, DFKI GmbH 2014
 License     :  GPLv2 or higher, see LICENSE.txt
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
-Portability :  portable
+Portability :  non-portable
 
 inspired by Yuriy Iskra's json2-types hackage package
 
@@ -28,9 +29,11 @@ module Common.Json
   , anToJson
   , tagJson
   , pJson
+  , ToJson (..)
   ) where
 
 import Common.AS_Annotation
+import Common.Data
 import Common.Doc as Doc
 import Common.DocUtils
 import Common.GlobalAnnotations
@@ -39,6 +42,7 @@ import Common.Parsec
 import Common.Result
 
 import Data.Char
+import Data.Data
 import Data.List
 import Data.Maybe
 import Data.Ratio
@@ -185,3 +189,29 @@ pJObj = cTok '{' >> fmap JObject (sepBy1 pJPair commaTok) << cTok '}'
 
 pJPair :: CharParser st JPair
 pJPair = pair (tok pStr << cTok ':') pJson
+
+{- | convert to json with special treatment for numbers, booleans, strings
+and other lists. -}
+myDataToJson :: MyData -> Json
+myDataToJson d = case d of
+  Builtin ty v -> case ty of
+    "number" -> case readSigned readFloat v of
+      [(n, "")] -> JNumber n
+      _ -> JObject [(ty, JString v)]
+    "bool" | v == "True" -> JBool True
+           | v == "False" -> JBool False
+    "string" -> JString v
+    _ -> JObject [(ty, JString v)]
+  ListOrTuple b l ->
+    let j = if null l then JNull else JArray $ map myDataToJson l
+    in if b then j else JObject [("tuple", j)]
+  Cons s _ l -> case map myDataToJson l of
+    [] -> JString s
+    [e] -> JObject [(s, e)]
+    js -> JObject [(s, JArray js)]
+
+class ToJson a where
+  asJson :: a -> Json
+
+instance Data a => ToJson a where
+  asJson = myDataToJson . dataToMyData

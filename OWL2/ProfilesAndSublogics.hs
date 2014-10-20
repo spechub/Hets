@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Copyright   :  (c) Felix Gabriel Mance
@@ -20,10 +21,12 @@ import OWL2.Sublogic
 import OWL2.Sign
 import OWL2.Morphism
 
+import Data.Data
+
 data ProfSub = ProfSub
     { profiles :: Profiles
     , sublogic :: OWLSub
-    } deriving (Show, Eq, Ord)
+    } deriving (Show, Eq, Ord, Typeable, Data)
 
 allProfSubs :: [[ProfSub]]
 allProfSubs = map (map (`ProfSub` slBottom)) allProfiles

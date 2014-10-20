@@ -138,7 +138,7 @@ readParseType = do
  case (b, t) of
   (True, "Prefix") -> do
    expectTag False "Prefix"
-   return Prefix
+   return PrefixT
   (True, "InfixR") -> do
    i <- readInt
    expectTag False "InfixR"

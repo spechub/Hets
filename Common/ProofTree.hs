@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  a simple proof tree
@@ -13,10 +14,12 @@ Datatype for storing of the proof tree
 
 module Common.ProofTree where
 
+import Data.Data
+
 {- |
   Datatype for storing of the proof tree. The Show class is instantiated.
 -}
-data ProofTree = ProofTree String deriving (Eq, Ord)
+data ProofTree = ProofTree String deriving (Eq, Ord, Typeable, Data)
 
 instance Show ProofTree where
   show (ProofTree st) = st

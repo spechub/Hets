@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  OWL Morphisms
@@ -28,6 +29,8 @@ import Common.Lib.State (execState)
 import Common.Lib.MapSet (setToMap)
 
 import Control.Monad
+
+import Data.Data
 import Data.List (stripPrefix)
 import Data.Maybe
 import qualified Data.Map as Map
@@ -38,7 +41,7 @@ data OWLMorphism = OWLMorphism
   , otarget :: Sign
   , mmaps :: MorphMap
   , pmap :: StringMap
-  } deriving (Show, Eq, Ord)
+  } deriving (Show, Eq, Ord, Typeable, Data)
 
 inclOWLMorphism :: Sign -> Sign -> OWLMorphism
 inclOWLMorphism s t = OWLMorphism
@@ -159,7 +162,7 @@ statSymbItems sig = map (function Expand . StringMap $ prefixMap sig)
   (\ (SymbItems m us) -> case m of
                AnyEntity -> map AnUri us
                EntityType ty -> map (ASymbol . Entity ty) us
-               Prefix -> map (APrefix . showQN) us)
+               PrefixO -> map (APrefix . showQN) us)
 
 statSymbMapItems :: Sign -> Maybe Sign -> [SymbMapItems]
   -> Result (Map.Map RawSymb RawSymb)
@@ -189,7 +192,7 @@ statSymbMapItems sig mtsig =
         EntityType ty ->
             let mS = ASymbol . Entity ty
             in map (\ (s, t) -> (mS s, mS t)) ps
-        Prefix ->
+        PrefixO ->
             map (\ (s, t) -> (APrefix (showQU s), APrefix $ showQU t)) ps)
 
 mapSen :: OWLMorphism -> Axiom -> Result Axiom

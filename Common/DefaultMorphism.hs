@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  supply a default morphism for a given signature type
@@ -23,11 +24,12 @@ module Common.DefaultMorphism
 import Common.Keywords
 import Common.Doc
 import Common.DocUtils
+import Data.Data
 
 data DefaultMorphism sign = MkMorphism
   { domOfDefaultMorphism :: sign
   , codOfDefaultMorphism :: sign
-  } deriving (Show, Eq, Ord)
+  } deriving (Show, Eq, Ord, Typeable, Data)
 
 instance Pretty a => Pretty (DefaultMorphism a) where
     pretty = printDefaultMorphism pretty

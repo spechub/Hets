@@ -242,6 +242,7 @@ showSen lid ga mt sig ns = let s = sentence ns in mkJObj
           ++ case senMark ns of
                "" -> []
                m -> [mkJPair "ComorphismOrigin" m]
+          ++ [("AST", asJson s)]
 
 showSym :: Sentences lid sentence sign morphism symbol => lid -> symbol -> Json
 showSym lid s = mkJObj

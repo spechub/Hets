@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  Maude Signatures
@@ -53,6 +53,7 @@ import Maude.Printing ()
 import Maude.Sentence (Sentence)
 import qualified Maude.Sentence as Sen
 
+import Data.Data
 import Data.Set (Set)
 import Data.Map (Map)
 import qualified Data.Set as Set
@@ -90,7 +91,7 @@ data Sign = Sign {
         sentences :: Sentences,         -- ^ The 'Set' of 'Sentence's
         kindRel :: KindRel
         -- ^ The 'Set' of 'Sentence's for the kind function
-    } deriving (Show, Ord, Eq)
+    } deriving (Show, Ord, Eq, Typeable)
 
 -- ** 'Sign' instances
 

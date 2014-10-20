@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Copyright   :  (c) DFKI GmbH 2012
@@ -72,6 +73,7 @@ module Common.IRI
 import Text.ParserCombinators.Parsec
 
 import Data.Char
+import Data.Data
 import Data.Ord (comparing)
 import Data.Map as Map (Map, lookup)
 import Data.Maybe
@@ -110,14 +112,14 @@ data IRI = IRI
     , abbrevFragment :: String    -- ^ @abbrevFragment@
     , hasAngles :: Bool           -- ^ IRI in angle brackets
     , iriPos :: Range             -- ^ position
-    }
+    } deriving (Typeable, Data)
 
 -- | Type for authority value within a IRI
 data IRIAuth = IRIAuth
     { iriUserInfo :: String       -- ^ @anonymous\@@
     , iriRegName :: String        -- ^ @www.haskell.org@
     , iriPort :: String           -- ^ @:42@
-    } deriving (Eq, Ord, Show)
+    } deriving (Eq, Ord, Show, Typeable, Data)
 
 -- | Blank IRI
 nullIRI :: IRI
@@ -393,7 +395,7 @@ iriManchester = iriWithPos $ angles iriReference
     loc <- pnLocal
     return nullIRI { abbrevPath = loc }
 
-data PNameLn = PNameLn PNameNs PnLocal deriving (Show, Eq, Ord)
+data PNameLn = PNameLn PNameNs PnLocal deriving (Show, Eq, Ord, Typeable)
 type PNameNs = String
 type PnPrefix = String
 type PnLocal = String

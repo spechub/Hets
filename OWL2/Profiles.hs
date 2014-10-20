@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Copyright   :  (c) Felix Gabriel Mance
@@ -17,13 +18,14 @@ module OWL2.Profiles where
 import OWL2.AS
 import OWL2.MS
 
+import Data.Data
 import Data.Maybe
 
 data Profiles = Profiles
     { el :: Bool
     , ql :: Bool
     , rl :: Bool
-    } deriving (Show, Eq, Ord)
+    } deriving (Show, Eq, Ord, Typeable, Data)
 
 allProfiles :: [[Profiles]]
 allProfiles =

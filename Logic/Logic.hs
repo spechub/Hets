@@ -140,11 +140,13 @@ import Common.GlobalAnnotations
 import Common.Id
 import Common.IRI
 import Common.Item
+import Common.Json
 import Common.Lib.Graph
 import Common.LibName
 import Common.Prec (PrecMap)
 import Common.Result
 import Common.Taxonomy
+import Common.ToXml
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
@@ -173,7 +175,7 @@ instance (Eq a, PrintTypeConv a) => EqPrintTypeConv a
 type EndoMap a = Map.Map a a
 
 {- | the name of a logic.
-     Define instances like "data CASL = CASL deriving Show"
+     Define instances like "data CASL = CASL deriving (Show, Typeable, Data)"
 -}
 class Show lid => Language lid where
     language_name :: lid -> String
@@ -315,7 +317,8 @@ class (Language lid, Category sign morphism, Ord sentence,
        Ord symbol, -- for efficient lookup
        PrintTypeConv sign, PrintTypeConv morphism,
        GetRange sentence, GetRange symbol,
-       PrintTypeConv sentence, PrintTypeConv symbol)
+       PrintTypeConv sentence, ToJson sentence,
+       ToXml sentence, PrintTypeConv symbol)
     => Sentences lid sentence sign morphism symbol
         | lid -> sentence sign morphism symbol
       where

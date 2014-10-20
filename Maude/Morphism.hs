@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  Maude Morphisms
@@ -55,6 +56,7 @@ import Maude.Sign (Sign, kindRel, KindRel)
 import Maude.Sentence (Sentence)
 import qualified Maude.Sign as Sign
 
+import Data.Data
 import Data.List (partition)
 import Data.Maybe (fromJust)
 import qualified Data.Set as Set
@@ -85,7 +87,7 @@ data Morphism = Morphism {
         kindMap :: KindMap,
         opMap :: OpMap,
         labelMap :: LabelMap
-    } deriving (Show, Ord, Eq)
+    } deriving (Show, Ord, Eq, Typeable)
 
 -- ** 'Morphism' instances
 
