@@ -64,6 +64,7 @@ logicToXml (Logic lid) = add_attrs
           $ unode "ConsistencyChecker" ()) (cons_checkers lid)
   ++ map (\ a -> add_attr (mkNameAttr $ checkerId a)
           $ unode "ConservativityChecker" ()) (conservativityCheck lid)
+  ++ [unode "Sublogics" . unlines . map sublogicName $ all_sublogics lid]
 
 comorphismToXml :: AnyComorphism -> Element
 comorphismToXml (Comorphism cid) = add_attrs
