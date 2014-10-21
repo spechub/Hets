@@ -93,7 +93,7 @@ instance Function IRI where
     _ -> qn
 
 instance Function Sign where
-   function t mp (Sign p1 p2 p3 p4 p5 p6 p7) = case mp of
+   function t mp (Sign p1 p2 p3 p4 p5 p6 p7 p8) = case mp of
     StringMap _ ->
         Sign (Set.map (function t mp) p1)
             (Set.map (function t mp) p2)
@@ -101,7 +101,8 @@ instance Function Sign where
             (Set.map (function t mp) p4)
             (Set.map (function t mp) p5)
             (Set.map (function t mp) p6)
-            (function t mp p7)
+            (Map.mapKeys (function t mp) p7)
+            (function t mp p8)
     _ -> err
 
 instance Function Entity where

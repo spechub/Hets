@@ -363,6 +363,10 @@ basicOWL2Analysis (inOnt, inSign, ga) = do
           . Map.map (iriToStringUnsecure . setAngles False)
           . Map.delete "" $ prefix_map ga
         odoc = inOnt { prefixDeclaration = pm }
+
+ -- TODO: use fs to extract labels from inDoc, then save them within
+ -- Sign.labelMap
+
         fs = ontFrames $ ontology odoc
         accSign = execState (createSign fs) inSign { prefixMap = pm }
         syms = Set.difference (symOf accSign) $ symOf inSign

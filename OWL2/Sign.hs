@@ -36,8 +36,16 @@ data Sign = Sign
             , annotationRoles :: Set.Set AnnotationProperty
               -- annotation properties
             , individuals :: Set.Set Individual  -- named individuals
+            , labelMap :: Map.Map IRI String
             , prefixMap :: PrefixMap
-            } deriving (Show, Eq, Ord, Typeable, Data)
+            } deriving (Show, Typeable, Data)
+
+instance Ord Sign where
+  compare (Sign c1 d1 op1 dp1 ar1 iv1 _ _) (Sign c2 d2 op2 dp2 ar2 iv2 _ _)
+    = compare (c1, d1, op1, dp1, ar1, iv1) (c2, d2, op2, dp2, ar2, iv2)
+
+instance Eq Sign where
+  s1 == s2 = compare s1 s2 == EQ
 
 data SignAxiom =
     Subconcept ClassExpression ClassExpression   -- subclass, superclass
@@ -67,6 +75,7 @@ emptySign = Sign
   , dataProperties = Set.empty
   , annotationRoles = Set.empty
   , individuals = Set.empty
+  , labelMap = Map.empty
   , prefixMap = Map.empty
   }
 
