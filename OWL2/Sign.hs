@@ -36,7 +36,7 @@ data Sign = Sign
             , annotationRoles :: Set.Set AnnotationProperty
               -- annotation properties
             , individuals :: Set.Set Individual  -- named individuals
-            , labelMap :: Map.Map IRI String
+            , labelMap :: Map.Map IRI Literal
             , prefixMap :: PrefixMap
             } deriving (Show, Typeable, Data)
 
