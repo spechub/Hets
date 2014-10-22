@@ -15,6 +15,7 @@ module CSL.ReduceProve where
 
 import Common.AS_Annotation
 
+import Data.Either
 import Data.List
 
 import Logic.Prover
@@ -27,10 +28,12 @@ import CSL.Sign
 -- as mkProverTemplate, but with additionally functionality to export lemmas
 mkProverTemplateWithLemmaExport :: String -> sublogics
   -> (String -> theory -> [FreeDefMorphism sentence morphism]
-      -> IO ([ProofStatus proof_tree], [(Named sentence, ProofStatus proof_tree)]))
+      -> IO ( [ProofStatus proof_tree]
+            , [(Named sentence, ProofStatus proof_tree)]))
   -> ProverTemplate theory sentence morphism sublogics proof_tree
 mkProverTemplateWithLemmaExport str sl fct = Prover
     { proverName = str
+    , proverUsable = fmap isLeft lookupRedShellCmd
     , proverSublogic = sl
     , proveGUI = Just $ \ s t fs -> fct s t fs
     , proveCMDLautomaticBatch = Nothing }
@@ -61,7 +64,8 @@ reduceProve _ (Theory _ senMap) _freedefs =
     in processCmds namedGoals
 
 -- | connect to CAS, stepwise process the cmds
-processCmds :: [Named CMD] -> IO ([ProofStatus [EXPRESSION]], [(Named CMD, ProofStatus [EXPRESSION])])
+processCmds :: [Named CMD]
+  -> IO ([ProofStatus [EXPRESSION]], [(Named CMD, ProofStatus [EXPRESSION])])
 processCmds cmds = do
   putStr "Connecting CAS.."
   sc <- lookupRedShellCmd

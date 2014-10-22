@@ -19,7 +19,6 @@ import ATC.ProofTree ()
 
 import Common.DefaultMorphism
 import Common.ProofTree
-import Common.ProverTools
 
 import Data.Monoid
 import Data.Map (isSubmapOf, fold)
@@ -83,12 +82,9 @@ instance Logic THF SL.THFSl BasicSpecTHF THFFormula () ()
                 SignTHF MorphismTHF SymbolTHF () ProofTree where
     all_sublogics THF = SL.sublogics_all
     stability THF = Testing
-    provers THF = [] ++ unsafeProverCheck "leo" "PATH" leoIIProver
-                     ++ unsafeProverCheck "isabelle" "PATH" isaProver
-                     ++ unsafeProverCheck "isabelle" "PATH" nitpickProver
-                     ++ unsafeProverCheck "isabelle" "PATH" refuteProver
-                     ++ unsafeProverCheck "isabelle" "PATH" sledgehammerProver
-                     ++ unsafeProverCheck "satallax" "PATH" satallaxProver
+    provers THF =
+      [ leoIIProver, isaProver, nitpickProver, refuteProver, sledgehammerProver
+      , satallaxProver ]
 
 -- Sublogics
 

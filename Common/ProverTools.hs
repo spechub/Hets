@@ -16,15 +16,7 @@ module Common.ProverTools where
 import Common.Utils
 
 import System.Directory
-import System.IO.Unsafe
 import System.FilePath
-
--- | Checks if a Prover Binary exists and is executable in an unsafe manner
-unsafeProverCheck :: String -- ^ prover Name
-                  -> String -- ^ Environment Variable
-                  -> a
-                  -> [a]
-unsafeProverCheck name env = unsafePerformIO . check4File name env
 
 missingExecutableInPath :: String -> IO Bool
 missingExecutableInPath name = do
@@ -44,6 +36,10 @@ check4FileAux name env = do
       let path = "" : splitPaths pPath
       exIT <- mapM (doesFileExist . (</> name)) path
       return $ map fst $ filter snd $ zip path exIT
+
+-- | Checks if a file exists in PATH
+checkBinary :: String -> IO Bool
+checkBinary name = fmap (not . null) $ check4FileAux name "PATH"
 
 -- | Checks if a file exists
 check4File :: String -- ^ file name
@@ -78,7 +74,3 @@ hetsOWLenv = "HETS_OWL_TOOLS"
 check4HetsOWLjar :: String -- ^ jar file name
   -> IO (Bool, FilePath)
 check4HetsOWLjar = check4jarFileWithDefault "OWL2" hetsOWLenv
-
-unsafeOWL2JarCheck :: String -> a -> [a]
-unsafeOWL2JarCheck jar p =
-  [p | unsafePerformIO $ fmap fst $ check4HetsOWLjar jar]

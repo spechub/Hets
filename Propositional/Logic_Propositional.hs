@@ -125,21 +125,16 @@ instance Logic Propositional
       all_sublogics Propositional = sublogics_all
       empty_proof_tree Propositional = emptyProofTree
     -- supplied provers
-      provers Propositional = []
 #ifdef UNI_PACKAGE
-        ++ unsafeProverCheck "zchaff" "PATH" zchaffProver
-        ++ unsafeProverCheck "minisat" "PATH" (minisatProver Minisat)
-        ++ unsafeProverCheck "minisat2" "PATH" (minisatProver Minisat2)
-        ++ [ttProver]
-      cons_checkers Propositional = []
-         ++ unsafeProverCheck "zchaff" "PATH" propConsChecker
-         ++ unsafeProverCheck "minisat" "PATH" (minisatConsChecker Minisat)
-         ++ unsafeProverCheck "minisat2" "PATH" (minisatConsChecker Minisat2)
-         ++ [ttConsistencyChecker]
-      conservativityCheck Propositional = []
-          ++ unsafeProverCheck "sKizzo" "PATH"
-             (ConservativityChecker "sKizzo" conserCheck)
-          ++ [ConservativityChecker "Truth Tables" ttConservativityChecker]
+      provers Propositional =
+        [zchaffProver, minisatProver Minisat, minisatProver Minisat2, ttProver]
+      cons_checkers Propositional =
+        [ propConsChecker, minisatConsChecker Minisat
+        , minisatConsChecker Minisat2, ttConsistencyChecker]
+      conservativityCheck Propositional =
+          [ ConservativityChecker "sKizzo" (checkBinary "sKizzo") conserCheck
+          , ConservativityChecker "Truth Tables" (return True)
+              ttConservativityChecker]
 #endif
 
 

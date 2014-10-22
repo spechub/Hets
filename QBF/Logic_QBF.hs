@@ -45,7 +45,6 @@ import QBF.Tools
 import ATC.ProofTree ()
 
 import Common.ProofTree
-import Common.ProverTools
 
 import qualified Data.Map as Map
 import Data.Monoid
@@ -118,8 +117,7 @@ instance Logic QBF
       all_sublogics QBF = sublogicsAll
       empty_proof_tree QBF = emptyProofTree
     -- supplied provers
-      provers QBF = []
-        ++ unsafeProverCheck "depqbf" "PATH" depQBFProver
+      provers QBF = [depQBFProver]
 
 -- | Static Analysis for propositional logic
 instance StaticAnalysis QBF

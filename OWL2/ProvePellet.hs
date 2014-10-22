@@ -63,21 +63,28 @@ pelletJar = "lib/pellet-cli.jar"
 pelletEnv :: String
 pelletEnv = "PELLET_PATH"
 
+pelletCheck :: IO Bool
+pelletCheck = fmap (not . null) $ check4FileAux pelletJar pelletEnv
+
 {- |
   The Prover implementation. First runs the batch prover (with graphical
   feedback), then starts the GUI prover.
 -}
 pelletProver :: Prover Sign Axiom OWLMorphism ProfSub ProofTree
-pelletProver = mkAutomaticProver pelletS topS pelletGUI
-  pelletCMDLautomaticBatch
+pelletProver =
+  (mkAutomaticProver "java" pelletS topS pelletGUI pelletCMDLautomaticBatch)
+  { proverUsable = pelletCheck }
 
 pelletEL :: Prover Sign Axiom OWLMorphism ProfSub ProofTree
-pelletEL = mkAutomaticProver pelletS (ProfSub elProfile slTop) pelletGUI
-  pelletCMDLautomaticBatch
+pelletEL =
+  (mkAutomaticProver "java" pelletS (ProfSub elProfile slTop) pelletGUI
+  pelletCMDLautomaticBatch)
+  { proverUsable = pelletCheck }
 
 pelletConsChecker :: ConsChecker Sign Axiom ProfSub OWLMorphism ProofTree
 pelletConsChecker = (mkConsChecker pelletS topS consCheck)
-  { ccNeedsTimer = False }
+  { ccNeedsTimer = False
+  , ccUsable = pelletCheck }
 
 {- |
   Record for prover specific functions. This is used by both GUI and command
