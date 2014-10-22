@@ -81,9 +81,9 @@ cmdlComplete st (left, _) = do
        case elements pS of
         Element z _ : _ ->
           do
-           let consCheckList = getConsCheckers $ findComorphismPaths
+           consCheckList <- getConsCheckers $ findComorphismPaths
                                   logicGraph $ sublogicOfTheory z
-               shortConsCList = nub $ map (\ (y, _) -> getCcName y)
+           let shortConsCList = nub $ map (\ (y, _) -> getCcName y)
                                        consCheckList
            showCmdComplete state shortConsCList comps left
         [] -> showCmdComplete state [] comps left

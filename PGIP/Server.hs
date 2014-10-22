@@ -800,8 +800,10 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
               Just str | elem str ppList
                 -> ppDGraph dg $ lookup str $ zip ppList prettyList
               _ -> sessAns ln svg sk
-            GlProvers mp mt -> return (xmlC, getFullProverList mp mt dg)
-            GlTranslations -> return (xmlC, getFullComorphList dg)
+            GlProvers mp mt -> lift $
+              fmap (\ l -> (xmlC, l)) $ getFullProverList mp mt dg
+            GlTranslations ->
+              lift $ fmap (\ l -> (xmlC, l)) $ getFullComorphList dg
             GlShowProverWindow prOrCons -> showAutoProofWindow dg k prOrCons
             GlAutoProve (ProveCmd prOrCons incl mp mt tl nds xForm) -> do
                (newLib, sens) <-
@@ -871,13 +873,15 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
                         lift $ nextSess sess sessRef newLib k
                         return (xmlC, ppTopElement $ formatConsNode res txt)
                     _ -> case nc of
-                      NcCmd Query.Theory -> return (htmlC,
-                          showGlobalTh dg i gTh k fstLine)
-                      NcProvers mp mt -> return (xmlC,
-                        formatProvers mp $ case mp of
-                        GlProofs -> getProversAux mt subL
-                        GlConsistency -> getConsCheckersAux mt subL)
-                      NcTranslations mp -> return (xmlC, getComorphs mp subL)
+                      NcCmd Query.Theory -> lift $ fmap (\ t -> (htmlC, t))
+                          $ showGlobalTh dg i gTh k fstLine
+                      NcProvers mp mt -> lift $
+                        fmap (\ l -> (xmlC, formatProvers mp l))
+                        $ case mp of
+                            GlProofs -> getProversAux mt subL
+                            GlConsistency -> getConsCheckersAux mt subL
+                      NcTranslations mp -> lift $
+                        fmap (\ l -> (xmlC, l)) $ getComorphs mp subL
                       _ -> error "getHetsResult.NodeQuery."
             EdgeQuery i _ ->
               case getDGLinksById (EdgeId i) dg of
@@ -923,7 +927,7 @@ showBool = map toLower . show
 
 {- | displays the global theory for a node with the option to prove theorems
 and select proving options -}
-showGlobalTh :: DGraph -> Int -> G_theory -> Int -> String -> String
+showGlobalTh :: DGraph -> Int -> G_theory -> Int -> String -> IO String
 showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
   sGTh@(G_theory lid _ (ExtSign sig _) _ thsens _) -> let
     ga = globalAnnos dg
@@ -936,35 +940,35 @@ showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
     sbShow = renderHtml ga $ pretty sig
     in case getThGoals sGTh of
       -- show simple view if no goals are found
-      [] -> mkHtmlElem fstLine [ headr, transBt, prvsBt,
+      [] -> return $ mkHtmlElem fstLine [ headr, transBt, prvsBt,
         unode "h4" "Theory" ] ++ sbShow ++ "\n<br />" ++ thShow
       -- else create proving functionality
-      gs -> let
+      gs -> do
         -- create list of theorems, selectable for proving
-        thmSl = map (\ (nm, bp) -> let gSt = maybe GOpen basicProofToGStatus bp
-          in add_attrs
+        let thmSl = map (\ (nm, bp) ->
+              let gSt = maybe GOpen basicProofToGStatus bp
+              in add_attrs
                  [ mkAttr "type" "checkbox", mkAttr "name" $ escStr nm
                  , mkAttr "unproven" $ showBool $ elem gSt [GOpen, GTimeout]]
-             $ unode "input" $ nm ++ "   (" ++ showSimple gSt ++ ")" ) gs
+              $ unode "input" $ nm ++ "   (" ++ showSimple gSt ++ ")" ) gs
         -- select unproven, all or none theorems by button
-        (btUnpr, btAll, btNone, jvScr1) = showSelectionButtons True
+            (btUnpr, btAll, btNone, jvScr1) = showSelectionButtons True
         -- create prove button and prover/comorphism selection
-        (prSl, cmrSl, jvScr2) = showProverSelection GlProofs [sublogicOfTh gTh]
-        (prBt, timeout) = showProveButton True
+        (prSl, cmrSl, jvScr2) <- showProverSelection GlProofs [sublogicOfTh gTh]
+        let (prBt, timeout) = showProveButton True
         -- hidden param field
-        hidStr = add_attrs [ mkAttr "name" "prove"
-          , mkAttr "type" "hidden", mkAttr "style" "display:none;"
-          , mkAttr "value" $ show i ]
-          inputNode
+            hidStr = add_attrs [ mkAttr "name" "prove"
+              , mkAttr "type" "hidden", mkAttr "style" "display:none;"
+              , mkAttr "value" $ show i ] inputNode
         -- combine elements within a form
-        thmMenu = let br = unode "br " () in add_attrs
-          [ mkAttr "name" "thmSel", mkAttr "method" "get"]
-          . unode "form"
-          $ [hidStr, prSl, cmrSl, br, btUnpr, btAll, btNone, timeout]
-          ++ intersperse br (prBt : thmSl)
+            thmMenu = let br = unode "br " () in add_attrs
+              [ mkAttr "name" "thmSel", mkAttr "method" "get"]
+              . unode "form"
+              $ [hidStr, prSl, cmrSl, br, btUnpr, btAll, btNone, timeout]
+              ++ intersperse br (prBt : thmSl)
         -- save dg and return to svg-view
-        goBack = aRef ('/' : show sessId) "return to DGraph"
-        in mkHtmlElemScript fstLine (jvScr1 ++ jvScr2)
+            goBack = aRef ('/' : show sessId) "return to DGraph"
+        return $ mkHtmlElemScript fstLine (jvScr1 ++ jvScr2)
           [ headr, transBt, prvsBt, plain " ", goBack, unode "h4" "Theorems"
           , thmMenu, unode "h4" "Theory" ] ++ sbShow ++ "\n<br />" ++ thShow
 
@@ -1005,15 +1009,15 @@ showAutoProofWindow dg sessId prOrCons = let
       -- otherwise
       (_, nd) : _ -> case maybeResult $ getGlobalTheory nd of
         Nothing -> fail $ "cannot compute global theory of:\n" ++ show nd
-        Just gTh -> let
-            br = unode "br " ()
-            (prSel, cmSel, jvSc) = showProverSelection prOrCons
+        Just gTh -> do
+          let br = unode "br " ()
+          (prSel, cmSel, jvSc) <- lift $ showProverSelection prOrCons
               [sublogicOfTh gTh]
-          in return (jvSc, add_attrs
-          [ mkAttr "name" "nodeSel", mkAttr "method" "get" ]
-          . unode "form" $
-          [ hidStr, prSel, cmSel, br, btAll, btNone, btUnpr, timeout, include ]
-          ++ intersperse br (prBt : nodeSel))
+          return (jvSc, add_attrs
+            [ mkAttr "name" "nodeSel", mkAttr "method" "get" ]
+            . unode "form" $
+            [ hidStr, prSel, cmSel, br, btAll, btNone, btUnpr, timeout
+            , include ] ++ intersperse br (prBt : nodeSel))
     return (htmlC, mkHtmlElemScript title (jvScr1 ++ jvScr2)
                [ goBack, plain " ", nodeMenu ])
 
@@ -1073,9 +1077,9 @@ showSelectionButtons isProver = (selUnPr, selAll, selNone, jvScr)
 
 -- | create prover and comorphism menu and combine them using javascript
 showProverSelection :: ProverMode -> [G_sublogics]
-  -> (Element, Element, String)
-showProverSelection prOrCons subLs = let
-  jvScr = unlines
+  -> IO (Element, Element, String)
+showProverSelection prOrCons subLs = do
+  let jvScr = unlines
         -- the chosen prover is passed as param
         [ "\nfunction updCmSel(pr) {"
         , "  var cmrSl = document.forms[0].elements.namedItem('translation');"
@@ -1112,25 +1116,28 @@ showProverSelection prOrCons subLs = let
         , "    }"
         , "  }"
         , "}" ]
-  allPrCm = nub $ concatMap ((case prOrCons of
+  pcs <- mapM ((case prOrCons of
     GlProofs -> getProversAux
     GlConsistency -> getConsCheckersAux) Nothing) subLs
+  let allPrCm = nub $ concat pcs
   -- create prover selection (drop-down)
-  prs = add_attr (mkAttr "name" "prover") $ unode "select" $ map (\ p ->
-    add_attrs [mkAttr "value" p, mkAttr "onClick" $ "updCmSel('" ++ p ++ "')"]
-    $ unode "option" p) $ showProversOnly allPrCm
+      prs = add_attr (mkAttr "name" "prover") $ unode "select" $ map (\ p ->
+        add_attrs [mkAttr "value" p, mkAttr "onClick"
+                  $ "updCmSel('" ++ p ++ "')"]
+        $ unode "option" p) $ showProversOnly allPrCm
   -- create comorphism selection (drop-down)
-  cmrs = add_attr (mkAttr "name" "translation") $ unode "select"
-    $ map (\ (cm, ps) -> let c = showComorph cm in
-    add_attrs [mkAttr "value" c, mkAttr "4prover" $ intercalate ";" ps]
-    $ unode "option" c) allPrCm
-  in (prs, cmrs, jvScr)
+      cmrs = add_attr (mkAttr "name" "translation") $ unode "select"
+        $ map (\ (cm, ps) -> let c = showComorph cm in
+        add_attrs [mkAttr "value" c, mkAttr "4prover" $ intercalate ";" ps]
+          $ unode "option" c) allPrCm
+  return (prs, cmrs, jvScr)
 
 showHtml :: FNode -> String
 showHtml fn = name fn ++ " " ++ goalsToPrefix (toGtkGoals fn)
 
-getAllAutomaticProvers :: G_sublogics -> [(G_prover, AnyComorphism)]
-getAllAutomaticProvers subL = getAllProvers ProveCMDLautomatic subL logicGraph
+getAllAutomaticProvers :: G_sublogics -> IO [(G_prover, AnyComorphism)]
+getAllAutomaticProvers subL =
+  getUsableProvers ProveCMDLautomatic subL logicGraph
 
 filterByProver :: Maybe String -> [(G_prover, AnyComorphism)]
   -> [(G_prover, AnyComorphism)]
@@ -1145,13 +1152,13 @@ filterByComorph mt = case mt of
       Just c -> filter ((== c) . showComorph . snd)
 
 getProverAndComorph :: Maybe String -> Maybe String -> G_sublogics
-   -> [(G_prover, AnyComorphism)]
-getProverAndComorph mp mc subL =
-   let ps = getFilteredProvers mc subL
-       spps = case filterByProver (Just "SPASS") ps of
+   -> IO [(G_prover, AnyComorphism)]
+getProverAndComorph mp mc subL = do
+   ps <- getFilteredProvers mc subL
+   let spps = case filterByProver (Just "SPASS") ps of
           [] -> ps
           fps -> fps
-   in case mp of
+   return $ case mp of
         Nothing -> spps
         _ -> filterByProver mp ps
 
@@ -1166,9 +1173,9 @@ removeFunnyChars = filter (\ c -> isAlphaNum c || elem c "_.:-")
 getWebProverName :: G_prover -> String
 getWebProverName = removeFunnyChars . getProverName
 
-getFullProverList :: ProverMode -> Maybe String -> DGraph -> String
-getFullProverList mp mt = formatProvers mp . foldr
-  (\ (_, nd) ls -> maybe ls ((++ ls) . case mp of
+getFullProverList :: ProverMode -> Maybe String -> DGraph -> IO String
+getFullProverList mp mt = fmap (formatProvers mp) . foldM
+  (\ ls (_, nd) -> maybe (return ls) (fmap (++ ls) . case mp of
       GlProofs -> getProversAux mt
       GlConsistency -> getConsCheckersAux mt
     . sublogicOfTh)
@@ -1183,12 +1190,12 @@ groupOnSnd f =
 
 {- | gather provers and comorphisms and resort them to
 (comorhism, supported provers) while not changing orig comorphism order -}
-getProversAux :: Maybe String -> G_sublogics -> [(AnyComorphism, [String])]
-getProversAux mt = groupOnSnd getWebProverName . getFilteredProvers mt
+getProversAux :: Maybe String -> G_sublogics -> IO [(AnyComorphism, [String])]
+getProversAux mt = fmap (groupOnSnd getWebProverName) . getFilteredProvers mt
 
 getFilteredProvers :: Maybe String -> G_sublogics
-  -> [(G_prover, AnyComorphism)]
-getFilteredProvers mt = filterByComorph mt . getAllAutomaticProvers
+  -> IO [(G_prover, AnyComorphism)]
+getFilteredProvers mt = fmap (filterByComorph mt) . getAllAutomaticProvers
 
 formatProvers :: ProverMode -> [(AnyComorphism, [String])] -> String
 formatProvers pm = let
@@ -1200,21 +1207,24 @@ formatProvers pm = let
 
 -- | retrieve a list of consistency checkers
 getConsCheckersAux :: Maybe String -> G_sublogics
-  -> [(AnyComorphism, [String])]
-getConsCheckersAux mt = groupOnSnd getCcName . getFilteredConsCheckers mt
+  -> IO [(AnyComorphism, [String])]
+getConsCheckersAux mt = fmap (groupOnSnd getCcName) . getFilteredConsCheckers mt
 
 getFilteredConsCheckers :: Maybe String -> G_sublogics
-  -> [(G_cons_checker, AnyComorphism)]
-getFilteredConsCheckers mt = filterByComorph mt . filter (getCcBatch . fst)
+  -> IO [(G_cons_checker, AnyComorphism)]
+getFilteredConsCheckers mt = fmap
+  (filterByComorph mt . filter (getCcBatch . fst))
   . getConsCheckers . findComorphismPaths logicGraph
 
-getComorphs :: Maybe String -> G_sublogics -> String
-getComorphs mp subL = formatComorphs . filterByProver mp
-    $ getAllAutomaticProvers subL
+getComorphs :: Maybe String -> G_sublogics -> IO String
+getComorphs mp = fmap (formatComorphs . filterByProver mp)
+    . getAllAutomaticProvers
 
-getFullComorphList :: DGraph -> String
-getFullComorphList = formatComorphs . foldr
-  (\ (_, nd) ls -> maybe ls ((++ ls) . getAllAutomaticProvers . sublogicOfTh)
+getFullComorphList :: DGraph -> IO String
+getFullComorphList =
+  fmap formatComorphs . foldM
+   (\ ls (_, nd) -> maybe (return ls)
+    (fmap (++ ls) . getAllAutomaticProvers . sublogicOfTh)
     $ maybeResult $ getGlobalTheory nd) [] . labNodesDG
 
 formatComorphs :: [(G_prover, AnyComorphism)] -> String
@@ -1224,11 +1234,11 @@ formatComorphs = ppTopElement . unode "translations"
 consNode :: LibEnv -> LibName -> DGraph -> (Int, DGNodeLab)
   -> G_sublogics -> Bool -> Maybe String -> Maybe String -> Maybe Int
   -> ResultT IO (LibEnv, [(String, String, String)])
-consNode le ln dg nl@(i, lb) subL useTh mp mt tl = let
-      consList = getFilteredConsCheckers mt subL
-      findCC x = filter ((== x ) . getCcName . fst) consList
+consNode le ln dg nl@(i, lb) subL useTh mp mt tl = do
+  consList <- lift $ getFilteredConsCheckers mt subL
+  let findCC x = filter ((== x ) . getCcName . fst) consList
       mcc = maybe (findCC "darwin") findCC mp
-      in case mcc of
+  case mcc of
         [] -> fail "no cons checker found"
         ((cc, c) : _) -> lift $ do
           cstat <- consistencyCheck useTh cc c ln le dg nl $ fromMaybe 1 tl
@@ -1245,8 +1255,9 @@ consNode le ln dg nl@(i, lb) subL useTh mp mt tl = let
 proveNode :: LibEnv -> LibName -> DGraph -> (Int, DGNodeLab) -> G_theory
   -> G_sublogics -> Bool -> Maybe String -> Maybe String -> Maybe Int
   -> [String] -> ResultT IO (LibEnv, [(String, String, String)])
-proveNode le ln dg nl gTh subL useTh mp mt tl thms = case
-    getProverAndComorph mp mt subL of
+proveNode le ln dg nl gTh subL useTh mp mt tl thms = do
+ ps <- lift $ getProverAndComorph mp mt subL
+ case ps of
   [] -> fail "no matching translation or prover found"
   cp : _ -> do
     let ks = map fst $ getThGoals gTh
