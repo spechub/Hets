@@ -15,7 +15,6 @@ module CSL.ReduceProve where
 
 import Common.AS_Annotation
 
-import Data.Either
 import Data.List
 
 import Logic.Prover
@@ -33,7 +32,7 @@ mkProverTemplateWithLemmaExport :: String -> sublogics
   -> ProverTemplate theory sentence morphism sublogics proof_tree
 mkProverTemplateWithLemmaExport str sl fct = Prover
     { proverName = str
-    , proverUsable = fmap isLeft lookupRedShellCmd
+    , proverUsable = fmap (either (const True) $ const False) lookupRedShellCmd
     , proverSublogic = sl
     , proveGUI = Just $ \ s t fs -> fct s t fs
     , proveCMDLautomaticBatch = Nothing }
