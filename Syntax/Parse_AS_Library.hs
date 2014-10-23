@@ -95,6 +95,7 @@ dolLibItem l = specDefn l <|> networkDefn l <|> do
     s1 <- asKey "import"
     iln <- libName l
     return (Download_items iln (ItemMaps []) $ getRange s1)
+  <|> viewDefn l
 
 networkDefn :: LogicGraph -> AParser st LIB_ITEM
 networkDefn l = do
@@ -102,6 +103,7 @@ networkDefn l = do
     name <- hetIRI l
     kEqu <- equalT
     (is, ps) <- separatedBy (hetIRI l) anComma
+    -- here the optional "Id :" part for NetworkElement is missing
     (es, qs) <- option ([], []) $ do
       kEx <- asKey excludingS
       (es, qs) <- separatedBy (hetIRI l) anComma
@@ -118,18 +120,17 @@ specDefn l = do
     s <- choice $ map asKey
       ["specification", specS, ontologyS, "onto", "model", "OMS"]
     n <- hetIRI l
-    g <- if dolOnly l then return emptyParams else generics l
+    g <- generics l
     e <- equalT
     a <- aSpec l
     q <- optEnd
     return . Syntax.AS_Library.Spec_defn n g a
       . catRange $ [s, e] ++ maybeToList q
 
--- | Parse an element of the library
-libItem :: LogicGraph -> AParser st LIB_ITEM
-libItem l = specDefn l
-  <|> -- view defn
-    do s1 <- asKey viewS <|> asKey interpretationS
+-- CASL view or DOL IntprDefn
+viewDefn :: LogicGraph -> AParser st LIB_ITEM
+viewDefn l = do
+       s1 <- choice $ map asKey [viewS, interpretationS, refinementS]
        vn <- hetIRI l
        g <- generics l
        s2 <- asKey ":"
@@ -143,6 +144,10 @@ libItem l = specDefn l
        return (Syntax.AS_Library.View_defn vn g vt symbMap
                     (catRange ([s1, s2] ++ ps ++ maybeToList q)))
 
+-- | Parse an element of the library
+libItem :: LogicGraph -> AParser st LIB_ITEM
+libItem l = specDefn l
+  <|> viewDefn l
   <|> -- equiv defn
     do s1 <- asKey equivalenceS
        en <- hetIRI l
@@ -319,7 +324,7 @@ optEnd = try
     << addLineAnnos
 
 generics :: LogicGraph -> AParser st GENERICITY
-generics l = do
+generics l = if dolOnly l then return emptyParams else do
     (pa, ps1) <- params l
     (imp, ps2) <- option ([], nullRange) (imports l)
     return $ Genericity (Params pa) (Imported imp) $ appRange ps1 ps2
