@@ -369,8 +369,8 @@ basicOWL2Analysis (inOnt, inSign, ga) = do
     (axl, nfl) <- createAxioms accSign fs
     let lblMp = foldr (\(Frame ext fbl) -> case ext of
           SimpleEntity (Entity _ _ ir) -> case fbl of
-            [AnnFrameBit [Annotation _ apr (AnnValLit lt)] _]
-              | localPart apr == "label" -> Map.insert ir lt
+            [AnnFrameBit [Annotation _ apr (AnnValLit (Literal s' _))] _]
+              | localPart apr == "label" -> Map.insert ir s'
             _ -> id
           _ -> id) (labelMap accSign) nfl
     -- TODO labelMap is generated. now check and use it!
