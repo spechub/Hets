@@ -63,8 +63,13 @@ pelletJar = "lib/pellet-cli.jar"
 pelletEnv :: String
 pelletEnv = "PELLET_PATH"
 
-pelletCheck :: IO Bool
-pelletCheck = fmap (not . null) $ check4FileAux pelletJar pelletEnv
+pelletCheck :: IO (Maybe String)
+pelletCheck = fmap
+  (\ l ->
+    if null l
+    then Just $ pelletJar ++ " not found in $" ++ pelletEnv
+    else Nothing)
+  $ check4FileAux pelletJar pelletEnv
 
 {- |
   The Prover implementation. First runs the batch prover (with graphical

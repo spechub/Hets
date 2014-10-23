@@ -223,7 +223,8 @@ data FreeDefMorphism sentence morphism = FreeDefMorphism
 -- | prover or consistency checker
 data ProverTemplate theory sentence morphism sublogics proof_tree = Prover
     { proverName :: String,
-      proverUsable :: IO Bool, -- are required binaries or jars installed
+      proverUsable :: IO (Maybe String),
+      -- are required binaries or jars installed, Nothing if yes
       proverSublogic :: sublogics,
       proveGUI :: Maybe (String -> theory -> [FreeDefMorphism sentence morphism]
                          -> IO ( [ProofStatus proof_tree]
@@ -267,7 +268,7 @@ mkProverTemplate :: String -> sublogics
   -> ProverTemplate theory sentence morphism sublogics proof_tree
 mkProverTemplate str sl fct = Prover
     { proverName = str
-    , proverUsable = return True
+    , proverUsable = return Nothing
     , proverSublogic = sl
     , proveGUI = Just $ \ s t fs -> do
                 ps <- fct s t fs
@@ -307,7 +308,7 @@ data CCStatus proof_tree = CCStatus
 
 data ConsChecker sign sentence sublogics morphism proof_tree = ConsChecker
   { ccName :: String
-  , ccUsable :: IO Bool
+  , ccUsable :: IO (Maybe String)
   , ccSublogic :: sublogics
   , ccBatch :: Bool -- True for batch checkers
   , ccNeedsTimer :: Bool -- True for checkers that ignore time limits
@@ -329,7 +330,7 @@ mkConsChecker :: String -> sublogics
   -> ConsChecker sign sentence sublogics morphism proof_tree
 mkConsChecker n sl f = ConsChecker
   { ccName = n
-  , ccUsable = return True
+  , ccUsable = return Nothing
   , ccSublogic = sl
   , ccBatch = True
   , ccNeedsTimer = True

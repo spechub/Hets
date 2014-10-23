@@ -279,7 +279,7 @@ instance Logic CASL CASL_Sublogics
          sublogicDimensions CASL = sDims []
          parseSublogic CASL = parseSL (\ s -> Just ((), s))
          conservativityCheck CASL =
-             [ConservativityChecker "CCC" (return True) checkFreeType]
+             [ConservativityChecker "CCC" (return Nothing) checkFreeType]
          empty_proof_tree CASL = emptyProofTree
          omdoc_metatheory CASL = Just caslMetaTheory
          export_senToOmdoc CASL = exportSenToOmdoc

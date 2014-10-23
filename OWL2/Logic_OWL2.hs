@@ -144,8 +144,7 @@ instance Logic OWL2 ProfSub OntologyDocument Axiom SymbItems SymbMapItems
          cons_checkers OWL2 = [pelletConsChecker, factConsChecker]
          conservativityCheck OWL2 = map
            (\ ct -> ConservativityChecker ("Locality_" ++ ct)
-                 (fmap fst $ check4HetsOWLjar localityJar)
-                      $ conserCheck ct)
+                    (checkOWLjar localityJar) $ conserCheck ct)
            ["BOTTOM_BOTTOM", "TOP_BOTTOM", "TOP_TOP"]
 
 #endif

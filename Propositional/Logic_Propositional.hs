@@ -133,7 +133,7 @@ instance Logic Propositional
         , minisatConsChecker Minisat2, ttConsistencyChecker]
       conservativityCheck Propositional =
           [ ConservativityChecker "sKizzo" (checkBinary "sKizzo") conserCheck
-          , ConservativityChecker "Truth Tables" (return True)
+          , ConservativityChecker "Truth Tables" (return Nothing)
               ttConservativityChecker]
 #endif
 

@@ -38,8 +38,12 @@ check4FileAux name env = do
       return $ map fst $ filter snd $ zip path exIT
 
 -- | Checks if a file exists in PATH
-checkBinary :: String -> IO Bool
-checkBinary name = fmap (not . null) $ check4FileAux name "PATH"
+checkBinary :: String -> IO (Maybe String)
+checkBinary name = fmap
+  (\ l -> if null l
+          then Just $ "missing binary in $PATH: " ++ name
+          else Nothing)
+  $ check4FileAux name "PATH"
 
 -- | Checks if a file exists
 check4File :: String -- ^ file name
@@ -74,3 +78,9 @@ hetsOWLenv = "HETS_OWL_TOOLS"
 check4HetsOWLjar :: String -- ^ jar file name
   -> IO (Bool, FilePath)
 check4HetsOWLjar = check4jarFileWithDefault "OWL2" hetsOWLenv
+
+checkOWLjar :: String -> IO (Maybe String)
+checkOWLjar name =
+  fmap (\ (b, p) -> if b then Nothing else
+       Just $ "missing jar ($" ++ hetsOWLenv ++ "): " ++ (p </> name))
+  $ check4HetsOWLjar name

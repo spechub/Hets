@@ -49,6 +49,7 @@ module Proofs.AbstractState
     ) where
 
 import qualified Data.Map as Map
+import Data.Maybe
 import Data.Typeable
 
 import Control.Concurrent.MVar
@@ -95,7 +96,7 @@ getProverName :: G_prover -> String
 getProverName (G_prover _ p) = proverName p
 
 usable :: G_prover -> IO Bool
-usable (G_prover _ p) = proverUsable p
+usable (G_prover _ p) = fmap isNothing $ proverUsable p
 
 coerceProver ::
   ( Logic lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
@@ -127,7 +128,7 @@ getCcBatch :: G_cons_checker -> Bool
 getCcBatch (G_cons_checker _ p) = ccBatch p
 
 usableCC :: G_cons_checker -> IO Bool
-usableCC (G_cons_checker _ p) = ccUsable p
+usableCC (G_cons_checker _ p) = fmap isNothing $ ccUsable p
 
 coerceConsChecker ::
   ( Logic lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1

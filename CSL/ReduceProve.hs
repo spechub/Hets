@@ -32,7 +32,7 @@ mkProverTemplateWithLemmaExport :: String -> sublogics
   -> ProverTemplate theory sentence morphism sublogics proof_tree
 mkProverTemplateWithLemmaExport str sl fct = Prover
     { proverName = str
-    , proverUsable = fmap (either (const True) $ const False) lookupRedShellCmd
+    , proverUsable = fmap (either (const Nothing) Just) lookupRedShellCmd
     , proverSublogic = sl
     , proveGUI = Just $ \ s t fs -> fct s t fs
     , proveCMDLautomaticBatch = Nothing }

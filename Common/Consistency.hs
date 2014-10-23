@@ -52,7 +52,7 @@ along the morphism. They are axioms only and not identical to any
 translated sentence of the source. -}
 data ConservativityChecker sign sentence morphism = ConservativityChecker
     { checkerId :: String
-    , checkerUsable :: IO Bool
+    , checkerUsable :: IO (Maybe String)
     , checkConservativity
         :: (sign, [Named sentence])
         -> morphism

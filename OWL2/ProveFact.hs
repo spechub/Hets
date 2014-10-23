@@ -51,7 +51,7 @@ import Data.Maybe
 factProver :: Prover Sign Axiom OWLMorphism ProfSub ProofTree
 factProver = (mkAutomaticProver "java" "Fact" topS factGUI
   factCMDLautomaticBatch)
-  { proverUsable = fmap fst $ check4HetsOWLjar factProverJarS }
+  { proverUsable = checkOWLjar factProverJarS }
 
 factProverJarS :: String
 factProverJarS = "OWLFactProver.jar"
@@ -98,7 +98,7 @@ factCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
 -}
 factConsChecker :: ConsChecker Sign Axiom ProfSub OWLMorphism ProofTree
 factConsChecker = (mkConsChecker "Fact" topS consCheck)
-  { ccUsable = fmap fst $ check4HetsOWLjar factJarS }
+  { ccUsable = checkOWLjar factJarS }
 
 {- |
   Record for prover specific functions. This is used by both GUI and command
