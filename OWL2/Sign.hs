@@ -129,7 +129,7 @@ isSubSign a b =
 
 symOf :: Sign -> Set.Set Entity
 symOf s = Set.unions
-  [ Set.map (\ir -> Entity (Map.lookup ir $ labelMap s) Class ir) $ concepts s
+  [ Set.map (\ ir -> Entity (Map.lookup ir $ labelMap s) Class ir) $ concepts s
   , Set.map (mkEntity Datatype) $ datatypes s
   , Set.map (mkEntity ObjectProperty) $ objectProperties s
   , Set.map (mkEntity DataProperty) $ dataProperties s

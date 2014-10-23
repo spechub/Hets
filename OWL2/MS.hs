@@ -149,34 +149,34 @@ symsOfObjectPropertyExpression o = case o of
 
 symsOfClassExpression :: ClassExpression -> Set.Set Entity
 symsOfClassExpression ce = case ce of
-  Expression c -> Set.singleton $ mkEntity  Class c
+  Expression c -> Set.singleton $ mkEntity Class c
   ObjectJunction _ cs -> Set.unions $ map symsOfClassExpression cs
   ObjectComplementOf c -> symsOfClassExpression c
-  ObjectOneOf is -> Set.fromList $ map (mkEntity  NamedIndividual) is
+  ObjectOneOf is -> Set.fromList $ map (mkEntity NamedIndividual) is
   ObjectValuesFrom _ oe c -> Set.union (symsOfObjectPropertyExpression oe)
     $ symsOfClassExpression c
-  ObjectHasValue oe i -> Set.insert (mkEntity  NamedIndividual i)
+  ObjectHasValue oe i -> Set.insert (mkEntity NamedIndividual i)
     $ symsOfObjectPropertyExpression oe
   ObjectHasSelf oe -> symsOfObjectPropertyExpression oe
   ObjectCardinality (Cardinality _ _ oe mc) -> Set.union
     (symsOfObjectPropertyExpression oe)
     $ maybe Set.empty symsOfClassExpression mc
-  DataValuesFrom _ de dr -> Set.insert (mkEntity  DataProperty de)
+  DataValuesFrom _ de dr -> Set.insert (mkEntity DataProperty de)
     $ symsOfDataRange dr
-  DataHasValue de _ -> Set.singleton $ mkEntity  DataProperty de
-  DataCardinality (Cardinality _ _ d m) -> Set.insert (mkEntity  DataProperty d)
+  DataHasValue de _ -> Set.singleton $ mkEntity DataProperty de
+  DataCardinality (Cardinality _ _ d m) -> Set.insert (mkEntity DataProperty d)
     $ maybe Set.empty symsOfDataRange m
 
 symsOfDataRange :: DataRange -> Set.Set Entity
 symsOfDataRange dr = case dr of
-  DataType t _ -> Set.singleton $ mkEntity  Datatype t
+  DataType t _ -> Set.singleton $ mkEntity Datatype t
   DataJunction _ ds -> Set.unions $ map symsOfDataRange ds
   DataComplementOf d -> symsOfDataRange d
   DataOneOf _ -> Set.empty
 
 symsOfAnnotation :: Annotation -> Set.Set Entity
 symsOfAnnotation (Annotation as p _) = Set.insert
-   (mkEntity  AnnotationProperty p) $ Set.unions (map symsOfAnnotation as)
+   (mkEntity AnnotationProperty p) $ Set.unions (map symsOfAnnotation as)
 
 symsOfAnnotations :: Annotations -> Set.Set Entity
 symsOfAnnotations = Set.unions . map symsOfAnnotation
@@ -194,28 +194,28 @@ symsOfAnnFrameBit af = case af of
   ClassDisjointUnion cs -> Set.unions $ map symsOfClassExpression cs
   ClassHasKey os ds -> Set.union
     (Set.unions $ map symsOfObjectPropertyExpression os)
-    . Set.fromList $ map (mkEntity  DataProperty) ds
+    . Set.fromList $ map (mkEntity DataProperty) ds
   ObjectSubPropertyChain os ->
     Set.unions $ map symsOfObjectPropertyExpression os
 
 symsOfListFrameBit :: ListFrameBit -> Set.Set Entity
 symsOfListFrameBit lb = case lb of
   AnnotationBit l -> annotedSyms
-    (Set.singleton . mkEntity  AnnotationProperty) l
+    (Set.singleton . mkEntity AnnotationProperty) l
   ExpressionBit l -> annotedSyms symsOfClassExpression l
   ObjectBit l -> annotedSyms symsOfObjectPropertyExpression l
-  DataBit l -> annotedSyms (Set.singleton . mkEntity  DataProperty) l
+  DataBit l -> annotedSyms (Set.singleton . mkEntity DataProperty) l
   IndividualSameOrDifferent l -> annotedSyms
-    (Set.singleton . mkEntity  NamedIndividual) l
+    (Set.singleton . mkEntity NamedIndividual) l
   ObjectCharacteristics l -> annotedSyms (const Set.empty) l
   DataPropRange l -> annotedSyms symsOfDataRange l
   IndividualFacts l -> annotedSyms symsOfFact l
 
 symsOfFact :: Fact -> Set.Set Entity
 symsOfFact fact = case fact of
-  ObjectPropertyFact _ oe i -> Set.insert (mkEntity  NamedIndividual i)
+  ObjectPropertyFact _ oe i -> Set.insert (mkEntity NamedIndividual i)
     $ symsOfObjectPropertyExpression oe
-  DataPropertyFact _ d _ -> Set.singleton $ mkEntity  DataProperty d
+  DataPropertyFact _ d _ -> Set.singleton $ mkEntity DataProperty d
 
 annotedSyms :: (a -> Set.Set Entity) -> AnnotatedList a -> Set.Set Entity
 annotedSyms f l = Set.union (Set.unions $ map (symsOfAnnotations . fst) l)

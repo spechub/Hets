@@ -457,9 +457,11 @@ pairSymbols (Entity lb1 k1 i1) (Entity lb2 k2 i2) =
   if k1 /= k2 then
     error "can't pair symbols of different kind"
    else do
-    let
-        rest x = drop 1 $ dropWhile (/= '#') x
-        pairLables lbl1 lbl2 = lbl1 -- TODO implement!
+    let rest x = drop 1 $ dropWhile (/= '#') x
+        pairLables lbl1 lbl2 = case (lbl1, lbl2) of
+            (Nothing, _) -> pairLables lbl2 lbl1
+            (Just l1, Just l2) | l1 /= l2 -> Just $ l1 ++ ", " ++ l2
+            _ -> lbl1
         pairIRIs (QN p1 l1 t1 _e1 r1)
                  (QN _p2 l2 _t2 _e2 _r2) =
          QN

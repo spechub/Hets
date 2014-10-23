@@ -113,7 +113,8 @@ checkDataRange s dr = case dr of
      DataProperties may be parsed as ObjectProperties -}
 classExpressionToDataRange :: Sign -> ClassExpression -> Result DataRange
 classExpressionToDataRange s ce = case ce of
-    Expression u -> checkEntity s (mkEntity Datatype u) >> return (DataType u [])
+    Expression u -> checkEntity s (mkEntity Datatype u)
+        >> return (DataType u [])
     ObjectJunction jt cel -> fmap (DataJunction jt)
         $ mapM (classExpressionToDataRange s) cel
     ObjectComplementOf c -> fmap DataComplementOf
@@ -140,7 +141,8 @@ checkClassExpression s desc =
         then fmap (ObjectValuesFrom q opExpr) $ checkClassExpression s d
         else let iri = objPropToIRI opExpr
              in if isDeclDataProp s iri then
-                    fmap (DataValuesFrom q iri) $ classExpressionToDataRange s d
+                    fmap (DataValuesFrom q iri)
+                      $ classExpressionToDataRange s d
                 else objErr iri
     ObjectHasSelf opExpr -> if isDeclObjProp s opExpr then return desc
         else objErr $ objPropToIRI opExpr
@@ -161,7 +163,8 @@ checkClassExpression s desc =
                 else do
                     dr <- classExpressionToDataRange s d
                     if isDeclDataProp s iri then
-                        return $ DataCardinality $ Cardinality a b iri $ Just dr
+                        return $ DataCardinality
+                          $ Cardinality a b iri $ Just dr
                         else datErr iri
     DataValuesFrom _ dExp r -> checkDataRange s r
         >> if isDeclDataProp s dExp then return desc else datErr dExp
@@ -372,7 +375,7 @@ basicOWL2Analysis (inOnt, inSign, ga) = do
       , ExtSign accSign {labelMap = generateLabelMap accSign nfl} syms, axl)
 
 generateLabelMap :: Sign -> [Frame] -> Map.Map IRI String
-generateLabelMap sig = foldr (\(Frame ext fbl) -> case ext of
+generateLabelMap sig = foldr (\ (Frame ext fbl) -> case ext of
         SimpleEntity (Entity _ _ ir) -> case fbl of
             [AnnFrameBit [Annotation _ apr (AnnValLit (Literal s' _))] _]
                 | localPart apr == "label" -> Map.insert ir s'
