@@ -36,7 +36,7 @@ data Sign = Sign
             , annotationRoles :: Set.Set AnnotationProperty
               -- annotation properties
             , individuals :: Set.Set Individual  -- named individuals
-            , labelMap :: Map.Map IRI String
+            , labelMap :: Map.Map IRI String -- labels (for better readability)
             , prefixMap :: PrefixMap
             } deriving (Show, Typeable, Data)
 
@@ -126,8 +126,6 @@ isSubSign a b =
        && Set.isSubsetOf (dataProperties a) (dataProperties b)
        && Set.isSubsetOf (annotationRoles a) (annotationRoles b)
        && Set.isSubsetOf (individuals a) (individuals b)
-
--- TODO better print Symbol-name (new function for Entity2Id (owl2.logic_owl))
 
 symOf :: Sign -> Set.Set Entity
 symOf s = Set.unions
