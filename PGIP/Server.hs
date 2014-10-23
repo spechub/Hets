@@ -45,6 +45,8 @@ import Static.PrintDevGraph
 import qualified Static.ToJson as ToJson
 import Static.ToXml as ToXml
 
+import Logic.LGToXml
+
 import Syntax.ToXml
 import Syntax.Print_AS_Structured
 
@@ -300,6 +302,7 @@ listRESTfullIdentifiers :: [String]
 listRESTfullIdentifiers =
   [ "libraries", "sessions", "menus", "filetype", "hets-lib", "dir"]
   ++ nodeEdgeIdes ++ newRESTIdes
+  ++ ["available-provers"]
 
 nodeEdgeIdes :: [String]
 nodeEdgeIdes = ["nodes", "edges"]
@@ -362,6 +365,9 @@ parseRESTfull opts sessRef pathBits qOpts splitQuery meth respond = let
         dirs <- liftIO $ getHetsLibContent opts path' splitQuery
         mkHtmlPage path' dirs respond
       ["version"] -> respond $ mkOkResponse textC hetcats_version
+      ["available-provers"] ->
+         usableProvers logicGraph
+         >>= respond . mkOkResponse xmlC . ppTopElement
       -- get dgraph from file
       "filetype" : libIri : _ -> mkFiletypeResponse opts libIri respond
       "hets-lib" : r -> let file = intercalate "/" r in

@@ -18,6 +18,8 @@ import Logic.Grothendieck
 import Logic.Logic
 import Logic.Prover
 
+import Control.Monad
+
 import qualified Data.Map as Map
 import Data.Char
 import Data.Maybe
@@ -26,6 +28,19 @@ import Common.Consistency
 import Common.ToXml
 
 import Text.XML.Light
+
+usableProvers :: LogicGraph -> IO Element
+usableProvers lg = do
+  ps <- mapM proversOfLogic . Map.elems $ logics lg
+  return $ unode "provers" $ concat ps
+
+proversOfLogic :: AnyLogic -> IO [Element]
+proversOfLogic (Logic lid) = do
+  bps <- filterM (fmap isNothing . proverUsable) $ provers lid
+  return $ map (\ p ->
+      add_attrs [ mkNameAttr $ proverName p
+                , mkAttr "logic" $ language_name lid]
+      $ unode "prover" ()) bps
 
 lGToXml :: LogicGraph -> IO Element
 lGToXml lg = do
@@ -52,7 +67,7 @@ logicToXml (Logic lid) = do
  let ps = provers lid
      cs1 = cons_checkers lid
      cs2 = conservativityCheck lid
-     ua b = mkAttr "usable" . map toLower $ show b
+     ua b = mkAttr "usable" . map toLower $ show $ isNothing b
  bps <- mapM proverUsable ps
  bcs1 <- mapM ccUsable cs1
  bcs2 <- mapM checkerUsable cs2
