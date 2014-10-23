@@ -495,7 +495,7 @@ mkMenus = menuTriple "" "Get menu triples" "menus"
   ++ [menuTriple "/DGraph/DGLink" "Show edge info" "edge"]
 
 status422 :: Status
-status422 = mkStatus 422 $ B8.pack "Unprocessable Entity"
+status422 = Status 422 $ B8.pack "Unprocessable Entity"
 
 mkFiletypeResponse :: HetcatsOpts -> String -> WebResponse
 mkFiletypeResponse opts libIri respond = do
@@ -569,7 +569,13 @@ htmlC = "text/html"
 
 mkResponse :: String -> Status -> String -> Response
 mkResponse ty st = responseLBS st
- (if null ty then [] else [(hContentType, B8.pack ty)]) . BS.pack
+  (if null ty then [] else
+#ifdef WARP1
+      [headerContentType $ B8.pack ty]
+#else
+      [(hContentType, B8.pack ty)]
+#endif
+  ) . BS.pack
 
 mkOkResponse :: String -> String -> Response
 mkOkResponse ty = mkResponse ty status200
