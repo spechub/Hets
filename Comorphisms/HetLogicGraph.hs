@@ -28,9 +28,11 @@ import Logic.Comorphism
 import Logic.Grothendieck
 import Logic.Coerce
 
+import Control.Monad
+
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import Data.Maybe (fromJust, fromMaybe)
+import Data.Maybe
 import Data.List
 
 {- | Heterogenous Sublogic Graph
@@ -43,38 +45,23 @@ data HetSublogicGraph = HetSublogicGraph
 emptyHetSublogicGraph :: HetSublogicGraph
 emptyHetSublogicGraph = HetSublogicGraph Map.empty Map.empty
 
+toTopSublogicAndProverSupported :: Map.Map String G_sublogics
+  -> AnyLogic -> IO (Map.Map String G_sublogics)
+toTopSublogicAndProverSupported mp (Logic lid) = do
+  ps <- filterM (fmap isNothing . proverUsable) $ provers lid
+  cs <- filterM (fmap isNothing . ccUsable) $ cons_checkers lid
+  let toGSLPair sl = let gsl = G_sublogics lid sl in (show gsl, gsl)
+      top_gsl = toGSLPair $ top_sublogic lid
+      prv_sls = map proverSublogic ps ++ map ccSublogic cs
+  return . Map.union mp . Map.fromList $ top_gsl : map toGSLPair prv_sls
+
 {- |
    initial version of a logic graph based on ticket #336
 -}
-hetSublogicGraph :: HetSublogicGraph
-hetSublogicGraph = removeDuplicateComorphisms $
-                   addHomogeneousInclusions $
-                   reduceToWellSupported $
-                   removeLoops $
-                   addComorphismEdges $
-                   emptyHetSublogicGraph
-                     { sublogicNodes =
-                           Map.union initialInterestingSublogics
-                                     (compute_preImageOfG_sublogics
-                                             initialInterestingSublogics)}
-    where initialInterestingSublogics = Map.union
-             (Map.fold toTopSublogicAndProverSupported Map.empty $
-                 logics logicGraph)
-                 (foldr srcSubl Map.empty comorphismList)
-          toTopSublogicAndProverSupported al mp =
-              case al of
-                Logic lid ->
-                    let toGSLPair sl = let gsl = G_sublogics lid sl
-                                       in (show gsl, gsl)
-                        top_gsl = toGSLPair $ top_sublogic lid
-                        prv_sls = map proverSublogic (provers lid)
-                          ++ map ccSublogic (cons_checkers lid)
-                    in Map.union mp $
-                       Map.fromList (top_gsl :
-                                     map toGSLPair prv_sls)
-
-          insP = uncurry Map.insert
-          toGsl :: Logic
+hetSublogicGraph :: IO HetSublogicGraph
+hetSublogicGraph = do
+  let insP = uncurry Map.insert
+      toGsl :: Logic
                      lid
                      sublogics
                      basic_spec
@@ -87,16 +74,29 @@ hetSublogicGraph = removeDuplicateComorphisms $
                      raw_symbol
                      proof_tree =>
                    lid -> sublogics -> G_sublogics
-          toGsl = G_sublogics
-          toPair gsl = (show gsl, gsl)
-
-          srcSubl acm nmp =
-            case acm of
+      toGsl = G_sublogics
+      toPair gsl = (show gsl, gsl)
+      srcSubl acm nmp = case acm of
              Comorphism cm ->
               let srcSL = sourceSublogic cm
                   srcLid = sourceLogic cm
                   srcGsl = toGsl srcLid srcSL
               in insP (toPair srcGsl) nmp
+      initialInterestingSublogics sl = do
+        m1 <- foldM toTopSublogicAndProverSupported Map.empty
+          . Map.elems $ logics logicGraph
+        return . Map.union m1 $ foldr sl Map.empty comorphismList
+  is <- initialInterestingSublogics srcSubl
+  return . removeDuplicateComorphisms
+    . addHomogeneousInclusions
+    . reduceToWellSupported
+    . removeLoops
+    . addComorphismEdges $
+                   emptyHetSublogicGraph
+                     { sublogicNodes =
+                           Map.union is
+                                     (compute_preImageOfG_sublogics
+                                             is)}
 
 
 {- | adds the interesting comorphisms without adding new nodes;
