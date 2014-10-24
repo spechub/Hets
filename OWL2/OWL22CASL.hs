@@ -202,7 +202,7 @@ mapMorphism oMor = do
       cdm <- mapSign $ osource oMor
       ccd <- mapSign $ otarget oMor
       let emap = mmaps oMor
-          preds = Map.foldWithKey (\ (Entity ty u1) u2 -> let
+          preds = Map.foldWithKey (\ (Entity _ ty u1) u2 -> let
               i1 = uriToCaslId u1
               i2 = uriToCaslId u2
               in case ty of
@@ -210,7 +210,7 @@ mapMorphism oMor = do
                 ObjectProperty -> Map.insert (i1, objectPropPred) i2
                 DataProperty -> Map.insert (i1, dataPropPred) i2
                 _ -> id) Map.empty emap
-          ops = Map.foldWithKey (\ (Entity ty u1) u2 -> case ty of
+          ops = Map.foldWithKey (\ (Entity _ ty u1) u2 -> case ty of
                 NamedIndividual -> Map.insert (uriToCaslId u1, indiConst)
                   (uriToCaslId u2, Total)
                 _ -> id) Map.empty emap
@@ -219,7 +219,7 @@ mapMorphism oMor = do
                  , pred_map = preds }
 
 mapSymbol :: Entity -> Set.Set Symbol
-mapSymbol (Entity ty iri) = let
+mapSymbol (Entity _ ty iri) = let
   syN = Set.singleton . Symbol (uriToCaslId iri)
   in case ty of
     Class -> syN $ PredAsItemType conceptPred
@@ -528,7 +528,7 @@ mapDescriptionListP cSig n lst = do
 mapFact :: CASLSign -> Extended -> Fact -> Result CASLFORMULA
 mapFact cSig ex f = case f of
     ObjectPropertyFact posneg obe ind -> case ex of
-        SimpleEntity (Entity NamedIndividual siri) -> do
+        SimpleEntity (Entity _ NamedIndividual siri) -> do
             inS <- mapIndivURI cSig siri
             inT <- mapIndivURI cSig ind
             oPropH <- mapObjProp cSig obe 1 2
@@ -539,7 +539,7 @@ mapFact cSig ex f = case f of
                             [mkEqDecl 1 inS, mkEqDecl 2 inT] oProp
         _ -> fail $ "ObjectPropertyFactsFacts Entity fail: " ++ show f
     DataPropertyFact posneg dpe lit -> case ex of
-        SimpleEntity (Entity NamedIndividual iri) -> do
+        SimpleEntity (Entity _ NamedIndividual iri) -> do
             inS <- mapIndivURI cSig iri
             inT <- mapLiteral lit
             oPropH <- mapDataProp cSig dpe 1 2
@@ -626,7 +626,7 @@ mapListFrameBit cSig ex rel lfb =
           Misc _ -> let cel = map snd cls in do
             (els, s) <- mapDescriptionListP cSig 1 $ comPairs cel cel
             mkEDPairs (uniteCASLSign cSig s) [1] rel els
-          SimpleEntity (Entity ty iri) -> do
+          SimpleEntity (Entity _ ty iri) -> do
               (els, s) <- mapAndUnzipM (\ (_, c) -> mapDescription cSig c 1) cls
               case ty of
                 NamedIndividual | rel == Just Types -> do
@@ -692,7 +692,7 @@ mapListFrameBit cSig ex rel lfb =
         Misc _ -> do
             pairs <- mapComDataPropsList cSig Nothing dl 1 2
             mkEDPairs cSig [1, 2] rel pairs
-        SimpleEntity (Entity DataProperty iri) -> case r of
+        SimpleEntity (Entity _ DataProperty iri) -> case r of
             SubPropertyOf -> do
                 os1 <- mapM (\ o1 -> mapDataProp cSig o1 1 2) dl
                 o2 <- mapDataProp cSig iri 2 1
@@ -707,13 +707,13 @@ mapListFrameBit cSig ex rel lfb =
         Nothing -> err
         Just (SDRelation re) -> do
             let mi = case ex of
-                    SimpleEntity (Entity NamedIndividual iri) -> Just iri
+                    SimpleEntity (Entity _ NamedIndividual iri) -> Just iri
                     _ -> Nothing
             fs <- mapComIndivList cSig re mi $ map snd al
             return (fs, cSig)
         _ -> err
     DataPropRange dpr -> case ex of
-        SimpleEntity (Entity DataProperty iri) -> do
+        SimpleEntity (Entity _ DataProperty iri) -> do
             oEx <- mapDataProp cSig iri 1 2
             (odes, s) <- mapAndUnzipM (\ (_, c) -> mapDataRange cSig c 2) dpr
             let vars = (mkNName 1, mkNName 2)
@@ -737,14 +737,14 @@ mapAnnFrameBit cSig ex ans afb =
     in case afb of
     AnnotationFrameBit _ -> return ([], cSig)
     DataFunctional -> case ex of
-        SimpleEntity (Entity _ iri) -> do
+        SimpleEntity (Entity _ _ iri) -> do
             so1 <- mapDataProp cSig iri 1 2
             so2 <- mapDataProp cSig iri 1 3
             return ([mkForall (thingDecl 1 : map dataDecl [2, 3]) $ implConj
                         [so1, so2] $ mkEqVar (dataDecl 2) $ qualData 3], cSig)
         _ -> err
     DatatypeBit dr -> case ex of
-        SimpleEntity (Entity Datatype iri) -> do
+        SimpleEntity (Entity _ Datatype iri) -> do
             (odes, s) <- mapDataRange cSig dr 2
             return ([mkVDataDecl [2] $ mkEqv odes $ mkMember
                     (qualData 2) $ uriToCaslId iri], uniteCASLSign cSig s)

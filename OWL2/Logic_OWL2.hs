@@ -94,6 +94,7 @@ instance Sentences OWL2 Axiom Sign OWLMorphism Entity where
     sym_of OWL2 = singletonList . symOf
     symmap_of OWL2 = symMapOf
     sym_name OWL2 = entityToId
+    sym_label OWL2 = label
     fullSymName OWL2 s = let
       i = cutIRI s
       x = expandedIRI i

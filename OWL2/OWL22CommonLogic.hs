@@ -257,7 +257,7 @@ mapMap :: Map.Map Entity IRI -> Result (Map.Map Id Id)
 mapMap m = return $ Map.map uriToId $ Map.mapKeys entityToId m
 
 mapSymbol :: Entity -> Set.Set Symbol
-mapSymbol (Entity _ iri) = Set.singleton $ idToRaw $ uriToId iri
+mapSymbol (Entity _ _ iri) = Set.singleton $ idToRaw $ uriToId iri
 
 mapSign :: OS.Sign -> Result Sign
 mapSign sig =
@@ -567,14 +567,14 @@ mapClassAssertion ind (ce, sent) = case ce of
 mapFact :: Sign -> Extended -> Fact -> Result TEXT
 mapFact cSig ex f = case f of
     ObjectPropertyFact posneg obe ind -> case ex of
-        SimpleEntity (Entity NamedIndividual siri) -> do
+        SimpleEntity (Entity _ NamedIndividual siri) -> do
             oPropH <- mapObjProp cSig obe (OIndi siri) (OIndi ind)
             return $ senToText $ case posneg of
                             Positive -> oPropH
                             Negative -> mkBN oPropH
         _ -> failMsg f
     DataPropertyFact posneg dpe lit -> case ex of
-        SimpleEntity (Entity NamedIndividual iri) -> do
+        SimpleEntity (Entity _ NamedIndividual iri) -> do
              inS <- mapIndivIRI cSig iri
              inT <- mapLit 1 lit
              nm <- uriToTokM dpe
@@ -669,7 +669,7 @@ mapListFrameBit cSig ex rel lfb = case lfb of
           Misc _ -> let cel = map snd cls in do
             (els, sig) <- mapDescriptionListP cSig 1 $ comPairs cel cel
             mkEDPairs sig [1] rel els
-          SimpleEntity (Entity ty iri) -> do
+          SimpleEntity (Entity _ ty iri) -> do
              ls <- mapM (\ (_, c) -> mapDescription cSig c (OIndi iri) 1) cls
              case ty of
               NamedIndividual | rel == Just Types -> do
@@ -738,7 +738,7 @@ mapListFrameBit cSig ex rel lfb = case lfb of
             Misc _ -> do
                     pairs <- mapDataPropListP cSig 1 2 $ comPairs dl dl
                     mkEDPairs cSig [1, 2] rel pairs
-            SimpleEntity (Entity DataProperty iri) -> case r of
+            SimpleEntity (Entity _ DataProperty iri) -> case r of
                 EDRelation _ -> do
                     pairs <- mapDataPropListP cSig 1 2 $ mkPairs iri dl
                     mkEDPairs cSig [1, 2] rel pairs
@@ -752,12 +752,12 @@ mapListFrameBit cSig ex rel lfb = case lfb of
     IndividualSameOrDifferent anl -> case rel of
         Nothing -> failMsg lfb
         Just (SDRelation re) -> do
-            let SimpleEntity (Entity NamedIndividual iri) = ex
+            let SimpleEntity (Entity _ NamedIndividual iri) = ex
             fs <- mapComIndivList cSig re (Just iri) $ map snd anl
             return (msen2Txt fs, cSig)
         _ -> failMsg lfb
     DataPropRange dpr -> case ex of
-        SimpleEntity (Entity DataProperty iri) -> do
+        SimpleEntity (Entity _ DataProperty iri) -> do
             oEx <- mapDPE cSig iri 1 2
             ls <- mapM (\ (_, r) -> mapDataRange cSig r $ OVar 2) dpr
             return (msen2Txt $ map (mkSent [mkNAME 1] [mkNAME 2] oEx
@@ -778,14 +778,14 @@ mapAnnFrameBit cSig ex afb =
     let err = fail $ "could not translate " ++ show afb in case afb of
     AnnotationFrameBit _ -> return ([], cSig)
     DataFunctional -> case ex of
-        SimpleEntity (Entity DataProperty iri) -> do
+        SimpleEntity (Entity _ DataProperty iri) -> do
             so1 <- mapDPE cSig iri 1 2
             so2 <- mapDPE cSig iri 1 3
             return ([mkQUBI (map mkNAME [1, 2, 3]) [so1, so2]
                         (mkNTERM 2) $ mkNTERM 3], cSig)
         _ -> err
     DatatypeBit dr -> case ex of
-        SimpleEntity (Entity Datatype iri) -> do
+        SimpleEntity (Entity _ Datatype iri) -> do
            (odes, dSig) <- mapDataRange cSig dr $ OVar 1
            let dtp = mkTermAtoms (uriToTok iri) [mkVTerm $ OVar 1]
            return ([senToText $ mk1QU $ mkBB dtp odes], dSig)

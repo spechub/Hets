@@ -45,7 +45,7 @@ frame2Boxes (Frame e bs) = case e of
     (ds, rs) = getRoleType r es
     rt = on RoleType intersectConcepts ds rs
     in Box [] (nubOrd $ map (setRoleType r rt) es) []
-  SimpleEntity (Entity et i) -> case et of
+  SimpleEntity (Entity _ et i) -> case et of
     NamedIndividual -> Box [] [] $ concatMap (indFrame2Boxes $ localPart i) bs
     _ -> Box [] [] []
   Misc _ -> catBoxes $ map miscFrame2Boxes bs
