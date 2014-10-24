@@ -5,6 +5,8 @@ import Common.Parsec
 import Control.Monad
 import Data.List
 
+import qualified Data.Set as Set
+
 import Text.ParserCombinators.Parsec
 
 data Term =
@@ -15,7 +17,30 @@ data Term =
   | Option Term
   | Many Term Bool
 
-data Rule = Rule String Term
+data Rule = Rule { lhs :: String, rhs :: Term }
+
+lhss :: [Rule] -> [String]
+lhss = sort . map lhs
+
+nts :: Bool -> Term -> Set.Set String
+nts b trm = let unite = Set.unions . map (nts b) in case trm of
+  Terminal s -> if b || isPrefixOf "($<$" s then Set.empty
+    else Set.singleton . init $ tail s
+  NT s -> if b then Set.singleton s else Set.empty
+  Alt l -> unite l
+  Seq l -> unite l
+  Option t -> nts b t
+  Many t _ -> nts b t
+
+terms :: Bool -> [Rule] -> Set.Set String
+terms b = Set.unions . map (nts b . rhs)
+
+terminals = terms False
+
+undeclared rs = Set.difference (terms True rs) . Set.fromList $ lhss rs
+startsyms rs = Set.difference (Set.fromList $ lhss rs) $ terms True rs
+
+doubles = map head . filter ((> 1) . length) . group . lhss
 
 ppRule :: Rule -> String
 ppRule (Rule s t) =
@@ -79,5 +104,13 @@ main :: IO ()
 main = do
   str <- getContents
   case parse (spaces >> many1 pRule << eof) "" str of
-    Right e -> putStr $ ppRules e
+    Right e -> do
+         print $ length e
+         let prn f = print $ f e
+         prn lhss
+         prn doubles
+         prn undeclared
+         prn startsyms
+         prn terminals
+         putStr $ ppRules e
     Left e -> print e
