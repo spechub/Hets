@@ -105,8 +105,8 @@ main = do
   str <- getContents
   case parse (spaces >> many1 pRule << eof) "" str of
     Right e -> do
-         print $ length e
          let prn f = print $ f e
+         prn length
          prn lhss
          prn doubles
          prn undeclared
