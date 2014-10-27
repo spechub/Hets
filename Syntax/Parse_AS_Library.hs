@@ -104,7 +104,7 @@ networkDefn l = do
     kEqu <- equalT
     (is, ps) <- separatedBy (hetIRI l) anComma
     -- here the optional "Id :" part for NetworkElement is missing
-    (es, qs) <- option ([], []) $ do
+    (es, qs) <- do
       kEx <- asKey excludingS
       (es, qs) <- separatedBy (hetIRI l) anComma
       return (es, kEx : qs)
