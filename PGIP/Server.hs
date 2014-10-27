@@ -559,7 +559,7 @@ xmlC :: String
 xmlC = "application/xml"
 
 jsonC :: String
-jsonC = "text/json"
+jsonC = "application/json"
 
 pdfC :: String
 pdfC = "application/pdf"
