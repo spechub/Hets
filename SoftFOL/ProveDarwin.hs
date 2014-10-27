@@ -86,12 +86,14 @@ darwinExe b = case b of
   graphical feedback), then starts the GUI prover. -}
 darwinProver
   :: ProverBinary -> Prover Sign Sentence SoftFOLMorphism () ProofTree
-darwinProver b = mkAutomaticProver (proverBinary b) () (darwinGUI b)
+darwinProver b =
+  mkAutomaticProver (darwinExe b) (proverBinary b) () (darwinGUI b)
   $ darwinCMDLautomaticBatchAux b
 
 darwinConsChecker
   :: ProverBinary -> ConsChecker Sign Sentence () SoftFOLMorphism ProofTree
-darwinConsChecker b = (mkConsChecker (proverBinary b) () $ consCheck b)
+darwinConsChecker b =
+  (mkUsableConsChecker (darwinExe b) (proverBinary b) () $ consCheck b)
   { ccNeedsTimer = False }
 
 {- |

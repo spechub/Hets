@@ -33,10 +33,10 @@ import Interfaces.GenericATPState
 import qualified Interfaces.Command as IC
 import Interfaces.History
 
-import Control.Monad (unless)
+import Control.Monad (unless, filterM)
 
 import Data.Graph.Inductive.Graph
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, isNothing)
 import Data.List
 import Data.IORef
 
@@ -171,11 +171,11 @@ proofTreeToProve fn st pcm pt nodeName (useTm, tm) =
 
 -- Merge goals with the same time-limit
 mergeGoals :: [(String, Int)] -> [(String, Int)]
-mergeGoals [] = []
-mergeGoals (h : []) = [h]
-mergeGoals ((n, l) : t@((n', l') : tl))
-  | l == l' = mergeGoals $ (n ++ ' ' : n', l) : tl
-  | otherwise = (n, l) : mergeGoals t
+mergeGoals i = case i of
+  (n, l) : t@((n', l') : tl) ->
+    if l == l' then mergeGoals $ (n ++ ' ' : n', l) : tl
+    else (n, l) : mergeGoals t
+  _ -> i
 
 dropName :: String -> String -> String
 dropName fch s = maybe s tail (stripPrefix fch s)
@@ -294,7 +294,9 @@ checkConservativityEdge useGUI link@(source, target, linklab) libEnv ln
       sensS' <- coerceThSens lidS lidT "checkconservativityOfEdge1" sensS
       let transSensSrc = propagateErrors "checkConservativityEdge2"
            $ mapThSensValueM (map_sen lidT compMor) sensS'
-      checkerR <- conservativityChoser useGUI $ conservativityCheck lidT
+      usableCs <- filterM (fmap isNothing . checkerUsable)
+        $ conservativityCheck lidT
+      checkerR <- conservativityChoser useGUI usableCs
       case maybeResult checkerR of
         Nothing -> return (concatMap diagString $ diags checkerR,
                            libEnv, link, SizedList.empty)

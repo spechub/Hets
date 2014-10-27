@@ -26,7 +26,6 @@ import Interfaces.Utils
 
 import CMDL.DataTypes (CmdlState (intState), ProveCmdType (..))
 import CMDL.DataTypesUtils
-import CMDL.Utils (checkPresenceProvers)
 
 import Comorphisms.LogicGraph (logicGraph)
 
@@ -79,29 +78,26 @@ negate_th_with_cons_checker g_th goal = case g_th of
                                  in Just $ G_theory_with_cons_checker lid1 th
                                             {P.tTarget = target'} cons_check
 
-getProversAutomatic :: G_sublogics -> [(G_prover, AnyComorphism)]
-getProversAutomatic sl = getAllProvers P.ProveCMDLautomatic sl logicGraph
+getProversAutomatic :: G_sublogics -> IO [(G_prover, AnyComorphism)]
+getProversAutomatic sl = getUsableProvers P.ProveCMDLautomatic sl logicGraph
 
 -- | Select a prover
 cProver :: String -> CmdlState -> IO CmdlState
 cProver input state =
   do
    -- trimed input
-   inpls <- checkPresenceProvers [trim input]
-   let inp = case inpls of
-                [] -> "Unknown"
-                pnme : _ -> pnme
+   let inp = trim input
    case i_state $ intState state of
     Nothing -> return $ genMsgAndCode "Nothing selected" 1 state
     Just pS ->
      -- check that some theories are selected
      case elements pS of
       [] -> return $ genMsgAndCode "Nothing selected" 1 state
-      Element z _ : _ -> let
-        prov = getProversAutomatic (sublogicOfTheory z)
-        pl = filter ((== inp) . getProverName . fst) prov
-        prover_names = map (getProverName . fst) prov
-        in case case cComorphism pS of
+      Element z _ : _ -> do
+        prov <- getProversAutomatic (sublogicOfTheory z)
+        let pl = filter ((== inp) . getProverName . fst) prov
+            prover_names = map (getProverName . fst) prov
+        case case cComorphism pS of
                    Nothing -> pl
                    Just x -> filter ((== x) . snd) pl ++ pl of
              [] -> if inp == "" then do
@@ -135,7 +131,7 @@ cConsChecker input state =
       [] -> return $ genMsgAndCode "Nothing selected" 1 state
       Element z _ : _ ->
        do
-        let consCheckList = getConsCheckers $ findComorphismPaths
+        consCheckList <- getConsCheckers $ findComorphismPaths
                                 logicGraph $ sublogicOfTheory z
         -- see if any comorphism was used
         case cComorphism pS of
@@ -160,9 +156,9 @@ cConsChecker input state =
                                              consChecker = Just p }
                                           }
                                       }
-         Just x ->
-          case find (\ (y, _) -> getCcName y == inp)
-                     $ getConsCheckers [x] of
+         Just x -> do
+          cs <- getConsCheckers [x]
+          case find (\ (y, _) -> getCcName y == inp) cs of
            Nothing ->
             case find (\ (y, _) -> getCcName y == inp) consCheckList of
              Nothing -> if inp == "" then do

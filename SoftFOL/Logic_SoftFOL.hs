@@ -18,7 +18,7 @@ module SoftFOL.Logic_SoftFOL where
 import Common.DefaultMorphism
 import Common.DocUtils
 import Common.ProofTree
-import Common.AS_Annotation (makeNamed, SenAttr(..))
+import Common.AS_Annotation (makeNamed, SenAttr (..))
 import Common.ExtSign
 
 import qualified Data.Set (empty)
@@ -35,7 +35,6 @@ import SoftFOL.Morphism
 import SoftFOL.PrintTPTP ()
 
 #ifdef UNI_PACKAGE
-import Common.ProverTools
 import SoftFOL.ProveSPASS
 import SoftFOL.ProveHyperHyper
 #ifndef NOHTTP
@@ -84,7 +83,7 @@ instance StaticAnalysis SoftFOL [TPTP] Sentence
          is_subsig SoftFOL _ _ = True
          subsig_inclusion SoftFOL = defaultInclusion
          basic_analysis SoftFOL = Just (\ (sp, sg, _) ->
-          return (sp, ExtSign sg Data.Set.empty, concatMap (\f -> case f of
+          return (sp, ExtSign sg Data.Set.empty, concatMap (\ f -> case f of
            FormAnno _ (Name n) r t _ -> [
              let sen = makeNamed n t
              in case r of
@@ -92,9 +91,9 @@ instance StaticAnalysis SoftFOL [TPTP] Sentence
                  Hypothesis -> sen
                  Definition -> sen { isAxiom = False, isDef = True}
                  Assumption -> sen
-                 Lemma      -> sen
-                 Theorem    -> sen
-                 _          -> sen { isAxiom = False } ]
+                 Lemma -> sen
+                 Theorem -> sen
+                 _ -> sen { isAxiom = False } ]
            _ -> []) sp))
 
 instance Logic SoftFOL () [TPTP] Sentence () ()
@@ -102,18 +101,13 @@ instance Logic SoftFOL () [TPTP] Sentence () ()
                SoftFOLMorphism SFSymbol () ProofTree where
          stability _ = Testing
 #ifdef UNI_PACKAGE
-         provers SoftFOL =
-           unsafeProverCheck "SPASS" "PATH" spassProver
+         provers SoftFOL = [spassProver]
 #ifndef NOHTTP
            ++ [mathServBroker, vampire]
 #endif
-           ++ concatMap
-              (\ b -> unsafeProverCheck (darwinExe b) "PATH" $ darwinProver b)
-              tptpProvers
-           ++ unsafeProverCheck "metis" "PATH" metisProver
-           ++ unsafeProverCheck hyperS "PATH" hyperProver
-         cons_checkers SoftFOL = concatMap
-              (\ b -> unsafeProverCheck (darwinExe b) "PATH"
-               $ darwinConsChecker b) tptpProvers
-           ++ unsafeProverCheck hyperS "PATH" hyperConsChecker
+           ++ map darwinProver tptpProvers
+           ++ [metisProver, hyperProver]
+         cons_checkers SoftFOL = map darwinConsChecker tptpProvers
+           ++ [hyperConsChecker]
+
 #endif

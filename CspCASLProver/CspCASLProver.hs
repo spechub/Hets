@@ -29,6 +29,7 @@ import CASL.Fold
 import CASL.Sign (CASLSign, Sign (..), sortSet)
 
 import Common.AS_Annotation (Named, mapNamedM)
+import Common.ProverTools
 import Common.Result
 
 import qualified Comorphisms.CASL2PCFOL as CASL2PCFOL
@@ -57,7 +58,8 @@ cspCASLProverS = "CspCASLProver"
 
 -- | The wrapper function that is CspCASL Prover
 cspCASLProver :: Prover CspCASLSign CspCASLSen CspCASLMorphism () ()
-cspCASLProver = mkProverTemplate cspCASLProverS () cspCASLProverProve
+cspCASLProver = (mkProverTemplate cspCASLProverS () cspCASLProverProve)
+  { proverUsable = checkBinary "isabelle" }
 
 -- | The main cspCASLProver function
 cspCASLProverProve :: String -> Theory CspCASLSign CspCASLSen () -> a ->

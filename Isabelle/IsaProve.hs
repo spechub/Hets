@@ -62,14 +62,16 @@ openIsaProofStatus :: String -> ProofStatus ()
 openIsaProofStatus n = openProofStatus n isabelleS ()
 
 isabelleProver :: Prover Sign Sentence (DefaultMorphism Sign) () ()
-isabelleProver = mkAutomaticProver isabelleS () isaProve isaBatchProve
+isabelleProver =
+  mkAutomaticProver "isabelle" isabelleS () isaProve isaBatchProve
 
 isabelleBatchProver :: Prover Sign Sentence (DefaultMorphism Sign) () ()
-isabelleBatchProver = mkAutomaticProver "isabelle-process" () (isaProveAux True)
-  isaBatchProve
+isabelleBatchProver = mkAutomaticProver "isabelle-process" "isabelle-process"
+  () (isaProveAux True) isaBatchProve
 
 isabelleConsChecker :: ConsChecker Sign Sentence () (DefaultMorphism Sign) ()
-isabelleConsChecker = (mkConsChecker "Isabelle-refute" () consCheck)
+isabelleConsChecker =
+  (mkUsableConsChecker "isabelle" "Isabelle-refute" () consCheck)
   { ccBatch = False
   , ccNeedsTimer = False }
 

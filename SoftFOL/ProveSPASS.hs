@@ -59,7 +59,7 @@ spassName :: String
 spassName = "SPASS"
 
 spassProver :: Prover Sign Sentence SoftFOLMorphism () ProofTree
-spassProver = mkAutomaticProver spassName () spassProveGUI
+spassProver = mkAutomaticProver spassName spassName () spassProveGUI
   spassProveCMDLautomaticBatch
 
 -- * Main prover functions
