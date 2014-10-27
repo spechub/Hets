@@ -70,13 +70,13 @@ data AssocEither = ALeft | ARight deriving (Show, Eq, Ord, Typeable, Data)
 {- | semantic (line) annotations without further information.
 Use the same drop-3-trick as for the 'Display_format'. -}
 data Semantic_anno = SA_cons | SA_def | SA_implies | SA_mono | SA_implied
-                   | SA_mcons | SA_ccons
-    deriving (Show, Eq, Ord, Typeable, Data)
+                   | SA_mcons | SA_ccons | SA_wdef
+    deriving (Show, Eq, Ord, Typeable, Data, Enum, Bounded)
 
 -- | a lookup table for the textual representation of semantic annos
 semantic_anno_table :: [(Semantic_anno, String)]
 semantic_anno_table =
-  toTable [SA_cons, SA_def, SA_implies, SA_mono, SA_implied, SA_mcons, SA_ccons]
+  toTable [minBound .. maxBound]
 
 {- | lookup the textual representation of a semantic anno
 in 'semantic_anno_table' -}
