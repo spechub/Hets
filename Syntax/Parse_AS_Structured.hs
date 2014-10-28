@@ -332,8 +332,6 @@ restriction lg =
        (mappings, commas) <- parseItemsMap nl
        return (Revealed mappings (catRange (kReveal : commas)))
 
-
-
 -- | Parse approximation
 approximation :: LogicGraph -> AParser st APPROXIMATION
 approximation lg =

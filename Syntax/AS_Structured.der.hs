@@ -24,7 +24,7 @@ import Common.AS_Annotation
 import Data.Typeable
 import qualified Data.Set as Set
 
-import Logic.Logic --(AnyLogic,REL_REF)
+import Logic.Logic
 import Logic.Grothendieck
     ( G_basic_spec
     , G_symb_items_list
