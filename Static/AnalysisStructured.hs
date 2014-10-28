@@ -387,6 +387,7 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp rg = case sp of
         _ -> hint p2 ("nothing renamed by:\n" ++ showDoc restr "")
             $ getRange restr
       return (Reduction (replaceAnnoted sp1' asp) restr, fs, dgf)
+  Extraction _ _ -> fail "AnalysisStructured.Extraction"
   Approximation _ _ -> fail "AnalysisStructured.Approximation"
   Minimization asp (Mini cm cv poss) -> do
       (nasp, nsig', dg') <- anaFreeOrCofreeSpec addSyms lg opts ln dg nsig

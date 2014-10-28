@@ -20,6 +20,8 @@ module Syntax.Parse_AS_Structured
     , parseMapping
     , parseCorrespondences
     , translationList
+    , renaming
+    , restriction
     , hetIRI
     ) where
 
@@ -273,8 +275,12 @@ specB l = do
 specC :: LogicGraph -> AParser st (Annoted SPEC)
 specC lG = do
     let spD = annoParser $ specD lG
-        rest = spD >>= translationList lG Translation Reduction
-          Approximation Minimization
+        rest = spD >>= \ s -> translationList
+          [ fmap (Extraction s) $ extraction lG
+          , fmap (Translation s) $ renaming lG
+          , fmap (Reduction s) $ restriction lG
+          , fmap (Approximation s) $ approximation lG
+          , fmap (Minimization s) $ minimization lG ] s
     l@(Logic lid) <- lookupCurrentLogic "specC" lG
     {- if the current logic has an associated data_logic,
     parse "data SPEC1 SPEC2", where SPEC1 is in the data_logic
@@ -290,12 +296,10 @@ specC lG = do
               return (emptyAnno $ Data lD l sp1 sp2 $ tokPos p1)
             <|> rest
 
-translationList :: LogicGraph -> (Annoted b -> RENAMING -> b)
-  -> (Annoted b -> RESTRICTION -> b) -> (Annoted b -> APPROXIMATION -> b)
-  -> (Annoted b -> MINIMIZATION -> b) -> Annoted b -> AParser st (Annoted b)
-translationList l ftrans frestr fapprox fminimize sp =
-     do sp' <- translation l sp ftrans frestr fapprox fminimize
-        translationList l ftrans frestr fapprox fminimize (emptyAnno sp')
+translationList :: [AParser st b] -> Annoted b -> AParser st (Annoted b)
+translationList cs sp =
+     do sp' <- choice cs
+        translationList cs (emptyAnno sp')
      <|> return sp
 
 {- | Parse renaming
@@ -328,6 +332,8 @@ restriction lg =
        (mappings, commas) <- parseItemsMap nl
        return (Revealed mappings (catRange (kReveal : commas)))
 
+
+
 -- | Parse approximation
 approximation :: LogicGraph -> AParser st APPROXIMATION
 approximation lg =
@@ -342,7 +348,7 @@ approximation lg =
 
 minimization :: LogicGraph -> AParser st MINIMIZATION
 minimization lg = do
-   p <- asKey minimizeS <|> asKey closedworldS
+   p <- minimizeKey <|> asKey freeS <|> asKey cofreeS
    (cm, p1) <- separatedBy (hetIRI lg) spaceT
    (cv, p2) <- option ([], []) $ do
        p3 <- asKey varsS
@@ -350,22 +356,11 @@ minimization lg = do
        return (ct, p3 : pos)
    return $ Mini cm cv $ catRange $ p : p1 ++ p2
 
-
-translation :: LogicGraph -> a -> (a -> RENAMING -> b)
-            -> (a -> RESTRICTION -> b) -> (a -> APPROXIMATION -> b)
-            -> (a -> MINIMIZATION -> b) -> AParser st b
-translation l sp ftrans frestr fapprox fminimization =
-    do r <- renaming l
-       return (ftrans sp r)
-    <|>
-    do r <- restriction l
-       return (frestr sp r)
-    <|>
-    do r <- approximation l
-       return (fapprox sp r)
-    <|>
-    do r <- minimization l
-       return (fminimization sp r)
+extraction :: LogicGraph -> AParser st EXTRACTION
+extraction lg = do
+  p <- asKey "extract" <|> asKey "remove"
+  (is, ps) <- separatedBy (hetIRI lg) commaT
+  return . ExtractOrRemove (tokStr p == "extract") is . catRange $ p : ps
 
 groupSpecLookhead :: LogicGraph -> AParser st IRI
 groupSpecLookhead lG =
@@ -374,6 +369,9 @@ groupSpecLookhead lG =
   (choice (map (tok2IRI . asKey) criticalKeywords)
    <|> tok2IRI cBraceT <|> tok2IRI oBracketT <|> tok2IRI cBracketT
    <|> (eof >> return nullIRI))
+
+minimizeKey :: AParser st Token
+minimizeKey = choice $ map asKey [minimizeS, closedworldS, "maximize"]
 
 specD :: LogicGraph -> AParser st SPEC
            -- do some lookahead for free spec, to avoid clash with free type
@@ -386,11 +384,7 @@ specD l = do
     sp <- annoParser $ groupSpec l
     return (Cofree_spec sp $ tokPos p)
   <|> do
-    p <- asKey minimizeS `followedWith` groupSpecLookhead l
-    sp <- annoParser $ groupSpec l
-    return (Minimize_spec sp $ tokPos p)
-  <|> do
-    p <- asKey closedworldS `followedWith` groupSpecLookhead l
+    p <- minimizeKey `followedWith` groupSpecLookhead l
     sp <- annoParser $ groupSpec l
     return (Minimize_spec sp $ tokPos p)
   <|> do
