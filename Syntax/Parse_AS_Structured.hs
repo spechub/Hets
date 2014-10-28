@@ -347,18 +347,18 @@ approximation lg =
 minimization :: LogicGraph -> AParser st MINIMIZATION
 minimization lg = do
    p <- minimizeKey <|> asKey freeS <|> asKey cofreeS
-   (cm, p1) <- separatedBy (hetIRI lg) spaceT
+   (cm) <- many1 (hetIRI lg)
    (cv, p2) <- option ([], []) $ do
        p3 <- asKey varsS
-       (ct, pos) <- separatedBy (hetIRI lg) spaceT
-       return (ct, p3 : pos)
-   return $ Mini cm cv $ catRange $ p : p1 ++ p2
+       ct <- many1 (hetIRI lg)
+       return (ct, [p3])
+   return . Mini cm cv . catRange $ p : p2
 
 extraction :: LogicGraph -> AParser st EXTRACTION
 extraction lg = do
   p <- asKey "extract" <|> asKey "remove"
-  (is, ps) <- separatedBy (hetIRI lg) commaT
-  return . ExtractOrRemove (tokStr p == "extract") is . catRange $ p : ps
+  is <- many1 (hetIRI lg)
+  return . ExtractOrRemove (tokStr p == "extract") is $ tokPos p
 
 groupSpecLookhead :: LogicGraph -> AParser st IRI
 groupSpecLookhead lG =
