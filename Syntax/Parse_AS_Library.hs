@@ -115,6 +115,7 @@ networkDefn l = do
 emptyParams :: GENERICITY
 emptyParams = Genericity (Params []) (Imported []) nullRange
 
+-- CASL spec-defn or DOL OMSDefn
 specDefn :: LogicGraph -> AParser st LIB_ITEM
 specDefn l = do
     s <- choice $ map asKey
@@ -124,16 +125,16 @@ specDefn l = do
     e <- equalT
     a <- aSpec l
     q <- optEnd
-    return . Syntax.AS_Library.Spec_defn n g a
+    return . Spec_defn n g a
       . catRange $ [s, e] ++ maybeToList q
 
--- CASL view or DOL IntprDefn
+-- CASL view-defn or DOL IntprDefn
 viewDefn :: LogicGraph -> AParser st LIB_ITEM
 viewDefn l = do
        s1 <- choice $ map asKey [viewS, interpretationS, refinementS]
        vn <- hetIRI l
        g <- generics l
-       s2 <- asKey ":"
+       s2 <- asKey ":"  -- missing alternative "= Refinement"
        vt <- viewType l
        (symbMap, ps) <- option ([], []) $ do
          s <- equalT
@@ -141,8 +142,8 @@ viewDefn l = do
          (m, _) <- parseMapping l
          return (m, [s])
        q <- optEnd
-       return (Syntax.AS_Library.View_defn vn g vt symbMap
-                    (catRange ([s1, s2] ++ ps ++ maybeToList q)))
+       return . View_defn vn g vt symbMap
+         . catRange $ [s1, s2] ++ ps ++ maybeToList q
 
 -- | Parse an element of the library
 libItem :: LogicGraph -> AParser st LIB_ITEM
@@ -156,7 +157,7 @@ libItem l = specDefn l
        s3 <- equalT
        sp <- aSpec l
        ep <- optEnd
-       return (Syntax.AS_Library.Equiv_defn en et sp
+       return (Equiv_defn en et sp
            (catRange (s1 : s2 : s3 : maybeToList ep)))
 
   <|> -- align defn
@@ -170,7 +171,7 @@ libItem l = specDefn l
          cs <- parseCorrespondences l
          return (cs, [s])
        q <- optEnd
-       return (Syntax.AS_Library.Align_defn an ar at corresps
+       return (Align_defn an ar at corresps
                     (catRange ([s1, s2] ++ ps ++ maybeToList q)))
   <|> -- module defn
     do s1 <- asKey moduleS
@@ -180,7 +181,7 @@ libItem l = specDefn l
        mt <- moduleType l
        s3 <- asKey forS
        rs <- restrictionSignature l
-       return (Syntax.AS_Library.Module_defn mn mt rs (catRange [s1, s2, s3]))
+       return (Module_defn mn mt rs (catRange [s1, s2, s3]))
   <|> -- unit spec
     do kUnit <- asKey unitS
        kSpec <- asKey specS
@@ -188,7 +189,7 @@ libItem l = specDefn l
        kEqu <- equalT
        usp <- unitSpec l
        kEnd <- optEnd
-       return (Syntax.AS_Library.Unit_spec_defn name usp
+       return (Unit_spec_defn name usp
                 (catRange ([kUnit, kSpec, kEqu] ++ maybeToList kEnd)))
   <|> -- ref spec
     do kRef <- asKey refinementS
@@ -196,7 +197,7 @@ libItem l = specDefn l
        kEqu <- equalT
        rsp <- refSpec l
        kEnd <- optEnd
-       return (Syntax.AS_Library.Ref_spec_defn name rsp
+       return (Ref_spec_defn name rsp
                    (catRange ([kRef, kEqu] ++ maybeToList kEnd)))
   <|> networkDefn l
   <|> -- arch spec
@@ -206,7 +207,7 @@ libItem l = specDefn l
        kEqu <- equalT
        asp <- annotedArchSpec l
        kEnd <- optEnd
-       return (Syntax.AS_Library.Arch_spec_defn name asp
+       return (Arch_spec_defn name asp
                 (catRange ([kArch, kASpec, kEqu] ++ maybeToList kEnd)))
   <|> -- download
     do s1 <- asKey fromS
@@ -252,7 +253,7 @@ libItem l = specDefn l
         a <- aSpec l
         p2 <- getPos
         if p1 == p2 then fail "cannot parse spec" else
-          return (Syntax.AS_Library.Spec_defn nullIRI
+          return (Spec_defn nullIRI
                (Genericity (Params []) (Imported []) nullRange) a nullRange)
 
 downloadItems :: LogicGraph -> AParser st (DownloadItems, [Token])
