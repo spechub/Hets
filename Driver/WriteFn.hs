@@ -51,6 +51,7 @@ import Logic.Coerce
 import Logic.Comorphism (targetLogic)
 import Logic.Grothendieck
 import Logic.LGToXml
+import Logic.LGToJson
 import Logic.Logic
 import Logic.Prover
 
@@ -420,6 +421,11 @@ writeSpecFiles opts file lenv ln dg = do
 writeLG :: HetcatsOpts -> IO ()
 writeLG opts = do
     doDump opts "LogicGraph" $ putStrLn $ showDoc logicGraph ""
-    lG <- lGToXml logicGraph
-    writeVerbFile opts { verbose = 2 } (outdir opts </> "LogicGraph.xml")
-      $ ppTopElement lG
+    if elem JsonOut $ outtypes opts then do
+      lG <- lGToJson logicGraph
+      writeVerbFile opts { verbose = 2 } (outdir opts </> "LogicGraph.json")
+        $ ppJson lG
+      else do
+      lG <- lGToXml logicGraph
+      writeVerbFile opts { verbose = 2 } (outdir opts </> "LogicGraph.xml")
+        $ ppTopElement lG
