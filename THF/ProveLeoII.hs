@@ -42,5 +42,5 @@ leoIIHelpText =
   "for more information.\n"
 
 leoIIProver :: ProverType
-leoIIProver = createSZSProver "Leo II"
+leoIIProver = createSZSProver "leo" "Leo II"
  leoIIHelpText pfun

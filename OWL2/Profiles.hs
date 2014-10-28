@@ -215,7 +215,7 @@ lFB ext mr lfb = case lfb of
                 }]
             ObjectEntity op -> andProfileList [ans, objProp op,
                 andList superClass cel]
-            SimpleEntity (Entity ty ent) -> case ty of
+            SimpleEntity (Entity _ ty ent) -> case ty of
                 DataProperty -> andProfileList [ans, andList superClass cel]
                 NamedIndividual -> andProfileList [ans, individual ent,
                     bottomProfile {
@@ -256,7 +256,7 @@ lFB ext mr lfb = case lfb of
             Misc anno -> andProfileList [ans, annotations anno, i, case r of
                 SDRelation Different -> topProfile
                 _ -> elrlProfile]
-            SimpleEntity (Entity _ ind) -> andProfileList [ans, individual ind,
+            SimpleEntity (Entity _ _ ind) -> andProfileList [ans, individual ind,
                 i, case r of
                     SDRelation Different -> topProfile
                     _ -> elrlProfile]
@@ -281,7 +281,7 @@ lFB ext mr lfb = case lfb of
         let ans = annotations $ concatMap fst anl
             facts = andList fact $ map snd anl
         in case ext of
-            SimpleEntity (Entity _ i) ->
+            SimpleEntity (Entity _ _ i) ->
                 andProfileList [ans, facts, individual i]
             _ -> error "bad fact bit"
 
@@ -292,7 +292,7 @@ aFB ext anno afb =
         AnnotationFrameBit _ -> ans
         DataFunctional -> andProfileList [ans, elrlProfile]
         DatatypeBit dr -> case ext of
-            SimpleEntity (Entity _ dt) -> andProfileList
+            SimpleEntity (Entity _ _ dt) -> andProfileList
                 [ans, dataType dt, dataRange dr]
             _ -> error "bad datatype bit"
         ClassDisjointUnion _ -> bottomProfile

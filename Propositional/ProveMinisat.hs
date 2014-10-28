@@ -69,8 +69,8 @@ msatName = map toLower . show
 -}
 minisatProver :: MiniSatVer
   -> LP.Prover Sig.Sign AS_BASIC.FORMULA PMorphism.Morphism PropSL ProofTree
-minisatProver v = LP.mkAutomaticProver (msatName v) top (minisatProveGUI v)
-  $ minisatProveCMDLautomaticBatch v
+minisatProver v = LP.mkAutomaticProver (msatName v) (msatName v) top
+  (minisatProveGUI v) $ minisatProveCMDLautomaticBatch v
 
 {- |
    The Consistency Cheker.
@@ -78,7 +78,8 @@ minisatProver v = LP.mkAutomaticProver (msatName v) top (minisatProveGUI v)
 minisatConsChecker :: MiniSatVer
   -> LP.ConsChecker Sig.Sign AS_BASIC.FORMULA PropSL PMorphism.Morphism
      ProofTree
-minisatConsChecker v = LP.mkConsChecker (msatName v) top $ consCheck v
+minisatConsChecker v =
+  LP.mkUsableConsChecker (msatName v) (msatName v) top $ consCheck v
 
 consCheck :: MiniSatVer -> String -> LP.TacticScript
   -> LP.TheoryMorphism Sig.Sign AS_BASIC.FORMULA PMorphism.Morphism ProofTree

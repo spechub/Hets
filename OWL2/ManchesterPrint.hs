@@ -160,7 +160,7 @@ instance Pretty Frame where
 
 printFrame :: Frame -> Doc
 printFrame (Frame eith bl) = case eith of
-    SimpleEntity (Entity e uri) -> keyword (showEntityType e) <+>
+    SimpleEntity (Entity _ e uri) -> keyword (showEntityType e) <+>
             fsep [pretty uri $+$ vcat (map pretty bl)]
     ObjectEntity ope -> keyword objectPropertyC <+>
             (pretty ope $+$ fsep [vcat (map pretty bl)])

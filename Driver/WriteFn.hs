@@ -279,8 +279,8 @@ writeTheory ins nam opts filePrefix ga
               _ -> putIfVerbose opts 3 $ "reparsed: " ++ f
             case ty of
               Manchester -> writeVerbFile opts f owltext
-              -- dirty workaround; because java-parser expects to read lib
-              -- from file, it is stored by hets in Omn format first..
+              {- dirty workaround; because java-parser expects to read lib
+              from file, it is stored by hets in Omn format first.. -}
               _ -> do
                 tmpFile <- getTempFile owltext $ i' ++ ".omn"
                 writeVerbFile opts f =<< convertOWL tmpFile (show ty)
@@ -420,5 +420,6 @@ writeSpecFiles opts file lenv ln dg = do
 writeLG :: HetcatsOpts -> IO ()
 writeLG opts = do
     doDump opts "LogicGraph" $ putStrLn $ showDoc logicGraph ""
+    lG <- lGToXml logicGraph
     writeVerbFile opts { verbose = 2 } (outdir opts </> "LogicGraph.xml")
-      . ppTopElement $ lGToXml logicGraph
+      $ ppTopElement lG

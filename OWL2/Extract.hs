@@ -23,27 +23,27 @@ import Common.Lib.State
 import qualified Data.Set as Set
 
 fromObjPropExpr :: ObjectPropertyExpression -> State Sign ()
-fromObjPropExpr = addEntity . Entity ObjectProperty . objPropToIRI
+fromObjPropExpr = addEntity . mkEntity ObjectProperty . objPropToIRI
 
 fromDataPropExpr :: DataPropertyExpression -> State Sign ()
-fromDataPropExpr = addEntity . Entity DataProperty
+fromDataPropExpr = addEntity . mkEntity DataProperty
 
 fromIndividual :: Individual -> State Sign ()
 fromIndividual ind =
-    unless (iriType ind == NodeID) $ addEntity $ Entity NamedIndividual ind
+    unless (iriType ind == NodeID) $ addEntity $ mkEntity NamedIndividual ind
 
 fromAnnoProp :: AnnotationProperty -> State Sign ()
-fromAnnoProp = addEntity . Entity AnnotationProperty
+fromAnnoProp = addEntity . mkEntity AnnotationProperty
 
 fromLiteral :: Literal -> State Sign ()
 fromLiteral l = case l of
     Literal _ ty -> case ty of
-        Typed u -> addEntity $ Entity Datatype u
+        Typed u -> addEntity $ mkEntity Datatype u
         _ -> return ()
     _ -> return ()
 
 fromDType :: Datatype -> State Sign ()
-fromDType dt = unless (isDatatypeKey dt) $ addEntity $ Entity Datatype dt
+fromDType dt = unless (isDatatypeKey dt) $ addEntity $ mkEntity Datatype dt
 
 -- | Adds the DataRange to the Signature and returns it as a State Sign ()
 fromDataRange :: DataRange -> State Sign ()
@@ -68,7 +68,7 @@ fromFact f = case f of
 fromDescription :: ClassExpression -> State Sign ()
 fromDescription desc = case desc of
   Expression u ->
-      unless (isThing u) $ addEntity $ Entity Class u
+      unless (isThing u) $ addEntity $ mkEntity Class u
   ObjectJunction _ ds -> mapM_ fromDescription ds
   ObjectComplementOf d -> fromDescription d
   ObjectOneOf is -> mapM_ fromIndividual is
@@ -164,12 +164,12 @@ extractSign = mapM_ fromFrame . ontFrames . ontology
 
 toDecl :: Sign -> [Frame]
 toDecl s =
-    let cls = map (Entity Class) $ Set.toList (concepts s)
-        dt = map (Entity Datatype) $ Set.toList (datatypes s)
-        op = map (Entity ObjectProperty) $ Set.toList (objectProperties s)
-        dp = map (Entity DataProperty) $ Set.toList (dataProperties s)
-        i = map (Entity NamedIndividual) $ Set.toList (individuals s)
-        ans = map (Entity AnnotationProperty) $ Set.toList (annotationRoles s)
+    let cls = map (mkEntity Class) $ Set.toList (concepts s)
+        dt = map (mkEntity Datatype) $ Set.toList (datatypes s)
+        op = map (mkEntity ObjectProperty) $ Set.toList (objectProperties s)
+        dp = map (mkEntity DataProperty) $ Set.toList (dataProperties s)
+        i = map (mkEntity NamedIndividual) $ Set.toList (individuals s)
+        ans = map (mkEntity AnnotationProperty) $ Set.toList (annotationRoles s)
     in map (\ c -> Frame (mkExtendedEntity c)
         [AnnFrameBit [] $ AnnotationFrameBit Declaration])
             (cls ++ dt ++ op ++ dp ++ i ++ ans)

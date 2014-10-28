@@ -52,7 +52,8 @@ hyperS = "ekrh"
 
 -- | The Prover implementation.
 hyperProver :: Prover Sign Sentence SoftFOLMorphism () ProofTree
-hyperProver = mkAutomaticProver hyperS () hyperGUI hyperCMDLautomaticBatch
+hyperProver =
+  mkAutomaticProver hyperS hyperS () hyperGUI hyperCMDLautomaticBatch
 
 {- |
   Record for prover specific functions. This is used by both GUI and command
@@ -261,7 +262,7 @@ examineProof sps stdoutC stderrC defStatus =
 -- Consistency Checker
 
 hyperConsChecker :: ConsChecker Sign Sentence () SoftFOLMorphism ProofTree
-hyperConsChecker = (mkConsChecker hyperS () consCheck)
+hyperConsChecker = (mkUsableConsChecker hyperS hyperS () consCheck)
   { ccNeedsTimer = False }
 
 {- |

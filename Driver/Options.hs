@@ -600,17 +600,16 @@ instance Show OutType where
     DfgFile t -> dfgS ++ show t
     TPTPFile t -> tptpS ++ show t
     ComptableXml -> "comptable.xml"
-    RDFOut -> "rdf"
+    RDFOut -> "nt"
     SigFile d -> "sig" ++ show d
     TheoryFile d -> "th" ++ show d
     SymXml -> "sym.xml"
     SymsXml -> "syms.xml"
 
--- RDFOut is on purpose not listed; must be added manually if neccessary
 plainOutTypeList :: [OutType]
 plainOutTypeList =
   [ Prf, EnvOut ] ++ map OWLOut plainOwlFormats ++
-  [ CLIFOut, KIFOut, OmdocOut, XmlOut, JsonOut, ExperimentalOut
+  [ RDFOut, CLIFOut, KIFOut, OmdocOut, XmlOut, JsonOut, ExperimentalOut
   , HaskellOut, ThyFile, ComptableXml, FreeCADOut, SymXml, SymsXml]
 
 outTypeList :: [OutType]
