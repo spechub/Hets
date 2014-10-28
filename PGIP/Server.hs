@@ -366,7 +366,7 @@ parseRESTfull opts sessRef pathBits qOpts splitQuery meth respond = let
         mkHtmlPage path' dirs respond
       ["version"] -> respond $ mkOkResponse textC hetcats_version
       ["available-provers"] ->
-         usableProvers logicGraph
+         liftIO (usableProvers logicGraph)
          >>= respond . mkOkResponse xmlC . ppTopElement
       -- get dgraph from file
       "filetype" : libIri : _ -> mkFiletypeResponse opts libIri respond
