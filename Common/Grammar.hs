@@ -66,7 +66,7 @@ pppTerm p trm = case trm of
   Many t b -> "{ " ++ ppTerm t ++ " }" ++ if b then "" else "-"
 
 nt :: CharParser st String
-nt = tok $ many1 letter
+nt = tok $ letter <:> many (letter <|> digit <|> oneOf "-_")
 
 primTerm :: CharParser st Term
 primTerm = fmap Terminal (tok sQuoted)

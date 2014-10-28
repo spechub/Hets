@@ -1,7 +1,7 @@
 Library              = [ PrefixMap ] , LibraryDefn
                      | OMSInConformingLanguage ;
 LibraryDefn          = 'library' , LibraryName , { LibraryItem } ;
-OMSInConformingLanguage = ($<$) language and serialization specific ($>$) ;
+OMSInConformingLanguage = ($<$ language and serialization specific $>$) ;
 LibraryItem          = LibImport
                      | OMSDefn
                      | NetworkDefn
@@ -61,7 +61,6 @@ GroupOMS             = '{' , OMS , '}'
 Translation          = 'with' , { LogicTranslation } , [ SymbolMapItems ] ;
 LogicTranslation     = 'translation' , OMSLangTrans ;
 Reduction            = 'hide' , { LogicReduction } , [ SymbolItems ]
-                     | 'hide' , LogicReduction , { LogicReduction }
                      | 'reveal' , SymbolMapItems ;
 LogicReduction       = 'along' , OMSLangTrans ;
 SymbolItems          = Symbol , { ',' , Symbol } ;
@@ -95,10 +94,11 @@ Symbol               = IRI ;
 SymbolMap            = Symbol , '|->' , Symbol ;
 SymbolOrMap          = Symbol
                      | SymbolMap ;
+Term                 = ($<$ an expression specific to a basic OMS language $>$) ;
+Sentence             = ($<$ an expression specific to a basic OMS language $>$) ;
 OMSName              = IRI ;
 IntprName            = IRI ;
 OMSRef               = IRI ;
-IntprRef             = IRI ;
 ExtensionRef         = IRI ;
 LanguageRef          = IRI ;
 LogicRef             = IRI ;
@@ -119,11 +119,10 @@ IntprDefn            = IntprKeyword , IntprName , [ Conservative ] , ':' , Intpr
 IntprKeyword         = 'interpretation'
                      | 'view'
                      | 'refinement' ;
-IntprName            = IRI ;
 IntprType            = GroupOMS , 'to' , GroupOMS ;
 Refinement           = OMS
                      | Network
-                     | Refinement , 'then' , Refinment
+                     | Refinement , 'then' , Refinement
                      | OMS , 'refined' , [ RefMap ] , 'to' , Refinement ;
 RefMap               = 'via' , { LogicTranslation } , [ SymbolMapItems ]
                      | 'via' , NodeMap , { ',' , NodeMap } ;
@@ -186,4 +185,17 @@ Vars                 = Symbol , { ',' , Symbol } ;
 IRI                  = '<' , FullIRI , '>'
                      | CURIE ;
 FullIRI              = ($<$ an IRI as defined in \nisref{IETF/RFC 3987:2005} $>$) ;
-CURIE                = ($<$ see \cref{c:curies} $>$) ;
+CURIE                = [ Prefix ] , Reference ;
+Prefix               = NCName , ':' ;
+NCName               = ($<$ \rm see ``NCName'' in \nisref{W3C/TR REC-xml-names:2009}, Section 3 $>$) ;
+Reference            = Path , [ Query ] , [ Fragment ] ;
+Path                 = ipath-absolute
+                     | ipath-rootless
+                     | ipath-empty ;
+ipath-absolute       = ($<$ \rm as defined in \nisref{IETF/RFC 3987} $>$) ;
+ipath-rootless       = ($<$ \rm as defined in \nisref{IETF/RFC 3987} $>$) ;
+ipath-empty          = ($<$ \rm as defined in \nisref{IETF/RFC 3987} $>$) ;
+Query                = '?' , iquery ;
+iquery               = ($<$ \rm as defined in \nisref{IETF/RFC 3987} $>$) ;
+Fragment             = '#' , ifragment ;
+ifragment            = ($<$ \rm as defined in \nisref{IETF/RFC 3987} $>$) ;
