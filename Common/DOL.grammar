@@ -127,6 +127,7 @@ IntprKeyword         = 'interpretation'
 IntprName            = IRI ;
 IntprType            = GroupOMS , 'to' , GroupOMS ;
 Refinement           = OMS
+                     | Network
                      | Refinement , 'then' , Refinement
                      | OMS , 'refined' , [ RefMap ] , 'to' , Refinement ;
 RefMap               = 'via' , { LogicTranslation } , [ SymbolMapItems ]
