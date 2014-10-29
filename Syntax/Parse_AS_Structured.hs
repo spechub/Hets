@@ -62,7 +62,7 @@ expandCurieMConservative lG i = if isSimple i then return i
 
 hetIRI :: LogicGraph -> GenParser Char st IRI
 hetIRI lG = try $ do
-  i <- iriManchester
+  i <- iriCurie
   skipSmart
   if iriToStringUnsecure i `elem` casl_reserved_words then
       unexpected $ show i
@@ -92,7 +92,7 @@ lookupLogicM i = if isSimple i
 decide after seeing ".", ":" or "->" what was meant -}
 logicName :: LogicGraph -> AParser st Logic_name
 logicName l = do
-      i <- iriManchester >>= expandCurieMConservative l
+      i <- iriCurie >>= expandCurieMConservative l
       let (ft, rt) = if isSimple i
                      then break (== '.') $ abbrevPath i -- HetCASL
                      else (abbrevPath i, [])
@@ -112,15 +112,15 @@ logicDescr l = do
   n@(Logic_name ln _ _) <- logicName l
   option (nameToLogicDescr n) $ do
      r <- asKey serializationS
-     sp <- sneakAhead iriManchester
+     sp <- sneakAhead iriCurie
      case sp of
-       Left _ -> iriManchester >> error "logicDescr" -- reproduce the error
+       Left _ -> iriCurie >> error "logicDescr" -- reproduce the error
        Right s -> do
          s' <- if isSimple s then return s else expandCurieMConservative l s
          let ld = LogicDescr n (Just s') $ tokPos r
          (Logic lid, sm) <- lookupCurrentSyntax "logicDescr" $ setLogicName ld l
          case basicSpecParser sm lid of
-           Just _ -> iriManchester >> return ld -- consume and return
+           Just _ -> iriCurie >> return ld -- consume and return
            Nothing -> unexpected ("serialization \"" ++ show s
                        ++ "\" for logic " ++ show ln)
                       <|> choice (map (\ pn -> pzero <?> '"' : pn ++ "\"")
