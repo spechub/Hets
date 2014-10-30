@@ -131,10 +131,10 @@ specDefn l = do
 -- CASL view-defn or DOL IntprDefn
 viewDefn :: LogicGraph -> AParser st LIB_ITEM
 viewDefn l = do
-       s1 <- choice $ map asKey [viewS, interpretationS, refinementS]
-       vn <- hetIRI l
-       g <- generics l
-       s2 <- asKey ":"  -- missing alternative "= Refinement"
+    s1 <- choice $ map asKey [viewS, interpretationS, refinementS]
+    vn <- hetIRI l
+    do
+       (g, s2) <- try $ pair (generics l) $ asKey ":"
        vt <- viewType l
        (symbMap, ps) <- option ([], []) $ do
          s <- equalT
@@ -144,6 +144,12 @@ viewDefn l = do
        q <- optEnd
        return . View_defn vn g vt symbMap
          . catRange $ [s1, s2] ++ ps ++ maybeToList q
+      <|> do
+       kEqu <- equalT
+       rsp <- refSpec l
+       kEnd <- optEnd
+       return (Ref_spec_defn vn rsp
+                   (catRange ([s1, kEqu] ++ maybeToList kEnd)))
 
 -- | Parse an element of the library
 libItem :: LogicGraph -> AParser st LIB_ITEM
@@ -191,14 +197,6 @@ libItem l = specDefn l
        kEnd <- optEnd
        return (Unit_spec_defn name usp
                 (catRange ([kUnit, kSpec, kEqu] ++ maybeToList kEnd)))
-  <|> -- ref spec
-    do kRef <- asKey refinementS
-       name <- hetIRI l
-       kEqu <- equalT
-       rsp <- refSpec l
-       kEnd <- optEnd
-       return (Ref_spec_defn name rsp
-                   (catRange ([kRef, kEqu] ++ maybeToList kEnd)))
   <|> networkDefn l
   <|> -- arch spec
     do kArch <- asKey archS
