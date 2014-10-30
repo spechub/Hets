@@ -1,6 +1,6 @@
 logic ExtModal
 
-spec Try5=
+spec Try5 =
 	time modality t
 	modalities a,b
 	nominals n,m
