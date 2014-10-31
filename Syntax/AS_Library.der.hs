@@ -91,7 +91,7 @@ addDownloadAux unique j =
       i = case query of
         "" -> j
         ['?'] -> libPath
-        _ : r -> fromMaybe libPath $ parseIRICurie r
+        _ : r -> fromMaybe libPath $ parseIRIManchester r
   in Download_items (iriLibName i)
     (if unique then UniqueItem i else ItemMaps [ItemNameMap i Nothing])
     $ iriPos i

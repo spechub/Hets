@@ -23,6 +23,7 @@ import Logic.Grothendieck (LogicGraph)
 import Syntax.AS_Structured
 import Syntax.AS_Architecture
 import Syntax.Parse_AS_Structured
+    (hetIRI, annoParser2, groupSpec, parseMapping, translationList)
 
 import Common.AS_Annotation
 import Common.AnnoState
@@ -262,10 +263,9 @@ GROUP-UNIT-TERM
 @ -}
 
 unitTermTransRed :: LogicGraph -> AParser st (Annoted UNIT_TERM)
-unitTermTransRed l = groupUnitTerm l >>= \ u ->
-    translationList
-      [ fmap (Unit_translation u) $ renaming l
-      , fmap (Unit_reduction u) $ restriction l ] u
+unitTermTransRed l = groupUnitTerm l >>=
+    translationList l Unit_translation Unit_reduction (error "approximate not allowed in architectural specifications")
+    (error "minimize not allowed in architectural specifications")
 
 {- | Parse unit expression
 @

@@ -286,6 +286,9 @@ asSeparator = pToken . string
 commaT :: CharParser st Token
 commaT = asSeparator ","
 
+spaceT :: CharParser st Token
+spaceT = asSeparator " "
+
 -- a single semicolon
 semiT :: CharParser st Token
 semiT = pToken $ string ";" << notFollowedBy (char ';')
