@@ -20,6 +20,8 @@ module Syntax.Parse_AS_Structured
     , parseMapping
     , parseCorrespondences
     , translationList
+    , renaming
+    , restriction
     , hetIRI
     ) where
 
@@ -60,7 +62,7 @@ expandCurieMConservative lG i = if isSimple i then return i
 
 hetIRI :: LogicGraph -> GenParser Char st IRI
 hetIRI lG = try $ do
-  i <- iriManchester
+  i <- iriCurie
   skipSmart
   if iriToStringUnsecure i `elem` casl_reserved_words then
       unexpected $ show i
@@ -90,7 +92,7 @@ lookupLogicM i = if isSimple i
 decide after seeing ".", ":" or "->" what was meant -}
 logicName :: LogicGraph -> AParser st Logic_name
 logicName l = do
-      i <- iriManchester >>= expandCurieMConservative l
+      i <- iriCurie >>= expandCurieMConservative l
       let (ft, rt) = if isSimple i
                      then break (== '.') $ abbrevPath i -- HetCASL
                      else (abbrevPath i, [])
@@ -110,15 +112,15 @@ logicDescr l = do
   n@(Logic_name ln _ _) <- logicName l
   option (nameToLogicDescr n) $ do
      r <- asKey serializationS
-     sp <- sneakAhead iriManchester
+     sp <- sneakAhead iriCurie
      case sp of
-       Left _ -> iriManchester >> error "logicDescr" -- reproduce the error
+       Left _ -> iriCurie >> error "logicDescr" -- reproduce the error
        Right s -> do
          s' <- if isSimple s then return s else expandCurieMConservative l s
          let ld = LogicDescr n (Just s') $ tokPos r
          (Logic lid, sm) <- lookupCurrentSyntax "logicDescr" $ setLogicName ld l
          case basicSpecParser sm lid of
-           Just _ -> iriManchester >> return ld -- consume and return
+           Just _ -> iriCurie >> return ld -- consume and return
            Nothing -> unexpected ("serialization \"" ++ show s
                        ++ "\" for logic " ++ show ln)
                       <|> choice (map (\ pn -> pzero <?> '"' : pn ++ "\"")
@@ -273,8 +275,12 @@ specB l = do
 specC :: LogicGraph -> AParser st (Annoted SPEC)
 specC lG = do
     let spD = annoParser $ specD lG
-        rest = spD >>= translationList lG Translation Reduction
-          Approximation Minimization
+        rest = spD >>= \ s -> translationList
+          [ fmap (Extraction s) $ extraction lG
+          , fmap (Translation s) $ renaming lG
+          , fmap (Reduction s) $ restriction lG
+          , fmap (Approximation s) $ approximation lG
+          , fmap (Minimization s) $ minimization lG ] s
     l@(Logic lid) <- lookupCurrentLogic "specC" lG
     {- if the current logic has an associated data_logic,
     parse "data SPEC1 SPEC2", where SPEC1 is in the data_logic
@@ -290,12 +296,10 @@ specC lG = do
               return (emptyAnno $ Data lD l sp1 sp2 $ tokPos p1)
             <|> rest
 
-translationList :: LogicGraph -> (Annoted b -> RENAMING -> b)
-  -> (Annoted b -> RESTRICTION -> b) -> (Annoted b -> APPROXIMATION -> b)
-  -> (Annoted b -> MINIMIZATION -> b) -> Annoted b -> AParser st (Annoted b)
-translationList l ftrans frestr fapprox fminimize sp =
-     do sp' <- translation l sp ftrans frestr fapprox fminimize
-        translationList l ftrans frestr fapprox fminimize (emptyAnno sp')
+translationList :: [AParser st b] -> Annoted b -> AParser st (Annoted b)
+translationList cs sp =
+     do sp' <- choice cs
+        translationList cs (emptyAnno sp')
      <|> return sp
 
 {- | Parse renaming
@@ -342,30 +346,19 @@ approximation lg =
 
 minimization :: LogicGraph -> AParser st MINIMIZATION
 minimization lg = do
-   p <- asKey minimizeS <|> asKey closedworldS
-   (cm, p1) <- separatedBy (hetIRI lg) spaceT
+   p <- minimizeKey <|> asKey freeS <|> asKey cofreeS
+   (cm) <- many1 (hetIRI lg)
    (cv, p2) <- option ([], []) $ do
        p3 <- asKey varsS
-       (ct, pos) <- separatedBy (hetIRI lg) spaceT
-       return (ct, p3 : pos)
-   return $ Mini cm cv $ catRange $ p : p1 ++ p2
+       ct <- many1 (hetIRI lg)
+       return (ct, [p3])
+   return . Mini cm cv . catRange $ p : p2
 
-
-translation :: LogicGraph -> a -> (a -> RENAMING -> b)
-            -> (a -> RESTRICTION -> b) -> (a -> APPROXIMATION -> b)
-            -> (a -> MINIMIZATION -> b) -> AParser st b
-translation l sp ftrans frestr fapprox fminimization =
-    do r <- renaming l
-       return (ftrans sp r)
-    <|>
-    do r <- restriction l
-       return (frestr sp r)
-    <|>
-    do r <- approximation l
-       return (fapprox sp r)
-    <|>
-    do r <- minimization l
-       return (fminimization sp r)
+extraction :: LogicGraph -> AParser st EXTRACTION
+extraction lg = do
+  p <- asKey "extract" <|> asKey "remove"
+  is <- many1 (hetIRI lg)
+  return . ExtractOrRemove (tokStr p == "extract") is $ tokPos p
 
 groupSpecLookhead :: LogicGraph -> AParser st IRI
 groupSpecLookhead lG =
@@ -374,6 +367,9 @@ groupSpecLookhead lG =
   (choice (map (tok2IRI . asKey) criticalKeywords)
    <|> tok2IRI cBraceT <|> tok2IRI oBracketT <|> tok2IRI cBracketT
    <|> (eof >> return nullIRI))
+
+minimizeKey :: AParser st Token
+minimizeKey = choice $ map asKey [minimizeS, closedworldS, "maximize"]
 
 specD :: LogicGraph -> AParser st SPEC
            -- do some lookahead for free spec, to avoid clash with free type
@@ -386,11 +382,7 @@ specD l = do
     sp <- annoParser $ groupSpec l
     return (Cofree_spec sp $ tokPos p)
   <|> do
-    p <- asKey minimizeS `followedWith` groupSpecLookhead l
-    sp <- annoParser $ groupSpec l
-    return (Minimize_spec sp $ tokPos p)
-  <|> do
-    p <- asKey closedworldS `followedWith` groupSpecLookhead l
+    p <- minimizeKey `followedWith` groupSpecLookhead l
     sp <- annoParser $ groupSpec l
     return (Minimize_spec sp $ tokPos p)
   <|> do

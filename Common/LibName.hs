@@ -94,7 +94,7 @@ mkLibName i v = (iriLibName i) { libVersion = v }
 emptyLibName :: String -> LibName
 emptyLibName s = iriLibName .
   fromMaybe (if null s then nullIRI else error $ "emptyLibName: " ++ s)
-  $ parseIRIManchester s
+  $ parseIRICurie s
 
 -- | convert file name to IRI reference
 filePathToIri :: FilePath -> IRI

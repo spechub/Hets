@@ -86,6 +86,7 @@ printSPEC lg spec = case spec of
              ++ showSyntax lid sm
       _ -> error "printSPEC: incomplete logic graph"
     EmptySpec _ -> specBraces empty
+    Extraction aa ab -> sep [condBracesTransReduct lg aa, printEXTRACTION ab]
     Translation aa ab -> sep [condBracesTransReduct lg aa, printRENAMING ab]
     Reduction aa ab -> sep [condBracesTransReduct lg aa, printRESTRICTION ab]
     Approximation _ _ -> error "Syntax/Print_AS_Structured"
@@ -107,6 +108,13 @@ printSPEC lg spec = case spec of
         $+$ prettyLG lg s2
     Combination cs es _ -> fsep $ keyword combineS : ppWithCommas cs
       : if null es then [] else [keyword excludingS, ppWithCommas es]
+
+instance Pretty EXTRACTION where
+    pretty = printEXTRACTION
+
+printEXTRACTION :: EXTRACTION -> Doc
+printEXTRACTION (ExtractOrRemove b aa _) =
+   keyword (if b then "extract" else "remove") <+> ppWithCommas aa
 
 instance Pretty RENAMING where
     pretty = printRENAMING

@@ -24,7 +24,7 @@ import Common.AS_Annotation
 import Data.Typeable
 import qualified Data.Set as Set
 
-import Logic.Logic --(AnyLogic,REL_REF)
+import Logic.Logic
 import Logic.Grothendieck
     ( G_basic_spec
     , G_symb_items_list
@@ -37,6 +37,7 @@ import Logic.Grothendieck
 
 data SPEC = Basic_spec G_basic_spec Range
           | EmptySpec Range
+          | Extraction (Annoted SPEC) EXTRACTION
           | Translation (Annoted SPEC) RENAMING
           | Reduction (Annoted SPEC) RESTRICTION
           | Approximation (Annoted SPEC) APPROXIMATION
@@ -72,6 +73,10 @@ data SPEC = Basic_spec G_basic_spec Range
    mappings / Logic projections.
 
 -}
+
+data EXTRACTION = ExtractOrRemove Bool [IRI] Range
+  deriving (Show, Eq, Typeable)
+
 data RENAMING = Renaming [G_mapping] Range
                 -- pos: "with", list of comma pos
                  deriving (Show, Eq, Typeable)

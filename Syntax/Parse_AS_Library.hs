@@ -13,7 +13,7 @@ Parser for CASL specification librariess
 
 module Syntax.Parse_AS_Library (library) where
 
-import Logic.Grothendieck (LogicGraph, prefixes)
+import Logic.Grothendieck (LogicGraph, dolOnly, prefixes)
 import Syntax.AS_Structured
 import Syntax.AS_Library
 import Syntax.Parse_AS_Structured
@@ -50,8 +50,9 @@ lGAnnos lG = do
 library :: LogicGraph -> AParser st LIB_DEFN
 library lG = do
     (lG1, an1) <- lGAnnos lG
-    (ps, ln) <- option (nullRange, iriLibName nullIRI) $ do
-      s1 <- asKey libraryS <|> asKey distributedOntologyS
+    (ps, ln) <- (if dolOnly lG1 then id else
+        option (nullRange, iriLibName nullIRI)) $ do
+      s1 <- asKey libraryS
       n <- libName lG1
       return (tokPos s1, n)
     (lG2, an2) <- lGAnnos lG1
@@ -60,7 +61,8 @@ library lG = do
 
 -- | Parse library name
 libName :: LogicGraph -> AParser st LibName
-libName lG = liftM2 mkLibName (hetIRI lG) $ optionMaybe version
+libName lG = liftM2 mkLibName (hetIRI lG)
+  $ if dolOnly lG then return Nothing else optionMaybe version
 
 -- | Parse the library version
 version :: AParser st VersionNumber
@@ -76,7 +78,7 @@ libItems :: LogicGraph -> AParser st [Annoted LIB_ITEM]
 libItems l =
      (eof >> return [])
     <|> do
-      r <- libItem l
+      r <- if dolOnly l then dolLibItem l else libItem l
       la <- lineAnnos
       (l', an) <- lGAnnos l
       is <- libItems (case r of
@@ -88,23 +90,51 @@ libItems l =
         Annoted i p nl ra : rs ->
           return $ Annoted r nullRange [] la : Annoted i p (an ++ nl) ra : rs
 
--- | Parse an element of the library
-libItem :: LogicGraph -> AParser st LIB_ITEM
-libItem l =
-     -- spec defn
-    do s <- asKey specS <|> asKey ontologyS
-       n <- hetIRI l
-       g <- generics l
-       e <- equalT
-       a <- aSpec l
-       q <- optEnd
-       return (Syntax.AS_Library.Spec_defn n g a
-               (catRange ([s, e] ++ maybeToList q)))
-  <|> -- view defn
-    do s1 <- asKey viewS <|> asKey interpretationS
-       vn <- hetIRI l
-       g <- generics l
-       s2 <- asKey ":"
+dolLibItem :: LogicGraph -> AParser st LIB_ITEM
+dolLibItem l = specDefn l <|> networkDefn l <|> do
+    s1 <- asKey "import"
+    iln <- libName l
+    return (Download_items iln (ItemMaps []) $ getRange s1)
+  <|> viewDefn l
+
+networkDefn :: LogicGraph -> AParser st LIB_ITEM
+networkDefn l = do
+    kGraph <- asKey "network"
+    name <- hetIRI l
+    kEqu <- equalT
+    (is, ps) <- separatedBy (hetIRI l) anComma
+    -- here the optional "Id :" part for NetworkElement is missing
+    (es, qs) <- do
+      kEx <- asKey excludingS
+      (es, qs) <- separatedBy (hetIRI l) anComma
+      return (es, kEx : qs)
+    kEnd <- optEnd
+    return . Graph_defn name is es
+         . catRange $ [kGraph, kEqu] ++ ps ++ qs ++ maybeToList kEnd
+
+emptyParams :: GENERICITY
+emptyParams = Genericity (Params []) (Imported []) nullRange
+
+-- CASL spec-defn or DOL OMSDefn
+specDefn :: LogicGraph -> AParser st LIB_ITEM
+specDefn l = do
+    s <- choice $ map asKey
+      ["specification", specS, ontologyS, "onto", "model", "OMS"]
+    n <- hetIRI l
+    g <- generics l
+    e <- equalT
+    a <- aSpec l
+    q <- optEnd
+    return . Spec_defn n g a
+      . catRange $ [s, e] ++ maybeToList q
+
+-- CASL view-defn or DOL IntprDefn
+viewDefn :: LogicGraph -> AParser st LIB_ITEM
+viewDefn l = do
+    s1 <- choice $ map asKey [viewS, interpretationS, refinementS]
+    vn <- hetIRI l
+    do
+       (g, s2) <- try $ pair (generics l) $ asKey ":"
        vt <- viewType l
        (symbMap, ps) <- option ([], []) $ do
          s <- equalT
@@ -112,9 +142,19 @@ libItem l =
          (m, _) <- parseMapping l
          return (m, [s])
        q <- optEnd
-       return (Syntax.AS_Library.View_defn vn g vt symbMap
-                    (catRange ([s1, s2] ++ ps ++ maybeToList q)))
+       return . View_defn vn g vt symbMap
+         . catRange $ [s1, s2] ++ ps ++ maybeToList q
+      <|> do
+       kEqu <- equalT
+       rsp <- refSpec l
+       kEnd <- optEnd
+       return (Ref_spec_defn vn rsp
+                   (catRange ([s1, kEqu] ++ maybeToList kEnd)))
 
+-- | Parse an element of the library
+libItem :: LogicGraph -> AParser st LIB_ITEM
+libItem l = specDefn l
+  <|> viewDefn l
   <|> -- equiv defn
     do s1 <- asKey equivalenceS
        en <- hetIRI l
@@ -123,7 +163,7 @@ libItem l =
        s3 <- equalT
        sp <- aSpec l
        ep <- optEnd
-       return (Syntax.AS_Library.Equiv_defn en et sp
+       return (Equiv_defn en et sp
            (catRange (s1 : s2 : s3 : maybeToList ep)))
 
   <|> -- align defn
@@ -137,7 +177,7 @@ libItem l =
          cs <- parseCorrespondences l
          return (cs, [s])
        q <- optEnd
-       return (Syntax.AS_Library.Align_defn an ar at corresps
+       return (Align_defn an ar at corresps
                     (catRange ([s1, s2] ++ ps ++ maybeToList q)))
   <|> -- module defn
     do s1 <- asKey moduleS
@@ -147,7 +187,7 @@ libItem l =
        mt <- moduleType l
        s3 <- asKey forS
        rs <- restrictionSignature l
-       return (Syntax.AS_Library.Module_defn mn mt rs (catRange [s1, s2, s3]))
+       return (Module_defn mn mt rs (catRange [s1, s2, s3]))
   <|> -- unit spec
     do kUnit <- asKey unitS
        kSpec <- asKey specS
@@ -155,28 +195,9 @@ libItem l =
        kEqu <- equalT
        usp <- unitSpec l
        kEnd <- optEnd
-       return (Syntax.AS_Library.Unit_spec_defn name usp
+       return (Unit_spec_defn name usp
                 (catRange ([kUnit, kSpec, kEqu] ++ maybeToList kEnd)))
-  <|> -- ref spec
-    do kRef <- asKey refinementS
-       name <- hetIRI l
-       kEqu <- equalT
-       rsp <- refSpec l
-       kEnd <- optEnd
-       return (Syntax.AS_Library.Ref_spec_defn name rsp
-                   (catRange ([kRef, kEqu] ++ maybeToList kEnd)))
-  <|> -- graph
-    do kGraph <- asKey graphS
-       name <- hetIRI l
-       kEqu <- equalT
-       (is, ps) <- separatedBy (hetIRI l) anComma
-       (es, qs) <- option ([], []) $ do
-         kEx <- asKey excludingS
-         (es, qs) <- separatedBy (hetIRI l) anComma
-         return (es, kEx : qs)
-       kEnd <- optEnd
-       return . Graph_defn name is es
-         . catRange $ [kGraph, kEqu] ++ ps ++ qs ++ maybeToList kEnd
+  <|> networkDefn l
   <|> -- arch spec
     do kArch <- asKey archS
        kASpec <- asKey specS
@@ -184,7 +205,7 @@ libItem l =
        kEqu <- equalT
        asp <- annotedArchSpec l
        kEnd <- optEnd
-       return (Syntax.AS_Library.Arch_spec_defn name asp
+       return (Arch_spec_defn name asp
                 (catRange ([kArch, kASpec, kEqu] ++ maybeToList kEnd)))
   <|> -- download
     do s1 <- asKey fromS
@@ -230,7 +251,7 @@ libItem l =
         a <- aSpec l
         p2 <- getPos
         if p1 == p2 then fail "cannot parse spec" else
-          return (Syntax.AS_Library.Spec_defn nullIRI
+          return (Spec_defn nullIRI
                (Genericity (Params []) (Imported []) nullRange) a nullRange)
 
 downloadItems :: LogicGraph -> AParser st (DownloadItems, [Token])
@@ -302,7 +323,7 @@ optEnd = try
     << addLineAnnos
 
 generics :: LogicGraph -> AParser st GENERICITY
-generics l = do
+generics l = if dolOnly l then return emptyParams else do
     (pa, ps1) <- params l
     (imp, ps2) <- option ([], nullRange) (imports l)
     return $ Genericity (Params pa) (Imported imp) $ appRange ps1 ps2
