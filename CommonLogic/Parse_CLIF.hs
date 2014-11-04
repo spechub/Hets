@@ -103,6 +103,7 @@ prefix = do
       return $ x ++ colonS
   many white
   i <- iriCurie
+  many white
   return [(p, i)]
 
 comment_txt :: CharParser st (TEXT, [PrefixMapping])

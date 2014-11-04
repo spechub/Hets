@@ -120,7 +120,7 @@ logicDescr l = do
          let ld = LogicDescr n (Just s') $ tokPos r
          (Logic lid, sm) <- lookupCurrentSyntax "logicDescr" $ setLogicName ld l
          case basicSpecParser sm lid of
-           Just _ -> iriCurie >> return ld -- consume and return
+           Just _ -> iriCurie >> skipSmart >> return ld -- consume and return
            Nothing -> unexpected ("serialization \"" ++ show s
                        ++ "\" for logic " ++ show ln)
                       <|> choice (map (\ pn -> pzero <?> '"' : pn ++ "\"")

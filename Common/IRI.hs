@@ -253,10 +253,7 @@ iriWithPos parser = do
 
 -- | Parses an IRI reference enclosed in '<', '>' or a CURIE
 iriCurie :: IRIParser st IRI
-iriCurie = brackets iriReference <|> curie
-
-brackets :: IRIParser st IRI -> IRIParser st IRI
-brackets p = angles p << skipSmart
+iriCurie = angles iriReference <|> curie
 
 angles :: IRIParser st IRI -> IRIParser st IRI
 angles p = char '<' >> fmap (\ i -> i { hasAngles = True }) p << char '>'
@@ -270,11 +267,9 @@ curie = iriWithPos $ do
         return $ n ++ c
       )
     i <- reference
-    skipSmart
     return $ i { prefixName = pn }
   <|> do
     r <- referenceAux False
-    skipSmart
     return r
 
 reference :: IRIParser st IRI
