@@ -40,14 +40,14 @@
       <Symbol kind="sort" name="p2" iri="p2" range="ParamView:8.15-8.16">sort p2</Symbol>
     </Declarations>
   </DGNode>
-  <DGNode name="s2__A1V" range="ParamView:8.6-8.9" reference="false" logic="CASL" refname="s" relxpath="/Parameters/Union/Spec[1]" />
+  <DGNode name="s2__A1V" range="ParamView:8.6-8.8" reference="false" logic="CASL" refname="s" relxpath="/Parameters/Union/Spec[1]" />
   <DGNode name="s2__A1A1" reference="false" logic="CASL" refname="s2" relxpath="/Actuals/Spec[1]/Actuals/Spec[1]">
     <Declarations>
       <Symbol kind="sort" name="t" iri="t" range="ParamView:8.35">sort t</Symbol>
     </Declarations>
   </DGNode>
-  <DGNode name="s2__A1" range="ParamView:8.6-8.9" reference="false" logic="CASL" refname="s2" relxpath="/Actuals/Spec[1]" />
-  <DGNode name="s2" range="ParamView:8.6-8.9" reference="false" logic="CASL" refname="s2" relxpath="/" />
+  <DGNode name="s2__A1" range="ParamView:8.6-8.8" reference="false" logic="CASL" refname="s2" relxpath="/Actuals/Spec[1]" />
+  <DGNode name="s2" range="ParamView:8.6-8.8" reference="false" logic="CASL" refname="s2" relxpath="/" />
   <DGLink source="s__IU1" target="s__PU1" linkid="0">
     <Type>GlobalDefInc</Type>
     <GMorphism name="id_CASL.SubPCSOL=E" />
