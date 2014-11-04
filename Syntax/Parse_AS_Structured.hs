@@ -276,11 +276,11 @@ specC :: LogicGraph -> AParser st (Annoted SPEC)
 specC lG = do
     let spD = annoParser $ specD lG
         rest = spD >>= \ s -> translationList
-          [ fmap (Extraction s) $ extraction lG
-          , fmap (Translation s) $ renaming lG
-          , fmap (Reduction s) $ restriction lG
-          , fmap (Approximation s) $ approximation lG
-          , fmap (Minimization s) $ minimization lG ] s
+          [ \ x -> fmap (Extraction x) $ extraction lG
+          , \ x -> fmap (Translation x) $ renaming lG
+          , \ x -> fmap (Reduction x) $ restriction lG
+          , \ x -> fmap (Approximation x) $ approximation lG
+          , \ x -> fmap (Minimization x) $ minimization lG ] s
     l@(Logic lid) <- lookupCurrentLogic "specC" lG
     {- if the current logic has an associated data_logic,
     parse "data SPEC1 SPEC2", where SPEC1 is in the data_logic
@@ -296,9 +296,10 @@ specC lG = do
               return (emptyAnno $ Data lD l sp1 sp2 $ tokPos p1)
             <|> rest
 
-translationList :: [AParser st b] -> Annoted b -> AParser st (Annoted b)
+translationList :: [Annoted b -> AParser st b] -> Annoted b
+  -> AParser st (Annoted b)
 translationList cs sp =
-     do sp' <- choice cs
+     do sp' <- choice $ map ($ sp) cs
         translationList cs (emptyAnno sp')
      <|> return sp
 

@@ -262,10 +262,10 @@ GROUP-UNIT-TERM
 @ -}
 
 unitTermTransRed :: LogicGraph -> AParser st (Annoted UNIT_TERM)
-unitTermTransRed l = groupUnitTerm l >>= \ u ->
+unitTermTransRed l = groupUnitTerm l >>=
     translationList
-      [ fmap (Unit_translation u) $ renaming l
-      , fmap (Unit_reduction u) $ restriction l ] u
+      [ (`fmap` renaming l) . Unit_translation
+      , (`fmap` restriction l) . Unit_reduction]
 
 {- | Parse unit expression
 @
