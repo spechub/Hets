@@ -12,6 +12,8 @@ Pretty printing of CASL architectural specifications
 
 module Syntax.Print_AS_Architecture () where
 
+import Data.List (intersperse)
+
 import Common.Doc
 import Common.DocUtils
 import Common.Keywords
@@ -25,7 +27,7 @@ sp1 = keyword " "
 instance PrettyLG ARCH_SPEC where
     prettyLG lg a = case a of
         Basic_arch_spec aa ab _ -> sep [keyword (unitS ++ sS)
-                <+> vcat (punctuate semi $ map (prettyLG lg) aa)
+                <+> vcat (punctuate (space <> semi) $ map (prettyLG lg) aa)
                , keyword resultS <+> prettyLG lg ab]
         Arch_spec_name aa -> pretty aa
         Group_arch_spec aa _ -> specBraces . rmTopKey $ prettyLG lg aa
@@ -61,7 +63,7 @@ instance PrettyLG REF_SPEC where
             prettyLG lg u : (if b then [] else [keyword behaviourallyS])
             ++ [keyword refinedS]
             ++ (if null m then [] else keyword viaS :
-                punctuate comma (map pretty m))
+                intersperse comma (map pretty m))
             ++ [keyword toS, prettyLG lg r]
         Arch_unit_spec aa _ ->
             fsep [keyword archS <+> keyword specS, prettyLG lg aa]
@@ -70,14 +72,14 @@ instance PrettyLG REF_SPEC where
             x : xs -> sep $ prettyLG lg x :
                map ( \ s -> keyword thenS <+> prettyLG lg s) xs
         Component_ref aa _ ->
-            specBraces $ sepByCommas $ map (prettyLG lg) aa
+            specBraces $ fsep $ intersperse comma $ map (prettyLG lg) aa
 
 instance PrettyLG UNIT_EXPRESSION where
     prettyLG lg (Unit_expression aa ab _) =
         let ab' = prettyLG lg ab
         in if null aa then ab'
            else fsep $ keyword lambdaS :
-                    punctuate semi (map (prettyLG lg) aa)
+                    intersperse semi (map (prettyLG lg) aa)
                     ++ [addBullet ab']
 
 instance PrettyLG UNIT_BINDING where
@@ -101,7 +103,7 @@ instance PrettyLG UNIT_TERM where
             x : xs -> sep $ prettyLG lg x :
                map ( \ s -> keyword andS <+> prettyLG lg s) xs
         Local_unit aa ab _ ->
-            fsep $ keyword localS : punctuate semi (map (prettyLG lg) aa)
+            fsep $ keyword localS : intersperse semi (map (prettyLG lg) aa)
                         ++ [keyword withinS, prettyLG lg ab]
         Unit_appl aa ab _ -> fsep $ structIRI aa : map (prettyLG lg) ab
         Group_unit_term aa _ -> specBraces $ prettyLG lg aa

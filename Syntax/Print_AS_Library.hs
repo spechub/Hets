@@ -13,6 +13,7 @@ Pretty printing of CASL specification libaries
 module Syntax.Print_AS_Library () where
 
 import Data.Maybe (maybeToList)
+import Data.List (intersperse)
 
 import Common.AS_Annotation
 import Common.IRI
@@ -149,7 +150,8 @@ printPARAMS lg (Params aa) = cat $ map (brackets . rmTopKey . prettyLG lg ) aa
 printIMPORTED :: LogicGraph -> IMPORTED -> Doc
 printIMPORTED lg (Imported aa) = case aa of
     [] -> empty
-    _ -> sep [keyword givenS, sepByCommas $ map (printGroupSpec lg) aa]
+    _ -> sep [keyword givenS, fsep . intersperse comma
+             $ map (printGroupSpec lg) aa]
 
 instance Pretty ALIGN_ARITIES where
   pretty = printAlignArities

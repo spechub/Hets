@@ -191,7 +191,7 @@ instance Pretty LABELED_ONTO_OR_INTPR_REF where
 
 printLIRI :: LABELED_ONTO_OR_INTPR_REF -> Doc
 printLIRI (Labeled n i) = case n of
-    Just x -> pretty x <> colon <> pretty i
+    Just x -> pretty x <+> colon <+> pretty i
     Nothing -> pretty i
 
 {- |
