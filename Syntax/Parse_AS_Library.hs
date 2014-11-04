@@ -134,7 +134,8 @@ viewDefn l = do
     s1 <- choice $ map asKey [viewS, interpretationS, refinementS]
     vn <- hetIRI l
     do
-       (g, s2) <- try $ pair (generics l) $ asKey ":"
+       g <- generics l
+       s2 <- asKey ":"
        vt <- viewType l
        (symbMap, ps) <- option ([], []) $ do
          s <- equalT
