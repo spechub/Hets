@@ -87,7 +87,7 @@ addDownload unique = emptyAnno . addDownloadAux unique
 addDownloadAux :: Bool -> SPEC_NAME -> LIB_ITEM
 addDownloadAux unique j =
   let libPath = deleteQuery j
-      query = iriQuery j -- this used to be the fragment
+      query = abbrevQuery j -- this used to be the fragment
       i = case query of
         "" -> j
         ['?'] -> libPath

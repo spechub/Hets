@@ -161,7 +161,8 @@ instance Ord IRI where
       (iriScheme j, iriAuthority j, iriPath j,
        iriQuery j, iriFragment j)) i k
     (False, False) -> comparing
-       (\ j -> (prefixName j, abbrevPath j, iriQuery j, iriFragment j)) i k
+      (\ j -> (prefixName j, abbrevPath j, abbrevQuery j, abbrevFragment j))
+      i k
     (b1, b2) -> compare b1 b2
 
 -- |converts IRI to String of expanded form. if available. Also showing Auth
@@ -253,7 +254,7 @@ iriWithPos parser = do
 
 -- | Parses an IRI reference enclosed in '<', '>' or a CURIE
 iriCurie :: IRIParser st IRI
-iriCurie = angles iriReference <|> curie
+iriCurie = angles iri <|> curie
 
 angles :: IRIParser st IRI -> IRIParser st IRI
 angles p = char '<' >> fmap (\ i -> i { hasAngles = True }) p << char '>'
@@ -268,9 +269,7 @@ curie = iriWithPos $ do
       )
     i <- reference
     return $ i { prefixName = pn }
-  <|> do
-    r <- referenceAux False
-    return r
+  <|> referenceAux False
 
 reference :: IRIParser st IRI
 reference = referenceAux True
@@ -642,6 +641,7 @@ iriToString iuserinfomap i
 iriToStringShort :: (String -> String) -> IRI -> ShowS
 iriToStringShort iuserinfomap i
   | hasFullIRI i && not (isAbbrev i) = iriToStringFull iuserinfomap i
+  | not $ null $ abbrevQuery i = tail . (abbrevQuery i ++)
   | otherwise = iriToStringAbbrev i
 
 iriToStringFull :: (String -> String) -> IRI -> ShowS
@@ -738,20 +738,14 @@ removeDotSegments ps = elimDots ps []
 
 -- Second arg accumulates isegments processed so far in reverse order
 elimDots :: String -> [String] -> String
-elimDots [] [] = ""
-elimDots [] rs = concat (reverse rs)
+elimDots "" rs = concat (reverse rs)
+elimDots "." rs = elimDots "" rs
 elimDots ( '.' : '/' : ps) rs = elimDots ps rs
-elimDots ( '.' : [] ) rs = elimDots [] rs
-elimDots ( '.' : '.' : '/' : ps) rs = elimDots ps (dropHead rs)
-elimDots ( '.' : '.' : [] ) rs = elimDots [] (dropHead rs)
+elimDots ".." rs = elimDots [] (drop 1 rs)
+elimDots ( '.' : '.' : '/' : ps) rs = elimDots ps (drop 1 rs)
 elimDots ps rs = elimDots ps1 (r : rs)
     where
         (r, ps1) = nextSegment ps
-
--- Return tail of non-null list, otherwise return null list
-dropHead :: [a] -> [a]
-dropHead [] = []
-dropHead (_ : rs) = rs
 
 {- Returns the next isegment and the rest of the path from a path string.
 Each isegment ends with the next '/' or the end of string. -}
@@ -891,7 +885,6 @@ expandCurie prefixMap c =
        Just i -> case mergeCurie c i of
                 Nothing -> Nothing
                 Just j -> Just $ j { prefixName = prefixName c
-                                   , abbrevPath = abbrevPath c
                                    , iriPos = iriPos c }
 
 setAngles :: Bool -> IRI -> IRI
@@ -901,8 +894,8 @@ setAngles b i = i { hasAngles = b }
 representations -}
 mergeCurie :: IRI -> IRI -> Maybe IRI
 mergeCurie c i =
-  parseIRICurie $ '<' : iriToStringFull id (setAngles False i) ""
-    ++ iriToStringAbbrevMerge c ">"
+  parseIRICurie $ iriToStringFull id (setAngles False i) ""
+    ++ iriToStringAbbrevMerge c ""
 
 deleteQuery :: IRI -> IRI
-deleteQuery i = i { iriQuery = "" }
+deleteQuery i = i { abbrevQuery = "" }
