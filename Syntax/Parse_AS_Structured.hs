@@ -143,7 +143,13 @@ parseLogic lG = do
 parseLogicAux :: LogicGraph -> AParser st Logic_code
 parseLogicAux lG =
     do l <- asKey logicS
-       do e <- logicName lG
+       do
+           f <- asKey funS  -- parse at least a logic target after "logic"
+           t <- logicName lG
+           return $ Logic_code Nothing Nothing (Just t)
+                                       $ tokPos l `appRange` tokPos f
+         <|> do
+          e <- logicName lG
                -- try to parse encoding or logic source after "logic"
           case e of
               Logic_name f Nothing Nothing ->
@@ -153,20 +159,15 @@ parseLogicAux lG =
                       <|> return (Logic_code (Just f) Nothing Nothing
                                   $ tokPos l)
               _ -> parseOptLogTarget lG Nothing (Just e) [l]
-         <|> do
-           f <- asKey funS  -- parse at least a logic target after "logic"
-           t <- logicName lG
-           return $ Logic_code Nothing Nothing (Just t)
-                                       $ tokPos l `appRange` tokPos f
 
 -- parse optional logic source and target after a colon (given an encoding e)
 parseLogAfterColon :: LogicGraph -> Maybe String -> [Token]
                       -> AParser st Logic_code
-parseLogAfterColon lG e l =
+parseLogAfterColon lG e l = parseOptLogTarget lG e Nothing l
+    <|>
     do s <- logicName lG
        parseOptLogTarget lG e (Just s) l
          <|> return (Logic_code e (Just s) Nothing $ catRange l)
-    <|> parseOptLogTarget lG e Nothing l
 
 -- parse an optional logic target (given encoding e or source s)
 parseOptLogTarget :: LogicGraph -> Maybe String -> Maybe Logic_name -> [Token]
