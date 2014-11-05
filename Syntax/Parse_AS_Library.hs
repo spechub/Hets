@@ -78,7 +78,7 @@ libItems :: LogicGraph -> AParser st [Annoted LIB_ITEM]
 libItems l =
      (eof >> return [])
     <|> do
-      r <- if dolOnly l then dolLibItem l else libItem l
+      r <- libItem l
       la <- lineAnnos
       (l', an) <- lGAnnos l
       is <- libItems (case r of
@@ -90,12 +90,11 @@ libItems l =
         Annoted i p nl ra : rs ->
           return $ Annoted r nullRange [] la : Annoted i p (an ++ nl) ra : rs
 
-dolLibItem :: LogicGraph -> AParser st LIB_ITEM
-dolLibItem l = specDefn l <|> networkDefn l <|> do
+dolImportItem :: LogicGraph -> AParser st LIB_ITEM
+dolImportItem l = do
     s1 <- asKey "import"
     iln <- libName l
     return (Download_items iln (ItemMaps []) $ getRange s1)
-  <|> viewDefn l
 
 networkDefn :: LogicGraph -> AParser st LIB_ITEM
 networkDefn l = do
@@ -156,6 +155,7 @@ viewDefn l = do
 libItem :: LogicGraph -> AParser st LIB_ITEM
 libItem l = specDefn l
   <|> viewDefn l
+  <|> dolImportItem l
   <|> -- equiv defn
     do s1 <- asKey equivalenceS
        en <- hetIRI l
