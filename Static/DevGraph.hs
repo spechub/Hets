@@ -1129,9 +1129,8 @@ lookupGlobalEnvDG sid dg = let
     gEnv = globalEnv dg
     shortIRI = iriToStringShortUnsecure sid
     in case Map.lookup sid gEnv of
-    Nothing -> Map.lookup (nullIRI { abbrevPath = shortIRI }) $
-               Map.mapKeys (\ x -> nullIRI {abbrevPath = abbrevPath x})
-               gEnv
+    Nothing -> Map.lookup shortIRI $
+               Map.mapKeys iriToStringShortUnsecure gEnv
     m -> m
 
 -- | lookup a reference node for a given libname and node
