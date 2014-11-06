@@ -263,10 +263,11 @@ writeTheory ins nam opts filePrefix ga
         | otherwise -> putIfVerbose opts 0 $ "expected RDF theory for: " ++ f
 #endif
 #ifndef NOOWLLOGIC
-    OWLOut ty -> case createOWLTheory raw_gTh of
-      Result _ Nothing ->
-        putIfVerbose opts 0 $ "expected OWL theory for: " ++ f
-      Result ds (Just th2) -> do
+    OWLOut ty -> case ty of
+      Manchester -> case createOWLTheory raw_gTh of
+        Result _ Nothing ->
+          putIfVerbose opts 0 $ "expected OWL theory for: " ++ f
+        Result ds (Just th2) -> do
             let sy = defSyntax opts
                 ms = if null sy then Nothing
                      else Just $ simpleIdToIRI $ mkSimpleId sy
@@ -277,14 +278,8 @@ writeTheory ins nam opts filePrefix ga
                 $ case parse (OWL2.basicSpec Map.empty >> eof) f owltext of
               Left err -> putIfVerbose opts 0 $ show err
               _ -> putIfVerbose opts 3 $ "reparsed: " ++ f
-            case ty of
-              Manchester -> writeVerbFile opts f owltext
-              {- dirty workaround; because java-parser expects to read lib
-              from file, it is stored by hets in Omn format first.. -}
-              _ -> do
-                tmpFile <- getTempFile owltext $ i' ++ ".omn"
-                writeVerbFile opts f =<< convertOWL tmpFile (show ty)
-                removeFile tmpFile
+            writeVerbFile opts f owltext
+      _ -> writeVerbFile opts f =<< convertOWL (getFilePath ln) (show ty)
 #endif
     CLIFOut
       | lang == language_name CommonLogic -> do

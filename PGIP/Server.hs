@@ -576,11 +576,7 @@ htmlC = "text/html"
 mkResponse :: String -> Status -> String -> Response
 mkResponse ty st = responseLBS st
   (if null ty then [] else
-#ifdef WARP1
-      [headerContentType $ B8.pack ty]
-#else
       [(hContentType, B8.pack ty)]
-#endif
   ) . BS.pack
 
 mkOkResponse :: String -> String -> Response
