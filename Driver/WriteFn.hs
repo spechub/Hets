@@ -25,7 +25,7 @@ import System.FilePath
 
 import Control.Monad
 
-import Data.List (partition, (\\))
+import Data.List (partition, (\\), intercalate)
 import Data.Maybe
 
 import Common.AS_Annotation
@@ -277,7 +277,11 @@ writeTheory ins nam opts filePrefix ga
               Left err -> putIfVerbose opts 0 $ show err
               _ -> putIfVerbose opts 3 $ "reparsed: " ++ f
             writeVerbFile opts f owltext
-      _ -> writeVerbFile opts f =<< convertOWL (getFilePath ln) (show ty)
+      _ -> let flp = getFilePath ln in case guess flp GuessIn of
+        OWLIn _ -> writeVerbFile opts f =<< convertOWL flp (show ty)
+        _ -> putIfVerbose opts 0
+          $ "OWL output only supported for owl input types ("
+          ++ intercalate ", " (map show plainOwlFormats) ++ ")"
 #endif
     CLIFOut
       | lang == language_name CommonLogic -> do
