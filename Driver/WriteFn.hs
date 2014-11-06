@@ -22,7 +22,6 @@ import Text.ParserCombinators.Parsec
 import Text.XML.Light
 
 import System.FilePath
-import System.Directory (removeFile)
 
 import Control.Monad
 
@@ -38,7 +37,6 @@ import Common.ExtSign
 import Common.LibName
 import Common.Result
 import Common.Parsec (forget)
-import Common.Utils (getTempFile)
 import Common.Percent
 import Common.GlobalAnnotations (GlobalAnnos)
 import qualified Data.Map as Map
