@@ -74,9 +74,14 @@ endif
 
 WAIEXTVERSION = $(shell $(HCPKG) latest wai-extra)
 WARPVERSION = $(shell $(HCPKG) latest warp)
+HTTPTYPESVERSION = $(shell $(HCPKG) latest http-types)
 ifneq ($(findstring -1., $(WARPVERSION)),)
   ifneq ($(findstring -1., $(WAIEXTVERSION)),)
-  SERVER_FLAG = -DSERVER -DWARP1
+    ifneq ($(findstring .8, $(HTTPTYPESVERSION)),)
+      SERVER_FLAG = -DSERVER -DWARP1
+    else
+      SERVER_FLAG = -DSERVER -DWARP1 -DHTTPTYPES
+    endif
   endif
 endif
 ifneq ($(findstring -2., $(WARPVERSION)),)
