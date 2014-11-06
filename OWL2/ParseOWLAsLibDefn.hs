@@ -56,7 +56,7 @@ parseOWL quick fn = do
           cont <- L.readFile tmpFile
           removeFile tmpFile
           parseProc cont
-      _-> error $ "process stop! " ++ shows exitCode "\n" ++ errStr
+      _ -> error $ "process stop! " ++ shows exitCode "\n" ++ errStr
 
 parseOWLAux :: Bool         -- ^ Sets Option.quick
          -> FilePath        -- ^ local filepath or uri
@@ -66,17 +66,17 @@ parseOWLAux quick fn args = do
     let jar = "OWL2Parser.jar"
     (hasJar, toolPath) <- check4HetsOWLjar jar
     if hasJar then executeProcess "java" (["-jar", toolPath </> jar]
-        ++ args ++ [fn] ++ if quick then ["-qk"] else []) ""
+        ++ args ++ [fn] ++ ["-qk" | quick]) ""
       else error $ jar
         ++ " not found, check your environment variable: " ++ hetsOWLenv
 
 -- | converts owl file to desired syntax using owl-api
-convertOWL :: FilePath -> String -> IO (String)
+convertOWL :: FilePath -> String -> IO String
 convertOWL fn tp = do
   (exitCode, content, errStr) <- parseOWLAux False fn ["-o-sys", tp]
   case (exitCode, errStr) of
     (ExitSuccess, "") -> return content
-    _-> error $ "process stop! " ++ shows exitCode "\n" ++ errStr
+    _ -> error $ "process stop! " ++ shows exitCode "\n" ++ errStr
 
 parseProc :: L.ByteString -> IO [LIB_DEFN]
 parseProc str = do
