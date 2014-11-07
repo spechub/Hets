@@ -83,7 +83,7 @@ anaArchSpec lgraph ln dg opts eo sharedCtx nP archSp = case archSp of
            anaUnitExpression lgraph ln dg' opts eo uctx $ item uexpr
        let (nodes', maybeRes) = case nodes of
                 [] -> ([], Nothing) -- don't think its possible
-                x : [] -> ([], Just x)
+                [x] -> ([], Just x)
                 _ -> (nodes, Nothing)
            rNodes = map refSource $ Map.elems branchMap
            (rN, dg3) =
@@ -771,7 +771,7 @@ anaUnitSpec lgraph ln dg opts eo impsig rN usp = case usp of
   Unit_type argSpecs resultSpec poss ->
    case argSpecs of
     [] -> case resultSpec of
-      Annoted (Spec_inst spn [] _) _ _ _
+      Annoted (Spec_inst spn [] _ _) _ _ _
         | case lookupGlobalEnvDG (fromMaybe spn
                                  $ expCurie (globalAnnos dg) eo spn) dg of
             Just (UnitEntry _) -> True
@@ -952,7 +952,7 @@ lambda expressions, like you do in the following -}
               Unit_type argSpecs resultSpec _ ->
                 case argSpecs of
                  [] -> case resultSpec of
-                        Annoted (Spec_inst spn [] _) _ _ _ ->
+                        Annoted (Spec_inst spn [] _ _) _ _ _ ->
                             iriToStringShortUnsecure spn
                         _ -> ""
                  _ -> ""

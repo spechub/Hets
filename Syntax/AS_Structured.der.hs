@@ -42,6 +42,8 @@ data SPEC = Basic_spec G_basic_spec Range
           | Reduction (Annoted SPEC) RESTRICTION
           | Approximation (Annoted SPEC) APPROXIMATION
           | Minimization (Annoted SPEC) MINIMIZATION
+          | Filtering (Annoted SPEC) FILTERING
+          | Bridge (Annoted SPEC) [RENAMING] (Annoted SPEC) Range
           | Union [Annoted SPEC] Range
             -- pos: "and"s
           | Extension [Annoted SPEC] Range
@@ -58,8 +60,9 @@ data SPEC = Basic_spec G_basic_spec Range
             -- pos: "closed"
           | Group (Annoted SPEC) Range
             -- pos: "{","}"
-          | Spec_inst SPEC_NAME [Annoted FIT_ARG] Range
-            -- pos: many of "[","]"; one balanced pair per FIT_ARG
+          | Spec_inst SPEC_NAME [Annoted FIT_ARG] (Maybe IRI) Range
+            {- pos: many of "[","]"; one balanced pair per FIT_ARG
+            an optional ImpName for DOL -}
           | Qualified_spec LogicDescr (Annoted SPEC) Range
             -- pos: "logic", Logic_name,":"
           | Data AnyLogic AnyLogic (Annoted SPEC) (Annoted SPEC) Range
@@ -67,12 +70,17 @@ data SPEC = Basic_spec G_basic_spec Range
           | Combination [LABELED_ONTO_OR_INTPR_REF] [EXTENSION_REF] Range
             {- pos: combine ONTO_OR_INTPR_REF, ...,  ONTO_OR_INTPR_REF
             excluding EXTENSION_REF, ..., EXTENSION_REF -}
+          | Apply IRI G_basic_spec Range
+            -- pos: "apply", use a basic spec parser to parse a sentence
             deriving (Show, Typeable)
 
 {- Renaming and Hiding can be performend with intermediate Logic
    mappings / Logic projections.
 
 -}
+
+data FILTERING = SelectOrReject Bool G_basic_spec Range
+  deriving (Show, Eq, Typeable)
 
 data EXTRACTION = ExtractOrRemove Bool [IRI] Range
   deriving (Show, Eq, Typeable)
@@ -87,11 +95,10 @@ data RESTRICTION = Hidden [G_hiding] Range
                    -- pos: "reveal", list of comma pos
                    deriving (Show, Eq, Typeable)
 
-data APPROXIMATION = Named_Approx APPROX_METHOD_REF Range
-                   | Qual_Approx APPROX_METHOD_REF LOGIC_REF Range
+data APPROXIMATION = ForgetOrKeep Bool [G_hiding] (Maybe LOGIC_REF) Range
                      deriving (Show, Eq, Typeable)
 
-data MINIMIZATION = Mini CircMin CircVars Range
+data MINIMIZATION = Mini Token CircMin CircVars Range
                     deriving (Show, Eq, Typeable)
 
 
@@ -114,7 +121,6 @@ type VIEW_NAME = IRI
 type EQUIV_NAME = IRI
 type ALIGN_NAME = IRI
 type MODULE_NAME = IRI
-type APPROX_METHOD_REF = IRI
 type ENTITY = IRI
 type RESTRICTION_SIGNATURE = [ENTITY]
 type CircMin = [Symb]
@@ -175,7 +181,7 @@ makeSpec :: G_basic_spec -> Annoted SPEC
 makeSpec gbs = emptyAnno $ Basic_spec gbs nullRange
 
 makeSpecInst :: SPEC_NAME -> Annoted SPEC
-makeSpecInst n = emptyAnno $ Spec_inst n [] nullRange
+makeSpecInst n = emptyAnno $ Spec_inst n [] Nothing nullRange
 
 addImports :: [SPEC_NAME] -> Annoted SPEC -> Annoted SPEC
 addImports is bs = case map makeSpecInst is of
@@ -239,7 +245,7 @@ getSpecNames sp = let f = getSpecNames . item in case sp of
   Local_spec s1 s2 _ -> Set.union (f s1) $ f s2
   Closed_spec as _ -> f as
   Group as _ -> f as
-  Spec_inst sn fas _ -> Set.insert sn
+  Spec_inst sn fas _ _ -> Set.insert sn
     . Set.unions . map f $ concatMap (getSpecs . item) fas
   Qualified_spec _ as _ -> f as
   Data _ _ s1 s2 _ -> Set.union (f s1) $ f s2

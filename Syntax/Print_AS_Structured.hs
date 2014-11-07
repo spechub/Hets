@@ -89,8 +89,11 @@ printSPEC lg spec = case spec of
     Extraction aa ab -> sep [condBracesTransReduct lg aa, printEXTRACTION ab]
     Translation aa ab -> sep [condBracesTransReduct lg aa, printRENAMING ab]
     Reduction aa ab -> sep [condBracesTransReduct lg aa, printRESTRICTION ab]
-    Approximation _ _ -> error "Syntax/Print_AS_Structured"
-    Minimization aa _ -> sep [keyword minimizeS, printGroupSpec lg aa]
+    Approximation aa ab ->
+      sep [condBracesTransReduct lg aa, printAPPROXIMATION ab]
+    Minimization aa ab ->
+      sep [condBracesTransReduct lg aa, printMINIMIZATION ab]
+    Filtering aa ab -> sep [condBracesTransReduct lg aa, printFILTERING ab]
     Union aa _ -> sep $ printUnion lg aa
     Extension aa _ -> sep $ printExtension lg aa
     Free_spec aa _ -> sep [keyword freeS, printGroupSpec lg aa]
@@ -100,7 +103,9 @@ printSPEC lg spec = case spec of
       [keyword localS, prettyLG lg aa, keyword withinS, condBracesWithin lg ab]
     Closed_spec aa _ -> sep [keyword closedS, printGroupSpec lg aa]
     Group aa _ -> prettyLG lg aa
-    Spec_inst aa ab _ -> cat [structIRI aa, print_fit_arg_list lg ab]
+    Spec_inst aa ab mi _ -> let
+      r = cat [structIRI aa, print_fit_arg_list lg ab]
+      in maybe r (\ i -> sep [r, pretty i]) mi
     Qualified_spec ln asp _ -> pretty ln <> colon
       $+$ prettyLG (setLogicName ln lg) asp
     Data ld _ s1 s2 _ -> keyword dataS
@@ -108,6 +113,33 @@ printSPEC lg spec = case spec of
         $+$ prettyLG lg s2
     Combination cs es _ -> fsep $ keyword combineS : ppWithCommas cs
       : if null es then [] else [keyword excludingS, ppWithCommas es]
+    Apply i bs _ ->
+      sep [keyword "apply" <+> pretty i, prettyLG lg $ Basic_spec bs nullRange]
+    Bridge s1 rs s2 _ -> fsep $ [condBraces lg s1, keyword "bridge"]
+      ++ map pretty rs ++ [condBraces lg s2]
+
+instance Pretty FILTERING where
+    pretty = printFILTERING
+
+printFILTERING :: FILTERING -> Doc
+printFILTERING (SelectOrReject b aa _) =
+   keyword (if b then "select" else "reject") <+> pretty aa
+
+instance Pretty MINIMIZATION where
+    pretty = printMINIMIZATION
+
+printMINIMIZATION :: MINIMIZATION -> Doc
+printMINIMIZATION (Mini kw cms cvs _) =
+   fsep $ keyword (tokStr kw) : map pretty cms ++ if null cvs then [] else
+     keyword "vars" : map pretty cvs
+
+instance Pretty APPROXIMATION where
+    pretty = printAPPROXIMATION
+
+printAPPROXIMATION :: APPROXIMATION -> Doc
+printAPPROXIMATION (ForgetOrKeep b syms ml _) =
+   fsep $ keyword (if b then "forget" else "keep")
+   : ppWithCommas syms : maybe [] (\ i -> [keyword withS, pretty i]) ml
 
 instance Pretty EXTRACTION where
     pretty = printEXTRACTION
@@ -218,6 +250,7 @@ printGroupSpec lg s = let d = prettyLG lg s in
 condBracesTransReduct :: LogicGraph -> Annoted SPEC -> Doc
 condBracesTransReduct lg s = let d = prettyLG lg s in
     case skip_Group $ item s of
+                 Bridge {} -> specBraces d
                  Extension {} -> specBraces d
                  Union {} -> specBraces d
                  Local_spec {} -> specBraces d
@@ -229,8 +262,9 @@ condBracesTransReduct lg s = let d = prettyLG lg s in
 condBracesWithin :: LogicGraph -> Annoted SPEC -> Doc
 condBracesWithin lg s = let d = prettyLG lg s in
     case skip_Group $ item s of
-                 Extension _ _ -> specBraces d
-                 Union _ _ -> specBraces d
+                 Bridge {} -> specBraces d
+                 Extension {} -> specBraces d
+                 Union {} -> specBraces d
                  _ -> d
 {- |
   only Extensions inside of Unions (and) need grouping braces
@@ -238,7 +272,15 @@ condBracesWithin lg s = let d = prettyLG lg s in
 condBracesAnd :: LogicGraph -> Annoted SPEC -> Doc
 condBracesAnd lg s = let d = prettyLG lg s in
     case skip_Group $ item s of
-                 Extension _ _ -> specBraces d
+                 Bridge {} -> specBraces d
+                 Extension {} -> specBraces d
+                 _ -> d
+
+-- bridges inside bridges need grouping
+condBraces :: LogicGraph -> Annoted SPEC -> Doc
+condBraces lg s = let d = prettyLG lg s in
+    case skip_Group $ item s of
+                 Bridge {} -> specBraces d
                  _ -> d
 
 -- | only skip groups without annotations

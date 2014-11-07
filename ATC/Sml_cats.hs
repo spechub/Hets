@@ -1238,7 +1238,7 @@ instance ATermConvertibleSML SPEC where
                 let
                 aa' = from_sml_ATermIRI (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
-                in Spec_inst aa' ab' nullRange
+                in Spec_inst aa' ab' Nothing nullRange
             _ -> from_sml_ShATermError "SPEC" aterm
         where
             aterm = getATerm att'

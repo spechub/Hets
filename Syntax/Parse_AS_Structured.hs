@@ -64,8 +64,9 @@ hetIRI :: LogicGraph -> GenParser Char st IRI
 hetIRI lG = try $ do
   i <- iriCurie
   skipSmart
-  if iriToStringUnsecure i `elem` casl_reserved_words then
-      unexpected $ show i
+  if iriToStringUnsecure i `elem`
+     (casl_reserved_words ++ casl_reserved_fops ++ map (: []) ")(,|;")
+    then unexpected $ show i
     else expandCurieM lG i
 
 -- | parse annotations and then still call an annotation parser
@@ -262,6 +263,15 @@ flatExts = concatMap $ \ as -> case item as of
 
 spec :: LogicGraph -> AParser st (Annoted SPEC)
 spec l = do
+  sp1 <- annoParser2 (specThen l)
+  option sp1 $ do
+    k <- asKey "bridge"
+    rs <- many (renaming l)
+    sp2 <- annoParser2 (specThen l)
+    return . emptyAnno . Bridge sp1 rs sp2 $ tokPos k
+
+specThen :: LogicGraph -> AParser st (Annoted SPEC)
+specThen l = do
   (sps, ps) <- annoParser2 (specA l) `separatedBy` asKey thenS
   return $ case sps of
     [sp] -> sp
@@ -347,14 +357,10 @@ restriction lg =
 -- | Parse approximation
 approximation :: LogicGraph -> AParser st APPROXIMATION
 approximation lg =
- do p1 <- asKey approximateS
-        -- with
-    do p2 <- asKey withS
-       n <- hetIRI lg
-       return $ Named_Approx n $ tokPos p1 `appRange` tokPos p2
-{- <|> -- in with
-    do ...
--}
+ do p1 <- asKey "forget" <|> asKey "keep"
+    (hs, _) <- parseHiding lg
+    li <- optionMaybe $ asKey withS >> hetIRI lg
+    return $ ForgetOrKeep (tokStr p1 /= "keep") hs li $ tokPos p1
 
 minimization :: LogicGraph -> AParser st MINIMIZATION
 minimization lg = do
@@ -364,7 +370,7 @@ minimization lg = do
        p3 <- asKey varsS
        ct <- many1 (hetIRI lg)
        return (ct, [p3])
-   return . Mini cm cv . catRange $ p : p2
+   return . Mini p cm cv . catRange $ p : p2
 
 extraction :: LogicGraph -> AParser st EXTRACTION
 extraction lg = do
@@ -406,8 +412,16 @@ specD l = do
 specE :: LogicGraph -> AParser st SPEC
 specE l = logicSpec l
       <|> combineSpec l
+      <|> applySpec l
       <|> (lookAhead (groupSpecLookhead l) >> groupSpec l)
       <|> (lookupCurrentSyntax "basic spec" l >>= basicSpec l)
+
+applySpec :: LogicGraph -> AParser st SPEC
+applySpec l = do
+  k <- asKey "apply"
+  n <- hetIRI l
+  Basic_spec bs _ <- lookupCurrentSyntax "apply spec" l >>= basicSpec l
+  return $ Apply n bs $ tokPos k
 
 -- | call a logic specific parser if it exists
 callParser :: Maybe (AParser st a) -> String -> String -> AParser st a
@@ -471,7 +485,8 @@ groupSpec l = do
   <|> do
     n <- hetIRI l
     (f, ps) <- fitArgs l
-    return (Spec_inst n f ps)
+    mi <- optionMaybe (hetIRI l)
+    return (Spec_inst n f mi ps)
 
 fitArgs :: LogicGraph -> AParser st ([Annoted FIT_ARG], Range)
 fitArgs l = do
