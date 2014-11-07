@@ -137,7 +137,7 @@ instance PrettyLG LIB_ITEM where
 
 prettyDownloadItems :: DownloadItems -> [Doc]
 prettyDownloadItems d = case d of
-  ItemMaps l -> punctuate comma $ map pretty l
+  ItemMaps l -> punctuate (space <> comma) $ map pretty l
   UniqueItem i -> [mapsto, structIRI i]
 
 instance PrettyLG GENERICITY where
