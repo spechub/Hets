@@ -121,9 +121,11 @@ type CircMin = [Symb]
 type CircVars = [Symb]
 type Symb = IRI
 
--- | a logic with serialization
+-- | a logic with serialization or a DOL qualification
 data LogicDescr = LogicDescr Logic_name (Maybe IRI) Range
   -- pos: "serialization"
+  | SyntaxQual IRI
+  | LanguageQual IRI
   deriving (Show, Typeable)
 
 data Logic_code = Logic_code (Maybe String)
@@ -142,7 +144,10 @@ data Logic_code = Logic_code (Maybe String)
                  "logic bla1: ->bla2" => <encoding> and <targ-logic> -}
                   deriving (Show, Eq, Typeable)
 
-data Logic_name = Logic_name String (Maybe Token) (Maybe SPEC_NAME)
+data Logic_name = Logic_name
+  String -- ^ looked up logic name
+  (Maybe Token) -- ^ sublogic part
+  (Maybe SPEC_NAME) -- ^ for a sublogic based on the given theory
   deriving (Show, Eq, Typeable)
 
 data LABELED_ONTO_OR_INTPR_REF = Labeled (Maybe CombineID) ONTO_OR_INTPR_REF
@@ -162,8 +167,9 @@ nameToLogicDescr :: Logic_name -> LogicDescr
 nameToLogicDescr n = LogicDescr n Nothing nullRange
 
 setLogicName :: LogicDescr -> LogicGraph -> LogicGraph
-setLogicName (LogicDescr (Logic_name lid _ _) s _) =
-  setSyntax s . setCurLogic lid
+setLogicName ld = case ld of
+  LogicDescr (Logic_name lid _ _) s _ -> setSyntax s . setCurLogic lid
+  _ -> id
 
 makeSpec :: G_basic_spec -> Annoted SPEC
 makeSpec gbs = emptyAnno $ Basic_spec gbs nullRange

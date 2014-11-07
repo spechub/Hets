@@ -16,7 +16,7 @@ module Syntax.Parse_AS_Structured
     ( annoParser2
     , groupSpec
     , aSpec
-    , logicDescr
+    , qualification
     , parseMapping
     , parseCorrespondences
     , translationList
@@ -106,6 +106,16 @@ logicName l = do
             $ oParenT >> (iriCurie >>= expandCurieMConservative l) << cParenT
       lo <- lookupLogicM e
       return $ Logic_name lo ms mt
+
+qualification :: LogicGraph -> AParser st (Token, LogicDescr)
+qualification l =
+  pair (asKey logicS) (logicDescr l)
+  <|> do
+    s <- asKey serializationS <|> asKey "language"
+    i <- iriCurie
+    skipSmart
+    return (s,
+      (if tokStr s == serializationS then SyntaxQual else LanguageQual) i)
 
 logicDescr :: LogicGraph -> AParser st LogicDescr
 logicDescr l = do
@@ -415,8 +425,8 @@ basicSpec lG (Logic lid, sm) = do
 
 logicSpec :: LogicGraph -> AParser st SPEC
 logicSpec lG = do
-   s1 <- asKey logicS
-   ln <- logicDescr lG
+   (s1, ln) <- qualification lG
+   many $ qualification lG -- ignore multiple qualifications for now
    s2 <- colonT
    sp <- annoParser $ specD $ setLogicName ln lG
    return $ Qualified_spec ln sp $ toRange s1 [] s2

@@ -220,8 +220,7 @@ libItem l = specDefn l
     do asKey "use"
        fmap (addDownloadAux False) $ hetIRI l
   <|> -- logic
-    do s <- asKey logicS
-       logD <- logicDescr l
+    do (s, logD) <- qualification l
        return $ Logic_decl logD $ tokPos s
   <|> -- newlogic
     do (n, s1) <- newlogicP

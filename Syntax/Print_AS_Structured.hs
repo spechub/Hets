@@ -101,7 +101,7 @@ printSPEC lg spec = case spec of
     Closed_spec aa _ -> sep [keyword closedS, printGroupSpec lg aa]
     Group aa _ -> prettyLG lg aa
     Spec_inst aa ab _ -> cat [structIRI aa, print_fit_arg_list lg ab]
-    Qualified_spec ln asp _ -> printLogicEncoding ln <> colon
+    Qualified_spec ln asp _ -> pretty ln <> colon
       $+$ prettyLG (setLogicName ln lg) asp
     Data ld _ s1 s2 _ -> keyword dataS
         <+> printGroupSpec (setCurLogic (show ld) lg) s1
@@ -173,8 +173,11 @@ printLogic_code (Logic_code menc msrc mtar _) =
         ++ pm msrc ++ funArrow : pm mtar
 
 instance Pretty LogicDescr where
-    pretty (LogicDescr n s _) = sep [pretty n,
-      maybe empty (\ r -> sep [keyword serializationS, pretty r]) s]
+    pretty ld = case ld of
+      LogicDescr n s _ -> sep [keyword logicS, pretty n,
+        maybe empty (\ r -> sep [keyword serializationS, pretty r]) s]
+      SyntaxQual i -> sep [keyword serializationS, pretty i]
+      LanguageQual i -> sep [keyword "language", pretty i]
 
 instance Pretty Logic_name where
     pretty = printLogic_name

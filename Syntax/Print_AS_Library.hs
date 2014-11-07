@@ -131,7 +131,7 @@ instance PrettyLG LIB_ITEM where
             $+$ keyword endS
         Download_items l ab _ -> topKey fromS <+>
             fsep ((pretty l <+> keyword getS) : prettyDownloadItems ab)
-        Logic_decl aa _ -> sep [keyword logicS, pretty aa]
+        Logic_decl aa _ -> pretty aa
         Newlogic_defn nl _ -> pretty nl
         Newcomorphism_defn nc _ -> pretty nc
 

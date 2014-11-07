@@ -90,7 +90,7 @@ addDownloadAux unique j =
       query = abbrevQuery j -- this used to be the fragment
       i = case query of
         "" -> j
-        ['?'] -> libPath
+        "?" -> libPath
         _ : r -> fromMaybe libPath $ parseIRICurie r
   in Download_items (iriLibName i)
     (if unique then UniqueItem i else ItemMaps [ItemNameMap i Nothing])
