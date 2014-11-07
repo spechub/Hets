@@ -114,7 +114,7 @@ instance Pretty EXTRACTION where
 
 printEXTRACTION :: EXTRACTION -> Doc
 printEXTRACTION (ExtractOrRemove b aa _) =
-   keyword (if b then "extract" else "remove") <+> ppWithCommas aa
+   keyword (if b then "extract" else "remove") <+> fsep (map pretty aa)
 
 instance Pretty RENAMING where
     pretty = printRENAMING
