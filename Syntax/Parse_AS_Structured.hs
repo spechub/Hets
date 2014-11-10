@@ -65,7 +65,7 @@ hetIRI lG = try $ do
   i <- iriCurie
   skipSmart
   if iriToStringUnsecure i `elem`
-     (casl_reserved_words ++ casl_reserved_fops ++ map (: []) ")(,|;")
+     (casl_reserved_words ++ casl_reserved_fops ++ map (: []) "-\215*)(,|;")
     then unexpected $ show i
     else expandCurieM lG i
 
@@ -485,7 +485,7 @@ groupSpec l = do
   <|> do
     n <- hetIRI l
     (f, ps) <- fitArgs l
-    mi <- optionMaybe (hetIRI l)
+    mi <- if dolOnly l then optionMaybe (hetIRI l) else return Nothing
     return (Spec_inst n f mi ps)
 
 fitArgs :: LogicGraph -> AParser st ([Annoted FIT_ARG], Range)
