@@ -65,7 +65,7 @@ myDataToXml d = case d of
   ListOrTuple b l -> let e = if b then "list" else "tuple" in
     if null l then unode e () else unode e $ map myDataToXml l
   Cons s mfs l -> if null l then unode s () else maybe
-    (unode s $ case l of
+    (case l of
       [Builtin ty v] -> add_attr (mkAttr ty v) $ unode s ()
       _ -> unode s $ map myDataToXml l)
     (eitherToElem s . zipWith (\ m f -> case m of
