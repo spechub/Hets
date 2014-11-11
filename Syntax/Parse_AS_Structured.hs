@@ -312,7 +312,7 @@ specC lG = do
           Just lD@(Logic dl) -> do
               p1 <- asKey dataS -- not a keyword
               sp1 <- annoParser $ basicSpec lG (lD, Nothing)
-                  <|> groupSpec (setCurLogic (language_name dl) lG)
+                  <|> groupSpecAux False (setCurLogic (language_name dl) lG)
               sp2 <- spD
               return (emptyAnno $ Data lD l sp1 sp2 $ tokPos p1)
             <|> rest
@@ -473,7 +473,10 @@ aSpec :: LogicGraph -> AParser st (Annoted SPEC)
 aSpec = annoParser2 . spec
 
 groupSpec :: LogicGraph -> AParser st SPEC
-groupSpec l = do
+groupSpec = groupSpecAux True
+
+groupSpecAux :: Bool -> LogicGraph -> AParser st SPEC
+groupSpecAux withImport l = do
     b <- oBraceT
     do
       c <- cBraceT
@@ -485,7 +488,7 @@ groupSpec l = do
   <|> do
     n <- hetIRI l
     (f, ps) <- fitArgs l
-    mi <- if dolOnly l then optionMaybe (hetIRI l) else return Nothing
+    mi <- if withImport then optionMaybe (hetIRI l) else return Nothing
     return (Spec_inst n f mi ps)
 
 fitArgs :: LogicGraph -> AParser st ([Annoted FIT_ARG], Range)
