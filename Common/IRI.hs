@@ -228,7 +228,7 @@ escaped = char '%' <:> hexDigit <:> single hexDigit
 -- RFC3986, section 2.2
 
 subDelims :: IRIParser st String
-subDelims = single $ satisfy isSubDelims
+subDelims = single $ oneOf subDelim
 
 -- RFC3986, section 2.3
 
@@ -411,7 +411,7 @@ ipvFuture = char 'v' <:> hexDigit <:> char '.'
     <:> many1 (satisfy isIpvFutureChar)
 
 isIpvFutureChar :: Char -> Bool
-isIpvFutureChar c = isUnreserved c || isSubDelims c || c == ':'
+isIpvFutureChar c = isUnreserved c || elem c (':' : subDelim)
 
 ipv6address :: IRIParser st String
 ipv6address = do
@@ -511,13 +511,15 @@ isegmentNzc = flat . many1 $ uchar "@"
 ipchar :: IRIParser st String
 ipchar = uchar ":@"
 
--- helper function for ipchar and friends
 uchar :: String -> IRIParser st String
-uchar extras =
+uchar = ucharAux False
+
+-- helper function for ipchar and friends
+ucharAux :: Bool -> String -> IRIParser st String
+ucharAux dolCurie extras =
         iunreservedChar
     <|> escaped
-    <|> subDelims
-    <|> single (oneOf extras)
+    <|> single (oneOf $ extras ++ if dolCurie then dolDelim else subDelim)
 
 -- RFC3987, section 2.2
 
