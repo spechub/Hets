@@ -411,7 +411,7 @@ ipvFuture = char 'v' <:> hexDigit <:> char '.'
     <:> many1 (satisfy isIpvFutureChar)
 
 isIpvFutureChar :: Char -> Bool
-isIpvFutureChar c = isUnreserved c || isSubDelims c || c == ';'
+isIpvFutureChar c = isUnreserved c || isSubDelims c || c == ':'
 
 ipv6address :: IRIParser st String
 ipv6address = do
