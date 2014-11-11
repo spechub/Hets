@@ -15,6 +15,7 @@ install:
 script:
  - make compile_in_steps
  - ./hets -V
+ - make check
 cache:
   directories:
   - .objs
