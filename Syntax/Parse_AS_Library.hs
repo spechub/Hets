@@ -50,8 +50,7 @@ lGAnnos lG = do
 library :: LogicGraph -> AParser st LIB_DEFN
 library lG = do
     (lG1, an1) <- lGAnnos lG
-    (ps, ln) <- (if dolOnly lG1 then id else
-        option (nullRange, iriLibName nullIRI)) $ do
+    (ps, ln) <- option (nullRange, iriLibName nullIRI) $ do
       s1 <- asKey libraryS
       n <- libName lG1
       return (tokPos s1, n)
