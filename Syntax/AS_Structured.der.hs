@@ -151,9 +151,9 @@ data Logic_code = Logic_code (Maybe String)
                   deriving (Show, Eq, Typeable)
 
 data Logic_name = Logic_name
-  String -- ^ looked up logic name
-  (Maybe Token) -- ^ sublogic part
-  (Maybe SPEC_NAME) -- ^ for a sublogic based on the given theory
+  String -- looked-up logic name
+  (Maybe Token) -- sublogic part
+  (Maybe SPEC_NAME) -- for a sublogic based on the given theory
   deriving (Show, Eq, Typeable)
 
 data LABELED_ONTO_OR_INTPR_REF = Labeled (Maybe CombineID) ONTO_OR_INTPR_REF
