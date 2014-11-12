@@ -14,6 +14,7 @@ Parser for CASL (heterogeneous) structured specifications
 
 module Syntax.Parse_AS_Structured
     ( annoParser2
+    , caslGroupSpec
     , groupSpec
     , aSpec
     , qualification
@@ -65,7 +66,7 @@ hetIRI lG = try $ do
   i <- iriCurie
   skipSmart
   if iriToStringUnsecure i `elem`
-     (casl_reserved_words ++ casl_reserved_fops ++ map (: []) "-\215*)(,|;")
+     (casl_reserved_words ++ casl_reserved_fops ++ map (: []) ")(,|;")
     then unexpected $ show i
     else expandCurieM lG i
 
@@ -312,7 +313,7 @@ specC lG = do
           Just lD@(Logic dl) -> do
               p1 <- asKey dataS -- not a keyword
               sp1 <- annoParser $ basicSpec lG (lD, Nothing)
-                  <|> groupSpecAux False (setCurLogic (language_name dl) lG)
+                  <|> caslGroupSpec (setCurLogic (language_name dl) lG)
               sp2 <- spD
               return (emptyAnno $ Data lD l sp1 sp2 $ tokPos p1)
             <|> rest
@@ -472,6 +473,11 @@ lookupAndSetComorphismName c lg = do
 aSpec :: LogicGraph -> AParser st (Annoted SPEC)
 aSpec = annoParser2 . spec
 
+-- | grouped spec or spec-inst without optional DOL import
+caslGroupSpec :: LogicGraph -> AParser st SPEC
+caslGroupSpec = groupSpecAux False
+
+-- | grouped spec or spec-inst with optional import
 groupSpec :: LogicGraph -> AParser st SPEC
 groupSpec = groupSpecAux True
 
