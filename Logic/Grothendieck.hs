@@ -438,6 +438,7 @@ data LogicGraph = LogicGraph
     , squares :: Map.Map (AnyComorphism, AnyComorphism) [Square]
     , qTATranslations :: Map.Map String AnyComorphism
     , prefixes :: Map.Map String IRI
+    , dolOnly :: Bool
     } deriving Show
 
 emptyLogicGraph :: LogicGraph
@@ -455,7 +456,9 @@ emptyLogicGraph = LogicGraph
     , modifications = Map.empty
     , squares = Map.empty
     , qTATranslations = Map.empty
-    , prefixes = Map.empty }
+    , prefixes = Map.empty
+    , dolOnly = False
+    }
 
 setCurLogicAux :: String -> LogicGraph -> LogicGraph
 setCurLogicAux s lg = lg { currentLogic = s }
@@ -884,8 +887,9 @@ logicGraph2Graph lg =
                 (mapSublogic c (coerce c sl))) $
       filter (\ (Comorphism c) -> Logic (sourceLogic c) == Logic lid
       && isSubElem (coerce c sl) (sourceSublogic c)
-      && (case c1 of Just (Comorphism c1') -> show c1' /= show c
-                     _ -> True)) relevantMorphisms,
+      && (case c1 of
+            Just (Comorphism c1') -> show c1' /= show c
+            _ -> True)) relevantMorphisms,
   weight = \ (Comorphism c) -> if Logic (sourceLogic c) ==
                                  Logic (targetLogic c) then 1 else 3
  }

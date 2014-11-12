@@ -14,12 +14,15 @@ Parser for CASL (heterogeneous) structured specifications
 
 module Syntax.Parse_AS_Structured
     ( annoParser2
+    , caslGroupSpec
     , groupSpec
     , aSpec
-    , logicDescr
+    , qualification
     , parseMapping
     , parseCorrespondences
     , translationList
+    , renaming
+    , restriction
     , hetIRI
     ) where
 
@@ -60,10 +63,11 @@ expandCurieMConservative lG i = if isSimple i then return i
 
 hetIRI :: LogicGraph -> GenParser Char st IRI
 hetIRI lG = try $ do
-  i <- iriManchester
+  i <- iriCurie
   skipSmart
-  if iriToStringUnsecure i `elem` casl_reserved_words then
-      unexpected $ show i
+  if iriToStringUnsecure i `elem`
+     (casl_reserved_words ++ casl_reserved_fops ++ map (: []) ")(,|;")
+    then unexpected $ show i
     else expandCurieM lG i
 
 -- | parse annotations and then still call an annotation parser
@@ -90,7 +94,7 @@ lookupLogicM i = if isSimple i
 decide after seeing ".", ":" or "->" what was meant -}
 logicName :: LogicGraph -> AParser st Logic_name
 logicName l = do
-      i <- iriManchester >>= expandCurieMConservative l
+      i <- iriCurie >>= expandCurieMConservative l
       let (ft, rt) = if isSimple i
                      then break (== '.') $ abbrevPath i -- HetCASL
                      else (abbrevPath i, [])
@@ -105,20 +109,30 @@ logicName l = do
       lo <- lookupLogicM e
       return $ Logic_name lo ms mt
 
+qualification :: LogicGraph -> AParser st (Token, LogicDescr)
+qualification l =
+  pair (asKey logicS) (logicDescr l)
+  <|> do
+    s <- asKey serializationS <|> asKey "language"
+    i <- iriCurie
+    skipSmart
+    return (s,
+      (if tokStr s == serializationS then SyntaxQual else LanguageQual) i)
+
 logicDescr :: LogicGraph -> AParser st LogicDescr
 logicDescr l = do
   n@(Logic_name ln _ _) <- logicName l
   option (nameToLogicDescr n) $ do
      r <- asKey serializationS
-     sp <- sneakAhead iriManchester
+     sp <- sneakAhead iriCurie
      case sp of
-       Left _ -> iriManchester >> error "logicDescr" -- reproduce the error
+       Left _ -> iriCurie >> error "logicDescr" -- reproduce the error
        Right s -> do
          s' <- if isSimple s then return s else expandCurieMConservative l s
          let ld = LogicDescr n (Just s') $ tokPos r
          (Logic lid, sm) <- lookupCurrentSyntax "logicDescr" $ setLogicName ld l
          case basicSpecParser sm lid of
-           Just _ -> iriManchester >> return ld -- consume and return
+           Just _ -> iriCurie >> skipSmart >> return ld -- consume and return
            Nothing -> unexpected ("serialization \"" ++ show s
                        ++ "\" for logic " ++ show ln)
                       <|> choice (map (\ pn -> pzero <?> '"' : pn ++ "\"")
@@ -141,7 +155,13 @@ parseLogic lG = do
 parseLogicAux :: LogicGraph -> AParser st Logic_code
 parseLogicAux lG =
     do l <- asKey logicS
-       do e <- logicName lG
+       do
+           f <- asKey funS  -- parse at least a logic target after "logic"
+           t <- logicName lG
+           return $ Logic_code Nothing Nothing (Just t)
+                                       $ tokPos l `appRange` tokPos f
+         <|> do
+          e <- logicName lG
                -- try to parse encoding or logic source after "logic"
           case e of
               Logic_name f Nothing Nothing ->
@@ -151,20 +171,15 @@ parseLogicAux lG =
                       <|> return (Logic_code (Just f) Nothing Nothing
                                   $ tokPos l)
               _ -> parseOptLogTarget lG Nothing (Just e) [l]
-         <|> do
-           f <- asKey funS  -- parse at least a logic target after "logic"
-           t <- logicName lG
-           return $ Logic_code Nothing Nothing (Just t)
-                                       $ tokPos l `appRange` tokPos f
 
 -- parse optional logic source and target after a colon (given an encoding e)
 parseLogAfterColon :: LogicGraph -> Maybe String -> [Token]
                       -> AParser st Logic_code
-parseLogAfterColon lG e l =
+parseLogAfterColon lG e l = parseOptLogTarget lG e Nothing l
+    <|>
     do s <- logicName lG
        parseOptLogTarget lG e (Just s) l
          <|> return (Logic_code e (Just s) Nothing $ catRange l)
-    <|> parseOptLogTarget lG e Nothing l
 
 -- parse an optional logic target (given encoding e or source s)
 parseOptLogTarget :: LogicGraph -> Maybe String -> Maybe Logic_name -> [Token]
@@ -249,6 +264,15 @@ flatExts = concatMap $ \ as -> case item as of
 
 spec :: LogicGraph -> AParser st (Annoted SPEC)
 spec l = do
+  sp1 <- annoParser2 (specThen l)
+  option sp1 $ do
+    k <- asKey "bridge"
+    rs <- many (renaming l)
+    sp2 <- annoParser2 (specThen l)
+    return . emptyAnno . Bridge sp1 rs sp2 $ tokPos k
+
+specThen :: LogicGraph -> AParser st (Annoted SPEC)
+specThen l = do
   (sps, ps) <- annoParser2 (specA l) `separatedBy` asKey thenS
   return $ case sps of
     [sp] -> sp
@@ -273,8 +297,12 @@ specB l = do
 specC :: LogicGraph -> AParser st (Annoted SPEC)
 specC lG = do
     let spD = annoParser $ specD lG
-        rest = spD >>= translationList lG Translation Reduction
-          Approximation Minimization
+        rest = spD >>= translationList
+          [ (`fmap` extraction lG) . Extraction
+          , (`fmap` renaming lG) . Translation
+          , (`fmap` restriction lG) . Reduction
+          , (`fmap` approximation lG) . Approximation
+          , (`fmap` minimization lG) . Minimization]
     l@(Logic lid) <- lookupCurrentLogic "specC" lG
     {- if the current logic has an associated data_logic,
     parse "data SPEC1 SPEC2", where SPEC1 is in the data_logic
@@ -285,17 +313,16 @@ specC lG = do
           Just lD@(Logic dl) -> do
               p1 <- asKey dataS -- not a keyword
               sp1 <- annoParser $ basicSpec lG (lD, Nothing)
-                  <|> groupSpec (setCurLogic (language_name dl) lG)
+                  <|> caslGroupSpec (setCurLogic (language_name dl) lG)
               sp2 <- spD
               return (emptyAnno $ Data lD l sp1 sp2 $ tokPos p1)
             <|> rest
 
-translationList :: LogicGraph -> (Annoted b -> RENAMING -> b)
-  -> (Annoted b -> RESTRICTION -> b) -> (Annoted b -> APPROXIMATION -> b)
-  -> (Annoted b -> MINIMIZATION -> b) -> Annoted b -> AParser st (Annoted b)
-translationList l ftrans frestr fapprox fminimize sp =
-     do sp' <- translation l sp ftrans frestr fapprox fminimize
-        translationList l ftrans frestr fapprox fminimize (emptyAnno sp')
+translationList :: [Annoted b -> AParser st b] -> Annoted b
+  -> AParser st (Annoted b)
+translationList cs sp =
+     do sp' <- choice $ map ($ sp) cs
+        translationList cs (emptyAnno sp')
      <|> return sp
 
 {- | Parse renaming
@@ -331,41 +358,26 @@ restriction lg =
 -- | Parse approximation
 approximation :: LogicGraph -> AParser st APPROXIMATION
 approximation lg =
- do p1 <- asKey approximateS
-        -- with
-    do p2 <- asKey withS
-       n <- hetIRI lg
-       return $ Named_Approx n $ tokPos p1 `appRange` tokPos p2
-{- <|> -- in with
-    do ...
--}
+ do p1 <- asKey "forget" <|> asKey "keep"
+    (hs, _) <- parseHiding lg
+    li <- optionMaybe $ asKey withS >> hetIRI lg
+    return $ ForgetOrKeep (tokStr p1 /= "keep") hs li $ tokPos p1
 
 minimization :: LogicGraph -> AParser st MINIMIZATION
 minimization lg = do
-   p <- asKey minimizeS <|> asKey closedworldS
-   (cm, p1) <- separatedBy (hetIRI lg) spaceT
+   p <- minimizeKey <|> asKey freeS <|> asKey cofreeS
+   (cm) <- many1 (hetIRI lg)
    (cv, p2) <- option ([], []) $ do
        p3 <- asKey varsS
-       (ct, pos) <- separatedBy (hetIRI lg) spaceT
-       return (ct, p3 : pos)
-   return $ Mini cm cv $ catRange $ p : p1 ++ p2
+       ct <- many1 (hetIRI lg)
+       return (ct, [p3])
+   return . Mini p cm cv . catRange $ p : p2
 
-
-translation :: LogicGraph -> a -> (a -> RENAMING -> b)
-            -> (a -> RESTRICTION -> b) -> (a -> APPROXIMATION -> b)
-            -> (a -> MINIMIZATION -> b) -> AParser st b
-translation l sp ftrans frestr fapprox fminimization =
-    do r <- renaming l
-       return (ftrans sp r)
-    <|>
-    do r <- restriction l
-       return (frestr sp r)
-    <|>
-    do r <- approximation l
-       return (fapprox sp r)
-    <|>
-    do r <- minimization l
-       return (fminimization sp r)
+extraction :: LogicGraph -> AParser st EXTRACTION
+extraction lg = do
+  p <- asKey "extract" <|> asKey "remove"
+  is <- many1 (hetIRI lg)
+  return . ExtractOrRemove (tokStr p == "extract") is $ tokPos p
 
 groupSpecLookhead :: LogicGraph -> AParser st IRI
 groupSpecLookhead lG =
@@ -374,6 +386,9 @@ groupSpecLookhead lG =
   (choice (map (tok2IRI . asKey) criticalKeywords)
    <|> tok2IRI cBraceT <|> tok2IRI oBracketT <|> tok2IRI cBracketT
    <|> (eof >> return nullIRI))
+
+minimizeKey :: AParser st Token
+minimizeKey = choice $ map asKey [minimizeS, closedworldS, "maximize"]
 
 specD :: LogicGraph -> AParser st SPEC
            -- do some lookahead for free spec, to avoid clash with free type
@@ -386,11 +401,7 @@ specD l = do
     sp <- annoParser $ groupSpec l
     return (Cofree_spec sp $ tokPos p)
   <|> do
-    p <- asKey minimizeS `followedWith` groupSpecLookhead l
-    sp <- annoParser $ groupSpec l
-    return (Minimize_spec sp $ tokPos p)
-  <|> do
-    p <- asKey closedworldS `followedWith` groupSpecLookhead l
+    p <- minimizeKey `followedWith` groupSpecLookhead l
     sp <- annoParser $ groupSpec l
     return (Minimize_spec sp $ tokPos p)
   <|> do
@@ -402,8 +413,16 @@ specD l = do
 specE :: LogicGraph -> AParser st SPEC
 specE l = logicSpec l
       <|> combineSpec l
+      <|> applySpec l
       <|> (lookAhead (groupSpecLookhead l) >> groupSpec l)
       <|> (lookupCurrentSyntax "basic spec" l >>= basicSpec l)
+
+applySpec :: LogicGraph -> AParser st SPEC
+applySpec l = do
+  k <- asKey "apply"
+  n <- hetIRI l
+  Basic_spec bs _ <- lookupCurrentSyntax "apply spec" l >>= basicSpec l
+  return $ Apply n bs $ tokPos k
 
 -- | call a logic specific parser if it exists
 callParser :: Maybe (AParser st a) -> String -> String -> AParser st a
@@ -421,8 +440,8 @@ basicSpec lG (Logic lid, sm) = do
 
 logicSpec :: LogicGraph -> AParser st SPEC
 logicSpec lG = do
-   s1 <- asKey logicS
-   ln <- logicDescr lG
+   (s1, ln) <- qualification lG
+   many $ qualification lG -- ignore multiple qualifications for now
    s2 <- colonT
    sp <- annoParser $ specD $ setLogicName ln lG
    return $ Qualified_spec ln sp $ toRange s1 [] s2
@@ -454,8 +473,16 @@ lookupAndSetComorphismName c lg = do
 aSpec :: LogicGraph -> AParser st (Annoted SPEC)
 aSpec = annoParser2 . spec
 
+-- | grouped spec or spec-inst without optional DOL import
+caslGroupSpec :: LogicGraph -> AParser st SPEC
+caslGroupSpec = groupSpecAux False
+
+-- | grouped spec or spec-inst with optional import
 groupSpec :: LogicGraph -> AParser st SPEC
-groupSpec l = do
+groupSpec = groupSpecAux True
+
+groupSpecAux :: Bool -> LogicGraph -> AParser st SPEC
+groupSpecAux withImport l = do
     b <- oBraceT
     do
       c <- cBraceT
@@ -467,7 +494,8 @@ groupSpec l = do
   <|> do
     n <- hetIRI l
     (f, ps) <- fitArgs l
-    return (Spec_inst n f ps)
+    mi <- if withImport then optionMaybe (hetIRI l) else return Nothing
+    return (Spec_inst n f mi ps)
 
 fitArgs :: LogicGraph -> AParser st ([Annoted FIT_ARG], Range)
 fitArgs l = do

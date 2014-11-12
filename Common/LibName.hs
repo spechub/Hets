@@ -94,12 +94,12 @@ mkLibName i v = (iriLibName i) { libVersion = v }
 emptyLibName :: String -> LibName
 emptyLibName s = iriLibName .
   fromMaybe (if null s then nullIRI else error $ "emptyLibName: " ++ s)
-  $ parseIRIManchester s
+  $ parseIRICurie s
 
 -- | convert file name to IRI reference
 filePathToIri :: FilePath -> IRI
 filePathToIri fp = fromMaybe (error $ "filePathToIri: " ++ fp)
-  . parseIRIReference $ encodeBut (\ c -> isUnreserved c || isReserved c) fp
+  . parseIRIReference $ encodeBut (\ c -> isUnreserved c || elem c reserved) fp
 
 -- | use file name as library IRI
 filePathToLibId :: FilePath -> IRI
