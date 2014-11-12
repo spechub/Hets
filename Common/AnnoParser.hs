@@ -241,7 +241,7 @@ prefixAnno ps = do
         p <- (string colonS >> return "") <|>
              (IRI.ncname << string colonS)
         spaces
-        i <- iriCurie
+        i <- angles iri
         spaces
         return (p, i)
     return $ Prefix_anno prefixes ps

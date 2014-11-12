@@ -46,6 +46,8 @@ module Common.IRI
     , isSimple
 
     -- * Parsing
+    , iri
+    , angles
     , iriCurie
     , parseCurie
     , parseIRICurie
@@ -900,8 +902,9 @@ setAngles b i = i { hasAngles = b }
 representations -}
 mergeCurie :: IRI -> IRI -> Maybe IRI
 mergeCurie c i =
-  parseIRICurie $ iriToStringFull id (setAngles False i) ""
-    ++ iriToStringAbbrevMerge c ""
+  let s = iriToStringFull id (setAngles False i) ""
+        ++ iriToStringAbbrevMerge c ""
+  in parseIRICurie $ if null $ iriScheme i then s else '<' : s ++ ">"
 
 deleteQuery :: IRI -> IRI
 deleteQuery i = i { abbrevQuery = "" }
