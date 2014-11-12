@@ -67,23 +67,27 @@ data SPEC = Basic_spec G_basic_spec Range
             -- pos: "logic", Logic_name,":"
           | Data AnyLogic AnyLogic (Annoted SPEC) (Annoted SPEC) Range
             -- pos: "data"
-          | Combination [LABELED_ONTO_OR_INTPR_REF] [EXTENSION_REF] Range
-            {- pos: combine ONTO_OR_INTPR_REF, ...,  ONTO_OR_INTPR_REF
-            excluding EXTENSION_REF, ..., EXTENSION_REF -}
+          | Combination Network Range
+            -- pos: "combine"
           | Apply IRI G_basic_spec Range
             -- pos: "apply", use a basic spec parser to parse a sentence
             deriving (Show, Typeable)
 
-{- Renaming and Hiding can be performend with intermediate Logic
-   mappings / Logic projections.
-
--}
+data Network = Network [LABELED_ONTO_OR_INTPR_REF] [EXTENSION_REF] Range
+  deriving (Show, Eq, Typeable)
 
 data FILTERING = SelectOrReject Bool G_basic_spec Range
   deriving (Show, Eq, Typeable)
 
 data EXTRACTION = ExtractOrRemove Bool [IRI] Range
   deriving (Show, Eq, Typeable)
+
+data APPROXIMATION = ForgetOrKeep Bool [G_hiding] (Maybe LOGIC_REF) Range
+  deriving (Show, Eq, Typeable)
+
+data MINIMIZATION = Mini Token CircMin CircVars Range
+  deriving (Show, Eq, Typeable)
+
 
 data RENAMING = Renaming [G_mapping] Range
                 -- pos: "with", list of comma pos
@@ -95,12 +99,9 @@ data RESTRICTION = Hidden [G_hiding] Range
                    -- pos: "reveal", list of comma pos
                    deriving (Show, Eq, Typeable)
 
-data APPROXIMATION = ForgetOrKeep Bool [G_hiding] (Maybe LOGIC_REF) Range
-                     deriving (Show, Eq, Typeable)
-
-data MINIMIZATION = Mini Token CircMin CircVars Range
-                    deriving (Show, Eq, Typeable)
-
+{- Renaming and Hiding can be performend with intermediate Logic
+   mappings / Logic projections.
+-}
 
 data G_mapping = G_symb_map G_symb_map_items_list
                | G_logic_translation Logic_code

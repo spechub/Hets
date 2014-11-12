@@ -124,9 +124,8 @@ instance PrettyLG LIB_ITEM where
         Ref_spec_defn si ab _ -> keyword refinementS <+>
             fsep [structIRI si <+> equals, prettyLG lg ab]
             $+$ keyword endS
-        Graph_defn si is es _ -> keyword graphS <+>
-            fsep ([structIRI si <+> equals, ppWithCommas is]
-              ++ if null es then [] else [keyword excludingS, ppWithCommas es])
+        Graph_defn si n _ -> keyword networkS <+>
+            fsep [structIRI si <+> equals, pretty n]
             $+$ keyword endS
         Download_items l ab _ -> topKey fromS <+>
             fsep ((pretty l <+> keyword getS) : prettyDownloadItems ab)

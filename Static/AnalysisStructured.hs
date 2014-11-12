@@ -574,7 +574,7 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp rg = case sp of
                    (replaceAnnoted sp1' asp1)
                    (replaceAnnoted sp2' asp2)
                    pos, nsig3, udg3)
-  Combination cItems eItems pos -> adjustPos pos $ do
+  Combination (Network cItems eItems _) pos -> adjustPos pos $ do
     let getNodes (cN, cE) cItem = let
             cEntry = fromMaybe (error $ "No entry for " ++ show cItem)
                      $ lookupGlobalEnvDG cItem dg

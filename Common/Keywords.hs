@@ -291,9 +291,6 @@ alignmentS = "alignment"
 combineS :: String
 combineS = "combine"
 
-distributedOntologyS :: String
-distributedOntologyS = "distributed-ontology"
-
 excludingS :: String
 excludingS = "excluding"
 
@@ -309,8 +306,8 @@ moduleS = "module"
 ontologyS :: String
 ontologyS = "ontology"
 
-graphS :: String
-graphS = "graph"
+networkS :: String
+networkS = "network"
 
 relationS :: String
 relationS = "relation"

@@ -111,12 +111,15 @@ printSPEC lg spec = case spec of
     Data ld _ s1 s2 _ -> keyword dataS
         <+> printGroupSpec (setCurLogic (show ld) lg) s1
         $+$ prettyLG lg s2
-    Combination cs es _ -> fsep $ keyword combineS : ppWithCommas cs
-      : if null es then [] else [keyword excludingS, ppWithCommas es]
+    Combination n _ -> sep [keyword combineS, pretty n]
     Apply i bs _ ->
       sep [keyword "apply" <+> pretty i, prettyLG lg $ Basic_spec bs nullRange]
     Bridge s1 rs s2 _ -> fsep $ [condBraces lg s1, keyword "bridge"]
       ++ map pretty rs ++ [condBraces lg s2]
+
+instance Pretty Network where
+    pretty (Network cs es _) = fsep $ ppWithCommas cs
+      : if null es then [] else [keyword excludingS, ppWithCommas es]
 
 instance Pretty FILTERING where
     pretty = printFILTERING

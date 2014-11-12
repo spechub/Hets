@@ -100,15 +100,10 @@ networkDefn l = do
     kGraph <- asKey "network"
     name <- hetIRI l
     kEqu <- equalT
-    (is, ps) <- separatedBy (hetIRI l) anComma
-    -- here the optional "Id :" part for NetworkElement is missing
-    (es, qs) <- do
-      kEx <- asKey excludingS
-      (es, qs) <- separatedBy (hetIRI l) anComma
-      return (es, kEx : qs)
+    n <- parseNetwork False l
     kEnd <- optEnd
-    return . Graph_defn name is es
-         . catRange $ [kGraph, kEqu] ++ ps ++ qs ++ maybeToList kEnd
+    return . Graph_defn name n
+         . catRange $ [kGraph, kEqu] ++ maybeToList kEnd
 
 emptyParams :: GENERICITY
 emptyParams = Genericity (Params []) (Imported []) nullRange

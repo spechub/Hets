@@ -61,8 +61,8 @@ data LIB_ITEM = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) Range
               -- pos: "unit", "spec", "=", opt "end"
               | Ref_spec_defn SPEC_NAME REF_SPEC Range
               -- pos: "refinement", "=", opt "end"
-              | Graph_defn IRI [IRI] [IRI] Range
-              -- pos: "graph", "=", commas, "excluding", commas, opt "end"
+              | Graph_defn IRI Network Range
+              -- pos: "network", "=", opt "end"
               | Download_items LibName DownloadItems Range
               -- pos: "from", "get", "|->", commas, opt "end"
               | Logic_decl LogicDescr Range
@@ -106,14 +106,16 @@ data PARAMS = Params [Annoted SPEC] deriving (Show, Typeable)
 
 data IMPORTED = Imported [Annoted SPEC] deriving (Show, Typeable)
 
-data VIEW_TYPE = View_type (Annoted SPEC) (Annoted SPEC) Range deriving (Show, Typeable)
+data VIEW_TYPE = View_type (Annoted SPEC) (Annoted SPEC) Range
+  deriving (Show, Typeable)
                  -- pos: "to"
 data EQUIV_TYPE = Equiv_type SPEC SPEC Range deriving (Show, Typeable)
 
 data MODULE_TYPE = Module_type (Annoted SPEC) (Annoted SPEC) Range
   deriving (Show, Typeable)
 
-data ALIGN_ARITIES = Align_arities ALIGN_ARITY ALIGN_ARITY deriving (Show, Typeable)
+data ALIGN_ARITIES = Align_arities ALIGN_ARITY ALIGN_ARITY
+  deriving (Show, Typeable)
 
 data ALIGN_ARITY = AA_InjectiveAndTotal | AA_Injective | AA_Total
                  | AA_NeitherInjectiveNorTotal

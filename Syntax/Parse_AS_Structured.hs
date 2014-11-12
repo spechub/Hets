@@ -24,6 +24,7 @@ module Syntax.Parse_AS_Structured
     , renaming
     , restriction
     , hetIRI
+    , parseNetwork
     ) where
 
 import Logic.Logic
@@ -451,12 +452,17 @@ logicSpec lG = do
 combineSpec :: LogicGraph -> AParser st SPEC
 combineSpec lG = do
     s1 <- asKey combineS
+    n <- parseNetwork True lG
+    return $ Combination n $ tokPos s1
+
+parseNetwork :: Bool -> LogicGraph -> AParser st Network
+parseNetwork opt lG = do
     (oir, ps1) <- separatedBy (parseLabeled lG) commaT
-    (exl, ps) <- option ([], []) $ do
+    (exl, ps) <- (if opt then option ([], []) else id) $ do
           s2 <- asKey excludingS
           (e, ps2) <- separatedBy (hetIRI lG) commaT
           return (e, s2 : ps2)
-    return $ Combination oir exl $ catRange $ s1 : ps1 ++ ps
+    return $ Network oir exl $ catRange $ ps1 ++ ps
 
 parseLabeled :: LogicGraph -> AParser st LABELED_ONTO_OR_INTPR_REF
 parseLabeled lG = do
