@@ -141,14 +141,24 @@ viewDefn l = do
        kEqu <- equalT
        rsp <- refSpec l
        kEnd <- optEnd
-       return (Ref_spec_defn vn rsp
-                   (catRange ([s1, kEqu] ++ maybeToList kEnd)))
+       return . Ref_spec_defn vn rsp
+                   . catRange $ [s1, kEqu] ++ maybeToList kEnd
+
+entailDefn :: LogicGraph -> AParser st LIB_ITEM
+entailDefn l = do
+  s <- asKey entailmentS
+  n <- hetIRI l
+  e <- equalT
+  et <- entailType l
+  q <- optEnd
+  return . Entail_defn n et . catRange $ [s, e] ++ maybeToList q
 
 -- | Parse an element of the library
 libItem :: LogicGraph -> AParser st LIB_ITEM
 libItem l = specDefn l
   <|> viewDefn l
   <|> dolImportItem l
+  <|> entailDefn l
   <|> -- equiv defn
     do s1 <- asKey equivalenceS
        en <- hetIRI l
@@ -256,6 +266,16 @@ downloadItems l = do
     i <- hetIRI l
     return (UniqueItem i, [s])
 
+entailType :: LogicGraph -> AParser st ENTAIL_TYPE
+entailType l = do
+    sp1 <- omsOrNetwork True l
+    r <- asKey entailsS
+    sp2 <- omsOrNetwork False l
+    return $ Entail_type sp1 sp2 $ tokPos r
+
+omsOrNetwork :: Bool -> LogicGraph -> AParser st OmsOrNetwork
+omsOrNetwork first l = fmap MkNetwork (try $ parseNetwork False l)
+  <|> fmap MkOms (if first then fmap emptyAnno $ groupSpec l else aSpec l)
 
 equivType :: LogicGraph -> AParser st EQUIV_TYPE
 equivType l = do

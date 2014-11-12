@@ -119,7 +119,7 @@ startingKeywords :: [String]
 startingKeywords =
     [ archS, fromS, logicS, newlogicS, refinementS, specS, unitS, viewS
     , ontologyS, alignmentS, networkS, equivalenceS, newcomorphismS
-    , interpretationS ]
+    , interpretationS, entailmentS ]
 
 -- | keywords that may follow a defining equal sign
 otherStartKeywords :: [String]
@@ -130,7 +130,7 @@ otherStartKeywords =
 continuationKeywords :: [String]
 continuationKeywords =
     [ behaviourallyS, getS, givenS, lambdaS, refinedS, resultS, toS, versionS
-    , excludingS ]
+    , excludingS, entailsS ]
 
 -- | reserved keywords
 casl_reserved_words :: [String]

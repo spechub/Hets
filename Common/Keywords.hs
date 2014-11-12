@@ -294,6 +294,12 @@ combineS = "combine"
 excludingS :: String
 excludingS = "excluding"
 
+entailmentS :: String
+entailmentS = "entailment"
+
+entailsS :: String
+entailsS = "entails"
+
 forS :: String
 forS = "for"
 

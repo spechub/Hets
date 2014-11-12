@@ -48,6 +48,8 @@ data LIB_ITEM = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) Range
               -- pos: "spec", "=", opt "end"
               | View_defn VIEW_NAME GENERICITY VIEW_TYPE [G_mapping] Range
               -- pos: "view", ":", opt "=", opt "end"
+              | Entail_defn IRI ENTAIL_TYPE Range
+              -- pos: "entailment", "=", opt "end"
               | Equiv_defn EQUIV_NAME EQUIV_TYPE (Annoted SPEC) Range
               -- pos: "equivalence", ":", "=", opt "end"
               | Align_defn ALIGN_NAME (Maybe ALIGN_ARITIES) VIEW_TYPE
@@ -108,7 +110,8 @@ data IMPORTED = Imported [Annoted SPEC] deriving (Show, Typeable)
 
 data VIEW_TYPE = View_type (Annoted SPEC) (Annoted SPEC) Range
   deriving (Show, Typeable)
-                 -- pos: "to"
+  -- pos: "to"
+
 data EQUIV_TYPE = Equiv_type SPEC SPEC Range deriving (Show, Typeable)
 
 data MODULE_TYPE = Module_type (Annoted SPEC) (Annoted SPEC) Range
@@ -120,6 +123,14 @@ data ALIGN_ARITIES = Align_arities ALIGN_ARITY ALIGN_ARITY
 data ALIGN_ARITY = AA_InjectiveAndTotal | AA_Injective | AA_Total
                  | AA_NeitherInjectiveNorTotal
                    deriving (Show, Enum, Bounded, Typeable)
+
+data OmsOrNetwork = MkOms (Annoted SPEC)
+  | MkNetwork Network
+  deriving (Show, Typeable)
+
+data ENTAIL_TYPE = Entail_type OmsOrNetwork OmsOrNetwork Range
+  deriving (Show, Typeable)
+  -- pos "entails"
 
 showAlignArity :: ALIGN_ARITY -> String
 showAlignArity ar = case ar of

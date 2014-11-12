@@ -88,10 +88,16 @@ instance PrettyLG LIB_ITEM where
             in topKey viewS <+>
                sep [sphead, prettyViewType ad lg vt, ppWithCommas ad]
                $+$ keyword endS
+        Entail_defn si (Entail_type s1 s2 _) _ -> topKey entailmentS <+>
+            sep [structIRI si <+> equals
+                , prettyLG lg s1
+                , keyword entailsS
+                , prettyLG lg s2 ]
+            $+$ keyword endS
         Equiv_defn si (Equiv_type as1 as2 _) sp _ -> topKey equivalenceS <+>
             sep [structIRI si <+> colon, sep
                 [ printGroupSpec lg $ emptyAnno as1
-                , text equiS
+                , equiv
                 , printGroupSpec lg $ emptyAnno as2]
                 <+> equals, prettyLG lg sp]
             $+$ keyword endS
@@ -132,6 +138,11 @@ instance PrettyLG LIB_ITEM where
         Logic_decl aa _ -> pretty aa
         Newlogic_defn nl _ -> pretty nl
         Newcomorphism_defn nc _ -> pretty nc
+
+instance PrettyLG OmsOrNetwork where
+   prettyLG lg s = case s of
+     MkOms o -> printGroupSpec lg o
+     MkNetwork n -> pretty n
 
 prettyDownloadItems :: DownloadItems -> [Doc]
 prettyDownloadItems d = case d of
