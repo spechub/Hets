@@ -141,9 +141,9 @@ logicDescr l = do
 
 -- * parse Logic_code
 
-parseLogic :: LogicGraph -> AParser st (Logic_code, LogicGraph)
-parseLogic lG = do
-   lc <- parseLogicAux lG
+parseLogic :: String -> LogicGraph -> AParser st (Logic_code, LogicGraph)
+parseLogic altKw lG = do
+   lc <- parseLogicAux altKw lG
    case lc of
      Logic_code _ _ (Just l) _ ->
          return (lc, setLogicName (nameToLogicDescr l) lG)
@@ -152,9 +152,9 @@ parseLogic lG = do
          return (lc, nLg)
      _ -> return (lc, lG)
 
-parseLogicAux :: LogicGraph -> AParser st Logic_code
-parseLogicAux lG =
-    do l <- asKey logicS
+parseLogicAux :: String -> LogicGraph -> AParser st Logic_code
+parseLogicAux altKw lG =
+    do l <- asKey logicS <|> asKey altKw
        do
            f <- asKey funS  -- parse at least a logic target after "logic"
            t <- logicName lG
@@ -214,23 +214,24 @@ parseItemsMap (Logic lid) = do
 
 
 parseMapping :: LogicGraph -> AParser st ([G_mapping], [Token])
-parseMapping = parseMapOrHide G_logic_translation G_symb_map parseItemsMap
+parseMapping =
+  parseMapOrHide "translation" G_logic_translation G_symb_map parseItemsMap
 
-parseMapOrHide :: (Logic_code -> a) -> (t -> a)
+parseMapOrHide :: String -> (Logic_code -> a) -> (t -> a)
                -> (AnyLogic -> AParser st (t, [Token])) -> LogicGraph
                -> AParser st ([a], [Token])
-parseMapOrHide constrLogic constrMap pa lG =
-    do (n, nLg) <- parseLogic lG
-       do c <- anComma
-          (gs, ps) <- parseMapOrHide constrLogic constrMap pa nLg
-          return (constrLogic n : gs, c : ps)
+parseMapOrHide altKw constrLogic constrMap pa lG =
+    do (n, nLg) <- parseLogic altKw lG
+       do optional anComma
+          (gs, ps) <- parseMapOrHide altKw constrLogic constrMap pa nLg
+          return (constrLogic n : gs, ps)
         <|> return ([constrLogic n], [])
     <|> do
       l <- lookupCurrentLogic "parseMapOrHide" lG
       (m, ps) <- pa l
-      do c <- anComma
-         (gs, qs) <- parseMapOrHide constrLogic constrMap pa lG
-         return (constrMap m : gs, ps ++ c : qs)
+      do optional anComma
+         (gs, qs) <- parseMapOrHide altKw constrLogic constrMap pa lG
+         return (constrMap m : gs, ps ++ qs)
         <|> return ([constrMap m], ps)
 
 -- * parse G_hiding
@@ -248,7 +249,8 @@ parseSingleSymb (Logic lid) = do
       return (G_symb_items_list lid cs, ps)
 
 parseHiding :: LogicGraph -> AParser st ([G_hiding], [Token])
-parseHiding = parseMapOrHide G_logic_projection G_symb_list parseItemsList
+parseHiding =
+  parseMapOrHide "along" G_logic_projection G_symb_list parseItemsList
 
 -- * specs
 
