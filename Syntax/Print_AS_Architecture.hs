@@ -12,8 +12,6 @@ Pretty printing of CASL architectural specifications
 
 module Syntax.Print_AS_Architecture () where
 
-import Data.List (intersperse)
-
 import Common.Doc
 import Common.DocUtils
 import Common.Keywords
@@ -63,7 +61,7 @@ instance PrettyLG REF_SPEC where
             prettyLG lg u : (if b then [] else [keyword behaviourallyS])
             ++ [keyword refinedS]
             ++ (if null m then [] else keyword viaS :
-                intersperse comma (map pretty m))
+                punctuate comma (map pretty m))
             ++ [keyword toS, prettyLG lg r]
         Arch_unit_spec aa _ ->
             fsep [keyword archS <+> keyword specS, prettyLG lg aa]
@@ -72,14 +70,14 @@ instance PrettyLG REF_SPEC where
             x : xs -> sep $ prettyLG lg x :
                map ( \ s -> keyword thenS <+> prettyLG lg s) xs
         Component_ref aa _ ->
-            specBraces $ fsep $ intersperse comma $ map (prettyLG lg) aa
+            specBraces $ sepByCommas $ map (prettyLG lg) aa
 
 instance PrettyLG UNIT_EXPRESSION where
     prettyLG lg (Unit_expression aa ab _) =
         let ab' = prettyLG lg ab
         in if null aa then ab'
            else fsep $ keyword lambdaS :
-                    intersperse semi (map (prettyLG lg) aa)
+                    punctuate semi (map (prettyLG lg) aa)
                     ++ [addBullet ab']
 
 instance PrettyLG UNIT_BINDING where
@@ -103,7 +101,7 @@ instance PrettyLG UNIT_TERM where
             x : xs -> sep $ prettyLG lg x :
                map ( \ s -> keyword andS <+> prettyLG lg s) xs
         Local_unit aa ab _ ->
-            fsep $ keyword localS : intersperse semi (map (prettyLG lg) aa)
+            fsep $ keyword localS : punctuate semi (map (prettyLG lg) aa)
                         ++ [keyword withinS, prettyLG lg ab]
         Unit_appl aa ab _ -> fsep $ structIRI aa : map (prettyLG lg) ab
         Group_unit_term aa _ -> specBraces $ prettyLG lg aa
