@@ -50,7 +50,7 @@ data LIB_ITEM = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) Range
               -- pos: "view", ":", opt "=", opt "end"
               | Entail_defn IRI ENTAIL_TYPE Range
               -- pos: "entailment", "=", opt "end"
-              | Equiv_defn EQUIV_NAME EQUIV_TYPE (Annoted SPEC) Range
+              | Equiv_defn EQUIV_NAME EQUIV_TYPE OmsOrNetwork Range
               -- pos: "equivalence", ":", "=", opt "end"
               | Align_defn ALIGN_NAME (Maybe ALIGN_ARITIES) VIEW_TYPE
                 [CORRESPONDENCE] Range
@@ -112,7 +112,9 @@ data VIEW_TYPE = View_type (Annoted SPEC) (Annoted SPEC) Range
   deriving (Show, Typeable)
   -- pos: "to"
 
-data EQUIV_TYPE = Equiv_type SPEC SPEC Range deriving (Show, Typeable)
+data EQUIV_TYPE = Equiv_type OmsOrNetwork OmsOrNetwork Range
+  deriving (Show, Typeable)
+  -- pos: "<->"
 
 data MODULE_TYPE = Module_type (Annoted SPEC) (Annoted SPEC) Range
   deriving (Show, Typeable)
@@ -167,11 +169,18 @@ getImportNames di = case di of
   ItemMaps im -> map (\ (ItemNameMap i mi) -> fromMaybe i mi) im
   UniqueItem i -> [i]
 
+getOms :: OmsOrNetwork -> [SPEC]
+getOms o = case o of
+  MkOms s -> [item s]
+  MkNetwork _ -> []
+
 getSpecDef :: LIB_ITEM -> [SPEC]
 getSpecDef li = case li of
   Spec_defn _ _ as _ -> [item as]
   View_defn _ _ (View_type s1 s2 _) _ _ -> [item s1, item s2]
-  Equiv_defn _ (Equiv_type s1 s2 _) as _ -> [s1, s2, item as]
+  Entail_defn _ (Entail_type s1 s2 _) _ -> getOms s1 ++ getOms s2
+  Equiv_defn _ (Equiv_type s1 s2 _) as _ ->
+    getOms s1 ++ getOms s2 ++ getOms as
   Align_defn _ _ (View_type s1 s2 _) _ _ -> [item s1, item s2]
   Module_defn _ (Module_type s1 s2 _) _ _ -> [item s1, item s2]
   _ -> []

@@ -96,9 +96,9 @@ instance PrettyLG LIB_ITEM where
             $+$ keyword endS
         Equiv_defn si (Equiv_type as1 as2 _) sp _ -> topKey equivalenceS <+>
             sep [structIRI si <+> colon, sep
-                [ printGroupSpec lg $ emptyAnno as1
+                [ prettyLG lg as1
                 , text equiS
-                , printGroupSpec lg $ emptyAnno as2]
+                , prettyLG lg as2]
                 <+> equals, prettyLG lg sp]
             $+$ keyword endS
         Align_defn si ar vt corresps _ ->

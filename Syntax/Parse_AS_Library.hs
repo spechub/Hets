@@ -165,7 +165,7 @@ libItem l = specDefn l
        s2 <- colonT
        et <- equivType l
        s3 <- equalT
-       sp <- aSpec l
+       sp <- omsOrNetwork False l
        ep <- optEnd
        return (Equiv_defn en et sp
            (catRange (s1 : s2 : s3 : maybeToList ep)))
@@ -279,9 +279,9 @@ omsOrNetwork first l = fmap MkNetwork (try $ parseNetwork False l)
 
 equivType :: LogicGraph -> AParser st EQUIV_TYPE
 equivType l = do
-    sp1 <- groupSpec l
+    sp1 <- omsOrNetwork True l
     r <- equiT
-    sp2 <- groupSpec l
+    sp2 <- omsOrNetwork True l
     return $ Equiv_type sp1 sp2 $ tokPos r
 
 alignArities :: AParser st ALIGN_ARITIES
