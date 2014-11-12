@@ -132,7 +132,6 @@ viewDefn l = do
        vt <- viewType l
        (symbMap, ps) <- option ([], []) $ do
          s <- equalT
-         optional $ try $ asKey "translation"
          (m, _) <- parseMapping l
          return (m, [s])
        q <- optEnd
