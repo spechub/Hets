@@ -120,7 +120,7 @@ instance PrettyLG LIB_ITEM where
                   Module_type sp1 sp2 _ -> sep
                     [prettyLG lg sp1, text ofS, prettyLG lg sp2]
             in topKey moduleS <+>
-               sep [sphead, spmt, text forS, sep $ map structIRI rs]
+               sep [sphead, spmt, text forS, pretty rs]
         Arch_spec_defn si ab _ -> topKey archS <+>
             fsep [keyword specS, structIRI si <+> equals, prettyLG lg ab]
             $+$ keyword endS

@@ -20,6 +20,7 @@ module Syntax.Parse_AS_Structured
     , qualification
     , parseMapping
     , parseCorrespondences
+    , parseItemsList
     , translationList
     , renaming
     , restriction
@@ -556,7 +557,7 @@ correspondence l = do
     return $ Single_correspondence mcid eRef toer mrRef mconf
 
 corr1 :: LogicGraph
-      -> AParser st ( Maybe CORRESPONDENCE_ID, G_symb_items_list
+      -> AParser st ( Maybe Annotation, G_symb_items_list
                     , Maybe RELATION_REF, Maybe CONFIDENCE, G_symb_items_list)
 corr1 l = do
     al <- lookupCurrentLogic "correspondence" l

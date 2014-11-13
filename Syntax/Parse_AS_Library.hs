@@ -13,13 +13,14 @@ Parser for CASL specification librariess
 
 module Syntax.Parse_AS_Library (library) where
 
-import Logic.Grothendieck (LogicGraph, dolOnly, prefixes)
+import Logic.Grothendieck
 import Syntax.AS_Structured
 import Syntax.AS_Library
 import Syntax.Parse_AS_Structured
 import Syntax.Parse_AS_Architecture
 
 import Common.AS_Annotation
+import Common.AnnoParser
 import Common.AnnoState
 import Common.Id
 import Common.IRI
@@ -127,7 +128,14 @@ viewDefn l = do
     s1 <- choice $ map asKey [viewS, interpretationS, refinementS]
     vn <- hetIRI l
     do
+       kEqu <- equalT
+       rsp <- refSpec l
+       kEnd <- optEnd
+       return . Ref_spec_defn vn rsp
+                   . catRange $ [s1, kEqu] ++ maybeToList kEnd
+      <|> do
        g <- generics l
+       _ <- annotations -- TODO: store annotations
        s2 <- asKey ":"
        vt <- viewType l
        (symbMap, ps) <- option ([], []) $ do
@@ -137,12 +145,6 @@ viewDefn l = do
        q <- optEnd
        return . View_defn vn g vt symbMap
          . catRange $ [s1, s2] ++ ps ++ maybeToList q
-      <|> do
-       kEqu <- equalT
-       rsp <- refSpec l
-       kEnd <- optEnd
-       return . Ref_spec_defn vn rsp
-                   . catRange $ [s1, kEqu] ++ maybeToList kEnd
 
 entailDefn :: LogicGraph -> AParser st LIB_ITEM
 entailDefn l = do
@@ -186,7 +188,7 @@ libItem l = specDefn l
   <|> -- module defn
     do s1 <- asKey moduleS
        mn <- hetIRI l
-       -- TODO: parse annotations
+       _ <- annotations -- TODO: store annotations
        s2 <- asKey ":"
        mt <- moduleType l
        s3 <- asKey forS
@@ -311,8 +313,11 @@ moduleType l = do
   sp2 <- aSpec l
   return $ Module_type sp1 sp2 (tokPos s)
 
-restrictionSignature :: LogicGraph -> AParser st RESTRICTION_SIGNATURE
-restrictionSignature lG = many1 $ hetIRI lG
+restrictionSignature :: LogicGraph -> AParser st G_symb_items_list
+restrictionSignature lG = do
+  l <- lookupCurrentLogic "restrictionSignature" lG
+  fmap fst $ parseItemsList l
+
 
 simpleIdOrDDottedId :: GenParser Char st Token
 simpleIdOrDDottedId = pToken $ liftM2 (++)

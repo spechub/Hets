@@ -25,7 +25,7 @@ import Common.LibName
 import Data.Maybe
 import Data.Typeable
 
-import Logic.Grothendieck (G_basic_spec)
+import Logic.Grothendieck
 import Logic.Logic
 
 import Syntax.AS_Architecture
@@ -46,15 +46,15 @@ data LIB_DEFN = Lib_defn LibName [Annoted LIB_ITEM] Range [Annotation]
 
 data LIB_ITEM = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) Range
               -- pos: "spec", "=", opt "end"
-              | View_defn VIEW_NAME GENERICITY VIEW_TYPE [G_mapping] Range
+              | View_defn IRI GENERICITY VIEW_TYPE [G_mapping] Range
               -- pos: "view", ":", opt "=", opt "end"
               | Entail_defn IRI ENTAIL_TYPE Range
               -- pos: "entailment", "=", opt "end"
-              | Equiv_defn EQUIV_NAME EQUIV_TYPE OmsOrNetwork Range
+              | Equiv_defn IRI EQUIV_TYPE OmsOrNetwork Range
               -- pos: "equivalence", ":", "=", opt "end"
-              | Align_defn ALIGN_NAME (Maybe ALIGN_ARITIES) VIEW_TYPE
+              | Align_defn IRI (Maybe ALIGN_ARITIES) VIEW_TYPE
                 [CORRESPONDENCE] Range
-              | Module_defn MODULE_NAME MODULE_TYPE RESTRICTION_SIGNATURE Range
+              | Module_defn IRI MODULE_TYPE G_symb_items_list Range
               {- G_symb_items_list is RESTRICTION-SIGNATURE
               TODO: CONSERVATIVE? -}
               | Arch_spec_defn ARCH_SPEC_NAME (Annoted ARCH_SPEC) Range

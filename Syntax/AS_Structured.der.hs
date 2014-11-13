@@ -73,7 +73,7 @@ data SPEC = Basic_spec G_basic_spec Range
             -- pos: "apply", use a basic spec parser to parse a sentence
             deriving (Show, Typeable)
 
-data Network = Network [LABELED_ONTO_OR_INTPR_REF] [EXTENSION_REF] Range
+data Network = Network [LABELED_ONTO_OR_INTPR_REF] [IRI] Range
   deriving (Show, Eq, Typeable)
 
 data FILTERING = SelectOrReject Bool G_basic_spec Range
@@ -82,10 +82,10 @@ data FILTERING = SelectOrReject Bool G_basic_spec Range
 data EXTRACTION = ExtractOrRemove Bool [IRI] Range
   deriving (Show, Eq, Typeable)
 
-data APPROXIMATION = ForgetOrKeep Bool [G_hiding] (Maybe LOGIC_REF) Range
+data APPROXIMATION = ForgetOrKeep Bool [G_hiding] (Maybe IRI) Range
   deriving (Show, Eq, Typeable)
 
-data MINIMIZATION = Mini Token CircMin CircVars Range
+data MINIMIZATION = Mini Token [IRI] [IRI] Range
   deriving (Show, Eq, Typeable)
 
 
@@ -113,20 +113,11 @@ data G_hiding = G_symb_list G_symb_items_list
 
 data FIT_ARG = Fit_spec (Annoted SPEC) [G_mapping] Range
                -- pos: opt "fit"
-             | Fit_view VIEW_NAME [Annoted FIT_ARG] Range
+             | Fit_view IRI [Annoted FIT_ARG] Range
                -- annotations before the view keyword are stored in Spec_inst
                deriving (Show, Typeable)
 
 type SPEC_NAME = IRI
-type VIEW_NAME = IRI
-type EQUIV_NAME = IRI
-type ALIGN_NAME = IRI
-type MODULE_NAME = IRI
-type ENTITY = IRI
-type RESTRICTION_SIGNATURE = [ENTITY]
-type CircMin = [Symb]
-type CircVars = [Symb]
-type Symb = IRI
 
 -- | a logic with serialization or a DOL qualification
 data LogicDescr = LogicDescr Logic_name (Maybe IRI) Range
@@ -157,18 +148,8 @@ data Logic_name = Logic_name
   (Maybe SPEC_NAME) -- for a sublogic based on the given theory
   deriving (Show, Eq, Typeable)
 
-data LABELED_ONTO_OR_INTPR_REF = Labeled (Maybe CombineID) ONTO_OR_INTPR_REF
+data LABELED_ONTO_OR_INTPR_REF = Labeled (Maybe Token) IRI
   deriving (Show, Eq, Typeable)
-
-type ONTO_NAME = IRI
-type EXTENSION_NAME = IRI
-type IMPORT_NAME = IRI
-
-type ONTO_OR_INTPR_REF = IRI
-type ONTO_REF = IRI
-type EXTENSION_REF = IRI
-type LOGIC_REF = IRI
-type CombineID = Token
 
 nameToLogicDescr :: Logic_name -> LogicDescr
 nameToLogicDescr n = LogicDescr n Nothing nullRange
@@ -196,21 +177,13 @@ data CORRESPONDENCE = Correspondence_block
                         (Maybe CONFIDENCE)
                         [CORRESPONDENCE]
                     | Single_correspondence
-                        (Maybe CORRESPONDENCE_ID)
+                        (Maybe Annotation)
                         G_symb_items_list -- was ENTITY_REF
                         G_symb_items_list -- was TERM_OR_ENTITY_REF
                         (Maybe RELATION_REF)
                         (Maybe CONFIDENCE)
                     | Default_correspondence
                       deriving (Show, Eq, Typeable)
-
-type CORRESPONDENCE_ID = Annotation
-
-type ENTITY_REF = IRI
-
-data TERM_OR_ENTITY_REF = Term G_symb_items_list Range
-                        | Entity_ref ENTITY_REF
-                          deriving (Show, Eq, Typeable)
 
 data RELATION_REF = Subsumes | IsSubsumed | Equivalent | Incompatible
                   | HasInstance | InstanceOf | DefaultRelation
