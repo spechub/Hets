@@ -5,5 +5,5 @@ do
    j=`basename $i .thy`
    ( cd `dirname $i`; \
      echo " use_thy \"$j\"; quit();" \
-     | isabelle-process )
+     | isabelle_process )
 done

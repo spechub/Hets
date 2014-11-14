@@ -63,7 +63,9 @@ instance Logic Isabelle () () Sentence () ()
          stability _ = Testing
     -- again default implementations are fine
          empty_proof_tree _ = ()
-         provers Isabelle = [isabelleProver, isabelleBatchProver]
+         provers Isabelle =
+           [isabelleProver Emacs, isabelleProver JEdit, isabelleBatchProver]
          cons_checkers Isabelle = [isabelleConsChecker]
 
-instance LogicalFramework Isabelle () () Sentence () () Sign IsabelleMorphism () () ()
+instance LogicalFramework Isabelle () () Sentence () () Sign IsabelleMorphism
+  () () ()
