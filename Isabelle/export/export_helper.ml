@@ -262,7 +262,7 @@ struct
                                 };
 
 	(* Add token position to error message *)
-	fun failT s t = Fail (s^" at "^Token.pos_of t);
+	fun failT s t = Fail (s^" at "^(ML_Syntax.print_position (Token.pos_of t)));
 	fun content s t = if Token.content_of t = s then Result s
                           else failT ("Expected content '"^s^"' but found "^
                                       "content '"^Token.content_of t^"'") t;
@@ -709,10 +709,8 @@ val thmNum = Unsynchronized.ref 0
 (* create a theory from a string of its body *)
 fun theory_of_string body parents =
      let val name   = "TempTheory"^Int.toString (Unsynchronized.inc thmNum)
-         val header = Thy_Header.make ("TempTheory",Position.none) [] [] []
-         val text   = unlines ["theory "^name,"begin",body,"end"]
-     in #1 (Thy_Load.load_thy 0 (Thy_Load.get_master_path ()) header
-         Position.start text parents) end
+	 val text   = unlines ["theory "^name,"begin",body,"end"]
+     in Thy_Info.script_thy Position.start text end
 
 fun remove_hol_true_prop t = case t of
    op$ (Const ("HOL.Trueprop",_), tm) => tm
@@ -753,8 +751,10 @@ fun hol_conjunctions tm = case HOLogic.dest_conj tm of
  | tms => List.concat (List.map hol_conjunctions tms)
 
 fun thms_of T      = List.map (fn (s,d) => (s,prop_of d))
-                      (remove_parent_data Global_Theory.all_thms_of
+                      (remove_parent_data (fn t => Global_Theory.all_thms_of t true)
                       (lift fast_string_ord #1) T)
+
+fun dest_table tbl = Name_Space.fold_table (fn t => fn l => t::l) tbl [];
 
 (* currently there seems to be no way (anymore) to
    attach any terms to a const directly. Thus the discarded
@@ -762,8 +762,7 @@ fun thms_of T      = List.map (fn (s,d) => (s,prop_of d))
    todo: maybe throw an exception if this is not the case? *)
 fun consts_of T    =
  let val get_consts = fn T => List.map (fn (n,(t,_)) => (n,t))
-                       (((Name_Space.dest_table (Syntax.init_pretty_global T)) o
-                        #constants o Consts.dest o Sign.consts_of) T)
+                       (#constants (Consts.dest (Proof_Context.consts_of (Syntax.init_pretty_global T))))
  in remove_parent_data get_consts (lift fast_string_ord #1) T end
 
 fun datatypes_of T =
@@ -815,7 +814,7 @@ fun classes_of T =
           String.size cls_suffix)) (List.filter (String.isSuffix cls_suffix)
           (List.map #1 thms))
  in List.map (fn name => 
-     let val i        = AxClass.get_info T name
+     let val i        = Axclass.get_info T name
          val parents' = List.concat (List.map
              (fn tm => Term.add_const_names tm [])
              ((Logic.dest_conjunction_list o #2
@@ -830,7 +829,7 @@ fun classes_of T =
          (* note: instead of cls_names we should only use
                   ancestors of the class *)
          val all_params = List.map (fn (s,t) => (Long_Name.base_name s,t))
-              (List.concat (List.map (#params o AxClass.get_info T) cls_names))
+              (List.concat (List.map (#params o Axclass.get_info T) cls_names))
          val sub_vars   = List.map (fn (s,t) => ((s,0),Free (s,t))) all_params
          val axioms     = List.map (fn (s,t) => (s,Term.subst_Vars sub_vars t))
                            axioms'
@@ -857,7 +856,7 @@ fun locales_of T   =
                                      (Locale.params_of T name))
        val filter  = ["_axioms.intro","_axioms_def","_def",".intro",".axioms_"]
        val axs     = List.filter ((String.isPrefix name) o #1)
-                                 (Global_Theory.all_thms_of T)
+                                 (Global_Theory.all_thms_of T true)
        val axioms' = List.filter
             (fn t => (not (List.exists
                       (fn s => String.isPrefix (name ^ s) (#1 t))
@@ -1012,8 +1011,6 @@ fun get_theories T =
 
 (* Generate XML Output *)
 
-structure XML_Syntax = Legacy_XML_Syntax
-
 fun fixTypeNames moduleName t = case t of
    XML.Elem (("Type",a),c) => XML.Elem (("Type",
     List.map (fn (n,s) =>
@@ -1043,20 +1040,20 @@ fun xml_of_term' T tbl t = case t of
  | _ => t
 
 fun xml_of_term T t = xml_of_term' T Symtab.empty
-     (XML_Syntax.xml_of_term t)
+     (the_single (Term_XML.Encode.term t))
 
 fun xml_of_datatype _ eqs = XML.Elem (("RecDatatypes",[]),List.map
  (fn (name,type_params,constructors) =>
     XML.Elem (("Datatype",[("name",Long_Name.base_name name)]),
-       (List.map XML_Syntax.xml_of_type type_params)
+       (List.map (the_single o Term_XML.Encode.typ) type_params)
       @(List.map (fn (s,tps) => XML.Elem
          (("Constructor",[("name",Long_Name.base_name s)]),
-           List.map XML_Syntax.xml_of_type tps))
+           List.map (the_single o Term_XML.Encode.typ) tps))
          constructors))) eqs)
 
 fun xml_of_function T (name,tp,def_eqs) =
  XML.Elem (("Function",[("name",Long_Name.base_name name)]),
-           (XML_Syntax.xml_of_type tp)
+           ((the_single o Term_XML.Encode.typ) tp)
   ::(List.map(fn (pats,tm) =>
    XML.Elem (("Equations",[]),List.map (xml_of_term T)
    (pats@[tm]))) def_eqs))
@@ -1070,14 +1067,14 @@ fun xml_of_class T (name,parents,assumps,fixes) =
     [xml_of_term T t])) assumps)
  @(List.map (fn (s,t) =>
    XML.Elem (("ClassParam",[("name",Long_Name.base_name s)]),
-    [XML_Syntax.xml_of_type t])) fixes))
+    [(the_single o Term_XML.Encode.typ) t])) fixes))
 
 fun xml_of_locale T (name,fixes,assumps,thms,parents) =
  XML.Elem (("Locale",[("name",Long_Name.base_name name)]),
   (List.map (fn ((s,t),m) =>
    XML.Elem (("LocaleParam",[("name",Long_Name.base_name s)]
      @(mixfix_to_args (SOME m))),
-    [XML_Syntax.xml_of_type t])) fixes)
+    [(the_single o Term_XML.Encode.typ) t])) fixes)
  @(List.map (fn (s,t) =>
    XML.Elem (("Assumption",[("name",Long_Name.base_name s)]),
     [xml_of_term T t])) assumps)
@@ -1100,7 +1097,7 @@ fun xml_of_theory (name, axs, thms, cs, dts, fns, cls, locales) =
                       [(xml_of_term T o prettify_term) t])) thms
      val consts   = List.map (fn (n,tp) => XML.Elem
                      (("Const",[("name",Long_Name.base_name n)]),
-                      [XML_Syntax.xml_of_type tp])) cs
+                      [(the_single o Term_XML.Encode.typ) tp])) cs
      val datatypes = List.map (xml_of_datatype T) dts
      val functions = List.map (xml_of_function T) fns
      val classes   = List.map (xml_of_class T) cls

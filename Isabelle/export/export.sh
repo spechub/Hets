@@ -48,14 +48,14 @@ else
 fi
 
 if [ ! -z $ISABELLE_BIN_PATH ]; then
- ISABELLE="$ISABELLE_BIN_PATH/isabelle"
+ ISABELLE="$ISABELLE_BIN_PATH/isabelle_process"
  if [ ! -e $ISABELLE ]; then
   echo "v0:Cannot find isabelle executable. Maybe you didn't specify ISABELLE_BIN_PATH correctly?" > $COMM_FILE
   exit 1
  fi
 else
- if which isabelle > /dev/null ; then
-   ISABELLE=`which isabelle`
+ if which isabelle_process > /dev/null ; then
+   ISABELLE=`which isabelle_process`
  else
   echo "v0:Cannot find isabelle executable. Maybe you need to specify ISABELLE_BIN_PATH?" > $COMM_FILE
   exit 1
@@ -81,7 +81,7 @@ echo "v1:Starting Isabelle" > $COMM_FILE
 
 (
  echo "theory IsaExport
-imports Datatype FunDef Fixrec Domain
+imports Datatype Fun_Def_Base Fixrec Domain
 begin
 ML {*
 
@@ -110,7 +110,7 @@ v \"Writing theory information\n\";
 handle ex => e ((General.exnMessage ex)^\"\n\");
 *}
 end"
-) | ($ISABELLE tty -l HOLCF) | tee $TEMP_FILE
+) | ($ISABELLE -I HOLCF) | tee $TEMP_FILE
 
 if grep "*** Error" $TEMP_FILE &> /dev/null ; then
  echo "v0:Loading Theory failed" > $COMM_FILE

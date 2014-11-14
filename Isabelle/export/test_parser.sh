@@ -36,14 +36,14 @@ if [ ! -r $TRANS.thy ]; then
 fi
 
 if [ ! -z $ISABELLE_BIN_PATH ]; then
- ISABELLE="$ISABELLE_BIN_PATH/isabelle"
+ ISABELLE="$ISABELLE_BIN_PATH/isabelle_process"
  if [ ! -e $ISABELLE ]; then
   echo "Cannot find isabelle executable. Maybe you didn't specify ISABELLE_BIN_PATH correctly?"
   exit 1
  fi
 else
- if which isabelle > /dev/null ; then
-   ISABELLE=`which isabelle`
+ if which isabelle_process > /dev/null ; then
+   ISABELLE=`which isabelle_process`
  else
   echo "Cannot find isabelle executable. Maybe you need to specify ISABELLE_BIN_PATH?"
   exit 1
@@ -69,7 +69,7 @@ echo "Starting Isabelle"
 
 (
  echo "theory IsaExport
-imports Datatype FunDef
+imports Datatype Fun_Def_Base
 begin
 ML {*
 
@@ -83,7 +83,7 @@ File.write (Path.explode \"./test.out\") (Parser.scan s |> PolyML.makestring);
 
 *}
 end"
-) | ($ISABELLE tty) | tee $TEMP_FILE
+) | ($ISABELLE -I) | tee $TEMP_FILE
 
 if grep "*** Error" $TEMP_FILE &> /dev/null ; then
  echo "Loading Theory failed"

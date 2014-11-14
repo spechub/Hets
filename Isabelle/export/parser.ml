@@ -206,7 +206,8 @@ struct
                    >> K Syntax.Parse_Print_Rule) toks
 	  in trans_pat -- Parse.!!! (trans_arrow -- trans_pat)
 	    >> (fn (left, (arr, right)) => arr (left, right)) end;
-	val trfun = Parse.opt_keyword "advanced" -- Parse.ML_source;
+	val ml_source = Parse.ML_source >> (fn t => (#text t, #pos t));
+	val trfun = Parse.opt_keyword "advanced" -- ml_source;
 	fun first' l = Scan.first (List.map preserve_toks l);
 	fun parse_interpretation_arguments mandatory = (* line 428 *)
 	  Parse.!!! (Parse_Spec.locale_expression mandatory) --
@@ -337,11 +338,11 @@ struct
                             >> NoTypeNotation),
 	("notation",Parse.opt_target --
                     (opt_mode -- Parse.and_list1
-                     (Parse.const -- Parse_Spec.locale_mixfix))
+                     (Parse.const -- Parse.mixfix))
                      >> Notation),                         (* line 216 *)
 	("no_notation",Parse.opt_target --
                     (opt_mode -- Parse.and_list1
-                     (Parse.const -- Parse_Spec.locale_mixfix))
+                     (Parse.const -- Parse.mixfix))
                      >> NoNotation),                       (* line 216 *)
 	("axiomatization",Scan.optional Parse.fixes [] --  (* line 231 *)
                           Scan.optional (Parse.where_ |--
@@ -370,32 +371,32 @@ struct
                       Scan.repeat1 Parse.xname 
                       >> hide "fact"),
 	("use",Parse.path >> Use),                         (* line 273 *)
-	("ML",Parse.ML_source >> ML),                      (* line 280 *)
-	("ML_prf",Parse.ML_source >> ML_prf),              (* line 287 *)
-	("ML_val",Parse.ML_source >> ML_val),              (* line 293 *)
-	("ML_command",Parse.ML_source >> ML_command),      (* line 297 *)
-	("setup",Parse.ML_source >> Setup),                (* line 301 *)
+	("ML",ml_source >> ML),                           (* line 280 *)
+	("ML_prf",ml_source >> ML_prf),              (* line 287 *)
+	("ML_val",ml_source >> ML_val),              (* line 293 *)
+	("ML_command",ml_source >> ML_command),      (* line 297 *)
+	("setup",ml_source >> Setup),                (* line 301 *)
 	("local_setup",Parse.opt_target --
-                       Parse.ML_source >> LocalSetup),     (* line 305 *)
+                       ml_source >> LocalSetup),     (* line 305 *)
 	("attribute_setup",Parse.position Parse.name --    (* line 309 *)
                            Parse.!!! (@{keyword "="} |--
-                           Parse.ML_source -- Scan.optional
+                           ml_source -- Scan.optional
                            Parse.text "") >> AttributeSetup),
 	("method_setup",Parse.position Parse.name --       (* line 315 *)
                            Parse.!!! (@{keyword "="} |--
-                           Parse.ML_source -- Scan.optional
+                           ml_source -- Scan.optional
                            Parse.text "") >> MethodSetup),
 	("declaration",Parse.opt_target --                 (* line 321 *)
                        Parse.opt_keyword "pervasive" --
-                       Parse.ML_source >> Declaration),
+                       ml_source >> Declaration),
 	("syntax_declaration",Parse.opt_target --          (* line 326 *)
                        Parse.opt_keyword "pervasive" --
-                       Parse.ML_source >> SyntaxDeclaration),
+                       ml_source >> SyntaxDeclaration),
 	("simproc_setup",Parse.opt_target --               (* line 331 *)
                        Parse.position Parse.name --
                        (@{keyword "("} |-- Parse.enum1 "|"
                         Parse.term --| @{keyword ")"} --|
-                        @{keyword "="}) -- Parse.ML_source
+                        @{keyword "="}) -- ml_source
                        -- Scan.optional (@{keyword "identifier"} 
                        |-- Scan.repeat1 Parse.xname) []
                        >> SimprocSetup),
@@ -408,7 +409,7 @@ struct
 	("print_ast_translation", trfun >>
           PrintAstTranslation),                            (* line 364 *)
 	("oracle", Parse.position Parse.name --
-           (@{keyword "="} |-- Parse.ML_source) >> Oracle),(* line 371 *)
+           (@{keyword "="} |-- ml_source) >> Oracle),(* line 371 *)
         ("bundle", Parse.opt_target -- (Parse.binding      (* line 379 *)
           --| @{keyword "="}) -- Parse_Spec.xthms1 --
           Parse.for_fixes >> Bundle),
@@ -602,34 +603,16 @@ struct
 	val thy_body = simple_thy_body || rec_thy_body;
 	(* taken from Pure/Thy/thy_load.ML *)
         fun read init state toks =
-             let val master_dir = Thy_Load.get_master_path ()
-                 val spans = (*map (resolve_files master_dir)*)
-                                 (Thy_Syntax.parse_spans toks)
-                 val elements = Thy_Syntax.parse_elements spans
-                 (* fun excursion *)
-                 val immediate = not (Goal.future_enabled ())
-                 fun proof_result (tr, trs) (st, _) =
-                      let
-                        val (result, st') = Toplevel.proof_result immediate
-                                             (tr, trs) st
-                        val pos' = Toplevel.pos_of (List.last (tr :: trs))
-                      in (result, (st', pos')) end
-                 fun element_result elem x =
-                      fold_map proof_result
-                        (Outer_Syntax.read_element (#2
-                         (Outer_Syntax.get_syntax ())) init elem) x
-                val (results, (end_state, end_pos)) = fold_map element_result
-                     elements (state, Position.none)
+             let val end_state =
+                           List.foldl (fn (t,s) => Toplevel.command_exception true t s)
+                            state (Outer_Syntax.read_spans
+                             (#2 (Outer_Syntax.get_syntax ())) toks)
              in end_state end;
 	fun init_thy dir (toks,header) =
             let val t = read (K
-                (let val {name = (name, _), imports, uses, ...} = header
-	 	     val _ = Thy_Header.define_keywords header
-    	    	     val _ = Present.init_theory name
-                     val master_dir = dir
+                (let val {name = (name, _), imports, ...} = header
 		     val parents = List.map (Thy_Info.get_theory o #1) imports
-	         in Thy_Load.begin_theory master_dir header parents
-                 |> Present.begin_theory 0 master_dir uses end))
+	         in Resources.begin_theory dir header parents end))
             in (t Toplevel.toplevel toks,t) end;
 end;
 
@@ -681,7 +664,7 @@ struct
                         Keyword.get_lexicons Position.start
                     |> Token.source_proper
                     |> Source.source Token.stopper
-                        (Scan.bulk (Parse.$$$ "--" -- Parse.!!! Parse.doc_source
+                        (Scan.bulk (Parse.$$$ "--" -- Parse.!!! Parse.document_source
                           >> K NONE || Parse.not_eof >> SOME)) NONE
                     |> Source.map_filter I |> Source.exhaust;
 	val dbg = List.map (fn t => (Token.kind_of t,Token.content_of t));
@@ -690,11 +673,11 @@ struct
                   --| Parse.command_name "end"
                   #> (fn (((h,a),b),_) => Thy {header=h,args=a,body=b}));
 	fun read_sort state loc =
-         let val ctxt = Named_Target.context_cmd (the_default
+         let val ctxt = Named_Target.begin (the_default
                          ("-", Position.none) loc) (Toplevel.theory_of state)
          in Syntax.read_sort ctxt end;
         fun do_read read mode state loc =
-         let val ctxt' = Named_Target.context_cmd (the_default
+         let val ctxt' = Named_Target.begin (the_default
                           ("-", Position.none) loc) (Toplevel.theory_of state)
              val ctxt  = Proof_Context.set_mode mode ctxt'
          in read ctxt end;
@@ -807,7 +790,11 @@ struct
                            (Context.theory_name T')) > 0
 	               then T'::(get_non_image_parents T') else [])
 	     (Context.parents_of T))
-	structure XML_Syntax = Legacy_XML_Syntax
+	structure XML_Syntax =
+	struct
+		val xml_of_type = the_single o Term_XML.Encode.typ;
+		val xml_of_term = the_single o Term_XML.Encode.term;
+	end
 	open TheoryData
 	open XML_Helper
 	datatype thy = datatype Parser.thy;
@@ -1290,16 +1277,16 @@ struct
                                    |> flat
                 val imports      = List.map xml_of_import (#imports h)
 		val keywords     = List.map xml_of_keyword (#keywords h)
-		val uses         = List.map xml_of_use (#uses h)
+		val uses         = [] (*List.map xml_of_use (#uses h)*)
                 val name         = attr "name" #1 (#name h)
 		val header'      = attr_of_option "header" "header" I header 
 		val (s,t)        = ParserHelper.init_thy dir (th,h)
                 val _            = v ("Exporting theory "^tname^"\n")
 		val (s',body'')  = xml_of_body (s,t) body
-                val _            = Toplevel.command (Toplevel.exit
+                val _            = ()(*Toplevel.command_exception true (Toplevel.exit
                                     Toplevel.empty) (#1 s') |>
                                    Toplevel.end_theory Position.none |>
-                                   Thy_Info.register_thy
+                                   Thy_Info.register_thy*)
                 val body'        = [body'' |> List.rev |> xml "Body" []]
             in thys@[xml "Thy" (name@header') (imports@keywords@body')] end;
 end;
