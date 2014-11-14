@@ -462,6 +462,13 @@ hets-opt:
 	$(MAKE) clean
 	$(MAKE) hets-optimized
 
+# the variant without GUI
+hets-server: HASKELINE_PACKAGE =
+hets-server: GLADE_PACKAGE =
+hets-server: UNI_PACKAGE =
+hets-server: $(derived_sources)
+	$(HC) --make -O -o hets-server hets.hs $(HC_OPTS)
+
 hets-optimized: $(derived_sources)
 	$(HC) --make -O -o hets hets.hs $(HC_OPTS)
 
@@ -561,6 +568,7 @@ o_clean:
 bin_clean:
 	$(RM) hets
 	$(RM) hets.cgi
+	$(RM) hets-server
 	$(RM) $(TESTTARGETS)
 
 clean_pretty:
