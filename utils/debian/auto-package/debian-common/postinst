@@ -1,6 +1,7 @@
-#/bin/sh
+#/bin/bash
+set -e
 
-version=`isabelle version`
+version=`isabelle version 2>/dev/null || exit 0`
 
 if [[ $version == *2014 ]]
  then 
@@ -15,3 +16,4 @@ else if [[ $version == *2012 ]]
   echo " sudo apt-get install isabelle-installer"
  fi
 fi
+#DEBHELPER#
