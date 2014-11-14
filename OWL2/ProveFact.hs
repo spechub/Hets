@@ -49,8 +49,15 @@ import Data.Maybe
   feedback), then starts the GUI prover.
 -}
 factProver :: Prover Sign Axiom OWLMorphism ProfSub ProofTree
-factProver = mkAutomaticProver "Fact" topS factGUI
-  factCMDLautomaticBatch
+factProver = (mkAutomaticProver "java" "Fact" topS factGUI
+  factCMDLautomaticBatch)
+  { proverUsable = checkOWLjar factProverJarS }
+
+factProverJarS :: String
+factProverJarS = "OWLFactProver.jar"
+
+factJarS :: String
+factJarS = "OWLFact.jar"
 
 {- |
   Invokes the generic prover GUI.
@@ -90,7 +97,8 @@ factCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
   The Cons-Checker implementation.
 -}
 factConsChecker :: ConsChecker Sign Axiom ProfSub OWLMorphism ProofTree
-factConsChecker = mkConsChecker "Fact" topS consCheck
+factConsChecker = (mkConsChecker "Fact" topS consCheck)
+  { ccUsable = checkOWLjar factJarS }
 
 {- |
   Record for prover specific functions. This is used by both GUI and command
@@ -149,7 +157,7 @@ runTimedFact :: FilePath -- ^ basename of problem file
   -> IO (Maybe (Bool, ExitCode, String, TimeOfDay))
 runTimedFact tmpFileName prob mEnt tLimit = do
   let hasEnt = isJust mEnt
-      jar = if hasEnt then "OWLFactProver.jar" else "OWLFact.jar"
+      jar = if hasEnt then factProverJarS else factJarS
       jlibName = "libFaCTPlusPlusJNI.so"
   (progTh, toolPath) <- check4HetsOWLjar jar
   hasJniLib <- doesFileExist $ "/lib/" ++ jlibName

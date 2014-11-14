@@ -95,14 +95,14 @@ getEntityTypeMap :: EntityType -> (Int, OWLMorphism)
                     -> (Int, Map.Map QName QName)
 getEntityTypeMap e (i, phi) = let
  f = Map.filterWithKey
-      (\ (Entity x _) _ -> x == e) $ mmaps phi
+      (\ (Entity _ x _) _ -> x == e) $ mmaps phi
  in (i, Map.fromList $
-    map (\ (Entity _ x, y) -> (x, y)) $
+    map (\ (Entity _ _ x, y) -> (x, y)) $
     Map.toAscList f)
 
 setEntityTypeMap :: EntityType -> Map.Map QName QName
                     -> Map.Map Entity QName
-setEntityTypeMap = Map.mapKeys . Entity
+setEntityTypeMap = Map.mapKeys . mkEntity
 
 getPrefixMap :: (Int, OWLMorphism) -> (Int, Map.Map QName QName)
 getPrefixMap (i, phi) = let

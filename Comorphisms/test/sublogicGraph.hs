@@ -23,7 +23,8 @@ import qualified Data.Map as Map
 main :: IO ()
 main = do
   testInj_mapSublogicAll
-  putStrLn ("Size of HetSublogicGraph (n,e): " ++ show (size hetSublogicGraph))
+  hsg <- hetSublogicGraph
+  putStrLn ("Size of HetSublogicGraph (n,e): " ++ show (size hsg))
 
 size :: HetSublogicGraph -> (Int, Int)
 size hsg = (Map.size $ sublogicNodes hsg,

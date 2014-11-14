@@ -150,7 +150,7 @@ slObjProp o = case o of
     ObjectInverseOf _ -> requireInverseRoles slBottom
 
 slEntity :: Entity -> OWLSub
-slEntity (Entity et iri) = case et of
+slEntity (Entity _ et iri) = case et of
     Datatype -> slDatatype iri
     _ -> slBottom
 

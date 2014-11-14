@@ -31,7 +31,6 @@ module CMDL.Utils
   , isOpenConsEdge
   , checkIntString
   , delExtension
-  , checkPresenceProvers
   , arrowLink
   ) where
 
@@ -47,34 +46,6 @@ import Static.DevGraph
 import Static.DgUtils
 
 import Common.Utils
-
--- a any version of function that supports IO
-anyIO :: (a -> IO Bool) -> [a] -> IO Bool
-anyIO fn ls = case ls of
-    [] -> return False
-    e : l -> do
-      result <- fn e
-      if result then return True else anyIO fn l
-
-{- checks if provers in the prover list are availabe on
-   the current machine -}
-checkPresenceProvers :: [String] -> IO [String]
-checkPresenceProvers ls = case ls of
-    [] -> return []
-    s@"SPASS" : l -> do
-                  path <- getEnvDef "PATH" ""
-                  path2 <- getEnvDef "Path" ""
-                  let lsPaths = map trim $ splitPaths path ++ splitPaths path2
-                      completePath x = x </> s
-                  result <- anyIO (doesFileExist . completePath)
-                               lsPaths
-                  if result then do
-                     contd <- checkPresenceProvers l
-                     return (s : contd)
-                   else checkPresenceProvers l
-    x : l -> do
-            contd <- checkPresenceProvers l
-            return (x : contd)
 
 {- removes the extension of the file find in the
    name of the prompter ( it delets everything

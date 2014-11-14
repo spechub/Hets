@@ -36,8 +36,16 @@ data Sign = Sign
             , annotationRoles :: Set.Set AnnotationProperty
               -- annotation properties
             , individuals :: Set.Set Individual  -- named individuals
+            , labelMap :: Map.Map IRI String -- labels (for better readability)
             , prefixMap :: PrefixMap
-            } deriving (Show, Eq, Ord, Typeable, Data)
+            } deriving (Show, Typeable, Data)
+
+instance Ord Sign where
+  compare (Sign c1 d1 op1 dp1 ar1 iv1 _ _) (Sign c2 d2 op2 dp2 ar2 iv2 _ _)
+    = compare (c1, d1, op1, dp1, ar1, iv1) (c2, d2, op2, dp2, ar2, iv2)
+
+instance Eq Sign where
+  s1 == s2 = compare s1 s2 == EQ
 
 data SignAxiom =
     Subconcept ClassExpression ClassExpression   -- subclass, superclass
@@ -67,6 +75,7 @@ emptySign = Sign
   , dataProperties = Set.empty
   , annotationRoles = Set.empty
   , individuals = Set.empty
+  , labelMap = Map.empty
   , prefixMap = Map.empty
   }
 
@@ -84,11 +93,11 @@ diffSig a b =
 addSymbToSign :: Sign -> Entity -> Result Sign
 addSymbToSign sig ent =
  case ent of
-   Entity Class eIri ->
+   Entity _ Class eIri ->
     return sig {concepts = Set.insert eIri $ concepts sig}
-   Entity ObjectProperty eIri ->
+   Entity _ ObjectProperty eIri ->
     return sig {objectProperties = Set.insert eIri $ objectProperties sig}
-   Entity NamedIndividual eIri ->
+   Entity _ NamedIndividual eIri ->
     return sig {individuals = Set.insert eIri $ individuals sig}
    _ -> return sig
 
@@ -120,16 +129,16 @@ isSubSign a b =
 
 symOf :: Sign -> Set.Set Entity
 symOf s = Set.unions
-  [ Set.map (Entity Class) $ concepts s
-  , Set.map (Entity Datatype) $ datatypes s
-  , Set.map (Entity ObjectProperty) $ objectProperties s
-  , Set.map (Entity DataProperty) $ dataProperties s
-  , Set.map (Entity NamedIndividual) $ individuals s
-  , Set.map (Entity AnnotationProperty) $ annotationRoles s ]
+  [ Set.map (\ ir -> Entity (Map.lookup ir $ labelMap s) Class ir) $ concepts s
+  , Set.map (mkEntity Datatype) $ datatypes s
+  , Set.map (mkEntity ObjectProperty) $ objectProperties s
+  , Set.map (mkEntity DataProperty) $ dataProperties s
+  , Set.map (mkEntity NamedIndividual) $ individuals s
+  , Set.map (mkEntity AnnotationProperty) $ annotationRoles s ]
 
 -- | takes an entity and modifies the sign according to the given function
 modEntity :: (IRI -> Set.Set IRI -> Set.Set IRI) -> Entity -> State Sign ()
-modEntity f (Entity ty u) = do
+modEntity f (Entity _ ty u) = do
   s <- get
   let chg = f u
   unless (isDatatypeKey u || isThing u) $ put $ case ty of

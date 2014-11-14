@@ -245,8 +245,9 @@ showSen lid ga mt sig ns = let s = sentence ns in add_attrs
 
 showSym :: (Sentences lid sentence sign morphism symbol) =>
            lid -> symbol -> Element
-showSym lid s = add_attrs
-            [ mkAttr "kind" $ symKind lid s
+showSym lid s = add_attrs ((reverse
+            . maybe id ((:) . mkAttr "label") (sym_label lid s))
+            [ mkAttr "iri" $ fullSymName lid s
             , mkNameAttr . show $ sym_name lid s
-            , mkAttr "iri" $ fullSymName lid s ]
-            $ prettySymbol emptyGlobalAnnos s
+            , mkAttr "kind" $ symKind lid s
+            ]) $ prettySymbol emptyGlobalAnnos s

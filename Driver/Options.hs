@@ -546,7 +546,7 @@ instance Show OWLFormat where
     OBO -> "obo"
     Turtle -> "ttl"
 
-data SPFType = ConsistencyCheck | ProveTheory
+data SPFType = ConsistencyCheck | ProveTheory deriving Eq
 
 instance Show SPFType where
   show x = case x of
@@ -580,6 +580,7 @@ data OutType =
   | TheoryFile Delta -- ^ signature with sentences as text
   | SymXml
   | SymsXml
+  deriving Eq
 
 instance Show OutType where
   show o = case o of
@@ -600,17 +601,16 @@ instance Show OutType where
     DfgFile t -> dfgS ++ show t
     TPTPFile t -> tptpS ++ show t
     ComptableXml -> "comptable.xml"
-    RDFOut -> "rdf"
+    RDFOut -> "nt"
     SigFile d -> "sig" ++ show d
     TheoryFile d -> "th" ++ show d
     SymXml -> "sym.xml"
     SymsXml -> "syms.xml"
 
--- RDFOut is on purpose not listed; must be added manually if neccessary
 plainOutTypeList :: [OutType]
 plainOutTypeList =
   [ Prf, EnvOut ] ++ map OWLOut plainOwlFormats ++
-  [ CLIFOut, KIFOut, OmdocOut, XmlOut, JsonOut, ExperimentalOut
+  [ RDFOut, CLIFOut, KIFOut, OmdocOut, XmlOut, JsonOut, ExperimentalOut
   , HaskellOut, ThyFile, ComptableXml, FreeCADOut, SymXml, SymsXml]
 
 outTypeList :: [OutType]
@@ -626,7 +626,7 @@ outTypeList = let dl = [Delta, Fully] in
 instance Read OutType where
     readsPrec _ = readShow outTypeList
 
-data Delta = Delta | Fully
+data Delta = Delta | Fully deriving Eq
 
 instance Show Delta where
   show d = case d of
@@ -636,6 +636,7 @@ instance Show Delta where
 {- | 'PrettyType' describes the type of output we want the pretty-printer
 to generate -}
 data PrettyType = PrettyAscii Bool | PrettyLatex Bool | PrettyXml | PrettyHtml
+  deriving Eq
 
 instance Show PrettyType where
   show p = case p of
@@ -653,6 +654,7 @@ prettyList2 = [PrettyAscii True, PrettyLatex True]
 -- | 'GraphType' describes the type of Graph that we want generated
 data GraphType =
     Dot Bool -- ^ True means show internal node labels
+  deriving Eq
 
 instance Show GraphType where
   show g = case g of

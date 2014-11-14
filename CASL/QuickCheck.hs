@@ -462,9 +462,9 @@ getCarrier qm s =
 {- | The Prover implementation. First runs the batch prover (with
   graphical feedback), then starts the GUI prover. -}
 quickCheckProver :: Prover CASLSign CASLFORMULA CASLMor CASL_Sublogics ProofTree
-quickCheckProver = mkAutomaticProver "QuickCheck"
-  (SL.top { has_part = False, which_logic = SL.FOL })
-  quickCheckGUI quickCheckCMDLautomaticBatch
+quickCheckProver = (mkProverTemplate "QuickCheck"
+  (SL.top { has_part = False, which_logic = SL.FOL }) quickCheckGUI)
+  { proveCMDLautomaticBatch = Just quickCheckCMDLautomaticBatch }
 
 {- |
   Record for prover specific functions. This is used by both GUI and command

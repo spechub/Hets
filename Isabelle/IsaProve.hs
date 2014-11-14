@@ -23,7 +23,7 @@ module Isabelle.IsaProve
   , isabelleProver
   , IsaEditor (..)
   , isaProve
-    ) where
+  ) where
 
 import Logic.Prover
 import Isabelle.IsaSign
@@ -73,15 +73,16 @@ openIsaProofStatus :: String -> ProofStatus ()
 openIsaProofStatus n = openProofStatus n isabelleS ()
 
 isabelleProver :: IsaEditor -> Prover Sign Sentence (DefaultMorphism Sign) () ()
-isabelleProver e = mkAutomaticProver (isabelleS ++ "-" ++ show e) ()
+isabelleProver e = mkAutomaticProver "isabelle" (isabelleS ++ "-" ++ show e) ()
   (isaProve e) isaBatchProve
 
 isabelleBatchProver :: Prover Sign Sentence (DefaultMorphism Sign) () ()
-isabelleBatchProver = mkAutomaticProver isabelleProcessS ()
+isabelleBatchProver = mkAutomaticProver isabelleProcessS isabelleProcessS ()
   (isaProveAux Nothing) isaBatchProve
 
 isabelleConsChecker :: ConsChecker Sign Sentence () (DefaultMorphism Sign) ()
-isabelleConsChecker = (mkConsChecker "Isabelle-refute" () consCheck)
+isabelleConsChecker =
+  (mkUsableConsChecker "isabelle" "Isabelle-refute" () consCheck)
   { ccBatch = False
   , ccNeedsTimer = False }
 

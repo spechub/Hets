@@ -34,7 +34,7 @@ pfun = ProverFuncs {
         in Just $ read m * 60 + read secs }
 
 satallaxProver :: ProverType
-satallaxProver = createSZSProver "Satallax"
+satallaxProver = createSZSProver "satallax" "Satallax"
  ("Satallax is an automated theorem prover for higher-order logic."
  ++ " The particular form of higher-order logic supported by Satallax"
  ++ " is Church's simple type theory with extensionality and choice operators.")

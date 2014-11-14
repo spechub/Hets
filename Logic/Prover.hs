@@ -18,6 +18,7 @@ import Common.Doc
 import Common.DocUtils
 import Common.Result
 import Common.ProofUtils
+import Common.ProverTools
 import qualified Common.OrderedMap as OMap
 
 import qualified Data.Map as Map
@@ -222,6 +223,8 @@ data FreeDefMorphism sentence morphism = FreeDefMorphism
 -- | prover or consistency checker
 data ProverTemplate theory sentence morphism sublogics proof_tree = Prover
     { proverName :: String,
+      proverUsable :: IO (Maybe String),
+      -- are required binaries or jars installed, Nothing if yes
       proverSublogic :: sublogics,
       proveGUI :: Maybe (String -> theory -> [FreeDefMorphism sentence morphism]
                          -> IO ( [ProofStatus proof_tree]
@@ -265,21 +268,29 @@ mkProverTemplate :: String -> sublogics
   -> ProverTemplate theory sentence morphism sublogics proof_tree
 mkProverTemplate str sl fct = Prover
     { proverName = str
+    , proverUsable = return Nothing
     , proverSublogic = sl
     , proveGUI = Just $ \ s t fs -> do
                 ps <- fct s t fs
                 return (ps, [])
     , proveCMDLautomaticBatch = Nothing }
 
-mkAutomaticProver :: String -> sublogics
+mkUsableProver :: String -> String -> sublogics
+  -> (String -> theory -> [FreeDefMorphism sentence morphism]
+      -> IO [ProofStatus proof_tree])
+  -> ProverTemplate theory sentence morphism sublogics proof_tree
+mkUsableProver bin str sl fct =
+  (mkProverTemplate str sl fct) { proverUsable = checkBinary bin }
+
+mkAutomaticProver :: String -> String -> sublogics
   -> (String -> theory -> [FreeDefMorphism sentence morphism]
       -> IO [ProofStatus proof_tree])
   -> (Bool -> Bool -> Concurrent.MVar (Result [ProofStatus proof_tree])
       -> String -> TacticScript -> theory -> [FreeDefMorphism sentence morphism]
       -> IO (Concurrent.ThreadId, Concurrent.MVar ()))
   -> ProverTemplate theory sentence morphism sublogics proof_tree
-mkAutomaticProver str sl fct bFct =
-  (mkProverTemplate str sl fct)
+mkAutomaticProver bin str sl fct bFct =
+  (mkUsableProver bin str sl fct)
   { proveCMDLautomaticBatch = Just bFct }
 
 -- | theory morphisms between two theories
@@ -297,6 +308,7 @@ data CCStatus proof_tree = CCStatus
 
 data ConsChecker sign sentence sublogics morphism proof_tree = ConsChecker
   { ccName :: String
+  , ccUsable :: IO (Maybe String)
   , ccSublogic :: sublogics
   , ccBatch :: Bool -- True for batch checkers
   , ccNeedsTimer :: Bool -- True for checkers that ignore time limits
@@ -318,7 +330,15 @@ mkConsChecker :: String -> sublogics
   -> ConsChecker sign sentence sublogics morphism proof_tree
 mkConsChecker n sl f = ConsChecker
   { ccName = n
+  , ccUsable = return Nothing
   , ccSublogic = sl
   , ccBatch = True
   , ccNeedsTimer = True
   , ccAutomatic = f }
+
+mkUsableConsChecker :: String -> String -> sublogics
+  -> (String -> TacticScript -> TheoryMorphism sign sentence morphism proof_tree
+      -> [FreeDefMorphism sentence morphism] -> IO (CCStatus proof_tree))
+  -> ConsChecker sign sentence sublogics morphism proof_tree
+mkUsableConsChecker bin n sl f =
+  (mkConsChecker n sl f) { ccUsable = checkBinary bin }

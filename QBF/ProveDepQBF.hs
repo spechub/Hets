@@ -47,9 +47,13 @@ import Data.Time.LocalTime (TimeOfDay)
 
 -- Prover
 
+depqbfS :: String
+depqbfS = "depqbf"
+
 -- | The Prover implementation.
 depQBFProver :: Prover Sign AS.FORMULA Morphism QBFSL ProofTree
-depQBFProver = mkAutomaticProver "depqbf" top depQBFGUI depQBFCMDLautomaticBatch
+depQBFProver =
+  mkAutomaticProver depqbfS depqbfS top depQBFGUI depQBFCMDLautomaticBatch
 
 {- |
   Record for prover specific functions. This is used by both GUI and command
@@ -122,7 +126,7 @@ runDepQBF ps cfg saveQDIMACS thName nGoal = do
     when saveQDIMACS (writeFile saveFile prob)
     stpTmpFile <- getTempFile prob saveFile
     t_start <- getHetsTime
-    (exitCode, stdoutC, stderrC) <- executeProcess "depqbf"
+    (exitCode, stdoutC, stderrC) <- executeProcess depqbfS
         (show tl : extraOpts cfg ++ [stpTmpFile]) ""
     t_end <- getHetsTime
     removeFile stpTmpFile

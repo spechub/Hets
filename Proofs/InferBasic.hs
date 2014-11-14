@@ -96,7 +96,7 @@ basicInferenceNode lg ln dGraph (node, lbl) libEnv intSt =
     thForProof <- liftR $ getGlobalTheory lbl
     let thName = libToFileName ln ++ "_" ++ getDGNodeName lbl
         freedefs = getCFreeDefMorphs libEnv ln dGraph node
-    let ps = getAllProvers ProveGUI (sublogicOfTh thForProof) lg
+    ps <- lift $ getUsableProvers ProveGUI (sublogicOfTh thForProof) lg
     kpMap <- liftR knownProversGUI
     {- let kpMap = foldl (\m (G_prover _ p,c) ->
          case Map.lookup (proverName p) m of
@@ -142,7 +142,7 @@ proveFineGrainedSelect :: LogicGraph
 proveFineGrainedSelect lg intSt freedefs st =
     runResultT $ do
        let sl = sublogicOfTheory st
-           cmsToProvers = getAllProvers ProveGUI sl lg
+       cmsToProvers <- lift $ getUsableProvers ProveGUI sl lg
        pr <- selectProver cmsToProvers
        ResultT $ callProver st { comorphismsToProvers = cmsToProvers }
                                intSt True freedefs pr

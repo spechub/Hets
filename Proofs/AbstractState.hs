@@ -40,17 +40,21 @@ module Proofs.AbstractState
     , isSubElemG
     , pathToComorphism
     , getAllProvers
+    , getUsableProvers
     , getConsCheckers
+    , getAllConsCheckers
     , lookupKnownProver
     , lookupKnownConsChecker
     , autoProofAtNode
     ) where
 
 import qualified Data.Map as Map
+import Data.Maybe
 import Data.Typeable
 
 import Control.Concurrent.MVar
 import Control.Monad.Trans
+import Control.Monad
 
 import qualified Common.OrderedMap as OMap
 import Common.Result as Result
@@ -91,6 +95,9 @@ instance Show G_prover where
 getProverName :: G_prover -> String
 getProverName (G_prover _ p) = proverName p
 
+usable :: G_prover -> IO Bool
+usable (G_prover _ p) = fmap isNothing $ proverUsable p
+
 coerceProver ::
   ( Logic lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1
@@ -119,6 +126,9 @@ getCcName (G_cons_checker _ p) = ccName p
 
 getCcBatch :: G_cons_checker -> Bool
 getCcBatch (G_cons_checker _ p) = ccBatch p
+
+usableCC :: G_cons_checker -> IO Bool
+usableCC (G_cons_checker _ p) = fmap isNothing $ ccUsable p
 
 coerceConsChecker ::
   ( Logic lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
@@ -336,8 +346,11 @@ recalculateSublogicAndSelectedTheory st = let
     { selectedTheory = sTh
     , proversMap = shrinkKnownProvers sLo $ proversMap st }
 
-getConsCheckers :: [AnyComorphism] -> [(G_cons_checker, AnyComorphism)]
-getConsCheckers = concatMap (\ cm@(Comorphism cid) ->
+getConsCheckers :: [AnyComorphism] -> IO [(G_cons_checker, AnyComorphism)]
+getConsCheckers = filterM (usableCC . fst) . getAllConsCheckers
+
+getAllConsCheckers :: [AnyComorphism] -> [(G_cons_checker, AnyComorphism)]
+getAllConsCheckers = concatMap (\ cm@(Comorphism cid) ->
     map (\ cc -> (G_cons_checker (targetLogic cid) cc, cm))
       $ cons_checkers $ targetLogic cid)
 
@@ -352,7 +365,7 @@ lookupKnownConsChecker st =
            matchingCC s (gp, _) = case gp of
                                   G_cons_checker _ p -> ccName p == s
            findCC (pr_n, cms) =
-               case filter (matchingCC pr_n) $ getConsCheckers
+               case filter (matchingCC pr_n) $ getAllConsCheckers
                     $ filter (lessSublogicComor sl) cms of
                  [] -> fail ("CMDL.ProverConsistency.lookupKnownConsChecker" ++
                                  ": no consistency checker found")
@@ -428,6 +441,11 @@ pathToComorphism (path, (G_sublogics lid sub, _)) =
    foldl unsafeCompComorphism
     (Comorphism $ mkIdComorphism lid1 sub1)
     (c : snd (unzip cs))
+
+getUsableProvers :: ProverKind -> G_sublogics -> LogicGraph
+ -> IO [(G_prover, AnyComorphism)]
+getUsableProvers pk start =
+  filterM (usable . fst) . getAllProvers pk start
 
 getAllProvers :: ProverKind -> G_sublogics -> LogicGraph
  -> [(G_prover, AnyComorphism)]

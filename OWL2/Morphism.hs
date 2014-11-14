@@ -55,7 +55,7 @@ isOWLInclusion m = Map.null (pmap m)
   && Map.null (mmaps m) && isSubSign (osource m) (otarget m)
 
 symMap :: MorphMap -> Map.Map Entity Entity
-symMap = Map.mapWithKey (\ (Entity ty _) -> Entity ty)
+symMap = Map.mapWithKey (\ (Entity lb ty _) -> Entity lb ty)
 
 inducedElems :: MorphMap -> [Entity]
 inducedElems = Map.elems . symMap
@@ -79,12 +79,12 @@ inducedFromMor :: Map.Map RawSymb RawSymb -> Sign -> Result OWLMorphism
 inducedFromMor rm sig = do
   let syms = symOf sig
   (mm, tm) <- foldM (\ (m, t) p -> case p of
-        (ASymbol s@(Entity _ v), ASymbol (Entity _ u)) ->
+        (ASymbol s@(Entity _ _ v), ASymbol (Entity _ _ u)) ->
             if Set.member s syms
             then return $ if u == v then (m, t) else (Map.insert s u m, t)
             else fail $ "unknown symbol: " ++ showDoc s "\n" ++ shows sig ""
         (AnUri v, AnUri u) -> case filter (`Set.member` syms)
-          $ map (`Entity` v) entityTypes of
+          $ map (`mkEntity` v) entityTypes of
           [] -> let v2 = showQU v
                     u2 = showQU u
                 in return $ inducedPref v2 u2 sig (m, t)
@@ -128,7 +128,7 @@ legalMor m = let mm = mmaps m in unless
 
 composeMor :: OWLMorphism -> OWLMorphism -> Result OWLMorphism
 composeMor m1 m2 =
-  let nm = Set.fold (\ s@(Entity ty u) -> let
+  let nm = Set.fold (\ s@(Entity _ ty u) -> let
             t = getIri ty u $ mmaps m1
             r = getIri ty t $ mmaps m2
             in if r == u then id else Map.insert s r) Map.empty
@@ -148,7 +148,7 @@ generatedSign :: Set.Set Entity -> Sign -> Result OWLMorphism
 generatedSign s sign = cogeneratedSign (Set.difference (symOf sign) s) sign
 
 matchesSym :: Entity -> RawSymb -> Bool
-matchesSym e@(Entity _ u) r = case r of
+matchesSym e@(Entity _ _ u) r = case r of
        ASymbol s -> s == e
        AnUri s -> s == u || expandedIRI s == expandedIRI u || case
          stripPrefix (reverse $ localPart s) (reverse $ localPart u) of
@@ -161,7 +161,7 @@ statSymbItems sig = map (function Expand . StringMap $ prefixMap sig)
   . concatMap
   (\ (SymbItems m us) -> case m of
                AnyEntity -> map AnUri us
-               EntityType ty -> map (ASymbol . Entity ty) us
+               EntityType ty -> map (ASymbol . mkEntity ty) us
                PrefixO -> map (APrefix . showQN) us)
 
 statSymbMapItems :: Sign -> Maybe Sign -> [SymbMapItems]
@@ -175,9 +175,9 @@ statSymbMapItems sig mtsig =
   . foldM (\ m (s, t) -> case Map.lookup s m of
     Nothing -> return $ Map.insert s t m
     Just u -> case (u, t) of
-      (AnUri su, ASymbol (Entity _ tu)) | su == tu ->
+      (AnUri su, ASymbol (Entity _ _ tu)) | su == tu ->
         return $ Map.insert s t m
-      (ASymbol (Entity _ su), AnUri tu) | su == tu -> return m
+      (ASymbol (Entity _ _ su), AnUri tu) | su == tu -> return m
       (AnUri su, APrefix tu) | showQU su == tu ->
         return $ Map.insert s t m
       (APrefix su, AnUri tu) | su == showQU tu -> return m
@@ -190,7 +190,7 @@ statSymbMapItems sig mtsig =
       case m of
         AnyEntity -> map (\ (s, t) -> (AnUri s, AnUri t)) ps
         EntityType ty ->
-            let mS = ASymbol . Entity ty
+            let mS = ASymbol . mkEntity ty
             in map (\ (s, t) -> (mS s, mS t)) ps
         PrefixO ->
             map (\ (s, t) -> (APrefix (showQU s), APrefix $ showQU t)) ps)

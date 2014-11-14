@@ -104,7 +104,7 @@ printSameOrDifferentInd x = case x of
     Different -> keyword differentIndividualsC
 
 instance Pretty Entity where
-    pretty (Entity ty e) = keyword (show ty) <+> pretty e
+    pretty (Entity _ ty e) = keyword (show ty) <+> pretty e
 
 instance Pretty Literal where
     pretty lit = case lit of

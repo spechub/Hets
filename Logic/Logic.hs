@@ -366,6 +366,9 @@ class (Language lid, Category sign morphism, Ord sentence,
       -- | symbols have a name, see CASL RefMan p. 192
       sym_name :: lid -> symbol -> Id
       sym_name l _ = statError l "sym_name"
+      -- | some symbols have a label for better readability
+      sym_label :: lid -> symbol -> Maybe String
+      sym_label _ _ = Nothing
       -- | the fully qualified name for XML output (i.e. of OWL2)
       fullSymName :: lid -> symbol -> String
       fullSymName l = show . sym_name l

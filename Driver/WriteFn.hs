@@ -22,11 +22,10 @@ import Text.ParserCombinators.Parsec
 import Text.XML.Light
 
 import System.FilePath
-import System.Directory (removeFile)
 
 import Control.Monad
 
-import Data.List (partition, (\\))
+import Data.List (partition, (\\), intercalate)
 import Data.Maybe
 
 import Common.AS_Annotation
@@ -38,7 +37,6 @@ import Common.ExtSign
 import Common.LibName
 import Common.Result
 import Common.Parsec (forget)
-import Common.Utils (getTempFile)
 import Common.Percent
 import Common.GlobalAnnotations (GlobalAnnos)
 import qualified Data.Map as Map
@@ -51,6 +49,7 @@ import Logic.Coerce
 import Logic.Comorphism (targetLogic)
 import Logic.Grothendieck
 import Logic.LGToXml
+import Logic.LGToJson
 import Logic.Logic
 import Logic.Prover
 
@@ -263,10 +262,11 @@ writeTheory ins nam opts filePrefix ga
         | otherwise -> putIfVerbose opts 0 $ "expected RDF theory for: " ++ f
 #endif
 #ifndef NOOWLLOGIC
-    OWLOut ty -> case createOWLTheory raw_gTh of
-      Result _ Nothing ->
-        putIfVerbose opts 0 $ "expected OWL theory for: " ++ f
-      Result ds (Just th2) -> do
+    OWLOut ty -> case ty of
+      Manchester -> case createOWLTheory raw_gTh of
+        Result _ Nothing ->
+          putIfVerbose opts 0 $ "expected OWL theory for: " ++ f
+        Result ds (Just th2) -> do
             let sy = defSyntax opts
                 ms = if null sy then Nothing
                      else Just $ simpleIdToIRI $ mkSimpleId sy
@@ -277,14 +277,12 @@ writeTheory ins nam opts filePrefix ga
                 $ case parse (OWL2.basicSpec Map.empty >> eof) f owltext of
               Left err -> putIfVerbose opts 0 $ show err
               _ -> putIfVerbose opts 3 $ "reparsed: " ++ f
-            case ty of
-              Manchester -> writeVerbFile opts f owltext
-              -- dirty workaround; because java-parser expects to read lib
-              -- from file, it is stored by hets in Omn format first..
-              _ -> do
-                tmpFile <- getTempFile owltext $ i' ++ ".omn"
-                writeVerbFile opts f =<< convertOWL tmpFile (show ty)
-                removeFile tmpFile
+            writeVerbFile opts f owltext
+      _ -> let flp = getFilePath ln in case guess flp GuessIn of
+        OWLIn _ -> writeVerbFile opts f =<< convertOWL flp (show ty)
+        _ -> putIfVerbose opts 0
+          $ "OWL output only supported for owl input types ("
+          ++ intercalate ", " (map show plainOwlFormats) ++ ")"
 #endif
     CLIFOut
       | lang == language_name CommonLogic -> do
@@ -420,5 +418,11 @@ writeSpecFiles opts file lenv ln dg = do
 writeLG :: HetcatsOpts -> IO ()
 writeLG opts = do
     doDump opts "LogicGraph" $ putStrLn $ showDoc logicGraph ""
-    writeVerbFile opts { verbose = 2 } (outdir opts </> "LogicGraph.xml")
-      . ppTopElement $ lGToXml logicGraph
+    if elem JsonOut $ outtypes opts then do
+      lG <- lGToJson logicGraph
+      writeVerbFile opts { verbose = 2 } (outdir opts </> "LogicGraph.json")
+        $ ppJson lG
+      else do
+      lG <- lGToXml logicGraph
+      writeVerbFile opts { verbose = 2 } (outdir opts </> "LogicGraph.xml")
+        $ ppTopElement lG

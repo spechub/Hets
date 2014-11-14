@@ -94,6 +94,7 @@ instance Sentences OWL2 Axiom Sign OWLMorphism Entity where
     sym_of OWL2 = singletonList . symOf
     symmap_of OWL2 = symMapOf
     sym_name OWL2 = entityToId
+    sym_label OWL2 = label
     fullSymName OWL2 s = let
       i = cutIRI s
       x = expandedIRI i
@@ -140,16 +141,11 @@ instance Logic OWL2 ProfSub OntologyDocument Axiom SymbItems SymbMapItems
          sublogicDimensions OWL2 = allProfSubs
          parseSublogic OWL2 _ = Just topS -- ignore sublogics
 #ifdef UNI_PACKAGE
-         provers OWL2 = unsafeProverCheck pelletJar pelletEnv pelletProver
-           ++ unsafeProverCheck pelletJar pelletEnv pelletEL
-           ++ unsafeOWL2JarCheck "OWLFactProver.jar" factProver
-         cons_checkers OWL2 =
-             unsafeProverCheck pelletJar pelletEnv pelletConsChecker
-             ++ unsafeOWL2JarCheck "OWLFact.jar" factConsChecker
-         conservativityCheck OWL2 = concatMap
-           (\ ct -> unsafeOWL2JarCheck localityJar
-              $ ConservativityChecker ("Locality_" ++ ct)
-                      $ conserCheck ct)
+         provers OWL2 = [pelletProver, pelletEL, factProver]
+         cons_checkers OWL2 = [pelletConsChecker, factConsChecker]
+         conservativityCheck OWL2 = map
+           (\ ct -> ConservativityChecker ("Locality_" ++ ct)
+                    (checkOWLjar localityJar) $ conserCheck ct)
            ["BOTTOM_BOTTOM", "TOP_BOTTOM", "TOP_TOP"]
 
 #endif
