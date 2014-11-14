@@ -9,16 +9,16 @@ ISABELLE_TGZ=Isabelle2014_linux.tar.gz
 ISABELLE_DIR=/usr/share/Isabelle2014
 
 wget http://www.cl.cam.ac.uk/research/hvg/Isabelle/dist/$ISABELLE_TGZ -O - \
-  | tar -xzf - -v -C /usr/share 
+  | tar -xzf - -v -C /usr/share
 
 sed -i~ '128iinit_component \"\$ISABELLE_HOME/contrib/ProofGeneral-4.2-2\"' \
   $ISABELLE_DIR/etc/settings
 
 $ISABELLE_DIR/bin/isabelle components -a
 $ISABELLE_DIR/bin/isabelle install /usr/bin
-$ISABELLE_DIR/bin/isabelle build -s -b -v HOL
+$ISABELLE_DIR/bin/isabelle build -s -b -v HOLCF
 
-ISABELLE_UNINST=/usr/bin/isabelle_uninstall.sh 
+ISABELLE_UNINST=/usr/bin/isabelle_uninstall.sh
 
 echo "creating uninstall script: $ISABELLE_UNINST"
 
