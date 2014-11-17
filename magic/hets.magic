@@ -32,22 +32,22 @@
 # further magic file entries by Christian.Maeder@dfki.de
 # RDF 1.1 XML Syntax http://www.w3.org/TR/rdf-syntax-grammar/
 0       string/t        \<rdf:RDF               RDF document
-!:mime  application/rdf
+!:mime  application/rdf+xml
 
 0       string/t        \<!--
 >15     string          >\0
 >>19    search/4096/t   \<rdf:RDF               RDF document
-!:mime  application/rdf
+!:mime  application/rdf+xml
 
 0       string/cWt      \<?xml\ version
 >15     string          >\0
 >>19    search/4096/t   \<rdf:RDF               RDF document
-!:mime  application/rdf
+!:mime  application/rdf+xml
 
 0       string/cWt      \<?xml\ version
 >15     string          >\0
 >>19    search/4096/cWt \<!doctype\ rdf:RDF     RDF document
-!:mime  application/rdf
+!:mime  application/rdf+xml
 
 # OWL XML
 0       string/t        \<Ontology              OWL document
