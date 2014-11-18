@@ -5,8 +5,6 @@ Maintainer: Corneliu-Claudiu Prodescu <cprodescu@googlemail.com>
 Build-Depends:
  debhelper(>=7.4.15),
  ghc,
- happy,
- ghc-haddock,
  libghc-parsec3-dev,
  libghc-tar-dev,
  libghc-hexpat-dev,
