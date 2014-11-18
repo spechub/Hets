@@ -140,15 +140,12 @@ instance Logic OWL2 ProfSub OntologyDocument Axiom SymbItems SymbMapItems
          bottomSublogic OWL2 = Just bottomS
          sublogicDimensions OWL2 = allProfSubs
          parseSublogic OWL2 _ = Just topS -- ignore sublogics
-#ifdef UNI_PACKAGE
          provers OWL2 = [pelletProver, pelletEL, factProver]
          cons_checkers OWL2 = [pelletConsChecker, factConsChecker]
          conservativityCheck OWL2 = map
            (\ ct -> ConservativityChecker ("Locality_" ++ ct)
                     (checkOWLjar localityJar) $ conserCheck ct)
            ["BOTTOM_BOTTOM", "TOP_BOTTOM", "TOP_TOP"]
-
-#endif
 
 instance SemiLatticeWithTop ProfSub where
     lub = maxS
