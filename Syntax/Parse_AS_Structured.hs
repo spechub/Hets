@@ -590,7 +590,7 @@ relationRefWithLookAhead lG = do
     return r
 
 relationRef :: LogicGraph -> AParser st RELATION_REF
-relationRef lG = ((do
+relationRef lG = do
       asKey ">"
       return Subsumes
     <|> do
@@ -603,24 +603,23 @@ relationRef lG = ((do
       asKey "%"
       return Incompatible
     <|> do
-      try $ asKey "$\\ni$"
+      try $ asKey "ni"
       return HasInstance
     <|> do
-      try $ asKey "$\\in$"
+      try $ asKey "in"
       return InstanceOf
-    <|> do
-      asKey "$\\mapsto$"
+     <|> do
+      try $ asKey mapsTo
       return DefaultRelation
-    ) << skipSmart)
-  <|> do
+ <|> do
     i <- hetIRI lG
     return $ Iri i
 
 confidenceBegin :: AParser st Char
-confidenceBegin = char '('
+confidenceBegin = char '0' <|> char '1'
 
 confidence :: AParser st Double
-confidence = char '(' >> confidenceNumber << char ')' << skipSmart
+confidence = confidenceNumber << skipSmart
 
 confidenceNumber :: AParser st Double
 confidenceNumber = do

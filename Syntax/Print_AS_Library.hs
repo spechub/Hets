@@ -203,13 +203,13 @@ printConfidence = text . ('(' :) . (++ ")") . show
 
 printRelationRef :: RELATION_REF -> Doc
 printRelationRef rref = case rref of
-  Subsumes -> text ">"
-  IsSubsumed -> text "<"
-  Equivalent -> text "="
+  Subsumes -> greater
+  IsSubsumed -> less
+  Equivalent -> equals
   Incompatible -> text "%"
-  HasInstance -> text "$\\ni$"
-  InstanceOf -> text "$\\in$"
-  DefaultRelation -> text "$\\mapsto$"
+  HasInstance -> keyword "ni"
+  InstanceOf -> keyword "in"
+  DefaultRelation -> mapsto
   Iri i -> structIRI i
 
 instance Pretty ItemNameMap where
