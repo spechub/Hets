@@ -34,7 +34,6 @@ import SoftFOL.Conversions
 import SoftFOL.Morphism
 import SoftFOL.PrintTPTP ()
 
-#ifdef UNI_PACKAGE
 import SoftFOL.ProveSPASS
 import SoftFOL.ProveHyperHyper
 #ifndef NOHTTP
@@ -42,7 +41,6 @@ import SoftFOL.ProveMathServ
 import SoftFOL.ProveVampire
 #endif
 import SoftFOL.ProveDarwin
-#endif
 import SoftFOL.ProveMetis
 
 instance Pretty Sign where
@@ -100,7 +98,6 @@ instance Logic SoftFOL () [TPTP] Sentence () ()
                Sign
                SoftFOLMorphism SFSymbol () ProofTree where
          stability _ = Testing
-#ifdef UNI_PACKAGE
          provers SoftFOL = [spassProver]
 #ifndef NOHTTP
            ++ [mathServBroker, vampire]
@@ -109,5 +106,3 @@ instance Logic SoftFOL () [TPTP] Sentence () ()
            ++ [metisProver, hyperProver]
          cons_checkers SoftFOL = map darwinConsChecker tptpProvers
            ++ [hyperConsChecker]
-
-#endif

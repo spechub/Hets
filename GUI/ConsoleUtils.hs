@@ -22,6 +22,9 @@ import Data.Char
 import Data.List
 import Control.Monad ( unless )
 
+infoDialog :: String -> String -> IO ()
+infoDialog _title msg = putStrLn msg
+
 -- | present a list of choices and return the selection
 listBox :: String -> [String] -> IO (Maybe Int)
 listBox prompt choices = do

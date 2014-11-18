@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, MultiParamTypeClasses #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {- |
 Module      :  $Header$
 Description :  Instance of class Logic for propositional logic
@@ -39,7 +39,6 @@ import Propositional.Symbol as Symbol
 import Propositional.Parse_AS_Basic
 import Propositional.Analysis
 import Propositional.Sublogic as Sublogic
-#ifdef UNI_PACKAGE
 import Propositional.ProveWithTruthTable
 import Propositional.Prove
 import Propositional.Conservativity
@@ -47,7 +46,6 @@ import Propositional.ProveMinisat
 
 import Common.ProverTools
 import Common.Consistency
-#endif
 import Common.ProofTree
 import Common.Id
 
@@ -125,7 +123,6 @@ instance Logic Propositional
       all_sublogics Propositional = sublogics_all
       empty_proof_tree Propositional = emptyProofTree
     -- supplied provers
-#ifdef UNI_PACKAGE
       provers Propositional =
         [zchaffProver, minisatProver Minisat, minisatProver Minisat2, ttProver]
       cons_checkers Propositional =
@@ -135,8 +132,6 @@ instance Logic Propositional
           [ ConservativityChecker "sKizzo" (checkBinary "sKizzo") conserCheck
           , ConservativityChecker "Truth Tables" (return Nothing)
               ttConservativityChecker]
-#endif
-
 
 -- | Static Analysis for propositional logic
 instance StaticAnalysis Propositional

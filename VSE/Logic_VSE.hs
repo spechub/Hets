@@ -34,9 +34,7 @@ import VSE.As
 import VSE.Parse
 import VSE.Ana
 import VSE.ATC_VSE ()
-#ifdef UNI_PACKAGE
 import VSE.Prove (vse)
-#endif
 import Logic.Logic
 
 import qualified Data.Map as Map
@@ -111,6 +109,4 @@ instance Logic VSE ()
                Symbol RawSymbol () where
          stability VSE = Unstable
          empty_proof_tree VSE = ()
-#ifdef UNI_PACKAGE
          provers VSE = [vse]
-#endif
