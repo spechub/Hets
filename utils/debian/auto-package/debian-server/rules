@@ -10,7 +10,11 @@ override_dh_auto_clean:
 
 override_dh_auto_build:
 	make derivedSources
+	cp Makefile Makefile.orig
+	cp ServerMakefile Makefile
+	make depend
 	make hets-server
+	cp Makefile.orig Makefile
 
 override_dh_auto_test:
 
