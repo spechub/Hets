@@ -13,6 +13,7 @@ Portability :  portable
 module CASL_DL.PredefinedCASLAxioms
   ( predefSign
   , predefinedSign
+  , predefinedSign2
   , thing
   , nothing
   , conceptPred
@@ -45,6 +46,7 @@ module CASL_DL.PredefinedCASLAxioms
 import CASL.AS_Basic_CASL
 import CASL.Sign
 import OWL2.Keywords
+import OWL2.AS (Datatype, printDatatype)
 
 import Common.AS_Annotation
 import Common.Id
@@ -53,6 +55,9 @@ import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.MapSet as MapSet
 
 import Data.Char
+import qualified Data.Set as Set
+
+import Debug.Trace
 
 hetsPrefix :: String
 hetsPrefix = ""
@@ -272,6 +277,52 @@ predefinedSign e = (emptySign e)
                        , float_lit = Just (dec, eId)
                        , string_lit = Just (emptyString, cons) }}
                  }
+
+-- only use datatypes from owl2.sign
+predefinedSign2 :: Set.Set Datatype -> e -> Sign f e
+predefinedSign2 dtps e = let dtps_S = (map (printDatatype) (Set.toList dtps))
+                             filterDT f = filter ((`elem` (map stringToId dtps_S)) . f) in
+                 trace ("DATATYPES_ORIG:\n" ++ unlines dtps_S) $ (emptySign e)
+                 { sortRel = (flip (foldr Rel.insertKey)) (thing : filterDT id [stringToId "Char"])
+                      $ Rel.transClosure $ Rel.fromList
+                      $ filterDT fst
+                       [(boolS, dataS),
+                        (integer, float),
+                        (float, dataS),
+                        (negIntS, nonPosInt),
+                        (nonNegInt, integer),
+                        (nonPosInt, integer),
+                        (posInt, nonNegInt),
+                        (stringS, dataS) ]
+                 , predMap =
+                     MapSet.fromList $ filterDT fst
+                      $ (nothing, [conceptPred])
+                      : map ((\ o -> (mkInfix o, [dataPred])) .
+                         showFacet) facetList
+                      ++ map ( \ o -> (stringToId o, intTypes))
+                         ["even", "odd"]
+                 , opMap = MapSet.fromList $ filterDT fst
+                        $ map (\ i -> (stringToId $ show i, [natT]))
+                          [0 .. 9 :: Int]
+                        ++ map (\ c -> (charToId c, [charT]))
+                          [chr 0 .. chr 127]
+                        ++
+                        [ (trueS, [boolT])
+                        , (falseS, [boolT])
+                        , (atAt, [atAtTy])
+                        , (unMinus, [minusTy, minusFloat])
+                        , (dec, [decTy])
+                        , (eId, [expTy])
+                        , (cons, [consTy])
+                        , (emptyString, [emptyStringTy])
+                        ]
+                 , globAnnos = emptyGlobalAnnos
+                     { literal_annos = emptyLiteralAnnos
+                       { number_lit = Just atAt
+                       , float_lit = Just (dec, eId)
+                       , string_lit = Just (emptyString, cons) }}
+                 }
+
 
 predefSign :: CASLSign
 predefSign = predefinedSign ()

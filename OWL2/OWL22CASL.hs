@@ -39,6 +39,7 @@ import OWL2.ManchesterPrint ()
 import OWL2.Morphism
 import OWL2.Symbols
 import qualified OWL2.Sign as OS
+import qualified OWL2.Sublogic as OSL
 -- CASL_DL = codomain
 import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
@@ -229,6 +230,7 @@ mapSymbol (Entity _ ty iri) = let
     AnnotationProperty -> Set.empty
     Datatype -> Set.empty
 
+-- TODO  sublogic analysis for OWL2CASL translation #1383 
 mapSign :: OS.Sign -> Result CASLSign
 mapSign sig =
       let conc = OS.concepts sig
@@ -241,22 +243,28 @@ mapSign sig =
             [ tMp conceptPred cPreds
             , tMp objectPropPred oPreds
             , tMp dataPropPred dPreds ]
-     in return $ uniteCASLSign predefSign (emptySign ())
+     -- TODO problem is that the whole predefSIgn is used, instead of only neccessary (depend on sublogic)
+     -- TODO work on this issue @ CASL_DL/PredefinedSign.hs
+     -- (test with: -o th -t OWL22CASL)
+     in return $ uniteCASLSign (predefinedSign2 (OS.datatypes sig) ()) (emptySign ())
              { predMap = aPreds
              , opMap = tMp indiConst . cvrt $ OS.individuals sig
              }
 
 loadDataInformation :: ProfSub -> Sign f ()
-loadDataInformation _ = let dts = Set.fromList $ map stringToId datatypeKeys
+loadDataInformation ps = let
+  dts = Set.map (stringToId . printDatatype)
+    $ OSL.datatype $ sublogic ps -- TODO reduce to only neccessary datatypes
     in (emptySign ()) { sortRel = Rel.fromKeysSet dts }
 
+-- TODO extract Sublogic and use only neccessary datatypes
 mapTheory :: (OS.Sign, [Named Axiom]) -> Result (CASLSign, [Named CASLFORMULA])
-mapTheory (owlSig, owlSens) = let sl = topS in do
-    cSig <- mapSign owlSig
+mapTheory (owlSig, owlSens) = let sl = sSig owlSig in do --topS in do -- replace topS with actual sublogic
+    cSig <- mapSign owlSig -- maybe pass sl to predefSign
     let pSig = loadDataInformation sl
         dTypes = (emptySign ()) {sortRel = Rel.transClosure . Rel.fromSet
                     . Set.map (\ d -> (uriToCaslId d, dataS))
-                    . Set.union predefIRIs $ OS.datatypes owlSig}
+                    {-. Set.union predefIRIs-} $ OS.datatypes owlSig} -- TODO check predefIRIs
     (cSens, nSig) <- foldM (\ (x, y) z -> do
             (sen, sig) <- mapSentence y z
             return (sen ++ x, uniteCASLSign sig y)) ([], cSig) owlSens
