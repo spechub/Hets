@@ -53,7 +53,7 @@ data LIB_ITEM = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) Range
               | Equiv_defn IRI EQUIV_TYPE OmsOrNetwork Range
               -- pos: "equivalence", ":", "=", opt "end"
               | Align_defn IRI (Maybe ALIGN_ARITIES) VIEW_TYPE
-                [CORRESPONDENCE] Range
+                [CORRESPONDENCE] AlignSem Range
               | Module_defn IRI MODULE_TYPE G_symb_items_list Range
               {- G_symb_items_list is RESTRICTION-SIGNATURE
               TODO: CONSERVATIVE? -}
@@ -74,6 +74,9 @@ data LIB_ITEM = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) Range
               | Newcomorphism_defn ComorphismDef Range
               -- pos: "newcomorphism", Comorphism_name, "=", opt "end"
                 deriving (Show, Typeable)
+
+data AlignSem = SingleDomain | GlobalDomain | ContextualizedDomain
+  deriving (Show, Typeable, Bounded, Enum)
 
 {- Item maps are the documented CASL renamed entities whereas a unique item
 contains the new target name of the single arbitrarily named item from the
@@ -181,6 +184,6 @@ getSpecDef li = case li of
   Entail_defn _ (Entail_type s1 s2 _) _ -> getOms s1 ++ getOms s2
   Equiv_defn _ (Equiv_type s1 s2 _) as _ ->
     getOms s1 ++ getOms s2 ++ getOms as
-  Align_defn _ _ (View_type s1 s2 _) _ _ -> [item s1, item s2]
+  Align_defn _ _ (View_type s1 s2 _) _ _ _ -> [item s1, item s2]
   Module_defn _ (Module_type s1 s2 _) _ _ -> [item s1, item s2]
   _ -> []

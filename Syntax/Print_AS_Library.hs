@@ -101,7 +101,7 @@ instance PrettyLG LIB_ITEM where
                 , prettyLG lg as2]
                 <+> equals, prettyLG lg sp]
             $+$ keyword endS
-        Align_defn si ar vt corresps _ ->
+        Align_defn si ar vt corresps aSem _ ->
             let spid = indexed (iriToStringShortUnsecure si)
                 sphead = case ar of
                   Nothing -> spid <+> colon
@@ -110,8 +110,8 @@ instance PrettyLG LIB_ITEM where
             in topKey alignmentS <+>
                sep ([sphead, prettyViewType [] lg vt]
                      ++ if null corresps then []
-                        else [equals,
-                              printCorrespondences corresps])
+                        else [ equals <+> printCorrespondences corresps
+                             , keyword "assuming" <+> keyword (show aSem)])
                $+$ keyword endS
         Module_defn mn mt rs _ ->
             let spid = indexed (iriToStringShortUnsecure mn)

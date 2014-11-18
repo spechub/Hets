@@ -178,12 +178,16 @@ libItem l = specDefn l
        ar <- optionMaybe alignArities
        s2 <- asKey ":"
        at <- viewType l
-       (corresps, ps) <- option ([], []) $ do
+       (corresps, ps, sem) <- option ([], [], SingleDomain) $ do
          s <- equalT
          cs <- parseCorrespondences l
-         return (cs, [s])
+         aSem <- option SingleDomain $ do
+            _ <- asKey "assuming"
+            choice $ map (\ d -> asKey (show d) >> return d)
+              [minBound .. maxBound]
+         return (cs, [s], aSem)
        q <- optEnd
-       return (Align_defn an ar at corresps
+       return (Align_defn an ar at corresps sem
                     (catRange ([s1, s2] ++ ps ++ maybeToList q)))
   <|> -- module defn
     do s1 <- asKey moduleS

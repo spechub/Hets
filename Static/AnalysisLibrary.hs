@@ -403,7 +403,7 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
     vn <- expCurieT (globalAnnos dg) eo vn'
     analyzing opts $ "view " ++ iriToStringUnsecure vn
     liftR $ anaViewDefn lg currLn libenv dg opts eo vn gen vt gsis pos
-  Align_defn an' arities atype acorresps pos -> do
+  Align_defn an' arities atype acorresps _ pos -> do
     an <- expCurieT (globalAnnos dg) eo an'
     analyzing opts $ "alignment " ++ iriToStringUnsecure an
     anaAlignDefn lg currLn libenv dg opts eo an arities atype acorresps pos
@@ -794,7 +794,7 @@ anaAlignDefn lg ln libenv dg opts eo an arities atype acorresps pos = do
             return dg7 {globalEnv = Map.insert an (AlignEntry asign)
                             $ globalEnv dg7}
             -- error "nyi"
-         let itm = Align_defn an arities atype' acorresps pos
+         let itm = Align_defn an arities atype' acorresps SingleDomain pos
              anstr = iriToStringUnsecure an
          if Map.member an $ globalEnv dg
           then liftR $ plain_error (itm, dg, libenv, lg, eo)
