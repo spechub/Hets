@@ -187,7 +187,7 @@ substDefn l = do
 
 resultDefn :: LogicGraph -> AParser st LIB_ITEM
 resultDefn l = do
-  q <- asKey "result"
+  q <- asKey resultS
   n <- hetIRI l
   (sns, cs) <- separatedBy (hetIRI l) anComma
   f <- asKey forS

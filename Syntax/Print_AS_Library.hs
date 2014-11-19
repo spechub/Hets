@@ -133,7 +133,7 @@ instance PrettyLG LIB_ITEM where
             sep [ structIRI sn <+> colon, prettyViewType [] lg vt
                 , equals <+> pretty sm]
             $+$ keyword endS
-        Result_defn rn sl sq b _ -> topKey "result" <+>
+        Result_defn rn sl sq b _ -> topKey resultS <+>
             fsep ([ structIRI rn , ppWithCommas sl
                   , keyword forS <+> pretty sq]
                   ++ [keyword "%complete" | b])
