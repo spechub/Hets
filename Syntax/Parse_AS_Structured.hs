@@ -65,14 +65,16 @@ expandCurieMConservative :: LogicGraph -> IRI -> GenParser Char st IRI
 expandCurieMConservative lG i = if isSimple i then return i
                                 else expandCurieM lG i
 
-hetIRI :: LogicGraph -> GenParser Char st IRI
-hetIRI lG = try $ do
+hetIriCurie :: GenParser Char st IRI
+hetIriCurie = try $ do
   i <- iriCurie
-  skipSmart
   if iriToStringUnsecure i `elem`
      (casl_reserved_words ++ casl_reserved_fops ++ map (: []) ")(,|;")
     then unexpected $ show i
-    else expandCurieM lG i
+    else return i
+
+hetIRI :: LogicGraph -> GenParser Char st IRI
+hetIRI lG = (hetIriCurie >>= expandCurieM lG) << skipSmart
 
 -- | parse annotations and then still call an annotation parser
 annoParser2 :: AParser st (Annoted a) -> AParser st (Annoted a)
@@ -98,7 +100,7 @@ lookupLogicM i = if isSimple i
 decide after seeing ".", ":" or "->" what was meant -}
 logicName :: LogicGraph -> AParser st Logic_name
 logicName l = do
-      i <- iriCurie >>= expandCurieMConservative l
+      i <- hetIriCurie >>= expandCurieMConservative l
       let (ft, rt) = if isSimple i
                      then break (== '.') $ abbrevPath i -- HetCASL
                      else (abbrevPath i, [])
@@ -109,7 +111,7 @@ logicName l = do
       skipSmart
       -- an optional spec name for a sublogic based on a theory #171
       mt <- optionMaybe
-            $ oParenT >> (iriCurie >>= expandCurieMConservative l) << cParenT
+            $ char '(' >> (iriCurie >>= expandCurieMConservative l) << cParenT
       lo <- lookupLogicM e
       return $ Logic_name lo ms mt
 
