@@ -136,7 +136,7 @@ viewDefn l = do
       <|> do
        g <- generics l
        _ <- annotations -- TODO: store annotations
-       s2 <- asKey ":"
+       s2 <- colonT
        vt <- viewType l
        (symbMap, ps) <- option ([], []) $ do
          s <- equalT
@@ -155,12 +155,57 @@ entailDefn l = do
   q <- optEnd
   return . Entail_defn n et . catRange $ [s, e] ++ maybeToList q
 
+queryDefn :: LogicGraph -> AParser st LIB_ITEM
+queryDefn l = do
+  q <- asKey "query"
+  n <- hetIRI l
+  e <- equalT
+  s <- asKey "select"
+  lg <- lookupCurrentLogic "query-defn" l
+  (vs, cs) <- parseItemsList lg
+  w <- asKey "where"
+  Basic_spec bs _ <- lookupCurrentSyntax "query-defn" l >>= basicSpec l
+  i <- asKey inS
+  oms <- aSpec l
+  mt <- optionMaybe $ asKey "along" >> renaming l
+  o <- optEnd
+  return . Query_defn n vs bs oms mt . catRange
+    $ [q, e, s, w] ++ cs ++ [i] ++ maybeToList o
+
+substDefn :: LogicGraph -> AParser st LIB_ITEM
+substDefn l = do
+  q <- asKey "substitution"
+  n <- hetIRI l
+  c <- colonT
+  vt <- viewType l
+  e <- equalT
+  lg <- lookupCurrentLogic "subst-defn" l
+  (m, cs) <- parseItemsMap lg
+  o <- optEnd
+  return . Subst_defn n vt m . catRange
+    $ [q, c, e] ++ cs ++ maybeToList o
+
+resultDefn :: LogicGraph -> AParser st LIB_ITEM
+resultDefn l = do
+  q <- asKey "result"
+  n <- hetIRI l
+  (sns, cs) <- separatedBy (hetIRI l) anComma
+  f <- asKey forS
+  r <- hetIRI l
+  a <- annotations
+  o <- optEnd
+  return . Result_defn n sns r (not $ null a) -- TODO check %complete
+    . catRange $ q : cs ++ [f] ++ maybeToList o
+
 -- | Parse an element of the library
 libItem :: LogicGraph -> AParser st LIB_ITEM
 libItem l = specDefn l
   <|> viewDefn l
   <|> dolImportItem l
   <|> entailDefn l
+  <|> queryDefn l
+  <|> substDefn l
+  <|> resultDefn l
   <|> -- equiv defn
     do s1 <- asKey equivalenceS
        en <- hetIRI l
@@ -176,7 +221,7 @@ libItem l = specDefn l
     do s1 <- asKey alignmentS
        an <- hetIRI l
        ar <- optionMaybe alignArities
-       s2 <- asKey ":"
+       s2 <- colonT
        at <- viewType l
        (corresps, ps, sem) <- option ([], [], SingleDomain) $ do
          s <- equalT
@@ -193,7 +238,7 @@ libItem l = specDefn l
     do s1 <- asKey moduleS
        mn <- hetIRI l
        _ <- annotations -- TODO: store annotations
-       s2 <- asKey ":"
+       s2 <- colonT
        mt <- moduleType l
        s3 <- asKey forS
        rs <- restrictionSignature l

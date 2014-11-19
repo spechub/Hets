@@ -14,6 +14,7 @@ Parser for CASL (heterogeneous) structured specifications
 
 module Syntax.Parse_AS_Structured
     ( annoParser2
+    , basicSpec
     , caslGroupSpec
     , groupSpec
     , aSpec
@@ -21,6 +22,7 @@ module Syntax.Parse_AS_Structured
     , parseMapping
     , parseCorrespondences
     , parseItemsList
+    , parseItemsMap
     , translationList
     , renaming
     , restriction

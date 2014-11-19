@@ -125,16 +125,19 @@ instance PrettyLG LIB_ITEM where
             fsep ([ structIRI qn <+> equals
                   , keyword "select" <+> pretty vs
                   , keyword "where" <+> pretty sen
-                  , keyword "in" <+> prettyLG lg spec]
+                  , keyword inS <+> prettyLG lg spec]
                   ++ maybe []
                   (\ r -> [keyword "along" <+> pretty r]) mt)
+            $+$ keyword endS
         Subst_defn sn vt sm _ -> topKey "substitution" <+>
             sep [ structIRI sn <+> colon, prettyViewType [] lg vt
                 , equals <+> pretty sm]
+            $+$ keyword endS
         Result_defn rn sl sq b _ -> topKey "result" <+>
             fsep ([ structIRI rn , ppWithCommas sl
-                  , keyword "for" <+> pretty sq]
-                 ++ if b then [keyword "%complete"] else [])
+                  , keyword forS <+> pretty sq]
+                  ++ [keyword "%complete" | b])
+            $+$ keyword endS
         Arch_spec_defn si ab _ -> topKey archS <+>
             fsep [keyword specS, structIRI si <+> equals, prettyLG lg ab]
             $+$ keyword endS
