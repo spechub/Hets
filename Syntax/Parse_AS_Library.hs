@@ -194,7 +194,7 @@ resultDefn l = do
   r <- hetIRI l
   a <- annotations
   o <- optEnd
-  return . Result_defn n sns r (not $ null a) -- TODO check %complete
+  return . Result_defn n sns r (any (identAnno "complete") a)
     . catRange $ q : cs ++ [f] ++ maybeToList o
 
 -- | Parse an element of the library
