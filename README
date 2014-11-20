@@ -1,12 +1,11 @@
 This README belongs to a "The heterogeneous tool set" (Hets) source
-release created by "make release" from the original svn repository.
-(for svn see http://subversion.tigris.org/)
+release created by "make release" from the original git repository.
 
 The original svn sources can be obtained by:
-svn co https://svn-agbkb.informatik.uni-bremen.de/Hets/trunk Hets
+git clone https://github.com/spechub/Hets
 
 Information not contained here can be found in the Hets user guide
-(doc/UserGuide.pdf) or on the Hets web page www.dfki.de/cps/hets.
+(doc/UserGuide.pdf) or on the Hets web page http://hets.eu.
 
 The subject of this source release is to create a binary "hets" that
 is able to analyse heterogeneous and in particular CASL
@@ -29,12 +28,12 @@ libraries.  Mac users are expected to install gtk2 from macports
 A typical call of hets is then: hets -g Basic/Numbers.casl
 
 Example specifications can be found under:
-https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk
+https://github.com/spechub/Hets-lib
 
 HETS_LIB should point to such library directories.
 
 For proving users may set HETS_ISABELLE, if "isabelle emacs" is not the right
-call for their system. Isabelle version 2012 is supported.
+call for their system. Isabelle version 2014 is supported.
 
 Further environment variables for provers are:
 
@@ -45,7 +44,7 @@ Further environment variables for provers are:
 
 If you need to build the hets binary follow the instructions in
 INSTALL, alternatively try to get a binary or a complete installer from:
-www.dfki.de/cps/hets/installation_e.htm
+hets.eu/hets/installation_e.htm
 
 The heterogeneous tool set (Hets) is mainly maintained by
 Christian Maeder (Christian.Maeder@dfki.de) and
