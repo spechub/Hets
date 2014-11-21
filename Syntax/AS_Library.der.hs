@@ -58,7 +58,7 @@ data LIB_ITEM = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) Range
               {- G_symb_items_list is RESTRICTION-SIGNATURE
               TODO: CONSERVATIVE? -}
               | Query_defn IRI G_symb_items_list G_basic_spec (Annoted SPEC)
-                (Maybe RENAMING) Range
+                (Maybe IRI) Range
               -- pos: "query", "=", "select", "where", "in", "along"
               | Subst_defn IRI VIEW_TYPE G_symb_map_items_list Range
               -- pos: "substitution", ":", "=", opt "end"

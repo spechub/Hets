@@ -101,7 +101,7 @@ networkDefn l = do
     kGraph <- asKey "network"
     name <- hetIRI l
     kEqu <- equalT
-    n <- parseNetwork False l
+    n <- parseNetwork l
     kEnd <- optEnd
     return . Graph_defn name n
          . catRange $ [kGraph, kEqu] ++ maybeToList kEnd
@@ -167,7 +167,7 @@ queryDefn l = do
   Basic_spec bs _ <- lookupCurrentSyntax "query-defn" l >>= basicSpec l
   i <- asKey inS
   oms <- aSpec l
-  mt <- optionMaybe $ asKey "along" >> renaming l
+  mt <- optionMaybe $ asKey "along" >> hetIRI l
   o <- optEnd
   return . Query_defn n vs bs oms mt . catRange
     $ [q, e, s, w] ++ cs ++ [i] ++ maybeToList o
@@ -212,7 +212,7 @@ libItem l = specDefn l
        s2 <- colonT
        et <- equivType l
        s3 <- equalT
-       sp <- omsOrNetwork False l
+       sp <- omsOrNetwork l
        ep <- optEnd
        return (Equiv_defn en et sp
            (catRange (s1 : s2 : s3 : maybeToList ep)))
@@ -319,20 +319,19 @@ downloadItems l = do
 
 entailType :: LogicGraph -> AParser st ENTAIL_TYPE
 entailType l = do
-    sp1 <- omsOrNetwork True l
+    sp1 <- omsOrNetwork l
     r <- asKey entailsS
-    sp2 <- omsOrNetwork False l
+    sp2 <- omsOrNetwork l
     return $ Entail_type sp1 sp2 $ tokPos r
 
-omsOrNetwork :: Bool -> LogicGraph -> AParser st OmsOrNetwork
-omsOrNetwork first l = fmap MkNetwork (try $ parseNetwork False l)
-  <|> fmap MkOms (if first then fmap emptyAnno $ groupSpec l else aSpec l)
+omsOrNetwork :: LogicGraph -> AParser st OmsOrNetwork
+omsOrNetwork l = fmap (MkOms . emptyAnno) $ groupSpec l
 
 equivType :: LogicGraph -> AParser st EQUIV_TYPE
 equivType l = do
-    sp1 <- omsOrNetwork True l
+    sp1 <- omsOrNetwork l
     r <- equiT
-    sp2 <- omsOrNetwork True l
+    sp2 <- omsOrNetwork l
     return $ Equiv_type sp1 sp2 $ tokPos r
 
 alignArities :: AParser st ALIGN_ARITIES

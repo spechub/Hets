@@ -457,13 +457,13 @@ logicSpec lG = do
 combineSpec :: LogicGraph -> AParser st SPEC
 combineSpec lG = do
     s1 <- asKey combineS
-    n <- parseNetwork True lG
+    n <- parseNetwork lG
     return $ Combination n $ tokPos s1
 
-parseNetwork :: Bool -> LogicGraph -> AParser st Network
-parseNetwork opt lG = do
+parseNetwork :: LogicGraph -> AParser st Network
+parseNetwork lG = do
     (oir, ps1) <- separatedBy (parseLabeled lG) commaT
-    (exl, ps) <- (if opt then option ([], []) else id) $ do
+    (exl, ps) <- option ([], []) $ do
           s2 <- asKey excludingS
           (e, ps2) <- separatedBy (hetIRI lG) commaT
           return (e, s2 : ps2)
