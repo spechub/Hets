@@ -146,7 +146,7 @@ mkNode (dg, m) (name, header', imps, keywords', uses', body) =
 anaIsaFile :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
 anaIsaFile _ path = do
  theories <- importIsaDataIO path
- let name = "Imported Theory"
+ let name = "ImportedTheory"
      (dg, _) = foldl mkNode (emptyDG, Map.empty) theories
      le = Map.insert (emptyLibName name) dg Map.empty
  return $ Just (emptyLibName name,
