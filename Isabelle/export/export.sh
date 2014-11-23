@@ -96,6 +96,7 @@ val v = fn s => out (1,\"Isabelle: \"^s);
 val e = fn s => (out (0,s); OS.Process.exit OS.Process.failure)
 
 v \"Loading helper library\n\";
+use \"$SCRIPTPATH/legacy_xml_syntax.ML\";
 use \"$SCRIPTPATH/parser.ml\";
 
 v \"Analyzing theory $TRANS_T\n\";

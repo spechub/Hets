@@ -790,11 +790,7 @@ struct
                            (Context.theory_name T')) > 0
 	               then T'::(get_non_image_parents T') else [])
 	     (Context.parents_of T))
-	structure XML_Syntax =
-	struct
-		val xml_of_type = the_single o Term_XML.Encode.typ;
-		val xml_of_term = the_single o Term_XML.Encode.term;
-	end
+	structure XML_Syntax = Legacy_XML_Syntax;
 	open TheoryData
 	open XML_Helper
 	datatype thy = datatype Parser.thy;
