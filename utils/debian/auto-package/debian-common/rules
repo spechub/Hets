@@ -29,7 +29,7 @@ override_dh_install:
 	install -m 755  hets debian/hets-core/usr/lib/hets
 	install -m 755 -d debian/hets-core/usr/lib/hets/hets-isa-tools
 	install -m 755 Isabelle/export/export.sh debian/hets-core/usr/lib/hets/hets-isa-tools
-	cp Isabelle/export/export_helper.ml debian/hets-core/usr/lib/hets/hets-isa-tools
+	cp Isabelle/export/parser.ml debian/hets-core/usr/lib/hets/hets-isa-tools
 	cp Isabelle/export/legacy_xml_syntax.ML debian/hets-core/usr/lib/hets/hets-isa-tools
 	cp Isabelle/export/COPYRIGHT debian/hets-core/usr/lib/hets/hets-isa-tools
 	cp -r hets-lib debian/hets-core/usr/lib/hets
