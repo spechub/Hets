@@ -26,7 +26,7 @@ String               = ($<$ \rm any list of unicode characters $>$) ;
 NetworkDefn          = NetworkKeyword , NetworkName , '=' , [ ConsStrength ] , Network ;
 NetworkKeyword       = 'network' ;
 NetworkName          = IRI ;
-Network              = NetworkElements , ExcludeExtensions ;
+Network              = NetworkElements , [ ExcludeExtensions ] ;
 NetworkElements      = NetworkElement , { ',' , NetworkElement } ;
 NetworkElement       = [ Id , ':' ] , OMSOrMappingorNetworkRef ;
 ExcludeExtensions    = 'excluding' , ExtensionRef , { ',' , ExtensionRef } ;
@@ -47,7 +47,7 @@ OMS                  = ExtendingOMS
                      | OMS , 'and' , [ ConsStrength ] , OMS
                      | OMS , 'then' , ExtensionOMS
                      | { Qualification } , ':' , GroupOMS
-                     | OMS , 'bridge' , { Translation } , OMS
+                     | OMS , 'bridge' , { Translation } , ExtendingOMS
                      | 'combine' , NetworkElements , [ ExcludeExtensions ]
                      | 'apply' , SubstName , Sentence
                      | GroupOMS ;
@@ -61,12 +61,10 @@ CircMin              = Symbol , { Symbol } ;
 CircVars             = 'vars' , Symbol , { Symbol } ;
 GroupOMS             = '{' , OMS , '}'
                      | OMSRef ;
-Translation          = 'with' , { LogicTranslation } , SymbolMapItems
-                     | 'with' , LogicTranslation , { LogicTranslation } ;
+Translation          = 'with' , { LogicTranslation } , [ SymbolMapItems ] ;
 LogicTranslation     = 'translation' , OMSLangTrans ;
-Reduction            = 'hide' , { LogicReduction } , SymbolItems
-                     | 'hide' , LogicReduction , { LogicReduction }
-                     | 'reveal' , SymbolMapItems ;
+Reduction            = 'hide' , { LogicReduction } , [ SymbolItems ]
+                     | 'reveal' , SymbolItems ;
 LogicReduction       = 'along' , OMSLangTrans ;
 SymbolItems          = Symbol , { ',' , Symbol } ;
 SymbolMapItems       = SymbolOrMap , { ',' , SymbolOrMap } ;
@@ -74,7 +72,7 @@ Extraction           = 'extract' , [ InterfaceSignature ]
                      | 'remove' , [ InterfaceSignature ] ;
 Approximation        = 'forget' , InterfaceSignature , [ 'with' , LogicRef ]
                      | 'keep' , InterfaceSignature , [ 'with' , LogicRef ]
-                     | 'keep' , LogicRef ;
+                     | 'keep' , 'with' , LogicRef ;
 Filtering            = 'select' , BasicOMS
                      | 'reject' , BasicOMS ;
 ExtensionOMS         = [ ExtConsStrength ] , [ ExtensionName ] , ExtendingOMS ;
@@ -126,27 +124,28 @@ IntprKeyword         = 'interpretation'
                      | 'refinement' ;
 IntprName            = IRI ;
 IntprType            = GroupOMS , 'to' , GroupOMS ;
-Refinement           = OMS
-                     | Network
+Refinement           = GroupOMS
+                     | NetworkName
                      | Refinement , 'then' , Refinement
-                     | OMS , 'refined' , [ RefMap ] , 'to' , Refinement ;
+                     | GroupOMS , 'refined' , [ RefMap ] , 'to' , Refinement
+                     | NetworkName , 'refined' , [ RefMap ] , 'to' , Refinement ;
 RefMap               = 'via' , { LogicTranslation } , [ SymbolMapItems ]
                      | 'via' , NodeMap , { ',' , NodeMap } ;
 NodeMap              = OMSName , '|->' , OMSName , [ 'using' , { LogicTranslation } , [ SymbolMapItems ] ] ;
-Entailment           = 'entailment' , EntailmentName , '=' , EntailmentType ;
+Entailment           = 'entailment' , EntailmentName , '=' , EntailmentType , 'end' ;
 EntailmentName       = IRI ;
-EntailmentType       = GroupOMS , 'entails' , OMS
-                     | Network , 'entails' , OMS
-                     | Network , 'entails' , Network ;
+EntailmentType       = GroupOMS , 'entails' , GroupOMS
+                     | OMSName , 'in' , Network , 'entails' , GroupOMS
+                     | NetworkName , 'entails' , NetworkName ;
 EquivDefn            = 'equivalence' , EquivName , ':' , EquivType , 'end' ;
 EquivName            = IRI ;
 EquivType            = GroupOMS , '<->' , GroupOMS , '=' , OMS
-                     | Network , '<->' , Network , '=' , Network ;
+                     | NetworkName , '<->' , NetworkName , '=' , Network ;
 ModuleRelDefn        = 'module' , ModuleName , [ Conservative ] , ':' , ModuleType , 'for' , InterfaceSignature ;
 ModuleName           = IRI ;
-ModuleType           = OMS , 'of' , OMS ;
+ModuleType           = GroupOMS , 'of' , GroupOMS ;
 AlignDefn            = 'alignment' , AlignName , [ AlignCards ] , ':' , AlignType , 'end'
-                     | 'alignment' , AlignName , [ AlignCards ] , ':' , AlignType , '=' , Correspondence , { ',' , Correspondence } , 'assuming' , AlignSem , 'end' ;
+                     | 'alignment' , AlignName , [ AlignCards ] , ':' , AlignType , '=' , Correspondence , { ',' , Correspondence } , [ 'assuming' , AlignSem ] , 'end' ;
 AlignName            = IRI ;
 AlignCards           = AlignCardForward , AlignCardBackward ;
 AlignCardForward     = AlignCard ;
@@ -180,9 +179,9 @@ Double               = ($<$ a number $\in [0,1]$ $>$) ;
 QueryRelatedDefn     = QueryDefn
                      | SubstDefn
                      | ResultDefn ;
-QueryDefn            = 'query' , QueryName , '=' , 'select' , Vars , 'where' , Sentence , 'in' , OMS , [ 'along' , Translation ] ;
-SubstDefn            = 'substitution' , SubstName , ':' , OMS , 'to' , OMS , '=' , SymbolMap ;
-ResultDefn           = 'result' , ResultName , SubstName , { ',' , SubstName } , 'for' , QueryName , [ '%complete' ] ;
+QueryDefn            = 'query' , QueryName , '=' , 'select' , Vars , 'where' , Sentence , 'in' , GroupOMS , [ 'along' , OMSLangTrans ] , 'end' ;
+SubstDefn            = 'substitution' , SubstName , ':' , GroupOMS , 'to' , GroupOMS , '=' , SymbolMapItems , 'end' ;
+ResultDefn           = 'result' , ResultName , '=' , SubstName , { ',' , SubstName } , 'for' , QueryName , [ '%complete' ] , 'end' ;
 QueryName            = IRI ;
 SubstName            = IRI ;
 ResultName           = IRI ;
