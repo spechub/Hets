@@ -39,6 +39,7 @@ import Driver.ReadFn
 
 import Common.AnnoState
 import Common.Result
+import Common.ResultT
 
 import Text.ParserCombinators.Parsec
 
@@ -90,8 +91,8 @@ guessInput opts mr file input =
       _ -> return $ joinFileTypes fty ty
   else return fty
 
-readLibDefn :: MonadIO m => LogicGraph -> HetcatsOpts -> Maybe String
-  -> FilePath -> FilePath -> String -> m [LIB_DEFN]
+readLibDefn :: LogicGraph -> HetcatsOpts -> Maybe String
+  -> FilePath -> FilePath -> String -> ResultT IO [LIB_DEFN]
 readLibDefn lgraph opts mr file fileForPos input =
     if null input then fail ("empty input file: " ++ file) else
     case intype opts of
@@ -102,7 +103,7 @@ readLibDefn lgraph opts mr file fileForPos input =
      ty <- guessInput opts mr file input
      case ty of
       HtmlIn -> fail "unexpected html input"
-      CommonLogicIn _ -> liftIO $ parseCL_CLIF file opts
+      CommonLogicIn _ -> parseCL_CLIF file opts
 #ifdef RDFLOGIC
      -- RDFIn -> liftIO $ parseRDF file
 #endif
