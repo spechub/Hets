@@ -185,7 +185,12 @@ tryDownload opts fnames fn = case fnames of
   fname : fnames' -> do
        mRes <- downloadSource opts fname
        case mRes of
-         Left _ -> tryDownload opts fnames' fn
+         Left err -> do
+           eith <- tryDownload opts fnames' fn
+           case eith of
+             Left res | null fnames' ->
+               return . Left $ err ++ "\n" ++ res
+             _ -> return eith
          Right cont -> return $ Right (fname, cont)
 
 getContent :: HetcatsOpts -> FilePath
