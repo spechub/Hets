@@ -72,7 +72,7 @@ Extraction           = 'extract' , [ InterfaceSignature ]
                      | 'remove' , [ InterfaceSignature ] ;
 Approximation        = 'forget' , InterfaceSignature , [ 'with' , LogicRef ]
                      | 'keep' , InterfaceSignature , [ 'with' , LogicRef ]
-                     | 'keep' , 'with' , LogicRef ;
+                     | 'keep' , LogicRef ;
 Filtering            = 'select' , BasicOMS
                      | 'reject' , BasicOMS ;
 ExtensionOMS         = [ ExtConsStrength ] , [ ExtensionName ] , ExtendingOMS ;
