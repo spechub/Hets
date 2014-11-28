@@ -215,16 +215,16 @@ exitHets err = do
 {- | output file type, checksum, real file name and file content.
 inputs are hets options, optional argument for the file program,
 and the library or file name. -}
-getContentAndFileType :: HetcatsOpts -> Maybe String -> FilePath
+getContentAndFileType :: HetcatsOpts -> FilePath
   -> IO (Either String (Maybe String, Maybe String, FilePath, String))
-getContentAndFileType opts mp fn = do
+getContentAndFileType opts fn = do
   eith <- getContent opts fn
   case eith of
     Left err -> return $ Left err
     Right (nFn, cont) -> do
       let isUri = checkUri nFn
       f <- if isUri then getTempFile cont "hets-file.tmp" else return nFn
-      Result ds mr <- runResultT $ getMagicFileType mp f
+      Result ds mr <- runResultT $ getMagicFileType (Just "--mime-type") f
       Result es mc <- runResultT $ getChecksum f
       showDiags opts (ds ++ es)
       when isUri $ removeFile f
@@ -232,7 +232,7 @@ getContentAndFileType opts mp fn = do
 
 showFileType :: HetcatsOpts -> FilePath -> IO ()
 showFileType opts fn = do
-  eith <- getContentAndFileType opts Nothing fn
+  eith <- getContentAndFileType opts fn
   case eith of
     Left err -> exitHets err
     Right (mr, _, nFn, _) ->

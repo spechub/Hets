@@ -505,7 +505,7 @@ status422 = Status 422 $ B8.pack "Unprocessable Entity"
 
 mkFiletypeResponse :: HetcatsOpts -> String -> WebResponse
 mkFiletypeResponse opts libIri respond = do
-  res <- liftIO $ getContentAndFileType opts Nothing libIri
+  res <- liftIO $ getContentAndFileType opts libIri
   respond $ case res of
     Left err -> mkResponse textC status422 err
     Right (mr, _, fn, _) -> case mr of
@@ -686,7 +686,7 @@ getDGraph opts sessRef dgQ = do
     NewDGQuery file cmdList -> do
       let cl = mapMaybe (\ s -> find ((== s) . cmdlGlobCmd)
                   $ map fst allGlobLibAct) cmdList
-      mf <- lift $ getContentAndFileType opts Nothing file
+      mf <- lift $ getContentAndFileType opts file
       case mf of
         Left err -> fail err
         Right (_, mh, f, cont) -> case mh of

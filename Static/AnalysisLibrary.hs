@@ -95,7 +95,7 @@ anaSource mln lg opts topLns libenv initDG origName = ResultT $ do
         "" -> Nothing
         s -> Just $ simpleIdToIRI $ mkSimpleId s
       lgraph = setSyntax syn $ setCurLogic (defLogic opts) lg
-  fname' <- getContentAndFileType opts (Just "--mime-type") fname
+  fname' <- getContentAndFileType opts fname
   case fname' of
     Left err -> return $ fail err
     Right (mr, _, file, inputLit) ->
