@@ -85,6 +85,7 @@ instance Sentences Propositional FORMULA
     symmap_of Propositional = getSymbolMap
     -- returns the name of a symbol
     sym_name Propositional = getSymbolName
+    symKind Propositional _ = "prop"
     -- translation of sentences along signature morphism
     map_sen Propositional = mapSentence
     -- there is nothing to leave out
