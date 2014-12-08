@@ -528,7 +528,7 @@ mkHtmlString path dirs = htmlHead ++ mkHtmlElem
   ("Listing of" ++ if null path then " repository" else ": " ++ path)
   (unode "h1" ("Hets " ++ hetcats_version) : unode "p"
      [ bold "Hompage:"
-     , aRef "http://www.dfki.de/cps/hets/" "dfki.de/cps/hets/"
+     , aRef "http://hets.eu" "hets.eu"
      , bold "Contact:"
      , aRef "mailto:hets-devel@informatik.uni-bremen.de"
        "hets-devel@informatik.uni-bremen.de" ]
