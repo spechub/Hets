@@ -26,10 +26,13 @@ import Common.Id
 import Common.IRI
 import Common.LibName
 import Common.ProverTools
+import Common.Result
+import Common.ResultT
 import Common.AS_Annotation
 import Common.Utils
 
 import Control.Monad
+import Control.Monad.Trans
 
 import Logic.Grothendieck
 import OWL2.Logic_OWL2
@@ -47,51 +50,59 @@ import Text.XML.Light hiding (QName)
 -- | call for owl parser (env. variable $HETS_OWL_TOOLS muss be defined)
 parseOWL :: Bool                  -- ^ Sets Option.quick
          -> FilePath              -- ^ local filepath or uri
-         -> IO [LIB_DEFN]         -- ^ map: uri -> OntologyFile
+         -> ResultT IO [LIB_DEFN] -- ^ map: uri -> OntologyFile
 parseOWL quick fn = do
-    tmpFile <- getTempFile "" "owlTemp.xml"
+    tmpFile <- lift $ getTempFile "" "owlTemp.xml"
     (exitCode, _, errStr) <- parseOWLAux quick fn ["-o", "xml", tmpFile]
     case (exitCode, errStr) of
       (ExitSuccess, "") -> do
-          cont <- L.readFile tmpFile
-          removeFile tmpFile
+          cont <- lift $ L.readFile tmpFile
+          lift $ removeFile tmpFile
           parseProc cont
-      _ -> error $ "process stop! " ++ shows exitCode "\n" ++ errStr
+      _ -> fail $ "process stop! " ++ shows exitCode "\n" ++ errStr
 
 parseOWLAux :: Bool         -- ^ Sets Option.quick
          -> FilePath        -- ^ local filepath or uri
          -> [String]        -- ^ arguments for java parser
-         -> IO (ExitCode, String, String)
+         -> ResultT IO (ExitCode, String, String)
 parseOWLAux quick fn args = do
     let jar = "OWL2Parser.jar"
-    (hasJar, toolPath) <- check4HetsOWLjar jar
-    if hasJar then executeProcess "java" (["-jar", toolPath </> jar]
+    (hasJar, toolPath) <- lift $ check4HetsOWLjar jar
+    if hasJar
+      then lift $ executeProcess "java" (["-jar", toolPath </> jar]
         ++ args ++ [fn] ++ ["-qk" | quick]) ""
-      else error $ jar
+      else fail $ jar
         ++ " not found, check your environment variable: " ++ hetsOWLenv
 
 -- | converts owl file to desired syntax using owl-api
 convertOWL :: FilePath -> String -> IO String
 convertOWL fn tp = do
-  (exitCode, content, errStr) <- parseOWLAux False fn ["-o-sys", tp]
-  case (exitCode, errStr) of
-    (ExitSuccess, "") -> return content
-    _ -> error $ "process stop! " ++ shows exitCode "\n" ++ errStr
+  Result ds mRes <- runResultT
+    $ parseOWLAux False fn ["-o-sys", tp]
+  case mRes of
+    Just (exitCode, content, errStr) -> case (exitCode, errStr) of
+      (ExitSuccess, "") -> return content
+      _ -> error $ "process stop! " ++ shows exitCode "\n" ++ errStr
+    _ -> error $ showRelDiags 2 ds
 
-parseProc :: L.ByteString -> IO [LIB_DEFN]
+parseProc :: L.ByteString -> ResultT IO [LIB_DEFN]
 parseProc str = do
-  res <- parseXml str
-  let es = elChildren $ either error id res
+  res <- lift $ parseXml str
+  case res of
+    Left err -> fail err
+    Right el -> let
+      es = elChildren el
       mis = concatMap (filterElementsName $ isSmth "Missing") es
       imap = Map.fromList . mapMaybe (\ e -> do
         imp <- findAttr (unqual "name") e
         ont <- findAttr (unqual "ontiri") e
         return (imp, ont)) $ concatMap (filterElementsName $ isSmth "Loaded") es
-  unless (null mis) . putStrLn $ "Missing imports: "
-    ++ intercalate ", " (map strContent mis)
-  return . map (convertToLibDefN imap)
-        . unifyDocs . map (xmlBasicSpec imap)
-        $ concatMap (filterElementsName $ isSmth "Ontology") es
+      in do
+        unless (null mis) . liftR . justWarn () $ "Missing imports: "
+            ++ intercalate ", " (map strContent mis)
+        return . map (convertToLibDefN imap)
+          . unifyDocs . map (xmlBasicSpec imap)
+          $ concatMap (filterElementsName $ isSmth "Ontology") es
 
 qNameToIRI :: QName -> SPEC_NAME
 qNameToIRI qn = let s = showQN qn in
