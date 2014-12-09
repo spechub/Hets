@@ -57,9 +57,7 @@ expandCurieM :: LogicGraph -> IRI -> GenParser Char st IRI
 expandCurieM lG i =
   case expandCurie (prefixes lG) i of
     Just ei -> return ei
-    Nothing -> if isSimple i
-               then return i
-               else fail $ "could not expand IRI " ++ show i
+    Nothing -> return i
 
 expandCurieMConservative :: LogicGraph -> IRI -> GenParser Char st IRI
 expandCurieMConservative lG i = if isSimple i then return i
