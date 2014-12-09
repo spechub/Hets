@@ -429,16 +429,8 @@ specD l = do
 specE :: LogicGraph -> AParser st SPEC
 specE l = logicSpec l
       <|> combineSpec l
-      <|> applySpec l
       <|> (lookAhead (groupSpecLookhead l) >> groupSpec l)
       <|> (lookupCurrentSyntax "basic spec" l >>= basicSpec l)
-
-applySpec :: LogicGraph -> AParser st SPEC
-applySpec l = do
-  k <- asKey "apply"
-  n <- hetIRI l
-  Basic_spec bs _ <- lookupCurrentSyntax "apply spec" l >>= basicSpec l
-  return $ Apply n bs $ tokPos k
 
 -- | call a logic specific parser if it exists
 callParser :: Maybe (AParser st a) -> String -> String -> AParser st a
