@@ -102,9 +102,9 @@ networkDefn l = do
     name <- hetIRI l
     kEqu <- equalT
     n <- parseNetwork l
-    kEnd <- optEnd
+    kEnd <- asKey endS
     return . Graph_defn name n
-         . catRange $ [kGraph, kEqu] ++ maybeToList kEnd
+         . catRange $ [kGraph, kEqu, kEnd]
 
 emptyParams :: GENERICITY
 emptyParams = Genericity (Params []) (Imported []) nullRange
