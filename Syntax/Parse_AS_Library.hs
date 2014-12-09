@@ -214,9 +214,8 @@ libItem l = specDefn l
        s3 <- equalT
        sp <- omsOrNetwork l
        ep <- optEnd
-       return (Equiv_defn en et sp
-           (catRange (s1 : s2 : s3 : maybeToList ep)))
-
+       return . Equiv_defn en et sp
+         . catRange $ s1 : s2 : s3 : maybeToList ep
   <|> -- align defn
     do s1 <- asKey alignmentS
        an <- hetIRI l
@@ -232,8 +231,8 @@ libItem l = specDefn l
               [minBound .. maxBound]
          return (cs, [s], aSem)
        q <- optEnd
-       return (Align_defn an ar at corresps sem
-                    (catRange ([s1, s2] ++ ps ++ maybeToList q)))
+       return . Align_defn an ar at corresps sem
+         . catRange $ [s1, s2] ++ ps ++ maybeToList q
   <|> -- module defn
     do s1 <- asKey moduleS
        mn <- hetIRI l
@@ -242,7 +241,9 @@ libItem l = specDefn l
        mt <- moduleType l
        s3 <- asKey forS
        rs <- restrictionSignature l
-       return (Module_defn mn mt rs (catRange [s1, s2, s3]))
+       kEnd <- optEnd
+       return . Module_defn mn mt rs
+         . catRange $ s1 : s2 : s3 : maybeToList kEnd
   <|> -- unit spec
     do kUnit <- asKey unitS
        kSpec <- asKey specS
