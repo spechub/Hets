@@ -141,7 +141,7 @@ instance Pretty APPROXIMATION where
 
 printAPPROXIMATION :: APPROXIMATION -> Doc
 printAPPROXIMATION (ForgetOrKeep b syms ml _) =
-   fsep $ keyword (if b then "forget" else "keep")
+   fsep $ keyword (if b then forgetS else keepS)
    : ppWithCommas syms : maybe [] (\ i -> [keyword withS, pretty i]) ml
 
 instance Pretty EXTRACTION where

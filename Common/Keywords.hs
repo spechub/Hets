@@ -453,6 +453,9 @@ floatingS = "floating"
 forallS :: String
 forallS = "forall"
 
+forgetS :: String
+forgetS = "forget"
+
 freeS :: String
 freeS = "free"
 
@@ -470,6 +473,9 @@ givenS = "given"
 
 hideS :: String
 hideS = "hide"
+
+keepS :: String
+keepS = "keep"
 
 approximateS :: String
 approximateS = "approximate"

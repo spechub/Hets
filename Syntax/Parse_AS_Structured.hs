@@ -366,10 +366,10 @@ restriction lg =
 -- | Parse approximation
 approximation :: LogicGraph -> AParser st APPROXIMATION
 approximation lg =
- do p1 <- asKey "forget" <|> asKey "keep"
+ do p1 <- asKey forgetS <|> asKey keepS
     (hs, _) <- parseHiding lg
-    li <- optionMaybe $ asKey withS >> hetIRI lg
-    return $ ForgetOrKeep (tokStr p1 /= "keep") hs li $ tokPos p1
+    li <- optionMaybe $ asKey keepS >> hetIRI lg
+    return $ ForgetOrKeep (tokStr p1 /= keepS) hs li $ tokPos p1
 
 minimization :: LogicGraph -> AParser st MINIMIZATION
 minimization lg = do

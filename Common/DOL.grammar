@@ -22,7 +22,7 @@ BoundPrefix          = ':'
                      | Prefix ;
 IRIBoundToPrefix     = '<' , FullIRI , '>' ;
 Separators           = 'separators' , String , String ;
-String               = ($<$ \rm any list of unicode characters $>$) ;
+String               = ($<$ \rm yet to be fixed, current default in hets is ? $>$) ;
 NetworkDefn          = NetworkKeyword , NetworkName , '=' , [ ConsStrength ] , Network ;
 NetworkKeyword       = 'network' ;
 NetworkName          = IRI ;
@@ -70,8 +70,8 @@ SymbolItems          = Symbol , { ',' , Symbol } ;
 SymbolMapItems       = SymbolOrMap , { ',' , SymbolOrMap } ;
 Extraction           = 'extract' , [ InterfaceSignature ]
                      | 'remove' , [ InterfaceSignature ] ;
-Approximation        = 'forget' , InterfaceSignature , [ 'with' , LogicRef ]
-                     | 'keep' , InterfaceSignature , [ 'with' , LogicRef ]
+Approximation        = 'forget' , InterfaceSignature , [ 'keep' , LogicRef ]
+                     | 'keep' , InterfaceSignature , [ 'keep' , LogicRef ]
                      | 'keep' , LogicRef ;
 Filtering            = 'select' , BasicOMS
                      | 'reject' , BasicOMS ;
