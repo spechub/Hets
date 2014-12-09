@@ -212,7 +212,7 @@ libItem l = specDefn l
        s2 <- colonT
        et <- equivType l
        s3 <- equalT
-       sp <- omsOrNetwork l
+       sp <- fmap MkOms $ aSpec l
        ep <- optEnd
        return . Equiv_defn en et sp
          . catRange $ s1 : s2 : s3 : maybeToList ep
