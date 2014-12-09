@@ -88,11 +88,17 @@ instance PrettyLG LIB_ITEM where
             in topKey viewS <+>
                sep [sphead, prettyViewType ad lg vt, ppWithCommas ad]
                $+$ keyword endS
-        Entail_defn si (Entail_type s1 s2 _) _ -> topKey entailmentS <+>
-            sep [structIRI si <+> equals
-                , prettyLG lg s1
-                , keyword entailsS
-                , prettyLG lg s2 ]
+        Entail_defn si et _ -> topKey entailmentS <+>
+            sep ((structIRI si <+> equals) : case et of
+                 Entail_type s1 s2 _ ->
+                   [ prettyLG lg s1
+                   , keyword entailsS
+                   , prettyLG lg s2 ]
+                 OMSInNetwork i nw s2 _ ->
+                   [ structIRI i <+> keyword inS
+                   , pretty nw
+                   , keyword entailsS
+                   , prettyLG lg s2 ])
             $+$ keyword endS
         Equiv_defn si (Equiv_type as1 as2 _) sp _ -> topKey equivalenceS <+>
             sep [structIRI si <+> colon, sep

@@ -141,6 +141,7 @@ data OmsOrNetwork = MkOms (Annoted SPEC)
   deriving (Show, Typeable)
 
 data ENTAIL_TYPE = Entail_type OmsOrNetwork OmsOrNetwork Range
+  | OMSInNetwork IRI Network SPEC Range
   deriving (Show, Typeable)
   -- pos "entails"
 

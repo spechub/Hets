@@ -321,9 +321,18 @@ downloadItems l = do
 entailType :: LogicGraph -> AParser st ENTAIL_TYPE
 entailType l = do
     sp1 <- omsOrNetwork l
-    r <- asKey entailsS
-    sp2 <- omsOrNetwork l
-    return $ Entail_type sp1 sp2 $ tokPos r
+    do
+        r <- asKey entailsS
+        sp2 <- omsOrNetwork l
+        return $ Entail_type sp1 sp2 $ tokPos r
+      <|> case sp1 of
+            MkOms (Annoted (Spec_inst n [] Nothing _) _ _ _) -> do
+              i <- asKey inS
+              nw <- parseNetwork l
+              r <- asKey entailsS
+              g <- groupSpec l
+              return . OMSInNetwork n nw g $ catRange [i, r]
+            _ -> fail "OMSName expected"
 
 omsOrNetwork :: LogicGraph -> AParser st OmsOrNetwork
 omsOrNetwork l = fmap (MkOms . emptyAnno) $ groupSpec l
