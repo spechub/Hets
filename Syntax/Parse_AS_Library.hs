@@ -160,10 +160,10 @@ queryDefn l = do
   q <- asKey "query"
   n <- hetIRI l
   e <- equalT
-  s <- asKey "select"
+  s <- asKey selectS
   lg <- lookupCurrentLogic "query-defn" l
   (vs, cs) <- parseItemsList lg
-  w <- asKey "where"
+  w <- asKey whereS
   Basic_spec bs _ <- lookupCurrentSyntax "query-defn" l >>= basicSpec l
   i <- asKey inS
   oms <- aSpec l

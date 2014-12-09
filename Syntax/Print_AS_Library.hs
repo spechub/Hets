@@ -123,8 +123,8 @@ instance PrettyLG LIB_ITEM where
                sep [sphead, spmt, text forS, pretty rs]
         Query_defn qn vs sen spec mt _ -> topKey "query" <+>
             fsep ([ structIRI qn <+> equals
-                  , keyword "select" <+> pretty vs
-                  , keyword "where" <+> pretty sen
+                  , keyword selectS <+> pretty vs
+                  , keyword whereS <+> pretty sen
                   , keyword inS <+> prettyLG lg spec]
                   ++ maybe []
                   (\ r -> [keyword "along" <+> pretty r]) mt)
