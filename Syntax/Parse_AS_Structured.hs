@@ -502,6 +502,7 @@ groupSpecAux withImport l = do
       return $ EmptySpec $ catRange [b, c]
      <|> do
       a <- aSpec l
+      addAnnos
       c <- cBraceT
       return $ Group a $ catRange [b, c]
   <|> do
