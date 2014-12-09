@@ -310,6 +310,7 @@ specC lG = do
           , (`fmap` renaming lG) . Translation
           , (`fmap` restriction lG) . Reduction
           , (`fmap` approximation lG) . Approximation
+          , (`fmap` filtering lG) . Filtering
           , (`fmap` minimization lG) . Minimization]
     l@(Logic lid) <- lookupCurrentLogic "specC" lG
     {- if the current logic has an associated data_logic,
@@ -386,6 +387,13 @@ extraction lg = do
   p <- asKey "extract" <|> asKey "remove"
   is <- many1 (hetIRI lg)
   return . ExtractOrRemove (tokStr p == "extract") is $ tokPos p
+
+filtering :: LogicGraph -> AParser st FILTERING
+filtering lg = do
+  p <- asKey selectS <|> asKey rejectS
+  s <- lookupCurrentSyntax "filtering" lg
+  Basic_spec bs _ <- basicSpec lg s
+  return . SelectOrReject (tokStr p == selectS) bs $ tokPos p
 
 groupSpecLookhead :: LogicGraph -> AParser st IRI
 groupSpecLookhead lG =

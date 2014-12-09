@@ -559,6 +559,9 @@ refinedS = "refined"
 refinementS :: String
 refinementS = "refinement"
 
+rejectS :: String
+rejectS = "reject"
+
 resultS :: String
 resultS = "result"
 
@@ -573,6 +576,9 @@ rigidS = "rigid"
 
 sS :: String
 sS = "s"
+
+selectS :: String
+selectS = "select"
 
 sortS :: String
 sortS = "sort"

@@ -126,7 +126,7 @@ instance Pretty FILTERING where
 
 printFILTERING :: FILTERING -> Doc
 printFILTERING (SelectOrReject b aa _) =
-   keyword (if b then "select" else "reject") <+> pretty aa
+   keyword (if b then selectS else rejectS) <+> pretty aa
 
 instance Pretty MINIMIZATION where
     pretty = printMINIMIZATION
