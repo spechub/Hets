@@ -309,7 +309,7 @@ nodeEdgeIdes = ["nodes", "edges"]
 
 newRESTIdes :: [String]
 newRESTIdes =
-  [ "dg", "translate", "provers", "consistency-checkers", "prove"
+  [ "dg", "translations", "provers", "consistency-checkers", "prove"
   , "consistency-check" ]
 
 queryFail :: String -> WebResponse
@@ -418,7 +418,7 @@ parseRESTfull opts sessRef pathBits qOpts splitQuery meth respond = let
         then getResponseAux newOpts . Query (NewDGQuery libIri $ cmdList
             ++ Set.toList (Set.fromList $ optFlags ++ qOpts))
          $ case newIde of
-           "translate" -> case nodeM of
+           "translations" -> case nodeM of
              Nothing -> GlTranslations
              Just n -> nodeQuery n $ NcTranslations Nothing
            _ | elem newIde ["provers", "consistency-checkers"] ->
