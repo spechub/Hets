@@ -330,6 +330,7 @@ parseRESTfull opts sessRef pathBits qOpts splitQuery meth respond = let
   library = lookup2 "library"
   format = lookup2 "format"
   nodeM = lookup2 "node"
+  theoremsM = parseTheorems $ lookup2 "theorems"
   transM = lookup2 "translation"
   proverM = lookup2 "prover"
   consM = lookup2 "consistency-checker"
@@ -431,7 +432,7 @@ parseRESTfull opts sessRef pathBits qOpts splitQuery meth respond = let
                  pm = if isProve then GlProofs else GlConsistency
                  pc = ProveCmd pm
                    (not (isProve && isJust inclM) || incl)
-                   (if isProve then proverM else consM) transM timeout [] True
+                   (if isProve then proverM else consM) transM timeout theoremsM True
              in case nodeM of
              Nothing -> GlAutoProve pc
              Just n -> nodeQuery n $ ProveNode pc
@@ -487,6 +488,11 @@ parseRESTfull opts sessRef pathBits qOpts splitQuery meth respond = let
     {- create failure response if request method is not known
     (should never happen) -}
     _ -> respond $ mkResponse "" status400 ""
+
+parseTheorems :: Maybe String -> [String]
+parseTheorems mstr = case mstr of
+  Nothing -> []
+  Just str -> splitOn ',' str
 
 mkMenuResponse :: WebResponse
 mkMenuResponse respond =
