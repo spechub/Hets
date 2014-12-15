@@ -260,7 +260,9 @@ basicSpec pm = do
     ie <- many importEntry
     ans <- many annotations
     as <- frames
-    return $ OntologyDocument
+    if null nss && null ie && null ans && null as && ou == nullQName
+      then fail "empty ontology"
+      else return $ OntologyDocument
         (Map.union (Map.fromList $ map (\ (p, q) -> (p, showQU q)) nss)
          (convertPrefixMap pm))
         (emptyOntology as)

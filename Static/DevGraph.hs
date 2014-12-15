@@ -451,7 +451,8 @@ getExtGenSigNodes :: ExtGenSig -> Set.Set Node
 getExtGenSigNodes (ExtGenSig g n) = Set.insert (getNode n) $ getGenSigNodes g
 
 -- | source, morphism, parameterized target
-data ExtViewSig = ExtViewSig NodeSig GMorphism ExtGenSig deriving (Show, Typeable)
+data ExtViewSig = ExtViewSig NodeSig GMorphism ExtGenSig
+  deriving (Show, Typeable)
 
 getExtViewSigNodes :: ExtViewSig -> Set.Set Node
 getExtViewSigNodes (ExtViewSig n _ e) =
@@ -460,7 +461,8 @@ getExtViewSigNodes (ExtViewSig n _ e) =
 {- ** types for architectural and unit specification analysis
     (as defined for basic static semantics in Chap. III:5.1) -}
 
-data UnitSig = UnitSig [NodeSig] NodeSig (Maybe NodeSig) deriving (Show, Eq, Typeable)
+data UnitSig = UnitSig [NodeSig] NodeSig (Maybe NodeSig)
+  deriving (Show, Eq, Typeable)
 {- Maybe NodeSig stores the union of the parameters
 the node is needed for consistency checks -}
 
@@ -686,7 +688,8 @@ getGlobEntryNodes g = case g of
 
 data AlignSig = AlignMor NodeSig GMorphism NodeSig
               | AlignSpan NodeSig GMorphism NodeSig GMorphism NodeSig
-              | WAlign    NodeSig GMorphism GMorphism -- s1, i1, sig1
+              | WAlign
+                          NodeSig GMorphism GMorphism -- s1, i1, sig1
                           NodeSig GMorphism GMorphism -- s2, i2, sig2
                           NodeSig                     -- t1
                           NodeSig                     -- t2
@@ -1129,9 +1132,8 @@ lookupGlobalEnvDG sid dg = let
     gEnv = globalEnv dg
     shortIRI = iriToStringShortUnsecure sid
     in case Map.lookup sid gEnv of
-    Nothing -> Map.lookup (nullIRI { abbrevPath = shortIRI }) $
-               Map.mapKeys (\ x -> nullIRI {abbrevPath = abbrevPath x})
-               gEnv
+    Nothing -> Map.lookup shortIRI $
+               Map.mapKeys iriToStringShortUnsecure gEnv
     m -> m
 
 -- | lookup a reference node for a given libname and node

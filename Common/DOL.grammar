@@ -1,0 +1,205 @@
+Library              = [ PrefixMap ] , LibraryDefn
+                     | OMSInConformingLanguage ;
+LibraryDefn          = 'library' , LibraryName , Qualification , { LibraryItem } ;
+OMSInConformingLanguage = ($<$ language and serialization specific $>$) ;
+LibraryItem          = LibImport
+                     | OMSDefn
+                     | NetworkDefn
+                     | MappingDefn
+                     | QueryRelatedDefn
+                     | Qualification ;
+LibImport            = 'import' , LibraryName ;
+Qualification        = LanguageQual
+                     | LogicQual
+                     | SyntaxQual ;
+LanguageQual         = 'language' , LanguageRef ;
+LogicQual            = 'logic' , LogicRef ;
+SyntaxQual           = 'serialization' , SyntaxRef ;
+LibraryName          = IRI ;
+PrefixMap            = '%prefix(' , { PrefixBinding } , ')%' ;
+PrefixBinding        = BoundPrefix , IRIBoundToPrefix , [ Separators ] ;
+BoundPrefix          = ':'
+                     | Prefix ;
+IRIBoundToPrefix     = '<' , FullIRI , '>' ;
+Separators           = 'separators' , String , String ;
+String               = ($<$ \rm yet to be fixed, current default in hets is ? $>$) ;
+NetworkDefn          = NetworkKeyword , NetworkName , '=' , [ ConsStrength ] , Network ;
+NetworkKeyword       = 'network' ;
+NetworkName          = IRI ;
+Network              = NetworkElements , [ ExcludeExtensions ] ;
+NetworkElements      = NetworkElement , { ',' , NetworkElement } ;
+NetworkElement       = [ Id , ':' ] , OMSOrMappingorNetworkRef ;
+ExcludeExtensions    = 'excluding' , ExtensionRef , { ',' , ExtensionRef } ;
+OMSOrMappingorNetworkRef = IRI ;
+Id                   = Letter , { LetterOrDigit } ;
+BasicOMS             = OMSInConformingLanguage ;
+MinimizableOMS       = BasicOMS
+                     | OMSRef , [ ImportName ] ;
+ExtendingOMS         = MinimizableOMS
+                     | MinimizeKeyword , '{' , MinimizableOMS , '}'
+                     | OMS , Extraction ;
+OMS                  = ExtendingOMS
+                     | OMS , Minimization
+                     | OMS , Translation
+                     | OMS , Reduction
+                     | OMS , Approximation
+                     | OMS , Filtering
+                     | OMS , 'and' , [ ConsStrength ] , OMS
+                     | OMS , 'then' , ExtensionOMS
+                     | { Qualification } , ':' , GroupOMS
+                     | OMS , 'bridge' , { Translation } , ExtendingOMS
+                     | 'combine' , NetworkElements , [ ExcludeExtensions ]
+                     | 'apply' , SubstName , Sentence
+                     | GroupOMS ;
+Minimization         = MinimizeKeyword , CircMin , [ CircVars ] ;
+MinimizeKeyword      = 'minimize'
+                     | 'closed-world'
+                     | 'maximize'
+                     | 'free'
+                     | 'cofree' ;
+CircMin              = Symbol , { Symbol } ;
+CircVars             = 'vars' , Symbol , { Symbol } ;
+GroupOMS             = '{' , OMS , '}'
+                     | OMSRef ;
+Translation          = 'with' , { LogicTranslation } , [ SymbolMapItems ] ;
+LogicTranslation     = 'translation' , OMSLangTrans ;
+Reduction            = 'hide' , { LogicReduction } , [ SymbolItems ]
+                     | 'reveal' , SymbolItems ;
+LogicReduction       = 'along' , OMSLangTrans ;
+SymbolItems          = Symbol , { ',' , Symbol } ;
+SymbolMapItems       = SymbolOrMap , { ',' , SymbolOrMap } ;
+Extraction           = 'extract' , [ InterfaceSignature ]
+                     | 'remove' , [ InterfaceSignature ] ;
+Approximation        = 'forget' , InterfaceSignature , [ 'keep' , LogicRef ]
+                     | 'keep' , InterfaceSignature , [ 'keep' , LogicRef ]
+                     | 'keep' , LogicRef ;
+Filtering            = 'select' , BasicOMS
+                     | 'reject' , BasicOMS ;
+ExtensionOMS         = [ ExtConsStrength ] , [ ExtensionName ] , ExtendingOMS ;
+ConsStrength         = Conservative
+                     | '%mono'
+                     | '%wdef'
+                     | '%def' ;
+ExtConsStrength      = ConsStrength
+                     | '%implied' ;
+Conservative         = '%ccons'
+                     | '%mcons' ;
+InterfaceSignature   = SymbolItems ;
+ImportName           = '%(' , IRI , ')%' ;
+ExtensionName        = '%(' , IRI , ')%' ;
+OMSkeyword           = 'ontology'
+                     | 'onto'
+                     | 'specification'
+                     | 'spec'
+                     | 'model'
+                     | 'OMS' ;
+OMSDefn              = OMSkeyword , OMSName , '=' , [ ConsStrength ] , OMS , 'end' ;
+Symbol               = IRI ;
+SymbolMap            = Symbol , '|->' , Symbol ;
+SymbolOrMap          = Symbol
+                     | SymbolMap ;
+Term                 = ($<$ an expression specific to a basic OMS language $>$) ;
+Sentence             = ($<$ an expression specific to a basic OMS language $>$) ;
+OMSName              = IRI ;
+OMSRef               = IRI ;
+ExtensionRef         = IRI ;
+LanguageRef          = IRI ;
+LogicRef             = IRI ;
+SyntaxRef            = IRI ;
+LoLaRef              = LanguageRef
+                     | LogicRef ;
+OMSLangTrans         = OMSLangTransRef
+                     | '->' , LoLaRef ;
+OMSLangTransRef      = IRI ;
+MappingDefn          = IntprDefn
+                     | Entailment
+                     | EquivDefn
+                     | ModuleRelDefn
+                     | AlignDefn ;
+IntprDefn            = IntprKeyword , IntprName , [ Conservative ] , ':' , IntprType , 'end'
+                     | IntprKeyword , IntprName , [ Conservative ] , ':' , IntprType , '=' , { LogicTranslation } , [ SymbolMapItems ] , 'end'
+                     | IntprKeyword , IntprName , '=' , Refinement , 'end' ;
+IntprKeyword         = 'interpretation'
+                     | 'view'
+                     | 'refinement' ;
+IntprName            = IRI ;
+IntprType            = GroupOMS , 'to' , GroupOMS ;
+Refinement           = GroupOMS
+                     | NetworkName
+                     | Refinement , 'then' , Refinement
+                     | GroupOMS , 'refined' , [ RefMap ] , 'to' , Refinement
+                     | NetworkName , 'refined' , [ RefMap ] , 'to' , Refinement ;
+RefMap               = 'via' , { LogicTranslation } , [ SymbolMapItems ]
+                     | 'via' , NodeMap , { ',' , NodeMap } ;
+NodeMap              = OMSName , '|->' , OMSName , [ 'using' , { LogicTranslation } , [ SymbolMapItems ] ] ;
+Entailment           = 'entailment' , EntailmentName , '=' , EntailmentType , 'end' ;
+EntailmentName       = IRI ;
+EntailmentType       = GroupOMS , 'entails' , GroupOMS
+                     | OMSName , 'in' , Network , 'entails' , GroupOMS
+                     | NetworkName , 'entails' , NetworkName ;
+EquivDefn            = 'equivalence' , EquivName , ':' , EquivType , 'end' ;
+EquivName            = IRI ;
+EquivType            = GroupOMS , '<->' , GroupOMS , '=' , OMS
+                     | NetworkName , '<->' , NetworkName , '=' , Network ;
+ModuleRelDefn        = 'module' , ModuleName , [ Conservative ] , ':' , ModuleType , 'for' , InterfaceSignature ;
+ModuleName           = IRI ;
+ModuleType           = GroupOMS , 'of' , GroupOMS ;
+AlignDefn            = 'alignment' , AlignName , [ AlignCards ] , ':' , AlignType , 'end'
+                     | 'alignment' , AlignName , [ AlignCards ] , ':' , AlignType , '=' , Correspondence , { ',' , Correspondence } , [ 'assuming' , AlignSem ] , 'end' ;
+AlignName            = IRI ;
+AlignCards           = AlignCardForward , AlignCardBackward ;
+AlignCardForward     = AlignCard ;
+AlignCardBackward    = AlignCard ;
+AlignCard            = '1'
+                     | '?'
+                     | '+'
+                     | '*' ;
+AlignType            = GroupOMS , 'to' , GroupOMS ;
+AlignSem             = 'SingleDomain'
+                     | 'GlobalDomain'
+                     | 'ContextualizedDomain' ;
+Correspondence       = CorrespondenceBlock
+                     | SingleCorrespondence
+                     | '*' ;
+CorrespondenceBlock  = 'relation' , [ RelationRef ] , [ Confidence ] , '{' , Correspondence , { ',' , Correspondence } , '}' ;
+SingleCorrespondence = SymbolRef , [ RelationRef ] , [ Confidence ] , TermOrSymbolRef , [ CorrespondenceId ] ;
+CorrespondenceId     = '%(' , IRI , ')%' ;
+SymbolRef            = IRI ;
+TermOrSymbolRef      = Term
+                     | SymbolRef ;
+RelationRef          = '>'
+                     | '<'
+                     | '='
+                     | '%'
+                     | 'ni'
+                     | 'in'
+                     | IRI ;
+Confidence           = Double ;
+Double               = ($<$ a number $\in [0,1]$ $>$) ;
+QueryRelatedDefn     = QueryDefn
+                     | SubstDefn
+                     | ResultDefn ;
+QueryDefn            = 'query' , QueryName , '=' , 'select' , Vars , 'where' , Sentence , 'in' , GroupOMS , [ 'along' , OMSLangTrans ] , 'end' ;
+SubstDefn            = 'substitution' , SubstName , ':' , GroupOMS , 'to' , GroupOMS , '=' , SymbolMapItems , 'end' ;
+ResultDefn           = 'result' , ResultName , '=' , SubstName , { ',' , SubstName } , 'for' , QueryName , [ '%complete' ] , 'end' ;
+QueryName            = IRI ;
+SubstName            = IRI ;
+ResultName           = IRI ;
+Vars                 = Symbol , { ',' , Symbol } ;
+IRI                  = '<' , FullIRI , '>'
+                     | CURIE ;
+FullIRI              = ($<$ an IRI as defined in \nisref{IETF/RFC 3987:2005} $>$) ;
+CURIE                = [ Prefix ] , Reference ;
+Prefix               = NCName , ':' ;
+NCName               = ($<$ \rm see ``NCName'' in \nisref{W3C/TR REC-xml-names:2009}, Section 3 $>$) ;
+Reference            = Path , [ Query ] , [ Fragment ] ;
+Path                 = ipath-absolute
+                     | ipath-rootless
+                     | ipath-empty ;
+ipath-absolute       = ($<$ \rm as defined in \nisref{IETF/RFC 3987} $>$) ;
+ipath-rootless       = ($<$ \rm as defined in \nisref{IETF/RFC 3987} $>$) ;
+ipath-empty          = ($<$ \rm as defined in \nisref{IETF/RFC 3987} $>$) ;
+Query                = '?' , iquery ;
+iquery               = ($<$ \rm as defined in \nisref{IETF/RFC 3987} $>$) ;
+Fragment             = '#' , ifragment ;
+ifragment            = ($<$ \rm as defined in \nisref{IETF/RFC 3987} $>$) ;

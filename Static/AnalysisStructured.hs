@@ -49,7 +49,7 @@ import Static.DgUtils
 import Static.GTheory
 
 import Syntax.AS_Structured
-import Syntax.Print_AS_Structured ()
+import Syntax.Print_AS_Structured
 
 import Common.AS_Annotation hiding (isAxiom, isDef)
 import Common.Consistency
@@ -183,8 +183,9 @@ getNamedSpec sp ln dg libenv = case lookupGlobalEnvDG sp dg of
 anaSublogic :: HetcatsOpts -> LogicDescr -> LibName -> DGraph -> LibEnv
   -> LogicGraph
   -> Result (Maybe (ExtGenSig, (LibName, DGraph, LNode DGNodeLab)), LogicGraph)
-anaSublogic _opts itm@(LogicDescr (Logic_name lt ms mt) _ _) ln dg libenv lG
-  = do
+anaSublogic _opts itm ln dg libenv lG
+  = case itm of
+  LogicDescr (Logic_name lt ms mt) _ _ -> do
     logN@(Logic lid) <- lookupLogic "" lt lG
     mgs <- case ms of
       Nothing -> return Nothing
@@ -239,6 +240,7 @@ anaSublogic _opts itm@(LogicDescr (Logic_name lt ms mt) _ _) ln dg libenv lG
             return (Just (s, t), lG1
               { sublogicBasedTheories = Map.insert logN nMap sbMap
               , currentTargetBase = Just (libName, nName) })
+  _ -> return (Nothing, lG)
 
 anaSpecTop :: Conservativity -> Bool -> LogicGraph -> LibName -> DGraph
   -> MaybeNode -> NodeName -> HetcatsOpts -> ExpOverrides -> SPEC -> Range
@@ -387,11 +389,10 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp rg = case sp of
         _ -> hint p2 ("nothing renamed by:\n" ++ showDoc restr "")
             $ getRange restr
       return (Reduction (replaceAnnoted sp1' asp) restr, fs, dgf)
-  Approximation _ _ -> fail "AnalysisStructured.Approximation"
-  Minimization asp (Mini cm cv poss) -> do
+  Minimization asp (Mini kw cm cv poss) -> do
       (nasp, nsig', dg') <- anaFreeOrCofreeSpec addSyms lg opts ln dg nsig
         name Minimize eo asp poss
-      return (Minimization nasp (Mini cm cv poss), nsig', dg')
+      return (Minimization nasp (Mini kw cm cv poss), nsig', dg')
   Union asps pos -> do
     (newAsps, _, ns, dg') <- adjustPos pos $ anaUnion addSyms lg ln dg nsig
       name opts eo asps rg
@@ -486,7 +487,7 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp rg = case sp of
       (sp', nsig', dg') <-
           anaSpecTop conser addSyms lg ln dg nsig name opts eo (item asp) rg
       return (Group (replaceAnnoted sp' asp) pos, nsig', dg')
-  Spec_inst spname' afitargs pos0 -> do
+  Spec_inst spname' afitargs mImp pos0 -> do
    spname <- expCurieR (globalAnnos dg) eo spname'
    let pos = if null afitargs then iriPos spname else pos0
    adjustPos pos $ case lookupGlobalEnvDG spname dg of
@@ -528,7 +529,7 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp rg = case sp of
              JustNode (NodeSig nI _) | nI == nB -> dg'
              _ -> insLink dg' morDelta'' globalDef (DGLinkMorph spname) nB nA
        dg5 <- createConsLink DefLink conser lg dg4 nsig ns SeeTarget
-       return (Spec_inst spname ffitargs pos, ns, dg5)
+       return (Spec_inst spname ffitargs mImp pos, ns, dg5)
        | otherwise -> instMismatchError spname lp la pos
     _ | null afitargs -> do
      warning () ("ignoring missing spec " ++ showDoc spname' "") pos
@@ -573,7 +574,7 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp rg = case sp of
                    (replaceAnnoted sp1' asp1)
                    (replaceAnnoted sp2' asp2)
                    pos, nsig3, udg3)
-  Combination cItems eItems pos -> adjustPos pos $ do
+  Combination (Network cItems eItems _) pos -> adjustPos pos $ do
     let getNodes (cN, cE) cItem = let
             cEntry = fromMaybe (error $ "No entry for " ++ show cItem)
                      $ lookupGlobalEnvDG cItem dg
@@ -634,6 +635,8 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp rg = case sp of
         le = Map.insert ln dg Map.empty -- cheating!!!
     (ns, dg') <- insertColimitInGraph le dg cNodes' cEdges' name
     return (sp, ns, dg')
+  _ -> fail $ "AnalysisStructured: " ++ show (prettyLG lg sp)
+
 
 getItems :: [LABELED_ONTO_OR_INTPR_REF] -> [IRI]
 getItems [] = []

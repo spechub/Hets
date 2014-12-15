@@ -139,13 +139,16 @@ sepByArbitrary :: Doc -> [Doc] -> Doc
 sepByArbitrary d = fsep . prepPunctuate (d <> space)
 
 printPredItem :: PRED_ITEM -> Doc
-printPredItem (Pred_item xs _) = fsep $ map pretty xs
+printPredItem (Pred_item xs _) =
+  keyword (propS ++ case xs of
+     [_] -> ""
+     _ -> "s") <+> ppWithCommas xs
 
 printBasicSpec :: BASIC_SPEC -> Doc
 printBasicSpec (Basic_spec xs) = vcat $ map pretty xs
 
 printBasicItems :: BASIC_ITEMS -> Doc
-printBasicItems (Axiom_items xs) = vcat $ map pretty xs
+printBasicItems (Axiom_items xs) = vcat $ map (addBullet . pretty) xs
 printBasicItems (Pred_decl x) = pretty x
 
 printSymbol :: SYMB -> Doc

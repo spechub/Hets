@@ -13,9 +13,10 @@ http://tools.ietf.org/html/rfc3986
 
 module Common.Percent
   ( encodeBut
-  , isReserved
-  , isGenDelims
-  , isSubDelims
+  , reserved
+  , genDelim
+  , subDelim
+  , dolDelim
   , isUnreserved
   , encode
   , decode
@@ -37,14 +38,17 @@ encodeBut :: (Char -> Bool) -> String -> String
 encodeBut keep = encodeChar8 keep . Char8.unpack . UTF8.fromString
 
 -- http://tools.ietf.org/html/rfc3986#section-2.2
-isReserved :: Char -> Bool
-isReserved c = isGenDelims c || isSubDelims c
+reserved :: String
+reserved = genDelim ++ subDelim
 
-isGenDelims :: Char -> Bool
-isGenDelims c = c `elem` ":/?#[]@"
+genDelim :: String
+genDelim = ":/?#[]@"
 
-isSubDelims :: Char -> Bool
-isSubDelims c = c `elem` "!$&'()*+,;="
+subDelim :: String
+subDelim = dolDelim ++ "(),;"
+
+dolDelim :: String
+dolDelim = "!$&'*+="
 
 -- http://tools.ietf.org/html/rfc3986#section-2.3
 isUnreserved :: Char -> Bool

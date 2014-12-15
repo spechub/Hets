@@ -113,6 +113,7 @@ readLibDefn lgraph opts mr file fileForPos input =
 #ifndef NOOWLLOGIC
       OWLIn _ -> parseOWL (isStructured opts) file
 #endif
-      _ -> case runParser (library lgraph) (emptyAnnos ()) fileForPos input of
+      _ -> case runParser (library lgraph { dolOnly = ty == DOLIn })
+           (emptyAnnos ()) fileForPos input of
          Left err -> fail (showErr err)
          Right ast -> return [ast]
