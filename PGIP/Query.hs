@@ -87,7 +87,7 @@ nodeCommands :: [String]
 nodeCommands = map showNodeCmd nodeCmds ++ comorphs ++ ["prove"]
 
 proveParams :: [String]
-proveParams = ["timeout", "include", "prover", "translation", "theorems"]
+proveParams = ["timeout", "include", "prover", "translation", "theorems", "axioms"]
 
 edgeCommands :: [String]
 edgeCommands = ["edge"]
@@ -133,9 +133,9 @@ data QueryKind =
   | GlShowProverWindow ProverMode
   | GlAutoProve ProveCmd
   | NodeQuery NodeIdOrName NodeCommand
-  | EdgeQuery Int String
+  | EdgeQuery Int String deriving (Show, Eq)
 
-data ProverMode = GlProofs | GlConsistency
+data ProverMode = GlProofs | GlConsistency deriving (Show, Eq)
 
 data ProveCmd = ProveCmd
   { pcProverMode :: ProverMode
@@ -144,13 +144,14 @@ data ProveCmd = ProveCmd
   , pcTranslation :: Maybe String
   , pcTimeout :: Maybe Int
   , pcTheoremsOrNodes :: [String]
-  , pcXmlResult :: Bool }
+  , pcXmlResult :: Bool
+  , pcAxioms :: [String] } deriving (Show, Eq)
 
 data NodeCommand =
     NcCmd NodeCmd
   | NcProvers ProverMode (Maybe String) -- optional comorphism
   | NcTranslations (Maybe String) -- optional prover name
-  | ProveNode ProveCmd
+  | ProveNode ProveCmd deriving (Show, Eq)
 
 -- | the path is not empty and leading slashes are removed
 anaUri :: [String] -> [QueryPair] -> [String] -> Either String Query
@@ -336,7 +337,7 @@ anaNodeQuery ans i moreTheorems incls pss =
       pp = ProveNode $ ProveCmd GlProofs (not (null incls) || case incl of
         Nothing -> True
         Just str -> map toLower str `notElem` ["f", "false"])
-        prover trans timeLimit theorems False
+        prover trans timeLimit theorems False []
       noPP = null incls && null pps
       noIncl = null incls && isNothing incl && isNothing timeLimit
       cmds = map (\ a -> (showNodeCmd a, a)) nodeCmds
