@@ -892,7 +892,8 @@ expandCurie prefixMap c =
     Nothing -> Nothing
     Just i -> case mergeCurie c i of
       Nothing -> Nothing
-      Just j -> Just $ if null $ iriScheme i then j else j
+      Just j -> Just $ if null $ iriScheme i then j { iriPos = iriPos c }
+        else j
         { prefixName = prefixName c
         , abbrevPath = abbrevPath c
         , abbrevQuery = abbrevQuery c
