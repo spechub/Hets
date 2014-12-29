@@ -200,7 +200,7 @@ hetsServer opts1 = do
          unless (null query) $ appendFile permFile $ query ++ "\n"
        else appendFile permFile "not white listed\n"
    if not white || black then respond $ mkResponse "" status403 ""
-    -- if path could be a RESTfull request, try to parse it
+    -- if path could be a RESTful request, try to parse it
     else do
      eith <- liftIO $ getArgFlags splitQuery
      case eith of
@@ -211,10 +211,10 @@ hetsServer opts1 = do
          Left err -> queryFail err respond
          Right (qr2, fs2) ->
            let newOpts = foldl makeOpts opts $ fs ++ map snd fs2
-           in if isRESTfull pathBits then
+           in if isRESTful pathBits then
               let unknown = filter (`notElem` allQueryKeys) $ map fst qr2
               in if null unknown then
-              parseRESTfull newOpts sessRef pathBits
+              parseRESTful newOpts sessRef pathBits
               (map fst fs2 ++ map (\ (a, b) -> a ++ "=" ++ b) vs)
               qr2 postParams meth respond
               else queryFail ("unknown query key(s): " ++ show unknown) respond
@@ -294,15 +294,15 @@ anaAutoProofQuery splitQuery = let
     err -> error $ "illegal autoproof method: " ++ show err
   in GlAutoProve $ ProveCmd prOrCons include prover trans timeout nodeSel False axioms
 
--- quick approach to whether or not the query can be a RESTfull request
-isRESTfull :: [String] -> Bool
-isRESTfull pathBits = case pathBits of
+-- quick approach to whether or not the query can be a RESTful request
+isRESTful :: [String] -> Bool
+isRESTful pathBits = case pathBits of
   [] -> False
   [h] | elem h ["version", "robots.txt"] -> True
-  h : _ -> elem h listRESTfullIdentifiers
+  h : _ -> elem h listRESTfulIdentifiers
 
-listRESTfullIdentifiers :: [String]
-listRESTfullIdentifiers =
+listRESTfulIdentifiers :: [String]
+listRESTfulIdentifiers =
   [ "libraries", "sessions", "menus", "filetype", "hets-lib", "dir"]
   ++ nodeEdgeIdes ++ newRESTIdes
   ++ ["available-provers"]
@@ -322,10 +322,10 @@ allQueryKeys :: [String]
 allQueryKeys = [updateS, "library", "consistency-checker"]
   ++ globalCommands ++ knownQueryKeys
 
--- query is analysed and processed in accordance with RESTfull interface
-parseRESTfull :: HetcatsOpts -> Cache -> [String] -> [String] -> [QueryPair]
+-- query is analysed and processed in accordance with RESTful interface
+parseRESTful :: HetcatsOpts -> Cache -> [String] -> [String] -> [QueryPair]
   -> [(String, String)] -> String -> WebResponse
-parseRESTfull opts sessRef pathBits qOpts splitQuery postParams meth respond = let
+parseRESTful opts sessRef pathBits qOpts splitQuery postParams meth respond = let
   {- some parameters from the paths query part might be needed more than once
   (when using lookup upon querybits, you need to unpack Maybe twice) -}
   lookupGETParam :: String -> Maybe String
@@ -348,7 +348,7 @@ parseRESTfull opts sessRef pathBits qOpts splitQuery postParams meth respond = l
               notElem (map toLower s) ["f", "false"]) inclM
   timeout = lookupParam "timeout" >>= readMaybe
   queryFailure = queryFail
-    ("this query does not comply with RESTfull interface: "
+    ("this query does not comply with RESTful interface: "
     ++ showPathQuery pathBits splitQuery) respond
   -- since used more often, generate full query out of nodeIRI and nodeCmd
   nodeQuery s = NodeQuery $ maybe (Right s) Left (readMaybe s :: Maybe Int)
