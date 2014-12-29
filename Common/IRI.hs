@@ -889,11 +889,16 @@ expandCurie :: Map String IRI -> IRI -> Maybe IRI
 expandCurie prefixMap c =
   if hasFullIRI c then Just c else
   case Map.lookup (filter (/= ':') $ prefixName c) prefixMap of
-       Nothing -> Nothing
-       Just i -> case mergeCurie c i of
-                Nothing -> Nothing
-                Just j -> Just $ j { prefixName = prefixName c
-                                   , iriPos = iriPos c }
+    Nothing -> Nothing
+    Just i -> case mergeCurie c i of
+      Nothing -> Nothing
+      Just j -> Just $ if null $ iriScheme i then j { iriPos = iriPos c }
+        else j
+        { prefixName = prefixName c
+        , abbrevPath = abbrevPath c
+        , abbrevQuery = abbrevQuery c
+        , abbrevFragment = abbrevFragment c
+        , iriPos = iriPos c }
 
 setAngles :: Bool -> IRI -> IRI
 setAngles b i = i { hasAngles = b }
