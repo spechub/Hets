@@ -333,10 +333,7 @@ parseRESTfull opts sessRef pathBits qOpts splitQuery postParams meth respond = l
   lookupParam :: String -> Maybe String
   lookupParam key = case meth of
     "GET" -> lookupGETParam key
-    -- For POST and others first check query string and then post data.
-    _ -> case lookupGETParam key of
-      Nothing -> lookup key postParams
-      justValue ->  justValue
+    _ -> lookup key postParams
   session = lookupParam "session" >>= readMaybe
   library = lookupParam "library"
   format = lookupParam "format"
