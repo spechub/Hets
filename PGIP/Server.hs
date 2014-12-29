@@ -177,6 +177,7 @@ hetsServer opts1 = do
   run port $ \ re -> do
    let respond = liftIO . return
 #endif
+   (postParamsB8, _) <- parseRequestBody lbsBackEnd re
    let rhost = shows (remoteHost re) "\n"
        ip = getIP4 rhost
        white = matchWhite ip wl
@@ -184,6 +185,7 @@ hetsServer opts1 = do
        splitQuery = map (\ (bs, ms) -> (B8.unpack bs, fmap B8.unpack ms))
          $ queryString re
        pathBits = map T.unpack $ pathInfo re
+       postParams = map (\(key, val) -> (B8.unpack key, B8.unpack val)) postParamsB8
        meth = B8.unpack (requestMethod re)
        query = showPathQuery pathBits splitQuery
    liftIO $ do
@@ -214,7 +216,7 @@ hetsServer opts1 = do
               in if null unknown then
               parseRESTfull newOpts sessRef pathBits
               (map fst fs2 ++ map (\ (a, b) -> a ++ "=" ++ b) vs)
-              qr2 meth respond
+              qr2 postParams meth respond
               else queryFail ("unknown query key(s): " ++ show unknown) respond
            -- only otherwise stick to the old response methods
            else oldWebApi newOpts tempLib permFile sessRef re pathBits qr2
@@ -322,24 +324,29 @@ allQueryKeys = [updateS, "library", "consistency-checker"]
 
 -- query is analysed and processed in accordance with RESTfull interface
 parseRESTfull :: HetcatsOpts -> Cache -> [String] -> [String] -> [QueryPair]
-  -> String -> WebResponse
-parseRESTfull opts sessRef pathBits qOpts splitQuery meth respond = let
+  -> [(String, String)] -> String -> WebResponse
+parseRESTfull opts sessRef pathBits qOpts splitQuery postParams meth respond = let
   {- some parameters from the paths query part might be needed more than once
   (when using lookup upon querybits, you need to unpack Maybe twice) -}
-  lookup2 = getVal splitQuery
-  session = lookup2 "session" >>= readMaybe
-  library = lookup2 "library"
-  format = lookup2 "format"
-  nodeM = lookup2 "node"
-  theoremsM = mSplitOnComma $ lookup2 "theorems"
-  transM = lookup2 "translation"
-  proverM = lookup2 "prover"
-  consM = lookup2 "consistency-checker"
-  inclM = lookup2 "include"
-  axiomsM = mSplitOnComma $ lookup2 "axioms"
+  lookupGETParam :: String -> Maybe String
+  lookupGETParam = getVal splitQuery
+  lookupParam :: String -> Maybe String
+  lookupParam key = case meth of
+    "GET" -> lookupGETParam key
+    _ -> lookup key postParams
+  session = lookupParam "session" >>= readMaybe
+  library = lookupParam "library"
+  format = lookupParam "format"
+  nodeM = lookupParam "node"
+  theoremsM = mSplitOnComma $ lookupParam "theorems"
+  transM = lookupParam "translation"
+  proverM = lookupParam "prover"
+  consM = lookupParam "consistency-checker"
+  inclM = lookupParam "include"
+  axiomsM = mSplitOnComma $ lookupParam "axioms"
   incl = maybe False (\ s ->
               notElem (map toLower s) ["f", "false"]) inclM
-  timeout = lookup2 "timeout" >>= readMaybe
+  timeout = lookupParam "timeout" >>= readMaybe
   queryFailure = queryFail
     ("this query does not comply with RESTfull interface: "
     ++ showPathQuery pathBits splitQuery) respond
@@ -467,7 +474,7 @@ parseRESTfull opts sessRef pathBits qOpts splitQuery meth respond = let
                   $ ProveNode pc
               >>= getResponse
           -- on other cmd look for (optional) specification of node or edge
-          _ -> case (nodeM, lookup2 "edge") of
+          _ -> case (nodeM, lookupParam "edge") of
               -- fail if both are specified
               (Just _, Just _) ->
                 fail "please specify only either node or edge"
