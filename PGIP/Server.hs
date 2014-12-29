@@ -285,11 +285,12 @@ anaAutoProofQuery splitQuery = let
   include = maybe False (== "on") $ lookup2 "includetheorems"
   nodeSel = filter (/= "includetheorems")
       $ map fst $ filter ((== Just "on") . snd) splitQuery
+  axioms = mSplitOnComma $ lookup2 "axioms"
   prOrCons = case lookup2 "autoproof" of
     Just "proof" -> GlProofs
     Just "cons" -> GlConsistency
     err -> error $ "illegal autoproof method: " ++ show err
-  in GlAutoProve $ ProveCmd prOrCons include prover trans timeout nodeSel False
+  in GlAutoProve $ ProveCmd prOrCons include prover trans timeout nodeSel False axioms
 
 -- quick approach to whether or not the query can be a RESTfull request
 isRESTfull :: [String] -> Bool
@@ -330,11 +331,12 @@ parseRESTfull opts sessRef pathBits qOpts splitQuery meth respond = let
   library = lookup2 "library"
   format = lookup2 "format"
   nodeM = lookup2 "node"
-  theoremsM = parseTheorems $ lookup2 "theorems"
+  theoremsM = mSplitOnComma $ lookup2 "theorems"
   transM = lookup2 "translation"
   proverM = lookup2 "prover"
   consM = lookup2 "consistency-checker"
   inclM = lookup2 "include"
+  axiomsM = mSplitOnComma $ lookup2 "axioms"
   incl = maybe False (\ s ->
               notElem (map toLower s) ["f", "false"]) inclM
   timeout = lookup2 "timeout" >>= readMaybe
@@ -432,7 +434,7 @@ parseRESTfull opts sessRef pathBits qOpts splitQuery meth respond = let
                  pm = if isProve then GlProofs else GlConsistency
                  pc = ProveCmd pm
                    (not (isProve && isJust inclM) || incl)
-                   (if isProve then proverM else consM) transM timeout theoremsM True
+                   (if isProve then proverM else consM) transM timeout theoremsM True axiomsM
              in case nodeM of
              Nothing -> GlAutoProve pc
              Just n -> nodeQuery n $ ProveNode pc
@@ -455,7 +457,7 @@ parseRESTfull opts sessRef pathBits qOpts splitQuery meth respond = let
           respond
         Just sId -> case cmd of
           "prove" ->
-            let pc = ProveCmd GlProofs incl proverM transM timeout [] False
+            let pc = ProveCmd GlProofs incl proverM transM timeout [] False axiomsM
             in case nodeM of
                 -- prove all nodes if no singleton is selected
                 Nothing -> return $ Query (DGQuery sId Nothing)
@@ -489,8 +491,8 @@ parseRESTfull opts sessRef pathBits qOpts splitQuery meth respond = let
     (should never happen) -}
     _ -> respond $ mkResponse "" status400 ""
 
-parseTheorems :: Maybe String -> [String]
-parseTheorems mstr = case mstr of
+mSplitOnComma :: Maybe String -> [String]
+mSplitOnComma mstr = case mstr of
   Nothing -> []
   Just str -> splitOn ',' str
 
@@ -823,9 +825,9 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
             GlTranslations ->
               lift $ fmap (\ l -> (xmlC, l)) $ getFullComorphList dg
             GlShowProverWindow prOrCons -> showAutoProofWindow dg k prOrCons
-            GlAutoProve (ProveCmd prOrCons incl mp mt tl nds xForm) -> do
+            GlAutoProve (ProveCmd prOrCons incl mp mt tl nds xForm axioms) -> do
                (newLib, sens) <-
-                 proveMultiNodes xForm prOrCons libEnv ln dg incl mp mt tl nds
+                 proveMultiNodes xForm prOrCons libEnv ln dg incl mp mt tl nds axioms
                if null sens then return (textC, "nothing to prove") else do
                   lift $ nextSess sess sessRef newLib k
                   return (htmlC, formatResultsMultiple xForm k sens prOrCons)
@@ -871,11 +873,11 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
                   Nothing -> fail $
                     "cannot compute global theory of:\n" ++ fstLine
                   Just gTh -> let subL = sublogicOfTh gTh in case nc of
-                    ProveNode (ProveCmd pm incl mp mt tl thms xForm) ->
+                    ProveNode (ProveCmd pm incl mp mt tl thms xForm axioms) ->
                       case pm of
                       GlProofs -> do
                         (newLib, sens) <- proveNode libEnv ln dg nl
-                          gTh subL incl mp mt tl thms
+                          gTh subL incl mp mt tl thms axioms
                         if null sens then return (textC, "nothing to prove")
                         else do
                           lift $ nextSess sess sessRef newLib k
@@ -1272,8 +1274,8 @@ consNode le ln dg nl@(i, lb) subL useTh mp mt tl = do
 
 proveNode :: LibEnv -> LibName -> DGraph -> (Int, DGNodeLab) -> G_theory
   -> G_sublogics -> Bool -> Maybe String -> Maybe String -> Maybe Int
-  -> [String] -> ResultT IO (LibEnv, [(String, String, String)])
-proveNode le ln dg nl gTh subL useTh mp mt tl thms = do
+  -> [String] -> [String] -> ResultT IO (LibEnv, [(String, String, String)])
+proveNode le ln dg nl gTh subL useTh mp mt tl thms axioms = do
  ps <- lift $ getProverAndComorph mp mt subL
  case ps of
   [] -> fail "no matching translation or prover found"
@@ -1284,21 +1286,20 @@ proveNode le ln dg nl gTh subL useTh mp mt tl thms = do
     unless (Set.null diffs) . fail $ "unknown theorems: " ++ show diffs
     when (null thms && null ks) $ fail "no theorems to prove"
     ((nTh, sens), _) <- autoProofAtNode useTh (maybe 1 (max 1) tl)
-      (if null thms then ks else thms) gTh cp
+      (if null thms then ks else thms) axioms gTh cp
     return (if null sens then le else
         Map.insert ln (updateLabelTheory le dg nl nTh) le, sens)
 
 -- run over multiple dgnodes and prove available goals for each
 proveMultiNodes :: Bool -> ProverMode -> LibEnv -> LibName -> DGraph -> Bool
-  -> Maybe String -> Maybe String -> Maybe Int -> [String]
+  -> Maybe String -> Maybe String -> Maybe Int -> [String] -> [String]
   -> ResultT IO (LibEnv, [Element])
-proveMultiNodes xF pm le ln dg useTh mp mt tl nodeSel = let
+proveMultiNodes xF pm le ln dg useTh mp mt tl nodeSel axioms = let
   runProof le' gTh nl = let
     subL = sublogicOfTh gTh
     dg' = lookupDGraph ln le' in case pm of
     GlConsistency -> consNode le' ln dg' nl subL useTh mp mt tl
-    GlProofs -> proveNode le' ln dg' nl gTh subL useTh mp mt tl
-             $ map fst $ getThGoals gTh
+    GlProofs -> proveNode le' ln dg' nl gTh subL useTh mp mt tl (map fst $ getThGoals gTh) axioms
   nodes2check = filter (case nodeSel of
     [] -> case pm of
             GlConsistency -> const True

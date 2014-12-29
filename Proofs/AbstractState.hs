@@ -324,7 +324,9 @@ prepareForProving st (G_prover lid4 p, co) = do
 makeSelectedTheory :: ProofState -> G_theory
 makeSelectedTheory s = case currentTheory s of
   G_theory lid syn sig si sens _ ->
+    -- axiom map, goal map
     let (aMap, gMap) = OMap.partition isAxiom sens
+        -- proven goals map
         pMap = OMap.filter isProvenSenStatus gMap
     in
     G_theory lid syn sig si
@@ -498,6 +500,8 @@ autoProofAtNode ::
                   -> Int
                    -- selected goals
                   -> [String]
+                   -- selected axioms
+                  -> [String]
                    -- Node selected for proving
                   -> G_theory
                    -- selected Prover and Comorphism
@@ -505,13 +509,15 @@ autoProofAtNode ::
                    -- returns new GoalStatus for the Node
                   -> ResultT IO ((G_theory, [(String, String, String)]),
                                  (ProofState, [ProofStatus G_proof_tree]))
-autoProofAtNode useTh timeout goals g_th p_cm = do
+autoProofAtNode useTh timeout goals axioms g_th p_cm = do
       let knpr = propagateErrors "autoProofAtNode"
             $ knownProversWithKind ProveCMDLautomatic
           pf_st = initialState "" g_th knpr
           sg_st = if null goals then pf_st else pf_st
             { selectedGoals = filter (`elem` goals) $ selectedGoals pf_st }
-          st = recalculateSublogicAndSelectedTheory sg_st
+          sa_st = if null axioms then sg_st else sg_st
+            { includedAxioms = filter (`elem` axioms) $ includedAxioms sg_st }
+          st = recalculateSublogicAndSelectedTheory sa_st
       -- try to prepare the theory
       if null $ selectedGoals st then fail "autoProofAtNode: no goals selected"
         else do
