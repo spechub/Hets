@@ -124,7 +124,8 @@ closedReduceProofStatus goalname proof_tree =
     , usedProver = reduceS
     , proofTree = proof_tree
     , usedTime = midnight
-    , tacticScript = TacticScript "" }
+    , tacticScript = TacticScript ""
+    , proofLines = [] }
 
 {-
 For Quantifier Elimination:

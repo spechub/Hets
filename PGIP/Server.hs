@@ -932,7 +932,15 @@ formatProofStatus ps =
   , unode "proofTree" $ show $ proofTree ps
   , unode "usedTime" $ formatUsedTime $ usedTime ps
   , unode "usedAxioms" $ formatUsedAxioms $ usedAxioms ps
+  , unode "proverOutput" $ formatProverOutput $ proofLines ps
   ]
+
+formatProverOutput :: [String] -> CData
+formatProverOutput ls =
+  CData { cdVerbatim = CDataVerbatim
+        , cdData = unlines ls
+        , cdLine = Nothing
+        }
 
 formatTacticScript :: ATPTacticScript -> [Element]
 formatTacticScript ts =

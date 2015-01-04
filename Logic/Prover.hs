@@ -179,7 +179,8 @@ data ProofStatus proof_tree = ProofStatus
     , usedProver :: String -- ^ name of prover
     , proofTree :: proof_tree
     , usedTime :: TimeOfDay
-    , tacticScript :: TacticScript }
+    , tacticScript :: TacticScript
+    , proofLines :: [String] }
     deriving (Show, Eq, Ord, Typeable)
 
 {- | constructs an open proof status with basic information filled in;
@@ -194,7 +195,8 @@ openProofStatus goalname provername proof_tree = ProofStatus
    , usedProver = provername
    , proofTree = proof_tree
    , usedTime = midnight
-   , tacticScript = TacticScript "" }
+   , tacticScript = TacticScript ""
+   , proofLines = [] }
 
 isProvedStat :: ProofStatus proof_tree -> Bool
 isProvedStat = isProvedGStat . goalStatus
