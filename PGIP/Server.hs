@@ -52,6 +52,7 @@ import Syntax.Print_AS_Structured
 
 import Interfaces.Command
 import Interfaces.CmdAction
+import Interfaces.GenericATPState
 
 import Comorphisms.LogicGraph
 
@@ -93,6 +94,7 @@ import Data.Maybe
 import Data.Ord
 import Data.Graph.Inductive.Graph (lab)
 import Data.Time.Clock
+import Data.Time.LocalTime
 
 import System.Random
 import System.Directory
@@ -889,13 +891,9 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
                         else do
                           lift $ nextSess sess sessRef newLib k
                           return (htmlC,
-                            formatResults xForm k i . unode "results"
-                            $ map (\ (n, e, d) -> unode "goal"
-                              [ unode "name" n
-                              , unode "result" e
-                              , unode "details" d]) sens)
+                            formatResults xForm k i . unode "results" $ formatGoals True sens)
                       GlConsistency -> do
-                        (newLib, [(_, res, txt)]) <- consNode libEnv ln dg nl
+                        (newLib, [(_, res, txt, _)]) <- consNode libEnv ln dg nl
                           subL incl mp mt tl
                         lift $ nextSess sess sessRef newLib k
                         return (xmlC, ppTopElement $ formatConsNode res txt)
@@ -916,6 +914,44 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
                 return (textC, showLEdge e ++ "\n" ++ showDoc l "")
               [] -> fail $ "no edge found with id: " ++ show i
               _ -> fail $ "multiple edges found with id: " ++ show i
+
+formatGoals :: Bool -> [(String, String, String, Maybe (ProofStatus G_proof_tree))] -> [Element]
+formatGoals includeDetails sens =
+  map (\ (n, e, d, mps) -> unode "goal"
+    ([unode "name" n, unode "result" e]
+    ++ [unode "details" d | includeDetails]
+    ++ case mps of
+        Nothing -> []
+        Just ps -> formatProofStatus ps)) sens
+
+formatProofStatus :: ProofStatus G_proof_tree -> [Element]
+formatProofStatus ps =
+  [ unode "usedProver" $ usedProver ps
+  -- `read` makes this type-unsafe
+  , unode "tacticScript" $ formatTacticScript $ read $ (\(TacticScript ts) -> ts) $ tacticScript ps
+  , unode "proofTree" $ show $ proofTree ps
+  , unode "usedTime" $ formatUsedTime $ usedTime ps
+  , unode "usedAxioms" $ formatUsedAxioms $ usedAxioms ps
+  ]
+
+formatTacticScript :: ATPTacticScript -> [Element]
+formatTacticScript ts =
+  [ unode "timeLimit" $ show $ tsTimeLimit ts
+  , unode "extraOpts" $ map (\opt -> unode "option" opt) $ tsExtraOpts ts
+  ]
+
+formatUsedTime :: TimeOfDay -> [Element]
+formatUsedTime tod =
+  [ unode "seconds" $ init $ show $ timeOfDayToTime tod
+  , unode "components"
+    [ unode "hours" $ show $ todHour tod
+    , unode "minutes" $ show $ todMin tod
+    , unode "seconds" $ show $ todSec tod
+    ]
+  ]
+
+formatUsedAxioms :: [String] -> [Element]
+formatUsedAxioms = map (\axiom -> unode "axiom" axiom)
 
 formatConsNode :: String -> String -> Element
 formatConsNode res txt = add_attr (mkAttr "state" res) $ unode "result" txt
@@ -1260,7 +1296,7 @@ formatComorphs = ppTopElement . unode "translations"
 
 consNode :: LibEnv -> LibName -> DGraph -> (Int, DGNodeLab)
   -> G_sublogics -> Bool -> Maybe String -> Maybe String -> Maybe Int
-  -> ResultT IO (LibEnv, [(String, String, String)])
+  -> ResultT IO (LibEnv, [(String, String, String, Maybe (ProofStatus G_proof_tree))])
 consNode le ln dg nl@(i, lb) subL useTh mp mt tl = do
   consList <- lift $ getFilteredConsCheckers mt subL
   let findCC x = filter ((== x ) . getCcName . fst) consList
@@ -1277,11 +1313,11 @@ consNode le ln dg nl@(i, lb) subL useTh mp mt tl = do
                              CSInconsistent -> markNodeInconsistent "" lb
                              CSConsistent -> markNodeConsistent "" lb
                              _ -> lb)) le
-          return (le'', [(" ", drop 2 $ show cSt, show cstat)])
+          return (le'', [(" ", drop 2 $ show cSt, show cstat, Nothing)])
 
 proveNode :: LibEnv -> LibName -> DGraph -> (Int, DGNodeLab) -> G_theory
   -> G_sublogics -> Bool -> Maybe String -> Maybe String -> Maybe Int
-  -> [String] -> [String] -> ResultT IO (LibEnv, [(String, String, String)])
+  -> [String] -> [String] -> ResultT IO (LibEnv, [(String, String, String, Maybe (ProofStatus G_proof_tree))])
 proveNode le ln dg nl gTh subL useTh mp mt tl thms axioms = do
  ps <- lift $ getProverAndComorph mp mt subL
  case ps of
@@ -1292,16 +1328,27 @@ proveNode le ln dg nl gTh subL useTh mp mt tl thms axioms = do
                 $ Set.fromList ks
     unless (Set.null diffs) . fail $ "unknown theorems: " ++ show diffs
     when (null thms && null ks) $ fail "no theorems to prove"
-    ((nTh, sens), _) <- autoProofAtNode useTh (maybe 1 (max 1) tl)
+    ((nTh, sens), (_, proofStatuses)) <- autoProofAtNode useTh (maybe 1 (max 1) tl)
       (if null thms then ks else thms) axioms gTh cp
     return (if null sens then le else
-        Map.insert ln (updateLabelTheory le dg nl nTh) le, sens)
+        Map.insert ln (updateLabelTheory le dg nl nTh) le, combineSensAndProofStatus sens proofStatuses)
+
+combineSensAndProofStatus :: [(String, String, String)] -> [ProofStatus G_proof_tree] -> [(String, String, String, Maybe (ProofStatus G_proof_tree))]
+combineSensAndProofStatus sens proofStatuses = let-- zipWith (\(name, e, d) ps -> (n, e, d, Just ps))
+  findProofStatusByName :: String -> Maybe (ProofStatus G_proof_tree)
+  findProofStatusByName n = case filter (\ps -> n == goalName ps) proofStatuses of
+    [] -> Nothing
+    (ps:_) -> Just ps
+  combineSens :: (String, String, String) -> (String, String, String, Maybe (ProofStatus G_proof_tree))
+  combineSens (n, e, d) = (n, e, d, findProofStatusByName n)
+  in map combineSens sens
 
 -- run over multiple dgnodes and prove available goals for each
 proveMultiNodes :: Bool -> ProverMode -> LibEnv -> LibName -> DGraph -> Bool
   -> Maybe String -> Maybe String -> Maybe Int -> [String] -> [String]
   -> ResultT IO (LibEnv, [Element])
 proveMultiNodes xF pm le ln dg useTh mp mt tl nodeSel axioms = let
+  runProof :: LibEnv -> G_theory -> (Int, DGNodeLab) -> ResultT IO (LibEnv, [(String, String, String, Maybe (ProofStatus G_proof_tree))])
   runProof le' gTh nl = let
     subL = sublogicOfTh gTh
     dg' = lookupDGraph ln le' in case pm of
@@ -1321,13 +1368,11 @@ proveMultiNodes xF pm le ln dg useTh mp mt tl nodeSel axioms = let
         return (le'', formatResultsAux xF pm (getDGNodeName dgn) sens : res))
           (le, []) nodes2check
 
-formatResultsAux :: Bool -> ProverMode -> String -> [(String, String, String)]
+formatResultsAux :: Bool -> ProverMode -> String -> [(String, String, String, Maybe (ProofStatus G_proof_tree))]
   -> Element
 formatResultsAux xF pm nm sens = unode nm $ case (sens, pm) of
-    ([(_, e, d)], GlConsistency) | xF -> formatConsNode e d
-    _ -> unode "results" $ map (\ (n, e, d) -> unode "goal"
-       $ [unode "name" n, unode "result" e]
-       ++ [unode "details" d | xF]) sens
+    ([(_, e, d, _)], GlConsistency) | xF -> formatConsNode e d
+    _ -> unode "results" $ formatGoals xF sens
 
 mkPath :: Session -> LibName -> Int -> String
 mkPath sess l k =

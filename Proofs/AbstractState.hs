@@ -16,6 +16,7 @@ It is also used by the CMDL interface.
 
 module Proofs.AbstractState
     ( G_prover (..)
+    , G_proof_tree (..)
     , getProverName
     , getCcName
     , getCcBatch
