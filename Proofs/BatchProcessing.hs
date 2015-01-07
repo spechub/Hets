@@ -219,8 +219,8 @@ genericProveBatch useStOpt tLimit extraOptions inclProvedThs saveProblem_batch
         recursion in that case
         add proved goals as axioms -}
         let res0 = proofStatus res_cfg
-            res = res0 { goalStatus =
-              case goalStatus res0 of
+            res = res0 { proofLines = resultOutput res_cfg,
+              goalStatus = case goalStatus res0 of
                 Open (Reason l) | err == ATPTLimitExceeded ->
                   Open (Reason $ "Timeout" : l)
                 r -> r }

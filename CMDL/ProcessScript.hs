@@ -43,7 +43,7 @@ isNotDisproved G_theory {gTheorySens = el} =
 checkList :: [BasicProof] -> Bool
 checkList [] = False
 checkList (l : ls) = case l of
-            BasicProof _ (ProofStatus _ b _ _ _ _ _) -> case b of
+            BasicProof _ (ProofStatus _ b _ _ _ _ _ _) -> case b of
               Disproved -> True
               _ -> checkList ls
             _ -> checkList ls
