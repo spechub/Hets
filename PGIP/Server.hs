@@ -64,6 +64,8 @@ import Logic.Logic
 import Proofs.AbstractState
 import Proofs.ConsistencyCheck
 
+import Text.Parsec.Prim (parse)
+
 import Text.XML.Light
 import Text.XML.Light.Cursor hiding (findChild)
 
@@ -71,8 +73,8 @@ import Common.AutoProofUtils
 import Common.Doc
 import Common.DocUtils (pretty, showGlobalDoc, showDoc)
 import Common.ExtSign (ExtSign (..))
-import Common.Json (ppJson)
 import Common.GtkGoal
+import Common.Json (Json (..), pJson, ppJson)
 import Common.LibName
 import Common.PrintLaTeX
 import Common.Result
@@ -224,20 +226,30 @@ hetsServer opts1 = do
            else oldWebApi newOpts tempLib permFile sessRef re pathBits qr2
              meth respond
 
-
-parseRequestParams :: Request -> IO [(String, String)]
-parseRequestParams re =
+parseRequestParams :: Request -> IO Json
+parseRequestParams request =
   let
+    noParams :: Json
+    noParams = JNull
+
+    parseJson :: String -> Maybe Json
+    parseJson s = case parse pJson "" s of
+      Left _  -> Nothing
+      Right json -> Just json
+
     lookupHeader :: String -> Maybe String
-    lookupHeader s = liftM B8.unpack $ lookup (CI.mk $ B8.pack s) $ requestHeaders re
-    formParams :: IO [(String, String)]
-    formParams = do
-      (formDataB8, _) <- parseRequestBody lbsBackEnd re
-      return $ map (\(key, val) -> (B8.unpack key, B8.unpack val)) formDataB8
-    jsonBody :: IO [(String, String)]
-    jsonBody = undefined
+    lookupHeader s = liftM B8.unpack $ lookup (CI.mk $ B8.pack s) $ requestHeaders request
+    formParams :: IO (Maybe Json)
+    formParams =
+      let toJsonObject assocList = "{" ++ (intercalate ", " $ map (\(k,v) -> show k ++ ": " ++ jsonStringOrArray v) assocList) ++ "}"
+          jsonStringOrArray str = if B8.head str == '[' then B8.unpack str else show str
+      in do
+        (formDataB8, _) <- parseRequestBody lbsBackEnd request
+        return $ parseJson $ toJsonObject formDataB8
+    jsonBody :: IO (Maybe Json)
+    jsonBody = liftM (parseJson . B8.unpack) $ requestBody request
   in
-    case lookupHeader "Content-Type" of
+    liftM (fromMaybe noParams) $ case lookupHeader "Content-Type" of
       Just "application/json" -> jsonBody
       Just "multipart/form-data" -> formParams
       _ -> formParams
@@ -342,31 +354,53 @@ allQueryKeys :: [String]
 allQueryKeys = [updateS, "library", "consistency-checker"]
   ++ globalCommands ++ knownQueryKeys
 
+
+data RequestBodyParam = Single String | List [String]
+
 -- query is analysed and processed in accordance with RESTful interface
 parseRESTful :: HetcatsOpts -> Cache -> [String] -> [String] -> [QueryPair]
-  -> [(String, String)] -> String -> WebResponse
+  -> Json -> String -> WebResponse
 parseRESTful opts sessRef pathBits qOpts splitQuery requestParams meth respond = let
   {- some parameters from the paths query part might be needed more than once
   (when using lookup upon querybits, you need to unpack Maybe twice) -}
-  lookupGETParam :: String -> Maybe String
-  lookupGETParam = getVal splitQuery
-  lookupParam :: String -> Maybe String
-  lookupParam key = case meth of
-    "GET" -> lookupGETParam key
-    _ -> lookup key requestParams
-  session = lookupParam "session" >>= readMaybe
-  library = lookupParam "library"
-  format = lookupParam "format"
-  nodeM = lookupParam "node"
-  theoremsM = mSplitOnComma $ lookupParam "theorems"
-  transM = lookupParam "translation"
-  proverM = lookupParam "prover"
-  consM = lookupParam "consistency-checker"
-  inclM = lookupParam "include"
-  axiomsM = mSplitOnComma $ lookupParam "axioms"
+  lookupQueryStringParam :: String -> Maybe String
+  lookupQueryStringParam = getVal splitQuery
+
+  lookupBodyParam :: String -> Json -> Maybe RequestBodyParam
+  lookupBodyParam key json = case json of
+    JObject pairs -> case lookup key pairs of
+      Just (JArray a) -> Just $ List $ map (read . ppJson) a
+      Just v -> Just $ Single $ read $ ppJson v
+      _ -> Nothing
+    _ -> Nothing
+
+  lookupSingleParam :: String -> Maybe String
+  lookupSingleParam key = case meth of
+    "GET" -> lookupQueryStringParam key
+    _ -> case lookupBodyParam key requestParams of
+          Just (Single s) -> Just s
+          _ -> Nothing
+
+  lookupListParam :: String -> [String]
+  lookupListParam key = case meth of
+    "GET" -> mSplitOnComma $ lookupQueryStringParam key
+    _ -> case lookupBodyParam key requestParams of
+          Just (List ps) -> ps
+          _ -> []
+
+  session = lookupSingleParam "session" >>= readMaybe
+  library = lookupSingleParam "library"
+  format = lookupSingleParam "format"
+  nodeM = lookupSingleParam "node"
+  theoremsM = lookupListParam "theorems"
+  transM = lookupSingleParam "translation"
+  proverM = lookupSingleParam "prover"
+  consM = lookupSingleParam "consistency-checker"
+  inclM = lookupSingleParam "include"
+  axiomsM = lookupListParam "axioms"
   incl = maybe False (\ s ->
               notElem (map toLower s) ["f", "false"]) inclM
-  timeout = lookupParam "timeout" >>= readMaybe
+  timeout = lookupSingleParam "timeout" >>= readMaybe
   queryFailure = queryFail
     ("this query does not comply with RESTful interface: "
     ++ showPathQuery pathBits splitQuery) respond
@@ -494,7 +528,7 @@ parseRESTful opts sessRef pathBits qOpts splitQuery requestParams meth respond =
                   $ ProveNode pc
               >>= getResponse
           -- on other cmd look for (optional) specification of node or edge
-          _ -> case (nodeM, lookupParam "edge") of
+          _ -> case (nodeM, lookupSingleParam "edge") of
               -- fail if both are specified
               (Just _, Just _) ->
                 fail "please specify only either node or edge"

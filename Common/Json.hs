@@ -13,7 +13,7 @@ inspired by Yuriy Iskra's json2-types hackage package
 -}
 
 module Common.Json
-  ( Json
+  ( Json (..)
   , ppJson
   , mkJStr
   , mkJBool
