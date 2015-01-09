@@ -182,7 +182,7 @@ hetsServer opts1 = do
   run port $ \ re -> do
    let respond = liftIO . return
 #endif
-   requestParams <- parseRequestParams re
+   requestBodyParams <- parseRequestParams re
    let rhost = shows (remoteHost re) "\n"
        ip = getIP4 rhost
        white = matchWhite ip wl
@@ -220,7 +220,7 @@ hetsServer opts1 = do
               in if null unknown then
               parseRESTful newOpts sessRef pathBits
               (map fst fs2 ++ map (\ (a, b) -> a ++ "=" ++ b) vs)
-              qr2 requestParams meth respond
+              qr2 requestBodyParams meth respond
               else queryFail ("unknown query key(s): " ++ show unknown) respond
            -- only otherwise stick to the old response methods
            else oldWebApi newOpts tempLib permFile sessRef re pathBits qr2
@@ -360,7 +360,7 @@ data RequestBodyParam = Single String | List [String]
 -- query is analysed and processed in accordance with RESTful interface
 parseRESTful :: HetcatsOpts -> Cache -> [String] -> [String] -> [QueryPair]
   -> Json -> String -> WebResponse
-parseRESTful opts sessRef pathBits qOpts splitQuery requestParams meth respond = let
+parseRESTful opts sessRef pathBits qOpts splitQuery requestBodyParams meth respond = let
   {- some parameters from the paths query part might be needed more than once
   (when using lookup upon querybits, you need to unpack Maybe twice) -}
   lookupQueryStringParam :: String -> Maybe String
@@ -377,14 +377,14 @@ parseRESTful opts sessRef pathBits qOpts splitQuery requestParams meth respond =
   lookupSingleParam :: String -> Maybe String
   lookupSingleParam key = case meth of
     "GET" -> lookupQueryStringParam key
-    _ -> case lookupBodyParam key requestParams of
+    _ -> case lookupBodyParam key requestBodyParams of
           Just (Single s) -> Just s
           _ -> Nothing
 
   lookupListParam :: String -> [String]
   lookupListParam key = case meth of
     "GET" -> mSplitOnComma $ lookupQueryStringParam key
-    _ -> case lookupBodyParam key requestParams of
+    _ -> case lookupBodyParam key requestBodyParams of
           Just (List ps) -> ps
           _ -> []
 
@@ -392,12 +392,12 @@ parseRESTful opts sessRef pathBits qOpts splitQuery requestParams meth respond =
   library = lookupSingleParam "library"
   format = lookupSingleParam "format"
   nodeM = lookupSingleParam "node"
-  theoremsM = lookupListParam "theorems"
+  theorems = lookupListParam "theorems"
   transM = lookupSingleParam "translation"
   proverM = lookupSingleParam "prover"
   consM = lookupSingleParam "consistency-checker"
   inclM = lookupSingleParam "include"
-  axiomsM = lookupListParam "axioms"
+  axioms = lookupListParam "axioms"
   incl = maybe False (\ s ->
               notElem (map toLower s) ["f", "false"]) inclM
   timeout = lookupSingleParam "timeout" >>= readMaybe
@@ -495,7 +495,7 @@ parseRESTful opts sessRef pathBits qOpts splitQuery requestParams meth respond =
                  pm = if isProve then GlProofs else GlConsistency
                  pc = ProveCmd pm
                    (not (isProve && isJust inclM) || incl)
-                   (if isProve then proverM else consM) transM timeout theoremsM True axiomsM
+                   (if isProve then proverM else consM) transM timeout theorems True axioms
              in case nodeM of
              Nothing -> GlAutoProve pc
              Just n -> nodeQuery n $ ProveNode pc
@@ -518,7 +518,7 @@ parseRESTful opts sessRef pathBits qOpts splitQuery requestParams meth respond =
           respond
         Just sId -> case cmd of
           "prove" ->
-            let pc = ProveCmd GlProofs incl proverM transM timeout [] False axiomsM
+            let pc = ProveCmd GlProofs incl proverM transM timeout [] False axioms
             in case nodeM of
                 -- prove all nodes if no singleton is selected
                 Nothing -> return $ Query (DGQuery sId Nothing)
