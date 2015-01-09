@@ -86,6 +86,7 @@ import Control.Monad
 import qualified Data.IntMap as IntMap
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import qualified Data.CaseInsensitive as CI
 import Data.Char
 import Data.IORef
 import Data.Function
@@ -179,7 +180,7 @@ hetsServer opts1 = do
   run port $ \ re -> do
    let respond = liftIO . return
 #endif
-   (postParamsB8, _) <- parseRequestBody lbsBackEnd re
+   requestParams <- parseRequestParams re
    let rhost = shows (remoteHost re) "\n"
        ip = getIP4 rhost
        white = matchWhite ip wl
@@ -187,7 +188,6 @@ hetsServer opts1 = do
        splitQuery = map (\ (bs, ms) -> (B8.unpack bs, fmap B8.unpack ms))
          $ queryString re
        pathBits = map T.unpack $ pathInfo re
-       postParams = map (\(key, val) -> (B8.unpack key, B8.unpack val)) postParamsB8
        meth = B8.unpack (requestMethod re)
        query = showPathQuery pathBits splitQuery
    liftIO $ do
@@ -218,11 +218,29 @@ hetsServer opts1 = do
               in if null unknown then
               parseRESTful newOpts sessRef pathBits
               (map fst fs2 ++ map (\ (a, b) -> a ++ "=" ++ b) vs)
-              qr2 postParams meth respond
+              qr2 requestParams meth respond
               else queryFail ("unknown query key(s): " ++ show unknown) respond
            -- only otherwise stick to the old response methods
            else oldWebApi newOpts tempLib permFile sessRef re pathBits qr2
              meth respond
+
+
+parseRequestParams :: Request -> IO [(String, String)]
+parseRequestParams re =
+  let
+    lookupHeader :: String -> Maybe String
+    lookupHeader s = liftM B8.unpack $ lookup (CI.mk $ B8.pack s) $ requestHeaders re
+    formParams :: IO [(String, String)]
+    formParams = do
+      (formDataB8, _) <- parseRequestBody lbsBackEnd re
+      return $ map (\(key, val) -> (B8.unpack key, B8.unpack val)) formDataB8
+    jsonBody :: IO [(String, String)]
+    jsonBody = undefined
+  in
+    case lookupHeader "Content-Type" of
+      Just "application/json" -> jsonBody
+      Just "multipart/form-data" -> formParams
+      _ -> formParams
 
 -- | the old API that supports downloading files and interactive stuff
 oldWebApi :: HetcatsOpts -> FilePath -> FilePath -> Cache -> Request -> [String]
@@ -327,7 +345,7 @@ allQueryKeys = [updateS, "library", "consistency-checker"]
 -- query is analysed and processed in accordance with RESTful interface
 parseRESTful :: HetcatsOpts -> Cache -> [String] -> [String] -> [QueryPair]
   -> [(String, String)] -> String -> WebResponse
-parseRESTful opts sessRef pathBits qOpts splitQuery postParams meth respond = let
+parseRESTful opts sessRef pathBits qOpts splitQuery requestParams meth respond = let
   {- some parameters from the paths query part might be needed more than once
   (when using lookup upon querybits, you need to unpack Maybe twice) -}
   lookupGETParam :: String -> Maybe String
@@ -335,7 +353,7 @@ parseRESTful opts sessRef pathBits qOpts splitQuery postParams meth respond = le
   lookupParam :: String -> Maybe String
   lookupParam key = case meth of
     "GET" -> lookupGETParam key
-    _ -> lookup key postParams
+    _ -> lookup key requestParams
   session = lookupParam "session" >>= readMaybe
   library = lookupParam "library"
   format = lookupParam "format"
