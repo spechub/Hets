@@ -159,7 +159,8 @@ examineProof ps _ stdoutC _ exitCode nGoal tUsed _ =
                         , usedProver = proverName depQBFProver
                         , proofTree = emptyProofTree
                         , usedTime = tUsed
-                        , tacticScript = TacticScript "" }
+                        , tacticScript = TacticScript ""
+                        , proofLines = [] }
         getAxioms = map AS_Anno.senAttr (initialAxioms ps)
     in case getDepQBFResult exitCode stdoutC of
                DepQBFProved -> return (ATPSuccess, defaultStatus

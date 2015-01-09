@@ -246,4 +246,5 @@ runFact sps cfg saveFact thName nGoal = do
                   , usedProver = proverName factProver
                   , proofTree = emptyProofTree
                   , usedTime = ut
-                  , tacticScript = tScript }
+                  , tacticScript = tScript
+                  , proofLines = [] }
