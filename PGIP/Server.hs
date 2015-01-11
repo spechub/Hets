@@ -873,7 +873,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format = do
                         ) [] nodesAndProofResults
               if null sens then return (textC, "nothing to prove") else do
                 lift $ nextSess sess sessRef newLib k
-                return (htmlC, formatResultsMultiple xForm k sens prOrCons)
+                return $ formatProofs format nodesAndProofResults
             GlobCmdQuery s ->
               case find ((s ==) . cmdlGlobCmd . fst) allGlobLibAct of
               Nothing -> if s == updateS then
@@ -924,8 +924,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format = do
                         if null proofResults then return (textC, "nothing to prove")
                         else do
                           lift $ nextSess sess sessRef newLib k
-                          return (htmlC,
-                            formatResults xForm k i . unode "results" $ formatGoals True proofResults)
+                          return $ formatProofs format [(getDGNodeName dgnode, proofResults)]
                       GlConsistency -> do
                         (newLib, [(_, res, txt, _)]) <- consNode libEnv ln dg nl
                           subL incl mp mt tl
