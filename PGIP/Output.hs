@@ -6,8 +6,13 @@ module PGIP.Output
   , dotC
   , svgC
   , htmlC
-  , formatProofs
+
+  , proofFormatterOptions
+  , pfoIncludeProof
+  , pfoIncludeDetails
+
   , ProofResult
+  , formatProofs
   ) where
 
 import Logic.Prover
@@ -34,14 +39,25 @@ svgC = "image/svg+xml"
 htmlC :: String
 htmlC = "text/html"
 
+
 type ProofResult = (String, String, String, Maybe (ProofStatus G_proof_tree))
-type ProofFormatter = [(String, [ProofResult])] -> (String, String)
-                   -- ^[(dgNodeName, result)]      ^(responseType, response)
+type ProofFormatter = ProofFormatterOptions -> [(String, [ProofResult])] -> (String, String)
+                                            -- ^[(dgNodeName, result)]      ^(responseType, response)
+
+data ProofFormatterOptions = ProofFormatterOptions
+  { pfoIncludeProof :: Bool
+  , pfoIncludeDetails :: Bool
+  } deriving (Show, Eq)
+
+proofFormatterOptions = ProofFormatterOptions
+  { pfoIncludeProof = True
+  , pfoIncludeDetails = True
+  }
 
 formatProofs :: Maybe String -> ProofFormatter
-formatProofs format ps = case format of
-  Just "json" -> formatAsJSON ps
-  _ -> formatAsXML ps
+formatProofs format options proofs = case format of
+  Just "json" -> formatAsJSON
+  _ -> formatAsXML
   where
   formatAsJSON :: ProofFormatter
   formatAsJSON proofs = (jsonC, undefined)
