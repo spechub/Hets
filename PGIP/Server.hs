@@ -115,6 +115,8 @@ data Session = Session
   , lastAccess :: UTCTime
   , usage :: Int }
 
+data UsedAPI = OldWebAPI | RESTfulAPI deriving (Show, Eq, Ord)
+
 type SessMap = Map.Map [String] Session
 type Cache = IORef (IntMap.IntMap Session, SessMap)
 
@@ -272,7 +274,7 @@ oldWebApi opts tempLib permFile sessRef re pathBits splitQuery meth respond
                Result ds ms <- liftIO $ runResultT
                  $ case readMaybe $ head pathBits of
                  Nothing -> fail "cannot read session id for automatic proofs"
-                 Just k' -> getHetsResult opts [] sessRef (qr k') Nothing proofFormatterOptions
+                 Just k' -> getHetsResult opts [] sessRef (qr k') Nothing OldWebAPI proofFormatterOptions
                respond $ case ms of
                  Nothing -> mkResponse textC status422 $ showRelDiags 1 ds
                  Just (t, s) -> mkOkResponse t s
@@ -424,7 +426,7 @@ parseRESTful opts sessRef pathBits qOpts splitQuery requestBodyParams meth respo
       in return . Query (DGQuery sId (Just p)) . nodeQuery (getFragment p)
   -- call getHetsResult with the properly generated query (Final Result)
   getResponseAux myOpts qr = do
-    Result ds ms <- liftIO $ runResultT $ getHetsResult myOpts [] sessRef qr format pfOptions
+    Result ds ms <- liftIO $ runResultT $ getHetsResult myOpts [] sessRef qr format RESTfulAPI pfOptions
     respond $ case ms of
       Nothing -> mkResponse textC status422 $ showRelDiags 1 ds
       Just (t, s) -> mkOkResponse t s
@@ -843,15 +845,15 @@ getHetsResponse opts updates sessRef pathBits query respond = do
   Result ds ms <- liftIO $ runResultT $ case anaUri pathBits query
     $ updateS : globalCommands of
     Left err -> fail err
-    Right q -> getHetsResult opts updates sessRef q Nothing proofFormatterOptions
+    Right q -> getHetsResult opts updates sessRef q Nothing OldWebAPI proofFormatterOptions
   respond $ case ms of
     Just (t, s) | not $ hasErrors ds -> mkOkResponse t s
     _ -> mkResponse textC status422 $ showRelDiags 1 ds
 
 getHetsResult :: HetcatsOpts -> [FileInfo BS.ByteString]
-  -> Cache -> Query.Query -> Maybe String -> ProofFormatterOptions
+  -> Cache -> Query.Query -> Maybe String ->  UsedAPI -> ProofFormatterOptions
   -> ResultT IO (String, String)
-getHetsResult opts updates sessRef (Query dgQ qk) format pfOptions = do
+getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
       sk@(sess, k) <- getDGraph opts sessRef dgQ
       let libEnv = sessLibEnv sess
       (ln, dg) <- maybe (fail "unknown development graph") return
