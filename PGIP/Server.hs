@@ -883,15 +883,18 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
             GlShowProverWindow prOrCons -> showAutoProofWindow dg k prOrCons
             GlAutoProve (ProveCmd prOrCons incl mp mt tl nds xForm axioms) -> do
               (newLib, nodesAndProofResults) <- proveMultiNodes prOrCons libEnv ln dg incl mp mt tl nds axioms
-              let sens = foldr (\(dgNodeName, proofResults) res ->
-                          formatResultsAux xForm prOrCons dgNodeName proofResults : res
-                        ) [] nodesAndProofResults
-              if null sens then return (textC, "nothing to prove") else do
+              if and $ map (null . snd) nodesAndProofResults then return (textC, "nothing to prove") else do
                 lift $ nextSess sess sessRef newLib k
-                return $ formatProofs
-                  format
-                  pfOptions
-                  nodesAndProofResults
+                return $ case api of
+                  OldWebAPI -> let
+                    sens = foldr (\(dgNodeName, proofResults) res ->
+                        formatResultsAux xForm prOrCons dgNodeName proofResults : res
+                      ) [] nodesAndProofResults
+                    in (htmlC, formatResultsMultiple xForm k sens prOrCons)
+                  RESTfulAPI -> formatProofs
+                    format
+                    pfOptions
+                    nodesAndProofResults
             GlobCmdQuery s ->
               case find ((s ==) . cmdlGlobCmd . fst) allGlobLibAct of
               Nothing -> if s == updateS then
@@ -942,10 +945,13 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
                         if null proofResults then return (textC, "nothing to prove")
                         else do
                           lift $ nextSess sess sessRef newLib k
-                          return $ formatProofs
-                            format
-                            pfOptions
-                            [(getDGNodeName dgnode, proofResults)]
+                          return $ case api of
+                            OldWebAPI -> (htmlC,
+                              formatResults xForm k i . unode "results" $ formatGoals True proofResults)
+                            RESTfulAPI -> formatProofs
+                              format
+                              pfOptions
+                              [(getDGNodeName dgnode, proofResults)]
                       GlConsistency -> do
                         (newLib, [(_, res, txt, _)]) <- consNode libEnv ln dg nl
                           subL incl mp mt tl
