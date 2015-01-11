@@ -940,13 +940,13 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
                     ProveNode (ProveCmd pm incl mp mt tl thms xForm axioms) ->
                       case pm of
                       GlProofs -> do
-                        (newLib, sens) <- proveNode libEnv ln dg nl
+                        (newLib, proofResults) <- proveNode libEnv ln dg nl
                           gTh subL incl mp mt tl thms axioms
-                        if null sens then return (textC, "nothing to prove")
+                        if null proofResults then return (textC, "nothing to prove")
                         else do
                           lift $ nextSess sess sessRef newLib k
                           return (htmlC,
-                            formatResults xForm k i . unode "results" $ formatGoals True sens)
+                            formatResults xForm k i . unode "results" $ formatGoals True proofResults)
                       GlConsistency -> do
                         (newLib, [(_, res, txt, _)]) <- consNode libEnv ln dg nl
                           subL incl mp mt tl
