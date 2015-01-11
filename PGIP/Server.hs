@@ -116,6 +116,7 @@ data Session = Session
 
 type SessMap = Map.Map [String] Session
 type Cache = IORef (IntMap.IntMap Session, SessMap)
+type ProofResult = (String, String, String, Maybe (ProofStatus G_proof_tree))
 
 randomKey :: IO Int
 randomKey = randomRIO (100000000, 999999999)
@@ -1377,7 +1378,7 @@ consNode le ln dg nl@(i, lb) subL useTh mp mt tl = do
 
 proveNode :: LibEnv -> LibName -> DGraph -> (Int, DGNodeLab) -> G_theory
   -> G_sublogics -> Bool -> Maybe String -> Maybe String -> Maybe Int
-  -> [String] -> [String] -> ResultT IO (LibEnv, [(String, String, String, Maybe (ProofStatus G_proof_tree))])
+  -> [String] -> [String] -> ResultT IO (LibEnv, [ProofResult])
 proveNode le ln dg nl gTh subL useTh mp mt tl thms axioms = do
  ps <- lift $ getProverAndComorph mp mt subL
  case ps of
@@ -1393,13 +1394,13 @@ proveNode le ln dg nl gTh subL useTh mp mt tl thms axioms = do
     return (if null sens then le else
         Map.insert ln (updateLabelTheory le dg nl nTh) le, combineSensAndProofStatus sens proofStatuses)
 
-combineSensAndProofStatus :: [(String, String, String)] -> [ProofStatus G_proof_tree] -> [(String, String, String, Maybe (ProofStatus G_proof_tree))]
+combineSensAndProofStatus :: [(String, String, String)] -> [ProofStatus G_proof_tree] -> [ProofResult]
 combineSensAndProofStatus sens proofStatuses = let-- zipWith (\(name, e, d) ps -> (n, e, d, Just ps))
   findProofStatusByName :: String -> Maybe (ProofStatus G_proof_tree)
   findProofStatusByName n = case filter (\ps -> n == goalName ps) proofStatuses of
     [] -> Nothing
     (ps:_) -> Just ps
-  combineSens :: (String, String, String) -> (String, String, String, Maybe (ProofStatus G_proof_tree))
+  combineSens :: (String, String, String) -> ProofResult
   combineSens (n, e, d) = (n, e, d, findProofStatusByName n)
   in map combineSens sens
 
@@ -1408,7 +1409,7 @@ proveMultiNodes :: Bool -> ProverMode -> LibEnv -> LibName -> DGraph -> Bool
   -> Maybe String -> Maybe String -> Maybe Int -> [String] -> [String]
   -> ResultT IO (LibEnv, [Element])
 proveMultiNodes xF pm le ln dg useTh mp mt tl nodeSel axioms = let
-  runProof :: LibEnv -> G_theory -> (Int, DGNodeLab) -> ResultT IO (LibEnv, [(String, String, String, Maybe (ProofStatus G_proof_tree))])
+  runProof :: LibEnv -> G_theory -> (Int, DGNodeLab) -> ResultT IO (LibEnv, [ProofResult])
   runProof le' gTh nl = let
     subL = sublogicOfTh gTh
     dg' = lookupDGraph ln le' in case pm of
@@ -1428,8 +1429,7 @@ proveMultiNodes xF pm le ln dg useTh mp mt tl nodeSel axioms = let
         return (le'', formatResultsAux xF pm (getDGNodeName dgn) sens : res))
           (le, []) nodes2check
 
-formatResultsAux :: Bool -> ProverMode -> String -> [(String, String, String, Maybe (ProofStatus G_proof_tree))]
-  -> Element
+formatResultsAux :: Bool -> ProverMode -> String -> [ProofResult] -> Element
 formatResultsAux xF pm nm sens = unode nm $ case (sens, pm) of
     ([(_, e, d, _)], GlConsistency) | xF -> formatConsNode e d
     _ -> unode "results" $ formatGoals xF sens
