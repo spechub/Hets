@@ -12,6 +12,7 @@ Portability :  non-portable (via imports)
 
 module PGIP.Server (hetsServer) where
 
+import PGIP.Output
 import PGIP.Query as Query
 
 import Driver.Options
@@ -116,7 +117,6 @@ data Session = Session
 
 type SessMap = Map.Map [String] Session
 type Cache = IORef (IntMap.IntMap Session, SessMap)
-type ProofResult = (String, String, String, Maybe (ProofStatus G_proof_tree))
 
 randomKey :: IO Int
 randomKey = randomRIO (100000000, 999999999)
@@ -621,27 +621,6 @@ mkHtmlElemScript title scr =
 mkHtmlPage :: FilePath -> [Element] -> WebResponse
 mkHtmlPage path es respond = respond . mkOkResponse htmlC
   $ mkHtmlString path es
-
-textC :: String
-textC = "text/plain"
-
-xmlC :: String
-xmlC = "application/xml"
-
-jsonC :: String
-jsonC = "application/json"
-
-pdfC :: String
-pdfC = "application/pdf"
-
-dotC :: String
-dotC = "text/vnd.graphviz"
-
-svgC :: String
-svgC = "image/svg+xml"
-
-htmlC :: String
-htmlC = "text/html"
 
 mkResponse :: String -> Status -> String -> Response
 mkResponse ty st = responseLBS st
