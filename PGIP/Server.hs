@@ -888,11 +888,13 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
               lift $ fmap (\ l -> (xmlC, l)) $ getFullComorphList dg
             GlShowProverWindow prOrCons -> showAutoProofWindow dg k prOrCons
             GlAutoProve (ProveCmd prOrCons incl mp mt tl nds xForm axioms) -> do
-               (newLib, sens) <-
-                 proveMultiNodes xForm prOrCons libEnv ln dg incl mp mt tl nds axioms
-               if null sens then return (textC, "nothing to prove") else do
-                  lift $ nextSess sess sessRef newLib k
-                  return (htmlC, formatResultsMultiple xForm k sens prOrCons)
+              (newLib, nodesAndProofResults) <- proveMultiNodes prOrCons libEnv ln dg incl mp mt tl nds axioms
+              let sens = foldr (\(dgNodeName, proofResults) res ->
+                          formatResultsAux xForm prOrCons dgNodeName proofResults : res
+                        ) [] nodesAndProofResults
+              if null sens then return (textC, "nothing to prove") else do
+                lift $ nextSess sess sessRef newLib k
+                return (htmlC, formatResultsMultiple xForm k sens prOrCons)
             GlobCmdQuery s ->
               case find ((s ==) . cmdlGlobCmd . fst) allGlobLibAct of
               Nothing -> if s == updateS then
@@ -1405,10 +1407,10 @@ combineSensAndProofStatus sens proofStatuses = let-- zipWith (\(name, e, d) ps -
   in map combineSens sens
 
 -- run over multiple dgnodes and prove available goals for each
-proveMultiNodes :: Bool -> ProverMode -> LibEnv -> LibName -> DGraph -> Bool
+proveMultiNodes :: ProverMode -> LibEnv -> LibName -> DGraph -> Bool
   -> Maybe String -> Maybe String -> Maybe Int -> [String] -> [String]
-  -> ResultT IO (LibEnv, [Element])
-proveMultiNodes xF pm le ln dg useTh mp mt tl nodeSel axioms = let
+  -> ResultT IO (LibEnv, [(String, [ProofResult])])
+proveMultiNodes pm le ln dg useTh mp mt tl nodeSel axioms = let
   runProof :: LibEnv -> G_theory -> (Int, DGNodeLab) -> ResultT IO (LibEnv, [ProofResult])
   runProof le' gTh nl = let
     subL = sublogicOfTh gTh
@@ -1425,8 +1427,8 @@ proveMultiNodes xF pm le ln dg useTh mp mt tl nodeSel axioms = let
       Nothing -> fail $
                     "cannot compute global theory of:\n" ++ show dgn
       Just gTh -> do
-        (le'', sens) <- runProof le' gTh nl
-        return (le'', formatResultsAux xF pm (getDGNodeName dgn) sens : res))
+        (le'', proofResults) <- runProof le' gTh nl
+        return (le'', (getDGNodeName dgn, proofResults) : res))
           (le, []) nodes2check
 
 formatResultsAux :: Bool -> ProverMode -> String -> [ProofResult] -> Element
