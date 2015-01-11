@@ -272,7 +272,7 @@ oldWebApi opts tempLib permFile sessRef re pathBits splitQuery meth respond
                Result ds ms <- liftIO $ runResultT
                  $ case readMaybe $ head pathBits of
                  Nothing -> fail "cannot read session id for automatic proofs"
-                 Just k' -> getHetsResult opts [] sessRef (qr k')
+                 Just k' -> getHetsResult opts [] sessRef (qr k') Nothing
                respond $ case ms of
                  Nothing -> mkResponse textC status422 $ showRelDiags 1 ds
                  Just (t, s) -> mkOkResponse t s
@@ -412,7 +412,7 @@ parseRESTful opts sessRef pathBits qOpts splitQuery requestBodyParams meth respo
       in return . Query (DGQuery sId (Just p)) . nodeQuery (getFragment p)
   -- call getHetsResult with the properly generated query (Final Result)
   getResponseAux myOpts qr = do
-    Result ds ms <- liftIO $ runResultT $ getHetsResult myOpts [] sessRef qr
+    Result ds ms <- liftIO $ runResultT $ getHetsResult myOpts [] sessRef qr format
     respond $ case ms of
       Nothing -> mkResponse textC status422 $ showRelDiags 1 ds
       Just (t, s) -> mkOkResponse t s
@@ -831,14 +831,14 @@ getHetsResponse opts updates sessRef pathBits query respond = do
   Result ds ms <- liftIO $ runResultT $ case anaUri pathBits query
     $ updateS : globalCommands of
     Left err -> fail err
-    Right q -> getHetsResult opts updates sessRef q
+    Right q -> getHetsResult opts updates sessRef q Nothing
   respond $ case ms of
     Just (t, s) | not $ hasErrors ds -> mkOkResponse t s
     _ -> mkResponse textC status422 $ showRelDiags 1 ds
 
 getHetsResult :: HetcatsOpts -> [FileInfo BS.ByteString]
-  -> Cache -> Query.Query -> ResultT IO (String, String)
-getHetsResult opts updates sessRef (Query dgQ qk) = do
+  -> Cache -> Query.Query -> Maybe String -> ResultT IO (String, String)
+getHetsResult opts updates sessRef (Query dgQ qk) format = do
       sk@(sess, k) <- getDGraph opts sessRef dgQ
       let libEnv = sessLibEnv sess
       (ln, dg) <- maybe (fail "unknown development graph") return
@@ -846,7 +846,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
       let title = libToFileName ln
       let svg = getSVG title ('/' : show k) dg
       case qk of
-            DisplayQuery ms -> case ms of
+            DisplayQuery ms -> case format `orElse` ms of
               Just "svg" -> fmap (\ s -> (svgC, s)) svg
               Just "xml" -> liftR $ return (xmlC, ppTopElement
                 $ ToXml.dGraph opts libEnv ln dg)
