@@ -193,25 +193,36 @@ pJPair = pair (tok pStr << cTok ':') pJson
 {- | convert to json with special treatment for numbers, booleans, strings
 and other lists. -}
 myDataToJson :: MyData -> Json
-myDataToJson d = case d of
-  Builtin ty v -> case ty of
-    "number" -> case readSigned readFloat v of
-      [(n, "")] -> JNumber n
-      _ -> JObject [(ty, JString v)]
-    "bool" | v == "True" -> JBool True
-           | v == "False" -> JBool False
-    "string" -> JString v
-    _ -> JObject [(ty, JString v)]
-  ListOrTuple b l ->
-    let j = if null l then JNull else JArray $ map myDataToJson l
-    in if b then j else JObject [("tuple", j)]
-  Cons s _ l -> case map myDataToJson l of
-    [] -> JString s
-    [e] -> JObject [(s, e)]
-    js -> JObject [(s, JArray js)]
+myDataToJson md =
+  let
+    recordFieldToObject :: (String, MyData) -> (String, Json)
+    recordFieldToObject (fieldName, value) = (fieldName, myDataToJson value)
+  in
+    case md of
+      Builtin typ value -> case typ of
+        "number" -> case readSigned readFloat value of
+          [(n, "")] -> JNumber n
+          _ -> JString value
+        "bool" | value == "True" -> JBool True
+               | value == "False" -> JBool False
+        "string" -> JString value
+        _ -> JString value
+      ListOrTuple _ mds -> JArray $ map myDataToJson mds
+      -- Special cases
+      Cons c Nothing [] | c `elem` ["Nothing", "Just", "Left", "Right"] ->
+        error ("myDataToJson: Constructor should not have appeared: " ++ show c)
+      -- Records
+      Cons _ (Just fields) mds ->
+        let
+        in JObject $ map recordFieldToObject $ zip fields mds
+      -- Data types
+      Cons constructor Nothing mds -> case map myDataToJson mds of
+        [] -> JString constructor
+        [e] -> e
+        ijs -> JArray ijs
 
 class ToJson a where
   asJson :: a -> Json
 
 instance Data a => ToJson a where
-  asJson = myDataToJson . dataToMyData
+  asJson = myDataToJson . normalizeMyDataForSerialization . dataToMyData
