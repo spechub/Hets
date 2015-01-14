@@ -25,11 +25,14 @@ import qualified Logic.Prover as LP
 import Proofs.AbstractState (G_proof_tree)
 
 import Common.Json (ppJson, asJson)
+import Common.ToXml (asXml)
 
 import Data.Data
 import Data.Time.LocalTime
 
 import Numeric
+
+import Text.XML.Light (ppTopElement)
 
 type ProofResult = (String, String, String, Maybe (LP.ProofStatus G_proof_tree))
 type ProofFormatter = ProofFormatterOptions -> [(String, [ProofResult])] -> (String, String)
@@ -51,12 +54,14 @@ formatProofs format options proofs = case format of
   Just "json" -> formatAsJSON
   _ -> formatAsXML
   where
+  proof :: [Proof]
   proof = map convertProof proofs
+
   formatAsJSON :: (String, String)
   formatAsJSON = (jsonC, ppJson $ asJson proof)
 
   formatAsXML :: (String, String)
-  formatAsXML = (xmlC, undefined proof)
+  formatAsXML = (xmlC, ppTopElement $ asXml proof)
 
   convertProof :: (String, [ProofResult]) -> Proof
   convertProof (nodeName, proofResults) = Proof
