@@ -24,6 +24,8 @@ import qualified Logic.Prover as LP
 
 import Proofs.AbstractState (G_proof_tree)
 
+import Common.Json (ppJson, asJson)
+
 import Data.Data
 import Data.Time.LocalTime
 
@@ -51,7 +53,7 @@ formatProofs format options proofs = case format of
   where
   proof = map convertProof proofs
   formatAsJSON :: (String, String)
-  formatAsJSON = (jsonC, undefined proof)
+  formatAsJSON = (jsonC, ppJson $ asJson proof)
 
   formatAsXML :: (String, String)
   formatAsXML = (xmlC, undefined proof)
