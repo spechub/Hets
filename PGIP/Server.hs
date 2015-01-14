@@ -272,7 +272,7 @@ oldWebApi opts tempLib permFile sessRef re pathBits splitQuery meth respond
                Result ds ms <- liftIO $ runResultT
                  $ case readMaybe $ head pathBits of
                  Nothing -> fail "cannot read session id for automatic proofs"
-                 Just k' -> getHetsResult opts [] sessRef (qr k') Nothing
+                 Just k' -> getHetsResult opts [] sessRef (qr k') Nothing proofFormatterOptions
                respond $ case ms of
                  Nothing -> mkResponse textC status422 $ showRelDiags 1 ds
                  Just (t, s) -> mkOkResponse t s
@@ -389,10 +389,18 @@ parseRESTful opts sessRef pathBits qOpts splitQuery requestBodyParams meth respo
           Just (List ps) -> ps
           _ -> []
 
+  isParamTrue :: Bool -> String -> Bool
+  isParamTrue def key = case fmap (map toLower) $ lookupSingleParam key of
+    Nothing -> def
+    Just "true" -> True
+    _ -> False
+
   session = lookupSingleParam "session" >>= readMaybe
   library = lookupSingleParam "library"
   format = lookupSingleParam "format"
   nodeM = lookupSingleParam "node"
+  includeDetails = isParamTrue True "includeDetails"
+  includeProof = isParamTrue True "includeProof"
   theorems = lookupListParam "theorems"
   transM = lookupSingleParam "translation"
   proverM = lookupSingleParam "prover"
@@ -407,12 +415,16 @@ parseRESTful opts sessRef pathBits qOpts splitQuery requestBodyParams meth respo
     ++ showPathQuery pathBits splitQuery) respond
   -- since used more often, generate full query out of nodeIRI and nodeCmd
   nodeQuery s = NodeQuery $ maybe (Right s) Left (readMaybe s :: Maybe Int)
+  pfOptions = proofFormatterOptions
+                { pfoIncludeProof = includeProof
+                , pfoIncludeDetails = includeDetails
+                }
   parseNodeQuery :: Monad m => String -> Int -> m NodeCommand -> m Query.Query
   parseNodeQuery p sId ncmd = ncmd >>= let
       in return . Query (DGQuery sId (Just p)) . nodeQuery (getFragment p)
   -- call getHetsResult with the properly generated query (Final Result)
   getResponseAux myOpts qr = do
-    Result ds ms <- liftIO $ runResultT $ getHetsResult myOpts [] sessRef qr format
+    Result ds ms <- liftIO $ runResultT $ getHetsResult myOpts [] sessRef qr format pfOptions
     respond $ case ms of
       Nothing -> mkResponse textC status422 $ showRelDiags 1 ds
       Just (t, s) -> mkOkResponse t s
@@ -831,14 +843,15 @@ getHetsResponse opts updates sessRef pathBits query respond = do
   Result ds ms <- liftIO $ runResultT $ case anaUri pathBits query
     $ updateS : globalCommands of
     Left err -> fail err
-    Right q -> getHetsResult opts updates sessRef q Nothing
+    Right q -> getHetsResult opts updates sessRef q Nothing proofFormatterOptions
   respond $ case ms of
     Just (t, s) | not $ hasErrors ds -> mkOkResponse t s
     _ -> mkResponse textC status422 $ showRelDiags 1 ds
 
 getHetsResult :: HetcatsOpts -> [FileInfo BS.ByteString]
-  -> Cache -> Query.Query -> Maybe String -> ResultT IO (String, String)
-getHetsResult opts updates sessRef (Query dgQ qk) format = do
+  -> Cache -> Query.Query -> Maybe String -> ProofFormatterOptions
+  -> ResultT IO (String, String)
+getHetsResult opts updates sessRef (Query dgQ qk) format pfOptions = do
       sk@(sess, k) <- getDGraph opts sessRef dgQ
       let libEnv = sessLibEnv sess
       (ln, dg) <- maybe (fail "unknown development graph") return
@@ -875,7 +888,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format = do
                 lift $ nextSess sess sessRef newLib k
                 return $ formatProofs
                   format
-                  (proofFormatterOptions { pfoIncludeDetails = xForm })
+                  pfOptions
                   nodesAndProofResults
             GlobCmdQuery s ->
               case find ((s ==) . cmdlGlobCmd . fst) allGlobLibAct of
@@ -929,7 +942,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format = do
                           lift $ nextSess sess sessRef newLib k
                           return $ formatProofs
                             format
-                            proofFormatterOptions
+                            pfOptions
                             [(getDGNodeName dgnode, proofResults)]
                       GlConsistency -> do
                         (newLib, [(_, res, txt, _)]) <- consNode libEnv ln dg nl
