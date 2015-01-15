@@ -186,11 +186,9 @@ readMaybe s = case filter (all isSpace . snd) $ reads s of
   _ -> Nothing
 
 -- | Left-biased choice on maybes
--- Extracted from Data.Generics.Aliases (syb-0.4.4)
+-- As in Data.Generics.Aliases (syb-0.4.4)
 orElse :: Maybe a -> Maybe a -> Maybe a
-x `orElse` y = case x of
-                 Just _  -> x
-                 Nothing -> y
+orElse x y = maybe y Just x
 
 -- | generalization of mapAccumL to monads
 mapAccumLM :: Monad m
