@@ -26,7 +26,6 @@ module Common.Utils
   , nubOrdOn
   , atMaybe
   , readMaybe
-  , orElse
   , mapAccumLM
   , mapAccumLCM
   , concatMapM
@@ -184,11 +183,6 @@ readMaybe :: Read a => String -> Maybe a
 readMaybe s = case filter (all isSpace . snd) $ reads s of
   [(a, _)] -> Just a
   _ -> Nothing
-
--- | Left-biased choice on maybes
--- As in Data.Generics.Aliases (syb-0.4.4)
-orElse :: Maybe a -> Maybe a -> Maybe a
-orElse x y = maybe y Just x
 
 -- | generalization of mapAccumL to monads
 mapAccumLM :: Monad m

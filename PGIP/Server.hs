@@ -863,7 +863,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
       let title = libToFileName ln
       let svg = getSVG title ('/' : show k) dg
       case qk of
-            DisplayQuery ms -> case format `orElse` ms of
+            DisplayQuery ms -> case format `mplus` ms of
               Just "svg" -> fmap (\ s -> (svgC, s)) svg
               Just "xml" -> liftR $ return (xmlC, ppTopElement
                 $ ToXml.dGraph opts libEnv ln dg)
