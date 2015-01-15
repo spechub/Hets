@@ -12,7 +12,9 @@ Portability :  non-portable (via imports)
 
 module PGIP.Server (hetsServer) where
 
-import PGIP.Output
+import PGIP.Output.Mime
+import PGIP.Output.Proof
+
 import PGIP.Query as Query
 
 import Driver.Options
