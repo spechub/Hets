@@ -209,12 +209,12 @@ myDataToJson md =
         _ -> JString value
       ListOrTuple _ mds -> JArray $ map myDataToJson mds
       -- Special cases
-      Cons c Nothing [] | c `elem` ["Nothing", "Just", "Left", "Right"] ->
+      Cons c Nothing [] | c `elem` ["Nothing", "Just", "Left", "Right"] ->
         error ("myDataToJson: Constructor should not have appeared: " ++ show c)
       -- Records
       Cons _ (Just fields) mds ->
         let
-        in JObject $ map recordFieldToObject $ zip fields mds
+        in JObject $ zipWith (curry recordFieldToObject) fields mds
       -- Data types
       Cons constructor Nothing mds -> case map myDataToJson mds of
         [] -> JString constructor

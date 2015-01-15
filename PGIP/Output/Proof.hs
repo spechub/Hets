@@ -1,10 +1,4 @@
-{-# LANGUAGE CPP
-           , DeriveGeneric
-           , TemplateHaskell
-           , EmptyDataDecls
-           , TypeFamilies
-           , DeriveDataTypeable
-           #-}
+{-# LANGUAGE CPP, TypeFamilies, DeriveDataTypeable #-}
 
 module PGIP.Output.Proof
   ( ProofFormatterOptions
@@ -35,8 +29,9 @@ import Numeric
 import Text.XML.Light (ppTopElement)
 
 type ProofResult = (String, String, String, Maybe (LP.ProofStatus G_proof_tree))
-type ProofFormatter = ProofFormatterOptions -> [(String, [ProofResult])] -> (String, String)
-                                            -- ^[(dgNodeName, result)]      ^(responseType, response)
+type ProofFormatter =
+    ProofFormatterOptions -> [(String, [ProofResult])] -> (String, String)
+                          -- ^[(dgNodeName, result)]   ^(responseType, response)
 
 data ProofFormatterOptions = ProofFormatterOptions
   { pfoIncludeProof :: Bool
@@ -105,7 +100,7 @@ formatProofs format options proofs = case format of
 
   convertTacticScript :: LP.ProofStatus G_proof_tree -> TacticScript
   convertTacticScript ps =
-    let atp = read $ (\(LP.TacticScript ts) -> ts) $ LP.tacticScript ps
+    let atp = read $ (\ (LP.TacticScript ts) -> ts) $ LP.tacticScript ps
     in TacticScript { timeLimit = tsTimeLimit atp
                     , extraOptions = tsExtraOpts atp
                     }

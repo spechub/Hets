@@ -59,8 +59,8 @@ dataToMyData a = let
 normalizeMyDataForSerialization :: MyData -> MyData
 normalizeMyDataForSerialization = stripDeleted . stripSpecialConstructors
   where
-    -- "_deleted" is not a valid haskell constructor and can't clash with real data.
-    -- Tt is used for marking a deleted data item.
+    {- "_deleted" is not a valid Haskell constructor and can't clash with real
+    data. It is used for marking a deleted data item. -}
     deletedData :: MyData
     deletedData = Cons "_deleted" Nothing []
 
@@ -85,8 +85,8 @@ normalizeMyDataForSerialization = stripDeleted . stripSpecialConstructors
     stripDeletedFieldsList :: [String] -> [MyData] -> ([String], [MyData])
     stripDeletedFieldsList fields values =
       unzip $
-      filter (\(_, v) -> isNotDeleted v) $
-      map (\(f, v) -> (f, stripDeleted v)) $
+      filter (\ (_, v) -> isNotDeleted v) $
+      map (\ (f, v) -> (f, stripDeleted v)) $
       zip fields values
 
     stripDeleted :: MyData -> MyData

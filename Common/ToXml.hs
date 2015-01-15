@@ -70,12 +70,12 @@ myDataToXml d =
     myDataToXmlWorker :: String -> MyData -> Element
     myDataToXmlWorker tag md = case md of
       Builtin _ v -> unode tag v
-      ListOrTuple _ values -> unode tag $ map (myDataToXmlWorker listItemTag) values
-      Cons _ Nothing values -> unode tag $ map (myDataToXmlWorker dataItemTag) values
+      ListOrTuple _ values ->
+        unode tag $ map (myDataToXmlWorker listItemTag) values
+      Cons _ Nothing values ->
+        unode tag $ map (myDataToXmlWorker dataItemTag) values
       Cons _ (Just fields) values ->
-        unode tag $
-        map (\(f, v) -> myDataToXmlWorker f v) $
-        zip fields values
+        unode tag $ zipWith myDataToXmlWorker fields values
   in
     case d of
       Cons constructor _ _ -> myDataToXmlWorker constructor d
