@@ -240,11 +240,6 @@ runFact sps cfg saveFact thName nGoal = do
         { tacticScript = tScript }
     disProvedStatus = defaultProofStatus {goalStatus = Disproved}
     provedStatus ut =
-      ProofStatus { goalName = senAttr nGoal
-                  , goalStatus = Proved True
-                  , usedAxioms = []
-                  , usedProver = proverName factProver
-                  , proofTree = emptyProofTree
-                  , usedTime = ut
-                  , tacticScript = tScript
-                  , proofLines = [] }
+      defaultProofStatus { goalStatus = Proved True
+                         , usedTime = ut
+                         , tacticScript = tScript }
