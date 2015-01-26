@@ -67,7 +67,7 @@ import Logic.Logic
 import Proofs.AbstractState
 import Proofs.ConsistencyCheck
 
-import Text.Parsec.Prim (parse)
+import Text.ParserCombinators.Parsec (parse)
 
 import Text.XML.Light
 import Text.XML.Light.Cursor hiding (findChild)
