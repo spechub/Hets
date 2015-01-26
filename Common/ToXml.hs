@@ -60,21 +60,30 @@ eitherToElem s l = let (as, es) = partitionEithers l in
   add_attrs as $ unode s es
 
 myDataToXml :: MyData -> Element
-myDataToXml d = case d of
-  Builtin ty v -> if null v then unode ty () else unode ty v
-  ListOrTuple b l -> let e = if b then "list" else "tuple" in
-    if null l then unode e () else unode e $ map myDataToXml l
-  Cons s mfs l -> if null l then unode s () else maybe
-    (case l of
-      [Builtin ty v] -> add_attr (mkAttr ty v) $ unode s ()
-      _ -> unode s $ map myDataToXml l)
-    (eitherToElem s . zipWith (\ m f -> case m of
-       Builtin _ v -> Left $ mkAttr f v
-       _ -> Right $ myDataToXml m)
-     l) mfs
+myDataToXml d =
+  let
+    listTag, listItemTag, dataItemTag :: String
+    listTag = "List"
+    listItemTag = "li"
+    dataItemTag = "d"
+
+    myDataToXmlWorker :: String -> MyData -> Element
+    myDataToXmlWorker tag md = case md of
+      Builtin _ v -> unode tag v
+      ListOrTuple _ values ->
+        unode tag $ map (myDataToXmlWorker listItemTag) values
+      Cons _ Nothing values ->
+        unode tag $ map (myDataToXmlWorker dataItemTag) values
+      Cons _ (Just fields) values ->
+        unode tag $ zipWith myDataToXmlWorker fields values
+  in
+    case d of
+      Cons constructor _ _ -> myDataToXmlWorker constructor d
+      ListOrTuple _ _ -> myDataToXmlWorker listTag d
+      Builtin _ v -> unode dataItemTag v
 
 class ToXml a where
   asXml :: a -> Element
 
 instance Data a => ToXml a where
-  asXml = myDataToXml . dataToMyData
+  asXml = myDataToXml . normalizeMyDataForSerialization . dataToMyData

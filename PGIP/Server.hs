@@ -12,6 +12,9 @@ Portability :  non-portable (via imports)
 
 module PGIP.Server (hetsServer) where
 
+import PGIP.Output.Mime
+import PGIP.Output.Proof
+
 import PGIP.Query as Query
 
 import Driver.Options
@@ -64,6 +67,8 @@ import Logic.Logic
 import Proofs.AbstractState
 import Proofs.ConsistencyCheck
 
+import Text.ParserCombinators.Parsec (parse)
+
 import Text.XML.Light
 import Text.XML.Light.Cursor hiding (findChild)
 
@@ -71,8 +76,8 @@ import Common.AutoProofUtils
 import Common.Doc
 import Common.DocUtils (pretty, showGlobalDoc, showDoc)
 import Common.ExtSign (ExtSign (..))
-import Common.Json (ppJson)
 import Common.GtkGoal
+import Common.Json (Json (..), pJson, ppJson)
 import Common.LibName
 import Common.PrintLaTeX
 import Common.Result
@@ -86,6 +91,7 @@ import Control.Monad
 import qualified Data.IntMap as IntMap
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import qualified Data.CaseInsensitive as CI
 import Data.Char
 import Data.IORef
 import Data.Function
@@ -110,6 +116,8 @@ data Session = Session
   , sessStart :: UTCTime
   , lastAccess :: UTCTime
   , usage :: Int }
+
+data UsedAPI = OldWebAPI | RESTfulAPI deriving (Show, Eq, Ord)
 
 type SessMap = Map.Map [String] Session
 type Cache = IORef (IntMap.IntMap Session, SessMap)
@@ -179,7 +187,7 @@ hetsServer opts1 = do
   run port $ \ re -> do
    let respond = liftIO . return
 #endif
-   (postParamsB8, _) <- parseRequestBody lbsBackEnd re
+   requestBodyParams <- parseRequestParams re
    let rhost = shows (remoteHost re) "\n"
        ip = getIP4 rhost
        white = matchWhite ip wl
@@ -187,7 +195,6 @@ hetsServer opts1 = do
        splitQuery = map (\ (bs, ms) -> (B8.unpack bs, fmap B8.unpack ms))
          $ queryString re
        pathBits = map T.unpack $ pathInfo re
-       postParams = map (\(key, val) -> (B8.unpack key, B8.unpack val)) postParamsB8
        meth = B8.unpack (requestMethod re)
        query = showPathQuery pathBits splitQuery
    liftIO $ do
@@ -218,11 +225,44 @@ hetsServer opts1 = do
               in if null unknown then
               parseRESTful newOpts sessRef pathBits
               (map fst fs2 ++ map (\ (a, b) -> a ++ "=" ++ b) vs)
-              qr2 postParams meth respond
+              qr2 requestBodyParams meth respond
               else queryFail ("unknown query key(s): " ++ show unknown) respond
            -- only otherwise stick to the old response methods
            else oldWebApi newOpts tempLib permFile sessRef re pathBits qr2
              meth respond
+
+parseRequestParams :: Request -> IO Json
+parseRequestParams request =
+  let
+    noParams :: Json
+    noParams = JNull
+
+    parseJson :: String -> Maybe Json
+    parseJson s = case parse pJson "" s of
+      Left _ -> Nothing
+      Right json -> Just json
+
+    lookupHeader :: String -> Maybe String
+    lookupHeader s =
+      liftM B8.unpack $ lookup (CI.mk $ B8.pack s) $ requestHeaders request
+    formParams :: IO (Maybe Json)
+    formParams =
+      let toJsonObject assocList = "{"
+            ++ intercalate ", " (map (\ (k, v) ->
+                  show k ++ ": " ++ jsonStringOrArray v) assocList)
+            ++ "}"
+          jsonStringOrArray str =
+            if B8.head str == '[' then B8.unpack str else show str
+      in do
+        (formDataB8, _) <- parseRequestBody lbsBackEnd request
+        return $ parseJson $ toJsonObject formDataB8
+    jsonBody :: IO (Maybe Json)
+    jsonBody = liftM (parseJson . B8.unpack) $ requestBody request
+  in
+    liftM (fromMaybe noParams) $ case lookupHeader "Content-Type" of
+      Just "application/json" -> jsonBody
+      Just "multipart/form-data" -> formParams
+      _ -> formParams
 
 -- | the old API that supports downloading files and interactive stuff
 oldWebApi :: HetcatsOpts -> FilePath -> FilePath -> Cache -> Request -> [String]
@@ -242,6 +282,7 @@ oldWebApi opts tempLib permFile sessRef re pathBits splitQuery meth respond
                  $ case readMaybe $ head pathBits of
                  Nothing -> fail "cannot read session id for automatic proofs"
                  Just k' -> getHetsResult opts [] sessRef (qr k')
+                              Nothing OldWebAPI proofFormatterOptions
                respond $ case ms of
                  Nothing -> mkResponse textC status422 $ showRelDiags 1 ds
                  Just (t, s) -> mkOkResponse t s
@@ -294,7 +335,8 @@ anaAutoProofQuery splitQuery = let
     Just "proof" -> GlProofs
     Just "cons" -> GlConsistency
     err -> error $ "illegal autoproof method: " ++ show err
-  in GlAutoProve $ ProveCmd prOrCons include prover trans timeout nodeSel False axioms
+  in GlAutoProve $
+        ProveCmd prOrCons include prover trans timeout nodeSel False axioms
 
 -- quick approach to whether or not the query can be a RESTful request
 isRESTful :: [String] -> Bool
@@ -324,42 +366,78 @@ allQueryKeys :: [String]
 allQueryKeys = [updateS, "library", "consistency-checker"]
   ++ globalCommands ++ knownQueryKeys
 
+
+data RequestBodyParam = Single String | List [String]
+
 -- query is analysed and processed in accordance with RESTful interface
 parseRESTful :: HetcatsOpts -> Cache -> [String] -> [String] -> [QueryPair]
-  -> [(String, String)] -> String -> WebResponse
-parseRESTful opts sessRef pathBits qOpts splitQuery postParams meth respond = let
+  -> Json -> String -> WebResponse
+parseRESTful
+  opts sessRef pathBits qOpts splitQuery requestBodyParams meth respond = let
   {- some parameters from the paths query part might be needed more than once
   (when using lookup upon querybits, you need to unpack Maybe twice) -}
-  lookupGETParam :: String -> Maybe String
-  lookupGETParam = getVal splitQuery
-  lookupParam :: String -> Maybe String
-  lookupParam key = case meth of
-    "GET" -> lookupGETParam key
-    _ -> lookup key postParams
-  session = lookupParam "session" >>= readMaybe
-  library = lookupParam "library"
-  format = lookupParam "format"
-  nodeM = lookupParam "node"
-  theoremsM = mSplitOnComma $ lookupParam "theorems"
-  transM = lookupParam "translation"
-  proverM = lookupParam "prover"
-  consM = lookupParam "consistency-checker"
-  inclM = lookupParam "include"
-  axiomsM = mSplitOnComma $ lookupParam "axioms"
+  lookupQueryStringParam :: String -> Maybe String
+  lookupQueryStringParam = getVal splitQuery
+
+  lookupBodyParam :: String -> Json -> Maybe RequestBodyParam
+  lookupBodyParam key json = case json of
+    JObject pairs -> case lookup key pairs of
+      Just (JArray a) -> Just $ List $ map (read . ppJson) a
+      Just v -> Just $ Single $ read $ ppJson v
+      _ -> Nothing
+    _ -> Nothing
+
+  lookupSingleParam :: String -> Maybe String
+  lookupSingleParam key = case meth of
+    "GET" -> lookupQueryStringParam key
+    _ -> case lookupBodyParam key requestBodyParams of
+          Just (Single s) -> Just s
+          _ -> Nothing
+
+  lookupListParam :: String -> [String]
+  lookupListParam key = case meth of
+    "GET" -> mSplitOnComma $ lookupQueryStringParam key
+    _ -> case lookupBodyParam key requestBodyParams of
+          Just (List ps) -> ps
+          _ -> []
+
+  isParamTrue :: Bool -> String -> Bool
+  isParamTrue def key = case fmap (map toLower) $ lookupSingleParam key of
+    Nothing -> def
+    Just "true" -> True
+    _ -> False
+
+  session = lookupSingleParam "session" >>= readMaybe
+  library = lookupSingleParam "library"
+  format = lookupSingleParam "format"
+  nodeM = lookupSingleParam "node"
+  includeDetails = isParamTrue True "includeDetails"
+  includeProof = isParamTrue True "includeProof"
+  theorems = lookupListParam "theorems"
+  transM = lookupSingleParam "translation"
+  proverM = lookupSingleParam "prover"
+  consM = lookupSingleParam "consistency-checker"
+  inclM = lookupSingleParam "include"
+  axioms = lookupListParam "axioms"
   incl = maybe False (\ s ->
               notElem (map toLower s) ["f", "false"]) inclM
-  timeout = lookupParam "timeout" >>= readMaybe
+  timeout = lookupSingleParam "timeout" >>= readMaybe
   queryFailure = queryFail
     ("this query does not comply with RESTful interface: "
     ++ showPathQuery pathBits splitQuery) respond
   -- since used more often, generate full query out of nodeIRI and nodeCmd
   nodeQuery s = NodeQuery $ maybe (Right s) Left (readMaybe s :: Maybe Int)
+  pfOptions = proofFormatterOptions
+                { pfoIncludeProof = includeProof
+                , pfoIncludeDetails = includeDetails
+                }
   parseNodeQuery :: Monad m => String -> Int -> m NodeCommand -> m Query.Query
   parseNodeQuery p sId ncmd = ncmd >>= let
       in return . Query (DGQuery sId (Just p)) . nodeQuery (getFragment p)
   -- call getHetsResult with the properly generated query (Final Result)
   getResponseAux myOpts qr = do
-    Result ds ms <- liftIO $ runResultT $ getHetsResult myOpts [] sessRef qr
+    Result ds ms <- liftIO $ runResultT $
+      getHetsResult myOpts [] sessRef qr format RESTfulAPI pfOptions
     respond $ case ms of
       Nothing -> mkResponse textC status422 $ showRelDiags 1 ds
       Just (t, s) -> mkOkResponse t s
@@ -442,8 +520,9 @@ parseRESTful opts sessRef pathBits qOpts splitQuery postParams meth respond = le
              let isProve = newIde == "prove"
                  pm = if isProve then GlProofs else GlConsistency
                  pc = ProveCmd pm
-                   (not (isProve && isJust inclM) || incl)
-                   (if isProve then proverM else consM) transM timeout theoremsM True axiomsM
+                        (not (isProve && isJust inclM) || incl)
+                        (if isProve then proverM else consM)
+                        transM timeout theorems True axioms
              in case nodeM of
              Nothing -> GlAutoProve pc
              Just n -> nodeQuery n $ ProveNode pc
@@ -466,7 +545,8 @@ parseRESTful opts sessRef pathBits qOpts splitQuery postParams meth respond = le
           respond
         Just sId -> case cmd of
           "prove" ->
-            let pc = ProveCmd GlProofs incl proverM transM timeout [] False axiomsM
+            let pc = ProveCmd GlProofs incl proverM transM timeout [] False
+                        axioms
             in case nodeM of
                 -- prove all nodes if no singleton is selected
                 Nothing -> return $ Query (DGQuery sId Nothing)
@@ -476,7 +556,7 @@ parseRESTful opts sessRef pathBits qOpts splitQuery postParams meth respond = le
                   $ ProveNode pc
               >>= getResponse
           -- on other cmd look for (optional) specification of node or edge
-          _ -> case (nodeM, lookupParam "edge") of
+          _ -> case (nodeM, lookupSingleParam "edge") of
               -- fail if both are specified
               (Just _, Just _) ->
                 fail "please specify only either node or edge"
@@ -568,27 +648,6 @@ mkHtmlElemScript title scr =
 mkHtmlPage :: FilePath -> [Element] -> WebResponse
 mkHtmlPage path es respond = respond . mkOkResponse htmlC
   $ mkHtmlString path es
-
-textC :: String
-textC = "text/plain"
-
-xmlC :: String
-xmlC = "application/xml"
-
-jsonC :: String
-jsonC = "application/json"
-
-pdfC :: String
-pdfC = "application/pdf"
-
-dotC :: String
-dotC = "text/vnd.graphviz"
-
-svgC :: String
-svgC = "image/svg+xml"
-
-htmlC :: String
-htmlC = "text/html"
 
 mkResponse :: String -> Status -> String -> Response
 mkResponse ty st = responseLBS st
@@ -799,14 +858,16 @@ getHetsResponse opts updates sessRef pathBits query respond = do
   Result ds ms <- liftIO $ runResultT $ case anaUri pathBits query
     $ updateS : globalCommands of
     Left err -> fail err
-    Right q -> getHetsResult opts updates sessRef q
+    Right q -> getHetsResult opts updates sessRef q Nothing OldWebAPI
+                  proofFormatterOptions
   respond $ case ms of
     Just (t, s) | not $ hasErrors ds -> mkOkResponse t s
     _ -> mkResponse textC status422 $ showRelDiags 1 ds
 
 getHetsResult :: HetcatsOpts -> [FileInfo BS.ByteString]
-  -> Cache -> Query.Query -> ResultT IO (String, String)
-getHetsResult opts updates sessRef (Query dgQ qk) = do
+  -> Cache -> Query.Query -> Maybe String -> UsedAPI -> ProofFormatterOptions
+  -> ResultT IO (String, String)
+getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
       sk@(sess, k) <- getDGraph opts sessRef dgQ
       let libEnv = sessLibEnv sess
       (ln, dg) <- maybe (fail "unknown development graph") return
@@ -814,7 +875,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
       let title = libToFileName ln
       let svg = getSVG title ('/' : show k) dg
       case qk of
-            DisplayQuery ms -> case ms of
+            DisplayQuery ms -> case format `mplus` ms of
               Just "svg" -> fmap (\ s -> (svgC, s)) svg
               Just "xml" -> liftR $ return (xmlC, ppTopElement
                 $ ToXml.dGraph opts libEnv ln dg)
@@ -835,11 +896,23 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
               lift $ fmap (\ l -> (xmlC, l)) $ getFullComorphList dg
             GlShowProverWindow prOrCons -> showAutoProofWindow dg k prOrCons
             GlAutoProve (ProveCmd prOrCons incl mp mt tl nds xForm axioms) -> do
-               (newLib, sens) <-
-                 proveMultiNodes xForm prOrCons libEnv ln dg incl mp mt tl nds axioms
-               if null sens then return (textC, "nothing to prove") else do
-                  lift $ nextSess sess sessRef newLib k
-                  return (htmlC, formatResultsMultiple xForm k sens prOrCons)
+              (newLib, nodesAndProofResults) <-
+                proveMultiNodes prOrCons libEnv ln dg incl mp mt tl nds axioms
+              if all (null . snd) nodesAndProofResults
+              then return (textC, "nothing to prove")
+              else do
+                lift $ nextSess sess sessRef newLib k
+                return $ case api of
+                  OldWebAPI -> let
+                    sens = foldr (\ (dgNodeName, proofResults) res ->
+                        formatResultsAux xForm prOrCons dgNodeName proofResults
+                        : res
+                      ) [] nodesAndProofResults
+                    in (htmlC, formatResultsMultiple xForm k sens prOrCons)
+                  RESTfulAPI -> formatProofs
+                    format
+                    pfOptions
+                    nodesAndProofResults
             GlobCmdQuery s ->
               case find ((s ==) . cmdlGlobCmd . fst) allGlobLibAct of
               Nothing -> if s == updateS then
@@ -885,13 +958,20 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
                     ProveNode (ProveCmd pm incl mp mt tl thms xForm axioms) ->
                       case pm of
                       GlProofs -> do
-                        (newLib, sens) <- proveNode libEnv ln dg nl
+                        (newLib, proofResults) <- proveNode libEnv ln dg nl
                           gTh subL incl mp mt tl thms axioms
-                        if null sens then return (textC, "nothing to prove")
+                        if null proofResults
+                        then return (textC, "nothing to prove")
                         else do
                           lift $ nextSess sess sessRef newLib k
-                          return (htmlC,
-                            formatResults xForm k i . unode "results" $ formatGoals True sens)
+                          return $ case api of
+                            OldWebAPI -> (htmlC,
+                              formatResults xForm k i . unode "results" $
+                                formatGoals True proofResults)
+                            RESTfulAPI -> formatProofs
+                              format
+                              pfOptions
+                              [(getDGNodeName dgnode, proofResults)]
                       GlConsistency -> do
                         (newLib, [(_, res, txt, _)]) <- consNode libEnv ln dg nl
                           subL incl mp mt tl
@@ -915,20 +995,21 @@ getHetsResult opts updates sessRef (Query dgQ qk) = do
               [] -> fail $ "no edge found with id: " ++ show i
               _ -> fail $ "multiple edges found with id: " ++ show i
 
-formatGoals :: Bool -> [(String, String, String, Maybe (ProofStatus G_proof_tree))] -> [Element]
-formatGoals includeDetails sens =
+formatGoals :: Bool -> [ProofResult] -> [Element]
+formatGoals includeDetails =
   map (\ (n, e, d, mps) -> unode "goal"
     ([unode "name" n, unode "result" e]
     ++ [unode "details" d | includeDetails]
     ++ case mps of
         Nothing -> []
-        Just ps -> formatProofStatus ps)) sens
+        Just ps -> formatProofStatus ps))
 
 formatProofStatus :: ProofStatus G_proof_tree -> [Element]
 formatProofStatus ps =
   [ unode "usedProver" $ usedProver ps
   -- `read` makes this type-unsafe
-  , unode "tacticScript" $ formatTacticScript $ read $ (\(TacticScript ts) -> ts) $ tacticScript ps
+  , unode "tacticScript" $ formatTacticScript $ read $
+      (\ (TacticScript ts) -> ts) $ tacticScript ps
   , unode "proofTree" $ show $ proofTree ps
   , unode "usedTime" $ formatUsedTime $ usedTime ps
   , unode "usedAxioms" $ formatUsedAxioms $ usedAxioms ps
@@ -945,7 +1026,7 @@ formatProverOutput ls =
 formatTacticScript :: ATPTacticScript -> [Element]
 formatTacticScript ts =
   [ unode "timeLimit" $ show $ tsTimeLimit ts
-  , unode "extraOpts" $ map (\opt -> unode "option" opt) $ tsExtraOpts ts
+  , unode "extraOpts" $ map (unode "option") $ tsExtraOpts ts
   ]
 
 formatUsedTime :: TimeOfDay -> [Element]
@@ -959,7 +1040,7 @@ formatUsedTime tod =
   ]
 
 formatUsedAxioms :: [String] -> [Element]
-formatUsedAxioms = map (\axiom -> unode "axiom" axiom)
+formatUsedAxioms = map (unode "axiom")
 
 formatConsNode :: String -> String -> Element
 formatConsNode res txt = add_attr (mkAttr "state" res) $ unode "result" txt
@@ -1304,7 +1385,7 @@ formatComorphs = ppTopElement . unode "translations"
 
 consNode :: LibEnv -> LibName -> DGraph -> (Int, DGNodeLab)
   -> G_sublogics -> Bool -> Maybe String -> Maybe String -> Maybe Int
-  -> ResultT IO (LibEnv, [(String, String, String, Maybe (ProofStatus G_proof_tree))])
+  -> ResultT IO (LibEnv, [ProofResult])
 consNode le ln dg nl@(i, lb) subL useTh mp mt tl = do
   consList <- lift $ getFilteredConsCheckers mt subL
   let findCC x = filter ((== x ) . getCcName . fst) consList
@@ -1325,7 +1406,7 @@ consNode le ln dg nl@(i, lb) subL useTh mp mt tl = do
 
 proveNode :: LibEnv -> LibName -> DGraph -> (Int, DGNodeLab) -> G_theory
   -> G_sublogics -> Bool -> Maybe String -> Maybe String -> Maybe Int
-  -> [String] -> [String] -> ResultT IO (LibEnv, [(String, String, String, Maybe (ProofStatus G_proof_tree))])
+  -> [String] -> [String] -> ResultT IO (LibEnv, [ProofResult])
 proveNode le ln dg nl gTh subL useTh mp mt tl thms axioms = do
  ps <- lift $ getProverAndComorph mp mt subL
  case ps of
@@ -1336,32 +1417,40 @@ proveNode le ln dg nl gTh subL useTh mp mt tl thms axioms = do
                 $ Set.fromList ks
     unless (Set.null diffs) . fail $ "unknown theorems: " ++ show diffs
     when (null thms && null ks) $ fail "no theorems to prove"
-    ((nTh, sens), (_, proofStatuses)) <- autoProofAtNode useTh (maybe 1 (max 1) tl)
+    ((nTh, sens), (_, proofStatuses)) <- autoProofAtNode useTh
+                                            (maybe 1 (max 1) tl)
       (if null thms then ks else thms) axioms gTh cp
     return (if null sens then le else
-        Map.insert ln (updateLabelTheory le dg nl nTh) le, combineSensAndProofStatus sens proofStatuses)
+        Map.insert ln ( updateLabelTheory le dg nl nTh) le
+                      , combineSensAndProofStatus sens proofStatuses
+                      )
 
-combineSensAndProofStatus :: [(String, String, String)] -> [ProofStatus G_proof_tree] -> [(String, String, String, Maybe (ProofStatus G_proof_tree))]
-combineSensAndProofStatus sens proofStatuses = let-- zipWith (\(name, e, d) ps -> (n, e, d, Just ps))
+combineSensAndProofStatus :: [(String, String, String)]
+  -> [ProofStatus G_proof_tree] -> [ProofResult]
+combineSensAndProofStatus sens proofStatuses = let
   findProofStatusByName :: String -> Maybe (ProofStatus G_proof_tree)
-  findProofStatusByName n = case filter (\ps -> n == goalName ps) proofStatuses of
-    [] -> Nothing
-    (ps:_) -> Just ps
-  combineSens :: (String, String, String) -> (String, String, String, Maybe (ProofStatus G_proof_tree))
+  findProofStatusByName n =
+    case filter ((n ==) . goalName) proofStatuses of
+      [] -> Nothing
+      (ps : _) -> Just ps
+  combineSens :: (String, String, String) -> ProofResult
   combineSens (n, e, d) = (n, e, d, findProofStatusByName n)
   in map combineSens sens
 
 -- run over multiple dgnodes and prove available goals for each
-proveMultiNodes :: Bool -> ProverMode -> LibEnv -> LibName -> DGraph -> Bool
+proveMultiNodes :: ProverMode -> LibEnv -> LibName -> DGraph -> Bool
   -> Maybe String -> Maybe String -> Maybe Int -> [String] -> [String]
-  -> ResultT IO (LibEnv, [Element])
-proveMultiNodes xF pm le ln dg useTh mp mt tl nodeSel axioms = let
-  runProof :: LibEnv -> G_theory -> (Int, DGNodeLab) -> ResultT IO (LibEnv, [(String, String, String, Maybe (ProofStatus G_proof_tree))])
+  -> ResultT IO (LibEnv, [(String, [ProofResult])])
+proveMultiNodes pm le ln dg useTh mp mt tl nodeSel axioms = let
+  runProof :: LibEnv -> G_theory -> (Int, DGNodeLab)
+    -> ResultT IO (LibEnv, [ProofResult])
   runProof le' gTh nl = let
     subL = sublogicOfTh gTh
     dg' = lookupDGraph ln le' in case pm of
     GlConsistency -> consNode le' ln dg' nl subL useTh mp mt tl
-    GlProofs -> proveNode le' ln dg' nl gTh subL useTh mp mt tl (map fst $ getThGoals gTh) axioms
+    GlProofs ->
+      proveNode le' ln dg' nl gTh subL useTh mp mt tl
+        (map fst $ getThGoals gTh) axioms
   nodes2check = filter (case nodeSel of
     [] -> case pm of
             GlConsistency -> const True
@@ -1372,12 +1461,11 @@ proveMultiNodes xF pm le ln dg useTh mp mt tl nodeSel axioms = let
       Nothing -> fail $
                     "cannot compute global theory of:\n" ++ show dgn
       Just gTh -> do
-        (le'', sens) <- runProof le' gTh nl
-        return (le'', formatResultsAux xF pm (getDGNodeName dgn) sens : res))
+        (le'', proofResults) <- runProof le' gTh nl
+        return (le'', (getDGNodeName dgn, proofResults) : res))
           (le, []) nodes2check
 
-formatResultsAux :: Bool -> ProverMode -> String -> [(String, String, String, Maybe (ProofStatus G_proof_tree))]
-  -> Element
+formatResultsAux :: Bool -> ProverMode -> String -> [ProofResult] -> Element
 formatResultsAux xF pm nm sens = unode nm $ case (sens, pm) of
     ([(_, e, d, _)], GlConsistency) | xF -> formatConsNode e d
     _ -> unode "results" $ formatGoals xF sens

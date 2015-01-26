@@ -87,7 +87,8 @@ nodeCommands :: [String]
 nodeCommands = map showNodeCmd nodeCmds ++ comorphs ++ ["prove"]
 
 proveParams :: [String]
-proveParams = ["timeout", "include", "prover", "translation", "theorems", "axioms"]
+proveParams = ["timeout", "include", "prover", "translation", "theorems",
+  "axioms", "includeDetails", "includeProof"]
 
 edgeCommands :: [String]
 edgeCommands = ["edge"]

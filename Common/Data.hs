@@ -22,6 +22,7 @@ import Data.List
 data MyData = Builtin String String -- label and content
   | ListOrTuple Bool [MyData] -- True means list
   | Cons String (Maybe [String]) [MyData] -- with optional field names
+  deriving (Show, Eq, Ord)
 
 {- | conversion with special treatment for numbers, booleans, strings,
 characters, ranges, ids, IRIs and other lists. -}
@@ -54,3 +55,47 @@ dataToMyData a = let
           (Builtin "id" . (`showId` "")) $ cast a)
          (Builtin "range" . show . prettyRange . rangeToList) $ cast a)
        (Builtin "string") $ cast a) bool $ cast a
+
+normalizeMyDataForSerialization :: MyData -> MyData
+normalizeMyDataForSerialization = stripDeleted . stripSpecialConstructors
+  where
+    {- "_deleted" is not a valid Haskell constructor and can't clash with real
+    data. It is used for marking a deleted data item. -}
+    deletedData :: MyData
+    deletedData = Cons "_deleted" Nothing []
+
+    isNotDeleted :: MyData -> Bool
+    isNotDeleted d = d /= deletedData
+
+    stripSpecialConstructors :: MyData -> MyData
+    stripSpecialConstructors md = case md of
+      Cons "Nothing" Nothing [] -> deletedData
+      Cons "Just" Nothing [value] -> value
+      Cons "Left" Nothing [value] -> value
+      Cons "Right" Nothing [value] -> value
+      Cons constructor fieldsM values ->
+        Cons constructor fieldsM $ map stripSpecialConstructors values
+      ListOrTuple isList values ->
+        ListOrTuple isList $ map stripSpecialConstructors values
+      _ -> md
+
+    stripDeletedList :: [MyData] -> [MyData]
+    stripDeletedList values = filter isNotDeleted $ map stripDeleted values
+
+    stripDeletedFieldsList :: [String] -> [MyData] -> ([String], [MyData])
+    stripDeletedFieldsList fields values =
+      unzip $
+      filter (\ (_, v) -> isNotDeleted v) $
+      map (\ (f, v) -> (f, stripDeleted v)) $
+      zip fields values
+
+    stripDeleted :: MyData -> MyData
+    stripDeleted md = case md of
+      ListOrTuple isList values ->
+        ListOrTuple isList $ stripDeletedList values
+      Cons constructor Nothing values ->
+        Cons constructor Nothing $ stripDeletedList values
+      Cons constructor (Just fields) values ->
+        let (fields', values') = stripDeletedFieldsList fields values
+        in Cons constructor (Just fields') values'
+      _ -> md
