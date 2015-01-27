@@ -233,6 +233,9 @@ showSen lid ga mt sig ns = let s = sentence ns in mkJObj
        Nothing -> []
        Just b -> [mkProvenJPair b]
      ++ mkNameJPair (senAttr ns) : rangeToJPair (getRangeSpan s)
+     ++ case priority ns of 
+          Just p -> [mkPriorityJPair p]
+          _ -> []
      ++ mkJPair (if isJust mt then "Theorem" else "Axiom")
           (show . useGlobalAnnos ga . print_named lid
                             . makeNamed "" $ simplify_sen lid sig s)

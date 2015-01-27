@@ -23,6 +23,7 @@ module Common.Json
   , JPair
   , mkJPair
   , mkNameJPair
+  , mkPriorityJPair
   , toJson
   , rangeToJPair
   , rangedToJson
@@ -117,6 +118,9 @@ mkJPair a b = (a, mkJStr b)
 
 mkNameJPair :: String -> JPair
 mkNameJPair = mkJPair "name"
+
+mkPriorityJPair :: String -> JPair
+mkPriorityJPair = mkJPair "priority"
 
 mkJNum :: Real b => b -> Json
 mkJNum = JNumber . toRational
