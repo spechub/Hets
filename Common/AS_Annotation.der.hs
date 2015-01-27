@@ -268,11 +268,12 @@ hasIdentAnno :: String -> Annoted a -> Bool
 hasIdentAnno str a = any (identAnno str) $ l_annos a ++ r_annos a
 
 getPriority :: [Annotation] -> Maybe String
-getPriority annos = 
-  foldl (\mId anno -> case anno of 
-                       Unparsed_anno (Annote_word "priority") (Group_anno (x:_)) _ -> Just x
+getPriority =
+  foldl (\mId anno -> case anno of
+                       Unparsed_anno (Annote_word "priority") (Group_anno (x:_))
+                         _ -> Just x
                        _ -> mId
-        ) Nothing annos
+        ) Nothing
 
 makeNamedSen :: Annoted a -> Named a
 makeNamedSen a = (makeNamed (getRLabel a) $ item a)
