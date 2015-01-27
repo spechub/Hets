@@ -175,6 +175,7 @@ notImplied = not . any isImplied . r_annos
 -- | naming or labelling sentences
 data SenAttr s a = SenAttr
     { senAttr :: a
+    , priority :: Maybe String
     , isAxiom :: Bool
     , isDef :: Bool
     , wasTheorem :: Bool
@@ -189,6 +190,7 @@ data SenAttr s a = SenAttr
 makeNamed :: a -> s -> SenAttr s a
 makeNamed a s = SenAttr
   { senAttr = a
+  , priority = Nothing
   , isAxiom = True
   , isDef = False
   , wasTheorem = False
@@ -265,9 +267,17 @@ identAnno str an = case an of
 hasIdentAnno :: String -> Annoted a -> Bool
 hasIdentAnno str a = any (identAnno str) $ l_annos a ++ r_annos a
 
+getPriority :: [Annotation] -> Maybe String
+getPriority annos = 
+  foldl (\mId anno -> case anno of 
+                       Unparsed_anno (Annote_word "priority") (Group_anno (x:_)) _ -> Just x
+                       _ -> mId
+        ) Nothing annos
+
 makeNamedSen :: Annoted a -> Named a
 makeNamedSen a = (makeNamed (getRLabel a) $ item a)
   { isAxiom = notImplied a
+  , priority = getPriority $ r_annos a
   , simpAnno = case (hasIdentAnno "simp" a, hasIdentAnno "nosimp" a) of
     (True, False) -> Just True
     (False, True) -> Just False
