@@ -229,11 +229,15 @@ showSymbolsTh ins name ga th = case th of
 showSen :: ( GetRange sentence, Pretty sentence
            , Sentences lid sentence sign morphism symbol) =>
    lid -> GlobalAnnos -> Maybe Bool -> sign -> Named sentence -> Element
-showSen lid ga mt sig ns = let s = sentence ns in add_attrs
+showSen lid ga mt sig ns =
+ let s = sentence ns in add_attrs
     (case mt of
        Nothing -> []
        Just b -> [mkProvenAttr b]
-     ++ mkNameAttr (senAttr ns) : rangeAttrs (getRangeSpan s))
+     ++ mkNameAttr (senAttr ns) : rangeAttrs (getRangeSpan s)
+     ++ case priority ns of
+         Just impo -> [mkPriorityAttr impo]
+         _ -> [])
     . unode (if isJust mt then "Theorem" else "Axiom") $ unode "Text"
           (show . useGlobalAnnos ga . print_named lid
                             . makeNamed "" $ simplify_sen lid sig s)

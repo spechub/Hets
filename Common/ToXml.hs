@@ -45,6 +45,9 @@ rangeAttrs = rangeAttrsF $ show . prettyRange
 mkNameAttr :: String -> Attr
 mkNameAttr = mkAttr "name"
 
+mkPriorityAttr :: String -> Attr
+mkPriorityAttr = mkAttr "priority"
+
 annotationF :: (Range -> [Attr]) -> GlobalAnnos -> Annotation -> Element
 annotationF f ga a = add_attrs (f $ getRangeSpan a)
   $ prettyElem "Annotation" ga a
