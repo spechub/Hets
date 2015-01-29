@@ -187,7 +187,6 @@ hetsServer opts1 = do
   run port $ \ re -> do
    let respond = liftIO . return
 #endif
-   requestBodyParams <- parseRequestParams re
    let rhost = shows (remoteHost re) "\n"
        ip = getIP4 rhost
        white = matchWhite ip wl
@@ -220,12 +219,13 @@ hetsServer opts1 = do
          Left err -> queryFail err respond
          Right (qr2, fs2) ->
            let newOpts = foldl makeOpts opts $ fs ++ map snd fs2
-           in if isRESTful pathBits then
+           in if isRESTful pathBits then do
+              requestBodyParams <- parseRequestParams re
               let unknown = filter (`notElem` allQueryKeys) $ map fst qr2
-              in if null unknown then
-              parseRESTful newOpts sessRef pathBits
-              (map fst fs2 ++ map (\ (a, b) -> a ++ "=" ++ b) vs)
-              qr2 requestBodyParams meth respond
+              if null unknown
+              then parseRESTful newOpts sessRef pathBits
+                    (map fst fs2 ++ map (\ (a, b) -> a ++ "=" ++ b) vs)
+                    qr2 requestBodyParams meth respond
               else queryFail ("unknown query key(s): " ++ show unknown) respond
            -- only otherwise stick to the old response methods
            else oldWebApi newOpts tempLib permFile sessRef re pathBits qr2
