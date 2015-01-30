@@ -153,16 +153,19 @@ matchIP4 ip mask = case mask of
 matchWhite :: [String] -> [[String]] -> Bool
 matchWhite ip l = null l || any (matchIP4 ip) l
 
+#ifdef WARP1
+type ResIO a = ResourceT IO a
+#else
+type ResIO a = IO a
+#endif
+
 #ifdef WARP3
 type WebResponse = (Response -> IO ResponseReceived) -> IO ResponseReceived
-type ResIO a = IO a
 #else
 #ifdef WARP1
 type WebResponse = (Response -> ResourceT IO Response) -> ResourceT IO Response
-type ResIO a = ResourceT IO a
 #else
 type WebResponse = (Response -> IO Response) -> IO Response
-type ResIO a = IO a
 #endif
 #endif
 
