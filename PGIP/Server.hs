@@ -161,11 +161,7 @@ type ResIO a = IO a
 #ifdef WARP3
 type WebResponse = (Response -> IO ResponseReceived) -> IO ResponseReceived
 #else
-#ifdef WARP1
-type WebResponse = (Response -> ResourceT IO Response) -> ResourceT IO Response
-#else
-type WebResponse = (Response -> IO Response) -> IO Response
-#endif
+type WebResponse = (Response -> ResIO Response) -> ResIO Response
 #endif
 
 hetsServer :: HetcatsOpts -> IO ()
