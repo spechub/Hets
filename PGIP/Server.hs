@@ -265,11 +265,7 @@ parseRequestParams request =
           jsonStringOrArray str =
             if B8.head str == '[' then B8.unpack str else show str
       in do
-#ifdef WARP3
         (formDataB8, _) <- parseRequestBody lbsBackEnd request
-#else
-        (formDataB8, _) <- parseRequestBody lbsBackEnd request
-#endif
         return $ parseJson $ toJsonObject formDataB8
 
 #ifdef WARP1
