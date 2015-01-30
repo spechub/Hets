@@ -26,6 +26,8 @@ import Network.HTTP.Types
 import Control.Monad.Trans (lift, liftIO)
 #ifdef WARP1
 import Control.Monad.Trans.Resource
+import Data.Conduit.Lazy (lazyConsume)
+import Data.Conduit (ResourceT, runResourceT)
 #endif
 import qualified Data.Text as T
 
@@ -230,8 +232,11 @@ hetsServer opts1 = do
            -- only otherwise stick to the old response methods
            else oldWebApi newOpts tempLib permFile sessRef re pathBits qr2
              meth respond
-
+#ifdef WARP1
+parseRequestParams :: Request -> ResourceT IO Json
+#else
 parseRequestParams :: Request -> IO Json
+#endif
 parseRequestParams request =
   let
     noParams :: Json
@@ -245,19 +250,51 @@ parseRequestParams request =
     lookupHeader :: String -> Maybe String
     lookupHeader s =
       liftM B8.unpack $ lookup (CI.mk $ B8.pack s) $ requestHeaders request
+
+#ifdef WARP1
+    formParams :: ResourceT IO (Maybe Json)
+#else
     formParams :: IO (Maybe Json)
+#endif
     formParams =
-      let toJsonObject assocList = "{"
+      let toJsonObject :: [(B8.ByteString, B8.ByteString)] -> String
+          toJsonObject assocList = "{"
             ++ intercalate ", " (map (\ (k, v) ->
                   show k ++ ": " ++ jsonStringOrArray v) assocList)
             ++ "}"
           jsonStringOrArray str =
             if B8.head str == '[' then B8.unpack str else show str
       in do
+#ifdef WARP3
         (formDataB8, _) <- parseRequestBody lbsBackEnd request
+#else
+        (formDataB8, _) <- parseRequestBody lbsBackEnd request
+#endif
         return $ parseJson $ toJsonObject formDataB8
+
+#ifdef WARP1
+    jsonBody :: ResourceT IO (Maybe Json)
+#else
     jsonBody :: IO (Maybe Json)
-    jsonBody = liftM (parseJson . B8.unpack) $ requestBody request
+#endif
+    jsonBody = liftM (parseJson . B8.unpack) $ receivedRequestBody
+
+#ifdef WARP1
+    receivedRequestBody :: ResourceT IO B8.ByteString
+#else
+    receivedRequestBody :: IO B8.ByteString
+#endif
+#ifdef WARP3
+    receivedRequestBody = requestBody request
+#else
+#ifdef WARP1
+    receivedRequestBody = liftM (B8.pack . BS.unpack) $ lazyRequestBody request
+    lazyRequestBody :: Request -> ResourceT IO BS.ByteString
+    lazyRequestBody = fmap BS.fromChunks . lazyConsume . requestBody
+#else
+    receivedRequestBody = liftM (B8.pack . BS.unpack) $ lazyRequestBody request
+#endif
+#endif
   in
     liftM (fromMaybe noParams) $ case lookupHeader "Content-Type" of
       Just "application/json" -> jsonBody
