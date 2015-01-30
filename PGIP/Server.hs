@@ -26,6 +26,7 @@ import Network.HTTP.Types
 import Control.Monad.Trans (lift, liftIO)
 #ifdef WARP1
 import Control.Monad.Trans.Resource
+import Data.Conduit.Lazy (lazyConsume)
 #endif
 import qualified Data.Text as T
 
@@ -151,14 +152,16 @@ matchIP4 ip mask = case mask of
 matchWhite :: [String] -> [[String]] -> Bool
 matchWhite ip l = null l || any (matchIP4 ip) l
 
+#ifdef WARP1
+type ResIO a = ResourceT IO a
+#else
+type ResIO a = IO a
+#endif
+
 #ifdef WARP3
 type WebResponse = (Response -> IO ResponseReceived) -> IO ResponseReceived
 #else
-#ifdef WARP1
-type WebResponse = (Response -> ResourceT IO Response) -> ResourceT IO Response
-#else
-type WebResponse = (Response -> IO Response) -> IO Response
-#endif
+type WebResponse = (Response -> ResIO Response) -> ResIO Response
 #endif
 
 hetsServer :: HetcatsOpts -> IO ()
@@ -230,8 +233,7 @@ hetsServer opts1 = do
            -- only otherwise stick to the old response methods
            else oldWebApi newOpts tempLib permFile sessRef re pathBits qr2
              meth respond
-
-parseRequestParams :: Request -> IO Json
+parseRequestParams :: Request -> ResIO Json
 parseRequestParams request =
   let
     noParams :: Json
@@ -245,9 +247,11 @@ parseRequestParams request =
     lookupHeader :: String -> Maybe String
     lookupHeader s =
       liftM B8.unpack $ lookup (CI.mk $ B8.pack s) $ requestHeaders request
-    formParams :: IO (Maybe Json)
+
+    formParams :: ResIO (Maybe Json)
     formParams =
-      let toJsonObject assocList = "{"
+      let toJsonObject :: [(B8.ByteString, B8.ByteString)] -> String
+          toJsonObject assocList = "{"
             ++ intercalate ", " (map (\ (k, v) ->
                   show k ++ ": " ++ jsonStringOrArray v) assocList)
             ++ "}"
@@ -256,8 +260,21 @@ parseRequestParams request =
       in do
         (formDataB8, _) <- parseRequestBody lbsBackEnd request
         return $ parseJson $ toJsonObject formDataB8
-    jsonBody :: IO (Maybe Json)
-    jsonBody = liftM (parseJson . B8.unpack) $ requestBody request
+
+    jsonBody :: ResIO (Maybe Json)
+    jsonBody = liftM (parseJson . B8.unpack) $ receivedRequestBody
+
+    receivedRequestBody :: ResIO B8.ByteString
+#ifdef WARP3
+    receivedRequestBody = requestBody request
+#else
+    receivedRequestBody = liftM (B8.pack . BS.unpack) $ lazyRequestBody request
+#endif
+
+#ifdef WARP1
+    lazyRequestBody :: Request -> ResourceT IO BS.ByteString
+    lazyRequestBody = fmap BS.fromChunks . lazyConsume . requestBody
+#endif
   in
     liftM (fromMaybe noParams) $ case lookupHeader "Content-Type" of
       Just "application/json" -> jsonBody
