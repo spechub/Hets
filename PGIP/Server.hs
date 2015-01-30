@@ -273,13 +273,12 @@ parseRequestParams request =
 #ifdef WARP3
     receivedRequestBody = requestBody request
 #else
-#ifdef WARP1
-    receivedRequestBody = liftM (B8.pack . BS.unpack) $ lazyRequestBody request
-    lazyRequestBody :: Request -> ResourceT IO BS.ByteString
-    lazyRequestBody = fmap BS.fromChunks . lazyConsume . requestBody
-#else
     receivedRequestBody = liftM (B8.pack . BS.unpack) $ lazyRequestBody request
 #endif
+
+#ifdef WARP1
+    lazyRequestBody :: Request -> ResourceT IO BS.ByteString
+    lazyRequestBody = fmap BS.fromChunks . lazyConsume . requestBody
 #endif
   in
     liftM (fromMaybe noParams) $ case lookupHeader "Content-Type" of
