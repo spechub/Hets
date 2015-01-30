@@ -155,11 +155,14 @@ matchWhite ip l = null l || any (matchIP4 ip) l
 
 #ifdef WARP3
 type WebResponse = (Response -> IO ResponseReceived) -> IO ResponseReceived
+type ResIO a = IO a
 #else
 #ifdef WARP1
 type WebResponse = (Response -> ResourceT IO Response) -> ResourceT IO Response
+type ResIO a = ResourceT IO a
 #else
 type WebResponse = (Response -> IO Response) -> IO Response
+type ResIO a = IO a
 #endif
 #endif
 
@@ -232,11 +235,7 @@ hetsServer opts1 = do
            -- only otherwise stick to the old response methods
            else oldWebApi newOpts tempLib permFile sessRef re pathBits qr2
              meth respond
-#ifdef WARP1
-parseRequestParams :: Request -> ResourceT IO Json
-#else
-parseRequestParams :: Request -> IO Json
-#endif
+parseRequestParams :: Request -> ResIO Json
 parseRequestParams request =
   let
     noParams :: Json
@@ -251,11 +250,7 @@ parseRequestParams request =
     lookupHeader s =
       liftM B8.unpack $ lookup (CI.mk $ B8.pack s) $ requestHeaders request
 
-#ifdef WARP1
-    formParams :: ResourceT IO (Maybe Json)
-#else
-    formParams :: IO (Maybe Json)
-#endif
+    formParams :: ResIO (Maybe Json)
     formParams =
       let toJsonObject :: [(B8.ByteString, B8.ByteString)] -> String
           toJsonObject assocList = "{"
@@ -268,18 +263,10 @@ parseRequestParams request =
         (formDataB8, _) <- parseRequestBody lbsBackEnd request
         return $ parseJson $ toJsonObject formDataB8
 
-#ifdef WARP1
-    jsonBody :: ResourceT IO (Maybe Json)
-#else
-    jsonBody :: IO (Maybe Json)
-#endif
+    jsonBody :: ResIO (Maybe Json)
     jsonBody = liftM (parseJson . B8.unpack) $ receivedRequestBody
 
-#ifdef WARP1
-    receivedRequestBody :: ResourceT IO B8.ByteString
-#else
-    receivedRequestBody :: IO B8.ByteString
-#endif
+    receivedRequestBody :: ResIO B8.ByteString
 #ifdef WARP3
     receivedRequestBody = requestBody request
 #else
