@@ -175,14 +175,10 @@ runHyper sps cfg saveTPTP thName nGoal =
           { tsTimeLimit = tl
           , tsExtraOpts = filter (isPrefixOf "#")
               $ lines $ prelTxt (show tl) ++ runTxt }
-        defProofStat = ProofStatus
-          { goalName = senAttr nGoal
-          , goalStatus = openGoalStatus
-          , usedAxioms = []
-          , usedProver = hyperS
-          , proofTree = emptyProofTree
-          , usedTime = midnight
-          , tacticScript = tScript }
+        defProofStat = (openProofStatus
+          (senAttr nGoal)
+          hyperS
+          emptyProofTree) { tacticScript = tScript }
     in
         if all checkOption simpleOptions
          then
