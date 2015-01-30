@@ -27,7 +27,6 @@ import Control.Monad.Trans (lift, liftIO)
 #ifdef WARP1
 import Control.Monad.Trans.Resource
 import Data.Conduit.Lazy (lazyConsume)
-import Data.Conduit (ResourceT, runResourceT)
 #endif
 import qualified Data.Text as T
 
