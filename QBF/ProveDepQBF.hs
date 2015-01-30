@@ -152,14 +152,10 @@ examineProof :: QBFProverState
              -> IO (ATPRetval, ProofStatus ProofTree)
 examineProof ps _ stdoutC _ exitCode nGoal tUsed _ =
     let
-        defaultStatus =
-            ProofStatus { goalName = senAttr nGoal
-                        , goalStatus = openGoalStatus
-                        , usedAxioms = []
-                        , usedProver = proverName depQBFProver
-                        , proofTree = emptyProofTree
-                        , usedTime = tUsed
-                        , tacticScript = TacticScript "" }
+        defaultStatus = (openProofStatus
+          (senAttr nGoal)
+          (proverName depQBFProver)
+          (emptyProofTree)) { usedTime = tUsed }
         getAxioms = map AS_Anno.senAttr (initialAxioms ps)
     in case getDepQBFResult exitCode stdoutC of
                DepQBFProved -> return (ATPSuccess, defaultStatus
