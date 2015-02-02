@@ -1,8 +1,9 @@
 module UML where
 import qualified Data.Map as Map
-
+import StateMachine
 data Model = ClassModel [Package]
-                | StateMachine (Map.Map Id State) [Transition] (Map.Map Id PseudoState)
+                | StateMachine [Entity] [Transition]
+		| StateMachineR Region
                 | Err String deriving Show
 
 data Package = Package {
@@ -46,16 +47,16 @@ data Association = Association {
 } deriving Show
 
 data End = End {
-endTarget :: Id,
+endTarget :: Class,
 label :: Label
-} deriving Show
+}
+
+instance Show End where
+	show end = "End(" ++ (show (label end)) ++ "): " ++ (className (endTarget end))  
 
 data Interface = Interface {
 interfaceName :: String
 } deriving Show
-
-type Id = String
-type Type = String
 
 data Label = Label {upperValue :: String,
 lowerValue :: String} deriving Show
@@ -66,30 +67,6 @@ data Signal = Signal {
         sigAttr :: [Attribute],
         sigProc :: [Procedure]
 } deriving Show
--- begin:StateMachines
 
-data Region = Region {
-        states :: [State],
-        transitions :: [Transition],
-        pseudoStates :: [PseudoState]} deriving Show
-
-data PseudoState = PseudoState {
-pseudoStateName :: String,
-pseudoStateType :: String
-} deriving Show
-
-data State = State {
-        region :: Maybe Region,
-        stateName :: String
-} deriving Show
-
-data Transition = Transition {
-        source :: String,
-        target :: String,
-        trigger :: Trigger,
-        guard :: Maybe Guard,
-        event :: Maybe Event} deriving Show
-
-type Trigger = String
-type Guard = String
-type Event = String
+type Id = String
+type Type = String

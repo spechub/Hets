@@ -13,19 +13,20 @@ import Data.Maybe
 processPackage :: Element -> Package
 processPackage el = Package {
         packageName = fromMaybe "" (findAttr nameName el),
-        classes = Map.fromList (parse "uml:Class" processClass (findChildren packagedElementName el)),
-        associations = Map.fromList (parse "uml:Association" processAssociation (findChildren packagedElementName el)),
+        classes = cl,
+        associations = Map.fromList (parse "uml:Association" (processAssociation cl) (findChildren packagedElementName el)),
         interfaces = Map.fromList (parse "uml:Interface" processInterface (findChildren packagedElementName el)),
         packageMerges = map (fromMaybe "" . findAttr (sName "mergedPackage")) (findChildren (sName "packageMerge") el),
         signals = Map.fromList (parse "uml:Signal" processSignal (findChildren packagedElementName el)),
-        assoClasses = Map.fromList (parse "uml:AssociationClass" processAssociationClass (findChildren packagedElementName el))}
+        assoClasses = Map.fromList (parse "uml:AssociationClass" (processAssociationClass cl) (findChildren packagedElementName el))}
+		where cl = Map.fromList (parse "uml:Class" processClass (findChildren packagedElementName el))
 
 
-processAssociation :: Element -> (Id,Association)
-processAssociation el = (fromMaybe "" (findAttr (sName "id") el), Association {ends = map processEnds (findChildren (sName "ownedEnd") el)})
+processAssociation :: Map.Map Id Class -> Element  -> (Id,Association)
+processAssociation cmap el = (fromMaybe "" (findAttr attrIdName el), Association {ends = map (processEnds cmap) (findChildren (sName "ownedEnd") el)})
 
-processEnds :: Element -> End
-processEnds el = End {endTarget = fromMaybe "" (findAttr (sName "type") el), label = processLabel el}
+processEnds :: Map.Map Id Class -> Element -> End
+processEnds emap el = End {endTarget = fromJust (Map.lookup (fromJust (findAttr (sName "type") el))  emap), label = processLabel el}
 
 
 processLabel :: Element -> Label
@@ -43,9 +44,9 @@ processClass el = (fromMaybe "" (findAttr attrIdName el)
                         attr = map processAttribute (findChildren attributeName el),
                         proc = map processProcedure (findChildren procedureName el)})
 
-processAssociationClass :: Element -> (Id, AssociationClass)
-processAssociationClass el = (fromMaybe "" (findAttr attrIdName el)
-                , AssociationClass {acClass = snd (processClass el), acAsso = snd (processAssociation el)})
+processAssociationClass :: Map.Map Id Class -> Element -> (Id, AssociationClass)
+processAssociationClass emap el = (fromMaybe "" (findAttr attrIdName el)
+                , AssociationClass {acClass = snd (processClass el), acAsso = snd (processAssociation emap el)})
 
 processSignal :: Element -> (Id, Signal)
 processSignal el = (fromMaybe "" (findAttr attrIdName el),

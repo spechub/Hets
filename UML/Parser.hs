@@ -12,7 +12,9 @@ import Utils
 import Data.Maybe
 main :: IO ()
 main = do
-        handle <- openFile "data/uml.xmi" ReadMode
+	handle <- openFile "data/simplelibrary.xmi" ReadMode
+        --handle <- openFile "data/uml.xmi" ReadMode
+	--handle <- openFile "data/statemachine.xmi" ReadMode
         contents <- hGetContents handle
         putStr (show (case parseXMLDoc contents of
                 Nothing -> [Err contents]
@@ -22,12 +24,13 @@ parseModels :: [Element] -> [Model]
 parseModels lis = case (filter (isElem "uml:Package") lis) of 
 	[] -> (ClassModel [Package {
 		packageName = "__DefaultPackage__",
-		classes = Map.fromList (parse "uml:Class" processClass lis),
-		associations = Map.fromList (parse "uml:Association" processAssociation lis),
+		classes = cl,
+		associations = Map.fromList (parse "uml:Association" (processAssociation cl) lis),
 		interfaces = Map.fromList (parse "uml:Interface" processInterface lis),
 		packageMerges = map (fromMaybe "" . findAttr (sName "mergedPackage")) (filter (isElem "packageMerge") lis),
 		signals = Map.fromList (parse "uml:Signal" processSignal lis),
-		assoClasses = Map.fromList (parse "uml:AssociationClass" processAssociationClass lis)}]):(parseModelsWOClass lis)
+		assoClasses = Map.fromList (parse "uml:AssociationClass" (processAssociationClass cl) lis)}]):(parseModelsWOClass lis)
+			where cl = Map.fromList (parse "uml:Class" processClass lis)
 	_ -> (ClassModel (parse "uml:Package" processPackage lis)) : (parseModelsWOClass lis)
 	
 
