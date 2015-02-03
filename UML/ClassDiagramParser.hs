@@ -1,3 +1,11 @@
+{- |
+Description :  XMI parser for UML Class Diagrams
+Copyright   :  (c) Martin Glauer
+
+Maintainer  :  martin.glauer@st.ovgu.de
+Stability   :  experimental
+
+-}
 module ClassDiagramParser where
 
 import qualified Data.Map as Map
@@ -9,24 +17,73 @@ import XMINames
 import Data.Maybe
 
 
+parseClassModel :: Element -> Model
+parseClassModel el = ClassModel CM{
+					cmName = fromJust (findAttr nameName el),
+					cmClasses = classes pack,
+					cmAssociations = associations pack,
+					cmInterfaces = interfaces pack,
+					cmPackageMerges = packageMerges pack,
+					cmSignals = signals pack,
+					cmAssociationClasses = packageAssociationClasses pack,
+					cmPackages = packagePackages pack
+				}
+				where 	pack = processPackage cacmap semap el
+					cacmap = Map.union cmap acmap
+					cmap = Map.fromList $ (map (\(id,x) -> (id,CL x)) (collectRec "uml:Class" processClass el)) 
+					acmap = Map.fromList $ (map (\(id,x) -> (id,AC x)) (collectRec "uml:AssociationClass" (processAssociationClass cmap semap) el))
+					semapraw = collectSpecialEnds cacmap el 
+					semap = (Map.fromList [(id, [x | (id2,x) <- semapraw, id == id2]) | id <- (Map.keys (Map.fromList semapraw))])
+processPackage :: Map.Map Id ClassEntity -> Map.Map Id [End] -> Element -> Package
+processPackage cmap semap el = Package {
+			packageName = fromMaybe "" (findAttr nameName el),
+			classes = Map.fromList $ map (\(id,CL x) -> (id,x)) (map ((\x -> (x,fromJust(Map.lookup x cmap))).(fromJust.(findAttr attrIdName))) (getChildrenType "uml:Class" el)),
+			associations = Map.fromList (parse "uml:Association" (processAssociation cmap semap) lis),
+			interfaces = Map.fromList (parse "uml:Interface" processInterface lis),
+			packageMerges = map (fromMaybe "" . findAttr (sName "mergedPackage")) (findChildren (sName "packageMerge") el),
+			packageAssociationClasses = Map.fromList $ map (\(id,AC x) -> (id,x)) (map ((\x -> (x,fromJust(Map.lookup x cmap))).(fromJust.(findAttr attrIdName))) (findChildren (sName "uml:AssociationClass") el)),
+			signals = Map.fromList (parse "uml:Signal" processSignal lis),
+			packagePackages = parse "uml:Package" (processPackage cmap semap) lis
+		} 
+		where lis = (findChildren packagedElementName el)
 
-processPackage :: Element -> Package
-processPackage el = Package {
-        packageName = fromMaybe "" (findAttr nameName el),
-        classes = cl,
-        associations = Map.fromList (parse "uml:Association" (processAssociation cl) (findChildren packagedElementName el)),
-        interfaces = Map.fromList (parse "uml:Interface" processInterface (findChildren packagedElementName el)),
-        packageMerges = map (fromMaybe "" . findAttr (sName "mergedPackage")) (findChildren (sName "packageMerge") el),
-        signals = Map.fromList (parse "uml:Signal" processSignal (findChildren packagedElementName el)),
-        assoClasses = Map.fromList (parse "uml:AssociationClass" (processAssociationClass cl) (findChildren packagedElementName el))}
-		where cl = Map.fromList (parse "uml:Class" processClass (findChildren packagedElementName el))
+findPackageElements :: Element -> [Element]
+findPackageElements el = filter (\x -> findAttr typeName x == Just "uml:Package") (findChildren packagedElementName el)
 
 
-processAssociation :: Map.Map Id Class -> Element  -> (Id,Association)
-processAssociation cmap el = (fromMaybe "" (findAttr attrIdName el), Association {ends = map (processEnds cmap) (findChildren (sName "ownedEnd") el)})
+collectRec :: String -> (Element -> (Id,t)) -> Element -> [(Id,t)]
+collectRec s f el =  (parse s f (findChildren packagedElementName el)) 
+			++ (foldl (++) [] (map (collectRec s f) (findPackageElements el)))
 
-processEnds :: Map.Map Id Class -> Element -> End
-processEnds emap el = End {endTarget = fromJust (Map.lookup (fromJust (findAttr (sName "type") el))  emap), label = processLabel el}
+collectSpecialEnds :: Map.Map Id ClassEntity -> Element -> [(Id,End)]
+collectSpecialEnds cmap el =  (foldl (++) [] (map (classTranslator cmap) cl))  ++ (foldl (++) [] (map (collectSpecialEnds cmap) (findPackageElements el)))
+				where 	cl = getChildrenType "uml:Class" el 
+
+getChildrenType :: String -> Element -> [Element]
+getChildrenType s el = filter (\x -> (findAttr typeName x) == Just s) (findChildren packagedElementName el)
+
+classTranslator :: Map.Map Id ClassEntity -> Element -> [(Id,End)]
+classTranslator cmap x = map (agrTranslator cmap) (filter (\x -> not ((findAttr (sName "aggregation") x) == Nothing)) (findChildren attributeName x))
+
+agrTranslator :: Map.Map Id ClassEntity -> Element -> (Id,End)
+agrTranslator cmap el = (fromJust (findAttr (sName "association") el),
+			End{	endTarget= fromJust (Map.lookup (fromJust (findAttr (sName "type") el)) cmap), 
+				label = processLabel el, 
+				endType = case findAttr (sName "aggregation") el of
+						Just "composite" -> Composition
+						Just "aggregate" -> Aggregation
+						Just t -> error $ "unknown aggregation type: " ++ t
+				})
+	
+
+processAssociation :: Map.Map Id ClassEntity -> Map.Map Id [End] -> Element  -> (Id,Association)
+processAssociation cmap semap el = (fromMaybe "" (findAttr attrIdName el), Association {ends = (map (processEnds cmap) (findChildren (sName "ownedEnd") el)) ++ fromMaybe [] (Map.lookup (fromJust(findAttr attrIdName el)) semap)})
+
+processEnds :: Map.Map Id ClassEntity -> Element -> End
+processEnds emap el = End {endTarget = (case (Map.lookup (fromJust (findAttr (sName "type") el))  emap) of 
+							Just t -> t
+							Nothing -> error $ "Key " ++ show (findAttr (sName "type") el) ++ " not found in " ++ (show emap)
+					), label = processLabel el, endType = Normal}
 
 
 processLabel :: Element -> Label
@@ -44,9 +101,9 @@ processClass el = (fromMaybe "" (findAttr attrIdName el)
                         attr = map processAttribute (findChildren attributeName el),
                         proc = map processProcedure (findChildren procedureName el)})
 
-processAssociationClass :: Map.Map Id Class -> Element -> (Id, AssociationClass)
-processAssociationClass emap el = (fromMaybe "" (findAttr attrIdName el)
-                , AssociationClass {acClass = snd (processClass el), acAsso = snd (processAssociation emap el)})
+processAssociationClass :: Map.Map Id ClassEntity -> Map.Map Id [End] -> Element -> (Id, AssociationClass)
+processAssociationClass emap semap el = (fromMaybe "" (findAttr attrIdName el)
+                , AssociationClass {acClass = snd (processClass el), acAsso = snd (processAssociation emap semap el)})
 
 processSignal :: Element -> (Id, Signal)
 processSignal el = (fromMaybe "" (findAttr attrIdName el),
