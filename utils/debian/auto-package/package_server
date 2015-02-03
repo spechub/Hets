@@ -55,7 +55,7 @@ print_help()
   echo "  prepare - Prepare the base.tgz files needed by pbuilder
             (needed for testing, you only need to call it once -
              updating takes place automatically)"
-  echo "  create  - Create source packages from svn trunk"
+  echo "  create  - Create source packages from git main branch"
   echo "  test    - Test building source packages"
   echo "  upload  - Upload packages to launchpad hets ppa"
   echo "  package - Do all the above i.e. create source packages,
@@ -320,7 +320,6 @@ fi
 if [ $OPT_CREATE -eq 0 ]; then
   echo "=== Creating source packages"
   ensure_package_installed git
-  ensure_package_installed "git-svn"
   ensure_package_installed ant
   ensure_package_installed "openjdk-7-jdk"
 
