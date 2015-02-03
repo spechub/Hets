@@ -22,6 +22,7 @@ override_dh_installman:
 
 override_dh_install:
 	install -m 755 -d debian/hets-server-core/usr/lib/hets-server
+	install -m 644 utils/hetcasl.sty debian/hets-server-core/usr/lib/hets-server
 	install -m 755 hets-server debian/hets-server-core/usr/lib/hets-server
 	install -m 755 -d debian/hets-server-core/usr/lib/hets-server/hets-isa-tools
 	install -m 755 Isabelle/export/export.sh debian/hets-server-core/usr/lib/hets-server/hets-isa-tools
