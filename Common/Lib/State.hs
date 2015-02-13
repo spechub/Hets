@@ -28,6 +28,10 @@ state = State
 instance Functor (State s) where
         fmap = liftM
 
+instance Applicative (State s) where
+        pure  = return
+        (<*>) = ap
+
 instance Monad (State s) where
         return a = State $ \ s -> (a, s)
         State f >>= k = State $ \ s ->
