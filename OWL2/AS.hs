@@ -294,8 +294,9 @@ preDefMaps sl pref = let
  in (sl, pref, sp)
 
 checkPredefAux :: PreDefMaps -> IRI -> Maybe (String, String)
-checkPredefAux (sl, pref, exPref) u = let lp = localPart u in
-  case namePrefix u of
+checkPredefAux (sl, pref, exPref) u = case expandedIRI u of
+  "" -> Nothing
+  _ -> let lp = localPart u in case namePrefix u of
     "http" -> case stripPrefix "//www." lp of
         Just q -> case stripPrefix "w3.org/" q of
             Just r -> case stripPrefix exPref r of
@@ -322,12 +323,13 @@ setDatatypePrefix iri = case isDatatypeKeyAux iri of
 
 -- | checks if the IRI is part of the built-in ones and puts the correct prefix
 setReservedPrefix :: IRI -> IRI
-setReservedPrefix iri
-    | isDatatypeKey iri && null (namePrefix iri) = setDatatypePrefix iri
-    | (isThing iri || isPredefDataProp iri || isPredefOWLAnnoProp iri
-        || isPredefObjProp iri) && null (namePrefix iri) = setPrefix "owl" iri
-    | isPredefRDFSAnnoProp iri = setPrefix "rdfs" iri
-    | otherwise = iri
+setReservedPrefix iri = case namePrefix iri of
+  ""
+    | isDatatypeKey iri -> setDatatypePrefix iri
+    | isThing iri || isPredefDataProp iri || isPredefOWLAnnoProp iri
+        || isPredefObjProp iri -> setPrefix "owl" iri
+    | isPredefRDFSAnnoProp iri -> setPrefix "rdfs" iri
+  _ -> iri
 
 stripReservedPrefix :: IRI -> IRI
 stripReservedPrefix = mkQName . getPredefName
