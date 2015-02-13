@@ -294,9 +294,8 @@ preDefMaps sl pref = let
  in (sl, pref, sp)
 
 checkPredefAux :: PreDefMaps -> IRI -> Maybe (String, String)
-checkPredefAux (sl, pref, exPref) u = case expandedIRI u of
-  "" -> Nothing
-  _ -> let lp = localPart u in case namePrefix u of
+checkPredefAux (sl, pref, exPref) u =
+  let lp = localPart u in case namePrefix u of
     "http" -> case stripPrefix "//www." lp of
         Just q -> case stripPrefix "w3.org/" q of
             Just r -> case stripPrefix exPref r of
@@ -306,7 +305,8 @@ checkPredefAux (sl, pref, exPref) u = case expandedIRI u of
               Just s | elem s sl -> Just (pref, s)
               _ -> Nothing
         Nothing -> Nothing
-    pu | elem pu ["", pref] && elem lp sl -> Just (pref, lp)
+    pu | (null (expandedIRI u) && null pu || pu == pref) && elem lp sl
+      -> Just (pref, lp)
     _ -> Nothing
 
 checkPredef :: PreDefMaps -> IRI -> Bool
