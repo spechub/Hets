@@ -43,6 +43,7 @@ module ParseLib2
     opt, skipUntil, skipUntilOff, skipUntilParse, skipNest) where
 
 import Data.Char
+import Control.Applicative
 import Control.Monad
 
 infixr 5 +++
@@ -58,6 +59,10 @@ instance Functor Parser where
    -- fmap         :: (a -> b) -> (Parser a -> Parser b)
    fmap f (P p) = P (\ pos inp -> [(f v, out) | (v, out) <- p pos inp])
 
+instance Applicative Parser where
+   pure = return
+   (<*>) = ap
+
 instance Monad Parser where
    -- return      :: a -> Parser a
    return v = P (\ _ inp -> [(v, inp)])
@@ -66,6 +71,11 @@ instance Monad Parser where
    (P p) >>= f = P (\ pos inp -> concat [papply (f v) pos out
                                                 | (v, out) <- p pos inp])
    fail _ = P (\ _ _ -> [])
+
+instance Alternative Parser where
+   (<|>) = mplus
+   empty = mzero
+   many p = many1 p +++ return []
 
 instance MonadPlus Parser where
    -- mzero            :: Parser a
@@ -127,9 +137,6 @@ sat :: (Char -> Bool) -> Parser Char
 sat p = do
   x <- item
   if p x then return x else mzero
-
-many :: Parser a -> Parser [a]
-many p = many1 p +++ return []
 
 many1 :: Parser a -> Parser [a]
 many1 p = do

@@ -40,6 +40,7 @@ import Common.Id (Token (..), nullRange)
 import Common.AS_Annotation (Named, SenAttr (..))
 import Common.Result
 
+import Control.Applicative
 import Control.Monad.State
 import Control.Monad.Identity
 
@@ -48,10 +49,10 @@ import Data.Maybe (fromJust, isJust)
 
 -- taken from http://www.haskell.org/haskellwiki/New_monads/MonadUnique
 newtype UniqueT m a = UniqueT (StateT Integer m a)
-    deriving (Functor, Monad, MonadTrans, MonadIO)
+    deriving (Functor, Applicative, Monad, MonadTrans, MonadIO)
 
 newtype Unique a = Unique (UniqueT Identity a)
-    deriving (Functor, Monad, MonadUnique)
+    deriving (Functor, Applicative, Monad, MonadUnique)
 
 class Monad m => MonadUnique m where
     fresh :: m Integer
