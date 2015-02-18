@@ -990,7 +990,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
                               pfOptions
                               [(getDGNodeName dgnode, proofResults)]
                       GlConsistency -> do
-                        (newLib, [(_, res, txt, _)]) <- consNode libEnv ln dg nl
+                        (newLib, [(_, res, txt, _, _)]) <- consNode libEnv ln dg nl
                           subL incl mp mt tl
                         lift $ nextSess sess sessRef newLib k
                         return (xmlC, ppTopElement $ formatConsNode res txt)
@@ -1014,7 +1014,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
 
 formatGoals :: Bool -> [ProofResult] -> [Element]
 formatGoals includeDetails =
-  map (\ (n, e, d, mps) -> unode "goal"
+  map (\ (n, e, d, _, mps) -> unode "goal"
     ([unode "name" n, unode "result" e]
     ++ [unode "details" d | includeDetails]
     ++ case mps of
@@ -1419,7 +1419,7 @@ consNode le ln dg nl@(i, lb) subL useTh mp mt tl = do
                              CSInconsistent -> markNodeInconsistent "" lb
                              CSConsistent -> markNodeConsistent "" lb
                              _ -> lb)) le
-          return (le'', [(" ", drop 2 $ show cSt, show cstat, Nothing)])
+          return (le'', [(" ", drop 2 $ show cSt, show cstat, c, Nothing)])
 
 proveNode :: LibEnv -> LibName -> DGraph -> (Int, DGNodeLab) -> G_theory
   -> G_sublogics -> Bool -> Maybe String -> Maybe String -> Maybe Int
@@ -1439,19 +1439,19 @@ proveNode le ln dg nl gTh subL useTh mp mt tl thms axioms = do
       (if null thms then ks else thms) axioms gTh cp
     return (if null sens then le else
         Map.insert ln ( updateLabelTheory le dg nl nTh) le
-                      , combineSensAndProofStatus sens proofStatuses
+                      , combineToProofResult sens cp proofStatuses
                       )
 
-combineSensAndProofStatus :: [(String, String, String)]
+combineToProofResult :: [(String, String, String)] -> (G_prover, AnyComorphism)
   -> [ProofStatus G_proof_tree] -> [ProofResult]
-combineSensAndProofStatus sens proofStatuses = let
+combineToProofResult sens (_, comorphism) proofStatuses = let
   findProofStatusByName :: String -> Maybe (ProofStatus G_proof_tree)
   findProofStatusByName n =
     case filter ((n ==) . goalName) proofStatuses of
       [] -> Nothing
       (ps : _) -> Just ps
   combineSens :: (String, String, String) -> ProofResult
-  combineSens (n, e, d) = (n, e, d, findProofStatusByName n)
+  combineSens (n, e, d) = (n, e, d, comorphism, findProofStatusByName n)
   in map combineSens sens
 
 -- run over multiple dgnodes and prove available goals for each
@@ -1484,7 +1484,7 @@ proveMultiNodes pm le ln dg useTh mp mt tl nodeSel axioms = let
 
 formatResultsAux :: Bool -> ProverMode -> String -> [ProofResult] -> Element
 formatResultsAux xF pm nm sens = unode nm $ case (sens, pm) of
-    ([(_, e, d, _)], GlConsistency) | xF -> formatConsNode e d
+    ([(_, e, d, _, _)], GlConsistency) | xF -> formatConsNode e d
     _ -> unode "results" $ formatGoals xF sens
 
 mkPath :: Session -> LibName -> Int -> String
