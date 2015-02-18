@@ -12,6 +12,7 @@ Portability :  non-portable (via imports)
 
 module PGIP.Server (hetsServer) where
 
+import PGIP.Output.Formatting
 import PGIP.Output.Mime
 import PGIP.Output.Proof
 
@@ -1330,17 +1331,6 @@ getProverAndComorph mp mc subL = do
    return $ case mp of
         Nothing -> spps
         _ -> filterByProver mp ps
-
-showComorph :: AnyComorphism -> String
-showComorph (Comorphism cid) = removeFunnyChars . drop 1 . dropWhile (/= ':')
-  . map (\ c -> if c == ';' then ':' else c)
-  $ language_name cid
-
-removeFunnyChars :: String -> String
-removeFunnyChars = filter (\ c -> isAlphaNum c || elem c "_.:-")
-
-getWebProverName :: G_prover -> String
-getWebProverName = removeFunnyChars . getProverName
 
 getFullProverList :: ProverMode -> Maybe String -> DGraph -> IO String
 getFullProverList mp mt = fmap (formatProvers mp) . foldM
