@@ -10,6 +10,7 @@ module PGIP.Output.Proof
   , formatProofs
   ) where
 
+import PGIP.Output.Formatting
 import PGIP.Output.Mime
 
 import Interfaces.GenericATPState (tsTimeLimit, tsExtraOpts)
@@ -78,7 +79,7 @@ formatProofs format options proofs = case format of
           then Just goalDetails
           else Nothing
       , usedProver = fmap LP.usedProver proofStatusM
-      , usedTranslation = show translation --FIXME
+      , usedTranslation = showComorph translation
       , tacticScript = fmap convertTacticScript proofStatusM
       , proofTree = fmap (show . LP.proofTree) proofStatusM
       , usedTime = fmap (convertTime . LP.usedTime) proofStatusM
