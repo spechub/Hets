@@ -153,15 +153,15 @@ matchWhite :: [String] -> [[String]] -> Bool
 matchWhite ip l = null l || any (matchIP4 ip) l
 
 #ifdef WARP1
-type ResIO a = ResourceT IO a
+type RsrcIO a = ResourceT IO a
 #else
-type ResIO a = IO a
+type RsrcIO a = IO a
 #endif
 
 #ifdef WARP3
 type WebResponse = (Response -> IO ResponseReceived) -> IO ResponseReceived
 #else
-type WebResponse = (Response -> ResIO Response) -> ResIO Response
+type WebResponse = (Response -> RsrcIO Response) -> RsrcIO Response
 #endif
 
 hetsServer :: HetcatsOpts -> IO ()
@@ -233,7 +233,7 @@ hetsServer opts1 = do
            -- only otherwise stick to the old response methods
            else oldWebApi newOpts tempLib permFile sessRef re pathBits qr2
              meth respond
-parseRequestParams :: Request -> ResIO Json
+parseRequestParams :: Request -> RsrcIO Json
 parseRequestParams request =
   let
     noParams :: Json
@@ -248,7 +248,7 @@ parseRequestParams request =
     lookupHeader s =
       liftM B8.unpack $ lookup (CI.mk $ B8.pack s) $ requestHeaders request
 
-    formParams :: ResIO (Maybe Json)
+    formParams :: RsrcIO (Maybe Json)
     formParams =
       let toJsonObject :: [(B8.ByteString, B8.ByteString)] -> String
           toJsonObject assocList = "{"
@@ -261,10 +261,10 @@ parseRequestParams request =
         (formDataB8, _) <- parseRequestBody lbsBackEnd request
         return $ parseJson $ toJsonObject formDataB8
 
-    jsonBody :: ResIO (Maybe Json)
+    jsonBody :: RsrcIO (Maybe Json)
     jsonBody = liftM (parseJson . B8.unpack) $ receivedRequestBody
 
-    receivedRequestBody :: ResIO B8.ByteString
+    receivedRequestBody :: RsrcIO B8.ByteString
 #ifdef WARP3
     receivedRequestBody = requestBody request
 #else
