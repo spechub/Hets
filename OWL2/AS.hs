@@ -91,7 +91,7 @@ unamedS :: String
 unamedS = "//www." ++ dnamedS
 
 dnamedS :: String
-dnamedS = "dfki.de/sks/hets/ontology/unamed"
+dnamedS = "hets.eu/ontology/unamed"
 
 dummyQName :: QName
 dummyQName = QN "http" unamedS Full ("http:" ++ unamedS) nullRange
