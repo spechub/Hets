@@ -91,7 +91,7 @@ unamedS :: String
 unamedS = "//www." ++ dnamedS
 
 dnamedS :: String
-dnamedS = "dfki.de/sks/hets/ontology/unamed"
+dnamedS = "hets.eu/ontology/unamed"
 
 dummyQName :: QName
 dummyQName = QN "http" unamedS Full ("http:" ++ unamedS) nullRange
@@ -295,18 +295,28 @@ preDefMaps sl pref = let
 
 checkPredefAux :: PreDefMaps -> IRI -> Maybe (String, String)
 checkPredefAux (sl, pref, exPref) u =
-  let lp = localPart u in case namePrefix u of
+  let lp = localPart u
+      nn = dnamedS ++ "#"
+      res = Just (pref, lp)
+  in case namePrefix u of
     "http" -> case stripPrefix "//www." lp of
         Just q -> case stripPrefix "w3.org/" q of
             Just r -> case stripPrefix exPref r of
               Just s | elem s sl -> Just (pref, s)
               _ -> Nothing
-            Nothing -> case stripPrefix (dnamedS ++ "#") q of
+            Nothing -> case stripPrefix nn q of
               Just s | elem s sl -> Just (pref, s)
               _ -> Nothing
         Nothing -> Nothing
-    pu | (null (expandedIRI u) && null pu || pu == pref) && elem lp sl
-      -> Just (pref, lp)
+    pu | elem lp sl -> case pu of
+      "" -> let ex = expandedIRI u in
+            case stripPrefix "http://www." ex of
+              Just r | r == "w3.org/" ++ exPref ++ lp || r == nn ++ lp
+                  -> res
+              _ | null ex -> res
+              _ -> Nothing
+      _ | pu == pref -> Just (pref, lp)
+      _ -> Nothing
     _ -> Nothing
 
 checkPredef :: PreDefMaps -> IRI -> Bool
