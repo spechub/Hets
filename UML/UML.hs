@@ -10,6 +10,8 @@ Structure used by ClassDiagramParser.hs
 
 module UML where
 import qualified Data.Map as Map
+import Data.Maybe
+
 import StateMachine
 data Model = ClassModel CM
                 | StateMachine [Entity] [Transition]
@@ -21,11 +23,15 @@ data CM = CM {
         cmAssociations :: (Map.Map Id Association),
         cmInterfaces :: (Map.Map Id Interface),
         cmPackageMerges :: [Id],
+	cmEnums :: Map.Map Id UML.Enum,
 	cmAssociationClasses :: (Map.Map Id  AssociationClass),
         cmSignals :: (Map.Map Id Signal),
 	cmPackages:: [Package]} deriving Show
 
-data ClassEntity = CL Class | AC AssociationClass deriving Show
+data ClassEntity = CL Class | AC AssociationClass | EN UML.Enum deriving Show
+
+instance Eq ClassEntity where
+	(==) x1 x2 = (showClassEntityName x1) == (showClassEntityName x2)
 
 data Package = Package {
         packageName :: String,
@@ -33,6 +39,7 @@ data Package = Package {
         associations :: (Map.Map Id Association),
         interfaces :: (Map.Map Id Interface),
         packageMerges :: [Id],
+	packageEnums :: Map.Map Id UML.Enum,
 	packageAssociationClasses :: (Map.Map Id  AssociationClass),
         signals :: (Map.Map Id Signal),
 	packagePackages :: [Package]} deriving Show
@@ -46,7 +53,7 @@ data AssociationClass = AssociationClass {
 
 
 data Class = Class {
-        super :: [Id],
+        super :: [ClassEntity],
         className :: String,
         attr :: [Attribute],
         proc :: [Procedure]
@@ -61,52 +68,77 @@ data Attribute = Attribute {
 }
 
 instance Show Attribute where 
-	show attr = (attrName attr) ++ ":" ++ (attrType attr) ++ "[" ++ (attrLowerValue attr) ++ ", " ++ (attrUpperValue attr) ++ "]" 
+	show attr = (attrName attr) ++ ":" ++ ((show.attrType) attr) ++ "[" ++ (attrLowerValue attr) ++ ", " ++ (attrUpperValue attr) ++ "]" 
 
 data Procedure = Procedure {
         procName :: String,
-        procPara :: [(String, Type)],
+        procPara :: [Attribute],
         procReturnType :: Maybe Type,
         procPackImports :: [Id],
         procElemImports :: [Id],
         procVisibility :: String
 } deriving Show
 
+
+data Enum = Enum{
+		enumName :: String,
+		enumLiterals :: [Literal]} deriving Show
+
+data Literal = Literal{ literalName:: String,
+			literalOwner :: UML.Enum} 
+
+instance Show Literal where
+	show lit = literalName lit
+
 data Association = Association {
-        ends :: [End]
+        ends :: [End],
+	assoName :: String
 } deriving Show
 
-data EndType = Composition | Aggregation | Normal deriving Show
+data EndType = Composition | Aggregation | Normal deriving (Show,Eq)
 
 -- The XMI-Standard ignores ends that are compositions or aggregations but adds attributes to the corresponding class. Leads to edges having only one end, which is quite inconvenient.
 --	Thus in this DS above mentioned attributes are ignored and the corresponding (special) edges recreated. These edges are marked by the non-normal EndTypes.
 data End = End {
 endTarget :: ClassEntity,
 label :: Label,
+endName :: Maybe String,
 endType :: EndType
-}
+} deriving Eq
 
+showClassEntityName :: ClassEntity -> String
+showClassEntityName (CL x) = className x
+showClassEntityName (AC x) = className (acClass x)
+showClassEntityName (EN x) = enumName x
 instance Show End where
 	show end = case endTarget end of 
-			CL cl -> "End("++ ((show.endType) end) ++ "): " ++ (className cl) ++ (show (label end))
-			AC ac -> "End("++ ((show.endType) end) ++ "): " ++ (className (acClass ac))   ++ (show (label end))
+			CL cl -> "End" ++ (fromMaybe "" (endName end)) ++"("++ ((show.endType) end) ++ "): " ++ (className cl) ++ (show (label end))
+			AC ac -> "End" ++ (fromMaybe "" (endName end)) ++"("++ ((show.endType) end) ++ "): " ++ (className (acClass ac))   ++ (show (label end))
 
 data Interface = Interface {
 interfaceName :: String
 } deriving Show
 
 data Label = Label {upperValue :: String,
-lowerValue :: String} 
+lowerValue :: String}  deriving Eq
 
 instance Show Label where
 	show l = "[" ++ (lowerValue l) ++ ", " ++ (upperValue l) ++ "]"
 
 data Signal = Signal {
-        sigSuper :: [Id],
+        sigSuper :: [ClassEntity],
         signalName :: String,
         sigAttr :: [Attribute],
         sigProc :: [Procedure]
 } deriving Show
 
 type Id = String
-type Type = String  --These types are somewhat cryptic in XMI. They are left as-is - who knows who needs this. Note that they might contain class ids
+data UMLType = CE ClassEntity | UMLString | UMLInteger | UMLBool | UMLUnlimitedNatural | UMLReal | UMLSequence Type | UMLSet Type | UMLOrderedSet Type | UMLBag Type | Other String deriving Show  --These types are somewhat cryptic in XMI. They are left as-is - who knows who needs this. Note that they might contain class ids
+
+data Type = Type{
+	umltype::UMLType,
+	typeUnique::Bool,
+	typeOrdered::Bool}
+
+instance Show Type where
+	show t = show (umltype t)

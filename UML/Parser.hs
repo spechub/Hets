@@ -10,13 +10,18 @@ import StateMachineParser
 import UML
 import Utils
 import Data.Maybe
+import PrettyUML
+import Common.Doc
+import Common.DocUtils
+import Common.Keywords
+
 main :: IO ()
 main = do
 	handle <- openFile "data/simplelibrary.xmi" ReadMode
         --handle <- openFile "data/uml.xmi" ReadMode
 	--handle <- openFile "data/statemachine.xmi" ReadMode
         contents <- hGetContents handle
-        putStr (show (case parseXMLDoc contents of
+        putStr $show (pretty(case parseXMLDoc contents of
                 Nothing -> error contents
                 Just el -> (parseModel el)))
 

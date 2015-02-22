@@ -10,3 +10,6 @@ parse s f (el : lis) =
 	case (findAttr typeName el) == Just s of
 		        True -> ((f el) : (parse s f lis))
 		        False -> parse s f lis
+
+getStringNotInList :: String -> [String] -> String
+getStringNotInList s l =  s ++ show (head [i| i <- [0..], not (elem (s ++ (show i)) l)])
