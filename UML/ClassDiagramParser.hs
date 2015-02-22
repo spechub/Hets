@@ -103,10 +103,10 @@ processEnds emap el = End {endTarget = (case (Map.lookup (fromJust (findAttr (sN
 processLabel :: Element -> Label
 processLabel el = Label {upperValue = case findChildren (sName "upperValue") el of
                                 [] -> "1"
-                                lis -> fromMaybe "" (findAttr (sName "value") (head lis)),
+                                lis -> fromMaybe "*" (findAttr (sName "value") (head lis)),
                         lowerValue = case findChildren (sName "lowerValue") el of
                                 [] -> "1"
-                                lis -> fromMaybe "" (findAttr (sName "value") (head lis))}
+                                lis -> fromMaybe "1" (findAttr (sName "value") (head lis))}
 
 processClass :: (Map.Map Id ClassEntity) -> Element -> (Id, Class)
 processClass emap el = (fromMaybe "" (findAttr attrIdName el)
