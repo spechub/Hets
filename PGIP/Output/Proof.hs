@@ -10,9 +10,11 @@ module PGIP.Output.Proof
   , formatProofs
   ) where
 
+import PGIP.Output.Formatting
 import PGIP.Output.Mime
 
 import Interfaces.GenericATPState (tsTimeLimit, tsExtraOpts)
+import Logic.Comorphism (AnyComorphism)
 
 import qualified Logic.Prover as LP
 
@@ -28,7 +30,10 @@ import Numeric
 
 import Text.XML.Light (ppTopElement)
 
-type ProofResult = (String, String, String, Maybe (LP.ProofStatus G_proof_tree))
+type ProofResult = (String, String, String,
+                -- ^(goalName, goalResult, goalDetails
+                    AnyComorphism, Maybe (LP.ProofStatus G_proof_tree))
+                -- ^translation, proofStatusM)
 type ProofFormatter =
     ProofFormatterOptions -> [(String, [ProofResult])] -> (String, String)
                           -- ^[(dgNodeName, result)]   ^(responseType, response)
@@ -65,23 +70,25 @@ formatProofs format options proofs = case format of
     }
 
   convertGoal :: ProofResult -> ProofGoal
-  convertGoal (goalName, goalResult, goalDetails, proofStatusM) = ProofGoal
-    { name = goalName
-    , result = goalResult
-    , details =
-        if pfoIncludeDetails options
-        then Just goalDetails
-        else Nothing
-    , usedProver = fmap LP.usedProver proofStatusM
-    , tacticScript = fmap convertTacticScript proofStatusM
-    , proofTree = fmap (show . LP.proofTree) proofStatusM
-    , usedTime = fmap (convertTime . LP.usedTime) proofStatusM
-    , usedAxioms = fmap LP.usedAxioms proofStatusM
-    , proverOutput =
-        if pfoIncludeProof options
-        then fmap (unlines . LP.proofLines) proofStatusM
-        else Nothing
-    }
+  convertGoal (goalName, goalResult, goalDetails, translation, proofStatusM) =
+    ProofGoal
+      { name = goalName
+      , result = goalResult
+      , details =
+          if pfoIncludeDetails options
+          then Just goalDetails
+          else Nothing
+      , usedProver = fmap LP.usedProver proofStatusM
+      , usedTranslation = showComorph translation
+      , tacticScript = fmap convertTacticScript proofStatusM
+      , proofTree = fmap (show . LP.proofTree) proofStatusM
+      , usedTime = fmap (convertTime . LP.usedTime) proofStatusM
+      , usedAxioms = fmap LP.usedAxioms proofStatusM
+      , proverOutput =
+          if pfoIncludeProof options
+          then fmap (unlines . LP.proofLines) proofStatusM
+          else Nothing
+      }
 
   convertTime :: TimeOfDay -> ProofTime
   convertTime tod = ProofTime
@@ -115,6 +122,7 @@ data ProofGoal = ProofGoal
   , result :: String
   , details :: Maybe String
   , usedProver :: Maybe String
+  , usedTranslation :: String
   , tacticScript :: Maybe TacticScript
   , proofTree :: Maybe String
   , usedTime :: Maybe ProofTime
