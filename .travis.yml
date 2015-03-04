@@ -10,13 +10,11 @@ before_install:
 install:
  - travis_retry cabal update
  - cabal install gtk2hs-buildtools
- - cabal install glade
+ - cabal install glade parsec1
  - cabal install -v --only-dependencies
 script:
- - make compile_in_steps
+ - make
  - ./hets -V
  - export HETS_MAGIC=$PWD/magic/hets.magic
  - make check
-cache:
-  directories:
-  - .objs
+
