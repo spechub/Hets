@@ -1332,6 +1332,12 @@ getProverAndComorph mp mc subL = do
         Nothing -> spps
         _ -> filterByProver mp ps
 
+getProverList :: ProverMode -> Maybe String -> G_sublogics
+              -> IO [(AnyComorphism, [String])]
+getProverList mp mt subL = case mp of
+  GlProofs -> getProversAux mt subL
+  GlConsistency -> getConsCheckersAux mt subL
+
 getFullProverList :: ProverMode -> Maybe String -> DGraph -> IO String
 getFullProverList mp mt = fmap (formatProvers mp) . foldM
   (\ ls (_, nd) -> maybe (return ls) (fmap (++ ls) . case mp of
