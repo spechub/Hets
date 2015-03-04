@@ -15,6 +15,7 @@ module PGIP.Server (hetsServer) where
 import PGIP.Output.Formatting
 import PGIP.Output.Mime
 import PGIP.Output.Proof
+import qualified PGIP.Output.Provers as OProvers
 
 import PGIP.Query as Query
 
@@ -998,11 +999,12 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
                     _ -> case nc of
                       NcCmd Query.Theory -> lift $ fmap (\ t -> (htmlC, t))
                           $ showGlobalTh dg i gTh k fstLine
-                      NcProvers mp mt -> lift $
-                        fmap (\ l -> (xmlC, formatProvers mp l))
-                        $ case mp of
-                            GlProofs -> getProversAux mt subL
-                            GlConsistency -> getConsCheckersAux mt subL
+                      NcProvers mp mt -> do
+                        availableProvers <- liftIO $ getProverList mp mt subL
+                        return $ case api of
+                          OldWebAPI -> (xmlC, formatProvers mp availableProvers)
+                          RESTfulAPI ->
+                            OProvers.formatProvers format mp availableProvers
                       NcTranslations mp -> lift $
                         fmap (\ l -> (xmlC, l)) $ getComorphs mp subL
                       _ -> error "getHetsResult.NodeQuery."
