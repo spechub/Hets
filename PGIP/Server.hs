@@ -15,6 +15,7 @@ module PGIP.Server (hetsServer) where
 import PGIP.Output.Formatting
 import PGIP.Output.Mime
 import PGIP.Output.Proof
+import PGIP.Output.Translations
 import qualified PGIP.Output.Provers as OProvers
 
 import PGIP.Query as Query
@@ -916,7 +917,11 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
                 RESTfulAPI -> OProvers.formatProvers format mp availableProvers
             GlTranslations -> do
               availableComorphisms <- liftIO $ getFullComorphList dg
-              return (xmlC, formatComorphs availableComorphisms)
+              return $ case api of
+                OldWebAPI ->
+                  (xmlC, formatComorphs availableComorphisms)
+                RESTfulAPI ->
+                  formatTranslations format availableComorphisms
             GlShowProverWindow prOrCons -> showAutoProofWindow dg k prOrCons
             GlAutoProve (ProveCmd prOrCons incl mp mt tl nds xForm axioms) -> do
               (newLib, nodesAndProofResults) <-
@@ -1011,7 +1016,11 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
                             OProvers.formatProvers format mp availableProvers
                       NcTranslations mp -> do
                         availableComorphisms <- liftIO $ getComorphs mp subL
-                        return (xmlC, formatComorphs availableComorphisms)
+                        return $ case api of
+                          OldWebAPI ->
+                            (xmlC, formatComorphs availableComorphisms)
+                          RESTfulAPI ->
+                            formatTranslations format availableComorphisms
                       _ -> error "getHetsResult.NodeQuery."
             EdgeQuery i _ ->
               case getDGLinksById (EdgeId i) dg of
