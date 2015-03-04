@@ -1340,9 +1340,6 @@ getFullProverList mp mt = fmap (formatProvers mp) . foldM
     . sublogicOfTh)
     $ maybeResult $ getGlobalTheory nd) [] . labNodesDG
 
-showProversOnly :: [(AnyComorphism, [String])] -> [String]
-showProversOnly = nubOrd . concatMap snd
-
 groupOnSnd :: Eq b => (a -> c) -> [(a, b)] -> [(b, [c])]
 groupOnSnd f =
   map (\ l@((_, b) : _) -> (b, map (f . fst) l)) . groupBy (on (==) snd)

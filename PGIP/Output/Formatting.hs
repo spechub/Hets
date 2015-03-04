@@ -1,8 +1,11 @@
 module PGIP.Output.Formatting
-  ( showComorph
-  , getWebProverName
+  ( getWebProverName
+  , showComorph
+  , showProversOnly
   , removeFunnyChars
   ) where
+
+import Common.Utils
 
 import Logic.Logic
 import Logic.Comorphism
@@ -21,3 +24,6 @@ removeFunnyChars = filter (\ c -> isAlphaNum c || elem c "_.:-")
 
 getWebProverName :: G_prover -> String
 getWebProverName = removeFunnyChars . getProverName
+
+showProversOnly :: [(AnyComorphism, [String])] -> [String]
+showProversOnly = nubOrd . concatMap snd
