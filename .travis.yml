@@ -11,7 +11,7 @@ install:
  - travis_retry cabal update
  - cabal install gtk2hs-buildtools
  - cabal install glade parsec1
- - cabal install -v --only-dependencies
+ - cabal install --only-dependencies
 script:
  - make
  - ./hets -V
