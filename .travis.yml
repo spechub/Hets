@@ -10,7 +10,7 @@ before_install:
 install:
  - travis_retry cabal update
  - cabal install gtk2hs-buildtools
- - cabal install --only-dependencies
+ - cabal install -v --only-dependencies
 script:
  - make compile_in_steps
  - ./hets -V
