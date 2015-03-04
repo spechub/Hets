@@ -909,8 +909,11 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
               Just str | elem str ppList
                 -> ppDGraph dg $ lookup str $ zip ppList prettyList
               _ -> sessAns ln svg sk
-            GlProvers mp mt -> lift $
-              fmap (\ l -> (xmlC, l)) $ getFullProverList mp mt dg
+            GlProvers mp mt -> do
+              availableProvers <- liftIO $ getFullProverList mp mt dg
+              return $ case api of
+                OldWebAPI -> (xmlC, formatProvers mp availableProvers)
+                RESTfulAPI -> OProvers.formatProvers format mp availableProvers
             GlTranslations ->
               lift $ fmap (\ l -> (xmlC, l)) $ getFullComorphList dg
             GlShowProverWindow prOrCons -> showAutoProofWindow dg k prOrCons
@@ -1340,8 +1343,9 @@ getProverList mp mt subL = case mp of
   GlProofs -> getProversAux mt subL
   GlConsistency -> getConsCheckersAux mt subL
 
-getFullProverList :: ProverMode -> Maybe String -> DGraph -> IO String
-getFullProverList mp mt = fmap (formatProvers mp) . foldM
+getFullProverList :: ProverMode -> Maybe String -> DGraph
+                  -> IO [(AnyComorphism, [String])]
+getFullProverList mp mt = foldM
   (\ ls (_, nd) -> maybe (return ls) (fmap (++ ls) . case mp of
       GlProofs -> getProversAux mt
       GlConsistency -> getConsCheckersAux mt
