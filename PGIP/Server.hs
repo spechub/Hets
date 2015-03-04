@@ -914,8 +914,9 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
               return $ case api of
                 OldWebAPI -> (xmlC, formatProvers mp availableProvers)
                 RESTfulAPI -> OProvers.formatProvers format mp availableProvers
-            GlTranslations ->
-              lift $ fmap (\ l -> (xmlC, l)) $ getFullComorphList dg
+            GlTranslations -> do
+              availableComorphisms <- liftIO $ getFullComorphList dg
+              return (xmlC, formatComorphs availableComorphisms)
             GlShowProverWindow prOrCons -> showAutoProofWindow dg k prOrCons
             GlAutoProve (ProveCmd prOrCons incl mp mt tl nds xForm axioms) -> do
               (newLib, nodesAndProofResults) <-
@@ -1008,8 +1009,9 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
                           OldWebAPI -> (xmlC, formatProvers mp availableProvers)
                           RESTfulAPI ->
                             OProvers.formatProvers format mp availableProvers
-                      NcTranslations mp -> lift $
-                        fmap (\ l -> (xmlC, l)) $ getComorphs mp subL
+                      NcTranslations mp -> do
+                        availableComorphisms <- liftIO $ getComorphs mp subL
+                        return (xmlC, formatComorphs availableComorphisms)
                       _ -> error "getHetsResult.NodeQuery."
             EdgeQuery i _ ->
               case getDGLinksById (EdgeId i) dg of
@@ -1384,13 +1386,12 @@ getFilteredConsCheckers mt = fmap
   (filterByComorph mt . filter (getCcBatch . fst))
   . getConsCheckers . findComorphismPaths logicGraph
 
-getComorphs :: Maybe String -> G_sublogics -> IO String
-getComorphs mp = fmap (formatComorphs . filterByProver mp)
+getComorphs :: Maybe String -> G_sublogics -> IO [(G_prover, AnyComorphism)]
+getComorphs mp = fmap (filterByProver mp)
     . getAllAutomaticProvers
 
-getFullComorphList :: DGraph -> IO String
-getFullComorphList =
-  fmap formatComorphs . foldM
+getFullComorphList :: DGraph -> IO [(G_prover, AnyComorphism)]
+getFullComorphList = foldM
    (\ ls (_, nd) -> maybe (return ls)
     (fmap (++ ls) . getAllAutomaticProvers . sublogicOfTh)
     $ maybeResult $ getGlobalTheory nd) [] . labNodesDG
