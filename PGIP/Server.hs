@@ -15,6 +15,8 @@ module PGIP.Server (hetsServer) where
 import PGIP.Output.Formatting
 import PGIP.Output.Mime
 import PGIP.Output.Proof
+import PGIP.Output.Translations
+import qualified PGIP.Output.Provers as OProvers
 
 import PGIP.Query as Query
 
@@ -908,10 +910,18 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
               Just str | elem str ppList
                 -> ppDGraph dg $ lookup str $ zip ppList prettyList
               _ -> sessAns ln svg sk
-            GlProvers mp mt -> lift $
-              fmap (\ l -> (xmlC, l)) $ getFullProverList mp mt dg
-            GlTranslations ->
-              lift $ fmap (\ l -> (xmlC, l)) $ getFullComorphList dg
+            GlProvers mp mt -> do
+              availableProvers <- liftIO $ getFullProverList mp mt dg
+              return $ case api of
+                OldWebAPI -> (xmlC, formatProvers mp availableProvers)
+                RESTfulAPI -> OProvers.formatProvers format mp availableProvers
+            GlTranslations -> do
+              availableComorphisms <- liftIO $ getFullComorphList dg
+              return $ case api of
+                OldWebAPI ->
+                  (xmlC, formatComorphs availableComorphisms)
+                RESTfulAPI ->
+                  formatTranslations format availableComorphisms
             GlShowProverWindow prOrCons -> showAutoProofWindow dg k prOrCons
             GlAutoProve (ProveCmd prOrCons incl mp mt tl nds xForm axioms) -> do
               (newLib, nodesAndProofResults) <-
@@ -998,13 +1008,19 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
                     _ -> case nc of
                       NcCmd Query.Theory -> lift $ fmap (\ t -> (htmlC, t))
                           $ showGlobalTh dg i gTh k fstLine
-                      NcProvers mp mt -> lift $
-                        fmap (\ l -> (xmlC, formatProvers mp l))
-                        $ case mp of
-                            GlProofs -> getProversAux mt subL
-                            GlConsistency -> getConsCheckersAux mt subL
-                      NcTranslations mp -> lift $
-                        fmap (\ l -> (xmlC, l)) $ getComorphs mp subL
+                      NcProvers mp mt -> do
+                        availableProvers <- liftIO $ getProverList mp mt subL
+                        return $ case api of
+                          OldWebAPI -> (xmlC, formatProvers mp availableProvers)
+                          RESTfulAPI ->
+                            OProvers.formatProvers format mp availableProvers
+                      NcTranslations mp -> do
+                        availableComorphisms <- liftIO $ getComorphs mp subL
+                        return $ case api of
+                          OldWebAPI ->
+                            (xmlC, formatComorphs availableComorphisms)
+                          RESTfulAPI ->
+                            formatTranslations format availableComorphisms
                       _ -> error "getHetsResult.NodeQuery."
             EdgeQuery i _ ->
               case getDGLinksById (EdgeId i) dg of
@@ -1332,16 +1348,20 @@ getProverAndComorph mp mc subL = do
         Nothing -> spps
         _ -> filterByProver mp ps
 
-getFullProverList :: ProverMode -> Maybe String -> DGraph -> IO String
-getFullProverList mp mt = fmap (formatProvers mp) . foldM
+getProverList :: ProverMode -> Maybe String -> G_sublogics
+              -> IO [(AnyComorphism, [String])]
+getProverList mp mt subL = case mp of
+  GlProofs -> getProversAux mt subL
+  GlConsistency -> getConsCheckersAux mt subL
+
+getFullProverList :: ProverMode -> Maybe String -> DGraph
+                  -> IO [(AnyComorphism, [String])]
+getFullProverList mp mt = foldM
   (\ ls (_, nd) -> maybe (return ls) (fmap (++ ls) . case mp of
       GlProofs -> getProversAux mt
       GlConsistency -> getConsCheckersAux mt
     . sublogicOfTh)
     $ maybeResult $ getGlobalTheory nd) [] . labNodesDG
-
-showProversOnly :: [(AnyComorphism, [String])] -> [String]
-showProversOnly = nubOrd . concatMap snd
 
 groupOnSnd :: Eq b => (a -> c) -> [(a, b)] -> [(b, [c])]
 groupOnSnd f =
@@ -1375,13 +1395,12 @@ getFilteredConsCheckers mt = fmap
   (filterByComorph mt . filter (getCcBatch . fst))
   . getConsCheckers . findComorphismPaths logicGraph
 
-getComorphs :: Maybe String -> G_sublogics -> IO String
-getComorphs mp = fmap (formatComorphs . filterByProver mp)
+getComorphs :: Maybe String -> G_sublogics -> IO [(G_prover, AnyComorphism)]
+getComorphs mp = fmap (filterByProver mp)
     . getAllAutomaticProvers
 
-getFullComorphList :: DGraph -> IO String
-getFullComorphList =
-  fmap formatComorphs . foldM
+getFullComorphList :: DGraph -> IO [(G_prover, AnyComorphism)]
+getFullComorphList = foldM
    (\ ls (_, nd) -> maybe (return ls)
     (fmap (++ ls) . getAllAutomaticProvers . sublogicOfTh)
     $ maybeResult $ getGlobalTheory nd) [] . labNodesDG
