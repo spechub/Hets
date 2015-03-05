@@ -714,12 +714,8 @@ initialize_installer:
 
 # check out java parts for OWL
 owl_java:
-	$(RM) -r OWL2/java/OwlApi
-	svn export -q \
-	--non-interactive \
-	--trust-server-cert \
-  https://github.com/owlcs/owlapi/tags/owlapi-parent-3.4.8 \
-  OWL2/java/OwlApi
+	curl -o OWL2/java/lib/owlapi-osgidistribution-3.5.1.jar http://repo1.maven.org/maven2/net/sourceforge/owlapi/owlapi-osgidistribution/3.5.1/owlapi-osgidistribution-3.5.1.jar
+
 
 initialize_java: owl_java
 	ant -q init
