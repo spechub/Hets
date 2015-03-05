@@ -91,7 +91,7 @@ unamedS :: String
 unamedS = "//www." ++ dnamedS
 
 dnamedS :: String
-dnamedS = "dfki.de/sks/hets/ontology/unamed"
+dnamedS = "hets.eu/ontology/unamed"
 
 dummyQName :: QName
 dummyQName = QN "http" unamedS Full ("http:" ++ unamedS) nullRange
@@ -294,18 +294,29 @@ preDefMaps sl pref = let
  in (sl, pref, sp)
 
 checkPredefAux :: PreDefMaps -> IRI -> Maybe (String, String)
-checkPredefAux (sl, pref, exPref) u = let lp = localPart u in
-  case namePrefix u of
+checkPredefAux (sl, pref, exPref) u =
+  let lp = localPart u
+      nn = dnamedS ++ "#"
+      res = Just (pref, lp)
+  in case namePrefix u of
     "http" -> case stripPrefix "//www." lp of
         Just q -> case stripPrefix "w3.org/" q of
             Just r -> case stripPrefix exPref r of
               Just s | elem s sl -> Just (pref, s)
               _ -> Nothing
-            Nothing -> case stripPrefix (dnamedS ++ "#") q of
+            Nothing -> case stripPrefix nn q of
               Just s | elem s sl -> Just (pref, s)
               _ -> Nothing
         Nothing -> Nothing
-    pu | elem pu ["", pref] && elem lp sl -> Just (pref, lp)
+    pu | elem lp sl -> case pu of
+      "" -> let ex = expandedIRI u in
+            case stripPrefix "http://www." ex of
+              Just r | r == "w3.org/" ++ exPref ++ lp || r == nn ++ lp
+                  -> res
+              _ | null ex -> res
+              _ -> Nothing
+      _ | pu == pref -> Just (pref, lp)
+      _ -> Nothing
     _ -> Nothing
 
 checkPredef :: PreDefMaps -> IRI -> Bool
@@ -322,12 +333,13 @@ setDatatypePrefix iri = case isDatatypeKeyAux iri of
 
 -- | checks if the IRI is part of the built-in ones and puts the correct prefix
 setReservedPrefix :: IRI -> IRI
-setReservedPrefix iri
-    | isDatatypeKey iri && null (namePrefix iri) = setDatatypePrefix iri
-    | (isThing iri || isPredefDataProp iri || isPredefOWLAnnoProp iri
-        || isPredefObjProp iri) && null (namePrefix iri) = setPrefix "owl" iri
-    | isPredefRDFSAnnoProp iri = setPrefix "rdfs" iri
-    | otherwise = iri
+setReservedPrefix iri = case namePrefix iri of
+  ""
+    | isDatatypeKey iri -> setDatatypePrefix iri
+    | isThing iri || isPredefDataProp iri || isPredefOWLAnnoProp iri
+        || isPredefObjProp iri -> setPrefix "owl" iri
+    | isPredefRDFSAnnoProp iri -> setPrefix "rdfs" iri
+  _ -> iri
 
 stripReservedPrefix :: IRI -> IRI
 stripReservedPrefix = mkQName . getPredefName
