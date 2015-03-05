@@ -17,6 +17,7 @@ Control.Monad.State, but now Control.Monad.Trans.State can be used instead.
 
 module Common.Lib.State where
 
+import Control.Applicative
 import Control.Monad
 
 -- | Our fixed state monad
@@ -27,6 +28,10 @@ state = State
 
 instance Functor (State s) where
         fmap = liftM
+
+instance Applicative (State s) where
+        pure  = return
+        (<*>) = ap
 
 instance Monad (State s) where
         return a = State $ \ s -> (a, s)

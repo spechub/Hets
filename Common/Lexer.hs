@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {- |
 Module      :  $Header$
 Description :  scanner for Casl tokens using Parsec

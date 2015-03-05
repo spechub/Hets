@@ -49,15 +49,16 @@ module Common.Result
   , printDiags
   ) where
 
-import Common.Doc
+import Common.Doc as Doc
 import Common.DocUtils
 import Common.GlobalAnnotations
 import Common.Id
 import Common.Lexer
 
+import Control.Applicative
 import Control.Monad.Identity
-import Data.Data
 
+import Data.Data
 import Data.Function
 import Data.List
 
@@ -133,12 +134,20 @@ data Result a = Result { diags :: [Diagnosis]
 instance Functor Result where
     fmap f (Result errs m) = Result errs $ fmap f m
 
+instance Applicative Result where
+    pure = return
+    (<*>) = ap
+
 instance Monad Result where
   return = Result [] . Just
   r@(Result e m) >>= f = case m of
       Nothing -> Result e Nothing
       Just x -> joinResult r $ f x
   fail s = fatal_error s nullRange
+
+instance Alternative Result where
+    (<|>) = mplus
+    empty = mzero
 
 instance MonadPlus Result where
    mzero = Result [] Nothing
@@ -291,10 +300,10 @@ instance Show Diagnosis where
 instance Pretty Diagnosis where
     pretty (Diag k s (Range sp)) = sep
         [ sep [case sp of
-            [] -> empty
+            [] -> Doc.empty
             _ -> prettyRange sp <> colon
         , case k of
-            MessageW -> empty
+            MessageW -> Doc.empty
             _ -> text (case k of
                   Error -> "***"
                   _ -> "###") <+> text (show k) <> colon
