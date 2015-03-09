@@ -54,7 +54,7 @@
       <copy file="${builddir}/OWLFact.jar" todir="../"/>
       <copy file="lib/native/i686/libFaCTPlusPlusJNI.so" todir="../lib/native/i686/"/>
       <copy file="lib/native/x86_64/libFaCTPlusPlusJNI.so" todir="../lib/native/x86_64/"/>
-      <copy file="${libdir}/FaCTpp-OWLAPI-3.4-v1.6.1.jar" todir="../lib/"/>
+      <copy file="${libdir}/uk.ac.manchester.cs.owl.factplusplus-P5.0-v1.6.3.1.jar" todir="../lib/"/>
     </target>
 
     <target name="fact-prover">
@@ -77,7 +77,7 @@
       <copy file="${builddir}/OWLFactProver.jar" todir="../"/>
       <copy file="lib/native/i686/libFaCTPlusPlusJNI.so" todir="../lib/native/i686/"/>
       <copy file="lib/native/x86_64/libFaCTPlusPlusJNI.so" todir="../lib/native/x86_64/"/>
-      <copy file="${libdir}/FaCTpp-OWLAPI-3.4-v1.6.1.jar" todir="../lib/"/>
+      <copy file="${libdir}/uk.ac.manchester.cs.owl.factplusplus-P5.0-v1.6.3.1.jar" todir="../lib/"/>
     </target>
 
     <target name="java-files" depends="install"/>
