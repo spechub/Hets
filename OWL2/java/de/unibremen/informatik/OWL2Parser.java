@@ -1,4 +1,3 @@
-package de.unibremen.informatik;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
