@@ -115,17 +115,17 @@ uriToIdM = return . uriToCaslId
 
 -- | Extracts Id from URI
 uriToCaslId :: IRI -> Id
-uriToCaslId urI = let 
-  repl a = if isAlphaNum a then [a] else if a/=':' then "_u" else "" 
+uriToCaslId urI = let
+  repl a = if isAlphaNum a then [a] else if a/=':' then "_u" else ""
   getId = stringToId . (concatMap repl)
- in 
-  if (isDatatypeKey urI) && (isThing urI)  then 
+ in
+  if (isDatatypeKey urI) && (isThing urI)  then
         getId $ localPart urI
-   else 
+   else
     let
       ePart = expandedIRI urI
-    in 
-      if ePart /= "" then 
+    in
+      if ePart /= "" then
         getId $ expandedIRI urI
       else -- this catches the datatypes, e.g. xsd:time, weird
         getId $ localPart urI
@@ -779,7 +779,7 @@ mapAnnFrameBit cSig ex ans afb =
         (keys, s) <-
             mapKey cSig ce (ol ++ dl) (nol ++ ndl) tl (uptoOP ++ uptoDP) lo
         return ([keys], uniteCASLSign cSig s)
-    ObjectSubPropertyChain oplst -> 
+    ObjectSubPropertyChain oplst ->
       case ex of
        ObjectEntity oe -> do
         os <- mapSubObjPropChain cSig oplst oe
@@ -803,4 +803,3 @@ mapAxioms :: CASLSign -> Axiom -> Result ([CASLFORMULA], CASLSign)
 mapAxioms cSig (PlainAxiom ex fb) = case fb of
     ListFrameBit rel lfb -> mapListFrameBit cSig ex rel lfb
     AnnFrameBit ans afb -> mapAnnFrameBit cSig ex ans afb
-
