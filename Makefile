@@ -712,12 +712,7 @@ initialize_installer:
 	@echo "  -> make"
 	@echo and wait until it is finished
 
-# check out java parts for OWL
-owl_java:
-	wget -O OWL2/java/lib/owlapi-osgidistribution-3.5.1.jar http://repo1.maven.org/maven2/net/sourceforge/owlapi/owlapi-osgidistribution/3.5.1/owlapi-osgidistribution-3.5.1.jar
-
-
-initialize_java: owl_java
+initialize_java:
 	ant -q init
 
 java-libs:

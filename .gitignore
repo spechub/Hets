@@ -3,9 +3,7 @@
 *.o
 *.dyn_hi
 *.dyn_o
-OWL2/java/lib/*.jar
 OWL2/*.jar
-OWL2/java/OwlApi/
 OWL2/java/build/
 OWL2/lib/
 ATC/AS_Annotation.der.hs
