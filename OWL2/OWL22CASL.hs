@@ -113,14 +113,14 @@ indiConst :: OpType
 indiConst = OpType Total [] thing
 
 uriToIdM :: OS.Sign -> IRI -> Result Id
-uriToIdM s i = return $ uriToCaslId s i 
+uriToIdM s i = return $ uriToCaslId s i
 
 -- | Extracts Id from URI
 uriToCaslId :: OS.Sign -> IRI -> Id
 uriToCaslId sig urI =
     let l = localPart urI
         ur = if isThing urI then mkQName l else urI
-        repl a = if isAlphaNum a then [a] else if a/=':' then "_u" else "" 
+        repl a = if isAlphaNum a then [a] else if a/=':' then "_u" else ""
         p = namePrefix ur
         nP = concatMap repl $ Map.findWithDefault p p $ OS.prefixMap sig   --this should be expanded always
         lP = concatMap repl l
@@ -208,8 +208,8 @@ mapMorphism :: OWLMorphism -> Result CASLMor
 mapMorphism oMor = do
       let oSig1 = osource oMor
           oSig2 = otarget oMor
-      cdm <- mapSign oSig1 
-      ccd <- mapSign oSig2 
+      cdm <- mapSign oSig1
+      ccd <- mapSign oSig2
       let emap = mmaps oMor
           preds = Map.foldWithKey (\ (Entity _ ty u1) u2 -> let
               i1 = uriToCaslId oSig1 u1
@@ -595,7 +595,7 @@ mapCharact oSig cSig ope c = case c of
 mapSubObjPropChain :: OS.Sign -> CASLSign -> [ObjectPropertyExpression]
     -> ObjectPropertyExpression -> Result CASLFORMULA
 mapSubObjPropChain oSig cSig props oP = do
-    let (_, vars) = unzip $ zip (oP:props) [1 ..] 
+    let (_, vars) = unzip $ zip (oP:props) [1 ..]
     -- because we need n+1 vars for a chain of n roles
     oProps <- mapM (\ (z, x) -> mapObjProp oSig cSig z x (x+1)) $
                 zip props vars
@@ -657,13 +657,13 @@ mapListFrameBit oSig cSig ex rel lfb =
                     let vars = case r of
                                 ADomain -> (mkNName 1, mkNName 2)
                                 ARange -> (mkNName 2, mkNName 1)
-                    return (map (mkFI [tokDecl $ fst vars] [tokDecl $ snd vars] tobjP) tdsc, 
+                    return (map (mkFI [tokDecl $ fst vars] [tokDecl $ snd vars] tobjP) tdsc,
                             uniteL $ cSig : s)
                   _ -> err
           ClassEntity ce -> let cel = map snd cls in case rel of
               Nothing -> return ([], cSig)
               Just r -> case r of
-                EDRelation _ -> do 
+                EDRelation _ -> do
                     (decrsS, s) <- mapDescriptionListP oSig cSig 1 $ mkPairs ce cel
                     mkEDPairs (uniteCASLSign cSig s) [1] rel decrsS
                 SubClass -> do
@@ -706,7 +706,7 @@ mapListFrameBit oSig cSig ex rel lfb =
                     . mkImpl o2) os1, cSig)
             EDRelation _ -> do
                 pairs <- mapComDataPropsList oSig cSig (Just iri) dl 1 2
-                mkEDPairs cSig [1, 2] rel pairs 
+                mkEDPairs cSig [1, 2] rel pairs
             _ -> return ([], cSig)
         _ -> err
     IndividualSameOrDifferent al -> case rel of
@@ -778,8 +778,8 @@ mapAnnFrameBit oSig cSig ex ans afb =
         (keys, s) <-
             mapKey oSig cSig ce (ol ++ dl) (nol ++ ndl) tl (uptoOP ++ uptoDP) lo
         return ([keys], uniteCASLSign cSig s)
-    ObjectSubPropertyChain oplst -> 
-      case ex of 
+    ObjectSubPropertyChain oplst ->
+      case ex of
        ObjectEntity oe -> do
         os <- mapSubObjPropChain oSig cSig oplst oe
         return ([os], cSig)
