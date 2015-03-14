@@ -35,6 +35,8 @@ import Static.DevGraph
 import Static.DgUtils
 import Static.History
 
+import Common.DocUtils
+
 import Logic.Comorphism
 import Logic.Grothendieck
 import Logic.Logic
@@ -345,7 +347,7 @@ proveNode useTh save2File sTxt ndpf ndnm mp mcm mThr mSt miSt libname =
      case prep of
      -- theory could not be computed
       Nothing -> return "No suitable prover and comorphism found"
-      Just (G_theory_with_prover lid1 th p, cmp) ->
+      Just (G_theory_with_prover lid1 th p, cmp) -> 
         case P.proveCMDLautomaticBatch p of
          Nothing -> return "Error obtaining the prover"
          Just fn ->
@@ -372,7 +374,7 @@ proveNode useTh save2File sTxt ndpf ndnm mp mcm mThr mSt miSt libname =
                       (P.TacticScript $ show sTxt)
                       th []
              swapMVar mThr $ Just $ fst tmp
-             getResults lid1 cmp (snd tmp) answ mSt
+             getResults lid1 cmp (snd tmp) answ mSt th
              swapMVar mThr Nothing
              ist <- readMVar miSt
              state <- readMVar mSt
@@ -495,22 +497,31 @@ disproveNode sTxt ndpf ndnm mp mcm mSt miSt ln =
 
 getResults :: (Logic lid sublogics basic_spec sentence
                      symb_items symb_map_items
-                     sign morphism symbol raw_symbol proof_tree) =>
+                     sign morphism symbol raw_symbol proof_tree, Pretty sentence) =>
               lid ->
               AnyComorphism ->
               MVar () ->
               MVar (Result [P.ProofStatus proof_tree]) ->
-              MVar (Maybe Int_NodeInfo) ->
+              MVar (Maybe Int_NodeInfo) -> 
+              P.Theory sign sentence proof_tree ->
               IO ()
-getResults lid acm mStop mData mState =
+getResults lid acm mStop mData mState (P.Theory _ sensMap) =
   do
     takeMVar mStop
     d <- takeMVar mData
     case d of
       Result _ Nothing -> return ()
       Result _ (Just d') -> do
-        mapM_ (\ gs -> putStrLn $ "Goal " ++ P.goalName gs
-               ++ " used " ++ unwords (P.usedAxioms gs))
+        mapM_ (\ gs -> let
+                  uAx = map 
+                          (\x -> let ax =  case OMap.lookup x sensMap of
+                                            Nothing -> error "Proof using a missing axiom"
+                                            Just s -> show $ pretty $ sentence s
+                                  in x ++" : " ++ ax ++ "\n") $
+                        P.usedAxioms gs
+                in  
+               putStrLn $ "Goal " ++ P.goalName gs
+               ++ " used \n" ++ unwords uAx)
           $ filter P.isProvedStat d'
         modifyMVar_ mState (\ s -> case s of
                   Nothing -> return s
