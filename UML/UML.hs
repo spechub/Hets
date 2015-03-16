@@ -8,11 +8,11 @@ Stability   :  experimental
 Structure used by ClassDiagramParser.hs
 -}
 
-module UML where
+module UML.UML where
 import qualified Data.Map as Map
 import Data.Maybe
+import UML.StateMachine
 
-import StateMachine
 data Model = ClassModel CM
                 | StateMachine [Entity] [Transition]
 		| StateMachineR Region deriving Show
@@ -23,12 +23,12 @@ data CM = CM {
         cmAssociations :: (Map.Map Id Association),
         cmInterfaces :: (Map.Map Id Interface),
         cmPackageMerges :: [Id],
-	cmEnums :: Map.Map Id UML.Enum,
+	cmEnums :: Map.Map Id UML.UML.Enum,
 	cmAssociationClasses :: (Map.Map Id  AssociationClass),
         cmSignals :: (Map.Map Id Signal),
 	cmPackages:: [Package]} deriving Show
 
-data ClassEntity = CL Class | AC AssociationClass | EN UML.Enum deriving Show
+data ClassEntity = CL Class | AC AssociationClass | EN UML.UML.Enum deriving Show
 
 instance Eq ClassEntity where
 	(==) x1 x2 = (showClassEntityName x1) == (showClassEntityName x2)
@@ -39,7 +39,7 @@ data Package = Package {
         associations :: (Map.Map Id Association),
         interfaces :: (Map.Map Id Interface),
         packageMerges :: [Id],
-	packageEnums :: Map.Map Id UML.Enum,
+	packageEnums :: Map.Map Id UML.UML.Enum,
 	packageAssociationClasses :: (Map.Map Id  AssociationClass),
         signals :: (Map.Map Id Signal),
 	packagePackages :: [Package]} deriving Show
@@ -85,7 +85,7 @@ data Enum = Enum{
 		enumLiterals :: [Literal]} deriving Show
 
 data Literal = Literal{ literalName:: String,
-			literalOwner :: UML.Enum} 
+			literalOwner :: UML.UML.Enum} 
 
 instance Show Literal where
 	show lit = literalName lit
@@ -112,8 +112,8 @@ showClassEntityName (AC x) = className (acClass x)
 showClassEntityName (EN x) = enumName x
 instance Show End where
 	show end = case endTarget end of 
-			CL cl -> "End" ++ (fromMaybe "" (endName end)) ++"("++ ((show.endType) end) ++ "): " ++ (className cl) ++ (show (label end))
-			AC ac -> "End" ++ (fromMaybe "" (endName end)) ++"("++ ((show.endType) end) ++ "): " ++ (className (acClass ac))   ++ (show (label end))
+			CL cl -> "End " ++ (fromMaybe "" (endName end)) ++"("++ ((show.endType) end) ++ "): " ++ (className cl) ++ (show (label end))
+			AC ac -> "End " ++ (fromMaybe "" (endName end)) ++"("++ ((show.endType) end) ++ "): " ++ (className (acClass ac))   ++ (show (label end))
 
 data Interface = Interface {
 interfaceName :: String

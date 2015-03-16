@@ -1,12 +1,12 @@
-module StateMachineParser where
+module UML.StateMachineParser where
 import qualified Data.Map as Map
 import System.IO
 import Text.XML.Light
-import UML
-import Utils
-import XMINames
+import UML.UML
+import UML.Utils
+import UML.XMINames
 import Data.Maybe
-import StateMachine 
+import UML.StateMachine 
 
 processRegion :: Element -> (Region,[(String,Entity)])
 processRegion el = (Region {states=ent, transitions=trans}, emap)

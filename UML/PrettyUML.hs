@@ -1,5 +1,5 @@
-module PrettyUML where
-import UML
+module UML.PrettyUML where
+import UML.UML
 import qualified Data.Map as Map
 import Common.Doc
 import Common.DocUtils

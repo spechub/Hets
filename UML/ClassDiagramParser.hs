@@ -6,14 +6,14 @@ Maintainer  :  martin.glauer@st.ovgu.de
 Stability   :  experimental
 
 -}
-module ClassDiagramParser where
+module UML.ClassDiagramParser where
 
 import qualified Data.Map as Map
 import System.IO
 import Text.XML.Light
-import UML
-import Utils
-import XMINames
+import UML.UML
+import UML.Utils
+import UML.XMINames
 import Data.Maybe
 import Data.List
 import Debug.Trace
@@ -30,7 +30,8 @@ parseClassModel el = ClassModel CM{
 					cmPackages = packagePackages pack,
 					cmEnums = packageEnums pack
 				}
-				where 	pack = processPackage allmap semap el
+				where 	
+					pack = processPackage allmap semap el
 					allmap = Map.union emap $ Map.union cmap acmap
 					cmap = Map.fromList $ (map (\(id,x) -> (id,CL x)) (collectRec "uml:Class" (processClass allmap) el)) 
 					emap = Map.fromList $ map (\(id,x) -> (id,EN x)) (collectRec "uml:Enumeration" processEnumeration el)
@@ -65,14 +66,15 @@ collectRec s f el =  (parse s f (findChildren packagedElementName el))
 
 
 collectSpecialEnds :: Map.Map Id ClassEntity -> Element -> [(Id,End)]
-collectSpecialEnds cmap el =  (foldl (++) [] (map (classTranslator cmap) cl))  ++ (foldl (++) [] (map (collectSpecialEnds cmap) (findPackageElements el)))
+collectSpecialEnds cmap el =  (foldl (++) [] (map (classSETranslator cmap) cl))  ++ (foldl (++) [] (map (collectSpecialEnds cmap) (findPackageElements el)))
 				where 	cl = getChildrenType "uml:Class" el 
 
 getChildrenType :: String -> Element -> [Element]
 getChildrenType s el = filter (\x -> (findAttr typeName x) == Just s) (findChildren packagedElementName el)
 
-classTranslator :: Map.Map Id ClassEntity -> Element -> [(Id,End)]
-classTranslator cmap x = map (agrTranslator cmap) (filter (\x -> not ((findAttr (sName "aggregation") x) == Nothing)) (findChildren attributeName x))
+classSETranslator :: Map.Map Id ClassEntity -> Element -> [(Id,End)]
+classSETranslator cmap x = map (agrTranslator cmap) (filter (\x -> not ((findAttr (sName "association") x) == Nothing)) (findChildren attributeName x))
+--classSETranslator cmap x = map (agrTranslator cmap) (filter (\x -> not ((findAttr (sName "aggregation") x) == Nothing)) (findChildren attributeName x))
 
 agrTranslator :: Map.Map Id ClassEntity -> Element -> (Id,End)
 agrTranslator cmap el = (fromJust (findAttr (sName "association") el),
@@ -81,6 +83,7 @@ agrTranslator cmap el = (fromJust (findAttr (sName "association") el),
 				endType = case findAttr (sName "aggregation") el of
 						Just "composite" -> Composition
 						Just "aggregate" -> Aggregation
+						Nothing -> Normal
 						Just t -> error $ "unknown aggregation type: " ++ t,
 				endName = findAttr nameName el
 				})
@@ -103,10 +106,10 @@ processEnds emap el = End {endTarget = (case (Map.lookup (fromJust (findAttr (sN
 processLabel :: Element -> Label
 processLabel el = Label {upperValue = case findChildren (sName "upperValue") el of
                                 [] -> "1"
-                                lis -> fromMaybe "*" (findAttr (sName "value") (head lis)),
+                                (x:lis) -> fromMaybe "*" (findAttr (sName "value") x),
                         lowerValue = case findChildren (sName "lowerValue") el of
                                 [] -> "1"
-                                lis -> fromMaybe "1" (findAttr (sName "value") (head lis))}
+                                (x:lis) -> fromMaybe "1" (findAttr (sName "value") x)}
 
 processClass :: (Map.Map Id ClassEntity) -> Element -> (Id, Class)
 processClass emap el = (fromMaybe "" (findAttr attrIdName el)
@@ -119,11 +122,11 @@ processAssociationClass :: Map.Map Id ClassEntity -> Map.Map Id [End] -> Element
 processAssociationClass emap semap el = (fromMaybe "" (findAttr attrIdName el)
                 , AssociationClass {acClass = snd (processClass emap el), acAsso = snd (processAssociation emap semap el)})
 
-processEnumeration :: Element -> (Id,UML.Enum)
+processEnumeration :: Element -> (Id,UML.UML.Enum)
 processEnumeration el = (fromJust  (findAttr attrIdName el),en)
 		 		where en = Enum{enumName = fromJust  (findAttr nameName el), enumLiterals = map snd $ map (processLiteral en) (findChildren (sName "ownedLiteral") el)}
 		
-processLiteral :: UML.Enum -> Element -> (Id,Literal)
+processLiteral :: UML.UML.Enum -> Element -> (Id,Literal)
 processLiteral en el = (fromJust  (findAttr attrIdName el), Literal{ literalName =  fromJust  (findAttr nameName el), literalOwner=en})
 
 processSignal :: (Map.Map Id ClassEntity) -> Element -> (Id, Signal)
@@ -143,10 +146,13 @@ processProcedure emap el = Procedure {
                         procPara = (map (processAttribute emap) (filter (not . isReturnParameter) (findChildren procParaName el))),
                         procReturnType = (case (filter (isReturnParameter) (findChildren procParaName el)) of
                                                                         [] -> Nothing
-                                                                        lis -> Just $ processType emap (head lis) ),
+                                                                        (x:lis) -> Just $ processType emap x ),
                         procElemImports = map (fromMaybe "" . (findAttr (sName "importedElement"))) (findChildren (sName "elementImport") el),
                         procPackImports = map (fromMaybe "" . (findAttr (sName "importedPackage"))) (findChildren (sName "packageImport") el),
-                        procVisibility = fromMaybe "" ((findAttr (sName "value")) (head (findChildren (sName "defaultValue") (head (filter (hasAttribute nameName "Visibility") (findChildren (sName "contents") (head (findChildren (sName "eAnnotations") el)) ))))))}
+                        procVisibility = case (findChildren (sName "eAnnotations") el) of
+											(x:lis) -> fromMaybe "" ((findAttr (sName "value")) (head (findChildren (sName "defaultValue") (head (filter (hasAttribute nameName "Visibility") (findChildren (sName "contents") x))))))
+											[] -> ""
+}
 
 isReturnParameter :: Element -> Bool
 isReturnParameter el = (findAttr procDirName el) == Just "return"
@@ -169,11 +175,13 @@ processAttribute emap el = Attribute {attrName = (case findAttr nameName el of
                         attrType = processType emap el,
                         attrUpperValue = case (findChildren (sName "upperValue") el ) of
                                 [] -> "1"
-                                lis -> fromMaybe "" (findAttr (sName "value") (head lis)),
+                                (x:lis) -> fromMaybe "" (findAttr (sName "value") x),
                         attrLowerValue = case (findChildren (sName "lowerValue") el) of
                                 [] -> "1"
-                                lis -> fromMaybe "" (findAttr (sName "value") (head lis)),
-                        attrVisibility = fromMaybe "" ((findAttr (sName "value")) (head (findChildren (sName "defaultValue") (head (filter (hasAttribute nameName "Visibility") (findChildren (sName "contents") (head (findChildren (sName "eAnnotations") el)) ))))))}
+                                (x:lis) -> fromMaybe "" (findAttr (sName "value") x),
+                        attrVisibility = case (findChildren (sName "eAnnotations") el) of
+											(x:lis) -> fromMaybe "" ((findAttr (sName "value")) (head (findChildren (sName "defaultValue") (head (filter (hasAttribute nameName "Visibility") (findChildren (sName "contents") x))))))
+											[] -> ""}
 
 processType :: (Map.Map Id ClassEntity) -> Element ->  Type
 processType cmap el =	Type{umltype = t, typeUnique = not $ (findAttr (sName "isUnique") el) == Just "false", typeOrdered= (findAttr (sName "isOrdered") el) == Just "true"}   -- Defaults:  Unique = True, Ordered = False
@@ -184,8 +192,10 @@ processType cmap el =	Type{umltype = t, typeUnique = not $ (findAttr (sName "isU
 						Just "String" -> UMLString
 						Just "Integer" -> UMLInteger
 						Just "Bool" -> UMLBool
+						Just "Boolean" -> UMLBool
 						Just "UnlimitedNatural" -> UMLUnlimitedNatural
 						Just "Real" -> UMLReal
+						Just t -> error $ "unknown type: " ++ t
 					typeString = (case findAttr attrTypeName1 el of
                                 		Nothing -> foldr (++) "" (map (fromMaybe "" . findAttr attrTypeName2) (findChildren attrTypeName1 el))
                                 		Just t -> t)

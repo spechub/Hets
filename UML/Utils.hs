@@ -1,8 +1,8 @@
-module Utils where
+module UML.Utils where
 
 import System.IO
 import Text.XML.Light
-import XMINames
+import UML.XMINames
 
 parse :: String -> (Element -> a) -> [Element] -> [a]
 parse _ _ [] = []

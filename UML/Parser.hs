@@ -1,35 +1,39 @@
 -- module Basic_UML where
 import System.IO
 import Text.XML.Light
-import XMINames
+import UML.XMINames
 
-import ClassDiagramParser
+import UML.ClassDiagramParser
 import Data.List.Split
 import qualified Data.Map as Map
-import StateMachineParser
-import UML
-import Utils
+import UML.StateMachineParser
+import UML.UML
+import UML.Utils
 import Data.Maybe
-import PrettyUML
+import UML.PrettyUML
 import Common.Doc
 import Common.DocUtils
 import Common.Keywords
 
 main :: IO ()
 main = do
-	handle <- openFile "data/simplelibrary.xmi" ReadMode
+	--handle <- openFile "UML/data/simplelibrary.xmi" ReadMode
+	handle <- openFile "UML/data/statemachine_Till.xml" ReadMode
         --handle <- openFile "data/uml.xmi" ReadMode
 	--handle <- openFile "data/statemachine.xmi" ReadMode
         contents <- hGetContents handle
-        putStr $show (pretty(case parseXMLDoc contents of
+        putStr $show $pretty  (case parseXMLDoc contents of
                 Nothing -> error contents
-                Just el -> (parseModel el)))
+                Just el -> (parseModel el))
 
 parseModel :: Element -> Model
-parseModel el = case findAttr typeName (head (findChildren packagedElementName el))  of 
-		Just "uml:StateMachine" -> (parseStateMachine (head (findChildren packagedElementName el)))
-		_ -> parseClassModel el
-
+parseModel el0 = 	case findAttr typeName (head (findChildren packagedElementName el))  of 
+						Just "uml:StateMachine" -> (parseStateMachine (head (findChildren packagedElementName el)))
+						_ -> parseClassModel el
+					where el =  case (elName el0) == modelName of 
+									True -> el0
+									False -> fromJust $ findElement modelName el0
+ 
 isElem :: String -> Element -> Bool 
 isElem s el = (findAttr typeName el) == Just s 
 

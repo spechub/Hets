@@ -1,4 +1,4 @@
-module StateMachine where
+module UML.StateMachine where
 import qualified Data.Map as Map
 import Data.Maybe
 
