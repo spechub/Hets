@@ -115,13 +115,20 @@ uriToIdM = return . uriToCaslId
 
 -- | Extracts Id from URI
 uriToCaslId :: IRI -> Id
-uriToCaslId urI =
-    let l = localPart urI
-        ur = if isThing urI then mkQName l else urI
-        repl a = if isAlphaNum a then [a] else "_u"
-        nP = concatMap repl $ namePrefix ur
-        lP = concatMap repl l
-    in stringToId $ (if isDatatypeKey urI then "" else nP) ++ lP
+uriToCaslId urI = let
+  repl a = if isAlphaNum a then [a] else if a/=':' then "_u" else ""
+  getId = stringToId . (concatMap repl)
+ in
+  if (isDatatypeKey urI) && (isThing urI)  then
+        getId $ localPart urI
+   else
+    let
+      ePart = expandedIRI urI
+    in
+      if ePart /= "" then
+        getId $ expandedIRI urI
+      else -- this catches the datatypes, e.g. xsd:time, weird
+        getId $ localPart urI
 
 tokDecl :: Token -> VAR_DECL
 tokDecl = flip mkVarDecl thing
@@ -158,6 +165,9 @@ mkFEI l1 l2 f = mkForall l1 . mkExist l2 . mkImpl f
 
 mkFIE :: [Int] -> [FORMULA f] -> Int -> Int -> FORMULA f
 mkFIE l1 l2 x y = mkVDecl l1 $ implConj l2 $ mkEqVar (thingDecl x) $ qualThing y
+
+mkFI :: [VAR_DECL] -> [VAR_DECL] -> FORMULA f -> FORMULA f -> FORMULA f
+mkFI l1 l2 f1 = (mkForall l1) . (mkImpl (mkExist l2 f1))
 
 mkRI :: [Int] -> Int -> FORMULA f -> FORMULA f
 mkRI l x so = mkVDecl l $ mkImpl (mkMember (qualThing x) thing) so
@@ -529,14 +539,11 @@ mapFact :: CASLSign -> Extended -> Fact -> Result CASLFORMULA
 mapFact cSig ex f = case f of
     ObjectPropertyFact posneg obe ind -> case ex of
         SimpleEntity (Entity _ NamedIndividual siri) -> do
-            inS <- mapIndivURI cSig siri
-            inT <- mapIndivURI cSig ind
-            oPropH <- mapObjProp cSig obe 1 2
+            oPropH <- mapObjPropI cSig obe (OIndi ind) (OIndi siri)
             let oProp = case posneg of
                     Positive -> oPropH
                     Negative -> Negation oPropH nullRange
-            return $ mkVDecl [1, 2] $ implConj
-                            [mkEqDecl 1 inS, mkEqDecl 2 inT] oProp
+            return oProp
         _ -> fail $ "ObjectPropertyFactsFacts Entity fail: " ++ show f
     DataPropertyFact posneg dpe lit -> case ex of
         SimpleEntity (Entity _ NamedIndividual iri) -> do
@@ -587,14 +594,14 @@ mapCharact cSig ope c = case c of
 
 -- | Mapping of ObjectSubPropertyChain
 mapSubObjPropChain :: CASLSign -> [ObjectPropertyExpression]
-    -> ObjectPropertyExpression -> Int -> Result CASLFORMULA
-mapSubObjPropChain cSig props oP n = let m = n + 1 in do
-    let (_, vars) = unzip $ zip (tail props) [m + 1 ..]
-        vl = n : vars ++ [m]
-    oProps <- mapM (\ (z, x, y) -> mapObjProp cSig z x y) $
-                zip3 props vl $ tail vl
-    ooP <- mapObjProp cSig oP n m
-    return $ mkVDecl [1, 2] $ mkVDecl vars $ implConj oProps ooP
+    -> ObjectPropertyExpression -> Result CASLFORMULA
+mapSubObjPropChain cSig props oP = do
+     let (_, vars) = unzip $ zip (oP:props) [1 ..]
+     -- because we need n+1 vars for a chain of n roles
+     oProps <- mapM (\ (z, x) -> mapObjProp cSig z x (x+1)) $
+                 zip props vars
+     ooP <- mapObjProp cSig oP 1 (head $ reverse vars)
+     return $ mkVDecl vars $ implConj oProps ooP
 
 -- | Mapping of subobj properties
 mapSubObjProp :: CASLSign -> ObjectPropertyExpression
@@ -636,7 +643,7 @@ mapListFrameBit cSig ex rel lfb =
                 DataProperty | rel == (Just $ DRRelation ADomain) -> do
                   oEx <- mapDataProp cSig iri 1 2
                   let vars = (mkNName 1, mkNName 2)
-                  return (map (mkFEI [tokDecl $ fst vars]
+                  return (map (mkFI [tokDecl $ fst vars]
                        [mkVarDecl (snd vars) dataS] oEx) els, uniteL $ cSig : s)
                 _ -> err
           ObjectEntity oe -> case rel of
@@ -651,8 +658,8 @@ mapListFrameBit cSig ex rel lfb =
                     let vars = case r of
                                 ADomain -> (mkNName 1, mkNName 2)
                                 ARange -> (mkNName 2, mkNName 1)
-                    return (map (mkFEI [tokDecl $ fst vars]
-                            [tokDecl $ snd vars] tobjP) tdsc, uniteL $ cSig : s)
+                    return (map (mkFI [tokDecl $ fst vars] [tokDecl $ snd vars] tobjP) tdsc,
+                            uniteL $ cSig : s)
                   _ -> err
           ClassEntity ce -> let cel = map snd cls in case rel of
               Nothing -> return ([], cSig)
@@ -772,9 +779,12 @@ mapAnnFrameBit cSig ex ans afb =
         (keys, s) <-
             mapKey cSig ce (ol ++ dl) (nol ++ ndl) tl (uptoOP ++ uptoDP) lo
         return ([keys], uniteCASLSign cSig s)
-    ObjectSubPropertyChain oplst -> do
-        os <- mapM (\ cd -> mapSubObjPropChain cSig oplst cd 3) oplst
-        return (os, cSig)
+    ObjectSubPropertyChain oplst ->
+      case ex of
+       ObjectEntity oe -> do
+        os <- mapSubObjPropChain cSig oplst oe
+        return ([os], cSig)
+       _ -> error "wrong annotation"
 
 keyDecl :: Int -> [Int] -> [VAR_DECL]
 keyDecl h il = map thingDecl (take h il) ++ map dataDecl (drop h il)
