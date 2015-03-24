@@ -34,6 +34,7 @@ translateModel2Phrases (ClassModel cm) = preamble ++ (translateClasses (cmClasse
 
 translateSign2Phrases :: UML.Sign.Sign -> [PHRASE] 
 translateSign2Phrases sign = (foldl (++) [] $ foldl (++) [] preambleSens) 
+    ++ (map translateEnumPreamble $ filterEnums $ fst $ signClassHier sign)
     ++ (map translateInherit (snd $ signClassHier sign))
     ++ (foldl (++) [] $ map translateAttribute (signAttribute sign))
     ++ (foldl (++) [] $ map translateProcedure (signOperations sign))
@@ -41,7 +42,10 @@ translateSign2Phrases sign = (foldl (++) [] $ foldl (++) [] preambleSens)
     ++ (foldl (++) [] $ map translateAssociation (signAssociations sign))
     ++ (foldl (++) [] $ map translateBinAsso $ filter ((2==).length.snd) (signAssociations sign))
                     
-
+filterEnums :: [ClassEntity] -> [UML.UML.Enum]
+filterEnums [] = []
+filterEnums ((EN en):lis) = en:(filterEnums lis)
+filterEnums (_:lis) = filterEnums lis
 {-
  (foldl (++) [] $ (map translateCompLabel compositions))
                         ++ (foldl (++) [] $ (map translateAssoLabel (filter (not.isComposition) (Map.elems $ cmAssociations cm))))
@@ -207,7 +211,7 @@ andSen sens = Bool_sent (Junction Conjunction sens) nullRange
 
 
 translateComposition :: ((String,ClassEntity),String,(String,Type)) -> [PHRASE]
-translateComposition ((on,ot),n,(tn,tt)) = (translateComposition2 (mkSimpleId on,mkSimpleId n,mkSimpleId tn)) ++ (map fromJust $ filter (isNothing) [translateEndCoin n 1 (on,defaultType  ot),translateEndCoin n 2 (tn,tt)])
+translateComposition ((on,ot),n,(tn,tt)) = (translateComposition2 (mkSimpleId on,mkSimpleId n,mkSimpleId tn)) ++ (map fromJust $ filter (not.isNothing) [translateEndCoin n 1 (on,defaultType  ot),translateEndCoin n 2 (tn,tt)])
 
 translateComposition2 :: (Token,Token,Token) -> [PHRASE]
 translateComposition2 (c1, m, c2) = [
@@ -420,19 +424,39 @@ comp2MFs comp = foldl (++) [] $  map (end2MFs (NumComp $ MFComposition (assoName
 
 retrieveSign :: CM -> UML.Sign.Sign 
 retrieveSign cm = UML.Sign.Sign{
-            signClassHier = (map (\c -> CL c) classLis, foldl (++) [] (map classToHier classLis)),
-            signAttribute = attributes,
-            signOperations = procedures,
-            signCompositions = compositions,
-            signAssociations = associations0
+            signClassHier = ((foldl (++) [] (map (fst.signClassHier) packSigs)) ++ (fmap EN enumLis) ++ (map (\c -> CL c) classLis), (foldl (++) [] (map (snd.signClassHier) packSigs)) ++ (foldl (++) [] (map classToHier classLis))),
+            signAttribute = (foldl (++) [] (map signAttribute packSigs)) ++ attributes,
+            signOperations = (foldl (++) [] (map signOperations packSigs)) ++procedures,
+            signCompositions = (foldl (++) [] (map signCompositions packSigs)) ++compositions,
+            signAssociations = (foldl (++) [] (map signAssociations packSigs)) ++associations0
         }
     where     
         classLis = Map.elems (cmClasses cm)
+        enumLis = Map.elems (cmEnums cm)
         --assoClasses = Map.elems (translateAssociationClasses (cmClasses cm))
         attributes = foldl (++) [] $ map (\c -> map (signTranslateAttr c) (attr c)) classLis
         compositions = map signTranslateComposition $ filter isComposition $ Map.elems $ cmAssociations cm
         procedures = foldl (++) [] $ map (\c -> map (signTranslateProc c) (proc c)) classLis
         associations0 = map signTranslateAsso $ filter (not.isComposition) $ Map.elems (cmAssociations cm)
+        packSigs = map retrieveSignPackage (cmPackages cm) 
+
+retrieveSignPackage :: UML.UML.Package -> UML.Sign.Sign
+retrieveSignPackage pack = UML.Sign.Sign{
+            signClassHier = ((foldl (++) [] (map (fst.signClassHier) packSigs)) ++ (fmap EN enumLis) ++ (map (\c -> CL c) classLis), (foldl (++) [] (map (snd.signClassHier) packSigs)) ++ (foldl (++) [] (map classToHier classLis))),
+            signAttribute = (foldl (++) [] (map signAttribute packSigs)) ++ attributes,
+            signOperations = (foldl (++) [] (map signOperations packSigs)) ++procedures,
+            signCompositions = (foldl (++) [] (map signCompositions packSigs)) ++compositions,
+            signAssociations = (foldl (++) [] (map signAssociations packSigs)) ++associations0
+        }
+    where     
+        classLis = Map.elems (classes pack)
+        enumLis = Map.elems (packageEnums pack)
+        --assoClasses = Map.elems (translateAssociationClasses (cmClasses cm))
+        attributes = foldl (++) [] $ map (\c -> map (signTranslateAttr c) (attr c)) classLis
+        compositions = map signTranslateComposition $ filter isComposition $ Map.elems $ associations pack
+        procedures = foldl (++) [] $ map (\c -> map (signTranslateProc c) (proc c)) classLis
+        associations0 = map signTranslateAsso $ filter (not.isComposition) $ Map.elems $ associations pack
+        packSigs = map retrieveSignPackage (packagePackages pack) 
 
 extractClasses :: [ClassEntity] -> [Class]
 extractClasses [] = []
