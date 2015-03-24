@@ -31,12 +31,12 @@ import Numeric
 import Text.XML.Light (ppTopElement)
 
 type ProofResult = (String, String, String,
-                -- ^(goalName, goalResult, goalDetails
+                -- (goalName, goalResult, goalDetails
                     AnyComorphism, Maybe (LP.ProofStatus G_proof_tree))
-                -- ^translation, proofStatusM)
+                -- translation, proofStatusM)
 type ProofFormatter =
     ProofFormatterOptions -> [(String, [ProofResult])] -> (String, String)
-                          -- ^[(dgNodeName, result)]   ^(responseType, response)
+                          -- [(dgNodeName, result)] -> (responseType, response)
 
 data ProofFormatterOptions = ProofFormatterOptions
   { pfoIncludeProof :: Bool
