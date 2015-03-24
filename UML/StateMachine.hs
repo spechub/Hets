@@ -6,9 +6,8 @@ data Region = Region {
         transitions :: [Transition]} deriving Show
 
 data PseudoState = PseudoState {
-pseudoStateName :: String,
-pseudoStateType :: String
-} deriving Show
+    pseudoStateName :: String,
+    pseudoStateType :: String} deriving Show
 
 data Entity = State String [Region] | EntryState String | ExitState String | InitialState String | DeepHistory | ShallowHistory | Junction | Choice | Fork | Join deriving Show
 {-data State = State {

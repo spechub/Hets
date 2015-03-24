@@ -13,6 +13,7 @@ import qualified Data.Map as Map
 import Data.Maybe
 import UML.StateMachine
 import qualified Common.Id
+import Prelude hiding (Enum)
 
 data Model = ClassModel CM
                 | StateMachine [Entity] [Transition]
