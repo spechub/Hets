@@ -193,3 +193,6 @@ morphismUnion mor1 mor2 =
       { source = unite p1 p2
       , target = unite (target mor1) $ target mor2
       , propMap = pmap } else Result pds Nothing
+
+
+

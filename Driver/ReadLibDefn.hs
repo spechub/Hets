@@ -45,6 +45,8 @@ import Text.ParserCombinators.Parsec
 import Control.Monad.Trans (MonadIO (..))
 import Data.List
 
+import UML.ParseUMLAsLibDefn
+
 mimeTypeMap :: [(String, InType)]
 mimeTypeMap =
   [ ("xml", DgXml)
@@ -102,6 +104,7 @@ readLibDefn lgraph opts mr file fileForPos input =
 #ifdef RDFLOGIC
  -- - RDFIn -> liftIO $ parseRDF file
 #endif
+      UMLCDXmi -> liftIO $ fmap (: []) $  parseUMLCDasLibDefn file
       Xmi -> liftIO $ fmap (: []) $ parseXmi file
       Qvt -> liftIO $ fmap (: []) $ parseQvt file
       TPTPIn -> liftIO $ fmap (: []) $ parseTPTP file

@@ -84,6 +84,7 @@ import Comorphisms.QVTR2CASL
 import Comorphisms.CASL2Hybrid
 import Comorphisms.Hybrid2CASL
 
+import Comorphisms.UML_CD2CL
 
 #ifdef CASLEXTENSIONS
 import Comorphisms.CoCFOL2IsabelleHOL
@@ -228,7 +229,8 @@ comorphismList =
     , Comorphism QBF2Prop
     , Comorphism Prop2QBF
     , Comorphism CSMOF2CASL
-    , Comorphism QVTR2CASL ]
+    , Comorphism QVTR2CASL
+    , Comorphism UML_CD2CL]
 
 inclusionList :: [AnyComorphism]
 inclusionList =

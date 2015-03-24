@@ -14,18 +14,18 @@ import CommonLogic.AS_CommonLogic
 
 main :: IO ()
 main = do
-	handle <- openFile "UML/data/statemachine_Till.xml" ReadMode
+    handle <- openFile "UML/data/statemachine_Till.xml" ReadMode
         --handle <- openFile "data/uml.xmi" ReadMode
-	--handle <- openFile "data/statemachine.xmi" ReadMode
+    --handle <- openFile "data/statemachine.xmi" ReadMode
         contents <- hGetContents handle
-        putStr $ show (printText (translate (case parseXMLDoc contents of
+        putStr $ show (printText (translateModel2Text (case parseXMLDoc contents of
                 Nothing -> error contents
                 Just el -> (parseModel el))))
 
 parseModel :: Element -> Model
-parseModel el0 = 	case findAttr typeName (head (findChildren packagedElementName el))  of 
-						Just "uml:StateMachine" -> (parseStateMachine (head (findChildren packagedElementName el)))
-						_ -> parseClassModel el
-					where el =  case (elName el0) == modelName of 
-									True -> el0
-									False -> fromJust $ findElement modelName el0
+parseModel el0 =     case findAttr typeName (head (findChildren packagedElementName el))  of 
+                        Just "uml:StateMachine" -> (parseStateMachine (head (findChildren packagedElementName el)))
+                        _ -> parseClassModel el
+                    where el =  case (elName el0) == modelName of 
+                                    True -> el0
+                                    False -> fromJust $ findElement modelName el0

@@ -12,10 +12,11 @@ module UML.UML where
 import qualified Data.Map as Map
 import Data.Maybe
 import UML.StateMachine
+import qualified Common.Id
 
 data Model = ClassModel CM
                 | StateMachine [Entity] [Transition]
-		| StateMachineR Region deriving Show
+        | StateMachineR Region deriving Show
 
 data CM = CM {
         cmName :: String,
@@ -23,15 +24,19 @@ data CM = CM {
         cmAssociations :: (Map.Map Id Association),
         cmInterfaces :: (Map.Map Id Interface),
         cmPackageMerges :: [Id],
-	cmEnums :: Map.Map Id UML.UML.Enum,
-	cmAssociationClasses :: (Map.Map Id  AssociationClass),
+    cmEnums :: Map.Map Id UML.UML.Enum,
+    cmAssociationClasses :: (Map.Map Id  AssociationClass),
         cmSignals :: (Map.Map Id Signal),
-	cmPackages:: [Package]} deriving Show
+    cmPackages:: [Package]} deriving Show
 
-data ClassEntity = CL Class | AC AssociationClass | EN UML.UML.Enum deriving Show
+instance Common.Id.GetRange CM where
+  getRange _ = Common.Id.nullRange
+  rangeSpan _ = []
+
+data ClassEntity = CL Class | AC AssociationClass | EN UML.UML.Enum deriving (Ord,Show)
 
 instance Eq ClassEntity where
-	(==) x1 x2 = (showClassEntityName x1) == (showClassEntityName x2)
+    (==) x1 x2 = (showClassEntityName x1) == (showClassEntityName x2)
 
 data Package = Package {
         packageName :: String,
@@ -39,36 +44,34 @@ data Package = Package {
         associations :: (Map.Map Id Association),
         interfaces :: (Map.Map Id Interface),
         packageMerges :: [Id],
-	packageEnums :: Map.Map Id UML.UML.Enum,
-	packageAssociationClasses :: (Map.Map Id  AssociationClass),
+    packageEnums :: Map.Map Id UML.UML.Enum,
+    packageAssociationClasses :: (Map.Map Id  AssociationClass),
         signals :: (Map.Map Id Signal),
-	packagePackages :: [Package]} deriving Show
+    packagePackages :: [Package]} deriving (Eq,Ord,Show)
 
 --These do not work very well, yet.
---	-> AssociationClasses can target classes but not other other AssociationClass  (ToDo)
+--    -> AssociationClasses can target classes but not other other AssociationClass  (ToDo)
 
 data AssociationClass = AssociationClass {
         acClass :: Class,
-        acAsso :: Association} deriving Show
+        acAsso :: Association} deriving (Eq,Ord,Show)
 
 
 data Class = Class {
         super :: [ClassEntity],
         className :: String,
         attr :: [Attribute],
-        proc :: [Procedure]
-} deriving Show
+        proc :: [Procedure]} deriving (Eq,Ord,Show)
 
 data Attribute = Attribute {
         attrName :: String,
         attrType :: Type,
         attrUpperValue :: String,
         attrLowerValue :: String,
-        attrVisibility :: String
-}
+        attrVisibility :: String}deriving (Eq,Ord)
 
 instance Show Attribute where 
-	show attr = (attrName attr) ++ ":" ++ ((show.attrType) attr) ++ "[" ++ (attrLowerValue attr) ++ ", " ++ (attrUpperValue attr) ++ "]" 
+    show attri = (attrName attri) ++ ":" ++ ((show.attrType) attri) ++ "[" ++ (attrLowerValue attri) ++ ", " ++ (attrUpperValue attri) ++ "]" 
 
 data Procedure = Procedure {
         procName :: String,
@@ -76,69 +79,92 @@ data Procedure = Procedure {
         procReturnType :: Maybe Type,
         procPackImports :: [Id],
         procElemImports :: [Id],
-        procVisibility :: String
-} deriving Show
+        procVisibility :: String} deriving (Eq,Ord,Show)
 
 
 data Enum = Enum{
-		enumName :: String,
-		enumLiterals :: [Literal]} deriving Show
+        enumName :: String,
+        enumLiterals :: [Literal]} deriving (Eq,Ord,Show)
 
 data Literal = Literal{ literalName:: String,
-			literalOwner :: UML.UML.Enum} 
+            literalOwner :: UML.UML.Enum}  deriving (Eq,Ord)
 
 instance Show Literal where
-	show lit = literalName lit
+    show lit = literalName lit
 
 data Association = Association {
         ends :: [End],
-	assoName :: String
-} deriving Show
+        assoName :: String} deriving (Eq,Ord,Show)
 
-data EndType = Composition | Aggregation | Normal deriving (Show,Eq)
+data EndType = Composition | Aggregation | Normal deriving (Eq,Ord,Show)
 
 -- The XMI-Standard ignores ends that are compositions or aggregations but adds attributes to the corresponding class. Leads to edges having only one end, which is quite inconvenient.
---	Thus in this DS above mentioned attributes are ignored and the corresponding (special) edges recreated. These edges are marked by the non-normal EndTypes.
+--    Thus in this DS above mentioned attributes are ignored and the corresponding (special) edges recreated. These edges are marked by the non-normal EndTypes.
 data End = End {
-endTarget :: ClassEntity,
-label :: Label,
-endName :: Maybe String,
-endType :: EndType
-} deriving Eq
+        endTarget :: ClassEntity,
+        label :: Label,
+        endName :: Maybe String,
+        endType :: EndType} deriving (Eq,Ord)
 
 showClassEntityName :: ClassEntity -> String
 showClassEntityName (CL x) = className x
 showClassEntityName (AC x) = className (acClass x)
 showClassEntityName (EN x) = enumName x
 instance Show End where
-	show end = case endTarget end of 
-			CL cl -> "End " ++ (fromMaybe "" (endName end)) ++"("++ ((show.endType) end) ++ "): " ++ (className cl) ++ (show (label end))
-			AC ac -> "End " ++ (fromMaybe "" (endName end)) ++"("++ ((show.endType) end) ++ "): " ++ (className (acClass ac))   ++ (show (label end))
+    show end = case endTarget end of 
+            CL cl -> "End " ++ (fromMaybe "" (endName end)) ++"("++ ((show.endType) end) ++ "): " ++ (className cl) ++ (show (label end))
+            AC ac -> "End " ++ (fromMaybe "" (endName end)) ++"("++ ((show.endType) end) ++ "): " ++ (className (acClass ac))   ++ (show (label end))
+            EN x -> "End "++ (fromMaybe "" (endName end)) ++"("++ ((show.endType) end) ++ "): " ++ (show x) ++ (show (label end))
 
 data Interface = Interface {
-interfaceName :: String
-} deriving Show
+        interfaceName :: String} deriving (Eq,Ord,Show)
 
-data Label = Label {upperValue :: String,
-lowerValue :: String}  deriving Eq
+data Label = Label {
+        upperValue :: String,
+        lowerValue :: String} deriving (Eq,Ord)
 
 instance Show Label where
-	show l = "[" ++ (lowerValue l) ++ ", " ++ (upperValue l) ++ "]"
+    show l = "[" ++ (lowerValue l) ++ ", " ++ (upperValue l) ++ "]"
 
 data Signal = Signal {
         sigSuper :: [ClassEntity],
         signalName :: String,
         sigAttr :: [Attribute],
-        sigProc :: [Procedure]
-} deriving Show
+        sigProc :: [Procedure]} deriving (Eq,Ord,Show)
 
 type Id = String
-data UMLType = CE ClassEntity | UMLString | UMLInteger | UMLBool | UMLUnlimitedNatural | UMLReal | UMLSequence Type | UMLSet Type | UMLOrderedSet Type | UMLBag Type | Other String deriving Show  --These types are somewhat cryptic in XMI. They are left as-is - who knows who needs this. Note that they might contain class ids
+data UMLType = CE ClassEntity | UMLString | UMLInteger | UMLBool | UMLUnlimitedNatural | UMLReal | UMLSequence Type | UMLSet Type | UMLOrderedSet Type | UMLBag Type | Other String deriving (Show,Eq,Ord)  --These types are somewhat cryptic in XMI. They are left as-is - who knows who needs this. Note that they might contain class ids
 
 data Type = Type{
-	umltype::UMLType,
-	typeUnique::Bool,
-	typeOrdered::Bool}
+        umltype::UMLType,
+        typeUnique::Bool,
+        typeOrdered::Bool} deriving (Eq,Ord)
 
 instance Show Type where
-	show t = show (umltype t)
+    show t = show (umltype t)
+
+compositionEnds :: Association -> (End,End)
+compositionEnds ass = (corigin,ctarget) 
+        where            
+            corigin = head $ filter isComposedEnd $ ends ass 
+            ctarget = case (filter (not.(corigin==)) (ends ass)) of 
+                        (x:_) -> x
+                        [] -> error $ show $ ends ass 
+
+isComposedEnd :: End -> Bool 
+isComposedEnd en = (endType en) == Composition
+
+isComposition :: Association -> Bool 
+isComposition as = any isComposedEnd (ends as)
+
+umlTypeString :: UMLType -> String
+umlTypeString (CE c) = showClassEntityName c
+umlTypeString (UMLString) = "buml:String"
+umlTypeString (UMLInteger) = "buml:Integer"
+umlTypeString (UMLBool) = "buml:Bool"
+umlTypeString (UMLUnlimitedNatural) = "buml:NaturalNumber"
+umlTypeString (UMLReal) = "buml:Real"
+umlTypeString _ = ""
+
+defaultType :: ClassEntity -> Type
+defaultType ce = Type{umltype = CE ce, typeOrdered = False, typeUnique = True}

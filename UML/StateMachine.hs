@@ -1,5 +1,4 @@
 module UML.StateMachine where
-import qualified Data.Map as Map
 import Data.Maybe
 
 data Region = Region {
@@ -25,14 +24,15 @@ data Transition = Transition {
         effect :: Maybe Event} 
 
 instance Show Transition where 
-	show tran = ((source tran) ++ " --" ++ tr ++ gu ++ ev ++ "--> " ++ (target tran))
-		 where	tr = fromMaybe "" (trigger tran)
-			gu = case guard tran of
-				Nothing -> ""
-				Just g -> "[" ++ g ++ "]"
-			ev = case effect tran of 
-				Nothing -> ""
-				Just e -> "/" ++ e
+    show tran = ((source tran) ++ " --" ++ tr ++ gu ++ ev ++ "--> " ++ (target tran))
+         where    
+            tr = fromMaybe "" (trigger tran)
+            gu = case guard tran of
+                Nothing -> ""
+                Just g -> "[" ++ g ++ "]"
+            ev = case effect tran of 
+                Nothing -> ""
+                Just e -> "/" ++ e
 
 type Trigger = String
 type Guard = String
