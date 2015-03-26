@@ -12,7 +12,7 @@ import Data.Maybe
 import UML.Utils
 import UML.Sign
 import Data.List
-
+import Data.Char
 
 
 
@@ -82,22 +82,22 @@ translateMF2TM mfs = Text_meta{ getText = Text (fmap Sentence (map translateMult
 translateMult2Sen :: MultForm -> SENTENCE 
 translateMult2Sen mf = case mf of 
                 NLeqF l (NumAttr (MFAttribute c p (MFType t cp))) -> Quant_sent Universal [Name x, Name y, Name n] (ifSen    (andSen [    typeFunction (mkSimpleId $ c ++ "." ++ p) [x,y], 
-                                        (typeFunction (mkSimpleId $ "form:" ++ (show t) ++ "-size") [y,n])])
-                                (typeFunction (mkSimpleId "buml::leq") [mkSimpleId $ show l,n])) nullRange
+                                        (typeFunction (mkSimpleId $ "form:" ++ (map toLower $ show t) ++ "-size") [y,n])])
+                                (typeFunction (mkSimpleId "buml:leq") [mkSimpleId $ show l,n])) nullRange
                     where 
                         [x,y,n] = map mkSimpleId $ generateNames [c,p,cp,annotString t] 3 
                 NLeqF l (NumAss (MFAssociation a endL) p1) -> Quant_sent Universal (map (\p -> Name p) xs) 
                     (ifSen    (andSen $ (map (\(x,c) -> typeFunction c [x]) (zip xs cs)) ++
                         [Atom_sent (Atom (Name_term  $ mkSimpleId "form:sequence-size")  [Term_seq $ Funct_term (Name_term  $ mkSimpleId "form:n-select") [Term_seq $ Name_term $ mkSimpleId a,Term_seq $ Name_term $ mkSimpleId $ show i, insertList xs,Term_seq $ Name_term n] nullRange]) nullRange])
-                                (typeFunction (mkSimpleId "buml::leq") [mkSimpleId $ show l,n])) nullRange
+                                (typeFunction (mkSimpleId "buml:leq") [mkSimpleId $ show l,n])) nullRange
                     where 
                         (n:xs) = map mkSimpleId $ generateNames ([show l,a,p1] ++ (map fst pcs)) $ (length pcs) +1  
                         pcs =  filter (\(p,_) -> not $ p == p1) endL
                         cs = map (mkSimpleId.fst) pcs 
                         i = snd $ head $ filter (\((p,_),_) -> p == p1) (zip endL [i0| i0<-[1..(length endL)]])
 
-                NLeqF l (NumComp (MFComposition m p1 (MFType t1 c1) p2 (MFType t2 c2)) p0) -> Quant_sent Universal [Name x]  (ifSen    (andSen [    (typeFunction (mkSimpleId c3mi) [x]), Atom_sent (Atom (Name_term  $ mkSimpleId $ "form:" ++ (show t3mi) ++ "-size") [Term_seq $ Funct_term (Name_term  $ mkSimpleId $ "form:select" ++ (show i)) [Term_seq $ Name_term x, Term_seq $ Name_term $ mkSimpleId m] nullRange,Term_seq $ Name_term n] ) nullRange])
-                                (typeFunction (mkSimpleId "buml::leq") [mkSimpleId $ show l, n])) nullRange
+                NLeqF l (NumComp (MFComposition m p1 (MFType t1 c1) p2 (MFType t2 c2)) p0) -> Quant_sent Universal [Name x]  (ifSen    (andSen [    (typeFunction (mkSimpleId c3mi) [x]), Atom_sent (Atom (Name_term  $ mkSimpleId $ "form:" ++ (map toLower $ show t3mi) ++ "-size") [Term_seq $ Funct_term (Name_term  $ mkSimpleId $ "form:select" ++ (show i)) [Term_seq $ Name_term x, Term_seq $ Name_term $ mkSimpleId m] nullRange,Term_seq $ Name_term n] ) nullRange])
+                                (typeFunction (mkSimpleId "buml:leq") [mkSimpleId $ show l, n])) nullRange
                     where 
                         [x,n] = map mkSimpleId $ generateNames [c1,p1,c2,p2,annotString t1,annotString t2,m] 2 
                         (c3mi,t3mi,i) = case p0==p1 of
@@ -105,8 +105,8 @@ translateMult2Sen mf = case mf of
                                 _ -> (c1,t1,"2")
                                 --_ -> error $ "Error! unknown name: " ++ (show pi)
                 FLeqN (NumAttr (MFAttribute c p (MFType t cp))) l -> Quant_sent Universal [Name x, Name y, Name n] (ifSen    (andSen [    typeFunction (mkSimpleId $ c ++ "." ++ p) [x,y], 
-                                        (typeFunction (mkSimpleId $ "form:" ++ (show t) ++ "-size") [y,n])])
-                                (typeFunction (mkSimpleId "buml::leq") [n,mkSimpleId $ show l])) nullRange
+                                        (typeFunction (mkSimpleId $ "form:" ++ (map toLower $ show t) ++ "-size") [y,n])])
+                                (typeFunction (mkSimpleId "buml:leq") [n,mkSimpleId $ show l])) nullRange
                     where 
                         [x,y,n] = map mkSimpleId $ generateNames [c,p,cp,annotString t] 3 
 
@@ -114,7 +114,7 @@ translateMult2Sen mf = case mf of
                 FLeqN (NumAss (MFAssociation a endL) p0) l -> Quant_sent Universal (map (\p -> Name p) xs) 
                     (ifSen    (andSen $ (map (\(x,c) -> typeFunction c [x]) (zip xs cs)) ++
                         [Atom_sent (Atom (Name_term  $ mkSimpleId "form:sequence-size")  [Term_seq $ Funct_term (Name_term  $ mkSimpleId "form:n-select") [Term_seq $ Name_term $ mkSimpleId a,Term_seq $ Name_term $ mkSimpleId $ show i, insertList xs,Term_seq $ Name_term n] nullRange]) nullRange])
-                                (typeFunction (mkSimpleId "buml::leq") [n,mkSimpleId $ show l])) nullRange
+                                (typeFunction (mkSimpleId "buml:leq") [n,mkSimpleId $ show l])) nullRange
                     where 
                         (n:xs) = map mkSimpleId $ generateNames ([show l,a,p0] ++ (map fst pcs)) $ (length pcs) +1  
                         pcs =  filter (\(p,_) -> not $ p == p0) endL
@@ -122,8 +122,8 @@ translateMult2Sen mf = case mf of
                         i = snd $ head $ filter (\((p,_),_) -> p == p0) (zip endL [i0| i0<-[1..(length endL)]])
 
                 FLeqN (NumComp (MFComposition m p1 (MFType t1 c1) p2 (MFType t2 c2)) p0) l -> Quant_sent Universal [Name x]  (ifSen    (andSen [    (typeFunction (mkSimpleId c3mi) [x]), 
-                                        Atom_sent (Atom (Name_term  $ mkSimpleId $ "form:" ++ (show t3mi) ++ "-size") [Term_seq $ Funct_term (Name_term  $ mkSimpleId $ "form:select" ++ (show i)) [Term_seq $ Name_term x, Term_seq $ Name_term $ mkSimpleId m] nullRange,Term_seq $ Name_term n] ) nullRange])
-                                (typeFunction (mkSimpleId "buml::leq") [n, mkSimpleId $ show l])) nullRange
+                                        Atom_sent (Atom (Name_term  $ mkSimpleId $ "form:" ++ (map toLower $ show t3mi) ++ "-size") [Term_seq $ Funct_term (Name_term  $ mkSimpleId $ "form:select" ++ (show i)) [Term_seq $ Name_term x, Term_seq $ Name_term $ mkSimpleId m] nullRange,Term_seq $ Name_term n] ) nullRange])
+                                (typeFunction (mkSimpleId "buml:leq") [n, mkSimpleId $ show l])) nullRange
                     where 
                         [x,n] = map mkSimpleId $ generateNames [c1,p1,c2,p2,annotString t1,annotString t2,m] 2 
                         (c3mi,t3mi,i) = case p0==p1 of
@@ -158,11 +158,11 @@ translateAssociation (n,endL)  = [    Sentence $ typeFunction (mkSimpleId "form:
                 endTypes = map (translateType.snd) endL --(map (translateType.defaultType.endTarget) $ ends as)
                 x = head $ filter (\x0 -> not $ any (isPrefixOf x0) endTypes) allStrings 
                 t = mkSimpleId "t" 
-                a = mkSimpleId "a"
+                a = mkSimpleId n
                 names = [mkSimpleId $ x ++ (show i)| i <- [1..(length $ endL)]]   
                 allStrings = concatMap (\s -> map (:s) $ ['a'..'z'] ++ ['0'..'9']) $ "" : allStrings  
-                x2inserts (x0:(y:ls)) = Funct_term (Name_term $ mkSimpleId "form:insert-sequence") [Term_seq $ Name_term x0,Term_seq $ (x2inserts (y:ls))] nullRange
-                x2inserts [x0] = Funct_term (Name_term $ mkSimpleId "form:insert-sequence") [Term_seq $ Name_term x0, Term_seq $ Name_term $ mkSimpleId "form:empty-sequence"] nullRange
+                x2inserts (x0:(y:ls)) = Funct_term (Name_term $ mkSimpleId "form:sequence-insert") [Term_seq $ Name_term x0,Term_seq $ (x2inserts (y:ls))] nullRange
+                x2inserts [x0] = Funct_term (Name_term $ mkSimpleId "form:sequence-insert") [Term_seq $ Name_term x0, Term_seq $ Name_term $ mkSimpleId "form:empty-sequence"] nullRange
                 x2inserts [] = error "empty association"
 
 generateNames :: [String] -> Int -> [String]
@@ -211,7 +211,7 @@ andSen sens = Bool_sent (Junction Conjunction sens) nullRange
 
 
 translateComposition :: ((String,ClassEntity),String,(String,Type)) -> [PHRASE]
-translateComposition ((on,ot),n,(tn,tt)) = (translateComposition2 (mkSimpleId on,mkSimpleId n,mkSimpleId tn)) ++ (map fromJust $ filter (not.isNothing) [translateEndCoin n 1 (on,defaultType  ot),translateEndCoin n 2 (tn,tt)])
+translateComposition ((on,ot),n,(tn,tt)) = (translateComposition2 (mkSimpleId $ showClassEntityName ot,mkSimpleId n,mkSimpleId $ translateType tt)) ++ (map fromJust $ filter (not.isNothing) [translateEndCoin n 1 (on,defaultType  ot),translateEndCoin n 2 (tn,tt)])
 
 translateComposition2 :: (Token,Token,Token) -> [PHRASE]
 translateComposition2 (c1, m, c2) = [
@@ -292,7 +292,7 @@ translateAttribute (cl,n,t) = mem ++ (map (translateProperty attrt l) sens)
                     rightUniqueRule attrt l (cp,y) (mkSimpleId "z")]
 
 translateTau :: Token -> (Token,Token,Token) -> SENTENCE
-translateTau m (c,t,x) = andSen [typeFunction c [x], Quant_sent Universal [Name m] (ifSen (typeFunction (mkSimpleId $ "from:" ++ (tokStr t) ++ "-member") [m,x]) (typeFunction c [m])) nullRange]
+translateTau m (c,t,x) = andSen [typeFunction c [x], Quant_sent Universal [Name m] (ifSen (typeFunction (mkSimpleId $ "form:" ++ (map toLower $ tokStr t) ++ "-member") [m,x]) (typeFunction c [m])) nullRange]
 
 translateTuple :: (Token,Token)  -> SENTENCE
 translateTuple (c,x) = typeFunction c [x]
