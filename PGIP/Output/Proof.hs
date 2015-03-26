@@ -10,6 +10,8 @@ module PGIP.Output.Proof
   , formatProofs
   ) where
 
+import PGIP.Common
+
 import PGIP.Output.Formatting
 import PGIP.Output.Mime
 
@@ -30,8 +32,8 @@ import Numeric
 
 import Text.XML.Light (ppTopElement)
 
-type ProofResult = (String, String, String,
-                -- (goalName, goalResult, goalDetails
+type ProofResult = (String, String, String, ProverOrConsChecker,
+                -- ^(goalName, goalResult, goalDetails, prover
                     AnyComorphism, Maybe (LP.ProofStatus G_proof_tree))
                 -- translation, proofStatusM)
 type ProofFormatter =
@@ -70,7 +72,8 @@ formatProofs format options proofs = case format of
     }
 
   convertGoal :: ProofResult -> ProofGoal
-  convertGoal (goalName, goalResult, goalDetails, translation, proofStatusM) =
+  convertGoal (goalName, goalResult, goalDetails, proverOrConsChecker,
+               translation, proofStatusM) =
     ProofGoal
       { name = goalName
       , result = goalResult
@@ -78,7 +81,7 @@ formatProofs format options proofs = case format of
           if pfoIncludeDetails options
           then Just goalDetails
           else Nothing
-      , usedProver = fmap LP.usedProver proofStatusM
+      , usedProver = proverOrConsCheckerName proverOrConsChecker
       , usedTranslation = showComorph translation
       , tacticScript = fmap convertTacticScript proofStatusM
       , proofTree = fmap (show . LP.proofTree) proofStatusM
@@ -121,7 +124,7 @@ data ProofGoal = ProofGoal
   { name :: String
   , result :: String
   , details :: Maybe String
-  , usedProver :: Maybe String
+  , usedProver :: String
   , usedTranslation :: String
   , tacticScript :: Maybe TacticScript
   , proofTree :: Maybe String
