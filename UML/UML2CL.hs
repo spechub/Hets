@@ -69,7 +69,7 @@ translateEndCoin m i (n,et) =
                                     [] -> Nothing
                                     (_:_) -> Just $ Sentence $ Quant_sent Universal [Name o,Name s] (ifSen 
                                         (typeFunction (mkSimpleId $ (className cl) ++"." ++ n) [o,s])
-                                        (Atom_sent (Equation (Name_term s) (Funct_term ( Name_term  $ mkSimpleId $ "form:seq2" ++ (translateTargetType et)) [Term_seq $ Funct_term (Name_term $ mkSimpleId $ "form:select"++(show i)) [Term_seq $ Name_term o,Term_seq $ Name_term $ mkSimpleId m] nullRange] nullRange))nullRange)) nullRange
+                                        (Atom_sent (Equation (Name_term s) (Funct_term ( Name_term  $ mkSimpleId $ "form:seq2" ++ (map toLower $ translateTargetType et)) [Term_seq $ Funct_term (Name_term $ mkSimpleId $ "form:select"++(show i)) [Term_seq $ Name_term o,Term_seq $ Name_term $ mkSimpleId m] nullRange] nullRange))nullRange)) nullRange
                                                 
         _ -> Nothing                           
 
