@@ -31,7 +31,9 @@ formatProvers format proverMode availableProvers = case format of
   where
   computedProvers :: Provers
   computedProvers =
-    let proverNames = map proverOrConsCheckerName $ proversOnly availableProvers
+    let proverNames = map (\p -> Prover { name = proverOrConsCheckerName p
+                                        , displayName = ""
+                                        }) $ proversOnly availableProvers
     in case proverMode of
       GlProofs -> emptyProvers { provers = Just proverNames }
       GlConsistency -> emptyProvers { consistencyCheckers = Just proverNames }
@@ -43,8 +45,13 @@ formatProvers format proverMode availableProvers = case format of
   formatAsXML = (xmlC, ppTopElement $ asXml computedProvers)
 
 data Provers = Provers
-  { provers :: Maybe [String]
-  , consistencyCheckers :: Maybe [String]
+  { provers :: Maybe [Prover]
+  , consistencyCheckers :: Maybe [Prover]
+  } deriving (Show, Typeable, Data)
+
+data Prover = Prover
+  { name :: String
+  , displayName :: String
   } deriving (Show, Typeable, Data)
 
 emptyProvers :: Provers
