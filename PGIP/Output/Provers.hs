@@ -16,6 +16,8 @@ import Logic.Comorphism (AnyComorphism)
 import Common.Json (ppJson, asJson)
 import Common.ToXml (asXml)
 
+import Proofs.AbstractState
+
 import Text.XML.Light (ppTopElement)
 
 import Data.Data
@@ -32,11 +34,16 @@ formatProvers format proverMode availableProvers = case format of
   computedProvers :: Provers
   computedProvers =
     let proverNames = map (\p -> Prover { name = proverOrConsCheckerName p
-                                        , displayName = ""
+                                        , displayName = internalProverName p
                                         }) $ proversOnly availableProvers
     in case proverMode of
       GlProofs -> emptyProvers { provers = Just proverNames }
       GlConsistency -> emptyProvers { consistencyCheckers = Just proverNames }
+
+  internalProverName :: PGIP.Common.ProverOrConsChecker -> String
+  internalProverName pOrCc = case pOrCc of
+    PGIP.Common.Prover p -> getProverName p
+    PGIP.Common.ConsChecker cc -> getCcName cc
 
   formatAsJSON :: (String, String)
   formatAsJSON = (jsonC, ppJson $ asJson computedProvers)
