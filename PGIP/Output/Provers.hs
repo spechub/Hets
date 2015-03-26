@@ -4,6 +4,8 @@ module PGIP.Output.Provers
   ( formatProvers
   ) where
 
+import qualified PGIP.Common
+
 import PGIP.Output.Formatting
 import PGIP.Output.Mime
 
@@ -18,8 +20,9 @@ import Text.XML.Light (ppTopElement)
 
 import Data.Data
 
-type ProversFormatter = ProverMode ->
-                        [(AnyComorphism, [String])] -> (String, String)
+type ProversFormatter = ProverMode
+                        -> [(AnyComorphism, [PGIP.Common.ProverOrConsChecker])]
+                        -> (String, String)
 
 formatProvers :: Maybe String -> ProversFormatter
 formatProvers format proverMode availableProvers = case format of
@@ -28,8 +31,8 @@ formatProvers format proverMode availableProvers = case format of
   where
   computedProvers :: Provers
   computedProvers =
-    let proverNames = showProversOnly availableProvers in
-    case proverMode of
+    let proverNames = map proverOrConsCheckerName $ proversOnly availableProvers
+    in case proverMode of
       GlProofs -> emptyProvers { provers = Just proverNames }
       GlConsistency -> emptyProvers { consistencyCheckers = Just proverNames }
 
