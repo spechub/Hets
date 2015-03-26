@@ -281,7 +281,7 @@ translateAttribute (cl,n,t) = mem ++ (map (translateProperty attrt l) sens)
                 x = mkSimpleId "x"
                 y = mkSimpleId "y"
                 l = [(c,x),(cp,y)]
-                sens = [typeFunction c [x],translateTau m (cptar,cp,y)]
+                sens = [typeFunction c [x],translateTau m (cp,cptar,y)]
                 attrt = mkSimpleId $ (className cl) ++ "." ++ n
                 c =  mkSimpleId $ translateType $ defaultType $ CL cl
                 cp = mkSimpleId $ translateType t 
@@ -292,7 +292,7 @@ translateAttribute (cl,n,t) = mem ++ (map (translateProperty attrt l) sens)
                     rightUniqueRule attrt l (cp,y) (mkSimpleId "z")]
 
 translateTau :: Token -> (Token,Token,Token) -> SENTENCE
-translateTau m (c,t,x) = andSen [typeFunction t [x], Quant_sent Universal [Name m] (ifSen (typeFunction (mkSimpleId $ "from:" ++ (tokStr t) ++ "-member") [m,x]) (typeFunction c [m])) nullRange]
+translateTau m (c,t,x) = andSen [typeFunction c [x], Quant_sent Universal [Name m] (ifSen (typeFunction (mkSimpleId $ "from:" ++ (tokStr t) ++ "-member") [m,x]) (typeFunction c [m])) nullRange]
 
 translateTuple :: (Token,Token)  -> SENTENCE
 translateTuple (c,x) = typeFunction c [x]
