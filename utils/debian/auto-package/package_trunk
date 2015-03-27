@@ -181,7 +181,7 @@ export_git_repo()
    rm -rf $FOLDER
    mkdir -p $FOLDER
    cd $REPO_FOLDER
-   git archive --format=tar master | (cd $FOLDER && tar -xf -)
+   git archive --format=tar HEAD | (cd $FOLDER && tar -xf -)
    cd $OLD_PWD
    if [ $? -eq 1 ]; then
      echo "Check out failed ..."
