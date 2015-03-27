@@ -3,7 +3,9 @@
     <property name="libdir"     value="./lib"/>
     <property name="builddir"   value="build"/>
     <property name="classesdir" value="${builddir}/classes"/>
-    <property name="target-vm"  value="1.5"/>
+    <property name="target-vm"  value="1.6"/>
+    <property name="owlapi-jars" value="lib/owlapi-osgidistribution-3.5.2.jar lib/guava-18.0.jar lib/trove4j-3.0.3.jar"/>
+    <property name="fact-jar" value="uk.ac.manchester.cs.owl.factplusplus-P5.0-v1.6.3.1.jar"/>
     <property environment="env"/>
 
     <path id="classpath">
@@ -16,14 +18,14 @@
         <delete dir="${builddir}"/>
     </target>
 
-    <target name="compile" depends="owl-api">
+    <target name="compile">
         <mkdir dir="${classesdir}/locality"/>
-        <javac srcdir="./" destdir="${classesdir}/locality" debug="on" target="${target-vm}" nowarn="off" source="1.5">
+        <javac srcdir="./" destdir="${classesdir}/locality" debug="on" target="${target-vm}" nowarn="off" source="1.6">
             <classpath refid="classpath"/>
 	    <include name="de/unibremen/informatik/locality/*.java"/>
         </javac>
        <mkdir dir="${classesdir}"/>
-        <javac srcdir="./" destdir="${classesdir}" debug="on" target="${target-vm}" nowarn="off" source="1.5">
+        <javac srcdir="./" destdir="${classesdir}" debug="on" target="${target-vm}" nowarn="off" source="1.6">
             <classpath refid="classpath"/>
 	    <include name="de/unibremen/informatik/*.java"/>
         </javac>
@@ -38,8 +40,7 @@
         <mkdir dir="${classesdir}/Fact"/>
 	<mkdir dir="../lib/native/i686"/>
 	<mkdir dir="../lib/native/x86_64"/>
-	<get src="http://factplusplus.googlecode.com/files/FaCTpp-OWLAPI-3.4-v1.6.1.jar" dest="${libdir}/FaCTpp-OWLAPI-3.4-v1.6.1.jar"/>
-        <javac srcdir="./" destdir="${classesdir}/Fact" debug="on" target="${target-vm}" nowarn="off" source="1.5">
+        <javac srcdir="./" destdir="${classesdir}/Fact" debug="on" target="${target-vm}" nowarn="off" source="1.6">
             <classpath refid="classpath"/>
 	    <include name="de/unibremen/informatik/Fact/*.java"/>
         </javac>
@@ -48,21 +49,20 @@
 	  <attribute name="Title" value="OWL Fact"/>
 	  <attribute name="Built-By" value="${user.name}"/>
 	  <attribute name="Main-Class" value="de.unibremen.informatik.Fact.Fact"/>
-	  <attribute name="Class-Path" value="lib/owl2api-bin.jar lib/FaCTpp-OWLAPI-3.4-v1.6.1.jar"/>
+	  <attribute name="Class-Path" value="${owlapi-jars} lib/${fact-jar}"/>
 	</manifest>
       </jar>
       <copy file="${builddir}/OWLFact.jar" todir="../"/>
       <copy file="lib/native/i686/libFaCTPlusPlusJNI.so" todir="../lib/native/i686/"/>
       <copy file="lib/native/x86_64/libFaCTPlusPlusJNI.so" todir="../lib/native/x86_64/"/>
-      <copy file="${libdir}/FaCTpp-OWLAPI-3.4-v1.6.1.jar" todir="../lib/"/>
+      <copy file="${libdir}/${fact-jar}" todir="../lib/"/>
     </target>
 
     <target name="fact-prover">
         <mkdir dir="${classesdir}/FactProver"/>
 	<mkdir dir="../lib/native/i686"/>
 	<mkdir dir="../lib/native/x86_64"/>
-	<get src="http://factplusplus.googlecode.com/files/FaCTpp-OWLAPI-3.4-v1.6.1.jar" dest="${libdir}/FaCTpp-OWLAPI-3.4-v1.6.1.jar"/>
-        <javac srcdir="./" destdir="${classesdir}/FactProver" debug="on" target="${target-vm}" nowarn="off" source="1.5">
+        <javac srcdir="./" destdir="${classesdir}/FactProver" debug="on" target="${target-vm}" nowarn="off" source="1.6">
             <classpath refid="classpath"/>
 	    <include name="de/unibremen/informatik/FactProver/*.java"/>
         </javac>
@@ -71,17 +71,17 @@
 	  <attribute name="Title" value="OWL Fact Prover"/>
 	  <attribute name="Built-By" value="${user.name}"/>
 	  <attribute name="Main-Class" value="de.unibremen.informatik.FactProver.Prove"/>
-	  <attribute name="Class-Path" value="lib/owl2api-bin.jar lib/FaCTpp-OWLAPI-3.4-v1.6.1.jar"/>
+	  <attribute name="Class-Path" value="${owlapi-jars} lib/${fact-jar}"/>
 	</manifest>
       </jar>
       <copy file="${builddir}/OWLFactProver.jar" todir="../"/>
       <copy file="lib/native/i686/libFaCTPlusPlusJNI.so" todir="../lib/native/i686/"/>
       <copy file="lib/native/x86_64/libFaCTPlusPlusJNI.so" todir="../lib/native/x86_64/"/>
-      <copy file="${libdir}/FaCTpp-OWLAPI-3.4-v1.6.1.jar" todir="../lib/"/>
+      <copy file="${libdir}/${fact-jar}" todir="../lib/"/>
     </target>
 
     <target name="java-files" depends="install"/>
-    <target name="java-libs" depends="owl-api,copy-libs"/>
+    <target name="java-libs" depends="copy-libs"/>
 
     <target name="jar" depends="compile">
       <jar basedir="${classesdir}/locality" destfile="${builddir}/OWLLocality.jar">
@@ -89,7 +89,7 @@
 	  <attribute name="Title" value="OWL Locality Checker"/>
 	  <attribute name="Built-By" value="${user.name}"/>
 	  <attribute name="Main-Class" value="de.unibremen.informatik.locality.LocalityChecker"/>
-	  <attribute name="Class-Path" value="lib/owl2api-bin.jar"/>
+	  <attribute name="Class-Path" value="${owlapi-jars}"/>
 	</manifest>
       </jar>
       <jar basedir="${classesdir}" destfile="${builddir}/OWL2Parser.jar">
@@ -97,18 +97,15 @@
 	  <attribute name="Title" value="OWL2 MNO Parser"/>
 	  <attribute name="Built-By" value="${user.name}"/>
 	  <attribute name="Main-Class" value="OWL2Parser"/>
-	  <attribute name="Class-Path" value="lib/owl2api-bin.jar"/>
+	  <attribute name="Class-Path" value="${owlapi-jars}"/>
 	</manifest>
       </jar>
     </target>
 
-    <target name="owl-api">
-      <ant antfile="build.xml" dir="./OwlApi/antbuild/" target="binjar" inheritAll="false"/>
-      <copy file="./OwlApi/antbuild/build/owlapi-bin.jar" tofile="${libdir}/owl2api-bin.jar"/>
-    </target>
-
     <target name="copy-libs">
       <mkdir dir="../lib"/>
-      <copy file="${libdir}/owl2api-bin.jar" todir="../lib/"/>
+      <copy todir="../lib/">
+        <fileset dir="${libdir}" excludes="native"/>
+      </copy>
     </target>
 </project>

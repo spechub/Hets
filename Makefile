@@ -712,16 +712,7 @@ initialize_installer:
 	@echo "  -> make"
 	@echo and wait until it is finished
 
-# check out java parts for OWL
-owl_java:
-	$(RM) -r OWL2/java/OwlApi
-	svn export -q \
-	--non-interactive \
-	--trust-server-cert \
-  https://github.com/owlcs/owlapi/tags/owlapi-parent-3.4.8 \
-  OWL2/java/OwlApi
-
-initialize_java: owl_java
+initialize_java:
 	ant -q init
 
 java-libs:
