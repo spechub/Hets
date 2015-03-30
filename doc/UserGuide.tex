@@ -1863,14 +1863,18 @@ Pellet uses the same ATP GUI as the provers for SoftFOL (ref. to section
 \subsection{Fact++}
 Fact++ is a \DL-reasoner for \SROIQ, which is the logic underlying OWL 2, written in
 C++. Fact++ is integrated into \Hets via the OWL-API, which is written in Java.
-A Java Runtime Environment (in version $>= 1.5$) has to be installed. To use Fact++,
+A Java Runtime Environment (in version $>= 1.6$) has to be installed. To use Fact++,
 the environment variable \verb+HETS_OWL_TOOLS+ has to be set to the directory
 containing the files
 \begin{verbatim}
+OWL2Parser.jar
 OWLFact.jar
 OWLFactProver.jar
+OWLLocality.jar
+lib/guava-18.0.jar
+lib/owlapi-osgidistribution-3.5.2.jar
+lib/trove4j-3.0.3.jar
 lib/uk.ac.manchester.cs.owl.factplusplus-P5.0-v1.6.3.1.jar
-lib/owlapi-osgidistribution-3.5.1
 \end{verbatim}
 as well as
 \begin{verbatim}
