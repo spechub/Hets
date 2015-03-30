@@ -320,7 +320,6 @@ fi
 if [ $OPT_CREATE -eq 0 ]; then
   echo "=== Creating source packages"
   ensure_package_installed git
-  ensure_package_installed "git-svn"
   ensure_package_installed ant
   ensure_package_installed "openjdk-7-jdk"
 
