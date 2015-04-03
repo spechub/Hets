@@ -119,6 +119,9 @@ import OWL2.OWL22CASL
 import OWL2.CASL2OWL
 import OWL2.OWL22CommonLogic
 import OWL2.Propositional2OWL2
+#ifdef CASLEXTENSIONS
+import Comorphisms.ExtModal2OWL
+#endif
 #endif
 
 #ifdef PROGRAMATICA
@@ -199,6 +202,9 @@ comorphismList =
     , Comorphism DMU2OWL2
     , Comorphism CASL2OWL
     , Comorphism Propositional2OWL2
+#ifdef CASLEXTENSIONS
+    , Comorphism ExtModal2OWL
+#endif
 #endif
 #ifdef PROGRAMATICA
     , Comorphism HasCASL2Haskell
