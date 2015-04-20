@@ -22,7 +22,7 @@ module Common.Utils
   , trim
   , trimLeft
   , trimRight
-  , toSnake
+  , toSnakeCase
   , nubOrd
   , nubOrdOn
   , atMaybe
@@ -156,20 +156,23 @@ trimRight = foldr (\ c cs -> if isSpace c && null cs then [] else c : cs) ""
    Convert CamelCased or mixedCases 'String' to a 'String' with underscores,
    the \"snake\" 'String'.
 
-   It also considers abbreviations in capital letters:
-   `toSnake "XMLHttpRequest" == "xml_http_request"`
+   It also considers SCREAMINGCamelCase:
+   `toSnakeCase "SomeSCREAMINGCamelCase" == "some_screaming_camel_case"`
 -}
-toSnake :: String -> String
-toSnake =
-  map toLower . intercalate "_" . glueSingletons . groupBy (const isLower)
+toSnakeCase :: String -> String
+toSnakeCase = toSnakeCase' False
   where
-    {- glue adjacent singleton lists together:
-       `glueSingletons "" ["abc", "d", "e", "fg" "h", "i"]
-       == ["abc", "de", "fg", "hi"]`
-    -}
-    glueSingletons :: [String] -> [String]
-    glueSingletons =
-      map concat . groupBy (\ v w -> (length v == 1) && (length w == 1))
+    toSnakeCase' :: Bool -> String -> String
+    toSnakeCase' screaming camel =
+      case camel of
+        a : r@(b : _) -> let
+          snake_tail = toSnakeCase' True r
+          snake_head = toLower a
+          in case (isLower a, isLower b) of
+            (True, False) -> a : '_' : toSnakeCase' False r
+            (False, True) | screaming -> '_' : snake_head : snake_tail
+            _ -> snake_head : snake_tail
+        _ -> map toLower camel
 
 {- | The 'nubWith' function accepts as an argument a \"stop list\" update
 function and an initial stop list. The stop list is a set of list elements

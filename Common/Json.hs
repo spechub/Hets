@@ -202,7 +202,7 @@ myDataToJson md =
   let
     recordFieldToObject :: (String, MyData) -> (String, Json)
     recordFieldToObject (fieldName, value) =
-      (toSnake fieldName, myDataToJson value)
+      (toSnakeCase fieldName, myDataToJson value)
   in
     case md of
       Builtin typ value -> case typ of
