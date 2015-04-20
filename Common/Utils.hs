@@ -22,8 +22,6 @@ module Common.Utils
   , trim
   , trimLeft
   , trimRight
-  , downcase
-  , splitR
   , toSnake
   , nubOrd
   , nubOrdOn
@@ -154,47 +152,24 @@ trimLeft = dropWhile isSpace
 trimRight :: String -> String
 trimRight = foldr (\ c cs -> if isSpace c && null cs then [] else c : cs) ""
 
--- | convert to lower case
-downcase :: String -> String
-downcase = map toLower
-
-{-
-   Split a 'String', by specified predicate, but do not remove matched
-   characters from the result.
-
-   Copied from https://gist.github.com/ruthenium/3715696
--}
-splitR :: (Char -> Bool) -> String -> [String]
-splitR _ [] = []
-splitR p s =
-  let
-    go :: Char -> String -> [String]
-    go m s' = case break p s' of
-      (b', []) -> [m : b']
-      (b', x : xs) -> (m : b') : go x xs
-  in case break p s of
-    (b, []) -> [b]
-    ([], h : t) -> go h t
-    (b, h : t) -> b : go h t
-
 {-
    Convert CamelCased or mixedCases 'String' to a 'String' with underscores,
    the \"snake\" 'String'.
 
    It also considers abbreviations in capital letters:
    `toSnake "XMLHttpRequest" == "xml_http_request"`
-
-   Based on https://gist.github.com/ruthenium/3715696
 -}
 toSnake :: String -> String
-toSnake = downcase . intercalate "_" . glueSingletons . splitR isUpper
+toSnake =
+  map toLower . intercalate "_" . glueSingletons . groupBy (const isLower)
   where
-    -- glue adjacent singleton lists together:
-    -- `glueSingletons "" ["abc", "d", "e", "fg" "h", "i"]
-    --     == ["abc", "de", "fg", "hi"]`
+    {- glue adjacent singleton lists together:
+       `glueSingletons "" ["abc", "d", "e", "fg" "h", "i"]
+       == ["abc", "de", "fg", "hi"]`
+    -}
     glueSingletons :: [String] -> [String]
-    glueSingletons = map (intercalate "") .
-      groupBy (\ v w -> (length w == 1) && (length v == 1))
+    glueSingletons =
+      map concat . groupBy (\ v w -> (length v == 1) && (length w == 1))
 
 {- | The 'nubWith' function accepts as an argument a \"stop list\" update
 function and an initial stop list. The stop list is a set of list elements
