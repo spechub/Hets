@@ -22,6 +22,9 @@ module Common.Utils
   , trim
   , trimLeft
   , trimRight
+  , downcase
+  , splitR
+  , toSnake
   , nubOrd
   , nubOrdOn
   , atMaybe
@@ -150,6 +153,54 @@ trimLeft = dropWhile isSpace
 -- | trims a string only on the right side
 trimRight :: String -> String
 trimRight = foldr (\ c cs -> if isSpace c && null cs then [] else c : cs) ""
+
+-- | convert to lower case
+downcase :: String -> String
+downcase = map toLower
+
+{-
+   Split a 'String', by specified predicate, but do not remove matched
+   characters from the result.
+
+   Copied from https://gist.github.com/ruthenium/3715696
+-}
+splitR :: (Char -> Bool) -> String -> [String]
+splitR _ [] = []
+splitR p s =
+  let
+    go :: Char -> String -> [String]
+    go m s' = case break p s' of
+      (b', []) -> [m : b']
+      (b', x : xs) -> (m : b') : go x xs
+  in case break p s of
+    (b, []) -> [b]
+    ([], h : t) -> go h t
+    (b, h : t) -> b : go h t
+
+{-
+   Convert CamelCased or mixedCases 'String' to a 'String' with underscores,
+   the \"snake\" 'String'.
+
+   It also considers abbreviations in capital letters:
+   `toSnake "XMLHttpRequest" == "xml_http_request"`
+
+   Based on https://gist.github.com/ruthenium/3715696
+-}
+toSnake :: String -> String
+toSnake = downcase . concat . underscores . glueSingletons "" . splitR isUpper
+  where
+    underscores :: [String] -> [String]
+    underscores [] = []
+    underscores (h : t) = h : map ('_' :) t
+
+    glueSingletons :: String -> [String] -> [String]
+    glueSingletons _ [] = []
+    glueSingletons acc ([] : ws) = glueSingletons acc ws
+    glueSingletons acc ([c] : ws) = glueSingletons (acc ++ [c]) ws
+    glueSingletons acc (w : ws) =
+      if null acc
+      then w : glueSingletons "" ws
+      else acc : w : glueSingletons "" ws
 
 {- | The 'nubWith' function accepts as an argument a \"stop list\" update
 function and an initial stop list. The stop list is a set of list elements
