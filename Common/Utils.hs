@@ -187,20 +187,14 @@ splitR p s =
    Based on https://gist.github.com/ruthenium/3715696
 -}
 toSnake :: String -> String
-toSnake = downcase . concat . underscores . glueSingletons "" . splitR isUpper
+toSnake = downcase . intercalate "_" . glueSingletons . splitR isUpper
   where
-    underscores :: [String] -> [String]
-    underscores [] = []
-    underscores (h : t) = h : map ('_' :) t
-
-    glueSingletons :: String -> [String] -> [String]
-    glueSingletons _ [] = []
-    glueSingletons acc ([] : ws) = glueSingletons acc ws
-    glueSingletons acc ([c] : ws) = glueSingletons (acc ++ [c]) ws
-    glueSingletons acc (w : ws) =
-      if null acc
-      then w : glueSingletons "" ws
-      else acc : w : glueSingletons "" ws
+    -- glue adjacent singleton lists together:
+    -- `glueSingletons "" ["abc", "d", "e", "fg" "h", "i"]
+    --     == ["abc", "de", "fg", "hi"]`
+    glueSingletons :: [String] -> [String]
+    glueSingletons = map (intercalate "") .
+      groupBy (\ v w -> (length w == 1) && (length v == 1))
 
 {- | The 'nubWith' function accepts as an argument a \"stop list\" update
 function and an initial stop list. The stop list is a set of list elements
