@@ -160,19 +160,17 @@ trimRight = foldr (\ c cs -> if isSpace c && null cs then [] else c : cs) ""
    `toSnakeCase "SomeSCREAMINGCamelCase" == "some_screaming_camel_case"`
 -}
 toSnakeCase :: String -> String
-toSnakeCase = toSnakeCase' False
-  where
-    toSnakeCase' :: Bool -> String -> String
-    toSnakeCase' screaming camel =
-      case camel of
-        a : r@(b : _) -> let
-          snake_tail = toSnakeCase' True r
-          snake_head = toLower a
-          in case (isLower a, isLower b) of
-            (True, False) -> a : '_' : toSnakeCase' False r
-            (False, True) | screaming -> '_' : snake_head : snake_tail
-            _ -> snake_head : snake_tail
-        _ -> map toLower camel
+toSnakeCase c = if hasBump c then unScream c else mkSnake c where
+  hasBump s = case s of
+    a : b : _ -> isUpper a && isLower b
+    _ -> False
+  unScream s = case s of
+    a : r -> toLower a : mkSnake r
+    _ -> s
+  mkSnake s = let newSnake t = '_' : unScream t in case s of
+    a : r@(b : _) | hasBump [b, a] -> a : newSnake r
+    _ | hasBump s -> newSnake s
+    _ -> unScream s
 
 {- | The 'nubWith' function accepts as an argument a \"stop list\" update
 function and an initial stop list. The stop list is a set of list elements
