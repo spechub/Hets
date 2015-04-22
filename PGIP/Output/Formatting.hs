@@ -27,5 +27,8 @@ removeFunnyChars = filter (\ c -> isAlphaNum c || elem c "_.:-")
 getWebProverName :: G_prover -> String
 getWebProverName = removeFunnyChars . getProverName
 
+proversOnly :: [(AnyComorphism, [ProverOrConsChecker])] -> [ProverOrConsChecker]
+proversOnly = nubOrdOn proverOrConsCheckerName . concatMap snd
+
 showProversOnly :: [(AnyComorphism, [String])] -> [String]
 showProversOnly = nubOrd . concatMap snd

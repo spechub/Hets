@@ -915,7 +915,8 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
             GlProvers mp mt -> do
               availableProvers <- liftIO $ getFullProverList mp mt dg
               return $ case api of
-                OldWebAPI -> (xmlC, formatProvers mp availableProvers)
+                OldWebAPI -> (xmlC, formatProvers mp $
+                  proversToStringAux availableProvers)
                 RESTfulAPI -> OProvers.formatProvers format mp availableProvers
             GlTranslations -> do
               availableComorphisms <- liftIO $ getFullComorphList dg
@@ -1013,7 +1014,8 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
                       NcProvers mp mt -> do
                         availableProvers <- liftIO $ getProverList mp mt subL
                         return $ case api of
-                          OldWebAPI -> (xmlC, formatProvers mp availableProvers)
+                          OldWebAPI -> (xmlC, formatProvers mp $
+                            proversToStringAux availableProvers)
                           RESTfulAPI ->
                             OProvers.formatProvers format mp availableProvers
                       NcTranslations mp -> do
@@ -1304,9 +1306,9 @@ showProverSelection prOrCons subLs = do
         , "    }"
         , "  }"
         , "}" ]
-  pcs <- mapM ((case prOrCons of
+  pcs <- mapM (liftM proversToStringAux . ((case prOrCons of
     GlProofs -> getProversAux
-    GlConsistency -> getConsCheckersAux) Nothing) subLs
+    GlConsistency -> getConsCheckersAux) Nothing)) subLs
   let allPrCm = nub $ concat pcs
   -- create prover selection (drop-down)
       prs = add_attr (mkAttr "name" "prover") $ unode "select" $ map (\ p ->
@@ -1351,13 +1353,13 @@ getProverAndComorph mp mc subL = do
         _ -> filterByProver mp ps
 
 getProverList :: ProverMode -> Maybe String -> G_sublogics
-              -> IO [(AnyComorphism, [String])]
+              -> IO [(AnyComorphism, [ProverOrConsChecker])]
 getProverList mp mt subL = case mp of
   GlProofs -> getProversAux mt subL
   GlConsistency -> getConsCheckersAux mt subL
 
 getFullProverList :: ProverMode -> Maybe String -> DGraph
-                  -> IO [(AnyComorphism, [String])]
+                  -> IO [(AnyComorphism, [ProverOrConsChecker])]
 getFullProverList mp mt = foldM
   (\ ls (_, nd) -> maybe (return ls) (fmap (++ ls) . case mp of
       GlProofs -> getProversAux mt
@@ -1369,10 +1371,16 @@ groupOnSnd :: Eq b => (a -> c) -> [(a, b)] -> [(b, [c])]
 groupOnSnd f =
   map (\ l@((_, b) : _) -> (b, map (f . fst) l)) . groupBy (on (==) snd)
 
+proversToStringAux :: [(AnyComorphism, [ProverOrConsChecker])]
+                   -> [(AnyComorphism, [String])]
+proversToStringAux = map (\ (x, ps) -> (x, map proverOrConsCheckerName ps))
+
 {- | gather provers and comorphisms and resort them to
 (comorhism, supported provers) while not changing orig comorphism order -}
-getProversAux :: Maybe String -> G_sublogics -> IO [(AnyComorphism, [String])]
-getProversAux mt = fmap (groupOnSnd getWebProverName) . getFilteredProvers mt
+getProversAux :: Maybe String -> G_sublogics
+              -> IO [(AnyComorphism, [ProverOrConsChecker])]
+getProversAux mt x =
+  fmap (groupOnSnd PGIP.Common.Prover) $ getFilteredProvers mt x
 
 getFilteredProvers :: Maybe String -> G_sublogics
   -> IO [(G_prover, AnyComorphism)]
@@ -1388,8 +1396,9 @@ formatProvers pm = let
 
 -- | retrieve a list of consistency checkers
 getConsCheckersAux :: Maybe String -> G_sublogics
-  -> IO [(AnyComorphism, [String])]
-getConsCheckersAux mt = fmap (groupOnSnd getCcName) . getFilteredConsCheckers mt
+  -> IO [(AnyComorphism, [ProverOrConsChecker])]
+getConsCheckersAux mt =
+  fmap (groupOnSnd PGIP.Common.ConsChecker) . getFilteredConsCheckers mt
 
 getFilteredConsCheckers :: Maybe String -> G_sublogics
   -> IO [(G_cons_checker, AnyComorphism)]
