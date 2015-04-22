@@ -22,6 +22,7 @@ module Common.Utils
   , trim
   , trimLeft
   , trimRight
+  , toSnakeCase
   , nubOrd
   , nubOrdOn
   , atMaybe
@@ -150,6 +151,26 @@ trimLeft = dropWhile isSpace
 -- | trims a string only on the right side
 trimRight :: String -> String
 trimRight = foldr (\ c cs -> if isSpace c && null cs then [] else c : cs) ""
+
+{-
+   Convert CamelCased or mixedCases 'String' to a 'String' with underscores,
+   the \"snake\" 'String'.
+
+   It also considers SCREAMINGCamelCase:
+   `toSnakeCase "SomeSCREAMINGCamelCase" == "some_screaming_camel_case"`
+-}
+toSnakeCase :: String -> String
+toSnakeCase c = if hasBump c then unScream c else mkSnake c where
+  hasBump s = case s of
+    a : b : _ -> isUpper a && isLower b
+    _ -> False
+  unScream s = case s of
+    a : r -> toLower a : mkSnake r
+    _ -> s
+  mkSnake s = let newSnake t = '_' : unScream t in case s of
+    a : r@(b : _) | hasBump [b, a] -> a : newSnake r
+    _ | hasBump s -> newSnake s
+    _ -> unScream s
 
 {- | The 'nubWith' function accepts as an argument a \"stop list\" update
 function and an initial stop list. The stop list is a set of list elements

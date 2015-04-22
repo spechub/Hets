@@ -41,6 +41,7 @@ import Common.GlobalAnnotations
 import Common.Id
 import Common.Parsec
 import Common.Result
+import Common.Utils
 
 import Data.Char
 import Data.Data
@@ -200,7 +201,8 @@ myDataToJson :: MyData -> Json
 myDataToJson md =
   let
     recordFieldToObject :: (String, MyData) -> (String, Json)
-    recordFieldToObject (fieldName, value) = (fieldName, myDataToJson value)
+    recordFieldToObject (fieldName, value) =
+      (toSnakeCase fieldName, myDataToJson value)
   in
     case md of
       Builtin typ value -> case typ of
