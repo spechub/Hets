@@ -24,6 +24,7 @@ import Proofs.AbstractState (G_proof_tree)
 
 import Common.Json (ppJson, asJson)
 import Common.ToXml (asXml)
+import Common.Utils (readMaybe)
 
 import Data.Data
 import Data.Time.LocalTime
@@ -112,13 +113,12 @@ formatProofs format options proofs = case format of
                       -> Maybe TacticScript
   convertTacticScript Nothing = Nothing
   convertTacticScript (Just ps) =
-    let ts = (\ (LP.TacticScript ts) -> ts) $ LP.tacticScript ps
-        atp = read ts
-    in if null ts
-       then Nothing
-       else Just $ TacticScript { timeLimit = tsTimeLimit atp
-                                , extraOptions = tsExtraOpts atp
-                                }
+    let tsStr = (\ (LP.TacticScript ts) -> ts) $ LP.tacticScript ps
+    in case readMaybe tsStr of
+         Nothing -> Nothing
+         Just atp -> Just TacticScript { timeLimit = tsTimeLimit atp
+                                       , extraOptions = tsExtraOpts atp
+                                       }
 
 data Proof = Proof
   { node :: String
