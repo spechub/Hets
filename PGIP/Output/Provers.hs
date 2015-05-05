@@ -2,6 +2,8 @@
 
 module PGIP.Output.Provers
   ( formatProvers
+  , prepareFormatProver
+  , Prover (..)
   ) where
 
 import qualified PGIP.Common
@@ -33,23 +35,27 @@ formatProvers format proverMode availableProvers = case format of
   where
   computedProvers :: Provers
   computedProvers =
-    let proverNames = map (\p -> Prover { name = proverOrConsCheckerName p
-                                        , displayName = internalProverName p
-                                        }) $ proversOnly availableProvers
+    let proverNames = map prepareFormatProver $ proversOnly availableProvers
     in case proverMode of
       GlProofs -> emptyProvers { provers = Just proverNames }
       GlConsistency -> emptyProvers { consistencyCheckers = Just proverNames }
-
-  internalProverName :: PGIP.Common.ProverOrConsChecker -> String
-  internalProverName pOrCc = case pOrCc of
-    PGIP.Common.Prover p -> getProverName p
-    PGIP.Common.ConsChecker cc -> getCcName cc
 
   formatAsJSON :: (String, String)
   formatAsJSON = (jsonC, ppJson $ asJson computedProvers)
 
   formatAsXML :: (String, String)
   formatAsXML = (xmlC, ppTopElement $ asXml computedProvers)
+
+prepareFormatProver :: PGIP.Common.ProverOrConsChecker -> Prover
+prepareFormatProver p = Prover { name = proverOrConsCheckerName p
+                               , displayName = internalProverName p
+                               }
+  where
+  internalProverName :: PGIP.Common.ProverOrConsChecker -> String
+  internalProverName pOrCc = case pOrCc of
+    PGIP.Common.Prover pr -> getProverName pr
+    PGIP.Common.ConsChecker cc -> getCcName cc
+
 
 data Provers = Provers
   { provers :: Maybe [Prover]

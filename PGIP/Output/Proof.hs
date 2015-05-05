@@ -14,6 +14,7 @@ import PGIP.Common
 
 import PGIP.Output.Formatting
 import PGIP.Output.Mime
+import PGIP.Output.Provers (Prover, prepareFormatProver)
 
 import Interfaces.GenericATPState (tsTimeLimit, tsExtraOpts)
 import Logic.Comorphism (AnyComorphism)
@@ -81,7 +82,7 @@ formatProofs format options proofs = case format of
           if pfoIncludeDetails options
           then Just goalDetails
           else Nothing
-      , usedProver = proverOrConsCheckerName proverOrConsChecker
+      , usedProver = prepareFormatProver proverOrConsChecker
       , usedTranslation = showComorph translation
       , tacticScript = fmap convertTacticScript proofStatusM
       , proofTree = fmap (show . LP.proofTree) proofStatusM
@@ -124,7 +125,7 @@ data ProofGoal = ProofGoal
   { name :: String
   , result :: String
   , details :: Maybe String
-  , usedProver :: String
+  , usedProver :: Prover
   , usedTranslation :: String
   , tacticScript :: Maybe TacticScript
   , proofTree :: Maybe String
