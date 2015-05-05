@@ -83,7 +83,7 @@ formatProofs format options proofs = case format of
           else Nothing
       , usedProver = proverOrConsCheckerName proverOrConsChecker
       , usedTranslation = showComorph translation
-      , tacticScript = fmap convertTacticScript proofStatusM
+      , tacticScript = convertTacticScript proofStatusM
       , proofTree = fmap (show . LP.proofTree) proofStatusM
       , usedTime = fmap (convertTime . LP.usedTime) proofStatusM
       , usedAxioms = fmap LP.usedAxioms proofStatusM
@@ -108,12 +108,17 @@ formatProofs format options proofs = case format of
         _ -> error $ "Failed reading the number " ++ show (todSec tod)
     }
 
-  convertTacticScript :: LP.ProofStatus G_proof_tree -> TacticScript
-  convertTacticScript ps =
-    let atp = read $ (\ (LP.TacticScript ts) -> ts) $ LP.tacticScript ps
-    in TacticScript { timeLimit = tsTimeLimit atp
-                    , extraOptions = tsExtraOpts atp
-                    }
+  convertTacticScript :: Maybe (LP.ProofStatus G_proof_tree)
+                      -> Maybe TacticScript
+  convertTacticScript Nothing = Nothing
+  convertTacticScript (Just ps) =
+    let ts = (\ (LP.TacticScript ts) -> ts) $ LP.tacticScript ps
+        atp = read ts
+    in if null ts
+       then Nothing
+       else Just $ TacticScript { timeLimit = tsTimeLimit atp
+                                , extraOptions = tsExtraOpts atp
+                                }
 
 data Proof = Proof
   { node :: String
