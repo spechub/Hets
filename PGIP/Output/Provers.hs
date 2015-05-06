@@ -18,8 +18,6 @@ import Logic.Comorphism (AnyComorphism)
 import Common.Json (ppJson, asJson)
 import Common.ToXml (asXml)
 
-import Proofs.AbstractState
-
 import Text.XML.Light (ppTopElement)
 
 import Data.Data
@@ -50,12 +48,6 @@ prepareFormatProver :: PGIP.Common.ProverOrConsChecker -> Prover
 prepareFormatProver p = Prover { name = proverOrConsCheckerName p
                                , displayName = internalProverName p
                                }
-  where
-  internalProverName :: PGIP.Common.ProverOrConsChecker -> String
-  internalProverName pOrCc = case pOrCc of
-    PGIP.Common.Prover pr -> getProverName pr
-    PGIP.Common.ConsChecker cc -> getCcName cc
-
 
 data Provers = Provers
   { provers :: Maybe [Prover]

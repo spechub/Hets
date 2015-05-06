@@ -12,9 +12,12 @@ import Proofs.AbstractState
 import Data.Char
 
 proverOrConsCheckerName :: ProverOrConsChecker -> String
-proverOrConsCheckerName p = case p of
-  Prover prover -> getWebProverName prover
-  ConsChecker consChecker -> getCcName consChecker
+proverOrConsCheckerName = removeFunnyChars . internalProverName
+
+internalProverName :: ProverOrConsChecker -> String
+internalProverName pOrCc = case pOrCc of
+  PGIP.Common.Prover pr -> getProverName pr
+  PGIP.Common.ConsChecker cc -> getCcName cc
 
 showComorph :: AnyComorphism -> String
 showComorph (Comorphism cid) = removeFunnyChars . drop 1 . dropWhile (/= ':')
