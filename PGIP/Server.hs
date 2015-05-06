@@ -1331,7 +1331,7 @@ filterByProver :: Maybe String -> [(G_prover, AnyComorphism)]
   -> [(G_prover, AnyComorphism)]
 filterByProver mp = case mp of
       Nothing -> id
-      Just p -> filter ((== p) . getWebProverName . fst)
+      Just p -> filter ((== p) . mkNiceProverName . getProverName . fst)
 
 filterByComorph :: Maybe String -> [(a, AnyComorphism)]
   -> [(a, AnyComorphism)]

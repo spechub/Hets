@@ -22,9 +22,6 @@ showComorph (Comorphism cid) = mkNiceProverName . drop 1 . dropWhile (/= ':')
 mkNiceProverName :: String -> String
 mkNiceProverName = filter (\ c -> isAlphaNum c || elem c "_.:-")
 
-getWebProverName :: G_prover -> String
-getWebProverName = mkNiceProverName . getProverName
-
 proversOnly :: [(AnyComorphism, [ProverOrConsChecker])] -> [ProverOrConsChecker]
 proversOnly = nubOrdOn (mkNiceProverName . internalProverName) . concatMap snd
 
