@@ -1002,8 +1002,8 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
                               pfOptions
                               [(getDGNodeName dgnode, proofResults)]
                       GlConsistency -> do
-                        (newLib, [(_, res, txt, _, _, _)]) <- consNode libEnv ln dg nl
-                          subL incl mp mt tl
+                        (newLib, [(_, res, txt, _, _, _)]) <-
+                          consNode libEnv ln dg nl subL incl mp mt tl
                         lift $ nextSess sess sessRef newLib k
                         return (xmlC, ppTopElement $ formatConsNode res txt)
                     _ -> case nc of
@@ -1304,9 +1304,9 @@ showProverSelection prOrCons subLs = do
         , "    }"
         , "  }"
         , "}" ]
-  pcs <- mapM (liftM proversToStringAux . ((case prOrCons of
+  pcs <- mapM (liftM proversToStringAux . (case prOrCons of
     GlProofs -> getProversAux
-    GlConsistency -> getConsCheckersAux) Nothing)) subLs
+    GlConsistency -> getConsCheckersAux) Nothing) subLs
   let allPrCm = nub $ concat pcs
   -- create prover selection (drop-down)
       prs = add_attr (mkAttr "name" "prover") $ unode "select" $ map (\ p ->
