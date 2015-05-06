@@ -9,9 +9,6 @@ import Proofs.AbstractState
 
 import Data.Char
 
-proverOrConsCheckerName :: ProverOrConsChecker -> String
-proverOrConsCheckerName = mkNiceProverName . internalProverName
-
 internalProverName :: ProverOrConsChecker -> String
 internalProverName pOrCc = case pOrCc of
   Proofs.AbstractState.Prover pr -> getProverName pr
@@ -29,7 +26,7 @@ getWebProverName :: G_prover -> String
 getWebProverName = mkNiceProverName . getProverName
 
 proversOnly :: [(AnyComorphism, [ProverOrConsChecker])] -> [ProverOrConsChecker]
-proversOnly = nubOrdOn proverOrConsCheckerName . concatMap snd
+proversOnly = nubOrdOn (mkNiceProverName . internalProverName) . concatMap snd
 
 showProversOnly :: [(AnyComorphism, [String])] -> [String]
 showProversOnly = nubOrd . concatMap snd

@@ -1371,7 +1371,8 @@ groupOnSnd f =
 
 proversToStringAux :: [(AnyComorphism, [ProverOrConsChecker])]
                    -> [(AnyComorphism, [String])]
-proversToStringAux = map (\ (x, ps) -> (x, map proverOrConsCheckerName ps))
+proversToStringAux = map (\ (x, ps) ->
+                           (x, map (mkNiceProverName . internalProverName) ps))
 
 {- | gather provers and comorphisms and resort them to
 (comorhism, supported provers) while not changing orig comorphism order -}
