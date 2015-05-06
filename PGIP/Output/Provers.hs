@@ -62,4 +62,4 @@ emptyProvers :: Provers
 emptyProvers = Provers { provers = Nothing, consistencyCheckers = Nothing }
 
 mkProver :: String -> Prover
-mkProver s = Prover { name = s, identifier = removeFunnyChars s }
+mkProver s = Prover { name = s, identifier = mkNiceProverName s }

@@ -10,7 +10,7 @@ import Proofs.AbstractState
 import Data.Char
 
 proverOrConsCheckerName :: ProverOrConsChecker -> String
-proverOrConsCheckerName = removeFunnyChars . internalProverName
+proverOrConsCheckerName = mkNiceProverName . internalProverName
 
 internalProverName :: ProverOrConsChecker -> String
 internalProverName pOrCc = case pOrCc of
@@ -18,15 +18,15 @@ internalProverName pOrCc = case pOrCc of
   Proofs.AbstractState.ConsChecker cc -> getCcName cc
 
 showComorph :: AnyComorphism -> String
-showComorph (Comorphism cid) = removeFunnyChars . drop 1 . dropWhile (/= ':')
+showComorph (Comorphism cid) = mkNiceProverName . drop 1 . dropWhile (/= ':')
   . map (\ c -> if c == ';' then ':' else c)
   $ language_name cid
 
-removeFunnyChars :: String -> String
-removeFunnyChars = filter (\ c -> isAlphaNum c || elem c "_.:-")
+mkNiceProverName :: String -> String
+mkNiceProverName = filter (\ c -> isAlphaNum c || elem c "_.:-")
 
 getWebProverName :: G_prover -> String
-getWebProverName = removeFunnyChars . getProverName
+getWebProverName = mkNiceProverName . getProverName
 
 proversOnly :: [(AnyComorphism, [ProverOrConsChecker])] -> [ProverOrConsChecker]
 proversOnly = nubOrdOn proverOrConsCheckerName . concatMap snd
