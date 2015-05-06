@@ -11,8 +11,8 @@ import Data.Char
 
 internalProverName :: ProverOrConsChecker -> String
 internalProverName pOrCc = case pOrCc of
-  Proofs.AbstractState.Prover pr -> getProverName pr
-  Proofs.AbstractState.ConsChecker cc -> getCcName cc
+  Prover pr -> getProverName pr
+  ConsChecker cc -> getCcName cc
 
 showComorph :: AnyComorphism -> String
 showComorph (Comorphism cid) = mkNiceProverName . drop 1 . dropWhile (/= ':')
