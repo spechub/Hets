@@ -12,8 +12,6 @@ Portability :  non-portable (via imports)
 
 module PGIP.Server (hetsServer) where
 
-import PGIP.Common
-
 import PGIP.Output.Formatting
 import PGIP.Output.Mime
 import PGIP.Output.Proof
@@ -1380,7 +1378,7 @@ proversToStringAux = map (\ (x, ps) -> (x, map proverOrConsCheckerName ps))
 getProversAux :: Maybe String -> G_sublogics
               -> IO [(AnyComorphism, [ProverOrConsChecker])]
 getProversAux mt x =
-  fmap (groupOnSnd PGIP.Common.Prover) $ getFilteredProvers mt x
+  fmap (groupOnSnd Proofs.AbstractState.Prover) $ getFilteredProvers mt x
 
 getFilteredProvers :: Maybe String -> G_sublogics
   -> IO [(G_prover, AnyComorphism)]
@@ -1398,7 +1396,7 @@ formatProvers pm = let
 getConsCheckersAux :: Maybe String -> G_sublogics
   -> IO [(AnyComorphism, [ProverOrConsChecker])]
 getConsCheckersAux mt =
-  fmap (groupOnSnd PGIP.Common.ConsChecker) . getFilteredConsCheckers mt
+  fmap (groupOnSnd Proofs.AbstractState.ConsChecker) . getFilteredConsCheckers mt
 
 getFilteredConsCheckers :: Maybe String -> G_sublogics
   -> IO [(G_cons_checker, AnyComorphism)]
@@ -1440,7 +1438,7 @@ consNode le ln dg nl@(i, lb) subL useTh mp mt tl = do
                              CSConsistent -> markNodeConsistent "" lb
                              _ -> lb)) le
           return (le'', [(" ", drop 2 $ show cSt, show cstat,
-                          PGIP.Common.ConsChecker cc, c, Nothing)])
+                          Proofs.AbstractState.ConsChecker cc, c, Nothing)])
 
 proveNode :: LibEnv -> LibName -> DGraph -> (Int, DGNodeLab) -> G_theory
   -> G_sublogics -> Bool -> Maybe String -> Maybe String -> Maybe Int
@@ -1472,8 +1470,8 @@ combineToProofResult sens (prover, comorphism) proofStatuses = let
       [] -> Nothing
       (ps : _) -> Just ps
   combineSens :: (String, String, String) -> ProofResult
-  combineSens (n, e, d) = (n, e, d, PGIP.Common.Prover prover, comorphism,
-                           findProofStatusByName n)
+  combineSens (n, e, d) = (n, e, d, Proofs.AbstractState.Prover prover,
+                           comorphism, findProofStatusByName n)
   in map combineSens sens
 
 -- run over multiple dgnodes and prove available goals for each

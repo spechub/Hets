@@ -5,8 +5,6 @@ import Common.Utils
 import Logic.Logic
 import Logic.Comorphism
 
-import PGIP.Common
-
 import Proofs.AbstractState
 
 import Data.Char
@@ -16,8 +14,8 @@ proverOrConsCheckerName = removeFunnyChars . internalProverName
 
 internalProverName :: ProverOrConsChecker -> String
 internalProverName pOrCc = case pOrCc of
-  PGIP.Common.Prover pr -> getProverName pr
-  PGIP.Common.ConsChecker cc -> getCcName cc
+  Proofs.AbstractState.Prover pr -> getProverName pr
+  Proofs.AbstractState.ConsChecker cc -> getCcName cc
 
 showComorph :: AnyComorphism -> String
 showComorph (Comorphism cid) = removeFunnyChars . drop 1 . dropWhile (/= ':')

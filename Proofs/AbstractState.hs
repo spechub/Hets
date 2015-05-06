@@ -15,7 +15,8 @@ It is also used by the CMDL interface.
 -}
 
 module Proofs.AbstractState
-    ( G_prover (..)
+    ( ProverOrConsChecker (..)
+    , G_prover (..)
     , G_proof_tree (..)
     , getProverName
     , getCcName
@@ -80,6 +81,10 @@ import Static.GTheory
 -- import Interfaces.DataTypes (IntState)
 
 -- * Provers
+
+data ProverOrConsChecker = Prover G_prover
+                         | ConsChecker G_cons_checker
+                         deriving (Show)
 
 -- | provers and consistency checkers for specific logics
 data G_prover =

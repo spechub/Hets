@@ -6,14 +6,14 @@ module PGIP.Output.Provers
   , Prover (..)
   ) where
 
-import qualified PGIP.Common
-
 import PGIP.Output.Formatting
 import PGIP.Output.Mime
 
 import PGIP.Query (ProverMode (..))
 
 import Logic.Comorphism (AnyComorphism)
+
+import Proofs.AbstractState (ProverOrConsChecker)
 
 import Common.Json (ppJson, asJson)
 import Common.ToXml (asXml)
@@ -23,7 +23,7 @@ import Text.XML.Light (ppTopElement)
 import Data.Data
 
 type ProversFormatter = ProverMode
-                        -> [(AnyComorphism, [PGIP.Common.ProverOrConsChecker])]
+                        -> [(AnyComorphism, [ProverOrConsChecker])]
                         -> (String, String)
 
 formatProvers :: Maybe String -> ProversFormatter
@@ -44,7 +44,7 @@ formatProvers format proverMode availableProvers = case format of
   formatAsXML :: (String, String)
   formatAsXML = (xmlC, ppTopElement $ asXml computedProvers)
 
-prepareFormatProver :: PGIP.Common.ProverOrConsChecker -> Prover
+prepareFormatProver :: ProverOrConsChecker -> Prover
 prepareFormatProver p = Prover { identifier = proverOrConsCheckerName p
                                , name = internalProverName p
                                }

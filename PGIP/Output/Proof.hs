@@ -10,8 +10,6 @@ module PGIP.Output.Proof
   , formatProofs
   ) where
 
-import PGIP.Common
-
 import PGIP.Output.Formatting
 import PGIP.Output.Mime
 import PGIP.Output.Provers (Prover, prepareFormatProver)
@@ -21,7 +19,7 @@ import Logic.Comorphism (AnyComorphism)
 
 import qualified Logic.Prover as LP
 
-import Proofs.AbstractState (G_proof_tree)
+import Proofs.AbstractState (G_proof_tree, ProverOrConsChecker)
 
 import Common.Json (ppJson, asJson)
 import Common.ToXml (asXml)
