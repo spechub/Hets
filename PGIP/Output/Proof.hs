@@ -24,6 +24,7 @@ import Proofs.AbstractState (G_proof_tree)
 
 import Common.Json (ppJson, asJson)
 import Common.ToXml (asXml)
+import Common.Utils (readMaybe)
 
 import Data.Data
 import Data.Time.LocalTime
@@ -83,7 +84,7 @@ formatProofs format options proofs = case format of
           else Nothing
       , usedProver = proverOrConsCheckerName proverOrConsChecker
       , usedTranslation = showComorph translation
-      , tacticScript = fmap convertTacticScript proofStatusM
+      , tacticScript = convertTacticScript proofStatusM
       , proofTree = fmap (show . LP.proofTree) proofStatusM
       , usedTime = fmap (convertTime . LP.usedTime) proofStatusM
       , usedAxioms = fmap LP.usedAxioms proofStatusM
@@ -108,12 +109,15 @@ formatProofs format options proofs = case format of
         _ -> error $ "Failed reading the number " ++ show (todSec tod)
     }
 
-  convertTacticScript :: LP.ProofStatus G_proof_tree -> TacticScript
-  convertTacticScript ps =
-    let atp = read $ (\ (LP.TacticScript ts) -> ts) $ LP.tacticScript ps
-    in TacticScript { timeLimit = tsTimeLimit atp
-                    , extraOptions = tsExtraOpts atp
-                    }
+  convertTacticScript :: Maybe (LP.ProofStatus G_proof_tree)
+                      -> Maybe TacticScript
+  convertTacticScript Nothing = Nothing
+  convertTacticScript (Just ps) =
+    case (\ (LP.TacticScript ts) -> readMaybe ts) $ LP.tacticScript ps of
+      Nothing -> Nothing
+      Just atp -> Just TacticScript { timeLimit = tsTimeLimit atp
+                                    , extraOptions = tsExtraOpts atp
+                                    }
 
 data Proof = Proof
   { node :: String
