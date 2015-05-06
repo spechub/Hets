@@ -3,7 +3,8 @@
 module PGIP.Output.Provers
   ( formatProvers
   , prepareFormatProver
-  , Prover (..)
+  , Prover
+  , mkProver
   ) where
 
 import PGIP.Output.Formatting
@@ -45,9 +46,7 @@ formatProvers format proverMode availableProvers = case format of
   formatAsXML = (xmlC, ppTopElement $ asXml computedProvers)
 
 prepareFormatProver :: ProverOrConsChecker -> Prover
-prepareFormatProver p = Prover { identifier = proverOrConsCheckerName p
-                               , name = internalProverName p
-                               }
+prepareFormatProver = mkProver . internalProverName
 
 data Provers = Provers
   { provers :: Maybe [Prover]
@@ -61,3 +60,6 @@ data Prover = Prover
 
 emptyProvers :: Provers
 emptyProvers = Provers { provers = Nothing, consistencyCheckers = Nothing }
+
+mkProver :: String -> Prover
+mkProver s = Prover { name = s, identifier = removeFunnyChars s }
