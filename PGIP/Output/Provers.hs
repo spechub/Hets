@@ -45,8 +45,8 @@ formatProvers format proverMode availableProvers = case format of
   formatAsXML = (xmlC, ppTopElement $ asXml computedProvers)
 
 prepareFormatProver :: PGIP.Common.ProverOrConsChecker -> Prover
-prepareFormatProver p = Prover { name = proverOrConsCheckerName p
-                               , displayName = internalProverName p
+prepareFormatProver p = Prover { identifier = proverOrConsCheckerName p
+                               , name = internalProverName p
                                }
 
 data Provers = Provers
@@ -55,8 +55,8 @@ data Provers = Provers
   } deriving (Show, Typeable, Data)
 
 data Prover = Prover
-  { name :: String
-  , displayName :: String
+  { identifier :: String
+  , name :: String
   } deriving (Show, Typeable, Data)
 
 emptyProvers :: Provers
