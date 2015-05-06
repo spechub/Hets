@@ -2,9 +2,10 @@
 
 module PGIP.Output.Provers
   ( formatProvers
+  , prepareFormatProver
+  , Prover
+  , mkProver
   ) where
-
-import qualified PGIP.Common
 
 import PGIP.Output.Formatting
 import PGIP.Output.Mime
@@ -13,17 +14,17 @@ import PGIP.Query (ProverMode (..))
 
 import Logic.Comorphism (AnyComorphism)
 
+import Proofs.AbstractState (ProverOrConsChecker)
+
 import Common.Json (ppJson, asJson)
 import Common.ToXml (asXml)
-
-import Proofs.AbstractState
 
 import Text.XML.Light (ppTopElement)
 
 import Data.Data
 
 type ProversFormatter = ProverMode
-                        -> [(AnyComorphism, [PGIP.Common.ProverOrConsChecker])]
+                        -> [(AnyComorphism, [ProverOrConsChecker])]
                         -> (String, String)
 
 formatProvers :: Maybe String -> ProversFormatter
@@ -33,17 +34,10 @@ formatProvers format proverMode availableProvers = case format of
   where
   computedProvers :: Provers
   computedProvers =
-    let proverNames = map (\p -> Prover { name = proverOrConsCheckerName p
-                                        , displayName = internalProverName p
-                                        }) $ proversOnly availableProvers
+    let proverNames = map prepareFormatProver $ proversOnly availableProvers
     in case proverMode of
       GlProofs -> emptyProvers { provers = Just proverNames }
       GlConsistency -> emptyProvers { consistencyCheckers = Just proverNames }
-
-  internalProverName :: PGIP.Common.ProverOrConsChecker -> String
-  internalProverName pOrCc = case pOrCc of
-    PGIP.Common.Prover p -> getProverName p
-    PGIP.Common.ConsChecker cc -> getCcName cc
 
   formatAsJSON :: (String, String)
   formatAsJSON = (jsonC, ppJson $ asJson computedProvers)
@@ -51,15 +45,21 @@ formatProvers format proverMode availableProvers = case format of
   formatAsXML :: (String, String)
   formatAsXML = (xmlC, ppTopElement $ asXml computedProvers)
 
+prepareFormatProver :: ProverOrConsChecker -> Prover
+prepareFormatProver = mkProver . internalProverName
+
 data Provers = Provers
   { provers :: Maybe [Prover]
   , consistencyCheckers :: Maybe [Prover]
   } deriving (Show, Typeable, Data)
 
 data Prover = Prover
-  { name :: String
-  , displayName :: String
+  { identifier :: String
+  , name :: String
   } deriving (Show, Typeable, Data)
 
 emptyProvers :: Provers
 emptyProvers = Provers { provers = Nothing, consistencyCheckers = Nothing }
+
+mkProver :: String -> Prover
+mkProver s = Prover { name = s, identifier = mkNiceProverName s }

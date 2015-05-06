@@ -12,8 +12,6 @@ Portability :  non-portable (via imports)
 
 module PGIP.Server (hetsServer) where
 
-import PGIP.Common
-
 import PGIP.Output.Formatting
 import PGIP.Output.Mime
 import PGIP.Output.Proof
@@ -70,13 +68,13 @@ import Logic.Grothendieck
 import Logic.Comorphism
 import Logic.Logic
 
-import Proofs.AbstractState
+import Proofs.AbstractState as AbsState
 import Proofs.ConsistencyCheck
 
 import Text.ParserCombinators.Parsec (parse)
 
 import Text.XML.Light
-import Text.XML.Light.Cursor hiding (findChild)
+import Text.XML.Light.Cursor
 
 import Common.AutoProofUtils
 import Common.Doc
@@ -1004,8 +1002,8 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
                               pfOptions
                               [(getDGNodeName dgnode, proofResults)]
                       GlConsistency -> do
-                        (newLib, [(_, res, txt, _, _, _)]) <- consNode libEnv ln dg nl
-                          subL incl mp mt tl
+                        (newLib, [(_, res, txt, _, _, _)]) <-
+                          consNode libEnv ln dg nl subL incl mp mt tl
                         lift $ nextSess sess sessRef newLib k
                         return (xmlC, ppTopElement $ formatConsNode res txt)
                     _ -> case nc of
@@ -1306,9 +1304,9 @@ showProverSelection prOrCons subLs = do
         , "    }"
         , "  }"
         , "}" ]
-  pcs <- mapM (liftM proversToStringAux . ((case prOrCons of
+  pcs <- mapM (liftM proversToStringAux . (case prOrCons of
     GlProofs -> getProversAux
-    GlConsistency -> getConsCheckersAux) Nothing)) subLs
+    GlConsistency -> getConsCheckersAux) Nothing) subLs
   let allPrCm = nub $ concat pcs
   -- create prover selection (drop-down)
       prs = add_attr (mkAttr "name" "prover") $ unode "select" $ map (\ p ->
@@ -1333,7 +1331,7 @@ filterByProver :: Maybe String -> [(G_prover, AnyComorphism)]
   -> [(G_prover, AnyComorphism)]
 filterByProver mp = case mp of
       Nothing -> id
-      Just p -> filter ((== p) . getWebProverName . fst)
+      Just p -> filter ((== p) . mkNiceProverName . getProverName . fst)
 
 filterByComorph :: Maybe String -> [(a, AnyComorphism)]
   -> [(a, AnyComorphism)]
@@ -1373,14 +1371,15 @@ groupOnSnd f =
 
 proversToStringAux :: [(AnyComorphism, [ProverOrConsChecker])]
                    -> [(AnyComorphism, [String])]
-proversToStringAux = map (\ (x, ps) -> (x, map proverOrConsCheckerName ps))
+proversToStringAux = map (\ (x, ps) ->
+                           (x, map (mkNiceProverName . internalProverName) ps))
 
 {- | gather provers and comorphisms and resort them to
 (comorhism, supported provers) while not changing orig comorphism order -}
 getProversAux :: Maybe String -> G_sublogics
               -> IO [(AnyComorphism, [ProverOrConsChecker])]
 getProversAux mt x =
-  fmap (groupOnSnd PGIP.Common.Prover) $ getFilteredProvers mt x
+  fmap (groupOnSnd AbsState.Prover) $ getFilteredProvers mt x
 
 getFilteredProvers :: Maybe String -> G_sublogics
   -> IO [(G_prover, AnyComorphism)]
@@ -1398,7 +1397,7 @@ formatProvers pm = let
 getConsCheckersAux :: Maybe String -> G_sublogics
   -> IO [(AnyComorphism, [ProverOrConsChecker])]
 getConsCheckersAux mt =
-  fmap (groupOnSnd PGIP.Common.ConsChecker) . getFilteredConsCheckers mt
+  fmap (groupOnSnd AbsState.ConsChecker) . getFilteredConsCheckers mt
 
 getFilteredConsCheckers :: Maybe String -> G_sublogics
   -> IO [(G_cons_checker, AnyComorphism)]
@@ -1440,7 +1439,7 @@ consNode le ln dg nl@(i, lb) subL useTh mp mt tl = do
                              CSConsistent -> markNodeConsistent "" lb
                              _ -> lb)) le
           return (le'', [(" ", drop 2 $ show cSt, show cstat,
-                          PGIP.Common.ConsChecker cc, c, Nothing)])
+                          AbsState.ConsChecker cc, c, Nothing)])
 
 proveNode :: LibEnv -> LibName -> DGraph -> (Int, DGNodeLab) -> G_theory
   -> G_sublogics -> Bool -> Maybe String -> Maybe String -> Maybe Int
@@ -1472,7 +1471,7 @@ combineToProofResult sens (prover, comorphism) proofStatuses = let
       [] -> Nothing
       (ps : _) -> Just ps
   combineSens :: (String, String, String) -> ProofResult
-  combineSens (n, e, d) = (n, e, d, PGIP.Common.Prover prover, comorphism,
+  combineSens (n, e, d) = (n, e, d, AbsState.Prover prover, comorphism,
                            findProofStatusByName n)
   in map combineSens sens
 
