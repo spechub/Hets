@@ -57,24 +57,24 @@ import Logic.LGToXml
 import Syntax.ToXml
 import Syntax.Print_AS_Structured
 
-import Interfaces.Command hiding (Prover)
+import Interfaces.Command
 import Interfaces.CmdAction
 import Interfaces.GenericATPState
 
 import Comorphisms.LogicGraph
 
-import Logic.Prover hiding (ConsChecker, Prover)
+import Logic.Prover
 import Logic.Grothendieck
 import Logic.Comorphism
 import Logic.Logic
 
-import Proofs.AbstractState
+import Proofs.AbstractState as AbsState
 import Proofs.ConsistencyCheck
 
 import Text.ParserCombinators.Parsec (parse)
 
 import Text.XML.Light
-import Text.XML.Light.Cursor hiding (findChild)
+import Text.XML.Light.Cursor
 
 import Common.AutoProofUtils
 import Common.Doc
@@ -1379,7 +1379,7 @@ proversToStringAux = map (\ (x, ps) ->
 getProversAux :: Maybe String -> G_sublogics
               -> IO [(AnyComorphism, [ProverOrConsChecker])]
 getProversAux mt x =
-  fmap (groupOnSnd Prover) $ getFilteredProvers mt x
+  fmap (groupOnSnd AbsState.Prover) $ getFilteredProvers mt x
 
 getFilteredProvers :: Maybe String -> G_sublogics
   -> IO [(G_prover, AnyComorphism)]
@@ -1397,7 +1397,7 @@ formatProvers pm = let
 getConsCheckersAux :: Maybe String -> G_sublogics
   -> IO [(AnyComorphism, [ProverOrConsChecker])]
 getConsCheckersAux mt =
-  fmap (groupOnSnd ConsChecker) . getFilteredConsCheckers mt
+  fmap (groupOnSnd AbsState.ConsChecker) . getFilteredConsCheckers mt
 
 getFilteredConsCheckers :: Maybe String -> G_sublogics
   -> IO [(G_cons_checker, AnyComorphism)]
@@ -1439,7 +1439,7 @@ consNode le ln dg nl@(i, lb) subL useTh mp mt tl = do
                              CSConsistent -> markNodeConsistent "" lb
                              _ -> lb)) le
           return (le'', [(" ", drop 2 $ show cSt, show cstat,
-                          ConsChecker cc, c, Nothing)])
+                          AbsState.ConsChecker cc, c, Nothing)])
 
 proveNode :: LibEnv -> LibName -> DGraph -> (Int, DGNodeLab) -> G_theory
   -> G_sublogics -> Bool -> Maybe String -> Maybe String -> Maybe Int
@@ -1471,7 +1471,7 @@ combineToProofResult sens (prover, comorphism) proofStatuses = let
       [] -> Nothing
       (ps : _) -> Just ps
   combineSens :: (String, String, String) -> ProofResult
-  combineSens (n, e, d) = (n, e, d, Prover prover, comorphism,
+  combineSens (n, e, d) = (n, e, d, AbsState.Prover prover, comorphism,
                            findProofStatusByName n)
   in map combineSens sens
 
