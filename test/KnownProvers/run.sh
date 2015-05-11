@@ -8,5 +8,5 @@ ret=$?
 
 # Test CMDL_tests
 
-for i in SoftFOL/tests/CMDL_tests Comorphisms/test/sublogicGraph;
+for i in Comorphisms/test/sublogicGraph;
   do (cd ../..; make $i ; $i); done
