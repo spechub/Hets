@@ -26,6 +26,7 @@ import qualified Common.AS_Annotation as Annotation
 import Common.Id as Id
 import Common.Keywords as Keywords
 import Common.Lexer as Lexer
+import Common.Token
 import Common.Parsec
 import Common.GlobalAnnotations (PrefixMap)
 
@@ -33,7 +34,7 @@ import Propositional.AS_BASIC_Propositional as AS_BASIC
 import Text.ParserCombinators.Parsec
 
 propKeywords :: [String]
-propKeywords =
+propKeywords = criticalKeywords ++
   [ Keywords.propS
   , Keywords.notS
   , Keywords.trueS
