@@ -15,6 +15,7 @@ import UML.Logic_UML
 import UML.UML hiding (Id)
 import UML.UML2CL
 import UML.UML2CL_preamble
+import UML.Morphism
 
 import CommonLogic.Sign as CL_Sign
 import CommonLogic.Logic_CommonLogic
@@ -23,6 +24,7 @@ import CommonLogic.Symbol as Symbol
 import CommonLogic.ATC_CommonLogic ()
 import CommonLogic.Sublogic
 import CommonLogic.Morphism
+import CommonLogic.Analysis
 
 import qualified Data.Map as Map 
 import qualified Data.Set as Set
@@ -40,7 +42,7 @@ instance Comorphism UML_CD2CL
       ()                    -- symb_items
       ()                    -- symb_map_items
       UML.Sign.Sign              -- sign
-      UML.Logic_UML.Morphism                  -- morphism
+      UML.Morphism.Morphism                  -- morphism
       ()                    -- symbol
       ()                    -- raw_symbol
       ()                    -- proof_tree
@@ -63,12 +65,15 @@ instance Comorphism UML_CD2CL
 
 mapTheory :: (UML.Sign.Sign, [Named MultForm]) -> Result (CL_Sign.Sign, [Named TEXT_META])
 mapTheory (sign, sens) = let 
-                            sg = mapSign sign
-                            t = makeNamed "" $ Text_meta{ As_CL.getText = Text (translateSign2Phrases sign) nullRange
-                            , As_CL.textIri = Nothing
-                            , As_CL.nondiscourseNames = Nothing
-                            , As_CL.prefix_map = [] }                              
-                            in return (sg ,t:(map (mapNamed $ mapSen) sens))
+                            sg = (mapSign sign)
+                            t =  (translateSign2Phrases sign)   
+                            tmSyms = (Set.fromList $ map symName $ foldl (++) [] $ map (symsOfTextMeta.sentence) tms) Set.\\ (allItems sg)
+                            sg2 = CL_Sign.Sign{ discourseNames = Set.union (discourseNames sg) tmSyms,
+                                                CL_Sign.nondiscourseNames = CL_Sign.nondiscourseNames sg,   
+                                                sequenceMarkers = sequenceMarkers sg}
+                            tms = (map (makeNamedSen.emptyAnno) t) ++   (map (mapNamed $ mapSen) sens)                   
+                            in return (sg2 , tms)
+
 
 mapSen ::  UML.Sign.MultForm -> TEXT_META
 mapSen mf = Text_meta{ As_CL.getText = Text phrases nullRange
@@ -80,7 +85,8 @@ mapSen mf = Text_meta{ As_CL.getText = Text phrases nullRange
 
 mapSign :: UML.Sign.Sign -> CL_Sign.Sign 
 mapSign sign = CL_Sign.Sign{
-    CL_Sign.discourseNames = Set.union (Set.fromList ((map (stringToId.showClassEntityName) $ fst $ signClassHier sign) 
+    CL_Sign.discourseNames =  Set.union (Set.fromList ((map (stringToId.showClassEntityName) $ fst $ signClassHier sign) 
+                    ++ (map (stringToId.literalName) $ foldl (++) [] (map enumLiterals $ filterEnums $ fst $ signClassHier sign))
                     ++ (map morphTranslateAttr (signAttribute sign))
                     ++ (foldl (++) [] $ map morphTranslateOper (signOperations sign))
                     ++ (map morphTranslateComp (signCompositions sign))
@@ -101,9 +107,9 @@ morphTranslateAsso (n,endL) = (stringToId n):(map (stringToId.fst) endL)
 morphTranslateOper :: (Class,String,[(String,Type)],Type) -> [Id]
 morphTranslateOper (c,n,para,_) = (stringToId $ (className c) ++ "." ++ n):(map (stringToId.fst) para)
 
-mapMor :: UML.Logic_UML.Morphism -> Result CommonLogic.Morphism.Morphism 
+mapMor :: UML.Morphism.Morphism -> Result CommonLogic.Morphism.Morphism 
 mapMor m = return CommonLogic.Morphism.Morphism
-  { source = mapSign $ domOfDefaultMorphism m
-  , target = mapSign $ codOfDefaultMorphism m
-  , propMap = Map.empty
+  { CommonLogic.Morphism.source = mapSign $ UML.Morphism.source m
+  , CommonLogic.Morphism.target = mapSign $ UML.Morphism.target m
+  , CommonLogic.Morphism.propMap = Map.empty
   }

@@ -317,7 +317,7 @@ RDF_files = RDF/AS.hs OWL2/AS.hs RDF/Symbols.hs RDF/Sign.hs RDF/Morphism.hs \
 
 CSMOF_files = CSMOF/As.hs CSMOF/Sign.hs
 
-UML_files = UML/UML.hs UML/Sign.hs UML/StateMachine.hs
+UML_files = UML/UML.hs UML/Sign.hs UML/Morphism.hs UML/StateMachine.hs
 
 #QVTR_files = QVTR/As.hs QVTR/Sign.hs
 

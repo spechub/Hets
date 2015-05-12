@@ -1,21 +1,24 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
-module UML.Logic_UML where 
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeSynonymInstances  #-}
+module UML.Logic_UML where
 
-import Logic.Logic
-import UML.UML as UML
-import UML.Sign
-import Common.DefaultMorphism
-import UML.ATC_UML ()
---import UML.Morphism
-import UML.StaticAna
-import Data.Monoid
-import UML.Parser
-import Common.DocUtils
-import UML.PrettyUML()
+import           Common.DefaultMorphism
+import           Data.Monoid
+import           Logic.Logic
+import           UML.ATC_UML            ()
+import           UML.Morphism
+import           UML.Parser
+import           UML.Sign
+import           UML.StaticAna
+import           UML.UML                as UML
+--import Common.DocUtils
+import           UML.PrettyUML          ()
 
-data UML = UML deriving Show 
+import qualified Data.Map               as Map
+data UML = UML deriving Show
 
-type Morphism = DefaultMorphism Sign
+--type Morphism = DefaultMorphism Sign
 
 instance Language UML where
   description _ = "UML Language"
@@ -37,7 +40,7 @@ instance Syntax UML
   ()
   ()
   ()
-    where 
+    where
         parsersAndPrinters UML =
                addSyntax "UML" (basicSpecCM, pretty)
                $ makeDefault (basicSpecCM, pretty)
@@ -75,3 +78,12 @@ instance StaticAnalysis UML
     --subsig_inclusion UML = defaultInclusion
     --induced_from_morphism _ _ sig = return $ MkMorphism sig sig
     --signature_union CSMOF sign1 _ = return sign1 -- TODO
+
+instance Category Sign Morphism
+    where
+      ide = idMor
+      dom = source
+      cod = target
+      isInclusion mor = (Map.null $ classMap mor) && (Map.null $ attributeMap mor) && (Map.null $ operationMap mor) && (Map.null $ associationMap mor) && (Map.null $ compositionMap mor)
+      legal_mor = isLegalMorphism
+      composeMorphisms = composeMor

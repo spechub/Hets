@@ -1,7 +1,7 @@
 module UML.XMINames where
 
-import Text.XML.Light
-import UML.UML
+import           Text.XML.Light
+import           UML.UML
 
 xmiURI1 :: Maybe String
 xmiURI2 :: Maybe String
@@ -10,7 +10,7 @@ xmiURI1 = Just "http://www.eclipse.org/uml2/5.0.0/UML"
 xmiURI2 = Just "http://www.omg.org/spec/XMI/20131001"
 --xmiURI2 = Just "http://schema.omg.org/spec/XMI/2.1"
 
-modelName :: Maybe String -> QName 
+modelName :: Maybe String -> QName
 modelName xmiURI1 = QName {qName = "Model", qURI = xmiURI1 , qPrefix = Just "uml"} -- uri:Just "http://www.eclipse.org/uml2/5.0.0/UML"
 
 packagedElementName :: QName

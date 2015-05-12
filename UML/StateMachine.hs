@@ -1,8 +1,8 @@
 module UML.StateMachine where
-import Data.Maybe
+import           Data.Maybe
 
 data Region = Region {
-        states :: [Entity],
+        states      :: [Entity],
         transitions :: [Transition]} deriving Show
 
 data PseudoState = PseudoState {
@@ -16,20 +16,20 @@ data Entity = State String [Region] | EntryState String | ExitState String | Ini
 } deriving Show-}
 
 data Transition = Transition {
-        source :: String,
-        target :: String,
+        source  :: String,
+        target  :: String,
         trigger :: Maybe Trigger,
-        guard :: Maybe Guard,
-        effect :: Maybe Event} 
+        guard   :: Maybe Guard,
+        effect  :: Maybe Event}
 
-instance Show Transition where 
+instance Show Transition where
     show tran = ((source tran) ++ " --" ++ tr ++ gu ++ ev ++ "--> " ++ (target tran))
-         where    
+         where
             tr = fromMaybe "" (trigger tran)
             gu = case guard tran of
                 Nothing -> ""
                 Just g -> "[" ++ g ++ "]"
-            ev = case effect tran of 
+            ev = case effect tran of
                 Nothing -> ""
                 Just e -> "/" ++ e
 
