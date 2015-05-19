@@ -516,8 +516,8 @@ $(DTD2HS): $(DTD2HS_deps) utils/DtdToHaskell-src/DtdToHaskell.hs
 	$(HC) --make -iutils/DtdToHaskell-src \
             utils/DtdToHaskell-src/DtdToHaskell.hs -o $@ $(HC_OPTS)
 
-Isabelle/IsaExport.hs: $(DTD2HS) Isabelle/IsaExport.dtd
-	($(DTD2HS) Isabelle/IsaExport.dtd Isabelle/IsaExport.hs Isabelle.)
+#Isabelle/IsaExport.hs: $(DTD2HS) Isabelle/IsaExport.dtd
+#	($(DTD2HS) Isabelle/IsaExport.dtd Isabelle/IsaExport.hs Isabelle.)
 
 $(GENRULES): $(DRIFT) $(GENERATERULES_deps)
 	(cd utils/GenerateRules; \

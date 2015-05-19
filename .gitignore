@@ -102,7 +102,6 @@ HolLight/ATC_HolLight.der.hs
 HolLight/ATC_HolLight.hs
 Isabelle/ATC_Isabelle.der.hs
 Isabelle/ATC_Isabelle.hs
-Isabelle/IsaExport.hs
 Isabelle/export/examples/*.isa
 Isabelle/export/examples/*.isa.pretty.xml
 LF/ATC_LF.der.hs
