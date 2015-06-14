@@ -14,6 +14,7 @@ instance Pretty Model where
 instance Pretty CM where
     pretty cm = (sep $ map pretty (Map.elems $ cmClasses cm))
                 $+$ (vcat $ map pretty (Map.elems $ cmAssociations cm))
+                $+$ (vcat $ map pretty (cmPackages cm))
 
 instance Pretty Class where
     pretty cl = (((text . className) cl) ) <> (parens $ foldl (<>) empty $ punctuate comma (map (text . showClassEntityName) (super cl)))
@@ -31,6 +32,10 @@ instance Pretty Association where
                     False -> (text $ assoName ass)
                                 <+> (brackets $ sep $ punctuate comma $ map pretty $ ends ass)
                     True -> (text $ assoName ass) <> text "[Composition]" <> colon <+> (pretty $ head $ ends ass) <+>  text "<>--" <+> (pretty $ head $ tail $ ends ass)
+instance Pretty Package where
+    pretty pack = (sep $ map pretty (Map.elems $ classes pack))
+                $+$ (vcat $ map pretty (Map.elems $ associations pack))
+                $+$ (vcat $ map pretty (packagePackages pack))
 
 instance Pretty End where
     pretty end =  ((text . (fromMaybe "") . endName) end) <> colon <> (text $ showClassEntityName $ endTarget end) <>  lbrack <> ((text . lowerValue . label) end) <> comma <+> ((text . upperValue . label) end) <> rbrack

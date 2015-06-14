@@ -6,11 +6,13 @@ import           System.IO
 import           Text.ParserCombinators.Parsec
 import           Text.XML.Light
 import           UML.Parser
-
+import           UML.PrettyUML
+import System.Environment (getArgs)
 main :: IO ()
 main = do
+    args <- getArgs
     --handle <- openFile "UML/data/simplelibrary.xmi" ReadMode
-    handle <- openFile "UML/data/statemachine_Till.xml" ReadMode
+    handle <- openFile (args!!0) ReadMode
         --handle <- openFile "data/uml.xmi" ReadMode
     --handle <- openFile "data/statemachine.xmi" ReadMode
     contents <- hGetContents handle

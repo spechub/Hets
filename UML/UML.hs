@@ -16,8 +16,8 @@ import           Prelude          hiding (Enum)
 import           UML.StateMachine
 
 data Model = ClassModel CM
-                | StateMachine [Entity] [Transition]
-        | StateMachineR Region deriving Show
+                | SM StateMachine deriving Show
+        -- | StateMachineR Region 
 
 data CM = CM {
         cmName               :: String,

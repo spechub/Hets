@@ -18,7 +18,7 @@ import           UML.XMINames
 
 parseClassModel :: (Maybe String, Maybe String) -> Element -> Model
 parseClassModel (xmiv, _) el = ClassModel CM {
-                    cmName = fromJust (findAttr nameName el),
+                    cmName = fromMaybe "unnamed" (findAttr nameName el),
                     cmClasses = classes pack,
                     cmAssociations = associations pack,
                     cmInterfaces = interfaces pack,

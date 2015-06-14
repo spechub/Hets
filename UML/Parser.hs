@@ -4,6 +4,7 @@ import           System.IO
 
 import           UML.ClassDiagramParser
 import           UML.StateMachineParser
+import           UML.StateMachine
 import           UML.UML
 import           UML.XMINames
 
@@ -26,7 +27,7 @@ parseUMLCDfromString s = case parseXMLDoc s of
                     Nothing -> error "Not a proper xmi-file"
                     Just el -> case parseModel el  of
                                 ClassModel cma -> cma
-                                _ -> error "unimplemented"
+                                x -> error $ "Modeltype unimplemented: " ++ (show x)
 
 parseUMLCDfromFile :: FilePath -> IO CM
 parseUMLCDfromFile fp =
@@ -35,23 +36,50 @@ parseUMLCDfromFile fp =
     contents <- hGetContents handle
     return $ parseUMLCDfromString contents
 
-parseModel :: Element -> Model
-parseModel el0 =     case findAttr (typeName xmiv) (head (findChildren packagedElementName el))  of
-                        Just "uml:StateMachine" -> (parseStateMachine xmiv (head (findChildren packagedElementName el)))
-                        _ -> parseClassModel (xmiv, umlv) el
-                    where
-                        el = fromJust $ findModelElement el0
-                        xmiv = (qURI . attrKey) $ head $ filter (not . (Nothing ==) . qURI . attrKey) $ elAttribs el
-                        umlv = qURI $ elName el --case filter ((Just "exporterVersion" ==).(findAttr nameName)) $ foldl (++) [] $ map (findChildren (sName "contents")) $ findChildren (sName "eAnnotations") el of
-                                    --[] -> "5.0.0"
-                                    --(dV:_) -> fromJust $ findAttr (sName "value") dV
 
+basicSpecSM :: PrefixMap ->  GenParser Char st StateMachine
+basicSpecSM _ = do
+                s <- many anyChar
+                return $ parseUMLSMfromString s
+
+parseUMLSMfromString :: String -> StateMachine
+parseUMLSMfromString s = case parseXMLDoc s of
+                    Nothing -> error "Not a proper xmi-file"
+                    Just el -> case parseModel el  of
+                                SM sm -> sm
+                                _ -> error "unimplemented"
+
+
+parseModel :: Element -> Model
+parseModel el0 =     case findChildren packagedElementName el of 
+                        (x:_) -> case findAttr (typeName xmiv) x of
+                            Just "uml:StateMachine" -> case findChildren packagedElementName el of 
+                                (x:_) -> SM (parseStateMachine xmiv x)
+                                [] -> error "No packagedElement found"
+                            _ -> parseClassModel (xmiv, umlv) el
+                   
+                                        --[] -> "5.0.0"
+                                        --(dV:_) -> fromJust $ findAttr (sName "value") dV
+                        _ -> error $ "No PackagedElement found: " ++ (show $ elChildren el) 
+                     where
+                        el = fromMaybe (error "No ModelElement found") $ findModelElement el0
+                        xmiv =  case filter (not . (Nothing ==) . qURI . attrKey) $ elAttribs el of  
+                                    [] -> Nothing
+                                    (x:_) ->  (qURI . attrKey) $ x
+                        umlv = qURI $ elName el --case filter ((Just "exporterVersion" ==).(findAttr nameName)) $ foldl (++) [] $ map (findChildren (sName "contents")) $ findChildren (sName "eAnnotations") el of
 findModelElement :: Element -> Maybe Element
-findModelElement el0 = case (qName $ elName el0) == "Model" && (qPrefix $ elName el0) == Just "uml" of
+findModelElement el0 = case findChildren packagedElementName el0 of
+                        [] -> case filter (not . isNothing) $ map findModelElement (elChildren el0) of
+                                [] -> Nothing
+                                [Just x] -> Just x
+                                _ -> error "Multiple models in a single XMI are not supported"
+                        _ -> Just el0
+
+{-case ((qName $ elName el0) == "Model" && (qPrefix $ elName el0) == Just "uml") of -- || ((qName $ elName el0) == "XMI") of
                     True -> Just el0
                     False -> case filter (not . isNothing) $ map findModelElement (elChildren el0) of
                                 [] -> Nothing
-                                (x : _) -> x
+                                (x : _) -> x-}
 
 isElem :: Maybe String -> String -> Element -> Bool
 isElem xmiv s el = (findAttr (typeName xmiv) el) == Just s

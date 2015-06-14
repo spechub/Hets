@@ -386,7 +386,7 @@ translateUMLType UMLInteger = "buml:Integer"
 translateUMLType UMLUnlimitedNatural = "form:NaturalNumber"
 translateUMLType UMLReal = "buml:Real"
 translateUMLType (CE x) = showClassEntityName x
-translateUMLType _ = error "unimplemented"
+translateUMLType t = error $ "TypeTranslation unimplemented:" ++ show t
 
 
 
