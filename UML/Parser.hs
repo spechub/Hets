@@ -14,7 +14,7 @@ import           Common.GlobalAnnotations      (PrefixMap)
 
 import           Text.ParserCombinators.Parsec
 import           Text.XML.Light
-
+import Data.String.Utils
 
 
 basicSpecCM :: PrefixMap ->  GenParser Char st CM
@@ -51,12 +51,12 @@ parseUMLSMfromString s = case parseXMLDoc s of
 
 
 parseModel :: Element -> Model
-parseModel el0 =     case findChildren packagedElementName el of 
-                        (x:_) -> case findAttr (typeName xmiv) x of
-                            Just "uml:StateMachine" -> case findChildren packagedElementName el of 
+parseModel el0 = case findChildren packagedElementName el of 
+                        (x:_) -> case Just smPrefix == (findAttr (typeName xmiv) x) of
+                            True -> case findChildren packagedElementName el of 
                                 (x:_) -> SM (parseStateMachine xmiv x)
                                 [] -> error "No packagedElement found"
-                            _ -> parseClassModel (xmiv, umlv) el
+                            False -> parseClassModel prefix (xmiv, umlv) el
                    
                                         --[] -> "5.0.0"
                                         --(dV:_) -> fromJust $ findAttr (sName "value") dV
@@ -65,7 +65,9 @@ parseModel el0 =     case findChildren packagedElementName el of
                         el = fromMaybe (error "No ModelElement found") $ findModelElement el0
                         xmiv =  case filter (not . (Nothing ==) . qURI . attrKey) $ elAttribs el of  
                                     [] -> Nothing
-                                    (x:_) ->  (qURI . attrKey) $ x
+                                    (x:_) ->  (qURI . attrKey) x
+                        prefix = head (split ":" $ fromMaybe "uml" $ findAttr (typeName xmiv) $ head $ findChildren packagedElementName el)
+                        smPrefix = prefix ++ ":StateMachine"
                         umlv = qURI $ elName el --case filter ((Just "exporterVersion" ==).(findAttr nameName)) $ foldl (++) [] $ map (findChildren (sName "contents")) $ findChildren (sName "eAnnotations") el of
 findModelElement :: Element -> Maybe Element
 findModelElement el0 = case findChildren packagedElementName el0 of

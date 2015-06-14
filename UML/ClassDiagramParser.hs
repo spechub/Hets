@@ -16,8 +16,8 @@ import           UML.UML
 import           UML.Utils
 import           UML.XMINames
 
-parseClassModel :: (Maybe String, Maybe String) -> Element -> Model
-parseClassModel (xmiv, _) el = ClassModel CM {
+parseClassModel :: String -> (Maybe String, Maybe String) -> Element -> Model
+parseClassModel prefix (xmiv, _) el = ClassModel CM {
                     cmName = fromMaybe "unnamed" (findAttr nameName el),
                     cmClasses = classes pack,
                     cmAssociations = associations pack,
@@ -29,35 +29,35 @@ parseClassModel (xmiv, _) el = ClassModel CM {
                     cmEnums = packageEnums pack
                 }
                 where
-                    pack = processPackage xmiv allmap semap el
+                    pack = processPackage prefix xmiv allmap semap el
                     allmap = Map.union emap $ Map.union cmap acmap
                     cmap = Map.fromList $ (map  (\ (id1, x) -> (id1, CL x))
-                            (collectRec xmiv "uml:Class"
+                            (collectRec prefix xmiv (prefix ++ ":Class")
                                 (processClass xmiv allmap) el))
                     emap = Map.fromList $ map (\ (id1, x) -> (id1, EN x))
-                                        (collectRec xmiv "uml:Enumeration"
+                                        (collectRec prefix xmiv (prefix ++ ":Enumeration")
                                             (processEnumeration xmiv) el)
                     acmap = Map.fromList $ (map (\ (id1, x) -> (id1, AC x))
-                                (collectRec xmiv "uml:AssociationClass"
+                                (collectRec prefix xmiv (prefix ++ ":AssociationClass")
                                 (processAssociationClass xmiv
                                     (Map.union cmap emap) semap) el))
-                    semapraw = collectSpecialEnds xmiv allmap el
+                    semapraw = collectSpecialEnds prefix xmiv allmap el
                     semap = (Map.fromList
                             [(  id1,
                                 [x | (id2, x) <- semapraw, id1 == id2])
                                 | id1 <- (Map.keys (Map.fromList semapraw))])
 
-processPackage :: Maybe String -> Map.Map Id ClassEntity
+processPackage :: String -> Maybe String -> Map.Map Id ClassEntity
                     -> Map.Map Id [End] -> Element -> Package
-processPackage xmiv cmap semap el = Package {
+processPackage prefix xmiv cmap semap el = Package {
             packageName = fromMaybe "" (findAttr nameName el),
             classes = Map.fromList $ map (\ (id1, CL x) -> (id1, x))
                         (map ( (\ x -> (x, fromJust (Map.lookup x cmap)))
                         . (fromJust . (findAttr (attrIdName xmiv))))
-                        (getChildrenType xmiv "uml:Class" el)),
-            associations = Map.fromList (parse xmiv "uml:Association"
+                        (getChildrenType xmiv (prefix ++ ":Class") el)),
+            associations = Map.fromList (parse xmiv (prefix ++ ":Association")
                                 (processAssociation xmiv cmap semap) lis),
-            interfaces = Map.fromList (parse xmiv "uml:Interface"
+            interfaces = Map.fromList (parse xmiv (prefix ++ ":Interface")
                             (processInterface xmiv) lis),
             packageMerges = map (fromMaybe "" . findAttr
                                 (sName "mergedPackage"))
@@ -66,15 +66,15 @@ processPackage xmiv cmap semap el = Package {
                 $ map (\ (id1, AC x) -> (id1, x))
                     (map ((\ x -> (x, fromJust (Map.lookup x cmap))) .
                     (fromJust . (findAttr (attrIdName xmiv))))
-                    (findChildren (sName "uml:AssociationClass") el)),
+                    (findChildren (sName (prefix ++ ":AssociationClass")) el)),
             packageEnums = Map.fromList
                         $ filterFromEntityMap xmiv cmap
                         (\ (EN x) -> x)
-                        (getChildrenType xmiv "uml:Enumeration" el),
-            signals = Map.fromList (parse xmiv "uml:Signal"
+                        (getChildrenType xmiv (prefix ++ ":Enumeration") el),
+            signals = Map.fromList (parse xmiv (prefix ++ ":Signal")
                         (processSignal xmiv cmap) lis),
-            packagePackages = parse xmiv "uml:Package"
-                        (processPackage xmiv  cmap semap) lis
+            packagePackages = parse xmiv (prefix ++ ":Package")
+                        (processPackage prefix xmiv  cmap semap) lis
         }
         where lis = (findChildren packagedElementName el)
 
@@ -84,26 +84,26 @@ filterFromEntityMap xmiv emap f lis = map (\ (id1, x) -> (id1, f x))
                 (map ((\ x -> (x, fromJust (Map.lookup x emap))) .
                 (fromJust . (findAttr (attrIdName xmiv)))) lis)
 
-findPackageElements :: Maybe String -> Element -> [Element]
-findPackageElements xmiv el = filter (\ x -> findAttr (typeName xmiv) x ==
-                    Just "uml:Package") (findChildren packagedElementName el)
+findPackageElements :: String -> Maybe String -> Element -> [Element]
+findPackageElements prefix xmiv el = filter (\ x -> findAttr (typeName xmiv) x ==
+                    Just (prefix ++ ":Package")) (findChildren packagedElementName el)
 
 
-collectRec :: Maybe String -> String -> (Element -> (s, t)) 
+collectRec :: String -> Maybe String -> String -> (Element -> (s, t)) 
                 -> Element -> [(s, t)]
-collectRec xmiv s f el =
+collectRec prefix xmiv s f el =
     (parse xmiv s f (findChildren packagedElementName el))
-    ++ (foldl (++) [] (map (collectRec xmiv s f)
-        (findPackageElements xmiv el)))
+    ++ (foldl (++) [] (map (collectRec prefix xmiv s f)
+        (findPackageElements prefix xmiv el)))
 
 
-collectSpecialEnds :: Maybe String -> Map.Map Id ClassEntity
+collectSpecialEnds :: String -> Maybe String -> Map.Map Id ClassEntity
                         -> Element -> [(Id, End)]
-collectSpecialEnds xmiv cmap el =
+collectSpecialEnds prefix xmiv cmap el =
     (foldl (++) [] (map (classSETranslator cmap) cl))
-    ++ (foldl (++) [] (map (collectSpecialEnds xmiv cmap)
-        (findPackageElements xmiv el)))
-                where     cl = getChildrenType xmiv "uml:Class" el
+    ++ (foldl (++) [] (map (collectSpecialEnds prefix xmiv cmap)
+        (findPackageElements prefix xmiv el)))
+                where     cl = getChildrenType xmiv (prefix ++ ":Class") el
 
 getChildrenType :: Maybe String -> String -> Element -> [Element]
 getChildrenType xmiv s el =
@@ -118,9 +118,9 @@ classSETranslator cmap x =
 --classSETranslator cmap x = map (agrTranslator cmap) (filter (\x -> not ((findAttr (sName "aggregation") x) == Nothing)) (findChildren attributeName x))
 
 agrTranslator :: Map.Map Id ClassEntity -> Element -> (Id, End)
-agrTranslator cmap el = (fromJust (findAttr (sName "association") el),
-            End {    endTarget = fromJust (Map.lookup
-                (fromJust (findAttr (sName "type") el)) cmap),
+agrTranslator cmap el = (fromMaybe (error "Aggregation w/o association") (findAttr (sName "association") el),
+            End {    endTarget = fromMaybe (error $ "aggregated class not found: " ++ (show el)) (Map.lookup
+                (fromMaybe (error "Element w/o type") (findAttr (sName "type") el)) cmap),
                 label = processLabel el,
                 endType = case findAttr (sName "aggregation") el of
                         Just "composite" -> Composition
@@ -133,26 +133,27 @@ agrTranslator cmap el = (fromJust (findAttr (sName "association") el),
 processAssociation :: Maybe String -> Map.Map Id ClassEntity
                         -> Map.Map Id [End] -> Element  -> (Id, Association)
 processAssociation xmiv cmap semap el =
-    (fromJust (findAttr (attrIdName xmiv) el),
+    (id,
     Association {ends = (map (processEnds xmiv cmap)
         (findChildren (sName "ownedEnd") el)) ++ fromMaybe []
-        (Map.lookup (fromJust (findAttr (attrIdName xmiv) el)) semap),
+        (Map.lookup id semap),
         assoName = an})
     where an = case (findAttr nameName el) of
-                Nothing -> fromJust (findAttr (attrIdName xmiv) el)
+                Nothing -> id
                 Just n -> n
+          id = fromMaybe (error "Association without id") $ findAttr (attrIdName xmiv) el
 
 processEnds :: Maybe String -> Map.Map Id ClassEntity -> Element -> End
 processEnds xmiv emap el =
     End {endTarget =
-        (case (Map.lookup (fromJust (findAttr (sName "type") el))  emap) of
+        (case (Map.lookup (fromMaybe (error "Element w/o type") (findAttr (sName "type") el))  emap) of
             Just t -> t
             Nothing -> error $ "Key "
                 ++ show (findAttr (sName "type") el)
                 ++ " not found in "
                 ++ (show emap)
                     ), label = processLabel el, endType = Normal,
-        endName = Just $ fromMaybe (fromJust $ findAttr (attrIdName xmiv) el)
+        endName = Just $ fromMaybe (fromMaybe (error "Element w/o id") $ findAttr (attrIdName xmiv) el)
                      $ (findAttr nameName el)}
 
 
@@ -299,7 +300,9 @@ processAttribute at = Attribute{attrName = show at,
 processGeneralization ::  (Map.Map Id ClassEntity) -> Element -> ClassEntity
 processGeneralization emap el = case findAttr attrGeneralName el of
                         Nothing -> error $ show el
-                        Just t -> fromJust $ Map.lookup t emap
+                        Just t -> case Map.lookup t emap of
+                            Just x -> x
+                            Nothing -> error "Superclass not found"
 
 processInterface :: Maybe String -> Element -> (Id, Interface)
 processInterface xmiv el = (fromMaybe "" (findAttr (attrIdName xmiv) el),

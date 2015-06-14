@@ -396,8 +396,14 @@ translateUMLType t = error $ "TypeTranslation unimplemented:" ++ show t
 retrieveSen :: CM -> [MultForm]
 retrieveSen m = foldl (++) [] ((map class2MFs $ fmap CL (Map.elems $ cmClasses m))
                 ++ (map asso2MFs (filter (not . isComposition) $ Map.elems $ cmAssociations m))
-                ++ (map comp2MFs (filter (isComposition) $ Map.elems $  cmAssociations m)))
+                ++ (map comp2MFs (filter (isComposition) $ Map.elems $  cmAssociations m))
+                ++ map retrieveSenPack (cmPackages m))
 
+retrieveSenPack :: Package -> [MultForm]
+retrieveSenPack pack = foldl (++) [] ((map class2MFs $ fmap CL (Map.elems $ classes pack))
+                ++ (map asso2MFs (filter (not . isComposition) $ Map.elems $ associations pack))
+                ++ (map comp2MFs (filter (isComposition) $ Map.elems $ associations pack))
+                ++ map retrieveSenPack (packagePackages pack))
 
 class2MFs :: ClassEntity -> [MultForm]
 class2MFs (CL cl) = foldl (++) [] $ map (attr2MFs cl) (attr cl)

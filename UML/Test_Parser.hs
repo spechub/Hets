@@ -7,7 +7,9 @@ import           Text.ParserCombinators.Parsec
 import           Text.XML.Light
 import           UML.Parser
 import           UML.PrettyUML
+import           UML.UML
 import System.Environment (getArgs)
+import UML.UML2CL
 main :: IO ()
 main = do
     args <- getArgs
@@ -19,4 +21,5 @@ main = do
 
     putStr $ case parse (basicSpecCM Map.empty) "" contents  of
             Left err -> show err
-            Right cm -> show $ pretty cm
+            Right cm ->     (show $ pretty cm) ++ "\n ____ DONE ____ \n" {-++
+                            (show $ retrieveSen cm)-}
