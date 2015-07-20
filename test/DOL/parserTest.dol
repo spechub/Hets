@@ -97,6 +97,10 @@ alignment a8 : foo:owltime_instant_l to bar:owltime_le
 , relation         {eRef1 ERef2}
 end
 
+alignment a9 : foo:owltime_instant_l to bar:owltime_le
+= eRef1 rRef       0.1 ERef2 %( corrId )%
+assuming SingleDomain
+end
 
 alignment a10 align-arity-forward 1 align-arity-backward 1 : foo:foo_bar to foo:baz
 end
