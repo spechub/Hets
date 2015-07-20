@@ -63,37 +63,37 @@ alignment a7 : foo:foo_bar to foo:baz
 end
 
 alignment a8 : foo:owltime_instant_l to bar:owltime_le
-= eRef1 rRef       (0.1) ERef2 %( corrId )%
-, eRef1 rRef       (0.1) ERef2
+= eRef1 rRef         0.1 ERef2 %( corrId )%
+, eRef1 rRef         0.1 ERef2
 , eRef1 rRef             ERef2 %( corrId )%
 , eRef1 rRef             ERef2
-, eRef1 rRef       (0.1) ERef2 %( corrId )%
-, eRef1 rRef       (0.1) ERef2
+, eRef1 rRef         0.1 ERef2 %( corrId )%
+, eRef1 rRef         0.1 ERef2
 , eRef1 rRef             ERef2 %( corrId )%
 , eRef1 rRef             ERef2
-, eRef1            (0.1) ERef2 %( corrId )%
-, eRef1            (0.1) ERef2
+, eRef1              0.1 ERef2 %( corrId )%
+, eRef1              0.1 ERef2
 , eRef1                  ERef2 %( corrId )%
 , eRef1                  ERef2
-, eRef1            (0.1) ERef2 %( corrId )%
-, eRef1            (0.1) ERef2
+, eRef1              0.1 ERef2 %( corrId )%
+, eRef1              0.1 ERef2
 , eRef1                  ERef2 %( corrId )%
 , eRef1                  ERef2
-, eRef1 <          (0.1) ERef2
-, eRef1 >          (0.1) ERef2
-, eRef1 =          (0.1) ERef2
-, eRef1 %          (0.1) ERef2
-, eRef1 ni         (0.1) ERef2
-, eRef1 in         (0.1) ERef2
+, eRef1 <            0.1 ERef2
+, eRef1 >            0.1 ERef2
+, eRef1 =            0.1 ERef2
+, eRef1 %            0.1 ERef2
+, eRef1 ni           0.1 ERef2
+, eRef1 in           0.1 ERef2
 , eRef1 <                ERef2
 , eRef1 >                ERef2
 , eRef1 =                ERef2
 , eRef1 %                ERef2
 , eRef1 ni               ERef2
 , eRef1 in               ERef2
-, relation < (0.1) {eRef1 ERef2}
+, relation <   0.1 {eRef1 ERef2}
 , relation <       {eRef1 ERef2}
-, relation   (0.1) {eRef1 ERef2}
+, relation     0.1 {eRef1 ERef2}
 , relation         {eRef1 ERef2}
 end
 
