@@ -131,7 +131,7 @@ showRelationsForVisible onto gv (_, _, gid) =
        Just g ->
          do let oldGraph = A.ontoGraph g
                 nodesInOldGraph = map fst $ labNodes oldGraph
-                newGr = nfilter (`elem` nodesInOldGraph) $ getClassGraph onto
+                newGr = restrict (`elem` nodesInOldGraph) $ getClassGraph onto
             purgeGraph gid gv
             updateDaVinciGraph newGr gid gv
             A.redisplay gid gv
@@ -156,7 +156,7 @@ showObjectsForVisible onto gv (_, _, gid) =
                 objectList =
                     map fst $ filter (findObjectsOfClass classesInOldGraph)
                     $ getTypedNodes [OntoObject] $ getClassGraph onto
-                objectGr = nfilter (`elem` objectList) (getClassGraph onto)
+                objectGr = restrict (`elem` objectList) (getClassGraph onto)
             updateDaVinciGraph (makeObjectGraph oldGraph
                                 (getPureClassGraph (getClassGraph onto))
                                 objectGr) gid gv
@@ -169,7 +169,7 @@ showWholeObjectGraph onto gv (_, _, gid) =
   do oldGv <- readIORef gv
      A.Result _ err <- purgeGraph gid gv
      let objectList = map fst $ getTypedNodes [OntoObject] $ getClassGraph onto
-         objectGraph = nfilter (`elem` objectList) $ getClassGraph onto
+         objectGraph = restrict (`elem` objectList) $ getClassGraph onto
      updateDaVinciGraph (makeObjectGraph empty
                          (getClassGraph onto) objectGraph) gid gv
      case err of
@@ -455,7 +455,7 @@ hideObjectsForVisible gv (_, _, gid) =
                 objectNodeIDs = map ( \ (_, v, _, _) -> v) $
                                 gselType (== OntoObject) oldGraph
             purgeGraph gid gv
-            updateDaVinciGraph (nfilter (`notElem` objectNodeIDs) oldGraph)
+            updateDaVinciGraph (restrict (`notElem` objectNodeIDs) oldGraph)
                                gid gv
             A.redisplay gid gv
             return ()
@@ -562,11 +562,11 @@ getPureClassGraph :: ClassGraph -> ClassGraph
 getPureClassGraph g =
     let classNodeList = map fst
           $ getTypedNodes [OntoClass, OntoPredicate] g
-    in nfilter (`elem` classNodeList) g
+    in restrict (`elem` classNodeList) g
 
 
-nfilter :: DynGraph gr => (Node -> Bool) -> gr a b -> gr a b
-nfilter f = ufold cfilter empty
+restrict :: DynGraph gr => (Node -> Bool) -> gr a b -> gr a b
+restrict f = ufold cfilter empty
             where cfilter (p, v, l, s) g =
                       if f v then (p', v, l, s') & g else g
                    where p' = filter (f . snd) p
