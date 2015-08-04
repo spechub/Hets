@@ -30,13 +30,12 @@ import Text.ParserCombinators.Parsec
 createSpec :: [TPTP] -> Annoted SPEC
 createSpec b = makeSpec $ G_basic_spec SoftFOL b
 
-parseTPTP :: FilePath -> IO LIB_DEFN
-parseTPTP filename = do
- s <- readFile filename
- case parse tptp filename s of
+parseTPTP :: String -> FilePath -> IO LIB_DEFN
+parseTPTP s filename = case parse tptp filename s of
   Right b ->
-   let lib = [makeLogicItem SoftFOL, makeSpecItem (simpleIdToIRI $ mkSimpleId $
-               filename) $ createSpec b]
+   let lib = [ makeLogicItem SoftFOL
+             , makeSpecItem (simpleIdToIRI $ mkSimpleId filename)
+               $ createSpec b]
    in return $ Lib_defn (emptyLibName $ convertFileToLibStr filename)
                 lib nullRange []
   Left err -> fail $ show err

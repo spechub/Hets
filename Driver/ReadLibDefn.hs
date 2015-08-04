@@ -109,7 +109,7 @@ readLibDefn lgraph opts mr file fileForPos input =
 #endif
       Xmi -> liftIO $ fmap (: []) $ parseXmi file
       Qvt -> liftIO $ fmap (: []) $ parseQvt file
-      TPTPIn -> liftIO $ fmap (: []) $ parseTPTP file
+      TPTPIn -> liftIO $ fmap (: []) $ parseTPTP input file
 #ifndef NOOWLLOGIC
       OWLIn _ -> parseOWL (isStructured opts) file
 #endif
