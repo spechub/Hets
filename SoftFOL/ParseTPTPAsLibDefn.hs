@@ -12,9 +12,9 @@ Portability :  non-portable (imports Logic.Logic)
 module SoftFOL.ParseTPTPAsLibDefn (parseTPTP) where
 
 import Common.Id
-import Common.IRI (simpleIdToIRI)
+import Common.IRI
 import Common.LibName
-import Common.AS_Annotation hiding (isAxiom, isDef)
+import Common.AS_Annotation
 
 import Logic.Grothendieck
 
@@ -28,15 +28,14 @@ import SoftFOL.ParseTPTP
 import Text.ParserCombinators.Parsec
 
 createSpec :: [TPTP] -> Annoted SPEC
-createSpec b = makeSpec $ G_basic_spec SoftFOL b
+createSpec = makeSpec . G_basic_spec SoftFOL
 
-parseTPTP :: FilePath -> IO LIB_DEFN
-parseTPTP filename = do
- s <- readFile filename
- case parse tptp filename s of
-  Right b ->
-   let lib = [makeLogicItem SoftFOL, makeSpecItem (simpleIdToIRI $ mkSimpleId $
-               filename) $ createSpec b]
-   in return $ Lib_defn (emptyLibName $ convertFileToLibStr filename)
-                lib nullRange []
+parseTPTP :: String -> FilePath -> IO LIB_DEFN
+parseTPTP s filename = case parse tptp filename s of
+  Right b -> return $ Lib_defn
+    (emptyLibName $ convertFileToLibStr filename)
+    [ makeLogicItem SoftFOL
+    , makeSpecItem (simpleIdToIRI $ mkSimpleId filename)
+      $ createSpec b ]
+    nullRange []
   Left err -> fail $ show err
