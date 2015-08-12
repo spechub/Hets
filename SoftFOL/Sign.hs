@@ -115,6 +115,12 @@ data SFSymbType = SFOpType [SPIdentifier] SPIdentifier
               | SFSortType
                 deriving (Show, Eq, Ord, Typeable, Data)
 
+sfSymbKind :: SFSymbType -> String
+sfSymbKind t = case t of
+  SFOpType {} -> "function"
+  SFPredType {} -> "predicate"
+  SFSortType -> "sort"
+
 -- * Internal data structures
 
 -- ** SPASS Problems
