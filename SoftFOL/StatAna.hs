@@ -31,7 +31,7 @@ basicAnalysis (sp, sg, _) =
       sig2 = foldr (addSyms True Set.empty . sentence) sg ns
       sig3 = if sig2 == emptySign then sig2 else sig2
            { sortMap = Map.insert universeSort Nothing $ sortMap sig2 }
-  in return (sp, ExtSign sig3 $ symOf sig3, ns)
+  in return (sp, ExtSign sig3 $ Set.difference (symOf sig3) $ symOf sg, ns)
 
 toNamedSen :: [TPTP] -> [Named Sentence]
 toNamedSen = concatMap $ \ f -> case f of
