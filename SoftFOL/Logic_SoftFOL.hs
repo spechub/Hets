@@ -18,10 +18,6 @@ module SoftFOL.Logic_SoftFOL where
 import Common.DefaultMorphism
 import Common.DocUtils
 import Common.ProofTree
-import Common.AS_Annotation (makeNamed, SenAttr (..))
-import Common.ExtSign
-
-import qualified Data.Set (empty)
 
 import ATC.ProofTree ()
 
@@ -29,6 +25,7 @@ import Logic.Logic
 
 import SoftFOL.ATC_SoftFOL ()
 import SoftFOL.Sign
+import SoftFOL.StatAna
 import SoftFOL.Print
 import SoftFOL.Conversions
 import SoftFOL.Morphism
@@ -69,6 +66,7 @@ instance Sentences SoftFOL Sentence Sign
       map_sen SoftFOL _ = return
       sym_of SoftFOL = singletonList . symOf
       sym_name SoftFOL = symbolToId
+      symKind SoftFOL = sfSymbKind . sym_type
       print_named SoftFOL = printFormula
       negation _ = negateSentence
     -- other default implementations are fine
@@ -80,19 +78,7 @@ instance StaticAnalysis SoftFOL [TPTP] Sentence
          empty_signature SoftFOL = emptySign
          is_subsig SoftFOL _ _ = True
          subsig_inclusion SoftFOL = defaultInclusion
-         basic_analysis SoftFOL = Just (\ (sp, sg, _) ->
-          return (sp, ExtSign sg Data.Set.empty, concatMap (\ f -> case f of
-           FormAnno _ (Name n) r t _ -> [
-             let sen = makeNamed n t
-             in case r of
-                 Axiom -> sen
-                 Hypothesis -> sen
-                 Definition -> sen { isAxiom = False, isDef = True}
-                 Assumption -> sen
-                 Lemma -> sen
-                 Theorem -> sen
-                 _ -> sen { isAxiom = False } ]
-           _ -> []) sp))
+         basic_analysis SoftFOL = Just basicAnalysis
 
 instance Logic SoftFOL () [TPTP] Sentence () ()
                Sign
