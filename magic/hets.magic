@@ -124,7 +124,7 @@
 0       search/4096/t   \(or\                   CLIF document
 !:mime  text/clif
 
-0       search/4096/t   \if(\                   CLIF document
+0       search/4096/t   \(if\                   CLIF document
 !:mime  text/clif
 
 0       search/4096/t   \(iff\                  CLIF document
