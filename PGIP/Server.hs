@@ -188,7 +188,7 @@ hetsServer opts1 = do
   putIfVerbose opts 1 $ "hets server is listening on port " ++ show port
   putIfVerbose opts 2 $ "for more information look into file: " ++ permFile
 #ifdef WARP3
-  run port $ \ re respond -> do
+  runSettings (setPort port $ setTimeout 86400 defaultSettings) $ \ re respond -> do
 #else
   run port $ \ re -> do
    let respond = liftIO . return
