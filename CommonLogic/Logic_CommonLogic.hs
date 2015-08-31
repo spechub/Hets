@@ -133,8 +133,9 @@ instance StaticAnalysis CommonLogic
       stat_symb_items CommonLogic = ()
       stat_symb_map_items CommonLogic = ()
       morphism_union CommonLogic = ()
-      signature_colimit CommonLogic = ()
 -}
+      signature_colimit CommonLogic = signColimit
+
 
 -- | Sublogics
 instance SemiLatticeWithTop CommonLogicSL where

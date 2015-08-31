@@ -19,6 +19,7 @@ module CommonLogic.Analysis
     , mkStatSymbMapItem
     , inducedFromMorphism
     , inducedFromToMorphism
+    , signColimit
     )
     where
 
@@ -29,6 +30,8 @@ import qualified Common.AS_Annotation as AS_Anno
 import Common.Id as Id
 import Common.IRI (parseIRIReference)
 import Common.DocUtils
+import Common.Lib.Graph
+import Common.SetColimit
 
 import CommonLogic.Symbol as Symbol
 import qualified CommonLogic.AS_CommonLogic as AS
@@ -40,6 +43,7 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 import qualified Common.Lib.MapSet as MapSet
 import qualified Data.List as List
+import Data.Graph.Inductive.Graph as Graph
 
 data DIAG_FORM = DiagForm
     {
@@ -349,3 +353,30 @@ symbToSymbol tok = Symbol.Symbol {Symbol.symName = Id.simpleIdToId tok}
 symsOfTextMeta :: AS.TEXT_META -> [Symbol.Symbol]
 symsOfTextMeta tm =
   Set.toList $ Symbol.symOf $ retrieveSign Sign.emptySig $ AS_Anno.emptyAnno tm
+
+-- | compute colimit of CL signatures
+signColimit :: Gr Sign.Sign (Int, Morphism.Morphism)
+                           -> Result (Sign.Sign, Map.Map Int Morphism.Morphism)
+signColimit diag = do
+ let mor2fun (x,mor) = (x, Morphism.propMap mor)
+     dGraph = emap mor2fun $ nmap Sign.discourseNames diag
+     (dCol, dmap) = addIntToSymbols $ computeColimitSet dGraph
+     ndGraph = emap mor2fun $ nmap Sign.nondiscourseNames diag
+     (ndCol, ndmap) = addIntToSymbols $ computeColimitSet ndGraph
+     sGraph = emap mor2fun $ nmap Sign.sequenceMarkers diag
+     (sCol, smap) = addIntToSymbols $ computeColimitSet sGraph
+     sig = Sign { Sign.discourseNames = dCol
+                 , Sign.nondiscourseNames = ndCol
+                 , Sign.sequenceMarkers = sCol
+                 }
+     mors = Map.unions $ map (\ (x, nsig) -> 
+                   let m = Morphism.Morphism {
+                              Morphism.source = nsig
+                            , Morphism.target = sig
+                            , Morphism.propMap = Map.unions 
+                                [ Map.findWithDefault (error "dmap") x dmap, 
+                                  Map.findWithDefault (error "ndmap") x ndmap, 
+                                  Map.findWithDefault (error "smap") x smap]
+                           }
+                            in Map.insert x m Map.empty) $ labNodes diag
+ return (sig, mors)
