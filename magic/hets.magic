@@ -90,49 +90,6 @@
 0       search/4096/t   Ontology:               OWL Manchester Notation
 !:mime  text/omn
 
-# CLIF
-0       search/4096/t   \(cl-text\              CLIF document
-!:mime  text/clif
-
-0       search/4096/t   \(cl-module\            CLIF document
-!:mime  text/clif
-
-0       search/4096/t   \(cl-excludes\          CLIF document
-!:mime  text/clif
-
-0       search/4096/t   \(cl-imports\           CLIF document
-!:mime  text/clif
-
-0       search/4096/t   \(cl-module\            CLIF document
-!:mime  text/clif
-
-0       search/4096/t   \(cl-comment\           CLIF document
-!:mime  text/clif
-
-0       search/4096/t   \(cl-roleset\           CLIF document
-!:mime  text/clif
-
-0       search/4096/t   \(forall\               CLIF document
-!:mime  text/clif
-
-0       search/4096/t   \(exists\               CLIF document
-!:mime  text/clif
-
-0       search/4096/t   \(and\                  CLIF document
-!:mime  text/clif
-
-0       search/4096/t   \(or\                   CLIF document
-!:mime  text/clif
-
-0       search/4096/t   \(if\                   CLIF document
-!:mime  text/clif
-
-0       search/4096/t   \(iff\                  CLIF document
-!:mime  text/clif
-
-0       search/4096/t   \(not\                  CLIF document
-!:mime  text/clif
-
 # DOL
 0       search/4096/t   distributed-ontology\   DOL document
 !:mime  text/dol
@@ -165,3 +122,46 @@
 
 0       search/4096/t   module\                 Haskell document
 !:mime  text/haskell
+
+# CLIF
+0       search/4096/t   \(cl-text \              CLIF document
+!:mime  text/clif
+
+0       search/4096/t   \(cl-module \            CLIF document
+!:mime  text/clif
+
+0       search/4096/t   \(cl-excludes \          CLIF document
+!:mime  text/clif
+
+0       search/4096/t   \(cl-imports \           CLIF document
+!:mime  text/clif
+
+0       search/4096/t   \(cl-module \            CLIF document
+!:mime  text/clif
+
+0       search/4096/t   \(cl-comment \           CLIF document
+!:mime  text/clif
+
+0       search/4096/t   \(cl-roleset \           CLIF document
+!:mime  text/clif
+
+0       search/4096/t   \(forall \               CLIF document
+!:mime  text/clif
+
+0       search/4096/t   \(exists \               CLIF document
+!:mime  text/clif
+
+0       search/4096/t   \(and \                  CLIF document
+!:mime  text/clif
+
+0       search/4096/t   \(or \                   CLIF document
+!:mime  text/clif
+
+0       search/4096/t   \(if \                   CLIF document
+!:mime  text/clif
+
+0       search/4096/t   \(iff \                  CLIF document
+!:mime  text/clif
+
+0       search/4096/t   \(not \                  CLIF document
+!:mime  text/clif
