@@ -165,7 +165,10 @@ type RsrcIO a = IO a
 #ifdef WARP3
 type WebResponse = (Response -> IO ResponseReceived) -> IO ResponseReceived
 catchException :: SomeException -> Response
-catchException e =  responseLBS internalServerError500 [(hContentType, B8.pack "text/plain; charset=utf-8")] $ BS.pack (show e)
+catchException e =  
+   responseLBS internalServerError500 
+               [(hContentType, B8.pack "text/plain; charset=utf-8")] $ 
+               BS.pack ("*** Error:\n"++show e)
 #else
 type WebResponse = (Response -> RsrcIO Response) -> RsrcIO Response
 #endif
