@@ -90,6 +90,39 @@
 0       search/4096/t   Ontology:               OWL Manchester Notation
 !:mime  text/omn
 
+# DOL
+0       search/4096/t   distributed-ontology\   DOL document
+!:mime  text/dol
+
+0       search/4096/t   ontology\               DOL document
+!:mime  text/dol
+
+0       search/4096/t   interpretation\         DOL document
+!:mime  text/dol
+
+# HetCASL
+0       search/4096/t   spec\                   HetCASL document
+!:mime  text/het
+
+0       search/4096/t   library\                HetCASL document
+!:mime  text/het
+
+0       search/4096/t   view\                   HetCASL document
+!:mime  text/het
+
+0       search/4096/t   logic\                  HetCASL document
+!:mime  text/het
+
+# CASL
+0       search/4096/t   sort\                   CASL document
+!:mime  text/casl
+
+0       search/4096/t   sorts\                  CASL document
+!:mime  text/casl
+
+0       search/4096/t   module\                 Haskell document
+!:mime  text/haskell
+
 # CLIF
 0       search/4096/t   \(cl-text\              CLIF document
 !:mime  text/clif
@@ -132,36 +165,3 @@
 
 0       search/4096/t   \(not\                  CLIF document
 !:mime  text/clif
-
-# DOL
-0       search/4096/t   distributed-ontology\   DOL document
-!:mime  text/dol
-
-0       search/4096/t   ontology\               DOL document
-!:mime  text/dol
-
-0       search/4096/t   interpretation\         DOL document
-!:mime  text/dol
-
-# HetCASL
-0       search/4096/t   spec\                   HetCASL document
-!:mime  text/het
-
-0       search/4096/t   library\                HetCASL document
-!:mime  text/het
-
-0       search/4096/t   view\                   HetCASL document
-!:mime  text/het
-
-0       search/4096/t   logic\                  HetCASL document
-!:mime  text/het
-
-# CASL
-0       search/4096/t   sort\                   CASL document
-!:mime  text/casl
-
-0       search/4096/t   sorts\                  CASL document
-!:mime  text/casl
-
-0       search/4096/t   module\                 Haskell document
-!:mime  text/haskell
