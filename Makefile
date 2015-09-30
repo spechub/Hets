@@ -54,7 +54,7 @@ derived_sources += $(GTK_GLADE_HSFILES)
 # the list of logics that need ShATermConvertible instances
 logics = CASL HasCASL Isabelle Modal Hybrid TopHybrid Temporal \
     CoCASL COL CspCASL CASL_DL \
-    SoftFOL ConstraintCASL Propositional RelationalScheme VSE OMDoc DFOL \
+    SoftFOL ConstraintCASL Propositional RelationalScheme EVT VSE OMDoc DFOL \
     LF Framework Maude ExtModal CommonLogic CSL QBF Adl HolLight Fpl THF \
     FreeCAD OWL2 RDF CSMOF QVTR
 
@@ -167,7 +167,7 @@ drifted_files = Common/AS_Annotation.hs \
     CoCASL/AS_CoCASL.hs COL/AS_COL.hs \
     CASL_DL/AS_CASL_DL.hs THF/As.hs \
     CspCASL/AS_CspCASL_Process.hs CspCASL/AS_CspCASL.hs \
-    RelationalScheme/AS.hs ATC/Grothendieck.hs \
+    RelationalScheme/AS.hs EVT/AS.hs ATC/Grothendieck.hs \
     ExtModal/AS_ExtModal.hs QBF/AS_BASIC_QBF.hs \
     CommonLogic/AS_CommonLogic.hs Fpl/As.hs \
     $(gendrifted_files)
@@ -266,6 +266,8 @@ QBF_files = Propositional/Sign.hs QBF/Morphism.hs \
 
 RS_files = RelationalScheme/AS.hs RelationalScheme/Sign.hs
 
+EVT_files = EVT/AS.hs EVT/Sign.hs
+
 Modal_files = Modal/AS_Modal.hs Modal/ModalSign.hs
 Hybrid_files = Hybrid/AS_Hybrid.hs Hybrid/HybridSign.hs
 TopHybrid_files = TopHybrid/AS_TopHybrid.hs TopHybrid/TopHybridSign.hs
@@ -326,6 +328,9 @@ CASL/ATC_CASL.der.hs: $(CASL_files) $(GENRULES)
 
 RelationalScheme/ATC_RelationalScheme.der.hs: $(RS_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.GlobalAnnotations -o $@ $(RS_files)
+
+EVT/ATC_EVT.der.hs: $(EVT_files) $(GENRULES)
+	$(GENRULECALL) -i ATC.GlobalAnnotations -o $@ $(EVT_files)
 
 Propositional/ATC_Propositional.der.hs: $(Propositional_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.AS_Annotation -o $@ $(Propositional_files)

@@ -70,6 +70,7 @@ import VSE.Logic_VSE
 -- no CASL extension, but omit them as non-essential
 import OMDoc.Logic_OMDoc
 import RelationalScheme.Logic_Rel
+import EVT.Logic_Rel
 import Temporal.Logic_Temporal
 import DFOL.Logic_DFOL
 import LF.Logic_LF
@@ -118,6 +119,7 @@ logicList =
   , Logic ConstraintCASL
   , Logic VSE
   , Logic RelScheme
+  , Logic Evt
   , Logic Temporal
   , Logic DFOL
   , Logic LF
