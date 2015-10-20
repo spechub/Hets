@@ -133,8 +133,10 @@ anaString mln lgraph opts topLns libenv initDG input file mr = do
       posFileName = case mln of
           Just gLn | useLibPos opts -> libToFileName gLn
           _ -> if checkUri file then file else realFileName
+      newOpts = if intype opts `elem` [DOLIn, HetCASLIn] 
+                 then opts{intype = GuessIn} else opts
   lift $ putIfVerbose opts 2 $ "Reading file " ++ file
-  libdefns <- readLibDefn lgraph opts mr file posFileName input
+  libdefns <-readLibDefn lgraph newOpts mr file posFileName input
   when (null libdefns) . fail $ "failed to read contents of file: " ++ file
   foldM (anaStringAux mln lgraph opts topLns initDG mr file posFileName)
         (error "Static.AnalysisLibrary.anaString", libenv)
