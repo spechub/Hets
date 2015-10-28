@@ -229,10 +229,11 @@ hetsServer opts1 = do
               requestBodyParams <- parseRequestParams re
               let unknown = filter (`notElem` allQueryKeys) $ map fst qr2
               if null unknown
-              then parseRESTful newOpts sessRef pathBits
+                then parseRESTful newOpts sessRef pathBits
                     (map fst fs2 ++ map (\ (a, b) -> a ++ "=" ++ b) vs)
                     qr2 requestBodyParams meth respond
-              else queryFail ("unknown query key(s): " ++ show unknown) respond
+                else queryFail ("unknown query key(s): " ++ show unknown)
+                               respond
            -- only otherwise stick to the old response methods
            else oldWebApi newOpts tempLib permFile sessRef re pathBits qr2
              meth respond
@@ -928,8 +929,8 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
               (newLib, nodesAndProofResults) <-
                 proveMultiNodes prOrCons libEnv ln dg incl mp mt tl nds axioms
               if all (null . snd) nodesAndProofResults
-              then return (textC, "nothing to prove")
-              else do
+                then return (textC, "nothing to prove")
+                else do
                 lift $ nextSess sess sessRef newLib k
                 return $ case api of
                   OldWebAPI -> let
@@ -990,8 +991,8 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
                         (newLib, proofResults) <- proveNode libEnv ln dg nl
                           gTh subL incl mp mt tl thms axioms
                         if null proofResults
-                        then return (textC, "nothing to prove")
-                        else do
+                          then return (textC, "nothing to prove")
+                          else do
                           lift $ nextSess sess sessRef newLib k
                           return $ case api of
                             OldWebAPI -> (htmlC,
