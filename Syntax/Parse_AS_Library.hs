@@ -213,11 +213,15 @@ libItem l = specDefn l
        en <- hetIRI l
        s2 <- colonT
        et <- equivType l
-       s3 <- equalT
-       sp <- fmap MkOms $ aSpec l
+       (ms3, sp) <- option (Nothing, MkOms $ emptyAnno $ EmptySpec nullRange)
+                           (do s3 <- equalT
+                               sp <- fmap MkOms $ aSpec l
+                               return (Just s3, sp))
        ep <- optEnd
        return . Equiv_defn en et sp
-         . catRange $ s1 : s2 : s3 : maybeToList ep
+         . catRange $ s1 : s2 : case ms3 of
+                                  Just s3 -> s3 : maybeToList ep
+                                  Nothing -> maybeToList ep
   <|> -- align defn
     do s1 <- asKey alignmentS
        an <- hetIRI l
