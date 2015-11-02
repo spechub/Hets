@@ -26,6 +26,8 @@ import Driver.Version
 
 import Network.Wai.Handler.Warp
 import Network.HTTP.Types
+
+import Codec.Binary.UTF8.String
 import Control.Monad.Trans (lift, liftIO)
 #ifdef WARP1
 import Control.Monad.Trans.Resource
@@ -197,7 +199,8 @@ hetsServer opts1 = do
 #ifdef WARP3
   runSettings (setOnExceptionResponse catchException $
                setPort port $
-               setTimeout 86400 defaultSettings) $ \ re respond -> do
+               setTimeout 86400 defaultSettings)
+    $ \ re respond -> do
 #else
   run port $ \ re -> do
    let respond = liftIO . return
@@ -686,7 +689,7 @@ mkResponse ty st = responseLBS st
 #else
       [(hContentType, B8.pack ty)]
 #endif
-  ) . BS.pack
+  ) . BS.pack . encodeString
 
 mkOkResponse :: String -> String -> Response
 mkOkResponse ty = mkResponse ty status200
