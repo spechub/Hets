@@ -26,6 +26,8 @@ import Driver.Version
 
 import Network.Wai.Handler.Warp
 import Network.HTTP.Types
+
+import Codec.Binary.UTF8.String
 import Control.Monad.Trans (lift, liftIO)
 #ifdef WARP1
 import Control.Monad.Trans.Resource
@@ -188,7 +190,8 @@ hetsServer opts1 = do
   putIfVerbose opts 1 $ "hets server is listening on port " ++ show port
   putIfVerbose opts 2 $ "for more information look into file: " ++ permFile
 #ifdef WARP3
-  runSettings (setPort port $ setTimeout 86400 defaultSettings) $ \ re respond -> do
+  runSettings (setPort port $ setTimeout 86400 defaultSettings)
+    $ \ re respond -> do
 #else
   run port $ \ re -> do
    let respond = liftIO . return
@@ -265,7 +268,7 @@ parseRequestParams request =
         return $ parseJson $ toJsonObject formDataB8
 
     jsonBody :: RsrcIO (Maybe Json)
-    jsonBody = liftM (parseJson . B8.unpack) $ receivedRequestBody
+    jsonBody = liftM (parseJson . B8.unpack) receivedRequestBody
 
     receivedRequestBody :: RsrcIO B8.ByteString
 #ifdef WARP3
@@ -677,7 +680,7 @@ mkResponse ty st = responseLBS st
 #else
       [(hContentType, B8.pack ty)]
 #endif
-  ) . BS.pack
+  ) . BS.pack . encodeString
 
 mkOkResponse :: String -> String -> Response
 mkOkResponse ty = mkResponse ty status200
