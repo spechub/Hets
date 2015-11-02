@@ -93,6 +93,7 @@ import Common.Utils
 import Common.XUpdate
 
 import Control.Monad
+import Control.Exception.Base (SomeException)
 
 import qualified Data.IntMap as IntMap
 import qualified Data.Map as Map
@@ -165,9 +166,15 @@ type RsrcIO a = IO a
 
 #ifdef WARP3
 type WebResponse = (Response -> IO ResponseReceived) -> IO ResponseReceived
+catchException :: SomeException -> Response
+catchException e =
+   mkResponse textC
+              internalServerError500
+              ("*** Error:\n" ++ show e)
 #else
 type WebResponse = (Response -> RsrcIO Response) -> RsrcIO Response
 #endif
+
 
 hetsServer :: HetcatsOpts -> IO ()
 hetsServer opts1 = do
@@ -190,7 +197,9 @@ hetsServer opts1 = do
   putIfVerbose opts 1 $ "hets server is listening on port " ++ show port
   putIfVerbose opts 2 $ "for more information look into file: " ++ permFile
 #ifdef WARP3
-  runSettings (setPort port $ setTimeout 86400 defaultSettings)
+  runSettings (setOnExceptionResponse catchException $
+               setPort port $
+               setTimeout 86400 defaultSettings)
     $ \ re respond -> do
 #else
   run port $ \ re -> do
