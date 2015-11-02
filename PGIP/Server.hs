@@ -165,10 +165,10 @@ type RsrcIO a = IO a
 #ifdef WARP3
 type WebResponse = (Response -> IO ResponseReceived) -> IO ResponseReceived
 catchException :: SomeException -> Response
-catchException e =  
+catchException e =
    mkResponse "text/plain; charset=utf-8"
-              internalServerError500 
-              ("*** Error:\n"++show e)
+              internalServerError500
+              ("*** Error:\n" ++ show e)
 #else
 type WebResponse = (Response -> RsrcIO Response) -> RsrcIO Response
 #endif
@@ -196,7 +196,7 @@ hetsServer opts1 = do
   putIfVerbose opts 2 $ "for more information look into file: " ++ permFile
 #ifdef WARP3
   runSettings (setOnExceptionResponse catchException $
-               setPort port $ 
+               setPort port $
                setTimeout 86400 defaultSettings) $ \ re respond -> do
 #else
   run port $ \ re -> do
@@ -274,7 +274,7 @@ parseRequestParams request =
         return $ parseJson $ toJsonObject formDataB8
 
     jsonBody :: RsrcIO (Maybe Json)
-    jsonBody = liftM (parseJson . B8.unpack) $ receivedRequestBody
+    jsonBody = liftM (parseJson . B8.unpack) receivedRequestBody
 
     receivedRequestBody :: RsrcIO B8.ByteString
 #ifdef WARP3
