@@ -168,7 +168,7 @@ type RsrcIO a = IO a
 type WebResponse = (Response -> IO ResponseReceived) -> IO ResponseReceived
 catchException :: SomeException -> Response
 catchException e =
-   mkResponse "text/plain; charset=utf-8"
+   mkResponse textC
               internalServerError500
               ("*** Error:\n" ++ show e)
 #else
