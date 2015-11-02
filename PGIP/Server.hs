@@ -166,12 +166,13 @@ type RsrcIO a = IO a
 type WebResponse = (Response -> IO ResponseReceived) -> IO ResponseReceived
 catchException :: SomeException -> Response
 catchException e =  
-   responseLBS internalServerError500 
-               [(hContentType, B8.pack "text/plain; charset=utf-8")] $ 
-               BS.pack ("*** Error:\n"++show e)
+   mkResponse "text/plain; charset=utf-8"
+              internalServerError500 
+              ("*** Error:\n"++show e)
 #else
 type WebResponse = (Response -> RsrcIO Response) -> RsrcIO Response
 #endif
+
 
 hetsServer :: HetcatsOpts -> IO ()
 hetsServer opts1 = do
