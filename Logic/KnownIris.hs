@@ -16,8 +16,8 @@ import qualified Data.Map as Map
 
 logPrefix, serPrefix :: String
 
-logPrefix = "http://purl.net/dol/logics/"
-serPrefix = "http://purl.net/dol/serializations/"
+logPrefix = "http://purl.net/DOL/logics/"
+serPrefix = "http://purl.net/DOL/serializations/"
 
 logicNames :: Map.Map String String
 logicNames = -- IRI -> local name
