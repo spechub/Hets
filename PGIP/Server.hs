@@ -174,7 +174,7 @@ hetsServer opts1 = do
   tempDir <- getTemporaryDirectory
   let tempLib = tempDir </> "MyHetsLib"
       logFile = tempDir </>
-        ("hets-server-instance-" ++ show port ++ ".log")
+        ("hets-" ++ show port ++ ".log")
       opts = opts1 { libdirs = tempLib : libdirs opts1 }
       port1 = listen opts1
       port = if port1 < 0 then 8000 else port1
