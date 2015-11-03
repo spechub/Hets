@@ -91,7 +91,7 @@ sublogicChars = many $ satisfy $ \ c -> notElem c ":./\\" && isSignChar c
 lookupLogicM :: IRI -> AParser st String
 lookupLogicM i = if isSimple i
                  then return l
-                 else case lookupLogicName l of
+                 else case lookupLogicName (filter (not . (`elem` "<>")) l) of
                    Just s -> return s
                    Nothing -> fail $ "logic " ++ show i ++ " not found"
   where l = iriToStringUnsecure i
