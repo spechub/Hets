@@ -35,7 +35,7 @@ module Syntax.Parse_AS_Structured
 import Logic.Logic
 import Logic.Comorphism
 import Logic.Grothendieck
-import Logic.KnownIris
+import Logic.KnownIris (lookupLogicName)
 
 import Syntax.AS_Structured
 
