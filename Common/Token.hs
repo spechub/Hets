@@ -112,7 +112,7 @@ criticalKeywords = terminatingKeywords ++ startingKeywords
 -- | keywords terminating a basic spec
 terminatingKeywords :: [String]
 terminatingKeywords =
-    [ andS, endS, extractS, fitS, forgetS, hideS, keepS, rejectS, removeS, 
+    [ andS, endS, extractS, fitS, forgetS, hideS, keepS, rejectS, removeS,
       revealS, selectS, thenS, withS, withinS, ofS, forS, toS, intersectS]
 
 -- | keywords starting a library item
