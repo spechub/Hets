@@ -706,9 +706,27 @@ cleanUpCache sessRef = do
   time <- getCurrentTime
   atomicModifyIORef sessRef $ \ (m, lm) ->
     if Map.size lm < mSize then ((m, lm), ()) else
-    let ss = drop (div mSize 2) . sortBy (cmpSess time) $ Map.elems lm
+    let ss = cleanUpSessions time mSize lm
     in ((IntMap.fromList $ map (\ s -> (sessKey s, s)) ss
        , Map.fromList $ map (\ s -> (sessPath s, s)) ss), ())
+  where
+    cleanUpSessions :: UTCTime -> Int -> SessMap -> [Session]
+    cleanUpSessions time maxSize =
+      unifySessionLists . dropCleanables . sessionCleanableLists
+      where
+        sessionSort :: [Session] -> [Session]
+        sessionSort = sortBy (cmpSess time)
+
+        sessionCleanableLists :: SessMap -> ([Session], [Session])
+        sessionCleanableLists =
+          partition sessCleanable . sessionSort . Map.elems
+
+        dropCleanables :: ([Session], [Session]) -> ([Session], [Session])
+        dropCleanables (cleanables, uncleanables) =
+          (drop (maxSize `div` 2) cleanables, uncleanables)
+
+        unifySessionLists :: ([Session], [Session]) -> [Session]
+        unifySessionLists = sessionSort . uncurry (++)
 
 cmpSess :: UTCTime -> Session -> Session -> Ordering
 cmpSess curTime =
