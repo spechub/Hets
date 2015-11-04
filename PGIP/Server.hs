@@ -122,7 +122,8 @@ data Session = Session
   , sessKey :: Int
   , sessStart :: UTCTime
   , lastAccess :: UTCTime
-  , usage :: Int }
+  , usage :: Int
+  , sessCleanable :: Bool } deriving (Show)
 
 data UsedAPI = OldWebAPI | RESTfulAPI deriving (Show, Eq, Ord)
 
@@ -823,7 +824,8 @@ getDGraph opts sessRef dgQ = do
                     , sessKey = 0  -- to be updated by addNewSess
                     , sessStart = time
                     , lastAccess = time
-                    , usage = 1 }
+                    , usage = 1
+                    , sessCleanable = False }
               k <- lift $ addNewSess sessRef sess
               return (sess, k)
     DGQuery k _ -> case IntMap.lookup k m of
