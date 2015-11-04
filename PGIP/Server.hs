@@ -736,6 +736,10 @@ nextSess :: LibEnv -> Session -> Cache -> Int -> IO Session
 nextSess newLib =
   modifySessionAndCache "nextSess" (\ s -> s { sessLibEnv = newLib })
 
+makeSessCleanable :: Session -> Cache -> Int -> IO Session
+makeSessCleanable =
+  modifySessionAndCache "makeSessCleanable" (\ s -> s { sessCleanable = True })
+
 modifySessionAndCache :: String -> (Session -> Session) -> Session -> Cache
                       -> Int -> IO Session
 modifySessionAndCache errorMessage f sess sessRef k =
