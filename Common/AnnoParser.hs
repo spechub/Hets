@@ -27,6 +27,7 @@ module Common.AnnoParser
     , newlineOrEof
     ) where
 
+import Text.Parsec.Char (endOfLine)
 import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Error
 import Text.ParserCombinators.Parsec.Pos as Pos
@@ -237,7 +238,8 @@ floatingAnno ps = literal2idsAnno ps Float_anno
 
 prefixAnno :: Range -> GenParser Char st Annotation
 prefixAnno ps = do
-    prefixes <- many $ do
+    prefixes <- many $ skipMany (commentLine >> endOfLine) >> do
+        spaces
         p <- (string colonS >> return "") <|>
              (IRI.ncname << string colonS)
         spaces
