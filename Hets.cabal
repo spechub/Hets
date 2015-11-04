@@ -71,6 +71,7 @@ Executable hets
     , array >= 0.1.0.0
     , aterm >= 0.1.0.1
     , base >= 4.0.0.0
+    , case-insensitive
     , containers >= 0.1.0.1
     , directory >= 1.0.0.0
     , fgl >= 5.4.1.1
