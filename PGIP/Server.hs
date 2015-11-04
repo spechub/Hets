@@ -731,8 +731,8 @@ addNewSess sessRef sess = do
   let s = sess { sessKey = k }
   addSess sessRef s
 
-nextSess :: Session -> Cache -> LibEnv -> Int -> IO Session
-nextSess sess sessRef newLib k = if k <= 0 then return sess else
+nextSess :: LibEnv -> Session -> Cache -> Int -> IO Session
+nextSess newLib sess sessRef k = if k <= 0 then return sess else
     atomicModifyIORef sessRef
       (\ (m, lm) -> case IntMap.lookup k m of
       Nothing -> error "nextSess"
@@ -940,7 +940,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
               if all (null . snd) nodesAndProofResults
               then return (textC, "nothing to prove")
               else do
-                lift $ nextSess sess sessRef newLib k
+                lift $ nextSess newLib sess sessRef k
                 return $ case api of
                   OldWebAPI -> let
                     sens = foldr (\ (dgNodeName, proofResults) res ->
@@ -960,13 +960,13 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
                 ch : _ -> do
                   let str = BS.unpack $ fileContent ch
                   (newLn, newLib) <- dgXUpdate opts str libEnv ln dg
-                  newSess <- lift $ nextSess sess sessRef newLib k
+                  newSess <- lift $ nextSess newLib sess sessRef k
                   sessAns newLn svg (newSess, k)
                 [] -> sessAns ln svg sk
                 else fail "getHetsResult.GlobCmdQuery"
               Just (_, act) -> do
                 newLib <- liftR $ act ln libEnv
-                newSess <- lift $ nextSess sess sessRef newLib k
+                newSess <- lift $ nextSess newLib sess sessRef k
                 -- calculate updated SVG-view from modified development graph
                 let newSvg = getSVG title ('/' : show k)
                       $ lookupDGraph ln newLib
@@ -1002,7 +1002,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
                         if null proofResults
                         then return (textC, "nothing to prove")
                         else do
-                          lift $ nextSess sess sessRef newLib k
+                          lift $ nextSess newLib sess sessRef k
                           return $ case api of
                             OldWebAPI -> (htmlC,
                               formatResults xForm k i . unode "results" $
@@ -1014,7 +1014,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
                       GlConsistency -> do
                         (newLib, [(_, res, txt, _, _, _)]) <-
                           consNode libEnv ln dg nl subL incl mp mt tl
-                        lift $ nextSess sess sessRef newLib k
+                        lift $ nextSess newLib sess sessRef k
                         return (xmlC, ppTopElement $ formatConsNode res txt)
                     _ -> case nc of
                       NcCmd Query.Theory -> lift $ fmap (\ t -> (htmlC, t))
