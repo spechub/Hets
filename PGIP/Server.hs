@@ -732,12 +732,19 @@ addNewSess sessRef sess = do
   addSess sessRef s
 
 nextSess :: LibEnv -> Session -> Cache -> Int -> IO Session
-nextSess newLib sess sessRef k = if k <= 0 then return sess else
+nextSess newLib =
+  modifySessionAndCache "nextSess" (\ s -> s { sessLibEnv = newLib })
+
+modifySessionAndCache :: String -> (Session -> Session) -> Session -> Cache
+                      -> Int -> IO Session
+modifySessionAndCache errorMessage f sess sessRef k =
+  if k <= 0 then return sess else
     atomicModifyIORef sessRef
       (\ (m, lm) -> case IntMap.lookup k m of
-      Nothing -> error "nextSess"
-      Just s -> let newSess = s { sessLibEnv = newLib }
-        in ((IntMap.insert k newSess m, lm), newSess))
+        Nothing -> error errorMessage
+        Just s -> let newSess = f s
+                  in ((IntMap.insert k newSess m, lm), newSess))
+
 
 ppDGraph :: DGraph -> Maybe PrettyType -> ResultT IO (String, String)
 ppDGraph dg mt = let ga = globalAnnos dg in case optLibDefn dg of
