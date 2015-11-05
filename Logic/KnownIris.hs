@@ -25,9 +25,9 @@ logicNames = -- IRI -> local name
   [ (logPrefix ++ "CommonLogic", "CommonLogic"),
     (logPrefix ++ "Propositional", "Propositional"),
     (logPrefix ++ "OWL2", "OWL"),
-    (logPrefix ++ "SROIQ", "OWL")] -- should be "NP-sROIQ-D|-|" instead of
-                                   -- "OWL" but Hets doesn't know that logic
-                                   -- yet for some reason...
+    (logPrefix ++ "SROIQ", "OWL")] -- should be "NP-sROIQ-D|-|"
+                                   -- (or "OWL.NP-sROIQ-D|-|"?) instead of
+                                   -- "OWL" but Hets claims not to kow both.
 
 lookupLogicName :: String -> Maybe String
 lookupLogicName = (`Map.lookup` logicNames) . filter (not . (`elem` "<>"))
