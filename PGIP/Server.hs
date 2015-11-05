@@ -702,7 +702,7 @@ addSess sessRef s = do
 
 cleanUpCache :: Cache -> IO ()
 cleanUpCache sessRef = do
-  let mSize = 20
+  let mSize = 60
   time <- getCurrentTime
   atomicModifyIORef sessRef $ \ (m, lm) ->
     if Map.size lm < mSize then ((m, lm), ()) else
