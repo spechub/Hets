@@ -24,7 +24,10 @@ logicNames = -- IRI -> local name
   Map.fromList
   [ (logPrefix ++ "CommonLogic", "CommonLogic"),
     (logPrefix ++ "Propositional", "Propositional"),
-    (logPrefix ++ "OWL2", "OWL") ]
+    (logPrefix ++ "OWL2", "OWL"),
+    (logPrefix ++ "SROIQ", "OWL")] -- should be "NP-sROIQ-D|-|" instead of
+                                   -- "OWL" but Hets doesn't know that logic
+                                   -- yet for some reason...
 
 lookupLogicName :: String -> Maybe String
 lookupLogicName = (`Map.lookup` logicNames)
