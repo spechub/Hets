@@ -30,7 +30,7 @@ logicNames = -- IRI -> local name
                                    -- yet for some reason...
 
 lookupLogicName :: String -> Maybe String
-lookupLogicName = (`Map.lookup` logicNames)
+lookupLogicName = (`Map.lookup` logicNames) . filter (not . (`elem` "<>"))
 
 serializations :: String -> Map.Map String String
 serializations l
