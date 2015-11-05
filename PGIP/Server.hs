@@ -929,7 +929,8 @@ getHetsResult :: HetcatsOpts -> [FileInfo BS.ByteString]
   -> Cache -> Query.Query -> Maybe String -> UsedAPI -> ProofFormatterOptions
   -> ResultT IO (String, String)
 getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
-      sk@(sess, k) <- getDGraph opts sessRef dgQ
+      sk@(sess', k) <- getDGraph opts sessRef dgQ
+      sess <- lift $ makeSessCleanable sess' sessRef k
       let libEnv = sessLibEnv sess
       (ln, dg) <- maybe (fail "unknown development graph") return
         $ sessGraph dgQ sess
