@@ -44,4 +44,5 @@ serializations l
   | otherwise = Map.empty
 
 lookupSerialization :: String -> String -> Maybe String
-lookupSerialization l = (`Map.lookup` serializations l)
+lookupSerialization l = (`Map.lookup` serializations l) .
+                        filter (not . (`elem` "<>"))
