@@ -119,7 +119,7 @@ qualification :: LogicGraph -> AParser st (Token, LogicDescr)
 qualification l =
   pair (asKey logicS) (logicDescr l)
   <|> do
-    s <- asKey serializationS <|> asKey "language"
+    s <- asKey serializationS <|> asKey languageS
     i <- iriCurie
     skipSmart
     return (s,
