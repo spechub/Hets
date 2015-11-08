@@ -117,7 +117,12 @@ logicName l = do
 
 qualification :: LogicGraph -> AParser st (Token, LogicDescr)
 qualification l =
-  pair (asKey logicS) (logicDescr l)
+  -- TODO: Properly support `language` declarations
+  -- The `<|> asKey languageS` part in the line below is part of a hack to
+  -- support `language` declarations without an accompanying `logic`
+  -- declaration by essentially treating `language` the same as `logic`.
+  -- This should probably be done properly instead, but it works for now.
+  pair (asKey logicS <|> asKey languageS) (logicDescr l)
   <|> do
     s <- asKey serializationS <|> asKey languageS
     i <- iriCurie

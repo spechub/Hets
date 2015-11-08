@@ -18,11 +18,18 @@ logPrefix, serPrefix :: String
 
 logPrefix = "http://purl.net/DOL/logics/"
 serPrefix = "http://purl.net/DOL/serializations/"
+lngPrefix = "http://purl.net/DOL/languages/"
 
 logicNames :: Map.Map String String
 logicNames = -- IRI -> local name
   Map.fromList
   [ (logPrefix ++ "CommonLogic", "CommonLogic"),
+    -- TODO: Properly support `language` declarations
+    -- The line below is part of a hack to support `language` declarations
+    -- without an accompanying `logic` declaration by essentially treating
+    -- `language` the same as `logic`.
+    -- This should probably be done properly instead, but it works for now.
+    (lngPrefix ++ "CommonLogic", "CommonLogic"),
     (logPrefix ++ "Propositional", "Propositional"),
     (logPrefix ++ "OWL2", "OWL"),
     (logPrefix ++ "SROIQ", "OWL")] -- should be "NP-sROIQ-D|-|"
