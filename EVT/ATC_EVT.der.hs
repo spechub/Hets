@@ -11,18 +11,15 @@ Portability :  non-portable(derive Typeable instances)
 
 Automatic derivation of instances via DrIFT-rule ShATermConvertible
   for the type(s):
-'EVT.AS.RSRelType'
-'EVT.AS.RSQualId'
-'EVT.AS.RSRel'
-'EVT.AS.RSRelationships'
-'EVT.AS.RSScheme'
-'EVT.Sign.RSDatatype'
-'EVT.Sign.RSSymbol'
-'EVT.Sign.RSColumn'
-'EVT.Sign.RSTable'
-'EVT.Sign.RSTables'
-'EVT.Sign.RSTMap'
-'EVT.Sign.RSMorphism'
+'EVT.AS.MACHINE'
+'EVT.AS.EVENT'
+'EVT.AS.GUARD'
+'EVT.AS.ACTION'
+'EVT.AS.EVTQualId'
+'EVT.Sign.EVTSign'
+'EVT.Sign.EVTMorphism'
+'EVT.Sign.EVTDatatype'
+'EVT.Sign.EVTSymbol'
 -}
 
 {-
@@ -36,6 +33,10 @@ module EVT.ATC_EVT () where
 
 import ATC.GlobalAnnotations
 import ATerm.Lib
+import CASL.AS_Basic_CASL
+import CASL.Overload
+import CASL.Sign
+import CASL.ToDoc
 import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
@@ -43,21 +44,22 @@ import Common.Id
 import Common.Result
 import Common.Utils
 import Data.Data
+import Data.List
+import Data.Ord
+import Data.Set as Set
 import EVT.AS
 import EVT.Keywords
 import EVT.Sign
+import qualified Common.Lib.MapSet as MapSet
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-{-! for EVT.AS.RSRelType derive : ShATermConvertible !-}
-{-! for EVT.AS.RSQualId derive : ShATermConvertible !-}
-{-! for EVT.AS.RSRel derive : ShATermConvertible !-}
-{-! for EVT.AS.RSRelationships derive : ShATermConvertible !-}
-{-! for EVT.AS.RSScheme derive : ShATermConvertible !-}
-{-! for EVT.Sign.RSDatatype derive : ShATermConvertible !-}
-{-! for EVT.Sign.RSSymbol derive : ShATermConvertible !-}
-{-! for EVT.Sign.RSColumn derive : ShATermConvertible !-}
-{-! for EVT.Sign.RSTable derive : ShATermConvertible !-}
-{-! for EVT.Sign.RSTables derive : ShATermConvertible !-}
-{-! for EVT.Sign.RSTMap derive : ShATermConvertible !-}
-{-! for EVT.Sign.RSMorphism derive : ShATermConvertible !-}
+{-! for EVT.AS.MACHINE derive : ShATermConvertible !-}
+{-! for EVT.AS.EVENT derive : ShATermConvertible !-}
+{-! for EVT.AS.GUARD derive : ShATermConvertible !-}
+{-! for EVT.AS.ACTION derive : ShATermConvertible !-}
+{-! for EVT.AS.EVTQualId derive : ShATermConvertible !-}
+{-! for EVT.Sign.EVTSign derive : ShATermConvertible !-}
+{-! for EVT.Sign.EVTMorphism derive : ShATermConvertible !-}
+{-! for EVT.Sign.EVTDatatype derive : ShATermConvertible !-}
+{-! for EVT.Sign.EVTSymbol derive : ShATermConvertible !-}

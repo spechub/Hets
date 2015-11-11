@@ -1,38 +1,37 @@
-{-# LANGUAGE DeriveDataTypeable #-}
-{- |
-Module      :  $Header$
-Description :  signaturefor Relational Schemes
-Copyright   :  Dominik Luecke, Uni Bremen 2008
-License     :  GPLv2 or higher, see LICENSE.txt or LIZENZ.txt
-
-Maintainer  :  luecke@informatik.uni-bremen.de
-Stability   :  provisional
-Portability :  portable
-
-Signature for Relational Schemes
--}
-
+{-#LANGUAGE DeriveDataTypeable#-}
 module EVT.Sign
-        ( RSIsKey
-        , RSDatatype (..)
-        , RSRawSymbol
-        , RSColumn (..)
-        , RSTable (..)
-        , RSTables (..)
-        , Sign
-        , RSMorphism (..)
-        , RSTMap (..)
-        , emptyRSSign
-        , isRSSubsig
-        , idMor
-        , rsInclusion
-        , uniteSig
-        , comp_rst_mor
-        , RSSymbol (..)
+        ( EVTIsKey
+          , EVTDatatype (..)
+          , EVTRawSymbol
+    --    , EVTEvent (..)
+	, EventNameMap
+--	, ActionNameMap
+	, EVTVarMap
+	, EVTSen
+--	, EVTVarList
+--      , Sentence (..)
+--	, EVTGuard (..)
+--	, EVTAction (..)
+        , EVTSign (..)
+        , EVTMorphism (..)
+        , EVTSymbol (..)
+        --, -- EVTTMap (..)
+        , emptyEVTSign
+    --    , isEVTSubsig
+    --    , idMor
+    --    , evtInclusion
+    --    , uniteSig
+        --, -- comp_rst_mor
         )
         where
 
+import CASL.Sign
+import CASL.AS_Basic_CASL
+import CASL.Overload
+import CASL.Sign
+import CASL.ToDoc
 import EVT.Keywords
+import EVT.AS
 
 import Common.AS_Annotation
 import Common.Doc
@@ -40,83 +39,113 @@ import Common.DocUtils
 import Common.Id
 import Common.Result
 import Common.Utils
+import qualified Common.Lib.MapSet as MapSet
 
 import Data.Data
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import Data.List
+import Data.Ord
 
-type RSIsKey = Bool
 
-data RSDatatype
-  = RSboolean | RSbinary | RSdate | RSdatetime | RSdecimal | RSfloat
-  | RSinteger | RSstring | RStext | RStime | RStimestamp | RSdouble
-  | RSnonPosInteger | RSnonNegInteger | RSlong | RSPointer
-    deriving (Eq, Ord, Typeable, Data)
+type EVTIsKey = Bool
 
-type RSRawSymbol = Id
+type EventNameMap = Map.Map EVENT_NAME EVENT
 
-data RSSymbol = STable Id |     -- id of a table
-                SColumn
-                    Id          -- id of the symbol
-                    Id          -- id of the table
-                    RSDatatype  -- datatype of the symbol
-                    RSIsKey     -- is it a key?
-                deriving (Eq, Ord, Show, Typeable, Data)
+type EVTVarMap = Map.Map SIMPLE_ID SORT
+--type EVTVarList = [TERM ()]
 
-instance GetRange RSSymbol
+{-data Sentence = EventEq EVENT_NAME {-EVTVarList-} EVENT
+      deriving (Show, Eq, Ord, Typeable, Data)
+-}
+type EVTCASLSign = Sign EVTSign
+type EVTSen = Sentence
+type EVTCASLSen = FORMULA MACHINE
 
-data RSColumn = RSColumn
-                    { c_name :: Id
-                    , c_data :: RSDatatype
-                    , c_key :: RSIsKey
-                    }
-                deriving (Eq, Ord, Show, Typeable, Data)
+data EVTSign = EVTSign
+    { 
+	varSet :: EVTVarMap
+	, eventSet :: EventNameMap
 
-data RSTable = RSTable
-                { t_name :: Id
-                , columns :: [RSColumn]
-                , rsannos :: [Annotation]
-                , t_keys :: Set.Set (Id, RSDatatype)
-                }
-                deriving (Show, Typeable, Data)
+    } deriving (Show, Eq, Ord, Typeable, Data)
 
-data RSTables = RSTables
-                    {
-                        tables :: Set.Set RSTable
-                    }
-                deriving (Eq, Ord, Show, Typeable, Data)
+emptyEVTSign ::EVTSign
+emptyEVTSign = EVTSign
+		{
+		   varSet = Map.empty
+		   , eventSet = Map.empty	
+		}
 
-instance GetRange RSTables
-
-isRSSubsig :: RSTables -> RSTables -> Bool
-isRSSubsig t1 t2 = t1 <= t2
-
-uniteSig :: (Monad m) => RSTables -> RSTables -> m RSTables
-uniteSig s1 s2 =
-    if s1 `isRSSubsig` s2 || s2 `isRSSubsig` s1 || s1 `isDisjoint` s2
-    then return $ RSTables $ tables s1 `Set.union` tables s2
-    else fail $ "Tables " ++ showDoc s1 "\nand "
-             ++ showDoc s2 "\ncannot be united."
-
-type Sign = RSTables
-
-data RSTMap = RSTMap
-                {
-                   col_map :: Map.Map Id Id
-                }
-                deriving (Eq, Ord, Show, Typeable, Data)
-
-data RSMorphism = RSMorphism
-                    { domain :: RSTables
-                    , codomain :: RSTables
-                    , table_map :: Map.Map Id Id
-                    , column_map :: Map.Map Id RSTMap
-                    }
+data EVTMorphism = EVTMorphism
+                    { domain :: EVTSign
+                    , codomain :: EVTSign
+                    , event_map :: Map.Map EVTSign EVTSign
+          	}
                     deriving (Eq, Ord, Show, Typeable, Data)
 
--- I hope that this works right, I do not want to debug this
-apply_comp_c_map :: RSTable -> Map.Map Id Id -> RSMorphism -> RSMorphism
-                 -> (Id, RSTMap)
+
+
+data EVTDatatype
+  = EVTBoolean | EVTNat 
+    deriving (Eq, Ord, Typeable, Data)
+
+type EVTRawSymbol = Id
+
+data EVTSymbol = E Id |     -- id of an event
+                 --  Id          -- id of the symbol --guard?
+                --   Id          -- id of the table --action?
+                   EVTDatatype  -- datatype of the symbol
+                   EVTIsKey     -- is it a key?
+                deriving (Eq, Ord, Show, Typeable, Data)
+ 
+
+instance GetRange EVTSymbol
+
+{-
+data EVTEvent = EVTEvent
+                {
+			eid :: Id
+			, guards :: Set.Set EVTGuard
+			, actions :: Set.Set EVTAction
+                }
+                deriving (Show, Typeable, Data)
+instance GetRange EVTEvent
+
+instance GetRange EVTGuard
+instance GetRange EVTAction
+
+
+
+data EVTMachine = EVTMachine
+                    {
+                        events :: Set.Set EVTEvent
+                    }
+                deriving (Eq, Ord, Show, Typeable, Data)
+
+
+isEVTSubsig :: EVTMachine -> EVTMachine -> Bool
+isEVTSubsig t1 t2 = t1 <= t2
+
+uniteSig :: (Monad m) => EVTMachine -> EVTMachine -> m EVTMachine
+uniteSig s1 s2 =
+    if s1 `isEVTSubsig` s2 || s2 `isEVTSubsig` s1 || s1 `isDisjoint` s2
+    then return $ EVTMachine $ events s1 `Set.union` events s2
+    else fail $ "Events " ++ showDoc s1 "\nand "
+             ++ showDoc s2 "\ncannot be united."
+
+type Sign = EVTEvent
+
+
+data EVTMorphism = EVTMorphism
+                    { domain :: EVTEvent
+                    , codomain :: EVTEvent
+                    , event_map :: Map.Map Id Id
+          	}
+                    deriving (Eq, Ord, Show, Typeable, Data)
+
+{-- I hope that this works right, I do not want to debug this
+apply_comp_c_map :: EVTEvent -> Map.Map Id Id -> EVTMorphism -> EVTMorphism
+                 -> (Id, EVTTMap)
 apply_comp_c_map rst t_map imap imor =
     let i = t_name rst
         c2 = column_map imor
@@ -125,130 +154,97 @@ apply_comp_c_map rst t_map imap imor =
         Just iM2 ->
           let c_set = Map.fromList . map (\ c -> (c_name c, ())) $ columns rst
               oM = composeMap c_set (col_map iM) (col_map iM2)
-          in (i, RSTMap oM)
+          in (i, EVTTMap oM)
         Nothing -> (i, iM)
-      Nothing -> (i, Map.findWithDefault (RSTMap Map.empty)
+      Nothing -> (i, Map.findWithDefault (EVTTMap Map.empty)
                        (Map.findWithDefault i i t_map) c2)
-
--- composition of Rel morphisms
-comp_rst_mor :: RSMorphism -> RSMorphism -> Result RSMorphism
+-}
+-- composition of EVT morphisms
+{-comp_rst_mor :: EVTMorphism -> EVTMorphism -> Result EVTMorphism
 comp_rst_mor mor1 mor2 =
         let d1 = domain mor1
-            t1 = Set.toList $ tables d1
-            t_set = Map.fromList $ map (\ t -> (t_name t, ())) t1
-            t_map = composeMap t_set (table_map mor1) (table_map mor2)
-            cm_map = Map.fromList
-              $ map (\ x -> apply_comp_c_map x t_map mor1 mor2) t1
-        in return RSMorphism
+            t1 = Set.toList $ events d1
+            e_set = Map.fromList $ map (\ e -> (e_name e, ())) t1
+            e_map = composeMap e_set (event_map mor1) (event_map mor2)
+
+        in return EVTMorphism
                 { domain = d1
                 , codomain = codomain mor2
-                , table_map = t_map
-                , column_map = cm_map
+                , event_map = e_map
                 }
+-} -}
 
-emptyRSSign :: RSTables
-emptyRSSign = RSTables
-                {
-                    tables = Set.empty
-                }
 
--- ^ id-morphism for RS
-idMor :: RSTables -> RSMorphism
-idMor t = RSMorphism
+
+{-
+-- ^ id-morphism for EVT
+idMor :: EVTEvent -> EVTMorphism
+idMor t = EVTMorphism
             { domain = t
             , codomain = t
-            , table_map = foldl (\ y x -> Map.insert (t_name x) (t_name x) y)
-                          Map.empty $ Set.toList $ tables t
-            , column_map =
-                    let
-                        makeRSTMap i =
-                           foldl (\ y x -> Map.insert (c_name x) (c_name x) y)
-                                 Map.empty $ columns i
-                    in
-                        foldl (\ y x -> Map.insert (t_name x)
-                                        (RSTMap $ makeRSTMap x) y)
-                                Map.empty $ Set.toList $ tables t
+            --, event_map = Nothing--foldl (\ y x -> Map.insert (eid x) (eid x) y) Map.empty $ Set.toList $ events t 
             }
 
-rsInclusion :: RSTables -> RSTables -> Result RSMorphism
-rsInclusion t1 t2 = return RSMorphism
+{-evtInclusion :: EVTEvent -> EVTEvent -> Result EVTMorphism
+evtInclusion t1 t2 = return EVTMorphism
             { domain = t1
             , codomain = t2
-            , table_map = foldl (\ y x -> Map.insert (t_name x) (t_name x) y)
-                          Map.empty $ Set.toList $ tables t1
-            , column_map =
-                    let
-                        makeRSTMap i =
-                           foldl (\ y x -> Map.insert (c_name x) (c_name x) y)
-                                 Map.empty $ columns i
-                    in
-                        foldl (\ y x -> Map.insert (t_name x)
-                                        (RSTMap $ makeRSTMap x) y)
-                                Map.empty $ Set.toList $ tables t1
+            , event_map = foldl (\ y x -> Map.insert (e_name x) (e_name x) y)
+                          Map.empty $ Set.toList $ events t1
             }
-
+-}
 -- pretty printing stuff
 
-instance Pretty RSColumn where
+{-instance Pretty RSColumn where
     pretty c = (if c_key c then keyword rsKey else empty) <+>
        pretty (c_name c) <+> colon <+> pretty (c_data c)
+-}
+instance Pretty EVTEvent where
+{-   pretty t = keyword evtName $+$ vcat (map pretty $ Set.toList $ eid t)  -}      
 
-instance Pretty RSTable where
-    pretty t = pretty (t_name t) <> parens (ppWithCommas $ columns t)
-               $+$ printAnnotationList (rsannos t)
 
-instance Pretty RSTables where
-    pretty t = keyword rsTables $+$ vcat (map pretty $ Set.toList $ tables t)
+{-instance Pretty EVTEvents where
+   -}
 
-instance Pretty RSTMap where
+{- instance Pretty RSTMap where
     pretty = pretty . col_map
 
-instance Pretty RSMorphism where
+
+instance Pret, Set.fromList $ events t2ty RSMorphism where
     pretty m = pretty (domain m) $+$ mapsto <+> pretty (codomain m)
                 $+$ pretty (table_map m) $+$ pretty (column_map m)
+-}
+instance Pretty EVTSymbol where
 
-instance Pretty RSSymbol where
-    pretty s = case s of
-      STable i -> pretty i
-      SColumn i _ t k -> pretty $ RSColumn i t k
+instance Pretty EVTMorphism where
+    
 
-instance Show RSDatatype where
+instance Show EVTDatatype where
     show dt = case dt of
-        RSboolean -> rsBool
-        RSbinary -> rsBin
-        RSdate -> rsDate
-        RSdatetime -> rsDatetime
-        RSdecimal -> rsDecimal
-        RSfloat -> rsFloat
-        RSinteger -> rsInteger
-        RSstring -> rsString
-        RStext -> rsText
-        RStime -> rsTime
-        RStimestamp -> rsTimestamp
-        RSdouble -> rsDouble
-        RSnonPosInteger -> rsNonPosInteger
-        RSnonNegInteger -> rsNonNegInteger
-        RSlong -> rsLong
-        RSPointer -> rsPointer
+        EVTBoolean -> evtBool
+        EVTNat -> evtNat
 
-instance Pretty RSDatatype where
+instance Pretty EVTDatatype where
   pretty = keyword . show
 
 {- we need an explicit instance declaration of Eq and Ord that
 correctly deals with tables -}
-instance Ord RSTable where
+instance Ord EVTEvent where
   compare t1 t2 =
-    compare (t_name t1, Set.fromList $ columns t1)
-            (t_name t2, Set.fromList $ columns t2)
-
-instance Eq RSTable where
+    compare (eid t1) (eid t2) 
+   
+instance Eq EVTEvent where
   a == b = compare a b == EQ
 
-isDisjoint :: RSTables -> RSTables -> Bool
+
+isDisjoint :: EVTMachine -> EVTMachine -> Bool
 isDisjoint s1 s2 =
     let
-        t1 = Set.map t_name $ tables s1
-        t2 = Set.map t_name $ tables s2
+        t1 = Set.map eid $ events s1
+        t2 = Set.map eid $ events s2
     in
         Set.fold (\ x y -> y && (x `Set.notMember` t2)) True t1 &&
         Set.fold (\ x y -> y && (x `Set.notMember` t1)) True t2
+
+instance Pretty EVTMachine where
+-}
