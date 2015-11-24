@@ -283,7 +283,9 @@ getTypeCUF cm uf = case uf of
                ++ sh lf' ++ ") is expected to be of type OType"
   return (lf', cs ++ [(lf', NormalC (errMsg, getRangeSpan lf, OType))])
  TUF_THF_Atom a -> case a of
-  TA_THF_Conn_Term _ -> not_supported a
+  TA_THF_Conn_Term c -> case c of
+   TCT_THF_Unary_Connective _ -> return (MapType OType OType,[])
+   _ -> not_supported a
   T0A_Constant c -> case Data.Map.lookup c cm of
    Just ti -> return (constType ti, [])
    Nothing -> case show $ toToken c of
