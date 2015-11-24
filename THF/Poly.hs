@@ -89,7 +89,7 @@ unifyType tp1 tp2_ =
       fatal_error ("Different type constructors! " ++
        " - " ++ s) r
      (_, MapType _ _) ->
-      fatal_error ("Different type constructor! " ++
+      fatal_error ("Different type constructors! " ++
        " - " ++ s) r
      (ProdType tps1, ProdType tps2) ->
       if length tps1 == length tps2 ||
@@ -284,7 +284,13 @@ getTypeCUF cm uf = case uf of
   return (lf', cs ++ [(lf', NormalC (errMsg, getRangeSpan lf, OType))])
  TUF_THF_Atom a -> case a of
   TA_THF_Conn_Term c -> case c of
-   TCT_THF_Unary_Connective _ -> return (MapType OType OType,[])
+   TCT_THF_Unary_Connective cn -> case cn of
+    Negation -> return (MapType OType OType,[])
+    _ -> do
+                    v <- numberedTok tmpV
+                    return (MapType (MapType (VType v) OType) OType,[])
+   TCT_Assoc_Connective _ -> return (MapType OType (MapType OType OType),[])
+   TCT_THF_Pair_Connective _ -> return (MapType OType (MapType OType OType),[])
    _ -> not_supported a
   T0A_Constant c -> case Data.Map.lookup c cm of
    Just ti -> return (constType ti, [])
