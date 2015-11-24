@@ -183,7 +183,7 @@ getTypeCBF cm bf = case bf of
    let errMsg = "(In-)Equality requires (" ++
         sh uf1 ++ ") : (" ++ sh t1
         ++ ") and (" ++ sh uf2 ++ ") : ("
-        ++ sh t2 ++ " to have the same type"
+        ++ ")" ++ sh t2 ++ " to have the same type"
    return (OType,
     cs1 ++ cs2 ++ [(t1, NormalC (errMsg, getRangeSpan bf, t2))])
   else do
@@ -295,7 +295,9 @@ getTypeCUF cm uf = case uf of
       v <- numberedTok tmpV
       return (VType v, [])
   -- fixme - add types for internal constants
-  T0A_Defined_Constant _ -> not_supported a
+  T0A_Defined_Constant c -> if (show c) == "true" || (show c) == "false"
+   then return (OType, [])
+   else not_supported a
   T0A_System_Constant _ -> not_supported a
   T0A_Variable v -> case Data.Map.lookup (A_Single_Quoted v) cm of
    Just ti -> return (constType ti, [])
@@ -319,7 +321,7 @@ getTypeCUF cm uf = case uf of
                                  (getRange tp)
            TV_Variable t -> do
             v' <- numberedTok tmpV
-            return (VType v' : l, ins t (VType v') cm')) ([], cm) vs
+            return (VType v' : l, ins t (VType v') cm')) ([], cm) (reverse vs)
   (uf'', cs) <- getTypeCUF cm' uf'
   case vst of
    [] -> lift $ fatal_error ("Invalid Abstraction: "
