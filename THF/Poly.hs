@@ -185,7 +185,7 @@ getTypeCBF cm bf = case bf of
    let errMsg = "(In-)Equality requires (" ++
         sh uf1 ++ ") : (" ++ sh t1
         ++ ") and (" ++ sh uf2 ++ ") : ("
-        ++ ")" ++ sh t2 ++ " to have the same type"
+        ++ sh t2 ++ ") to have the same type"
    return (OType,
     cs1 ++ cs2 ++ [(t1, NormalC (errMsg, getRangeSpan bf, t2))])
   else do
