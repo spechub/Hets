@@ -376,8 +376,8 @@ class (Language lid, Category sign morphism, Ord sentence,
       symKind :: lid -> symbol -> String
       symKind _ _ = ""
       -- | the symbols occuring in a sentence (any order)
-      symsOfSen :: lid -> sentence -> [symbol]
-      symsOfSen _ _ = []
+      symsOfSen :: lid -> sign -> sentence -> [symbol]
+      symsOfSen _ _ _ = []
       -- | combine two symbols into another one
       pair_symbols :: lid -> symbol -> symbol -> Result symbol
       pair_symbols lid _ _ = error $ "pair_symbols nyi for logic " ++ show lid
