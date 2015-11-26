@@ -241,7 +241,7 @@ showSen lid ga mt sig ns =
     . unode (if isJust mt then "Theorem" else "Axiom") $ unode "Text"
           (show . useGlobalAnnos ga . print_named lid
                             . makeNamed "" $ simplify_sen lid sig s)
-          : map (showSym lid) (symsOfSen lid s)
+          : map (showSym lid) (symsOfSen lid sig s)
           ++ case senMark ns of
                "" -> []
                m -> [unode "ComorphismOrigin" m]

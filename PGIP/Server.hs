@@ -180,7 +180,8 @@ hetsServer :: HetcatsOpts -> IO ()
 hetsServer opts1 = do
   tempDir <- getTemporaryDirectory
   let tempLib = tempDir </> "MyHetsLib"
-      permFile = tempDir </> "empty.txt"
+      logFile = tempDir </>
+        ("hets-" ++ show port ++ ".log")
       opts = opts1 { libdirs = tempLib : libdirs opts1 }
       port1 = listen opts1
       port = if port1 < 0 then 8000 else port1
@@ -188,14 +189,14 @@ hetsServer opts1 = do
       bl = blacklist opts1
       prList ll = intercalate ", " $ map (intercalate ".") ll
   createDirectoryIfMissing False tempLib
-  writeFile permFile ""
-  unless (null wl) . appendFile permFile
+  writeFile logFile ""
+  unless (null wl) . appendFile logFile
     $ "white list: " ++ prList wl ++ "\n"
-  unless (null bl) . appendFile permFile
+  unless (null bl) . appendFile logFile
     $ "black list: " ++ prList bl ++ "\n"
   sessRef <- newIORef (IntMap.empty, Map.empty)
   putIfVerbose opts 1 $ "hets server is listening on port " ++ show port
-  putIfVerbose opts 2 $ "for more information look into file: " ++ permFile
+  putIfVerbose opts 2 $ "for more information look into file: " ++ logFile
 #ifdef WARP3
   runSettings (setOnExceptionResponse catchException $
                setPort port $
@@ -218,13 +219,13 @@ hetsServer opts1 = do
      time <- getCurrentTime
      createDirectoryIfMissing False tempLib
      (m, _) <- readIORef sessRef
-     appendFile permFile rhost
+     appendFile logFile rhost
      unless black $ if white then do
-         appendFile permFile $ shows time " sessions: "
+         appendFile logFile $ shows time " sessions: "
                     ++ shows (IntMap.size m) "\n"
-         appendFile permFile $ shows (requestHeaders re) "\n"
-         unless (null query) $ appendFile permFile $ query ++ "\n"
-       else appendFile permFile "not white listed\n"
+         appendFile logFile $ shows (requestHeaders re) "\n"
+         unless (null query) $ appendFile logFile $ query ++ "\n"
+       else appendFile logFile "not white listed\n"
    if not white || black then respond $ mkResponse "" status403 ""
     -- if path could be a RESTful request, try to parse it
     else do
@@ -246,7 +247,7 @@ hetsServer opts1 = do
                     qr2 requestBodyParams meth respond
               else queryFail ("unknown query key(s): " ++ show unknown) respond
            -- only otherwise stick to the old response methods
-           else oldWebApi newOpts tempLib permFile sessRef re pathBits qr2
+           else oldWebApi newOpts tempLib sessRef re pathBits qr2
              meth respond
 parseRequestParams :: Request -> RsrcIO Json
 parseRequestParams request =
@@ -297,9 +298,9 @@ parseRequestParams request =
       _ -> formParams
 
 -- | the old API that supports downloading files and interactive stuff
-oldWebApi :: HetcatsOpts -> FilePath -> FilePath -> Cache -> Request -> [String]
+oldWebApi :: HetcatsOpts -> FilePath -> Cache -> Request -> [String]
   -> [QueryPair] -> String -> WebResponse
-oldWebApi opts tempLib permFile sessRef re pathBits splitQuery meth respond
+oldWebApi opts tempLib sessRef re pathBits splitQuery meth respond
   = case meth of
       "GET" -> if isJust $ lookup "menus" splitQuery
          then mkMenuResponse respond else do
@@ -328,7 +329,6 @@ oldWebApi opts tempLib permFile sessRef re pathBits splitQuery meth respond
               Just areatext -> let content = B8.unpack areatext in
                 if all isSpace content then return Nothing else liftIO $ do
                    tmpFile <- getTempFile content "temp.het"
-                   copyPermissions permFile tmpFile
                    return $ Just tmpFile
         let res tmpFile =
               getHetsResponse opts [] sessRef [tmpFile] splitQuery respond
@@ -345,7 +345,6 @@ oldWebApi opts tempLib permFile sessRef re pathBits splitQuery meth respond
            if any isAlphaNum fn then do
              let tmpFile = tempLib </> fn
              liftIO $ BS.writeFile tmpFile $ fileContent f
-             liftIO $ copyPermissions permFile tmpFile
              maybe (res tmpFile) res mTmpFile
             else mRes
           _ -> getHetsResponse
@@ -757,7 +756,6 @@ ppDGraph dg mt = let ga = globalAnnos dg in case optLibDefn dg of
          tmpDir <- getTemporaryDirectory
          tmpFile <- writeTempFile (latexHeader ++ latex ++ latexFooter)
            tmpDir "temp.tex"
-         copyPermissions (tmpDir </> "empty.txt") tmpFile
          mapM_ (\ s -> do
             let sty = (</> "hetcasl.sty")
                 f = sty s
