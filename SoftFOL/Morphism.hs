@@ -11,7 +11,7 @@ Portability :  portable
 Functions for symbols of SoftFOL.
 -}
 
-module SoftFOL.Morphism (symOf, symbolToId) where
+module SoftFOL.Morphism (symOf, symsOfTerm, symbolToId) where
 
 import SoftFOL.Sign
 
@@ -19,6 +19,7 @@ import Common.Id
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+import Data.Monoid
 
 symOf :: Sign -> Set.Set SFSymbol
 symOf sig =
@@ -46,3 +47,10 @@ toSortSymb ident = SFSymbol { sym_ident = ident
 
 symbolToId :: SFSymbol -> Id
 symbolToId = simpleIdToId . sym_ident
+
+
+symsOfTerm :: SPTerm -> Set.Set SFSymbol
+symsOfTerm (SPQuantTerm _ vars f) = symsOfTerm f Set.\\ mconcat (map symsOfTerm vars)
+symsOfTerm (SPComplexTerm (SPCustomSymbol s) args) = 
+  Set.insert (toSortSymb s) $ mconcat $ map symsOfTerm args
+symsOfTerm (SPComplexTerm _ args) = mconcat $ map symsOfTerm args

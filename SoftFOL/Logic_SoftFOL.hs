@@ -15,6 +15,8 @@ Instance of class Logic for SoftFOL.
 
 module SoftFOL.Logic_SoftFOL where
 
+import Data.Set (toList)
+
 import Common.DefaultMorphism
 import Common.DocUtils
 import Common.ProofTree
@@ -65,6 +67,7 @@ instance Sentences SoftFOL Sentence Sign
                            SoftFOLMorphism SFSymbol where
       map_sen SoftFOL _ = return
       sym_of SoftFOL = singletonList . symOf
+      symsOfSen SoftFOL = toList . symsOfTerm
       sym_name SoftFOL = symbolToId
       symKind SoftFOL = sfSymbKind . sym_type
       print_named SoftFOL = printFormula
