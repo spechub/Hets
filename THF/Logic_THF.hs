@@ -36,6 +36,8 @@ import THF.Sign
 import THF.Print
 import THF.ParseTHF
 import qualified THF.Sublogic as SL
+import THF.Poly (getSymbols)
+import THF.Utils (toId)
 
 -- TODO implement more instance methods
 
@@ -59,8 +61,12 @@ instance Logic.Logic.Syntax THF BasicSpecTHF SymbolTHF () () where
 instance Sentences THF THFFormula SignTHF MorphismTHF SymbolTHF where
     map_sen THF _ = return
     print_named THF = printNamedSentenceTHF Nothing
-    {- sym_name THF =
-    negation THF _ =
+    symsOfSen THF = getSymbols
+    sym_name THF = toId . symId
+    symKind THF s = case symType s of
+                     ST_Type _ -> "type"
+                     ST_Const _ -> "constant"
+    {- negation THF _ =
     other default implementations are fine -}
 
 instance StaticAnalysis THF BasicSpecTHF THFFormula () ()

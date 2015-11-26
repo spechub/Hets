@@ -27,8 +27,10 @@ import Common.DocUtils
 import Control.Monad.State
 import qualified Data.Map (Map, lookup, insert, empty,
                            mapAccumWithKey, foldWithKey,
-                           mapWithKey)
+                           mapWithKey, toList)
 import qualified Data.List (mapAccumL, elemIndex)
+import qualified Data.Set (fromList, toList)
+import Data.Maybe (catMaybes)
 
 sh :: Pretty a => a -> String
 sh = show . pretty
@@ -374,9 +376,9 @@ flattenMap = Data.Map.foldWithKey
 
 type RewriteArg = Data.Map.Map Constant (Maybe Int)
 
-rewriteVariableList' :: (RewriteFuns RewriteArg, RewriteArg) ->
+rewriteVariableList_ :: (RewriteFuns RewriteArg, RewriteArg) ->
                         [THFVariable] -> Result [THFVariable]
-rewriteVariableList' (_, cm) vs = return $
+rewriteVariableList_ (_, cm) vs = return $
  map (\ v -> let t = case v of
                      TV_THF_Typed_Variable t' _ -> t'
                      TV_Variable t' -> t'
@@ -385,9 +387,9 @@ rewriteVariableList' (_, cm) vs = return $
                  t { tokStr = tokStr t ++ intToStr i }
                 _ -> v) vs
 
-rewriteConst' :: (RewriteFuns RewriteArg, RewriteArg) ->
+rewriteConst_ :: (RewriteFuns RewriteArg, RewriteArg) ->
                  Constant -> Result THFUnitaryFormula
-rewriteConst' (_, cm) c = return . TUF_THF_Atom . T0A_Constant $
+rewriteConst_ (_, cm) c = return . TUF_THF_Atom . T0A_Constant $
  case Data.Map.lookup c cm of
   Just (Just i) -> addSuffix (intToStr i) c
   _ -> c
@@ -434,12 +436,47 @@ infer cm fs =
                        constAnno = Null}) $ flattenMap cm'
       in do
            let r = rewriteTHF0 {
-             rewriteVariableList = rewriteVariableList',
-             rewriteConst = rewriteConst'
+             rewriteVariableList = rewriteVariableList_,
+             rewriteConst = rewriteConst_
            }
            fs' <- mapM (\ (f, i) -> rewriteSenFun (r, i) f)
             (zip fs instances)
            return (new_cm, fs')
+
+typeConstsOf :: Type -> [Constant]
+typeConstsOf (MapType tp1 tp2) = (typeConstsOf tp1) ++ (typeConstsOf tp2)
+typeConstsOf (ProdType tps) = concat $ map typeConstsOf tps
+typeConstsOf (CType c) = [c]
+typeConstsOf (ParType t) = typeConstsOf t
+typeConstsOf _ = []
+
+collectVariableTypes :: (AnaFuns a Constant, a) -> [THFVariable] -> Result [Constant]
+collectVariableTypes _ vs =
+ let tps = catMaybes $ map (\v -> case v of
+                                   TV_THF_Typed_Variable _ t ->
+                                    thfTopLevelTypeToType t 
+                                   _ -> Nothing) vs
+ in return . concat $ map typeConstsOf tps
+
+getSymbols :: SignTHF -> THFFormula -> [SymbolTHF]
+getSymbols s f =
+ let f' = makeNamed "tmp" f
+     cs = Data.Map.toList $ fst $ propagateErrors "THF.Poly.getSymbols" $
+                            infer (consts s) [f']
+     r = anaTHF0 { anaVariableList = collectVariableTypes }
+     ts' = propagateErrors "THF.Poly.getSymbols" $ anaSenFun (r, []) f'
+     ts = Data.Set.toList . Data.Set.fromList $ ts' ++
+          (concat (map (typeConstsOf . constType . snd) cs))
+     symsC = map (\(_,ci) -> Symbol { symId = constId ci,
+                                      symName = constName ci,
+                                      symType = ST_Const $ constType ci }) cs
+     symsT = map (\n -> case Data.Map.lookup n (types s) of
+                         Just t -> Symbol { symId = THF.Sign.typeId t,
+                                            symName = typeName t,
+                                            symType = ST_Type Kind}
+                         Nothing -> error $ "THF.Poly.getSymbols: " ++
+                                            "Unknown type " ++ (show n)) ts
+ in symsC ++ symsT
 
 type_check :: TypeMap -> ConstMap -> [Named THFFormula]
                -> Result [[(Token, Type)]]
