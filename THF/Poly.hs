@@ -279,11 +279,16 @@ getTypeCUF cm uf = case uf of
             constName = N_Atomic_Word $ c t,
             constType = tp,
             constAnno = Null}
- TUF_THF_Unary_Formula _ lf -> do
+ TUF_THF_Unary_Formula q lf -> do
   (lf', cs) <- getTypeCLF cm lf
-  let errMsg = "Unary Formula (" ++ sh lf ++ ") : ("
-               ++ sh lf' ++ ") is expected to be of type OType"
-  return (lf', cs ++ [(lf', NormalC (errMsg, getRangeSpan lf, OType))])
+  let errMsg = "Unary Formula (" ++ sh uf ++ ") : ("
+               ++ sh uf ++ ") is expected to be of type OType"
+      lf'' = case q of
+              Negation -> lf'
+              _ -> case lf' of
+                     MapType _ t -> t
+                     _ ->  error "TUF_THF_Unary_Formula"
+  return (lf'', cs ++ [(lf'', NormalC (errMsg, getRangeSpan uf, OType))])
  TUF_THF_Atom a -> case a of
   TA_THF_Conn_Term c -> case c of
    TCT_THF_Unary_Connective cn -> case cn of
