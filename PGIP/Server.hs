@@ -122,7 +122,8 @@ data Session = Session
   , sessKey :: Int
   , sessStart :: UTCTime
   , lastAccess :: UTCTime
-  , usage :: Int }
+  , usage :: Int
+  , sessCleanable :: Bool } deriving (Show)
 
 data UsedAPI = OldWebAPI | RESTfulAPI deriving (Show, Eq, Ord)
 
@@ -701,13 +702,31 @@ addSess sessRef s = do
 
 cleanUpCache :: Cache -> IO ()
 cleanUpCache sessRef = do
-  let mSize = 20
+  let mSize = 60
   time <- getCurrentTime
   atomicModifyIORef sessRef $ \ (m, lm) ->
     if Map.size lm < mSize then ((m, lm), ()) else
-    let ss = drop (div mSize 2) . sortBy (cmpSess time) $ Map.elems lm
+    let ss = cleanUpSessions time mSize m
     in ((IntMap.fromList $ map (\ s -> (sessKey s, s)) ss
        , Map.fromList $ map (\ s -> (sessPath s, s)) ss), ())
+  where
+    cleanUpSessions :: UTCTime -> Int -> IntMap.IntMap Session -> [Session]
+    cleanUpSessions time maxSize =
+      unifySessionLists . dropCleanables . sessionCleanableLists
+      where
+        sessionSort :: [Session] -> [Session]
+        sessionSort = sortBy (cmpSess time)
+
+        sessionCleanableLists :: IntMap.IntMap Session -> ([Session], [Session])
+        sessionCleanableLists =
+          partition sessCleanable . sessionSort . IntMap.elems
+
+        dropCleanables :: ([Session], [Session]) -> ([Session], [Session])
+        dropCleanables (cleanables, uncleanables) =
+          (drop (maxSize `div` 2) cleanables, uncleanables)
+
+        unifySessionLists :: ([Session], [Session]) -> [Session]
+        unifySessionLists = sessionSort . uncurry (++)
 
 cmpSess :: UTCTime -> Session -> Session -> Ordering
 cmpSess curTime =
@@ -731,13 +750,24 @@ addNewSess sessRef sess = do
   let s = sess { sessKey = k }
   addSess sessRef s
 
-nextSess :: Session -> Cache -> LibEnv -> Int -> IO Session
-nextSess sess sessRef newLib k = if k <= 0 then return sess else
+nextSess :: LibEnv -> Session -> Cache -> Int -> IO Session
+nextSess newLib =
+  modifySessionAndCache "nextSess" (\ s -> s { sessLibEnv = newLib })
+
+makeSessCleanable :: Session -> Cache -> Int -> IO Session
+makeSessCleanable =
+  modifySessionAndCache "makeSessCleanable" (\ s -> s { sessCleanable = True })
+
+modifySessionAndCache :: String -> (Session -> Session) -> Session -> Cache
+                      -> Int -> IO Session
+modifySessionAndCache errorMessage f sess sessRef k =
+  if k <= 0 then return sess else
     atomicModifyIORef sessRef
       (\ (m, lm) -> case IntMap.lookup k m of
-      Nothing -> error "nextSess"
-      Just s -> let newSess = s { sessLibEnv = newLib }
-        in ((IntMap.insert k newSess m, lm), newSess))
+        Nothing -> error errorMessage
+        Just s -> let newSess = f s
+                  in ((IntMap.insert k newSess m, lm), newSess))
+
 
 ppDGraph :: DGraph -> Maybe PrettyType -> ResultT IO (String, String)
 ppDGraph dg mt = let ga = globalAnnos dg in case optLibDefn dg of
@@ -816,7 +846,8 @@ getDGraph opts sessRef dgQ = do
                     , sessKey = 0  -- to be updated by addNewSess
                     , sessStart = time
                     , lastAccess = time
-                    , usage = 1 }
+                    , usage = 1
+                    , sessCleanable = False }
               k <- lift $ addNewSess sessRef sess
               return (sess, k)
     DGQuery k _ -> case IntMap.lookup k m of
@@ -898,7 +929,8 @@ getHetsResult :: HetcatsOpts -> [FileInfo BS.ByteString]
   -> Cache -> Query.Query -> Maybe String -> UsedAPI -> ProofFormatterOptions
   -> ResultT IO (String, String)
 getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
-      sk@(sess, k) <- getDGraph opts sessRef dgQ
+      sk@(sess', k) <- getDGraph opts sessRef dgQ
+      sess <- lift $ makeSessCleanable sess' sessRef k
       let libEnv = sessLibEnv sess
       (ln, dg) <- maybe (fail "unknown development graph") return
         $ sessGraph dgQ sess
@@ -940,7 +972,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
               if all (null . snd) nodesAndProofResults
               then return (textC, "nothing to prove")
               else do
-                lift $ nextSess sess sessRef newLib k
+                lift $ nextSess newLib sess sessRef k
                 return $ case api of
                   OldWebAPI -> let
                     sens = foldr (\ (dgNodeName, proofResults) res ->
@@ -960,13 +992,13 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
                 ch : _ -> do
                   let str = BS.unpack $ fileContent ch
                   (newLn, newLib) <- dgXUpdate opts str libEnv ln dg
-                  newSess <- lift $ nextSess sess sessRef newLib k
+                  newSess <- lift $ nextSess newLib sess sessRef k
                   sessAns newLn svg (newSess, k)
                 [] -> sessAns ln svg sk
                 else fail "getHetsResult.GlobCmdQuery"
               Just (_, act) -> do
                 newLib <- liftR $ act ln libEnv
-                newSess <- lift $ nextSess sess sessRef newLib k
+                newSess <- lift $ nextSess newLib sess sessRef k
                 -- calculate updated SVG-view from modified development graph
                 let newSvg = getSVG title ('/' : show k)
                       $ lookupDGraph ln newLib
@@ -1002,7 +1034,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
                         if null proofResults
                         then return (textC, "nothing to prove")
                         else do
-                          lift $ nextSess sess sessRef newLib k
+                          lift $ nextSess newLib sess sessRef k
                           return $ case api of
                             OldWebAPI -> (htmlC,
                               formatResults xForm k i . unode "results" $
@@ -1014,7 +1046,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
                       GlConsistency -> do
                         (newLib, [(_, res, txt, _, _, _)]) <-
                           consNode libEnv ln dg nl subL incl mp mt tl
-                        lift $ nextSess sess sessRef newLib k
+                        lift $ nextSess newLib sess sessRef k
                         return (xmlC, ppTopElement $ formatConsNode res txt)
                     _ -> case nc of
                       NcCmd Query.Theory -> lift $ fmap (\ t -> (htmlC, t))
