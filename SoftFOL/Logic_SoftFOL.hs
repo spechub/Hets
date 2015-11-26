@@ -67,7 +67,7 @@ instance Sentences SoftFOL Sentence Sign
                            SoftFOLMorphism SFSymbol where
       map_sen SoftFOL _ = return
       sym_of SoftFOL = singletonList . symOf
-      symsOfSen SoftFOL = toList . symsOfTerm
+      symsOfSen SoftFOL sign = toList . symsOfTerm sign
       sym_name SoftFOL = symbolToId
       symKind SoftFOL = sfSymbKind . sym_type
       print_named SoftFOL = printFormula

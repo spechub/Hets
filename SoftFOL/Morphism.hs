@@ -49,8 +49,15 @@ symbolToId :: SFSymbol -> Id
 symbolToId = simpleIdToId . sym_ident
 
 
-symsOfTerm :: SPTerm -> Set.Set SFSymbol
-symsOfTerm (SPQuantTerm _ vars f) = symsOfTerm f Set.\\ mconcat (map symsOfTerm vars)
-symsOfTerm (SPComplexTerm (SPCustomSymbol s) args) = 
-  Set.insert (toSortSymb s) $ mconcat $ map symsOfTerm args
-symsOfTerm (SPComplexTerm _ args) = mconcat $ map symsOfTerm args
+idsOfTerm :: SPTerm -> Set.Set SPIdentifier
+idsOfTerm (SPQuantTerm _ vars f) = idsOfTerm f Set.\\ mconcat (map idsOfTerm vars)
+idsOfTerm (SPComplexTerm (SPCustomSymbol s) args) = 
+  Set.insert s $ mconcat $ map idsOfTerm args
+idsOfTerm (SPComplexTerm _ args) = mconcat $ map idsOfTerm args
+
+symsOfTerm :: Sign -> SPTerm -> Set.Set SFSymbol
+symsOfTerm sig t = Set.filter in_term sig_syms
+   where sig_syms = symOf sig
+         term_ids = idsOfTerm t
+         in_term sy = sym_ident sy `Set.member` term_ids 
+
