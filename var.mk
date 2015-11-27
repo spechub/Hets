@@ -2,7 +2,7 @@
 
 GHCVERSION = $(shell ghc --numeric-version)
 ifneq ($(findstring 7., $(GHCVERSION)),)
-GHC7OPTS = -fcontext-stack=26
+GHC7OPTS =
 GHC7RTSOPTS = -rtsopts
 endif
 
