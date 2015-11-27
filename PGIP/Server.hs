@@ -281,11 +281,7 @@ parseRequestParams request =
     jsonBody = liftM (parseJson . B8.unpack) receivedRequestBody
 
     receivedRequestBody :: RsrcIO B8.ByteString
-#ifdef WARP3
-    receivedRequestBody = requestBody request
-#else
     receivedRequestBody = liftM (B8.pack . BS.unpack) $ lazyRequestBody request
-#endif
 
 #ifdef WARP1
     lazyRequestBody :: Request -> ResourceT IO BS.ByteString
