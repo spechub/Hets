@@ -354,11 +354,7 @@ rewriteConst' :: (RewriteFuns a, a) -> Constant -> Result THFUnitaryFormula
 rewriteConst' _ = return . TUF_THF_Atom . T0A_Constant
 
 rewriteConnTerm' :: (RewriteFuns a, a) -> THFConnTerm -> Result THFConnTerm
-rewriteConnTerm' _ c = case c of
- TCT_THF_Pair_Connective _ ->
-  mkError "THF.Utils.rewriteConnTerm: Pair Connective not in THF0!" c
- _ -> return c
-
+rewriteConnTerm' _ c = return c
 
 data AnaFuns a b = AnaFuns {
  anaLogicFormula :: (AnaFuns a b, a) -> THFLogicFormula -> Result [b],
@@ -486,7 +482,4 @@ anaConst' :: (AnaFuns a b, a) -> Constant -> Result [b]
 anaConst' _ _ = return []
 
 anaConnTerm' :: (AnaFuns a b, a) -> THFConnTerm -> Result [b]
-anaConnTerm' _ c = case c of
- TCT_THF_Pair_Connective _ ->
-  mkError "THF.Utils.anaConnTerm: Pair Connective not in THF0!" c
- _ -> return []
+anaConnTerm' _ _ = return []
