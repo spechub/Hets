@@ -35,10 +35,8 @@ instance Pretty BasicSpecTHF where
 
 instance Pretty SymbolTHF where
     pretty s = case symType s of
-        ST_Const t -> text "Constant" <+> pretty (symId s) <+> text ":"
-                        <+> pretty t
-        ST_Type k -> text "Type" <+> pretty (symId s) <+> text ":"
-                        <+> pretty k
+        ST_Const t -> pretty (symId s) <+> text ":" <+> pretty t
+        ST_Type k -> pretty (symId s) <+> text ":" <+> pretty k
 
 instance Pretty SignTHF where
     pretty s =
