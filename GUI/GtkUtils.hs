@@ -572,8 +572,9 @@ activate widgets active = mapM_ (`widgetSetSensitive` active) widgets
 
 toComboBoxText :: String -> ComboBoxText
 #ifdef GTK12
-type ComboBoxText = String
 toComboBoxText = id
+
+type ComboBoxText = String
 #else
 toComboBoxText = Text.pack
 #endif
