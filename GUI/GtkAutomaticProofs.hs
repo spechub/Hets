@@ -336,7 +336,7 @@ updateComorphism view list cbComorphism sh = do
   signalUnblock sh
 
 expand :: Finder -> [ComboBoxText]
-expand = map (toComboBoxText . show) . comorphism
+expand = toComboBoxText . comorphism
 
 setSelectedComorphism :: TreeView -> ListStore Finder -> ComboBox -> IO ()
 setSelectedComorphism view list cbComorphism = do

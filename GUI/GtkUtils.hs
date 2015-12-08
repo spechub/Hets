@@ -570,11 +570,11 @@ updateListData list listData = do
 activate :: [Widget] -> Bool -> IO ()
 activate widgets active = mapM_ (`widgetSetSensitive` active) widgets
 
-toComboBoxText :: String -> ComboBoxText
+toComboBoxText :: Show a => [a] -> [ComboBoxText]
 #ifdef GTK12
-toComboBoxText = id
+toComboBoxText = map show
 
 type ComboBoxText = String
 #else
-toComboBoxText = Text.pack
+toComboBoxText = map (Text.pack . show)
 #endif
