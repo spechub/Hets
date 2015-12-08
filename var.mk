@@ -39,7 +39,10 @@ UNIX_PACKAGE = -DUNIX
 endif
 
 GLADEVERSION = $(shell $(HCPKG) latest glade)
-ifneq ($(findstring 0.1, $(GLADEVERSION)),)
+ifneq ($(findstring 0.12, $(GLADEVERSION)),)
+GLADE_PACKAGE = -DGTKGLADE -DGTK12 $(SUNRUNPATH)
+endif
+ifneq ($(findstring 0.13, $(GLADEVERSION)),)
 GLADE_PACKAGE = -DGTKGLADE $(SUNRUNPATH)
 endif
 
