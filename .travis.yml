@@ -8,7 +8,11 @@ install:
  - travis_retry cabal update
  - cabal install alex happy
  - cabal install gtk2hs-buildtools
- - cabal install glade parsec1
+ - cabal install parsec1
+ - git clone https://github.com/cmaeder/glade.git
+ - cd glade
+ - cabal install
+ - cd ..
  - cabal install --only-dependencies
 script:
  - make
