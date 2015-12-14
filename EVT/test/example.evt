@@ -1,0 +1,8 @@
+library Marie
+
+logic EVT
+
+spec AProp =
+   grd name thispred
+   act name thispred
+end
