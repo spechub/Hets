@@ -49,7 +49,7 @@ import Data.Ord
 
 type EVTIsKey = Bool
 
-type EventNameMap g a = Map.Map EVENT_NAME (EVENT g a)
+type EventNameMap = Map.Map EVENT_NAME EVENT
 
 type EVTVarMap = Map.Map SIMPLE_ID SORT
 --type EVTVarList = [TERM ()]
@@ -57,28 +57,28 @@ type EVTVarMap = Map.Map SIMPLE_ID SORT
 {-data Sentence = EventEq EVENT_NAME {-EVTVarList-} EVENT
       deriving (Show, Eq, Ord, Typeable, Data)
 -}
-type EVTCASLSign g a = Sign (EVTSign g a)
+type EVTCASLSign = Sign EVTSign
 type EVTSen = Sentence
 --type EVTCASLSen = FORMULA MACHINE
 
-data EVTSign g a= EVTSign
+data EVTSign = EVTSign
     { 
 	varSet :: EVTVarMap
-	, eventSet :: EventNameMap g a
+	, eventSet :: EventNameMap
 
     } deriving (Show, Eq, Ord, Typeable, Data)
 
---emptyEVTSign ::EVTSign
-emptyEVTSign g a= EVTSign g a
-		{-
+emptyEVTSign ::EVTSign
+emptyEVTSign= EVTSign 
+		{
 		   varSet = Map.empty 
 		   , eventSet = Map.empty 	
-		-}
+		}
 
-data EVTMorphism g a= EVTMorphism
-                    { domain :: EVTSign g a
-                    , codomain :: EVTSign g a
-                    , event_map :: Map.Map (EVTSign g a) (EVTSign g a)
+data EVTMorphism = EVTMorphism
+                    { domain :: EVTSign 
+                    , codomain :: EVTSign 
+                    , event_map :: Map.Map EVTSign EVTSign
           	}
                     deriving (Eq, Ord, Show, Typeable, Data)
 

@@ -26,8 +26,8 @@ import Common.DocUtils
 import Common.Result
 
 import EVT.Keywords
-import CASL.AS_Basic_CASL( FORMULA (..), SORT, TERM (..), VAR)
-
+import CASL.AS_Basic_CASL--( FORMULA (..), SORT, TERM (..), VAR)
+import CASL.ATC_CASL
 -- DrIFT command
 {-! global: GetRange !-}
 type GUARD_NAME = Id
@@ -35,29 +35,29 @@ type ACTION_NAME = Id
 type EVENT_NAME = Id
 
 -- | Machines are sets of events. (they should be made of a data part and then an event part
-data MACHINE g a = MACHINE [VAR] [EVENT g a] Range
+data MACHINE = MACHINE [VAR] [EVENT ] Range
                  deriving (Show, Eq, Ord, Typeable, Data)
 
-data EVENT g a = EVENT
+data EVENT = EVENT
 	     {   name :: EVENT_NAME		
-		, guards :: [GUARD g]
-		, actions :: [ACTION a]
+		, guards :: [GUARD]
+		, actions :: [ACTION]
 	     }
 		deriving (Show, Eq, Ord, Typeable, Data)
 
-data GUARD g = GUARD
+data GUARD = GUARD
 	     {
 		  gnum :: Id
-		, predicate :: FORMULA g
+		, predicate :: (FORMULA ())
 	     }
-		deriving (Eq, Ord, Show, Typeable, Data)
+		deriving (Show, Eq, Ord, Typeable, Data)
 
-data ACTION a = ACTION
+data ACTION = ACTION
 	     {
 		  anum :: Id
-		, statement :: FORMULA a
+		, statement :: (FORMULA ())
 	     }		
-		deriving (Eq, Ord, Show, Typeable, Data)
+		deriving (Show, Eq, Ord, Typeable, Data)
 
 data EVTQualId = EVTQualId
                 {
