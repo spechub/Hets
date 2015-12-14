@@ -28,7 +28,6 @@ module EVT.Sign
 import CASL.Sign
 import CASL.AS_Basic_CASL
 import CASL.Overload
-import CASL.Sign
 import CASL.ToDoc
 import EVT.Keywords
 import EVT.AS
@@ -50,7 +49,7 @@ import Data.Ord
 
 type EVTIsKey = Bool
 
-type EventNameMap = Map.Map EVENT_NAME EVENT
+type EventNameMap g a = Map.Map EVENT_NAME (EVENT g a)
 
 type EVTVarMap = Map.Map SIMPLE_ID SORT
 --type EVTVarList = [TERM ()]
@@ -58,28 +57,28 @@ type EVTVarMap = Map.Map SIMPLE_ID SORT
 {-data Sentence = EventEq EVENT_NAME {-EVTVarList-} EVENT
       deriving (Show, Eq, Ord, Typeable, Data)
 -}
-type EVTCASLSign = Sign EVTSign
+type EVTCASLSign g a = Sign (EVTSign g a)
 type EVTSen = Sentence
-type EVTCASLSen = FORMULA MACHINE
+--type EVTCASLSen = FORMULA MACHINE
 
-data EVTSign = EVTSign
+data EVTSign g a= EVTSign
     { 
 	varSet :: EVTVarMap
-	, eventSet :: EventNameMap
+	, eventSet :: EventNameMap g a
 
     } deriving (Show, Eq, Ord, Typeable, Data)
 
-emptyEVTSign ::EVTSign
-emptyEVTSign = EVTSign
-		{
-		   varSet = Map.empty
-		   , eventSet = Map.empty	
-		}
+--emptyEVTSign ::EVTSign
+emptyEVTSign g a= EVTSign g a
+		{-
+		   varSet = Map.empty 
+		   , eventSet = Map.empty 	
+		-}
 
-data EVTMorphism = EVTMorphism
-                    { domain :: EVTSign
-                    , codomain :: EVTSign
-                    , event_map :: Map.Map EVTSign EVTSign
+data EVTMorphism g a= EVTMorphism
+                    { domain :: EVTSign g a
+                    , codomain :: EVTSign g a
+                    , event_map :: Map.Map (EVTSign g a) (EVTSign g a)
           	}
                     deriving (Eq, Ord, Show, Typeable, Data)
 

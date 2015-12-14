@@ -22,12 +22,13 @@ import CASL.AS_Basic_CASL
 import qualified CASL.Formula as CASL
 
 import Control.Monad
-import Control.Applicative
+import Control.Applicative hiding (many)
 
 import EVT.AS 
 import EVT.Keywords
 import EVT.Sign
-
+import CASL.Parse_AS_Basic
+import CASL.OpItem
 import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Error
 
@@ -35,22 +36,19 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 
 evtBasicSpec :: PrefixMap -> AParser st EVENT
-evtBasicSpec _ = do 
-	    	  spaces
-	          pos1 <- getPos
-		  gs <- parseEVTGuards
-		  as <- parseEVTActions
-	     	  pos2 <- getPos
-		  return (EVENT (stringToId "FIXMEINPARSEEVT") gs as) 
+evtBasicSpec _ = do spaces
+    	            pos1 <- getPos
+		    gs <- many parseEVTGuards
+		    as <- many parseEVTActions
+	     	    pos2 <- getPos
+		    return (EVENT (stringToId "FIXMEINPARSEEVT") gs as) 
 
-parseEVTGuards ::AParser st [GUARD]
+parseEVTGuards ::AParser st GUARD
 parseEVTGuards=
 	do
 	   try $ asKey grd
-	   gs <- many parseGuard   
+	   gs <- parseGuard   
 	   return gs
-	<|>
-	   return []
 
 evtSortId :: AParser st SORT
 evtSortId = sortId evtKeywords
@@ -58,26 +56,30 @@ evtSortId = sortId evtKeywords
 parseGuard :: AParser st GUARD
 parseGuard= do 
 	      gid<-evtSortId
+	      spaces
+	      pr<-CASL.formula ["Hello", "World"]
 	      return GUARD 
 	       {
-		 gname = gid
+		 gnum = gid
+		 , predicate = pr
 	       }
 
-parseEVTActions :: AParser st [ACTION]
+parseEVTActions :: AParser st ACTION
 parseEVTActions=
 	do
 	   try $ asKey action
-	   as <- many parseAction   
+	   as <- parseAction   
 	   return as
-	<|> 
-	   return []
 
 parseAction :: AParser st ACTION
 parseAction =  do 
 	      aid<-evtSortId
-	      return ACTION
+	      spaces
+	      st<-CASL.formula ["Hello", "World"]
+	      return ACTION 
 	       {
-		aname = aid
+		anum = aid
+		, statement = st
 	       }	
 
 

@@ -266,7 +266,7 @@ QBF_files = Propositional/Sign.hs QBF/Morphism.hs \
 
 RS_files = RelationalScheme/AS.hs RelationalScheme/Sign.hs
 
-EVT_files = EVT/AS.hs EVT/Sign.hs
+EVT_files = EVT/AS.hs EVT/Sign.hs 
 
 Modal_files = Modal/AS_Modal.hs Modal/ModalSign.hs
 Hybrid_files = Hybrid/AS_Hybrid.hs Hybrid/HybridSign.hs

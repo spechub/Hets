@@ -11,8 +11,6 @@ module EVT.AS
 	, EVENT (..)
 	, MACHINE (..)
 	, EVENT_NAME
-	, ACTION_NAME
-	, GUARD_NAME
 	--, mapQualId
         --, getSignature
         ) where
@@ -28,44 +26,39 @@ import Common.DocUtils
 import Common.Result
 
 import EVT.Keywords
-import CASL.AS_Basic_CASL
+import CASL.AS_Basic_CASL( FORMULA (..), SORT, TERM (..), VAR)
 
 -- DrIFT command
 {-! global: GetRange !-}
---CSPCOPY
 type GUARD_NAME = Id
-
 type ACTION_NAME = Id
-
 type EVENT_NAME = Id
 
 -- | Machines are sets of events. (they should be made of a data part and then an event part
-data MACHINE = MACHINE EVENT Range
+data MACHINE g a = MACHINE [VAR] [EVENT g a] Range
                  deriving (Show, Eq, Ord, Typeable, Data)
 
-data EVENT = EVENT
+data EVENT g a = EVENT
 	     {   name :: EVENT_NAME		
-		, guards :: [GUARD]
-		, actions :: [ACTION]
+		, guards :: [GUARD g]
+		, actions :: [ACTION a]
 	     }
 		deriving (Show, Eq, Ord, Typeable, Data)
 
-
-
-data GUARD = GUARD 
+data GUARD g = GUARD
 	     {
-		gname :: GUARD_NAME --[PRED_ITEM ()] 
+		  gnum :: Id
+		, predicate :: FORMULA g
 	     }
 		deriving (Eq, Ord, Show, Typeable, Data)
 
-data ACTION = ACTION
-	     {  aname ::ACTION_NAME --[TERM ()] 
+data ACTION a = ACTION
+	     {
+		  anum :: Id
+		, statement :: FORMULA a
 	     }		
 		deriving (Eq, Ord, Show, Typeable, Data)
 
-
---RELSCHEMECOPY
--- first Id is TableId, second is columnId --}
 data EVTQualId = EVTQualId
                 {
                   eventid :: Id

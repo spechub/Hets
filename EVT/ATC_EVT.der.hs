@@ -34,6 +34,7 @@ module EVT.ATC_EVT () where
 import ATC.GlobalAnnotations
 import ATerm.Lib
 import CASL.AS_Basic_CASL
+import CASL.AS_Basic_CASL (FORMULA (..), SORT, TERM (..), VAR)
 import CASL.Overload
 import CASL.Sign
 import CASL.ToDoc
