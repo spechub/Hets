@@ -33,6 +33,12 @@ assign = ":="
 checkeq :: String
 checkeq = "="
 
+member :: String
+member = ":"
+
+thenaturalnumbers:: String
+thenaturalnumbers = "thenats"
+
 
 -- | starting EVT keywords
 startKeywords :: [String]
