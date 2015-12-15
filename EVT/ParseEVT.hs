@@ -26,8 +26,8 @@ evtBasicSpec _ = do spaces
                     gs <- many parseEVTGuards
                     as <- many parseEVTActions
 --                    pos2 <- getPos
-                    --error . show $ (EVENT (stringToId "FIXMEINPARSEEVT") gs as) 
-                    return (EVENT (stringToId "FIXMEINPARSEEVT") gs as) 
+                    error . show $ (EVENT (stringToId "FIXMEINPARSEEVT") gs as) 
+                    --return (EVENT (stringToId "FIXMEINPARSEEVT") gs as) 
 
 parseEVTGuards ::AParser st GUARD
 parseEVTGuards=
@@ -43,7 +43,7 @@ parseGuard :: AParser st GUARD
 parseGuard= do 
               gid<-evtSortId
               spaces
-              pr<-CASL.formula evtKeywords --this is what the csp people did
+              pr<-CASL.formula evtKeywords 
               return GUARD 
                {
                  gnum = gid
@@ -61,7 +61,7 @@ parseAction :: AParser st ACTION
 parseAction =  do 
               aid<-evtSortId
               spaces
-              st<- CASL.formula  evtKeywords --this is what the csp people did
+              st<- CASL.formula  evtKeywords 
               return ACTION 
                {
                 anum = aid
