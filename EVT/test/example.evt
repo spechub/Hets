@@ -2,7 +2,7 @@ library Marie
 
 logic EVT
 
-spec AProp =
+spec anevent =
    grd iamaguard x \in NAT
    act iamanaction x = x + 1
 end
