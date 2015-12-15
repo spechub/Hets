@@ -3,6 +3,6 @@ library Marie
 logic EVT
 
 spec AProp =
-   grd name thispred
-   act name thispred
+   grd iamaguard x \in NAT
+   act iamanaction x = x + 1
 end
