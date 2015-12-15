@@ -872,7 +872,7 @@ cmpFilePath f1 f2 = case comparing hasTrailingPathSeparator f2 f1 of
   EQ -> compare f1 f2
   c -> c
 
-getHetsResponse :: HetcatsOpts -> [FileInfo BS.ByteString]
+getHetsResponse :: HetcatsOpts -> [Network.Wai.Parse.FileInfo BS.ByteString]
   -> Cache -> [String] -> [QueryPair] -> WebResponse
 getHetsResponse opts updates sessRef pathBits query respond = do
   Result ds ms <- liftIO $ runResultT $ case anaUri pathBits query
@@ -884,7 +884,7 @@ getHetsResponse opts updates sessRef pathBits query respond = do
     Just (t, s) | not $ hasErrors ds -> mkOkResponse t s
     _ -> mkResponse textC status422 $ showRelDiags 1 ds
 
-getHetsResult :: HetcatsOpts -> [FileInfo BS.ByteString]
+getHetsResult :: HetcatsOpts -> [Network.Wai.Parse.FileInfo BS.ByteString]
   -> Cache -> Query.Query -> Maybe String -> UsedAPI -> ProofFormatterOptions
   -> ResultT IO (String, String)
 getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
