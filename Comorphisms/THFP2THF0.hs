@@ -28,7 +28,8 @@ import THF.Cons
 import THF.Sign
 import qualified THF.Sublogic as SL
 import THF.As
-import THF.Utils
+import THF.Utils (RewriteFuns (..), rewriteSenFun, rewriteTHF0, recreateSymbols,
+                  toToken, typeToTopLevelType, thfTopLevelTypeToType, mkNames)
 
 import qualified Data.Map as Map
 import Control.Monad (liftM)
