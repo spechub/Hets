@@ -3,15 +3,10 @@ module EVT.Sign
         ( EVTIsKey
           , EVTDatatype (..)
           , EVTRawSymbol
-    --    , EVTEvent (..)
-	, EventNameMap
---	, ActionNameMap
-	, EVTVarMap
-	, EVTSen
+        , EventNameMap
+        , EVTVarMap
+        , EVTSen
 --	, EVTVarList
---      , Sentence (..)
---	, EVTGuard (..)
---	, EVTAction (..)
         , EVTSign (..)
         , EVTMorphism (..)
         , EVTSymbol (..)
@@ -25,27 +20,14 @@ module EVT.Sign
         )
         where
 
-import CASL.Sign
+--import CASL.Sign
 import CASL.AS_Basic_CASL
-import CASL.Overload
-import CASL.ToDoc
-import EVT.Keywords
 import EVT.AS
 
-import Common.AS_Annotation
-import Common.Doc
-import Common.DocUtils
 import Common.Id
-import Common.Result
-import Common.Utils
-import qualified Common.Lib.MapSet as MapSet
 
 import Data.Data
 import qualified Data.Map as Map
-import qualified Data.Set as Set
-import Data.List
-import Data.Ord
-
 
 type EVTIsKey = Bool
 
@@ -57,29 +39,29 @@ type EVTVarMap = Map.Map SIMPLE_ID SORT
 {-data Sentence = EventEq EVENT_NAME {-EVTVarList-} EVENT
       deriving (Show, Eq, Ord, Typeable, Data)
 -}
-type EVTCASLSign = Sign EVTSign
+--type EVTCASLSign = Sign EVTSign
 type EVTSen = Sentence
 --type EVTCASLSen = FORMULA MACHINE
 
 data EVTSign = EVTSign
     { 
-	varSet :: EVTVarMap
-	, eventSet :: EventNameMap
+          varSet :: EVTVarMap
+        , eventSet :: EventNameMap
 
     } deriving (Show, Eq, Ord, Typeable, Data)
 
 emptyEVTSign ::EVTSign
 emptyEVTSign= EVTSign 
-		{
-		   varSet = Map.empty 
-		   , eventSet = Map.empty 	
-		}
+                {
+                   varSet = Map.empty 
+                 , eventSet = Map.empty 
+                }
 
 data EVTMorphism = EVTMorphism
                     { domain :: EVTSign 
                     , codomain :: EVTSign 
                     , event_map :: Map.Map EVTSign EVTSign
-          	}
+                    }
                     deriving (Eq, Ord, Show, Typeable, Data)
 
 

@@ -6,67 +6,60 @@ Abstract syntax for Events
 module EVT.AS
         ( EVTQualId (..)
         , Sentence
-	, ACTION (..)
-	, GUARD (..)
-	, EVENT (..)
-	, MACHINE (..)
-	, EVENT_NAME
-	--, mapQualId
+                , ACTION (..)
+                , GUARD (..)
+                , EVENT (..)
+                , MACHINE (..)
+                , EVENT_NAME
+                --, mapQualId
         --, getSignature
         ) where
 
 import Data.Data
-import qualified Data.Map as Map
-import Data.Set as Set
 
 import Common.Id
-import Common.AS_Annotation
-import Common.Doc
-import Common.DocUtils
-import Common.Result
+import CASL.AS_Basic_CASL
+import CASL.ATC_CASL () 
 
-import EVT.Keywords
-import CASL.AS_Basic_CASL--( FORMULA (..), SORT, TERM (..), VAR)
-import CASL.ATC_CASL
 -- DrIFT command
 {-! global: GetRange !-}
 type GUARD_NAME = Id
 type ACTION_NAME = Id
 type EVENT_NAME = Id
 
--- | Machines are sets of events. (they should be made of a data part and then an event part
-data MACHINE = MACHINE [VAR] [EVENT ] Range
+-- | Machines are sets of events. 
+data MACHINE = MACHINE [EVENT] --Range
                  deriving (Show, Eq, Ord, Typeable, Data)
 
 data EVENT = EVENT
-	     {   name :: EVENT_NAME		
-		, guards :: [GUARD]
-		, actions :: [ACTION]
-	     }
-		deriving (Show, Eq, Ord, Typeable, Data)
+                     {   name :: EVENT_NAME                                
+                       , guards :: [GUARD]
+                       , actions :: [ACTION]
+                     }
+                     deriving (Show, Eq, Ord, Typeable, Data)
 
 data GUARD = GUARD
-	     {
-		  gnum :: Id
-		, predicate :: (FORMULA ())
-	     }
-		deriving (Show, Eq, Ord, Typeable, Data)
+                     {
+                        gnum :: GUARD_NAME
+                      , predicate :: (FORMULA ())
+                     }
+                     deriving (Show, Eq, Ord, Typeable, Data)
 
 data ACTION = ACTION
-	     {
-		  anum :: Id
-		, statement :: (FORMULA ())
-	     }		
-		deriving (Show, Eq, Ord, Typeable, Data)
+                     {
+                        anum :: ACTION_NAME
+                      , statement :: (FORMULA ())
+                     }                                
+                     deriving (Show, Eq, Ord, Typeable, Data)
 
 data EVTQualId = EVTQualId
                 {
-                  eventid :: Id
-		}
+                  eventid :: Id 
+                }
                 deriving (Eq, Ord, Show, Typeable, Data)
 
 -- Sentences are machines
-type Sentence = MACHINE
+type Sentence = EVENT
 
 
 {-

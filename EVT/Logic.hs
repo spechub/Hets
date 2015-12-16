@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- 
 
 Instance of class Logic for EVTs
@@ -10,7 +10,6 @@ import Common.DocUtils
 import Common.Id
 
 import Data.Monoid
-import qualified Data.Set as Set
 
 import Logic.Logic
 
@@ -21,16 +20,12 @@ import EVT.ATC_EVT ()
 --import EVT.StaticAnalysis
 
 import CASL.Logic_CASL
-import CASL.Parse_AS_Basic
-import CASL.Morphism
-import CASL.Sign
-import CASL.ToDoc
 
 data EVT = EVT deriving (Show)
 
 instance Language EVT where
     description _ =
-        "Logic for the Institution EVT"
+        "Logic for the Institution EVT" 
 
 -- | Instance of Category for EVT
 instance Category
@@ -43,21 +38,26 @@ instance Category
                -- composeMorphisms = comp_mor
 
 -- | Instance of Sentences for EVT
-instance Sentences EVT MACHINE EVTSign EVTMorphism EVTSymbol where				
+instance Sentences EVT EVENT EVTSign EVTMorphism EVTSymbol where			
     -- there is nothing to leave out
    simplify_sen EVT _ form = form
    print_named _ = printAnnoted pretty . fromLabelledSen
     --map_sen EVT = map_evt
 
---instance Pretty EVTSentence where
 
 instance Pretty EVENT where
 instance Pretty MACHINE where
 instance Pretty EVTMorphism where
 instance Pretty EVTSign where
 instance Pretty EVTSymbol where
-instance Monoid EVENT where
 
+instance Monoid EVENT where
+     mempty = EVENT (stringToId "") [] []
+     mappend (EVENT n1 g1 a1) (EVENT n2 g2 a2) = EVENT (mappend n1 n2) (mappend g1 g2) (mappend a1 a2) 
+
+instance Monoid MACHINE where
+     mempty = MACHINE []
+     mappend (MACHINE m1) (MACHINE m2) = MACHINE (mappend m1 m2) 
 
 instance Monoid EVTSign where
      mempty = emptyEVTSign
@@ -66,20 +66,21 @@ instance Monoid EVTSign where
 instance Monoid Id
 
 -- | Syntax of EVT
-instance Syntax EVT EVENT EVTSymbol () () where--EVTMorphism () () where
-     parse_basic_spec (EVT) = Just $ evtBasicSpec
-     --parse_symb_items _ = Nothing
-     --parse_symb_map_items _ = Nothing
+instance Syntax EVT [MACHINE] EVTSymbol () () where--EVTMorphism () () where
+     parse_basic_spec _ = Just $ evtBasicSpec
+     parse_symb_items _ = Nothing
+     parse_symb_map_items _ = Nothing
 
 instance Logic EVT
     -- Sublogics (missing)
     ()
     -- basic_spec
+    [MACHINE]
     EVENT
-    MACHINE-- sentence
+    -- sentence
     () -- symb_items
     () --symb map items
-    EVTSign	-- Signature
+    EVTSign  -- Signature
         -- symb_map_items
    -- CspSymbMapItems
     -- signature
@@ -92,7 +93,7 @@ instance Logic EVT
     where
       stability (EVT)= Experimental
       data_logic (EVT) = Just (Logic CASL)
-      --empty_proof_tree _ = ()
+      empty_proof_tree _ = ()
      -- provers (GenCspCASL _) = cspProvers (undefined :: a)
 
 {-- | Instance of Logic for EVT
@@ -112,8 +113,8 @@ instance Logic EVT
 
 - | Static Analysis for EVT-}
 instance StaticAnalysis EVT
-    EVENT                    -- basic_spec
-    MACHINE --   Sentence
+    [MACHINE]                    -- basic_spec
+    EVENT--   Sentence
     ()                            -- symb_items
     ()                            -- symb_map_items
     EVTSign  -- sign                

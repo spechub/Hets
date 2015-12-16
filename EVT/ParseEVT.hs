@@ -20,14 +20,32 @@ import qualified CASL.Formula as CASL
 import EVT.AS 
 import EVT.Keywords
 
-evtBasicSpec :: PrefixMap -> AParser st EVENT
-evtBasicSpec _ = do spaces
---                    pos1 <- getPos
-                    gs <- many parseEVTGuards
-                    as <- many parseEVTActions
+evtBasicSpec :: PrefixMap -> AParser st [MACHINE]
+evtBasicSpec _ = do macs <- many evtBasicSpec'
+                    return macs
+
+evtBasicSpec' :: AParser st MACHINE
+evtBasicSpec' = do spaces
+--                 pos1 <- getPos
+                   es <- many parseEVTEvents                    
 --                    pos2 <- getPos
-                    error . show $ (EVENT (stringToId "FIXMEINPARSEEVT") gs as) 
-                    --return (EVENT (stringToId "FIXMEINPARSEEVT") gs as) 
+                   return (MACHINE es)
+
+parseEVTEvents ::AParser st EVENT
+parseEVTEvents =
+        do
+           try $ asKey event
+           es <- parseEvent   
+           return es
+
+parseEvent ::AParser st EVENT
+parseEvent =
+        do
+           name <- evtSortId
+           spaces  
+           gs <- many parseEVTGuards
+           as <- many parseEVTActions
+           return (EVENT name gs as)
 
 parseEVTGuards ::AParser st GUARD
 parseEVTGuards=

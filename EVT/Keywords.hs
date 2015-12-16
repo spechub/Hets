@@ -13,9 +13,7 @@ printing.
 
 -}
 
-module EVT.Keywords where
-
-import Common.Keywords
+module EVT.Keywords where 
 
 -- | Keywords identifying beginning of eventdeclaration part.
 event :: String

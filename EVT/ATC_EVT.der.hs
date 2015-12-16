@@ -34,26 +34,12 @@ module EVT.ATC_EVT () where
 import ATC.GlobalAnnotations
 import ATerm.Lib
 import CASL.AS_Basic_CASL
-import CASL.ATC_CASL
-import CASL.Overload
-import CASL.Sign
-import CASL.ToDoc
-import Common.AS_Annotation
-import Common.Doc
-import Common.DocUtils
+import CASL.ATC_CASL ()
 import Common.Id
-import Common.Result
-import Common.Utils
 import Data.Data
-import Data.List
-import Data.Ord
-import Data.Set as Set
 import EVT.AS
-import EVT.Keywords
 import EVT.Sign
-import qualified Common.Lib.MapSet as MapSet
 import qualified Data.Map as Map
-import qualified Data.Set as Set
 
 {-! for EVT.AS.MACHINE derive : ShATermConvertible !-}
 {-! for EVT.AS.EVENT derive : ShATermConvertible !-}
