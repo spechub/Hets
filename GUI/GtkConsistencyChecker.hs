@@ -344,8 +344,8 @@ updateComorphism view list cbComorphism sh = do
     Nothing -> return ()
   signalUnblock sh
 
-expand :: Finder -> [String]
-expand = map show . comorphism
+expand :: Finder -> [ComboBoxText]
+expand = toComboBoxText . comorphism
 
 setSelectedComorphism :: TreeView -> ListStore Finder -> ComboBox -> IO ()
 setSelectedComorphism view list cbComorphism = do

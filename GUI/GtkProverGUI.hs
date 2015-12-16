@@ -252,8 +252,8 @@ updateComorphism view list cbComorphism sh = do
     Nothing -> return ()
   signalUnblock sh
 
-expand :: GProver -> [String]
-expand = map show . comorphism
+expand :: GProver -> [ComboBoxText]
+expand = toComboBoxText . comorphism
 
 setSelectedComorphism :: TreeView -> ListStore GProver -> ComboBox -> ProofState
   -> IO ProofState
