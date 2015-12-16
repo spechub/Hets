@@ -1,0 +1,62 @@
+
+\documentclass{article}
+\title{Creating ATermConvertible-Instances with \emph{genRules} and \emph{DrIFT}} 
+\author{Felix Reckers}
+\begin{document}
+
+\maketitle
+
+The tool \emph{genRules} provides the ability to create automatically rules, which can 
+be proceeded by \emph{DrIFT}. The directory \emph{ATC} includes the files with ATermConvertible
+instances, which are necessary to read datatypes from and to write them to files in the 
+Shared-ATerm-format.\\ 
+To create a new ATermConvertible instance for the datatypes in one file or more, you can invoke 
+\emph{genRules} in the directory \emph{utils}. It will generate a file with the specified 
+rules for \emph{DrIFT}. Then you can invoke \emph{DrIFT} on that file to create the instances.
+\emph{genRules} will generate a file with a \verb|.der.hs|-suffix, it will contain all necessary 
+imports and the \emph{DrIFT}-rules for each datatype. If the input is one file, the name of the 
+output file will be the same as the input plus the special suffix. If there is more than one 
+input file, the output file will have the name of the first of them. Every specific logic 
+instance is saved in the directory which represents that logic: CASL, HasCASL, Haskell and CspCASL.
+These files begin with an
+\emph{ATC\_} followed by the logic name. All the other ATC-files are saved in the directory \emph{ATC}.
+\section*{Invoking \emph{genRules}}
+The following options are available:
+\begin{description}
+\item[-r:] This option must be declared, it specifies the rule for generation. 
+In this case it must be \emph{ShATermConvertible}.
+\item[-o:] Specifies the output directory, commonly the output directory is \emph{ATC}. 
+If the output directory is the same as the directory from the used file(s) it is supposed 
+that the instance is a specific logic instance. 
+\item[-x:] Excludes the specified datatype(s). That means, that there will no rules be
+ generated for that datatype(s).
+\item[-h:] Specifies a header file.
+\end{description}
+\section*{Header files}
+Header files must have the suffix \verb|.header.hs| and the name of the file they 
+are created for. They must be in the \emph{ATC}-directory.\\
+A header file will be parsed and every instance in that file will be omited
+at the rule-generation. You can also include rules for omitting any datatype(s) 
+from the parsed file. The syntax for omitting a datatype is: 
+\begin{verbatim}
+{-| Exclude: Datatype |-}
+\end{verbatim}
+where "Datatype" is the name of the datatype, which should be omited. In a header file can be 
+haskell-comments, they will not be considered. \\
+Every logic specific ATC-instance, although it was generated from more than one file, has only one 
+header file, which has the logic name (i.e., CASL.header.hs).\\
+Header files are necessary, because \emph{DrIFT} can't generate all instances automatically.
+
+\section*{Automatic file-generation with \emph{make}}
+To generate a file automatically before compiling \emph{hets}, you must include the file name
+in the variable \emph{genrule\_files} in the Makefile. All files in that variable will be seperated 
+into files which are from a specific logic directory (CASL, HasCASL, CspCASL, Haskell) and those which 
+are not. The files from every logic will be packed in the specific logic ATC-file (look above).
+So every instance of a file which is not in a logic directory, will be put in the ATC-directory. 
+This prospective filenames must be also added to the variable \emph{gendrifted\_files}. For example,
+for the file name \emph{Commom/Named.hs} in the variable \emph{genrule\_files}, there must also be 
+the file name \emph{ATC/Named.hs} in the variable \emph{gendrifted\_files}.\\
+It must be noted, that the order in the variable \emph{gendrifted\_files} is significant. So if 
+an instance file A imports an other instance file B, B must stand before A in the variable.
+
+\end{document}
