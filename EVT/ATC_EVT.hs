@@ -34,26 +34,12 @@ module EVT.ATC_EVT () where
 import ATC.GlobalAnnotations
 import ATerm.Lib
 import CASL.AS_Basic_CASL
-import CASL.ATC_CASL
-import CASL.Overload
-import CASL.Sign
-import CASL.ToDoc
-import Common.AS_Annotation
-import Common.Doc
-import Common.DocUtils
+import CASL.ATC_CASL ()
 import Common.Id
-import Common.Result
-import Common.Utils
 import Data.Data
-import Data.List
-import Data.Ord
-import Data.Set as Set
 import EVT.AS
-import EVT.Keywords
 import EVT.Sign
-import qualified Common.Lib.MapSet as MapSet
 import qualified Data.Map as Map
-import qualified Data.Set as Set
 
 {-! for EVT.AS.MACHINE derive : ShATermConvertible !-}
 {-! for EVT.AS.EVENT derive : ShATermConvertible !-}
@@ -69,20 +55,14 @@ import qualified Data.Set as Set
 
 instance ShATermConvertible MACHINE where
   toShATermAux att0 xv = case xv of
-    MACHINE a b c -> do
+    MACHINE a -> do
       (att1, a') <- toShATerm' att0 a
-      (att2, b') <- toShATerm' att1 b
-      (att3, c') <- toShATerm' att2 c
-      return $ addATerm (ShAAppl "MACHINE" [a', b', c'] []) att3
+      return $ addATerm (ShAAppl "MACHINE" [a'] []) att1
   fromShATermAux ix att0 = case getShATerm ix att0 of
-    ShAAppl "MACHINE" [a, b, c] _ ->
+    ShAAppl "MACHINE" [a] _ ->
       case fromShATerm' a att0 of
       { (att1, a') ->
-      case fromShATerm' b att1 of
-      { (att2, b') ->
-      case fromShATerm' c att2 of
-      { (att3, c') ->
-      (att3, MACHINE a' b' c') }}}
+      (att1, MACHINE a') }
     u -> fromShATermError "MACHINE" u
 
 instance ShATermConvertible EVENT where
@@ -145,20 +125,33 @@ instance ShATermConvertible EVTQualId where
       (att1, EVTQualId a') }
     u -> fromShATermError "EVTQualId" u
 
-instance ShATermConvertible EVTSign where
+instance ShATermConvertible EVTSymbol where
   toShATermAux att0 xv = case xv of
-    EVTSign a b -> do
+    E a -> do
       (att1, a') <- toShATerm' att0 a
-      (att2, b') <- toShATerm' att1 b
-      return $ addATerm (ShAAppl "EVTSign" [a', b'] []) att2
+      return $ addATerm (ShAAppl "E" [a'] []) att1
+    EVTDatatype a -> do
+      (att1, a') <- toShATerm' att0 a
+      return $ addATerm (ShAAppl "EVTDatatype" [a'] []) att1
   fromShATermAux ix att0 = case getShATerm ix att0 of
-    ShAAppl "EVTSign" [a, b] _ ->
+    ShAAppl "E" [a] _ ->
       case fromShATerm' a att0 of
       { (att1, a') ->
-      case fromShATerm' b att1 of
-      { (att2, b') ->
-      (att2, EVTSign a' b') }}
-    u -> fromShATermError "EVTSign" u
+      (att1, E a') }
+    ShAAppl "EVTDatatype" [a] _ ->
+      case fromShATerm' a att0 of
+      { (att1, a') ->
+      (att1, EVTDatatype a') }
+    u -> fromShATermError "EVTSymbol" u
+
+instance ShATermConvertible EVTDatatype where
+  toShATermAux att0 xv = case xv of
+    EVTBoolean -> return $ addATerm (ShAAppl "EVTBoolean" [] []) att0
+    EVTNat -> return $ addATerm (ShAAppl "EVTNat" [] []) att0
+  fromShATermAux ix att0 = case getShATerm ix att0 of
+    ShAAppl "EVTBoolean" [] _ -> (att0, EVTBoolean)
+    ShAAppl "EVTNat" [] _ -> (att0, EVTNat)
+    u -> fromShATermError "EVTDatatype" u
 
 instance ShATermConvertible EVTMorphism where
   toShATermAux att0 xv = case xv of
@@ -178,30 +171,17 @@ instance ShATermConvertible EVTMorphism where
       (att3, EVTMorphism a' b' c') }}}
     u -> fromShATermError "EVTMorphism" u
 
-instance ShATermConvertible EVTDatatype where
+instance ShATermConvertible EVTSign where
   toShATermAux att0 xv = case xv of
-    EVTBoolean -> return $ addATerm (ShAAppl "EVTBoolean" [] []) att0
-    EVTNat -> return $ addATerm (ShAAppl "EVTNat" [] []) att0
-  fromShATermAux ix att0 = case getShATerm ix att0 of
-    ShAAppl "EVTBoolean" [] _ -> (att0, EVTBoolean)
-    ShAAppl "EVTNat" [] _ -> (att0, EVTNat)
-    u -> fromShATermError "EVTDatatype" u
-
-instance ShATermConvertible EVTSymbol where
-  toShATermAux att0 xv = case xv of
-    E a -> do
+    EVTSign a b -> do
       (att1, a') <- toShATerm' att0 a
-      return $ addATerm (ShAAppl "E" [a'] []) att1
-    EVTDatatype a -> do
-      (att1, a') <- toShATerm' att0 a
-      return $ addATerm (ShAAppl "EVTDatatype" [a'] []) att1
+      (att2, b') <- toShATerm' att1 b
+      return $ addATerm (ShAAppl "EVTSign" [a', b'] []) att2
   fromShATermAux ix att0 = case getShATerm ix att0 of
-    ShAAppl "E" [a] _ ->
+    ShAAppl "EVTSign" [a, b] _ ->
       case fromShATerm' a att0 of
       { (att1, a') ->
-      (att1, E a') }
-    ShAAppl "EVTDatatype" [a] _ ->
-      case fromShATerm' a att0 of
-      { (att1, a') ->
-      (att1, EVTDatatype a') }
-    u -> fromShATermError "EVTSymbol" u
+      case fromShATerm' b att1 of
+      { (att2, b') ->
+      (att2, EVTSign a' b') }}
+    u -> fromShATermError "EVTSign" u
