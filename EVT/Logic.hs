@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances #-}
 {- 
 
 Instance of class Logic for EVTs
@@ -66,7 +66,7 @@ instance Monoid EVTSign where
 instance Monoid Id
 
 -- | Syntax of EVT
-instance Syntax EVT [MACHINE] EVTSymbol () () where--EVTMorphism () () where
+instance Syntax EVT MACHINE EVTSymbol () () where--EVTMorphism () () where
      parse_basic_spec _ = Just $ evtBasicSpec
      parse_symb_items _ = Nothing
      parse_symb_map_items _ = Nothing
@@ -75,7 +75,7 @@ instance Logic EVT
     -- Sublogics (missing)
     ()
     -- basic_spec
-    [MACHINE]
+    MACHINE
     EVENT
     -- sentence
     () -- symb_items
@@ -113,7 +113,7 @@ instance Logic EVT
 
 - | Static Analysis for EVT-}
 instance StaticAnalysis EVT
-    [MACHINE]                    -- basic_spec
+    MACHINE                    -- basic_spec
     EVENT--   Sentence
     ()                            -- symb_items
     ()                            -- symb_map_items

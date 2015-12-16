@@ -20,16 +20,12 @@ import qualified CASL.Formula as CASL
 import EVT.AS 
 import EVT.Keywords
 
-evtBasicSpec :: PrefixMap -> AParser st [MACHINE]
-evtBasicSpec _ = do macs <- many evtBasicSpec'
-                    return macs
-
-evtBasicSpec' :: AParser st MACHINE
-evtBasicSpec' = do spaces
---                 pos1 <- getPos
-                   es <- many parseEVTEvents                    
---                    pos2 <- getPos
-                   return (MACHINE es)
+evtBasicSpec :: PrefixMap -> AParser st MACHINE
+evtBasicSpec _ = do spaces
+--                  pos1 <- getPos
+                    es <- many parseEVTEvents                    
+--                  pos2 <- getPos
+                    return (MACHINE es)
 
 parseEVTEvents ::AParser st EVENT
 parseEVTEvents =
