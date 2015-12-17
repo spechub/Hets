@@ -37,12 +37,6 @@ flag uniform
     svn co https://svn-agbkb.informatik.uni-bremen.de/uni/trunk uni
     http://www.informatik.uni-bremen.de/uDrawGraph
 
-flag programatica
-  description: use programatica for the haskell logic
-    http://programatica.cs.pdx.edu/
-    installed via "make" within Hets if cvs sources are checked out
-    in the same parent directory as Hets
-
 flag tar
   description: save VSE proofs in tar archives
 
@@ -100,10 +94,6 @@ Executable hets
       , uni-util >= 2.0 && < 3.0
     cpp-options: -DUNI_PACKAGE
 
-  if flag(programatica)
-    build-depends: programatica >= 1.0 && < 1.1
-    cpp-options: -DPROGRAMATICA
-
   if flag(haxml)
     build-depends: HaXml >= 1.24 && < 2
     cpp-options: -DHAXML
@@ -139,5 +129,6 @@ Executable hets
       , warp >= 3.0 && < 4.0
       , http-types >= 0.6 && < 0.9
       , text >= 0.5 && < 1.3
+      , case-insensitive
       , random >= 1.0
     cpp-options: -DSERVER -DWARP3
