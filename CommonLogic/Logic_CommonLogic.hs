@@ -62,7 +62,7 @@ instance Sentences CommonLogic
       symmap_of CommonLogic = getSymbolMap -- returns the symbol map
       sym_name CommonLogic = getSymbolName -- returns the name of a symbol
       map_sen CommonLogic = mapSentence -- TODO
-      symsOfSen CommonLogic = symsOfTextMeta
+      symsOfSen CommonLogic _ = symsOfTextMeta
       symKind CommonLogic = Symbol.symKind
 
 instance Monoid BASIC_SPEC where

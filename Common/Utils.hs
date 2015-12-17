@@ -429,13 +429,13 @@ withinDirectory p a = do
   setCurrentDirectory d
   return r
 
--- | calls openTempFile but directly writes content and closes the file
+-- | opens a temp file but directly writes content and closes the file
 writeTempFile :: String -- ^ Content
   -> FilePath -- ^ Directory in which to create the file
   -> String   -- ^ File name template
   -> IO FilePath -- ^ create file
 writeTempFile str tmpDir file = do
-  (tmpFile, hdl) <- openTempFile tmpDir file
+  (tmpFile, hdl) <- openTempFileWithDefaultPermissions tmpDir file
   hPutStr hdl str
   hFlush hdl
   hClose hdl

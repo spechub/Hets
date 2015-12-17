@@ -100,7 +100,7 @@ instance Sentences OWL2 Axiom Sign OWLMorphism Entity where
       x = expandedIRI i
       in if null x then getPredefName i else x
     symKind OWL2 = takeWhile isAlpha . showEntityType . entityKind
-    symsOfSen OWL2 = Set.toList . symsOfAxiom
+    symsOfSen OWL2 _ = Set.toList . symsOfAxiom
     pair_symbols OWL2 = pairSymbols
 
 

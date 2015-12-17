@@ -223,7 +223,7 @@ instance Sentences CASL CASLFORMULA CASLSign CASLMor Symbol where
       symmap_of CASL = morphismToSymbMap
       sym_name CASL = symName
       symKind CASL = show . pretty . symbolKind . symbType
-      symsOfSen CASL = Set.toList
+      symsOfSen CASL _ = Set.toList
         . foldFormula (symbolsRecord $ const Set.empty)
       simplify_sen CASL = simplifyCASLSen
       print_named CASL = printTheoryFormula

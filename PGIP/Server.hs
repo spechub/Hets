@@ -26,6 +26,8 @@ import Driver.Version
 
 import Network.Wai.Handler.Warp
 import Network.HTTP.Types
+
+import Codec.Binary.UTF8.String
 import Control.Monad.Trans (lift, liftIO)
 #ifdef WARP1
 import Control.Monad.Trans.Resource
@@ -34,7 +36,7 @@ import Data.Conduit.Lazy (lazyConsume)
 import qualified Data.Text as T
 
 import Network.Wai
-import Network.Wai.Parse
+import Network.Wai.Parse as W
 
 import qualified Data.ByteString.Lazy.Char8 as BS
 import qualified Data.ByteString.Char8 as B8
@@ -91,6 +93,7 @@ import Common.Utils
 import Common.XUpdate
 
 import Control.Monad
+import Control.Exception.Base (SomeException)
 
 import qualified Data.IntMap as IntMap
 import qualified Data.Map as Map
@@ -119,7 +122,8 @@ data Session = Session
   , sessKey :: Int
   , sessStart :: UTCTime
   , lastAccess :: UTCTime
-  , usage :: Int }
+  , usage :: Int
+  , sessCleanable :: Bool } deriving (Show)
 
 data UsedAPI = OldWebAPI | RESTfulAPI deriving (Show, Eq, Ord)
 
@@ -163,15 +167,22 @@ type RsrcIO a = IO a
 
 #ifdef WARP3
 type WebResponse = (Response -> IO ResponseReceived) -> IO ResponseReceived
+catchException :: SomeException -> Response
+catchException e =
+   mkResponse textC
+              internalServerError500
+              ("*** Error:\n" ++ show e)
 #else
 type WebResponse = (Response -> RsrcIO Response) -> RsrcIO Response
 #endif
+
 
 hetsServer :: HetcatsOpts -> IO ()
 hetsServer opts1 = do
   tempDir <- getTemporaryDirectory
   let tempLib = tempDir </> "MyHetsLib"
-      permFile = tempDir </> "empty.txt"
+      logFile = tempDir </>
+        ("hets-" ++ show port ++ ".log")
       opts = opts1 { libdirs = tempLib : libdirs opts1 }
       port1 = listen opts1
       port = if port1 < 0 then 8000 else port1
@@ -179,16 +190,19 @@ hetsServer opts1 = do
       bl = blacklist opts1
       prList ll = intercalate ", " $ map (intercalate ".") ll
   createDirectoryIfMissing False tempLib
-  writeFile permFile ""
-  unless (null wl) . appendFile permFile
+  writeFile logFile ""
+  unless (null wl) . appendFile logFile
     $ "white list: " ++ prList wl ++ "\n"
-  unless (null bl) . appendFile permFile
+  unless (null bl) . appendFile logFile
     $ "black list: " ++ prList bl ++ "\n"
   sessRef <- newIORef (IntMap.empty, Map.empty)
   putIfVerbose opts 1 $ "hets server is listening on port " ++ show port
-  putIfVerbose opts 2 $ "for more information look into file: " ++ permFile
+  putIfVerbose opts 2 $ "for more information look into file: " ++ logFile
 #ifdef WARP3
-  runSettings (setPort port $ setTimeout 86400 defaultSettings) $ \ re respond -> do
+  runSettings (setOnExceptionResponse catchException $
+               setPort port $
+               setTimeout 86400 defaultSettings)
+    $ \ re respond -> do
 #else
   run port $ \ re -> do
    let respond = liftIO . return
@@ -206,13 +220,13 @@ hetsServer opts1 = do
      time <- getCurrentTime
      createDirectoryIfMissing False tempLib
      (m, _) <- readIORef sessRef
-     appendFile permFile rhost
+     appendFile logFile rhost
      unless black $ if white then do
-         appendFile permFile $ shows time " sessions: "
+         appendFile logFile $ shows time " sessions: "
                     ++ shows (IntMap.size m) "\n"
-         appendFile permFile $ shows (requestHeaders re) "\n"
-         unless (null query) $ appendFile permFile $ query ++ "\n"
-       else appendFile permFile "not white listed\n"
+         appendFile logFile $ shows (requestHeaders re) "\n"
+         unless (null query) $ appendFile logFile $ query ++ "\n"
+       else appendFile logFile "not white listed\n"
    if not white || black then respond $ mkResponse "" status403 ""
     -- if path could be a RESTful request, try to parse it
     else do
@@ -234,7 +248,7 @@ hetsServer opts1 = do
                     qr2 requestBodyParams meth respond
               else queryFail ("unknown query key(s): " ++ show unknown) respond
            -- only otherwise stick to the old response methods
-           else oldWebApi newOpts tempLib permFile sessRef re pathBits qr2
+           else oldWebApi newOpts tempLib sessRef re pathBits qr2
              meth respond
 parseRequestParams :: Request -> RsrcIO Json
 parseRequestParams request =
@@ -265,14 +279,10 @@ parseRequestParams request =
         return $ parseJson $ toJsonObject formDataB8
 
     jsonBody :: RsrcIO (Maybe Json)
-    jsonBody = liftM (parseJson . B8.unpack) $ receivedRequestBody
+    jsonBody = liftM (parseJson . B8.unpack) receivedRequestBody
 
     receivedRequestBody :: RsrcIO B8.ByteString
-#ifdef WARP3
-    receivedRequestBody = requestBody request
-#else
     receivedRequestBody = liftM (B8.pack . BS.unpack) $ lazyRequestBody request
-#endif
 
 #ifdef WARP1
     lazyRequestBody :: Request -> ResourceT IO BS.ByteString
@@ -285,9 +295,9 @@ parseRequestParams request =
       _ -> formParams
 
 -- | the old API that supports downloading files and interactive stuff
-oldWebApi :: HetcatsOpts -> FilePath -> FilePath -> Cache -> Request -> [String]
+oldWebApi :: HetcatsOpts -> FilePath -> Cache -> Request -> [String]
   -> [QueryPair] -> String -> WebResponse
-oldWebApi opts tempLib permFile sessRef re pathBits splitQuery meth respond
+oldWebApi opts tempLib sessRef re pathBits splitQuery meth respond
   = case meth of
       "GET" -> if isJust $ lookup "menus" splitQuery
          then mkMenuResponse respond else do
@@ -316,7 +326,6 @@ oldWebApi opts tempLib permFile sessRef re pathBits splitQuery meth respond
               Just areatext -> let content = B8.unpack areatext in
                 if all isSpace content then return Nothing else liftIO $ do
                    tmpFile <- getTempFile content "temp.het"
-                   copyPermissions permFile tmpFile
                    return $ Just tmpFile
         let res tmpFile =
               getHetsResponse opts [] sessRef [tmpFile] splitQuery respond
@@ -333,7 +342,6 @@ oldWebApi opts tempLib permFile sessRef re pathBits splitQuery meth respond
            if any isAlphaNum fn then do
              let tmpFile = tempLib </> fn
              liftIO $ BS.writeFile tmpFile $ fileContent f
-             liftIO $ copyPermissions permFile tmpFile
              maybe (res tmpFile) res mTmpFile
             else mRes
           _ -> getHetsResponse
@@ -677,7 +685,7 @@ mkResponse ty st = responseLBS st
 #else
       [(hContentType, B8.pack ty)]
 #endif
-  ) . BS.pack
+  ) . BS.pack . encodeString
 
 mkOkResponse :: String -> String -> Response
 mkOkResponse ty = mkResponse ty status200
@@ -690,13 +698,31 @@ addSess sessRef s = do
 
 cleanUpCache :: Cache -> IO ()
 cleanUpCache sessRef = do
-  let mSize = 20
+  let mSize = 60
   time <- getCurrentTime
   atomicModifyIORef sessRef $ \ (m, lm) ->
     if Map.size lm < mSize then ((m, lm), ()) else
-    let ss = drop (div mSize 2) . sortBy (cmpSess time) $ Map.elems lm
+    let ss = cleanUpSessions time mSize m
     in ((IntMap.fromList $ map (\ s -> (sessKey s, s)) ss
        , Map.fromList $ map (\ s -> (sessPath s, s)) ss), ())
+  where
+    cleanUpSessions :: UTCTime -> Int -> IntMap.IntMap Session -> [Session]
+    cleanUpSessions time maxSize =
+      unifySessionLists . dropCleanables . sessionCleanableLists
+      where
+        sessionSort :: [Session] -> [Session]
+        sessionSort = sortBy (cmpSess time)
+
+        sessionCleanableLists :: IntMap.IntMap Session -> ([Session], [Session])
+        sessionCleanableLists =
+          partition sessCleanable . sessionSort . IntMap.elems
+
+        dropCleanables :: ([Session], [Session]) -> ([Session], [Session])
+        dropCleanables (cleanables, uncleanables) =
+          (drop (maxSize `div` 2) cleanables, uncleanables)
+
+        unifySessionLists :: ([Session], [Session]) -> [Session]
+        unifySessionLists = sessionSort . uncurry (++)
 
 cmpSess :: UTCTime -> Session -> Session -> Ordering
 cmpSess curTime =
@@ -720,13 +746,24 @@ addNewSess sessRef sess = do
   let s = sess { sessKey = k }
   addSess sessRef s
 
-nextSess :: Session -> Cache -> LibEnv -> Int -> IO Session
-nextSess sess sessRef newLib k = if k <= 0 then return sess else
+nextSess :: LibEnv -> Session -> Cache -> Int -> IO Session
+nextSess newLib =
+  modifySessionAndCache "nextSess" (\ s -> s { sessLibEnv = newLib })
+
+makeSessCleanable :: Session -> Cache -> Int -> IO Session
+makeSessCleanable =
+  modifySessionAndCache "makeSessCleanable" (\ s -> s { sessCleanable = True })
+
+modifySessionAndCache :: String -> (Session -> Session) -> Session -> Cache
+                      -> Int -> IO Session
+modifySessionAndCache errorMessage f sess sessRef k =
+  if k <= 0 then return sess else
     atomicModifyIORef sessRef
       (\ (m, lm) -> case IntMap.lookup k m of
-      Nothing -> error "nextSess"
-      Just s -> let newSess = s { sessLibEnv = newLib }
-        in ((IntMap.insert k newSess m, lm), newSess))
+        Nothing -> error errorMessage
+        Just s -> let newSess = f s
+                  in ((IntMap.insert k newSess m, lm), newSess))
+
 
 ppDGraph :: DGraph -> Maybe PrettyType -> ResultT IO (String, String)
 ppDGraph dg mt = let ga = globalAnnos dg in case optLibDefn dg of
@@ -745,7 +782,6 @@ ppDGraph dg mt = let ga = globalAnnos dg in case optLibDefn dg of
          tmpDir <- getTemporaryDirectory
          tmpFile <- writeTempFile (latexHeader ++ latex ++ latexFooter)
            tmpDir "temp.tex"
-         copyPermissions (tmpDir </> "empty.txt") tmpFile
          mapM_ (\ s -> do
             let sty = (</> "hetcasl.sty")
                 f = sty s
@@ -806,7 +842,8 @@ getDGraph opts sessRef dgQ = do
                     , sessKey = 0  -- to be updated by addNewSess
                     , sessStart = time
                     , lastAccess = time
-                    , usage = 1 }
+                    , usage = 1
+                    , sessCleanable = False }
               k <- lift $ addNewSess sessRef sess
               return (sess, k)
     DGQuery k _ -> case IntMap.lookup k m of
@@ -872,7 +909,7 @@ cmpFilePath f1 f2 = case comparing hasTrailingPathSeparator f2 f1 of
   EQ -> compare f1 f2
   c -> c
 
-getHetsResponse :: HetcatsOpts -> [FileInfo BS.ByteString]
+getHetsResponse :: HetcatsOpts -> [W.FileInfo BS.ByteString]
   -> Cache -> [String] -> [QueryPair] -> WebResponse
 getHetsResponse opts updates sessRef pathBits query respond = do
   Result ds ms <- liftIO $ runResultT $ case anaUri pathBits query
@@ -884,11 +921,12 @@ getHetsResponse opts updates sessRef pathBits query respond = do
     Just (t, s) | not $ hasErrors ds -> mkOkResponse t s
     _ -> mkResponse textC status422 $ showRelDiags 1 ds
 
-getHetsResult :: HetcatsOpts -> [FileInfo BS.ByteString]
+getHetsResult :: HetcatsOpts -> [W.FileInfo BS.ByteString]
   -> Cache -> Query.Query -> Maybe String -> UsedAPI -> ProofFormatterOptions
   -> ResultT IO (String, String)
 getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
-      sk@(sess, k) <- getDGraph opts sessRef dgQ
+      sk@(sess', k) <- getDGraph opts sessRef dgQ
+      sess <- lift $ makeSessCleanable sess' sessRef k
       let libEnv = sessLibEnv sess
       (ln, dg) <- maybe (fail "unknown development graph") return
         $ sessGraph dgQ sess
@@ -930,7 +968,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
               if all (null . snd) nodesAndProofResults
               then return (textC, "nothing to prove")
               else do
-                lift $ nextSess sess sessRef newLib k
+                lift $ nextSess newLib sess sessRef k
                 return $ case api of
                   OldWebAPI -> let
                     sens = foldr (\ (dgNodeName, proofResults) res ->
@@ -950,13 +988,13 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
                 ch : _ -> do
                   let str = BS.unpack $ fileContent ch
                   (newLn, newLib) <- dgXUpdate opts str libEnv ln dg
-                  newSess <- lift $ nextSess sess sessRef newLib k
+                  newSess <- lift $ nextSess newLib sess sessRef k
                   sessAns newLn svg (newSess, k)
                 [] -> sessAns ln svg sk
                 else fail "getHetsResult.GlobCmdQuery"
               Just (_, act) -> do
                 newLib <- liftR $ act ln libEnv
-                newSess <- lift $ nextSess sess sessRef newLib k
+                newSess <- lift $ nextSess newLib sess sessRef k
                 -- calculate updated SVG-view from modified development graph
                 let newSvg = getSVG title ('/' : show k)
                       $ lookupDGraph ln newLib
@@ -992,7 +1030,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
                         if null proofResults
                         then return (textC, "nothing to prove")
                         else do
-                          lift $ nextSess sess sessRef newLib k
+                          lift $ nextSess newLib sess sessRef k
                           return $ case api of
                             OldWebAPI -> (htmlC,
                               formatResults xForm k i . unode "results" $
@@ -1004,7 +1042,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
                       GlConsistency -> do
                         (newLib, [(_, res, txt, _, _, _)]) <-
                           consNode libEnv ln dg nl subL incl mp mt tl
-                        lift $ nextSess sess sessRef newLib k
+                        lift $ nextSess newLib sess sessRef k
                         return (xmlC, ppTopElement $ formatConsNode res txt)
                     _ -> case nc of
                       NcCmd Query.Theory -> lift $ fmap (\ t -> (htmlC, t))

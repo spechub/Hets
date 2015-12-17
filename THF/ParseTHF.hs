@@ -1101,7 +1101,7 @@ distinctObject :: CharParser st Token
 distinctObject = parseToken $ do
     char '\"'
     s <- fmap concat $ many1 (tryString "\\\\" <|> tryString "\\\""
-        <|> single ( satisfy (\ c -> printable c && notElem c "'\\")))
+        <|> single ( satisfy (\ c -> printable c && notElem c "\"\\")))
     keyChar '\"'
     return s
 
@@ -1140,8 +1140,8 @@ unsignedReal = do
         d <- decimalFractional <|> decimal
         e <- oneOf "Ee"
         return (d ++ [e]))
-    ex <- decimal
-    return (de ++ ex)
+    ex <- integer
+    return (de ++ (show ex))
   <|> decimalFractional
   <?> "unsigned real"
 

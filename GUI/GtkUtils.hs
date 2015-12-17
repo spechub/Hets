@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {- |
 Module      :  $Header$
 Description :  Access to the .glade files stored as strings inside the binary
@@ -69,8 +70,9 @@ module GUI.GtkUtils
   , activate
 
   , escapeGtkMarkup
-  )
-  where
+  , ComboBoxText
+  , toComboBoxText
+  ) where
 
 import Graphics.UI.Gtk
 import Graphics.UI.Gtk.Glade
@@ -85,6 +87,8 @@ import Common.Utils (getTempFile)
 
 import Control.Concurrent (forkIO)
 import Control.Monad (when)
+
+import qualified Data.Text as Text
 
 import System.Directory ( removeFile, doesFileExist
                         , canonicalizePath)
@@ -565,3 +569,12 @@ updateListData list listData = do
 -- | Activates or deactivates a list of widgets
 activate :: [Widget] -> Bool -> IO ()
 activate widgets active = mapM_ (`widgetSetSensitive` active) widgets
+
+toComboBoxText :: Show a => [a] -> [ComboBoxText]
+#ifdef GTK12
+toComboBoxText = map show
+
+type ComboBoxText = String
+#else
+toComboBoxText = map (Text.pack . show)
+#endif

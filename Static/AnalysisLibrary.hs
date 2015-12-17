@@ -482,7 +482,8 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
      liftR $ mkError "illegal cyclic library import"
        $ Set.map getLibId topLns
     else do
-        (ln', libenv') <- anaLibFile lg opts topLns libenv
+        let newOpts = opts { intype = GuessIn }
+        (ln', libenv') <- anaLibFile lg newOpts topLns libenv
           (cpIndexMaps dg emptyDG { globalAnnos =
             emptyGlobalAnnos { prefix_map = prefix_map $ globalAnnos dg }}) ln
         unless (ln == ln')
