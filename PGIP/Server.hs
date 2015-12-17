@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP, DoAndIfThenElse #-}
 {- |
 Module      :  $Header$
 Description :  run hets as server
