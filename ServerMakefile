@@ -16,7 +16,7 @@ UNI_PACKAGE =
 all: hets-server
 
 depend:
-	$(HC) -M hets.hs $(HC_OPTS)
+	$(HC) -M -dep-suffix "" hets.hs $(HC_OPTS)
 
 hets-server: hets.o
 	$(HC) --make -O -o $@ hets.hs $(HC_OPTS) -w
