@@ -105,12 +105,12 @@ data DGQuery = DGQuery
   | NewDGQuery
   { queryLib :: FilePath
   , commands :: [String]
-  }
+  } deriving Show
 
 data Query = Query
   { dgQuery :: DGQuery
   , queryKind :: QueryKind
-  }
+  } deriving Show
 
 type NodeIdOrName = Either Int String
 

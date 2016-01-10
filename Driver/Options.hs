@@ -369,7 +369,7 @@ data Flag =
   | OutputLogicGraph
   | FileType
   | AccessToken String
-  | UrlCatalog [(String, String)]
+  | UrlCatalog [(String, String)] deriving Show
 
 -- | 'makeOpts' includes a parsed Flag in a set of HetcatsOpts
 makeOpts :: HetcatsOpts -> Flag -> HetcatsOpts
