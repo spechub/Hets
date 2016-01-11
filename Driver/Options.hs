@@ -785,7 +785,7 @@ optionArgs = foldr (\ o l -> case o of
 
 -- | command line switches for the wep-api excluding non-dev-graph related ones
 optionFlags :: [(String, Flag)]
-optionFlags = drop 11 $ foldr (\ o l -> case o of
+optionFlags = dropWhile ((/= justStructuredS). fst) $ foldr (\ o l -> case o of
   Option _ (s : _) (NoArg f) _ -> (s, f) : l
   _ -> l) [] options
 
