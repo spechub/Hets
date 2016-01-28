@@ -282,7 +282,8 @@ dolChar = ucharAux True "@:"
 referenceAux :: Bool -> IRIParser st IRI
 referenceAux allowEmpty = iriWithPos $ do
   up <- option "" (single $ char '/')
-        <++> option "" (dolChar <++> flat (many $ ucharAux True "@:/"))
+        <++> option "" (dolChar <++>
+                        flat (many $ ucharAux True "@:/.-"))
   uq <- option "" uiquery
   uf <- (if allowEmpty || not (null up) || not (null uq)
          then option "" else id) uifragment
