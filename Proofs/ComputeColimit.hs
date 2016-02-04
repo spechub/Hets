@@ -36,6 +36,7 @@ import Common.IRI
 import Common.Utils (nubOrd)
 
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Data.Graph.Inductive.Graph
 
 computeColimit :: LibName -> LibEnv -> Result LibEnv
@@ -97,7 +98,8 @@ gWeaklyAmalgamableCocone diag
    (_, G_theory lid _ _ _ _ _) -> do
     graph <- homogeniseGDiagram lid diag
     (sig, mor) <- weakly_amalgamable_colimit lid graph
-    let gth = noSensGTheory lid (mkExtSign sig) startSigId
+    let esign = (mkExtSign sig) {nonImportedSymbols = foldl Set.union Set.empty $ sym_of lid sig}
+        gth = noSensGTheory lid esign startSigId
         cid = mkIdComorphism lid (top_sublogic lid)
         morFun = Map.fromList $
          map (\ (n, s) -> (n, GMorphism cid (mkExtSign s) startSigId

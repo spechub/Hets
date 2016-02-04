@@ -599,6 +599,7 @@ class ( Syntax lid basic_spec symbol symb_items symb_map_items
          theory_to_taxonomy l _ _ _ _ = statFail l "theory_to_taxonomy"
          -- | create a theory from a correspondence
          corresp2th :: lid
+                    -> String
                     -> sign
                     -> sign
                     -> [symb_items]
@@ -608,7 +609,7 @@ class ( Syntax lid basic_spec symbol symb_items symb_map_items
                     -> REL_REF
                     -> Result (sign, [Named sentence], sign, sign,
                                EndoMap symbol, EndoMap symbol)
-         corresp2th _ _ _ _ _ _ _ _ = error "c2th nyi"
+         corresp2th _ _ _ _ _ _ _ _ _ = error "c2th nyi"
          -- | create a co-span fragment from an equivalence
          equiv2cospan :: lid -> sign -> sign -> [symb_items] -> [symb_items]
            -> Result (sign, sign, sign, EndoMap symbol, EndoMap symbol)

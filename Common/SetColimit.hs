@@ -105,10 +105,10 @@ computeCoeqs graph (colim, morMap) edgeList =
     in computeCoeqs graph (colim', morMap') edges'
 
 class (Eq a, Ord a) => SymbolName a where
-  addIntAsSuffix :: (a, Int) -> a
+  addString :: (a, String) -> a
 
 instance SymbolName Id where
- addIntAsSuffix (x, y) = appendNumber x y
+ addString (x, y) = appendString x y
 
 addIntToSymbols :: (SymbolName a) =>
                (Set.Set (a, Node), Map.Map Node (Map.Map a (a, Node))) ->
@@ -132,10 +132,11 @@ addIntToSymbols (set, fun) = let
     in namePartitions ps f0 s2 f2
                 else
      -- several elements with same name, the number is added at the end
-    let s2 = Set.union s1 $ Set.fromList $ map addIntAsSuffix p
+    let s2 = Set.union s1 $ Set.fromList $ map (\(x,y) -> addString (x, show y)) p
+        a2String (x,y) = (x, show y) 
         updateF node = Map.union (Map.findWithDefault (error "f1") node f1) $
              Map.fromList $
-             map ( \ x -> (x, addIntAsSuffix $
+             map ( \ x -> (x, addString $ a2String $  
                              Map.findWithDefault (error "addSuffixToId") x
                              (Map.findWithDefault (error "f0") node f0))) $
              filter (\ x -> Map.findWithDefault (error "fo(node)") x
