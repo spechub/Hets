@@ -692,8 +692,8 @@ getGlobEntryNodes g = case g of
 data AlignSig = AlignMor NodeSig GMorphism NodeSig
               | AlignSpan NodeSig GMorphism NodeSig GMorphism NodeSig
               | WAlign
-                          NodeSig GMorphism GMorphism -- s1, i1, sig1
-                          NodeSig GMorphism GMorphism -- s2, i2, sig2
+                          NodeSig GMorphism GMorphism -- s1, i1:s1 to b, sig1: s1 to t1
+                          NodeSig GMorphism GMorphism -- s2, i2: s2 to b, sig2: s2 to t2
                           NodeSig                     -- t1
                           NodeSig                     -- t2
                           NodeSig                     -- b
