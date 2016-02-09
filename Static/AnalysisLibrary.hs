@@ -525,8 +525,7 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
                     _ ->
                      ( []
                      , [ mkError ("non-unique name within imported library: "
-                                  ++ intercalate ", " (map show is)
-                                  ++ " " ++ show (getLibId ln'))
+                                  ++ intercalate ", " (map show is))
                          ln'], [])
                 additionalEo = Map.fromList $ map (\ o -> (o, fn)) origItems
                 eo' = Map.unionWith (\ _ p2 -> p2) eo additionalEo
