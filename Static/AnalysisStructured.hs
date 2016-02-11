@@ -77,8 +77,11 @@ import Proofs.ComputeColimit (insertColimitInGraph)
 
 import Common.Lib.Graph
 
+<<<<<<< HEAD
 import Static.ComputeTheory
 
+=======
+>>>>>>> don't use prefixes to disambiguate in colimits and alignments
 -- overrides CUIRIE expansion for Download_items
 type ExpOverrides = Map.Map IRI FilePath
 
@@ -618,7 +621,7 @@ anaSpecAux conser addSyms lg libEnv ln dg nsig name opts eo sp rg = case sp of
                      t2 = getNode tar2
                     in (nub $ [s, t1, t2] ++ cN,
                               [lEdge s t1 phi1, lEdge s t2 phi2] ++ cE)
-                   WAlign src1 i1 sig1 src2 i2 sig2 tar1 tar2 bri ->  let
+                   WAlign src1 i1 sig1 src2 i2 sig2 tar1 tar2 bri -> let
                       s1 = getNode src1
                       s2 = getNode src2
                       t1 = getNode tar1
@@ -676,7 +679,7 @@ anaExtraction :: LogicGraph -> LibEnv -> DGraph -> NodeSig -> NodeName -> Range 
 anaExtraction lg libEnv dg nsig name rg _extr = do
   let dg0 = markHiding libEnv dg
       n = getNode nsig
-  if labelHasHiding $ labDG dg0 n then 
+  if labelHasHiding $ labDG dg0 n then
     fail "cannot extract module from a non-flattenable OMS"
    else do
     let dgThm = computeDGraphTheories libEnv dg0

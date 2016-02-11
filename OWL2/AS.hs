@@ -112,7 +112,7 @@ setFull q = q {iriType = Full}
 type IRI = QName
 
 instance SymbolName QName where
- addString (q, s) = q { namePrefix = s,
+ addString (q, s) = q { localPart = localPart q ++ s,
                              expandedIRI = expandedIRI q ++ s
                            }
 
