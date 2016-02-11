@@ -510,7 +510,12 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
                     in if not $ null leftExpIms
                         then ([], leftExpIms, itemNameMapsToIRIs ims)
                         else (rights expIms, warns, itemNameMapsToIRIs ims)
-                  UniqueItem i -> case Map.keys $ globalEnv dg' of
+                  UniqueItem i ->
+                    let is = Map.keys $ globalEnv dg'
+                        ks = case is of
+                               [_] -> is
+                               _ -> filter (== getLibId ln') is
+                    in case ks of
                     [j] -> case expCurie (globalAnnos dg) eo i of
                       Nothing -> ([], [prefixErrorIRI i], [i])
                       Just expI -> case expCurie (globalAnnos dg) eo j of
@@ -519,7 +524,8 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
                             ([ItemNameMap expJ (Just expI)], [], [i, j])
                     _ ->
                      ( []
-                     , [ mkError "non-unique name within imported library"
+                     , [ mkError ("non-unique name within imported library: "
+                                  ++ intercalate ", " (map show is))
                          ln'], [])
                 additionalEo = Map.fromList $ map (\ o -> (o, fn)) origItems
                 eo' = Map.unionWith (\ _ p2 -> p2) eo additionalEo
