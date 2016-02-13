@@ -18,7 +18,7 @@ import Logic.Prover
 import OWL2.MS
 import OWL2.Morphism
 import OWL2.Sign
-import OWL2.ManchesterPrint
+import OWL2.FunctionalPrint
 import OWL2.XMLConversion
 
 import Common.AS_Annotation

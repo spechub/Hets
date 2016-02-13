@@ -18,7 +18,7 @@ import Common.Doc hiding (sepBySemis, sepByCommas)
 import Common.DocUtils hiding (ppWithCommas)
 
 import OWL2.AS
-import OWL2.Print ()
+import OWL2.ManchesterPrintBasic ()
 
 import RDF.AS
 import RDF.Symbols

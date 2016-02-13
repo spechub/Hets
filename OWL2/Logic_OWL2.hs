@@ -39,10 +39,12 @@ import OWL2.Conservativity
 import OWL2.MS
 import OWL2.MS2Ship
 import OWL2.ManchesterParser
-import OWL2.ManchesterPrint
+--import OWL2.ManchesterPrint
+--import OWL2.ManchesterPrintBasic ()
+import OWL2.FunctionalPrint 
+import OWL2.FunctionalPrintBasic ()
 import OWL2.Morphism
 import OWL2.Parse
-import OWL2.Print ()
 import OWL2.ProfilesAndSublogics
 import OWL2.ProveFact
 import OWL2.ProvePellet
@@ -83,7 +85,7 @@ instance Monoid OntologyDocument where
 
 instance Syntax OWL2 OntologyDocument Entity SymbItems SymbMapItems where
     parsersAndPrinters OWL2 = addSyntax "Ship" (basicSpec, ppShipOnt)
-      $ addSyntax "Manchester" (basicSpec, pretty)
+      $ addSyntax "Functional" (basicSpec, pretty)
       $ makeDefault (basicSpec, pretty)
     parseSingleSymbItem OWL2 = Just symbItem
     parse_symb_items OWL2 = Just symbItems

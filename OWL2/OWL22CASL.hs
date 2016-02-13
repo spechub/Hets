@@ -33,9 +33,9 @@ import OWL2.Keywords
 import OWL2.MS
 import OWL2.AS as O
 import OWL2.Parse
-import OWL2.Print
+import OWL2.FunctionalPrintBasic
 import OWL2.ProfilesAndSublogics
-import OWL2.ManchesterPrint ()
+import OWL2.FunctionalPrint ()
 import OWL2.Morphism
 import OWL2.Symbols
 import qualified OWL2.Sign as OS

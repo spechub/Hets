@@ -16,7 +16,7 @@ import OWL2.Sign
 import OWL2.Morphism
 import OWL2.AS
 import OWL2.MS
-import OWL2.Print ()
+import OWL2.FunctionalPrintBasic ()
 import OWL2.Theorem
 import OWL2.Function
 import OWL2.Symbols

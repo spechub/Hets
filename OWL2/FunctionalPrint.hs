@@ -1,16 +1,16 @@
 {- |
-Module      :  ./OWL2/ManchesterPrint.hs
-Copyright   :  (c) Felix Gabriel Mance
+Module      :  $Header$
+Copyright   :  (c) Till Mossakowski, University of Madgeburg, 2016
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  f.mance@jacobs-university.de
+Maintainer  :  till@iws.cs.ovgu.de
 Stability   :  provisional
 Portability :  portable
 
-Pretty printing for the Manchester Syntax of OWL 2
+Pretty printing for the functional-style syntax of OWL 2
 -}
 
-module OWL2.ManchesterPrint where
+module OWL2.FunctionalPrint where
 
 import Common.Doc
 import Common.DocUtils
@@ -22,7 +22,7 @@ import OWL2.Extract
 import OWL2.MS
 import OWL2.Sign
 import OWL2.Theorem
-import OWL2.ManchesterPrintBasic
+import OWL2.FunctionalPrintBasic
 import OWL2.Keywords
 import OWL2.ColonKeywords
 
@@ -188,7 +188,7 @@ printImport x = keyword importC <+> pretty x
 
 printPrefixes :: PrefixMap -> Doc
 printPrefixes x = vcat (map (\ (a, b) ->
-       (text "Prefix:" <+> text a <> colon <+> text ('<' : b ++ ">")))
+       (text "Prefix(" <+> text a <> colon <+> text ('<' : b ++ ">")))
           (Map.toList x))
 
 -- | Printing the ontology

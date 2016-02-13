@@ -1,16 +1,16 @@
 {- |
-Module      :  ./OWL2/Print.hs
-Copyright   :  (c) Heng Jiang, Uni Bremen 2005-2006
+Module      :  $Header$
+Copyright   :  (c) Till Mossakowski, University of Magdeburg, 2016
 License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  portable
 
-Pretty printing for the Manchester Syntax of OWL 2.
+Pretty printing for the functional-style syntax of OWL 2.
 -}
 
-module OWL2.Print where
+module OWL2.FunctionalPrintBasic where
 
 import Common.Doc
 import Common.DocUtils
