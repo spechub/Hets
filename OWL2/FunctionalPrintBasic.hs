@@ -85,13 +85,13 @@ printRelation = keyword . showRelation
 
 printEquivOrDisjointClasses :: EquivOrDisjoint -> Doc
 printEquivOrDisjointClasses x = case x of
-    Equivalent -> text "EquivalentClasses:"
-    Disjoint -> text "DisjointClasses:"
+    Equivalent -> text "EquivalentClasses"
+    Disjoint -> text "DisjointClasses"
 
 printEquivOrDisjointProp :: EquivOrDisjoint -> Doc
 printEquivOrDisjointProp e = case e of
-    Disjoint -> text "DisjointProperties:"
-    Equivalent -> text "EquivalentProperties:"
+    Disjoint -> text "DisjointProperties"
+    Equivalent -> text "EquivalentProperties"
 
 printPositiveOrNegative :: PositiveOrNegative -> Doc
 printPositiveOrNegative x = case x of

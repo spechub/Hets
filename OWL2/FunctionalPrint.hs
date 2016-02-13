@@ -82,12 +82,12 @@ printSign s = vcat
     (map (\ (c, l) -> hsep $ map text [prefixC, c ++ ":", '<' : l ++ ">"])
     $ Map.toList $ prefixMap s)
         $++$ foldl1 ($++$) (map (uncurry $ printSignElem s)
-                [ (datatypeC, datatypes)
-                , (classC, concepts)
-                , (objectPropertyC, objectProperties)
-                , (dataPropertyC, dataProperties)
-                , (individualC, individuals)
-                , (annotationPropertyC, annotationRoles) ])
+                [ ("Declaration(Datatype(", datatypes)
+                , ("Declaration(Class(", concepts)
+                , ("Declaration(ObjectProperty(", objectProperties)
+                , ("Declaration(DataProperty(", dataProperties)
+                , ("Declaration(NamedIndividual(", individuals)
+                , ("Declaration(AnnotationProperty(", annotationRoles) ])
 
 instance Pretty Fact where
     pretty = printFact
@@ -157,17 +157,26 @@ printFrameBit fb = case fb of
             _ -> empty
     AnnFrameBit a afb -> printAnnFrameBit a afb
 
+showEntityTypeF :: EntityType -> String
+showEntityTypeF e = case e of
+    Datatype -> "Declaration(DataType("
+    Class -> "Declaration(Class("
+    ObjectProperty -> "Declaration(ObjectProperty("
+    DataProperty -> "Declaration(DataProperty("
+    AnnotationProperty -> "Declaration(AnnotationProperty("
+    NamedIndividual -> "Declaration(NamedIndividual("
+
 instance Pretty Frame where
     pretty = printFrame
 
 printFrame :: Frame -> Doc
 printFrame (Frame eith bl) = case eith of
-    SimpleEntity (Entity _ e uri) -> keyword (showEntityType e) <+>
-            fsep [pretty uri $+$ vcat (map pretty bl)]
-    ObjectEntity ope -> keyword objectPropertyC <+>
-            (pretty ope $+$ fsep [vcat (map pretty bl)])
-    ClassEntity ce -> keyword classC <+>
-            (pretty ce $+$ fsep [vcat (map pretty bl)])
+    SimpleEntity (Entity _ e uri) -> text (showEntityTypeF e) <+>
+            fsep [pretty uri $+$ vcat (map pretty bl)] <+> text "))"
+    ObjectEntity ope -> text "Declaration(ObjectProperty(" <+>
+            (pretty ope $+$ fsep [vcat (map pretty bl)])  <+> text "))"
+    ClassEntity ce -> text "Declaration(Class(" <+>
+            (pretty ce $+$ fsep [vcat (map pretty bl)])  <+> text "))"
     Misc a -> case bl of
         [ListFrameBit (Just r) lfb] -> printMiscBit r a lfb
         [AnnFrameBit ans (AnnotationFrameBit Assertion)] ->
@@ -188,7 +197,7 @@ printImport x = keyword importC <+> pretty x
 
 printPrefixes :: PrefixMap -> Doc
 printPrefixes x = vcat (map (\ (a, b) ->
-       (text "Prefix(" <+> text a <> colon <+> text ('<' : b ++ ">")))
+       (text "Prefix(" <+> text a <> text ":=" <+> text ('<' : b ++ ">)")))
           (Map.toList x))
 
 -- | Printing the ontology
