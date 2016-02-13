@@ -174,9 +174,9 @@ printFrame (Frame eith bl) = case eith of
     SimpleEntity (Entity _ e uri) -> text (showEntityTypeF e) <+>
             fsep [pretty uri $+$ vcat (map pretty bl)] <+> text "))"
     ObjectEntity ope -> text "Declaration(ObjectProperty(" <+>
-            (pretty ope $+$ fsep [vcat (map pretty bl)])  <+> text "))"
+            (text ":" <> pretty ope $+$ fsep [vcat (map pretty bl)])  <+> text "))"
     ClassEntity ce -> text "Declaration(Class(" <+>
-            (pretty ce $+$ fsep [vcat (map pretty bl)])  <+> text "))"
+            (text ":" <> pretty ce $+$ fsep [vcat (map pretty bl)])  <+> text "))"
     Misc a -> case bl of
         [ListFrameBit (Just r) lfb] -> printMiscBit r a lfb
         [AnnFrameBit ans (AnnotationFrameBit Assertion)] ->
