@@ -142,16 +142,16 @@ printAnnFrameBit a afb = case afb of
     DataFunctional -> keyword characteristicsC <+>
           (printAnnotations a $+$ printCharact functionalS)
 
-instance Pretty FrameBit where
-    pretty = printFrameBit
+--instance Pretty FrameBit where
+--    pretty = printFrameBit
 
-printFrameBit :: FrameBit -> Doc
-printFrameBit fb = case fb of
+printFrameBit :: Pretty a => a -> FrameBit -> Doc
+printFrameBit ce fb = case fb of
     ListFrameBit r lfb -> case r of
-        Just rel -> printRelation rel <+> pretty lfb
+        Just rel -> printRelation rel <> parens (pretty ce <+> pretty lfb)
         Nothing -> case lfb of
-            ObjectCharacteristics x -> keyword characteristicsC
-                <+> printAnnotatedList x
+            ObjectCharacteristics x -> 
+                vcat $ map (\(_,y) -> pretty y <> parens (pretty ce)) x -- annos!
             DataPropRange x -> keyword rangeC <+> printAnnotatedList x
             IndividualFacts x -> keyword factsC <+> printAnnotatedList x
             _ -> empty
@@ -171,12 +171,17 @@ instance Pretty Frame where
 
 printFrame :: Frame -> Doc
 printFrame (Frame eith bl) = case eith of
-    SimpleEntity (Entity _ e uri) -> text (showEntityTypeF e) <+>
-            fsep [pretty uri $+$ vcat (map pretty bl)] <+> text "))"
-    ObjectEntity ope -> text "Declaration(ObjectProperty(" <+>
-            (pretty ope $+$ fsep [vcat (map pretty bl)])  <+> text "))"
-    ClassEntity ce -> text "Declaration(Class(" <+>
-            (pretty ce $+$ fsep [vcat (map pretty bl)])  <+> text "))"
+    SimpleEntity (Entity _ e uri) -> 
+            text (showEntityTypeF e) <> pretty uri <> text "))"
+            $+$ fsep [vcat (map (printFrameBit uri) bl)] 
+    ObjectEntity ope -> 
+            text "Declaration(ObjectProperty(" <> pretty ope <> text "))"
+              $+$ fsep [vcat (map (printFrameBit ope) bl)] 
+    ClassEntity ce -> 
+            (if isBasicClass ce then 
+              text "Declaration(Class(" <> pretty ce <> text "))"
+              else empty)
+            $+$ fsep [vcat (map (printFrameBit ce) bl)]
     Misc a -> case bl of
         [ListFrameBit (Just r) lfb] -> printMiscBit r a lfb
         [AnnFrameBit ans (AnnotationFrameBit Assertion)] ->

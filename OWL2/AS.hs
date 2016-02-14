@@ -637,6 +637,10 @@ data ClassExpression =
   | DataCardinality (Cardinality DataPropertyExpression DataRange)
     deriving (Show, Eq, Ord, Typeable, Data)
 
+isBasicClass :: ClassExpression -> Bool
+isBasicClass (Expression _) = True
+isBasicClass _ = False
+
 -- * ANNOTATIONS
 
 data Annotation = Annotation [Annotation] AnnotationProperty AnnotationValue

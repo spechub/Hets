@@ -26,7 +26,7 @@ import OWL2.ColonKeywords
 import Data.List
 
 instance Pretty Character where
-    pretty = printCharact . show
+    pretty = printCharact . (++ "ObjectProperty") . show
 
 printCharact :: String -> Doc
 printCharact = text
@@ -83,8 +83,19 @@ quantifierType :: QuantifierType -> Doc
 quantifierType AllValuesFrom = keyword "ObjectAllValuesFrom"
 quantifierType SomeValuesFrom = keyword "ObjectSomeValuesFrom"
 
+showRelationF :: Relation -> String
+showRelationF r = case r of
+    EDRelation ed -> showEquivOrDisjoint ed
+    SubPropertyOf -> "SubPropertyOf"
+    InverseOf -> "InverseOf"
+    SubClass -> "SubClassOf"
+    Types -> "ClassAssertion"
+    DRRelation dr -> showDomainOrRange dr
+    SDRelation sd -> showSameOrDifferent sd
+
 printRelation :: Relation -> Doc
-printRelation = keyword . showRelation
+printRelation = keyword . showRelationF 
+
 
 printEquivOrDisjointClasses :: EquivOrDisjoint -> Doc
 printEquivOrDisjointClasses x = case x of
@@ -103,8 +114,8 @@ printPositiveOrNegative x = case x of
 
 printSameOrDifferentInd :: SameOrDifferent -> Doc
 printSameOrDifferentInd x = case x of
-    Same -> keyword sameIndividualC
-    Different -> keyword differentIndividualsC
+    Same -> keyword "SameIndividual"
+    Different -> keyword "DifferentIndividuals"
 
 instance Pretty Entity where
     pretty (Entity _ ty e) = keyword (show ty) <+> pretty e
@@ -218,7 +229,7 @@ printAnnotation (Annotation ans ap av) =
 
 printAnnotations :: Annotations -> Doc
 printAnnotations l = case l of
-    [] -> empty
+    _ -> empty -- restore annos!
     _ -> keyword annotationsC <+>
           vcat (punctuate comma (map (\ (Annotation ans ap av) ->
             printAnnotations ans $+$ pretty (Annotation [] ap av)) l) )
