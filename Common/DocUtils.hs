@@ -140,6 +140,9 @@ printMaybe fA mb = case mb of
 ppWithCommas :: Pretty a => [a] -> Doc
 ppWithCommas = sepByCommas . map pretty
 
+ppWithSpaces :: Pretty a => [a] -> Doc
+ppWithSpaces = fsep . punctuate space . map pretty
+
 instance (Pretty a, Pretty b) => Pretty (a, b) where
     pretty = printPair pretty pretty
 

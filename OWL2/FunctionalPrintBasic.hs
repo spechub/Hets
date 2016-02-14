@@ -75,10 +75,13 @@ instance Pretty RawSymb where
         APrefix p -> pretty p
 
 cardinalityType :: CardinalityType -> Doc
-cardinalityType = keyword . showCardinalityType
+cardinalityType MinCardinality = keyword "ObjectMinCardinality"
+cardinalityType MaxCardinality = keyword "ObjectMaxCardinality"
+cardinalityType ExactCardinality = keyword "ObjectExactCardinality"
 
 quantifierType :: QuantifierType -> Doc
-quantifierType = keyword . showQuantifierType
+quantifierType AllValuesFrom = keyword "ObjectAllValuesFrom"
+quantifierType SomeValuesFrom = keyword "ObjectSomeValuesFrom"
 
 printRelation :: Relation -> Doc
 printRelation = keyword . showRelation
@@ -160,24 +163,24 @@ printDataRange dr = case dr of
 -- | Printing the ClassExpression
 instance Pretty ClassExpression where
   pretty desc = case desc of
-   Expression ocUri -> printIRI ocUri
+   Expression ocUri -> text ":" <> printIRI ocUri
    ObjectJunction ty ds -> let
       (k, p) = case ty of
-          UnionOf -> (orS, pretty)
-          IntersectionOf -> (andS, printPrimary)
-      in fsep $ prepPunctuate (keyword k <> space) $ map p ds
-   ObjectComplementOf d -> keyword notS <+> printNegatedPrimary d
-   ObjectOneOf indUriList -> specBraces $ ppWithCommas indUriList
+          UnionOf -> ("ObjectUnionOf", pretty)
+          IntersectionOf -> ("ObjectIntersectionOf", printPrimary)
+      in text k <> parens (fsep $ prepPunctuate space $ map p ds)
+   ObjectComplementOf d -> keyword "ObjectComplementOf" <> (parens $ printNegatedPrimary d)
+   ObjectOneOf indUriList -> keyword "ObjectOneOf" <> (parens $ ppWithSpaces indUriList)
    ObjectValuesFrom ty opExp d ->
-      printObjPropExp opExp <+> quantifierType ty <+> printNegatedPrimary d
+      quantifierType ty <> parens (printObjPropExp opExp <+> printNegatedPrimary d)
    ObjectHasSelf opExp ->
       printObjPropExp opExp <+> keyword selfS
    ObjectHasValue opExp indUri ->
-      pretty opExp <+> keyword valueS <+> pretty indUri
+      keyword "ObjectHasValue" <> parens (pretty opExp <+> pretty indUri)
    ObjectCardinality (Cardinality ty card opExp maybeDesc) ->
-      printObjPropExp opExp <+> cardinalityType ty
-        <+> text (show card)
-        <+> maybe (keyword "Thing") printPrimary maybeDesc
+      cardinalityType ty 
+       <> parens (text (show card) <+> printObjPropExp opExp 
+                  <+> maybe empty printPrimary maybeDesc)
    DataValuesFrom ty dpExp dRange ->
        printIRI dpExp <+> quantifierType ty
         <+> pretty dRange
@@ -222,5 +225,5 @@ printAnnotations l = case l of
 
 printAnnotatedList :: Pretty a => AnnotatedList a -> Doc
 printAnnotatedList l =
-    vcat $ punctuate comma $ map
+    vcat $  map
         ( \ (ans, a) -> printAnnotations ans $+$ pretty a) l
