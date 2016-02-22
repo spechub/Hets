@@ -115,14 +115,15 @@ prenexNormalForm n sig sen = case sen of
    vdecls' = map (\(v,s) -> mkVarDecl v s) $ map fst vars'
    qsen' = foldl (\f (v,s,t)-> substitute v s t f) qsen $ map (\((x,y),(z,t)) -> (z, t, Qual_var x y nullRange)) vars'
    (n'', jsen) = prenexNormalForm n' sig $ 
-                   Junction j (qsen':sens') nullRange
-  in trace "5 conj&disj" $ (n5, Quantification q vdecls' jsen nullRange)
+                   Junction j (qsen':sens) nullRange
+  in trace "5 conj&disj" $ (n'', Quantification q vdecls' jsen nullRange)
  -- don't forget recursion for other cases 
  Junction j jsens _ -> let 
    (n', jsens') = foldl (\(x,sens0) s -> let (x',s') = prenexNormalForm x sig s 
                                        in (x', s':sens0)) 
                      (n, []) jsens
-  in trace "junction recursion" $ (n', Junction j jsens' nullRange)
+   (n'', sen') = prenexNormalForm n' sig $ Junction j jsens' nullRange
+  in trace "junction recursion" $ (n'', sen')
  -- both two next cases cover 4.
  Relation (Quantification q vdecls qsen _) Implication sen2 _ -> let
    (n', sen2') = prenexNormalForm n sig sen2
