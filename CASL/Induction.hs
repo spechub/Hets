@@ -12,7 +12,7 @@ We provide both second-order induction schemes as well as their
 instantiation to specific first-order formulas.
 -}
 
-module CASL.Induction (inductionScheme, generateInductionLemmas) where
+module CASL.Induction (inductionScheme, generateInductionLemmas, substitute) where
 
 import CASL.AS_Basic_CASL
 import CASL.Sign
