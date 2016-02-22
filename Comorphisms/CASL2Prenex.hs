@@ -82,28 +82,6 @@ instance Comorphism CASL2Prenex
 -- Q y (F conn G[y/x])
 -- with y fresh and conn in {/\,\/,->}  
 
-{-
-example: PNF of
-. exists y1 : s 
-   . forall x1 : s
-    . (forall y2 : s . exists x2 : s . x1 + y2 < x2)
-      => 
-      (forall x3 : s . exists y3 : s. y1 + x3 > y3)
-its NNF is:
-.exists y1 : s
- .forall x1: s
- (exists y2 :s . forall x2 : s . not (x1 + y1 < x2) )  \/ 
- (forall x3 : s . exists y3 :s . y1 + x3 > y3)
-computed using the rules: 
- 1. exists y1 : s stays unchanged
- 2. forall x1 : s stays unchanged
- 3. Junction \/ case, first sentence is quantified, rule 3. applies:
-      .exists gn_x0:s (prenexNormalForm $ Junction \/   )
-                           
-     
-
--}
-
 -- starting index for fresh variables
 -- signature
 -- formula that we compute normal form of
@@ -132,20 +110,13 @@ prenexNormalForm n sig sen = case sen of
     in trace "3" $ (n'', Quantification q vdecls' jsen nullRange)
  -- this covers 5. for conjunction and disjunction
  Junction j (nqsen:(Quantification q vdecls qsen _):sens) _ -> let
-   (n', nqsen') = prenexNormalForm n sig nqsen
-   (n'', qsen') = prenexNormalForm n' sig qsen
-   (n''', sens') = foldl (\(x,sens0) s -> let (x',s') = prenexNormalForm x sig s 
-                                       in (x', s':sens0)) 
-                     (n'', []) sens
    vars = flatVAR_DECLs vdecls
-   (n4, vars') = getFreshVars vars n'''
+   (n', vars') = getFreshVars vars n'
    vdecls' = map (\(v,s) -> mkVarDecl v s) $ map fst vars'
-   qsen'' = foldl (\f (v,s,t)-> substitute v s t f) qsen' $ map (\((x,y),(z,t)) -> (z, t, Qual_var x y nullRange)) vars'
-   (n5, sen') = prenexNormalForm n4 sig $ 
-                   Junction j 
-                            ((Quantification q vdecls' (Junction j [nqsen', qsen''] nullRange) nullRange):sens') 
-                            nullRange
-  in trace "5 conj&disj" $ (n5, sen')
+   qsen' = foldl (\f (v,s,t)-> substitute v s t f) qsen $ map (\((x,y),(z,t)) -> (z, t, Qual_var x y nullRange)) vars'
+   (n'', jsen) = prenexNormalForm n' sig $ 
+                   Junction j (qsen':sens') nullRange
+  in trace "5 conj&disj" $ (n5, Quantification q vdecls' jsen nullRange)
  -- don't forget recursion for other cases 
  Junction j jsens _ -> let 
    (n', jsens') = foldl (\(x,sens0) s -> let (x',s') = prenexNormalForm x sig s 
