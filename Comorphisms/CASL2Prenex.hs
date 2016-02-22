@@ -26,19 +26,13 @@ import CASL.Morphism
 import CASL.Sublogic as SL hiding (bottom)
 import CASL.Induction
 import CASL.Quantification
-import CASL.ToDoc
 
 import Common.Result
 import Common.Id
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+
 import Common.AS_Annotation
 import Common.ProofTree
-import qualified Common.Lib.MapSet as MapSet
-
-import qualified Common.Lib.Rel as Rel
-
-import Data.List(partition)
 
 import Debug.Trace
 
@@ -106,55 +100,59 @@ prenexNormalForm n sig sen = case sen of
        (n', vars') = getFreshVars vars n
        vdecls' = map (\(v,s) -> mkVarDecl v s) $ map fst vars'
        qsen' = foldl (\f (v,s,t)-> substitute v s t f) qsen $ map (\((x,y),(z,t)) -> (z, t, Qual_var x y nullRange)) vars'
-       (n'', jsen) = trace "4" $ prenexNormalForm n' sig $ Junction j (qsen':sens) nullRange
+       (n'', jsen) = prenexNormalForm n' sig $ Junction j (qsen':sens) nullRange
     in trace "3" $ (n'', Quantification q vdecls' jsen nullRange)
  -- this covers 5. for conjunction and disjunction
  Junction j (nqsen:(Quantification q vdecls qsen _):sens) _ -> let
    vars = flatVAR_DECLs vdecls
-   (n', vars') = getFreshVars vars n'
+   (n', vars') = getFreshVars vars n
    vdecls' = map (\(v,s) -> mkVarDecl v s) $ map fst vars'
    qsen' = foldl (\f (v,s,t)-> substitute v s t f) qsen $ map (\((x,y),(z,t)) -> (z, t, Qual_var x y nullRange)) vars'
    (n'', jsen) = prenexNormalForm n' sig $ 
-                   Junction j (qsen':sens) nullRange
+                   Junction j (nqsen:qsen':sens) nullRange
   in trace "5 conj & disj" $ (n'', Quantification q vdecls' jsen nullRange)
  -- don't forget recursion for other cases 
  Junction j jsens _ -> let 
    (n', jsens') = foldl (\(x,sens0) s -> let (x',s') = prenexNormalForm x sig s 
-                                       in (x', s':sens0)) 
-                     (n, []) jsens
-   (n'', sen') = prenexNormalForm n' sig $ Junction j jsens' nullRange
-  in trace "junction recursion" $ (n'', sen')
+                                       in  trace ("in foldl junction:" ++ show s) $  (x', s':sens0)) 
+                        (n, []) jsens
+  in trace ("junction recursion:" ++ show jsens ++ "\n") $ (n', Junction j jsens' nullRange)
  -- both two next cases cover 4.
  Relation (Quantification q vdecls qsen _) Implication sen2 _ -> let
    vars = flatVAR_DECLs vdecls 
    (n', vars') = getFreshVars vars n
    vdecls' = map (\(v,s) -> mkVarDecl v s) $ map fst vars'
    qsen' = foldl (\f (v,s,t)-> substitute v s t f) qsen $ map (\((x,y),(z,t)) -> (z, t, Qual_var x y nullRange)) vars'
-  in trace "4.1" $  prenexNormalForm n' sig $ Quantification (dualQuant q) vdecls' (Relation qsen' Implication sen2 nullRange) nullRange
+   (n'', implSen) = prenexNormalForm n' sig $ Relation qsen' Implication sen2 nullRange
+  in trace "4.1" $  (n'', Quantification (dualQuant q) vdecls' implSen nullRange)
  Relation sen1 RevImpl (Quantification q vdecls qsen _) _ -> let
    vars = flatVAR_DECLs vdecls
    (n', vars') = getFreshVars vars n
    vdecls' = map (\(v,s) -> mkVarDecl v s) $ map fst vars'
    qsen' = foldl (\f (v,s,t)-> substitute v s t f) qsen $ map (\((x,y),(z,t)) -> (z, t, Qual_var x y nullRange)) vars'
-  in trace "4.2" $ prenexNormalForm n' sig $ Quantification (dualQuant q) vdecls' (Relation sen1 RevImpl qsen' nullRange) nullRange 
+   (n'', revImplSen) = prenexNormalForm n' sig $ Relation sen1 RevImpl qsen' nullRange
+  in trace "4.2" $ (n'', Quantification (dualQuant q) vdecls' revImplSen nullRange)
  -- next two cases cover 5. for implication
  Relation sen1 Implication (Quantification q vdecls qsen _) _ -> let
    vars = flatVAR_DECLs vdecls
    (n', vars') = getFreshVars vars n'
    vdecls' = map (\(v,s) -> mkVarDecl v s) $ map fst vars'
    qsen' = foldl (\f (v,s,t)-> substitute v s t f) qsen $ map (\((x,y),(z,t)) -> (z, t, Qual_var x y nullRange)) vars'
-  in trace "5.1" $ prenexNormalForm n' sig $ Quantification q vdecls' (Relation sen1 Implication qsen' nullRange) nullRange
+   (n'', implSen) = prenexNormalForm n' sig $ Relation sen1 Implication qsen' nullRange
+  in trace "5.1" $ (n'', Quantification q vdecls' implSen nullRange)
  Relation (Quantification q vdecls qsen _) RevImpl sen2 _ -> let
    vars = flatVAR_DECLs vdecls
    (n', vars') = getFreshVars vars n
    vdecls' = map (\(v,s) -> mkVarDecl v s) $ map fst vars'
    qsen' = foldl (\f (v,s,t)-> substitute v s t f) qsen $ map (\((x,y),(z,t)) -> (z, t, Qual_var x y nullRange)) vars'
-  in trace "5.2" $ prenexNormalForm n' sig $ Quantification q vdecls' (Relation qsen' RevImpl sen2 nullRange) nullRange
- -- recursion for other cases
+   (n'', revImplSen) = prenexNormalForm n' sig $ Relation qsen' RevImpl sen2 nullRange
+  in trace "5.2" $ (n'', Quantification q vdecls' revImplSen nullRange)
+ -- recursion for other cases 
  Relation sen1 rel sen2 _ -> let
    (n', sen1')  = prenexNormalForm n sig sen1
    (n'', sen2') = prenexNormalForm n' sig sen2
-  in trace ("recursion impl") $ prenexNormalForm n'' sig $ Relation sen1' rel sen2' nullRange  
+  in trace ("recursion impl") $ (n'', Relation sen1' rel sen2' nullRange)  
+ -- for quantification, recursive call for the quantified formula
  Quantification q vars qsen _ -> let 
    (n', qsen') = prenexNormalForm n sig qsen
   in trace "recursion quant" $ (n', Quantification q vars qsen' nullRange) 
@@ -163,12 +161,12 @@ prenexNormalForm n sig sen = case sen of
 
 getFreshVars :: [(VAR,SORT)] -> Int -> (Int, [((VAR,SORT),(VAR,SORT))])
 getFreshVars oldVars n = let 
-  (n', newVars) = foldl (\(x, vs) (v, s) -> (n+1, (genNumVar "x" n, s):vs)) (n, []) $ oldVars
+  (n', newVars) = foldl (\(x, vs) (_, s) -> (x+1, (genNumVar "x" n, s):vs)) (n, []) $ oldVars
  in (n', zip newVars $ reverse oldVars)
   
 mapTheory :: (CASLSign, [Named CASLFORMULA]) -> Result (CASLSign, [Named CASLFORMULA])
 mapTheory (sig, nsens) = do
- let sens = foldl (\sens0 s -> let (_, s') = trace (show $ negationNormalForm s) $ prenexNormalForm 0 sig $ negationNormalForm s -- no sense to call miniscope here
+ let sens = foldl (\sens0 s -> let (_, s') = prenexNormalForm 0 sig $ negationNormalForm s -- no sense to call miniscope here
                                in s':sens0) [] $ map sentence nsens
  return (sig, map (makeNamed "") sens)
 
