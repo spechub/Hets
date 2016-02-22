@@ -166,7 +166,7 @@ prenexNormalForm n sig sen = case sen of
  Relation sen1 rel sen2 _ -> let
    (n', sen1')  = prenexNormalForm n sig sen1
    (n'', sen2') = prenexNormalForm n' sig sen2
-  in trace ("recursion impl") $ (n'', Relation sen1' rel sen2' nullRange)  
+  in trace ("recursion impl") $ prenexNormalForm n'' sig $ Relation sen1' rel sen2' nullRange  
  Quantification q vars qsen _ -> let 
    (n', qsen') = prenexNormalForm n sig qsen
   in trace "recursion quant" $ (n', Quantification q vars qsen' nullRange) 
