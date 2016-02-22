@@ -139,25 +139,17 @@ prenexNormalForm n sig sen = case sen of
   in trace "4.2" $ prenexNormalForm n' sig $ Quantification (dualQuant q) vdecls' (Relation sen1 RevImpl qsen' nullRange) nullRange 
  -- next two cases cover 5. for implication
  Relation sen1 Implication (Quantification q vdecls qsen _) _ -> let
-   (n', sen1') = prenexNormalForm n sig sen1
-   (n'', qsen') = prenexNormalForm n' sig qsen
    vars = flatVAR_DECLs vdecls
-   (n3, vars') = getFreshVars vars n''
+   (n', vars') = getFreshVars vars n'
    vdecls' = map (\(v,s) -> mkVarDecl v s) $ map fst vars'
-   qsen'' = foldl (\f (v,s,t)-> substitute v s t f) qsen' $ map (\((x,y),(z,t)) -> (z, t, Qual_var x y nullRange)) vars'
-  in trace "5.1" $  (n3, Quantification q vdecls' 
-                         (Relation sen1' Implication qsen'' nullRange)
-                         nullRange)
+   qsen' = foldl (\f (v,s,t)-> substitute v s t f) qsen $ map (\((x,y),(z,t)) -> (z, t, Qual_var x y nullRange)) vars'
+  in trace "5.1" $ prenexNormalForm n' sig $ Quantification q vdecls' (Relation sen1 Implication qsen' nullRange) nullRange
  Relation (Quantification q vdecls qsen _) RevImpl sen2 _ -> let
-   (n', sen2') = prenexNormalForm n sig sen2
-   (n'', qsen') = prenexNormalForm n' sig qsen
    vars = flatVAR_DECLs vdecls
-   (n3, vars') = getFreshVars vars n''
+   (n', vars') = getFreshVars vars n
    vdecls' = map (\(v,s) -> mkVarDecl v s) $ map fst vars'
-   qsen'' = foldl (\f (v,s,t)-> substitute v s t f) qsen' $ map (\((x,y),(z,t)) -> (z, t, Qual_var x y nullRange)) vars'
-  in trace "5.2" $ (n3, Quantification q vdecls' 
-                         (Relation qsen'' RevImpl sen2' nullRange)
-                         nullRange)
+   qsen' = foldl (\f (v,s,t)-> substitute v s t f) qsen $ map (\((x,y),(z,t)) -> (z, t, Qual_var x y nullRange)) vars'
+  in trace "5.2" $ prenexNormalForm n' sig $ Quantification q vdecls' (Relation qsen' RevImpl sen2 nullRange) nullRange
  -- recursion for other cases
  Relation sen1 rel sen2 _ -> let
    (n', sen1')  = prenexNormalForm n sig sen1
