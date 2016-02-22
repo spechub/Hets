@@ -82,6 +82,28 @@ instance Comorphism CASL2Prenex
 -- Q y (F conn G[y/x])
 -- with y fresh and conn in {/\,\/,->}  
 
+{-
+example: PNF of
+. exists y1 : s 
+   . forall x1 : s
+    . (forall y2 : s . exists x2 : s . x1 + y2 < x2)
+      => 
+      (forall x3 : s . exists y3 : s. y1 + x3 > y3)
+its NNF is:
+.exists y1 : s
+ .forall x1: s
+ (exists y2 :s . forall x2 : s . not (x1 + y1 < x2) )  \/ 
+ (forall x3 : s . exists y3 :s . y1 + x3 > y3)
+computed using the rules: 
+ 1. exists y1 : s stays unchanged
+ 2. forall x1 : s stays unchanged
+ 3. Junction \/ case, first sentence is quantified, rule 3. applies:
+      .exists gn_x0:s (prenexNormalForm $ Junction \/   )
+                           
+     
+
+-}
+
 -- starting index for fresh variables
 -- signature
 -- formula that we compute normal form of
@@ -101,15 +123,13 @@ prenexNormalForm n sig sen = case sen of
   in trace "ng rec" $ (n', Negation nsen' nullRange)
  -- this covers 3.
  Junction j ((Quantification q vdecls qsen _):sens) _ -> 
-   let (n',sens') = foldl (\(x,sens0) s -> let (x',s') = prenexNormalForm x sig s 
-                                       in (x', s':sens0)) 
-                     (n, []) sens
+   let 
        vars = flatVAR_DECLs vdecls 
-       (n'', vars') = getFreshVars vars n'
+       (n', vars') = getFreshVars vars n
        vdecls' = map (\(v,s) -> mkVarDecl v s) $ map fst vars'
-       (n''', qsen') = prenexNormalForm n'' sig qsen
-       qsen'' = foldl (\f (v,s,t)-> substitute v s t f) qsen' $ map (\((x,y),(z,t)) -> (z, t, Qual_var x y nullRange)) vars'
-    in trace "3" $ (n''', Quantification q vdecls' (Junction j (qsen'':sens') nullRange) nullRange)
+       qsen' = foldl (\f (v,s,t)-> substitute v s t f) qsen $ map (\((x,y),(z,t)) -> (z, t, Qual_var x y nullRange)) vars'
+       (n'', jsen) = trace "4" $ prenexNormalForm n' sig $ Junction j (qsen':sens) nullRange
+    in trace "3" $ (n'', Quantification q vdecls' jsen nullRange)
  -- this covers 5. for conjunction and disjunction
  Junction j (nqsen:(Quantification q vdecls qsen _):sens) _ -> let
    (n', nqsen') = prenexNormalForm n sig nqsen
@@ -182,10 +202,34 @@ prenexNormalForm n sig sen = case sen of
  x -> trace "atoms" $ (n, x)
 
 getFreshVars :: [(VAR,SORT)] -> Int -> (Int, [((VAR,SORT),(VAR,SORT))])
-getFreshVars _ _ = error "nyi"
+getFreshVars oldVars n = let 
+  (n', newVars) = foldl (\(x, vs) (v, s) -> (n+1, (genNumVar "x" n, s):vs)) (n, []) $ oldVars
+ in (n', zip newVars $ reverse oldVars)
   
 mapTheory :: (CASLSign, [Named CASLFORMULA]) -> Result (CASLSign, [Named CASLFORMULA])
 mapTheory (sig, nsens) = do
- let sens = foldl (\sens0 s -> let (_, s') = prenexNormalForm 0 sig  s -- $ negationNormalForm s -- no sense to call miniscope here
+ let sens = foldl (\sens0 s -> let (_, s') = trace (show $ negationNormalForm s) $ prenexNormalForm 0 sig $ negationNormalForm s -- no sense to call miniscope here
                                in s':sens0) [] $ map sentence nsens
  return (sig, map (makeNamed "") sens)
+
+
+-- this should go some place where it's available for all comorphisms 
+negationNormalForm :: CASLFORMULA -> CASLFORMULA
+negationNormalForm sen = case sen of
+ Quantification q vars qsen _ -> Quantification q vars (negationNormalForm qsen) nullRange 
+ Junction j sens _ -> Junction j (map negationNormalForm sens) nullRange 
+ Relation sen1 Implication sen2 _ -> let sen1' = negationNormalForm $ Negation (negationNormalForm sen1) nullRange
+                                         sen2' = negationNormalForm sen2
+                                     in Junction Dis [sen1', sen2'] nullRange
+ Relation sen1 RevImpl sen2 _ -> let sen2' = negationNormalForm $ Negation (negationNormalForm sen2) nullRange
+                                     sen1' = negationNormalForm sen1
+                                 in Junction Dis [sen1', sen2'] nullRange
+ Relation sen1 Equivalence sen2 _ -> let sen1' = Relation sen1 Implication sen2 nullRange
+                                         sen2' = Relation sen2 Implication sen1 nullRange 
+                                     in negationNormalForm $ Junction Con [sen1', sen2'] nullRange 
+ Negation (Negation sen' _) _ -> negationNormalForm sen'
+ Negation (Junction Con sens _) _ -> Junction Dis (map (\x -> negationNormalForm $ Negation x nullRange) sens) nullRange
+ Negation (Junction Dis sens _) _ -> Junction Con (map (\x -> negationNormalForm $ Negation x nullRange) sens) nullRange
+ Negation (Quantification Unique_existential _vars _sen _) _-> error "nyi"
+ Negation (Quantification q vars qsen _) _ -> Quantification (dualQuant q) vars (negationNormalForm $ Negation qsen nullRange) nullRange
+ x -> x
