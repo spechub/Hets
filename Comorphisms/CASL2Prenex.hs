@@ -126,21 +126,17 @@ prenexNormalForm n sig sen = case sen of
   in trace "junction recursion" $ (n'', sen')
  -- both two next cases cover 4.
  Relation (Quantification q vdecls qsen _) Implication sen2 _ -> let
-   (n', sen2') = prenexNormalForm n sig sen2
-   (n'', qsen') = prenexNormalForm n' sig qsen
    vars = flatVAR_DECLs vdecls 
-   (n3, vars') = getFreshVars vars n''
+   (n', vars') = getFreshVars vars n
    vdecls' = map (\(v,s) -> mkVarDecl v s) $ map fst vars'
-   qsen'' = foldl (\f (v,s,t)-> substitute v s t f) qsen' $ map (\((x,y),(z,t)) -> (z, t, Qual_var x y nullRange)) vars'
-  in trace "4.1" $  (n3, Quantification (dualQuant q) vdecls' (Relation qsen'' Implication sen2' nullRange) nullRange) 
+   qsen' = foldl (\f (v,s,t)-> substitute v s t f) qsen $ map (\((x,y),(z,t)) -> (z, t, Qual_var x y nullRange)) vars'
+  in trace "4.1" $  prenexNormalForm n' sig $ Quantification (dualQuant q) vdecls' (Relation qsen' Implication sen2 nullRange) nullRange
  Relation sen1 RevImpl (Quantification q vdecls qsen _) _ -> let
-   (n', sen1') = prenexNormalForm n sig sen1
-   (n'', qsen') = prenexNormalForm n' sig qsen
    vars = flatVAR_DECLs vdecls
-   (n3, vars') = getFreshVars vars n''
+   (n', vars') = getFreshVars vars n
    vdecls' = map (\(v,s) -> mkVarDecl v s) $ map fst vars'
-   qsen'' = foldl (\f (v,s,t)-> substitute v s t f) qsen' $ map (\((x,y),(z,t)) -> (z, t, Qual_var x y nullRange)) vars'
-  in trace "4.2" $ (n3, Quantification (dualQuant q) vdecls' (Relation sen1' RevImpl qsen'' nullRange) nullRange) 
+   qsen' = foldl (\f (v,s,t)-> substitute v s t f) qsen $ map (\((x,y),(z,t)) -> (z, t, Qual_var x y nullRange)) vars'
+  in trace "4.2" $ prenexNormalForm n' sig $ Quantification (dualQuant q) vdecls' (Relation sen1 RevImpl qsen' nullRange) nullRange 
  -- next two cases cover 5. for implication
  Relation sen1 Implication (Quantification q vdecls qsen _) _ -> let
    (n', sen1') = prenexNormalForm n sig sen1
