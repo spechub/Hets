@@ -7,8 +7,10 @@ Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  non-portable(Grothendieck)
 
-Parser for CASL specification librariess
+Parser for CASL specification libraries
    Follows Sect. II:3.1.5 of the CASL Reference Manual.
+Parser for DOL documents
+   Follows the DOL OMG standard, clause 9.3
 -}
 
 module Syntax.Parse_AS_Library (library) where

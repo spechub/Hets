@@ -10,6 +10,8 @@ Portability :  non-portable(Grothendieck)
 
 Abstract syntax of HetCASL (heterogeneous) structured specifications
    Follows Sect. II:2.2.3 of the CASL Reference Manual.
+Abstract syntax of DOL OMS and networks
+   Follows the DOL OMG standard, clauses 9.4, 9.5, M.2 and M.3
 -}
 
 module Syntax.AS_Structured where

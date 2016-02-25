@@ -10,6 +10,8 @@ Portability :  non-portable(Grothendieck)
 
 Abstract syntax of HetCASL specification libraries
    Follows Sect. II:2.2.5 of the CASL Reference Manual.
+Abstract syntax of DOL documents
+   Follows the DOL OMG standard, clauses 9.3 and M.1
 -}
 
 module Syntax.AS_Library where

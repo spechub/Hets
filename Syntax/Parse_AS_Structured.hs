@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  parser for CASL (heterogeneous) structured specifications
+Description :  parser for DOL OMS and CASL (heterogeneous) structured specifications
 Copyright   :  (c) Till Mossakowski, Christian Maeder, Uni Bremen 2002-2005
 License     :  GPLv2 or higher, see LICENSE.txt
 Maintainer  :  Christian.Maeder@dfki.de
@@ -10,6 +10,8 @@ Portability :  non-portable(Grothendieck)
 Parser for CASL (heterogeneous) structured specifications
    Concerning the homogeneous syntax, this follows Sect II:3.1.3
    of the CASL Reference Manual.
+Parser for DOL ontologies, models and specifications and networks.
+   Follows the DOL OMG standard, clauses 9.4 and 9.5
 -}
 
 module Syntax.Parse_AS_Structured
