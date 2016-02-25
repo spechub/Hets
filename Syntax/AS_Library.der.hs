@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
-Description :  abstract syntax of CASL specification libraries
+Description :  abstract syntax of DOL documents and CASL specification libraries
 Copyright   :  (c) Klaus Luettich, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt
 Maintainer  :  till@informatik.uni-bremen.de

@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  parser for CASL specification librariess
+Description :  parser for DOL documents and CASL specification librariess
 Copyright   :  (c) Maciek Makowski, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt
 Maintainer  :  Christian.Maeder@dfki.de
