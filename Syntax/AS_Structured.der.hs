@@ -2,7 +2,7 @@
 {- |
 Module      :  $Header$
 Description :  abstract syntax of DOL OMS and CASL structured specifications
-Copyright   :  (c) Klaus Luettich, Uni Bremen 2002-2006
+Copyright   :  (c) Klaus Luettich, Uni Bremen 2002-2016
 License     :  GPLv2 or higher, see LICENSE.txt
 Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional

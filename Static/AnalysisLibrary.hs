@@ -1,15 +1,16 @@
 {- |
 Module      :  $Header$
-Description :  static analysis of CASL specification libraries
-Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2006
+Description :  static analysis of DOL documents and CASL specification libraries
+Copyright   :  (c) Till Mossakowski, Uni Magdeburg 2002-2016
 License     :  GPLv2 or higher, see LICENSE.txt
 Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
-Static analysis of CASL specification libraries
+Static analysis of DOL documents and CASL specification libraries
    Follows the verification semantics sketched in Chap. IV:6
    of the CASL Reference Manual.
+   Follows the semantics of DOL documents, DOL OMG standard, clause 10.2.1 
 -}
 
 module Static.AnalysisLibrary

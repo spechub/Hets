@@ -1,15 +1,18 @@
 {- |
 Module      :  $Header$
-Description :  static analysis of heterogeneous structured specifications
-Copyright   :  (c) Till Mossakowski and Uni Bremen 2003-2006
+Description :  static analysis of DOL OMS and heterogeneous structured specifications
+Copyright   :  (c) Till Mossakowski and Uni Magdeburg 2003-2016
 License     :  GPLv2 or higher, see LICENSE.txt
 Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Grothendieck)
 
-Static analysis of CASL (heterogeneous) structured specifications
+Static analysis of DOL OMS and networks and
+       CASL (heterogeneous) structured specifications
    Follows the verfication semantic rules in Chap. IV:4.7
    of the CASL Reference Manual.
+   Follows the semantics of DOL OMS and networks, 
+   DOL OMG standard, clauses 10.2.2 and 10.2.3 
 -}
 
 module Static.AnalysisStructured
