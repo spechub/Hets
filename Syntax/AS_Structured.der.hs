@@ -49,7 +49,7 @@ data SPEC = Basic_spec G_basic_spec Range
           | Union [Annoted SPEC] Range
             -- pos: "and"s
           | Intersection [Annoted SPEC] Range
-            -- pos: "and"s
+            -- pos: "intersect"s
           | Extension [Annoted SPEC] Range
             -- pos: "then"s
           | Free_spec (Annoted SPEC) Range
