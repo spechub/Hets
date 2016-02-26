@@ -113,7 +113,7 @@ criticalKeywords = terminatingKeywords ++ startingKeywords
 terminatingKeywords :: [String]
 terminatingKeywords =
     [ andS, endS, fitS, forgetS, hideS, keepS, rejectS, revealS, selectS
-    , thenS, withS, withinS, ofS, forS, toS]
+    , thenS, withS, withinS, ofS, forS, toS, intersectS]
 
 -- | keywords starting a library item
 startingKeywords :: [String]
