@@ -115,6 +115,7 @@ instance StaticAnalysis OWL2 OntologyDocument Axiom
       convertTheory OWL2 = Just convertBasicTheory
       empty_signature OWL2 = emptySign
       signature_union OWL2 = uniteSign
+      intersection OWL2 = intersectSign
       signatureDiff OWL2 s = return . diffSig s
       final_union OWL2 = signature_union OWL2
       is_subsig OWL2 = isSubSign
