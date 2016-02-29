@@ -395,9 +395,20 @@ extraction lg = do
 filtering :: LogicGraph -> AParser st FILTERING
 filtering lg = do
   p <- asKey selectS <|> asKey rejectS
-  s <- lookupCurrentSyntax "filtering" lg
-  Basic_spec bs _ <- basicSpec lg s
-  return . FilterBasicSpec (tokStr p == selectS) bs $ tokPos p
+  filtering_aux p lg
+
+filtering_aux :: Token -> LogicGraph -> AParser st FILTERING
+filtering_aux p lg =
+  do 
+    s <- lookupCurrentSyntax "filtering" lg
+    Basic_spec bs _ <- basicSpec lg s
+    return . FilterBasicSpec (tokStr p == selectS) bs $ tokPos p
+ <|>
+  do
+    s <- lookupCurrentSyntax "filtering" lg
+    (g_symb_items_list,ps) <- parseItemsList (fst s)
+    return . FilterSymbolList (tokStr p == selectS) 
+               g_symb_items_list $ catRange (p : ps)
 
 groupSpecLookhead :: LogicGraph -> AParser st IRI
 groupSpecLookhead lG =
