@@ -170,6 +170,16 @@ joinG_sentences (G_theory lid1 syn sig1 ind sens1 _)
   return $ assert (plainSign sig1 == plainSign sig2')
              $ G_theory lid1 syn sig1 ind (joinSens sens1 sens2') startThId
 
+-- | Intersect the sentences of two G_theories, G_sign is the intersection of their signatures
+intersectG_sentences :: Monad m => G_sign -> G_theory -> G_theory -> m G_theory
+intersectG_sentences gsig@(G_sign lidS signS indS) 
+                    (G_theory lid1 syn sig1 ind sens1 _)
+                    (G_theory lid2 _ sig2 _ sens2 _) = do
+  sens1' <- coerceThSens lid1 lidS "intersectG_sentences1" sens1
+  sens2' <- coerceThSens lid2 lidS "intersectG_sentences2" sens2
+  return $ G_theory lidS Nothing signS indS (intersectSens sens1' sens2') startThId
+
+
 -- | flattening the sentences form a list of G_theories
 flatG_sentences :: Monad m => G_theory -> [G_theory] -> m G_theory
 flatG_sentences = foldM joinG_sentences

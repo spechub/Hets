@@ -121,6 +121,7 @@ data DGOrigin =
   | DGLogicCoercion
   | DGTranslation Renamed
   | DGUnion
+  | DGIntersect
   | DGRestriction (MaybeRestricted) (Set.Set G_symbol)
   | DGRevealTranslation
   | DGFreeOrCofree FreeOrCofree
@@ -252,6 +253,7 @@ data DGLinkOrigin =
   | DGLinkTranslation
   | DGLinkClosedLenv
   | DGLinkImports
+  | DGLinkIntersect
   | DGLinkMorph IRI
   | DGLinkInst IRI Fitted
   | DGLinkInstArg IRI

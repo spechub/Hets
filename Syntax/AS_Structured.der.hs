@@ -48,6 +48,8 @@ data SPEC = Basic_spec G_basic_spec Range
           | Bridge (Annoted SPEC) [RENAMING] (Annoted SPEC) Range
           | Union [Annoted SPEC] Range
             -- pos: "and"s
+          | Intersection [Annoted SPEC] Range
+            -- pos: "and"s
           | Extension [Annoted SPEC] Range
             -- pos: "then"s
           | Free_spec (Annoted SPEC) Range
@@ -215,6 +217,7 @@ getSpecNames sp = let f = getSpecNames . item in case sp of
   Approximation as _ -> f as
   Minimization as _ -> f as
   Union as _ -> Set.unions $ map f as
+  Intersection as _ -> Set.unions $ map f as
   Extension as _ -> Set.unions $ map f as
   Free_spec as _ -> f as
   Cofree_spec as _ -> f as

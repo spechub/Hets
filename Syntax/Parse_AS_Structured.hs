@@ -288,10 +288,14 @@ specThen l = do
 
 specA :: LogicGraph -> AParser st (Annoted SPEC)
 specA l = do
-  (sps, ps) <- annoParser2 (specB l) `separatedBy` asKey andS
-  return $ case sps of
-    [sp] -> sp
-    _ -> emptyAnno (Union sps $ catRange ps)
+  sp <- annoParser2 $ specB l
+  option sp $ do
+    t <- asKey andS <|> asKey intersectS
+    (sps, ts) <- annoParser2 (specB l) `separatedBy` asKey (tokStr t)
+    let cons = case tokStr t of
+                 "and" -> Union
+                 _ -> Intersection
+    return $ emptyAnno (cons (sp : sps) $ catRange (t : ts))
 
 specB :: LogicGraph -> AParser st (Annoted SPEC)
 specB l = do

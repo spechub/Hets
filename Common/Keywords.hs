@@ -495,6 +495,9 @@ instanceS = "instance"
 internalS :: String
 internalS = "internal"
 
+intersectS :: String
+intersectS = "intersect"
+
 lambdaS :: String
 lambdaS = "lambda"
 

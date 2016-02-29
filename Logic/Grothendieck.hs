@@ -80,6 +80,7 @@ module Logic.Grothendieck
   , homGsigDiff
   , gsigUnion
   , gsigManyUnion
+  , gsigManyIntersect
   , homogeneousMorManyUnion
   , logicInclusion
   , logicUnion
@@ -127,6 +128,8 @@ import Data.Maybe
 import Data.Typeable
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+
+-- import Debug.Trace
 
 import Text.ParserCombinators.Parsec (Parser, parse, eof, (<|>))
 -- for looking up modifications
@@ -790,6 +793,34 @@ homogeneousMorManyUnion (gmor : gmors) =
             mor1' <- coerceMorphism lid1 lid2 "homogeneousMorManyUnion" mor1
             mor <- morphism_union lid2 mor1' mor2
             return (G_morphism lid2 mor startMorId)) gmor gmors
+
+-- | intersection of a list of Grothendieck signatures
+gsigManyIntersect :: LogicGraph -> [G_sign] -> Result G_sign
+gsigManyIntersect _ [] =
+  fail "intersection of emtpy list of signatures"
+gsigManyIntersect lg (gsigma : gsigmas) =
+  foldM (gsigIntersect lg True) gsigma gsigmas
+
+-- | heterogeneous union of two Grothendieck signatures TODO: adapt the code to intersection, no heterogeneous intersections for now
+gsigIntersect :: LogicGraph -> Bool -> G_sign -> G_sign -> Result G_sign
+gsigIntersect lg both gsig1@(G_sign lid1 (ExtSign sigma1 _) _)
+          gsig2@(G_sign lid2 (ExtSign sigma2 _) _) =
+ if Logic lid1 == Logic lid2
+    then homogeneousGsigIntersect both gsig1 gsig2
+    else error "intersection of heterogeneous signatures is not supported yet"
+
+-- | homogeneous intersection of two Grothendieck signatures
+homogeneousGsigIntersect :: Bool -> G_sign -> G_sign -> Result G_sign
+homogeneousGsigIntersect both (G_sign lid1 sigma1@(ExtSign sig1 syms1) _) (G_sign lid2 sigma2 _) = do
+  sigma2'@(ExtSign sig2 _) <- coerceSign lid2 lid1 "Intersection of signatures" sigma2
+  sigma3@(ExtSign sig3 _) <- ext_signature_intersect lid1 sigma1 sigma2'
+   -- probably here I have to do the intersection of their symset_of
+  let syms2 = symset_of lid1 sig2
+      symI = Set.intersection syms1 syms2
+  -- trace ("symI:" ++ show symI ++ "syms1:" ++ show syms1 ++ "syms2:" ++ show syms2 ++ "sig3:" ++ show sig3) $ 
+  return $ G_sign lid1
+             (ExtSign sig3 symI) 
+         startSigId
 
 -- | inclusion between two logics
 logicInclusion :: LogicGraph -> AnyLogic -> AnyLogic -> Result AnyComorphism
