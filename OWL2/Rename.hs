@@ -59,9 +59,9 @@ intersectSign s1 s2 = do
             , datatypes = Set.intersection (datatypes s1) $ datatypes s2 
             , objectProperties = Set.intersection (objectProperties s1) $ objectProperties s2
             , dataProperties = Set.intersection (dataProperties s1) $ dataProperties s2
-            , annotationRoles = Set.empty 
+            , annotationRoles = Set.intersection (annotationRoles s1) $ annotationRoles s2
             , individuals  = Set.intersection (individuals s1) $ individuals s2
-            , labelMap = Map.empty 
+            , labelMap = Map.intersection (labelMap s1) $ labelMap s2
             , prefixMap =  pm
             }
     else fail "Static analysis could not intersect signatures"
