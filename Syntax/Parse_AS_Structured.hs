@@ -397,7 +397,7 @@ filtering lg = do
   p <- asKey selectS <|> asKey rejectS
   s <- lookupCurrentSyntax "filtering" lg
   Basic_spec bs _ <- basicSpec lg s
-  return . SelectOrReject (tokStr p == selectS) bs $ tokPos p
+  return . FilterBasicSpec (tokStr p == selectS) bs $ tokPos p
 
 groupSpecLookhead :: LogicGraph -> AParser st IRI
 groupSpecLookhead lG =
