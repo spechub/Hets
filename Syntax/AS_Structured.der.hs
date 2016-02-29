@@ -78,7 +78,8 @@ data SPEC = Basic_spec G_basic_spec Range
 data Network = Network [LABELED_ONTO_OR_INTPR_REF] [IRI] Range
   deriving (Show, Eq, Typeable)
 
-data FILTERING = SelectOrReject Bool G_basic_spec Range
+data FILTERING = FilterBasicSpec Bool G_basic_spec Range
+               | FilterSymbolList Bool  G_symb_items_list Range
   deriving (Show, Eq, Typeable)
 
 data EXTRACTION = ExtractOrRemove Bool [IRI] Range
