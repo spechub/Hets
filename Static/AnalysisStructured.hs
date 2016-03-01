@@ -403,7 +403,7 @@ anaSpecAux conser addSyms lg libEnv ln dg nsig name opts eo sp rg = case sp of
        let sp1 = item asp
            rname = extName "Filtering" name
        (sp', nsig', dg') <- anaSpec addSyms lg libEnv ln dg nsig rname opts eo sp1 rg
-       (nf, dgF) <- anaFiltering lg libEnv dg' nsig' filtering 
+       (nf, dgF) <- anaFiltering lg libEnv dg' nsig' rname filtering 
        return (Filtering (replaceAnnoted sp' asp) filtering, nf, dgF)
        -- error "analysis of filterings not yet implemented"
   Minimization asp (Mini kw cm cv poss) -> do
@@ -762,9 +762,9 @@ anaIntersect addSyms lg libEnv ln dg nsig name opts eo asps rg = case asps of
              dg3 <- foldM insE dg2 nsigs'
              return (newAsps, nsigs', ns, dg3)
 
-anaFiltering :: LogicGraph -> LibEnv -> DGraph -> NodeSig -> FILTERING 
+anaFiltering :: LogicGraph -> LibEnv -> DGraph -> NodeSig -> NodeName-> FILTERING 
    -> Result (NodeSig, DGraph) 
-anaFiltering lg libEnv dg nsig filtering = case filtering of
+anaFiltering lg libEnv dg nsig nname filtering = case filtering of
   FilterSymbolList selectOrReject syms@(G_symb_items_list lidS sItems) _ -> 
    if not selectOrReject then do
      let strs = map (symb_items_name lidS) sItems
@@ -776,7 +776,7 @@ anaFiltering lg libEnv dg nsig filtering = case filtering of
      case th of 
       G_theory l1 ser1 sig1 ind1 sens1 ind1' -> do
          let gth' = G_theory l1 ser1 sig1 ind1 (foldl (\m x -> Map.delete x m) sens1 strs) ind1'
-         let (ns@(NodeSig node gsigma), dg') = insGTheory dg emptyNodeName DGEmpty gth'
+         let (ns@(NodeSig node gsigma), dg') = insGTheory dg nname DGEmpty gth'
          gmor <- ginclusion lg gsigma $ getSig nsig
          let dg2 = insLink dg' gmor globalThm SeeSource node $ getNode nsig
          return (ns, dg2)
