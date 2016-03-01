@@ -450,6 +450,12 @@ data SYMB_ITEMS = Symb_items SYMB_KIND [SYMB] Range
                   -- pos: SYMB_KIND, commas
                   deriving (Show, Eq, Ord, Typeable, Data)
 
+symbItemsName :: SYMB_ITEMS -> String
+symbItemsName (Symb_items _ syms _ ) =
+ concatMap (\x -> case x of 
+                    Symb_id i -> show i
+                    Qual_id i _ _ -> show i) syms 
+
 data SYMB_MAP_ITEMS = Symb_map_items SYMB_KIND [SYMB_OR_MAP] Range
                       -- pos: SYMB_KIND, commas
                       deriving (Show, Eq, Ord, Typeable, Data)
