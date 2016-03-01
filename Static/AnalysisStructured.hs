@@ -397,7 +397,7 @@ anaSpecAux conser addSyms lg libEnv ln dg nsig name opts eo sp rg = case sp of
        let sp1 = item asp
            rname = extName "Filtering" name
        (sp', nsig', dg') <- anaSpec addSyms lg libEnv ln dg nsig rname opts eo sp1 rg
-       (nf, dgF) <- anaFiltering lg libEnv dg' nsig' rname filtering 
+       (nf, dgF) <- anaFiltering lg libEnv dg' nsig' name filtering 
        return (Filtering (replaceAnnoted sp' asp) filtering, nf, dgF)
        -- error "analysis of filterings not yet implemented"
   Minimization asp (Mini kw cm cv poss) -> do
