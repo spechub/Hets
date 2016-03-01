@@ -87,6 +87,7 @@ instance Syntax OWL2 OntologyDocument Entity SymbItems SymbMapItems where
     parseSingleSymbItem OWL2 = Just symbItem
     parse_symb_items OWL2 = Just symbItems
     parse_symb_map_items OWL2 = Just symbMapItems
+    symb_items_name OWL2 = symbItemsName
 
 instance Sentences OWL2 Axiom Sign OWLMorphism Entity where
     map_sen OWL2 = mapSen
