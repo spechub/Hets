@@ -575,6 +575,7 @@ data OutType =
   | DfgFile SPFType -- ^ SPASS input file
   | TPTPFile SPFType
   | ComptableXml
+  | MedusaJson
   | RDFOut
   | SigFile Delta -- ^ signature as text
   | TheoryFile Delta -- ^ signature with sentences as text
@@ -601,6 +602,7 @@ instance Show OutType where
     DfgFile t -> dfgS ++ show t
     TPTPFile t -> tptpS ++ show t
     ComptableXml -> "comptable.xml"
+    MedusaJson -> "medusa.json"
     RDFOut -> "nt"
     SigFile d -> "sig" ++ show d
     TheoryFile d -> "th" ++ show d
@@ -611,7 +613,7 @@ plainOutTypeList :: [OutType]
 plainOutTypeList =
   [ Prf, EnvOut ] ++ map OWLOut plainOwlFormats ++
   [ RDFOut, CLIFOut, KIFOut, OmdocOut, XmlOut, JsonOut, ExperimentalOut
-  , HaskellOut, ThyFile, ComptableXml, FreeCADOut, SymXml, SymsXml]
+  , HaskellOut, ThyFile, ComptableXml, MedusaJson, FreeCADOut, SymXml, SymsXml]
 
 outTypeList :: [OutType]
 outTypeList = let dl = [Delta, Fully] in
