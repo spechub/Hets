@@ -26,11 +26,20 @@ medusaToJsonString = ppJson . medusaToJson
 medusaToJson :: Medusa -> Json
 medusaToJson m = JObject [("Definitions",defs),("Relations",rels)]
   where inds = Set.toList $ indivs m
+        mrels = Set.toList $ relations m
         defs = JArray $ map indToJson inds
-        rels = JArray []
+        rels = JArray $ map relToJson mrels
 
 -- convert an OWL2 individual with its type to JSON
 indToJson :: (QName,QName) -> Json
 indToJson (i,t) = 
   JObject [("Identifier",JString $ localPart i),
            ("Type",JString $ localPart t)]
+
+-- convert a relation to JSON
+relToJson :: (QName, QName, QName, QName) -> Json
+relToJson (i1, p1, i2, p2) = 
+ JObject [("Individual1", JString $ localPart i1),
+          ("Point1", JString $ localPart p1),
+          ("Individual2", JString $ localPart i2),
+          ("Point2", JString $ localPart p2)]
