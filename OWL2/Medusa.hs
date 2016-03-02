@@ -41,10 +41,11 @@ medusa _ (sig, nsens) = do
       allInds = Set.map (\ i -> (i,getC i)) inds
       relTuples = foldl Set.union Set.empty $ map (getR allInds) $ Set.toList inds
       images = Set.foldl Set.union Set.empty $ Set.map (\(i1, _, i2, _) -> Set.fromList [i1, i2]) relTuples
-  trace ("nsens:" ++ concatMap (\x -> case axiomBit (sentence x) of
-                                        ListFrameBit Nothing (IndividualFacts _) ->  show (sentence x) ++ "\n\n\n"
-                                        _ -> "") 
-                     nsens) $ return $ Medusa {
+  --trace ("nsens:" ++ concatMap (\x -> case axiomBit (sentence x) of
+  --                                      ListFrameBit Nothing (IndividualFacts _) ->  show (sentence x) ++ "\n\n\n"
+  --                                      _ -> "") 
+  --                   nsens) $ 
+  return $ Medusa {
             indivs = Set.filter (\(i,_) -> Set.member i images) allInds , 
             relations = relTuples
            }
@@ -79,7 +80,8 @@ getMeetsFactsAux axs tInds point1 ax =
     SimpleEntity e | cutIRI e == point1 ->
       case axiomBit ax of
          ListFrameBit Nothing (IndividualFacts [([], (ObjectPropertyFact Positive (ObjectProp ope) point2))]) -> 
-            if localPart ope == "meets" then trace ("\npoint1:" ++ show (localPart point1) ++ " point2:" ++ show (localPart point2)) $ getFiatBoundaryFacts axs tInds point1 point2
+            if localPart ope == "meets" then -- trace ("\npoint1:" ++ show (localPart point1) ++ " point2:" ++ show (localPart point2)) $ 
+                                             getFiatBoundaryFacts axs tInds point1 point2
               else Nothing
          _ -> Nothing
     _ -> Nothing
@@ -97,7 +99,8 @@ getFiatBoundaryFacts axs tInds point1 point2 =
            [(_, t)] -> t
            _ -> error $ "could not determine the type of " ++ show ind  
    in case (i1, i2) of
-        (Just ind1, Just ind2) -> trace ("ind1:" ++ show (localPart ind1) ++ " ind2:"  ++ show (localPart ind2)) $ Just (ind1, typeOf point1, ind2, typeOf point2)
+        (Just ind1, Just ind2) -> -- trace ("ind1:" ++ show (localPart ind1) ++ " ind2:"  ++ show (localPart ind2)) $ 
+                                  Just (ind1, typeOf point1, ind2, typeOf point2)
         _ -> Nothing
 
 getFiatBoundaryFactsAux :: QName -> Axiom -> Maybe QName
