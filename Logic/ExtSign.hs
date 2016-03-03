@@ -21,7 +21,6 @@ import Common.DocUtils
 import Common.ExtSign
 import Logic.Logic
 
---import Debug.Trace
 
 ext_sym_of :: Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
@@ -34,8 +33,7 @@ makeExtSign :: Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol proof_tree
         => lid -> sign -> ExtSign sign symbol
-makeExtSign l s = -- trace ("symset:" ++ show (symset_of l s)) $ 
-                  ExtSign s $ symset_of l s
+makeExtSign l s = ExtSign s $ symset_of l s
 
 ext_ide :: (Ord symbol, Category sign morphism)
            => ExtSign sign symbol -> morphism
@@ -77,7 +75,6 @@ ext_signature_intersect l e1@(ExtSign s1 _) e2@(ExtSign s2 _) = do
     checkExtSign l "u1" e1
     checkExtSign l "u2" e2
     s <- intersection l s1 s2
-    -- trace ("ext_intersect:" ++ show s) $ 
     return $ makeExtSign l s
 
 ext_is_subsig :: Logic lid sublogics
