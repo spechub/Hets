@@ -67,9 +67,8 @@ getClassAux ind ax =
 --  and return i1 type(p1) i2 type(p2)
 getMeetsFacts :: [Axiom] -> Set.Set (QName, QName) -> QName ->
               Set.Set (QName, QName, QName, QName)
-getMeetsFacts axs tInds n = case mapMaybe (getMeetsFactsAux axs tInds n) axs of
-   [] -> Set.empty
-   x -> Set.fromList x
+getMeetsFacts axs tInds n = 
+  Set.fromList $ mapMaybe (getMeetsFactsAux axs tInds n) axs
 
 getMeetsFactsAux :: [Axiom] -> Set.Set (QName, QName) -> QName -> Axiom -> Maybe (QName, QName, QName, QName)
 getMeetsFactsAux axs tInds point1 ax =
