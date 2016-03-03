@@ -801,15 +801,15 @@ gsigManyIntersect lg (gsigma : gsigmas) =
 
 -- | heterogeneous union of two Grothendieck signatures
 gsigIntersect :: LogicGraph -> Bool -> G_sign -> G_sign -> Result G_sign
-gsigIntersect lg both gsig1@(G_sign lid1 (ExtSign sigma1 _) _)
-          gsig2@(G_sign lid2 (ExtSign sigma2 _) _) =
+gsigIntersect _lg both gsig1@(G_sign lid1 (ExtSign _sigma1 _) _)
+          gsig2@(G_sign lid2 (ExtSign _sigma2 _) _) =
  if Logic lid1 == Logic lid2
     then homogeneousGsigIntersect both gsig1 gsig2
     else error "intersection of heterogeneous signatures is not supported yet"
 
 -- | homogeneous intersection of two Grothendieck signatures
 homogeneousGsigIntersect :: Bool -> G_sign -> G_sign -> Result G_sign
-homogeneousGsigIntersect both (G_sign lid1 sigma1@(ExtSign sig1 syms1) _) (G_sign lid2 sigma2 _) = do
+homogeneousGsigIntersect _both (G_sign lid1 sigma1@(ExtSign _sig1 syms1) _) (G_sign lid2 sigma2 _) = do
   sigma2'@(ExtSign sig2 _) <- coerceSign lid2 lid1 "Intersection of signatures" sigma2
   sigma3@(ExtSign sig3 _) <- ext_signature_intersect lid1 sigma1 sigma2'
   let syms2 = symset_of lid1 sig2
