@@ -6,7 +6,7 @@ License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  till@iws.cs.ovgu.de
 Stability   :  provisional
-Portability :  non-portable 
+Portability :  non-portable
 
 JSON output for Medusa
 -}
@@ -32,13 +32,13 @@ medusaToJson m = JObject [("Definitions",defs),("Relations",rels)]
 
 -- convert an OWL2 individual with its type to JSON
 indToJson :: (QName,QName) -> Json
-indToJson (i,t) = 
+indToJson (i,t) =
   JObject [("Identifier",JString $ localPart i),
            ("Type",JString $ localPart t)]
 
 -- convert a relation to JSON
 relToJson :: (QName, QName, QName, QName) -> Json
-relToJson (i1, p1, i2, p2) = 
+relToJson (i1, p1, i2, p2) =
  JObject [("Individual1", JString $ localPart i1),
           ("Point1", JString $ localPart p1),
           ("Individual2", JString $ localPart i2),
