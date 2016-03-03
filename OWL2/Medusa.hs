@@ -54,9 +54,9 @@ checkMapMaybe f x =
 
 -- | get the class of an individual
 getClass :: [Axiom] -> QName -> QName
-getClass axs n = case mapMaybe (getClassAux n) axs of
-   (c:_) -> c
-   [] -> nullQName { localPart = "unknown" }
+getClass axs n = case checkMapMaybe (getClassAux n) axs of
+   Just c -> c
+   Nothing -> nullQName { localPart = "unknown" }
 
 getClassAux :: QName -> Axiom -> Maybe QName
 getClassAux ind ax =
