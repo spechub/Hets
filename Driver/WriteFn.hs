@@ -71,6 +71,9 @@ import CASL.CompositionTable.ComputeTable
 import CASL.CompositionTable.ModelChecker
 import CASL.CompositionTable.ParseTable2
 
+import OWL2.Medusa
+import OWL2.MedusaToJson
+
 #ifdef PROGRAMATICA
 import Haskell.CreateModules
 #endif
@@ -253,6 +256,14 @@ writeTheory ins nam opts filePrefix ga
             Just td -> writeVerbFile opts f $ tableXmlStr td
             Nothing -> return ()
         else putIfVerbose opts 0 $ "expected CASL theory for: " ++ f
+    MedusaJson -> if lang == language_name OWL2 then do
+          th2 <- coerceBasicTheory lid OWL2 "" th
+          let Result ds res = medusa i th2
+          showDiags opts ds
+          case res of
+            Just td -> writeVerbFile opts f $ medusaToJsonString td
+            Nothing -> return ()
+        else putIfVerbose opts 0 $ "expected OWL2 theory for: " ++ f
 #ifdef RDFLOGIC
     RDFOut
         | lang == language_name RDF -> do
@@ -378,6 +389,7 @@ writeSpecFiles opts file lenv ln dg = do
             FreeCADOut -> True
             HaskellOut -> True
             ComptableXml -> True
+            MedusaJson -> True
             SymXml -> True
             _ -> False) outTypes
         allSpecs = null ns
