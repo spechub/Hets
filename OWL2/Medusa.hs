@@ -25,8 +25,6 @@ import Common.Result
 import Data.Maybe
 import qualified Data.Set as Set
 
-import Debug.Trace
-
 data Medusa = Medusa {
                indivs :: Set.Set (QName,QName),
                relations :: Set.Set (QName, QName, QName, QName)}
@@ -39,12 +37,10 @@ medusa _ (sig, nsens) = do
       getC = getClass (map sentence nsens)
       getR tInds = getMeetsFacts (map sentence nsens) tInds
       allInds = Set.map (\ i -> (i,getC i)) inds
-      relTuples = foldl Set.union Set.empty $ map (getR allInds) $ Set.toList inds
-      images = Set.foldl Set.union Set.empty $ Set.map (\(i1, _, i2, _) -> Set.fromList [i1, i2]) relTuples
-  --trace ("nsens:" ++ concatMap (\x -> case axiomBit (sentence x) of
-  --                                      ListFrameBit Nothing (IndividualFacts _) ->  show (sentence x) ++ "\n\n\n"
-  --                                      _ -> "")
-  --                   nsens) $
+      relTuples = foldl Set.union Set.empty $
+                  map (getR allInds) $ Set.toList inds
+      images = Set.foldl Set.union Set.empty $
+               Set.map (\(i1, _, i2, _) -> Set.fromList [i1, i2]) relTuples
   return $ Medusa {
             indivs = Set.filter (\(i,_) -> Set.member i images) allInds ,
             relations = relTuples
@@ -69,7 +65,8 @@ getClassAux ind ax =
 --  look for individuals "i1" and "i2" such that
 --  i1 has_fiat_boundary p1 and i2 has_fiat_boundary p2
 --  and return i1 type(p1) i2 type(p2)
-getMeetsFacts :: [Axiom] -> Set.Set (QName, QName) -> QName -> Set.Set (QName, QName, QName, QName)
+getMeetsFacts :: [Axiom] -> Set.Set (QName, QName) -> QName ->
+              Set.Set (QName, QName, QName, QName)
 getMeetsFacts axs tInds n = case mapMaybe (getMeetsFactsAux axs tInds n) axs of
    [] -> Set.empty
    x -> Set.fromList x
@@ -79,14 +76,18 @@ getMeetsFactsAux axs tInds point1 ax =
   case axiomTopic ax of
     SimpleEntity e | cutIRI e == point1 ->
       case axiomBit ax of
-         ListFrameBit Nothing (IndividualFacts [([], (ObjectPropertyFact Positive (ObjectProp ope) point2))]) ->
-            if localPart ope == "meets" then -- trace ("\npoint1:" ++ show (localPart point1) ++ " point2:" ++ show (localPart point2)) $
-                                             getFiatBoundaryFacts axs tInds point1 point2
+         ListFrameBit Nothing (IndividualFacts [([],
+                               (ObjectPropertyFact Positive
+                                                   (ObjectProp ope) point2))
+                                               ]) ->
+            if localPart ope == "meets" then
+                getFiatBoundaryFacts axs tInds point1 point2
               else Nothing
          _ -> Nothing
     _ -> Nothing
 
-getFiatBoundaryFacts :: [Axiom] -> Set.Set (QName, QName) -> QName -> QName -> Maybe (QName, QName, QName, QName)
+getFiatBoundaryFacts :: [Axiom] -> Set.Set (QName, QName) -> QName -> QName ->
+                     Maybe (QName, QName, QName, QName)
 getFiatBoundaryFacts axs tInds point1 point2 =
    let i1 = case mapMaybe (getFiatBoundaryFactsAux point1) axs of
               (c:_) -> Just c
@@ -99,8 +100,8 @@ getFiatBoundaryFacts axs tInds point1 point2 =
            [(_, t)] -> t
            _ -> error $ "could not determine the type of " ++ show ind
    in case (i1, i2) of
-        (Just ind1, Just ind2) -> -- trace ("ind1:" ++ show (localPart ind1) ++ " ind2:"  ++ show (localPart ind2)) $
-                                  Just (ind1, typeOf point1, ind2, typeOf point2)
+        (Just ind1, Just ind2) ->
+           Just (ind1, typeOf point1, ind2, typeOf point2)
         _ -> Nothing
 
 getFiatBoundaryFactsAux :: QName -> Axiom -> Maybe QName
@@ -109,8 +110,6 @@ getFiatBoundaryFactsAux point ax =
     SimpleEntity e ->
       case axiomBit ax of
        ListFrameBit Nothing (IndividualFacts facts) ->
-         -- trace ("point':" ++ show (localPart point') ++ " point: " ++ show (localPart point)
-         --  ++ " ope: " ++ show (localPart ope)) $
         loopFacts facts e point
        _ -> Nothing
     _ -> Nothing
@@ -120,7 +119,8 @@ loopFacts [] _ _ = Nothing
 loopFacts (afact:facts') e point =
   case afact of
     ([], (ObjectPropertyFact Positive (ObjectProp ope) point')) ->
-      if (localPart ope == "has_fiat_boundary") && (localPart point == localPart point') then Just $ cutIRI e
+      if (localPart ope == "has_fiat_boundary") &&
+         (localPart point == localPart point') then Just $ cutIRI e
        else loopFacts facts' e point
     _ -> loopFacts facts' e point
 
