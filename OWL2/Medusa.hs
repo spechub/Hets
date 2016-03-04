@@ -46,11 +46,17 @@ medusa _ (sig, nsens) = do
             relations = relTuples
            }
 
+checkMapMaybe :: (a -> Maybe b) -> [a] -> Maybe b 
+checkMapMaybe f x =
+ case mapMaybe f x of
+   (c:_) -> Just c
+   [] -> Nothing
+
 -- | get the class of an individual
 getClass :: [Axiom] -> QName -> QName
-getClass axs n = case mapMaybe (getClassAux n) axs of
-   (c:_) -> c
-   [] -> nullQName { localPart = "unknown" }
+getClass axs n = case checkMapMaybe (getClassAux n) axs of
+   Just c -> c
+   Nothing -> nullQName { localPart = "unknown" }
 
 getClassAux :: QName -> Axiom -> Maybe QName
 getClassAux ind ax =
@@ -67,9 +73,14 @@ getClassAux ind ax =
 --  and return i1 type(p1) i2 type(p2)
 getMeetsFacts :: [Axiom] -> Set.Set (QName, QName) -> QName ->
               Set.Set (QName, QName, QName, QName)
+<<<<<<< HEAD
 getMeetsFacts axs tInds n = case mapMaybe (getMeetsFactsAux axs tInds n) axs of
    [] -> Set.empty
    x -> Set.fromList x
+=======
+getMeetsFacts axs tInds n = 
+  Set.fromList $ mapMaybe (getMeetsFactsAux axs tInds n) axs
+>>>>>>> origin/medusa
 
 getMeetsFactsAux :: [Axiom] -> Set.Set (QName, QName) -> QName -> Axiom -> Maybe (QName, QName, QName, QName)
 getMeetsFactsAux axs tInds point1 ax =
@@ -89,12 +100,17 @@ getMeetsFactsAux axs tInds point1 ax =
 getFiatBoundaryFacts :: [Axiom] -> Set.Set (QName, QName) -> QName -> QName ->
                      Maybe (QName, QName, QName, QName)
 getFiatBoundaryFacts axs tInds point1 point2 =
+<<<<<<< HEAD
    let i1 = case mapMaybe (getFiatBoundaryFactsAux point1) axs of
               (c:_) -> Just c
               [] -> Nothing
        i2 = case mapMaybe (getFiatBoundaryFactsAux point2) axs of
               (c:_) -> Just c
               [] -> Nothing
+=======
+   let i1 = checkMapMaybe (getFiatBoundaryFactsAux point1) axs 
+       i2 = checkMapMaybe (getFiatBoundaryFactsAux point2) axs
+>>>>>>> origin/medusa
        typeOf ind =
          case Set.toList $ Set.filter (\(x, _) -> x == ind) tInds of
            [(_, t)] -> t
