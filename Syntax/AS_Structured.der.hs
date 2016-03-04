@@ -216,6 +216,7 @@ getSpecNames sp = let f = getSpecNames . item in case sp of
   Reduction as _ -> f as
   Approximation as _ -> f as
   Minimization as _ -> f as
+  Filtering as _ -> f as
   Union as _ -> Set.unions $ map f as
   Intersection as _ -> Set.unions $ map f as
   Extension as _ -> Set.unions $ map f as
