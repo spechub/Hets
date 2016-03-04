@@ -1,15 +1,16 @@
 {- |
 Module      :  $Header$
-Description :  static analysis of heterogeneous structured specifications
-Copyright   :  (c) Till Mossakowski and Uni Bremen 2003-2006
+Description :  static analysis of DOL OMS and heterogeneous structured specifications
+Copyright   :  (c) Till Mossakowski and Uni Magdeburg 2003-2016
 License     :  GPLv2 or higher, see LICENSE.txt
 Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Grothendieck)
 
-Static analysis of CASL (heterogeneous) structured specifications
-   Follows the verfication semantic rules in Chap. IV:4.7
-   of the CASL Reference Manual.
+Static analysis of DOL OMS and networks and
+       CASL (heterogeneous) structured specifications
+  Follows the semantics of DOL OMS and networks,
+   DOL OMG standard, clauses 10.2.2 and 10.2.3
 -}
 
 module Static.AnalysisStructured
@@ -76,7 +77,6 @@ import Proofs.ComputeColimit (insertColimitInGraph)
 
 import Common.Lib.Graph
 
-import Debug.Trace
 import Static.ComputeTheory
 
 -- overrides CUIRIE expansion for Download_items
@@ -408,7 +408,7 @@ anaSpecAux conser addSyms lg libEnv ln dg nsig name opts eo sp rg = case sp of
     (newAsps, _, ns, dg') <- adjustPos pos $ anaUnion addSyms lg libEnv ln dg nsig
       name opts eo asps rg
     return (Union newAsps pos, ns, dg')
-  Intersection asps pos -> do 
+  Intersection asps pos -> do
     (newAsps, _, ns, dg') <- adjustPos pos $ anaIntersect addSyms lg libEnv ln dg nsig
       name opts eo asps rg
     return (Intersection newAsps pos, ns, dg')
@@ -637,14 +637,12 @@ anaSpecAux conser addSyms lg libEnv ln dg nsig name opts eo sp rg = case sp of
            nPaths = concat $ concatMap (gDefPaths n) cN
            nNodes = concatMap (\ (x, y, _) -> [x, y]) nPaths
            hideLinks = filter (\ (_, _, l) -> dgl_type l == HidingDefLink)
-              $ concatMap (inn g) $ cN ++ nNodes 
+              $ concatMap (inn g) $ cN ++ nNodes
            hNodes = map (\ (x, _, _) -> x) hideLinks
            implicitNodes = nub $ iN ++ nNodes ++ hNodes
-           intersectLinks = -- trace ("links:" ++ (concatMap (\ (x,y,l) -> "\nx:"++show x++" y:"++ show y ++ "type:" ++ show (dgl_origin l)) $ concatMap (inn g) $ cN ++ implicitNodes )) $ 
-                            filter (\ (_, _, l) -> dgl_origin l == DGLinkIntersect) 
-                            $ concatMap (inn g) $ cN ++ implicitNodes 
-           in -- trace ("\n\n\nintersectLinks:" ++ show intersectLinks) $ 
-              (cN, implicitNodes
+           intersectLinks = filter (\ (_, _, l) -> dgl_origin l == DGLinkIntersect)
+                            $ concatMap (inn g) $ cN ++ implicitNodes
+           in (cN, implicitNodes
               , nub $ nPaths ++ cE ++ hideLinks ++ intersectLinks)
         addLinks (cN, cE) = foldl addGDefLinks (cN, [], cE) cN
         (cNodes, iNodes, cEdges) =
@@ -722,8 +720,7 @@ anaIntersect addSyms lg libEnv ln dg nsig name opts eo asps rg = case asps of
         _ -> do
           let nsigs' = reverse nsigs
               labelHidings = map labelHasHiding $ map (\n -> labDG (markHiding libEnv dg) $ getNode n) nsigs'
-              hasHiding = -- trace ("\n\nlabels:" ++ show labelHidings ++ "\n\n") $ 
-                          foldl (\x y -> x || y) False labelHidings 
+              hasHiding = foldl (\x y -> x || y) False labelHidings
           case hasHiding of
             True -> fail "Intersection is defined only for flattenable theories"
             False -> do

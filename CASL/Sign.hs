@@ -36,8 +36,6 @@ import Data.Maybe (fromMaybe)
 import Data.List (isPrefixOf)
 import Control.Monad (when, unless)
 
--- import Debug.Trace
-
 -- constants have empty argument lists
 data OpType = OpType {opKind :: OpKind, opArgs :: [SORT], opRes :: SORT}
               deriving (Show, Eq, Ord, Typeable, Data)
@@ -348,9 +346,9 @@ uniteCASLSign :: CASLSign -> CASLSign -> CASLSign
 uniteCASLSign = addSig (\ _ _ -> ())
 
 interRel :: (Show a, Ord a) => Rel.Rel a -> Rel.Rel a -> Rel.Rel a
-interRel a b = -- trace ("a:"++ show a++ "b:" ++ show b ++ "i:" ++ show (Set.intersection (Rel.toSet a) $ Rel.toSet b)) $ 
-  (Rel.fromSet
-  . Set.intersection (Rel.toSet a) . Rel.toSet) b
+interRel a =
+  Rel.fromSet
+  . Set.intersection (Rel.toSet a) . Rel.toSet
 
 interOpMapSet :: OpMap -> OpMap -> OpMap
 interOpMapSet m = rmOrAddPartsMap True
@@ -360,8 +358,7 @@ interMapSet :: PredMap -> PredMap -> PredMap
 interMapSet = MapSet.intersection
 
 interSig :: (e -> e -> e) -> Sign f e -> Sign f e -> Sign f e
-interSig ef a b = let s = sortSet a `Set.intersection` sortSet b in 
-  -- trace ("\nsortRelA:" ++ show (sortRel a) ++ "\nsortRelB:" ++ show (sortRel b) ++ "\nsortRelInt:" ++ show (interRel (sortRel a) $ sortRel b)) $ 
+interSig ef a b = let s = sortSet a `Set.intersection` sortSet b in
   closeSortRel a
   { emptySortSet = Set.difference s
       $ nonEmptySortSet a `Set.intersection` nonEmptySortSet b

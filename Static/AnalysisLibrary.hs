@@ -10,7 +10,7 @@ Portability :  non-portable(Logic)
 Static analysis of DOL documents and CASL specification libraries
    Follows the verification semantics sketched in Chap. IV:6
    of the CASL Reference Manual.
-   Follows the semantics of DOL documents, DOL OMG standard, clause 10.2.1 
+   Follows the semantics of DOL documents, DOL OMG standard, clause 10.2.1
 -}
 
 module Static.AnalysisLibrary
