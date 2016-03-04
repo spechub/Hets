@@ -700,13 +700,14 @@ anaIntersect addSyms lg libEnv ln dg nsig name opts eo asps rg = case asps of
   [] -> fail "empty intersection"
   _ -> do
       let sps = map item asps
-      (sps', nsigs, dg', _) <-
-          let ana (sps1, nsigs, dg', n) sp' = do
+          ana (sps1, nsigs, dg', n) sp' = do
                 let n1 = inc n
                 (sp1, nsig', dg1) <-
-                  anaSpec addSyms lg libEnv ln dg' nsig n1 opts eo sp' $ getRange sp'
+                  anaSpec addSyms lg libEnv ln dg' nsig n1 opts eo sp' $
+                          getRange sp'
                 return (sp1 : sps1, nsig' : nsigs, dg1, n1)
-           in foldM ana ([], [], dg, extName "Intersect" name) sps
+      (sps', nsigs, dg', _) <-
+        foldM ana ([], [], dg, extName "Intersect" name) sps
       let newAsps = zipWith replaceAnnoted (reverse sps') asps
       case nsigs of
         [ns] -> return (newAsps, nsigs, ns, dg')
