@@ -741,9 +741,9 @@ anaIntersect addSyms lg libEnv ln dg nsig name opts eo asps rg = case asps of
 anaFiltering :: LogicGraph -> LibEnv -> DGraph -> NodeSig -> NodeName-> FILTERING 
    -> Result (NodeSig, DGraph) 
 anaFiltering lg libEnv dg nsig nname filtering = case filtering of
-  FilterSymbolList selectOrReject syms@(G_symb_items_list lidS sItems) _ -> 
+  FilterSymbolList selectOrReject syms@(G_symb_items_list lidS sItems) _ ->
    if not selectOrReject then do
-     let strs = map (symb_items_name lidS) sItems
+     let strs = concatMap (symb_items_name lidS) sItems
          dgThm = computeDGraphTheories libEnv dg
          th = 
             case (globalTheory . labDG dgThm . getNode) nsig of 
