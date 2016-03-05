@@ -539,7 +539,7 @@ mapFact :: CASLSign -> Extended -> Fact -> Result CASLFORMULA
 mapFact cSig ex f = case f of
     ObjectPropertyFact posneg obe ind -> case ex of
         SimpleEntity (Entity _ NamedIndividual siri) -> do
-            oPropH <- mapObjPropI cSig obe (OIndi ind) (OIndi siri)
+            oPropH <- mapObjPropI cSig obe (OIndi siri) (OIndi ind)
             let oProp = case posneg of
                     Positive -> oPropH
                     Negative -> Negation oPropH nullRange
