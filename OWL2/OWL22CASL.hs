@@ -445,29 +445,39 @@ mapCard :: Bool -> CASLSign -> CardinalityType -> Int
     -> Result (FORMULA (), CASLSign)
 mapCard b cSig ct n prop d var = do
     let vlst = map (var +) [1 .. n]
-        vlstM = vlst ++ [n + var + 1]
+        vlstM = vlst ++ [n + var + 1] --[n + var + 1]
+        vlstE = [n + var + 1]
     (dOut, s) <- case d of
         Nothing -> return ([], [emptySign ()])
         Just y ->
            if b then let Left ce = y in mapAndUnzipM
                         (mapDescription cSig ce) vlst
            else let Right dr = y in mapAndUnzipM (mapDataRange cSig dr) vlst
+    (eOut, s') <- case d of
+        Nothing -> return ([], [emptySign ()])
+        Just y ->
+           if b then let Left ce = y in mapAndUnzipM
+                        (mapDescription cSig ce) vlstE
+           else let Right dr = y in mapAndUnzipM (mapDataRange cSig dr) vlstE
     let dlst = map (\ (x, y) -> mkNeg $ mkStEq (qualThing x) $ qualThing y)
                         $ comPairs vlst vlst
         dlstM = map (\ (x, y) -> mkStEq (qualThing x) $ qualThing y)
-                        $ comPairs vlstM vlstM
+                        $ mkPairs (n + var + 1) vlst
         qVars = map thingDecl vlst
         qVarsM = map thingDecl vlstM
+        qVarsE = map thingDecl vlstE
     oProps <- cardProps b cSig prop var vlst
     oPropsM <- cardProps b cSig prop var vlstM
-    let minLst = mkExist qVars $ conjunct $ dlst ++ dOut ++ oProps
-        maxLst = mkForall qVarsM $ mkImpl (conjunct $ oPropsM ++ dOut)
+    oPropsE <- cardProps b cSig prop var vlstE
+    let minLst = conjunct $ dlst ++ oProps ++ dOut
+        maxLst = mkImpl (conjunct $ oPropsE ++ eOut)
                         $ disjunct dlstM
-        ts = uniteL $ cSig : s
+        exactLst = mkExist qVars $ conjunct [minLst, mkForall qVarsE maxLst]
+        ts = uniteL $ [cSig] ++ s ++ s' 
     return $ case ct of
-            MinCardinality -> (minLst, ts)
-            MaxCardinality -> (maxLst, ts)
-            ExactCardinality -> (conjunct [minLst, maxLst], ts)
+            MinCardinality -> (mkExist qVars minLst, ts)
+            MaxCardinality -> (mkForall qVarsM maxLst, ts)
+            ExactCardinality -> (exactLst, ts) --(conjunct [minLst, maxLst], ts)
 
 -- | mapping of OWL2 Descriptions
 mapDescription :: CASLSign -> ClassExpression -> Int ->
