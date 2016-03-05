@@ -50,8 +50,6 @@ import CASL.Sublogic
 import Common.ProofTree
 import Common.DocUtils
 
-import Debug.Trace
-
 import Data.Maybe
 import Text.ParserCombinators.Parsec
 
@@ -117,7 +115,7 @@ uriToIdM = return . uriToCaslId
 
 -- | Extracts Id from URI
 uriToCaslId :: IRI -> Id
-uriToCaslId urI = trace ("translating " ++ show urI) $ let
+uriToCaslId urI = let
   repl a = if isAlphaNum a then [a] else if a/=':' then "_u" else ""
   getId = stringToId . (concatMap repl)
  in
