@@ -116,12 +116,12 @@ uriToIdM = return . uriToCaslId
 -- | Extracts Id from URI
 uriToCaslId :: IRI -> Id
 uriToCaslId urI = let
-  repl a = if isAlphaNum a then [a] else if a/=':' then "_u" else ""
+  repl a = if isAlphaNum a then [a] else if a/=':' then "_" else ""
   getId = stringToId . (concatMap repl)
  in
   if ((isDatatypeKey urI) && (isThing urI))  then
         getId $ localPart urI
-   else stringToId $ localPart urI
+   else getId $ localPart urI
     {-let
       ePart = expandedIRI urI
     in
