@@ -50,6 +50,8 @@ import CASL.Sublogic
 import Common.ProofTree
 import Common.DocUtils
 
+import Debug.Trace
+
 import Data.Maybe
 import Text.ParserCombinators.Parsec
 
@@ -115,20 +117,20 @@ uriToIdM = return . uriToCaslId
 
 -- | Extracts Id from URI
 uriToCaslId :: IRI -> Id
-uriToCaslId urI = let
+uriToCaslId urI = trace ("translating " ++ show urI) $ let
   repl a = if isAlphaNum a then [a] else if a/=':' then "_u" else ""
   getId = stringToId . (concatMap repl)
  in
-  if (isDatatypeKey urI) && (isThing urI)  then
+  if ((isDatatypeKey urI) && (isThing urI))  then
         getId $ localPart urI
-   else
-    let
+   else stringToId $ localPart urI
+    {-let
       ePart = expandedIRI urI
     in
       if ePart /= "" then
         getId $ expandedIRI urI
       else -- this catches the datatypes, e.g. xsd:time, weird
-        getId $ localPart urI
+        getId $ localPart urI-}
 
 tokDecl :: Token -> VAR_DECL
 tokDecl = flip mkVarDecl thing
