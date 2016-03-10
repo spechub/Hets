@@ -598,8 +598,8 @@ anaEntailmentDefn lg ln libEnv dg opts eo en et pos = do
                           (extName "Source" name) opts eo spS $ getRange spS
         (spTgt', tgtNsig, dg'') <- anaSpec True lg libEnv ln dg' (EmptyNode l)
                           (extName "Target" name) opts eo spT $ getRange spT
-        incl <- ginclusion lg (getSig srcNsig) (getSig tgtNsig)
-        let  dg3 = insLink dg'' incl globalThm SeeSource (getNode srcNsig) (getNode tgtNsig)
+        incl <- ginclusion lg (getSig tgtNsig) (getSig srcNsig)
+        let  dg3 = insLink dg'' incl globalThm SeeSource (getNode tgtNsig) (getNode srcNsig)
              gsig = GenSig (EmptyNode l) [] (EmptyNode l)
         let vsig = ExtViewSig srcNsig incl $ ExtGenSig gsig tgtNsig
         return (Entail_defn en et pos, dg3{
