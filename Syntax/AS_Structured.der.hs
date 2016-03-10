@@ -217,6 +217,7 @@ getSpecNames sp = let f = getSpecNames . item in case sp of
   Minimization as _ -> f as
   Union as _ -> Set.unions $ map f as
   Intersection as _ -> Set.unions $ map f as
+  Extraction as _ -> f as
   Extension as _ -> Set.unions $ map f as
   Free_spec as _ -> f as
   Cofree_spec as _ -> f as
