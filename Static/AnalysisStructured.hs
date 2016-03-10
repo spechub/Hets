@@ -364,7 +364,7 @@ anaSpecAux conser addSyms lg libEnv ln dg nsig name opts eo sp rg = case sp of
     let sp0 = item asp
         rname = extName "Extension" name
     (sp', nsig', dg0) <- anaSpec addSyms lg libEnv ln dg nsig rname opts eo sp0 rg
-    (ns', dg1) <- anaExtraction lg libEnv dg0 nsig' rname rg extr
+    (ns', dg1) <- anaExtraction lg libEnv dg0 nsig' name rg extr
     return (Extraction (replaceAnnoted sp' asp) extr, ns', dg1)
   Reduction asp restr ->
    do let sp1 = item asp
