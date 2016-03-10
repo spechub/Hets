@@ -115,6 +115,7 @@ dgOriginHeader o = case o of
     DGTranslation _ -> "translation"
     DGUnion -> "union"
     DGIntersect -> "intersection"
+    DGExtract -> "extraction"
     DGRestriction _ _ -> "restriction"
     DGRevealTranslation -> "translation part of a revealing"
     DGFreeOrCofree v -> map toLower (show v) ++ "-spec"
