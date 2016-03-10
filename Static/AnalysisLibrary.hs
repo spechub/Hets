@@ -10,7 +10,7 @@ Portability :  non-portable(Logic)
 Static analysis of DOL documents and CASL specification libraries
    Follows the verification semantics sketched in Chap. IV:6
    of the CASL Reference Manual.
-   Follows the semantics of DOL documents, DOL OMG standard, clause 10.2.1 
+   Follows the semantics of DOL documents, DOL OMG standard, clause 10.2.1
 -}
 
 module Static.AnalysisLibrary
@@ -337,10 +337,10 @@ alreadyDefined :: String -> String
 alreadyDefined str = "Name " ++ str ++ " already defined"
 
 -- | analyze a GENERICITY
-anaGenericity :: LogicGraph -> LibName -> DGraph -> HetcatsOpts
+anaGenericity :: LogicGraph -> LibEnv -> LibName -> DGraph -> HetcatsOpts
   -> ExpOverrides -> NodeName -> GENERICITY
   -> Result (GENERICITY, GenSig, DGraph)
-anaGenericity lg ln dg opts eo name
+anaGenericity lg libEnv ln dg opts eo name
     gen@(Genericity (Params psps) (Imported isps) pos) =
   let ms = currentBaseTheory dg in
   adjustPos pos $ case psps of
@@ -356,10 +356,10 @@ anaGenericity lg ln dg opts eo name
    (imps', nsigI, dg') <- case isps of
      [] -> return ([], baseNode, dg)
      _ -> do
-      (is', _, nsig', dgI) <- anaUnion False lg ln dg baseNode
+      (is', _, nsig', dgI) <- anaUnion False lg libEnv ln dg baseNode
           (extName "Imports" name) opts eo isps $ getRange isps
       return (is', JustNode nsig', dgI)
-   (ps', nsigPs, ns, dg'') <- anaUnion False lg ln dg' nsigI
+   (ps', nsigPs, ns, dg'') <- anaUnion False lg libEnv ln dg' nsigI
           (extName "Parameters" name) opts eo psps $ getRange psps
    return (Genericity (Params ps') (Imported imps') pos,
      GenSig nsigI nsigPs $ JustNode ns, dg'')
@@ -381,12 +381,12 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
         nName = makeName spn
     analyzing opts $ "spec " ++ spstr
     (gen', gsig@(GenSig _ _args allparams), dg') <-
-      liftR $ anaGenericity lg currLn dg opts eo nName gen
+      liftR $ anaGenericity lg libenv currLn dg opts eo nName gen
     (sanno1, impliesA) <- liftR $ getSpecAnnos pos asp
     when impliesA $ liftR $ plain_error ()
       "unexpected initial %implies in spec-defn" pos
     (sp', body, dg'') <-
-      liftR (anaSpecTop sanno1 True lg currLn dg'
+      liftR (anaSpecTop sanno1 True lg libenv currLn dg'
             allparams nName opts eo (item asp) pos)
     let libItem' = Spec_defn spn gen' (replaceAnnoted sp' asp) pos
         genv = globalEnv dg
@@ -412,7 +412,7 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
     asn <- expCurieT (globalAnnos dg) eo asn'
     let asstr = iriToStringUnsecure asn
     analyzing opts $ "arch spec " ++ asstr
-    (_, _, diag, archSig, dg', asp') <- liftR $ anaArchSpec lg currLn dg
+    (_, _, diag, archSig, dg', asp') <- liftR $ anaArchSpec lg libenv currLn dg
       opts eo emptyExtStUnitCtx Nothing $ item asp
     let asd' = Arch_spec_defn asn (replaceAnnoted asp' asp) pos
         genv = globalEnv dg'
@@ -437,7 +437,7 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
     analyzing opts $ "unit spec " ++ usstr
     l <- lookupCurrentLogic "Unit_spec_defn" lg
     (rSig, dg', usp') <-
-      liftR $ anaUnitSpec lg currLn dg opts eo (EmptyNode l) Nothing usp
+      liftR $ anaUnitSpec lg libenv currLn dg opts eo (EmptyNode l) Nothing usp
     unitSig <- liftR $ getUnitSigFromRef rSig
     let usd' = Unit_spec_defn usn usp' pos
         genv = globalEnv dg'
@@ -451,7 +451,7 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
     rn <- expCurieT (globalAnnos dg) eo rn'
     let rnstr = iriToStringUnsecure rn
     l <- lookupCurrentLogic "Ref_spec_defn" lg
-    (_, _, _, rsig, dg', rsp') <- liftR $ anaRefSpec lg currLn dg opts eo
+    (_, _, _, rsig, dg', rsp') <- liftR $ anaRefSpec lg libenv currLn dg opts eo
       (EmptyNode l) rn emptyExtStUnitCtx Nothing rsp
     analyzing opts $ "ref spec " ++ rnstr
     let rsd' = Ref_spec_defn rn rsp' pos
@@ -584,10 +584,10 @@ anaViewDefn :: LogicGraph -> LibName -> LibEnv -> DGraph -> HetcatsOpts
 anaViewDefn lg ln libenv dg opts eo vn gen vt gsis pos = do
   let vName = makeName vn
   (gen', gsig@(GenSig _ _ allparams), dg') <-
-       anaGenericity lg ln dg opts eo vName gen
+       anaGenericity lg libenv ln dg opts eo vName gen
   (vt', (src@(NodeSig nodeS gsigmaS)
         , tar@(NodeSig nodeT gsigmaT@(G_sign lidT _ _))), dg'') <-
-       anaViewType lg ln dg' allparams opts eo vName vt
+       anaViewType lg libenv ln dg' allparams opts eo vName vt
   let genv = globalEnv dg''
   if Map.member vn genv
     then plain_error (View_defn vn gen' vt' gsis pos, dg'', libenv, lg, eo)
@@ -620,21 +620,21 @@ anaViewDefn lg ln libenv dg opts eo vn gen vt gsis pos = do
                , libenv, lg, eo)
 
 {- | analyze a VIEW_TYPE
-The first three arguments give the global context
+The first four arguments give the global context
 The AnyLogic is the current logic
 The NodeSig is the signature of the parameter of the view
 flag, whether just the structure shall be analysed -}
-anaViewType :: LogicGraph -> LibName -> DGraph -> MaybeNode -> HetcatsOpts
+anaViewType :: LogicGraph -> LibEnv -> LibName -> DGraph -> MaybeNode -> HetcatsOpts
   -> ExpOverrides
   -> NodeName -> VIEW_TYPE -> Result (VIEW_TYPE, (NodeSig, NodeSig), DGraph)
-anaViewType lg ln dg parSig opts eo name (View_type aspSrc aspTar pos) = do
+anaViewType lg libEnv ln dg parSig opts eo name (View_type aspSrc aspTar pos) = do
   -- trace "called anaViewType" $ do
   l <- lookupCurrentLogic "VIEW_TYPE" lg
   let spS = item aspSrc
       spT = item aspTar
-  (spSrc', srcNsig, dg') <- anaSpec False lg ln dg (EmptyNode l)
+  (spSrc', srcNsig, dg') <- anaSpec False lg libEnv ln dg (EmptyNode l)
     (extName "Source" name) opts eo spS $ getRange spS
-  (spTar', tarNsig, dg'') <- anaSpec True lg ln dg' parSig
+  (spTar', tarNsig, dg'') <- anaSpec True lg libEnv ln dg' parSig
     (extName "Target" name) opts eo spT $ getRange spT
   return (View_type (replaceAnnoted spSrc' aspSrc)
                     (replaceAnnoted spTar' aspTar)
@@ -648,7 +648,7 @@ anaAlignDefn :: LogicGraph -> LibName -> LibEnv -> DGraph -> HetcatsOpts
 anaAlignDefn lg ln libenv dg opts eo an arities atype acorresps pos = do
      l <- lookupCurrentLogic "Align_defn" lg
      (atype', (src, tar), dg') <- liftR
-       $ anaViewType lg ln dg (EmptyNode l) opts eo (makeName an) atype
+       $ anaViewType lg libenv ln dg (EmptyNode l) opts eo (makeName an) atype
      let gsig1 = getSig src
          gsig2 = getSig tar
      case (gsig1, gsig2) of

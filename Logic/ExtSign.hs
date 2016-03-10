@@ -21,6 +21,7 @@ import Common.DocUtils
 import Common.ExtSign
 import Logic.Logic
 
+
 ext_sym_of :: Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol proof_tree
@@ -60,9 +61,20 @@ ext_signature_union :: Logic lid sublogics
         => lid -> ExtSign sign symbol -> ExtSign sign symbol
                -> Result (ExtSign sign symbol)
 ext_signature_union l e1@(ExtSign s1 _) e2@(ExtSign s2 _) = do
-    checkExtSign l "u1" e1
-    checkExtSign l "u2" e2
+    checkExtSign l "ext_signature_union_1" e1
+    checkExtSign l "ext_signature_union_2" e2
     s <- signature_union l s1 s2
+    return $ makeExtSign l s
+
+ext_signature_intersect :: Logic lid sublogics
+        basic_spec sentence symb_items symb_map_items
+        sign morphism symbol raw_symbol proof_tree
+        => lid -> ExtSign sign symbol -> ExtSign sign symbol
+               -> Result (ExtSign sign symbol)
+ext_signature_intersect l e1@(ExtSign s1 _) e2@(ExtSign s2 _) = do
+    checkExtSign l "ext_signature_intersect_1" e1
+    checkExtSign l "ext_signature_intersect_2" e2
+    s <- intersection l s1 s2
     return $ makeExtSign l s
 
 ext_is_subsig :: Logic lid sublogics
