@@ -122,6 +122,7 @@ data DGOrigin =
   | DGTranslation Renamed
   | DGUnion
   | DGIntersect
+  | DGExtract
   | DGRestriction (MaybeRestricted) (Set.Set G_symbol)
   | DGRevealTranslation
   | DGFreeOrCofree FreeOrCofree

@@ -360,6 +360,12 @@ anaSpecAux conser addSyms lg libEnv ln dg nsig name opts eo sp rg = case sp of
            -- ??? too simplistic for non-comorphism inter-logic translations
          return (ns, insLink dg'' mor globalDef SeeTarget n' node)
       return (Translation (replaceAnnoted sp1' asp) ren, fs, dgf)
+  Extraction asp extr -> do
+    let sp0 = item asp
+        rname = extName "Extension" name
+    (sp', nsig', dg0) <- anaSpec addSyms lg libEnv ln dg nsig rname opts eo sp0 rg
+    (ns', dg1) <- anaExtraction lg libEnv dg0 nsig' name rg extr
+    return (Extraction (replaceAnnoted sp' asp) extr, ns', dg1)
   Reduction asp restr ->
    do let sp1 = item asp
           rname = extName "Restriction" name
@@ -664,6 +670,23 @@ gsigUnionMaybe :: LogicGraph -> Bool -> MaybeNode -> G_sign -> Result G_sign
 gsigUnionMaybe lg both mn gsig = case mn of
   EmptyNode _ -> return gsig
   JustNode ns -> gsigUnion lg both (getSig ns) gsig
+
+anaExtraction :: LogicGraph -> LibEnv -> DGraph -> NodeSig -> NodeName -> Range ->
+              EXTRACTION -> Result (NodeSig, DGraph)
+anaExtraction lg libEnv dg nsig name rg _extr = do
+  let dg0 = markHiding libEnv dg
+      n = getNode nsig
+  if labelHasHiding $ labDG dg0 n then 
+    fail "cannot extract module from a non-flattenable OMS"
+   else do
+    let dgThm = computeDGraphTheories libEnv dg0
+        gth = case (globalTheory . labDG dgThm) n  of
+               Nothing -> error "not able to compute theory"
+               Just th -> th
+        (nsig', dg') = insGTheory dg (setSrcRange rg name) DGExtract gth
+    incl <- ginclusion lg (getSig nsig') (getSig nsig)
+    let  dg'' = insLink dg' incl globalThm SeeSource (getNode nsig') n
+    return (nsig', dg'')
 
 anaUnion :: Bool -> LogicGraph -> LibEnv -> LibName -> DGraph -> MaybeNode -> NodeName
   -> HetcatsOpts -> ExpOverrides -> [Annoted SPEC] -> Range
