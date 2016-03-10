@@ -400,6 +400,10 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
         , dg'' { globalEnv = Map.insert spn (SpecEntry
                   $ ExtGenSig gsig body) genv }
         , libenv, lg, eo)
+  Entail_defn en' etype pos -> do
+    en <- expCurieT (globalAnnos dg) eo en'
+    analyzing opts $ "entailment " ++ iriToStringUnsecure en
+    liftR $ anaEntailmentDefn lg currLn libenv dg opts eo en etype pos
   View_defn vn' gen vt gsis pos -> do
     vn <- expCurieT (globalAnnos dg) eo vn'
     analyzing opts $ "view " ++ iriToStringUnsecure vn
@@ -575,6 +579,35 @@ symbolsOf lg gs1@(G_sign l1 (ExtSign sig1 sys1) _)
         _ -> mkError "non-unique raw symbols" c
       ps <- symbolsOf lg gs1 gs2 corresps'
       return $ Set.insert p ps
+
+-- | analyse an entailment type
+-- | analyse genericity and view type and construct gmorphism
+anaEntailmentDefn :: LogicGraph -> LibName -> LibEnv -> DGraph -> HetcatsOpts
+  -> ExpOverrides -> IRI -> ENTAIL_TYPE -> Range
+  -> Result (LIB_ITEM, DGraph, LibEnv, LogicGraph, ExpOverrides)
+anaEntailmentDefn lg ln libEnv dg opts eo en et pos = do
+  case et of 
+   Entail_type on1 on2 range -> do
+     case (on1, on2) of
+      (MkOms asp1, MkOms asp2) -> do
+        let spS = item asp1
+            spT = item asp2
+            name = makeName en
+        l <- lookupCurrentLogic "ENTAIL_DEFN" lg
+        (spSrc', srcNsig, dg') <- anaSpec False lg libEnv ln dg (EmptyNode l)
+                          (extName "Source" name) opts eo spS $ getRange spS
+        (spTgt', tgtNsig, dg'') <- anaSpec True lg libEnv ln dg' (EmptyNode l)
+                          (extName "Target" name) opts eo spT $ getRange spT
+        incl <- ginclusion lg (getSig srcNsig) (getSig tgtNsig)
+        let  dg3 = insLink dg'' incl globalThm SeeSource (getNode srcNsig) (getNode tgtNsig)
+             gsig = GenSig (EmptyNode l) [] (EmptyNode l)
+        let vsig = ExtViewSig srcNsig incl $ ExtGenSig gsig tgtNsig
+        return (Entail_defn en et pos, dg3{
+                  globalEnv = Map.insert en (ViewOrStructEntry True vsig) $ globalEnv dg3},  
+                  libEnv, lg, eo)
+      _ -> fail "entailment between networks not supported yet"
+   _ -> fail "omsinnetwork entailment not supported yet"
+
 
 -- | analyse genericity and view type and construct gmorphism
 anaViewDefn :: LogicGraph -> LibName -> LibEnv -> DGraph -> HetcatsOpts
