@@ -77,11 +77,8 @@ import Proofs.ComputeColimit (insertColimitInGraph)
 
 import Common.Lib.Graph
 
-<<<<<<< HEAD
 import Static.ComputeTheory
 
-=======
->>>>>>> don't use prefixes to disambiguate in colimits and alignments
 -- overrides CUIRIE expansion for Download_items
 type ExpOverrides = Map.Map IRI FilePath
 
