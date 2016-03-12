@@ -116,19 +116,19 @@ uriToIdM = return . uriToCaslId
 -- | Extracts Id from URI
 uriToCaslId :: IRI -> Id
 uriToCaslId urI = let
-  repl a = if isAlphaNum a then [a] else if a/=':' then "_u" else ""
+  repl a = if isAlphaNum a then [a] else if a/=':' then "_" else ""
   getId = stringToId . (concatMap repl)
  in
-  if (isDatatypeKey urI) && (isThing urI)  then
+  if ((isDatatypeKey urI) && (isThing urI))  then
         getId $ localPart urI
-   else
-    let
+   else getId $ localPart urI
+    {-let
       ePart = expandedIRI urI
     in
       if ePart /= "" then
         getId $ expandedIRI urI
       else -- this catches the datatypes, e.g. xsd:time, weird
-        getId $ localPart urI
+        getId $ localPart urI-}
 
 tokDecl :: Token -> VAR_DECL
 tokDecl = flip mkVarDecl thing
@@ -445,29 +445,39 @@ mapCard :: Bool -> CASLSign -> CardinalityType -> Int
     -> Result (FORMULA (), CASLSign)
 mapCard b cSig ct n prop d var = do
     let vlst = map (var +) [1 .. n]
-        vlstM = vlst ++ [n + var + 1]
+        vlstM = vlst ++ [n + var + 1] --[n + var + 1]
+        vlstE = [n + var + 1]
     (dOut, s) <- case d of
         Nothing -> return ([], [emptySign ()])
         Just y ->
            if b then let Left ce = y in mapAndUnzipM
                         (mapDescription cSig ce) vlst
            else let Right dr = y in mapAndUnzipM (mapDataRange cSig dr) vlst
+    (eOut, s') <- case d of
+        Nothing -> return ([], [emptySign ()])
+        Just y ->
+           if b then let Left ce = y in mapAndUnzipM
+                        (mapDescription cSig ce) vlstE
+           else let Right dr = y in mapAndUnzipM (mapDataRange cSig dr) vlstE
     let dlst = map (\ (x, y) -> mkNeg $ mkStEq (qualThing x) $ qualThing y)
                         $ comPairs vlst vlst
         dlstM = map (\ (x, y) -> mkStEq (qualThing x) $ qualThing y)
-                        $ comPairs vlstM vlstM
+                        $ mkPairs (n + var + 1) vlst
         qVars = map thingDecl vlst
         qVarsM = map thingDecl vlstM
+        qVarsE = map thingDecl vlstE
     oProps <- cardProps b cSig prop var vlst
     oPropsM <- cardProps b cSig prop var vlstM
-    let minLst = mkExist qVars $ conjunct $ dlst ++ dOut ++ oProps
-        maxLst = mkForall qVarsM $ mkImpl (conjunct $ oPropsM ++ dOut)
+    oPropsE <- cardProps b cSig prop var vlstE
+    let minLst = conjunct $ dlst ++ oProps ++ dOut
+        maxLst = mkImpl (conjunct $ oPropsE ++ eOut)
                         $ disjunct dlstM
-        ts = uniteL $ cSig : s
+        exactLst = mkExist qVars $ conjunct [minLst, mkForall qVarsE maxLst]
+        ts = uniteL $ [cSig] ++ s ++ s' 
     return $ case ct of
-            MinCardinality -> (minLst, ts)
-            MaxCardinality -> (maxLst, ts)
-            ExactCardinality -> (conjunct [minLst, maxLst], ts)
+            MinCardinality -> (mkExist qVars minLst, ts)
+            MaxCardinality -> (mkForall qVarsM maxLst, ts)
+            ExactCardinality -> (exactLst, ts) --(conjunct [minLst, maxLst], ts)
 
 -- | mapping of OWL2 Descriptions
 mapDescription :: CASLSign -> ClassExpression -> Int ->
@@ -539,7 +549,7 @@ mapFact :: CASLSign -> Extended -> Fact -> Result CASLFORMULA
 mapFact cSig ex f = case f of
     ObjectPropertyFact posneg obe ind -> case ex of
         SimpleEntity (Entity _ NamedIndividual siri) -> do
-            oPropH <- mapObjPropI cSig obe (OIndi ind) (OIndi siri)
+            oPropH <- mapObjPropI cSig obe (OIndi siri) (OIndi ind)
             let oProp = case posneg of
                     Positive -> oPropH
                     Negative -> Negation oPropH nullRange
