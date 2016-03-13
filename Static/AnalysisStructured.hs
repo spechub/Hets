@@ -750,7 +750,7 @@ anaIntersect addSyms lg libEnv ln dg nsig name opts eo asps rg = case asps of
             False -> do
              let dgThm = computeDGraphTheories libEnv dg
                  theo:theos = map (\x -> case (globalTheory . labDG dgThm . getNode) x of
-                                            Nothing -> error "1"
+                                            Nothing -> error $ "not able to compute theory of node" ++ (show $ getNode x)
                                             Just th -> th) nsigs'
              gbigSigma <- gsigManyIntersect lg (map getSig nsigs')
              gth <- foldM (intersectG_sentences gbigSigma) theo theos
@@ -780,8 +780,8 @@ anaFiltering lg libEnv dg nsig nname filtering = case filtering of
          gmor <- ginclusion lg gsigma $ getSig nsig
          let dg2 = insLink dg' gmor globalThm SeeSource node $ getNode nsig
          return (ns, dg2)
-    else error "1"
-  FilterBasicSpec selectOrReject bSpec _ -> error "basic spec"
+    else error "analysis of select not implemented yet"
+  FilterBasicSpec selectOrReject bSpec _ -> error "filtering a basic spec not implemented yet"
 
 
 -- analysis of renamings
