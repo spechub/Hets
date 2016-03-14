@@ -52,6 +52,7 @@ import OWL2.StaticAnalysis
 import OWL2.Symbols
 import OWL2.Taxonomy
 import OWL2.Theorem
+import OWL2.ExtractModule
 
 data OWL2 = OWL2
 
@@ -130,6 +131,7 @@ instance StaticAnalysis OWL2 OntologyDocument Axiom
       signature_colimit OWL2 = return . signColimit
       corresp2th OWL2 = corr2theo
       equiv2cospan OWL2 = addEquiv
+      extract_module OWL2 = extractModule
 #ifdef UNI_PACKAGE
       theory_to_taxonomy OWL2 = onto2Tax
 #endif
