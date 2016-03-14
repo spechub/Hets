@@ -21,11 +21,20 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 
 import Common.Result
+import Common.ResultT
 import Common.AS_Annotation
 import qualified Common.IRI as IRI
 
 import Control.Monad
+import System.IO.Unsafe
 
 extractModule :: [IRI.IRI] -> (Sign, [Named Axiom])
                           -> Result (Sign, [Named Axiom])
-extractModule _ = return
+extractModule sig onto =
+  unsafePerformIO $ runResultT $ extractModuleAux sig onto
+
+extractModuleAux :: [IRI.IRI] -> (Sign, [Named Axiom])
+                          -> ResultT IO (Sign, [Named Axiom])
+extractModuleAux _ = liftR . return
+
+
