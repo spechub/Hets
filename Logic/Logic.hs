@@ -616,7 +616,10 @@ class ( Syntax lid basic_spec symbol symb_items symb_map_items
          equiv2cospan :: lid -> sign -> sign -> [symb_items] -> [symb_items]
            -> Result (sign, sign, sign, EndoMap symbol, EndoMap symbol)
          equiv2cospan _ _ _ _ _ = error "equiv2cospan nyi"
-
+         -- | extract the module 
+         extract_module :: lid -> [symbol] -> (sign, [Named sentence])
+                        -> Result (sign, [Named sentence])
+         extract_module _ _ = id
 
 -- | print a whole theory
 printTheory :: StaticAnalysis lid basic_spec sentence symb_items symb_map_items
