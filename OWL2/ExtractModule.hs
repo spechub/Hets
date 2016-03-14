@@ -20,21 +20,30 @@ import OWL2.MS
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
+import Common.Utils
 import Common.Result
 import Common.ResultT
 import Common.AS_Annotation
 import qualified Common.IRI as IRI
 
 import Control.Monad
+import Control.Monad.Trans
 import System.IO.Unsafe
 
 extractModule :: [IRI.IRI] -> (Sign, [Named Axiom])
-                          -> Result (Sign, [Named Axiom])
-extractModule sig onto =
-  unsafePerformIO $ runResultT $ extractModuleAux sig onto
+                           -> Result (Sign, [Named Axiom])
+extractModule syms onto =
+  unsafePerformIO $ runResultT $ extractModuleAux syms onto
 
 extractModuleAux :: [IRI.IRI] -> (Sign, [Named Axiom])
-                          -> ResultT IO (Sign, [Named Axiom])
-extractModuleAux _ = liftR . return
+                              -> ResultT IO (Sign, [Named Axiom])
+extractModuleAux syms onto = do
+  let ontolgy_content = "Class: A"
+  inFile <- lift $ getTempFile ontolgy_content "owl"
+  outFile <- lift $ getTempFile "" "owl"
+  let args = [inFile, "--extract-module", "-d"] 
+             ++ map show syms ++ ["-o", outFile]
+  (code,stdout,stderr) <- lift $ executeProcess "owltools" args ""
+  lift $ return onto
 
 
