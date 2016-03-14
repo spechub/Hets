@@ -617,7 +617,7 @@ class ( Syntax lid basic_spec symbol symb_items symb_map_items
            -> Result (sign, sign, sign, EndoMap symbol, EndoMap symbol)
          equiv2cospan _ _ _ _ _ = error "equiv2cospan nyi"
          -- | extract the module 
-         extract_module :: lid -> [symbol] -> (sign, [Named sentence])
+         extract_module :: lid -> [IRI] -> (sign, [Named sentence])
                         -> Result (sign, [Named sentence])
          extract_module _ _ = return
 
