@@ -707,92 +707,12 @@ anaAlignDefn lg ln libenv dg opts eo an arities atype acorresps pos = do
         if not aCheck then
           liftR $ mkError "Arities do not check" arities
          else do
-         -- correspondence
-         let isFunctional = isTotal gsig1 leftList &&
-                          isInjective leftList
-             allEquiv = all
-                         (\ c ->
-                           case c of
-                            Single_correspondence
-                               _ _ _ (Just Equivalent) _ -> True
-                            _ -> False )
-                        acorresps
-         newDg <-
-          if isFunctional && allEquiv then do
-           let eMap = foldl (\ f (gs1, gs2) ->
-                     case gs1 of
-                       G_symbol l1 s1 ->
-                         case gs2 of
-                           G_symbol l2 s2 ->
-                             let s1' = symbol_to_raw lid1
-                                         $ coerceSymbol l1 lid1 s1
-                                 s2' = symbol_to_raw lid1
-                                         $ coerceSymbol l2 lid1 s2
-                             in Map.insert s1' s2' f
-                            ) Map.empty $ Set.toList pairsSet
-           gsign2' <- liftR $ coerceSign lid2 lid1 "coerce sign" gsign2
-           phi <- liftR $
-                   induced_from_to_morphism lid1 eMap gsign1 gsign2'
-           let
-             gmor = GMorphism
-                       (mkIdComorphism lid1 (top_sublogic lid1))
-                       gsign1 ind1 phi startMorId
-             asign = AlignMor src gmor tar
-             dg'' = dg' { globalEnv = Map.insert an (AlignEntry asign)
-                         $ globalEnv dg' }
-             dg3 = insLink dg'' gmor globalThm
-                     (DGLinkAlign an) (getNode src) (getNode tar)
-           return dg3
-          else
-           if allEquiv then do
-            (pairedSymSet, eMap1, eMap2) <-
-              liftR $ foldM (\ (s, f1, f2) (gs1, gs2) ->
-                      case gs1 of
-                        G_symbol l1 s1 ->
-                          case gs2 of
-                            G_symbol l2 s2 -> do
-                              let s1' = coerceSymbol l1 lid1 s1
-                                  s2' = coerceSymbol l2 lid1 s2
-                              csym <- pair_symbols lid1 s1' s2'
-                              let s' = Set.insert csym s
-                                  f1' = Map.insert
-                                           (symbol_to_raw lid1 csym)
-                                           (symbol_to_raw lid1 s1')
-                                           f1
-                                  f2' = Map.insert
-                                           (symbol_to_raw lid1 csym)
-                                           (symbol_to_raw lid1 s2')
-                                           f2
-                              return (s', f1', f2')
-                             ) (Set.empty, Map.empty, Map.empty)
-                             $ Set.toList pairsSet
-            sigma0 <- liftR $ foldM (add_symb_to_sign lid1)
-              (empty_signature lid1) $ Set.toList pairedSymSet
-            let eSigma0 = makeExtSign lid1 sigma0
-            pi1 <- liftR $
-                    induced_from_to_morphism lid1 eMap1 eSigma0 gsign1
-            gsign2' <- liftR $
-                        coerceSign lid2 lid1 "coerce sign" gsign2
-            pi2 <- liftR $
-                    induced_from_to_morphism lid1 eMap2 eSigma0 gsign2'
-            let gsig = G_sign lid1 eSigma0 startSigId -- check index!!!!!
-                (sspan, dg'') = insGSig dg' (makeName an) DGAlignment gsig
-                gmor1 = GMorphism
-                        (mkIdComorphism lid1 (top_sublogic lid1))
-                        eSigma0 ind1 pi1 startMorId
-                gmor2 = GMorphism
-                        (mkIdComorphism lid1 (top_sublogic lid1))
-                        eSigma0 ind1 pi2 startMorId
-                dg3 = insLink dg'' gmor1 globalDef
-                      (DGLinkAlign an) (getNode sspan) (getNode src)
-                dg4 = insLink dg3 gmor2 globalDef
-                      (DGLinkAlign an) (getNode sspan) (getNode tar)
-                asign = AlignSpan sspan gmor1 src gmor2 tar
-            return dg4 { globalEnv = Map.insert an (AlignEntry asign)
-                            $ globalEnv dg4 }
-           else do
+         newDg <- do
+            -- (A_source, A_target, A_bridge,  
+            --  A_source -> O1, A_target -> O2)
             (gt1, gt2, gt, gmor1, gmor2) <- liftR $
-                generateWAlign gsig1 gsig2 acorresps
+                generateWAlign an gsig1 gsig2 acorresps
+            -- A_source
             let n1 = getNewNodeDG dg'
                 labN1 = newInfoNodeLab
                          (makeName an
@@ -800,6 +720,7 @@ anaAlignDefn lg ln libenv dg opts eo an arities atype acorresps pos = do
                          (newNodeInfo DGAlignment)
                          gt1
                 dg1 = insLNodeDG (n1, labN1) dg'
+            -- A_target
                 n2 = getNewNodeDG dg1
                 labN2 = newInfoNodeLab
                          (makeName an
@@ -807,6 +728,7 @@ anaAlignDefn lg ln libenv dg opts eo an arities atype acorresps pos = do
                          (newNodeInfo DGAlignment)
                          gt2
                 dg2 = insLNodeDG (n2, labN2) dg1
+             -- A_bridge
                 n = getNewNodeDG dg2
                 labN = newInfoNodeLab
                          (makeName an
@@ -814,19 +736,24 @@ anaAlignDefn lg ln libenv dg opts eo an arities atype acorresps pos = do
                          (newNodeInfo DGAlignment)
                          gt
                 dg3 = insLNodeDG (n, labN) dg2
+             -- A_target-> O2
                 (_, dg4) = insLEdgeDG
-                         (n2, n, globDefLink gmor2 $ DGLinkAlign an)
+                         (n2, getNode tar, globDefLink gmor2 $ DGLinkAlign an)
                          dg3
+             -- A_source -> O1 
                 (_, dg5) = insLEdgeDG
-                        (n1, n, globDefLink gmor1 $ DGLinkAlign an)
+                        (n1, getNode src, globDefLink gmor1 $ DGLinkAlign an)
                         dg4
-            incl1 <- liftR $ ginclusion lg (signOf gt1) gsig1
-            incl2 <- liftR $ ginclusion lg (signOf gt2) gsig2
+             -- inclusion of A_source in A_bridge 
+            incl1 <- liftR $ ginclusion lg (signOf gt1) $ signOf gt
+             -- inclusion of A_target in A_bridge
+            incl2 <- liftR $ ginclusion lg (signOf gt2) $ signOf gt
+             -- add the inclusions to the dg
             let (_, dg6) = insLEdgeDG
-                             (n1, getNode src,
+                             (n1, n,
                                globDefLink incl1 $ DGLinkAlign an) dg5
                 (_, dg7) = insLEdgeDG
-                             (n2, getNode tar,
+                             (n2, n,
                                globDefLink incl2 $ DGLinkAlign an) dg6
                 -- store the alignment in the global env
                 asign = WAlign (NodeSig n1 $ signOf gt1) incl1 gmor1
@@ -834,91 +761,80 @@ anaAlignDefn lg ln libenv dg opts eo an arities atype acorresps pos = do
                               src tar (NodeSig n $ signOf gt)
             return dg7 {globalEnv = Map.insert an (AlignEntry asign)
                             $ globalEnv dg7}
-            -- error "nyi"
          let itm = Align_defn an arities atype' acorresps SingleDomain pos
              anstr = iriToStringUnsecure an
          if Map.member an $ globalEnv dg
           then liftR $ plain_error (itm, dg, libenv, lg, eo)
                 (alreadyDefined anstr) pos
           else return (itm, newDg, libenv, lg, eo)
-               -- error "Analysis of alignments nyi"
        else liftR $ fatal_error
          ("Alignments only work between ontologies in the same logic\n"
          ++ show (prettyLG lg atype)) pos
 
-generateWAlign :: G_sign -> G_sign -> [CORRESPONDENCE]
+generateWAlign :: IRI -> G_sign -> G_sign -> [CORRESPONDENCE]
                -> Result (G_theory, G_theory, G_theory, GMorphism, GMorphism)
-generateWAlign (G_sign lid1 (ExtSign ssig _) _)
+generateWAlign an
+               (G_sign lid1 (ExtSign ssig _) _)
                (G_sign lid2 (ExtSign tsig _) _)
                corrs = do
  tsig' <- coercePlainSign lid2 lid1 "coercePlainSign" tsig
- let (eSymbs, cSymbs) = foldl (\ (l1, l2) c -> case c of
-                      Single_correspondence _ s1 s2 (Just Equivalent) _ ->
-                        ((s1, s2) : l1, l2)
-                      Single_correspondence _ s1 s2 (Just rref) _ ->
-                        (l1, (s1, s2, refToRel rref) : l2)
-                      _ -> error "only single correspondences") ([], []) corrs
  -- 1. initialize
+ let
      sig1 = empty_signature lid1
      sig2 = empty_signature lid1
      sig = empty_signature lid1
      phi1 = Map.empty
      phi2 = Map.empty
-{- for each equivalence in eSymbs
- put s1 in gth1, sigma_1(s1) = s1_s2
- put s2 in gth2, sigma_2(s2) = s1_s2
- put s1_s2 in gth -}
-     addEquiv (s1, s2, s, p1, p2) (G_symb_items_list lids1 l1,
-                            G_symb_items_list lids2 l2) = do
-       l1' <- coerceSymbItemsList lids1 lid1 "coerceSymbItemsList" l1
-       l2' <- coerceSymbItemsList lids2 lid1 "coerceSymbItemsList" l2
-       (ctsig, cssig1, cssig2, cmap1, cmap2) <-
-          equiv2cospan lid1 ssig tsig' l1' l2'
-       s1' <- signature_union lid1 s1 cssig1
-       s2' <- signature_union lid1 s2 cssig2
-       s' <- signature_union lid1 s ctsig
-       let p1' = Map.union cmap1 p1
-           p2' = Map.union cmap2 p2
-       return (s1', s2', s', p1', p2')
- (sig1', sig2', sig', phi1', phi2') <- foldM addEquiv
-       (sig1, sig2, sig, phi1, phi2) eSymbs
- {- for each other correspondence in cSymbs
- put s1 in gth1, sigma_1(s1) = s1 if undefined
- put s2 in gth2, sigma_2(s2) = s2 if undefined
- gtI = corresp2th s1 s2 rref
- make the union of gtI with gth,
- possibly renaming symbols in gtI according to sigma_1,2 -}
+ -- 2. for each correspondence (e1,e2,r), 
+ --    build the bridge ontology (s', sens')
+ --    the signatures s1'' and s2'' of the involved symbols
+ --    together with the maps (aname:e1 -> e1) and (aname:e2 -> e2)
+ -- This is done by corresp2th, in a logic dependent way.
  let addCorresp (s1, s2, s, sens, p1, p2) (G_symb_items_list lids1 l1,
                             G_symb_items_list lids2 l2, rrel) = do
        l1' <- coerceSymbItemsList lids1 lid1 "coerceSymbItemsList" l1
        l2' <- coerceSymbItemsList lids2 lid1 "coerceSymbItemsList" l2
-       (sigb, senb, s1', s2', eMap1, eMap2) <- corresp2th lid1 ssig tsig'
-                                                          l1' l2' p1 p2 rrel
+       (sigb, senb, s1', s2', eMap1, eMap2) <- 
+           corresp2th lid1 (iriToStringUnsecure an)
+                           ssig tsig'
+                           l1' l2' p1 p2 rrel
        s1'' <- signature_union lid1 s1 s1'
        s2'' <- signature_union lid1 s2 s2'
        s' <- signature_union lid1 s sigb
        let p1' = Map.union eMap1 p1
            p2' = Map.union eMap2 p2
-       return (s1'', s2'', s', sens ++ senb, p1', p2')
+           sens' = sens ++ senb
+       return (s1'', s2'', s', sens', p1', p2')
  (sig1'', sig2'', sig'', sens'', sMap1, sMap2) <- foldM addCorresp
-       (sig1', sig2', sig', [], phi1', phi2') cSymbs
- -- make G_ results
+       (sig1, sig2, sig, [], phi1, phi2) $ 
+       map (\c -> case c of 
+                   Single_correspondence _ s1 s2 (Just rref) _ -> 
+                     (s1, s2, refToRel rref)
+                   _ -> error "only single correspondences for now") 
+       corrs
+ -- 3. make G_ results
+ -- gth1 is A_source
  let gth1 = noSensGTheory lid1 (mkExtSign sig1'') startSigId
+ -- gth2 is A_target
      gth2 = noSensGTheory lid1 (mkExtSign sig2'') startSigId
+ -- gth is A_bridge
      gth = G_theory lid1 Nothing (mkExtSign sig'') startSigId
                                  (toThSens sens'') startThId
+ -- prepare the maps for morphism generation
      rsMap1 = Map.mapKeys (symbol_to_raw lid1) $
               Map.map (symbol_to_raw lid1) sMap1
      rsMap2 = Map.mapKeys (symbol_to_raw lid1) $
               Map.map (symbol_to_raw lid1) sMap2
+ -- mor1 should go from A_source to O1: sig1'' to ssig
  mor1 <- induced_from_to_morphism
-            lid1 rsMap1 (mkExtSign sig1'') (mkExtSign sig'')
+            lid1 rsMap1 (mkExtSign sig1'') (mkExtSign ssig)
  let gmor1 = gEmbed2 (signOf gth1) $ mkG_morphism lid1 mor1
+ -- mor2 should go from A_target to O2: sig2'' to tsig'
  mor2 <- {- trace "mor2:" $
          trace ("source: " ++ (show sig2'')) $
-         trace ("target: " ++ (show sig''))  $ -}
+         trace ("target: " ++ (show tsig'))  $ -}
          induced_from_to_morphism
-            lid1 rsMap2 (mkExtSign sig2'') (mkExtSign sig'')
+            lid1 rsMap2 (mkExtSign sig2'') (mkExtSign tsig')
  let gmor2 = gEmbed2 (signOf gth2) $ mkG_morphism lid1 mor2
  return (gth1, gth2, gth, gmor1, gmor2)
 

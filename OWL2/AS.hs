@@ -19,6 +19,7 @@ module OWL2.AS where
 
 import Common.Id
 import Common.Keywords (stringS)
+import Common.SetColimit
 
 import Common.Result
 
@@ -109,6 +110,12 @@ setFull :: QName -> QName
 setFull q = q {iriType = Full}
 
 type IRI = QName
+
+instance SymbolName QName where
+ addString (q, s) = q { localPart = localPart q ++ s,
+                             expandedIRI = expandedIRI q ++ s
+                           }
+
 
 -- | checks if an IRI is an anonymous individual
 isAnonymous :: IRI -> Bool

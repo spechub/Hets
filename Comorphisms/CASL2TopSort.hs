@@ -112,7 +112,7 @@ generateSubSortMap sortRels pMap =
     let disAmbMap = Map.map disAmbPred
         disAmbPred v = let pn = predicatePI v in
           case dropWhile (`Set.member` MapSet.keysSet pMap)
-                   $ pn : map (appendNumber (predicatePI v)) [1 ..] of
+                   $ pn : map (\x -> appendString (predicatePI v) $ show x) [1 ..] of
             n : _ -> v { predicatePI = n }
             [] -> error "generateSubSortMap"
         mR = (Rel.flatSet .

@@ -86,11 +86,6 @@ signColimit graph = let
                      ) $ labNodes graph
   in (colimSign, colimMor)
 
-instance SymbolName QName where
- addIntAsSuffix (q, i) = q { namePrefix = show i,
-                             expandedIRI = expandedIRI q ++ show i
-                           }
-
 getEntityTypeMap :: EntityType -> (Int, OWLMorphism)
                     -> (Int, Map.Map QName QName)
 getEntityTypeMap e (i, phi) = let

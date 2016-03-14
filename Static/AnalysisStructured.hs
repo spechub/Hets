@@ -596,7 +596,7 @@ anaSpecAux conser addSyms lg libEnv ln dg nsig name opts eo sp rg = case sp of
             lEdge x y m = case filter (\ (_, z, l) -> (z == y) &&
                                          (dgl_morphism l == m) ) $
                                out bgraph x of
-                             [] -> error "No edge found"
+                             [] -> error $ "No edge found:\n x:" ++ show x ++ "\n y: " ++ show y
                              lE : _ -> lE
            in case cEntry of
                SpecEntry extGenSig -> let
@@ -608,11 +608,11 @@ anaSpecAux conser addSyms lg libEnv ln dg nsig name opts eo sp rg = case sp of
                  in (nub $ s : t : cN, lEdge s t gm : cE)
                AlignEntry asig ->
                   case asig of
-                   AlignMor src gmor tar -> let
+                   AlignMor src gmor tar ->  let
                      s = getNode src
                      t = getNode tar
                     in (nub $ s : t : cN, lEdge s t gmor : cE)
-                   AlignSpan src phi1 tar1 phi2 tar2 -> let
+                   AlignSpan src phi1 tar1 phi2 tar2 ->  let
                      s = getNode src
                      t1 = getNode tar1
                      t2 = getNode tar2
@@ -625,8 +625,8 @@ anaSpecAux conser addSyms lg libEnv ln dg nsig name opts eo sp rg = case sp of
                       t2 = getNode tar2
                       b = getNode bri
                      in (nub $ s1 : s2 : t1 : t2 : b : cN,
-                         [lEdge s1 t1 i1, lEdge s1 b sig1,
-                          lEdge s2 t2 i2, lEdge s2 b sig2] ++ cE)
+                         [lEdge s1 b i1, lEdge s1 t1 sig1,
+                          lEdge s2 b i2, lEdge s2 t2 sig2] ++ cE)
                _ -> error $ show cItem
                     ++ "is not an ontology, a view or an alignment"
         addGDefLinks (cN, iN, cE) n = let
@@ -676,7 +676,7 @@ anaExtraction :: LogicGraph -> LibEnv -> DGraph -> NodeSig -> NodeName -> Range 
 anaExtraction lg libEnv dg nsig name rg _extr = do
   let dg0 = markHiding libEnv dg
       n = getNode nsig
-  if labelHasHiding $ labDG dg0 n then 
+  if labelHasHiding $ labDG dg0 n then
     fail "cannot extract module from a non-flattenable OMS"
    else do
     let dgThm = computeDGraphTheories libEnv dg0
