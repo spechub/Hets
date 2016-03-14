@@ -619,7 +619,7 @@ class ( Syntax lid basic_spec symbol symb_items symb_map_items
          -- | extract the module 
          extract_module :: lid -> [symbol] -> (sign, [Named sentence])
                         -> Result (sign, [Named sentence])
-         extract_module _ _ = id
+         extract_module _ _ = return
 
 -- | print a whole theory
 printTheory :: StaticAnalysis lid basic_spec sentence symb_items symb_map_items
