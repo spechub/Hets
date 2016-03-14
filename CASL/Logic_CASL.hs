@@ -130,6 +130,7 @@ instance Syntax CASL CASLBasicSpec
          parse_symb_items CASL = Just $ symbItems []
          parse_symb_map_items CASL = Just $ symbMapItems []
          toItem CASL = bsToItem
+         symb_items_name CASL = symbItemsName
 
 -- lattices (for sublogics)
 

@@ -25,6 +25,10 @@ data ExtEntityType = AnyEntity | PrefixO | EntityType EntityType
 data SymbItems = SymbItems ExtEntityType [IRI]
     deriving (Show, Eq, Typeable, Data)
 
+symbItemsName :: SymbItems -> [String]
+symbItemsName (SymbItems _ iris) = 
+ map showQN iris
+
 data SymbMapItems = SymbMapItems ExtEntityType [(IRI, Maybe IRI)]
     deriving (Show, Eq, Typeable, Data)
 

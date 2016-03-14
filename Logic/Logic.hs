@@ -260,11 +260,13 @@ class (Language lid, PrintTypeConv basic_spec, GetRange basic_spec,
          -- | parser for symbol maps
          parse_symb_map_items :: lid -> Maybe (AParser st symb_map_items)
          toItem :: lid -> basic_spec -> Item
+         symb_items_name :: lid -> symb_items -> [String]
          -- default implementations
          parse_basic_spec _ = Nothing
          parseSingleSymbItem _ = Nothing
          parse_symb_items _ = Nothing
          parse_symb_map_items _ = Nothing
+         symb_items_name _ _ = [""]
          toItem _ bs = mkFlatItem ("Basicspec", pretty bs) $ getRangeSpan bs
 
 basicSpecParser :: Syntax lid basic_spec symbol symb_items symb_map_items

@@ -80,7 +80,8 @@ data SPEC = Basic_spec G_basic_spec Range
 data Network = Network [LABELED_ONTO_OR_INTPR_REF] [IRI] Range
   deriving (Show, Eq, Typeable)
 
-data FILTERING = SelectOrReject Bool G_basic_spec Range
+data FILTERING = FilterBasicSpec Bool G_basic_spec Range
+               | FilterSymbolList Bool  G_symb_items_list Range
   deriving (Show, Eq, Typeable)
 
 data EXTRACTION = ExtractOrRemove Bool [IRI] Range
@@ -215,6 +216,7 @@ getSpecNames sp = let f = getSpecNames . item in case sp of
   Reduction as _ -> f as
   Approximation as _ -> f as
   Minimization as _ -> f as
+  Filtering as _ -> f as
   Union as _ -> Set.unions $ map f as
   Intersection as _ -> Set.unions $ map f as
   Extraction as _ -> f as
