@@ -680,7 +680,7 @@ gsigUnionMaybe lg both mn gsig = case mn of
 
 anaExtraction :: LogicGraph -> LibEnv -> DGraph -> NodeSig -> NodeName -> Range ->
               EXTRACTION -> Result (NodeSig, DGraph)
-anaExtraction lg libEnv dg nsig name rg _extr = do
+anaExtraction lg libEnv dg nsig name rg (ExtractOrRemove _ iris _) = do
   let dg0 = markHiding libEnv dg
       n = getNode nsig
   if labelHasHiding $ labDG dg0 n then
@@ -690,7 +690,14 @@ anaExtraction lg libEnv dg nsig name rg _extr = do
         gth = case (globalTheory . labDG dgThm) n  of
                Nothing -> error "not able to compute theory"
                Just th -> th
-        (nsig', dg') = insGTheory dg (setSrcRange rg name) DGExtract gth
+    mTh <- case gth of
+        G_theory lid syntax (ExtSign sig _) _ gsens _ -> do 
+          let nsens = toNamedList gsens 
+          (msig, msens) <- extract_module lid iris (sig, nsens)
+          return $ G_theory lid syntax 
+                            (ExtSign msig $ foldl Set.union Set.empty $ sym_of lid msig) startSigId 
+                            (toThSens msens) startThId
+    let (nsig', dg') = insGTheory dg (setSrcRange rg name) DGExtract mTh
     incl <- ginclusion lg (getSig nsig') (getSig nsig)
     let  dg'' = insLink dg' incl globalThm SeeSource (getNode nsig') n
     return (nsig', dg'')
