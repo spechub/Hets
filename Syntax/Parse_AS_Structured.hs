@@ -389,8 +389,8 @@ minimization lg = do
 extraction :: LogicGraph -> AParser st EXTRACTION
 extraction lg = do
   p <- asKey extractS <|> asKey removeS
-  is <- many1 (hetIRI lg)
-  return . ExtractOrRemove (tokStr p == extractS) is $ tokPos p
+  is <- separatedBy (hetIRI lg) commaT
+  return . ExtractOrRemove (tokStr p == extractS) (fst is) $ tokPos p
 
 filtering :: LogicGraph -> AParser st FILTERING
 filtering lg = do
