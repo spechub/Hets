@@ -36,6 +36,8 @@ import System.IO.Unsafe
 
 import Common.ExtSign
 
+import Debug.Trace
+
 extractModule :: [IRI.IRI] -> (Sign, [Named Axiom])
                            -> Result (Sign, [Named Axiom])
 extractModule syms onto =
@@ -46,17 +48,17 @@ extractModuleAux :: [IRI.IRI] -> (Sign, [Named Axiom])
 extractModuleAux syms onto = do
   let ontology_content = show $ printOWLBasicTheory onto 
    -- should be a string with the ontology from onto, maybe create a G_theory and pretty print it..., show theory
-  inFile <- lift $ getTempFile ontology_content "owl"
-  outFile <- lift $ getTempFile "" "owl"
-  let args = [inFile, "--extract-module", "-d"] 
+  inFile <- lift $ getTempFile ontology_content "in"
+  outFile <- lift $ getTempFile "" "out"
+  let args = trace (show syms) $ [inFile, "--extract-module", "-m STAR"] 
              ++ map show syms ++ ["-o", outFile]
-  (_code,_stdout,_stderr) <- lift $ executeProcess "owltools" args ""
+  (_code,_stdout,_stderr) <- trace (show args) $ lift $ executeProcess "owltools" args ""
   -- in outFile is the module, it needs to be parsed, see parseOWL in ParseOWLAsLibDefn.hs, convert a LIB_DEFN to a theory...
   (_imap,ontos) <- parseOWL False outFile
   -- do liftR for lifting something from Result to ResultT
   case ontos of
    [modOnto] -> do 
-     (_ontodoc, ExtSign sig _, sens) <- liftR $ basicOWL2Analysis (modOnto, emptySign, emptyGlobalAnnos) 
+     (_ontodoc, ExtSign sig _, sens) <- trace (show modOnto) $ liftR $ basicOWL2Analysis (modOnto, emptySign, emptyGlobalAnnos) 
      lift $ return (sig, sens)
    _ -> error "the module should be just one ontology"
 
