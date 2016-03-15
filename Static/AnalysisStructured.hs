@@ -680,7 +680,9 @@ gsigUnionMaybe lg both mn gsig = case mn of
 
 anaExtraction :: LogicGraph -> LibEnv -> DGraph -> NodeSig -> NodeName -> Range ->
               EXTRACTION -> Result (NodeSig, DGraph)
-anaExtraction lg libEnv dg nsig name rg (ExtractOrRemove _ iris _) = do
+anaExtraction lg libEnv dg nsig name rg (ExtractOrRemove b iris _) = if not b then 
+  fail "analysis of remove not implemented yet"
+ else do
   let dg0 = markHiding libEnv dg
       n = getNode nsig
   if labelHasHiding $ labDG dg0 n then

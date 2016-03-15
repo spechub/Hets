@@ -13,15 +13,11 @@ OWL 2 module extraction
 
 module OWL2.ExtractModule where
 
---import OWL2.AS
 import OWL2.Sign
 import OWL2.MS
 import OWL2.ManchesterPrint
 import OWL2.ParseOWL
 import OWL2.StaticAnalysis
-
---import qualified Data.Set as Set
---import qualified Data.Map as Map
 
 import Common.Utils
 import Common.Result
@@ -30,7 +26,6 @@ import Common.AS_Annotation
 import Common.GlobalAnnotations
 import qualified Common.IRI as IRI
 
---import Control.Monad
 import Control.Monad.Trans
 import System.IO.Unsafe
 
