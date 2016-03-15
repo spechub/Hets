@@ -5,7 +5,7 @@ License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
-Portability :  non-portable (imports Logic.Logic)
+Portability :  non-portable 
 
 analyse OWL files by calling the external Java parser.
 -}
