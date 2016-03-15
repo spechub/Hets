@@ -438,6 +438,9 @@ etypeS = "etype"
 existsS :: String
 existsS = "exists"
 
+extractS :: String
+extractS = "extract"
+
 falseS :: String
 falseS = "false"
 
@@ -564,6 +567,9 @@ refinementS = "refinement"
 
 rejectS :: String
 rejectS = "reject"
+
+removeS :: String
+removeS = "remove"
 
 resultS :: String
 resultS = "result"
