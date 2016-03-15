@@ -50,7 +50,7 @@ extractModuleAux syms onto = do
    -- should be a string with the ontology from onto, maybe create a G_theory and pretty print it..., show theory
   inFile <- lift $ getTempFile ontology_content "in"
   outFile <- lift $ getTempFile "" "out"
-  let args = trace (show syms) $ [inFile, "--extract-module", "-m STAR"] 
+  let args = trace (show syms) $ [inFile, "--extract-module", "-m", "STAR"] 
              ++ map (\x -> show $ x{IRI.hasAngles = False}) syms ++ ["-o", outFile]
   (_code,_stdout,_stderr) <- trace (show args) $ lift $ executeProcess "owltools" args ""
   -- in outFile is the module, it needs to be parsed, see parseOWL in ParseOWLAsLibDefn.hs, convert a LIB_DEFN to a theory...
