@@ -18,6 +18,7 @@ import OWL2.Sign
 import OWL2.MS
 import OWL2.ManchesterPrint
 import OWL2.ParseOWL
+import OWL2.StaticAnalysis
 
 --import qualified Data.Set as Set
 --import qualified Data.Map as Map
@@ -26,13 +27,14 @@ import Common.Utils
 import Common.Result
 import Common.ResultT
 import Common.AS_Annotation
+import Common.GlobalAnnotations
 import qualified Common.IRI as IRI
 
 --import Control.Monad
 import Control.Monad.Trans
 import System.IO.Unsafe
 
-import Debug.Trace
+import Common.ExtSign
 
 extractModule :: [IRI.IRI] -> (Sign, [Named Axiom])
                            -> Result (Sign, [Named Axiom])
@@ -48,10 +50,14 @@ extractModuleAux syms onto = do
   outFile <- lift $ getTempFile "" "owl"
   let args = [inFile, "--extract-module", "-d"] 
              ++ map show syms ++ ["-o", outFile]
-  (code,stdout,stderr) <- lift $ executeProcess "owltools" args ""
+  (_code,_stdout,_stderr) <- lift $ executeProcess "owltools" args ""
   -- in outFile is the module, it needs to be parsed, see parseOWL in ParseOWLAsLibDefn.hs, convert a LIB_DEFN to a theory...
-  (imap,ontos) <- parseOWL False outFile
-  -- do liftIO for lifting something from Result to ResultT
-  lift $ return onto
+  (_imap,ontos) <- parseOWL False outFile
+  -- do liftR for lifting something from Result to ResultT
+  case ontos of
+   [modOnto] -> do 
+     (_ontodoc, ExtSign sig _, sens) <- liftR $ basicOWL2Analysis (modOnto, emptySign, emptyGlobalAnnos) 
+     lift $ return (sig, sens)
+   _ -> error "the module should be just one ontology"
 
 
