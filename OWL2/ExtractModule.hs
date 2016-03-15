@@ -13,14 +13,14 @@ OWL 2 module extraction
 
 module OWL2.ExtractModule where
 
-import OWL2.AS
+--import OWL2.AS
 import OWL2.Sign
 import OWL2.MS
 import OWL2.ManchesterPrint
-import OWL2.ParseOWLAsLibDefn
+import OWL2.ParseOWL
 
-import qualified Data.Set as Set
-import qualified Data.Map as Map
+--import qualified Data.Set as Set
+--import qualified Data.Map as Map
 
 import Common.Utils
 import Common.Result
@@ -28,7 +28,7 @@ import Common.ResultT
 import Common.AS_Annotation
 import qualified Common.IRI as IRI
 
-import Control.Monad
+--import Control.Monad
 import Control.Monad.Trans
 import System.IO.Unsafe
 
@@ -50,7 +50,7 @@ extractModuleAux syms onto = do
              ++ map show syms ++ ["-o", outFile]
   (code,stdout,stderr) <- lift $ executeProcess "owltools" args ""
   -- in outFile is the module, it needs to be parsed, see parseOWL in ParseOWLAsLibDefn.hs, convert a LIB_DEFN to a theory...
-  libDefn <- parseOWL False outFile
+  (imap,ontos) <- parseOWL False outFile
   -- do liftIO for lifting something from Result to ResultT
   lift $ return onto
 

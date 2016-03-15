@@ -111,7 +111,7 @@ readLibDefn lgraph opts mr file fileForPos input =
       Qvt -> liftIO $ fmap (: []) $ parseQvt file
       TPTPIn -> liftIO $ fmap (: []) $ parseTPTP input file
 #ifndef NOOWLLOGIC
-      OWLIn _ -> parseOWL (isStructured opts) file
+      OWLIn _ -> parseOWLAsLibDefn (isStructured opts) file
 #endif
       _ -> case runParser (library lgraph { dolOnly = ty == DOLIn })
            (emptyAnnos ()) fileForPos input of
