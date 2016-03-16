@@ -438,8 +438,8 @@ corr2theo aname ssig tsig l1 l2 eMap1 eMap2 rref = do
       case
        (match1, match2) of
           ([e1], [e2]) -> do
-           let e1' = e1 {cutIRI =  addString (cutIRI e1, "_source")} 
-               e2' = e2 {cutIRI =  addString (cutIRI e2, "_target")} 
+           let e1' = e1 -- {cutIRI =  addString (cutIRI e1, "_source")} 
+               e2' = e2 -- {cutIRI =  addString (cutIRI e2, "_target")} 
                sig = emptySign
                eMap1' = Map.union eMap1 $ Map.fromAscList [(e1', e1)]
                eMap2' = Map.union eMap2 $ Map.fromAscList [(e2', e2)]
