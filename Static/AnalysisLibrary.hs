@@ -790,12 +790,25 @@ generateWAlign an
  --    the signatures s1'' and s2'' of the involved symbols
  --    together with the maps (aname:e1 -> e1) and (aname:e2 -> e2)
  -- This is done by corresp2th, in a logic dependent way.
+ -- first we check if we must disambiguate names in the bridge ontology
+ let flag = let insNames aSet aLid aSItems = foldl (\s n -> Set.insert n s) aSet $ 
+                                              map (symb_items_name aLid) aSItems 
+                (syms1, syms2) =  
+                 foldl (\ (set1, set2) c -> case c of
+                               Single_correspondence _ (G_symb_items_list lidS1 sitems1) 
+                                                       (G_symb_items_list lidS2 sitems2) _ _ -> 
+                                   (insNames set1 lidS1 sitems1, 
+                                    insNames set2 lidS2 sitems2)
+                               _ -> error "only single corrs") 
+                       (Set.empty, Set.empty) corrs
+             in not $ Set.null $ Set.intersection syms1 syms2 
+ -- then we set a flag in addCorresp to True if disambiguation is needed
  let addCorresp (s1, s2, s, sens, p1, p2) (G_symb_items_list lids1 l1,
                             G_symb_items_list lids2 l2, rrel) = do
        l1' <- coerceSymbItemsList lids1 lid1 "coerceSymbItemsList" l1
        l2' <- coerceSymbItemsList lids2 lid1 "coerceSymbItemsList" l2
        (sigb, senb, s1', s2', eMap1, eMap2) <- 
-           corresp2th lid1 (iriToStringUnsecure an)
+           corresp2th lid1 (iriToStringUnsecure an) flag
                            ssig tsig'
                            l1' l2' p1 p2 rrel
        s1'' <- signature_union lid1 s1 s1'
