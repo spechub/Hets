@@ -601,7 +601,8 @@ class ( Syntax lid basic_spec symbol symb_items symb_map_items
          theory_to_taxonomy l _ _ _ _ = statFail l "theory_to_taxonomy"
          -- | create a theory from a correspondence
          corresp2th :: lid
-                    -> String
+                    -> String -- the name of the alignment
+                    -> Bool   -- flag: should we disambiguate in the bridge
                     -> sign
                     -> sign
                     -> [symb_items]

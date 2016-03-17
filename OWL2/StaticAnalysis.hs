@@ -424,11 +424,11 @@ addEquiv ssig tsig l1 l2 = do
           _ -> fail $ "non-unique symbol match:" ++ show l1 ++ " " ++ show l2
     _ -> fail "terms not yet supported in alignments"
 
-corr2theo :: String -> Sign -> Sign -> [SymbItems] -> [SymbItems] ->
+corr2theo :: String -> Bool -> Sign -> Sign -> [SymbItems] -> [SymbItems] ->
              EndoMap Entity -> EndoMap Entity -> REL_REF ->
              Result (Sign, [Named Axiom], Sign, Sign,
                      EndoMap Entity, EndoMap Entity)
-corr2theo aname ssig tsig l1 l2 eMap1 eMap2 rref = do
+corr2theo aname flag ssig tsig l1 l2 eMap1 eMap2 rref = do
   let l1' = statSymbItems ssig l1
       l2' = statSymbItems tsig l2
   case (l1', l2') of
@@ -438,8 +438,8 @@ corr2theo aname ssig tsig l1 l2 eMap1 eMap2 rref = do
       case
        (match1, match2) of
           ([e1], [e2]) -> do
-           let e1' = e1 {cutIRI =  addString (cutIRI e1, "_source")} 
-               e2' = e2 {cutIRI =  addString (cutIRI e2, "_target")} 
+           let e1' = if flag then e1 {cutIRI =  addString (cutIRI e1, "_source")} else e1
+               e2' = if flag then e2 {cutIRI =  addString (cutIRI e2, "_target")} else e2 
                sig = emptySign
                eMap1' = Map.union eMap1 $ Map.fromAscList [(e1', e1)]
                eMap2' = Map.union eMap2 $ Map.fromAscList [(e2', e2)]
