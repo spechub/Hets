@@ -36,6 +36,8 @@ import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
+import OWL2.GenericPrint
+
 data OWLMorphism = OWLMorphism
   { osource :: Sign
   , otarget :: Sign

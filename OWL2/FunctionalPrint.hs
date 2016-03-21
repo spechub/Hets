@@ -34,7 +34,7 @@ import qualified Data.Set as Set
 -- | OWL2 signature printing
 
 printOneNamed :: Anno.Named Axiom -> Doc
-printOneNamed ns = pretty
+printOneNamed ns = printAxiom
   $ (if Anno.isAxiom ns then rmImplied else addImplied) $ Anno.sentence ns
 
 delTopic :: Extended -> Sign -> Sign
@@ -60,7 +60,7 @@ prepareBasicTheory (s, l) =
   (s { prefixMap = Map.union (prefixMap s) predefPrefixes }, l)
 
 printBasicTheory :: (Sign, [Named Axiom]) -> Doc
-printBasicTheory = pretty . convertBasicTheory
+printBasicTheory = printOntologyDocument . convertBasicTheory
 
 convertBasicTheory :: (Sign, [Named Axiom]) -> OntologyDocument
 convertBasicTheory (sig, l) = let
@@ -69,9 +69,6 @@ convertBasicTheory (sig, l) = let
   s = foldr (delTopic . axiomTopic . sentence) sig l
   in OntologyDocument (prefixMap s) $ emptyOntology
   $ toDecl s ++ cnvrt rmImpliedFrame axs ++ cnvrt addImpliedFrame ths
-
-instance Pretty Sign where
-    pretty = printSign
 
 printSignElem :: Pretty a => Sign -> String -> (Sign -> Set.Set a) -> Doc
 printSignElem s ty f = vcat $ map (\ t -> keyword ty <+> pretty t)
@@ -89,8 +86,7 @@ printSign s = vcat
                 , ("Declaration(NamedIndividual(", individuals)
                 , ("Declaration(AnnotationProperty(", annotationRoles) ])
 
-instance Pretty Fact where
-    pretty = printFact
+
 
 printFact :: Fact -> Doc
 printFact pf = case pf of
@@ -99,8 +95,7 @@ printFact pf = case pf of
     DataPropertyFact pn dp l -> printPositiveOrNegative pn
            <+> pretty dp <+> pretty l
 
-instance Pretty ListFrameBit where
-    pretty = printListFrameBit
+
 
 -- | ListFrameBits only with relations
 printListFrameBit :: ListFrameBit -> Doc
@@ -142,18 +137,16 @@ printAnnFrameBit a afb = case afb of
     DataFunctional -> keyword characteristicsC <+>
           (printAnnotations a $+$ printCharact functionalS)
 
---instance Pretty FrameBit where
---    pretty = printFrameBit
-
 printFrameBit :: Pretty a => a -> FrameBit -> Doc
 printFrameBit ce fb = case fb of
     ListFrameBit r lfb -> case r of
-        Just rel -> printRelation rel <> parens (pretty ce <+> pretty lfb)
+        Just rel -> printRelation rel <> parens (pretty ce <+> printListFrameBit lfb)
         Nothing -> case lfb of
             ObjectCharacteristics x -> 
                 vcat $ map (\(_,y) -> pretty y <> parens (pretty ce)) x -- annos!
             DataPropRange x -> keyword rangeC <+> printAnnotatedList x
-            IndividualFacts x -> keyword factsC <+> printAnnotatedList x
+            IndividualFacts x -> keyword factsC <+> (vcat $  map
+                                  ( \ (ans, a) -> printAnnotations ans $+$ printFact a) x)
             _ -> empty
     AnnFrameBit a afb -> printAnnFrameBit a afb
 
@@ -165,9 +158,6 @@ showEntityTypeF e = case e of
     DataProperty -> "Declaration(DataProperty("
     AnnotationProperty -> "Declaration(AnnotationProperty("
     NamedIndividual -> "Declaration(NamedIndividual("
-
-instance Pretty Frame where
-    pretty = printFrame
 
 printFrame :: Frame -> Doc
 printFrame (Frame eith bl) = case eith of
@@ -191,9 +181,6 @@ printFrame (Frame eith bl) = case eith of
           $+$ printFrame (Frame eith r)
         [] -> empty
 
-instance Pretty Axiom where
-    pretty = printAxiom
-
 printAxiom :: Axiom -> Doc
 printAxiom (PlainAxiom e fb) = printFrame (Frame e [fb])
 
@@ -205,19 +192,13 @@ printPrefixes x = vcat (map (\ (a, b) ->
        (text "Prefix(" <+> text a <> text ":=" <+> text ('<' : b ++ ">)")))
           (Map.toList x))
 
--- | Printing the ontology
-instance Pretty Ontology where
-    pretty = printOntology
-
 printOntology :: Ontology -> Doc
 printOntology Ontology {name = a, imports = b, ann = c, ontFrames = d} =
     (if nullQName == a then empty else keyword ontologyC <+> pretty a)
     $++$ vcat (map printImport b)
-    $++$ vcat (map printAnnotations c) $+$ vcat (map pretty d)
+    $++$ vcat (map printAnnotations c) $+$ vcat (map printFrame d)
 
 printOntologyDocument :: OntologyDocument -> Doc
 printOntologyDocument OntologyDocument {prefixDeclaration = a, ontology = b} =
-    printPrefixes a $++$ pretty b
+    printPrefixes a $++$ printOntology b
 
-instance Pretty OntologyDocument where
-    pretty = printOntologyDocument

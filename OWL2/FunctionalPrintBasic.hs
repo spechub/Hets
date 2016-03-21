@@ -66,13 +66,14 @@ instance Pretty SymbMapItems where
                     Nothing -> empty
                     Just t -> mapsto <+> pretty t]) us)
 
-instance GetRange RawSymb -- no position by default
+--instance GetRange RawSymb -- no position by default
 
-instance Pretty RawSymb where
+{-instance Pretty RawSymb where
     pretty rs = case rs of
         ASymbol e -> pretty e
         AnUri u -> pretty u
         APrefix p -> pretty p
+-}
 
 cardinalityType :: CardinalityType -> Doc
 cardinalityType MinCardinality = keyword "ObjectMinCardinality"
