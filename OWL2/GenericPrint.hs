@@ -17,6 +17,7 @@ import qualified OWL2.FunctionalPrint as FPrint
 import qualified OWL2.MS2Ship as Ship
 
 import Common.Doc
+import Common.DocUtils
 import OWL2.MS
 
 import qualified Data.Set as Set
