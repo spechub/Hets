@@ -85,10 +85,10 @@ instance Monoid OntologyDocument where
       OntologyDocument (Map.union p1 p2) $ mappend o1 o2
 
 instance Syntax OWL2 OntologyDocument Entity SymbItems SymbMapItems where
-    parsersAndPrinters OWL2 = addSyntax "Ship" (basicSpec, prettyWithString "Ship")
-      $ addSyntax "Functional" (basicSpec, prettyWithString "Functional")
-      $ addSyntax "Manchester" (basicSpec, prettyWithString "Manchester")
-      $ makeDefault (basicSpec, prettyWithString "Functional")
+    parsersAndPrinters OWL2 = addSyntax "Ship" (basicSpec, multiPretty ShipFormat)
+      $ addSyntax "Functional" (basicSpec, multiPretty FunctionalSyntax)
+      $ addSyntax "Manchester" (basicSpec, multiPretty ManchesterSyntax)
+      $ makeDefault (basicSpec, multiPretty FunctionalSyntax)
     parseSingleSymbItem OWL2 = Just symbItem
     parse_symb_items OWL2 = Just symbItems
     parse_symb_map_items OWL2 = Just symbMapItems
@@ -96,7 +96,7 @@ instance Syntax OWL2 OntologyDocument Entity SymbItems SymbMapItems where
 
 instance Sentences OWL2 Axiom Sign OWLMorphism Entity where
     map_sen OWL2 = mapSen
-    print_named OWL2 = printOneNamed "Functional"
+    print_named OWL2 = printOneNamed FunctionalSyntax
     sym_of OWL2 = singletonList . symOf
     symmap_of OWL2 = symMapOf
     sym_name OWL2 = entityToId
@@ -118,7 +118,7 @@ instance StaticAnalysis OWL2 OntologyDocument Axiom
       basic_analysis OWL2 = Just basicOWL2Analysis
       stat_symb_items OWL2 s = return . statSymbItems s
       stat_symb_map_items OWL2 = statSymbMapItems
-      convertTheory OWL2 = Just $ convertBasicTheory "Functional"
+      convertTheory OWL2 = Just $ convertBasicTheory FunctionalSyntax
       empty_signature OWL2 = emptySign
       signature_union OWL2 = uniteSign
       intersection OWL2 = intersectSign

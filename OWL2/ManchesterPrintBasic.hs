@@ -31,8 +31,8 @@ instance Pretty Character where
 printCharact :: String -> Doc
 printCharact = text
 
-instance Pretty QName where
-    pretty = printIRI
+--instance Pretty QName where
+--    pretty = printIRI
 
 printIRI :: QName -> Doc
 printIRI q
@@ -55,23 +55,23 @@ instance Pretty ExtEntityType where
 
 instance Pretty SymbItems where
     pretty (SymbItems m us) = pretty m
-        <+> ppWithCommas us
+        <+> (sepByCommas . map printIRI) us
 
 instance Pretty SymbMapItems where
     pretty (SymbMapItems m us) = pretty m
         <+> sepByCommas
             (map (\ (s, ms) -> sep
-                [ pretty s
+                [ printIRI s
                 , case ms of
                     Nothing -> empty
-                    Just t -> mapsto <+> pretty t]) us)
+                    Just t -> mapsto <+> printIRI t]) us)
 
 instance GetRange RawSymb -- no position by default
 
 instance Pretty RawSymb where
     pretty rs = case rs of
-        ASymbol e -> pretty e
-        AnUri u -> pretty u
+        ASymbol e -> printEntity e
+        AnUri u -> printIRI u
         APrefix p -> pretty p
 
 cardinalityType :: CardinalityType -> Doc
@@ -103,8 +103,11 @@ printSameOrDifferentInd x = case x of
     Same -> keyword sameIndividualC
     Different -> keyword differentIndividualsC
 
-instance Pretty Entity where
-    pretty (Entity _ ty e) = keyword (show ty) <+> pretty e
+--instance Pretty Entity where
+--    pretty 
+
+printEntity :: Entity -> Doc
+printEntity (Entity _ ty e) = keyword (show ty) <+> printIRI e
 
 instance Pretty Literal where
     pretty lit = case lit of
@@ -127,7 +130,7 @@ instance Pretty ObjectPropertyExpression where
 
 printObjPropExp :: ObjectPropertyExpression -> Doc
 printObjPropExp obExp = case obExp of
-    ObjectProp ou -> pretty ou
+    ObjectProp ou -> printIRI ou
     ObjectInverseOf iopExp -> keyword inverseS <+> printObjPropExp iopExp
 
 printFV :: (ConstrainingFacet, RestrictionValue) -> Doc
@@ -147,7 +150,7 @@ instance Pretty DataRange where
 
 printDataRange :: DataRange -> Doc
 printDataRange dr = case dr of
-    DataType dtype l -> pretty dtype <+>
+    DataType dtype l -> printIRI dtype <+>
       if null l then empty else brackets $ sepByCommas $ map printFV l
     DataComplementOf drange -> keyword notS <+> pretty drange
     DataOneOf constList -> specBraces $ ppWithCommas constList
@@ -158,22 +161,23 @@ printDataRange dr = case dr of
       in fsep $ prepPunctuate (keyword k <> space) $ map pretty drlist
 
 -- | Printing the ClassExpression
-instance Pretty ClassExpression where
-  pretty desc = case desc of
+
+printClassExpression :: ClassExpression -> Doc
+printClassExpression desc = case desc of
    Expression ocUri -> printIRI ocUri
    ObjectJunction ty ds -> let
       (k, p) = case ty of
-          UnionOf -> (orS, pretty)
+          UnionOf -> (orS, printClassExpression)
           IntersectionOf -> (andS, printPrimary)
       in fsep $ prepPunctuate (keyword k <> space) $ map p ds
    ObjectComplementOf d -> keyword notS <+> printNegatedPrimary d
-   ObjectOneOf indUriList -> specBraces $ ppWithCommas indUriList
+   ObjectOneOf indUriList -> specBraces $ (sepByCommas . map printIRI) indUriList
    ObjectValuesFrom ty opExp d ->
       printObjPropExp opExp <+> quantifierType ty <+> printNegatedPrimary d
    ObjectHasSelf opExp ->
       printObjPropExp opExp <+> keyword selfS
    ObjectHasValue opExp indUri ->
-      pretty opExp <+> keyword valueS <+> pretty indUri
+      pretty opExp <+> keyword valueS <+> printIRI indUri
    ObjectCardinality (Cardinality ty card opExp maybeDesc) ->
       printObjPropExp opExp <+> cardinalityType ty
         <+> text (show card)
@@ -181,18 +185,18 @@ instance Pretty ClassExpression where
    DataValuesFrom ty dpExp dRange ->
        printIRI dpExp <+> quantifierType ty
         <+> pretty dRange
-   DataHasValue dpExp cons -> pretty dpExp <+> keyword valueS <+> pretty cons
+   DataHasValue dpExp cons -> printIRI dpExp <+> keyword valueS <+> pretty cons
    DataCardinality (Cardinality ty card dpExp maybeRange) ->
-       pretty dpExp <+> cardinalityType ty <+> text (show card)
+       printIRI dpExp <+> cardinalityType ty <+> text (show card)
          <+> maybe empty pretty maybeRange
 
 printPrimary :: ClassExpression -> Doc
-printPrimary d = let dd = pretty d in case d of
+printPrimary d = let dd = printClassExpression d in case d of
   ObjectJunction {} -> parens dd
   _ -> dd
 
 printNegatedPrimary :: ClassExpression -> Doc
-printNegatedPrimary d = let r = parens $ pretty d in case d of
+printNegatedPrimary d = let r = parens $ printClassExpression d in case d of
   ObjectComplementOf _ -> r
   ObjectValuesFrom {} -> r
   DataValuesFrom {} -> r
@@ -203,7 +207,7 @@ printNegatedPrimary d = let r = parens $ pretty d in case d of
 -- | annotations printing
 instance Pretty AnnotationValue where
     pretty x = case x of
-        AnnValue iri -> pretty iri
+        AnnValue iri -> printIRI iri
         AnnValLit lit -> pretty lit
 
 instance Pretty OWL2.AS.Annotation where
@@ -211,7 +215,7 @@ instance Pretty OWL2.AS.Annotation where
 
 printAnnotation :: OWL2.AS.Annotation -> Doc
 printAnnotation (Annotation ans ap av) =
-    sep [printAnnotations ans, sep [pretty ap, pretty av]]
+    sep [printAnnotations ans, sep [printIRI ap, pretty av]]
 
 printAnnotations :: Annotations -> Doc
 printAnnotations l = case l of
@@ -224,3 +228,9 @@ printAnnotatedList :: Pretty a => AnnotatedList a -> Doc
 printAnnotatedList l =
     vcat $ punctuate comma $ map
         ( \ (ans, a) -> printAnnotations ans $+$ pretty a) l
+
+printAnnotatedList2 :: (a -> Doc) -> AnnotatedList a -> Doc
+printAnnotatedList2 g l =
+    vcat $ punctuate comma $ map
+        ( \ (ans, a) -> printAnnotations ans $+$ g a) l
+

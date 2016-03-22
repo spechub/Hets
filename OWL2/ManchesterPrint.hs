@@ -74,47 +74,53 @@ printSignElem :: Pretty a => Sign -> String -> (Sign -> Set.Set a) -> Doc
 printSignElem s ty f = vcat $ map (\ t -> keyword ty <+> pretty t)
     $ Set.toList $ f s
 
+printSignElem2 :: Sign -> String -> (Sign -> Set.Set a, a -> Doc) -> Doc
+printSignElem2 s ty (f, g) = vcat $ map (\ t -> keyword ty <+> g t)
+    $ Set.toList $ f s
+
 printSign :: Sign -> Doc
 printSign s = vcat
     (map (\ (c, l) -> hsep $ map text [prefixC, c ++ ":", '<' : l ++ ">"])
     $ Map.toList $ prefixMap s)
-        $++$ foldl1 ($++$) (map (uncurry $ printSignElem s)
-                [ (datatypeC, datatypes)
-                , (classC, concepts)
-                , (objectPropertyC, objectProperties)
-                , (dataPropertyC, dataProperties)
-                , (individualC, individuals)
-                , (annotationPropertyC, annotationRoles) ])
+        $++$ foldl1 ($++$) (map (uncurry $ printSignElem2 s)
+                [ (datatypeC, (datatypes, printIRI))
+                , (classC, (concepts, printIRI))
+                , (objectPropertyC, (objectProperties, printIRI))
+                , (dataPropertyC, (dataProperties, printIRI))
+                , (individualC, (individuals, printIRI))
+                , (annotationPropertyC, (annotationRoles, printIRI)) ])
 
 printFact :: Fact -> Doc
 printFact pf = case pf of
     ObjectPropertyFact pn op i -> printPositiveOrNegative pn
-           <+> pretty op <+> pretty i
+           <+> pretty op <+> printIRI i
     DataPropertyFact pn dp l -> printPositiveOrNegative pn
-           <+> pretty dp <+> pretty l
+           <+> printIRI dp <+> pretty l
 
 -- | ListFrameBits only with relations
 printListFrameBit :: ListFrameBit -> Doc
 printListFrameBit lfb = case lfb of
-    AnnotationBit a -> printAnnotatedList a
-    ExpressionBit a -> printAnnotatedList a
-    ObjectBit a -> printAnnotatedList a
-    DataBit a -> printAnnotatedList a
-    IndividualSameOrDifferent a -> printAnnotatedList a
+    AnnotationBit a -> printAnnotatedList2 printIRI a
+    ExpressionBit a -> printAnnotatedList2 printClassExpression a
+    ObjectBit a -> printAnnotatedList2 printObjPropExp a
+    DataBit a -> printAnnotatedList2 printIRI a
+    IndividualSameOrDifferent a -> printAnnotatedList2 printIRI a
     _ -> empty
 
 printMisc :: Pretty a => Annotations -> (b -> Doc) -> b -> AnnotatedList a
     -> Doc
 printMisc a f r anl = f r <+> (printAnnotations a $+$ printAnnotatedList anl)
 
+printMisc2 g a f r anl = f r <+> (printAnnotations a $+$ printAnnotatedList2 g anl)
+
 -- | Misc ListFrameBits
 printMiscBit :: Relation -> Annotations -> ListFrameBit -> Doc
 printMiscBit r a lfb = case lfb of
-    ExpressionBit anl -> printMisc a printEquivOrDisjointClasses (getED r) anl
-    ObjectBit anl -> printMisc a printEquivOrDisjointProp (getED r) anl
-    DataBit anl -> printMisc a printEquivOrDisjointProp (getED r) anl
+    ExpressionBit anl -> printMisc2 printClassExpression a printEquivOrDisjointClasses (getED r) anl
+    ObjectBit anl -> printMisc2 printObjPropExp a printEquivOrDisjointProp (getED r) anl
+    DataBit anl -> printMisc2 printIRI a printEquivOrDisjointProp (getED r) anl
     IndividualSameOrDifferent anl ->
-        printMisc a printSameOrDifferentInd (getSD r) anl
+        printMisc2 printIRI a printSameOrDifferentInd (getSD r) anl
     _ -> empty
 
 printAnnFrameBit :: Annotations -> AnnFrameBit -> Doc
@@ -124,9 +130,9 @@ printAnnFrameBit a afb = case afb of
           $+$ keyword equivalentToC <+> pretty x
     ClassDisjointUnion x -> keyword disjointUnionOfC
       <+> (printAnnotations a
-          $+$ vcat (punctuate comma ( map pretty x )))
+          $+$ vcat (punctuate comma ( map printClassExpression x )))
     ClassHasKey op dp -> keyword hasKeyC <+> (printAnnotations a
-      $+$ vcat (punctuate comma $ map pretty op ++ map pretty dp))
+      $+$ vcat (punctuate comma $ map pretty op ++ map printIRI dp))
     ObjectSubPropertyChain opl -> keyword subPropertyChainC
       <+> (printAnnotations a $+$ fsep (prepPunctuate (keyword oS <> space)
           $ map pretty opl))
@@ -150,16 +156,16 @@ printFrameBit fb = case fb of
 printFrame :: Frame -> Doc
 printFrame (Frame eith bl) = case eith of
     SimpleEntity (Entity _ e uri) -> keyword (showEntityType e) <+>
-            fsep [pretty uri $+$ vcat (map printFrameBit bl)]
+            fsep [printIRI uri $+$ vcat (map printFrameBit bl)]
     ObjectEntity ope -> keyword objectPropertyC <+>
-            (pretty ope $+$ fsep [vcat (map printFrameBit bl)])
+            (printObjPropExp ope $+$ fsep [vcat (map printFrameBit bl)])
     ClassEntity ce -> keyword classC <+>
-            (pretty ce $+$ fsep [vcat (map printFrameBit bl)])
+            (printClassExpression ce $+$ fsep [vcat (map printFrameBit bl)])
     Misc a -> case bl of
         [ListFrameBit (Just r) lfb] -> printMiscBit r a lfb
         [AnnFrameBit ans (AnnotationFrameBit Assertion)] ->
             let [Annotation _ iri _] = a
-            in keyword individualC <+> (pretty iri $+$ printAnnotations ans)
+            in keyword individualC <+> (printIRI iri $+$ printAnnotations ans)
         h : r -> printFrame (Frame eith [h])
           $+$ printFrame (Frame eith r)
         [] -> empty
@@ -168,7 +174,7 @@ printAxiom :: Axiom -> Doc
 printAxiom (PlainAxiom e fb) = printFrame (Frame e [fb])
 
 printImport :: ImportIRI -> Doc
-printImport x = keyword importC <+> pretty x
+printImport x = keyword importC <+> printIRI x
 
 printPrefixes :: PrefixMap -> Doc
 printPrefixes x = vcat (map (\ (a, b) ->
@@ -179,7 +185,7 @@ printPrefixes x = vcat (map (\ (a, b) ->
 
 printOntology :: Ontology -> Doc
 printOntology Ontology {name = a, imports = b, ann = c, ontFrames = d} =
-    (if nullQName == a then empty else keyword ontologyC <+> pretty a)
+    (if nullQName == a then empty else keyword ontologyC <+> printIRI a)
     $++$ vcat (map printImport b)
     $++$ vcat (map printAnnotations c) $+$ vcat (map printFrame d)
 

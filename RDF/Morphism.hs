@@ -37,6 +37,8 @@ import Data.Data
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
+import OWL2.GenericPrint
+
 data RDFMorphism = RDFMorphism
   { osource :: Sign
   , otarget :: Sign
@@ -85,6 +87,7 @@ symMapOf mor = Map.union (symMap $ mmaps mor) $ setToMap $ symOf $ osource mor
 isRDFInclusion :: RDFMorphism -> Bool
 isRDFInclusion m = Map.null (mmaps m) && isSubSign (osource m) (otarget m)
 
+
 instance Pretty RDFMorphism where
   pretty m = let
     s = osource m
@@ -101,6 +104,7 @@ instance Pretty RDFMorphism where
        else
          [ pretty $ mmaps m
          , colon <+> srcD, mapsto <+> specBraces (space <> pretty t) ]
+
 {-
 legalMor :: RDFMorphism -> Result ()
 legalMor m = let mm = mmaps m in unless

@@ -187,7 +187,6 @@ module Common.Doc
     , changeGlobalAnnos
     , rmTopKey
     , showRaw
-    , PrettyWithString(..)
     ) where
 
 import Common.AS_Annotation
@@ -1216,6 +1215,3 @@ rmTopKey = foldDoc idRecord
 changeGlobalAnnos :: (GlobalAnnos -> GlobalAnnos) -> Doc -> Doc
 changeGlobalAnnos = ChangeGlobalAnnos
 
--- | class for pretty printing with a string argument
-class PrettyWithString a where
-  prettyWithString :: String -> a -> Doc

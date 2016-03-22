@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiParamTypeClasses #-}
 {- |
 Module      :  ./Common/DocUtils.hs
 Description :  Pretty class for pretty printing with instances plus utilities
@@ -231,3 +232,12 @@ showGlobalDoc ga = shows . useGlobalAnnos ga . pretty
 
 instance Pretty IRI where
   pretty = text . show
+
+class MultiPretty a b where
+  multiPretty :: a -> b -> Doc
+
+ppWithCommas2 :: (a -> Doc) -> [a] -> Doc
+ppWithCommas2 g = sepByCommas . map g
+
+ppWithSpaces2 :: (a -> Doc) -> [a] -> Doc
+ppWithSpaces2 g = fsep . punctuate space . map g

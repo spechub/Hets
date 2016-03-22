@@ -18,7 +18,7 @@ import Common.Doc hiding (sepBySemis, sepByCommas)
 import Common.DocUtils hiding (ppWithCommas)
 
 import OWL2.AS
-import OWL2.ManchesterPrintBasic ()
+import OWL2.ManchesterPrintBasic (printIRI, printDataIRI)
 
 import RDF.AS
 import RDF.Symbols
@@ -43,14 +43,14 @@ instance Pretty Predicate where
     pretty = printPredicate
 
 printPredicate :: Predicate -> Doc
-printPredicate (Predicate iri) = pretty iri
+printPredicate (Predicate iri) = printIRI iri
 
 instance Pretty RDFLiteral where
     pretty lit = case lit of
         RDFLiteral b lexi ty -> text (if not b
                 then '"' : lexi ++ "\""
                 else "\"\"\"" ++ lexi ++ "\"\"\"") <> case ty of
-            Typed u -> keyword cTypeS <> pretty u
+            Typed u -> keyword cTypeS <> printDataIRI u
             Untyped tag -> if isNothing tag then empty
                     else let Just tag2 = tag in text "@" <> text tag2
         RDFNumberLit f -> text (show f)
@@ -66,7 +66,7 @@ instance Pretty Subject where
 
 printSubject :: Subject -> Doc
 printSubject subj = case subj of
-    Subject iri -> pretty iri
+    Subject iri -> printIRI iri
     SubjectList ls -> brackets $ ppWithSemis ls
     SubjectCollection c -> parens $ (hsep . map pretty) c
 
@@ -91,8 +91,8 @@ printStatement :: Statement -> Doc
 printStatement s = case s of
     Statement t -> pretty t
     PrefixStatement (PrefixR p iri)
-        -> text "@prefix" <+> pretty p <> colon <+> pretty iri <+> dot
-    BaseStatement (Base iri) -> text "@base" <+> pretty iri <+> dot
+        -> text "@prefix" <+> pretty p <> colon <+> printIRI iri <+> dot
+    BaseStatement (Base iri) -> text "@base" <+> printIRI iri <+> dot
 
 instance Pretty TurtleDocument where
     pretty = printDocument
@@ -150,18 +150,18 @@ instance Pretty RDFEntity where
     pretty (RDFEntity ty ent) = pretty ty <+> pretty ent
 
 instance Pretty SymbItems where
-    pretty (SymbItems m us) = pretty m <+> ppWithCommas us
+    pretty (SymbItems m us) = pretty m <+> (sepByCommas . map printIRI) us
 
 instance Pretty SymbMapItems where
     pretty (SymbMapItems m us) = pretty m
         <+> sepByCommas
             (map (\ (s, ms) -> sep
-                [ pretty s
+                [ printIRI s
                 , case ms of
                     Nothing -> empty
-                    Just t -> mapsto <+> pretty t]) us)
+                    Just t -> mapsto <+> printIRI t]) us)
 
 instance Pretty RawSymb where
     pretty rs = case rs of
         ASymbol e -> pretty e
-        AnUri u -> pretty u
+        AnUri u -> printIRI u
