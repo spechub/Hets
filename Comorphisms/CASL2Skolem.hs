@@ -26,12 +26,10 @@ import CASL.Morphism
 import CASL.Sublogic as SL hiding (bottom)
 import CASL.Induction
 import CASL.Quantification
-import CASL.ToDoc
 
 import Common.Result
 import Common.Id
 import qualified Data.Set as Set
-import qualified Data.Map as Map
 import Common.AS_Annotation
 import Common.ProofTree
 import qualified Common.Lib.MapSet as MapSet
@@ -39,8 +37,6 @@ import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
 
 import Data.List(partition)
-
-import Debug.Trace
 
 data CASL2Skolem = CASL2Skolem deriving Show
 
@@ -93,7 +89,7 @@ mkSkolemFunction x =
 -- the names are generated starting with a given number
 
 replaceBoundVars :: [(VAR, SORT)] -> [(VAR, SORT)] -> Int -> CASLFORMULA -> (CASLSign, CASLFORMULA)
-replaceBoundVars vars fVars n sen = trace ("vars:" ++ show vars ++ "fVars:" ++ show fVars ++ "n:" ++ show n) $ let 
+replaceBoundVars vars fVars n sen = let 
    -- for each variable that occurs free in sen, generate a new skolem function name
    fNames = map (mkSkolemFunction . snd) $ zip fVars $ [n..]
    -- for each such name, its arguments will be the types of vars and the result, the corresponding sort in fVars
