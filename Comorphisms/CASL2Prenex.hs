@@ -34,8 +34,6 @@ import qualified Data.Set as Set
 import Common.AS_Annotation
 import Common.ProofTree
 
-import Debug.Trace
-
 data CASL2Prenex = CASL2Prenex deriving Show
 
 instance Language CASL2Prenex where
@@ -63,101 +61,75 @@ instance Comorphism CASL2Prenex
     has_model_expansion CASL2Prenex = True -- check
     is_weakly_amalgamable CASL2Prenex = True --check
 
--- rules:
--- 1. F <-> G becomes F -> G and G -> F
--- 2. not (Q x . F) becomes (dual Q) x . not F
--- 3. (Q x . F) conn G becomes
--- Q y . (F[y/x] conn G) 
--- where y is fresh, conn is /\ or \/
--- 4. (Q x .F) => G becomes
--- (dual Q) y . (F[y/x] => G)
--- where y is fresh
--- 5. F conn (Q x . G) becomes
--- Q y (F conn G[y/x])
--- with y fresh and conn in {/\,\/,->}  
+-- remove equivalences and implications, turn arbitrary junctions into binary ones
+preprocessSen :: CASLFORMULA -> CASLFORMULA
+preprocessSen sen = case sen of
+ Relation sen1 Equivalence sen2 _ -> let -- remove equivalences
+   sen1' = preprocessSen sen1
+   sen2' = preprocessSen sen2
+  in Junction Con [Junction Dis [Negation sen1' nullRange, sen2'] nullRange,
+                   Junction Dis [Negation sen2' nullRange, sen1'] nullRange
+                  ] nullRange
+ Relation sen1 Implication sen2 _ -> let -- remove implications
+   sen1' = preprocessSen sen1
+   sen2' = preprocessSen sen2
+  in Junction Dis [Negation sen1' nullRange, sen2'] nullRange
+ Relation sen1 RevImpl sen2 _ -> let -- remove reverse implications
+   sen1' = preprocessSen sen1
+   sen2' = preprocessSen sen2
+  in Junction Dis [Negation sen2' nullRange, sen1'] nullRange
+ Junction j sens _ -> let -- only binary junctions
+   sens' = map preprocessSen sens 
+   bindLeft [] = Junction j [] nullRange
+   bindLeft [x] = Junction j [x] nullRange 
+   bindLeft [x,y] = Junction j [x,y] nullRange
+   bindLeft (x:y:s') = Junction j [x, bindLeft (y:s')] nullRange
+  in bindLeft sens'
+ Quantification q vdecls qsen _ -> let -- recursion
+   qsen' = preprocessSen qsen
+  in Quantification q vdecls qsen' nullRange
+ _ -> sen
 
--- starting index for fresh variables
--- signature
--- formula that we compute normal form of
-prenexNormalForm :: Int -> CASLSign -> CASLFORMULA -> (Int,CASLFORMULA)
-prenexNormalForm n sig sen = case sen of
- -- this covers 1. 
- Relation sen1 Equivalence sen2 _ -> let sen1' = Relation sen1 Implication sen2 nullRange
-                                         sen2' = Relation sen2 Implication sen1 nullRange 
-                                     in trace "1" $ prenexNormalForm n sig $ Junction Con [sen1', sen2'] nullRange
- -- this covers 2.
- Negation (Quantification q vdecls qsen _) _ -> let 
-   (n', qsen') = prenexNormalForm n sig $ Negation qsen nullRange
-  in trace "2" $ (n', Quantification (dualQuant q) vdecls qsen' nullRange)
- -- in the remanining cases for negation, apply recursion
+-- function 2: computePNF
+-- see page 292 in LPL.pdf
+-- but instead of checking that a variable occurs free in a formula
+-- I do a alpha renaming such that this property is ensured
+
+computePNF :: Int -> CASLFORMULA -> (Int, CASLFORMULA)
+computePNF n sen = case sen of
  Negation nsen _ -> let 
-   (n', nsen') = prenexNormalForm n sig nsen
-  in trace "ng rec" $ (n', Negation nsen' nullRange)
- -- this covers 3.
- Junction j ((Quantification q vdecls qsen _):sens) _ -> 
-   let 
-       vars = flatVAR_DECLs vdecls 
-       (n', vars') = getFreshVars vars n
-       vdecls' = map (\(v,s) -> mkVarDecl v s) $ map fst vars'
-       qsen' = foldl (\f (v,s,t)-> substitute v s t f) qsen $ map (\((x,y),(z,t)) -> (z, t, Qual_var x y nullRange)) vars'
-       (n'', jsen) = prenexNormalForm n' sig $ Junction j (qsen':sens) nullRange
-    in trace "3" $ (n'', Quantification q vdecls' jsen nullRange)
- -- this covers 5. for conjunction and disjunction
- Junction j (nqsen:(Quantification q vdecls qsen _):sens) _ -> let
-   vars = flatVAR_DECLs vdecls
-   (n', vars') = getFreshVars vars n
-   vdecls' = map (\(v,s) -> mkVarDecl v s) $ map fst vars'
-   qsen' = foldl (\f (v,s,t)-> substitute v s t f) qsen $ map (\((x,y),(z,t)) -> (z, t, Qual_var x y nullRange)) vars'
-   (n'', jsen) = prenexNormalForm n' sig $ 
-                   Junction j (nqsen:qsen':sens) nullRange
-  in trace "5 conj & disj" $ (n'', Quantification q vdecls' jsen nullRange)
- -- don't forget recursion for other cases 
- Junction j jsens _ -> let 
-   (n', jsens') = foldl (\(x,sens0) s -> let (x',s') = prenexNormalForm x sig s 
-                                       in  trace ("in foldl junction:" ++ show s) $  (x', s':sens0)) 
-                        (n, []) jsens
-  in trace ("junction recursion:" ++ show jsens ++ "\n") $ (n', Junction j jsens' nullRange)
- -- both two next cases cover 4.
- Relation (Quantification q vdecls qsen _) Implication sen2 _ -> let
-   vars = flatVAR_DECLs vdecls 
-   (n', vars') = getFreshVars vars n
-   vdecls' = map (\(v,s) -> mkVarDecl v s) $ map fst vars'
-   qsen' = foldl (\f (v,s,t)-> substitute v s t f) qsen $ map (\((x,y),(z,t)) -> (z, t, Qual_var x y nullRange)) vars'
-   (n'', implSen) = prenexNormalForm n' sig $ Relation qsen' Implication sen2 nullRange
-  in trace "4.1" $  (n'', Quantification (dualQuant q) vdecls' implSen nullRange)
- Relation sen1 RevImpl (Quantification q vdecls qsen _) _ -> let
-   vars = flatVAR_DECLs vdecls
-   (n', vars') = getFreshVars vars n
-   vdecls' = map (\(v,s) -> mkVarDecl v s) $ map fst vars'
-   qsen' = foldl (\f (v,s,t)-> substitute v s t f) qsen $ map (\((x,y),(z,t)) -> (z, t, Qual_var x y nullRange)) vars'
-   (n'', revImplSen) = prenexNormalForm n' sig $ Relation sen1 RevImpl qsen' nullRange
-  in trace "4.2" $ (n'', Quantification (dualQuant q) vdecls' revImplSen nullRange)
- -- next two cases cover 5. for implication
- Relation sen1 Implication (Quantification q vdecls qsen _) _ -> let
-   vars = flatVAR_DECLs vdecls
-   (n', vars') = getFreshVars vars n'
-   vdecls' = map (\(v,s) -> mkVarDecl v s) $ map fst vars'
-   qsen' = foldl (\f (v,s,t)-> substitute v s t f) qsen $ map (\((x,y),(z,t)) -> (z, t, Qual_var x y nullRange)) vars'
-   (n'', implSen) = prenexNormalForm n' sig $ Relation sen1 Implication qsen' nullRange
-  in trace "5.1" $ (n'', Quantification q vdecls' implSen nullRange)
- Relation (Quantification q vdecls qsen _) RevImpl sen2 _ -> let
-   vars = flatVAR_DECLs vdecls
-   (n', vars') = getFreshVars vars n
-   vdecls' = map (\(v,s) -> mkVarDecl v s) $ map fst vars'
-   qsen' = foldl (\f (v,s,t)-> substitute v s t f) qsen $ map (\((x,y),(z,t)) -> (z, t, Qual_var x y nullRange)) vars'
-   (n'', revImplSen) = prenexNormalForm n' sig $ Relation qsen' RevImpl sen2 nullRange
-  in trace "5.2" $ (n'', Quantification q vdecls' revImplSen nullRange)
- -- recursion for other cases 
- Relation sen1 rel sen2 _ -> let
-   (n', sen1')  = prenexNormalForm n sig sen1
-   (n'', sen2') = prenexNormalForm n' sig sen2
-  in trace ("recursion impl") $ (n'', Relation sen1' rel sen2' nullRange)  
- -- for quantification, recursive call for the quantified formula
+   (n', nsen') = computePNF n nsen
+   (n'', nsen'') = case nsen' of
+    Quantification q vdecls qsen _ -> -- deMorgan
+       (n', Quantification (dualQuant q) vdecls (Negation qsen nullRange) nullRange)
+    _ -> (n', Negation nsen' nullRange)
+  in (n'', nsen'') 
+ Junction j [sen1, sen2] _ -> let
+   (n', sen1') = computePNF n sen1
+   (n'', sen2') = computePNF n' sen2
+   (n3, sen') = case (sen1', sen2') of 
+     (Quantification q vdecls qsen _, aSen) -> let
+         vars = flatVAR_DECLs vdecls
+         (n''', vars') = getFreshVars vars n''
+         vdecls' = map (\(v,s) -> mkVarDecl v s) $ map fst vars'
+         qsen' = foldl (\f (v,s,t)-> substitute v s t f) qsen $  
+                        map (\((x,y),(z,t)) -> (z, t, Qual_var x y nullRange)) vars'
+         (n4, qsen'') = computePNF n''' (Junction j [qsen', aSen] nullRange)
+        in (n4, Quantification q vdecls' qsen'' nullRange)
+     (aSen, Quantification q vdecls qsen _) -> let
+         vars = flatVAR_DECLs vdecls
+         (n''', vars') = getFreshVars vars n''
+         vdecls' = map (\(v,s) -> mkVarDecl v s) $ map fst vars'
+         qsen' = foldl (\f (v,s,t)-> substitute v s t f) qsen $  
+                        map (\((x,y),(z,t)) -> (z, t, Qual_var x y nullRange)) vars'
+         (n4, qsen'') = computePNF n''' (Junction j [aSen, qsen'] nullRange)
+        in (n4, Quantification q vdecls' qsen'' nullRange)
+     _ -> (n'', Junction j [sen1', sen2'] nullRange)
+  in (n3, sen')
  Quantification q vars qsen _ -> let 
-   (n', qsen') = prenexNormalForm n sig qsen
-  in trace "recursion quant" $ (n', Quantification q vars qsen' nullRange) 
- -- for atoms and similars, do nothing
- x -> trace "atoms" $ (n, x)
+   (n', qsen') = computePNF n qsen
+  in (n', Quantification q vars qsen' nullRange) 
+ _ -> (n, sen)
 
 getFreshVars :: [(VAR,SORT)] -> Int -> (Int, [((VAR,SORT),(VAR,SORT))])
 getFreshVars oldVars n = let 
@@ -166,28 +138,7 @@ getFreshVars oldVars n = let
   
 mapTheory :: (CASLSign, [Named CASLFORMULA]) -> Result (CASLSign, [Named CASLFORMULA])
 mapTheory (sig, nsens) = do
- let sens = foldl (\sens0 s -> let (_, s') = prenexNormalForm 0 sig $ negationNormalForm s -- no sense to call miniscope here
+ let sens = foldl (\sens0 s -> let (_, s') =  computePNF 0 $ preprocessSen s
                                in s':sens0) [] $ map sentence nsens
  return (sig, map (makeNamed "") sens)
 
-
--- this should go some place where it's available for all comorphisms 
-negationNormalForm :: CASLFORMULA -> CASLFORMULA
-negationNormalForm sen = case sen of
- Quantification q vars qsen _ -> Quantification q vars (negationNormalForm qsen) nullRange 
- Junction j sens _ -> Junction j (map negationNormalForm sens) nullRange 
- Relation sen1 Implication sen2 _ -> let sen1' = negationNormalForm $ Negation (negationNormalForm sen1) nullRange
-                                         sen2' = negationNormalForm sen2
-                                     in Junction Dis [sen1', sen2'] nullRange
- Relation sen1 RevImpl sen2 _ -> let sen2' = negationNormalForm $ Negation (negationNormalForm sen2) nullRange
-                                     sen1' = negationNormalForm sen1
-                                 in Junction Dis [sen1', sen2'] nullRange
- Relation sen1 Equivalence sen2 _ -> let sen1' = Relation sen1 Implication sen2 nullRange
-                                         sen2' = Relation sen2 Implication sen1 nullRange 
-                                     in negationNormalForm $ Junction Con [sen1', sen2'] nullRange 
- Negation (Negation sen' _) _ -> negationNormalForm sen'
- Negation (Junction Con sens _) _ -> Junction Dis (map (\x -> negationNormalForm $ Negation x nullRange) sens) nullRange
- Negation (Junction Dis sens _) _ -> Junction Con (map (\x -> negationNormalForm $ Negation x nullRange) sens) nullRange
- Negation (Quantification Unique_existential _vars _sen _) _-> error "nyi"
- Negation (Quantification q vars qsen _) _ -> Quantification (dualQuant q) vars (negationNormalForm $ Negation qsen nullRange) nullRange
- x -> x
