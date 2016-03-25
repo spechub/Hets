@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Taxonomy/MMiSSOntology.hs
 Copyright   :  (c) Uni Bremen 2004-2007
 License     :  GPLv2 or higher, see LICENSE.txt
 

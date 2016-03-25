@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./OWL2/Conservativity.hs
 Copyright   :  (c) Dominik Luecke, 2008
 License     :  GPLv2 or higher, see LICENSE.txt
 

@@ -1,6 +1,6 @@
 {-# LANGUAGE StandaloneDeriving, DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Haskell/BaseATC.hs
 Description :  basic ShATermConvertible instances
 Copyright   :  (c) Christian Maeder, Uni Bremen 2005-2006
 License     :  GPLv2 or higher, see LICENSE.txt

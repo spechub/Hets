@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Adl/Print.hs
 Description :  pretty printing ADL syntax
 Copyright   :  (c) Stef Joosten, Christian Maeder DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt

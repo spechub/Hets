@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Common/ConvertMixfixToken.hs
 Description :  generic conversion of mixfix tokens
 Copyright   :  Christian Maeder and Uni Bremen 2004
 License     :  GPLv2 or higher, see LICENSE.txt

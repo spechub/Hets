@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/Maude2CASL.hs
 Description :  Coding of Maude with preorder semantics into CASL
 Copyright   :  (c) Adrian Riesco and Uni Bremen 2007
 License     :  GPLv2 or higher, see LICENSE.txt

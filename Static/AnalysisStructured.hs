@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Static/AnalysisStructured.hs
 Description :  static analysis of DOL OMS and heterogeneous structured specifications
 Copyright   :  (c) Till Mossakowski and Uni Magdeburg 2003-2016
 License     :  GPLv2 or higher, see LICENSE.txt

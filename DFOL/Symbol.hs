@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./DFOL/Symbol.hs
 Description :  Symbol definition for first-order logic with
                dependent types
 Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2010

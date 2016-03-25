@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL/AlphaConvert.hs
 Description :  alpha-conversion (renaming of bound variables) for CASL formulas
 Copyright   :  (c) Christian Maeder, Uni Bremen 2005
 License     :  GPLv2 or higher, see LICENSE.txt

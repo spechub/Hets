@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./CASL/AS_Basic_CASL.der.hs
 Description :  Abstract syntax of CASL basic specifications
 Copyright   :  (c) Klaus Luettich, Christian Maeder, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CSMOF/tests/Test_Parser.hs
 Description :  Test case for CSMOF parsing, parses a file and shows the resulting CSMOF metamodel
 Copyright   :  (c) Daniel Calegari Universidad de la Republica, Uruguay 2013
 License     :  GPLv2 or higher, see LICENSE.txt

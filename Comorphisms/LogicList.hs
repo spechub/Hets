@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/LogicList.hs
 Description :  Assembles all the logics into a list, as a prerequisite
   for the logic graph
 Copyright   :  (c)  Till Mossakowski and Uni Bremen 2003

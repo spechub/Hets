@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL/SymbolMapAnalysis.hs
 Description :  symbol map analysis for the CASL logic.
 Copyright   :  (c) Till Mossakowski, C. Maeder and Uni Bremen 2002-2005
 License     :  GPLv2 or higher, see LICENSE.txt

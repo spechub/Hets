@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/HasCASL2PCoClTyConsHOL.hs
 Description :  coding out subtyping
 Copyright   :  (c) C.Maeder Uni Bremen 2007
 License     :  GPLv2 or higher, see LICENSE.txt

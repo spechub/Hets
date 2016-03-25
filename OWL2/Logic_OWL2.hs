@@ -1,7 +1,7 @@
 {-# LANGUAGE CPP, MultiParamTypeClasses, TypeSynonymInstances #-}
 {-# OPTIONS -w #-}
 {- |
-Module      :  $Header$
+Module      :  ./OWL2/Logic_OWL2.hs
 Description :  instance of the class Logic for OWL2
 Copyright   :  (c) Christian Maeder, DFKI GmbH 2011
 License     :  GPLv2 or higher, see LICENSE.txt

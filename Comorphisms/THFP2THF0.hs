@@ -1,7 +1,7 @@
 {-# OPTIONS -O0 #-}
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/THFP2THF0.hs
 Description :  Comorphism from THFP to THF0
 Copyright   :  (c) J. von Schroeder, DFKI Bremen 2012
 License     :  GPLv2 or higher, see LICENSE.txt

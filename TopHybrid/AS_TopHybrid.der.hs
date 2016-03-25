@@ -1,7 +1,7 @@
 {-# LANGUAGE ExistentialQuantification, DeriveDataTypeable
   , OverlappingInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./TopHybrid/AS_TopHybrid.der.hs
 License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  nevrenato@gmail.com

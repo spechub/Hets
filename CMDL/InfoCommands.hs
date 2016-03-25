@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP, RankNTypes #-}
 {- |
-Module      :$Header$
+Module      :./CMDL/InfoCommands.hs
 Description : CMDL interface commands
 Copyright   : uni-bremen and DFKI
 License     : GPLv2 or higher, see LICENSE.txt

@@ -2,7 +2,7 @@
   , FlexibleInstances, UndecidableInstances, OverlappingInstances
   , ExistentialQuantification, GeneralizedNewtypeDeriving #-}
 {- |
-Module      :  $Header$
+Module      :  ./Logic/Morphism.hs
 Description :  interface (type class) for logic projections (morphisms) in Hets
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2004
 License     :  GPLv2 or higher, see LICENSE.txt

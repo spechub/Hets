@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CommonLogic/Analysis.hs
 Description :  Basic analysis for common logic
 Copyright   :  (c) Eugen Kuksa, Karl Luc, Uni Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt

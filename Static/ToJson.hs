@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Static/ToJson.hs
 Description :  json output of Hets development graphs
 Copyright   :  (c) Christian Maeder, DFKI GmbH 2014
 License     :  GPLv2 or higher, see LICENSE.txt

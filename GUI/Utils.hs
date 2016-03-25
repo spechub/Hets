@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 {- |
-Module      :  $Header$
+Module      :  ./GUI/Utils.hs
 Description :  cpp choice between "GUI.HTkUtils" and "GUI.ConsoleUtils"
 Copyright   :  (c) C. Maeder, Uni Bremen 2002-2005
 License     :  GPLv2 or higher, see LICENSE.txt

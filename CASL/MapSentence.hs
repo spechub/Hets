@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL/MapSentence.hs
 Description :  rename symbols of sentences according to a signature morphisms
 Copyright   :  (c) Christian Maeder, Till Mossakowski and Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./THF/Poly.hs
 Description :  Helper functions for coding out polymorphism
 Copyright   :  (c) J. von Schroeder, DFKI Bremen 2012
 License     :  GPLv2 or higher, see LICENSE.txt

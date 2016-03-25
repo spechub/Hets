@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Static/DGNavigation.hs
 Description :  Navigation through the Development Graph
 Copyright   :  (c) Ewaryst Schulz, DFKI Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt

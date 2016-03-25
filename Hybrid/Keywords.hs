@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Hybrid/Keywords.hs
 Description :  String constants for HybridCASL keywords to be used for parsing
   and printing
 Copyright   :  (c) Renato Neves and Mondrian Project 2012

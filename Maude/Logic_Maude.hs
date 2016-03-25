@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {- |
-Module      :  $Header$
+Module      :  ./Maude/Logic_Maude.hs
 Description :  Instance of class Logic for Maude
 Copyright   :  (c) Martin Kuehl, Uni Bremen 2008
 License     :  GPLv2 or higher, see LICENSE.txt

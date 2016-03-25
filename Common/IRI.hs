@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Common/IRI.hs
 Copyright   :  (c) DFKI GmbH 2012
 License     :  GPLv2 or higher, see LICENSE.txt
 

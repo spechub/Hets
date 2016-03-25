@@ -1,7 +1,7 @@
 {-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies
   , FlexibleInstances, UndecidableInstances, ExistentialQuantification #-}
 {- |
-Module      :  $Header$
+Module      :  ./Logic/Modification.hs
 Description :  interface (type class) for comorphism modifications in Hets
 Copyright   :  (c) Mihai Codescu, Uni Bremen 2002-2004
 License     :  GPLv2 or higher, see LICENSE.txt

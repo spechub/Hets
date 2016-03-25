@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./OMDoc/DataTypes.hs
 Description :  The OMDoc Data Types
 Copyright   :  (c) Ewaryst Schulz, DFKI 2008
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Proofs/InferBasic.hs
 Description :  devGraph rule that calls provers for specific logics
 Copyright   :  (c) J. Gerken, T. Mossakowski, K. Luettich, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt

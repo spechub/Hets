@@ -1,5 +1,5 @@
 {- |
-Module      :$Header$
+Module      :./CMDL/DataTypesUtils.hs
 Description : utilitary functions used throughout the CMDL interface
 Copyright   : uni-bremen and DFKI
 License     : GPLv2 or higher, see LICENSE.txt

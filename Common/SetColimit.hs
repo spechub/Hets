@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Common/SetColimit.hs
 Description :  colimit of an arbitrary diagram in Set
 Copyright   :  (c) Mihai Codescu, and Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt

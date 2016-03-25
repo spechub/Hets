@@ -1,6 +1,6 @@
 {-# LANGUAGE OverlappingInstances, TypeSynonymInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Maude/Meta/HasSorts.hs
 Description :  Accessing the Sorts of Maude data types
 Copyright   :  (c) Martin Kuehl, Uni Bremen 2008-2009
 License     :  GPLv2 or higher, see LICENSE.txt

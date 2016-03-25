@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./HasCASL/Symbol.hs
 Description :  symbol analysis
 Copyright   :  (c) Christian Maeder and Uni Bremen 2003
 License     :  GPLv2 or higher, see LICENSE.txt

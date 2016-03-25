@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/CASL_DL2CASL.hs
 Description :  Inclusion of CASL_DL into CASL
 Copyright   :  (c) Uni Bremen 2007
 License     :  GPLv2 or higher, see LICENSE.txt

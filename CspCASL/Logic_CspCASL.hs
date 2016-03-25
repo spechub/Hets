@@ -1,7 +1,7 @@
 {-# LANGUAGE MultiParamTypeClasses, ScopedTypeVariables
   , TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./CspCASL/Logic_CspCASL.hs
 Description :  CspCASL instance of type class logic
 Copyright   :  (c)  Markus Roggenbach, Till Mossakowski and Uni Bremen 2003
 License     :  GPLv2 or higher, see LICENSE.txt

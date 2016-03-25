@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CommonLogic/Print_KIF.hs
 Description :  Pretty Printer for KIF
 Copyright   :  (c) Soeren Schulze, Uni Bremen 2012
 License     :  GPLv2 or higher, see LICENSE.txt

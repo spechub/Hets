@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Common/Keywords.hs
 Description :  String constants for CASL keywords to be used for parsing
   and printing
 Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2003

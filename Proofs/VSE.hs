@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 {- |
-Module      :  $Header$
+Module      :  ./Proofs/VSE.hs
 Description :  Interface to send structured theories to the VSE prover
 Copyright   :  (c) C. Maeder, DFKI 2009
 License     :  GPLv2 or higher, see LICENSE.txt

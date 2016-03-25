@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/CASL2SubCFOL.hs
 Description :  coding out partiality
 Copyright   :  (c) Zicheng Wang, C.Maeder Uni Bremen 2002-2009
 License     :  GPLv2 or higher, see LICENSE.txt

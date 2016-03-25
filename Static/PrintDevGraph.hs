@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Static/PrintDevGraph.hs
 Description :  pretty printing (parts of) a LibEnv
 Copyright   :  (c) C. Maeder, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt

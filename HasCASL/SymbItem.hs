@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./HasCASL/SymbItem.hs
 Description :  parsing symbol items
 Copyright   :  (c) Christian Maeder and Uni Bremen 2003
 License     :  GPLv2 or higher, see LICENSE.txt

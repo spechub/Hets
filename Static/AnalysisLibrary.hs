@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Static/AnalysisLibrary.hs
 Description :  static analysis of DOL documents and CASL specification libraries
 Copyright   :  (c) Till Mossakowski, Uni Magdeburg 2002-2016
 License     :  GPLv2 or higher, see LICENSE.txt

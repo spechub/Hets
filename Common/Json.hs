@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleInstances, UndecidableInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Common/Json.hs
 Description :  Json utilities
 Copyright   :  (c) Christian Maeder, DFKI GmbH 2014
 License     :  GPLv2 or higher, see LICENSE.txt

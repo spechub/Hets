@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleContexts, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Haskell/HatAna.hs
 Description :  calling programatica's analysis
 Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt

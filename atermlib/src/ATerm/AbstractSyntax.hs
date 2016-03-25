@@ -1,6 +1,6 @@
 {-# LANGUAGE MagicHash #-}
 {- |
-Module      :  $Header$
+Module      :  ./atermlib/src/ATerm/AbstractSyntax.hs
 Description :  the abstract syntax of shared ATerms and their lookup table
 Copyright   :  (c) Klaus Luettich, C. Maeder, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt

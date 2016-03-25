@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, TypeSynonymInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./OWL2/DMU2OWL2.hs
 Description :  translating DMU xml to OWL
 Copyright   :  (c) Christian Maeder, DFKI and Uni Bremen 2009
 License     :  GPLv2 or higher, see LICENSE.txt

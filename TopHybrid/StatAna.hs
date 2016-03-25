@@ -1,6 +1,6 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {- |
-Module      :  $Header$
+Module      :  ./TopHybrid/StatAna.hs
 License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  nevrenato@gmail.com

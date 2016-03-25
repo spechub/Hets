@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./atermlib/src/ATerm/Conversion.hs
 Description :  the class ShATermConvertible and basic instances
 Copyright   :  (c) Klaus Luettich, C. Maeder, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt

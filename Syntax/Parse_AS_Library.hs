@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Syntax/Parse_AS_Library.hs
 Description :  parser for DOL documents and CASL specification librariess
 Copyright   :  (c) Maciek Makowski, Uni Bremen 2002-2016
 License     :  GPLv2 or higher, see LICENSE.txt

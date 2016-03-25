@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./THF/Sublogic.hs
 Description :  Sublogics for THF
 Copyright   :  (c) Jonathan von Schroeder, DFKI Bremen 2012
 License     :  GPLv2 or higher, see LICENSE.txt

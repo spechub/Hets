@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Taxonomy/OntoParser.hs
 Copyright   :  (c) DFKI GmbH, Uni Bremen 2004-2009
 License     :  GPLv2 or higher, see LICENSE.txt
 

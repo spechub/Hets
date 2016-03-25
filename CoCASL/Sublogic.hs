@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CoCASL/Sublogic.hs
 Description :  sublogic analysis for CoCASL
 Copyright   :  (c) Till Mossakowski, C.Maeder and Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./OWL2/Sublogic.hs
 Copyright   :  (c) Dominik Luecke, Felix Gabriel Mance
 License     :  GPLv2 or higher, see LICENSE.txt
 

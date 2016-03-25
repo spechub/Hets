@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL/Simplify.hs
 Description :  resolve empty conjunctions and other trivial cases
 Copyright   :  (c) Christian Maeder, Uni Bremen 2005
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Common/Lib/SizedList.hs
 Description :  lists with their size similar to Data.Edison.Seq.SizedSeq
 Copyright   :  C. Maeder DFKI Bremen 2008
 License     :  GPLv2 or higher, see LICENSE.txt

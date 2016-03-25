@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./OWL2/ColimSign.hs
 Description :  OWL signatures colimits
 Copyright   :  (c) Mihai Codescu, and Uni Bremen 2009
 License     :  GPLv2 or higher, see LICENSE.txt

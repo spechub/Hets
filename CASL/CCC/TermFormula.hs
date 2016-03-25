@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL/CCC/TermFormula.hs
 Description :  auxiliary functions on terms and formulas
 Copyright   :  (c) Mingyi Liu, Till Mossakowski, Uni Bremen 2004-2005
 License     :  GPLv2 or higher, see LICENSE.txt

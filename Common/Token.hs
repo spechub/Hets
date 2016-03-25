@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Common/Token.hs
 Description :  parser for CASL 'Id's based on "Common.Lexer"
 Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2004
 License     :  GPLv2 or higher, see LICENSE.txt

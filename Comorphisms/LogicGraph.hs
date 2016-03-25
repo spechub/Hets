@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/LogicGraph.hs
 Description :  the logic graph
 Copyright   :  (c)  Till Mossakowski and Uni Bremen 2003
 License     :  GPLv2 or higher, see LICENSE.txt

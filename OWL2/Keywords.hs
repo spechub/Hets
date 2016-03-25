@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./OWL2/Keywords.hs
 Description :  OWL reserved keywords
   and printing
 Copyright   :  (c) Christian Maeder DFKI Bremen 2008, Felix Mance, 2011

@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Common/Id.hs
 Description :  positions, simple and mixfix identifiers
 Copyright   :  (c) Klaus Luettich and Christian Maeder and Uni Bremen 2002-2003
 License     :  GPLv2 or higher, see LICENSE.txt

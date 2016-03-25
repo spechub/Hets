@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL/World.hs
 Description :  adding a parameter to ops and preds
 Copyright   :  (c) Christian Maeder, DFKI 2012
 License     :  GPLv2 or higher, see LICENSE.txt

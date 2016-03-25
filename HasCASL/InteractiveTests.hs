@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeSynonymInstances, Rank2Types #-}
 {- |
-Module      :  $Header$
+Module      :  ./HasCASL/InteractiveTests.hs
 Description :  Test functions for MatchingWithDefinitions
 Copyright   :  (c) Ewaryst Schulz, DFKI Bremen 2010
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt

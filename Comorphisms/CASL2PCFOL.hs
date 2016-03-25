@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/CASL2PCFOL.hs
 Description :  coding out subsorting
 Copyright   :  (c) Zicheng Wang, Liam O'Reilly, C. Maeder Uni Bremen 2002-2009
 License     :  GPLv2 or higher, see LICENSE.txt

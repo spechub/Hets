@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/PPolyTyConsHOL2IsaUtils.hs
 Description :  translating a HasCASL subset to Isabelle
 Copyright   :  (c) C. Maeder, DFKI 2008
 License     :  GPLv2 or higher, see LICENSE.txt

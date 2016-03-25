@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./CASL_DL/Sign.hs
 Description :  Signatures for DL logics, as extension of CASL signatures
 Copyright   :  (c) Klaus Luettich, Uni Bremen 2004
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./CSL/Logic_CSL.hs
 Description :  Instance of class Logic for CSL
 Copyright   :  (c) Dominik Dietrich, DFKI Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt

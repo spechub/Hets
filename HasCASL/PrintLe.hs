@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./HasCASL/PrintLe.hs
 Description :  pretty printing signatures
 Copyright   :  (c) Christian Maeder, Uni Bremen, DFKI GmbH 2002-2009
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./SoftFOL/MathServParsing.hs
 Description :  Functions for parsing MathServ output as a MathServResponse
 Copyright   :  (c) Rainer Grabbe, DFKI GmbH
 License     :  GPLv2 or higher, see LICENSE.txt

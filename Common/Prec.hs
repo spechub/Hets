@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Common/Prec.hs
 Description :  precedence checking
 Copyright   :  Christian Maeder and Uni Bremen 2006
 License     :  GPLv2 or higher, see LICENSE.txt

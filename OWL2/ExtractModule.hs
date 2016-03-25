@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./OWL2/ExtractModule.hs
 Copyright   :  Till Mossakowski, Uni Magdeburg 2016
 License     :  GPLv2 or higher, see LICENSE.txt
 

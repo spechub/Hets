@@ -1,7 +1,7 @@
 {-# LANGUAGE ExistentialQuantification, MultiParamTypeClasses
  , DeriveDataTypeable, GeneralizedNewtypeDeriving #-}
 {- |
-Module      :  $Header$
+Module      :  ./Logic/Grothendieck.hs
 Description :  Grothendieck logic (flattening of logic graph to a single logic)
 Copyright   :  (c) Till Mossakowski, and Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt

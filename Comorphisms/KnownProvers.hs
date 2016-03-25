@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/KnownProvers.hs
 Description :  provides a map of provers to their most useful composed
   comorphisms
 Copyright   :  (c) Klaus Luettich, Uni Bremen 2005

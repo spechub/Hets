@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Common/AnalyseAnnos.hs
 Description :  analyse annotations and add them to global ones
 Copyright   :  (c) Christian Maeder, Klaus Luettich and Uni Bremen 2002-2003
 License     :  GPLv2 or higher, see LICENSE.txt

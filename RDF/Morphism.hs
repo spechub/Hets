@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./RDF/Morphism.hs
 Description :  RDF Morphism
 Copyright   :  (c) Francisc-Nicolae Bungiu, Felix Gabriel Mance, 2011
 License     :  GPLv2 or higher, see LICENSE.txt

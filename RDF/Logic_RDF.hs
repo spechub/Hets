@@ -1,7 +1,7 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances #-}
 {-# OPTIONS -w #-}
 {- |
-Module      :  $Header$
+Module      :  ./RDF/Logic_RDF.hs
 Description :  instance of the class Logic for RDF
 Copyright   :  (c) Felix Mance
 License     :  GPLv2 or higher, see LICENSE.txt

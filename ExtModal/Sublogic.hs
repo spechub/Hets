@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./ExtModal/Sublogic.hs
 Description :  Sublogics for ExtModal logic
 Copyright   :  (c) DFKI 2012
 License     :  GPLv2 or higher, see LICENSE.txt

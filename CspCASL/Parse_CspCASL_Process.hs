@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CspCASL/Parse_CspCASL_Process.hs
 Description :  Parser for CspCASL processes
 Copyright   :  (c)
 License     :  GPLv2 or higher, see LICENSE.txt

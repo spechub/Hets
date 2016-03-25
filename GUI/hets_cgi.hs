@@ -1,5 +1,5 @@
 {- |
-Module       : $Header$
+Module       : ./GUI/hets_cgi.hs
 Copyright    : (c) Heng Jiang, Klaus Luettich Uni Bremen 2004-2006
 License      : GPLv2 or higher, see LICENSE.txt
 

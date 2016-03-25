@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./SoftFOL/Conversions.hs
 Description :  Functions to convert to internal SP* data structures.
 Copyright   :  (c) Rene Wagner, Klaus Luettich, Uni Bremen 2005
 License     :  GPLv2 or higher, see LICENSE.txt

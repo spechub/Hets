@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/SuleCFOL2SoftFOL.hs
 Description :  Coding of a CASL subset into SoftFOL
 Copyright   :  (c) Klaus Luettich and Uni Bremen 2005
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Syntax/Parse_AS_Structured.hs
 Description :  parser for DOL OMS and CASL (heterogeneous) structured specifications
 Copyright   :  (c) Till Mossakowski, Christian Maeder, Uni Bremen 2002-2016
 License     :  GPLv2 or higher, see LICENSE.txt

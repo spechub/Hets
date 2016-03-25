@@ -1,5 +1,5 @@
 {- |
-Module      : $Header$
+Module      : ./CMDL/DataTypes.hs
 Description : Internal data types of the CMDL interface
 Copyright   : uni-bremen and DFKI
 License     : GPLv2 or higher, see LICENSE.txt

@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./THF/Logic_THF.hs
 Description :  Instance of class Logic for THF.
 Copyright   :  (c) A. Tsogias, DFKI Bremen 2011
                (c) Jonathan von Schroeder, DFKI Bremen 2012

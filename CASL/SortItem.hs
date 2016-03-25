@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL/SortItem.hs
 Description :  parser for SORT-ITEMs
 Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2004
 License     :  GPLv2 or higher, see LICENSE.txt

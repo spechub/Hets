@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/Hybrid2CASL.hs
 Copyright   :  nevrenato@gmail.com
 License     :  GPLv2 or higher, see LICENSE.txt
 

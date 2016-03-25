@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./GUI/GtkDisprove.hs
 Description :  Gtk Module to enable disproving Theorems
 Copyright   :  (c) Simon Ulbricht, Uni Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt

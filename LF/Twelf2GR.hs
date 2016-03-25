@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./LF/Twelf2GR.hs
 Description :  Conversion of Twelf files to LF signatures and morphisms
 Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP, DoAndIfThenElse #-}
 {- |
-Module      :  $Header$
+Module      :  ./PGIP/Server.hs
 Description :  run hets as server
 Copyright   :  (c) Christian Maeder, DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt

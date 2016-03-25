@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 {- |
-Module      :  $Header$
+Module      :  ./GUI/GtkUtils.hs
 Description :  Access to the .glade files stored as strings inside the binary
 Copyright   :  (c) Thiemo Wiedemeyer, Uni Bremen 2008
 License     :  GPLv2 or higher, see LICENSE.txt

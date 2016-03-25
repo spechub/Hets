@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Static/XSimplePath.hs
 Description :  Simplification of XPath-Structure
 Copyright   :  (c) Simon Ulbricht, DFKI GmbH 2011
 License     :  GPLv2 or higher, see LICENSE.txt

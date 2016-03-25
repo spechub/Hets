@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./SoftFOL/ParseTPTP.hs
 Description :  A parser for the TPTP Input Syntax
 Copyright   :  (c) C.Maeder, DFKI Lab Bremen 2008
 License     :  GPLv2 or higher, see LICENSE.txt

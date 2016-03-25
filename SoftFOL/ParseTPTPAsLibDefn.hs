@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./SoftFOL/ParseTPTPAsLibDefn.hs
 Copyright   :  (c) Jonathan von Schroeder, DFKI Bremen 2013
 License     :  GPLv2 or higher, see LICENSE.txt
 

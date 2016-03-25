@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 {- |
-Module      :  $Header$
+Module      :  ./CASL/CompositionTable/ModelChecker.hs
 Description :  checks validity of models regarding a composition table
 Copyright   :  (c) Uni Bremen 2005
 License     :  GPLv2 or higher, see LICENSE.txt

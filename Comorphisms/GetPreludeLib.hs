@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/GetPreludeLib.hs
 Description :  read a prelude library for some comorphisms
 Copyright   :  (c) Christian Maeder and DFKI GmbH 2009
 License     :  GPLv2 or higher, see LICENSE.txt

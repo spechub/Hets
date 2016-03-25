@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./SoftFOL/PrintTPTP.hs
 Description :  Pretty printing for SPASS signatures in TPTP syntax.
 Copyright   :  (c) Rene Wagner, Rainer Grabbe, Uni Bremen 2005-2006
 License     :  GPLv2 or higher, see LICENSE.txt
