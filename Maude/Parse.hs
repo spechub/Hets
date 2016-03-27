@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Maude/Parse.hs
 Description :  extract Maude text in structured specs
 Copyright   :  (c) C. Maeder, DFKI GmbH 2009
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 {- |
-Module      :  $Header$
+Module      :  ./Driver/Options.hs
 Description :  Datatypes and functions for options that hets understands.
 Copyright   :  (c) Martin Kuehl, Christian Maeder, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt

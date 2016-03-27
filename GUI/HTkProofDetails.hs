@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./GUI/HTkProofDetails.hs
 Description :  GUI for showing and saving proof details.
 Copyright   :  (c) Rainer Grabbe 2006
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Common/DefaultMorphism.hs
 Description :  supply a default morphism for a given signature type
 Copyright   :  (c) C. Maeder, and Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt

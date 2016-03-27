@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Static/ConsInclusions.hs
 Description :  dump conservative inclusion links
 Copyright   :  (c) C. Maeder, DFKI GmbH 2011
 License     :  GPLv2 or higher, see LICENSE.txt

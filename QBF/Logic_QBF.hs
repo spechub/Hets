@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {- |
-Module      :  $Header$
+Module      :  ./QBF/Logic_QBF.hs
 Description :  Instance of class Logic for propositional logic
                extended with QBFs
 

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Common/Lib/Tabular.hs
 Description :  parts of the tabular package
 Copyright   :  (c) Eric Kow <E.Y.Kow@brighton.ac.uk>
 License     :  BSD3

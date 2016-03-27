@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./QBF/ProveDepQBF.hs
 Description :  Interface to the theorem prover e-krhyper in CASC-mode.
 Copyright   :  (c) Jonathan von Schroeder, DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt

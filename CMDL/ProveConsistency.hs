@@ -1,5 +1,5 @@
 {- |
-Module      : $Header$
+Module      : ./CMDL/ProveConsistency.hs
 Description : CMDL interface commands
 Copyright   : uni-bremen and DFKI
 License     : GPLv2 or higher, see LICENSE.txt

@@ -4,7 +4,7 @@
  #-}
 
 {- |
-Module      :  $Header$
+Module      :  ./OMDoc/XmlInterface.hs
 Description :  OMDoc-XML conversion
 Copyright   :  (c) Ewaryst Schulz, DFKI 2009
 License     :  GPLv2 or higher, see LICENSE.txt

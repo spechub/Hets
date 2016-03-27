@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./HasCASL/Builtin.hs
 Description :  builtin types and functions
 Copyright   :  (c) Christian Maeder and Uni Bremen 2003
 License     :  GPLv2 or higher, see LICENSE.txt

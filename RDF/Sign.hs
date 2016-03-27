@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./RDF/Sign.hs
 Copyright   :  Francisc-Nicolae Bungiu, Jacobs University Bremen
 License     :  GPLv2 or higher, see LICENSE.txt
 

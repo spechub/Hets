@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./HolLight/Logic_HolLight.hs
 Description :  Instance of class Logic for HolLight
 
 Copyright   :  (c) Jonathan von Schroeder, DFKI GmbH 2010

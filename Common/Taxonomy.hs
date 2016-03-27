@@ -1,6 +1,6 @@
 
 {- |
-Module      :  $Header$
+Module      :  ./Common/Taxonomy.hs
 Description :  type for selecting different kinds of taxonomy graphs
 Copyright   :  (c) Klaus Luettich, Uni Bremen 2002-2004
 License     :  GPLv2 or higher, see LICENSE.txt

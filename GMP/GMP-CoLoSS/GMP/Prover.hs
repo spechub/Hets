@@ -1,4 +1,4 @@
-{- | Module     : $Header$
+{- | Module     : ./GMP/GMP-CoLoSS/GMP/Prover.hs
  -  Description : Implementation of the generic sequent calculus
  -  Copyright   : (c) Daniel Hausmann & Lutz Schroeder, DFKI Lab Bremen,
  -                Rob Myers & Dirk Pattinson, Department of Computing, ICL

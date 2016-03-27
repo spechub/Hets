@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleInstances, FlexibleContexts #-}
 {- |
-Module      :  $Header$
+Module      :  ./CASL/ColimSign.hs
 Description :  CASL signatures colimits
 Copyright   :  (c) Mihai Codescu, and Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt

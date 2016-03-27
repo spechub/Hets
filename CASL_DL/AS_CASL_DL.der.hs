@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./CASL_DL/AS_CASL_DL.der.hs
 Description :  abstract syntax for CASL_DL logic extension of CASL
 Copyright   :  (c) Klaus Luettich, Dominik Luecke, Uni Bremen 2004-2008
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CSMOF/tests/Test_StatAna.hs
 Description :  Test case for CSMOF static analysis
 Copyright   :  (c) Daniel Calegari Universidad de la Republica, Uruguay 2013
 License     :  GPLv2 or higher, see LICENSE.txt

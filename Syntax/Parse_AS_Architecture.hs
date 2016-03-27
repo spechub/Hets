@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Syntax/Parse_AS_Architecture.hs
 Description :  parser for CASL architectural specifications
 Copyright   :  (c) Maciek Makowski, Warsaw University 2003-2004, C. Maeder
 License     :  GPLv2 or higher, see LICENSE.txt

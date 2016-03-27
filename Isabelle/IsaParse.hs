@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Isabelle/IsaParse.hs
 Description :  parser for an Isabelle theory
 Copyright   :  (c) C. Maeder and Uni Bremen 2005-2006
 License     :  GPLv2 or higher, see LICENSE.txt

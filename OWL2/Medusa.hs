@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./OWL2/Medusa.hs
 Description :  Convert OWL2 ontology to Medusa data structure
 Copyright   :  (c) Till Mossakowski, Uni Magdeburg 2016
 License     :  GPLv2 or higher, see LICENSE.txt

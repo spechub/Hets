@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./SoftFOL/DFGParser.hs
 Description :  A parser for the SPASS Input Syntax
 Copyright   :  (c) C. Immanuel Normann, Heng Jiang, C.Maeder, Uni Bremen 2007
 License     :  GPLv2 or higher, see LICENSE.txt

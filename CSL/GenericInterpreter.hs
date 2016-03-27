@@ -1,6 +1,6 @@
 {-# LANGUAGE  FlexibleContexts #-}
 {- |
-Module      :  $Header$
+Module      :  ./CSL/GenericInterpreter.hs
 Description :  Generic ASState functionality for AssignmentStores
 Copyright   :  (c) Ewaryst Schulz, DFKI Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt

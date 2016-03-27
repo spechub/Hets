@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./VSE/Ana.hs
 Description :  static analysis of VSE parts
 Copyright   :  (c) C. Maeder, DFKI Bremen 2008
 License     :  GPLv2 or higher, see LICENSE.txt

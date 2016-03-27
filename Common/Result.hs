@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Common/Result.hs
 Description :  Result monad for accumulating Diagnosis messages
 Copyright   :  (c) T. Mossakowski, C. Maeder, Uni Bremen 2002-2008
 License     :  GPLv2 or higher, see LICENSE.txt

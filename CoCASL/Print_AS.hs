@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CoCASL/Print_AS.hs
 Description :  pretty print abstract syntax of CoCASL
 Copyright   :  (c) T. Mossakowski, Uni Bremen 2004-2006
 License     :  GPLv2 or higher, see LICENSE.txt

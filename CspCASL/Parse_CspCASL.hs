@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CspCASL/Parse_CspCASL.hs
 Description :  Parser for CspCASL specifications
 Copyright   :  (c) Uni Bremen 2007
 License     :  GPLv2 or higher, see LICENSE.txt

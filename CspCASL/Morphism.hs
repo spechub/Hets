@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./CspCASL/Morphism.hs
 Description :  Symbols and signature morphisms for the CspCASL logic
 Copyright   :  (c) Liam O'Reilly, Markus Roggenbach, Swansea University 2008
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./CommonLogic/Sign.hs
 Description :  Signature for common logic
 Copyright   :  (c) Karl Luc, DFKI Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt

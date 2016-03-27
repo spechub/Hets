@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./GUI/GtkGenericATP.hs
 Description :  Gtk Generic Prover GUI.
 Copyright   :  (c) Thiemo Wiedemeyer, Uni Bremen 2009
 License     :  GPLv2 or higher, see LICENSE.txt

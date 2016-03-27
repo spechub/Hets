@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/ExtModal2ExtModalNoSubsorts.hs
 Description :  coding out subsorting
 Copyright   :  (c) C. Maeder DFKI GmbH 2012
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Common/Http.hs
 Description :  wrapper for simple http
 Copyright   :  (c) Christian Maeder 2013
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Framework/Analysis.hs
 Description :  Analyzes a logic definition
 Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt

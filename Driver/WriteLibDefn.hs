@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Driver/WriteLibDefn.hs
 Description :  Writing out a HetCASL library
 Copyright   :  (c) Klaus Luettich, C.Maeder, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt

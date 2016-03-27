@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./LF/Twelf2DG.hs
 Description :  Conversion of Twelf files to Development Graphs
 Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt

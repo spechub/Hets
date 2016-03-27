@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./ConstraintCASL/Logic_ConstraintCASL.hs
 Description :  instance of the class Logic for ConstraintCASL
 Copyright   :  (c) Uni Bremen 2002-2007
 License     :  GPLv2 or higher, see LICENSE.txt

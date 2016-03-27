@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL/Induction.hs
 Description :  Derive induction schemes from sort generation constraints
 Copyright   :  (c) Till Mossakowski, Rainer Grabbe and Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./HasCASL/HToken.hs
 Description :  parsers for HasCASL tokens
 Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2004
 License     :  GPLv2 or higher, see LICENSE.txt

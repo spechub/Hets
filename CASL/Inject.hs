@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL/Inject.hs
 Description :  Replace Sorted_term(s) with explicit injection functions.
 Copyright   :  (c) Christian Maeder, Uni Bremen 2005
 License     :  GPLv2 or higher, see LICENSE.txt

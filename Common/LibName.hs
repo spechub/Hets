@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Common/LibName.hs
 Description :  library names for HetCASL and development graphs
 Copyright   :  (c) Christian Maeder, DFKI GmbH 2008
 License     :  GPLv2 or higher, see LICENSE.txt

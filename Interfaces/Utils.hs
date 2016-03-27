@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 {- |
-Module      :$Header$
+Module      :./Interfaces/Utils.hs
 Description : utilitary functions
 Copyright   : uni-bremen and DFKI
 License     : GPLv2 or higher, see LICENSE.txt

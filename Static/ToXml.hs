@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Static/ToXml.hs
 Description :  xml output of Hets development graphs
 Copyright   :  (c) Ewaryst Schulz, Uni Bremen 2009
 License     :  GPLv2 or higher, see LICENSE.txt

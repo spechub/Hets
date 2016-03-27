@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./VSE/Parse.hs
 Description :  parsing VSE parts
 Copyright   :  (c) C. Maeder, DFKI Bremen 2008
 License     :  GPLv2 or higher, see LICENSE.txt

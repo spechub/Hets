@@ -1,6 +1,6 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {- |
-Module      :  $Header$
+Module      :  ./GUI/HTkUtils.hs
 Copyright   :  (c) K. Luettich, Rene Wagner, Uni Bremen 2002-2005
 License     :  GPLv2 or higher, see LICENSE.txt
 

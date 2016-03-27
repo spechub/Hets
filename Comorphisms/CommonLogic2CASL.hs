@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/CommonLogic2CASL.hs
 Description :  Comorphism from CommonLogic to CASL
 Copyright   :  (c)  Eugen Kuksa, Uni Bremen 2011, DFKI GmbH 2012
 License     :  GPLv2 or higher, see LICENSE.txt

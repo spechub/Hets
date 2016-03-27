@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Maude/AS_Maude.hs
 Description :  Abstract Maude Syntax
 Copyright   :  (c) DFKI GmbH 2009
 License     :  GPLv2 or higher, see LICENSE.txt

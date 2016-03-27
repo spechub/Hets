@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 {- |
-Module      :  $Header$
+Module      :  ./Driver/ReadLibDefn.hs
 Description :  reading Lib-Defns
 Copyright   :  (c) C. Maeder, DFKI 2014
 License     :  GPLv2 or higher, see LICENSE.txt

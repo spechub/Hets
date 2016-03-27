@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./HasCASL/MinType.hs
 Description :  choose a minimal type for overloaded terms
 Copyright   :  (c) Christian Maeder and Uni Bremen 2003
 License     :  GPLv2 or higher, see LICENSE.txt

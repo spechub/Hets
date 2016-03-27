@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Driver/AnaLib.hs
 Description :  wrapper for static analysis of HetCASL
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt

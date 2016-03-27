@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./OWL2/MS2Ship.hs
 Copyright   :  (c) C. Maeder DFKI GmbH 2012
 License     :  GPLv2 or higher, see LICENSE.txt
 

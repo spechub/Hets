@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Propositional/ProveWithTruthTable.hs
 Description :  Provers for propositional logic
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2008
 License     :  GPLv2 or higher, see LICENSE.txt

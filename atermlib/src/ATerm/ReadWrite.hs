@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./atermlib/src/ATerm/ReadWrite.hs
 Description :  read and write ATerms to and from strings
 Copyright   :  (c) Klaus Luettich, C.Maeder, Uni Bremen 2002-2005
 License     :  GPLv2 or higher, see LICENSE.txt

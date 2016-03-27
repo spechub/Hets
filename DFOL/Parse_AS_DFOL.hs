@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./DFOL/Parse_AS_DFOL.hs
 Description :  A parser for first-order logic with dependent types (DFOL)
 Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2009
 License     :  GPLv2 or higher, see LICENSE.txt

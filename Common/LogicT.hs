@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Common/LogicT.hs
 Description :  colimit of an arbitrary diagram in Set
 Copyright   :  (c) 2005, Amr Sabry, Chung-chieh Shan, Oleg Kiselyov,
         and Daniel P. Friedman

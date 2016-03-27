@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CspCASLProver/Consts.hs
 Description :  Constants and related fucntions for CspCASLProver
 Copyright   :  (c) Liam O'Reilly and Markus Roggenbach,
                    Swansea University 2008

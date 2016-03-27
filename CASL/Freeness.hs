@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL/Freeness.hs
 Description :  Computation of the constraints needed for free definition links.
 Copyright   :  (c) Adrian Riesco, Facultad de Informatica UCM 2009
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./OWL2/Print.hs
 Copyright   :  (c) Heng Jiang, Uni Bremen 2005-2006
 License     :  GPLv2 or higher, see LICENSE.txt
 

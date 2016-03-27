@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./OWL2/ColonKeywords.hs
 Description :  String constants for OWL colon keywords to be used for parsing
   and printing
 Copyright   :  (c) Christian Maeder DFKI Bremen 2008

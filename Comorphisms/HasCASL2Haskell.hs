@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/HasCASL2Haskell.hs
 Description :  translating program equations to Haskell
 Copyright   :  (c) Christian Maeder, Uni Bremen 2004-2005
 License     :  GPLv2 or higher, see LICENSE.txt

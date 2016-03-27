@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Static/AnalysisArchitecture.hs
 Description :  static analysis of CASL architectural specifications
 Copyright   :  (c) Maciek Makowski, Warsaw University, C. Maeder 2004-2006
                Mihai Codescu, DFKI GmbH Bremen 2010

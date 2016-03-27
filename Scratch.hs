@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-unused-imports -fno-warn-unused-binds #-}
 
 {- |
-Module      :  $Header$
+Module      :  ./Scratch.hs
 Description :  ghci test file
 Copyright   :  (c)  C. Maeder, DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt

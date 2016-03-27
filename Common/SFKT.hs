@@ -1,6 +1,6 @@
 {-# LANGUAGE RankNTypes #-}
 {- |
-Module      :  $Header$
+Module      :  ./Common/SFKT.hs
 Copyright   :  (c) 2005, Amr Sabry, Chung-chieh Shan, Oleg Kiselyov
                 and Daniel P. Friedman
 License     :  GPLv2 or higher, see LICENSE.txt

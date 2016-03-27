@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Hybrid/Logic_Hybrid.hs
 Description :  Instance of class Logic for Hybrid CASL
 
 

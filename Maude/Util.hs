@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Maude/Util.hs
 Description :  Utility Functions
 Copyright   :  (c) Martin Kuehl, Uni Bremen 2009
 License     :  GPLv2 or higher, see LICENSE.txt

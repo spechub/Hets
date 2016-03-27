@@ -1,6 +1,6 @@
 {-# LANGUAGE RankNTypes #-}
 {- |
-Module      :  $Header$
+Module      :  ./Static/ChangeGraph.hs
 Description :  functions for changing a development graphs
 Copyright   :  (c)  Christian Maeder, DFKI GmbH 2009
 License     :  GPLv2 or higher, see LICENSE.txt

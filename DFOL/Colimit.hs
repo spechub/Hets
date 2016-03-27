@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./DFOL/Colimit.hs
 Description :  Signature colimits for first-order logic with dependent
                types (DFOL)
 Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2009

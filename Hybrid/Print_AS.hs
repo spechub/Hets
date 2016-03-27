@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Hybrid/Print_AS.hs
 Copyright   :  (c) Renato Neves
 License     :  GPLv2 or higher, see LICENSE.txt
 

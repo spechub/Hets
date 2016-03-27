@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./OWL2/MedusaToJson.hs
 Description :  JSON output for Medusa
 Copyright   :  (c) Uni Magdeburg 2016
 License     :  GPLv2 or higher, see LICENSE.txt

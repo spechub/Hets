@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances, FlexibleContexts, TypeSynonymInstances
   , UndecidableInstances, OverlappingInstances, MultiParamTypeClasses #-}
 {- |
-Module      :  $Header$
+Module      :  ./CSL/ReduceInterpreter.hs
 Description :  Reduce instance for the AssignmentStore class
 Copyright   :  (c) Ewaryst Schulz, DFKI Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt

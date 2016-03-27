@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Logic/ExtSign.hs
 Description :  derived functions for signatures with symbol sets
 Copyright   :  (c) Till Mossakowski, and Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Common/Lib/RelCheck.hs
 Description :  a couple of test cases mainly for intransKernel
 Copyright   :  (c) Uni Bremen 2003-2005
 License     :  GPLv2 or higher, see LICENSE.txt

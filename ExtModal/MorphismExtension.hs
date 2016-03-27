@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./ExtModal/MorphismExtension.hs
 Description :  Morphism extension for modal signature morphisms
 Copyright   :  DFKI GmbH 2009
 License     :  GPLv2 or higher, see LICENSE.txt

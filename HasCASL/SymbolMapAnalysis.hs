@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./HasCASL/SymbolMapAnalysis.hs
 Description :  analysis of symbol mappings
 Copyright   :  (c) Till Mossakowski, Christian Maeder and Uni Bremen 2002-2005
 License     :  GPLv2 or higher, see LICENSE.txt

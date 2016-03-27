@@ -1,7 +1,7 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances,
              UndecidableInstances, ExistentialQuantification #-}
 {- |
-Module      :  $Header$
+Module      :  ./TopHybrid/Logic_TopHybrid.hs
 License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  : nevrenato@gmail.com

@@ -1,6 +1,6 @@
 {-# LANGUAGE ExistentialQuantification, DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Proofs/AbstractState.hs
 Description :  State data structure used by the goal management GUI.
 Copyright   :  (c) Uni Bremen 2005-2007
 License     :  GPLv2 or higher, see LICENSE.txt

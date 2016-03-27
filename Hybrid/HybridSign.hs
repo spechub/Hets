@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Hybrid/HybridSign.hs
 License     :  GPLv2 or higher, see LICENSE.txt
 
 Stability   :  provisional
