@@ -36,7 +36,7 @@ printIRI q
     | ((iriType q == Full || namePrefix q `elem` ["", "owl", "rdfs"])
        && isPredefPropOrClass q)
        || isDatatypeKey q = keyword $ getPredefName q
-    | otherwise = text $ showQN q
+    | otherwise = if namePrefix q == "" then text ":" <> (text $ localPart q) else text $ showQN q
 
 printDataIRI :: QName -> Doc
 printDataIRI q = if isDatatypeKey q then text $ showQN $ setDatatypePrefix q
@@ -165,7 +165,7 @@ printDataRange dr = case dr of
 -- | Printing the ClassExpression
 printClassExpression :: ClassExpression -> Doc
 printClassExpression desc = case desc of
-   Expression ocUri -> text ":" <> printIRI ocUri
+   Expression ocUri -> printIRI ocUri
    ObjectJunction ty ds -> let
       (k, p) = case ty of
           UnionOf -> ("ObjectUnionOf", printClassExpression)
