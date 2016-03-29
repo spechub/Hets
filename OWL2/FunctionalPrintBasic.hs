@@ -84,8 +84,8 @@ quantifierType SomeValuesFrom = keyword "ObjectSomeValuesFrom"
 showRelationF :: Relation -> String
 showRelationF r = case r of
     EDRelation ed -> showEquivOrDisjoint ed
-    SubPropertyOf -> "SubPropertyOf"
-    InverseOf -> "InverseOf"
+    SubPropertyOf -> "SubObjectPropertyOf" -- what about data properties????
+    InverseOf -> "InverseObjectProperties"
     SubClass -> "SubClassOf"
     Types -> "ClassAssertion"
     DRRelation dr -> showDomainOrRange dr
@@ -169,12 +169,12 @@ printClassExpression desc = case desc of
    ObjectJunction ty ds -> let
       (k, p) = case ty of
           UnionOf -> ("ObjectUnionOf", printClassExpression)
-          IntersectionOf -> ("ObjectIntersectionOf", printPrimary)
+          IntersectionOf -> ("ObjectIntersectionOf", printClassExpression)
       in text k <> parens (fsep $ prepPunctuate space $ map p ds)
-   ObjectComplementOf d -> keyword "ObjectComplementOf" <> (parens $ printNegatedPrimary d)
+   ObjectComplementOf d -> keyword "ObjectComplementOf" <> (parens $ printClassExpression d)
    ObjectOneOf indUriList -> keyword "ObjectOneOf" <> (parens $ ppWithSpaces2 printIRI indUriList)
    ObjectValuesFrom ty opExp d ->
-      quantifierType ty <> parens (printObjPropExp opExp <+> printNegatedPrimary d)
+      quantifierType ty <> parens (printObjPropExp opExp <+> printClassExpression d)
    ObjectHasSelf opExp ->
       printObjPropExp opExp <+> keyword selfS
    ObjectHasValue opExp indUri ->

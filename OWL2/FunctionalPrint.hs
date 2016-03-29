@@ -31,6 +31,8 @@ import Data.List
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
+import Debug.Trace
+
 -- | OWL2 signature printing
 
 printOneNamed :: Anno.Named Axiom -> Doc
@@ -111,7 +113,9 @@ printMisc :: Pretty a => Annotations -> (b -> Doc) -> b -> AnnotatedList a
     -> Doc
 printMisc a f r anl = f r <+> parens (printAnnotations a $+$ printAnnotatedList anl) 
 
-printMisc2 g a f r anl = f r <+> (printAnnotations a $+$ printAnnotatedList2 g anl)
+printMisc2 :: (a -> Doc) -> Annotations -> (b -> Doc) -> b -> AnnotatedList a
+    -> Doc
+printMisc2 g a f r anl = f r <+> parens (printAnnotations a $+$ printAnnotatedList2 g anl)
 
 -- | Misc ListFrameBits
 printMiscBit :: Relation -> Annotations -> ListFrameBit -> Doc
@@ -123,8 +127,8 @@ printMiscBit r a lfb = case lfb of
         printMisc2 printIRI a printSameOrDifferentInd (getSD r) anl
     _ -> empty
 
-printAnnFrameBit :: Annotations -> AnnFrameBit -> Doc
-printAnnFrameBit a afb = case afb of
+printAnnFrameBit :: (a -> Doc) -> a -> Annotations -> AnnFrameBit -> Doc
+printAnnFrameBit g ce a afb = case afb of
     AnnotationFrameBit _ -> printAnnotations a
     DatatypeBit x -> printAnnotations a
           $+$ keyword equivalentToC <+> printDataRange x
@@ -133,9 +137,11 @@ printAnnFrameBit a afb = case afb of
           $+$ vcat (punctuate comma ( map printClassExpression x )))
     ClassHasKey op dp -> keyword hasKeyC <+> (printAnnotations a
       $+$ vcat (punctuate comma $ map printObjPropExp op ++ map printIRI dp))
-    ObjectSubPropertyChain opl -> keyword subPropertyChainC
-      <+> (printAnnotations a $+$ fsep (prepPunctuate (keyword oS <> space)
-          $ map printObjPropExp opl))
+    ObjectSubPropertyChain opl -> text "SubObjectPropertyOf"
+      <+> parens (text "ObjectPropertyChain" <+> 
+                  parens 
+                    (fsep (prepPunctuate space $ map printObjPropExp opl)) 
+                  <+> g ce) 
     DataFunctional -> keyword characteristicsC <+>
           (printAnnotations a $+$ printCharact functionalS)
 
@@ -150,7 +156,7 @@ printFrameBit g ce fb = case fb of
             IndividualFacts x -> keyword factsC <+> (vcat $  map
                                   ( \ (ans, a) -> printAnnotations ans $+$ printFact a) x)
             _ -> empty
-    AnnFrameBit a afb -> printAnnFrameBit a afb
+    AnnFrameBit a afb -> printAnnFrameBit g ce a afb
 
 showEntityTypeF :: EntityType -> String
 showEntityTypeF e = case e of
