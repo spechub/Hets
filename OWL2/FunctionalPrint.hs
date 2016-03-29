@@ -31,8 +31,6 @@ import Data.List
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-import Debug.Trace
-
 -- | OWL2 signature printing
 
 printOneNamed :: Anno.Named Axiom -> Doc
@@ -202,9 +200,11 @@ printPrefixes x = vcat (map (\ (a, b) ->
 
 printOntology :: Ontology -> Doc
 printOntology Ontology {name = a, imports = b, ann = c, ontFrames = d} =
-    (if nullQName == a then empty else keyword ontologyC <+> printIRI a)
-    $++$ vcat (map printImport b)
-    $++$ vcat (map printAnnotations c) $+$ vcat (map printFrame d)
+   text "Ontology" <+> parens 
+    (
+    (if nullQName == a then text "<http://hets.eu/unnamed>" else printIRI a) $++$
+    vcat (map printImport b)
+    $++$ vcat (map printAnnotations c) $+$ vcat (map printFrame d))
 
 printOntologyDocument :: OntologyDocument -> Doc
 printOntologyDocument OntologyDocument {prefixDeclaration = a, ontology = b} =
