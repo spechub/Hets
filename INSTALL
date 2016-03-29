@@ -1,53 +1,151 @@
+Unless you know what you are doing you should always install the prepared
+system packages for your OS, instead of compiling it by yourself:
+
+Ubuntu:
+  # add the hets PPA site to your system unless already done
+  apt-add-repository ppa:hets/hets
+  apt-add-repository -s \
+    "deb http://ppa.launchpad.net/hets/hets/ubuntu trusty main
+  # update the system's package catalog and install hets incl. dependencies
+  apt-get update
+  apt-get install hets
+  # to update your installation to a recent version do from time to time:
+  apt-get update
+  apt-get upgrade [hets]
+
+Solaris 11+:
+  # add the package publisher info of the Uni Magedeburg to your system
+  # if not already done (see "pkg publisher" output)
+  pkg set-publisher --add-origin http://pkg.cs.ovgu.de/lnf lnf
+  # install hets incl. dependencies
+  pkg install hets
+  # to update your installation to a recent version do from time to time:
+  pkg update [hets]
+
+Adding packages to the system usually requires additional privileges.
+So sudo, pfexec or similar tools might be needed to be able to execute the
+commands mentioned above successfully.
+
+In non-desktop environments like servers, where no GUI is needed/hets is
+running as a service, you may prefer to install the package 'hets-server'
+instead. This one gets compiled without GTK+/Glade/TclTk support and thus
+reduces the number of dependencies/required ressources noteworthy.
+
+
+Compiling from source
+=====================
 For compilation we use the Glasgow Haskell Compiler "ghc" Version
 ghc-7.4.x, ghc-7.6.x or ghc-7.8.2
 
-The binary "hets" should be produced from a source distribution by:
+To get  programatica support  one should extract the programatica sources to
+the programatica/tools directory. For convinience you may adjust the related
+variables in var.mk and let  'make check-programatica'  take care of it.
 
-  make depend
-  make hets
+The "hets" and "hets-server" binary can be made at once using the command:
+
+  make all
   # this takes a while
 
-Missing cabal packages can be installed using utils/installHetsPkgs.sh which
-requires the "cabal" binary that is part of the haskell platform
-http://hackage.haskell.org/platform/.
+Other supported targets are hets-opt, hets-server-opt and docs. Omit the suffix
+'-opt' to create unoptimzed versions of them. For more details study the
+Makefile (GNU style, so on Solaris use 'gmake' instead of 'make').
 
-Use "gmake" (and "gtar" for unpacking) under solaris!
+When the desired targets were made, you may install it into your own local
+directory by setting the PREFIX environment variable to a corresponding
+value first and calling the appropriate target (default is /usr). E.g.:
 
-When building hets directly from svn sources, just call "make" and install
-further ghc packages if errors occur.
+  PREFIX=/home/foo/bar/hets make install
 
-Rather than building the binary yourself, you may try out one of our
-nightly created binaries (compressed with bzip2).
-Under Ubuntu these binaries are downloaded by "sudo hets -update".
+Instead of install one may use the targets install-hets, install-hets-server
+and install-common as well.
 
-To obtain hets under Ubuntu issue:
-  sudo apt-add-repository ppa:hets/hets
-  sudo apt-add-repository -s \
-    "deb http://ppa.launchpad.net/hets/hets/ubuntu trusty main
-  sudo apt-get update
-  sudo apt-get build-dep hets # to get tools to build hets yourself
-  sudo apt-get install hets   # to get the hets packages and dependencies
+To install to a virtual root, one may set the env variable DESTDIR to the
+desired directory. Per default it is unset and thus equivalent to / .
 
+Last but not least one may set the env variable DEB_BUILD_ARCH to a non-null
+value (as dpkg-buildpackage automatically does). In this case the PREFIX gets
+effectively prefixed packagewise by another one, which makes packageing
+easier and uniform across different OS.
+
+When compiling the sources fails, this is probably because of missing haskell
+modules or other packages. Having a look at utils/installHetsPkgs.sh as well as
+var.mk may help to find out, what is missing on your system. On Ubuntu the
+following command may do all you need "apt-get build-dep hets". For Solaris 11+
+have a look at http://pkg.cs.ovgu.de/lnf/en/catalog.shtml or the output of e.g.
+"pkg list -a 'library/haskell/*'".
+
+NOTE that one should NEVER make _any_ target as user 'root' or as a user with
+additional privileges, which allow one to overwrite/delete system files!
+When you want to create debian binary packages, use fakeroot instead.
+
+
+Examples
+========
 Examples for testing can be obtained from
 http://www.informatik.uni-bremen.de/cofi/Libraries/lib.tgz
-Try out i.e. "hets -g Basic/Numbers.casl" to see if the graphical interface
+
+Try out e.g. "hets -g Basic/Numbers.casl" to see if the graphical interface
 pops up. If this does not work, maybe "uDrawGraph" (Version 3.1.1) from
-http://www.informatik.uni-bremen.de/uDrawGraph
-is not properly installed.  Make sure "uDrawGraph" can be found in your PATH.
+http://www.informatik.uni-bremen.de/uDrawGraph is not properly installed. Make
+sure "uDrawGraph" can be found in your PATH.
 
-(Under Ubuntu uDrawGraph is a dependency and the libraries can be found under
-/usr/lib/hets/hets-lib.)
 
-Source releases (created by "make release" and not needed under Ubuntu)
-contain generated sources that should not be changed manually. Some
-files are generated by tools (i.e. like "DrIFT"); these utilities are
-also Haskell programs.  A source release already contains html
-documentation of our modules. In order to generate the documentation
-from svn sources you'll need "haddock" that comes with ghc.
+Misc
+====
+For convinience you may use "make archive" to export the HEAD of your _local_
+hets repository to an xz compressed tar archive (see git-archive(1) for more
+information). HEAD refers usually to the last commited version of your current
+branch (see "git branch"). Such an archive is e.g. needed for uploading a source
+package to an Ubuntu Personal Package Archive (PPA). For this in addition some
+minor things get pre-compiled/build, minimal git infos exported to related
+files, redundant or unneeded data get deleted and programatica gets bundled as
+is, because Ubuntu PPAs do not allow to download required pre-requisites
+on-the-fly. But remember, the Ubuntu PPA is really picky about archive names,
+so for each release one should choose a different filename, otherwise be
+prepared for getting it rejected. Therefore you may set the environment variable
+ARC_NAME to get out of the box you need, e.g.:
 
-Note also that the Makefile in a source release differs from the
-Makefile obtained via svn. For a release the ReleaseMakefile
-overwrites the Makefile from svn. The original Makefile is renamed
-to Makefile.orig.
+	ARC_NAME=/tmp/foobar-1.2.3.tar.xz make archive
+
+If there is already an archive with the same name, it will be overwritten
+unconditionally!
+
+The make targets 'clean', 'build', 'build-arch', 'build-indep' as well as
+'binary', 'binary-arch' and 'binary-indep' are reserved in the sense of
+https://www.debian.org/doc/debian-policy/ch-source.html#s-debianrules
+
+On debian based system you may even use the following or similar command, to
+create the binary *.deb packages in the parent directory of Hets:
+"fakeroot DEB_BUILD_ARCH=1 gmake binary". For more details consult the Makefile.
+
+
+Package-Versioning: A.B.C-n.m.r[.c]*
+====================================
+Actually for each intended package publication on the PPA, the related commit
+should be either propperly tagged OR ./version_nr should be updated using
+a number tripple with no leading zero[s] (see semantic versioning). For now it
+is a twin pack only and thus we always add a '.1' and get "A.B.1" as our first
+part (in debian terms the "upstream_version").
+
+The second part (in debian terms the "debian_revision") is made of the string
+n.m.r[.c] whereby n denotes number of pkg build modification count wrt. the
+upstream_version. With each new upstream_version it starts again with 1 and
+gets increased, if the source didn't change, but the way, how the package gets
+build/structured. m.r is the LSB_RELEASE of the intended OS.
+
+The last optional part [.c]* is used (simply incremented by 1 on demand), if
+neither source nor pkg build procedure has been changed, but a new version is
+needed to be able to overwrite old stuff, e.g. if the PPA goes mad again.
+
+So e.g. to be able to overwrite the current installed hets package with your
+own version without getting into trouble, and getting this in turn automatically
+replaced on e.g. 'apt-get update; apt-get upgrade' when a new version arrived,
+one should just set FULL_DEBVERS to the same of the latest or installed package,
+append a '.1' and increment it on demand. If it is not set, make deduces it from
+the running system.
+
+We use neither the debian epoch nonsense, nor lsb release names or other
+questionable stuff - just A.B.C-n.m.r[.c]* and none of them zero padded!
+
 
 hets-devel@informatik.uni-bremen.de
