@@ -119,6 +119,7 @@ import OWL2.OWL22CASL
 import OWL2.CASL2OWL
 import OWL2.OWL22CommonLogic
 import OWL2.Propositional2OWL2
+import OWL2.OWLRelativisation
 #ifdef CASLEXTENSIONS
 import Comorphisms.ExtModal2OWL
 #endif
@@ -202,6 +203,7 @@ comorphismList =
     , Comorphism DMU2OWL2
     , Comorphism CASL2OWL
     , Comorphism Propositional2OWL2
+    , Comorphism OWLRelativisation
 #ifdef CASLEXTENSIONS
     , Comorphism ExtModal2OWL
 #endif
