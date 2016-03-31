@@ -7,7 +7,7 @@ install:
  - travis_retry cabal update
  - cabal install alex happy
  - cabal install gtk2hs-buildtools
- - cabal install glade parsec1
+ - cabal install glade
  - cabal install --only-dependencies
 script:
  - make
