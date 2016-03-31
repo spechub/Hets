@@ -80,7 +80,7 @@ instance Comorphism
       map_symbol CASL_DL2CASL _ = Set.singleton
       map_sentence CASL_DL2CASL = trSentence
       map_morphism CASL_DL2CASL = mapMor
-      map_theory CASL_DL2CASL = trTheory
+      map_theory CASL_DL2CASL _ = trTheory
       isInclusionComorphism CASL_DL2CASL = True
       has_model_expansion CASL_DL2CASL = True
 

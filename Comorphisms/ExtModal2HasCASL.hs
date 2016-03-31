@@ -69,7 +69,7 @@ instance Comorphism ExtModal2HasCASL
       { HC.which_logic = HOL
       , HC.has_sub = CASL.has_sub sl
       , HC.has_part = CASL.has_part sl }
-    map_theory ExtModal2HasCASL (sig, allSens) = let
+    map_theory ExtModal2HasCASL _ (sig, allSens) = let
       (frames, sens) = partition (isFrameAx . sentence) allSens
       in case transSig sig sens of
       (mme, s) -> return

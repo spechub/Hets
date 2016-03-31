@@ -170,7 +170,7 @@ instance Show a => Comorphism (GenSuleCFOL2SoftFOL a)
     mapSublogic cid sl =
         if isSubElem sl $ sourceSublogic cid
         then Just () else Nothing
-    map_theory (GenSuleCFOL2SoftFOL a) = transTheory sigTrCASL formTrCASL
+    map_theory (GenSuleCFOL2SoftFOL a) _ = transTheory sigTrCASL formTrCASL
       . case show a of
       str | str == show SoftFOLInduction -> generateInductionLemmas True
           | str == show SoftFOLInduction2 -> generateInductionLemmas False

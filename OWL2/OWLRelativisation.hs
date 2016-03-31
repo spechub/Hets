@@ -70,120 +70,121 @@ instance Comorphism
       isInclusionComorphism OWLRelativisation = True 
       has_model_expansion OWLRelativisation = False -- TODO: check
 
-topC :: IRI
-topC = QN "" "top" Abbreviated "top" nullRange
+topC :: String -> IRI
+topC s = QN "" ("top_" ++ s) Abbreviated ("top_" ++ s) nullRange
 
-mapTheory :: (OS.Sign, [Named Axiom]) -> Result (OS.Sign, [Named Axiom])
-mapTheory (sig, nsens) = do
- let sig' = sig{OS.concepts = Set.insert topC $ OS.concepts sig}
-     (dds, dops, rops, nsens') = foldl (\(dps, opd, opr, sens) s -> let 
-                                  (dps', opd', opr', s') = mapSentence (dps, opd, opr) s 
+mapTheory :: Maybe String -> (OS.Sign, [Named Axiom]) -> Result (OS.Sign, [Named Axiom])
+mapTheory mString (sig, nsens) = do
+ let s = maybe "" id mString
+     sig' = sig{OS.concepts = Set.insert (topC s) $ OS.concepts sig}
+     (dds, dops, rops, nsens') = foldl (\(dps, opd, opr, sens) se -> let 
+                                  (dps', opd', opr', s') = mapSentence s (dps, opd, opr) se 
                                  in (dps', opd', opr', s':sens))
                             (Set.empty, Set.empty, Set.empty, []) nsens
-     csens = map cSubTop $ Set.toList $ OS.concepts sig
-     isens = map iIsTop $ Set.toList $ OS.individuals sig
-     dsens = map dTop $ Set.toList $ Set.difference (OS.objectProperties sig) dops
-     rsens = map rTop $ Set.toList $ Set.difference (OS.objectProperties sig) rops
-     dsens' = map dDataTop $ Set.toList $ Set.difference (OS.dataProperties sig) dds 
+     csens = map (cSubTop s)  $ Set.toList $ OS.concepts sig
+     isens = map (iIsTop s) $ Set.toList $ OS.individuals sig
+     dsens = map (dTop s) $ Set.toList $ Set.difference (OS.objectProperties sig) dops
+     rsens = map (rTop s) $ Set.toList $ Set.difference (OS.objectProperties sig) rops
+     dsens' = map (dDataTop s) $ Set.toList $ Set.difference (OS.dataProperties sig) dds 
  return (sig', (reverse nsens') ++ csens ++ isens ++ dsens ++ rsens ++ dsens')
 
-cSubTop :: IRI -> Named Axiom
-cSubTop c = let 
+cSubTop :: String -> IRI -> Named Axiom
+cSubTop s c = let 
    sen = PlainAxiom (mkExtendedEntity $ mkEntity Class c)
                    (ListFrameBit (Just SubClass) $
-                           ExpressionBit [([], Expression topC)])
+                           ExpressionBit [([], Expression (topC s))])
  in makeNamed "" sen
 
-iIsTop :: IRI -> Named Axiom 
-iIsTop i = let 
+iIsTop :: String -> IRI -> Named Axiom 
+iIsTop s i = let 
    sen = PlainAxiom (mkExtendedEntity $ mkEntity NamedIndividual i)
                    (ListFrameBit (Just Types) $
-                           ExpressionBit [([], Expression topC)])
+                           ExpressionBit [([], Expression (topC s))])
  in makeNamed "" sen
 
-dDataTop :: IRI -> Named Axiom
-dDataTop d = let
+dDataTop :: String -> IRI -> Named Axiom
+dDataTop s d = let
   sen = PlainAxiom (mkExtendedEntity $ mkEntity DataProperty d) 
                    (ListFrameBit (Just (DRRelation ADomain)) $ 
-                       ExpressionBit [([], Expression topC)])
+                       ExpressionBit [([], Expression (topC s))])
  in makeNamed "" sen
 
-dTop :: IRI -> Named Axiom
-dTop r = let 
+dTop :: String -> IRI -> Named Axiom
+dTop s r = let
   sen = PlainAxiom (mkExtendedEntity $ mkEntity ObjectProperty r) 
                    (ListFrameBit (Just (DRRelation ADomain)) $ 
-                       ExpressionBit [([], Expression topC)])
+                       ExpressionBit [([], Expression (topC s))])
  in makeNamed "" sen
 
 
-rTop :: IRI -> Named Axiom
-rTop r = let 
+rTop :: String -> IRI -> Named Axiom
+rTop s r = let 
   sen = PlainAxiom (mkExtendedEntity $ mkEntity ObjectProperty r) 
                    (ListFrameBit (Just (DRRelation ARange)) $ 
-                       ExpressionBit [([], Expression topC)])
+                       ExpressionBit [([], Expression (topC s))])
  in makeNamed "" sen
 
-relClassExp :: ClassExpression -> ClassExpression
-relClassExp ce = case ce of 
- Expression aClass -> if isThing aClass then Expression topC else ce
- ObjectJunction j ces -> ObjectJunction j $ map relClassExp ces
- ObjectComplementOf ce' -> ObjectJunction IntersectionOf [Expression topC, 
-                                                           ObjectComplementOf $ relClassExp ce']
+relClassExp :: String -> ClassExpression -> ClassExpression
+relClassExp s ce = case ce of 
+ Expression aClass -> if isThing aClass then Expression (topC s) else ce
+ ObjectJunction j ces -> ObjectJunction j $ map (relClassExp s) ces
+ ObjectComplementOf ce' -> ObjectJunction IntersectionOf 
+       [Expression (topC s), ObjectComplementOf $ relClassExp s ce']
  ObjectValuesFrom AllValuesFrom ope ce' -> 
-    ObjectJunction IntersectionOf [Expression topC,  
-                   ObjectValuesFrom AllValuesFrom ope $ relClassExp ce']
+    ObjectJunction IntersectionOf [Expression (topC s),  
+                   ObjectValuesFrom AllValuesFrom ope $ relClassExp s ce']
  _ -> ce 
 
-relListFrameBit :: ListFrameBit -> ListFrameBit
-relListFrameBit lfb = case lfb of
- ExpressionBit acel -> ExpressionBit $ map (\(x,ce) -> (x, relClassExp ce)) acel
+relListFrameBit :: String -> ListFrameBit -> ListFrameBit
+relListFrameBit s lfb = case lfb of
+ ExpressionBit acel -> ExpressionBit $ map (\(x,ce) -> (x, relClassExp s ce)) acel
  -- the replacement already ensures that the domain is a subclass of top
  -- together with Class: C SubClassOf: top for every C
  _ -> lfb 
 
-relAnnFrameBit :: AnnFrameBit -> AnnFrameBit
-relAnnFrameBit afb = case afb of
-  ClassDisjointUnion ces -> ClassDisjointUnion $ map relClassExp ces 
+relAnnFrameBit :: String -> AnnFrameBit -> AnnFrameBit
+relAnnFrameBit s afb = case afb of
+  ClassDisjointUnion ces -> ClassDisjointUnion $ map (relClassExp s) ces 
   _ -> afb
 
-mapSentence :: (Set.Set IRI, Set.Set IRI, Set.Set IRI) -> Named Axiom -> 
+mapSentence :: String -> (Set.Set IRI, Set.Set IRI, Set.Set IRI) -> Named Axiom -> 
                (Set.Set IRI, Set.Set IRI, Set.Set IRI, Named Axiom)
-mapSentence (dpd, opd, opr) ax = let
+mapSentence s (dpd, opd, opr) ax = let
    relAxiom sen = case axiomTopic sen of 
       ClassEntity _ce -> case axiomBit sen of
         ListFrameBit mrel lfb -> 
              (dpd, opd, opr, 
               PlainAxiom (axiomTopic sen) $ 
                ListFrameBit mrel $  
-                 relListFrameBit lfb) 
+                 relListFrameBit s lfb) 
         AnnFrameBit annos afb -> (dpd, opd, opr, PlainAxiom (axiomTopic sen) $ 
-               AnnFrameBit annos $ relAnnFrameBit afb) -- for disjoint unions?
+               AnnFrameBit annos $ relAnnFrameBit s afb) -- for disjoint unions?
       ObjectEntity (ObjectProp anIri) -> case axiomBit sen of  -- when do I have here an inverse?
          ListFrameBit (Just (DRRelation ADomain)) lfb -> 
           (dpd, Set.insert anIri opd, opr, 
                  PlainAxiom (axiomTopic sen)
                     (ListFrameBit (Just (DRRelation ADomain)) $ 
-                      relListFrameBit lfb)
+                      relListFrameBit s lfb)
                     )
          ListFrameBit (Just (DRRelation ARange)) lfb -> 
           (dpd, opd, Set.insert anIri opr, 
                  PlainAxiom (axiomTopic sen)
                     (ListFrameBit (Just (DRRelation ARange)) $ 
-                      relListFrameBit lfb)
+                      relListFrameBit s lfb)
                     )
          ListFrameBit mrel lfb -> (dpd, opd, opr, 
                  PlainAxiom (axiomTopic sen)
                     (ListFrameBit mrel $ 
-                      relListFrameBit lfb))
+                      relListFrameBit s lfb))
          AnnFrameBit annos afb -> (dpd, opd, opr, PlainAxiom (axiomTopic sen) $ 
-                         AnnFrameBit annos $ relAnnFrameBit afb)
+                         AnnFrameBit annos $ relAnnFrameBit s afb)
       SimpleEntity ent -> case entityKind ent of 
          DataProperty -> case axiomBit sen of
              ListFrameBit (Just (DRRelation ADomain)) lfb -> 
                (Set.insert (cutIRI ent) dpd, opd, opr, 
                  PlainAxiom (axiomTopic sen)
                     (ListFrameBit (Just (DRRelation ADomain)) $ 
-                      relListFrameBit lfb)
+                      relListFrameBit s lfb)
                     )
              _ -> (dpd, opd, opr, sen) 
          NamedIndividual -> case axiomBit sen of
@@ -191,8 +192,8 @@ mapSentence (dpd, opd, opr) ax = let
                   (dpd, opd, opr,
                    PlainAxiom (axiomTopic sen) $
                     ListFrameBit (Just Types) $ 
-                     relListFrameBit lfb) 
-            _ -> (dpd, opd, opr, sen)
+                     relListFrameBit s lfb) 
+            _ -> (dpd, opd, opr, sen) 
          _ -> (dpd, opd, opr, sen)
       _ -> (dpd, opd, opr, sen)
    (dpd', opd', opr', axRel) = relAxiom $ sentence ax

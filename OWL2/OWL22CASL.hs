@@ -87,7 +87,7 @@ instance Comorphism
       targetLogic OWL22CASL = CASL
       mapSublogic OWL22CASL _ = Just $ cFol
         { cons_features = emptyMapConsFeature }
-      map_theory OWL22CASL = mapTheory
+      map_theory OWL22CASL _ = mapTheory
       map_morphism OWL22CASL = mapMorphism
       map_symbol OWL22CASL _ = mapSymbol
       isInclusionComorphism OWL22CASL = True

@@ -78,6 +78,7 @@ import Common.LibName
 import Common.Result
 import qualified Common.OrderedMap as OMap
 import qualified Common.Lib.SizedList as SizedList
+import Common.IRI
 
 import Driver.Options (HetcatsOpts, putIfVerbose, outtypes, doDump, verbose)
 import Driver.WriteLibDefn (writeShATermFile)
@@ -461,6 +462,7 @@ translateTheoryOfNode gInfo@(GInfo { hetcatsOpts = opts
     Nothing -> return ()
     Just ist -> do
       let libEnv = i_libEnv ist
+          name = show $ getName $ dgn_name $ labDG dgraph node -- maybe not the best string 
       case computeTheory libEnv ln node of
         Just th@(G_theory lid _ sign _ sens _) -> do
           -- find all comorphism paths starting from lid
@@ -477,7 +479,7 @@ translateTheoryOfNode gInfo@(GInfo { hetcatsOpts = opts
               sign' <- coerceSign lid lidS "" sign
               sens' <- coerceThSens lid lidS "" sens
               -- translate theory along chosen comorphism
-              let Result es mTh = wrapMapTheory cid
+              let Result es mTh = wrapMapTheory cid (Just name) -- this is where the string is passed!
                     (plainSign sign', toNamedList sens')
               case mTh of
                 Nothing -> showDiagMess opts es

@@ -136,7 +136,7 @@ consistencyCheck includeTheorems (G_cons_checker lid4 cc) (Comorphism cid) ln
               map (\ s -> s { isAxiom = True }) namedSens
               else namedSens
         bTh'@(sig1, _) <- coerceBasicTheory lid1 lidS "" (sign, sens)
-        (sig2, sens2) <- wrapMapTheory cid bTh'
+        (sig2, sens2) <- wrapMapTheory cid Nothing bTh' -- should be safe!
         incl <- subsig_inclusion lidT (empty_signature lidT) sig2
         return (sig1, TheoryMorphism
           { tSource = emptyTheory lidT

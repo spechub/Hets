@@ -58,7 +58,7 @@ instance Comorphism ExtModal2CASL
     sourceSublogic ExtModal2CASL = mkTop foleml
     targetLogic ExtModal2CASL = CASL
     mapSublogic ExtModal2CASL s = Just s { ext_features = () }
-    map_theory ExtModal2CASL (sig, sens) = case transSig sig of
+    map_theory ExtModal2CASL _ (sig, sens) = case transSig sig of
       mme -> return (mme, map (mapNamed $ transTop sig mme) sens)
     {-
     map_morphism ExtModal2CASL = return . mapMor

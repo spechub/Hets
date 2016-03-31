@@ -62,4 +62,4 @@ instance Comorphism
       sourceSublogic ExtModal2OWL = mkTop maxSublogic
       targetLogic ExtModal2OWL = OWL2
       mapSublogic ExtModal2OWL _ = Just topS
-      map_theory ExtModal2OWL = mapTheory
+      map_theory ExtModal2OWL _ = mapTheory

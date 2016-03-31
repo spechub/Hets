@@ -55,7 +55,7 @@ instance Comorphism CASL2CoCASL
     targetLogic CASL2CoCASL = CoCASL
     mapSublogic CASL2CoCASL s = Just $ s { ext_features = False }
 
-    map_theory CASL2CoCASL = return . embedCASLTheory emptyCoCASLSign
+    map_theory CASL2CoCASL _ = return . embedCASLTheory emptyCoCASLSign
     map_morphism CASL2CoCASL = return . mapCASLMor emptyCoCASLSign emptyMorExt
     map_sentence CASL2CoCASL _ = return . mapFORMULA
     map_symbol CASL2CoCASL _ = Set.singleton . id

@@ -57,7 +57,7 @@ instance Comorphism CASL2VSEImport
     sourceSublogic CASL2VSEImport = SL.cFol
     targetLogic CASL2VSEImport = VSE
     mapSublogic CASL2VSEImport _ = Just ()
-    map_theory CASL2VSEImport = mapCASLTheory
+    map_theory CASL2VSEImport _ = mapCASLTheory
     map_morphism CASL2VSEImport = return . mapMor
     map_sentence CASL2VSEImport _ = return . mapFORMULA
     map_symbol CASL2VSEImport = error "nyi"

@@ -60,7 +60,7 @@ instance Comorphism ExtModal2ExtModalNoSubsorts
                , which_logic = max Horn $ which_logic sl
                , has_eq = True}
         else sl
-    map_theory ExtModal2ExtModalNoSubsorts = mkTheoryMapping (\ sig ->
+    map_theory ExtModal2ExtModalNoSubsorts _ = mkTheoryMapping (\ sig ->
       let e = encodeSig sig in
       return (e, map (mapNamed injEMFormula) (monotonicities sig)
                  ++ generateAxioms sig))

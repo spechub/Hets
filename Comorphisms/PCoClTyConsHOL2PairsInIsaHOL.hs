@@ -47,7 +47,7 @@ instance Comorphism PCoClTyConsHOL2PairsInIsaHOL
     targetLogic PCoClTyConsHOL2PairsInIsaHOL = Isabelle
     mapSublogic cid sl = if sl `isSubElem` sourceSublogic cid
                        then Just () else Nothing
-    map_theory PCoClTyConsHOL2PairsInIsaHOL th = do
+    map_theory PCoClTyConsHOL2PairsInIsaHOL _ th = do
       (sig, sens) <- mapTheory New simpForOption th
       return (sig { baseSig = MainHC_thy }, sens)
     map_sentence PCoClTyConsHOL2PairsInIsaHOL sign =

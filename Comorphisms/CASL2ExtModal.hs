@@ -51,7 +51,7 @@ instance Comorphism CASL2ExtModal
     sourceSublogic CASL2ExtModal = SL.top
     targetLogic CASL2ExtModal = ExtModal
     mapSublogic CASL2ExtModal s = Just s { ext_features = botSublogic }
-    map_theory CASL2ExtModal = return . embedCASLTheory emptyEModalSign
+    map_theory CASL2ExtModal _ = return . embedCASLTheory emptyEModalSign
     map_morphism CASL2ExtModal =
       return . mapCASLMor emptyEModalSign emptyMorphExtension
     map_sentence CASL2ExtModal _ = return . mapFORMULA

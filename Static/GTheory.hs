@@ -145,7 +145,7 @@ mapG_theory (Comorphism cid) (G_theory lid _ (ExtSign sign _) ind1 sens ind2) =
   bTh <- coerceBasicTheory lid (sourceLogic cid)
     ("unapplicable comorphism '" ++ language_name cid ++ "'\n")
     (sign, toNamedList sens)
-  (sign', sens') <- wrapMapTheory cid bTh
+  (sign', sens') <- wrapMapTheory cid Nothing bTh -- could cause trouble!
   return $ G_theory (targetLogic cid) Nothing (mkExtSign sign')
          ind1 (toThSens sens') ind2
 
@@ -156,7 +156,7 @@ translateG_theory (GMorphism cid _ _ morphism2 _)
   let tlid = targetLogic cid
   bTh <- coerceBasicTheory lid (sourceLogic cid)
                     "translateG_theory" (sign, toNamedList sens)
-  (_, sens'') <- wrapMapTheory cid bTh
+  (_, sens'') <- wrapMapTheory cid Nothing bTh -- could cause trouble!
   sens''' <- mapM (mapNamedM $ map_sen tlid morphism2) sens''
   return $ G_theory tlid Nothing (mkExtSign $ cod morphism2)
              startSigId (toThSens sens''') startThId

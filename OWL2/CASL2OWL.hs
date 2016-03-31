@@ -85,7 +85,7 @@ instance Comorphism
         { sub_features = LocFilSub }
       targetLogic CASL2OWL = OWL2
       mapSublogic CASL2OWL _ = Just topS
-      map_theory CASL2OWL = mapTheory
+      map_theory CASL2OWL _ = mapTheory
 
 {- names must be disambiguated as is done in CASL.Qualify or SuleCFOL2SoftFOL.
    Ops or preds in the overload relation denote the same objectProperty!

@@ -71,7 +71,7 @@ instance Comorphism Propositional2OWL2
         sourceSublogic Propositional2OWL2 = PSL.top
         targetLogic Propositional2OWL2 = OWLLogic.OWL2
         mapSublogic Propositional2OWL2 = Just . mapSub -- TODO
-        map_theory Propositional2OWL2 = mapTheory
+        map_theory Propositional2OWL2 _ = mapTheory
         isInclusionComorphism Propositional2OWL2 = True
         has_model_expansion Propositional2OWL2 = True
 

@@ -48,7 +48,7 @@ instance Comorphism CASL2CspCASL
     sourceSublogic CASL2CspCASL = SL.top
     targetLogic CASL2CspCASL = cspCASL
     mapSublogic CASL2CspCASL _ = Just ()
-    map_theory CASL2CspCASL =
+    map_theory CASL2CspCASL _ =
       return . embedCASLTheory emptyCspSign
     map_symbol CASL2CspCASL _ = Set.singleton . caslToCspSymbol
     map_morphism CASL2CspCASL =

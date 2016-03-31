@@ -62,7 +62,7 @@ instance Comorphism CASL2PCFOL
                                                          $ which_logic sl
                                          , has_eq = True}
                                   else sl
-    map_theory CASL2PCFOL = mkTheoryMapping ( \ sig ->
+    map_theory CASL2PCFOL _ = mkTheoryMapping ( \ sig ->
       let e = encodeSig sig in
       return (e, map (mapNamed $ injFormula id) (monotonicities sig)
                  ++ generateAxioms sig))

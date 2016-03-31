@@ -77,7 +77,7 @@ instance Comorphism CASL2HasCASL
     map_morphism CASL2HasCASL = return . mapMor
     map_sentence CASL2HasCASL _ = return . toSentence
     map_symbol CASL2HasCASL _ = Set.singleton . mapSym
-    map_theory CASL2HasCASL = return . mapTheory
+    map_theory CASL2HasCASL _ = return . mapTheory
     has_model_expansion CASL2HasCASL = True
     is_weakly_amalgamable CASL2HasCASL = True
     isInclusionComorphism CASL2HasCASL = True

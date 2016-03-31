@@ -49,7 +49,7 @@ instance Comorphism THFP2THF0
     sourceSublogic THFP2THF0 = SL.tHFP
     targetLogic THFP2THF0 = THF
     mapSublogic THFP2THF0 _ = Just SL.tHF0
-    map_theory THFP2THF0 = trans_theory
+    map_theory THFP2THF0 _ = trans_theory
     has_model_expansion THFP2THF0 = True
 
 trans_theory :: (SignTHF, [Named THFFormula])

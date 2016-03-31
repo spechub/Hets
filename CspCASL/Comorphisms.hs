@@ -52,7 +52,7 @@ instance (CspCASLSemantics a, CspCASLSemantics b)
     sourceSublogic _ = ()
     targetLogic (CspCASL2CspCASL _ b) = GenCspCASL b
     mapSublogic _ _ = Just ()
-    map_theory _ = return
+    map_theory _ _ = return
     map_morphism _ = return
     map_sentence _ = const return
     map_symbol _ _ = Set.singleton

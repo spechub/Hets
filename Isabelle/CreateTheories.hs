@@ -46,14 +46,14 @@ createIsaTheory (G_theory lid _ (ExtSign sign0 _) _ sens0 _) = do
         r1 = coerceBasicTheory lid CASL "" th
         r1' = do
           th0 <- r1
-          th1 <- wrapMapTheory CASL2PCFOL th0
-          th2 <- wrapMapTheory CASL2HasCASL th1
-          wrapMapTheory PCoClTyConsHOL2PairsInIsaHOL th2
+          th1 <- wrapMapTheory CASL2PCFOL Nothing th0
+          th2 <- wrapMapTheory CASL2HasCASL Nothing th1 
+          wrapMapTheory PCoClTyConsHOL2PairsInIsaHOL Nothing th2
 #ifdef PROGRAMATICA
         r2 = coerceBasicTheory lid Haskell "" th
         r2' = do
           th0 <- r2
-          wrapMapTheory Haskell2IsabelleHOLCF th0
+          wrapMapTheory Haskell2IsabelleHOLCF Nothing th0
 #else
         r2 = r1
         r2' = r1'
@@ -61,8 +61,8 @@ createIsaTheory (G_theory lid _ (ExtSign sign0 _) _ sens0 _) = do
         r4 = coerceBasicTheory lid HasCASL "" th
         r4' = do
           th0 <- r4
-          th1 <- wrapMapTheory HasCASL2PCoClTyConsHOL th0
-          wrapMapTheory PCoClTyConsHOL2PairsInIsaHOL th1
+          th1 <- wrapMapTheory HasCASL2PCoClTyConsHOL Nothing th0
+          wrapMapTheory PCoClTyConsHOL2PairsInIsaHOL Nothing th1
         r5 = coerceBasicTheory lid Isabelle "" th
         r3 = case maybeResult r1 of
                Nothing -> case maybeResult r2 of

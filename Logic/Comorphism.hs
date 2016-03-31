@@ -86,13 +86,14 @@ class (Language cid,
     because the target may be a sublanguage
     map_basic_spec :: cid -> basic_spec1 -> Result basic_spec2
     cover theoroidal comorphisms as well -}
-    map_theory :: cid -> (sign1, [Named sentence1])
+    map_theory :: cid -> Maybe String
+                      -> (sign1, [Named sentence1])
                       -> Result (sign2, [Named sentence2])
     -- map_theory but also consider sentence marks
-    mapMarkedTheory :: cid -> (sign1, [Named sentence1])
+    mapMarkedTheory :: cid -> Maybe String -> (sign1, [Named sentence1])
                       -> Result (sign2, [Named sentence2])
-    mapMarkedTheory cid (sig, sens) = do
-      (sig2, sens2) <- map_theory cid (sig, map unmark sens)
+    mapMarkedTheory cid ms (sig, sens) = do
+      (sig2, sens2) <- map_theory cid ms (sig, map unmark sens)
       return (sig2, map (markSen $ language_name cid) sens2)
     map_morphism :: cid -> morphism1 -> Result morphism2
     map_morphism = mapDefaultMorphism
@@ -140,8 +141,8 @@ map_sign :: Comorphism cid
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1
             lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2
-         => cid -> sign1 -> Result (sign2, [Named sentence2])
-map_sign cid sign = wrapMapTheory cid (sign, [])
+         => cid -> Maybe String -> sign1 -> Result (sign2, [Named sentence2])
+map_sign cid ms sign = wrapMapTheory cid ms (sign, [])
 
 mapDefaultMorphism :: Comorphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
@@ -150,8 +151,8 @@ mapDefaultMorphism :: Comorphism cid
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2
          => cid -> morphism1 -> Result morphism2
 mapDefaultMorphism cid mor = do
-  (sig1, _) <- map_sign cid $ dom mor
-  (sig2, _) <- map_sign cid $ cod mor
+  (sig1, _) <- map_sign cid Nothing $ dom mor
+  (sig2, _) <- map_sign cid Nothing $ cod mor
   inclusion (targetLogic cid) sig1 sig2
 
 failMapSentence :: Comorphism cid
@@ -177,10 +178,10 @@ wrapMapTheory :: Comorphism cid
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1
             lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2
-            => cid -> (sign1, [Named sentence1])
+            => cid -> Maybe String -> (sign1, [Named sentence1])
                    -> Result (sign2, [Named sentence2])
-wrapMapTheory cid (sign, sens) =
-  let res = mapMarkedTheory cid (sign, sens)
+wrapMapTheory cid ms (sign, sens) =
+  let res = mapMarkedTheory cid ms (sign, sens)
       lid1 = sourceLogic cid
       thDoc = show (vcat $ pretty sign : map (print_named lid1) sens)
   in
@@ -273,7 +274,7 @@ instance Logic lid sublogics
                if isSubElem subl $ inclusion_source_sublogic cid
                then Just subl
                else Nothing
-           map_theory _ = return
+           map_theory _ _ = return
            map_morphism _ = return
            map_sentence _ _ = return
            map_symbol _ _ = Set.singleton
@@ -321,7 +322,7 @@ instance (Comorphism cid1
            mapSublogic cid2 .
             forceCoerceSublogic (targetLogic cid1) (sourceLogic cid2)
    map_sentence (CompComorphism cid1 cid2) si1 se1 =
-         do (si2, _) <- map_sign cid1 si1
+         do (si2, _) <- map_sign cid1 Nothing si1
             se2 <- map_sentence cid1 si1 se1
             (si2', se2') <- coerceBasicTheory
                 (targetLogic cid1) (sourceLogic cid2)
@@ -330,11 +331,11 @@ instance (Comorphism cid1
                 [x] -> map_sentence cid2 si2' $ sentence x
                 _ -> error "CompComorphism.map_sentence"
 
-   map_theory (CompComorphism cid1 cid2) ti1 =
-         do ti2 <- map_theory cid1 ti1
+   map_theory (CompComorphism cid1 cid2) ms ti1 =
+         do ti2 <- map_theory cid1 ms ti1
             ti2' <- coerceBasicTheory (targetLogic cid1) (sourceLogic cid2)
                         "Mapping theory along comorphism" ti2
-            wrapMapTheory cid2 ti2'
+            wrapMapTheory cid2 ms ti2'
 
    map_morphism (CompComorphism cid1 cid2) m1 =
        do m2 <- map_morphism cid1 m1
@@ -343,7 +344,7 @@ instance (Comorphism cid1
           map_morphism cid2 m3
 
    map_symbol (CompComorphism cid1 cid2) sig1 = let
-     th = map_sign cid1 sig1 in
+     th = map_sign cid1 Nothing sig1 in
     case maybeResult th of
      Nothing -> error "failed translating signature"
      Just (sig2', _) -> let
@@ -363,7 +364,7 @@ instance (Comorphism cid1
      let lid1 = sourceLogic cid1
          lid3 = sourceLogic cid2
      in if language_name lid1 == language_name lid3 then do
-         bTh1 <- map_sign cid1 sign
+         bTh1 <- map_sign cid1 Nothing sign
          (sign1, _) <-
            coerceBasicTheory (targetLogic cid1) lid3 "extractModel1" bTh1
          bTh2 <- extractModel cid2 sign1 pt3

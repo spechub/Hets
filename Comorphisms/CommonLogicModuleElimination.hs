@@ -70,7 +70,7 @@ instance Comorphism
       sourceSublogic CommonLogicModuleElimination = Sl.top
       targetLogic CommonLogicModuleElimination = Logic.CommonLogic
       mapSublogic CommonLogicModuleElimination = Just . mapSub
-      map_theory CommonLogicModuleElimination = mapTheory
+      map_theory CommonLogicModuleElimination _ = mapTheory
       map_morphism CommonLogicModuleElimination = mapMor
       map_sentence CommonLogicModuleElimination = mapSentence
       -- hasCommonLogicModuleElimination_model_expansion  = True -- TODO: check if it is really True

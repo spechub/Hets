@@ -68,7 +68,7 @@ instance Comorphism HasCASL2THFP_P
     sourceSublogic HasCASL2THFP_P = reqSubLogicForTHFP -- topLogic
     targetLogic HasCASL2THFP_P = THF
     mapSublogic HasCASL2THFP_P _ = Just SL.tHFP_P
-    map_theory HasCASL2THFP_P = transTheory
+    map_theory HasCASL2THFP_P _ = transTheory
     map_symbol HasCASL2THFP_P env s = propagateErrors "" $
      transSymbol env s
     -- isInclusionComorphism HasCASL2THF0_ST = True

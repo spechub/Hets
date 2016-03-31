@@ -76,7 +76,7 @@ instance Comorphism cid
             log2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2
                where
- tauSigma (IdModif cid) sigma = do (sigma1, _) <- map_sign cid sigma
+ tauSigma (IdModif cid) sigma = do (sigma1, _) <- map_sign cid Nothing sigma
                                    return (ide sigma1)
  sourceComorphism (IdModif cid) = cid
  targetComorphism (IdModif cid) = cid
@@ -184,7 +184,7 @@ instance (Modification lid1 cid1 cid2
          case cast sigma1 of
            Nothing -> fail "Cannot compose modifications"
            Just sigma3 -> do
-             (sigma4, _) <- map_sign (targetComorphism lid1) sigma3
+             (sigma4, _) <- map_sign (targetComorphism lid1) Nothing sigma3
              case cast sigma4 of
                Nothing -> fail "Cannot compose modifications"
                Just sigma5 -> tauSigma lid2 sigma5 >>= comp mor6

@@ -80,8 +80,8 @@ instance Comorphism
       targetLogic OWL22CommonLogic = CommonLogic
       mapSublogic OWL22CommonLogic _ = Just ClSl.top
       -- map_theory is not needed when mapMarkedTheory is defined
-      map_theory OWL22CommonLogic = error "map_theory OWL22CommonLogic"
-      mapMarkedTheory OWL22CommonLogic = mapTheory
+      map_theory OWL22CommonLogic _ = error "map_theory OWL22CommonLogic"
+      mapMarkedTheory OWL22CommonLogic _ = mapTheory
       map_morphism OWL22CommonLogic = mapMorphism
       map_symbol OWL22CommonLogic _ = mapSymbol
       isInclusionComorphism OWL22CommonLogic = True

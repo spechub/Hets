@@ -44,7 +44,7 @@ instance Comorphism THFP_P2THFP
     sourceSublogic THFP_P2THFP = SL.tHFP_P
     targetLogic THFP_P2THFP = THF
     mapSublogic THFP_P2THFP sl = Just $ sl { SL.ext_Poly = False }
-    map_theory THFP_P2THFP = trans_theory
+    map_theory THFP_P2THFP _ = trans_theory
     has_model_expansion THFP_P2THFP = True
 
 trans_theory :: (SignTHF, [Named THFFormula])

@@ -78,7 +78,7 @@ instance Comorphism
           sourceSublogic RelScheme2CASL = ()
           targetLogic RelScheme2CASL = CASL
           mapSublogic RelScheme2CASL _ = Just SL.caslTop
-          map_theory RelScheme2CASL = map_RelScheme_theory
+          map_theory RelScheme2CASL _ = map_RelScheme_theory
           map_morphism RelScheme2CASL = return . mapMorphism
           map_sentence RelScheme2CASL = mapSen
           isInclusionComorphism RelScheme2CASL = True

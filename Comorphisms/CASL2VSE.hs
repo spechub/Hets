@@ -51,7 +51,7 @@ instance Comorphism CASL2VSE
     sourceSublogic CASL2VSE = SL.cFol
     targetLogic CASL2VSE = VSE
     mapSublogic CASL2VSE _ = Just ()
-    map_theory CASL2VSE = return . embedCASLTheory emptyProcs
+    map_theory CASL2VSE _ = return . embedCASLTheory emptyProcs
     map_morphism CASL2VSE = return . mapCASLMor emptyProcs emptyMorExt
     map_sentence CASL2VSE _ = return . mapFORMULA
     map_symbol CASL2VSE _ = Set.singleton . id

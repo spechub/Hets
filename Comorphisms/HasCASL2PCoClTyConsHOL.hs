@@ -56,7 +56,7 @@ instance Comorphism HasCASL2PCoClTyConsHOL
         , has_polymorphism = True
         , which_logic = max Horn $ which_logic sl
         , has_eq = True } else sl
-    map_theory HasCASL2PCoClTyConsHOL = mkTheoryMapping
+    map_theory HasCASL2PCoClTyConsHOL _ = mkTheoryMapping
       (\ sig -> return (encodeSig sig, monos sig ++ subtAxioms (typeMap sig)))
       (map_sentence HasCASL2PCoClTyConsHOL)
     map_morphism HasCASL2PCoClTyConsHOL mor = return mor

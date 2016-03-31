@@ -94,7 +94,7 @@ instance Comorphism
       sourceSublogic (CL2CFOL b) = b
       targetLogic (CL2CFOL _) = CLogic.CASL
       mapSublogic (CL2CFOL _) = Just . mapSub
-      map_theory (CL2CFOL b) = mapTheory b
+      map_theory (CL2CFOL b) _ = mapTheory b
       map_morphism (CL2CFOL b) = mapMor b
       map_sentence (CL2CFOL b) _ = mapSentence b
       has_model_expansion (CL2CFOL _) = True

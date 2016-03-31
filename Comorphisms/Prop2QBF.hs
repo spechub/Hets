@@ -71,7 +71,7 @@ instance Comorphism Prop2QBF
       sourceSublogic Prop2QBF = PSL.top
       targetLogic Prop2QBF = QLogic.QBF
       mapSublogic Prop2QBF _ = Nothing
-      map_theory Prop2QBF = mapTheory
+      map_theory Prop2QBF _ = mapTheory
       is_model_transportable Prop2QBF = True
       map_symbol Prop2QBF _ = mapSym
       map_sentence Prop2QBF _ = trForm

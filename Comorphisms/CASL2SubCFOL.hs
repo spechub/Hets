@@ -94,7 +94,7 @@ instance Comorphism CASL2SubCFOL
         , has_pred = True
         , which_logic = max Horn $ which_logic sl
         , has_eq = True} else sl
-    map_theory (CASL2SubCFOL b m) (sig, sens) =
+    map_theory (CASL2SubCFOL b m) _ (sig, sens) =
         let fbsrts = Set.unions $ map (botFormulaSorts . sentence) sens
             bsrts = sortsWithBottom m sig fbsrts
             sens1 = generateAxioms b bsrts sig

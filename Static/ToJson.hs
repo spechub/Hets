@@ -74,7 +74,7 @@ dGraph full lenv ln dg =
 
 gmorph :: HetcatsOpts -> GlobalAnnos -> GMorphism -> Json
 gmorph opts ga gm@(GMorphism cid (ExtSign ssig _) _ tmor _) =
-  case map_sign cid ssig of
+  case map_sign cid Nothing ssig of -- could cause trouble?
     Result _ mr -> case mr of
       Nothing -> error $ "Static.ToXml.gmorph: " ++ showGlobalDoc ga gm ""
       Just (tsig, tsens) -> let

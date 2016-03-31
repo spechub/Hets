@@ -56,7 +56,7 @@ instance Comorphism DFOL2CASL
                       , CSL.has_pred = True
                       , CSL.which_logic = CSL.FOL
                       }
-   map_theory DFOL2CASL = wrapInResult . theoryTransl
+   map_theory DFOL2CASL _ = wrapInResult . theoryTransl
    map_symbol DFOL2CASL = symbolTransl
    map_sentence DFOL2CASL sig = wrapInResult . senTransl sig
    map_morphism DFOL2CASL = wrapInResult . morphTransl

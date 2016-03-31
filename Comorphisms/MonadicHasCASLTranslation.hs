@@ -48,7 +48,7 @@ instance Comorphism MonadicHasCASL2IsabelleHOL
     targetLogic MonadicHasCASL2IsabelleHOL = Isabelle
     mapSublogic cid sl = if sl `isSubElem` sourceSublogic cid
                        then Just () else Nothing
-    map_theory MonadicHasCASL2IsabelleHOL =
+    map_theory MonadicHasCASL2IsabelleHOL _ =
         mapTheory (Old NoSimpLift) simpForOption
     map_sentence MonadicHasCASL2IsabelleHOL sign =
         transSentence sign (typeToks sign) (Old NoSimpLift) simpForOption

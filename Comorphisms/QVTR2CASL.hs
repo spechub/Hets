@@ -83,7 +83,7 @@ instance Comorphism QVTR2CASL
         { has_part = False
         , sub_features = LocFilSub
         , cons_features = SortGen True True }
-      map_theory QVTR2CASL = mapTheory
+      map_theory QVTR2CASL _ = mapTheory
       map_sentence QVTR2CASL s = return . mapSen s (mapSign s)
       map_morphism QVTR2CASL = mapMor
       -- map_symbol QVTR2CASL _ = Set.singleton . mapSym

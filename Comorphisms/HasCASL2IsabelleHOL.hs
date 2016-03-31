@@ -60,7 +60,7 @@ instance Comorphism HasCASL2IsabelleHOL
     targetLogic HasCASL2IsabelleHOL = Isabelle
     mapSublogic cid sl = if sl `isSubElem` sourceSublogic cid
                        then Just () else Nothing
-    map_theory HasCASL2IsabelleHOL = mkTheoryMapping transSignature
+    map_theory HasCASL2IsabelleHOL _ = mkTheoryMapping transSignature
                    (map_sentence HasCASL2IsabelleHOL)
     map_sentence HasCASL2IsabelleHOL sign phi =
        case transSentence sign phi of

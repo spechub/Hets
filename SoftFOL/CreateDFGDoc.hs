@@ -71,19 +71,19 @@ printTheoryAsSoftFOL sn lang checkConsistency
       (resultToMaybe (if lessSublogicComor (sublogicOfTh gth) $
           Comorphism suleCFOL2SoftFOL
        then coerceBasicTheory lid CASL "" (sign, sens)
-              >>= wrapMapTheory suleCFOL2SoftFOL
+              >>= wrapMapTheory suleCFOL2SoftFOL Nothing
        else (if lessSublogicComor (sublogicOfTh gth) $ Comorphism idCASL
         then coerceBasicTheory lid CASL "" (sign, sens)
-              >>= wrapMapTheory idCASL
-              >>= wrapMapTheory defaultCASL2SubCFOL
-              >>= wrapMapTheory suleCFOL2SoftFOL
+              >>= wrapMapTheory idCASL Nothing
+              >>= wrapMapTheory defaultCASL2SubCFOL Nothing
+              >>= wrapMapTheory suleCFOL2SoftFOL Nothing
         else if lessSublogicComor (sublogicOfTh gth) $
                 Comorphism idCASL_nosub
              then coerceBasicTheory lid CASL "" (sign, sens)
-                      >>= wrapMapTheory idCASL_nosub
-                      >>= wrapMapTheory CASL2PCFOL
-                      >>= wrapMapTheory defaultCASL2SubCFOL
-                      >>= wrapMapTheory suleCFOL2SoftFOL
+                      >>= wrapMapTheory idCASL_nosub Nothing
+                      >>= wrapMapTheory CASL2PCFOL Nothing
+                      >>= wrapMapTheory defaultCASL2SubCFOL Nothing
+                      >>= wrapMapTheory suleCFOL2SoftFOL Nothing
              else coerceBasicTheory lid SoftFOL "" (sign, sens))))
   where
         printOut = case lang of

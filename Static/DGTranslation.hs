@@ -67,7 +67,7 @@ updateEdges (Comorphism cidMor) gc (s, t, lbl) = case dgl_morphism lbl of
          tlid = targetLogic cidMor
      ExtSign lsign sys <- coerceSign (sourceLogic cid') slid
        "DGTranslation.fSign" esig
-     (lsign', _) <- map_sign cidMor lsign
+     (lsign', _) <- map_sign cidMor Nothing lsign -- could cause troubles!
      lMor <- coerceMorphism (targetLogic cid') slid "DGTranslation.fMor" mor
      lmorphism' <- map_morphism cidMor lMor
      return (s, t, lbl
@@ -84,7 +84,7 @@ updateNodes (Comorphism cidMor) (node, dgNodeLab) =
       let slid = sourceLogic cidMor
       ExtSign sign' sys' <- coerceSign lid slid "DGTranslation.fTh.sign" esig
       thSens' <- coerceThSens lid slid "DGTranslation.fTh.sen" thSens
-      (sign'', namedS) <- wrapMapTheory cidMor (sign', toNamedList thSens')
+      (sign'', namedS) <- wrapMapTheory cidMor Nothing (sign', toNamedList thSens') -- troubles?
       return (node, dgNodeLab
         { dgn_nf = Nothing
         , dgn_sigma = Nothing

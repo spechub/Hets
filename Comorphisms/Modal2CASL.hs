@@ -70,7 +70,7 @@ instance Comorphism Modal2CASL
       { sub_features = LocFilSub
       , cons_features = NoSortGen
       } -- to support going to SPASS
-    map_theory (Modal2CASL) (sig, sens) = case transSig sig of
+    map_theory (Modal2CASL) _ (sig, sens) = case transSig sig of
       mme -> return (caslSign mme, relFormulas mme
                      ++ map (mapNamed $ transSen sig) sens)
     map_morphism Modal2CASL = return . mapMor

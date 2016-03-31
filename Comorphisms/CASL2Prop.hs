@@ -79,7 +79,7 @@ instance Comorphism CASL2Prop
       sourceSublogic CASL2Prop = sublogics_max need_fol need_pred
       targetLogic CASL2Prop = PLogic.Propositional
       mapSublogic CASL2Prop = Just . mapSub
-      map_theory CASL2Prop = mapTheory
+      map_theory CASL2Prop _ = mapTheory
       is_model_transportable CASL2Prop = True
       map_symbol CASL2Prop _ = mapSym
       map_sentence CASL2Prop _ = trForm

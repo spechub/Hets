@@ -83,9 +83,9 @@ instance Comorphism
 mapSentence :: ClSign.Sign -> ClBasic.TEXT_META -> Result Sentence
 mapSentence sig = return . mkSen . transTextMeta sig
 
-mapTheory :: (ClSign.Sign, [AS_Anno.Named ClBasic.TEXT_META])
+mapTheory :: Maybe String -> (ClSign.Sign, [AS_Anno.Named ClBasic.TEXT_META])
              -> Result (Sign, [AS_Anno.Named Sentence])
-mapTheory (sig, namedTextMetas) =
+mapTheory _ (sig, namedTextMetas) =
   return (mapSig sig, ax_that : map (transNamed sig) namedTextMetas)
 
 individualS :: String

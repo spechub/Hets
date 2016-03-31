@@ -60,7 +60,7 @@ instance Comorphism CoCASL2CoSubCFOL
         , has_pred = True
         , which_logic = max Horn $ which_logic sl
         , has_eq = True} else sl
-    map_theory CoCASL2CoSubCFOL (sig, sens) =
+    map_theory CoCASL2CoSubCFOL _ (sig, sens) =
         let bsrts = sortsWithBottom (formulaTreatment defaultCASL2SubCFOL)
               sig $ Set.unions $ map (botCoFormulaSorts . sentence) sens
             e = encodeSig bsrts sig

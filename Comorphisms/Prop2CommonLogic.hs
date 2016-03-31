@@ -78,7 +78,7 @@ instance Comorphism Prop2CommonLogic
       sourceSublogic Prop2CommonLogic = PSL.top
       targetLogic Prop2CommonLogic = ClLogic.CommonLogic
       mapSublogic Prop2CommonLogic = Just . mapSub
-      map_theory Prop2CommonLogic = mapTheory
+      map_theory Prop2CommonLogic _ = mapTheory
       map_sentence Prop2CommonLogic = mapSentence
       map_morphism Prop2CommonLogic = mapMor
 

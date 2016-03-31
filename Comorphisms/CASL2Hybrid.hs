@@ -47,7 +47,7 @@ instance Comorphism CASL2Hybrid
     sourceSublogic CASL2Hybrid = SL.top
     targetLogic CASL2Hybrid = Hybrid
     mapSublogic CASL2Hybrid _ = Just ()
-    map_theory CASL2Hybrid = return . embedCASLTheory emptyHybridSign
+    map_theory CASL2Hybrid _ = return . embedCASLTheory emptyHybridSign
     map_morphism CASL2Hybrid = return . mapCASLMor emptyHybridSign emptyMorExt
     map_sentence CASL2Hybrid _ = return . mapFORMULA
     map_symbol CASL2Hybrid _ = Set.singleton . id

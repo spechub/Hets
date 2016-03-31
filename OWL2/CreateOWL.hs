@@ -41,13 +41,13 @@ createOWLTheory :: G_theory -> Result (Sign, [Named Axiom])
 createOWLTheory (G_theory lid _ (ExtSign sign0 _) _ sens0 _) = do
     let th = (sign0, toNamedList sens0)
         r1 = coerceBasicTheory lid CASL "" th
-        r1' = r1 >>= wrapMapTheory CASL2OWL
+        r1' = r1 >>= wrapMapTheory CASL2OWL Nothing
         r2 = coerceBasicTheory lid DMU "" th
-        r2' = r2 >>= wrapMapTheory DMU2OWL2
+        r2' = r2 >>= wrapMapTheory DMU2OWL2 Nothing
         r3 = coerceBasicTheory lid Propositional "" th
-        r3' = r3 >>= wrapMapTheory Propositional2OWL2
+        r3' = r3 >>= wrapMapTheory Propositional2OWL2 Nothing
         r4 = coerceBasicTheory lid ExtModal "" th
-        r4' = r4 >>= wrapMapTheory ExtModal2OWL
+        r4' = r4 >>= wrapMapTheory ExtModal2OWL Nothing
         r5 = coerceBasicTheory lid OWL2 "" th
         r6 = case maybeResult r1 of
                Nothing -> case maybeResult r2 of

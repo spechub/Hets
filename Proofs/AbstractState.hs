@@ -305,7 +305,7 @@ prepareTheory st (Comorphism cid) = case selectedTheory st of
         bTh' <- coerceBasicTheory lid (sourceLogic cid)
                    "Proofs.AbstractState.prepareTheory: basic theory"
                    (sign, toNamedList sens)
-        (sign'', sens'') <- wrapMapTheory cid bTh'
+        (sign'', sens'') <- wrapMapTheory cid Nothing bTh' -- should be safe!
         return . GPlainTheory (targetLogic cid) . Theory sign''
           $ toThSens sens''
 

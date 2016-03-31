@@ -60,7 +60,7 @@ instance Comorphism CoCFOL2IsabelleHOL
     targetLogic CoCFOL2IsabelleHOL = Isabelle
     mapSublogic cid sl = if sl `isSubElem` sourceSublogic cid
                        then Just () else Nothing
-    map_theory CoCFOL2IsabelleHOL =
+    map_theory CoCFOL2IsabelleHOL _ =
       return . transTheory sigTrCoCASL formTrCoCASL
     map_sentence CoCFOL2IsabelleHOL sign =
       return . mapSen formTrCoCASL sign (typeToks sign)

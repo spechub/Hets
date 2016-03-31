@@ -65,6 +65,6 @@ instance Modification MODAL_EMBEDDING (InclComorphism CASL CASL_Sublogics)
   sourceComorphism MODAL_EMBEDDING = mkIdComorphism CASL (top_sublogic CASL)
   targetComorphism MODAL_EMBEDDING = CompComorphism CASL2Modal Modal2CASL
   tauSigma MODAL_EMBEDDING sigma = do
-      (sigma1, _ ) <- wrapMapTheory CASL2Modal (sigma, [])
-      (sigma2, _ ) <- wrapMapTheory Modal2CASL (sigma1, [])
+      (sigma1, _ ) <- wrapMapTheory CASL2Modal Nothing (sigma, [])
+      (sigma2, _ ) <- wrapMapTheory Modal2CASL Nothing (sigma1, [])
       return (embedMorphism () sigma sigma2)

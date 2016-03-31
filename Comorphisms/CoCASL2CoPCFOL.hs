@@ -58,7 +58,7 @@ instance Comorphism CoCASL2CoPCFOL
             , has_part = True
             , has_eq = True
             }
-    map_theory CoCASL2CoPCFOL = mkTheoryMapping ( \ sig ->
+    map_theory CoCASL2CoPCFOL _ = mkTheoryMapping ( \ sig ->
       let e = encodeSig sig in return
       (e, map (mapNamed $ injFormula injC_Formula) (monotonicities sig)
           ++ map (mapNamed mapFORMULA) (generateAxioms sig)))

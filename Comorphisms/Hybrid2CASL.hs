@@ -70,7 +70,7 @@ instance Comorphism Hybrid2CASL
                 { SL.cons_features = SL.emptyMapConsFeature
                 , SL.sub_features = SL.NoSub
                 }
-        map_theory Hybrid2CASL = transTheory
+        map_theory Hybrid2CASL _ = transTheory
         has_model_expansion Hybrid2CASL = True
         is_weakly_amalgamable Hybrid2CASL = True
         is_model_transportable Hybrid2CASL = True

@@ -58,7 +58,7 @@ instance Comorphism CASL2VSERefine
     sourceSublogic CASL2VSERefine = SL.cFol
     targetLogic CASL2VSERefine = VSE
     mapSublogic CASL2VSERefine _ = Just ()
-    map_theory CASL2VSERefine = mapCASLTheory
+    map_theory CASL2VSERefine _ = mapCASLTheory
     map_morphism CASL2VSERefine = return . mapMor
     map_sentence CASL2VSERefine _ = error "map sen nyi" -- return. mapCASSen
     map_symbol CASL2VSERefine = error "map symbol nyi"

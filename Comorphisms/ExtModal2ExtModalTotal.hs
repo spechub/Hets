@@ -63,7 +63,7 @@ instance Comorphism ExtModal2ExtModalTotal
         , has_pred = True
         , which_logic = max Horn $ which_logic sl
         , has_eq = True} else sl
-    map_theory ExtModal2ExtModalTotal (sig, sens) = let
+    map_theory ExtModal2ExtModalTotal _ (sig, sens) = let
       bsrts = emsortsWithBottom sig
       sens1 = generateAxioms True bsrts sig
       sens2 = map (mapNamed (noCondsEMFormula . simplifyEMFormula

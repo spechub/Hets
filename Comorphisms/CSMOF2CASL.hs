@@ -79,7 +79,7 @@ instance Comorphism CSMOF2CASL
         { has_part = False
         , sub_features = LocFilSub
         , cons_features = SortGen True True }
-      map_theory CSMOF2CASL = mapTheory
+      map_theory CSMOF2CASL _ = mapTheory
       map_sentence CSMOF2CASL s = return . mapSen (mapSign s)
       map_morphism CSMOF2CASL = mapMor
       -- map_symbol CSMOF2CASL _ = Set.singleton . mapSym

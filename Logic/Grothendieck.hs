@@ -207,7 +207,7 @@ isSubGsign lg (G_sign lid1 (ExtSign sigma1 _) _)
                 "Grothendieck.isSubGsign: cannot happen" sigma1
      sigma2' <- coercePlainSign lid2 (targetLogic cid)
                 "Grothendieck.isSubGsign: cannot happen" sigma2
-     sigma1t <- resultToMaybe $ map_sign cid sigma1'
+     sigma1t <- resultToMaybe $ map_sign cid Nothing sigma1' -- but this could cause trouble!
      return $ is_subsig (targetLogic cid) (fst sigma1t) sigma2'
 
 instance Show G_sign where
@@ -714,7 +714,7 @@ instance Category G_sign GMorphism where
     isInclusionComorphism cid && isInclusion mor
   legal_mor (GMorphism r (ExtSign s _) _ mor _) = do
     legal_mor mor
-    case maybeResult $ map_sign r s of
+    case maybeResult $ map_sign r Nothing s of
       Just (sigma', _) | sigma' == cod mor -> return ()
       _ -> fail "legal_mor.GMorphism2"
 
@@ -735,7 +735,7 @@ gEmbed (G_morphism lid mor ind) = let sig = dom mor in
 gEmbedComorphism :: AnyComorphism -> G_sign -> Result GMorphism
 gEmbedComorphism (Comorphism cid) (G_sign lid sig ind) = do
   sig'@(ExtSign s _) <- coerceSign lid (sourceLogic cid) "gEmbedComorphism" sig
-  (sigTar, _) <- map_sign cid s
+  (sigTar, _) <- map_sign cid Nothing s
   return (GMorphism cid sig' ind (ide sigTar) startMorId)
 
 -- | heterogeneous union of two Grothendieck signatures
@@ -753,8 +753,8 @@ gsigUnion lg both gsig1@(G_sign lid1 (ExtSign sigma1 _) _)
           lidT2 = targetLogic cid2
       sigma1' <- coercePlainSign lid1 lidS1 "Union of signaturesa" sigma1
       sigma2' <- coercePlainSign lid2 lidS2 "Union of signaturesb" sigma2
-      (sigma1'', _) <- map_sign cid1 sigma1'  -- where to put axioms???
-      (sigma2'', _) <- map_sign cid2 sigma2'  -- where to put axioms???
+      (sigma1'', _) <- map_sign cid1 Nothing sigma1'  -- where to put axioms???
+      (sigma2'', _) <- map_sign cid2 Nothing sigma2'  -- where to put axioms???
       sigma2''' <- coercePlainSign lidT2 lidT1 "Union of signaturesc" sigma2''
       sigma3 <- signature_union lidT1 sigma1'' sigma2'''
       return $ G_sign lidT1 (ExtSign sigma3 $ symset_of lidT1
@@ -845,7 +845,7 @@ gSigCoerce lg g@(G_sign lid1 sigma1 _) l2@(Logic lid2) =
     cmor@(Comorphism i) <- logicInclusion lg (Logic lid1) l2
     ExtSign sigma1' sy <-
         coerceSign lid1 (sourceLogic i) "gSigCoerce of signature" sigma1
-    (sigma1'', _) <- map_sign i sigma1'
+    (sigma1'', _) <- map_sign i Nothing sigma1' -- could cause trouble!
     sys <- return . Set.unions . map (map_symbol i sigma1') $ Set.toList sy
     let lid = targetLogic i
     return (G_sign lid (ExtSign sigma1'' sys) startSigId, cmor)
@@ -859,7 +859,7 @@ inclusionAux guard lg (G_sign lid1 sigma1 ind) (G_sign lid2 sigma2 _) = do
     Comorphism i <- logicInclusion lg (Logic lid1) (Logic lid2)
     ext1@(ExtSign sigma1' _) <-
         coerceSign lid1 (sourceLogic i) "Inclusion of signatures" sigma1
-    (sigma1'', _) <- map_sign i sigma1'
+    (sigma1'', _) <- map_sign i Nothing sigma1' -- could cause trouble!
     ExtSign sigma2' _ <-
         coerceSign lid2 (targetLogic i) "Inclusion of signatures" sigma2
     mor <- (if guard then inclusion else subsig_inclusion)

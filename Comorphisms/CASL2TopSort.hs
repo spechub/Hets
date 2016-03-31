@@ -88,7 +88,7 @@ instance Comorphism CASL2TopSort
              special Sort_gen_ax are coded out -}
         else Nothing
 
-    map_theory CASL2TopSort = mkTheoryMapping transSig transSen
+    map_theory CASL2TopSort _ = mkTheoryMapping transSig transSen
     map_morphism CASL2TopSort mor = do
         let trSig = fmap fst . transSig
         sigSour <- trSig $ msource mor

@@ -80,7 +80,7 @@ instance Comorphism SoftFOL2CommonLogic
       sourceSublogic SoftFOL2CommonLogic = ()
       targetLogic SoftFOL2CommonLogic = ClLogic.CommonLogic
       mapSublogic SoftFOL2CommonLogic = Just . mapSub
-      map_theory SoftFOL2CommonLogic = mapTheory
+      map_theory SoftFOL2CommonLogic _ = mapTheory
       map_sentence SoftFOL2CommonLogic = mapSentence
       map_morphism SoftFOL2CommonLogic = mapMor
 

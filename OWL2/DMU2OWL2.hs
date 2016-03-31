@@ -62,7 +62,7 @@ instance Comorphism DMU2OWL2
     sourceSublogic DMU2OWL2 = top
     targetLogic DMU2OWL2 = OWL2
     mapSublogic DMU2OWL2 _ = Just top
-    map_theory DMU2OWL2 = mapTheory
+    map_theory DMU2OWL2 _ = mapTheory
     map_morphism DMU2OWL2 _ = return $ inclOWLMorphism emptySign emptySign
     has_model_expansion DMU2OWL2 = True
     is_weakly_amalgamable DMU2OWL2 = True

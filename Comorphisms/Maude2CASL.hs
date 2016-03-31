@@ -82,7 +82,7 @@ instance Comorphism Maude2CASL
       mapSublogic Maude2CASL _ = Just CSL.caslTop
         { CSL.cons_features = CSL.emptyMapConsFeature
         , CSL.sub_features = CSL.NoSub }
-      map_theory Maude2CASL = mapTheory
+      map_theory Maude2CASL _ = mapTheory
       is_model_transportable Maude2CASL = True
       map_symbol Maude2CASL = mapSymbol
       map_sentence Maude2CASL = mapSentence
@@ -96,8 +96,8 @@ mapMaudeFreeness :: MMor.Morphism
 mapMaudeFreeness morph = do
  let sMaude = MMor.source morph
      tMaude = MMor.target morph
- (sCASL, _) <- map_theory Maude2CASL (sMaude, [])
- (tCASL, _) <- map_theory Maude2CASL (tMaude, [])
+ (sCASL, _) <- map_theory Maude2CASL Nothing (sMaude, [])
+ (tCASL, _) <- map_theory Maude2CASL Nothing (tMaude, [])
  let tExt = signExtension tMaude tCASL
      (f1, f2) = morExtension morph tExt sCASL tCASL
  return (tExt, f1, f2)

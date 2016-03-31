@@ -222,9 +222,9 @@ translateTerm (Abs tm1 tm2) vs = IsaSign.Abs (translateTerm tm1 vs)
 
 -- mapping theories
 
-mapTheory :: (Sign, [Named Sentence]) ->
+mapTheory :: Maybe String -> (Sign, [Named Sentence]) ->
              Result (IsaSign.Sign, [Named IsaSign.Sentence])
-mapTheory (sig, n_sens) = let
+mapTheory _ (sig, n_sens) = let
   sig' = mapSign sig
   n_sens' = map mapNamedSen n_sens
                           in return (sig', n_sens')
