@@ -125,6 +125,8 @@ class (Language cid,
     constituents cid = [language_name cid]
     isInclusionComorphism :: cid -> Bool
     isInclusionComorphism _ = False
+    isRelativisationComorphism :: cid -> Bool
+    isRelativisationComorphism _ = False
 
 targetSublogic :: Comorphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1

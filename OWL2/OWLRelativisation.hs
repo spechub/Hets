@@ -67,7 +67,8 @@ instance Comorphism
       map_theory OWLRelativisation = mapTheory
       map_morphism OWLRelativisation = mapMorphism
       map_symbol OWLRelativisation = mapSymbol
-      isInclusionComorphism OWLRelativisation = True 
+      isInclusionComorphism OWLRelativisation = True
+      isRelativisationComorphism OWLRelativisation = True
       has_model_expansion OWLRelativisation = False -- TODO: check
 
 topC :: String -> IRI
@@ -200,7 +201,7 @@ mapSentence s (dpd, opd, opr) ax = let
  in (dpd', opd', opr', (flip mapNamed ax . const) axRel)
 
 mapMorphism :: OWLMorphism -> Result OWLMorphism
-mapMorphism _mor = error "nyi"
+mapMorphism = return -- but this is wrong, as only identities should be mapped
 
 mapSymbol :: OS.Sign -> Entity -> Set.Set Entity
 mapSymbol _sig sym = Set.singleton sym

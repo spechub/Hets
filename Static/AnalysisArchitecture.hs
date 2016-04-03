@@ -537,7 +537,7 @@ anaUnitTerm lgraph libEnv ln dg opts eo uctx@(buc, diag) utrm =
        -- EmptyNode $ error ... should be replaced with local env!
        gMorph <- anaRenaming lgraph
                  (EmptyNode $ error "Static.AnalysisArchitecture")
-                    (getSig (getSigFromDiag dnsig)) opts ren
+                    (getSig (getSigFromDiag dnsig)) opts "" ren -- should be the name of the node!
        let sink = [(p, gMorph)]
        -- check amalamability conditions
        () <- assertAmalgamability opts pos diag1 sink utStr

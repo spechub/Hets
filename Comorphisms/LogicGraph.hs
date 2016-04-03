@@ -41,6 +41,7 @@ module Comorphisms.LogicGraph
     , lookupComorphism_in_LG
     , comorphismList
     , inclusionList
+    , relComorphism
     , lookupSquare_in_LG
     , lookupQTA_in_LG
     ) where
@@ -114,6 +115,7 @@ import Comorphisms.SoftFOL2CommonLogic
 import Comorphisms.Adl2CASL
 #endif
 #ifndef NOOWLLOGIC
+import OWL2.Logic_OWL2
 import OWL2.DMU2OWL2
 import OWL2.OWL22CASL
 import OWL2.CASL2OWL
@@ -235,6 +237,13 @@ comorphismList =
 inclusionList :: [AnyComorphism]
 inclusionList =
     filter (\ (Comorphism cid) -> isInclusionComorphism cid) comorphismList
+
+-- | relativisation comorphism of a logic
+
+relComorphism :: AnyLogic -> [AnyComorphism]
+relComorphism (Logic lid) = 
+  filter (\ (Comorphism cid) -> isRelativisationComorphism cid) comorphismList -- need to select only those with source logic = lid
+
 
 addComps :: Map.Map (String, String) AnyComorphism
          -> Map.Map (String, String) AnyComorphism

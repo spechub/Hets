@@ -29,6 +29,8 @@ import Logic.Coerce
 import Logic.ExtSign
 import Logic.Prover
 
+import Comorphisms.LogicGraph
+
 import Syntax.AS_Structured
 import Syntax.Print_AS_Structured
 import Syntax.Print_AS_Library ()
@@ -408,10 +410,10 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
     vn <- expCurieT (globalAnnos dg) eo vn'
     analyzing opts $ "view " ++ iriToStringUnsecure vn
     liftR $ anaViewDefn lg currLn libenv dg opts eo vn gen vt gsis pos
-  Align_defn an' arities atype acorresps _ pos -> do
+  Align_defn an' arities atype acorresps asem pos -> do
     an <- expCurieT (globalAnnos dg) eo an'
     analyzing opts $ "alignment " ++ iriToStringUnsecure an
-    anaAlignDefn lg currLn libenv dg opts eo an arities atype acorresps pos
+    anaAlignDefn lg currLn libenv dg opts eo an arities atype acorresps asem pos
   Arch_spec_defn asn' asp pos -> do
     asn <- expCurieT (globalAnnos dg) eo asn'
     let asstr = iriToStringUnsecure asn
@@ -629,13 +631,13 @@ anaViewDefn lg ln libenv dg opts eo vn gen vt gsis pos = do
       let (tsis, hsis) = partitionGmaps gsis
       (gsigmaS', tmor) <- if null tsis then do
           (gsigmaS', imor) <- gSigCoerce lg gsigmaS (Logic lidT)
-          tmor <- gEmbedComorphism imor gsigmaS
+          tmor <- gEmbedComorphism Nothing imor gsigmaS -- should be the name of the source node
           return (gsigmaS', tmor)
         else do
-          mor <- anaRenaming lg allparams gsigmaS opts (Renaming tsis pos)
+          mor <- anaRenaming lg allparams gsigmaS opts "" (Renaming tsis pos) -- should be the name of the source node
           let gsigmaS'' = cod mor
           (gsigmaS', imor) <- gSigCoerce lg gsigmaS'' (Logic lidT)
-          tmor <- gEmbedComorphism imor gsigmaS''
+          tmor <- gEmbedComorphism Nothing imor gsigmaS'' -- should be the name of the source node
           fmor <- comp mor tmor
           return (gsigmaS', fmor)
       emor <- fmap gEmbed $ anaGmaps lg opts pos gsigmaS' gsigmaT hsis
@@ -676,14 +678,65 @@ anaViewType lg libEnv ln dg parSig opts eo name (View_type aspSrc aspTar pos) = 
 
 anaAlignDefn :: LogicGraph -> LibName -> LibEnv -> DGraph -> HetcatsOpts
   -> ExpOverrides -> IRI -> Maybe ALIGN_ARITIES -> VIEW_TYPE
-  -> [CORRESPONDENCE] -> Range
+  -> [CORRESPONDENCE] -> AlignSem -> Range
   -> ResultT IO (LIB_ITEM, DGraph, LibEnv, LogicGraph, ExpOverrides)
-anaAlignDefn lg ln libenv dg opts eo an arities atype acorresps pos = do
+anaAlignDefn lg ln libenv dg opts eo an arities atype acorresps asem pos = do
      l <- lookupCurrentLogic "Align_defn" lg
      (atype', (src, tar), dg') <- liftR
        $ anaViewType lg libenv ln dg (EmptyNode l) opts eo (makeName an) atype
-     let gsig1 = getSig src
-         gsig2 = getSig tar
+     (dg'', src', tar') <- case asem of 
+           SingleDomain -> return (dg', src, tar)
+           _ -> do
+            let gsig1 = getSig src
+                gsig2 = getSig tar
+            case (gsig1, gsig2) of 
+               (G_sign lid1 (ExtSign sig1 _) _, G_sign lid2 (ExtSign sig2 _) _) -> do 
+                  let rels1 = relComorphism (Logic lid1)
+                      rels2 = relComorphism (Logic lid2)
+                  case (rels1, rels2) of
+                    ([Comorphism cid1], [Comorphism cid2]) -> do
+                        let src' = getNewNodeDG dg'
+                            sname = dgn_name $ labDG dg' $ getNode src
+                        sig1' <- liftR $ coercePlainSign lid1 (sourceLogic cid1) "coercePlainSign" sig1
+                        (trsig1, trsens1) <- liftR $ map_sign cid1 (Just $ show $ getName sname) sig1'
+                        let gt1 = G_theory (targetLogic cid1) Nothing -- maybe it's wrong? 
+                                  (ExtSign trsig1 $ foldl Set.union Set.empty $ sym_of (targetLogic cid1) trsig1) startSigId 
+                                  (toThSens trsens1) startThId
+                        let labN1 = newInfoNodeLab
+                                    (sname{extString = extString sname ++ "relativisation"})
+                                    (newNodeInfo DGAlignment)
+                                    gt1
+                            dg1 = insLNodeDG (src', labN1) dg'
+                            tar' = getNewNodeDG dg1
+                            tname = dgn_name $ labDG dg1 $ getNode tar
+                        sig2' <- liftR $ coercePlainSign lid2 (sourceLogic cid2) "coercePlainSign" sig2
+                        (trsig2, trsens2) <- liftR $ map_sign cid2 (Just $ show $ getName tname) sig2'
+                        let gt2 = G_theory (targetLogic cid2) Nothing -- maybe it's wrong? 
+                                  (ExtSign trsig2 $ foldl Set.union Set.empty $ sym_of (targetLogic cid2) trsig2) startSigId 
+                                  (toThSens trsens2) startThId
+                        let labN2 = newInfoNodeLab
+                                    (tname{extString = extString tname ++ "relativisation"})
+                                    (newNodeInfo DGAlignment)
+                                    gt2
+                            dg2 = insLNodeDG (tar', labN2) dg1
+                                          -- must add inclusions from src to src' and tar to tar'
+                        gmor1@(GMorphism mid1 _ _ mor1 _) <- liftR $ ginclusion lg gsig1 $ signOf gt1
+                        mor1' <- liftR $ coerceMorphism (targetLogic mid1) (targetLogic cid1) "coerceMorphism" mor1
+                        let gmor1' = GMorphism cid1 (ExtSign sig1' $ foldl Set.union Set.empty $ sym_of (sourceLogic cid1) sig1') startSigId mor1' startMorId
+                        let (_, dg3) = insLEdgeDG
+                                          (getNode src, src', globDefLink gmor1' $ DGLinkAlign an)
+                                          dg2
+                        gmor2@(GMorphism mid2 _ _ mor2 _) <- liftR $ ginclusion lg gsig2 $ signOf gt2
+                        mor2' <- liftR $ coerceMorphism (targetLogic mid2) (targetLogic cid2) "coerceMorphism" mor2
+                        let gmor2' = GMorphism cid2 (ExtSign sig2' $ foldl Set.union Set.empty $ sym_of (sourceLogic cid2) sig2') startSigId mor2' startMorId
+                        let (_, dg4) = insLEdgeDG
+                                         (getNode tar, tar', globDefLink gmor2' $ DGLinkAlign an)
+                                         dg3 
+                        return (dg4, NodeSig src' $ signOf gt1, NodeSig tar' $ signOf gt2)
+                        --return (dg', src, tar)
+                    _ -> error "relativisation comorphisms not found"
+     let gsig1 = getSig src'
+         gsig2 = getSig tar'
      case (gsig1, gsig2) of
       (G_sign lid1 gsign1 ind1, G_sign lid2 gsign2 _) ->
        if Logic lid1 == Logic lid2 then do
@@ -711,20 +764,20 @@ anaAlignDefn lg ln libenv dg opts eo an arities atype acorresps pos = do
             -- (A_source, A_target, A_bridge,  
             --  A_source -> O1, A_target -> O2)
             (gt1, gt2, gt, gmor1, gmor2) <- liftR $
-                generateWAlign an gsig1 gsig2 acorresps
+                generateWAlign an asem gsig1 gsig2 acorresps
             -- A_source
-            let n1 = getNewNodeDG dg'
+            let n1 = getNewNodeDG dg''
                 labN1 = newInfoNodeLab
                          (makeName an
-                          {abbrevFragment = abbrevFragment an ++ "_source"})
+                          {abbrevQuery = abbrevQuery an ++ "_source"})
                          (newNodeInfo DGAlignment)
                          gt1
-                dg1 = insLNodeDG (n1, labN1) dg'
+                dg1 = insLNodeDG (n1, labN1) dg''
             -- A_target
                 n2 = getNewNodeDG dg1
                 labN2 = newInfoNodeLab
                          (makeName an
-                          {abbrevFragment = abbrevFragment an ++ "_target"})
+                          {abbrevQuery = abbrevQuery an ++ "_target"})
                          (newNodeInfo DGAlignment)
                          gt2
                 dg2 = insLNodeDG (n2, labN2) dg1
@@ -732,17 +785,17 @@ anaAlignDefn lg ln libenv dg opts eo an arities atype acorresps pos = do
                 n = getNewNodeDG dg2
                 labN = newInfoNodeLab
                          (makeName an
-                          {abbrevFragment = abbrevFragment an ++ "_bridge"})
+                          {abbrevQuery = abbrevQuery an ++ "_bridge"})
                          (newNodeInfo DGAlignment)
                          gt
                 dg3 = insLNodeDG (n, labN) dg2
              -- A_target-> O2
                 (_, dg4) = insLEdgeDG
-                         (n2, getNode tar, globDefLink gmor2 $ DGLinkAlign an)
+                         (n2, getNode tar', globDefLink gmor2 $ DGLinkAlign an)
                          dg3
              -- A_source -> O1 
                 (_, dg5) = insLEdgeDG
-                        (n1, getNode src, globDefLink gmor1 $ DGLinkAlign an)
+                        (n1, getNode src', globDefLink gmor1 $ DGLinkAlign an)
                         dg4
              -- inclusion of A_source in A_bridge 
             incl1 <- liftR $ ginclusion lg (signOf gt1) $ signOf gt
@@ -758,7 +811,7 @@ anaAlignDefn lg ln libenv dg opts eo an arities atype acorresps pos = do
                 -- store the alignment in the global env
                 asign = WAlign (NodeSig n1 $ signOf gt1) incl1 gmor1
                               (NodeSig n2 $ signOf gt2) incl2 gmor2
-                              src tar (NodeSig n $ signOf gt)
+                              src' tar' (NodeSig n $ signOf gt)
             return dg7 {globalEnv = Map.insert an (AlignEntry asign)
                             $ globalEnv dg7}
          let itm = Align_defn an arities atype' acorresps SingleDomain pos
@@ -771,9 +824,9 @@ anaAlignDefn lg ln libenv dg opts eo an arities atype acorresps pos = do
          ("Alignments only work between ontologies in the same logic\n"
          ++ show (prettyLG lg atype)) pos
 
-generateWAlign :: IRI -> G_sign -> G_sign -> [CORRESPONDENCE]
+generateWAlign :: IRI -> AlignSem -> G_sign -> G_sign -> [CORRESPONDENCE]
                -> Result (G_theory, G_theory, G_theory, GMorphism, GMorphism)
-generateWAlign an
+generateWAlign an asem
                (G_sign lid1 (ExtSign ssig _) _)
                (G_sign lid2 (ExtSign tsig _) _)
                corrs = do
@@ -807,8 +860,10 @@ generateWAlign an
                             G_symb_items_list lids2 l2, rrel) = do
        l1' <- coerceSymbItemsList lids1 lid1 "coerceSymbItemsList" l1
        l2' <- coerceSymbItemsList lids2 lid1 "coerceSymbItemsList" l2
-       (sigb, senb, s1', s2', eMap1, eMap2) <- 
-           corresp2th lid1 (iriToStringUnsecure an) flag
+       (sigb, senb, s1', s2', eMap1, eMap2) <- corresp2th lid1 (iriToStringUnsecure an) flag 
+                           (case asem of 
+                             ContextualizedDomain -> True
+                             _ -> False)
                            ssig tsig'
                            l1' l2' p1 p2 rrel
        s1'' <- signature_union lid1 s1 s1'
@@ -843,10 +898,7 @@ generateWAlign an
             lid1 rsMap1 (mkExtSign sig1'') (mkExtSign ssig)
  let gmor1 = gEmbed2 (signOf gth1) $ mkG_morphism lid1 mor1
  -- mor2 should go from A_target to O2: sig2'' to tsig'
- mor2 <- {- trace "mor2:" $
-         trace ("source: " ++ (show sig2'')) $
-         trace ("target: " ++ (show tsig'))  $ -}
-         induced_from_to_morphism
+ mor2 <- induced_from_to_morphism
             lid1 rsMap2 (mkExtSign sig2'') (mkExtSign tsig')
  let gmor2 = gEmbed2 (signOf gth2) $ mkG_morphism lid1 mor2
  return (gth1, gth2, gth, gmor1, gmor2)

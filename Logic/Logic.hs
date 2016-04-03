@@ -603,6 +603,7 @@ class ( Syntax lid basic_spec symbol symb_items symb_map_items
          corresp2th :: lid
                     -> String -- the name of the alignment
                     -> Bool   -- flag: should we disambiguate in the bridge
+                    -> Bool   -- flag: True for contextualized semantics
                     -> sign
                     -> sign
                     -> [symb_items]
@@ -612,7 +613,7 @@ class ( Syntax lid basic_spec symbol symb_items symb_map_items
                     -> REL_REF
                     -> Result (sign, [Named sentence], sign, sign,
                                EndoMap symbol, EndoMap symbol)
-         corresp2th _ _ _ _ _ _ _ _ _ = error "c2th nyi"
+         corresp2th _ _ _ _ _ _ _ _ _ _ = error "c2th nyi"
          -- | create a co-span fragment from an equivalence
          equiv2cospan :: lid -> sign -> sign -> [symb_items] -> [symb_items]
            -> Result (sign, sign, sign, EndoMap symbol, EndoMap symbol)

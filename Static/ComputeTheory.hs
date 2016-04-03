@@ -145,7 +145,7 @@ computeLabelTheory le dg (n, lbl) = let localTh = dgn_theory lbl in
                    return $ dgn_theory sl
                else getGlobalTheory sl
          -- translate theory and turn all imported theorems into axioms
-         translateG_theory (dgl_morphism l) $ theoremsToAxioms th)
+         translateG_theory (show $ getName $ dgn_name $ labDG dg s) (dgl_morphism l) $ theoremsToAxioms th)
          $ sortBy
             (flip $ comparing (\ (_, _, l) -> dgl_id l))
             $ getImports dg n

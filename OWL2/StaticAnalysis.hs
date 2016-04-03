@@ -413,7 +413,7 @@ addEquiv ssig tsig l1 l2 = do
           ([e1], [e2]) ->
            if entityKind e1 == entityKind e2 then do
               s <- pairSymbols e1 e2
-              sig <- addSymbToSign emptySign s
+              sig  <- addSymbToSign emptySign s
               sig1 <- addSymbToSign emptySign e1
               sig2 <- addSymbToSign emptySign e2
               return (sig, sig1, sig2,
@@ -424,11 +424,11 @@ addEquiv ssig tsig l1 l2 = do
           _ -> fail $ "non-unique symbol match:" ++ show l1 ++ " " ++ show l2
     _ -> fail "terms not yet supported in alignments"
 
-corr2theo :: String -> Bool -> Sign -> Sign -> [SymbItems] -> [SymbItems] ->
+corr2theo :: String -> Bool -> Bool -> Sign -> Sign -> [SymbItems] -> [SymbItems] ->
              EndoMap Entity -> EndoMap Entity -> REL_REF ->
              Result (Sign, [Named Axiom], Sign, Sign,
                      EndoMap Entity, EndoMap Entity)
-corr2theo aname flag ssig tsig l1 l2 eMap1 eMap2 rref = do
+corr2theo aname flag contextualizedSemantics ssig tsig l1 l2 eMap1 eMap2 rref = do
   let l1' = statSymbItems ssig l1
       l2' = statSymbItems tsig l2
   case (l1', l2') of
@@ -440,15 +440,57 @@ corr2theo aname flag ssig tsig l1 l2 eMap1 eMap2 rref = do
           ([e1], [e2]) -> do
            let e1' = if flag then e1 {cutIRI =  addString (cutIRI e1, "_source")} else e1
                e2' = if flag then e2 {cutIRI =  addString (cutIRI e2, "_target")} else e2 
+                -- for contextualized semantics
+               rtsIRI = QN "" "r_TS" Abbreviated "r_TS" Id.nullRange
+               rstIRI = QN "" "r_ST" Abbreviated "r_ST" Id.nullRange
+               topSIRI = QN "" "top_S" Abbreviated "top_S" Id.nullRange
+               topTIRI = QN "" "top_T" Abbreviated "top_T" Id.nullRange
+               rts = mkEntity ObjectProperty rtsIRI
+               rst = mkEntity ObjectProperty rstIRI
+               topS = mkEntity Class topSIRI
+               topT = mkEntity Class topTIRI
                sig = emptySign
                eMap1' = Map.union eMap1 $ Map.fromAscList [(e1', e1)]
                eMap2' = Map.union eMap2 $ Map.fromAscList [(e2', e2)]
            sig1 <- addSymbToSign sig e1'
            sig2 <- addSymbToSign sig e2'
-           sigB <- addSymbToSign sig1 e2'
+           sigB <- if contextualizedSemantics then addSymbToSign sig1 e2'
+                   else foldM addSymbToSign sig1 [e2', rts, rst, topS, topT]
+           let defAxioms = map (makeNamed "") 
+                              [ -- 1. domain of rts is top_T
+                               PlainAxiom (mkExtendedEntity rts) $
+                                 ListFrameBit (Just $ DRRelation ADomain) $
+                                  ExpressionBit [([], Expression topTIRI)],
+                               -- 2. range of rts is top_S
+                               PlainAxiom (mkExtendedEntity rts) $
+                                 ListFrameBit (Just $ DRRelation ARange) $
+                                  ExpressionBit [([], Expression topSIRI)],
+                               -- 3. domain of rst is top_S
+                               PlainAxiom (mkExtendedEntity rst) $
+                                 ListFrameBit (Just $ DRRelation ADomain) $
+                                  ExpressionBit [([], Expression topSIRI)],
+                               -- 4. range of rst is top_T 
+                               PlainAxiom (mkExtendedEntity rst) $
+                                 ListFrameBit (Just $ DRRelation ARange) $
+                                  ExpressionBit [([], Expression topTIRI)]
+                                 ]
            case rref of
-            Equiv -> do
-             let extPart = mkExtendedEntity e2'
+            Equiv -> if contextualizedSemantics then do
+             let axiom = case (entityKind e1', entityKind e2') of
+                          (Class, Class) -> 
+                            PlainAxiom (mkExtendedEntity e1') $ 
+                             ListFrameBit (Just $ EDRelation Equivalent) $
+                              ExpressionBit [([], ObjectValuesFrom AllValuesFrom (ObjectInverseOf $ ObjectProp rtsIRI) $ Expression $ cutIRI e2' )]
+                          (NamedIndividual, NamedIndividual) -> 
+                            PlainAxiom (mkExtendedEntity e2') $ 
+                             ListFrameBit Nothing $ 
+                              IndividualFacts [([], ObjectPropertyFact Positive (ObjectProp rtsIRI) $ cutIRI e1')]
+                          (ObjectProperty, ObjectProperty) -> error "nyi"
+                          _ -> error $ "use equivalence only between symbols of same kind" ++
+                                              show l1 ++ " " ++ show l2
+             return (sigB, (makeNamed "" axiom):defAxioms, sig1, sig2, eMap1', eMap2')      
+                     else do
+             let extPart = mkExtendedEntity e1'
                  axiom = PlainAxiom extPart $
                            ListFrameBit (Just $
                               case (entityKind e1', entityKind e2') of
@@ -456,12 +498,19 @@ corr2theo aname flag ssig tsig l1 l2 eMap1 eMap2 rref = do
                                 (ObjectProperty, ObjectProperty) ->
                                    EDRelation Equivalent
                                 (NamedIndividual, NamedIndividual) -> SDRelation Same
-                                _ -> error $ "use subsumption only between"
-                                              ++ "classes or roles:" ++
+                                _ -> error $ "use equivalence only between symbols of same kind:" ++
                                               show l1 ++ " " ++ show l2) $
-                           ExpressionBit [([], Expression $ cutIRI e1')]
+                           ExpressionBit [([], Expression $ cutIRI e2')]
              return (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2')
-            Subs -> do
+            Subs -> if contextualizedSemantics then do
+              let axiom = case (entityKind e1', entityKind e2') of
+                           (Class, Class) -> error "nyi"
+                           (ObjectProperty, ObjectProperty) -> error "nyi"
+                           _ -> error $ "use subsumption only between"
+                                              ++ "classes or roles:" ++
+                                              show l1 ++ " " ++ show l2
+              return (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2')     
+                     else do
              let extPart = mkExtendedEntity e2'
                  axiom = PlainAxiom extPart $
                            ListFrameBit (Just $
@@ -474,26 +523,60 @@ corr2theo aname flag ssig tsig l1 l2 eMap1 eMap2 rref = do
                                               show l1 ++ " " ++ show l2) $
                            ExpressionBit [([], Expression $ cutIRI e1')]
              return (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2')
-            Incomp -> do
+            Incomp -> if contextualizedSemantics then do
+              let axiom = case (entityKind e1', entityKind e2') of
+                           (Class, Class) -> error "nyi"
+                           (ObjectProperty, ObjectProperty) -> error "nyi"
+                           _ -> error $ "use incompatibilites only between entities of same kind:" ++
+                                              show l1 ++ " " ++ show l2
+              return (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2')     
+                      else do
              let extPart = mkExtendedEntity e1'
                  axiom = PlainAxiom extPart $
                            ListFrameBit (Just $ EDRelation Disjoint) $
                            ExpressionBit [([], Expression $ cutIRI e2')]
              return (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2')
-            IsSubs -> do
+            IsSubs -> if contextualizedSemantics then do
+              let axiom = case (entityKind e1', entityKind e2') of
+                           (Class, Class) -> PlainAxiom (mkExtendedEntity e1') $ 
+                                             ListFrameBit (Just SubClass) $
+                                             ExpressionBit [([],  ObjectValuesFrom SomeValuesFrom (ObjectInverseOf $ ObjectProp rtsIRI) $ Expression $ cutIRI e2')]
+                           (ObjectProperty, ObjectProperty) -> error "nyi"
+                           _ -> error $ "use subsumption only between"
+                                              ++ "classes or roles:" ++
+                                              show l1 ++ " " ++ show l2
+              return (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2')    
+                      else do
              let extPart = mkExtendedEntity e1'
                  axiom = PlainAxiom extPart $
                            ListFrameBit (Just SubClass) $
                            ExpressionBit [([], Expression $ cutIRI e2')]
              return (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2')
-            InstOf -> do
-             let extPart = mkExtendedEntity e1'
-                 axiom = PlainAxiom extPart $
-                           ListFrameBit (Just Types) $
-                           ExpressionBit [([], Expression $ cutIRI e2')]
-             return
-                 (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2')
-            HasInst -> do
+            InstOf -> if contextualizedSemantics then 
+                case (entityKind e1', entityKind e2') of
+                 (NamedIndividual, Class) -> do
+                   let axiom = PlainAxiom (mkExtendedEntity e1') $ 
+                                ListFrameBit (Just Types) $
+                                  ExpressionBit [([], ObjectValuesFrom SomeValuesFrom (ObjectInverseOf $ ObjectProp rtsIRI) $ Expression $ cutIRI e2' )]
+                   return (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2')
+                 _ -> error $ "wrong kinds:" ++ show l1 ++ " " ++ show l2
+                      else case (entityKind e1', entityKind e2') of
+                (NamedIndividual, Class) -> do
+                    let extPart = mkExtendedEntity e1'
+                        axiom = PlainAxiom extPart $
+                                ListFrameBit (Just Types) $
+                                 ExpressionBit [([], Expression $ cutIRI e2')]
+                    return (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2')
+                _ -> error $ "wrong kinds:" ++ show l1 ++ " " ++ show l2 
+            HasInst -> if contextualizedSemantics then 
+                case (entityKind e1', entityKind e2') of
+                 (Class, NamedIndividual) -> do
+                   let axiom = PlainAxiom (mkExtendedEntity e2') $ 
+                                ListFrameBit (Just Types) $
+                                  ExpressionBit [([], ObjectValuesFrom SomeValuesFrom (ObjectProp rtsIRI) $ Expression $ cutIRI e1' )]
+                   return (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2')
+                 _ -> error $ "wrong kinds:" ++ show l1 ++ " " ++ show l2
+                      else do
              let extPart = mkExtendedEntity e2'
                  axiom = PlainAxiom extPart $
                            ListFrameBit (Just Types) $

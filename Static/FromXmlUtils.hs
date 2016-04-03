@@ -103,7 +103,7 @@ translateByGName lg gsig gname =
   let str = trim gname in
   if null str then ginclusion lg gsig gsig else do
     cmor <- lookupComorphism str lg
-    gEmbedComorphism cmor gsig
+    gEmbedComorphism Nothing cmor gsig -- should be the name of the source node!
 
 -- | get the gmorphism for a gmorphism name with symbols maps
 getGMorphism :: LogicGraph -> G_sign

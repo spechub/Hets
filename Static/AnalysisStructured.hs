@@ -101,7 +101,7 @@ coerceNode lg dg ns@(NodeSig _ (G_sign lid1 _ _)) nn l2@(Logic lid2) =
 coerceNodeByComorph :: AnyComorphism -> DGraph -> NodeSig -> NodeName
            -> Result (NodeSig, DGraph)
 coerceNodeByComorph c dg (NodeSig n s) nn = do
-      gmor <- gEmbedComorphism c s
+      gmor <- gEmbedComorphism Nothing c s -- should be the name of the source node
       case find (\ (_, _, l) -> dgl_origin l == SeeTarget
           && dgl_type l == globalDef
           && dgl_morphism l == gmor) $ outDG dg n of
@@ -349,7 +349,8 @@ anaSpecAux conser addSyms lg libEnv ln dg nsig name opts eo sp rg = case sp of
           rPos = getRange ren
       (sp1', ns'@(NodeSig n' gsigma), dg') <- anaSpec addSyms lg libEnv ln dg nsig
         (extName "Translation" name) opts eo sp1 rPos
-      mor <- anaRenaming lg nsig gsigma opts ren
+      let nname = show $ getName $ dgn_name $ labDG dg' n'
+      mor <- anaRenaming lg nsig gsigma opts nname ren
       -- ??? check that mor is identity on local env
       when (isIdentity mor) $ warning ()
          ("nothing renamed by:\n" ++ showDoc ren "") rPos
@@ -544,7 +545,7 @@ anaSpecAux conser addSyms lg libEnv ln dg nsig name opts eo sp rg = case sp of
              -> return morDelta
          _ -> ginclusion lg gsigmaA gsigmaRes >>= comp morDelta
        (_, imor) <- gSigCoerce lg gsigmaB $ Logic $ sourceLogic cid
-       tmor <- gEmbedComorphism imor gsigmaB
+       tmor <- gEmbedComorphism Nothing imor gsigmaB -- should be the name of the source node
        morDelta'' <- comp tmor morDelta'
        let dg4 = case nsig of
              JustNode (NodeSig nI _) | nI == nB -> dg'
@@ -794,9 +795,9 @@ anaFiltering lg libEnv dg nsig nname filtering = case filtering of
 
 
 -- analysis of renamings
-anaRen :: LogicGraph -> HetcatsOpts -> MaybeNode -> Range -> GMorphism
+anaRen :: LogicGraph -> HetcatsOpts -> MaybeNode -> Range -> String -> GMorphism 
   -> G_mapping -> Result GMorphism
-anaRen lg opts lenv pos gmor@(GMorphism r sigma ind1 mor _) gMapping =
+anaRen lg opts lenv pos nname gmor@(GMorphism r sigma ind1 mor _) gMapping =
   adjustPos pos $ case gMapping of
   G_symb_map (G_symb_map_items_list lid sis) ->
     let lid2 = targetLogic r in
@@ -826,9 +827,9 @@ anaRen lg opts lenv pos gmor@(GMorphism r sigma ind1 mor _) gMapping =
       return $ GMorphism r sigma ind1 mor2 startMorId
     else do
       comor <- logicInclusion lg (Logic lid2) (Logic lid)
-      gmorTrans <- gEmbedComorphism comor $ cod gmor
+      gmorTrans <- gEmbedComorphism (Just nname) comor $ cod gmor -- should be the name of the source node
       newMor <- comp gmor gmorTrans
-      anaRen lg opts lenv pos newMor gMapping
+      anaRen lg opts lenv pos nname newMor gMapping
   G_logic_translation (Logic_code tok src tar pos1) ->
     let pos2 = if pos1 == nullRange then pos else pos1
         adj1 = adjustPos pos2
@@ -843,7 +844,7 @@ anaRen lg opts lenv pos gmor@(GMorphism r sigma ind1 mor _) gMapping =
                Nothing -> fail "with logic: cannot determine comorphism"
     checkSrcOrTarLogic pos2 True c src
     checkSrcOrTarLogic pos2 False c tar
-    mor1 <- gEmbedComorphism c (G_sign srcLid srcSig ind)
+    mor1 <- gEmbedComorphism (Just nname) c (G_sign srcLid srcSig ind)
     comp gmor mor1
 
 checkSrcOrTarLogic :: Range -> Bool -> AnyComorphism -> Maybe Logic_name
@@ -857,10 +858,10 @@ checkSrcOrTarLogic pos b (Comorphism cid) ml = case ml of
            ++ (if b then "source" else "target") ++ " logic of "
            ++ language_name cid) pos
 
-anaRenaming :: LogicGraph -> MaybeNode -> G_sign -> HetcatsOpts -> RENAMING
+anaRenaming :: LogicGraph -> MaybeNode -> G_sign -> HetcatsOpts -> String -> RENAMING
   -> Result GMorphism
-anaRenaming lg lenv gSigma opts (Renaming ren pos) =
-      foldM (anaRen lg opts lenv pos) (ide gSigma) ren
+anaRenaming lg lenv gSigma opts s (Renaming ren pos) =
+      foldM (anaRen lg opts lenv pos s) (ide gSigma) ren
 
 getRestrLogic :: RESTRICTION -> Result AnyLogic
 getRestrLogic restr = case restr of
@@ -988,7 +989,7 @@ anaFitArg lg libEnv ln dg spname nsigI nsigP@(NodeSig nP gsigmaP) opts name eo f
    let tl = Logic $ targetLogic aid
    (nsigA'@(NodeSig nA' gsigA'), dg'') <- coerceNode lg dg' nsigA name tl
    (gsigmaP', pmor) <- gSigCoerce lg gsigmaP tl
-   tmor <- gEmbedComorphism pmor gsigmaP
+   tmor <- gEmbedComorphism Nothing pmor gsigmaP -- should be the name of the source node
    gmor <- anaGmaps lg opts pos gsigmaP' gsigA' gsis
    eGmor <- comp tmor $ gEmbed gmor
    return ( Fit_spec (replaceAnnoted sp' asp) gsis pos

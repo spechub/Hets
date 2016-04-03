@@ -160,7 +160,7 @@ dgFlatRenamings lib_Env l_n dg =
          Just n_dgn_theory -> lv2 {dgn_theory = n_dgn_theory }
          Nothing -> cErr "dgFlatRenamings2" v2
        n_lnode@(_, n_lv) = propagateErrors "dgFlatRenamings3" $ do
-             t_dgn_theory <- translateG_theory (dgl_morphism label)
+             t_dgn_theory <- translateG_theory "" (dgl_morphism label) -- should be the name of the node!
                              $ dgn_theory nlv1
              return (n_node, newInfoNodeLab name
                                      (newNodeInfo DGFlattening)

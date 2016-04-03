@@ -150,13 +150,13 @@ mapG_theory (Comorphism cid) (G_theory lid _ (ExtSign sign _) ind1 sens ind2) =
          ind1 (toThSens sens') ind2
 
 -- | Translation of a G_theory along a GMorphism
-translateG_theory :: GMorphism -> G_theory -> Result G_theory
-translateG_theory (GMorphism cid _ _ morphism2 _)
+translateG_theory :: String -> GMorphism -> G_theory -> Result G_theory
+translateG_theory nname (GMorphism cid _ _ morphism2 _)
                       (G_theory lid _ (ExtSign sign _) _ sens _) = do
   let tlid = targetLogic cid
   bTh <- coerceBasicTheory lid (sourceLogic cid)
                     "translateG_theory" (sign, toNamedList sens)
-  (_, sens'') <- wrapMapTheory cid Nothing bTh -- could cause trouble!
+  (_, sens'') <- wrapMapTheory cid (Just nname) bTh
   sens''' <- mapM (mapNamedM $ map_sen tlid morphism2) sens''
   return $ G_theory tlid Nothing (mkExtSign $ cod morphism2)
              startSigId (toThSens sens''') startThId
@@ -172,9 +172,9 @@ joinG_sentences (G_theory lid1 syn sig1 ind sens1 _)
 
 -- | Intersect the sentences of two G_theories, G_sign is the intersection of their signatures
 intersectG_sentences :: Monad m => G_sign -> G_theory -> G_theory -> m G_theory
-intersectG_sentences gsig@(G_sign lidS signS indS) 
-                    (G_theory lid1 syn sig1 ind sens1 _)
-                    (G_theory lid2 _ sig2 _ sens2 _) = do
+intersectG_sentences (G_sign lidS signS indS) 
+                    (G_theory lid1 _syn _sig1 _ind sens1 _)
+                    (G_theory lid2 _ _sig2 _ sens2 _) = do
   sens1' <- coerceThSens lid1 lidS "intersectG_sentences1" sens1
   sens2' <- coerceThSens lid2 lidS "intersectG_sentences2" sens2
   return $ G_theory lidS Nothing signS indS (intersectSens sens1' sens2') startThId

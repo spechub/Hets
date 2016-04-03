@@ -101,8 +101,8 @@ isSameTranslation :: G_theory -> GMorphism -> [LEdge DGLinkLab] -> Bool
 isSameTranslation th morphism path =
   case calculateMorphismOfPath path of
       Just morphismOfPath ->
-         maybeResult (translateG_theory morphism th) ==
-                     maybeResult (translateG_theory morphismOfPath th)
+         maybeResult (translateG_theory "" morphism th) ==
+                     maybeResult (translateG_theory "" morphismOfPath th) -- should be the name of the node!
       Nothing -> False
 
 -- | local inference
@@ -133,7 +133,7 @@ localInferenceAux libEnv dgraph ledge@(src, tgt, edgeLab) = let
     in case maybeThSrc of
     Just thSrc ->
       case (computeLocalNodeTheory libEnv dgraph tgt,
-                        maybeResult $ translateG_theory morphism thSrc) of
+                        maybeResult $ translateG_theory "" morphism thSrc) of -- should be the name of the node!
         (Just th@(G_theory lidTgt syn sig ind sensTgt _),
               Just (G_theory lidSrc _ _ _ sentensSrc _)) ->
           case maybeResult (coerceThSens lidSrc lidTgt "" sentensSrc) of
