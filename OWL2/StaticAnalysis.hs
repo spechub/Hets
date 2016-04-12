@@ -38,6 +38,7 @@ import Common.SetColimit
 import Control.Monad
 
 import Logic.Logic
+import Debug.Trace
 
 -- | Error messages for static analysis
 failMsg :: Entity -> ClassExpression -> Result a
@@ -452,9 +453,15 @@ corr2theo aname flag contextualizedSemantics ssig tsig l1 l2 eMap1 eMap2 rref = 
                sig = emptySign
                eMap1' = Map.union eMap1 $ Map.fromAscList [(e1', e1)]
                eMap2' = Map.union eMap2 $ Map.fromAscList [(e2', e2)]
-           sig1 <- addSymbToSign sig e1'
-           sig2 <- addSymbToSign sig e2'
-           sigB <- if contextualizedSemantics then addSymbToSign sig1 e2'
+           sig1 <- {-if contextualizedSemantics then 
+                     foldM addSymbToSign sig [e1', rst]
+                   else-} 
+                   addSymbToSign sig e1'
+           sig2 <- {-if contextualizedSemantics then 
+                     foldM addSymbToSign sig [e1', rts]
+                   else -}
+                   addSymbToSign sig e2'
+           sigB <- if not contextualizedSemantics then addSymbToSign sig1 e2'
                    else foldM addSymbToSign sig1 [e2', rts, rst, topS, topT]
            let defAxioms = map (makeNamed "") 
                               [ -- 1. domain of rts is top_T
