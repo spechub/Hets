@@ -24,9 +24,7 @@ module Static.AnalysisLibrary
 
 import Logic.Logic
 import Logic.Grothendieck
-import Logic.Comorphism
 import Logic.Coerce
-import Logic.ExtSign
 import Logic.Prover
 
 import Syntax.AS_Structured
@@ -564,16 +562,13 @@ symbolsOf lg gs1@(G_sign l1 (ExtSign sig1 sys1) _)
       ss2 <- coerceSymbItemsList lid2 l2 "symbolsOf1" sis2
       rs2 <- stat_symb_items l2 sig2 ss2
       p <- case (rs1, rs2) of
-        ([r1], [r2]) -> -- trace (show r1 ++ " " ++ show (Set.toList sys1)) $
+        ([r1], [r2]) ->
          case
             ( filter (\ sy -> matches l1 sy r1) $ Set.toList sys1
             , filter (\ sy -> matches l2 sy r2) $ Set.toList sys2) of
           ([s1], [s2]) ->
             return (G_symbol l1 s1, G_symbol l2 s2)
-          (ll1, ll2) -> {- trace
-               ("sys1:" ++ (show $
-               Set.toList sys1
-               ))  $ -}
+          (ll1, ll2) ->
                  error
                   $ "non-unique symbol match: " ++ show ll1 ++ "\n" ++ show ll2
         _ -> mkError "non-unique raw symbols" c
@@ -586,25 +581,27 @@ anaEntailmentDefn :: LogicGraph -> LibName -> LibEnv -> DGraph -> HetcatsOpts
   -> ExpOverrides -> IRI -> ENTAIL_TYPE -> Range
   -> Result (LIB_ITEM, DGraph, LibEnv, LogicGraph, ExpOverrides)
 anaEntailmentDefn lg ln libEnv dg opts eo en et pos = do
-  case et of 
-   Entail_type on1 on2 range -> do
+  case et of
+   Entail_type on1 on2 _ -> do
      case (on1, on2) of
       (MkOms asp1, MkOms asp2) -> do
         let spS = item asp1
             spT = item asp2
             name = makeName en
         l <- lookupCurrentLogic "ENTAIL_DEFN" lg
-        (spSrc', srcNsig, dg') <- anaSpec False lg libEnv ln dg (EmptyNode l)
+        (_spSrc', srcNsig, dg') <- anaSpec False lg libEnv ln dg (EmptyNode l)
                           (extName "Source" name) opts eo spS $ getRange spS
-        (spTgt', tgtNsig, dg'') <- anaSpec True lg libEnv ln dg' (EmptyNode l)
+        (_spTgt', tgtNsig, dg'') <- anaSpec True lg libEnv ln dg' (EmptyNode l)
                           (extName "Target" name) opts eo spT $ getRange spT
         incl <- ginclusion lg (getSig tgtNsig) (getSig srcNsig)
-        let  dg3 = insLink dg'' incl globalThm SeeSource (getNode tgtNsig) (getNode srcNsig)
+        let  dg3 = insLink dg'' incl globalThm SeeSource
+                   (getNode tgtNsig) (getNode srcNsig)
              gsig = GenSig (EmptyNode l) [] (EmptyNode l)
         let vsig = ExtViewSig srcNsig incl $ ExtGenSig gsig tgtNsig
         return (Entail_defn en et pos, dg3{
-                  globalEnv = Map.insert en (ViewOrStructEntry True vsig) $ globalEnv dg3},  
-                  libEnv, lg, eo)
+                  globalEnv = Map.insert en (ViewOrStructEntry True vsig)
+                              $ globalEnv dg3},
+                libEnv, lg, eo)
       _ -> fail "entailment between networks not supported yet"
    _ -> fail "omsinnetwork entailment not supported yet"
 
@@ -685,7 +682,7 @@ anaAlignDefn lg ln libenv dg opts eo an arities atype acorresps pos = do
      let gsig1 = getSig src
          gsig2 = getSig tar
      case (gsig1, gsig2) of
-      (G_sign lid1 gsign1 ind1, G_sign lid2 gsign2 _) ->
+      (G_sign lid1 _ _, G_sign lid2 _ _) ->
        if Logic lid1 == Logic lid2 then do
         -- arities TO DO
         pairsSet <- liftR $ symbolsOf lg gsig1 gsig2 acorresps
@@ -708,7 +705,7 @@ anaAlignDefn lg ln libenv dg opts eo an arities atype acorresps pos = do
           liftR $ mkError "Arities do not check" arities
          else do
          newDg <- do
-            -- (A_source, A_target, A_bridge,  
+            -- (A_source, A_target, A_bridge,
             --  A_source -> O1, A_target -> O2)
             (gt1, gt2, gt, gmor1, gmor2) <- liftR $
                 generateWAlign an gsig1 gsig2 acorresps
@@ -740,11 +737,11 @@ anaAlignDefn lg ln libenv dg opts eo an arities atype acorresps pos = do
                 (_, dg4) = insLEdgeDG
                          (n2, getNode tar, globDefLink gmor2 $ DGLinkAlign an)
                          dg3
-             -- A_source -> O1 
+             -- A_source -> O1
                 (_, dg5) = insLEdgeDG
                         (n1, getNode src, globDefLink gmor1 $ DGLinkAlign an)
                         dg4
-             -- inclusion of A_source in A_bridge 
+             -- inclusion of A_source in A_bridge
             incl1 <- liftR $ ginclusion lg (signOf gt1) $ signOf gt
              -- inclusion of A_target in A_bridge
             incl2 <- liftR $ ginclusion lg (signOf gt2) $ signOf gt
@@ -785,29 +782,29 @@ generateWAlign an
      sig = empty_signature lid1
      phi1 = Map.empty
      phi2 = Map.empty
- -- 2. for each correspondence (e1,e2,r), 
+ -- 2. for each correspondence (e1,e2,r),
  --    build the bridge ontology (s', sens')
  --    the signatures s1'' and s2'' of the involved symbols
  --    together with the maps (aname:e1 -> e1) and (aname:e2 -> e2)
  -- This is done by corresp2th, in a logic dependent way.
  -- first we check if we must disambiguate names in the bridge ontology
- let flag = let insNames aSet aLid aSItems = foldl (\s n -> Set.insert n s) aSet $ 
-                                              map (symb_items_name aLid) aSItems 
-                (syms1, syms2) =  
+ let flag = let insNames aSet aLid aSItems = foldl (\s n -> Set.insert n s) aSet $
+                                              map (symb_items_name aLid) aSItems
+                (syms1, syms2) =
                  foldl (\ (set1, set2) c -> case c of
-                               Single_correspondence _ (G_symb_items_list lidS1 sitems1) 
-                                                       (G_symb_items_list lidS2 sitems2) _ _ -> 
-                                   (insNames set1 lidS1 sitems1, 
+                               Single_correspondence _ (G_symb_items_list lidS1 sitems1)
+                                                       (G_symb_items_list lidS2 sitems2) _ _ ->
+                                   (insNames set1 lidS1 sitems1,
                                     insNames set2 lidS2 sitems2)
-                               _ -> error "only single corrs") 
+                               _ -> error "only single corrs")
                        (Set.empty, Set.empty) corrs
-             in not $ Set.null $ Set.intersection syms1 syms2 
+             in not $ Set.null $ Set.intersection syms1 syms2
  -- then we set a flag in addCorresp to True if disambiguation is needed
  let addCorresp (s1, s2, s, sens, p1, p2) (G_symb_items_list lids1 l1,
                             G_symb_items_list lids2 l2, rrel) = do
        l1' <- coerceSymbItemsList lids1 lid1 "coerceSymbItemsList" l1
        l2' <- coerceSymbItemsList lids2 lid1 "coerceSymbItemsList" l2
-       (sigb, senb, s1', s2', eMap1, eMap2) <- 
+       (sigb, senb, s1', s2', eMap1, eMap2) <-
            corresp2th lid1 (iriToStringUnsecure an) flag
                            ssig tsig'
                            l1' l2' p1 p2 rrel
@@ -819,11 +816,11 @@ generateWAlign an
            sens' = sens ++ senb
        return (s1'', s2'', s', sens', p1', p2')
  (sig1'', sig2'', sig'', sens'', sMap1, sMap2) <- foldM addCorresp
-       (sig1, sig2, sig, [], phi1, phi2) $ 
-       map (\c -> case c of 
-                   Single_correspondence _ s1 s2 (Just rref) _ -> 
+       (sig1, sig2, sig, [], phi1, phi2) $
+       map (\c -> case c of
+                   Single_correspondence _ s1 s2 (Just rref) _ ->
                      (s1, s2, refToRel rref)
-                   _ -> error "only single correspondences for now") 
+                   _ -> error "only single correspondences for now")
        corrs
  -- 3. make G_ results
  -- gth1 is A_source
