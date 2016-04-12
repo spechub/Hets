@@ -76,7 +76,8 @@ getMeetsFacts :: [Axiom] -> Set.Set (QName, QName) -> QName ->
 getMeetsFacts axs tInds n = 
   Set.fromList $ mapMaybe (getMeetsFactsAux axs tInds n) axs
 
-getMeetsFactsAux :: [Axiom] -> Set.Set (QName, QName) -> QName -> Axiom -> Maybe (QName, QName, QName, QName)
+getMeetsFactsAux :: [Axiom] -> Set.Set (QName, QName) -> QName -> Axiom -> 
+                 Maybe (QName, QName, QName, QName)
 getMeetsFactsAux axs tInds point1 ax =
   case axiomTopic ax of
     SimpleEntity e | cutIRI e == point1 ->
@@ -116,6 +117,7 @@ getFiatBoundaryFactsAux point ax =
     _ -> Nothing
 
 
+loopFacts :: AnnotatedList Fact -> Entity -> QName -> Maybe QName
 loopFacts [] _ _ = Nothing
 loopFacts (afact:facts') e point =
   case afact of
