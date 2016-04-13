@@ -31,7 +31,7 @@ import Data.List
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-import Debug.Trace
+-- import Debug.Trace
 
 -- | OWL2 signature printing
 
@@ -89,22 +89,13 @@ printSign s = vcat
                 , ("Declaration(AnnotationProperty(", annotationRoles) ])
 
 
-printFact :: Fact -> Doc -- this function is wrong! We need it in GenericPrint, but should be corrected
-printFact pf = case pf of
-    ObjectPropertyFact pn op i -> printPositiveOrNegative pn
-           <+> printObjPropExp op <+> printIRIWithColon i
-    DataPropertyFact pn dp l -> printPositiveOrNegative pn
-           <+> printIRIWithColon dp <+> printLiteral l
-
-
-
 -- | ListFrameBits only with relations
 printListFrameBit :: ListFrameBit -> Doc
 printListFrameBit lfb = case lfb of
     AnnotationBit a -> printAnnotatedList2 printIRI a
     ExpressionBit a -> printAnnotatedList2 printClassExpression a
     ObjectBit a -> printAnnotatedList2 printObjPropExp a
-    DataBit a -> printAnnotatedList2 printIRI a
+    DataBit a -> printAnnotatedList2 printIRIWithColon a
     IndividualSameOrDifferent a -> printAnnotatedList2 printIRIWithColon a
     _ -> empty
 
@@ -141,13 +132,12 @@ printAnnFrameBit g ce a afb = case afb of
                   parens 
                     (fsep (prepPunctuate space $ map printObjPropExp opl)) 
                   <+> g ce) 
-    DataFunctional -> keyword characteristicsC <+>
-          (printAnnotations a $+$ printCharact functionalS)
+    DataFunctional -> text "FunctionalObjectProperty" <> parens (g ce)
 
-printFrameBit :: (a -> Doc) -> a -> FrameBit -> Doc
-printFrameBit g ce fb = case fb of
+printFrameBit :: Bool -> (a -> Doc) -> a -> FrameBit -> Doc
+printFrameBit b g ce fb = case fb of
     ListFrameBit r lfb -> case r of
-        Just rel -> printRelation rel <> parens (g ce <+> printListFrameBit lfb)
+        Just rel -> printRelation b rel <> parens (g ce <+> printListFrameBit lfb)
         Nothing -> case lfb of
             ObjectCharacteristics x -> 
                 vcat $ map (\(_,y) -> printCharacter y <> parens (g ce)) x -- annos!
@@ -177,15 +167,15 @@ printFrame :: Frame -> Doc
 printFrame f@(Frame eith bl) = case eith of
     SimpleEntity (Entity _ e uri) -> 
             text (showEntityTypeF e) <> printIRIWithColon uri <> text "))"
-            $+$ fsep [vcat (map (printFrameBit printIRIWithColon uri) bl)] 
+            $+$ fsep [vcat (map (printFrameBit (if e == DataProperty then True else False) printIRIWithColon uri) bl)] 
     ObjectEntity ope -> 
             text "Declaration( ObjectProperty( " <> printObjPropExp ope <> text "))"
-              $+$ fsep [vcat (map (printFrameBit printObjPropExp ope) bl)] 
+              $+$ fsep [vcat (map (printFrameBit False printObjPropExp ope) bl)] 
     ClassEntity ce -> 
             (if isBasicClass ce then 
               text "Declaration( Class( " <> printClassExpression ce <> text "))"
               else empty)
-            $+$ fsep [vcat (map (printFrameBit printClassExpression ce) bl)]
+            $+$ fsep [vcat (map (printFrameBit False printClassExpression ce) bl)]
     Misc a -> case bl of
         [ListFrameBit (Just r) lfb] -> printMiscBit r a lfb
         [AnnFrameBit ans (AnnotationFrameBit Assertion)] ->
@@ -215,6 +205,6 @@ printOntology Ontology {name = a, imports = b, ann = c, ontFrames = d} =
     $++$ vcat (map printAnnotations c) $+$ vcat (map printFrame d))
 
 printOntologyDocument :: OntologyDocument -> Doc
-printOntologyDocument OntologyDocument {prefixDeclaration = a, ontology = b} = trace (show b) $
+printOntologyDocument OntologyDocument {prefixDeclaration = a, ontology = b} = --trace (show b) $
     printPrefixes a $++$ printOntology b
 

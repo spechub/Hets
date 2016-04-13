@@ -25,7 +25,6 @@ import OWL2.ColonKeywords
 
 import Data.List
 
-import Debug.Trace
 
 printCharacter :: Character -> Doc
 printCharacter = printCharact . (++ "ObjectProperty") . show
@@ -84,14 +83,14 @@ quantifierType :: QuantifierType -> Doc
 quantifierType AllValuesFrom = keyword "ObjectAllValuesFrom"
 quantifierType SomeValuesFrom = keyword "ObjectSomeValuesFrom"
 
-showRelationF :: Relation -> String
-showRelationF r = case r of
+showRelationF :: Bool -> Relation -> String
+showRelationF b r = case r of
     EDRelation ed -> showEquivOrDisjointF ed
-    SubPropertyOf -> "SubObjectPropertyOf" -- what about data properties????
+    SubPropertyOf -> if b then "SubDataPropertyOf" else "SubObjectPropertyOf" 
     InverseOf -> "InverseObjectProperties"
     SubClass -> "SubClassOf"
     Types -> "ClassAssertion"
-    DRRelation dr -> showDomainOrRangeF dr
+    DRRelation dr -> showDomainOrRangeF b dr
     SDRelation sd -> showSameOrDifferentF sd
 
 showEquivOrDisjointF :: EquivOrDisjoint -> String
@@ -99,18 +98,18 @@ showEquivOrDisjointF ed = case ed of
     Equivalent -> "EquivalentClasses"
     Disjoint -> "DisjointClasses"
 
-showDomainOrRangeF :: DomainOrRange-> String
-showDomainOrRangeF dr = case dr of
-    ADomain -> "DataPropertyDomain"
-    ARange -> "DataPropertyRange"
+showDomainOrRangeF :: Bool -> DomainOrRange-> String
+showDomainOrRangeF b dr = case dr of
+    ADomain -> if b then "DataPropertyDomain" else "ObjectPropertyDomain" 
+    ARange -> "ObjectPropertyRange"
 
 showSameOrDifferentF :: SameOrDifferent -> String
 showSameOrDifferentF sd = case sd of
     Same -> "SameIndividual"
     Different -> "DifferentIndividuals"
 
-printRelation :: Relation -> Doc
-printRelation = keyword . showRelationF 
+printRelation :: Bool -> Relation -> Doc
+printRelation b = keyword . (showRelationF b) 
 
 
 printEquivOrDisjointClasses :: EquivOrDisjoint -> Doc

@@ -45,11 +45,6 @@ instance MultiPretty OWLSerializations Sign where
     multiPretty ManchesterSyntax = MPrint.printSign
     multiPretty x = error $ "unsupported syntax for OWL:" ++ show x
 
-instance MultiPretty OWLSerializations Fact where
-    multiPretty FunctionalSyntax = FPrint.printFact
-    multiPretty ManchesterSyntax = MPrint.printFact
-    multiPretty x = error $ "unsupported syntax for OWL:" ++ show x
-
 instance MultiPretty OWLSerializations ListFrameBit where
     multiPretty FunctionalSyntax = FPrint.printListFrameBit
     multiPretty ManchesterSyntax = MPrint.printListFrameBit
@@ -104,6 +99,6 @@ instance Pretty ListFrameBit where
  pretty = FPrint.printListFrameBit
 
 instance Pretty Fact where
- pretty = FPrint.printFact
+ pretty = MPrint.printFact -- for now!
 
 
