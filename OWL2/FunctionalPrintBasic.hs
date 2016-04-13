@@ -31,12 +31,13 @@ printCharacter = printCharact . (++ "ObjectProperty") . show
 printCharact :: String -> Doc
 printCharact = text
 
+printIRIWithColon :: QName -> Doc
+printIRIWithColon q = 
+ if namePrefix q `elem` ["owl", "rdfs"] then printIRI q 
+   else text ":" <> printIRI q 
+
 printIRI :: QName -> Doc
-printIRI q
-    | ((iriType q == Full || namePrefix q `elem` ["", "owl", "rdfs"])
-       && isPredefPropOrClass q)
-       || isDatatypeKey q = keyword $ getPredefName q
-    | otherwise = if namePrefix q == "" then text ":" <> (text $ localPart q) else text $ showQN q
+printIRI q = text $ showQN q
 
 printDataIRI :: QName -> Doc
 printDataIRI q = if isDatatypeKey q then text $ showQN $ setDatatypePrefix q
@@ -136,7 +137,7 @@ printLiteral lit = case lit of
 
 printObjPropExp :: ObjectPropertyExpression -> Doc
 printObjPropExp obExp = case obExp of
-    ObjectProp ou -> printIRI ou
+    ObjectProp ou -> printIRIWithColon ou
     ObjectInverseOf iopExp -> keyword inverseS <+> printObjPropExp iopExp
 
 printFV :: (ConstrainingFacet, RestrictionValue) -> Doc
@@ -152,7 +153,7 @@ printDatatypeFacet = keyword . showFacet
 
 printDataRange :: DataRange -> Doc
 printDataRange dr = case dr of
-    DataType dtype l -> printIRI dtype <+>
+    DataType dtype l -> printIRIWithColon dtype <+>
       if null l then empty else brackets $ sepByCommas $ map printFV l
     DataComplementOf drange -> keyword notS <+> printDataRange drange
     DataOneOf constList -> specBraces $ ppWithCommas2 printLiteral constList
@@ -165,7 +166,7 @@ printDataRange dr = case dr of
 -- | Printing the ClassExpression
 printClassExpression :: ClassExpression -> Doc
 printClassExpression desc = case desc of
-   Expression ocUri -> printIRI ocUri
+   Expression ocUri -> printIRIWithColon ocUri
    ObjectJunction ty ds -> let
       (k, p) = case ty of
           UnionOf -> ("ObjectUnionOf", printClassExpression)
