@@ -158,12 +158,12 @@ printFrameBit g ce fb = case fb of
 
 showEntityTypeF :: EntityType -> String
 showEntityTypeF e = case e of
-    Datatype -> "Declaration(DataType("
-    Class -> "Declaration(Class("
-    ObjectProperty -> "Declaration(ObjectProperty("
-    DataProperty -> "Declaration(DataProperty("
-    AnnotationProperty -> "Declaration(AnnotationProperty("
-    NamedIndividual -> "Declaration(NamedIndividual("
+    Datatype -> "Declaration( DataType( "
+    Class -> "Declaration( Class( "
+    ObjectProperty -> "Declaration( ObjectProperty( "
+    DataProperty -> "Declaration( DataProperty( "
+    AnnotationProperty -> "Declaration( AnnotationProperty( "
+    NamedIndividual -> "Declaration( NamedIndividual( "
 
 printFrame :: Frame -> Doc
 printFrame (Frame eith bl) = case eith of
@@ -171,11 +171,11 @@ printFrame (Frame eith bl) = case eith of
             text (showEntityTypeF e) <> printIRI uri <> text "))"
             $+$ fsep [vcat (map (printFrameBit printIRI uri) bl)] 
     ObjectEntity ope -> 
-            text "Declaration(ObjectProperty(" <> printObjPropExp ope <> text "))"
+            text "Declaration( ObjectProperty( " <> printObjPropExp ope <> text "))"
               $+$ fsep [vcat (map (printFrameBit printObjPropExp ope) bl)] 
     ClassEntity ce -> 
             (if isBasicClass ce then 
-              text "Declaration(Class(" <> printClassExpression ce <> text "))"
+              text "Declaration( Class( " <> printClassExpression ce <> text "))"
               else empty)
             $+$ fsep [vcat (map (printFrameBit printClassExpression ce) bl)]
     Misc a -> case bl of

@@ -33,8 +33,8 @@ printCharact = text
 
 printIRIWithColon :: QName -> Doc
 printIRIWithColon q = 
- if namePrefix q `elem` ["owl", "rdfs"] then printIRI q 
-   else text ":" <> printIRI q 
+ if namePrefix q == "" then text ":" <> printIRI q 
+   else printIRI q 
 
 printIRI :: QName -> Doc
 printIRI q = text $ showQN q
