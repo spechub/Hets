@@ -31,6 +31,8 @@ import Data.List
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
+import Debug.Trace
+
 -- | OWL2 signature printing
 
 printOneNamed :: Anno.Named Axiom -> Doc
@@ -87,13 +89,12 @@ printSign s = vcat
                 , ("Declaration(AnnotationProperty(", annotationRoles) ])
 
 
-
-printFact :: Fact -> Doc
+printFact :: Fact -> Doc -- this function is wrong! We need it in GenericPrint, but should be corrected
 printFact pf = case pf of
     ObjectPropertyFact pn op i -> printPositiveOrNegative pn
-           <+> printObjPropExp op <+> printIRI i
+           <+> printObjPropExp op <+> printIRIWithColon i
     DataPropertyFact pn dp l -> printPositiveOrNegative pn
-           <+> printIRI dp <+> printLiteral l
+           <+> printIRIWithColon dp <+> printLiteral l
 
 
 
@@ -104,7 +105,7 @@ printListFrameBit lfb = case lfb of
     ExpressionBit a -> printAnnotatedList2 printClassExpression a
     ObjectBit a -> printAnnotatedList2 printObjPropExp a
     DataBit a -> printAnnotatedList2 printIRI a
-    IndividualSameOrDifferent a -> printAnnotatedList2 printIRI a
+    IndividualSameOrDifferent a -> printAnnotatedList2 printIRIWithColon a
     _ -> empty
 
 printMisc :: Pretty a => Annotations -> (b -> Doc) -> b -> AnnotatedList a
@@ -150,11 +151,18 @@ printFrameBit g ce fb = case fb of
         Nothing -> case lfb of
             ObjectCharacteristics x -> 
                 vcat $ map (\(_,y) -> printCharacter y <> parens (g ce)) x -- annos!
-            DataPropRange x -> keyword rangeC <+> printAnnotatedList2 printDataRange x
-            IndividualFacts x -> keyword factsC <+> (vcat $  map
-                                  ( \ (ans, a) -> printAnnotations ans $+$ printFact a) x)
+            DataPropRange x -> text "DataPropertyRange" <> parens(g ce <+> printAnnotatedList2 printDataRange x)
+            IndividualFacts x ->  printAnnotatedList2 (printIndividualFact g ce) x
             _ -> empty
     AnnFrameBit a afb -> printAnnFrameBit g ce a afb
+
+printIndividualFact :: (a -> Doc) -> a -> Fact -> Doc
+printIndividualFact g ce (ObjectPropertyFact posOrNeg ope ind) =  case posOrNeg of
+  Positive -> text "ObjectPropertyAssertion" <> parens(printObjPropExp ope <+> g ce <+> printIRIWithColon ind) 
+  Negative -> text "NegativeObjectPropertyAssertion" <> parens(printObjPropExp ope <+> g ce <+> printIRIWithColon ind) 
+printIndividualFact g ce (DataPropertyFact posOrNeg dpe lit) = case posOrNeg of
+  Positive -> text "DataPropertyAssertion" <> parens(printIRIWithColon dpe <+> g ce <+> printLiteral lit) 
+  Negative -> text "NegativeDataPropertyAssertion" <> parens(printIRIWithColon dpe <+> g ce <+> printLiteral lit) 
 
 showEntityTypeF :: EntityType -> String
 showEntityTypeF e = case e of
@@ -166,10 +174,10 @@ showEntityTypeF e = case e of
     NamedIndividual -> "Declaration( NamedIndividual( "
 
 printFrame :: Frame -> Doc
-printFrame (Frame eith bl) = case eith of
+printFrame f@(Frame eith bl) = case eith of
     SimpleEntity (Entity _ e uri) -> 
-            text (showEntityTypeF e) <> printIRI uri <> text "))"
-            $+$ fsep [vcat (map (printFrameBit printIRI uri) bl)] 
+            text (showEntityTypeF e) <> printIRIWithColon uri <> text "))"
+            $+$ fsep [vcat (map (printFrameBit printIRIWithColon uri) bl)] 
     ObjectEntity ope -> 
             text "Declaration( ObjectProperty( " <> printObjPropExp ope <> text "))"
               $+$ fsep [vcat (map (printFrameBit printObjPropExp ope) bl)] 
@@ -207,6 +215,6 @@ printOntology Ontology {name = a, imports = b, ann = c, ontFrames = d} =
     $++$ vcat (map printAnnotations c) $+$ vcat (map printFrame d))
 
 printOntologyDocument :: OntologyDocument -> Doc
-printOntologyDocument OntologyDocument {prefixDeclaration = a, ontology = b} =
+printOntologyDocument OntologyDocument {prefixDeclaration = a, ontology = b} = trace (show b) $
     printPrefixes a $++$ printOntology b
 

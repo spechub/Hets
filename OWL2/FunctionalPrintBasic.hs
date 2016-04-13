@@ -25,6 +25,8 @@ import OWL2.ColonKeywords
 
 import Data.List
 
+import Debug.Trace
+
 printCharacter :: Character -> Doc
 printCharacter = printCharact . (++ "ObjectProperty") . show
 
@@ -84,13 +86,28 @@ quantifierType SomeValuesFrom = keyword "ObjectSomeValuesFrom"
 
 showRelationF :: Relation -> String
 showRelationF r = case r of
-    EDRelation ed -> showEquivOrDisjoint ed
+    EDRelation ed -> showEquivOrDisjointF ed
     SubPropertyOf -> "SubObjectPropertyOf" -- what about data properties????
     InverseOf -> "InverseObjectProperties"
     SubClass -> "SubClassOf"
     Types -> "ClassAssertion"
-    DRRelation dr -> showDomainOrRange dr
-    SDRelation sd -> showSameOrDifferent sd
+    DRRelation dr -> showDomainOrRangeF dr
+    SDRelation sd -> showSameOrDifferentF sd
+
+showEquivOrDisjointF :: EquivOrDisjoint -> String
+showEquivOrDisjointF ed = case ed of
+    Equivalent -> "EquivalentClasses"
+    Disjoint -> "DisjointClasses"
+
+showDomainOrRangeF :: DomainOrRange-> String
+showDomainOrRangeF dr = case dr of
+    ADomain -> "DataPropertyDomain"
+    ARange -> "DataPropertyRange"
+
+showSameOrDifferentF :: SameOrDifferent -> String
+showSameOrDifferentF sd = case sd of
+    Same -> "SameIndividual"
+    Different -> "DifferentIndividuals"
 
 printRelation :: Relation -> Doc
 printRelation = keyword . showRelationF 
@@ -173,7 +190,7 @@ printClassExpression desc = case desc of
           IntersectionOf -> ("ObjectIntersectionOf", printClassExpression)
       in text k <> parens (fsep $ prepPunctuate space $ map p ds)
    ObjectComplementOf d -> keyword "ObjectComplementOf" <> (parens $ printClassExpression d)
-   ObjectOneOf indUriList -> keyword "ObjectOneOf" <> (parens $ ppWithSpaces2 printIRI indUriList)
+   ObjectOneOf indUriList -> keyword "ObjectOneOf" <> (parens $ ppWithSpaces2 printIRIWithColon indUriList)
    ObjectValuesFrom ty opExp d ->
       quantifierType ty <> parens (printObjPropExp opExp <+> printClassExpression d)
    ObjectHasSelf opExp ->
