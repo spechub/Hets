@@ -25,6 +25,7 @@ import OWL2.ColonKeywords
 
 import Data.List
 
+import Debug.Trace
 
 printCharacter :: Character -> Doc
 printCharacter = printCharact . (++ "ObjectProperty") . show
@@ -79,9 +80,9 @@ cardinalityType MinCardinality = keyword "ObjectMinCardinality"
 cardinalityType MaxCardinality = keyword "ObjectMaxCardinality"
 cardinalityType ExactCardinality = keyword "ObjectExactCardinality"
 
-quantifierType :: QuantifierType -> Doc
-quantifierType AllValuesFrom = keyword "ObjectAllValuesFrom"
-quantifierType SomeValuesFrom = keyword "ObjectSomeValuesFrom"
+quantifierType :: Bool -> QuantifierType -> Doc
+quantifierType b AllValuesFrom = if b then keyword "DataAllValuesFrom" else keyword "ObjectAllValuesFrom"
+quantifierType b SomeValuesFrom = if b then keyword "DataSomeValuesFrom" else keyword "ObjectSomeValuesFrom"
 
 showRelationF :: Bool -> Relation -> String
 showRelationF b r = case r of
@@ -160,6 +161,7 @@ printFV :: (ConstrainingFacet, RestrictionValue) -> Doc
 printFV (facet, restValue) = pretty (fromCF facet) <+> printLiteral restValue
 
 fromCF :: ConstrainingFacet -> String
+fromCF (QN "xsd" "<=" _ _ _) = "xsd:minInclusive" -- TODO: improve or add all other xsd defaults
 fromCF f
     | iriType f == Full = showQU f \\ "http://www.w3.org/2001/XMLSchema#"
     | otherwise = localPart f
@@ -169,15 +171,16 @@ printDatatypeFacet = keyword . showFacet
 
 printDataRange :: DataRange -> Doc
 printDataRange dr = case dr of
-    DataType dtype l -> printIRIWithColon dtype <+>
-      if null l then empty else brackets $ sepByCommas $ map printFV l
-    DataComplementOf drange -> keyword notS <+> printDataRange drange
-    DataOneOf constList -> specBraces $ ppWithCommas2 printLiteral constList
+    DataType dtype l ->
+      if null l then printIRIWithColon dtype 
+      else text "DatatypeRestriction" <> parens (printIRIWithColon dtype <+> ppWithSpaces2 printFV l)
+    DataComplementOf drange -> keyword "DataComplementOf" <> parens (printDataRange drange)
+    DataOneOf constList -> keyword "DataOneOf" <> parens (ppWithSpaces2 printLiteral constList)
     DataJunction ty drlist -> let
       k = case ty of
-          UnionOf -> orS
-          IntersectionOf -> andS
-      in fsep $ prepPunctuate (keyword k <> space) $ map printDataRange drlist
+          UnionOf -> text "DataUnionOf"
+          IntersectionOf -> text "DataIntersectionOf"
+      in  k <> parens (ppWithSpaces2 printDataRange drlist)
 
 -- | Printing the ClassExpression
 printClassExpression :: ClassExpression -> Doc
@@ -191,7 +194,7 @@ printClassExpression desc = case desc of
    ObjectComplementOf d -> keyword "ObjectComplementOf" <> (parens $ printClassExpression d)
    ObjectOneOf indUriList -> keyword "ObjectOneOf" <> (parens $ ppWithSpaces2 printIRIWithColon indUriList)
    ObjectValuesFrom ty opExp d ->
-      quantifierType ty <> parens (printObjPropExp opExp <+> printClassExpression d)
+      quantifierType False ty <> parens (printObjPropExp opExp <+> printClassExpression d)
    ObjectHasSelf opExp ->
       printObjPropExp opExp <+> keyword selfS
    ObjectHasValue opExp indUri ->
@@ -200,13 +203,13 @@ printClassExpression desc = case desc of
       cardinalityType ty 
        <> parens (text (show card) <+> printObjPropExp opExp 
                   <+> maybe empty printPrimary maybeDesc)
-   DataValuesFrom ty dpExp dRange ->
-       printIRI dpExp <+> quantifierType ty
-        <+> printDataRange dRange
-   DataHasValue dpExp cons -> printIRI dpExp <+> keyword valueS <+> printLiteral cons
+   DataValuesFrom ty dpExp dRange -> trace (show dRange) $ 
+       quantifierType True ty <> parens( printIRIWithColon dpExp
+        <+> printDataRange dRange)
+   DataHasValue dpExp cons -> text "ObjectHasValue" <> parens (printIRIWithColon dpExp <+> printLiteral cons)
    DataCardinality (Cardinality ty card dpExp maybeRange) ->
-       printIRI dpExp <+> cardinalityType ty <+> text (show card)
-         <+> maybe empty printDataRange maybeRange
+        cardinalityType ty <> parens(printIRIWithColon dpExp <+> text (show card)
+         <+> maybe empty printDataRange maybeRange)
 
 printPrimary :: ClassExpression -> Doc
 printPrimary d = let dd = printClassExpression d in case d of
