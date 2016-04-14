@@ -161,6 +161,7 @@ printFV :: (ConstrainingFacet, RestrictionValue) -> Doc
 printFV (facet, restValue) = pretty (fromCF facet) <+> printLiteral restValue
 
 fromCF :: ConstrainingFacet -> String
+fromCF (QN "xsd" ">=" _ _ _) = "xsd:maxInclusive"
 fromCF (QN "xsd" "<=" _ _ _) = "xsd:minInclusive" -- TODO: improve or add all other xsd defaults
 fromCF f
     | iriType f == Full = showQU f \\ "http://www.w3.org/2001/XMLSchema#"
