@@ -482,115 +482,197 @@ corr2theo aname flag contextualizedSemantics ssig tsig l1 l2 eMap1 eMap2 rref = 
                                   ExpressionBit [([], Expression topTIRI)]
                                  ]
            case rref of
-            Equiv -> if contextualizedSemantics then do
+-------------------------------------------------------------------------------
+-- entity1 = entity2
+-------------------------------------------------------------------------------
+            Equiv -> do
              let axiom = case (entityKind e1', entityKind e2') of
                           (Class, Class) -> 
-                            PlainAxiom (mkExtendedEntity e1') $ 
-                             ListFrameBit (Just $ EDRelation Equivalent) $
-                              ExpressionBit [([], ObjectValuesFrom AllValuesFrom (ObjectInverseOf $ ObjectProp rtsIRI) $ Expression $ cutIRI e2' )]
-                          (NamedIndividual, NamedIndividual) -> 
-                            PlainAxiom (mkExtendedEntity e2') $ 
-                             ListFrameBit Nothing $ 
-                              IndividualFacts [([], ObjectPropertyFact Positive (ObjectProp rtsIRI) $ cutIRI e1')]
-                          (ObjectProperty, ObjectProperty) -> error "nyi"
+                            if contextualizedSemantics then 
+                               PlainAxiom (mkExtendedEntity e1') $ 
+                                ListFrameBit (Just $ EDRelation Equivalent) $
+                                ExpressionBit [([], ObjectValuesFrom AllValuesFrom (ObjectInverseOf $ ObjectProp rtsIRI) $ Expression $ cutIRI e2' )] 
+                             else PlainAxiom (mkExtendedEntity e1') $ 
+                                   ListFrameBit (Just $ EDRelation Equivalent) $
+                                   ExpressionBit [([], Expression $ cutIRI e2')]
+                          (NamedIndividual, NamedIndividual) ->
+                            if contextualizedSemantics then
+                               PlainAxiom (mkExtendedEntity e2') $
+                                 ListFrameBit Nothing $ 
+                                 IndividualFacts [([], ObjectPropertyFact Positive (ObjectProp rtsIRI) $ cutIRI e1')] 
+                             else PlainAxiom (mkExtendedEntity e1') $ 
+                                   ListFrameBit (Just $ SDRelation Same) $
+                                   ExpressionBit [([], Expression $ cutIRI e2')]
+                          (ObjectProperty, ObjectProperty) ->
+                            if contextualizedSemantics then 
+                               {-
+                                I'd like to have this axiom, but it is not supported by the syntax: 
+                                PlainAxiom (mkExtendedEntity e1') $
+                                ListFrameBit (Just $ EDRelation Equivalent) $
+                                AnnFrameBit [] $ ObjectSubPropertyChain [ObjectInverseOf $ ObjectProp rtsIRI, ObjectProp $ cutIRI e2', ObjectProp rtsIRI] 
+                                               -- here I would probably need to add composition of roles to ObjectPropertyExpressions
+                               -}
+                               error "equivalence of object properties not yet supported"
+                             else PlainAxiom (mkExtendedEntity e1') $ 
+                                   ListFrameBit (Just $ EDRelation Equivalent) $
+                                   ExpressionBit [([], Expression $ cutIRI e2')]
                           _ -> error $ "use equivalence only between symbols of same kind" ++
                                               show l1 ++ " " ++ show l2
-             return (sigB, (makeNamed "" axiom):defAxioms, sig1, sig2, eMap1', eMap2')      
-                     else do
-             let extPart = mkExtendedEntity e1'
-                 axiom = PlainAxiom extPart $
-                           ListFrameBit (Just $
-                              case (entityKind e1', entityKind e2') of
-                                (Class, Class) -> EDRelation Equivalent
-                                (ObjectProperty, ObjectProperty) ->
-                                   EDRelation Equivalent
-                                (NamedIndividual, NamedIndividual) -> SDRelation Same
-                                _ -> error $ "use equivalence only between symbols of same kind:" ++
-                                              show l1 ++ " " ++ show l2) $
-                           ExpressionBit [([], Expression $ cutIRI e2')]
-             return (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2')
-            Subs -> if contextualizedSemantics then do
+                 axioms = let nAx = makeNamed "" axiom in 
+                          if contextualizedSemantics then nAx:defAxioms else [nAx]  
+             return (sigB, axioms, sig1, sig2, eMap1', eMap2')
+-----------------------------------------------------------------------------
+-- entity1 > entity2
+-------------------------------------------------------------------------------
+            Subs -> do
+             let axiom = case (entityKind e1', entityKind e2') of 
+                          (Class, Class) -> 
+                             if contextualizedSemantics then 
+                                PlainAxiom (ClassEntity $ ObjectValuesFrom SomeValuesFrom (ObjectInverseOf $ ObjectProp rtsIRI) $
+                                            Expression $ cutIRI e2') $ 
+                                 ListFrameBit (Just SubClass) $
+                                 ExpressionBit [([], Expression $ cutIRI e1')]
+                              else
+                                PlainAxiom (mkExtendedEntity e2') $
+                                  ListFrameBit (Just SubClass) $
+                                  ExpressionBit [([], Expression $ cutIRI e1')]
+                          (ObjectProperty, ObjectProperty) -> 
+                             if contextualizedSemantics then
+                                PlainAxiom (mkExtendedEntity e1') $ 
+                                 AnnFrameBit [] $ ObjectSubPropertyChain [ObjectInverseOf $ ObjectProp rtsIRI, ObjectProp $ cutIRI e2', ObjectProp rtsIRI]
+                              else
+                                PlainAxiom (mkExtendedEntity e2') $
+                                  ListFrameBit (Just SubPropertyOf) $
+                                  ExpressionBit [([], Expression $ cutIRI e1')]
+                          _ -> error $ "use subsumption only between"
+                                              ++ "classes or roles:" ++
+                                              show l1 ++ " " ++ show l2
+                 axioms = let nAx = makeNamed "" axiom in 
+                          if contextualizedSemantics then nAx:defAxioms else [nAx]  
+             return (sigB, axioms, sig1, sig2, eMap1', eMap2')
+-------------------------------------------------------------------------------
+-- entity1 % entity2
+-------------------------------------------------------------------------------
+            Incomp -> do 
               let axiom = case (entityKind e1', entityKind e2') of
-                           (Class, Class) -> error "nyi"
-                           (ObjectProperty, ObjectProperty) -> error "nyi"
+                           (Class,Class) -> 
+                             if contextualizedSemantics then
+                                 PlainAxiom (Misc []) $
+                                  ListFrameBit (Just (EDRelation Equivalent)) $ 
+                                    ExpressionBit [([], ObjectJunction IntersectionOf 
+                                                      [Expression $ cutIRI e1',
+                                                       ObjectValuesFrom SomeValuesFrom (ObjectInverseOf $ ObjectProp rtsIRI) $ Expression $ cutIRI e2'
+                                                      ]),
+                                                   ([], Expression $ QN "owl" "Nothing" Abbreviated "http://www.w3.org/2002/07/owl#Nothing" Id.nullRange)]
+                              else 
+                                 PlainAxiom (mkExtendedEntity e1') $
+                                                   ListFrameBit (Just $ EDRelation Disjoint) $
+                                                   ExpressionBit [([], Expression $ cutIRI e2')]                                 
+                           (ObjectProperty, ObjectProperty) -> 
+                              if contextualizedSemantics then error "nyi"
+                                {- should be 
+                                    PlainAxiom (mkExtendedEntity e1') $
+                                    ListFrameBit (Just $ EDRelation Disjoint) $
+                                    ExpressionBit [([], $ ObjectSubPropertyChain [ObjectInverseOf $ ObjectProp rtsIRI, ObjectProp $ cutIRI e2', ObjectProp rtsIRI])], same as above
+                                -} 
+                               else
+                                PlainAxiom (mkExtendedEntity e1') $
+                                                   ListFrameBit (Just $ EDRelation Disjoint) $
+                                                   ExpressionBit [([], Expression $ cutIRI e2')] 
+                           (NamedIndividual, NamedIndividual) -> 
+                              if contextualizedSemantics then 
+                                PlainAxiom (Misc []) $ 
+                                                 ListFrameBit (Just (EDRelation Equivalent)) $ 
+                                                  ExpressionBit 
+                                                    [ ([], ObjectJunction IntersectionOf 
+                                                             [ObjectOneOf [cutIRI e2'],
+                                                              ObjectValuesFrom SomeValuesFrom 
+                                                               (ObjectProp rtsIRI) $ 
+                                                               ObjectOneOf [cutIRI e1']]),
+                                                      ([], Expression $ QN "owl" "Nothing" Abbreviated "http://www.w3.org/2002/07/owl#Nothing" Id.nullRange)]
+                               else PlainAxiom (mkExtendedEntity e1') $
+                                     ListFrameBit (Just $ SDRelation Different) $
+                                     ExpressionBit [([], Expression $ cutIRI e2')] 
                            _ -> error $ "use subsumption only between"
-                                              ++ "classes or roles:" ++
-                                              show l1 ++ " " ++ show l2
-              return (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2')     
-                     else do
-             let extPart = mkExtendedEntity e2'
-                 axiom = PlainAxiom extPart $
-                           ListFrameBit (Just $
-                              case (entityKind e1', entityKind e2') of
-                                (Class, Class) -> SubClass
-                                (ObjectProperty, ObjectProperty) ->
-                                    SubPropertyOf
-                                _ -> error $ "use subsumption only between"
-                                              ++ "classes or roles:" ++
-                                              show l1 ++ " " ++ show l2) $
-                           ExpressionBit [([], Expression $ cutIRI e1')]
-             return (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2')
-            Incomp -> if contextualizedSemantics then do
+                                ++ "symbols of same kind:" ++
+                                show l1 ++ " " ++ show l2
+                  axioms = let nAx = makeNamed "" axiom in 
+                           if contextualizedSemantics then nAx:defAxioms else [nAx]  
+              return (sigB, axioms, sig1, sig2, eMap1', eMap2')
+-------------------------------------------------------------------------------
+-- entity1 < entity2
+-------------------------------------------------------------------------------
+            IsSubs -> do 
               let axiom = case (entityKind e1', entityKind e2') of
-                           (Class, Class) -> error "nyi"
-                           (ObjectProperty, ObjectProperty) -> error "nyi"
-                           _ -> error $ "use incompatibilites only between entities of same kind:" ++
-                                              show l1 ++ " " ++ show l2
-              return (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2')     
-                      else do
-             let extPart = mkExtendedEntity e1'
-                 axiom = PlainAxiom extPart $
-                           ListFrameBit (Just $ EDRelation Disjoint) $
-                           ExpressionBit [([], Expression $ cutIRI e2')]
-             return (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2')
-            IsSubs -> if contextualizedSemantics then do
-              let axiom = case (entityKind e1', entityKind e2') of
-                           (Class, Class) -> PlainAxiom (mkExtendedEntity e1') $ 
-                                             ListFrameBit (Just SubClass) $
-                                             ExpressionBit [([],  ObjectValuesFrom SomeValuesFrom (ObjectInverseOf $ ObjectProp rtsIRI) $ Expression $ cutIRI e2')]
-                           (ObjectProperty, ObjectProperty) -> error "nyi"
+                           (Class, Class) -> 
+                             if contextualizedSemantics then 
+                                PlainAxiom (mkExtendedEntity e1') $ 
+                                  ListFrameBit (Just SubClass) $
+                                  ExpressionBit [([],  ObjectValuesFrom SomeValuesFrom (ObjectInverseOf $ ObjectProp rtsIRI) $
+                                                       Expression $ cutIRI e2')]
+                              else 
+                                 PlainAxiom (mkExtendedEntity e1') $
+                                  ListFrameBit (Just SubClass) $
+                                  ExpressionBit [([], Expression $ cutIRI e2')]
+                           (ObjectProperty, ObjectProperty) -> 
+                              if contextualizedSemantics then error "nyi"
+                                             {- should be
+                                       PlainAxiom (mkExtendedEntity e1') $ 
+                                        ListFrameBit (Just SubPropertyOf) $
+                                        AnnFrameBit [] $ ObjectSubPropertyChain [ObjectInverseOf $ ObjectProp rtsIRI, ObjectProp $ cutIRI e2', ObjectProp rtsIRI], same as above
+                                  -}
+                                else 
+                                 PlainAxiom (mkExtendedEntity e1') $
+                                  ListFrameBit (Just SubPropertyOf) $
+                                  ExpressionBit [([], Expression $ cutIRI e2')]
                            _ -> error $ "use subsumption only between"
-                                              ++ "classes or roles:" ++
-                                              show l1 ++ " " ++ show l2
-              return (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2')    
-                      else do
-             let extPart = mkExtendedEntity e1'
-                 axiom = PlainAxiom extPart $
-                           ListFrameBit (Just SubClass) $
-                           ExpressionBit [([], Expression $ cutIRI e2')]
-             return (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2')
-            InstOf -> if contextualizedSemantics then 
+                                        ++ "classes or roles:" ++
+                                        show l1 ++ " " ++ show l2
+                  axioms = let nAx = makeNamed "" axiom in 
+                           if contextualizedSemantics then nAx:defAxioms else [nAx]  
+              return (sigB, axioms, sig1, sig2, eMap1', eMap2')
+---------------------------------------------------------------------------------
+-- entity1 in entity2
+---------------------------------------------------------------------------------
+            InstOf -> 
                 case (entityKind e1', entityKind e2') of
                  (NamedIndividual, Class) -> do
-                   let axiom = PlainAxiom (mkExtendedEntity e1') $ 
-                                ListFrameBit (Just Types) $
-                                  ExpressionBit [([], ObjectValuesFrom SomeValuesFrom (ObjectInverseOf $ ObjectProp rtsIRI) $ Expression $ cutIRI e2' )]
-                   return (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2')
+                   let axiom = if contextualizedSemantics then 
+                                 PlainAxiom (mkExtendedEntity e1') $ 
+                                  ListFrameBit (Just Types) $
+                                  ExpressionBit [([], ObjectValuesFrom SomeValuesFrom (ObjectInverseOf $ ObjectProp rtsIRI) $ 
+                                                      Expression $ cutIRI e2' )]
+                                else 
+                                  PlainAxiom (mkExtendedEntity e1') $
+                                   ListFrameBit (Just Types) $
+                                   ExpressionBit [([], Expression $ cutIRI e2')] 
+                       axioms = let nAx = makeNamed "" axiom in 
+                                if contextualizedSemantics then nAx:defAxioms else [nAx]  
+                   return (sigB, axioms, sig1, sig2, eMap1', eMap2')
                  _ -> error $ "wrong kinds:" ++ show l1 ++ " " ++ show l2
-                      else case (entityKind e1', entityKind e2') of
-                (NamedIndividual, Class) -> do
-                    let extPart = mkExtendedEntity e1'
-                        axiom = PlainAxiom extPart $
-                                ListFrameBit (Just Types) $
-                                 ExpressionBit [([], Expression $ cutIRI e2')]
-                    return (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2')
-                _ -> error $ "wrong kinds:" ++ show l1 ++ " " ++ show l2 
-            HasInst -> if contextualizedSemantics then 
+-------------------------------------------------------------------------------
+-- entity1 ni entity2
+-------------------------------------------------------------------------------
+            HasInst -> 
                 case (entityKind e1', entityKind e2') of
                  (Class, NamedIndividual) -> do
-                   let axiom = PlainAxiom (mkExtendedEntity e2') $ 
-                                ListFrameBit (Just Types) $
-                                  ExpressionBit [([], ObjectValuesFrom SomeValuesFrom (ObjectProp rtsIRI) $ Expression $ cutIRI e1' )]
-                   return (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2')
+                     let axiom = if contextualizedSemantics then 
+                                   PlainAxiom (mkExtendedEntity e2') $ 
+                                   ListFrameBit (Just Types) $
+                                   ExpressionBit [([], ObjectValuesFrom SomeValuesFrom (ObjectProp rtsIRI) $ 
+                                                       Expression $ cutIRI e1' )]
+                                  else 
+                                   PlainAxiom (mkExtendedEntity e2') $
+                                    ListFrameBit (Just Types) $
+                                    ExpressionBit [([], Expression $ cutIRI e1')]
+                         axioms = let nAx = makeNamed "" axiom in 
+                                  if contextualizedSemantics then nAx:defAxioms else [nAx]  
+                     return (sigB, axioms, sig1, sig2, eMap1', eMap2')                 
                  _ -> error $ "wrong kinds:" ++ show l1 ++ " " ++ show l2
-                      else do
-             let extPart = mkExtendedEntity e2'
-                 axiom = PlainAxiom extPart $
-                           ListFrameBit (Just Types) $
-                           ExpressionBit [([], Expression $ cutIRI e1')]
-             return
-                 (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2')
-            RelName r -> error "nyi" {- do
+-------------------------------------------------------------------------------
+-- entity1 rel entity2
+-------------------------------------------------------------------------------
+            RelName _r -> error "nyi" {- do
              let extPart = mkExtendedEntity e1'
                  rQName = QN "" (iriToStringUnsecure r)
                              Abbreviated (iriToStringUnsecure r) Id.nullRange
