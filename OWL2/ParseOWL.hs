@@ -45,7 +45,8 @@ parseOWL quick fn = do
     tmpFile <- lift $ getTempFile "" "owlTemp.xml"
     (exitCode, _, errStr) <- parseOWLAux quick fn ["-o", "xml", tmpFile]
     case (exitCode, errStr) of
-      (ExitSuccess, "") -> do
+      (ExitSuccess, str) -> do
+          lift $ putStr str
           cont <- lift $ L.readFile tmpFile
           lift $ removeFile tmpFile
           parseProc cont
