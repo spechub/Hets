@@ -158,20 +158,23 @@ runTimedFact :: FilePath -- ^ basename of problem file
 runTimedFact tmpFileName prob mEnt tLimit = do
   let hasEnt = isJust mEnt
       jar = if hasEnt then factProverJarS else factJarS
-      jlibName = "libFaCTPlusPlusJNI.so"
+      jlibSoName = "libFaCTPlusPlusJNI.so"
+      jlibName = "libFaCTPlusPlusJNI.jnilib"
   (progTh, toolPath) <- check4HetsOWLjar jar
-  hasJniLib <- doesFileExist $ "/lib/" ++ jlibName
+  hasJniSoInLib <- doesFileExist $ "/lib/" ++ jlibSoName
+  hasJniInLib <- doesFileExist $ "/lib/" ++ jlibName
   (_, arch, _) <- executeProcess "uname" ["-m"] ""
   if progTh then
         withinDirectory toolPath $ do
           mJni <- fmap (lookup "HETS_JNI_LIBS") getEnvironment
           let jni = fromMaybe ("lib/native/" ++ trim arch) mJni
+          hasJniSo <- doesFileExist $ jni </> jlibSoName
           hasJni <- doesFileExist $ jni </> jlibName
-          if hasJni || hasJniLib then do
+          if hasJni || hasJniSo || hasJniInLib || hasJniSoInLib then do
             timeTmpFile <- getTempFile prob tmpFileName
             let entailsFile = timeTmpFile ++ ".entail.owl"
                 jargs = ["-Djava.library.path=" ++ jni
-                        | not hasJniLib || isJust mJni ]
+                        | not (hasJniInLib || hasJniSoInLib) || isJust mJni ]
                    ++ ["-jar", jar, "file://" ++ timeTmpFile]
                   ++ ["file://" ++ entailsFile | hasEnt ]
             case mEnt of
@@ -184,7 +187,10 @@ runTimedFact tmpFileName prob mEnt tLimit = do
             when hasEnt $ removeFile entailsFile
             return $ fmap (\ (ex, out, err) ->
                   (True, ex, out ++ err, diffHetsTime t_end t_start)) mExit
-            else return $ Just (False, ExitSuccess, "no " ++ jlibName, midnight)
+            else return $ Just (False,
+                                ExitSuccess,
+                                "no " ++ jlibSoName ++ " or " ++ jlibName,
+                                midnight)
     else return $ Just (False, ExitSuccess, jar ++ " not found.", midnight)
 
 {- |
