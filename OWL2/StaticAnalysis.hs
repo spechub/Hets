@@ -491,7 +491,7 @@ corr2theo aname flag contextualizedSemantics ssig tsig l1 l2 eMap1 eMap2 rref = 
                             if contextualizedSemantics then 
                                PlainAxiom (mkExtendedEntity e1') $ 
                                 ListFrameBit (Just $ EDRelation Equivalent) $
-                                ExpressionBit [([], ObjectValuesFrom AllValuesFrom (ObjectInverseOf $ ObjectProp rtsIRI) $ Expression $ cutIRI e2' )] 
+                                ExpressionBit [([], ObjectValuesFrom SomeValuesFrom (ObjectInverseOf $ ObjectProp rtsIRI) $ Expression $ cutIRI e2' )] 
                              else PlainAxiom (mkExtendedEntity e1') $ 
                                    ListFrameBit (Just $ EDRelation Equivalent) $
                                    ExpressionBit [([], Expression $ cutIRI e2')]
