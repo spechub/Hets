@@ -161,8 +161,6 @@ runTimedFact tmpFileName prob mEnt tLimit = do
       jlibSoName = "libFaCTPlusPlusJNI.so"
       jlibName = "libFaCTPlusPlusJNI.jnilib"
   (progTh, toolPath) <- check4HetsOWLjar jar
-  hasJniSoInLib <- doesFileExist $ "/lib/" ++ jlibSoName
-  hasJniInLib <- doesFileExist $ "/lib/" ++ jlibName
   (_, arch, _) <- executeProcess "uname" ["-m"] ""
   if progTh then
         withinDirectory toolPath $ do
@@ -170,13 +168,12 @@ runTimedFact tmpFileName prob mEnt tLimit = do
           let jni = fromMaybe ("lib/native/" ++ trim arch) mJni
           hasJniSo <- doesFileExist $ jni </> jlibSoName
           hasJni <- doesFileExist $ jni </> jlibName
-          if hasJni || hasJniSo || hasJniInLib || hasJniSoInLib then do
+          if hasJni || hasJniSo then do
             timeTmpFile <- getTempFile prob tmpFileName
             let entailsFile = timeTmpFile ++ ".entail.owl"
-                jargs = ["-Djava.library.path=" ++ jni
-                        | not (hasJniInLib || hasJniSoInLib) || isJust mJni ]
+                jargs = ["-Djava.library.path=" ++ jni | isJust mJni ]
                    ++ ["-jar", jar, "file://" ++ timeTmpFile]
-                  ++ ["file://" ++ entailsFile | hasEnt ]
+                   ++ ["file://" ++ entailsFile | hasEnt ]
             case mEnt of
               Just entail -> writeFile entailsFile entail
               _ -> return ()
