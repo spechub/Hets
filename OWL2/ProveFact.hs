@@ -11,6 +11,7 @@ Fact++ prover for OWL
 -}
 
 module OWL2.ProveFact (factProver, factConsChecker) where
+import Data.List (intercalate) -- DEBUG
 
 import Logic.Prover
 
@@ -173,8 +174,18 @@ runTimedFact tmpFileName prob mEnt tLimit = do
           case mEnt of
             Just entail -> writeFile entailsFile entail
             _ -> return ()
+          putStrLn $ "" -- DEBUG
+          putStrLn $ "jargs: " ++ (intercalate " " jargs) -- DEBUG
+          putStrLn $ "mLibraryPath: " ++ show mLibraryPath -- DEBUG
+          executeProcess "cp" [timeTmpFile, "/tmp/timeTmpFile.owl"] "" -- DEBUG
+          executeProcess "cp" [entailsFile, "/tmp/entailsFile.owl"] "" -- DEBUG
           t_start <- getHetsTime
           mExit <- timeoutCommand tLimit "java" jargs
+          putStrLn $ (\ (Just (ex, out, err)) -> "exitCode: " ++ show ex) mExit -- DEBUG
+          putStrLn $ (\ (Just (ex, out, err)) -> "out: " ++ out) mExit -- DEBUG
+          putStrLn $ (\ (Just (ex, out, err)) -> "err: " ++ err) mExit -- DEBUG
+          putStrLn $ "" -- DEBUG
+          putStrLn $ "" -- DEBUG
           t_end <- getHetsTime
           removeFile timeTmpFile
           when hasEnt $ removeFile entailsFile
