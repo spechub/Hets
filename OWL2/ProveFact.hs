@@ -158,37 +158,36 @@ runTimedFact :: FilePath -- ^ basename of problem file
 runTimedFact tmpFileName prob mEnt tLimit = do
   let hasEnt = isJust mEnt
       jar = if hasEnt then factProverJarS else factJarS
-      jlibSoName = "libFaCTPlusPlusJNI.so"
-      jlibName = "libFaCTPlusPlusJNI.jnilib"
   (progTh, toolPath) <- check4HetsOWLjar jar
   (_, arch, _) <- executeProcess "uname" ["-m"] ""
   if progTh then
         withinDirectory toolPath $ do
-          mJni <- fmap (lookup "HETS_JNI_LIBS") getEnvironment
-          let jni = fromMaybe ("lib/native/" ++ trim arch) mJni
-          hasJniSo <- doesFileExist $ jni </> jlibSoName
-          hasJni <- doesFileExist $ jni </> jlibName
-          if hasJni || hasJniSo then do
-            timeTmpFile <- getTempFile prob tmpFileName
-            let entailsFile = timeTmpFile ++ ".entail.owl"
-                jargs = ["-Djava.library.path=" ++ jni | isJust mJni ]
-                   ++ ["-jar", jar, "file://" ++ timeTmpFile]
-                   ++ ["file://" ++ entailsFile | hasEnt ]
-            case mEnt of
-              Just entail -> writeFile entailsFile entail
-              _ -> return ()
-            t_start <- getHetsTime
-            mExit <- timeoutCommand tLimit "java" jargs
-            t_end <- getHetsTime
-            removeFile timeTmpFile
-            when hasEnt $ removeFile entailsFile
-            return $ fmap (\ (ex, out, err) ->
-                  (True, ex, out ++ err, diffHetsTime t_end t_start)) mExit
-            else return $ Just (False,
-                                ExitSuccess,
-                                "no " ++ jlibSoName ++ " or " ++ jlibName,
-                                midnight)
+          mLibraryPath <- fmap (lookup "LD_LIBRARY_PATH") getEnvironment
+          let libraryPath = fromMaybe ("lib/native/" ++ trim arch) mLibraryPath
+          timeTmpFile <- getTempFile prob tmpFileName
+          let entailsFile = timeTmpFile ++ ".entail.owl"
+              jargs = ["-Djava.library.path=" ++ libraryPath
+                        | isJust mLibraryPath ]
+                 ++ ["-jar", jar, "file://" ++ timeTmpFile]
+                 ++ ["file://" ++ entailsFile | hasEnt ]
+          case mEnt of
+            Just entail -> writeFile entailsFile entail
+            _ -> return ()
+          t_start <- getHetsTime
+          mExit <- timeoutCommand tLimit "java" jargs
+          t_end <- getHetsTime
+          removeFile timeTmpFile
+          when hasEnt $ removeFile entailsFile
+          return $ fmap (computeResult t_start t_end) mExit
     else return $ Just (False, ExitSuccess, jar ++ " not found.", midnight)
+  where
+    computeResult :: HetsTime
+                  -> HetsTime
+                  -> (ExitCode, String, String)
+                  -> (Bool, ExitCode, String, TimeOfDay)
+    computeResult t_start t_end (exitCode, out, err) = case exitCode of
+      ExitSuccess -> (True, exitCode, out ++ err, diffHetsTime t_end t_start)
+      _ -> (False, exitCode, "Java Error:\n" ++ err, diffHetsTime t_end t_start)
 
 {- |
    Invocation of the Fact Prover.
