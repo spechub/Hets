@@ -79,6 +79,11 @@ import Common.Lib.Graph
 
 import Static.ComputeTheory
 
+import Debug.Trace
+import OWL2.Logic_OWL2
+import OWL2.Parse
+import qualified OWL2.Sign as OSign
+
 -- overrides CUIRIE expansion for Download_items
 type ExpOverrides = Map.Map IRI FilePath
 
@@ -524,10 +529,17 @@ anaSpecAux conser addSyms lg libEnv ln dg nsig name opts eo sp rg = case sp of
           return (sp, body, dg2)
              -- otherwise, we need to create a new one
         _ -> do
-           gsigma <- gsigUnionMaybe lg addSyms nsig gsigmaB
+           gsigma@(G_sign lid esig _) <- gsigUnionMaybe lg addSyms nsig gsigmaB
+           gsigma' <- if language_name lid == "OWL2"
+                       then do
+                         (ExtSign owlSign owlSyms) <- coerceSign lid OWL2 "Static Analysis coerce to OWL2" esig
+                         let owlSign' = owlSign{OSign.prefixMap = Map.union (convertPrefixMap $ prefix_map $ globalAnnos dg) $ OSign.prefixMap owlSign}
+                         gsigmaPref <- gsigUnion lg True gsigma $ G_sign OWL2 (ExtSign owlSign' owlSyms) startSigId
+                         return gsigmaPref
+                       else return gsigma
            let (fsig@(NodeSig node _), dg2) =
-                 insGSig dg name (DGInst spname) gsigma
-           incl <- ginclusion lg gsigmaB gsigma
+                 insGSig dg name (DGInst spname) gsigma'
+           incl <- trace (show lid) $ ginclusion lg gsigmaB gsigma'
            let dg3 = case nsig of
                  JustNode (NodeSig nI _) | nI == nB -> dg2
                  _ -> insLink dg2 incl globalDef (DGLinkMorph spname) nB node
@@ -700,9 +712,9 @@ anaExtraction lg libEnv dg nsig name rg (ExtractOrRemove b iris _) = if not b th
                             (ExtSign msig $ foldl Set.union Set.empty $ sym_of lid msig) startSigId 
                             (toThSens msens) startThId
     let (nsig', dg') = insGTheory dg (setSrcRange rg name) DGExtract mTh
-    incl <- ginclusion lg (getSig nsig') (getSig nsig)
-    let  dg'' = insLink dg' incl globalThm SeeSource (getNode nsig') n
-    return (nsig', dg'')
+    --incl <- ginclusion lg (getSig nsig') (getSig nsig)
+    --let  dg'' = insLink dg' incl globalThm SeeSource (getNode nsig') n
+    return (nsig', dg') --dg'')
 
 anaUnion :: Bool -> LogicGraph -> LibEnv -> LibName -> DGraph -> MaybeNode -> NodeName
   -> HetcatsOpts -> ExpOverrides -> [Annoted SPEC] -> Range
