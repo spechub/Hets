@@ -421,7 +421,7 @@ addEquiv ssig tsig l1 l2 = do
                          Map.insert e2 s Map.empty)
              else
               fail "only symbols of same kind can be equivalent in an alignment"
-          _ -> fail $ "non-unique symbol match:" ++ show l1 ++ " " ++ show l2
+          _ -> fail $ "non-unique symbol match in addEquiv: " ++ showDoc l1 " " ++ showDoc l2 ""
     _ -> fail "terms not yet supported in alignments"
 
 corr2theo :: String -> Bool -> Sign -> Sign -> [SymbItems] -> [SymbItems] ->
@@ -527,5 +527,5 @@ corr2theo aname flag ssig tsig l1 l2 eMap1 eMap2 rref = do
                       Map.union eMap2' $ Map.fromAscList [(rsym, sym')]) 
                _ -> fail $ "too many matches for " ++ show rQName -}
             _ -> fail $ "nyi:" ++ show rref
-          _ -> fail $ "non-unique symbol match:" ++ show l1 ++ " " ++ show l2
+          _ -> fail $ "non-unique symbol match in corr2theo:" ++ showDoc l1 "\n " ++ showDoc l2 ""
     _ -> fail "terms not yet supported in alignments"
