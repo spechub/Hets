@@ -575,7 +575,9 @@ symbolsOf lg gs1@(G_sign l1 (ExtSign sig1 sys1) _)
                  plain_error (G_symbol l1 $ head ll1, G_symbol l2 $ head ll2) -- this is a hack!
                   ("Missing or non-unique symbol match " ++ 
                    "for correspondence\nMatches for first symbol: " ++ 
+                   showDoc rs1 "\n" ++
                    showDoc ll1 "\nMatches for second symbol:" ++ 
+                   showDoc rs2 "\n" ++
                    showDoc ll2 "\n") 
                   nullRange
         _ -> fail $ "non-unique raw symbols"
