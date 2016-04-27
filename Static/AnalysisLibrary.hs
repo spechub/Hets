@@ -77,6 +77,7 @@ import LF.Twelf2DG
 import Framework.Analysis
 
 import MMT.Hets2mmt (mmtRes)
+import Debug.Trace
 
 -- a set of library names to check for cyclic imports
 type LNS = Set.Set LibName
@@ -576,7 +577,7 @@ symbolsOf lg gs1@(G_sign l1 (ExtSign sig1 sys1) _)
                   ("Missing or non-unique symbol match " ++ 
                    "for correspondence\nMatches for first symbol: " ++ 
                    showDoc rs1 "\n" ++
-                   showDoc ll1 "\nMatches for second symbol:" ++ 
+                   showDoc ll1 "\nMatches for second symbol: " ++ 
                    showDoc rs2 "\n" ++
                    showDoc ll2 "\n") 
                   nullRange
@@ -682,7 +683,14 @@ anaAlignDefn :: LogicGraph -> LibName -> LibEnv -> DGraph -> HetcatsOpts
   -> ExpOverrides -> IRI -> Maybe ALIGN_ARITIES -> VIEW_TYPE
   -> [CORRESPONDENCE] -> Range
   -> ResultT IO (LIB_ITEM, DGraph, LibEnv, LogicGraph, ExpOverrides)
-anaAlignDefn lg ln libenv dg opts eo an arities atype acorresps pos = do
+anaAlignDefn lg ln libenv dg opts eo an arities atype acorresps pos = 
+ let 
+    getLeftSym (ls, rs) corr = case corr of 
+        Single_correspondence _ sym1 sym2 _ _ -> (sym1:ls, sym2:rs)
+        _ -> error "only single correspondences supported" 
+    (leftSymbols, rightSymbols) = foldl (\ (ls, rs) x -> getLeftSym (ls,rs) x) ([], []) acorresps
+    displaySym x = showDoc x " "
+  in trace ("Left symbols:\n" ++ (concatMap displaySym leftSymbols)  ++ "\nRight symbols:\n" ++ (concatMap displaySym rightSymbols) ++ "\n") $ do
      l <- lookupCurrentLogic "Align_defn" lg
      (atype', (src, tar), dg') <- liftR
        $ anaViewType lg libenv ln dg (EmptyNode l) opts eo (makeName an) atype

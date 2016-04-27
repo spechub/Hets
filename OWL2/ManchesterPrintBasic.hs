@@ -54,8 +54,8 @@ instance Pretty ExtEntityType where
         PrefixO -> keyword "Prefix"
 
 instance Pretty SymbItems where
-    pretty (SymbItems m us) = pretty m
-        <+> (sepByCommas . map printIRI) us
+    pretty (SymbItems m us) = -- pretty m <+>
+        (sepByCommas . map printIRI) us
 
 instance Pretty SymbMapItems where
     pretty (SymbMapItems m us) = pretty m
