@@ -39,7 +39,7 @@ printIRI q
     | ((iriType q == Full || namePrefix q `elem` ["", "owl", "rdfs"])
        && isPredefPropOrClass q)
        || isDatatypeKey q = keyword $ getPredefName q
-    | otherwise = text $ showQN q
+    | otherwise = text $ showQU q
 
 printDataIRI :: QName -> Doc
 printDataIRI q = if isDatatypeKey q then text $ showQN $ setDatatypePrefix q
