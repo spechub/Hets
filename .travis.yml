@@ -4,11 +4,12 @@ language: haskell
 ghc: 7.8
 before_install:
  - sudo apt-get update -qq
- - sudo apt-get install -qq zlib1g-dev libncurses-dev libcairo2-dev libglib2.0-dev libpango1.0-dev libgtk2.0-dev libglade2-dev spass software-properties-common
+ - sudo apt-get install -qq zlib1g-dev libncurses-dev libcairo2-dev libglib2.0-dev libpango1.0-dev libgtk2.0-dev libglade2-dev spass software-properties-common dpkg-dev
  - sudo apt-add-repository -y ppa:hets/hets
  - sudo apt-get update -qq
  - sudo apt-get install -qq darwin
 install:
+ - sudo apt-get install `dpkg-checkbuilddeps debian/control | cut -f3- -d:` || true
  - travis_retry cabal update
  - cabal install alex happy
  - cabal install gtk2hs-buildtools
