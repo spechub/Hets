@@ -134,7 +134,6 @@ APPENDPRELUDESTRING = utils/appendHaskellPreludeString \
 Haskell/PreludeString.hs: Haskell/PreludeString.append.hs \
     $(APPENDPRELUDESTRING)
 	$(APPENDPRELUDESTRING) < $< > $@
-	@chmod 444 $@
 
 Ast_Haskell_files = HsDeclStruct HsExpStruct HsFieldsStruct \
     HsGuardsStruct HsKindStruct HsPatStruct HsTypeStruct HsAssocStruct \
@@ -676,7 +675,6 @@ Driver/Version.hs: Driver/Version.in version_nr rev.txt
 	@$(RM) $@
 	@${SED} -e "s|\$$Header\$$|./$@|" Driver/Version.in >$@
 	@printf '  ++ "$(shell cat version_nr), $(shell cat rev.txt)"\n' >> $@
-	@chmod 444 $@
 
 rev.txt:
 	@if [ -z "$(EXPORTED)" ]; then \
@@ -709,7 +707,6 @@ $(CASL_DEPENDENT_BINARIES): $(derived_sources)
 ## rule for DrIFT
 %.hs: %.der.hs $(DRIFT)
 	$(DRIFT_ENV); export DERIVEPATH; $(DRIFT) $< > $@
-	@chmod 444 $@
 
 ## compiling rules for object and interface files
 %.o %.hi: %.hs
