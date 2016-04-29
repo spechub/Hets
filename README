@@ -138,6 +138,16 @@ On MacOSX building the GUI supporting binaries may not work because of missing
 GTK2/Glade and Tcl/Tk support.
 
 
+Testing the build
+=================
+To run all available tests against the hets binary, simply type:
+
+	make check
+
+It is recommended to have 'spass' and 'darwin' installed to avoid skipping
+related tests.
+
+
 Running Hets
 ============
 Examples for testing can be obtained from
