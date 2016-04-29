@@ -1,11 +1,12 @@
 # to be included by Makefile
 
+## check-programatica convenience target helper vars:
 # The URL of the programatica source archive to download if missing. It must be
 # a gzippid tar archive, which can be get using wget!
 # Don't quote! Space and other shell metcharacters are not allowed!
 PROGRAMATICA_SRC_URL ?= \
-	http://theo.cs.uni-magdeburg.de/downloads/src/programatica-1.0.0.5.tar.gz
-# As an alternative and if you have a local copy of the programatica source
+	http://theo.cs.uni-magdeburg.de/downloads/hets/src/programatica-1.0.0.5.tar.gz
+# As an alternative, if you have a local copy of the programatica source
 # archive to use.
 # Don't quote! Space and other shell metcharacters are not allowed!
 PROGRAMATICA_SRC_FILE ?= \
@@ -92,9 +93,18 @@ ifneq ($(findstring 2., $(UNIVERSION)),)
 UNI_PACKAGE = -DUNI_PACKAGE
 endif
 
+PFE_SETUP_FILE := programatica/tools/Setup.hs
+# If programatica src, i.e. Setup.hs et. al. is there ...
+PFE_SETUP := $(shell ls -1 $(PFE_SETUP_FILE) 2>/dev/null )
+ifneq ($(PFE_SETUP),)
+# check for haskell programatica module ...
 PROGRAMATICAVERSION = $(shell $(HCPKG) latest programatica)
 ifneq ($(findstring 1.0, $(PROGRAMATICAVERSION)),)
-PFE_FLAGS = -package programatica -DPROGRAMATICA
+# and enable programatica support
+PFE_FLAGS := -package programatica -DPROGRAMATICA
+else
+PFE_FLAGS :=
+endif
 endif
 
 WAIEXTVERSION = $(shell $(HCPKG) latest wai-extra)
@@ -131,7 +141,7 @@ HASKELINE_PACKAGE :=
 GLADE_PACKAGE :=
 endif
 
-HC_OPTS_WITHOUTGLADE := $(PARSEC_FLAG) \
+HC_OPTS_WITHOUTGLADE = $(PARSEC_FLAG) \
   $(TIME_PACKAGE) $(TAR_PACKAGE) $(HTTP_PACKAGE) $(UNIX_PACKAGE) \
   $(UNI_PACKAGE) $(HASKELINE_PACKAGE) $(HEXPAT_PACKAGE) \
   $(PFE_FLAGS) $(SERVER_FLAG) $(HAXML_PACKAGE) $(HAXML_PACKAGE_COMPAT) \
@@ -140,4 +150,4 @@ HC_OPTS_WITHOUTGLADE := $(PARSEC_FLAG) \
 # for profiling (or a minimal hets) comment out the previous two package lines
 # and the $(GLADE_PACKAGE) below
 
-HC_OPTS := $(HC_OPTS_WITHOUTGLADE) $(GLADE_PACKAGE)
+HC_OPTS = $(HC_OPTS_WITHOUTGLADE) $(GLADE_PACKAGE)
