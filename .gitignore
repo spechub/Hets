@@ -19,6 +19,7 @@ doc/*.fls
 doc/*.log
 doc/*.out
 doc/UserGuide.pdf
+doc/hs2isa.ps
 docs/
 programatica/
 OWL2/*.jar
@@ -179,3 +180,5 @@ CSMOF/ATC_CSMOF.der.hs
 CSMOF/ATC_CSMOF.hs
 QVTR/ATC_QVTR.der.hs
 QVTR/ATC_QVTR.hs
+test/*/*.th
+test/*/*.xml
