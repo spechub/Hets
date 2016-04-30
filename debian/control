@@ -29,7 +29,8 @@ Build-Depends:
  tar,
  texlive-latex-base,
  texlive-latex-extra,
- texlive-pictures
+ texlive-pictures,
+ texlive-fonts-recommended
 Standards-Version: 3.9.3
 Homepage: https://github.com/spechub/Hets
 

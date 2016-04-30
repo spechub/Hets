@@ -10,6 +10,7 @@ before_install:
 install:
  - sudo apt-get install `dpkg-checkbuilddeps debian/control 2>&1 | cut -f3- -d":" | sed -e 's,([^)]*),,g'` || true
 script:
+ - ghc -V
  - make
  - ./hets -V
  - export HETS_MAGIC=$PWD/magic/hets.magic
