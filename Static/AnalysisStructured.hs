@@ -323,7 +323,7 @@ anaSpecAux conser addSyms lg libEnv ln dg nsig name opts eo sp rg = case sp of
        let names = checkSenNames lid sigma_complete $ nameAndDisambiguate ax
        if not $ Set.null names  then
           fail $ "The following sentence names are also used as symbol names:" 
-          ++ show names
+          ++ (concatMap (\x -> x ++ " ") $ Set.toList names)
        else do
         diffSig <- case signatureDiff lid sigma_complete sig of
           Result _ (Just ds) -> return ds
