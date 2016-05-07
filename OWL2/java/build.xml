@@ -63,8 +63,8 @@ Either adjust the 'target-vm' property in the build.xml or use a compatible JVM.
 	</manifest>
       </jar>
       <copy file="${builddir}/OWLFact.jar" todir="../"/>
-      <copy file="lib/native/i686/libFaCTPlusPlusJNI.so" todir="../lib/native/i686/"/>
-      <copy file="lib/native/x86_64/libFaCTPlusPlusJNI.so" todir="../lib/native/x86_64/"/>
+      <copy file="lib/native/i686/libFaCTPlusPlusJNI.so" todir="../lib/native/i686/" failonerror="false" />
+      <copy file="lib/native/x86_64/libFaCTPlusPlusJNI.so" todir="../lib/native/x86_64/" failonerror="false" />
       <copy file="${libdir}/${fact-jar}" todir="../lib/"/>
     </target>
 
@@ -85,8 +85,8 @@ Either adjust the 'target-vm' property in the build.xml or use a compatible JVM.
 	</manifest>
       </jar>
       <copy file="${builddir}/OWLFactProver.jar" todir="../"/>
-      <copy file="lib/native/i686/libFaCTPlusPlusJNI.so" todir="../lib/native/i686/"/>
-      <copy file="lib/native/x86_64/libFaCTPlusPlusJNI.so" todir="../lib/native/x86_64/"/>
+      <copy file="lib/native/i686/libFaCTPlusPlusJNI.so" todir="../lib/native/i686/" failonerror="false" />
+      <copy file="lib/native/x86_64/libFaCTPlusPlusJNI.so" todir="../lib/native/x86_64/" failonerror="false" />
       <copy file="${libdir}/${fact-jar}" todir="../lib/"/>
     </target>
 

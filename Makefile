@@ -47,7 +47,7 @@ define EOL
 endef
 
 # indicate, whether working on an exported repo
-GIT_TIMESTAMP := $(shell printf "`git log -1 --format=%ct -- .`")
+GIT_TIMESTAMP := $(shell [ -d .git ] && git log -1 --format=%ct -- . )
 EXPORTED := $(shell [ -n "$(GIT_TIMESTAMP)" ] || printf 1)
 
 # the 'replacing spaces' example was taken from the (GNU) Make info manual
@@ -801,6 +801,7 @@ archive: rev.txt $(USER_GUIDE)
 	printf 'Removing unused/non-distributed files ...\n' ; \
 	rm -rf HolLight/OcamlTools/*/*dmtcp OWL2/java/lib/native \
 		MMT/hets-mmt-standalone.jar ; \
+	rm -rf GMP mini .gitignore utils/{nightly,debian,macports,ubuntu} ; \
 	zip -d OWL2/java/lib/owlapi-osgidistribution-3.5.2.jar \
 		lib/guava-18.0.jar lib/trove4j-3.0.3.jar ; \
 	printf 'Done.\n' ; \
@@ -861,7 +862,7 @@ install-owl-tools: jars
 	rm -rf $(BASEDIR)/lib/native/*/*.dll lib \
 		$(BASEDIR)/lib/`basename $$X` ; \
 	jar cMf $(BASEDIR)/lib/`basename $$X` *
-	zip -d $(BASEDIR)/lib/owlapi-osgidistribution-3.5.2.jar \
+	-zip -d $(BASEDIR)/lib/owlapi-osgidistribution-3.5.2.jar \
 		lib/guava-18.0.jar lib/trove4j-3.0.3.jar
 	@printf 'Sources:\n\t%s\n\t%s\n\t%s\n' \
 		'https://bitbucket.org/trove4j/trove/downloads'\
