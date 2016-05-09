@@ -33,6 +33,10 @@ Solaris 11+:
   # to update your installation to a recent version do from time to time:
   pkg update [hets]
 
+To get optional TeX/PDF support, you also need to install the related pdflatex
+packages (Ubuntu: texlive-latex-base, texlive-latex-extra, texlive-pictures,
+texlive-fonts-recommended; Solaris 11+: tl-latex, tl-fonts, tl-utils).
+
 Adding packages to the system usually requires additional privileges.
 So sudo, pfexec or similar tools might be needed to be able to execute the
 commands mentioned above successfully.
