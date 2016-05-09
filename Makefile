@@ -604,7 +604,7 @@ clean_pretty:
 			CommonLogic/TestData/*.{pp.het,th} Common/testxmldiff \
 		doc/UserGuide.{log,aux,bbl,blg,out,fdb_latexmk,fls} doc/hs2isa.ps \
 			$(USER_GUIDE) log.haddock \
-		debian/{root,changelog*,*.tmp,files,hets-*,tmp} \
+		debian/{root,files,hets-*,tmp} \
 	"
 
 java_clean:
@@ -613,7 +613,7 @@ java_clean:
 clean: bin_clean o_clean clean_pretty
 
 realclean: clean java_clean
-	@$(RM) -f *.bin
+	@$(RM) -f *.bin debian/changelog*
 
 ### additionally removes generated files not in the repository tree
 distclean: realclean clean_genRules
@@ -934,10 +934,10 @@ build: build-indep build-arch
 CHANGELOG := $(shell [ -f debian/changelog ] && \
 	printf 'debian/changelog' || printf 'debian/changelog.tmp')
 
-# See Versioning in ./INSTALL
+# See Versioning in ./README
 # NOTE: The dash crap sucks again here! So we assume only the 2nd rev num
 # might be padded with a single '0' to avoid more clutter.
-debian/changelog.tmp:
+debian/changelog.tmp: debian/control
 	@SRCPKG=`grep ^Source: debian/control |awk '{ print $$2 ; }'` ; \
 	if [ -z "${FULL_DEBVERS}" ]; then \
 		LSB=`lsb_release -rs`; A="$${LSB%.*}"; B="$${LSB#*.}"; B="$${B##0}"; \
@@ -977,6 +977,9 @@ binary-arch: build-arch install-hets install-hets_server $(CHANGELOG)
 	dpkg-deb -Z xz -b $(DESTDIR)$(SUBDIR_hets_server) ../hets-C.deb
 	dpkg-name -o ../hets-B.deb ../hets-C.deb
 
+# Make sure debian/changelog exists, since dpkg-buildpackage runs finally a
+# "dpkg-genchanges -b -m'...' >../${fullPkgName}.changes"
 binary: binary-indep binary-arch
+	@[ -f debian/changelog ] || ln -s changelog.tmp debian/changelog
 
 # vim: ts=4 sw=4 filetype=make
