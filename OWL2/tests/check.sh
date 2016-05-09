@@ -7,6 +7,8 @@ ECHO="echo -e"
 
 $ECHO "\nhi !\n"
 
+[[ `uname -s` == 'SunOS' ]] && MAKE=gmake || MAKE=make
+
 ALL=`ls`
 
 for DIR in $ALL
@@ -29,7 +31,7 @@ do
 
             $ECHO "\ncompiling runConv...\n"
 
-            make OWL2/scripts/runConv
+            ${MAKE} OWL2/scripts/runConv
 
             cd OWL2/tests/$DIR/res
 
@@ -73,7 +75,7 @@ do
 
             $ECHO "\ncompiling runXML...\n"
 
-            make OWL2/scripts/runXML
+            ${MAKE} OWL2/scripts/runXML
 
             cd OWL2/tests/$DIR/res
 
