@@ -345,11 +345,16 @@ public class OWL2Parser {
 			int chomp = -1;
             try {
                 OWLXMLRenderer xmlren = new OWLXMLRenderer();
+				String t = System.getenv("HETS_GZIP");
+				boolean gz = t == null || t.equalsIgnoreCase("on");
+				t = gz ? ".xml.gz" : ".xml";
 				String tmpDir = System.getenv("TMPDIR");
-                File tempFile = File.createTempFile("owlTemp_1", ".xml.gz",
+                File tempFile = File.createTempFile("owlTemp_1", t,
 					tmpDir == null ? null : new File(tmpDir));
 				fos = new FileOutputStream(tempFile);
-                out = new OutputStreamWriter(new GZIPOutputStream(fos, 4096),
+				out = new OutputStreamWriter(gz
+					? new GZIPOutputStream(fos, 4096)
+					: fos,
 					"UTF-8");
                 if (quick) {
                     onto.getOWLOntologyManager().removeAxioms(onto,
@@ -360,7 +365,9 @@ public class OWL2Parser {
 				out = null;
 				fos = null;
 				fis = new FileInputStream(tempFile);
-                in = new InputStreamReader(new GZIPInputStream(fis, 4096),
+				in = new InputStreamReader(gz
+					? new GZIPInputStream(fis, 4096)
+					: fis,
 					"UTF-8");
 				// ignore the first line containing <?xml version="1.0"?>
 				while ((chomp != -2) && (c = in.read(buf, 0, 8192)) != -1) {
@@ -392,8 +399,11 @@ public class OWL2Parser {
                 in.close();
 				in = null;
 				fis = null;
-                tempFile.deleteOnExit();
-                append("<Loaded name=\"")
+				t = System.getenv("HETS_KEEPTMP");
+				if (t == null || ! t.equalsIgnoreCase("on")) {
+					tempFile.deleteOnExit();
+				}
+				append("<Loaded name=\"")
 					.append(manager.getOntologyDocumentIRI(onto))
                 	.append("\" ontiri=\"")
 					.append(onto.getOntologyID().getOntologyIRI())
