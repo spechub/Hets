@@ -76,6 +76,7 @@ import LF.Twelf2DG
 import Framework.Analysis
 
 import MMT.Hets2mmt (mmtRes)
+import Proofs.ComputeColimit
 
 -- a set of library names to check for cyclic imports
 type LNS = Set.Set LibName
@@ -482,6 +483,21 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
                        , currentBaseTheory = Just $ extGenBody s2 }
               else dg { currentBaseTheory = Just $ extGenBody s }
         return (itm, dg2, libenv, newLg, eo)
+  Network_defn anIri (Network cItems eItems _) pos -> do
+    nn <- expCurieT (globalAnnos dg) eo anIri
+    let nnstr = iriToStringUnsecure nn
+    analyzing opts $ "network " ++ nnstr
+    let (cNodes, cEdges) = networkDiagram dg cItems eItems
+        diag = makeDiagram dg cNodes cEdges
+        genv = globalEnv dg
+    if Map.member nn genv 
+       then
+        liftR $ plain_error (itm, dg, libenv, lg, eo)
+               (alreadyDefined nnstr) pos
+       else
+        return (itm, dg{globalEnv = Map.insert nn (NetworkEntry diag) genv},
+                libenv, lg, eo)
+    --error "static analysis of network not yet implemented"
   Download_items ln items pos ->
     if Set.member ln topLns then
      liftR $ mkError "illegal cyclic library import"
@@ -891,6 +907,7 @@ anaItemNameOrMap1 libenv ln refDG (genv, dg) (old, new) = do
     AlignEntry _asig -> anaErr "alignment download"
     ArchOrRefEntry b _rsig -> anaErr $ (if b then "arch" else "ref")
       ++ " spec download"
+    NetworkEntry _gdiag -> anaErr "network download"
 
 refNodesig :: LibEnv -> LibName -> DGraph -> DGraph -> (NodeName, NodeSig)
            -> (DGraph, NodeSig)

@@ -679,6 +679,7 @@ data GlobalEntry =
   | ArchOrRefEntry Bool RefSig
   | AlignEntry AlignSig
   | UnitEntry UnitSig
+  | NetworkEntry GDiagram
     deriving (Show, Typeable)
 
 getGlobEntryNodes :: GlobalEntry -> Set.Set Node
@@ -687,6 +688,7 @@ getGlobEntryNodes g = case g of
   ViewOrStructEntry _ e -> getExtViewSigNodes e
   UnitEntry u -> getUnitSigNodes u
   ArchOrRefEntry _ r -> getRefSigNodes r
+  NetworkEntry gdiag -> Set.fromList $ nodes gdiag
   _ -> Set.empty
 
 data AlignSig = AlignMor NodeSig GMorphism NodeSig

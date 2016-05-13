@@ -35,6 +35,7 @@ module Static.AnalysisStructured
     , ExpOverrides
     , notFoundError
     , prefixErrorIRI
+    , networkDiagram
     ) where
 
 import Driver.Options
@@ -596,7 +597,17 @@ anaSpecAux conser addSyms lg libEnv ln dg nsig name opts eo sp rg = case sp of
                    (replaceAnnoted sp2' asp2)
                    pos, nsig3, udg3)
   Combination (Network cItems eItems _) pos -> adjustPos pos $ do
-    let getNodes (cN, cE) cItem = let
+    let (cNodes', cEdges') = networkDiagram dg cItems eItems
+    (ns, dg') <- insertColimitInGraph libEnv dg cNodes' cEdges' name
+    return (sp, ns, dg')
+  _ -> fail $ "AnalysisStructured: " ++ show (prettyLG lg sp)
+
+networkDiagram :: DGraph
+                        -> [LABELED_ONTO_OR_INTPR_REF]
+                        -> [IRI]
+                        -> ([Node], [(Node, Node, DGLinkLab)])
+networkDiagram dg cItems eItems = let 
+        getNodes remove (cN, cE) cItem = let
             cEntry = fromMaybe (error $ "No entry for " ++ show cItem)
                      $ lookupGlobalEnvDG cItem dg
             bgraph = dgBody dg
@@ -608,11 +619,15 @@ anaSpecAux conser addSyms lg libEnv ln dg nsig name opts eo sp rg = case sp of
            in case cEntry of
                SpecEntry extGenSig -> let
                    n = getNode $ extGenBody extGenSig
-                  in if elem n cN then (cN, cE) else (n : cN, cE)
+                  in if remove then
+                     (n:cN, nub $ cE ++ out bgraph n ++ inn bgraph n) -- remove all incoming and outgoing edges of n 
+                     else if elem n cN then (cN, cE) else (n : cN, cE)
                ViewOrStructEntry True (ExtViewSig ns gm eGS) -> let
                    s = getNode ns
                    t = getNode $ extGenBody eGS
-                 in (nub $ s : t : cN, lEdge s t gm : cE)
+                 in if remove 
+                     then (cN, lEdge s t gm : cE) -- keep the nodes and remove just the edge 
+                     else(nub $ s : t : cN, lEdge s t gm : cE)
                AlignEntry asig ->
                   case asig of
                    AlignMor src gmor tar ->  let
@@ -631,11 +646,20 @@ anaSpecAux conser addSyms lg libEnv ln dg nsig name opts eo sp rg = case sp of
                       t1 = getNode tar1
                       t2 = getNode tar2
                       b = getNode bri
-                     in (nub $ s1 : s2 : t1 : t2 : b : cN,
+                     in if remove then
+                         (nub $ s1 : s2 : b : cN,
+                         [lEdge s1 b i1, lEdge s1 t1 sig1,
+                          lEdge s2 b i2, lEdge s2 t2 sig2] ++ cE) 
+                        else (nub $ s1 : s2 : t1 : t2 : b : cN,
                          [lEdge s1 b i1, lEdge s1 t1 sig1,
                           lEdge s2 b i2, lEdge s2 t2 sig2] ++ cE)
+               NetworkEntry diag -> let
+                    dnodes = nodes diag
+                    ledges = labEdges diag
+                    dgedges = map (\(x,y, (_, m)) -> lEdge x y m) ledges
+                   in (dnodes, dgedges)
                _ -> error $ show cItem
-                    ++ "is not an ontology, a view or an alignment"
+                    ++ " is not an ontology, a view, a network or an alignment"
         addGDefLinks (cN, iN, cE) n = let
            g = dgBody dg
            allGDef = all $ \ (_, _, l) -> isGlobalDef $ dgl_type l
@@ -652,13 +676,12 @@ anaSpecAux conser addSyms lg libEnv ln dg nsig name opts eo sp rg = case sp of
               , nub $ nPaths ++ cE ++ hideLinks ++ intersectLinks)
         addLinks (cN, cE) = foldl addGDefLinks (cN, [], cE) cN
         (cNodes, iNodes, cEdges) =
-           addLinks . foldl getNodes ([], []) $ getItems cItems
-        (eNodes, eEdges) = foldl getNodes ([], []) eItems
+           addLinks . foldl (getNodes False) ([], []) $ getItems cItems
+        (eNodes, eEdges) = foldl (getNodes True) ([], []) eItems
         (cNodes', cEdges') = (nub (cNodes ++ iNodes) \\ eNodes,
                               cEdges \\ eEdges)
-    (ns, dg') <- insertColimitInGraph libEnv dg cNodes' cEdges' name
-    return (sp, ns, dg')
-  _ -> fail $ "AnalysisStructured: " ++ show (prettyLG lg sp)
+ in (cNodes', cEdges')
+  
 
 
 getItems :: [LABELED_ONTO_OR_INTPR_REF] -> [IRI]
