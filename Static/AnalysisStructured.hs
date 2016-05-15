@@ -602,31 +602,40 @@ anaSpecAux conser addSyms lg libEnv ln dg nsig name opts eo sp rg = case sp of
     return (sp, ns, dg')
   _ -> fail $ "AnalysisStructured: " ++ show (prettyLG lg sp)
 
+
+-- | build the diagram of a network specified as a list of network elements to be added
+-- | and a list of network elements to be removed
+
 networkDiagram :: DGraph
                         -> [LABELED_ONTO_OR_INTPR_REF]
                         -> [IRI]
                         -> ([Node], [(Node, Node, DGLinkLab)])
 networkDiagram dg cItems eItems = let 
-        getNodes remove (cN, cE) cItem = let
-            cEntry = fromMaybe (error $ "No entry for " ++ show cItem)
-                     $ lookupGlobalEnvDG cItem dg
+        -- add to/remove from a list of nodes and a list of edges
+        -- the graph of a network element
+        -- if remove is true, nElem gets removed 
+        getNodes remove (cN, cE) nElem = let
+            cEntry = fromMaybe (error $ "No entry for " ++ show nElem)
+                     $ lookupGlobalEnvDG nElem dg
             bgraph = dgBody dg
             lEdge x y m = case filter (\ (_, z, l) -> (z == y) &&
                                          (dgl_morphism l == m) ) $
                                out bgraph x of
                              [] -> error $ "No edge found:\n x:" ++ show x ++ "\n y: " ++ show y
                              lE : _ -> lE
-           in case cEntry of
+           in case nElem of
                SpecEntry extGenSig -> let
                    n = getNode $ extGenBody extGenSig
                   in if remove then
-                     (n:cN, nub $ cE ++ out bgraph n ++ inn bgraph n) -- remove all incoming and outgoing edges of n 
+                     (n:cN, nub $ cE ++ out bgraph n ++ inn bgraph n) 
+                     -- remove all incoming and outgoing edges of n 
                      else if elem n cN then (cN, cE) else (n : cN, cE)
                ViewOrStructEntry True (ExtViewSig ns gm eGS) -> let
                    s = getNode ns
                    t = getNode $ extGenBody eGS
                  in if remove 
-                     then (cN, lEdge s t gm : cE) -- keep the nodes and remove just the edge 
+                     then (cN, lEdge s t gm : cE) 
+                     -- keep the nodes and remove just the edge 
                      else(nub $ s : t : cN, lEdge s t gm : cE)
                AlignEntry asig ->
                   case asig of
@@ -658,8 +667,10 @@ networkDiagram dg cItems eItems = let
                     ledges = labEdges diag
                     dgedges = map (\(x,y, (_, m)) -> lEdge x y m) ledges
                    in (dnodes, dgedges)
-               _ -> error $ show cItem
-                    ++ " is not an ontology, a view, a network or an alignment"
+               _ -> error $ show nElem
+                    ++ " is not an OMS, a view, a network or an alignment"
+        -- also add the implicit elements: paths of global def. links,
+        -- hiding def. links, inclusions of DOL intersections
         addGDefLinks (cN, iN, cE) n = let
            g = dgBody dg
            allGDef = all $ \ (_, _, l) -> isGlobalDef $ dgl_type l
@@ -682,8 +693,6 @@ networkDiagram dg cItems eItems = let
                               cEdges \\ eEdges)
  in (cNodes', cEdges')
   
-
-
 getItems :: [LABELED_ONTO_OR_INTPR_REF] -> [IRI]
 getItems [] = []
 getItems (Labeled _ i : r) = i : getItems r

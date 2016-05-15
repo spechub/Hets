@@ -497,7 +497,6 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
        else
         return (itm, dg{globalEnv = Map.insert nn (NetworkEntry diag) genv},
                 libenv, lg, eo)
-    --error "static analysis of network not yet implemented"
   Download_items ln items pos ->
     if Set.member ln topLns then
      liftR $ mkError "illegal cyclic library import"
