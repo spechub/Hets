@@ -623,7 +623,7 @@ networkDiagram dg cItems eItems = let
                                out bgraph x of
                              [] -> error $ "No edge found:\n x:" ++ show x ++ "\n y: " ++ show y
                              lE : _ -> lE
-           in case nElem of
+           in case cEntry of
                SpecEntry extGenSig -> let
                    n = getNode $ extGenBody extGenSig
                   in if remove then
