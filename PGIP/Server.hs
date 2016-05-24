@@ -45,6 +45,7 @@ import Static.AnalysisLibrary
 import Static.ApplyChanges
 import Static.ComputeTheory
 import Static.DevGraph
+import Static.DGTranslation
 import Static.DgUtils
 import Static.DotGraph
 import Static.FromXml
@@ -556,7 +557,9 @@ parseRESTful
              in case nodeM of
              Nothing -> GlAutoProve pc
              Just n -> nodeQuery n $ ProveNode pc
-           "dg" -> DisplayQuery (Just $ fromMaybe "xml" format)
+           "dg" -> case transM of 
+             Nothing -> DisplayQuery (Just $ fromMaybe "xml" format)
+             Just tr -> Query.DGTranslation tr
            "theory" -> case transM of
              Nothing -> case nodeM of
                          Just x -> NodeQuery (maybe (Right x) Left $ readMaybe x) 
@@ -939,6 +942,11 @@ getHetsResult :: HetcatsOpts -> [W.FileInfo BS.ByteString]
   -> Cache -> Query.Query -> Maybe String -> UsedAPI -> ProofFormatterOptions
   -> ResultT IO (String, String)
 getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
+      let getCom n = let ncoms = filter (\(Comorphism cid) -> language_name cid == n) comorphismList
+                     in case ncoms of
+                         [c] -> c
+                         [] -> error $ "comorphism not found:" ++ n
+                         _ -> error $ "more than one comorphism found for:" ++ n
       sk@(sess', k) <- getDGraph opts sessRef dgQ
       sess <- lift $ makeSessCleanable sess' sessRef k
       let libEnv = sessLibEnv sess
@@ -962,6 +970,13 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
               Just str | elem str ppList
                 -> ppDGraph dg $ lookup str $ zip ppList prettyList
               _ -> sessAns ln svg sk
+            Query.DGTranslation path -> do 
+              -- compose the comorphisms passed in translation
+               let coms = map getCom $ splitOn ',' path
+               com <- foldM compComorphism (head coms) $ tail coms
+               dg' <- liftR $ dg_translation libEnv dg com
+               liftR $ return (xmlC, ppTopElement
+                $ ToXml.dGraph opts libEnv ln dg')
             GlProvers mp mt -> do
               availableProvers <- liftIO $ getFullProverList mp mt dg
               return $ case api of
@@ -1066,12 +1081,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
                                        $ showNodeXml opts (globalAnnos dg) libEnv dg i
                       NcCmd (Query.Translate x) -> do
                           -- compose the comorphisms passed in translation
-                          let getCom n = let ncoms = filter (\(Comorphism cid) -> language_name cid == n) comorphismList
-                                          in case ncoms of
-                                              [c] -> c
-                                              [] -> error $ "comorphism not found:" ++ n
-                                              _ -> error $ "more than one comorphism found for:" ++ n
-                              coms = map getCom $ splitOn ',' x
+                          let coms = map getCom $ splitOn ',' x
                           com <- foldM compComorphism (head coms) $ tail coms
                           -- translate the theory of i along com
                           gTh1 <- liftR $ mapG_theory com gTh

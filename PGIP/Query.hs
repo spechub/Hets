@@ -128,6 +128,7 @@ showPathQuery p q = showPath p ++ if null q then "" else showQuery q
 
 data QueryKind =
     DisplayQuery (Maybe String)
+  | DGTranslation String
   | GlobCmdQuery String
   | GlProvers ProverMode (Maybe String)
   | GlTranslations
