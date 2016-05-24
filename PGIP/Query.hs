@@ -74,11 +74,11 @@ displayTypes =
 comorphs :: [String]
 comorphs = ["provers", "translations"]
 
-data NodeCmd = Node | Info | Theory | Symbols
-  deriving (Show, Eq, Bounded, Enum)
+data NodeCmd = Node | Info | Theory | Symbols | Translate String
+  deriving (Show, Eq)
 
 nodeCmds :: [NodeCmd]
-nodeCmds = [minBound .. maxBound]
+nodeCmds = [Node, Info, Theory, Symbols]
 
 showNodeCmd :: NodeCmd -> String
 showNodeCmd = map toLower . show
@@ -344,7 +344,7 @@ anaNodeQuery ans i moreTheorems incls pss =
       cmds = map (\ a -> (showNodeCmd a, a)) nodeCmds
   in case ans of
        [] -> Right $ NodeQuery i
-         $ if noPP then NcCmd minBound else pp
+         $ if noPP then NcCmd Node else pp
        [cmd] -> case cmd of
          "prove" -> Right $ NodeQuery i pp
          "provers" | noIncl && isNothing prover ->
