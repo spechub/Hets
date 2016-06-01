@@ -6,7 +6,10 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -45,20 +48,87 @@ public class OWL2Parser {
 	private static OWLOntologyIRIMapperImpl mapper =
 		new OWLOntologyIRIMapperImpl();
 	private static URI uri = null;
+	private static int maxRedirects = 0;
+
+	private static void checkMaxRedirects() {
+		String t = System.getProperty("http.maxRedirects", null);
+		if (t == null || t.isEmpty()) {
+			maxRedirects = 20;
+			return;
+		}
+		try {
+			int n = Integer.parseInt(t, 10);
+			if (n > 0) {
+				maxRedirects = n;
+			}
+		} catch (NumberFormatException nfe) {
+			System.err.println("Ignoring invalid system property "
+				+ "'http.maxRedirects' - invalid number '" + t + "'");
+		}
+	}
+
+	private static URLConnection getConnection(URL url, int redirCount)
+		throws IOException
+	{
+		URLConnection c = url.openConnection();
+		if (!(c instanceof HttpURLConnection)) {
+			return c;
+		}
+		HttpURLConnection con = (HttpURLConnection) c;
+		con.addRequestProperty("Accept", "text/plain");
+		con.setConnectTimeout(300 * 1000);	// 5 min timeout
+		int status = con.getResponseCode();
+		if (status == HttpURLConnection.HTTP_MOVED_TEMP
+			|| status == HttpURLConnection.HTTP_MOVED_PERM
+			|| status == HttpURLConnection.HTTP_SEE_OTHER)
+		{
+			if (redirCount > maxRedirects) {
+				System.err.println("Max. redirects (" + maxRedirects
+					+ ") reached for " + url);
+				return null;
+			}
+			String loc = null;
+			try {
+				loc = con.getHeaderField("Location");
+				if (loc == null) {
+					System.err.println("Invalid redirect by '" + url
+						+ "' (missing Location header).");
+					return null;
+				}
+				url = new URL(loc);
+			} catch (MalformedURLException mue) {
+				System.err.println("'" + url + "' redirects to an unsupported "
+					+ "resource (" + loc + ")");
+				return null;
+			}
+			con.disconnect();
+			return getConnection(url, redirCount + 1);
+		} else if (status != HttpURLConnection.HTTP_OK) {
+			System.err.println("URL '" + url + "' is not OK (status " + status
+				+ ").");
+			return null;
+		}
+		return con;
+	}
 
 	public static void main(String[] args) {
 		// A simple example of how to load and save an ontology
 		try {
 			OWLOutputHandler out = new OWLOutputHandler();
 			parseArgs(args, out);
-			URLConnection con = uri.toURL().openConnection();
-			con.addRequestProperty("Accept", "text/plain");
+			checkMaxRedirects();
+			URLConnection con = getConnection(uri.toURL(), 0);
+			if (con == null) {
+				System.err.println("Nothing to parse - exiting.");
+				System.exit(1);
+			}
 			StreamDocumentSource sds =
 				new StreamDocumentSource(con.getInputStream(), IRI.create(uri));
 			OWLOntologyLoaderConfiguration config =
 				new OWLOntologyLoaderConfiguration();
 			config = config
 				.setMissingImportHandlingStrategy(MissingImportHandlingStrategy.SILENT);
+			config = config.setFollowRedirects(true);
 			OWLOntology ontology =
 				manager.loadOntologyFromOntologyDocument(sds, config);
 			if ( !missingImports.isEmpty()) {
