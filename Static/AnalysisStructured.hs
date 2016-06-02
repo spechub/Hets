@@ -35,6 +35,7 @@ module Static.AnalysisStructured
     , ExpOverrides
     , notFoundError
     , prefixErrorIRI
+    , networkDiagram
     ) where
 
 import Driver.Options
@@ -64,6 +65,7 @@ import Common.LibName
 import Common.Result
 import Common.Utils (number)
 import Common.Lib.MapSet (imageSet, setInsert)
+import Common.ProofUtils
 
 import Data.Graph.Inductive.Graph
 import qualified Data.Set as Set
@@ -319,21 +321,26 @@ anaSpecAux conser addSyms lg libEnv ln dg nsig name opts eo sp rg = case sp of
                Nothing | null ds ->
                  fail "basic analysis failed without giving a reason"
                _ -> res
-       diffSig <- case signatureDiff lid sigma_complete sig of
-         Result _ (Just ds) -> return ds
-         _ -> warning sigma_complete
-           "signature difference could not be computed using full one" pos
-       let gsysd = Set.map (G_symbol lid) sysd
-           (ns, dg') = insGTheory dg0 (setSrcRange rg name)
-             (DGBasicSpec (Just $ G_basic_spec lid bspec')
-             (G_sign lid (mkExtSign diffSig) startSigId) gsysd)
-               $ G_theory lid (currentSyntax lg) (ExtSign sigma_complete
-               $ Set.intersection
-                     (if addSyms then Set.union sys sysd else sysd)
-               $ symset_of lid sigma_complete)
-             startSigId (toThSens ax) startThId
-       dg'' <- createConsLink DefLink conser lg dg' nsig' ns DGLinkExtension
-       return (Basic_spec (G_basic_spec lid bspec') pos, ns, dg'')
+       let names = checkSenNames lid sigma_complete $ nameAndDisambiguate ax
+       if not $ Set.null names  then
+          fail $ "The following sentence names are also used as symbol names:" 
+          ++ (concatMap (\x -> x ++ " ") $ Set.toList names)
+       else do
+        diffSig <- case signatureDiff lid sigma_complete sig of
+          Result _ (Just ds) -> return ds
+          _ -> warning sigma_complete
+            "signature difference could not be computed using full one" pos
+        let gsysd = Set.map (G_symbol lid) sysd
+            (ns, dg') = insGTheory dg0 (setSrcRange rg name)
+              (DGBasicSpec (Just $ G_basic_spec lid bspec')
+              (G_sign lid (mkExtSign diffSig) startSigId) gsysd)
+                $ G_theory lid (currentSyntax lg) (ExtSign sigma_complete
+                $ Set.intersection
+                      (if addSyms then Set.union sys sysd else sysd)
+                $ symset_of lid sigma_complete)
+              startSigId (toThSens ax) startThId
+        dg'' <- createConsLink DefLink conser lg dg' nsig' ns DGLinkExtension
+        return (Basic_spec (G_basic_spec lid bspec') pos, ns, dg'')
   EmptySpec pos -> case nsig of
       EmptyNode _ -> do
         warning () "empty spec" pos
@@ -596,9 +603,26 @@ anaSpecAux conser addSyms lg libEnv ln dg nsig name opts eo sp rg = case sp of
                    (replaceAnnoted sp2' asp2)
                    pos, nsig3, udg3)
   Combination (Network cItems eItems _) pos -> adjustPos pos $ do
-    let getNodes (cN, cE) cItem = let
-            cEntry = fromMaybe (error $ "No entry for " ++ show cItem)
-                     $ lookupGlobalEnvDG cItem dg
+    let (cNodes', cEdges') = networkDiagram dg cItems eItems
+    (ns, dg') <- insertColimitInGraph libEnv dg cNodes' cEdges' name
+    return (sp, ns, dg')
+  _ -> fail $ "AnalysisStructured: " ++ show (prettyLG lg sp)
+
+
+-- | build the diagram of a network specified as a list of network elements to be added
+-- | and a list of network elements to be removed
+
+networkDiagram :: DGraph
+                        -> [LABELED_ONTO_OR_INTPR_REF]
+                        -> [IRI]
+                        -> ([Node], [(Node, Node, DGLinkLab)])
+networkDiagram dg cItems eItems = let 
+        -- add to/remove from a list of nodes and a list of edges
+        -- the graph of a network element
+        -- if remove is true, nElem gets removed 
+        getNodes remove (cN, cE) nElem = let
+            cEntry = fromMaybe (error $ "No entry for " ++ show nElem)
+                     $ lookupGlobalEnvDG nElem dg
             bgraph = dgBody dg
             lEdge x y m = case filter (\ (_, z, l) -> (z == y) &&
                                          (dgl_morphism l == m) ) $
@@ -608,11 +632,17 @@ anaSpecAux conser addSyms lg libEnv ln dg nsig name opts eo sp rg = case sp of
            in case cEntry of
                SpecEntry extGenSig -> let
                    n = getNode $ extGenBody extGenSig
-                  in if elem n cN then (cN, cE) else (n : cN, cE)
+                  in if remove then
+                     (n:cN, nub $ cE ++ out bgraph n ++ inn bgraph n) 
+                     -- remove all incoming and outgoing edges of n 
+                     else if elem n cN then (cN, cE) else (n : cN, cE)
                ViewOrStructEntry True (ExtViewSig ns gm eGS) -> let
                    s = getNode ns
                    t = getNode $ extGenBody eGS
-                 in (nub $ s : t : cN, lEdge s t gm : cE)
+                 in if remove 
+                     then (cN, lEdge s t gm : cE) 
+                     -- keep the nodes and remove just the edge 
+                     else(nub $ s : t : cN, lEdge s t gm : cE)
                AlignEntry asig ->
                   case asig of
                    AlignMor src gmor tar ->  let
@@ -631,11 +661,22 @@ anaSpecAux conser addSyms lg libEnv ln dg nsig name opts eo sp rg = case sp of
                       t1 = getNode tar1
                       t2 = getNode tar2
                       b = getNode bri
-                     in (nub $ s1 : s2 : t1 : t2 : b : cN,
+                     in if remove then
+                         (nub $ s1 : s2 : b : cN,
+                         [lEdge s1 b i1, lEdge s1 t1 sig1,
+                          lEdge s2 b i2, lEdge s2 t2 sig2] ++ cE) 
+                        else (nub $ s1 : s2 : t1 : t2 : b : cN,
                          [lEdge s1 b i1, lEdge s1 t1 sig1,
                           lEdge s2 b i2, lEdge s2 t2 sig2] ++ cE)
-               _ -> error $ show cItem
-                    ++ "is not an ontology, a view or an alignment"
+               NetworkEntry diag -> let
+                    dnodes = nodes diag
+                    ledges = labEdges diag
+                    dgedges = map (\(x,y, (_, m)) -> lEdge x y m) ledges
+                   in (dnodes, dgedges)
+               _ -> error $ show nElem
+                    ++ " is not an OMS, a view, a network or an alignment"
+        -- also add the implicit elements: paths of global def. links,
+        -- hiding def. links, inclusions of DOL intersections
         addGDefLinks (cN, iN, cE) n = let
            g = dgBody dg
            allGDef = all $ \ (_, _, l) -> isGlobalDef $ dgl_type l
@@ -652,15 +693,12 @@ anaSpecAux conser addSyms lg libEnv ln dg nsig name opts eo sp rg = case sp of
               , nub $ nPaths ++ cE ++ hideLinks ++ intersectLinks)
         addLinks (cN, cE) = foldl addGDefLinks (cN, [], cE) cN
         (cNodes, iNodes, cEdges) =
-           addLinks . foldl getNodes ([], []) $ getItems cItems
-        (eNodes, eEdges) = foldl getNodes ([], []) eItems
+           addLinks . foldl (getNodes False) ([], []) $ getItems cItems
+        (eNodes, eEdges) = foldl (getNodes True) ([], []) eItems
         (cNodes', cEdges') = (nub (cNodes ++ iNodes) \\ eNodes,
                               cEdges \\ eEdges)
-    (ns, dg') <- insertColimitInGraph libEnv dg cNodes' cEdges' name
-    return (sp, ns, dg')
-  _ -> fail $ "AnalysisStructured: " ++ show (prettyLG lg sp)
-
-
+ in (cNodes', cEdges')
+  
 getItems :: [LABELED_ONTO_OR_INTPR_REF] -> [IRI]
 getItems [] = []
 getItems (Labeled _ i : r) = i : getItems r

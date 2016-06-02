@@ -314,8 +314,8 @@ oldWebApi opts tempLib sessRef re pathBits splitQuery meth respond
                  Just k' -> getHetsResult opts [] sessRef (qr k')
                               Nothing OldWebAPI proofFormatterOptions
                respond $ case ms of
-                 Nothing -> mkResponse textC status422 $ showRelDiags 1 ds
-                 Just (t, s) -> mkOkResponse t s
+                 Just (t, s) | not $ hasErrors ds-> mkOkResponse t s
+                 _ -> mkResponse textC status422 $ showRelDiags 1 ds
            -- AUTOMATIC PROOFS E.N.D.
            else getHetsResponse opts [] sessRef pathBits splitQuery respond
       "POST" -> do
@@ -467,8 +467,8 @@ parseRESTful
     Result ds ms <- liftIO $ runResultT $
       getHetsResult myOpts [] sessRef qr format RESTfulAPI pfOptions
     respond $ case ms of
-      Nothing -> mkResponse textC status422 $ showRelDiags 1 ds
-      Just (t, s) -> mkOkResponse t s
+      Just (t, s) | not $ hasErrors ds -> mkOkResponse t s
+      _ -> mkResponse textC status422 $ showRelDiags 1 ds
   getResponse = getResponseAux opts
   -- respond depending on request Method
   in case meth of

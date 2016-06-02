@@ -153,7 +153,7 @@ instance PrettyLG LIB_ITEM where
         Ref_spec_defn si ab _ -> keyword refinementS <+>
             fsep [structIRI si <+> equals, prettyLG lg ab]
             $+$ keyword endS
-        Graph_defn si n _ -> keyword networkS <+>
+        Network_defn si n _ -> keyword networkS <+>
             fsep [structIRI si <+> equals, pretty n]
             $+$ keyword endS
         Download_items l ab _ -> topKey fromS <+>

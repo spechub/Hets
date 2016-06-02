@@ -105,7 +105,7 @@ networkDefn l = do
     kEqu <- equalT
     n <- parseNetwork l
     kEnd <- asKey endS
-    return . Graph_defn name n
+    return . Network_defn name n
          . catRange $ [kGraph, kEqu, kEnd]
 
 emptyParams :: GENERICITY
