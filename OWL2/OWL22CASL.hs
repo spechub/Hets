@@ -121,14 +121,14 @@ uriToCaslId urI = let
  in
   if ((isDatatypeKey urI) && (isThing urI))  then
         getId $ localPart urI
-   else getId $ localPart urI
-    {-let
+   else 
+    let
       ePart = expandedIRI urI
     in
       if ePart /= "" then
         getId $ expandedIRI urI
-      else -- this catches the datatypes, e.g. xsd:time, weird
-        getId $ localPart urI-}
+      else 
+        getId $ localPart urI
 
 tokDecl :: Token -> VAR_DECL
 tokDecl = flip mkVarDecl thing
