@@ -34,6 +34,7 @@ module CASL.Sublogic
     , top
     , caslTop
     , cFol
+    , cPrenex
     , sublogics_max
     , comp_list
     -- * functions for the creation of minimal sublogics
@@ -102,6 +103,7 @@ datatypes for CASL sublogics
 data CASL_Formulas = Atomic  -- ^ atomic logic
                    | Horn    -- ^ positive conditional logic
                    | GHorn   -- ^ generalized positive conditional logic
+                   | Prenex  -- ^ formulas in prenex normal form
                    | FOL     -- ^ first-order logic
                    | SOL     -- ^ second-order logic
                    deriving (Show, Eq, Ord, Typeable, Data)
@@ -180,6 +182,9 @@ cFol = caslTop
   { sub_features = NoSub -- no subsorting
   , has_part = False -- no partiality
   }
+
+cPrenex :: Lattice a => CASL_SL a
+cPrenex = cFol {which_logic = Prenex}
 
 mkBot :: a -> CASL_SL a
 mkBot = CASL_SL NoSub False NoSortGen False False Atomic False
@@ -290,6 +295,8 @@ nameList =
   , ((False, SOL), "SOAlg")
   , ((True, FOL), "FOL")
   , ((False, FOL), "FOAlg")
+  , ((True, Prenex), "Prenex")
+  , ((False,Prenex), "PrenexAlg")
   , ((True, GHorn), "GHorn")
   , ((False, GHorn), "GCond")
   , ((True, Horn), "Horn")

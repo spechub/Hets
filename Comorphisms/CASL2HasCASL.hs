@@ -71,6 +71,7 @@ instance Comorphism CASL2HasCASL
              CasSub.Atomic -> HasSub.Atomic
              CasSub.Horn -> HasSub.Horn
              CasSub.GHorn -> HasSub.GHorn
+             CasSub.Prenex -> HasSub.FOL -- at least for now
              CasSub.FOL -> HasSub.FOL
              CasSub.SOL -> HasSub.HOL
         }

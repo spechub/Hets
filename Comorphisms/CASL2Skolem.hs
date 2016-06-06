@@ -55,15 +55,22 @@ instance Comorphism CASL2Skolem
                CASLMor
                Symbol RawSymbol ProofTree where
     sourceLogic CASL2Skolem = CASL
-    sourceSublogic CASL2Skolem = SL.caslTop --TODO
+    sourceSublogic CASL2Skolem = SL.cPrenex
     targetLogic CASL2Skolem = CASL
-    mapSublogic CASL2Skolem sl = Just sl -- TODO
+    mapSublogic CASL2Skolem sl = Just sl
     map_theory CASL2Skolem = mapTheory
     map_morphism CASL2Skolem = error "nyi"
-    map_sentence CASL2Skolem _ _ = error "nyi"
+    map_sentence CASL2Skolem = mapSentence
     map_symbol CASL2Skolem _ = Set.singleton . id
-    has_model_expansion CASL2Skolem = True -- check
-    is_weakly_amalgamable CASL2Skolem = True --check
+    has_model_expansion CASL2Skolem = True
+    is_weakly_amalgamable CASL2Skolem = True
+    eps CASL2Skolem = False
+
+mapSentence :: CASLSign -> CASLFORMULA -> Result CASLFORMULA
+mapSentence sig sen = do
+ let (_n', _nsig', sen1) = skolemize 0 [] sig sig
+                                $ miniscoping sig sen
+ return sen1  
 
 mapTheory :: (CASLSign, [Named CASLFORMULA]) ->
           Result (CASLSign, [Named CASLFORMULA])
