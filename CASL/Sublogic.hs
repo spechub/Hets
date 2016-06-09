@@ -280,7 +280,7 @@ sDims l = let
   , [b { has_eq = t } ]
   , [b { has_pred = t } ]
   , [b { has_empty_sorts = t } ]
-  , [b { which_logic = fo } | fo <- reverse [SOL, FOL, GHorn, Horn]]]
+  , [b { which_logic = fo } | fo <- reverse [SOL, FOL, Prenex, GHorn, Horn]]]
 
 {- ----------------------------------------------------------------------------
 Conversion functions (to String)

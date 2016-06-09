@@ -36,8 +36,6 @@ import qualified Common.Lib.MapSet as MapSet
 
 import qualified Common.Lib.Rel as Rel
 
-import Data.List(partition)
-
 data CASL2Skolem = CASL2Skolem deriving Show
 
 instance Language CASL2Skolem where
@@ -68,16 +66,14 @@ instance Comorphism CASL2Skolem
 
 mapSentence :: CASLSign -> CASLFORMULA -> Result CASLFORMULA
 mapSentence sig sen = do
- let (_n', _nsig', sen1) = skolemize 0 [] sig sig
-                                $ miniscoping sig sen
+ let (_n', _nsig', sen1) = skolemize 0 [] sig sig sen
  return sen1  
 
 mapTheory :: (CASLSign, [Named CASLFORMULA]) ->
           Result (CASLSign, [Named CASLFORMULA])
 mapTheory (sig, nsens) = do
  let (_, nsig, nsens') = foldl (\(n, nsig0, sens0) nsen ->
-        let (n', nsig', sen1) = skolemize n [] sig nsig0
-                                $ miniscoping sig $ sentence nsen
+        let (n', nsig', sen1) = skolemize n [] sig nsig0 $ sentence nsen
         in (n', nsig', nsen{sentence = sen1}:sens0))
       (0, emptySign (), []) nsens
      sig' = uniteCASLSign sig nsig
@@ -144,7 +140,7 @@ skolemize n outerFreeVars osig nsig sen = case sen of
       let (y, nsig1, s') = skolemize x outerFreeVars osig nsig0 s
       in (y, uniteCASLSign nsig1 nsig0, s':sens0))
                         (n, nsig, []) sens
-  in (n', nsig', Junction j sens' nullRange)
+  in (n', nsig', Junction j (reverse sens') nullRange)
  Relation sen1 rel sen2 _ -> let
    (n', nsig', sen') = skolemize n outerFreeVars osig nsig sen1
    (n'', nsig'', sen'') = skolemize n' outerFreeVars osig nsig' sen2
@@ -154,54 +150,3 @@ skolemize n outerFreeVars osig nsig sen = case sen of
   in (n', nsig', Negation sen' nullRange)
  x -> (n, nsig, x)
 
--- miniscoping:
--- Qx(G and F) => QxG and F
--- Qx(G or F) => QxG or F
--- forall x (G and H) => (forall x G) and (forall x H)
--- exists x (G or H) => (exists x G) or (exists x H)
--- where x occurs freely in G, H
--- but not in F
-
-miniscoping :: CASLSign -> CASLFORMULA -> CASLFORMULA
-miniscoping sig sen = case sen of
- Quantification q vdecls (Junction j sens _) _ ->
-   let
-    vars = Set.fromList $ flatVAR_DECLs vdecls
-    (sensVarsFree, sensNoVars) = partition
-        (\s ->
-          let svars = freeVars sig s
-          in (svars /= Set.difference svars vars))
-                                 sens
-    sensVarsFree' = map (miniscoping sig) sensVarsFree
-    sensNoVars' = map (miniscoping sig) sensNoVars
-   in case (q, j) of
-       (Existential, Con) ->
-         Junction Con
-          ((Quantification Existential vdecls
-                           (Junction Con sensVarsFree' nullRange) nullRange)
-          : sensNoVars')
-         nullRange
-       (Existential, Dis) ->
-         Junction Dis
-          ((map (\s -> Quantification Existential vdecls s nullRange)
-            sensVarsFree') ++ sensNoVars')
-          nullRange
-       (Universal, Con) ->
-         Junction Con
-          ((map (\s -> Quantification Universal vdecls s nullRange)
-            sensVarsFree') ++ sensNoVars') nullRange
-       (Universal, Dis) ->
-         Junction Dis
-          ((Quantification Universal vdecls
-             (Junction Dis sensVarsFree' nullRange) nullRange):sensNoVars')
-         nullRange
-       _ -> error "miniscoping nyi for exists uniquely"
- Quantification q vdecls qsen _ ->
-  Quantification q vdecls (miniscoping sig qsen) nullRange
- Junction j sens _ ->
-   Junction j (map (miniscoping sig) sens) nullRange
- Relation sen1 rel sen2 _ ->
-   Relation (miniscoping sig sen1) rel (miniscoping sig sen2) nullRange
- Negation nsen _ ->
-   Negation (miniscoping sig nsen) nullRange
- x -> x
