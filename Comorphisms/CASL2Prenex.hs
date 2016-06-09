@@ -50,7 +50,8 @@ instance Comorphism CASL2Prenex
     sourceLogic CASL2Prenex = CASL
     sourceSublogic CASL2Prenex = SL.caslTop
     targetLogic CASL2Prenex = CASL
-    mapSublogic CASL2Prenex sl = Just sl -- TODO
+    mapSublogic CASL2Prenex sl = 
+      Just $ min sl (sl{SL.which_logic = SL.Prenex})
     map_theory CASL2Prenex = mapTheory
     map_morphism CASL2Prenex = return
     map_sentence CASL2Prenex sig = return . (mapSentence sig)
@@ -155,19 +156,13 @@ computePNF sen = case sen of
   Quantification q vdecls (computePNF qsen) nullRange
  Junction j sens _ -> let
    sens' = map computePNF sens
-   processQuants asen = case asen of
-     Quantification q vdecls sen' _ -> Quantification q vdecls (processQuants sen') nullRange
-     Junction j' jsens _ -> let
-       nonQuantifiedSen (Quantification _ _ _ _) = False
-       nonQuantifiedSen _ = True
-       (nonQuantJSens, remJSens) = span nonQuantifiedSen jsens
-       in if nonQuantJSens == jsens then asen
-           else case remJSens of 
-                  (Quantification q vdecls qsen _):remJSens' -> 
-                    Quantification q vdecls (processQuants $ Junction j' (nonQuantJSens ++ (qsen: remJSens')) nullRange) nullRange
-                  _ -> error "computePNF" -- should not be possible
-     _ -> asen
-  in processQuants $ Junction j sens' nullRange
+   (vdecls, sens'') = foldl (\(vs, ss) s -> case s of 
+                                           Quantification q vd' qs' _ -> ((q,vd'):vs, qs':ss)
+                                           _ -> (vs, s:ss)) 
+                    ([], []) sens'
+   qsen = Junction j (reverse sens'') nullRange
+   rsen = foldl (\s (q, vd) -> Quantification q vd s nullRange) qsen vdecls 
+  in rsen
  _ -> sen 
 
 mapSentence :: CASLSign -> CASLFORMULA -> CASLFORMULA
