@@ -156,8 +156,12 @@ computePNF sen = case sen of
   Quantification q vdecls (computePNF qsen) nullRange
  Junction j sens _ -> let
    sens' = map computePNF sens
+   collectQuants s = case s of 
+                       Quantification q vd qs _ -> let (vs, qs') = collectQuants qs in ((q,vd):vs, qs')
+                       _ -> ([], s)
    (vdecls, sens'') = foldl (\(vs, ss) s -> case s of 
-                                           Quantification q vd' qs' _ -> ((q,vd'):vs, qs':ss)
+                                           Quantification q vd qs _ -> let (vs', qs') = collectQuants qs
+                                                                          in (vs' ++ (q,vd):vs, qs':ss)
                                            _ -> (vs, s:ss)) 
                     ([], []) sens'
    qsen = Junction j (reverse sens'') nullRange
