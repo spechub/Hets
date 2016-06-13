@@ -119,6 +119,7 @@ import System.Directory
 import System.Exit
 import System.FilePath
 import System.IO
+import System.Posix.Process (getProcessID)
 
 data Session = Session
   { sessLibEnv :: LibEnv
@@ -184,6 +185,7 @@ type WebResponse = (Response -> RsrcIO Response) -> RsrcIO Response
 
 hetsServer :: HetcatsOpts -> IO ()
 hetsServer opts1 = do
+  writePidFile opts1
   tempDir <- getTemporaryDirectory
   let tempLib = tempDir </> "MyHetsLib"
       logFile = tempDir </>
@@ -255,6 +257,17 @@ hetsServer opts1 = do
            -- only otherwise stick to the old response methods
            else oldWebApi newOpts tempLib sessRef re pathBits qr2
              meth respond
+
+writePidFile :: HetcatsOpts -> IO ()
+writePidFile opts =
+  let pidFilePath = pidFile opts
+  in if null pidFilePath
+     then return ()
+     else do
+       pid <- getProcessID
+       writeFile pidFilePath (show pid)
+       return ()
+
 parseRequestParams :: Request -> RsrcIO Json
 parseRequestParams request =
   let

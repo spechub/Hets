@@ -98,7 +98,7 @@ bracket s = "[" ++ s ++ "]"
 verboseS, intypeS, outtypesS, skipS, justStructuredS, transS,
      guiS, libdirsS, outdirS, amalgS, recursiveS, namedSpecsS,
      interactiveS, modelSparQS, counterSparQS, connectS, xmlS, listenS,
-     applyAutomaticRuleS, normalFormS, unlitS :: String
+     applyAutomaticRuleS, normalFormS, unlitS, pidFileS :: String
 
 modelSparQS = "modelSparQ"
 counterSparQS = "counterSparQ"
@@ -118,6 +118,7 @@ interactiveS = "interactive"
 connectS = "connect"
 xmlS = "xml"
 listenS = "listen"
+pidFileS = "pidfile"
 applyAutomaticRuleS = "apply-automatic-rule"
 normalFormS = "normal-form"
 unlitS = "unlit"
@@ -213,6 +214,7 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , unlit :: Bool
   , serve :: Bool
   , listen :: Int
+  , pidFile :: FilePath
   , whitelist :: [[String]]
   , blacklist :: [[String]]
   , runMMT :: Bool
@@ -259,6 +261,7 @@ defaultHetcatsOpts = HcOpt
   , unlit = False
   , serve = False
   , listen = -1
+  , pidFile = ""
   , whitelist = []
   , blacklist = []
   , runMMT = False
@@ -300,6 +303,7 @@ instance Show HetcatsOpts where
     ++ showFlag xmlFlag xmlS
     ++ showFlag ((/= -1) . connectP) connectS
     ++ showFlag ((/= -1) . listen) listenS
+    ++ showEqOpt pidFileS (pidFile opts)
     ++ showIPLists whitelist whitelistS
     ++ showIPLists blacklist blacklistS
     ++ concatMap (showEqOpt "dump") (dumpOpts opts)
@@ -361,6 +365,7 @@ data Flag =
   | RelPos
   | Serve
   | Listen Int
+  | PidFile FilePath
   | Whitelist String
   | Blacklist String
   | UseMMT
@@ -379,6 +384,7 @@ makeOpts opts flg =
     Interactive -> opts { interactive = True }
     XML -> opts { xmlFlag = True }
     Listen x -> opts { listen = x }
+    PidFile x -> opts { pidFile = x }
     Blacklist x -> opts { blacklist = splitIPs x }
     Whitelist x -> opts { whitelist = splitIPs x }
     Connect x y -> opts { connectP = x, connectH = y }
@@ -691,6 +697,8 @@ options = let
     , Option "x" [xmlS] (NoArg XML)
        "use xml packets to communicate"
 #ifdef SERVER
+    , Option "P" [pidFileS] (ReqArg PidFile "FILEPATH")
+       "path to put the PID file of the hets server (omit if no pidfile is desired)"
     , Option "X" ["server"] (NoArg Serve)
        "start hets as web-server"
 #endif
