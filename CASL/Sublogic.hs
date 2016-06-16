@@ -459,7 +459,7 @@ sl_form_level_aux ff (isCompound, leftImp) phi =
        let ql = sl_form_level_aux ff (isCompound, leftImp) f
        in if is_atomic_q q then ql else max FOL ql
    Junction j l _ -> maximum $ case j of
-      Con -> map (sl_form_level_aux ff (True, leftImp)) l
+      Con -> FOL : map (sl_form_level_aux ff (True, leftImp)) l
       Dis -> FOL : map (sl_form_level_aux ff (False, False)) l
    Relation l1 c l2 _ -> maximum $ sl_form_level_aux ff (True, True) l1
      : case c of
