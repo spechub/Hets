@@ -34,6 +34,8 @@ module Logic.Comorphism
     , isIdComorphism
     , isModelTransportable
     , hasModelExpansion
+    , isEps
+    , isRps
     , isWeaklyAmalgamable
     , compComorphism
     ) where
@@ -446,6 +448,15 @@ hasModelExpansion (Comorphism cid) = has_model_expansion cid
 -- | Test whether a comorphism is weakly amalgamable
 isWeaklyAmalgamable :: AnyComorphism -> Bool
 isWeaklyAmalgamable (Comorphism cid) = is_weakly_amalgamable cid
+
+-- | Tests whether a comorphism is rps or eps
+
+isEps :: AnyComorphism -> Bool
+isEps (Comorphism cid) = eps cid
+
+isRps :: AnyComorphism -> Bool
+isRps (Comorphism cid) = rps cid
+
 
 -- | Compose comorphisms
 compComorphism :: Monad m => AnyComorphism -> AnyComorphism -> m AnyComorphism
