@@ -955,7 +955,7 @@ debian/changelog.tmp: debian/control
 
 # NOTE: dpkg-gencontrol is not POSIX conform wrt. arg processing!
 binary-indep: build-indep install-common $(CHANGELOG)
-	@[ "$${USERNAME}" != 'root' -o -z "$${FAKEROOTKEY}" ] && \
+	-@[ "$${USERNAME}" != 'root' -o -z "$${FAKEROOTKEY}" ] && \
 		printf '\nWARNING: The $<  target should be called using fakeroot!\n\n'
 	$(INSTALL) -m 0755 -d $(DESTDIR)$(SUBDIR_common)/DEBIAN
 	dpkg-gencontrol -P$(DESTDIR)$(SUBDIR_common) -phets-common \
@@ -964,7 +964,7 @@ binary-indep: build-indep install-common $(CHANGELOG)
 	dpkg-name -o ../hets-A.deb
 
 binary-arch: build-arch install-hets install-hets_server $(CHANGELOG)
-	@[ "$${USERNAME}" != 'root' -o -z "$${FAKEROOTKEY}" ] && \
+	-@[ "$${USERNAME}" != 'root' -o -z "$${FAKEROOTKEY}" ] && \
 		printf '\nWARNING: The $<  target should be called using fakeroot!\n\n'
 	$(INSTALL) -m 0755 -d \
 		$(DESTDIR)$(SUBDIR_hets)/DEBIAN \
