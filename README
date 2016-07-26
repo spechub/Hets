@@ -92,7 +92,8 @@ NOTE that since version 0.99.10 programatica support is disabled by default.
 If you want programatica support you need to extract the sources first into
 programatica/tools (this folder should than contain the Setup.hs file). One
 may try 'make get-programatica' as an alternative - it tries to fetch the
-source[s] defined in var.mk and extract them to the right place. To compile
+source[s] defined in var.mk and extract them to the right place. On Ubuntu you
+should also install the package 'libghc-programatica-dev'. To compile
 without programatica support again, just rename or delete ./programatica/
 and do a 'make distclean' before building the new binaries. 'make realclean'
 is almost the same, but it leaves the derived aka generated sources untouched
