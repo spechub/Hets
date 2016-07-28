@@ -12,6 +12,10 @@ Portability :  non-portable (via imports)
 
 module PGIP.Server (hetsServer) where
 
+#ifdef WARP3
+import Control.Exception.Base (SomeException)
+#endif
+
 import PGIP.Output.Formatting
 import PGIP.Output.Mime
 import PGIP.Output.Proof
