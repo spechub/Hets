@@ -12,6 +12,10 @@ Portability :  non-portable (via imports)
 
 module PGIP.Server (hetsServer) where
 
+#ifdef WARP3
+import Control.Exception.Base (SomeException)
+#endif
+
 import PGIP.Output.Formatting
 import PGIP.Output.Mime
 import PGIP.Output.Proof
@@ -45,6 +49,7 @@ import Static.AnalysisLibrary
 import Static.ApplyChanges
 import Static.ComputeTheory
 import Static.DevGraph
+import Static.DGTranslation
 import Static.DgUtils
 import Static.DotGraph
 import Static.FromXml
@@ -91,9 +96,9 @@ import Common.ResultT
 import Common.ToXml
 import Common.Utils
 import Common.XUpdate
+import Common.GlobalAnnotations
 
 import Control.Monad
-import Control.Exception.Base (SomeException)
 
 import qualified Data.IntMap as IntMap
 import qualified Data.Map as Map
@@ -385,7 +390,7 @@ nodeEdgeIdes = ["nodes", "edges"]
 newRESTIdes :: [String]
 newRESTIdes =
   [ "dg", "translations", "provers", "consistency-checkers", "prove"
-  , "consistency-check" ]
+  , "consistency-check", "theory" ]
 
 queryFail :: String -> WebResponse
 queryFail msg respond = respond $ mkResponse textC status400 msg
@@ -464,8 +469,9 @@ parseRESTful
       in return . Query (DGQuery sId (Just p)) . nodeQuery (getFragment p)
   -- call getHetsResult with the properly generated query (Final Result)
   getResponseAux myOpts qr = do
+    let format' = Just $ fromMaybe "xml" format
     Result ds ms <- liftIO $ runResultT $
-      getHetsResult myOpts [] sessRef qr format RESTfulAPI pfOptions
+      getHetsResult myOpts [] sessRef qr format' RESTfulAPI pfOptions
     respond $ case ms of
       Just (t, s) | not $ hasErrors ds -> mkOkResponse t s
       _ -> mkResponse textC status422 $ showRelDiags 1 ds
@@ -533,9 +539,8 @@ parseRESTful
             newOpts = foldl makeOpts opts $ mapMaybe (`lookup` optionFlags)
               optFlags
         in if elem newIde newRESTIdes && all (`elem` globalCommands) cmdList
-        then getResponseAux newOpts . Query (NewDGQuery libIri $ cmdList
-            ++ Set.toList (Set.fromList $ optFlags ++ qOpts))
-         $ case newIde of
+        then let
+         qkind = case newIde of
            "translations" -> case nodeM of
              Nothing -> GlTranslations
              Just n -> nodeQuery n $ NcTranslations Nothing
@@ -554,8 +559,22 @@ parseRESTful
              in case nodeM of
              Nothing -> GlAutoProve pc
              Just n -> nodeQuery n $ ProveNode pc
-           _ -> DisplayQuery (Just $ fromMaybe "xml" format)
-        else queryFailure
+           "dg" -> case transM of
+             Nothing -> DisplayQuery (Just $ fromMaybe "xml" format)
+             Just tr -> Query.DGTranslation tr
+           "theory" -> case transM of
+             Nothing -> case nodeM of
+                         Just x -> NodeQuery (maybe (Right x) Left $ readMaybe x)
+                                   $ NcCmd Query.Theory
+                         Nothing -> error "REST: theory"
+             Just tr -> case nodeM of
+                         Just x -> NodeQuery (maybe (Right x) Left $ readMaybe x)
+                                   $ NcCmd $ Query.Translate tr
+                         Nothing -> error "REST: theory"
+           _ -> error $ "REST: unknown " ++ newIde
+         in getResponseAux newOpts . Query (NewDGQuery libIri $ cmdList
+            ++ Set.toList (Set.fromList $ optFlags ++ qOpts)) $ qkind
+                 else queryFailure
       _ -> queryFailure
     "PUT" -> case pathBits of
       {- execute global commands
@@ -925,6 +944,11 @@ getHetsResult :: HetcatsOpts -> [W.FileInfo BS.ByteString]
   -> Cache -> Query.Query -> Maybe String -> UsedAPI -> ProofFormatterOptions
   -> ResultT IO (String, String)
 getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
+      let getCom n = let ncoms = filter (\(Comorphism cid) -> language_name cid == n) comorphismList
+                     in case ncoms of
+                         [c] -> c
+                         [] -> error $ "comorphism not found:" ++ n
+                         _ -> error $ "more than one comorphism found for:" ++ n
       sk@(sess', k) <- getDGraph opts sessRef dgQ
       sess <- lift $ makeSessCleanable sess' sessRef k
       let libEnv = sessLibEnv sess
@@ -948,6 +972,13 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
               Just str | elem str ppList
                 -> ppDGraph dg $ lookup str $ zip ppList prettyList
               _ -> sessAns ln svg sk
+            Query.DGTranslation path -> do
+              -- compose the comorphisms passed in translation
+               let coms = map getCom $ splitOn ',' path
+               com <- foldM compComorphism (head coms) $ tail coms
+               dg' <- liftR $ dg_translation libEnv dg com
+               liftR $ return (xmlC, ppTopElement
+                $ ToXml.dGraph opts libEnv ln dg')
             GlProvers mp mt -> do
               availableProvers <- liftIO $ getFullProverList mp mt dg
               return $ case api of
@@ -1045,8 +1076,31 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
                         lift $ nextSess newLib sess sessRef k
                         return (xmlC, ppTopElement $ formatConsNode res txt)
                     _ -> case nc of
-                      NcCmd Query.Theory -> lift $ fmap (\ t -> (htmlC, t))
-                          $ showGlobalTh dg i gTh k fstLine
+                      NcCmd Query.Theory -> case api of
+                          OldWebAPI -> lift $ fmap (\ t -> (htmlC, t))
+                                       $ showGlobalTh dg i gTh k fstLine
+                          RESTfulAPI -> lift $ fmap (\ t -> (xmlC, t))
+                                       $ showNodeXml opts (globalAnnos dg) libEnv dg i
+                      NcCmd (Query.Translate x) -> do
+                          -- compose the comorphisms passed in translation
+                          let coms = map getCom $ splitOn ',' x
+                          com <- foldM compComorphism (head coms) $ tail coms
+                          -- translate the theory of i along com
+                          gTh1 <- liftR $ mapG_theory com gTh
+                          -- insert the translation of i in dg
+                          let n1 = getNewNodeDG dg
+                              labN1 = newInfoNodeLab
+                                       emptyNodeName
+                                       (newNodeInfo DGBasic) -- to be corrected
+                                       gTh1
+                              dg1 = insLNodeDG (n1, labN1) dg
+                          gmor <- liftR $ gEmbedComorphism com $ signOf $ dgn_theory dgnode
+                          -- add a link from i to n1 labeled with (com, id)
+                          let (_, dg2) = insLEdgeDG
+                                          (i, n1, globDefLink gmor SeeSource) -- origin to be corrected
+                                          dg1
+                          -- show the theory of n1 in xml format
+                          lift $ fmap (\ t -> (xmlC, t)) $ showNodeXml opts (globalAnnos dg2) libEnv dg2 n1
                       NcProvers mp mt -> do
                         availableProvers <- liftIO $ getProverList mp mt subL
                         return $ case api of
@@ -1150,6 +1204,13 @@ resultStyles = unlines
 
 showBool :: Bool -> String
 showBool = map toLower . show
+
+showNodeXml :: HetcatsOpts -> GlobalAnnos -> LibEnv -> DGraph -> Int -> IO String
+showNodeXml opts ga lenv dg n = let
+ lNodeN = lab (dgBody dg) n
+ in case lNodeN of
+     Just lNode -> return $ ppTopElement $ ToXml.lnode opts ga lenv (n,lNode)
+     Nothing -> error $ "no node for " ++ show n
 
 {- | displays the global theory for a node with the option to prove theorems
 and select proving options -}
