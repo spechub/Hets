@@ -469,9 +469,7 @@ parseRESTful
       in return . Query (DGQuery sId (Just p)) . nodeQuery (getFragment p)
   -- call getHetsResult with the properly generated query (Final Result)
   getResponseAux myOpts qr = do
-    let format' = case format of 
-                    Nothing -> Just "xml"
-                    _ -> format
+    let format' = Just $ fromMaybe "xml" format
     Result ds ms <- liftIO $ runResultT $
       getHetsResult myOpts [] sessRef qr format' RESTfulAPI pfOptions
     respond $ case ms of
@@ -561,21 +559,21 @@ parseRESTful
              in case nodeM of
              Nothing -> GlAutoProve pc
              Just n -> nodeQuery n $ ProveNode pc
-           "dg" -> case transM of 
+           "dg" -> case transM of
              Nothing -> DisplayQuery (Just $ fromMaybe "xml" format)
              Just tr -> Query.DGTranslation tr
            "theory" -> case transM of
              Nothing -> case nodeM of
-                         Just x -> NodeQuery (maybe (Right x) Left $ readMaybe x) 
+                         Just x -> NodeQuery (maybe (Right x) Left $ readMaybe x)
                                    $ NcCmd Query.Theory
                          Nothing -> error "REST: theory"
              Just tr -> case nodeM of
-                         Just x -> NodeQuery (maybe (Right x) Left $ readMaybe x) 
+                         Just x -> NodeQuery (maybe (Right x) Left $ readMaybe x)
                                    $ NcCmd $ Query.Translate tr
                          Nothing -> error "REST: theory"
            _ -> error $ "REST: unknown " ++ newIde
          in getResponseAux newOpts . Query (NewDGQuery libIri $ cmdList
-            ++ Set.toList (Set.fromList $ optFlags ++ qOpts)) $ qkind 
+            ++ Set.toList (Set.fromList $ optFlags ++ qOpts)) $ qkind
                  else queryFailure
       _ -> queryFailure
     "PUT" -> case pathBits of
@@ -974,7 +972,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
               Just str | elem str ppList
                 -> ppDGraph dg $ lookup str $ zip ppList prettyList
               _ -> sessAns ln svg sk
-            Query.DGTranslation path -> do 
+            Query.DGTranslation path -> do
               -- compose the comorphisms passed in translation
                let coms = map getCom $ splitOn ',' path
                com <- foldM compComorphism (head coms) $ tail coms
@@ -1078,7 +1076,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
                         lift $ nextSess newLib sess sessRef k
                         return (xmlC, ppTopElement $ formatConsNode res txt)
                     _ -> case nc of
-                      NcCmd Query.Theory -> case api of 
+                      NcCmd Query.Theory -> case api of
                           OldWebAPI -> lift $ fmap (\ t -> (htmlC, t))
                                        $ showGlobalTh dg i gTh k fstLine
                           RESTfulAPI -> lift $ fmap (\ t -> (xmlC, t))
@@ -1102,7 +1100,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
                                           (i, n1, globDefLink gmor SeeSource) -- origin to be corrected
                                           dg1
                           -- show the theory of n1 in xml format
-                          lift $ fmap (\ t -> (xmlC, t)) $ showNodeXml opts (globalAnnos dg2) libEnv dg2 n1 
+                          lift $ fmap (\ t -> (xmlC, t)) $ showNodeXml opts (globalAnnos dg2) libEnv dg2 n1
                       NcProvers mp mt -> do
                         availableProvers <- liftIO $ getProverList mp mt subL
                         return $ case api of
@@ -1210,7 +1208,7 @@ showBool = map toLower . show
 showNodeXml :: HetcatsOpts -> GlobalAnnos -> LibEnv -> DGraph -> Int -> IO String
 showNodeXml opts ga lenv dg n = let
  lNodeN = lab (dgBody dg) n
- in case lNodeN of 
+ in case lNodeN of
      Just lNode -> return $ ppTopElement $ ToXml.lnode opts ga lenv (n,lNode)
      Nothing -> error $ "no node for " ++ show n
 
