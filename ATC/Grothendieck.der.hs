@@ -82,7 +82,7 @@ fromShATermLG' lg i att = case getATerm' i att of
                (attN, t) -> (setATerm' i t attN, t)
 
 -- generic undecidable instance
-instance ShATermConvertible a => ShATermLG a where
+instance (ShATermConvertible a, Typeable a) => ShATermLG a where
   toShATermLG = toShATermAux
   fromShATermLG _ = fromShATermAux
 
