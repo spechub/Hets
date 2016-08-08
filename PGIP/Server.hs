@@ -202,8 +202,11 @@ hetsServer opts = do
 writePidFile :: HetcatsOpts -> IO ()
 writePidFile opts =
   let pidFilePath = pidFile opts
+      v = verbose opts
   in (unless (null pidFilePath) $
-     do pid <- getProcessID
+     do unless (null pidFilePath)
+          (verbMsgIOLn v 2 ("Writing PIDfile " ++ show pidFilePath))
+        pid <- getProcessID
         writeFile pidFilePath (show pid))
 
 deletePidFile :: HetcatsOpts -> IO ()
