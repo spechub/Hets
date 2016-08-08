@@ -33,6 +33,7 @@ module Driver.Options
   , ATType
   , Delta
   , hetcatsOpts
+  , printOptionsWarnings
   , isStructured
   , guess
   , rmSuffix
@@ -988,6 +989,12 @@ hetcatsOpts argv =
                return (foldr (flip makeOpts) defaultHetcatsOpts flags)
                             { infiles = nonOpts }
         (_, _, errs) -> hetsIOError (concat errs)
+
+printOptionsWarnings :: HetcatsOpts -> IO ()
+printOptionsWarnings opts =
+  let v = verbose opts in
+  unless (null (pidFile opts) || serve opts)
+    (verbMsgIOLn v 1 "option -P has no effect because it is used without -X")
 
 -- | 'checkFlags' checks all parsed Flags for sanity
 checkFlags :: [Flag] -> IO [Flag]
