@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/Haskell2IsabelleHOLCF.hs
 Description :  translating a Haskell subset to Isabelle HOLCF
 Copyright   :  (c) Paolo Torrini and Till Mossakowski and Uni Bremen 2004-2005
 License     :  All rights reserved.

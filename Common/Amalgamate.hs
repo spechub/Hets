@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Common/Amalgamate.hs
 Description :  data types for amalgamability options and analysis
 Copyright   :  (c) Christian Maeder, Uni Bremen 2004
 License     :  GPLv2 or higher, see LICENSE.txt

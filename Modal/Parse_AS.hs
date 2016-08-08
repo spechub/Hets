@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Modal/Parse_AS.hs
 Copyright   :  (c) Till Mossakowski, Wiebke Herding, C. Maeder, Uni Bremen 2004
 License     :  GPLv2 or higher, see LICENSE.txt
 

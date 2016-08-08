@@ -1,7 +1,7 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, DeriveDataTypeable
   , GeneralizedNewtypeDeriving, TypeSynonymInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./FreeCAD/Logic_FreeCAD.hs
 Description :  Instance of class Logic for FreeCAD
 Copyright   :  (c) Christian Maeder DFKI, Uni Bremen 2009
 License     :  GPLv2 or higher, see LICENSE.txt

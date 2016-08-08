@@ -1,14 +1,16 @@
 {- |
-Module      :  $Header$
-Description :  parser for CASL specification librariess
-Copyright   :  (c) Maciek Makowski, Uni Bremen 2002-2006
+Module      :  ./Syntax/Parse_AS_Library.hs
+Description :  parser for DOL documents and CASL specification librariess
+Copyright   :  (c) Maciek Makowski, Uni Bremen 2002-2016
 License     :  GPLv2 or higher, see LICENSE.txt
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  non-portable(Grothendieck)
 
-Parser for CASL specification librariess
+Parser for CASL specification libraries
    Follows Sect. II:3.1.5 of the CASL Reference Manual.
+Parser for DOL documents
+   Follows the DOL OMG standard, clause 9.3
 -}
 
 module Syntax.Parse_AS_Library (library) where
@@ -103,7 +105,7 @@ networkDefn l = do
     kEqu <- equalT
     n <- parseNetwork l
     kEnd <- asKey endS
-    return . Graph_defn name n
+    return . Network_defn name n
          . catRange $ [kGraph, kEqu, kEnd]
 
 emptyParams :: GENERICITY

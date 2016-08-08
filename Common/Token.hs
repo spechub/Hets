@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Common/Token.hs
 Description :  parser for CASL 'Id's based on "Common.Lexer"
 Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2004
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -112,8 +112,8 @@ criticalKeywords = terminatingKeywords ++ startingKeywords
 -- | keywords terminating a basic spec
 terminatingKeywords :: [String]
 terminatingKeywords =
-    [ andS, endS, fitS, forgetS, hideS, keepS, rejectS, revealS, selectS
-    , thenS, withS, withinS, ofS, forS, toS]
+    [ andS, endS, extractS, fitS, forgetS, hideS, keepS, rejectS, removeS, 
+      revealS, selectS, thenS, withS, withinS, ofS, forS, toS, intersectS]
 
 -- | keywords starting a library item
 startingKeywords :: [String]

@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/HasCASL2HasCASL.hs
 Description :  translating executable formulas to programs
 Copyright   :  (c) Christian Maeder, Uni Bremen 2004
 License     :  GPLv2 or higher, see LICENSE.txt

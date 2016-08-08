@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CspCASL/Print_CspCASL.hs
 Description :  Pretty printing for CspCASL
 Copyright   :  (c) Andy Gimblett and Uni Bremen 2006
 License     :  GPLv2 or higher, see LICENSE.txt

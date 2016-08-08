@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Framework/Logic_Framework.hs
 Description :  Instances of Logic and other classes for the logic Framework
 Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2009
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Common/Doc.hs
 Description :  document data type Doc for (pretty) printing in various formats
 Copyright   :  (c) Christian Maeder and Uni Bremen 2006
 License     :  GPLv2 or higher, see LICENSE.txt

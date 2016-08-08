@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CSL/GeneralExtendedParameter.hs
 Description :  Handling of extended parameters
 Copyright   :  (c) Ewaryst Schulz, DFKI Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt

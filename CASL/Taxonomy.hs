@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL/Taxonomy.hs
 Description :  converters for theories to MMiSSOntology
   (subsorting and concept taxonomies)
 Copyright   :  (c) Klaus Luettich, Uni Bremen 2002-2004

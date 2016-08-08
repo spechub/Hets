@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Common/AnnoState.hs
 Description :  parsing of interspersed annotations
 Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt

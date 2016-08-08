@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./ExtModal/Keywords.hs
 Description :  Keywords for extended modal logic
 Copyright   :  DFKI GmbH 2009
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -1,7 +1,7 @@
 {-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, DeriveDataTypeable
   , FlexibleInstances, UndecidableInstances, ExistentialQuantification #-}
 {- |
-Module      :  $Header$
+Module      :  ./Logic/Comorphism.hs
 Description :  interface and class for logic translations
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt

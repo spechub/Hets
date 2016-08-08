@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Syntax/Print_AS_Structured.hs
 Description :  pretty printing of CASL structured specifications
 Copyright   :  (c) Klaus Luettich, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -50,6 +50,9 @@ instance PrettyLG SPEC where
 printUnion :: LogicGraph -> [Annoted SPEC] -> [Doc]
 printUnion lg = prepPunctuate (topKey andS <> space) . map (condBracesAnd lg)
 
+printIntersection :: LogicGraph -> [Annoted SPEC] -> [Doc]
+printIntersection lg = prepPunctuate (topKey intersectS <> space) . map (condBracesAnd lg)
+
 moveAnnos :: Annoted SPEC -> [Annoted SPEC] -> [Annoted SPEC]
 moveAnnos x l = appAnno $ case l of
     [] -> error "moveAnnos"
@@ -95,6 +98,7 @@ printSPEC lg spec = case spec of
       sep [condBracesTransReduct lg aa, printMINIMIZATION ab]
     Filtering aa ab -> sep [condBracesTransReduct lg aa, printFILTERING ab]
     Union aa _ -> sep $ printUnion lg aa
+    Intersection aa _ -> sep $ printIntersection lg aa
     Extension aa _ -> sep $ printExtension lg aa
     Free_spec aa _ -> sep [keyword freeS, printGroupSpec lg aa]
     Cofree_spec aa _ -> sep [keyword cofreeS, printGroupSpec lg aa]
@@ -125,7 +129,9 @@ instance Pretty FILTERING where
     pretty = printFILTERING
 
 printFILTERING :: FILTERING -> Doc
-printFILTERING (SelectOrReject b aa _) =
+printFILTERING (FilterBasicSpec b aa _) =
+   keyword (if b then selectS else rejectS) <+> pretty aa
+printFILTERING (FilterSymbolList b aa _) =
    keyword (if b then selectS else rejectS) <+> pretty aa
 
 instance Pretty MINIMIZATION where
@@ -256,6 +262,7 @@ condBracesTransReduct lg s = let d = prettyLG lg s in
                  Bridge {} -> specBraces d
                  Extension {} -> specBraces d
                  Union {} -> specBraces d
+                 Intersection {} -> specBraces d
                  Local_spec {} -> specBraces d
                  _ -> d
 
@@ -268,6 +275,7 @@ condBracesWithin lg s = let d = prettyLG lg s in
                  Bridge {} -> specBraces d
                  Extension {} -> specBraces d
                  Union {} -> specBraces d
+                 Intersection {} -> specBraces d
                  _ -> d
 {- |
   only Extensions inside of Unions (and) need grouping braces

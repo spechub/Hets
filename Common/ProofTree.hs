@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Common/ProofTree.hs
 Description :  a simple proof tree
 Copyright   :  (c) DFKI GmbH, Uni Bremen 2002-2008
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -1,6 +1,6 @@
 {-# LANGUAGE RankNTypes, DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Static/DevGraph.hs
 Description :  Central datastructures for development graphs
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -121,6 +121,8 @@ data DGOrigin =
   | DGLogicCoercion
   | DGTranslation Renamed
   | DGUnion
+  | DGIntersect
+  | DGExtract
   | DGRestriction (MaybeRestricted) (Set.Set G_symbol)
   | DGRevealTranslation
   | DGFreeOrCofree FreeOrCofree
@@ -252,6 +254,7 @@ data DGLinkOrigin =
   | DGLinkTranslation
   | DGLinkClosedLenv
   | DGLinkImports
+  | DGLinkIntersect
   | DGLinkMorph IRI
   | DGLinkInst IRI Fitted
   | DGLinkInstArg IRI
@@ -676,6 +679,7 @@ data GlobalEntry =
   | ArchOrRefEntry Bool RefSig
   | AlignEntry AlignSig
   | UnitEntry UnitSig
+  | NetworkEntry GDiagram
     deriving (Show, Typeable)
 
 getGlobEntryNodes :: GlobalEntry -> Set.Set Node
@@ -684,13 +688,14 @@ getGlobEntryNodes g = case g of
   ViewOrStructEntry _ e -> getExtViewSigNodes e
   UnitEntry u -> getUnitSigNodes u
   ArchOrRefEntry _ r -> getRefSigNodes r
+  NetworkEntry gdiag -> Set.fromList $ nodes gdiag
   _ -> Set.empty
 
 data AlignSig = AlignMor NodeSig GMorphism NodeSig
               | AlignSpan NodeSig GMorphism NodeSig GMorphism NodeSig
               | WAlign
-                          NodeSig GMorphism GMorphism -- s1, i1, sig1
-                          NodeSig GMorphism GMorphism -- s2, i2, sig2
+                          NodeSig GMorphism GMorphism -- s1, i1:s1 to b, sig1: s1 to t1
+                          NodeSig GMorphism GMorphism -- s2, i2: s2 to b, sig2: s2 to t2
                           NodeSig                     -- t1
                           NodeSig                     -- t2
                           NodeSig                     -- b

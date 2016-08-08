@@ -1,7 +1,7 @@
 {-# LANGUAGE CPP, MultiParamTypeClasses, TypeSynonymInstances
   , FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./CASL/Logic_CASL.hs
 Description :  Instance of class Logic for the CASL logic
 Copyright   :  (c) Klaus Luettich, Uni Bremen 2002-2005
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -130,6 +130,7 @@ instance Syntax CASL CASLBasicSpec
          parse_symb_items CASL = Just $ symbItems []
          parse_symb_map_items CASL = Just $ symbMapItems []
          toItem CASL = bsToItem
+         symb_items_name CASL = symbItemsName
 
 -- lattices (for sublogics)
 

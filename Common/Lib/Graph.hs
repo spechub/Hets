@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Common/Lib/Graph.hs
 Description :  Tree-based implementation of 'Graph' and 'DynGraph'
   using Data.Map
 Copyright   :  (c) Martin Erwig, Christian Maeder and Uni Bremen 1999-2006

@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Common/Lib/MapSet.hs
 Description :  Maps of sets
 Copyright   :  (c) DFKI GmbH 2011
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Proofs/DGFlattening.hs
 Description :  flattening parts of development graphs
 Copyright   :  (c) Igor Stassiy, DFKI Bremen 2008
 License     :  GPLv2 or higher, see LICENSE.txt

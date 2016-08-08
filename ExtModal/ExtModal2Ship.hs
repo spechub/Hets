@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./ExtModal/ExtModal2Ship.hs
 Description :  Translation from ExtModal to Ship
 Copyright   :  (c) C. Maeder, DFKI GmbH 2012
 License     :  GPLv2 or higher, see LICENSE.txt

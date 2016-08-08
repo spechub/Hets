@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./ATC/Sml_cats.hs
 Description :  conversions to and from old SML aterm format
 Copyright   :  (c) Klaus Luettich and Uni Bremen 2002-2004
 License     :  GPLv2 or higher, see LICENSE.txt

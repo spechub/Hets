@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./OWL2/Sign.hs
 Copyright   :  Heng Jiang, Uni Bremen 2007
 License     :  GPLv2 or higher, see LICENSE.txt
 

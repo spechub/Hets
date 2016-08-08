@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./OWL2/StaticAnalysis.hs
 Copyright   :  Felix Gabriel Mance
 License     :  GPLv2 or higher, see LICENSE.txt
 
@@ -33,6 +33,7 @@ import Common.ExtSign
 import Common.Lib.State
 import qualified Common.Id as Id
 import Common.IRI (iriToStringUnsecure, setAngles)
+import Common.SetColimit
 
 import Control.Monad
 
@@ -423,11 +424,11 @@ addEquiv ssig tsig l1 l2 = do
           _ -> fail $ "non-unique symbol match:" ++ show l1 ++ " " ++ show l2
     _ -> fail "terms not yet supported in alignments"
 
-corr2theo :: Sign -> Sign -> [SymbItems] -> [SymbItems] ->
+corr2theo :: String -> Bool -> Sign -> Sign -> [SymbItems] -> [SymbItems] ->
              EndoMap Entity -> EndoMap Entity -> REL_REF ->
              Result (Sign, [Named Axiom], Sign, Sign,
                      EndoMap Entity, EndoMap Entity)
-corr2theo ssig tsig l1 l2 eMap1 eMap2 rref = do
+corr2theo aname flag ssig tsig l1 l2 eMap1 eMap2 rref = do
   let l1' = statSymbItems ssig l1
       l2' = statSymbItems tsig l2
   case (l1', l2') of
@@ -437,21 +438,34 @@ corr2theo ssig tsig l1 l2 eMap1 eMap2 rref = do
       case
        (match1, match2) of
           ([e1], [e2]) -> do
-           let e1' = Map.findWithDefault e1 e1 eMap1
-               e2' = Map.findWithDefault e2 e2 eMap2
+           let e1' = if flag then e1 {cutIRI =  addString (cutIRI e1, "_source")} else e1
+               e2' = if flag then e2 {cutIRI =  addString (cutIRI e2, "_target")} else e2 
                sig = emptySign
-               eMap1' = Map.union eMap1 $ Map.fromAscList [(e1, e1)]
-               eMap2' = Map.union eMap2 $ Map.fromAscList [(e2, e2)]
-           sig1 <- addSymbToSign sig e1
-           sig2 <- addSymbToSign sig e2
-           sigI <- addSymbToSign sig e1'
-           sigB <- addSymbToSign sigI e2'
+               eMap1' = Map.union eMap1 $ Map.fromAscList [(e1', e1)]
+               eMap2' = Map.union eMap2 $ Map.fromAscList [(e2', e2)]
+           sig1 <- addSymbToSign sig e1'
+           sig2 <- addSymbToSign sig e2'
+           sigB <- addSymbToSign sig1 e2'
            case rref of
+            Equiv -> do
+             let extPart = mkExtendedEntity e2'
+                 axiom = PlainAxiom extPart $
+                           ListFrameBit (Just $
+                              case (entityKind e1', entityKind e2') of
+                                (Class, Class) -> EDRelation Equivalent
+                                (ObjectProperty, ObjectProperty) ->
+                                   EDRelation Equivalent
+                                (NamedIndividual, NamedIndividual) -> SDRelation Same
+                                _ -> error $ "use subsumption only between"
+                                              ++ "classes or roles:" ++
+                                              show l1 ++ " " ++ show l2) $
+                           ExpressionBit [([], Expression $ cutIRI e1')]
+             return (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2')
             Subs -> do
              let extPart = mkExtendedEntity e2'
                  axiom = PlainAxiom extPart $
                            ListFrameBit (Just $
-                              case (entityKind e1, entityKind e2) of
+                              case (entityKind e1', entityKind e2') of
                                 (Class, Class) -> SubClass
                                 (ObjectProperty, ObjectProperty) ->
                                     SubPropertyOf
@@ -486,7 +500,7 @@ corr2theo ssig tsig l1 l2 eMap1 eMap2 rref = do
                            ExpressionBit [([], Expression $ cutIRI e1')]
              return
                  (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2')
-            RelName r -> do
+            RelName r -> error "nyi" {- do
              let extPart = mkExtendedEntity e1'
                  rQName = QN "" (iriToStringUnsecure r)
                              Abbreviated (iriToStringUnsecure r) Id.nullRange
@@ -510,8 +524,8 @@ corr2theo ssig tsig l1 l2 eMap1 eMap2 rref = do
                  sig2' <- addSymbToSign sig2 rsym
                  return
                    (sigB', [makeNamed "" axiom], sig1, sig2', eMap1',
-                      Map.union eMap2' $ Map.fromAscList [(rsym, sym')])
-               _ -> fail $ "too many matches for " ++ show rQName
+                      Map.union eMap2' $ Map.fromAscList [(rsym, sym')]) 
+               _ -> fail $ "too many matches for " ++ show rQName -}
             _ -> fail $ "nyi:" ++ show rref
           _ -> fail $ "non-unique symbol match:" ++ show l1 ++ " " ++ show l2
     _ -> fail "terms not yet supported in alignments"

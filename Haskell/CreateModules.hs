@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Haskell/CreateModules.hs
 Description :  creating Haskell modules via translations
 Copyright   :  (c) C. Maeder, Uni Bremen 2006
 License     :  GPLv2 or higher, see LICENSE.txt

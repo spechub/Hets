@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./CspCASL/AS_CspCASL_Process.der.hs
 Description :  Abstract syntax of CSP-CASL processes
 Copyright   :  (c) Markus Roggenbach and Till Mossakowski and Uni Bremen 2004
 License     :  GPLv2 or higher, see LICENSE.txt

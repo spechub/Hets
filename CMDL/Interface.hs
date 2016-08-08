@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 {- |
-Module      : $Header$
+Module      : ./CMDL/Interface.hs
 Description : The definition of CMDL interface for
               standard input and file input
 Copyright   : uni-bremen and DFKI

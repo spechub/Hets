@@ -1,7 +1,7 @@
 {-# LANGUAGE MultiParamTypeClasses, UndecidableInstances, FlexibleInstances
   , TypeSynonymInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Modifications/ModalEmbedding.hs
 Copyright   :  (c) Mihai Codescu, Uni Bremen 2002-2004
 License     :  GPLv2 or higher, see LICENSE.txt
 

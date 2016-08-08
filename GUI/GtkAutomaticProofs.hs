@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./GUI/GtkAutomaticProofs.hs
 Description :  Gtk GUI for automatic proving procedure of multiple nodes
 Copyright   :  (c) Simon Ulbricht, Uni Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt

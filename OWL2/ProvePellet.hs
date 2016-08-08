@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./OWL2/ProvePellet.hs
 Description :  Interface to the OWL Ontology prover via Pellett.
 Copyright   :  (c) Heng Jiang, Uni Bremen 2004-2008
 License     :  GPLv2 or higher, see LICENSE.txt

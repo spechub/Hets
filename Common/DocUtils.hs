@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Common/DocUtils.hs
 Description :  Pretty class for pretty printing with instances plus utilities
 Copyright   :  (c) jianchun wang and Uni Bremen 2006
 License     :  GPLv2 or higher, see LICENSE.txt

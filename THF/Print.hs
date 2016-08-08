@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./THF/Print.hs
 Description :  Seveal Pretty instances.
 Copyright   :  (c) A. Tsogias, DFKI Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt

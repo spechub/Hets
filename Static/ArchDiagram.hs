@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Static/ArchDiagram.hs
 Description :  Data types and functions for architectural diagrams
 Copyright   :  (c) Maciek Makowski, Warsaw University 2004-2006
 License     :  GPLv2 or higher, see LICENSE.txt

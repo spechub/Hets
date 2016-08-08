@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Fpl/StatAna.hs
 Description :  static basic analysis for FPL
 Copyright   :  (c) Christian Maeder, DFKI GmbH 2011
 License     :  GPLv2 or higher, see LICENSE.txt

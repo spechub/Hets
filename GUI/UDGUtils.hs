@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./GUI/UDGUtils.hs
 Description :  wrapper for uDrawGraph utilities from the uniform workbench
 Copyright   :  (c) Christian Maeder DFKI Bremen 2008
 License     :  GPLv2 or higher, see LICENSE.txt

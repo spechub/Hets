@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Isabelle/IsaStrings.hs
 Description :  predefined strings of several Isabelle logics
 Copyright   :  (c) Uni Bremen 2005
 License     :  GPLv2 or higher, see LICENSE.txt

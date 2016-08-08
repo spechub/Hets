@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./CoCASL/Logic_CoCASL.hs
 Description :  Instance of class Logic for CoCASL
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2004
 License     :  GPLv2 or higher, see LICENSE.txt

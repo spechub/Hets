@@ -1,7 +1,7 @@
 {-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, DeriveDataTypeable
   , FlexibleInstances, UndecidableInstances, ExistentialQuantification #-}
 {- |
-Module      :  $Header$
+Module      :  ./Logic/Logic.hs
 Description :  central interface (type class) for logics in Hets
 Copyright   :  (c) Till Mossakowski, and Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -260,11 +260,13 @@ class (Language lid, PrintTypeConv basic_spec, GetRange basic_spec,
          -- | parser for symbol maps
          parse_symb_map_items :: lid -> Maybe (AParser st symb_map_items)
          toItem :: lid -> basic_spec -> Item
+         symb_items_name :: lid -> symb_items -> [String]
          -- default implementations
          parse_basic_spec _ = Nothing
          parseSingleSymbItem _ = Nothing
          parse_symb_items _ = Nothing
          parse_symb_map_items _ = Nothing
+         symb_items_name _ _ = [""]
          toItem _ bs = mkFlatItem ("Basicspec", pretty bs) $ getRangeSpan bs
 
 basicSpecParser :: Syntax lid basic_spec symbol symb_items symb_map_items
@@ -391,6 +393,16 @@ symset_of :: forall lid sentence sign morphism symbol .
              Sentences lid sentence sign morphism symbol =>
              lid -> sign -> Set.Set symbol
 symset_of lid sig = Set.unions $ sym_of lid sig
+
+-- | check that all sentence names in a theory do not appear as symbol names
+checkSenNames :: forall lid sentence sign morphism symbol . 
+                 Sentences lid sentence sign morphism symbol =>
+                 lid -> sign -> [Named sentence] -> Set.Set String
+checkSenNames lid aSig nsens = 
+ let senNames = map senAttr nsens
+     symNames = map (show . (sym_name lid)) $ Set.toList $
+                symset_of lid aSig
+ in Set.intersection (Set.fromList symNames) $ Set.fromList senNames 
 
 -- | dependency ordered list of symbols for a signature
 symlist_of :: forall lid sentence sign morphism symbol .
@@ -599,6 +611,8 @@ class ( Syntax lid basic_spec symbol symb_items symb_map_items
          theory_to_taxonomy l _ _ _ _ = statFail l "theory_to_taxonomy"
          -- | create a theory from a correspondence
          corresp2th :: lid
+                    -> String -- the name of the alignment
+                    -> Bool   -- flag: should we disambiguate in the bridge
                     -> sign
                     -> sign
                     -> [symb_items]
@@ -608,12 +622,15 @@ class ( Syntax lid basic_spec symbol symb_items symb_map_items
                     -> REL_REF
                     -> Result (sign, [Named sentence], sign, sign,
                                EndoMap symbol, EndoMap symbol)
-         corresp2th _ _ _ _ _ _ _ _ = error "c2th nyi"
+         corresp2th _ _ _ _ _ _ _ _ _ = error "c2th nyi"
          -- | create a co-span fragment from an equivalence
          equiv2cospan :: lid -> sign -> sign -> [symb_items] -> [symb_items]
            -> Result (sign, sign, sign, EndoMap symbol, EndoMap symbol)
          equiv2cospan _ _ _ _ _ = error "equiv2cospan nyi"
-
+         -- | extract the module 
+         extract_module :: lid -> [IRI] -> (sign, [Named sentence])
+                        -> Result (sign, [Named sentence])
+         extract_module _ _ = return
 
 -- | print a whole theory
 printTheory :: StaticAnalysis lid basic_spec sentence symb_items symb_map_items

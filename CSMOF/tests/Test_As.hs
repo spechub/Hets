@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CSMOF/tests/Test_As.hs
 Description :  Test case for the CSMOF abstract structure
 Copyright   :  (c) Daniel Calegari Universidad de la Republica, Uruguay 2013
 License     :  GPLv2 or higher, see LICENSE.txt

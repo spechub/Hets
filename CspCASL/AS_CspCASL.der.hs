@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./CspCASL/AS_CspCASL.der.hs
 Description :  Abstract syntax fo CspCASL
 Copyright   :  (c) Markus Roggenbach and Till Mossakowski and Uni Bremen 2004
 License     :  GPLv2 or higher, see LICENSE.txt

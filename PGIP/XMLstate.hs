@@ -1,5 +1,5 @@
 {- |
-Module      : $Header$
+Module      : ./PGIP/XMLstate.hs
 Description : after parsing XML message a list of XMLcommands is produced,
               containing commands that need to be executed
 Copyright   : uni-bremen and DFKI

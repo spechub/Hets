@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./ExtModal/Ship.hs
 Copyright   :  (c) C. Maeder DFKI GmbH
 License     :  GPLv2 or higher, see LICENSE.txt
 

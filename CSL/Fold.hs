@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CSL/Fold.hs
 Description :  folding functions for CSL terms and commands
 Copyright   :  (c) Ewaryst.Schulz, DFKI 2010
 License     :  GPLv2 or higher, see LICENSE.txt

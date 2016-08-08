@@ -1,7 +1,7 @@
 {- |
-Module      :  $Header$
-Description :  parser for CASL (heterogeneous) structured specifications
-Copyright   :  (c) Till Mossakowski, Christian Maeder, Uni Bremen 2002-2005
+Module      :  ./Syntax/Parse_AS_Structured.hs
+Description :  parser for DOL OMS and CASL (heterogeneous) structured specifications
+Copyright   :  (c) Till Mossakowski, Christian Maeder, Uni Bremen 2002-2016
 License     :  GPLv2 or higher, see LICENSE.txt
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
@@ -10,6 +10,8 @@ Portability :  non-portable(Grothendieck)
 Parser for CASL (heterogeneous) structured specifications
    Concerning the homogeneous syntax, this follows Sect II:3.1.3
    of the CASL Reference Manual.
+Parser for DOL ontologies, models and specifications and networks.
+   Follows the DOL OMG standard, clauses 9.4 and 9.5
 -}
 
 module Syntax.Parse_AS_Structured
@@ -286,10 +288,14 @@ specThen l = do
 
 specA :: LogicGraph -> AParser st (Annoted SPEC)
 specA l = do
-  (sps, ps) <- annoParser2 (specB l) `separatedBy` asKey andS
-  return $ case sps of
-    [sp] -> sp
-    _ -> emptyAnno (Union sps $ catRange ps)
+  sp <- annoParser2 $ specB l
+  option sp $ do
+    t <- asKey andS <|> asKey intersectS
+    (sps, ts) <- annoParser2 (specB l) `separatedBy` asKey (tokStr t)
+    let cons = case tokStr t of
+                 "and" -> Union
+                 _ -> Intersection
+    return $ emptyAnno (cons (sp : sps) $ catRange (t : ts))
 
 specB :: LogicGraph -> AParser st (Annoted SPEC)
 specB l = do
@@ -382,16 +388,27 @@ minimization lg = do
 
 extraction :: LogicGraph -> AParser st EXTRACTION
 extraction lg = do
-  p <- asKey "extract" <|> asKey "remove"
-  is <- many1 (hetIRI lg)
-  return . ExtractOrRemove (tokStr p == "extract") is $ tokPos p
+  p <- asKey extractS <|> asKey removeS
+  (is,commas) <- separatedBy (hetIRI lg) commaT
+  return . ExtractOrRemove (tokStr p == extractS) is $ catRange (p:commas)
 
 filtering :: LogicGraph -> AParser st FILTERING
 filtering lg = do
   p <- asKey selectS <|> asKey rejectS
-  s <- lookupCurrentSyntax "filtering" lg
-  Basic_spec bs _ <- basicSpec lg s
-  return . SelectOrReject (tokStr p == selectS) bs $ tokPos p
+  filtering_aux p lg
+
+filtering_aux :: Token -> LogicGraph -> AParser st FILTERING
+filtering_aux p lg =
+  do 
+    s <- lookupCurrentSyntax "filtering" lg
+    Basic_spec bs _ <- basicSpec lg s
+    return . FilterBasicSpec (tokStr p == selectS) bs $ tokPos p
+ <|>
+  do
+    s <- lookupCurrentSyntax "filtering" lg
+    (g_symb_items_list,ps) <- parseItemsList (fst s)
+    return . FilterSymbolList (tokStr p == selectS) 
+               g_symb_items_list $ catRange (p : ps)
 
 groupSpecLookhead :: LogicGraph -> AParser st IRI
 groupSpecLookhead lG =

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Static/WACocone.hs
 Description :  heterogeneous signatures colimits approximations
 Copyright   :  (c) Mihai Codescu, and Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt

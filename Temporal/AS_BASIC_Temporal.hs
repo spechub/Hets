@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Temporal/AS_BASIC_Temporal.hs
 Description :  Abstract syntax of temporal basic specifications
 Copyright   :  (c) Klaus Hartke, Uni Bremen 2008
 License     :  GPLv2 or higher, see LICENSE.txt

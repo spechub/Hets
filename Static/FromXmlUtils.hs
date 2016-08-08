@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Static/FromXmlUtils.hs
 Description :  theory datastructure for development graphs
 Copyright   :  (c) Christian Maeder, Simon Ulbricht, Uni Bremen 20011
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CommonLogic/OMDoc.hs
 Description :  Common Logic specific OMDoc constants
 Copyright   :  (c) Iulia Ignatov, DFKI Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt

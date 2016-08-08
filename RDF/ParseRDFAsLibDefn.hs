@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./RDF/ParseRDFAsLibDefn.hs
 Copyright   :  Felix Mance
 License     :  GPLv2 or higher, see LICENSE.txt
 

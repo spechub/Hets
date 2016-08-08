@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CommonLogic/OMDocImport.hs
 Description :  OMDoc-to-CommonLogic conversion
 Copyright   :  (c) Iulia Ignatov, DFKI Bremen 2009, Eugen Kuksa, Uni Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt

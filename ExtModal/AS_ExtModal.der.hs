@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./ExtModal/AS_ExtModal.der.hs
 Copyright   :  DFKI GmbH 2009
 License     :  GPLv2 or higher, see LICENSE.txt
 

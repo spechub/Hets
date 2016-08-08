@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Isabelle/Translate.hs
 Description :  create legal Isabelle mixfix identifier
 Copyright   :  (c) University of Cambridge, Cambridge, England
                adaption (c) Till Mossakowski, Uni Bremen 2002-2005

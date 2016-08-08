@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CMDL/ParseProofScript.hs
 Description :  parse a heterogeneous proof script
 Copyright   :  (c) Christian Maeder, DFKI GmbH 2009
 License     :  GPLv2 or higher, see LICENSE.txt

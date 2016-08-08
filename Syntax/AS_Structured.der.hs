@@ -1,8 +1,8 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
-Description :  abstract syntax of CASL structured specifications
-Copyright   :  (c) Klaus Luettich, Uni Bremen 2002-2006
+Module      :  ./Syntax/AS_Structured.der.hs
+Description :  abstract syntax of DOL OMS and CASL structured specifications
+Copyright   :  (c) Klaus Luettich, Uni Bremen 2002-2016
 License     :  GPLv2 or higher, see LICENSE.txt
 Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional
@@ -10,6 +10,8 @@ Portability :  non-portable(Grothendieck)
 
 Abstract syntax of HetCASL (heterogeneous) structured specifications
    Follows Sect. II:2.2.3 of the CASL Reference Manual.
+Abstract syntax of DOL OMS and networks
+   Follows the DOL OMG standard, clauses 9.4, 9.5, M.2 and M.3
 -}
 
 module Syntax.AS_Structured where
@@ -46,6 +48,8 @@ data SPEC = Basic_spec G_basic_spec Range
           | Bridge (Annoted SPEC) [RENAMING] (Annoted SPEC) Range
           | Union [Annoted SPEC] Range
             -- pos: "and"s
+          | Intersection [Annoted SPEC] Range
+            -- pos: "intersect"s
           | Extension [Annoted SPEC] Range
             -- pos: "then"s
           | Free_spec (Annoted SPEC) Range
@@ -76,7 +80,8 @@ data SPEC = Basic_spec G_basic_spec Range
 data Network = Network [LABELED_ONTO_OR_INTPR_REF] [IRI] Range
   deriving (Show, Eq, Typeable)
 
-data FILTERING = SelectOrReject Bool G_basic_spec Range
+data FILTERING = FilterBasicSpec Bool G_basic_spec Range
+               | FilterSymbolList Bool  G_symb_items_list Range
   deriving (Show, Eq, Typeable)
 
 data EXTRACTION = ExtractOrRemove Bool [IRI] Range
@@ -211,7 +216,10 @@ getSpecNames sp = let f = getSpecNames . item in case sp of
   Reduction as _ -> f as
   Approximation as _ -> f as
   Minimization as _ -> f as
+  Filtering as _ -> f as
   Union as _ -> Set.unions $ map f as
+  Intersection as _ -> Set.unions $ map f as
+  Extraction as _ -> f as
   Extension as _ -> Set.unions $ map f as
   Free_spec as _ -> f as
   Cofree_spec as _ -> f as

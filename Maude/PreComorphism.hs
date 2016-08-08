@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Maude/PreComorphism.hs
 Description :  Maude Comorphisms
 Copyright   :  (c) Adrian Riesco, Facultad de Informatica UCM 2009
 License     :  GPLv2 or higher, see LICENSE.txt

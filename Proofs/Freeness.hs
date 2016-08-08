@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Proofs/Freeness.hs
 Description :  normalization of freeness
 Copyright   :  (c) Mihai Codescu, DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt

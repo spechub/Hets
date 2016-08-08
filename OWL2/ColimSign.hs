@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./OWL2/ColimSign.hs
 Description :  OWL signatures colimits
 Copyright   :  (c) Mihai Codescu, and Uni Bremen 2009
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -85,11 +85,6 @@ signColimit graph = let
                                    in (i, om)
                      ) $ labNodes graph
   in (colimSign, colimMor)
-
-instance SymbolName QName where
- addIntAsSuffix (q, i) = q { namePrefix = show i,
-                             expandedIRI = expandedIRI q ++ show i
-                           }
 
 getEntityTypeMap :: EntityType -> (Int, OWLMorphism)
                     -> (Int, Map.Map QName QName)

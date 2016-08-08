@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Proofs/QualifyNames.hs
 Description :  qualify all names in the nodes of development graphs
 Copyright   :  (c) Igor Stassiy, C.Maeder DFKI Bremen 2008
 License     :  GPLv2 or higher, see LICENSE.txt

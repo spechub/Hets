@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 {- |
-Module      :  $Header$
+Module      :  ./Driver/Options.hs
 Description :  Datatypes and functions for options that hets understands.
 Copyright   :  (c) Martin Kuehl, Christian Maeder, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -369,7 +369,7 @@ data Flag =
   | OutputLogicGraph
   | FileType
   | AccessToken String
-  | UrlCatalog [(String, String)]
+  | UrlCatalog [(String, String)] deriving Show
 
 -- | 'makeOpts' includes a parsed Flag in a set of HetcatsOpts
 makeOpts :: HetcatsOpts -> Flag -> HetcatsOpts
@@ -575,6 +575,7 @@ data OutType =
   | DfgFile SPFType -- ^ SPASS input file
   | TPTPFile SPFType
   | ComptableXml
+  | MedusaJson
   | RDFOut
   | SigFile Delta -- ^ signature as text
   | TheoryFile Delta -- ^ signature with sentences as text
@@ -601,6 +602,7 @@ instance Show OutType where
     DfgFile t -> dfgS ++ show t
     TPTPFile t -> tptpS ++ show t
     ComptableXml -> "comptable.xml"
+    MedusaJson -> "medusa.json"
     RDFOut -> "nt"
     SigFile d -> "sig" ++ show d
     TheoryFile d -> "th" ++ show d
@@ -611,7 +613,7 @@ plainOutTypeList :: [OutType]
 plainOutTypeList =
   [ Prf, EnvOut ] ++ map OWLOut plainOwlFormats ++
   [ RDFOut, CLIFOut, KIFOut, OmdocOut, XmlOut, JsonOut, ExperimentalOut
-  , HaskellOut, ThyFile, ComptableXml, FreeCADOut, SymXml, SymsXml]
+  , HaskellOut, ThyFile, ComptableXml, MedusaJson, FreeCADOut, SymXml, SymsXml]
 
 outTypeList :: [OutType]
 outTypeList = let dl = [Delta, Fully] in
@@ -785,7 +787,7 @@ optionArgs = foldr (\ o l -> case o of
 
 -- | command line switches for the wep-api excluding non-dev-graph related ones
 optionFlags :: [(String, Flag)]
-optionFlags = drop 11 $ foldr (\ o l -> case o of
+optionFlags = dropWhile ((/= justStructuredS). fst) $ foldr (\ o l -> case o of
   Option _ (s : _) (NoArg f) _ -> (s, f) : l
   _ -> l) [] options
 

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Common/FileType.hs
 Description :  checking the file type
 Copyright   :  (c) C. Maeder, DFKI 2014
 License     :  GPLv2 or higher, see LICENSE.txt

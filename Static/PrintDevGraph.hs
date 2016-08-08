@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Static/PrintDevGraph.hs
 Description :  pretty printing (parts of) a LibEnv
 Copyright   :  (c) C. Maeder, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -114,6 +114,8 @@ dgOriginHeader o = case o of
     DGLogicCoercion -> "logic-translation"
     DGTranslation _ -> "translation"
     DGUnion -> "union"
+    DGIntersect -> "intersection"
+    DGExtract -> "extraction"
     DGRestriction _ _ -> "restriction"
     DGRevealTranslation -> "translation part of a revealing"
     DGFreeOrCofree v -> map toLower (show v) ++ "-spec"
@@ -206,6 +208,7 @@ dgLinkOriginHeader o = case o of
     DGLinkTranslation -> "OMDoc translation"
     DGLinkClosedLenv -> "closed spec and local environment"
     DGLinkImports -> "OWL import"
+    DGLinkIntersect -> "inclusion of intersection"
     DGLinkMorph _ -> "instantiation morphism of"
     DGLinkInst _ _ -> "instantiation of"
     DGLinkInstArg _ -> "actual parameter of"

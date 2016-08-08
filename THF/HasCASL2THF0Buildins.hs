@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./THF/HasCASL2THF0Buildins.hs
 Description :  create legal THF mixfix identifier
 Copyright   :  (c) A. Tsogias, DFKI Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt

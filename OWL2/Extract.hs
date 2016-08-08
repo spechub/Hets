@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./OWL2/Extract.hs
 Description :  extraction of the sign from the frames
 Copyright   :  (c) Francisc-Nicolae Bungiu, Felix Gabriel Mance
 License     :  GPLv2 or higher, see LICENSE.txt

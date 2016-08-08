@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./CASL/QuickCheck.hs
 Description :  QuickCheck model checker for CASL.CFOL
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2007
 License     :  GPLv2 or higher, see LICENSE.txt

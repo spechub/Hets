@@ -30,7 +30,7 @@ Hets is based on a graph of logics and logic translations. The overall architect
 
 ## Using Hets
 
-You can try out Hets using the [Web-based interface](http://pollux.informatik.uni-bremen.de:8000/)
+You can try out Hets using the [Web-based interface](http://rest.hets.eu/)
 
 #### The best way to use hets is under Ubuntu. Possibly run this OS in a virtual box.
 A compressed (1.2G, uncompressed 4.2G) virtual box image can be [downloaded from here](http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/vbox-x86-linux). username/password is ubuntu/reverse.

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL/SymbolParser.hs
 Description :  Parser for symbols in translations and reductions
 Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt

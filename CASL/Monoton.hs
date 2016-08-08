@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL/Monoton.hs
 Description :  monotonicities of the overload relation
 Copyright   :  (c) C. Maeder DFKI Uni Bremen 2002-2005
 License     :  GPLv2 or higher, see LICENSE.txt

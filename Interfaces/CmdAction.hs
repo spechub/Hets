@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Interfaces/CmdAction.hs
 Description :  command action associations for all interfaces
 Copyright   :  (c) Christian Maeder, DFKI GmbH 2009
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Temporal/ModalCaslToNuSmvLtl.hs
 Copyright   :  (c) Klaus Hartke, Uni Bremen 2008
 License     :  GPLv2 or higher, see LICENSE.txt
 

@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Static/XGraph.hs
 Description :  xml input for Hets development graphs
 Copyright   :  (c) Simon Ulbricht, DFKI GmbH 2011
 License     :  GPLv2 or higher, see LICENSE.txt

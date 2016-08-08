@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeSynonymInstances, MultiParamTypeClasses, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./OMDoc/Logic_OMDoc.hs
 Description :  Rudimentary Logic-instances for OMDoc
 Copyright   :  (c) Hendrik Iben, Uni Bremen 2005-2007
 License     :  GPLv2 or higher, see LICENSE.txt

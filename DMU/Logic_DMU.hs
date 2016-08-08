@@ -1,7 +1,7 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, DeriveDataTypeable
   , GeneralizedNewtypeDeriving #-}
 {- |
-Module      :  $Header$
+Module      :  ./DMU/Logic_DMU.hs
 Description :  Instance of class Logic for DMU
 Copyright   :  (c) Christian Maeder DFKI, Uni Bremen 2009
 License     :  GPLv2 or higher, see LICENSE.txt

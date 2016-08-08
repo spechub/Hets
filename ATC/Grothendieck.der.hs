@@ -1,6 +1,6 @@
 {-# LANGUAGE UndecidableInstances, FlexibleInstances, OverlappingInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./ATC/Grothendieck.der.hs
 Description :  manually created ShATermConvertible instances
 Copyright   :  (c) Felix Reckers, C. Maeder, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -82,7 +82,7 @@ fromShATermLG' lg i att = case getATerm' i att of
                (attN, t) -> (setATerm' i t attN, t)
 
 -- generic undecidable instance
-instance ShATermConvertible a => ShATermLG a where
+instance (ShATermConvertible a, Typeable a) => ShATermLG a where
   toShATermLG = toShATermAux
   fromShATermLG _ = fromShATermAux
 

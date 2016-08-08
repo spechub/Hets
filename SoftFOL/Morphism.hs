@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./SoftFOL/Morphism.hs
 Description :  Symbol related functions for SoftFOL.
 Copyright   :  (c) Klaus Luettich, Uni Bremen 2007
 License     :  GPLv2 or higher, see LICENSE.txt

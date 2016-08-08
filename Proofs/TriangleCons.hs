@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Proofs/TriangleCons.hs
 Description :  apply triangle-cons rule for all edges in development graphs
 Copyright   :  (c) Christian Maeder, DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -26,8 +26,6 @@ import qualified Data.Set as Set
 import Data.Graph.Inductive.Graph
 
 import Control.Monad
-
-import Debug.Trace
 
 triangleConsRule :: DGRule
 triangleConsRule = DGRule "TriangleCons"
@@ -67,7 +65,7 @@ triangleConsDG dg (s, t, l) = do
                checkThm (edgeTypeModInc e)
              ) $ out g t
  case oThm of
-   [] -> trace "1" $ return dg -- no outgoing thm link found
+   [] -> return dg -- no outgoing thm link found
    _ -> do
     let bases = filter (\ ((s', _, _), _) -> s == s')
                 $ concatMap (\ dge@(_, tt, _) ->
@@ -77,7 +75,7 @@ triangleConsDG dg (s, t, l) = do
                            ) $ inn g tt)
                   oThm
     case bases of
-      [] -> trace "2" $ return dg -- no cons link found
+      [] -> return dg -- no cons link found
       ((_, _, cl), (_, _, tl)) : _ -> do
         let changes = markCons cl tl
         return $ changesDGH dg changes

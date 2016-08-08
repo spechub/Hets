@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./HasCASL/FoldTerm.hs
 Description :  fold functions for terms and program equations
 Copyright   :  (c) Christian Maeder and Uni Bremen 2005
 License     :  GPLv2 or higher, see LICENSE.txt

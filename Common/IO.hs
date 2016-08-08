@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 {- |
-Module      :  $Header$
+Module      :  ./Common/IO.hs
 Description :  wrapper module for changed IO handling since ghc-6.12.1
 Copyright   :  (c) Christian Maeder DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt

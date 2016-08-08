@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Common/testxpath.hs
 Description :  standalone parser for path expressions
 Copyright   :  (c) C. Maeder, DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt

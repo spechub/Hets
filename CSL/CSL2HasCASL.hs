@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CSL/CSL2HasCASL.hs
 Description :  Helper functions for Prop2CASL
 Copyright   :  (c) Dominik Luecke and Uni Bremen 2007
 License     :  GPLv2 or higher, see LICENSE.txt

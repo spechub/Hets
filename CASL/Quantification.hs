@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL/Quantification.hs
 Description :  Free variables; getting rid of superfluous quantifications
 Copyright   :  (c) Till Mossakowski and Uni Bremen 2002-2005
 License     :  GPLv2 or higher, see LICENSE.txt

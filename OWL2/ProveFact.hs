@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./OWL2/ProveFact.hs
 Copyright   :  (c) Domink Luecke, Uni Bremen 2009-2010
 License     :  GPLv2 or higher, see LICENSE.txt
 

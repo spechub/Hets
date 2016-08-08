@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CSL/Lemma_Export.hs
 Description :  Generation of Lemmata for CMDs
 Copyright   :  (c) Dominik Dietrich, DFKI Bremen, 2010
 License     :  GPLv2 or higher, see LICENSE.txt

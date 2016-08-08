@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Logic/Coerce.hs
 Description :  coerce logic entities dynamically
 Copyright   :  (c) T. Mossakowski, C. Maeder, Uni Bremen 2005-2006
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Driver/ReadFn.hs
 Description :  reading and parsing ATerms, CASL, HetCASL files
 Copyright   :  (c) Klaus Luettich, C. Maeder, Uni Bremen 2002-2014
 License     :  GPLv2 or higher, see LICENSE.txt

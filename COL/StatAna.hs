@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./COL/StatAna.hs
 Description :  Static analysis for COL
 Copyright   :  (c) Christian Maeder, Uni Bremen 2004
 License     :  GPLv2 or higher, see LICENSE.txt

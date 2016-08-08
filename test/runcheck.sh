@@ -1,4 +1,6 @@
-#!/bin/sh
+#!/bin/bash
+
+[[ `uname -s` == 'SunOS' ]] && MAKE=gmake || MAKE=make
 
 for i in *
 do
@@ -6,7 +8,7 @@ do
     echo "processing $i"
     cd "$i"
     if [ -f Makefile ]
-      then gmake
+      then ${MAKE}
     elif [ -x run.sh ]
       then ./run.sh
     else echo "nothing done in $i"

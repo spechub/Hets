@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./CSL/Parse_AS_Basic.hs
 Description :  Parser for basic specs
 Copyright   :  (c) Dominik Dietrich, DFKI Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt

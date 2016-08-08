@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleInstances, FlexibleContexts #-}
 {- |
-Module      :  $Header$
+Module      :  ./CASL/ColimSign.hs
 Description :  CASL signatures colimits
 Copyright   :  (c) Mihai Codescu, and Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -249,7 +249,7 @@ assignName (opSet, idx) givenNames namesFun =
                       (Map.findWithDefault (error "assignName") y opSetNames)
         avail' = sortBy sndOrd $ Map.keys opSetNames
         idN = head avail'
-       in (appendNumber idN idx, givenNames)
+       in (appendString idN $ show idx, givenNames)
      _ -> {- must take the most frequent available name and give it to the class
           and this name becomes given -}
           let
@@ -409,7 +409,7 @@ assignPName (pSet, idx) givenNames namesFun =
         sndOrd x y = compare (pSetNames Map.! x) (pSetNames Map.! y)
         avail' = sortBy sndOrd $ Map.keys pSetNames
         idN = head avail'
-       in (appendNumber idN idx, givenNames)
+       in (appendString idN $ show idx, givenNames)
      _ -> {- must take the most frequent available name and give it to the class
           and this name becomes given -}
           let

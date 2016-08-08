@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
 {- |
-Module      :  $Header$
+Module      :  ./CSMOF/Logic_CSMOF.hs
 Description :  Instance of class Logic for the CSMOF logic
 Copyright   :  (c) Daniel Calegari Universidad de la Republica, Uruguay 2013
 License     :  GPLv2 or higher, see LICENSE.txt

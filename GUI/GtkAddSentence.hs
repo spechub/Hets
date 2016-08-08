@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./GUI/GtkAddSentence.hs
 Description :  Gtk GUI for adding a sentence
 Copyright   :  (c) C. Maeder DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt

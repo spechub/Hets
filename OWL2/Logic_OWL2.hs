@@ -1,7 +1,7 @@
 {-# LANGUAGE CPP, MultiParamTypeClasses, TypeSynonymInstances #-}
 {-# OPTIONS -w #-}
 {- |
-Module      :  $Header$
+Module      :  ./OWL2/Logic_OWL2.hs
 Description :  instance of the class Logic for OWL2
 Copyright   :  (c) Christian Maeder, DFKI GmbH 2011
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -52,6 +52,7 @@ import OWL2.StaticAnalysis
 import OWL2.Symbols
 import OWL2.Taxonomy
 import OWL2.Theorem
+import OWL2.ExtractModule
 
 data OWL2 = OWL2
 
@@ -87,6 +88,7 @@ instance Syntax OWL2 OntologyDocument Entity SymbItems SymbMapItems where
     parseSingleSymbItem OWL2 = Just symbItem
     parse_symb_items OWL2 = Just symbItems
     parse_symb_map_items OWL2 = Just symbMapItems
+    symb_items_name OWL2 = symbItemsName
 
 instance Sentences OWL2 Axiom Sign OWLMorphism Entity where
     map_sen OWL2 = mapSen
@@ -115,6 +117,7 @@ instance StaticAnalysis OWL2 OntologyDocument Axiom
       convertTheory OWL2 = Just convertBasicTheory
       empty_signature OWL2 = emptySign
       signature_union OWL2 = uniteSign
+      intersection OWL2 = intersectSign
       signatureDiff OWL2 s = return . diffSig s
       final_union OWL2 = signature_union OWL2
       is_subsig OWL2 = isSubSign
@@ -128,6 +131,7 @@ instance StaticAnalysis OWL2 OntologyDocument Axiom
       signature_colimit OWL2 = return . signColimit
       corresp2th OWL2 = corr2theo
       equiv2cospan OWL2 = addEquiv
+      extract_module OWL2 = extractModule
 #ifdef UNI_PACKAGE
       theory_to_taxonomy OWL2 = onto2Tax
 #endif

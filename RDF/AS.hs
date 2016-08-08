@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./RDF/AS.hs
 Copyright   :  (c) Felix Gabriel Mance, Francisc-Nicolae Bungiu
 License     :  GPLv2 or higher, see LICENSE.txt
 

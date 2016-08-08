@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CspCASLProver.hs
 Description :  Interface to the CspCASLProver (Isabelle based) theorem prover
 Copyright   :  (c) Liam O'Reilly and Markus Roggenbach, Swansea University 2009
 License     :  GPLv2 or higher, see LICENSE.txt

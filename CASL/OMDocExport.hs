@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleInstances, TypeSynonymInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./CASL/OMDocExport.hs
 Description :  CASL-to-OMDoc conversion
 Copyright   :  (c) Ewaryst Schulz, DFKI Bremen 2009
 License     :  GPLv2 or higher, see LICENSE.txt

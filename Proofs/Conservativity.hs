@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Proofs/Conservativity.hs
 Description :  conservativity proof rule for development graphs
 Copyright   :  (c) Markus Gross, DFKI 2009
 License     :  GPLv2 or higher, see LICENSE.txt
