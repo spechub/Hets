@@ -286,10 +286,8 @@ predefinedAxioms = let
             (Qual_pred_name thing classPredType n) [t1] n]
 
 mkNNameAux :: Int -> String
-mkNNameAux k = case k of
-    0 -> ""
-    j -> mkNNameAux (j `div` 26) ++ [chr (j `mod` 26 + 96)]
-
+mkNNameAux k = genNamePrefix ++ "x" ++ show k
+ 
 -- | Build a name
 mkNName :: Int -> Token
 mkNName i = mkSimpleId $ hetsPrefix ++ mkNNameAux i
