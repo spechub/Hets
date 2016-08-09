@@ -27,6 +27,7 @@ import Common.Result
 import Common.Utils (composeMap)
 import Common.Lib.State (execState)
 import Common.Lib.MapSet (setToMap)
+import Common.Id(nullRange)
 
 import Control.Monad
 
@@ -68,12 +69,13 @@ inducedSign m t s =
     in function Rename (StringMap t) new
 
 inducedPref :: String -> String -> Sign -> (MorphMap, StringMap)
-    -> (MorphMap, StringMap)
+    -> Result (MorphMap, StringMap)
 inducedPref v u sig (m, t) =
     let pm = prefixMap sig
     in if Set.member v $ Map.keysSet pm
-         then if u == v then (m, t) else (m, Map.insert v u t)
-        else error $ "unknown symbol: " ++ showDoc v "\n" ++ shows sig ""
+         then if u == v then return (m, t) else return (m, Map.insert v u t)
+        else
+          plain_error (Map.empty, Map.empty) ("unknown symbol: " ++ showDoc v "\nin signature:\n" ++ showDoc sig "") nullRange
 
 inducedFromMor :: Map.Map RawSymb RawSymb -> Sign -> Result OWLMorphism
 inducedFromMor rm sig = do
@@ -87,10 +89,10 @@ inducedFromMor rm sig = do
           $ map (`mkEntity` v) entityTypes of
           [] -> let v2 = showQU v
                     u2 = showQU u
-                in return $ inducedPref v2 u2 sig (m, t)
+                in inducedPref v2 u2 sig (m, t)
           l -> return $ if u == v then (m, t) else
                             (foldr (`Map.insert` u) m l, t)
-        (APrefix v, APrefix u) -> return $ inducedPref v u sig (m, t)
+        (APrefix v, APrefix u) -> inducedPref v u sig (m, t)
         _ -> error "OWL2.Morphism.inducedFromMor") (Map.empty, Map.empty)
                         $ Map.toList rm
   return OWLMorphism
