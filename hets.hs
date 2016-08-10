@@ -62,6 +62,7 @@ import Isabelle.Isa2DG (anaIsaFile, anaThyFile)
 main :: IO ()
 main =
     getArgs >>= hetcatsOpts >>= \ opts -> let imode = interactive opts in
+    printOptionsWarnings opts >>
 #ifdef SERVER
      if serve opts then hetsServer opts else
 #endif

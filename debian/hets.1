@@ -24,7 +24,7 @@
 [\-g] [\-u]
 .\" @EDESKTOP@
 [\-I] [\-p] [\-s] [\-l\ \fIlogic\fR] [\-y\ \fIser\fR] [\-L\ \fIdirs\fR]
-[\-m\ \fIfile\fR] [\-x] [\-X] [\-c\ \fIhost\fB:\fIport\fR] [\-S\ \fIport\fR]
+[\-m\ \fIfile\fR] [\-x] [\-P file] [\-X] [\-c\ \fIhost\fB:\fIport\fR] [\-S\ \fIport\fR]
 [\-C\ \fIurls\fR] [\-i\ itype] [\-d\ \fIstring\fR] [\-e\ \fIenc\fR]
 [\-O\ \fIdir\fR] [\-o\ \fIotypes\fR] [\-U\ \fIfile\fR] [\-R] [\-A] [\-N]
 [\-n\ \fIspecs\fR] [\-w\ \fIviews\fR] [\-t\ \fItrans\fR] [\-a\ \fIanalysis\fR]
@@ -111,6 +111,9 @@ Sets the lisp file for SparQ definitions to \fIfile\fR (works for CASL only).
 .TP
 .BR \-x , \ \--xml
 Uses xml packages (rather than plain text) to communicate.
+.TP
+\fB-P\fR \fIfile\fR , \fB--pidfile=\fIfile\fR
+Write the PID of the hets-server process to the given \fIfile\fR.
 .TP
 .BR \-X , \ \--server
 Start hets as web-server.

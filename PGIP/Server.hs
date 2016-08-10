@@ -99,6 +99,8 @@ import Common.XUpdate
 import Common.GlobalAnnotations
 
 import Control.Monad
+import Control.Exception (throwTo)
+import Control.Concurrent (myThreadId, ThreadId)
 
 import qualified Data.IntMap as IntMap
 import qualified Data.Map as Map
@@ -119,6 +121,8 @@ import System.Directory
 import System.Exit
 import System.FilePath
 import System.IO
+import System.Posix.Process (getProcessID)
+import System.Posix.Signals
 
 data Session = Session
   { sessLibEnv :: LibEnv
@@ -181,9 +185,37 @@ catchException e =
 type WebResponse = (Response -> RsrcIO Response) -> RsrcIO Response
 #endif
 
+deletePidFileAndExit :: HetcatsOpts -> ThreadId -> ExitCode -> IO ()
+deletePidFileAndExit opts threadId exitCode = do
+  deletePidFile opts
+  throwTo threadId exitCode
 
 hetsServer :: HetcatsOpts -> IO ()
-hetsServer opts1 = do
+hetsServer opts = do
+  tid <- myThreadId
+  writePidFile opts
+  installHandler sigINT (Catch $ deletePidFileAndExit opts tid ExitSuccess) Nothing
+  installHandler sigTERM (Catch $ deletePidFileAndExit opts tid ExitSuccess) Nothing
+  hetsServer' opts
+  deletePidFile opts
+
+writePidFile :: HetcatsOpts -> IO ()
+writePidFile opts =
+  let pidFilePath = pidFile opts
+      v = verbose opts
+  in (unless (null pidFilePath) $
+     do unless (null pidFilePath)
+          (verbMsgIOLn v 2 ("Writing PIDfile " ++ show pidFilePath))
+        pid <- getProcessID
+        writeFile pidFilePath (show pid))
+
+deletePidFile :: HetcatsOpts -> IO ()
+deletePidFile opts =
+  let pidFilePath = pidFile opts
+  in (unless (null pidFilePath) $ removeFile $ pidFile opts)
+
+hetsServer' :: HetcatsOpts -> IO ()
+hetsServer' opts1 = do
   tempDir <- getTemporaryDirectory
   let tempLib = tempDir </> "MyHetsLib"
       logFile = tempDir </>
@@ -255,6 +287,7 @@ hetsServer opts1 = do
            -- only otherwise stick to the old response methods
            else oldWebApi newOpts tempLib sessRef re pathBits qr2
              meth respond
+
 parseRequestParams :: Request -> RsrcIO Json
 parseRequestParams request =
   let
