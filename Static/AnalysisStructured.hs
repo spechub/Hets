@@ -410,7 +410,7 @@ anaSpecAux conser addSyms lg libEnv ln dg nsig name opts eo sp rg = case sp of
        let sp1 = item asp
            rname = extName "Filtering" name
        (sp', nsig', dg') <- anaSpec addSyms lg libEnv ln dg nsig rname opts eo sp1 rg
-       (nf, dgF) <- anaFiltering lg libEnv dg' nsig' name filtering 
+       (nf, dgF) <- anaFiltering lg libEnv dg' nsig' name filtering
        return (Filtering (replaceAnnoted sp' asp) filtering, nf, dgF)
        -- error "analysis of filterings not yet implemented"
   Minimization asp (Mini kw cm cv poss) -> do
@@ -718,7 +718,7 @@ gsigUnionMaybe lg both mn gsig = case mn of
 
 anaExtraction :: LogicGraph -> LibEnv -> DGraph -> NodeSig -> NodeName -> Range ->
               EXTRACTION -> Result (NodeSig, DGraph)
-anaExtraction lg libEnv dg nsig name rg (ExtractOrRemove b iris _) = if not b then 
+anaExtraction lg libEnv dg nsig name rg (ExtractOrRemove b iris _) = if not b then
   fail "analysis of remove not implemented yet"
  else do
   let dg0 = markHiding libEnv dg
@@ -731,11 +731,11 @@ anaExtraction lg libEnv dg nsig name rg (ExtractOrRemove b iris _) = if not b th
                Nothing -> error "not able to compute theory"
                Just th -> th
     mTh <- case gth of
-        G_theory lid syntax (ExtSign sig _) _ gsens _ -> do 
-          let nsens = toNamedList gsens 
+        G_theory lid syntax (ExtSign sig _) _ gsens _ -> do
+          let nsens = toNamedList gsens
           (msig, msens) <- extract_module lid iris (sig, nsens)
-          return $ G_theory lid syntax 
-                            (ExtSign msig $ foldl Set.union Set.empty $ sym_of lid msig) startSigId 
+          return $ G_theory lid syntax
+                            (ExtSign msig $ foldl Set.union Set.empty $ sym_of lid msig) startSigId
                             (toThSens msens) startThId
     let (nsig', dg') = insGTheory dg (setSrcRange rg name) DGExtract mTh
     incl <- ginclusion lg (getSig nsig') (getSig nsig)
@@ -809,26 +809,27 @@ anaIntersect addSyms lg libEnv ln dg nsig name opts eo asps rg = case asps of
              dg3 <- foldM insE dg2 nsigs'
              return (newAsps, nsigs', ns, dg3)
 
-anaFiltering :: LogicGraph -> LibEnv -> DGraph -> NodeSig -> NodeName-> FILTERING 
-   -> Result (NodeSig, DGraph) 
+anaFiltering :: LogicGraph -> LibEnv -> DGraph -> NodeSig -> NodeName-> FILTERING
+   -> Result (NodeSig, DGraph)
 anaFiltering lg libEnv dg nsig nname filtering = case filtering of
-  FilterSymbolList selectOrReject syms@(G_symb_items_list lidS sItems) _ ->
+  FilterSymbolList selectOrReject (G_symb_items_list lidS sItems) _ ->
    if not selectOrReject then do
      let strs = concatMap (symb_items_name lidS) sItems
          dgThm = computeDGraphTheories libEnv dg
-         th = 
-            case (globalTheory . labDG dgThm . getNode) nsig of 
+         th =
+            case (globalTheory . labDG dgThm . getNode) nsig of
                   Nothing -> error "error computing theory"
                   Just t -> t
-     case th of 
+     case th of
       G_theory l1 ser1 sig1 ind1 sens1 ind1' -> do
-         let gth' = G_theory l1 ser1 sig1 ind1 (foldl (\m x -> Map.delete x m) sens1 strs) ind1'
+         let gth' = G_theory l1 ser1 sig1 ind1
+                    (foldl (\m x -> Map.delete x m) sens1 strs) ind1'
          let (ns@(NodeSig node gsigma), dg') = insGTheory dg nname DGEmpty gth'
          gmor <- ginclusion lg gsigma $ getSig nsig
          let dg2 = insLink dg' gmor globalThm SeeSource node $ getNode nsig
          return (ns, dg2)
     else error "analysis of select not implemented yet"
-  FilterBasicSpec selectOrReject bSpec _ -> error "filtering a basic spec not implemented yet"
+  FilterBasicSpec _ _ _ -> error "filtering a basic spec not implemented yet"
 
 
 -- analysis of renamings
