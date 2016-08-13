@@ -461,7 +461,7 @@ derived_sources += $(drifted_files) Driver/Version.hs $(hs_der_files)
     count fromKif release cgi ghci build-hets callghc \
 	get-programatica check_desktop check_server check_cgi \
 	install install-common install-owl-tools archive \
-	build-indep build-arch build binary-indep binary-arch binary
+	build-indep build-arch build binary-indep binary-arch binary rev.txt
 
 .SECONDARY: $(generated_rule_files)
 
