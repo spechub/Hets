@@ -264,7 +264,7 @@ loadDataInformation sl = let
   dts = Set.map uriToCaslId $ SL.datatype $ sublogic sl
   eSig x = (emptySign ()) { sortRel =
        Rel.fromList  [(x, dataS)]}
-  sigs = Set.toList $ 
+  sigs = Set.toList $
          Set.map (\x -> Map.findWithDefault (eSig x) x datatypeSigns) dts
  in  foldl uniteCASLSign (emptySign ()) sigs
 
@@ -649,6 +649,17 @@ mkEDPairs s il mr pairs = do
                 _ -> error "expected EDRelation") pairs
     return (ls, s)
 
+mkEDPairs' :: CASLSign -> [Int] -> Maybe O.Relation -> [(FORMULA f, FORMULA f)]
+    -> Result ([FORMULA f], CASLSign)
+mkEDPairs' s [i1, i2] mr pairs = do
+    let ls = map (\ (x, y) -> mkVDecl [i1] $ mkVDataDecl [i2]
+            $ case fromMaybe (error "expected EDRelation") mr of
+                EDRelation Equivalent -> mkEqv x y
+                EDRelation Disjoint -> mkNC [x, y]
+                _ -> error "expected EDRelation") pairs
+    return (ls, s)
+mkEDPairs' _ _ _ _ = error "wrong call of mkEDPairs'"
+
 -- | Mapping of ListFrameBit
 mapListFrameBit :: CASLSign -> Extended -> Maybe O.Relation -> ListFrameBit
        -> Result ([CASLFORMULA], CASLSign)
@@ -734,7 +745,7 @@ mapListFrameBit cSig ex rel lfb =
                     . mkImpl o2) os1, cSig)
             EDRelation _ -> do
                 pairs <- mapComDataPropsList cSig (Just iri) dl 1 2
-                mkEDPairs cSig [1, 2] rel pairs
+                mkEDPairs' cSig [1, 2] rel pairs
             _ -> return ([], cSig)
         _ -> err
     IndividualSameOrDifferent al -> case rel of
@@ -827,6 +838,6 @@ mapKey cSig ce pl npl p i h = do
             $ mkExist (keyDecl h i) $ conjunct $ pl ++ [un], s)
 
 mapAxioms :: CASLSign -> Axiom -> Result ([CASLFORMULA], CASLSign)
-mapAxioms cSig (PlainAxiom ex fb) = case fb of
+mapAxioms cSig ax@(PlainAxiom ex fb) = case fb of
     ListFrameBit rel lfb -> mapListFrameBit cSig ex rel lfb
     AnnFrameBit ans afb -> mapAnnFrameBit cSig ex ans afb
