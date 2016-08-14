@@ -740,7 +740,7 @@ mapListFrameBit cSig ex rel lfb =
         SimpleEntity (Entity _ DataProperty iri) -> case r of
             SubPropertyOf -> do
                 os1 <- mapM (\ o1 -> mapDataProp cSig o1 1 2) dl
-                o2 <- mapDataProp cSig iri 2 1
+                o2 <- mapDataProp cSig iri 1 2 -- was 2 1
                 return (map (mkForall [thingDecl 1, dataDecl 2]
                     . mkImpl o2) os1, cSig)
             EDRelation _ -> do
@@ -838,6 +838,6 @@ mapKey cSig ce pl npl p i h = do
             $ mkExist (keyDecl h i) $ conjunct $ pl ++ [un], s)
 
 mapAxioms :: CASLSign -> Axiom -> Result ([CASLFORMULA], CASLSign)
-mapAxioms cSig ax@(PlainAxiom ex fb) = case fb of
+mapAxioms cSig (PlainAxiom ex fb) = case fb of
     ListFrameBit rel lfb -> mapListFrameBit cSig ex rel lfb
     AnnFrameBit ans afb -> mapAnnFrameBit cSig ex ans afb
