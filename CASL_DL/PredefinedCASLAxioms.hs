@@ -339,7 +339,6 @@ floatSign = integerSign
                           (unMinus, [minusTy, minusFloat])
                         , (dec, [decTy])
                         , (eId, [expTy])
-                        , (cons, [consTy])
                         ]
                  , globAnnos = (globAnnos integerSign)
                      { literal_annos = (literal_annos $ globAnnos integerSign)
@@ -358,8 +357,8 @@ boolSign = (emptySign ())
                         ]
                  }
 
-stringSign :: CASLSign
-stringSign = (emptySign ())
+stringSignAux :: CASLSign
+stringSignAux = (emptySign ())
                  { sortRel = 
                       Rel.transClosure $ Rel.fromList
                        [ (stringS, dataS) ]
@@ -367,12 +366,16 @@ stringSign = (emptySign ())
                         $ 
                         [
                          (emptyString, [emptyStringTy])
+                         , (cons, [consTy])
                         ]
                  , globAnnos = emptyGlobalAnnos
                      { literal_annos = emptyLiteralAnnos
                        { 
                        string_lit = Just (emptyString, cons) }}
                  }
+
+stringSign :: CASLSign
+stringSign = uniteCASLSign stringSignAux charSign
 
 datatypeSigns :: Map.Map SORT CASLSign
 datatypeSigns = Map.fromList
