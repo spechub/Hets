@@ -39,6 +39,7 @@ import OWL2.ManchesterPrint ()
 import OWL2.Morphism
 import OWL2.Symbols
 import qualified OWL2.Sign as OS
+import qualified OWL2.Sublogic as SL
 -- CASL_DL = codomain
 import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
@@ -122,13 +123,13 @@ uriToCaslId urI = let
  in
   if ((isDatatypeKey urI) && (isThing urI))  then
         getId $ localPart urI
-   else 
+   else
     let
       ePart = expandedIRI urI
     in
       if ePart /= "" then
         getId $ expandedIRI urI
-      else 
+      else
         getId $ localPart urI
 
 tokDecl :: Token -> VAR_DECL
@@ -252,27 +253,35 @@ mapSign sig =
             [ tMp conceptPred cPreds
             , tMp objectPropPred oPreds
             , tMp dataPropPred dPreds ]
-     in return $ uniteCASLSign predefSign (emptySign ())
+     in return $  uniteCASLSign predefSign2
+         (emptySign ())
              { predMap = aPreds
              , opMap = tMp indiConst . cvrt $ OS.individuals sig
              }
 
 loadDataInformation :: ProfSub -> Sign f ()
-loadDataInformation _ = let dts = Set.fromList $ map stringToId datatypeKeys
-    in  (emptySign ()) { sortRel = Rel.fromKeysSet dts }
+loadDataInformation sl = let
+  dts = Set.map uriToCaslId $ SL.datatype $ sublogic sl
+ in  (emptySign ()) { sortRel =
+       Rel.transClosure . Rel.fromSet .
+       Set.map  (\ d -> (d, dataS))
+       $ dts }
 
 mapTheory :: (OS.Sign, [Named Axiom]) -> Result (CASLSign, [Named CASLFORMULA])
-mapTheory (owlSig, owlSens) = let sl = topS in do
+mapTheory (owlSig, owlSens) = let
+  sl = sublogicOfTheo OWL2 (owlSig, map sentence owlSens)
+ in do
     cSig <- mapSign owlSig
     let pSig = loadDataInformation sl
-        dTypes = (emptySign ()) {sortRel = Rel.transClosure . Rel.fromSet
+        {- dTypes = (emptySign ()) {sortRel = Rel.transClosure . Rel.fromSet
                     . Set.map (\ d -> (uriToCaslId d, dataS))
-                    . Set.union predefIRIs $ OS.datatypes owlSig}
+                    . Set.union predefIRIs $ OS.datatypes owlSig} -}
     (cSens, nSig) <- foldM (\ (x, y) z -> do
             (sen, sig) <- mapSentence y z
             return (sen ++ x, uniteCASLSign sig y)) ([], cSig) owlSens
-    return (foldl1 uniteCASLSign [nSig, pSig, dTypes],
-                predefinedAxioms ++ (reverse cSens))
+    return (foldl1 uniteCASLSign [nSig, pSig],  -- , dTypes],
+            reverse cSens)
+           -- predefinedAxioms ++ (reverse cSens))
 
 -- | mapping of OWL to CASL_DL formulae
 mapSentence :: CASLSign -> Named Axiom -> Result ([Named CASLFORMULA], CASLSign)

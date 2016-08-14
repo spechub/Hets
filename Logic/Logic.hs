@@ -395,14 +395,14 @@ symset_of :: forall lid sentence sign morphism symbol .
 symset_of lid sig = Set.unions $ sym_of lid sig
 
 -- | check that all sentence names in a theory do not appear as symbol names
-checkSenNames :: forall lid sentence sign morphism symbol . 
+checkSenNames :: forall lid sentence sign morphism symbol .
                  Sentences lid sentence sign morphism symbol =>
                  lid -> sign -> [Named sentence] -> Set.Set String
-checkSenNames lid aSig nsens = 
+checkSenNames lid aSig nsens =
  let senNames = map senAttr nsens
      symNames = map (show . (sym_name lid)) $ Set.toList $
                 symset_of lid aSig
- in Set.intersection (Set.fromList symNames) $ Set.fromList senNames 
+ in Set.intersection (Set.fromList symNames) $ Set.fromList senNames
 
 -- | dependency ordered list of symbols for a signature
 symlist_of :: forall lid sentence sign morphism symbol .
@@ -627,7 +627,7 @@ class ( Syntax lid basic_spec symbol symb_items symb_map_items
          equiv2cospan :: lid -> sign -> sign -> [symb_items] -> [symb_items]
            -> Result (sign, sign, sign, EndoMap symbol, EndoMap symbol)
          equiv2cospan _ _ _ _ _ = error "equiv2cospan nyi"
-         -- | extract the module 
+         -- | extract the module
          extract_module :: lid -> [IRI] -> (sign, [Named sentence])
                         -> Result (sign, [Named sentence])
          extract_module _ _ = return
@@ -849,6 +849,17 @@ class (StaticAnalysis lid
                           -> Result (sign, [Named sentence])
          -- no logic should throw an error here
          addOmdocToTheory _ _ t _ = return t
+
+
+-- | sublogic of a theory
+sublogicOfTheo :: (Logic lid sublogics
+        basic_spec sentence symb_items symb_map_items
+        sign morphism symbol raw_symbol proof_tree) =>
+    lid -> (sign, [sentence]) -> sublogics
+sublogicOfTheo _ (sig, axs) =
+  foldl lub (minSublogic sig) $
+  map minSublogic axs
+
 
 {- The class of logics which can be used as logical frameworks, in which object
    logics can be specified by the user. Currently the only logics implementing

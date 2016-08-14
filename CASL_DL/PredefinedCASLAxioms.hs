@@ -13,6 +13,7 @@ Portability :  portable
 module CASL_DL.PredefinedCASLAxioms
   ( predefSign
   , predefinedSign
+  , predefSign2
   , thing
   , nothing
   , conceptPred
@@ -231,6 +232,14 @@ noThing = Qual_pred_name nothing classPredType n
 intTypes :: [PredType]
 intTypes = map (\ t -> PredType [t]) [integer, nonNegInt]
 
+predefinedSign2 :: e -> Sign f e
+predefinedSign2 e = (emptySign e) {
+  sortRel = Rel.insertKey thing $ Rel.insertKey dataS Rel.empty
+  }
+
+predefSign2 :: CASLSign
+predefSign2 = predefinedSign2 ()
+
 predefinedSign :: e -> Sign f e
 predefinedSign e = (emptySign e)
                  { sortRel = Rel.insertKey (stringToId "Char")
@@ -287,7 +296,7 @@ predefinedAxioms = let
 
 mkNNameAux :: Int -> String
 mkNNameAux k = genNamePrefix ++ "x" ++ show k
- 
+
 -- | Build a name
 mkNName :: Int -> Token
 mkNName i = mkSimpleId $ hetsPrefix ++ mkNNameAux i
