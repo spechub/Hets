@@ -14,6 +14,7 @@ module CASL_DL.PredefinedCASLAxioms
   ( predefSign
   , predefinedSign
   , predefSign2
+  , datatypeSigns
   , thing
   , nothing
   , conceptPred
@@ -52,6 +53,8 @@ import Common.Id
 import Common.GlobalAnnotations
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.MapSet as MapSet
+
+import qualified Data.Map as Map
 
 import Data.Char
 
@@ -240,6 +243,45 @@ predefinedSign2 e = (emptySign e) {
 predefSign2 :: CASLSign
 predefSign2 = predefinedSign2 ()
 
+-- | instead of one big signature, several small ones
+
+charSign :: CASLSign
+charSign = (emptySign ())
+                 { sortRel = Rel.insertKey (stringToId "Char") Rel.empty
+                 , opMap = MapSet.fromList
+                        $  map (\ c -> (charToId c, [charT]))
+                          [chr 0 .. chr 127]
+                 }
+
+integerSign :: CASLSign
+integerSign  = (emptySign ())
+                 { sortRel =
+                      Rel.transClosure $ Rel.fromList
+                       [(negIntS, nonPosInt),
+                        (nonNegInt, integer),
+                        (nonPosInt, integer),
+                        (posInt, nonNegInt),
+                        (integer, dataS)]
+                 , predMap =
+                     MapSet.fromList
+                      $ 
+                      map ( \ o -> (stringToId o, intTypes))
+                         ["even", "odd"]
+                 , opMap = MapSet.fromList
+                        $ map (\ i -> (stringToId $ show i, [natT]))
+                          [0 .. 9 :: Int]
+                        ++
+                        [ 
+                         (atAt, [atAtTy])
+                        ]
+                 , globAnnos = emptyGlobalAnnos
+                     { literal_annos = emptyLiteralAnnos
+                       { number_lit = Just atAt
+                        }}
+                 }
+
+
+
 predefinedSign :: e -> Sign f e
 predefinedSign e = (emptySign e)
                  { sortRel = Rel.insertKey (stringToId "Char")
@@ -281,6 +323,64 @@ predefinedSign e = (emptySign e)
                        , float_lit = Just (dec, eId)
                        , string_lit = Just (emptyString, cons) }}
                  }
+
+floatSign :: CASLSign
+floatSign = integerSign
+                 { sortRel = Rel.union (sortRel integerSign) 
+                      $ Rel.transClosure $ Rel.fromList
+                       [
+                        (integer, float),
+                        (float, dataS)
+                        ]
+                 
+                 , opMap = MapSet.union (opMap integerSign) $ MapSet.fromList
+                        $ 
+                        [
+                          (unMinus, [minusTy, minusFloat])
+                        , (dec, [decTy])
+                        , (eId, [expTy])
+                        , (cons, [consTy])
+                        ]
+                 , globAnnos = (globAnnos integerSign)
+                     { literal_annos = (literal_annos $ globAnnos integerSign)
+                       {  float_lit = Just (dec, eId)
+                        }}
+                 }
+
+boolSign :: CASLSign
+boolSign = (emptySign ())
+                 { sortRel =  Rel.transClosure $ Rel.fromList
+                       [(boolS, dataS)]
+                 , opMap = MapSet.fromList
+                        $ 
+                        [ (trueS, [boolT])
+                        , (falseS, [boolT])
+                        ]
+                 }
+
+stringSign :: CASLSign
+stringSign = (emptySign ())
+                 { sortRel = 
+                      Rel.transClosure $ Rel.fromList
+                       [ (stringS, dataS) ]
+                 , opMap = MapSet.fromList
+                        $ 
+                        [
+                         (emptyString, [emptyStringTy])
+                        ]
+                 , globAnnos = emptyGlobalAnnos
+                     { literal_annos = emptyLiteralAnnos
+                       { 
+                       string_lit = Just (emptyString, cons) }}
+                 }
+
+datatypeSigns :: Map.Map SORT CASLSign
+datatypeSigns = Map.fromList
+   [ (charS, charSign)
+   , (integer, integerSign)
+   , (float, floatSign)
+   , (boolS, boolSign)
+   , (stringS, stringSign)]
 
 predefSign :: CASLSign
 predefSign = predefinedSign ()

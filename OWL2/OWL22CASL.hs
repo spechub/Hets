@@ -259,13 +259,14 @@ mapSign sig =
              , opMap = tMp indiConst . cvrt $ OS.individuals sig
              }
 
-loadDataInformation :: ProfSub -> Sign f ()
+loadDataInformation :: ProfSub -> CASLSign
 loadDataInformation sl = let
   dts = Set.map uriToCaslId $ SL.datatype $ sublogic sl
- in  (emptySign ()) { sortRel =
-       Rel.transClosure . Rel.fromSet .
-       Set.map  (\ d -> (d, dataS))
-       $ dts }
+  eSig x = (emptySign ()) { sortRel =
+       Rel.fromList  [(x, dataS)]}
+  sigs = Set.toList $ 
+         Set.map (\x -> Map.findWithDefault (eSig x) x datatypeSigns) dts
+ in  foldl uniteCASLSign (emptySign ()) sigs
 
 mapTheory :: (OS.Sign, [Named Axiom]) -> Result (CASLSign, [Named CASLFORMULA])
 mapTheory (owlSig, owlSens) = let
