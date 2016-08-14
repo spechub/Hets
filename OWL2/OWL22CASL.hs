@@ -123,13 +123,13 @@ uriToCaslId urI = let
  in
   if ((isDatatypeKey urI) && (isThing urI))  then
         getId $ localPart urI
-   else
+   else {-
     let
       ePart = expandedIRI urI
     in
       if ePart /= "" then
         getId $ expandedIRI urI
-      else
+      else -}
         getId $ localPart urI
 
 tokDecl :: Token -> VAR_DECL
