@@ -143,6 +143,10 @@ varDeclRange (Var_decl vs s _) = case vs of
 
 data Junctor = Con | Dis deriving (Show, Eq, Ord, Typeable, Data)
 
+dualJunctor :: Junctor -> Junctor
+dualJunctor Con = Dis
+dualJunctor Dis = Con
+
 data Relation = Implication | RevImpl | Equivalence
   deriving (Show, Eq, Ord, Typeable, Data)
 

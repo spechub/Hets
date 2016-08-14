@@ -34,6 +34,8 @@ module Logic.Comorphism
     , isIdComorphism
     , isModelTransportable
     , hasModelExpansion
+    , isEps
+    , isRps
     , isWeaklyAmalgamable
     , compComorphism
     ) where
@@ -124,6 +126,12 @@ class (Language cid,
     constituents cid = [language_name cid]
     isInclusionComorphism :: cid -> Bool
     isInclusionComorphism _ = False
+    -- reduction preserves satisfaction
+    rps :: cid -> Bool
+    rps _ = True
+    -- expansion preserves satisfaction
+    eps :: cid -> Bool
+    eps _ = True
 
 targetSublogic :: Comorphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
@@ -440,6 +448,15 @@ hasModelExpansion (Comorphism cid) = has_model_expansion cid
 -- | Test whether a comorphism is weakly amalgamable
 isWeaklyAmalgamable :: AnyComorphism -> Bool
 isWeaklyAmalgamable (Comorphism cid) = is_weakly_amalgamable cid
+
+-- | Tests whether a comorphism is rps or eps
+
+isEps :: AnyComorphism -> Bool
+isEps (Comorphism cid) = eps cid
+
+isRps :: AnyComorphism -> Bool
+isRps (Comorphism cid) = rps cid
+
 
 -- | Compose comorphisms
 compComorphism :: Monad m => AnyComorphism -> AnyComorphism -> m AnyComorphism

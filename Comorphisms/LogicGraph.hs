@@ -102,6 +102,9 @@ import Comorphisms.CspCASL2Modal
 import CspCASL.Comorphisms
 import Comorphisms.CASL_DL2CASL
 import Comorphisms.RelScheme2CASL
+import Comorphisms.CASL2Skolem
+import Comorphisms.CASL2Prenex
+import Comorphisms.CASL2NNF
 import Comorphisms.CASL2VSE
 import Comorphisms.CASL2VSERefine
 import Comorphisms.CASL2VSEImport
@@ -186,6 +189,9 @@ comorphismList =
     , Comorphism CASL2VSE
     , Comorphism CASL2VSEImport
     , Comorphism CASL2VSERefine
+    , Comorphism CASL2Skolem
+    , Comorphism CASL2NNF
+    , Comorphism CASL2Prenex
     , Comorphism Maude2CASL
     , Comorphism (CL2CFOL folsl {compact = False})
     , Comorphism (CL2CFOL fullclsl)
