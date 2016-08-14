@@ -51,6 +51,7 @@ import Common.ResultT
 import Common.LibName
 import Common.Id
 import Common.IRI
+import Common.DocUtils
 import qualified Common.Unlit as Unlit
 
 import Driver.Options
@@ -574,7 +575,7 @@ symbolsOf lg gs1@(G_sign l1 (ExtSign sig1 sys1) _)
         (G_symb_items_list lid2 sis2) _ _ -> do
       ss1 <- coerceSymbItemsList lid1 l1 "symbolsOf1" sis1
       rs1 <- stat_symb_items l1 sig1 ss1
-      ss2 <- coerceSymbItemsList lid2 l2 "symbolsOf1" sis2
+      ss2 <- coerceSymbItemsList lid2 l2 "symbolsOf2" sis2
       rs2 <- stat_symb_items l2 sig2 ss2
       p <- case (rs1, rs2) of
         ([r1], [r2]) ->
@@ -583,10 +584,16 @@ symbolsOf lg gs1@(G_sign l1 (ExtSign sig1 sys1) _)
             , filter (\ sy -> matches l2 sy r2) $ Set.toList sys2) of
           ([s1], [s2]) ->
             return (G_symbol l1 s1, G_symbol l2 s2)
-          (ll1, ll2) ->
-                 error
-                  $ "non-unique symbol match: " ++ show ll1 ++ "\n" ++ show ll2
-        _ -> mkError "non-unique raw symbols" c
+          (ll1, ll2) -> 
+                 plain_error (G_symbol l1 $ head ll1, G_symbol l2 $ head ll2) -- this is a hack!
+                  ("Missing or non-unique symbol match " ++ 
+                   "for correspondence\nMatches for first symbol: " ++ 
+                   showDoc rs1 "\n" ++
+                   showDoc ll1 "\nMatches for second symbol: " ++ 
+                   showDoc rs2 "\n" ++
+                   showDoc ll2 "\n") 
+                  nullRange
+        _ -> fail $ "non-unique raw symbols"
       ps <- symbolsOf lg gs1 gs2 corresps'
       return $ Set.insert p ps
 
