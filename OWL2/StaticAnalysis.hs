@@ -31,7 +31,6 @@ import Common.Result
 import Common.GlobalAnnotations hiding (PrefixMap)
 import Common.ExtSign
 import Common.Lib.State
-import qualified Common.Id as Id
 import Common.IRI (iriToStringUnsecure, setAngles)
 import Common.SetColimit
 
@@ -74,6 +73,9 @@ checkLiteral :: Sign -> Literal -> Result ()
 checkLiteral s l = case l of
     Literal _ (Typed dt) -> checkEntity s $ mkEntity Datatype dt
     _ -> return ()
+
+isDeclInd :: Sign -> Individual -> Bool
+isDeclInd s ind = Set.member ind $ individuals s
 
 isDeclObjProp :: Sign -> ObjectPropertyExpression -> Bool
 isDeclObjProp s ope = let op = objPropToIRI ope in
@@ -181,8 +183,12 @@ checkClassExpression s desc =
 
 checkFact :: Sign -> Fact -> Result ()
 checkFact s f = case f of
-    ObjectPropertyFact _ op _ -> unless (isDeclObjProp s op) $
-        fail $ "Static analysis. ObjectPropertyFact failed " ++ show f
+    ObjectPropertyFact _ op ind ->
+     if not $ isDeclObjProp s op then
+       fail $ "unknown object property:" ++ showDoc op ""
+      else if not $ isDeclInd s ind then
+        fail $ "unknown individual: " ++ showDoc ind ""
+            else return ()
     DataPropertyFact _ dp l -> do
         checkLiteral s l
         unless (isDeclDataProp s dp)
@@ -429,7 +435,7 @@ corr2theo :: String -> Bool -> Sign -> Sign -> [SymbItems] -> [SymbItems] ->
              EndoMap Entity -> EndoMap Entity -> REL_REF ->
              Result (Sign, [Named Axiom], Sign, Sign,
                      EndoMap Entity, EndoMap Entity)
-corr2theo aname flag ssig tsig l1 l2 eMap1 eMap2 rref = do
+corr2theo _aname flag ssig tsig l1 l2 eMap1 eMap2 rref = do
   let l1' = statSymbItems ssig l1
       l2' = statSymbItems tsig l2
   case (l1', l2') of
@@ -440,7 +446,7 @@ corr2theo aname flag ssig tsig l1 l2 eMap1 eMap2 rref = do
        (match1, match2) of
           ([e1], [e2]) -> do
            let e1' = if flag then e1 {cutIRI =  addString (cutIRI e1, "_source")} else e1
-               e2' = if flag then e2 {cutIRI =  addString (cutIRI e2, "_target")} else e2 
+               e2' = if flag then e2 {cutIRI =  addString (cutIRI e2, "_target")} else e2
                sig = emptySign
                eMap1' = Map.union eMap1 $ Map.fromAscList [(e1', e1)]
                eMap2' = Map.union eMap2 $ Map.fromAscList [(e2', e2)]
@@ -501,7 +507,7 @@ corr2theo aname flag ssig tsig l1 l2 eMap1 eMap2 rref = do
                            ExpressionBit [([], Expression $ cutIRI e1')]
              return
                  (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2')
-            RelName r -> error "nyi" {- do
+            RelName _r -> error "nyi" {- do
              let extPart = mkExtendedEntity e1'
                  rQName = QN "" (iriToStringUnsecure r)
                              Abbreviated (iriToStringUnsecure r) Id.nullRange
@@ -525,7 +531,7 @@ corr2theo aname flag ssig tsig l1 l2 eMap1 eMap2 rref = do
                  sig2' <- addSymbToSign sig2 rsym
                  return
                    (sigB', [makeNamed "" axiom], sig1, sig2', eMap1',
-                      Map.union eMap2' $ Map.fromAscList [(rsym, sym')]) 
+                      Map.union eMap2' $ Map.fromAscList [(rsym, sym')])
                _ -> fail $ "too many matches for " ++ show rQName -}
             _ -> fail $ "nyi:" ++ show rref
           _ -> fail $ "non-unique symbol match:" ++ showDoc l1 " " 
