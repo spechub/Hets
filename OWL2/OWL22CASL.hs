@@ -469,7 +469,7 @@ mapCard b cSig ct n prop d var = do
     let dlst = map (\ (x, y) -> mkNeg $ mkStEq (qualThing x) $ qualThing y)
                         $ comPairs vlst vlst
         dlstM = map (\ (x, y) -> mkStEq (qualThing x) $ qualThing y)
-                        $ mkPairs (n + var + 1) vlst
+                        $ comPairs vlstM vlstM
         qVars = map thingDecl vlst
         qVarsM = map thingDecl vlstM
         qVarsE = map thingDecl vlstE
@@ -656,7 +656,7 @@ mapListFrameBit cSig ex rel lfb =
               case ty of
                 NamedIndividual | rel == Just Types -> do
                   inD <- mapIndivURI cSig iri
-                  let els' = map (substitute (mkNName 1) thing inD) els 
+                  let els' = map (substitute (mkNName 1) thing inD) els
                   return ( els', uniteL $ cSig : s)
                 DataProperty | rel == (Just $ DRRelation ADomain) -> do
                   oEx <- mapDataProp cSig iri 1 2
