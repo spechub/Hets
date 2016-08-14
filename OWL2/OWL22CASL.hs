@@ -280,8 +280,7 @@ mapTheory (owlSig, owlSens) = let
             (sen, sig) <- mapSentence y z
             return (sen ++ x, uniteCASLSign sig y)) ([], cSig) owlSens
     return (foldl1 uniteCASLSign [nSig, pSig],  -- , dTypes],
-            reverse cSens)
-           -- predefinedAxioms ++ (reverse cSens))
+            predefinedAxioms ++ (reverse cSens))
 
 -- | mapping of OWL to CASL_DL formulae
 mapSentence :: CASLSign -> Named Axiom -> Result ([Named CASLFORMULA], CASLSign)
