@@ -736,7 +736,7 @@ mapListFrameBit cSig ex rel lfb =
       Just r -> case ex of
         Misc _ -> do
             pairs <- mapComDataPropsList cSig Nothing dl 1 2
-            mkEDPairs cSig [1, 2] rel pairs
+            mkEDPairs' cSig [1, 2] rel pairs
         SimpleEntity (Entity _ DataProperty iri) -> case r of
             SubPropertyOf -> do
                 os1 <- mapM (\ o1 -> mapDataProp cSig o1 1 2) dl
