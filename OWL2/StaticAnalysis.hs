@@ -93,14 +93,12 @@ filterObjProp = filter . isDeclObjProp
 checkObjPropList :: Sign -> [ObjectPropertyExpression] -> Result ()
 checkObjPropList s ol = do
     let ls = map (isDeclObjProp s) ol
-    unless (and ls) $ fail $ "Static analysis found that not all properties" ++
-        " in the following list are ObjectProperties\n\n" ++ show ol
+    unless (and ls) $ fail $ "undeclared object properties:\n" ++ showDoc ol ""
 
 checkDataPropList :: Sign -> [DataPropertyExpression] -> Result ()
 checkDataPropList s dl = do
     let ls = map (isDeclDataProp s) dl
-    unless (and ls) $ fail $ "Static analysis found that not all properties" ++
-        " in the following list are DataProperties\n\n" ++ show dl
+    unless (and ls) $ fail $ "undeclared data properties:\n" ++ showDoc dl ""
 
 -- | checks if a DataRange is valid
 checkDataRange :: Sign -> DataRange -> Result ()
@@ -240,10 +238,14 @@ checkListBit s r fb = case fb of
             ol = map snd anl
             sorted = filterObjProp s ol
         if null sorted then do
-            let dpl = map objPropToIRI ol
+            let opl = map objPropToIRI ol
             checkAnnos s annos
-            checkDataPropList s dpl >> return (DataBit $ zip annos dpl)
-            else if length sorted == length ol then return fb
+            let undeclOps = filter (\x -> not $ isDeclObjProp s
+                                              $ ObjectProp x) opl
+            if null undeclOps then return $ ObjectBit anl
+              else fail $ "undeclared object properties:\n" ++
+                          (showDoc undeclOps "")
+          else if length sorted == length ol then return fb
                     else fail $ "Static analysis found that there are" ++
                         " multiple types of properties in\n\n" ++
                         show sorted ++ show (map objPropToIRI $ ol \\ sorted)
@@ -427,7 +429,7 @@ addEquiv ssig tsig l1 l2 = do
                          Map.insert e2 s Map.empty)
              else
               fail "only symbols of same kind can be equivalent in an alignment"
-          _ -> fail $ "non-unique symbol match:" ++ showDoc l1 " " 
+          _ -> fail $ "non-unique symbol match:" ++ showDoc l1 " "
                                                  ++  showDoc l2 " "
     _ -> fail "terms not yet supported in alignments"
 
@@ -534,6 +536,6 @@ corr2theo _aname flag ssig tsig l1 l2 eMap1 eMap2 rref = do
                       Map.union eMap2' $ Map.fromAscList [(rsym, sym')])
                _ -> fail $ "too many matches for " ++ show rQName -}
             _ -> fail $ "nyi:" ++ show rref
-          _ -> fail $ "non-unique symbol match:" ++ showDoc l1 " " 
+          _ -> fail $ "non-unique symbol match:" ++ showDoc l1 " "
                                                  ++ showDoc l2 " "
     _ -> fail "terms not yet supported in alignments"
