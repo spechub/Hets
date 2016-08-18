@@ -93,7 +93,10 @@ filterObjProp = filter . isDeclObjProp
 checkObjPropList :: Sign -> [ObjectPropertyExpression] -> Result ()
 checkObjPropList s ol = do
     let ls = map (isDeclObjProp s) ol
-    unless (and ls) $ fail $ "undeclared object properties:\n" ++ showDoc ol ""
+    unless (and ls) $ fail $ "undeclared object properties:\n" ++
+                      showDoc (map (\o -> case o of
+                                     ObjectProp _ -> o
+                                     ObjectInverseOf x -> x) ol) ""
 
 checkDataPropList :: Sign -> [DataPropertyExpression] -> Result ()
 checkDataPropList s dl = do
@@ -238,14 +241,10 @@ checkListBit s r fb = case fb of
             ol = map snd anl
             sorted = filterObjProp s ol
         if null sorted then do
-            let opl = map objPropToIRI ol
             checkAnnos s annos
-            let undeclOps = filter (\x -> not $ isDeclObjProp s
-                                              $ ObjectProp x) opl
-            if null undeclOps then return $ ObjectBit anl
-              else fail $ "undeclared object properties:\n" ++
-                          (showDoc undeclOps "")
-          else if length sorted == length ol then return fb
+            checkObjPropList s ol
+            return $ ObjectBit anl
+         else if length sorted == length ol then return fb
                     else fail $ "Static analysis found that there are" ++
                         " multiple types of properties in\n\n" ++
                         show sorted ++ show (map objPropToIRI $ ol \\ sorted)
