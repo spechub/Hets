@@ -47,7 +47,7 @@ define EOL
 endef
 
 # indicate, whether working on an exported repo
-GIT_TIMESTAMP := $(shell [ -d .git ] && git log -1 --format=%ct -- . )
+GIT_TIMESTAMP := $(shell [ -d .git ] && git log -1 --format=%ct )
 EXPORTED := $(shell [ -n "$(GIT_TIMESTAMP)" ] || printf 1)
 
 # the 'replacing spaces' example was taken from the (GNU) Make info manual
