@@ -35,17 +35,18 @@ You can try out Hets using the [Web-based interface](http://rest.hets.eu/)
 #### The best way to use hets is under Ubuntu. Possibly run this OS in a virtual box.
 A compressed (1.2G, uncompressed 4.2G) virtual box image can be [downloaded from here](http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/vbox-x86-linux). username/password is ubuntu/reverse.
 
-### Installing Hets under Ubuntu Trusty Tahr (14.04)
+### Installing Hets under Ubuntu
 
 #### The basic system
 ```
+sudo apt-get install software-properties-common
 sudo apt-add-repository ppa:hets/hets
 sudo apt-get update
-sudo apt-get install hets-core
+sudo apt-get install hets-desktop
 ```
 
-* additionally, you can install (via apt-get) hets-ontology
-* for the full system including all of these, use hets instead of hets-core
+* for the full system including all provers etc., use hets-desktop-all instead of hets-desktop
+* for using Hets as a server providing a RESTful interface, use hets-server or hets-server-all. This is a smaller version without GUI dependencies. Note that also hets-desktop can be used as as server.
 
 #### Hets development
 For Hets development additionally type in
@@ -54,6 +55,8 @@ sudo apt-add-repository -s "deb http://ppa.launchpad.net/hets/hets/ubuntu trusty
 sudo apt-get update
 sudo apt-get build-dep hets
 ```
+Replace 'trusty' with the Ubuntu version that you use.
+The Hets sources should be obtained from the git repository (see the end of this page).
 
 ### Hets Images for Mac OS X 10.9 (Mavericks)
 
