@@ -47,9 +47,13 @@ import Data.Time.LocalTime (TimeOfDay)
 
 -- Prover
 
+depqbfS :: String
+depqbfS = "depqbf"
+
 -- | The Prover implementation.
 depQBFProver :: Prover Sign AS.FORMULA Morphism QBFSL ProofTree
-depQBFProver = mkAutomaticProver "depqbf" top depQBFGUI depQBFCMDLautomaticBatch
+depQBFProver =
+  mkAutomaticProver depqbfS depqbfS top depQBFGUI depQBFCMDLautomaticBatch
 
 {- |
   Record for prover specific functions. This is used by both GUI and command
@@ -122,7 +126,7 @@ runDepQBF ps cfg saveQDIMACS thName nGoal = do
     when saveQDIMACS (writeFile saveFile prob)
     stpTmpFile <- getTempFile prob saveFile
     t_start <- getHetsTime
-    (exitCode, stdoutC, stderrC) <- executeProcess "depqbf"
+    (exitCode, stdoutC, stderrC) <- executeProcess depqbfS
         (show tl : extraOpts cfg ++ [stpTmpFile]) ""
     t_end <- getHetsTime
     removeFile stpTmpFile
@@ -148,14 +152,10 @@ examineProof :: QBFProverState
              -> IO (ATPRetval, ProofStatus ProofTree)
 examineProof ps _ stdoutC _ exitCode nGoal tUsed _ =
     let
-        defaultStatus =
-            ProofStatus { goalName = senAttr nGoal
-                        , goalStatus = openGoalStatus
-                        , usedAxioms = []
-                        , usedProver = proverName depQBFProver
-                        , proofTree = emptyProofTree
-                        , usedTime = tUsed
-                        , tacticScript = TacticScript "" }
+        defaultStatus = (openProofStatus
+          (senAttr nGoal)
+          (proverName depQBFProver)
+          (emptyProofTree)) { usedTime = tUsed }
         getAxioms = map AS_Anno.senAttr (initialAxioms ps)
     in case getDepQBFResult exitCode stdoutC of
                DepQBFProved -> return (ATPSuccess, defaultStatus

@@ -112,14 +112,15 @@ criticalKeywords = terminatingKeywords ++ startingKeywords
 -- | keywords terminating a basic spec
 terminatingKeywords :: [String]
 terminatingKeywords =
-    [andS, endS, fitS, hideS, revealS, thenS, withS, withinS]
+    [ andS, endS, fitS, forgetS, hideS, keepS, rejectS, revealS, selectS
+    , thenS, withS, withinS, ofS, forS, toS, intersectS]
 
 -- | keywords starting a library item
 startingKeywords :: [String]
 startingKeywords =
     [ archS, fromS, logicS, newlogicS, refinementS, specS, unitS, viewS
-    , ontologyS, alignmentS, diagramS, equivalenceS, newcomorphismS
-    , interpretationS ]
+    , ontologyS, alignmentS, networkS, equivalenceS, newcomorphismS
+    , interpretationS, entailmentS ]
 
 -- | keywords that may follow a defining equal sign
 otherStartKeywords :: [String]
@@ -130,7 +131,7 @@ otherStartKeywords =
 continuationKeywords :: [String]
 continuationKeywords =
     [ behaviourallyS, getS, givenS, lambdaS, refinedS, resultS, toS, versionS
-    , excludingS ]
+    , excludingS, entailsS ]
 
 -- | reserved keywords
 casl_reserved_words :: [String]

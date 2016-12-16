@@ -106,6 +106,13 @@ computeDGraphTheories le dgraph =
   let newDg = computeDGraphTheoriesAux le dgraph
   in groupHistory dgraph (DGRule "Compute theory") newDg
 
+
+computeDGraphTheoriesAux :: LibEnv -> DGraph -> DGraph
+computeDGraphTheoriesAux le dgraph =
+  foldl (\ dg l@(n, lbl) -> updatePending dg lbl
+    (n, recomputeNodeLabel le dg l))
+     dgraph $ topsortedNodes dgraph
+
 recomputeNodeLabel :: LibEnv -> DGraph -> LNode DGNodeLab -> DGNodeLab
 recomputeNodeLabel le dg l@(n, lbl) =
   case computeLabelTheory le dg l of
@@ -123,12 +130,6 @@ recomputeNodeLabel le dg l@(n, lbl) =
            { globalTheory = ngTh }
         Nothing -> lbl1
     Nothing -> lbl
-
-computeDGraphTheoriesAux :: LibEnv -> DGraph -> DGraph
-computeDGraphTheoriesAux le dgraph =
-  foldl (\ dg l@(n, lbl) -> updatePending dg lbl
-    (n, recomputeNodeLabel le dg l))
-     dgraph $ topsortedNodes dgraph
 
 computeLabelTheory :: LibEnv -> DGraph -> LNode DGNodeLab -> Maybe G_theory
 computeLabelTheory le dg (n, lbl) = let localTh = dgn_theory lbl in

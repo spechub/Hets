@@ -1,0 +1,37 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+
+%:
+	dh $@
+
+override_dh_auto_clean:
+	make distclean
+	dh_auto_clean
+
+override_dh_auto_build:
+	make derivedSources
+	cp Makefile Makefile.orig
+	cp ServerMakefile Makefile
+	make depend
+	make hets-server
+	cp Makefile.orig Makefile
+
+override_dh_auto_test:
+
+override_dh_installman:
+
+override_dh_install:
+	install -m 755 -d debian/hets-server-core/usr/lib/hets-server
+	install -m 644 utils/hetcasl.sty debian/hets-server-core/usr/lib/hets-server
+	install -m 755 hets-server debian/hets-server-core/usr/lib/hets-server
+	install -m 755 -d debian/hets-server-core/usr/lib/hets-server/hets-isa-tools
+	install -m 755 Isabelle/export/export.sh debian/hets-server-core/usr/lib/hets-server/hets-isa-tools
+	cp Isabelle/export/export_helper.ml debian/hets-server-core/usr/lib/hets-server/hets-isa-tools
+	cp -r hets-lib debian/hets-server-core/usr/lib/hets-server
+	install -m 644 magic/hets.magic debian/hets-server-core/usr/lib/hets-server
+	cp -r hets-owl-tools debian/hets-server-core/usr/lib/hets-server
+	install -m 755 -d debian/hets-server-core/usr/lib/hets-server/hets-maude-lib
+	install -m 644 Maude/hets.prj debian/hets-server-core/usr/lib/hets-server/hets-maude-lib
+	cp Maude/*maude debian/hets-server-core/usr/lib/hets-server/hets-maude-lib
+	install -m 755 -d debian/hets-server-core/usr/bin
+	cp debian/hets_script debian/hets-server-core/usr/bin/hets-server

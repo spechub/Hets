@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  positions, simple and mixfix identifiers
@@ -22,6 +23,7 @@ A simple identifier is a lexical token given by a string and a start position.
 module Common.Id where
 
 import Data.Char
+import Data.Data
 import Data.List (isPrefixOf)
 import qualified Data.Set as Set
 
@@ -30,13 +32,14 @@ data Pos = SourcePos
   { sourceName :: String
   , sourceLine :: !Int
   , sourceColumn :: !Int
-  } deriving (Eq, Ord)
+  } deriving (Eq, Ord, Typeable, Data)
 
 instance Show Pos where
     showsPrec _ = showPos
 
 -- | position lists with trivial equality
 newtype Range = Range { rangeToList :: [Pos] }
+  deriving (Typeable, Data)
 
 -- let InlineAxioms recognize positions
 instance Show Range where
@@ -84,7 +87,7 @@ showPos p = let name = sourceName p
 -- | tokens as supplied by the scanner
 data Token = Token { tokStr :: String
                    , tokPos :: Range
-                   } deriving (Eq, Ord)
+                   } deriving (Eq, Ord, Typeable, Data)
 
 instance Show Token where
   show x = "(mkSimpleId "++['"'] ++ (tokStr x) ++ ['"'] ++ ")"
@@ -163,7 +166,7 @@ data Id = Id
     { getTokens :: [Token]
     , getComps :: [Id]
     , rangeOfId :: Range }
-    deriving (Eq, Ord)
+    deriving (Eq, Ord, Typeable, Data)
     -- pos of square brackets and commas of a compound list
 
 instance Show Id where

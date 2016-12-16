@@ -146,7 +146,7 @@ For searching or looking up any [library functions](http://www.haskell.org/ghc/d
 Also look into [programming guidelines](http://www.haskell.org/haskellwiki/Programming_guidelines) and [things to avoid in Haskell](http://www.haskell.org/haskellwiki/Things_to_avoid).
 
 ### Dependencies
-Dependencies can be installed as specified in [Hets Developtment](#hets-development)
+Dependencies can be installed as specified in [Hets Development](#hets-development)
 
 ### Contributing changes
 
@@ -155,7 +155,7 @@ Before committing haskell source files you may check compliance to the programmi
 * The comments in your haskell sources should not cause `haddock` to fail. After `make` (for re-compiling changed sources) `make doc` will call `haddock`.
 * Also check your source with [hlint](http://community.haskell.org/~ndm/hlint/) which you may install by `cabal install hlint`.
 
-Also have a look at the current [Release Notes](https://github.com/spechub/Hets/releases/latest) and [Debugging and Testing Hets](https://github.com/spechub/Hets/wiki/Debugging-and-Testing-Hets).
+Also have a look at the current [Release Notes](https://github.com/spechub/Hets/releases/latest), [Debugging and Testing Hets](https://github.com/spechub/Hets/wiki/Debugging-and-Testing-Hets),[Code Review](https://github.com/spechub/Hets/wiki/Code-Review) and [Branching](https://github.com/spechub/Hets/wiki/Branching).
 
 If you want to participate in the Hets development feel free to tell us via our [mailing list](http://www.informatik.uni-bremen.de/mailman/listinfo/hets-devel) for Hets developers. This mailing list can also be read via http://news.gmane.org/gmane.comp.lang.hets.devel.
 

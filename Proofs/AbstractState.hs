@@ -15,7 +15,9 @@ It is also used by the CMDL interface.
 -}
 
 module Proofs.AbstractState
-    ( G_prover (..)
+    ( ProverOrConsChecker (..)
+    , G_prover (..)
+    , G_proof_tree (..)
     , getProverName
     , getCcName
     , getCcBatch
@@ -40,17 +42,21 @@ module Proofs.AbstractState
     , isSubElemG
     , pathToComorphism
     , getAllProvers
+    , getUsableProvers
     , getConsCheckers
+    , getAllConsCheckers
     , lookupKnownProver
     , lookupKnownConsChecker
     , autoProofAtNode
     ) where
 
 import qualified Data.Map as Map
+import Data.Maybe
 import Data.Typeable
 
 import Control.Concurrent.MVar
 import Control.Monad.Trans
+import Control.Monad
 
 import qualified Common.OrderedMap as OMap
 import Common.Result as Result
@@ -76,6 +82,10 @@ import Static.GTheory
 
 -- * Provers
 
+data ProverOrConsChecker = Prover G_prover
+                         | ConsChecker G_cons_checker
+                         deriving (Show)
+
 -- | provers and consistency checkers for specific logics
 data G_prover =
   forall lid sublogics basic_spec sentence symb_items symb_map_items
@@ -90,6 +100,9 @@ instance Show G_prover where
 
 getProverName :: G_prover -> String
 getProverName (G_prover _ p) = proverName p
+
+usable :: G_prover -> IO Bool
+usable (G_prover _ p) = fmap isNothing $ proverUsable p
 
 coerceProver ::
   ( Logic lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
@@ -119,6 +132,9 @@ getCcName (G_cons_checker _ p) = ccName p
 
 getCcBatch :: G_cons_checker -> Bool
 getCcBatch (G_cons_checker _ p) = ccBatch p
+
+usableCC :: G_cons_checker -> IO Bool
+usableCC (G_cons_checker _ p) = fmap isNothing $ ccUsable p
 
 coerceConsChecker ::
   ( Logic lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
@@ -314,7 +330,9 @@ prepareForProving st (G_prover lid4 p, co) = do
 makeSelectedTheory :: ProofState -> G_theory
 makeSelectedTheory s = case currentTheory s of
   G_theory lid syn sig si sens _ ->
+    -- axiom map, goal map
     let (aMap, gMap) = OMap.partition isAxiom sens
+        -- proven goals map
         pMap = OMap.filter isProvenSenStatus gMap
     in
     G_theory lid syn sig si
@@ -336,8 +354,11 @@ recalculateSublogicAndSelectedTheory st = let
     { selectedTheory = sTh
     , proversMap = shrinkKnownProvers sLo $ proversMap st }
 
-getConsCheckers :: [AnyComorphism] -> [(G_cons_checker, AnyComorphism)]
-getConsCheckers = concatMap (\ cm@(Comorphism cid) ->
+getConsCheckers :: [AnyComorphism] -> IO [(G_cons_checker, AnyComorphism)]
+getConsCheckers = filterM (usableCC . fst) . getAllConsCheckers
+
+getAllConsCheckers :: [AnyComorphism] -> [(G_cons_checker, AnyComorphism)]
+getAllConsCheckers = concatMap (\ cm@(Comorphism cid) ->
     map (\ cc -> (G_cons_checker (targetLogic cid) cc, cm))
       $ cons_checkers $ targetLogic cid)
 
@@ -352,7 +373,7 @@ lookupKnownConsChecker st =
            matchingCC s (gp, _) = case gp of
                                   G_cons_checker _ p -> ccName p == s
            findCC (pr_n, cms) =
-               case filter (matchingCC pr_n) $ getConsCheckers
+               case filter (matchingCC pr_n) $ getAllConsCheckers
                     $ filter (lessSublogicComor sl) cms of
                  [] -> fail ("CMDL.ProverConsistency.lookupKnownConsChecker" ++
                                  ": no consistency checker found")
@@ -429,6 +450,11 @@ pathToComorphism (path, (G_sublogics lid sub, _)) =
     (Comorphism $ mkIdComorphism lid1 sub1)
     (c : snd (unzip cs))
 
+getUsableProvers :: ProverKind -> G_sublogics -> LogicGraph
+ -> IO [(G_prover, AnyComorphism)]
+getUsableProvers pk start =
+  filterM (usable . fst) . getAllProvers pk start
+
 getAllProvers :: ProverKind -> G_sublogics -> LogicGraph
  -> [(G_prover, AnyComorphism)]
 getAllProvers pk start lg =
@@ -444,9 +470,9 @@ getAllProvers pk start lg =
    -> [(t2, AnyComorphism)]
   mkComorphism kp path@(_, (end, _)) =
    let fullComorphism = pathToComorphism path
-   in case Map.toList $ Map.filterWithKey (\ l _ -> isSubElemG end l) kp of
-        [(_, ps)] -> map (\ p -> (p, fullComorphism)) ps
-        _ -> error "error1"
+       cs = Map.toList $ Map.filterWithKey (\ l _ -> isSubElemG end l) kp
+   in concatMap (\ x -> case x of
+                        (_, ps) -> map (\ p -> (p, fullComorphism)) ps) cs
 
 {- | the list of proof statuses is integrated into the goalMap of the state
 after validation of the Disproved Statuses -}
@@ -480,6 +506,8 @@ autoProofAtNode ::
                   -> Int
                    -- selected goals
                   -> [String]
+                   -- selected axioms
+                  -> [String]
                    -- Node selected for proving
                   -> G_theory
                    -- selected Prover and Comorphism
@@ -487,13 +515,15 @@ autoProofAtNode ::
                    -- returns new GoalStatus for the Node
                   -> ResultT IO ((G_theory, [(String, String, String)]),
                                  (ProofState, [ProofStatus G_proof_tree]))
-autoProofAtNode useTh timeout goals g_th p_cm = do
+autoProofAtNode useTh timeout goals axioms g_th p_cm = do
       let knpr = propagateErrors "autoProofAtNode"
             $ knownProversWithKind ProveCMDLautomatic
           pf_st = initialState "" g_th knpr
           sg_st = if null goals then pf_st else pf_st
             { selectedGoals = filter (`elem` goals) $ selectedGoals pf_st }
-          st = recalculateSublogicAndSelectedTheory sg_st
+          sa_st = if null axioms then sg_st else sg_st
+            { includedAxioms = filter (`elem` axioms) $ includedAxioms sg_st }
+          st = recalculateSublogicAndSelectedTheory sa_st
       -- try to prepare the theory
       if null $ selectedGoals st then fail "autoProofAtNode: no goals selected"
         else do

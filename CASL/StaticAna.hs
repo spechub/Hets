@@ -202,11 +202,8 @@ anaLocalVarForms anaFrm il afs ps = do
                              (ds ++ dss, f {item = resF} : ress,
                                  f {item = anaF} : ranas))
                      ([], [], []) afs
-               fufs = map (mapAn (\ f -> let
-                         qf = mkForallRange il f ps
-                         vs = map (\ (v, s) -> Var_decl [v] s ps)
-                              $ Set.toList $ freeVars sign qf
-                         in stripQuant sign $ mkForallRange vs qf ps))
+               fufs = map (mapAn (\ f -> quantFreeVars sign
+                            (mkForallRange il f ps) ps))
                       anaFs
            addDiags es
            return (resFs, fufs)
@@ -269,23 +266,33 @@ toSortGenAx ps isFree (sorts, rel, ops) = do
                         (Op_type Total [s] t p) p) $ Rel.toList
                   $ Rel.irreflex rel
         allSyms = opSyms ++ injSyms
-        resType _ (Op_name _) = False
-        resType s (Qual_op_name _ t _) = res_OP_TYPE t == s
-        getIndex s = fromMaybe (-1) $ elemIndex s sortList
-        addIndices (Op_name _) =
-          error "CASL.StaticAna.addIndices"
-        addIndices os@(Qual_op_name _ t _) =
-            (os, map getIndex $ args_OP_TYPE t)
-        collectOps s =
-          Constraint s (map addIndices $ filter (resType s) allSyms) s
-        constrs = map collectOps sortList
-        resList = Set.fromList $ map (\ o -> case o of
-                    Qual_op_name _ t _ -> res_OP_TYPE t
-                    Op_name _ -> error "CASL.StaticAna.resList")
-                  allSyms
+        resType (Op_name _) = error "CASL.StaticAna.resType"
+        resType (Qual_op_name _ t _) = res_OP_TYPE t
+        argTypes (Op_name _) = error "CASL.StaticAna.argTypes"
+        argTypes (Qual_op_name _ t _) = args_OP_TYPE t
+        getIndex l s = fromMaybe (-1) $ elemIndex s l
+        addIndices l os =
+            (os, map (getIndex l) $ argTypes os)
+        collectOps s = (s, filter ((== s) . resType) allSyms)
+        constrs0 = map collectOps sortList
+        dRel = Rel.depSort . Rel.transClosure $ foldr (\ (s, os) r ->
+               Set.fold (`Rel.insertDiffPair` s) (Rel.insertKey s r)
+               $ Set.unions
+               $ map (Set.intersection sorts . Set.fromList . argTypes) os)
+               Rel.empty constrs0
+        m2 = Map.fromList constrs0
+        mkConstr ss =
+            let sl = Set.toList ss in
+            toSortGenNamed
+            (mkSort_gen_ax
+            (map (\ s -> Constraint s
+                   (map (addIndices sl)
+                    $ Map.findWithDefault (error "CASL.StaticAna.mkConstr")
+                    s m2) s) sl) isFree) sl
+        resList = Set.fromList $ map resType allSyms
         noConsList = Set.difference sorts resList
         voidOps = Set.difference resList sorts
-        f = Sort_gen_ax constrs isFree
+        sens = map mkConstr dRel
     when (null sortList)
       $ addDiags [Diag Error "missing generated sort" ps]
     unless (Set.null noConsList)
@@ -294,7 +301,9 @@ toSortGenAx ps isFree (sorts, rel, ops) = do
     unless (Set.null voidOps)
       $ addDiags [mkDiag Warning "non-generated sorts as constructor result"
                   voidOps]
-    addSentences [toSortGenNamed f sortList]
+    when (length dRel > 1)
+      $ addDiags [mkDiag Warning "splittable groups of generated sorts" dRel]
+    addSentences sens
 
 ana_SIG_ITEMS :: (FormExtension f, TermExtension f)
   => Min f e -> Ana s b s f e -> Mix b s f e -> GenKind -> SIG_ITEMS s f
@@ -512,13 +521,13 @@ ana_OP_ATTR mef mix ty ni ois oa = do
       rty = opRes ty
       atys = opArgs ty
       q = posOfId rty
-  case atys of
+      tds = case atys of
          [t1, t2] | t1 == t2 -> case oa of
-              Comm_op_attr -> return ()
-              _ -> unless (t1 == rty) $ addDiags [Diag Error
-                             "result sort must be equal to argument sorts" q]
-         _ -> addDiags [Diag Error
-                        "expecting two arguments of equal sort" q]
+              Comm_op_attr -> []
+              _ -> [ Diag Error "result sort must be equal to argument sorts" q
+                   | t1 /= rty ]
+         _ -> [Diag Error "expecting two arguments of equal sort" q]
+  addDiags tds
   case oa of
     Unit_op_attr t -> do
            sign <- get
@@ -528,8 +537,9 @@ ana_OP_ATTR mef mix ty ni ois oa = do
            case mt of
              Nothing -> return Nothing
              Just (resT, anaT) -> do
-               addSentences $ map (makeUnit True anaT ty ni) ois
-               addSentences $ map (makeUnit False anaT ty ni) ois
+               when (null tds) $ do
+                 addSentences $ map (makeUnit True anaT ty ni) ois
+                 addSentences $ map (makeUnit False anaT ty ni) ois
                return $ Just $ Unit_op_attr resT
     Assoc_op_attr -> do
       let (vs, [v1, v2, v3]) = threeVars rty
@@ -541,7 +551,7 @@ ana_OP_ATTR mef mix ty ni ois oa = do
               (Application qi [Application qi [v1, v2] p, v3] p) Strong
               (Application qi [v1, Application qi [v2, v3] p] p) p) p)
             { isAxiom = ni }
-      addSentences $ map makeAssoc ois
+      when (null tds) . addSentences $ map makeAssoc ois
       return $ Just oa
     Comm_op_attr -> do
       let ns = map mkSimpleId ["x", "y"]
@@ -555,7 +565,7 @@ ana_OP_ATTR mef mix ty ni ois oa = do
              (Equation (Application qi args p) Strong
               (Application qi (reverse args) p) p) p) {
              isAxiom = ni }
-      addSentences $ map makeComm ois
+      when (null tds) . addSentences $ map makeComm ois
       return $ Just oa
     Idem_op_attr -> do
       let v = mkSimpleId "x"
@@ -567,7 +577,7 @@ ana_OP_ATTR mef mix ty ni ois oa = do
             (Equation
              (Application (Qual_op_name i sty p) [qv, qv] p)
              Strong qv p) p) { isAxiom = ni }
-      addSentences $ map makeIdem ois
+      when (null tds) . addSentences $ map makeIdem ois
       return $ Just oa
 
 -- first bool for left and right, second one for no implied annotation

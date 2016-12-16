@@ -454,7 +454,7 @@ toSortConstraint (tc, lisObj) =
   let
     sor = stringToId $ name tc
     simplCon = Constraint sor (foldr ((:) . toConstraint sor) [] lisObj) sor
-    constr = Sort_gen_ax [simplCon] True
+    constr = mkSort_gen_ax [simplCon] True
   in
     makeNamed ("sortGenCon_" ++ name tc) constr
 

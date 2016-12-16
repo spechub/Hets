@@ -18,6 +18,7 @@ module Common.SFKT
   , observe
   ) where
 
+import Control.Applicative
 import Control.Monad
 import Control.Monad.Trans
 import Common.LogicT
@@ -37,9 +38,20 @@ type SK ans a = a -> FK ans -> ans
 {- the success continuation gets one answer(value) and a computation
 to run to get more answers -}
 
+instance Monad m => Functor (SFKT m) where
+  fmap = liftM
+
+instance Monad m => Applicative (SFKT m) where
+  pure = return
+  (<*>) = ap
+
 instance Monad m => Monad (SFKT m) where
   return e = SFKT (\ sk -> sk e)
   m >>= f = SFKT (\ sk -> unSFKT m (\ a -> unSFKT (f a) sk))
+
+instance Monad m => Alternative (SFKT m) where
+  (<|>) = mplus
+  empty = mzero
 
 instance Monad m => MonadPlus (SFKT m) where
   mzero = SFKT (\ _ fk -> fk)

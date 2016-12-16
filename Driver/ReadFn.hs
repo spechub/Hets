@@ -1,12 +1,12 @@
 {- |
 Module      :  $Header$
 Description :  reading and parsing ATerms, CASL, HetCASL files
-Copyright   :  (c) Klaus Luettich, C. Maeder, Uni Bremen 2002-2006
+Copyright   :  (c) Klaus Luettich, C. Maeder, Uni Bremen 2002-2014
 License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
-Portability :  non-portable(DevGraph)
+Portability :  non-portable(Grothendieck)
 
 reading and parsing ATerms, CASL, HetCASL files as much as is needed for the
 static analysis
@@ -24,6 +24,7 @@ module Driver.ReadFn
   , fromShATermString
   , getContentAndFileType
   , showFileType
+  , keepOrigClifName
   ) where
 
 import Logic.Grothendieck
@@ -88,8 +89,9 @@ guessXmlContent isXml str = case dropWhile isSpace str of
   Nothing -> Right GuessIn
   Just e -> case elName e of
     q | isDgXml q -> Right DgXml
-      | isRDF q -> Right
-         $ if any (isOWLOnto . elName) $ elChildren e then OWLIn else RDFIn
+      | isRDF q -> Right $ OWLIn $ if any (isOWLOnto . elName) $ elChildren e
+          then OwlXml else RdfXml
+      | qName q == "Ontology" -> Right $ OWLIn OwlXml
       | isDMU q -> Left "unexpected DMU xml format"
       | isPpXml q -> Left "unexpected pp.xml format"
       | null (qName q) || not isXml -> Right GuessIn
@@ -169,9 +171,18 @@ fileToLibName opts efile =
          (path, _) : _ -> mkLibStr $ drop (length path) file
                    -- cut off libdir prefix
 
+-- | add query string for an access token before loading an URI
+loadAccessUri :: HetcatsOpts -> FilePath -> IO (Either String String)
+loadAccessUri opts fn = do
+  let u = fn ++ case accessToken opts of
+        "" -> ""
+        t -> '?' : accessTokenS ++ "=" ++ t
+  putIfVerbose opts 4 $ "downloading " ++ u
+  loadFromUri u
+
 downloadSource :: HetcatsOpts -> FilePath -> IO (Either String String)
 downloadSource opts fn =
-  if checkUri fn then loadFromUri fn else do
+  if checkUri fn then loadAccessUri opts fn else do
     b <- doesFileExist fn
     if b then catchIOException (Left $ "could not read file: " ++ fn)
         . fmap Right $ readEncFile (ioEncoding opts) fn
@@ -184,13 +195,19 @@ tryDownload opts fnames fn = case fnames of
   fname : fnames' -> do
        mRes <- downloadSource opts fname
        case mRes of
-         Left _ -> tryDownload opts fnames' fn
+         Left err -> do
+           eith <- tryDownload opts fnames' fn
+           case eith of
+             Left res | null fnames' ->
+               return . Left $ err ++ "\n" ++ res
+             _ -> return eith
          Right cont -> return $ Right (fname, cont)
 
 getContent :: HetcatsOpts -> FilePath
   -> IO (Either String (FilePath, String))
 getContent opts = getExtContent opts (getExtensions opts)
 
+-- URIs must not have queries or fragments as possible extensions are appended
 getExtContent :: HetcatsOpts -> [String] -> FilePath
   -> IO (Either String (FilePath, String))
 getExtContent opts exts fp =
@@ -205,16 +222,19 @@ exitHets err = do
   hPutStrLn stderr err
   exitWith $ ExitFailure 2
 
-getContentAndFileType :: HetcatsOpts -> Maybe String -> FilePath
+{- | output file type, checksum, real file name and file content.
+inputs are hets options, optional argument for the file program,
+and the library or file name. -}
+getContentAndFileType :: HetcatsOpts -> FilePath
   -> IO (Either String (Maybe String, Maybe String, FilePath, String))
-getContentAndFileType opts mp fn = do
+getContentAndFileType opts fn = do
   eith <- getContent opts fn
   case eith of
     Left err -> return $ Left err
     Right (nFn, cont) -> do
       let isUri = checkUri nFn
       f <- if isUri then getTempFile cont "hets-file.tmp" else return nFn
-      Result ds mr <- runResultT $ getMagicFileType mp f
+      Result ds mr <- runResultT $ getMagicFileType (Just "--mime-type") f
       Result es mc <- runResultT $ getChecksum f
       showDiags opts (ds ++ es)
       when isUri $ removeFile f
@@ -222,7 +242,7 @@ getContentAndFileType opts mp fn = do
 
 showFileType :: HetcatsOpts -> FilePath -> IO ()
 showFileType opts fn = do
-  eith <- getContentAndFileType opts Nothing fn
+  eith <- getContentAndFileType opts fn
   case eith of
     Left err -> exitHets err
     Right (mr, _, nFn, _) ->
@@ -231,3 +251,12 @@ showFileType opts fn = do
       in case mr of
         Just s -> putStrLn $ fstr ++ s
         Nothing -> exitHets $ fstr ++ "could not determine file type."
+
+keepOrigClifName :: HetcatsOpts -> FilePath -> FilePath -> FilePath
+keepOrigClifName opts origName file =
+  let iTypes = intype opts
+  in case guess file iTypes of
+       ext@(CommonLogicIn _) -> case guess origName iTypes of
+         CommonLogicIn _ -> origName
+         _ -> origName ++ '.' : show ext
+       _ -> file

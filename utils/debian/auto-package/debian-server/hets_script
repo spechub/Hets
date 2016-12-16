@@ -1,0 +1,27 @@
+#!/bin/sh -e
+#
+# this script is part of Hets
+# - Heterogenous Tool Set -
+#
+
+#
+# Setting environment variables
+# and starting Hets
+#
+
+export HETS_MAGIC=/usr/lib/hets-server/hets.magic
+export HETS_LIB=/usr/lib/hets-server/hets-lib
+export HETS_OWL_TOOLS=/usr/lib/hets-server/hets-owl-tools
+export HETS_ISABELLE_LIB=/usr/lib/hets-server/hets-lib/Isabelle
+export HETS_ISA_TOOLS=/usr/lib/hets-server/hets-isa-tools
+export HETS_APROVE=$HETS_OWL_TOOLS/AProVE.jar
+export HETS_ONTODMU=$HETS_OWL_TOOLS/OntoDMU.jar
+export HETS_MAUDE_LIB=/usr/lib/hets-server/hets-maude-lib
+export HETS_HOLLIGHT_TOOLS=/usr/lib/hets-server/hets-hollight-tools
+export HETS_HOL_DIR=/usr/share/hol-light
+export HETS_OCAML_LIB_DIR=/usr/lib/ocaml/compiler-libs
+export PELLET_PATH=/usr/share/pellet
+export TWELF_LIB=/usr/share/twelf/bin
+export MAUDE_LIB=/usr/share/maude
+
+exec /usr/lib/hets-server/hets-server ${1+"$@"}

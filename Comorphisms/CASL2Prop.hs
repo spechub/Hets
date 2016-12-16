@@ -84,7 +84,7 @@ instance Comorphism CASL2Prop
       map_symbol CASL2Prop _ = mapSym
       map_sentence CASL2Prop _ = trForm
       map_morphism CASL2Prop = mapMor
-      has_model_expansion CASL2Prop = True
+      has_model_expansion CASL2Prop = False
       is_weakly_amalgamable CASL2Prop = True
       isInclusionComorphism CASL2Prop = False
 

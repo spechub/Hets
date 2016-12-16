@@ -41,8 +41,8 @@ fromRight e = case e of
 
 isPrefix :: Term -> Bool
 isPrefix tm = case tm of
-  Var _ _ (HolTermInfo (Prefix, _)) -> True
-  Const _ _ (HolTermInfo (Prefix, _)) -> True
+  Var _ _ (HolTermInfo (PrefixT, _)) -> True
+  Const _ _ (HolTermInfo (PrefixT, _)) -> True
   _ -> False
 
 ppPrintType :: HolType -> Doc

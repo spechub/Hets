@@ -24,11 +24,11 @@ GENITCORRECTIONS_deps = utils/itcor/GenItCorrections.hs
 
 PERL = perl
 GENRULES = utils/genRules
-GENRULECALL = $(GENRULES) -r Typeable -r ShATermConvertible \
-    -i Data.Typeable -i ATerm.Lib
+GENRULECALL = $(GENRULES) -r ShATermConvertible \
+    -i ATerm.Lib
 
-GENRULECALL2 = $(GENRULES) -r Typeable -r ShATermLG \
-    -i Data.Typeable -i ATerm.Lib -i ATC.Grothendieck
+GENRULECALL2 = $(GENRULES) -r ShATermLG \
+    -i ATerm.Lib -i ATC.Grothendieck
 DRIFT = utils/DrIFT
 HADDOCK = haddock
 
@@ -56,7 +56,7 @@ logics = CASL HasCASL Isabelle Modal Hybrid TopHybrid Temporal \
     CoCASL COL CspCASL CASL_DL \
     SoftFOL ConstraintCASL Propositional RelationalScheme VSE OMDoc DFOL \
     LF Framework Maude ExtModal CommonLogic CSL QBF Adl HolLight Fpl THF \
-    FreeCAD OWL2 RDF CSMOF UML# QVTR
+    FreeCAD OWL2 RDF CSMOF QVTR UML
 
 TESTTARGETFILES += Scratch.hs CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     Haskell/wrap.hs Isabelle/isa.hs Syntax/hetpa.hs \
@@ -118,7 +118,8 @@ Haskell_files = $(addsuffix .hs, \
 
 ## rule for ATC generation
 Haskell/ATC_Haskell.der.hs: $(Haskell_files) $(GENRULES)
-	$(GENRULECALL) -i Haskell.BaseATC -o $@ $(Haskell_files)
+	$(GENRULECALL) -r Typeable -i Data.Typeable -i Haskell.BaseATC \
+  -o $@ $(Haskell_files)
 
 hs_der_files += $(hs_clean_files)
 ifneq ($(strip $(PFE_FLAGS)),)
@@ -319,7 +320,7 @@ CSMOF_files = CSMOF/As.hs CSMOF/Sign.hs
 
 UML_files = UML/UML.hs UML/Sign.hs UML/Morphism.hs UML/StateMachine.hs
 
-#QVTR_files = QVTR/As.hs QVTR/Sign.hs
+QVTR_files = QVTR/As.hs QVTR/Sign.hs
 
 # ATC DrIFT-rule generation for logics
 CASL/ATC_CASL.der.hs: $(CASL_files) $(GENRULES)
@@ -425,8 +426,9 @@ CSMOF/ATC_CSMOF.der.hs: $(CSMOF_files) $(GENRULES)
 UML/ATC_UML.der.hs: $(UML_files) $(GENRULES)
 	$(GENRULECALL) -i Common.ATerm.ConvInstances -o $@ $(UML_files)
 
-#QVTR/ATC_QVTR.der.hs: $(QVTR_files) $(GENRULES)
-#	$(GENRULECALL) -i Common.ATerm.ConvInstances -o $@ $(QVTR_files)
+QVTR/ATC_QVTR.der.hs: $(QVTR_files) CSMOF/ATC_CSMOF.hs $(GENRULES)
+	$(GENRULECALL) -i CSMOF.ATC_CSMOF -i Common.ATerm.ConvInstances \
+ -o $@ $(QVTR_files)
 
 # all ATC .der.hs files for all logics
 atc_logic_files = $(foreach logic, $(logics), $(logic)/ATC_$(logic).der.hs)
@@ -450,7 +452,9 @@ derived_sources += $(drifted_files) Driver/Version.hs $(hs_der_files)
 .PHONY : all hets-opt hets-optimized clean o_clean clean_pretty \
     real_clean bin_clean distclean annos checkversion \
     check capa hacapa h2h h2hf showKP clean_genRules genRules \
-    count doc fromKif derivedSources release cgi ghci build callghc
+    count doc fromKif derivedSources release cgi ghci build callghc rev.txt
+
+.FORCE :
 
 .SECONDARY : %.hs %.d $(generated_rule_files)
 
@@ -462,6 +466,13 @@ hets-opt:
 	$(MAKE) derivedSources
 	$(MAKE) clean
 	$(MAKE) hets-optimized
+
+# the variant without GUI
+hets-server: HASKELINE_PACKAGE =
+hets-server: GLADE_PACKAGE =
+hets-server: UNI_PACKAGE =
+hets-server: $(derived_sources)
+	$(HC) --make -O -o hets-server hets.hs $(HC_OPTS)
 
 hets-optimized: $(derived_sources)
 	$(HC) --make -O -o hets hets.hs $(HC_OPTS)
@@ -494,6 +505,13 @@ docs/index.html:
 
 derivedSources: $(derived_sources)
 
+deps: .FORCE $(derived_sources)
+	$(HC) -M -dep-makefile Makefile.deps hets.hs $(HC_OPTS)
+	cat Makefile.deps | grep .hs | awk '{print $$3}' > deps
+
+compile_in_steps: deps
+	cat deps | xargs -L 200 $(HC) --make -odir=.objs $(HC_OPTS)
+
 $(DRIFT): $(DRIFT_deps)
 	(cd utils/DrIFT-src; $(HC) --make DrIFT.hs -o ../DrIFT)
 
@@ -517,7 +535,7 @@ utils/appendHaskellPreludeString: utils/appendHaskellPreludeString.hs
 # release management
 release:
 	$(RM) -r Hets
-	git clone https://github.com/spechub/Hets
+	git clone --depth=50 $(HETSBRANCH) https://github.com/spechub/Hets
 	(cd Hets; $(MAKE) derivedSources; $(MAKE) clean; \
             cp Makefile Makefile.orig; \
             cp ReleaseMakefile Makefile; \
@@ -555,6 +573,7 @@ o_clean:
 bin_clean:
 	$(RM) hets
 	$(RM) hets.cgi
+	$(RM) hets-server
 	$(RM) $(TESTTARGETS)
 
 clean_pretty:
@@ -698,16 +717,7 @@ initialize_installer:
 	@echo "  -> make"
 	@echo and wait until it is finished
 
-# check out java parts for OWL
-owl_java:
-	$(RM) -r OWL2/java/OwlApi
-	svn export -q \
-	--non-interactive \
-	--trust-server-cert \
-  https://github.com/owlcs/owlapi/tags/owlapi-parent-3.4.8 \
-  OWL2/java/OwlApi
-
-initialize_java: owl_java
+initialize_java:
 	ant -q init
 
 java-libs:

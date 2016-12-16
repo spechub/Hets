@@ -288,12 +288,13 @@ updateNodes view listNodes update lock unlock = do
 updateFinder :: TreeView -> ListStore Finder -> Bool -> G_sublogics -> IO ()
 updateFinder view list useNonBatch sl = do
   old <- listStoreToList list
+  cs <- getConsCheckers $ findComorphismPaths logicGraph sl
   let new = Map.elems $ foldr (\ (cc, c) m ->
               let n = getCcName cc
                   f = Map.findWithDefault (Finder n cc [] 0) n m
               in Map.insert n (f { comorphism = c : comorphism f}) m) Map.empty
               $ (if useNonBatch then id else filter (getCcBatch . fst))
-              $ getConsCheckers $ findComorphismPaths logicGraph sl
+              cs
   when (old /= new) $ do
     -- update list and try to select previous finder
     selected' <- getSelectedSingle view list
@@ -343,8 +344,8 @@ updateComorphism view list cbComorphism sh = do
     Nothing -> return ()
   signalUnblock sh
 
-expand :: Finder -> [String]
-expand = map show . comorphism
+expand :: Finder -> [ComboBoxText]
+expand = toComboBoxText . comorphism
 
 setSelectedComorphism :: TreeView -> ListStore Finder -> ComboBox -> IO ()
 setSelectedComorphism view list cbComorphism = do

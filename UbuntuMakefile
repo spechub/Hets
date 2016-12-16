@@ -12,7 +12,7 @@ include var.mk
 all: hets
 
 depend:
-	$(HC) -M hets.hs $(HC_OPTS)
+	$(HC) -M -dep-suffix "" hets.hs $(HC_OPTS)
 
 hets: hets.o
 	$(HC) --make -O -o $@ hets.hs $(HC_OPTS) -w

@@ -22,6 +22,7 @@ module Common.Utils
   , trim
   , trimLeft
   , trimRight
+  , toSnakeCase
   , nubOrd
   , nubOrdOn
   , atMaybe
@@ -150,6 +151,26 @@ trimLeft = dropWhile isSpace
 -- | trims a string only on the right side
 trimRight :: String -> String
 trimRight = foldr (\ c cs -> if isSpace c && null cs then [] else c : cs) ""
+
+{-
+   Convert CamelCased or mixedCases 'String' to a 'String' with underscores,
+   the \"snake\" 'String'.
+
+   It also considers SCREAMINGCamelCase:
+   `toSnakeCase "SomeSCREAMINGCamelCase" == "some_screaming_camel_case"`
+-}
+toSnakeCase :: String -> String
+toSnakeCase c = if hasBump c then unScream c else mkSnake c where
+  hasBump s = case s of
+    a : b : _ -> isUpper a && isLower b
+    _ -> False
+  unScream s = case s of
+    a : r -> toLower a : mkSnake r
+    _ -> s
+  mkSnake s = let newSnake t = '_' : unScream t in case s of
+    a : r@(b : _) | hasBump [b, a] -> a : newSnake r
+    _ | hasBump s -> newSnake s
+    _ -> unScream s
 
 {- | The 'nubWith' function accepts as an argument a \"stop list\" update
 function and an initial stop list. The stop list is a set of list elements
@@ -408,13 +429,13 @@ withinDirectory p a = do
   setCurrentDirectory d
   return r
 
--- | calls openTempFile but directly writes content and closes the file
+-- | opens a temp file but directly writes content and closes the file
 writeTempFile :: String -- ^ Content
   -> FilePath -- ^ Directory in which to create the file
   -> String   -- ^ File name template
   -> IO FilePath -- ^ create file
 writeTempFile str tmpDir file = do
-  (tmpFile, hdl) <- openTempFile tmpDir file
+  (tmpFile, hdl) <- openTempFileWithDefaultPermissions tmpDir file
   hPutStr hdl str
   hFlush hdl
   hClose hdl

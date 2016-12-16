@@ -1,34 +1,33 @@
 name: Hets
 version: 0.99
 Description: The Heterogeneous Tool Set
-homepage: http://www.dfki.de/sks/hets
-bug-reports: http://trac.informatik.uni-bremen.de:8080/hets
+homepage:https://github.com/spechub/Hets
 License: LGPL
 License-File: LICENSE.txt
 Author:
-  2007 Cui Jian <ken@informatik.uni-bremen.de>
-  2007 Hendrik Iben <hiben@informatik.uni-bremen.de>
-  2007 Klaus Luettich <luettich@informatik.uni-bremen.de>
-  2007 Paolo Torrini <paolot@informatik.uni-bremen.de>
-  2007 Rainer Grabbe <rainer@informatik.uni-bremen.de>
-  2008 Andy Gimblett <a.m.gimblett@swansea.ac.uk>
-  2008 Heng Jiang <jiang@informatik.uni-bremen.de>
-  2008 Igor Stassiy <i.stassiy@jacobs-university.de>
-  2008 Mingyi Liu <xinga@informatik.uni-bremen.de>
-  2009 Christian.Maeder@dfki.de
-  2009 Dominik Luecke <luecke@informatik.uni-bremen.de>
-  2009 Ewaryst.Schulz@dfki.de
-  2009 Liam O'Reilly <csliam@swansea.ac.uk>
-  2009 Markus.Gross@dfki.de
-  2009 Mihai.Codescu@dfki.de
-  2009 Razvan Pascanu <r.pascanu@jacobs-university.de>
-  2009 Thiemo Wiedemeyer <raider@informatik.uni-bremen.de>
-  2009 Till.Mossakowski@dfki.de
-  2010 Jonathan.von_Schroeder@dfki.de
-  2010 Simon.Ulbricht@dfki.de
-  2010 Corneliu-Claudiu.Prodescu@dfki.de
+  2007 Cui Jian
+  2007 Hendrik Iben
+  2007 Klaus Luettich
+  2007 Paolo Torrini
+  2007 Rainer Grabbe
+  2008 Andy Gimblett
+  2008 Heng Jiang
+  2008 Igor Stassiy
+  2008 Mingyi Liu
+  2009 Christian Maeder
+  2009 Dominik Luecke
+  2009 Ewaryst Schulz
+  2009 Liam O'Reilly
+  2009 Markus Gross
+  2009 Mihai Codescu
+  2009 Razvan Pascanu
+  2009 Thiemo Wiedemeyer
+  2009 Till Mossakowski
+  2010 Jonathan von Schroeder
+  2010 Simon Ulbricht
+  2010 Corneliu-Claudiu Prodescu
 Maintainer: hets-devel@informatik.uni-bremen.de
-Copyright: 2006-2009 DFKI GmbH Bremen, Uni Bremen
+Copyright: 2006-2014 DFKI GmbH Bremen, Uni Bremen
 Stability: Experimental
 build-type: Simple
 Cabal-Version: >= 1.4
@@ -37,12 +36,6 @@ flag uniform
   description: use HTk and uDrawGraph binding form the uniform workbench
     svn co https://svn-agbkb.informatik.uni-bremen.de/uni/trunk uni
     http://www.informatik.uni-bremen.de/uDrawGraph
-
-flag programatica
-  description: use programatica for the haskell logic
-    http://programatica.cs.pdx.edu/
-    installed via "make" within Hets if cvs sources are checked out
-    in the same parent directory as Hets
 
 flag tar
   description: save VSE proofs in tar archives
@@ -60,12 +53,15 @@ flag gtkglade
   description: gtk and glade packages for a better user interface
 
 flag server
-  description: hets as web interface based on wai-extra-0.2.4.2
+  description: hets as web interface based on wai-extra and warp
+
+flag haxml
+  description: convert Isabelle theories to development graphs
 
 Executable hets
   Main-is: hets.hs
   build-depends:
-      HTTP >= 4000.0.5
+      HTTP >= 4000.2.4
     , array >= 0.1.0.0
     , aterm >= 0.1.0.1
     , base >= 4.0.0.0
@@ -81,11 +77,11 @@ Executable hets
     , parsec >= 2.1.0.0
     , pretty >= 1.0.0.0
     , process >= 1.0.1.1
-    , time >= 1.1.3 && < 1.5
+    , time >= 1.1.3 && < 1.6
     , utf8-string
     , bytestring >= 0.9
     , xml >= 1.3.7 && < 1.4
-  cpp-options: -DCASLEXTENSIONS
+  cpp-options: -DCASLEXTENSIONS -DRDFLOGIC
   ghc-options: -threaded -fcontext-stack=31
 
   if flag(uniform)
@@ -93,15 +89,14 @@ Executable hets
         uni-events
       , uni-graphs >= 2.0 && < 3.0
       , uni-htk >= 2.0 && < 3.0
-      , uni-posixutil
       , uni-reactor
       , uni-uDrawGraph >= 2.0 && < 3.0
       , uni-util >= 2.0 && < 3.0
     cpp-options: -DUNI_PACKAGE
 
-  if flag(programatica)
-    build-depends: programatica >= 1.0 && < 1.1
-    cpp-options: -DPROGRAMATICA
+  if flag(haxml)
+    build-depends: HaXml >= 1.24 && < 2
+    cpp-options: -DHAXML
 
   if flag(tar)
     build-depends: tar >= 0.3 && < 0.5
@@ -118,7 +113,7 @@ Executable hets
 
   if flag(hexpat)
     build-depends:
-        hexpat >= 0.11
+        hexpat >= 0.11 && < 0.21
     cpp-options: -DHEXPAT
 
   if flag(gtkglade)
@@ -129,11 +124,11 @@ Executable hets
 
   if flag(server)
     build-depends:
-        wai-extra >= 0.4
-      , wai >= 0.4
-      , warp >= 0.4
+        wai-extra >= 3.0 && < 4.0
+      , wai >= 3.0 && < 4.0
+      , warp >= 3.0 && < 4.0
       , http-types >= 0.6 && < 0.9
-      , text >= 0.5 && < 2.0
-      , bytestring >= 0.9
+      , text >= 0.5 && < 1.3
+      , case-insensitive
       , random >= 1.0
-    cpp-options: -DSERVER
+    cpp-options: -DSERVER -DWARP3

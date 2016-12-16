@@ -47,7 +47,9 @@ delTopic e s = case e of
 
 groupAxioms :: [Axiom] -> [Frame]
 groupAxioms =
-  map (\ l@(PlainAxiom e _ : _) -> Frame e $ map axiomBit l)
+  concatMap (\ l@(PlainAxiom e _ : _) -> case e of
+    Misc _ -> map (Frame e . (: []) . axiomBit) l
+    _ -> [Frame e $ map axiomBit l])
   . groupBy (on (==) axiomTopic) . sortBy (on compare axiomTopic)
 
 printOWLBasicTheory :: (Sign, [Named Axiom]) -> Doc
@@ -160,7 +162,7 @@ instance Pretty Frame where
 
 printFrame :: Frame -> Doc
 printFrame (Frame eith bl) = case eith of
-    SimpleEntity (Entity e uri) -> keyword (showEntityType e) <+>
+    SimpleEntity (Entity _ e uri) -> keyword (showEntityType e) <+>
             fsep [pretty uri $+$ vcat (map pretty bl)]
     ObjectEntity ope -> keyword objectPropertyC <+>
             (pretty ope $+$ fsep [vcat (map pretty bl)])
@@ -171,7 +173,9 @@ printFrame (Frame eith bl) = case eith of
         [AnnFrameBit ans (AnnotationFrameBit Assertion)] ->
             let [Annotation _ iri _] = a
             in keyword individualC <+> (pretty iri $+$ printAnnotations ans)
-        _ -> empty
+        h : r -> printFrame (Frame eith [h])
+          $+$ printFrame (Frame eith r)
+        [] -> empty
 
 instance Pretty Axiom where
     pretty = printAxiom

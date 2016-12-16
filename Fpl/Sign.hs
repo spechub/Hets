@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  signatures for FPL
@@ -26,6 +27,7 @@ import CASL.Sign
 import CASL.AS_Basic_CASL
 import CASL.ToDoc
 
+import Data.Data
 import Data.List
 import Data.Ord
 
@@ -43,7 +45,7 @@ boolType = sortToOpType boolSort
 
 data SignExt = SignExt
   { constr :: OpMap }
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 instance Pretty SignExt where
   pretty es = let nr = nullRange in case

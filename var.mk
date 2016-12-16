@@ -2,7 +2,6 @@
 
 GHCVERSION = $(shell ghc --numeric-version)
 ifneq ($(findstring 7., $(GHCVERSION)),)
-GHC7OPTS = -fcontext-stack=26
 GHC7RTSOPTS = -rtsopts
 endif
 
@@ -28,11 +27,6 @@ ifneq ($(findstring HaXml-1.20, $(HAXMLVERSION)),)
 HAXML_PACKAGE_COMPAT = -DHAXML_COMPAT
 endif
 
-TIMEVERSION = $(shell $(HCPKG) latest time)
-ifneq ($(findstring time-1.1.2, $(TIMEVERSION)),)
-TIME_PACKAGE = -DTIME_WITHOUT_TYPEABLE
-endif
-
 TARVERSION = $(shell $(HCPKG) latest tar)
 ifneq ($(findstring 0., $(TARVERSION)),)
 TAR_PACKAGE = -DTAR_PACKAGE
@@ -42,12 +36,12 @@ UNIXVERSION = $(shell $(HCPKG) latest unix)
 ifneq ($(findstring 2., $(UNIXVERSION)),)
 UNIX_PACKAGE = -DUNIX
 endif
-ifneq ($(findstring 2.4, $(UNIXVERSION)),)
-UNIX_PACKAGE = -DUNIX
-endif
 
 GLADEVERSION = $(shell $(HCPKG) latest glade)
-ifneq ($(findstring 0.1, $(GLADEVERSION)),)
+ifneq ($(findstring 0.12, $(GLADEVERSION)),)
+GLADE_PACKAGE = -DGTKGLADE -DGTK12 $(SUNRUNPATH)
+endif
+ifneq ($(findstring 0.13, $(GLADEVERSION)),)
 GLADE_PACKAGE = -DGTKGLADE $(SUNRUNPATH)
 endif
 
@@ -82,16 +76,27 @@ endif
 
 WAIEXTVERSION = $(shell $(HCPKG) latest wai-extra)
 WARPVERSION = $(shell $(HCPKG) latest warp)
-ifneq ($(findstring 1., $(WARPVERSION)),)
-  ifneq ($(findstring 1., $(WAIEXTVERSION)),)
+HTTPTYPESVERSION = $(shell $(HCPKG) latest http-types)
+ifneq ($(findstring -1., $(WARPVERSION)),)
+  ifneq ($(findstring -1., $(WAIEXTVERSION)),)
+    ifneq ($(findstring .8, $(HTTPTYPESVERSION)),)
+      SERVER_FLAG = -DSERVER -DWARP1
+    else
+      SERVER_FLAG = -DSERVER -DWARP1 -DHTTPTYPES
+    endif
+  endif
+endif
+ifneq ($(findstring -2., $(WARPVERSION)),)
+  ifneq ($(findstring -2., $(WAIEXTVERSION)),)
   SERVER_FLAG = -DSERVER
   endif
 endif
-ifneq ($(findstring 2., $(WARPVERSION)),)
-  ifneq ($(findstring 2., $(WAIEXTVERSION)),)
-  SERVER_FLAG = -DSERVER
+ifneq ($(findstring -3., $(WARPVERSION)),)
+  ifneq ($(findstring -3., $(WAIEXTVERSION)),)
+  SERVER_FLAG = -DSERVER -DWARP3
   endif
 endif
+
 
 PARSEC1VERSION = $(shell $(HCPKG) latest parsec1)
 ifneq ($(findstring 1.0., $(PARSEC1VERSION)),)
@@ -99,7 +104,6 @@ PARSEC_FLAG = -hide-package parsec -package parsec1
 endif
 
 ifneq ($(strip $(UNI_PACKAGE)),)
-TESTTARGETFILES += Taxonomy/taxonomyTool.hs
   ifeq ($(strip $(HTTP_PACKAGE)),)
   TESTTARGETFILES += SoftFOL/tests/CMDL_tests.hs
   endif
@@ -110,7 +114,7 @@ HASKELINE_PACKAGE =
 GLADE_PACKAGE =
 endif
 
-HC_OPTS_WITHOUTGLADE = $(GHC7OPTS) $(PARSEC_FLAG) \
+HC_OPTS_WITHOUTGLADE = $(PARSEC_FLAG) \
   $(TIME_PACKAGE) $(TAR_PACKAGE) $(HTTP_PACKAGE) $(UNIX_PACKAGE) \
   $(UNI_PACKAGE) $(HASKELINE_PACKAGE) $(HEXPAT_PACKAGE) \
   $(PFE_FLAGS) $(SERVER_FLAG) $(HAXML_PACKAGE) $(HAXML_PACKAGE_COMPAT) \

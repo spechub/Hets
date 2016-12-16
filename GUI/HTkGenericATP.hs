@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {- |
 Module      :  $Header$
 Description :  Generic Prover GUI.
@@ -139,7 +140,7 @@ data OpFrame = OpFrame { ofFrame :: Frame
   from a 'GenericATPState.GenericState'.
 -}
 goalsView
-    :: GenericState sign sentence proofTree pst -- ^ current global prover state
+    :: GenericState sentence proofTree pst -- ^ current global prover state
     -> [LBGoalView] -- ^ resulting ['LBGoalView'] list
 goalsView s = map ((\ g ->
                       let cfg = Map.lookup g (configsMap s)
@@ -203,7 +204,7 @@ batchInfoText tl gTotal gDone =
    Updates the display of the status of the current goal.
 -}
 updateDisplay
-    :: GenericState sign sentence proofTree pst
+    :: GenericState sentence proofTree pst
        -- ^ current global prover state
     -> Bool -- ^ set to 'True' if you want the 'ListBox' to be updated
     -> ListBox String

@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  datastructures for annotations of (Het)CASL.
@@ -17,6 +18,7 @@ module Common.AS_Annotation where
 import Common.Id
 import Common.IRI (IRI)
 
+import Data.Data
 import Data.Maybe
 import qualified Data.Map as Map
 
@@ -24,15 +26,17 @@ import qualified Data.Map as Map
 {-! global: GetRange !-}
 
 -- | start of an annote with its WORD or a comment
-data Annote_word = Annote_word String | Comment_start deriving (Show, Eq, Ord)
+data Annote_word = Annote_word String | Comment_start
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | line or group for 'Unparsed_anno'
 data Annote_text = Line_anno String | Group_anno [String]
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 {- | formats to be displayed (may be extended in the future).
 Drop 3 from the show result to get the string for parsing and printing -}
-data Display_format = DF_HTML | DF_LATEX | DF_RTF deriving (Show, Eq, Ord)
+data Display_format = DF_HTML | DF_LATEX | DF_RTF
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | swap the entries of a lookup table
 swapTable :: [(a, b)] -> [(b, a)]
@@ -58,21 +62,21 @@ lookupDisplayFormat df =
 'NoDirection' can also not be specified explicitly,
 but covers those ids that are not mentionend in precedences. -}
 data PrecRel = Higher | Lower | BothDirections | NoDirection
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | either left or right associative
-data AssocEither = ALeft | ARight deriving (Show, Eq, Ord)
+data AssocEither = ALeft | ARight deriving (Show, Eq, Ord, Typeable, Data)
 
 {- | semantic (line) annotations without further information.
 Use the same drop-3-trick as for the 'Display_format'. -}
 data Semantic_anno = SA_cons | SA_def | SA_implies | SA_mono | SA_implied
-                   | SA_mcons | SA_ccons
-    deriving (Show, Eq, Ord)
+                   | SA_mcons | SA_ccons | SA_wdef
+    deriving (Show, Eq, Ord, Typeable, Data, Enum, Bounded)
 
 -- | a lookup table for the textual representation of semantic annos
 semantic_anno_table :: [(Semantic_anno, String)]
 semantic_anno_table =
-  toTable [SA_cons, SA_def, SA_implies, SA_mono, SA_implied, SA_mcons, SA_ccons]
+  toTable [minBound .. maxBound]
 
 {- | lookup the textual representation of a semantic anno
 in 'semantic_anno_table' -}
@@ -108,7 +112,7 @@ data Annotation = -- | constructor for comments or unparsed annotes
                 | Semantic_anno Semantic_anno Range
                 {- position information for annotations is provided
                 by every annotation -}
-                  deriving (Show, Eq, Ord)
+                  deriving (Show, Eq, Ord, Typeable, Data)
 
 {- | 'isLabel' tests if the given 'Annotation' is a label
 (a 'Label' typically follows a formula) -}
@@ -158,7 +162,7 @@ data Annoted a = Annoted
     { item :: a
     , opt_pos :: Range
     , l_annos :: [Annotation]
-    , r_annos :: [Annotation] } deriving (Show, Ord, Eq)
+    , r_annos :: [Annotation] } deriving (Show, Ord, Eq, Typeable, Data)
 
 annoRange :: (a -> [Pos]) -> Annoted a -> [Pos]
 annoRange f a =
@@ -171,6 +175,7 @@ notImplied = not . any isImplied . r_annos
 -- | naming or labelling sentences
 data SenAttr s a = SenAttr
     { senAttr :: a
+    , priority :: Maybe String
     , isAxiom :: Bool
     , isDef :: Bool
     , wasTheorem :: Bool
@@ -179,12 +184,13 @@ data SenAttr s a = SenAttr
     , simpAnno :: Maybe Bool -- for %simp or %nosimp annotations
     , attrOrigin :: Maybe Id
     , senMark :: String -- a marker for theoroidal comorphisms
-    , sentence :: s } deriving (Eq, Ord, Show)
+    , sentence :: s } deriving (Eq, Ord, Show, Typeable, Data)
 
 -- | equip a sentence with a name
 makeNamed :: a -> s -> SenAttr s a
 makeNamed a s = SenAttr
   { senAttr = a
+  , priority = Nothing
   , isAxiom = True
   , isDef = False
   , wasTheorem = False
@@ -261,9 +267,17 @@ identAnno str an = case an of
 hasIdentAnno :: String -> Annoted a -> Bool
 hasIdentAnno str a = any (identAnno str) $ l_annos a ++ r_annos a
 
+getPriority :: [Annotation] -> Maybe String
+getPriority = foldl
+  (\ mId anno -> case anno of
+    Unparsed_anno (Annote_word "priority") (Group_anno (x : _)) _ -> Just x
+    _ -> mId
+  ) Nothing
+
 makeNamedSen :: Annoted a -> Named a
 makeNamedSen a = (makeNamed (getRLabel a) $ item a)
   { isAxiom = notImplied a
+  , priority = getPriority $ r_annos a
   , simpAnno = case (hasIdentAnno "simp" a, hasIdentAnno "nosimp" a) of
     (True, False) -> Just True
     (False, True) -> Just False
@@ -274,7 +288,7 @@ annoArg txt = case txt of
   Line_anno str -> str
   Group_anno ls -> unlines ls
 
-newtype Name = Name String
+newtype Name = Name String deriving Typeable
 
 instance Show Name where
   show (Name s) = s

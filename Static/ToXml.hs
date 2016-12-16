@@ -64,6 +64,7 @@ dGraph full lenv ln dg =
       lnodes = labNodes body
       ledges = labEdges body
   in add_attrs [ mkAttr "filename" $ getFilePath ln
+               , mkAttr "mime-type" . fromMaybe "unknown" $ mimeType ln
                , mkAttr "libname" . show $ setAngles False $ getLibId ln
                , mkAttr "dgnodes" . show $ length lnodes
                , mkAttr "dgedges" . show $ length ledges
@@ -228,23 +229,29 @@ showSymbolsTh ins name ga th = case th of
 showSen :: ( GetRange sentence, Pretty sentence
            , Sentences lid sentence sign morphism symbol) =>
    lid -> GlobalAnnos -> Maybe Bool -> sign -> Named sentence -> Element
-showSen lid ga mt sig ns = let s = sentence ns in add_attrs
+showSen lid ga mt sig ns =
+ let s = sentence ns in add_attrs
     (case mt of
        Nothing -> []
        Just b -> [mkProvenAttr b]
-     ++ mkNameAttr (senAttr ns) : rangeAttrs (getRangeSpan s))
+     ++ mkNameAttr (senAttr ns) : rangeAttrs (getRangeSpan s)
+     ++ case priority ns of
+         Just impo -> [mkPriorityAttr impo]
+         _ -> [])
     . unode (if isJust mt then "Theorem" else "Axiom") $ unode "Text"
           (show . useGlobalAnnos ga . print_named lid
                             . makeNamed "" $ simplify_sen lid sig s)
-          : map (showSym lid) (symsOfSen lid s)
+          : map (showSym lid) (symsOfSen lid sig s)
           ++ case senMark ns of
                "" -> []
                m -> [unode "ComorphismOrigin" m]
+          ++ [unode "AST" $ asXml s]
 
 showSym :: (Sentences lid sentence sign morphism symbol) =>
            lid -> symbol -> Element
-showSym lid s = add_attrs
-            [ mkAttr "kind" $ symKind lid s
+showSym lid s = add_attrs ((reverse
+            . maybe id ((:) . mkAttr "label") (sym_label lid s))
+            [ mkAttr "iri" $ fullSymName lid s
             , mkNameAttr . show $ sym_name lid s
-            , mkAttr "iri" $ fullSymName lid s ]
-            $ prettySymbol emptyGlobalAnnos s
+            , mkAttr "kind" $ symKind lid s
+            ]) $ prettySymbol emptyGlobalAnnos s

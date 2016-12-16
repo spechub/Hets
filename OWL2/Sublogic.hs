@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Copyright   :  (c) Dominik Luecke, Felix Gabriel Mance
@@ -21,10 +22,11 @@ import OWL2.Morphism
 import Data.List
 import Data.Maybe
 
+import Data.Data
 import qualified Data.Set as Set
 
 data NumberRestrictions = None | Unqualified | Qualified
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 owlDatatypes :: Set.Set Datatype
 owlDatatypes = predefIRIs
@@ -38,7 +40,7 @@ data OWLSub = OWLSub
     , complexRoleInclusions :: Bool
     , addFeatures :: Bool
     , datatype :: Set.Set Datatype
-    } deriving (Show, Eq, Ord)
+    } deriving (Show, Eq, Ord, Typeable, Data)
 
 allSublogics :: [[OWLSub]]
 allSublogics = let
@@ -148,7 +150,7 @@ slObjProp o = case o of
     ObjectInverseOf _ -> requireInverseRoles slBottom
 
 slEntity :: Entity -> OWLSub
-slEntity (Entity et iri) = case et of
+slEntity (Entity _ et iri) = case et of
     Datatype -> slDatatype iri
     _ -> slBottom
 

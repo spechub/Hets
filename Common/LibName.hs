@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  library names for HetCASL and development graphs
@@ -12,7 +13,7 @@ Abstract syntax of HetCASL specification libraries
 -}
 
 module Common.LibName
-  ( LibName (LibName)
+  ( LibName (LibName, getLibId, locIRI, mimeType)
   , VersionNumber (VersionNumber)
   , LinkPath (LinkPath)
   , SLinkPath
@@ -28,8 +29,8 @@ module Common.LibName
   , emptyLibName
   , convertFileToLibStr
   , mkLibStr
-  , getLibId
-  , locIRI
+  , setMimeType
+  , mkLibName
   ) where
 
 import Common.Doc
@@ -37,9 +38,11 @@ import Common.DocUtils
 import Common.Id
 import Common.IRI
 import Common.Keywords
+import Common.Percent
 import Common.Utils
 
 import Data.Char
+import Data.Data
 import Data.List
 import Data.Maybe
 import Data.Ord
@@ -77,40 +80,53 @@ libNameToId ln = let
 
 data LibName = LibName
     { getLibId :: IRI
-    , libIdRange :: Range  -- start of getLibId
     , locIRI :: Maybe IRI
+    , mimeType :: Maybe String
     , libVersion :: Maybe VersionNumber }
+  deriving (Typeable, Data)
 
 iriLibName :: IRI -> LibName
-iriLibName i = LibName i nullRange Nothing Nothing
+iriLibName i = LibName i Nothing Nothing Nothing
+
+mkLibName :: IRI -> Maybe VersionNumber -> LibName
+mkLibName i v = (iriLibName i) { libVersion = v }
 
 emptyLibName :: String -> LibName
 emptyLibName s = iriLibName .
   fromMaybe (if null s then nullIRI else error $ "emptyLibName: " ++ s)
-  $ parseIRIManchester s
+  $ parseIRICurie s
 
+-- | convert file name to IRI reference
 filePathToIri :: FilePath -> IRI
 filePathToIri fp = fromMaybe (error $ "filePathToIri: " ++ fp)
-  . parseIRIReference $ escapeIRIString isUnescapedInIRI fp
+  . parseIRIReference $ encodeBut (\ c -> isUnreserved c || elem c reserved) fp
 
+-- | use file name as library IRI
 filePathToLibId :: FilePath -> IRI
 filePathToLibId = setAngles True . filePathToIri
 
+-- | insert file name as location IRI
 setFilePath :: FilePath -> LibName -> LibName
-setFilePath fp ln =
-  ln { locIRI = Just $ filePathToIri fp }
+setFilePath fp ln = ln { locIRI = Just $ filePathToIri fp }
 
+-- | insert optional mime type
+setMimeType :: Maybe String -> LibName -> LibName
+setMimeType m ln = ln { mimeType = m }
+
+-- | interpret library IRI as file path
 libToFileName :: LibName -> FilePath
 libToFileName = iriToStringUnsecure . setAngles False . getLibId
 
+-- | extract location IRI as file name
 getFilePath :: LibName -> FilePath
 getFilePath = maybe "" iriToStringUnsecure . locIRI
 
 data VersionNumber = VersionNumber [String] Range
-                      -- pos: "version", start of first string
+  deriving (Typeable, Data)
+                    -- pos: "version", start of first string
 
 instance GetRange LibName where
-  getRange = libIdRange
+  getRange = getRange . getLibId
 
 instance Show LibName where
   show = show . hsep . prettyLibName
@@ -132,7 +148,7 @@ instance Ord LibName where
 instance Pretty LibName where
     pretty = fsep . prettyLibName
 
-data LinkPath a = LinkPath a [(LibName, Int)] deriving (Ord, Eq)
+data LinkPath a = LinkPath a [(LibName, Int)] deriving (Eq, Ord, Typeable, Data)
 
 type SLinkPath = LinkPath String
 

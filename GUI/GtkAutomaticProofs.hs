@@ -253,8 +253,11 @@ performAutoProof gi inclThms timeout update (Finder _ pr cs i) listNodes nodes =
            res <- maybe (return Nothing) (\ g_th -> do
                     Result ds ms <- runResultT
                         (do
-                          (a, b) <- autoProofAtNode inclThms timeout [] g_th (pr, c)
-                          liftIO $ addCommandHistoryToState (intState gi) (fst b) (Just (pr, c)) (snd b) (name fn) (True, timeout)
+                          (a, b) <- autoProofAtNode inclThms timeout [] [] g_th
+                            (pr, c)
+                          liftIO $ addCommandHistoryToState (intState gi)
+                            (fst b) (Just (pr, c)) (snd b) (name fn)
+                            (True, timeout)
                           return a)
                     maybe (fail $ showRelDiags 1 ds) (return . Just . fst) ms)
                   $ globalTheory $ snd $ node fn
@@ -291,11 +294,12 @@ updateNodes view listNodes update lock unlock = do
 updateFinder :: TreeView -> ListStore Finder -> G_sublogics -> IO ()
 updateFinder view list sl = do
   old <- listStoreToList list
+  ps <- getUsableProvers ProveCMDLautomatic sl logicGraph
   let new = Map.elems $ foldr (\ (pr, c) m ->
               let n = getProverName pr
                   f = Map.findWithDefault (Finder n pr [] 0) n m
               in Map.insert n (f { comorphism = c : comorphism f}) m) Map.empty
-              $ getAllProvers ProveCMDLautomatic sl logicGraph
+              ps
   when (old /= new) $ do
     -- update list and try to select previous finder
     selected' <- getSelectedSingle view list
@@ -331,8 +335,8 @@ updateComorphism view list cbComorphism sh = do
     Nothing -> return ()
   signalUnblock sh
 
-expand :: Finder -> [String]
-expand = map show . comorphism
+expand :: Finder -> [ComboBoxText]
+expand = toComboBoxText . comorphism
 
 setSelectedComorphism :: TreeView -> ListStore Finder -> ComboBox -> IO ()
 setSelectedComorphism view list cbComorphism = do

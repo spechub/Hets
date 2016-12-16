@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  HolLight signature
@@ -12,6 +13,7 @@ Portability :  portable
 
 module HolLight.Sign where
 
+import Data.Typeable
 import qualified Data.Map as Map
 import Common.DocUtils
 import Common.Doc
@@ -21,7 +23,7 @@ import HolLight.Helper
 
 data Sign = Sign { types :: Map.Map String Int
                  , ops :: Map.Map String HolType }
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Typeable)
 
 prettyTypes :: Map.Map String Int -> Doc
 prettyTypes = ppMap text (\ i -> if i < 1 then empty else parens (pretty i))

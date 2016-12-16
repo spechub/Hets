@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  ordered maps (these keep insertion order)
@@ -32,14 +33,15 @@ module Common.OrderedMap
 
 import Prelude hiding (lookup, map, filter, null)
 
-import qualified Data.Map as Map
-import qualified Data.List as List
+import Data.Data
 import Data.Ord
+import qualified Data.List as List
+import qualified Data.Map as Map
 
 data ElemWOrd a = EWOrd
   { order :: Int
   , ele :: a }
-  deriving Show
+  deriving (Show, Typeable, Data)
 
 instance Ord a => Eq (ElemWOrd a) where
     x == y = compare x y == EQ

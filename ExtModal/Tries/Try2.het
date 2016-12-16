@@ -1,6 +1,6 @@
 logic ExtModal
 
-spec Try2=
+spec Try2 =
 	time modality t
 	modalities a,b
 	sort N

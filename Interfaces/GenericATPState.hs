@@ -101,7 +101,7 @@ type GenericGoalNameMap = Map.Map String String
 {- |
   Represents the global state of the prover GUI.
 -}
-data GenericState sign sentence proof_tree pst = GenericState {
+data GenericState sentence proof_tree pst = GenericState {
     -- | currently selected goal or Nothing
     currentGoal :: Maybe ATPIdentifier,
     -- | initial empty proof_tree
@@ -136,7 +136,7 @@ initialGenericState
     -> Theory sign sentence proof_tree
     -> [FreeDefMorphism sentence morphism] -- ^ freeness constraints
     -> proof_tree -- ^ initial empty proof_tree
-    -> GenericState sign sentence proof_tree pst
+    -> GenericState sentence proof_tree pst
 initialGenericState prName ips trSenName th freedefs pt =
     GenericState {currentGoal = Nothing,
                   currentProofTree = pt,
@@ -177,7 +177,7 @@ initialGenericState prName ips trSenName th freedefs pt =
   removed and warnings are generated. -}
 
 revertRenamingOfLabels :: (Ord sentence, Ord proof_tree) =>
-                           GenericState sign sentence proof_tree pst
+                           GenericState sentence proof_tree pst
                         -> [ProofStatus proof_tree]
                         -> Result [ProofStatus proof_tree]
 revertRenamingOfLabels st = foldM transNames []

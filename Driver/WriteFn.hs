@@ -25,17 +25,19 @@ import System.FilePath
 
 import Control.Monad
 
-import Data.List (partition, (\\))
+import Data.List (partition, (\\), intercalate)
 import Data.Maybe
 
 import Common.AS_Annotation
 import Common.Id
-import Common.IRI (IRI, simpleIdToIRI, iriToStringShortUnsecure)
+import Common.IRI (IRI, simpleIdToIRI, iriToStringShortUnsecure, setAngles)
+import Common.Json (ppJson)
 import Common.DocUtils
 import Common.ExtSign
 import Common.LibName
 import Common.Result
 import Common.Parsec (forget)
+import Common.Percent
 import Common.GlobalAnnotations (GlobalAnnos)
 import qualified Data.Map as Map
 import Common.SExpr
@@ -47,6 +49,7 @@ import Logic.Coerce
 import Logic.Comorphism (targetLogic)
 import Logic.Grothendieck
 import Logic.LGToXml
+import Logic.LGToJson
 import Logic.Logic
 import Logic.Prover
 
@@ -59,6 +62,7 @@ import Static.DotGraph
 import qualified Static.PrintDevGraph as DG
 import Static.ComputeTheory
 import qualified Static.ToXml as ToXml
+import qualified Static.ToJson as ToJson
 
 import CASL.Logic_CASL
 import CASL.CompositionTable.Pretty2
@@ -66,6 +70,9 @@ import CASL.CompositionTable.ToXml
 import CASL.CompositionTable.ComputeTable
 import CASL.CompositionTable.ModelChecker
 import CASL.CompositionTable.ParseTable2
+
+import OWL2.Medusa
+import OWL2.MedusaToJson
 
 #ifdef PROGRAMATICA
 import Haskell.CreateModules
@@ -88,6 +95,7 @@ import VSE.ToSExpr
 #ifndef NOOWLLOGIC
 import OWL2.CreateOWL
 import OWL2.Logic_OWL2
+import OWL2.ParseOWLAsLibDefn (convertOWL)
 import qualified OWL2.ManchesterPrint as OWL2 (prepareBasicTheory)
 import qualified OWL2.ManchesterParser as OWL2 (basicSpec)
 #endif
@@ -131,6 +139,8 @@ writeLibEnv opts filePrefix lenv ln ot =
              >>= writeVerbFile opts f
       XmlOut -> writeVerbFile opts f $ ppTopElement
           $ ToXml.dGraph opts lenv ln dg
+      JsonOut -> writeVerbFile opts f $ ppJson
+          $ ToJson.dGraph opts lenv ln dg
       SymsXml -> writeVerbFile opts f $ ppTopElement
           $ ToXml.dgSymbols dg
       OmdocOut -> do
@@ -201,7 +211,8 @@ writeTheory :: [String] -> String -> HetcatsOpts -> FilePath -> GlobalAnnos
   -> G_theory -> LibName -> IRI -> OutType -> IO ()
 writeTheory ins nam opts filePrefix ga
   raw_gTh@(G_theory lid _ (ExtSign sign0 _) _ sens0 _) ln i ot =
-    let fp = filePrefix ++ "_" ++ iriToStringShortUnsecure i
+    let fp = filePrefix ++ "_" ++ i'
+        i' = encode (iriToStringShortUnsecure $ setAngles False i)
         f = fp ++ "." ++ show ot
         th = (sign0, toNamedList sens0)
         lang = language_name lid
@@ -245,11 +256,28 @@ writeTheory ins nam opts filePrefix ga
             Just td -> writeVerbFile opts f $ tableXmlStr td
             Nothing -> return ()
         else putIfVerbose opts 0 $ "expected CASL theory for: " ++ f
+    MedusaJson -> if lang == language_name OWL2 then do
+          th2 <- coerceBasicTheory lid OWL2 "" th
+          let Result ds res = medusa i th2
+          showDiags opts ds
+          case res of
+            Just td -> writeVerbFile opts f $ medusaToJsonString td
+            Nothing -> return ()
+        else putIfVerbose opts 0 $ "expected OWL2 theory for: " ++ f
+#ifdef RDFLOGIC
+    RDFOut
+        | lang == language_name RDF -> do
+            th2 <- coerceBasicTheory lid RDF "" th
+            let rdftext = shows (RDF.printRDFBasicTheory th2) "\n"
+            writeVerbFile opts f rdftext
+        | otherwise -> putIfVerbose opts 0 $ "expected RDF theory for: " ++ f
+#endif
 #ifndef NOOWLLOGIC
-    OWLOut -> case createOWLTheory raw_gTh of
-      Result _ Nothing ->
-        putIfVerbose opts 0 $ "expected OWL theory for: " ++ f
-      Result ds (Just th2) -> do
+    OWLOut ty -> case ty of
+      Manchester -> case createOWLTheory raw_gTh of
+        Result _ Nothing ->
+          putIfVerbose opts 0 $ "expected OWL theory for: " ++ f
+        Result ds (Just th2) -> do
             let sy = defSyntax opts
                 ms = if null sy then Nothing
                      else Just $ simpleIdToIRI $ mkSimpleId sy
@@ -261,14 +289,11 @@ writeTheory ins nam opts filePrefix ga
               Left err -> putIfVerbose opts 0 $ show err
               _ -> putIfVerbose opts 3 $ "reparsed: " ++ f
             writeVerbFile opts f owltext
-#endif
-#ifdef RDFLOGIC
-    RDFOut
-        | lang == language_name RDF -> do
-            th2 <- coerceBasicTheory lid RDF "" th
-            let rdftext = shows (RDF.printRDFBasicTheory th2) "\n"
-            writeVerbFile opts f rdftext
-        | otherwise -> putIfVerbose opts 0 $ "expected RDF theory for: " ++ f
+      _ -> let flp = getFilePath ln in case guess flp GuessIn of
+        OWLIn _ -> writeVerbFile opts f =<< convertOWL flp (show ty)
+        _ -> putIfVerbose opts 0
+          $ "OWL output only supported for owl input types ("
+          ++ intercalate ", " (map show plainOwlFormats) ++ ")"
 #endif
     CLIFOut
       | lang == language_name CommonLogic -> do
@@ -354,15 +379,17 @@ writeSpecFiles opts file lenv ln dg = do
             DfgFile _ -> True
             TPTPFile _ -> True
             XmlOut -> True
+            JsonOut -> True
             OmdocOut -> True
             TheoryFile _ -> True
             SigFile _ -> True
-            OWLOut -> True
+            OWLOut _ -> True
             CLIFOut -> True
             KIFOut -> True
             FreeCADOut -> True
             HaskellOut -> True
             ComptableXml -> True
+            MedusaJson -> True
             SymXml -> True
             _ -> False) outTypes
         allSpecs = null ns
@@ -403,5 +430,11 @@ writeSpecFiles opts file lenv ln dg = do
 writeLG :: HetcatsOpts -> IO ()
 writeLG opts = do
     doDump opts "LogicGraph" $ putStrLn $ showDoc logicGraph ""
-    writeVerbFile opts { verbose = 2 } (outdir opts </> "LogicGraph.xml")
-      . ppTopElement $ lGToXml logicGraph
+    if elem JsonOut $ outtypes opts then do
+      lG <- lGToJson logicGraph
+      writeVerbFile opts { verbose = 2 } (outdir opts </> "LogicGraph.json")
+        $ ppJson lG
+      else do
+      lG <- lGToXml logicGraph
+      writeVerbFile opts { verbose = 2 } (outdir opts </> "LogicGraph.xml")
+        $ ppTopElement lG

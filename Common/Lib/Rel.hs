@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  Relations, based on maps
@@ -41,13 +42,14 @@ module Common.Lib.Rel
     , delete, succs, predecessors, irreflex, sccOfClosure
     , transClosure, fromList, toList, toPrecMap
     , intransKernel, mostRight, restrict, delSet
-    , toSet, fromSet, topSort, nodes, collaps
+    , toSet, fromSet, topSort, depSort, nodes, collaps
     , transpose, transReduce
     , fromMap, locallyFiltered
     , flatSet, partSet, partList, leqClasses
     ) where
 
 import Prelude hiding (map, null)
+import Data.Data
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Data.List as List
@@ -55,7 +57,8 @@ import qualified Data.List as List
 import qualified Common.Lib.MapSet as MapSet
 
 -- | no invariant is ensured for relations!
-newtype Rel a = Rel { toMap :: Map.Map a (Set.Set a) } deriving (Eq, Ord)
+newtype Rel a = Rel { toMap :: Map.Map a (Set.Set a) }
+  deriving (Eq, Ord, Typeable, Data)
 
 instance Show a => Show (Rel a) where
     show = show . toMap
@@ -272,6 +275,18 @@ expandCycle cs s = case cs of
   [] -> s
   c : r ->
     if Set.null $ Set.intersection c s then expandCycle r s else Set.union c s
+
+-- dependency sort
+depSort :: Ord a => Rel a -> [Set.Set a]
+depSort r = let cs = sccOfClosure r in
+  List.concatMap (List.map (depCycle cs) . Set.toList)
+    $ topSortDAG $ irreflex $ collaps cs r
+
+depCycle :: Ord a => [Set.Set a] -> a -> Set.Set a
+depCycle cs a = case cs of
+  [] -> Set.singleton a
+  c : r ->
+    if Set.member a c then c else depCycle r a
 
 -- | gets the most right elements of a relation,
 mostRightOfCollapsed :: Ord a => Rel a -> Set.Set a

@@ -53,21 +53,23 @@ The default display for a LibEnv should be:
 
 import Common.Utils
 
+import Control.Exception
+
 import Data.Char
 import Data.List
 import Data.Maybe
 import qualified Data.Map as Map
 
-import Driver.Options
+import Common.Percent
 
-import Numeric
+import Driver.Options
 
 ppList :: [String]
 ppList = map (show . PrettyOut) prettyList ++ ["pdf"]
 
 displayTypes :: [String]
 displayTypes =
-  ["svg", "xml", "dot", "symbols", "session"] ++ ppList
+  ["svg", "xml", "json", "dot", "symbols", "session"] ++ ppList
 
 comorphs :: [String]
 comorphs = ["provers", "translations"]
@@ -85,10 +87,15 @@ nodeCommands :: [String]
 nodeCommands = map showNodeCmd nodeCmds ++ comorphs ++ ["prove"]
 
 proveParams :: [String]
-proveParams = ["timeout", "include", "prover", "translation", "theorems"]
+proveParams = ["timeout", "include", "prover", "translation", "theorems",
+  "axioms", "includeDetails", "includeProof"]
 
 edgeCommands :: [String]
 edgeCommands = ["edge"]
+
+knownQueryKeys :: [String]
+knownQueryKeys = displayTypes ++ nodeCommands ++ proveParams ++ edgeCommands
+  ++ ["format", "autoproof", "consistency", "dg", "name", "id"]
 
 -- Lib- and node name can be IRIs now (the query id is the session number)
 data DGQuery = DGQuery
@@ -98,16 +105,26 @@ data DGQuery = DGQuery
   | NewDGQuery
   { queryLib :: FilePath
   , commands :: [String]
-  }
+  } deriving Show
 
 data Query = Query
   { dgQuery :: DGQuery
   , queryKind :: QueryKind
-  }
+  } deriving Show
 
 type NodeIdOrName = Either Int String
 
 type QueryPair = (String, Maybe String)
+
+showQuery :: [QueryPair] -> String
+showQuery = ('?' :) . intercalate "&" . map (\ (s, ms) ->
+  encode s ++ maybe "" (('=' :) . encode) ms)
+
+showPath :: [String] -> String
+showPath = intercalate "/" . map encode
+
+showPathQuery :: [String] -> [QueryPair] -> String
+showPathQuery p q = showPath p ++ if null q then "" else showQuery q
 
 data QueryKind =
     DisplayQuery (Maybe String)
@@ -117,9 +134,9 @@ data QueryKind =
   | GlShowProverWindow ProverMode
   | GlAutoProve ProveCmd
   | NodeQuery NodeIdOrName NodeCommand
-  | EdgeQuery Int String
+  | EdgeQuery Int String deriving (Show, Eq)
 
-data ProverMode = GlProofs | GlConsistency
+data ProverMode = GlProofs | GlConsistency deriving (Show, Eq)
 
 data ProveCmd = ProveCmd
   { pcProverMode :: ProverMode
@@ -128,13 +145,14 @@ data ProveCmd = ProveCmd
   , pcTranslation :: Maybe String
   , pcTimeout :: Maybe Int
   , pcTheoremsOrNodes :: [String]
-  , pcXmlResult :: Bool }
+  , pcXmlResult :: Bool
+  , pcAxioms :: [String] } deriving (Show, Eq)
 
 data NodeCommand =
     NcCmd NodeCmd
   | NcProvers ProverMode (Maybe String) -- optional comorphism
   | NcTranslations (Maybe String) -- optional prover name
-  | ProveNode ProveCmd
+  | ProveNode ProveCmd deriving (Show, Eq)
 
 -- | the path is not empty and leading slashes are removed
 anaUri :: [String] -> [QueryPair] -> [String] -> Either String Query
@@ -151,6 +169,44 @@ anaUri pathBits query globals = case anaQuery query globals of
 
 isNat :: String -> Bool
 isNat s = all isDigit s && not (null s) && length s < 11
+
+getSwitches :: [QueryPair] -> Either String ([QueryPair], [(String, Flag)])
+getSwitches qs = case qs of
+  [] -> Right ([], [])
+  q@(s, mv) : r ->
+    let eith = getSwitches r
+    in case lookup s optionFlags of
+      Just f -> case mv of
+        Just v | notElem (map toLower v) ["on", "t", "true", "1"] ->
+          Left $ "query flag can only be switched on: " ++ s ++ "=" ++ v
+        _ -> case eith of
+          Right (qr, ps) -> Right (qr, (s, f) : ps)
+          err -> err
+      Nothing -> case eith of
+        Right (qr, ps) -> Right (q : qr, ps)
+        err -> err
+
+-- due to the error calls in the option parsers this needs to be in the IO monad
+getArgFlags :: [QueryPair]
+  -> IO (Either String ([QueryPair], [(String, String)], [Flag]))
+getArgFlags qs = case qs of
+  [] -> return $ Right ([], [], [])
+  q@(s, mv) : r -> do
+    eith <- getArgFlags r
+    case lookup s optionArgs of
+     Just p -> case mv of
+       Nothing -> return . Left $ "missing value for query argument: " ++ s
+       Just v -> do
+         eith2 <- try $ evaluate $ p v
+         case eith2 :: Either ErrorCall Flag of
+           Right f -> case eith of
+               Right (qr, vs, fs) -> return $ Right (qr, (s, v) : vs, f : fs)
+               err -> return err
+           Left _ ->
+             return . Left $ "illegal value for option: " ++ s ++ "=" ++ v
+     Nothing -> case eith of
+       Right (qr, vs, fs) -> return $ Right (q : qr, vs, fs)
+       err -> return err
 
 -- | a leading question mark is removed, possibly a session id is returned
 anaQuery :: [QueryPair] -> [String] -> Either String (Maybe Int, QueryKind)
@@ -251,24 +307,11 @@ unEsc s = let m = Map.fromList $ map (\ (a, b) -> (b, a)) escMap
   'X' : c : r -> Map.findWithDefault c c m : unEsc r
   c : r -> c : unEsc r
 
-encodeForQuery :: String -> String
-encodeForQuery = concatMap (\ c -> let n = ord c in case c of
-  _ | isAscii c && isAlphaNum c || elem c "_.-" -> [c]
-  ' ' -> "+"
-  _ | n <= 255 -> '%' : (if n < 16 then "0" else "") ++ showHex n ""
-  _ -> "") -- ignore real unicode stuff
-
 decodePlus :: Char -> Char
 decodePlus c = if c == '+' then ' ' else c
 
 decodeQuery :: String -> String
-decodeQuery s = case s of
-  "" -> ""
-  '%' : h1 : h2 : r -> case readHex [h1, h2] of
-      (i, "") : _ -> [decodePlus $ chr i]
-      _ -> ['%', h1, h2]
-    ++ decodeQuery r
-  c : r -> decodePlus c : decodeQuery r
+decodeQuery = map decodePlus . decode
 
 getFragOfCode :: String -> String
 getFragOfCode = getFragment . decodeQuery
@@ -295,7 +338,7 @@ anaNodeQuery ans i moreTheorems incls pss =
       pp = ProveNode $ ProveCmd GlProofs (not (null incls) || case incl of
         Nothing -> True
         Just str -> map toLower str `notElem` ["f", "false"])
-        prover trans timeLimit theorems False
+        prover trans timeLimit theorems False []
       noPP = null incls && null pps
       noIncl = null incls && isNothing incl && isNothing timeLimit
       cmds = map (\ a -> (showNodeCmd a, a)) nodeCmds

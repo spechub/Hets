@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {- |
 Module      :  $Header$
 Description :  scanner for Casl tokens using Parsec
@@ -285,9 +286,6 @@ asSeparator = pToken . string
 
 commaT :: CharParser st Token
 commaT = asSeparator ","
-
-spaceT :: CharParser st Token
-spaceT = asSeparator " "
 
 -- a single semicolon
 semiT :: CharParser st Token

@@ -130,6 +130,7 @@ instance Syntax CASL CASLBasicSpec
          parse_symb_items CASL = Just $ symbItems []
          parse_symb_map_items CASL = Just $ symbMapItems []
          toItem CASL = bsToItem
+         symb_items_name CASL = symbItemsName
 
 -- lattices (for sublogics)
 
@@ -223,7 +224,7 @@ instance Sentences CASL CASLFORMULA CASLSign CASLMor Symbol where
       symmap_of CASL = morphismToSymbMap
       sym_name CASL = symName
       symKind CASL = show . pretty . symbolKind . symbType
-      symsOfSen CASL = Set.toList
+      symsOfSen CASL _ = Set.toList
         . foldFormula (symbolsRecord $ const Set.empty)
       simplify_sen CASL = simplifyCASLSen
       print_named CASL = printTheoryFormula
@@ -278,7 +279,8 @@ instance Logic CASL CASL_Sublogics
          all_sublogics CASL = sublogics_all []
          sublogicDimensions CASL = sDims []
          parseSublogic CASL = parseSL (\ s -> Just ((), s))
-         conservativityCheck CASL = [ConservativityChecker "CCC" checkFreeType]
+         conservativityCheck CASL =
+             [ConservativityChecker "CCC" (return Nothing) checkFreeType]
          empty_proof_tree CASL = emptyProofTree
          omdoc_metatheory CASL = Just caslMetaTheory
          export_senToOmdoc CASL = exportSenToOmdoc

@@ -120,7 +120,7 @@ normalFormDG libEnv dgraph = foldM (\ dg (node, nodelab) ->
                           paths = map (\ x ->
                                        (x, propagateErrors "normalFormDG"
                                              $ dijkstra diagram node x))
-                                      $ filter (\ x -> node `elem` subgraph
+                                      $ filter (\ x -> node `elem` predecs
                                                       diagram x) leaves
                                           in
                             case paths of
@@ -196,8 +196,8 @@ finalSubcateg graph = let
     leaves = filter (\ (n, _) -> outdeg graph n == 0) $ labNodes graph
  in buildGraph graph (map fst leaves) leaves [] $ nodes graph
 
-subgraph :: Gr a b -> Node -> [Node]
-subgraph graph node = let
+predecs :: Gr a b -> Node -> [Node]
+predecs graph node = let
    descs nList descList =
     case nList of
       [] -> descList
@@ -225,7 +225,7 @@ buildGraph oGraph leaves nList eList nodeList =
       _ -> let
             Just l = lab oGraph n
             nList' = (n, l) : nList
-            accesLeaves = filter (\ x -> n `elem` subgraph oGraph x) leaves
+            accesLeaves = filter (\ x -> n `elem` predecs oGraph x) leaves
             eList' = map (\ x -> (n, x, (1 :: Int,
                        propagateErrors "buildGraph" $ dijkstra oGraph n x)))
                        accesLeaves

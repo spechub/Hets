@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, MultiParamTypeClasses #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {- |
 Module      :  $Header$
 Description :  Instance of class Logic for propositional logic
@@ -39,7 +39,6 @@ import Propositional.Symbol as Symbol
 import Propositional.Parse_AS_Basic
 import Propositional.Analysis
 import Propositional.Sublogic as Sublogic
-#ifdef UNI_PACKAGE
 import Propositional.ProveWithTruthTable
 import Propositional.Prove
 import Propositional.Conservativity
@@ -47,7 +46,6 @@ import Propositional.ProveMinisat
 
 import Common.ProverTools
 import Common.Consistency
-#endif
 import Common.ProofTree
 import Common.Id
 
@@ -87,6 +85,7 @@ instance Sentences Propositional FORMULA
     symmap_of Propositional = getSymbolMap
     -- returns the name of a symbol
     sym_name Propositional = getSymbolName
+    symKind Propositional _ = "prop"
     -- translation of sentences along signature morphism
     map_sen Propositional = mapSentence
     -- there is nothing to leave out
@@ -125,23 +124,15 @@ instance Logic Propositional
       all_sublogics Propositional = sublogics_all
       empty_proof_tree Propositional = emptyProofTree
     -- supplied provers
-      provers Propositional = []
-#ifdef UNI_PACKAGE
-        ++ unsafeProverCheck "zchaff" "PATH" zchaffProver
-        ++ unsafeProverCheck "minisat" "PATH" (minisatProver Minisat)
-        ++ unsafeProverCheck "minisat2" "PATH" (minisatProver Minisat2)
-        ++ [ttProver]
-      cons_checkers Propositional = []
-         ++ unsafeProverCheck "zchaff" "PATH" propConsChecker
-         ++ unsafeProverCheck "minisat" "PATH" (minisatConsChecker Minisat)
-         ++ unsafeProverCheck "minisat2" "PATH" (minisatConsChecker Minisat2)
-         ++ [ttConsistencyChecker]
-      conservativityCheck Propositional = []
-          ++ unsafeProverCheck "sKizzo" "PATH"
-             (ConservativityChecker "sKizzo" conserCheck)
-          ++ [ConservativityChecker "Truth Tables" ttConservativityChecker]
-#endif
-
+      provers Propositional =
+        [zchaffProver, minisatProver Minisat, minisatProver Minisat2, ttProver]
+      cons_checkers Propositional =
+        [ propConsChecker, minisatConsChecker Minisat
+        , minisatConsChecker Minisat2, ttConsistencyChecker]
+      conservativityCheck Propositional =
+          [ ConservativityChecker "sKizzo" (checkBinary "sKizzo") conserCheck
+          , ConservativityChecker "Truth Tables" (return Nothing)
+              ttConservativityChecker]
 
 -- | Static Analysis for propositional logic
 instance StaticAnalysis Propositional

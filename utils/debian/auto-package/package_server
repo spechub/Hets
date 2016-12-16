@@ -1,0 +1,474 @@
+#!/bin/bash
+#
+# Auto package Hets repository
+#
+# c.prodescu@jacobs-university.de
+# jonathan.von_schroeder@gmail.com
+# Christian.Maeder@dfki.de
+#
+
+MAIN_DISTRO="oneiric"
+
+AUTO_INSTALL=1
+OPTERR=0
+
+HETS_REPO=https://github.com/spechub/Hets.git
+HETS_LIB_REPO=https://github.com/spechub/Hets-lib.git
+
+PROGRAMATICA=programatica-1.0.0.5
+
+DIRNAME="`dirname "$0"`"
+OLD_PWD="`cd $DIRNAME && pwd`"
+DISTRO_DIR=$OLD_PWD/debian
+
+OPT_PREPARE=1
+OPT_CREATE=1
+OPT_TEST=1
+OPT_UPLOAD=1
+OPT_CLEAN=1
+
+DATA_DIR=$OLD_PWD/data
+HETS_REPO_FOLDER=$DATA_DIR/hets-repo
+HETS_FOLDER=$DATA_DIR/hets
+HETS_OWL_TOOLS_FOLDER=$HETS_FOLDER/hets-owl-tools
+HETS_LIB_REPO_FOLDER=$DATA_DIR/hets-lib-repo
+RESULTS_DIR=$OLD_PWD/results
+
+cd $DISTRO_DIR
+for f in *
+do
+  DISTROS="$f ${DISTROS}"
+done
+cd $OLD_PWD
+
+CURR_DISTRO=`cat /etc/*-release | grep DISTRIB_CODENAME | cut -d'=' -f2`
+
+print_help()
+{
+  echo "Usage: $0 [<option> ...] <command>"
+  echo ""
+  echo "Create & upload hets packages from the svn trunk."
+  echo "This scripts needs a few additional files."
+#  echo "If these are not present it will try to get them from svn."
+  echo ""
+  echo "Comands:"
+  echo "  prepare - Prepare the base.tgz files needed by pbuilder
+            (needed for testing, you only need to call it once -
+             updating takes place automatically)"
+  echo "  create  - Create source packages from git main branch"
+  echo "  test    - Test building source packages"
+  echo "  upload  - Upload packages to launchpad hets ppa"
+  echo "  package - Do all the above i.e. create source packages,
+            test them and then upload them"
+  echo "  clean   - Remove any checkouts, build files etc."
+  echo ""
+  echo "Please note:
+              * prepare and test need you to be either root
+                or to be able to call sudo"
+  echo ""
+  echo "Options:"
+  echo "  -h Print this help"
+  echo "  -i Try to install dependencies of this script
+     automatically using apt-get (note requires
+     you to be root are to be able to call sudo)
+  -a Execute commands for all available distros
+  -s DISTRO
+     Select distro for commands
+  -c Select current distro for commands: $CURR_DISTRO
+  -r REVISION
+     use revision REVISION instead of the latest HETS revision"
+}
+
+ensure_package_installed()
+{
+  local PKG="$1"
+  dpkg -s $PKG 1>/dev/null 2>/dev/null
+  if [ $? -eq 1 ]; then
+    if [ $AUTO_INSTALL -eq 0 ]; then
+       echo ":: Installing $PKG"
+       which apt-get 1>/dev/null 2>/dev/null
+       if [ $? -eq 1 ]; then
+         echo "Can't find apt-get ..."
+         echo "Giving up."
+         exit
+       fi
+       if [ $UID -eq 0 ]; then
+         local CMD="apt-get install"
+       else
+         which sudo 1>/dev/null 2>/dev/null
+         if [ $? -eq 1 ]; then
+           echo "Can't find sudo and you're not root ..."
+           echo "Giving up."
+           exit
+         fi
+         local CMD="sudo apt-get install"
+       fi
+       $CMD $PKG
+       dpkg -s $PKG 1>/dev/null 2>/dev/null
+       if [ $? -eq 1 ]; then
+          echo "Installing $PKG seems to have failed ..."
+          echo "Giving up."
+          exit
+       else
+          echo ":: Package $PKG is now installed"
+       fi
+    else
+      echo ":: Package $PKG not installed"
+      echo "Auto-install option not given ..."
+      echo "Please install $PKG manually or try again with -i ..."
+      echo "Giving up."
+      exit 1
+    fi
+  else
+    echo ":: Package $PKG installed"
+  fi
+}
+
+export_git_repo()
+{
+  local SUFF="$1"
+  local REPO="$2"
+  local REPO_FOLDER="$3"
+  local FOLDER="$4"
+  local TARGET_REV="$5"
+  local UPTODATE=1
+  EXPORT_UPTODATE=1
+  if [ -d $REPO_FOLDER ]; then
+    (cd $REPO_FOLDER && git status 1>/dev/null 2>/dev/null)
+    if [ $? -eq 0 ]; then
+      echo ":: Updating previous checkout of $REPO"
+      (cd $REPO_FOLDER && git pull)
+      if [ $? -eq 0 ]; then
+        UPTODATE=0
+      fi
+    else
+      echo "$REPO_FOLDER exists ..."
+      echo "But it is not a git repository ..."
+      read -n1 -p " Delete it? (y/n) "
+      echo
+      [[ $REPLY = [yY] ]] && { rm -rf $REPO_FOLDER; } || { echo "Giving up."; exit 1; }
+    fi
+  fi
+  if [ $UPTODATE -eq 1 ]; then
+    echo ":: Checking out $REPO ..."
+    mkdir -p $REPO_FOLDER
+    git clone $REPO $REPO_FOLDER >/dev/null
+    if [ $? -eq 1 ]; then
+      echo "Check out failed ..."
+      echo "Giving up."
+      exit 1
+    fi
+  fi
+ REVISION=`git --git-dir=$HETS_REPO_FOLDER/.git log -1 --format=%ct`
+  if [ ! $? -eq 0 ]; then
+    echo "Couldn't detect revision ..."
+    echo "Giving up."
+    exit 1
+  fi
+ if [ "$TARGET_REV" != "" ]; then
+   GIT_TARGET_REV=$TARGET_REV
+   (cd $REPO_FOLDER && git checkout $GIT_TARGET_REV)
+   if [ "`cat \"${DATA_DIR}/revision_${SUFF}\" 2>/dev/null`" == "$TARGET_REV" ]; then
+     EXPORT_UPTODATE=0
+   fi
+ fi
+ if [ "`cat \"${DATA_DIR}/revision_${SUFF}\" 2>/dev/null`" == "$REVISION" ]; then
+     EXPORT_UPTODATE=0
+ fi
+ if [ $EXPORT_UPTODATE -eq 1 ]; then
+   rm -f $DATA_DIR/revision_$SUFF 2> /dev/null
+   echo ":: Exporting $REPO ..."
+   rm -rf $FOLDER
+   mkdir -p $FOLDER
+   cd $REPO_FOLDER
+   git archive --format=tar master | (cd $FOLDER && tar -xf -)
+   cd $OLD_PWD
+   if [ $? -eq 1 ]; then
+     echo "Check out failed ..."
+     echo "Giving up."
+     exit 1
+   fi
+   git --git-dir=$HETS_REPO_FOLDER/.git log -1 --format=%ct > $DATA_DIR/revision_$SUFF
+ else
+   echo "Export of $REPO is up to date"
+ fi
+}
+
+SELECTED_DISTROS=""
+HETS_REV=""
+
+while getopts ":hias:cr:" opt; do
+  case $opt in
+    \?)
+      echo "Invalid option: -$OPTARG" >&2
+      echo ""
+      print_help
+      exit 1
+      ;;
+    h)
+      print_help
+      exit
+      ;;
+    i)
+      AUTO_INSTALL=0
+      ;;
+    a)
+      SELECTED_DISTROS="$DISTROS $SELECTED_DISTROS"
+      ;;
+    s)
+      if grep -q "$OPTARG" <<<$DISTROS; then
+        SELECTED_DISTROS="$OPTARG $SELECTED_DISTROS"
+      else
+        echo "Distribution $OPTARG not available ..."
+        echo "Giving up."
+        exit 1
+      fi
+      ;;
+    c)
+      SELECTED_DISTROS="$CURR_DISTRO $SELECTED_DISTROS"
+      ;;
+    r)
+      HETS_REV="$OPTARG"
+      ;;
+  esac
+done
+
+SELECTED_DISTROS=`echo $SELECTED_DISTROS | tr ' ' '\n' | sort -u | tr '\n' ' '`
+
+if echo "$SELECTED_DISTROS" | grep -q "^[[:space:]]*$" ; then
+  echo "No Distro selected " >&2
+  echo ""
+  print_help
+  exit 1
+fi
+
+echo ":: Selected Distros are: $SELECTED_DISTROS"
+
+shift $(($OPTIND - 1))
+
+set_option()
+{
+ OPTION=OPT_$1
+ export $OPTION=0
+}
+
+for arg in "$@"
+do
+    case `echo $arg | tr [:upper:] [:lower:]` in
+      prepare)
+          set_option "PREPARE"
+          ;;
+      create)
+          set_option "CREATE"
+          ;;
+      test)
+          set_option "TEST"
+          ;;
+      upload)
+          set_option "UPLOAD"
+          ;;
+      package)
+          set_option "CREATE"
+          set_option "TEST"
+          set_option "UPLOAD"
+          ;;
+      clean)
+          set_option "CLEAN"
+          ;;
+      *)
+          echo "Unknown command $arg ..."
+          echo
+          print_help
+          exit 1
+    esac
+done
+
+mkdir -p  $OLD_PWD/logs/
+
+if [ ! -d $RESULTS_DIR ]; then
+  mkdir -p $RESULTS_DIR
+fi
+
+if [ $OPT_PREPARE -eq 0 ]; then
+  echo "=== Preparing base.tgz"
+  mkdir -p $OLD_PWD/pbuilder/
+  if [ $UID -eq 0 ]; then
+    CMD="pbuilder"
+  else
+    which sudo 1>/dev/null 2>/dev/null
+    if [ $? -eq 1 ]; then
+      echo "Can't find sudo and you're not root ..."
+      echo "Giving up."
+      exit
+    fi
+    CMD="sudo pbuilder"
+  fi
+  for DIST in $SELECTED_DISTROS
+do
+  echo ":: Creating base.tgz for distro $DIST"
+  echo "See $OLD_PWD/logs/pbuilder_${DIST}_base.tgz.log"
+  $CMD create --basetgz "$OLD_PWD/pbuilder/${DIST}_base.tgz" --distribution $DIST --othermirror "deb http://archive.ubuntu.com/ubuntu $DIST main restricted universe multiverse|deb http://ppa.launchpad.net/hets/hets/ubuntu $DIST main" > "$OLD_PWD/logs/pbuilder_${DIST}_base.tgz.log`date +%s`"
+  echo ":: Done"
+done
+fi
+
+if [ $OPT_CLEAN -eq 0 ]; then
+  echo "=== Cleaning"
+  rm -rf $OLD_PWD/data/
+fi
+
+if [ $OPT_CREATE -eq 0 ]; then
+  echo "=== Creating source packages"
+  ensure_package_installed git
+  ensure_package_installed ant
+  ensure_package_installed "openjdk-7-jdk"
+
+  export_git_repo "hets" "$HETS_REPO" "$HETS_REPO_FOLDER" "$HETS_FOLDER" "$HETS_REV"
+
+  if [ $EXPORT_UPTODATE -eq 1 ]; then
+    rm -f $DATA_DIR/*.done 2> /dev/null
+    rm -f $DATA_DIR/revision_lib 2> /dev/null
+  fi
+
+  HETS_VERSION=`cat $HETS_FOLDER/version_nr`
+  if [ ! $? -eq 0 ]; then
+    echo "Couldn't detect version ..."
+    echo "Giving up."
+    exit 1
+  fi
+  echo ":: Hets version is: $HETS_VERSION"
+
+  HETS_REVISION=$REVISION
+  echo ":: Revision is: $HETS_REVISION"
+
+  HETS_FULL_VERSION="$HETS_VERSION"r"$HETS_REVISION"
+  echo ":: Full version is: $HETS_FULL_VERSION"
+
+  export_git_repo "lib" "$HETS_LIB_REPO" "$HETS_LIB_REPO_FOLDER" "$HETS_FOLDER/hets-lib"
+
+  echo ":: Compiling Hets OWL Tools"
+  if [ ! -f "$DATA_DIR/owl.done" ]; then
+    cd $HETS_FOLDER
+    make initialize_java 1>/dev/null || { echo Building Hets OWL Tools failed && echo Giving up. && exit 1; }
+    cd $OLD_PWD
+    mkdir -p $HETS_OWL_TOOLS_FOLDER
+    cd $HETS_FOLDER/OWL2
+    cp -r OWL*.jar $HETS_OWL_TOOLS_FOLDER
+    cd $OLD_PWD
+    mkdir -p $HETS_OWL_TOOLS_FOLDER/lib
+    cp $HETS_FOLDER/OWL2/lib/*.jar $HETS_OWL_TOOLS_FOLDER/lib
+    cp $HETS_FOLDER/CASL/Termination/AProVE.jar $HETS_FOLDER/hets-owl-tools
+    cp $HETS_FOLDER/DMU/OntoDMU.jar $HETS_FOLDER/hets-owl-tools
+    touch $DATA_DIR/owl.done
+    rm $DATA_DIR/clean.done 2> /dev/null
+  else
+    echo "Not necessary"
+  fi
+  echo ":: Clearing $HETS_FOLDER"
+  if [ ! -f $DATA_DIR/clean.done ]; then
+    cd $HETS_FOLDER
+    make distclean 1>/dev/null 2>/dev/null
+    rm programatica 2>/dev/null
+    rm -rf GMP mini
+    mkdir -p programatica
+    wget http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/src-distribution/$PROGRAMATICA.tar.gz
+    tar -xf $PROGRAMATICA.tar.gz
+    mv $PROGRAMATICA programatica/tools
+    rm -r $PROGRAMATICA.tar.gz
+    cd $OLD_PWD
+    touch $DATA_DIR/clean.done
+  fi
+  if [ ! -f $DATA_DIR/orig.done ]; then
+    echo ":: Creating orig.tar.gz"
+    cd $HETS_FOLDER
+    echo $HETS_REVISION >> rev.txt
+    rm -rf $HETS_FOLDER/.gitignore
+    rm -rf $HETS_FOLDER/OWL2/java/OwlApi
+    rm -rf $HETS_FOLDER/utils/nightly
+    rm -rf $HETS_FOLDER/utils/debian
+    rm -rf $HETS_FOLDER/utils/macports
+    rm -rf $HETS_FOLDER/utils/ubuntu
+    cd ..
+    tar -czf $RESULTS_DIR/hets-server_$HETS_FULL_VERSION.orig.tar.gz hets
+    cd $OLD_PWD
+    touch $DATA_DIR/orig.done
+  else
+    echo ".orig.tar.gz is up to date"
+  fi
+  for DIST in $SELECTED_DISTROS
+do
+  rm -rf $HETS_FOLDER
+  echo "::Packaging for $DIST distroseries"
+  cd $DATA_DIR
+  tar -xf $RESULTS_DIR/hets-server_$HETS_FULL_VERSION.orig.tar.gz
+  cd $OLD_PWD
+  echo ::Creating debian folder $HETS_FOLDER and changelog
+  mkdir -p $HETS_FOLDER/debian
+  cp -rf $OLD_PWD/debian-server/* $HETS_FOLDER/debian
+  cp -rf $OLD_PWD/debian/$DIST/* $HETS_FOLDER/debian
+
+  # Creating the changelog
+  if [ "$DIST" = "$MAIN_DISTRO" ]; then
+    ADDITIONAL=""
+  else
+    ADDITIONAL="~$DIST"
+  fi
+  echo "hets-server ($HETS_FULL_VERSION-0ubuntu1$ADDITIONAL) `basename $DIST`; urgency=low" > .changelog
+  echo >> .changelog
+  echo "  * Initial release, automatically generated." >> .changelog
+  echo >> .changelog
+  echo " -- `cat changelog_name` <`cat changelog_email`>  `date -R`" >> .changelog
+
+  #merging changelogs
+  mv .changelog $HETS_FOLDER/debian/changelog
+  echo ::Done
+
+  echo ::Starting package building and signing;
+  ln -s $RESULTS_DIR/hets-server_$HETS_FULL_VERSION.orig.tar.gz $DATA_DIR/hets-server_$HETS_FULL_VERSION.orig.tar.gz
+  cd $HETS_FOLDER;
+  debuild -S -sa
+  echo ::Done
+  cd $OLD_PWD
+  rm $DATA_DIR/hets-server_$HETS_FULL_VERSION.orig.tar.gz
+  cp $DATA_DIR/hets-server_$HETS_FULL_VERSION* $RESULTS_DIR/
+  rm $DATA_DIR/hets-server_$HETS_FULL_VERSION*
+done
+
+cd $DATA_DIR
+tar -xf $RESULTS_DIR/hets-server_$HETS_FULL_VERSION.orig.tar.gz
+cd $OLD_PWD
+
+fi
+
+if [ $OPT_UPLOAD -eq 0 ]; then
+
+  if [ ! $OPT_CREATE -eq 0 ]; then
+    echo "You need to (re-)create the packages for uploading"
+    exit
+  fi
+
+echo "=== Uploading source packages"
+for DIST in $SELECTED_DISTROS
+do
+  if [ "$DIST" = "$MAIN_DISTRO" ]; then
+    ADDITIONAL=""
+  else
+    ADDITIONAL="~$DIST"
+  fi
+  if [ ! -f $RESULTS_DIR/hets-server_"$HETS_FULL_VERSION"-0ubuntu1"$ADDITIONAL"_source.changes ]; then
+    echo "hets_$HETS_FULL_VERSION-0ubuntu1$ADDITIONAL.changes doesn't exist ..."
+    echo "Maybe you need to call create first ..."
+    echo "Giving up."
+    exit
+  fi
+  echo :: Upload hets-server_"$HETS_FULL_VERSION"-0ubuntu1"$ADDITIONAL"_source.changes
+  # dput ppa:hets/hets $RESULTS_DIR/hets_"$HETS_FULL_VERSION"-0ubuntu1"$ADDITIONAL"_source.changes
+done
+
+fi
+
+if [ $OPT_TEST -eq 0 ]; then
+  echo "Testing not yet implemented ..."
+  echo "Giving up."
+  exit 1
+fi

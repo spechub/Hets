@@ -1416,7 +1416,7 @@
   not def d(c) %(ga_selector_undef_d_c)%,
   forall v1 : a . not def d(c(v1)) %(ga_selector_undef_d_c)%,
   %% free
-  generated type s ::= c | c(a)? | c(a; t; t; t) | sort s1 | sort s2
+  generated type s ::= c | c(a; t; t; t) | c(a)? | sort s1 | sort s2
                                                   %(ga_generated_s)%,
   forall v1 : a; v2, v3, v4 : t . a(c(v1, v2, v3, v4)) = v2
                                                    %(ga_selector_a)%,
@@ -1424,7 +1424,7 @@
                                                    %(ga_selector_b)%,
   forall v1 : a; v2, v3, v4 : t . d(c(v1, v2, v3, v4)) = v4
                                                    %(ga_selector_d)%,
-  generated type s ::= c | c(a)? | c(a; t; t; t) | sort s1 | sort s2
+  generated type s ::= c | c(a; t; t; t) | c(a)? | sort s1 | sort s2
                                                   %(ga_generated_s)%,
   forall v1 : a; v2, v3, v4 : t . a(c(v1, v2, v3, v4)) = v2
                                                    %(ga_selector_a)%,
@@ -1432,9 +1432,10 @@
                                                    %(ga_selector_b)%,
   forall v1 : a; v2, v3, v4 : t . d(c(v1, v2, v3, v4)) = v4
                                                    %(ga_selector_d)%,
-  generated types
-  s ::= c | c(a)? | c(a; t; t; t) | sort s1 | sort s2 | sort t;
-  t ::= sort t                                  %(ga_generated_s_t)%,
+  generated type t ::= sort t %(ga_generated_t)%,
+  generated type
+  s ::= c | c(a; t; t; t) | c(a)? | sort s1 | sort s2 | sort t
+                                                  %(ga_generated_s)%,
   true %(The true formula)%,
   true
   %(and this also goes along several lines! and with special stuff: -*/\&=<>BCDEFGHIJKLM!%)%,
@@ -2207,6 +2208,8 @@ total selectors 'a : s -> t, b : s -> t, d : s -> t'
 293.9: ### Warning: generated sorts without constructor '{t}'
 292.13: ### Warning:
 non-generated sorts as constructor result '{b}'
+293.6-293.9: ### Warning:
+splittable groups of generated sorts '[{t}, {s}]'
 300.6: ### Hint: redeclared sort 's'
 301.6: ### Hint: redeclared sort 't'
 304.6: *** Error: unknown sort 'b'

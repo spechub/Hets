@@ -1,0 +1,16 @@
+#!/bin/bash
+set -e
+
+version=`isabelle version 2>/dev/null || exit 0`
+
+if [[ "$version" == *2014 ]]; then 
+  echo "you are using $version"
+elif [[ "$version" == *2012 ]]; then
+  echo "uninstall your old Isabelle2012 and install Isabelle2014 by"
+  echo " sudo apt-get remove isabelle"
+  echo " sudo apt-get install isabelle-installer"
+else 
+  echo "possibly install Isabelle2014 by"
+  echo " sudo apt-get install isabelle-installer"
+fi
+#DEBHELPER#

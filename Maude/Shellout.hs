@@ -14,14 +14,15 @@ module Maude.Shellout (
     runMaude,
     basicAnalysis,
     findSpec,
-    getAllOutput,
     getAllSpec,
-    getErrors
+    getErrors,
+    maudePutStrLn
 ) where
 
 import System.FilePath
 import System.IO
 import System.Process
+import System.Timeout
 
 import Maude.AS_Maude
 
@@ -53,17 +54,21 @@ runMaude = do
         runInteractiveProcess maudePath maudeArgs Nothing Nothing
     return ("in " ++ hml </> maudeHetsPath, hIn, hOut, hErr, procH)
 
+maudePutStrLn :: Handle -> String -> IO ()
+maudePutStrLn hIn str = do
+  hPutStrLn hIn str
+  hFlush hIn
+
 {- | performs the basic analysis, extracting the signature and the sentences
 of the given Maude text, that can use the signature accumulated thus far. -}
 basicAnalysis :: Sign -> MaudeText -> IO (Sign, [Sentence])
 basicAnalysis sign (MaudeText mt) = do
     (inString, hIn, hOut, _, _) <- runMaude
-    hPutStrLn hIn inString
+    maudePutStrLn hIn inString
     let sigStr = show $ parens
           $ vcat [text "mod FROM-HETS is", inlineSign sign, text mt
                  , text "endm"]
-    hPutStrLn hIn sigStr
-    hFlush hIn
+    maudePutStrLn hIn sigStr
     specOut <- hGetContents hOut
     hClose hIn
     let spStr = findSpec specOut
@@ -87,27 +92,16 @@ findSpec = let
         filterNil = filter $ (/=) '\NUL'
     in filterNil . unlines . findSpecEnd . findSpecBeg . lines
 
--- | extracts a Maude module or view
-getAllOutput :: Handle -> String -> Bool -> IO String
-getAllOutput hOut s False = do
-    ready <- hWaitForInput hOut 500
-    if ready
-        then do
-            ss <- hGetLine hOut
-            getAllOutput hOut (s ++ "\n" ++ ss) (final ss)
-        else do
-            handle <- hShow hOut
-            error $ "No output available on handle: " ++ handle
-getAllOutput _ s True = return $ prepare s
-
 -- | extracts the Haskell representation of a Maude module or view
 getAllSpec :: Handle -> String -> Bool -> IO String
 getAllSpec hOut s False = do
-    ready <- hWaitForInput hOut 500
+    ready <- hWaitForInput hOut 2000
     if ready
-        then do
-            ss <- hGetLine hOut
-            getAllSpec hOut (s ++ "\n" ++ ss) (finalSpec ss)
+        then do  -- 5 secs per line
+            ms <- timeout 5000000 $ hGetLine hOut
+            case ms of
+              Nothing -> return s
+              Just ss -> getAllSpec hOut (s ++ "\n" ++ ss) (finalSpec ss)
         else do
             handle <- hShow hOut
             error $ "No spec available on handle: " ++ handle
@@ -115,31 +109,10 @@ getAllSpec _ s True = return s
 
 getErrors :: Handle -> IO (Bool, String)
 getErrors hErr = do
-               ready <- hWaitForInput hErr 500
-               if ready
-                   then do
-                         ss <- hGetLine hErr
-                         return (ok (drop 9 ss), ss)
-                   else return (True, "")
-
-ok :: String -> Bool
-ok ('<' : _) = True
-ok _ = False
-
--- | possible ends of a Maude module or view
-final :: String -> Bool
-final "endfm" = True
-final "endm" = True
-final "endth" = True
-final "endfth" = True
-final "endv" = True
-final _ = False
+  ss <- hGetContents hErr
+  return (null ss, ss)
 
 -- | end of the Haskell representation of a Maude module or view
 finalSpec :: String -> Bool
 finalSpec "@#$endHetsSpec$#@" = True
 finalSpec _ = False
-
--- | drops the header and adds the parens for Full Maude
-prepare :: String -> String
-prepare s = "(" ++ drop 8 s ++ ")"

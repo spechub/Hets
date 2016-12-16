@@ -64,7 +64,6 @@ module Taxonomy.MMiSSOntology
     , findLNode
     ) where
 
-import Control.Monad.Error ()
 import Data.List
 import Data.Char (toLower)
 

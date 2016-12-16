@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  QVTR signature and sentences
@@ -20,13 +21,14 @@ import Common.Doc
 import Common.DocUtils
 import Common.Id
 
+import Data.Data
 import qualified Data.Map as Map
 
 
 data RuleDef = RuleDef { name :: String
                        , top :: Bool
                        , parameters :: [CSMOF.TypeClass]
-                       } deriving (Show, Eq, Ord)
+                       } deriving (Show, Eq, Ord, Typeable, Data)
 
 instance Pretty RuleDef where
   pretty (RuleDef nam to pars) =
@@ -43,7 +45,7 @@ data Sign = Sign { sourceSign :: CSMOF.Sign
                  , nonTopRelations :: Map.Map String RuleDef
                  , topRelations :: Map.Map String RuleDef
                  , keyDefs :: [(String, String)]
-                 } deriving (Show, Eq, Ord)
+                 } deriving (Show, Eq, Ord, Typeable, Data)
 
 instance GetRange Sign where
   getRange _ = nullRange
@@ -82,7 +84,7 @@ emptySign = Sign { sourceSign = CSMOF.emptySign
 
 data Sen = KeyConstr { keyConst :: Key }
          | QVTSen { rule :: RelationSen }
-         deriving (Show, Eq, Ord)
+         deriving (Show, Eq, Ord, Typeable, Data)
 
 instance GetRange Sen where
   getRange _ = nullRange
@@ -100,7 +102,7 @@ data RelationSen = RelationSen { ruleDef :: RuleDef
                                , targetPattern :: Pattern
                                , whenClause :: Maybe WhenWhere
                                , whereClause :: Maybe WhenWhere
-                               } deriving (Show, Eq, Ord)
+                               } deriving (Show, Eq, Ord, Typeable, Data)
 
 instance GetRange RelationSen where
   getRange _ = nullRange
@@ -130,7 +132,7 @@ instance Pretty RelationSen where
 data Pattern = Pattern { patVarSet :: [RelVar]
                        , patRels :: [(CSMOF.PropertyT, RelVar, RelVar)]
                        , patPreds :: [(String, String, OCL)]
-                       } deriving (Show, Eq, Ord)
+                       } deriving (Show, Eq, Ord, Typeable, Data)
 
 instance GetRange Pattern where
   getRange _ = nullRange

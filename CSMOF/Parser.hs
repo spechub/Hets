@@ -66,7 +66,7 @@ createDataType metamodel _ name =
                                     }
       type_X = Type { typeSuper = namedElement_X
                     , typeSubClasses = DDataType {
-                       getDataType = DataType { classSuper = type_X } }
+                       getDataType = Datatype { classSuper = type_X } }
                     }
   -- there is only one element
   in [namedElement_X]
@@ -302,7 +302,7 @@ getSuperTypesNames typ =
       let super = foldr ((++) . getSuperTypesNames . classSuperType) []
                    superClasses
       in namedElementName (typeSuper typ) : super
-    (Type _ (DDataType (DataType dt))) -> [namedElementName (typeSuper dt)]
+    (Type _ (DDataType (Datatype dt))) -> [namedElementName (typeSuper dt)]
 
 
 equalPropertyName :: String -> NamedElement -> Bool

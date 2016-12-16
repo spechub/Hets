@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  precedence checking
@@ -20,6 +21,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
 
+import Data.Data
 import Data.Maybe
 import Data.List (partition)
 
@@ -27,7 +29,7 @@ import Data.List (partition)
 data PrecMap = PrecMap
     { precMap :: Map.Map Id Int
     , maxWeight :: Int
-    } deriving Show
+    } deriving (Show, Typeable, Data)
 
 emptyPrecMap :: PrecMap
 emptyPrecMap = PrecMap

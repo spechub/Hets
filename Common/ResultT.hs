@@ -14,6 +14,7 @@ Portability :  portable
 module Common.ResultT where
 
 import Common.Result
+import Control.Applicative
 import Control.Monad
 import Control.Monad.Trans
 
@@ -23,6 +24,10 @@ instance Monad m => Functor (ResultT m) where
     fmap f m = ResultT $ do
         r <- runResultT m
         return $ fmap f r
+
+instance Monad m => Applicative (ResultT m) where
+    pure = return
+    (<*>) = ap
 
 instance Monad m => Monad (ResultT m) where
     return = ResultT . return . return

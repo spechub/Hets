@@ -56,8 +56,9 @@ anaLibReadPrfs opts file = do
 
 -- | lookup an env or read and analyze a file
 anaLib :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
-anaLib opts fname = do
-  let isPrfFile = isSuffixOf prfSuffix
+anaLib opts origName = do
+  let fname = useCatalogURL opts origName
+      isPrfFile = isSuffixOf prfSuffix
   ep <- getContent opts {intype = GuessIn}
     $ if isPrfFile fname then rmSuffix fname else fname
   case ep of
@@ -68,7 +69,8 @@ anaLib opts fname = do
                              ++ file ++ "' not found."
             return Nothing
       | isDgXmlFile opts file content -> readDGXml opts file
-      | otherwise -> anaLibExt opts file emptyLibEnv emptyDG
+      | otherwise -> anaLibExt opts (keepOrigClifName opts origName file)
+            emptyLibEnv emptyDG
 
 -- | read a file and extended the current library environment
 anaLibExt :: HetcatsOpts -> FilePath -> LibEnv -> DGraph

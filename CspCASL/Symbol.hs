@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  semantic csp-casl symbols
@@ -26,6 +27,7 @@ import Common.Id
 import Common.Result
 import qualified Common.Lib.MapSet as MapSet
 
+import Data.Data
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -35,13 +37,13 @@ data CspSymbType
   = CaslSymbType SymbType
   | ProcAsItemType ProcProfile
   | ChanAsItemType Id -- the SORT
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 data CspSymbol = CspSymbol {cspSymName :: Id, cspSymbType :: CspSymbType}
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 data CspRawSymbol = ACspSymbol CspSymbol | CspKindedSymb CspSymbKind Id
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 rawId :: CspRawSymbol -> Id
 rawId r = case r of

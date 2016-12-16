@@ -449,13 +449,13 @@ see \url{http://www.tptp.org}.
   of these specifications Hets provides connections to the computer
   algebra systems Mathematica, Maple and Reduce.
 \item[Hybrid] HybridCASL \cite{DBLP:conf/calco/NevesMMB13} extends ModalCASL by implementing
-the characteristic features of hybrid logic, both at the level of syntax and semantics. A comorphism from HybridCASL 
+the characteristic features of hybrid logic, both at the level of syntax and semantics. A comorphism from HybridCASL
 to CASL is provided.
 
-The method of hybridisation of arbitrary institutions documented in \cite{DBLP:conf/calco/MartinsMDB11}, providing a method to automatically 
+The method of hybridisation of arbitrary institutions documented in \cite{DBLP:conf/calco/MartinsMDB11}, providing a method to automatically
 combine the standard properties of hybrid logics with any logic already integrated in Hets.
 Some manual intervention is still required: a parser and a semantics analyser for the sentences of the base
-logic need to be declared at source code level. 
+logic need to be declared at source code level.
 Currently, the hybridised versions of the following logics may be used in a fully automatic way:
 Propositional, CASL, CoCASL, and any other logic already hybridised.
 \end{description}
@@ -571,7 +571,7 @@ RelScheme2CASL & inclusion \\\hline
 The latest \Hets version can be obtained from the
 \Hets tools home page
 \begin{quote}
-\url{http://www.dfki.de/cps/hets}
+\url{http://hets.eu}
 \end{quote}
  Since \Hets is being
 improved constantly, it is recommended always to use the latest version.
@@ -1863,14 +1863,18 @@ Pellet uses the same ATP GUI as the provers for SoftFOL (ref. to section
 \subsection{Fact++}
 Fact++ is a \DL-reasoner for \SROIQ, which is the logic underlying OWL 2, written in
 C++. Fact++ is integrated into \Hets via the OWL-API, which is written in Java.
-A Java Runtime Environment (in version $>= 1.5$) has to be installed. To use Fact++,
+A Java Runtime Environment (in version $>= 1.6$) has to be installed. To use Fact++,
 the environment variable \verb+HETS_OWL_TOOLS+ has to be set to the directory
 containing the files
 \begin{verbatim}
+OWL2Parser.jar
 OWLFact.jar
 OWLFactProver.jar
-lib/FaCTpp-OWLAPI-3.4-v1.6.1.jar
-lib/owl2api-bin.jar
+OWLLocality.jar
+lib/guava-18.0.jar
+lib/owlapi-osgidistribution-3.5.2.jar
+lib/trove4j-3.0.3.jar
+lib/uk.ac.manchester.cs.owl.factplusplus-P5.0-v1.6.3.1.jar
 \end{verbatim}
 as well as
 \begin{verbatim}

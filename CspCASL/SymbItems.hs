@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  syntactic csp-casl symbols
@@ -32,27 +33,28 @@ import Common.Token
 import Text.ParserCombinators.Parsec
 
 import Control.Monad
+import Data.Data
 
 import qualified Data.Set as Set
 
 data CspSymbItems = CspSymbItems CspSymbKind [CspSymb]
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 data CspSymbMapItems = CspSymbMapItems CspSymbKind [CspSymbMap]
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 data CspSymbKind = CaslKind SYMB_KIND | ProcessKind | ChannelKind
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 data CspSymb = CspSymb Id (Maybe CspType)
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 -- for channels with sorts we may re-use A_type that is ambiguous
 data CspType = CaslType TYPE | ProcType ProcProfile
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 data CspSymbMap = CspSymbMap CspSymb (Maybe CspSymb)
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 pluralCspSympKind :: CspSymbKind -> [a] -> Doc
 pluralCspSympKind k l = case k of

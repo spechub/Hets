@@ -805,7 +805,7 @@ toStringConstraint (sor, lisObj) =
       [stringSort, stringSort] stringSort nullRange) nullRange, [])
     simplCon = Constraint sor (concatOp : foldr ((:) . toConstraintFromId sor)
       [] lisObj) sor
-    constr = Sort_gen_ax [simplCon] True
+    constr = mkSort_gen_ax [simplCon] True
   in
     makeNamed "sortGenCon_String" constr
 

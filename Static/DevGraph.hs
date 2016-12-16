@@ -1,4 +1,4 @@
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RankNTypes, DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  Central datastructures for development graphs
@@ -62,9 +62,11 @@ import Control.Concurrent.MVar
 import Data.Graph.Inductive.Basic
 import Data.Graph.Inductive.Graph as Graph
 import Data.Graph.Inductive.Query.DFS
+
 import Data.List
 import Data.Maybe
 import Data.Ord
+import Data.Typeable
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -76,12 +78,13 @@ import Common.Result
 
 -- | Node with signature in a DG
 data NodeSig = NodeSig { getNode :: Node, getSig :: G_sign }
-    deriving (Eq, Show)
+    deriving (Show, Eq, Typeable)
 
 {- | NodeSig or possibly the empty sig in a logic
      (but since we want to avoid lots of vsacuous nodes with empty sig,
      we do not assign a real node in the DG here) -}
-data MaybeNode = JustNode NodeSig | EmptyNode AnyLogic deriving (Show, Eq)
+data MaybeNode = JustNode NodeSig | EmptyNode AnyLogic
+  deriving (Show, Eq, Typeable)
 
 getMaybeNodes :: MaybeNode -> Set.Set Node
 getMaybeNodes m = case m of
@@ -89,7 +92,7 @@ getMaybeNodes m = case m of
   JustNode n -> Set.singleton $ getNode n
 
 -- | a wrapper for renamings with a trivial Ord instance
-newtype Renamed = Renamed RENAMING deriving Show
+newtype Renamed = Renamed RENAMING deriving (Show, Typeable)
 
 instance Ord Renamed where
   compare _ _ = EQ
@@ -98,7 +101,8 @@ instance Eq Renamed where
   _ == _ = True
 
 -- | a wrapper for restrictions with a trivial Ord instance
-data MaybeRestricted = NoRestriction | Restricted RESTRICTION deriving Show
+data MaybeRestricted = NoRestriction | Restricted RESTRICTION
+  deriving (Show, Typeable)
 
 instance Ord MaybeRestricted where
   compare _ _ = EQ
@@ -117,6 +121,7 @@ data DGOrigin =
   | DGLogicCoercion
   | DGTranslation Renamed
   | DGUnion
+  | DGIntersect
   | DGRestriction (MaybeRestricted) (Set.Set G_symbol)
   | DGRevealTranslation
   | DGFreeOrCofree FreeOrCofree
@@ -135,7 +140,7 @@ data DGOrigin =
   | DGFlattening
   | DGAlignment
   | DGTest
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable)
 
 -- | node content or reference to another library's node
 data DGNodeInfo = DGNode
@@ -144,7 +149,7 @@ data DGNodeInfo = DGNode
   | DGRef                        -- reference to node in a different DG
   { ref_libname :: LibName      -- pointer to DG where ref'd node resides
   , ref_node :: Node             -- pointer to ref'd node
-  } deriving (Show, Eq)
+  } deriving (Show, Eq, Typeable)
 
 {- | node inscriptions in development graphs.
 Nothing entries indicate "not computed yet" -}
@@ -164,7 +169,7 @@ data DGNodeLab =
   , xnode :: Maybe XGraph.XNode
   , dgn_lock :: Maybe (MVar ())
   , dgn_symbolpathlist :: G_symbolmap [SLinkPath]
-  }
+  } deriving Typeable
 
 instance Show DGNodeLab where
   show _ = "<a DG node label>"
@@ -233,7 +238,7 @@ getRealDGNodeType dgnlab = DGNodeType
   , isInternalSpec = isInternalNode dgnlab }
 
 -- | a wrapper for fitting morphisms with a trivial Eq instance
-newtype Fitted = Fitted [G_mapping] deriving Show
+newtype Fitted = Fitted [G_mapping] deriving (Show, Typeable)
 
 instance Eq Fitted where
   _ == _ = True
@@ -248,6 +253,7 @@ data DGLinkOrigin =
   | DGLinkTranslation
   | DGLinkClosedLenv
   | DGLinkImports
+  | DGLinkIntersect
   | DGLinkMorph IRI
   | DGLinkInst IRI Fitted
   | DGLinkInstArg IRI
@@ -259,7 +265,7 @@ data DGLinkOrigin =
   | DGLinkFlatteningUnion
   | DGLinkFlatteningRename
   | DGLinkRefinement IRI
-    deriving (Show, Eq)
+    deriving (Show, Eq, Typeable)
 
 {- | Link types of development graphs,
      Sect. IV:4.2 of the CASL Reference Manual explains them in depth. -}
@@ -271,7 +277,7 @@ data DGLinkType =
     {- DGLink S1 S2 m2 (DGLinkType m1 p) n
     corresponds to a span of morphisms
     S1 <--m1-- S --m2--> S2 -}
-    deriving (Show, Eq)
+    deriving (Show, Eq, Typeable)
 
 -- | extract theorem link status from link type
 thmLinkStatus :: DGLinkType -> Maybe ThmLinkStatus
@@ -300,7 +306,7 @@ data DGLinkLab = DGLink
   , dglPending :: Bool        -- open proofs of edges in proof basis
   , dgl_id :: EdgeId          -- id of the edge
   , dglName :: String         -- name of the edge
-  } deriving (Eq)
+  } deriving (Eq, Typeable)
 
 instance Show DGLinkLab where
   show _ = "<a DG link label>"
@@ -429,7 +435,7 @@ isCofreeEdge edge = case edge of
 -- ** types for global environments
 
 -- | import, formal parameters and united signature of formal params
-data GenSig = GenSig MaybeNode [NodeSig] MaybeNode deriving Show
+data GenSig = GenSig MaybeNode [NodeSig] MaybeNode deriving (Show, Typeable)
 
 getGenSigNodes :: GenSig -> Set.Set Node
 getGenSigNodes (GenSig m1 ns m2) = Set.unions
@@ -441,13 +447,14 @@ getGenSigNodes (GenSig m1 ns m2) = Set.unions
 data ExtGenSig = ExtGenSig
   { genericity :: GenSig
   , extGenBody :: NodeSig }
-  deriving Show
+  deriving (Show, Typeable)
 
 getExtGenSigNodes :: ExtGenSig -> Set.Set Node
 getExtGenSigNodes (ExtGenSig g n) = Set.insert (getNode n) $ getGenSigNodes g
 
 -- | source, morphism, parameterized target
-data ExtViewSig = ExtViewSig NodeSig GMorphism ExtGenSig deriving Show
+data ExtViewSig = ExtViewSig NodeSig GMorphism ExtGenSig
+  deriving (Show, Typeable)
 
 getExtViewSigNodes :: ExtViewSig -> Set.Set Node
 getExtViewSigNodes (ExtViewSig n _ e) =
@@ -456,7 +463,8 @@ getExtViewSigNodes (ExtViewSig n _ e) =
 {- ** types for architectural and unit specification analysis
     (as defined for basic static semantics in Chap. III:5.1) -}
 
-data UnitSig = UnitSig [NodeSig] NodeSig (Maybe NodeSig) deriving (Show, Eq)
+data UnitSig = UnitSig [NodeSig] NodeSig (Maybe NodeSig)
+  deriving (Show, Eq, Typeable)
 {- Maybe NodeSig stores the union of the parameters
 the node is needed for consistency checks -}
 
@@ -465,14 +473,14 @@ getUnitSigNodes (UnitSig ns n m) =
   Set.fromList $ map getNode (n : ns ++ maybeToList m)
 
 data ImpUnitSigOrSig = ImpUnitSig MaybeNode UnitSig | Sig NodeSig
-   deriving (Show, Eq)
+   deriving (Show, Eq, Typeable)
 
 type StUnitCtx = Map.Map IRI ImpUnitSigOrSig
 
 emptyStUnitCtx :: StUnitCtx
 emptyStUnitCtx = Map.empty
 
-{- data ArchSig = ArchSig StUnitCtx UnitSig deriving Show
+{- data ArchSig = ArchSig StUnitCtx UnitSig deriving (Show, Typeable)
 this type is superseeded by RefSig -}
 
 type RefSigMap = Map.Map IRI RefSig
@@ -489,7 +497,7 @@ getBStContextNodes = Set.unions . map getRefSigNodes . Map.elems
 
 data RefSig = BranchRefSig RTPointer (UnitSig, Maybe BranchSig)
             | ComponentRefSig RTPointer RefSigMap
-              deriving (Eq)
+              deriving (Eq, Typeable)
 
 getRefSigNodes :: RefSig -> Set.Set Node
 getRefSigNodes rs = case rs of
@@ -543,7 +551,7 @@ mkBotSigFromUnit usig = BranchRefSig RTNone (usig, Nothing)
 
 data BranchSig = UnitSigAsBranchSig UnitSig
                | BranchStaticContext BStContext
-                 deriving (Show, Eq)
+                 deriving (Show, Eq, Typeable)
 
 getBranchSigNodes :: BranchSig -> Set.Set Node
 getBranchSigNodes bs = case bs of
@@ -670,7 +678,7 @@ data GlobalEntry =
   | ArchOrRefEntry Bool RefSig
   | AlignEntry AlignSig
   | UnitEntry UnitSig
-    deriving Show
+    deriving (Show, Typeable)
 
 getGlobEntryNodes :: GlobalEntry -> Set.Set Node
 getGlobEntryNodes g = case g of
@@ -682,12 +690,13 @@ getGlobEntryNodes g = case g of
 
 data AlignSig = AlignMor NodeSig GMorphism NodeSig
               | AlignSpan NodeSig GMorphism NodeSig GMorphism NodeSig
-              | WAlign    NodeSig GMorphism GMorphism -- s1, i1, sig1
+              | WAlign
+                          NodeSig GMorphism GMorphism -- s1, i1, sig1
                           NodeSig GMorphism GMorphism -- s2, i2, sig2
                           NodeSig                     -- t1
                           NodeSig                     -- t2
                           NodeSig                     -- b
-  deriving (Show, Eq)
+  deriving (Show, Eq, Typeable)
 
 type GlobalEnv = Map.Map IRI GlobalEntry
 
@@ -704,17 +713,18 @@ data DGChange =
   | DeleteEdge (LEdge DGLinkLab)
   -- it contains the old label and new label with node
   | SetNodeLab DGNodeLab (LNode DGNodeLab)
-  deriving Show
+  deriving (Show, Typeable)
 
 data HistElem =
     HistElem DGChange
   | HistGroup DGRule ProofHistory
+  deriving Typeable
 
 type ProofHistory = SizedList.SizedList HistElem
 
 -- datatypes for the refinement tree
 
-data RTNodeType = RTPlain UnitSig | RTRef Node deriving (Eq)
+data RTNodeType = RTPlain UnitSig | RTRef Node deriving (Eq, Typeable)
 
 instance Show RTNodeType where
   show (RTPlain u) = "RTPlain\n" ++ show u
@@ -724,7 +734,7 @@ data RTNodeLab = RTNodeLab
   { rtn_type :: RTNodeType
   , rtn_name :: String
   , rtn_diag :: String
-  } deriving Eq
+  } deriving (Eq, Typeable)
 
 instance Show RTNodeLab where
  show r =
@@ -740,11 +750,11 @@ instance Show RTNodeLab where
 data RTLinkType =
     RTRefine
   | RTComp
-  deriving (Show, Eq)
+  deriving (Show, Eq, Typeable)
 
 data RTLinkLab = RTLink
   { rtl_type :: RTLinkType
-  } deriving (Show, Eq)
+  } deriving (Show, Eq, Typeable)
 
 -- utility functions for handling refinement tree
 
@@ -888,18 +898,18 @@ addEdgesToNodeRT dg' rnodes n' =
 to store the diagrams of the arch specs in the dgraph -}
 
 data DiagNodeLab = DiagNode { dn_sig :: NodeSig, dn_desc :: String }
- deriving Show
+ deriving (Show, Typeable)
 
 data DiagLinkLab = DiagLink { dl_morphism :: GMorphism, dl_number :: Int }
+  deriving Typeable
 
 instance Show DiagLinkLab where
  show _ = ""
 
-data Diag = Diagram {
-               diagGraph :: Tree.Gr DiagNodeLab DiagLinkLab,
-               numberOfEdges :: Int
-            }
-          deriving Show
+data Diag = Diagram
+  { diagGraph :: Tree.Gr DiagNodeLab DiagLinkLab
+  , numberOfEdges :: Int
+  } deriving (Show, Typeable)
 
 {- | the actual development graph with auxiliary information. A
   'G_sign' should be stored in 'sigMap' under its 'gSignSelfIdx'. The
@@ -923,7 +933,7 @@ data DGraph = DGraph
   , morMap :: Map.Map MorId G_morphism -- ^ morphism map
   , proofHistory :: ProofHistory -- ^ applied proof steps
   , redoHistory :: ProofHistory -- ^ undone proofs steps
-  }
+  } deriving Typeable
 
 instance Show DGraph where
   show _ = "<a development graph>"
@@ -1124,9 +1134,8 @@ lookupGlobalEnvDG sid dg = let
     gEnv = globalEnv dg
     shortIRI = iriToStringShortUnsecure sid
     in case Map.lookup sid gEnv of
-    Nothing -> Map.lookup (nullIRI { abbrevPath = shortIRI }) $
-               Map.mapKeys (\ x -> nullIRI {abbrevPath = abbrevPath x})
-               gEnv
+    Nothing -> Map.lookup shortIRI $
+               Map.mapKeys iriToStringShortUnsecure gEnv
     m -> m
 
 -- | lookup a reference node for a given libname and node

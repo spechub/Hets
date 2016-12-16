@@ -24,13 +24,14 @@ import Data.Maybe
 
 getChecksum :: FilePath -> ResultT IO String
 getChecksum fn = ResultT $ do
-  ckprg <- getEnvDef "HETS_CHECKSUM" "sha256sum"
+  ckprg <- getEnvDef "HETS_CHECKSUM" "shasum -a 256"
   case words ckprg of  -- no support for options with spaces
     [] -> return $ fail "set HETS_CHECKSUM to a proper command"
     cmd : args -> do
       (ex, out, err) <- executeProcess cmd (args ++ [fn]) ""
       return $ case (ex, map words $ lines out) of
-        (ExitSuccess, (h : _) : _) | null err -> return h
+        (ExitSuccess, (h : _) : _) | null err ->
+          justHint h $ h ++ "  " ++ fn
         _ -> fail $ "could not determine checksum: "
           ++ shows ex "\n" ++ out
           ++ if null err then "" else "\nerror\n" ++ err

@@ -90,7 +90,7 @@ instance Pretty Statement where
 printStatement :: Statement -> Doc
 printStatement s = case s of
     Statement t -> pretty t
-    PrefixStatement (Prefix p iri)
+    PrefixStatement (PrefixR p iri)
         -> text "@prefix" <+> pretty p <> colon <+> pretty iri <+> dot
     BaseStatement (Base iri) -> text "@base" <+> pretty iri <+> dot
 

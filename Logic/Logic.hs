@@ -140,11 +140,13 @@ import Common.GlobalAnnotations
 import Common.Id
 import Common.IRI
 import Common.Item
+import Common.Json
 import Common.Lib.Graph
 import Common.LibName
 import Common.Prec (PrecMap)
 import Common.Result
 import Common.Taxonomy
+import Common.ToXml
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
@@ -173,7 +175,7 @@ instance (Eq a, PrintTypeConv a) => EqPrintTypeConv a
 type EndoMap a = Map.Map a a
 
 {- | the name of a logic.
-     Define instances like "data CASL = CASL deriving Show"
+     Define instances like "data CASL = CASL deriving (Show, Typeable, Data)"
 -}
 class Show lid => Language lid where
     language_name :: lid -> String
@@ -258,11 +260,13 @@ class (Language lid, PrintTypeConv basic_spec, GetRange basic_spec,
          -- | parser for symbol maps
          parse_symb_map_items :: lid -> Maybe (AParser st symb_map_items)
          toItem :: lid -> basic_spec -> Item
+         symb_items_name :: lid -> symb_items -> [String]
          -- default implementations
          parse_basic_spec _ = Nothing
          parseSingleSymbItem _ = Nothing
          parse_symb_items _ = Nothing
          parse_symb_map_items _ = Nothing
+         symb_items_name _ _ = [""]
          toItem _ bs = mkFlatItem ("Basicspec", pretty bs) $ getRangeSpan bs
 
 basicSpecParser :: Syntax lid basic_spec symbol symb_items symb_map_items
@@ -315,7 +319,8 @@ class (Language lid, Category sign morphism, Ord sentence,
        Ord symbol, -- for efficient lookup
        PrintTypeConv sign, PrintTypeConv morphism,
        GetRange sentence, GetRange symbol,
-       PrintTypeConv sentence, PrintTypeConv symbol)
+       PrintTypeConv sentence, ToJson sentence,
+       ToXml sentence, PrintTypeConv symbol)
     => Sentences lid sentence sign morphism symbol
         | lid -> sentence sign morphism symbol
       where
@@ -363,6 +368,9 @@ class (Language lid, Category sign morphism, Ord sentence,
       -- | symbols have a name, see CASL RefMan p. 192
       sym_name :: lid -> symbol -> Id
       sym_name l _ = statError l "sym_name"
+      -- | some symbols have a label for better readability
+      sym_label :: lid -> symbol -> Maybe String
+      sym_label _ _ = Nothing
       -- | the fully qualified name for XML output (i.e. of OWL2)
       fullSymName :: lid -> symbol -> String
       fullSymName l = show . sym_name l
@@ -370,8 +378,8 @@ class (Language lid, Category sign morphism, Ord sentence,
       symKind :: lid -> symbol -> String
       symKind _ _ = ""
       -- | the symbols occuring in a sentence (any order)
-      symsOfSen :: lid -> sentence -> [symbol]
-      symsOfSen _ _ = []
+      symsOfSen :: lid -> sign -> sentence -> [symbol]
+      symsOfSen _ _ _ = []
       -- | combine two symbols into another one
       pair_symbols :: lid -> symbol -> symbol -> Result symbol
       pair_symbols lid _ _ = error $ "pair_symbols nyi for logic " ++ show lid

@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  Signature for THF
@@ -21,7 +22,7 @@ import Common.DefaultMorphism
 import Common.Id hiding (typeId)
 import Common.Result
 
-
+import Data.Data
 import qualified Data.Map as Map
 
 {- -----------------------------------------------------------------------------
@@ -37,7 +38,7 @@ data SignTHF = Sign
     { types :: TypeMap
     , consts :: ConstMap
     , symbols :: SymbolMap
-    } deriving (Show, Eq)
+    } deriving (Show, Eq, Typeable, Data)
 
 -- Ord instance that does not use symbols
 instance Ord SignTHF where
@@ -62,7 +63,7 @@ data TypeInfo = TypeInfo
     , typeName :: Name
     , typeKind :: Kind
     , typeAnno :: Annotations }
-    deriving (Show)
+    deriving (Show, Typeable, Data)
 
 -- Ord instance that neither uses typeDef nor typeAnno
 instance Ord TypeInfo where
@@ -83,7 +84,7 @@ data ConstInfo = ConstInfo
     , constName :: Name
     , constType :: Type
     , constAnno :: Annotations }
-    deriving (Show)
+    deriving (Show, Typeable, Data)
 
 -- Ord instance that neither uses constDef nor constAnno
 instance Ord ConstInfo where

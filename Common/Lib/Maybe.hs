@@ -15,10 +15,18 @@ and only contains the Monad instance for the newtype MaybeT m.
 
 module Common.Lib.Maybe (MaybeT (..), liftToMaybeT) where
 
+import Control.Applicative
 import Control.Monad
 
 -- | A monad transformer which adds Maybe semantics to an existing monad.
 newtype MaybeT m a = MaybeT { runMaybeT :: m (Maybe a) }
+
+instance Monad m => Functor (MaybeT m) where
+  fmap = liftM
+
+instance Monad m => Applicative (MaybeT m) where
+  pure = return
+  (<*>) = ap
 
 instance Monad m => Monad (MaybeT m) where
   fail _ = MaybeT $ return Nothing

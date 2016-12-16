@@ -80,6 +80,7 @@ module Logic.Grothendieck
   , homGsigDiff
   , gsigUnion
   , gsigManyUnion
+  , gsigManyIntersect
   , homogeneousMorManyUnion
   , logicInclusion
   , logicUnion
@@ -438,6 +439,7 @@ data LogicGraph = LogicGraph
     , squares :: Map.Map (AnyComorphism, AnyComorphism) [Square]
     , qTATranslations :: Map.Map String AnyComorphism
     , prefixes :: Map.Map String IRI
+    , dolOnly :: Bool
     } deriving Show
 
 emptyLogicGraph :: LogicGraph
@@ -455,7 +457,9 @@ emptyLogicGraph = LogicGraph
     , modifications = Map.empty
     , squares = Map.empty
     , qTATranslations = Map.empty
-    , prefixes = Map.empty }
+    , prefixes = Map.empty
+    , dolOnly = False
+    }
 
 setCurLogicAux :: String -> LogicGraph -> LogicGraph
 setCurLogicAux s lg = lg { currentLogic = s }
@@ -788,6 +792,32 @@ homogeneousMorManyUnion (gmor : gmors) =
             mor <- morphism_union lid2 mor1' mor2
             return (G_morphism lid2 mor startMorId)) gmor gmors
 
+-- | intersection of a list of Grothendieck signatures
+gsigManyIntersect :: LogicGraph -> [G_sign] -> Result G_sign
+gsigManyIntersect _ [] =
+  fail "intersection of emtpy list of signatures"
+gsigManyIntersect lg (gsigma : gsigmas) =
+  foldM (gsigIntersect lg True) gsigma gsigmas
+
+-- | heterogeneous union of two Grothendieck signatures
+gsigIntersect :: LogicGraph -> Bool -> G_sign -> G_sign -> Result G_sign
+gsigIntersect _lg both gsig1@(G_sign lid1 (ExtSign _sigma1 _) _)
+          gsig2@(G_sign lid2 (ExtSign _sigma2 _) _) =
+ if Logic lid1 == Logic lid2
+    then homogeneousGsigIntersect both gsig1 gsig2
+    else error "intersection of heterogeneous signatures is not supported yet"
+
+-- | homogeneous intersection of two Grothendieck signatures
+homogeneousGsigIntersect :: Bool -> G_sign -> G_sign -> Result G_sign
+homogeneousGsigIntersect _both (G_sign lid1 sigma1@(ExtSign _sig1 syms1) _) (G_sign lid2 sigma2 _) = do
+  sigma2'@(ExtSign sig2 _) <- coerceSign lid2 lid1 "Intersection of signatures" sigma2
+  sigma3@(ExtSign sig3 _) <- ext_signature_intersect lid1 sigma1 sigma2'
+  let syms2 = symset_of lid1 sig2
+      symI = Set.intersection syms1 syms2
+  return $ G_sign lid1
+             (ExtSign sig3 symI)
+         startSigId
+
 -- | inclusion between two logics
 logicInclusion :: LogicGraph -> AnyLogic -> AnyLogic -> Result AnyComorphism
 logicInclusion logicGraph l1@(Logic lid1) (Logic lid2) =
@@ -884,8 +914,9 @@ logicGraph2Graph lg =
                 (mapSublogic c (coerce c sl))) $
       filter (\ (Comorphism c) -> Logic (sourceLogic c) == Logic lid
       && isSubElem (coerce c sl) (sourceSublogic c)
-      && (case c1 of Just (Comorphism c1') -> show c1' /= show c
-                     _ -> True)) relevantMorphisms,
+      && (case c1 of
+            Just (Comorphism c1') -> show c1' /= show c
+            _ -> True)) relevantMorphisms,
   weight = \ (Comorphism c) -> if Logic (sourceLogic c) ==
                                  Logic (targetLogic c) then 1 else 3
  }

@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  RDF Morphism
@@ -32,6 +33,7 @@ import RDF.Print ()
 import Control.Monad
 import Data.Maybe
 -}
+import Data.Data
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -39,7 +41,7 @@ data RDFMorphism = RDFMorphism
   { osource :: Sign
   , otarget :: Sign
   , mmaps :: MorphMap
-  } deriving (Show, Eq, Ord)
+  } deriving (Show, Eq, Ord, Typeable, Data)
 {- }
 inclRDFMorphism :: Sign -> Sign -> RDFMorphism
 inclRDFMorphism s t = RDFMorphism

@@ -42,7 +42,7 @@ import Text.XML.Light
 import System.Random
 import System.IO
 import System.Time
-import System.Cmd
+import System.Process
 import System.Posix.IO
 import System.Posix.Types
 import System.Posix.Files
@@ -200,7 +200,8 @@ handle (F5 input box1 box2 box3 box4) = do
 anaInput :: String -> SelectedBoxes -> FilePath
          -> IO (CRes.Result Output)
 anaInput contents selectedBoxes outputfiles = do
-  ast : _ <- readLibDefn logicGraph webOpts Nothing "<stdin>" "<stdin>" contents
+  CRes.Result _ (Just (ast : _)) <- runResultT
+    $ readLibDefn logicGraph webOpts Nothing "<stdin>" "<stdin>" contents
   CRes.Result ds mres <- runResultT
       $ anaLibDefn logicGraph webOpts Set.empty emptyLibEnv emptyDG ast ""
   let ds1 = filter diagFilter ds

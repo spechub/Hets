@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  Result monad for accumulating Diagnosis messages
@@ -48,14 +49,16 @@ module Common.Result
   , printDiags
   ) where
 
-import Common.Doc
+import Common.Doc as Doc
 import Common.DocUtils
 import Common.GlobalAnnotations
 import Common.Id
 import Common.Lexer
 
+import Control.Applicative
 import Control.Monad.Identity
 
+import Data.Data
 import Data.Function
 import Data.List
 
@@ -66,13 +69,13 @@ import Text.ParserCombinators.Parsec (parse)
 -- | severness of diagnostic messages
 data DiagKind = Error | Warning | Hint | Debug
               | MessageW -- ^ used for messages in the web interface
-                deriving (Eq, Ord, Show)
+                deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | a diagnostic message with 'Pos'
 data Diagnosis = Diag { diagKind :: DiagKind
                       , diagString :: String
                       , diagPos :: Range
-                      } deriving Eq
+                      } deriving (Eq, Typeable, Data)
 
 -- | construct a message for a printable item that carries a position
 mkDiag :: (GetRange a, Pretty a) => DiagKind -> String -> a -> Diagnosis
@@ -126,10 +129,14 @@ checkUniqueness l =
 -- | The result monad. A failing result should include an error message.
 data Result a = Result { diags :: [Diagnosis]
                        , maybeResult :: Maybe a
-                       } deriving Show
+                       } deriving (Show, Typeable, Data)
 
 instance Functor Result where
     fmap f (Result errs m) = Result errs $ fmap f m
+
+instance Applicative Result where
+    pure = return
+    (<*>) = ap
 
 instance Monad Result where
   return = Result [] . Just
@@ -137,6 +144,10 @@ instance Monad Result where
       Nothing -> Result e Nothing
       Just x -> joinResult r $ f x
   fail s = fatal_error s nullRange
+
+instance Alternative Result where
+    (<|>) = mplus
+    empty = mzero
 
 instance MonadPlus Result where
    mzero = Result [] Nothing
@@ -263,7 +274,6 @@ prettyRange :: [Pos] -> Doc
 prettyRange = sepByCommas . map prettySingleSourceRange
     . groupBy (on (==) sourceName) . sort
 
--- Added this instance because prettyRange is not exported
 instance Pretty Range where
     pretty = prettyRange . rangeToList
 
@@ -290,10 +300,10 @@ instance Show Diagnosis where
 instance Pretty Diagnosis where
     pretty (Diag k s (Range sp)) = sep
         [ sep [case sp of
-            [] -> empty
+            [] -> Doc.empty
             _ -> prettyRange sp <> colon
         , case k of
-            MessageW -> empty
+            MessageW -> Doc.empty
             _ -> text (case k of
                   Error -> "***"
                   _ -> "###") <+> text (show k) <> colon

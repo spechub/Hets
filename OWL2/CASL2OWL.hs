@@ -185,7 +185,7 @@ mapSign csig = let
   sortSens = eqSorts ++ disjSorts ++ subSens ++ nonEmptySens
   mkIndi b i ts = makeNamed
         ("individual " ++ show i ++ " of class " ++ showDoc ts "")
-        $ PlainAxiom (SimpleEntity $ Entity NamedIndividual
+        $ PlainAxiom (SimpleEntity $ mkEntity NamedIndividual
         $ idToAnonIRI b i)
         $ ListFrameBit (Just Types) $ ExpressionBit
         $ map toACE ts

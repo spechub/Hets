@@ -15,11 +15,16 @@ Datatypes for options that hets understands.
 
 module Driver.Options
   ( HetcatsOpts (..)
+  , Flag
+  , optionArgs
   , optionFlags
+  , accessTokenS
   , makeOpts
   , AnaType (..)
   , GuiType (..)
   , InType (..)
+  , OWLFormat (..)
+  , plainOwlFormats
   , OutType (..)
   , PrettyType (..)
   , prettyList
@@ -141,13 +146,16 @@ blacklistS = "blacklist"
 whitelistS :: String
 whitelistS = "whitelist"
 
+accessTokenS :: String
+accessTokenS = "access-token"
+
 genTermS, treeS, bafS :: String
 genTermS = "gen_trm"
 treeS = "tree."
 bafS = ".baf"
 
-graphS, ppS, envS, deltaS, prfS, omdocS, hsS, experimentalS :: String
-graphS = "graph."
+graphE, ppS, envS, deltaS, prfS, omdocS, hsS, experimentalS :: String
+graphE = "graph."
 ppS = "pp."
 envS = "env"
 deltaS = ".delta"
@@ -211,6 +219,7 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , fullTheories :: Bool
   , outputLogicGraph :: Bool
   , fileType :: Bool
+  , accessToken :: String
   , fullSign :: Bool }
 
 {- | 'defaultHetcatsOpts' defines the default HetcatsOpts, which are used as
@@ -256,6 +265,7 @@ defaultHetcatsOpts = HcOpt
   , fullTheories = False
   , outputLogicGraph = False
   , fileType = False
+  , accessToken = ""
   , fullSign = False }
 
 instance Show HetcatsOpts where
@@ -276,6 +286,9 @@ instance Show HetcatsOpts where
     ++ case defSyntax opts of
           s | s /= defSyntax defaultHetcatsOpts -> showEqOpt serializationS s
           _ -> ""
+    ++ case accessToken opts of
+          "" -> ""
+          t -> showEqOpt accessTokenS t
     ++ showEqOpt libdirsS (intercalate ":" $ libdirs opts)
     ++ case modelSparQ opts of
           "" -> ""
@@ -355,7 +368,8 @@ data Flag =
   | FullSign
   | OutputLogicGraph
   | FileType
-  | UrlCatalog [(String, String)]
+  | AccessToken String
+  | UrlCatalog [(String, String)] deriving Show
 
 -- | 'makeOpts' includes a parsed Flag in a set of HetcatsOpts
 makeOpts :: HetcatsOpts -> Flag -> HetcatsOpts
@@ -400,6 +414,7 @@ makeOpts opts flg =
     FileType -> opts { fileType = True }
     FullSign -> opts { fullSign = True }
     UrlCatalog m -> opts { urlCatalog = m ++ urlCatalog opts }
+    AccessToken s -> opts { accessToken = s }
     Help -> opts -- skipped
     Version -> opts -- skipped
 
@@ -433,9 +448,7 @@ data InType =
   | CASLIn
   | HetCASLIn
   | DOLIn
-  | OWLIn
-  | OwlXmlIn
-  | OBOIn
+  | OWLIn OWLFormat
   | HaskellIn
   | MaudeIn
   | TwelfIn
@@ -447,10 +460,10 @@ data InType =
   | ExperimentalIn -- ^ for testing new functionality
   | ProofCommand
   | GuessIn
+  | RDFIn
   | FreeCADIn
   | CommonLogicIn Bool  -- ^ "clf" or "clif" ('True' is long version)
   | DgXml
-  | RDFIn
   | Xmi
   | UMLCDXmi
   | Qvt
@@ -464,9 +477,7 @@ instance Show InType where
     CASLIn -> "casl"
     HetCASLIn -> "het"
     DOLIn -> "dol"
-    OwlXmlIn -> "owl.xml"
-    OWLIn -> "owl"
-    OBOIn -> "obo"
+    OWLIn oty -> show oty
     HaskellIn -> hsS
     ExperimentalIn -> "exp"
     MaudeIn -> "maude"
@@ -479,10 +490,10 @@ instance Show InType where
     OmdocIn -> omdocS
     ProofCommand -> "hpf"
     GuessIn -> ""
+    RDFIn -> "rdf"
     FreeCADIn -> "fcstd"
     CommonLogicIn isLong -> if isLong then "clif" else "clf"
     DgXml -> xmlS
-    RDFIn -> "rdf"
     Xmi -> "xmi"
     Qvt -> "qvt"
     HtmlIn -> "html"
@@ -490,10 +501,9 @@ instance Show InType where
 
 -- maybe this optional tree prefix can be omitted
 instance Read InType where
-    readsPrec _ = readShowAux $ map ( \ i -> (show i, i))
-                  (plainInTypes ++ aInTypes)
-                  ++ [(treeS ++ genTermS ++ show at, ATermIn at)
-                           | at <- [BAF, NonBAF]]
+    readsPrec _ = readShowAux $ concatMap showAll (plainInTypes ++ aInTypes)
+      where showAll i@(ATermIn _) = [(show i, i), (treeS ++ show i, i)]
+            showAll i = [(show i, i)]
 
 -- | 'ATType' describes distinct types of ATerms
 data ATType = BAF | NonBAF deriving Eq
@@ -503,19 +513,42 @@ instance Show ATType where
     BAF -> bafS
     NonBAF -> ""
 
--- OwlXmlIn needs to be before OWLIn to avoid a read error in parseInType1
+-- RDFIn is on purpose not listed; must be added manually if neccessary
 plainInTypes :: [InType]
 plainInTypes =
-  [ CASLIn, HetCASLIn, DOLIn, OwlXmlIn, OWLIn, OBOIn, HaskellIn, ExperimentalIn
+  [ CASLIn, HetCASLIn, DOLIn ]
+  ++ map OWLIn plainOwlFormats ++
+  [ HaskellIn, ExperimentalIn
   , MaudeIn, TwelfIn
   , HolLightIn, IsaIn, ThyIn, PrfIn, OmdocIn, ProofCommand
   , CommonLogicIn False, CommonLogicIn True
-  , DgXml, FreeCADIn, RDFIn, Xmi, Qvt, TPTPIn ]
+  , DgXml, FreeCADIn, Xmi, Qvt, TPTPIn ]
 
 aInTypes :: [InType]
 aInTypes = [ ATermIn x | x <- [BAF, NonBAF] ]
 
-data SPFType = ConsistencyCheck | ProveTheory
+-- | 'OWLFormat' lists possibilities for OWL syntax (in + out)
+data OWLFormat =
+    Manchester
+  | OwlXml
+  | RdfXml
+  | OBO
+  | Turtle
+  deriving Eq
+
+plainOwlFormats :: [OWLFormat]
+plainOwlFormats = [ Manchester, OwlXml, RdfXml, OBO, Turtle ]
+
+instance Show OWLFormat where
+  show ty = case ty of
+    Manchester -> "omn"
+    OwlXml -> "owl"
+    -- "owl.xml" ?? might occur but conflicts with dgxml
+    RdfXml -> "rdf"
+    OBO -> "obo"
+    Turtle -> "ttl"
+
+data SPFType = ConsistencyCheck | ProveTheory deriving Eq
 
 instance Show SPFType where
   show x = case x of
@@ -531,11 +564,12 @@ data OutType =
   | GraphOut GraphType
   | Prf
   | EnvOut
-  | OWLOut
+  | OWLOut OWLFormat
   | CLIFOut
   | KIFOut
   | OmdocOut
   | XmlOut -- ^ development graph xml output
+  | JsonOut -- ^ development graph json output
   | ExperimentalOut -- ^ for testing new functionality
   | HaskellOut
   | FreeCADOut
@@ -543,23 +577,26 @@ data OutType =
   | DfgFile SPFType -- ^ SPASS input file
   | TPTPFile SPFType
   | ComptableXml
+  | MedusaJson
+  | RDFOut
   | SigFile Delta -- ^ signature as text
   | TheoryFile Delta -- ^ signature with sentences as text
-  | RDFOut
   | SymXml
   | SymsXml
+  deriving Eq
 
 instance Show OutType where
   show o = case o of
     PrettyOut p -> ppS ++ show p
-    GraphOut f -> graphS ++ show f
+    GraphOut f -> graphE ++ show f
     Prf -> prfS
     EnvOut -> envS
-    OWLOut -> "omn"
+    OWLOut oty -> show oty
     CLIFOut -> "clif"
     KIFOut -> "kif"
     OmdocOut -> omdocS
     XmlOut -> xmlS
+    JsonOut -> "json"
     ExperimentalOut -> experimentalS
     HaskellOut -> hsS
     FreeCADOut -> "fcxml"
@@ -567,16 +604,18 @@ instance Show OutType where
     DfgFile t -> dfgS ++ show t
     TPTPFile t -> tptpS ++ show t
     ComptableXml -> "comptable.xml"
+    MedusaJson -> "medusa.json"
+    RDFOut -> "nt"
     SigFile d -> "sig" ++ show d
     TheoryFile d -> "th" ++ show d
-    RDFOut -> "nt"
     SymXml -> "sym.xml"
     SymsXml -> "syms.xml"
 
 plainOutTypeList :: [OutType]
 plainOutTypeList =
-  [Prf, EnvOut, OWLOut, CLIFOut, KIFOut, OmdocOut, XmlOut, ExperimentalOut,
-      HaskellOut, ThyFile, ComptableXml, FreeCADOut, RDFOut, SymXml, SymsXml]
+  [ Prf, EnvOut ] ++ map OWLOut plainOwlFormats ++
+  [ RDFOut, CLIFOut, KIFOut, OmdocOut, XmlOut, JsonOut, ExperimentalOut
+  , HaskellOut, ThyFile, ComptableXml, MedusaJson, FreeCADOut, SymXml, SymsXml]
 
 outTypeList :: [OutType]
 outTypeList = let dl = [Delta, Fully] in
@@ -589,9 +628,9 @@ outTypeList = let dl = [Delta, Fully] in
     ++ [ GraphOut f | f <- graphList ]
 
 instance Read OutType where
-    readsPrec _ = readShowAux $ map ( \ o -> (show o, o)) outTypeList
+    readsPrec _ = readShow outTypeList
 
-data Delta = Delta | Fully
+data Delta = Delta | Fully deriving Eq
 
 instance Show Delta where
   show d = case d of
@@ -601,6 +640,7 @@ instance Show Delta where
 {- | 'PrettyType' describes the type of output we want the pretty-printer
 to generate -}
 data PrettyType = PrettyAscii Bool | PrettyLatex Bool | PrettyXml | PrettyHtml
+  deriving Eq
 
 instance Show PrettyType where
   show p = case p of
@@ -618,6 +658,7 @@ prettyList2 = [PrettyAscii True, PrettyLatex True]
 -- | 'GraphType' describes the type of Graph that we want generated
 data GraphType =
     Dot Bool -- ^ True means show internal node labels
+  deriving Eq
 
 instance Show GraphType where
   show g = case g of
@@ -702,6 +743,8 @@ options = let
     , Option "" [relposS] (NoArg RelPos) "use relative file positions"
     , Option "" [fullSignS] (NoArg FullSign) "xml output full signatures"
     , Option "" [fullTheoriesS] (NoArg FullTheories) "xml output full theories"
+    , Option "" [accessTokenS] (ReqArg AccessToken "TOKEN")
+      "add access token to URLs (for ontohub)"
     , Option "O" [outdirS] (ReqArg OutDir "DIR")
       "destination directory for output files"
     , Option "o" [outtypesS] (ReqArg parseOutTypes "OTYPES")
@@ -713,7 +756,7 @@ options = let
               ++ bracket deltaS ++ crS
        ++ bS ++ ppS ++ joinBar (map show prettyList) ++ crS
        ++ bS ++ ppS ++ joinBar (map show prettyList2) ++ crS
-       ++ bS ++ graphS ++ joinBar (map show graphList) ++ crS
+       ++ bS ++ graphE ++ joinBar (map show graphList) ++ crS
        ++ bS ++ dfgS ++ bracket cS ++ crS
        ++ bS ++ tptpS ++ bracket cS)
     , Option "U" ["xupdate"] (ReqArg XUpdate "FILE")
@@ -738,8 +781,15 @@ options = let
       Option "M" ["MMT"] (NoArg UseMMT)
       "use MMT" ]
 
+-- | options that require arguments for the wep-api excluding \"translation\"
+optionArgs :: [(String, String -> Flag)]
+optionArgs = foldr (\ o l -> case o of
+  Option _ (s : _) (ReqArg f _) _ | s /= transS -> (s, f) : l
+  _ -> l) [] options
+
+-- | command line switches for the wep-api excluding non-dev-graph related ones
 optionFlags :: [(String, Flag)]
-optionFlags = drop 11 $ foldr (\ o l -> case o of
+optionFlags = dropWhile ((/= justStructuredS). fst) $ foldr (\ o l -> case o of
   Option _ (s : _) (NoArg f) _ -> (s, f) : l
   _ -> l) [] options
 

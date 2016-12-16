@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  Tree-based implementation of 'Graph' and 'DynGraph'
@@ -31,17 +32,21 @@ module Common.Lib.Graph
   ) where
 
 import Data.Graph.Inductive.Graph as Graph
-import qualified Data.IntMap as Map
+
+import Data.Data
 import Data.List
+import qualified Data.IntMap as Map
 
 -- | the graph type constructor
 newtype Gr a b = Gr { convertToMap :: Map.IntMap (GrContext a b) }
+  deriving (Typeable, Data)
 
 data GrContext a b = GrContext
     { nodeLabel :: a
     , nodeSuccs :: Map.IntMap [b]
     , loops :: [b]
     , nodePreds :: Map.IntMap [b] }
+  deriving (Typeable, Data)
 
 unsafeConstructGr :: Map.IntMap (GrContext a b) -> Gr a b
 unsafeConstructGr = Gr

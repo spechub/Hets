@@ -153,7 +153,7 @@ getEntityType ty = fromMaybe (err $ "no entity type " ++ ty)
   . lookup ty $ map (\ e -> (show e, e)) entityTypes
 
 getEntity :: XMLBase -> Element -> Entity
-getEntity b e = Entity (getEntityType $ (qName . elName) e) $ getIRI b e
+getEntity b e = mkEntity (getEntityType $ (qName . elName) e) $ getIRI b e
 
 getDeclaration :: XMLBase -> Element -> Axiom
 getDeclaration b e = case getName e of
@@ -343,7 +343,7 @@ getClassAxiom b e =
     "DisjointUnion" -> PlainAxiom (ClassEntity $ getClassExpression b hd)
         $ AnnFrameBit as $ ClassDisjointUnion $ map (getClassExpression b) tl
     "DatatypeDefinition" ->
-        PlainAxiom (SimpleEntity $ Entity Datatype $ getIRI b dhd)
+        PlainAxiom (SimpleEntity $ mkEntity Datatype $ getIRI b dhd)
             $ AnnFrameBit as $ DatatypeBit $ getDataRange b dtl
     _ -> getKey b e
 
@@ -417,7 +417,7 @@ getDPAxiom b e =
    in case getName e of
     "SubDataPropertyOf" ->
         let [hd, lst] = map (getIRI b) $ filterChL dataPropList e
-        in PlainAxiom (SimpleEntity $ Entity DataProperty hd)
+        in PlainAxiom (SimpleEntity $ mkEntity DataProperty hd)
               $ ListFrameBit (Just SubPropertyOf) $ DataBit [(as, lst)]
     "EquivalentDataProperties" ->
         let dpl = map (getIRI b) $ filterChL dataPropList e
@@ -430,16 +430,16 @@ getDPAxiom b e =
     "DataPropertyDomain" ->
         let dp = getIRI b $ filterCL dataPropList e
             ce = getClassExpression b $ filterCL classExpressionList e
-        in PlainAxiom (SimpleEntity $ Entity DataProperty dp) $ ListFrameBit
+        in PlainAxiom (SimpleEntity $ mkEntity DataProperty dp) $ ListFrameBit
                 (Just $ DRRelation ADomain) $ ExpressionBit [(as, ce)]
     "DataPropertyRange" ->
         let dp = getIRI b $ filterCL dataPropList e
             dr = getDataRange b $ filterCL dataRangeList e
-        in PlainAxiom (SimpleEntity $ Entity DataProperty dp)
+        in PlainAxiom (SimpleEntity $ mkEntity DataProperty dp)
                 $ ListFrameBit Nothing $ DataPropRange [(as, dr)]
     "FunctionalDataProperty" ->
         let dp = getIRI b $ filterCL dataPropList e
-        in PlainAxiom (SimpleEntity $ Entity DataProperty dp)
+        in PlainAxiom (SimpleEntity $ mkEntity DataProperty dp)
                 $ AnnFrameBit as DataFunctional
     _ -> getDataAssertion b e
 
@@ -451,11 +451,11 @@ getDataAssertion b e =
        lit = getLiteral b $ filterC "Literal" e
    in case getName e of
     "DataPropertyAssertion" ->
-         PlainAxiom (SimpleEntity $ Entity NamedIndividual ind)
+         PlainAxiom (SimpleEntity $ mkEntity NamedIndividual ind)
            $ ListFrameBit Nothing $ IndividualFacts
                [(as, DataPropertyFact Positive dp lit)]
     "NegativeDataPropertyAssertion" ->
-         PlainAxiom (SimpleEntity $ Entity NamedIndividual ind)
+         PlainAxiom (SimpleEntity $ mkEntity NamedIndividual ind)
             $ ListFrameBit Nothing $ IndividualFacts
                [(as, DataPropertyFact Negative dp lit)]
     _ -> getObjectAssertion b e
@@ -467,11 +467,11 @@ getObjectAssertion b e =
        [hd, lst] = map (getIRI b) $ filterChL individualList e
    in case getName e of
     "ObjectPropertyAssertion" ->
-        PlainAxiom (SimpleEntity $ Entity NamedIndividual hd)
+        PlainAxiom (SimpleEntity $ mkEntity NamedIndividual hd)
            $ ListFrameBit Nothing $ IndividualFacts
                [(as, ObjectPropertyFact Positive op lst)]
     "NegativeObjectPropertyAssertion" ->
-        PlainAxiom (SimpleEntity $ Entity NamedIndividual hd)
+        PlainAxiom (SimpleEntity $ mkEntity NamedIndividual hd)
            $ ListFrameBit Nothing $ IndividualFacts
                [(as, ObjectPropertyFact Negative op lst)]
     _ -> getIndividualAssertion b e
@@ -496,7 +496,7 @@ getClassAssertion b e = case getName e of
         let as = getAllAnnos b e
             ce = getClassExpression b $ filterCL classExpressionList e
             ind = getIRI b $ filterCL individualList e
-        in PlainAxiom (SimpleEntity $ Entity NamedIndividual ind)
+        in PlainAxiom (SimpleEntity $ mkEntity NamedIndividual ind)
                 $ ListFrameBit (Just Types) $ ExpressionBit [(as, ce)]
     _ -> getAnnoAxiom b e
 
@@ -516,14 +516,14 @@ getAnnoAxiom b e =
                     $ AnnotationFrameBit Assertion
     "SubAnnotationPropertyOf" ->
         let [hd, lst] = map (getIRI b) $ filterCh "AnnotationProperty" e
-        in PlainAxiom (SimpleEntity $ Entity AnnotationProperty hd)
+        in PlainAxiom (SimpleEntity $ mkEntity AnnotationProperty hd)
             $ ListFrameBit (Just SubPropertyOf) $ AnnotationBit [(as, lst)]
     "AnnotationPropertyDomain" ->
-        PlainAxiom (SimpleEntity $ Entity AnnotationProperty ap)
+        PlainAxiom (SimpleEntity $ mkEntity AnnotationProperty ap)
                $ ListFrameBit (Just $ DRRelation ADomain)
                       $ AnnotationBit [(as, iri)]
     "AnnotationPropertyRange" ->
-        PlainAxiom (SimpleEntity $ Entity AnnotationProperty ap)
+        PlainAxiom (SimpleEntity $ mkEntity AnnotationProperty ap)
                $ ListFrameBit (Just $ DRRelation ARange)
                       $ AnnotationBit [(as, iri)]
     _ -> PlainAxiom (Misc []) . AnnFrameBit [] . AnnotationFrameBit

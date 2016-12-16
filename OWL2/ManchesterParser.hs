@@ -56,7 +56,7 @@ annotationPropertyFrame = do
     pkeyword annotationPropertyC
     ap <- uriP
     x <- many apBit
-    return $ makeFrame (SimpleEntity $ Entity AnnotationProperty ap) x
+    return $ makeFrame (SimpleEntity $ mkEntity AnnotationProperty ap) x
 
 apBit :: CharParser st FrameBit
 apBit = do
@@ -78,7 +78,7 @@ datatypeBit = do
     as1 <- many annotations
     mp <- optionMaybe $ pkeyword equivalentToC >> pair optionalAnnos dataRange
     as2 <- many annotations
-    return $ Frame (SimpleEntity $ Entity Datatype duri)
+    return $ Frame (SimpleEntity $ mkEntity Datatype duri)
       $ map (`AnnFrameBit` AnnotationFrameBit Assertion) as1 ++ case mp of
           Nothing -> [AnnFrameBit [] $ AnnotationFrameBit Declaration]
           Just (ans, dr) -> [AnnFrameBit ans $ DatatypeBit dr]
@@ -190,7 +190,7 @@ dataPropertyFrame = do
     pkeyword dataPropertyC
     duri <- uriP
     as <- many dataFrameBit
-    return $ makeFrame (SimpleEntity $ Entity DataProperty duri) as
+    return $ makeFrame (SimpleEntity $ mkEntity DataProperty duri) as
 
 fact :: CharParser st Fact
 fact = do
@@ -225,7 +225,7 @@ individualFrame = do
     pkeyword individualC
     iuri <- individual
     as <- many iFrameBit
-    return $ makeFrame (SimpleEntity $ Entity NamedIndividual iuri) as
+    return $ makeFrame (SimpleEntity $ mkEntity NamedIndividual iuri) as
 
 misc :: CharParser st Frame
 misc = do
@@ -260,7 +260,9 @@ basicSpec pm = do
     ie <- many importEntry
     ans <- many annotations
     as <- frames
-    return $ OntologyDocument
+    if null nss && null ie && null ans && null as && ou == nullQName
+      then fail "empty ontology"
+      else return $ OntologyDocument
         (Map.union (Map.fromList $ map (\ (p, q) -> (p, showQU q)) nss)
          (convertPrefixMap pm))
         (emptyOntology as)

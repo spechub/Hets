@@ -1,6 +1,6 @@
 #!/bin/bash -x
 
-PATH=/home/pub-bkb/bin:/usr/bin:/opt/csw/bin:/usr/ccs/bin
+PATH=/home/pub-bkb/bin:/home/pub-bkb/pc-solaris/bin:/usr/bin:/opt/csw/bin:/usr/ccs/bin
 UDG_HOME=/home/pub-bkb/uDrawGraph-3.1
 HETS_LIB=/local/home/maeder/haskell/Hets-lib
 

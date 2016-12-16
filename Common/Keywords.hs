@@ -291,11 +291,14 @@ alignmentS = "alignment"
 combineS :: String
 combineS = "combine"
 
-distributedOntologyS :: String
-distributedOntologyS = "distributed-ontology"
-
 excludingS :: String
 excludingS = "excluding"
+
+entailmentS :: String
+entailmentS = "entailment"
+
+entailsS :: String
+entailsS = "entails"
 
 forS :: String
 forS = "for"
@@ -309,8 +312,8 @@ moduleS = "module"
 ontologyS :: String
 ontologyS = "ontology"
 
-diagramS :: String
-diagramS = "diagram"
+networkS :: String
+networkS = "network"
 
 relationS :: String
 relationS = "relation"
@@ -450,6 +453,9 @@ floatingS = "floating"
 forallS :: String
 forallS = "forall"
 
+forgetS :: String
+forgetS = "forget"
+
 freeS :: String
 freeS = "free"
 
@@ -468,6 +474,9 @@ givenS = "given"
 hideS :: String
 hideS = "hide"
 
+keepS :: String
+keepS = "keep"
+
 approximateS :: String
 approximateS = "approximate"
 
@@ -485,6 +494,9 @@ instanceS = "instance"
 
 internalS :: String
 internalS = "internal"
+
+intersectS :: String
+intersectS = "intersect"
 
 lambdaS :: String
 lambdaS = "lambda"
@@ -550,6 +562,9 @@ refinedS = "refined"
 refinementS :: String
 refinementS = "refinement"
 
+rejectS :: String
+rejectS = "reject"
+
 resultS :: String
 resultS = "result"
 
@@ -564,6 +579,9 @@ rigidS = "rigid"
 
 sS :: String
 sS = "s"
+
+selectS :: String
+selectS = "select"
 
 sortS :: String
 sortS = "sort"

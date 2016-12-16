@@ -24,6 +24,7 @@ import Data.Maybe
 import Data.Char (isDigit)
 import Data.List (find, nub)
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 import Common.Result
 
@@ -48,6 +49,22 @@ uniteSign s1 s2 = do
     let (pm, tm) = integPref (prefixMap s1) (prefixMap s2)
     if Map.null tm then return (addSign s1 s2) {prefixMap = pm}
       else fail "Static analysis could not unite signatures"
+
+intersectSign :: Sign -> Sign -> Result Sign
+intersectSign s1 s2 = do
+   let (pm, tm) = integPref (prefixMap s1) $ prefixMap s2
+   if Map.null tm then 
+     return emptySign{ 
+              concepts = Set.intersection (concepts s1) $ concepts s2 
+            , datatypes = Set.intersection (datatypes s1) $ datatypes s2 
+            , objectProperties = Set.intersection (objectProperties s1) $ objectProperties s2
+            , dataProperties = Set.intersection (dataProperties s1) $ dataProperties s2
+            , annotationRoles = Set.intersection (annotationRoles s1) $ annotationRoles s2
+            , individuals  = Set.intersection (individuals s1) $ individuals s2
+            , labelMap = Map.intersection (labelMap s1) $ labelMap s2
+            , prefixMap =  pm
+            }
+    else fail "Static analysis could not intersect signatures"
 
 integPref :: PrefixMap -> PrefixMap
                     -> (PrefixMap, StringMap)
