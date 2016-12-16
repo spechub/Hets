@@ -1,14 +1,15 @@
+
+-- |This module implements an institution for UML Class Diagrams as described
+-- in the DOL standard - at least the signature and the sentences
 module UML.Sign where
 
 --import CommonLogic.Sign
 
 import           UML.UML
 import           UML.UML   ()
-
-
 import           Common.Id
 
-
+-- |The signature
 data Sign = Sign {
     signClassHier    :: ([ClassEntity], [(ClassEntity, ClassEntity)]),
     signAttribute    :: [(Class, String, Type)],
@@ -16,18 +17,8 @@ data Sign = Sign {
     signCompositions :: [((String, ClassEntity), String, (String, Type))],
     signAssociations :: [(String, [(String, Type)])]
     } deriving (Eq, Ord, Show)
-{--- | Determines whether a morphism is valid
-isLegalMorphism :: Morphism -> Result ()
-isLegalMorphism pmor =
-    let psource = items $ source pmor
-        ptarget = items $ target pmor
-        pdom = Map.keysSet $ propMap pmor
-        pcodom = Set.map (applyMorphism pmor) psource
-    in unless (Set.isSubsetOf pcodom ptarget && Set.isSubsetOf pdom psource) $
-        fail "illegal Propositional morphism"
--}
 
-
+-- | checks whether an Signature is empty
 emptySign :: Sign
 emptySign = Sign {
     signClassHier = ([], []),
@@ -37,8 +28,12 @@ emptySign = Sign {
     signAssociations = []
     }
 
-data MultForm = NLeqF NumLit FunExpr | FLeqN FunExpr NumLit deriving (Eq, Ord, Show)
-data FunExpr = NumComp MFCOMPOSITION MFEnd | NumAss MFASSOCIATION MFEnd | NumAttr MFATTRIBUTE deriving (Eq, Ord, Show)
+-- | The multiplicity formulas as defined by the specified grammar (see DOL)
+data MultForm = NLeqF NumLit FunExpr 
+                | FLeqN FunExpr NumLit deriving (Eq, Ord, Show)
+data FunExpr = NumComp MFCOMPOSITION MFEnd 
+                | NumAss MFASSOCIATION MFEnd 
+                | NumAttr MFATTRIBUTE deriving (Eq, Ord, Show)
 data MFATTRIBUTE = MFAttribute MFClassifier MFEnd MFTYPE deriving (Eq, Ord, Show)
 data MFCOMPOSITION = MFComposition MFName MFEnd MFTYPE MFEnd MFTYPE deriving (Eq, Ord, Show)
 data MFASSOCIATION = MFAssociation MFName [(MFEnd, MFTYPE)] deriving (Eq, Ord, Show)
@@ -54,30 +49,33 @@ instance GetRange MultForm where
   rangeSpan _ = []
 
 
-
+-- |The sentences are given by expressions in Common Logic
 data Sen = TEXT_META
 
 
 comp2mfcomp :: ((String, ClassEntity), String, (String, Type)) -> MFCOMPOSITION
 comp2mfcomp ((on, ce), n, (tn, tart)) = MFComposition n on (MFType Set $ showClassEntityName ce) tn (type2mftype tart)
 
-
+-- |Converts a UMLType to a \tau expressions from DOL
 type2mftype :: Type -> MFTYPE
 type2mftype t = case (typeOrdered t, typeUnique t) of
-                    (True, True) -> MFType Set (umlTypeString $ umltype t)
-                    (True, False) -> MFType Set (umlTypeString $ umltype t)
+                    (True, True) -> MFType OrderedSet (umlTypeString $ umltype t)
+                    (True, False) -> MFType List (umlTypeString $ umltype t)
                     (False, True) -> MFType Set (umlTypeString $ umltype t)
-                    (False, False) -> MFType Set (umlTypeString $ umltype t)
+                    (False, False) -> MFType Bag (umlTypeString $ umltype t)
 
+-- |Constructs the multiplicity expression for a given association
 asso2mfasso :: (String, [(String, Type)]) -> MFASSOCIATION
 asso2mfasso (n, lis) = MFAssociation n (map end2mfend lis)
 
+-- |Returns the end expression and type of a given association end
 end2mfend :: (String, Type) -> (MFEnd, MFTYPE)
 end2mfend (n, t) = (n, type2mftype t)
 
 annotString :: Annot -> String
 annotString = show
 
+-- |Constructs the multiplicity expression for a given attribute
 attr2mfattr :: (Class, String, Type) -> MFATTRIBUTE
 attr2mfattr (cs, s, t) = MFAttribute (className cs) s (type2mftype t)
 

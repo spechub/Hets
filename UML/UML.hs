@@ -2,11 +2,13 @@
 Description :  Data structure for UML Class Diagrams
 Copyright   :  (c) Martin Glauer
 
-Maintainer  :  martin.glauer@st.ovgu.de
+Maintainer  :  glauer@iws.cs.ovgu.de
 Stability   :  experimental
 
 Structure used by ClassDiagramParser.hs
 -}
+
+-- |This module contains the general data structure for UML Class Diagrams.
 
 module UML.UML where
 import qualified Common.Id
@@ -17,11 +19,11 @@ import           UML.StateMachine
 
 data Model = ClassModel CM
                 | SM StateMachine deriving Show
-        -- | StateMachineR Region 
 
+-- |A UML Class Model 
 data CM = CM {
         cmName               :: String,
-        cmClasses            :: (Map.Map Id Class), -- These mappings are still necessary. You will need them, e.g. to get super classes by their id. (subject to change - someday)
+        cmClasses            :: (Map.Map Id Class), 
         cmAssociations       :: (Map.Map Id Association),
         cmInterfaces         :: (Map.Map Id Interface),
         cmPackageMerges      :: [Id],
@@ -30,11 +32,15 @@ data CM = CM {
         cmSignals            :: (Map.Map Id Signal),
         cmPackages           :: [Package]} deriving Show
 
+-- ^These mappings are still necessary. You will need them, e.g. to get 
+-- super classes by their id. (subject to change - someday - maybe)
+
 instance Common.Id.GetRange CM where
   getRange _ = Common.Id.nullRange
   rangeSpan _ = []
 
-data ClassEntity = CL Class | AC AssociationClass | EN UML.UML.Enum deriving (Ord, Show)
+data ClassEntity = CL Class 
+                    | EN UML.UML.Enum deriving (Ord, Show)
 
 instance Eq ClassEntity where
     (==) x1 x2 = (showClassEntityName x1) == (showClassEntityName x2)
@@ -50,8 +56,9 @@ data Package = Package {
         signals                   :: (Map.Map Id Signal),
         packagePackages           :: [Package]} deriving (Eq, Ord, Show)
 
---These do not work very well, yet.
---    -> AssociationClasses can target classes but not other other AssociationClass  (ToDo)
+-- These do not work very well, yet.
+--    -> AssociationClasses can contain classes but not 
+--       other AssociationClass
 
 data AssociationClass = AssociationClass {
         acClass :: Class,
@@ -72,7 +79,9 @@ data Attribute = Attribute {
         attrVisibility :: String} deriving (Eq, Ord)
 
 instance Show Attribute where
-    show attri = (attrName attri) ++ ":" ++ ((show . attrType) attri) ++ "[" ++ (attrLowerValue attri) ++ ", " ++ (attrUpperValue attri) ++ "]"
+    show attri = (attrName attri) ++ ":" ++ ((show . attrType) attri) ++ "[" 
+                    ++ (attrLowerValue attri) ++ ", " 
+                    ++ (attrUpperValue attri) ++ "]"
 
 data Procedure = Procedure {
         procName        :: String,
@@ -99,8 +108,12 @@ data Association = Association {
 
 data EndType = Composition | Aggregation | Normal deriving (Eq, Ord, Show)
 
--- The XMI-Standard ignores ends that are compositions or aggregations but adds attributes to the corresponding class. Leads to edges having only one end, which is quite inconvenient.
---    Thus in this DS above mentioned attributes are ignored and the corresponding (special) edges recreated. These edges are marked by the non-normal EndTypes.
+-- The XMI-Standard ignores ends that are compositions or aggregations but adds
+-- attributes to the corresponding class. Leads to edges having only one end, 
+-- which is quite inconvenient.
+-- Thus in this DS above mentioned attributes are ignored and the corresponding
+-- (special) edges recreated. These edges are marked by the non-normal EndTypes.
+
 data End = End {
         endTarget :: ClassEntity,
         label     :: Label,
@@ -113,9 +126,16 @@ showClassEntityName (AC x) = className (acClass x)
 showClassEntityName (EN x) = enumName x
 instance Show End where
     show end = case endTarget end of
-            CL cl -> "End " ++ (fromMaybe "" (endName end)) ++ "(" ++ ((show . endType) end) ++ "): " ++ (className cl) ++ (show (label end))
-            AC ac -> "End " ++ (fromMaybe "" (endName end)) ++ "(" ++ ((show . endType) end) ++ "): " ++ (className (acClass ac))   ++ (show (label end))
-            EN x -> "End " ++ (fromMaybe "" (endName end)) ++ "(" ++ ((show . endType) end) ++ "): " ++ (show x) ++ (show (label end))
+            CL cl -> "End " ++ (fromMaybe "" (endName end)) ++ "(" 
+                            ++ ((show . endType) end) ++ "): " ++ (className cl)
+                            ++ (show (label end))
+            AC ac -> "End " ++ (fromMaybe "" (endName end)) ++ "(" 
+                            ++ ((show . endType) end) ++ "): " 
+                            ++ (className (acClass ac))   
+                            ++ (show (label end))
+            EN x -> "End "  ++ (fromMaybe "" (endName end)) 
+                            ++ "(" ++ ((show . endType) end) ++ "): " 
+                            ++ (show x) ++ (show (label end))
 
 data Interface = Interface {
         interfaceName :: String} deriving (Eq, Ord, Show)
@@ -128,13 +148,17 @@ instance Show Label where
     show l = "[" ++ (lowerValue l) ++ ", " ++ (upperValue l) ++ "]"
 
 data Signal = Signal {
-        sigSuper   :: [ClassEntity],
         signalName :: String,
-        sigAttr    :: [Attribute],
-        sigProc    :: [Procedure]} deriving (Eq, Ord, Show)
+} deriving (Eq, Ord, Show)
 
 type Id = String
-data UMLType = CE ClassEntity | UMLString | UMLInteger | UMLBool | UMLUnlimitedNatural | UMLReal | UMLSequence Type | UMLSet Type | UMLOrderedSet Type | UMLBag Type | Other String deriving (Show, Eq, Ord)  --These types are somewhat cryptic in XMI. They are left as-is - who knows who needs this. Note that they might contain class ids
+data UMLType = CE ClassEntity | UMLString | UMLInteger | UMLBool 
+                | UMLUnlimitedNatural | UMLReal | UMLSequence Type 
+                | UMLSet Type | UMLOrderedSet Type | UMLBag Type 
+                | Other String deriving (Show, Eq, Ord)  
+                -- The "Other" types are somewhat cryptic in XMI. 
+                -- They are left as-is - who knows who needs this. 
+                -- Note that they might contain class ids
 
 data Type = Type {   umltype    :: UMLType,
                     typeUnique  :: Bool,

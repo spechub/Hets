@@ -6,6 +6,8 @@ Maintainer  :  martin.glauer@st.ovgu.de
 Stability   :  experimental
 
 -}
+
+-- |This module implements a parser from xmi to a single UML Class Model
 module UML.ClassDiagramParser where
 
 import           Data.List
@@ -16,7 +18,12 @@ import           UML.UML
 import           UML.Utils
 import           UML.XMINames
 
-parseClassModel :: String -> (Maybe String, Maybe String) -> Element -> Model
+-- |Constructs the UML model. Assumes that the the passed element is the root 
+-- of the xml model description
+parseClassModel :: String -- ^ The prefix of used by the uml namespace 
+                    -> (Maybe String, Maybe String) -- ^ xmi version
+                    -> Element -- ^ the xml element to parse
+                    -> Model
 parseClassModel prefix (xmiv, _) el = ClassModel CM {
                     cmName = fromMaybe "unnamed" (findAttr nameName el),
                     cmClasses = classes pack,
@@ -46,6 +53,8 @@ parseClassModel prefix (xmiv, _) el = ClassModel CM {
                             [(  id1,
                                 [x | (id2, x) <- semapraw, id1 == id2])
                                 | id1 <- (Map.keys (Map.fromList semapraw))])
+
+-- |Constructs the Package structure for an element that is an UML Package
 
 processPackage :: String -> Maybe String -> Map.Map Id ClassEntity
                     -> Map.Map Id [End] -> Element -> Package
@@ -78,12 +87,18 @@ processPackage prefix xmiv cmap semap el = Package {
         }
         where lis = (findChildren packagedElementName el)
 
-filterFromEntityMap :: Maybe String -> (Map.Map Id ClassEntity)
-                        -> (ClassEntity -> t) -> [Element] -> [(Id, t)]
-filterFromEntityMap xmiv emap f lis = map (\ (id1, x) -> (id1, f x))
-                (map ((\ x -> (x, fromJust (Map.lookup x emap))) .
+-- | takes the ids of the passed element list, pairs them with the corresponding
+-- class entities and applies the given function to ce.
+filterFromEntityMap :: Maybe String 
+                        -> (Map.Map Id ClassEntity) -- ^ ce dictionary
+                        -> (ClassEntity -> t) -- ^ a mapping ce -> t
+                        -> [Element] 
+                        -> [(Id, t)]
+filterFromEntityMap xmiv emap f lis = --map (\ (id1, x) -> (id1, f x))
+                (map ((\ x -> (x, f $ fromJust (Map.lookup x emap))) .
                 (fromJust . (findAttr (attrIdName xmiv)))) lis)
 
+-- |Collects the children of all given elements that are UML Packages
 findPackageElements :: String -> Maybe String -> Element -> [Element]
 findPackageElements prefix xmiv el = filter (\ x -> findAttr (typeName xmiv) x ==
                     Just (prefix ++ ":Package")) (findChildren packagedElementName el)
