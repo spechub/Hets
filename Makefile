@@ -99,7 +99,7 @@ logics = CASL HasCASL Isabelle Modal Hybrid TopHybrid Temporal \
     CoCASL COL CspCASL CASL_DL \
     SoftFOL ConstraintCASL Propositional RelationalScheme VSE OMDoc DFOL \
     LF Framework Maude ExtModal CommonLogic CSL QBF Adl HolLight Fpl THF \
-    FreeCAD OWL2 RDF CSMOF QVTR
+    FreeCAD OWL2 RDF CSMOF QVTR TPTP
 
 TESTTARGETFILES += Scratch.hs CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     Haskell/wrap.hs Isabelle/isa.hs Syntax/hetpa.hs \
@@ -188,6 +188,7 @@ drifted_files = Common/AS_Annotation.hs \
     RelationalScheme/AS.hs ATC/Grothendieck.hs \
     ExtModal/AS_ExtModal.hs QBF/AS_BASIC_QBF.hs \
     CommonLogic/AS_CommonLogic.hs Fpl/As.hs \
+	TPTP/AS.hs \
     $(gendrifted_files)
 
 # files to extract data types from to generate ShATermConvertible instances
@@ -338,6 +339,8 @@ CSMOF_files = CSMOF/As.hs CSMOF/Sign.hs
 
 QVTR_files = QVTR/As.hs QVTR/Sign.hs
 
+TPTP_files = TPTP/AS.hs
+
 # ATC DrIFT-rule generation for logics
 CASL/ATC_CASL.der.hs: $(CASL_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.GlobalAnnotations -o $@ $(CASL_files)
@@ -442,6 +445,9 @@ CSMOF/ATC_CSMOF.der.hs: $(CSMOF_files) $(GENRULES)
 QVTR/ATC_QVTR.der.hs: $(QVTR_files) CSMOF/ATC_CSMOF.hs $(GENRULES)
 	$(GENRULECALL) -i CSMOF.ATC_CSMOF -i Common.ATerm.ConvInstances \
  -o $@ $(QVTR_files)
+
+TPTP/ATC_TPTP.der.hs: $(TPTP_files) $(GENRULES)
+	$(GENRULECALL)  -i ATC.AS_Annotation -o $@ $(TPTP_files)
 
 # all ATC .der.hs files for all logics
 atc_logic_files = $(foreach logic, $(logics), $(logic)/ATC_$(logic).der.hs)
