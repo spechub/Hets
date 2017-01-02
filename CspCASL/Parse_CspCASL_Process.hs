@@ -36,7 +36,7 @@ import qualified CASL.Formula as CASL
 import Common.AnnoState
 import Common.Id
 import Common.Keywords
-import Common.Lexer
+import Common.Lexer hiding (parens)
 import Common.Parsec
 import Common.Token (parseId, sortId, varId)
 

@@ -20,7 +20,7 @@ import Text.ParserCombinators.Parsec
 
 import Common.AS_Annotation
 import Common.Id
-import Common.Lexer
+import Common.Lexer hiding (parens)
 import Common.Parsec
 
 import Control.Monad
