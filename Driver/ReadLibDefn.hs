@@ -59,7 +59,9 @@ mimeTypeMap =
   , ("dol", DOLIn)
   , ("clif", CommonLogicIn True)
   , ("het", HetCASLIn)
-  , ("casl", CASLIn) ]
+  , ("casl", CASLIn)
+  , ("tptp", TPTPIn)
+  , ("p", TPTPIn) ]
 
 owlXmlTypes :: [InType]
 owlXmlTypes = map OWLIn [OwlXml, RdfXml, Turtle]
