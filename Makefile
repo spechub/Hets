@@ -339,7 +339,7 @@ CSMOF_files = CSMOF/As.hs CSMOF/Sign.hs
 
 QVTR_files = QVTR/As.hs QVTR/Sign.hs
 
-TPTP_files = TPTP/AS.hs
+TPTP_files = TPTP/AS.hs TPTP/Sign.hs
 
 # ATC DrIFT-rule generation for logics
 CASL/ATC_CASL.der.hs: $(CASL_files) $(GENRULES)
