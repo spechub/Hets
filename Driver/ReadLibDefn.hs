@@ -31,7 +31,7 @@ import OWL2.ParseOWLAsLibDefn
 #endif
 import CSMOF.ParseXmiAsLibDefn
 import QVTR.ParseQvtAsLibDefn
-import SoftFOL.ParseTPTPAsLibDefn
+import TPTP.ParseAsLibDefn
 import FreeCAD.Logic_FreeCAD
 
 import Driver.Options
@@ -111,7 +111,7 @@ readLibDefn lgraph opts mr file fileForPos input =
 #endif
       Xmi -> liftIO $ fmap (: []) $ parseXmi file
       Qvt -> liftIO $ fmap (: []) $ parseQvt file
-      TPTPIn -> liftIO $ fmap (: []) $ parseTPTP input file
+      TPTPIn -> parseTPTP opts file input
 #ifndef NOOWLLOGIC
       OWLIn _ -> parseOWLAsLibDefn (isStructured opts) file
 #endif
