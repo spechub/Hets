@@ -86,6 +86,9 @@ import SoftFOL.CreateDFGDoc
 import SoftFOL.DFGParser
 import SoftFOL.ParseTPTP
 
+import TPTP.Logic
+import qualified TPTP.Pretty as TPTPPretty
+
 import FreeCAD.XMLPrinter (exportXMLFC)
 import FreeCAD.Logic_FreeCAD
 
@@ -220,7 +223,12 @@ writeTheory ins nam opts filePrefix ga
     FreeCADOut -> writeFreeCADFile opts filePrefix raw_gTh
     ThyFile -> writeIsaFile opts filePrefix raw_gTh ln i
     DfgFile c -> writeSoftFOL opts f raw_gTh i c 0 "DFG"
-    TPTPFile c -> writeSoftFOL opts f raw_gTh i c 1 "TPTP"
+    TPTPFile
+        | lang == language_name TPTP -> do
+            th2 <- coerceBasicTheory lid TPTP "" th
+            let tptpText = show (TPTPPretty.printBasicTheory th2)
+            writeVerbFile opts f tptpText
+        | otherwise -> putIfVerbose opts 0 $ "expected RDF theory for: " ++ f
     TheoryFile d -> do
       if null $ show d then
         writeVerbFile opts f $ shows (DG.printTh ga i raw_gTh) "\n"
@@ -377,7 +385,7 @@ writeSpecFiles opts file lenv ln dg = do
         specOutTypes = filter ( \ ot -> case ot of
             ThyFile -> True
             DfgFile _ -> True
-            TPTPFile _ -> True
+            TPTPFile -> True
             XmlOut -> True
             JsonOut -> True
             OmdocOut -> True

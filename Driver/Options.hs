@@ -585,7 +585,7 @@ data OutType =
   | FreeCADOut
   | ThyFile -- ^ isabelle theory file
   | DfgFile SPFType -- ^ SPASS input file
-  | TPTPFile SPFType
+  | TPTPFile
   | ComptableXml
   | MedusaJson
   | RDFOut
@@ -612,7 +612,7 @@ instance Show OutType where
     FreeCADOut -> "fcxml"
     ThyFile -> "thy"
     DfgFile t -> dfgS ++ show t
-    TPTPFile t -> tptpS ++ show t
+    TPTPFile -> tptpS
     ComptableXml -> "comptable.xml"
     MedusaJson -> "medusa.json"
     RDFOut -> "nt"
@@ -625,7 +625,8 @@ plainOutTypeList :: [OutType]
 plainOutTypeList =
   [ Prf, EnvOut ] ++ map OWLOut plainOwlFormats ++
   [ RDFOut, CLIFOut, KIFOut, OmdocOut, XmlOut, JsonOut, ExperimentalOut
-  , HaskellOut, ThyFile, ComptableXml, MedusaJson, FreeCADOut, SymXml, SymsXml]
+  , HaskellOut, ThyFile, ComptableXml, MedusaJson, FreeCADOut, SymXml, SymsXml
+  , TPTPFile]
 
 outTypeList :: [OutType]
 outTypeList = let dl = [Delta, Fully] in
@@ -634,7 +635,6 @@ outTypeList = let dl = [Delta, Fully] in
     ++ [ SigFile d | d <- dl ]
     ++ [ TheoryFile d | d <- dl ]
     ++ [ DfgFile x | x <- spfTypes]
-    ++ [ TPTPFile x | x <- spfTypes]
     ++ [ GraphOut f | f <- graphList ]
 
 instance Read OutType where
@@ -773,7 +773,7 @@ options = let
        ++ bS ++ ppS ++ joinBar (map show prettyList2) ++ crS
        ++ bS ++ graphE ++ joinBar (map show graphList) ++ crS
        ++ bS ++ dfgS ++ bracket cS ++ crS
-       ++ bS ++ tptpS ++ bracket cS)
+       ++ bS ++ tptpS)
     , Option "U" ["xupdate"] (ReqArg XUpdate "FILE")
       "apply additional xupdates from file"
     , Option "R" [recursiveS] (NoArg Recurse)
