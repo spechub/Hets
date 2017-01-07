@@ -21,11 +21,14 @@ import TPTP.Morphism
 import TPTP.Morphism.Sentence
 import TPTP.Parser
 import TPTP.Pretty
+import TPTP.Prover.EProver
 import TPTP.Sign
 import TPTP.Sublogic as Sublogic
 import TPTP.StaticAnalysis
 
+import ATC.ProofTree ()
 import Common.DefaultMorphism
+import Common.ProofTree
 import Logic.Logic as Logic
 
 import Data.Monoid
@@ -68,7 +71,7 @@ instance StaticAnalysis TPTP BASIC_SPEC Sentence () () Sign Morphism Symbol ()
 instance Logic TPTP Sublogic BASIC_SPEC Sentence () () Sign Morphism Symbol () ProofTree
   where
     stability _ = Testing
-    provers TPTP = []
+    provers TPTP = [eprover]
 
 
 instance SublogicName Sublogic where

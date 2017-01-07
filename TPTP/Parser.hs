@@ -22,7 +22,9 @@ References
     grammar rules at this reference page (modulo case).
 -}
 
-module TPTP.Parser (parseBasicSpec) where
+module TPTP.Parser ( parseBasicSpec
+                   , annotated_formula
+                   ) where
 
 import TPTP.AS hiding (name, formulaRole, annotations)
 import TPTP.Common
