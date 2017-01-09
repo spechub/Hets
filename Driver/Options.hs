@@ -128,6 +128,9 @@ relposS = "relative-positions"
 fullSignS :: String
 fullSignS = "full-signatures"
 
+printASTS :: String
+printASTS = "print-AST"
+
 fullTheoriesS :: String
 fullTheoriesS = "full-theories"
 
@@ -218,7 +221,8 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , outputLogicGraph :: Bool
   , fileType :: Bool
   , accessToken :: String
-  , fullSign :: Bool }
+  , fullSign :: Bool
+  , printAST :: Bool }
 
 {- | 'defaultHetcatsOpts' defines the default HetcatsOpts, which are used as
 basic values when the user specifies nothing else -}
@@ -265,7 +269,8 @@ defaultHetcatsOpts = HcOpt
   , outputLogicGraph = False
   , fileType = False
   , accessToken = ""
-  , fullSign = False }
+  , fullSign = False
+  , printAST = False }
 
 instance Show HetcatsOpts where
   show opts =
@@ -307,6 +312,7 @@ instance Show HetcatsOpts where
     ++ showFlag unlit unlitS
     ++ showFlag useLibPos relposS
     ++ showFlag fullSign fullSignS
+    ++ showFlag printAST printASTS
     ++ showFlag fullTheories fullTheoriesS
     ++ case urlCatalog opts of
          [] -> ""
@@ -368,6 +374,7 @@ data Flag =
   | UseMMT
   | FullTheories
   | FullSign
+  | PrintAST
   | OutputLogicGraph
   | FileType
   | AccessToken String
@@ -416,6 +423,7 @@ makeOpts opts flg =
     OutputLogicGraph -> opts { outputLogicGraph = True }
     FileType -> opts { fileType = True }
     FullSign -> opts { fullSign = True }
+    PrintAST -> opts { printAST = True }
     UrlCatalog m -> opts { urlCatalog = m ++ urlCatalog opts }
     AccessToken s -> opts { accessToken = s }
     Help -> opts -- skipped
@@ -748,6 +756,7 @@ options = let
     , Option "" [unlitS] (NoArg Unlit) "unlit input source"
     , Option "" [relposS] (NoArg RelPos) "use relative file positions"
     , Option "" [fullSignS] (NoArg FullSign) "xml output full signatures"
+    , Option "" [printASTS] (NoArg PrintAST) ("print AST in xml/json output")
     , Option "" [fullTheoriesS] (NoArg FullTheories) "xml output full theories"
     , Option "" [accessTokenS] (ReqArg AccessToken "TOKEN")
       "add access token to URLs (for ontohub)"

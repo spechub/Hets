@@ -142,7 +142,7 @@ writeLibEnv opts filePrefix lenv ln ot =
       JsonOut -> writeVerbFile opts f $ ppJson
           $ ToJson.dGraph opts lenv ln dg
       SymsXml -> writeVerbFile opts f $ ppTopElement
-          $ ToXml.dgSymbols dg
+          $ ToXml.dgSymbols opts dg
       OmdocOut -> do
           let Result ds mOmd = exportLibEnv (recurse opts) (outdir opts) ln lenv
           showDiags opts ds
@@ -241,7 +241,7 @@ writeTheory ins nam opts filePrefix ga
         writeVerbFile opts (f ++ ".sexpr")
           $ shows (prettySExpr $ vseSignToSExpr sign') "\n"
     SymXml -> writeVerbFile opts f $ ppTopElement
-           $ ToXml.showSymbolsTh ins nam ga raw_gTh
+           $ ToXml.showSymbolsTh opts ins nam ga raw_gTh
 #ifdef PROGRAMATICA
     HaskellOut -> case printModule raw_gTh of
         Nothing ->

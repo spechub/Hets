@@ -1001,7 +1001,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
               Just "dot" -> liftR $ return
                 (dotC, dotGraph title False title dg)
               Just "symbols" -> liftR $ return (xmlC, ppTopElement
-                $ ToXml.dgSymbols dg)
+                $ ToXml.dgSymbols opts dg)
               Just "session" -> liftR $ return (htmlC, ppElement
                 $ aRef (mkPath sess ln k) $ show k)
               Just str | elem str ppList
@@ -1082,7 +1082,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
                 NcCmd cmd | elem cmd [Query.Node, Info, Symbols]
                   -> case cmd of
                    Symbols -> return (xmlC, ppTopElement
-                           $ showSymbols ins (globalAnnos dg) dgnode)
+                           $ showSymbols opts ins (globalAnnos dg) dgnode)
                    _ -> return (textC, fstLine ++ showN dgnode)
                 _ -> case maybeResult $ getGlobalTheory dgnode of
                   Nothing -> fail $
