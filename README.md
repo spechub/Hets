@@ -51,11 +51,11 @@ sudo apt-get install hets-desktop
 #### Hets development
 For Hets development additionally type in
 ```
-sudo apt-add-repository -s "deb http://ppa.launchpad.net/hets/hets/ubuntu trusty main"
+sudo apt-add-repository -s "deb http://ppa.launchpad.net/hets/hets/ubuntu xenial main"
 sudo apt-get update
-sudo apt-get build-dep hets
+sudo apt-get build-dep hets-desktop
 ```
-Replace 'trusty' with the Ubuntu version that you use.
+Replace 'xenial' with the Ubuntu version that you use.
 The Hets sources should be obtained from the git repository (see the end of this page).
 
 ### Hets Images for Mac OS X 10.9 (Mavericks)
