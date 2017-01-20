@@ -22,6 +22,7 @@ import TPTP.Morphism.Sentence
 import TPTP.Parser
 import TPTP.Pretty
 import TPTP.Prover.EProver
+import TPTP.Prover.Vampire
 import TPTP.Sign
 import TPTP.Sublogic as Sublogic
 import TPTP.StaticAnalysis
@@ -71,7 +72,7 @@ instance StaticAnalysis TPTP BASIC_SPEC Sentence () () Sign Morphism Symbol ()
 instance Logic TPTP Sublogic BASIC_SPEC Sentence () () Sign Morphism Symbol () ProofTree
   where
     stability _ = Testing
-    provers TPTP = [eprover]
+    provers TPTP = [eprover, vampire]
 
 
 instance SublogicName Sublogic where
