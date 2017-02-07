@@ -31,6 +31,7 @@ import Control.Monad
 import Data.Char (toUpper)
 import Data.Maybe
 import Data.Time.LocalTime
+import System.Directory
 import System.Exit
 
 type AtpFunType =
@@ -124,6 +125,18 @@ mkTheoryFileName theoryName namedGoal =
 
 getTimeLimit :: GenericConfig ProofTree -> Int
 getTimeLimit cfg = fromMaybe 100 $ timeLimit cfg
+
+hardTimeLimit :: GenericConfig ProofTree -> Int
+hardTimeLimit cfg =
+  let timeLimit = getTimeLimit cfg
+  in minimum [ timeLimit + 30
+             , round ((1.5 :: Double) * fromIntegral timeLimit)
+             ]
+
+gnuTimeout :: IO String
+gnuTimeout = do
+  path <- findExecutable "gtimeout"
+  return $ if isJust path then "gtimeout" else "timeout"
 
 
 prepareProverInput :: ProverState
