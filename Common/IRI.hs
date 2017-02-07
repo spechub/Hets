@@ -612,7 +612,11 @@ isUcsChar c =
      (0xB0000 <= n && n <= 0xBFFFD) ||
      (0xC0000 <= n && n <= 0xCFFFD) ||
      (0xD0000 <= n && n <= 0xDFFFD) ||
-     (0xE1000 <= n && n <= 0xEFFFD)
+     (0xE1000 <= n && n <= 0xEFFFD) ||
+     -- The following line is a custom extension. It is *not* part of the IRI
+     -- standard, but necessary for the TPTP library (all THF examples) to
+     -- work:
+     c == '^'
 
 isIprivate :: Char -> Bool
 isIprivate c =
