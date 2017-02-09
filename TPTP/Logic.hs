@@ -22,10 +22,11 @@ import TPTP.Morphism.Sentence
 import TPTP.Parser
 import TPTP.Pretty
 import TPTP.Sign
+import TPTP.Sublogic as Sublogic
 import TPTP.StaticAnalysis
 
 import Common.DefaultMorphism
-import Logic.Logic
+import Logic.Logic as Logic
 
 import Data.Monoid
 import qualified Data.Set as Set
@@ -64,7 +65,54 @@ instance StaticAnalysis TPTP BASIC_SPEC Sentence () () Sign Morphism Symbol ()
     basic_analysis TPTP = Just basicAnalysis
     signature_union TPTP = signatureUnionR
 
-instance Logic TPTP () BASIC_SPEC Sentence () () Sign Morphism Symbol () ()
+instance Logic TPTP Sublogic BASIC_SPEC Sentence () () Sign Morphism Symbol () ProofTree
   where
     stability _ = Testing
     provers TPTP = []
+
+
+instance SublogicName Sublogic where
+    sublogicName = Sublogic.sublogicName
+
+instance SemiLatticeWithTop Sublogic where
+    lub = leastUpperBound
+    top = Sublogic.top
+
+
+instance MinSublogic Sublogic () where
+  minSublogic = sublogicOfUnit bottom
+
+instance MinSublogic Sublogic BASIC_SPEC where
+  minSublogic = sublogicOfBaiscSpec bottom
+
+instance MinSublogic Sublogic Sentence where
+  minSublogic = sublogicOfSentence bottom
+
+instance MinSublogic Sublogic Symbol where
+  minSublogic = sublogicOfSymbol bottom
+
+instance MinSublogic Sublogic Sign where
+  minSublogic = sublogicOfSign bottom
+
+instance MinSublogic Sublogic Morphism where
+  minSublogic = sublogicOfMorphism bottom
+
+
+instance ProjectSublogic Sublogic BASIC_SPEC where
+  projectSublogic = projectSublogicBasicSpec
+
+instance ProjectSublogic Sublogic Sentence where
+  projectSublogic = projectSublogicSentence
+
+instance ProjectSublogic Sublogic Sign where
+  projectSublogic = projectSublogicSign
+
+instance ProjectSublogic Sublogic Morphism where
+  projectSublogic = projectSublogicMorphism
+
+
+instance ProjectSublogicM Sublogic () where
+  projectSublogicM = projectSublogicMUnit
+
+instance ProjectSublogicM Sublogic Symbol where
+  projectSublogicM = projectSublogicMSymbol
