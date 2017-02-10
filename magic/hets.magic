@@ -123,6 +123,28 @@
 0       search/4096/t   module\                 Haskell document
 !:mime  text/haskell
 
+# TPTP
+0       search/4096/t   thf(              TPTP document
+!:mime  text/tptp
+
+0       search/4096/t   tfx(              TPTP document
+!:mime  text/tptp
+
+0       search/4096/t   tff(              TPTP document
+!:mime  text/tptp
+
+0       search/4096/t   tcf(              TPTP document
+!:mime  text/tptp
+
+0       search/4096/t   fof(              TPTP document
+!:mime  text/tptp
+
+0       search/4096/t   cnf(              TPTP document
+!:mime  text/tptp
+
+0       search/4096/t   tpi(              TPTP document
+!:mime  text/tptp
+
 # CLIF
 0       search/4096/t   \(cl-text \              CLIF document
 !:mime  text/clif
