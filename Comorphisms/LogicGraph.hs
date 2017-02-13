@@ -67,6 +67,7 @@ import Comorphisms.CFOL2IsabelleHOL
 import Comorphisms.CommonLogic2IsabelleHOL
 import Comorphisms.HolLight2Isabelle
 import Comorphisms.SuleCFOL2SoftFOL
+import Comorphisms.SuleCFOL2TPTP
 import Comorphisms.Prop2CASL
 import Comorphisms.CASL2Prop
 import Comorphisms.HasCASL2IsabelleHOL
@@ -226,6 +227,7 @@ comorphismList =
     , Comorphism HasCASL2PCoClTyConsHOL
     , Comorphism HasCASL2HasCASL
     , Comorphism suleCFOL2SoftFOL
+    , Comorphism suleCFOL2TPTP
     , Comorphism CASL2PCFOL
     , Comorphism $ CASL2SubCFOL True FormulaDependent -- unique bottoms
     , Comorphism $ CASL2SubCFOL False SubsortBottoms -- keep free types

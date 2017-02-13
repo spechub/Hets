@@ -1,0 +1,766 @@
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{- |
+Module      :  ./Comorphisms/SuleCFOL2TPTP.hs
+Description :  Coding of a CASL subset into TPTP
+Copyright   :  (c) Eugen Kuksa and Till Mossakowksi
+License     :  GPLv2 or higher, see LICENSE.txt
+
+Maintainer  :  kuksa@iks.cs.ovgu.de
+Stability   :  provisional
+Portability :  non-portable (imports Logic.Logic)
+
+The translating comorphism from a CASL subset to TPTP.
+-}
+
+module Comorphisms.SuleCFOL2TPTP
+  ( suleCFOL2TPTP
+  ) where
+
+import Control.Exception (assert)
+import Control.Monad (foldM)
+
+import Logic.Logic as Logic
+import Logic.Comorphism
+
+import Common.AS_Annotation
+import Common.Id
+import Common.Result
+import Common.DocUtils
+import Common.ProofTree
+import Common.Utils
+import qualified Common.Lib.Rel as Rel
+import qualified Common.Lib.MapSet as MapSet
+
+import qualified Data.Map as Map
+import qualified Data.Set as Set
+
+import Data.List as List
+import Data.Maybe
+import Data.Char
+import Data.Function
+
+import CASL.Logic_CASL
+import CASL.AS_Basic_CASL
+import CASL.Cycle
+import CASL.Sublogic as SL
+import CASL.Sign as CSign
+import CASL.MapSentence
+import CASL.Morphism
+import CASL.Quantification
+import CASL.Overload
+import CASL.Utils
+import CASL.Inject
+--import CASL.Induction (generateInductionLemmas)
+import CASL.Simplify
+import CASL.ToDoc
+
+import TPTP.Sign as SPSign
+import TPTP.Logic
+
+data PlainTPTP = PlainTPTP
+
+instance Show PlainTPTP where
+  show PlainTPTP = "TPTP"
+
+-- | The identity of the comorphisms
+data GenSuleCFOL2TPTP a = GenSuleCFOL2TPTP a deriving Show
+
+suleCFOL2TPTP :: GenSuleCFOL2TPTP PlainTPTP
+suleCFOL2TPTP = GenSuleCFOL2TPTP PlainTPTP
+
+
+-- | TPTP theories
+type TPTPTheory = (SPSign.Sign, [Named Sentence])
+
+data CType = CSort
+           | CVar SORT
+           | CPred CSign.PredType
+           | COp CSign.OpType
+             deriving (Eq, Ord, Show)
+
+toCKType :: CType -> CKType
+toCKType ct = case ct of
+  CSort -> CKSort
+  CVar _ -> CKVar
+  CPred _ -> CKPred
+  COp _ -> CKOp
+
+-- Identifiers in TPTP
+type TPTPId = Token
+
+-- | CASL Ids with Types mapped to SPIdentifier
+type IdTypeSPIdMap = Map.Map Id (Map.Map CType TPTPId)
+
+-- | specialized lookup for IdTypeSPIdMap
+lookupSPId :: Id -> CType -> IdTypeSPIdMap ->
+          Maybe TPTPId
+lookupSPId i t = maybe Nothing (Map.lookup t) . Map.lookup i
+
+-- | specialized insert (with error) for IdTypeSPIdMap
+insertSPId :: Id -> CType ->
+              TPTPId ->
+              IdTypeSPIdMap ->
+              IdTypeSPIdMap
+insertSPId i t spid m =
+    assert (checkIdentifier (toCKType t) $ show spid) $
+    Map.insertWith (Map.unionWith err) i (Map.insert t spid Map.empty) m
+    where err = error ("SuleCFOL2TPTP: for Id \"" ++ show i ++
+                       "\" the type \"" ++ show t ++
+                       "\" can't be mapped to different TPTP identifiers")
+
+deleteSPId :: Id -> CType ->
+              IdTypeSPIdMap ->
+              IdTypeSPIdMap
+deleteSPId i t m =
+    maybe m (\ m2 -> let m2' = Map.delete t m2
+                     in if Map.null m2'
+                           then Map.delete i m
+                           else Map.insert i m2' m) $
+          Map.lookup i m
+
+-- | specialized elems into a set for IdTypeSPIdMap
+elemsSPIdSet :: IdTypeSPIdMap -> Set.Set TPTPId
+elemsSPIdSet = Map.fold (\ m res -> Set.union res
+                                      (Set.fromList (Map.elems m)))
+                         Set.empty
+
+-- extended signature translation
+type SignTranslator f e = CSign.Sign f e -> e -> TPTPTheory -> TPTPTheory
+
+-- extended signature translation for CASL
+sigTrCASL :: SignTranslator () ()
+sigTrCASL _ _ = id
+
+-- extended formula translation
+type FormulaTranslator f e =
+    CSign.Sign f e -> IdTypeSPIdMap -> f -> Sentence
+
+-- extended formula translation for CASL
+formTrCASL :: FormulaTranslator () ()
+formTrCASL _ _ = error "SuleCFOL2TPTP: No extended formulas allowed in CASL"
+
+instance Show a => Language (GenSuleCFOL2TPTP a) where
+  language_name (GenSuleCFOL2TPTP a) = "CASL2" ++ show a
+
+instance Show a => Comorphism (GenSuleCFOL2TPTP a)
+               CASL CASL_Sublogics
+               CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
+               CASLSign
+               CASLMor
+               CSign.Symbol RawSymbol ProofTree
+               TPTP Sublogic BASIC_SPEC Sentence () ()
+               Sign Morphism Symbol () ProofTree where
+    sourceLogic (GenSuleCFOL2TPTP _) = CASL
+    sourceSublogic (GenSuleCFOL2TPTP a) = SL.cFol
+                      { sub_features = LocFilSub
+                      , cons_features = emptyMapConsFeature
+                      , has_empty_sorts = show a == show PlainTPTP }
+    targetLogic (GenSuleCFOL2TPTP _) = TPTP
+    mapSublogic cid sl = FOF
+    map_theory (GenSuleCFOL2TPTP a) = transTheory sigTrCASL formTrCASL
+    has_model_expansion (GenSuleCFOL2TPTP _) = True
+
+transTheory :: (FormExtension f, Eq f) =>
+               SignTranslator f e
+            -> FormulaTranslator f e
+            -> (CSign.Sign f e, [Named (FORMULA f)])
+            -> Result TPTPTheory
+transTheory trSig trForm (sign, sens) = undefined
+
+{-
+-- -------------------------- Signature -----------------------------
+
+transFuncMap :: IdTypeSPIdMap ->
+                CSign.Sign e f ->
+                (FuncMap, IdTypeSPIdMap)
+transFuncMap idMap sign = Map.foldWithKey toSPOpType (Map.empty, idMap)
+  . MapSet.toMap $ CSign.opMap sign
+    where toSPOpType iden typeSet (fm, im) =
+              if isSingleton typeSet then
+                 let oType = Set.findMin typeSet
+                     sid' = sid fm oType
+                 in (Map.insert sid' (Set.singleton (transOpType oType)) fm,
+                      insertSPId iden (COp oType) sid' im)
+              else foldr insOIdSet (fm, im)
+                $ Rel.partSet (leqF sign) typeSet
+              where insOIdSet tset (fm', im') =
+                        let sid' = sid fm' (Set.findMax tset)
+                        in (Map.insert sid' (Set.map transOpType tset) fm',
+                            Set.fold (\ x -> insertSPId iden (COp x) sid')
+                                     im' tset)
+                    sid fma t = disSPOId CKOp (transId CKOp iden)
+                                       (uType (transOpType t))
+                                       (Set.union (Map.keysSet fma)
+                                           (elemsSPIdSet idMap))
+                    uType t = fst t ++ [snd t]
+
+transPredMap :: IdTypeSPIdMap -> CSign.Sign e f
+  -> (SPSign.PredMap, IdTypeSPIdMap)
+transPredMap idMap sign =
+    Map.foldWithKey toSPPredType (Map.empty, idMap) . MapSet.toMap
+      $ CSign.predMap sign
+    where toSPPredType iden typeSet (fm, im) =
+              if isSingleton typeSet then
+                let pType = Set.findMin typeSet
+                    sid' = sid fm pType
+                in (Map.insert sid' (Set.singleton (transPredType pType)) fm
+                   , insertSPId iden (CPred pType) sid' im)
+              else case -- genPredImplicationDisjunctions sign $
+                        Rel.partSet (leqP sign) typeSet of
+                     splitTySet -> foldr insOIdSet (fm, im) splitTySet
+              where insOIdSet tset (fm', im') =
+                        let sid' = sid fm' (Set.findMax tset)
+                        in (Map.insert sid' (Set.map transPredType tset) fm',
+                            Set.fold (\ x -> insertSPId iden (CPred x) sid')
+                                     im' tset)
+                    sid fma t = disSPOId CKPred (transId CKPred iden)
+                                       (transPredType t)
+                                       (Set.union (Map.keysSet fma)
+                                           (elemsSPIdSet idMap))
+
+{- left typing implies right typing; explicit overloading sentences
+are generated from these pairs, type TypePair = (CType,CType) -}
+
+-- | disambiguation of TPTP Identifiers
+disSPOId :: CKType -- ^ Type of CASl identifier
+         -> TPTPId -- ^ translated CASL Identifier
+         -> [TPTPId] {- ^ translated Sort Symbols of the profile
+                           (maybe empty) -}
+         -> Set.Set TPTPId -- ^ TPTP Identifiers already in use
+         -> TPTPId {- ^ fresh Identifier generated from second argument;
+    if the identifier was not in the set this is just the second argument -}
+disSPOId cType sid ty idSet
+    | checkIdentifier cType (show sid) && not (lkup $ show sid) = sid
+    | otherwise = let nSid = disSPOId' $ show sid
+                  in assert (checkIdentifier cType nSid) $ mkSimpleId nSid
+    where disSPOId' sid'
+              | not (lkup asid) = asid
+              | otherwise = addType asid 1
+              where asid = sid' ++ case cType of
+                        CKSort -> ""
+                        CKVar -> ""
+                        x -> '_' : show (length ty - (case x of
+                                                    CKOp -> 1
+                                                    _ -> 0))
+                    addType res n =
+                        let nres = asid ++ '_' : fc n
+                            nres' = nres ++ '_' : show n
+                        in if nres == res
+                           then if nres' == res
+                                then error ("SuleCFOL2TPTP: "
+                                            ++ "cannot calculate"
+                                            ++ " unambiguous id for "
+                                            ++ show sid ++ " with type "
+                                            ++ show ty
+                                            ++ " and nres = " ++ nres
+                                            ++ "\n with idSet "
+                                            ++ show idSet)
+                                else if not (lkup nres')
+                                     then nres'
+                                     else addType nres (n + 1)
+                           else if not (lkup nres)
+                                then nres
+                                else addType nres (n + 1)
+          lkup x = Set.member (mkSimpleId x) idSet
+          fc n = concatMap (take n . show) ty
+
+transOpType :: CSign.OpType -> ([TPTPId], TPTPId)
+transOpType ot = (map transIdSort (CSign.opArgs ot),
+                  transIdSort (CSign.opRes ot))
+
+transPredType :: CSign.PredType -> [TPTPId]
+transPredType = map transIdSort . CSign.predArgs
+
+-- | translate every Id as Sort
+transIdSort :: Id -> TPTPId
+transIdSort = transId CKSort
+
+integrateGenerated :: IdTypeSPIdMap -> [Named (FORMULA f)] ->
+                      SPSign.Sign ->
+                      Result (IdTypeSPIdMap, SPSign.Sign, [Named Sentence])
+integrateGenerated idMap genSens sign
+    | null genSens = return (idMap, sign, [])
+    | otherwise =
+      case partition isAxiom genSens of
+      (genAxs, genGoals) ->
+        case makeGenGoals sign idMap genGoals of
+        (newPredsMap, idMap', goalsAndSentences) ->
+          -- makeGens must not invent new sorts
+          case makeGens sign idMap' genAxs of
+          Result dias mv ->
+            maybe (Result dias Nothing)
+                  (\ (spSortMap_makeGens, newOpsMap, idMap'', exhaustSens) ->
+                      let spSortMap' =
+                            Map.union spSortMap_makeGens (SPSign.sortMap sign)
+                      in assert (Map.size spSortMap' ==
+                                    Map.size (SPSign.sortMap sign))
+                             (Result dias
+                                     (Just (idMap'',
+                                            sign { sortMap = spSortMap'
+                                                 , funcMap =
+                                                     Map.union (funcMap sign)
+                                                               newOpsMap
+                                                 , SPSign.predMap =
+                                                     Map.union
+                                                     (SPSign.predMap sign)
+                                                               newPredsMap},
+                                            mkInjSentences idMap' newOpsMap ++
+                                            goalsAndSentences ++
+                                            exhaustSens))))
+                  mv
+
+makeGenGoals :: SPSign.Sign -> IdTypeSPIdMap -> [Named (FORMULA f)]
+             -> (SPSign.PredMap, IdTypeSPIdMap, [Named Sentence])
+makeGenGoals sign idMap fs =
+  let Result _ res = makeGens sign idMap fs
+  in case res of
+   Nothing -> (Map.empty, idMap, [])
+   Just (_, _, idMap', fs') ->
+     let fs'' = map (\ s -> s {isAxiom = False}) fs'
+     in (Map.empty, idMap', fs'')
+ {- Sort_gen_ax as goals only implemented through a hack."
+sketch of full implementation :
+   - invent new predicate P that is supposed to hold on
+     every x in the (freely) generated sort.
+   - generate formulas with this predicate for each constructor.
+   - recursive constructors hold if the predicate holds on the variables
+   - prove forall x . P(x)
+
+  implementation is postponed as this translation does not produce
+only one goal, but additional symbols, axioms and a goal
+ -}
+
+makeGens :: SPSign.Sign -> IdTypeSPIdMap -> [Named (FORMULA f)]
+         -> Result (SortMap, FuncMap, IdTypeSPIdMap, [Named Sentence])
+            {- ^ The list of TPTP sentences gives exhaustiveness for
+            generated sorts with only constant constructors
+            and\/or subsort injections, by simply translating
+            such sort generation constraints to disjunctions -}
+makeGens sign idMap fs =
+    case foldl (makeGen sign) (return (Map.empty, idMap, [], [])) fs of
+    Result ds mv ->
+        maybe (Result ds Nothing)
+              (\ (opM, idMap', pairs, exhaustSens) ->
+                   Result ds
+                      (Just (foldr (uncurry Map.insert)
+                                   Map.empty pairs,
+                             opM, idMap', exhaustSens)))
+              mv
+
+makeGen :: SPSign.Sign
+        -> Result (FuncMap, IdTypeSPIdMap,
+                   [(TPTPId, Maybe Generated)], [Named Sentence])
+        -> Named (FORMULA f)
+        -> Result (FuncMap, IdTypeSPIdMap,
+                   [(TPTPId, Maybe Generated)], [Named Sentence])
+makeGen sign r@(Result ods omv) nf =
+    maybe (Result ods Nothing) process omv where
+ process (oMap, iMap, rList, eSens) = case sentence nf of
+  Sort_gen_ax constrs free ->
+      if null mp then (case mapAccumL makeGenP (oMap, iMap, []) srts of
+                       ((oMap', iMap', eSens'), genPairs) ->
+                          Result ods (Just (oMap', iMap',
+                                            rList ++ genPairs,
+                                            eSens ++ eSens')))
+                 else mkError ("Sort generation constraints with " ++
+                               "non-injective sort mappings cannot " ++
+                               "be translated to TPTP") mp
+      where -- compute standard form of sort generation constraints
+            (srts, ops, mp) = recover_Sort_gen_ax constrs
+            -- test whether a constructor belongs to a specific sort
+            hasTheSort s (Qual_op_name _ ot _) = s == res_OP_TYPE ot
+            hasTheSort _ _ = error "SuleCFOL2TPTP.hasTheSort"
+            mkGen = Just . Generated free . map fst
+            -- translate constraint for one sort
+            makeGenP (opM, idMap, exSens) s = ((newOpMap, newIdMap,
+                                                exSens ++ eSen ops_of_s s),
+                                        (s', mkGen cons))
+                where ((newOpMap, newIdMap), cons) =
+                          mapAccumL mkInjOp (opM, idMap) ops_of_s
+                      ops_of_s = List.filter (hasTheSort s) ops
+                      s' = fromMaybe (error $ "SuleCFOL2TPTP.makeGen: "
+                                        ++ "No mapping found for '"
+                                        ++ shows s "'")
+                                 (lookupSPId s CSort idMap)
+            {- is an operation a constant or an injection ?
+            (we currently can translate only these) -}
+            isConstorInj o =
+              nullArgs o || isInjName (opSymbName o)
+            -- generate sentences for one sort
+            eSen os s = [ makeNamed (newName s) (SPQuantTerm SPForall
+                            [typedVarTerm var1
+                             $ fromMaybe (error "lookup failed")
+                             (lookupSPId s CSort iMap)] (disj var1 os))
+                        | all isConstorInj os ]
+            -- generate sentences: compute one disjunct (for one alternative)
+            mkDisjunct v o@(Qual_op_name _ (Op_type _ args res _) _) =
+              -- a constant? then just compare with it
+              case args of
+                [] -> mkEq (varTerm v) $ varTerm $ transOPSYMB iMap o
+                {- an injection? then quantify existentially
+                (for the injection's argument)
+                since injections are identities, we can leave them out -}
+                [arg] -> let ta = transIdSort arg in SPQuantTerm SPExists
+                  [ typedVarTerm var2 ta ]
+                   $ mkEq (varTerm v)
+                   $ if Rel.member ta (transIdSort res)
+                        $ SPSign.sortRel sign
+                     then varTerm var2
+                     else compTerm (spSym $ transOPSYMB iMap o) [varTerm var2]
+                _ -> error "cannot handle ordinary constructors"
+            mkDisjunct _ _ = error "unqualified operation symbol"
+            -- make disjunction out of all the alternatives
+            disj v os = case map (mkDisjunct v) os of
+                        [] -> error "SuleCFOL2TPTP: no constructors found"
+                        [x] -> x
+                        xs -> foldl1 mkDisj xs
+            -- generate enough variables
+            var = fromJust (find (\ x ->
+                      not (Set.member (mkSimpleId x) usedIds))
+                            ("X" : ['X' : show i | i <- [(1 :: Int) ..]]))
+            var1 = mkSimpleId var
+            var2 = mkSimpleId $ var ++ "a"
+            varTerm = simpTerm . spSym
+            newName s = "ga_exhaustive_generated_sort_" ++ show (pretty s)
+            usedIds = elemsSPIdSet iMap
+            nullArgs o = case o of
+                         Qual_op_name _ (Op_type _ args _ _) _ -> null args
+                         _ -> error "SuleCFOL2TPTP: wrong constructor"
+  _ -> r
+
+mkInjOp :: (FuncMap, IdTypeSPIdMap)
+        -> OP_SYMB
+        -> ((FuncMap, IdTypeSPIdMap),
+            (TPTPId, ([TPTPId], TPTPId)))
+mkInjOp (opM, idMap) qo@(Qual_op_name i ot _) =
+    if isInjName i && isNothing lsid
+       then ((Map.insert i' (Set.singleton (transOpType ot')) opM,
+              insertSPId i (COp ot') i' idMap),
+             (i', transOpType ot'))
+       else ((opM, idMap),
+             (fromMaybe err lsid,
+              transOpType ot'))
+    where i' = disSPOId CKOp (transId CKOp i)
+                        (utype (transOpType ot')) usedNames
+          ot' = CSign.toOpType ot
+          lsid = lookupSPId i (COp ot') idMap
+          usedNames = Map.keysSet opM
+          err = error ("SuleCFOL2TPTP.mkInjOp: Cannot find SPId for '"
+                       ++ show qo ++ "'")
+          utype t = fst t ++ [snd t]
+mkInjOp _ _ = error "SuleCFOL2TPTP.mkInjOp: Wrong constructor!!"
+
+mkInjSentences :: IdTypeSPIdMap
+               -> FuncMap
+               -> [Named Sentence]
+mkInjSentences idMap = Map.foldWithKey genInjs []
+    where genInjs k tset fs = Set.fold (genInj k) fs tset
+          genInj k (args, res) =
+              assert (length args == 1)
+                     . (makeNamed (newName (show k) (show $ head args)
+                                 $ show res)
+                       (SPQuantTerm SPForall
+                              [typedVarTerm var $ head args]
+                             (compTerm SPEqual
+                                       [compTerm (spSym k)
+                                                 [simpTerm (spSym var)],
+                                        simpTerm (spSym var)])) :)
+          var = mkSimpleId $
+            fromJust (find (\ x -> not (Set.member (mkSimpleId x) usedIds))
+                          ("Y" : [ 'Y' : show i | i <- [(1 :: Int) ..]]))
+          newName o a r = "ga_" ++ o ++ '_' : a ++ '_' : r ++ "_id"
+          usedIds = elemsSPIdSet idMap
+
+{- |
+  Translate a CASL signature into TPTP signature 'TPTP.Sign.Sign'.
+  Before translating, eqPredicate symbols where removed from signature.
+-}
+transSign :: CSign.Sign f e -> (SPSign.Sign, IdTypeSPIdMap)
+transSign sign = (SPSign.emptySign { SPSign.sortRel =
+                                 Rel.map transIdSort (CSign.sortRel sign)
+                           , sortMap = spSortMap
+                           , funcMap = fMap
+                           , SPSign.predMap = pMap
+                           , singleSorted = isSingleSorted sign
+                           }
+                 , idMap'')
+    where (spSortMap, idMap) =
+            Set.fold (\ i (sm, im) ->
+                          let sid = disSPOId CKSort (transIdSort i)
+                                       [mkSimpleId $ take 20 (cycle "So")]
+                                       (Map.keysSet sm)
+                          in (Map.insert sid Nothing sm,
+                              insertSPId i CSort sid im))
+                                        (Map.empty, Map.empty)
+                                        (CSign.sortSet sign)
+          (fMap, idMap') = transFuncMap idMap sign
+          (pMap, idMap'') = transPredMap idMap' sign
+
+nonEmptySortSens :: CSign.Sign f e -> IdTypeSPIdMap -> SortMap -> [Named Sentence]
+nonEmptySortSens sig idMap sm =
+  let es = Set.difference (sortSet sig) $ emptySortSet sig
+  in [ extSen s | nes <- Set.toList es
+     , let s = fromMaybe (transIdSort nes) $ lookupSPId nes CSort idMap
+     , Set.member s $ Map.keysSet sm ]
+    where extSen s = makeNamed ("ga_non_empty_sort_" ++ show s) $ SPQuantTerm
+                     SPExists [varTerm] $ compTerm (spSym s) [varTerm]
+              where varTerm = simpTerm $ spSym $ mkSimpleId $ newVar s
+          newVar s = fromJust $ find (/= show s)
+                          $ "Y" : ['Y' : show i | i <- [(1 :: Int) ..]]
+
+disjointTopSorts :: CSign.Sign f e -> IdTypeSPIdMap -> [Named Sentence]
+disjointTopSorts sign idMap = let
+    s = CSign.sortSet sign
+    sl = Rel.partSet (haveCommonSupersorts True sign) s
+    l = map (\ p -> case keepMinimals1 False sign id $ Set.toList p of
+                       [e] -> e
+                       _ -> error "disjointTopSorts") sl
+    pairs ls = case ls of
+      s1 : r -> map (\ s2 -> (s1, s2)) r ++ pairs r
+      _ -> []
+    v1 = simpTerm $ spSym $ mkSimpleId "Y1"
+    v2 = simpTerm $ spSym $ mkSimpleId "Y2"
+    in map (\ (t1, t2) ->
+         makeNamed ("disjoint_sorts_" ++ shows t1 "_" ++ show t2) $
+           SPQuantTerm SPForall
+               [ compTerm (spSym t1) [v1]
+               , compTerm (spSym t2) [v2]]
+              $ compTerm SPNot [mkEq v1 v2]) $ pairs $
+                map (\ t -> fromMaybe (transIdSort t)
+                     $ lookupSPId t CSort idMap) l
+
+transTheory :: (FormExtension f, Eq f) =>
+               SignTranslator f e
+            -> FormulaTranslator f e
+            -> (CSign.Sign f e, [Named (FORMULA f)])
+            -> Result TPTPTheory
+transTheory trSig trForm (sign, sens) =
+  let (nsig, sm) = removeSortCycles sign
+  in transTheoryAux trSig trForm (nsig
+     , map (mapNamed $ mapMorphForm (return id)
+                 ((embedMorphism () sign nsig) { sort_map = sm })) sens)
+
+transTheoryAux :: (FormExtension f, Eq f) =>
+               SignTranslator f e
+            -> FormulaTranslator f e
+            -> (CSign.Sign f e, [Named (FORMULA f)])
+            -> Result TPTPTheory
+transTheoryAux trSig trForm (sign, sens) =
+  fmap (trSig sign (CSign.extendedInfo sign))
+    (case transSign (filterPreds $ foldl insInjOps sign genAxs) of
+     (tSign, idMap) ->
+        do (idMap', tSign', sentencesAndGoals) <-
+               integrateGenerated idMap genSens tSign
+           let tSignElim = if SPSign.singleSortNotGen tSign'
+                             then tSign' {sortMap = Map.empty} else tSign'
+           return (tSignElim,
+                    disjointTopSorts sign idMap' ++
+                    sentencesAndGoals ++
+                    nonEmptySortSens sign idMap' (sortMap tSignElim) ++
+                    map (mapNamed (transFORM (singleSortNotGen tSign') eqPreds
+                                     sign idMap' trForm))
+                        realSens'))
+
+  where (genSens, realSens) =
+            partition (\ s -> case sentence s of
+                              Sort_gen_ax _ _ -> True
+                              _ -> False) sens
+        (eqPreds, realSens') = foldl findEqPredicates (Set.empty, []) realSens
+        genAxs = filter isAxiom genSens
+        insInjOps sig s =
+              case sentence s of
+              (Sort_gen_ax constrs _) ->
+                 case recover_Sort_gen_ax constrs of
+                 (_, ops, mp) -> assert (null mp) (insertInjOps sig ops)
+              _ -> error "SuleCFOL2TPTP.transTheory.insInjOps"
+        filterPreds sig =
+              sig { CSign.predMap = MapSet.difference
+                (CSign.predMap sig)
+                (Set.fold (\ pl -> case pl of
+                      Pred_name pn -> MapSet.insert pn (PredType [])
+                      Qual_pred_name pn pt _ ->
+                        MapSet.insert pn $ CSign.toPredType pt)
+                    MapSet.empty eqPreds) }
+
+{- |
+ Finds definitions (Equivalences) where one side is a binary predicate
+ and the other side is a built-in equality application (Strong_equation).
+ The given Named (FORMULA f) is checked for this and if so, will be put
+ into the set of such predicates.
+-}
+findEqPredicates :: (Eq f) => (Set.Set PRED_SYMB, [Named (FORMULA f)])
+                    -- ^ previous list of found predicates and valid sentences
+                 -> Named (FORMULA f)
+                    -- ^ sentence to check
+                 -> (Set.Set PRED_SYMB, [Named (FORMULA f)])
+findEqPredicates (eqPreds, sens) sen =
+    case sentence sen of
+      Quantification Universal var_decl quantFormula _ ->
+        isEquiv (foldl (\ vList (Var_decl v s _) ->
+                          vList ++ map (\ vl -> (vl, s)) v)
+                       [] var_decl)
+                quantFormula
+      _ -> validSens
+
+  where
+    validSens = (eqPreds, sens ++ [sen])
+    isEquiv vars qf =
+      {- Exact two variables are checked if they have the same Sort.
+      If more than two variables should be compared, use foldl. -}
+      if (length vars == 2) && (snd (head vars) == snd (vars !! 1))
+       then case qf of
+          Relation f1 Equivalence f2 _ -> isStrong_eq vars f1 f2
+          _ -> validSens
+        else validSens
+    isStrong_eq vars f1 f2 =
+      let f1n = case f1 of
+                  Equation _ Strong _ _ -> f1
+                  _ -> f2
+          f2n = case f1 of
+                  Equation _ Strong _ _ -> f2
+                  _ -> f1
+      in case f1n of
+            Equation eq_t1 Strong eq_t2 _ -> case f2n of
+              Predication eq_pred_symb pterms _ ->
+                if Map.toList (Map.fromList $ sortedVarTermList pterms)
+                     == Map.toList (Map.fromList vars)
+                 && Map.toList
+                         (Map.fromList $ sortedVarTermList [eq_t1, eq_t2])
+                     == Map.toList (Map.fromList vars)
+                  then (Set.insert eq_pred_symb eqPreds, sens)
+                  else validSens
+              _ -> validSens
+            _ -> validSens
+
+{- |
+  Creates a list of (VAR, SORT) out of a list of TERMs. Only Qual_var TERMs
+  are inserted which will be checked using
+  'Comorphisms.SuleCFOL2TPTP.hasSortedVarTerm'.
+-}
+sortedVarTermList :: [TERM f] -> [(VAR, SORT)]
+sortedVarTermList = mapMaybe hasSortedVarTerm
+
+{- |
+  Finds a 'CASL.AS_Basic_CASL.Qual_var' term recursively if super term(s) is
+  'CASL.AS_Basic_CASL.Sorted_term' or 'CASL.AS_Basic_CASL.Cast'.
+-}
+hasSortedVarTerm :: TERM f -> Maybe (VAR, SORT)
+hasSortedVarTerm t = case t of
+    Qual_var v s _ -> Just (v, s)
+    Sorted_term tx _ _ -> hasSortedVarTerm tx
+    Cast tx _ _ -> hasSortedVarTerm tx
+    _ -> Nothing
+
+
+-- ---------------------------- Formulas ------------------------------
+
+transOPSYMB :: IdTypeSPIdMap -> OP_SYMB -> TPTPId
+transOPSYMB idMap ~qo@(Qual_op_name op ot _) =
+    fromMaybe (error $ "SuleCFOL2TPTP.transOPSYMB: unknown op: " ++ show qo)
+        (lookupSPId op (COp (CSign.toOpType ot)) idMap)
+
+transPREDSYMB :: IdTypeSPIdMap -> PRED_SYMB -> TPTPId
+transPREDSYMB idMap ~qp@(Qual_pred_name p pt _) = fromMaybe
+    (error $ "SuleCFOL2TPTP.transPREDSYMB: unknown pred: " ++ show qp)
+          (lookupSPId p (CPred (CSign.toPredType pt)) idMap)
+
+-- | Translate the quantifier
+quantify :: QUANTIFIER -> SPQuantSym
+quantify q = case q of
+    Universal -> SPForall
+    Existential -> SPExists
+    Unique_existential ->
+      error "SuleCFOL2TPTP: no translation for existential quantification."
+
+transVarTup :: (Set.Set TPTPId, IdTypeSPIdMap) ->
+               (VAR, SORT) ->
+               ((Set.Set TPTPId, IdTypeSPIdMap),
+                (TPTPId, TPTPId))
+                {- ^ ((new set of used Ids, new map of Ids to original Ids),
+                (var as sp_Id, sort as sp_Id)) -}
+transVarTup (usedIds, idMap) (v, s) =
+    ((Set.insert sid usedIds,
+      insertSPId vi (CVar s) sid $ deleteSPId vi (CVar s) idMap)
+    , (sid, spSort))
+    where spSort = fromMaybe
+            (error $ "SuleCFOL2TPTP: translation of sort \"" ++
+             showDoc s "\" not found")
+            (lookupSPId s CSort idMap)
+          vi = simpleIdToId v
+          sid = disSPOId CKVar (transId CKVar vi)
+                    [mkSimpleId $ "_Va_" ++ showDoc s "_Va"]
+                    usedIds
+
+transFORM :: (Eq f, FormExtension f) => Bool -- ^ single sorted flag
+          -> Set.Set PRED_SYMB -- ^ list of predicates to substitute
+          -> CSign.Sign f e
+          -> IdTypeSPIdMap -> FormulaTranslator f e
+          -> FORMULA f -> Sentence
+transFORM siSo eqPreds sign i tr phi = transFORMULA siSo sign i tr phi'
+    where phi' = codeOutConditionalF id
+                     (codeOutUniqueExtF id id
+                          (substEqPreds eqPreds id phi))
+
+
+transFORMULA :: FormExtension f => Bool -> CSign.Sign f e -> IdTypeSPIdMap
+             -> FormulaTranslator f e -> FORMULA f -> Sentence
+transFORMULA siSo sign idMap tr frm = case frm of
+  Quantification qu vdecl phi _ ->
+    SPQuantTerm (quantify qu)
+                    vList
+                    (transFORMULA siSo sign idMap' tr phi)
+    where ((_, idMap'), vList) =
+              mapAccumL (\ acc e ->
+                  let (acc', e') = transVarTup acc e
+                  in (acc', (if siSo then simpTerm . spSym . fst
+                                     else uncurry typedVarTerm)
+                            e'))
+                        (sidSet, idMap) (flatVAR_DECLs vdecl)
+          sidSet = elemsSPIdSet idMap
+  Junction j phis _ -> let
+    (n, op) = if j == Dis then (SPFalse, mkDisj) else (SPTrue, mkConj)
+    in if null phis then simpTerm n else
+    foldl1 op (map (transFORMULA siSo sign idMap tr) phis)
+  Relation phi1 c phi2 _ -> compTerm
+    (if c == Equivalence then SPEquiv else SPImplies)
+    [transFORMULA siSo sign idMap tr phi1, transFORMULA siSo sign idMap tr phi2]
+  Negation phi _ -> compTerm SPNot [transFORMULA siSo sign idMap tr phi]
+  Atom b _ -> simpTerm $ if b then SPTrue else SPFalse
+  Predication psymb args _ -> compTerm (spSym (transPREDSYMB idMap psymb))
+           (map (transTERM siSo sign idMap tr) args)
+  Equation t1 _ t2 _ -> -- sortOfTerm t1 == sortOfTerm t2
+       mkEq (transTERM siSo sign idMap tr t1) (transTERM siSo sign idMap tr t2)
+  ExtFORMULA phi -> tr sign idMap phi
+  Definedness _ _ -> simpTerm SPTrue -- assume totality
+  Membership t s _ -> if siSo then simpTerm SPTrue else
+    maybe (error ("SuleCFOL2TPTP.tF: no TPTP Id found for \"" ++
+                  showDoc s "\""))
+          (\ si -> compTerm (spSym si) [transTERM siSo sign idMap tr t])
+          (lookupSPId s CSort idMap)
+  _ -> error
+    $ "SuleCFOL2TPTP.transFORMULA: unknown FORMULA '" ++ showDoc frm "'"
+
+transTERM :: FormExtension f => Bool -> CSign.Sign f e -> IdTypeSPIdMap
+          -> FormulaTranslator f e -> TERM f -> Sentence
+transTERM siSo sign idMap tr term = case term of
+  Qual_var v s _ -> maybe
+    (error
+         ("SuleCFOL2TPTP.tT: no TPTP Id found for \"" ++ showDoc v "\""))
+        (simpTerm . spSym) (lookupSPId (simpleIdToId v) (CVar s) idMap)
+  Application opsymb args _ ->
+    compTerm (spSym (transOPSYMB idMap opsymb))
+             (map (transTERM siSo sign idMap tr) args)
+  Conditional _t1 _phi _t2 _ ->
+    error "SuleCFOL2TPTP.transTERM: Conditional terms must be coded out."
+  Sorted_term t _s _ -> -- sortOfTerm t isSubsortOf s
+    transTERM siSo sign idMap tr t
+  Cast t _s _ -> -- s isSubsortOf sortOfTerm t
+    transTERM siSo sign idMap tr t
+  _ -> error ("SuleCFOL2TPTP.transTERM: unknown TERM '" ++ showDoc term "'")
+
+isSingleSorted :: CSign.Sign f e -> Bool
+isSingleSorted sign =
+  Set.size (CSign.sortSet sign) == 1
+  && Set.null (emptySortSet sign) -- empty sorts need relativization
+
+-}
