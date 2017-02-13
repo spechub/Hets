@@ -54,8 +54,11 @@ import CASL.Inject
 import CASL.Simplify
 import CASL.ToDoc
 
-import TPTP.Sign as SPSign
+import TPTP.AS as TAS
+import TPTP.Sign as TSign
 import TPTP.Logic
+import TPTP.Sublogic
+import TPTP.Translate
 
 data PlainTPTP = PlainTPTP
 
@@ -70,7 +73,7 @@ suleCFOL2TPTP = GenSuleCFOL2TPTP PlainTPTP
 
 
 -- | TPTP theories
-type TPTPTheory = (SPSign.Sign, [Named Sentence])
+type TPTPTheory = (TSign.Sign, [Named Sentence])
 
 data CType = CSort
            | CVar SORT
@@ -148,15 +151,15 @@ instance Show a => Comorphism (GenSuleCFOL2TPTP a)
                CASLSign
                CASLMor
                CSign.Symbol RawSymbol ProofTree
-               TPTP Sublogic BASIC_SPEC Sentence () ()
-               Sign Morphism Symbol () ProofTree where
+               TPTP.Logic.TPTP Sublogic TAS.BASIC_SPEC Sentence () ()
+               TSign.Sign TSign.Morphism TSign.Symbol () ProofTree where
     sourceLogic (GenSuleCFOL2TPTP _) = CASL
     sourceSublogic (GenSuleCFOL2TPTP a) = SL.cFol
                       { sub_features = LocFilSub
                       , cons_features = emptyMapConsFeature
                       , has_empty_sorts = show a == show PlainTPTP }
-    targetLogic (GenSuleCFOL2TPTP _) = TPTP
-    mapSublogic cid sl = FOF
+    targetLogic (GenSuleCFOL2TPTP _) = TPTP.Logic.TPTP
+    mapSublogic cid sl = Just FOF
     map_theory (GenSuleCFOL2TPTP a) = transTheory sigTrCASL formTrCASL
     has_model_expansion (GenSuleCFOL2TPTP _) = True
 
@@ -195,7 +198,7 @@ transFuncMap idMap sign = Map.foldWithKey toSPOpType (Map.empty, idMap)
                     uType t = fst t ++ [snd t]
 
 transPredMap :: IdTypeSPIdMap -> CSign.Sign e f
-  -> (SPSign.PredMap, IdTypeSPIdMap)
+  -> (TSign.PredMap, IdTypeSPIdMap)
 transPredMap idMap sign =
     Map.foldWithKey toSPPredType (Map.empty, idMap) . MapSet.toMap
       $ CSign.predMap sign
@@ -276,8 +279,8 @@ transIdSort :: Id -> TPTPId
 transIdSort = transId CKSort
 
 integrateGenerated :: IdTypeSPIdMap -> [Named (FORMULA f)] ->
-                      SPSign.Sign ->
-                      Result (IdTypeSPIdMap, SPSign.Sign, [Named Sentence])
+                      TSign.Sign ->
+                      Result (IdTypeSPIdMap, TSign.Sign, [Named Sentence])
 integrateGenerated idMap genSens sign
     | null genSens = return (idMap, sign, [])
     | otherwise =
@@ -291,26 +294,26 @@ integrateGenerated idMap genSens sign
             maybe (Result dias Nothing)
                   (\ (spSortMap_makeGens, newOpsMap, idMap'', exhaustSens) ->
                       let spSortMap' =
-                            Map.union spSortMap_makeGens (SPSign.sortMap sign)
+                            Map.union spSortMap_makeGens (TSign.sortMap sign)
                       in assert (Map.size spSortMap' ==
-                                    Map.size (SPSign.sortMap sign))
+                                    Map.size (TSign.sortMap sign))
                              (Result dias
                                      (Just (idMap'',
                                             sign { sortMap = spSortMap'
                                                  , funcMap =
                                                      Map.union (funcMap sign)
                                                                newOpsMap
-                                                 , SPSign.predMap =
+                                                 , TSign.predMap =
                                                      Map.union
-                                                     (SPSign.predMap sign)
+                                                     (TSign.predMap sign)
                                                                newPredsMap},
                                             mkInjSentences idMap' newOpsMap ++
                                             goalsAndSentences ++
                                             exhaustSens))))
                   mv
 
-makeGenGoals :: SPSign.Sign -> IdTypeSPIdMap -> [Named (FORMULA f)]
-             -> (SPSign.PredMap, IdTypeSPIdMap, [Named Sentence])
+makeGenGoals :: TSign.Sign -> IdTypeSPIdMap -> [Named (FORMULA f)]
+             -> (TSign.PredMap, IdTypeSPIdMap, [Named Sentence])
 makeGenGoals sign idMap fs =
   let Result _ res = makeGens sign idMap fs
   in case res of
@@ -330,7 +333,7 @@ sketch of full implementation :
 only one goal, but additional symbols, axioms and a goal
  -}
 
-makeGens :: SPSign.Sign -> IdTypeSPIdMap -> [Named (FORMULA f)]
+makeGens :: TSign.Sign -> IdTypeSPIdMap -> [Named (FORMULA f)]
          -> Result (SortMap, FuncMap, IdTypeSPIdMap, [Named Sentence])
             {- ^ The list of TPTP sentences gives exhaustiveness for
             generated sorts with only constant constructors
@@ -347,7 +350,7 @@ makeGens sign idMap fs =
                              opM, idMap', exhaustSens)))
               mv
 
-makeGen :: SPSign.Sign
+makeGen :: TSign.Sign
         -> Result (FuncMap, IdTypeSPIdMap,
                    [(TPTPId, Maybe Generated)], [Named Sentence])
         -> Named (FORMULA f)
@@ -404,7 +407,7 @@ makeGen sign r@(Result ods omv) nf =
                   [ typedVarTerm var2 ta ]
                    $ mkEq (varTerm v)
                    $ if Rel.member ta (transIdSort res)
-                        $ SPSign.sortRel sign
+                        $ TSign.sortRel sign
                      then varTerm var2
                      else compTerm (spSym $ transOPSYMB iMap o) [varTerm var2]
                 _ -> error "cannot handle ordinary constructors"
@@ -475,12 +478,12 @@ mkInjSentences idMap = Map.foldWithKey genInjs []
   Translate a CASL signature into TPTP signature 'TPTP.Sign.Sign'.
   Before translating, eqPredicate symbols where removed from signature.
 -}
-transSign :: CSign.Sign f e -> (SPSign.Sign, IdTypeSPIdMap)
-transSign sign = (SPSign.emptySign { SPSign.sortRel =
+transSign :: CSign.Sign f e -> (TSign.Sign, IdTypeSPIdMap)
+transSign sign = (TSign.emptySign { TSign.sortRel =
                                  Rel.map transIdSort (CSign.sortRel sign)
                            , sortMap = spSortMap
                            , funcMap = fMap
-                           , SPSign.predMap = pMap
+                           , TSign.predMap = pMap
                            , singleSorted = isSingleSorted sign
                            }
                  , idMap'')
@@ -551,7 +554,7 @@ transTheoryAux trSig trForm (sign, sens) =
      (tSign, idMap) ->
         do (idMap', tSign', sentencesAndGoals) <-
                integrateGenerated idMap genSens tSign
-           let tSignElim = if SPSign.singleSortNotGen tSign'
+           let tSignElim = if TSign.singleSortNotGen tSign'
                              then tSign' {sortMap = Map.empty} else tSign'
            return (tSignElim,
                     disjointTopSorts sign idMap' ++
