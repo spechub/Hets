@@ -10,6 +10,37 @@ Stability   :  provisional
 Portability :  non-portable (imports Logic.Logic)
 
 The translating comorphism from a CASL subset to TPTP.
+
+Reflections on the theory of this comorphism:
+- sorts are represented as predicates (TPTP is unsorted)
+- we are in the Sule sublogic of CASL, hence each sort is subsort of
+  one top-sorts (top-sort = maximum sort of its connected component)
+- the top-sorts are represented as disjoint predicates
+- subsorting is represented as predicate containment
+- the model expansion property only holds up to isomorphism
+  (which does not matter, because satisfaction is isomorphism invariant)
+  Namely, for a CASL model, take an isomorphic model where the carriers
+  of top-sorts are made disjoint
+- a function f:s1 x ... x sn -> s is represented by a function f
+  plus axiom forall x1,...,xn . s1(x1) /\ ... /\ sn(xn) => s(f(x1,...xn))
+- a predicate p:s1 x ... x sn is represented by a predicate p
+  (no axiom needed)
+- we must ensure that this is compatible with overloading.
+  Therefore, if f:s1 x ... x sn -> s and f:t1 x ... x tn -> t and
+  for all i=1..n, ui and si are in the same connected component, but
+  f:s1 x ... x sn -> s and f:t1 x ... x tn -> t are not in the CASL overloading
+  relation, they must be disambiguated with their type.
+  Similarly for predicates.
+  (As a first step, we could just raise an error in the case, since
+  this will only occur in very seldom cases.)
+- sentence translation is done by omitting types of function and predicate
+  symbols and by relativising quantifiers with the predicate corresponding
+  to the sort of the quantified variable
+- model reduction translates a TPTP model to a CASL model with
+  - carriers = extensions of corresponding predicates
+  - functions = restrictions of functions to the appropriate carriers.
+    The above axioms ensure that this gives a total function
+  - predicates = restrictions of functions to the appropriate carriers.
 -}
 
 module Comorphisms.SuleCFOL2TPTP
