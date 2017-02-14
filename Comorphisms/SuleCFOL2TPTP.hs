@@ -175,16 +175,11 @@ transTheory trSig trForm (sign, sens) = undefined
 
 transFuncMap :: IdTypeSPIdMap ->
                 CSign.Sign e f ->
-                (FuncMap, IdTypeSPIdMap)
-transFuncMap idMap sign = Map.foldWithKey toSPOpType (Map.empty, idMap)
+                (TSign.FunctorSet, IdTypeSPIdMap, [Named Sentence])
+transFuncMap idMap sign = Map.foldWithKey toSPOpType (Set.empty, idMap,[])
   . MapSet.toMap $ CSign.opMap sign
     where toSPOpType iden typeSet (fm, im) =
-              if isSingleton typeSet then
-                 let oType = Set.findMin typeSet
-                     sid' = sid fm oType
-                 in (Map.insert sid' (Set.singleton (transOpType oType)) fm,
-                      insertSPId iden (COp oType) sid' im)
-              else foldr insOIdSet (fm, im)
+              foldr insOIdSet (fm, im)
                 $ Rel.partSet (leqF sign) typeSet
               where insOIdSet tset (fm', im') =
                         let sid' = sid fm' (Set.findMax tset)
@@ -197,8 +192,9 @@ transFuncMap idMap sign = Map.foldWithKey toSPOpType (Map.empty, idMap)
                                            (elemsSPIdSet idMap))
                     uType t = fst t ++ [snd t]
 
+
 transPredMap :: IdTypeSPIdMap -> CSign.Sign e f
-  -> (TSign.PredMap, IdTypeSPIdMap)
+  -> (TSign.PredicateSet, IdTypeSPIdMap)
 transPredMap idMap sign =
     Map.foldWithKey toSPPredType (Map.empty, idMap) . MapSet.toMap
       $ CSign.predMap sign
@@ -221,51 +217,7 @@ transPredMap idMap sign =
                                        (Set.union (Map.keysSet fma)
                                            (elemsSPIdSet idMap))
 
-{- left typing implies right typing; explicit overloading sentences
-are generated from these pairs, type TypePair = (CType,CType) -}
 
--- | disambiguation of TPTP Identifiers
-disSPOId :: CKType -- ^ Type of CASl identifier
-         -> TPTPId -- ^ translated CASL Identifier
-         -> [TPTPId] {- ^ translated Sort Symbols of the profile
-                           (maybe empty) -}
-         -> Set.Set TPTPId -- ^ TPTP Identifiers already in use
-         -> TPTPId {- ^ fresh Identifier generated from second argument;
-    if the identifier was not in the set this is just the second argument -}
-disSPOId cType sid ty idSet
-    | checkIdentifier cType (show sid) && not (lkup $ show sid) = sid
-    | otherwise = let nSid = disSPOId' $ show sid
-                  in assert (checkIdentifier cType nSid) $ mkSimpleId nSid
-    where disSPOId' sid'
-              | not (lkup asid) = asid
-              | otherwise = addType asid 1
-              where asid = sid' ++ case cType of
-                        CKSort -> ""
-                        CKVar -> ""
-                        x -> '_' : show (length ty - (case x of
-                                                    CKOp -> 1
-                                                    _ -> 0))
-                    addType res n =
-                        let nres = asid ++ '_' : fc n
-                            nres' = nres ++ '_' : show n
-                        in if nres == res
-                           then if nres' == res
-                                then error ("SuleCFOL2TPTP: "
-                                            ++ "cannot calculate"
-                                            ++ " unambiguous id for "
-                                            ++ show sid ++ " with type "
-                                            ++ show ty
-                                            ++ " and nres = " ++ nres
-                                            ++ "\n with idSet "
-                                            ++ show idSet)
-                                else if not (lkup nres')
-                                     then nres'
-                                     else addType nres (n + 1)
-                           else if not (lkup nres)
-                                then nres
-                                else addType nres (n + 1)
-          lkup x = Set.member (mkSimpleId x) idSet
-          fc n = concatMap (take n . show) ty
 
 transOpType :: CSign.OpType -> ([TPTPId], TPTPId)
 transOpType ot = (map transIdSort (CSign.opArgs ot),
@@ -765,5 +717,6 @@ isSingleSorted :: CSign.Sign f e -> Bool
 isSingleSorted sign =
   Set.size (CSign.sortSet sign) == 1
   && Set.null (emptySortSet sign) -- empty sorts need relativization
+
 
 -}
