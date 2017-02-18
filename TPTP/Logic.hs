@@ -27,6 +27,7 @@ import TPTP.Prover.EProver
 import TPTP.Prover.Geo3
 import TPTP.Prover.Isabelle
 import TPTP.Prover.Leo2
+import TPTP.Prover.Satallax
 import TPTP.Prover.SPASS
 import TPTP.Prover.Vampire
 import TPTP.Sign
@@ -78,7 +79,8 @@ instance StaticAnalysis TPTP BASIC_SPEC Sentence () () Sign Morphism Symbol ()
 instance Logic TPTP Sublogic BASIC_SPEC Sentence () () Sign Morphism Symbol () ProofTree
   where
     stability _ = Testing
-    provers TPTP = [cvc4, darwin, eprover, geo3, isabelle, leo2, spass, vampire]
+    provers TPTP = [cvc4, darwin, eprover, geo3, isabelle, leo2, satallax,
+                    spass, vampire]
 
 
 instance SublogicName Sublogic where
