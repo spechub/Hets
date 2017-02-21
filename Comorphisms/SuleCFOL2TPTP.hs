@@ -41,6 +41,31 @@ Reflections on the theory of this comorphism:
   - functions = restrictions of functions to the appropriate carriers.
     The above axioms ensure that this gives a total function
   - predicates = restrictions of functions to the appropriate carriers.
+
+
+Implementation notes:
+- Only FORMULA is needed (CASL/AS_Basic_CASL.hs).
+- Definedness is already removed by other comorphisms.
+- Equation is already reduced to simple equality (=).
+- Membership is simply a predicate.
+- Mixfix is only used during parsing. It cannot occur.
+- Unparsed_formula cannot occur.
+- Sort_gen_ax can occur, but we can't translate it. Fail at this point.
+- QuantOp cannot occur.
+- QuantPred cannot occur.
+- ExtFORMULA cannot occur.
+-
+- Sorted_term: Only use the TERM, ignore the SORT
+- Cast cannot occur.
+- Conditional: Replace the TERMs by the Formulas in which they occur
+- Everything below cannot occur.
+
+- Sign.hs (use the type CASLSign)
+- SortRel: Retrieve the sorts, and their relations to each other.
+- emptySortSet: For every sort that are not in this set, add an axiom that the sort is not empty.
+- opMap: Add an axiom (sorts) for every OpType in the OpMap.
+- predMap: Same thing, but only for the arguments
+- The remainder is only a cache - Don't use it.
 -}
 
 module Comorphisms.SuleCFOL2TPTP
