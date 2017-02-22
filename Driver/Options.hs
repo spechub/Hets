@@ -1055,7 +1055,7 @@ checkLibDirs fs =
 
 joinHttpLibPath :: [String] -> [String]
 joinHttpLibPath l = case l of
-  p : f : r | elem p ["http", "https"] && take 2 f == "//" ->
+  p : f : r | elem p ["file", "http", "https"] && take 2 f == "//" ->
     (p ++ ':' : f) : joinHttpLibPath r
   f : r -> f : joinHttpLibPath r
   [] -> []
