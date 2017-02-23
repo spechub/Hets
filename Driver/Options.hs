@@ -726,7 +726,8 @@ options = let
       "choose different logic syntax"
     , Option "L" [libdirsS] (ReqArg LibDirs "DIR")
       ("colon-separated list of directories"
-       ++ crS ++ "containing DOL libraries")
+       ++ crS ++ "containing DOL libraries."
+       ++ crS ++ "If an http[s] URL is specified here, it is treated as the last libdir because colons can occur in such URLs")
     , Option "m" [modelSparQS] (ReqArg ModelSparQ "FILE")
       "lisp file for SparQ definitions"
     , Option "" [counterSparQS] (ReqArg parseCounter "0-99")
@@ -1055,8 +1056,10 @@ checkLibDirs fs =
 
 joinHttpLibPath :: [String] -> [String]
 joinHttpLibPath l = case l of
-  p : f : r | elem p ["file", "http", "https"] && take 2 f == "//" ->
+  p : f : r | p  == "file" && take 2 f == "//" ->
     (p ++ ':' : f) : joinHttpLibPath r
+  p : f : _ | elem p ["http", "https"] && take 2 f == "//" ->
+    [intercalate ":" l]
   f : r -> f : joinHttpLibPath r
   [] -> []
 
