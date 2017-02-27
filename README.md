@@ -58,9 +58,16 @@ sudo apt-get build-dep hets-desktop
 Replace 'xenial' with the Ubuntu version that you use.
 The Hets sources should be obtained from the git repository (see the end of this page).
 
-### Hets Images for Mac OS X 10.9 (Mavericks)
+### Installing Hets under Archlinux
+We provide the AUR-packages [`hets-desktop-bin`](https://aur.archlinux.org/packages/hets-desktop-bin/) and [`hets-server-bin`](https://aur.archlinux.org/packages/hets-server-bin/) to install 64 bit binaries of Hets/Hets-server.
+If you would like to compile Hets yourself, you can install one of the AUR-packages [`hets-desktop`](https://aur.archlinux.org/packages/hets-desktop/) and [`hets-server`](https://aur.archlinux.org/packages/hets-server/).
 
-These [Disk images for the Hets application](http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/intel-mac/dmgs/) have only limited functionality. (GTK based menus are missing.)
+### Installing Hets under OS X/macOS (10.9 (Mavericks) and greater)
+* Install Homebrew: See [https://brew.sh](https://brew.sh)
+* Install Java: `brew cask install java`
+* Only for Hets-Desktop, install X11: `brew cask install xquartz`
+* Either install hets-desktop: `brew install spechub/hets/hets-desktop`
+* Or install hets-server: `brew install spechub/hets/hets-server`
 
 ### Hets binaries
 (these are usually not needed but may replace the binaries from above)
@@ -73,10 +80,6 @@ These [Disk images for the Hets application](http://www.informatik.uni-bremen.de
 	* [Daily snapshot](http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/linux64/daily/)
 	* [Latest release](http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/linux64/releasedhets.bz2)
 	* [All versions](http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/linux64/versions/)
-* Intel Mac (Mavericks)
-	* [Daily snapshot](http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/intel-mac/daily/)
-	* [Latest release](http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/intel-mac/releasedhets.bz2)
-	* [All versions](http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/intel-mac/versions/)
 * Solaris
 	* [Daily snapshot](http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/pc-solaris/daily/)
 	* [Latest release](http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/pc-solaris/releasedhets.bz2)
