@@ -12,19 +12,19 @@ Portability :  non-portable (imports Logic.Logic)
 The translating comorphism from a CASL subset to TPTP.
 
 Reflections on the theory of this comorphism:
-- sorts are represented as predicates (TPTP is unsorted)
+- sorts are represented as predicates (TPTP is unsorted) => DONE
 - we are in the Sule sublogic of CASL, hence each sort is subsort of
-  one top-sorts (top-sort = maximum sort of its connected component)
-- the top-sorts are represented as disjoint predicates
-- subsorting is represented as predicate containment
+  one top-sorts (top-sort = maximum sort of its connected component) => DONE
+- the top-sorts are represented as disjoint predicates => DONE
+- subsorting is represented as predicate containment => DONE
 - the model expansion property only holds up to isomorphism
   (which does not matter, because satisfaction is isomorphism invariant)
   Namely, for a CASL model, take an isomorphic model where the carriers
-  of top-sorts are made disjoint
+  of top-sorts are made disjoint => DONE
 - a function f:s1 x ... x sn -> s is represented by a function f
-  plus axiom forall x1,...,xn . s1(x1) /\ ... /\ sn(xn) => s(f(x1,...xn))
+  plus axiom forall x1,...,xn . s1(x1) /\ ... /\ sn(xn) => s(f(x1,...xn)) => DONE
 - a predicate p:s1 x ... x sn is represented by a predicate p
-  (no axiom needed)
+  (no axiom needed) => DONE
 - we must ensure that this is compatible with overloading.
   Therefore, if f:s1 x ... x sn -> s and f:t1 x ... x tn -> t and
   for all i=1..n, ui and si are in the same connected component, but
@@ -272,29 +272,43 @@ translateTerm x = case x of
 
 translateSign :: (FormExtension f, Eq f)
               => CSign.Sign f e -> Result (TSign.Sign, [Named TSign.Sentence])
-translateSign caslSign = return (tptpSign, sentencesOfSorts ++ undefined)
+translateSign caslSign =
+  return (tptpSign, sentencesOfSorts ++ sentencesOfOps ++ undefined)
   where
     tptpSign :: TSign.Sign
     tptpSign = undefined
 
     sentencesOfSorts :: [Named TSign.Sentence]
     sentencesOfSorts =
-      Map.foldWithKey createSentenceOfSort [] $ Rel.toMap $ sortRel caslSign
+      let sortMap = Rel.toMap $ sortRel caslSign
+          allSorts = Rel.nodes $ sortRel caslSign
+          emptySorts = emptySortSet caslSign
+          topSorts = Rel.mostRight $ sortRel caslSign
+          subsortSentences =
+            Map.foldWithKey (createSubsortSentences emptySorts) [] sortMap
+          topSortSentences =
+            Set.foldr (createTopSortSentences topSorts) [] topSorts
+      in  subsortSentences ++ topSortSentences
 
-    createSentenceOfSort :: SORT -> Set.Set SORT -> [Named TSign.Sentence]
-                         -> [Named TSign.Sentence]
-    createSentenceOfSort sort subsorts sentences =
-      let sortSentence = undefined
-          subsortSentences = foldr
+    createSubsortSentences :: Set.Set SORT -> SORT -> Set.Set SORT
+                         -> [Named TSign.Sentence] -> [Named TSign.Sentence]
+    createSubsortSentences emptySorts sort subsorts sentences =
+      let subsortSentences = Set.foldr
             (\ subsort sens -> createSubsortSentence sort subsort : sens)
-            [] $ Set.toList subsorts
-      in  sortSentence : subsortSentences ++ sentences
+            [] subsorts
+          nonEmptySortsSentence =
+            if Set.member sort emptySorts
+            then []
+            else [createNonEmptySortSentence sort]
+          -- TODO do we need a sentence for the sort itself?
+      in  subsortSentences ++ nonEmptySortsSentence ++ sentences
 
-    -- creates fof(name, axiom, ! [X]: (subsort(X) => sort(X)))
+    -- creates:
+    -- fof(sort_SUBSORT_subsort_of_SORT, axiom, ! [X]: (SUBSORT(X) => SORT(X))).
     createSubsortSentence :: SORT -> SORT -> Named TSign.Sentence
     createSubsortSentence sort subsort =
       let varX = mkSimpleId "X"
-          nameString = signSentenceName sort subsort
+          nameString = "sign_" ++ show subsort ++ "_subsort_of_" ++ show sort
           name = NameString $ mkSimpleId nameString
           formula = FOFF_logic $ FOFLF_unitary $ FOFUF_quantified $
             FOF_quantified_formula ForAll [varX] $
@@ -304,14 +318,127 @@ translateSign caslSign = return (tptpSign, sentencesOfSorts ++ undefined)
           sentence = AF_FOF_Annotated $
             FOF_annotated name Axiom formula (Annotations Nothing)
       in  makeNamed nameString sentence
-      where
-       sortOfX :: Variable -> SORT -> FOF_unitary_formula
-       sortOfX var s = FOFUF_atomic $ FOFAT_plain $
-         FOFPAF_predicate (predicateOfSort s) [FOFT_variable var]
 
-       signSentenceName :: SORT -> SORT -> String
-       signSentenceName sort subsort =
-         "sign_" ++ show subsort ++ "_subsort_of_" ++ show sort
+    -- creates:
+    -- fof(sign_non_empty_sort_SORTNAME, axiom, ? [X]: (SORT(X))).
+    createNonEmptySortSentence :: SORT -> Named TSign.Sentence
+    createNonEmptySortSentence sort =
+      let varX = mkSimpleId "X"
+          nameString = "sign_non_empty_sort_" ++ show sort
+          name = NameString $ mkSimpleId nameString
+          formula = FOFF_logic $ FOFLF_unitary $ FOFUF_quantified $
+            FOF_quantified_formula Exists [varX] $
+            FOFUF_logic $ FOFLF_unitary $ sortOfX varX sort
+          sentence = AF_FOF_Annotated $
+            FOF_annotated name Axiom formula (Annotations Nothing)
+      in  makeNamed nameString sentence
+
+    createTopSortSentences :: Set.Set SORT -> SORT
+                           -> [Named TSign.Sentence] -> [Named TSign.Sentence]
+    createTopSortSentences topSorts sort sentences =
+      createTopSortSentence (Set.delete sort topSorts) sort : sentences
+      where
+        -- creates:
+        -- fof(sign_topsort_SORT, axiom,
+        --   ! [X]: (SORT(X) => ~ OTHER_SORT1(X) & ... & ~ OTHER_SORTn(X)).
+        createTopSortSentence :: Set.Set SORT -> SORT -> Named TSign.Sentence
+        createTopSortSentence otherTopSorts sort =
+          let varX = mkSimpleId "X"
+              nameString = "sign_topsort_" ++ show sort
+              name = NameString $ mkSimpleId nameString
+
+              formula = FOFF_logic $ FOFLF_unitary $ FOFUF_quantified $
+                FOF_quantified_formula ForAll [varX] $
+                FOFUF_logic $ FOFLF_binary $ FOFBF_nonassoc $
+                FOF_binary_nonassoc
+                  TAS.Implication
+                  (sortOfX varX sort) $
+                  FOFUF_logic $ FOFLF_binary $ FOFBF_assoc $ FOFBA_and $
+                  Set.toList $
+                  Set.map (negateUnitaryFormula . sortOfX varX) otherTopSorts
+
+              sentence = AF_FOF_Annotated $
+                FOF_annotated name Axiom formula (Annotations Nothing)
+          in  makeNamed nameString sentence
+
+    negateUnitaryFormula :: FOF_unitary_formula -> FOF_unitary_formula
+    negateUnitaryFormula f = FOFUF_unary $ FOFUF_connective NOT f
+
+    sentencesOfOps :: [Named TSign.Sentence]
+    sentencesOfOps =
+      -- TODO is assocOps already included in opMap or are these two disjunct?
+      Map.foldrWithKey createSentencesOfOp [] $ MapSet.toMap $
+        assocOps caslSign `MapSet.union` opMap caslSign
+      where
+        createSentencesOfOp :: OP_NAME -> Set.Set OpType
+                            -> [Named TSign.Sentence] -> [Named TSign.Sentence]
+        createSentencesOfOp opName opTypes sentences =
+          -- Assign a new sentence name to each type of the op by adding a suffix
+          let useNameSuffix = Set.size opTypes > 1
+              (sentencesOfThisOp, _) = Set.foldr
+                (\ opType (sens, i) ->
+                  (createSentenceOfOp
+                    (if useNameSuffix then "_" ++ show i else "")
+                    opName opType : sens, i + 1))
+                ([], 1) opTypes
+          in  sentencesOfThisOp ++ sentences
+
+        -- creates either:
+        -- fof(sign_op_OPNAME, axiom, S(op)).
+        -- or:
+        -- fof(sign_op_OPNAME, axiom,
+        --      ! [X1, ..., Xn]: S1(X1) & ... & Sn(Xn) => S(op(X1, ..., Xn))).
+        createSentenceOfOp :: String -> OP_NAME -> OpType
+                           -> Named TSign.Sentence
+        createSentenceOfOp nameSuffix opName opType =
+          let nameString = "sign_op" ++ nameSuffix ++ "_" ++ show opName
+              name = NameString $ mkSimpleId nameString
+
+              predicateResult = predicateOfSort $ opRes opType
+              predicates = map predicateOfSort $ opArgs opType
+              variables = map (\ i -> mkSimpleId $ "X" ++ show i)
+                            [1 .. length (opArgs opType)]
+              -- TODO should different OpTypes yield differently named functions?
+              function = functionOfOp opName
+
+              functionAntecedent =
+                FOFUF_logic $ FOFLF_binary $ FOFBF_assoc $ FOFBA_and $
+                map (\ (v, p) ->
+                      FOFUF_atomic $ FOFAT_plain $ FOFPAF_predicate p
+                      [FOFT_function $ FOFFT_plain $ FOFPT_constant $ v]) $
+                  zip variables predicates
+              functionConsequent = FOFUF_atomic $ FOFAT_plain $
+                FOFPAF_predicate predicateResult
+                [FOFT_function $ FOFFT_plain $ FOFPT_functor function $
+                  map FOFT_variable variables]
+
+              unitaryFormulaConstant = FOFUF_atomic $ FOFAT_plain $
+                FOFPAF_predicate predicateResult
+                [FOFT_function $ FOFFT_plain $ FOFPT_constant $ function]
+
+              unitaryFormulaFunction = FOFUF_quantified $
+                FOF_quantified_formula ForAll variables $
+                FOFUF_logic $ FOFLF_binary $ FOFBF_nonassoc $
+                FOF_binary_nonassoc
+                  TAS.Implication functionAntecedent functionConsequent
+
+              formula = FOFF_logic $ FOFLF_unitary $
+                if null variables
+                then unitaryFormulaConstant
+                else unitaryFormulaFunction
+              sentence = AF_FOF_Annotated $
+                FOF_annotated name Axiom formula (Annotations Nothing)
+          in  makeNamed nameString sentence
+
+
+    sortOfX :: Variable -> SORT -> FOF_unitary_formula
+    sortOfX var sort = FOFUF_atomic $ FOFAT_plain $
+      FOFPAF_predicate (predicateOfSort sort) [FOFT_variable var]
+
+functionOfOp :: OP_NAME -> TAS.Predicate
+functionOfOp opName =
+  let functionName = "function_" ++ show opName
+  in  mkSimpleId functionName
 
 predicateOfSort :: SORT -> TAS.Predicate
 predicateOfSort sort =
