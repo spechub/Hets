@@ -96,7 +96,7 @@ import Data.Char
 import Data.Function
 
 import CASL.Logic_CASL
-import CASL.AS_Basic_CASL
+import CASL.AS_Basic_CASL as CAS
 import CASL.Cycle
 import CASL.Sublogic as SL
 import CASL.Sign as CSign
@@ -224,7 +224,99 @@ transTheory :: (FormExtension f, Eq f) =>
             -> FormulaTranslator f e
             -> (CSign.Sign f e, [Named (FORMULA f)])
             -> Result TPTPTheory
-transTheory trSig trForm (sign, sens) = undefined
+transTheory trSig trForm (sign, sens) = do
+  (tptpSign, signSentences) <- translateSign sign
+  translatedSentences <- mapM translateNamedFormula sens
+  return (tptpSign, signSentences ++ translatedSentences)
+
+translateNamedFormula :: Named (FORMULA f) -> Result (Named TSign.Sentence)
+translateNamedFormula x = do
+  translated <- translateFormula $ sentence x
+  return $ makeNamed (senAttr x) translated
+
+translateFormula :: FORMULA f -> Result TSign.Sentence
+translateFormula x = case x of
+    Quantification q vars f range -> undefined
+    Junction Con fs range -> undefined
+    Junction Dis fs range -> undefined
+    Relation f1 CAS.Implication f2 range -> undefined
+    Relation f1 RevImpl f2 range -> undefined
+    Relation f1 CAS.Equivalence f2 range -> undefined
+    Negation f range -> undefined
+    Atom True range -> undefined
+    Atom False range -> undefined
+    Predication p terms range -> undefined
+    -- There is no Definedness in SuleCFOL
+    Equation t1 Strong t2 range -> undefined
+    -- There is no Equation t1 Existl t2 in SuleCFOL
+    Membership t s range -> undefined
+    -- There is no Mixfix_formula - it only occurs during parsing
+    -- There is no Unparsed_formula
+    -- Sort_gen_ax cannot be translated. Fail:
+    Sort_gen_ax _ _ -> fail "Sort generation axioms are not yet supported."
+    -- There is no QuantOp in SuleCFOL
+    -- There is no QuantPred in SuleCFOL
+    -- There is no ExtFORMULA in SuleCFOL
+    _ -> fail "A formula that should not occur has occurred."
+
+translateTerm :: TERM f -> Result TSign.Sentence
+translateTerm x = case x of
+  Qual_var var s range -> undefined
+  Application op terms range -> undefined
+  -- The sort can be ignored:
+  Sorted_term t _ range -> undefined
+  -- There is no Cast in SuleCFOL
+  Conditional t_if condition t_else range -> undefined
+  -- Everything else cannot occur
+  _ -> fail "A term that should not occur has occurred."
+
+translateSign :: (FormExtension f, Eq f)
+              => CSign.Sign f e -> Result (TSign.Sign, [Named TSign.Sentence])
+translateSign caslSign = return (tptpSign, sentencesOfSorts ++ undefined)
+  where
+    tptpSign :: TSign.Sign
+    tptpSign = undefined
+
+    sentencesOfSorts :: [Named TSign.Sentence]
+    sentencesOfSorts =
+      Map.foldWithKey createSentenceOfSort [] $ Rel.toMap $ sortRel caslSign
+
+    createSentenceOfSort :: SORT -> Set.Set SORT -> [Named TSign.Sentence]
+                         -> [Named TSign.Sentence]
+    createSentenceOfSort sort subsorts sentences =
+      let sortSentence = undefined
+          subsortSentences = foldr
+            (\ subsort sens -> createSubsortSentence sort subsort : sens)
+            [] $ Set.toList subsorts
+      in  sortSentence : subsortSentences ++ sentences
+
+    -- creates fof(name, axiom, ! [X]: (subsort(X) => sort(X)))
+    createSubsortSentence :: SORT -> SORT -> Named TSign.Sentence
+    createSubsortSentence sort subsort =
+      let varX = mkSimpleId "X"
+          nameString = signSentenceName sort subsort
+          name = NameString $ mkSimpleId nameString
+          formula = FOFF_logic $ FOFLF_unitary $ FOFUF_quantified $
+            FOF_quantified_formula ForAll [varX] $
+            FOFUF_logic $ FOFLF_binary $ FOFBF_nonassoc $
+            FOF_binary_nonassoc
+              TAS.Implication (sortOfX varX subsort) (sortOfX varX sort)
+          sentence = AF_FOF_Annotated $
+            FOF_annotated name Axiom formula (Annotations Nothing)
+      in  makeNamed nameString sentence
+      where
+       sortOfX :: Variable -> SORT -> FOF_unitary_formula
+       sortOfX var s = FOFUF_atomic $ FOFAT_plain $
+         FOFPAF_predicate (predicateOfSort s) [FOFT_variable var]
+
+       signSentenceName :: SORT -> SORT -> String
+       signSentenceName sort subsort =
+         "sign_" ++ show subsort ++ "_subsort_of_" ++ show sort
+
+predicateOfSort :: SORT -> TAS.Predicate
+predicateOfSort sort =
+  let predicateName = "sort_" ++ show sort
+  in  mkSimpleId predicateName
 
 {-
 -- -------------------------- Signature -----------------------------
