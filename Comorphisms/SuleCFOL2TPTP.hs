@@ -270,6 +270,21 @@ translateTerm x = case x of
   -- Everything else cannot occur
   _ -> fail "A term that should not occur has occurred."
 
+-- finds ops and preds that have the same name but operate on different connected components. Renames these ops and preds.
+prepareSign :: (FormExtension f, Eq f) => CSign.Sign f e -> CSign.Sign f e
+prepareSign sign =
+  let connectedComponents = gatherConnectedComponents sign
+  in  undefined
+  where
+    gatherConnectedComponents :: (FormExtension f, Eq f)
+                              => CSign.Sign f e -> [Set.Set SORT]
+    gatherConnectedComponents sign =
+      let topSortsL = Set.toList $ Rel.mostRight $ sortRel sign
+          revReflTransClosureSortRel =
+            Rel.transpose $ Rel.reflexive $ Rel.transClosure $ sortRel sign
+      in  map (\ topSort -> Set.insert topSort $
+                  Rel.succs revReflTransClosureSortRel topSort) topSortsL
+
 translateSign :: (FormExtension f, Eq f)
               => CSign.Sign f e -> Result (TSign.Sign, [Named TSign.Sentence])
 translateSign caslSign =
