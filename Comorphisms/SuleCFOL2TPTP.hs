@@ -225,7 +225,8 @@ transTheory :: (FormExtension f, Eq f) =>
             -> (CSign.Sign f e, [Named (FORMULA f)])
             -> Result TPTPTheory
 transTheory trSig trForm (sign, sens) = do
-  (tptpSign, signSentences) <- translateSign sign
+  let (preparedSign, opRenamings, predRenamings) = prepareSign sign
+  (tptpSign, signSentences) <- translateSign preparedSign
   translatedSentences <- mapM translateNamedFormula sens
   return (tptpSign, signSentences ++ translatedSentences)
 
@@ -270,11 +271,32 @@ translateTerm x = case x of
   -- Everything else cannot occur
   _ -> fail "A term that should not occur has occurred."
 
+-- Ops and Preds in the overloading relation must be renamed.
+-- This type contains the Sign with renaming applied and the information what
+-- each original op+type or pred+type was renamed to.
+type SignWithRenamings f e = (CSign.Sign f e,
+                              Map.Map (OP_NAME, OpType) OP_NAME,
+                              Map.Map (PRED_NAME, PredType) PRED_NAME)
+
 -- finds ops and preds that have the same name but operate on different connected components. Renames these ops and preds.
-prepareSign :: (FormExtension f, Eq f) => CSign.Sign f e -> CSign.Sign f e
+prepareSign :: (FormExtension f, Eq f)
+            => CSign.Sign f e -> SignWithRenamings f e
 prepareSign sign =
   let connectedComponents = gatherConnectedComponents sign
-  in  undefined
+      connectedComponentMap = connectedComponentsToMap connectedComponents
+      renamedOps =
+        Map.foldrWithKey (addOpIfConflicting connectedComponentMap) Map.empty $
+          MapSet.toMap $ opMap sign
+      renamedPreds =
+        Map.foldrWithKey (addPredIfConflicting connectedComponentMap) Map.empty $
+          MapSet.toMap $ predMap sign
+      renamedOpMap =
+        MapSet.foldWithKey (modifyOpMap renamedOps) (opMap sign) $ opMap sign
+      renamedPredMap =
+        MapSet.foldWithKey (modifyPredMap renamedPreds) (predMap sign) $ predMap sign
+  in  (sign { opMap = renamedOpMap, predMap = renamedPredMap},
+       renamedOps,
+       renamedPreds)
   where
     gatherConnectedComponents :: (FormExtension f, Eq f)
                               => CSign.Sign f e -> [Set.Set SORT]
@@ -283,7 +305,108 @@ prepareSign sign =
           revReflTransClosureSortRel =
             Rel.transpose $ Rel.reflexive $ Rel.transClosure $ sortRel sign
       in  map (\ topSort -> Set.insert topSort $
-                  Rel.succs revReflTransClosureSortRel topSort) topSortsL
+            Rel.succs revReflTransClosureSortRel topSort) topSortsL
+
+    -- Maps a SORT to the index of the connected Component
+    connectedComponentsToMap :: [Set.Set SORT] -> Map.Map SORT Int
+    connectedComponentsToMap connectedComponents =
+      let indexedCCs = zip connectedComponents [1..]
+      in  foldr (\ (cc, i) ccMap ->
+                  Set.foldr (\ sort ccMap' ->
+                              Map.insert sort i ccMap'
+                            ) ccMap cc
+                ) Map.empty indexedCCs
+
+    addOpIfConflicting :: Map.Map SORT Int -> OP_NAME -> Set.Set OpType
+                       -> Map.Map (OP_NAME, OpType) OP_NAME
+                       -> Map.Map (OP_NAME, OpType) OP_NAME
+    addOpIfConflicting connectedComponentMap opName opTypes conflicts =
+      let opTypesL = Set.toList opTypes
+          opTypeCombinations = [(x,y) | x <- opTypesL, y <- opTypesL, x < y]
+      in  foldr addIfConflicting Map.empty opTypeCombinations
+      where
+        addIfConflicting :: (OpType, OpType)
+                         -> Map.Map (OP_NAME, OpType) OP_NAME
+                         -> Map.Map (OP_NAME, OpType) OP_NAME
+        addIfConflicting (t1, t2) conflicts =
+          if isConflicting t1 t2
+          then Map.insert (opName, t1) (renameCurrentOp t1) $
+                 Map.insert (opName, t2) (renameCurrentOp t2) conflicts
+          else conflicts
+
+        isConflicting :: OpType -> OpType -> Bool
+        isConflicting t1 t2 =
+          let sameNumberOfArgs = length (opArgs t1) == length (opArgs t2)
+              allArgsInSameCC =
+                all (isInSameCC connectedComponentMap) $
+                  zip (opArgs t1) (opArgs t2)
+          in  sameNumberOfArgs &&
+                not (leqF sign t1 t2 || leqF sign t2 t1) &&
+                allArgsInSameCC
+
+        renameCurrentOp :: OpType -> OP_NAME
+        renameCurrentOp opType =
+          let argsS = intercalate "_" $ map show $ opArgs opType
+              resultS = show $ opRes opType
+              newOpNameS = show opName ++ "_" ++ argsS ++ "_" ++ resultS
+          in  opName { getTokens = [mkSimpleId newOpNameS] }
+
+    addPredIfConflicting :: Map.Map SORT Int -> PRED_NAME -> Set.Set PredType
+                         -> Map.Map (PRED_NAME, PredType) PRED_NAME
+                         -> Map.Map (PRED_NAME, PredType) PRED_NAME
+    addPredIfConflicting connectedComponentMap predName predTypes conflicts =
+      let predTypesL = Set.toList predTypes
+          predTypeCombinations =
+            [(x,y) | x <- predTypesL, y <- predTypesL, x < y]
+      in  foldr addIfConflicting Map.empty predTypeCombinations
+      where
+        addIfConflicting :: (PredType, PredType)
+                         -> Map.Map (PRED_NAME, PredType) PRED_NAME
+                         -> Map.Map (PRED_NAME, PredType) PRED_NAME
+        addIfConflicting (t1, t2) conflicts =
+          if isConflicting t1 t2
+          then Map.insert (predName, t1) (renameCurrentPred t1) $
+                 Map.insert (predName, t2) (renameCurrentPred t2) conflicts
+          else conflicts
+
+        isConflicting :: PredType -> PredType -> Bool
+        isConflicting t1 t2 =
+          let sameNumberOfArgs = length (predArgs t1) == length (predArgs t2)
+              allArgsInSameCC =
+                all (isInSameCC connectedComponentMap) $
+                  zip (predArgs t1) (predArgs t2)
+          in  sameNumberOfArgs &&
+                not (leqP sign t1 t2 || leqP sign t2 t1) &&
+                allArgsInSameCC
+
+        renameCurrentPred :: PredType -> PRED_NAME
+        renameCurrentPred predType =
+          let argsS = intercalate "_" $ map show $ predArgs predType
+              newPredNameS = show predName ++ "_" ++ argsS
+          in  predName { getTokens = [mkSimpleId newPredNameS] }
+
+    isInSameCC :: Map.Map SORT Int -> (SORT, SORT) -> Bool
+    isInSameCC connectedComponentMap (s1, s2) =
+      let cc1 = Map.lookup s1 connectedComponentMap
+          cc2 = Map.lookup s2 connectedComponentMap
+      in  cc1 == cc2 && cc1 /= Nothing -- Nothing can not occur
+
+    modifyOpMap :: Map.Map (OP_NAME, OpType) OP_NAME
+                -> OP_NAME -> OpType -> OpMap -> OpMap
+    modifyOpMap renamedOps opName opType opMap =
+      case Map.lookup (opName, opType) renamedOps of
+        Nothing -> opMap
+        Just newOpName -> MapSet.insert newOpName opType $
+                            MapSet.delete opName opType opMap
+
+    modifyPredMap :: Map.Map (PRED_NAME, PredType) PRED_NAME
+                  -> PRED_NAME -> PredType -> PredMap -> PredMap
+    modifyPredMap renamedPreds predName predType predMap =
+      case Map.lookup (predName, predType) renamedPreds of
+        Nothing -> predMap
+        Just newPredName -> MapSet.insert newPredName predType $
+                              MapSet.delete predName predType predMap
+
 
 translateSign :: (FormExtension f, Eq f)
               => CSign.Sign f e -> Result (TSign.Sign, [Named TSign.Sentence])
