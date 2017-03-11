@@ -20,7 +20,7 @@ Reflections on the theory of this comorphism:
 - the model expansion property only holds up to isomorphism
   (which does not matter, because satisfaction is isomorphism invariant)
   Namely, for a CASL model, take an isomorphic model where the carriers
-  of top-sorts are made disjoint => DONE
+  of top-sorts are made disjoint => TODO (axiom for disjoint top sorts is DONE)
 - a function f:s1 x ... x sn -> s is represented by a function f
   plus axiom forall x1,...,xn . s1(x1) /\ ... /\ sn(xn) => s(f(x1,...xn)) => DONE
 - a predicate p:s1 x ... x sn is represented by a predicate p
@@ -32,10 +32,10 @@ Reflections on the theory of this comorphism:
   relation, they must be disambiguated with their type.
   Similarly for predicates.
   (As a first step, we could just raise an error in the case, since
-  this will only occur in very seldom cases.)
+  this will only occur in very seldom cases.) => DONE with renaming
 - sentence translation is done by omitting types of function and predicate
   symbols and by relativising quantifiers with the predicate corresponding
-  to the sort of the quantified variable
+  to the sort of the quantified variable => DONE
 - model reduction translates a TPTP model to a CASL model with
   - carriers = extensions of corresponding predicates
   - functions = restrictions of functions to the appropriate carriers.
@@ -86,6 +86,7 @@ import Common.ProofTree
 import Common.Utils
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.MapSet as MapSet
+import Control.Monad (liftM)
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -225,51 +226,482 @@ transTheory :: (FormExtension f, Eq f) =>
             -> (CSign.Sign f e, [Named (FORMULA f)])
             -> Result TPTPTheory
 transTheory trSig trForm (sign, sens) = do
-  let (preparedSign, opRenamings, predRenamings) = prepareSign sign
+  -- TODO what to do with trSig and trForm?
+  let signWithRenamings@(preparedSign, _, _) = prepareSign sign
+  let preparedSens = concatMap prepareNamedFormula sens
   (tptpSign, signSentences) <- translateSign preparedSign
-  translatedSentences <- mapM translateNamedFormula sens
+  translatedSentences <- mapM (translateNamedFormula signWithRenamings) preparedSens
   return (tptpSign, signSentences ++ translatedSentences)
 
-translateNamedFormula :: Named (FORMULA f) -> Result (Named TSign.Sentence)
-translateNamedFormula x = do
-  translated <- translateFormula $ sentence x
-  return $ makeNamed (senAttr x) translated
+prepareNamedFormula :: (FormExtension f, Eq f)
+                    => Named (FORMULA f) -> [Named (FORMULA f)]
+prepareNamedFormula formula =
+  let resolvedConditionalsFormulae =
+        resolveConditionals $
+        resolveUniqueExistentialQuantifier $
+        sentence formula
+      nameS = senAttr formula
+  in  case resolvedConditionalsFormulae of
+        [_] -> map (\ f -> makeNamed nameS f) resolvedConditionalsFormulae
+        _ -> map (\ (f, i) ->
+                   makeNamed (nameS ++ "_resolved_conditional_" ++ show i) f
+                 ) $ zip resolvedConditionalsFormulae [1..]
+  where
+    -- Resolves/removes Conditional terms recursively. For instance, from
+    -- P(T11 when C1 else T12, T21 when C2 else T22)
+    -- it creates this list of formulae:
+    -- C1 & C2 => P(T11, T21)
+    -- C1 & ~C2 => P(T11, T22)
+    -- ~C1 & C2 => P(T12, T21)
+    -- ~C1 & ~C2 => P(T12, T22)
+    --
+    -- If C1 itself contain conditionals, then the resolved formula list of C1
+    -- is joined to one formula by conjunction.
+    resolveConditionals :: (FormExtension f, Eq f) => FORMULA f -> [FORMULA f]
+    resolveConditionals x = case x of
+      Quantification q vars f r ->
+        map (\ f' -> Quantification q vars f' r) $ resolveConditionals f
+      Junction j fs r ->
+        map (\ fs' -> Junction j fs' r) $ map resolveConditionals fs
+      Relation f1 rel f2 r ->
+        let resolvedFormulae1 = resolveConditionals f1
+            resolvedFormulae2 = resolveConditionals f2
+        in  map (\ (f1', f2') -> Relation f1' rel f2' r)
+              [(x,y) | x <- resolvedFormulae1, y <- resolvedFormulae2]
+      Negation f r -> map (\ f' -> Negation f' r) $ resolveConditionals f
+      Predication p ts r -> resolveTerms ts (\ ts' -> Predication p ts' r)
+      Definedness t r -> resolveTerms [t] (\ [t'] -> Definedness t' r)
+      Equation t1 e t2 r ->
+        resolveTerms [t1, t2] (\ [t1', t2'] -> Equation t1' e t2' r)
+      Membership t sort r -> resolveTerms [t] (\ [t'] -> Membership t' sort r)
+      -- the others cannot occur in SuleCFOL
+      _ -> [x]
 
-translateFormula :: FORMULA f -> Result TSign.Sentence
-translateFormula x = case x of
-    Quantification q vars f range -> undefined
-    Junction Con fs range -> undefined
-    Junction Dis fs range -> undefined
-    Relation f1 CAS.Implication f2 range -> undefined
-    Relation f1 RevImpl f2 range -> undefined
-    Relation f1 CAS.Equivalence f2 range -> undefined
-    Negation f range -> undefined
-    Atom True range -> undefined
-    Atom False range -> undefined
-    Predication p terms range -> undefined
-    -- There is no Definedness in SuleCFOL
-    Equation t1 Strong t2 range -> undefined
-    -- There is no Equation t1 Existl t2 in SuleCFOL
-    Membership t s range -> undefined
-    -- There is no Mixfix_formula - it only occurs during parsing
-    -- There is no Unparsed_formula
-    -- Sort_gen_ax cannot be translated. Fail:
-    Sort_gen_ax _ _ -> fail "Sort generation axioms are not yet supported."
-    -- There is no QuantOp in SuleCFOL
-    -- There is no QuantPred in SuleCFOL
-    -- There is no ExtFORMULA in SuleCFOL
-    _ -> fail "A formula that should not occur has occurred."
+      where
+        resolveTerms :: (FormExtension f, Eq f)
+                     => [TERM f] -> ([TERM f] -> FORMULA f) -> [FORMULA f]
+        resolveTerms ts toFormula =
+          map resolveTermsForConditionalValue boolPermutations
+          where
+            -- GHC complains about the type variable f, and needs to infer the
+            -- type itself in these functions:
+            -- conditionalMap :: (FormExtension f, Eq f)
+            --                => Map.Map Integer (TERM f)
+            conditionalMap = findConditionals ts
 
-translateTerm :: TERM f -> Result TSign.Sentence
-translateTerm x = case x of
-  Qual_var var s range -> undefined
-  Application op terms range -> undefined
+            -- combinations :: (FormExtension f, Eq f)
+            --              => Map.Map (Bool, Integer) (FORMULA f, TERM f)
+            combinations = conditionalCombinations conditionalMap
+
+            boolPermutations :: [[Bool]]
+            boolPermutations = getBoolPermutations $ Map.size conditionalMap
+
+            -- resolveTermsForConditionalValue :: (FormExtension f, Eq f)
+            --                                 => [Bool] -> FORMULA f
+            resolveTermsForConditionalValue permutation =
+              let permutationWithIndexes =
+                    zip permutation $ Set.toList $
+                    Map.keysSet conditionalMap
+                  conditionsWithTerms =
+                    map (fromJust . (flip Map.lookup) combinations)
+                    permutationWithIndexes
+                  condition = conjunction $ map fst conditionsWithTerms
+                  replacedTerms =
+                    map (\ (b, i, t) ->
+                          snd $ Map.findWithDefault
+                                -- The `undefined` is only here for the type
+                                -- check. It is thrown away anyway by `snd`:
+                                (undefined, t) (b, i) combinations
+                        ) $ zip3 permutation [1..] ts
+              in  implication condition $ toFormula replacedTerms
+
+    conditionalCombinations :: (FormExtension f, Eq f)
+                            => Map.Map Integer (TERM f)
+                            -> Map.Map (Bool, Integer) (FORMULA f, TERM f)
+    conditionalCombinations conditionalMap =
+      -- The inner list and concat is needed for the list comprehension to work.
+      Map.fromList $ concat [ [ ((True, i), (condition t, thenTerm t))
+                              , ((False, i), (negCondition t, elseTerm t))
+                              ]
+                            | (i, t) <- Map.toList $ conditionalMap
+                            ]
+      where
+        errorMessage = "Non-Condition found where only Condition can occur. " ++
+                       "This is a Bug in Hets."
+        condition :: (FormExtension f, Eq f) => TERM f -> FORMULA f
+        condition x = case x of
+          Conditional _ c _ _ ->
+            case resolveConditionals c of
+              [singleResolved] -> singleResolved
+              manyResolved -> conjunction manyResolved
+          _ -> error errorMessage
+
+        negCondition :: (FormExtension f, Eq f) => TERM f -> FORMULA f
+        negCondition x = Negation (condition x) nullRange
+
+        thenTerm :: (FormExtension f, Eq f) => TERM f -> TERM f
+        thenTerm x = case x of
+          Conditional t _ _ _ -> t
+          _ -> error errorMessage
+
+        elseTerm :: (FormExtension f, Eq f) => TERM f -> TERM f
+        elseTerm x = case x of
+          Conditional _ _ t _ -> t
+          _ -> error errorMessage
+
+    conjunction :: (FormExtension f, Eq f) => [FORMULA f] -> FORMULA f
+    conjunction fs = Junction Con fs nullRange
+
+    implication :: (FormExtension f, Eq f) => FORMULA f -> FORMULA f -> FORMULA f
+    implication antecedent consequent =
+      Relation antecedent CAS.Implication consequent nullRange
+
+    findConditionals :: (FormExtension f, Eq f)
+                     => [TERM f] -> Map.Map Integer (TERM f)
+    findConditionals ts =
+      snd $ foldr (\ t (index, conditionals) ->
+              (index + 1, if isConditional t
+                          then Map.insert index t conditionals
+                          else conditionals)
+            ) (1, Map.empty) ts
+      where
+        isConditional :: (FormExtension f, Eq f) => TERM f -> Bool
+        isConditional x = case x of
+          Conditional _ _ _ _ -> True
+          _ -> False
+
+    getBoolPermutations :: Int -> [[Bool]]
+    getBoolPermutations k = permute $ replicate k [True,False]
+      where
+        permute :: [[a]] -> [[a]]
+        permute [] = [[]]
+        permute [x] = map (\y -> [y]) x
+        permute (x:l) =
+          concat (map (distribute (permute l)) x)
+          where
+          distribute perms y = map ((:) y) perms
+    resolveUniqueExistentialQuantifier :: (FormExtension f, Eq f)
+                                       => FORMULA f -> FORMULA f
+    resolveUniqueExistentialQuantifier =
+      snd . resolveUniqueExistentialQuantifier' Set.empty
+      where
+        -- creates:
+        -- exists (x1: s1, ... xn: sn) .
+        --   (f(x1, ..., xn) & forall (y1: s1, ..., yn: sn) .
+        --     f(y1, ..., yn) => x1 = y1 & ... & xn = yn)
+        resolveUniqueExistentialQuantifier' :: (FormExtension f, Eq f)
+                                            => Set.Set VAR
+                                            -> FORMULA f
+                                            -> (Set.Set VAR, FORMULA f)
+        resolveUniqueExistentialQuantifier' usedVars x = case x of
+          Quantification Unique_existential varDecls f r ->
+            let usedVars' = Set.unions $ collectVars usedVars f :
+                  map (collectVarsDecl usedVars) varDecls
+                boundVars = concatMap (\ (Var_decl vars _ _) -> vars) varDecls
+                varMap = mapToFreshVariables usedVars' boundVars
+                varSortMap = mapToSort varDecls varMap
+
+                -- creates:
+                -- f(y1, ..., yn)
+                replacedVarsF = replaceVars varMap f
+
+                -- creates:
+                -- x1 = y1 & ... & xn = yn
+                equalityF =
+                  Junction Con
+                    (map (\ (x, y) ->
+                          Equation
+                            (Qual_var x (fromJust $ Map.lookup y varSortMap) nullRange)
+                            Strong
+                            (Qual_var y (fromJust $ Map.lookup y varSortMap) nullRange)
+                            nullRange
+                         ) $ Map.toList varMap)
+                    nullRange
+
+                -- creates:
+                -- f(y1, ..., yn) => (x1 = y1 & ... & xn = yn)
+                implyingEquality =
+                  Relation replacedVarsF CAS.Implication equalityF nullRange
+
+                -- creates:
+                --   forall (y1: s1, ..., yn: sn) .
+                --     f(y1, ..., yn) => x1 = y1 & ... & xn = yn)
+                uniquenessF =
+                  Quantification Universal
+                    (map (\ (Var_decl vars sort r) ->
+                           Var_decl (map (\ var ->
+                                           Map.findWithDefault var var varMap
+                                         ) vars) sort r
+                         ) varDecls)
+                    implyingEquality
+                    nullRange
+
+                f' = Junction Con [f, uniquenessF] nullRange
+            in  (usedVars', Quantification Existential varDecls f' r)
+
+        collectVars :: (FormExtension f, Eq f)
+                    => Set.Set VAR -> FORMULA f -> Set.Set VAR
+        collectVars usedVars x = case x of
+          Quantification _ decls f _ ->
+            let varsF = collectVars usedVars f
+                varsDeclsL = map (collectVarsDecl usedVars) decls
+            in  Set.unions $ varsF : varsDeclsL
+          Junction _ fs _ -> Set.unions $ map (collectVars usedVars) fs
+          Relation f1 _ f2 _ ->
+            let f1Vars = collectVars usedVars f1
+                f2Vars = collectVars usedVars f2
+            in  Set.union f1Vars f2Vars
+          Negation f _ -> collectVars usedVars f
+          Predication _ ts _ -> Set.unions $ map (collectVarsT usedVars) ts
+          Definedness t _ -> collectVarsT usedVars t
+          Equation t1 _ t2 _ ->
+            let t1Vars = collectVarsT usedVars t1
+                t2Vars = collectVarsT usedVars t2
+            in  Set.union t1Vars t2Vars
+          Membership t _ _ -> collectVarsT usedVars t
+          _ -> Set.empty
+
+        collectVarsT :: (FormExtension f, Eq f)
+                     => Set.Set VAR -> TERM f -> Set.Set VAR
+        collectVarsT usedVars x = case x of
+          Qual_var v _ _ -> Set.singleton v
+          Application _ ts _ -> Set.unions $ map (collectVarsT usedVars) ts
+          Sorted_term t _ _ -> collectVarsT usedVars t
+          Conditional t1 f t2 _ ->
+            let t1Vars = collectVarsT usedVars t1
+                t2Vars = collectVarsT usedVars t2
+                fVars = collectVars usedVars f
+            in  Set.unions [t1Vars, t2Vars, fVars]
+          -- The other cannot occur in SuleCFOL
+          _ -> Set.empty
+
+        collectVarsDecl :: Set.Set VAR -> VAR_DECL -> Set.Set VAR
+        collectVarsDecl usedVars x = case x of
+          Var_decl vars _ _ -> Set.fromList vars `Set.union` usedVars
+
+        replaceVars :: (FormExtension f, Eq f)
+                    => Map.Map VAR VAR -> FORMULA f -> FORMULA f
+        replaceVars varMap x = case x of
+          Quantification q decls f r ->
+            Quantification q decls (replaceVars varMap f) r
+          Junction j fs r -> Junction j (map (replaceVars varMap) fs) r
+          Relation f1 rel f2 r ->
+            let f1' = replaceVars varMap f1
+                f2' = replaceVars varMap f2
+            in  Relation f1' rel f2' r
+          Negation f r -> Negation (replaceVars varMap f) r
+          Predication p ts r -> Predication p (map (replaceVarsT varMap) ts) r
+          Definedness t r -> Definedness (replaceVarsT varMap t) r
+          Equation t1 e t2 r ->
+            let t1' = replaceVarsT varMap t1
+                t2' = replaceVarsT varMap t2
+            in  Equation t1' e t2' r
+          Membership t s r -> Membership (replaceVarsT varMap t) s r
+          _ -> x
+
+        replaceVarsT :: (FormExtension f, Eq f)
+                     => Map.Map VAR VAR -> TERM f -> TERM f
+        replaceVarsT varMap x = case x of
+          Qual_var v s r -> Qual_var (Map.findWithDefault v v varMap) s r
+          Application o ts r -> Application o (map (replaceVarsT varMap) ts) r
+          Sorted_term t s r -> Sorted_term (replaceVarsT varMap t) s r
+          Conditional t1 f t2 r ->
+            let t1' = replaceVarsT varMap t1
+                t2' = replaceVarsT varMap t2
+            in  Conditional t1' f t2' r
+          -- The other cannot occur in SuleCFOL
+          _ -> x
+
+        mapToFreshVariables :: Set.Set VAR -> [VAR] -> Map.Map VAR VAR
+        mapToFreshVariables usedVars =
+          snd . foldr (\ var (usedVars', varMap) ->
+                        let freshVar = freshVariable usedVars' var
+                        in  (Set.insert freshVar usedVars',
+                            Map.insert var freshVar varMap)
+                      ) (usedVars, Map.empty)
+
+        mapToSort :: [VAR_DECL] -> Map.Map VAR VAR -> Map.Map VAR SORT
+        mapToSort varDecls varMap=
+          foldr (\ (Var_decl vars sort _) sortMap ->
+                  foldr (\ var sortMap' ->
+                          let replacedVar = Map.findWithDefault var var varMap
+                          in  Map.insert replacedVar sort sortMap'
+                        ) sortMap vars
+                ) Map.empty varDecls
+
+
+        freshVariable :: Set.Set VAR -> VAR ->  VAR
+        freshVariable usedVars var = freshVariable' 0
+          where
+            freshVariable' :: Integer -> VAR
+            freshVariable' i =
+              let freshVar = mkSimpleId $ varName i
+              in  if Set.member freshVar usedVars
+                  then freshVariable' $ i + 1
+                  else freshVar
+
+            varName :: Integer -> String
+            varName i =
+              show var ++ "_other" ++ if i == 0 then "" else "_" ++ show i
+
+
+translateNamedFormula :: (FormExtension f, Eq f)
+                      => SignWithRenamings f e
+                      -> Named (FORMULA f) -> Result (Named TSign.Sentence)
+translateNamedFormula signWithRenamings x = do
+  let nameS = senAttr x
+  translated <- translateFormula signWithRenamings nameS $ sentence x
+  return $ makeNamed nameS translated
+
+translateFormula :: (FormExtension f, Eq f)
+                 => SignWithRenamings f e -> String -> FORMULA f
+                 -> Result TSign.Sentence
+translateFormula signWithRenamings nameS f = do
+  let name = NameString $ mkSimpleId nameS
+  fofFormula <- toUnitaryFormula f
+  return $ fofUnitaryFormulaToAxiom name fofFormula
+  where
+    -- GHC complains about the type variable f, and needs to infer the type
+    -- itself at this point.
+    -- toUnitaryFormula :: (FormExtension f, Eq f)
+    --                  => Set.Set TAS.Variable
+    --                  -> FORMULA f
+    --                  -> Result FOF_unitary_formula
+    toUnitaryFormula x = case x of
+      Quantification q vars f _ -> do
+        let fofVars = translateVarDecls vars
+        let variableList = map fst fofVars
+        let variableDeclaration =
+              FOFUF_logic $ FOFLF_binary $ FOFBF_assoc $ FOFBA_and $
+              map (uncurry sortOfX) fofVars
+        fofF <- toUnitaryFormula f
+        case q of
+          Universal ->
+            let implication =
+                  FOFUF_logic $ FOFLF_binary $ FOFBF_nonassoc $
+                  FOF_binary_nonassoc TAS.Implication variableDeclaration fofF
+            in  return $ FOFUF_quantified $
+                         FOF_quantified_formula ForAll variableList implication
+          Existential ->
+            let conjunction =
+                  FOFUF_logic $ FOFLF_binary $ FOFBF_assoc $
+                  FOFBA_and [variableDeclaration, fofF]
+            in  return $ FOFUF_quantified $
+                         FOF_quantified_formula Exists variableList conjunction
+          -- Has been resolved/removed by prepareNamedFormula:
+          Unique_existential ->
+            fail "Unique_existential occurred where it cannot occur. This is a bug in Hets."
+      Junction Con fs _ -> do
+        fofs <- mapM toUnitaryFormula fs
+        return $ FOFUF_logic $ FOFLF_binary $ FOFBF_assoc $ FOFBA_and fofs
+      Junction Dis fs _ -> do
+        fofs <- mapM toUnitaryFormula fs
+        return $ FOFUF_logic $ FOFLF_binary $ FOFBF_assoc $ FOFBA_or fofs
+      Relation f1 CAS.Implication f2 _ -> do
+        fof1 <- toUnitaryFormula f1
+        fof2 <- toUnitaryFormula f2
+        return $ FOFUF_logic $ FOFLF_binary $ FOFBF_nonassoc $
+                 FOF_binary_nonassoc TAS.Implication fof1 fof2
+      Relation f1 RevImpl f2 _ -> do
+        fof1 <- toUnitaryFormula f1
+        fof2 <- toUnitaryFormula f2
+        return $ FOFUF_logic $ FOFLF_binary $ FOFBF_nonassoc $
+                 FOF_binary_nonassoc ReverseImplication fof1 fof2
+      Relation f1 CAS.Equivalence f2 _ -> do
+        fof1 <- toUnitaryFormula f1
+        fof2 <- toUnitaryFormula f2
+        return $ FOFUF_logic $ FOFLF_binary $ FOFBF_nonassoc $
+                 FOF_binary_nonassoc TAS.Equivalence fof1 fof2
+      Negation f _ -> do
+        fofF <- toUnitaryFormula f
+        return $ FOFUF_unary $ FOFUF_connective NOT fofF
+      Atom True _ ->
+        return $ FOFUF_atomic $ FOFAT_defined $ FOFDAF_plain $
+                 FOFDPF_proposition $ TPTP_true
+      Atom False _ ->
+        return $ FOFUF_atomic $ FOFAT_defined $ FOFDAF_plain $
+                 FOFDPF_proposition $ TPTP_true
+      Predication predSymb terms _ -> do
+        predName <- case predSymb of
+              Pred_name _ ->
+                fail "An unqualified predicate has been detected. This is a bug in Hets."
+              Qual_pred_name predName (Pred_type args _) _ ->
+                return $ lookupPredName signWithRenamings predName $
+                  PredType { predArgs = args }
+        let predicate = predicateOfPred predName
+        args <- mapM (translateTerm signWithRenamings) terms
+        case args of
+          [] -> return $ FOFUF_atomic $ FOFAT_plain $ FOFPAF_proposition predicate
+          _ -> return $ FOFUF_atomic $ FOFAT_plain $ FOFPAF_predicate predicate args
+      -- There is no Equation t1 Existl t2 in SuleCFOL
+      Equation t1 Strong t2 _ -> do
+        fofTerm1 <- translateTerm signWithRenamings t1
+        fofTerm2 <- translateTerm signWithRenamings t2
+        return $ FOFUF_atomic $ FOFAT_defined $ FOFDAF_infix $
+                 FOF_defined_infix_formula
+                 Defined_infix_equality fofTerm1 fofTerm2
+      Membership term sort _ -> do
+        fofTerm <- translateTerm signWithRenamings term
+        return $ FOFUF_atomic $ FOFAT_plain $
+                 FOFPAF_predicate (predicateOfSort sort) [fofTerm]
+      -- Sort_gen_ax cannot be translated. Fail:
+      Sort_gen_ax _ _ -> fail "Sort generation axioms are not yet supported."
+      -- There is no Definedness in SuleCFOL
+      -- There is no Mixfix_formula - it only occurs during parsing
+      -- There is no Unparsed_formula
+      -- There is no QuantOp in SuleCFOL
+      -- There is no QuantPred in SuleCFOL
+      -- There is no ExtFORMULA in SuleCFOL
+      _ -> fail "A formula that should not occur has occurred."
+
+    translateVarDecls :: [VAR_DECL] -> [(TAS.Variable, SORT)]
+    translateVarDecls = concatMap translateVarDecl
+
+    translateVarDecl :: VAR_DECL -> [(TAS.Variable, SORT)]
+    translateVarDecl x = case x of
+      Var_decl vars sort _ -> zip vars $ repeat sort
+
+
+translateTerm :: (FormExtension f, Eq f)
+              => SignWithRenamings f e
+              -> TERM f
+              -> Result TAS.FOF_term
+translateTerm signWithRenamings x = case x of
+  Qual_var var _ _ -> return $ FOFT_variable var
+  Application opSymb terms _ -> do
+    opName <- case opSymb of
+          Op_name _ ->
+            fail "An unqualified operation has been detected. This is a bug in Hets."
+          Qual_op_name opName (Op_type kind args res _) _ ->
+            return $ lookupOpName signWithRenamings opName $
+              OpType { opKind = kind, opArgs = args, opRes = res }
+    let function = functionOfOp opName
+    args <- mapM (translateTerm signWithRenamings) terms
+    case args of
+      [] -> return $ FOFT_function $ FOFFT_plain $ FOFPT_constant $ function
+      _ -> return $ FOFT_function $ FOFFT_plain $ FOFPT_functor function args
   -- The sort can be ignored:
-  Sorted_term t _ range -> undefined
+  Sorted_term term _ _ -> translateTerm signWithRenamings term
+  -- Conditional has been resolved/removed in prepareNamedFormula
   -- There is no Cast in SuleCFOL
-  Conditional t_if condition t_else range -> undefined
   -- Everything else cannot occur
   _ -> fail "A term that should not occur has occurred."
+
+
+fofUnitaryFormulaToAxiom :: TAS.Name -> FOF_unitary_formula -> TSign.Sentence
+fofUnitaryFormulaToAxiom name f =
+  let formula = FOFF_logic $ FOFLF_unitary f
+  in  AF_FOF_Annotated $ FOF_annotated name Axiom formula (Annotations Nothing)
+
+lookupOpName :: (FormExtension f, Eq f)
+             => SignWithRenamings f e -> OP_NAME -> OpType -> OP_NAME
+lookupOpName (_, renamedOps, _) opName opType =
+  Map.findWithDefault opName (opName, opType) renamedOps
+
+lookupPredName :: (FormExtension f, Eq f)
+             => SignWithRenamings f e -> PRED_NAME -> PredType -> PRED_NAME
+lookupPredName (_, _, renamedPreds) predName predType =
+  Map.findWithDefault predName (predName, predType) renamedPreds
 
 -- Ops and Preds in the overloading relation must be renamed.
 -- This type contains the Sign with renaming applied and the information what
@@ -323,7 +755,7 @@ prepareSign sign =
     addOpIfConflicting connectedComponentMap opName opTypes conflicts =
       let opTypesL = Set.toList opTypes
           opTypeCombinations = [(x,y) | x <- opTypesL, y <- opTypesL, x < y]
-      in  foldr addIfConflicting Map.empty opTypeCombinations
+      in  foldr addIfConflicting conflicts opTypeCombinations
       where
         addIfConflicting :: (OpType, OpType)
                          -> Map.Map (OP_NAME, OpType) OP_NAME
@@ -358,7 +790,7 @@ prepareSign sign =
       let predTypesL = Set.toList predTypes
           predTypeCombinations =
             [(x,y) | x <- predTypesL, y <- predTypesL, x < y]
-      in  foldr addIfConflicting Map.empty predTypeCombinations
+      in  foldr addIfConflicting conflicts predTypeCombinations
       where
         addIfConflicting :: (PredType, PredType)
                          -> Map.Map (PRED_NAME, PredType) PRED_NAME
@@ -419,7 +851,6 @@ translateSign caslSign =
     sentencesOfSorts :: [Named TSign.Sentence]
     sentencesOfSorts =
       let sortMap = Rel.toMap $ sortRel caslSign
-          allSorts = Rel.nodes $ sortRel caslSign
           emptySorts = emptySortSet caslSign
           topSorts = Rel.mostRight $ sortRel caslSign
           subsortSentences =
@@ -448,13 +879,12 @@ translateSign caslSign =
       let varX = mkSimpleId "X"
           nameString = "sign_" ++ show subsort ++ "_subsort_of_" ++ show sort
           name = NameString $ mkSimpleId nameString
-          formula = FOFF_logic $ FOFLF_unitary $ FOFUF_quantified $
+          formula = FOFUF_quantified $
             FOF_quantified_formula ForAll [varX] $
             FOFUF_logic $ FOFLF_binary $ FOFBF_nonassoc $
             FOF_binary_nonassoc
               TAS.Implication (sortOfX varX subsort) (sortOfX varX sort)
-          sentence = AF_FOF_Annotated $
-            FOF_annotated name Axiom formula (Annotations Nothing)
+          sentence = fofUnitaryFormulaToAxiom name formula
       in  makeNamed nameString sentence
 
     -- creates:
@@ -464,11 +894,10 @@ translateSign caslSign =
       let varX = mkSimpleId "X"
           nameString = "sign_non_empty_sort_" ++ show sort
           name = NameString $ mkSimpleId nameString
-          formula = FOFF_logic $ FOFLF_unitary $ FOFUF_quantified $
+          formula = FOFUF_quantified $
             FOF_quantified_formula Exists [varX] $
             FOFUF_logic $ FOFLF_unitary $ sortOfX varX sort
-          sentence = AF_FOF_Annotated $
-            FOF_annotated name Axiom formula (Annotations Nothing)
+          sentence = fofUnitaryFormulaToAxiom name formula
       in  makeNamed nameString sentence
 
     createTopSortSentences :: Set.Set SORT -> SORT
@@ -485,7 +914,7 @@ translateSign caslSign =
               nameString = "sign_topsort_" ++ show sort
               name = NameString $ mkSimpleId nameString
 
-              formula = FOFF_logic $ FOFLF_unitary $ FOFUF_quantified $
+              formula = FOFUF_quantified $
                 FOF_quantified_formula ForAll [varX] $
                 FOFUF_logic $ FOFLF_binary $ FOFBF_nonassoc $
                 FOF_binary_nonassoc
@@ -495,8 +924,7 @@ translateSign caslSign =
                   Set.toList $
                   Set.map (negateUnitaryFormula . sortOfX varX) otherTopSorts
 
-              sentence = AF_FOF_Annotated $
-                FOF_annotated name Axiom formula (Annotations Nothing)
+              sentence = fofUnitaryFormulaToAxiom name formula
           in  makeNamed nameString sentence
 
     negateUnitaryFormula :: FOF_unitary_formula -> FOF_unitary_formula
@@ -536,7 +964,6 @@ translateSign caslSign =
               predicates = map predicateOfSort $ opArgs opType
               variables = map (\ i -> mkSimpleId $ "X" ++ show i)
                             [1 .. length (opArgs opType)]
-              -- TODO should different OpTypes yield differently named functions?
               function = functionOfOp opName
 
               functionAntecedent =
@@ -560,23 +987,26 @@ translateSign caslSign =
                 FOF_binary_nonassoc
                   TAS.Implication functionAntecedent functionConsequent
 
-              formula = FOFF_logic $ FOFLF_unitary $
+              formula =
                 if null variables
                 then unitaryFormulaConstant
                 else unitaryFormulaFunction
-              sentence = AF_FOF_Annotated $
-                FOF_annotated name Axiom formula (Annotations Nothing)
+              sentence = fofUnitaryFormulaToAxiom name formula
           in  makeNamed nameString sentence
 
+sortOfX :: Variable -> SORT -> FOF_unitary_formula
+sortOfX var sort = FOFUF_atomic $ FOFAT_plain $
+  FOFPAF_predicate (predicateOfSort sort) [FOFT_variable var]
 
-    sortOfX :: Variable -> SORT -> FOF_unitary_formula
-    sortOfX var sort = FOFUF_atomic $ FOFAT_plain $
-      FOFPAF_predicate (predicateOfSort sort) [FOFT_variable var]
-
-functionOfOp :: OP_NAME -> TAS.Predicate
+functionOfOp :: OP_NAME -> TAS.TPTP_functor
 functionOfOp opName =
   let functionName = "function_" ++ show opName
   in  mkSimpleId functionName
+
+predicateOfPred :: PRED_NAME -> TAS.Predicate
+predicateOfPred predName =
+  let predicateName = "predicate_" ++ show predName
+  in  mkSimpleId predicateName
 
 predicateOfSort :: SORT -> TAS.Predicate
 predicateOfSort sort =
