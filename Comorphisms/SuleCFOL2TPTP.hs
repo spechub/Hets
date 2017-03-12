@@ -117,16 +117,16 @@ import TPTP.Sign as TSign
 import TPTP.Logic
 import TPTP.Sublogic
 
-data PlainTPTP = PlainTPTP
+data TPTP_FOF = TPTP_FOF
 
-instance Show PlainTPTP where
-  show PlainTPTP = "TPTP"
+instance Show TPTP_FOF where
+  show TPTP_FOF = "TPTP_FOF"
 
 -- | The identity of the comorphisms
 data GenSuleCFOL2TPTP a = GenSuleCFOL2TPTP a deriving Show
 
-suleCFOL2TPTP :: GenSuleCFOL2TPTP PlainTPTP
-suleCFOL2TPTP = GenSuleCFOL2TPTP PlainTPTP
+suleCFOL2TPTP :: GenSuleCFOL2TPTP TPTP_FOF
+suleCFOL2TPTP = GenSuleCFOL2TPTP TPTP_FOF
 
 -- | TPTP theories
 type TPTPTheory = (TSign.Sign, [Named Sentence])
@@ -146,7 +146,7 @@ instance Show a => Comorphism (GenSuleCFOL2TPTP a)
     sourceSublogic (GenSuleCFOL2TPTP a) = SL.cFol
                       { sub_features = LocFilSub
                       , cons_features = emptyMapConsFeature
-                      , has_empty_sorts = show a == show PlainTPTP }
+                      , has_empty_sorts = show a == show TPTP_FOF }
     targetLogic (GenSuleCFOL2TPTP _) = TPTP.Logic.TPTP
     mapSublogic cid sl = Just FOF
     map_theory (GenSuleCFOL2TPTP a) = transTheory
