@@ -95,6 +95,7 @@ import Data.List as List
 import Data.Maybe
 import Data.Char
 import Data.Function
+import Numeric (showHex)
 
 import CASL.Logic_CASL
 import CASL.AS_Basic_CASL as CAS
@@ -115,7 +116,6 @@ import TPTP.AS as TAS
 import TPTP.Sign as TSign
 import TPTP.Logic
 import TPTP.Sublogic
-import TPTP.Translate
 
 data PlainTPTP = PlainTPTP
 
@@ -128,76 +128,8 @@ data GenSuleCFOL2TPTP a = GenSuleCFOL2TPTP a deriving Show
 suleCFOL2TPTP :: GenSuleCFOL2TPTP PlainTPTP
 suleCFOL2TPTP = GenSuleCFOL2TPTP PlainTPTP
 
-
 -- | TPTP theories
 type TPTPTheory = (TSign.Sign, [Named Sentence])
-
-data CType = CSort
-           | CVar SORT
-           | CPred CSign.PredType
-           | COp CSign.OpType
-             deriving (Eq, Ord, Show)
-
-toCKType :: CType -> CKType
-toCKType ct = case ct of
-  CSort -> CKSort
-  CVar _ -> CKVar
-  CPred _ -> CKPred
-  COp _ -> CKOp
-
--- Identifiers in TPTP
-type TPTPId = Token
-
--- | CASL Ids with Types mapped to SPIdentifier
-type IdTypeSPIdMap = Map.Map Id (Map.Map CType TPTPId)
-
--- | specialized lookup for IdTypeSPIdMap
-lookupSPId :: Id -> CType -> IdTypeSPIdMap ->
-          Maybe TPTPId
-lookupSPId i t = maybe Nothing (Map.lookup t) . Map.lookup i
-
--- | specialized insert (with error) for IdTypeSPIdMap
-insertSPId :: Id -> CType ->
-              TPTPId ->
-              IdTypeSPIdMap ->
-              IdTypeSPIdMap
-insertSPId i t spid m =
-    assert (checkIdentifier (toCKType t) $ show spid) $
-    Map.insertWith (Map.unionWith err) i (Map.insert t spid Map.empty) m
-    where err = error ("SuleCFOL2TPTP: for Id \"" ++ show i ++
-                       "\" the type \"" ++ show t ++
-                       "\" can't be mapped to different TPTP identifiers")
-
-deleteSPId :: Id -> CType ->
-              IdTypeSPIdMap ->
-              IdTypeSPIdMap
-deleteSPId i t m =
-    maybe m (\ m2 -> let m2' = Map.delete t m2
-                     in if Map.null m2'
-                           then Map.delete i m
-                           else Map.insert i m2' m) $
-          Map.lookup i m
-
--- | specialized elems into a set for IdTypeSPIdMap
-elemsSPIdSet :: IdTypeSPIdMap -> Set.Set TPTPId
-elemsSPIdSet = Map.fold (\ m res -> Set.union res
-                                      (Set.fromList (Map.elems m)))
-                         Set.empty
-
--- extended signature translation
-type SignTranslator f e = CSign.Sign f e -> e -> TPTPTheory -> TPTPTheory
-
--- extended signature translation for CASL
-sigTrCASL :: SignTranslator () ()
-sigTrCASL _ _ = id
-
--- extended formula translation
-type FormulaTranslator f e =
-    CSign.Sign f e -> IdTypeSPIdMap -> f -> Sentence
-
--- extended formula translation for CASL
-formTrCASL :: FormulaTranslator () ()
-formTrCASL _ _ = error "SuleCFOL2TPTP: No extended formulas allowed in CASL"
 
 instance Show a => Language (GenSuleCFOL2TPTP a) where
   language_name (GenSuleCFOL2TPTP a) = "CASL2" ++ show a
@@ -217,16 +149,13 @@ instance Show a => Comorphism (GenSuleCFOL2TPTP a)
                       , has_empty_sorts = show a == show PlainTPTP }
     targetLogic (GenSuleCFOL2TPTP _) = TPTP.Logic.TPTP
     mapSublogic cid sl = Just FOF
-    map_theory (GenSuleCFOL2TPTP a) = transTheory sigTrCASL formTrCASL
+    map_theory (GenSuleCFOL2TPTP a) = transTheory
     has_model_expansion (GenSuleCFOL2TPTP _) = True
 
-transTheory :: (FormExtension f, Eq f) =>
-               SignTranslator f e
-            -> FormulaTranslator f e
-            -> (CSign.Sign f e, [Named (FORMULA f)])
+transTheory :: (FormExtension f, Eq f)
+            => (CSign.Sign f e, [Named (FORMULA f)])
             -> Result TPTPTheory
-transTheory trSig trForm (sign, sens) = do
-  -- TODO what to do with trSig and trForm?
+transTheory (sign, sens) = do
   let signWithRenamings@(preparedSign, _, _) = prepareSign sign
   let preparedSens = concatMap prepareNamedFormula sens
   (tptpSign, signSentences) <- translateSign preparedSign
@@ -999,23 +928,39 @@ sortOfX var sort = FOFUF_atomic $ FOFAT_plain $
 
 functionOfOp :: OP_NAME -> TAS.TPTP_functor
 functionOfOp opName =
-  let functionName = "function_" ++ show opName
+  let functionName = "function_" ++ toAlphaNum (show opName)
   in  mkSimpleId functionName
 
 predicateOfPred :: PRED_NAME -> TAS.Predicate
 predicateOfPred predName =
-  let predicateName = "predicate_" ++ show predName
+  let predicateName = "predicate_" ++ toAlphaNum (show predName)
   in  mkSimpleId predicateName
 
 predicateOfSort :: SORT -> TAS.Predicate
 predicateOfSort sort =
-  let predicateName = "sort_" ++ show sort
+  let predicateName = "sort_" ++ toAlphaNum (show sort)
   in  mkSimpleId predicateName
 
 variableOfVar :: VAR -> TAS.Variable
 variableOfVar var =
-  let varName = "VAR_" ++ show var
+  let varName = "VAR_" ++ toAlphaNum (show var)
   in  mkSimpleId varName
+
+toAlphaNum :: String -> String
+toAlphaNum = concatMap toAlphaNumC
+  where
+    toAlphaNumC :: Char -> String
+    toAlphaNumC c = case c of
+      '+' -> "PLUS"
+      '-' -> "MINUS"
+      '/' -> "SLASH"
+      '\\' -> "BACKSLASH"
+      '%' -> "PERCENT"
+      '<' -> "OPENINGANGLE"
+      '>' -> "CLOSINGANGLE"
+      '_' -> "_"
+      _ -> if isAlphaNum c then [c] else 'U' : showHex (ord c) ""
+
 
 {-
 -- -------------------------- Signature -----------------------------
