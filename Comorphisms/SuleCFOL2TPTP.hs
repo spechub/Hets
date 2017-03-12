@@ -68,6 +68,9 @@ Implementation notes:
 - The remainder is only a cache - Don't use it.
 -}
 
+-- TODO if something is %implied, make it a conjecture!
+-- See Basic/RelationsAndOrders.casl, node StrictOrder/AsymmetricRelation
+
 module Comorphisms.SuleCFOL2TPTP
   ( suleCFOL2TPTP
   ) where
@@ -540,7 +543,7 @@ prepareNamedFormula formula =
 
             varName :: Int -> String
             varName i =
-              show var ++ "_other" ++ if i == 0 then "" else "_" ++ show i
+              show var ++ "_OTHER" ++ if i == 0 then "" else "_" ++ show i
 
 
 translateNamedFormula :: (FormExtension f, Eq f)
@@ -599,11 +602,14 @@ translateFormula signWithRenamings nameS f = do
         fof2 <- toUnitaryFormula f2
         return $ FOFUF_logic $ FOFLF_binary $ FOFBF_nonassoc $
                  FOF_binary_nonassoc TAS.Implication fof1 fof2
+      -- TODO answer why this is:
+      -- For some reason, "f2 if f1" is saved as "Relation f1 RevImpl f2 _"
       Relation f1 RevImpl f2 _ -> do
         fof1 <- toUnitaryFormula f1
         fof2 <- toUnitaryFormula f2
+        -- Flip the formulae:
         return $ FOFUF_logic $ FOFLF_binary $ FOFBF_nonassoc $
-                 FOF_binary_nonassoc ReverseImplication fof1 fof2
+                 FOF_binary_nonassoc ReverseImplication fof2 fof1
       Relation f1 CAS.Equivalence f2 _ -> do
         fof1 <- toUnitaryFormula f1
         fof2 <- toUnitaryFormula f2
@@ -1015,8 +1021,9 @@ translateSign caslSign =
 
               predicateResult = predicateOfSort $ opRes opType
               predicates = map predicateOfSort $ opArgs opType
-              variables = map (\ i -> mkSimpleId $ "X" ++ show i)
-                            [1 .. length (opArgs opType)]
+              variables =
+                map (\ i -> variableOfVar $ mkSimpleId $ "X" ++ show i)
+                  [1 .. length (opArgs opType)]
               function = functionOfOp opName
 
               functionAntecedent =
@@ -1028,7 +1035,7 @@ translateSign caslSign =
               functionConsequent = FOFUF_atomic $ FOFAT_plain $
                 FOFPAF_predicate predicateResult
                 [FOFT_function $ FOFFT_plain $ FOFPT_functor function $
-                  map (FOFT_variable . variableOfVar) $ variables]
+                  map FOFT_variable variables]
 
               unitaryFormulaConstant = FOFUF_atomic $ FOFAT_plain $
                 FOFPAF_predicate predicateResult
@@ -1081,8 +1088,13 @@ toAlphaNum = concatMap toAlphaNumC
       '/' -> "SLASH"
       '\\' -> "BACKSLASH"
       '%' -> "PERCENT"
-      '<' -> "OPENINGANGLE"
-      '>' -> "CLOSINGANGLE"
+      '<' -> "OPEN"
+      '>' -> "CLOSE"
+      '~' -> "TILDE"
+      '=' -> "EQ"
+      '*' -> "STAR"
+      '\'' -> "PRIME"
+      '\"' -> "QUOTE"
       '_' -> "_"
       _ -> if isAlphaNum c then [c] else 'U' : showHex (ord c) ""
 
