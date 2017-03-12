@@ -165,16 +165,16 @@ transTheory (sign, sens) = do
 prepareNamedFormula :: (FormExtension f, Eq f)
                     => Named (FORMULA f) -> [Named (FORMULA f)]
 prepareNamedFormula formula =
-  let resolvedConditionalsFormulae =
+  let resolvedFormulae =
         resolveConditionals $
         resolveUniqueExistentialQuantifier $
         sentence formula
       nameS = senAttr formula
-  in  case resolvedConditionalsFormulae of
-        [_] -> map (\ f -> makeNamed nameS f) resolvedConditionalsFormulae
+  in  case resolvedFormulae of
+        [_] -> map (\ f -> makeNamed nameS f) resolvedFormulae
         _ -> map (\ (f, i) ->
                    makeNamed (nameS ++ "_resolved_conditional_" ++ show i) f
-                 ) $ zip resolvedConditionalsFormulae [1..]
+                 ) $ zip resolvedFormulae [1..]
   where
     -- Resolves/removes Conditional terms recursively. For instance, from
     -- P(T11 when C1 else T12, T21 when C2 else T22)
@@ -191,7 +191,8 @@ prepareNamedFormula formula =
       Quantification q vars f r ->
         map (\ f' -> Quantification q vars f' r) $ resolveConditionals f
       Junction j fs r ->
-        map (\ fs' -> Junction j fs' r) $ map resolveConditionals fs
+        map (\ fs' -> Junction j fs' r) $
+        List.transpose $ map resolveConditionals fs
       Relation f1 rel f2 r ->
         let resolvedFormulae1 = resolveConditionals f1
             resolvedFormulae2 = resolveConditionals f2
@@ -546,7 +547,7 @@ translateNamedFormula :: (FormExtension f, Eq f)
                       => SignWithRenamings f e
                       -> Named (FORMULA f) -> Result (Named TSign.Sentence)
 translateNamedFormula signWithRenamings x = do
-  let nameS = senAttr x
+  let nameS = "sentence_" ++ (map toLower $ senAttr x)
   translated <- translateFormula signWithRenamings nameS $ sentence x
   return $ makeNamed nameS translated
 
@@ -925,7 +926,7 @@ translateSign caslSign =
     -- fof(sort_SUBSORT_subsort_of_SORT, axiom, ! [X]: (SUBSORT(X) => SORT(X))).
     createSubsortSentence :: SORT -> SORT -> Named TSign.Sentence
     createSubsortSentence sort subsort =
-      let varX = mkSimpleId "X"
+      let varX = variableOfVar $ mkSimpleId "X"
           nameString = "sign_" ++ show subsort ++ "_subsort_of_" ++ show sort
           name = NameString $ mkSimpleId nameString
           formula = FOFUF_quantified $
@@ -940,7 +941,7 @@ translateSign caslSign =
     -- fof(sign_non_empty_sort_SORTNAME, axiom, ? [X]: (SORT(X))).
     createNonEmptySortSentence :: SORT -> Named TSign.Sentence
     createNonEmptySortSentence sort =
-      let varX = mkSimpleId "X"
+      let varX = variableOfVar $ mkSimpleId "X"
           nameString = "sign_non_empty_sort_" ++ show sort
           name = NameString $ mkSimpleId nameString
           formula = FOFUF_quantified $
@@ -952,14 +953,17 @@ translateSign caslSign =
     createTopSortSentences :: Set.Set SORT -> SORT
                            -> [Named TSign.Sentence] -> [Named TSign.Sentence]
     createTopSortSentences topSorts sort sentences =
-      createTopSortSentence (Set.delete sort topSorts) sort : sentences
+      let otherTopSorts = Set.delete sort topSorts
+      in  if Set.null otherTopSorts
+          then []
+          else createTopSortSentence otherTopSorts sort : sentences
       where
         -- creates:
         -- fof(sign_topsort_SORT, axiom,
         --   ! [X]: (SORT(X) => ~ OTHER_SORT1(X) & ... & ~ OTHER_SORTn(X)).
         createTopSortSentence :: Set.Set SORT -> SORT -> Named TSign.Sentence
         createTopSortSentence otherTopSorts sort =
-          let varX = mkSimpleId "X"
+          let varX = variableOfVar $ mkSimpleId "X"
               nameString = "sign_topsort_" ++ show sort
               name = NameString $ mkSimpleId nameString
 
@@ -1045,16 +1049,16 @@ translateSign caslSign =
 
 sortOfX :: TAS.Variable -> SORT -> FOF_unitary_formula
 sortOfX var sort = FOFUF_atomic $ FOFAT_plain $
-  FOFPAF_predicate (predicateOfSort sort) [FOFT_variable $ variableOfVar var]
+  FOFPAF_predicate (predicateOfSort sort) [FOFT_variable var]
 
 functionOfOp :: OP_NAME -> TAS.TPTP_functor
 functionOfOp opName =
-  let functionName = "function_" ++ toAlphaNum (show opName)
+  let functionName = "op_" ++ toAlphaNum (show opName)
   in  mkSimpleId functionName
 
 predicateOfPred :: PRED_NAME -> TAS.Predicate
 predicateOfPred predName =
-  let predicateName = "predicate_" ++ toAlphaNum (show predName)
+  let predicateName = "pred_" ++ toAlphaNum (show predName)
   in  mkSimpleId predicateName
 
 predicateOfSort :: SORT -> TAS.Predicate
