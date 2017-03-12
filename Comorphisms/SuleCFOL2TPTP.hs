@@ -564,8 +564,7 @@ translateFormula signWithRenamings nameS f = do
     -- GHC complains about the type variable f, and needs to infer the type
     -- itself at this point.
     -- toUnitaryFormula :: (FormExtension f, Eq f)
-    --                  => Set.Set TAS.Variable
-    --                  -> FORMULA f
+    --                  => FORMULA f
     --                  -> Result FOF_unitary_formula
     toUnitaryFormula x = case x of
       Quantification q vars f _ -> do
@@ -659,7 +658,7 @@ translateFormula signWithRenamings nameS f = do
 
     translateVarDecl :: VAR_DECL -> [(TAS.Variable, SORT)]
     translateVarDecl x = case x of
-      Var_decl vars sort _ -> zip vars $ repeat sort
+      Var_decl vars sort _ -> zip (map variableOfVar vars) $ repeat sort
 
 
 translateTerm :: (FormExtension f, Eq f)
@@ -667,7 +666,7 @@ translateTerm :: (FormExtension f, Eq f)
               -> TERM f
               -> Result TAS.FOF_term
 translateTerm signWithRenamings x = case x of
-  Qual_var var _ _ -> return $ FOFT_variable var
+  Qual_var var _ _ -> return $ FOFT_variable $ variableOfVar var
   Application opSymb terms _ -> do
     opName <- case opSymb of
           Op_name _ ->
@@ -975,7 +974,7 @@ translateSign caslSign =
               functionConsequent = FOFUF_atomic $ FOFAT_plain $
                 FOFPAF_predicate predicateResult
                 [FOFT_function $ FOFFT_plain $ FOFPT_functor function $
-                  map FOFT_variable variables]
+                  map (FOFT_variable . variableOfVar) $ variables]
 
               unitaryFormulaConstant = FOFUF_atomic $ FOFAT_plain $
                 FOFPAF_predicate predicateResult
@@ -994,9 +993,9 @@ translateSign caslSign =
               sentence = fofUnitaryFormulaToAxiom name formula
           in  makeNamed nameString sentence
 
-sortOfX :: Variable -> SORT -> FOF_unitary_formula
+sortOfX :: TAS.Variable -> SORT -> FOF_unitary_formula
 sortOfX var sort = FOFUF_atomic $ FOFAT_plain $
-  FOFPAF_predicate (predicateOfSort sort) [FOFT_variable var]
+  FOFPAF_predicate (predicateOfSort sort) [FOFT_variable $ variableOfVar var]
 
 functionOfOp :: OP_NAME -> TAS.TPTP_functor
 functionOfOp opName =
@@ -1012,6 +1011,11 @@ predicateOfSort :: SORT -> TAS.Predicate
 predicateOfSort sort =
   let predicateName = "sort_" ++ show sort
   in  mkSimpleId predicateName
+
+variableOfVar :: VAR -> TAS.Variable
+variableOfVar var =
+  let varName = "VAR_" ++ show var
+  in  mkSimpleId varName
 
 {-
 -- -------------------------- Signature -----------------------------
