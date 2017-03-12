@@ -212,47 +212,70 @@ prepareNamedFormula formula =
         resolveTerms ts toFormula =
           map resolveTermsForConditionalValue boolPermutations
           where
+            boolPermutations :: [[Bool]]
+            boolPermutations = getBoolPermutations $ Map.size conditionalTermMap
+
             -- GHC complains about the type variable f, and needs to infer the
             -- type itself in these functions:
-            -- conditionalMap :: (FormExtension f, Eq f)
-            --                => Map.Map Integer (TERM f)
-            conditionalMap = findConditionals ts
+
+            -- termMap :: (FormExtension f, Eq f) => Map.Map Int (TERM f)
+            termMap = Map.fromList $ zip [0..] ts
+
+            -- conditionalTermMap :: (FormExtension f, Eq f)
+            --                    => Map.Map Int (TERM f)
+            conditionalTermMap = findConditionals ts
+
+            -- This overwrites the termMap with entries from conditionalTermMap.
+            -- completeTermMap :: (FormExtension f, Eq f)
+            --                 => Map.Map Int (TERM f)
+            completeTermMap = conditionalTermMap `Map.union` termMap
 
             -- combinations :: (FormExtension f, Eq f)
-            --              => Map.Map (Bool, Integer) (FORMULA f, TERM f)
-            combinations = conditionalCombinations conditionalMap
-
-            boolPermutations :: [[Bool]]
-            boolPermutations = getBoolPermutations $ Map.size conditionalMap
+            --              => Map.Map (Bool, Int) (FORMULA f, TERM f)
+            combinations = conditionalCombinations conditionalTermMap
 
             -- resolveTermsForConditionalValue :: (FormExtension f, Eq f)
             --                                 => [Bool] -> FORMULA f
             resolveTermsForConditionalValue permutation =
               let permutationWithIndexes =
-                    zip permutation $ Set.toList $
-                    Map.keysSet conditionalMap
-                  conditionsWithTerms =
-                    map (fromJust . (flip Map.lookup) combinations)
-                    permutationWithIndexes
-                  condition = conjunction $ map fst conditionsWithTerms
+                   zip permutation $
+                   Set.toAscList $ Map.keysSet conditionalTermMap
+                  currentCombinations =
+                    Map.filterWithKey
+                      (\ key _ -> key `elem` permutationWithIndexes)
+                      combinations
+                  currentConditions =
+                    Map.foldrWithKey
+                      (\ (_, i) (c, _) acc -> Map.insert i c acc)
+                      Map.empty
+                      currentCombinations
+                  currentTerms =
+                    Map.foldrWithKey
+                      (\ (_, i) (_, t) acc -> Map.insert i t acc)
+                      Map.empty
+                      currentCombinations
+                  condition = conjunction $ Map.elems currentConditions
                   replacedTerms =
-                    map (\ (b, i, t) ->
-                          snd $ Map.findWithDefault
-                                -- The `undefined` is only here for the type
-                                -- check. It is thrown away anyway by `snd`:
-                                (undefined, t) (b, i) combinations
-                        ) $ zip3 permutation [1..] ts
-              in  implication condition $ toFormula replacedTerms
+                    map snd $ Map.toAscList $ currentTerms `Map.union` termMap
+              in  if Map.null combinations
+                  then toFormula ts
+                  else implication condition $ toFormula replacedTerms
 
+    -- Transforms the conditionalMap:
+    -- The numbers in the indexes stay the same, but the keys are added a Bool
+    -- where True maps to the positive conditional formula and the term that is
+    -- supposed to be used in that case. False maps to the negated conditional
+    -- formula and the term that is supposed to be used in case this negation
+    -- holds.
     conditionalCombinations :: (FormExtension f, Eq f)
-                            => Map.Map Integer (TERM f)
-                            -> Map.Map (Bool, Integer) (FORMULA f, TERM f)
-    conditionalCombinations conditionalMap =
+                            => Map.Map Int (TERM f)
+                            -> Map.Map (Bool, Int) (FORMULA f, TERM f)
+    conditionalCombinations conditionalTermMap =
       -- The inner list and concat is needed for the list comprehension to work.
       Map.fromList $ concat [ [ ((True, i), (condition t, thenTerm t))
                               , ((False, i), (negCondition t, elseTerm t))
                               ]
-                            | (i, t) <- Map.toList $ conditionalMap
+                            | (i, t) <- Map.toList $ conditionalTermMap
                             ]
       where
         errorMessage = "Non-Condition found where only Condition can occur. " ++
@@ -285,14 +308,13 @@ prepareNamedFormula formula =
     implication antecedent consequent =
       Relation antecedent CAS.Implication consequent nullRange
 
+    -- Filters TERMs with the Conditional constructor and indexes them
+    -- starting at 0. Indexing happens before filtering, so the indexes may
+    -- "contain holes".
     findConditionals :: (FormExtension f, Eq f)
-                     => [TERM f] -> Map.Map Integer (TERM f)
+                     => [TERM f] -> Map.Map Int (TERM f)
     findConditionals ts =
-      snd $ foldr (\ t (index, conditionals) ->
-              (index + 1, if isConditional t
-                          then Map.insert index t conditionals
-                          else conditionals)
-            ) (1, Map.empty) ts
+      Map.fromList $ filter (isConditional . snd) $ zip [0..] ts
       where
         isConditional :: (FormExtension f, Eq f) => TERM f -> Bool
         isConditional x = case x of
@@ -508,14 +530,14 @@ prepareNamedFormula formula =
         freshVariable :: Set.Set VAR -> VAR ->  VAR
         freshVariable usedVars var = freshVariable' 0
           where
-            freshVariable' :: Integer -> VAR
+            freshVariable' :: Int -> VAR
             freshVariable' i =
               let freshVar = mkSimpleId $ varName i
               in  if Set.member freshVar usedVars
                   then freshVariable' $ i + 1
                   else freshVar
 
-            varName :: Integer -> String
+            varName :: Int -> String
             varName i =
               show var ++ "_other" ++ if i == 0 then "" else "_" ++ show i
 
@@ -881,7 +903,7 @@ translateSign caslSign =
           emptySorts = emptySortSet caslSign
           topSorts = Rel.mostRight $ sortRel caslSign
           subsortSentences =
-            Map.foldWithKey (createSubsortSentences emptySorts) [] sortMap
+            Map.foldrWithKey (createSubsortSentences emptySorts) [] sortMap
           topSortSentences =
             Set.foldr (createTopSortSentences topSorts) [] topSorts
       in  subsortSentences ++ topSortSentences
