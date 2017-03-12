@@ -367,6 +367,7 @@ prepareNamedFormula formula =
 
                 f' = Junction Con [f, uniquenessF] nullRange
             in  (usedVars', Quantification Existential varDecls f' r)
+          _ -> (usedVars, x)
 
         collectVars :: (FormExtension f, Eq f)
                     => Set.Set VAR -> FORMULA f -> Set.Set VAR
@@ -771,10 +772,63 @@ prepareSign sign =
 translateSign :: (FormExtension f, Eq f)
               => CSign.Sign f e -> Result (TSign.Sign, [Named TSign.Sentence])
 translateSign caslSign =
-  return (tptpSign, sentencesOfSorts ++ sentencesOfOps ++ undefined)
+  return (tptpSign, sentencesOfSorts ++ sentencesOfOps)
   where
     tptpSign :: TSign.Sign
-    tptpSign = undefined
+    tptpSign =
+      let predicatesOfSorts =
+            Set.foldr (\ sort predicates ->
+                        Map.insertWith
+                          Set.union
+                          (predicateOfSort sort)
+                          (Set.singleton 1)
+                          predicates
+                      ) Map.empty $ Rel.nodes $ sortRel caslSign
+          constants =
+            MapSet.foldWithKey (\ opName opType constants ->
+                                 if null $ opArgs opType
+                                 then Set.insert
+                                        (functionOfOp opName)
+                                        constants
+                                 else constants
+                               ) Set.empty $ opMap caslSign
+          -- numbers cannot be generated due to prefix "function_"
+          propositions =
+            MapSet.foldWithKey (\ predName predType propositions ->
+                                 if null $ predArgs predType
+                                 then Set.insert
+                                        (predicateOfPred predName)
+                                        propositions
+                                 else propositions
+                               ) Set.empty $ predMap caslSign
+          predicatesWithoutSorts =
+            MapSet.foldWithKey (\ predName predType predicates ->
+                                 if not $ null $ predArgs predType
+                                 then Map.insertWith
+                                       Set.union
+                                       (predicateOfPred predName)
+                                       (Set.singleton $ length $
+                                         predArgs predType)
+                                       predicates
+                                 else predicates
+                               ) Map.empty $ predMap caslSign
+          predicates =
+            Map.unionWith Set.union predicatesOfSorts predicatesWithoutSorts
+          functors =
+            MapSet.foldWithKey (\ opName opType functors ->
+                                 if not $ null $ opArgs opType
+                                 then Map.insertWith
+                                        Set.union
+                                        (functionOfOp opName)
+                                        (Set.singleton $ length $ opArgs opType)
+                                        functors
+                                 else functors
+                               ) Map.empty $ opMap caslSign
+      in  TSign.emptySign { constantSet = constants
+                          , propositionSet = propositions
+                          , fofPredicateMap = predicates
+                          , fofFunctorMap = functors
+                          }
 
     sentencesOfSorts :: [Named TSign.Sentence]
     sentencesOfSorts =
@@ -788,7 +842,7 @@ translateSign caslSign =
       in  subsortSentences ++ topSortSentences
 
     createSubsortSentences :: Set.Set SORT -> SORT -> Set.Set SORT
-                         -> [Named TSign.Sentence] -> [Named TSign.Sentence]
+                           -> [Named TSign.Sentence] -> [Named TSign.Sentence]
     createSubsortSentences emptySorts sort subsorts sentences =
       let subsortSentences = Set.foldr
             (\ subsort sens -> createSubsortSentence sort subsort : sens)
