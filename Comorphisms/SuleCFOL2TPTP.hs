@@ -312,7 +312,7 @@ prepareNamedFormula formula =
     resolveUniqueExistentialQuantifier :: (FormExtension f, Eq f)
                                        => FORMULA f -> FORMULA f
     resolveUniqueExistentialQuantifier =
-      snd . resolveUniqueExistentialQuantifier' Set.empty
+      resolveUniqueExistentialQuantifier' Set.empty
       where
         -- creates:
         -- exists (x1: s1, ... xn: sn) .
@@ -321,7 +321,7 @@ prepareNamedFormula formula =
         resolveUniqueExistentialQuantifier' :: (FormExtension f, Eq f)
                                             => Set.Set VAR
                                             -> FORMULA f
-                                            -> (Set.Set VAR, FORMULA f)
+                                            -> FORMULA f
         resolveUniqueExistentialQuantifier' usedVars x = case x of
           Quantification Unique_existential varDecls f r ->
             let usedVars' = Set.unions $ collectVars usedVars f :
@@ -366,8 +366,53 @@ prepareNamedFormula formula =
                     nullRange
 
                 f' = Junction Con [f, uniquenessF] nullRange
-            in  (usedVars', Quantification Existential varDecls f' r)
-          _ -> (usedVars, x)
+            in  Quantification Existential varDecls f' r
+          Quantification q varDecls f r ->
+            let usedVars' = Set.unions $ collectVars usedVars f :
+                  map (collectVarsDecl usedVars) varDecls
+                f' = resolveUniqueExistentialQuantifier' usedVars' f
+            in  Quantification q varDecls f' r
+          Junction j fs r ->
+            let usedVars' = Set.unions $ map (collectVars usedVars) fs
+                fs' = map (resolveUniqueExistentialQuantifier' usedVars') fs
+            in  Junction j fs' r
+          Relation f1 rel f2 r ->
+            let usedVars' = Set.unions $ map (collectVars usedVars) [f1, f2]
+                f1' = resolveUniqueExistentialQuantifier' usedVars' f1
+                f2' = resolveUniqueExistentialQuantifier' usedVars' f2
+            in  Relation f1' rel f2' r
+          Negation f r ->
+            Negation (resolveUniqueExistentialQuantifier' usedVars f) r
+          Predication p ts r ->
+            let usedVars' = Set.unions $ map (collectVarsT usedVars) ts
+                ts' = map (resolveUniqueExistentialQuantifierT usedVars') ts
+            in  Predication p ts' r
+          Definedness t r ->
+            let usedVars' = collectVarsT usedVars t
+                t' = resolveUniqueExistentialQuantifierT usedVars' t
+            in  Definedness t' r
+          Equation t1 e t2 r ->
+            let usedVars' = Set.unions $ map (collectVarsT usedVars) [t1, t2]
+                t1' = resolveUniqueExistentialQuantifierT usedVars' t1
+                t2' = resolveUniqueExistentialQuantifierT usedVars' t2
+            in  Equation t1' e t2' r
+          Membership t s r ->
+            let usedVars' = collectVarsT usedVars t
+                t' = resolveUniqueExistentialQuantifierT usedVars' t
+            in  Membership t' s r
+          _ -> x
+
+        resolveUniqueExistentialQuantifierT :: (FormExtension f, Eq f)
+                                            => Set.Set VAR -> TERM f -> TERM f
+        resolveUniqueExistentialQuantifierT usedVars x = case x of
+          Conditional t1 f t2 r ->
+            let usedVars' = Set.unions $ map (collectVarsT usedVars) [t1, t2]
+                t1' = resolveUniqueExistentialQuantifierT usedVars' t1
+                t2' = resolveUniqueExistentialQuantifierT usedVars' t2
+                f' = resolveUniqueExistentialQuantifier' usedVars' f
+            in  Conditional t1' f' t2' r
+          _ -> x
+
 
         collectVars :: (FormExtension f, Eq f)
                     => Set.Set VAR -> FORMULA f -> Set.Set VAR
