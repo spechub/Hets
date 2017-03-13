@@ -417,9 +417,11 @@ prepareSign sign =
 
         renameCurrentOp :: OpType -> OP_NAME
         renameCurrentOp opType =
-          let argsS = intercalate "_" $ map show $ opArgs opType
-              resultS = show $ opRes opType
-              newOpNameS = show opName ++ "_" ++ argsS ++ "_" ++ resultS
+          let argsS =
+                intercalate "_" $ map (toAlphaNum . show) $ opArgs opType
+              resultS = toAlphaNum $ show $ opRes opType
+              newOpNameS =
+                toAlphaNum (show opName) ++ "_" ++ argsS ++ "_" ++ resultS
           in  opName { getTokens = [mkSimpleId newOpNameS] }
 
     addPredIfConflicting :: Map.Map SORT Int -> PRED_NAME -> Set.Set PredType
@@ -452,8 +454,9 @@ prepareSign sign =
 
         renameCurrentPred :: PredType -> PRED_NAME
         renameCurrentPred predType =
-          let argsS = intercalate "_" $ map show $ predArgs predType
-              newPredNameS = show predName ++ "_" ++ argsS
+          let argsS =
+                intercalate "_" $ map (toAlphaNum . show) $ predArgs predType
+              newPredNameS = toAlphaNum (show predName) ++ "_" ++ argsS
           in  predName { getTokens = [mkSimpleId newPredNameS] }
 
     isInSameCC :: Map.Map SORT Int -> (SORT, SORT) -> Bool
@@ -568,7 +571,9 @@ translateSign caslSign =
     createSubsortSentence :: SORT -> SORT -> Named TSign.Sentence
     createSubsortSentence sort subsort =
       let varX = variableOfVar $ mkSimpleId "X"
-          nameString = "sign_" ++ show subsort ++ "_subsort_of_" ++ show sort
+          nameString =
+            "sign_" ++ toAlphaNum (show subsort) ++
+            "_subsort_of_" ++ toAlphaNum (show sort)
           name = NameString $ mkSimpleId nameString
           formula = FOFUF_quantified $
             FOF_quantified_formula ForAll [varX] $
@@ -583,7 +588,7 @@ translateSign caslSign =
     createNonEmptySortSentence :: SORT -> Named TSign.Sentence
     createNonEmptySortSentence sort =
       let varX = variableOfVar $ mkSimpleId "X"
-          nameString = "sign_non_empty_sort_" ++ show sort
+          nameString = "sign_non_empty_sort_" ++ toAlphaNum (show sort)
           name = NameString $ mkSimpleId nameString
           formula = FOFUF_quantified $
             FOF_quantified_formula Exists [varX] $
@@ -605,7 +610,7 @@ translateSign caslSign =
         createTopSortSentence :: Set.Set SORT -> SORT -> Named TSign.Sentence
         createTopSortSentence otherTopSorts sort =
           let varX = variableOfVar $ mkSimpleId "X"
-              nameString = "sign_topsort_" ++ show sort
+              nameString = "sign_topsort_" ++ toAlphaNum (show sort)
               name = NameString $ mkSimpleId nameString
 
               formula = FOFUF_quantified $
@@ -649,7 +654,8 @@ translateSign caslSign =
         createSentenceOfOp :: String -> OP_NAME -> OpType
                            -> Named TSign.Sentence
         createSentenceOfOp nameSuffix opName opType =
-          let nameString = "sign_op" ++ nameSuffix ++ "_" ++ show opName
+          let nameString =
+                "sign_op" ++ nameSuffix ++ "_" ++ toAlphaNum (show opName)
               name = NameString $ mkSimpleId nameString
 
               predicateResult = predicateOfSort $ opRes opType
