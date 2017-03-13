@@ -56,3 +56,36 @@ spec test_cond =
   . f(x) = (g(x) when p(x) else h(x)) 
   . f(x) = ((g(x) when p(x) else h(x)) when q(x) else f(x))
 end
+
+spec Nat =
+  free type Nat ::= 0 | suc(Nat)
+  ops   __ + __, __ * __  :   Nat * Nat ->  Nat;
+  op ack : Nat * Nat * Nat -> Nat
+  forall m,n,k : Nat
+  . 0 + m = m                        %(add_0_Nat)%       %simp
+  . suc(n) + m = suc(n + m)          %(add_suc_Nat)%     %simp
+     . 0 * m = 0                        %(mult_0_Nat)% %simp
+     . suc(n) * m = (n * m) + m         %(mult_suc_Nat)% %simp
+
+  . m + 0 = m                        %(add_0_Nat_right)% %implied
+                                                         %simp
+  . m+(n+k) = (m+n)+k                %(add_assoc_Nat)%   %implied
+                                                         %simp
+  . m+suc(n) = suc(m+n)              %(add_suc_Nat)%     %implied
+                                                         %simp
+  . m+n = n+m                        %(add_comm_Nat)%    %implied
+
+  forall a,b,n:Nat
+  .  ack(a, b, 0)=suc(b)
+  .  ack(a, 0, suc(0))= a
+  .  ack(a, 0, suc(suc(0)))= 0
+  .  ack(a, 0, suc(suc(suc(n))))= suc(0)
+  .  ack(a, suc(b), suc(n))=ack(a, ack(a, b, suc(n)), n)
+
+  pred __<=__ : Nat*Nat
+  forall m,n : Nat
+  . 0 <= n                           %(leq_def1_Nat)% %simp
+  . not suc(n) <= 0                  %(leq_def2_Nat)% %simp
+  . suc(m) <= suc(n) <=> m <= n      %(leq_def3_Nat)% %simp
+
+end
