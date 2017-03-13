@@ -7,13 +7,22 @@ spec test_overloading =
   sorts s < t1; t1 < u; s < t2; t2 < u
   sorts v < w; w < x
   ops f:s->v; f:s->x; f:t1->w  %% in the overloading relation
+  ops g:s->v; g:s->x; g:t1->w  %% in the overloading relation
+  forall y:s
+  . f(y)=g(y) %(f=g)%
 end
 
 spec test_non_overloading =
   sorts s < t1; t1 < u; s < t2; t2 < u
   sorts v < w; w < x
-  sort z
-  ops f:s->v; f:s->z; f:z->w  %% not in the overloading relation
+  sorts z1,z2
+  ops f:s->v; f:s->z1; f:z1->w; f:z2->w  %% not in the overloading relation
+  ops g:s->v; g:s->z1; g:z1->w; g:z2->w  %% not in the overloading relation
+  forall y:s
+  . (op f : s -> v)(y) = (op g : s -> v)(y) %(f=g 1)%
+  . (op f : s -> z1)(y) = (op g : s -> z1)(y) %(f=g 2)%
+  forall y:z1
+  . f(y) = g(y) %(f=g 3)%
 end
 
 spec test_partially_overloading =
