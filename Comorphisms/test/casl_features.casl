@@ -3,12 +3,34 @@ spec test_if =
   . p if q
 end
 
-spec test_sorts =
+spec test_overloading =
   sorts s < t1; t1 < u; s < t2; t2 < u
   sorts v < w; w < x
-  ops f:s->v; f:s->x; f:t1->w
+  ops f:s->v; f:s->x; f:t1->w  %% in the overloading relation
 end
 
+spec test_non_overloading =
+  sorts s < t1; t1 < u; s < t2; t2 < u
+  sorts v < w; w < x
+  sort z
+  ops f:s->v; f:s->z; f:z->w  %% not in the overloading relation
+end
+
+spec test_partially_overloading =
+  sorts s < t1; t1 < u; s < t2; t2 < u
+  sorts v < w; w < x
+  sort z
+  ops f:s->v; f:s->x; f:z->w  %% partially in the overloading relation
+end
+
+spec test_many_sorts =
+  sorts a,b,c,d,e
+end
+
+spec test_connected_components =
+  sorts a < b; c < b; c < d; d < e; f < e; g < h
+end
+  
 spec test_cond =
   sort s
   ops f,g,h:s->s
