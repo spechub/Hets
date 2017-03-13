@@ -20,7 +20,7 @@ Reflections on the theory of this comorphism:
 - the model expansion property only holds up to isomorphism
   (which does not matter, because satisfaction is isomorphism invariant)
   Namely, for a CASL model, take an isomorphic model where the carriers
-  of top-sorts are made disjoint => TODO (axiom for disjoint top sorts is DONE)
+  of top-sorts are made disjoint => DONE
 - a function f:s1 x ... x sn -> s is represented by a function f
   plus axiom forall x1,...,xn . s1(x1) /\ ... /\ sn(xn) => s(f(x1,...xn)) => DONE
 - a predicate p:s1 x ... x sn is represented by a predicate p
@@ -36,7 +36,7 @@ Reflections on the theory of this comorphism:
 - sentence translation is done by omitting types of function and predicate
   symbols and by relativising quantifiers with the predicate corresponding
   to the sort of the quantified variable => DONE
-- model reduction translates a TPTP model to a CASL model with
+- model reduction translates a TPTP model to a CASL model with => TODO
   - carriers = extensions of corresponding predicates
   - functions = restrictions of functions to the appropriate carriers.
     The above axioms ensure that this gives a total function
@@ -67,9 +67,6 @@ Implementation notes:
 - predMap: Same thing, but only for the arguments
 - The remainder is only a cache - Don't use it.
 -}
-
--- TODO if something is %implied, make it a conjecture!
--- See Basic/RelationsAndOrders.casl, node StrictOrder/AsymmetricRelation
 
 module Comorphisms.SuleCFOL2TPTP
   ( suleCFOL2TPTP
@@ -610,7 +607,6 @@ translateFormula signWithRenamings nameS isAxiom f = do
         fof2 <- toUnitaryFormula f2
         return $ FOFUF_logic $ FOFLF_binary $ FOFBF_nonassoc $
                  FOF_binary_nonassoc TAS.Implication fof1 fof2
-      -- TODO answer why this is:
       -- For some reason, "f2 if f1" is saved as "Relation f1 RevImpl f2 _"
       Relation f1 RevImpl f2 _ -> do
         fof1 <- toUnitaryFormula f1
@@ -940,7 +936,6 @@ translateSign caslSign =
             if Set.member sort emptySorts
             then []
             else [createNonEmptySortSentence sort]
-          -- TODO do we need a sentence for the sort itself?
       in  subsortSentences ++ nonEmptySortsSentence ++ sentences
 
     -- creates:
@@ -1006,9 +1001,7 @@ translateSign caslSign =
 
     sentencesOfOps :: [Named TSign.Sentence]
     sentencesOfOps =
-      -- TODO is assocOps already included in opMap or are these two disjunct?
-      Map.foldrWithKey createSentencesOfOp [] $ MapSet.toMap $
-        assocOps caslSign `MapSet.union` opMap caslSign
+      Map.foldrWithKey createSentencesOfOp [] $ MapSet.toMap $ opMap caslSign
       where
         createSentencesOfOp :: OP_NAME -> Set.Set OpType
                             -> [Named TSign.Sentence] -> [Named TSign.Sentence]
