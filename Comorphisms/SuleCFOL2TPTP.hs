@@ -172,12 +172,15 @@ prepareNamedFormula formula =
         resolveConditionals $
         resolveUniqueExistentialQuantifier $
         sentence formula
-      nameS = senAttr formula
+      name = senAttr formula
   in  case resolvedFormulae of
-        [_] -> map (\ f -> makeNamed nameS f) resolvedFormulae
-        _ -> map (\ (f, i) ->
-                   makeNamed (nameS ++ "_resolved_conditional_" ++ show i) f
-                 ) $ zip resolvedFormulae [1..]
+        [_] -> map (\ f -> formula { sentence = f }) resolvedFormulae
+        _ ->
+          map (\ (f, i) ->
+                formula { senAttr = (name ++ "_resolved_conditional_" ++ show i)
+                        , sentence = f
+                        }
+              ) $ zip resolvedFormulae [1..]
   where
     -- Resolves/removes Conditional terms recursively. For instance, from
     -- P(T11 when C1 else T12, T21 when C2 else T22)
