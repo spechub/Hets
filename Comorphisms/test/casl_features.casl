@@ -25,6 +25,14 @@ spec test_non_overloading =
   . f(y) = g(y) %(f=g 3)%
 end
 
+spec test_non_overloading2 =
+  sorts s < t1; t1 < u; s < t2; t2 < u
+  sorts v < w; w < x
+  sorts z1,z2
+  ops f:s->v; f:t1->z1; f:v->w; f:w->t1  %% not in the overloading relation
+  ops g:s->v; g:t1->z1; g:v->w; g:w->t1  %% not in the overloading relation
+end
+
 spec test_partially_overloading =
   sorts s < t1; t1 < u; s < t2; t2 < u
   sorts v < w; w < x
