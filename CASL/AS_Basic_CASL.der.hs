@@ -158,7 +158,9 @@ data FORMULA f = Quantification QUANTIFIER [VAR_DECL] (FORMULA f) Range
                -- pos: "/\"s or "\/"s
              | Relation (FORMULA f) Relation (FORMULA f) Range
                {- pos: "<=>", "=>" or "if"
-               note: the first formula is the premise also for "if"! -}
+               Note: The first formula is the premise also for "if"!
+               Explicitly: During parsing, "f2 if f1" is saved as
+               "Relation f1 RevImpl f2 _" -}
              | Negation (FORMULA f) Range
                -- pos: not
              | Atom Bool Range

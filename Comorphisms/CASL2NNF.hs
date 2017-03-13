@@ -74,10 +74,11 @@ negationNormalForm sen = case sen of
                 Negation (negationNormalForm sen1) nullRange
        sen2' = negationNormalForm sen2
    in Junction Dis [sen1', sen2'] nullRange
+ -- During parsing, "f2 if f1" is saved as "Relation f1 RevImpl f2 _"
  Relation sen1 RevImpl sen2 _ ->
-   let sen2' = negationNormalForm $
-                Negation (negationNormalForm sen2) nullRange
-       sen1' = negationNormalForm sen1
+   let sen1' = negationNormalForm $
+                Negation (negationNormalForm sen1) nullRange
+       sen2' = negationNormalForm sen2
    in Junction Dis [sen1', sen2'] nullRange
  Relation sen1 Equivalence sen2 _ ->
    let sen1' = Relation sen1 Implication sen2 nullRange
