@@ -1,0 +1,19 @@
+spec test_if =
+  pred p,q : ()
+  . p if q
+end
+
+spec test_sorts =
+  sorts s < t1; t1 < u; s < t2; t2 < u
+  sorts v < w; w < x
+  ops f:s->v; f:s->x; f:t1->w
+end
+
+spec test_cond =
+  sort s
+  ops f,g,h:s->s
+  preds p,q:s
+  forall x:s
+  . f(x) = (g(x) when p(x) else h(x)) 
+  . f(x) = ((g(x) when p(x) else h(x)) when q(x) else f(x))
+end
