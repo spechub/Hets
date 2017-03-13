@@ -928,10 +928,10 @@ translateSign caslSign =
 
     createSubsortSentences :: Set.Set SORT -> SORT -> Set.Set SORT
                            -> [Named TSign.Sentence] -> [Named TSign.Sentence]
-    createSubsortSentences emptySorts sort subsorts sentences =
+    createSubsortSentences emptySorts sort supersorts sentences =
       let subsortSentences = Set.foldr
-            (\ subsort sens -> createSubsortSentence sort subsort : sens)
-            [] subsorts
+            (\ supersort sens -> createSubsortSentence supersort sort : sens)
+            [] supersorts
           nonEmptySortsSentence =
             if Set.member sort emptySorts
             then []
