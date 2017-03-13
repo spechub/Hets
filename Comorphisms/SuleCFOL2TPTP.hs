@@ -145,7 +145,7 @@ instance Show a => Comorphism (GenSuleCFOL2TPTP a)
     sourceLogic (GenSuleCFOL2TPTP _) = CASL
     sourceSublogic (GenSuleCFOL2TPTP a) = SL.cFol
                       { sub_features = LocFilSub
-                      , cons_features = emptyMapConsFeature
+                      , cons_features = NoSortGen
                       , has_empty_sorts = show a == show TPTP_FOF }
     targetLogic (GenSuleCFOL2TPTP _) = TPTP.Logic.TPTP
     mapSublogic cid sl = Just FOF
