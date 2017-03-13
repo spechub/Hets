@@ -551,16 +551,21 @@ translateNamedFormula :: (FormExtension f, Eq f)
                       -> Named (FORMULA f) -> Result (Named TSign.Sentence)
 translateNamedFormula signWithRenamings x = do
   let nameS = "sentence_" ++ (map toLower $ senAttr x)
-  translated <- translateFormula signWithRenamings nameS $ sentence x
-  return $ makeNamed nameS translated
+  translated <-
+    translateFormula signWithRenamings nameS (isAxiom x) $ sentence x
+  return $ x { senAttr = nameS
+             , sentence = translated
+             }
 
 translateFormula :: (FormExtension f, Eq f)
-                 => SignWithRenamings f e -> String -> FORMULA f
+                 => SignWithRenamings f e -> String -> Bool -> FORMULA f
                  -> Result TSign.Sentence
-translateFormula signWithRenamings nameS f = do
+translateFormula signWithRenamings nameS isAxiom f = do
   let name = NameString $ mkSimpleId nameS
   fofFormula <- toUnitaryFormula f
-  return $ fofUnitaryFormulaToAxiom name fofFormula
+  return $ if isAxiom
+           then fofUnitaryFormulaToAxiom name fofFormula
+           else fofUnitaryFormulaToConjecture name fofFormula
   where
     -- GHC complains about the type variable f, and needs to infer the type
     -- itself at this point.
@@ -695,6 +700,13 @@ fofUnitaryFormulaToAxiom :: TAS.Name -> FOF_unitary_formula -> TSign.Sentence
 fofUnitaryFormulaToAxiom name f =
   let formula = FOFF_logic $ FOFLF_unitary f
   in  AF_FOF_Annotated $ FOF_annotated name Axiom formula (Annotations Nothing)
+
+fofUnitaryFormulaToConjecture :: TAS.Name -> FOF_unitary_formula
+                              -> TSign.Sentence
+fofUnitaryFormulaToConjecture name f =
+  let formula = FOFF_logic $ FOFLF_unitary f
+  in  AF_FOF_Annotated $
+        FOF_annotated name Conjecture formula (Annotations Nothing)
 
 lookupOpName :: (FormExtension f, Eq f)
              => SignWithRenamings f e -> OP_NAME -> OpType -> OP_NAME
