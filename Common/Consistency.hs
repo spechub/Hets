@@ -31,6 +31,7 @@ data Conservativity =
   | PCons
   | Cons
   | Mono
+  | WDef
   | Def
     deriving (Show, Read, Eq, Ord, Typeable, Data)
 
@@ -42,6 +43,7 @@ showConsistencyStatus cs = case cs of
   Cons -> "conservative"
   PCons -> "proof-theoretically conservative"
   Mono -> "monomorphic"
+  WDef -> "weak definitional"
   Def -> "definitional"
 
 instance Pretty Conservativity where

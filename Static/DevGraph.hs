@@ -672,10 +672,37 @@ refSigComposition (ComponentRefSig n1 rsmap1) (ComponentRefSig n2 rsmap2) = do
 refSigComposition _rsig1 _rsig2 =
   fail "composition of refinement signatures"
 
+-- | signature of modules
+
+data ModuleSig = ModuleSig NodeSig NodeSig
+  deriving (Show, Typeable)
+  -- the first NodeSig is the node of the module
+  -- the second is the one of the original ontology
+  -- this determines uniquely the edge between them
+  -- labeled with the inclusion
+
+-- | signature of equivalences
+
+data EquivSig = EquivSig GDiagram GDiagram GDiagram
+ deriving (Show, Typeable)
+
+ -- we use the type GDiagram to store graphs
+ -- we have just one datatype for all types of equivalences
+ -- the ontologies in semantics of OMS equivalences
+ -- can be regarded as a graph with one node and no edges
+
+-- | signature of entailments
+
+data EntailSig = EntailSig GDiagram
+ deriving (Show, Typeable)
+
 -- | an entry of the global environment
 data GlobalEntry =
     SpecEntry ExtGenSig
   | ViewOrStructEntry Bool ExtViewSig
+  | ModuleEntry ModuleSig
+  | EntailmentEntry EntailSig
+  | EquivalenceEntry EquivSig
   | ArchOrRefEntry Bool RefSig
   | AlignEntry AlignSig
   | UnitEntry UnitSig
