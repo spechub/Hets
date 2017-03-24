@@ -25,6 +25,7 @@ edgeAttributes ety = concatMap (", " ++)
     GlobalDef -> []
     HetDef -> ["color=" ++ doubleColor "black"]
     HidingDef -> ["color=blue"]
+    ApproxDef -> ["color=orange"] -- should think of something else here
     LocalDef -> ["style=dashed"]
     FreeOrCofreeDef _ -> ["color=blue"]
     ThmType

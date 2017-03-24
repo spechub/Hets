@@ -273,6 +273,9 @@ data DGLinkOrigin =
 data DGLinkType =
     ScopedLink Scope LinkKind ConsStatus
   | HidingDefLink
+  | ApproxLink 
+      -- same as hiding definition link, but needs to be treated differently 
+      -- e.g. when computing theories
   | FreeOrCofreeDefLink FreeOrCofree MaybeNode -- the "parameter" node
   | HidingFreeOrCofreeThm (Maybe FreeOrCofree) Node GMorphism ThmLinkStatus
     {- DGLink S1 S2 m2 (DGLinkType m1 p) n
@@ -353,6 +356,7 @@ getHomEdgeType isPend isHom lt = case lt of
             , isConservativ = isProvenConsStatusLink cons
             , isPending = isPend } -- needs to be checked
       HidingDefLink -> HidingDef
+      ApproxLink -> ApproxDef
       FreeOrCofreeDefLink fc _ -> FreeOrCofreeDef fc
       HidingFreeOrCofreeThm mh _ _ st -> ThmType
         { thmEdgeType = case mh of

@@ -265,6 +265,7 @@ data DGEdgeTypeModInc =
     GlobalDef
   | HetDef
   | HidingDef
+  | ApproxDef
   | LocalDef
   | FreeOrCofreeDef FreeOrCofree
   | ThmType { thmEdgeType :: ThmTypes
