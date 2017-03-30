@@ -63,6 +63,7 @@ import qualified Static.PrintDevGraph as DG
 import Static.ComputeTheory
 import qualified Static.ToXml as ToXml
 import qualified Static.ToJson as ToJson
+import qualified Persistence.DevGraph
 
 import CASL.Logic_CASL
 import CASL.CompositionTable.Pretty2
@@ -142,6 +143,7 @@ writeLibEnv opts filePrefix lenv ln ot =
              >>= writeVerbFile opts f
       XmlOut -> writeVerbFile opts f $ ppTopElement
           $ ToXml.dGraph opts lenv ln dg
+      DbOut -> Persistence.DevGraph.exportLibEnv f lenv
       JsonOut -> writeVerbFile opts f $ ppJson
           $ ToJson.dGraph opts lenv ln dg
       SymsXml -> writeVerbFile opts f $ ppTopElement
