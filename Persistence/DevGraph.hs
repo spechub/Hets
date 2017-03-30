@@ -32,10 +32,12 @@ import Control.Monad.Trans.Reader (ReaderT)
 import Control.Monad.Trans.Resource (ResourceT)
 
 import Static.DevGraph
+import Static.DgUtils
 import Data.Text (Text, pack)
 import Common.LibName
 import qualified Data.Map as Map
 import Data.Graph.Inductive.Graph as Graph
+import Data.Maybe
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
 Graphs
@@ -67,11 +69,9 @@ exportDG :: (MonadIO m, IsSqlBackend backend, PersistQueryRead backend, PersistS
              => DGName -> DGraph -> DBMonad backend m ()
 exportDG dgname dgraph = do
   let dg = dgBody dgraph
-      n = nodes dg
-  liftIO $ print (show dgname)
+      nds = nodes dg
   graphId <- insert $ Graphs $ pack $ show dgname
-  liftIO $ print (show graphId)
-  x <- selectList [GraphsId ==. graphId] [LimitTo 1]
-  liftIO $ print (show x)
+  mapM_ (\n -> insert $ Nodes graphId $
+                pack $ show $ getName $ dgn_name $ fromJust $ lab dg n) nds
   return ()
     
