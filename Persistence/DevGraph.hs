@@ -18,6 +18,12 @@ Stability   :  provisional
 Portability :  portable
 -}
 
+-- #####################
+-- HINT: look at Static.ToJson and Static.ToXml
+-- this will give detailed information about how to extract
+-- the relevant information from a development graph
+-- #####################
+
 module Persistence.DevGraph where
        
 import Control.Monad.IO.Class  (liftIO)
@@ -65,7 +71,7 @@ exportLibEnv db lenv = runSqlite (pack db) $ do
     where exportAux list dgname dgraph =
              exportDG dgname dgraph : list
 
-exportDG :: (MonadIO m, IsSqlBackend backend, PersistQueryRead backend, PersistStoreWrite backend)	 
+exportDG :: (MonadIO m, IsSqlBackend backend, PersistQueryRead backend, PersistStoreWrite backend)
              => DGName -> DGraph -> DBMonad backend m ()
 exportDG dgname dgraph = do
   let dg = dgBody dgraph
