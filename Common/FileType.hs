@@ -64,7 +64,7 @@ getFileType :: Maybe FilePath -> Maybe String -> FilePath -> ResultT IO String
 getFileType mmf mp fn = ResultT $ do
   (ex, out, err) <- executeProcess "file"
     (maybe [] (\ mf -> ["-m", mf]) mmf
-    ++ maybeToList mp ++ ["-b", fn]) ""
+    ++ maybeToList mp ++ ["-b", fn] ++ ["--mime-type"]) ""
   let unexp = "unexpected file type "
   return $ case (ex, lines out) of
     (ExitSuccess, ls) -> if null err then case ls of
