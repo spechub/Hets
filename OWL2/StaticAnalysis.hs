@@ -394,8 +394,10 @@ generateLabelMap sig = foldr (\ (Frame ext fbl) -> case ext of
 
 -- | adding annotations for theorems
 anaAxiom :: Axiom -> Named Axiom
-anaAxiom ax = findImplied ax $ makeNamed "" ax
-
+anaAxiom ax = findImplied ax $ makeNamed name ax
+   where names = getNames ax
+         name = concat $ intersperse "_" names
+         
 findImplied :: Axiom -> Named Axiom -> Named Axiom
 findImplied ax sent =
   if prove ax then sent
@@ -403,6 +405,41 @@ findImplied ax sent =
          , isDef = False
          , wasTheorem = False }
    else sent { isAxiom = True }
+
+getNames1 :: Annotation -> [String]
+getNames1 anno = case anno of
+      Annotation _ aIRI (AnnValLit (Literal value (Typed _))) ->
+          if localPart aIRI == "label"
+             then [value]
+             else []
+      _ -> []
+
+getNamesList :: (Annotations, a) -> [String]
+getNamesList (ans, _) = concatMap getNames1 ans
+
+getNamesAnnList :: AnnotatedList a -> [String]
+getNamesAnnList = concatMap getNamesList
+
+getNamesLFB :: ListFrameBit -> [String]
+getNamesLFB fb = case fb of
+    AnnotationBit a -> getNamesAnnList a
+    ExpressionBit a -> getNamesAnnList a
+    ObjectBit a -> getNamesAnnList a
+    DataBit a -> getNamesAnnList a
+    IndividualSameOrDifferent a -> getNamesAnnList a
+    ObjectCharacteristics a -> getNamesAnnList a
+    DataPropRange a -> getNamesAnnList a
+    IndividualFacts a -> getNamesAnnList a
+
+getNamesFB :: FrameBit -> [String]
+getNamesFB fb = case fb of
+    ListFrameBit _ lfb -> getNamesLFB lfb
+    AnnFrameBit ans _ -> concatMap getNames1 ans
+
+getNames :: Axiom -> [String]
+getNames (PlainAxiom eith fb) = case eith of
+      Misc ans -> concatMap getNames1 ans ++ getNamesFB fb
+      _ -> getNamesFB fb
 
 
 addEquiv :: Sign -> Sign -> [SymbItems] -> [SymbItems] ->
