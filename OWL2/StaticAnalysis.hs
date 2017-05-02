@@ -407,7 +407,7 @@ findImplied ax sent =
    else sent { isAxiom = True }
 
 getNames1 :: Annotation -> [String]
-getNames1 anno = trace (show anno) $ case anno of
+getNames1 anno = case anno of
       Annotation _ aIRI (AnnValLit (Literal value _)) ->
           if localPart aIRI == "label"
              then [value]
