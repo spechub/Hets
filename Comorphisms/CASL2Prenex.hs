@@ -150,8 +150,9 @@ computePNF sen = case sen of
           -- recursive call to catch multiple quantifiers for sen2'
         _ -> -- no quantifications
           Relation sen1' Implication sen2' nullRange
+ -- During parsing, "f2 if f1" is saved as "Relation f1 RevImpl f2 _"
  Relation sen1 RevImpl sen2 _ -> 
-  computePNF $ Relation sen2 Implication sen1 nullRange
+  computePNF $ Relation sen1 Implication sen2 nullRange
  Quantification q vdecls qsen _ -> 
   Quantification q vdecls (computePNF qsen) nullRange
  Junction j sens _ -> let
