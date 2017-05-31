@@ -57,39 +57,39 @@ leastUpperBound = max
  - Determine sublogics
 ---------------------------------------------------------------------------- -}
 sublogicOfUnit :: Sublogic -> () -> Sublogic
-sublogicOfUnit sublogic () = bottom
+sublogicOfUnit minimumSublogic () = minimumSublogic
 
 sublogicOfBaiscSpec :: Sublogic -> BASIC_SPEC -> Sublogic
-sublogicOfBaiscSpec sublogic basicSpec = case basicSpec of
-  Basic_spec annotedTPTPs -> foldr leastUpperBound sublogic $
-    map (sublogicOfTPTP sublogic . item) annotedTPTPs
+sublogicOfBaiscSpec minimumSublogic basicSpec = case basicSpec of
+  Basic_spec annotedTPTPs -> foldr leastUpperBound minimumSublogic $
+    map (sublogicOfTPTP . item) annotedTPTPs
   where
-    sublogicOfTPTP :: Sublogic -> TPTP -> Sublogic
-    sublogicOfTPTP sublogic tptp = case tptp of
-      TPTP tptp_inputs -> foldr leastUpperBound sublogic $
-        map (sublogicOfTPTPInput sublogic) tptp_inputs
+    sublogicOfTPTP :: TPTP -> Sublogic
+    sublogicOfTPTP tptp = case tptp of
+      TPTP tptp_inputs -> foldr leastUpperBound minimumSublogic $
+        map sublogicOfTPTPInput tptp_inputs
 
-    sublogicOfTPTPInput :: Sublogic -> TPTP_input -> Sublogic
-    sublogicOfTPTPInput sublogic tptp_input = case tptp_input of
+    sublogicOfTPTPInput :: TPTP_input -> Sublogic
+    sublogicOfTPTPInput tptp_input = case tptp_input of
       Annotated_formula annotated_formula ->
-        sublogicOfSentence sublogic annotated_formula
-      _ -> sublogic
+        sublogicOfSentence minimumSublogic annotated_formula
+      _ -> minimumSublogic
 
 sublogicOfSentence :: Sublogic -> Sentence -> Sublogic
-sublogicOfSentence sublogic sentence = case sentence of
-  AF_THF_Annotated _ -> THF
-  AF_TFX_Annotated _ -> THF
-  AF_TFF_Annotated _ -> TFF
-  AF_TCF_Annotated _ -> TFF
-  AF_FOF_Annotated _ -> FOF
-  AF_CNF_Annotated _ -> CNF
-  AF_TPI_Annotated _ -> THF
+sublogicOfSentence minimumSublogic sentence = case sentence of
+  AF_THF_Annotated _ -> leastUpperBound minimumSublogic THF
+  AF_TFX_Annotated _ -> leastUpperBound minimumSublogic THF
+  AF_TFF_Annotated _ -> leastUpperBound minimumSublogic TFF
+  AF_TCF_Annotated _ -> leastUpperBound minimumSublogic TFF
+  AF_FOF_Annotated _ -> leastUpperBound minimumSublogic FOF
+  AF_CNF_Annotated _ -> leastUpperBound minimumSublogic CNF
+  AF_TPI_Annotated _ -> leastUpperBound minimumSublogic THF
 
 sublogicOfSymbol :: Sublogic -> Symbol -> Sublogic
-sublogicOfSymbol sublogic symbol = bottom
+sublogicOfSymbol minimumSublogic _ = minimumSublogic
 
 sublogicOfSign :: Sublogic -> Sign -> Sublogic
-sublogicOfSign sublogic sign = case () of
+sublogicOfSign minimumSublogic sign = case () of
   _ | not $ Map.null $ thfTypeConstantMap sign -> THF
   _ | not $ Map.null $ thfTypeFunctorMap sign -> THF
   _ | not $ Map.null $ thfPredicateMap sign -> THF
@@ -101,13 +101,13 @@ sublogicOfSign sublogic sign = case () of
   _ | not $ Set.null $ numberSet sign -> TFF
   _ | not $ Map.null $ fofPredicateMap sign -> FOF
   _ | not $ Map.null $ fofFunctorMap sign -> FOF
-  _ -> bottom
+  _ -> minimumSublogic
 
 sublogicOfMorphism :: Sublogic -> Morphism -> Sublogic
-sublogicOfMorphism sublogic morphism =
+sublogicOfMorphism minimumSublogic morphism =
   leastUpperBound
-    (sublogicOfSign sublogic $ domOfDefaultMorphism morphism)
-    (sublogicOfSign sublogic $ codOfDefaultMorphism morphism)
+    (sublogicOfSign minimumSublogic $ domOfDefaultMorphism morphism)
+    (sublogicOfSign minimumSublogic $ codOfDefaultMorphism morphism)
 
 
 {- ----------------------------------------------------------------------------
@@ -116,20 +116,20 @@ sublogicOfMorphism sublogic morphism =
 -- TODO: complete the projections
 
 projectSublogicBasicSpec :: Sublogic -> BASIC_SPEC -> BASIC_SPEC
-projectSublogicBasicSpec sublogic basicSpec = basicSpec
+projectSublogicBasicSpec _ basicSpec = basicSpec
 
 projectSublogicSign :: Sublogic -> Sign -> Sign
-projectSublogicSign sublogic sign = sign
+projectSublogicSign _ sign = sign
 
 projectSublogicSentence :: Sublogic -> Sentence -> Sentence
-projectSublogicSentence sublogic sentence = sentence
+projectSublogicSentence _ sentence = sentence
 
 projectSublogicMorphism :: Sublogic -> Morphism -> Morphism
-projectSublogicMorphism sublogic morphism = morphism
+projectSublogicMorphism _ morphism = morphism
 
 
 projectSublogicMUnit :: Sublogic -> () -> Maybe ()
-projectSublogicMUnit sublogic = Just
+projectSublogicMUnit _ = Just
 
 projectSublogicMSymbol :: Sublogic -> Symbol -> Maybe Symbol
-projectSublogicMSymbol sublogic symbol = Just symbol
+projectSublogicMSymbol _ symbol = Just symbol

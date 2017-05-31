@@ -11,7 +11,7 @@ Portability :  non-portable (imports Logic)
 
 module TPTP.Prover.SPASS.ProofParser (parseOutput) where
 
-import TPTP.Sign hiding (InferenceRule)
+import TPTP.Sign
 
 import Common.AS_Annotation
 import Common.Utils

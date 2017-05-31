@@ -29,8 +29,8 @@ mkSymbol :: Token -> SymbolType -> Symbol
 mkSymbol i t = Symbol { symbolId = i , symbolType = t }
 
 gatherTHFSymbols :: SymbolType -> THFTypeDeclarationMap -> Set.Set Symbol
-gatherTHFSymbols symbolType = Set.map fromJust . Set.filter isJust .
-  Set.map (\ x -> mkSymbolFromTHFType x symbolType) . Map.keysSet
+gatherTHFSymbols symType = Set.map fromJust . Set.filter isJust .
+  Set.map (\ x -> mkSymbolFromTHFType x symType) . Map.keysSet
   where
     mkSymbolFromTHFType :: THFTypeable -> SymbolType -> Maybe Symbol
     mkSymbolFromTHFType x t = case x of

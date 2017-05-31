@@ -128,9 +128,9 @@ getTimeLimit cfg = fromMaybe 100 $ timeLimit cfg
 
 hardTimeLimit :: GenericConfig ProofTree -> Int
 hardTimeLimit cfg =
-  let timeLimit = getTimeLimit cfg
-  in minimum [ timeLimit + 30
-             , round ((1.5 :: Double) * fromIntegral timeLimit)
+  let configuredTimeLimit = getTimeLimit cfg
+  in minimum [ configuredTimeLimit + 30
+             , round ((1.5 :: Double) * fromIntegral configuredTimeLimit)
              ]
 
 gnuTimeout :: IO String

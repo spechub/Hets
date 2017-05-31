@@ -549,16 +549,6 @@ printSign s =
        , text "}%"]
 
   where
-    printFunctor :: (TPTP_functor, FunctorType) -> Doc
-    printFunctor (f, args) = pretty f <> colon <+> printFunctorType args
-
-    printFunctorType :: FunctorType -> Doc
-    printFunctorType a = case a of
-      FunctorTHF [arg] -> pretty arg
-      FunctorTHF args -> parens $ sepByCommas $ map pretty args
-      FunctorFOF [arg] -> pretty arg
-      FunctorFOF args -> parens $ sepByCommas $ map pretty args
-
     printTHFType :: (THFTypeable, THF_top_level_type) -> Doc
     printTHFType (t, tlt) = pretty $ case t of
       THFTypeFormula f -> THFTF_typeable f tlt
@@ -591,14 +581,6 @@ printSign s =
 
     printTFFSubType :: (Untyped_atom, Atom) -> Doc
     printTFFSubType (a1, a2) = pretty $ TFF_subtype a1 a2
-
-    printType_functor :: (Type_functor, Type_functorType) -> Doc
-    printType_functor (t, args) = pretty t <> colon <+> printType_functorType args
-
-    printType_functorType :: Type_functorType -> Doc
-    printType_functorType a = case a of
-      Type_functorType [arg] -> pretty arg
-      Type_functorType args -> parens $ sepByCommas $ map pretty args
 
 printBasicSpec :: BASIC_SPEC -> Doc
 printBasicSpec (Basic_spec xs) = vcat $ map pretty xs

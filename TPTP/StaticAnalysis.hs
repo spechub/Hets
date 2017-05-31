@@ -29,8 +29,6 @@ import Common.Result
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-import Debug.Trace
-
 basicAnalysis :: (BASIC_SPEC, Sign, GlobalAnnos)
               -> Result (BASIC_SPEC, ExtSign Sign Symbol, [Named Sentence])
 basicAnalysis (basicSpec, signOfIncludes, _) =
@@ -924,10 +922,10 @@ signOfUnary_connective x = case x of
   NOT -> emptySign
 
 signOfType_constant :: Type_constant -> Sign
-signOfType_constant a = emptySign -- Handled by thfTypeConstantMap and tffTypeConstantMap
+signOfType_constant _ = emptySign -- Handled by thfTypeConstantMap and tffTypeConstantMap
 
 signOfType_functor :: Type_functor -> Sign
-signOfType_functor a = emptySign -- Handled by thfTypeFunctorMap and tffTypeFunctorMap
+signOfType_functor _ = emptySign -- Handled by thfTypeFunctorMap and tffTypeFunctorMap
 
 signOfDefined_type :: Defined_type -> Sign
 signOfDefined_type x = case x of
@@ -1029,7 +1027,11 @@ signOfDefined_term x = case x of
   DT_object a -> signOfDistinct_object a
 
 signOfVariable :: Variable -> Sign
-signOfVariable a = emptySign
+signOfVariable _ = emptySign
+
+-- The following types are defined in the AS, but never actually used.
+-- We only comment them out instead of removing them to be able to adapt to
+-- future changes of the TPTP quickly.
 
 -- signOfSource :: Source -> Sign
 -- signOfSource x = case x of
