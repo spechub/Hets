@@ -347,9 +347,9 @@ thf_unitary_formula = parserTrace "thf_unitary_formula" (
   liftM THFUF_logic (parens thf_logic_formula)
   <|> liftM THFUF_quantified thf_quantified_formula
   <|> liftM THFUF_unary thf_unary_formula
-  <|> liftM THFUF_atom thf_atom
   <|> liftM THFUF_conditional thf_conditional
   <|> liftM THFUF_let thf_let
+  <|> liftM THFUF_atom thf_atom
   <|> liftM THFUF_tuple thf_tuple
   <?> "thf_unitary_formula"
   )
@@ -2511,14 +2511,16 @@ commentLineWith :: String -> Bool -> CharParser st Token
 commentLineWith beginning restrict = (do
   tryString beginning
   if restrict then notFollowedBy (char '$') else return ()
-  pToken $ manyTill printable_char (char '\n'))
+  -- we use anyChar instead of printable_char for the comments to parse the whole tptp library
+  pToken $ manyTill anyChar (char '\n'))
   <?> "commentLineWith"
 
 commentBlockWith :: String -> Bool -> CharParser st Token
 commentBlockWith beginning restrict = (do
   tryString beginning
   if restrict then notFollowedBy (char '$') >> return () else return ()
-  pToken $ manyTill printable_char (strTok "*/"))
+  -- we use anyChar instead of printable_char for the comments to parse the whole tptp library
+  pToken $ manyTill anyChar (strTok "*/"))
   <?> "commentBlockWith"
 
 {- -----------------------------------------------------------------------------
@@ -2756,7 +2758,8 @@ printable_char :: CharParser st Char
 printable_char = satisfy printable <?> "printable_char"
 
 printable :: Char -> Bool
-printable c = 32 <= ord c && ord c <= 126
+-- the tab character is an unofficial extension
+printable c = (32 <= ord c && ord c <= 126) || c == '\t'
 
 -- NOTE: not used
 -- -- <viewable_char>        ::: [.\n]
