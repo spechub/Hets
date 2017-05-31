@@ -31,6 +31,7 @@ import TPTP.Common
 
 import qualified Common.AnnoState as AnnoState
 import qualified Common.AS_Annotation as Annotation
+import Common.DebugParser
 import Common.GlobalAnnotations (PrefixMap)
 import Common.Id (Token (..))
 import Common.IRI (IRI (..), iriCurie)
@@ -45,47 +46,9 @@ import Text.ParserCombinators.Parsec
 {- -----------------------------------------------------------------------------
 Debug
 ----------------------------------------------------------------------------- -}
-import Debug.Trace
-import Text.Printf
 
-
-parserInsideTrace :: Monad m => String -> m ()
-parserInsideTrace msg = trace msg $ return ()
-
-parserTrace, parserTraceId, parserTraceLineNumber, parserTraceFull :: String -> CharParser st a -> CharParser st a
+parserTrace :: String -> CharParser st a -> CharParser st a
 parserTrace = parserTraceId
-parserTraceId _ p = p
-parserTraceLineNumber _ p = do
-  s <- getParserState
-  if 1 == (sourceColumn $ statePos s)
-  then trace (show $ sourceLine $ statePos s) $ return ()
-  else return ()
-  p
-parserTraceFull msg p = do
-  s <- getParserState
-  if debug s
-  then do
-    let outBefore = takeWhile (\ c -> c /= '\n') $ take width (stateInput s)
-    trace (parserMessage s outBefore) $ return ()
-    parsed <- p
-    s' <- getParserState
-    let outAfter = takeConsumed outBefore s s'
-    trace (successMessage s s' outBefore outAfter) $ return parsed
-  else p
-  where
-    width = 54 :: Int
-    space = 5 :: Int
-    parserWidth = 24 :: Int
-    parsedWidth = 24 :: Int
-    debug s = True --6 == (sourceLine $ statePos s)
-    line s = sourceLine $ statePos s
-    column s = sourceColumn $ statePos s
-    parserMessage s out =  printf ("%3d.%-4d - %" ++ show width ++ "s%" ++ show space ++ "s     %-" ++ show parserWidth ++ "s") (line s) (column s) out "" msg
-    successMessage s s' outBefore outAfter = printf ("%3d.%-4d - %" ++ show width ++ "s%" ++ show space ++ "s --> %-" ++ show parserWidth ++ "s  =  %-"++ show parsedWidth ++"s  FROM  %3d.%-4d - %-s") (line s') (column s') "" "" msg outAfter (line s) (column s) outBefore
-    takeConsumed :: String -> State s u -> State s u -> String
-    takeConsumed outBefore stateBefore stateAfter =
-      let consumedLength = sourceColumn (statePos stateAfter) - sourceColumn (statePos stateBefore)
-      in take consumedLength outBefore
 
 {- -----------------------------------------------------------------------------
 Logic components
@@ -2754,8 +2717,8 @@ alpha_numeric = satisfy (\ c -> isAlphaNum c || c == '_') <?> "alpha_numeric"
 -- %----<printable_char> is any printable ASCII character, codes 32 (space) to 126
 -- %----(tilde). <printable_char> does not include tabs, newlines, bells, etc. The
 -- %----use of . does not not exclude tab, so this is a bit loose.
-printable_char :: CharParser st Char
-printable_char = satisfy printable <?> "printable_char"
+-- printable_char :: CharParser st Char
+-- printable_char = satisfy printable <?> "printable_char"
 
 printable :: Char -> Bool
 -- the tab character is an unofficial extension
