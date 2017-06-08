@@ -167,6 +167,19 @@ If you want to participate in the Hets development feel free to tell us via our 
 
 If you wish to make larger changes we generally recommend [forking](https://help.github.com/articles/fork-a-repo) this repository. You can however request access to this repository if you plan on contributing regularly.
 
+
+### Build Hets using Stack
+* [Install Stack](https://docs.haskellstack.org/en/stable/install_and_upgrade) (use the generic Linux option if you are on Ubuntu).
+* Build Hets with one of the following:
+  ```
+    make
+    make hets
+    make hets_server
+  ```
+  This uses Stack to build the Hets[-Server] binary.
+  During this process, the specified version of GHC is installed in the user directory, all dependencies are built and finally, the Hets[-Server] binary is compiled.
+
+
 ## Troubleshooting & Useful Tools
 
 ## Hints for contributors switching from svn to git

@@ -14,13 +14,28 @@ PROGRAMATICA_SRC_FILE ?= \
 # The local file gets tried first, and if not usable the remote on gets fetched.
 # If both are unset or set to an empty string, programatica support is skipped.
 
-GHCVERSION := $(shell ghc --numeric-version)
+OSNAME := $(shell uname -s)
+OSVERS := $(shell uname -v 2>/dev/null)
+
+STACK := stack
+STACK_EXEC := $(STACK) exec --
+
+ifeq "$(OSNAME)" "Darwin"
+    STACK_DEPENDENCIES_FLAGS := --flag gtk:have-quartz-gtk
+else
+    STACK_DEPENDENCIES_FLAGS :=
+endif
+
+# Dummy variables to install GHC and install the Haskell-dependencies.  These
+# must be called before ghc or ghc-pkg is called because the packages need to
+# be installed before they are checked.
+STACK_SETUP := $(shell $(STACK) setup > /dev/null)
+STACK_INSTALL_DEPENDENCIES := $(shell $(STACK) build --only-dependencies $(STACK_DEPENDENCIES_FLAGS) > /dev/null)
+
+GHCVERSION := $(shell $(STACK_EXEC) ghc --numeric-version)
 ifneq ($(findstring 7., $(GHCVERSION)),)
 GHC7RTSOPTS := -rtsopts
 endif
-
-OSNAME := $(shell uname -s)
-OSVERS := $(shell uname -v 2>/dev/null)
 
 ifneq ($(findstring SunOS, $(OSNAME)),)
   TAR = gtar
@@ -36,9 +51,9 @@ else
   PATCH = patch
 endif
 
-HC = ghc -optl-s -XTemplateHaskell -threaded $(GHC7RTSOPTS)
+HC = $(STACK_EXEC) ghc -optl-s -XTemplateHaskell -threaded $(GHC7RTSOPTS)
 
-HCPKG := ghc-pkg
+HCPKG := $(STACK_EXEC) ghc-pkg
 
 HAXMLVERSION = $(shell $(HCPKG) latest HaXml)
 ifneq ($(findstring HaXml-1.2, $(HAXMLVERSION)),)

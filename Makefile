@@ -13,7 +13,8 @@ include var.mk
 HETS_VERSION ?= $(shell printf `cat version_nr`)
 
 # We assume ghc 7+
-GHCVERSION := $(shell ghc --numeric-version)
+GHCVERSION := $(shell $(HC) --numeric-version)
+GHC_PARALLEL_FEATURE := $(shell expr $(shell $(HC) --numeric-version | cut -d '.' -f 1) \>= 8)
 NO_BIND_WARNING := -fno-warn-unused-do-bind
 HC_WARN := -Wall -fwarn-tabs \
   -fwarn-unrecognised-pragmas -fno-warn-orphans $(NO_BIND_WARNING)
@@ -21,6 +22,9 @@ HC_WARN := -Wall -fwarn-tabs \
 # call resulting binary with a final +RTS -p to get a file <binary>.prof
 #HC_PROF := -prof -auto-all -osuf p_o +RTS -K100m -RTS
 HC_OPTS += $(HC_WARN) $(HC_PROF)
+ifeq "$(GHC_PARALLEL_FEATURE)" "1"
+    HC_OPTS += -j
+endif
 # -ddump-minimal-imports
 # uncomment the above line to generate .imports files for displayDependencyGraph
 
@@ -461,7 +465,8 @@ derived_sources += $(drifted_files) Driver/Version.hs $(hs_der_files)
     count fromKif release cgi ghci build-hets callghc \
 	get-programatica check_desktop check_server check_cgi \
 	install install-common install-owl-tools archive \
-	build-indep build-arch build binary-indep binary-arch binary rev.txt
+	build-indep build-arch build binary-indep binary-arch binary rev.txt \
+	stack-setup stack-install-dependencies
 
 .SECONDARY: $(generated_rule_files)
 
@@ -523,7 +528,7 @@ updateHeaders: $(derived_sources)
 	@find . -name '*.hs' -exec fgrep -l '$$Header$$' {} + | xargs -I@ \
 		${SED} -i -e 's|\$$Header\$$|@|g' @
 
-GHC_LIBDIR := $(shell ghc --print-libdir)
+GHC_LIBDIR := $(shell $(HC) --print-libdir)
 GHC_BASEDIR := $(shell cd $(GHC_LIBDIR)/../.. && printf "$${PWD}")
 
 # scanning the "whole" NFS server isn't so smart, so restrict to wellknown dirs
@@ -628,7 +633,7 @@ distclean: realclean clean_genRules
 
 ### interactive
 ghci: $(derived_sources)
-	ghci $(HC_OPTS)
+	$(STACK_EXEC) ghci $(HC_OPTS)
 
 ### build only, don't link. Target was formerly known as 'build'.
 build-hets: hets.hs
