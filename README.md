@@ -170,6 +170,16 @@ If you wish to make larger changes we generally recommend [forking](https://help
 
 ### Build Hets using Stack
 * [Install Stack](https://docs.haskellstack.org/en/stable/install_and_upgrade) (use the generic Linux option if you are on Ubuntu).
+* Install build- and GUI-dependencies
+  * Ubuntu:
+    ```
+    sudo apt-get install libglib2.0-dev libcairo2-dev libpango1.0-dev libgtk2.0-dev libglade2-dev libncurses-dev
+    ```
+  * macOS:
+    ```
+    brew cask install xquartz
+    brew install binutils glib libglade cairo gtk fontconfig freetype gettext spechub/hets/udrawgraph
+    ```
 * Build Hets with one of the following:
   ```
     make
