@@ -33,8 +33,9 @@ STACK_SETUP := $(shell $(STACK) setup > /dev/null)
 STACK_INSTALL_DEPENDENCIES := $(shell $(STACK) build --only-dependencies $(STACK_DEPENDENCIES_FLAGS) > /dev/null)
 
 GHCVERSION := $(shell $(STACK_EXEC) ghc --numeric-version)
-ifneq ($(findstring 7., $(GHCVERSION)),)
-GHC7RTSOPTS := -rtsopts
+GHC_RTSOPTS_AVAILABLE := $(shell expr $(shell $(STACK_EXEC) ghc --numeric-version | cut -d '.' -f 1) \>= 7)
+ifeq "$(GHC_RTSOPTS_AVAILABLE)" "1"
+GHCRTSOPTS := -rtsopts
 endif
 
 ifneq ($(findstring SunOS, $(OSNAME)),)
@@ -51,7 +52,7 @@ else
   PATCH = patch
 endif
 
-HC = $(STACK_EXEC) ghc -optl-s -XTemplateHaskell -threaded $(GHC7RTSOPTS)
+HC = $(STACK_EXEC) ghc -optl-s -XTemplateHaskell -threaded $(GHCRTSOPTS)
 
 HCPKG := $(STACK_EXEC) ghc-pkg
 
