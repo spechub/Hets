@@ -28,10 +28,7 @@ endif
 
 # We assume ghc 7+
 GHCVERSION := $(shell $(STACK_EXEC) ghc --numeric-version)
-GHC_RTSOPTS_AVAILABLE := $(shell [ $(firstword $(subst ., ,$(GHCVERSION))) -ge 7 ] && printf '1' || printf '0' )
-ifeq "$(GHC_RTSOPTS_AVAILABLE)" "1"
-    GHCRTSOPTS := -rtsopts
-endif
+GHCRTSOPTS := $(shell [ $(firstword $(subst ., ,$(GHCVERSION))) -ge 7 ] && echo '-rtsopts')
 
 ifneq ($(findstring SunOS, $(OSNAME)),)
   TAR = gtar
