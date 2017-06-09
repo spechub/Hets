@@ -580,7 +580,7 @@ pretty/LaTeX_maps.hs: utils/words.pl utils/genItCorrections \
 
 ### clean up
 clean_stack:
-	rm -rf .stack-work
+	@$(RM) -rf .stack-work
 
 clean_genRules:
 	@$(RM) $(generated_rule_files) $(gendrifted_files) $(hs_clean_files)
