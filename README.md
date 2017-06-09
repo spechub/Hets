@@ -180,6 +180,10 @@ If you wish to make larger changes we generally recommend [forking](https://help
     brew cask install xquartz
     brew install binutils glib libglade cairo gtk fontconfig freetype gettext spechub/hets/udrawgraph
     ```
+* Setup Stack for Hets:
+  ```
+  make stack
+  ```
 * Build Hets with one of the following:
   ```
     make
@@ -188,6 +192,10 @@ If you wish to make larger changes we generally recommend [forking](https://help
   ```
   This uses Stack to build the Hets[-Server] binary.
   During this process, the specified version of GHC is installed in the user directory, all dependencies are built and finally, the Hets[-Server] binary is compiled.
+* If you want to clean the extra-dependencies of Stack that are put into the Hets working directory, run
+  ```
+  make clean_stack
+  ```
 
 
 ## Troubleshooting & Useful Tools

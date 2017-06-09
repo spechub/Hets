@@ -26,12 +26,6 @@ else
     STACK_DEPENDENCIES_FLAGS :=
 endif
 
-# Dummy variables to install GHC and install the Haskell-dependencies.  These
-# must be called before ghc or ghc-pkg is called because the packages need to
-# be installed before they are checked.
-STACK_SETUP := $(shell $(STACK) setup > /dev/null)
-STACK_INSTALL_DEPENDENCIES := $(shell $(STACK) build --only-dependencies $(STACK_DEPENDENCIES_FLAGS) > /dev/null)
-
 # We assume ghc 7+
 GHCVERSION := $(shell $(STACK_EXEC) ghc --numeric-version)
 GHC_RTSOPTS_AVAILABLE := $(shell [ $(firstword $(subst ., ,$(GHCVERSION))) -ge 7 ] && printf '1' || printf '0' )

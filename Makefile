@@ -34,6 +34,10 @@ all: hets.bin hets_server.bin
 # papers (doc/*.pdf) are already pre-generated.
 docs: doc/UserGuide.pdf
 
+# Create the build environment
+stack:
+	$(STACK) setup
+	$(STACK) build --only-dependencies $(STACK_DEPENDENCIES_FLAGS)
 
 SED := $(shell [ "$(OSNAME)" = 'SunOS' ] && printf 'gsed' || printf 'sed')
 TAR := $(shell [ "$(OSNAME)" = 'SunOS' ] && printf 'gtar' || printf 'tar')
@@ -575,6 +579,9 @@ pretty/LaTeX_maps.hs: utils/words.pl utils/genItCorrections \
 	$(info $(EOL)Done.$(EOL)Please copy the file manually to Common$(EOL))
 
 ### clean up
+clean_stack:
+	rm -rf .stack-work
+
 clean_genRules:
 	@$(RM) $(generated_rule_files) $(gendrifted_files) $(hs_clean_files)
 
@@ -615,7 +622,7 @@ realclean: clean java_clean
 	@$(RM) -f *.bin debian/changelog*
 
 ### additionally removes generated files not in the repository tree
-distclean: realclean clean_genRules
+distclean: clean_stack realclean clean_genRules
 	@$(RM) -rf $(derived_sources) \
 		utils/appendHaskellPreludeString \
 		utils/DrIFT utils/genRules \

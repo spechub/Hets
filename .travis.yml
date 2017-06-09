@@ -24,7 +24,7 @@ before_install:
 install:
   - sudo apt-get install --no-install-recommends `dpkg-checkbuilddeps debian/control 2>&1 | cut -f3- -d":" | sed -e 's,([^)]*),,g' -e 's,openjdk-.*-jdk,,'` || true
 script:
-  - stack setup
+  - make stack
   - stack exec -- ghc -V
   - make
   - ./hets -V
