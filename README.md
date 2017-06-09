@@ -184,6 +184,9 @@ If you wish to make larger changes we generally recommend [forking](https://help
   ```
   make stack
   ```
+  When you invoke `make` for the first time, this will give you warnings about not having found a compiler ("No compiler found, expected minor version match with ghc-...").
+  Don't let this discourage you - it's normal.
+  Running `make stack` will take care of it and install the compiler.
 * Build Hets with one of the following:
   ```
     make
