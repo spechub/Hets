@@ -32,10 +32,11 @@ endif
 STACK_SETUP := $(shell $(STACK) setup > /dev/null)
 STACK_INSTALL_DEPENDENCIES := $(shell $(STACK) build --only-dependencies $(STACK_DEPENDENCIES_FLAGS) > /dev/null)
 
+# We assume ghc 7+
 GHCVERSION := $(shell $(STACK_EXEC) ghc --numeric-version)
-GHC_RTSOPTS_AVAILABLE := $(shell expr $(shell $(STACK_EXEC) ghc --numeric-version | cut -d '.' -f 1) \>= 7)
+GHC_RTSOPTS_AVAILABLE := $(shell [ $(firstword $(subst ., ,$(GHCVERSION))) -ge 7 ] && printf '1' || printf '0' )
 ifeq "$(GHC_RTSOPTS_AVAILABLE)" "1"
-GHCRTSOPTS := -rtsopts
+    GHCRTSOPTS := -rtsopts
 endif
 
 ifneq ($(findstring SunOS, $(OSNAME)),)
@@ -167,3 +168,5 @@ HC_OPTS_WITHOUTGLADE = $(PARSEC_FLAG) \
 # and the $(GLADE_PACKAGE) below
 
 HC_OPTS = $(HC_OPTS_WITHOUTGLADE) $(GLADE_PACKAGE)
+# Compile on all CPU cores in parallel if GHC >= 8.0 is used.
+HC_OPTS += $(shell [ $(firstword $(subst ., ,$(GHCVERSION))) -ge 8 ] && echo '-j')

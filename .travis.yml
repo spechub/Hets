@@ -21,11 +21,12 @@ before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -qq darwin
 install:
- - sudo apt-get install --no-install-recommends `dpkg-checkbuilddeps debian/control 2>&1 | cut -f3- -d":" | sed -e 's,([^)]*),,g' -e 's,openjdk-.*-jdk,,'` || true
- - sudo apt-get install openjdk-7-jdk
+  - sudo apt-get install --no-install-recommends `dpkg-checkbuilddeps debian/control 2>&1 | cut -f3- -d":" | sed -e 's,([^)]*),,g' -e 's,openjdk-.*-jdk,,'` || true
+  - sudo apt-get install openjdk-7-jdk
 script:
- - make
- - stack exec -- ghc -V
- - ./hets -V
- - export HETS_MAGIC=$PWD/magic/hets.magic
- - make check
+  - stack setup
+  - stack exec -- ghc -V
+  - make
+  - ./hets -V
+  - export HETS_MAGIC=$PWD/magic/hets.magic
+  - make check
