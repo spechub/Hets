@@ -1,5 +1,10 @@
 # to be included by Makefile
 
+STACK_EXISTS := $(shell command -v stack 2> /dev/null)
+ifndef STACK_EXISTS
+    $(error "stack is not available please install haskell-stack")
+endif
+
 ## check-programatica convenience target helper vars:
 # The URL of the programatica source archive to download if missing. It must be
 # a gzippid tar archive, which can be get using wget!
