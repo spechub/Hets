@@ -86,7 +86,7 @@ import SoftFOL.CreateDFGDoc
 import SoftFOL.DFGParser
 import SoftFOL.ParseTPTP
 
-import TPTP.Logic
+import TPTP.Logic_TPTP
 import qualified TPTP.Pretty as TPTPPretty
 
 import FreeCAD.XMLPrinter (exportXMLFC)

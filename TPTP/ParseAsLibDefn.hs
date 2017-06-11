@@ -14,7 +14,7 @@ module TPTP.ParseAsLibDefn (parseTPTP) where
 
 import TPTP.AS as AS
 import TPTP.Common
-import TPTP.Logic as Logic
+import TPTP.Logic_TPTP as Logic
 import TPTP.Parser
 
 import Common.AnnoState

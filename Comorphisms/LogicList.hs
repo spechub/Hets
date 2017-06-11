@@ -76,7 +76,7 @@ import LF.Logic_LF
 import Framework.Logic_Framework
 import Maude.Logic_Maude
 import CommonLogic.Logic_CommonLogic
-import TPTP.Logic
+import TPTP.Logic_TPTP
 #endif
 #ifndef NOOWLLOGIC
 import DMU.Logic_DMU

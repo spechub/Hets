@@ -1,7 +1,7 @@
 {-# LANGUAGE CPP, MultiParamTypeClasses, TypeSynonymInstances
   , FlexibleInstances #-}
 {- |
-Module      :  ./TPTP/Logic.hs
+Module      :  ./TPTP/Logic_TPTP.hs
 Description :  Instance of class Logic for TPTP.
 Copyright   :  (c) Eugen Kuksa University of Magdeburg 2017
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -13,7 +13,7 @@ Portability :  non-portable (imports Logic)
 Instance of class Logic for TPTP.
 -}
 
-module TPTP.Logic where
+module TPTP.Logic_TPTP where
 
 import TPTP.AS hiding (TPTP)
 import TPTP.ATC_TPTP ()
