@@ -180,8 +180,9 @@ If you wish to make larger changes we generally recommend [forking](https://help
     brew cask install xquartz
     brew install binutils glib libglade cairo gtk fontconfig freetype gettext spechub/hets/udrawgraph
     ```
-* Setup Stack for Hets:
+* Setup Stack for Hets (this needs to be done only once after every time the stack.yaml has changed):
   ```
+  stack setup
   make stack
   ```
   When you invoke `make` for the first time, this will give you warnings about not having found a compiler ("No compiler found, expected minor version match with ghc-...").

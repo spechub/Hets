@@ -36,7 +36,6 @@ docs: doc/UserGuide.pdf
 
 # Create the build environment
 stack:
-	$(STACK) setup
 	$(STACK) build --only-dependencies $(STACK_DEPENDENCIES_FLAGS)
 
 SED := $(shell [ "$(OSNAME)" = 'SunOS' ] && printf 'gsed' || printf 'sed')
