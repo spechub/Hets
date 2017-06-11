@@ -14,6 +14,7 @@ module TPTP.Prover.Leo2 (leo2) where
 import TPTP.Prover.Common
 import TPTP.Prover.ProofParser
 import TPTP.Prover.ProverState
+import TPTP.Morphism
 import TPTP.Sign
 import TPTP.Sublogic
 

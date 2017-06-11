@@ -14,6 +14,7 @@ module TPTP.Prover.SPASS (spass) where
 import TPTP.Prover.Common
 import TPTP.Prover.SPASS.ProofParser
 import TPTP.Prover.ProverState
+import TPTP.Morphism
 import TPTP.Sign
 import TPTP.Sublogic
 

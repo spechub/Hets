@@ -14,6 +14,7 @@ module TPTP.Prover.CVC4 (cvc4) where
 import TPTP.Prover.Common
 import TPTP.Prover.ProofParser
 import TPTP.Prover.ProverState
+import TPTP.Morphism
 import TPTP.Sign
 import TPTP.Sublogic
 

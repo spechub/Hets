@@ -14,6 +14,7 @@ Data structures representing TPTP sublogics.
 module TPTP.Sublogic where
 
 import TPTP.AS
+import TPTP.Morphism
 import TPTP.Sign
 
 import Common.AS_Annotation (item)

@@ -16,7 +16,6 @@ module TPTP.Sign where
 
 import TPTP.AS
 
-import Common.DefaultMorphism
 import Common.Id
 
 import Data.Data
@@ -115,8 +114,6 @@ emptySign = Sign { constantSet = Set.empty
                  , thfTypeDeclarationMap = Map.empty
                  , tffTypeDeclarationMap = Map.empty
                  }
-
-type Morphism = DefaultMorphism Sign
 
 negateSentence :: Sentence -> Maybe Sentence
 negateSentence sen = case sen of

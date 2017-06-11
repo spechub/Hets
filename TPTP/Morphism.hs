@@ -12,18 +12,22 @@ Portability :  non-portable (imports Logic)
 Symbol-related functions for TPTP.
 -}
 
-module TPTP.Morphism ( symbolsOfSign
+module TPTP.Morphism ( Morphism
+                     , symbolsOfSign
                      , symbolToId
                      ) where
 
 import TPTP.AS
 import TPTP.Sign as Sign
 
+import Common.DefaultMorphism
 import Common.Id
 import qualified Data.Map as Map
 
 import Data.Maybe
 import qualified Data.Set as Set
+
+type Morphism = DefaultMorphism Sign
 
 mkSymbol :: Token -> SymbolType -> Symbol
 mkSymbol i t = Symbol { symbolId = i , symbolType = t }

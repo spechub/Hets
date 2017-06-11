@@ -15,6 +15,7 @@ import TPTP.Prover.Common
 import TPTP.Prover.EProver.ProofParser
 import TPTP.Prover.ProofParser
 import TPTP.Prover.ProverState
+import TPTP.Morphism
 import TPTP.Sign
 import TPTP.Sublogic
 

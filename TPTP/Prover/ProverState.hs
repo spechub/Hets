@@ -21,6 +21,7 @@ module TPTP.Prover.ProverState ( ProverState (..)
                                ) where
 
 import TPTP.AS
+import TPTP.Morphism
 import TPTP.Pretty
 import TPTP.Sign
 

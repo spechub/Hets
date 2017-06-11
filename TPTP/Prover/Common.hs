@@ -12,6 +12,7 @@ Portability :  non-portable (imports Logic)
 module TPTP.Prover.Common where
 
 import TPTP.Prover.ProverState
+import TPTP.Morphism
 import TPTP.Sign
 import TPTP.Sublogic
 
