@@ -586,9 +586,9 @@ clean_genRules:
 
 ### removes all *.o, *.hi and *.p_o files in all subdirectories except for .stack-work
 o_clean:
-	@find . \( -name '*.o' -o -name '*.hi' -o -name '*.p_o' \
-			   -o -name '*.dyn_hi' -o -name '*.dyn_o' \) \
-			-o -path ./.stack-work -prune -type f -exec rm -f {} +
+	@find . \( \( -name '*.o' -o -name '*.hi' -o -name '*.p_o' \
+			      -o -name '*.dyn_hi' -o -name '*.dyn_o' \) \
+			   -o -path ./.stack-work -prune -type f \) -exec rm -f {} +
 	@$(RM) -f .hets*
 
 ### remove binaries
