@@ -113,8 +113,9 @@ import CASL.Simplify
 import CASL.ToDoc
 
 import TPTP.AS as TAS
+import TPTP.Morphism as TMorphism
 import TPTP.Sign as TSign
-import TPTP.Logic
+import TPTP.Logic_TPTP
 import TPTP.Sublogic
 
 data TPTP_FOF = TPTP_FOF
@@ -140,14 +141,14 @@ instance Show a => Comorphism (GenSuleCFOL2TPTP a)
                CASLSign
                CASLMor
                CSign.Symbol RawSymbol ProofTree
-               TPTP.Logic.TPTP Sublogic TAS.BASIC_SPEC Sentence () ()
-               TSign.Sign TSign.Morphism TSign.Symbol () ProofTree where
+               TPTP.Logic_TPTP.TPTP Sublogic TAS.BASIC_SPEC Sentence () ()
+               TSign.Sign TMorphism.Morphism TSign.Symbol () ProofTree where
     sourceLogic (GenSuleCFOL2TPTP _) = CASL
     sourceSublogic (GenSuleCFOL2TPTP a) = SL.cFol
                       { sub_features = LocFilSub
                       , cons_features = NoSortGen
                       , has_empty_sorts = show a == show TPTP_FOF }
-    targetLogic (GenSuleCFOL2TPTP _) = TPTP.Logic.TPTP
+    targetLogic (GenSuleCFOL2TPTP _) = TPTP.Logic_TPTP.TPTP
     mapSublogic cid sl = Just FOF
     map_theory (GenSuleCFOL2TPTP a) = transTheory
     has_model_expansion (GenSuleCFOL2TPTP _) = True
