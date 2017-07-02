@@ -284,7 +284,7 @@
     (if opt
 	(dolist (current opt run-option)
 	  (setq run-option (concat run-option current " "))))
-    (setq hets-command (concat dol-hets-program run-option dol-hets-file-name))
+    (setq hets-command (concat dol-hets-program run-option "\"" dol-hets-file-name "\""))
 
     ;; Pop up the compilation buffer.
     (set-buffer outbuf)
