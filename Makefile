@@ -34,9 +34,14 @@ all: hets.bin hets_server.bin
 # papers (doc/*.pdf) are already pre-generated.
 docs: doc/UserGuide.pdf
 
+# Upgrade haskell-stack
+stack_upgrade:
+	$(STACK) upgrade
+	$(STACK_EXEC) -- ghc-pkg recache
 # Create the build environment
-stack:
-	$(STACK) build --only-dependencies $(STACK_DEPENDENCIES_FLAGS)
+stack: $(STACK_UPGRADE_TARGET)
+	$(STACK) build --install-ghc --only-dependencies $(STACK_DEPENDENCIES_FLAGS)
+	touch stack
 
 SED := $(shell [ "$(OSNAME)" = 'SunOS' ] && printf 'gsed' || printf 'sed')
 TAR := $(shell [ "$(OSNAME)" = 'SunOS' ] && printf 'gtar' || printf 'tar')
@@ -579,7 +584,7 @@ pretty/LaTeX_maps.hs: utils/words.pl utils/genItCorrections \
 
 ### clean up
 clean_stack:
-	@$(RM) -rf .stack-work
+	@$(RM) -rf .stack-work stack
 
 clean_genRules:
 	@$(RM) $(generated_rule_files) $(gendrifted_files) $(hs_clean_files)
@@ -706,7 +711,7 @@ $(CASL_DEPENDENT_BINARIES): $(derived_sources)
 .SUFFIXES:
 
 ## rule for GHC
-%: %.hs callghc
+%: %.hs $(STACK_TARGET) callghc
 	@touch .hets-oow
 	$(HC) --make $(HC_OPTS) -o $@ $<
 
@@ -931,7 +936,7 @@ install: install-hets install-hets_server install-common install-owl-tools
 ############################################################################
 build-indep: jars docs
 
-build-arch: hets.bin hets_server.bin
+build-arch: $(STACK_TARGET) hets.bin hets_server.bin
 
 build: build-indep build-arch
 

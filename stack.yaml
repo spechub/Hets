@@ -51,6 +51,7 @@ packages:
 extra-deps:
   - aterm-0.1.0.1
   - glade-0.13.1
+  - haskeline-0.7.4.0
   - uni-events-2.2.2.0
   - uni-graphs-2.2.1.0
   - uni-htk-2.2.1.3
