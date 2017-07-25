@@ -592,8 +592,8 @@ clean_genRules:
 ### removes all *.o, *.hi and *.p_o files in all subdirectories except for
 ### .stack-work, where the compiled dependencies reside
 o_clean:
-	@find . -path ./.stack-work -prune -type f -o \
-	    \( -name '*.o' -o -name '*.hi' -o -name '*.p_o' \
+	@find . -path ./.stack-work -prune -type f \
+	    -o \( -name '*.o' -o -name '*.hi' -o -name '*.p_o' \
         -o -name '*.dyn_hi' -o -name '*.dyn_o' \) -exec rm -f {} +
 	@$(RM) -f .hets*
 
