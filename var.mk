@@ -1,26 +1,29 @@
 # to be included by Makefile
 
+OSNAME := $(shell uname -s)
+OSVERS := $(shell uname -v 2>/dev/null)
+
 # If stack exists, use it. Otherwise skip it and use the system GHC.
-ifeq "$(shell command -v stack > /dev/null && echo '1' || echo '0')" "1"
-    STACK := stack
+STACK ?= $(shell command -v stack 2> /dev/null)
+STACK_EXEC :=
+STACK_TARGET :=
+STACK_UPGRADE_TARGET :=
+STACK_DEPENDENCIES_FLAGS :=
+ifneq ($(STACK),)
     STACK_EXEC := $(STACK) exec --
     # Upgrade Haskell-Stack if the version requirement of 1.4.0 is not met
     STACK_VERSION := $(shell stack --numeric-version)
     STACK_VERSION_SPLIT := $(subst ., ,$(STACK_VERSION))
     STACK_TARGET := stack
+
     ifneq "$(shell [ $(firstword $(STACK_VERSION_SPLIT)) -ge '1' ] && [ $(word 2,$(STACK_VERSION_SPLIT)) -ge '4' ] && echo '1')" '1'
         STACK_UPGRADE_TARGET := stack_upgrade
-    else
-        STACK_UPGRADE_TARGET :=
     endif
-else
-    STACK :=
-    STACK_EXEC :=
-    STACK_TARGET :=
-    STACK_UPGRADE_TARGET :=
+
+    ifeq "$(OSNAME)" "Darwin"
+        STACK_DEPENDENCIES_FLAGS := --flag gtk:have-quartz-gtk
+    endif
 endif
-
-
 
 ## check-programatica convenience target helper vars:
 # The URL of the programatica source archive to download if missing. It must be
@@ -35,15 +38,6 @@ PROGRAMATICA_SRC_FILE ?= \
 	/data/src/develop/programatica-1.0.0.5.tar.gz
 # The local file gets tried first, and if not usable the remote on gets fetched.
 # If both are unset or set to an empty string, programatica support is skipped.
-
-OSNAME := $(shell uname -s)
-OSVERS := $(shell uname -v 2>/dev/null)
-
-ifeq "$(OSNAME)" "Darwin"
-    STACK_DEPENDENCIES_FLAGS := --flag gtk:have-quartz-gtk
-else
-    STACK_DEPENDENCIES_FLAGS :=
-endif
 
 # We assume ghc 7+
 GHCVERSION := $(shell $(STACK_EXEC) ghc --numeric-version)
