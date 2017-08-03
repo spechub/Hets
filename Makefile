@@ -12,8 +12,6 @@ include var.mk
 
 HETS_VERSION ?= $(shell printf `cat version_nr`)
 
-# We assume ghc 7+
-GHCVERSION := $(shell ghc --numeric-version)
 NO_BIND_WARNING := -fno-warn-unused-do-bind
 HC_WARN := -Wall -fwarn-tabs \
   -fwarn-unrecognised-pragmas -fno-warn-orphans $(NO_BIND_WARNING)
@@ -36,6 +34,14 @@ all: hets.bin hets_server.bin
 # papers (doc/*.pdf) are already pre-generated.
 docs: doc/UserGuide.pdf
 
+# Upgrade haskell-stack
+stack_upgrade:
+	$(STACK) upgrade
+	$(STACK_EXEC) -- ghc-pkg recache
+# Create the build environment
+stack: $(STACK_UPGRADE_TARGET)
+	$(STACK) build --install-ghc --only-dependencies $(STACK_DEPENDENCIES_FLAGS)
+	touch stack
 
 SED := $(shell [ "$(OSNAME)" = 'SunOS' ] && printf 'gsed' || printf 'sed')
 TAR := $(shell [ "$(OSNAME)" = 'SunOS' ] && printf 'gtar' || printf 'tar')
@@ -523,7 +529,7 @@ updateHeaders: $(derived_sources)
 	@find . -name '*.hs' -exec fgrep -l '$$Header$$' {} + | xargs -I@ \
 		${SED} -i -e 's|\$$Header\$$|@|g' @
 
-GHC_LIBDIR := $(shell ghc --print-libdir)
+GHC_LIBDIR := $(shell $(STACK_EXEC) ghc --print-libdir)
 GHC_BASEDIR := $(shell cd $(GHC_LIBDIR)/../.. && printf "$${PWD}")
 
 # scanning the "whole" NFS server isn't so smart, so restrict to wellknown dirs
@@ -577,12 +583,17 @@ pretty/LaTeX_maps.hs: utils/words.pl utils/genItCorrections \
 	$(info $(EOL)Done.$(EOL)Please copy the file manually to Common$(EOL))
 
 ### clean up
+clean_stack:
+	@$(RM) -rf .stack-work stack
+
 clean_genRules:
 	@$(RM) $(generated_rule_files) $(gendrifted_files) $(hs_clean_files)
 
-### removes all *.o, *.hi and *.p_o files in all subdirectories
+### removes all *.o, *.hi and *.p_o files in all subdirectories except for
+### .stack-work, where the compiled dependencies reside
 o_clean:
-	@find . \( -name '*.o' -o -name '*.hi' -o -name '*.p_o' \
+	@find . -path ./.stack-work -prune -type f \
+	    -o \( -name '*.o' -o -name '*.hi' -o -name '*.p_o' \
         -o -name '*.dyn_hi' -o -name '*.dyn_o' \) -exec rm -f {} +
 	@$(RM) -f .hets*
 
@@ -616,7 +627,7 @@ realclean: clean java_clean
 	@$(RM) -f *.bin debian/changelog*
 
 ### additionally removes generated files not in the repository tree
-distclean: realclean clean_genRules
+distclean: clean_stack realclean clean_genRules
 	@$(RM) -rf $(derived_sources) \
 		utils/appendHaskellPreludeString \
 		utils/DrIFT utils/genRules \
@@ -628,7 +639,7 @@ distclean: realclean clean_genRules
 
 ### interactive
 ghci: $(derived_sources)
-	ghci $(HC_OPTS)
+	$(STACK_EXEC) ghci $(HC_OPTS)
 
 ### build only, don't link. Target was formerly known as 'build'.
 build-hets: hets.hs
@@ -700,7 +711,7 @@ $(CASL_DEPENDENT_BINARIES): $(derived_sources)
 .SUFFIXES:
 
 ## rule for GHC
-%: %.hs callghc
+%: %.hs $(STACK_TARGET) callghc
 	@touch .hets-oow
 	$(HC) --make $(HC_OPTS) -o $@ $<
 
@@ -925,7 +936,7 @@ install: install-hets install-hets_server install-common install-owl-tools
 ############################################################################
 build-indep: jars docs
 
-build-arch: hets.bin hets_server.bin
+build-arch: $(STACK_TARGET) hets.bin hets_server.bin
 
 build: build-indep build-arch
 

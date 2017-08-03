@@ -11,6 +11,7 @@ hets_server
 hets.cgi
 rev.txt
 *.orig
+.stack-work/
 doc/*.aux
 doc/*.bbl
 doc/*.blg

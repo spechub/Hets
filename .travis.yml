@@ -1,18 +1,32 @@
 sudo: required
 dist: trusty
 language: generic
+cache:
+  directories:
+  - $HOME/.stack
+  - ./.stack-work
+addons:
+  apt:
+    sources:
+      - sourceline: ppa:hets/hets
+    packages:
+      - libgmp-dev
+      - software-properties-common
+      - dpkg-dev
+      - spass
+      - darwin
+      - openjdk-7-jdk
 before_install:
- - sudo apt-get update -qq
- - sudo apt-get install -qq spass software-properties-common dpkg-dev 
- - sudo apt-add-repository -y ppa:hets/hets
- - sudo apt-get update -qq
- - sudo apt-get install -qq darwin
+  # Download and unpack the stack executable
+  - mkdir -p ~/.local/bin
+  - export PATH=$HOME/.local/bin:$PATH
+  - travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
 install:
- - sudo apt-get install --no-install-recommends `dpkg-checkbuilddeps debian/control 2>&1 | cut -f3- -d":" | sed -e 's,([^)]*),,g' -e 's,openjdk-.*-jdk,,'` || true
- - sudo apt-get install openjdk-7-jdk
+  - sudo apt-get install --no-install-recommends `dpkg-checkbuilddeps debian/control 2>&1 | cut -f3- -d":" | sed -e 's,([^)]*),,g' -e 's,openjdk-.*-jdk,,'` || true
 script:
- - ghc -V
- - make
- - ./hets -V
- - export HETS_MAGIC=$PWD/magic/hets.magic
- - make check
+  - make stack
+  - stack exec -- ghc -V
+  - make
+  - ./hets -V
+  - export HETS_MAGIC=$PWD/magic/hets.magic
+  - make check

@@ -167,6 +167,41 @@ If you want to participate in the Hets development feel free to tell us via our 
 
 If you wish to make larger changes we generally recommend [forking](https://help.github.com/articles/fork-a-repo) this repository. You can however request access to this repository if you plan on contributing regularly.
 
+
+### Build Hets using Stack
+* [Install Stack](https://docs.haskellstack.org/en/stable/install_and_upgrade) (use the generic Linux option if you are on Ubuntu).
+* Install build- and GUI-dependencies
+  * Ubuntu:
+    ```
+    sudo apt-get install libglib2.0-dev libcairo2-dev libpango1.0-dev libgtk2.0-dev libglade2-dev libncurses-dev
+    ```
+  * macOS:
+    ```
+    brew cask install xquartz
+    brew install binutils glib libglade cairo gtk fontconfig freetype gettext spechub/hets/udrawgraph
+    ```
+* Setup Stack for Hets (this needs to be done only once after every time the stack.yaml has changed):
+  ```
+  stack setup
+  make stack
+  ```
+  When you invoke `make` for the first time, this will give you warnings about not having found a compiler ("No compiler found, expected minor version match with ghc-...").
+  Don't let this discourage you - it's normal.
+  Running `make stack` will take care of it and install the compiler.
+* Build Hets with one of the following:
+  ```
+    make
+    make hets
+    make hets_server
+  ```
+  This uses Stack to build the Hets[-Server] binary.
+  During this process, the specified version of GHC is installed in the user directory, all dependencies are built and finally, the Hets[-Server] binary is compiled.
+* If you want to clean the extra-dependencies of Stack that are put into the Hets working directory, run
+  ```
+  make clean_stack
+  ```
+
+
 ## Troubleshooting & Useful Tools
 
 ## Hints for contributors switching from svn to git
