@@ -1,0 +1,29 @@
+resolver: lts-9.0
+
+packages:
+  - '.'
+
+extra-deps:
+  - aterm-0.1.0.1
+  - glade-0.13.1
+  - haskeline-0.7.4.0
+  - uni-events-2.2.2.0
+  - uni-graphs-2.2.1.0
+  - uni-htk-2.2.1.3
+  - uni-posixutil-2.2.1.1
+  - uni-reactor-2.2.1.0
+  - uni-uDrawGraph-2.2.1.3
+  - uni-util-2.3.0.1
+
+flags:
+  Hets:
+    uniform: true
+    tar: true
+    unix: true
+    haskeline: true
+    hexpat: true
+    gtkglade: true
+    server: true
+    haxml: true
+
+extra-package-dbs: []

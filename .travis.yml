@@ -3,6 +3,8 @@ dist: trusty
 language: generic
 cache:
   directories:
+  - $HOME/.ghc
+  - $HOME/.cabal
   - $HOME/.stack
   - ./.stack-work
 addons:
@@ -16,6 +18,18 @@ addons:
       - spass
       - darwin
       - openjdk-7-jdk
+matrix:
+  include:
+    # Default environment:
+    - env:
+    # Simulate Ubuntu xenial and yakkety (GHC 7.10.3):
+    - env: STACK_YAML="$PWD/.stack-ghc-7.10.3.yaml"
+    # Simulate Ubuntu artful (GHC 8.0.2):
+    - env: STACK_YAML="$PWD/.stack-ghc-8.0.2.yaml"
+  allow_failures:
+    - env: STACK_YAML="$PWD/.stack-ghc-7.10.3.yaml"
+    - env: STACK_YAML="$PWD/.stack-ghc-8.0.2.yaml"
+
 before_install:
   # Download and unpack the stack executable
   - mkdir -p ~/.local/bin
