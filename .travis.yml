@@ -26,17 +26,32 @@ matrix:
     - env: STACK_YAML="$PWD/.stack-ghc-7.10.3.yaml"
     # Simulate Ubuntu artful (GHC 8.0.2):
     - env: STACK_YAML="$PWD/.stack-ghc-8.0.2.yaml"
+    - os: osx
+      osx_image: xcode8.3
   allow_failures:
     - env: STACK_YAML="$PWD/.stack-ghc-7.10.3.yaml"
     - env: STACK_YAML="$PWD/.stack-ghc-8.0.2.yaml"
+    - os: osx
 
 before_install:
   # Download and unpack the stack executable
   - mkdir -p ~/.local/bin
   - export PATH=$HOME/.local/bin:$PATH
-  - travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
+  - |
+    if [ `uname` = "Darwin" ]
+    then
+      travis_retry curl --insecure -L https://www.stackage.org/stack/osx-x86_64 | tar xz --strip-components=1 --include '*/stack' -C ~/.local/bin
+    else
+      travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
+    fi
 install:
-  - sudo apt-get install --no-install-recommends `dpkg-checkbuilddeps debian/control 2>&1 | cut -f3- -d":" | sed -e 's,([^)]*),,g' -e 's,openjdk-.*-jdk,,'` || true
+  - |
+    if [ `uname` = "Darwin" ]
+    then
+      brew install libglade wget glib binutils cairo fontconfig freetype gettext gtk
+    else
+      sudo apt-get install --no-install-recommends `dpkg-checkbuilddeps debian/control 2>&1 | cut -f3- -d":" | sed -e 's,([^)]*),,g' -e 's,openjdk-.*-jdk,,'` || true
+    fi
 script:
   - make stack
   - stack exec -- ghc -V
