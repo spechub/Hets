@@ -1,13 +1,13 @@
 {- |
 Module      :  ./Driver/AnaLib.hs
-Description :  wrapper for static analysis of HetCASL
+Description :  wrapper for static analysis of DOL
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt
 Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
-wrapper for static analysis of HetCASL reading and writing prf-files
+wrapper for static analysis of DOL reading and writing prf-files
 -}
 
 module Driver.AnaLib

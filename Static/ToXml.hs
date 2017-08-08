@@ -71,7 +71,7 @@ dGraph full lenv ln dg =
                , mkAttr "nextlinkid" . showEdgeId $ getNewEdgeId dg ]
      . unode "DGraph" $
          subnodes "Global" (annotations ga . convertGlobalAnnos
-                            $ removeHetCASLprefixes ga)
+                            $ removeDOLprefixes ga)
          ++ map (lnode full ga lenv) lnodes
          ++ map (ledge full ga dg) ledges
 

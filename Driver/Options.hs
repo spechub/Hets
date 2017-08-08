@@ -719,7 +719,7 @@ options = let
       "choose different logic syntax"
     , Option "L" [libdirsS] (ReqArg LibDirs "DIR")
       ("colon-separated list of directories"
-       ++ crS ++ "containing HetCASL libraries")
+       ++ crS ++ "containing DOL libraries")
     , Option "m" [modelSparQS] (ReqArg ModelSparQ "FILE")
       "lisp file for SparQ definitions"
     , Option "" [counterSparQS] (ReqArg parseCounter "0-99")

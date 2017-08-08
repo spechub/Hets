@@ -1,15 +1,16 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  ./Common/LibName.hs
-Description :  library names for HetCASL and development graphs
+Description :  library names for DOL and development graphs
 Copyright   :  (c) Christian Maeder, DFKI GmbH 2008
 License     :  GPLv2 or higher, see LICENSE.txt
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  portable
 
-Abstract syntax of HetCASL specification libraries
-   Follows Sect. II:2.2.5 of the CASL Reference Manual.
+Abstract syntax of HetCASL/DOL specification library names.
+   Follows Sect. II:2.2.5 of the CASL Reference Manual
+   and 9.7 of the OMG standard DOL.
 -}
 
 module Common.LibName
