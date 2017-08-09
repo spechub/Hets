@@ -703,7 +703,7 @@ metaRobots = add_attrs
 mkHtmlString :: FilePath -> [Element] -> String
 mkHtmlString path dirs = htmlHead ++ mkHtmlElem
   ("Listing of" ++ if null path then " repository" else ": " ++ path)
-  (unode "h1" ("Hets " ++ hetcats_version) : unode "p"
+  (unode "h1" hetcats_version : unode "p"
      [ bold "Hompage:"
      , aRef "http://hets.eu" "hets.eu"
      , bold "Contact:"

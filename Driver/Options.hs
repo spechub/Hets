@@ -48,7 +48,6 @@ module Driver.Options
   , checkRecentEnv
   , downloadExtensions
   , defaultHetcatsOpts
-  , hetsVersion
   , showDiags
   , showDiags1
   , putIfVerbose
@@ -79,10 +78,6 @@ import Control.Monad.Trans
 import Data.Char
 import Data.List
 import Data.Maybe
-
--- | short version without date for ATC files
-hetsVersion :: String
-hetsVersion = takeWhile (/= ',') hetcats_version
 
 -- | translate a given http reference using the URL catalog
 useCatalogURL :: HetcatsOpts -> FilePath -> FilePath
@@ -1007,7 +1002,7 @@ checkFlags fs = do
         h = null [ () | Help <- fs]
         v = null [ () | Version <- fs]
     unless h $ putStr hetsUsage
-    unless v $ putStrLn ("version of hets: " ++ hetcats_version)
+    unless v $ putStrLn hetcats_version
     unless (v && h) exitSuccess
     collectFlags fs
 

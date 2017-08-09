@@ -32,6 +32,7 @@ import Logic.Grothendieck
 import ATC.Grothendieck
 
 import Driver.Options
+import Driver.Version
 
 import ATerm.AbstractSyntax
 import ATerm.ReadWrite
@@ -105,8 +106,8 @@ readShATermFile lg fp = do
 fromVersionedATT :: ShATermLG a => LogicGraph -> ATermTable -> Result a
 fromVersionedATT lg att =
     case getATerm att of
-    ShAAppl "hets" [versionnr, aterm] [] ->
-        if hetsVersion == snd (fromShATermLG lg versionnr att)
+    ShAAppl "hets" [versionno, aterm] [] ->
+        if hetcats_version_numeric == snd (fromShATermLG lg versionno att)
         then Result [] (Just $ snd $ fromShATermLG lg aterm att)
         else Result [Diag Warning
                      "Wrong version number ... re-analyzing"

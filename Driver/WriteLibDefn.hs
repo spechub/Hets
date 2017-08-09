@@ -49,6 +49,7 @@ import Syntax.ToXml
 import Text.XML.Light (ppTopElement)
 
 import Driver.Options
+import Driver.Version
 
 import System.FilePath
 
@@ -106,9 +107,9 @@ writeShATermFile fp atcon = toShATermString atcon >>= writeFile fp
 
 versionedATermTable :: ShATermLG a => a -> IO ATermTable
 versionedATermTable atcon = do
-    (att1, versionnr) <- toShATermLG emptyATermTable hetsVersion
+    (att1, versionno) <- toShATermLG emptyATermTable hetcats_version_numeric
     (att2, aterm) <- toShATermLG att1 atcon
-    return $ fst $ addATerm (ShAAppl "hets" [versionnr, aterm] []) att2
+    return $ fst $ addATerm (ShAAppl "hets" [versionno, aterm] []) att2
 
 writeShATermFileSDoc :: ShATermLG a => FilePath -> a -> IO ()
 writeShATermFileSDoc fp atcon =
