@@ -10,7 +10,7 @@
 
 include var.mk
 
-HETS_VERSION ?= $(shell printf `cat version_nr`)
+HETS_VERSION ?= $(shell grep "_numeric = " Driver/Version.hs | cut -d '"' -f2)
 
 NO_BIND_WARNING := -fno-warn-unused-do-bind
 HC_WARN := -Wall -fwarn-tabs \
