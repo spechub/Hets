@@ -408,7 +408,7 @@ anaAutoProofQuery splitQuery = let
 isRESTful :: [String] -> Bool
 isRESTful pathBits = case pathBits of
   [] -> False
-  [h] | elem h ["version", "robots.txt"] -> True
+  [h] | elem h ["numeric-version", "version", "robots.txt"] -> True
   h : _ -> elem h listRESTfulIdentifiers
 
 listRESTfulIdentifiers :: [String]
@@ -522,6 +522,8 @@ parseRESTful
         dirs <- liftIO $ getHetsLibContent opts path' splitQuery
         mkHtmlPage path' dirs respond
       ["version"] -> respond $ mkOkResponse textC hetcats_version
+      ["numeric-version"] ->
+        respond $ mkOkResponse textC hetcats_version_numeric
       ["available-provers"] ->
          liftIO (usableProvers logicGraph)
          >>= respond . mkOkResponse xmlC . ppTopElement
