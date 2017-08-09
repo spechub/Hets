@@ -455,7 +455,7 @@ genRules: $(generated_rule_files)
 gendrifted_files = $(patsubst %.der.hs, %.hs, $(generated_rule_files))
 
 # all sources that need to be created before ghc can be called
-derived_sources += $(drifted_files) Driver/Version.hs $(hs_der_files)
+derived_sources += $(drifted_files) $(hs_der_files)
 
 
 ####################################################################
@@ -680,12 +680,6 @@ check: $(TESTTARGETS)
 
 test:
 	yes X | $(MAKE) check
-
-## Preparing the version of Hets
-Driver/Version.hs: Driver/Version.in version_nr rev.txt
-	@$(RM) $@
-	@${SED} -e "s|\$$Header\$$|./$@|" Driver/Version.in >$@
-	@printf '  ++ "$(shell cat version_nr), $(shell cat rev.txt)"\n' >> $@
 
 rev.txt:
 	@if [ -z "$(EXPORTED)" ]; then \
