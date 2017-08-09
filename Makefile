@@ -467,7 +467,7 @@ derived_sources += $(drifted_files) $(hs_der_files)
     count fromKif release cgi ghci build-hets callghc \
 	get-programatica check_desktop check_server check_cgi \
 	install install-common install-owl-tools archive \
-	build-indep build-arch build binary-indep binary-arch binary rev.txt
+	build-indep build-arch build binary-indep binary-arch binary
 
 .SECONDARY: $(generated_rule_files)
 
@@ -635,7 +635,6 @@ distclean: clean_stack realclean clean_genRules
 		utils/DtdToHaskell-src/DtdToHaskell \
 		utils/genItCorrections pretty/LaTeX_maps.hs pretty/words.pl.log \
 		docs
-	@[ -n "$(EXPORTED)" ] || $(RM) rev.txt
 
 ### interactive
 ghci: $(derived_sources)
@@ -680,16 +679,6 @@ check: $(TESTTARGETS)
 
 test:
 	yes X | $(MAKE) check
-
-rev.txt:
-	@if [ -z "$(EXPORTED)" ]; then \
-		printf '$(GIT_TIMESTAMP)\n' > rev.txt ; \
-	elif [ ! -e rev.txt  ]; then \
-		printf 'Unable to create rev.txt (no git repo infos available)\n' ; \
-		exit 1; \
-	else \
-		printf 'Keeping rev.txt (no git repo infos available)\n' ; \
-	fi
 
 ATC/DevGraph.hs: Static/DevGraph.hs
 
@@ -782,13 +771,13 @@ get-programatica:
 		printf 'Failed! No programatica support available!\n' ; exit 4 ; \
 	fi
 
-ARC_NAME ?= /tmp/hets-$(HETS_VERSION)-$(GIT_TIMESTAMP)-src.tar.xz
+ARC_NAME ?= /tmp/hets-$(HETS_VERSION)-src.tar.xz
 
 # remove trailing .txz or .tar.xz
 archive: ARC_BNAME = \
 	$(patsubst %.txz,%, $(patsubst %.tar.xz,%,$(notdir $(ARC_NAME))))
 
-archive: rev.txt $(USER_GUIDE)
+archive: $(USER_GUIDE)
 	@[ -n "$(EXPORTED)" ] && \
 		printf '\nThis source tree is already exported.\n' && exit 1 ; \
 	FNAME=$(dir $(ARC_NAME))/$(ARC_BNAME).tar.xz ; \
@@ -796,7 +785,6 @@ archive: rev.txt $(USER_GUIDE)
 	rm -rf tmp ; mkdir tmp || exit 3 ; \
 	git archive --format=tar --prefix=$(ARC_BNAME)/ HEAD | \
 		( cd tmp ; $(TAR) xf - ) ; \
-	cp rev.txt tmp/$(ARC_BNAME)/ ; \
 	if [ -e $(USER_GUIDE) ]; then \
 		cp $(USER_GUIDE) tmp/$(ARC_BNAME)/$(USER_GUIDE) ; \
 	else \
