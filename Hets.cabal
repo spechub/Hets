@@ -131,5 +131,9 @@ Executable hets
       , http-types >= 0.6 && <= 1.0
       , text >= 0.5 && < 1.3
       , case-insensitive
+      , persistent >= 2.7.0
+      , persistent-template >= 2.5.2
+      , persistent-postgresql >= 2.6.1
+      , persistent-sqlite >= 2.6.2
       , random >= 1.0
     cpp-options: -DSERVER -DWARP3
