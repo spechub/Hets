@@ -10,8 +10,6 @@
 
 include var.mk
 
-HETS_VERSION ?= $(shell grep "_numeric = " Driver/Version.hs | cut -d '"' -f2)
-
 NO_BIND_WARNING := -fno-warn-unused-do-bind
 HC_WARN := -Wall -fwarn-tabs \
   -fwarn-unrecognised-pragmas -fno-warn-orphans $(NO_BIND_WARNING)
@@ -46,6 +44,9 @@ stack: $(STACK_UPGRADE_TARGET)
 SED := $(shell [ "$(OSNAME)" = 'SunOS' ] && printf 'gsed' || printf 'sed')
 TAR := $(shell [ "$(OSNAME)" = 'SunOS' ] && printf 'gtar' || printf 'tar')
 INSTALL := $(shell [ "$(OSNAME)" = 'SunOS' ] && printf 'ginstall' || printf 'install')
+HETS_VERSION ?= $(shell ${SED} -n \
+	-e '/^hetcats_version_numeric =/ { s/.*"\([^"]*\)".*/\1/; p; q; }' \
+	Driver/Version.hs )
 
 define EOL
 
@@ -53,8 +54,7 @@ define EOL
 endef
 
 # indicate, whether working on an exported repo
-GIT_TIMESTAMP := $(shell [ -d .git ] && git log -1 --format=%ct )
-EXPORTED := $(shell [ -n "$(GIT_TIMESTAMP)" ] || printf 1)
+EXPORTED := $(shell [ -d .git ] || printf 1)
 
 # the 'replacing spaces' example was taken from the (GNU) Make info manual
 empty =
