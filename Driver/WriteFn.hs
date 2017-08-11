@@ -121,6 +121,8 @@ import Driver.WriteLibDefn
 import OMDoc.XmlInterface (xmlOut)
 import OMDoc.Export (exportLibEnv)
 
+import Persistence.DBConfig (databaseConfig)
+
 writeVerbFile :: HetcatsOpts -> FilePath -> String -> IO ()
 writeVerbFile opts f str = do
     putIfVerbose opts 2 $ "Writing file: " ++ f
@@ -143,7 +145,9 @@ writeLibEnv opts filePrefix lenv ln ot =
              >>= writeVerbFile opts f
       XmlOut -> writeVerbFile opts f $ ppTopElement
           $ ToXml.dGraph opts lenv ln dg
-      DbOut -> Persistence.DevGraph.exportLibEnv f lenv
+      DbOut -> do
+        dbConfig <- databaseConfig opts f
+        Persistence.DevGraph.exportLibEnv dbConfig lenv
       JsonOut -> writeVerbFile opts f $ ppJson
           $ ToJson.dGraph opts lenv ln dg
       SymsXml -> writeVerbFile opts f $ ppTopElement
