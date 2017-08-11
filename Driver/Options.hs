@@ -94,7 +94,7 @@ bracket s = "[" ++ s ++ "]"
 -- use the same strings for parsing and printing!
 verboseS, intypeS, outtypesS, skipS, justStructuredS, transS,
      guiS, libdirsS, outdirS, amalgS, recursiveS, namedSpecsS,
-     interactiveS, modelSparQS, counterSparQS, connectS, xmlS, listenS,
+     interactiveS, modelSparQS, counterSparQS, connectS, xmlS, dbS, listenS,
      applyAutomaticRuleS, normalFormS, unlitS, pidFileS :: String
 
 modelSparQS = "modelSparQ"
@@ -200,6 +200,8 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , counterSparQ :: Int
   , outdir :: FilePath
   , outtypes :: [OutType]
+  , databaseConfigFile :: FilePath
+  , databaseSubConfig :: String
   , xupdate :: FilePath
   , recurse :: Bool
   , verbose :: Int
@@ -252,6 +254,8 @@ defaultHetcatsOpts = HcOpt
   , counterSparQ = 3
   , outdir = ""
   , outtypes = [] -- no default
+  , databaseConfigFile = ""
+  , databaseSubConfig = ""
   , xupdate = ""
   , recurse = False
   , defLogic = "CASL"
@@ -373,6 +377,8 @@ data Flag =
   | ModelSparQ FilePath
   | CounterSparQ Int
   | OutTypes [OutType]
+  | DatabaseConfigFile FilePath
+  | DatabaseSubConfig String
   | Specs [SIMPLE_ID]
   | Trans [SIMPLE_ID]
   | Views [SIMPLE_ID]
@@ -421,6 +427,8 @@ makeOpts opts flg =
     CounterSparQ x -> opts { counterSparQ = x }
     OutDir x -> opts { outdir = x }
     OutTypes x -> opts { outtypes = x }
+    DatabaseConfigFile x -> opts { databaseConfigFile = x }
+    DatabaseSubConfig x -> opts { databaseSubConfig = x }
     XUpdate x -> opts { xupdate = x }
     Recurse -> opts { recurse = True }
     ApplyAutomatic -> opts { applyAutomatic = True }
@@ -809,7 +817,14 @@ options = let
        ++ bS ++ ppS ++ joinBar (map show prettyList2) ++ crS
        ++ bS ++ graphE ++ joinBar (map show graphList) ++ crS
        ++ bS ++ dfgS ++ bracket cS ++ crS
-       ++ bS ++ tptpS)
+       ++ bS ++ tptpS ++ bracket cS)
+    , Option "" ["database-config"] (ReqArg DatabaseConfigFile "FILEPATH")
+       ("path to the database configuration (yaml) file - "
+       ++ "if none is given despite database output, "
+       ++ "an sqlite database is created in the output directory")
+    , Option "" ["database-subconfig"] (ReqArg DatabaseSubConfig "KEY")
+       ("subconfig of the database-config - "
+       ++ "one of: production, development, test")
     , Option "U" ["xupdate"] (ReqArg XUpdate "FILE")
       "apply additional xupdates from file"
     , Option "R" [recursiveS] (NoArg Recurse)

@@ -139,5 +139,6 @@ Executable hets
       , persistent-template >= 2.5.2
       , persistent-postgresql >= 2.6.1
       , persistent-sqlite >= 2.6.2
+      , yaml >= 0.8.23.3
       , random >= 1.0
     cpp-options: -DSERVER -DWARP3

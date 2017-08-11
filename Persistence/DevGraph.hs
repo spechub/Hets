@@ -24,11 +24,15 @@ Portability :  portable
 -- the relevant information from a development graph
 -- #####################
 
-module Persistence.DevGraph where
-       
-import Control.Monad.IO.Class  (liftIO)
+module Persistence.DevGraph (exportLibEnv) where
+
+import Persistence.Database
+import Persistence.DBConfig
+
+import Control.Monad (when)
+import Control.Monad.IO.Class (liftIO)
 import Database.Persist
-import Database.Persist.Sqlite
+import Database.Persist.Sql
 import Database.Persist.TH
 
 import Control.Monad.IO.Class (MonadIO (..))
@@ -60,19 +64,20 @@ Edges
     deriving Show
 |]
 
-type DBMonad backend m a = ReaderT backend (NoLoggingT (ResourceT m)) a
+type DBMonad backend m a = ReaderT backend m a
 type DGName = LibName
 
-exportLibEnv :: String -> LibEnv -> IO ()
-exportLibEnv db lenv = runSqlite (pack db) $ do
-    runMigration migrateAll
+exportLibEnv :: DBConfig -> LibEnv -> IO ()
+exportLibEnv dbConfig lenv = onDatabase dbConfig $ do
+    when (adapter dbConfig == Just "sqlite") $ runMigration migrateAll
     sequence $ Map.foldlWithKey exportAux [] lenv
     return ()
     where exportAux list dgname dgraph =
              exportDG dgname dgraph : list
 
-exportDG :: (MonadIO m, IsSqlBackend backend, PersistQueryRead backend, PersistStoreWrite backend)
-             => DGName -> DGraph -> DBMonad backend m ()
+exportDG :: (BaseBackend backend ~ SqlBackend, MonadIO m,
+              PersistStoreWrite backend)
+         => DGName -> DGraph -> DBMonad backend m ()
 exportDG dgname dgraph = do
   let dg = dgBody dgraph
       nds = nodes dg
@@ -80,4 +85,3 @@ exportDG dgname dgraph = do
   mapM_ (\n -> insert $ Nodes graphId $
                 pack $ show $ getName $ dgn_name $ fromJust $ lab dg n) nds
   return ()
-    
