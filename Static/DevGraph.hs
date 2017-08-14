@@ -169,7 +169,6 @@ data DGNodeLab =
   , nodeMod :: NodeMod
   , xnode :: Maybe XGraph.XNode
   , dgn_lock :: Maybe (MVar ())
-  , dgn_symbolpathlist :: G_symbolmap [SLinkPath]
   } deriving Typeable
 
 instance Show DGNodeLab where
@@ -1029,7 +1028,7 @@ newRefInfo ln n = DGRef
 
 -- | create a new node label
 newInfoNodeLab :: NodeName -> DGNodeInfo -> G_theory -> DGNodeLab
-newInfoNodeLab name info gTh@(G_theory lid _ _ _ _ _) = DGNodeLab
+newInfoNodeLab name info gTh = DGNodeLab
   { dgn_name = name
   , dgn_theory = gTh
   , globalTheory = Nothing
@@ -1042,8 +1041,7 @@ newInfoNodeLab name info gTh@(G_theory lid _ _ _ _ _) = DGNodeLab
   , nodeInfo = info
   , nodeMod = unMod
   , xnode = Nothing
-  , dgn_lock = Nothing
-  , dgn_symbolpathlist = G_symbolmap lid Map.empty }
+  , dgn_lock = Nothing }
 
 -- | create a new node label using 'newNodeInfo' and 'newInfoNodeLab'
 newNodeLab :: NodeName -> DGOrigin -> G_theory -> DGNodeLab

@@ -15,8 +15,6 @@ Abstract syntax of HetCASL specification libraries
 module Common.LibName
   ( LibName (LibName, getLibId, locIRI, mimeType)
   , VersionNumber (VersionNumber)
-  , LinkPath (LinkPath)
-  , SLinkPath
   , isQualNameFrom
   , isQualName
   , mkQualName
@@ -147,10 +145,6 @@ instance Ord LibName where
 
 instance Pretty LibName where
     pretty = fsep . prettyLibName
-
-data LinkPath a = LinkPath a [(LibName, Int)] deriving (Eq, Ord, Typeable, Data)
-
-type SLinkPath = LinkPath String
 
 convertFileToLibStr :: FilePath -> String
 convertFileToLibStr = mkLibStr . takeBaseName
