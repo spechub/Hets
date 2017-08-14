@@ -521,9 +521,9 @@ parseRESTful
         let path' = intercalate "/" r
         dirs <- liftIO $ getHetsLibContent opts path' splitQuery
         mkHtmlPage path' dirs respond
-      ["version"] -> respond $ mkOkResponse textC hetcats_version
+      ["version"] -> respond $ mkOkResponse textC hets_version
       ["numeric-version"] ->
-        respond $ mkOkResponse textC hetcats_version_numeric
+        respond $ mkOkResponse textC hets_version_numeric
       ["available-provers"] ->
          liftIO (usableProvers logicGraph)
          >>= respond . mkOkResponse xmlC . ppTopElement
@@ -705,7 +705,7 @@ metaRobots = add_attrs
 mkHtmlString :: FilePath -> [Element] -> String
 mkHtmlString path dirs = htmlHead ++ mkHtmlElem
   ("Listing of" ++ if null path then " repository" else ": " ++ path)
-  (unode "h1" hetcats_version : unode "p"
+  (unode "h1" hets_version : unode "p"
      [ bold "Hompage:"
      , aRef "http://hets.eu" "hets.eu"
      , bold "Contact:"

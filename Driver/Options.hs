@@ -1007,8 +1007,8 @@ checkFlags fs = do
         v = null [ () | Version <- fs]
         vn = null [ () | VersionNumeric <- fs]
     unless h $ putStr hetsUsage
-    unless v $ putStrLn hetcats_version
-    unless vn $ putStrLn hetcats_version_numeric
+    unless v $ putStrLn hets_version
+    unless vn $ putStrLn hets_version_numeric
     unless (h && v && vn) exitSuccess
     collectFlags fs
 

@@ -142,7 +142,7 @@ main = run mainCGI
 mainCGI :: CGI ()
 mainCGI = ask $ html $ do
       CGI.head $ title $ text "Hets Web Interface"
-      CGI.body $ makeForm $ page1 hetcats_version
+      CGI.body $ makeForm $ page1 hets_version
 
 page1 :: String -> WithHTML x CGI ()
 page1 title1 = do

@@ -107,7 +107,7 @@ writeShATermFile fp atcon = toShATermString atcon >>= writeFile fp
 
 versionedATermTable :: ShATermLG a => a -> IO ATermTable
 versionedATermTable atcon = do
-    (att1, versionno) <- toShATermLG emptyATermTable hetcats_version_numeric
+    (att1, versionno) <- toShATermLG emptyATermTable hets_version_numeric
     (att2, aterm) <- toShATermLG att1 atcon
     return $ fst $ addATerm (ShAAppl "hets" [versionno, aterm] []) att2
 
