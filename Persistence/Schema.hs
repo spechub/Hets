@@ -26,14 +26,14 @@ import Database.Persist.TH
 import Data.Text (Text)
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
-Graphs
+Graphs -- should become Document
     name Text
     deriving Show
-Nodes
+Nodes -- should become OMS
     graphId GraphsId
     name Text
     deriving Show
-Edges
+Edges -- should become Mapping
     graphId GraphsId
     sourceId NodesId
     targetId NodesId
