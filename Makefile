@@ -45,7 +45,7 @@ SED := $(shell [ "$(OSNAME)" = 'SunOS' ] && printf 'gsed' || printf 'sed')
 TAR := $(shell [ "$(OSNAME)" = 'SunOS' ] && printf 'gtar' || printf 'tar')
 INSTALL := $(shell [ "$(OSNAME)" = 'SunOS' ] && printf 'ginstall' || printf 'install')
 HETS_VERSION ?= $(shell ${SED} -n \
-	-e '/^hets_version_numeric =/ { s/.*"\([^"]*\)".*/\1/; p; q; }' \
+	-e '/^hetsVersionNumeric =/ { s/.*"\([^"]*\)".*/\1/; p; q; }' \
 	Driver/Version.hs )
 
 define EOL
