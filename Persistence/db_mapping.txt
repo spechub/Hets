@@ -1,0 +1,79 @@
+documentation of the mapping of Hets/DG datatypes to the database
+
+Hets - database
+LibEnv - need not be represented in the database
+  instead, all contained (LibName,DGraph)s will be stored as Documents 
+  proceed from the leaves of the LibEnv graph to the top. Then each DGRef can be resolved.
+  Note that the current Document is needed in all contained OMS and Mappings.
+  call getLibDepRel in order to compute (and then store) dependency relation on Documents
+(LibName,DGraph) - Document 
+  LibName: store version and both IRIs (one is the location, one is the id of the Document)
+  DGraph:
+    globalAnnos - leave for later
+    optLibDefn - leave for later
+    globalEnv - leave for later
+    dgBody - go through the graph and represent all nodes and edges, and these
+      link to the respective Document. Hence a DGraph can be recovered using all nodes and edges of
+      a given Document
+    currentBaseTheory - ignore
+    refTree - leave for later
+    specRoots - ignore
+    nameMap - ignore
+    archSpecDiags - leave for later
+    getNewEdgeId - ignore
+    allRefNodes - ignore
+    sigMap - use it in order to index signatures of a document (avoid duplicates)
+    thMap - iuse it in order to index OMS of a document (avoid duplicates)
+    morMap - use it in order to index mappings of a document (avoid duplicates)
+    proofHistory - ignore
+    redoHistory - ignore
+Range - Range
+  only two Pos are needed, and only one filename
+NodeName - NodeName
+  xpath is caching information and can be ignored
+DGOrigin - OMSOrigin
+  just an enumeration (additional data can be ignored)
+Conservativtiy - String (for Unknown, take the argument string)
+ConsStatus - ConsStatus represent 2x Conservativtiy, omit ThmLinkStatus
+(DGNodeLab,Node) - OMS (create a new OMS only if nodeInfo is a DGNode)
+    note that Node is just an integer, pointing to a development graph node, aka OMS
+    dgn_theory: the G_theory can be represented inline:
+       gTheoryLogic, gTheorySign can be stored as Signature
+       gTheorySyntax is stored as an assoication to Serialization
+       gTheorySignIdx, gTheorySelfIdx is caching information and can be ignored
+       gTheorySens is stored as an assoication to Sentence. The proof info can be ignored
+    globalTheory is caching information and can be ignored
+    labelHasHiding should be represented
+    labelHasFree should be represented
+    dgn_nf pointer to OMS
+    dgn_sigma :: Maybe GMorphism -- inclusion of signature into nf signature
+    dgn_freenf pointer to OMS
+    dgn_phi  :: Maybe GMorphism -- morphism from signature to nffree signature
+    nodeInfo respent directly:
+      DGNode
+        node_origin represent as enumeration
+        node_cons_status repredent as ConsStatus
+      DGRef - here, no new OMS needs be created. Instead, lookup the ref_node (pointer to OMS)
+    nodeMod - can be ignored
+    xnode - can be ignored
+    dgn_lock - can be ignored
+    (dgn_symbolpathlist - can be ignored)
+    an OMS should also contain a pointer (association) to its Document, which can be obtained through the enclosing LibEnv
+G_theory - represented only as part of OMS
+G_sign - Signature
+    contains a logic id and an ExtSign. The latter is stored using an association class
+    indicating whether a symbol has been imported or not.
+    Store signature as XML string or JSON.
+(DGLinkLab,Node,Node) - Mapping
+    dgl_morphism Store as XML string or JSON.
+    dgl_type - represent only the enumerations, ConsStatus: see above
+    dgl_origin :: DGLinkOrigin -- origin in input language
+    dglPending :: Bool        -- open proofs of edges in proof basis
+    dgl_id :: EdgeId          -- id of the edge
+    dglName :: String         -- name of the edge
+MaybeNode - pointer to OMS
+   should we use inheritance table or not?
+   in case of EmptyNode create a new OMS with empty signature and given logic (if not existing yet)
+   each logic should point to an OMS with the empty signature over that logic (association from Logic to Signature)
+
+
