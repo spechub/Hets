@@ -48,7 +48,6 @@ module Driver.Options
   , checkRecentEnv
   , downloadExtensions
   , defaultHetcatsOpts
-  , hetsVersion
   , showDiags
   , showDiags1
   , putIfVerbose
@@ -79,10 +78,6 @@ import Control.Monad.Trans
 import Data.Char
 import Data.List
 import Data.Maybe
-
--- | short version without date for ATC files
-hetsVersion :: String
-hetsVersion = takeWhile (/= ',') hetcats_version
 
 -- | translate a given http reference using the URL catalog
 useCatalogURL :: HetcatsOpts -> FilePath -> FilePath
@@ -338,6 +333,7 @@ data Flag =
   | Quiet
   | Uncolored
   | Version
+  | VersionNumeric
   | Recurse
   | ApplyAutomatic
   | NormalForm
@@ -424,6 +420,7 @@ makeOpts opts flg =
     AccessToken s -> opts { accessToken = s }
     Help -> opts -- skipped
     Version -> opts -- skipped
+    VersionNumeric -> opts -- skipped
 
 -- | 'AnaType' describes the type of analysis to be performed
 data AnaType = Basic | Structured | Skip
@@ -686,6 +683,8 @@ options = let
     , Option "q" ["quiet"] (NoArg Quiet)
       "same as -v0, no output to stdout"
     , Option "V" ["version"] (NoArg Version)
+      "print version information and exit"
+    , Option "" ["numeric-version"] (NoArg VersionNumeric)
       "print version number and exit"
     , Option "h" ["help", "usage"] (NoArg Help)
       "print usage information and exit"
@@ -1006,9 +1005,11 @@ checkFlags fs = do
                         -- collect some more here?
         h = null [ () | Help <- fs]
         v = null [ () | Version <- fs]
+        vn = null [ () | VersionNumeric <- fs]
     unless h $ putStr hetsUsage
-    unless v $ putStrLn ("version of hets: " ++ hetcats_version)
-    unless (v && h) exitSuccess
+    unless v $ putStrLn hetsVersion
+    unless vn $ putStrLn hetsVersionNumeric
+    unless (h && v && vn) exitSuccess
     collectFlags fs
 
 -- auxiliary functions: FileSystem interaction --

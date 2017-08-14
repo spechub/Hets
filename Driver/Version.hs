@@ -14,5 +14,9 @@ generated version module of Hets
 
 module Driver.Version where
 
-hetcats_version :: String
-hetcats_version = "v"
+hetsVersionNumeric :: String
+hetsVersionNumeric = "0.100.0"
+
+hetsVersion :: String
+hetsVersion =
+  "The Heterogeneous Tool Set, version " ++ hetsVersionNumeric
