@@ -102,7 +102,7 @@ logicName :: LogicGraph -> AParser st Logic_name
 logicName l = do
       i <- hetIriCurie >>= expandCurieMConservative l
       let (ft, rt) = if isSimple i
-                     then break (== '.') $ abbrevPath i -- HetCASL
+                     then break (== '.') $ abbrevPath i -- DOL
                      else (abbrevPath i, [])
       (e, ms) <- if null rt then return (i, Nothing)
          else do

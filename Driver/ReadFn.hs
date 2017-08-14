@@ -1,6 +1,6 @@
 {- |
 Module      :  ./Driver/ReadFn.hs
-Description :  reading and parsing ATerms, CASL, HetCASL files
+Description :  reading and parsing ATerms, CASL, DOL files
 Copyright   :  (c) Klaus Luettich, C. Maeder, Uni Bremen 2002-2014
 License     :  GPLv2 or higher, see LICENSE.txt
 
@@ -8,7 +8,7 @@ Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  non-portable(Grothendieck)
 
-reading and parsing ATerms, CASL, HetCASL files as much as is needed for the
+reading and parsing ATerms, CASL, DOL files as much as is needed for the
 static analysis
 -}
 

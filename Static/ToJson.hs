@@ -68,7 +68,7 @@ dGraph full lenv ln dg =
          , ("dgedges", mkJNum $ length ledges)
          , ("nextlinkid", mkJNum . getEdgeNum $ getNewEdgeId dg)
          , ("Global", mkJArr . map (anToJson ga) . convertGlobalAnnos
-                            $ removeHetCASLprefixes ga)
+                            $ removeDOLprefixes ga)
          , ("DGNode", mkJArr $ map (lnode full ga lenv) lnodes)
          , ("DGLink", mkJArr $ map (ledge full ga dg) ledges) ]
 

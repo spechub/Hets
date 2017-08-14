@@ -1,6 +1,6 @@
 {- |
 Module      :  ./Driver/WriteLibDefn.hs
-Description :  Writing out a HetCASL library
+Description :  Writing out a DOL library
 Copyright   :  (c) Klaus Luettich, C.Maeder, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt
 
@@ -8,7 +8,7 @@ Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  non-portable(DevGraph)
 
-Writing out HetCASL env files as much as is needed for
+Writing out DOL env files as much as is needed for
 the static analysis
 -}
 

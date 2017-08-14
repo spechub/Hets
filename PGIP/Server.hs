@@ -1730,7 +1730,7 @@ headElems path = let d = "default" in unode "strong" "Choose a display type:" :
        [ unode "small" "internal command overview as XML:"
        , menuElement ]
      , plain $ "Select a local file as library or "
-       ++ "enter a HetCASL specification in the text area and press \"submit\""
+       ++ "enter a DOL specification in the text area and press \"submit\""
        ++ ", or browse through our Hets-lib library below."
      , uploadHtml ]
 

@@ -4,7 +4,7 @@ Hets is a parsing, static analysis and proof management tool incorporating vario
 
 ### Supported languages
 
-* general-purpose logics: [Propositional](http://en.wikipedia.org/wiki/Propositional_calculus), [QBF](http://en.wikipedia.org/wiki/QBF), [TPTP](http://www.tptp.org/)/SoftFOL, [CASL](http://www.cofi.info/CASL) (FOL), [HasCASL](http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/HasCASL/) (HOL)
+* general-purpose logics: [Propositional](http://en.wikipedia.org/wiki/Propositional_calculus), [QBF](http://en.wikipedia.org/wiki/QBF), [TPTP](http://www.tptp.org/)/SoftFOL, [CASL](http://www.informatik.uni-bremen.de/cofi/index.php/CASL) (FOL), [HasCASL](http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/HasCASL/) (HOL)
 * logical frameworks: [Isabelle](http://www.cl.cam.ac.uk/research/hvg/Isabelle/), [LF](http://en.wikipedia.org/wiki/LF_%28logical_framework%29), DFOL
 * modeling languages: [Meta-Object Facility (MOF)](https://en.wikipedia.org/wiki/Meta-Object_Facility), [Query/View/Transformation (QVT)](https://en.wikipedia.org/wiki/QVT)
 * ontologies and constraint languages: [OWL](http://www.w3.org/TR/owl2-overview/), [CommonLogic](http://cl.tamu.edu/), [RelScheme](http://en.wikipedia.org/wiki/Database_schema), ConstraintCASL
@@ -22,7 +22,7 @@ Hets is a parsing, static analysis and proof management tool incorporating vario
 * [CSPCASL-prover](http://dx.doi.org/10.1016/j.entcs.2009.08.018), an Isabelle-based prover for CspCASL,
 * [VSE](http://www.dfki.de/vse/systems/vse/), an interactive prover for dynamic logic.
 
-The structuring constructs of the heterogeneous specification language are those of the language [CASL](http://www.cofi.info/CASL), plus some constructs to select languages (logics) and language translations. The heterogeneous specification language of Hets is called [HetCASL](http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/HetCASL/index_e.htm). However, Hets can also read other structuring constructs, like those of Haskell, Maude or OWL. All these are mapped to so-called development graphs and processed with a proof calculus for heterogeneous development graphs that allows to decompose global proof obligations into local ones (during this, Hets also needs to compute [colimits](http://en.wikipedia.org/wiki/Limit_%28category_theory%29#Colimits_2) of theories over the involved logics).
+The structuring constructs of the heterogeneous specification language are those of the [OMG](http://www.omg.org)-standardised [Distributed Ontology, Model and Specification Language (DOL)](http://dol-omg.org), extending those of [CASL](http://www.informatik.uni-bremen.de/cofi/index.php/CASL). However, Hets can also read other structuring constructs, like those of Haskell, Maude or OWL. All these are mapped to so-called development graphs and processed with a proof calculus for heterogeneous development graphs that allows to decompose global proof obligations into local ones (during this, Hets also needs to compute [colimits](http://en.wikipedia.org/wiki/Limit_%28category_theory%29#Colimits_2) of theories over the involved logics).
 
 Hets is based on a graph of logics and logic translations. The overall architecture is depicted below. Adding new logics and logic translations to Hets can be done with moderate effort by adding some Haskell code to the Hets source. With the [Latin](https://trac.omdoc.org/LATIN/) project, this becomes much easier: logics (and in the near future also logic translations) can be declaratively specified in [LF](http://twelf.plparty.org/wiki/Bibliography_of_LF).
 
@@ -92,7 +92,7 @@ Just download the binary and put it somewhere in the $PATH.
 * Our current linux binaries also rely on gtk-2 and glade-2 libraries for more and better menus. Thus you may need to install additional libraries. Use ldd (or "otools -L hets" on Macs) to see which libraries are missing.)
 * For displaying development graphs (with the -g option), you need to install [uDraw(Graph)](http://www.informatik.uni-bremen.de/uDrawGraph/en/) (formerly known as daVinci) that relies on [Tcl/Tk (version 8.4 or 8.5)](http://www.tcl.tk/software/tcltk/8.4.html) (which probably has been already installed on your computer anyway). Make sure uDrawGraph and wish are in your $PATH.
 
-Download the [CASL libraries](http://www.cofi.info/Libraries) and set $HETS_LIB to the folder containing these.
+Download the [CASL libraries](http://www.informatik.uni-bremen.de/cofi/index.php/Libraries) and set $HETS_LIB to the folder containing these.
 
 ### Quickstart
 

@@ -12,7 +12,7 @@ Portability :  portable
 reading and writing files changed between ghc-6.10.4 and ghc-6.12.1 from
 latin1 to utf8.
 
-This module allows to continue reading and writing latin1 (HetCASL) files.
+This module allows to continue reading and writing latin1 (DOL) files.
 However, this module does not support to write utf8 files with ghc-6.10.4 or
 earlier versions.
 
