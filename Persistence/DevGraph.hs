@@ -28,41 +28,22 @@ module Persistence.DevGraph (exportLibEnv) where
 
 import Persistence.Database
 import Persistence.DBConfig
+import Persistence.Schema
 
 import Control.Monad (when)
-import Control.Monad.IO.Class (liftIO)
 import Database.Persist
 import Database.Persist.Sql
-import Database.Persist.TH
 
 import Control.Monad.IO.Class (MonadIO (..))
-import Control.Monad.Logger (NoLoggingT)
-import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Monad.Trans.Reader (ReaderT)
-import Control.Monad.Trans.Resource (ResourceT)
 
 import Static.DevGraph
 import Static.DgUtils
-import Data.Text (Text, pack)
 import Common.LibName
 import qualified Data.Map as Map
 import Data.Graph.Inductive.Graph as Graph
 import Data.Maybe
-
-share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
-Graphs
-    name Text
-    deriving Show
-Nodes
-    graphId GraphsId
-    name Text
-    deriving Show
-Edges
-    graphId GraphsId
-    sourceId NodesId
-    targetId NodesId
-    deriving Show
-|]
+import Data.Text (pack)
 
 type DBMonad backend m a = ReaderT backend m a
 type DGName = LibName
