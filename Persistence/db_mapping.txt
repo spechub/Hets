@@ -40,7 +40,7 @@ ConsStatus - ConsStatus represent 2x Conservativtiy, omit ThmLinkStatus
     dgn_theory: the G_theory can be represented inline:
        gTheoryLogic, gTheorySign can be stored as Signature
        gTheorySyntax is stored as an assoication to Serialization
-       gTheorySignIdx, gTheorySelfIdx is caching information and can be ignored
+       gTheorySignIdx, gTheorySelfIdx is the index of the theory in thMap above (use it to avoid duplicates)
        gTheorySens is stored as an assoication to Sentence. The proof info can be ignored
     globalTheory is caching information and can be ignored
     labelHasHiding should be represented
@@ -61,9 +61,11 @@ ConsStatus - ConsStatus represent 2x Conservativtiy, omit ThmLinkStatus
     an OMS should also contain a pointer (association) to its Document, which can be obtained through the enclosing LibEnv
 G_theory - represented only as part of OMS
 G_sign - Signature
-    contains a logic id and an ExtSign. The latter is stored using an association class
-    indicating whether a symbol has been imported or not.
-    Store signature as XML string or JSON.
+    gSignLogic the logic, store it
+    gSign 
+       plainSign Store signature as XML string or JSON.
+       nonImportedSymbols indicates whether a symbol has been imported or not. Store it using an association class SignatureSymbol    
+    gSignSelfIdx is the index of the signature in sigMap above (use it to avoid duplicates)
 (DGLinkLab,Node,Node) - Mapping
     dgl_morphism Store as XML string or JSON.
     dgl_type - represent only the enumerations, ConsStatus: see above
