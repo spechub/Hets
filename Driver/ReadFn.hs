@@ -208,11 +208,6 @@ getExtContent opts exts fp =
            concatMap (\ d -> map (d </>) fs) $ "" : libdirs opts
   in tryDownload opts ffs fn
 
-exitHets :: String -> IO ()
-exitHets err = do
-  hPutStrLn stderr err
-  exitWith $ ExitFailure 2
-
 {- | output file type, checksum, real file name and file content.
 inputs are hets options, optional argument for the file program,
 and the library or file name. -}
@@ -235,13 +230,13 @@ showFileType :: HetcatsOpts -> FilePath -> IO ()
 showFileType opts fn = do
   eith <- getContentAndFileType opts fn
   case eith of
-    Left err -> exitHets err
+    Left err -> hetsIOError err
     Right (mr, _, nFn, _) ->
       let fstr = (if nFn == fn then fn else nFn ++ " (via " ++ fn ++ ")")
              ++ ": "
       in case mr of
         Just s -> putStrLn $ fstr ++ s
-        Nothing -> exitHets $ fstr ++ "could not determine file type."
+        Nothing -> hetsIOError $ fstr ++ "could not determine file type."
 
 keepOrigClifName :: HetcatsOpts -> FilePath -> FilePath -> FilePath
 keepOrigClifName opts origName file =

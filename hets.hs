@@ -117,7 +117,7 @@ processFile opts file =
     case res of
       Just (ln, nEnv) ->
         writeSpecFiles opts file nEnv ln $ lookupDGraph ln nEnv
-      _ -> return ()
+      _ -> hetsIOError ""
     if guess file (intype opts) /= ProofCommand && interactive opts
       then cmdlRun opts >> return ()
       else displayGraph file opts res
