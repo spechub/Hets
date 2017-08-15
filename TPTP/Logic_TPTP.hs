@@ -79,6 +79,7 @@ instance StaticAnalysis TPTP BASIC_SPEC Sentence () () Sign Morphism Symbol ()
 instance Logic TPTP Sublogic BASIC_SPEC Sentence () () Sign Morphism Symbol () ProofTree
   where
     stability _ = Testing
+    all_sublogics TPTP = [CNF, FOF, TFF, THF]
     provers TPTP = [cvc4, darwin, eprover, geo3, isabelle, leo2, satallax,
                     spass, vampire]
 
