@@ -1107,8 +1107,8 @@ hetsError = error . ("command line usage error (see 'hets -h')\n" ++)
 -- | print error and usage and exit with code 2
 hetsIOError :: String -> IO a
 hetsIOError s = do
-  hPutStrLn stderr s
-  putStr hetsUsage
+  unless (null s) $ hPutStrLn stderr s
+  putStr "for Hets usage, use: hets -h\n"
   exitWith $ ExitFailure 2
 
 -- | 'hetsUsage' generates usage information for the commandline
