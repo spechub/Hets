@@ -36,6 +36,7 @@
       (append
        '(("\\.dol\\'" . dol-mode))
        '(("\\.het\\'"  . dol-mode))
+       '(("\\.clif\\'"  . dol-mode))
        '(("\\.casl\\'"  . dol-mode))
        auto-mode-alist))
 (autoload 'dol-mode "dol-mode" "Entering DOL mode..." t)
