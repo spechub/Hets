@@ -58,6 +58,7 @@ toNamedSen (Basic_spec annotedItems) =
     formulaIsAxiom :: Annotated_formula -> Bool
     formulaIsAxiom af = case formulaRole af of
       Conjecture -> False
+      Negated_conjecture -> False
       _ -> True
 
     formulaIsDef :: Annotated_formula -> Bool
