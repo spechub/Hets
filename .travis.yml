@@ -27,12 +27,12 @@ install:
 before_script:
   - '[ -d $HOME/Hets-lib ] || git clone --depth=1 https://github.com/spechub/Hets-lib.git $HOME/Hets-lib'
 script:
+  - export HETS_MAGIC=$PWD/magic/hets.magic
+  - export HETS_LIB=$HOME/Hets-lib
   - make stack
   - stack exec -- ghc -V
   - make
   - ./hets -V
-  - export HETS_MAGIC=$PWD/magic/hets.magic
   - make check
   - sudo make install
-  - export HETS_LIB=$HOME/Hets-lib
-  - cd $HOME/Hets-lib && ./check-files
+  - test/hets-lib-check.sh
