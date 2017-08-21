@@ -12,6 +12,7 @@ hets.cgi
 rev.txt
 *.orig
 .stack-work/
+stack
 doc/*.aux
 doc/*.bbl
 doc/*.blg
