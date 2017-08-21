@@ -25,7 +25,15 @@ before_install:
 install:
   - sudo apt-get install --no-install-recommends `dpkg-checkbuilddeps debian/control 2>&1 | cut -f3- -d":" | sed -e 's,([^)]*),,g' -e 's,openjdk-.*-jdk,,'` || true
 before_script:
-  - '[ -d $HOME/Hets-lib ] || git clone --depth=1 https://github.com/spechub/Hets-lib.git $HOME/Hets-lib'
+  - |
+    if [ -d $HOME/Hets-lib/.git ]
+    then
+      pushd $HOME/Hets-lib
+      git pull
+      popd
+    else
+      git clone --depth=1 https://github.com/spechub/Hets-lib.git $HOME/Hets-lib
+    fi
 script:
   - export HETS_MAGIC=$PWD/magic/hets.magic
   - export HETS_LIB=$HOME/Hets-lib
