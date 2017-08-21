@@ -13,15 +13,20 @@ Portability :  non-portable (uses package HTTP)
 
 module Common.Http where
 
+import Driver.Options
+
 import Control.Exception (try)
 import qualified Data.ByteString.Lazy.Char8 as Char8
 import Network.Connection (TLSSettings(..))
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS
 
-loadFromUri :: String -> IO (Either String String)
-loadFromUri uri = do
-  manager <- newManager noVerifyTlsManagerSettings
+loadFromUri :: HetcatsOpts -> String -> IO (Either String String)
+loadFromUri opts uri = do
+  manager <-
+    if disableCertificateVerification opts
+    then newManager noVerifyTlsManagerSettings
+    else newManager tlsManagerSettings
   initialRequest <- parseRequest uri
   let request = initialRequest
         { requestHeaders = [ ("Accept", "*/*; q=0.1, text/plain") ]}
