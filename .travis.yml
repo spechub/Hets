@@ -4,6 +4,7 @@ language: generic
 cache:
   directories:
   - $HOME/.stack
+  - $HOME/Hets-lib
   - ./.stack-work
 addons:
   apt:
@@ -23,6 +24,8 @@ before_install:
   - travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
 install:
   - sudo apt-get install --no-install-recommends `dpkg-checkbuilddeps debian/control 2>&1 | cut -f3- -d":" | sed -e 's,([^)]*),,g' -e 's,openjdk-.*-jdk,,'` || true
+before_script:
+  - '[ -d $HOME/Hets-lib ] || git clone --depth=1 https://github.com/spechub/Hets-lib.git $HOME/Hets-lib'
 script:
   - make stack
   - stack exec -- ghc -V
@@ -30,3 +33,6 @@ script:
   - ./hets -V
   - export HETS_MAGIC=$PWD/magic/hets.magic
   - make check
+  - sudo make install
+  - export HETS_LIB=$HOME/Hets-lib
+  - cd $HOME/Hets-lib && ./check-files
