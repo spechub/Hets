@@ -157,11 +157,6 @@ ifneq ($(strip $(UNI_PACKAGE)),)
   endif
 endif
 
-ifneq ($(findstring Darwin, $(OSNAME)),)
-HASKELINE_PACKAGE :=
-GLADE_PACKAGE :=
-endif
-
 HC_OPTS_WITHOUTGLADE = $(PARSEC_FLAG) \
   $(TIME_PACKAGE) $(TAR_PACKAGE) $(HTTP_PACKAGE) $(UNIX_PACKAGE) \
   $(UNI_PACKAGE) $(HASKELINE_PACKAGE) $(HEXPAT_PACKAGE) \
