@@ -282,7 +282,6 @@ runEProverBuffered saveTPTP graph fullgraph options tmpFileName prob = do
    (err, out) <-
       do
        timeTmpFile <- getTempFile prob tmpFile
-       grep <- executableWithDefault "ggrep" "grep"
        (_, out, err, _) <-
         if graph || fullgraph || not s then do
               bufferFile <- getTempFile "" "eprover-proof-buffer"
@@ -294,12 +293,11 @@ runEProverBuffered saveTPTP graph fullgraph options tmpFileName prob = do
                `Exception.catch` (\ ThreadKilled -> terminateProcess h)
               hClose buff
               mkGraph bufferFile
-              runInteractiveCommand $ unwords [grep, "-e", "axiom",
-               "-e", "SZS", bufferFile, "&&", "rm", "-f", bufferFile]
+              runInteractiveCommand $ unwords ["egrep", "axiom|SZS",
+                bufferFile, "&&", "rm", "-f", bufferFile]
         else runInteractiveCommand $ unwords
              [bin, "--proof-object", options, timeTmpFile,
-              "|", grep, "-e", "axiom", "-e", "SZS",
-               "&&", "rm", timeTmpFile]
+              "|", "egrep", "axiom|SZS", "&&", "rm", timeTmpFile]
        return (out, err)
    perr <- hGetContents err
    pout <- hGetContents out

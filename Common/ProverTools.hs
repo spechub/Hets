@@ -18,13 +18,6 @@ import Common.Utils
 import System.Directory
 import System.FilePath
 
-executableWithDefault :: String -> String -> IO String
-executableWithDefault ex def = do
-  mPath <- findExecutable ex
-  case mPath of
-    Nothing -> return def
-    Just _ -> return ex
-
 missingExecutableInPath :: String -> IO Bool
 missingExecutableInPath name = do
   mp <- findExecutable name
