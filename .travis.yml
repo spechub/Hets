@@ -12,6 +12,7 @@ addons:
       - sourceline: ppa:hets/hets
     packages:
       - libgmp-dev
+      - latexmk
       - software-properties-common
       - dpkg-dev
       - spass
@@ -35,12 +36,26 @@ before_script:
       git clone --depth=1 https://github.com/spechub/Hets-lib.git $HOME/Hets-lib
     fi
 script:
+  # Prepare to run Hets
   - export HETS_MAGIC=$PWD/magic/hets.magic
   - export HETS_LIB=$HOME/Hets-lib
+
+  # Compile Hets
   - make stack
   - stack exec -- ghc -V
   - make
   - ./hets -V
+
+  # Install Hets
+  # It needs to be installed before `make check` because it was already compiled
+  # by calling `make`.
+  - export PREFIX=/tmp/hets-install
+  - export PATH=$PREFIX/bin:$PATH
+  - mkdir -p $PREFIX
+  - make install-hets
+  - make install-common
+  - make install-owl-tools
+
+  # Run more checks
   - make check
-  - sudo make install
   - test/hets-lib-check.sh
