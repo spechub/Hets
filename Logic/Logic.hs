@@ -394,16 +394,6 @@ symset_of :: forall lid sentence sign morphism symbol .
              lid -> sign -> Set.Set symbol
 symset_of lid sig = Set.unions $ sym_of lid sig
 
--- | check that all sentence names in a theory do not appear as symbol names
-checkSenNames :: forall lid sentence sign morphism symbol .
-                 Sentences lid sentence sign morphism symbol =>
-                 lid -> sign -> [Named sentence] -> Set.Set String
-checkSenNames lid aSig nsens =
- let senNames = map senAttr nsens
-     symNames = map (show . (sym_name lid)) $ Set.toList $
-                symset_of lid aSig
- in Set.intersection (Set.fromList symNames) $ Set.fromList senNames
-
 -- | dependency ordered list of symbols for a signature
 symlist_of :: forall lid sentence sign morphism symbol .
               Sentences lid sentence sign morphism symbol =>

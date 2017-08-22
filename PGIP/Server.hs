@@ -352,8 +352,8 @@ oldWebApi opts tempLib sessRef re pathBits splitQuery meth respond
                  Just k' -> getHetsResult opts [] sessRef (qr k')
                               Nothing OldWebAPI proofFormatterOptions
                respond $ case ms of
-                 Just (t, s) | not $ hasErrors ds-> mkOkResponse t s
-                 _ -> mkResponse textC status422 $ showRelDiags 1 ds
+                 Nothing -> mkResponse textC status422 $ showRelDiags 1 ds
+                 Just (t, s) -> mkOkResponse t s
            -- AUTOMATIC PROOFS E.N.D.
            else getHetsResponse opts [] sessRef pathBits splitQuery respond
       "POST" -> do
@@ -506,8 +506,8 @@ parseRESTful
     Result ds ms <- liftIO $ runResultT $
       getHetsResult myOpts [] sessRef qr format' RESTfulAPI pfOptions
     respond $ case ms of
-      Just (t, s) | not $ hasErrors ds -> mkOkResponse t s
-      _ -> mkResponse textC status422 $ showRelDiags 1 ds
+      Nothing -> mkResponse textC status422 $ showRelDiags 1 ds
+      Just (t, s) -> mkOkResponse t s
   getResponse = getResponseAux opts
   -- respond depending on request Method
   in case meth of
@@ -1001,7 +1001,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
               Just "dot" -> liftR $ return
                 (dotC, dotGraph title False title dg)
               Just "symbols" -> liftR $ return (xmlC, ppTopElement
-                $ ToXml.dgSymbols dg)
+                $ ToXml.dgSymbols opts dg)
               Just "session" -> liftR $ return (htmlC, ppElement
                 $ aRef (mkPath sess ln k) $ show k)
               Just str | elem str ppList
@@ -1082,7 +1082,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
                 NcCmd cmd | elem cmd [Query.Node, Info, Symbols]
                   -> case cmd of
                    Symbols -> return (xmlC, ppTopElement
-                           $ showSymbols ins (globalAnnos dg) dgnode)
+                           $ showSymbols opts ins (globalAnnos dg) dgnode)
                    _ -> return (textC, fstLine ++ showN dgnode)
                 _ -> case maybeResult $ getGlobalTheory dgnode of
                   Nothing -> fail $

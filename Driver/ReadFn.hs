@@ -184,7 +184,8 @@ tryDownload :: HetcatsOpts -> [FilePath] -> FilePath
 tryDownload opts fnames fn = case fnames of
   [] -> return $ Left $ "no input found for: " ++ fn
   fname : fnames' -> do
-       mRes <- downloadSource opts fname
+       let fname' = fromMaybe fname $ stripPrefix "file://" fname
+       mRes <- downloadSource opts fname'
        case mRes of
          Left err -> do
            eith <- tryDownload opts fnames' fn

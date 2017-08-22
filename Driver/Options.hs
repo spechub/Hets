@@ -128,6 +128,9 @@ relposS = "relative-positions"
 fullSignS :: String
 fullSignS = "full-signatures"
 
+printASTS :: String
+printASTS = "print-AST"
+
 fullTheoriesS :: String
 fullTheoriesS = "full-theories"
 
@@ -218,7 +221,8 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , outputLogicGraph :: Bool
   , fileType :: Bool
   , accessToken :: String
-  , fullSign :: Bool }
+  , fullSign :: Bool
+  , printAST :: Bool }
 
 {- | 'defaultHetcatsOpts' defines the default HetcatsOpts, which are used as
 basic values when the user specifies nothing else -}
@@ -265,7 +269,8 @@ defaultHetcatsOpts = HcOpt
   , outputLogicGraph = False
   , fileType = False
   , accessToken = ""
-  , fullSign = False }
+  , fullSign = False
+  , printAST = False }
 
 instance Show HetcatsOpts where
   show opts =
@@ -307,6 +312,7 @@ instance Show HetcatsOpts where
     ++ showFlag unlit unlitS
     ++ showFlag useLibPos relposS
     ++ showFlag fullSign fullSignS
+    ++ showFlag printAST printASTS
     ++ showFlag fullTheories fullTheoriesS
     ++ case urlCatalog opts of
          [] -> ""
@@ -368,6 +374,7 @@ data Flag =
   | UseMMT
   | FullTheories
   | FullSign
+  | PrintAST
   | OutputLogicGraph
   | FileType
   | AccessToken String
@@ -416,6 +423,7 @@ makeOpts opts flg =
     OutputLogicGraph -> opts { outputLogicGraph = True }
     FileType -> opts { fileType = True }
     FullSign -> opts { fullSign = True }
+    PrintAST -> opts { printAST = True }
     UrlCatalog m -> opts { urlCatalog = m ++ urlCatalog opts }
     AccessToken s -> opts { accessToken = s }
     Help -> opts -- skipped
@@ -577,7 +585,7 @@ data OutType =
   | FreeCADOut
   | ThyFile -- ^ isabelle theory file
   | DfgFile SPFType -- ^ SPASS input file
-  | TPTPFile SPFType
+  | TPTPFile
   | ComptableXml
   | MedusaJson
   | RDFOut
@@ -604,7 +612,7 @@ instance Show OutType where
     FreeCADOut -> "fcxml"
     ThyFile -> "thy"
     DfgFile t -> dfgS ++ show t
-    TPTPFile t -> tptpS ++ show t
+    TPTPFile -> tptpS
     ComptableXml -> "comptable.xml"
     MedusaJson -> "medusa.json"
     RDFOut -> "nt"
@@ -617,7 +625,8 @@ plainOutTypeList :: [OutType]
 plainOutTypeList =
   [ Prf, EnvOut ] ++ map OWLOut plainOwlFormats ++
   [ RDFOut, CLIFOut, KIFOut, OmdocOut, XmlOut, JsonOut, ExperimentalOut
-  , HaskellOut, ThyFile, ComptableXml, MedusaJson, FreeCADOut, SymXml, SymsXml]
+  , HaskellOut, ThyFile, ComptableXml, MedusaJson, FreeCADOut, SymXml, SymsXml
+  , TPTPFile]
 
 outTypeList :: [OutType]
 outTypeList = let dl = [Delta, Fully] in
@@ -626,7 +635,6 @@ outTypeList = let dl = [Delta, Fully] in
     ++ [ SigFile d | d <- dl ]
     ++ [ TheoryFile d | d <- dl ]
     ++ [ DfgFile x | x <- spfTypes]
-    ++ [ TPTPFile x | x <- spfTypes]
     ++ [ GraphOut f | f <- graphList ]
 
 instance Read OutType where
@@ -718,7 +726,8 @@ options = let
       "choose different logic syntax"
     , Option "L" [libdirsS] (ReqArg LibDirs "DIR")
       ("colon-separated list of directories"
-       ++ crS ++ "containing DOL libraries")
+       ++ crS ++ "containing DOL libraries."
+       ++ crS ++ "If an http[s] URL is specified here, it is treated as the last libdir because colons can occur in such URLs")
     , Option "m" [modelSparQS] (ReqArg ModelSparQ "FILE")
       "lisp file for SparQ definitions"
     , Option "" [counterSparQS] (ReqArg parseCounter "0-99")
@@ -748,6 +757,7 @@ options = let
     , Option "" [unlitS] (NoArg Unlit) "unlit input source"
     , Option "" [relposS] (NoArg RelPos) "use relative file positions"
     , Option "" [fullSignS] (NoArg FullSign) "xml output full signatures"
+    , Option "" [printASTS] (NoArg PrintAST) ("print AST in xml/json output")
     , Option "" [fullTheoriesS] (NoArg FullTheories) "xml output full theories"
     , Option "" [accessTokenS] (ReqArg AccessToken "TOKEN")
       "add access token to URLs (for ontohub)"
@@ -764,7 +774,7 @@ options = let
        ++ bS ++ ppS ++ joinBar (map show prettyList2) ++ crS
        ++ bS ++ graphE ++ joinBar (map show graphList) ++ crS
        ++ bS ++ dfgS ++ bracket cS ++ crS
-       ++ bS ++ tptpS ++ bracket cS)
+       ++ bS ++ tptpS)
     , Option "U" ["xupdate"] (ReqArg XUpdate "FILE")
       "apply additional xupdates from file"
     , Option "R" [recursiveS] (NoArg Recurse)
@@ -1046,7 +1056,10 @@ checkLibDirs fs =
 
 joinHttpLibPath :: [String] -> [String]
 joinHttpLibPath l = case l of
-  p : f : r | elem p ["http", "https"] -> (p ++ ':' : f) : joinHttpLibPath r
+  p : f : r | p  == "file" && take 2 f == "//" ->
+    (p ++ ':' : f) : joinHttpLibPath r
+  p : f : _ | elem p ["http", "https"] && take 2 f == "//" ->
+    [intercalate ":" l]
   f : r -> f : joinHttpLibPath r
   [] -> []
 

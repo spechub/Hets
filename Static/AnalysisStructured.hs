@@ -65,7 +65,6 @@ import Common.LibName
 import Common.Result
 import Common.Utils (number)
 import Common.Lib.MapSet (imageSet, setInsert)
-import Common.ProofUtils
 
 import Data.Graph.Inductive.Graph
 import qualified Data.Set as Set
@@ -321,26 +320,21 @@ anaSpecAux conser addSyms lg libEnv ln dg nsig name opts eo sp rg = case sp of
                Nothing | null ds ->
                  fail "basic analysis failed without giving a reason"
                _ -> res
-       let names = checkSenNames lid sigma_complete $ nameAndDisambiguate ax
-       if not $ Set.null names  then
-          fail $ "The following sentence names are also used as symbol names:" 
-          ++ (concatMap (\x -> x ++ " ") $ Set.toList names)
-       else do
-        diffSig <- case signatureDiff lid sigma_complete sig of
-          Result _ (Just ds) -> return ds
-          _ -> warning sigma_complete
-            "signature difference could not be computed using full one" pos
-        let gsysd = Set.map (G_symbol lid) sysd
-            (ns, dg') = insGTheory dg0 (setSrcRange rg name)
-              (DGBasicSpec (Just $ G_basic_spec lid bspec')
-              (G_sign lid (mkExtSign diffSig) startSigId) gsysd)
-                $ G_theory lid (currentSyntax lg) (ExtSign sigma_complete
-                $ Set.intersection
-                      (if addSyms then Set.union sys sysd else sysd)
-                $ symset_of lid sigma_complete)
-              startSigId (toThSens ax) startThId
-        dg'' <- createConsLink DefLink conser lg dg' nsig' ns DGLinkExtension
-        return (Basic_spec (G_basic_spec lid bspec') pos, ns, dg'')
+       diffSig <- case signatureDiff lid sigma_complete sig of
+         Result _ (Just ds) -> return ds
+         _ -> warning sigma_complete
+           "signature difference could not be computed using full one" pos
+       let gsysd = Set.map (G_symbol lid) sysd
+           (ns, dg') = insGTheory dg0 (setSrcRange rg name)
+             (DGBasicSpec (Just $ G_basic_spec lid bspec')
+             (G_sign lid (mkExtSign diffSig) startSigId) gsysd)
+               $ G_theory lid (currentSyntax lg) (ExtSign sigma_complete
+               $ Set.intersection
+                     (if addSyms then Set.union sys sysd else sysd)
+               $ symset_of lid sigma_complete)
+             startSigId (toThSens ax) startThId
+       dg'' <- createConsLink DefLink conser lg dg' nsig' ns DGLinkExtension
+       return (Basic_spec (G_basic_spec lid bspec') pos, ns, dg'')
   EmptySpec pos -> case nsig of
       EmptyNode _ -> do
         warning () "empty spec" pos
