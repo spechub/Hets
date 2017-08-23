@@ -246,7 +246,7 @@ mapSign sig =
       let conc = OS.concepts sig
           cvrt = map uriToCaslId . Set.toList
           tMp k = MapSet.fromList . map (\ u -> (u, [k]))
-          cPreds = thing : nothing : cvrt conc
+          cPreds = thingPred : nothing : cvrt conc
           oPreds = cvrt $ OS.objectProperties sig
           dPreds = cvrt $ OS.dataProperties sig
           aPreds = foldr MapSet.union MapSet.empty
@@ -296,8 +296,12 @@ mapVar cSig v = case v of
 
 -- | Mapping of Class URIs
 mapClassURI :: CASLSign -> Class -> Token -> Result CASLFORMULA
-mapClassURI _ c t = fmap (mkPred conceptPred [mkThingVar t]) $ uriToIdM c
-
+mapClassURI _ c t =
+  fmap (mkPred conceptPred [mkThingVar t]) $ uriToIdM c1
+  where c1 = if localPart c=="Thing"
+              then c {localPart= "ThingPred", expandedIRI = "http://www.hets.eu/ontology/unamed#ThingPred" }
+              else c
+                                          
 -- | Mapping of Individual URIs
 mapIndivURI :: CASLSign -> Individual -> Result (TERM ())
 mapIndivURI _ uriI = do
