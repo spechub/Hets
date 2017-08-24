@@ -18,7 +18,6 @@ module CommonLogic.Lexer_CLIF where
 import CommonLogic.AS_CommonLogic
 import Common.Id as Id
 import qualified Common.Lexer as Lexer
-import Common.Lexer (parens)
 import Common.Parsec
 import Common.Keywords
 
@@ -51,6 +50,12 @@ enclosedname = do
    c2 <- char '\"' <?> "\""
    many white
    return $ c1 : s ++ [c2]
+
+-- | parser for parens
+-- Note that these use different oParenT and cParenT from the ones in
+-- Common.Lexer to skip whitespaces and comments.
+parens :: CharParser st a -> CharParser st a
+parens p = oParenT >> p << cParenT
 
 -- Parser Keywords
 andKey :: CharParser st Id.Token
