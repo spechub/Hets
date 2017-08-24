@@ -52,6 +52,8 @@ enclosedname = do
    return $ c1 : s ++ [c2]
 
 -- | parser for parens
+-- Note that these use different oParenT and cParenT from the ones in
+-- Common.Lexer to skip whitespaces and comments.
 parens :: CharParser st a -> CharParser st a
 parens p = oParenT >> p << cParenT
 
