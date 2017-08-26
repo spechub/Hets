@@ -296,12 +296,8 @@ mapVar cSig v = case v of
 
 -- | Mapping of Class URIs
 mapClassURI :: CASLSign -> Class -> Token -> Result CASLFORMULA
-mapClassURI _ c t =
-  fmap (mkPred conceptPred [mkThingVar t]) $ uriToIdM c1
-  where c1 = if localPart c=="Thing"
-              then c {localPart= "ThingPred", expandedIRI = "http://www.hets.eu/ontology/unamed#ThingPred" }
-              else c
-                                          
+mapClassURI _ c t = fmap (mkPred conceptPred [mkThingVar t]) $ uriToIdM c
+
 -- | Mapping of Individual URIs
 mapIndivURI :: CASLSign -> Individual -> Result (TERM ())
 mapIndivURI _ uriI = do
