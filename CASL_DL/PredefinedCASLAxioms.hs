@@ -16,7 +16,6 @@ module CASL_DL.PredefinedCASLAxioms
   , predefSign2
   , datatypeSigns
   , thing
-  , thingPred
   , nothing
   , conceptPred
   , dataPred
@@ -65,9 +64,6 @@ hetsPrefix = ""
 -- | OWL topsort Thing
 thing :: SORT
 thing = stringToId thingS
-
-thingPred :: SORT
-thingPred = stringToId "ThingPred"
 
 n :: Range
 n = nullRange
@@ -399,7 +395,7 @@ predefinedAxioms = let
   in [makeNamed "nothing in Nothing" $ mkForall [v1] $ Negation
             (Predication noThing [t1] n) n,
       makeNamed "thing in Thing" $ mkForall [v1] $ Predication
-            (Qual_pred_name thingPred classPredType n) [t1] n]
+            (Qual_pred_name thing classPredType n) [t1] n]
 
 mkNNameAux :: Int -> String
 mkNNameAux k = genNamePrefix ++ "x" ++ show k
