@@ -14,7 +14,7 @@ Abstract syntax of HetCASL/DOL specification library names.
 -}
 
 module Common.LibName
-  ( LibName (LibName, getLibId, locIRI, mimeType)
+  ( LibName (LibName, getLibId, locIRI, mimeType, libVersion)
   , VersionNumber (VersionNumber)
   , isQualNameFrom
   , isQualName

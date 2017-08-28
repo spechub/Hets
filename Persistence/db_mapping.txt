@@ -1,81 +1,90 @@
 documentation of the mapping of Hets/DG datatypes to the database
 
 Hets - database
-LibEnv - need not be represented in the database
-  instead, all contained (LibName,DGraph)s will be stored as Documents 
-  proceed from the leaves of the LibEnv graph to the top. Then each DGRef can be resolved.
-  Note that the current Document is needed in all contained OMS and Mappings.
-  call getLibDepRel in order to compute (and then store) dependency relation on Documents
-(LibName,DGraph) - Document 
-  LibName: store version and both IRIs (one is the location, one is the id of the Document)
+[o] LibEnv - need not be represented in the database
+  [x] instead, all contained (LibName,DGraph)s will be stored as Documents
+  [x] proceed from the leaves of the LibEnv graph to the top. Then each DGRef can be resolved.
+  [x] Note that the current Document is needed in all contained OMS and Mappings.
+  [x] call getLibDepRel in order to compute (and then store) dependency relation on Documents
+(LibName,DGraph) - Document
+  [x] LibName: store version and both IRIs (one is the location, one is the id of the Document)
   DGraph:
-    globalAnnos - leave for later
-    optLibDefn - leave for later
-    globalEnv - leave for later
-    dgBody - go through the graph and represent all nodes and edges, and these
-      link to the respective Document. Hence a DGraph can be recovered using all nodes and edges of
-      a given Document
-    currentBaseTheory - ignore
-    refTree - leave for later
-    specRoots - ignore
-    nameMap - ignore
-    archSpecDiags - leave for later
-    getNewEdgeId - ignore
-    allRefNodes - ignore
-    sigMap - use it in order to index signatures of a document (avoid duplicates)
-    thMap - iuse it in order to index OMS of a document (avoid duplicates)
-    morMap - use it in order to index mappings of a document (avoid duplicates)
-    proofHistory - ignore
-    redoHistory - ignore
-Range - Range
-  only two Pos are needed, and only one filename
-NodeName - NodeName
-  xpath is caching information and can be ignored
-DGOrigin - OMSOrigin
-  just an enumeration (additional data can be ignored)
-Conservativtiy - String (for Unknown, take the argument string)
-ConsStatus - ConsStatus represent 2x Conservativtiy, omit ThmLinkStatus
-(DGNodeLab,Node) - OMS (create a new OMS only if nodeInfo is a DGNode)
-    note that Node is just an integer, pointing to a development graph node, aka OMS
-    dgn_theory: the G_theory can be represented inline:
-       gTheoryLogic, gTheorySign can be stored as Signature
-       gTheorySyntax is stored as an assoication to Serialization
-       gTheorySignIdx, gTheorySelfIdx is the index of the theory in thMap above (use it to avoid duplicates)
-       gTheorySens is stored as an assoication to Sentence. The proof info can be ignored
-    globalTheory is caching information and can be ignored
-    labelHasHiding should be represented
-    labelHasFree should be represented
-    dgn_nf pointer to OMS
-    dgn_sigma :: Maybe GMorphism -- inclusion of signature into nf signature
-    dgn_freenf pointer to OMS
-    dgn_phi  :: Maybe GMorphism -- morphism from signature to nffree signature
-    nodeInfo respent directly:
-      DGNode
-        node_origin represent as enumeration
-        node_cons_status repredent as ConsStatus
-      DGRef - here, no new OMS needs be created. Instead, lookup the ref_node (pointer to OMS)
-    nodeMod - can be ignored
-    xnode - can be ignored
-    dgn_lock - can be ignored
-    (dgn_symbolpathlist - can be ignored)
-    an OMS should also contain a pointer (association) to its Document, which can be obtained through the enclosing LibEnv
-G_theory - represented only as part of OMS
-G_sign - Signature
-    gSignLogic the logic, store it
-    gSign 
-       plainSign Store signature as XML string or JSON.
-       nonImportedSymbols indicates whether a symbol has been imported or not. Store it using an association class SignatureSymbol    
-    gSignSelfIdx is the index of the signature in sigMap above (use it to avoid duplicates)
-(DGLinkLab,Node,Node) - Mapping
-    dgl_morphism Store as XML string or JSON.
-    dgl_type - represent only the enumerations, ConsStatus: see above
-    dgl_origin :: DGLinkOrigin -- origin in input language
-    dglPending :: Bool        -- open proofs of edges in proof basis
-    dgl_id :: EdgeId          -- id of the edge
-    dglName :: String         -- name of the edge
-MaybeNode - pointer to OMS
-   should we use inheritance table or not?
-   in case of EmptyNode create a new OMS with empty signature and given logic (if not existing yet)
-   each logic should point to an OMS with the empty signature over that logic (association from Logic to Signature)
+    [o] globalAnnos - leave for later
+    [o] optLibDefn - leave for later
+    [o] globalEnv - leave for later
+    [-] dgBody - go through the graph and represent all nodes and edges, and these
+      link to the respective Document. Hence a DGraph can be recovered using all nodes and edges of a given Document
+    [o] currentBaseTheory - ignore
+    [o] refTree - leave for later
+    [o] specRoots - ignore
+    [o] nameMap - ignore
+    [o] archSpecDiags - leave for later
+    [o] getNewEdgeId - ignore
+    [o] allRefNodes - ignore
+    [x] sigMap - use it in order to index signatures of a document (avoid duplicates)
+    [?] thMap  - use it in order to index OMS of a document (avoid duplicates)
+    [?] morMap - use it in order to index signature morphisms of a document (avoid duplicates)
+    [o] proofHistory - ignore
+    [o] redoHistory - ignore
+[x] Range - Range [S]
+  [x] only two Pos are needed, and only one filename
+[x] NodeName - NodeName
+  [o] xpath is caching information and can be ignored
+[x] DGOrigin - OMSOrigin
+  [x] just an enumeration (additional data can be ignored)
+[x] Conservativtiy - String (for Unknown, take the argument string)
+[x] ConsStatus - ConsStatus represent 2x Conservativtiy, omit ThmLinkStatus
+[-] (DGNodeLab,Node) - OMS (create a new OMS only if nodeInfo is a DGNode)
+    [x] note that Node is just an integer, pointing to a development graph node, aka OMS
+    [ ] dgn_theory: the G_theory can be represented inline:
+       [x] gTheoryLogic, gTheorySign can be stored as Signature
+       [ ] gTheorySyntax is stored as an assoication to Serialization
+       [x] gTheorySignIdx, gTheorySelfIdx is the index of the theory in thMap above (use it to avoid duplicates)
+       [x] gTheorySens is stored as an assoication to Sentence. The proof info can be ignored
+    [o] globalTheory is caching information and can be ignored
+    [x] labelHasHiding should be represented
+    [x] labelHasFree should be represented
+    [x] dgn_nf pointer to OMS
+    [x] dgn_sigma :: Maybe GMorphism -- inclusion of signature into nf signature
+    [x] dgn_freenf pointer to OMS
+    [x] dgn_phi  :: Maybe GMorphism -- morphism from signature to nffree signature
+    [x] nodeInfo respent directly:
+      [x] DGNode
+        [x] node_origin represent as enumeration
+        [x] node_cons_status repredent as ConsStatus
+      [x] DGRef - here, no new OMS needs be created. Instead, lookup the ref_node (pointer to OMS)
+    [o] nodeMod - can be ignored
+    [o] xnode - can be ignored
+    [o] dgn_lock - can be ignored
+    [o] (dgn_symbolpathlist - can be ignored)
+    [x] an OMS should also contain a pointer (association) to its Document, which can be obtained through the enclosing LibEnv
+[x] G_theory - represented only as part of OMS
+[x] G_sign - Signature
+    [x] gSignLogic the logic, store it
+    [x] gSign
+       [x] plainSign Store signature as XML string or JSON.
+       [x] nonImportedSymbols indicates whether a symbol has been imported or not. Store it using an association class SignatureSymbol
+    [x] gSignSelfIdx is the index of the signature in sigMap above (use it to avoid duplicates)
+[x] (DGLinkLab,Node,Node) - Mapping
+    [x] dgl_morphism see GMorphism
+    [x] dgl_type - represent only the enumerations, ConsStatus: see above
+    [x] dgl_origin - use an enumeration
+    [x] dglPending - store
+    [o] dgl_id - ingore
+    [x] dglName - store
+[x] MaybeNode - pointer to OMS
+   [x] should we use inheritance table or not?
+   [?] in case of EmptyNode create a new OMS with empty signature and given logic (if not existing yet) - make the target null at first
+   [?] each logic should point to an OMS with the empty signature over that logic (association from Logic to Signature) - Leave it out at first.
+[x] GMorphism - SignatureMorphism
+   [x] gMorphismComor - store as LogicMapping
+   [o] gMorphismSign - ignore
+   [o] gMorphismSignIdx - ignore
+   [x] gMorphismMor - Store as XML string or JSON.
+   [x] gMorphismMorIdx - use it to eliminate duplicates, using morMap above
 
 
+
+-----------------------
+
+Signature to JSON: Is the symbols function in ToJson the correct one?

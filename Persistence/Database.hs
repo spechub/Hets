@@ -16,9 +16,13 @@ import Database.Persist.Postgresql
 import Database.Persist.Sqlite
 import Data.Text (pack)
 
-onDatabase :: (BaseBackend backend ~ SqlBackend,
-               IsPersistBackend backend, MonadIO m,
-               MonadBaseControl IO m)
+type DBMonad backend m a = ReaderT backend m a
+
+onDatabase :: ( MonadIO m
+              , MonadBaseControl IO m
+              , IsSqlBackend backend
+              , IsPersistBackend backend
+              )
            => DBConfig
            -> ReaderT backend (NoLoggingT m) a
            -> m a
@@ -35,3 +39,6 @@ onDatabase dbConfig =
 
 defaultPoolSize :: Int
 defaultPoolSize = 4
+
+doMigrate :: DBConfig -> Bool
+doMigrate dbConfig = (/= Just "postgresql") $ adapter dbConfig
