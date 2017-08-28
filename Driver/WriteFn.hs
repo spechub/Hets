@@ -147,7 +147,7 @@ writeLibEnv opts filePrefix lenv ln ot =
           $ ToXml.dGraph opts lenv ln dg
       DbOut -> do
         dbConfig <- databaseConfig opts f
-        Persistence.DevGraph.exportLibEnv dbConfig lenv
+        Persistence.DevGraph.exportLibEnv opts dbConfig lenv
       JsonOut -> writeVerbFile opts f $ ppJson
           $ ToJson.dGraph opts lenv ln dg
       SymsXml -> writeVerbFile opts f $ ppTopElement
