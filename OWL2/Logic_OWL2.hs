@@ -163,6 +163,7 @@ instance StaticAnalysis OWL2 OntologyDocument Axiom
       empty_signature OWL2 = emptySign
       signature_union OWL2 = uniteSign
       intersection OWL2 = intersectSign
+      morphism_union OWL2  = morphismUnion
       signatureDiff OWL2 s = return . diffSig s
       final_union OWL2 = signature_union OWL2
       is_subsig OWL2 = isSubSign
