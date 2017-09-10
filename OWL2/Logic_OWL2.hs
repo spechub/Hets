@@ -25,6 +25,9 @@ import Common.DocUtils
 import Common.ProofTree
 import Common.ProverTools
 
+import Common.ExtSign
+import Common.Result
+
 import Data.Char (isAlpha)
 import Data.Monoid
 import qualified Data.Map as Map
@@ -105,6 +108,36 @@ instance Sentences OWL2 Axiom Sign OWLMorphism Entity where
     symsOfSen OWL2 _ = Set.toList . symsOfAxiom
     pair_symbols OWL2 = pairSymbols
 
+inducedFromToMor :: Map.Map RawSymb RawSymb -> 
+                    ExtSign Sign Entity -> 
+                    ExtSign Sign Entity -> 
+                    Result OWLMorphism
+inducedFromToMor rm s@(ExtSign ssig _) t@(ExtSign tsig _) = 
+ case Map.toList rm of
+   [] -> do 
+     case Set.toList (concepts tsig) of 
+       [aClass] -> do  
+        let aEntity = Entity Nothing Class aClass
+            rm' = Map.fromList $ 
+                   map (\x -> (ASymbol $ Entity Nothing Class x, 
+                              ASymbol $ aEntity)) $ 
+                   Set.toList $ concepts ssig
+        inducedFromToMorphismAux rm' s t 
+   _ ->  inducedFromToMorphismAux rm  s t
+
+inducedFromToMorphismAux rm s@(ExtSign ssig _) t@(ExtSign tsig _) = do
+    mor <- inducedFromMor rm ssig
+    let csig = cod mor
+    incl <- if isSubSign csig tsig 
+             then return $ inclOWLMorphism csig tsig
+             else fail $ show $ fsep
+                   [ text "OWL"
+                   , text "symbol(s) missing in target:"
+                   , pretty $ Set.difference (symset_of OWL2 csig) $ 
+                                              symset_of OWL2 tsig ]              
+    composeMorphisms mor incl
+
+
 
 instance StaticAnalysis OWL2 OntologyDocument Axiom
                SymbItems SymbMapItems
@@ -126,6 +159,7 @@ instance StaticAnalysis OWL2 OntologyDocument Axiom
       symbol_to_raw OWL2 = ASymbol
       add_symb_to_sign OWL2 = addSymbToSign
       induced_from_morphism OWL2 = inducedFromMor
+      induced_from_to_morphism OWL2 = inducedFromToMor
       cogenerated_sign OWL2 = cogeneratedSign
       generated_sign OWL2 = generatedSign
       signature_colimit OWL2 = return . signColimit

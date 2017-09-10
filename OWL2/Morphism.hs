@@ -77,6 +77,7 @@ inducedPref v u sig (m, t) =
         else
           plain_error (Map.empty, Map.empty) ("unknown symbol: " ++ showDoc v "\nin signature:\n" ++ showDoc sig "") nullRange
 
+ 
 inducedFromMor :: Map.Map RawSymb RawSymb -> Sign -> Result OWLMorphism
 inducedFromMor rm sig = do
   let syms = symOf sig
