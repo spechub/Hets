@@ -125,6 +125,10 @@ inducedFromToMor rm s@(ExtSign ssig _) t@(ExtSign tsig _) =
         inducedFromToMorphismAux rm' s t 
    _ ->  inducedFromToMorphismAux rm  s t
 
+inducedFromToMorphismAux :: Map.Map RawSymb RawSymb -> 
+                    ExtSign Sign Entity -> 
+                    ExtSign Sign Entity -> 
+                    Result OWLMorphism
 inducedFromToMorphismAux rm s@(ExtSign ssig _) t@(ExtSign tsig _) = do
     mor <- inducedFromMor rm ssig
     let csig = cod mor
