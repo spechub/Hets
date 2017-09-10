@@ -115,14 +115,22 @@ inducedFromToMor :: Map.Map RawSymb RawSymb ->
 inducedFromToMor rm s@(ExtSign ssig _) t@(ExtSign tsig _) = 
  case Map.toList rm of
    [] -> do 
-     case Set.toList (concepts tsig) of 
-       [aClass] -> do  
-        let aEntity = Entity Nothing Class aClass
-            rm' = Map.fromList $ 
-                   map (\x -> (ASymbol $ Entity Nothing Class x, 
-                              ASymbol $ aEntity)) $ 
-                   Set.toList $ concepts ssig
-        inducedFromToMorphismAux rm' s t 
+     let 
+       mkImplMap f k = 
+         case Set.toList (f tsig) of 
+           [x] -> 
+              let aEntity = Entity Nothing k x
+              in Map.fromList $ 
+                    map (\y -> (ASymbol $ Entity Nothing k y, 
+                               ASymbol $ aEntity)) $ 
+                    Set.toList $ f ssig
+           _ -> Map.empty 
+       rm' = Map.unions
+                   [mkImplMap concepts Class,
+                    mkImplMap objectProperties ObjectProperty,
+                    mkImplMap dataProperties DataProperty, 
+                    mkImplMap individuals NamedIndividual]
+      in inducedFromToMorphismAux rm' s t 
    _ ->  inducedFromToMorphismAux rm  s t
 
 inducedFromToMorphismAux :: Map.Map RawSymb RawSymb -> 
