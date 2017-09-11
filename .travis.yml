@@ -40,6 +40,10 @@ before_script:
       git clone --depth=1 https://github.com/spechub/Hets-lib.git $HOME/Hets-lib
     fi
 script:
+  # For some reason, Travis CI sets this environment variable, which breaks the
+  # tests (_JAVA_OPTIONS=-Xmx2048m -Xms512m)
+  - unset _JAVA_OPTIONS
+
   # Prepare to run Hets
   - export HETS_MAGIC=$PWD/magic/hets.magic
 
