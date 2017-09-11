@@ -638,8 +638,12 @@ inclusion :: StaticAnalysis lid basic_spec sentence symb_items symb_map_items
 inclusion l s1 s2 = if is_subsig l s1 s2 then subsig_inclusion l s1 s2
   else fail $ show $ fsep
        [ text (language_name l)
-       , text "symbol(s) missing in target:"
-       , pretty $ Set.difference (symset_of l s1) $ symset_of l s2 ]
+       , text "cannot construct inclusion. Symbol(s) missing in target:"
+       , pretty $ Set.difference (symset_of l s1) $ symset_of l s2
+       , text "\nSource is: "
+       , pretty $ symset_of l s1
+       , text "\nTarget is: "
+       , pretty $ symset_of l s2 ]
 
 {- | semi lattices with top (needed for sublogics). Note that `Ord` is
 only used for efficiency and is not related to the /partial/ order given
