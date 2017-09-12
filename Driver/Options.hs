@@ -206,7 +206,9 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , databaseOutputFile :: FilePath
   , databaseConfigFile :: FilePath
   , databaseSubConfigKey :: String
+  , databaseFileVersionId :: String
   , databaseConfig :: DBConfig.DBConfig
+  , databaseContext :: DBConfig.DBContext
   , xupdate :: FilePath
   , recurse :: Bool
   , verbose :: Int
@@ -262,7 +264,9 @@ defaultHetcatsOpts = HcOpt
   , databaseOutputFile = ""
   , databaseConfigFile = ""
   , databaseSubConfigKey = ""
+  , databaseFileVersionId = ""
   , databaseConfig = DBConfig.emptyDBConfig
+  , databaseContext = DBConfig.emptyDBContext
   , xupdate = ""
   , recurse = False
   , defLogic = "CASL"
@@ -387,6 +391,7 @@ data Flag =
   | DatabaseOutputFile FilePath
   | DatabaseConfigFile FilePath
   | DatabaseSubConfigKey String
+  | DatabaseFileVersionId String
   | Specs [SIMPLE_ID]
   | Trans [SIMPLE_ID]
   | Views [SIMPLE_ID]
@@ -438,6 +443,7 @@ makeOpts opts flg =
     DatabaseOutputFile x -> opts { databaseOutputFile = x }
     DatabaseConfigFile x -> opts { databaseConfigFile = x }
     DatabaseSubConfigKey x -> opts { databaseSubConfigKey = x }
+    DatabaseFileVersionId x -> opts { databaseFileVersionId = x }
     XUpdate x -> opts { xupdate = x }
     Recurse -> opts { recurse = True }
     ApplyAutomatic -> opts { applyAutomatic = True }
@@ -828,13 +834,15 @@ options = let
        ++ bS ++ dfgS ++ bracket cS ++ crS
        ++ bS ++ tptpS ++ bracket cS)
     , Option "" ["database-file"] (ReqArg DatabaseOutputFile "FILEPATH")
-       ("path to the sqlite database file - " ++ crS
+       ("path to the sqlite database file" ++ crS
        ++ "This option is ignored if the option --database-config is given.")
     , Option "" ["database-config"] (ReqArg DatabaseConfigFile "FILEPATH")
-       "path to the database configuration (yaml) file - "
+       "path to the database configuration (yaml) file"
     , Option "" ["database-subconfig"] (ReqArg DatabaseSubConfigKey "KEY")
-       ("subconfig of the database-config - "
+       ("subconfig of the database-config" ++ crS
        ++ "one of: production, development, test")
+    , Option "" ["database-fileversion-id"] (ReqArg DatabaseFileVersionId "ID")
+       "ID (sha1-hash) of the file version to associate the data with"
     , Option "U" ["xupdate"] (ReqArg XUpdate "FILE")
       "apply additional xupdates from file"
     , Option "R" [recursiveS] (NoArg Recurse)
@@ -1057,14 +1065,24 @@ hetcatsOpts argv =
             do flags <- checkFlags opts
                let opts' = (foldr (flip makeOpts) defaultHetcatsOpts flags)
                             { infiles = nonOpts }
-               dbConfig <- if DbOut `elem` outtypes opts'
-                           then DBConfig.databaseConfig
-                                  (databaseOutputFile opts')
-                                  (databaseConfigFile opts')
-                                  (databaseSubConfigKey opts')
-                           else return DBConfig.emptyDBConfig
-               return opts' { databaseConfig = dbConfig }
+               setupDatabaseOptions opts'
         (_, _, errs) -> hetsIOError (concat errs)
+  where
+    setupDatabaseOptions :: HetcatsOpts -> IO HetcatsOpts
+    setupDatabaseOptions opts = do
+      let dbContext = DBConfig.emptyDBContext
+            { DBConfig.contextFileVersion = databaseFileVersionId opts
+            }
+      dbConfig <- if DbOut `elem` outtypes opts
+                  then DBConfig.parseDatabaseConfig
+                         (databaseOutputFile opts)
+                         (databaseConfigFile opts)
+                         (databaseSubConfigKey opts)
+                  else return DBConfig.emptyDBConfig
+      return opts { databaseConfig = dbConfig
+                  , databaseContext = dbContext
+                  }
+
 
 printOptionsWarnings :: HetcatsOpts -> IO ()
 printOptionsWarnings opts =
@@ -1217,7 +1235,8 @@ showDiags1 opts res =
   if outputToStdout opts || dbout then do
     Result ds res' <- lift $ runResultT res
     when (outputToStdout opts) $ lift $ printDiags (verbose opts) ds
-    when dbout $ lift $ saveDiagnoses (databaseConfig opts) (verbose opts) ds
+    when dbout $ lift $
+      saveDiagnoses (databaseConfig opts) (databaseContext opts) (verbose opts) ds
     case res' of
       Just res'' -> return res''
       Nothing -> liftR $ Result [] Nothing

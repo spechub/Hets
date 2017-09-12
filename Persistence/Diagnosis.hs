@@ -26,32 +26,29 @@ import Control.Monad (foldM_)
 import Control.Monad.IO.Class (MonadIO (..))
 import qualified Data.Text as Text
 import Database.Persist
+import Database.Persist.Sql
 
-saveDiagnoses :: DBConfig -> Int -> [Result.Diagnosis] -> IO ()
-saveDiagnoses dbConfig verbosity diagnoses =
-  onDatabase dbConfig $ do
-    -- TODO: find the correct Repository
-    repositoryM <- selectFirst [RepositorySlug ==. "ada/fixtures"] []
-    case repositoryM of
-      -- TODO: print the Repository id in the error
-      Nothing -> fail "Did not find the Repository"
-      Just (Entity repositoryKey _) -> do
-        -- TODO: find the correct FileVersion
-        fileVersionM <- selectFirst [FileVersionRepositoryId ==. repositoryKey] []
-        case fileVersionM of
-          -- TODO: print the FileVersion id in the error
-          Nothing -> fail "Did not find the FileVersion"
-          Just (Entity fileVersionKey _) -> do
-            diagnosisM <- selectFirst [DiagnosisFileVersionId ==. fileVersionKey]
-                                      [Desc DiagnosisNumber]
-            let number = case diagnosisM of
-                  Nothing -> 1
-                  Just (Entity _ diagnosisValue) ->
-                    1 + diagnosisNumber diagnosisValue
-            foldM_ (\ currentNumber diagnosis -> do
-                     saveDiagnosis fileVersionKey currentNumber diagnosis
-                     return (currentNumber + 1)
-                   ) number $ Result.filterDiags verbosity diagnoses
+saveDiagnoses :: DBConfig -> DBContext -> Int -> [Result.Diagnosis] -> IO ()
+saveDiagnoses dbConfig dbContext verbosity diagnoses =
+  let fileVersion = contextFileVersion dbContext
+  in onDatabase dbConfig $ do
+      fileVersionM <-
+        selectFirst [ FileVersionId ==. toSqlKey
+                          (fromIntegral (read fileVersion :: Integer))] []
+      case fileVersionM of
+        Nothing -> fail ("Could not find the FileVersion \"" ++
+                         fileVersion ++ "\"")
+        Just (Entity fileVersionKey _) -> do
+          diagnosisM <- selectFirst [DiagnosisFileVersionId ==. fileVersionKey]
+                                    [Desc DiagnosisNumber]
+          let number = case diagnosisM of
+                Nothing -> 1
+                Just (Entity _ diagnosisValue) ->
+                  1 + diagnosisNumber diagnosisValue
+          foldM_ (\ currentNumber diagnosis -> do
+                   saveDiagnosis fileVersionKey currentNumber diagnosis
+                   return (currentNumber + 1)
+                 ) number $ Result.filterDiags verbosity diagnoses
 
 saveDiagnosis :: MonadIO m
               => FileVersionId -> Int -> Result.Diagnosis -> DBMonad m ()

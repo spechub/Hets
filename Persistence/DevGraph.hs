@@ -21,6 +21,7 @@ Portability :  portable
 module Persistence.DevGraph (exportLibEnv) where
 
 import Persistence.Database
+import Persistence.DBConfig
 import Persistence.LogicGraph
 import Persistence.Schema as SchemaClass hiding (ConsStatus, Range)
 import Persistence.Schema.MappingOrigin (MappingOrigin)
@@ -75,6 +76,7 @@ import Data.Set (Set)
 import qualified Data.Set as Set
 import qualified Data.Text as Text
 import Database.Persist
+import Database.Persist.Sql
 
 import Debug.Trace
 
@@ -108,55 +110,51 @@ exportLibEnv opts libEnv =
 createDocuments :: MonadIO m
                 => HetcatsOpts -> LibEnv -> [Set LibName]
                 -> DBMonad m (Map LibName LocIdBaseId)
-createDocuments opts libEnv =
-  foldM (\ outerAcc libNameSet ->
-             foldM (\ innerAcc libName -> do
-                      documentKey <- createDocument libName
-                      return $ Map.insert libName documentKey innerAcc
-                   ) outerAcc libNameSet
-        ) Map.empty
+createDocuments opts libEnv dependencyOrderedLibsSetL =
+  let fileVersion = contextFileVersion $ databaseContext opts
+  in do
+      fileVersionM <-
+        selectFirst [ FileVersionId ==. toSqlKey
+                          (fromIntegral (read fileVersion :: Integer))] []
+      case fileVersionM of
+        Nothing -> fail ("Could not find the FileVersion \"" ++
+                         fileVersion ++ "\"")
+        Just (Entity fileVersionKey _) ->
+          foldM (\ outerAcc libNameSet ->
+                     foldM (\ innerAcc libName -> do
+                              documentKey <- createDocument fileVersionKey libName
+                              return $ Map.insert libName documentKey innerAcc
+                           ) outerAcc libNameSet
+                ) Map.empty dependencyOrderedLibsSetL
   where
     createDocument :: MonadIO m
-                   => LibName -> DBMonad m LocIdBaseId
-    createDocument libName = do
+                   => FileVersionId -> LibName -> DBMonad m LocIdBaseId
+    createDocument fileVersionKey libName =
       let name = show $ pretty $ getLibId libName
-      let location = fmap show $ locIRI libName
-      let version = fmap (intercalate "." . (\ (VersionNumber v _) -> v)) $ libVersion libName
-      -- TODO: Use the correct locId
-      let locId = name
-
-      -- TODO: find the correct Repository
-      repositoryM <- selectFirst [RepositorySlug ==. "ada/fixtures"] []
-      case repositoryM of
-        -- TODO: print the Repository id in the error
-        Nothing -> fail "Did not find the Repository"
-        Just (Entity repositoryKey _) -> do
-          -- TODO: find the correct FileVersion
-          fileVersionM <- selectFirst [FileVersionRepositoryId ==. repositoryKey] []
-          case fileVersionM of
-            -- TODO: print the FileVersion id in the error
-            Nothing -> fail "Did not find the FileVersion"
-            Just (Entity fileVersionKey _) ->
-              let dGraph = fromJust $ Map.lookup libName libEnv
-              in do
-                  -- TODO: Check whether it is a Library or a NativeDocument
-                  -- TODO: find a fitting locId
-                  let documentLocIdBaseValue = LocIdBase
-                        { locIdBaseFileVersionId = fileVersionKey
-                        , locIdBaseKind = Enums.Library
-                        , locIdBaseLocId = locId
-                        }
-                  documentKey <- insert documentLocIdBaseValue
-                  insert Document
-                    { documentLocIdBaseId = documentKey
-                    , documentKind = DocumentKindType.NativeDocument
-                    , documentName = name
-                    , documentLocation = location
-                    , documentVersion = version
-                    }
-                  createOMS opts dGraph fileVersionKey
-                    (Entity documentKey documentLocIdBaseValue)
-                  return documentKey
+          location = fmap show $ locIRI libName
+          version = fmap (intercalate "." . (\ (VersionNumber v _) -> v)) $ libVersion libName
+          -- TODO: Use the correct locId
+          locId = name
+          dGraph = fromJust $ Map.lookup libName libEnv
+      in do
+          -- TODO: Check whether it is a Library or a NativeDocument
+          -- TODO: find a fitting locId
+          let documentLocIdBaseValue = LocIdBase
+                { locIdBaseFileVersionId = fileVersionKey
+                , locIdBaseKind = Enums.Library
+                , locIdBaseLocId = locId
+                }
+          documentKey <- insert documentLocIdBaseValue
+          insert Document
+            { documentLocIdBaseId = documentKey
+            , documentKind = DocumentKindType.NativeDocument
+            , documentName = name
+            , documentLocation = location
+            , documentVersion = version
+            }
+          createOMS opts dGraph fileVersionKey
+            (Entity documentKey documentLocIdBaseValue)
+          return documentKey
 
 createDocumentLinks :: MonadIO m
                     => Map LibName LocIdBaseId -> Rel LibName
