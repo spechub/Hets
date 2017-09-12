@@ -25,6 +25,7 @@ import Persistence.LogicGraph
 import Persistence.Schema as SchemaClass hiding (ConsStatus, Range)
 import Persistence.Schema.MappingOrigin (MappingOrigin)
 import qualified Persistence.Schema.MappingOrigin as MappingOrigin
+import Persistence.Range
 import Persistence.Schema.MappingType (MappingType)
 import qualified Persistence.Schema.ConjectureKindType as ConjectureKindType
 import qualified Persistence.Schema.DocumentKindType as DocumentKindType
@@ -34,7 +35,7 @@ import qualified Persistence.Schema.MappingType as MappingType
 import Persistence.Schema.OMSOrigin (OMSOrigin)
 import qualified Persistence.Schema.OMSOrigin as OMSOrigin
 import qualified Persistence.Schema.ReasoningStatusOnConjectureType as ReasoningStatusOnConjectureType
-import qualified Persistence.Schema as SchemaClass (ConsStatus (..), Range (..))
+import qualified Persistence.Schema as SchemaClass (ConsStatus (..))
 import qualified Persistence.Schema.SentenceKindType as SentenceKindType
 import Persistence.Utils
 
@@ -74,7 +75,6 @@ import Data.Set (Set)
 import qualified Data.Set as Set
 import qualified Data.Text as Text
 import Database.Persist
-import Database.Persist.Sql
 
 import Debug.Trace
 
@@ -97,7 +97,7 @@ emptyDBCache = DBCache { nodeMap = Map.empty
 
 exportLibEnv :: HetcatsOpts -> LibEnv -> IO ()
 exportLibEnv opts libEnv =
-  onDatabase opts $ do
+  onDatabase (databaseConfig opts) $ do
     migrateLanguages
     let dependencyLibNameRel = getLibDepRel libEnv
     let dependencyOrderedLibsSetL = Rel.depSort dependencyLibNameRel
@@ -105,13 +105,9 @@ exportLibEnv opts libEnv =
     createDocumentLinks documentMap dependencyLibNameRel
     return ()
 
-createDocuments :: ( MonadIO m
-                   , IsSqlBackend backend
-                   , PersistQueryRead backend
-                   , PersistStoreWrite backend
-                   )
+createDocuments :: MonadIO m
                 => HetcatsOpts -> LibEnv -> [Set LibName]
-                -> DBMonad backend m (Map LibName LocIdBaseId)
+                -> DBMonad m (Map LibName LocIdBaseId)
 createDocuments opts libEnv =
   foldM (\ outerAcc libNameSet ->
              foldM (\ innerAcc libName -> do
@@ -120,12 +116,8 @@ createDocuments opts libEnv =
                    ) outerAcc libNameSet
         ) Map.empty
   where
-    createDocument :: ( MonadIO m
-                      , IsSqlBackend backend
-                      , PersistQueryRead backend
-                      , PersistStoreWrite backend
-                      )
-                   => LibName -> DBMonad backend m LocIdBaseId
+    createDocument :: MonadIO m
+                   => LibName -> DBMonad m LocIdBaseId
     createDocument libName = do
       let name = show $ pretty $ getLibId libName
       let location = fmap show $ locIRI libName
@@ -166,25 +158,17 @@ createDocuments opts libEnv =
                     (Entity documentKey documentLocIdBaseValue)
                   return documentKey
 
-createDocumentLinks :: ( MonadIO m
-                       , IsSqlBackend backend
-                       , PersistQueryRead backend
-                       , PersistStoreWrite backend
-                       )
+createDocumentLinks :: MonadIO m
                     => Map LibName LocIdBaseId -> Rel LibName
-                    -> DBMonad backend m ()
+                    -> DBMonad m ()
 createDocumentLinks documentMap dependencyLibNameRel =
   mapM_ (\ (targetLibName, sourceLibNamesSet) ->
           mapM_ (createDocumentLink targetLibName) $
             Set.toList sourceLibNamesSet
         ) $ Map.toList $ Rel.toMap dependencyLibNameRel
   where
-    createDocumentLink :: ( MonadIO m
-                          , IsSqlBackend backend
-                          , PersistQueryRead backend
-                          , PersistStoreWrite backend
-                          )
-                       => LibName -> LibName -> DBMonad backend m ()
+    createDocumentLink :: MonadIO m
+                       => LibName -> LibName -> DBMonad m ()
     createDocumentLink sourceLibName targetLibName = do
       -- These libNames must be in the documentMap by construction
       let sourceKey = fromJust $ Map.lookup sourceLibName documentMap
@@ -194,13 +178,9 @@ createDocumentLinks documentMap dependencyLibNameRel =
                           }
       return ()
 
-createOMS :: ( MonadIO m
-             , IsSqlBackend backend
-             , PersistQueryRead backend
-             , PersistStoreWrite backend
-             )
+createOMS :: MonadIO m
           => HetcatsOpts -> DGraph -> FileVersionId -> Entity LocIdBase
-          -> DBMonad backend m [LocIdBaseId]
+          -> DBMonad m [LocIdBaseId]
 createOMS opts dGraph fileVersionKey (Entity documentKey documentLocIdBaseValue) =
   let nodeLabels = labNodes $ dgBody dGraph
       linkLabels = labEdges $ dgBody dGraph
@@ -216,13 +196,9 @@ createOMS opts dGraph fileVersionKey (Entity documentKey documentLocIdBaseValue)
   where
     globalAnnotations = globalAnnos dGraph
 
-    findOrCreateNode :: ( MonadIO m
-                        , IsSqlBackend backend
-                        , PersistQueryRead backend
-                        , PersistStoreWrite backend
-                        )
+    findOrCreateNode :: MonadIO m
                      => DBCache -> (Int, DGNodeLab)
-                     -> DBMonad backend m (LocIdBaseId, DBCache)
+                     -> DBMonad m (LocIdBaseId, DBCache)
     findOrCreateNode dbCache (nodeId, nodeLabel) =
       let keyM = Map.lookup nodeId $ nodeMap dbCache in
       case keyM of
@@ -331,9 +307,6 @@ createOMS opts dGraph fileVersionKey (Entity documentKey documentLocIdBaseValue)
               return (omsLocIdBaseKey, dbCache6)
 
     createSentences :: ( MonadIO m
-                       , IsSqlBackend backend
-                       , PersistQueryRead backend
-                       , PersistStoreWrite backend
                        , GetRange sentence
                        , Pretty sentence
                        , Sentences lid sentence sign morphism symbol
@@ -341,7 +314,7 @@ createOMS opts dGraph fileVersionKey (Entity documentKey documentLocIdBaseValue)
                     => DBCache -> Entity LocIdBase
                     -> lid -> sign
                     -> ThSens sentence (AnyComorphism, BasicProof)
-                    -> DBMonad backend m ([LocIdBaseId], DBCache)
+                    -> DBMonad m ([LocIdBaseId], DBCache)
     createSentences dbCache omsLocId lid sign sentences =
       let (axioms, conjectures) = OMap.partition isAxiom sentences
           namedAxioms = toNamedList axioms
@@ -370,9 +343,6 @@ createOMS opts dGraph fileVersionKey (Entity documentKey documentLocIdBaseValue)
         return (conjectureKeys ++ axiomKeys, dbCache2)
 
     associateSymbolsOfSentence :: ( MonadIO m
-                                  , IsSqlBackend backend
-                                  , PersistQueryRead backend
-                                  , PersistStoreWrite backend
                                   , GetRange sentence
                                   , Pretty sentence
                                   , Sentences lid sentence sign morphism symbol
@@ -380,7 +350,7 @@ createOMS opts dGraph fileVersionKey (Entity documentKey documentLocIdBaseValue)
                                => DBCache
                                -> LocIdBaseId -> lid -> sign
                                -> Named sentence
-                               -> DBMonad backend m DBCache
+                               -> DBMonad m DBCache
     associateSymbolsOfSentence dbCache sentenceKey lid sign namedSentence =
       let symbolsOfSentence = symsOfSen lid sign $ sentence namedSentence
       in  do
@@ -401,15 +371,12 @@ createOMS opts dGraph fileVersionKey (Entity documentKey documentLocIdBaseValue)
             return dbCache
 
     createAxiom :: ( MonadIO m
-                   , IsSqlBackend backend
-                   , PersistQueryRead backend
-                   , PersistStoreWrite backend
                    , GetRange sentence
                    , Pretty sentence
                    , Sentences lid sentence sign morphism symbol
                    )
                 => DBCache -> Entity LocIdBase -> lid -> sign -> Named sentence
-                -> DBMonad backend m (LocIdBaseId, DBCache)
+                -> DBMonad m (LocIdBaseId, DBCache)
     createAxiom dbCache (Entity omsKey omsLocIdBaseValue) lid sign namedAxiom =
       let name = senAttr namedAxiom
           range = getRangeSpan $ sentence namedAxiom
@@ -438,16 +405,13 @@ createOMS opts dGraph fileVersionKey (Entity documentKey documentLocIdBaseValue)
           return (axiomLocIdBaseKey, dbCache)
 
     createConjecture :: ( MonadIO m
-                        , IsSqlBackend backend
-                        , PersistQueryRead backend
-                        , PersistStoreWrite backend
                         , GetRange sentence
                         , Pretty sentence
                         , Sentences lid sentence sign morphism symbol
                         )
                      => DBCache -> Entity LocIdBase -> lid -> sign -> Bool
                      -> Named sentence
-                     -> DBMonad backend m (LocIdBaseId, DBCache)
+                     -> DBMonad m (LocIdBaseId, DBCache)
     createConjecture dbCache (Entity omsKey omsLocIdBaseValue) lid sign isProved
                      namedConjecture =
       let name = senAttr namedConjecture
@@ -499,13 +463,9 @@ createOMS opts dGraph fileVersionKey (Entity documentKey documentLocIdBaseValue)
             }
           return (conjectureLocIdBaseKey, dbCache)
 
-    createNodeById :: ( MonadIO m
-                      , IsSqlBackend backend
-                      , PersistQueryRead backend
-                      , PersistStoreWrite backend
-                      )
+    createNodeById :: MonadIO m
                    => DBCache -> Maybe Node
-                   -> DBMonad backend m (Maybe LocIdBaseId, DBCache)
+                   -> DBMonad m (Maybe LocIdBaseId, DBCache)
     createNodeById dbCache nodeIdM = case nodeIdM of
       Nothing -> return (Nothing, dbCache)
       Just nodeId ->
@@ -552,13 +512,9 @@ createOMS opts dGraph fileVersionKey (Entity documentKey documentLocIdBaseValue)
       DGAlignment -> OMSOrigin.DGAlignment
       DGTest -> OMSOrigin.DGTest
 
-    createMapping :: ( MonadIO m
-                     , IsSqlBackend backend
-                     , PersistQueryRead backend
-                     , PersistStoreWrite backend
-                     )
+    createMapping :: MonadIO m
                   => DBCache -> (Int, Int, DGLinkLab)
-                  -> DBMonad backend m (LocIdBaseId, DBCache)
+                  -> DBMonad m (LocIdBaseId, DBCache)
     createMapping dbCache (sourceId, targetId, linkLabel) = do
       sourceKey <- case Map.lookup sourceId $ nodeMap dbCache of
         Just key -> return key
@@ -665,16 +621,12 @@ createOMS opts dGraph fileVersionKey (Entity documentKey documentLocIdBaseValue)
       HidingFreeOrCofreeThm (Just Minimize) _ _ (Proven _ _) -> MappingType.HidingMinimizeProved
 
 
-findOrCreateSignatureMorphismM :: ( MonadIO m
-                                  , IsSqlBackend backend
-                                  , PersistQueryRead backend
-                                  , PersistStoreWrite backend
-                                  )
+findOrCreateSignatureMorphismM :: MonadIO m
                                => HetcatsOpts -> DBCache -> GlobalAnnos
                                -> Maybe GMorphism
-                               -> DBMonad backend m ( Maybe SignatureMorphismId
-                                                    , DBCache
-                                                    )
+                               -> DBMonad m ( Maybe SignatureMorphismId
+                                            , DBCache
+                                            )
 findOrCreateSignatureMorphismM opts dbCache globalAnnotations gMorphismM =
   case gMorphismM of
     Nothing -> return (Nothing, dbCache)
@@ -683,16 +635,12 @@ findOrCreateSignatureMorphismM opts dbCache globalAnnotations gMorphismM =
         findOrCreateSignatureMorphism opts dbCache globalAnnotations gMorphism
       return (Just signatureMorphismKey, dbCache1)
 
-findOrCreateSignatureMorphism :: ( MonadIO m
-                                 , IsSqlBackend backend
-                                 , PersistQueryRead backend
-                                 , PersistStoreWrite backend
-                                 )
+findOrCreateSignatureMorphism :: MonadIO m
                               => HetcatsOpts -> DBCache -> GlobalAnnos
                               -> GMorphism
-                              -> DBMonad backend m ( SignatureMorphismId
-                                                   , DBCache
-                                                   )
+                              -> DBMonad m ( SignatureMorphismId
+                                           , DBCache
+                                           )
 findOrCreateSignatureMorphism opts dbCache globalAnnotations gMorphism =
   case gMorphism of
     GMorphism { gMorphismComor = cid
@@ -716,36 +664,8 @@ findOrCreateSignatureMorphism opts dbCache globalAnnotations gMorphism =
                      , dbCache { signatureMorphismMap = signatureMorphismMap' }
                      )
 
-
-createRange :: ( MonadIO m
-               , IsSqlBackend backend
-               , PersistQueryRead backend
-               , PersistStoreWrite backend
-               )
-            => Range -> DBMonad backend m (Maybe RangeId)
-createRange range =
-  let rangeL = rangeToList range
-  in  if null rangeL
-      then return Nothing
-      else
-        let startPos = head rangeL
-            endPosM = if null $ tail rangeL
-                      then Nothing
-                      else Just $ head $ tail rangeL
-        in fmap Just $ insert SchemaClass.Range
-             { rangePath = sourceName startPos
-             , rangeStartLine = sourceLine startPos
-             , rangeStartColumn = sourceColumn startPos
-             , rangeEndLine = fmap sourceLine endPosM
-             , rangeEndColumn = fmap sourceColumn endPosM
-             }
-
-createConsStatus :: ( MonadIO m
-                    , IsSqlBackend backend
-                    , PersistQueryRead backend
-                    , PersistStoreWrite backend
-                    )
-                 => ConsStatus -> DBMonad backend m ConsStatusId
+createConsStatus :: MonadIO m
+                 => ConsStatus -> DBMonad m ConsStatusId
 createConsStatus (ConsStatus r p _) =
   insert SchemaClass.ConsStatus
     { consStatusRequired = toString r
@@ -758,14 +678,11 @@ createConsStatus (ConsStatus r p _) =
       _ -> map toLower $ show c
 
 findLanguage :: ( MonadIO m
-                , IsSqlBackend backend
-                , PersistQueryRead backend
-                , PersistStoreWrite backend
                 , Logic.Logic lid sublogics
                     basic_spec sentence symb_items symb_map_items
                     sign morphism symbol raw_symbol proof_tree
                 )
-             => lid -> DBMonad backend m LanguageId
+             => lid -> DBMonad m LanguageId
 findLanguage lid = do
   languageM <- selectFirst [LanguageSlug ==. parameterize (show lid)] []
   case languageM of
@@ -773,14 +690,11 @@ findLanguage lid = do
     Nothing -> fail ("Language not found in the database: " ++ show lid)
 
 findLogic :: ( MonadIO m
-             , IsSqlBackend backend
-             , PersistQueryRead backend
-             , PersistStoreWrite backend
              , Logic.Logic lid sublogics
                  basic_spec sentence symb_items symb_map_items
                  sign morphism symbol raw_symbol proof_tree
              )
-          => lid -> sublogics -> DBMonad backend m LogicId
+          => lid -> sublogics -> DBMonad m LogicId
 findLogic lid sublogic = do
   let name = sublogicName sublogic
   let logicSlugS = parameterize name
@@ -799,13 +713,10 @@ findLogic lid sublogic = do
         }
 
 findOrCreateSignature :: ( MonadIO m
-                         , IsSqlBackend backend
-                         , PersistQueryRead backend
-                         , PersistStoreWrite backend
                          , Sentences lid sentence sign morphism symbol
                          )
                       => DBCache -> lid -> ExtSign sign symbol -> SigId
-                      -> LanguageId -> DBMonad backend m (SignatureId, DBCache)
+                      -> LanguageId -> DBMonad m (SignatureId, DBCache)
 findOrCreateSignature dbCache lid extSign sigId languageKey =
   case Map.lookup sigId $ signatureMap dbCache of
     Just signatureKey -> return (signatureKey, dbCache)
@@ -819,14 +730,11 @@ findOrCreateSignature dbCache lid extSign sigId languageKey =
                                           signatureMap dbCache }
              )
 associateSymbolsOfSignature :: ( MonadIO m
-                               , IsSqlBackend backend
-                               , PersistQueryRead backend
-                               , PersistStoreWrite backend
                                , Sentences lid sentence sign morphism symbol
                                )
                             => DBCache -> lid
                             -> ExtSign sign symbol -> SignatureId
-                            -> DBMonad backend m DBCache
+                            -> DBMonad m DBCache
 associateSymbolsOfSignature dbCache lid extSign signatureKey =
   let ownSymbols = nonImportedSymbols extSign
       allSymbols = symset_of lid $ plainSign extSign
@@ -848,14 +756,11 @@ associateSymbolsOfSignature dbCache lid extSign signatureKey =
         return dbCache
 
 createSymbols :: ( MonadIO m
-                 , IsSqlBackend backend
-                 , PersistQueryRead backend
-                 , PersistStoreWrite backend
                  , Sentences lid sentence sign morphism symbol
                  )
               => DBCache -> FileVersionId -> Entity LocIdBase -> lid
               -> ExtSign sign symbol
-              -> DBMonad backend m DBCache
+              -> DBMonad m DBCache
 createSymbols dbCache fileVersionKey (Entity omsKey omsLocIdBaseValue) lid
               (ExtSign { plainSign = sign }) = do
   symbolKeyMap' <-

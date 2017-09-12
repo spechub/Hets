@@ -6,9 +6,9 @@ data LocIdBaseKindType = FileVersion | NativeDocument | Library | OMS | Mapping 
                          deriving (Show, Read, Eq)
 derivePersistField "LocIdBaseKindType"
 
-data ErrorKindType = SyntaxError
-                     deriving (Show, Read, Eq)
-derivePersistField "ErrorKindType"
+data DiagnosisKindType = Error | Warning | Hint | Debug
+                         deriving (Show, Read, Eq)
+derivePersistField "DiagnosisKindType"
 
 data ReasoningAttemptKindType = ProofAttempt | ConsistencyCheckAttempt
                                 deriving (Show, Read, Eq)
