@@ -8,6 +8,12 @@ import qualified Data.Yaml as Yaml
 import GHC.Generics
 import System.Directory
 
+newtype DBContext = DBContext { contextFileVersion :: String }
+                    deriving (Show, Eq)
+
+emptyDBContext :: DBContext
+emptyDBContext = DBContext { contextFileVersion = "" }
+
 data ExtDBConfig = ExtDBConfig { development :: Maybe DBConfig
                                , test :: Maybe DBConfig
                                , production :: Maybe DBConfig
@@ -41,22 +47,22 @@ emptyDBConfig = DBConfig { adapter = Nothing
                          , pool = Nothing
                          }
 
-databaseConfig :: FilePath -> FilePath -> String -> IO DBConfig
-databaseConfig dbFile dbConfigFile subconfigKey =
+parseDatabaseConfig :: FilePath -> FilePath -> String -> IO DBConfig
+parseDatabaseConfig dbFile dbConfigFile subconfigKey =
   case (null dbFile, null dbConfigFile) of
      (True, True) -> fail ("No database configuration supplied. "
                            ++ "Please specify either --database-config "
                            ++ "or --database-file.")
-     (_, False) -> configFromYaml dbConfigFile
-     (False, _) -> return $ sqliteConfig dbFile
+     (_, False) -> configFromYaml
+     (False, _) -> return sqliteConfig
   where
-    sqliteConfig :: FilePath -> DBConfig
-    sqliteConfig filepath = emptyDBConfig { adapter = Just "sqlite"
-                                          , database = filepath
-                                          }
+    sqliteConfig :: DBConfig
+    sqliteConfig = emptyDBConfig { adapter = Just "sqlite"
+                                 , database = dbFile
+                                 }
 
-    configFromYaml :: FilePath -> IO DBConfig
-    configFromYaml dbConfigFile = do
+    configFromYaml :: IO DBConfig
+    configFromYaml = do
       fileExist <- doesFileExist dbConfigFile
       if fileExist
       then do
@@ -78,17 +84,17 @@ databaseConfig dbFile dbConfigFile subconfigKey =
         Just dbConfig -> return dbConfig
 
     parseExtDBConfig :: String -> BS.ByteString -> IO DBConfig
-    parseExtDBConfig subconfigKey content =
+    parseExtDBConfig key content =
       let parsedContent = Yaml.decode content :: Maybe ExtDBConfig
       in case parsedContent of
         Nothing ->
           fail "Persistence.DBConfig: Could not parse database config file."
         Just extDbConfig ->
-          let field = if subconfigKey == "production" then production
-                      else if subconfigKey == "development" then development
+          let field = if key == "production" then production
+                      else if key == "development" then development
                       else test
           in case field extDbConfig of
             Nothing ->
               fail ("Persistence.DBConfig: Could not find subconfig "
-                ++ subconfigKey ++ " in database configuration file.")
+                ++ key ++ " in database configuration file.")
             Just dbConfig -> return dbConfig

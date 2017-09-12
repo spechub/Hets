@@ -50,9 +50,7 @@ import Common.Utils
 
 import Text.XML.Light
 
-import System.Exit
 import System.FilePath
-import System.IO
 import System.Directory
 
 import Control.Monad

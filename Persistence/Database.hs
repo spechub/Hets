@@ -3,7 +3,7 @@
 
 module Persistence.Database where
 
-import Persistence.DBConfig hiding (databaseConfig)
+import Persistence.DBConfig
 import Persistence.Schema
 import qualified Persistence.PostgreSQL as PSQL
 
