@@ -62,6 +62,7 @@ module Driver.Options
 import Driver.Version
 
 import qualified Persistence.DBConfig as DBConfig
+import Persistence.Diagnosis
 
 import Common.Utils
 import Common.IO
@@ -1212,9 +1213,11 @@ showDiags opts ds =
 -- | show diagnostic messages (see Result.hs), according to verbosity level
 showDiags1 :: HetcatsOpts -> ResultT IO a -> ResultT IO a
 showDiags1 opts res =
-  if outputToStdout opts then do
+  let dbout = DbOut `elem` outtypes opts in
+  if outputToStdout opts || dbout then do
     Result ds res' <- lift $ runResultT res
-    lift $ printDiags (verbose opts) ds
+    when (outputToStdout opts) $ lift $ printDiags (verbose opts) ds
+    when dbout $ lift $ saveDiagnoses (databaseConfig opts) (verbose opts) ds
     case res' of
       Just res'' -> return res''
       Nothing -> liftR $ Result [] Nothing

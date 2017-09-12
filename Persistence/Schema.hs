@@ -143,11 +143,14 @@ Range sql=ranges
   endColumn Int Maybe
   deriving Show
 
-Error sql=errors
-  documentId LocIdBaseId -- DocumentId is LocIdBaseId
+Diagnosis sql=diagnoses
+  fileVersionId FileVersionId
   rangeId RangeId Maybe
+  -- kind should not be a String, but an Enums.DiagnosisKindType. This is not
+  -- supported by Persistent, though, because it is a PostgreSQL enum type.
+  -- See https://github.com/yesodweb/persistent/issues/264
+  kind String sqltype=text
   number Int
-  kind Enums.ErrorKindType
   text Text
   deriving Show
 

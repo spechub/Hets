@@ -17,16 +17,11 @@ import Logic.Comorphism as Comorphism
 import Control.Monad (unless)
 import Control.Monad.IO.Class (MonadIO (..))
 import Database.Persist
-import Database.Persist.Sql
 
 import Debug.Trace
 
-migrateLanguages :: ( MonadIO m
-                    , IsSqlBackend backend
-                    , PersistQueryRead backend
-                    , PersistStoreWrite backend
-                    )
-                 => DBMonad backend m ()
+migrateLanguages :: MonadIO m
+                 => DBMonad m ()
 migrateLanguages = do
   let versionKeyName = "lastMigratedVersion"
   lastMigratedVersionM <- selectFirst [HetsKey ==. versionKeyName] []
@@ -36,24 +31,16 @@ migrateLanguages = do
     Just (Entity _ value) ->
       unless (hetsValue value == hetsVersionNumeric) exportLogicGraph
 
-exportLogicGraph :: ( MonadIO m
-                    , IsSqlBackend backend
-                    , PersistQueryRead backend
-                    , PersistStoreWrite backend
-                    )
-                 => DBMonad backend m ()
+exportLogicGraph :: MonadIO m
+                 => DBMonad m ()
 exportLogicGraph = do
   exportLanguagesAndLogics LogicGraph.logicGraph
   exportLanguageMappingsAndLogicMappings LogicGraph.logicGraph
 
 -- Export all Languages and Logics. Add those that have been added since a
 -- previous version of Hets. This does not delete Languages or Logics.
-exportLanguagesAndLogics :: ( MonadIO m
-                            , IsSqlBackend backend
-                            , PersistQueryRead backend
-                            , PersistStoreWrite backend
-                            )
-                         => LogicGraph -> DBMonad backend m ()
+exportLanguagesAndLogics :: MonadIO m
+                         => LogicGraph -> DBMonad m ()
 exportLanguagesAndLogics logicGraph =
   mapM_ (\ (Logic.Logic lid) -> do
           let languageSlugS = parameterize $ show lid
@@ -87,25 +74,16 @@ exportLanguagesAndLogics logicGraph =
 -- Export all LanguageMappings and LogicMappings. Add those that have been added
 -- since a previous version of Hets. This does not delete any of the old
 -- mappings.
-exportLanguageMappingsAndLogicMappings :: ( MonadIO m
-                                          , IsSqlBackend backend
-                                          , PersistQueryRead backend
-                                          , PersistStoreWrite backend
-                                          )
-                                       => LogicGraph -> DBMonad backend m ()
+exportLanguageMappingsAndLogicMappings :: MonadIO m
+                                       => LogicGraph -> DBMonad m ()
 exportLanguageMappingsAndLogicMappings logicGraph =
   mapM_ findOrCreateLanguageMappingAndLogicMapping $ comorphisms logicGraph
 
-findOrCreateLanguageMappingAndLogicMapping :: ( MonadIO m
-                                              , IsSqlBackend backend
-                                              , PersistQueryRead backend
-                                              , PersistStoreWrite backend
-                                              )
+findOrCreateLanguageMappingAndLogicMapping :: MonadIO m
                                            => AnyComorphism
-                                           -> DBMonad backend m
-                                                      ( LanguageMappingId
-                                                      , LogicMappingId
-                                                      )
+                                           -> DBMonad m ( LanguageMappingId
+                                                        , LogicMappingId
+                                                        )
 findOrCreateLanguageMappingAndLogicMapping (Comorphism.Comorphism cid) =
           let name = language_name cid
               logicMappingSlugS = parameterize name
