@@ -200,6 +200,7 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , counterSparQ :: Int
   , outdir :: FilePath
   , outtypes :: [OutType]
+  , databaseOutputFile :: FilePath
   , databaseConfigFile :: FilePath
   , databaseSubConfig :: String
   , xupdate :: FilePath
@@ -254,6 +255,7 @@ defaultHetcatsOpts = HcOpt
   , counterSparQ = 3
   , outdir = ""
   , outtypes = [] -- no default
+  , databaseOutputFile = ""
   , databaseConfigFile = ""
   , databaseSubConfig = ""
   , xupdate = ""
@@ -377,6 +379,7 @@ data Flag =
   | ModelSparQ FilePath
   | CounterSparQ Int
   | OutTypes [OutType]
+  | DatabaseOutputFile FilePath
   | DatabaseConfigFile FilePath
   | DatabaseSubConfig String
   | Specs [SIMPLE_ID]
@@ -427,6 +430,7 @@ makeOpts opts flg =
     CounterSparQ x -> opts { counterSparQ = x }
     OutDir x -> opts { outdir = x }
     OutTypes x -> opts { outtypes = x }
+    DatabaseOutputFile x -> opts { databaseOutputFile = x }
     DatabaseConfigFile x -> opts { databaseConfigFile = x }
     DatabaseSubConfig x -> opts { databaseSubConfig = x }
     XUpdate x -> opts { xupdate = x }
@@ -818,10 +822,11 @@ options = let
        ++ bS ++ graphE ++ joinBar (map show graphList) ++ crS
        ++ bS ++ dfgS ++ bracket cS ++ crS
        ++ bS ++ tptpS ++ bracket cS)
+    , Option "" ["database-file"] (ReqArg DatabaseOutputFile "FILEPATH")
+       ("path to the sqlite database file - " ++ crS
+       ++ "This option is ignored if the option --database-config is given.")
     , Option "" ["database-config"] (ReqArg DatabaseConfigFile "FILEPATH")
-       ("path to the database configuration (yaml) file - "
-       ++ "if none is given despite database output, "
-       ++ "an sqlite database is created in the output directory")
+       "path to the database configuration (yaml) file - "
     , Option "" ["database-subconfig"] (ReqArg DatabaseSubConfig "KEY")
        ("subconfig of the database-config - "
        ++ "one of: production, development, test")
