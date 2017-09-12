@@ -61,6 +61,8 @@ module Driver.Options
 
 import Driver.Version
 
+import qualified Persistence.DBConfig as DBConfig
+
 import Common.Utils
 import Common.IO
 import Common.Id
@@ -202,7 +204,8 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , outtypes :: [OutType]
   , databaseOutputFile :: FilePath
   , databaseConfigFile :: FilePath
-  , databaseSubConfig :: String
+  , databaseSubConfigKey :: String
+  , databaseConfig :: DBConfig.DBConfig
   , xupdate :: FilePath
   , recurse :: Bool
   , verbose :: Int
@@ -257,7 +260,8 @@ defaultHetcatsOpts = HcOpt
   , outtypes = [] -- no default
   , databaseOutputFile = ""
   , databaseConfigFile = ""
-  , databaseSubConfig = ""
+  , databaseSubConfigKey = ""
+  , databaseConfig = DBConfig.emptyDBConfig
   , xupdate = ""
   , recurse = False
   , defLogic = "CASL"
@@ -381,7 +385,7 @@ data Flag =
   | OutTypes [OutType]
   | DatabaseOutputFile FilePath
   | DatabaseConfigFile FilePath
-  | DatabaseSubConfig String
+  | DatabaseSubConfigKey String
   | Specs [SIMPLE_ID]
   | Trans [SIMPLE_ID]
   | Views [SIMPLE_ID]
@@ -432,7 +436,7 @@ makeOpts opts flg =
     OutTypes x -> opts { outtypes = x }
     DatabaseOutputFile x -> opts { databaseOutputFile = x }
     DatabaseConfigFile x -> opts { databaseConfigFile = x }
-    DatabaseSubConfig x -> opts { databaseSubConfig = x }
+    DatabaseSubConfigKey x -> opts { databaseSubConfigKey = x }
     XUpdate x -> opts { xupdate = x }
     Recurse -> opts { recurse = True }
     ApplyAutomatic -> opts { applyAutomatic = True }
@@ -827,7 +831,7 @@ options = let
        ++ "This option is ignored if the option --database-config is given.")
     , Option "" ["database-config"] (ReqArg DatabaseConfigFile "FILEPATH")
        "path to the database configuration (yaml) file - "
-    , Option "" ["database-subconfig"] (ReqArg DatabaseSubConfig "KEY")
+    , Option "" ["database-subconfig"] (ReqArg DatabaseSubConfigKey "KEY")
        ("subconfig of the database-config - "
        ++ "one of: production, development, test")
     , Option "U" ["xupdate"] (ReqArg XUpdate "FILE")
@@ -1050,8 +1054,15 @@ hetcatsOpts argv =
    in case getOpt Permute options argv' of
         (opts, nonOpts, []) ->
             do flags <- checkFlags opts
-               return (foldr (flip makeOpts) defaultHetcatsOpts flags)
+               let opts' = (foldr (flip makeOpts) defaultHetcatsOpts flags)
                             { infiles = nonOpts }
+               dbConfig <- if DbOut `elem` outtypes opts'
+                           then DBConfig.databaseConfig
+                                  (databaseOutputFile opts')
+                                  (databaseConfigFile opts')
+                                  (databaseSubConfigKey opts')
+                           else return DBConfig.emptyDBConfig
+               return opts' { databaseConfig = dbConfig }
         (_, _, errs) -> hetsIOError (concat errs)
 
 printOptionsWarnings :: HetcatsOpts -> IO ()

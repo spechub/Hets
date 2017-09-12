@@ -21,7 +21,6 @@ Portability :  portable
 module Persistence.DevGraph (exportLibEnv) where
 
 import Persistence.Database
-import Persistence.DBConfig
 import Persistence.LogicGraph
 import Persistence.Schema as SchemaClass hiding (ConsStatus, Range)
 import Persistence.Schema.MappingOrigin (MappingOrigin)
@@ -62,7 +61,7 @@ import Static.DgUtils
 import Static.GTheory
 import qualified Static.ToJson as ToJson
 
-import Control.Monad (foldM, when)
+import Control.Monad (foldM)
 import Control.Monad.IO.Class (MonadIO (..))
 import Data.Char (toLower)
 import qualified Data.IntMap as IntMap
@@ -96,10 +95,9 @@ emptyDBCache = DBCache { nodeMap = Map.empty
                        , symbolKeyMap = Map.empty
                        }
 
-exportLibEnv :: HetcatsOpts -> DBConfig -> LibEnv -> IO ()
-exportLibEnv opts dbConfig libEnv =
-  onDatabase dbConfig $ do
-    when (doMigrate dbConfig) $ runMigration migrateAll
+exportLibEnv :: HetcatsOpts -> LibEnv -> IO ()
+exportLibEnv opts libEnv =
+  onDatabase opts $ do
     migrateLanguages
     let dependencyLibNameRel = getLibDepRel libEnv
     let dependencyOrderedLibsSetL = Rel.depSort dependencyLibNameRel
