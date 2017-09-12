@@ -3,9 +3,13 @@
 
 module Persistence.Database where
 
-import Persistence.DBConfig
+import Persistence.DBConfig hiding (databaseConfig)
+import Persistence.Schema
 import qualified Persistence.PostgreSQL as PSQL
 
+import Driver.Options
+
+import Control.Monad (when)
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Control
 import Control.Monad.Trans.Reader
@@ -20,14 +24,13 @@ type DBMonad backend m a = ReaderT backend m a
 
 onDatabase :: ( MonadIO m
               , MonadBaseControl IO m
-              , IsSqlBackend backend
-              , IsPersistBackend backend
               )
-           => DBConfig
-           -> ReaderT backend (NoLoggingT m) a
+           => HetcatsOpts
+           -> DBMonad SqlBackend (NoLoggingT m) a
            -> m a
-onDatabase dbConfig =
-  let connection = case adapter dbConfig of
+onDatabase opts f =
+  let dbConfig = databaseConfig opts
+      connection = case adapter dbConfig of
         Just "postgresql" ->
           withPostgresqlPool (PSQL.connectionString dbConfig) $
             fromMaybe defaultPoolSize $ pool dbConfig
@@ -35,7 +38,9 @@ onDatabase dbConfig =
           withSqlitePool (pack $ database dbConfig) defaultPoolSize
         _ -> fail ("Persistence.Database: No database adapter specified "
                      ++ "or adapter unsupported.")
-  in runNoLoggingT . connection . runSqlPool
+  in runNoLoggingT $ connection $ runSqlPool $ do
+       when (doMigrate $ databaseConfig opts) $ runMigration migrateAll
+       f
 
 defaultPoolSize :: Int
 defaultPoolSize = 4
