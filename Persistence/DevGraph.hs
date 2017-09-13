@@ -78,8 +78,6 @@ import qualified Data.Text as Text
 import Database.Persist
 import Database.Persist.Sql
 
-import Debug.Trace
-
 -- TODO: replace this by the `symbol` type variable and find a string representation that is unique such that there can be a unique index in the database
 type SymbolMapIndex = (String, String) -- (SymbolKind, FullSymbolName)
 
@@ -119,13 +117,25 @@ createDocuments opts libEnv dependencyOrderedLibsSetL =
       case fileVersionM of
         Nothing -> fail ("Could not find the FileVersion \"" ++
                          fileVersion ++ "\"")
-        Just (Entity fileVersionKey _) ->
-          foldM (\ outerAcc libNameSet ->
-                     foldM (\ innerAcc libName -> do
-                              documentKey <- createDocument fileVersionKey libName
-                              return $ Map.insert libName documentKey innerAcc
-                           ) outerAcc libNameSet
-                ) Map.empty dependencyOrderedLibsSetL
+        Just (Entity fileVersionKey _) -> do
+          -- First create all documents in the order of the dependency relation
+          documentMap <-
+            foldM (\ outerAcc libNameSet ->
+                       foldM (\ innerAcc libName -> do
+                                documentKey <- createDocument fileVersionKey libName
+                                return $ Map.insert libName documentKey innerAcc
+                             ) outerAcc libNameSet
+                  ) Map.empty dependencyOrderedLibsSetL
+          -- Then create all documents that are not yet in the database (e.g.
+          -- not in the dependency relation)
+          foldM (\ acc libName ->
+                  let alreadyInserted = isJust $ Map.lookup libName acc in
+                  if alreadyInserted
+                  then return acc
+                  else do
+                        documentKey <- createDocument fileVersionKey libName
+                        return $ Map.insert libName documentKey acc
+                ) documentMap $ Map.keys libEnv
   where
     createDocument :: MonadIO m
                    => FileVersionId -> LibName -> DBMonad m LocIdBaseId
@@ -318,25 +328,22 @@ createOMS opts dGraph fileVersionKey (Entity documentKey documentLocIdBaseValue)
           namedAxioms = toNamedList axioms
           orderedConjectures = OMap.toList conjectures
       in do
+        -- Create all axioms
         (axiomKeys, dbCache1) <-
           foldM (\ (axiomKeysAcc, dbCacheAcc) namedAxiom -> do
-                  (axiomKey, dbCacheAcc') <-
-                    createAxiom dbCacheAcc omsLocId lid sign namedAxiom
-                  associateSymbolsOfSentence dbCacheAcc axiomKey lid sign
-                    namedAxiom
-                  return (axiomKey : axiomKeysAcc, dbCacheAcc')
+                  (axiomKey, dbCacheAcc1) <- createAxiom dbCacheAcc omsLocId lid sign namedAxiom
+                  dbCacheAcc2 <- associateSymbolsOfSentence dbCacheAcc1 omsLocId axiomKey lid sign namedAxiom
+                  return (axiomKey : axiomKeysAcc, dbCacheAcc2)
                 ) ([], dbCache) namedAxioms
+        -- Create all conjectures
         (conjectureKeys, dbCache2) <-
           foldM (\ (conjectureKeysAcc, dbCacheAcc) (name, senStatus) ->
                   let namedConjecture = toNamed name senStatus
                       isProved = isProvenSenStatus senStatus
                   in do
-                    (conjectureKey, dbCacheAcc') <- createConjecture dbCacheAcc
-                                                      omsLocId lid sign isProved
-                                                      namedConjecture
-                    associateSymbolsOfSentence dbCacheAcc conjectureKey lid sign
-                      namedConjecture
-                    return (conjectureKey : conjectureKeysAcc, dbCacheAcc')
+                    (conjectureKey, dbCacheAcc1) <- createConjecture dbCacheAcc omsLocId lid sign isProved namedConjecture
+                    dbCacheAcc2 <- associateSymbolsOfSentence dbCacheAcc1 omsLocId conjectureKey lid sign namedConjecture
+                    return (conjectureKey : conjectureKeysAcc, dbCacheAcc2)
                 ) ([], dbCache1) orderedConjectures
         return (conjectureKeys ++ axiomKeys, dbCache2)
 
@@ -345,28 +352,36 @@ createOMS opts dGraph fileVersionKey (Entity documentKey documentLocIdBaseValue)
                                   , Pretty sentence
                                   , Sentences lid sentence sign morphism symbol
                                   )
-                               => DBCache
+                               => DBCache -> Entity LocIdBase
                                -> LocIdBaseId -> lid -> sign
                                -> Named sentence
                                -> DBMonad m DBCache
-    associateSymbolsOfSentence dbCache sentenceKey lid sign namedSentence =
+    associateSymbolsOfSentence dbCache omsLocId sentenceKey lid sign namedSentence =
       let symbolsOfSentence = symsOfSen lid sign $ sentence namedSentence
       in  do
-            foldM (\ associatedSymbols symbol ->
-                    let fullName = show $ fullSymName lid symbol
-                        mapIndex = symbolMapIndex lid symbol
-                    in  if Set.member mapIndex associatedSymbols
-                        then return associatedSymbols
-                        else case Map.lookup mapIndex $ symbolKeyMap dbCache of
-                               Just symbolKey -> do
-                                 insert SentenceSymbol
-                                   { sentenceSymbolSentenceId = sentenceKey
-                                   , sentenceSymbolSymbolId = symbolKey
-                                   }
-                                 return $ Set.insert mapIndex associatedSymbols
-                               Nothing -> fail ("Persistence.DevGraph.associateSymbolsOfSentence: Symbol not found: " ++ fullName)
-                  ) Set.empty symbolsOfSentence
-            return dbCache
+            (dbCache', _) <-
+              foldM (\ (dbCacheAcc, associatedSymbols) symbol ->
+                      let mapIndex = symbolMapIndex lid symbol
+                      in  if Set.member mapIndex associatedSymbols
+                          then return (dbCacheAcc, associatedSymbols)
+                          else case Map.lookup mapIndex $ symbolKeyMap dbCacheAcc of
+                                 Just symbolKey -> do
+                                   insert SentenceSymbol
+                                     { sentenceSymbolSentenceId = sentenceKey
+                                     , sentenceSymbolSymbolId = symbolKey
+                                     }
+                                   return ( dbCacheAcc
+                                          , Set.insert mapIndex associatedSymbols
+                                          )
+                                 Nothing -> do
+                                   dbCacheAcc' <-
+                                     createSymbol dbCacheAcc fileVersionKey
+                                       omsLocId lid symbol
+                                   return ( dbCacheAcc'
+                                          , Set.insert mapIndex associatedSymbols
+                                          )
+                    ) (dbCache, Set.empty) symbolsOfSentence
+            return dbCache'
 
     createAxiom :: ( MonadIO m
                    , GetRange sentence
@@ -702,7 +717,7 @@ findLogic lid sublogic = do
                         ] []
   case logicM of
     Just (Entity key _) -> return key
-    Nothing -> trace ("Logic not found in the database: " ++ logicSlugS ++ " (" ++ name ++ ")") $
+    Nothing ->
       -- TODO: do not insert the sublogic as soon as https://github.com/spechub/Hets/issues/1740 is fixed
       insert SchemaClass.Logic
         { logicLanguageId = languageKey
@@ -759,36 +774,43 @@ createSymbols :: ( MonadIO m
               => DBCache -> FileVersionId -> Entity LocIdBase -> lid
               -> ExtSign sign symbol
               -> DBMonad m DBCache
-createSymbols dbCache fileVersionKey (Entity omsKey omsLocIdBaseValue) lid
-              (ExtSign { plainSign = sign }) = do
-  symbolKeyMap' <-
-    foldM (\ symbolKeyMapAcc symbol ->
-            let name = show $ sym_name lid symbol
-                fullName =
-                  show $ fullSymName lid symbol
-                symbolKind = symKind lid symbol
-                locId = locIdBaseLocId omsLocIdBaseValue
-                        ++ "//" ++ name
-                mapIndex = symbolMapIndex lid symbol
-            in case Map.lookup mapIndex symbolKeyMapAcc of
-                 Just _ -> return symbolKeyMapAcc
-                 Nothing -> do
-                    symbolKey <- insert LocIdBase
-                      { locIdBaseFileVersionId = fileVersionKey
-                      , locIdBaseKind = Enums.Symbol
-                      , locIdBaseLocId = locId
-                      }
-                    insert Symbol
-                      { symbolLocIdBaseId = symbolKey
-                      , symbolOmsId = omsKey
-                      , symbolRangeId = Nothing
-                      , symbolSymbolKind = symbolKind
-                      , symbolName = name
-                      , symbolFullName = Text.pack fullName
-                      }
-                    return $ Map.insert mapIndex symbolKey symbolKeyMapAcc
-          ) Map.empty $ symlist_of lid sign
-  return dbCache { symbolKeyMap = symbolKeyMap' }
+createSymbols dbCache fileVersionKey omsLocId lid
+              ExtSign { plainSign = sign } =
+  foldM (\ dbCacheAcc symbol ->
+          createSymbol dbCacheAcc fileVersionKey omsLocId lid symbol
+        ) dbCache $ symlist_of lid sign
+
+createSymbol :: ( MonadIO m
+                , Sentences lid sentence sign morphism symbol
+                )
+             => DBCache -> FileVersionId -> Entity LocIdBase -> lid -> symbol
+             -> DBMonad m DBCache
+createSymbol dbCache fileVersionKey (Entity omsKey omsLocIdBaseValue) lid
+  symbol =
+    let name = show $ sym_name lid symbol
+        fullName = show $ fullSymName lid symbol
+        symbolKind = symKind lid symbol
+        locId = locIdBaseLocId omsLocIdBaseValue ++ "//" ++ name
+        mapIndex = symbolMapIndex lid symbol
+        symbolKeyMap' = symbolKeyMap dbCache
+    in case Map.lookup mapIndex symbolKeyMap' of
+         Just _ -> return dbCache
+         Nothing -> do
+            symbolKey <- insert LocIdBase
+              { locIdBaseFileVersionId = fileVersionKey
+              , locIdBaseKind = Enums.Symbol
+              , locIdBaseLocId = locId
+              }
+            insert Symbol
+              { symbolLocIdBaseId = symbolKey
+              , symbolOmsId = omsKey
+              , symbolRangeId = Nothing
+              , symbolSymbolKind = symbolKind
+              , symbolName = name
+              , symbolFullName = Text.pack fullName
+              }
+            return dbCache { symbolKeyMap =
+                               Map.insert mapIndex symbolKey symbolKeyMap' }
 
 symbolMapIndex :: Sentences lid sentence sign morphism symbol
                => lid -> symbol -> SymbolMapIndex

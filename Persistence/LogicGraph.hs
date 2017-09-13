@@ -18,8 +18,6 @@ import Control.Monad (unless)
 import Control.Monad.IO.Class (MonadIO (..))
 import Database.Persist
 
-import Debug.Trace
-
 migrateLanguages :: MonadIO m
                  => DBMonad m ()
 migrateLanguages = do
@@ -97,16 +95,11 @@ findOrCreateLanguageMappingAndLogicMapping (Comorphism.Comorphism cid) =
                   selectFirst [LanguageSlug ==. sourceLanguageSlugS] []
             Just (Entity targetLanguageKey _) <-
                   selectFirst [LanguageSlug ==. targetLanguageSlugS] []
-            -- Just (Entity sourceLogicKey _) <-
-            --       selectFirst [LogicSlug ==. sourceLogicSlugS] []
-            -- Just (Entity targetLogicKey _) <-
-            --       selectFirst [LogicSlug ==. targetLogicSlugS] []
-            -- -----------------------------------------------------------------
 
             -- findOrCreateLogic (source):
             sourceLogicM <- selectFirst [LogicSlug ==. sourceLogicSlugS] []
             sourceLogicKey <- case sourceLogicM of
-                Nothing -> trace ("Could not find sublogic " ++ sublogicName (sourceSublogic cid) ++ " used as the source sublogic by the comorphism " ++ name) $ do
+                Nothing -> do
                   -- TODO: do not insert the sublogic as soon as https://github.com/spechub/Hets/issues/1740 is fixed
                   let sublogic = sourceSublogic cid
                   let logicSlugS = parameterize $ sublogicName sublogic
@@ -123,7 +116,7 @@ findOrCreateLanguageMappingAndLogicMapping (Comorphism.Comorphism cid) =
             -- findOrCreateLogic (target):
             targetLogicM <- selectFirst [LogicSlug ==. targetLogicSlugS] []
             targetLogicKey <- case targetLogicM of
-                Nothing -> trace ("Could not find sublogic " ++ sublogicName (targetSublogic cid) ++ " used as the target sublogic by the comorphism " ++ show name) $ do
+                Nothing -> do
                   -- TODO: do not insert the sublogic as soon as https://github.com/spechub/Hets/issues/1740 is fixed
                   let sublogic = targetSublogic cid
                   let logicSlugS = parameterize $ sublogicName sublogic
@@ -136,7 +129,6 @@ findOrCreateLanguageMappingAndLogicMapping (Comorphism.Comorphism cid) =
                       , logicName = sublogicName $ targetSublogic cid
                       }
                 Just (Entity t _) -> return t
-            -- -----------------------------------------------------------------
 
             -- findOrCreateLanguageMapping:
             languageMappingM <-

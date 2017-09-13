@@ -103,15 +103,7 @@ ConsStatus sql=cons_statuses
 
 
 -- We leave out the other columns here because we don't need them in Hets
-Repository sql=repositories
-  slug String
-  deriving Show
-
 FileVersion sql=file_versions
-  repositoryId RepositoryId
-  commitSha String
-  path String
-  UniqueFileVersionInCommit repositoryId commitSha path
   deriving Show
 
 LocIdBase sql=loc_id_bases
