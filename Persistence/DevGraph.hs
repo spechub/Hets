@@ -82,14 +82,12 @@ import Database.Persist.Sql
 type SymbolMapIndex = (String, String) -- (SymbolKind, FullSymbolName)
 
 data DBCache = DBCache { nodeMap :: Map Node LocIdBaseId
-                       , theoryMap :: Map ThId OMSId
                        , signatureMap :: Map SigId SignatureId
                        , signatureMorphismMap :: Map MorId SignatureMorphismId
                        , symbolKeyMap :: Map SymbolMapIndex LocIdBaseId
                        } deriving Show
 emptyDBCache :: DBCache
 emptyDBCache = DBCache { nodeMap = Map.empty
-                       , theoryMap = Map.empty
                        , signatureMap = Map.empty
                        , signatureMorphismMap = Map.empty
                        , symbolKeyMap = Map.empty
