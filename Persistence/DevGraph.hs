@@ -46,6 +46,7 @@ import Common.DocUtils
 import Common.ExtSign
 import Common.GlobalAnnotations
 import Common.Id
+import Common.IRI (setAngles)
 import Common.Json (ppJson)
 import Common.Lib.Graph as Graph hiding (nodeLabel)
 import qualified Common.Lib.Graph as Graph (nodeLabel)
@@ -139,14 +140,13 @@ createDocuments opts libEnv dependencyOrderedLibsSetL =
                    => FileVersionId -> LibName -> DBMonad m LocIdBaseId
     createDocument fileVersionKey libName =
       let name = show $ pretty $ getLibId libName
+          displayName = show $ setAngles False $ getLibId libName
           location = fmap show $ locIRI libName
           version = fmap (intercalate "." . (\ (VersionNumber v _) -> v)) $ libVersion libName
-          -- TODO: Use the correct locId
-          locId = name
+          locId = displayName
           dGraph = fromJust $ Map.lookup libName libEnv
       in do
           -- TODO: Check whether it is a Library or a NativeDocument
-          -- TODO: find a fitting locId
           let documentLocIdBaseValue = LocIdBase
                 { locIdBaseFileVersionId = fileVersionKey
                 , locIdBaseKind = Enums.Library
@@ -156,6 +156,7 @@ createDocuments opts libEnv dependencyOrderedLibsSetL =
           insert Document
             { documentLocIdBaseId = documentKey
             , documentKind = DocumentKindType.NativeDocument
+            , documentDisplayName = displayName
             , documentName = name
             , documentLocation = location
             , documentVersion = version
@@ -250,12 +251,11 @@ createOMS opts dGraph fileVersionKey (Entity documentKey documentLocIdBaseValue)
               let name = show $ getName internalNodeName
               let nameExtension = extString internalNodeName
               let nameExtensionIndex = extIndex internalNodeName
-              let fullName = name ++ nameExtension ++ show nameExtensionIndex
+              let displayName = showName internalNodeName
               let omsLocIdBaseValue = LocIdBase
                     { locIdBaseFileVersionId = fileVersionKey
                     , locIdBaseKind = Enums.OMS
-                    -- TODO: find a fitting locId
-                    , locIdBaseLocId = fullName
+                    , locIdBaseLocId = displayName
                     }
               omsLocIdBaseKey <- insert omsLocIdBaseValue
               insert OMS
@@ -273,6 +273,7 @@ createOMS opts dGraph fileVersionKey (Entity documentKey documentLocIdBaseValue)
                 , oMSOrigin = omsOrigin nodeLabel
                 , oMSConsStatusId = consStatusKey
                 , oMSNameRangeId = nodeNameRangeKey
+                , oMSDisplayName = displayName
                 , oMSName = name
                 , oMSNameExtension = nameExtension
                 , oMSNameExtensionIndex = nameExtensionIndex
@@ -558,11 +559,10 @@ createOMS opts dGraph fileVersionKey (Entity documentKey documentLocIdBaseValue)
           fmap Just $ findLanguage lid
         _ -> return Nothing
 
-      -- TODO: find a fitting locId
-      let name = if null $ dglName linkLabel
-                 then show (dgl_id linkLabel)
-                 else dglName linkLabel
-      let locId = locIdBaseLocId documentLocIdBaseValue ++ "//" ++ name
+      let displayName = if null $ dglName linkLabel
+                        then show (dgl_id linkLabel)
+                        else dglName linkLabel
+      let locId = locIdBaseLocId documentLocIdBaseValue ++ "//" ++ displayName
       mappingKey <- insert LocIdBase
         { locIdBaseFileVersionId = fileVersionKey
         , locIdBaseKind = Enums.Mapping
@@ -576,6 +576,7 @@ createOMS opts dGraph fileVersionKey (Entity documentKey documentLocIdBaseValue)
         , mappingConsStatusId = consStatusKeyM
         , mappingFreenessParameterOMSId = freenessParameterOMSKeyM
         , mappingFreenessParameterLanguageId = freenessParameterLanguageKeyM
+        , mappingDisplayName = displayName
         , mappingName = dglName linkLabel
         , mappingType = mappingTypeValue
         , mappingOrigin = origin
