@@ -117,6 +117,7 @@ Document sql=documents
   locIdBaseId LocIdBaseId sql=id -- the field `locIdBaseId` is mapped to the column `id`
   Primary locIdBaseId            -- ... which is the primary key
   kind DocumentKindType
+  displayName String
   name String
   location String Maybe
   version String Maybe
@@ -162,6 +163,7 @@ OMS sql=oms
   origin OMSOrigin
   consStatusId ConsStatusId
   nameRangeId RangeId Maybe -- Represents NodeName
+  displayName String        -- Represents NodeName
   name String               -- Represents NodeName
   nameExtension String      -- Represents NodeName
   nameExtensionIndex Int    -- Represents NodeName
@@ -181,6 +183,7 @@ Mapping sql=mappings
   freenessParameterOMSId LocIdBaseId Maybe sql=freeness_parameter_oms_id -- DocumentId is a LocIdBaseId
   freenessParameterLanguageId LanguageId Maybe
 
+  displayName String
   name String
   origin MappingOrigin
   pending Bool
