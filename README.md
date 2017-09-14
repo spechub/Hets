@@ -69,6 +69,12 @@ If you would like to compile Hets yourself, you can install one of the AUR-packa
 * Either install hets-desktop: `brew install spechub/hets/hets-desktop`
 * Or install hets-server: `brew install spechub/hets/hets-server`
 
+This installs Hets along with all its dependencies.
+Some of the dependencies are optional, but recommended, especially the provers.
+You can install Hets without these by adding a flag `--without-*` where `*` is one of these recommended dependencies.
+For instance, you can run `brew install spechub/hets/hets-desktop --without-leo2` to skip the installation of Leo2.
+For a list of these flags, run `brew info spechub/hets/hets-desktop`.
+
 ### Hets binaries
 (these are usually not needed but may replace the binaries from above)
 
