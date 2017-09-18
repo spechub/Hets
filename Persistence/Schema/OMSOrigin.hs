@@ -62,7 +62,7 @@ instance Show OMSOrigin where
   show DGFitView = "dg_fit_view"
   show DGProof = "dg_proof"
   show DGNormalForm = "dg_normal_form"
-  show DGintegratedSCC = "d_gintegrated_scc"
+  show DGintegratedSCC = "dg_integrated_scc"
   show DGFlattening = "dg_flattening"
   show DGAlignment = "dg_alignment"
   show DGTest = "dg_test"
