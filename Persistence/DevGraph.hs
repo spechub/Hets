@@ -28,8 +28,6 @@ import Persistence.Schema.MappingOrigin (MappingOrigin)
 import qualified Persistence.Schema.MappingOrigin as MappingOrigin
 import Persistence.Range
 import Persistence.Schema.MappingType (MappingType)
-import qualified Persistence.Schema.ConjectureKindType as ConjectureKindType
-import qualified Persistence.Schema.DocumentKindType as DocumentKindType
 import qualified Persistence.Schema.Enums as Enums
 import qualified Persistence.Schema.EvaluationStateType as EvaluationStateType
 import qualified Persistence.Schema.MappingType as MappingType
@@ -37,7 +35,6 @@ import Persistence.Schema.OMSOrigin (OMSOrigin)
 import qualified Persistence.Schema.OMSOrigin as OMSOrigin
 import qualified Persistence.Schema.ReasoningStatusOnConjectureType as ReasoningStatusOnConjectureType
 import qualified Persistence.Schema as SchemaClass (ConsStatus (..))
-import qualified Persistence.Schema.SentenceKindType as SentenceKindType
 import Persistence.Utils
 
 import Common.AS_Annotation
@@ -155,7 +152,6 @@ createDocuments opts libEnv dependencyOrderedLibsSetL =
           documentKey <- insert documentLocIdBaseValue
           insert Document
             { documentLocIdBaseId = documentKey
-            , documentKind = DocumentKindType.NativeDocument
             , documentDisplayName = displayName
             , documentName = name
             , documentLocation = location
@@ -407,7 +403,6 @@ createOMS opts dGraph fileVersionKey (Entity documentKey documentLocIdBaseValue)
             { sentenceLocIdBaseId = axiomLocIdBaseKey
             , sentenceOmsId = omsKey
             , sentenceRangeId = rangeKeyM
-            , sentenceKind = SentenceKindType.Axiom
             , sentenceName = name
             , sentenceText = Text.pack text
             }
@@ -436,18 +431,10 @@ createOMS opts dGraph fileVersionKey (Entity documentKey documentLocIdBaseValue)
             if isProved
             then EvaluationStateType.FinishedSuccessfully
             else EvaluationStateType.NotYetEnqueued
-          kindLocId =
+          kind =
             if isProved
             then Enums.Theorem
             else Enums.OpenConjecture
-          kindSentence =
-            if isProved
-            then SentenceKindType.Theorem
-            else SentenceKindType.OpenConjecture
-          kindConjecture =
-            if isProved
-            then ConjectureKindType.Theorem
-            else ConjectureKindType.OpenConjecture
           reasoningStatus =
             if isProved
             then ReasoningStatusOnConjectureType.THM
@@ -456,20 +443,18 @@ createOMS opts dGraph fileVersionKey (Entity documentKey documentLocIdBaseValue)
           rangeKeyM <- createRange range
           conjectureLocIdBaseKey <- insert LocIdBase
             { locIdBaseFileVersionId = fileVersionKey
-            , locIdBaseKind = kindLocId
+            , locIdBaseKind = kind
             , locIdBaseLocId = locId
             }
           insert Sentence
             { sentenceLocIdBaseId = conjectureLocIdBaseKey
             , sentenceOmsId = omsKey
             , sentenceRangeId = rangeKeyM
-            , sentenceKind = kindSentence
             , sentenceName = name
             , sentenceText = Text.pack text
             }
           insert Conjecture
             { conjectureSentenceId = conjectureLocIdBaseKey
-            , conjectureKind = kindConjecture
             , conjectureEvaluationState = evaluationState
             , conjectureReasoningStatus = reasoningStatus
             }

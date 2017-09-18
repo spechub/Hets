@@ -22,7 +22,6 @@ import Persistence.Schema as SchemaClass
 
 import qualified Common.Result as Result
 
-import Control.Monad (foldM_)
 import Control.Monad.IO.Class (MonadIO (..))
 import qualified Data.Text as Text
 import Database.Persist
@@ -38,21 +37,13 @@ saveDiagnoses dbConfig dbContext verbosity diagnoses =
       case fileVersionM of
         Nothing -> fail ("Could not find the FileVersion \"" ++
                          fileVersion ++ "\"")
-        Just (Entity fileVersionKey _) -> do
-          diagnosisM <- selectFirst [DiagnosisFileVersionId ==. fileVersionKey]
-                                    [Desc DiagnosisNumber]
-          let number = case diagnosisM of
-                Nothing -> 1
-                Just (Entity _ diagnosisValue) ->
-                  1 + diagnosisNumber diagnosisValue
-          foldM_ (\ currentNumber diagnosis -> do
-                   saveDiagnosis fileVersionKey currentNumber diagnosis
-                   return (currentNumber + 1)
-                 ) number $ Result.filterDiags verbosity diagnoses
+        Just (Entity fileVersionKey _) ->
+          mapM_ (saveDiagnosis fileVersionKey) $
+            Result.filterDiags verbosity diagnoses
 
 saveDiagnosis :: MonadIO m
-              => FileVersionId -> Int -> Result.Diagnosis -> DBMonad m ()
-saveDiagnosis fileVersionKey number diagnosis =
+              => FileVersionId -> Result.Diagnosis -> DBMonad m ()
+saveDiagnosis fileVersionKey diagnosis =
     let kind = case Result.diagKind diagnosis of
           Result.Error -> "Error"
           Result.Warning -> "Warning"
@@ -64,7 +55,6 @@ saveDiagnosis fileVersionKey number diagnosis =
          rangeKeyM <- createRange range
          insert SchemaClass.Diagnosis
            { diagnosisFileVersionId = fileVersionKey
-           , diagnosisNumber = number
            , diagnosisKind = kind
            , diagnosisText = Text.pack text
            , diagnosisRangeId = rangeKeyM

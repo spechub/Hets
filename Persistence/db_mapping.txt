@@ -87,4 +87,7 @@ Hets - database
 
 -----------------------
 
-Signature to JSON: Is the symbols function in ToJson the correct one?
+[ ] Signature to JSON: Is the symbols function in ToJson the correct one?
+[ ] There is no SymbolMapping in the schema.
+[ ] languageStandardizationStatus = "TODO" -- TODO: add to class Logic
+[ ] languageDefinedBy = "registry" -- TODO: add to class Logic

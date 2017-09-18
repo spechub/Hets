@@ -27,8 +27,6 @@ import Database.Persist.TH
 
 import Data.Text (Text)
 
-import Persistence.Schema.ConjectureKindType (ConjectureKindType)
-import Persistence.Schema.DocumentKindType (DocumentKindType)
 import qualified Persistence.Schema.Enums as Enums
 import Persistence.Schema.EvaluationStateType (EvaluationStateType)
 import Persistence.Schema.MappingOrigin (MappingOrigin)
@@ -36,7 +34,6 @@ import Persistence.Schema.MappingType (MappingType)
 import Persistence.Schema.OMSOrigin (OMSOrigin)
 import Persistence.Schema.ReasoningStatusOnConjectureType (ReasoningStatusOnConjectureType)
 import Persistence.Schema.ReasoningStatusOnReasoningAttemptType (ReasoningStatusOnReasoningAttemptType)
-import Persistence.Schema.SentenceKindType (SentenceKindType)
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
 Hets sql=hets
@@ -116,7 +113,6 @@ LocIdBase sql=loc_id_bases
 Document sql=documents
   locIdBaseId LocIdBaseId sql=id -- the field `locIdBaseId` is mapped to the column `id`
   Primary locIdBaseId            -- ... which is the primary key
-  kind DocumentKindType
   displayName String
   name String
   location String Maybe
@@ -143,7 +139,6 @@ Diagnosis sql=diagnoses
   -- supported by Persistent, though, because it is a PostgreSQL enum type.
   -- See https://github.com/yesodweb/persistent/issues/264
   kind String sqltype=text
-  number Int
   text Text
   deriving Show
 
@@ -195,7 +190,6 @@ Sentence sql=sentences
   Primary locIdBaseId            -- ... which is the primary key
   omsId LocIdBaseId -- OMSId is LocIdBaseId
   rangeId RangeId Maybe
-  kind SentenceKindType
   name String
   text Text
   deriving Show
@@ -210,7 +204,6 @@ Conjecture sql=conjectures
   -- the field `locIdBaseId` is mapped to the column `id`
   sentenceId LocIdBaseId sql=id -- SentenceId is LocIdBaseId
   Primary sentenceId -- ... which is the primary key
-  kind ConjectureKindType
   evaluationState EvaluationStateType default='not_yet_enqueued'
   reasoningStatus ReasoningStatusOnConjectureType default='OPN'
   deriving Show
@@ -294,7 +287,6 @@ SineSymbolCommonness sql=sine_symbol_commonnesses
 ReasoningAttempt sql=reasoning_attempts
   reasonerConfigurationId ReasonerConfigurationId
   usedReasonerId ReasonerId Maybe
-  number Int
   timeTaken Int Maybe
   evaluationState EvaluationStateType default='not_yet_enqueued'
   reasoningStatus ReasoningStatusOnReasoningAttemptType default='OPN'
