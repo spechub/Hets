@@ -75,13 +75,12 @@ LogicMapping sql=logic_mappings
   isWeaklyAmalgamable Bool
   deriving Show
 
--- Not yet implemented in the Hets business logic
--- Serialization
---   slug String
---   UniqueSerializationSlug slug
---   languageId LanguageId
---   name String
---   deriving Show
+Serialization
+  languageId LanguageId
+  slug String
+  UniqueSerializationLanguageIdSerializationSlug languageId slug
+  name String
+  deriving Show
 
 Signature sql=signatures
   languageId LanguageId
@@ -90,6 +89,8 @@ Signature sql=signatures
 SignatureMorphism sql=signature_morphisms
   logicMappingId LogicMappingId
   asJson String
+  sourceId SignatureId
+  targetId SignatureId
   deriving Show
 
 ConsStatus sql=cons_statuses
@@ -148,8 +149,7 @@ OMS sql=oms
   documentId LocIdBaseId -- DocumentId is LocIdBaseId
   logicId LogicId
   languageId LanguageId
-  -- Not yet implemented in Hets business logic:
-  -- serializationId SerializationId
+  serializationId SerializationId Maybe
   signatureId SignatureId
   normalFormId LocIdBaseId Maybe
   normalFormSignatureMorphismId SignatureMorphismId Maybe
@@ -218,6 +218,12 @@ Symbol sql=symbols
   fullName Text
   deriving Show
 
+SymbolMapping sql=symbol_mappings
+  signatureMorphismId SignatureMorphismId
+  sourceId LocIdBaseId -- SymbolId is LocIdBaseId
+  targetId LocIdBaseId -- SymbolId is LocIdBaseId
+  deriving Show
+
 SentenceSymbol sql=sentences_symbols
   sentenceId LocIdBaseId -- SentenceId is LocIdBaseId
   symbolId LocIdBaseId -- SymbolId is LocIdBaseId
@@ -246,10 +252,10 @@ PremiseSelection sql=premise_selections
   reasonerConfigurationId ReasonerConfigurationId
   deriving Show
 
-PremiseSelectedAxioms sql=premise_selected_axioms
-  axiomId LocIdBaseId -- AxiomId is LocIdBaseId
+PremiseSelectedSentence sql=premise_selected_axioms
+  premiseId LocIdBaseId -- SentenceId is LocIdBaseId
   premiseSelectionId PremiseSelectionId
-  Primary axiomId premiseSelectionId
+  Primary premiseId premiseSelectionId
   deriving Show
 
 ManualPremiseSelection sql=manual_premise_selections

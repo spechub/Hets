@@ -1,11 +1,6 @@
-{-# LANGUAGE EmptyDataDecls             #-}
-{-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE GADTs                      #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE OverloadedStrings          #-}
-{-# LANGUAGE QuasiQuotes                #-}
-{-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeFamilies               #-}
 
 {- |
@@ -43,7 +38,7 @@ import Common.DocUtils
 import Common.ExtSign
 import Common.GlobalAnnotations
 import Common.Id
-import Common.IRI (setAngles)
+import Common.IRI (IRI (..), setAngles)
 import Common.Json (ppJson)
 import Common.Lib.Graph as Graph hiding (nodeLabel)
 import qualified Common.Lib.Graph as Graph (nodeLabel)
@@ -61,7 +56,7 @@ import Static.DgUtils
 import Static.GTheory
 import qualified Static.ToJson as ToJson
 
-import Control.Monad (foldM)
+import Control.Monad (foldM, foldM_)
 import Control.Monad.IO.Class (MonadIO (..))
 import Data.Char (toLower)
 import qualified Data.IntMap as IntMap
@@ -79,13 +74,18 @@ import Database.Persist.Sql
 -- TODO: replace this by the `symbol` type variable and find a string representation that is unique such that there can be a unique index in the database
 type SymbolMapIndex = (String, String) -- (SymbolKind, FullSymbolName)
 
-data DBCache = DBCache { nodeMap :: Map Node LocIdBaseId
-                       , signatureMap :: Map SigId SignatureId
-                       , signatureMorphismMap :: Map MorId SignatureMorphismId
-                       , symbolKeyMap :: Map SymbolMapIndex LocIdBaseId
-                       } deriving Show
+data DBCache = DBCache
+  { documentMap :: Map LibName LocIdBaseId -- Here, LocIdBaseId is DocumentId
+  , nodeMap :: Map (LibName, Node) (LocIdBaseId, SignatureId) -- Here, LocIdBaseId is OMSId
+  , signatureMap :: Map (LibName, SigId) SignatureId
+  , signatureMorphismMap :: Map (LibName, MorId)
+                             (SignatureMorphismId, [SymbolMappingId], GMorphism)
+  , symbolKeyMap :: Map (LibName, Int, SymbolMapIndex) LocIdBaseId -- Here, LocIdBaseId is SymbolId
+  } deriving Show
+
 emptyDBCache :: DBCache
-emptyDBCache = DBCache { nodeMap = Map.empty
+emptyDBCache = DBCache { documentMap = Map.empty
+                       , nodeMap = Map.empty
                        , signatureMap = Map.empty
                        , signatureMorphismMap = Map.empty
                        , symbolKeyMap = Map.empty
@@ -97,387 +97,271 @@ exportLibEnv opts libEnv =
     migrateLanguages
     let dependencyLibNameRel = getLibDepRel libEnv
     let dependencyOrderedLibsSetL = Rel.depSort dependencyLibNameRel
-    documentMap <- createDocuments opts libEnv dependencyOrderedLibsSetL
-    createDocumentLinks documentMap dependencyLibNameRel
+    dbCache1 <-
+      createDocuments opts libEnv emptyDBCache dependencyOrderedLibsSetL
+    createDocumentLinks dbCache1 dependencyLibNameRel
     return ()
 
 createDocuments :: MonadIO m
-                => HetcatsOpts -> LibEnv -> [Set LibName]
-                -> DBMonad m (Map LibName LocIdBaseId)
-createDocuments opts libEnv dependencyOrderedLibsSetL =
-  let fileVersion = contextFileVersion $ databaseContext opts
-  in do
-      fileVersionM <-
-        selectFirst [ FileVersionId ==. toSqlKey
-                          (fromIntegral (read fileVersion :: Integer))] []
-      case fileVersionM of
-        Nothing -> fail ("Could not find the FileVersion \"" ++
-                         fileVersion ++ "\"")
-        Just (Entity fileVersionKey _) -> do
-          -- First create all documents in the order of the dependency relation
-          documentMap <-
-            foldM (\ outerAcc libNameSet ->
-                       foldM (\ innerAcc libName -> do
-                                documentKey <- createDocument fileVersionKey libName
-                                return $ Map.insert libName documentKey innerAcc
-                             ) outerAcc libNameSet
-                  ) Map.empty dependencyOrderedLibsSetL
-          -- Then create all documents that are not yet in the database (e.g.
-          -- not in the dependency relation)
-          foldM (\ acc libName ->
-                  let alreadyInserted = isJust $ Map.lookup libName acc in
-                  if alreadyInserted
-                  then return acc
-                  else do
-                        documentKey <- createDocument fileVersionKey libName
-                        return $ Map.insert libName documentKey acc
-                ) documentMap $ Map.keys libEnv
+                => HetcatsOpts -> LibEnv -> DBCache -> [Set LibName]
+                -> DBMonad m DBCache
+createDocuments opts libEnv dbCache0 dependencyOrderedLibsSetL = do
+  fileVersionKey <- findFileVersionKey
+  dbCache1 <-
+    createDocumentsInDependencyRelation opts libEnv fileVersionKey dbCache0
+      dependencyOrderedLibsSetL
+  createDocumentsThatAreIndependent opts libEnv fileVersionKey dbCache1
   where
-    createDocument :: MonadIO m
-                   => FileVersionId -> LibName -> DBMonad m LocIdBaseId
-    createDocument fileVersionKey libName =
-      let name = show $ pretty $ getLibId libName
-          displayName = show $ setAngles False $ getLibId libName
-          location = fmap show $ locIRI libName
-          version = fmap (intercalate "." . (\ (VersionNumber v _) -> v)) $ libVersion libName
-          locId = displayName
-          dGraph = fromJust $ Map.lookup libName libEnv
-      in do
-          -- TODO: Check whether it is a Library or a NativeDocument
-          let documentLocIdBaseValue = LocIdBase
-                { locIdBaseFileVersionId = fileVersionKey
-                , locIdBaseKind = Enums.Library
-                , locIdBaseLocId = locId
-                }
-          documentKey <- insert documentLocIdBaseValue
-          insert Document
-            { documentLocIdBaseId = documentKey
-            , documentDisplayName = displayName
-            , documentName = name
-            , documentLocation = location
-            , documentVersion = version
-            }
-          createOMS opts dGraph fileVersionKey
-            (Entity documentKey documentLocIdBaseValue)
-          return documentKey
+    findFileVersionKey :: MonadIO m => DBMonad m FileVersionId
+    findFileVersionKey =
+      let fileVersion = contextFileVersion $ databaseContext opts in do
+        fileVersionM <-
+          selectFirst [ FileVersionId ==. toSqlKey
+                            (fromIntegral (read fileVersion :: Integer))] []
+        case fileVersionM of
+          Nothing -> fail ("Could not find the FileVersion \"" ++
+                           fileVersion ++ "\"")
+          Just (Entity fileVersionKey _) -> return fileVersionKey
 
-createDocumentLinks :: MonadIO m
-                    => Map LibName LocIdBaseId -> Rel LibName
-                    -> DBMonad m ()
-createDocumentLinks documentMap dependencyLibNameRel =
-  mapM_ (\ (targetLibName, sourceLibNamesSet) ->
-          mapM_ (createDocumentLink targetLibName) $
-            Set.toList sourceLibNamesSet
-        ) $ Map.toList $ Rel.toMap dependencyLibNameRel
-  where
-    createDocumentLink :: MonadIO m
-                       => LibName -> LibName -> DBMonad m ()
-    createDocumentLink sourceLibName targetLibName = do
-      -- These libNames must be in the documentMap by construction
-      let sourceKey = fromJust $ Map.lookup sourceLibName documentMap
-      let targetKey = fromJust $ Map.lookup targetLibName documentMap
-      insert DocumentLink { documentLinkSourceId = sourceKey
-                          , documentLinkTargetId = targetKey
-                          }
-      return ()
+createDocumentsInDependencyRelation :: MonadIO m
+                                    => HetcatsOpts -> LibEnv -> FileVersionId
+                                    -> DBCache -> [Set LibName]
+                                    -> DBMonad m DBCache
+createDocumentsInDependencyRelation opts libEnv fileVersionKey =
+  foldM
+    (\ outerAcc libNameSet ->
+       foldM
+         (\ dbCacheAcc libName ->
+            createDocument opts libEnv fileVersionKey dbCacheAcc libName
+         ) outerAcc libNameSet
+    )
+
+createDocumentsThatAreIndependent :: MonadIO m
+                                  => HetcatsOpts -> LibEnv -> FileVersionId
+                                  -> DBCache -> DBMonad m DBCache
+createDocumentsThatAreIndependent opts libEnv fileVersionKey dbCache =
+  foldM
+    (\ dbCacheAcc libName ->
+      let alreadyInserted =
+            isJust $ Map.lookup libName $ documentMap dbCacheAcc
+      in  if alreadyInserted
+          then return dbCacheAcc
+          else createDocument opts libEnv fileVersionKey dbCacheAcc libName
+    ) dbCache $ Map.keys libEnv
+
+createDocument :: MonadIO m
+               => HetcatsOpts -> LibEnv -> FileVersionId -> DBCache -> LibName
+               -> DBMonad m DBCache
+createDocument opts libEnv fileVersionKey dbCache0 libName =
+  let dGraph = fromJust $ Map.lookup libName libEnv
+      globalAnnotations = globalAnnos dGraph
+      name = show $ pretty $ getLibId libName
+      displayName = show $ setAngles False $ getLibId libName
+      location = fmap show $ locIRI libName
+      version = fmap (intercalate "." . (\ (VersionNumber v _) -> v)) $
+                  libVersion libName
+      locId = displayName
+  in  do
+        -- TODO: Check whether it is a Library or a NativeDocument
+        let documentLocIdBaseValue = LocIdBase
+              { locIdBaseFileVersionId = fileVersionKey
+              , locIdBaseKind = Enums.Library
+              , locIdBaseLocId = locId
+              }
+        documentKey <- insert documentLocIdBaseValue
+        insert Document
+          { documentLocIdBaseId = documentKey
+          , documentDisplayName = displayName
+          , documentName = name
+          , documentLocation = location
+          , documentVersion = version
+          }
+        let dbCache1 = addDocumentToCache libName documentKey dbCache0
+        createAllOmsOfDocument opts libEnv fileVersionKey dbCache1 dGraph
+          globalAnnotations libName (Entity documentKey documentLocIdBaseValue)
+
+createAllOmsOfDocument :: MonadIO m
+                       => HetcatsOpts -> LibEnv -> FileVersionId -> DBCache
+                       -> DGraph -> GlobalAnnos -> LibName -> Entity LocIdBase
+                       -> DBMonad m DBCache
+createAllOmsOfDocument opts libEnv fileVersionKey dbCache0 dGraph
+  globalAnnotations libName (Entity documentKey documentLocIdBaseValue) =
+  let labeledNodes = labNodes $ dgBody dGraph
+      labeledEdges = labEdges $ dgBody dGraph
+  in  do
+        dbCache1 <- foldM
+          (\ dbCacheAcc labeledNode ->
+            fmap (\ (_, _, dbCache) -> dbCache) $
+              findOrCreateOMS opts libEnv fileVersionKey dbCacheAcc
+                globalAnnotations libName documentKey labeledNode
+          ) dbCache0 labeledNodes
+        foldM
+          (\ dbCacheAcc labeledEdge ->
+            createMapping opts libEnv fileVersionKey dbCacheAcc globalAnnotations
+              libName documentLocIdBaseValue labeledEdge
+          ) dbCache1 labeledEdges
+
+findOrCreateOMSM :: MonadIO m
+                 => HetcatsOpts -> LibEnv -> FileVersionId -> DBCache
+                 -> GlobalAnnos -> LibName -> LocIdBaseId -> Maybe Int
+                 -> DBMonad m (Maybe LocIdBaseId, Maybe SignatureId, DBCache)
+findOrCreateOMSM opts libEnv fileVersionKey dbCache0 globalAnnotations libName
+  documentKey nodeIdM =
+  case nodeIdM of
+    Nothing -> return (Nothing, Nothing, dbCache0)
+    Just nodeId ->
+      let nodeLabel = getNodeLabel libEnv libName nodeId
+      in  do
+            (omsKey, signatureKey, dbCache1) <-
+              findOrCreateOMS opts libEnv fileVersionKey dbCache0
+                globalAnnotations libName documentKey (nodeId, nodeLabel)
+            return (Just omsKey, Just signatureKey, dbCache1)
+
+findOrCreateOMS :: MonadIO m
+                => HetcatsOpts -> LibEnv -> FileVersionId -> DBCache
+                -> GlobalAnnos -> LibName -> LocIdBaseId -> (Int, DGNodeLab)
+                -> DBMonad m (LocIdBaseId, SignatureId, DBCache)
+findOrCreateOMS opts libEnv fileVersionKey dbCache0 globalAnnotations libName
+  documentKey (nodeId, nodeLabel) =
+  case cachedOMSKey libName nodeId dbCache0 of
+    Just (omsKey, signatureKey) -> return (omsKey, signatureKey, dbCache0)
+    Nothing -> case nodeInfo nodeLabel of
+      DGRef { ref_node = refNodeId
+            , ref_libname = refLibName
+            } -> do
+        let refNodeLabel = getNodeLabel libEnv refLibName refNodeId
+        (omsKey, signatureKey, dbCache1) <-
+          findOrCreateOMS opts libEnv fileVersionKey dbCache0
+            globalAnnotations refLibName documentKey (refNodeId, refNodeLabel)
+        return ( omsKey
+               , signatureKey
+               , addNodeToCache libName nodeId omsKey signatureKey dbCache1
+               )
+      DGNode _ consStatus -> do
+        omsKeyM <- findOMSAndSignature fileVersionKey nodeLabel
+        case omsKeyM of
+          Just (omsKey, signatureKey) ->
+            return ( omsKey
+                   , signatureKey
+                   , addNodeToCache libName nodeId omsKey signatureKey dbCache0
+                   )
+          Nothing ->
+            createOMS opts libEnv fileVersionKey dbCache0 globalAnnotations libName
+              documentKey (nodeId, nodeLabel) consStatus
 
 createOMS :: MonadIO m
-          => HetcatsOpts -> DGraph -> FileVersionId -> Entity LocIdBase
-          -> DBMonad m [LocIdBaseId]
-createOMS opts dGraph fileVersionKey (Entity documentKey documentLocIdBaseValue) =
-  let nodeLabels = labNodes $ dgBody dGraph
-      linkLabels = labEdges $ dgBody dGraph
-  in do
-    (omsKeys, dbCache1) <-
-      foldM (\ (omsKeyAcc, dbCacheAcc) nodeLabelWithId -> do
-              (omsKey, newCache) <-
-                findOrCreateNode dbCacheAcc nodeLabelWithId
-              return (omsKey : omsKeyAcc, newCache)
-            ) ([], emptyDBCache) nodeLabels
-    mapM_ (createMapping dbCache1) linkLabels
-    return omsKeys
+          => HetcatsOpts -> LibEnv -> FileVersionId -> DBCache -> GlobalAnnos
+          -> LibName -> LocIdBaseId -> (Int, DGNodeLab) -> ConsStatus
+          -> DBMonad m (LocIdBaseId, SignatureId, DBCache)
+createOMS opts libEnv fileVersionKey dbCache0 globalAnnotations libName documentKey
+  (nodeId, nodeLabel) consStatus =
+  let gTheory = dgn_theory nodeLabel
+      internalNodeName = dgn_name nodeLabel
+      name = show $ getName internalNodeName
+      nameExtension = extString internalNodeName
+      nameExtensionIndex = extIndex internalNodeName
+      displayName = showName internalNodeName
+  in  do
+        consStatusKey <- createConsStatus consStatus
+        nodeNameRangeKey <- createRange $ srcRange internalNodeName
+
+        languageKey <- case gTheory of
+          G_theory { gTheoryLogic = lid } -> findLanguage lid
+
+        serializationKey <- case gTheory of
+          G_theory { gTheorySyntax = syntaxM } ->
+            findOrCreateSerializationM languageKey syntaxM
+
+        logicKey <- case sublogicOfTh gTheory of
+          G_sublogics lid sublogics -> findOrCreateLogic lid sublogics
+
+        (signatureKey, signatureIsNew, dbCache1) <- case gTheory of
+          G_theory { gTheoryLogic = lid
+                   , gTheorySignIdx = sigId
+                   , gTheorySign = extSign
+                   } ->
+           findOrCreateSignature dbCache0 libName lid extSign sigId languageKey
+
+        (normalFormKeyM, normalFormSignatureKeyM, dbCache2) <-
+          findOrCreateOMSM opts libEnv fileVersionKey dbCache1 globalAnnotations
+            libName documentKey $ dgn_nf nodeLabel
+
+        (freeNormalFormKeyM, freeNormalFormSignatureKeyM, dbCache3) <-
+          findOrCreateOMSM opts libEnv fileVersionKey dbCache2 globalAnnotations
+            libName documentKey $ dgn_freenf nodeLabel
+
+        (normalFormSignatureMorphismKeyM, _, dbCache4) <-
+          findOrCreateSignatureMorphismM opts libEnv dbCache3 libName
+            (nodeId, dgn_nf nodeLabel) globalAnnotations
+            (signatureKey, normalFormSignatureKeyM) $
+            dgn_sigma nodeLabel
+
+        (freeNormalFormSignatureMorphismKeyM, _, dbCache5) <-
+          findOrCreateSignatureMorphismM opts libEnv dbCache4 libName
+            (nodeId, dgn_freenf nodeLabel) globalAnnotations
+            (signatureKey, freeNormalFormSignatureKeyM) $
+            dgn_sigma nodeLabel
+
+        let omsLocIdBaseValue = LocIdBase
+              { locIdBaseFileVersionId = fileVersionKey
+              , locIdBaseKind = Enums.OMS
+              , locIdBaseLocId = locIdOfOMS nodeLabel
+              }
+        omsKey <- insert omsLocIdBaseValue
+        insert OMS
+          { oMSLocIdBaseId = omsKey
+          , oMSDocumentId = documentKey
+          , oMSLanguageId = languageKey
+          , oMSLogicId = logicKey
+          , oMSSerializationId = serializationKey
+          , oMSSignatureId = signatureKey
+          , oMSNormalFormId = normalFormKeyM
+          , oMSNormalFormSignatureMorphismId = normalFormSignatureMorphismKeyM
+          , oMSFreeNormalFormId = freeNormalFormKeyM
+          , oMSFreeNormalFormSignatureMorphismId = freeNormalFormSignatureMorphismKeyM
+          , oMSOrigin = omsOrigin
+          , oMSConsStatusId = consStatusKey
+          , oMSNameRangeId = nodeNameRangeKey
+          , oMSDisplayName = displayName
+          , oMSName = name
+          , oMSNameExtension = nameExtension
+          , oMSNameExtensionIndex = nameExtensionIndex
+          , oMSLabelHasHiding = labelHasHiding nodeLabel
+          , oMSLabelHasFree = labelHasFree nodeLabel
+          }
+
+        let omsLocIdBaseEntity = Entity omsKey omsLocIdBaseValue
+
+        dbCache6 <- case gTheory of
+          G_theory { gTheoryLogic = lid
+                   , gTheorySign = extSign
+                   } ->
+            createSymbols libEnv fileVersionKey dbCache5 libName nodeId
+              omsLocIdBaseEntity lid extSign
+
+        dbCache7 <- case gTheory of
+          G_theory { gTheoryLogic = lid
+                   , gTheorySign = ExtSign { plainSign = sign }
+                   , gTheorySens = sentences
+                   } ->
+            createSentences libEnv fileVersionKey dbCache6 globalAnnotations
+              libName nodeId omsLocIdBaseEntity lid sign sentences
+
+        dbCache8 <- case gTheory of
+          G_theory { gTheoryLogic = lid
+                   , gTheorySign = extSign
+                   } ->
+            if signatureIsNew
+            then associateSymbolsOfSignature libEnv dbCache7 libName nodeId lid extSign signatureKey
+            else return dbCache7
+
+        return ( omsKey
+               , signatureKey
+               , addNodeToCache libName nodeId omsKey signatureKey dbCache8
+               )
   where
-    globalAnnotations = globalAnnos dGraph
-
-    findOrCreateNode :: MonadIO m
-                     => DBCache -> (Int, DGNodeLab)
-                     -> DBMonad m (LocIdBaseId, DBCache)
-    findOrCreateNode dbCache (nodeId, nodeLabel) =
-      let keyM = Map.lookup nodeId $ nodeMap dbCache in
-      case keyM of
-        Just key -> return (key, dbCache)
-        Nothing -> do
-          (normalFormKeyM, dbCache1) <- createNodeById dbCache $ dgn_nf nodeLabel
-          (normalFormSignatureMorphismKeyM, dbCache2) <-
-            findOrCreateSignatureMorphismM opts dbCache1 globalAnnotations $
-              dgn_sigma nodeLabel
-          (freeNormalFormKeyM, dbCache3) <- createNodeById dbCache2 $ dgn_freenf nodeLabel
-          (freeNormalFormSignatureMorphismKeyM, dbCache4) <-
-            findOrCreateSignatureMorphismM opts dbCache3 globalAnnotations $
-              dgn_sigma nodeLabel
-          case nodeInfo nodeLabel of
-            DGNode _ consStatus -> do
-              consStatusKey <- createConsStatus consStatus
-              let internalNodeName = dgn_name nodeLabel
-              nodeNameRangeKey <- createRange $ srcRange internalNodeName
-              ----------------------------------------------------------------------
-              -- TODO: Work with these
-              -- [ ] gTheorySyntax is stored as an assoication to Serialization
-              -- [ ] gTheorySignIdx, gTheorySelfIdx is the index of the theory in thMap above (use it to avoid duplicates)
-              let gTheory = dgn_theory nodeLabel
-
-              languageKey <- case gTheory of
-                G_theory { gTheoryLogic = lid } -> findLanguage lid
-
-              logicKey <- case sublogicOfTh gTheory of
-                G_sublogics lid sublogics -> findLogic lid sublogics
-
-              (signatureKey, dbCache5) <- case gTheory of
-                G_theory { gTheoryLogic = lid
-                         , gTheorySignIdx = sigId
-                         , gTheorySign = extSign
-                         } ->
-                 findOrCreateSignature dbCache4 lid extSign sigId languageKey
-
-              -- Not yet implemented in the Hets business logic
-              -- syntaxId <- case gTheory of
-              --               G_theory { gTheorySyntax = syntaxIRIM } ->
-              --                 findOrCreateSyntax syntaxIRIM
-              ----------------------------------------------------------------------
-              let name = show $ getName internalNodeName
-              let nameExtension = extString internalNodeName
-              let nameExtensionIndex = extIndex internalNodeName
-              let displayName = showName internalNodeName
-              let omsLocIdBaseValue = LocIdBase
-                    { locIdBaseFileVersionId = fileVersionKey
-                    , locIdBaseKind = Enums.OMS
-                    , locIdBaseLocId = displayName
-                    }
-              omsLocIdBaseKey <- insert omsLocIdBaseValue
-              insert OMS
-                { oMSLocIdBaseId = omsLocIdBaseKey
-                , oMSDocumentId = documentKey
-                , oMSLanguageId = languageKey
-                , oMSLogicId = logicKey
-                -- Not yet implemented in Hets business logic:
-                -- , oMSSerializationId = undefined
-                , oMSSignatureId = signatureKey
-                , oMSNormalFormId = normalFormKeyM
-                , oMSNormalFormSignatureMorphismId = normalFormSignatureMorphismKeyM
-                , oMSFreeNormalFormId = freeNormalFormKeyM
-                , oMSFreeNormalFormSignatureMorphismId = freeNormalFormSignatureMorphismKeyM
-                , oMSOrigin = omsOrigin nodeLabel
-                , oMSConsStatusId = consStatusKey
-                , oMSNameRangeId = nodeNameRangeKey
-                , oMSDisplayName = displayName
-                , oMSName = name
-                , oMSNameExtension = nameExtension
-                , oMSNameExtensionIndex = nameExtensionIndex
-                , oMSLabelHasHiding = labelHasHiding nodeLabel
-                , oMSLabelHasFree = labelHasFree nodeLabel
-                }
-
-              let omsLocIdBaseEntity = Entity omsLocIdBaseKey omsLocIdBaseValue
-
-              dbCache6 <- case gTheory of
-                G_theory { gTheoryLogic = lid
-                         , gTheorySign = extSign
-                         } -> createSymbols dbCache5 fileVersionKey
-                                omsLocIdBaseEntity lid extSign
-
-              (_, dbCache7) <- case gTheory of
-                G_theory { gTheoryLogic = lid
-                         , gTheorySign = ExtSign { plainSign = sign }
-                         , gTheorySens = sentences
-                         } -> createSentences dbCache6 omsLocIdBaseEntity
-                                lid sign sentences
-
-              dbCache8 <- case gTheory of
-                G_theory { gTheoryLogic = lid
-                         , gTheorySign = extSign
-                         } -> associateSymbolsOfSignature dbCache7
-                                lid extSign signatureKey
-
-              let nodeMap' = Map.insert nodeId omsLocIdBaseKey $ nodeMap dbCache6
-              return (omsLocIdBaseKey, dbCache8 { nodeMap = nodeMap' })
-            DGRef { ref_node = refNodeId } -> do
-              (omsLocIdBaseKeyM, dbCache5) <-
-                createNodeById dbCache4 $ Just refNodeId
-              -- `Nothing` cannot happen by construction:
-              let omsLocIdBaseKey = fromJust omsLocIdBaseKeyM
-              let nodeMap' = Map.insert nodeId omsLocIdBaseKey $ nodeMap dbCache5
-              let dbCache6 = dbCache5 { nodeMap = nodeMap' }
-              return (omsLocIdBaseKey, dbCache6)
-
-    createSentences :: ( MonadIO m
-                       , GetRange sentence
-                       , Pretty sentence
-                       , Sentences lid sentence sign morphism symbol
-                       )
-                    => DBCache -> Entity LocIdBase
-                    -> lid -> sign
-                    -> ThSens sentence (AnyComorphism, BasicProof)
-                    -> DBMonad m ([LocIdBaseId], DBCache)
-    createSentences dbCache omsLocId lid sign sentences =
-      let (axioms, conjectures) = OMap.partition isAxiom sentences
-          namedAxioms = toNamedList axioms
-          orderedConjectures = OMap.toList conjectures
-      in do
-        -- Create all axioms
-        (axiomKeys, dbCache1) <-
-          foldM (\ (axiomKeysAcc, dbCacheAcc) namedAxiom -> do
-                  (axiomKey, dbCacheAcc1) <- createAxiom dbCacheAcc omsLocId lid sign namedAxiom
-                  dbCacheAcc2 <- associateSymbolsOfSentence dbCacheAcc1 omsLocId axiomKey lid sign namedAxiom
-                  return (axiomKey : axiomKeysAcc, dbCacheAcc2)
-                ) ([], dbCache) namedAxioms
-        -- Create all conjectures
-        (conjectureKeys, dbCache2) <-
-          foldM (\ (conjectureKeysAcc, dbCacheAcc) (name, senStatus) ->
-                  let namedConjecture = toNamed name senStatus
-                      isProved = isProvenSenStatus senStatus
-                  in do
-                    (conjectureKey, dbCacheAcc1) <- createConjecture dbCacheAcc omsLocId lid sign isProved namedConjecture
-                    dbCacheAcc2 <- associateSymbolsOfSentence dbCacheAcc1 omsLocId conjectureKey lid sign namedConjecture
-                    return (conjectureKey : conjectureKeysAcc, dbCacheAcc2)
-                ) ([], dbCache1) orderedConjectures
-        return (conjectureKeys ++ axiomKeys, dbCache2)
-
-    associateSymbolsOfSentence :: ( MonadIO m
-                                  , GetRange sentence
-                                  , Pretty sentence
-                                  , Sentences lid sentence sign morphism symbol
-                                  )
-                               => DBCache -> Entity LocIdBase
-                               -> LocIdBaseId -> lid -> sign
-                               -> Named sentence
-                               -> DBMonad m DBCache
-    associateSymbolsOfSentence dbCache omsLocId sentenceKey lid sign namedSentence =
-      let symbolsOfSentence = symsOfSen lid sign $ sentence namedSentence
-      in  do
-            (dbCache', _) <-
-              foldM (\ (dbCacheAcc, associatedSymbols) symbol ->
-                      let mapIndex = symbolMapIndex lid symbol
-                      in  if Set.member mapIndex associatedSymbols
-                          then return (dbCacheAcc, associatedSymbols)
-                          else case Map.lookup mapIndex $ symbolKeyMap dbCacheAcc of
-                                 Just symbolKey -> do
-                                   insert SentenceSymbol
-                                     { sentenceSymbolSentenceId = sentenceKey
-                                     , sentenceSymbolSymbolId = symbolKey
-                                     }
-                                   return ( dbCacheAcc
-                                          , Set.insert mapIndex associatedSymbols
-                                          )
-                                 Nothing -> do
-                                   dbCacheAcc' <-
-                                     createSymbol dbCacheAcc fileVersionKey
-                                       omsLocId lid symbol
-                                   return ( dbCacheAcc'
-                                          , Set.insert mapIndex associatedSymbols
-                                          )
-                    ) (dbCache, Set.empty) symbolsOfSentence
-            return dbCache'
-
-    createAxiom :: ( MonadIO m
-                   , GetRange sentence
-                   , Pretty sentence
-                   , Sentences lid sentence sign morphism symbol
-                   )
-                => DBCache -> Entity LocIdBase -> lid -> sign -> Named sentence
-                -> DBMonad m (LocIdBaseId, DBCache)
-    createAxiom dbCache (Entity omsKey omsLocIdBaseValue) lid sign namedAxiom =
-      let name = senAttr namedAxiom
-          range = getRangeSpan $ sentence namedAxiom
-          locId = locIdBaseLocId omsLocIdBaseValue ++ "//" ++ name
-          text = show $ useGlobalAnnos globalAnnotations $
-                   print_named lid $ makeNamed "" $
-                   simplify_sen lid sign $ sentence namedAxiom
-      in do
-          rangeKeyM <- createRange range
-          axiomLocIdBaseKey <- insert LocIdBase
-            { locIdBaseFileVersionId = fileVersionKey
-            , locIdBaseKind = Enums.Axiom
-            , locIdBaseLocId = locId
-            }
-          insert Sentence
-            { sentenceLocIdBaseId = axiomLocIdBaseKey
-            , sentenceOmsId = omsKey
-            , sentenceRangeId = rangeKeyM
-            , sentenceName = name
-            , sentenceText = Text.pack text
-            }
-          insert Axiom
-            { axiomSentenceId = axiomLocIdBaseKey
-            }
-          return (axiomLocIdBaseKey, dbCache)
-
-    createConjecture :: ( MonadIO m
-                        , GetRange sentence
-                        , Pretty sentence
-                        , Sentences lid sentence sign morphism symbol
-                        )
-                     => DBCache -> Entity LocIdBase -> lid -> sign -> Bool
-                     -> Named sentence
-                     -> DBMonad m (LocIdBaseId, DBCache)
-    createConjecture dbCache (Entity omsKey omsLocIdBaseValue) lid sign isProved
-                     namedConjecture =
-      let name = senAttr namedConjecture
-          range = getRangeSpan $ sentence namedConjecture
-          locId = locIdBaseLocId omsLocIdBaseValue ++ "//" ++ name
-          text = show $ useGlobalAnnos globalAnnotations $
-                   print_named lid $ makeNamed "" $
-                   simplify_sen lid sign $ sentence namedConjecture
-          evaluationState =
-            if isProved
-            then EvaluationStateType.FinishedSuccessfully
-            else EvaluationStateType.NotYetEnqueued
-          kind =
-            if isProved
-            then Enums.Theorem
-            else Enums.OpenConjecture
-          reasoningStatus =
-            if isProved
-            then ReasoningStatusOnConjectureType.THM
-            else ReasoningStatusOnConjectureType.OPN
-      in do
-          rangeKeyM <- createRange range
-          conjectureLocIdBaseKey <- insert LocIdBase
-            { locIdBaseFileVersionId = fileVersionKey
-            , locIdBaseKind = kind
-            , locIdBaseLocId = locId
-            }
-          insert Sentence
-            { sentenceLocIdBaseId = conjectureLocIdBaseKey
-            , sentenceOmsId = omsKey
-            , sentenceRangeId = rangeKeyM
-            , sentenceName = name
-            , sentenceText = Text.pack text
-            }
-          insert Conjecture
-            { conjectureSentenceId = conjectureLocIdBaseKey
-            , conjectureEvaluationState = evaluationState
-            , conjectureReasoningStatus = reasoningStatus
-            }
-          return (conjectureLocIdBaseKey, dbCache)
-
-    createNodeById :: MonadIO m
-                   => DBCache -> Maybe Node
-                   -> DBMonad m (Maybe LocIdBaseId, DBCache)
-    createNodeById dbCache nodeIdM = case nodeIdM of
-      Nothing -> return (Nothing, dbCache)
-      Just nodeId ->
-        let nodeLabel = fromJust $ nodeLabelById nodeId
-        in do
-          (omsLocIdBaseKey, dbCache1) <-
-            findOrCreateNode dbCache (nodeId, nodeLabel)
-          return (Just omsLocIdBaseKey, dbCache1)
-
-    nodeLabelById :: Node -> Maybe DGNodeLab
-    nodeLabelById nodeId =
-      fmap Graph.nodeLabel $ IntMap.lookup nodeId $ convertToMap $ dgBody dGraph
-
-    omsOrigin :: DGNodeLab -> OMSOrigin
-    omsOrigin nodeLabel = case node_origin $ nodeInfo nodeLabel of
+    omsOrigin :: OMSOrigin
+    omsOrigin = case node_origin $ nodeInfo nodeLabel of
       DGEmpty -> OMSOrigin.DGEmpty
       DGBasic -> OMSOrigin.DGBasic
       DGBasicSpec{} -> OMSOrigin.DGBasicSpec
@@ -509,68 +393,484 @@ createOMS opts dGraph fileVersionKey (Entity documentKey documentLocIdBaseValue)
       DGAlignment -> OMSOrigin.DGAlignment
       DGTest -> OMSOrigin.DGTest
 
-    createMapping :: MonadIO m
-                  => DBCache -> (Int, Int, DGLinkLab)
-                  -> DBMonad m (LocIdBaseId, DBCache)
-    createMapping dbCache (sourceId, targetId, linkLabel) = do
-      sourceKey <- case Map.lookup sourceId $ nodeMap dbCache of
-        Just key -> return key
-        Nothing -> fail ("Persistence.DevGraph.createMapping: Could not find source node with ID " ++ show sourceId)
 
-      targetKey <- case Map.lookup targetId $ nodeMap dbCache of
-        Just key -> return key
-        Nothing -> fail ("Persistence.DevGraph.createMapping: Could not find target node with ID " ++ show targetId)
+createConsStatus :: MonadIO m
+                 => ConsStatus -> DBMonad m ConsStatusId
+createConsStatus (ConsStatus r p _) =
+  insert SchemaClass.ConsStatus
+    { consStatusRequired = toString r
+    , consStatusProved = toString p
+    }
+  where
+    toString :: Conservativity -> String
+    toString c = case c of
+      Unknown s -> s
+      _ -> map toLower $ show c
 
-      (signatureMorphismKey, dbCache1) <-
-        findOrCreateSignatureMorphism opts dbCache globalAnnotations $
-          dgl_morphism linkLabel
+findOrCreateSignatureMorphismM :: MonadIO m
+                               => HetcatsOpts -> LibEnv -> DBCache -> LibName
+                               -> (Int, Maybe Int) -> GlobalAnnos
+                               -> (SignatureId, Maybe SignatureId)
+                               -> Maybe GMorphism
+                               -> DBMonad m ( Maybe SignatureMorphismId
+                                            , [SymbolMappingId]
+                                            , DBCache
+                                            )
+findOrCreateSignatureMorphismM opts libEnv dbCache libName (sourceId, targetIdM)
+  globalAnnotations (sourceSignatureKey, targetSignatureKeyM) gMorphismM =
+    case gMorphismM of
+      Nothing -> return (Nothing, [], dbCache)
+      Just gMorphism -> do
+        (signatureMorphismKey, symbolMappingKeys, dbCache1) <-
+          findOrCreateSignatureMorphism opts libEnv dbCache libName
+            (sourceId, fromJust targetIdM) globalAnnotations
+            (sourceSignatureKey, fromJust targetSignatureKeyM) gMorphism
+        return (Just signatureMorphismKey, symbolMappingKeys, dbCache1)
 
-      let origin = mappingOriginOfLinkLabel linkLabel
-      let mappingTypeValue = mappingTypeOfLinkLabel linkLabel
+findOrCreateSignatureMorphism :: MonadIO m
+                              => HetcatsOpts -> LibEnv -> DBCache -> LibName
+                              -> (Int, Int) -> GlobalAnnos
+                              -> (SignatureId, SignatureId)
+                              -> GMorphism
+                              -> DBMonad m ( SignatureMorphismId
+                                           , [SymbolMappingId]
+                                           , DBCache
+                                           )
+findOrCreateSignatureMorphism opts libEnv dbCache libName edge globalAnnotations
+  (sourceSignatureKey, targetSignatureKey) gMorphism =
+    case gMorphism of
+      GMorphism { gMorphismComor = cid
+                , gMorphismMorIdx = morphismId
+                } ->
+        case Map.lookup (libName, morphismId) $ signatureMorphismMap dbCache of
+          Just (signatureMorphismKey, symbolMappingKeys, _) ->
+            return (signatureMorphismKey, symbolMappingKeys, dbCache)
+          Nothing ->
+            let json = ppJson $ ToJson.gmorph opts globalAnnotations gMorphism
+            in do
+                (_, logicMappingKey) <-
+                  findOrCreateLanguageMappingAndLogicMapping $ Comorphism cid
+                signatureMorphismKey <- insert SignatureMorphism
+                  { signatureMorphismLogicMappingId = logicMappingKey
+                  , signatureMorphismAsJson = json
+                  , signatureMorphismSourceId = sourceSignatureKey
+                  , signatureMorphismTargetId = targetSignatureKey
+                  }
 
-      consStatusKeyM <- case dgl_type linkLabel of
-        ScopedLink _ _ consStatus -> fmap Just $ createConsStatus consStatus
-        _ -> return Nothing
+                (symbolMappingKeys, dbCache1) <-
+                  findOrCreateSymbolMappings libEnv dbCache libName edge
+                    signatureMorphismKey gMorphism
 
-      freenessParameterOMSKeyM <- case dgl_type linkLabel of
-        FreeOrCofreeDefLink _ (JustNode NodeSig { getNode = nodeId }) ->
-          case Map.lookup nodeId $ nodeMap dbCache of
-            Just key -> return $ Just key
-            Nothing -> fail ("Persistence.DevGraph.createMapping: Could not find freeness parameter node with ID " ++ show nodeId)
-        _ -> return Nothing
+                let signatureMorphismMap' =
+                      Map.insert (libName, morphismId)
+                        (signatureMorphismKey, symbolMappingKeys, gMorphism) $
+                        signatureMorphismMap dbCache1
+                let dbCache2 =
+                      dbCache1 { signatureMorphismMap = signatureMorphismMap' }
+                return ( signatureMorphismKey
+                       , symbolMappingKeys
+                       , dbCache2
+                       )
 
-      freenessParameterLanguageKeyM <- case dgl_type linkLabel of
-        FreeOrCofreeDefLink _ (EmptyNode (Logic.Logic lid)) ->
-          fmap Just $ findLanguage lid
-        _ -> return Nothing
+findOrCreateSymbolMappings :: MonadIO m
+                           => LibEnv -> DBCache -> LibName -> (Int, Int)
+                           -> SignatureMorphismId -> GMorphism
+                           -> DBMonad m ([SymbolMappingId], DBCache)
+findOrCreateSymbolMappings libEnv dbCache libName edge signatureMorphismKey
+  gMorphism = case gMorphism of
+    GMorphism { gMorphismComor = cid
+              , gMorphismMor = morphism
+              } ->
+      let lid = targetLogic cid in do
+        symbolMappingKeys <-
+          mapM (findOrCreateSymbolMapping libEnv dbCache libName edge
+                  signatureMorphismKey lid
+               ) $ Map.toList $ symmap_of lid morphism
+        return (symbolMappingKeys, dbCache)
 
-      let displayName = if null $ dglName linkLabel
-                        then show (dgl_id linkLabel)
-                        else dglName linkLabel
-      let locId = locIdBaseLocId documentLocIdBaseValue ++ "//" ++ displayName
-      mappingKey <- insert LocIdBase
+findOrCreateSymbolMapping :: ( MonadIO m
+                             , Sentences lid sentence sign morphism symbol
+                             )
+                          => LibEnv -> DBCache -> LibName -> (Int, Int)
+                          -> SignatureMorphismId -> lid -> (symbol, symbol)
+                          -> DBMonad m SymbolMappingId
+findOrCreateSymbolMapping libEnv dbCache libName (sourceId, targetId)
+  signatureMorphismKey lid (sourceSymbol, targetSymbol) = do
+  let sourceKey =
+        fromJust $ findSymbolInCache libEnv libName sourceId lid sourceSymbol
+          dbCache
+
+  let targetKey =
+        fromJust $ findSymbolInCache libEnv libName targetId lid targetSymbol
+          dbCache
+
+  symbolMappingM <-
+    selectFirst [ SymbolMappingSignatureMorphismId ==. signatureMorphismKey
+                , SymbolMappingSourceId ==. sourceKey
+                , SymbolMappingTargetId ==. targetKey
+                ] []
+  case symbolMappingM of
+    Just (Entity symbolMappingKey _) -> return symbolMappingKey
+    Nothing ->
+      insert SymbolMapping
+        { symbolMappingSignatureMorphismId = signatureMorphismKey
+        , symbolMappingSourceId = sourceKey
+        , symbolMappingTargetId = targetKey
+        }
+
+findOrCreateSerializationM :: MonadIO m
+                           => LanguageId -> Maybe IRI
+                           -> DBMonad m (Maybe SerializationId)
+findOrCreateSerializationM languageKey syntaxM =
+  case syntaxM of
+    Nothing -> return Nothing
+    Just syntaxIRI -> do
+      let syntaxIRIString = show $ setAngles False syntaxIRI
+      serializationM <- selectFirst [SerializationName ==. syntaxIRIString] []
+      case serializationM of
+        Just (Entity serializationKey _) -> return $ Just serializationKey
+        Nothing -> do
+          serializationKey <- insert Serialization
+            { serializationLanguageId = languageKey
+            , serializationSlug = parameterize syntaxIRIString
+            , serializationName = syntaxIRIString
+            }
+          return $ Just serializationKey
+
+findLanguage :: ( MonadIO m
+                , Logic.Logic lid sublogics
+                    basic_spec sentence symb_items symb_map_items
+                    sign morphism symbol raw_symbol proof_tree
+                )
+             => lid -> DBMonad m LanguageId
+findLanguage lid = do
+  languageM <- selectFirst [LanguageSlug ==. parameterize (show lid)] []
+  case languageM of
+    Just (Entity key _) -> return key
+    Nothing -> fail ("Language not found in the database: " ++ show lid)
+
+findOrCreateLogic :: ( MonadIO m
+                     , Logic.Logic lid sublogics
+                         basic_spec sentence symb_items symb_map_items
+                         sign morphism symbol raw_symbol proof_tree
+                     )
+                  => lid -> sublogics -> DBMonad m LogicId
+findOrCreateLogic lid sublogic = do
+  let name = sublogicName sublogic
+  let logicSlugS = parameterize name
+  languageKey <- findLanguage lid
+  logicM <- selectFirst [ LogicLanguageId ==. languageKey
+                        , LogicSlug ==. logicSlugS
+                        ] []
+  case logicM of
+    Just (Entity key _) -> return key
+    Nothing ->
+      -- TODO: do not insert the sublogic as soon as https://github.com/spechub/Hets/issues/1740 is fixed
+      insert SchemaClass.Logic
+        { logicLanguageId = languageKey
+        , logicSlug = logicSlugS
+        , logicName = name
+        }
+
+findOrCreateSignature :: ( MonadIO m
+                         , Sentences lid sentence sign morphism symbol
+                         )
+                      => DBCache -> LibName -> lid -> ExtSign sign symbol
+                      -> SigId -> LanguageId
+                      -> DBMonad m (SignatureId, Bool, DBCache)
+findOrCreateSignature dbCache libName lid extSign sigId languageKey =
+  case Map.lookup (libName, sigId) $ signatureMap dbCache of
+    Just signatureKey -> return (signatureKey, False, dbCache)
+    Nothing -> do
+      signatureKey <- insert Signature
+        { signatureLanguageId = languageKey
+        , signatureAsJson = ppJson $ ToJson.symbols lid extSign
+        }
+      return ( signatureKey
+             , True
+             , addSignatureToCache libName sigId signatureKey dbCache
+             )
+
+createSymbols :: ( MonadIO m
+                 , Sentences lid sentence sign morphism symbol
+                 )
+              => LibEnv -> FileVersionId -> DBCache -> LibName -> Int
+              -> Entity LocIdBase -> lid -> ExtSign sign symbol
+              -> DBMonad m DBCache
+createSymbols libEnv fileVersionKey dbCache libName nodeId omsLocIdBase lid
+              ExtSign { plainSign = sign } =
+  foldM (\ dbCacheAcc symbol ->
+          findOrCreateSymbol libEnv fileVersionKey dbCacheAcc libName nodeId
+            omsLocIdBase lid symbol
+        ) dbCache $ symlist_of lid sign
+
+findOrCreateSymbol :: ( MonadIO m
+                      , Sentences lid sentence sign morphism symbol
+                      )
+                   => LibEnv -> FileVersionId -> DBCache -> LibName -> Int
+                   -> Entity LocIdBase -> lid -> symbol -> DBMonad m DBCache
+findOrCreateSymbol libEnv fileVersionKey dbCache libName nodeId
+  (Entity omsKey omsLocIdBaseValue) lid symbol =
+    let name = show $ sym_name lid symbol
+        fullName = show $ fullSymName lid symbol
+        symbolKind = symKind lid symbol
+        locId = locIdBaseLocId omsLocIdBaseValue ++ "//" ++ name
+    in  if symbolIsSaved libEnv libName nodeId lid symbol dbCache
+        then return dbCache
+        else do
+          symbolKey <- insert LocIdBase
+            { locIdBaseFileVersionId = fileVersionKey
+            , locIdBaseKind = Enums.Symbol
+            , locIdBaseLocId = locId
+            }
+          insert Symbol
+            { symbolLocIdBaseId = symbolKey
+            , symbolOmsId = omsKey
+            , symbolRangeId = Nothing
+            , symbolSymbolKind = symbolKind
+            , symbolName = name
+            , symbolFullName = Text.pack fullName
+            }
+          return $ addSymbolToCache libEnv libName nodeId lid symbol symbolKey dbCache
+
+createSentences :: ( MonadIO m
+                   , GetRange sentence
+                   , Pretty sentence
+                   , Sentences lid sentence sign morphism symbol
+                   )
+                => LibEnv -> FileVersionId -> DBCache -> GlobalAnnos -> LibName
+                -> Int -> Entity LocIdBase -> lid -> sign
+                -> ThSens sentence (AnyComorphism, BasicProof)
+                -> DBMonad m DBCache
+createSentences libEnv fileVersionKey dbCache0 globalAnnotations libName nodeId omsLocId lid sign sentences =
+  let (axioms, conjectures) = OMap.partition isAxiom sentences
+      namedAxioms = toNamedList axioms
+      orderedConjectures = OMap.toList conjectures
+  in do
+    dbCache1 <- createAxioms libEnv fileVersionKey dbCache0 globalAnnotations libName nodeId omsLocId lid sign namedAxioms
+    createConjectures libEnv fileVersionKey dbCache1 globalAnnotations libName nodeId omsLocId lid sign orderedConjectures
+
+createAxioms :: ( MonadIO m
+                , Foldable t
+                , Sentences lid sentence sign morphism symbol
+                )
+             => LibEnv -> FileVersionId -> DBCache -> GlobalAnnos
+             -> LibName -> Int -> Entity LocIdBase -> lid -> sign
+             -> t (Named sentence)
+             -> DBMonad m DBCache
+createAxioms libEnv fileVersionKey dbCache globalAnnotations libName nodeId omsLocId lid sign =
+  foldM (\ dbCacheAcc namedAxiom -> do
+          (axiomKey, dbCacheAcc1) <-
+            createSentence fileVersionKey dbCacheAcc globalAnnotations omsLocId
+              lid sign False False namedAxiom
+          associateSymbolsOfSentence libEnv fileVersionKey dbCacheAcc1 libName nodeId omsLocId axiomKey lid
+            sign namedAxiom
+        ) dbCache
+
+createConjectures :: ( MonadIO m
+                     , Foldable t
+                     , Sentences lid sentence sign morphism symbol
+                     )
+                  => LibEnv -> FileVersionId -> DBCache -> GlobalAnnos
+                  -> LibName -> Int -> Entity LocIdBase -> lid -> sign
+                  -> t (String, SenStatus sentence (AnyComorphism, BasicProof))
+                  -> DBMonad m DBCache
+createConjectures libEnv fileVersionKey dbCache globalAnnotations libName nodeId omsLocId lid sign =
+  foldM (\ dbCacheAcc (name, senStatus) ->
+          let namedConjecture = toNamed name senStatus
+              isProved = isProvenSenStatus senStatus
+          in do
+            (conjectureKey, dbCacheAcc1) <-
+              createSentence fileVersionKey dbCacheAcc globalAnnotations omsLocId
+                lid sign True isProved namedConjecture
+            associateSymbolsOfSentence libEnv fileVersionKey dbCacheAcc1 libName nodeId omsLocId conjectureKey lid
+              sign namedConjecture
+        ) dbCache
+
+createSentence :: ( MonadIO m
+                  , GetRange sentence
+                  , Pretty sentence
+                  , Sentences lid sentence sign morphism symbol
+                  )
+               => FileVersionId -> DBCache -> GlobalAnnos -> Entity LocIdBase
+               -> lid -> sign -> Bool -> Bool -> Named sentence
+               -> DBMonad m (LocIdBaseId, DBCache)
+createSentence fileVersionKey dbCache globalAnnotations (Entity omsKey omsLocIdBaseValue)
+  lid sign isConjecture isProved namedSentence =
+  let name = senAttr namedSentence
+      range = getRangeSpan $ sentence namedSentence
+      locId = locIdBaseLocId omsLocIdBaseValue ++ "//" ++ name
+      text = show $ useGlobalAnnos globalAnnotations $
+               print_named lid $ makeNamed "" $
+               simplify_sen lid sign $ sentence namedSentence
+      kind =
+        if isConjecture
+        then if isProved
+             then Enums.Theorem
+             else Enums.OpenConjecture
+        else Enums.Axiom
+      evaluationState =
+        if isProved
+        then EvaluationStateType.FinishedSuccessfully
+        else EvaluationStateType.NotYetEnqueued
+      reasoningStatus =
+        if isProved
+        then ReasoningStatusOnConjectureType.THM
+        else ReasoningStatusOnConjectureType.OPN
+  in do
+      rangeKeyM <- createRange range
+      sentenceLocIdBaseKey <- insert LocIdBase
         { locIdBaseFileVersionId = fileVersionKey
-        , locIdBaseKind = Enums.Mapping
+        , locIdBaseKind = kind
         , locIdBaseLocId = locId
         }
-      insert Mapping
-        { mappingLocIdBaseId = mappingKey
-        , mappingSourceId = sourceKey
-        , mappingTargetId = targetKey
-        , mappingSignatureMorphismId = signatureMorphismKey
-        , mappingConsStatusId = consStatusKeyM
-        , mappingFreenessParameterOMSId = freenessParameterOMSKeyM
-        , mappingFreenessParameterLanguageId = freenessParameterLanguageKeyM
-        , mappingDisplayName = displayName
-        , mappingName = dglName linkLabel
-        , mappingType = mappingTypeValue
-        , mappingOrigin = origin
-        , mappingPending = dglPending linkLabel
+      insert Sentence
+        { sentenceLocIdBaseId = sentenceLocIdBaseKey
+        , sentenceOmsId = omsKey
+        , sentenceRangeId = rangeKeyM
+        , sentenceName = name
+        , sentenceText = Text.pack text
         }
-      return (mappingKey, dbCache1)
+      if isConjecture
+      then insert Conjecture
+             { conjectureSentenceId = sentenceLocIdBaseKey
+             , conjectureEvaluationState = evaluationState
+             , conjectureReasoningStatus = reasoningStatus
+             } >> return ()
+      else insert Axiom { axiomSentenceId = sentenceLocIdBaseKey } >> return ()
+      return (sentenceLocIdBaseKey, dbCache)
 
-    mappingOriginOfLinkLabel :: DGLinkLab -> MappingOrigin
-    mappingOriginOfLinkLabel linkLabel = case dgl_origin linkLabel of
+associateSymbolsOfSentence :: ( MonadIO m
+                              , GetRange sentence
+                              , Pretty sentence
+                              , Sentences lid sentence sign morphism symbol
+                              )
+                           => LibEnv -> FileVersionId -> DBCache -> LibName
+                           -> Int -> Entity LocIdBase -> LocIdBaseId
+                           -> lid -> sign -> Named sentence
+                           -> DBMonad m DBCache
+associateSymbolsOfSentence libEnv fileVersionKey dbCache libName nodeId omsLocIdBase sentenceKey lid sign namedSentence =
+  let symbolsOfSentence = symsOfSen lid sign $ sentence namedSentence
+  in  do
+        (dbCache', _) <-
+          foldM (\ (dbCacheAcc, associatedSymbols) symbol ->
+                  let mapIndex = symbolMapIndex lid symbol
+                  in  if Set.member mapIndex associatedSymbols
+                      then return (dbCacheAcc, associatedSymbols)
+                      else case findSymbolInCache libEnv libName nodeId lid symbol dbCacheAcc of
+                             Just symbolKey -> do
+                               insert SentenceSymbol
+                                 { sentenceSymbolSentenceId = sentenceKey
+                                 , sentenceSymbolSymbolId = symbolKey
+                                 }
+                               return ( dbCacheAcc
+                                      , Set.insert mapIndex associatedSymbols
+                                      )
+                             Nothing -> do
+                               dbCacheAcc' <-
+                                 findOrCreateSymbol libEnv fileVersionKey
+                                   dbCacheAcc libName nodeId omsLocIdBase
+                                   lid symbol
+                               return ( dbCacheAcc'
+                                      , Set.insert mapIndex associatedSymbols
+                                      )
+                ) (dbCache, Set.empty) symbolsOfSentence
+        return dbCache'
+
+associateSymbolsOfSignature :: ( MonadIO m
+                               , Sentences lid sentence sign morphism symbol
+                               )
+                            => LibEnv -> DBCache -> LibName -> Int -> lid
+                            -> ExtSign sign symbol -> SignatureId
+                            -> DBMonad m DBCache
+associateSymbolsOfSignature libEnv dbCache libName nodeId lid extSign signatureKey =
+  let ownSymbols = nonImportedSymbols extSign
+      allSymbols = symset_of lid $ plainSign extSign
+  in do
+       foldM_
+         (\ associatedSymbols symbol ->
+           let mapIndex = symbolMapIndex lid symbol
+               symbolKey =
+                 fromJust $ findSymbolInCache libEnv libName nodeId lid symbol
+                   dbCache
+               imported = Set.member symbol ownSymbols
+           in  if Set.member mapIndex associatedSymbols
+               then return associatedSymbols
+               else do
+                 insert SignatureSymbol
+                   { signatureSymbolSignatureId = signatureKey
+                   , signatureSymbolSymbolId = symbolKey
+                   , signatureSymbolImported = imported
+                   }
+                 return $ Set.insert mapIndex associatedSymbols
+         ) Set.empty allSymbols
+       return dbCache
+
+createMapping :: MonadIO m
+              => HetcatsOpts -> LibEnv -> FileVersionId -> DBCache -> GlobalAnnos
+              -> LibName -> LocIdBase -> (Int, Int, DGLinkLab)
+              -> DBMonad m DBCache
+createMapping opts libEnv fileVersionKey dbCache globalAnnotations libName
+  documentLocIdBaseValue (sourceId, targetId, linkLabel) = do
+  (sourceOMSKey, sourceSignatureKey) <-
+    case Map.lookup (libName, sourceId) $ nodeMap dbCache of
+      Just (omsKey, signatureKey) -> return (omsKey, signatureKey)
+      Nothing -> fail ("Persistence.DevGraph.createMapping: Could not find source node with ID " ++ show sourceId)
+
+  (targetOMSKey, targetSignatureKey) <-
+    case Map.lookup (libName, targetId) $ nodeMap dbCache of
+      Just (omsKey, signatureKey) -> return (omsKey, signatureKey)
+      Nothing -> fail ("Persistence.DevGraph.createMapping: Could not find target node with ID " ++ show targetId)
+
+  (signatureMorphismKey, _, dbCache1) <-
+    findOrCreateSignatureMorphism opts libEnv dbCache libName (sourceId, targetId)
+      globalAnnotations (sourceSignatureKey, targetSignatureKey) $
+      dgl_morphism linkLabel
+
+  consStatusKeyM <- case dgl_type linkLabel of
+    ScopedLink _ _ consStatus -> fmap Just $ createConsStatus consStatus
+    _ -> return Nothing
+
+  freenessParameterOMSKeyM <- case dgl_type linkLabel of
+    FreeOrCofreeDefLink _ (JustNode NodeSig { getNode = nodeId }) ->
+      case Map.lookup (libName, nodeId) $ nodeMap dbCache of
+        Just (freenessParameterOMSKey, _) ->
+          return $ Just freenessParameterOMSKey
+        Nothing -> fail ("Persistence.DevGraph.createMapping: Could not find freeness parameter node with ID " ++ show nodeId)
+    _ -> return Nothing
+
+  freenessParameterLanguageKeyM <- case dgl_type linkLabel of
+    FreeOrCofreeDefLink _ (EmptyNode (Logic.Logic lid)) ->
+      fmap Just $ findLanguage lid
+    _ -> return Nothing
+
+  let displayName = if null $ dglName linkLabel
+                    then show (dgl_id linkLabel)
+                    else dglName linkLabel
+  let locId = locIdBaseLocId documentLocIdBaseValue ++ "//" ++ displayName
+  mappingKey <- insert LocIdBase
+    { locIdBaseFileVersionId = fileVersionKey
+    , locIdBaseKind = Enums.Mapping
+    , locIdBaseLocId = locId
+    }
+  insert Mapping
+    { mappingLocIdBaseId = mappingKey
+    , mappingSourceId = sourceOMSKey
+    , mappingTargetId = targetOMSKey
+    , mappingSignatureMorphismId = signatureMorphismKey
+    , mappingConsStatusId = consStatusKeyM
+    , mappingFreenessParameterOMSId = freenessParameterOMSKeyM
+    , mappingFreenessParameterLanguageId = freenessParameterLanguageKeyM
+    , mappingDisplayName = displayName
+    , mappingName = dglName linkLabel
+    , mappingType = mappingTypeOfLinkLabel
+    , mappingOrigin = mappingOriginOfLinkLabel
+    , mappingPending = dglPending linkLabel
+    }
+  return dbCache1
+  where
+    mappingOriginOfLinkLabel :: MappingOrigin
+    mappingOriginOfLinkLabel = case dgl_origin linkLabel of
       SeeTarget -> MappingOrigin.SeeTarget
       SeeSource -> MappingOrigin.SeeSource
       TEST -> MappingOrigin.TEST
@@ -593,8 +893,8 @@ createOMS opts dGraph fileVersionKey (Entity documentKey documentLocIdBaseValue)
       DGLinkFlatteningRename -> MappingOrigin.DGLinkFlatteningRename
       DGLinkRefinement _ -> MappingOrigin.DGLinkRefinement
 
-    mappingTypeOfLinkLabel :: DGLinkLab -> MappingType
-    mappingTypeOfLinkLabel linkLabel = case dgl_type linkLabel of
+    mappingTypeOfLinkLabel :: MappingType
+    mappingTypeOfLinkLabel = case dgl_type linkLabel of
       ScopedLink Local DefLink _ -> MappingType.LocalDef
       ScopedLink Local (ThmLink LeftOpen) _ -> MappingType.LocalThmOpen
       ScopedLink Local (ThmLink (Proven _ _)) _ -> MappingType.LocalThmProved
@@ -618,183 +918,85 @@ createOMS opts dGraph fileVersionKey (Entity documentKey documentLocIdBaseValue)
       HidingFreeOrCofreeThm (Just Minimize) _ _ (Proven _ _) -> MappingType.HidingMinimizeProved
 
 
-findOrCreateSignatureMorphismM :: MonadIO m
-                               => HetcatsOpts -> DBCache -> GlobalAnnos
-                               -> Maybe GMorphism
-                               -> DBMonad m ( Maybe SignatureMorphismId
-                                            , DBCache
-                                            )
-findOrCreateSignatureMorphismM opts dbCache globalAnnotations gMorphismM =
-  case gMorphismM of
-    Nothing -> return (Nothing, dbCache)
-    Just gMorphism -> do
-      (signatureMorphismKey, dbCache1) <-
-        findOrCreateSignatureMorphism opts dbCache globalAnnotations gMorphism
-      return (Just signatureMorphismKey, dbCache1)
+cachedOMSKey :: LibName -> Int -> DBCache -> Maybe (LocIdBaseId, SignatureId)
+cachedOMSKey libName nodeId = Map.lookup (libName, nodeId) . nodeMap
 
-findOrCreateSignatureMorphism :: MonadIO m
-                              => HetcatsOpts -> DBCache -> GlobalAnnos
-                              -> GMorphism
-                              -> DBMonad m ( SignatureMorphismId
-                                           , DBCache
-                                           )
-findOrCreateSignatureMorphism opts dbCache globalAnnotations gMorphism =
-  case gMorphism of
-    GMorphism { gMorphismComor = cid
-              , gMorphismMorIdx = morphismId
-              } ->
-      case Map.lookup morphismId $ signatureMorphismMap dbCache of
-        Just key -> return (key, dbCache)
+symbolIsSaved :: Sentences lid sentence sign morphism symbol
+              => LibEnv -> LibName -> Int -> lid -> symbol -> DBCache -> Bool
+symbolIsSaved libEnv libName nodeId lid symbol =
+  isJust . findSymbolInCache libEnv libName nodeId lid symbol
+
+-- Gives the node label to an id. Use only if the combination exists.
+getNodeLabel :: LibEnv -> LibName -> Int -> DGNodeLab
+getNodeLabel libEnv libName nodeId =
+  fromJust $ fmap Graph.nodeLabel $ IntMap.lookup nodeId $ convertToMap $
+    dgBody $ fromJust $ Map.lookup libName libEnv
+
+dereferenceNodeId :: LibEnv -> LibName -> Int -> (LibName, Int)
+dereferenceNodeId libEnv libName nodeId =
+  case nodeInfo $ getNodeLabel libEnv libName nodeId of
+    DGNode {} -> (libName, nodeId)
+    DGRef { ref_node = refNodeId
+          , ref_libname = refLibName
+          } -> dereferenceNodeId libEnv refLibName refNodeId
+
+addDocumentToCache :: LibName -> LocIdBaseId -> DBCache -> DBCache
+addDocumentToCache libName documentKey dbCache =
+  dbCache { documentMap = Map.insert libName documentKey $ documentMap dbCache }
+
+addNodeToCache :: LibName -> Int -> LocIdBaseId -> SignatureId -> DBCache
+               -> DBCache
+addNodeToCache libName nodeId omsKey signatureKey dbCache =
+  dbCache { nodeMap = Map.insert (libName, nodeId) (omsKey, signatureKey) $
+                        nodeMap dbCache
+          }
+
+addSignatureToCache :: LibName -> SigId -> SignatureId -> DBCache -> DBCache
+addSignatureToCache libName sigId signatureKey dbCache =
+  dbCache { signatureMap = Map.insert (libName, sigId) signatureKey $
+                             signatureMap dbCache }
+
+addSymbolToCache :: Sentences lid sentence sign morphism symbol
+                 => LibEnv -> LibName -> Int -> lid -> symbol -> LocIdBaseId
+                 -> DBCache -> DBCache
+addSymbolToCache libEnv libName nodeId lid symbol symbolKey dbCache =
+
+  let mapIndex = symbolMapIndex lid symbol
+      (libNameDereferenced, nodeIdDereferenced) = dereferenceNodeId libEnv libName nodeId
+  in  dbCache { symbolKeyMap =
+                  Map.insert (libNameDereferenced, nodeIdDereferenced, mapIndex) symbolKey $
+                    symbolKeyMap dbCache
+              }
+
+findSymbolInCache :: Sentences lid sentence sign morphism symbol
+                  => LibEnv -> LibName -> Int -> lid -> symbol
+                  -> DBCache -> Maybe LocIdBaseId
+findSymbolInCache libEnv libName nodeId lid symbol dbCache =
+  let mapIndex = symbolMapIndex lid symbol
+      (libNameDereferenced, nodeIdDereferenced) = dereferenceNodeId libEnv libName nodeId
+  in  Map.lookup (libNameDereferenced, nodeIdDereferenced, mapIndex) $ symbolKeyMap dbCache
+
+findOMSAndSignature :: MonadIO m
+                    => FileVersionId -> DGNodeLab
+                    -> DBMonad m (Maybe (LocIdBaseId, SignatureId))
+findOMSAndSignature fileVersionKey nodeLabel = do
+  omsLocIdM <- selectFirst [ LocIdBaseFileVersionId ==. fileVersionKey
+                           , LocIdBaseKind ==. Enums.OMS
+                           , LocIdBaseLocId ==. locIdOfOMS nodeLabel
+                           ] []
+  case omsLocIdM of
+    Just (Entity omsKey _) -> do
+      omsValueM <- selectFirst [OMSLocIdBaseId ==. omsKey] []
+      omsValue <- case omsValueM of
         Nothing ->
-          let json = ppJson $ ToJson.gmorph opts globalAnnotations gMorphism
-          in do
-              (_, logicMappingKey) <-
-                findOrCreateLanguageMappingAndLogicMapping $ Comorphism cid
-              signatureMorphismKey <- insert SignatureMorphism
-                { signatureMorphismLogicMappingId = logicMappingKey
-                , signatureMorphismAsJson = json
-                }
-              let signatureMorphismMap' =
-                    Map.insert morphismId signatureMorphismKey $
-                      signatureMorphismMap dbCache
-              return ( signatureMorphismKey
-                     , dbCache { signatureMorphismMap = signatureMorphismMap' }
-                     )
+          fail ("Persistence.DevGraph.findOMSAndSignature could not find OM with ID "
+                ++ show (unSqlBackendKey $ unLocIdBaseKey omsKey))
+        Just (Entity _ omsValue) -> return omsValue
+      return $ Just (omsKey, oMSSignatureId omsValue)
+    Nothing -> return Nothing
 
-createConsStatus :: MonadIO m
-                 => ConsStatus -> DBMonad m ConsStatusId
-createConsStatus (ConsStatus r p _) =
-  insert SchemaClass.ConsStatus
-    { consStatusRequired = toString r
-    , consStatusProved = toString p
-    }
-  where
-    toString :: Conservativity -> String
-    toString c = case c of
-      Unknown s -> s
-      _ -> map toLower $ show c
-
-findLanguage :: ( MonadIO m
-                , Logic.Logic lid sublogics
-                    basic_spec sentence symb_items symb_map_items
-                    sign morphism symbol raw_symbol proof_tree
-                )
-             => lid -> DBMonad m LanguageId
-findLanguage lid = do
-  languageM <- selectFirst [LanguageSlug ==. parameterize (show lid)] []
-  case languageM of
-    Just (Entity key _) -> return key
-    Nothing -> fail ("Language not found in the database: " ++ show lid)
-
-findLogic :: ( MonadIO m
-             , Logic.Logic lid sublogics
-                 basic_spec sentence symb_items symb_map_items
-                 sign morphism symbol raw_symbol proof_tree
-             )
-          => lid -> sublogics -> DBMonad m LogicId
-findLogic lid sublogic = do
-  let name = sublogicName sublogic
-  let logicSlugS = parameterize name
-  languageKey <- findLanguage lid
-  logicM <- selectFirst [ LogicLanguageId ==. languageKey
-                        , LogicSlug ==. logicSlugS
-                        ] []
-  case logicM of
-    Just (Entity key _) -> return key
-    Nothing ->
-      -- TODO: do not insert the sublogic as soon as https://github.com/spechub/Hets/issues/1740 is fixed
-      insert SchemaClass.Logic
-        { logicLanguageId = languageKey
-        , logicSlug = logicSlugS
-        , logicName = name
-        }
-
-findOrCreateSignature :: ( MonadIO m
-                         , Sentences lid sentence sign morphism symbol
-                         )
-                      => DBCache -> lid -> ExtSign sign symbol -> SigId
-                      -> LanguageId -> DBMonad m (SignatureId, DBCache)
-findOrCreateSignature dbCache lid extSign sigId languageKey =
-  case Map.lookup sigId $ signatureMap dbCache of
-    Just signatureKey -> return (signatureKey, dbCache)
-    Nothing -> do
-      signatureKey <- insert Signature
-        { signatureLanguageId = languageKey
-        , signatureAsJson = ppJson $ ToJson.symbols lid extSign
-        }
-      return ( signatureKey
-             , dbCache { signatureMap = Map.insert sigId signatureKey $
-                                          signatureMap dbCache }
-             )
-associateSymbolsOfSignature :: ( MonadIO m
-                               , Sentences lid sentence sign morphism symbol
-                               )
-                            => DBCache -> lid
-                            -> ExtSign sign symbol -> SignatureId
-                            -> DBMonad m DBCache
-associateSymbolsOfSignature dbCache lid extSign signatureKey =
-  let ownSymbols = nonImportedSymbols extSign
-      allSymbols = symset_of lid $ plainSign extSign
-  in do foldM (\ associatedSymbols symbol ->
-                let mapIndex = symbolMapIndex lid symbol
-                    symbolKey =
-                      fromJust $ Map.lookup mapIndex $ symbolKeyMap dbCache
-                    imported = Set.member symbol ownSymbols
-                in  if Set.member mapIndex associatedSymbols
-                    then return associatedSymbols
-                    else do
-                      insert SignatureSymbol
-                        { signatureSymbolSignatureId = signatureKey
-                        , signatureSymbolSymbolId = symbolKey
-                        , signatureSymbolImported = imported
-                        }
-                      return $ Set.insert mapIndex associatedSymbols
-              ) Set.empty allSymbols
-        return dbCache
-
-createSymbols :: ( MonadIO m
-                 , Sentences lid sentence sign morphism symbol
-                 )
-              => DBCache -> FileVersionId -> Entity LocIdBase -> lid
-              -> ExtSign sign symbol
-              -> DBMonad m DBCache
-createSymbols dbCache fileVersionKey omsLocId lid
-              ExtSign { plainSign = sign } =
-  foldM (\ dbCacheAcc symbol ->
-          createSymbol dbCacheAcc fileVersionKey omsLocId lid symbol
-        ) dbCache $ symlist_of lid sign
-
-createSymbol :: ( MonadIO m
-                , Sentences lid sentence sign morphism symbol
-                )
-             => DBCache -> FileVersionId -> Entity LocIdBase -> lid -> symbol
-             -> DBMonad m DBCache
-createSymbol dbCache fileVersionKey (Entity omsKey omsLocIdBaseValue) lid
-  symbol =
-    let name = show $ sym_name lid symbol
-        fullName = show $ fullSymName lid symbol
-        symbolKind = symKind lid symbol
-        locId = locIdBaseLocId omsLocIdBaseValue ++ "//" ++ name
-        mapIndex = symbolMapIndex lid symbol
-        symbolKeyMap' = symbolKeyMap dbCache
-    in case Map.lookup mapIndex symbolKeyMap' of
-         Just _ -> return dbCache
-         Nothing -> do
-            symbolKey <- insert LocIdBase
-              { locIdBaseFileVersionId = fileVersionKey
-              , locIdBaseKind = Enums.Symbol
-              , locIdBaseLocId = locId
-              }
-            insert Symbol
-              { symbolLocIdBaseId = symbolKey
-              , symbolOmsId = omsKey
-              , symbolRangeId = Nothing
-              , symbolSymbolKind = symbolKind
-              , symbolName = name
-              , symbolFullName = Text.pack fullName
-              }
-            return dbCache { symbolKeyMap =
-                               Map.insert mapIndex symbolKey symbolKeyMap' }
+locIdOfOMS :: DGNodeLab -> String
+locIdOfOMS nodeLabel = showName $ dgn_name nodeLabel
 
 symbolMapIndex :: Sentences lid sentence sign morphism symbol
                => lid -> symbol -> SymbolMapIndex
@@ -803,5 +1005,25 @@ symbolMapIndex lid symbol =
       symbolKind = symKind lid symbol
   in (symbolKind, fullName)
 
--- Not yet implemented in the Hets business logic
--- findOrCreateSyntax syntax = return ()
+
+
+
+createDocumentLinks :: MonadIO m
+                    => DBCache -> Rel LibName
+                    -> DBMonad m ()
+createDocumentLinks dbCache dependencyLibNameRel =
+  mapM_ (\ (targetLibName, sourceLibNamesSet) ->
+          mapM_ (createDocumentLink targetLibName) $
+            Set.toList sourceLibNamesSet
+        ) $ Map.toList $ Rel.toMap dependencyLibNameRel
+  where
+    createDocumentLink :: MonadIO m
+                       => LibName -> LibName -> DBMonad m ()
+    createDocumentLink sourceLibName targetLibName = do
+      -- These libNames must be in the documentMap by construction
+      let sourceKey = fromJust $ Map.lookup sourceLibName $ documentMap dbCache
+      let targetKey = fromJust $ Map.lookup targetLibName $ documentMap dbCache
+      insert DocumentLink { documentLinkSourceId = sourceKey
+                          , documentLinkTargetId = targetKey
+                          }
+      return ()
