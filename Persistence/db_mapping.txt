@@ -23,7 +23,8 @@ Hets - database
     [o] allRefNodes - ignore
     [x] sigMap - use it in order to index signatures of a document (avoid duplicates)
     [?] thMap  - use it in order to index OMS of a document (avoid duplicates)
-    [?] morMap - use it in order to index signature morphisms of a document (avoid duplicates)
+        optionally add association OMS -- Theory -- Sentence
+    [x] morMap - use it in order to index signature morphisms of a document (avoid duplicates)
     [o] proofHistory - ignore
     [o] redoHistory - ignore
 [x] Range - Range [S]
@@ -36,9 +37,10 @@ Hets - database
 [x] ConsStatus - ConsStatus represent 2x Conservativtiy, omit ThmLinkStatus
 [-] (DGNodeLab,Node) - OMS (create a new OMS only if nodeInfo is a DGNode)
     [x] note that Node is just an integer, pointing to a development graph node, aka OMS
-    [ ] dgn_theory: the G_theory can be represented inline:
+    [x] dgn_theory: the G_theory can be represented inline:
        [x] gTheoryLogic, gTheorySign can be stored as Signature
-       [ ] gTheorySyntax is stored as an assoication to Serialization
+       [x] gTheorySyntax is stored as an assoication to Serialization
+           only fill the url, there can be one or none
        [x] gTheorySignIdx, gTheorySelfIdx is the index of the theory in thMap above (use it to avoid duplicates)
        [x] gTheorySens is stored as an assoication to Sentence. The proof info can be ignored
     [o] globalTheory is caching information and can be ignored
@@ -87,7 +89,12 @@ Hets - database
 
 -----------------------
 
-[ ] Signature to JSON: Is the symbols function in ToJson the correct one?
+[x] Signature to JSON: Is the symbols function in ToJson the correct one?
+    anwer: yes
 [ ] There is no SymbolMapping in the schema.
+    use Logic.Logic.symmap_of
 [ ] languageStandardizationStatus = "TODO" -- TODO: add to class Logic
+    create a ticket for till
 [ ] languageDefinedBy = "registry" -- TODO: add to class Logic
+    leave it for till - #1753
+[ ] use options to determine Document Kind
