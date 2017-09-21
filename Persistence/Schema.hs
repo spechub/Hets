@@ -125,7 +125,7 @@ DocumentLink sql=document_links
   targetId LocIdBaseId -- DocumentId is LocIdBaseId
   deriving Show
 
-Range sql=ranges
+FileRange sql=file_ranges
   path String
   startLine Int
   startColumn Int
@@ -135,7 +135,7 @@ Range sql=ranges
 
 Diagnosis sql=diagnoses
   fileVersionId FileVersionId
-  rangeId RangeId Maybe
+  fileRangeId FileRangeId Maybe
   -- kind should not be a String, but an Enums.DiagnosisKindType. This is not
   -- supported by Persistent, though, because it is a PostgreSQL enum type.
   -- See https://github.com/yesodweb/persistent/issues/264
@@ -157,7 +157,7 @@ OMS sql=oms
   freeNormalFormSignatureMorphismId SignatureMorphismId Maybe
   origin OMSOrigin
   consStatusId ConsStatusId
-  nameRangeId RangeId Maybe -- Represents NodeName
+  nameFileRangeId FileRangeId Maybe -- Represents NodeName
   displayName String        -- Represents NodeName
   name String               -- Represents NodeName
   nameExtension String      -- Represents NodeName
@@ -189,7 +189,7 @@ Sentence sql=sentences
   locIdBaseId LocIdBaseId sql=id -- the field `locIdBaseId` is mapped to the column `id`
   Primary locIdBaseId            -- ... which is the primary key
   omsId LocIdBaseId -- OMSId is LocIdBaseId
-  rangeId RangeId Maybe
+  fileRangeId FileRangeId Maybe
   name String
   text Text
   deriving Show
@@ -212,7 +212,7 @@ Symbol sql=symbols
   locIdBaseId LocIdBaseId sql=id -- the field `locIdBaseId` is mapped to the column `id`
   Primary locIdBaseId            -- ... which is the primary key
   omsId LocIdBaseId -- OMSId is LocIdBaseId
-  rangeId RangeId Maybe
+  fileRangeId FileRangeId Maybe
   symbolKind String
   name String
   fullName Text

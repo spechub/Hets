@@ -18,7 +18,7 @@ module Persistence.DevGraph (exportLibEnv) where
 import Persistence.Database
 import Persistence.DBConfig
 import Persistence.LogicGraph
-import Persistence.Schema as SchemaClass hiding (ConsStatus, Range)
+import Persistence.Schema as SchemaClass hiding (ConsStatus)
 import Persistence.Schema.MappingOrigin (MappingOrigin)
 import qualified Persistence.Schema.MappingOrigin as MappingOrigin
 import Persistence.Range
@@ -353,7 +353,7 @@ createOMS opts libEnv fileVersionKey dbCache0 globalAnnotations libName
           , oMSFreeNormalFormSignatureMorphismId = freeNormalFormSignatureMorphismKeyM
           , oMSOrigin = omsOrigin
           , oMSConsStatusId = consStatusKey
-          , oMSNameRangeId = nodeNameRangeKey
+          , oMSNameFileRangeId = nodeNameRangeKey
           , oMSDisplayName = displayName
           , oMSName = name
           , oMSNameExtension = nameExtension
@@ -658,7 +658,7 @@ findOrCreateSymbol libEnv fileVersionKey dbCache libName nodeId
           insert Symbol
             { symbolLocIdBaseId = symbolKey
             , symbolOmsId = omsKey
-            , symbolRangeId = Nothing
+            , symbolFileRangeId = Nothing
             , symbolSymbolKind = symbolKind
             , symbolName = name
             , symbolFullName = Text.pack fullName
@@ -759,7 +759,7 @@ createSentence fileVersionKey dbCache globalAnnotations (Entity omsKey omsLocIdB
       insert Sentence
         { sentenceLocIdBaseId = sentenceLocIdBaseKey
         , sentenceOmsId = omsKey
-        , sentenceRangeId = rangeKeyM
+        , sentenceFileRangeId = rangeKeyM
         , sentenceName = name
         , sentenceText = Text.pack text
         }
