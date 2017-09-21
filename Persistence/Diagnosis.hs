@@ -57,6 +57,6 @@ saveDiagnosis fileVersionKey diagnosis =
            { diagnosisFileVersionId = fileVersionKey
            , diagnosisKind = kind
            , diagnosisText = Text.pack text
-           , diagnosisRangeId = rangeKeyM
+           , diagnosisFileRangeId = rangeKeyM
            }
          return ()
