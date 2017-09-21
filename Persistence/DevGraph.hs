@@ -36,6 +36,7 @@ import Common.AS_Annotation
 import Common.Consistency
 import Common.DocUtils
 import Common.ExtSign
+import Common.FileType
 import Common.GlobalAnnotations
 import Common.Id
 import Common.IRI (IRI (..), setAngles)
@@ -45,6 +46,8 @@ import qualified Common.Lib.Graph as Graph (nodeLabel)
 import Common.Lib.Rel (Rel)
 import qualified Common.Lib.Rel as Rel
 import Common.LibName
+import Common.Result (maybeResult)
+import Common.ResultT (runResultT)
 import Driver.Options
 import qualified Common.OrderedMap as OMap
 import Logic.Comorphism
@@ -124,8 +127,8 @@ createDocuments opts libEnv dbCache0 dependencyOrderedLibsSetL = do
           Just (Entity fileVersionKey _) -> return fileVersionKey
 
 createDocumentsInDependencyRelation :: MonadIO m
-                                    => HetcatsOpts -> LibEnv -> FileVersionId
-                                    -> DBCache -> [Set LibName]
+                                    => HetcatsOpts -> LibEnv
+                                    -> FileVersionId -> DBCache -> [Set LibName]
                                     -> DBMonad m DBCache
 createDocumentsInDependencyRelation opts libEnv fileVersionKey =
   foldM
@@ -137,8 +140,9 @@ createDocumentsInDependencyRelation opts libEnv fileVersionKey =
     )
 
 createDocumentsThatAreIndependent :: MonadIO m
-                                  => HetcatsOpts -> LibEnv -> FileVersionId
-                                  -> DBCache -> DBMonad m DBCache
+                                  => HetcatsOpts -> LibEnv
+                                  -> FileVersionId -> DBCache
+                                  -> DBMonad m DBCache
 createDocumentsThatAreIndependent opts libEnv fileVersionKey dbCache =
   foldM
     (\ dbCacheAcc libName ->
@@ -150,8 +154,8 @@ createDocumentsThatAreIndependent opts libEnv fileVersionKey dbCache =
     ) dbCache $ Map.keys libEnv
 
 createDocument :: MonadIO m
-               => HetcatsOpts -> LibEnv -> FileVersionId -> DBCache -> LibName
-               -> DBMonad m DBCache
+               => HetcatsOpts -> LibEnv -> FileVersionId -> DBCache
+               -> LibName -> DBMonad m DBCache
 createDocument opts libEnv fileVersionKey dbCache0 libName =
   let dGraph = fromJust $ Map.lookup libName libEnv
       globalAnnotations = globalAnnos dGraph
@@ -162,10 +166,10 @@ createDocument opts libEnv fileVersionKey dbCache0 libName =
                   libVersion libName
       locId = displayName
   in  do
-        -- TODO: Check whether it is a Library or a NativeDocument
+        kind <- kindOfDocument opts location
         let documentLocIdBaseValue = LocIdBase
               { locIdBaseFileVersionId = fileVersionKey
-              , locIdBaseKind = Enums.Library
+              , locIdBaseKind = kind
               , locIdBaseLocId = locId
               }
         documentKey <- insert documentLocIdBaseValue
@@ -180,12 +184,39 @@ createDocument opts libEnv fileVersionKey dbCache0 libName =
         createAllOmsOfDocument opts libEnv fileVersionKey dbCache1 dGraph
           globalAnnotations libName (Entity documentKey documentLocIdBaseValue)
 
+-- Guess the kind of the Document. First, by the filepath only and then, by
+-- searching for keywords in the content. If the type cannot be guessed,
+-- default to Library.
+kindOfDocument :: MonadIO m
+               => HetcatsOpts -> Maybe FilePath -> m Enums.LocIdBaseKindType
+kindOfDocument opts filepathM = case filepathM of
+  Nothing -> return Enums.Library
+  Just filepath -> case guess filepath (intype opts) of
+    GuessIn -> do
+      mimeR <-
+        liftIO $ runResultT $ getMagicFileType (Just "--mime-type") filepath
+      case maybeResult mimeR of
+        Just mime -> return $ determineTypeByMime mime
+        Nothing -> return Enums.Library
+    t -> return $ determineType t
+  where
+    determineType :: InType -> Enums.LocIdBaseKindType
+    determineType t = if show t `elem` ["casl", "het", "dol"]
+                      then Enums.Library
+                      else Enums.NativeDocument
+
+    determineTypeByMime :: String -> Enums.LocIdBaseKindType
+    determineTypeByMime t = if t `elem` ["text/casl", "text/het", "text/dol"]
+                            then Enums.Library
+                            else Enums.NativeDocument
+
 createAllOmsOfDocument :: MonadIO m
                        => HetcatsOpts -> LibEnv -> FileVersionId -> DBCache
                        -> DGraph -> GlobalAnnos -> LibName -> Entity LocIdBase
                        -> DBMonad m DBCache
 createAllOmsOfDocument opts libEnv fileVersionKey dbCache0 dGraph
-  globalAnnotations libName (Entity documentKey documentLocIdBaseValue) =
+  globalAnnotations libName
+  documentLocIdBase@(Entity _ documentLocIdBaseValue) =
   let labeledNodes = labNodes $ dgBody dGraph
       labeledEdges = labEdges $ dgBody dGraph
   in  do
@@ -193,7 +224,7 @@ createAllOmsOfDocument opts libEnv fileVersionKey dbCache0 dGraph
           (\ dbCacheAcc labeledNode ->
             fmap (\ (_, _, dbCache) -> dbCache) $
               findOrCreateOMS opts libEnv fileVersionKey dbCacheAcc
-                globalAnnotations libName documentKey labeledNode
+                globalAnnotations libName documentLocIdBase labeledNode
           ) dbCache0 labeledNodes
         foldM
           (\ dbCacheAcc labeledEdge ->
@@ -203,10 +234,10 @@ createAllOmsOfDocument opts libEnv fileVersionKey dbCache0 dGraph
 
 findOrCreateOMSM :: MonadIO m
                  => HetcatsOpts -> LibEnv -> FileVersionId -> DBCache
-                 -> GlobalAnnos -> LibName -> LocIdBaseId -> Maybe Int
+                 -> GlobalAnnos -> LibName -> Entity LocIdBase -> Maybe Int
                  -> DBMonad m (Maybe LocIdBaseId, Maybe SignatureId, DBCache)
 findOrCreateOMSM opts libEnv fileVersionKey dbCache0 globalAnnotations libName
-  documentKey nodeIdM =
+  documentLocIdBase nodeIdM =
   case nodeIdM of
     Nothing -> return (Nothing, Nothing, dbCache0)
     Just nodeId ->
@@ -214,15 +245,16 @@ findOrCreateOMSM opts libEnv fileVersionKey dbCache0 globalAnnotations libName
       in  do
             (omsKey, signatureKey, dbCache1) <-
               findOrCreateOMS opts libEnv fileVersionKey dbCache0
-                globalAnnotations libName documentKey (nodeId, nodeLabel)
+                globalAnnotations libName documentLocIdBase (nodeId, nodeLabel)
             return (Just omsKey, Just signatureKey, dbCache1)
 
 findOrCreateOMS :: MonadIO m
                 => HetcatsOpts -> LibEnv -> FileVersionId -> DBCache
-                -> GlobalAnnos -> LibName -> LocIdBaseId -> (Int, DGNodeLab)
+                -> GlobalAnnos -> LibName -> Entity LocIdBase
+                -> (Int, DGNodeLab)
                 -> DBMonad m (LocIdBaseId, SignatureId, DBCache)
 findOrCreateOMS opts libEnv fileVersionKey dbCache0 globalAnnotations libName
-  documentKey (nodeId, nodeLabel) =
+  documentLocIdBase (nodeId, nodeLabel) =
   case cachedOMSKey libName nodeId dbCache0 of
     Just (omsKey, signatureKey) -> return (omsKey, signatureKey, dbCache0)
     Nothing -> case nodeInfo nodeLabel of
@@ -232,13 +264,13 @@ findOrCreateOMS opts libEnv fileVersionKey dbCache0 globalAnnotations libName
         let refNodeLabel = getNodeLabel libEnv refLibName refNodeId
         (omsKey, signatureKey, dbCache1) <-
           findOrCreateOMS opts libEnv fileVersionKey dbCache0
-            globalAnnotations refLibName documentKey (refNodeId, refNodeLabel)
+            globalAnnotations refLibName documentLocIdBase (refNodeId, refNodeLabel)
         return ( omsKey
                , signatureKey
                , addNodeToCache libName nodeId omsKey signatureKey dbCache1
                )
       DGNode _ consStatus -> do
-        omsKeyM <- findOMSAndSignature fileVersionKey nodeLabel
+        omsKeyM <- findOMSAndSignature fileVersionKey documentLocIdBase nodeLabel
         case omsKeyM of
           Just (omsKey, signatureKey) ->
             return ( omsKey
@@ -247,14 +279,14 @@ findOrCreateOMS opts libEnv fileVersionKey dbCache0 globalAnnotations libName
                    )
           Nothing ->
             createOMS opts libEnv fileVersionKey dbCache0 globalAnnotations libName
-              documentKey (nodeId, nodeLabel) consStatus
+              documentLocIdBase (nodeId, nodeLabel) consStatus
 
 createOMS :: MonadIO m
           => HetcatsOpts -> LibEnv -> FileVersionId -> DBCache -> GlobalAnnos
-          -> LibName -> LocIdBaseId -> (Int, DGNodeLab) -> ConsStatus
+          -> LibName -> Entity LocIdBase -> (Int, DGNodeLab) -> ConsStatus
           -> DBMonad m (LocIdBaseId, SignatureId, DBCache)
-createOMS opts libEnv fileVersionKey dbCache0 globalAnnotations libName documentKey
-  (nodeId, nodeLabel) consStatus =
+createOMS opts libEnv fileVersionKey dbCache0 globalAnnotations libName
+  documentLocIdBase@(Entity documentKey _) (nodeId, nodeLabel) consStatus =
   let gTheory = dgn_theory nodeLabel
       internalNodeName = dgn_name nodeLabel
       name = show $ getName internalNodeName
@@ -284,11 +316,11 @@ createOMS opts libEnv fileVersionKey dbCache0 globalAnnotations libName document
 
         (normalFormKeyM, normalFormSignatureKeyM, dbCache2) <-
           findOrCreateOMSM opts libEnv fileVersionKey dbCache1 globalAnnotations
-            libName documentKey $ dgn_nf nodeLabel
+            libName documentLocIdBase $ dgn_nf nodeLabel
 
         (freeNormalFormKeyM, freeNormalFormSignatureKeyM, dbCache3) <-
           findOrCreateOMSM opts libEnv fileVersionKey dbCache2 globalAnnotations
-            libName documentKey $ dgn_freenf nodeLabel
+            libName documentLocIdBase $ dgn_freenf nodeLabel
 
         (normalFormSignatureMorphismKeyM, _, dbCache4) <-
           findOrCreateSignatureMorphismM opts libEnv dbCache3 libName
@@ -305,7 +337,7 @@ createOMS opts libEnv fileVersionKey dbCache0 globalAnnotations libName document
         let omsLocIdBaseValue = LocIdBase
               { locIdBaseFileVersionId = fileVersionKey
               , locIdBaseKind = Enums.OMS
-              , locIdBaseLocId = locIdOfOMS nodeLabel
+              , locIdBaseLocId = locIdOfOMS documentLocIdBase nodeLabel
               }
         omsKey <- insert omsLocIdBaseValue
         insert OMS
@@ -977,12 +1009,12 @@ findSymbolInCache libEnv libName nodeId lid symbol dbCache =
   in  Map.lookup (libNameDereferenced, nodeIdDereferenced, mapIndex) $ symbolKeyMap dbCache
 
 findOMSAndSignature :: MonadIO m
-                    => FileVersionId -> DGNodeLab
+                    => FileVersionId -> Entity LocIdBase -> DGNodeLab
                     -> DBMonad m (Maybe (LocIdBaseId, SignatureId))
-findOMSAndSignature fileVersionKey nodeLabel = do
+findOMSAndSignature fileVersionKey documentLocIdBase nodeLabel = do
   omsLocIdM <- selectFirst [ LocIdBaseFileVersionId ==. fileVersionKey
                            , LocIdBaseKind ==. Enums.OMS
-                           , LocIdBaseLocId ==. locIdOfOMS nodeLabel
+                           , LocIdBaseLocId ==. locIdOfOMS documentLocIdBase nodeLabel
                            ] []
   case omsLocIdM of
     Just (Entity omsKey _) -> do
@@ -995,8 +1027,12 @@ findOMSAndSignature fileVersionKey nodeLabel = do
       return $ Just (omsKey, oMSSignatureId omsValue)
     Nothing -> return Nothing
 
-locIdOfOMS :: DGNodeLab -> String
-locIdOfOMS nodeLabel = showName $ dgn_name nodeLabel
+locIdOfOMS :: Entity LocIdBase -> DGNodeLab -> String
+locIdOfOMS (Entity _ documentLocIdBaseValue) nodeLabel =
+  case locIdBaseKind documentLocIdBaseValue of
+    Enums.NativeDocument -> showName $ dgn_name nodeLabel
+    _ -> locIdBaseLocId documentLocIdBaseValue
+         ++ "//" ++ showName (dgn_name nodeLabel)
 
 symbolMapIndex :: Sentences lid sentence sign morphism symbol
                => lid -> symbol -> SymbolMapIndex
