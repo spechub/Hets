@@ -47,7 +47,7 @@ saveDiagnosis :: MonadIO m
 saveDiagnosis fileVersionKey diagnosis =
     let kind = case Result.diagKind diagnosis of
           Result.Error -> Enums.Error
-          Result.Warning -> Enums.Warning
+          Result.Warning -> Enums.Warn
           Result.Hint -> Enums.Hint
           _ -> Enums.Debug
         text = Result.diagString diagnosis
