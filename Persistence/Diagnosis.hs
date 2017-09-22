@@ -17,6 +17,7 @@ module Persistence.Diagnosis (saveDiagnoses) where
 
 import Persistence.Database
 import Persistence.DBConfig
+import qualified Persistence.Schema.Enums as Enums
 import Persistence.Range
 import Persistence.Schema as SchemaClass
 
@@ -45,10 +46,10 @@ saveDiagnosis :: MonadIO m
               => FileVersionId -> Result.Diagnosis -> DBMonad m ()
 saveDiagnosis fileVersionKey diagnosis =
     let kind = case Result.diagKind diagnosis of
-          Result.Error -> "Error"
-          Result.Warning -> "Warning"
-          Result.Hint -> "Hint"
-          _ -> "Debug"
+          Result.Error -> Enums.Error
+          Result.Warning -> Enums.Warning
+          Result.Hint -> Enums.Hint
+          _ -> Enums.Debug
         text = Result.diagString diagnosis
         range = Result.diagPos diagnosis
     in do
