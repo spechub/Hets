@@ -136,10 +136,7 @@ FileRange sql=file_ranges
 Diagnosis sql=diagnoses
   fileVersionId FileVersionId
   fileRangeId FileRangeId Maybe
-  -- kind should not be a String, but an Enums.DiagnosisKindType. This is not
-  -- supported by Persistent, though, because it is a PostgreSQL enum type.
-  -- See https://github.com/yesodweb/persistent/issues/264
-  kind String sqltype=text
+  kind Enums.DiagnosisKindType
   text Text
   deriving Show
 
