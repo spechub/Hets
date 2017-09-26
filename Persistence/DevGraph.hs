@@ -64,7 +64,7 @@ import Control.Monad.IO.Class (MonadIO (..))
 import Data.Char (toLower)
 import qualified Data.IntMap as IntMap
 import Data.Graph.Inductive.Graph as Graph
-import Data.List (intercalate)
+import Data.List (intercalate, stripPrefix)
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe
@@ -164,7 +164,7 @@ createDocument opts libEnv fileVersionKey dbCache0 libName =
       location = fmap show $ locIRI libName
       version = fmap (intercalate "." . (\ (VersionNumber v _) -> v)) $
                   libVersion libName
-      locId = displayName
+      locId = locIdOfDocument opts location displayName
   in  do
         kind <- kindOfDocument opts location
         let documentLocIdBaseValue = LocIdBase
@@ -183,6 +183,15 @@ createDocument opts libEnv fileVersionKey dbCache0 libName =
         let dbCache1 = addDocumentToCache libName documentKey dbCache0
         createAllOmsOfDocument opts libEnv fileVersionKey dbCache1 dGraph
           globalAnnotations libName (Entity documentKey documentLocIdBaseValue)
+
+locIdOfDocument :: HetcatsOpts -> Maybe String -> String -> String
+locIdOfDocument opts location displayName =
+  let base = fromMaybe displayName location
+  in  case libdirs opts of
+        libdir' : _ ->
+          let libdir = if last libdir' == '/' then libdir' else libdir' ++ "/"
+          in  fromMaybe base $ stripPrefix libdir base
+        [] -> base
 
 -- Guess the kind of the Document. First, by the filepath only and then, by
 -- searching for keywords in the content. If the type cannot be guessed,
