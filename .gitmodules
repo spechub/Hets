@@ -1,0 +1,4 @@
+[submodule "_dependencies/persistent"]
+	path = _dependencies/persistent
+	url = git@github.com:eugenk/persistent.git
+	branch = add_support_for_postgresqls_enumerated_types
