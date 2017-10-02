@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, ScopedTypeVariables #-}
 {- |
 Module      :  ./Comorphisms/SuleCFOL2TPTP.hs
 Description :  Coding of a CASL subset into TPTP
@@ -126,7 +126,7 @@ translateNamedFormula signWithRenamings x = do
              , sentence = translated
              }
 
-translateFormula :: (FormExtension f, Eq f)
+translateFormula :: forall e f . (FormExtension f, Eq f)
                  => SignWithRenamings f e -> String -> Bool -> FORMULA f
                  -> Result TSign.Sentence
 translateFormula signWithRenamings nameS isAxiom f = do
@@ -136,11 +136,9 @@ translateFormula signWithRenamings nameS isAxiom f = do
            then fofUnitaryFormulaToAxiom name fofFormula
            else fofUnitaryFormulaToConjecture name fofFormula
   where
-    -- GHC complains about the type variable f, and needs to infer the type
-    -- itself at this point.
-    -- toUnitaryFormula :: (FormExtension f, Eq f)
-    --                  => FORMULA f
-    --                  -> Result FOF_unitary_formula
+    toUnitaryFormula :: (FormExtension f, Eq f)
+                         => FORMULA f
+                         -> Result FOF_unitary_formula
     toUnitaryFormula x = case x of
       Quantification q vars f _ -> do
         let fofVars = translateVarDecls vars
