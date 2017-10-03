@@ -64,7 +64,7 @@ import Control.Monad.IO.Class (MonadIO (..))
 import Data.Char (toLower)
 import qualified Data.IntMap as IntMap
 import Data.Graph.Inductive.Graph as Graph
-import Data.List (intercalate, stripPrefix)
+import Data.List (intercalate, isPrefixOf, stripPrefix)
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe
@@ -156,7 +156,7 @@ createDocumentsThatAreIndependent opts libEnv fileVersionKey dbCache =
 createDocument :: MonadIO m
                => HetcatsOpts -> LibEnv -> FileVersionId -> DBCache
                -> LibName -> DBMonad m DBCache
-createDocument opts libEnv fileVersionKey dbCache0 libName =
+createDocument opts libEnv parentFileVersionKey dbCache0 libName =
   let dGraph = fromJust $ Map.lookup libName libEnv
       globalAnnotations = globalAnnos dGraph
       name = show $ pretty $ getLibId libName
@@ -166,6 +166,9 @@ createDocument opts libEnv fileVersionKey dbCache0 libName =
                   libVersion libName
       locId = locIdOfDocument opts location displayName
   in  do
+        -- We need to find the FileVersion of the corresponding document
+        -- if it is located inside the libdir.
+        fileVersionKey <- findFileVersion opts parentFileVersionKey location
         kind <- kindOfDocument opts location
         let documentLocIdBaseValue = LocIdBase
               { locIdBaseFileVersionId = fileVersionKey
@@ -187,11 +190,40 @@ createDocument opts libEnv fileVersionKey dbCache0 libName =
 locIdOfDocument :: HetcatsOpts -> Maybe String -> String -> String
 locIdOfDocument opts location displayName =
   let base = fromMaybe displayName location
-  in  case libdirs opts of
-        libdir' : _ ->
-          let libdir = if last libdir' == '/' then libdir' else libdir' ++ "/"
-          in  fromMaybe base $ stripPrefix libdir base
-        [] -> base
+  in  if null $ libdirs opts
+      then base
+      else fromMaybe base $ stripPrefix (firstLibdir opts) base
+
+firstLibdir :: HetcatsOpts -> String
+firstLibdir opts =
+  let libdir' = head $ libdirs opts
+  in  if last libdir' == '/' then libdir' else libdir' ++ "/"
+
+findFileVersion :: MonadIO m
+                => HetcatsOpts -> FileVersionId -> Maybe String
+                -> DBMonad m FileVersionId
+findFileVersion opts fileVersionKey location =
+  let isInLibdir = not (null $ libdirs opts)
+                     && isJust location
+                     && head (libdirs opts) `isPrefixOf` fromJust location
+      path = fromJust $ stripPrefix (firstLibdir opts) $ fromJust location
+      queryString = Text.pack (
+        "SELECT file_versions.id "
+        ++ "FROM file_versions "
+        ++ "INNER JOIN file_version_parents "
+        ++ "  ON file_version_parents.last_changed_file_version_id = file_versions.id "
+        ++ "INNER JOIN file_versions AS backreference "
+        ++ "  ON file_version_parents.queried_sha = backreference.commit_sha "
+        ++ "WHERE (file_versions.path = ? "
+        ++ "       AND backreference.id = ?);")
+  in  if isInLibdir
+      then do
+            results <-
+              rawSql queryString [ toPersistValue path
+                                 , toPersistValue fileVersionKey
+                                 ]
+            return $ head results
+      else return fileVersionKey
 
 -- Guess the kind of the Document. First, by the filepath only and then, by
 -- searching for keywords in the content. If the type cannot be guessed,
