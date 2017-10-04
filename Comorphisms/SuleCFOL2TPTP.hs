@@ -191,7 +191,7 @@ translateFormula signWithRenamings nameS isAxiom f = do
                  FOFDPF_proposition $ TPTP_true
       Atom False _ ->
         return $ FOFUF_atomic $ FOFAT_defined $ FOFDAF_plain $
-                 FOFDPF_proposition $ TPTP_true
+                 FOFDPF_proposition $ TPTP_false
       Predication predSymb terms _ -> do
         predName <- case predSymb of
               Pred_name _ ->
