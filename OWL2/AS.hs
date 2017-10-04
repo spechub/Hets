@@ -4,7 +4,7 @@ Module      :  ./OWL2/AS.hs
 Copyright   :  (c) C. Maeder, Felix Gabriel Mance
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  Christian.Maeder@dfki.de
+Maintainer  :  Alexander.Koslowski@st.ovgu.de
 Stability   :  provisional
 Portability :  portable
 
