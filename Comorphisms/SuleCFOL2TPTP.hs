@@ -144,8 +144,7 @@ translateFormula signWithRenamings nameS isAxiom f = do
         let fofVars = translateVarDecls vars
         let variableList = map fst fofVars
         let variableDeclaration =
-              FOFUF_logic $ FOFLF_binary $ FOFBF_assoc $ FOFBA_and $
-              map (uncurry sortOfX) fofVars
+              unitaryFormulaAnd $ map (uncurry sortOfX) fofVars
         fofF <- toUnitaryFormula f
         case q of
           Universal ->
@@ -155,9 +154,7 @@ translateFormula signWithRenamings nameS isAxiom f = do
             in  return $ FOFUF_quantified $
                          FOF_quantified_formula ForAll variableList implication
           Existential ->
-            let conjunction =
-                  FOFUF_logic $ FOFLF_binary $ FOFBF_assoc $
-                  FOFBA_and [variableDeclaration, fofF]
+            let conjunction = unitaryFormulaAnd [variableDeclaration, fofF]
             in  return $ FOFUF_quantified $
                          FOF_quantified_formula Exists variableList conjunction
           -- Has been resolved/removed by prepareNamedFormula:
@@ -165,10 +162,10 @@ translateFormula signWithRenamings nameS isAxiom f = do
             fail "Unique_existential occurred where it cannot occur. This is a bug in Hets."
       Junction Con fs _ -> do
         fofs <- mapM toUnitaryFormula fs
-        return $ FOFUF_logic $ FOFLF_binary $ FOFBF_assoc $ FOFBA_and fofs
+        return $ unitaryFormulaAnd fofs
       Junction Dis fs _ -> do
         fofs <- mapM toUnitaryFormula fs
-        return $ FOFUF_logic $ FOFLF_binary $ FOFBF_assoc $ FOFBA_or fofs
+        return $ unitaryFormulaOr fofs
       Relation f1 CAS.Implication f2 _ -> do
         fof1 <- toUnitaryFormula f1
         fof2 <- toUnitaryFormula f2
@@ -234,6 +231,12 @@ translateFormula signWithRenamings nameS isAxiom f = do
     translateVarDecl :: VAR_DECL -> [(TAS.Variable, SORT)]
     translateVarDecl x = case x of
       Var_decl vars sort _ -> zip (map variableOfVar vars) $ repeat sort
+
+unitaryFormulaAnd :: FOF_and_formula -> FOF_unitary_formula
+unitaryFormulaAnd = FOFUF_logic . FOFLF_binary . FOFBF_assoc . FOFBA_and
+
+unitaryFormulaOr :: FOF_or_formula -> FOF_unitary_formula
+unitaryFormulaOr = FOFUF_logic . FOFLF_binary . FOFBF_assoc . FOFBA_or
 
 
 translateTerm :: (FormExtension f, Eq f)
@@ -561,7 +564,7 @@ translateSign caslSign =
                 FOF_binary_nonassoc
                   TAS.Implication
                   (sortOfX varX sort) $
-                  FOFUF_logic $ FOFLF_binary $ FOFBF_assoc $ FOFBA_and $
+                  unitaryFormulaAnd $
                   Set.toList $
                   Set.map (negateUnitaryFormula . sortOfX varX) otherTopSorts
 
@@ -607,8 +610,7 @@ translateSign caslSign =
                   [1 .. length (opArgs opType)]
               function = functionOfOp opName
 
-              functionAntecedent =
-                FOFUF_logic $ FOFLF_binary $ FOFBF_assoc $ FOFBA_and $
+              functionAntecedent = unitaryFormulaAnd $
                 map (\ (v, p) ->
                       FOFUF_atomic $ FOFAT_plain $ FOFPAF_predicate p
                       [FOFT_function $ FOFFT_plain $ FOFPT_constant $ v]) $
