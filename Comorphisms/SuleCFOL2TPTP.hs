@@ -679,5 +679,6 @@ toAlphaNum = concatMap toAlphaNumC
       '*' -> "STAR"
       '\'' -> "PRIME"
       '\"' -> "QUOTE"
+      ' ' -> "_"
       '_' -> "_"
       _ -> if isAlphaNum c then [c] else 'U' : showHex (ord c) ""
