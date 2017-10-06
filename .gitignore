@@ -188,3 +188,4 @@ TPTP/ATC_TPTP.der.hs
 TPTP/ATC_TPTP.hs
 test/*/*.th
 test/*/*.xml
+/_dependencies
