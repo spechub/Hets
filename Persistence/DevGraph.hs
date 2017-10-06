@@ -97,7 +97,7 @@ emptyDBCache = DBCache { documentMap = Map.empty
 exportLibEnv :: HetcatsOpts -> LibEnv -> IO ()
 exportLibEnv opts libEnv =
   onDatabase (databaseConfig opts) $ do
-    migrateLanguages opts
+    advisoryLocked opts "migrateLanguages" migrateLanguages
     let dependencyLibNameRel = getLibDepRel libEnv
     let dependencyOrderedLibsSetL = Rel.depSort dependencyLibNameRel
     dbCache1 <-
@@ -169,31 +169,34 @@ createDocument opts libEnv parentFileVersionKey dbCache0 libName =
         -- if it is located inside the libdir.
         fileVersionKey <- findFileVersion opts parentFileVersionKey location
         kind <- kindOfDocument opts location
-        documentM <- selectFirst [ LocIdBaseLocId ==. locId
-                                 , LocIdBaseFileVersionId ==. fileVersionKey
-                                 , LocIdBaseKind ==. kind
-                                 ] []
-        (doSave, documentKey, documentLocIdBaseValue) <- case documentM of
-          Just (Entity documentKey documentLocIdBaseValue) ->
-            return (False, documentKey, documentLocIdBaseValue)
-          Nothing -> do
-            let documentLocIdBaseValue = LocIdBase
-                  { locIdBaseFileVersionId = fileVersionKey
-                  , locIdBaseKind = kind
-                  , locIdBaseLocId = locId
-                  }
-            documentKey <- insert documentLocIdBaseValue
-            insert Document
-              { documentLocIdBaseId = documentKey
-              , documentDisplayName = displayName
-              , documentName = name
-              , documentLocation = location
-              , documentVersion = version
-              }
-            return (True, documentKey, documentLocIdBaseValue)
-        let dbCache1 = addDocumentToCache libName documentKey dbCache0
-        createAllOmsOfDocument opts libEnv fileVersionKey dbCache1 doSave dGraph
-          globalAnnotations libName (Entity documentKey documentLocIdBaseValue)
+        let fileVersionKeyS =
+              show $ unSqlBackendKey $ unFileVersionKey fileVersionKey
+        advisoryLocked opts (fileVersionKeyS ++ "-" ++ show kind ++ "-" ++ locId) $ do
+          documentM <- selectFirst [ LocIdBaseLocId ==. locId
+                                   , LocIdBaseFileVersionId ==. fileVersionKey
+                                   , LocIdBaseKind ==. kind
+                                   ] []
+          (doSave, documentKey, documentLocIdBaseValue) <- case documentM of
+            Just (Entity documentKey documentLocIdBaseValue) ->
+              return (False, documentKey, documentLocIdBaseValue)
+            Nothing -> do
+              let documentLocIdBaseValue = LocIdBase
+                    { locIdBaseFileVersionId = fileVersionKey
+                    , locIdBaseKind = kind
+                    , locIdBaseLocId = locId
+                    }
+              documentKey <- insert documentLocIdBaseValue
+              insert Document
+                { documentLocIdBaseId = documentKey
+                , documentDisplayName = displayName
+                , documentName = name
+                , documentLocation = location
+                , documentVersion = version
+                }
+              return (True, documentKey, documentLocIdBaseValue)
+          let dbCache1 = addDocumentToCache libName documentKey dbCache0
+          createAllOmsOfDocument opts libEnv fileVersionKey dbCache1 doSave dGraph
+            globalAnnotations libName (Entity documentKey documentLocIdBaseValue)
 
 locIdOfDocument :: HetcatsOpts -> Maybe String -> String -> String
 locIdOfDocument opts location displayName =
