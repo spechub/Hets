@@ -9,6 +9,7 @@ import Persistence.Schema as SchemaClass
 import Persistence.Utils
 
 import qualified Comorphisms.LogicGraph as LogicGraph (logicGraph)
+import Driver.Options
 import Driver.Version
 import Logic.Grothendieck
 import Logic.Logic as Logic
@@ -19,15 +20,16 @@ import Control.Monad.IO.Class (MonadIO (..))
 import Database.Persist
 
 migrateLanguages :: MonadIO m
-                 => DBMonad m ()
-migrateLanguages = do
+                 => HetcatsOpts -> DBMonad m ()
+migrateLanguages opts = do
   let versionKeyName = "lastMigratedVersion"
-  lastMigratedVersionM <- selectFirst [HetsKey ==. versionKeyName] []
-  case lastMigratedVersionM of
-    Nothing ->
-      insert (Hets versionKeyName hetsVersionNumeric) >> exportLogicGraph
-    Just (Entity _ value) ->
-      unless (hetsValue value == hetsVersionNumeric) exportLogicGraph
+  do
+    lastMigratedVersionM <- selectFirst [HetsKey ==. versionKeyName] []
+    case lastMigratedVersionM of
+      Nothing ->
+        insert (Hets versionKeyName hetsVersionNumeric) >> exportLogicGraph
+      Just (Entity _ value) ->
+        unless (hetsValue value == hetsVersionNumeric) exportLogicGraph
 
 exportLogicGraph :: MonadIO m
                  => DBMonad m ()
