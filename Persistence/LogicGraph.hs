@@ -9,7 +9,6 @@ import Persistence.Schema as SchemaClass
 import Persistence.Utils
 
 import qualified Comorphisms.LogicGraph as LogicGraph (logicGraph)
-import Driver.Options
 import Driver.Version
 import Logic.Grothendieck
 import Logic.Logic as Logic
@@ -19,9 +18,9 @@ import Control.Monad (unless)
 import Control.Monad.IO.Class (MonadIO (..))
 import Database.Persist
 
-migrateLanguages :: MonadIO m
-                 => HetcatsOpts -> DBMonad m ()
-migrateLanguages opts = do
+
+migrateLanguages :: MonadIO m => DBMonad m ()
+migrateLanguages = do
   let versionKeyName = "lastMigratedVersion"
   do
     lastMigratedVersionM <- selectFirst [HetsKey ==. versionKeyName] []
