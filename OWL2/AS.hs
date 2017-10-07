@@ -110,6 +110,17 @@ simpleIdToQName sid = nullQName {
 , iriPos = tokPos sid
 }
 
+{-
+-- Helper function for turning a string into a IRI
+parseQNameAny :: QNameParser () QName -> String -> Maybe QName
+parseQNameAny parser qnamestr = case parse (parser << eof) "" qnamestr of
+        Left _ -> Nothing
+        Right u -> Just u { iriPos = nullRange }
+
+type QNameParser st a = GenParser Char st a
+
+-}
+
 isNullQName :: QName -> Bool
 isNullQName qn = case qn of
     QN "" "" _ "" _ -> True
