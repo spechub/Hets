@@ -80,6 +80,10 @@ showQU (QN pre local _ _ _) =
 showQI :: QName -> String
 showQI n = '<' : showQU n ++ ">"
 
+--hasFullIRI | do we have a full (possibly expanded) IRI (i.e. for comparisons)
+hasFullQName :: QName -> Bool
+hasFullQName i = not . null $ namePrefix i ++ localPart i
+
 nullQName :: QName
 nullQName = QN "" "" Abbreviated "" nullRange
 
