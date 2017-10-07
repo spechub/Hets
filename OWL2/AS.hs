@@ -92,7 +92,10 @@ isAbbrev i
   | iriType i == Abbreviated = True
   | otherwise = False
 
-
+isSimple :: QName -> Bool
+isSimple i 
+  | iriType i == Abbreviated && namePrefix i == "" = True
+  | otherwise = False
 
 nullQName :: QName
 nullQName = QN "" "" Abbreviated "" nullRange
