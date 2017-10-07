@@ -101,7 +101,8 @@ isSimple i
 nullQName :: QName
 nullQName = QN "" "" Abbreviated "" nullRange
 
---simpleIdToIRI | Converts a Simple_ID to an IRI
+--simpleIdToIRI | Converts a Simple_ID to an IRI 
+--is this correct?
 simpleIdToQName :: SIMPLE_ID -> QName
 simpleIdToQName sid = nullQName {
   localPart = tokStr sid
