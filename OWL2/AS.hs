@@ -92,6 +92,7 @@ isAbbrev i
   | iriType i == Abbreviated = True
   | otherwise = False
 
+--isSimple | do we have a simple IRI that is a (possibly expanded) abbreviated IRI without prefix
 isSimple :: QName -> Bool
 isSimple i 
   | iriType i == Abbreviated && namePrefix i == "" = True
