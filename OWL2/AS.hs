@@ -82,7 +82,9 @@ showQI n = '<' : showQU n ++ ">"
 
 --hasFullIRI | do we have a full (possibly expanded) IRI (i.e. for comparisons)
 hasFullQName :: QName -> Bool
-hasFullQName i = not . null $ namePrefix i ++ localPart i
+hasFullQName i 
+  | iriType i == Full = True
+  | otherwise = False
 
 nullQName :: QName
 nullQName = QN "" "" Abbreviated "" nullRange
