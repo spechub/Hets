@@ -101,6 +101,14 @@ isSimple i
 nullQName :: QName
 nullQName = QN "" "" Abbreviated "" nullRange
 
+--simpleIdToIRI | Converts a Simple_ID to an IRI
+simpleIdToQName :: SIMPLE_ID -> QName
+simpleIdToQName sid = nullQName {
+  localPart = tokStr sid
+, iriType = Abbreviated
+, iriPos = tokPos sid
+}
+
 isNullQName :: QName -> Bool
 isNullQName qn = case qn of
     QN "" "" _ "" _ -> True
