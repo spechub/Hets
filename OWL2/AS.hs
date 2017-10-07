@@ -86,6 +86,14 @@ hasFullQName i
   | iriType i == Full = True
   | otherwise = False
 
+--isAbbrev | do we have an abbreviated IRI (i.e. for pretty printing)
+isAbbrev :: QName -> Bool
+isAbbrev i 
+  | iriType i == Abbreviated = True
+  | otherwise = False
+
+
+
 nullQName :: QName
 nullQName = QN "" "" Abbreviated "" nullRange
 
