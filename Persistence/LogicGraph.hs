@@ -9,6 +9,7 @@ import Persistence.Schema as SchemaClass
 import Persistence.Utils
 
 import qualified Comorphisms.LogicGraph as LogicGraph (logicGraph)
+import Driver.Options
 import Driver.Version
 import Logic.Grothendieck
 import Logic.Logic as Logic
@@ -18,23 +19,29 @@ import Control.Monad (unless)
 import Control.Monad.IO.Class (MonadIO (..))
 import Database.Persist
 
+migrateLogicGraphKey :: String
+migrateLogicGraphKey = "migrateLogicGraph"
 
-migrateLanguages :: MonadIO m => DBMonad m ()
-migrateLanguages = do
+exportLogicGraph :: HetcatsOpts -> IO ()
+exportLogicGraph opts =
+  onDatabase (databaseConfig opts) $
+    advisoryLocked opts migrateLogicGraphKey $ migrateLogicGraph opts
+
+migrateLogicGraph :: MonadIO m => HetcatsOpts -> DBMonad m ()
+migrateLogicGraph opts = do
   let versionKeyName = "lastMigratedVersion"
   do
     lastMigratedVersionM <- selectFirst [HetsKey ==. versionKeyName] []
     case lastMigratedVersionM of
       Nothing ->
-        insert (Hets versionKeyName hetsVersionNumeric) >> exportLogicGraph
+        insert (Hets versionKeyName hetsVersionNumeric) >> migrateLogicGraph' opts
       Just (Entity _ value) ->
-        unless (hetsValue value == hetsVersionNumeric) exportLogicGraph
+        unless (hetsValue value == hetsVersionNumeric) $ migrateLogicGraph' opts
 
-exportLogicGraph :: MonadIO m
-                 => DBMonad m ()
-exportLogicGraph = do
+migrateLogicGraph' :: MonadIO m => HetcatsOpts -> DBMonad m ()
+migrateLogicGraph' opts = do
   exportLanguagesAndLogics LogicGraph.logicGraph
-  exportLanguageMappingsAndLogicMappings LogicGraph.logicGraph
+  exportLanguageMappingsAndLogicMappings opts LogicGraph.logicGraph
 
 -- Export all Languages and Logics. Add those that have been added since a
 -- previous version of Hets. This does not delete Languages or Logics.
@@ -74,16 +81,19 @@ exportLanguagesAndLogics logicGraph =
 -- since a previous version of Hets. This does not delete any of the old
 -- mappings.
 exportLanguageMappingsAndLogicMappings :: MonadIO m
-                                       => LogicGraph -> DBMonad m ()
-exportLanguageMappingsAndLogicMappings logicGraph =
-  mapM_ findOrCreateLanguageMappingAndLogicMapping $ comorphisms logicGraph
+                                       => HetcatsOpts
+                                       -> LogicGraph -> DBMonad m ()
+exportLanguageMappingsAndLogicMappings opts logicGraph =
+  mapM_ (findOrCreateLanguageMappingAndLogicMapping opts) $
+    comorphisms logicGraph
 
 findOrCreateLanguageMappingAndLogicMapping :: MonadIO m
-                                           => AnyComorphism
+                                           => HetcatsOpts
+                                           -> AnyComorphism
                                            -> DBMonad m ( LanguageMappingId
                                                         , LogicMappingId
                                                         )
-findOrCreateLanguageMappingAndLogicMapping (Comorphism.Comorphism cid) =
+findOrCreateLanguageMappingAndLogicMapping opts (Comorphism.Comorphism cid) =
           let name = language_name cid
               logicMappingSlugS = parameterize name
               sourceLanguageSlugS = parameterize $ show $ sourceLogic cid
@@ -107,11 +117,12 @@ findOrCreateLanguageMappingAndLogicMapping (Comorphism.Comorphism cid) =
                   logicM <- selectFirst [LogicSlug ==. logicSlugS] []
                   case logicM of
                     Just (Entity key _) -> return key
-                    Nothing -> insert SchemaClass.Logic
-                      { logicLanguageId = sourceLanguageKey
-                      , logicSlug = logicSlugS
-                      , logicName = sublogicName $ sourceSublogic cid
-                      }
+                    Nothing -> advisoryLocked opts migrateLogicGraphKey $
+                      insert SchemaClass.Logic
+                        { logicLanguageId = sourceLanguageKey
+                        , logicSlug = logicSlugS
+                        , logicName = sublogicName $ sourceSublogic cid
+                        }
                 Just (Entity t _) -> return t
 
             -- findOrCreateLogic (target):
@@ -124,11 +135,12 @@ findOrCreateLanguageMappingAndLogicMapping (Comorphism.Comorphism cid) =
                   logicM <- selectFirst [LogicSlug ==. logicSlugS] []
                   case logicM of
                     Just (Entity key _) -> return key
-                    Nothing -> insert SchemaClass.Logic
-                      { logicLanguageId = targetLanguageKey
-                      , logicSlug = logicSlugS
-                      , logicName = sublogicName $ targetSublogic cid
-                      }
+                    Nothing -> advisoryLocked opts migrateLogicGraphKey $
+                      insert SchemaClass.Logic
+                        { logicLanguageId = targetLanguageKey
+                        , logicSlug = logicSlugS
+                        , logicName = sublogicName $ targetSublogic cid
+                        }
                 Just (Entity t _) -> return t
 
             -- findOrCreateLanguageMapping:

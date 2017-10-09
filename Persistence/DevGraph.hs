@@ -54,7 +54,7 @@ import Logic.Comorphism
 import Logic.Grothendieck hiding (gMorphism)
 import Logic.Logic as Logic
 import Logic.Prover
-import Static.DevGraph
+import Static.DevGraph hiding (getLogic)
 import Static.DgUtils
 import Static.GTheory
 import qualified Static.ToJson as ToJson
@@ -97,7 +97,6 @@ emptyDBCache = DBCache { documentMap = Map.empty
 exportLibEnv :: HetcatsOpts -> LibEnv -> IO ()
 exportLibEnv opts libEnv =
   onDatabase (databaseConfig opts) $ do
-    advisoryLocked opts "migrateLanguages" migrateLanguages
     let dependencyLibNameRel = getLibDepRel libEnv
     let dependencyOrderedLibsSetL = Rel.depSort dependencyLibNameRel
     dbCache1 <-
@@ -413,7 +412,7 @@ createOMS opts libEnv fileVersionKey dbCache0 doSave globalAnnotations libName
                 findOrCreateSerializationM languageKey syntaxM
 
             logicKey <- case sublogicOfTh gTheory of
-              G_sublogics lid sublogics -> findOrCreateLogic lid sublogics
+              G_sublogics lid sublogics -> findOrCreateLogic opts lid sublogics
 
             let omsLocIdBaseValue = LocIdBase
                   { locIdBaseFileVersionId = fileVersionKey
@@ -564,7 +563,7 @@ findOrCreateSignatureMorphism opts libEnv dbCache doSave libName edge
             let json = ppJson $ ToJson.gmorph opts globalAnnotations gMorphism
             in do
                 (_, logicMappingKey) <-
-                  findOrCreateLanguageMappingAndLogicMapping $ Comorphism cid
+                  findOrCreateLanguageMappingAndLogicMapping opts $ Comorphism cid
                 signatureMorphismKey <-
                   if doSave
                   then insert SignatureMorphism
@@ -683,23 +682,38 @@ findOrCreateLogic :: ( MonadIO m
                          basic_spec sentence symb_items symb_map_items
                          sign morphism symbol raw_symbol proof_tree
                      )
-                  => lid -> sublogics -> DBMonad m LogicId
-findOrCreateLogic lid sublogic = do
+                  => HetcatsOpts -> lid -> sublogics -> DBMonad m LogicId
+findOrCreateLogic opts lid sublogic =
   let name = sublogicName sublogic
-  let logicSlugS = parameterize name
-  languageKey <- findLanguage lid
-  logicM <- selectFirst [ LogicLanguageId ==. languageKey
-                        , LogicSlug ==. logicSlugS
-                        ] []
-  case logicM of
-    Just (Entity key _) -> return key
-    Nothing ->
-      -- TODO: do not insert the sublogic as soon as https://github.com/spechub/Hets/issues/1740 is fixed
-      insert SchemaClass.Logic
-        { logicLanguageId = languageKey
-        , logicSlug = logicSlugS
-        , logicName = name
-        }
+      logicSlugS = parameterize name
+  in  do
+        languageKey <- findLanguage lid
+        -- This is a two-staged process to save some performance:
+        -- Case 1: If the logic existed beforehand, then we don't lock the
+        -- database and return the logic ID. This is expected to happen very
+        -- frequently.
+        -- Case 2: If the logic did not exist at this point, we need to create
+        -- it atomically. To do this, we do a find-or-create pattern inside a
+        -- mutex. This is expected to happen only a few times.
+        logicM1 <- getLogic languageKey logicSlugS
+        case logicM1 of
+          Just (Entity key _) -> return key
+          Nothing -> advisoryLocked opts migrateLogicGraphKey $ do
+            logicM2 <- getLogic languageKey logicSlugS
+            case logicM2 of
+              Just (Entity key _) -> return key
+              Nothing -> insert SchemaClass.Logic
+                           { logicLanguageId = languageKey
+                           , logicSlug = logicSlugS
+                           , logicName = name
+                           }
+
+getLogic :: MonadIO m
+         => LanguageId -> String -> DBMonad m (Maybe (Entity SchemaClass.Logic))
+getLogic languageKey logicSlugS =
+  selectFirst [ LogicLanguageId ==. languageKey
+              , LogicSlug ==. logicSlugS
+              ] []
 
 findOrCreateSignature :: ( MonadIO m
                          , Sentences lid sentence sign morphism symbol
