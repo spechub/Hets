@@ -64,6 +64,7 @@ import Static.ComputeTheory
 import qualified Static.ToXml as ToXml
 import qualified Static.ToJson as ToJson
 import qualified Persistence.DevGraph
+import qualified Persistence.LogicGraph
 
 import CASL.Logic_CASL
 import CASL.CompositionTable.Pretty2
@@ -440,11 +441,19 @@ writeSpecFiles opts file lenv ln dg = do
 writeLG :: HetcatsOpts -> IO ()
 writeLG opts = do
     doDump opts "LogicGraph" $ putStrLn $ showDoc logicGraph ""
-    if elem JsonOut $ outtypes opts then do
-      lG <- lGToJson logicGraph
-      writeVerbFile opts { verbose = 2 } (outdir opts </> "LogicGraph.json")
-        $ ppJson lG
-      else do
-      lG <- lGToXml logicGraph
-      writeVerbFile opts { verbose = 2 } (outdir opts </> "LogicGraph.xml")
-        $ ppTopElement lG
+    let writeLGXML = do
+          lG <- lGToXml logicGraph
+          writeVerbFile opts { verbose = 2 } (outdir opts </> "LogicGraph.xml")
+            $ ppTopElement lG
+    if null $ outtypes opts
+    then writeLGXML
+    else
+      mapM_ (\ outtype -> case outtype of
+              XmlOut -> writeLGXML
+              JsonOut -> do
+                lG <- lGToJson logicGraph
+                writeVerbFile opts { verbose = 2 } (outdir opts </> "LogicGraph.json")
+                  $ ppJson lG
+              DbOut -> Persistence.LogicGraph.exportLogicGraph opts
+              _ -> return ()
+            ) $ outtypes opts
