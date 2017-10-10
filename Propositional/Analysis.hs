@@ -342,3 +342,4 @@ pROPsen_analysis (_, s, f) =
             g = Just . AS_Anno.sentence . formula . head
             annoF = AS_Anno.Annoted f Id.nullRange [] []
         in Result.Result (h x) (g x)
+

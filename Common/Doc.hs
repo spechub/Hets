@@ -173,6 +173,8 @@ module Common.Doc
     , prettyBind
     , prettyUniv
     , prettyExist
+    , boxDoc
+    , diamondDoc
       -- * docifying annotations and ids
     , annoDoc
     , idDoc
@@ -457,7 +459,8 @@ quMarkD, dot, bullet, defn, less, greater, lambda, mapsto, funArrow, pfun,
    interleave, synchronous, genpar_open, genpar_close, alpar_open,
    alpar_sep, alpar_close, external_choice, internal_choice, hiding_proc,
    ren_proc_open, ren_proc_close, dagger, vdash, dashv, breve, prettyAt,
-   prettyHere, prettyBind, prettyUniv, prettyExist :: Doc
+   prettyHere, prettyBind, prettyUniv, prettyExist, 
+   boxDoc, diamondDoc :: Doc
 
 quMarkD = text quMark
 dot = text dotS
@@ -508,6 +511,8 @@ prettyHere = symbol "Here"
 prettyBind = symbol "Bind"
 prettyUniv = symbol "Univ"
 prettyExist = symbol "Exist"
+boxDoc = symbol boxS
+diamondDoc = symbol diamondS
 -- | we know how to print annotations
 annoDoc :: Annotation -> Doc
 annoDoc = AnnoDoc

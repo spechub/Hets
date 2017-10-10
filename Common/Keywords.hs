@@ -175,6 +175,9 @@ functS = "fun"
 diamondS :: String
 diamondS = "<>"
 
+boxS :: String
+boxS = "[]"
+
 -- | the greater sign
 greaterS :: String
 greaterS = ">"
@@ -531,6 +534,8 @@ modalitiesS = "modalities"
 modalityS :: String
 modalityS = "modality"
 
+nomS :: String
+nomS = "state"
 
 notS :: String
 notS = "not"

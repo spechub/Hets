@@ -42,6 +42,7 @@ import Logic.Grothendieck
 import CASL.Logic_CASL  -- also serves as default logic
 import HasCASL.Logic_HasCASL
 import Propositional.Logic_Propositional
+import HPL.Logic_HPL
 import QBF.Logic_QBF
 import HolLight.Logic_HolLight
 import CSL.Logic_CSL
@@ -95,6 +96,7 @@ logicList =
   , Logic Isabelle
   , Logic SoftFOL
   , Logic Propositional
+  , Logic HPL
   , Logic QBF
   , Logic HolLight
   , Logic FreeCAD

@@ -27,6 +27,10 @@ module Propositional.AS_BASIC_Propositional
     , SYMB_OR_MAP (..)         -- Symbol or symbol map
     , PRED_ITEM (..)           -- Predicates
     , isPrimForm
+    , isJunctForm
+    , ppf
+    , printFormula
+    , sepByArbitrary 
     ) where
 
 import Common.Id as Id
@@ -117,15 +121,19 @@ isPrimForm f = case f of
         Negation _ _ -> True
         _ -> False
 
--- Pretty printing for formulas
-printFormula :: FORMULA -> Doc
-printFormula frm =
-  let ppf p f = (if p f then id else parens) $ printFormula f
-      isJunctForm f = case f of
+ppf :: (FORMULA -> Bool) -> FORMULA -> Doc
+ppf p f = (if p f then id else parens) $ printFormula f
+
+isJunctForm :: FORMULA -> Bool
+isJunctForm f = case f of
         Implication {} -> False
         Equivalence {} -> False
         _ -> True
-  in case frm of
+
+-- Pretty printing for formulas
+printFormula :: FORMULA -> Doc
+printFormula frm =
+ case frm of
   False_atom _ -> text falseS
   True_atom _ -> text trueS
   Predication x -> pretty x

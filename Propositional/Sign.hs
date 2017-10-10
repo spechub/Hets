@@ -23,6 +23,7 @@ module Propositional.Sign
     (Sign (..)                     -- Propositional Signatures
     , id2SimpleId
     , pretty                        -- pretty printing
+    , printSign
     , isLegalSignature              -- is a signature ok?
     , addToSig                      -- adds an id to the given Signature
     , unite                         -- union of signatures
