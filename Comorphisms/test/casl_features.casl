@@ -37,7 +37,7 @@ spec test_partially_overloading =
   sorts s < t1; t1 < u; s < t2; t2 < u
   sorts v < w; w < x
   sort z
-  ops f:s->v; f:s->x; f:z->w  %% partially in the overloading relation
+  ops f:s->v; f:s->x; f:s->z  %% partially in the overloading relation
 end
 
 spec test_many_sorts =
@@ -47,13 +47,13 @@ end
 spec test_connected_components =
   sorts a < b; c < b; c < d; d < e; f < e; g < h
 end
-  
+
 spec test_cond =
   sort s
   ops f,g,h:s->s
   preds p,q:s
   forall x:s
-  . f(x) = (g(x) when p(x) else h(x)) 
+  . f(x) = (g(x) when p(x) else h(x))
   . f(x) = ((g(x) when p(x) else h(x)) when q(x) else f(x))
 end
 
@@ -87,5 +87,4 @@ spec Nat =
   . 0 <= n                           %(leq_def1_Nat)% %simp
   . not suc(n) <= 0                  %(leq_def2_Nat)% %simp
   . suc(m) <= suc(n) <=> m <= n      %(leq_def3_Nat)% %simp
-
 end

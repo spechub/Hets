@@ -100,7 +100,7 @@ transTheory :: (FormExtension f, Eq f)
             => (CSign.Sign f e, [Named (FORMULA f)])
             -> Result TPTPTheory
 transTheory (sign, sens) = do
-  let signWithRenamings@(preparedSign, _, _) = prepareSign sign
+  let signWithRenamings@(preparedSign, a, _) = prepareSign sign
   let preparedSens = map prepareNamedFormula sens
   (tptpSign, signSentences) <- translateSign preparedSign
   translatedSentences <- mapM (translateNamedFormula signWithRenamings) preparedSens
@@ -345,21 +345,31 @@ prepareSign sign =
         addIfConflicting :: (OpType, OpType)
                          -> Map.Map (OP_NAME, OpType) OP_NAME
                          -> Map.Map (OP_NAME, OpType) OP_NAME
-        addIfConflicting (t1, t2) conflicts =
+        addIfConflicting (t1, t2) conflicts' =
           if isConflicting t1 t2
           then Map.insert (opName, t1) (renameCurrentOp t1) $
-                 Map.insert (opName, t2) (renameCurrentOp t2) conflicts
-          else conflicts
+                 Map.insert (opName, t2) (renameCurrentOp t2) conflicts'
+          else if hasAllArgsInSameCC t1 t2
+               then let greaterOpType = if leqOpType t1 t2 then t2 else t1 in
+                    Map.insert (opName, t1) (renameCurrentOp greaterOpType) $
+                      Map.insert (opName, t2) (renameCurrentOp greaterOpType) conflicts'
+               else conflicts'
+
+        leqOpType :: OpType -> OpType -> Bool
+        leqOpType t1 t2 = all (uncurry $ leqSort sign) $
+          zip (opArgs t1 ++ [opRes t1]) (opArgs t2 ++ [opRes t2])
 
         isConflicting :: OpType -> OpType -> Bool
         isConflicting t1 t2 =
+          hasAllArgsInSameCC t1 t2 && not (leqF sign t1 t2 || leqF sign t2 t1)
+
+        hasAllArgsInSameCC :: OpType -> OpType -> Bool
+        hasAllArgsInSameCC t1 t2 =
           let sameNumberOfArgs = length (opArgs t1) == length (opArgs t2)
               allArgsInSameCC =
                 all (isInSameCC connectedComponentMap) $
                   zip (opArgs t1) (opArgs t2)
-          in  sameNumberOfArgs &&
-                not (leqF sign t1 t2 || leqF sign t2 t1) &&
-                allArgsInSameCC
+          in sameNumberOfArgs && allArgsInSameCC
 
         renameCurrentOp :: OpType -> OP_NAME
         renameCurrentOp opType =
@@ -382,21 +392,31 @@ prepareSign sign =
         addIfConflicting :: (PredType, PredType)
                          -> Map.Map (PRED_NAME, PredType) PRED_NAME
                          -> Map.Map (PRED_NAME, PredType) PRED_NAME
-        addIfConflicting (t1, t2) conflicts =
+        addIfConflicting (t1, t2) conflicts' =
           if isConflicting t1 t2
           then Map.insert (predName, t1) (renameCurrentPred t1) $
-                 Map.insert (predName, t2) (renameCurrentPred t2) conflicts
-          else conflicts
+                 Map.insert (predName, t2) (renameCurrentPred t2) conflicts'
+          else if hasAllArgsInSameCC t1 t2
+               then let greaterPredType = if leqPredType t1 t2 then t2 else t1 in
+                    Map.insert (predName, t1) (renameCurrentPred greaterPredType) $
+                      Map.insert (predName, t2) (renameCurrentPred greaterPredType) conflicts'
+               else conflicts'
 
         isConflicting :: PredType -> PredType -> Bool
         isConflicting t1 t2 =
+          hasAllArgsInSameCC t1 t2 && not (leqP sign t1 t2 || leqP sign t2 t1)
+
+        leqPredType :: PredType -> PredType -> Bool
+        leqPredType t1 t2 = all (uncurry $ leqSort sign) $
+          zip (predArgs t1) (predArgs t2)
+
+        hasAllArgsInSameCC :: PredType -> PredType -> Bool
+        hasAllArgsInSameCC t1 t2 =
           let sameNumberOfArgs = length (predArgs t1) == length (predArgs t2)
               allArgsInSameCC =
                 all (isInSameCC connectedComponentMap) $
                   zip (predArgs t1) (predArgs t2)
-          in  sameNumberOfArgs &&
-                not (leqP sign t1 t2 || leqP sign t2 t1) &&
-                allArgsInSameCC
+          in sameNumberOfArgs && allArgsInSameCC
 
         renameCurrentPred :: PredType -> PRED_NAME
         renameCurrentPred predType =
