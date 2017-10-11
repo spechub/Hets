@@ -1,10 +1,10 @@
 {- |
 Module      :  ./HPL/Analysis.hs
 Description :  Basic analysis for propositional logic
-Copyright   :  (c) Dominik Luecke, Uni Bremen 2007
+Copyright   :  (c) Mihai Codescu, IMAR, 2017
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  luecke@informatik.uni-bremen.de
+Maintainer  :  mscodescu@gmail.com
 Stability   :  experimental
 Portability :  portable
 

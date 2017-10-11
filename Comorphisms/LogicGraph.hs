@@ -68,6 +68,7 @@ import Comorphisms.CommonLogic2IsabelleHOL
 import Comorphisms.HolLight2Isabelle
 import Comorphisms.SuleCFOL2SoftFOL
 import Comorphisms.Prop2CASL
+import Comorphisms.HPL2CASL
 import Comorphisms.CASL2Prop
 import Comorphisms.HasCASL2IsabelleHOL
 import Comorphisms.PCoClTyConsHOL2IsabelleHOL
@@ -160,6 +161,7 @@ comorphismList =
     , Comorphism CommonLogic2IsabelleHOL
     , Comorphism HolLight2Isabelle
     , Comorphism Prop2CASL
+    , Comorphism HPL2CASL
     , Comorphism CASL2Prop
     , Comorphism DFOL2CASL
     , Comorphism HasCASL2THFP_P
