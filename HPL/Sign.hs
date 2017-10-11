@@ -51,9 +51,13 @@ instance Pretty HSign where
     pretty = printSign
 
 {- | determines whether a signature is vaild
-all sets are ok, so glued to true -}
+a signature is not legal when the same name is used for
+both a nominal and a proposition-}
 isLegalSignature :: HSign -> Bool
-isLegalSignature _ = True
+isLegalSignature sig = let
+  propSet = PSign.items $ propSig sig
+  nomsSet = noms sig
+ in Set.intersection propSet nomsSet == Set.empty
 
 -- | pretty printing for signatures
 printSign :: HSign -> Doc

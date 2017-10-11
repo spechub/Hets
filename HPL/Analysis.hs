@@ -103,8 +103,11 @@ retrieveBasicItem tsig x =
                  ++ " after first axiom"
               , Result.diagPos = AS_Anno.opt_pos x }]
         }) tsig $ (\ (PBasic.Pred_item xs _) -> xs) apred
-      HBasic.Nom_decl apred -> List.foldl (\ asig ax -> TestSig
-        { msign = HSign.addNomToSig (msign asig) $ Id.simpleIdToId ax
+      HBasic.Nom_decl apred -> List.foldl (\ asig ax -> let 
+        newSign = HSign.addNomToSig (msign asig) $ Id.simpleIdToId ax
+        legal = HSign.isLegalSignature newSign 
+       in TestSig
+        { msign = newSign
         , occurence = occ
         , tdiagnosis = tdiagnosis tsig ++
             [ Result.Diag
@@ -112,6 +115,14 @@ retrieveBasicItem tsig x =
               , Result.diagString = if nocc then "All fine" else
                  "Definition of state " ++ show (HSymbol.pretty ax)
                  ++ " after first axiom"
+              , Result.diagPos = AS_Anno.opt_pos x }] 
+            ++
+           [Result.Diag 
+            { Result.diagKind = if legal then Result.Hint 
+                                 else Result.Error
+              , Result.diagString = if legal then "All fine" else
+                 "The nominal name " ++ show (HSymbol.pretty ax) ++
+                 " has already been used as a proposition name." 
               , Result.diagPos = AS_Anno.opt_pos x }]
         }) tsig $ (\ (HBasic.Nom_item xs _) -> xs) apred
       HBasic.Axiom_items _ -> TestSig
@@ -234,7 +245,7 @@ basicHPLAnalysis (bs, sig, _) =
       $ Just (bs, ExtSign sigItems declaredSyms, formulae)
     where
       bsSig = makeSig bs sig
-      sigItems = msign bsSig --TODO: sigItems should not have same name for both a nominal and a proposition
+      sigItems = msign bsSig
       declaredSyms = Set.difference (HSymbol.symOf sigItems) $ HSymbol.symOf sig
       bsForm = makeFormulas bs sigItems
       formulae = map formula bsForm
