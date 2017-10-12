@@ -237,7 +237,9 @@ findFileVersion opts fileVersionKey location =
               rawSql queryString [ toPersistValue path
                                  , toPersistValue fileVersionKey
                                  ]
-            return $ head results
+            if null results
+            then return fileVersionKey
+            else return $ head results
       else return fileVersionKey
 
 -- Guess the kind of the Document. First, by the filepath only and then, by
