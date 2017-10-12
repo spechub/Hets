@@ -102,6 +102,8 @@ ConsStatus sql=cons_statuses
 
 -- We leave out the other columns here because we don't need them in Hets
 FileVersion sql=file_versions
+  path String
+  commitSha String
   deriving Show
 
 LocIdBase sql=loc_id_bases

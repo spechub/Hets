@@ -108,53 +108,53 @@ createDocuments :: MonadIO m
                 => HetcatsOpts -> LibEnv -> DBCache -> [Set LibName]
                 -> DBMonad m DBCache
 createDocuments opts libEnv dbCache0 dependencyOrderedLibsSetL = do
-  fileVersionKey <- findFileVersionKey
+  fileVersion <- getFileVersion opts
   dbCache1 <-
-    createDocumentsInDependencyRelation opts libEnv fileVersionKey dbCache0
+    createDocumentsInDependencyRelation opts libEnv fileVersion dbCache0
       dependencyOrderedLibsSetL
-  createDocumentsThatAreIndependent opts libEnv fileVersionKey dbCache1
-  where
-    findFileVersionKey :: MonadIO m => DBMonad m FileVersionId
-    findFileVersionKey =
-      let fileVersion = contextFileVersion $ databaseContext opts in do
-        fileVersionM <-
-          selectFirst [ FileVersionId ==. toSqlKey
-                            (fromIntegral (read fileVersion :: Integer))] []
-        case fileVersionM of
-          Nothing -> fail ("Could not find the FileVersion \"" ++
-                           fileVersion ++ "\"")
-          Just (Entity fileVersionKey _) -> return fileVersionKey
+  createDocumentsThatAreIndependent opts libEnv fileVersion dbCache1
+
+getFileVersion :: MonadIO m => HetcatsOpts -> DBMonad m (Entity FileVersion)
+getFileVersion opts =
+  let fileVersionS = contextFileVersion $ databaseContext opts in do
+    fileVersionM <-
+      selectFirst [ FileVersionId ==. toSqlKey
+                        (fromIntegral (read fileVersionS :: Integer))] []
+    case fileVersionM of
+      Nothing -> fail ("Could not find the FileVersion \"" ++
+                       fileVersionS ++ "\"")
+      Just fileVersion' -> return fileVersion'
 
 createDocumentsInDependencyRelation :: MonadIO m
                                     => HetcatsOpts -> LibEnv
-                                    -> FileVersionId -> DBCache -> [Set LibName]
+                                    -> Entity FileVersion -> DBCache -> [Set LibName]
                                     -> DBMonad m DBCache
-createDocumentsInDependencyRelation opts libEnv fileVersionKey =
+createDocumentsInDependencyRelation opts libEnv fileVersion =
   foldM
     (\ outerAcc libNameSet ->
        foldM
          (\ dbCacheAcc libName ->
-            createDocument opts libEnv fileVersionKey dbCacheAcc libName
+            createDocument opts libEnv fileVersion dbCacheAcc libName
          ) outerAcc libNameSet
     )
 
 createDocumentsThatAreIndependent :: MonadIO m
                                   => HetcatsOpts -> LibEnv
-                                  -> FileVersionId -> DBCache
+                                  -> Entity FileVersion -> DBCache
                                   -> DBMonad m DBCache
-createDocumentsThatAreIndependent opts libEnv fileVersionKey dbCache =
+createDocumentsThatAreIndependent opts libEnv fileVersion dbCache =
   foldM
     (\ dbCacheAcc libName ->
       let alreadyInserted = isJust $ Map.lookup libName $ documentMap dbCacheAcc
       in  if alreadyInserted
           then return dbCacheAcc
-          else createDocument opts libEnv fileVersionKey dbCacheAcc libName
+          else createDocument opts libEnv fileVersion dbCacheAcc libName
     ) dbCache $ Map.keys libEnv
 
 createDocument :: MonadIO m
-               => HetcatsOpts -> LibEnv -> FileVersionId -> DBCache
+               => HetcatsOpts -> LibEnv -> Entity FileVersion -> DBCache
                -> LibName -> DBMonad m DBCache
-createDocument opts libEnv parentFileVersionKey dbCache0 libName =
+createDocument opts libEnv parentFileVersion dbCache0 libName =
   let dGraph = fromJust $ Map.lookup libName libEnv
       globalAnnotations = globalAnnos dGraph
       name = show $ pretty $ getLibId libName
@@ -166,7 +166,7 @@ createDocument opts libEnv parentFileVersionKey dbCache0 libName =
   in  do
         -- We need to find the FileVersion of the corresponding document
         -- if it is located inside the libdir.
-        fileVersionKey <- findFileVersion opts parentFileVersionKey location
+        fileVersionKey <- findFileVersionByPath opts parentFileVersion location
         kind <- kindOfDocument opts location
         let fileVersionKeyS =
               show $ unSqlBackendKey $ unFileVersionKey fileVersionKey
@@ -213,33 +213,23 @@ firstLibdir opts =
 -- the file itself also exists in future commits that changed other files.
 -- This function finds the FileVersion of the file at `location` (i.e. the
 -- commit that last changed that file).
-findFileVersion :: MonadIO m
-                => HetcatsOpts -> FileVersionId -> Maybe String
-                -> DBMonad m FileVersionId
-findFileVersion opts fileVersionKey location =
+findFileVersionByPath :: MonadIO m
+                      => HetcatsOpts -> Entity FileVersion -> Maybe String
+                      -> DBMonad m FileVersionId
+findFileVersionByPath opts (Entity fileVersionKey fileVersionValue) location =
   let isInLibdir = not (null $ libdirs opts)
                      && isJust location
                      && head (libdirs opts) `isPrefixOf` fromJust location
       path = fromJust $ stripPrefix (firstLibdir opts) $ fromJust location
-      queryString = Text.pack (
-        "SELECT file_versions.id "
-        ++ "FROM file_versions "
-        ++ "INNER JOIN file_version_parents "
-        ++ "  ON file_version_parents.last_changed_file_version_id = file_versions.id "
-        ++ "INNER JOIN file_versions AS backreference "
-        ++ "  ON file_version_parents.queried_sha = backreference.commit_sha "
-        ++ "WHERE (file_versions.path = ? "
-        ++ "       AND backreference.id = ?);")
-
+      sha = fileVersionCommitSha fileVersionValue
   in  if isInLibdir
       then do
-            results <-
-              rawSql queryString [ toPersistValue path
-                                 , toPersistValue fileVersionKey
-                                 ]
-            if null results
-            then return fileVersionKey
-            else return $ head results
+            resultM <- selectFirst [ FileVersionPath ==. path
+                                   , FileVersionCommitSha ==. sha
+                                   ] []
+            return $ case resultM of
+              Nothing -> fileVersionKey
+              Just (Entity key _) -> key
       else return fileVersionKey
 
 -- Guess the kind of the Document. First, by the filepath only and then, by
