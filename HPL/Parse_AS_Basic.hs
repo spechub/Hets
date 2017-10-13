@@ -140,27 +140,37 @@ diamondKey = asKey diamondS
 atKey :: AParser st Token
 atKey = asKey asP
 
+lambdaKey :: AParser st Token
+lambdaKey = asKey "lambda"
+
+gtT :: AParser st Token
+gtT = asKey ">"
+
 -- | Parser for primitive formulae
 primFormula :: AParser st HBasic.FORMULA
 primFormula =
     do c <- trueKey
-       return (HBasic.Prop_formula $ PBasic.True_atom $ tokPos c)
+       return $ HBasic.Prop_formula $ PBasic.True_atom $ tokPos c
     <|>
     do c <- falseKey
-       return (HBasic.Prop_formula $ PBasic.False_atom $ tokPos c)
+       return $ HBasic.Prop_formula $ PBasic.False_atom $ tokPos c
     <|>
     do c <- notKey <|> negKey <?> "\"not\""
        k <- primFormula
-       return (HBasic.Negation k $ tokPos c)
+       return $ HBasic.Negation k $ tokPos c
     <|> parenFormula
     <|> 
-     do c <- diamondKey
+     do c1 <- lessT
+        x <- lambdaKey
+        c2 <- gtT
         k <- impFormula
-        return (HBasic.DiamondFormula k $ tokPos c)
+        return $ HBasic.DiamondFormula x k $ tokPos c1
     <|> 
-     do c <- boxKey
+     do c1 <- oBracketT
+        x <- lambdaKey
+        c2 <- cBracketT
         k <- impFormula
-        return $ HBasic.BoxFormula k $ tokPos c
+        return $ HBasic.BoxFormula x k $ tokPos c1
     <|> 
      do c <- atKey
         n <- propId

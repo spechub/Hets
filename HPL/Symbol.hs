@@ -43,7 +43,7 @@ import qualified Propositional.Morphism as PMorphism
 import qualified HPL.Sign as HSign
 import qualified HPL.Morphism as HMorphism
 
-data SymKind = PropKind | NomKind
+data SymKind = PropKind | NomKind | ModKind Int
        deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | Datatype for symbols
@@ -63,6 +63,8 @@ printSymbol x = pretty $ symName x
 symKindStr :: Symbol -> String
 symKindStr (Symbol _ PropKind) = "prop"
 symKindStr (Symbol _ NomKind)  = "state"
+symKindStr (Symbol _ (ModKind _))  = "modality"
+
 
 -- | Extraction of symbols from a signature
 symOf :: HSign.HSign -> Set.Set Symbol
@@ -72,10 +74,15 @@ symOf sig =
               (\ y -> Set.insert Symbol {symName = y, symKind = PropKind})
               Set.empty $
               PSign.items $ HSign.propSig sig
-  in Set.fold 
+    nSymSet = Set.fold 
               (\ y -> Set.insert Symbol {symName = y, symKind = NomKind})
               pSymSet $
               HSign.noms sig
+    mSymSet = Set.fold 
+              (\ (m, i) -> Set.insert Symbol {symName = m, symKind = ModKind i})
+              nSymSet $
+              HSign.mods sig
+   in mSymSet
 
 -- | Determines the symbol map of a morhpism
 getSymbolMap :: HMorphism.HMorphism -> Map.Map Symbol Symbol
@@ -96,7 +103,7 @@ getSymbolMap f =
                            NomKind)
        )
        m $
-       Set.toList $ HSign.noms $ HMorphism.source f
+       Set.toList $ HSign.noms $ HMorphism.source f -- TODO: add identity on modalities?
 
 -- | Determines the name of a symbol
 getSymbolName :: Symbol -> Id.Id

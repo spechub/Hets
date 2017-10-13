@@ -44,7 +44,8 @@ There is only one modality so we don't represent it
 explicitly in the signature. -}
 data HSign = HSign {
                   propSig :: PSign.Sign,
-                  noms :: Set.Set Id}
+                  noms :: Set.Set Id,
+                  mods :: Set.Set (Id, Int)}
   deriving (Show, Eq, Ord, Typeable, Data)
 
 instance Pretty HSign where
@@ -57,7 +58,10 @@ isLegalSignature :: HSign -> Bool
 isLegalSignature sig = let
   propSet = PSign.items $ propSig sig
   nomsSet = noms sig
- in Set.intersection propSet nomsSet == Set.empty
+  modsSet = Set.map fst $ mods sig
+ in (Set.intersection propSet nomsSet == Set.empty) && 
+    (Set.intersection propSet modsSet == Set.empty) &&
+    (Set.intersection modsSet nomsSet == Set.empty)
 
 -- | pretty printing for signatures
 printSign :: HSign -> Doc
@@ -65,6 +69,9 @@ printSign s =
     PSign.printSign (propSig s)
     $+$
     hsep [text "states", sepByCommas $ map pretty $ Set.toList $ noms s]
+    $+$
+    hsep [text "modalities", sepByCommas $ map (\(x,i) -> pretty x <+> plainText (show i)) $ Set.toList $ mods s]
+  
 
 -- | Adds a nominal to the signature
 addNomToSig :: HSign -> Id -> HSign
@@ -79,12 +86,14 @@ addPropToSig sig p = sig {propSig = PSign.addToSig (propSig sig) p}
 unite :: HSign -> HSign -> HSign
 unite sig1 sig2 = HSign {
                     propSig = PSign.unite (propSig sig1) $ propSig sig2,
-                    noms = Set.union (noms sig1) $ noms sig2}
+                    noms = Set.union (noms sig1) $ noms sig2,
+                    mods = mods sig1}
 
 -- | The empty signature
 emptySig :: HSign
 emptySig = HSign {propSig = PSign.emptySig,
-                  noms = Set.empty}
+                  noms = Set.empty,
+                  mods = Set.singleton (stringToId "lambda",2)}
 
 -- | Determines if sig1 is subsignature of sig2
 isSubSigOf :: HSign -> HSign -> Bool
@@ -96,7 +105,8 @@ isSubSigOf sig1 sig2 =
 sigDiff :: HSign -> HSign -> HSign
 sigDiff sig1 sig2 = HSign {
                      propSig = PSign.sigDiff (propSig sig1) $ propSig sig2,
-                     noms = Set.difference (noms sig1) $ noms sig2}
+                     noms = Set.difference (noms sig1) $ noms sig2,
+                     mods = mods sig1} -- TODO: ?
 
 -- | union of Signatures
 sigUnion :: HSign -> HSign -> Result HSign

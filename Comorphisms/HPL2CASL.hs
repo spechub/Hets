@@ -110,9 +110,9 @@ mapSign sig = let
                                 MapSet.empty $ PSign.items $ HSign.propSig sig
               }
   lambdaSig = pSig { 
-                CSign.predMap = MapSet.insert (genName "lambda") 
+                CSign.predMap = MapSet.insert (stringToId "lambda") 
                                               (CSign.PredType [st, st]) $
-                                              CSign.predMap pSig
+                                              CSign.predMap pSig --TODO: apply to HSign.mods sig
                }
  in lambdaSig
 
@@ -168,11 +168,11 @@ mapSenAux x b frm = case frm of
            CBasic.Equivalence (mapSenAux x b sen2) nullRange
  HBasic.AtState tok frm' _ ->
      mapSenAux tok False frm' 
- HBasic.BoxFormula frm' _ -> let
+ HBasic.BoxFormula _lambda frm' _ -> let
      y = genNumVar "y" 0 
      lambdaXY = CBasic.mkPredication 
                   (CBasic.Qual_pred_name 
-                     (genName "lambda") 
+                     (stringToId "lambda") 
                      (CBasic.Pred_type [stSort, stSort] nullRange) 
                      nullRange)
                   [CBasic.Qual_var x stSort nullRange, 
@@ -181,11 +181,11 @@ mapSenAux x b frm = case frm of
                                 (mapSenAux y b frm') nullRange
      declY = CBasic.Var_decl [genNumVar "y" 0] stSort nullRange --TODO: int arg? 
   in CBasic.mkForall [declY] implSen
- HBasic.DiamondFormula frm' _ -> let
+ HBasic.DiamondFormula _lambda frm' _ -> let
      y = genNumVar "y" 0 
      lambdaXY = CBasic.mkPredication 
                   (CBasic.Qual_pred_name 
-                     (genName "lambda") 
+                     (stringToId "lambda") 
                      (CBasic.Pred_type [stSort, stSort] nullRange) 
                      nullRange)
                   [CBasic.Qual_var x stSort nullRange, 

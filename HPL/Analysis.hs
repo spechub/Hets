@@ -272,8 +272,8 @@ replaceNom sen nom = let
      HBasic.Implication sen1 sen2 r -> HBasic.Implication (replaceNom sen1 nom) (replaceNom sen2 nom) r
      HBasic.Equivalence sen1 sen2 r -> HBasic.Equivalence (replaceNom sen1 nom) (replaceNom sen2 nom) r
      HBasic.AtState tok sen' r -> HBasic.AtState tok (replaceNom sen' nom) r
-     HBasic.BoxFormula sen' r -> HBasic.BoxFormula (replaceNom sen' nom) r
-     HBasic.DiamondFormula sen' r -> HBasic.DiamondFormula (replaceNom sen' nom) r
+     HBasic.BoxFormula mod sen' r -> HBasic.BoxFormula mod (replaceNom sen' nom) r
+     HBasic.DiamondFormula mod sen' r -> HBasic.DiamondFormula mod (replaceNom sen' nom) r
      _ -> sen
 
 {-

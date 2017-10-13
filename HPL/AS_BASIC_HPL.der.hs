@@ -75,9 +75,9 @@ data FORMULA =
    -- nominals as sentences
   | AtState Id.Token FORMULA Id.Range
    -- at_i formulas
-  | BoxFormula FORMULA Id.Range
+  | BoxFormula Id.Token FORMULA Id.Range
    -- pos: "<>"
-  | DiamondFormula FORMULA Id.Range
+  | DiamondFormula Id.Token FORMULA Id.Range
    -- pos: "[]"
     deriving (Show, Eq, Ord, Typeable, Data)
 
@@ -129,8 +129,8 @@ printFormula aFrm =
    Prop_formula pfrm -> PBasic.printFormula pfrm 
    Nominal nom _ -> pretty nom  
    AtState nom frm _ -> prettyAt <+> pretty nom <+> colon <+> printFormula frm 
-   BoxFormula frm _ -> boxDoc <+> printFormula frm
-   DiamondFormula frm _ -> diamondDoc <+> printFormula frm
+   BoxFormula moda frm _ -> lbrack <> pretty moda <> rbrack <+> printFormula frm
+   DiamondFormula moda frm _ ->  less <> pretty moda <> greater <+>printFormula frm
    Negation frm _ -> notDoc <+> printFormula frm
    Conjunction xs _ -> PBasic.sepByArbitrary andDoc $ 
                         map printFormula xs

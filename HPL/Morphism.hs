@@ -52,7 +52,7 @@ data HMorphism = HMorphism
   , target :: HSign
   , propMap :: Map.Map Id Id
   , nomMap :: Map.Map Id Id
-  } deriving (Show, Eq, Ord, Typeable, Data)
+  } deriving (Show, Eq, Ord, Typeable, Data) --TODO: add modalities map!
 
 instance Pretty HMorphism where
     pretty = printMorphism
