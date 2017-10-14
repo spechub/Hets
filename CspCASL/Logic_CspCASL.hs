@@ -150,7 +150,7 @@ instance CspCASLSemantics a => Logic (GenCspCASL a)
     -- proof_tree (missing)
     ()
     where
-      stability (GenCspCASL _) = Experimental
+      stability (GenCspCASL _) = Testing
       data_logic (GenCspCASL _) = Just (Logic CASL)
       empty_proof_tree _ = ()
       provers (GenCspCASL _) = cspProvers (undefined :: a)

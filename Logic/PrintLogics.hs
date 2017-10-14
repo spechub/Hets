@@ -22,7 +22,7 @@ import Data.List
 main :: IO ()
 main = do
   putStrLn "*** List of logics in Hets ***"
-  mapM_ printLogics [Stable, Testing, Unstable, Experimental]
+  mapM_ printLogics [Stable, Testing, Experimental, Unstable]
 
 hasStability :: Stability -> AnyLogic -> Bool
 hasStability s (Logic l) = stability l == s

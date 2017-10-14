@@ -136,7 +136,7 @@ instance Logic CASL_DL CASL_DL_SL
                DLSign
                DLMor
                Symbol RawSymbol ProofTree where
-         stability _ = Unstable
+         stability _ = Experimental
          top_sublogic _ = SROIQ
          all_sublogics _ = [SROIQ]
 

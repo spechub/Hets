@@ -172,6 +172,6 @@ instance Logic HasCASL Sublogic
                Env
                Morphism
                Symbol RawSymbol () where
-         stability _ = Testing
+         stability _ = Stable
          all_sublogics _ = sublogics_all
          empty_proof_tree _ = ()

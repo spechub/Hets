@@ -94,7 +94,7 @@ instance Logic CommonLogic
     Symbol            -- raw_symbol
     ProofTree         -- proof_tree
     where
-       stability CommonLogic = Testing
+       stability CommonLogic = Stable
        all_sublogics CommonLogic = sublogics_all
        empty_proof_tree CommonLogic = emptyProofTree
        provers CommonLogic = []

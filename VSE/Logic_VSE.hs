@@ -107,6 +107,6 @@ instance Logic VSE ()
                VSESign
                VSEMor
                Symbol RawSymbol () where
-         stability VSE = Unstable
+         stability VSE = Testing
          empty_proof_tree VSE = ()
          provers VSE = [vse]

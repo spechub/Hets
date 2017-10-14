@@ -123,5 +123,5 @@ instance Logic Modal ()
                MSign
                ModalMor
                Symbol RawSymbol () where
-         stability _ = Unstable
+         stability _ = Testing
          empty_proof_tree _ = ()

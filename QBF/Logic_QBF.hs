@@ -112,7 +112,7 @@ instance Logic QBF
     Symbol                    -- raw_symbol
     ProofTree                 -- proof_tree
     where
-      stability QBF = Experimental
+      stability QBF = Stable
       top_sublogic QBF = Sublogic.top
       all_sublogics QBF = sublogicsAll
       empty_proof_tree QBF = emptyProofTree
