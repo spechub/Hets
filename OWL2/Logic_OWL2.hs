@@ -140,16 +140,8 @@ inducedFromToMorphismAux :: Map.Map RawSymb RawSymb ->
 inducedFromToMorphismAux rm s@(ExtSign ssig _) t@(ExtSign tsig _) = do
     mor <- inducedFromMor rm ssig
     let csig = cod mor
-    incl <- if isSubSign csig tsig 
-             then return $ inclOWLMorphism csig tsig
-             else fail $ show $ fsep
-                   [ text "OWL"
-                   , text "symbol(s) missing in target:"
-                   , pretty $ Set.difference (symset_of OWL2 csig) $ 
-                                              symset_of OWL2 tsig ]              
+    incl <- inclusion OWL2 csig tsig              
     composeMorphisms mor incl
-
-
 
 instance StaticAnalysis OWL2 OntologyDocument Axiom
                SymbItems SymbMapItems
