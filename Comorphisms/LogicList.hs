@@ -96,7 +96,6 @@ logicList =
   , Logic SoftFOL
   , Logic Propositional
   , Logic QBF
-  , Logic HolLight
   , Logic FreeCAD
   , Logic CSL
 #ifdef PROGRAMATICA
