@@ -53,7 +53,7 @@ import Data.Monoid
 data QBF = QBF deriving Show
 
 instance Language QBF where
-    description _ = "Propositional Logic extended with QBFs\n"
+    description _ = "Propositional Logic extended with quantified boolean formulas\n"
         ++ "for more information please refer to\n"
         ++ "http://en.wikipedia.org/wiki/Propositional_logic"
         ++ "http://www.voronkov.com/lics.cgi"

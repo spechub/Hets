@@ -44,7 +44,7 @@ data CASL_DL = CASL_DL deriving Show
 
 instance Language CASL_DL where
  description _ = unlines
-  [ "CASL_DL is at the same time an extension and a restriction of CASL."
+  [ "CASL_DL is the restriction of CASL to OWL 1 expressivity."
   , "It additionally provides cardinality restrictions in a description logic"
   , "sense; and it limits the expressivity of CASL to the description logic"
   , "SHOIN(D). Hence it provides the following sublogics:"

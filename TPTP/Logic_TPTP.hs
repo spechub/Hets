@@ -47,7 +47,7 @@ data TPTP = TPTP deriving (Show, Ord, Eq)
 instance Language TPTP
   where
     description _ =
-      "The TPTP (Thousands of Problems for Theorem Provers) Language" ++
+      "The TPTP (Thousands of Problems for Theorem Provers) Language\n" ++
       "See http://www.cs.miami.edu/~tptp/"
 
 instance Syntax TPTP BASIC_SPEC Symbol () ()

@@ -66,8 +66,8 @@ instance Show a => Language (GenCspCASL a) where
       language_name (GenCspCASL a) = "CspCASL"
         ++ let s = show a in if s == "()" then "" else '_' : s
       description _ =
-        "CspCASL - see\n\n" ++
-        "http://www.cs.swan.ac.uk/~csmarkus/ProcessesAndData/"
+        "CspCASL - extension of CASL with the process algebra CSP\n" ++
+        "See http://www.cs.swan.ac.uk/~csmarkus/ProcessesAndData/"
 
 -- | Instance of Sentences for CspCASL
 instance Show a => Sentences (GenCspCASL a)
