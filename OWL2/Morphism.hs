@@ -77,6 +77,7 @@ inducedPref v u sig (m, t) =
         else
           plain_error (Map.empty, Map.empty) ("unknown symbol: " ++ showDoc v "\nin signature:\n" ++ showDoc sig "") nullRange
 
+ 
 inducedFromMor :: Map.Map RawSymb RawSymb -> Sign -> Result OWLMorphism
 inducedFromMor rm sig = do
   let syms = symOf sig
@@ -201,3 +202,27 @@ mapSen :: OWLMorphism -> Axiom -> Result Axiom
 mapSen m a = do
     let new = function Rename (MorphMap $ mmaps m) a
     return $ function Rename (StringMap $ pmap m) new
+
+morphismUnion :: OWLMorphism -> OWLMorphism -> Result OWLMorphism
+morphismUnion mor1 mor2 = do
+ let ssig1 = osource mor1
+     tsig1 = otarget mor1
+     ssig2 = osource mor2
+     tsig2 = otarget mor2
+     ssig = addSign ssig1 ssig2
+     tsig = addSign tsig1 tsig2
+     m1 = mmaps mor1
+     m2 = mmaps mor2
+     intM = Map.intersection m1 m2
+     pairs = filter (\(a,b) -> a /= b)
+             $ map (\x -> (Map.findWithDefault (error "1") x m1, 
+                           Map.findWithDefault (error "2") x m2)) 
+             $ Map.keys intM
+ case pairs of 
+  [] -> 
+    return $  OWLMorphism {
+                 osource = ssig,
+                 otarget = tsig,
+                 mmaps = Map.union m1 m2,
+                 pmap = Map.union (pmap mor1) $ pmap mor2}
+  _ -> fail $ "can't unite morphisms:" ++ show pairs
