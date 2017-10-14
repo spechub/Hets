@@ -137,6 +137,9 @@ fullTheoriesS = "full-theories"
 logicGraphS :: String
 logicGraphS = "logic-graph"
 
+logicListS :: String
+logicListS = "logic-list"
+
 fileTypeS :: String
 fileTypeS = "file-type"
 
@@ -218,6 +221,7 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , blacklist :: [[String]]
   , runMMT :: Bool
   , fullTheories :: Bool
+  , outputLogicList :: Bool
   , outputLogicGraph :: Bool
   , fileType :: Bool
   , accessToken :: String
@@ -266,6 +270,7 @@ defaultHetcatsOpts = HcOpt
   , blacklist = []
   , runMMT = False
   , fullTheories = False
+  , outputLogicList = False
   , outputLogicGraph = False
   , fileType = False
   , accessToken = ""
@@ -280,6 +285,7 @@ instance Show HetcatsOpts where
     in
     showEqOpt verboseS (show $ verbose opts)
     ++ show (guiType opts)
+    ++ showFlag outputLogicList logicListS
     ++ showFlag outputLogicGraph logicGraphS
     ++ showFlag fileType fileTypeS
     ++ showFlag interactive interactiveS
@@ -375,6 +381,7 @@ data Flag =
   | FullTheories
   | FullSign
   | PrintAST
+  | OutputLogicList
   | OutputLogicGraph
   | FileType
   | AccessToken String
@@ -420,6 +427,7 @@ makeOpts opts flg =
     RelPos -> opts { useLibPos = True }
     UseMMT -> opts { runMMT = True }
     FullTheories -> opts { fullTheories = True }
+    OutputLogicList -> opts { outputLogicList = True }
     OutputLogicGraph -> opts { outputLogicGraph = True }
     FileType -> opts { fileType = True }
     FullSign -> opts { fullSign = True }
@@ -710,6 +718,8 @@ options = let
     , Option "X" ["server"] (NoArg Serve)
        "start hets as web-server"
 #endif
+    , Option "z" [logicListS] (NoArg OutputLogicList)
+      "output logic list as plain text"
     , Option "G" [logicGraphS] (NoArg OutputLogicGraph)
       "output logic graph (as xml) or as graph (-g)"
     , Option "I" [interactiveS] (NoArg Interactive)

@@ -19,16 +19,16 @@ import Logic.Logic
 import Control.Monad
 import Data.List
 
-main :: IO ()
-main = do
+printLogics :: IO ()
+printLogics = do
   putStrLn "*** List of logics in Hets ***"
-  mapM_ printLogics [Stable, Testing, Experimental, Unstable]
+  mapM_ printLogicsWithStability [Stable, Testing, Experimental, Unstable]
 
 hasStability :: Stability -> AnyLogic -> Bool
 hasStability s (Logic l) = stability l == s
 
-printLogics :: Stability -> IO ()
-printLogics s = do
+printLogicsWithStability :: Stability -> IO ()
+printLogicsWithStability s = do
   putStrLn $ "Stability: "++show s
   mapM_ printLogic $ filter (hasStability s) logicList
   
