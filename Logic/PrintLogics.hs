@@ -34,7 +34,7 @@ printLogicsWithStability s = do
   
 printLogic :: AnyLogic -> IO ()
 printLogic (Logic l) = do
-  putStrLn $ "  "++show l++": "++head ((lines $ description l) ++ [""])
+  putStrLn $ "  "++show l++": "++short_description l
   let ps = provers l
   unless (null ps) $ do
     putStr "    provers: "
