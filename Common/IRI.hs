@@ -271,7 +271,7 @@ showRelation r = case r of
     SDRelation sd -> showSameOrDifferent sd
 
 getED :: Relation -> EquivOrDisjoint
-getED r = case r of
+getED r |
     EDRelation ed -> ed
     _ -> error "not Equivalent or Disjunkt"
 
@@ -285,6 +285,16 @@ getSD s = case s of
     SDRelation sd -> sd
     _ -> error "not same or different"
 
+data Character =
+    Functional
+  | InverseFunctional
+  | Reflexive
+  | Irreflexive
+  | Symmetric
+  | Asymmetric
+  | Antisymmetric
+  | Transitive
+    deriving (Enum, Bounded, Show, Eq, Ord, Typeable, Data)
 
 -- * Parse a IRI
 
