@@ -750,7 +750,7 @@ findOrCreateSymbol libEnv fileVersionKey dbCache doSave libName nodeId
     let name = show $ sym_name lid symbol
         fullName = show $ fullSymName lid symbol
         symbolKind = symKind lid symbol
-        locId = locIdBaseLocId omsLocIdBaseValue ++ "//" ++ name
+        locId = locIdBaseLocId omsLocIdBaseValue ++ "//" ++ symbolKind ++ "/" ++ name
     in  if symbolIsCached libEnv libName nodeId lid symbol dbCache
         then return dbCache
         else do
