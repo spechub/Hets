@@ -270,6 +270,20 @@ showRelation r = case r of
     DRRelation dr -> showDomainOrRange dr
     SDRelation sd -> showSameOrDifferent sd
 
+getED :: Relation -> EquivOrDisjoint
+getED r = case r of
+    EDRelation ed -> ed
+    _ -> error "not Equivalent or Disjunkt"
+
+getDR :: Relation -> DomainOrRange
+getDR r = case r of
+    DRRelation dr -> dr
+    _ -> error "not domain or range"
+
+getSD :: Relation -> SameOrDifferent
+getSD s = case s of
+    SDRelation sd -> sd
+    _ -> error "not same or different"
 
 
 -- * Parse a IRI
