@@ -75,6 +75,9 @@ import Data.Map as Map (Map, lookup)
 import Data.Maybe
 import Data.List
 
+import OWL2.ColonKeywords
+import OWL2.Keywords
+
 import Common.Id
 import Common.Lexer
 import Common.Parsec
@@ -306,6 +309,46 @@ showQuantifierType :: QuantifierType -> String
 showQuantifierType ty = case ty of
     AllValuesFrom -> onlyS
     SomeValuesFrom -> someS
+
+-- * Predefined IRI checkings
+
+thingMap :: PreDefMaps
+thingMap = makeOWLPredefMaps predefClass
+
+isThing :: IRI -> Bool
+isThing = checkPredef thingMap
+
+makePredefObjProp :: PreDefMaps
+makePredefObjProp = makeOWLPredefMaps predefObjProp
+
+isPredefObjProp :: IRI -> Bool
+isPredefObjProp = checkPredef makePredefObjProp
+
+makePredefDataProp :: PreDefMaps
+makePredefDataProp = makeOWLPredefMaps predefDataProp
+
+isPredefDataProp :: IRI -> Bool
+isPredefDataProp = checkPredef makePredefDataProp
+
+makePredefRDFSAnnoProp :: PreDefMaps
+makePredefRDFSAnnoProp = preDefMaps predefRDFSAnnoProps "rdfs"
+
+isPredefRDFSAnnoProp :: IRI -> Bool
+isPredefRDFSAnnoProp = checkPredef makePredefRDFSAnnoProp
+
+makePredefOWLAnnoProp :: PreDefMaps
+makePredefOWLAnnoProp = makeOWLPredefMaps predefOWLAnnoProps
+
+isPredefOWLAnnoProp :: IRI -> Bool
+isPredefOWLAnnoProp = checkPredef makePredefOWLAnnoProp
+
+isPredefAnnoProp :: IRI -> Bool
+isPredefAnnoProp iri = isPredefOWLAnnoProp iri || isPredefRDFSAnnoProp iri
+
+isPredefPropOrClass :: IRI -> Bool
+isPredefPropOrClass iri = isPredefAnnoProp iri || isPredefDataProp iri
+    || isPredefObjProp iri || isThing iri
+
 
 -- * Parse a IRI
 
