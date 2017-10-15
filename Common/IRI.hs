@@ -233,6 +233,15 @@ showEquivOrDisjoint ed = case ed of
     Equivalent -> equivalentToC
     Disjoint -> disjointWithC
 
+data SameOrDifferent = Same | Different
+    deriving (Show, Eq, Ord, Typeable, Data)
+
+showSameOrDifferent :: SameOrDifferent -> String
+showSameOrDifferent sd = case sd of
+    Same -> sameAsC
+    Different -> differentFromC
+
+
 -- * Parse a IRI
 
 {- | Turn a string containing an RFC3987 IRI into an 'IRI'.
