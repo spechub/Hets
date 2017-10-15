@@ -296,6 +296,13 @@ data Character =
   | Transitive
     deriving (Enum, Bounded, Show, Eq, Ord, Typeable, Data)
 
+data PositiveOrNegative = Positive | Negative
+    deriving (Show, Eq, Ord, Typeable, Data)
+
+data QuantifierType = AllValuesFrom | SomeValuesFrom
+    deriving (Show, Eq, Ord, Typeable, Data)
+
+
 -- * Parse a IRI
 
 {- | Turn a string containing an RFC3987 IRI into an 'IRI'.
