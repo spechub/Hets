@@ -73,6 +73,7 @@ import Data.Data
 import Data.Ord (comparing)
 import Data.Map as Map (Map, lookup)
 import Data.Maybe
+import Data.List
 
 import Common.Id
 import Common.Lexer
@@ -96,6 +97,9 @@ or the simple IRI
 
 >  abbrevPath
 -}
+
+
+
 data IRI = IRI
     { iriScheme :: String         -- ^ @foo:@
     , iriAuthority :: Maybe IRIAuth -- ^ @\/\/anonymous\@www.haskell.org:42@
@@ -189,6 +193,16 @@ simpleIdToIRI :: SIMPLE_ID -> IRI
 simpleIdToIRI sid = nullIRI { abbrevPath = tokStr sid
                             , iriPos = tokPos sid
                             }
+
+-- | set the Range attribute of IRIs
+setIRIRange :: Range -> IRI -> IRI
+setIRIRange r i = i { iriPos = r }
+
+-- | checks if a string (bound to be localPart of an IRI) contains \":\/\/\"
+cssIRI :: String -> String
+cssIRI i 
+  | isInfixOf "://" i = "Full"
+  | otherwise = "Abbreviated"
 
 -- * Parse a IRI
 
