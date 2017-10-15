@@ -230,16 +230,24 @@ data EquivOrDisjoint = Equivalent | Disjoint
 
 showEquivOrDisjoint :: EquivOrDisjoint -> String
 showEquivOrDisjoint ed = case ed of
-    Equivalent -> equivalentToC
-    Disjoint -> disjointWithC
+    Equivalent -> "equivalentToC"
+    Disjoint -> "disjointWithC"
+
+data DomainOrRange = ADomain | ARange
+    deriving (Show, Eq, Ord, Typeable, Data)
+
+showDomainOrRange :: DomainOrRange -> String
+showDomainOrRange dr = case dr of
+    ADomain -> "domainC"
+    ARange -> "rangeC"
 
 data SameOrDifferent = Same | Different
     deriving (Show, Eq, Ord, Typeable, Data)
-
+    
 showSameOrDifferent :: SameOrDifferent -> String
 showSameOrDifferent sd = case sd of
-    Same -> sameAsC
-    Different -> differentFromC
+    Same -> "sameAsC"
+    Different -> "differentFromC"
 
 data Relation =
     EDRelation EquivOrDisjoint
@@ -251,13 +259,14 @@ data Relation =
   | SDRelation SameOrDifferent
     deriving (Show, Eq, Ord, Typeable, Data)
 
+--    
 showRelation :: Relation -> String
 showRelation r = case r of
     EDRelation ed -> showEquivOrDisjoint ed
-    SubPropertyOf -> subPropertyOfC
-    InverseOf -> inverseOfC
-    SubClass -> subClassOfC
-    Types -> typesC
+    SubPropertyOf -> "subPropertyOfC"
+    InverseOf -> "inverseOfC"
+    SubClass -> "subClassOfC"
+    Types -> "typesC"
     DRRelation dr -> showDomainOrRange dr
     SDRelation sd -> showSameOrDifferent sd
 
