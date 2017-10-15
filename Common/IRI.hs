@@ -225,7 +225,8 @@ type DataProperty = IRI
 type AnnotationProperty = IRI
 type Individual = IRI
 
-
+data EquivOrDisjoint = Equivalent | Disjoint
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 -- * Parse a IRI
 
