@@ -263,8 +263,8 @@ data QuantifierType = AllValuesFrom | SomeValuesFrom
 
 showQuantifierType :: QuantifierType -> String
 showQuantifierType ty = case ty of
-    AllValuesFrom -> onlyS
-    SomeValuesFrom -> someS
+    AllValuesFrom -> "onlyS"
+    SomeValuesFrom -> "someS"
 
 -- * Predefined IRI checkings
 
