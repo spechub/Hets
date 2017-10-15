@@ -232,7 +232,7 @@ showRelation r = case r of
 getED :: Relation -> EquivOrDisjoint
 getED r = case r of
     EDRelation ed -> ed
-    _ -> error "not domain or range"
+    _ -> error "not Equivalent or Disjunkt"
 
 getDR :: Relation -> DomainOrRange
 getDR r = case r of
