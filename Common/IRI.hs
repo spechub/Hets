@@ -146,6 +146,10 @@ without prefix -}
 isSimple :: IRI -> Bool
 isSimple i = null (prefixName i) && isAbbrev i
 
+-- | do we have a nullIRI
+isNullIRI :: IRI -> Bool
+isNullIRI i = i == nullIRI
+
 {- IRI as instance of Show.  Note that for security reasons, the default
 behaviour should suppress any iuserinfo field (see RFC3986, section 7.5).
 But we don't do this since we use iriToStringUnsecure all over the place
