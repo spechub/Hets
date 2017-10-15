@@ -228,6 +228,11 @@ type Individual = IRI
 data EquivOrDisjoint = Equivalent | Disjoint
     deriving (Show, Eq, Ord, Typeable, Data)
 
+showEquivOrDisjoint :: EquivOrDisjoint -> String
+showEquivOrDisjoint ed = case ed of
+    Equivalent -> equivalentToC
+    Disjoint -> disjointWithC
+
 -- * Parse a IRI
 
 {- | Turn a string containing an RFC3987 IRI into an 'IRI'.
