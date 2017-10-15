@@ -241,6 +241,27 @@ showSameOrDifferent sd = case sd of
     Same -> sameAsC
     Different -> differentFromC
 
+data Relation =
+    EDRelation EquivOrDisjoint
+  | SubPropertyOf
+  | InverseOf
+  | SubClass
+  | Types
+  | DRRelation DomainOrRange
+  | SDRelation SameOrDifferent
+    deriving (Show, Eq, Ord, Typeable, Data)
+
+showRelation :: Relation -> String
+showRelation r = case r of
+    EDRelation ed -> showEquivOrDisjoint ed
+    SubPropertyOf -> subPropertyOfC
+    InverseOf -> inverseOfC
+    SubClass -> subClassOfC
+    Types -> typesC
+    DRRelation dr -> showDomainOrRange dr
+    SDRelation sd -> showSameOrDifferent sd
+
+
 
 -- * Parse a IRI
 
