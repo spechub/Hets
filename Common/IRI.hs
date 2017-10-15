@@ -214,6 +214,19 @@ predefPrefixes = Map.fromList
       , ("xsd", "http://www.w3.org/2001/XMLSchema#")
       , ("", showQU dummyQName ++ "#") ]
 
+type LexicalForm = String
+type LanguageTag = String
+type ImportIRI = IRI
+type OntologyIRI = IRI
+type Class = IRI
+type Datatype = IRI
+type ObjectProperty = IRI
+type DataProperty = IRI
+type AnnotationProperty = IRI
+type Individual = IRI
+
+
+
 -- * Parse a IRI
 
 {- | Turn a string containing an RFC3987 IRI into an 'IRI'.
