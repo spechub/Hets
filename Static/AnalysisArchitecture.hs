@@ -471,7 +471,7 @@ anaUnitBindings lgraph libEnv ln dg opts eo uctx@(buc, _) bs = case bs of
                (BranchRefSig _ (UnitSig argSigs nsig _, _), dg', usp') <-
                    anaUnitSpec lgraph libEnv ln dg opts eo 
                                un (EmptyNode curl) Nothing usp
-                         -- TODO: is un OK above?
+                         -- TODO: is un OK above? MC: yes, names are unique
                let ub' = Unit_binding un usp' poss
                case argSigs of
                     _ : _ -> plain_error ([], dg', [])
