@@ -171,9 +171,10 @@ nodeSigUnion :: LogicGraph -> DGraph -> [MaybeNode] -> DGOrigin -> SPEC_NAME
 nodeSigUnion lgraph dg nodeSigs orig sname =
   do sigUnion@(G_sign lid sigU ind) <- gsigManyUnion lgraph
                                    $ map getMaybeSig nodeSigs
-     let nodeContents = newNodeLab 
-                        (makeName $ 
-                          sname {abbrevPath = abbrevPath sname ++ "_union"}) 
+     let unionName = makeName $ 
+                      sname {abbrevPath = abbrevPath sname ++ "_union"}
+         nodeContents = newNodeLab 
+                        (unionName{extIndex = 1}) 
                         orig
                         $ noSensGTheory lid sigU ind
          node = getNewNodeDG dg
@@ -805,10 +806,9 @@ anaUnitSpec lgraph libEnv ln dg opts eo usName impsig rN usp = case usp of
        return (mkRefSigFromUnit usig , dg', Unit_type []
                             (replaceAnnoted resultSpec' resultSpec) poss)
     _ -> do -- a non-trivial unit type
+       let argsName = usName{abbrevPath = abbrevPath usName ++ "_args"}
        (argSigs, dg1, argSpecs') <- 
-          anaArgSpecs lgraph libEnv ln dg opts eo 
-            (usName{abbrevPath = abbrevPath usName ++ "_args"}) 
-            argSpecs
+          anaArgSpecs lgraph libEnv ln dg opts eo argsName argSpecs
        (sigUnion, dg2) <- 
          case argSigs of 
            [argSig] -> return (argSig, dg1) -- the optimization mentioned below
@@ -816,10 +816,11 @@ anaUnitSpec lgraph libEnv ln dg opts eo usName impsig rN usp = case usp of
                           (impsig : map JustNode argSigs) DGFormalParams usName
         {- if i have no imports, i can optimize?
         in that case, an identity morphism is introduced -}
+       let resName = makeName $ usName{abbrevPath = abbrevPath usName ++ "_res"}
        (resultSpec', resultSig, dg3) <- anaSpec True lgraph libEnv ln
            dg2 (JustNode sigUnion)
-                (makeName $ usName{abbrevPath = abbrevPath usName ++ "_res"}) 
-                opts eo (item resultSpec) poss
+               (resName {extIndex = 1}) 
+               opts eo (item resultSpec) poss
        let usig = UnitSig argSigs resultSig $ Just sigUnion
            rsig = mkRefSigFromUnit usig
        return (rsig, dg3, Unit_type argSpecs'
@@ -1015,9 +1016,10 @@ anaArgSpecs lgraph libEnv ln dg opts eo usName args = let
   argSpec : argSpecs -> do
        l <- lookupLogic "anaArgSpecs " (currentLogic lgraph) lgraph
        let sp = item argSpec
+           xName = makeName $ usName{abbrevPath = abbrevPath usName ++ show x}
        (argSpec', argSig, dg') <-
            anaSpec False lgraph libEnv ln aDG (EmptyNode l) 
-              (makeName $ usName{abbrevPath = abbrevPath usName ++ show x})
+              (xName{extIndex = x + 1})
               opts eo sp $ getRange sp
        (argSigs, dg'', argSpecs') <-
            anaArgSpecsAux dg' (x + 1 ::Int) argSpecs
