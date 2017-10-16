@@ -958,7 +958,6 @@ lambda expressions, like you do in the following -}
      -- beh will be ignored for now
      (_rsig@(BranchRefSig _ (usig, _)), dg', asp') <- 
            anaUnitSpec lgraph libEnv ln dg opts eo rn' nsig nP uspec 
-                                       -- TODO: flag for source and target
      (_, _, _, _rsig'@(BranchRefSig n2 (usig', bsig)), dgr', rsp') <-
        anaRefSpec False lgraph libEnv ln dg' opts eo nsig rn emptyExtStUnitCtx Nothing rspec
              -- here Nothing is fine
