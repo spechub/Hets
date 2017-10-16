@@ -48,6 +48,7 @@ import qualified Common.Lib.Rel as Rel
 import Common.LibName
 import Common.Result (maybeResult)
 import Common.ResultT (runResultT)
+import Common.Utils
 import Driver.Options
 import qualified Common.OrderedMap as OMap
 import Logic.Comorphism
@@ -598,28 +599,45 @@ findOrCreateSymbolMappings libEnv dbCache doSave libName edge
   signatureMorphismKey gMorphism = case gMorphism of
     GMorphism { gMorphismComor = cid
               , gMorphismMor = morphism
+              , gMorphismSign = extSign@ExtSign { plainSign = sign }
               } ->
-      let lid = targetLogic cid in do
-        symbolMappingKeys <-
-          mapM (findOrCreateSymbolMapping libEnv dbCache doSave libName edge
-                  signatureMorphismKey lid
-               ) $ Map.toList $ symmap_of lid morphism
-        return (symbolMappingKeys, dbCache)
+      let sourceLid = sourceLogic cid
+          targetLid = targetLogic cid
+          symbolMap = symmap_of targetLid morphism
+      in  do
+            symbolMappingKeys <-
+              concatMapM
+                (\ sourceSymbol ->
+                  concatMapM
+                    (\ translatedSymbol ->
+                      case Map.lookup translatedSymbol symbolMap of
+                        Nothing -> return []
+                        Just targetSymbol -> do
+                            symbolMappingKey <-
+                              findOrCreateSymbolMapping libEnv dbCache doSave
+                                libName edge signatureMorphismKey sourceLid
+                                targetLid sourceSymbol targetSymbol
+                            return [symbolMappingKey]
+                    ) $ Set.toList $ map_symbol cid sign sourceSymbol
+                ) $ Set.toList $ symset_of sourceLid $ plainSign extSign
+            return (symbolMappingKeys, dbCache)
 
 findOrCreateSymbolMapping :: ( MonadIO m
-                             , Sentences lid sentence sign morphism symbol
+                             , Sentences lid1 sentence1 sign1 morphism1 symbol1
+                             , Sentences lid2 sentence2 sign2 morphism2 symbol2
                              )
                           => LibEnv -> DBCache -> Bool -> LibName -> (Int, Int)
-                          -> SignatureMorphismId -> lid -> (symbol, symbol)
+                          -> SignatureMorphismId
+                          -> lid1 -> lid2 -> symbol1 -> symbol2
                           -> DBMonad m SymbolMappingId
 findOrCreateSymbolMapping libEnv dbCache doSave libName (sourceId, targetId)
-  signatureMorphismKey lid (sourceSymbol, targetSymbol) = do
+  signatureMorphismKey sourceLid targetLid sourceSymbol targetSymbol = do
   let sourceKey =
-        fromJust $ findSymbolInCache libEnv libName sourceId lid sourceSymbol
+        fromJust $ findSymbolInCache libEnv libName sourceId sourceLid sourceSymbol
           dbCache
 
   let targetKey =
-        fromJust $ findSymbolInCache libEnv libName targetId lid targetSymbol
+        fromJust $ findSymbolInCache libEnv libName targetId targetLid targetSymbol
           dbCache
 
   symbolMappingM <-
