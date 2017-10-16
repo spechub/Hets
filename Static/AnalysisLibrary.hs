@@ -441,7 +441,8 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
     analyzing opts $ "unit spec " ++ usstr
     l <- lookupCurrentLogic "Unit_spec_defn" lg
     (rSig, dg', usp') <-
-      liftR $ anaUnitSpec lg libenv currLn dg opts eo (EmptyNode l) Nothing usp
+      liftR $ anaUnitSpec lg libenv currLn dg opts eo 
+                          usn' (EmptyNode l) Nothing usp
     unitSig <- liftR $ getUnitSigFromRef rSig
     let usd' = Unit_spec_defn usn usp' pos
         genv = globalEnv dg'

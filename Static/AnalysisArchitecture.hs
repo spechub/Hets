@@ -166,13 +166,16 @@ alreadyDefinedUnit u =
     "Unit " ++ iriToStringUnsecure u ++ " already declared/defined"
 
 -- | Create a node that represents a union of signatures
-nodeSigUnion :: LogicGraph -> DGraph -> [MaybeNode] -> DGOrigin
+nodeSigUnion :: LogicGraph -> DGraph -> [MaybeNode] -> DGOrigin -> SPEC_NAME
              -> Result (NodeSig, DGraph)
-nodeSigUnion lgraph dg nodeSigs orig =
+nodeSigUnion lgraph dg nodeSigs orig sname =
   do sigUnion@(G_sign lid sigU ind) <- gsigManyUnion lgraph
                                    $ map getMaybeSig nodeSigs
-     let nodeContents = newNodeLab emptyNodeName orig
-           $ noSensGTheory lid sigU ind
+     let nodeContents = newNodeLab 
+                        (makeName $ 
+                          sname {abbrevPath = abbrevPath sname ++ "_union"}) 
+                        orig
+                        $ noSensGTheory lid sigU ind
          node = getNewNodeDG dg
          dg' = insNodeDG (node, nodeContents) dg
          inslink dgres nsig = do
@@ -216,7 +219,7 @@ ANSWER: when it's just a unit sig -}
          EmptyNode _ -> do
           (resultSig', dg2) <- case unionSig of
               Just x -> nodeSigUnion lgraph dg1
-                          [JustNode x, JustNode resultSig] DGImports
+                          [JustNode x, JustNode resultSig] DGImports unIRI
               _ -> return (resultSig, dg1)
           return (updateNodeNameRT dg2 n False ustr,
                   setUnitSigInRef rsig0 $ UnitSig argSigs resultSig' unionSig)
@@ -226,10 +229,11 @@ ANSWER: when it's just a unit sig -}
                 -- this changes the name of the node in the RT
            (argUnion, dg3) <- nodeSigUnion lgraph dg2
                               (map JustNode argSigs ++ [impSig])
-                              DGImports
+                              DGImports unIRI
                 -- union of the arguments with the imports
            (resultSig', dg4) <- nodeSigUnion lgraph dg3
                           [JustNode resultSig, JustNode argUnion] DGImports
+                                unIRI
                 {- union of the arguments with the result
                    F : S -> T given M
                    becomes F : M * S -> S_M \cup S \cup T -}
@@ -356,6 +360,7 @@ anaUnitImported lgraph libEnv ln dg opts eo uctx@(_, diag) poss terms =
            anaUnitImported' lgraph libEnv ln dg opts eo uctx terms
        (sig, dg'') <- nodeSigUnion lgraph dg'
                       (map (JustNode . getSigFromDiag) dnsigs) DGImports
+                      (simpleIdToIRI $ mkSimpleId "imports")
        let pos = getPosUnitImported poss
        sink <- inclusionSink lgraph dnsigs sig
        () <- assertAmalgamability opts pos diag' sink ("imports:" ++
@@ -411,6 +416,7 @@ anaUnitExpression lgraph libEnv ln dg opts eo uctx@(buc, diag)
        (pardnsigs, diag'', buc') <- insNodes diag args buc
        (resnsig, _) <- nodeSigUnion lgraph dg'
                               (map (JustNode . snd) args) DGFormalParams
+                              (simpleIdToIRI $ mkSimpleId "union")
        (Diag_node_sig nU _, diagI) <-
                              extendDiagramIncl lgraph diag''
                              pardnsigs resnsig dexp
@@ -461,7 +467,9 @@ anaUnitBindings lgraph libEnv ln dg opts eo uctx@(buc, _) bs = case bs of
                let unpos = iriPos un
                curl <- lookupCurrentLogic "UNIT_BINDINGS" lgraph
                (BranchRefSig _ (UnitSig argSigs nsig _, _), dg', usp') <-
-                   anaUnitSpec lgraph libEnv ln dg opts eo (EmptyNode curl) Nothing usp
+                   anaUnitSpec lgraph libEnv ln dg opts eo 
+                               un (EmptyNode curl) Nothing usp
+                         -- TODO: is un OK above?
                let ub' = Unit_binding un usp' poss
                case argSigs of
                     _ : _ -> plain_error ([], dg', [])
@@ -552,6 +560,7 @@ anaUnitTerm lgraph libEnv ln dg opts eo uctx@(buc, diag) utrm =
        -- compute sigma
        (sig, dg'') <- nodeSigUnion lgraph dg'
                       (map (JustNode . getSigFromDiag) dnsigs) DGUnion
+                      (simpleIdToIRI $ mkSimpleId "imports")
        -- check amalgamability conditions
        sink <- inclusionSink lgraph dnsigs sig
        () <- assertAmalgamability opts poss diag1 sink utStr
@@ -579,12 +588,14 @@ anaUnitTerm lgraph libEnv ln dg opts eo uctx@(buc, diag) utrm =
                      (BranchRefSig _ (UnitSig argSigs resultSig _, _))) ->
                 do (sigF, dg') <- nodeSigUnion lgraph dg
                        (toMaybeNode pI : map JustNode argSigs) DGFormalParams
+                       (simpleIdToIRI $ mkSimpleId "sigF")
                    (morphSigs, dg'', diagA) <-
                        anaFitArgUnits lgraph libEnv ln dg' opts eo
                             uctx utrm pos argSigs fargus
                    (sigA, dg''') <- nodeSigUnion lgraph dg''
                        (toMaybeNode pI : map (JustNode . second) morphSigs)
                               DGFitSpec
+                              (simpleIdToIRI $ mkSimpleId "sigA")
                    -- compute morphA (\sigma^A)
                    G_sign lidI sigI _ <- return (getMaybeSig (toMaybeNode pI))
                    let idI = mkG_morphism lidI (ext_ide sigI)
@@ -659,12 +670,14 @@ anaUnitTerm lgraph libEnv ln dg opts eo uctx@(buc, diag) utrm =
                        fs' = map getCopy fnodes
                    (sigF, dg') <- nodeSigUnion lgraph dg
                        (map JustNode argSigs) DGFormalParams
+                                  (simpleIdToIRI $ mkSimpleId "sigF")
                    (morphSigs, dg'', diagA) <-
                        anaFitArgUnits lgraph libEnv ln dg' opts eo
                             (fst uctx, diagC) utrm pos argSigs fargus
                    (sigA, dg''') <- nodeSigUnion lgraph dg''
                        (map (JustNode . second) morphSigs)
                               DGFitSpec
+                              (simpleIdToIRI $ mkSimpleId "sigA")
                    -- compute morphA (\sigma^A)
                    morphA <- homogeneousMorManyUnion
                              $ map first morphSigs
@@ -761,13 +774,14 @@ anaFitArgUnit lgraph libEnv ln dg opts eo uctx nsig
 anaUnitSpec :: LogicGraph -> LibEnv -> LibName -> DGraph
   -> HetcatsOpts    -- ^ should only the structure be analysed?
   -> ExpOverrides   -- for expanding CURIEs
+  -> SPEC_NAME      -- the name of the unit spec, for node names
   -> MaybeNode      -- ^ the signature of imports
   -> Maybe RTPointer -- for building refinement trees
   -> UNIT_SPEC -> Result (RefSig, DGraph, UNIT_SPEC)
 {- ^ returns 1. unit signature 2. the development graph resulting from
 structred specs inside the unit spec and 3. a UNIT_SPEC after possible
 conversions. -}
-anaUnitSpec lgraph libEnv ln dg opts eo impsig rN usp = case usp of
+anaUnitSpec lgraph libEnv ln dg opts eo usName impsig rN usp = case usp of
   Unit_type argSpecs resultSpec poss ->
    case argSpecs of
     [] -> case resultSpec of
@@ -781,22 +795,31 @@ anaUnitSpec lgraph libEnv ln dg opts eo impsig rN usp = case usp of
             _ -> False ->
        {- if argspecs are empty and resultspec is a name of unit spec
           then this should be converted to a Spec_name -}
-        anaUnitSpec lgraph libEnv ln dg opts eo impsig rN (Spec_name spn)
+        anaUnitSpec lgraph libEnv ln dg opts eo usName impsig rN (Spec_name spn)
       _ -> do -- a trivial unit type
        (resultSpec', resultSig, dg') <- anaSpec False lgraph libEnv ln
-           dg impsig emptyNodeName opts eo (item resultSpec) poss
+           dg impsig 
+           (makeName $ usName{abbrevPath = abbrevPath usName ++ "_res"}) 
+           opts eo (item resultSpec) poss
        let usig = UnitSig [] resultSig Nothing
        return (mkRefSigFromUnit usig , dg', Unit_type []
                             (replaceAnnoted resultSpec' resultSpec) poss)
     _ -> do -- a non-trivial unit type
-       (argSigs, dg1, argSpecs') <- anaArgSpecs lgraph libEnv ln dg opts eo argSpecs
-       (sigUnion, dg2) <- nodeSigUnion lgraph dg1
-                          (impsig : map JustNode argSigs) DGFormalParams
+       (argSigs, dg1, argSpecs') <- 
+          anaArgSpecs lgraph libEnv ln dg opts eo 
+            (usName{abbrevPath = abbrevPath usName ++ "_args"}) 
+            argSpecs
+       (sigUnion, dg2) <- 
+         case argSigs of 
+           [argSig] -> return (argSig, dg1) -- the optimization mentioned below
+           _ -> nodeSigUnion lgraph dg1
+                          (impsig : map JustNode argSigs) DGFormalParams usName
         {- if i have no imports, i can optimize?
         in that case, an identity morphism is introduced -}
        (resultSpec', resultSig, dg3) <- anaSpec True lgraph libEnv ln
            dg2 (JustNode sigUnion)
-                emptyNodeName opts eo (item resultSpec) poss
+                (makeName $ usName{abbrevPath = abbrevPath usName ++ "_res"}) 
+                opts eo (item resultSpec) poss
        let usig = UnitSig argSigs resultSig $ Just sigUnion
            rsig = mkRefSigFromUnit usig
        return (rsig, dg3, Unit_type argSpecs'
@@ -841,7 +864,7 @@ anaUnitSpec lgraph libEnv ln dg opts eo impsig rN usp = case usp of
     _ -> notFoundError "unit specification" usn
   Closed_unit_spec usp' _ -> do
     curl <- lookupCurrentLogic "UnitSpec" lgraph
-    anaUnitSpec lgraph libEnv ln dg opts eo (EmptyNode curl) rN usp'
+    anaUnitSpec lgraph libEnv ln dg opts eo usName (EmptyNode curl) rN usp'
 
 -- | Analyse refinement specification
 anaRefSpec :: LogicGraph -> LibEnv -> LibName -> DGraph
@@ -860,7 +883,7 @@ anaRefSpec lgraph libEnv ln dg opts eo nsig rn sharedCtx nP rsp =
   Unit_spec asp ->
      do
        (rsig, dg', asp') <-
-           anaUnitSpec lgraph libEnv ln dg opts eo nsig nP asp
+           anaUnitSpec lgraph libEnv ln dg opts eo rn nsig nP asp
        case rsig of
          BranchRefSig _ _ -> do
           usig <- getUnitSigFromRef rsig
@@ -927,7 +950,8 @@ lambda expressions, like you do in the following -}
    do
      -- beh will be ignored for now
      (_rsig@(BranchRefSig _ (usig, _)), dg', asp') <-
-           anaUnitSpec lgraph libEnv ln dg opts eo nsig nP uspec
+           anaUnitSpec lgraph libEnv ln dg opts eo rn nsig nP uspec 
+                                       -- TODO: is rn fine above?
      (_, _, _, _rsig'@(BranchRefSig n2 (usig', bsig)), dgr', rsp') <-
        anaRefSpec lgraph libEnv ln dg' opts eo nsig rn emptyExtStUnitCtx Nothing rspec
              -- here Nothing is fine
@@ -983,20 +1007,24 @@ anaSymbMapRef lg dg' ns ns' symbMap rn = do
 
 -- | Analyse a list of argument specifications
 anaArgSpecs :: LogicGraph -> LibEnv -> LibName -> DGraph -> HetcatsOpts
-  -> ExpOverrides
+  -> ExpOverrides -> SPEC_NAME
   -> [Annoted SPEC] -> Result ([NodeSig], DGraph, [Annoted SPEC])
-anaArgSpecs lgraph libEnv ln dg opts eo args = case args of
-  [] -> return ([], dg, [])
+anaArgSpecs lgraph libEnv ln dg opts eo usName args = let
+ anaArgSpecsAux aDG x args' = case args' of
+  [] -> return ([], aDG, [])
   argSpec : argSpecs -> do
        l <- lookupLogic "anaArgSpecs " (currentLogic lgraph) lgraph
        let sp = item argSpec
        (argSpec', argSig, dg') <-
-           anaSpec False lgraph libEnv ln dg (EmptyNode l) emptyNodeName
-                                           opts eo sp $ getRange sp
+           anaSpec False lgraph libEnv ln aDG (EmptyNode l) 
+              (makeName $ usName{abbrevPath = abbrevPath usName ++ show x})
+              opts eo sp $ getRange sp
        (argSigs, dg'', argSpecs') <-
-           anaArgSpecs lgraph libEnv ln dg' opts eo argSpecs
+           anaArgSpecsAux dg' (x + 1 ::Int) argSpecs
+             -- lgraph libEnv ln dg' opts eo usName argSpecs
        return (argSig : argSigs, dg'', replaceAnnoted argSpec' argSpec
                           : argSpecs')
+ in anaArgSpecsAux dg 0 args
 
 {- | Check that given diagram ensures amalgamability along given set
 of morphisms -}
