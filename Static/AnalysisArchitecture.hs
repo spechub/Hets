@@ -19,8 +19,6 @@ module Static.AnalysisArchitecture
     , anaRefSpec
     ) where
 
-import Debug.Trace
-
 import Driver.Options
 
 import Logic.Logic
@@ -1019,8 +1017,7 @@ anaArgSpecs lgraph libEnv ln dg opts eo usName args = let
        l <- lookupLogic "anaArgSpecs " (currentLogic lgraph) lgraph
        let sp = item argSpec
            xName = makeName $ usName{abbrevPath = abbrevPath usName ++ show x}
-       (argSpec', argSig, dg') <- trace ("xName:" ++ show xName ++ 
-                                         "\nsp:" ++ show sp)$
+       (argSpec', argSig, dg') <- 
            anaSpec False False -- don't optimize the node out 
               lgraph libEnv ln aDG (EmptyNode l) 
               (xName{extIndex = x + 1})

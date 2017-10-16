@@ -38,8 +38,6 @@ module Static.AnalysisStructured
     , networkDiagram
     ) where
 
-import Debug.Trace
-
 import Driver.Options
 
 import Logic.Logic
@@ -535,7 +533,7 @@ anaSpecAux conser addSyms optNodes lg
       -- the case without parameters leads to a simpler dg
       (0, 0) -> case nsig of
           -- if the node shall not be named and the logic does not change,
-        EmptyNode _ | isInternal name && optNodes -> trace "notNamed" $ do
+        EmptyNode _ | isInternal name && optNodes -> do
           dg2 <- createConsLink DefLink conser lg dg nsig body SeeTarget
              -- then just return the body
           return (sp, body, dg2)
