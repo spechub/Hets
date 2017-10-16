@@ -171,8 +171,7 @@ nodeSigUnion :: LogicGraph -> DGraph -> [MaybeNode] -> DGOrigin -> SPEC_NAME
 nodeSigUnion lgraph dg nodeSigs orig sname =
   do sigUnion@(G_sign lid sigU ind) <- gsigManyUnion lgraph
                                    $ map getMaybeSig nodeSigs
-     let unionName = makeName $ 
-                      sname {abbrevPath = abbrevPath sname ++ "_union"}
+     let unionName = makeName $ addSuffixToIRI "_union" sname
          nodeContents = newNodeLab 
                         (unionName{extIndex = 1}) 
                         orig
@@ -204,7 +203,8 @@ anaUnitDeclDefn lgraph libEnv ln dg opts eo uctx@(buc, _) udd = case udd of
        (dns, diag', dg', uts') <-
            anaUnitImported lgraph libEnv ln dg opts eo uctx pos uts
        let impSig = toMaybeNode dns
-       (nodes, maybeRes, mDiag, rsig', dg0, usp') <- anaRefSpec lgraph libEnv ln
+       (nodes, maybeRes, mDiag, rsig', dg0, usp') <- 
+           anaRefSpec True lgraph libEnv ln
            dg' opts eo impSig unIRI (buc, diag') Nothing usp
        usig@(UnitSig argSigs resultSig unionSig) <- getUnitSigFromRef rsig'
        let (n, dg1, rsig0) =
@@ -340,8 +340,9 @@ anaUnitRef lgraph libEnv ln dg opts eo _uctx@(_ggbuc, _diag') rN
            _ -> error "components!"
   curl <- lookupCurrentLogic "UNIT_REF" lgraph
   let impSig = EmptyNode curl
-  ( _, _, _, rsig, dg'', usp') <- anaRefSpec lgraph libEnv ln dg opts eo impSig un
-                        emptyExtStUnitCtx n usp
+  ( _, _, _, rsig, dg'', usp') <- 
+         anaRefSpec True lgraph libEnv ln dg opts eo impSig un
+                    emptyExtStUnitCtx n usp
   let ud' = Unit_ref un usp' pos
   return ((un, rsig), dg'', ud')
 
@@ -800,15 +801,15 @@ anaUnitSpec lgraph libEnv ln dg opts eo usName impsig rN usp = case usp of
       _ -> do -- a trivial unit type
        (resultSpec', resultSig, dg') <- anaSpec False True lgraph libEnv ln
            dg impsig 
-           (makeName $ usName{abbrevPath = abbrevPath usName ++ "_res"}) 
+           (makeName usName) 
            opts eo (item resultSpec) poss
        let usig = UnitSig [] resultSig Nothing
        return (mkRefSigFromUnit usig , dg', Unit_type []
                             (replaceAnnoted resultSpec' resultSpec) poss)
     _ -> do -- a non-trivial unit type
-       let argsName = usName{abbrevPath = abbrevPath usName ++ "_args"}
+       let 
        (argSigs, dg1, argSpecs') <- 
-          anaArgSpecs lgraph libEnv ln dg opts eo argsName argSpecs
+          anaArgSpecs lgraph libEnv ln dg opts eo usName argSpecs
        (sigUnion, dg2) <- 
          case argSigs of 
            [argSig] -> return (argSig, dg1) -- the optimization mentioned below
@@ -816,7 +817,7 @@ anaUnitSpec lgraph libEnv ln dg opts eo usName impsig rN usp = case usp of
                           (impsig : map JustNode argSigs) DGFormalParams usName
         {- if i have no imports, i can optimize?
         in that case, an identity morphism is introduced -}
-       let resName = makeName $ usName{abbrevPath = abbrevPath usName ++ "_res"}
+       let resName = makeName $ addSuffixToIRI "_res" usName 
        (resultSpec', resultSig, dg3) <- anaSpec True True lgraph libEnv ln
            dg2 (JustNode sigUnion)
                (resName {extIndex = 1}) 
@@ -868,7 +869,9 @@ anaUnitSpec lgraph libEnv ln dg opts eo usName impsig rN usp = case usp of
     anaUnitSpec lgraph libEnv ln dg opts eo usName (EmptyNode curl) rN usp'
 
 -- | Analyse refinement specification
-anaRefSpec :: LogicGraph -> LibEnv -> LibName -> DGraph
+anaRefSpec :: 
+   Bool -- True is the refinement is source of a refinement
+   -> LogicGraph -> LibEnv -> LibName -> DGraph
    -> HetcatsOpts      -- ^ should only the structure be analysed?
    -> ExpOverrides
    -> MaybeNode        -- ^ the signature of imports
@@ -879,12 +882,13 @@ anaRefSpec :: LogicGraph -> LibEnv -> LibName -> DGraph
    -> Result ([DiagNodeSig], -- for lambda expressions
               Maybe DiagNodeSig, -- for tracing between levels
               Maybe Diag, RefSig, DGraph, REF_SPEC)
-anaRefSpec lgraph libEnv ln dg opts eo nsig rn sharedCtx nP rsp =
+anaRefSpec src lgraph libEnv ln dg opts eo nsig rn sharedCtx nP rsp =
  case rsp of
   Unit_spec asp ->
-     do
+     do 
+       let rn' = if src then rn else addSuffixToIRI "_target" rn
        (rsig, dg', asp') <-
-           anaUnitSpec lgraph libEnv ln dg opts eo rn nsig nP asp
+           anaUnitSpec lgraph libEnv ln dg opts eo rn' nsig nP asp
        case rsig of
          BranchRefSig _ _ -> do
           usig <- getUnitSigFromRef rsig
@@ -919,7 +923,7 @@ lambda expressions, like you do in the following -}
        (dg', anaSpecs, _) <- foldM (\ (dgr, rList, rN') rsp0 ->
                                         do
           (_, _, _, rsig', dgr', rsp') <-
-                               anaRefSpec lgraph libEnv ln dgr opts eo nsig
+                               anaRefSpec False lgraph libEnv ln dgr opts eo nsig
                                (simpleIdToIRI $ mkSimpleId $
                                              show rn ++ "gen_ref_name" ++
                                              show (length rList) )
@@ -949,12 +953,14 @@ lambda expressions, like you do in the following -}
                Component_ref (reverse anaRefs) range)
   Refinement beh uspec gMapList rspec range ->
    do
+     let rn' = if src then addSuffixToIRI "_source" rn
+                      else rn
      -- beh will be ignored for now
-     (_rsig@(BranchRefSig _ (usig, _)), dg', asp') <-
-           anaUnitSpec lgraph libEnv ln dg opts eo rn nsig nP uspec 
-                                       -- TODO: is rn fine above?
+     (_rsig@(BranchRefSig _ (usig, _)), dg', asp') <- 
+           anaUnitSpec lgraph libEnv ln dg opts eo rn' nsig nP uspec 
+                                       -- TODO: flag for source and target
      (_, _, _, _rsig'@(BranchRefSig n2 (usig', bsig)), dgr', rsp') <-
-       anaRefSpec lgraph libEnv ln dg' opts eo nsig rn emptyExtStUnitCtx Nothing rspec
+       anaRefSpec False lgraph libEnv ln dg' opts eo nsig rn emptyExtStUnitCtx Nothing rspec
              -- here Nothing is fine
      case (usig, usig') of
        (UnitSig _ls ns _, UnitSig _ls' ns' _) -> do
@@ -1006,6 +1012,12 @@ anaSymbMapRef lg dg' ns ns' symbMap rn = do
        (_, dg'') = insLEdgeDG (nodeS, nodeT, linkLabel) dg'
    return dg''
 
+addSuffixToIRI :: String -> IRI -> IRI
+addSuffixToIRI s i = if not $ null $ abbrevQuery i 
+                   then i{abbrevQuery = abbrevQuery i ++ s}
+                  else  
+                        i{abbrevPath  = abbrevPath i ++ s}
+
 -- | Analyse a list of argument specifications
 anaArgSpecs :: LogicGraph -> LibEnv -> LibName -> DGraph -> HetcatsOpts
   -> ExpOverrides -> SPEC_NAME
@@ -1016,7 +1028,8 @@ anaArgSpecs lgraph libEnv ln dg opts eo usName args = let
   argSpec : argSpecs -> do
        l <- lookupLogic "anaArgSpecs " (currentLogic lgraph) lgraph
        let sp = item argSpec
-           xName = makeName $ usName{abbrevPath = abbrevPath usName ++ show x}
+           xIRI = addSuffixToIRI ("_arg" ++ show x) usName
+           xName = makeName xIRI
        (argSpec', argSig, dg') <- 
            anaSpec False False -- don't optimize the node out 
               lgraph libEnv ln aDG (EmptyNode l) 

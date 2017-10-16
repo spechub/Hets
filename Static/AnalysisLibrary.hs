@@ -456,7 +456,8 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
     rn <- expCurieT (globalAnnos dg) eo rn'
     let rnstr = iriToStringUnsecure rn
     l <- lookupCurrentLogic "Ref_spec_defn" lg
-    (_, _, _, rsig, dg', rsp') <- liftR $ anaRefSpec lg libenv currLn dg opts eo
+    (_, _, _, rsig, dg', rsp') <- liftR $ 
+        anaRefSpec True lg libenv currLn dg opts eo
       (EmptyNode l) rn emptyExtStUnitCtx Nothing rsp
     analyzing opts $ "ref spec " ++ rnstr
     let rsd' = Ref_spec_defn rn rsp' pos
