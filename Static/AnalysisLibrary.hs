@@ -612,9 +612,11 @@ anaEntailmentDefn lg ln libEnv dg opts eo en et pos = do
             spT = item asp2
             name = makeName en
         l <- lookupCurrentLogic "ENTAIL_DEFN" lg
-        (_spSrc', srcNsig, dg') <- anaSpec False lg libEnv ln dg (EmptyNode l)
-                          (extName "Source" name) opts eo spS $ getRange spS
-        (_spTgt', tgtNsig, dg'') <- anaSpec True lg libEnv ln dg' (EmptyNode l)
+        (_spSrc', srcNsig, dg') <- anaSpec False True lg libEnv ln 
+                          dg (EmptyNode l) (extName "Source" name)
+                          opts eo spS $ getRange spS
+        (_spTgt', tgtNsig, dg'') <- anaSpec True True lg libEnv ln 
+                          dg' (EmptyNode l)
                           (extName "Target" name) opts eo spT $ getRange spT
         incl <- ginclusion lg (getSig tgtNsig) (getSig srcNsig)
         let  dg3 = insLink dg'' incl globalThm SeeSource
@@ -685,9 +687,9 @@ anaViewType lg libEnv ln dg parSig opts eo name (View_type aspSrc aspTar pos) = 
   l <- lookupCurrentLogic "VIEW_TYPE" lg
   let spS = item aspSrc
       spT = item aspTar
-  (spSrc', srcNsig, dg') <- anaSpec False lg libEnv ln dg (EmptyNode l)
+  (spSrc', srcNsig, dg') <- anaSpec False True lg libEnv ln dg (EmptyNode l)
     (extName "Source" name) opts eo spS $ getRange spS
-  (spTar', tarNsig, dg'') <- anaSpec True lg libEnv ln dg' parSig
+  (spTar', tarNsig, dg'') <- anaSpec True True lg libEnv ln dg' parSig
     (extName "Target" name) opts eo spT $ getRange spT
   return (View_type (replaceAnnoted spSrc' aspSrc)
                     (replaceAnnoted spTar' aspTar)

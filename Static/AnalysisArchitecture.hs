@@ -19,6 +19,8 @@ module Static.AnalysisArchitecture
     , anaRefSpec
     ) where
 
+import Debug.Trace
+
 import Driver.Options
 
 import Logic.Logic
@@ -798,7 +800,7 @@ anaUnitSpec lgraph libEnv ln dg opts eo usName impsig rN usp = case usp of
           then this should be converted to a Spec_name -}
         anaUnitSpec lgraph libEnv ln dg opts eo usName impsig rN (Spec_name spn)
       _ -> do -- a trivial unit type
-       (resultSpec', resultSig, dg') <- anaSpec False lgraph libEnv ln
+       (resultSpec', resultSig, dg') <- anaSpec False True lgraph libEnv ln
            dg impsig 
            (makeName $ usName{abbrevPath = abbrevPath usName ++ "_res"}) 
            opts eo (item resultSpec) poss
@@ -817,7 +819,7 @@ anaUnitSpec lgraph libEnv ln dg opts eo usName impsig rN usp = case usp of
         {- if i have no imports, i can optimize?
         in that case, an identity morphism is introduced -}
        let resName = makeName $ usName{abbrevPath = abbrevPath usName ++ "_res"}
-       (resultSpec', resultSig, dg3) <- anaSpec True lgraph libEnv ln
+       (resultSpec', resultSig, dg3) <- anaSpec True True lgraph libEnv ln
            dg2 (JustNode sigUnion)
                (resName {extIndex = 1}) 
                opts eo (item resultSpec) poss
@@ -1017,13 +1019,14 @@ anaArgSpecs lgraph libEnv ln dg opts eo usName args = let
        l <- lookupLogic "anaArgSpecs " (currentLogic lgraph) lgraph
        let sp = item argSpec
            xName = makeName $ usName{abbrevPath = abbrevPath usName ++ show x}
-       (argSpec', argSig, dg') <-
-           anaSpec False lgraph libEnv ln aDG (EmptyNode l) 
+       (argSpec', argSig, dg') <- trace ("xName:" ++ show xName ++ 
+                                         "\nsp:" ++ show sp)$
+           anaSpec False False -- don't optimize the node out 
+              lgraph libEnv ln aDG (EmptyNode l) 
               (xName{extIndex = x + 1})
               opts eo sp $ getRange sp
        (argSigs, dg'', argSpecs') <-
            anaArgSpecsAux dg' (x + 1 ::Int) argSpecs
-             -- lgraph libEnv ln dg' opts eo usName argSpecs
        return (argSig : argSigs, dg'', replaceAnnoted argSpec' argSpec
                           : argSpecs')
  in anaArgSpecsAux dg 0 args
