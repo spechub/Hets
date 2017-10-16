@@ -233,7 +233,7 @@ mapAccumLCM g f s l = case l of
 
 {- | Monadic version of concatMap
      taken from http://darcs.haskell.org/ghc/compiler/utils/MonadUtils.hs -}
-concatMapM :: Monad m => (a -> m [b]) -> [a] -> m [b]
+concatMapM :: (Traversable t, Monad m) => (a -> m [b]) -> t a -> m [b]
 concatMapM f = liftM concat . mapM f
 
 -- | composition of arbitrary maps
