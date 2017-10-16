@@ -104,6 +104,7 @@ ConsStatus sql=cons_statuses
 FileVersion sql=file_versions
   path String
   commitSha String
+  evaluationState EvaluationStateType default='not_yet_enqueued'
   deriving Show
 
 LocIdBase sql=loc_id_bases
