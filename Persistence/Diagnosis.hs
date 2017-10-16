@@ -1,6 +1,5 @@
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
-{-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE TypeFamilies               #-}
 
 {- |
@@ -17,7 +16,9 @@ module Persistence.Diagnosis (saveDiagnoses) where
 
 import Persistence.Database
 import Persistence.DBConfig
+import Persistence.FileVersion
 import qualified Persistence.Schema.Enums as Enums
+import qualified Persistence.Schema.EvaluationStateType as EvaluationStateType
 import Persistence.Range
 import Persistence.Schema as SchemaClass
 
@@ -26,21 +27,18 @@ import qualified Common.Result as Result
 import Control.Monad.IO.Class (MonadIO (..))
 import qualified Data.Text as Text
 import Database.Persist
-import Database.Persist.Sql
 
 saveDiagnoses :: DBConfig -> DBContext -> Int -> [Result.Diagnosis] -> IO ()
 saveDiagnoses dbConfig dbContext verbosity diagnoses =
-  let fileVersion = contextFileVersion dbContext
-  in onDatabase dbConfig $ do
-      fileVersionM <-
-        selectFirst [ FileVersionId ==. toSqlKey
-                          (fromIntegral (read fileVersion :: Integer))] []
-      case fileVersionM of
-        Nothing -> fail ("Could not find the FileVersion \"" ++
-                         fileVersion ++ "\"")
-        Just (Entity fileVersionKey _) ->
-          mapM_ (saveDiagnosis fileVersionKey) $
-            Result.filterDiags verbosity diagnoses
+  onDatabase dbConfig $ do
+    (Entity fileVersionKey _) <- getFileVersion dbContext
+    mapM_ (saveDiagnosis fileVersionKey) $
+      Result.filterDiags verbosity diagnoses
+    let errors = filter ((Result.Error ==) . Result.diagKind) diagnoses
+    let state = if null errors
+                then EvaluationStateType.FinishedSuccessfully
+                else EvaluationStateType.FinishedUnsuccessfully
+    setFileVersionState dbContext state
 
 saveDiagnosis :: MonadIO m
               => FileVersionId -> Result.Diagnosis -> DBMonad m ()

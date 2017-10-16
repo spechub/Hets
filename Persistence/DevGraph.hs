@@ -17,6 +17,7 @@ module Persistence.DevGraph (exportLibEnv) where
 
 import Persistence.Database
 import Persistence.DBConfig
+import Persistence.FileVersion
 import Persistence.LogicGraph
 import Persistence.Schema as SchemaClass hiding (ConsStatus)
 import Persistence.Schema.MappingOrigin (MappingOrigin)
@@ -96,35 +97,28 @@ emptyDBCache = DBCache { documentMap = Map.empty
                        }
 
 exportLibEnv :: HetcatsOpts -> LibEnv -> IO ()
-exportLibEnv opts libEnv =
+exportLibEnv opts libEnv = do
+  onDatabase (databaseConfig opts) $
+    setFileVersionState (databaseContext opts) EvaluationStateType.Processing
   onDatabase (databaseConfig opts) $ do
     let dependencyLibNameRel = getLibDepRel libEnv
     let dependencyOrderedLibsSetL = Rel.depSort dependencyLibNameRel
     dbCache1 <-
       createDocuments opts libEnv emptyDBCache dependencyOrderedLibsSetL
     createDocumentLinks dbCache1 dependencyLibNameRel
+    setFileVersionState (databaseContext opts)
+      EvaluationStateType.FinishedSuccessfully
     return ()
 
 createDocuments :: MonadIO m
                 => HetcatsOpts -> LibEnv -> DBCache -> [Set LibName]
                 -> DBMonad m DBCache
 createDocuments opts libEnv dbCache0 dependencyOrderedLibsSetL = do
-  fileVersion <- getFileVersion opts
+  fileVersion <- getFileVersion $ databaseContext opts
   dbCache1 <-
     createDocumentsInDependencyRelation opts libEnv fileVersion dbCache0
       dependencyOrderedLibsSetL
   createDocumentsThatAreIndependent opts libEnv fileVersion dbCache1
-
-getFileVersion :: MonadIO m => HetcatsOpts -> DBMonad m (Entity FileVersion)
-getFileVersion opts =
-  let fileVersionS = contextFileVersion $ databaseContext opts in do
-    fileVersionM <-
-      selectFirst [ FileVersionId ==. toSqlKey
-                        (fromIntegral (read fileVersionS :: Integer))] []
-    case fileVersionM of
-      Nothing -> fail ("Could not find the FileVersion \"" ++
-                       fileVersionS ++ "\"")
-      Just fileVersion' -> return fileVersion'
 
 createDocumentsInDependencyRelation :: MonadIO m
                                     => HetcatsOpts -> LibEnv
