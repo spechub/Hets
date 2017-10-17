@@ -16,7 +16,6 @@ Portability :  portable
 module Persistence.DevGraph (exportLibEnv) where
 
 import Persistence.Database
-import Persistence.DBConfig
 import Persistence.FileVersion
 import Persistence.LogicGraph
 import Persistence.Schema as SchemaClass hiding (ConsStatus)
