@@ -38,7 +38,7 @@ saveDiagnoses dbConfig dbContext verbosity diagnoses =
     let state = if null errors
                 then EvaluationStateType.FinishedSuccessfully
                 else EvaluationStateType.FinishedUnsuccessfully
-    setFileVersionState dbContext state
+    setFileVersionStateOn fileVersionKey state
 
 saveDiagnosis :: MonadIO m
               => FileVersionId -> Result.Diagnosis -> DBMonad m ()

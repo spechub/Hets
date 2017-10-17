@@ -101,7 +101,20 @@ ConsStatus sql=cons_statuses
 
 
 -- We leave out the other columns here because we don't need them in Hets
+OrganizationalUnit sql=organizational_units
+  kind String
+  slug String
+  UniqueOrganizationalUnitSlug slug
+  deriving Show
+
+-- We leave out the other columns here because we don't need them in Hets
+Repository sql=repositories
+  ownerId OrganizationalUnitId
+  deriving Show
+
+-- We leave out the other columns here because we don't need them in Hets
 FileVersion sql=file_versions
+  repositoryId RepositoryId
   path String
   commitSha String
   evaluationState EvaluationStateType default='not_yet_enqueued'
@@ -239,7 +252,7 @@ SignatureSymbol sql=signature_symbols
 
 Reasoner sql=reasoners
   slug String
-  UniqueReasonerSlug
+  UniqueReasonerSlug slug
   displayName String
   deriving Show
 
