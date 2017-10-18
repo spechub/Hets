@@ -154,10 +154,6 @@ without prefix -}
 isSimple :: IRI -> Bool
 isSimple i = null (prefixName i) && isAbbrev i
 
--- | do we have a nullIRI
-isNullIRI :: IRI -> Bool
-isNullIRI i = i == nullIRI
-
 {- IRI as instance of Show.  Note that for security reasons, the default
 behaviour should suppress any iuserinfo field (see RFC3986, section 7.5).
 But we don't do this since we use iriToStringUnsecure all over the place
@@ -198,6 +194,11 @@ simpleIdToIRI sid = nullIRI { abbrevPath = tokStr sid
                             , iriPos = tokPos sid
                             }
 
+-- * new functions for OWL.AS
+-- | do we have a nullIRI
+isNullIRI :: IRI -> Bool
+isNullIRI i = i == nullIRI
+
 -- | set the Range attribute of IRIs
 setIRIRange :: Range -> IRI -> IRI
 setIRIRange r i = i { iriPos = r }
@@ -208,7 +209,22 @@ cssIRI i
   | isInfixOf "://" i = "Full"
   | otherwise = "Abbreviated"
 
-
+iRIRange :: IRI -> [Pos]
+iRIRange = undefined
+showIRI :: IRI -> String
+showIRI = undefined
+showIRIU :: IRI -> String
+showIRIU = undefined
+showIRII :: IRI -> String
+showIRII = undefined
+dummyIRI :: IRI
+dummyIRI = undefined
+mkIRI :: String -> IRI
+mkIRI = undefined
+setPrefix :: String -> IRI -> IRI
+setPrefix = undefined
+setFull :: IRI -> IRI
+setFull = undefined
 
 
 -- * Parse an IRI
