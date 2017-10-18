@@ -74,6 +74,7 @@ import Data.Ord (comparing)
 import Data.Map as Map (Map, lookup)
 import Data.Maybe
 import Data.List
+import qualified Data.Map as Map
 
 import OWL2.ColonKeywords
 import OWL2.Keywords
@@ -207,150 +208,10 @@ cssIRI i
   | isInfixOf "://" i = "Full"
   | otherwise = "Abbreviated"
 
-type PrefixMap = Map.Map String String
-
-predefPrefixes :: PrefixMap
-predefPrefixes = Map.fromList
-      [ ("owl", "http://www.w3.org/2002/07/owl#")
-      , ("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
-      , ("rdfs", "http://www.w3.org/2000/01/rdf-schema#")
-      , ("xsd", "http://www.w3.org/2001/XMLSchema#")
-      , ("", showQU dummyQName ++ "#") ]
-
-type LexicalForm = String
-type LanguageTag = String
-type ImportIRI = IRI
-type OntologyIRI = IRI
-type Class = IRI
-type Datatype = IRI
-type ObjectProperty = IRI
-type DataProperty = IRI
-type AnnotationProperty = IRI
-type Individual = IRI
-
-data EquivOrDisjoint = Equivalent | Disjoint
-    deriving (Show, Eq, Ord, Typeable, Data)
-
-showEquivOrDisjoint :: EquivOrDisjoint -> String
-showEquivOrDisjoint ed = case ed of
-    Equivalent -> equivalentToC
-    Disjoint -> disjointWithC
-
-data DomainOrRange = ADomain | ARange
-    deriving (Show, Eq, Ord, Typeable, Data)
-
-showDomainOrRange :: DomainOrRange -> String
-showDomainOrRange dr = case dr of
-    ADomain -> domainC
-    ARange -> rangeC
-
-data SameOrDifferent = Same | Different
-    deriving (Show, Eq, Ord, Typeable, Data)
-    
-showSameOrDifferent :: SameOrDifferent -> String
-showSameOrDifferent sd = case sd of
-    Same -> sameAsC
-    Different -> differentFromC
-
-data Relation =
-    EDRelation EquivOrDisjoint
-  | SubPropertyOf
-  | InverseOf
-  | SubClass
-  | Types
-  | DRRelation DomainOrRange
-  | SDRelation SameOrDifferent
-    deriving (Show, Eq, Ord, Typeable, Data)
-
---    
-showRelation :: Relation -> String
-showRelation r = case r of
-    EDRelation ed -> showEquivOrDisjoint ed
-    SubPropertyOf -> subPropertyOfC
-    InverseOf -> inverseOfC
-    SubClass -> subClassOfC
-    Types -> typesC
-    DRRelation dr -> showDomainOrRange dr
-    SDRelation sd -> showSameOrDifferent sd
-
-getED :: Relation -> EquivOrDisjoint
-getED r |
-    EDRelation ed -> ed
-    _ -> error "not Equivalent or Disjunkt"
-
-getDR :: Relation -> DomainOrRange
-getDR r = case r of
-    DRRelation dr -> dr
-    _ -> error "not domain or range"
-
-getSD :: Relation -> SameOrDifferent
-getSD s = case s of
-    SDRelation sd -> sd
-    _ -> error "not same or different"
-
-data Character =
-    Functional
-  | InverseFunctional
-  | Reflexive
-  | Irreflexive
-  | Symmetric
-  | Asymmetric
-  | Antisymmetric
-  | Transitive
-    deriving (Enum, Bounded, Show, Eq, Ord, Typeable, Data)
-
-data PositiveOrNegative = Positive | Negative
-    deriving (Show, Eq, Ord, Typeable, Data)
-
-data QuantifierType = AllValuesFrom | SomeValuesFrom
-    deriving (Show, Eq, Ord, Typeable, Data)
-
-showQuantifierType :: QuantifierType -> String
-showQuantifierType ty = case ty of
-    AllValuesFrom -> onlyS
-    SomeValuesFrom -> someS
-
--- * Predefined IRI checkings
-
-thingMap :: PreDefMaps
-thingMap = makeOWLPredefMaps predefClass
-
-isThing :: IRI -> Bool
-isThing = checkPredef thingMap
-
-makePredefObjProp :: PreDefMaps
-makePredefObjProp = makeOWLPredefMaps predefObjProp
-
-isPredefObjProp :: IRI -> Bool
-isPredefObjProp = checkPredef makePredefObjProp
-
-makePredefDataProp :: PreDefMaps
-makePredefDataProp = makeOWLPredefMaps predefDataProp
-
-isPredefDataProp :: IRI -> Bool
-isPredefDataProp = checkPredef makePredefDataProp
-
-makePredefRDFSAnnoProp :: PreDefMaps
-makePredefRDFSAnnoProp = preDefMaps predefRDFSAnnoProps "rdfs"
-
-isPredefRDFSAnnoProp :: IRI -> Bool
-isPredefRDFSAnnoProp = checkPredef makePredefRDFSAnnoProp
-
-makePredefOWLAnnoProp :: PreDefMaps
-makePredefOWLAnnoProp = makeOWLPredefMaps predefOWLAnnoProps
-
-isPredefOWLAnnoProp :: IRI -> Bool
-isPredefOWLAnnoProp = checkPredef makePredefOWLAnnoProp
-
-isPredefAnnoProp :: IRI -> Bool
-isPredefAnnoProp iri = isPredefOWLAnnoProp iri || isPredefRDFSAnnoProp iri
-
-isPredefPropOrClass :: IRI -> Bool
-isPredefPropOrClass iri = isPredefAnnoProp iri || isPredefDataProp iri
-    || isPredefObjProp iri || isThing iri
 
 
--- * Parse a IRI
+
+-- * Parse an IRI
 
 {- | Turn a string containing an RFC3987 IRI into an 'IRI'.
 Returns 'Nothing' if the string is not a valid IRI;

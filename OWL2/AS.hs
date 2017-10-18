@@ -80,46 +80,9 @@ showQU (QN pre local _ _ _) =
 showQI :: QName -> String
 showQI n = '<' : showQU n ++ ">"
 
---hasFullIRI | do we have a full (possibly expanded) IRI (i.e. for comparisons)
-hasFullQName :: QName -> Bool
-hasFullQName i 
-  | iriType i == Full = True
-  | otherwise = False
-
---isAbbrev | do we have an abbreviated IRI (i.e. for pretty printing)
-isAbbrev :: QName -> Bool
-isAbbrev i 
-  | iriType i == Abbreviated = True
-  | otherwise = False
-
---isSimple | do we have a simple IRI that is a (possibly expanded) abbreviated IRI without prefix
-isSimple :: QName -> Bool
-isSimple i 
-  | iriType i == Abbreviated && namePrefix i == "" = True
-  | otherwise = False
-
 nullQName :: QName
 nullQName = QN "" "" Abbreviated "" nullRange
 
---simpleIdToIRI | Converts a Simple_ID to an IRI 
---is this correct?
-simpleIdToQName :: SIMPLE_ID -> QName
-simpleIdToQName sid = nullQName {
-  localPart = tokStr sid
-, iriType = Abbreviated
-, iriPos = tokPos sid
-}
-
-{-
--- Helper function for turning a string into a IRI
-parseQNameAny :: QNameParser () QName -> String -> Maybe QName
-parseQNameAny parser qnamestr = case parse (parser << eof) "" qnamestr of
-        Left _ -> Nothing
-        Right u -> Just u { iriPos = nullRange }
-
-type QNameParser st a = GenParser Char st a
-
--}
 
 isNullQName :: QName -> Bool
 isNullQName qn = case qn of
@@ -232,7 +195,7 @@ showRelation r = case r of
 getED :: Relation -> EquivOrDisjoint
 getED r = case r of
     EDRelation ed -> ed
-    _ -> error "not Equivalent or Disjunkt"
+    _ -> error "not domain or range"
 
 getDR :: Relation -> DomainOrRange
 getDR r = case r of
