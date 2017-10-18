@@ -120,6 +120,14 @@ FileVersion sql=file_versions
   evaluationState EvaluationStateType default='not_yet_enqueued'
   deriving Show
 
+-- This table is only needed for a SELECT JOIN by Ontohub. It needs to at least
+-- exist for running with SQLite
+FileVersionParent sql=file_version_parents
+  lastChangedFileVersionId FileVersionId
+  queriedSha String
+  Primary lastChangedFileVersionId queriedSha
+  deriving Show
+
 LocIdBase sql=loc_id_bases
   fileVersionId FileVersionId -- FileVersionId is LocIdBaseId
   kind Enums.LocIdBaseKindType

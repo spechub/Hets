@@ -210,20 +210,29 @@ firstLibdir opts =
 findFileVersionByPath :: MonadIO m
                       => HetcatsOpts -> Entity FileVersion -> Maybe String
                       -> DBMonad m FileVersionId
-findFileVersionByPath opts (Entity fileVersionKey fileVersionValue) location =
+findFileVersionByPath opts (Entity fileVersionKey _) location =
   let isInLibdir = not (null $ libdirs opts)
                      && isJust location
                      && head (libdirs opts) `isPrefixOf` fromJust location
       path = fromJust $ stripPrefix (firstLibdir opts) $ fromJust location
-      sha = fileVersionCommitSha fileVersionValue
+      queryString = Text.pack (
+        "SELECT file_versions.id "
+        ++ "FROM file_versions "
+        ++ "INNER JOIN file_version_parents "
+        ++ "  ON file_version_parents.last_changed_file_version_id = file_versions.id "
+        ++ "INNER JOIN file_versions AS backreference "
+        ++ "  ON file_version_parents.queried_sha = backreference.commit_sha "
+        ++ "WHERE (file_versions.path = ? "
+        ++ "       AND backreference.id = ?);")
   in  if isInLibdir
       then do
-            resultM <- selectFirst [ FileVersionPath ==. path
-                                   , FileVersionCommitSha ==. sha
-                                   ] []
-            return $ case resultM of
-              Nothing -> fileVersionKey
-              Just (Entity key _) -> key
+            results <-
+              rawSql queryString [ toPersistValue path
+                                 , toPersistValue fileVersionKey
+                                 ]
+            if null results
+            then return fileVersionKey
+            else return $ head results
       else return fileVersionKey
 
 -- Guess the kind of the Document. First, by the filepath only and then, by
