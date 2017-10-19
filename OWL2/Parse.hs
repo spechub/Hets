@@ -22,6 +22,7 @@ import OWL2.ColonKeywords
 
 import Common.Keywords
 import Common.Id
+import Common.IRI
 import Common.Lexer
 import Common.Parsec
 import Common.AnnoParser (commentLine)
@@ -154,31 +155,31 @@ skips :: CharParser st a -> CharParser st a
 skips = (<< skipMany
         (forget space <|> forget commentLine <|> nestCommentOut <?> ""))
 
-abbrIriNoPos :: CharParser st QName
+abbrIriNoPos :: CharParser st IRI
 abbrIriNoPos = try $ do
     pre <- try $ prefix << char ':'
     r <- hierPartWithOpts <|> return "" -- allow an empty local part
-    return nullQName { namePrefix = pre, localPart = r }
-  <|> fmap mkQName hierPartWithOpts
+    return nullIRI { namePrefix = pre, localPart = r }
+  <|> fmap mkIRI hierPartWithOpts
 
-abbrIri :: CharParser st QName
+abbrIri :: CharParser st IRI
 abbrIri = do
   p <- getPos
   q <- abbrIriNoPos
   return q { iriPos = Range [p],
                 iriType = if namePrefix q == "_" then NodeID else Abbreviated }
 
-fullIri :: CharParser st QName
+fullIri :: CharParser st IRI
 fullIri = do
     char '<'
     QN pre r _ _ p <- abbrIri
     char '>'
     return $ QN pre r Full (if null pre then r else pre ++ ":" ++ r) p
 
-uriQ :: CharParser st QName
+uriQ :: CharParser st IRI
 uriQ = fullIri <|> abbrIri
 
-uriP :: CharParser st QName
+uriP :: CharParser st IRI
 uriP =
   skips $ try $ checkWithUsing showQN uriQ $ \ q -> let p = namePrefix q in
   if null p then notElem (localPart q) owlKeywords
@@ -233,8 +234,8 @@ uriPair = uriP >>= \ u -> do
     return (u, Just u2)
   <|> return (u, Nothing)
 
-datatypeUri :: CharParser st QName
-datatypeUri = fmap mkQName (choice $ map keyword datatypeKeys) <|> uriP
+datatypeUri :: CharParser st IRI
+datatypeUri = fmap mkIRI (choice $ map keyword datatypeKeys) <|> uriP
 
 optSign :: CharParser st Bool
 optSign = option False $ fmap (== '-') (oneOf "+-")
@@ -291,7 +292,7 @@ stringLiteral = do
         string asP
         t <- skips $ optionMaybe languageTag
         return $ Literal s $ Untyped t
-    <|> skips (return $ Literal s $ Typed $ mkQName stringS)
+    <|> skips (return $ Literal s $ Typed $ mkIRI stringS)
 
 literal :: CharParser st Literal
 literal = do
@@ -302,10 +303,10 @@ literal = do
 
 -- * description
 
-owlClassUri :: CharParser st QName
+owlClassUri :: CharParser st IRI
 owlClassUri = uriP
 
-individualUri :: CharParser st QName
+individualUri :: CharParser st IRI
 individualUri = uriP
 
 individual :: CharParser st Individual
@@ -416,7 +417,7 @@ card = do
   n <- skips getNumber
   return (c, value 10 n)
 
--- tries to parse either a QName or a literal
+-- tries to parse either a IRI or a literal
 individualOrConstant :: CharParser st (Either Individual Literal)
 individualOrConstant = fmap Right literal <|> fmap Left individual
 
@@ -583,7 +584,7 @@ domainOrRange = choice
   $ map (\ f -> pkeyword (showDomainOrRange f) >> return f)
   [ADomain, ARange]
 
-nsEntry :: CharParser st (String, QName)
+nsEntry :: CharParser st (String, IRI)
 nsEntry = do
     pkeyword prefixC
     p <- skips (option "" prefix << char ':')
@@ -595,7 +596,7 @@ nsEntry = do
     i <- skips fullIri
     return (p, i)
 
-importEntry :: CharParser st QName
+importEntry :: CharParser st IRI
 importEntry = pkeyword importC >> uriP
 
 convertPrefixMap :: GA.PrefixMap -> Map.Map String String
