@@ -473,7 +473,7 @@ setPref s e = e {elAttribs = Attr {attrKey = makeQN "name"
     , attrVal = s} : elAttribs e}
 
 set1Map :: (String, String) -> Element
-set1Map (s, iri) = setPref s $ mwIRI $ setFull $ splitIRI $ mkQName iri
+set1Map (s, iri) = setPref s $ mwIRI $ splitIRI $ mkQName iri
 
 xmlPrefixes :: PrefixMap -> [Element]
 xmlPrefixes pm = let allpm = Map.union pm predefPrefixes in

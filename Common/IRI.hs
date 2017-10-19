@@ -64,6 +64,15 @@ module Common.IRI
     , simpleIdToIRI
     , deleteQuery
     , setAngles
+   
+    -- * methods from OWL2.AS
+    , iRIRange
+    , showIRI
+    , showIRIU
+    , showIRII
+    , dummyIRI
+    , mkIRI
+    , setPrefix
     ) where
 
 import Text.ParserCombinators.Parsec
@@ -79,7 +88,7 @@ import qualified Data.Map as Map
 import OWL2.ColonKeywords
 import OWL2.Keywords
 
-import Common.Id
+import Common.Id as Id
 import Common.Lexer
 import Common.Parsec
 import Common.Percent
@@ -210,22 +219,54 @@ cssIRI i
   | otherwise = "Abbreviated"
 
 iRIRange :: IRI -> [Pos]
-iRIRange = undefined
-showIRI :: IRI -> String
-showIRI = undefined
-showIRIU :: IRI -> String
-showIRIU = undefined
-showIRII :: IRI -> String
-showIRII = undefined
-dummyIRI :: IRI
-dummyIRI = undefined
-mkIRI :: String -> IRI
-mkIRI = undefined
-setPrefix :: String -> IRI -> IRI
-setPrefix = undefined
-setFull :: IRI -> IRI
-setFull = undefined
+iRIRange i = let Range rs = iriPos i in case rs of
+  [p] -> let
+    p0 = if hasFullIRI i then Id.incSourceColumn p (-1) else p
+    in tokenRange $ Token (showIRI i) $ Range [p0]
+  _ -> rs
 
+showIRI :: IRI -> String
+showIRI i 
+  | hasFullIRI i = showIRII i
+  | otherwise = showIRIU i
+
+showIRIU :: IRI -> String
+showIRIU i
+  | hasFullIRI i && not (isAbbrev i) = showIRII i
+  | not $ null $ abbrevQuery i = tail $ abbrevQuery i
+  | otherwise = showIRIAbbrev i
+
+showIRIAbbrev :: IRI -> String
+showIRIAbbrev (IRI { prefixName = pname
+                       , abbrevPath = aPath
+                       , abbrevQuery = aQuery
+                       , abbrevFragment = aFragment
+                       }) =
+  pname ++ aPath ++ aQuery ++ aFragment
+
+showIRII :: IRI -> String
+showIRII (IRI { iriScheme = scheme
+              -- , iriAuthority = authority
+              , iriPath = path
+              , iriQuery = query
+              , iriFragment = fragment
+              , hasAngles = b
+              }) =
+  (if b then "<" else "") ++ scheme
+  -- ++ iriAuthToString iuserinfomap authority "" TODO: removed for now
+  ++ path ++ query ++ fragment ++ (if b then ">" else "")
+
+dummyIRI :: IRI
+dummyIRI = nullIRI { 
+       iriScheme = "http"
+    , abbrevPath = "hets.eu/ontology/unamed"
+    }
+
+mkIRI :: String -> IRI
+mkIRI = simpleIdToIRI. mkSimpleId
+
+setPrefix :: String -> IRI -> IRI
+setPrefix s i = i{prefixName = s}
 
 -- * Parse an IRI
 
