@@ -14,6 +14,7 @@ Symbol items for Hets
 module OWL2.Symbols where
 
 import OWL2.AS
+import Common.IRI
 
 import Data.Data
 
@@ -27,7 +28,7 @@ data SymbItems = SymbItems ExtEntityType [IRI]
 
 symbItemsName :: SymbItems -> [String]
 symbItemsName (SymbItems _ iris) = 
- map showQN iris
+ map showIRI iris
 
 data SymbMapItems = SymbMapItems ExtEntityType [(IRI, Maybe IRI)]
     deriving (Show, Eq, Typeable, Data)

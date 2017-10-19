@@ -20,6 +20,7 @@ module OWL2.AS where
 import Common.Id
 import Common.Keywords (stringS)
 import Common.SetColimit
+import Common.IRI
 
 import Common.Result
 
@@ -33,6 +34,8 @@ import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
+
+{-
 data IRIType = Full | Abbreviated | NodeID
     deriving (Show, Eq, Ord, Typeable, Data)
 
@@ -98,8 +101,8 @@ dnamedS = "hets.eu/ontology/unamed"
 dummyQName :: QName
 dummyQName = QN "http" unamedS Full ("http:" ++ unamedS) nullRange
 
-mkQName :: String -> QName
-mkQName s = nullQName { localPart = s }
+mkIRI :: String -> QName
+mkIRI s = nullQName { localPart = s }
 
 setQRange :: Range -> QName -> QName
 setQRange r q = q { iriPos = r }
@@ -125,6 +128,13 @@ isAnonymous iri = iriType iri == NodeID || namePrefix iri == "_"
 -- | checks if a string (bound to be localPart of an IRI) contains \":\/\/\"
 cssIRI :: String -> IRIType
 cssIRI iri = if isInfixOf "://" iri then Full else Abbreviated
+-}
+
+-- | checks if an IRI is an anonymous individual
+isAnonymous :: IRI -> Bool
+isAnonymous iri = prefixName iri == "_" 
+ -- TODO: was also checking that the type is NodeID, but we don't have that now! 
+
 
 -- | prefix -> localname
 type PrefixMap = Map.Map String String
@@ -135,7 +145,7 @@ predefPrefixes = Map.fromList
       , ("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
       , ("rdfs", "http://www.w3.org/2000/01/rdf-schema#")
       , ("xsd", "http://www.w3.org/2001/XMLSchema#")
-      , ("", showQU dummyQName ++ "#") ]
+      , ("", showIRIU dummyIRI ++ "#") ]
 
 type LexicalForm = String
 type LanguageTag = String
@@ -269,10 +279,10 @@ isPredefPropOrClass iri = isPredefAnnoProp iri || isPredefDataProp iri
     || isPredefObjProp iri || isThing iri
 
 predefIRIs :: Set.Set IRI
-predefIRIs = Set.fromList $ map (setPrefix "xsd" . mkQName) xsdKeys
-    ++ map (setPrefix "owl" . mkQName) owlNumbers
-    ++ map (setPrefix "rdf" . mkQName) [rdfsLiteral, stringS]
-    ++ [setPrefix "rdfs" $ mkQName xmlLiteral]
+predefIRIs = Set.fromList $ map (setPrefix "xsd" . mkIRI) xsdKeys
+    ++ map (setPrefix "owl" . mkIRI) owlNumbers
+    ++ map (setPrefix "rdf" . mkIRI) [rdfsLiteral, stringS]
+    ++ [setPrefix "rdfs" $ mkIRI xmlLiteral]
 
 isDatatypeKey :: IRI -> Bool
 isDatatypeKey = not . null . isDatatypeKeyAux
@@ -302,7 +312,8 @@ preDefMaps sl pref = let
  in (sl, pref, sp)
 
 checkPredefAux :: PreDefMaps -> IRI -> Maybe (String, String)
-checkPredefAux (sl, pref, exPref) u =
+checkPredefAux (sl, pref, exPref) u = Nothing
+{-
   let lp = localPart u
       nn = dnamedS ++ "#"
       res = Just (pref, lp)
@@ -326,6 +337,7 @@ checkPredefAux (sl, pref, exPref) u =
       _ | pu == pref -> Just (pref, lp)
       _ -> Nothing
     _ -> Nothing
+-}
 
 checkPredef :: PreDefMaps -> IRI -> Bool
 checkPredef ms = isJust . checkPredefAux ms
@@ -336,12 +348,12 @@ makeOWLPredefMaps sl = preDefMaps sl "owl"
 -- | sets the correct prefix for the predefined datatypes
 setDatatypePrefix :: IRI -> IRI
 setDatatypePrefix iri = case isDatatypeKeyAux iri of
-  (p, l) : _ -> setPrefix p $ mkQName l
-  _ -> error $ showQU iri ++ " is not a predefined datatype"
+  (p, l) : _ -> setPrefix p $ mkIRI l
+  _ -> error $ showIRIU iri ++ " is not a predefined datatype"
 
 -- | checks if the IRI is part of the built-in ones and puts the correct prefix
 setReservedPrefix :: IRI -> IRI
-setReservedPrefix iri = case namePrefix iri of
+setReservedPrefix iri = case prefixName iri of
   ""
     | isDatatypeKey iri -> setDatatypePrefix iri
     | isThing iri || isPredefDataProp iri || isPredefOWLAnnoProp iri
@@ -350,18 +362,18 @@ setReservedPrefix iri = case namePrefix iri of
   _ -> iri
 
 stripReservedPrefix :: IRI -> IRI
-stripReservedPrefix = mkQName . getPredefName
+stripReservedPrefix = mkIRI . getPredefName
 
 {- | returns the name of the predefined IRI (e.g <xsd:string> returns "string"
     or <http://www.w3.org/2002/07/owl#real> returns "real") -}
 getPredefName :: IRI -> String
 getPredefName iri =
-    if namePrefix iri `elem` ["", "xsd", "rdf", "rdfs", "owl"]
-        then localPart iri
-        else case mapMaybe (`stripPrefix` showQU iri)
+    if prefixName iri `elem` ["", "xsd", "rdf", "rdfs", "owl"]
+        then abbrevPath iri
+        else case mapMaybe (`stripPrefix` showIRIU iri)
                     $ Map.elems predefPrefixes of
                 [s] -> s
-                _ -> showQN iri
+                _ -> showIRII iri
 
 -- | Extracts Token from IRI
 uriToTok :: IRI -> Token
@@ -376,7 +388,7 @@ entityToId :: Entity -> Id
 entityToId = uriToId . cutIRI
 
 printDatatype :: IRI -> String
-printDatatype dt = showQU $
+printDatatype dt = showIRIU $
     if isDatatypeKey dt then stripReservedPrefix dt else dt
 
 data DatatypeCat = OWL2Number | OWL2String | OWL2Bool | Other
@@ -405,7 +417,7 @@ xsdStringsMap :: PreDefMaps
 xsdStringsMap = makeXsdMap xsdStrings
 
 facetToIRI :: DatatypeFacet -> ConstrainingFacet
-facetToIRI = setPrefix "xsd" . mkQName . showFacet
+facetToIRI = setPrefix "xsd" . mkIRI . showFacet
 
 -- * Cardinalities
 
@@ -449,7 +461,7 @@ instance Eq Entity where
 
 instance GetRange Entity where
   getRange = iriPos . cutIRI
-  rangeSpan = qNameRange . cutIRI
+  rangeSpan = iRIRange . cutIRI
 
 data EntityType =
     Datatype
@@ -482,15 +494,13 @@ pairSymbols (Entity lb1 k1 i1) (Entity lb2 k2 i2) =
             (Nothing, _) -> pairLables lbl2 lbl1
             (Just l1, Just l2) | l1 /= l2 -> Just $ l1 ++ ", " ++ l2
             _ -> lbl1
-        pairIRIs (QN p1 l1 t1 _e1 r1)
-                 (QN _p2 l2 _t2 _e2 _r2) =
-         QN
-          { namePrefix = p1
-          , localPart = if rest l1 == rest l2 then l1 else l1 ++ "_" ++ rest l2
-          , iriType = t1
-          , expandedIRI = ""
-          , iriPos = r1
-          }
+        pairIRIs i1 i2 = nullIRI
+          { prefixName = prefixName i1
+          , abbrevPath = if rest (abbrevPath i1) == 
+                            rest (abbrevPath i2) 
+                          then abbrevPath i1 
+                          else (abbrevPath i1) ++ "_" ++ (abbrevPath i2)
+          } -- TODO: made it compile, but most likely will cause issues!
     return $ Entity (pairLables lb1 lb2) k1 $ pairIRIs i1 i2
 
 -- * LITERALS

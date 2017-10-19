@@ -13,6 +13,8 @@ OWL 2 signature and sentences
 
 module OWL2.Sign where
 
+
+import Common.IRI
 import OWL2.AS
 
 import qualified Data.Set as Set

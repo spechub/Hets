@@ -19,6 +19,7 @@ References:
 module RDF.AS where
 
 import Common.Id
+import Common.IRI
 import OWL2.AS
 
 import Data.Data
@@ -36,7 +37,7 @@ data TurtleDocument = TurtleDocument
     deriving (Show, Eq, Ord, Typeable, Data)
 
 emptyTurtleDocument :: TurtleDocument
-emptyTurtleDocument = TurtleDocument nullQName Map.empty []
+emptyTurtleDocument = TurtleDocument nullIRI Map.empty []
 
 data Statement = Statement Triples | PrefixStatement Prefix | BaseStatement Base
     deriving (Show, Eq, Ord, Typeable, Data)
@@ -108,16 +109,14 @@ triplesOfDocument :: TurtleDocument -> [Triples]
 triplesOfDocument doc = extractTripleStatements $ statements doc
 
 rdfFirst :: IRI
-rdfFirst = QN "rdf" "first" Abbreviated
-    "http://www.w3.org/1999/02/22-rdf-syntax-ns#first" nullRange
+rdfFirst = nullIRI{prefixName = "rdf", abbrevPath = "first"}
 
 rdfRest :: IRI
-rdfRest = QN "rdf" "rest" Abbreviated
-    "http://www.w3.org/1999/02/22-rdf-syntax-ns#rest" nullRange
+rdfRest = nullIRI{prefixName = "rdf", abbrevPath = "rest"}
 
 rdfNil :: IRI
-rdfNil = QN "rdf" "nil" Abbreviated
-    "http://www.w3.org/1999/02/22-rdf-syntax-ns#nil" nullRange
+rdfNil = nullIRI{prefixName = "rdf", abbrevPath = "nil"}
 
 isAbsoluteIRI :: IRI -> Bool
-isAbsoluteIRI iri = iriType iri == Full && isPrefixOf "//" (localPart iri)
+isAbsoluteIRI iri = hasFullIRI iri && isPrefixOf "//" (abbrevPath iri)
+
