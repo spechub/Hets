@@ -155,29 +155,13 @@ skips :: CharParser st a -> CharParser st a
 skips = (<< skipMany
         (forget space <|> forget commentLine <|> nestCommentOut <?> ""))
 
-abbrIriNoPos :: CharParser st IRI
-abbrIriNoPos = try $ do
-    pre <- try $ prefix << char ':'
-    r <- hierPartWithOpts <|> return "" -- allow an empty local part
-    return nullIRI { namePrefix = pre, localPart = r }
-  <|> fmap mkIRI hierPartWithOpts
-
-abbrIri :: CharParser st IRI
-abbrIri = do
-  p <- getPos
-  q <- abbrIriNoPos
-  return q { iriPos = Range [p],
-                iriType = if namePrefix q == "_" then NodeID else Abbreviated }
-
-fullIri :: CharParser st IRI
-fullIri = do
-    char '<'
-    QN pre r _ _ p <- abbrIri
-    char '>'
-    return $ QN pre r Full (if null pre then r else pre ++ ":" ++ r) p
 
 uriQ :: CharParser st IRI
-uriQ = fullIri <|> abbrIri
+-- uriQ = fullIri <|> abbrIri
+uriQ = Common.IRI.iriCurie
+
+fullIri :: CharParser st IRI
+fullIri = angles iri
 
 uriP :: CharParser st IRI
 uriP =
@@ -312,8 +296,8 @@ individualUri = uriP
 individual :: CharParser st Individual
 individual = do
     i <- individualUri
-    return $ if namePrefix i == "_" then i {iriType = NodeID}
-                                    else i
+    return $ i --if namePrefix i == "_" then i {iriType = NodeID}
+                 --                   else i
 
 skipChar :: Char -> CharParser st ()
 skipChar = forget . skips . char
