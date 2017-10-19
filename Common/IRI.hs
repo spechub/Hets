@@ -93,6 +93,7 @@ import Common.Id as Id
 import Common.Lexer
 import Common.Parsec
 import Common.Percent
+import Common.Token (mixId)
 
 -- * The IRI datatype
 
@@ -117,7 +118,7 @@ or the simple IRI
 data IRI = IRI
     { iriScheme :: String         -- ^ @foo:@
     , iriAuthority :: Maybe IRIAuth -- ^ @\/\/anonymous\@www.haskell.org:42@
-    , iriPath :: String           -- ^ local part @\/ghc@
+    , iriPath :: Id               -- ^ local part @\/ghc@
     , iriQuery :: String          -- ^ @?query@
     , iriFragment :: String       -- ^ @#frag@
     , prefixName :: String        -- ^ @prefix@
@@ -140,7 +141,7 @@ nullIRI :: IRI
 nullIRI = IRI
     { iriScheme = ""
     , iriAuthority = Nothing
-    , iriPath = ""
+    , iriPath = mkId []
     , iriQuery = ""
     , iriFragment = ""
     , prefixName = ""
@@ -151,9 +152,13 @@ nullIRI = IRI
     , iriPos = nullRange
     }
 
+-- | special show function for Ids within IRIs
+showIRIId :: Id -> String
+showIRIId = show -- to be refined
+
 -- | do we have a full (possibly expanded) IRI (i.e. for comparisons)
 hasFullIRI :: IRI -> Bool
-hasFullIRI i = not . null $ iriScheme i ++ iriPath i
+hasFullIRI i = not . null $ iriScheme i ++ (show $ iriPath i)
 
 -- | do we have an abbreviated IRI (i.e. for pretty printing)
 isAbbrev :: IRI -> Bool
@@ -442,7 +447,7 @@ pnCharsPAux c =
 iri :: IRIParser st IRI
 iri = iriWithPos $ do
   us <- try uscheme
-  (ua, up) <- ihierPart
+  (ua, up) <- ihierPartId
   uq <- option "" uiquery
   uf <- option "" uifragment
   return nullIRI
@@ -453,14 +458,18 @@ iri = iriWithPos $ do
             , iriFragment = uf
             }
 
+ihierPartId :: IRIParser st (Maybe IRIAuth, Id)
+ihierPartId = do
+  (ua, s) <- ihierPart
+  return (ua, stringToId s)
+  
+ihierPart :: IRIParser st (Maybe IRIAuth, String)
+ihierPart = ihierOrIrelativePart
+    <|> fmap (\ s -> (Nothing, s)) ihierPartNoAuth
 
 ihierOrIrelativePart :: IRIParser st (Maybe IRIAuth, String)
 ihierOrIrelativePart =
   try (string "//") >> pair uiauthority ipathAbEmpty
-
-ihierPart :: IRIParser st (Maybe IRIAuth, String)
-ihierPart = ihierOrIrelativePart
-    <|> fmap (\ s -> (Nothing, s)) ihierPartNoAuth
 
 ihierPartNoAuth :: IRIParser st String
 ihierPartNoAuth = ipathAbs <|> ipathRootLess <|> return ""
@@ -575,6 +584,9 @@ iisegment-nz-nc = 1*( iunreserved / pct-encoded / sub-delims
 {- iipchar         = iunreserved / pct-encoded / sub-delims / ":"
 / "@" -}
 
+idParser :: IRIParser st Id
+idParser = mixId ([],[]) ([],[]) 
+
 ipathAbEmpty :: IRIParser st String
 ipathAbEmpty = flat $ many slashIsegment
 
@@ -642,7 +654,7 @@ iriReference = iri <|> irelativeRef
 irelativeRef :: IRIParser st IRI
 irelativeRef = iriWithPos $ do
   notMatching uscheme
-  (ua, up) <- irelativePart
+  (ua, up) <- irelativePartId
   uq <- option "" uiquery
   uf <- option "" uifragment
   return nullIRI
@@ -652,6 +664,11 @@ irelativeRef = iriWithPos $ do
             , iriFragment = uf
             }
 
+irelativePartId :: IRIParser st (Maybe IRIAuth, Id)
+irelativePartId = do
+  (ua, s) <- irelativePart
+  return (ua, stringToId s)
+  
 irelativePart :: IRIParser st (Maybe IRIAuth, String)
 irelativePart = ihierOrIrelativePart
   <|> fmap (\ s -> (Nothing, s)) (ipathAbs <|> ipathNoScheme <|> return "")
@@ -745,6 +762,8 @@ iriToStringShort iuserinfomap i
   | otherwise = iriToStringAbbrev i
 
 iriToStringFull :: (String -> String) -> IRI -> ShowS
+iriToStringFull = undefined -- todo
+{-
 iriToStringFull iuserinfomap (IRI { iriScheme = scheme
                                   , iriAuthority = authority
                                   , iriPath = path
@@ -755,6 +774,7 @@ iriToStringFull iuserinfomap (IRI { iriScheme = scheme
   (if b then "<" else "") ++ scheme
   ++ iriAuthToString iuserinfomap authority ""
   ++ path ++ query ++ fragment ++ (if b then ">" else "") ++ s
+-}
 
 iriToStringAbbrev :: IRI -> ShowS
 iriToStringAbbrev (IRI { prefixName = pname
@@ -795,6 +815,8 @@ For example:
 
 -}
 relativeTo :: IRI -> IRI -> Maybe IRI
+relativeTo ref base = undefined -- todo
+{-
 relativeTo ref base
     | isDefined ( iriScheme ref ) =
         just_isegments ref
@@ -804,7 +826,7 @@ relativeTo ref base
             just_isegments ref
                 { iriScheme = iriScheme base
                 , iriAuthority = iriAuthority base
-                , iriPath = if head (iriPath ref) == '/' then iriPath ref
+                , iriPath = if head (show $ iriPath ref) == '/' then iriPath ref
                             else mergePaths base ref
                 }
     | isDefined ( iriQuery ref ) =
@@ -830,11 +852,14 @@ relativeTo ref base
                 pb = iriPath b
                 pr = iriPath r
         dropLast = fst . splitLast -- reverse . dropWhile (/='/') . reverse
+-}
 
 -- Remove dot isegments, but protect leading '/' character
-removeDotSegments :: String -> String
-removeDotSegments ('/' : ps) = '/' : elimDots ps []
-removeDotSegments ps = elimDots ps []
+removeDotSegments :: Id -> Id
+removeDotSegments = undefined -- todo
+--removeDotSegments :: String -> String
+--removeDotSegments ('/' : ps) = '/' : elimDots ps []
+--removeDotSegments ps = elimDots ps []
 
 -- Second arg accumulates isegments processed so far in reverse order
 elimDots :: String -> [String] -> String
@@ -882,34 +907,36 @@ but any acceptable implementation must satisfy the following:
 For any valid absolute IRI.
 (cf. <http://lists.w3.org/Archives/Public/iri/2003Jan/0008.html>
 <http://lists.w3.org/Archives/Public/iri/2003Jan/0005.html>) -}
-relativeFrom :: IRI -> IRI -> IRI
-relativeFrom uabs base
+relativeFrom :: Id -> Id -> Id -- todo
+relativeFrom i _ = i
+relativeFrom_old :: IRI -> IRI -> IRI
+relativeFrom_old uabs base
     | diff iriScheme uabs base = uabs
     | diff iriAuthority uabs base = uabs { iriScheme = "" }
     | diff iriPath uabs base = uabs
         { iriScheme = ""
         , iriAuthority = Nothing
-        , iriPath = relPathFrom (removeBodyDotSegments $ iriPath uabs)
-                                     (removeBodyDotSegments $ iriPath base)
+        , iriPath = undefined -- todo -- relPathFrom (removeBodyDotSegments $ iriPath uabs)
+                                 --    (removeBodyDotSegments $ iriPath base)
         }
     | diff iriQuery uabs base = uabs
         { iriScheme = ""
         , iriAuthority = Nothing
-        , iriPath = ""
+        , iriPath = mkId []
         }
     | otherwise = uabs          -- Always carry fragment from uabs
         { iriScheme = ""
         , iriAuthority = Nothing
-        , iriPath = ""
+        , iriPath = mkId []
         , iriQuery = ""
         }
     where
         diff :: Eq b => (a -> b) -> a -> a -> Bool
         diff sel u1 u2 = sel u1 /= sel u2
         -- Remove dot isegments except the final isegment
-        removeBodyDotSegments p = removeDotSegments p1 ++ p2
-            where
-                (p1, p2) = splitLast p
+        removeBodyDotSegments p = undefined -- todo -- removeDotSegments p1 ++ p2
+            --where
+            --    (p1, p2) = splitLast p
 
 relPathFrom :: String -> String -> String
 relPathFrom [] _ = "/"
