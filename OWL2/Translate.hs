@@ -11,6 +11,7 @@ Portability :  portable
 
 module OWL2.Translate where
 
+import Common.IRI
 import Common.Id
 import Common.ProofUtils
 
@@ -22,15 +23,15 @@ import OWL2.Parse
 idToIRI :: Id -> QName
 idToIRI = idToAnonIRI False
 
-idToAnonIRI :: Bool -> Id -> QName
+idToAnonIRI :: Bool -> Id -> IRI
 idToAnonIRI = idToAnonNumberedIRI (-1)
 
-idToNumberedIRI :: Id -> Int -> QName
+idToNumberedIRI :: Id -> Int -> IRI
 idToNumberedIRI i n = idToAnonNumberedIRI n False i
 
-idToAnonNumberedIRI :: Int -> Bool -> Id -> QName
-idToAnonNumberedIRI n b i = nullQName
-  { localPart = (if b then ('_' :) else id) $ transString (show i)
+idToAnonNumberedIRI :: Int -> Bool -> Id -> IRI
+idToAnonNumberedIRI n b i = nullIRI
+  { abbrevPath = (if b then ('_' :) else id) $ transString (show i)
       ++ if n < 0 then "" else '_' : show n
   , iriPos = rangeOfId i }
 
@@ -51,3 +52,4 @@ transString str = let
 replaceChar :: Char -> String
 -- <http://www.htmlhelp.com/reference/charset/>
 replaceChar c = if isAlphaNum c then [c] else lookupCharMap c
+

@@ -282,7 +282,7 @@ dataIncl :: IRI -> CommonAnno.Named TEXT
 dataIncl iri = CommonAnno.makeNamed "" $ senToText
     $ mk1QU $ mkBI (mk1TermAtom $ uriToTok iri) $ mkSAtom "Datatype"
 
-propertyIncl :: String -> QName -> CommonAnno.Named TEXT
+propertyIncl :: String -> IRI -> CommonAnno.Named TEXT
 propertyIncl s prop = CommonAnno.makeNamed "" $ senToText $
     let [d, pr] = map (`mkTermAtoms` map mkNTERM [1, 2])
             [uriToTok prop, mkSimpleId s]
@@ -295,7 +295,7 @@ declarations s =
         dp = Set.toList $ OS.dataProperties s
         op = Set.toList $ OS.objectProperties s
     in map thingIncl c
-        ++ map dataIncl (map (setPrefix "xsd" . mkQName) datatypeKeys ++ dt)
+        ++ map dataIncl (map (setPrefix "xsd" . mkIRI) datatypeKeys ++ dt)
         ++ map (propertyIncl topDataProp) dp
         ++ map (propertyIncl bottomDataProp) dp
         ++ map (propertyIncl topObjProp) op
@@ -315,7 +315,7 @@ mapTheory (owlSig, owlSens) = do
                 return (x ++ sen, unite sig y)
                 ) ([], cSig) owlSens
     let sig = unite (emptySig {discourseNames = Set.fromList $ map (uriToId .
-            setReservedPrefix . mkQName) $ "Datatype" : predefClass
+            setReservedPrefix . mkIRI) $ "Datatype" : predefClass
             ++ [topDataProp, bottomDataProp, topObjProp, bottomObjProp]
             ++ datatypeKeys}) nSig
         cSens = map (CommonAnno.markSen "OWLbuiltin")

@@ -16,6 +16,7 @@ import Common.Doc
 import Common.DocUtils
 import Common.Id
 import Common.Keywords
+import Common.IRI
 
 import OWL2.AS
 import OWL2.MS
@@ -31,18 +32,8 @@ instance Pretty Character where
 printCharact :: String -> Doc
 printCharact = text
 
-instance Pretty QName where
-    pretty = printIRI
-
-printIRI :: QName -> Doc
-printIRI q
-    | ((iriType q == Full || namePrefix q `elem` ["", "owl", "rdfs"])
-       && isPredefPropOrClass q)
-       || isDatatypeKey q = keyword $ getPredefName q
-    | otherwise = text $ showQN q
-
-printDataIRI :: QName -> Doc
-printDataIRI q = if isDatatypeKey q then text $ showQN $ setDatatypePrefix q
+printDataIRI :: IRI -> Doc
+printDataIRI q = if isDatatypeKey q then text $ showIRI $ setDatatypePrefix q
  else printIRI q
 
 -- | Symbols printing
