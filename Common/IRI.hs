@@ -247,7 +247,7 @@ showIRIAbbrev (IRI { prefixName = pname
                        , abbrevPath = aPath
                        , abbrevQuery = aQuery
                        , abbrevFragment = aFragment
-                       }) =
+                       }) =  
   pname ++ aPath ++ aQuery ++ aFragment
 
 showIRII :: IRI -> String

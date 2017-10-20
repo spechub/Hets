@@ -42,8 +42,12 @@ disambiguateName :: String -> PrefixMap -> String
 disambiguateName n nameMap =
   let nm = if null n then "n" else n  -- change other empty prefixes to "n..."
       newname = reverse . dropWhile isDigit $ reverse nm
-  in fromJust $ find (not . flip Map.member nameMap)
-      [newname ++ show (i :: Int) | i <- [1 ..]]
+      x =  find (not . flip Map.member nameMap)
+           [newname ++ show (i :: Int) | i <- [1 ..]]
+  in case x of
+      Just y -> y
+      Nothing -> error $ "could not disambiguate " ++ n ++ 
+                         " using " ++ show nameMap 
 
 uniteSign :: Sign -> Sign -> Result Sign
 uniteSign s1 s2 = do

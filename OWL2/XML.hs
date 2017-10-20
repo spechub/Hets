@@ -82,8 +82,12 @@ getIRI b e =
         anIri = attrVal a
     in case qName $ attrKey a of
         "abbreviatedIRI" -> appendBase b $ nullIRI {abbrevPath = anIri}
-        "IRI" -> appendBase b $ fromJust $ parseIRI anIri
+        "IRI" -> let x = parseIRI anIri
+                 in case x of
+                     Just y -> appendBase b y
+                     Nothing -> error $ "could not get IRI from " ++ show anIri
         "nodeID" -> appendBase b $ mkIRI anIri
+        _ -> error $ "wrong qName:" ++ show (attrKey a)
    
 
 {- | if the IRI contains colon, it is split there;
