@@ -76,6 +76,8 @@ module Common.IRI
     , setPrefix
     ) where
 
+import Debug.Trace
+
 import Text.ParserCombinators.Parsec
 
 import Data.Char
@@ -247,7 +249,7 @@ showIRIAbbrev (IRI { prefixName = pname
                        , abbrevPath = aPath
                        , abbrevQuery = aQuery
                        , abbrevFragment = aFragment
-                       }) =  
+                       }) = trace ("Showing IRI prefix:" ++ pname ++" path:" ++ aPath) $ 
   pname ++ aPath ++ aQuery ++ aFragment
 
 showIRII :: IRI -> String
