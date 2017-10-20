@@ -762,19 +762,19 @@ iriToStringShort iuserinfomap i
   | otherwise = iriToStringAbbrev i
 
 iriToStringFull :: (String -> String) -> IRI -> ShowS
-iriToStringFull = undefined -- todo
-{-
+-- todo
+
 iriToStringFull iuserinfomap (IRI { iriScheme = scheme
                                   , iriAuthority = authority
                                   , iriPath = path
                                   , iriQuery = query
                                   , iriFragment = fragment
                                   , hasAngles = b
-                                  }) s =
+                                  }) s = 
   (if b then "<" else "") ++ scheme
   ++ iriAuthToString iuserinfomap authority ""
-  ++ path ++ query ++ fragment ++ (if b then ">" else "") ++ s
--}
+  ++ show path ++ query ++ fragment ++ (if b then ">" else "") ++ s
+
 
 iriToStringAbbrev :: IRI -> ShowS
 iriToStringAbbrev (IRI { prefixName = pname
