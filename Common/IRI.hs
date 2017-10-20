@@ -918,8 +918,15 @@ relativeFrom uabs base
     | diff iriPath uabs base = uabs
         { iriScheme = ""
         , iriAuthority = Nothing
-        , iriPath = undefined -- todo -- relPathFrom (removeBodyDotSegments $ iriPath uabs)
-                                 --    (removeBodyDotSegments $ iriPath base)
+        , iriPath = let
+                      i1 = iriPath uabs
+                      i2 = iriPath base
+                    in case (getTokens i1, getTokens i2) of
+                        ((Token s1 _):_ , (Token s2 _):_) ->  
+                             stringToId $ relPathFrom 
+                                  (removeBodyDotSegments s1)
+                                  (removeBodyDotSegments s2)
+                        _ -> error $ "empty id:" ++ show i1 ++ " " ++ show i2
         }
     | diff iriQuery uabs base = uabs
         { iriScheme = ""
@@ -936,9 +943,9 @@ relativeFrom uabs base
         diff :: Eq b => (a -> b) -> a -> a -> Bool
         diff sel u1 u2 = sel u1 /= sel u2
         -- Remove dot isegments except the final isegment
-        removeBodyDotSegments p = undefined -- todo -- removeDotSegments p1 ++ p2
-            --where
-            --    (p1, p2) = splitLast p
+        removeBodyDotSegments p = removeDotSegmentsString p1 ++ p2
+            where
+               (p1, p2) = splitLast p
 
 relPathFrom :: String -> String -> String
 relPathFrom [] _ = "/"
