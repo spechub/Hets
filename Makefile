@@ -333,7 +333,7 @@ OWL2_files = OWL2/AS.hs OWL2/Symbols.hs OWL2/Sign.hs OWL2/MS.hs \
   OWL2/Profiles.hs Common/IRI.hs
 
 RDF_files = RDF/AS.hs OWL2/AS.hs RDF/Symbols.hs RDF/Sign.hs RDF/Morphism.hs \
-  RDF/Sublogic.hs
+  RDF/Sublogic.hs Common/IRI.hs
 
 CSMOF_files = CSMOF/As.hs CSMOF/Sign.hs
 
