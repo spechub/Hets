@@ -584,9 +584,20 @@ idParser = mixId ([],[]) ([],[])
 
 ipathAbEmpty :: IRIParser st Id
 ipathAbEmpty = do
-  s <- flat $ many slashIsegment
-  return $ stringToId s
+  char '/'
+  si <- isegmentorId "/"
+  case si of
+    Left s -> do i <- ipathAbEmpty
+                 return $ prependString s i
+    Right i -> return i
 
+isegmentorId :: String -> IRIParser st (Either String Id)
+isegmentorId lead =
+      do s <- isegment
+         return (Left ('/':s))
+  <|> do id <- idParser
+         return (Right (prependString "/" id))
+  
 ipathAbs :: IRIParser st Id
 ipathAbs = do
   s <- char '/' <:> option "" ipathRootLess

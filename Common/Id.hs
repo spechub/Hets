@@ -232,6 +232,13 @@ appendString (Id tokList idList range) s = let
            ++ tokens
  in Id (genTok tokList [] s) idList range
 
+-- | prepend a string to the first token of an Id
+prependString :: String -> Id -> Id
+prependString s (Id [] comps range) =
+  Id [Token s nullRange] comps range
+prependString s (Id (Token t range1:toks) comps range2) =
+  Id (Token (s++t) range1:toks) comps range2
+
 -- | the name of injections
 injToken :: Token
 injToken = genToken "inj"
