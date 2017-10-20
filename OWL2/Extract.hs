@@ -30,7 +30,7 @@ fromDataPropExpr = addEntity . mkEntity DataProperty
 
 fromIndividual :: Individual -> State Sign ()
 fromIndividual ind =
-    unless (iriType ind == NodeID) $ addEntity $ mkEntity NamedIndividual ind
+ addEntity $ mkEntity NamedIndividual ind
 
 fromAnnoProp :: AnnotationProperty -> State Sign ()
 fromAnnoProp = addEntity . mkEntity AnnotationProperty

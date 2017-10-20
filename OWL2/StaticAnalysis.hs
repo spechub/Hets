@@ -31,7 +31,7 @@ import Common.Result
 import Common.GlobalAnnotations hiding (PrefixMap)
 import Common.ExtSign
 import Common.Lib.State
-import Common.IRI (iriToStringUnsecure, setAngles)
+import Common.IRI --(iriToStringUnsecure, setAngles)
 import Common.SetColimit
 
 import Control.Monad
@@ -43,7 +43,7 @@ failMsg :: Entity -> ClassExpression -> Result a
 failMsg (Entity _ ty e) desc =
   fatal_error
     ("undeclared `" ++ showEntityType ty
-          ++ " " ++ showQN e ++ "` in the following ClassExpression:\n"
+          ++ " " ++ showIRI e ++ "` in the following ClassExpression:\n"
           ++ showDoc desc "") $ iriPos e
 
 -- | checks if an entity is in the signature
@@ -387,7 +387,7 @@ generateLabelMap :: Sign -> [Frame] -> Map.Map IRI String
 generateLabelMap sig = foldr (\ (Frame ext fbl) -> case ext of
         SimpleEntity (Entity _ _ ir) -> case fbl of
             [AnnFrameBit [Annotation _ apr (AnnValLit (Literal s' _))] _]
-                | namePrefix apr == "rdfs" && localPart apr == "label"
+                | prefixName apr == "rdfs" && abbrevPath apr == "label"
                   -> Map.insert ir s'
             _ -> id
         _ -> id ) (labelMap sig)
@@ -409,7 +409,7 @@ findImplied ax sent =
 getNames1 :: Annotation -> [String]
 getNames1 anno = case anno of
       Annotation _ aIRI (AnnValLit (Literal value _)) ->
-          if localPart aIRI == "label"
+          if abbrevPath aIRI == "label"
              then [value]
              else []
       _ -> []

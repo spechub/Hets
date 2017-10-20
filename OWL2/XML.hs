@@ -17,6 +17,7 @@ module OWL2.XML
  ) where
 
 import Common.Lexer (value)
+import Common.IRI
 
 import OWL2.AS
 import OWL2.Extract
@@ -78,59 +79,57 @@ filterCL l e = fromMaybe (err "child not found")
 getIRI :: XMLBase -> Element -> IRI
 getIRI b e =
     let [a] = elAttribs e
-        iri = attrVal a
-        ty = case qName $ attrKey a of
-            "abbreviatedIRI" -> Abbreviated
-            "IRI" -> Full
-            "nodeID" -> NodeID
-            _ -> cssIRI iri
-    in appendBase b $ nullQName {localPart = iri, iriType = ty}
+        anIri = attrVal a
+    in case qName $ attrKey a of
+        "abbreviatedIRI" -> appendBase b $ nullIRI {abbrevPath = anIri}
+        "IRI" -> appendBase b $ fromJust $ parseIRI anIri
+        "nodeID" -> cssIRI anIri --?
+   
 
 {- | if the IRI contains colon, it is split there;
 else, the xml:base needs to be prepended to the local part
 and then the IRI must be splitted -}
 appendBase :: XMLBase -> IRI -> IRI
 appendBase b qn =
-    let r = localPart qn
+    let r = abbrevPath qn
     in splitIRI $ if ':' `elem` r
         then qn
-        else qn {localPart = b ++ r, iriType = Full}
+        else qn {abbrevPath = b ++ r}
 
 -- | splits an IRI at the colon
 splitIRI :: IRI -> IRI
-splitIRI qn = case iriType qn of
-    NodeID -> mkNodeID qn
-    _ -> let lp = localPart qn
-             (np, ':' : nlp) = span (/= ':') lp
-         in qn {namePrefix = np, localPart = nlp}
+splitIRI qn = let 
+  lp = abbrevPath qn
+  (np, ':' : nlp) = span (/= ':') lp
+ in qn {prefixName = np, abbrevPath = nlp}
 
 -- | prepends "_:" to the nodeID if is not there already
 mkNodeID :: IRI -> IRI
 mkNodeID qn =
-    let lp = localPart qn
+    let lp = abbrevPath qn
     in case lp of
-        '_' : ':' : r -> qn {namePrefix = "_", localPart = r}
-        _ -> qn {namePrefix = "_"}
+        '_' : ':' : r -> qn {prefixName = "_", abbrevPath = r}
+        _ -> qn {prefixName = "_"}
 
 -- | gets the content of an element with name Import
 importIRI :: Map.Map String String -> XMLBase -> Element -> IRI
 importIRI m b e =
   let cont1 = strContent e
       cont = Map.findWithDefault cont1 cont1 m
-      iri = nullQName {localPart = cont}
-  in appendBase b $ iri {iriType = cssIRI cont}
+      anIri = nullIRI {abbrevPath = cont}
+  in appendBase b anIRI
 
 -- | gets the content of an element with name IRI, AbbreviatedIRI or Import
 contentIRI :: XMLBase -> Element -> IRI
 contentIRI b e =
   let cont = strContent e
-      iri = nullQName {localPart = cont}
+      iri = nullIRI {abbrevPath = cont}
   in case getName e of
       "AbbreviatedIRI" -> splitIRI iri
       "IRI" -> if ':' `elem` cont
-                then splitIRI $ iri {iriType = Full}
+                then splitIRI  iri 
                 else appendBase b iri
-      "Import" -> appendBase b $ iri {iriType = cssIRI cont}
+      "Import" -> appendBase b $ iri 
       _ -> err "invalid type of iri"
 
 -- | gets the name of an axiom in XML Syntax

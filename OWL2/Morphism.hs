@@ -14,6 +14,7 @@ Morphisms for OWL
 
 module OWL2.Morphism where
 
+import Common.IRI
 import OWL2.AS
 import OWL2.MS
 import OWL2.Sign
@@ -88,8 +89,8 @@ inducedFromMor rm sig = do
             else fail $ "unknown symbol: " ++ showDoc s "\n" ++ shows sig ""
         (AnUri v, AnUri u) -> case filter (`Set.member` syms)
           $ map (`mkEntity` v) entityTypes of
-          [] -> let v2 = showQU v
-                    u2 = showQU u
+          [] -> let v2 = showIRIU v
+                    u2 = showIRIU u
                 in inducedPref v2 u2 sig (m, t)
           l -> return $ if u == v then (m, t) else
                             (foldr (`Map.insert` u) m l, t)
@@ -153,11 +154,12 @@ generatedSign s sign = cogeneratedSign (Set.difference (symOf sign) s) sign
 matchesSym :: Entity -> RawSymb -> Bool
 matchesSym e@(Entity _ _ u) r = case r of
        ASymbol s -> s == e
-       AnUri s -> s == u || expandedIRI s == expandedIRI u || case
-         stripPrefix (reverse $ localPart s) (reverse $ localPart u) of
-           Just (c : _) | null (namePrefix s) -> elem c "/#"
+       AnUri s -> s == u  -- || expandedIRI s == expandedIRI u 
+                || case
+         stripPrefix (reverse $ abbrevPath s) (reverse $ abbrevPath u) of
+           Just (c : _) | null (prefixName s) -> elem c "/#"
            _ -> False
-       APrefix p -> p == namePrefix u
+       APrefix p -> p == prefixName u
 
 statSymbItems :: Sign -> [SymbItems] -> [RawSymb]
 statSymbItems sig = map (function Expand . StringMap $ prefixMap sig)
@@ -165,7 +167,7 @@ statSymbItems sig = map (function Expand . StringMap $ prefixMap sig)
   (\ (SymbItems m us) -> case m of
                AnyEntity -> map AnUri us
                EntityType ty -> map (ASymbol . mkEntity ty) us
-               PrefixO -> map (APrefix . showQN) us)
+               PrefixO -> map (APrefix . showIRI) us)
 
 statSymbMapItems :: Sign -> Maybe Sign -> [SymbMapItems]
   -> Result (Map.Map RawSymb RawSymb)
@@ -181,9 +183,9 @@ statSymbMapItems sig mtsig =
       (AnUri su, ASymbol (Entity _ _ tu)) | su == tu ->
         return $ Map.insert s t m
       (ASymbol (Entity _ _ su), AnUri tu) | su == tu -> return m
-      (AnUri su, APrefix tu) | showQU su == tu ->
+      (AnUri su, APrefix tu) | showIRIU su == tu ->
         return $ Map.insert s t m
-      (APrefix su, AnUri tu) | su == showQU tu -> return m
+      (APrefix su, AnUri tu) | su == showIRIU tu -> return m
       _ -> if u == t then return m else
         fail $ "differently mapped symbol: " ++ showDoc s "\nmapped to "
              ++ showDoc u " and " ++ showDoc t "")
@@ -196,7 +198,7 @@ statSymbMapItems sig mtsig =
             let mS = ASymbol . mkEntity ty
             in map (\ (s, t) -> (mS s, mS t)) ps
         PrefixO ->
-            map (\ (s, t) -> (APrefix (showQU s), APrefix $ showQU t)) ps)
+            map (\ (s, t) -> (APrefix (showIRIU s), APrefix $ showIRIU t)) ps)
 
 mapSen :: OWLMorphism -> Axiom -> Result Axiom
 mapSen m a = do

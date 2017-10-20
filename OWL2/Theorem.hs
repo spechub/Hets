@@ -12,14 +12,15 @@ Adds the "implied" annotation - for specifying theorems
 
 module OWL2.Theorem where
 
+import Common.IRI
 import OWL2.AS
 import OWL2.MS
 
 import Data.List
 
 implied :: Annotation
-implied = Annotation [] (mkQName "Implied")
-  . AnnValLit . Literal "true" . Typed $ mkQName "string"
+implied = Annotation [] (mkIRI "Implied")
+  . AnnValLit . Literal "true" . Typed $ mkIRI "string"
 
 rmList :: Annotations -> Annotations
 rmList = filter (not . prove1)
@@ -88,7 +89,7 @@ addImpliedFrame a = case rmImpliedFrame a of
 prove1 :: Annotation -> Bool
 prove1 anno = case anno of
       Annotation _ aIRI (AnnValLit (Literal value (Typed _))) ->
-          localPart aIRI == "Implied" && isInfixOf "true" value
+          abbrevPath aIRI == "Implied" && isInfixOf "true" value
       _ -> False
 
 proveList :: (Annotations, a) -> Bool
