@@ -115,8 +115,8 @@ createDocuments :: MonadIO m
 createDocuments opts libEnv dbCache0 dependencyOrderedLibsSetL = do
   fileVersion <- getFileVersion $ databaseContext opts
   dbCache1 <-
-    createDocumentsInDependencyRelation opts libEnv fileVersion dbCache0
-      dependencyOrderedLibsSetL
+    createDocumentsInDependencyRelation opts libEnv fileVersion dbCache0 $
+      reverse dependencyOrderedLibsSetL
   createDocumentsThatAreIndependent opts libEnv fileVersion dbCache1
 
 createDocumentsInDependencyRelation :: MonadIO m
