@@ -870,7 +870,7 @@ relativeTo ref base
 -- Remove dot isegments, but protect leading '/' character
 removeDotSegments :: Id -> Id
 removeDotSegments i = case getTokens i of
-  [] -> error $ "Cannot remove fots from empty id:" ++ show i
+  [] -> error $ "Cannot remove dots from empty id:" ++ show i
   (Token s r):_ -> let 
     t' = Token (removeDotSegmentsString s) r
    in simpleIdToId t' 
