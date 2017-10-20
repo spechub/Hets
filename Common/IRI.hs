@@ -447,7 +447,7 @@ pnCharsPAux c =
 iri :: IRIParser st IRI
 iri = iriWithPos $ do
   us <- try uscheme
-  (ua, up) <- ihierPartId
+  (ua, up) <- ihierPart
   uq <- option "" uiquery
   uf <- option "" uifragment
   return nullIRI
@@ -458,21 +458,16 @@ iri = iriWithPos $ do
             , iriFragment = uf
             }
 
-ihierPartId :: IRIParser st (Maybe IRIAuth, Id)
-ihierPartId = do
-  (ua, s) <- ihierPart
-  return (ua, stringToId s)
-  
-ihierPart :: IRIParser st (Maybe IRIAuth, String)
+ihierPart :: IRIParser st (Maybe IRIAuth, Id)
 ihierPart = ihierOrIrelativePart
     <|> fmap (\ s -> (Nothing, s)) ihierPartNoAuth
 
-ihierOrIrelativePart :: IRIParser st (Maybe IRIAuth, String)
+ihierOrIrelativePart :: IRIParser st (Maybe IRIAuth, Id)
 ihierOrIrelativePart =
   try (string "//") >> pair uiauthority ipathAbEmpty
 
-ihierPartNoAuth :: IRIParser st String
-ihierPartNoAuth = ipathAbs <|> ipathRootLess <|> return ""
+ihierPartNoAuth :: IRIParser st Id
+ihierPartNoAuth = ipathAbs <|> ipathRootLessId <|> (return $ stringToId "")
 
 -- RFC3986, section 3.1
 
@@ -587,17 +582,28 @@ iisegment-nz-nc = 1*( iunreserved / pct-encoded / sub-delims
 idParser :: IRIParser st Id
 idParser = mixId ([],[]) ([],[]) 
 
-ipathAbEmpty :: IRIParser st String
-ipathAbEmpty = flat $ many slashIsegment
+ipathAbEmpty :: IRIParser st Id
+ipathAbEmpty = do
+  s <- flat $ many slashIsegment
+  return $ stringToId s
 
-ipathAbs :: IRIParser st String
-ipathAbs = char '/' <:> option "" ipathRootLess
+ipathAbs :: IRIParser st Id
+ipathAbs = do
+  s <- char '/' <:> option "" ipathRootLess
+  return $ stringToId s
+
+ipathRootLessId :: IRIParser st Id
+ipathRootLessId = do
+  s <- ipathRootLess
+  return $ stringToId s
 
 ipathRootLess :: IRIParser st String
 ipathRootLess = flat $ isegmentNz <:> many slashIsegment
 
-ipathNoScheme :: IRIParser st String
-ipathNoScheme = flat $ isegmentNzc <:> many slashIsegment
+ipathNoScheme :: IRIParser st Id
+ipathNoScheme =  do
+  s <- flat $ isegmentNzc <:> many slashIsegment
+  return $ stringToId s
 
 slashIsegment :: IRIParser st String
 slashIsegment = char '/' <:> isegment
@@ -654,7 +660,7 @@ iriReference = iri <|> irelativeRef
 irelativeRef :: IRIParser st IRI
 irelativeRef = iriWithPos $ do
   notMatching uscheme
-  (ua, up) <- irelativePartId
+  (ua, up) <- irelativePart
   uq <- option "" uiquery
   uf <- option "" uifragment
   return nullIRI
@@ -664,14 +670,9 @@ irelativeRef = iriWithPos $ do
             , iriFragment = uf
             }
 
-irelativePartId :: IRIParser st (Maybe IRIAuth, Id)
-irelativePartId = do
-  (ua, s) <- irelativePart
-  return (ua, stringToId s)
-  
-irelativePart :: IRIParser st (Maybe IRIAuth, String)
+irelativePart :: IRIParser st (Maybe IRIAuth, Id)
 irelativePart = ihierOrIrelativePart
-  <|> fmap (\ s -> (Nothing, s)) (ipathAbs <|> ipathNoScheme <|> return "")
+  <|> fmap (\ s -> (Nothing, s)) (ipathAbs <|> ipathNoScheme <|> return (stringToId ""))
 
 -- RFC3987, section 2.2 omitted absoluteIRI
 
