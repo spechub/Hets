@@ -15,6 +15,7 @@ Instances for some of the functions used in OWL 2
 module OWL2.Function where
 
 import OWL2.AS
+import Common.IRI
 import OWL2.MS
 import OWL2.Sign
 import OWL2.Symbols
@@ -47,7 +48,7 @@ getIri :: EntityType -> IRI -> Map.Map Entity IRI -> IRI
 getIri ty u = fromMaybe u . Map.lookup (mkEntity ty u)
 
 cutWith :: EntityType -> Action -> AMap -> IRI -> IRI
-cutWith ty t s iri = cutIRI $ function t s $ mkEntity ty iri
+cutWith ty t s anIri= cutIRI $ function t s $ mkEntity ty anIri
 
 err :: t
 err = error "operation not allowed"
@@ -65,31 +66,27 @@ instance Function PrefixMap where
 instance Function IRI where
   function a m qn = case m of
     StringMap pm -> case a of
-        Rename -> let pre = namePrefix qn in
-            qn { namePrefix = Map.findWithDefault pre pre pm}
-        Expand ->
-            let np = namePrefix qn
-                lp = localPart qn
-                iri = case iriType qn of
-                    Full -> let
-                      ex = np ++ ":" ++ lp
-                      res = qn {expandedIRI = ex}
-                      in if elem np ["http", "https"] then -- abbreviate
+     Rename -> let pre = prefixName qn in
+              qn { prefixName = Map.findWithDefault pre pre pm}
+     Expand ->
+      let np = prefixName qn
+          lp = abbrevPath qn
+          iRi = if hasFullIRI qn then let
+                  ex = np ++ ":" ++ lp
+                  res = fromJust $ expandCurie (Map.map mkIRI pm) qn
+                in if elem np ["http", "https"] then -- abbreviate
                         case Map.lookup "" pm of
                           Just ep | length ep > 5 -> case stripPrefix ep ex of
                             Just rl@(_ : _) -> res
-                              { namePrefix = ""
-                              , localPart = rl
-                              , iriType = Abbreviated }
+                              { prefixName = ""
+                              , abbrevPath = rl
+                              }
                             _ -> res
                           _ -> res
                       else res
-                    NodeID -> qn {expandedIRI = lp}
-                    _ -> let miri = Map.lookup np $ Map.union pm predefPrefixes
-                         in case miri of
-                            Just expn -> qn {expandedIRI = expn ++ lp}
-                            Nothing -> error $ np ++ ": prefix not found"
-            in setReservedPrefix iri
+               else fromJust $ expandCurie 
+                     (Map.map mkIRI $ Map.union pm predefPrefixes) qn 
+      in setReservedPrefix iRi
     _ -> qn
 
 instance Function Sign where
@@ -155,7 +152,7 @@ instance Function Annotation where
 
 instance Function AnnotationValue where
     function t s av = case av of
-        AnnValue iri -> AnnValue $ function t s iri
+        AnnValue anIri -> AnnValue $ function t s anIri
         AnnValLit l -> AnnValLit $ function t s l
 
 instance Function Annotations where

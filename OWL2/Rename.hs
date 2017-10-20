@@ -16,6 +16,7 @@ no prefix clashes
 module OWL2.Rename where
 
 import OWL2.AS
+import Common.IRI
 import OWL2.MS
 import OWL2.Sign
 import OWL2.Function
@@ -31,8 +32,8 @@ import Common.Result
 testAndInteg :: (String, String)
      -> (PrefixMap, StringMap) -> (PrefixMap, StringMap)
 testAndInteg (pre, oiri) (old, tm) = case Map.lookup pre old of
-  Just iri ->
-   if oiri == iri then (old, tm)
+  Just anIri ->
+   if oiri == anIri then (old, tm)
     else let pre' = disambiguateName pre old
          in (Map.insert pre' oiri old, Map.insert pre pre' tm)
   Nothing -> (Map.insert pre oiri old, tm)
@@ -73,11 +74,11 @@ integPref oldMap testMap =
 
 newOid :: OntologyIRI -> OntologyIRI -> OntologyIRI
 newOid id1 id2 =
-  let lid1 = localPart id1
-      lid2 = localPart id2
+  let lid1 = abbrevPath id1
+      lid2 = abbrevPath id2
   in if null lid1 then id2
       else if null lid2 || id1 == id2 then id1
-            else id1 { localPart = uriToName lid1 ++ "_" ++ uriToName lid2 }
+            else id1 { abbrevPath = uriToName lid1 ++ "_" ++ uriToName lid2 }
 
 combineDoc :: OntologyDocument -> OntologyDocument
                       -> OntologyDocument
