@@ -762,8 +762,6 @@ iriToStringShort iuserinfomap i
   | otherwise = iriToStringAbbrev i
 
 iriToStringFull :: (String -> String) -> IRI -> ShowS
--- todo
-
 iriToStringFull iuserinfomap (IRI { iriScheme = scheme
                                   , iriAuthority = authority
                                   , iriPath = path
@@ -856,10 +854,15 @@ relativeTo ref base
 
 -- Remove dot isegments, but protect leading '/' character
 removeDotSegments :: Id -> Id
-removeDotSegments = undefined -- todo
---removeDotSegments :: String -> String
---removeDotSegments ('/' : ps) = '/' : elimDots ps []
---removeDotSegments ps = elimDots ps []
+removeDotSegments i = case getTokens i of
+  [] -> error $ "Cannot remove fots from empty id:" ++ show i
+  (Token s r):_ -> let 
+    t' = Token (removeDotSegmentsString s) r
+   in simpleIdToId t' 
+
+removeDotSegmentsString :: String -> String
+removeDotSegmentsString ('/' : ps) = '/' : elimDots ps []
+removeDotSegmentsString ps = elimDots ps []
 
 -- Second arg accumulates isegments processed so far in reverse order
 elimDots :: String -> [String] -> String
