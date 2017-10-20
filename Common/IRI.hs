@@ -252,15 +252,15 @@ showIRIAbbrev (IRI { prefixName = pname
 
 showIRII :: IRI -> String
 showIRII (IRI { iriScheme = scheme
-              -- , iriAuthority = authority
+              , iriAuthority = authority
               , iriPath = path
               , iriQuery = query
               , iriFragment = fragment
               , hasAngles = b
               }) =
   (if b then "<" else "") ++ scheme
-  -- ++ iriAuthToString iuserinfomap authority "" TODO: removed for now
-  ++ path ++ query ++ fragment ++ (if b then ">" else "")
+  --  ++ iriAuthToString iuserinfomap authority "" --TODO: removed for now
+  ++ show path ++ query ++ fragment ++ (if b then ">" else "")
 
 dummyIRI :: IRI
 dummyIRI = nullIRI { 

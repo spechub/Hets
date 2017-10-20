@@ -14,6 +14,7 @@ module OWL2.XMLConversion where
 
 import Common.AS_Annotation (Named, sentence)
 import Common.IRI hiding (showIRI)
+import Common.Id
 
 import OWL2.AS
 import OWL2.MS
@@ -160,7 +161,7 @@ xmlLiteral l = case l of
             "http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral")
             part
   NumberLit f -> setDt True (nullIRI {iriScheme = "http",
-        iriPath = "//www.w3.org/2001/XMLSchema#" ++ numberName f})
+        iriPath = stringToId $ "//www.w3.org/2001/XMLSchema#" ++ numberName f})
         $ setName literalK $ mwText $ show f
 
 xmlIndividual :: IRI -> Element
