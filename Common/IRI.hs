@@ -249,7 +249,7 @@ showIRIAbbrev (IRI { prefixName = pname
                        , abbrevPath = aPath
                        , abbrevQuery = aQuery
                        , abbrevFragment = aFragment
-                       }) = trace ("Showing IRI prefix:" ++ pname ++" path:" ++ aPath) $ 
+                       }) = trace ("Showing IRI prefix=" ++ pname ++" path=" ++ aPath) $ 
   pname ++ aPath ++ aQuery ++ aFragment
 
 showIRII :: IRI -> String
