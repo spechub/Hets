@@ -66,6 +66,7 @@ module Common.IRI
     , setAngles
    
     -- * methods from OWL2.AS
+    , isNullIRI
     , iRIRange
     , showIRI
     , showIRIU

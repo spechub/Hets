@@ -14,6 +14,7 @@ Printer for N-triples
 module RDF.Print where
 
 import Common.AS_Annotation
+import Common.IRI
 import Common.Doc hiding (sepBySemis, sepByCommas)
 import Common.DocUtils hiding (ppWithCommas)
 
@@ -43,7 +44,7 @@ instance Pretty Predicate where
     pretty = printPredicate
 
 printPredicate :: Predicate -> Doc
-printPredicate (Predicate iri) = pretty iri
+printPredicate (Predicate anIRI) = pretty anIRI
 
 instance Pretty RDFLiteral where
     pretty lit = case lit of
@@ -66,7 +67,7 @@ instance Pretty Subject where
 
 printSubject :: Subject -> Doc
 printSubject subj = case subj of
-    Subject iri -> pretty iri
+    Subject anIRI -> pretty anIRI
     SubjectList ls -> brackets $ ppWithSemis ls
     SubjectCollection c -> parens $ (hsep . map pretty) c
 
@@ -90,9 +91,9 @@ instance Pretty Statement where
 printStatement :: Statement -> Doc
 printStatement s = case s of
     Statement t -> pretty t
-    PrefixStatement (PrefixR p iri)
-        -> text "@prefix" <+> pretty p <> colon <+> pretty iri <+> dot
-    BaseStatement (Base iri) -> text "@base" <+> pretty iri <+> dot
+    PrefixStatement (PrefixR p anIRI)
+        -> text "@prefix" <+> pretty p <> colon <+> pretty anIRI <+> dot
+    BaseStatement (Base anIRI) -> text "@base" <+> pretty anIRI <+> dot
 
 instance Pretty TurtleDocument where
     pretty = printDocument
@@ -101,19 +102,19 @@ printDocument :: TurtleDocument -> Doc
 printDocument doc = (vcat . map pretty) (statements doc)
 
 printExpandedIRI :: IRI -> Doc
-printExpandedIRI iri = if iriType iri == NodeID then text $ showQU iri
-    else text "<" <> text (expandedIRI iri) <> text ">"
+printExpandedIRI anIRI = if not $ hasFullIRI anIRI then text $ showIRIU anIRI
+    else text "<" <> text (showIRII anIRI) <> text ">"
 
 instance Pretty Term where
     pretty = printTerm
 
 printTerm :: Term -> Doc
 printTerm t = case t of
-    SubjectTerm iri -> printExpandedIRI iri
-    PredicateTerm iri -> printExpandedIRI iri
+    SubjectTerm anIRI -> printExpandedIRI anIRI
+    PredicateTerm anIRI -> printExpandedIRI anIRI
     ObjectTerm obj -> case obj of
         Right lit -> pretty lit
-        Left iri -> printExpandedIRI iri
+        Left anIRI -> printExpandedIRI anIRI
 
 instance Pretty Axiom where
     pretty = printAxiom

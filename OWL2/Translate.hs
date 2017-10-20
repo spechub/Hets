@@ -20,7 +20,7 @@ import Data.Char
 import OWL2.AS
 import OWL2.Parse
 
-idToIRI :: Id -> QName
+idToIRI :: Id -> IRI
 idToIRI = idToAnonIRI False
 
 idToAnonIRI :: Bool -> Id -> IRI

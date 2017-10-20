@@ -16,6 +16,7 @@ References  :  <http://www.w3.org/TR/owl2-manchester-syntax/>
 module OWL2.MS where
 
 import Common.Id
+import Common.IRI
 import OWL2.AS
 
 import Data.Data
@@ -116,13 +117,13 @@ data OntologyDocument = OntologyDocument
 instance GetRange OntologyDocument
 
 emptyOntology :: [Frame] -> Ontology
-emptyOntology = Ontology nullQName [] []
+emptyOntology = Ontology nullIRI [] []
 
 emptyOntologyDoc :: OntologyDocument
 emptyOntologyDoc = OntologyDocument Map.empty $ emptyOntology []
 
 isEmptyOntology :: Ontology -> Bool
-isEmptyOntology (Ontology oiri annoList impList fs) = isNullQName oiri
+isEmptyOntology (Ontology oiri annoList impList fs) = isNullIRI oiri
     && null annoList && null impList && null fs
 
 isEmptyOntologyDoc :: OntologyDocument -> Bool
