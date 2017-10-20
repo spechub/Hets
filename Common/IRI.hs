@@ -907,10 +907,8 @@ but any acceptable implementation must satisfy the following:
 For any valid absolute IRI.
 (cf. <http://lists.w3.org/Archives/Public/iri/2003Jan/0008.html>
 <http://lists.w3.org/Archives/Public/iri/2003Jan/0005.html>) -}
-relativeFrom :: Id -> Id -> Id -- todo
-relativeFrom i _ = i
-relativeFrom_old :: IRI -> IRI -> IRI
-relativeFrom_old uabs base
+relativeFrom :: IRI -> IRI -> IRI
+relativeFrom uabs base
     | diff iriScheme uabs base = uabs
     | diff iriAuthority uabs base = uabs { iriScheme = "" }
     | diff iriPath uabs base = uabs
