@@ -42,8 +42,8 @@ parseOWLAsLibDefn quick fn = do
    (imap, ontodocs) <- parseOWL quick fn
    return $ map (convertToLibDefN imap) ontodocs
 
-qNameToIRI :: QName -> SPEC_NAME
-qNameToIRI qn = let s = showQN qn in
+qNameToIRI :: IRI -> SPEC_NAME
+qNameToIRI qn = let s = showIRI qn in
   fromMaybe (error $ "qNameToIRI " ++ s) $ parseIRICurie s
 
 createSpec :: OntologyDocument -> [SPEC_NAME] -> Annoted SPEC

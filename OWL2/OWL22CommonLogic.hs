@@ -28,6 +28,7 @@ import qualified Data.Map as Map
 -- OWL2 = domain
 import OWL2.Logic_OWL2
 import OWL2.AS
+import Common.IRI
 import OWL2.Keywords
 import OWL2.MS
 import OWL2.ProfilesAndSublogics
@@ -257,7 +258,7 @@ mapMap :: Map.Map Entity IRI -> Result (Map.Map Id Id)
 mapMap m = return $ Map.map uriToId $ Map.mapKeys entityToId m
 
 mapSymbol :: Entity -> Set.Set Symbol
-mapSymbol (Entity _ _ iri) = Set.singleton $ idToRaw $ uriToId iri
+mapSymbol (Entity _ _ iRi) = Set.singleton $ idToRaw $ uriToId iRi
 
 mapSign :: OS.Sign -> Result Sign
 mapSign sig =
@@ -275,12 +276,12 @@ nothingSent = CommonAnno.makeNamed "" $ senToText $ mk1QU $ mkBN $ mkSAtom
     "Nothing"
 
 thingIncl :: IRI -> CommonAnno.Named TEXT
-thingIncl iri = CommonAnno.makeNamed "" $ senToText
-    $ mk1QU $ mkBI (mk1TermAtom $ uriToTok iri) $ mkSAtom "Thing"
+thingIncl iRi = CommonAnno.makeNamed "" $ senToText
+    $ mk1QU $ mkBI (mk1TermAtom $ uriToTok iRi) $ mkSAtom "Thing"
 
 dataIncl :: IRI -> CommonAnno.Named TEXT
-dataIncl iri = CommonAnno.makeNamed "" $ senToText
-    $ mk1QU $ mkBI (mk1TermAtom $ uriToTok iri) $ mkSAtom "Datatype"
+dataIncl iRi = CommonAnno.makeNamed "" $ senToText
+    $ mk1QU $ mkBI (mk1TermAtom $ uriToTok iRi) $ mkSAtom "Datatype"
 
 propertyIncl :: String -> IRI -> CommonAnno.Named TEXT
 propertyIncl s prop = CommonAnno.makeNamed "" $ senToText $
@@ -441,7 +442,7 @@ mapFacet :: Sign -> VarOrIndi -> TERM -> (ConstrainingFacet, RestrictionValue)
 mapFacet sig i var (f, r) = let v = varToInt i + 1 in do
     l <- mapLit v r
     let sign = unite sig $ emptySig {
-                  discourseNames = Set.fromList [stringToId $ showQN
+                  discourseNames = Set.fromList [stringToId $ showIRI
                                                   $ stripReservedPrefix f]}
     case l of
         Right lit -> return (mkTermAtoms (uriToTok f) [lit, var], sign)
@@ -574,14 +575,14 @@ mapFact cSig ex f = case f of
                             Negative -> mkBN oPropH
         _ -> failMsg f
     DataPropertyFact posneg dpe lit -> case ex of
-        SimpleEntity (Entity _ NamedIndividual iri) -> do
-             inS <- mapIndivIRI cSig iri
+        SimpleEntity (Entity _ NamedIndividual iRi) -> do
+             inS <- mapIndivIRI cSig iRi
              inT <- mapLit 1 lit
              nm <- uriToTokM dpe
              dPropH <- case inT of
                     Right li -> return $ mkTermAtoms nm [inS, li]
                     Left (s1, s2) -> do
-                        sens <- mapDataProp cSig dpe (OIndi iri) $ OVar 1
+                        sens <- mapDataProp cSig dpe (OIndi iRi) $ OVar 1
                         return $ mkBC [sens, s1, s2]
              return $ senToText $ case posneg of
                              Positive -> dPropH
@@ -669,16 +670,16 @@ mapListFrameBit cSig ex rel lfb = case lfb of
           Misc _ -> let cel = map snd cls in do
             (els, sig) <- mapDescriptionListP cSig 1 $ comPairs cel cel
             mkEDPairs sig [1] rel els
-          SimpleEntity (Entity _ ty iri) -> do
-             ls <- mapM (\ (_, c) -> mapDescription cSig c (OIndi iri) 1) cls
+          SimpleEntity (Entity _ ty iRi) -> do
+             ls <- mapM (\ (_, c) -> mapDescription cSig c (OIndi iRi) 1) cls
              case ty of
               NamedIndividual | rel == Just Types -> do
-                  inD <- mapIndivIRI cSig iri
+                  inD <- mapIndivIRI cSig iRi
                   let ocls = map (mapClassAssertion inD)
                             $ zip (map snd cls) $ map fst ls
                   return (ocls, uniteL $ map snd ls)
               DataProperty | rel == (Just $ DRRelation ADomain) -> do
-                  oEx <- mapDPE cSig iri 1 2
+                  oEx <- mapDPE cSig iRi 1 2
                   return (msen2Txt $ map (mkSent [mk1NAME] [mkNAME 2] oEx
                             . fst) ls, uniteL $ map snd ls)
               _ -> failMsg cls
@@ -738,13 +739,13 @@ mapListFrameBit cSig ex rel lfb = case lfb of
             Misc _ -> do
                     pairs <- mapDataPropListP cSig 1 2 $ comPairs dl dl
                     mkEDPairs cSig [1, 2] rel pairs
-            SimpleEntity (Entity _ DataProperty iri) -> case r of
+            SimpleEntity (Entity _ DataProperty iRi) -> case r of
                 EDRelation _ -> do
-                    pairs <- mapDataPropListP cSig 1 2 $ mkPairs iri dl
+                    pairs <- mapDataPropListP cSig 1 2 $ mkPairs iRi dl
                     mkEDPairs cSig [1, 2] rel pairs
                 SubPropertyOf -> do
                     os1 <- mapM (\ o1 -> mapDPE cSig o1 1 2) dl
-                    o2 <- mapDPE cSig iri 1 2
+                    o2 <- mapDPE cSig iRi 1 2
                     return (msen2Txt $ map (mkQU (map mkNAME [1, 2])
                         . mkBI o2) os1, cSig)
                 _ -> failMsg lfb
@@ -752,13 +753,13 @@ mapListFrameBit cSig ex rel lfb = case lfb of
     IndividualSameOrDifferent anl -> case rel of
         Nothing -> failMsg lfb
         Just (SDRelation re) -> do
-            let SimpleEntity (Entity _ NamedIndividual iri) = ex
-            fs <- mapComIndivList cSig re (Just iri) $ map snd anl
+            let SimpleEntity (Entity _ NamedIndividual iRi) = ex
+            fs <- mapComIndivList cSig re (Just iRi) $ map snd anl
             return (msen2Txt fs, cSig)
         _ -> failMsg lfb
     DataPropRange dpr -> case ex of
-        SimpleEntity (Entity _ DataProperty iri) -> do
-            oEx <- mapDPE cSig iri 1 2
+        SimpleEntity (Entity _ DataProperty iRi) -> do
+            oEx <- mapDPE cSig iRi 1 2
             ls <- mapM (\ (_, r) -> mapDataRange cSig r $ OVar 2) dpr
             return (msen2Txt $ map (mkSent [mkNAME 1] [mkNAME 2] oEx
                         . fst) ls, uniteL $ map snd ls )
@@ -778,24 +779,24 @@ mapAnnFrameBit cSig ex afb =
     let err = fail $ "could not translate " ++ show afb in case afb of
     AnnotationFrameBit _ -> return ([], cSig)
     DataFunctional -> case ex of
-        SimpleEntity (Entity _ DataProperty iri) -> do
-            so1 <- mapDPE cSig iri 1 2
-            so2 <- mapDPE cSig iri 1 3
+        SimpleEntity (Entity _ DataProperty iRi) -> do
+            so1 <- mapDPE cSig iRi 1 2
+            so2 <- mapDPE cSig iRi 1 3
             return ([mkQUBI (map mkNAME [1, 2, 3]) [so1, so2]
                         (mkNTERM 2) $ mkNTERM 3], cSig)
         _ -> err
     DatatypeBit dr -> case ex of
-        SimpleEntity (Entity _ Datatype iri) -> do
+        SimpleEntity (Entity _ Datatype iRi) -> do
            (odes, dSig) <- mapDataRange cSig dr $ OVar 1
-           let dtp = mkTermAtoms (uriToTok iri) [mkVTerm $ OVar 1]
+           let dtp = mkTermAtoms (uriToTok iRi) [mkVTerm $ OVar 1]
            return ([senToText $ mk1QU $ mkBB dtp odes], dSig)
         _ -> err
     ClassDisjointUnion clsl -> case ex of
-        ClassEntity (Expression iri) -> do
+        ClassEntity (Expression iRi) -> do
             (decrs, dSig) <- mapDescriptionList cSig 1 clsl
             (decrsS, pSig) <- mapDescriptionListP cSig 1 $ comPairs clsl clsl
             let decrsP = unzip decrsS
-            mcls <- mapClassIRI cSig iri $ mkNName 1
+            mcls <- mapClassIRI cSig iRi $ mkNName 1
             return ([senToText $ mk1QU $ mkBB mcls $ mkBC
                     [mkBD decrs, mkBN $ mkBC $ uncurry (++) decrsP]],
                     unite dSig pSig)

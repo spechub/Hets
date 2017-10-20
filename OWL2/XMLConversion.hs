@@ -13,6 +13,7 @@ Conversion from Manchester Syntax to XML Syntax
 module OWL2.XMLConversion where
 
 import Common.AS_Annotation (Named, sentence)
+import Common.IRI hiding (showIRI)
 
 import OWL2.AS
 import OWL2.MS
@@ -28,9 +29,7 @@ import qualified Data.Map as Map
 
 -- | prints the IRI with a colon separating the prefix and the local part
 showIRI :: IRI -> String
-showIRI (QN pre local ty _ _) = case ty of
-    NodeID -> local
-    _ -> pre ++ ":" ++ local
+showIRI anIRI = prefixName anIRI ++ abbrevPath anIRI
 
 nullQN :: Text.XML.Light.QName
 nullQN = QName "" Nothing Nothing
@@ -62,21 +61,20 @@ setName s e = e {elName = nullQN {qName = s,
 {- | sets the attribute key to one of IRI, abbreviatedIRI or nodeID
  and the attribute value to the actual content of the IRI -}
 setIRI :: IRI -> Element -> Element
-setIRI iri e =
-    let fan = iriType iri
-        ty
-            | fan == Full = iriK
-            | fan == Abbreviated = "abbreviatedIRI"
-            | otherwise = nodeID
+setIRI anIri e =
+    let ty
+            | hasFullIRI anIri = iriK
+            | otherwise = "abbreviatedIRI"
+            -- | otherwise = nodeID TODO:?
     in e {elAttribs = [Attr {attrKey = makeQN ty,
-                             attrVal = showIRI $ setReservedPrefix iri}]}
+                             attrVal = showIRI $ setReservedPrefix anIri}]}
 
 mwIRI :: IRI -> Element
-mwIRI iri = setIRI iri nullElem
+mwIRI anIri = setIRI anIri nullElem
 
 -- | makes an element with the string as name and the IRI as content
 mwNameIRI :: String -> IRI -> Element
-mwNameIRI s iri = setName s $ mwIRI iri
+mwNameIRI s anIri = setName s $ mwIRI anIri
 
 -- | makes a new element with the given string as name
 mwString :: String -> Element
@@ -96,7 +94,7 @@ mwText s = setText s nullElem
 
 -- | makes a new element with the IRI as the text content
 mwSimpleIRI :: IRI -> Element
-mwSimpleIRI s = setName (if iriType s /= Abbreviated then iriK
+mwSimpleIRI s = setName (if hasFullIRI s then iriK
                           else abbreviatedIRI) $ mwText $ showIRI
                           $ setReservedPrefix s
 
@@ -107,8 +105,8 @@ mwSimpleIRI s = setName (if iriType s /= Abbreviated then iriK
     and the given IRI -}
 make1 :: Bool -> String -> String -> (String -> IRI -> Element) -> IRI ->
             [([Element], Element)] -> [Element]
-make1 rl hdr shdr f iri = map (\ (a, b) -> makeElement hdr
-        $ a ++ (if rl then [f shdr iri, b] else [b, f shdr iri]))
+make1 rl hdr shdr f anIri = map (\ (a, b) -> makeElement hdr
+        $ a ++ (if rl then [f shdr anIri, b] else [b, f shdr anIri]))
 
 -- almost the same, just that the function takes only one argument
 make2 :: Bool -> String -> (a -> Element) -> a ->
@@ -123,7 +121,7 @@ setInt i e = e {elAttribs = [Attr {attrKey = makeQN "cardinality",
 
 -- | the reverse of @properFacet@ in "OWL2.XML"
 correctFacet :: ConstrainingFacet -> ConstrainingFacet
-correctFacet c = let d = getPredefName c in setPrefix "http" $ mkQName $
+correctFacet c = let d = getPredefName c in setPrefix "http" $ mkIRI $
     "//www.w3.org/2001/XMLSchema#" ++ case d of
         ">" -> "minExclusive"
         "<" -> "maxExclusive"
@@ -158,17 +156,17 @@ xmlLiteral l = case l of
     let part = setName literalK $ mwText lf
     in case tu of
         Typed dt -> setDt True dt part
-        Untyped lang -> setLangTag lang $ setDt True (splitIRI $ mkQName
+        Untyped lang -> setLangTag lang $ setDt True (splitIRI $ mkIRI
             "http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral")
             part
-  NumberLit f -> setDt True (nullQName {namePrefix = "http",
-        localPart = "//www.w3.org/2001/XMLSchema#" ++ numberName f})
+  NumberLit f -> setDt True (nullIRI {iriScheme = "http",
+        iriPath = "//www.w3.org/2001/XMLSchema#" ++ numberName f})
         $ setName literalK $ mwText $ show f
 
 xmlIndividual :: IRI -> Element
-xmlIndividual iri =
-    mwNameIRI (if isAnonymous iri then anonymousIndividualK
-                else namedIndividualK) iri
+xmlIndividual iRi =
+    mwNameIRI (if isAnonymous iRi then anonymousIndividualK
+                else namedIndividualK) iRi
 
 xmlFVPair :: (ConstrainingFacet, RestrictionValue) -> Element
 xmlFVPair (cf, rv) = setDt False cf $ makeElement facetRestrictionK
@@ -246,12 +244,12 @@ xmlAnnotation :: Annotation -> Element
 xmlAnnotation (Annotation al ap av) = makeElement annotationK
     $ map xmlAnnotation al ++ [mwNameIRI annotationPropertyK ap,
     case av of
-        AnnValue iri -> xmlSubject iri
+        AnnValue iRi -> xmlSubject iRi
         AnnValLit l -> xmlLiteral l]
 
 xmlSubject :: IRI -> Element
-xmlSubject iri = if isAnonymous iri then xmlIndividual iri
-                  else mwSimpleIRI iri
+xmlSubject iRi = if isAnonymous iRi then xmlIndividual iRi
+                  else mwSimpleIRI iRi
 
 xmlAnnotations :: Annotations -> [Element]
 xmlAnnotations = map xmlAnnotation
@@ -387,10 +385,10 @@ xmlLFB ext mr lfb = case lfb of
             ) list
 
 xmlAssertion :: IRI -> Annotations -> [Element]
-xmlAssertion iri = map (\ (Annotation as ap av) ->
+xmlAssertion iRi = map (\ (Annotation as ap av) ->
     makeElement annotationAssertionK $ xmlAnnotations as
         ++ [mwNameIRI annotationPropertyK ap]
-        ++ [xmlSubject iri, case av of
+        ++ [xmlSubject iRi, case av of
                 AnnValue avalue -> xmlSubject avalue
                 AnnValLit l -> xmlLiteral l])
 
@@ -403,9 +401,9 @@ xmlAFB ext anno afb = case afb of
             Assertion -> if null anno then [makeElement declarationK
                                                 [xmlEntity ent]]
                           else
-                           let Entity _ _ iri = ent in xmlAssertion iri anno
+                           let Entity _ _ iRi = ent in xmlAssertion iRi anno
             XmlError _ -> error "xmlAFB"
-        Misc ans -> let [Annotation _ iri _] = ans in xmlAssertion iri anno
+        Misc ans -> let [Annotation _ iRi _] = ans in xmlAssertion iRi anno
         ClassEntity ent -> case ent of
             Expression c -> [makeElement declarationK
                     $ xmlAnnotations anno ++ [xmlEntity $ mkEntity Class c]]
@@ -473,17 +471,17 @@ setPref s e = e {elAttribs = Attr {attrKey = makeQN "name"
     , attrVal = s} : elAttribs e}
 
 set1Map :: (String, String) -> Element
-set1Map (s, iri) = setPref s $ mwIRI $ splitIRI $ mkQName iri
+set1Map (s, iRi) = setPref s $ mwIRI $ splitIRI $ mkIRI iRi
 
 xmlPrefixes :: PrefixMap -> [Element]
 xmlPrefixes pm = let allpm = Map.union pm predefPrefixes in
     map (setName prefixK . set1Map) $ Map.toList allpm
 
 setOntIRI :: OntologyIRI -> Element -> Element
-setOntIRI iri e =
-    if elem iri [nullQName, dummyQName] then e
+setOntIRI iRi e =
+    if elem iRi [nullIRI, dummyIRI] then e
      else e {elAttribs = Attr {attrKey = makeQN "ontologyIRI",
-        attrVal = showIRI iri} : elAttribs e}
+        attrVal = showIRI iRi} : elAttribs e}
 
 setBase :: String -> Element -> Element
 setBase s e = e {elAttribs = Attr {attrKey = nullQN {qName = "base",
@@ -497,7 +495,7 @@ xmlOntologyDoc :: Sign -> OntologyDocument -> Element
 xmlOntologyDoc s od =
     let ont = ontology od
         pd = prefixDeclaration od
-        emptyPref = fromMaybe (showIRI dummyQName) $ Map.lookup "" pd
+        emptyPref = fromMaybe (showIRI dummyIRI) $ Map.lookup "" pd
     in setBase emptyPref $ setXMLNS $ setOntIRI (name ont)
         $ makeElement "Ontology" $ xmlPrefixes pd
             ++ map xmlImport (imports ont)

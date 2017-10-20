@@ -83,7 +83,7 @@ getIRI b e =
     in case qName $ attrKey a of
         "abbreviatedIRI" -> appendBase b $ nullIRI {abbrevPath = anIri}
         "IRI" -> appendBase b $ fromJust $ parseIRI anIri
-        "nodeID" -> cssIRI anIri --?
+        "nodeID" -> appendBase b $ mkIRI anIri
    
 
 {- | if the IRI contains colon, it is split there;
@@ -93,8 +93,8 @@ appendBase :: XMLBase -> IRI -> IRI
 appendBase b qn =
     let r = abbrevPath qn
     in splitIRI $ if ':' `elem` r
-        then qn
-        else qn {abbrevPath = b ++ r}
+                   then qn
+                   else qn {abbrevPath = b ++ r}
 
 -- | splits an IRI at the colon
 splitIRI :: IRI -> IRI
@@ -117,7 +117,7 @@ importIRI m b e =
   let cont1 = strContent e
       cont = Map.findWithDefault cont1 cont1 m
       anIri = nullIRI {abbrevPath = cont}
-  in appendBase b anIRI
+  in appendBase b anIri
 
 -- | gets the content of an element with name IRI, AbbreviatedIRI or Import
 contentIRI :: XMLBase -> Element -> IRI
@@ -169,7 +169,7 @@ isPlainLiteral s =
 correctLit :: Literal -> Literal
 correctLit l = case l of
     Literal lf (Typed dt) ->
-        let nlf = if isSuffixOf "float" (localPart dt) && last lf /= 'f'
+        let nlf = if isSuffixOf "float" (abbrevPath dt) && last lf /= 'f'
                 then lf ++ "f"
                 else lf
         in Literal nlf (Typed dt)
@@ -190,7 +190,7 @@ getLiteral b e = case getName e of
              Nothing -> if isPlainLiteral dt then
                           Literal lf $ Untyped Nothing
                          else correctLit $ Literal lf $ Typed $ appendBase b $
-                            nullQName {localPart = dt, iriType = cssIRI dt}
+                            nullIRI{abbrevPath = dt}
     _ -> err "not literal"
 
 getValue :: XMLBase -> Element -> AnnotationValue
@@ -230,8 +230,8 @@ getObjProp b e = case getName e of
 -- | replaces eg. "minExclusive" with ">"
 properFacet :: ConstrainingFacet -> ConstrainingFacet
 properFacet cf
-    | iriType cf == Full =
-        let p = showQU cf \\ "http://www.w3.org/2001/XMLSchema#"
+    | hasFullIRI cf =
+        let p = showIRIU cf \\ "http://www.w3.org/2001/XMLSchema#"
         in case p of
             "minInclusive" -> facetToIRI MININCLUSIVE
             "minExclusive" -> facetToIRI MINEXCLUSIVE
@@ -558,9 +558,9 @@ getOntologyIRI :: XMLBase -> Element -> OntologyIRI
 getOntologyIRI b e =
   let oi = findAttr (unqual "ontologyIRI") e
   in case oi of
-    Nothing -> dummyQName
+    Nothing -> dummyIRI
     Just iri -> appendBase b
-        $ nullQName {localPart = iri, iriType = cssIRI iri}
+        $ nullIRI {abbrevPath = iri}
 
 getBase :: Element -> XMLBase
 getBase e = fromJust $ vFindAttrBy (isSmth "base") e
