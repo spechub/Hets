@@ -814,19 +814,18 @@ For example:
 
 -}
 relativeTo :: IRI -> IRI -> Maybe IRI
-relativeTo ref base = undefined -- todo
-{-
 relativeTo ref base
     | isDefined ( iriScheme ref ) =
         just_isegments ref
     | isJust ( iriAuthority ref ) =
         just_isegments ref { iriScheme = iriScheme base }
-    | isDefined ( iriPath ref ) =
+    | isDefined $ getFstString $ iriPath ref = 
             just_isegments ref
                 { iriScheme = iriScheme base
                 , iriAuthority = iriAuthority base
-                , iriPath = if head (show $ iriPath ref) == '/' then iriPath ref
-                            else mergePaths base ref
+                , iriPath = if head (getFstString $ iriPath ref) == '/' 
+                            then iriPath ref
+                            else stringToId $ mergePaths base ref
                 }
     | isDefined ( iriQuery ref ) =
         just_isegments ref
@@ -842,16 +841,20 @@ relativeTo ref base
             , iriQuery = iriQuery base
             }
     where
+        getFstString anId = case getTokens anId of 
+           (Token s _):_ -> s
+           _ -> error $ "can't get first string from an empty id"        
         just_isegments u =
             Just $ u { iriPath = removeDotSegments (iriPath u) }
         mergePaths b r
-            | isJust (iriAuthority b) && null pb = '/' : pr
-            | otherwise = dropLast pb ++ pr
+            | isJust (iriAuthority b) && null pbs = '/' : prs
+            | otherwise = dropLast pbs ++ prs
             where
                 pb = iriPath b
                 pr = iriPath r
+                pbs = getFstString pb
+                prs = getFstString pr
         dropLast = fst . splitLast -- reverse . dropWhile (/='/') . reverse
--}
 
 -- Remove dot isegments, but protect leading '/' character
 removeDotSegments :: Id -> Id
