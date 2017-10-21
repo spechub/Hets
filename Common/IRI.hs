@@ -88,6 +88,8 @@ import Data.Maybe
 import Data.List
 import qualified Data.Map as Map
 
+import Control.Monad (when)
+
 import OWL2.ColonKeywords
 import OWL2.Keywords
 
@@ -587,10 +589,16 @@ idParser = mixId ([],[]) ([],[])
 
 ipathAbEmpty :: IRIParser st Id
 ipathAbEmpty = do
-  char '/'
+  s <- flat $ many slashIsegment
+  return $ stringToId s
+
+ipathAbEmpty1 :: Bool -> IRIParser st Id
+ipathAbEmpty1 slash = do
+  when slash $ do char '/'; return ()
   si <- isegmentorId "/"
   case si of
-    Left s ->     do i <- ipathAbEmpty
+    Left s ->     do char '/'
+                     i <- ipathAbEmpty1 False
                      return $ prependString s i
               <|> do return $ stringToId ""  
     Right i -> return i
@@ -599,8 +607,8 @@ isegmentorId :: String -> IRIParser st (Either String Id)
 isegmentorId lead =
       do s <- isegment
          return (Left ('/':s))
-  <|> do id <- idParser
-         return (Right (prependString "/" id))
+--  <|> do id <- idParser
+--         return (Right (prependString "/" id))
   
 ipathAbs :: IRIParser st Id
 ipathAbs = do
