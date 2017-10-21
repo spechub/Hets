@@ -255,15 +255,15 @@ showIRIAbbrev (IRI { prefixName = pname
   pname ++ aPath ++ aQuery ++ aFragment
 
 showIRII :: IRI -> String
-showIRII (IRI { iriScheme = scheme
+showIRII i@(IRI { iriScheme = scheme
               , iriAuthority = authority
               , iriPath = path
               , iriQuery = query
               , iriFragment = fragment
               , hasAngles = b
-              }) =
+              }) = trace ("showing IRII:" ++ show i) $ 
   (if b then "<" else "") ++ scheme
-  --  ++ iriAuthToString iuserinfomap authority "" --TODO: removed for now
+  ++ iriAuthToString id authority "" --TODO: replaced with id for now
   ++ show path ++ query ++ fragment ++ (if b then ">" else "")
 
 dummyIRI :: IRI
