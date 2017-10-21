@@ -14,7 +14,7 @@ References  :  <http://www.w3.org/TR/2009/NOTE-owl2-manchester-syntax-20091027/>
 -}
 
 module OWL2.Parse where
-
+import Debug.Trace
 import OWL2.AS
 import OWL2.Symbols
 import OWL2.Keywords
@@ -158,7 +158,7 @@ skips = (<< skipMany
 
 uriQ :: CharParser st IRI
 -- uriQ = fullIri <|> abbrIri
-uriQ = Common.IRI.iriCurie
+uriQ = trace "uriQ" Common.IRI.iriCurie
 
 fullIri :: CharParser st IRI
 fullIri = angles iri

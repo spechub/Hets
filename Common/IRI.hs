@@ -282,17 +282,17 @@ setPrefix s i = i{prefixName = s}
 Returns 'Nothing' if the string is not a valid IRI;
 (an absolute IRI with optional fragment identifier). -}
 parseIRI :: String -> Maybe IRI
-parseIRI = parseIRIAny iri
+parseIRI s = trace ("iri:"++s++" ") $ parseIRIAny iri s
 
 {- | Parse a IRI reference to an 'IRI' value.
 Returns 'Nothing' if the string is not a valid IRI reference.
 (an absolute or relative IRI with optional fragment identifier). -}
 parseIRIReference :: String -> Maybe IRI
-parseIRIReference = parseIRIAny iriReference
+parseIRIReference s = trace ("iriref:"++s++" ") $ parseIRIAny iriReference s
 
 -- | Turn a string containing a CURIE into an 'IRI'
 parseCurie :: String -> Maybe IRI
-parseCurie = parseIRIAny curie
+parseCurie s = trace ("curie:"++s++" ") $ parseIRIAny curie s
 
 {- | Turn a string containing an IRI or a CURIE into an 'IRI'.
 Returns 'Nothing' if the string is not a valid IRI;
@@ -347,7 +347,7 @@ iriWithPos parser = do
 
 -- | Parses an IRI reference enclosed in '<', '>' or a CURIE
 iriCurie :: IRIParser st IRI
-iriCurie = angles iri <|> curie
+iriCurie = angles iri <|> curie 
 
 angles :: IRIParser st IRI -> IRIParser st IRI
 angles p = char '<' >> fmap (\ i -> i { hasAngles = True }) p << char '>'
@@ -355,13 +355,13 @@ angles p = char '<' >> fmap (\ i -> i { hasAngles = True }) p << char '>'
 -- | Parses a CURIE <http://www.w3.org/TR/rdfa-core/#s_curies>
 curie :: IRIParser st IRI
 curie = iriWithPos $ do
-    pn <- try (do
+    pn <- trace "curie: try" $ try (do
         n <- ncname
         c <- string ":"
         return $ n ++ c
       )
     i <- reference
-    return $ i { prefixName = pn }
+    return $ trace ("curie: "++show i) $ i { prefixName = pn }
   <|> referenceAux False
 
 reference :: IRIParser st IRI
