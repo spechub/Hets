@@ -590,8 +590,9 @@ ipathAbEmpty = do
   char '/'
   si <- isegmentorId "/"
   case si of
-    Left s -> do i <- ipathAbEmpty
-                 return $ prependString s i
+    Left s ->     do i <- ipathAbEmpty
+                     return $ prependString s i
+              <|> do return $ stringToId ""  
     Right i -> return i
 
 isegmentorId :: String -> IRIParser st (Either String Id)
