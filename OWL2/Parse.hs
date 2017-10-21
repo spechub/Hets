@@ -165,7 +165,7 @@ uriQ = trace "uriQ" Common.IRI.iriCurie
 compoundUriQ :: CharParser st IRI
 compoundUriQ = do
       i <- uriQ
--     (c, p) <- option ([], nullRange) (comps (owlKeywords,owlKeywords))
+      (c, p) <- option ([], nullRange) (comps (owlKeywords,owlKeywords))  
       return $ trace (show (i,c,p)) $ (i { iriPath = addComponents (iriPath i) (c,p) })
          
 
