@@ -474,6 +474,11 @@ idRange (Id ts _ r) =
     let (fs, rs) = splitMixToken ts
     in joinRanges $ map tokenRange fs ++ [outerRange r] ++ map tokenRange rs
 
+-- | add components to an Id
+addComponents :: Id -> ([Id], Range) -> Id
+addComponents i (comps,rs) = i { getComps = getComps i ++ comps
+                               , rangeOfId = appRange (rangeOfId i) rs}
+
 -- -- helper class -------------------------------------------------------
 
 {- | This class is derivable with DrIFT.
