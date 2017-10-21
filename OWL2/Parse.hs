@@ -14,7 +14,9 @@ References  :  <http://www.w3.org/TR/2009/NOTE-owl2-manchester-syntax-20091027/>
 -}
 
 module OWL2.Parse where
+
 import Debug.Trace
+
 import OWL2.AS
 import OWL2.Symbols
 import OWL2.Keywords
@@ -501,7 +503,7 @@ restriction = objectPropertyExpr >>= restrictionAny
 restrictionOrAtomic :: CharParser st ClassExpression
 restrictionOrAtomic = do
     opExpr <- objectPropertyExpr
-    trace ("restrictionOrAtomic:"++show opExpr) $ restrictionAny opExpr <|> case opExpr of
+    restrictionAny opExpr <|> case opExpr of
        ObjectProp euri -> return $ Expression euri
        _ -> unexpected "inverse object property"
   <|> atomic

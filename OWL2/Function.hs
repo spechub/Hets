@@ -87,8 +87,17 @@ instance Function IRI where
                             _ -> res
                           _ -> res
                       else res
-               else let x = expandCurie 
-                             (Map.map mkIRI $ Map.union pm predefPrefixes) qn 
+               else let iriMap = foldl (\pm' (kp, vp) -> 
+                                case parseIRI vp of
+                                  Just i -> Map.insert kp i pm'
+                                  Nothing -> if null kp then 
+                                               Map.insert kp 
+                                                 ((mkIRI vp)) 
+                                                 pm'
+                                              else pm') 
+                              Map.empty $  
+                              Map.toList $ Map.union pm predefPrefixes
+                        x = expandCurie iriMap qn 
                     in case x of
                         Just y -> y
                         Nothing -> error $ "could not expand curie:" ++ showIRI qn

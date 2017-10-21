@@ -1040,7 +1040,7 @@ difSegsFrom sabs base = difSegsFrom ("../" ++ sabs) (snd $ nextSegment base)
 to the prefix of @c@ or the concatenation of @i@ and @abbrevPath c@
 is not a valid IRI. -}
 expandCurie :: Map String IRI -> IRI -> Maybe IRI
-expandCurie prefixMap c =
+expandCurie prefixMap c =  
   if hasFullIRI c then Just c else
   case Map.lookup (filter (/= ':') $ prefixName c) prefixMap of
     Nothing -> Nothing

@@ -312,12 +312,13 @@ preDefMaps sl pref = let
  in (sl, pref, sp)
 
 checkPredefAux :: PreDefMaps -> IRI -> Maybe (String, String)
-checkPredefAux (sl, pref, exPref) u = Nothing
-{-
-  let lp = localPart u
-      nn = dnamedS ++ "#"
+checkPredefAux (sl, pref, exPref) u = 
+  let lp = abbrevPath u
+      dnamedS = "hets.eu/ontology/unamed"
+      nn = dnamedS ++ "#" 
+      -- TODO: this is the dummy name and was removed before
       res = Just (pref, lp)
-  in case namePrefix u of
+  in case prefixName u of
     "http" -> case stripPrefix "//www." lp of
         Just q -> case stripPrefix "w3.org/" q of
             Just r -> case stripPrefix exPref r of
@@ -328,16 +329,17 @@ checkPredefAux (sl, pref, exPref) u = Nothing
               _ -> Nothing
         Nothing -> Nothing
     pu | elem lp sl -> case pu of
-      "" -> let ex = expandedIRI u in
+      "" -> let ex = iriToStringUnsecure u in 
+            --TODO: ^is this the right way to replace expandedIRI?
             case stripPrefix "http://www." ex of
               Just r | r == "w3.org/" ++ exPref ++ lp || r == nn ++ lp
                   -> res
               _ | null ex -> res
               _ -> Nothing
-      _ | pu == pref -> Just (pref, lp)
+      _ | pref == pu || pref ++ ":" == pu -> Just (pref, lp)
       _ -> Nothing
     _ -> Nothing
--}
+
 
 checkPredef :: PreDefMaps -> IRI -> Bool
 checkPredef ms = isJust . checkPredefAux ms
