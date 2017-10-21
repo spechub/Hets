@@ -166,6 +166,7 @@ fullIri = angles iri
 uriP :: CharParser st IRI
 uriP =
   skips $ try $ checkWithUsing showIRI uriQ $ \ q -> let p = prefixName q in
+  trace ("uriP:p:"++show p++"q:"++show q) $
   if null p then notElem (abbrevPath q) owlKeywords
    else notElem p $ map (takeWhile (/= ':'))
         $ colonKeywords
@@ -494,7 +495,7 @@ restriction = objectPropertyExpr >>= restrictionAny
 restrictionOrAtomic :: CharParser st ClassExpression
 restrictionOrAtomic = do
     opExpr <- objectPropertyExpr
-    restrictionAny opExpr <|> case opExpr of
+    trace ("restrictionOrAtomic:"++show opExpr) $ restrictionAny opExpr <|> case opExpr of
        ObjectProp euri -> return $ Expression euri
        _ -> unexpected "inverse object property"
   <|> atomic
