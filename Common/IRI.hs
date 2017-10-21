@@ -378,12 +378,13 @@ referenceAux allowEmpty = iriWithPos $ do
   uq <- option "" uiquery
   uf <- (if allowEmpty || not (null up) || not (null uq)
          then option "" else id) uifragment
-  return nullIRI
+  let iri = nullIRI
           { abbrevPath = up
           , abbrevQuery = uq
           , abbrevFragment = uf
           }
-
+  return $ (trace ("referenceAux:"++show iri)) iri
+  
 {- | Prefix part of CURIE in @prefix_part:reference@
   <http://www.w3.org/TR/2009/REC-xml-names-20091208/#NT-NCName> -}
 ncname :: GenParser Char st String
