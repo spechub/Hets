@@ -110,11 +110,11 @@ For example, for the (full) IRI
 
 or the abbreviated IRI
 
->   prefix:abbrevPath?abbrevQuery#abbrevFragment
+>   prefix:iriPath?iriQuery#iriFragment
 
 or the simple IRI
 
->  abbrevPath
+>  iriPath
 -}
 
 
@@ -126,9 +126,7 @@ data IRI = IRI
     , iriQuery :: String          -- ^ @?query@
     , iriFragment :: String       -- ^ @#frag@
     , prefixName :: String        -- ^ @prefix@
-    , abbrevPath :: String        -- ^ @abbrevPath@
-    , abbrevQuery :: String       -- ^ @abbrevQueryh@
-    , abbrevFragment :: String    -- ^ @abbrevFragment@
+    , isAbbrev :: Bool            -- ^ is the IRI a CURIE or not?                    
     , hasAngles :: Bool           -- ^ IRI in angle brackets
     , iriPos :: Range             -- ^ position
     } deriving (Typeable, Data)
@@ -149,24 +147,18 @@ nullIRI = IRI
     , iriQuery = ""
     , iriFragment = ""
     , prefixName = ""
-    , abbrevPath = ""
-    , abbrevQuery = ""
-    , abbrevFragment = ""
+    , isAbbrev = False
     , hasAngles = False
     , iriPos = nullRange
     }
 
 -- | special show function for Ids within IRIs
 showIRIId :: Id -> String
-showIRIId = show -- to be refined
+showIRIId = show -- todo: to be refined
 
 -- | do we have a full (possibly expanded) IRI (i.e. for comparisons)
 hasFullIRI :: IRI -> Bool
 hasFullIRI i = not . null $ iriScheme i ++ (show $ iriPath i)
-
--- | do we have an abbreviated IRI (i.e. for pretty printing)
-isAbbrev :: IRI -> Bool
-isAbbrev i = not . null $ prefixName i ++ abbrevPath i
 
 {- | do we have a simple IRI that is a (possibly expanded) abbreviated IRI
 without prefix -}
@@ -191,7 +183,7 @@ instance Ord IRI where
       (iriScheme j, iriAuthority j, iriPath j,
        iriQuery j, iriFragment j)) i k
     (False, False) -> comparing
-      (\ j -> (prefixName j, abbrevPath j, abbrevQuery j, abbrevFragment j))
+      (\ j -> (prefixName j, iriPath j, iriQuery j, iriFragment j))
       i k
     (b1, b2) -> compare b1 b2
 
@@ -209,8 +201,9 @@ instance GetRange IRI where
 
 -- | Converts a Simple_ID to an IRI
 simpleIdToIRI :: SIMPLE_ID -> IRI
-simpleIdToIRI sid = nullIRI { abbrevPath = tokStr sid
+simpleIdToIRI sid = nullIRI { iriPath = simpleIdToId sid
                             , iriPos = tokPos sid
+                            , isAbbrev = True
                             }
 
 -- * new functions for OWL.AS
@@ -243,16 +236,16 @@ showIRI i
 showIRIU :: IRI -> String
 showIRIU i
   | hasFullIRI i && not (isAbbrev i) = showIRII i
-  | not $ null $ abbrevQuery i = tail $ abbrevQuery i
+  | not $ null $ iriQuery i = tail $ iriQuery i
   | otherwise = showIRIAbbrev i
 
 showIRIAbbrev :: IRI -> String
 showIRIAbbrev (IRI { prefixName = pname
-                       , abbrevPath = aPath
-                       , abbrevQuery = aQuery
-                       , abbrevFragment = aFragment
-                       }) = trace ("Showing IRI prefix=" ++ pname ++" path=" ++ aPath) $ 
-  pname ++ aPath ++ aQuery ++ aFragment
+                       , iriPath = aPath
+                       , iriQuery = aQuery
+                       , iriFragment = aFragment
+                       }) = trace ("Showing IRI prefix=" ++ pname ++" path=" ++ show aPath) $ 
+  pname ++ show aPath ++ aQuery ++ aFragment
 
 showIRII :: IRI -> String
 showIRII i@(IRI { iriScheme = scheme
@@ -269,7 +262,11 @@ showIRII i@(IRI { iriScheme = scheme
 dummyIRI :: IRI
 dummyIRI = nullIRI { 
        iriScheme = "http"
-    , abbrevPath = "hets.eu/ontology/unamed"
+     , iriAuthority = Just IRIAuth
+                       { iriUserInfo = ""
+                       , iriRegName = "hets.eu"
+                       , iriPort = "" }
+     , iriPath = stringToId "/ontology/unamed"
     }
 
 mkIRI :: String -> IRI
@@ -381,9 +378,9 @@ referenceAux allowEmpty = iriWithPos $ do
   uf <- (if allowEmpty || not (null up) || not (null uq)
          then option "" else id) uifragment
   let iri = nullIRI
-          { abbrevPath = up
-          , abbrevQuery = uq
-          , abbrevFragment = uf
+          { iriPath = stringToId up
+          , iriQuery = uq
+          , iriFragment = uf
           }
   return $ (trace ("referenceAux:"++show iri)) iri
   
@@ -782,7 +779,7 @@ iriToString iuserinfomap i
 iriToStringShort :: (String -> String) -> IRI -> ShowS
 iriToStringShort iuserinfomap i
   | hasFullIRI i && not (isAbbrev i) = iriToStringFull iuserinfomap i
-  | not $ null $ abbrevQuery i = tail . (abbrevQuery i ++)
+  | not $ null $ iriQuery i = tail . (iriQuery i ++)
   | otherwise = iriToStringAbbrev i
 
 iriToStringFull :: (String -> String) -> IRI -> ShowS
@@ -800,18 +797,18 @@ iriToStringFull iuserinfomap (IRI { iriScheme = scheme
 
 iriToStringAbbrev :: IRI -> ShowS
 iriToStringAbbrev (IRI { prefixName = pname
-                       , abbrevPath = aPath
-                       , abbrevQuery = aQuery
-                       , abbrevFragment = aFragment
+                       , iriPath = aPath
+                       , iriQuery = aQuery
+                       , iriFragment = aFragment
                        }) =
-  (pname ++) . (aPath ++) . (aQuery ++) . (aFragment ++)
+  (pname ++) . (show aPath ++) . (aQuery ++) . (aFragment ++)
 
 iriToStringAbbrevMerge :: IRI -> ShowS
-iriToStringAbbrevMerge (IRI { abbrevPath = aPath
-                            , abbrevQuery = aQuery
-                            , abbrevFragment = aFragment
+iriToStringAbbrevMerge (IRI { iriPath = aPath
+                            , iriQuery = aQuery
+                            , iriFragment = aFragment
                             }) =
-  (aPath ++) . (aQuery ++) . (aFragment ++)
+  (show aPath ++) . (aQuery ++) . (aFragment ++)
 
 iriAuthToString :: (String -> String) -> Maybe IRIAuth -> ShowS
 iriAuthToString _ Nothing = id          -- shows ""
@@ -1037,7 +1034,7 @@ difSegsFrom sabs base = difSegsFrom ("../" ++ sabs) (snd $ nextSegment base)
 -- * Other normalization functions
 
 {- |Expands a CURIE to an IRI. @Nothing@ iff there is no IRI @i@ assigned
-to the prefix of @c@ or the concatenation of @i@ and @abbrevPath c@
+to the prefix of @c@ or the concatenation of @i@ and @iriPath c@
 is not a valid IRI. -}
 expandCurie :: Map String IRI -> IRI -> Maybe IRI
 expandCurie prefixMap c =  
@@ -1049,9 +1046,9 @@ expandCurie prefixMap c =
       Just j -> Just $ if null $ iriScheme i then j { iriPos = iriPos c }
         else j
         { prefixName = prefixName c
-        , abbrevPath = abbrevPath c
-        , abbrevQuery = abbrevQuery c
-        , abbrevFragment = abbrevFragment c
+        , iriPath = iriPath c
+        , iriQuery = iriQuery c
+        , iriFragment = iriFragment c
         , iriPos = iriPos c }
 
 setAngles :: Bool -> IRI -> IRI
@@ -1066,9 +1063,10 @@ mergeCurie c i =
   in parseIRICurie $ if null $ iriScheme i then s else '<' : s ++ ">"
 
 deleteQuery :: IRI -> IRI
-deleteQuery i = i { abbrevQuery = "" }
+deleteQuery i = i { iriQuery = "" }
 
 addSuffixToIRI :: String -> IRI -> IRI
-addSuffixToIRI s i = if not $ null $ abbrevQuery i 
-                   then i{abbrevQuery = abbrevQuery i ++ s}
-                   else i{abbrevPath  = abbrevPath i ++ s}
+addSuffixToIRI s i = if not $ null $ iriQuery i 
+                   then i{iriQuery = iriQuery i ++ s}
+                  else  
+                        i{iriPath  = appendId (iriPath i) (stringToId s)}

@@ -109,14 +109,20 @@ triplesOfDocument :: TurtleDocument -> [Triples]
 triplesOfDocument doc = extractTripleStatements $ statements doc
 
 rdfFirst :: IRI
-rdfFirst = nullIRI{prefixName = "rdf", abbrevPath = "first"}
+rdfFirst = nullIRI { prefixName = "rdf"
+                   , iriPath = stringToId "first"
+                   , isAbbrev = True }
 
 rdfRest :: IRI
-rdfRest = nullIRI{prefixName = "rdf", abbrevPath = "rest"}
+rdfRest = nullIRI { prefixName = "rdf"
+                  , iriPath = stringToId "rest"
+                  , isAbbrev = True }
 
 rdfNil :: IRI
-rdfNil = nullIRI{prefixName = "rdf", abbrevPath = "nil"}
+rdfNil = nullIRI { prefixName = "rdf"
+                 , iriPath = stringToId "nil"
+                 , isAbbrev = True }
 
 isAbsoluteIRI :: IRI -> Bool
-isAbsoluteIRI iri = hasFullIRI iri && isPrefixOf "//" (abbrevPath iri)
+isAbsoluteIRI i = hasFullIRI i && isPrefixOf "//" (show $ iriPath i)
 

@@ -16,7 +16,6 @@ import Common.Parsec
 import Common.Lexer
 import Common.AnnoParser (newlineOrEof)
 import Common.Token (criticalKeywords)
-import Common.Id
 import Common.IRI
 import qualified Common.GlobalAnnotations as GA (PrefixMap)
 
@@ -32,7 +31,7 @@ import Text.ParserCombinators.Parsec
 uriP :: CharParser st IRI
 uriP =
   skips $ try $ checkWithUsing showIRI uriQ $ \ q ->
-    not (null $ prefixName q) || notElem (abbrevPath q) criticalKeywords
+    not (null $ prefixName q) || notElem (show $ iriPath q) criticalKeywords
 
 -- * hets symbols parser
 

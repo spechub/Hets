@@ -18,6 +18,7 @@ module OWL2.XML
 
 import Common.Lexer (value)
 import Common.IRI
+import Common.Id (stringToId, prependString, tokStr, getTokens)
 
 import OWL2.AS
 import OWL2.Extract
@@ -81,7 +82,7 @@ getIRI b e =
     let [a] = elAttribs e
         anIri = attrVal a
     in case qName $ attrKey a of
-        "abbreviatedIRI" -> appendBase b $ nullIRI {abbrevPath = anIri}
+        "abbreviatedIRI" -> appendBase b $ nullIRI {iriPath = stringToId anIri, isAbbrev = True }
         "IRI" -> let x = parseIRI anIri
                  in case x of
                      Just y -> appendBase b y
@@ -95,24 +96,31 @@ else, the xml:base needs to be prepended to the local part
 and then the IRI must be splitted -}
 appendBase :: XMLBase -> IRI -> IRI
 appendBase b qn =
-    let r = abbrevPath qn
-    in splitIRI $ if ':' `elem` r
+    let r = iriPath qn
+    in splitIRI $ if ':' `elem` show r
                    then qn
-                   else qn {abbrevPath = b ++ r}
+                   else qn {iriPath = prependString b r}
 
 -- | splits an IRI at the colon
 splitIRI :: IRI -> IRI
 splitIRI qn = let 
-  lp = abbrevPath qn
-  (np, ':' : nlp) = span (/= ':') lp
- in qn {prefixName = np, abbrevPath = nlp}
+  i = iriPath qn
+  in case getTokens i of
+    [] -> qn
+    (tok:ts) ->
+      let lp = tokStr tok
+          (np, ':' : nlp) = span (/= ':') lp
+      in qn { prefixName = np
+            , iriPath = i { getTokens = tok { tokStr = nlp } : ts}
+            }
 
 -- | prepends "_:" to the nodeID if is not there already
 mkNodeID :: IRI -> IRI
 mkNodeID qn =
-    let lp = abbrevPath qn
+    let lp = show $ iriPath qn
     in case lp of
-        '_' : ':' : r -> qn {prefixName = "_", abbrevPath = r}
+        '_' : ':' : r -> qn {prefixName = "_", iriPath = stringToId r}
+        -- todo: maybe we should keep the Id structure of iriPath qn
         _ -> qn {prefixName = "_"}
 
 -- | gets the content of an element with name Import
@@ -120,14 +128,14 @@ importIRI :: Map.Map String String -> XMLBase -> Element -> IRI
 importIRI m b e =
   let cont1 = strContent e
       cont = Map.findWithDefault cont1 cont1 m
-      anIri = nullIRI {abbrevPath = cont}
+      anIri = nullIRI {iriPath = stringToId cont, isAbbrev = True}
   in appendBase b anIri
 
 -- | gets the content of an element with name IRI, AbbreviatedIRI or Import
 contentIRI :: XMLBase -> Element -> IRI
 contentIRI b e =
   let cont = strContent e
-      iri = nullIRI {abbrevPath = cont}
+      iri = nullIRI {iriPath = stringToId cont, isAbbrev = True}
   in case getName e of
       "AbbreviatedIRI" -> splitIRI iri
       "IRI" -> if ':' `elem` cont
@@ -173,7 +181,7 @@ isPlainLiteral s =
 correctLit :: Literal -> Literal
 correctLit l = case l of
     Literal lf (Typed dt) ->
-        let nlf = if isSuffixOf "float" (abbrevPath dt) && last lf /= 'f'
+        let nlf = if isSuffixOf "float" (show $ iriPath dt) && last lf /= 'f'
                 then lf ++ "f"
                 else lf
         in Literal nlf (Typed dt)
@@ -194,7 +202,7 @@ getLiteral b e = case getName e of
              Nothing -> if isPlainLiteral dt then
                           Literal lf $ Untyped Nothing
                          else correctLit $ Literal lf $ Typed $ appendBase b $
-                            nullIRI{abbrevPath = dt}
+                            nullIRI{iriPath = stringToId dt}
     _ -> err "not literal"
 
 getValue :: XMLBase -> Element -> AnnotationValue
@@ -564,7 +572,7 @@ getOntologyIRI b e =
   in case oi of
     Nothing -> dummyIRI
     Just iri -> appendBase b
-        $ nullIRI {abbrevPath = iri}
+        $ nullIRI {iriPath = stringToId iri, isAbbrev = True}
 
 getBase :: Element -> XMLBase
 getBase e = fromJust $ vFindAttrBy (isSmth "base") e

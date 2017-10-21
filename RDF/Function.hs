@@ -13,7 +13,6 @@ Instances for some of the functions used in RDF
 -}
 
 module RDF.Function where
-import OWL2.AS
 import Common.IRI
 import RDF.AS
 -- import RDF.Sign

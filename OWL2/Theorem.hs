@@ -89,7 +89,7 @@ addImpliedFrame a = case rmImpliedFrame a of
 prove1 :: Annotation -> Bool
 prove1 anno = case anno of
       Annotation _ aIRI (AnnValLit (Literal value (Typed _))) ->
-          abbrevPath aIRI == "Implied" && isInfixOf "true" value
+          show (iriPath aIRI) == "Implied" && isInfixOf "true" value
       _ -> False
 
 proveList :: (Annotations, a) -> Bool

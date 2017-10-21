@@ -17,7 +17,6 @@ import Common.ProofUtils
 
 import Data.Char
 
-import OWL2.AS
 import OWL2.Parse
 
 idToIRI :: Id -> IRI
@@ -31,9 +30,10 @@ idToNumberedIRI i n = idToAnonNumberedIRI n False i
 
 idToAnonNumberedIRI :: Int -> Bool -> Id -> IRI
 idToAnonNumberedIRI n b i = nullIRI
-  { abbrevPath = (if b then ('_' :) else id) $ transString (show i)
-      ++ if n < 0 then "" else '_' : show n
-  , iriPos = rangeOfId i }
+  { iriPath = stringToId ((if b then ('_' :) else id) $ transString (show i)
+      ++ if n < 0 then "" else '_' : show n)
+  , iriPos = rangeOfId i
+  , isAbbrev = True }
 
 -- | translate to a valid OWL string
 transString :: String -> String

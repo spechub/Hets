@@ -20,6 +20,7 @@ import OWL2.MS
 
 import Common.AS_Annotation
 import Common.IRI as IRI
+import Common.Id (stringToId)
 import Common.Result
 
 import Data.Maybe
@@ -56,7 +57,7 @@ checkMapMaybe f x =
 getClass :: [Axiom] -> IRI -> IRI
 getClass axs n = case checkMapMaybe (getClassAux n) axs of
    Just c -> c
-   Nothing -> nullIRI { abbrevPath = "unknown" }
+   Nothing -> nullIRI { iriPath = stringToId "unknown", isAbbrev = True }
 
 getClassAux :: IRI -> Axiom -> Maybe IRI
 getClassAux ind ax =
@@ -86,7 +87,7 @@ getMeetsFactsAux axs tInds point1 ax =
                                (ObjectPropertyFact Positive
                                                    (ObjectProp ope) point2))
                                                ]) ->
-            if abbrevPath ope == "meets" then
+            if show (iriPath ope) == "meets" then
                 getFiatBoundaryFacts axs tInds point1 point2
               else Nothing
          _ -> Nothing
@@ -122,8 +123,8 @@ loopFacts [] _ _ = Nothing
 loopFacts (afact:facts') e point =
   case afact of
     ([], (ObjectPropertyFact Positive (ObjectProp ope) point')) ->
-      if (abbrevPath ope == "has_fiat_boundary") &&
-         (abbrevPath point == abbrevPath point') then Just $ cutIRI e
+      if (show (iriPath ope) == "has_fiat_boundary") &&
+         (iriPath point == iriPath point') then Just $ cutIRI e
        else loopFacts facts' e point
     _ -> loopFacts facts' e point
 

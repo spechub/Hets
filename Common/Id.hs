@@ -239,6 +239,13 @@ prependString s (Id [] comps range) =
 prependString s (Id (Token t range1:toks) comps range2) =
   Id (Token (s++t) range1:toks) comps range2
 
+-- | append two Ids
+appendId :: Id -> Id -> Id
+appendId i1 i2 =
+  Id (getTokens i1 ++ getTokens i2)
+     (getComps i1 ++ getComps i2)
+     (appRange (rangeOfId i1) (rangeOfId i2))
+
 -- | the name of injections
 injToken :: Token
 injToken = genToken "inj"

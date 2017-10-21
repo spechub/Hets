@@ -387,7 +387,7 @@ generateLabelMap :: Sign -> [Frame] -> Map.Map IRI String
 generateLabelMap sig = foldr (\ (Frame ext fbl) -> case ext of
         SimpleEntity (Entity _ _ ir) -> case fbl of
             [AnnFrameBit [Annotation _ apr (AnnValLit (Literal s' _))] _]
-                | prefixName apr == "rdfs" && abbrevPath apr == "label"
+                | prefixName apr == "rdfs" && show (iriPath apr) == "label"
                   -> Map.insert ir s'
             _ -> id
         _ -> id ) (labelMap sig)
@@ -409,7 +409,7 @@ findImplied ax sent =
 getNames1 :: Annotation -> [String]
 getNames1 anno = case anno of
       Annotation _ aIRI (AnnValLit (Literal value _)) ->
-          if abbrevPath aIRI == "label"
+          if show (iriPath aIRI) == "label"
              then [value]
              else []
       _ -> []

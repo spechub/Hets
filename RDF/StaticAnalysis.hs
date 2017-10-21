@@ -73,7 +73,7 @@ resolvePrefix b pm (PrefixR s new) = let res = resolveIRI b pm new
 
 resolvePredicate :: Base -> RDFPrefixMap -> Predicate -> Predicate
 resolvePredicate b pm (Predicate p) = Predicate $
-    if null (prefixName p) && abbrevPath p == "a" then
+    if null (prefixName p) && show (iriPath p) == "a" then
         p { iriScheme = "http",
             iriPath = stringToId "//www.w3.org/1999/02/22-rdf-syntax-ns#type"
           }
@@ -129,7 +129,8 @@ resolveDocument doc = let newStatements = resolveStatements
 -- * Axiom extraction
 
 generateBNode :: Int -> IRI
-generateBNode i = nullIRI{abbrevPath = "bnode" ++ show i}
+generateBNode i = nullIRI { iriPath = stringToId ("bnode" ++ show i)
+                          , isAbbrev = True }
 
 collectionToPOList :: [Object] -> [PredicateObjectList]
 collectionToPOList objs = case objs of

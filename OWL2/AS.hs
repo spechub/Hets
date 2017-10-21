@@ -313,7 +313,7 @@ preDefMaps sl pref = let
 
 checkPredefAux :: PreDefMaps -> IRI -> Maybe (String, String)
 checkPredefAux (sl, pref, exPref) u = 
-  let lp = abbrevPath u
+  let lp = show $ iriPath u
       dnamedS = "hets.eu/ontology/unamed"
       nn = dnamedS ++ "#" 
       -- TODO: this is the dummy name and was removed before
@@ -371,7 +371,7 @@ stripReservedPrefix = mkIRI . getPredefName
 getPredefName :: IRI -> String
 getPredefName iri =
     if prefixName iri `elem` ["", "xsd", "rdf", "rdfs", "owl"]
-        then abbrevPath iri
+        then show $ iriPath iri
         else case mapMaybe (`stripPrefix` showIRIU iri)
                     $ Map.elems predefPrefixes of
                 [s] -> s
@@ -498,10 +498,10 @@ pairSymbols (Entity lb1 k1 i1) (Entity lb2 k2 i2) =
             _ -> lbl1
         pairIRIs i1 i2 = nullIRI
           { prefixName = prefixName i1
-          , abbrevPath = if rest (abbrevPath i1) == 
-                            rest (abbrevPath i2) 
-                          then abbrevPath i1 
-                          else (abbrevPath i1) ++ "_" ++ (abbrevPath i2)
+          , iriPath = if rest (show $ iriPath i1) == 
+                            rest (show $ iriPath i2) 
+                          then iriPath i1 
+                          else appendId (iriPath i1) (iriPath i2)
           } -- TODO: made it compile, but most likely will cause issues!
     return $ Entity (pairLables lb1 lb2) k1 $ pairIRIs i1 i2
 

@@ -17,6 +17,7 @@ module OWL2.Rename where
 
 import OWL2.AS
 import Common.IRI
+import Common.Id (stringToId)
 import OWL2.MS
 import OWL2.Sign
 import OWL2.Function
@@ -78,11 +79,12 @@ integPref oldMap testMap =
 
 newOid :: OntologyIRI -> OntologyIRI -> OntologyIRI
 newOid id1 id2 =
-  let lid1 = abbrevPath id1
-      lid2 = abbrevPath id2
-  in if null lid1 then id2
-      else if null lid2 || id1 == id2 then id1
-            else id1 { abbrevPath = uriToName lid1 ++ "_" ++ uriToName lid2 }
+  let lid1 = iriPath id1
+      lid2 = iriPath id2
+  in if null $ show lid1 then id2
+      else if (null $ show lid2) || id1 == id2 then id1
+            else id1 { iriPath = stringToId (uriToName (show lid1) ++ "_" ++ uriToName (show lid2)) }
+  -- todo: improve.
 
 combineDoc :: OntologyDocument -> OntologyDocument
                       -> OntologyDocument

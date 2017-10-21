@@ -47,7 +47,7 @@ frame2Boxes (Frame e bs) = case e of
     rt = on RoleType intersectConcepts ds rs
     in Box [] (nubOrd $ map (setRoleType r rt) es) []
   SimpleEntity (Entity _ et i) -> case et of
-    NamedIndividual -> Box [] [] $ concatMap (indFrame2Boxes $ abbrevPath i) bs
+    NamedIndividual -> Box [] [] $ concatMap (indFrame2Boxes $ show $ iriPath i) bs
     _ -> Box [] [] []
   Misc _ -> catBoxes $ map miscFrame2Boxes bs
 
@@ -137,11 +137,11 @@ indListFrame2Boxes i mr lfb = case lfb of
     IndividualFacts l | isNothing mr ->
       concatMap (\ f -> case snd f of
         ObjectPropertyFact pn ope j ->
-          [ARole i (abbrevPath j)
+          [ARole i (show $ iriPath j)
           $ (if pn == Positive then id else UnOp NotR) $ ope2Role ope]
         DataPropertyFact {} -> []) l
     IndividualSameOrDifferent l -> case mr of
-      Just (SDRelation sd) -> map (AIndividual i sd . abbrevPath . snd) l
+      Just (SDRelation sd) -> map (AIndividual i sd . show . iriPath . snd) l
       _ -> []
     _ -> []
 
@@ -160,9 +160,9 @@ miscListFrame2Boxes mr lfb = case mr of
         Box [] (if ed == Disjoint then disRs opes else mkCycle eqR opes) []
       _ -> emptyBox
     SDRelation sd -> case lfb of
-      IndividualSameOrDifferent l -> let is = map (abbrevPath . snd) l in
+      IndividualSameOrDifferent l -> let is = map (iriPath . snd) l in
         Box [] [] $ (if sd == Same then mkCycle else pairwise)
-         (`AIndividual` sd) is
+         (`AIndividual` sd) (map show is)
       _ -> emptyBox
     _ -> emptyBox
   Nothing -> emptyBox
@@ -197,11 +197,11 @@ topRT :: RoleType
 topRT = RoleType topC topC
 
 i2c :: IRI -> Concept
-i2c = NominalC . abbrevPath
+i2c = NominalC . show . iriPath
 
 ce2Concept :: ClassExpression -> Concept
 ce2Concept ce = case ce of
-    Expression c -> let s = abbrevPath c in
+    Expression c -> let s = show $ iriPath c in
       if isThing c then if s == thingS then topC else NotC topC
       else CName s
     ObjectJunction t cs -> JoinedC (Just t) $ map ce2Concept cs
@@ -218,7 +218,7 @@ ce2Concept ce = case ce of
 
 ope2Role :: ObjectPropertyExpression -> Role
 ope2Role ope = case ope of
-    ObjectProp o -> let r = abbrevPath o in
+    ObjectProp o -> let r = show $ iriPath o in
       if isPredefObjProp o then if r == topObjProp then topR else botR
       else RName r
     ObjectInverseOf e -> UnOp InvR $ ope2Role e

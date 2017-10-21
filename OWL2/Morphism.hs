@@ -156,7 +156,7 @@ matchesSym e@(Entity _ _ u) r = case r of
        ASymbol s -> s == e
        AnUri s -> s == u  -- || expandedIRI s == expandedIRI u 
                 || case
-         stripPrefix (reverse $ abbrevPath s) (reverse $ abbrevPath u) of
+         stripPrefix (reverse $ show $ iriPath s) (reverse $ show $ iriPath u) of
            Just (c : _) | null (prefixName s) -> elem c "/#"
            _ -> False
        APrefix p -> p == prefixName u

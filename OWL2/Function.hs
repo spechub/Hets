@@ -16,6 +16,7 @@ module OWL2.Function where
 
 import OWL2.AS
 import Common.IRI
+import Common.Id (stringToId)
 import OWL2.MS
 import OWL2.Sign
 import OWL2.Symbols
@@ -70,7 +71,7 @@ instance Function IRI where
               qn { prefixName = Map.findWithDefault pre pre pm}
      Expand ->
       let np = prefixName qn
-          lp = abbrevPath qn
+          lp = show $ iriPath qn
           iRi = if hasFullIRI qn then let
                   ex = np ++ ":" ++ lp
                   res = let x = expandCurie (Map.map mkIRI pm) qn in
@@ -82,7 +83,7 @@ instance Function IRI where
                           Just ep | length ep > 5 -> case stripPrefix ep ex of
                             Just rl@(_ : _) -> res
                               { prefixName = ""
-                              , abbrevPath = rl
+                              , iriPath = stringToId rl -- todo: maybe we should keep the Id structure of iriPath qn
                               }
                             _ -> res
                           _ -> res

@@ -175,7 +175,7 @@ fullIri = angles iri
 uriP :: CharParser st IRI
 uriP =
   skips $ try $ checkWithUsing showIRI compoundUriQ $ \ q -> let p = prefixName q in
-  if null p then notElem (abbrevPath q) owlKeywords
+  if null p then notElem (show $ iriPath q) owlKeywords
    else notElem p $ map (takeWhile (/= ':'))
         $ colonKeywords
         ++ [ show d ++ e | d <- equivOrDisjointL, e <- [classesC, propertiesC]]

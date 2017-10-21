@@ -18,7 +18,6 @@ import Common.IRI
 import Data.Data
 
 import RDF.AS
-import OWL2.AS
 
 -- * SYMBOL ITEMS FOR HETS
 

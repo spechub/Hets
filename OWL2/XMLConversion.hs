@@ -30,7 +30,7 @@ import qualified Data.Map as Map
 
 -- | prints the IRI with a colon separating the prefix and the local part
 showIRI :: IRI -> String
-showIRI anIRI = prefixName anIRI ++ abbrevPath anIRI
+showIRI anIRI = prefixName anIRI ++ show (iriPath anIRI)
 
 nullQN :: Text.XML.Light.QName
 nullQN = QName "" Nothing Nothing
