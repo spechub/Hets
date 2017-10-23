@@ -203,6 +203,7 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , counterSparQ :: Int
   , outdir :: FilePath
   , outtypes :: [OutType]
+  , databaseDoMigrate :: Bool
   , databaseOutputFile :: FilePath
   , databaseConfigFile :: FilePath
   , databaseSubConfigKey :: String
@@ -261,6 +262,7 @@ defaultHetcatsOpts = HcOpt
   , counterSparQ = 3
   , outdir = ""
   , outtypes = [] -- no default
+  , databaseDoMigrate = True
   , databaseOutputFile = ""
   , databaseConfigFile = ""
   , databaseSubConfigKey = ""
@@ -388,6 +390,7 @@ data Flag =
   | ModelSparQ FilePath
   | CounterSparQ Int
   | OutTypes [OutType]
+  | DatabaseDoNotMigrate
   | DatabaseOutputFile FilePath
   | DatabaseConfigFile FilePath
   | DatabaseSubConfigKey String
@@ -440,6 +443,7 @@ makeOpts opts flg =
     CounterSparQ x -> opts { counterSparQ = x }
     OutDir x -> opts { outdir = x }
     OutTypes x -> opts { outtypes = x }
+    DatabaseDoNotMigrate -> opts { databaseDoMigrate = False }
     DatabaseOutputFile x -> opts { databaseOutputFile = x }
     DatabaseConfigFile x -> opts { databaseConfigFile = x }
     DatabaseSubConfigKey x -> opts { databaseSubConfigKey = x }
@@ -833,6 +837,9 @@ options = let
        ++ bS ++ graphE ++ joinBar (map show graphList) ++ crS
        ++ bS ++ dfgS ++ bracket cS ++ crS
        ++ bS ++ tptpS ++ bracket cS)
+    , Option "" ["database-do-not-migrate"] (NoArg DatabaseDoNotMigrate)
+       ("Disallow Hets to create or alter the database tables" ++ crS
+       ++ "This option is ignored if the option --database-config is given.")
     , Option "" ["database-file"] (ReqArg DatabaseOutputFile "FILEPATH")
        ("path to the sqlite database file" ++ crS
        ++ "This option is ignored if the option --database-config is given.")
@@ -1078,6 +1085,7 @@ hetcatsOpts argv =
                          (databaseOutputFile opts)
                          (databaseConfigFile opts)
                          (databaseSubConfigKey opts)
+                         (databaseDoMigrate opts)
                   else return DBConfig.emptyDBConfig
       return opts { databaseConfig = dbConfig
                   , databaseContext = dbContext
