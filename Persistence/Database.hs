@@ -51,6 +51,3 @@ onDatabase dbConfig f =
 
 defaultPoolSize :: Int
 defaultPoolSize = 4
-
-doMigrate :: DBConfig -> Bool
-doMigrate dbConfig = (/= Just "postgresql") $ adapter dbConfig

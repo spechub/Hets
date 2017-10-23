@@ -29,7 +29,14 @@ data DBConfig = DBConfig { adapter :: Maybe String
                          , encoding :: Maybe String
                          , locale :: Maybe String
                          , pool :: Maybe Int
+                         -- The `Maybe` is only to skip this key during parsing.
+                         -- It is used only for additional information that are
+                         -- taken from the HetcatsOpts:
+                         , needMigration :: Maybe Bool
                          } deriving (Show, Generic)
+
+doMigrate :: DBConfig -> Bool
+doMigrate = (Just True ==) . needMigration
 
 instance FromJSON ExtDBConfig
 instance FromJSON DBConfig
@@ -45,16 +52,19 @@ emptyDBConfig = DBConfig { adapter = Nothing
                          , encoding = Nothing
                          , locale = Nothing
                          , pool = Nothing
+                         , needMigration = Just True
                          }
 
-parseDatabaseConfig :: FilePath -> FilePath -> String -> IO DBConfig
-parseDatabaseConfig dbFile dbConfigFile subconfigKey =
+parseDatabaseConfig :: FilePath -> FilePath -> String -> Bool -> IO DBConfig
+parseDatabaseConfig dbFile dbConfigFile subconfigKey performMigration =
   case (null dbFile, null dbConfigFile) of
      (True, True) -> fail ("No database configuration supplied. "
                            ++ "Please specify either --database-config "
                            ++ "or --database-file.")
-     (_, False) -> configFromYaml
-     (False, _) -> return sqliteConfig
+     (_, False) -> do
+       config <- configFromYaml
+       return config { needMigration = Just performMigration }
+     (False, _) -> return sqliteConfig { needMigration = Just performMigration }
   where
     sqliteConfig :: DBConfig
     sqliteConfig = emptyDBConfig { adapter = Just "sqlite"
