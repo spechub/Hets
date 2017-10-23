@@ -1,5 +1,5 @@
 name: Hets
-version: 0.99
+version: 0.100.0
 Description: The Heterogeneous Tool Set
 homepage:https://github.com/spechub/Hets
 License: LGPL
@@ -137,6 +137,7 @@ Executable hets
       , file-embed >= 0.0.10
       , persistent >= 2.7.0
       , persistent-template >= 2.5.2
+      , persistent-mysql >= 2.6.1
       , persistent-postgresql >= 2.6.1
       , persistent-sqlite >= 2.6.2
       , yaml >= 0.8.23.3
