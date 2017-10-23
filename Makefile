@@ -40,6 +40,10 @@ stack_upgrade:
 stack: $(STACK_UPGRADE_TARGET)
 	$(STACK) build --install-ghc --only-dependencies $(STACK_DEPENDENCIES_FLAGS)
 	touch stack
+restack:
+	rm -f stack
+	$(STACK) build --install-ghc --only-dependencies $(STACK_DEPENDENCIES_FLAGS)
+	touch stack
 
 SED := $(shell [ "$(OSNAME)" = 'SunOS' ] && printf 'gsed' || printf 'sed')
 TAR := $(shell [ "$(OSNAME)" = 'SunOS' ] && printf 'gtar' || printf 'tar')
