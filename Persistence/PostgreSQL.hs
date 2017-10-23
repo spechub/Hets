@@ -3,7 +3,6 @@ module Persistence.PostgreSQL where
 import Persistence.DBConfig
 
 import qualified Data.ByteString.Char8 as BS
-import Data.List (intercalate)
 import Data.Maybe
 
 connectionString :: DBConfig -> BS.ByteString
