@@ -5,6 +5,7 @@ module Persistence.Database where
 
 import Persistence.DBConfig
 import Persistence.Schema
+import qualified Persistence.MySQL as MySQL
 import qualified Persistence.PostgreSQL as PSQL
 
 import Control.Monad (when)
@@ -14,6 +15,7 @@ import Control.Monad.Trans.Reader
 import Control.Monad.Logger
 
 import Data.Maybe
+import Database.Persist.MySQL
 import Database.Persist.Postgresql
 import Database.Persist.Sqlite
 import Data.Text (pack)
@@ -28,10 +30,18 @@ onDatabase :: ( MonadIO m
            -> m a
 onDatabase dbConfig f =
   let connection = case adapter dbConfig of
+        Just "mysql" ->
+          withMySQLPool (MySQL.connectionInfo dbConfig) $
+            fromMaybe defaultPoolSize $ pool dbConfig
+        Just "mysql2" ->
+          withMySQLPool (MySQL.connectionInfo dbConfig) $
+            fromMaybe defaultPoolSize $ pool dbConfig
         Just "postgresql" ->
           withPostgresqlPool (PSQL.connectionString dbConfig) $
             fromMaybe defaultPoolSize $ pool dbConfig
         Just "sqlite" ->
+          withSqlitePool (pack $ database dbConfig) defaultPoolSize
+        Just "sqlite3" ->
           withSqlitePool (pack $ database dbConfig) defaultPoolSize
         _ -> fail ("Persistence.Database: No database adapter specified "
                      ++ "or adapter unsupported.")
