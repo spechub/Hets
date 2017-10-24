@@ -23,7 +23,7 @@
 # resolver:
 #  name: custom-snapshot
 #  location: "./custom-snapshot.yaml"
-resolver: lts-9.0
+resolver: lts-9.10
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -48,6 +48,7 @@ packages:
   - './_dependencies/persistent/persistent-mysql'
   - './_dependencies/persistent/persistent-postgresql'
   - './_dependencies/persistent/persistent-sqlite'
+  - './_dependencies/persistent/persistent-template'
   - '.'
 
 # Dependency packages to be pulled from upstream that are not in the resolver
@@ -68,6 +69,7 @@ extra-deps:
   - persistent-mysql-2.6.2
   - persistent-postgresql-2.6.1
   - persistent-sqlite-2.6.2
+  - persistent-template-2.5.3
 
 # Override default flag values for local packages and extra-deps
 flags:
