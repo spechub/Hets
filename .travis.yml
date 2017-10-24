@@ -66,7 +66,9 @@ matrix:
         - make install-common
         - make install-owl-tools
         - test/hets-lib-check.sh
-    - env: WITH_SQLITE=1
+    - env: WITH_POSTGRESQL=1
+      services:
+        postgresql: '9.6'
       script:
         # Run hets through Hets-lib
         # Install Hets - this does not need to recompile Hets
@@ -76,5 +78,19 @@ matrix:
         - make install-hets
         - make install-common
         - make install-owl-tools
-        - export DATABASE_FILE=/tmp/hets-lib-database-check.sqlite
+        - export DATABASE_CONFIG=Persistence/database_postgresql.yml
+        - test/hets-lib-database-check.sh
+    - env: WITH_MYSQL=1
+      services:
+        - mysql
+      script:
+        # Run hets through Hets-lib
+        # Install Hets - this does not need to recompile Hets
+        - export PREFIX=/tmp/hets-install
+        - export PATH=$PREFIX/bin:$PATH
+        - mkdir -p $PREFIX
+        - make install-hets
+        - make install-common
+        - make install-owl-tools
+        - export DATABASE_CONFIG=Persistence/database_mysql.yml
         - test/hets-lib-database-check.sh

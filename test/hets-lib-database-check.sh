@@ -2,14 +2,13 @@
 
 test_files=$(cat $(dirname $0)/hets-lib-testfiles)
 
-DATABASE_FILE=${DATABASE_FILE:-/tmp/hets-lib-database-check.sqlite}
-echo DATABASE_FILE=$DATABASE_FILE
+export DATABASE_CONFIG=${DATABASE_CONFIG:-Persistence/database_postgresql.yml}
+echo DATABASE_CONFIG=$DATABASE_CONFIG
 
 set -ex
 
-hets --output-types=db --database-file=$DATABASE_FILE --logic-graph
-
 for i in $test_files
 do
-  hets --quiet -a none --output-types=db --database-file=$DATABASE_FILE $HETS_LIB/$i
+  $(dirname $0)/hets-lib-database-reset.sh
+  hets --quiet -a none --output-types=db --database-config=$DATABASE_CONFIG --database-subconfig=test $HETS_LIB/$i
 done
