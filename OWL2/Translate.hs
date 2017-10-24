@@ -19,8 +19,11 @@ import Data.Char
 
 import OWL2.Parse
 
-idToIRI :: Id -> IRI
-idToIRI = idToAnonIRI False
+-- now provided in Common.IRI.
+-- todo: care about special characters? or is this unnecessary
+--       if IRI and Id are completely unified?
+--idToIRI :: Id -> IRI
+--idToIRI = idToAnonIRI False
 
 idToAnonIRI :: Bool -> Id -> IRI
 idToAnonIRI = idToAnonNumberedIRI (-1)

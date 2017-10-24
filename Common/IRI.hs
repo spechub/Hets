@@ -74,6 +74,7 @@ module Common.IRI
     , showIRII
     , dummyIRI
     , mkIRI
+    , idToIRI  
     , setPrefix
     ) where
 
@@ -269,6 +270,13 @@ dummyIRI = nullIRI {
 
 mkIRI :: String -> IRI
 mkIRI = simpleIdToIRI. mkSimpleId
+
+idToIRI :: Id -> IRI
+idToIRI i =  nullIRI { iriScheme = ""
+                     , iriAuthority = Nothing
+                     , iriPath = i
+                     , isAbbrev = True
+                     }
 
 setPrefix :: String -> IRI -> IRI
 setPrefix s i = i{prefixName = s}

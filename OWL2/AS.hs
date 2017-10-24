@@ -364,26 +364,30 @@ setReservedPrefix iri = case prefixName iri of
   _ -> iri
 
 stripReservedPrefix :: IRI -> IRI
-stripReservedPrefix = mkIRI . getPredefName
+stripReservedPrefix = idToIRI . uriToId
 
-{- | returns the name of the predefined IRI (e.g <xsd:string> returns "string"
-    or <http://www.w3.org/2002/07/owl#real> returns "real") -}
-getPredefName :: IRI -> String
-getPredefName iri =
-    if prefixName iri `elem` ["", "xsd", "rdf", "rdfs", "owl"]
-        then show $ iriPath iri
-        else case mapMaybe (`stripPrefix` showIRIU iri)
+{- | Extracts Id from IRI
+     returns the name of the predefined IRI (e.g <xsd:string> returns "string"
+     or <http://www.w3.org/2002/07/owl#real> returns "real") -}
+uriToId :: IRI -> Id
+uriToId iri =
+    if (prefixName iri `elem` ["", "xsd", "rdf", "rdfs", "owl"])
+       || (   null (iriScheme iri)
+           && null (iriQuery iri)
+           && null (iriFragment iri)
+           && isNothing (iriAuthority iri))
+        then iriPath iri
+        else stringToId $ case mapMaybe (`stripPrefix` showIRIU iri)
                     $ Map.elems predefPrefixes of
                 [s] -> s
                 _ -> showIRII iri
 
+getPredefName :: IRI -> String
+getPredefName = show . uriToId
+
 -- | Extracts Token from IRI
 uriToTok :: IRI -> Token
-uriToTok urI = mkSimpleId $ getPredefName urI
-
--- | Extracts Id from IRI
-uriToId :: IRI -> Id
-uriToId = simpleIdToId . uriToTok
+uriToTok = mkSimpleId . show . getPredefName
 
 -- | Extracts Id from Entities
 entityToId :: Entity -> Id
