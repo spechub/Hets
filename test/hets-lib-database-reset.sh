@@ -1,11 +1,11 @@
 #!/bin/bash
 
-if [ -n "$WITH_POSTGRESQL" ]
+if [ "$JOB" = "PostgreSQL" ]
 then
   psql -U postgres -c 'drop database hets_test;' > /dev/null
   psql -U postgres -c 'create database hets_test;' > /dev/null
 fi
-if [ -n "$WITH_MYSQL" ]
+if [ "$JOB" = "$MySQL" ]
 then
   mysql -u root -e 'drop database hets_test;'
   mysql -u root -e 'create database hets_test;'

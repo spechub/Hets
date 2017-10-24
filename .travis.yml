@@ -18,12 +18,11 @@ addons:
       - spass
       - darwin
       - openjdk-7-jdk
-before_install:
+install:
   # Download and unpack the stack executable
   - mkdir -p ~/.local/bin
   - export PATH=$HOME/.local/bin:$PATH
   - travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
-install:
   - sudo apt-get install --no-install-recommends `dpkg-checkbuilddeps debian/control 2>&1 | cut -f3- -d":" | sed -e 's,([^)]*),,g' -e 's,openjdk-.*-jdk,,'` || true
 
 before_script:
@@ -51,11 +50,11 @@ before_script:
 
 matrix:
   include:
-    - env: WITH_MAKE_CHECK=1
+    - env: JOB='make check'
       script:
         # Run the test
         - make check
-    - env: WITH_HETS_LIB=1
+    - env: JOB='Hets-lib'
       script:
         # Run hets through Hets-lib
         # Install Hets - this does not need to recompile Hets
@@ -66,7 +65,7 @@ matrix:
         - make install-common
         - make install-owl-tools
         - test/hets-lib-check.sh
-    - env: WITH_POSTGRESQL=1
+    - env: JOB='PostgreSQL'
       services:
         postgresql: '9.6'
       script:
@@ -80,7 +79,7 @@ matrix:
         - make install-owl-tools
         - export DATABASE_CONFIG=Persistence/database_postgresql.yml
         - test/hets-lib-database-check.sh
-    - env: WITH_MYSQL=1
+    - env: JOB='MySQL'
       services:
         - mysql
       script:
