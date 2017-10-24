@@ -135,8 +135,6 @@ LocIdBase sql=loc_id_bases
   deriving Show
 
 Document sql=documents
-  locIdBaseId LocIdBaseId sql=id -- the field `locIdBaseId` is mapped to the column `id`
-  Primary locIdBaseId            -- ... which is the primary key
   displayName String
   name String
   location String Maybe
@@ -164,8 +162,6 @@ Diagnosis sql=diagnoses
   deriving Show
 
 OMS sql=oms
-  locIdBaseId LocIdBaseId sql=id -- the field `locIdBaseId` is mapped to the column `id`
-  Primary locIdBaseId            -- ... which is the primary key
   documentId LocIdBaseId -- DocumentId is LocIdBaseId
   logicId LogicId
   languageId LanguageId
@@ -187,8 +183,6 @@ OMS sql=oms
   deriving Show
 
 Mapping sql=mappings
-  locIdBaseId LocIdBaseId sql=id -- the field `locIdBaseId` is mapped to the column `id`
-  Primary locIdBaseId            -- ... which is the primary key
   sourceId LocIdBaseId -- OMSId is a LocIdBaseId
   targetId LocIdBaseId -- OMSId is a LocIdBaseId
   signatureMorphismId SignatureMorphismId
@@ -206,8 +200,6 @@ Mapping sql=mappings
   deriving Show
 
 Sentence sql=sentences
-  locIdBaseId LocIdBaseId sql=id -- the field `locIdBaseId` is mapped to the column `id`
-  Primary locIdBaseId            -- ... which is the primary key
   omsId LocIdBaseId -- OMSId is LocIdBaseId
   fileRangeId FileRangeId Maybe
   name String
@@ -215,22 +207,14 @@ Sentence sql=sentences
   deriving Show
 
 Axiom sql=axioms
-  -- the field `locIdBaseId` is mapped to the column `id`
-  sentenceId LocIdBaseId sql=id -- SentenceId is LocIdBaseId
-  Primary sentenceId -- ... which is the primary key
   deriving Show
 
 Conjecture sql=conjectures
-  -- the field `locIdBaseId` is mapped to the column `id`
-  sentenceId LocIdBaseId sql=id -- SentenceId is LocIdBaseId
-  Primary sentenceId -- ... which is the primary key
   evaluationState EvaluationStateType
   reasoningStatus ReasoningStatusOnConjectureType
   deriving Show
 
 Symbol sql=symbols
-  locIdBaseId LocIdBaseId sql=id -- the field `locIdBaseId` is mapped to the column `id`
-  Primary locIdBaseId            -- ... which is the primary key
   omsId LocIdBaseId -- OMSId is LocIdBaseId
   fileRangeId FileRangeId Maybe
   symbolKind String
@@ -279,33 +263,21 @@ PremiseSelectedSentence sql=premise_selected_axioms
   deriving Show
 
 ManualPremiseSelection sql=manual_premise_selections
-  -- the field `premiseSelectionId` is mapped to the column `id`
-  premiseSelectionId PremiseSelectionId sql=id
-  Primary premiseSelectionId -- ... which is the primary key
   deriving Show
 
 SinePremiseSelection sql=sine_premise_selections
-  -- the field `premiseSelectionId` is mapped to the column `id`
-  premiseSelectionId PremiseSelectionId sql=id
-  Primary premiseSelectionId -- ... which is the primary key
   depthLimit Int Maybe
   tolerance Double Maybe
   axiomNumberLimit Int Maybe
   deriving Show
 
 SineSymbolAxiomTrigger sql=sine_symbol_axiom_triggers
-  -- SinePremiseSelectionId is PremiseSelectionId
-  sinePremiseSelectionId PremiseSelectionId sql=id
-  Primary sinePremiseSelectionId -- ... which is the primary key
   axiomId LocIdBaseId -- AxiomId is LocIdBaseId
   symbolId LocIdBaseId -- SymbolId is LocIdBaseId
   minTolerance Double
   deriving Show
 
 SineSymbolCommonness sql=sine_symbol_commonnesses
-  -- SinePremiseSelectionId is PremiseSelectionId
-  sinePremiseSelectionId PremiseSelectionId sql=id
-  Primary sinePremiseSelectionId -- ... which is the primary key
   symbolId LocIdBaseId -- SymbolId is LocIdBaseId
   commonness Int
   deriving Show
