@@ -15,8 +15,6 @@ References  :  <http://www.w3.org/TR/2009/NOTE-owl2-manchester-syntax-20091027/>
 
 module OWL2.Parse where
 
-import Debug.Trace
-
 import OWL2.AS
 import OWL2.Symbols
 import OWL2.Keywords
@@ -160,13 +158,13 @@ skips = (<< skipMany
 
 uriQ :: CharParser st IRI
 -- uriQ = fullIri <|> abbrIri
-uriQ = trace "uriQ" Common.IRI.iriCurie
+uriQ = Common.IRI.iriCurie
 
 compoundUriQ :: CharParser st IRI
 compoundUriQ = do
       i <- uriQ
-      (c, p) <- option ([], nullRange) (comps (owlKeywords,owlKeywords))  
-      return $ trace (show (i,c,p)) $ (i { iriPath = addComponents (iriPath i) (c,p) })
+      (c, p) <- option ([], nullRange) (comps (owlKeywords,owlKeywords))
+      return i { iriPath = addComponents (iriPath i) (c,p) }
          
 
 fullIri :: CharParser st IRI

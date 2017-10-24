@@ -76,8 +76,6 @@ module Common.IRI
     , setPrefix
     ) where
 
-import Debug.Trace
-
 import Text.ParserCombinators.Parsec
 
 import Data.Char
@@ -244,8 +242,7 @@ showIRIAbbrev (IRI { prefixName = pname
                        , iriPath = aPath
                        , iriQuery = aQuery
                        , iriFragment = aFragment
-                       }) = trace ("Showing IRI prefix=" ++ pname ++" path=" ++ show aPath) $ 
-  pname ++ show aPath ++ aQuery ++ aFragment
+                       }) = pname ++ show aPath ++ aQuery ++ aFragment
 
 showIRII :: IRI -> String
 showIRII i@(IRI { iriScheme = scheme
@@ -254,7 +251,7 @@ showIRII i@(IRI { iriScheme = scheme
               , iriQuery = query
               , iriFragment = fragment
               , hasAngles = b
-              }) = trace ("showing IRII:" ++ show i) $ 
+              }) = 
   (if b then "<" else "") ++ scheme
   ++ iriAuthToString id authority "" --TODO: replaced with id for now
   ++ show path ++ query ++ fragment ++ (if b then ">" else "")
@@ -281,17 +278,17 @@ setPrefix s i = i{prefixName = s}
 Returns 'Nothing' if the string is not a valid IRI;
 (an absolute IRI with optional fragment identifier). -}
 parseIRI :: String -> Maybe IRI
-parseIRI s = trace ("iri:"++s++" ") $ parseIRIAny iri s
+parseIRI s = parseIRIAny iri s
 
 {- | Parse a IRI reference to an 'IRI' value.
 Returns 'Nothing' if the string is not a valid IRI reference.
 (an absolute or relative IRI with optional fragment identifier). -}
 parseIRIReference :: String -> Maybe IRI
-parseIRIReference s = trace ("iriref:"++s++" ") $ parseIRIAny iriReference s
+parseIRIReference s = parseIRIAny iriReference s
 
 -- | Turn a string containing a CURIE into an 'IRI'
 parseCurie :: String -> Maybe IRI
-parseCurie s = trace ("curie:"++s++" ") $ parseIRIAny curie s
+parseCurie s = parseIRIAny curie s
 
 {- | Turn a string containing an IRI or a CURIE into an 'IRI'.
 Returns 'Nothing' if the string is not a valid IRI;
@@ -354,13 +351,13 @@ angles p = char '<' >> fmap (\ i -> i { hasAngles = True }) p << char '>'
 -- | Parses a CURIE <http://www.w3.org/TR/rdfa-core/#s_curies>
 curie :: IRIParser st IRI
 curie = iriWithPos $ do
-    pn <- trace "curie: try" $ try (do
+    pn <- try (do
         n <- ncname
         c <- string ":"
         return $ n ++ c
       )
     i <- reference
-    return $ trace ("curie: "++show i) $ i { prefixName = pn }
+    return i { prefixName = pn }
   <|> referenceAux False
 
 reference :: IRIParser st IRI
@@ -383,7 +380,7 @@ referenceAux allowEmpty = iriWithPos $ do
           , iriFragment = uf
           , isAbbrev = True  
           }
-  return $ (trace ("referenceAux:"++show iri)) iri
+  return iri
   
 {- | Prefix part of CURIE in @prefix_part:reference@
   <http://www.w3.org/TR/2009/REC-xml-names-20091208/#NT-NCName> -}
