@@ -50,6 +50,7 @@ module Common.IRI
     , iri
     , angles
     , iriCurie
+    , compoundIriCurie  
     , parseCurie
     , parseIRICurie
     , parseIRIReference
@@ -95,7 +96,7 @@ import Common.Id as Id
 import Common.Lexer
 import Common.Parsec
 import Common.Percent
-import Common.Token (mixId)
+import Common.Token (mixId, comps)
 
 -- * The IRI datatype
 
@@ -345,8 +346,18 @@ iriWithPos parser = do
 iriCurie :: IRIParser st IRI
 iriCurie = angles iri <|> curie 
 
+compoundIriCurie :: IRIParser st IRI
+compoundIriCurie = angles iri <|> compoundCurie 
+
 angles :: IRIParser st IRI -> IRIParser st IRI
 angles p = char '<' >> fmap (\ i -> i { hasAngles = True }) p << char '>'
+
+-- | Parses a CURIE possibly followed by components of a compound Id
+compoundCurie :: IRIParser st IRI
+compoundCurie = do
+      i <- curie
+      (c, p) <- option ([], nullRange) (comps ([], []))
+      return i { iriPath = addComponents (iriPath i) (c,p) }
 
 -- | Parses a CURIE <http://www.w3.org/TR/rdfa-core/#s_curies>
 curie :: IRIParser st IRI

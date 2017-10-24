@@ -26,7 +26,7 @@ import Common.IRI
 import Common.Lexer
 import Common.Parsec
 import Common.AnnoParser (commentLine)
-import Common.Token (criticalKeywords, sortId, comps)
+import Common.Token (criticalKeywords, sortId)
 import Common.Utils (nubOrd)
 import qualified Common.IRI as IRI
 import qualified Common.GlobalAnnotations as GA (PrefixMap)
@@ -158,21 +158,14 @@ skips = (<< skipMany
 
 uriQ :: CharParser st IRI
 -- uriQ = fullIri <|> abbrIri
-uriQ = Common.IRI.iriCurie
-
-compoundUriQ :: CharParser st IRI
-compoundUriQ = do
-      i <- uriQ
-      (c, p) <- option ([], nullRange) (comps (owlKeywords,owlKeywords))
-      return i { iriPath = addComponents (iriPath i) (c,p) }
-         
+uriQ = Common.IRI.compoundIriCurie
 
 fullIri :: CharParser st IRI
 fullIri = angles iri
 
 uriP :: CharParser st IRI
 uriP =
-  skips $ try $ checkWithUsing showIRI compoundUriQ $ \ q -> let p = prefixName q in
+  skips $ try $ checkWithUsing showIRI uriQ $ \ q -> let p = prefixName q in
   if null p then notElem (show $ iriPath q) owlKeywords
    else notElem p $ map (takeWhile (/= ':'))
         $ colonKeywords
