@@ -381,6 +381,7 @@ referenceAux allowEmpty = iriWithPos $ do
           { iriPath = stringToId up
           , iriQuery = uq
           , iriFragment = uf
+          , isAbbrev = True  
           }
   return $ (trace ("referenceAux:"++show iri)) iri
   
