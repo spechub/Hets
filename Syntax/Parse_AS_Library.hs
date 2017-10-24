@@ -401,7 +401,7 @@ optEnd = try
     << addLineAnnos
 
 generics :: LogicGraph -> AParser st GENERICITY
-generics l = if dolOnly l then return emptyParams else do
+generics l = do
     (pa, ps1) <- params l
     (imp, ps2) <- option ([], nullRange) (imports l)
     return $ Genericity (Params pa) (Imported imp) $ appRange ps1 ps2
