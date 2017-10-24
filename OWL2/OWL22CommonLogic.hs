@@ -33,7 +33,7 @@ import OWL2.Keywords
 import OWL2.MS
 import OWL2.ProfilesAndSublogics
 import OWL2.Morphism
-import OWL2.Symbols
+import OWL2.Symbols hiding (idToRaw)
 import qualified OWL2.Sign as OS
 -- CommonLogic = codomain
 import Common.DocUtils

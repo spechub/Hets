@@ -15,6 +15,7 @@ module OWL2.Symbols where
 
 import OWL2.AS
 import Common.IRI
+import Common.Id (Id)
 
 import Data.Data
 
@@ -36,3 +37,6 @@ data SymbMapItems = SymbMapItems ExtEntityType [(IRI, Maybe IRI)]
 -- | raw symbols
 data RawSymb = ASymbol Entity | AnUri IRI | APrefix String
     deriving (Show, Eq, Ord, Typeable, Data)
+
+idToRaw :: Id -> RawSymb
+idToRaw = AnUri . idToIRI
