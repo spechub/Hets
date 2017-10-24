@@ -179,13 +179,13 @@ createDocument opts libEnv parentFileVersion dbCache0 libName =
                     , locIdBaseLocId = locId
                     }
               documentKey <- insert documentLocIdBaseValue
-              insert Document
-                { documentLocIdBaseId = documentKey
-                , documentDisplayName = displayName
-                , documentName = name
-                , documentLocation = location
-                , documentVersion = version
-                }
+              let document = Document
+                    { documentDisplayName = displayName
+                    , documentName = name
+                    , documentLocation = location
+                    , documentVersion = version
+                    }
+              insertEntityMany [Entity (toSqlKey $ fromSqlKey documentKey) document]
               return (True, documentKey, documentLocIdBaseValue)
           let dbCache1 = addDocumentToCache libName documentKey dbCache0
           createAllOmsOfDocument opts libEnv fileVersionKey dbCache1 doSave dGraph
@@ -415,27 +415,27 @@ createOMS opts libEnv fileVersionKey dbCache0 doSave globalAnnotations libName
                   , locIdBaseLocId = locId
                   }
             omsKey <- insert omsLocIdBaseValue
-            insert OMS
-              { oMSLocIdBaseId = omsKey
-              , oMSDocumentId = documentKey
-              , oMSLanguageId = languageKey
-              , oMSLogicId = logicKey
-              , oMSSerializationId = serializationKey
-              , oMSSignatureId = signatureKey
-              , oMSNormalFormId = normalFormKeyM
-              , oMSNormalFormSignatureMorphismId = normalFormSignatureMorphismKeyM
-              , oMSFreeNormalFormId = freeNormalFormKeyM
-              , oMSFreeNormalFormSignatureMorphismId = freeNormalFormSignatureMorphismKeyM
-              , oMSOrigin = omsOrigin
-              , oMSConsStatusId = consStatusKey
-              , oMSNameFileRangeId = nodeNameRangeKey
-              , oMSDisplayName = displayName
-              , oMSName = name
-              , oMSNameExtension = nameExtension
-              , oMSNameExtensionIndex = nameExtensionIndex
-              , oMSLabelHasHiding = labelHasHiding nodeLabel
-              , oMSLabelHasFree = labelHasFree nodeLabel
-              }
+            let oms = OMS
+                  { oMSDocumentId = documentKey
+                  , oMSLanguageId = languageKey
+                  , oMSLogicId = logicKey
+                  , oMSSerializationId = serializationKey
+                  , oMSSignatureId = signatureKey
+                  , oMSNormalFormId = normalFormKeyM
+                  , oMSNormalFormSignatureMorphismId = normalFormSignatureMorphismKeyM
+                  , oMSFreeNormalFormId = freeNormalFormKeyM
+                  , oMSFreeNormalFormSignatureMorphismId = freeNormalFormSignatureMorphismKeyM
+                  , oMSOrigin = omsOrigin
+                  , oMSConsStatusId = consStatusKey
+                  , oMSNameFileRangeId = nodeNameRangeKey
+                  , oMSDisplayName = displayName
+                  , oMSName = name
+                  , oMSNameExtension = nameExtension
+                  , oMSNameExtensionIndex = nameExtensionIndex
+                  , oMSLabelHasHiding = labelHasHiding nodeLabel
+                  , oMSLabelHasFree = labelHasFree nodeLabel
+                  }
+            insertEntityMany [Entity (toSqlKey $ fromSqlKey omsKey) oms]
             return $ Entity omsKey omsLocIdBaseValue
 
         dbCache6 <- case gTheory of
@@ -782,14 +782,14 @@ findOrCreateSymbol libEnv fileVersionKey dbCache doSave libName nodeId
                 , locIdBaseKind = Enums.Symbol
                 , locIdBaseLocId = locId
                 }
-              insert Symbol
-                { symbolLocIdBaseId = symbolKey
-                , symbolOmsId = omsKey
-                , symbolFileRangeId = Nothing
-                , symbolSymbolKind = symbolKind
-                , symbolName = name
-                , symbolFullName = Text.pack fullName
-                }
+              let symbolValue = Symbol
+                    { symbolOmsId = omsKey
+                    , symbolFileRangeId = Nothing
+                    , symbolSymbolKind = symbolKind
+                    , symbolName = name
+                    , symbolFullName = Text.pack fullName
+                    }
+              insertEntityMany [Entity (toSqlKey $ fromSqlKey symbolKey) symbolValue]
               return symbolKey
             else do
               symbolM <- selectFirst [ LocIdBaseLocId ==. locId
@@ -892,30 +892,31 @@ createSentence fileVersionKey dbCache doSave globalAnnotations
         then ReasoningStatusOnConjectureType.THM
         else ReasoningStatusOnConjectureType.OPN
   in  do
-        sentenceLocIdBaseKey <-
+        sentenceKey <-
           if doSave
           then do
                rangeKeyM <- createRange range
-               sentenceLocIdBaseKey <- insert LocIdBase
+               sentenceKey <- insert LocIdBase
                  { locIdBaseFileVersionId = fileVersionKey
                  , locIdBaseKind = kind
                  , locIdBaseLocId = locId
                  }
-               insert Sentence
-                 { sentenceLocIdBaseId = sentenceLocIdBaseKey
-                 , sentenceOmsId = omsKey
-                 , sentenceFileRangeId = rangeKeyM
-                 , sentenceName = name
-                 , sentenceText = Text.pack text
-                 }
+               let sentenceValue = Sentence
+                     { sentenceOmsId = omsKey
+                     , sentenceFileRangeId = rangeKeyM
+                     , sentenceName = name
+                     , sentenceText = Text.pack text
+                     }
+               insertEntityMany [Entity (toSqlKey $ fromSqlKey sentenceKey) sentenceValue]
                if isConjecture
-               then insert Conjecture
-                      { conjectureSentenceId = sentenceLocIdBaseKey
-                      , conjectureEvaluationState = evaluationState
-                      , conjectureReasoningStatus = reasoningStatus
-                      } >> return ()
-               else insert Axiom { axiomSentenceId = sentenceLocIdBaseKey } >> return ()
-               return sentenceLocIdBaseKey
+               then let conjecture = Conjecture
+                          { conjectureEvaluationState = evaluationState
+                          , conjectureReasoningStatus = reasoningStatus
+                          }
+                    in  insertEntityMany [Entity (toSqlKey $ fromSqlKey sentenceKey) conjecture]
+               else let axiom = Axiom { }
+                    in insertEntityMany [Entity (toSqlKey $ fromSqlKey sentenceKey) axiom]
+               return sentenceKey
             else do
               sentenceM <- selectFirst [ LocIdBaseLocId ==. locId
                                        , LocIdBaseFileVersionId ==. fileVersionKey
@@ -925,7 +926,7 @@ createSentence fileVersionKey dbCache doSave globalAnnotations
                 Nothing -> fail ("Persistence.DevGraph.createSentence: Sentence not found"
                                  ++ locId)
                 Just (Entity sentenceKey _) -> return sentenceKey
-        return (sentenceLocIdBaseKey, dbCache)
+        return (sentenceKey, dbCache)
 
 associateSymbolsOfSentence :: ( MonadIO m
                               , GetRange sentence
@@ -1049,20 +1050,20 @@ createMapping opts libEnv fileVersionKey dbCache globalAnnotations
       , locIdBaseKind = Enums.Mapping
       , locIdBaseLocId = locId
       }
-    insert Mapping
-      { mappingLocIdBaseId = mappingKey
-      , mappingSourceId = sourceOMSKey
-      , mappingTargetId = targetOMSKey
-      , mappingSignatureMorphismId = signatureMorphismKey
-      , mappingConsStatusId = consStatusKeyM
-      , mappingFreenessParameterOMSId = freenessParameterOMSKeyM
-      , mappingFreenessParameterLanguageId = freenessParameterLanguageKeyM
-      , mappingDisplayName = displayName
-      , mappingName = dglName linkLabel
-      , mappingType = mappingTypeOfLinkLabel
-      , mappingOrigin = mappingOriginOfLinkLabel
-      , mappingPending = dglPending linkLabel
-      }
+    let mapping = Mapping
+          { mappingSourceId = sourceOMSKey
+          , mappingTargetId = targetOMSKey
+          , mappingSignatureMorphismId = signatureMorphismKey
+          , mappingConsStatusId = consStatusKeyM
+          , mappingFreenessParameterOMSId = freenessParameterOMSKeyM
+          , mappingFreenessParameterLanguageId = freenessParameterLanguageKeyM
+          , mappingDisplayName = displayName
+          , mappingName = dglName linkLabel
+          , mappingType = mappingTypeOfLinkLabel
+          , mappingOrigin = mappingOriginOfLinkLabel
+          , mappingPending = dglPending linkLabel
+          }
+    insertEntityMany [Entity (toSqlKey $ fromSqlKey mappingKey) mapping]
     return dbCache1
   where
     mappingOriginOfLinkLabel :: MappingOrigin
@@ -1181,7 +1182,7 @@ findOMSAndSignature fileVersionKey documentLocIdBase nodeLabel = do
                            ] []
   case omsLocIdM of
     Just (Entity omsKey _) -> do
-      omsValueM <- selectFirst [OMSLocIdBaseId ==. omsKey] []
+      omsValueM <- selectFirst [OMSId ==. toSqlKey (fromSqlKey omsKey)] []
       omsValue <- case omsValueM of
         Nothing ->
           fail ("Persistence.DevGraph.findOMSAndSignature could not find OMS with ID "
