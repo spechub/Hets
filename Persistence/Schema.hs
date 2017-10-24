@@ -34,16 +34,15 @@ import Persistence.Schema.MappingType (MappingType)
 import Persistence.Schema.OMSOrigin (OMSOrigin)
 import Persistence.Schema.ReasoningStatusOnConjectureType (ReasoningStatusOnConjectureType)
 import Persistence.Schema.ReasoningStatusOnReasoningAttemptType (ReasoningStatusOnReasoningAttemptType)
-
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
 Hets sql=hets
-  key String
+  key String maxlen=384
   Primary key
   value String
   deriving Show
 
 Language sql=languages
-  slug String
+  slug String maxlen=384
   UniqueLanguageSlug slug
   name String
   description String
@@ -53,7 +52,7 @@ Language sql=languages
 
 Logic sql=logics
   languageId LanguageId
-  slug String
+  slug String maxlen=384
   UniqueLanguageIdLogicSlug languageId slug
   name String
   deriving Show
@@ -67,7 +66,7 @@ LogicMapping sql=logic_mappings
   languageMappingId LanguageMappingId
   sourceId LogicId
   targetId LogicId
-  slug String
+  slug String maxlen=384
   UniqueLanguageMappingIdLogicMappingSlug languageMappingId slug
   name String
   isInclusion Bool
@@ -77,7 +76,7 @@ LogicMapping sql=logic_mappings
 
 Serialization
   languageId LanguageId
-  slug String
+  slug String maxlen=384
   UniqueSerializationLanguageIdSerializationSlug languageId slug
   name String
   deriving Show
@@ -103,7 +102,7 @@ ConsStatus sql=cons_statuses
 -- We leave out the other columns here because we don't need them in Hets
 OrganizationalUnit sql=organizational_units
   kind String
-  slug String
+  slug String maxlen=384
   UniqueOrganizationalUnitSlug slug
   deriving Show
 
@@ -117,21 +116,21 @@ FileVersion sql=file_versions
   repositoryId RepositoryId
   path String
   commitSha String
-  evaluationState EvaluationStateType default='not_yet_enqueued'
+  evaluationState EvaluationStateType
   deriving Show
 
 -- This table is only needed for a SELECT JOIN by Ontohub. It needs to at least
 -- exist for running with SQLite
 FileVersionParent sql=file_version_parents
   lastChangedFileVersionId FileVersionId
-  queriedSha String
+  queriedSha String maxlen=40
   Primary lastChangedFileVersionId queriedSha
   deriving Show
 
 LocIdBase sql=loc_id_bases
   fileVersionId FileVersionId -- FileVersionId is LocIdBaseId
-  kind Enums.LocIdBaseKindType
-  locId String
+  kind Enums.LocIdBaseKindType maxlen=384
+  locId String maxlen=384
   UniqueLocIdBaseLocId fileVersionId kind locId
   deriving Show
 
@@ -225,8 +224,8 @@ Conjecture sql=conjectures
   -- the field `locIdBaseId` is mapped to the column `id`
   sentenceId LocIdBaseId sql=id -- SentenceId is LocIdBaseId
   Primary sentenceId -- ... which is the primary key
-  evaluationState EvaluationStateType default='not_yet_enqueued'
-  reasoningStatus ReasoningStatusOnConjectureType default='OPN'
+  evaluationState EvaluationStateType
+  reasoningStatus ReasoningStatusOnConjectureType
   deriving Show
 
 Symbol sql=symbols
@@ -259,7 +258,7 @@ SignatureSymbol sql=signature_symbols
   deriving Show
 
 Reasoner sql=reasoners
-  slug String
+  slug String maxlen=384
   UniqueReasonerSlug slug
   displayName String
   deriving Show
@@ -315,8 +314,8 @@ ReasoningAttempt sql=reasoning_attempts
   reasonerConfigurationId ReasonerConfigurationId
   usedReasonerId ReasonerId Maybe
   timeTaken Int Maybe
-  evaluationState EvaluationStateType default='not_yet_enqueued'
-  reasoningStatus ReasoningStatusOnReasoningAttemptType default='OPN'
+  evaluationState EvaluationStateType
+  reasoningStatus ReasoningStatusOnReasoningAttemptType
   deriving Show
 
 GeneratedAxiom sql=generated_axioms
