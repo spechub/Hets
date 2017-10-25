@@ -179,13 +179,12 @@ instance Eq IRI where
 -- compares full/expanded IRI (if expanded) or abbreviated part if not expanded
 instance Ord IRI where
   compare i k = case (hasFullIRI i, hasFullIRI k) of
-    (True, True) -> comparing (\ j ->
-      (iriScheme j, iriAuthority j, iriPath j,
-       iriQuery j, iriFragment j)) i k
     (False, False) -> comparing
       (\ j -> (prefixName j, iriPath j, iriQuery j, iriFragment j))
       i k
-    (b1, b2) -> compare b1 b2
+    _ -> comparing (\ j ->
+      (iriScheme j, iriAuthority j, iriPath j,
+       iriQuery j, iriFragment j)) i k
 
 -- |converts IRI to String of expanded form. if available. Also showing Auth
 iriToStringUnsecure :: IRI -> String
