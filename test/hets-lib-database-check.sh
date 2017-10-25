@@ -1,6 +1,6 @@
 #!/bin/bash
 
-test_files=$(cat $(dirname $0)/hets-lib-testfiles)
+test_files=$(cat $(dirname $0)/hets-lib-database-testfiles)
 
 export DATABASE_CONFIG=${DATABASE_CONFIG:-Persistence/database_postgresql.yml}
 echo DATABASE_CONFIG=$DATABASE_CONFIG
