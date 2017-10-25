@@ -351,8 +351,9 @@ createAxioms s fl = do
 check1Prefix :: Maybe String -> String -> Bool
 check1Prefix ms s = case ms of
     Nothing -> True
-    Just iRi -> iRi == s
-
+    Just iRi -> iRi == s || "<"++iRi++">" == s || iRi == "<"++s++">"
+      -- todo: ensure that addition of angle brackets is not necessary
+      
 checkPrefixMap :: PrefixMap -> Bool
 checkPrefixMap pm =
     let pl = map (`Map.lookup` pm) ["owl", "rdf", "rdfs", "xsd"]
