@@ -516,13 +516,14 @@ anaUnitTerm lgraph libEnv ln dg opts eo uctx@(buc, diag) utrm =
   in case utrm of
   Unit_reduction ut restr -> do
        let orig = DGRestriction (Restricted restr) Set.empty
-       (p, diag1, dg1, ut') <-
+       (p@(Diag_node_sig iNode _), diag1, dg1, ut') <-
            anaUnitTerm lgraph libEnv ln dg opts eo uctx (item ut)
        curl <- lookupCurrentLogic "UnitTerm" lgraph
        (incl, msigma) <- anaRestriction lgraph (emptyG_sign curl)
                          (getSig (getSigFromDiag p)) opts restr
+       let i = addSuffixToNode "_reduction" iNode
        (q@(Diag_node_sig qn _), diag', dg') <-
-           extendDiagramWithMorphismRevHide pos lgraph diag1 dg1 p incl utStr
+           extendDiagramWithMorphismRevHide pos lgraph diag1 dg1 p incl i utStr
             orig
        case msigma of
                   Nothing ->
@@ -535,9 +536,10 @@ anaUnitTerm lgraph libEnv ln dg opts eo uctx@(buc, diag) utrm =
                       do
                          -- check amalgamability conditions
                          let sink = [(qn, sigma)]
+                             iN = addSuffixToNode "_amalg" qn
                          () <- assertAmalgamability opts pos diag' sink utStr
                          (q', diag'', dg'') <- extendDiagramWithMorphism pos
-                            lgraph diag' dg' q sigma utStr orig
+                            lgraph diag' dg' q sigma iN utStr orig
                          return (q', diag'', dg'',
                                    Unit_reduction
                                    (replaceAnnoted ut' ut) restr)
@@ -549,10 +551,11 @@ anaUnitTerm lgraph libEnv ln dg opts eo uctx@(buc, diag) utrm =
                  (EmptyNode $ error "Static.AnalysisArchitecture")
                     (getSig (getSigFromDiag dnsig)) opts ren
        let sink = [(p, gMorph)]
+           iN = addSuffixToNode "_amalg" p
        -- check amalamability conditions
        () <- assertAmalgamability opts pos diag1 sink utStr
        (dnsig', diag', dg') <- extendDiagramWithMorphism pos lgraph
-           diag1 dg1 dnsig gMorph utStr
+           diag1 dg1 dnsig gMorph iN utStr
                 (DGTranslation $ Renamed ren)
        return (dnsig', diag', dg', Unit_translation
                          (replaceAnnoted ut' ut) ren)
@@ -630,13 +633,16 @@ anaUnitTerm lgraph libEnv ln dg opts eo uctx@(buc, diag) utrm =
                               ins diag'' dg2 morphNodes
                    (diag'', dg4) <- ins diag' dg''' $ zip argSigs morphSigs
                    -- check amalgamability conditions
+                   let i = addSuffixToIRI "_amalg" un
                    (sigR, dg5) <- extendDGraph dg4 resultSig
-                                  sigMorExt DGExtension
+                                  sigMorExt i DGExtension
                    -- make the union of sigR with all specs of arguments
                    let nsigs' = reverse $ map (getSigFromDiag . third) morphSigs
                    gbigSigma <- gsigManyUnion lgraph $ map getSig
                      $ sigR : nsigs'
-                   let (ns@(NodeSig node _), dg6) = insGSig dg5 emptyNodeName
+                   let xIRI = addSuffixToIRI "_union" un
+                       xName = makeName xIRI
+                       (ns@(NodeSig node _), dg6) = insGSig dg5 xName
                                                      DGUnion gbigSigma
                        insE dgl (NodeSig n gsigma) = do
                          incl <- ginclusion lgraph gsigma gbigSigma
@@ -703,8 +709,9 @@ anaUnitTerm lgraph libEnv ln dg opts eo uctx@(buc, diag) utrm =
                               ins diag1 dg1 eIS
                    (diag', dg4) <- ins diagA dg''' eI
                    -- check amalgamability conditions
+                   let i = addSuffixToIRI "_amalg" un
                    (sigR, dg5) <- extendDGraph dg4 resultSig
-                                   sigMorExt DGExtension
+                                   sigMorExt i DGExtension
                    incSink <- inclusionSink lgraph (map third morphSigs) sigR
                    assertAmalgamability opts pos diag' incSink utStr
                    {- -- for lambda applications
@@ -769,7 +776,9 @@ anaFitArgUnit lgraph libEnv ln dg opts eo uctx nsig
            (Just $ plainSign sigmaT') sis
          ext_induced_from_to_morphism lid rmap sigmaS' sigmaT'
        let gMorph = mkG_morphism lid mor
-       (nsig', dg'') <- extendDGraph dg' nsig (gEmbed gMorph) DGFitSpec
+           i = addSuffixToNode "_fit" $ getNode nsig
+              -- ^ this ensures unique names
+       (nsig', dg'') <- extendDGraph dg' nsig (gEmbed gMorph) i DGFitSpec
        return (gMorph, nsig', p, dg'', diag')
 
 -- | Analyse unit specification
@@ -1016,6 +1025,10 @@ addSuffixToIRI s i = if not $ null $ abbrevQuery i
                    then i{abbrevQuery = abbrevQuery i ++ s}
                   else  
                         i{abbrevPath  = abbrevPath i ++ s}
+
+addSuffixToNode :: String -> Node -> IRI
+addSuffixToNode s n = addSuffixToIRI s $ simpleIdToIRI $ mkSimpleId $
+                      show n
 
 -- | Analyse a list of argument specifications
 anaArgSpecs :: LogicGraph -> LibEnv -> LibName -> DGraph -> HetcatsOpts
