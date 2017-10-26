@@ -93,3 +93,15 @@ matrix:
         - make install-owl-tools
         - export DATABASE_CONFIG=Persistence/database_mysql.yml
         - test/hets-lib-database-check.sh
+    - env: JOB='SQLite'
+      script:
+        # Run hets through Hets-lib
+        # Install Hets - this does not need to recompile Hets
+        - export PREFIX=/tmp/hets-install
+        - export PATH=$PREFIX/bin:$PATH
+        - mkdir -p $PREFIX
+        - make install-hets
+        - make install-common
+        - make install-owl-tools
+        - export DATABASE_FILE=/tmp/hets.sqlite
+        - test/hets-lib-database-check.sh
