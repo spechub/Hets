@@ -83,7 +83,7 @@ getIRI b e =
         anIri = attrVal a
     in case qName $ attrKey a of
         "abbreviatedIRI" -> appendBase b $ nullIRI {iriPath = stringToId anIri, isAbbrev = True }
-        "IRI" -> let x = parseIRI anIri
+        "IRI" -> let x = parseIRIReference anIri -- todo: or combine parseIRI and parseIRIReference
                  in case x of
                      Just y -> appendBase b y
                      Nothing -> error $ "could not get IRI from " ++ show anIri
