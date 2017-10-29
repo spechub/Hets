@@ -131,6 +131,7 @@ data DGOrigin =
   | DGLogicQual
   | DGData
   | DGFormalParams
+  | DGVerificationGeneric
   | DGImports
   | DGInst IRI
   | DGFitSpec
