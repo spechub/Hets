@@ -505,6 +505,7 @@ createOMS opts libEnv fileVersionKey dbCache0 doSave globalAnnotations libName
       DGLogicQual -> OMSOrigin.DGLogicQual
       DGData -> OMSOrigin.DGData
       DGFormalParams -> OMSOrigin.DGFormalParams
+      DGVerificationGeneric -> OMSOrigin.DGVerificationGeneric
       DGImports -> OMSOrigin.DGImports
       DGInst _ -> OMSOrigin.DGInst
       DGFitSpec -> OMSOrigin.DGFitSpec

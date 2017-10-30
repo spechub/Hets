@@ -23,6 +23,7 @@ data OMSOrigin = DGEmpty
                | DGLogicQual
                | DGData
                | DGFormalParams
+               | DGVerificationGeneric
                | DGImports
                | DGInst
                | DGFitSpec
@@ -56,6 +57,7 @@ instance Show OMSOrigin where
   show DGLogicQual = "dg_logic_qual"
   show DGData = "dg_data"
   show DGFormalParams = "dg_formal_params"
+  show DGVerificationGeneric = "dg_verification_generic"
   show DGImports = "dg_imports"
   show DGInst = "dg_inst"
   show DGFitSpec = "dg_fit_spec"
@@ -89,6 +91,7 @@ instance Read OMSOrigin where
     | show DGLogicQual `isPrefixOf` input = [(DGLogicQual, drop (length $ show DGLogicQual) input)]
     | show DGData `isPrefixOf` input = [(DGData, drop (length $ show DGData) input)]
     | show DGFormalParams `isPrefixOf` input = [(DGFormalParams, drop (length $ show DGFormalParams) input)]
+    | show DGVerificationGeneric `isPrefixOf` input = [(DGVerificationGeneric, drop (length $ show DGVerificationGeneric) input)]
     | show DGImports `isPrefixOf` input = [(DGImports, drop (length $ show DGImports) input)]
     | show DGInst `isPrefixOf` input = [(DGInst, drop (length $ show DGInst) input)]
     | show DGFitSpec `isPrefixOf` input = [(DGFitSpec, drop (length $ show DGFitSpec) input)]
