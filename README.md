@@ -173,7 +173,8 @@ If you wish to make larger changes we generally recommend [forking](https://help
 * Install build- and GUI-dependencies
   * Ubuntu:
     ```
-    sudo apt-get install libglib2.0-dev libcairo2-dev libpango1.0-dev libgtk2.0-dev libglade2-dev libncurses-dev
+    sudo apt install libglib2.0-dev libcairo2-dev libpango1.0-dev libgtk2.0-dev libglade2-dev libncurses-dev
+    sudo apt install mysql-server libmysqlclient-dev postgresql postgresql-server-dev-9.5
     ```
   * macOS:
     ```
