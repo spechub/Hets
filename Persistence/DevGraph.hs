@@ -16,6 +16,7 @@ Portability :  portable
 module Persistence.DevGraph (exportLibEnv) where
 
 import Persistence.Database
+import Persistence.Diagnosis
 import Persistence.FileVersion
 import Persistence.LogicGraph
 import Persistence.Schema as SchemaClass
@@ -45,7 +46,7 @@ import qualified Common.Lib.Graph as Graph (nodeLabel)
 import Common.Lib.Rel (Rel)
 import qualified Common.Lib.Rel as Rel
 import Common.LibName
-import Common.Result (maybeResult)
+import Common.Result (maybeResult, Diagnosis(..), DiagKind(..))
 import Common.ResultT (runResultT)
 import Common.Utils
 import Driver.Options
@@ -59,6 +60,7 @@ import Static.DgUtils
 import Static.GTheory
 import qualified Static.ToJson as ToJson
 
+import Control.Exception
 import Control.Monad (foldM, foldM_, when)
 import Control.Monad.IO.Class (MonadIO (..))
 import Data.Char (toLower)
@@ -96,17 +98,31 @@ emptyDBCache = DBCache { documentMap = Map.empty
 
 exportLibEnv :: HetcatsOpts -> LibEnv -> IO ()
 exportLibEnv opts libEnv = do
-  onDatabase (databaseConfig opts) $
-    setFileVersionState (databaseContext opts) EvaluationStateType.Processing
-  onDatabase (databaseConfig opts) $ do
-    let dependencyLibNameRel = getLibDepRel libEnv
-    let dependencyOrderedLibsSetL = Rel.depSort dependencyLibNameRel
-    dbCache1 <-
-      createDocuments opts libEnv emptyDBCache dependencyOrderedLibsSetL
-    createDocumentLinks dbCache1 dependencyLibNameRel
-    setFileVersionState (databaseContext opts)
-      EvaluationStateType.FinishedSuccessfully
-    return ()
+  onDatabase dbConfig $
+    setFileVersionState dbContext EvaluationStateType.Processing
+  Control.Exception.catch export saveErrorAndRethrow
+  where
+    dbConfig = databaseConfig opts
+    dbContext = databaseContext opts
+
+    export :: IO ()
+    export = onDatabase dbConfig $ do
+      let dependencyLibNameRel = getLibDepRel libEnv
+      let dependencyOrderedLibsSetL = Rel.depSort dependencyLibNameRel
+      dbCache1 <-
+        createDocuments opts libEnv emptyDBCache dependencyOrderedLibsSetL
+      createDocumentLinks dbCache1 dependencyLibNameRel
+      setFileVersionState dbContext EvaluationStateType.FinishedSuccessfully
+      return ()
+
+    saveErrorAndRethrow :: SomeException -> IO ()
+    saveErrorAndRethrow exception = do
+      let message = show exception
+      saveDiagnoses dbConfig dbContext 5 [Diag { diagKind = Error
+                                               , diagString = message
+                                               , diagPos = nullRange
+                                               }]
+      fail message
 
 createDocuments :: MonadIO m
                 => HetcatsOpts -> LibEnv -> DBCache -> [Set LibName]
@@ -633,13 +649,13 @@ findOrCreateSymbolMapping :: ( MonadIO m
                           -> DBMonad m SymbolMappingId
 findOrCreateSymbolMapping libEnv dbCache doSave libName (sourceId, targetId)
   signatureMorphismKey sourceLid targetLid sourceSymbol targetSymbol = do
-  let sourceKey =
-        fromJust $ findSymbolInCache libEnv libName sourceId sourceLid sourceSymbol
-          dbCache
+  sourceKey <-
+    fromJustFail (symbolErrorMessage libEnv libName sourceId sourceSymbol sourceLid "source") $
+      findSymbolInCache libEnv libName sourceId sourceLid sourceSymbol dbCache
 
-  let targetKey =
-        fromJust $ findSymbolInCache libEnv libName targetId targetLid targetSymbol
-          dbCache
+  targetKey <-
+    fromJustFail (symbolErrorMessage libEnv libName targetId targetSymbol targetLid "target") $
+      findSymbolInCache libEnv libName targetId targetLid targetSymbol dbCache
 
   symbolMappingM <-
     selectFirst [ SymbolMappingSignatureMorphismId ==. signatureMorphismKey
@@ -656,6 +672,23 @@ findOrCreateSymbolMapping libEnv dbCache doSave libName (sourceId, targetId)
             , symbolMappingTargetId = targetKey
             }
       else fail "Persistence.DevGraph.findOrCreateSymbolMapping: not found"
+
+symbolErrorMessage :: Sentences lid sentence sign morphism symbol
+                   => LibEnv -> LibName -> Node -> symbol -> lid -> String
+                   -> String
+symbolErrorMessage libEnv libName nodeId symbol lid end =
+  let (libNameDereferenced, nodeIdDereferenced) = dereferenceNodeId libEnv libName nodeId
+      fullName = show $ fullSymName lid symbol
+      symbolKind = symKind lid symbol
+      nodeName = show $ getName $ dgn_name $ getNodeLabel libEnv libName nodeId
+  in  "Could not find " ++ end ++ " symbol for SymbolMapping:"
+      ++ "\nsymbol name: " ++ fullName
+      ++ "\nsymbol kind: " ++ symbolKind
+      ++ "\nnode name: " ++ nodeName
+      ++ "\nnode ID: " ++ show nodeIdDereferenced
+      ++ "\nlibrary name: " ++ show libNameDereferenced
+      ++ "\nThis is a system error. Please report it at https://github.com/spechub/Hets/issues"
+
 
 findOrCreateSerializationM :: MonadIO m
                            => LanguageId -> Maybe IRI
@@ -1227,3 +1260,9 @@ createDocumentLinks dbCache dependencyLibNameRel =
                           , documentLinkTargetId = targetKey
                           }
       return ()
+
+
+fromJustFail :: MonadIO m => String -> Maybe a -> m a
+fromJustFail message maybeValue = case maybeValue of
+  Just value -> return value
+  Nothing -> fail message
