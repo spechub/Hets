@@ -800,7 +800,7 @@ findOrCreateSymbol :: ( MonadIO m
 findOrCreateSymbol libEnv fileVersionKey dbCache doSave libName nodeId
   (Entity omsKey omsLocIdBaseValue) lid symbol =
     let name = show $ sym_name lid symbol
-        fullName = show $ fullSymName lid symbol
+        fullName = fullSymName lid symbol
         symbolKind = symKind lid symbol
         locId = locIdBaseLocId omsLocIdBaseValue ++ "//" ++ symbolKind ++ "/" ++ name
     in  if symbolIsCached libEnv libName nodeId lid symbol dbCache
