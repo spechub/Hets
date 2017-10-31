@@ -92,7 +92,7 @@ SignatureMorphism sql=signature_morphisms
   targetId SignatureId
   deriving Show
 
-ConsStatus sql=cons_statuses
+ConservativityStatus sql=conservativity_statuses
   -- Use "Unknown String" for non-Common.Consistency.Conservativtiy statuses
   required String
   proved String
@@ -172,7 +172,7 @@ OMS sql=oms
   freeNormalFormId LocIdBaseId Maybe
   freeNormalFormSignatureMorphismId SignatureMorphismId Maybe
   origin OMSOrigin
-  consStatusId ConsStatusId
+  conservativityStatusId ConservativityStatusId
   nameFileRangeId FileRangeId Maybe -- Represents NodeName
   displayName String        -- Represents NodeName
   name String               -- Represents NodeName
@@ -186,7 +186,7 @@ Mapping sql=mappings
   sourceId LocIdBaseId -- OMSId is a LocIdBaseId
   targetId LocIdBaseId -- OMSId is a LocIdBaseId
   signatureMorphismId SignatureMorphismId
-  consStatusId ConsStatusId Maybe
+  conservativityStatusId ConservativityStatusId Maybe
 
   -- Exactly one of the following two is not `Nothing`:
   freenessParameterOMSId LocIdBaseId Maybe sql=freeness_parameter_oms_id -- DocumentId is a LocIdBaseId

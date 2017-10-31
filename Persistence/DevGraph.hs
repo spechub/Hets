@@ -18,7 +18,7 @@ module Persistence.DevGraph (exportLibEnv) where
 import Persistence.Database
 import Persistence.FileVersion
 import Persistence.LogicGraph
-import Persistence.Schema as SchemaClass hiding (ConsStatus)
+import Persistence.Schema as SchemaClass
 import Persistence.Schema.MappingOrigin (MappingOrigin)
 import qualified Persistence.Schema.MappingOrigin as MappingOrigin
 import Persistence.Range
@@ -29,7 +29,6 @@ import qualified Persistence.Schema.MappingType as MappingType
 import Persistence.Schema.OMSOrigin (OMSOrigin)
 import qualified Persistence.Schema.OMSOrigin as OMSOrigin
 import qualified Persistence.Schema.ReasoningStatusOnConjectureType as ReasoningStatusOnConjectureType
-import qualified Persistence.Schema as SchemaClass (ConsStatus (..))
 import Persistence.Utils
 
 import Common.AS_Annotation
@@ -399,7 +398,7 @@ createOMS opts libEnv fileVersionKey dbCache0 doSave globalAnnotations libName
               Nothing -> fail ("Persistence.DevGraph.createOMS: OMS not found"
                                ++ locId)
           else do
-            consStatusKey <- createConsStatus consStatus
+            conservativityStatusKey <- createConservativityStatus consStatus
             nodeNameRangeKey <- createRange $ srcRange internalNodeName
 
             serializationKey <- case gTheory of
@@ -426,7 +425,7 @@ createOMS opts libEnv fileVersionKey dbCache0 doSave globalAnnotations libName
                   , oMSFreeNormalFormId = freeNormalFormKeyM
                   , oMSFreeNormalFormSignatureMorphismId = freeNormalFormSignatureMorphismKeyM
                   , oMSOrigin = omsOrigin
-                  , oMSConsStatusId = consStatusKey
+                  , oMSConservativityStatusId = conservativityStatusKey
                   , oMSNameFileRangeId = nodeNameRangeKey
                   , oMSDisplayName = displayName
                   , oMSName = name
@@ -502,12 +501,12 @@ createOMS opts libEnv fileVersionKey dbCache0 doSave globalAnnotations libName
       DGTest -> OMSOrigin.DGTest
 
 
-createConsStatus :: MonadIO m
-                 => ConsStatus -> DBMonad m ConsStatusId
-createConsStatus (ConsStatus r p _) =
-  insert SchemaClass.ConsStatus
-    { consStatusRequired = toString r
-    , consStatusProved = toString p
+createConservativityStatus :: MonadIO m
+                           => ConsStatus -> DBMonad m ConservativityStatusId
+createConservativityStatus (ConsStatus r p _) =
+  insert SchemaClass.ConservativityStatus
+    { conservativityStatusRequired = toString r
+    , conservativityStatusProved = toString p
     }
   where
     toString :: Conservativity -> String
@@ -1028,8 +1027,9 @@ createMapping opts libEnv fileVersionKey dbCache globalAnnotations
   if isJust mappingM
   then return dbCache1
   else do
-    consStatusKeyM <- case dgl_type linkLabel of
-      ScopedLink _ _ consStatus -> fmap Just $ createConsStatus consStatus
+    conservativityStatusKeyM <- case dgl_type linkLabel of
+      ScopedLink _ _ consStatus ->
+        fmap Just $ createConservativityStatus consStatus
       _ -> return Nothing
 
     freenessParameterOMSKeyM <- case dgl_type linkLabel of
@@ -1054,7 +1054,7 @@ createMapping opts libEnv fileVersionKey dbCache globalAnnotations
           { mappingSourceId = sourceOMSKey
           , mappingTargetId = targetOMSKey
           , mappingSignatureMorphismId = signatureMorphismKey
-          , mappingConsStatusId = consStatusKeyM
+          , mappingConservativityStatusId = conservativityStatusKeyM
           , mappingFreenessParameterOMSId = freenessParameterOMSKeyM
           , mappingFreenessParameterLanguageId = freenessParameterLanguageKeyM
           , mappingDisplayName = displayName

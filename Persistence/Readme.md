@@ -15,7 +15,7 @@ This document shows how the internal data types of Hets are mapped to the databa
 | Range | FileRange: The `[Pos]` list is broken down to the first and - if present - second element, interpreted as the beginning and end of the range. It is not saved at all if the list is empty. It is assumed that the path in all elements of the list is the same. |
 | DGOrigin | OMSOrigin (enumeration type) |
 | Conservativity | String (a table column, the `Unknown` constructor is mapped to the containing String) |
-| ConsStatus | ConsStatus |
+| ConsStatus | ConservativityStatus |
 | (DGNodeLab, Node) | OMS |
 | NodeName | part of OMS |
 | G_theory | Split into Language, Logic, Signature, Serialization, Symbol, Sentence and associations between these |
