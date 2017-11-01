@@ -193,7 +193,8 @@ extendDGraph :: DGraph    -- ^ the development graph to be extended
 -- ^ returns the target signature of the morphism and the resulting DGraph
 extendDGraph dg (NodeSig n _) morph i orig = case cod morph of
     targetSig@(G_sign lid tar ind) -> let
-      nodeContents = newNodeLab (makeName i) orig
+      name = ensureUniqueNames dg i 1
+      nodeContents = newNodeLab name orig
         $ noSensGTheory lid tar ind
       linkContents = globDefLink morph SeeTarget
       node = getNewNodeDG dg
@@ -552,7 +553,7 @@ insertFormalParamAndVerifCond
                                  diag0 dg0
                                  _targetNode@(Diag_node_sig tNode tSig) fpi qB
                                  mor
-                                 argStr origin = do
+                                 argStr _origin = do
   let nodeContents = DiagNode {dn_sig = fpi, dn_desc = argStr}
       diagGr = diagGraph diag0
       node = Tree.getNewNode diagGr
@@ -576,10 +577,12 @@ insertFormalParamAndVerifCond
     cmor@(G_sign lid tar ind) -> do
       let f = getNode fpi
           fpiLab = labDG dg'' f
+          name = getName $ dgn_name fpiLab
           k = getNewNodeDG dg''
+          nodeName = (ensureUniqueNames dg'' (addSuffixToIRI ("_verif_" ++ argStr) name) 1){extIndex = 1} 
           labelK = newInfoNodeLab
-                    (extName "Verification" $ dgn_name fpiLab)
-                    (newNodeInfo origin) $ noSensGTheory lid tar ind
+                    nodeName
+                    (newNodeInfo DGVerificationGeneric) $ noSensGTheory lid tar ind
           dgK = insNodeDG (k, labelK) dg''
           (_, dg''') = insLEdgeDG (f, k, globDefLink mor DGLinkProof) dgK
           {- inserts the node for fpi with sigma and

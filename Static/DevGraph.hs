@@ -131,6 +131,7 @@ data DGOrigin =
   | DGLogicQual
   | DGData
   | DGFormalParams
+  | DGVerificationGeneric
   | DGImports
   | DGInst IRI
   | DGFitSpec
@@ -1591,3 +1592,11 @@ duplicateDefEdges :: DGraph -> [Edge]
 duplicateDefEdges = concat .
   filter (not . isSingle) . group . map (\ (s, t, _) -> (s, t))
   . filter (liftE isDefEdge) . labEdgesDG
+
+ensureUniqueNames :: DGraph -> IRI -> Int -> NodeName
+ensureUniqueNames dg anIRI n = 
+ let allNames = map (getName . dgn_name . snd) $  labNodesDG dg
+     iri' = addSuffixToIRI (show n) anIRI
+ in if iri' `elem` allNames 
+     then ensureUniqueNames dg anIRI (n + 1) 
+     else makeName iri'

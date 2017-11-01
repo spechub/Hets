@@ -124,6 +124,7 @@ dgOriginHeader o = case o of
     DGLogicQual -> "spec with logic qualifier"
     DGData -> "data-spec"
     DGFormalParams -> "formal parameters"
+    DGVerificationGeneric -> "verification for application of generic units"
     DGImports -> "arch import"
     DGInst _ -> "instantiation"
     DGFitSpec -> "fitting-spec"
