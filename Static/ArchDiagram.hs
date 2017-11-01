@@ -193,7 +193,8 @@ extendDGraph :: DGraph    -- ^ the development graph to be extended
 -- ^ returns the target signature of the morphism and the resulting DGraph
 extendDGraph dg (NodeSig n _) morph i orig = case cod morph of
     targetSig@(G_sign lid tar ind) -> let
-      nodeContents = newNodeLab (makeName i) orig
+      name = ensureUniqueNames dg i 1
+      nodeContents = newNodeLab name orig
         $ noSensGTheory lid tar ind
       linkContents = globDefLink morph SeeTarget
       node = getNewNodeDG dg
@@ -578,8 +579,9 @@ insertFormalParamAndVerifCond
           fpiLab = labDG dg'' f
           name = getName $ dgn_name fpiLab
           k = getNewNodeDG dg''
+          nodeName = (ensureUniqueNames dg'' (addSuffixToIRI ("_verif_" ++ argStr) name) 1){extIndex = 1} 
           labelK = newInfoNodeLab
-                    ((makeName $ addSuffixToIRI ("_verif_" ++ argStr) name){extIndex = 1})
+                    nodeName
                     (newNodeInfo DGVerificationGeneric) $ noSensGTheory lid tar ind
           dgK = insNodeDG (k, labelK) dg''
           (_, dg''') = insLEdgeDG (f, k, globDefLink mor DGLinkProof) dgK

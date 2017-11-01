@@ -33,6 +33,8 @@ also shall be visible in the displayed development graph.
 
 module Static.DevGraph where
 
+import Debug.Trace
+
 import Syntax.AS_Structured
 import Syntax.AS_Library
 import Static.GTheory
@@ -1592,3 +1594,11 @@ duplicateDefEdges :: DGraph -> [Edge]
 duplicateDefEdges = concat .
   filter (not . isSingle) . group . map (\ (s, t, _) -> (s, t))
   . filter (liftE isDefEdge) . labEdgesDG
+
+ensureUniqueNames :: DGraph -> IRI -> Int -> NodeName
+ensureUniqueNames dg anIRI n = 
+ let allNames = map (getName . dgn_name . snd) $  labNodesDG dg
+     iri' = addSuffixToIRI (show n) anIRI
+ in trace ("iri:" ++ show iri' ++ "\nallNames:" ++ show allNames) $ if iri' `elem` allNames 
+     then ensureUniqueNames dg anIRI (n + 1) 
+     else makeName iri'

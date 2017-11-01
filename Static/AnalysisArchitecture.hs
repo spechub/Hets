@@ -171,7 +171,7 @@ nodeSigUnion :: LogicGraph -> DGraph -> [MaybeNode] -> DGOrigin -> SPEC_NAME
 nodeSigUnion lgraph dg nodeSigs orig sname =
   do sigUnion@(G_sign lid sigU ind) <- gsigManyUnion lgraph
                                    $ map getMaybeSig nodeSigs
-     let unionName = makeName $ addSuffixToIRI "_union" sname
+     let unionName = ensureUniqueNames dg (addSuffixToIRI "_union" sname) 1
          nodeContents = newNodeLab 
                         (unionName{extIndex = 1}) 
                         orig
@@ -641,7 +641,7 @@ anaUnitTerm lgraph libEnv ln dg opts eo uctx@(buc, diag) utrm =
                    gbigSigma <- gsigManyUnion lgraph $ map getSig
                      $ sigR : nsigs'
                    let xIRI = addSuffixToIRI ("_union_"++argStr) un
-                       xName = makeName xIRI
+                       xName = ensureUniqueNames dg5 xIRI 1
                        (ns@(NodeSig node _), dg6) = insGSig dg5 xName
                                                      DGUnion gbigSigma
                        insE dgl (NodeSig n gsigma) = do
@@ -811,7 +811,7 @@ anaUnitSpec lgraph libEnv ln dg opts eo usName impsig rN usp = case usp of
       _ -> do -- a trivial unit type
        (resultSpec', resultSig, dg') <- anaSpec False True lgraph libEnv ln
            dg impsig 
-           (makeName usName) 
+           (ensureUniqueNames dg usName 1) 
            opts eo (item resultSpec) poss
        let usig = UnitSig [] resultSig Nothing
        return (mkRefSigFromUnit usig , dg', Unit_type []
@@ -827,7 +827,7 @@ anaUnitSpec lgraph libEnv ln dg opts eo usName impsig rN usp = case usp of
                           (impsig : map JustNode argSigs) DGFormalParams usName
         {- if i have no imports, i can optimize?
         in that case, an identity morphism is introduced -}
-       let resName = makeName $ addSuffixToIRI "_res" usName 
+       let resName = ensureUniqueNames dg2 (addSuffixToIRI "_res" usName) 1 
        (resultSpec', resultSig, dg3) <- anaSpec True True lgraph libEnv ln
            dg2 (JustNode sigUnion)
                (resName {extIndex = 1}) 
@@ -1036,7 +1036,7 @@ anaArgSpecs lgraph libEnv ln dg opts eo usName args = let
        l <- lookupLogic "anaArgSpecs " (currentLogic lgraph) lgraph
        let sp = item argSpec
            xIRI = addSuffixToIRI ("_arg" ++ show x) usName
-           xName = makeName xIRI
+           xName = ensureUniqueNames aDG xIRI 1
        (argSpec', argSig, dg') <- 
            anaSpec False False -- don't optimize the node out 
               lgraph libEnv ln aDG (EmptyNode l) 
