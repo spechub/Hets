@@ -65,14 +65,15 @@ exportLanguagesAndLogics logicGraph =
 
           -- Export Logic
           mapM_ (\ sublogic -> do
-                  let logicSlugS = parameterize $ sublogicName sublogic
+                  let logicNameS = sublogicNameForDB lid sublogic
+                  let logicSlugS = parameterize logicNameS
                   logicM <- selectFirst [LogicSlug ==. logicSlugS] []
                   case logicM of
                     Just (Entity key _) -> return key
                     Nothing -> insert SchemaClass.Logic
                       { logicLanguageId = languageKey
                       , logicSlug = logicSlugS
-                      , logicName = sublogicName sublogic
+                      , logicName = logicNameS
                       }
                 ) $ all_sublogics lid
         ) $ logics logicGraph
@@ -98,8 +99,10 @@ findOrCreateLanguageMappingAndLogicMapping opts (Comorphism.Comorphism cid) =
               logicMappingSlugS = parameterize name
               sourceLanguageSlugS = parameterize $ show $ sourceLogic cid
               targetLanguageSlugS = parameterize $ show $ targetLogic cid
-              sourceLogicSlugS = parameterize $ sublogicName $ sourceSublogic cid
-              targetLogicSlugS = parameterize $ sublogicName $ targetSublogic cid
+              sourceLogicName = sublogicNameForDB (sourceLogic cid) $ sourceSublogic cid
+              targetLogicName = sublogicNameForDB (targetLogic cid) $ targetSublogic cid
+              sourceLogicSlugS = parameterize sourceLogicName
+              targetLogicSlugS = parameterize targetLogicName
           in do
             -- Find the IDs in the databases:
             Just (Entity sourceLanguageKey _) <-
@@ -112,16 +115,14 @@ findOrCreateLanguageMappingAndLogicMapping opts (Comorphism.Comorphism cid) =
             sourceLogicKey <- case sourceLogicM of
                 Nothing -> do
                   -- TODO: do not insert the sublogic as soon as https://github.com/spechub/Hets/issues/1740 is fixed
-                  let sublogic = sourceSublogic cid
-                  let logicSlugS = parameterize $ sublogicName sublogic
-                  logicM <- selectFirst [LogicSlug ==. logicSlugS] []
+                  logicM <- selectFirst [LogicSlug ==. sourceLogicSlugS] []
                   case logicM of
                     Just (Entity key _) -> return key
                     Nothing -> advisoryLocked opts migrateLogicGraphKey $
                       insert SchemaClass.Logic
                         { logicLanguageId = sourceLanguageKey
-                        , logicSlug = logicSlugS
-                        , logicName = sublogicName $ sourceSublogic cid
+                        , logicSlug = sourceLogicSlugS
+                        , logicName = sourceLogicName
                         }
                 Just (Entity t _) -> return t
 
@@ -130,16 +131,14 @@ findOrCreateLanguageMappingAndLogicMapping opts (Comorphism.Comorphism cid) =
             targetLogicKey <- case targetLogicM of
                 Nothing -> do
                   -- TODO: do not insert the sublogic as soon as https://github.com/spechub/Hets/issues/1740 is fixed
-                  let sublogic = targetSublogic cid
-                  let logicSlugS = parameterize $ sublogicName sublogic
-                  logicM <- selectFirst [LogicSlug ==. logicSlugS] []
+                  logicM <- selectFirst [LogicSlug ==. targetLogicSlugS] []
                   case logicM of
                     Just (Entity key _) -> return key
                     Nothing -> advisoryLocked opts migrateLogicGraphKey $
                       insert SchemaClass.Logic
                         { logicLanguageId = targetLanguageKey
-                        , logicSlug = logicSlugS
-                        , logicName = sublogicName $ targetSublogic cid
+                        , logicSlug = targetLogicSlugS
+                        , logicName = targetLogicName
                         }
                 Just (Entity t _) -> return t
 
@@ -174,3 +173,10 @@ findOrCreateLanguageMappingAndLogicMapping opts (Comorphism.Comorphism cid) =
                   , logicMappingIsWeaklyAmalgamable = is_weakly_amalgamable cid
                   }
                 return (languageMappingKey, logicMappingKey)
+
+sublogicNameForDB :: Logic.Logic lid sublogics basic_spec sentence symb_items
+                       symb_map_items sign morphism symbol raw_symbol proof_tree
+                  => lid -> sublogics -> String
+sublogicNameForDB lid sublogic =
+  let hetsName = sublogicName sublogic
+  in  if null hetsName then show lid else hetsName
