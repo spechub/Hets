@@ -926,5 +926,4 @@ deleteQuery i = i { abbrevQuery = "" }
 addSuffixToIRI :: String -> IRI -> IRI
 addSuffixToIRI s i = if not $ null $ abbrevQuery i 
                    then i{abbrevQuery = abbrevQuery i ++ s}
-                  else  
-                        i{abbrevPath  = abbrevPath i ++ s}
+                   else i{abbrevPath  = abbrevPath i ++ s}
