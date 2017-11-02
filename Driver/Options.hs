@@ -208,6 +208,7 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , databaseConfigFile :: FilePath
   , databaseSubConfigKey :: String
   , databaseFileVersionId :: String
+  , databaseReanalyze :: Bool
   , databaseConfig :: DBConfig.DBConfig
   , databaseContext :: DBConfig.DBContext
   , xupdate :: FilePath
@@ -267,6 +268,7 @@ defaultHetcatsOpts = HcOpt
   , databaseConfigFile = ""
   , databaseSubConfigKey = ""
   , databaseFileVersionId = ""
+  , databaseReanalyze = False
   , databaseConfig = DBConfig.emptyDBConfig
   , databaseContext = DBConfig.emptyDBContext
   , xupdate = ""
@@ -395,6 +397,7 @@ data Flag =
   | DatabaseConfigFile FilePath
   | DatabaseSubConfigKey String
   | DatabaseFileVersionId String
+  | DatabaseReanalyze
   | Specs [SIMPLE_ID]
   | Trans [SIMPLE_ID]
   | Views [SIMPLE_ID]
@@ -448,6 +451,7 @@ makeOpts opts flg =
     DatabaseConfigFile x -> opts { databaseConfigFile = x }
     DatabaseSubConfigKey x -> opts { databaseSubConfigKey = x }
     DatabaseFileVersionId x -> opts { databaseFileVersionId = x }
+    DatabaseReanalyze -> opts { databaseReanalyze = True }
     XUpdate x -> opts { xupdate = x }
     Recurse -> opts { recurse = True }
     ApplyAutomatic -> opts { applyAutomatic = True }
@@ -850,6 +854,8 @@ options = let
        ++ "one of: production, development, test")
     , Option "" ["database-fileversion-id"] (ReqArg DatabaseFileVersionId "ID")
        "ID (sha1-hash) of the file version to associate the data with"
+    , Option "" ["database-reanalyze"] (NoArg DatabaseReanalyze)
+       "Overwrite data of this document and its imports in the database"
     , Option "U" ["xupdate"] (ReqArg XUpdate "FILE")
       "apply additional xupdates from file"
     , Option "R" [recursiveS] (NoArg Recurse)

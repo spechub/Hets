@@ -184,24 +184,29 @@ createDocument opts libEnv parentFileVersion dbCache0 libName =
                                    , LocIdBaseFileVersionId ==. fileVersionKey
                                    , LocIdBaseKind ==. kind
                                    ] []
-          (doSave, documentKey, documentLocIdBaseValue) <- case documentM of
-            Just (Entity documentKey documentLocIdBaseValue) ->
-              return (False, documentKey, documentLocIdBaseValue)
-            Nothing -> do
-              let documentLocIdBaseValue = LocIdBase
-                    { locIdBaseFileVersionId = fileVersionKey
-                    , locIdBaseKind = kind
-                    , locIdBaseLocId = locId
-                    }
-              documentKey <- insert documentLocIdBaseValue
-              let document = Document
-                    { documentDisplayName = displayName
-                    , documentName = name
-                    , documentLocation = location
-                    , documentVersion = version
-                    }
-              insertEntityMany [Entity (toSqlKey $ fromSqlKey documentKey) document]
-              return (True, documentKey, documentLocIdBaseValue)
+          case documentM of
+            Just (Entity documentKey _) ->
+              when (databaseReanalyze opts) $ delete documentKey
+            Nothing -> return ()
+          (doSave, documentKey, documentLocIdBaseValue) <-
+            case (databaseReanalyze opts, documentM) of
+              (False, Just (Entity documentKey documentLocIdBaseValue)) ->
+                return (False, documentKey, documentLocIdBaseValue)
+              _ -> do
+                let documentLocIdBaseValue = LocIdBase
+                      { locIdBaseFileVersionId = fileVersionKey
+                      , locIdBaseKind = kind
+                      , locIdBaseLocId = locId
+                      }
+                documentKey <- insert documentLocIdBaseValue
+                let document = Document
+                      { documentDisplayName = displayName
+                      , documentName = name
+                      , documentLocation = location
+                      , documentVersion = version
+                      }
+                insertEntityMany [Entity (toSqlKey $ fromSqlKey documentKey) document]
+                return (True, documentKey, documentLocIdBaseValue)
           let dbCache1 = addDocumentToCache libName documentKey dbCache0
           createAllOmsOfDocument opts libEnv fileVersionKey dbCache1 doSave dGraph
             globalAnnotations libName (Entity documentKey documentLocIdBaseValue)
