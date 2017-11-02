@@ -803,7 +803,7 @@ findOrCreateSymbol libEnv fileVersionKey dbCache doSave libName nodeId
     let name = show $ sym_name lid symbol
         fullName = fullSymName lid symbol
         symbolKind = symKind lid symbol
-        locId = locIdBaseLocId omsLocIdBaseValue ++ "//" ++ symbolKind ++ "/" ++ name
+        locId = locIdBaseLocId omsLocIdBaseValue ++ "/symbols/" ++ symbolKind ++ "/" ++ name
     in  if symbolIsCached libEnv libName nodeId lid symbol dbCache
         then return dbCache
         else do
@@ -906,7 +906,7 @@ createSentence fileVersionKey dbCache doSave globalAnnotations
   (Entity omsKey omsLocIdBaseValue) lid sign isConjecture isProved namedSentence =
   let name = senAttr namedSentence
       range = getRangeSpan $ sentence namedSentence
-      locId = locIdBaseLocId omsLocIdBaseValue ++ "//" ++ name
+      locId = locIdBaseLocId omsLocIdBaseValue ++ "/sentences/" ++ name
       text = show $ useGlobalAnnos globalAnnotations $
                print_named lid $ makeNamed "" $
                simplify_sen lid sign $ sentence namedSentence
@@ -1053,7 +1053,7 @@ createMapping opts libEnv fileVersionKey dbCache globalAnnotations
   let displayName = if null $ dglName linkLabel
                     then show (dgl_id linkLabel)
                     else dglName linkLabel
-  let locId = locIdBaseLocId documentLocIdBaseValue ++ "//" ++ displayName
+  let locId = locIdBaseLocId documentLocIdBaseValue ++ "//mappings/" ++ displayName
   mappingM <- selectFirst [ LocIdBaseFileVersionId ==. fileVersionKey
                           , LocIdBaseKind ==. Enums.Mapping
                           , LocIdBaseLocId ==. locId
@@ -1230,7 +1230,7 @@ locIdOfOMS (Entity _ documentLocIdBaseValue) nodeLabel =
   case locIdBaseKind documentLocIdBaseValue of
     Enums.NativeDocument -> showName $ dgn_name nodeLabel
     _ -> locIdBaseLocId documentLocIdBaseValue
-         ++ "//" ++ showName (dgn_name nodeLabel)
+         ++ "//oms/" ++ showName (dgn_name nodeLabel)
 
 symbolMapIndex :: Sentences lid sentence sign morphism symbol
                => lid -> symbol -> SymbolMapIndex
