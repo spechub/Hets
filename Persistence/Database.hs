@@ -46,7 +46,7 @@ onDatabase dbConfig f =
         _ -> fail ("Persistence.Database: No database adapter specified "
                      ++ "or adapter unsupported.")
   in runNoLoggingT $ connection $ runSqlPool $ do
-       when (doMigrate dbConfig) $ runMigration migrateAll
+       when (doMigrate dbConfig) $ (runMigrationSilent migrateAll >> return ())
        f
 
 defaultPoolSize :: Int

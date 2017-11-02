@@ -16,9 +16,9 @@ esac
 
 case "$JOB" in
   "PostgreSQL"|"MySQL")
-    hets --quiet --output-types=db --database-config=$DATABASE_CONFIG --database-subconfig=test --logic-graph 2> /dev/null
+    hets --quiet --output-types=db --database-config=$DATABASE_CONFIG --database-subconfig=test --logic-graph
     ;;
   "SQLite")
-    hets --quiet --output-types=db --database-file=$DATABASE_FILE --logic-graph 2> /dev/null
+    hets --quiet --output-types=db --database-file=$DATABASE_FILE --logic-graph
     ;;
 esac
