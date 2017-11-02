@@ -36,13 +36,13 @@ import Persistence.Schema.ReasoningStatusOnConjectureType (ReasoningStatusOnConj
 import Persistence.Schema.ReasoningStatusOnReasoningAttemptType (ReasoningStatusOnReasoningAttemptType)
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
 Hets sql=hets
-  key String maxlen=384
+  key String maxlen=255
   Primary key
   value String
   deriving Show
 
 Language sql=languages
-  slug String maxlen=384
+  slug String maxlen=255
   UniqueLanguageSlug slug
   name String
   description String
@@ -52,7 +52,7 @@ Language sql=languages
 
 Logic sql=logics
   languageId LanguageId
-  slug String maxlen=384
+  slug String maxlen=247 -- 255 - 8 (8 for the languageId)
   UniqueLanguageIdLogicSlug languageId slug
   name String
   deriving Show
@@ -66,7 +66,7 @@ LogicMapping sql=logic_mappings
   languageMappingId LanguageMappingId
   sourceId LogicId
   targetId LogicId
-  slug String maxlen=384
+  slug String maxlen=247 -- 255 - 8 (8 for the languageMappingId)
   UniqueLanguageMappingIdLogicMappingSlug languageMappingId slug
   name String
   isInclusion Bool
@@ -76,7 +76,7 @@ LogicMapping sql=logic_mappings
 
 Serialization
   languageId LanguageId
-  slug String maxlen=384
+  slug String maxlen=247 -- 255 - 8 (8 for the languageId)
   UniqueSerializationLanguageIdSerializationSlug languageId slug
   name String
   deriving Show
@@ -102,7 +102,7 @@ ConservativityStatus sql=conservativity_statuses
 -- We leave out the other columns here because we don't need them in Hets
 OrganizationalUnit sql=organizational_units
   kind String
-  slug String maxlen=384
+  slug String maxlen=255
   UniqueOrganizationalUnitSlug slug
   deriving Show
 
@@ -123,14 +123,14 @@ FileVersion sql=file_versions
 -- exist for running with SQLite
 FileVersionParent sql=file_version_parents
   lastChangedFileVersionId FileVersionId
-  queriedSha String maxlen=40
+  queriedSha String maxlen=40 -- A SHA1 hash always has 40 characters
   Primary lastChangedFileVersionId queriedSha
   deriving Show
 
 LocIdBase sql=loc_id_bases
   fileVersionId FileVersionId -- FileVersionId is LocIdBaseId
-  kind Enums.LocIdBaseKindType maxlen=384
-  locId String maxlen=384
+  kind Enums.LocIdBaseKindType maxlen=16
+  locId String
   UniqueLocIdBaseLocId fileVersionId kind locId
   deriving Show
 
@@ -242,7 +242,7 @@ SignatureSymbol sql=signature_symbols
   deriving Show
 
 Reasoner sql=reasoners
-  slug String maxlen=384
+  slug String maxlen=255
   UniqueReasonerSlug slug
   displayName String
   deriving Show
