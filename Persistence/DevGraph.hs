@@ -286,8 +286,7 @@ createAllOmsOfDocument :: MonadIO m
                        -> Bool -> DGraph -> GlobalAnnos -> LibName
                        -> Entity LocIdBase -> DBMonad m DBCache
 createAllOmsOfDocument opts libEnv fileVersionKey dbCache0 doSave dGraph
-  globalAnnotations libName
-  documentLocIdBase@(Entity _ documentLocIdBaseValue) =
+  globalAnnotations libName documentLocIdBase =
   let labeledNodes = labNodes $ dgBody dGraph
       labeledEdges = labEdges $ dgBody dGraph
   in  do
@@ -299,8 +298,8 @@ createAllOmsOfDocument opts libEnv fileVersionKey dbCache0 doSave dGraph
           ) dbCache0 labeledNodes
         foldM
           (\ dbCacheAcc labeledEdge ->
-            createMapping opts libEnv fileVersionKey dbCacheAcc
-              globalAnnotations libName documentLocIdBaseValue labeledEdge
+            createMapping opts libEnv fileVersionKey dbCacheAcc doSave
+              globalAnnotations libName documentLocIdBase labeledEdge
           ) dbCache1 labeledEdges
 
 findOrCreateOMSM :: MonadIO m
@@ -1035,11 +1034,12 @@ associateSymbolsOfSignature libEnv dbCache libName nodeId lid extSign signatureK
        return dbCache
 
 createMapping :: MonadIO m
-              => HetcatsOpts -> LibEnv -> FileVersionId -> DBCache
-              -> GlobalAnnos -> LibName -> LocIdBase -> (Int, Int, DGLinkLab)
-              -> DBMonad m DBCache
-createMapping opts libEnv fileVersionKey dbCache globalAnnotations
-  libName documentLocIdBaseValue (sourceId, targetId, linkLabel) = do
+              => HetcatsOpts -> LibEnv -> FileVersionId -> DBCache -> Bool
+              -> GlobalAnnos -> LibName -> Entity LocIdBase
+              -> (Int, Int, DGLinkLab) -> DBMonad m DBCache
+createMapping opts libEnv fileVersionKey dbCache doSave globalAnnotations
+  libName documentLocIdBase@(Entity _ documentLocIdBaseValue)
+  (sourceId, targetId, linkLabel) = do
   (sourceOMSKey, sourceSignatureKey) <-
     case Map.lookup (libName, sourceId) $ nodeMap dbCache of
       Just (omsKey, signatureKey) -> return (omsKey, signatureKey)
@@ -1071,13 +1071,14 @@ createMapping opts libEnv fileVersionKey dbCache globalAnnotations
         fmap Just $ createConservativityStatus consStatus
       _ -> return Nothing
 
-    freenessParameterOMSKeyM <- case dgl_type linkLabel of
-      FreeOrCofreeDefLink _ (JustNode NodeSig { getNode = nodeId }) ->
-        case Map.lookup (libName, nodeId) $ nodeMap dbCache of
-          Just (freenessParameterOMSKey, _) ->
-            return $ Just freenessParameterOMSKey
-          Nothing -> fail ("Persistence.DevGraph.createMapping: Could not find freeness parameter node with ID " ++ show (libName, nodeId))
-      _ -> return Nothing
+    (freenessParameterOMSKeyM, dbCache2) <- case dgl_type linkLabel of
+      FreeOrCofreeDefLink _ (JustNode NodeSig { getNode = nodeId }) -> do
+        let nodeLabel = getNodeLabel libEnv libName nodeId
+        (freenessParameterOMSKey, _, dbCache') <-
+          findOrCreateOMS opts libEnv fileVersionKey dbCache1 doSave
+            globalAnnotations libName documentLocIdBase (nodeId, nodeLabel)
+        return (Just freenessParameterOMSKey, dbCache')
+      _ -> return (Nothing, dbCache)
 
     freenessParameterLanguageKeyM <- case dgl_type linkLabel of
       FreeOrCofreeDefLink _ (EmptyNode (Logic.Logic lid)) ->
@@ -1103,7 +1104,7 @@ createMapping opts libEnv fileVersionKey dbCache globalAnnotations
           , mappingPending = dglPending linkLabel
           }
     insertEntityMany [Entity (toSqlKey $ fromSqlKey mappingKey) mapping]
-    return dbCache1
+    return dbCache2
   where
     mappingOriginOfLinkLabel :: MappingOrigin
     mappingOriginOfLinkLabel = case dgl_origin linkLabel of
