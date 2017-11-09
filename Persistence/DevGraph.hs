@@ -1043,12 +1043,12 @@ createMapping opts libEnv fileVersionKey dbCache globalAnnotations
   (sourceOMSKey, sourceSignatureKey) <-
     case Map.lookup (libName, sourceId) $ nodeMap dbCache of
       Just (omsKey, signatureKey) -> return (omsKey, signatureKey)
-      Nothing -> fail ("Persistence.DevGraph.createMapping: Could not find source node with ID " ++ show sourceId)
+      Nothing -> fail ("Persistence.DevGraph.createMapping: Could not find source node with ID " ++ show (libName, sourceId))
 
   (targetOMSKey, targetSignatureKey) <-
     case Map.lookup (libName, targetId) $ nodeMap dbCache of
       Just (omsKey, signatureKey) -> return (omsKey, signatureKey)
-      Nothing -> fail ("Persistence.DevGraph.createMapping: Could not find target node with ID " ++ show targetId)
+      Nothing -> fail ("Persistence.DevGraph.createMapping: Could not find target node with ID " ++ show (libName, targetId))
 
   (signatureMorphismKey, _, dbCache1) <-
     findOrCreateSignatureMorphism opts libEnv dbCache True libName
@@ -1076,7 +1076,7 @@ createMapping opts libEnv fileVersionKey dbCache globalAnnotations
         case Map.lookup (libName, nodeId) $ nodeMap dbCache of
           Just (freenessParameterOMSKey, _) ->
             return $ Just freenessParameterOMSKey
-          Nothing -> fail ("Persistence.DevGraph.createMapping: Could not find freeness parameter node with ID " ++ show nodeId)
+          Nothing -> fail ("Persistence.DevGraph.createMapping: Could not find freeness parameter node with ID " ++ show (libName, nodeId))
       _ -> return Nothing
 
     freenessParameterLanguageKeyM <- case dgl_type linkLabel of
