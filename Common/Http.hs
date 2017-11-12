@@ -16,7 +16,10 @@ module Common.Http where
 import Driver.Options
 
 import Control.Exception (try)
-import qualified Data.ByteString.Lazy.Char8 as Char8
+import qualified Data.ByteString.Lazy.Char8 as LChar8
+import qualified Data.ByteString.Char8 as Char8
+import qualified Data.CaseInsensitive as CI (mk)
+import Data.Char (isSpace)
 import Network.Connection (TLSSettings(..))
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS
@@ -29,8 +32,14 @@ loadFromUri opts uri = do
     then newManager noVerifyTlsManagerSettings
     else newManager tlsManagerSettings
   initialRequest <- parseRequest uri
+  let additionalHeaders =
+        map ((\ (header, value) ->
+               (CI.mk $ Char8.pack header,
+                Char8.pack $ dropWhile isSpace $ tail value)) .
+             break (== ':')) $ httpRequestHeaders opts
   let request = initialRequest
-        { requestHeaders = [ ("Accept", "*/*; q=0.1, text/plain") ]}
+        { requestHeaders = ("Accept", "*/*; q=0.1, text/plain")
+                             : additionalHeaders }
   eResponse <- try $ httpLbs request manager
   case eResponse of
     Left err ->
@@ -45,7 +54,7 @@ loadFromUri opts uri = do
       return $ if 400 <= status
                then Left ("Failed to load " ++ show uri ++ ": HTTP status code "
                           ++ show status)
-               else Right $ Char8.unpack $ responseBody response
+               else Right $ LChar8.unpack $ responseBody response
 
 noVerifyTlsManagerSettings :: ManagerSettings
 noVerifyTlsManagerSettings = mkManagerSettings noVerifyTlsSettings Nothing
