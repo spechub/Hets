@@ -277,7 +277,7 @@ anaLibDefn lgraph opts topLns libenv dg (Lib_defn ln alibItems pos ans) file
       newLD = Lib_defn ln
         (zipWith replaceAnnoted (reverse libItems') alibItems) pos ans
       dg2 = dg1 { optLibDefn = Just newLD }
-  return (ln, newLD, globalAnnos dg2, Map.insert ln dg2 libenv')
+  return $ trace ("anaLibDefn" ++ show (nodes $ dgBody dg2)) (ln, newLD, globalAnnos dg2, Map.insert ln dg2 libenv')
 
 shortcutUnions :: DGraph -> Result DGraph
 shortcutUnions dgraph = let spNs = getGlobNodes $ globalEnv dgraph in
