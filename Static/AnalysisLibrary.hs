@@ -22,6 +22,9 @@ module Static.AnalysisLibrary
     , LNS
     ) where
 
+import Debug.Trace
+import Data.Graph.Inductive.Graph (nodes)
+
 import Logic.Logic
 import Logic.Grothendieck
 import Logic.Coerce
@@ -395,7 +398,7 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
               (alreadyDefined spstr) pos
       else
         -- let (_n, dg''') = addSpecNodeRT dg'' (UnitSig args body) $ show spn
-        return
+        return $ trace ("anaLibItem" ++ show (nodes $ dgBody dg'')) $
         ( libItem'
         , dg'' { globalEnv = Map.insert spn (SpecEntry
                   $ ExtGenSig gsig body) genv }

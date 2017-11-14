@@ -33,6 +33,7 @@ also shall be visible in the displayed development graph.
 
 module Static.DevGraph where
 
+import Debug.Trace
 import Syntax.AS_Structured
 import Syntax.AS_Library
 import Static.GTheory
@@ -1255,7 +1256,7 @@ nodesDG = nodes . dgBody
 
 -- | tries to get the label of the given node in a given DG
 labDG :: DGraph -> Node -> DGNodeLab
-labDG dg n = fromMaybe (error $ "labDG " ++ show n) $ lab (dgBody dg) n
+labDG dg n = fromMaybe (error $ "labDG " ++ show n) $ lab (dgBody dg) (trace ("labDG"++show (nodes $ dgBody dg)) n)
 
 -- | tries to get the label of the given node in a given RT
 labRT :: DGraph -> Node -> RTNodeLab
