@@ -1,0 +1,12 @@
+{
+  "name": "hets-gui2",
+  "version": "0.1.0",
+  "description": "A new GUI for HETS.",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node main.js"
+  },
+  "author": "",
+  "license": "GPL-3.0"
+}
