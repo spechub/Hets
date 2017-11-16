@@ -98,13 +98,14 @@ prettySymbol :: (GetRange a, Pretty a) => GlobalAnnos -> a -> Element
 prettySymbol = prettyRangeElem "Symbol"
 
 lnode :: HetcatsOpts -> GlobalAnnos -> LibEnv -> LNode DGNodeLab -> Element
-lnode opts ga lenv (_, lbl) =
+lnode opts ga lenv (nodeId, lbl) =
   let nm = dgn_name lbl
       (spn, xp) = case reverse $ xpath nm of
           ElemName s : t -> (s, showXPath t)
           l -> ("?", showXPath l)
   in add_attrs (mkNameAttr (showName nm)
     : rangeAttrs (srcRange nm)
+    ++ [mkAttr "id" (show $ nodeId)]
     ++ mkAttr "reference" (map toLower $ show $ isDGRef lbl)
     : case signOf $ dgn_theory lbl of
         G_sign slid _ _ -> mkAttr "logic" (show slid)
