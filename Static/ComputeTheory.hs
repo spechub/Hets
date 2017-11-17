@@ -26,6 +26,8 @@ module Static.ComputeTheory
     , getImportNames
     ) where
 
+import Debug.Trace
+
 import Logic.Prover
 
 import Static.GTheory
@@ -102,19 +104,22 @@ computeLibEnvTheories le =
     in foldl upd Map.empty lns
 
 computeDGraphTheories :: LibEnv -> DGraph -> DGraph
-computeDGraphTheories le dgraph =
+computeDGraphTheories le dgraph = trace ("computeDGraphTheories:"++show (nodes $ dgBody dgraph)) $ 
   let newDg = computeDGraphTheoriesAux le dgraph
-  in groupHistory dgraph (DGRule "Compute theory") newDg
+  in trace ("newDg:"++show (nodes $ dgBody newDg)) $ 
+     groupHistory dgraph (DGRule "Compute theory") newDg
 
 
 computeDGraphTheoriesAux :: LibEnv -> DGraph -> DGraph
-computeDGraphTheoriesAux le dgraph =
+computeDGraphTheoriesAux le dgraph = let
+  tnodes = topsortedNodes dgraph 
+ in trace ("tnodes:"++ show tnodes)$
   foldl (\ dg l@(n, lbl) -> updatePending dg lbl
     (n, recomputeNodeLabel le dg l))
-     dgraph $ topsortedNodes dgraph
+     dgraph tnodes
 
 recomputeNodeLabel :: LibEnv -> DGraph -> LNode DGNodeLab -> DGNodeLab
-recomputeNodeLabel le dg l@(n, lbl) =
+recomputeNodeLabel le dg l@(n, lbl) = trace ("recomputeNodeLabel:" ++ show n)$ 
   case computeLabelTheory le dg l of
     gTh@(Just th) ->
       let (chg, lbl1) = case globalTheory lbl of

@@ -271,9 +271,11 @@ anaLibDefn lgraph opts topLns libenv dg (Lib_defn ln alibItems pos ans) file
   (libItems', dg', libenv', _, _) <- foldM (anaLibItemAux opts topLns ln)
       ([], dg { globalAnnos = allAnnos }, libenv
       , lgraph, Map.empty) (map item alibItems)
-  let dg1 = computeDGraphTheories libenv' $ markFree libenv'
-        $ markHiding libenv' $ fromMaybe dg' $ maybeResult
-        $ shortcutUnions dg'
+  let dg1 = trace ("calling computeDGraphTheories:"++show (nodes $ dgBody dg')) $ computeDGraphTheories libenv' $ markFree libenv'
+        $ markHiding libenv' 
+        -- $ fromMaybe dg' $ maybeResult
+        -- $ shortcutUnions 
+        dg'
       newLD = Lib_defn ln
         (zipWith replaceAnnoted (reverse libItems') alibItems) pos ans
       dg2 = dg1 { optLibDefn = Just newLD }
