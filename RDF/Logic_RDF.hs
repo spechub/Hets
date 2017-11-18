@@ -96,6 +96,7 @@ instance Logic RDF RDFSub TurtleDocument Axiom SymbItems SymbMapItems
                Sign
                RDFMorphism RDFEntity RawSymb ProofTree where
          empty_proof_tree RDF = emptyProofTree
+         stability RDF = Experimental
 
 {-
 instance SemiLatticeWithTop ProfSub where

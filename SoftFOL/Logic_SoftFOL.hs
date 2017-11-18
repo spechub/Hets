@@ -86,7 +86,7 @@ instance StaticAnalysis SoftFOL [TPTP] Sentence
 instance Logic SoftFOL () [TPTP] Sentence () ()
                Sign
                SoftFOLMorphism SFSymbol () ProofTree where
-         stability _ = Testing
+         stability _ = Stable
          provers SoftFOL = [spassProver]
 #ifndef NOHTTP
            ++ [mathServBroker, vampire]

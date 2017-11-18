@@ -27,6 +27,7 @@ import Driver.ReadFn (showFileType)
 import Driver.WriteFn
 
 import Static.DevGraph
+import Logic.PrintLogics
 
 #ifdef UNI_PACKAGE
 import GUI.ShowGraph
@@ -70,7 +71,10 @@ main =
        then cmdlRun opts >>= displayGraph "" opts . getMaybeLib . intState
        else do
          putIfVerbose opts 3 $ "Options: " ++ show opts
-         case (infiles opts, outputLogicGraph opts) of
+         if outputLogicList opts
+            then printLogics
+         else  
+          case (infiles opts, outputLogicGraph opts) of
            ([], lg) -> case guiType opts of
              UseGui ->
 #ifdef UNI_PACKAGE

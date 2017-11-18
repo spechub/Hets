@@ -184,6 +184,10 @@ class Show lid => Language lid where
     -- default implementation
     description _ = ""
 
+-- short description = first line of description
+short_description :: Language lid => lid -> String
+short_description l = head ((lines $ description l) ++ [""])
+      
 {- | Categories are given as usual: objects, morphisms, identities,
      domain, codomain and composition. The type id is the name, or
      the identity of the category. It is an argument to all functions

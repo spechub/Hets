@@ -125,7 +125,7 @@ instance Logic CoCASL CoCASL_Sublogics
                CoCASLMor
                Symbol RawSymbol () where
          parse_basic_sen CoCASL = Just $ const parseSen
-         stability CoCASL = Unstable
+         stability CoCASL = Testing
          proj_sublogic_epsilon CoCASL = pr_epsilon emptyMorExt
          all_sublogics CoCASL = sublogics_all [True]
          sublogicDimensions CoCASL = sDims [[True]]

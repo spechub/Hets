@@ -120,7 +120,7 @@ instance StaticAnalysis ExtModal EM_BASIC_SPEC ExtModalFORMULA SYMB_ITEMS
 
 instance Logic ExtModal ExtModalSL EM_BASIC_SPEC ExtModalFORMULA SYMB_ITEMS
     SYMB_MAP_ITEMS ExtModalSign ExtModalMorph Symbol RawSymbol () where
-        stability ExtModal = Experimental
+        stability ExtModal = Testing
         all_sublogics ExtModal = sublogics_all $ foleml : concat sublogicsDim
         sublogicDimensions ExtModal = sDims sublogicsDim
         parseSublogic ExtModal = parseSL $ Just . parseSublog
