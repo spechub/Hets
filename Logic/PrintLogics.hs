@@ -38,5 +38,5 @@ printLogic (Logic l) = do
   let ps = provers l
   unless (null ps) $ do
     putStr "    provers: "
-    putStrLn $ concat $ intersperse ", " $ map proverName ps
+    putStrLn $ intercalate ", " $ map proverName ps
 
