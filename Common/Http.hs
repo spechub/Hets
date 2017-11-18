@@ -20,6 +20,7 @@ import qualified Data.ByteString.Lazy.Char8 as Char8
 import Network.Connection (TLSSettings(..))
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS
+import Network.HTTP.Types (statusCode)
 
 loadFromUri :: HetcatsOpts -> String -> IO (Either String String)
 loadFromUri opts uri = do
@@ -40,7 +41,11 @@ loadFromUri opts uri = do
         InvalidUrlException invalidUrl reason ->
           return $ Left ("Failed to load " ++ show invalidUrl ++ ": " ++ reason)
     Right response ->
-      return $ Right $ Char8.unpack $ responseBody response
+      let status = statusCode $ responseStatus response in
+      return $ if 400 <= status
+               then Left ("Failed to load " ++ show uri ++ ": HTTP status code "
+                          ++ show status)
+               else Right $ Char8.unpack $ responseBody response
 
 noVerifyTlsManagerSettings :: ManagerSettings
 noVerifyTlsManagerSettings = mkManagerSettings noVerifyTlsSettings Nothing
