@@ -22,7 +22,6 @@ module Static.AnalysisLibrary
     , LNS
     ) where
 
-import Debug.Trace
 import Data.Graph.Inductive.Graph (nodes)
 
 import Logic.Logic
@@ -271,7 +270,7 @@ anaLibDefn lgraph opts topLns libenv dg (Lib_defn ln alibItems pos ans) file
   (libItems', dg', libenv', _, _) <- foldM (anaLibItemAux opts topLns ln)
       ([], dg { globalAnnos = allAnnos }, libenv
       , lgraph, Map.empty) (map item alibItems)
-  let dg1 = trace ("calling computeDGraphTheories:"++show (nodes $ dgBody dg')) $ computeDGraphTheories libenv' $ markFree libenv'
+  let dg1 = computeDGraphTheories libenv' $ markFree libenv'
         $ markHiding libenv' 
         $ fromMaybe dg' $ maybeResult
         $ shortcutUnions 
@@ -279,7 +278,7 @@ anaLibDefn lgraph opts topLns libenv dg (Lib_defn ln alibItems pos ans) file
       newLD = Lib_defn ln
         (zipWith replaceAnnoted (reverse libItems') alibItems) pos ans
       dg2 = dg1 { optLibDefn = Just newLD }
-  return $ trace ("anaLibDefn" ++ show (nodes $ dgBody dg2)) (ln, newLD, globalAnnos dg2, Map.insert ln dg2 libenv')
+  return (ln, newLD, globalAnnos dg2, Map.insert ln dg2 libenv')
 
 shortcutUnions :: DGraph -> Result DGraph
 shortcutUnions dgraph = let spNs = getGlobNodes $ globalEnv dgraph in
@@ -401,7 +400,7 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
               (alreadyDefined spstr) pos
       else
         -- let (_n, dg''') = addSpecNodeRT dg'' (UnitSig args body) $ show spn
-        return $ trace ("anaLibItem" ++ show (nodes $ dgBody dg'')) $
+        return $ 
         ( libItem'
         , dg'' { globalEnv = Map.insert spn (SpecEntry
                   $ ExtGenSig gsig body) genv }

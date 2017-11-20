@@ -37,7 +37,7 @@ module Static.AnalysisStructured
     , prefixErrorIRI
     , networkDiagram
     ) where
-import Debug.Trace
+
 import Driver.Options
 
 import Logic.Logic
@@ -130,7 +130,8 @@ insGTheory dg name orig (G_theory lid syn sig ind sens tind) =
           (if ind == startSigId
            then setSigMapDG $ Map.insert (succ s) nsig sgMap else id)
            $ insNodeDG (node, node_contents) dg)
-    in trace ("insGTheory" ++ show (nodes $ dgBody dg_res)) $ (nsig_res,dg_res)
+    in (nsig_res,dg_res)
+
 insGSig :: DGraph -> NodeName -> DGOrigin -> G_sign -> (NodeSig, DGraph)
 insGSig dg name orig (G_sign lid sig ind) =
     insGTheory dg name orig $ noSensGTheory lid sig ind
@@ -430,13 +431,13 @@ anaSpecAux conser addSyms optNodes lg
       name opts eo asps rg
     return (Intersection newAsps pos, ns, dg')
   Extension asps pos -> do
-   let namedSps = trace ("anaSpec: Extension 1" ++ show (nodes $ dgBody dg)) $ map (\ (asp, n) ->
+   let namedSps = map (\ (asp, n) ->
          let nn = incBy n (extName "Extension" name) in
          if n < length asps then (nn, asp)
          else (name { xpath = xpath nn }, asp)) $ number asps
    (sps', nsig1', dg1, _, _) <- foldM (anaExtension lg libEnv opts eo ln pos)
      ([], nsig, dg, conser, addSyms) namedSps
-   case trace ("anaSpec: Extension 2" ++ show (nodes $ dgBody dg1)) $ nsig1' of
+   case nsig1' of
        EmptyNode _ -> fail "empty extension"
        JustNode nsig1 -> return (Extension (zipWith replaceAnnoted
                           (reverse sps') asps)
@@ -1295,7 +1296,7 @@ anaExtension lg libEnv opts eo ln pos (sps', nsig', dg', conser, addSyms) (name'
       return $ insLink dg1 (ide sig1) globalThm DGImpliesLink n1 n'
     _ -> return dg1
    else return dg1
-  return (trace ("anaExtension"++show (nodes $ dgBody dg2)) (sp1' : sps', JustNode nsig1, dg2, None, True))
+  return (sp1' : sps', JustNode nsig1, dg2, None, True)
 
 
 -- BEGIN CURIE expansion
