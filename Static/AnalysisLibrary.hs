@@ -273,8 +273,8 @@ anaLibDefn lgraph opts topLns libenv dg (Lib_defn ln alibItems pos ans) file
       , lgraph, Map.empty) (map item alibItems)
   let dg1 = trace ("calling computeDGraphTheories:"++show (nodes $ dgBody dg')) $ computeDGraphTheories libenv' $ markFree libenv'
         $ markHiding libenv' 
-        -- $ fromMaybe dg' $ maybeResult
-        -- $ shortcutUnions 
+        $ fromMaybe dg' $ maybeResult
+        $ shortcutUnions 
         dg'
       newLD = Lib_defn ln
         (zipWith replaceAnnoted (reverse libItems') alibItems) pos ans
@@ -289,6 +289,7 @@ shortcutUnions dgraph = let spNs = getGlobNodes $ globalEnv dgraph in
   in case outDG dg n of
        [(_, t, et@DGLink {dgl_type = lt})]
          | Set.notMember n spNs && null (getThSens locTh) && isGlobalDef lt
+           && not (hasOutgoingFreeEdge dg t)
            && length innNs > 1
            && all (\ (_, _, el) -> case dgl_type el of
                 ScopedLink Global DefLink (ConsStatus cs None LeftOpen)

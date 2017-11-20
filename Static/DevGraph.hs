@@ -434,6 +434,11 @@ isCofreeEdge edge = case edge of
     FreeOrCofreeDefLink Cofree _ -> True
     _ -> False
 
+hasOutgoingFreeEdge :: DGraph -> Node -> Bool
+hasOutgoingFreeEdge dg n =
+ let nEdges = outDG dg n in
+ not $ null $ filter (\(_,_, e) -> isFreeEdge $ dgl_type e) nEdges 
+
 -- ** types for global environments
 
 -- | import, formal parameters and united signature of formal params
