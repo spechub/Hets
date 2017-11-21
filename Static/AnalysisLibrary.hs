@@ -271,10 +271,8 @@ anaLibDefn lgraph opts topLns libenv dg (Lib_defn ln alibItems pos ans) file
       ([], dg { globalAnnos = allAnnos }, libenv
       , lgraph, Map.empty) (map item alibItems)
   let dg1 = computeDGraphTheories libenv' $ markFree libenv'
-        $ markHiding libenv' 
-        $ fromMaybe dg' $ maybeResult
-        $ shortcutUnions 
-        dg'
+        $ markHiding libenv' $ fromMaybe dg' $ maybeResult
+        $ shortcutUnions dg'
       newLD = Lib_defn ln
         (zipWith replaceAnnoted (reverse libItems') alibItems) pos ans
       dg2 = dg1 { optLibDefn = Just newLD }
@@ -400,7 +398,7 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
               (alreadyDefined spstr) pos
       else
         -- let (_n, dg''') = addSpecNodeRT dg'' (UnitSig args body) $ show spn
-        return $ 
+        return
         ( libItem'
         , dg'' { globalEnv = Map.insert spn (SpecEntry
                   $ ExtGenSig gsig body) genv }
