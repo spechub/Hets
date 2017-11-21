@@ -210,6 +210,7 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , applyAutomatic :: Bool
   , computeNormalForm :: Bool
   , dumpOpts :: [String]
+  , disableCertificateVerification :: Bool
   , ioEncoding :: Enc
     -- | use the library name in positions to avoid differences after uploads
   , useLibPos :: Bool
@@ -260,6 +261,7 @@ defaultHetcatsOpts = HcOpt
   , applyAutomatic = False
   , computeNormalForm = False
   , dumpOpts = []
+  , disableCertificateVerification = False
   , ioEncoding = Utf8
   , useLibPos = False
   , unlit = False
@@ -369,6 +371,7 @@ data Flag =
   | Connect Int String
   | XML
   | Dump String
+  | DisableCertificateVerification
   | IOEncoding Enc
   | Unlit
   | RelPos
@@ -421,6 +424,8 @@ makeOpts opts flg =
     Quiet -> opts { verbose = 0 }
     Uncolored -> opts { uncolored = True }
     Dump s -> opts { dumpOpts = s : dumpOpts opts }
+    DisableCertificateVerification ->
+      opts { disableCertificateVerification = True }
     IOEncoding e -> opts { ioEncoding = e }
     Serve -> opts { serve = True }
     Unlit -> opts { unlit = True }
@@ -762,6 +767,9 @@ options = let
         map (++ bracket bafS) [bracket treeS ++ genTermS]))
     , Option "d" ["dump"] (ReqArg Dump "STRING")
       "dump various strings"
+    , Option "" ["disable-certificate-verification"]
+      (NoArg DisableCertificateVerification)
+      "Disable TLS certificate verification"
     , Option "e" ["encoding"] (ReqArg parseEncoding "ENCODING")
       "latin1 or utf8 (default) encoding"
     , Option "" [unlitS] (NoArg Unlit) "unlit input source"

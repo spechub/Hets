@@ -62,6 +62,9 @@ Executable hets
   Main-is: hets.hs
   build-depends:
       HTTP >= 4000.2.4
+    , http-client >= 0.5.7.0
+    , http-client-tls >= 0.3.5.1
+    , connection >= 0.2.8
     , array >= 0.1.0.0
     , aterm >= 0.1.0.1
     , base >= 4.0.0.0

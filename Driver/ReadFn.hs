@@ -169,7 +169,7 @@ loadAccessUri opts fn = do
         "" -> ""
         t -> '?' : accessTokenS ++ "=" ++ t
   putIfVerbose opts 4 $ "downloading " ++ u
-  loadFromUri u
+  loadFromUri opts u
 
 downloadSource :: HetcatsOpts -> FilePath -> IO (Either String String)
 downloadSource opts fn =
