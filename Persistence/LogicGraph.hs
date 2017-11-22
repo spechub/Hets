@@ -2,7 +2,11 @@
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE TypeFamilies               #-}
-module Persistence.LogicGraph where
+module Persistence.LogicGraph ( migrateLogicGraphKey
+                              , exportLogicGraph
+                              , findOrCreateLogic
+                              , findOrCreateLanguageMappingAndLogicMapping
+                              ) where
 
 import Persistence.Database
 import Persistence.Schema as SchemaClass
@@ -40,43 +44,68 @@ migrateLogicGraph opts = do
 
 migrateLogicGraph' :: MonadIO m => HetcatsOpts -> DBMonad m ()
 migrateLogicGraph' opts = do
-  exportLanguagesAndLogics LogicGraph.logicGraph
+  exportLanguagesAndLogics opts LogicGraph.logicGraph
   exportLanguageMappingsAndLogicMappings opts LogicGraph.logicGraph
 
 -- Export all Languages and Logics. Add those that have been added since a
 -- previous version of Hets. This does not delete Languages or Logics.
 exportLanguagesAndLogics :: MonadIO m
-                         => LogicGraph -> DBMonad m ()
-exportLanguagesAndLogics logicGraph =
+                         => HetcatsOpts -> LogicGraph -> DBMonad m ()
+exportLanguagesAndLogics opts logicGraph =
   mapM_ (\ (Logic.Logic lid) -> do
-          let languageSlugS = parameterize $ show lid
-          languageM <- selectFirst [LanguageSlug ==. languageSlugS] []
-          languageKey <- case languageM of
-            Just (Entity key _) -> return key
-            Nothing -> do
-              -- Export Language
-              insert Language
-                { languageSlug = languageSlugS
-                , languageName = show lid
-                , languageDescription = description lid
-                , languageStandardizationStatus = "TODO" -- TODO: add to class Logic
-                , languageDefinedBy = "registry" -- TODO: add to class Logic (URL)
-                }
-
-          -- Export Logic
-          mapM_ (\ sublogic -> do
-                  let logicNameS = sublogicNameForDB lid sublogic
-                  let logicSlugS = parameterize logicNameS
-                  logicM <- selectFirst [LogicSlug ==. logicSlugS] []
-                  case logicM of
-                    Just (Entity key _) -> return key
-                    Nothing -> insert SchemaClass.Logic
-                      { logicLanguageId = languageKey
-                      , logicSlug = logicSlugS
-                      , logicName = logicNameS
-                      }
-                ) $ all_sublogics lid
+          languageKey <- findOrCreateLanguage lid
+          mapM_ (findOrCreateLogic opts languageKey lid) $ all_sublogics lid
         ) $ logics logicGraph
+
+findOrCreateLanguage :: ( MonadIO m
+                        , Logic.Logic lid sublogics basic_spec sentence
+                            symb_items symb_map_items sign morphism symbol
+                            raw_symbol proof_tree
+                        )
+                     => lid -> DBMonad m LanguageId
+findOrCreateLanguage lid = do
+  let languageSlugS = parameterize $ show lid
+  languageM <- selectFirst [LanguageSlug ==. languageSlugS] []
+  case languageM of
+    Just (Entity key _) -> return key
+    Nothing -> insert Language
+        { languageSlug = languageSlugS
+        , languageName = show lid
+        , languageDescription = description lid
+        , languageStandardizationStatus = "TODO" -- TODO: add to class Logic
+        , languageDefinedBy = "registry" -- TODO: add to class Logic (URL)
+        }
+
+findOrCreateLogic :: ( MonadIO m
+                     , Logic.Logic lid sublogics basic_spec sentence
+                         symb_items symb_map_items sign morphism symbol
+                         raw_symbol proof_tree
+                     )
+                  => HetcatsOpts -> LanguageId -> lid -> sublogics
+                  -> DBMonad m LogicId
+findOrCreateLogic opts languageKey lid sublogic = do
+  let logicNameS = sublogicNameForDB lid sublogic
+  let logicSlugS = parameterize logicNameS
+  logicM <- selectFirst [LogicSlug ==. logicSlugS] []
+  case logicM of
+    Just (Entity key _) -> return key
+    Nothing ->
+      -- This is a two-staged process to save some performance:
+      -- Case 1: If the logic existed beforehand, then we don't lock the
+      -- database and return the logic ID. This is expected to happen very
+      -- frequently.
+      -- Case 2: If the logic did not exist at this point, we need to create
+      -- it atomically. To do this, we do a find-or-create pattern inside a
+      -- mutex. This is expected to happen only a few times.
+      advisoryLocked opts migrateLogicGraphKey $ do
+        logicM' <- selectFirst [LogicSlug ==. logicSlugS] []
+        case logicM' of
+          Just (Entity key _) -> return key
+          Nothing -> insert SchemaClass.Logic
+            { logicLanguageId = languageKey
+            , logicSlug = logicSlugS
+            , logicName = logicNameS
+            }
 
 -- Export all LanguageMappings and LogicMappings. Add those that have been added
 -- since a previous version of Hets. This does not delete any of the old
@@ -89,90 +118,69 @@ exportLanguageMappingsAndLogicMappings opts logicGraph =
     comorphisms logicGraph
 
 findOrCreateLanguageMappingAndLogicMapping :: MonadIO m
-                                           => HetcatsOpts
-                                           -> AnyComorphism
+                                           => HetcatsOpts -> AnyComorphism
                                            -> DBMonad m ( LanguageMappingId
                                                         , LogicMappingId
                                                         )
 findOrCreateLanguageMappingAndLogicMapping opts (Comorphism.Comorphism cid) =
-          let name = language_name cid
-              logicMappingSlugS = parameterize name
-              sourceLanguageSlugS = parameterize $ show $ sourceLogic cid
-              targetLanguageSlugS = parameterize $ show $ targetLogic cid
-              sourceLogicName = sublogicNameForDB (sourceLogic cid) $ sourceSublogic cid
-              targetLogicName = sublogicNameForDB (targetLogic cid) $ targetSublogic cid
-              sourceLogicSlugS = parameterize sourceLogicName
-              targetLogicSlugS = parameterize targetLogicName
-          in do
-            -- Find the IDs in the databases:
-            Just (Entity sourceLanguageKey _) <-
-                  selectFirst [LanguageSlug ==. sourceLanguageSlugS] []
-            Just (Entity targetLanguageKey _) <-
-                  selectFirst [LanguageSlug ==. targetLanguageSlugS] []
+  let sourceLanguageSlugS = parameterize $ show $ sourceLogic cid
+      targetLanguageSlugS = parameterize $ show $ targetLogic cid
+  in do
+    -- Find the IDs in the databases:
+    Just (Entity sourceLanguageKey _) <-
+          selectFirst [LanguageSlug ==. sourceLanguageSlugS] []
+    Just (Entity targetLanguageKey _) <-
+          selectFirst [LanguageSlug ==. targetLanguageSlugS] []
 
-            -- findOrCreateLogic (source):
-            sourceLogicM <- selectFirst [LogicSlug ==. sourceLogicSlugS] []
-            sourceLogicKey <- case sourceLogicM of
-                Nothing -> do
-                  -- TODO: do not insert the sublogic as soon as https://github.com/spechub/Hets/issues/1740 is fixed
-                  logicM <- selectFirst [LogicSlug ==. sourceLogicSlugS] []
-                  case logicM of
-                    Just (Entity key _) -> return key
-                    Nothing -> advisoryLocked opts migrateLogicGraphKey $
-                      insert SchemaClass.Logic
-                        { logicLanguageId = sourceLanguageKey
-                        , logicSlug = sourceLogicSlugS
-                        , logicName = sourceLogicName
-                        }
-                Just (Entity t _) -> return t
+    sourceLogicKey <-
+      findOrCreateLogic opts sourceLanguageKey (sourceLogic cid) $ sourceSublogic cid
+    targetLogicKey <-
+      findOrCreateLogic opts targetLanguageKey (targetLogic cid) $ targetSublogic cid
 
-            -- findOrCreateLogic (target):
-            targetLogicM <- selectFirst [LogicSlug ==. targetLogicSlugS] []
-            targetLogicKey <- case targetLogicM of
-                Nothing -> do
-                  -- TODO: do not insert the sublogic as soon as https://github.com/spechub/Hets/issues/1740 is fixed
-                  logicM <- selectFirst [LogicSlug ==. targetLogicSlugS] []
-                  case logicM of
-                    Just (Entity key _) -> return key
-                    Nothing -> advisoryLocked opts migrateLogicGraphKey $
-                      insert SchemaClass.Logic
-                        { logicLanguageId = targetLanguageKey
-                        , logicSlug = targetLogicSlugS
-                        , logicName = targetLogicName
-                        }
-                Just (Entity t _) -> return t
+    languageMappingKey <-
+      findOrCreateLanguageMapping sourceLanguageKey targetLanguageKey
+    logicMappingKey <-
+      findOrCreateLogicMapping sourceLogicKey targetLogicKey languageMappingKey $ Comorphism.Comorphism cid
 
-            -- findOrCreateLanguageMapping:
-            languageMappingM <-
-              selectFirst [ LanguageMappingSourceId ==. sourceLanguageKey
-                          , LanguageMappingTargetId ==. targetLanguageKey
-                          ] []
-            languageMappingKey <- case languageMappingM of
-              Just (Entity key _) -> return key
-              Nothing -> insert LanguageMapping
-                { languageMappingSourceId = sourceLanguageKey
-                , languageMappingTargetId = targetLanguageKey
-                }
+    return (languageMappingKey, logicMappingKey)
 
-            -- findOrCreateLogicMapping:
-            logicMappingM <-
-              selectFirst [ LogicMappingLanguageMappingId ==. languageMappingKey
-                          , LogicMappingSlug ==. logicMappingSlugS
-                          ] []
-            case logicMappingM of
-              Just (Entity key _) -> return (languageMappingKey, key)
-              Nothing -> do
-                logicMappingKey <- insert LogicMapping
-                  { logicMappingLanguageMappingId = languageMappingKey
-                  , logicMappingSourceId = sourceLogicKey
-                  , logicMappingTargetId = targetLogicKey
-                  , logicMappingSlug = logicMappingSlugS
-                  , logicMappingName = name
-                  , logicMappingIsInclusion = isInclusionComorphism cid
-                  , logicMappingHasModelExpansion = has_model_expansion cid
-                  , logicMappingIsWeaklyAmalgamable = is_weakly_amalgamable cid
-                  }
-                return (languageMappingKey, logicMappingKey)
+findOrCreateLanguageMapping :: MonadIO m
+                            => LanguageId -> LanguageId
+                            -> DBMonad m LanguageMappingId
+findOrCreateLanguageMapping sourceLanguageKey targetLanguageKey = do
+  languageMappingM <-
+    selectFirst [ LanguageMappingSourceId ==. sourceLanguageKey
+                , LanguageMappingTargetId ==. targetLanguageKey
+                ] []
+  case languageMappingM of
+    Just (Entity key _) -> return key
+    Nothing -> insert LanguageMapping
+      { languageMappingSourceId = sourceLanguageKey
+      , languageMappingTargetId = targetLanguageKey
+      }
+
+findOrCreateLogicMapping :: MonadIO m
+                         => LogicId -> LogicId -> LanguageMappingId -> AnyComorphism
+                         -> DBMonad m LogicMappingId
+findOrCreateLogicMapping sourceLogicKey targetLogicKey languageMappingKey (Comorphism.Comorphism cid) = do
+  let name = language_name cid
+  let logicMappingSlugS = parameterize name
+  logicMappingM <-
+    selectFirst [ LogicMappingLanguageMappingId ==. languageMappingKey
+                , LogicMappingSlug ==. logicMappingSlugS
+                ] []
+  case logicMappingM of
+    Just (Entity key _) -> return key
+    Nothing -> insert LogicMapping
+      { logicMappingLanguageMappingId = languageMappingKey
+      , logicMappingSourceId = sourceLogicKey
+      , logicMappingTargetId = targetLogicKey
+      , logicMappingSlug = logicMappingSlugS
+      , logicMappingName = name
+      , logicMappingIsInclusion = isInclusionComorphism cid
+      , logicMappingHasModelExpansion = has_model_expansion cid
+      , logicMappingIsWeaklyAmalgamable = is_weakly_amalgamable cid
+      }
 
 sublogicNameForDB :: Logic.Logic lid sublogics basic_spec sentence symb_items
                        symb_map_items sign morphism symbol raw_symbol proof_tree

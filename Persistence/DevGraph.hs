@@ -426,7 +426,7 @@ createOMS opts libEnv fileVersionKey dbCache0 doSave globalAnnotations libName
                 findOrCreateSerializationM languageKey syntaxM
 
             logicKey <- case sublogicOfTh gTheory of
-              G_sublogics lid sublogics -> findOrCreateLogic opts lid sublogics
+              G_sublogics lid sublogics -> findOrCreateLogic' opts lid sublogics
 
             let omsLocIdBaseValue = LocIdBase
                   { locIdBaseFileVersionId = fileVersionKey
@@ -726,43 +726,15 @@ findLanguage lid = do
     Just (Entity key _) -> return key
     Nothing -> fail ("Language not found in the database: " ++ show lid)
 
-findOrCreateLogic :: ( MonadIO m
-                     , Logic.Logic lid sublogics
-                         basic_spec sentence symb_items symb_map_items
-                         sign morphism symbol raw_symbol proof_tree
-                     )
-                  => HetcatsOpts -> lid -> sublogics -> DBMonad m LogicId
-findOrCreateLogic opts lid sublogic =
-  let name = sublogicName sublogic
-      logicSlugS = parameterize name
-  in  do
-        languageKey <- findLanguage lid
-        -- This is a two-staged process to save some performance:
-        -- Case 1: If the logic existed beforehand, then we don't lock the
-        -- database and return the logic ID. This is expected to happen very
-        -- frequently.
-        -- Case 2: If the logic did not exist at this point, we need to create
-        -- it atomically. To do this, we do a find-or-create pattern inside a
-        -- mutex. This is expected to happen only a few times.
-        logicM1 <- getLogic languageKey logicSlugS
-        case logicM1 of
-          Just (Entity key _) -> return key
-          Nothing -> advisoryLocked opts migrateLogicGraphKey $ do
-            logicM2 <- getLogic languageKey logicSlugS
-            case logicM2 of
-              Just (Entity key _) -> return key
-              Nothing -> insert SchemaClass.Logic
-                           { logicLanguageId = languageKey
-                           , logicSlug = logicSlugS
-                           , logicName = name
-                           }
-
-getLogic :: MonadIO m
-         => LanguageId -> String -> DBMonad m (Maybe (Entity SchemaClass.Logic))
-getLogic languageKey logicSlugS =
-  selectFirst [ LogicLanguageId ==. languageKey
-              , LogicSlug ==. logicSlugS
-              ] []
+findOrCreateLogic' :: ( MonadIO m
+                      , Logic.Logic lid sublogics
+                          basic_spec sentence symb_items symb_map_items
+                          sign morphism symbol raw_symbol proof_tree
+                      )
+                   => HetcatsOpts -> lid -> sublogics -> DBMonad m LogicId
+findOrCreateLogic' opts lid sublogic = do
+  languageKey <- findLanguage lid
+  findOrCreateLogic opts languageKey lid sublogic
 
 findOrCreateSignature :: ( MonadIO m
                          , Sentences lid sentence sign morphism symbol
