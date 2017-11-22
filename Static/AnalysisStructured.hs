@@ -125,11 +125,11 @@ insGTheory dg name orig (G_theory lid syn sig ind sens tind) =
         nth = G_theory lid syn sig nind sens ntind
         node_contents = newNodeLab name orig nth
         node = getNewNodeDG dg
-     in (NodeSig node nsig,
-          (if tb then setThMapDG $ Map.insert (succ t) nth tMap else id) $
-          (if ind == startSigId
-           then setSigMapDG $ Map.insert (succ s) nsig sgMap else id)
-           $ insNodeDG (node, node_contents) dg)
+    in (NodeSig node nsig,
+         (if tb then setThMapDG $ Map.insert (succ t) nth tMap else id) $
+         (if ind == startSigId
+          then setSigMapDG $ Map.insert (succ s) nsig sgMap else id)
+          $ insNodeDG (node, node_contents) dg)
 
 insGSig :: DGraph -> NodeName -> DGOrigin -> G_sign -> (NodeSig, DGraph)
 insGSig dg name orig (G_sign lid sig ind) =

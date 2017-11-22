@@ -108,10 +108,10 @@ computeDGraphTheories le dgraph =
 
 
 computeDGraphTheoriesAux :: LibEnv -> DGraph -> DGraph
-computeDGraphTheoriesAux le dgraph = 
+computeDGraphTheoriesAux le dgraph =
   foldl (\ dg l@(n, lbl) -> updatePending dg lbl
     (n, recomputeNodeLabel le dg l))
-     dgraph $ topsortedNodes dgraph 
+     dgraph $ topsortedNodes dgraph
 
 recomputeNodeLabel :: LibEnv -> DGraph -> LNode DGNodeLab -> DGNodeLab
 recomputeNodeLabel le dg l@(n, lbl) =
