@@ -284,6 +284,7 @@ shortcutUnions dgraph = let spNs = getGlobNodes $ globalEnv dgraph in
   in case outDG dg n of
        [(_, t, et@DGLink {dgl_type = lt})]
          | Set.notMember n spNs && null (getThSens locTh) && isGlobalDef lt
+           && not (hasOutgoingFreeEdge dg t)
            && length innNs > 1
            && all (\ (_, _, el) -> case dgl_type el of
                 ScopedLink Global DefLink (ConsStatus cs None LeftOpen)
