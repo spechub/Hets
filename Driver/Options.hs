@@ -137,6 +137,9 @@ fullTheoriesS = "full-theories"
 logicGraphS :: String
 logicGraphS = "logic-graph"
 
+logicListS :: String
+logicListS = "logic-list"
+
 fileTypeS :: String
 fileTypeS = "file-type"
 
@@ -207,6 +210,7 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , applyAutomatic :: Bool
   , computeNormalForm :: Bool
   , dumpOpts :: [String]
+  , disableCertificateVerification :: Bool
   , ioEncoding :: Enc
     -- | use the library name in positions to avoid differences after uploads
   , useLibPos :: Bool
@@ -218,6 +222,7 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , blacklist :: [[String]]
   , runMMT :: Bool
   , fullTheories :: Bool
+  , outputLogicList :: Bool
   , outputLogicGraph :: Bool
   , fileType :: Bool
   , accessToken :: String
@@ -256,6 +261,7 @@ defaultHetcatsOpts = HcOpt
   , applyAutomatic = False
   , computeNormalForm = False
   , dumpOpts = []
+  , disableCertificateVerification = False
   , ioEncoding = Utf8
   , useLibPos = False
   , unlit = False
@@ -266,6 +272,7 @@ defaultHetcatsOpts = HcOpt
   , blacklist = []
   , runMMT = False
   , fullTheories = False
+  , outputLogicList = False
   , outputLogicGraph = False
   , fileType = False
   , accessToken = ""
@@ -280,6 +287,7 @@ instance Show HetcatsOpts where
     in
     showEqOpt verboseS (show $ verbose opts)
     ++ show (guiType opts)
+    ++ showFlag outputLogicList logicListS
     ++ showFlag outputLogicGraph logicGraphS
     ++ showFlag fileType fileTypeS
     ++ showFlag interactive interactiveS
@@ -363,6 +371,7 @@ data Flag =
   | Connect Int String
   | XML
   | Dump String
+  | DisableCertificateVerification
   | IOEncoding Enc
   | Unlit
   | RelPos
@@ -375,6 +384,7 @@ data Flag =
   | FullTheories
   | FullSign
   | PrintAST
+  | OutputLogicList
   | OutputLogicGraph
   | FileType
   | AccessToken String
@@ -414,12 +424,15 @@ makeOpts opts flg =
     Quiet -> opts { verbose = 0 }
     Uncolored -> opts { uncolored = True }
     Dump s -> opts { dumpOpts = s : dumpOpts opts }
+    DisableCertificateVerification ->
+      opts { disableCertificateVerification = True }
     IOEncoding e -> opts { ioEncoding = e }
     Serve -> opts { serve = True }
     Unlit -> opts { unlit = True }
     RelPos -> opts { useLibPos = True }
     UseMMT -> opts { runMMT = True }
     FullTheories -> opts { fullTheories = True }
+    OutputLogicList -> opts { outputLogicList = True }
     OutputLogicGraph -> opts { outputLogicGraph = True }
     FileType -> opts { fileType = True }
     FullSign -> opts { fullSign = True }
@@ -710,6 +723,8 @@ options = let
     , Option "X" ["server"] (NoArg Serve)
        "start hets as web-server"
 #endif
+    , Option "z" [logicListS] (NoArg OutputLogicList)
+      "output logic list as plain text"
     , Option "G" [logicGraphS] (NoArg OutputLogicGraph)
       "output logic graph (as xml) or as graph (-g)"
     , Option "I" [interactiveS] (NoArg Interactive)
@@ -752,6 +767,9 @@ options = let
         map (++ bracket bafS) [bracket treeS ++ genTermS]))
     , Option "d" ["dump"] (ReqArg Dump "STRING")
       "dump various strings"
+    , Option "" ["disable-certificate-verification"]
+      (NoArg DisableCertificateVerification)
+      "Disable TLS certificate verification"
     , Option "e" ["encoding"] (ReqArg parseEncoding "ENCODING")
       "latin1 or utf8 (default) encoding"
     , Option "" [unlitS] (NoArg Unlit) "unlit input source"

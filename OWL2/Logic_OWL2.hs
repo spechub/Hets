@@ -189,6 +189,7 @@ instance Logic OWL2 ProfSub OntologyDocument Axiom SymbItems SymbMapItems
            (\ ct -> ConservativityChecker ("Locality_" ++ ct)
                     (checkOWLjar localityJar) $ conserCheck ct)
            ["BOTTOM_BOTTOM", "TOP_BOTTOM", "TOP_TOP"]
+         stability OWL2 = Stable
 
 instance SemiLatticeWithTop ProfSub where
     lub = maxS

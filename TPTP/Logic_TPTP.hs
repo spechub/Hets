@@ -47,7 +47,7 @@ data TPTP = TPTP deriving (Show, Ord, Eq)
 instance Language TPTP
   where
     description _ =
-      "The TPTP (Thousands of Problems for Theorem Provers) Language" ++
+      "The TPTP (Thousands of Problems for Theorem Provers) Language\n" ++
       "See http://www.cs.miami.edu/~tptp/"
 
 instance Syntax TPTP BASIC_SPEC Symbol () ()
@@ -78,7 +78,7 @@ instance StaticAnalysis TPTP BASIC_SPEC Sentence () () Sign Morphism Symbol ()
 
 instance Logic TPTP Sublogic BASIC_SPEC Sentence () () Sign Morphism Symbol () ProofTree
   where
-    stability _ = Testing
+    stability _ = Stable
     all_sublogics TPTP = [CNF, FOF, TFF, THF]
     provers TPTP = [cvc4, darwin, eprover, geo3, isabelle, leo2, satallax,
                     spass, vampire]

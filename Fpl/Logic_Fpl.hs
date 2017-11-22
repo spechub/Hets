@@ -85,5 +85,5 @@ instance Logic Fpl ()
                FplSign
                FplMor
                Symbol RawSymbol () where
-         stability _ = Unstable
+         stability _ = Experimental
          empty_proof_tree _ = ()

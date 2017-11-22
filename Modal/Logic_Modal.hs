@@ -39,7 +39,8 @@ data Modal = Modal deriving Show
 
 instance Language Modal where
  description _ = unlines
-  [ "ModalCASL extends CASL by modal operators. Syntax for ordinary"
+  [ "ModalCASL extends CASL by modal operators."
+  , "Syntax for ordinary"
   , "modalities, multi-modal logics as well as  term-modal"
   , "logic (also covering dynamic logic) is provided."
   , "Specific modal logics can be obtained via restrictions to"
@@ -123,5 +124,5 @@ instance Logic Modal ()
                MSign
                ModalMor
                Symbol RawSymbol () where
-         stability _ = Unstable
+         stability _ = Testing
          empty_proof_tree _ = ()

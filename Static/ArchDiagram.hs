@@ -213,7 +213,7 @@ extendDGraphRev :: DGraph    -- ^ the development graph to be extended
 -- ^ returns the source signature of the morphism and the resulting DGraph
 extendDGraphRev dg (NodeSig n _) morph i orig = case dom morph of
     sourceSig@(G_sign lid src ind) -> let
-      nodeContents = newNodeLab (makeName i) orig
+      nodeContents = newNodeLab (ensureUniqueNames dg i 1) orig
         $ noSensGTheory lid src ind
       linkContents = globDefLink morph SeeSource
       node = getNewNodeDG dg
@@ -232,7 +232,7 @@ extendDGraphRevHide :: DGraph    -- ^ the development graph to be extended
 -- ^ returns the source signature of the morphism and the resulting DGraph
 extendDGraphRevHide dg (NodeSig n _) morph i orig = case dom morph of
     sourceSig@(G_sign lid src ind) -> let
-      nodeContents = newNodeLab (makeName i) orig
+      nodeContents = newNodeLab (ensureUniqueNames dg i 1) orig
         $ noSensGTheory lid src ind
       linkContents = defDGLink morph HidingDefLink
                                       DGLinkProof

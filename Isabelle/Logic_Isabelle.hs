@@ -32,7 +32,7 @@ data Isabelle = Isabelle deriving Show
 
 instance Language Isabelle where
  description _ =
-  "Isabelle - a generic theorem prover\n" ++
+  "logic of the generic theorem prover Isabelle\n" ++
   "This logic corresponds to the logic of Isabelle,\n" ++
   "a weak intuitionistic type theory\n" ++
   "Also, the logics encoded in Isabelle, like FOL, HOL, HOLCF, ZF " ++
