@@ -22,7 +22,6 @@ module Static.AnalysisLibrary
     , LNS
     ) where
 
-import Data.Graph.Inductive.Graph (nodes)
 import Logic.Logic
 import Logic.Grothendieck
 import Logic.Coerce
