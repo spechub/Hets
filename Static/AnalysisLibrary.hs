@@ -739,24 +739,21 @@ anaAlignDefn lg ln libenv dg opts eo an arities atype acorresps pos = do
             -- A_source
             let n1 = getNewNodeDG dg'
                 labN1 = newInfoNodeLab
-                         (makeName an
-                          {abbrevFragment = abbrevFragment an ++ "_source"})
+                         (makeName $ addSuffixToIRI "_source" an)
                          (newNodeInfo DGAlignment)
                          gt1
                 dg1 = insLNodeDG (n1, labN1) dg'
             -- A_target
                 n2 = getNewNodeDG dg1
                 labN2 = newInfoNodeLab
-                         (makeName an
-                          {abbrevFragment = abbrevFragment an ++ "_target"})
+                         (makeName $ addSuffixToIRI "_target" an)
                          (newNodeInfo DGAlignment)
                          gt2
                 dg2 = insLNodeDG (n2, labN2) dg1
              -- A_bridge
                 n = getNewNodeDG dg2
                 labN = newInfoNodeLab
-                         (makeName an
-                          {abbrevFragment = abbrevFragment an ++ "_bridge"})
+                         (makeName $ addSuffixToIRI "_bridge" an)
                          (newNodeInfo DGAlignment)
                          gt
                 dg3 = insLNodeDG (n, labN) dg2
