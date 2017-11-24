@@ -152,6 +152,9 @@ whitelistS = "whitelist"
 accessTokenS :: String
 accessTokenS = "access-token"
 
+httpRequestHeaderS :: String
+httpRequestHeaderS = "http-request-header"
+
 genTermS, treeS, bafS :: String
 genTermS = "gen_trm"
 treeS = "tree."
@@ -226,6 +229,7 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , outputLogicGraph :: Bool
   , fileType :: Bool
   , accessToken :: String
+  , httpRequestHeaders :: [String]
   , fullSign :: Bool
   , printAST :: Bool }
 
@@ -276,6 +280,7 @@ defaultHetcatsOpts = HcOpt
   , outputLogicGraph = False
   , fileType = False
   , accessToken = ""
+  , httpRequestHeaders = []
   , fullSign = False
   , printAST = False }
 
@@ -298,6 +303,9 @@ instance Show HetcatsOpts where
     ++ case defSyntax opts of
           s | s /= defSyntax defaultHetcatsOpts -> showEqOpt serializationS s
           _ -> ""
+    ++ case httpRequestHeaders opts of
+          [] -> ""
+          headers -> concatMap (showEqOpt httpRequestHeaderS . show) headers
     ++ case accessToken opts of
           "" -> ""
           t -> showEqOpt accessTokenS t
@@ -388,6 +396,7 @@ data Flag =
   | OutputLogicGraph
   | FileType
   | AccessToken String
+  | HttpRequestHeader String
   | UrlCatalog [(String, String)] deriving Show
 
 -- | 'makeOpts' includes a parsed Flag in a set of HetcatsOpts
@@ -439,6 +448,7 @@ makeOpts opts flg =
     PrintAST -> opts { printAST = True }
     UrlCatalog m -> opts { urlCatalog = m ++ urlCatalog opts }
     AccessToken s -> opts { accessToken = s }
+    HttpRequestHeader header -> opts { httpRequestHeaders = header : httpRequestHeaders opts }
     Help -> opts -- skipped
     Version -> opts -- skipped
     VersionNumeric -> opts -- skipped
@@ -779,6 +789,9 @@ options = let
     , Option "" [fullTheoriesS] (NoArg FullTheories) "xml output full theories"
     , Option "" [accessTokenS] (ReqArg AccessToken "TOKEN")
       "add access token to URLs (for ontohub)"
+    , Option "H" [httpRequestHeaderS] (ReqArg HttpRequestHeader "HTTP_HEADER")
+      ("additional headers to use for HTTP requests"
+      ++ crS ++ "this option can be used multiple times")
     , Option "O" [outdirS] (ReqArg OutDir "DIR")
       "destination directory for output files"
     , Option "o" [outtypesS] (ReqArg parseOutTypes "OTYPES")
