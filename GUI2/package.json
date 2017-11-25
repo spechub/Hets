@@ -2,11 +2,29 @@
   "name": "hets-gui2",
   "version": "0.1.0",
   "description": "A new GUI for HETS.",
-  "main": "main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node main.js"
+    "start": "electron app",
+    "build": "npm run build-render && npm run build-base",
+    "build-render": "webpack --config webpack.render.js",
+    "build-base": "webpack --config webpack.base.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/spechub/Hets"
   },
   "author": "",
-  "license": "GPL-3.0"
+  "license": "GPL-3.0",
+  "devDependencies": {
+    "@types/react": "^16.0.25",
+    "@types/react-dom": "^16.0.3",
+    "awesome-typescript-loader": "^3.4.0",
+    "electron": "1.7.9",
+    "react": "^16.1.1",
+    "react-dom": "^16.1.1",
+    "source-map-loader": "^0.2.3",
+    "typescript": "^2.6.1",
+    "webpack": "^3.8.1"
+  },
+  "dependencies": {}
 }

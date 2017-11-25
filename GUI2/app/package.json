@@ -1,0 +1,7 @@
+{
+    "name": "HETS",
+    "version": "0.1.0",
+    "description": "A new GUI for HETS.",
+    "main": "main.js",
+    "license": "GPL-3.0"
+}
