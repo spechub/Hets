@@ -105,7 +105,7 @@ lnode opts ga lenv (nodeId, lbl) =
           l -> ("?", showXPath l)
   in add_attrs (mkNameAttr (showName nm)
     : rangeAttrs (srcRange nm)
-    ++ [mkAttr "id" (show $ nodeId)]
+    ++ [mkAttr "id" $ show nodeId]
     ++ mkAttr "reference" (map toLower $ show $ isDGRef lbl)
     : case signOf $ dgn_theory lbl of
         G_sign slid _ _ -> mkAttr "logic" (show slid)
