@@ -180,6 +180,8 @@ ledge opts ga dg (f, t, lbl) = let
   ([ mkAttr "source" $ getNameOfNode f dg
   , mkAttr "target" $ getNameOfNode t dg
   , mkAttr "linkid" $ showEdgeId $ dgl_id lbl
+  , mkAttr "id_source" $ show f
+  , mkAttr "id_target" $ show t
   ] ++ case dgl_origin lbl of
          DGLinkView i _ ->
            [mkNameAttr . iriToStringShortUnsecure $ setAngles False i]
