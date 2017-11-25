@@ -181,7 +181,9 @@ ledge opts ga dg (f, t, lbl) = let
   in mkJObj
   $ [ mkJPair "source" $ getNameOfNode f dg
   , mkJPair "target" $ getNameOfNode t dg
-  , ("linkid", mkJNum . getEdgeNum $ dgl_id lbl) ]
+  , ("linkid", mkJNum . getEdgeNum $ dgl_id lbl)
+  , ("id_source", mkJNum f)
+  , ("id_target", mkJNum t) ]
   ++ case dgl_origin lbl of
          DGLinkView i _ ->
            [mkNameJPair . iriToStringShortUnsecure $ setAngles False i]
