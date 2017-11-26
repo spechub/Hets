@@ -24,8 +24,8 @@ import Control.Monad
 import qualified Control.Monad.Fail as Fail
 
 import Driver.Options
-import Driver.AnaLib
 import Driver.ReadFn (showFileType)
+import Driver.ReadMain
 import Driver.WriteFn
 
 import Static.DevGraph
@@ -51,16 +51,6 @@ import PGIP.XMLstate (isRemote)
 import PGIP.Server
 #endif
 
-import Maude.Maude2DG (anaMaudeFile)
-import LF.Twelf2DG (anaTwelfFile)
-import OMDoc.Import (anaOMDocFile)
-#ifdef HEXPAT
-import HolLight.HolLight2DG (anaHolLightFile)
-#endif
-
-#ifdef HAXML
-import Isabelle.Isa2DG (anaIsaFile, anaThyFile)
-#endif
 
 main :: IO ()
 main =
@@ -100,26 +90,11 @@ processFile opts file =
   if fileType opts then showFileType opts file else do
     putIfVerbose opts 3 ("Processing input: " ++ file)
     let doExit = guiType opts == UseGui
-    res <- case guess file (intype opts) of
-#ifdef PROGRAMATICA
-      HaskellIn -> putStr "this is HaskellIn" >> anaHaskellFile opts file
-#endif
-#ifdef HEXPAT
-      HolLightIn -> anaHolLightFile opts file
-#endif
-#ifdef HAXML
-      IsaIn -> anaIsaFile opts file
-      ThyIn -> anaThyFile opts file
-#endif
-      PrfIn -> anaLibReadPrfs opts file
-      ProofCommand -> do
-        st <- cmdlProcessFile doExit opts file
-        liftM (getMaybeLib . intState)
-          $ (if interactive opts then cmdlRunShell else return) st
-      MaudeIn -> anaMaudeFile opts file
-      TwelfIn -> anaTwelfFile opts file
-      OmdocIn -> anaOMDocFile opts file
-      _ -> anaLib opts file
+    res <- if guess file (intype opts) == ProofCommand then do
+                st <- cmdlProcessFile doExit opts file
+                liftM (getMaybeLib . intState)
+                 $ (if interactive opts then cmdlRunShell else return) st
+           else read_and_analyse file opts
     case res of
       Just (ln, nEnv) ->
         writeSpecFiles opts file nEnv ln $ lookupDGraph ln nEnv
