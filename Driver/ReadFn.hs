@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {- |
 Module      :  ./Driver/ReadFn.hs
 Description :  reading and parsing ATerms, CASL, DOL files
@@ -249,3 +250,4 @@ keepOrigClifName opts origName file =
          CommonLogicIn _ -> origName
          _ -> origName ++ '.' : show ext
        _ -> file
+
