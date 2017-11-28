@@ -1117,14 +1117,14 @@ createMapping opts libEnv fileVersionKey dbCache doSave globalAnnotations
       FreeOrCofreeDefLink Minimize _ -> MappingType.MinimizeDef
       HidingFreeOrCofreeThm Nothing _ _ LeftOpen -> MappingType.HidingOpen
       HidingFreeOrCofreeThm Nothing _ _ (Proven _ _) -> MappingType.HidingProved
-      HidingFreeOrCofreeThm (Just Free) _ _ LeftOpen -> MappingType.HidingFreeOpen
-      HidingFreeOrCofreeThm (Just Cofree) _ _ LeftOpen -> MappingType.HidingCofreeOpen
-      HidingFreeOrCofreeThm (Just NPFree) _ _ LeftOpen -> MappingType.HidingNPFreeOpen
-      HidingFreeOrCofreeThm (Just Minimize) _ _ LeftOpen -> MappingType.HidingMinimizeOpen
-      HidingFreeOrCofreeThm (Just Free) _ _ (Proven _ _) -> MappingType.HidingFreeProved
-      HidingFreeOrCofreeThm (Just Cofree) _ _ (Proven _ _) -> MappingType.HidingCofreeProved
-      HidingFreeOrCofreeThm (Just NPFree) _ _ (Proven _ _) -> MappingType.HidingNPFreeProved
-      HidingFreeOrCofreeThm (Just Minimize) _ _ (Proven _ _) -> MappingType.HidingMinimizeProved
+      HidingFreeOrCofreeThm (Just Free) _ _ LeftOpen -> MappingType.FreeOpen
+      HidingFreeOrCofreeThm (Just Cofree) _ _ LeftOpen -> MappingType.CofreeOpen
+      HidingFreeOrCofreeThm (Just NPFree) _ _ LeftOpen -> MappingType.NPFreeOpen
+      HidingFreeOrCofreeThm (Just Minimize) _ _ LeftOpen -> MappingType.MinimizeOpen
+      HidingFreeOrCofreeThm (Just Free) _ _ (Proven _ _) -> MappingType.FreeProved
+      HidingFreeOrCofreeThm (Just Cofree) _ _ (Proven _ _) -> MappingType.CofreeProved
+      HidingFreeOrCofreeThm (Just NPFree) _ _ (Proven _ _) -> MappingType.NPFreeProved
+      HidingFreeOrCofreeThm (Just Minimize) _ _ (Proven _ _) -> MappingType.MinimizeProved
 
 
 cachedOMSKey :: LibName -> Int -> DBCache -> Maybe (LocIdBaseId, SignatureId)

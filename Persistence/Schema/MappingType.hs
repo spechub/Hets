@@ -8,10 +8,8 @@ data MappingType = LocalDef | LocalThmOpen | LocalThmProved
                  | HidingDef
                  | FreeDef | CofreeDef | NPFreeDef | MinimizeDef
                  | HidingOpen | HidingProved
-                 | HidingFreeOpen | HidingCofreeOpen
-                 | HidingNPFreeOpen | HidingMinimizeOpen
-                 | HidingFreeProved | HidingCofreeProved
-                 | HidingNPFreeProved | HidingMinimizeProved
+                 | FreeOpen | CofreeOpen | NPFreeOpen | MinimizeOpen
+                 | FreeProved | CofreeProved | NPFreeProved | MinimizeProved
                    deriving Eq
 
 instance Show MappingType where
@@ -28,14 +26,14 @@ instance Show MappingType where
   show MinimizeDef = "minimize_def"
   show HidingOpen = "hiding_open"
   show HidingProved = "hiding_proved"
-  show HidingFreeOpen = "hiding_free_open"
-  show HidingCofreeOpen = "hiding_cofree_open"
-  show HidingNPFreeOpen = "hiding_np_free_open"
-  show HidingMinimizeOpen = "hiding_minimize_open"
-  show HidingFreeProved = "hiding_free_proved"
-  show HidingCofreeProved = "hiding_cofree_proved"
-  show HidingNPFreeProved = "hiding_np_free_proved"
-  show HidingMinimizeProved = "hiding_minimize_proved"
+  show FreeOpen = "free_open"
+  show CofreeOpen = "cofree_open"
+  show NPFreeOpen = "np_free_open"
+  show MinimizeOpen = "minimize_open"
+  show FreeProved = "free_proved"
+  show CofreeProved = "cofree_proved"
+  show NPFreeProved = "np_free_proved"
+  show MinimizeProved = "minimize_proved"
 
 instance Read MappingType where
   readsPrec _ input
@@ -52,14 +50,14 @@ instance Read MappingType where
     | show MinimizeDef `isPrefixOf` input = [(MinimizeDef, drop (length $ show MinimizeDef) input)]
     | show HidingOpen `isPrefixOf` input = [(HidingOpen, drop (length $ show HidingOpen) input)]
     | show HidingProved `isPrefixOf` input = [(HidingProved, drop (length $ show HidingProved) input)]
-    | show HidingFreeOpen `isPrefixOf` input = [(HidingFreeOpen, drop (length $ show HidingFreeOpen) input)]
-    | show HidingCofreeOpen `isPrefixOf` input = [(HidingCofreeOpen, drop (length $ show HidingCofreeOpen) input)]
-    | show HidingNPFreeOpen `isPrefixOf` input = [(HidingNPFreeOpen, drop (length $ show HidingNPFreeOpen) input)]
-    | show HidingMinimizeOpen `isPrefixOf` input = [(HidingMinimizeOpen, drop (length $ show HidingMinimizeOpen) input)]
-    | show HidingFreeProved `isPrefixOf` input = [(HidingFreeProved, drop (length $ show HidingFreeProved) input)]
-    | show HidingCofreeProved `isPrefixOf` input = [(HidingCofreeProved, drop (length $ show HidingCofreeProved) input)]
-    | show HidingNPFreeProved `isPrefixOf` input = [(HidingNPFreeProved, drop (length $ show HidingNPFreeProved) input)]
-    | show HidingMinimizeProved `isPrefixOf` input = [(HidingMinimizeProved, drop (length $ show HidingMinimizeProved) input)]
+    | show FreeOpen `isPrefixOf` input = [(FreeOpen, drop (length $ show FreeOpen) input)]
+    | show CofreeOpen `isPrefixOf` input = [(CofreeOpen, drop (length $ show CofreeOpen) input)]
+    | show NPFreeOpen `isPrefixOf` input = [(NPFreeOpen, drop (length $ show NPFreeOpen) input)]
+    | show MinimizeOpen `isPrefixOf` input = [(MinimizeOpen, drop (length $ show MinimizeOpen) input)]
+    | show FreeProved `isPrefixOf` input = [(FreeProved, drop (length $ show FreeProved) input)]
+    | show CofreeProved `isPrefixOf` input = [(CofreeProved, drop (length $ show CofreeProved) input)]
+    | show NPFreeProved `isPrefixOf` input = [(NPFreeProved, drop (length $ show NPFreeProved) input)]
+    | show MinimizeProved `isPrefixOf` input = [(MinimizeProved, drop (length $ show MinimizeProved) input)]
     | otherwise = []
 
 derivePersistField "MappingType"
