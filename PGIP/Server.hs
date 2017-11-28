@@ -23,6 +23,7 @@ import PGIP.Output.Translations
 import qualified PGIP.Output.Provers as OProvers
 
 import PGIP.Query as Query
+import PGIP.Server.WebAssets
 
 import Driver.Options
 import Driver.ReadFn
@@ -341,7 +342,7 @@ oldWebApi opts tempLib sessRef re pathBits splitQuery meth respond
          then mkMenuResponse respond else do
          let path = intercalate "/" pathBits
          dirs@(_ : cs) <- liftIO $ getHetsLibContent opts path splitQuery
-         if not (null cs) || null path then mkHtmlPage path dirs respond
+         if not (null cs) || null path then htmlResponse path dirs respond
            -- AUTOMATIC PROOFS (parsing)
            else if isJust $ getVal splitQuery "autoproof" then
              let qr k = Query (DGQuery k Nothing) $
@@ -520,7 +521,7 @@ parseRESTful
       "dir" : r -> do
         let path' = intercalate "/" r
         dirs <- liftIO $ getHetsLibContent opts path' splitQuery
-        mkHtmlPage path' dirs respond
+        htmlResponse path' dirs respond
       ["version"] -> respond $ mkOkResponse textC hetsVersion
       ["numeric-version"] ->
         respond $ mkOkResponse textC hetsVersionNumeric
@@ -697,39 +698,64 @@ menuTriple q d c = unode "triple"
                 , unode "displayname" d
                 , unode "command" c ]
 
-metaRobots :: Element
-metaRobots = add_attrs
-  [mkNameAttr "robots", mkAttr "content" "noindex,nofollow"]
-  $ unode "meta" ()
+htmlResponse :: FilePath -> [Element] -> WebResponse
+htmlResponse path listElements respond = respond . mkOkResponse htmlC
+  $ htmlPageWithTopContent path listElements
 
-mkHtmlString :: FilePath -> [Element] -> String
-mkHtmlString path dirs = htmlHead ++ mkHtmlElem
+htmlPageWithTopContent :: FilePath -> [Element] -> String
+htmlPageWithTopContent path listElements = htmlPage
   ("Listing of" ++ if null path then " repository" else ": " ++ path)
+  []
   (unode "h1" hetsVersion : unode "p"
      [ bold "Hompage:"
      , aRef "http://hets.eu" "hets.eu"
      , bold "Contact:"
      , aRef "mailto:hets-devel@informatik.uni-bremen.de"
        "hets-devel@informatik.uni-bremen.de" ]
-   : headElems path ++ [unode "ul" dirs])
+   : headElems path ++ [unode "ul" listElements])
 
-mkHtmlElem :: String -> [Element] -> String
-mkHtmlElem title = mkHtmlElemAux title [metaRobots]
+htmlPage :: String -> String -> [Element] -> String
+htmlPage title javascripts body = htmlHead title javascripts
+  ++ intercalate "\n" (map ppElement body)
+  ++ htmlFoot
 
-mkHtmlElemAux :: String -> [Element] -> [Element] -> String
-mkHtmlElemAux title headers body = ppElement $ unode "html"
-      [ unode "head" $ unode "title" title : headers, unode "body" body ]
+htmlHead :: String -> String -> String
+htmlHead title javascript =
+  "<!DOCTYPE html>\n"
+  ++ "<html lang=\"en\">\n"
+  ++ "  <head>\n"
+  ++ "    <meta charset=\"utf-8\">\n"
+  ++ "    <meta content=\"width=device-width,initial-scale=1,shrink-to-fit=no\" name=\"viewport\">\n"
+  ++ "    <meta content=\"#000000\" name=\"theme-color\">\n"
+  ++ "    <meta name=\"robots\" content=\"noindex,nofollow\">\n"
+  ++ "    <title>DOLIator - " ++ title ++ "</title>\n"
+  ++ "    <!-- Semantic UI stylesheet -->\n"
+  ++ "    <style type=\"text/css\">\n"
+  ++ semanticUiCss ++ "\n"
+  ++ "    </style>\n"
+  ++ "    <!-- Hets stylesheet -->\n"
+  ++ "    <style type=\"text/css\">\n"
+  ++ hetsCss ++ "\n"
+  ++ "    </style>\n"
+  ++ "  </head>\n"
+  ++ "  <body>\n"
+  ++ "    <!-- jQuery -->\n"
+  ++ "    <script type=\"text/javascript\">\n"
+  ++ jQueryJs ++ "\n"
+  ++ "    </script>\n"
+  ++ "    <!-- Semantic UI Javascript -->\n"
+  ++ "    <script type=\"text/javascript\">\n"
+  ++ semanticUiJs ++ "\n"
+  ++ "    </script>\n"
+  ++ "    <!-- Hets Javascript -->\n"
+  ++ "    <script type=\"text/javascript\">\n"
+  ++ javascript ++ "\n"
+  ++ "    </script>\n"
 
--- include a script within page
-mkHtmlElemScript :: String -> String -> [Element] -> String
-mkHtmlElemScript title scr =
-  mkHtmlElemAux title [ metaRobots
-  , add_attr (mkAttr "type" "text/javascript") . unode "script"
-    . Text $ CData CDataRaw scr Nothing] -- scr must not be encoded!
-
-mkHtmlPage :: FilePath -> [Element] -> WebResponse
-mkHtmlPage path es respond = respond . mkOkResponse htmlC
-  $ mkHtmlString path es
+htmlFoot :: String
+htmlFoot =
+ "  </body>\n"
+  ++ "</html>\n"
 
 mkResponse :: String -> Status -> String -> Response
 mkResponse ty st = responseLBS st
@@ -830,7 +856,7 @@ ppDGraph dg mt = let ga = globalAnnos dg in case optLibDefn dg of
         PrettyXml -> return
           (xmlC, ppTopElement $ xmlLibDefn logicGraph ga ld)
         PrettyAscii _ -> return (textC, renderText ga d ++ "\n")
-        PrettyHtml -> return (htmlC, htmlHead ++ renderHtml ga d)
+        PrettyHtml -> return (htmlC, renderHtml ga d)
         PrettyLatex _ -> return ("application/latex", latex)
       Nothing -> lift $ do
          tmpDir <- getTemporaryDirectory
@@ -1262,7 +1288,7 @@ showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
     sbShow = renderHtml ga $ pretty sig
     in case getThGoals sGTh of
       -- show simple view if no goals are found
-      [] -> return $ mkHtmlElem fstLine [ headr, transBt, prvsBt,
+      [] -> return $ htmlPage fstLine "" [ headr, transBt, prvsBt,
         unode "h4" "Theory" ] ++ sbShow ++ "\n<br />" ++ thShow
       -- else create proving functionality
       gs -> do
@@ -1290,7 +1316,7 @@ showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
               ++ intersperse br (prBt : thmSl)
         -- save dg and return to svg-view
             goBack = aRef ('/' : show sessId) "return to DGraph"
-        return $ mkHtmlElemScript fstLine (jvScr1 ++ jvScr2)
+        return $ htmlPage fstLine (jvScr1 ++ jvScr2)
           [ headr, transBt, prvsBt, plain " ", goBack, unode "h4" "Theorems"
           , thmMenu, unode "h4" "Theory" ] ++ sbShow ++ "\n<br />" ++ thShow
 
@@ -1340,7 +1366,7 @@ showAutoProofWindow dg sessId prOrCons = let
             . unode "form" $
             [ hidStr, prSel, cmSel, br, btAll, btNone, btUnpr, timeout
             , include ] ++ intersperse br (prBt : nodeSel))
-    return (htmlC, mkHtmlElemScript title (jvScr1 ++ jvScr2)
+    return (htmlC, htmlPage title (jvScr1 ++ jvScr2)
                [ goBack, plain " ", nodeMenu ])
 
 showProveButton :: Bool -> (Element, Element)
@@ -1672,8 +1698,9 @@ sessAnsAux libName svg (sess, k) =
       autoProofBt = aRef ('/' : show k ++ "?autoproof") "automatic proofs"
       consBt = aRef ('/' : show k ++ "?consistency") "consistency checker"
 -- the html quicklinks to nodes and edges have been removed with R.16827
-  in (htmlC, htmlHead ++ mkHtmlElem
+  in (htmlC, htmlPage
            ('(' : shows k ")" ++ ln)
+           []
            (bold ("library " ++ ln)
             : map ref displayTypes
             ++ menuElement : loadXUpdate (libPath ++ updateS)
@@ -1738,12 +1765,6 @@ headElems path = let d = "default" in unode "strong" "Choose a display type:" :
 
 menuElement :: Element
 menuElement = aRef "?menus" "menus"
-
-htmlHead :: String
-htmlHead =
-    let dtd = "PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\""
-        url = "\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\""
-    in concat ["<!DOCTYPE html ", dtd, " ", url, ">\n"]
 
 inputNode :: Element
 inputNode = unode "input" ()
