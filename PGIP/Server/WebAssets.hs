@@ -1,10 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 
-module PGIP.Server.WebAssets ( hetsCss
-                             , semanticUiCss
-                             , semanticUiJs
-                             , jQueryJs
-                             ) where
+module PGIP.Server.WebAssets where
 
 import Data.ByteString (unpack)
 import Data.Char (chr)
@@ -13,6 +9,10 @@ import Data.FileEmbed
 hetsCss :: String
 hetsCss =
   map (chr . fromEnum) $ unpack $ $(embedFile "PGIP/assets/hets.css")
+
+hetsJs :: String
+hetsJs =
+  map (chr . fromEnum) $ unpack $ $(embedFile "PGIP/assets/hets.js")
 
 semanticUiCss :: String
 semanticUiCss =

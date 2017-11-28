@@ -703,16 +703,9 @@ htmlResponse path listElements respond = respond . mkOkResponse htmlC
   $ htmlPageWithTopContent path listElements
 
 htmlPageWithTopContent :: FilePath -> [Element] -> String
-htmlPageWithTopContent path listElements = htmlPage
-  ("Listing of" ++ if null path then " repository" else ": " ++ path)
-  []
-  (unode "h1" hetsVersion : unode "p"
-     [ bold "Hompage:"
-     , aRef "http://hets.eu" "hets.eu"
-     , bold "Contact:"
-     , aRef "mailto:hets-devel@informatik.uni-bremen.de"
-       "hets-devel@informatik.uni-bremen.de" ]
-   : headElems path ++ [unode "ul" listElements])
+htmlPageWithTopContent path listElements =
+  htmlPage (if null path then "Start Page" else path) []
+    (pageHeader ++ pageOptions path ++ [pageMoreExamples listElements])
 
 htmlPage :: String -> String -> [Element] -> String
 htmlPage title javascripts body = htmlHead title javascripts
@@ -747,15 +740,125 @@ htmlHead title javascript =
   ++ "    <script type=\"text/javascript\">\n"
   ++ semanticUiJs ++ "\n"
   ++ "    </script>\n"
-  ++ "    <!-- Hets Javascript -->\n"
+  ++ "    <!-- Static Hets Javascript -->\n"
+  ++ "    <script type=\"text/javascript\">\n"
+  ++ hetsJs ++ "\n"
+  ++ "    </script>\n"
+  ++ "    <!-- Dynamic Hets Javascript -->\n"
   ++ "    <script type=\"text/javascript\">\n"
   ++ javascript ++ "\n"
   ++ "    </script>\n"
+  ++ "    <div class=\"ui left aligned doubling stackable centered relaxed grid container\">\n"
 
 htmlFoot :: String
 htmlFoot =
- "  </body>\n"
+  "    </div>\n"
+  ++ "  </body>\n"
   ++ "</html>\n"
+
+pageHeader :: [Element]
+pageHeader =
+  [ add_attr (mkAttr "class" "one column row") $ unode "div" $ unode "h1" "DOLIator"
+  , add_attr (mkAttr "class" "one column row center aligned") $ unode "div" $
+      add_attr (mkAttr "class" "ui very padded text container raised segment ten wide column center aligned") $
+      unode "div" [ unode "p" "Welcome to DOLIator, the web interface to our implementation of the \"Ontology, Modeling and Specification Language\""
+                  , add_attr (mkAttr "class" "ui horizontal list") $ unode "div"
+                      [ add_attr (mkAttr "target" "_blank") $ add_attr (mkAttr "class" "item") $ aRef "http://dol-omg.org/" "DOL-Homepage"
+                      , add_attr (mkAttr "target" "_blank") $ add_attr (mkAttr "class" "item") $ aRef "http://hets.eu/" "DOLIator-Homepage"
+                      , add_attr (mkAttr "class" "item") $ aRef "mailto:hets-devel@informatik.uni-bremen.de" "Contact"
+                      ]
+                  ]
+  ]
+
+pageOptions :: String -> [Element]
+pageOptions path =
+  [ add_attr (mkAttr "class" "one column row") $ unode "div"
+      [ pageOptionsFormat path
+      , pageOptionsCommandList
+      ]
+  , add_attr (mkAttr "class" "ui row") $ unode "div" $
+      add_attr (mkAttr "class" "ui container segment sixteen wide column") $ unode "div" $
+        add_attr (mkAttr "class" "ui relaxed grid") $ unode "div"
+          [ add_attr (mkAttr "class" "one column row centered") $ unode "div" $
+              unode "p" "Select a local DOL file as library or enter a DOL specification in the text area and press \"Submit\"."
+          , add_attr (mkAttr "class" "two column row") $ unode "div"
+              [ pageOptionsFile
+              , pageOptionsExamples
+              ]
+          ]
+  ]
+
+pageOptionsFile :: Element
+pageOptionsFile =
+  add_attr (mkAttr "class" "ui container column") $ unode "div" $
+    add_attr (mkAttr "class" "ui row") $ unode "div" pageOptionsFileForm
+
+
+pageOptionsExamples :: Element
+pageOptionsExamples =
+  add_attr (mkAttr "class" "ui container column") $ unode "div"
+    [ plain "Examples will appear here..."]
+
+pageOptionsFileForm :: Element
+pageOptionsFileForm = add_attr (mkAttr "class" "ui basic form") $
+  mkForm "/" [ pageOptionsFilePickerInput
+             , horizontalDivider "OR"
+             , pageOptionsFileTextArea
+             , add_attr (mkAttr "class" "ui button") submitNode
+             ]
+
+horizontalDivider :: String -> Element
+horizontalDivider label =
+  add_attr (mkAttr "class" "ui horizontal divider") $ unode "div" label
+
+pageOptionsFileTextArea :: Element
+pageOptionsFileTextArea =
+  unode "p" $ add_attrs
+    [ mkAttr "cols" "68"
+    , mkAttr "rows" "22"
+    , mkAttr "name" "content"
+    ] $ unode "textarea" ""
+
+pageOptionsFilePickerInput :: Element
+pageOptionsFilePickerInput =
+  add_attr (mkAttr "class" "field") $ unode "div" $
+    add_attr (mkAttr "class" "ui fluid file input action") $ unode "div"
+      [ add_attrs [mkAttr "type" "text", mkAttr "readonly" "true"] $ unode "input" ""
+      , add_attrs [mkAttr "type" "file", mkAttr "id" "file", mkAttr "name" "file", mkAttr "autocomplete" "off"] $ unode "input" ""
+      , add_attr (mkAttr "class" "ui button") $ unode "div" "Chose File..."
+      ]
+
+
+pageOptionsFormat :: String -> Element
+pageOptionsFormat path =
+  let defaultFormat = "default"
+  in  add_attr (mkAttr "class" "ui dropdown button") $ unode "div"
+        [ add_attr (mkAttr "class" "text") $ unode "div" "Output Format"
+        , add_attr (mkAttr "class" "dropdown icon") $ unode "i" ""
+        , add_attr (mkAttr "class" "menu") $ unode "div" $
+            map (\ f -> add_attr (mkAttr "class" "item") $
+                  aRef (if f == defaultFormat then "/" </> path else '?' : f) f
+                ) (defaultFormat : displayTypes)
+        ]
+
+pageOptionsCommandList :: Element
+pageOptionsCommandList =
+  add_attr (mkAttr "href" "?menus") $ unode "a" $
+    add_attr (mkAttr "class" "ui button") $ unode "button" $
+    plain "List all commands as XML"
+
+pageMoreExamples :: [Element] -> Element
+pageMoreExamples listElements =
+  add_attr (mkAttr "class" "ui ten wide column container left aligned") $ unode "div" $
+    add_attr (mkAttr "class" "ui styled accordion") $ unode "div"
+      [ add_attr (mkAttr "class" "title") $ unode "div"
+          [ add_attr (mkAttr "class" "dropdown icon") $ unode "i" ""
+          , unode "span" "More Examples"
+          ]
+      , add_attr (mkAttr "class" "content") $ unode "div" $
+          add_attr (mkAttr "class" "transistion hidden") $ unode "div" $
+            unode "ul" listElements
+      ]
 
 mkResponse :: String -> Status -> String -> Response
 mkResponse ty st = responseLBS st
@@ -1751,18 +1854,6 @@ bold = unode "b"
 plain :: String -> Element
 plain = unode "p"
 
-headElems :: String -> [Element]
-headElems path = let d = "default" in unode "strong" "Choose a display type:" :
-  map (\ q -> aRef (if q == d then "/" </> path else '?' : q) q)
-      (d : displayTypes)
-  ++ [ unode "p"
-       [ unode "small" "internal command overview as XML:"
-       , menuElement ]
-     , plain $ "Select a local file as library or "
-       ++ "enter a DOL specification in the text area and press \"submit\""
-       ++ ", or browse through our Hets-lib library below."
-     , uploadHtml ]
-
 menuElement :: Element
 menuElement = aRef "?menus" "menus"
 
@@ -1771,10 +1862,10 @@ inputNode = unode "input" ()
 
 loadNode :: String -> Element
 loadNode nm = add_attrs
-    [ mkAttr "type" "file"
-    , mkAttr "name" nm
-    , mkAttr "size" "40"]
-    inputNode
+  [ mkAttr "type" "file"
+  , mkAttr "name" nm
+  , mkAttr "size" "40"
+  ] inputNode
 
 submitNode :: Element
 submitNode = add_attrs
@@ -1788,15 +1879,6 @@ mkForm a = add_attrs
   , mkAttr "enctype" "multipart/form-data"
   , mkAttr "method" "post" ]
   . unode "form"
-
-uploadHtml :: Element
-uploadHtml = mkForm "/"
-  [ loadNode "file"
-  , unode "p" $ add_attrs
-    [ mkAttr "cols" "68"
-    , mkAttr "rows" "22"
-    , mkAttr "name" "content" ] $ unode "textarea" ""
-  , submitNode ]
 
 loadXUpdate :: String -> Element
 loadXUpdate a = mkForm a
