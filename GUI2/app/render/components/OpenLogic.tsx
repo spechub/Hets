@@ -2,6 +2,7 @@ import * as React from "react"
 import { Event } from "electron"
 
 import { IPCComm } from "../actions/IPCComm"
+import { DGraphParser } from "../actions/DGraphParser"
 import { QUERY_CHANNEL_RESPONSE } from "../../shared/SharedConstants"
 
 export interface OpenLogicState {
@@ -42,8 +43,12 @@ export class OpenLogicButton extends React.Component<OpenLogicProps, OpenLogicSt
     IPCComm.queryHets(this.state.filePath);
   }
 
-  private displayResp(e: Event, s: string) {
+  private displayResp(e: Event, s: any) {
     console.log(e);
+
     console.log(s);
+
+    let foo = new DGraphParser(s);
+    console.log(foo);
   }
 }
