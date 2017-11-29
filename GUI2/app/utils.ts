@@ -1,4 +1,5 @@
 import * as http from "http"
+import * as querystring from "querystring"
 
 interface HETSApiOptions {
   readonly hostname: string;
@@ -10,10 +11,12 @@ export class Utils {
 
   public static async queryHETSApi(filepath: string): Promise<JSON> {
 
+    const escapedFileURL = querystring.escape("file:///" + filepath);
+
     const hetsApiOptions = {
       hostname: "172.16.186.129",
       port: 8000,
-      path: `/dg/${filepath}/?format=json`,
+      path: `/dg/${escapedFileURL}/?format=json`,
     };
 
     try {
