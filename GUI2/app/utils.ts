@@ -8,31 +8,28 @@ interface HETSApiOptions {
 
 export class Utils {
 
-  public static queryHETSApi(_filepath: string): JSON {
+  public static async queryHETSApi(filepath: string): Promise<JSON> {
 
     const hetsApiOptions = {
       hostname: "172.16.186.129",
       port: 8000,
-      path: "/filetype/" + _filepath,
+      path: `/dg/${filepath}/?format=json`,
     };
 
-    this.getJSON(hetsApiOptions).then((res: JSON) => {
-      return res;
-    }).catch((err: Error) => {
-      console.error(err.message);
-      return null;
-    });
-
-    return null;
+    try {
+      return await this.getJSON(hetsApiOptions);
+    } catch (err) {
+      throw new Error(err);
+    }
   }
 
   /**
    * Executes a standard GET request but returns a promise.
    * @param _options Object containing request parameters.
    */
-  private static getJSON(_options: HETSApiOptions): Promise<JSON> {
+  private static getJSON(options: HETSApiOptions): Promise<JSON> {
     return new Promise<JSON>((resolve, reject: (reason?: Error) => void) => {
-      http.get(_options, (res) => {
+      http.get(options, (res) => {
         const { statusCode } = res;
         const contentType = res.headers["content-type"];
 

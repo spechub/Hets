@@ -1,8 +1,9 @@
-import { Utils } from "./utils"
-
 import { app, BrowserWindow, ipcMain, Event } from "electron"
 import * as path from "path"
 import * as url from "url"
+
+import { Utils } from "./utils"
+import { QUERY_CHANNEL, QUERY_CHANNEL_RESPONSE } from "./shared/SharedConstants"
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -53,6 +54,10 @@ app.on("activate", () => {
   }
 });
 
-ipcMain.on("query-hets", (event: Event, file: string) => {
-  event.sender.send("query-hets-response", Utils.queryHETSApi(file));
+ipcMain.on(QUERY_CHANNEL, (event: Event, file: string) => {
+  Utils.queryHETSApi(file).catch((err: Error) => {
+    console.error(err.message);
+  }).then((res: JSON) => {
+    event.sender.send(QUERY_CHANNEL_RESPONSE, res);
+  });
 });

@@ -4,6 +4,6 @@ import * as ReactDOM from "react-dom"
 import { OpenLogicButton } from "./components/OpenLogic"
 
 ReactDOM.render(
-    <OpenLogicButton onClick={ () => alert("foobar") } />,
+    <OpenLogicButton />,
     document.getElementById("example")
 );
