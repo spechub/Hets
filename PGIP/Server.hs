@@ -24,6 +24,7 @@ import qualified PGIP.Output.Provers as OProvers
 
 import PGIP.Query as Query
 import PGIP.Server.WebAssets
+import qualified PGIP.Server.Examples as Examples
 
 import Driver.Options
 import Driver.ReadFn
@@ -706,10 +707,12 @@ htmlPageWithTopContent :: FilePath -> [Element] -> String
 htmlPageWithTopContent path listElements =
   htmlPage (if null path then "Start Page" else path) []
     (pageHeader ++ pageOptions path ++ [pageMoreExamples listElements])
+    ""
 
-htmlPage :: String -> String -> [Element] -> String
-htmlPage title javascripts body = htmlHead title javascripts
+htmlPage :: String -> String -> [Element] -> String -> String
+htmlPage title javascripts body rawHtmlPageFooter = htmlHead title javascripts
   ++ intercalate "\n" (map ppElement body)
+  ++ htmlWrapBottomContent rawHtmlPageFooter
   ++ htmlFoot
 
 htmlHead :: String -> String -> String
@@ -750,6 +753,13 @@ htmlHead title javascript =
   ++ "    </script>\n"
   ++ "    <div class=\"ui left aligned doubling stackable centered relaxed grid container\">\n"
 
+htmlWrapBottomContent :: String -> String
+htmlWrapBottomContent content =
+  if null content then "" else
+    "      <div class=\"ui segment pushable left aligned\" style=\"overflow: auto;\">\n"
+    ++ content
+    ++ "       </div>\n"
+
 htmlFoot :: String
 htmlFoot =
   "    </div>\n"
@@ -758,9 +768,9 @@ htmlFoot =
 
 pageHeader :: [Element]
 pageHeader =
-  [ add_attr (mkAttr "class" "one column row") $ unode "div" $ unode "h1" "DOLIator"
-  , add_attr (mkAttr "class" "one column row center aligned") $ unode "div" $
-      add_attr (mkAttr "class" "ui very padded text container raised segment ten wide column center aligned") $
+  [ add_attr (mkAttr "class" "row") $ unode "div" $ unode "h1" "DOLIator"
+  , add_attr (mkAttr "class" "row") $ unode "div" $
+      add_attr (mkAttr "class" "ui text container raised segment center aligned") $
       unode "div" [ unode "p" "Welcome to DOLIator, the web interface to our implementation of the \"Ontology, Modeling and Specification Language\""
                   , add_attr (mkAttr "class" "ui horizontal list") $ unode "div"
                       [ add_attr (mkAttr "target" "_blank") $ add_attr (mkAttr "class" "item") $ aRef "http://dol-omg.org/" "DOL-Homepage"
@@ -772,74 +782,137 @@ pageHeader =
 
 pageOptions :: String -> [Element]
 pageOptions path =
-  [ add_attr (mkAttr "class" "one column row") $ unode "div"
-      [ pageOptionsFormat path
+  [ add_attr (mkAttr "class" "row") $ unode "div"
+      [ pageOptionsFormat "?" path
       , pageOptionsCommandList
       ]
-  , add_attr (mkAttr "class" "ui row") $ unode "div" $
-      add_attr (mkAttr "class" "ui container segment sixteen wide column") $ unode "div" $
-        add_attr (mkAttr "class" "ui relaxed grid") $ unode "div"
-          [ add_attr (mkAttr "class" "one column row centered") $ unode "div" $
-              unode "p" "Select a local DOL file as library or enter a DOL specification in the text area and press \"Submit\"."
-          , add_attr (mkAttr "class" "two column row") $ unode "div"
-              [ pageOptionsFile
-              , pageOptionsExamples
-              ]
-          ]
+  , add_attr (mkAttr "class" "row") $ unode "div" $
+      add_attr (mkAttr "class" "ui relaxed grid container segment") $ unode "div"
+        [ add_attr (mkAttr "class" "row centered") $ unode "div" $
+            unode "p" "Select a local DOL file as library or enter a DOL specification in the text area or choose one of the minimal examples from the right hand side and press \"Submit\"."
+        , add_attr (mkAttr "class" "three column row") $ unode "div"
+            [ pageOptionsFile
+            , pageOptionsExamples
+            ]
+        ]
   ]
 
 pageOptionsFile :: Element
 pageOptionsFile =
-  add_attr (mkAttr "class" "ui container column") $ unode "div" $
+  add_attr (mkAttr "class" "ui container twelve wide column left aligned") $ unode "div" $
     add_attr (mkAttr "class" "ui row") $ unode "div" pageOptionsFileForm
 
 
 pageOptionsExamples :: Element
 pageOptionsExamples =
-  add_attr (mkAttr "class" "ui container column") $ unode "div"
-    [ plain "Examples will appear here..."]
+  add_attr (mkAttr "class" "ui container four wide column left aligned") $ unode "div"
+    [ unode "h4" "Minimal Examples"
+    , add_attr (mkAttr "class" "ui list") $ unode "div" $
+        map (\ (elementName, exampleText) ->
+              add_attr (mkAttr "class" "item") $ unode "div" $
+                add_attrs [ mkAttr "class" "insert-example-into-user-input-text"
+                          , mkAttr "data-text" exampleText
+                          , mkAttr "data-input-type" $ map toLower elementName
+                          ] $ unode "span" elementName
+              ) [ ("DOL", Examples.dol)
+                , ("CASL", Examples.casl)
+                , ("OWL", Examples.owl)
+                , ("CLIF", Examples.clif)
+                ]
+    ]
 
 pageOptionsFileForm :: Element
-pageOptionsFileForm = add_attr (mkAttr "class" "ui basic form") $
+pageOptionsFileForm = add_attr (mkAttr "id" "user-file-form") $
   mkForm "/" [ pageOptionsFilePickerInput
              , horizontalDivider "OR"
              , pageOptionsFileTextArea
-             , add_attr (mkAttr "class" "ui button") submitNode
+             , add_attrs [mkAttr "class" "ui relaxed grid", mkAttr "style" "margin-top: 1em"] $ unode "div"
+                 [ add_attr (mkAttr "class" "six wide column") $ unode "div" inputTypeDropDown
+                 , add_attr (mkAttr "class" "ten wide column right aligned") $ unode "div" submitButton
+                 ]
              ]
 
-horizontalDivider :: String -> Element
-horizontalDivider label =
-  add_attr (mkAttr "class" "ui horizontal divider") $ unode "div" label
+inputTypeDropDown :: Element
+inputTypeDropDown = unode "div"
+   [ add_attr (mkAttr "class" "ui sub header") $ unode "div" "Input Type of text field"
+   , add_attrs [mkAttr "name" "input-type", mkAttr "id" "user-file-input-type"] $
+       unode "select" $
+         add_attr (mkAttr "value" "") (unode "option" "[Use selected file instead of text field]")
+         : map (\ inType ->
+                 add_attr (mkAttr "value" $ show inType) $ unode "option" $ show inType
+               ) plainInTypes
+   ]
 
 pageOptionsFileTextArea :: Element
-pageOptionsFileTextArea =
-  unode "p" $ add_attrs
-    [ mkAttr "cols" "68"
-    , mkAttr "rows" "22"
-    , mkAttr "name" "content"
-    ] $ unode "textarea" ""
+pageOptionsFileTextArea = add_attrs
+  [ mkAttr "cols" "68"
+  , mkAttr "rows" "22"
+  , mkAttr "name" "content"
+  , mkAttr "id" "user-input-text"
+  ] $ unode "textarea" ""
 
 pageOptionsFilePickerInput :: Element
-pageOptionsFilePickerInput =
+pageOptionsFilePickerInput = filePickerInputElement "file" "file" "Choose File..."
+
+pageOptionsFormat :: String -> String -> Element
+pageOptionsFormat delimiter path =
+  let defaultFormat = "default"
+  in  dropDownElement "Output Format" $
+        map (\ f ->
+              aRef (if f == defaultFormat then "/" </> path else "/" </> path ++ delimiter ++ f) f
+            ) (defaultFormat : displayTypes)
+
+filePickerInputElement :: String -> String -> String -> Element
+filePickerInputElement idArgument nameArgument title =
   add_attr (mkAttr "class" "field") $ unode "div" $
     add_attr (mkAttr "class" "ui fluid file input action") $ unode "div"
       [ add_attrs [mkAttr "type" "text", mkAttr "readonly" "true"] $ unode "input" ""
-      , add_attrs [mkAttr "type" "file", mkAttr "id" "file", mkAttr "name" "file", mkAttr "autocomplete" "off"] $ unode "input" ""
-      , add_attr (mkAttr "class" "ui button") $ unode "div" "Chose File..."
+      , add_attrs [ mkAttr "type" "file"
+                  , mkAttr "id" idArgument
+                  , mkAttr "name" nameArgument
+                  , mkAttr "autocomplete" "off"
+                  ] $ unode "input" ""
+      , add_attr (mkAttr "class" "ui button") $ unode "div" title
       ]
 
+dropDownElement :: String -> [Element] -> Element
+dropDownElement title items =
+  add_attr (mkAttr "class" "ui dropdown button") $ unode "div"
+    [ add_attr (mkAttr "class" "text") $ unode "div" title
+    , add_attr (mkAttr "class" "dropdown icon") $ unode "i" ""
+    , dropDownSubMenu items
+    ]
 
-pageOptionsFormat :: String -> Element
-pageOptionsFormat path =
-  let defaultFormat = "default"
-  in  add_attr (mkAttr "class" "ui dropdown button") $ unode "div"
-        [ add_attr (mkAttr "class" "text") $ unode "div" "Output Format"
-        , add_attr (mkAttr "class" "dropdown icon") $ unode "i" ""
-        , add_attr (mkAttr "class" "menu") $ unode "div" $
-            map (\ f -> add_attr (mkAttr "class" "item") $
-                  aRef (if f == defaultFormat then "/" </> path else '?' : f) f
-                ) (defaultFormat : displayTypes)
-        ]
+linkButtonElement :: String -> String -> Element
+linkButtonElement address label =
+  add_attr (mkAttr "class" "ui button") $ aRef address label
+
+htmlRow :: Element -> Element
+htmlRow = add_attr (mkAttr "class" "row") . unode "div"
+
+dropDownToLevelsElement :: String -> [(Element, [Element])] -> Element
+dropDownToLevelsElement title twoLeveledItems =
+  add_attr (mkAttr "class" "ui dropdown button") $ unode "div"
+    [ add_attr (mkAttr "class" "text") $ unode "div" title
+    , add_attr (mkAttr "class" "dropdown icon") $ unode "i" ""
+    , add_attr (mkAttr "class" "menu") $ unode "div" $
+        map (\ (label, items) ->
+              add_attr (mkAttr "class" "item") $ unode "div"
+                (
+                  ( if null items
+                    then []
+                    else [add_attr (mkAttr "class" "dropdown icon") $ unode "i" ""]
+                  )
+                  ++ [add_attr (mkAttr "class" "text") $ unode "div" label]
+                  ++ if null items then [] else [dropDownSubMenu items]
+                )
+            ) twoLeveledItems
+    ]
+
+dropDownSubMenu :: [Element] -> Element
+dropDownSubMenu items =
+  add_attr (mkAttr "class" "menu") $ unode "div" $
+    map (add_attr (mkAttr "class" "item")) items
 
 pageOptionsCommandList :: Element
 pageOptionsCommandList =
@@ -859,6 +932,10 @@ pageMoreExamples listElements =
           add_attr (mkAttr "class" "transistion hidden") $ unode "div" $
             unode "ul" listElements
       ]
+
+horizontalDivider :: String -> Element
+horizontalDivider label =
+  add_attr (mkAttr "class" "ui horizontal divider") $ unode "div" label
 
 mkResponse :: String -> Status -> String -> Response
 mkResponse ty st = responseLBS st
@@ -1383,16 +1460,20 @@ showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
   sGTh@(G_theory lid _ (ExtSign sig _) _ thsens _) -> let
     ga = globalAnnos dg
     -- links to translations and provers xml view
-    transBt = aRef ('/' : show sessId ++ "?translations=" ++ show i)
+    transBt = linkButtonElement ('/' : show sessId ++ "?translations=" ++ show i)
       "translations"
-    prvsBt = aRef ('/' : show sessId ++ "?provers=" ++ show i) "provers"
-    headr = unode "h3" fstLine
+    prvsBt = linkButtonElement ('/' : show sessId ++ "?provers=" ++ show i) "provers"
+    headr = htmlRow $ unode "h3" fstLine
     thShow = renderHtml ga $ vcat $ map (print_named lid) $ toNamedList thsens
     sbShow = renderHtml ga $ pretty sig
     in case getThGoals sGTh of
       -- show simple view if no goals are found
-      [] -> return $ htmlPage fstLine "" [ headr, transBt, prvsBt,
-        unode "h4" "Theory" ] ++ sbShow ++ "\n<br />" ++ thShow
+      [] -> return $ htmlPage fstLine ""
+                       [ headr
+                       , transBt
+                       , prvsBt
+                       , htmlRow $ unode "h4" "Theory"
+                       ] $ "<pre>\n" ++ sbShow ++ "\n<br />" ++ thShow ++ "\n</pre>\n"
       -- else create proving functionality
       gs -> do
         -- create list of theorems, selectable for proving
@@ -1421,7 +1502,7 @@ showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
             goBack = aRef ('/' : show sessId) "return to DGraph"
         return $ htmlPage fstLine (jvScr1 ++ jvScr2)
           [ headr, transBt, prvsBt, plain " ", goBack, unode "h4" "Theorems"
-          , thmMenu, unode "h4" "Theory" ] ++ sbShow ++ "\n<br />" ++ thShow
+          , thmMenu, unode "h4" "Theory" ] $ sbShow ++ "\n<br />" ++ thShow
 
 -- | show window of the autoproof function
 showAutoProofWindow :: DGraph -> Int -> ProverMode
@@ -1470,7 +1551,7 @@ showAutoProofWindow dg sessId prOrCons = let
             [ hidStr, prSel, cmSel, br, btAll, btNone, btUnpr, timeout
             , include ] ++ intersperse br (prBt : nodeSel))
     return (htmlC, htmlPage title (jvScr1 ++ jvScr2)
-               [ goBack, plain " ", nodeMenu ])
+               [ goBack, plain " ", nodeMenu ] "")
 
 showProveButton :: Bool -> (Element, Element)
 showProveButton isProver = (prBt, timeout) where
@@ -1794,25 +1875,32 @@ sessAnsAux libName svg (sess, k) =
   let libEnv = sessLibEnv sess
       ln = libToFileName libName
       libref l =
-        aRef (mkPath sess l k) (libToFileName l) : map (\ d ->
-         aRef (extPath sess l k ++ d) d) displayTypes
+        ( aRef (mkPath sess l k) (libToFileName l)
+        , aRef (mkPath sess l k) "default"
+            : map (\ d -> aRef (extPath sess l k ++ d) d) displayTypes
+        )
       libPath = extPath sess libName k
       ref d = aRef (libPath ++ d) d
       autoProofBt = aRef ('/' : show k ++ "?autoproof") "automatic proofs"
       consBt = aRef ('/' : show k ++ "?consistency") "consistency checker"
 -- the html quicklinks to nodes and edges have been removed with R.16827
-  in (htmlC, htmlPage
-           ('(' : shows k ")" ++ ln)
-           []
-           (bold ("library " ++ ln)
-            : map ref displayTypes
-            ++ menuElement : loadXUpdate (libPath ++ updateS)
-            : plain "tools:" : mkUnorderedList [autoProofBt, consBt]
-            : plain "commands:"
-            : mkUnorderedList (map ref globalCommands)
-            : plain "imported libraries:"
-            : [mkUnorderedList $ map libref $ Map.keys libEnv]
-           ) ++ svg)
+  in  ( htmlC
+      , htmlPage
+          ("DOLIator - (" ++ shows k ")" ++ ln)
+          []
+          [ add_attr (mkAttr "class" "row") (unode "div" $ unode "h1" ("Library " ++ ln))
+          , add_attr (mkAttr "class" "row") $ unode "div"
+              [ pageOptionsFormat "" libPath
+              , pageOptionsCommandList
+              , dropDownElement "Tools" [autoProofBt, consBt]
+              , dropDownElement "Commands" (map ref globalCommands)
+              , dropDownToLevelsElement "Imported Libraries" $ map libref $ Map.keys libEnv
+              ]
+          , add_attr (mkAttr "class" "sixteen wide column centered") (unode "div" $ loadXUpdate (libPath ++ updateS))
+          , add_attr (mkAttr "class" "row") $ unode "div" $ unode "h3" "Development Graph"
+          ]
+          svg
+      )
 
 getHetsLibContent :: HetcatsOpts -> String -> [QueryPair] -> IO [Element]
 getHetsLibContent opts dir query = do
@@ -1842,48 +1930,32 @@ mkHtmlRef query entry = unode "dir" $ aRef
   (entry ++ if null query then "" else '?' : intercalate "&"
          (map (\ (x, ms) -> x ++ maybe "" ('=' :) ms) query)) entry
 
-mkUnorderedList :: Node t => [t] -> Element
-mkUnorderedList = unode "ul" . map (unode "li")
-
-italic :: String -> Element
-italic = unode "i"
-
-bold :: String -> Element
-bold = unode "b"
-
 plain :: String -> Element
 plain = unode "p"
-
-menuElement :: Element
-menuElement = aRef "?menus" "menus"
 
 inputNode :: Element
 inputNode = unode "input" ()
 
-loadNode :: String -> Element
-loadNode nm = add_attrs
-  [ mkAttr "type" "file"
-  , mkAttr "name" nm
-  , mkAttr "size" "40"
-  ] inputNode
-
-submitNode :: Element
-submitNode = add_attrs
+submitButton :: Element
+submitButton = add_attrs
     [ mkAttr "type" "submit"
-    , mkAttr "value" "submit"]
-    inputNode
+    , mkAttr "value" "submit"
+    , mkAttr "class" "ui button"
+    ] inputNode
 
 mkForm :: String -> [Element] -> Element
-mkForm a = add_attrs
-  [ mkAttr "action" a
-  , mkAttr "enctype" "multipart/form-data"
-  , mkAttr "method" "post" ]
-  . unode "form"
+mkForm a =
+  add_attrs [ mkAttr "action" a
+            , mkAttr "enctype" "multipart/form-data"
+            , mkAttr "method" "post"
+            , mkAttr "class" "ui basic form"
+            ] . unode "form"
 
 loadXUpdate :: String -> Element
 loadXUpdate a = mkForm a
-  [ italic xupdateS
-  , loadNode xupdateS
-  , italic "impacts"
-  , loadNode "impacts"
-  , submitNode ]
+  [add_attr (mkAttr "class" "ui relaxed grid container") $ unode "div"
+    [ add_attr (mkAttr "class" "six wide column") $ unode "div" $ filePickerInputElement xupdateS xupdateS xupdateS
+    , add_attr (mkAttr "class" "six wide column") $ unode "div" $ filePickerInputElement "impacts" "impacts" "impacts"
+    , add_attr (mkAttr "class" "four wide column") $ unode "div" submitButton
+    ]
+  ]

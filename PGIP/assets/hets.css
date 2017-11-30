@@ -1,3 +1,8 @@
 .ui.file.input input[type="file"] {
   display: none;
 }
+
+.insert-example-into-user-input-text:hover {
+  cursor: pointer;
+  color: #0E6EB8;
+}
