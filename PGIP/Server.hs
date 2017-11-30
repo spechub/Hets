@@ -337,8 +337,8 @@ parseRequestParams request =
 -- | the old API that supports downloading files and interactive stuff
 oldWebApi :: HetcatsOpts -> FilePath -> Cache -> Request -> [String]
   -> [QueryPair] -> String -> WebResponse
-oldWebApi opts tempLib sessRef re pathBits splitQuery meth respond
-  = case meth of
+oldWebApi opts tempLib sessRef re pathBits splitQuery meth respond =
+  case meth of
       "GET" -> if isJust $ lookup "menus" splitQuery
          then mkMenuResponse respond else do
          let path = intercalate "/" pathBits
@@ -360,6 +360,11 @@ oldWebApi opts tempLib sessRef re pathBits splitQuery meth respond
            else getHetsResponse opts [] sessRef pathBits splitQuery respond
       "POST" -> do
         (params, files) <- parseRequestBody lbsBackEnd re
+        let opts' = case lookup (B8.pack "input-type") params of
+                      Nothing -> opts
+                      Just inputType -> if null $ B8.unpack inputType
+                                        then opts
+                                        else opts { intype = read $ B8.unpack inputType }
         mTmpFile <- case lookup "content"
                    $ map (\ (a, b) -> (B8.unpack a, b)) params of
               Nothing -> return Nothing
@@ -368,12 +373,12 @@ oldWebApi opts tempLib sessRef re pathBits splitQuery meth respond
                    tmpFile <- getTempFile content "temp.het"
                    return $ Just tmpFile
         let res tmpFile =
-              getHetsResponse opts [] sessRef [tmpFile] splitQuery respond
+              getHetsResponse opts' [] sessRef [tmpFile] splitQuery respond
             mRes = maybe (queryFail "nothing submitted" respond)
               res mTmpFile
         case files of
           [] -> if isJust $ getVal splitQuery "prove" then
-               getHetsResponse opts [] sessRef pathBits
+               getHetsResponse opts' [] sessRef pathBits
                  (splitQuery ++ map (\ (a, b)
                  -> (B8.unpack a, Just $ B8.unpack b)) params) respond
             else mRes
@@ -385,7 +390,7 @@ oldWebApi opts tempLib sessRef re pathBits splitQuery meth respond
              maybe (res tmpFile) res mTmpFile
             else mRes
           _ -> getHetsResponse
-                 opts (map snd files) sessRef pathBits splitQuery respond
+                 opts' (map snd files) sessRef pathBits splitQuery respond
       _ -> respond $ mkResponse "" status400 ""
 
 -- extract what we need to know from an autoproof request
@@ -834,10 +839,10 @@ pageOptionsFileForm = add_attr (mkAttr "id" "user-file-form") $
 
 inputTypeDropDown :: Element
 inputTypeDropDown = unode "div"
-   [ add_attr (mkAttr "class" "ui sub header") $ unode "div" "Input Type of text field"
+   [ add_attr (mkAttr "class" "ui sub header") $ unode "div" "Input Type of File or Text Field"
    , add_attrs [mkAttr "name" "input-type", mkAttr "id" "user-file-input-type"] $
        unode "select" $
-         add_attr (mkAttr "value" "") (unode "option" "[Use selected file instead of text field]")
+         add_attr (mkAttr "value" "") (unode "option" "[Try to determine automatically]")
          : map (\ inType ->
                  add_attr (mkAttr "value" $ show inType) $ unode "option" $ show inType
                ) plainInTypes
