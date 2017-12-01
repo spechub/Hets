@@ -40,6 +40,7 @@ instance Common.Id.GetRange CM where
   rangeSpan _ = []
 
 data ClassEntity = CL Class 
+                    | AC AssociationClass
                     | EN UML.UML.Enum deriving (Ord, Show)
 
 instance Eq ClassEntity where
@@ -148,8 +149,7 @@ instance Show Label where
     show l = "[" ++ (lowerValue l) ++ ", " ++ (upperValue l) ++ "]"
 
 data Signal = Signal {
-        signalName :: String,
-} deriving (Eq, Ord, Show)
+        signalName :: String} deriving (Eq, Ord, Show)
 
 type Id = String
 data UMLType = CE ClassEntity | UMLString | UMLInteger | UMLBool 
@@ -160,9 +160,10 @@ data UMLType = CE ClassEntity | UMLString | UMLInteger | UMLBool
                 -- They are left as-is - who knows who needs this. 
                 -- Note that they might contain class ids
 
-data Type = Type {   umltype    :: UMLType,
-                    typeUnique  :: Bool,
-                    typeOrdered :: Bool} deriving (Eq, Ord)
+data Type = Type {  
+    umltype    :: UMLType,
+    typeUnique  :: Bool,
+    typeOrdered :: Bool} deriving (Eq, Ord)
 
 instance Show Type where
     show t = show (umltype t)

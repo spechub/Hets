@@ -9,12 +9,12 @@ import           UML.UML
 import           UML.XMINames
 
 import           Data.Maybe
-
+import           Data.List.Split
 import           Common.GlobalAnnotations      (PrefixMap)
 
 import           Text.ParserCombinators.Parsec
 import           Text.XML.Light
-import Data.String.Utils
+
 
 
 basicSpecCM :: PrefixMap ->  GenParser Char st CM
@@ -66,7 +66,7 @@ parseModel el0 = case findChildren packagedElementName el of
                         xmiv =  case filter (not . (Nothing ==) . qURI . attrKey) $ elAttribs el of  
                                     [] -> Nothing
                                     (x:_) ->  (qURI . attrKey) x
-                        prefix = head (split ":" $ fromMaybe "uml" $ findAttr (typeName xmiv) $ head $ findChildren packagedElementName el)
+                        prefix = head (splitOn ":" $ fromMaybe "uml" $ findAttr (typeName xmiv) $ head $ findChildren packagedElementName el)
                         smPrefix = prefix ++ ":StateMachine"
                         umlv = qURI $ elName el --case filter ((Just "exporterVersion" ==).(findAttr nameName)) $ foldl (++) [] $ map (findChildren (sName "contents")) $ findChildren (sName "eAnnotations") el of
 findModelElement :: Element -> Maybe Element

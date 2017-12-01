@@ -4,7 +4,7 @@
 module UML.Sign where
 
 --import CommonLogic.Sign
-
+import           Data.List
 import           UML.UML
 import           UML.UML   ()
 import           Common.Id
@@ -60,7 +60,7 @@ comp2mfcomp ((on, ce), n, (tn, tart)) = MFComposition n on (MFType Set $ showCla
 type2mftype :: Type -> MFTYPE
 type2mftype t = case (typeOrdered t, typeUnique t) of
                     (True, True) -> MFType OrderedSet (umlTypeString $ umltype t)
-                    (True, False) -> MFType List (umlTypeString $ umltype t)
+                    (True, False) -> MFType Sequence (umlTypeString $ umltype t)
                     (False, True) -> MFType Set (umlTypeString $ umltype t)
                     (False, False) -> MFType Bag (umlTypeString $ umltype t)
 

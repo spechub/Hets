@@ -219,15 +219,10 @@ processLiteral xmiv en el =
 processSignal :: Maybe String -> (Map.Map Id ClassEntity)
                     -> Element -> (Id, Signal)
 processSignal xmiv emap el = (fromMaybe "" (findAttr (attrIdName xmiv) el),
-    Signal {sigSuper = map (processGeneralization emap)
-            (findChildren generalizationName el),
-                        signalName = (case findAttr nameName el of
-                                        Nothing -> show el
-                                        Just t -> t),
-                        sigAttr = map (processAttribute emap)
-                            (findChildren attributeName el),
-                        sigProc = map (processProcedure emap)
-                            (findChildren procedureName el)})
+    Signal { 
+      signalName = (case findAttr nameName el of
+        Nothing -> show el
+        Just t -> t)})
 
 processProcedure :: (Map.Map Id ClassEntity) -> Element -> Procedure
 processProcedure emap el = Procedure {
