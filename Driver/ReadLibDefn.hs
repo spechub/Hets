@@ -96,16 +96,12 @@ guessInput opts mr file input =
       _ -> return $ joinFileTypes fty ty
   else return fty
 
-<<<<<<< HEAD
 isUMLCDroot :: Element -> Bool 
 isUMLCDroot el0 = not $ isNothing $ findModelElement el0 
 
-readLibDefn :: MonadIO m => LogicGraph -> HetcatsOpts -> Maybe String
-  -> FilePath -> FilePath -> String -> m [LIB_DEFN]
-=======
 readLibDefn :: LogicGraph -> HetcatsOpts -> Maybe String
   -> FilePath -> FilePath -> String -> ResultT IO [LIB_DEFN]
->>>>>>> origin/develop
+
 readLibDefn lgraph opts mr file fileForPos input =
     if null input then fail ("empty input file: " ++ file) else
     case intype opts of
