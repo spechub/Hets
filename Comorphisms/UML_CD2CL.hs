@@ -38,7 +38,7 @@ instance Comorphism UML_CD2CL
     UML.Logic_UML.UML
     ()                    -- Sublogics
       UML.UML.CM                 -- basic_spec
-    UML.Sign.MultForm             -- sentence
+    UML.Sign.Sen             -- sentence
       ()                    -- symb_items
       ()                    -- symb_map_items
       UML.Sign.Sign              -- sign
@@ -63,7 +63,7 @@ instance Comorphism UML_CD2CL
         map_theory UML_CD2CL = mapTheory
         map_morphism UML_CD2CL = mapMor 
 
-mapTheory :: (UML.Sign.Sign, [Named MultForm]) -> Result (CL_Sign.Sign, [Named TEXT_META])
+mapTheory :: (UML.Sign.Sign, [Named Sen]) -> Result (CL_Sign.Sign, [Named TEXT_META])
 mapTheory (sign, sens) = let 
                             sg = (mapSign sign)
                             t =  (translateSign2Phrases sign)   
@@ -75,7 +75,7 @@ mapTheory (sign, sens) = let
                             in return (sg2 , tms)
 
 
-mapSen ::  UML.Sign.MultForm -> TEXT_META
+mapSen ::  UML.Sign.Sen -> TEXT_META
 mapSen mf = Text_meta{ As_CL.getText = Text phrases nullRange
                           , As_CL.textIri = Nothing
                           , As_CL.nondiscourseNames = Nothing
