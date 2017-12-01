@@ -47,7 +47,7 @@ instance Pretty UMLType where
 instance Pretty Type where
     pretty t = (pretty . umltype) t
 
-instance Pretty MultForm where
+instance Pretty UML.Sign.Sen where
     pretty (NLeqF n f) = pretty $ (show n) ++ "<=" ++ (show f)
     pretty (FLeqN f n) = pretty $ (show f) ++ "<=" ++ (show n)
 instance Pretty Sign where

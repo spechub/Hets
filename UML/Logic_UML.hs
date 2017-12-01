@@ -24,7 +24,7 @@ instance Language UML where
   description _ = "UML Language"
 
 instance Sentences UML
-  MultForm
+  UML.Sign.Sen
   Sign
   Morphism
   ()
@@ -49,7 +49,7 @@ instance Syntax UML
 instance Logic UML
   ()                    -- Sublogics
   CM                 -- basic_spec
-  MultForm             -- sentence
+  UML.Sign.Sen             -- sentence
   ()                    -- symb_items
   ()                    -- symb_map_items
   UML.Sign.Sign              -- sign
@@ -64,7 +64,7 @@ instance Logic UML
 
 instance StaticAnalysis UML
   CM         -- basic_spec
-  MultForm   -- sentence
+  UML.Sign.Sen   -- sentence
   ()                -- symb_items
   ()                -- symb_map_items
   UML.Sign.Sign              -- sign

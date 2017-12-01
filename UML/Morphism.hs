@@ -98,7 +98,7 @@ composeMor m1 m2 = return Morphism {
         associationMap = Map.fromList [(a, d) | (a, b) <- (Map.toList $ associationMap m1), (c, d) <- (Map.toList $ associationMap m2), b == c]
 }
 
-mapSentence :: Morphism -> MultForm -> Result MultForm
+mapSentence :: Morphism -> Sen -> Result Sen
 mapSentence mor (NLeqF n f) = return $ NLeqF n (mapSen_fe mor f)
 mapSentence mor (FLeqN f n) = return $ FLeqN (mapSen_fe mor f) n
 

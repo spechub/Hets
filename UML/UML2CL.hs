@@ -83,13 +83,13 @@ translateEndCoin m i (n, et) =
 
         _ -> Nothing
 
-translateMF2TM :: [MultForm] -> TEXT_META
+translateMF2TM :: [Sen] -> TEXT_META
 translateMF2TM mfs = Text_meta { getText = Text (fmap Sentence (map translateMult2Sen mfs)) nullRange
     , textIri = Nothing
     , nondiscourseNames = Nothing
     , prefix_map = [] }
 
-translateMult2Sen :: MultForm -> SENTENCE
+translateMult2Sen :: Sen -> SENTENCE
 translateMult2Sen mf = case mf of
                 NLeqF l (NumAttr (MFAttribute c p (MFType t cp))) -> Quant_sent Universal [Name x, Name y, Name n] (ifSen    (andSen [    typeFunction (mkSimpleId $ c ++ "." ++ p) [x, y],
                                         (typeFunction (mkSimpleId $ "form:" ++ (map toLower $ show t) ++ "-size") [y, n])])
@@ -393,27 +393,27 @@ translateUMLType t = error $ "TypeTranslation unimplemented:" ++ show t
 --Sign
 
 
-retrieveSen :: CM -> [MultForm]
+retrieveSen :: CM -> [Sen]
 retrieveSen m = foldl (++) [] ((map class2MFs $ fmap CL (Map.elems $ cmClasses m))
                 ++ (map asso2MFs (filter (not . isComposition) $ Map.elems $ cmAssociations m))
                 ++ (map comp2MFs (filter (isComposition) $ Map.elems $  cmAssociations m))
                 ++ map retrieveSenPack (cmPackages m))
 
-retrieveSenPack :: Package -> [MultForm]
+retrieveSenPack :: Package -> [Sen]
 retrieveSenPack pack = foldl (++) [] ((map class2MFs $ fmap CL (Map.elems $ classes pack))
                 ++ (map asso2MFs (filter (not . isComposition) $ Map.elems $ associations pack))
                 ++ (map comp2MFs (filter (isComposition) $ Map.elems $ associations pack))
                 ++ map retrieveSenPack (packagePackages pack))
 
-class2MFs :: ClassEntity -> [MultForm]
+class2MFs :: ClassEntity -> [Sen]
 class2MFs (CL cl) = foldl (++) [] $ map (attr2MFs cl) (attr cl)
 class2MFs (AC ac) = class2MFs (CL $ acClass ac)
 class2MFs (EN _) = []
 
-attr2MFs :: Class -> Attribute -> [MultForm]
+attr2MFs :: Class -> Attribute -> [Sen]
 attr2MFs cl attri = bounds2MFs (attrLowerValue attri) (attrUpperValue attri) (NumAttr $ MFAttribute (className cl) (attrName attri) (type2mftype $ attrType attri) )
 
-bounds2MFs :: String -> String -> FunExpr -> [MultForm]
+bounds2MFs :: String -> String -> FunExpr -> [Sen]
 bounds2MFs low upp fe = (NLeqF (read low) fe) :
                     case upp of
                         "*" -> []
@@ -422,14 +422,14 @@ bounds2MFs low upp fe = (NLeqF (read low) fe) :
 end2StrMFT :: End -> (String, MFTYPE)
 end2StrMFT end = (fromJust $ endName end, type2mftype $ defaultType $ endTarget end)
 
-asso2MFs :: Association -> [MultForm]
+asso2MFs :: Association -> [Sen]
 asso2MFs ass = foldl (++) [] $  map (end2MFs (NumAss (MFAssociation (assoName ass) (map end2StrMFT (ends ass))))) (ends ass)
 
 
-end2MFs :: (String -> FunExpr) -> End -> [MultForm]
+end2MFs :: (String -> FunExpr) -> End -> [Sen]
 end2MFs an end = bounds2MFs (lowerValue $ label end) (upperValue $ label end) (an $ fromJust $ endName end)
 
-comp2MFs :: Association -> [MultForm]
+comp2MFs :: Association -> [Sen]
 comp2MFs comp = foldl (++) [] $  map (end2MFs (NumComp $ MFComposition (assoName comp) (fromJust $ endName origin) (MFType Set (showClassEntityName $ endTarget origin)) (fromJust $ endName target) (type2mftype $ defaultType $ endTarget target) )) (ends comp)
                     where
                         origin = head $ filter isComposedEnd $ ends comp

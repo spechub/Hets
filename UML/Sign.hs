@@ -1,4 +1,4 @@
-
+{-# LANGUAGE DeriveDataTypeable #-}
 -- |This module implements an institution for UML Class Diagrams as described
 -- in the DOL standard - at least the signature and the sentences
 module UML.Sign where
@@ -8,6 +8,7 @@ import           Data.List
 import           UML.UML
 import           UML.UML   ()
 import           Common.Id
+import           Data.Data
 
 -- |The signature
 data Sign = Sign {
@@ -29,28 +30,25 @@ emptySign = Sign {
     }
 
 -- | The multiplicity formulas as defined by the specified grammar (see DOL)
-data MultForm = NLeqF NumLit FunExpr 
-                | FLeqN FunExpr NumLit deriving (Eq, Ord, Show)
+data Sen = NLeqF NumLit FunExpr 
+                | FLeqN FunExpr NumLit deriving (Eq, Ord, Show, Typeable, Data)
 data FunExpr = NumComp MFCOMPOSITION MFEnd 
                 | NumAss MFASSOCIATION MFEnd 
-                | NumAttr MFATTRIBUTE deriving (Eq, Ord, Show)
-data MFATTRIBUTE = MFAttribute MFClassifier MFEnd MFTYPE deriving (Eq, Ord, Show)
-data MFCOMPOSITION = MFComposition MFName MFEnd MFTYPE MFEnd MFTYPE deriving (Eq, Ord, Show)
-data MFASSOCIATION = MFAssociation MFName [(MFEnd, MFTYPE)] deriving (Eq, Ord, Show)
+                | NumAttr MFATTRIBUTE deriving (Eq, Ord, Show, Typeable, Data)
+data MFATTRIBUTE = MFAttribute MFClassifier MFEnd MFTYPE deriving (Eq, Ord, Show, Typeable, Data)
+data MFCOMPOSITION = MFComposition MFName MFEnd MFTYPE MFEnd MFTYPE deriving (Eq, Ord, Show, Typeable, Data)
+data MFASSOCIATION = MFAssociation MFName [(MFEnd, MFTYPE)] deriving (Eq, Ord, Show, Typeable, Data)
 type MFClassifier = MFName
 type MFEnd = MFName
-data MFTYPE = MFType Annot MFClassifier deriving (Eq, Ord, Show)
+data MFTYPE = MFType Annot MFClassifier deriving (Eq, Ord, Show, Typeable, Data)
 type NumLit = Integer
-data Annot = OrderedSet | Set | Sequence | Bag deriving (Eq, Ord, Show)
+data Annot = OrderedSet | Set | Sequence | Bag deriving (Eq, Ord, Show, Typeable, Data)
 type MFName = String
 
-instance GetRange MultForm where
+instance GetRange Sen where
   getRange _ = nullRange
   rangeSpan _ = []
 
-
--- |The sentences are given by expressions in Common Logic
-data Sen = TEXT_META
 
 
 comp2mfcomp :: ((String, ClassEntity), String, (String, Type)) -> MFCOMPOSITION
