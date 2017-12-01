@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./QVTR/Print.hs
 Description :  pretty printing for QVTR
 Copyright   :  (c) Daniel Calegari Universidad de la Republica, Uruguay 2013
 License     :  GPLv2 or higher, see LICENSE.txt

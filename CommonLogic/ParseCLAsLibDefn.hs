@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CommonLogic/ParseCLAsLibDefn.hs
 Copyright   :  Eugen Kuksa 2011
 License     :  GPLv2 or higher, see LICENSE.txt
 

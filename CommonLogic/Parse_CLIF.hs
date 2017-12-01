@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CommonLogic/Parse_CLIF.hs
 Description :  Parser of common logic interchange format
 Copyright   :  (c) Karl Luc, DFKI Bremen 2010, Eugen Kuksa and Uni Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -20,7 +20,7 @@ import qualified Common.AS_Annotation as Annotation
 import CommonLogic.AS_CommonLogic as AS
 import Common.Id as Id
 import Common.IRI
-import Common.Lexer as Lexer hiding (oParenT, cParenT, pToken)
+import Common.Lexer as Lexer hiding (oParenT, cParenT, pToken, parens)
 import Common.Keywords (colonS, mapsTo)
 import Common.GlobalAnnotations (PrefixMap)
 import Common.Parsec

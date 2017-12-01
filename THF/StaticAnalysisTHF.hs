@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./THF/StaticAnalysisTHF.hs
 Description :  Static analysis for THF
 Copyright   :  (c) A. Tsogias, DFKI Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt

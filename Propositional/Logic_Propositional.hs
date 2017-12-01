@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {- |
-Module      :  $Header$
+Module      :  ./Propositional/Logic_Propositional.hs
 Description :  Instance of class Logic for propositional logic
 Copyright   :  (c) Dominik Luecke, Uni Bremen 2007
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -119,7 +119,7 @@ instance Logic Propositional
     where
         -- hybridization
       parse_basic_sen Propositional = Just $ const impFormula
-      stability Propositional = Experimental
+      stability Propositional = Stable
       top_sublogic Propositional = Sublogic.top
       all_sublogics Propositional = sublogics_all
       empty_proof_tree Propositional = emptyProofTree

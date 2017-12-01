@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./HasCASL/RawSym.hs
 Description :  raw symbol functions
 Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2003
 License     :  GPLv2 or higher, see LICENSE.txt

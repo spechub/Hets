@@ -1,7 +1,7 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances #-}
 {-# OPTIONS -w #-}
 {- |
-Module      :  $Header$
+Module      :  ./RDF/Logic_RDF.hs
 Description :  instance of the class Logic for RDF
 Copyright   :  (c) Felix Mance
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -96,6 +96,7 @@ instance Logic RDF RDFSub TurtleDocument Axiom SymbItems SymbMapItems
                Sign
                RDFMorphism RDFEntity RawSymb ProofTree where
          empty_proof_tree RDF = emptyProofTree
+         stability RDF = Experimental
 
 {-
 instance SemiLatticeWithTop ProfSub where

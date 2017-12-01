@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Framework/AS.hs
 Description :  Abstract syntax for logic definitions
 Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt

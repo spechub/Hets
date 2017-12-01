@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Static/ComputeTheory.hs
 Description :  compute the theory of a node
 Copyright   :  (c) Christian Maeder and DFKI GmbH 2009
 License     :  GPLv2 or higher, see LICENSE.txt

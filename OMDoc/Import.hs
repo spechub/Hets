@@ -1,6 +1,6 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {- |
-Module      :  $Header$
+Module      :  ./OMDoc/Import.hs
 Description :  Transforms an OMDoc file into a development graph
 Copyright   :  (c) Ewaryst Schulz, DFKI Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt

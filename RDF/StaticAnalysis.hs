@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./RDF/StaticAnalysis.hs
 Copyright   :  Felix Gabriel Mance
 License     :  GPLv2 or higher, see LICENSE.txt
 

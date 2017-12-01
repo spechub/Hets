@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./GUI/GtkConsistencyChecker.hs
 Description :  Gtk GUI for the consistency checker
 Copyright   :  (c) Thiemo Wiedemeyer, Uni Bremen 2009
 License     :  GPLv2 or higher, see LICENSE.txt

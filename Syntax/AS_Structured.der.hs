@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Syntax/AS_Structured.der.hs
 Description :  abstract syntax of DOL OMS and CASL structured specifications
 Copyright   :  (c) Klaus Luettich, Uni Bremen 2002-2016
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -219,6 +219,7 @@ getSpecNames sp = let f = getSpecNames . item in case sp of
   Filtering as _ -> f as
   Union as _ -> Set.unions $ map f as
   Intersection as _ -> Set.unions $ map f as
+  Extraction as _ -> f as
   Extension as _ -> Set.unions $ map f as
   Free_spec as _ -> f as
   Cofree_spec as _ -> f as

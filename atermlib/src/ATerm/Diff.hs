@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./atermlib/src/ATerm/Diff.hs
 Description :  compute the differences of two unshared ATerms
 Copyright   :  (c) Klaus Luettich, Uni Bremen 2005
 License     :  GPLv2 or higher, see LICENSE.txt

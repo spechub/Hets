@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 {- |
-Module      :  $Header$
+Module      :  ./GUI/GraphMenu.hs
 Description :  Menu creation functions for the Graphdisplay
 Copyright   :  (c) Thiemo Wiedemeyer, Uni Bremen 2002-2008
 License     :  GPLv2 or higher, see LICENSE.txt

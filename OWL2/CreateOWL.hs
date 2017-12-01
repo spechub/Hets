@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./OWL2/CreateOWL.hs
 Description :  translate theories to OWL2
 Copyright   :  (c) C. Maeder, DFKI GmbH 2012
 License     :  GPLv2 or higher, see LICENSE.txt

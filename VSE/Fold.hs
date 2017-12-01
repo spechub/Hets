@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./VSE/Fold.hs
 Description :  folding functions for VSE progams
 Copyright   :  (c) Christian Maeder, DFKI Bremen 2008
 License     :  GPLv2 or higher, see LICENSE.txt

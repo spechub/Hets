@@ -1,5 +1,5 @@
 {- |
-Module      : $Header$
+Module      : ./PGIP/XMLparsing.hs
 Description : XML processing for the CMDL interface
 Copyright   : uni-bremen and DFKI
 License     : GPLv2 or higher, see LICENSE.txt

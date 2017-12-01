@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Syntax/Parse_AS_Structured.hs
 Description :  parser for DOL OMS and CASL (heterogeneous) structured specifications
 Copyright   :  (c) Till Mossakowski, Christian Maeder, Uni Bremen 2002-2016
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -102,7 +102,7 @@ logicName :: LogicGraph -> AParser st Logic_name
 logicName l = do
       i <- hetIriCurie >>= expandCurieMConservative l
       let (ft, rt) = if isSimple i
-                     then break (== '.') $ abbrevPath i -- HetCASL
+                     then break (== '.') $ abbrevPath i -- DOL
                      else (abbrevPath i, [])
       (e, ms) <- if null rt then return (i, Nothing)
          else do
@@ -388,9 +388,9 @@ minimization lg = do
 
 extraction :: LogicGraph -> AParser st EXTRACTION
 extraction lg = do
-  p <- asKey "extract" <|> asKey "remove"
-  is <- many1 (hetIRI lg)
-  return . ExtractOrRemove (tokStr p == "extract") is $ tokPos p
+  p <- asKey extractS <|> asKey removeS
+  (is,commas) <- separatedBy (hetIRI lg) commaT
+  return . ExtractOrRemove (tokStr p == extractS) is $ catRange (p:commas)
 
 filtering :: LogicGraph -> AParser st FILTERING
 filtering lg = do

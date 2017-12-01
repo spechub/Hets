@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CSL/EPElimination.hs
 Description :  The extended parameter elimination procedure
 Copyright   :  (c) Ewaryst Schulz, DFKI Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt

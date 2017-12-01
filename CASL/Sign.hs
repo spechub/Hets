@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./CASL/Sign.hs
 Description :  CASL signatures and local environments for basic analysis
 Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -590,3 +590,15 @@ addSymbToSign sig sy =
         SubsortAsItemType _ -> return sig
         PredAsItemType pt -> return $ addPred' sig' n pt
         OpAsItemType ot -> return $ addOp' sig' n ot
+
+
+-- The function below belong in a different file. But I put them here for now.
+-- dual of a quantifier
+
+dualQuant :: QUANTIFIER -> QUANTIFIER
+dualQuant q = case q of
+ Universal -> Existential
+ Existential -> Universal 
+ Unique_existential -> error "unique existential quantifier has no dual" -- should not get here
+
+

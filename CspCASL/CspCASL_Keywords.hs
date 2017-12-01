@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CspCASL/CspCASL_Keywords.hs
 Description :  CspCASL keywords to be used for parsing and printing
 Copyright   :  (c) Andy Gimblett and Swansea University 2006
 License     :  GPLv2 or higher, see LICENSE.txt

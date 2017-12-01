@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./CASL_DL/Logic_CASL_DL.hs
 Description :  Instance of class Logic for CASL DL
 Copyright   :  (c) Klaus Luettich, Uni Bremen 2005
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -44,7 +44,7 @@ data CASL_DL = CASL_DL deriving Show
 
 instance Language CASL_DL where
  description _ = unlines
-  [ "CASL_DL is at the same time an extension and a restriction of CASL."
+  [ "CASL_DL is the restriction of CASL to OWL 1 expressivity."
   , "It additionally provides cardinality restrictions in a description logic"
   , "sense; and it limits the expressivity of CASL to the description logic"
   , "SHOIN(D). Hence it provides the following sublogics:"
@@ -136,7 +136,7 @@ instance Logic CASL_DL CASL_DL_SL
                DLSign
                DLMor
                Symbol RawSymbol ProofTree where
-         stability _ = Unstable
+         stability _ = Experimental
          top_sublogic _ = SROIQ
          all_sublogics _ = [SROIQ]
 

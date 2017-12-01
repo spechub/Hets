@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL/ToSExpr.hs
 Description :  translate CASL to S-Expressions
 Copyright   :  (c) C. Maeder, DFKI 2008
 License     :  GPLv2 or higher, see LICENSE.txt

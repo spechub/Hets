@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./GUI/displayDependencyGraph.hs
 Description :  create a slightly faked dependency graph of the hets directories
 Copyright   :  (c) jianchun wang and Uni Bremen 2006
 License     :  GPLv2 or higher, see LICENSE.txt

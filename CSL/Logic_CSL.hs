@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./CSL/Logic_CSL.hs
 Description :  Instance of class Logic for CSL
 Copyright   :  (c) Dominik Dietrich, DFKI Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -11,6 +11,11 @@ Portability :  non-portable (imports Logic.Logic)
 
 Instance of class Logic for the CSL logic
    Also the instances for Syntax and Category.
+
+see
+Dominik Dietrich, Lutz Schröder, and Ewaryst Schulz:
+Formalizing and Operationalizing Industrial Standards.
+D. Giannakopoulou and F. Orejas (Eds.): FASE 2011, LNCS 6603, pp. 81–95, 2011.
 -}
 
 
@@ -40,7 +45,7 @@ instance Show CSL where
     show _ = "EnCL"
 
 instance Language CSL where
-    description _ = "EnCL Logic\n"
+    description _ = "A Domain-Specific Language for Engineering Calculations\n"
 -- language_name _ = "EnCL"
 
 -- | Instance of Category for CSL logic

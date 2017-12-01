@@ -1,7 +1,7 @@
 {-# LANGUAGE CPP, MultiParamTypeClasses, TypeSynonymInstances
   , FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./VSE/Logic_VSE.hs
 Description :  the incomplete Logic instance for VSE
 Copyright   :  (c) C. Maeder, DFKI 2008
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -107,6 +107,6 @@ instance Logic VSE ()
                VSESign
                VSEMor
                Symbol RawSymbol () where
-         stability VSE = Unstable
+         stability VSE = Testing
          empty_proof_tree VSE = ()
          provers VSE = [vse]

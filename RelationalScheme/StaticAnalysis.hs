@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./RelationalScheme/StaticAnalysis.hs
 Description :  static analysis for Relational Schemes
 Copyright   :  Dominik Luecke, Uni Bremen 2008
 License     :  GPLv2 or higher, see LICENSE.txt or LIZENZ.txt

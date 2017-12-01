@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Static/PrintDevGraph.hs
 Description :  pretty printing (parts of) a LibEnv
 Copyright   :  (c) C. Maeder, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -115,6 +115,7 @@ dgOriginHeader o = case o of
     DGTranslation _ -> "translation"
     DGUnion -> "union"
     DGIntersect -> "intersection"
+    DGExtract -> "extraction"
     DGRestriction _ _ -> "restriction"
     DGRevealTranslation -> "translation part of a revealing"
     DGFreeOrCofree v -> map toLower (show v) ++ "-spec"
@@ -123,6 +124,7 @@ dgOriginHeader o = case o of
     DGLogicQual -> "spec with logic qualifier"
     DGData -> "data-spec"
     DGFormalParams -> "formal parameters"
+    DGVerificationGeneric -> "verification for application of generic units"
     DGImports -> "arch import"
     DGInst _ -> "instantiation"
     DGFitSpec -> "fitting-spec"

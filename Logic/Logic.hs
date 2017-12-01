@@ -1,7 +1,7 @@
 {-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, DeriveDataTypeable
   , FlexibleInstances, UndecidableInstances, ExistentialQuantification #-}
 {- |
-Module      :  $Header$
+Module      :  ./Logic/Logic.hs
 Description :  central interface (type class) for logics in Hets
 Copyright   :  (c) Till Mossakowski, and Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -184,6 +184,10 @@ class Show lid => Language lid where
     -- default implementation
     description _ = ""
 
+-- short description = first line of description
+short_description :: Language lid => lid -> String
+short_description l = head ((lines $ description l) ++ [""])
+      
 {- | Categories are given as usual: objects, morphisms, identities,
      domain, codomain and composition. The type id is the name, or
      the identity of the category. It is an argument to all functions
@@ -601,6 +605,8 @@ class ( Syntax lid basic_spec symbol symb_items symb_map_items
          theory_to_taxonomy l _ _ _ _ = statFail l "theory_to_taxonomy"
          -- | create a theory from a correspondence
          corresp2th :: lid
+                    -> String -- the name of the alignment
+                    -> Bool   -- flag: should we disambiguate in the bridge
                     -> sign
                     -> sign
                     -> [symb_items]
@@ -610,12 +616,15 @@ class ( Syntax lid basic_spec symbol symb_items symb_map_items
                     -> REL_REF
                     -> Result (sign, [Named sentence], sign, sign,
                                EndoMap symbol, EndoMap symbol)
-         corresp2th _ _ _ _ _ _ _ _ = error "c2th nyi"
+         corresp2th _ _ _ _ _ _ _ _ _ = error "c2th nyi"
          -- | create a co-span fragment from an equivalence
          equiv2cospan :: lid -> sign -> sign -> [symb_items] -> [symb_items]
            -> Result (sign, sign, sign, EndoMap symbol, EndoMap symbol)
          equiv2cospan _ _ _ _ _ = error "equiv2cospan nyi"
-
+         -- | extract the module
+         extract_module :: lid -> [IRI] -> (sign, [Named sentence])
+                        -> Result (sign, [Named sentence])
+         extract_module _ _ = return
 
 -- | print a whole theory
 printTheory :: StaticAnalysis lid basic_spec sentence symb_items symb_map_items
@@ -633,8 +642,12 @@ inclusion :: StaticAnalysis lid basic_spec sentence symb_items symb_map_items
 inclusion l s1 s2 = if is_subsig l s1 s2 then subsig_inclusion l s1 s2
   else fail $ show $ fsep
        [ text (language_name l)
-       , text "symbol(s) missing in target:"
-       , pretty $ Set.difference (symset_of l s1) $ symset_of l s2 ]
+       , text "cannot construct inclusion. Symbol(s) missing in target:"
+       , pretty $ Set.difference (symset_of l s1) $ symset_of l s2
+       , text "\nSource is: "
+       , pretty $ symset_of l s1
+       , text "\nTarget is: "
+       , pretty $ symset_of l s2 ]
 
 {- | semi lattices with top (needed for sublogics). Note that `Ord` is
 only used for efficiency and is not related to the /partial/ order given
@@ -834,6 +847,17 @@ class (StaticAnalysis lid
                           -> Result (sign, [Named sentence])
          -- no logic should throw an error here
          addOmdocToTheory _ _ t _ = return t
+
+
+-- | sublogic of a theory
+sublogicOfTheo :: (Logic lid sublogics
+        basic_spec sentence symb_items symb_map_items
+        sign morphism symbol raw_symbol proof_tree) =>
+    lid -> (sign, [sentence]) -> sublogics
+sublogicOfTheo _ (sig, axs) =
+  foldl lub (minSublogic sig) $
+  map minSublogic axs
+
 
 {- The class of logics which can be used as logical frameworks, in which object
    logics can be specified by the user. Currently the only logics implementing

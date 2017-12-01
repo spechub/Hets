@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./OWL2/ProverState.hs
 Description :  Interface to the OWL Ontology provers.
 Copyright   :  (c) Heng Jiang, Uni Bremen 2004-2008
 License     :  GPLv2 or higher, see LICENSE.txt

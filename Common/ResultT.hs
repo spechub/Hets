@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Common/ResultT.hs
 Description :  ResultT type and a monadic transformer instance
 Copyright   :  (c) T. Mossakowski, C. Maeder, Uni Bremen 2006
 License     :  GPLv2 or higher, see LICENSE.txt

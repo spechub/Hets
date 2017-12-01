@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./DFOL/AS_DFOL.hs
 Description :  Abstract syntax for first-order logic with dependent types (DFOL)
 Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2009
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Maude/Meta/HasName.hs
 Description :  Accessing the names of Maude data types
 Copyright   :  (c) Martin Kuehl, Uni Bremen 2008-2009
 License     :  GPLv2 or higher, see LICENSE.txt

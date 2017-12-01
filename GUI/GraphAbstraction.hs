@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./GUI/GraphAbstraction.hs
 Description :  Interface for graph viewing and abstraction
 Copyright   :  (c) Thiemo Wiedemeyer, T. Mossakowski, Uni Bremen 2002-2008
 License     :  GPLv2 or higher, see LICENSE.txt

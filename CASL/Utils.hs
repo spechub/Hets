@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL/Utils.hs
 Description :  Utilities for CASL and its comorphisms
 Copyright   :  (c) Klaus Luettich and Uni Bremen 2002-2004
 License     :  GPLv2 or higher, see LICENSE.txt

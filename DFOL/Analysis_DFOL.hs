@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./DFOL/Analysis_DFOL.hs
 Description :  Static analysis for first-order logic with dependent types (DFOL)
 Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2009
 License     :  GPLv2 or higher, see LICENSE.txt

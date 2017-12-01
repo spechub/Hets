@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 {- |
-Module      :  $Header$
+Module      :  ./Driver/ReadLibDefn.hs
 Description :  reading Lib-Defns
 Copyright   :  (c) C. Maeder, DFKI 2014
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -31,7 +31,7 @@ import OWL2.ParseOWLAsLibDefn
 #endif
 import CSMOF.ParseXmiAsLibDefn
 import QVTR.ParseQvtAsLibDefn
-import SoftFOL.ParseTPTPAsLibDefn
+import TPTP.ParseAsLibDefn
 import FreeCAD.Logic_FreeCAD
 
 import Data.Maybe 
@@ -64,7 +64,9 @@ mimeTypeMap =
   , ("dol", DOLIn)
   , ("clif", CommonLogicIn True)
   , ("het", HetCASLIn)
-  , ("casl", CASLIn) ]
+  , ("casl", CASLIn)
+  , ("tptp", TPTPIn)
+  , ("p", TPTPIn) ]
 
 owlXmlTypes :: [InType]
 owlXmlTypes = map OWLIn [OwlXml, RdfXml, Turtle]
@@ -123,9 +125,9 @@ readLibDefn lgraph opts mr file fileForPos input =
                                             True -> parseUMLCDasLibDefn file
                                             False ->  parseXmi file 
       Qvt -> liftIO $ fmap (: []) $ parseQvt file
-      TPTPIn -> liftIO $ fmap (: []) $ parseTPTP input file
+      TPTPIn -> parseTPTP opts file input
 #ifndef NOOWLLOGIC
-      OWLIn _ -> parseOWL (isStructured opts) file
+      OWLIn _ -> parseOWLAsLibDefn (isStructured opts) file
 #endif
       _ -> case runParser (library lgraph { dolOnly = ty == DOLIn })
            (emptyAnnos ()) fileForPos input of

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CspCASL/SimplifySen.hs
 Description : simplification of CspCASL sentences for output after analysis
 Copyright   :  (c) Liam O'Reilly and Markus Roggenbach, Swansea University 2009
 License     :  GPLv2 or higher, see LICENSE.txt

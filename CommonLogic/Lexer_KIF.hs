@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CommonLogic/Lexer_KIF.hs
 Description :  Parser of the Knowledge Interchange Format
 Copyright   :  (c) Karl Luc, DFKI Bremen 2010, Soeren Schulze 2012
 License     :  GPLv2 or higher

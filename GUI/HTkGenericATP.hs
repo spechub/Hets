@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {- |
-Module      :  $Header$
+Module      :  ./GUI/HTkGenericATP.hs
 Description :  Generic Prover GUI.
 Copyright   :  (c) Klaus Luettich, Rainer Grabbe, Uni Bremen 2006
 License     :  GPLv2 or higher, see LICENSE.txt

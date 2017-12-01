@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Syntax/AS_Library.der.hs
 Description :  abstract syntax of DOL documents and CASL specification libraries
 Copyright   :  (c) Klaus Luettich, Uni Bremen 2002-2016
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -72,7 +72,7 @@ data LIB_ITEM = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) Range
               -- pos: "unit", "spec", "=", opt "end"
               | Ref_spec_defn SPEC_NAME REF_SPEC Range
               -- pos: "refinement", "=", opt "end"
-              | Graph_defn IRI Network Range
+              | Network_defn IRI Network Range
               -- pos: "network", "=", opt "end"
               | Download_items LibName DownloadItems Range
               -- pos: "from", "get", "|->", commas, opt "end"

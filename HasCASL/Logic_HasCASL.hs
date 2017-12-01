@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {- |
-Module      :  $Header$
+Module      :  ./HasCASL/Logic_HasCASL.hs
 Description :  instance of class Logic
 Copyright   :  (c) Christian Maeder and Uni Bremen 2003-2005
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -43,8 +43,8 @@ data HasCASL = HasCASL deriving Show
 
 instance Language HasCASL where
  description _ = unlines
-  [ "HasCASL - Algebraic Specification + Functional Programming = "
-  , "            Environment for Formal Software Development"
+  [ "HasCASL - Algebraic Specification + Functional Programming"
+  , "            = Environment for Formal Software Development"
   , "This logic is based on the partial lambda calculus and"
   , "  features subtyping, overloading and type class polymorphism"
   , "See the HasCASL summary and further papers available at"
@@ -172,6 +172,6 @@ instance Logic HasCASL Sublogic
                Env
                Morphism
                Symbol RawSymbol () where
-         stability _ = Testing
+         stability _ = Stable
          all_sublogics _ = sublogics_all
          empty_proof_tree _ = ()

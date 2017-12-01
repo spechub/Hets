@@ -1,6 +1,6 @@
 {-# LANGUAGE  FlexibleContexts, FlexibleInstances, TypeSynonymInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./CSL/MathematicaInterpreter.hs
 Description :  Mathematica instance for the AssignmentStore class
 Copyright   :  (c) Ewaryst Schulz, DFKI Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt

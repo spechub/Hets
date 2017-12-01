@@ -1,6 +1,6 @@
 {-# LANGUAGE RankNTypes, DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Static/DevGraph.hs
 Description :  Central datastructures for development graphs
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -122,6 +122,7 @@ data DGOrigin =
   | DGTranslation Renamed
   | DGUnion
   | DGIntersect
+  | DGExtract
   | DGRestriction (MaybeRestricted) (Set.Set G_symbol)
   | DGRevealTranslation
   | DGFreeOrCofree FreeOrCofree
@@ -130,6 +131,7 @@ data DGOrigin =
   | DGLogicQual
   | DGData
   | DGFormalParams
+  | DGVerificationGeneric
   | DGImports
   | DGInst IRI
   | DGFitSpec
@@ -168,7 +170,6 @@ data DGNodeLab =
   , nodeMod :: NodeMod
   , xnode :: Maybe XGraph.XNode
   , dgn_lock :: Maybe (MVar ())
-  , dgn_symbolpathlist :: G_symbolmap [SLinkPath]
   } deriving Typeable
 
 instance Show DGNodeLab where
@@ -432,6 +433,11 @@ isCofreeEdge edge = case edge of
     FreeOrCofreeDefLink Cofree _ -> True
     _ -> False
 
+hasOutgoingFreeEdge :: DGraph -> Node -> Bool
+hasOutgoingFreeEdge dg n =
+ let nEdges = outDG dg n in
+ not $ null $ filter (\(_,_, e) -> isFreeEdge $ dgl_type e) nEdges 
+
 -- ** types for global environments
 
 -- | import, formal parameters and united signature of formal params
@@ -678,6 +684,7 @@ data GlobalEntry =
   | ArchOrRefEntry Bool RefSig
   | AlignEntry AlignSig
   | UnitEntry UnitSig
+  | NetworkEntry GDiagram
     deriving (Show, Typeable)
 
 getGlobEntryNodes :: GlobalEntry -> Set.Set Node
@@ -686,13 +693,14 @@ getGlobEntryNodes g = case g of
   ViewOrStructEntry _ e -> getExtViewSigNodes e
   UnitEntry u -> getUnitSigNodes u
   ArchOrRefEntry _ r -> getRefSigNodes r
+  NetworkEntry gdiag -> Set.fromList $ nodes gdiag
   _ -> Set.empty
 
 data AlignSig = AlignMor NodeSig GMorphism NodeSig
               | AlignSpan NodeSig GMorphism NodeSig GMorphism NodeSig
               | WAlign
-                          NodeSig GMorphism GMorphism -- s1, i1, sig1
-                          NodeSig GMorphism GMorphism -- s2, i2, sig2
+                          NodeSig GMorphism GMorphism -- s1, i1:s1 to b, sig1: s1 to t1
+                          NodeSig GMorphism GMorphism -- s2, i2: s2 to b, sig2: s2 to t2
                           NodeSig                     -- t1
                           NodeSig                     -- t2
                           NodeSig                     -- b
@@ -1026,7 +1034,7 @@ newRefInfo ln n = DGRef
 
 -- | create a new node label
 newInfoNodeLab :: NodeName -> DGNodeInfo -> G_theory -> DGNodeLab
-newInfoNodeLab name info gTh@(G_theory lid _ _ _ _ _) = DGNodeLab
+newInfoNodeLab name info gTh = DGNodeLab
   { dgn_name = name
   , dgn_theory = gTh
   , globalTheory = Nothing
@@ -1039,8 +1047,7 @@ newInfoNodeLab name info gTh@(G_theory lid _ _ _ _ _) = DGNodeLab
   , nodeInfo = info
   , nodeMod = unMod
   , xnode = Nothing
-  , dgn_lock = Nothing
-  , dgn_symbolpathlist = G_symbolmap lid Map.empty }
+  , dgn_lock = Nothing }
 
 -- | create a new node label using 'newNodeInfo' and 'newInfoNodeLab'
 newNodeLab :: NodeName -> DGOrigin -> G_theory -> DGNodeLab
@@ -1590,3 +1597,11 @@ duplicateDefEdges :: DGraph -> [Edge]
 duplicateDefEdges = concat .
   filter (not . isSingle) . group . map (\ (s, t, _) -> (s, t))
   . filter (liftE isDefEdge) . labEdgesDG
+
+ensureUniqueNames :: DGraph -> IRI -> Int -> NodeName
+ensureUniqueNames dg anIRI n = 
+ let allNames = map (getName . dgn_name . snd) $  labNodesDG dg
+     iri' = addSuffixToIRI (show n) anIRI
+ in if iri' `elem` allNames 
+     then ensureUniqueNames dg anIRI (n + 1) 
+     else makeName iri'

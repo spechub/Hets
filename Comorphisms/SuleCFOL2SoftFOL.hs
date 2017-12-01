@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/SuleCFOL2SoftFOL.hs
 Description :  Coding of a CASL subset into SoftFOL
 Copyright   :  (c) Klaus Luettich and Uni Bremen 2005
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -1007,6 +1007,7 @@ toForm sign m t = case t of
          case (symb, fs) of
            (SPNot, [f]) -> return (mkNeg f)
            (SPImplies, [f1, f2]) -> return (mkImpl f1 f2)
+           -- During parsing, "f2 if f1" is saved as "Relation f1 RevImpl f2 _"
            (SPImplied, [f2, f1]) -> return (Relation f1 RevImpl f2 nullRange)
            (SPEquiv, [f1, f2]) -> return (mkEqv f1 f2)
            (SPAnd, _) -> return (conjunct fs)

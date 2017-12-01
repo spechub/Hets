@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./ExtModal/Parse_AS.hs
 Description :  Parser for extended modal logic
 Copyright   :  DFKI GmbH 2009
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt

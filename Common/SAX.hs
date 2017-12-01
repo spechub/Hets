@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Common/SAX.hs
 Description :  A few helper functions to work with the sax parser
 Copyright   :  (c) Jonathan von Schroeder, DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt

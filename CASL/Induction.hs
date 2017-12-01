@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL/Induction.hs
 Description :  Derive induction schemes from sort generation constraints
 Copyright   :  (c) Till Mossakowski, Rainer Grabbe and Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -12,7 +12,7 @@ We provide both second-order induction schemes as well as their
 instantiation to specific first-order formulas.
 -}
 
-module CASL.Induction (inductionScheme, generateInductionLemmas) where
+module CASL.Induction (inductionScheme, generateInductionLemmas, substitute) where
 
 import CASL.AS_Basic_CASL
 import CASL.Sign

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Logic/KnownIris.hs
 Description :  map of the known logics and serializations
 Copyright   :  (c) Soeren Schulze, Uni Bremen 2012
 License     :  GPLv2 or higher, see LICENSE.txt

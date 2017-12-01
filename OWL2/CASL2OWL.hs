@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./OWL2/CASL2OWL.hs
 Description :  Comorphism from CASL to OWL2
 Copyright   :  (c) C. Maeder, DFKI GmbH 2012
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -197,8 +197,8 @@ mapSign csig = let
   (cs, ncs) = MapSet.partition (null . opArgs) om
   (sos, os) = MapSet.partition isSingleArgOp ncs
   (props, nps) = MapSet.partition (null . predArgs) pm
-  (sps, rps) = MapSet.partition (isSingle . predArgs) nps
-  (bps, ps) = MapSet.partition isBinPredType rps
+  (sps, rps') = MapSet.partition (isSingle . predArgs) nps
+  (bps, ps) = MapSet.partition isBinPredType rps'
   pm = predMap csig
   osig = OS.emptySign
     { concepts = toIris $ Set.unions

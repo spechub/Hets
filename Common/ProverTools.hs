@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Common/ProverTools.hs
 Description :  Check for availability of provers
 Copyright   :  (c) Dminik Luecke, and Uni Bremen 2008
 License     :  GPLv2 or higher, see LICENSE.txt

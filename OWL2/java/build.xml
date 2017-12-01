@@ -1,9 +1,10 @@
 <project default="install">
 
+	<property name="build.sysclasspath" value="ignore"/>
     <property name="libdir"     value="./lib"/>
     <property name="builddir"   value="build"/>
     <property name="classesdir" value="${builddir}/classes"/>
-    <property name="target-vm"  value="1.6"/>
+    <property name="target-vm"  value="1.7"/>
     <property name="owlapi-jars" value="lib/owlapi-osgidistribution-3.5.2.jar lib/guava-18.0.jar lib/trove4j-3.0.3.jar"/>
     <property name="fact-jar" value="uk.ac.manchester.cs.owl.factplusplus-P5.0-v1.6.3.1.jar"/>
     <property environment="env"/>
@@ -14,18 +15,27 @@
         </fileset>
     </path>
 
+	<condition property="vm.ok">
+		<matches string="${java.version}" pattern="^${target-vm}\." />
+	</condition>
+	<target name="vm.warning" unless="${vm.ok}">
+		<echo level="warning">
+Java version in use is ${java.version} but should be ${target-vm}.x!
+Either adjust the 'target-vm' property in the build.xml or use a compatible JVM.
+		</echo>
+	</target>
     <target name="clean">
         <delete dir="${builddir}"/>
     </target>
 
-    <target name="compile">
+    <target name="compile" depends="vm.warning">
         <mkdir dir="${classesdir}/locality"/>
-        <javac srcdir="./" destdir="${classesdir}/locality" debug="on" target="${target-vm}" nowarn="off" source="1.6">
+        <javac srcdir="./" destdir="${classesdir}/locality" debug="on">
             <classpath refid="classpath"/>
 	    <include name="de/unibremen/informatik/locality/*.java"/>
         </javac>
        <mkdir dir="${classesdir}"/>
-        <javac srcdir="./" destdir="${classesdir}" debug="on" target="${target-vm}" nowarn="off" source="1.6">
+        <javac srcdir="./" destdir="${classesdir}" debug="on">
             <classpath refid="classpath"/>
 	    <include name="de/unibremen/informatik/*.java"/>
         </javac>
@@ -40,7 +50,7 @@
         <mkdir dir="${classesdir}/Fact"/>
 	<mkdir dir="../lib/native/i686"/>
 	<mkdir dir="../lib/native/x86_64"/>
-        <javac srcdir="./" destdir="${classesdir}/Fact" debug="on" target="${target-vm}" nowarn="off" source="1.6">
+        <javac srcdir="./" destdir="${classesdir}/Fact" debug="on">
             <classpath refid="classpath"/>
 	    <include name="de/unibremen/informatik/Fact/*.java"/>
         </javac>
@@ -53,8 +63,8 @@
 	</manifest>
       </jar>
       <copy file="${builddir}/OWLFact.jar" todir="../"/>
-      <copy file="lib/native/i686/libFaCTPlusPlusJNI.so" todir="../lib/native/i686/"/>
-      <copy file="lib/native/x86_64/libFaCTPlusPlusJNI.so" todir="../lib/native/x86_64/"/>
+      <copy file="lib/native/i686/libFaCTPlusPlusJNI.so" todir="../lib/native/i686/" failonerror="false" />
+      <copy file="lib/native/x86_64/libFaCTPlusPlusJNI.so" todir="../lib/native/x86_64/" failonerror="false" />
       <copy file="${libdir}/${fact-jar}" todir="../lib/"/>
     </target>
 
@@ -62,7 +72,7 @@
         <mkdir dir="${classesdir}/FactProver"/>
 	<mkdir dir="../lib/native/i686"/>
 	<mkdir dir="../lib/native/x86_64"/>
-        <javac srcdir="./" destdir="${classesdir}/FactProver" debug="on" target="${target-vm}" nowarn="off" source="1.6">
+        <javac srcdir="./" destdir="${classesdir}/FactProver" debug="on">
             <classpath refid="classpath"/>
 	    <include name="de/unibremen/informatik/FactProver/*.java"/>
         </javac>
@@ -75,8 +85,8 @@
 	</manifest>
       </jar>
       <copy file="${builddir}/OWLFactProver.jar" todir="../"/>
-      <copy file="lib/native/i686/libFaCTPlusPlusJNI.so" todir="../lib/native/i686/"/>
-      <copy file="lib/native/x86_64/libFaCTPlusPlusJNI.so" todir="../lib/native/x86_64/"/>
+      <copy file="lib/native/i686/libFaCTPlusPlusJNI.so" todir="../lib/native/i686/" failonerror="false" />
+      <copy file="lib/native/x86_64/libFaCTPlusPlusJNI.so" todir="../lib/native/x86_64/" failonerror="false" />
       <copy file="${libdir}/${fact-jar}" todir="../lib/"/>
     </target>
 

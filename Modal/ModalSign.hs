@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Modal/ModalSign.hs
 Copyright   :  (c) Till Mossakowski, C. Maeder, Uni Bremen 2004
 License     :  GPLv2 or higher, see LICENSE.txt
 

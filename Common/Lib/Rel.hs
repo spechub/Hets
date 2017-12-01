@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Common/Lib/Rel.hs
 Description :  Relations, based on maps
 Copyright   :  (c) Uni Bremen 2003-2005
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Omega/Terms.hs
 Description :  Hets-to-Omega conversion
 Copyright   :  (c) Ewaryst Schulz, DFKI Bremen 2009
 License     :  GPLv2 or higher, see LICENSE.txt

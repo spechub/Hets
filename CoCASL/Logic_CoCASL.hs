@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./CoCASL/Logic_CoCASL.hs
 Description :  Instance of class Logic for CoCASL
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2004
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -125,7 +125,7 @@ instance Logic CoCASL CoCASL_Sublogics
                CoCASLMor
                Symbol RawSymbol () where
          parse_basic_sen CoCASL = Just $ const parseSen
-         stability CoCASL = Unstable
+         stability CoCASL = Testing
          proj_sublogic_epsilon CoCASL = pr_epsilon emptyMorExt
          all_sublogics CoCASL = sublogics_all [True]
          sublogicDimensions CoCASL = sDims [[True]]

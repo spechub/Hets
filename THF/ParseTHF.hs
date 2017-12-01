@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./THF/ParseTHF.hs
 Description :  A Parser for the TPTP-THF Syntax
 Copyright   :  (c) Jonathan von Schroeder, DFKI Bremen 2012
                (c) A. Tsogias, DFKI Bremen 2011

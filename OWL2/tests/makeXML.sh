@@ -1,11 +1,12 @@
-#!/bin/sh
+#!/bin/bash
 
 HETS_OWL_TOOLS=`pwd`/..
 export HETS_OWL_TOOLS
 
 cd ../..
 
-make
+[[ `uname -s` == 'SunOS' ]] && MAKE=gmake || MAKE=make
+${MAKE}
 
 cd OWL2/tests
 
@@ -27,7 +28,7 @@ cd ../..
 
 echo "compiling runConv...\n"
 
-make OWL2/scripts/runConv
+${MAKE} OWL2/scripts/runConv
 
 echo "\nrunning runConv first time...\n"
 
@@ -100,7 +101,7 @@ cd ../../..
 
 echo "compiling runXML...\n"
 
-make OWL2/scripts/runXML
+${MAKE} OWL2/scripts/runXML
 
 cd OWL2/tests/XML
 

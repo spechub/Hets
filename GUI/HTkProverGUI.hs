@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./GUI/HTkProverGUI.hs
 Description :  Goal management GUI.
 Copyright   :  (c) Rene Wagner, Klaus Luettich, Uni Bremen 2005
 License     :  GPLv2 or higher, see LICENSE.txt

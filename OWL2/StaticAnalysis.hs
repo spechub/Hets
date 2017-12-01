@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./OWL2/StaticAnalysis.hs
 Copyright   :  Felix Gabriel Mance
 License     :  GPLv2 or higher, see LICENSE.txt
 
@@ -31,8 +31,8 @@ import Common.Result
 import Common.GlobalAnnotations hiding (PrefixMap)
 import Common.ExtSign
 import Common.Lib.State
-import qualified Common.Id as Id
 import Common.IRI (iriToStringUnsecure, setAngles)
+import Common.SetColimit
 
 import Control.Monad
 
@@ -74,6 +74,9 @@ checkLiteral s l = case l of
     Literal _ (Typed dt) -> checkEntity s $ mkEntity Datatype dt
     _ -> return ()
 
+isDeclInd :: Sign -> Individual -> Bool
+isDeclInd s ind = Set.member ind $ individuals s
+
 isDeclObjProp :: Sign -> ObjectPropertyExpression -> Bool
 isDeclObjProp s ope = let op = objPropToIRI ope in
     Set.member op (objectProperties s) || isPredefObjProp op
@@ -90,14 +93,15 @@ filterObjProp = filter . isDeclObjProp
 checkObjPropList :: Sign -> [ObjectPropertyExpression] -> Result ()
 checkObjPropList s ol = do
     let ls = map (isDeclObjProp s) ol
-    unless (and ls) $ fail $ "Static analysis found that not all properties" ++
-        " in the following list are ObjectProperties\n\n" ++ show ol
+    unless (and ls) $ fail $ "undeclared object properties:\n" ++
+                      showDoc (map (\o -> case o of
+                                     ObjectProp _ -> o
+                                     ObjectInverseOf x -> x) ol) ""
 
 checkDataPropList :: Sign -> [DataPropertyExpression] -> Result ()
 checkDataPropList s dl = do
     let ls = map (isDeclDataProp s) dl
-    unless (and ls) $ fail $ "Static analysis found that not all properties" ++
-        " in the following list are DataProperties\n\n" ++ show dl
+    unless (and ls) $ fail $ "undeclared data properties:\n" ++ showDoc dl ""
 
 -- | checks if a DataRange is valid
 checkDataRange :: Sign -> DataRange -> Result ()
@@ -180,8 +184,12 @@ checkClassExpression s desc =
 
 checkFact :: Sign -> Fact -> Result ()
 checkFact s f = case f of
-    ObjectPropertyFact _ op _ -> unless (isDeclObjProp s op) $
-        fail $ "Static analysis. ObjectPropertyFact failed " ++ show f
+    ObjectPropertyFact _ op ind ->
+     if not $ isDeclObjProp s op then
+       fail $ "unknown object property:" ++ showDoc op ""
+      else if not $ isDeclInd s ind then
+        fail $ "unknown individual: " ++ showDoc ind ""
+            else return ()
     DataPropertyFact _ dp l -> do
         checkLiteral s l
         unless (isDeclDataProp s dp)
@@ -233,10 +241,10 @@ checkListBit s r fb = case fb of
             ol = map snd anl
             sorted = filterObjProp s ol
         if null sorted then do
-            let dpl = map objPropToIRI ol
             checkAnnos s annos
-            checkDataPropList s dpl >> return (DataBit $ zip annos dpl)
-            else if length sorted == length ol then return fb
+            checkObjPropList s ol
+            return $ ObjectBit anl
+         else if length sorted == length ol then return fb
                     else fail $ "Static analysis found that there are" ++
                         " multiple types of properties in\n\n" ++
                         show sorted ++ show (map objPropToIRI $ ol \\ sorted)
@@ -386,8 +394,10 @@ generateLabelMap sig = foldr (\ (Frame ext fbl) -> case ext of
 
 -- | adding annotations for theorems
 anaAxiom :: Axiom -> Named Axiom
-anaAxiom ax = findImplied ax $ makeNamed "" ax
-
+anaAxiom ax = findImplied ax $ makeNamed name ax
+   where names = getNames ax
+         name = concat $ intersperse "_" names
+         
 findImplied :: Axiom -> Named Axiom -> Named Axiom
 findImplied ax sent =
   if prove ax then sent
@@ -395,6 +405,41 @@ findImplied ax sent =
          , isDef = False
          , wasTheorem = False }
    else sent { isAxiom = True }
+
+getNames1 :: Annotation -> [String]
+getNames1 anno = case anno of
+      Annotation _ aIRI (AnnValLit (Literal value _)) ->
+          if localPart aIRI == "label"
+             then [value]
+             else []
+      _ -> []
+
+getNamesList :: (Annotations, a) -> [String]
+getNamesList (ans, _) = concatMap getNames1 ans
+
+getNamesAnnList :: AnnotatedList a -> [String]
+getNamesAnnList = concatMap getNamesList
+
+getNamesLFB :: ListFrameBit -> [String]
+getNamesLFB fb = case fb of
+    AnnotationBit a -> getNamesAnnList a
+    ExpressionBit a -> getNamesAnnList a
+    ObjectBit a -> getNamesAnnList a
+    DataBit a -> getNamesAnnList a
+    IndividualSameOrDifferent a -> getNamesAnnList a
+    ObjectCharacteristics a -> getNamesAnnList a
+    DataPropRange a -> getNamesAnnList a
+    IndividualFacts a -> getNamesAnnList a
+
+getNamesFB :: FrameBit -> [String]
+getNamesFB fb = case fb of
+    ListFrameBit _ lfb -> getNamesLFB lfb
+    AnnFrameBit ans _ -> concatMap getNames1 ans
+
+getNames :: Axiom -> [String]
+getNames (PlainAxiom eith fb) = case eith of
+      Misc ans -> concatMap getNames1 ans ++ getNamesFB fb
+      _ -> getNamesFB fb
 
 
 addEquiv :: Sign -> Sign -> [SymbItems] -> [SymbItems] ->
@@ -420,14 +465,15 @@ addEquiv ssig tsig l1 l2 = do
                          Map.insert e2 s Map.empty)
              else
               fail "only symbols of same kind can be equivalent in an alignment"
-          _ -> fail $ "non-unique symbol match:" ++ show l1 ++ " " ++ show l2
+          _ -> fail $ "non-unique symbol match:" ++ showDoc l1 " "
+                                                 ++  showDoc l2 " "
     _ -> fail "terms not yet supported in alignments"
 
-corr2theo :: Sign -> Sign -> [SymbItems] -> [SymbItems] ->
+corr2theo :: String -> Bool -> Sign -> Sign -> [SymbItems] -> [SymbItems] ->
              EndoMap Entity -> EndoMap Entity -> REL_REF ->
              Result (Sign, [Named Axiom], Sign, Sign,
                      EndoMap Entity, EndoMap Entity)
-corr2theo ssig tsig l1 l2 eMap1 eMap2 rref = do
+corr2theo _aname flag ssig tsig l1 l2 eMap1 eMap2 rref = do
   let l1' = statSymbItems ssig l1
       l2' = statSymbItems tsig l2
   case (l1', l2') of
@@ -437,21 +483,34 @@ corr2theo ssig tsig l1 l2 eMap1 eMap2 rref = do
       case
        (match1, match2) of
           ([e1], [e2]) -> do
-           let e1' = Map.findWithDefault e1 e1 eMap1
-               e2' = Map.findWithDefault e2 e2 eMap2
+           let e1' = if flag then e1 {cutIRI =  addString (cutIRI e1, "_source")} else e1
+               e2' = if flag then e2 {cutIRI =  addString (cutIRI e2, "_target")} else e2
                sig = emptySign
-               eMap1' = Map.union eMap1 $ Map.fromAscList [(e1, e1)]
-               eMap2' = Map.union eMap2 $ Map.fromAscList [(e2, e2)]
-           sig1 <- addSymbToSign sig e1
-           sig2 <- addSymbToSign sig e2
-           sigI <- addSymbToSign sig e1'
-           sigB <- addSymbToSign sigI e2'
+               eMap1' = Map.union eMap1 $ Map.fromAscList [(e1', e1)]
+               eMap2' = Map.union eMap2 $ Map.fromAscList [(e2', e2)]
+           sig1 <- addSymbToSign sig e1'
+           sig2 <- addSymbToSign sig e2'
+           sigB <- addSymbToSign sig1 e2'
            case rref of
+            Equiv -> do
+             let extPart = mkExtendedEntity e2'
+                 axiom = PlainAxiom extPart $
+                           ListFrameBit (Just $
+                              case (entityKind e1', entityKind e2') of
+                                (Class, Class) -> EDRelation Equivalent
+                                (ObjectProperty, ObjectProperty) ->
+                                   EDRelation Equivalent
+                                (NamedIndividual, NamedIndividual) -> SDRelation Same
+                                _ -> error $ "use subsumption only between"
+                                              ++ "classes or roles:" ++
+                                              show l1 ++ " " ++ show l2) $
+                           ExpressionBit [([], Expression $ cutIRI e1')]
+             return (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2')
             Subs -> do
              let extPart = mkExtendedEntity e2'
                  axiom = PlainAxiom extPart $
                            ListFrameBit (Just $
-                              case (entityKind e1, entityKind e2) of
+                              case (entityKind e1', entityKind e2') of
                                 (Class, Class) -> SubClass
                                 (ObjectProperty, ObjectProperty) ->
                                     SubPropertyOf
@@ -486,7 +545,7 @@ corr2theo ssig tsig l1 l2 eMap1 eMap2 rref = do
                            ExpressionBit [([], Expression $ cutIRI e1')]
              return
                  (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2')
-            RelName r -> do
+            RelName _r -> error "nyi" {- do
              let extPart = mkExtendedEntity e1'
                  rQName = QN "" (iriToStringUnsecure r)
                              Abbreviated (iriToStringUnsecure r) Id.nullRange
@@ -511,7 +570,8 @@ corr2theo ssig tsig l1 l2 eMap1 eMap2 rref = do
                  return
                    (sigB', [makeNamed "" axiom], sig1, sig2', eMap1',
                       Map.union eMap2' $ Map.fromAscList [(rsym, sym')])
-               _ -> fail $ "too many matches for " ++ show rQName
+               _ -> fail $ "too many matches for " ++ show rQName -}
             _ -> fail $ "nyi:" ++ show rref
-          _ -> fail $ "non-unique symbol match:" ++ show l1 ++ " " ++ show l2
+          _ -> fail $ "non-unique symbol match:" ++ showDoc l1 " "
+                                                 ++ showDoc l2 " "
     _ -> fail "terms not yet supported in alignments"

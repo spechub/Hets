@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/CommonLogic2IsabelleHOL.hs
 Description :  direct comorphism from CommonLogic to Isabelle-HOL
 Copyright   :  (c) Soeren Schulze, Uni Bremen 2012
 License     :  GPLv2 or higher, see LICENSE.txt

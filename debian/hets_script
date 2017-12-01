@@ -1,0 +1,43 @@
+#!/bin/ksh93
+
+BASEDIR=@CLIENT_BASEDIR@
+PROG="${.sh.file##*/}"
+
+[[ -z ${HETS_MAGIC} ]] && \
+		         HETS_MAGIC="${BASEDIR}/lib/hets/hets.magic"
+[[ -z ${HETS_LIB} ]] && \
+		           HETS_LIB="${BASEDIR}/lib/hets/hets-lib"
+[[ -z ${HETS_OWL_TOOLS} ]] && \
+		     HETS_OWL_TOOLS="${BASEDIR}/lib/hets/hets-owl-tools"
+[[ -z ${HETS_ISA_TOOLS} ]] && \
+		     HETS_ISA_TOOLS="${BASEDIR}/lib/hets/hets-isa-tools"
+[[ -z ${HETS_MAUDE_LIB} ]] && \
+		     HETS_MAUDE_LIB="${BASEDIR}/lib/hets/hets-maude-lib"
+[[ -z ${HETS_HOLLIGHT_TOOLS} ]] && \
+		HETS_HOLLIGHT_TOOLS="${BASEDIR}/lib/hets/hets-hollight-tools"
+
+[[ -z ${HETS_OCAML_LIB_DIR} ]] && \
+		 HETS_OCAML_LIB_DIR="${BASEDIR}/lib/ocaml/compiler-libs"
+
+[[ -z ${MAUDE_LIB} ]] && \
+		          MAUDE_LIB="${BASEDIR}/share/maude"
+[[ -z ${HETS_HOL_DIR} ]] && \
+		       HETS_HOL_DIR="${BASEDIR}/share/hol-light"
+[[ -z ${PELLET_PATH} ]] && \
+		        PELLET_PATH="${BASEDIR}/share/pellet"
+[[ -z ${TWELF_LIB} ]] && \
+		          TWELF_LIB="${BASEDIR}/share/twelf/bin"
+
+[[ -z ${HETS_APROVE} ]] && \
+		      HETS_APROVE="${HETS_OWL_TOOLS}/AProVE.jar"
+[[ -z ${HETS_ONTODMU} ]] && \
+		     HETS_ONTODMU="${HETS_OWL_TOOLS}/OntoDMU.jar"
+
+[[ -z ${HETS_ISABELLE_LIB} ]] && \
+		HETS_ISABELLE_LIB="${HETS_LIB}/Isabelle"
+
+export HETS_HOLLIGHT_TOOLS HETS_HOL_DIR HETS_ISA_TOOLS HETS_LIB HETS_MAGIC \
+	HETS_MAUDE_LIB HETS_OCAML_LIB_DIR HETS_OWL_TOOLS MAUDE_LIB PELLET_PATH \
+	TWELF_LIB HETS_APROVE HETS_ISABELLE_LIB HETS_ONTODMU
+
+exec "${BASEDIR}/lib/hets/${PROG}" "$@"

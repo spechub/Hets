@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CommonLogic/Lexer_CLIF.hs
 Description :  Parser of common logic interchange format
 Copyright   :  (c) Karl Luc, DFKI Bremen 2010
 License     :  GPLv2 or higher
@@ -52,6 +52,8 @@ enclosedname = do
    return $ c1 : s ++ [c2]
 
 -- | parser for parens
+-- Note that these use different oParenT and cParenT from the ones in
+-- Common.Lexer to skip whitespaces and comments.
 parens :: CharParser st a -> CharParser st a
 parens p = oParenT >> p << cParenT
 

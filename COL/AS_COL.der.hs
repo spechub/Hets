@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./COL/AS_COL.der.hs
 Description :  Abstract syntax for COL extension of CASL
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2004
 License     :  GPLv2 or higher, see LICENSE.txt

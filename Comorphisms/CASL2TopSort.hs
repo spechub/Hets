@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/CASL2TopSort.hs
 Copyright   :  (c) Klaus Luettich, Uni Bremen 2002-2004
 License     :  GPLv2 or higher, see LICENSE.txt
 
@@ -112,7 +112,8 @@ generateSubSortMap sortRels pMap =
     let disAmbMap = Map.map disAmbPred
         disAmbPred v = let pn = predicatePI v in
           case dropWhile (`Set.member` MapSet.keysSet pMap)
-                   $ pn : map (appendNumber (predicatePI v)) [1 ..] of
+                   $ pn : map (\x -> appendString (predicatePI v) $ show x) 
+                          [1::Int ..] of
             n : _ -> v { predicatePI = n }
             [] -> error "generateSubSortMap"
         mR = (Rel.flatSet .

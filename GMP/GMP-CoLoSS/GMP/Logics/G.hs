@@ -1,4 +1,4 @@
-{- | Module     : $Header$
+{- | Module     : ./GMP/GMP-CoLoSS/GMP/Logics/G.hs
  -  Description : Implementation of logic instance Graded Modal Logic
  -  Copyright   : (c) Daniel Hausmann & Georgel Calin & Lutz Schroeder, DFKI Lab Bremen,
  -                Rob Myers & Dirk Pattinson, Department of Computing, ICL

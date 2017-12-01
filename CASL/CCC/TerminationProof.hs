@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL/CCC/TerminationProof.hs
 Description :  termination proofs for equation systems, using AProVE
 Copyright   :  (c) Mingyi Liu and Till Mossakowski and Uni Bremen 2004-2005
 License     :  GPLv2 or higher, see LICENSE.txt

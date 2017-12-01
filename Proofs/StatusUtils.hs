@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Proofs/StatusUtils.hs
 Description :  the proof status with manipulating functions
 Copyright   :  (c) Jorina F. Gerken, Till Mossakowski, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt

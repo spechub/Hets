@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./GUI/GtkProverGUI.hs
 Description :  Gtk GUI for the prover
 Copyright   :  (c) Thiemo Wiedemeyer, Uni Bremen 2008
 License     :  GPLv2 or higher, see LICENSE.txt

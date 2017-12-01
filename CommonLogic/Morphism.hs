@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./CommonLogic/Morphism.hs
 Description :  Morphism of Common Logic
 Copyright   :  (c) Uni Bremen DFKI 2010
 License     :  GPLv2 or higher, see LICENSE.txt

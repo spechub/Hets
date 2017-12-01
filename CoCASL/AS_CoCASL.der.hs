@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./CoCASL/AS_CoCASL.der.hs
 Description :  Abstract syntax for CoCASL
 Copyright   :  (c) T.Mossakowski, C.Maeder, Uni Bremen 2004-2006
 License     :  GPLv2 or higher, see LICENSE.txt

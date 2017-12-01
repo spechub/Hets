@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL/Fold.hs
 Description :  folding functions for CASL terms and formulas
 Copyright   :  (c) Christian Maeder, Uni Bremen 2005
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Maude/Language.hs
 Description :  Parsing the Maude Language
 Copyright   :  (c) Martin Kuehl, Uni Bremen 2009
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./HasCASL/SimplifyTerm.hs
 Description :  simplify terms for prettier printing
 Copyright   :  (c) Christian Maeder and Uni Bremen 2005
 License     :  GPLv2 or higher, see LICENSE.txt

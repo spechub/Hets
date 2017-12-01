@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeSynonymInstances, FlexibleContexts #-}
 {- |
-Module      :  $Header$
+Module      :  ./CSL/InteractiveTests.hs
 Description :  Test environment for CSL
 Copyright   :  (c) Ewaryst Schulz, DFKI Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt

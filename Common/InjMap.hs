@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Common/InjMap.hs
 Description :  injective maps
 Copyright   :  (c) Uni Bremen 2006
 License     :  GPLv2 or higher, see LICENSE.txt

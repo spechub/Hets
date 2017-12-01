@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies #-}
 {- |
-Module      :  $Header$
+Module      :  ./Temporal/Ctl.hs
 Copyright   :  (c) Klaus Hartke, Uni Bremen 2008
 License     :  GPLv2 or higher, see LICENSE.txt
 

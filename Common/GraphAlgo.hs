@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Common/GraphAlgo.hs
 Description :  Algorithms on Graphs
 Copyright   :  (c) Jonathan von Schroeder, DFKI Bremen 2012
 License     :  GPLv2 or higher, see LICENSE.txt

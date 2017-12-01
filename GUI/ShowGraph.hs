@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 {- |
-Module      :  $Header$
+Module      :  ./GUI/ShowGraph.hs
 Copyright   :  (c) Uni Bremen 2002-2005
 License     :  GPLv2 or higher, see LICENSE.txt
 

@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Adl/Logic_Adl.hs
 Description :  the Logic instance for ADL
 Copyright   :  (c) Stef Joosten, Christian Maeder DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -9,6 +9,12 @@ Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  non-portable (import Logic.Logic)
 
+see
+Stef Joosten:
+Deriving Functional Specifications from Business Requirements with Ampersand
+
+and
+https://lab.cs.ru.nl/BusinessRules/Requirements_engineering
 -}
 
 module Adl.Logic_Adl where
@@ -34,7 +40,7 @@ import Logic.Logic
 data Adl = Adl deriving Show
 
 instance Language Adl where
-    description _ = "A description language"
+    description _ = "A description language for business rules"
 
 type Morphism = DefaultMorphism Sign
 

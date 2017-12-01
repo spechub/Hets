@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/CASL2VSERefine.hs
 Description :  VSE refinement as comorphism
 Copyright   :  (c) M. Codescu, DFKI Bremen 2008
 License     :  GPLv2 or higher, see LICENSE.txt

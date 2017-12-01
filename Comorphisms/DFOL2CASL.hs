@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/DFOL2CASL.hs
 Description :  Translation of first-order logic with dependent types (DFOL) to
                CASL
 Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2009

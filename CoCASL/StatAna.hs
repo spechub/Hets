@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CoCASL/StatAna.hs
 Description :  static analysis for CoCASL
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2004-2005
 License     :  GPLv2 or higher, see LICENSE.txt

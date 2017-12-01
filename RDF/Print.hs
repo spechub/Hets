@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./RDF/Print.hs
 Copyright   :  (c) Felix Gabriel Mance
 License     :  GPLv2 or higher, see LICENSE.txt
 

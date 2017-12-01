@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./OWL2/OWL22CommonLogic.hs
 Description :  Comorphism from OWL2 to Common Logic
 Copyright   :  (c) Francisc-Nicolae Bungiu, Felix Gabriel Mance
 License     :  GPLv2 or higher, see LICENSE.txt

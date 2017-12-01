@@ -1,7 +1,7 @@
 {-# LANGUAGE CPP, MultiParamTypeClasses, TypeSynonymInstances
   , FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./CASL/Logic_CASL.hs
 Description :  Instance of class Logic for the CASL logic
 Copyright   :  (c) Klaus Luettich, Uni Bremen 2002-2005
 License     :  GPLv2 or higher, see LICENSE.txt

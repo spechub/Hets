@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Syntax/Parse_AS_Library.hs
 Description :  parser for DOL documents and CASL specification librariess
 Copyright   :  (c) Maciek Makowski, Uni Bremen 2002-2016
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -105,7 +105,7 @@ networkDefn l = do
     kEqu <- equalT
     n <- parseNetwork l
     kEnd <- asKey endS
-    return . Graph_defn name n
+    return . Network_defn name n
          . catRange $ [kGraph, kEqu, kEnd]
 
 emptyParams :: GENERICITY
@@ -401,7 +401,7 @@ optEnd = try
     << addLineAnnos
 
 generics :: LogicGraph -> AParser st GENERICITY
-generics l = if dolOnly l then return emptyParams else do
+generics l = do
     (pa, ps1) <- params l
     (imp, ps2) <- option ([], nullRange) (imports l)
     return $ Genericity (Params pa) (Imported imp) $ appRange ps1 ps2

@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/CoCASL2CoSubCFOL.hs
 Description :  Extension of CASL2SubCFOL to CoCASL
 Copyright   :  (c) Till Mossakowski, C.Maeder, Uni Bremen 2006
 License     :  GPLv2 or higher, see LICENSE.txt

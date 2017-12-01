@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./RelationalScheme/Logic_Rel.hs
 Description :  Instance of class Logic for Rel
 Copyright   :  (c) Dominik Luecke, Uni Bremen 2008
 License     :  GPLv2 or higher, see LICENSE.txt

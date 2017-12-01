@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Static/test/TestDGTrans.hs
 Copyright   :  Heng Jiang, Uni Bremen 2004-2006
 License     :  GPLv2 or higher, see LICENSE.txt
 

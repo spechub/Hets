@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Syntax.hs
 Description :  folder description
 Copyright   :  (c) Christian Maeder and Uni Bremen 2006
 License     :  GPLv2 or higher, see LICENSE.txt

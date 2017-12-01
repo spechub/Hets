@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./THF/SZSProver.hs
 Description :  General Interface to a prover using SZS status messages
 Copyright   :  (c) Jonathan von Schroeder, DFKI Bremen 2012
 License     :  GPLv2 or higher, see LICENSE.txt

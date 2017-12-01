@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/CFOL2IsabelleHOL.hs
 Description :  embedding from CASL (CFOL) to Isabelle-HOL
 Copyright   :  (c) Till Mossakowski and Uni Bremen 2003-2005
 License     :  GPLv2 or higher, see LICENSE.txt

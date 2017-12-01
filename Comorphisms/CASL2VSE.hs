@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/CASL2VSE.hs
 Description :  embedding from CASL to VSE
 Copyright   :  (c) C. Maeder, DFKI Bremen 2008
 License     :  GPLv2 or higher, see LICENSE.txt

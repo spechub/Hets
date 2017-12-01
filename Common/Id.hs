@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Common/Id.hs
 Description :  positions, simple and mixfix identifiers
 Copyright   :  (c) Klaus Luettich and Christian Maeder and Uni Bremen 2002-2003
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -25,6 +25,7 @@ module Common.Id where
 import Data.Char
 import Data.Data
 import Data.List (isPrefixOf)
+import Data.Ratio
 import qualified Data.Set as Set
 
 -- do use in data types that derive d directly
@@ -211,25 +212,25 @@ isGeneratedToken = isPrefixOf genNamePrefix . tokStr
 
 {- | append a number to the first token of a (possible compound) Id,
    or generate a new identifier for /invisible/ ones -}
-appendNumber :: Id -> Int -> Id
-appendNumber (Id tokList idList range) nr = let
+appendString :: Id -> String -> Id
+appendString (Id tokList idList range) s = let
   isAlphaToken tok = case tokStr tok of
     c : _ -> isAlpha c
     "" -> False
-  genTok tList tList1 n = case tList of
-    [] -> [mkSimpleId $ genNamePrefix ++ "n" ++ show n]
+  genTok tList tList1 str = case tList of
+    [] -> [mkSimpleId $ genNamePrefix ++ "n" ++ str]
           -- for invisible identifiers
     tok : tokens ->
        if isPlace tok || not (isAlphaToken tok)
-       then genTok tokens (tok : tList1) n
+       then genTok tokens (tok : tList1) str
        else reverse tList1 ++
            [tok {tokStr = -- avoid gn_gn_
                 (if isGeneratedToken tok then "" else genNamePrefix)
-                 ++ tokStr tok ++ show n}]
+                 ++ tokStr tok ++ str}]
                  {- only underline words may be
                     prefixed with genNamePrefix or extended with a number -}
            ++ tokens
- in Id (genTok tokList [] nr) idList range
+ in Id (genTok tokList [] s) idList range
 
 -- | the name of injections
 injToken :: Token
@@ -503,6 +504,8 @@ instance GetRange ()
 instance GetRange Char
 instance GetRange Bool
 instance GetRange Int
+instance GetRange Integer
+instance GetRange (Ratio a) -- for Rational
 
 instance GetRange a => GetRange (Maybe a) where
     getRange = maybe nullRange getRange

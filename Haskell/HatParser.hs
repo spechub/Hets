@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Haskell/HatParser.hs
 Description :  calling programatica's parser
 Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2005
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -1,7 +1,7 @@
 {-# LANGUAGE CPP, MultiParamTypeClasses, TypeSynonymInstances #-}
 {-# OPTIONS -w #-}
 {- |
-Module      :  $Header$
+Module      :  ./OWL2/Logic_OWL2.hs
 Description :  instance of the class Logic for OWL2
 Copyright   :  (c) Christian Maeder, DFKI GmbH 2011
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -24,6 +24,9 @@ import Common.Doc
 import Common.DocUtils
 import Common.ProofTree
 import Common.ProverTools
+
+import Common.ExtSign
+import Common.Result
 
 import Data.Char (isAlpha)
 import Data.Monoid
@@ -52,6 +55,7 @@ import OWL2.StaticAnalysis
 import OWL2.Symbols
 import OWL2.Taxonomy
 import OWL2.Theorem
+import OWL2.ExtractModule
 
 data OWL2 = OWL2
 
@@ -104,6 +108,40 @@ instance Sentences OWL2 Axiom Sign OWLMorphism Entity where
     symsOfSen OWL2 _ = Set.toList . symsOfAxiom
     pair_symbols OWL2 = pairSymbols
 
+inducedFromToMor :: Map.Map RawSymb RawSymb -> 
+                    ExtSign Sign Entity -> 
+                    ExtSign Sign Entity -> 
+                    Result OWLMorphism
+inducedFromToMor rm s@(ExtSign ssig _) t@(ExtSign tsig _) = 
+ case Map.toList rm of
+   [] -> do 
+     let 
+       mkImplMap f k = 
+         case Set.toList (f tsig) of 
+           [x] -> 
+              let aEntity = Entity Nothing k x
+              in Map.fromList $ 
+                    map (\y -> (ASymbol $ Entity Nothing k y, 
+                               ASymbol $ aEntity)) $ 
+                    Set.toList $ f ssig
+           _ -> Map.empty 
+       rm' = Map.unions
+                   [mkImplMap concepts Class,
+                    mkImplMap objectProperties ObjectProperty,
+                    mkImplMap dataProperties DataProperty, 
+                    mkImplMap individuals NamedIndividual]
+      in inducedFromToMorphismAux rm' s t 
+   _ ->  inducedFromToMorphismAux rm  s t
+
+inducedFromToMorphismAux :: Map.Map RawSymb RawSymb -> 
+                    ExtSign Sign Entity -> 
+                    ExtSign Sign Entity -> 
+                    Result OWLMorphism
+inducedFromToMorphismAux rm s@(ExtSign ssig _) t@(ExtSign tsig _) = do
+    mor <- inducedFromMor rm ssig
+    let csig = cod mor
+    incl <- inclusion OWL2 csig tsig              
+    composeMorphisms mor incl
 
 instance StaticAnalysis OWL2 OntologyDocument Axiom
                SymbItems SymbMapItems
@@ -117,6 +155,7 @@ instance StaticAnalysis OWL2 OntologyDocument Axiom
       empty_signature OWL2 = emptySign
       signature_union OWL2 = uniteSign
       intersection OWL2 = intersectSign
+      morphism_union OWL2  = morphismUnion
       signatureDiff OWL2 s = return . diffSig s
       final_union OWL2 = signature_union OWL2
       is_subsig OWL2 = isSubSign
@@ -125,11 +164,13 @@ instance StaticAnalysis OWL2 OntologyDocument Axiom
       symbol_to_raw OWL2 = ASymbol
       add_symb_to_sign OWL2 = addSymbToSign
       induced_from_morphism OWL2 = inducedFromMor
+      induced_from_to_morphism OWL2 = inducedFromToMor
       cogenerated_sign OWL2 = cogeneratedSign
       generated_sign OWL2 = generatedSign
       signature_colimit OWL2 = return . signColimit
       corresp2th OWL2 = corr2theo
       equiv2cospan OWL2 = addEquiv
+      extract_module OWL2 = extractModule
 #ifdef UNI_PACKAGE
       theory_to_taxonomy OWL2 = onto2Tax
 #endif
@@ -148,6 +189,7 @@ instance Logic OWL2 ProfSub OntologyDocument Axiom SymbItems SymbMapItems
            (\ ct -> ConservativityChecker ("Locality_" ++ ct)
                     (checkOWLjar localityJar) $ conserCheck ct)
            ["BOTTOM_BOTTOM", "TOP_BOTTOM", "TOP_TOP"]
+         stability OWL2 = Stable
 
 instance SemiLatticeWithTop ProfSub where
     lub = maxS

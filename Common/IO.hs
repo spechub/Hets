@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 {- |
-Module      :  $Header$
+Module      :  ./Common/IO.hs
 Description :  wrapper module for changed IO handling since ghc-6.12.1
 Copyright   :  (c) Christian Maeder DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -12,7 +12,7 @@ Portability :  portable
 reading and writing files changed between ghc-6.10.4 and ghc-6.12.1 from
 latin1 to utf8.
 
-This module allows to continue reading and writing latin1 (HetCASL) files.
+This module allows to continue reading and writing latin1 (DOL) files.
 However, this module does not support to write utf8 files with ghc-6.10.4 or
 earlier versions.
 

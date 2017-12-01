@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Static/DGTranslation.hs
 Description :  Translation of development graphs along comorphisms
 Copyright   :  Heng Jiang, Uni Bremen 2004-2006
 License     :  GPLv2 or higher, see LICENSE.txt

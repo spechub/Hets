@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/CASL2VSEImport.hs
 Description :  embedding from CASL to VSE, plus wrapping procedures
                with default implementations
 Copyright   :  (c) M.Codescu, DFKI Bremen 2008

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./utils/itcor/GenItCorrections.hs
 Copyright   :  (c) C. Maeder, DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt
 

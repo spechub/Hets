@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Haskell/Haskell2DG.hs
 Description :  create a development graph from Haskell modules
 Copyright   :  (c) Christian Maeder, Uni Bremen 2006
 License     :  GPLv2 or higher, see LICENSE.txt

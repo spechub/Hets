@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Isabelle/IsaConsts.hs
 Description :  constants for Isabelle terms
 Copyright   :  (c) Sonja Groening, Christian Maeder, Uni Bremen 2004-2006
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -1,7 +1,7 @@
 {-# LANGUAGE CPP, MultiParamTypeClasses, TypeSynonymInstances
   , FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./SoftFOL/Logic_SoftFOL.hs
 Description :  Instance of class Logic for SoftFOL.
 Copyright   :  (c) Rene Wagner, Klaus Luettich, Uni Bremen 2005-2007
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -86,7 +86,7 @@ instance StaticAnalysis SoftFOL [TPTP] Sentence
 instance Logic SoftFOL () [TPTP] Sentence () ()
                Sign
                SoftFOLMorphism SFSymbol () ProofTree where
-         stability _ = Testing
+         stability _ = Stable
          provers SoftFOL = [spassProver]
 #ifndef NOHTTP
            ++ [mathServBroker, vampire]

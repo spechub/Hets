@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Proofs/BatchProcessing.hs
 Description :  Batch processing functions.
 Copyright   :  (c) Klaus Luettich, Rainer Grabbe 2006
 License     :  GPLv2 or higher, see LICENSE.txt

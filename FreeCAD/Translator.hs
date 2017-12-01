@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./FreeCAD/Translator.hs
 Description :  The main part of the module. Here the parsing, translation of the
                input xml is handled, as well as the I/O.
 Copyright   :  (c) Robert Savu and Uni Bremen 2011

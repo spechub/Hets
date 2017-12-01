@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL_DL/StatAna.hs
 Description :  static analysis of DL parts
 Copyright   :  (c) Klaus Luettich, Uni Bremen 2005
 License     :  GPLv2 or higher, see LICENSE.txt

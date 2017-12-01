@@ -39,11 +39,13 @@ import OWL2.ManchesterPrint ()
 import OWL2.Morphism
 import OWL2.Symbols
 import qualified OWL2.Sign as OS
+import qualified OWL2.Sublogic as SL
 -- CASL_DL = codomain
 import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.Morphism
+import CASL.Induction
 import CASL.Sublogic
 -- import OWL2.ManchesterParser
 
@@ -116,19 +118,19 @@ uriToIdM = return . uriToCaslId
 -- | Extracts Id from URI
 uriToCaslId :: IRI -> Id
 uriToCaslId urI = let
-  repl a = if isAlphaNum a then [a] else if a/=':' then "_u" else ""
+  repl a = if isAlphaNum a then [a] else if a/=':' then "_" else ""
   getId = stringToId . (concatMap repl)
  in
   if ((isDatatypeKey urI) && (isThing urI))  then
         getId $ localPart urI
-   else stringToId $ localPart urI
-    {-let
+   else {-
+    let
       ePart = expandedIRI urI
     in
       if ePart /= "" then
         getId $ expandedIRI urI
-      else -- this catches the datatypes, e.g. xsd:time, weird
-        getId $ localPart urI-}
+      else -}
+        getId $ localPart urI
 
 tokDecl :: Token -> VAR_DECL
 tokDecl = flip mkVarDecl thing
@@ -251,27 +253,35 @@ mapSign sig =
             [ tMp conceptPred cPreds
             , tMp objectPropPred oPreds
             , tMp dataPropPred dPreds ]
-     in return $ uniteCASLSign predefSign (emptySign ())
+     in return $  uniteCASLSign predefSign2
+         (emptySign ())
              { predMap = aPreds
              , opMap = tMp indiConst . cvrt $ OS.individuals sig
              }
 
-loadDataInformation :: ProfSub -> Sign f ()
-loadDataInformation _ = let dts = Set.fromList $ map stringToId datatypeKeys
-    in (emptySign ()) { sortRel = Rel.fromKeysSet dts }
+loadDataInformation :: ProfSub -> CASLSign
+loadDataInformation sl = let
+  dts = Set.map uriToCaslId $ SL.datatype $ sublogic sl
+  eSig x = (emptySign ()) { sortRel =
+       Rel.fromList  [(x, dataS)]}
+  sigs = Set.toList $
+         Set.map (\x -> Map.findWithDefault (eSig x) x datatypeSigns) dts
+ in  foldl uniteCASLSign (emptySign ()) sigs
 
 mapTheory :: (OS.Sign, [Named Axiom]) -> Result (CASLSign, [Named CASLFORMULA])
-mapTheory (owlSig, owlSens) = let sl = topS in do
+mapTheory (owlSig, owlSens) = let
+  sl = sublogicOfTheo OWL2 (owlSig, map sentence owlSens)
+ in do
     cSig <- mapSign owlSig
     let pSig = loadDataInformation sl
-        dTypes = (emptySign ()) {sortRel = Rel.transClosure . Rel.fromSet
+        {- dTypes = (emptySign ()) {sortRel = Rel.transClosure . Rel.fromSet
                     . Set.map (\ d -> (uriToCaslId d, dataS))
-                    . Set.union predefIRIs $ OS.datatypes owlSig}
+                    . Set.union predefIRIs $ OS.datatypes owlSig} -}
     (cSens, nSig) <- foldM (\ (x, y) z -> do
             (sen, sig) <- mapSentence y z
             return (sen ++ x, uniteCASLSign sig y)) ([], cSig) owlSens
-    return (foldl1 uniteCASLSign [nSig, pSig, dTypes],
-                predefinedAxioms ++ cSens)
+    return (foldl1 uniteCASLSign [nSig, pSig],  -- , dTypes],
+            predefinedAxioms ++ (reverse cSens))
 
 -- | mapping of OWL to CASL_DL formulae
 mapSentence :: CASLSign -> Named Axiom -> Result ([Named CASLFORMULA], CASLSign)
@@ -446,28 +456,45 @@ mapCard :: Bool -> CASLSign -> CardinalityType -> Int
 mapCard b cSig ct n prop d var = do
     let vlst = map (var +) [1 .. n]
         vlstM = vlst ++ [n + var + 1]
+        vlstE = [n + var + 1]
     (dOut, s) <- case d of
         Nothing -> return ([], [emptySign ()])
         Just y ->
            if b then let Left ce = y in mapAndUnzipM
                         (mapDescription cSig ce) vlst
            else let Right dr = y in mapAndUnzipM (mapDataRange cSig dr) vlst
+    (eOut, s') <- case d of
+        Nothing -> return ([], [emptySign ()])
+        Just y ->
+           if b then let Left ce = y in mapAndUnzipM
+                        (mapDescription cSig ce) vlstM
+           else let Right dr = y in mapAndUnzipM (mapDataRange cSig dr) vlstM
+    (fOut, s'') <- case d of
+        Nothing -> return ([], [emptySign ()])
+        Just y ->
+           if b then let Left ce = y in mapAndUnzipM
+                        (mapDescription cSig ce) vlstE
+           else let Right dr = y in mapAndUnzipM (mapDataRange cSig dr) vlstE
     let dlst = map (\ (x, y) -> mkNeg $ mkStEq (qualThing x) $ qualThing y)
                         $ comPairs vlst vlst
         dlstM = map (\ (x, y) -> mkStEq (qualThing x) $ qualThing y)
                         $ comPairs vlstM vlstM
         qVars = map thingDecl vlst
         qVarsM = map thingDecl vlstM
+        qVarsE = map thingDecl vlstE
     oProps <- cardProps b cSig prop var vlst
     oPropsM <- cardProps b cSig prop var vlstM
-    let minLst = mkExist qVars $ conjunct $ dlst ++ dOut ++ oProps
-        maxLst = mkForall qVarsM $ mkImpl (conjunct $ oPropsM ++ dOut)
+    oPropsE <- cardProps b cSig prop var vlstE
+    let minLst = conjunct $ dlst ++ oProps ++ dOut
+        maxLst = mkImpl (conjunct $ oPropsM ++ eOut)
                         $ disjunct dlstM
-        ts = uniteL $ cSig : s
+        exactLst' = mkImpl (conjunct $ oPropsE ++ fOut) $ disjunct dlstM
+        exactLst = mkExist qVars $ conjunct [minLst, mkForall qVarsE exactLst']
+        ts = uniteL $ [cSig] ++ s ++ s' ++ s''
     return $ case ct of
-            MinCardinality -> (minLst, ts)
-            MaxCardinality -> (maxLst, ts)
-            ExactCardinality -> (conjunct [minLst, maxLst], ts)
+            MinCardinality -> (mkExist qVars minLst, ts)
+            MaxCardinality -> (mkForall qVarsM maxLst, ts)
+            ExactCardinality -> (exactLst, ts)
 
 -- | mapping of OWL2 Descriptions
 mapDescription :: CASLSign -> ClassExpression -> Int ->
@@ -622,6 +649,17 @@ mkEDPairs s il mr pairs = do
                 _ -> error "expected EDRelation") pairs
     return (ls, s)
 
+mkEDPairs' :: CASLSign -> [Int] -> Maybe O.Relation -> [(FORMULA f, FORMULA f)]
+    -> Result ([FORMULA f], CASLSign)
+mkEDPairs' s [i1, i2] mr pairs = do
+    let ls = map (\ (x, y) -> mkVDecl [i1] $ mkVDataDecl [i2]
+            $ case fromMaybe (error "expected EDRelation") mr of
+                EDRelation Equivalent -> mkEqv x y
+                EDRelation Disjoint -> mkNC [x, y]
+                _ -> error "expected EDRelation") pairs
+    return (ls, s)
+mkEDPairs' _ _ _ _ = error "wrong call of mkEDPairs'"
+
 -- | Mapping of ListFrameBit
 mapListFrameBit :: CASLSign -> Extended -> Maybe O.Relation -> ListFrameBit
        -> Result ([CASLFORMULA], CASLSign)
@@ -638,8 +676,8 @@ mapListFrameBit cSig ex rel lfb =
               case ty of
                 NamedIndividual | rel == Just Types -> do
                   inD <- mapIndivURI cSig iri
-                  return (map (mk1VDecl . mkImpl (mkEqDecl 1 inD)) els,
-                        uniteL $ cSig : s)
+                  let els' = map (substitute (mkNName 1) thing inD) els
+                  return ( els', uniteL $ cSig : s)
                 DataProperty | rel == (Just $ DRRelation ADomain) -> do
                   oEx <- mapDataProp cSig iri 1 2
                   let vars = (mkNName 1, mkNName 2)
@@ -698,16 +736,16 @@ mapListFrameBit cSig ex rel lfb =
       Just r -> case ex of
         Misc _ -> do
             pairs <- mapComDataPropsList cSig Nothing dl 1 2
-            mkEDPairs cSig [1, 2] rel pairs
+            mkEDPairs' cSig [1, 2] rel pairs
         SimpleEntity (Entity _ DataProperty iri) -> case r of
             SubPropertyOf -> do
                 os1 <- mapM (\ o1 -> mapDataProp cSig o1 1 2) dl
-                o2 <- mapDataProp cSig iri 2 1
+                o2 <- mapDataProp cSig iri 1 2 -- was 2 1
                 return (map (mkForall [thingDecl 1, dataDecl 2]
                     . mkImpl o2) os1, cSig)
             EDRelation _ -> do
                 pairs <- mapComDataPropsList cSig (Just iri) dl 1 2
-                mkEDPairs cSig [1, 2] rel pairs
+                mkEDPairs' cSig [1, 2] rel pairs
             _ -> return ([], cSig)
         _ -> err
     IndividualSameOrDifferent al -> case rel of
