@@ -729,7 +729,7 @@ htmlHead title javascript =
   ++ "    <meta content=\"width=device-width,initial-scale=1,shrink-to-fit=no\" name=\"viewport\">\n"
   ++ "    <meta content=\"#000000\" name=\"theme-color\">\n"
   ++ "    <meta name=\"robots\" content=\"noindex,nofollow\">\n"
-  ++ "    <title>DOLIator - " ++ title ++ "</title>\n"
+  ++ "    <title>Hets, the DOLiator - " ++ title ++ "</title>\n"
   ++ "    <!-- Semantic UI stylesheet -->\n"
   ++ "    <style type=\"text/css\">\n"
   ++ semanticUiCss ++ "\n"
@@ -773,13 +773,13 @@ htmlFoot =
 
 pageHeader :: [Element]
 pageHeader =
-  [ add_attr (mkAttr "class" "row") $ unode "div" $ unode "h1" "DOLIator"
+  [ add_attr (mkAttr "class" "row") $ unode "div" $ unode "h1" "Hets, the DOLiator"
   , add_attr (mkAttr "class" "row") $ unode "div" $
       add_attr (mkAttr "class" "ui text container raised segment center aligned") $
-      unode "div" [ unode "p" "Welcome to DOLIator, the web interface to our implementation of the \"Ontology, Modeling and Specification Language\""
+      unode "div" [ unode "p" "Welcome to DOLiator, the web interface to our implementation of the \"Ontology, Modeling and Specification Language\""
                   , add_attr (mkAttr "class" "ui horizontal list") $ unode "div"
-                      [ add_attr (mkAttr "target" "_blank") $ add_attr (mkAttr "class" "item") $ aRef "http://dol-omg.org/" "DOL-Homepage"
-                      , add_attr (mkAttr "target" "_blank") $ add_attr (mkAttr "class" "item") $ aRef "http://hets.eu/" "DOLIator-Homepage"
+                      [ add_attr (mkAttr "target" "_blank") $ add_attr (mkAttr "class" "item") $ aRef "http://dol-omg.org/" "DOL Homepage"
+                      , add_attr (mkAttr "target" "_blank") $ add_attr (mkAttr "class" "item") $ aRef "http://hets.eu/" "Hets Homepage"
                       , add_attr (mkAttr "class" "item") $ aRef "mailto:hets-devel@informatik.uni-bremen.de" "Contact"
                       ]
                   ]
@@ -923,7 +923,7 @@ pageOptionsCommandList :: Element
 pageOptionsCommandList =
   add_attr (mkAttr "href" "?menus") $ unode "a" $
     add_attr (mkAttr "class" "ui button") $ unode "button" $
-    plain "List all commands as XML"
+    plain "Information about the Web Interface"
 
 pageMoreExamples :: [Element] -> Element
 pageMoreExamples listElements =
@@ -1891,7 +1891,7 @@ sessAnsAux libName svg (sess, k) =
 -- the html quicklinks to nodes and edges have been removed with R.16827
   in  ( htmlC
       , htmlPage
-          ("DOLIator - (" ++ shows k ")" ++ ln)
+          ("Hets, the DOLiator - (" ++ shows k ")" ++ ln)
           []
           [ add_attr (mkAttr "class" "row") (unode "div" $ unode "h1" ("Library " ++ ln))
           , add_attr (mkAttr "class" "row") $ unode "div"
