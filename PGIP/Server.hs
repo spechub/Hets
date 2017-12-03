@@ -1336,8 +1336,9 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
                           lift $ nextSess newLib sess sessRef k
                           return $ case api of
                             OldWebAPI -> (htmlC,
-                              formatResults xForm k i . unode "results" $
-                                formatGoals True proofResults)
+                              formatResults xForm k i .
+                                add_attr (mkAttr "class" "results") $
+                                unode "div" $ formatGoals True proofResults)
                             RESTfulAPI -> formatProofs
                               format
                               pfOptions
@@ -1397,31 +1398,33 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
 
 formatGoals :: Bool -> [ProofResult] -> [Element]
 formatGoals includeDetails =
-  map (\ (n, e, d, _, _, mps) -> unode "goal"
-    ([unode "name" n, unode "result" e]
-    ++ [unode "details" d | includeDetails]
+  map (\ (n, e, d, _, _, mps) -> add_attr (mkAttr "class" "results-goal") $ unode "div"
+    ([ unode "h3" ("Results for " ++ n ++ " (" ++ e ++ ")") ]
+    ++ [add_attr (mkAttr "class" "results-details") $ unode "div" d | includeDetails]
     ++ case mps of
         Nothing -> []
         Just ps -> formatProofStatus ps))
 
 formatProofStatus :: ProofStatus G_proof_tree -> [Element]
 formatProofStatus ps =
-  [ unode "usedProver" $ usedProver ps
+  [ unode "h5" "Used Prover"
+  , add_attr (mkAttr "class" "usedProver") $ unode "p" $ usedProver ps
   -- `read` makes this type-unsafe
-  , unode "tacticScript" $ formatTacticScript $ read $
+  , unode "h5" "Tactic Script"
+  , add_attr (mkAttr "class" "tacticScript") $ unode "p" $ formatTacticScript $ read $
       (\ (TacticScript ts) -> ts) $ tacticScript ps
-  , unode "proofTree" $ show $ proofTree ps
-  , unode "usedTime" $ formatUsedTime $ usedTime ps
-  , unode "usedAxioms" $ formatUsedAxioms $ usedAxioms ps
-  , unode "proverOutput" $ formatProverOutput $ proofLines ps
+  , unode "h5" "Proof Tree"
+  , add_attr (mkAttr "class" "proofTree") $ unode "div" $ show $ proofTree ps
+  , unode "h5" "Used Time"
+  , add_attr (mkAttr "class" "usedTime") $ unode "div" $ formatUsedTime $ usedTime ps
+  , unode "h5" "Used Axioms"
+  , add_attr (mkAttr "class" "usedAxioms") $ unode "div" $ formatUsedAxioms $ usedAxioms ps
+  , unode "h5" "Prover Output"
+  , add_attr (mkAttr "class" "proverOutput") $ unode "div" $ formatProverOutput $ proofLines ps
   ]
 
-formatProverOutput :: [String] -> CData
-formatProverOutput ls =
-  CData { cdVerbatim = CDataVerbatim
-        , cdData = unlines ls
-        , cdLine = Nothing
-        }
+formatProverOutput :: [String] -> Element
+formatProverOutput = unode "pre" . unlines
 
 formatTacticScript :: ATPTacticScript -> [Element]
 formatTacticScript ts =
@@ -1452,27 +1455,24 @@ formatResultsMultiple xForm sessId rs prOrCons =
     GlConsistency -> aRef ('/' : show sessId ++ "?consistency") "return"
     GlProofs -> aRef ('/' : show sessId ++ "?autoproof") "return"
   goBack2 = aRef ('/' : show sessId) "return to DGraph"
-  in ppElement $ unode "html" ( unode "head"
-    [ unode "title" "Results", add_attr ( mkAttr "type" "text/css" )
-    $ unode "style" resultStyles, goBack1, plain " ", goBack2 ]
-    : foldr (\ el r -> unode "h4" (qName $ elName el) : el : r) [] rs )
+  in htmlPage "Results" []
+       [ htmlRow $ unode "h1" "Results"
+       , htmlRow $ unode "div" [goBack1, goBack2]
+       , htmlRow $ unode "div" $
+           foldr (\ el r -> unode "h4" (qName $ elName el) : el : r) [] rs
+       ] ""
 
 -- | display results of proving session (single node)
 formatResults :: Bool -> Int -> Int -> Element -> String
 formatResults xForm sessId i rs =
   if xForm || sessId <= 0 then ppTopElement rs else let
-  goBack1 = aRef ('/' : show sessId ++ "?theory=" ++ show i) "return to Theory"
-  goBack2 = aRef ('/' : show sessId) "return to DGraph"
-  in ppElement $ unode "html" [ unode "head"
-    [ unode "title" "Results", add_attr ( mkAttr "type" "text/css" )
-    $ unode "style" resultStyles, goBack1, plain " ", goBack2 ], rs ]
-
-resultStyles :: String
-resultStyles = unlines
-  [ "results { margin: 5px; padding:5px; display:block; }"
-  , "goal { display:block; margin-left:15px; }"
-  , "name { display:inline; margin:5px; padding:10px; font-weight:bold; }"
-  , "result { display:inline; padding:30px; }" ]
+  goBack1 = linkButtonElement ('/' : show sessId ++ "?theory=" ++ show i) "return to Theory"
+  goBack2 = linkButtonElement ('/' : show sessId) "return to DGraph"
+  in htmlPage "Results" []
+       [ htmlRow $ unode "h1" "Results"
+       , htmlRow $ unode "div" [goBack1, goBack2]
+       , htmlRow $ add_attr (mkAttr "class" "ui relaxed grid raised segment container left aligned") $ unode "div" rs
+       ] ""
 
 showBool :: Bool -> String
 showBool = map toLower . show
@@ -1912,7 +1912,7 @@ proveMultiNodes pm le ln dg useTh mp mt tl nodeSel axioms = let
 formatResultsAux :: Bool -> ProverMode -> String -> [ProofResult] -> Element
 formatResultsAux xF pm nm sens = unode nm $ case (sens, pm) of
     ([(_, e, d, _, _, _)], GlConsistency) | xF -> formatConsNode e d
-    _ -> unode "results" $ formatGoals xF sens
+    _ -> add_attr (mkAttr "class" "results") $ unode "div" $ formatGoals xF sens
 
 mkPath :: Session -> LibName -> Int -> String
 mkPath sess l k =

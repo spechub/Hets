@@ -7,6 +7,22 @@
   color: #0E6EB8;
 }
 
+.results {
+  margin: 5px;
+  padding:5px;
+  display:block;
+}
+.results-goal {
+  display:block;
+  margin-left:15px;
+}
+.results-details {
+}
+.result {
+  display:inline;
+  padding:30px;
+}
+
 pre {
   margin: 0;
   padding: 0;
