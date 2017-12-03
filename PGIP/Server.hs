@@ -1957,7 +1957,6 @@ sessAnsAux libName svg (sess, k) =
               , dropDownElement "Commands" (map ref globalCommands)
               , dropDownToLevelsElement "Imported Libraries" $ map libref $ Map.keys libEnv
               ]
-          , add_attr (mkAttr "class" "sixteen wide column centered") (unode "div" $ loadXUpdate (libPath ++ updateS))
           , add_attr (mkAttr "class" "row") $ unode "div" $ unode "h3" "Development Graph"
           ]
           svg
