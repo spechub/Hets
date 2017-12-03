@@ -6,3 +6,15 @@
   cursor: pointer;
   color: #0E6EB8;
 }
+
+pre {
+  margin: 0;
+  padding: 0;
+}
+
+pre > br {
+  display: none;
+  height: 0;
+  margin: 0;
+  padding: 0;
+}

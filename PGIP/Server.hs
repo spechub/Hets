@@ -838,15 +838,37 @@ pageOptionsFileForm = add_attr (mkAttr "id" "user-file-form") $
              ]
 
 inputTypeDropDown :: Element
-inputTypeDropDown = unode "div"
-   [ add_attr (mkAttr "class" "ui sub header") $ unode "div" "Input Type of File or Text Field"
-   , add_attrs [mkAttr "name" "input-type", mkAttr "id" "user-file-input-type"] $
-       unode "select" $
-         add_attr (mkAttr "value" "") (unode "option" "[Try to determine automatically]")
-         : map (\ inType ->
-                 add_attr (mkAttr "value" $ show inType) $ unode "option" $ show inType
-               ) plainInTypes
+inputTypeDropDown = singleSelectionDropDown
+  "Input Type of File or Text Field"
+  "input-type"
+  (Just "user-file-input-type")
+  ( ("", "[Try to determine automatically]", [])
+    : map (\ inType -> (show inType, show inType, [])) plainInTypes
+  )
+
+singleSelectionDropDown :: String -> String -> Maybe String -> [(String, String, [Attr])] -> Element
+singleSelectionDropDown label inputName htmlIdM options = unode "div"
+   [ add_attr (mkAttr "class" "ui sub header") $ unode "div" label
+   , add_attrs ( mkAttr "name" inputName
+               : maybe [] (\ htmlId -> [mkAttr "id" htmlId]) htmlIdM
+               ) $ unode "select" $
+         map (\ (optionValue, optionLabel, attributes) ->
+               add_attrs (mkAttr "value" optionValue : attributes) $
+                 unode "option" optionLabel
+             ) options
    ]
+
+checkboxElement :: String -> [Attr] -> Element
+checkboxElement label attributes =
+  add_attr (mkAttr "class" "four wide column") $ unode "div" $
+    add_attr (mkAttr "class" "ui checkbox") $ unode "div"
+      [ add_attrs
+          ([ mkAttr "type" "checkbox"
+          , mkAttr "tabindex" "0"
+          , mkAttr "class" "hidden"
+          ] ++ attributes) $ unode "input" ""
+      , unode "label" label
+      ]
 
 pageOptionsFileTextArea :: Element
 pageOptionsFileTextArea = add_attrs
@@ -1286,7 +1308,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
                   Just dgnode -> return (i, dgnode)
               let fstLine = (if isDGRef dgnode then ("reference " ++) else
                     if isInternalNode dgnode then ("internal " ++) else id)
-                    "node " ++ getDGNodeName dgnode ++ " (#" ++ show i ++ ")\n"
+                    "Node " ++ getDGNodeName dgnode ++ " (#" ++ show i ++ ")\n"
                   ins = getImportNames dg i
                   showN d = showGlobalDoc (globalAnnos dg) d "\n"
               case nc of
@@ -1482,12 +1504,14 @@ showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
       -- else create proving functionality
       gs -> do
         -- create list of theorems, selectable for proving
-        let thmSl = map (\ (nm, bp) ->
-              let gSt = maybe GOpen basicProofToGStatus bp
-              in add_attrs
-                 [ mkAttr "type" "checkbox", mkAttr "name" $ escStr nm
-                 , mkAttr "unproven" $ showBool $ elem gSt [GOpen, GTimeout]]
-              $ unode "input" $ nm ++ "   (" ++ showSimple gSt ++ ")" ) gs
+        let thmSl =
+              map (\ (nm, bp) ->
+                    let gSt = maybe GOpen basicProofToGStatus bp
+                    in checkboxElement (nm ++ "   (" ++ showSimple gSt ++ ")")
+                       [ mkAttr "name" $ escStr nm
+                       , mkAttr "unproven" $ showBool $ elem gSt [GOpen, GTimeout]
+                       ]
+                ) gs
         -- select unproven, all or none theorems by button
             (btUnpr, btAll, btNone, jvScr1) = showSelectionButtons True
         -- create prove button and prover/comorphism selection
@@ -1498,16 +1522,26 @@ showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
               , mkAttr "type" "hidden", mkAttr "style" "display:none;"
               , mkAttr "value" $ show i ] inputNode
         -- combine elements within a form
-            thmMenu = let br = unode "br " () in add_attrs
-              [ mkAttr "name" "thmSel", mkAttr "method" "get"]
-              . unode "form"
-              $ [hidStr, prSl, cmrSl, br, btUnpr, btAll, btNone, timeout]
-              ++ intersperse br (prBt : thmSl)
+            thmMenu =
+              add_attrs [ mkAttr "name" "thmSel", mkAttr "method" "get"]
+                . add_attr (mkAttr "class" "ui form") $ unode "form"
+                $ add_attr (mkAttr "class" "ui relaxed grid container left aligned") $ unode "div"
+                $ [ add_attr (mkAttr "class" "row") $ unode "div" [hidStr, prSl, cmrSl]
+                  , add_attr (mkAttr "class" "row") $ unode "div" [btUnpr, btAll, btNone, timeout]
+                  , add_attr (mkAttr "class" "row") $ unode "div" thmSl
+                  , add_attr (mkAttr "class" "row") $ unode "div" prBt
+                  ]
         -- save dg and return to svg-view
-            goBack = aRef ('/' : show sessId) "return to DGraph"
+            goBack = linkButtonElement ('/' : show sessId) "Return to DGraph"
         return $ htmlPage fstLine (jvScr1 ++ jvScr2)
-          [ headr, transBt, prvsBt, plain " ", goBack, unode "h4" "Theorems"
-          , thmMenu, unode "h4" "Theory" ] $ sbShow ++ "\n<br />" ++ thShow
+          [ headr
+          , transBt
+          , prvsBt
+          , goBack
+          , htmlRow $ unode "h4" "Theorems"
+          , thmMenu
+          , htmlRow $ unode "h4" "Theory"
+          ] $ "<pre>\n" ++ sbShow ++ "\n<br />" ++ thShow ++ "\n</pre>\n"
 
 -- | show window of the autoproof function
 showAutoProofWindow :: DGraph -> Int -> ProverMode
@@ -1560,25 +1594,42 @@ showAutoProofWindow dg sessId prOrCons = let
 
 showProveButton :: Bool -> (Element, Element)
 showProveButton isProver = (prBt, timeout) where
-        prBt = [ mkAttr "type" "submit", mkAttr "value"
-               $ if isProver then "Prove" else "Check"]
-               `add_attrs` inputNode
+        prBt = add_attrs
+          [ mkAttr "type" "submit"
+          , mkAttr "class" "ui button"
+          , mkAttr "value" $ if isProver then "Prove" else "Check"
+          ] inputNode
         -- create timeout field
-        timeout = add_attrs [mkAttr "type" "text", mkAttr "name" "timeout"
-               , mkAttr "value" "1", mkAttr "size" "3"]
-               $ unode "input" "Sec/Goal "
+        timeout = add_attr (mkAttr "class" "three wide field") $ unode "div"
+          [ unode "label" "Timeout (Sec/Goal)"
+          , add_attrs
+              [ mkAttr "type" "text"
+              , mkAttr "name" "timeout"
+              , mkAttr "placeholder" "Timeout (Sec/Goal)"
+              , mkAttr "value" "1"
+              ] $ unode "input" ""
+          ]
 
 -- | select unproven, all or none theorems by button
 showSelectionButtons :: Bool -> (Element, Element, Element, String)
 showSelectionButtons isProver = (selUnPr, selAll, selNone, jvScr)
   where prChoice = if isProver then "SPASS" else "darwin"
-        selUnPr = add_attrs [mkAttr "type" "button"
+        selUnPr = add_attrs
+          [ mkAttr "type" "button"
+          , mkAttr "class" "ui button"
           , mkAttr "value" $ if isProver then "Unproven" else "Unchecked"
-          , mkAttr "onClick" "chkUnproven()"] inputNode
-        selAll = add_attrs [mkAttr "type" "button", mkAttr "value" "All"
-          , mkAttr "onClick" "chkAll(true)"] inputNode
-        selNone = add_attrs [mkAttr "type" "button", mkAttr "value" "None"
-          , mkAttr "onClick" "chkAll(false)"] inputNode
+          , mkAttr "onClick" "chkUnproven()"
+          ] inputNode
+        selAll = add_attrs
+          [ mkAttr "type" "button", mkAttr "value" "All"
+          , mkAttr "class" "ui button"
+          , mkAttr "onClick" "chkAll(true)"
+          ] inputNode
+        selNone = add_attrs
+          [ mkAttr "type" "button", mkAttr "value" "None"
+          , mkAttr "class" "ui button"
+          , mkAttr "onClick" "chkAll(false)"
+          ] inputNode
         -- javascript features
         jvScr = unlines
           -- select unproven goals by button
@@ -1658,15 +1709,17 @@ showProverSelection prOrCons subLs = do
     GlConsistency -> getConsCheckersAux) Nothing) subLs
   let allPrCm = nub $ concat pcs
   -- create prover selection (drop-down)
-      prs = add_attr (mkAttr "name" "prover") $ unode "select" $ map (\ p ->
-        add_attrs [mkAttr "value" p, mkAttr "onClick"
-                  $ "updCmSel('" ++ p ++ "')"]
-        $ unode "option" p) $ showProversOnly allPrCm
+      prs = add_attr (mkAttr "class" "eight wide column") $ unode "div" $
+        singleSelectionDropDown "Prover" "prover" Nothing $
+          map (\ p ->
+                (p, p, [mkAttr "onClick" $ "updCmSel('" ++ p ++ "')"])
+              ) $ showProversOnly allPrCm
   -- create comorphism selection (drop-down)
-      cmrs = add_attr (mkAttr "name" "translation") $ unode "select"
-        $ map (\ (cm, ps) -> let c = showComorph cm in
-        add_attrs [mkAttr "value" c, mkAttr "4prover" $ intercalate ";" ps]
-          $ unode "option" c) allPrCm
+      cmrs = add_attr (mkAttr "class" "eight wide column") $ unode "div" $
+        singleSelectionDropDown "Translation" "translation" Nothing $
+          map (\ (cm, ps) -> let c = showComorph cm in
+                (c, c, [mkAttr "4prover" $ intercalate ";" ps])
+              ) allPrCm
   return (prs, cmrs, jvScr)
 
 showHtml :: FNode -> String
