@@ -881,6 +881,7 @@ pageOptionsFileTextArea = add_attrs
   , mkAttr "rows" "22"
   , mkAttr "name" "content"
   , mkAttr "id" "user-input-text"
+  , mkAttr "style" "font-family: monospace;"
   ] $ unode "textarea" ""
 
 pageOptionsFilePickerInput :: Element
