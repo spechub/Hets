@@ -711,7 +711,7 @@ htmlResponse path listElements respond = respond . mkOkResponse htmlC
 htmlPageWithTopContent :: FilePath -> [Element] -> String
 htmlPageWithTopContent path listElements =
   htmlPage (if null path then "Start Page" else path) []
-    (pageHeader ++ pageOptions path ++ [pageMoreExamples listElements])
+    (pageHeader ++ pageOptions path listElements)
     ""
 
 htmlPage :: String -> String -> [Element] -> String -> String
@@ -785,32 +785,29 @@ pageHeader =
                   ]
   ]
 
-pageOptions :: String -> [Element]
-pageOptions path =
-  [ add_attr (mkAttr "class" "row") $ unode "div"
-      [ pageOptionsFormat "?" path
-      , pageOptionsCommandList
-      ]
+pageOptions :: String -> [Element] -> [Element]
+pageOptions path listElements =
+  [ add_attr (mkAttr "class" "row") $ unode "div" pageOptionsCommandList
   , add_attr (mkAttr "class" "row") $ unode "div" $
       add_attr (mkAttr "class" "ui relaxed grid container segment") $ unode "div"
         [ add_attr (mkAttr "class" "row centered") $ unode "div" $
             unode "p" "Select a local DOL file as library or enter a DOL specification in the text area or choose one of the minimal examples from the right hand side and press \"Submit\"."
         , add_attr (mkAttr "class" "three column row") $ unode "div"
             [ pageOptionsFile
-            , pageOptionsExamples
+            , pageOptionsExamples (not $ null path) listElements
             ]
         ]
   ]
 
 pageOptionsFile :: Element
 pageOptionsFile =
-  add_attr (mkAttr "class" "ui container twelve wide column left aligned") $ unode "div" $
+  add_attr (mkAttr "class" "ui container ten wide column left aligned") $ unode "div" $
     add_attr (mkAttr "class" "ui row") $ unode "div" pageOptionsFileForm
 
 
-pageOptionsExamples :: Element
-pageOptionsExamples =
-  add_attr (mkAttr "class" "ui container four wide column left aligned") $ unode "div"
+pageOptionsExamples :: Bool -> [Element] -> Element
+pageOptionsExamples moreExamplesAreOpen listElements =
+  add_attr (mkAttr "class" "ui container six wide column left aligned") $ unode "div"
     [ unode "h4" "Minimal Examples"
     , add_attr (mkAttr "class" "ui list") $ unode "div" $
         map (\ (elementName, inputType, exampleText) ->
@@ -829,6 +826,7 @@ pageOptionsExamples =
                 , ("HasCASL", "het", Examples.hascasl)
                 , ("Modal", "het", Examples.modal)
                 ]
+    , pageMoreExamples moreExamplesAreOpen listElements
     ]
 
 pageOptionsFileForm :: Element
@@ -953,15 +951,16 @@ pageOptionsCommandList =
     add_attr (mkAttr "class" "ui button") $ unode "button" $
     plain "Information about the Web Interface"
 
-pageMoreExamples :: [Element] -> Element
-pageMoreExamples listElements =
+pageMoreExamples :: Bool -> [Element] -> Element
+pageMoreExamples isOpen listElements =
+  let activeClass = if isOpen then "active " else "" in
   add_attr (mkAttr "class" "ui ten wide column container left aligned") $ unode "div" $
     add_attr (mkAttr "class" "ui styled accordion") $ unode "div"
-      [ add_attr (mkAttr "class" "title") $ unode "div"
+      [ add_attr (mkAttr "class" (activeClass ++ "title")) $ unode "div"
           [ add_attr (mkAttr "class" "dropdown icon") $ unode "i" ""
           , unode "span" "More Examples"
           ]
-      , add_attr (mkAttr "class" "content") $ unode "div" $
+      , add_attr (mkAttr "class" (activeClass ++ "content")) $ unode "div" $
           add_attr (mkAttr "class" "transistion hidden") $ unode "div" $
             unode "ul" listElements
       ]
