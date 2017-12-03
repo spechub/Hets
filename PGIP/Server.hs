@@ -944,12 +944,6 @@ dropDownSubMenu items =
   add_attr (mkAttr "class" "menu") $ unode "div" $
     map (add_attr (mkAttr "class" "item")) items
 
-pageOptionsCommandList :: Element
-pageOptionsCommandList =
-  add_attr (mkAttr "href" "?menus") $ unode "a" $
-    add_attr (mkAttr "class" "ui button") $ unode "button" $
-    plain "Information about the Web Interface"
-
 pageMoreExamples :: Bool -> [Element] -> Element
 pageMoreExamples isOpen listElements =
   let activeClass = if isOpen then "active " else "" in
@@ -2010,12 +2004,3 @@ mkForm a =
             , mkAttr "method" "post"
             , mkAttr "class" "ui basic form"
             ] . unode "form"
-
-loadXUpdate :: String -> Element
-loadXUpdate a = mkForm a
-  [add_attr (mkAttr "class" "ui relaxed grid container") $ unode "div"
-    [ add_attr (mkAttr "class" "six wide column") $ unode "div" $ filePickerInputElement xupdateS xupdateS xupdateS
-    , add_attr (mkAttr "class" "six wide column") $ unode "div" $ filePickerInputElement "impacts" "impacts" "impacts"
-    , add_attr (mkAttr "class" "four wide column") $ unode "div" submitButton
-    ]
-  ]
