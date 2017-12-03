@@ -813,16 +813,21 @@ pageOptionsExamples =
   add_attr (mkAttr "class" "ui container four wide column left aligned") $ unode "div"
     [ unode "h4" "Minimal Examples"
     , add_attr (mkAttr "class" "ui list") $ unode "div" $
-        map (\ (elementName, exampleText) ->
+        map (\ (elementName, inputType, exampleText) ->
               add_attr (mkAttr "class" "item") $ unode "div" $
                 add_attrs [ mkAttr "class" "insert-example-into-user-input-text"
                           , mkAttr "data-text" exampleText
-                          , mkAttr "data-input-type" $ map toLower elementName
+                          , mkAttr "data-input-type" inputType
                           ] $ unode "span" elementName
-              ) [ ("DOL", Examples.dol)
-                , ("CASL", Examples.casl)
-                , ("OWL", Examples.owl)
-                , ("CLIF", Examples.clif)
+              ) [ ("DOL", "dol", Examples.dol)
+                , ("CASL", "casl", Examples.casl)
+                , ("OWL", "owl", Examples.owl)
+                , ("CLIF", "clif", Examples.clif)
+                , ("Propositional", "het", Examples.propositional)
+                , ("RDF", "rdf", Examples.rdf)
+                , ("TPTP", "tptp", Examples.tptp)
+                , ("HasCASL", "het", Examples.hascasl)
+                , ("Modal", "het", Examples.modal)
                 ]
     ]
 
