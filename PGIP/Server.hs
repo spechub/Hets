@@ -787,8 +787,7 @@ pageHeader =
 
 pageOptions :: String -> [Element] -> [Element]
 pageOptions path listElements =
-  [ add_attr (mkAttr "class" "row") $ unode "div" pageOptionsCommandList
-  , add_attr (mkAttr "class" "row") $ unode "div" $
+  [ add_attr (mkAttr "class" "row") $ unode "div" $
       add_attr (mkAttr "class" "ui relaxed grid container segment") $ unode "div"
         [ add_attr (mkAttr "class" "row centered") $ unode "div" $
             unode "p" "Select a local DOL file as library or enter a DOL specification in the text area or choose one of the minimal examples from the right hand side and press \"Submit\"."
@@ -1954,7 +1953,6 @@ sessAnsAux libName svg (sess, k) =
           [ add_attr (mkAttr "class" "row") (unode "div" $ unode "h1" ("Library " ++ ln))
           , add_attr (mkAttr "class" "row") $ unode "div"
               [ pageOptionsFormat "" libPath
-              , pageOptionsCommandList
               , dropDownElement "Tools" [autoProofBt, consBt]
               , dropDownElement "Commands" (map ref globalCommands)
               , dropDownToLevelsElement "Imported Libraries" $ map libref $ Map.keys libEnv
