@@ -23,6 +23,7 @@ module Driver.Options
   , AnaType (..)
   , GuiType (..)
   , InType (..)
+  , plainInTypes
   , OWLFormat (..)
   , plainOwlFormats
   , OutType (..)
