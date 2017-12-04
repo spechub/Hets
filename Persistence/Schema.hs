@@ -34,6 +34,7 @@ import Persistence.Schema.MappingType (MappingType)
 import Persistence.Schema.OMSOrigin (OMSOrigin)
 import Persistence.Schema.ReasoningStatusOnConjectureType (ReasoningStatusOnConjectureType)
 import Persistence.Schema.ReasoningStatusOnReasoningAttemptType (ReasoningStatusOnReasoningAttemptType)
+
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
 Hets sql=hets
   key String maxlen=255
@@ -74,7 +75,7 @@ LogicMapping sql=logic_mappings
   isWeaklyAmalgamable Bool
   deriving Show
 
-Serialization
+Serialization sql=serializations
   languageId LanguageId
   slug String maxlen=247 -- 255 - 8 (8 for the languageId)
   UniqueSerializationLanguageIdSerializationSlug languageId slug
