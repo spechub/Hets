@@ -778,7 +778,8 @@ findOrCreateSymbol libEnv fileVersionKey dbCache doSave libName nodeId
   (Entity omsKey omsLocIdBaseValue) lid symbol =
     let name = show $ sym_name lid symbol
         fullName = fullSymName lid symbol
-        symbolKind = symKind lid symbol
+        symbolKind' = symKind lid symbol
+        symbolKind = if null symbolKind' then "symbol" else symbolKind'
         locId = locIdBaseLocId omsLocIdBaseValue ++ "/symbols/" ++ symbolKind ++ "/" ++ name
     in  if symbolIsCached libEnv libName nodeId lid symbol dbCache
         then return dbCache
