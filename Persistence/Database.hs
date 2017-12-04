@@ -61,9 +61,15 @@ runFullMigrationSet :: forall m . ( MonadBaseControl IO m
                     => DBConfig -> DBMonad m ()
 runFullMigrationSet dbConfig =
   when (doMigrate dbConfig) $ do
+    disableNotices -- PostgreSQL prints notices if an index already exists
     runMigrationSilent migrateAll
     mapM_ (handle ignoreIndexExistsError . runRawSql) $ indexesSQL dbConfig
   where
+    disableNotices :: MonadIO m => DBMonad m ()
+    disableNotices =
+      when (adapter dbConfig == Just "postgresql")
+        (runRawSql "SET client_min_messages = error;" >> return ())
+
     runRawSql :: MonadIO m => String -> DBMonad m [Single (Maybe Text)]
     runRawSql sql =
       let query = pack $ if isMySql dbConfig
