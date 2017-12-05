@@ -18,6 +18,7 @@ addons:
       - spass
       - darwin
       - openjdk-7-jdk
+  postgresql: '9.6'
 install:
   # Download and unpack the stack executable
   - mkdir -p ~/.local/bin
