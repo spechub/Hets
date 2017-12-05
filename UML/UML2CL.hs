@@ -456,7 +456,7 @@ retrieveSign cm = UML.Sign.Sign {
         --assoClasses = Map.elems (translateAssociationClasses (cmClasses cm))
         attributes = foldl (++) [] $ map (\ c -> map (signTranslateAttr c) (attr c)) classLis
         compositions = map signTranslateComposition $ filter isComposition $ Map.elems $ cmAssociations cm
-        procedures = foldl (++) [] $ map (\ c -> map (signTranslateProc c) (proc c)) classLis
+        procedures = foldl (++) [] $ map (\ c -> map (signTranslateProc c) $ filter (isJust . procReturnType) (proc c)) classLis
         associations0 = map signTranslateAsso $ filter (not . isComposition) $ Map.elems (cmAssociations cm)
         packSigs = map retrieveSignPackage (cmPackages cm)
 
@@ -474,7 +474,7 @@ retrieveSignPackage pack = UML.Sign.Sign {
         --assoClasses = Map.elems (translateAssociationClasses (cmClasses cm))
         attributes = foldl (++) [] $ map (\ c -> map (signTranslateAttr c) (attr c)) classLis
         compositions = map signTranslateComposition $ filter isComposition $ Map.elems $ associations pack
-        procedures = foldl (++) [] $ map (\ c -> map (signTranslateProc c) (proc c)) classLis
+        procedures = foldl (++) [] $ map (\ c -> map (signTranslateProc c) $ filter (isJust . procReturnType) (proc c)) classLis -- TODO: Add handling for empty return
         associations0 = map signTranslateAsso $ filter (not . isComposition) $ Map.elems $ associations pack
         packSigs = map retrieveSignPackage (packagePackages pack)
 
