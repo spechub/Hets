@@ -74,6 +74,12 @@ data Class = Class {
         attr      :: [Attribute],
         proc      :: [Procedure]} deriving (Eq, Ord, Show)
 
+data DataType = DataType {
+        dtsuper :: [ClassEntity],
+	      dtName  :: String,
+	      dtattr  :: [Attribute],
+        dtproc  :: [Procedure] } deriving (Eq, Ord, Show)
+
 data Attribute = Attribute {
         attrName       :: String,
         attrType       :: Type,
@@ -105,8 +111,7 @@ data Literal = Literal { literalName :: String,
 instance Show Literal where
     show lit = literalName lit
 
-data DataType = DataType {
-	dtName :: String } deriving (Eq, Ord, Show)
+
 
 data Association = Association {
         ends     :: [End],

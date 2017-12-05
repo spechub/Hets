@@ -69,19 +69,22 @@ translateEndCoin :: String -> Integer -> (String, Type) -> Maybe TEXT_META
 translateEndCoin m i (n, et) =
     case umltype et of
         CE ce -> case ce of
-                    CL cl -> tc cl
-                    AC ac -> tc $ acClass ac
+                    CL cl -> translateEndCoinCE className attr i m n et cl
+                    AC ac -> translateEndCoinCE className attr i m n et $ acClass ac
                     EN _ -> Nothing
-                    where
-                        o = mkSimpleId "o"
-                        s = mkSimpleId "s"
-                        tc cl = case filter ((n ==) . attrName) (attr cl) of
-                                    [] -> Nothing
-                                    (_ : _) -> Just $ phrases2TM [Sentence $ Quant_sent Universal [Name o, Name s] (ifSen
-                                        (typeFunction (mkSimpleId $ (className cl) ++ "." ++ n) [o, s])
-                                        (Atom_sent (Equation (Name_term s) (Funct_term ( Name_term  $ mkSimpleId $ "form:seq2" ++ (map toLower $ translateTargetType et)) [Term_seq $ Funct_term (Name_term $ mkSimpleId $ "form:select" ++ (show i)) [Term_seq $ Name_term o, Term_seq $ Name_term $ mkSimpleId m] nullRange] nullRange)) nullRange)) nullRange]
-
+                    DT dt -> translateEndCoinCE dtName dtattr i m n et dt 
         _ -> Nothing
+
+translateEndCoinCE :: (a -> String) -> (a -> [Attribute]) -> Integer -> String -> String -> Type -> a -> Maybe TEXT_META
+translateEndCoinCE namef attrf i m n et cl = 
+  case filter ((n ==) . attrName) (attrf cl) of -- Translate class cl into TEXT_META
+    [] -> Nothing
+    (_ : _) -> Just $ phrases2TM [Sentence $ Quant_sent Universal [Name o, Name s] (ifSen
+        (typeFunction (mkSimpleId $ (namef cl) ++ "." ++ n) [o, s])
+        (Atom_sent (Equation (Name_term s) (Funct_term ( Name_term  $ mkSimpleId $ "form:seq2" ++ (map toLower $ translateTargetType et)) [Term_seq $ Funct_term (Name_term $ mkSimpleId $ "form:select" ++ (show i)) [Term_seq $ Name_term o, Term_seq $ Name_term $ mkSimpleId m] nullRange] nullRange)) nullRange)) nullRange]
+      where
+                      o = mkSimpleId "o"
+                      s = mkSimpleId "s"
 
 translateMF2TM :: [Sen] -> TEXT_META
 translateMF2TM mfs = Text_meta { getText = Text (fmap Sentence (map translateMult2Sen mfs)) nullRange

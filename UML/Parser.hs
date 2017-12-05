@@ -54,7 +54,7 @@ parseModel :: Element -> Model
 parseModel el0 = case findChildren packagedElementName el of 
                         (x:_) -> case Just smPrefix == (findAttr (typeName xmiv) x) of
                             True -> case findChildren packagedElementName el of 
-                                (x:_) -> SM (parseStateMachine xmiv x)
+                                (y:_) -> SM (parseStateMachine xmiv y)
                                 [] -> error "No packagedElement found"
                             False -> parseClassModel prefix (xmiv, umlv) el
                    

@@ -37,20 +37,18 @@ parseClassModel prefix (xmiv, _) el = ClassModel CM {
                 }
                 where
                     pack = processPackage prefix xmiv allmap semap el
-                    allmap = Map.union dtmap $ Map.union emap $ Map.union cmap acmap
-                    cmap = Map.fromList $ (map  (\ (id1, x) -> (id1, CL x))
+                    allmap = Map.union emap $ Map.union cmap acmap
+                    cmap = Map.fromList $ ((map  (\ (id1, x) -> (id1, CL x))
                             (collectRec prefix xmiv (prefix ++ ":Class")
-                                (processClass xmiv allmap) el))
+                                (processClass xmiv allmap) el)) ++ (map  (\ (id1, x) -> (id1, DT x))
+                            (collectRec prefix xmiv (prefix ++ ":DataType")
+                                (processDatatype xmiv allmap) el)))
                     emap = Map.fromList $ map (\ (id1, x) -> (id1, EN x))
                                         (collectRec prefix xmiv (prefix ++ ":Enumeration")
                                             (processEnumeration xmiv) el)
                     acmap = Map.fromList $ (map (\ (id1, x) -> (id1, AC x))
                                 (collectRec prefix xmiv (prefix ++ ":AssociationClass")
                                 (processAssociationClass xmiv
-                                    (Map.union cmap emap) semap) el))
-		    dtmap = Map.fromList $ (map (\ (id1, x) -> (id1, DT x))
-                                (collectRec prefix xmiv (prefix ++ ":DataType")
-                                (processDatatype xmiv
                                     (Map.union cmap emap) semap) el))
                     semapraw = collectSpecialEnds prefix xmiv allmap el
                     semap = (Map.fromList
@@ -149,27 +147,18 @@ agrTranslator cmap el = (fromMaybe (error "Aggregation w/o association") (findAt
                 endName = findAttr nameName el
                 })
 
-processDatatype :: Maybe String -> Map.Map Id ClassEntity
-                        -> Map.Map Id [End] -> Element  -> (Id, UML.UML.DataType)
-processDatatype xmiv cmap semap el =  
-	(id, DataType { dtName = dtn})
-	where dtn = case (findAttr nameName el) of
-                Nothing -> id
-                Just n -> n
-              id = fromMaybe (error "DataType without id") $ findAttr (attrIdName xmiv) el
-
 processAssociation :: Maybe String -> Map.Map Id ClassEntity
                         -> Map.Map Id [End] -> Element  -> (Id, Association)
 processAssociation xmiv cmap semap el =
-    (id,
+    (aid,
     Association {ends = (map (processEnds xmiv cmap)
         (findChildren (sName "ownedEnd") el)) ++ fromMaybe []
-        (Map.lookup id semap),
+        (Map.lookup aid semap),
         assoName = an})
     where an = case (findAttr nameName el) of
-                Nothing -> id
+                Nothing -> aid
                 Just n -> n
-          id = fromMaybe (error "Association without id") $ findAttr (attrIdName xmiv) el
+          aid = fromMaybe (error "Association without id") $ findAttr (attrIdName xmiv) el
 
 processEnds :: Maybe String -> Map.Map Id ClassEntity -> Element -> End
 processEnds xmiv emap el =
@@ -209,6 +198,18 @@ processClass xmiv emap el = (fromMaybe "" (findAttr (attrIdName xmiv) el)
                         proc = map (processProcedure emap)
                             (findChildren procedureName el)})
 
+processDatatype :: Maybe String -> (Map.Map Id ClassEntity)
+                 -> Element -> (Id, UML.UML.DataType)
+processDatatype xmiv emap el = (fromMaybe "" (findAttr (attrIdName xmiv) el)
+                , UML.UML.DataType {
+                    dtsuper = map (processGeneralization emap)
+                        (findChildren generalizationName el),
+                    dtName = fromMaybe "" ( findAttr nameName el),
+                    dtattr = map (processAttribute emap)
+                            (findChildren attributeName el),
+                    dtproc = map (processProcedure emap)
+                            (findChildren procedureName el)})
+
 processAssociationClass :: Maybe String -> Map.Map Id ClassEntity
                             -> Map.Map Id [End] -> Element
                             -> (Id, AssociationClass)
@@ -231,7 +232,7 @@ processLiteral xmiv en el =
 
 processSignal :: Maybe String -> (Map.Map Id ClassEntity)
                     -> Element -> (Id, Signal)
-processSignal xmiv emap el = (fromMaybe "" (findAttr (attrIdName xmiv) el),
+processSignal xmiv _ el = (fromMaybe "" (findAttr (attrIdName xmiv) el),
     Signal { 
       signalName = (case findAttr nameName el of
         Nothing -> show el
