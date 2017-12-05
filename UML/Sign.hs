@@ -8,7 +8,7 @@ import           Data.List
 import           UML.UML
 import           UML.UML   ()
 import           Common.Id
-import           Data.Data
+import           Data.Data(Data,Typeable)
 
 -- |The signature
 data Sign = Sign {

@@ -15,6 +15,7 @@ import qualified Common.Id
 import qualified Data.Map         as Map
 import           Data.Maybe
 import           Prelude          hiding (Enum)
+import 		 Data.Data 	  hiding (DataType)
 import           UML.StateMachine
 
 data Model = ClassModel CM
@@ -41,7 +42,8 @@ instance Common.Id.GetRange CM where
 
 data ClassEntity = CL Class 
                     | AC AssociationClass
-                    | EN UML.UML.Enum deriving (Ord, Show)
+                    | EN UML.UML.Enum
+		    | DT UML.UML.DataType deriving (Ord, Show)
 
 instance Eq ClassEntity where
     (==) x1 x2 = (showClassEntityName x1) == (showClassEntityName x2)
@@ -103,6 +105,9 @@ data Literal = Literal { literalName :: String,
 instance Show Literal where
     show lit = literalName lit
 
+data DataType = DataType {
+	dtName :: String } deriving (Eq, Ord, Show)
+
 data Association = Association {
         ends     :: [End],
         assoName :: String} deriving (Eq, Ord, Show)
@@ -125,6 +130,7 @@ showClassEntityName :: ClassEntity -> String
 showClassEntityName (CL x) = className x
 showClassEntityName (AC x) = className (acClass x)
 showClassEntityName (EN x) = enumName x
+showClassEntityName (DT x) = dtName x
 instance Show End where
     show end = case endTarget end of
             CL cl -> "End " ++ (fromMaybe "" (endName end)) ++ "(" 

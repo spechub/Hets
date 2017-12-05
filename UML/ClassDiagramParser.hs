@@ -37,7 +37,7 @@ parseClassModel prefix (xmiv, _) el = ClassModel CM {
                 }
                 where
                     pack = processPackage prefix xmiv allmap semap el
-                    allmap = Map.union emap $ Map.union cmap acmap
+                    allmap = Map.union dtmap $ Map.union emap $ Map.union cmap acmap
                     cmap = Map.fromList $ (map  (\ (id1, x) -> (id1, CL x))
                             (collectRec prefix xmiv (prefix ++ ":Class")
                                 (processClass xmiv allmap) el))
@@ -47,6 +47,10 @@ parseClassModel prefix (xmiv, _) el = ClassModel CM {
                     acmap = Map.fromList $ (map (\ (id1, x) -> (id1, AC x))
                                 (collectRec prefix xmiv (prefix ++ ":AssociationClass")
                                 (processAssociationClass xmiv
+                                    (Map.union cmap emap) semap) el))
+		    dtmap = Map.fromList $ (map (\ (id1, x) -> (id1, DT x))
+                                (collectRec prefix xmiv (prefix ++ ":DataType")
+                                (processDatatype xmiv
                                     (Map.union cmap emap) semap) el))
                     semapraw = collectSpecialEnds prefix xmiv allmap el
                     semap = (Map.fromList
@@ -144,6 +148,15 @@ agrTranslator cmap el = (fromMaybe (error "Aggregation w/o association") (findAt
                         Just t -> error $ "unknown aggregation type: " ++ t,
                 endName = findAttr nameName el
                 })
+
+processDatatype :: Maybe String -> Map.Map Id ClassEntity
+                        -> Map.Map Id [End] -> Element  -> (Id, UML.UML.DataType)
+processDatatype xmiv cmap semap el =  
+	(id, DataType { dtName = dtn})
+	where dtn = case (findAttr nameName el) of
+                Nothing -> id
+                Just n -> n
+              id = fromMaybe (error "DataType without id") $ findAttr (attrIdName xmiv) el
 
 processAssociation :: Maybe String -> Map.Map Id ClassEntity
                         -> Map.Map Id [End] -> Element  -> (Id, Association)
@@ -346,3 +359,4 @@ parsePackages (el:lis) = case (findAttr typeName el) of
                 Just "uml:Package" -> ((processPackage el):(parsePackages lis))
                 Just _ -> parsePackages lis
 -}
+

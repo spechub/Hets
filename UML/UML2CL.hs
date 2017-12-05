@@ -409,6 +409,7 @@ class2MFs :: ClassEntity -> [Sen]
 class2MFs (CL cl) = foldl (++) [] $ map (attr2MFs cl) (attr cl)
 class2MFs (AC ac) = class2MFs (CL $ acClass ac)
 class2MFs (EN _) = []
+class2MFs (DT _) = []
 
 attr2MFs :: Class -> Attribute -> [Sen]
 attr2MFs cl attri = bounds2MFs (attrLowerValue attri) (attrUpperValue attri) (NumAttr $ MFAttribute (className cl) (attrName attri) (type2mftype $ attrType attri) )
