@@ -2,7 +2,6 @@
 module Comorphisms.UML_CD2CL where
 
 import Common.ProofTree
-import Common.DefaultMorphism
 import Common.Result
 import Common.Id
 import Common.AS_Annotation

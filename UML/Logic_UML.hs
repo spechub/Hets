@@ -3,8 +3,6 @@
 {-# LANGUAGE TypeSynonymInstances  #-}
 module UML.Logic_UML where
 
-import           Common.DefaultMorphism
-import           Data.Monoid
 import           Logic.Logic
 import           UML.ATC_UML            ()
 import           UML.Morphism
