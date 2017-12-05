@@ -1085,7 +1085,13 @@ hetcatsOpts argv =
     setupDatabaseOptions opts = do
       let dbContext = DBConfig.emptyDBContext
             { DBConfig.contextFileVersion = databaseFileVersionId opts
+            , DBConfig.contextFilePath = head $ infiles opts
             }
+      -- If the fileVersionId is not given, Hets has not been called by Ontohub.
+      -- Hence, there is no git handling and we always need to reanalyze the
+      -- file.
+      let databaseReanalyze' =
+            null (databaseFileVersionId opts) || databaseReanalyze opts
       dbConfig <- if DbOut `elem` outtypes opts
                   then DBConfig.parseDatabaseConfig
                          (databaseOutputFile opts)
@@ -1095,6 +1101,7 @@ hetcatsOpts argv =
                   else return DBConfig.emptyDBConfig
       return opts { databaseConfig = dbConfig
                   , databaseContext = dbContext
+                  , databaseReanalyze = databaseReanalyze'
                   }
 
 

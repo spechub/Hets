@@ -16,6 +16,7 @@ Portability :  portable
 module Persistence.DevGraph (exportLibEnv) where
 
 import Persistence.Database
+import Persistence.DevGraph.Cleaning
 import Persistence.Diagnosis
 import Persistence.FileVersion
 import Persistence.LogicGraph
@@ -185,8 +186,8 @@ createDocument opts libEnv parentFileVersion dbCache0 libName =
                                    , LocIdBaseKind ==. kind
                                    ] []
           case documentM of
-            Just (Entity documentKey _) ->
-              when (databaseReanalyze opts) $ delete documentKey
+            Just document -> when (databaseReanalyze opts) $
+              Persistence.DevGraph.Cleaning.clean document
             Nothing -> return ()
           (doSave, documentKey, documentLocIdBaseValue) <-
             case (databaseReanalyze opts, documentM) of

@@ -35,7 +35,20 @@ import Persistence.Schema.OMSOrigin (OMSOrigin)
 import Persistence.Schema.ReasoningStatusOnConjectureType (ReasoningStatusOnConjectureType)
 import Persistence.Schema.ReasoningStatusOnReasoningAttemptType (ReasoningStatusOnReasoningAttemptType)
 
-share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
+indexes :: [(String, [String])]
+indexes =
+  [ ("languages", ["slug"])
+  , ("logics", ["slug"])
+  , ("language_mappings", ["source_id", "target_id"])
+  , ("logic_mappings", ["language_mapping_id", "slug"])
+  , ("signature_morphisms", ["logic_mapping_id", "source_id", "target_id"])
+  , ("symbol_mappings", ["signature_morphism_id", "source_id", "target_id"])
+  ]
+
+share [ mkPersist sqlSettings
+      , mkDeleteCascade sqlSettings
+      , mkMigrate "migrateAll"
+      ] [persistLowerCase|
 Hets sql=hets
   key String maxlen=255
   Primary key
@@ -257,7 +270,7 @@ PremiseSelection sql=premise_selections
   reasonerConfigurationId ReasonerConfigurationId
   deriving Show
 
-PremiseSelectedSentence sql=premise_selected_axioms
+PremiseSelectedSentence sql=premise_selected_sentences
   premiseId LocIdBaseId -- SentenceId is LocIdBaseId
   premiseSelectionId PremiseSelectionId
   Primary premiseId premiseSelectionId
@@ -272,13 +285,15 @@ SinePremiseSelection sql=sine_premise_selections
   axiomNumberLimit Int Maybe
   deriving Show
 
-SineSymbolAxiomTrigger sql=sine_symbol_axiom_triggers
-  axiomId LocIdBaseId -- AxiomId is LocIdBaseId
+SineSymbolPremiseTrigger sql=sine_symbol_premise_triggers
+  sinePremiseSelectionId SinePremiseSelectionId
+  premiseId LocIdBaseId -- AxiomId is LocIdBaseId
   symbolId LocIdBaseId -- SymbolId is LocIdBaseId
   minTolerance Double
   deriving Show
 
 SineSymbolCommonness sql=sine_symbol_commonnesses
+  sinePremiseSelectionId SinePremiseSelectionId
   symbolId LocIdBaseId -- SymbolId is LocIdBaseId
   commonness Int
   deriving Show
@@ -291,12 +306,18 @@ ReasoningAttempt sql=reasoning_attempts
   reasoningStatus ReasoningStatusOnReasoningAttemptType
   deriving Show
 
+ProofAttempt sql=proof_attempts
+  conjectureId LocIdBaseId Maybe
+
+ConsistencyCheckAttempt sql=consistency_check_attempts
+  omsId LocIdBaseId Maybe
+
 GeneratedAxiom sql=generated_axioms
   reasoningAttemptId ReasoningAttemptId
   text Text
   deriving Show
 
-ReasonerOutput
+ReasonerOutput sql=reasoner_outputs
   reasoningAttemptId ReasoningAttemptId
   reasonerId ReasonerId
   text Text

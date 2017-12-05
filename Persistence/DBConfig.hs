@@ -8,11 +8,14 @@ import qualified Data.Yaml as Yaml
 import GHC.Generics
 import System.Directory
 
-newtype DBContext = DBContext { contextFileVersion :: String }
-                    deriving (Show, Eq)
+data DBContext = DBContext { contextFileVersion :: String
+                           , contextFilePath :: FilePath -- a cache of "head $ infiles opts"
+                           } deriving (Show, Eq)
 
 emptyDBContext :: DBContext
-emptyDBContext = DBContext { contextFileVersion = "" }
+emptyDBContext = DBContext { contextFileVersion = ""
+                           , contextFilePath = ""
+                           }
 
 data ExtDBConfig = ExtDBConfig { development :: Maybe DBConfig
                                , test :: Maybe DBConfig

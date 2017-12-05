@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE TypeFamilies               #-}
 
 {- |
@@ -24,9 +25,8 @@ import Persistence.Schema as SchemaClass
 import Persistence.Schema.EvaluationStateType
 
 import Control.Monad.IO.Class (MonadIO (..))
-import Data.List (replicate)
 import Database.Persist
-import Database.Persist.Sql (toSqlKey, unSqlBackendKey)
+import Database.Persist.Sql (toSqlKey)
 
 setFileVersionStateOn :: MonadIO m
                       => FileVersionId -> EvaluationStateType -> DBMonad m ()
@@ -44,8 +44,8 @@ getFileVersion :: MonadIO m => DBContext -> DBMonad m (Entity FileVersion)
 getFileVersion dbContext =
   let fileVersionS = contextFileVersion dbContext in
   if null fileVersionS
-  then createNewFileVersion
-  else do
+  then  findOrCreateFileVersion dbContext -- Hets has not been called by Ontohub
+  else do -- Hets has been called by Ontohub
         fileVersionM <-
           selectFirst [ FileVersionId ==. toSqlKey
                             (fromIntegral (read fileVersionS :: Integer))] []
@@ -54,30 +54,36 @@ getFileVersion dbContext =
                            fileVersionS ++ "\"")
           Just fileVersion' -> return fileVersion'
 
-createNewFileVersion :: MonadIO m => DBMonad m (Entity FileVersion)
-createNewFileVersion = do
-  fileVersionM <- lastFileVersion
+nonGitFileVersion :: String
+nonGitFileVersion = "non-git FileVersion"
+
+findOrCreateFileVersion :: forall m . MonadIO m
+                        => DBContext -> DBMonad m (Entity FileVersion)
+findOrCreateFileVersion dbContext = do
+  let path = contextFilePath dbContext
+  fileVersionM <- lastFileVersion path
   case fileVersionM of
-    Just (Entity fileVersionKey _) ->
-      let lastFileVersionId =
-            fromIntegral $ unSqlBackendKey $ unFileVersionKey fileVersionKey
-      in  create (lastFileVersionId + 1 :: Integer)
-    Nothing -> create (1 :: Integer)
+    Just fileVersion -> return fileVersion
+    Nothing -> create path
   where
-    create :: (Show s, MonadIO m) => s -> DBMonad m (Entity FileVersion)
+    create :: MonadIO m => FilePath -> DBMonad m (Entity FileVersion)
     create path = do
         Entity repositoryKey _ <- repositoryFirstOrCreate
         let fileVersionValue = FileVersion
               { fileVersionRepositoryId = repositoryKey
-              , fileVersionPath = show path
-              , fileVersionCommitSha = replicate 40 '0'
+              , fileVersionPath = path
+              , fileVersionCommitSha = nonGitFileVersion
               , fileVersionEvaluationState = NotYetEnqueued
               }
         fileVersionKey <- insert fileVersionValue
         return $ Entity fileVersionKey fileVersionValue
 
-lastFileVersion :: MonadIO m => DBMonad m (Maybe (Entity FileVersion))
-lastFileVersion = selectFirst [] [Desc FileVersionId]
+lastFileVersion :: MonadIO m
+                => FilePath -> DBMonad m (Maybe (Entity FileVersion))
+lastFileVersion path =
+  selectFirst [ FileVersionPath ==. path
+              , FileVersionCommitSha ==. nonGitFileVersion
+              ] [Desc FileVersionId]
 
 repositoryFirstOrCreate :: MonadIO m => DBMonad m (Entity Repository)
 repositoryFirstOrCreate = do

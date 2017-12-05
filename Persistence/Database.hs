@@ -79,22 +79,19 @@ runFullMigrationSet dbConfig =
 
     ignoreIndexExistsError :: MonadIO m
                            => SomeException -> DBMonad m [Single (Maybe Text)]
-    ignoreIndexExistsError exception =
+    ignoreIndexExistsError = ignoreError "'ix_"
+
+    ignoreError :: MonadIO m
+                => String -> SomeException -> DBMonad m [Single (Maybe Text)]
+    ignoreError searchInfix exception =
       let message = show exception in
-      if isMySql dbConfig && ("'ix_" `isInfixOf` message)
+      if isMySql dbConfig && (searchInfix `isInfixOf` message)
       then return []
       else fail message
 
 indexesSQL :: DBConfig -> [String]
 indexesSQL dbConfig =
-  map sqlString
-    [ ("languages", ["slug"])
-    , ("logics", ["slug"])
-    , ("language_mappings", ["source_id", "target_id"])
-    , ("logic_mappings", ["language_mapping_id", "slug"])
-    , ("signature_morphisms", ["logic_mapping_id", "source_id", "target_id"])
-    , ("symbol_mappings", ["signature_morphism_id", "source_id", "target_id"])
-    ]
+  map sqlString Persistence.Schema.indexes
   where
     sqlString :: (String, [String]) -> String
     sqlString (table, columns) =
