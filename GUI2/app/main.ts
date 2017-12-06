@@ -1,9 +1,12 @@
-import { app, BrowserWindow, ipcMain, Event } from "electron"
-import * as path from "path"
-import * as url from "url"
+import { app, BrowserWindow, ipcMain, Event } from "electron";
+import * as path from "path";
+import * as url from "url";
 
-import { Utils } from "./utils"
-import { QUERY_CHANNEL, QUERY_CHANNEL_RESPONSE } from "./shared/SharedConstants"
+import { Utils } from "./utils";
+import {
+  QUERY_CHANNEL,
+  QUERY_CHANNEL_RESPONSE
+} from "./shared/SharedConstants";
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -14,11 +17,13 @@ function createWindow() {
   win = new BrowserWindow({ width: 800, height: 600 });
 
   // and load the index.html of the app.
-  win.loadURL(url.format({
-    pathname: path.join(__dirname, "index.html"),
-    protocol: "file:",
-    slashes: true
-  }));
+  win.loadURL(
+    url.format({
+      pathname: path.join(__dirname, "index.html"),
+      protocol: "file:",
+      slashes: true
+    })
+  );
 
   // Open the DevTools.
   win.webContents.openDevTools();
@@ -28,7 +33,7 @@ function createWindow() {
     // Dereference the window object, usually you would store windows
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
-    win = null
+    win = null;
   });
 }
 
@@ -54,10 +59,12 @@ app.on("activate", () => {
   }
 });
 
-ipcMain.on(QUERY_CHANNEL, (event: Event, file: string) => {
-  Utils.queryHETSApi(file).catch((err: Error) => {
-    console.error(err.message);
-  }).then((res: JSON) => {
-    event.sender.send(QUERY_CHANNEL_RESPONSE, res);
-  });
+ipcMain.on(QUERY_CHANNEL, (event: Event, message: any) => {
+  Utils.queryHETSApi(message.hostname, message.port, message.file)
+    .catch((err: Error) => {
+      console.error(err.message);
+    })
+    .then((res: JSON) => {
+      event.sender.send(QUERY_CHANNEL_RESPONSE, res);
+    });
 });

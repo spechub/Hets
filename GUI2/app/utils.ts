@@ -1,5 +1,5 @@
-import * as http from "http"
-import * as querystring from "querystring"
+import * as http from "http";
+import * as querystring from "querystring";
 
 interface HETSApiOptions {
   readonly hostname: string;
@@ -8,15 +8,17 @@ interface HETSApiOptions {
 }
 
 export class Utils {
-
-  public static async queryHETSApi(filepath: string): Promise<JSON> {
-
+  public static async queryHETSApi(
+    hostname: string,
+    port: number,
+    filepath: string
+  ): Promise<JSON> {
     const escapedFileURL = querystring.escape("file:///" + filepath);
 
     const hetsApiOptions = {
-      hostname: "172.16.186.129",
-      port: 8000,
-      path: `/dg/${escapedFileURL}/?format=json`,
+      hostname: hostname,
+      port: port,
+      path: `/dg/${escapedFileURL}/?format=json`
     };
 
     try {
@@ -32,36 +34,44 @@ export class Utils {
    */
   private static getJSON(options: HETSApiOptions): Promise<JSON> {
     return new Promise<JSON>((resolve, reject: (reason?: Error) => void) => {
-      http.get(options, (res) => {
-        const { statusCode } = res;
-        const contentType = res.headers["content-type"];
+      http
+        .get(options, res => {
+          const { statusCode } = res;
+          const contentType = res.headers["content-type"];
 
-        let error: Error;
-        if (statusCode !== 200) {
-          error = new Error(`Request Failed. Status Code: ${statusCode}`);
-        } else if (!/^application\/json/.test(contentType)) {
-          error = new Error(`Invalid content-type. Expected application/json but received ${contentType}`);
-        }
-        if (error) {
-          // consume response data to free up memory
-          res.resume();
-          reject(error);
-        }
-
-        res.setEncoding("utf8");
-        let rawData = "";
-        res.on("data", (chunk) => { rawData += chunk; });
-        res.on("end", () => {
-          try {
-            const parsedData = JSON.parse(rawData);
-            resolve(parsedData);
-          } catch (err) {
-            reject(err);
+          let error: Error;
+          if (statusCode !== 200) {
+            error = new Error(`Request Failed. Status Code: ${statusCode}`);
+          } else if (!/^application\/json/.test(contentType)) {
+            error = new Error(
+              `Invalid content-type. Expected application/json but received ${
+                contentType
+              }`
+            );
           }
+          if (error) {
+            // consume response data to free up memory
+            res.resume();
+            reject(error);
+          }
+
+          res.setEncoding("utf8");
+          let rawData = "";
+          res.on("data", chunk => {
+            rawData += chunk;
+          });
+          res.on("end", () => {
+            try {
+              const parsedData = JSON.parse(rawData);
+              resolve(parsedData);
+            } catch (err) {
+              reject(err);
+            }
+          });
+        })
+        .on("error", err => {
+          reject(err);
         });
-      }).on("error", (err) => {
-        reject(err);
-      });
     });
   }
 }

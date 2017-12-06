@@ -1,9 +1,9 @@
-import * as React from "react"
-import { Event } from "electron"
+import * as React from "react";
+import { Event } from "electron";
 
-import { IPCComm } from "../actions/IPCComm"
-import { DGraphParser } from "../actions/DGraphParser"
-import { QUERY_CHANNEL_RESPONSE } from "../../shared/SharedConstants"
+import { IPCComm } from "../actions/IPCComm";
+import { DGraphParser } from "../actions/DGraphParser";
+import { QUERY_CHANNEL_RESPONSE } from "../../shared/SharedConstants";
 
 export interface OpenLogicState {
   filePath: string;
@@ -11,23 +11,29 @@ export interface OpenLogicState {
 
 export interface OpenLogicProps {}
 
-export class OpenLogicButton extends React.Component<OpenLogicProps, OpenLogicState> {
-
+export class OpenLogicButton extends React.Component<
+  OpenLogicProps,
+  OpenLogicState
+> {
   constructor(props: OpenLogicProps) {
     super(props);
 
     this.state = {
       filePath: ""
-    }
+    };
 
-    IPCComm.recieveMessage(QUERY_CHANNEL_RESPONSE, this.displayResp)
+    IPCComm.recieveMessage(QUERY_CHANNEL_RESPONSE, this.displayResp);
   }
 
   render() {
     return (
       <div>
-        <input type="text" value={ this.state.filePath } onChange={ (e) => this.updateFilePath(e) } />
-        <button onClick={() => this.onClick() }>Open Logic</button>
+        <input
+          type="text"
+          value={this.state.filePath}
+          onChange={e => this.updateFilePath(e)}
+        />
+        <button onClick={() => this.onClick()}>Open Logic</button>
       </div>
     );
   }
@@ -35,7 +41,7 @@ export class OpenLogicButton extends React.Component<OpenLogicProps, OpenLogicSt
   private updateFilePath(evt: React.ChangeEvent<HTMLInputElement>) {
     this.setState({
       filePath: evt.target.value
-    })
+    });
   }
 
   private onClick() {

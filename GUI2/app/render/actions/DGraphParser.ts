@@ -1,4 +1,13 @@
-import { DGraph, DGLink, DGNode, Global, GMorphism, Axiom, Declaration, Theorem } from "../../shared/DGraph"
+import {
+  DGraph,
+  DGLink,
+  DGNode,
+  Global,
+  GMorphism,
+  Axiom,
+  Declaration,
+  Theorem
+} from "../../shared/DGraph";
 
 interface Serializable<T> {
   deserialize(input: any): T;
@@ -65,7 +74,6 @@ class GlobalImpl implements Global, Serializable<Global> {
 }
 
 class DGraphImpl implements DGraph, Serializable<DGraph> {
-
   DGLinks: DGLink[];
   DGNodes: DGNode[];
   Globals: Global[];
@@ -102,7 +110,6 @@ class DGraphImpl implements DGraph, Serializable<DGraph> {
 }
 
 export class DGraphParser {
-
   public dgraph: DGraph;
 
   constructor(dgraph: any) {
