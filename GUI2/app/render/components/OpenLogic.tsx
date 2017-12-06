@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Event } from "electron";
-import { Button, Input, Container, Grid } from "semantic-ui-react";
+import { Button, Input, Container } from "semantic-ui-react";
 
 import { IPCComm } from "../actions/IPCComm";
 import { DGraphParser } from "../actions/DGraphParser";
