@@ -144,7 +144,7 @@ FileVersionParent sql=file_version_parents
 LocIdBase sql=loc_id_bases
   fileVersionId FileVersionId -- FileVersionId is LocIdBaseId
   kind Enums.LocIdBaseKindType maxlen=16
-  locId String maxlen=767
+  locId String maxlen=255
   UniqueLocIdBaseLocId fileVersionId kind locId
   deriving Show
 
