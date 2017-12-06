@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Event } from "electron";
+import { Button, Input, Container, Grid } from "semantic-ui-react";
 
 import { IPCComm } from "../actions/IPCComm";
 import { DGraphParser } from "../actions/DGraphParser";
@@ -27,20 +28,23 @@ export class OpenLogicButton extends React.Component<
 
   render() {
     return (
-      <div>
-        <input
+      <Container fluid={true}>
+        <Input
           type="text"
           value={this.state.filePath}
-          onChange={e => this.updateFilePath(e)}
+          onChange={(e, d) => this.updateFilePath(e, d)}
         />
-        <button onClick={() => this.onClick()}>Open Logic</button>
-      </div>
+        <Button onClick={() => this.onClick()}>Open Logic</Button>
+      </Container>
     );
   }
 
-  private updateFilePath(evt: React.ChangeEvent<HTMLInputElement>) {
+  private updateFilePath(
+    _evt: React.SyntheticEvent<HTMLInputElement>,
+    data: any
+  ) {
     this.setState({
-      filePath: evt.target.value
+      filePath: data.value
     });
   }
 

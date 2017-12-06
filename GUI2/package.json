@@ -7,6 +7,7 @@
     "start": "electron app",
     "build": "npm run build-render && npm run build-base",
     "build-render": "webpack --config webpack.render.js",
+    "watch-render": "webpack --config webpack.render.js -w",
     "build-base": "webpack --config webpack.base.js"
   },
   "repository": {
@@ -19,10 +20,15 @@
     "@types/react": "^16.0.25",
     "@types/react-dom": "^16.0.3",
     "awesome-typescript-loader": "^3.4.0",
+    "css-loader": "^0.28.7",
     "electron": "1.7.9",
+    "file-loader": "^1.1.5",
     "react": "^16.1.1",
     "react-dom": "^16.1.1",
+    "semantic-ui-css": "^2.2.12",
+    "semantic-ui-react": "^0.77.0",
     "source-map-loader": "^0.2.3",
+    "style-loader": "^0.19.0",
     "typescript": "^2.6.1",
     "webpack": "^3.8.1"
   },
