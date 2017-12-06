@@ -1,10 +1,7 @@
 import * as React from "react";
-import { Event } from "electron";
 import { Button, Input, Container } from "semantic-ui-react";
 
 import { IPCComm } from "../actions/IPCComm";
-import { DGraphParser } from "../actions/DGraphParser";
-import { QUERY_CHANNEL_RESPONSE } from "../../shared/SharedConstants";
 
 export interface OpenLogicState {
   filePath: string;
@@ -22,8 +19,6 @@ export class OpenLogicButton extends React.Component<
     this.state = {
       filePath: ""
     };
-
-    IPCComm.recieveMessage(QUERY_CHANNEL_RESPONSE, this.displayResp);
   }
 
   render() {
@@ -51,14 +46,5 @@ export class OpenLogicButton extends React.Component<
   private onClick() {
     console.log(this.state.filePath);
     IPCComm.queryHets(this.state.filePath);
-  }
-
-  private displayResp(e: Event, s: any) {
-    console.log(e);
-
-    console.log(s);
-
-    let foo = new DGraphParser(s);
-    console.log(foo);
   }
 }
