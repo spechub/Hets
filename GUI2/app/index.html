@@ -2,19 +2,31 @@
 <html>
 
 <head>
-    <meta charset="UTF-8">
-    <title>Hello World!</title>
+  <meta charset="UTF-8">
+  <title>Hello World!</title>
+  <style>
+    .links line {
+      stroke: #999;
+      stroke-opacity: 0.6;
+    }
+
+    .nodes circle {
+      stroke: #fff;
+      stroke-width: 1.5px;
+    }
+  </style>
 </head>
 
 <body>
-    <!-- Dependencies -->
-    <script src="../node_modules/react/umd/react.development.js"></script>
-    <script src="../node_modules/react-dom/umd/react-dom.development.js"></script>
+  <!-- Dependencies -->
+  <script src="../node_modules/react/umd/react.development.js"></script>
+  <script src="../node_modules/react-dom/umd/react-dom.development.js"></script>
+  <script src="../node_modules/d3/build/d3.js"></script>
 
-    <div id="example"></div>
+  <div id="example"></div>
 
-    <!-- Main -->
-    <script src="./dist/bundle.js"></script>
+  <!-- Main -->
+  <script src="./dist/bundle.js"></script>
 </body>
 
 </html>

@@ -17,10 +17,12 @@
   "author": "",
   "license": "GPL-3.0",
   "devDependencies": {
+    "@types/d3": "^4.12.0",
     "@types/react": "^16.0.25",
     "@types/react-dom": "^16.0.3",
     "awesome-typescript-loader": "^3.4.0",
     "css-loader": "^0.28.7",
+    "d3": "^4.12.0",
     "electron": "1.7.9",
     "file-loader": "^1.1.5",
     "react": "^16.1.1",
