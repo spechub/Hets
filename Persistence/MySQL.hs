@@ -1,9 +1,28 @@
-module Persistence.MySQL where
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE GADTs                      #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+
+module Persistence.MySQL (connection) where
 
 import Persistence.DBConfig
 
+import Control.Monad.IO.Class
+import Control.Monad.Trans.Control
+import Control.Monad.Logger
 import Data.Maybe
+import Data.Pool (Pool)
 import Database.Persist.MySQL
+
+connection :: ( BaseBackend backend ~ SqlBackend
+              , IsPersistBackend backend
+              , MonadIO m
+              , MonadBaseControl IO m
+              , MonadLogger m
+              )
+           => DBConfig -> Int -> (Pool backend -> m a) -> m a
+connection dbConfig defaultPoolSize =
+  withMySQLPool (connectionInfo dbConfig) $
+    fromMaybe defaultPoolSize $ pool dbConfig
 
 connectionInfo :: DBConfig -> ConnectInfo
 connectionInfo config =

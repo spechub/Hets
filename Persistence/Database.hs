@@ -8,6 +8,7 @@ import Persistence.DBConfig
 import Persistence.Schema
 import qualified Persistence.MySQL as MySQL
 import qualified Persistence.PostgreSQL as PSQL
+import qualified Persistence.SQLite as SQLite
 
 import Control.Exception.Lifted
 import Control.Monad (when)
@@ -17,11 +18,9 @@ import Control.Monad.Trans.Reader
 import Control.Monad.Logger
 
 import Data.List (intercalate, isInfixOf)
-import Data.Maybe
-import Database.Persist.MySQL
-import Database.Persist.Postgresql
-import Database.Persist.Sqlite
 import Data.Text (Text, pack)
+
+import Database.Persist.Sql
 
 type DBMonad m a = ReaderT SqlBackend m a
 
@@ -33,19 +32,11 @@ onDatabase :: ( MonadIO m
            -> m a
 onDatabase dbConfig f =
   let connection = case adapter dbConfig of
-        Just "mysql" ->
-          withMySQLPool (MySQL.connectionInfo dbConfig) $
-            fromMaybe defaultPoolSize $ pool dbConfig
-        Just "mysql2" ->
-          withMySQLPool (MySQL.connectionInfo dbConfig) $
-            fromMaybe defaultPoolSize $ pool dbConfig
-        Just "postgresql" ->
-          withPostgresqlPool (PSQL.connectionString dbConfig) $
-            fromMaybe defaultPoolSize $ pool dbConfig
-        Just "sqlite" ->
-          withSqlitePool (pack $ database dbConfig) defaultPoolSize
-        Just "sqlite3" ->
-          withSqlitePool (pack $ database dbConfig) defaultPoolSize
+        Just "mysql" -> MySQL.connection dbConfig defaultPoolSize
+        Just "mysql2" -> MySQL.connection dbConfig defaultPoolSize
+        Just "postgresql" -> PSQL.connection dbConfig defaultPoolSize
+        Just "sqlite" -> SQLite.connection dbConfig defaultPoolSize
+        Just "sqlite3" -> SQLite.connection dbConfig defaultPoolSize
         _ -> fail ("Persistence.Database: No database adapter specified "
                      ++ "or adapter unsupported.")
   in runNoLoggingT $ connection $ runSqlPool $ do

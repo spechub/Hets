@@ -1,9 +1,29 @@
-module Persistence.PostgreSQL where
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE GADTs                      #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+
+module Persistence.PostgreSQL (connection) where
 
 import Persistence.DBConfig
 
+import Control.Monad.IO.Class
+import Control.Monad.Trans.Control
+import Control.Monad.Logger
 import qualified Data.ByteString.Char8 as BS
 import Data.Maybe
+import Data.Pool (Pool)
+import Database.Persist.Postgresql
+
+connection :: ( BaseBackend backend ~ SqlBackend
+              , IsPersistBackend backend
+              , MonadIO m
+              , MonadBaseControl IO m
+              , MonadLogger m
+              )
+           => DBConfig -> Int -> (Pool backend -> m a) -> m a
+connection dbConfig defaultPoolSize =
+  withPostgresqlPool (connectionString dbConfig) $
+    fromMaybe defaultPoolSize $ pool dbConfig
 
 connectionString :: DBConfig -> BS.ByteString
 connectionString config =
