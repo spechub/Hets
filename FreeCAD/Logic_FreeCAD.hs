@@ -64,6 +64,7 @@ instance Syntax FreeCAD Document () () () where
 instance Sentences FreeCAD () Sign FCMorphism () where
   map_sen FreeCAD _ = return
   sym_of FreeCAD _ = [Set.singleton ()]
+  symKind FreeCAD _ = "emptyKind"
   symmap_of FreeCAD _ = Map.empty
   sym_name FreeCAD _ = genName "FreeCAD"
 
