@@ -155,6 +155,7 @@ instance Sentences OMDoc_PUN () OMDoc_Sign OMDoc_Morphism OMDoc.Symbol where
   sym_name OMDoc_PUN s =
     -- real Id's are saved as Presentation-Elements...
     stringToId $ OMDoc.symbolId s
+  symKind OMDoc_PUN = show . OMDoc.symbolRole
 
 instance StaticAnalysis OMDoc_PUN () () () () OMDoc_Sign OMDoc_Morphism OMDoc.Symbol () where
   symbol_to_raw OMDoc_PUN _ = ()
