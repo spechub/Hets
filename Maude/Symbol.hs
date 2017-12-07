@@ -21,6 +21,8 @@ module Maude.Symbol (
     SymbolSet,
     SymbolMap,
     SymbolRel,
+    SymbolKind (..),
+    symType,
     kindSym2sortSym,
     -- * Conversion
     toId,
@@ -67,6 +69,28 @@ type Symbols = [Symbol]
 type SymbolSet = Set Symbol
 type SymbolMap = Map Symbol Symbol
 type SymbolRel = Rel Symbol
+
+data SymbolKind = SortK | KindK | LablK | OpK 
+        deriving (Show, Read, Ord, Eq, Typeable)
+
+-- | the kind of a symbol
+
+symType :: Symbol -> SymbolKind
+symType (Sort _) = SortK
+symType (Kind _) = KindK
+symType (Labl _) = LablK
+symType _ = OpK
+
+instance Pretty SymbolKind where 
+ pretty k = case k of
+   SortK -> text "sort"
+   KindK -> text "kind"
+   LablK -> text "label"
+   OpK   -> text "op"
+
+
+ 
+
 
 -- ** Symbol instances
 
