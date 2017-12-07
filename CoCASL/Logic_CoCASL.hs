@@ -31,6 +31,7 @@ import CASL.SymbolMapAnalysis
 import CASL.SymbolParser
 
 import Data.List
+import Common.DocUtils
 
 import Logic.Logic
 
@@ -65,6 +66,7 @@ map_C_FORMULA mor frm = case frm of
 instance Sentences CoCASL CoCASLFORMULA CSign CoCASLMor Symbol where
       map_sen CoCASL m = return . mapSen map_C_FORMULA m
       sym_of CoCASL = symOf
+      symKind CoCASL = show . pretty . symbolKind . symbType
       symmap_of CoCASL = morphismToSymbMap
       sym_name CoCASL = symName
 
