@@ -32,6 +32,8 @@ import CASL.SymbolParser
 import CASL.Logic_CASL ()
 import Logic.Logic
 
+import Common.DocUtils
+
 data COL = COL deriving Show
 
 instance Language COL where
@@ -56,6 +58,7 @@ instance Syntax COL C_BASIC_SPEC
 instance Sentences COL COLFORMULA CSign COLMor Symbol where
       map_sen COL m = return . mapSen (const id) m
       sym_of COL = symOf
+      symKind COL = show . pretty . symbolKind . symbType
       symmap_of COL = morphismToSymbMap
       sym_name COL = symName
 
