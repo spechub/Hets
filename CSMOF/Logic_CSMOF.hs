@@ -44,6 +44,7 @@ instance Sentences CSMOF
   ()
   where
     map_sen CSMOF _ = return
+    symKind CSMOF _ = "emptyKind"
 
 
 instance Syntax CSMOF
