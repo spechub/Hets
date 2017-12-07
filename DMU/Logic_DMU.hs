@@ -61,7 +61,6 @@ instance Sentences DMU () Text (DefaultMorphism Text) () where
   sym_of DMU _ = [Set.singleton ()]
   symmap_of DMU _ = Map.empty
   sym_name DMU _ = genName "DMU"
-  symKind DMU _ = "emptyKind"
 
 instance StaticAnalysis DMU Text () () () Text (DefaultMorphism Text) () ()
   where

@@ -45,7 +45,6 @@ instance Sentences QVTR
   ()
   where
     map_sen QVTR _ = return
-    symKind QVTR _ = "emptyKind"
 
 
 instance Syntax QVTR
