@@ -48,6 +48,7 @@ instance Sentences Isabelle Sentence Sign IsabelleMorphism () where
       map_sen Isabelle _ = return
       print_named Isabelle = printNamedSen
     -- other default implementations are fine
+      symKind Isabelle _ = "emptyKind"
 
 instance StaticAnalysis Isabelle () Sentence
                () ()
