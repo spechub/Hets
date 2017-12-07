@@ -46,7 +46,8 @@ instance Monoid LogicDef where
 instance Syntax Framework LogicDef () () ()
 
 -- sentences for Framework
-instance Sentences Framework () LogicDef Morphism ()
+instance Sentences Framework () LogicDef Morphism () where
+  symKind Framework _ = "emptyKind"
 
 -- static analysis for Framework
 instance StaticAnalysis Framework LogicDef () () ()
