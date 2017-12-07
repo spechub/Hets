@@ -91,6 +91,7 @@ instance Sentences HasCASL Sentence Env Morphism Symbol where
     print_named _ = printSemiAnno (changeGlobalAnnos addBuiltins . pretty) True
         . fromLabelledSen
     sym_name HasCASL = symName
+    symKind HasCASL = show . pretty . symbTypeToKind . symType
     sym_of HasCASL = symOf
     mostSymsOf HasCASL = mostSyms
     symmap_of HasCASL = morphismToSymbMap
