@@ -79,6 +79,8 @@ instance Sentences QBF FORMULA
     negation QBF = Just . negateFormula
     -- returns the set of symbols
     sym_of QBF = singletonList . symOf
+    -- kind of symbols is always prop
+    symKind QBF _ = "prop"
     -- returns the symbol map
     symmap_of QBF = getSymbolMap
     -- returns the name of a symbol
