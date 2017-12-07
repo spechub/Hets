@@ -39,6 +39,11 @@ data CspSymbType
   | ChanAsItemType Id -- the SORT
   deriving (Show, Eq, Ord, Typeable, Data)
 
+instance Pretty CspSymbType where
+ pretty (CaslSymbType st)  = pretty $ symbolKind st
+ pretty (ProcAsItemType _) = text "process"
+ pretty (ChanAsItemType _) = text "channel"
+
 data CspSymbol = CspSymbol {cspSymName :: Id, cspSymbType :: CspSymbType}
   deriving (Show, Eq, Ord, Typeable, Data)
 
