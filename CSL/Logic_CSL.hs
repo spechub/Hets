@@ -78,6 +78,7 @@ instance Sentences CSL CMD
     map_sen CSL = mapSentence
     -- there is nothing to leave out
     simplify_sen CSL _ = id
+    symKind CSL _ = "op"
 
 instance Monoid BASIC_SPEC where
     mempty = Basic_spec []
