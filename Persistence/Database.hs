@@ -5,10 +5,8 @@
 module Persistence.Database (DBMonad, onDatabase) where
 
 import Persistence.DBConfig
+import Persistence.DynamicDatabaseConnection
 import Persistence.Schema
-import qualified Persistence.MySQL as MySQL
-import qualified Persistence.PostgreSQL as PSQL
-import qualified Persistence.SQLite as SQLite
 
 import Control.Exception.Lifted
 import Control.Monad (when)
@@ -18,7 +16,6 @@ import Control.Monad.Trans.Reader
 import Control.Monad.Logger
 
 import Data.List (intercalate, isInfixOf)
-import Data.Pool (Pool)
 import Data.Text (Text, pack)
 
 import Database.Persist.Sql
@@ -31,28 +28,11 @@ onDatabase :: ( MonadIO m
            => DBConfig
            -> DBMonad (NoLoggingT m) a
            -> m a
-onDatabase dbConfig f = runNoLoggingT $ getConnection dbConfig $ runSqlPool $ do
-  runFullMigrationSet dbConfig
-  f
-
-getConnection :: ( BaseBackend backend ~ SqlBackend
-                 , IsPersistBackend backend
-                 , MonadIO m
-                 , MonadBaseControl IO m
-                 , MonadLogger m
-                 )
-              => DBConfig -> (Pool backend -> m a) -> m a
-getConnection dbConfig = case adapter dbConfig of
-  Just "mysql" -> MySQL.connection dbConfig defaultPoolSize
-  Just "mysql2" -> MySQL.connection dbConfig defaultPoolSize
-  Just "postgresql" -> PSQL.connection dbConfig defaultPoolSize
-  Just "sqlite" -> SQLite.connection dbConfig defaultPoolSize
-  Just "sqlite3" -> SQLite.connection dbConfig defaultPoolSize
-  _ -> fail ("Persistence.Database: No database adapter specified "
-               ++ "or adapter unsupported.")
-
-defaultPoolSize :: Int
-defaultPoolSize = 4
+onDatabase dbConfig f = do
+  connection <- liftIO $ getConnection dbConfig
+  runNoLoggingT $ connection $ runSqlPool $ do
+    runFullMigrationSet dbConfig
+    f
 
 runFullMigrationSet :: forall m . ( MonadBaseControl IO m
                                   , MonadIO m
