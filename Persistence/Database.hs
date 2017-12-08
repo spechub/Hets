@@ -2,7 +2,7 @@
 {-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 
-module Persistence.Database where
+module Persistence.Database (DBMonad, onDatabase) where
 
 import Persistence.DBConfig
 import Persistence.Schema
@@ -18,6 +18,7 @@ import Control.Monad.Trans.Reader
 import Control.Monad.Logger
 
 import Data.List (intercalate, isInfixOf)
+import Data.Pool (Pool)
 import Data.Text (Text, pack)
 
 import Database.Persist.Sql
@@ -30,18 +31,25 @@ onDatabase :: ( MonadIO m
            => DBConfig
            -> DBMonad (NoLoggingT m) a
            -> m a
-onDatabase dbConfig f =
-  let connection = case adapter dbConfig of
-        Just "mysql" -> MySQL.connection dbConfig defaultPoolSize
-        Just "mysql2" -> MySQL.connection dbConfig defaultPoolSize
-        Just "postgresql" -> PSQL.connection dbConfig defaultPoolSize
-        Just "sqlite" -> SQLite.connection dbConfig defaultPoolSize
-        Just "sqlite3" -> SQLite.connection dbConfig defaultPoolSize
-        _ -> fail ("Persistence.Database: No database adapter specified "
-                     ++ "or adapter unsupported.")
-  in runNoLoggingT $ connection $ runSqlPool $ do
-       runFullMigrationSet dbConfig
-       f
+onDatabase dbConfig f = runNoLoggingT $ getConnection dbConfig $ runSqlPool $ do
+  runFullMigrationSet dbConfig
+  f
+
+getConnection :: ( BaseBackend backend ~ SqlBackend
+                 , IsPersistBackend backend
+                 , MonadIO m
+                 , MonadBaseControl IO m
+                 , MonadLogger m
+                 )
+              => DBConfig -> (Pool backend -> m a) -> m a
+getConnection dbConfig = case adapter dbConfig of
+  Just "mysql" -> MySQL.connection dbConfig defaultPoolSize
+  Just "mysql2" -> MySQL.connection dbConfig defaultPoolSize
+  Just "postgresql" -> PSQL.connection dbConfig defaultPoolSize
+  Just "sqlite" -> SQLite.connection dbConfig defaultPoolSize
+  Just "sqlite3" -> SQLite.connection dbConfig defaultPoolSize
+  _ -> fail ("Persistence.Database: No database adapter specified "
+               ++ "or adapter unsupported.")
 
 defaultPoolSize :: Int
 defaultPoolSize = 4
@@ -68,6 +76,9 @@ runFullMigrationSet dbConfig =
                          else sql ++ " SELECT ('dummy');"
       in  rawSql query []
 
+    -- MySQL does not have "CREATE INDEX IF NOT EXISTS", so we work around this
+    -- by trying to create it in any case. It throws an error if it already
+    -- exists. This error is then ignored.
     ignoreIndexExistsError :: MonadIO m
                            => SomeException -> DBMonad m [Single (Maybe Text)]
     ignoreIndexExistsError = ignoreError "'ix_"
