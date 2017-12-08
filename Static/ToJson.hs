@@ -94,7 +94,7 @@ prettySymbol :: (GetRange a, Pretty a) => GlobalAnnos -> a -> [JPair]
 prettySymbol = rangedToJson "Symbol"
 
 lnode :: HetcatsOpts -> GlobalAnnos -> LibEnv -> LNode DGNodeLab -> Json
-lnode opts ga lenv (_, lbl) =
+lnode opts ga lenv (nodeId, lbl) =
   let nm = dgn_name lbl
       (spn, xp) = case reverse $ xpath nm of
           ElemName s : t -> (s, showXPath t)
@@ -102,6 +102,7 @@ lnode opts ga lenv (_, lbl) =
   in mkJObj
   $ mkNameJPair (showName nm)
     : rangeToJPair (srcRange nm)
+    ++ [("id", mkJNum nodeId)]
     ++ [("reference", mkJBool $ isDGRef lbl)]
     ++ case signOf $ dgn_theory lbl of
         G_sign slid _ _ -> mkJPair "logic" (show slid)
@@ -180,7 +181,9 @@ ledge opts ga dg (f, t, lbl) = let
   in mkJObj
   $ [ mkJPair "source" $ getNameOfNode f dg
   , mkJPair "target" $ getNameOfNode t dg
-  , ("linkid", mkJNum . getEdgeNum $ dgl_id lbl) ]
+  , ("linkid", mkJNum . getEdgeNum $ dgl_id lbl)
+  , ("id_source", mkJNum f)
+  , ("id_target", mkJNum t) ]
   ++ case dgl_origin lbl of
          DGLinkView i _ ->
            [mkNameJPair . iriToStringShortUnsecure $ setAngles False i]
