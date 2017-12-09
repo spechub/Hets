@@ -380,7 +380,7 @@ class (Language lid, Category sign morphism, Ord sentence,
       fullSymName l = show . sym_name l
       -- | a logic dependent kind of a symbol
       symKind :: lid -> symbol -> String
-      symKind _ _ = "emptyKind"
+      symKind _ _ = "defaultKind"
       -- | the symbols occuring in a sentence (any order)
       symsOfSen :: lid -> sign -> sentence -> [symbol]
       symsOfSen _ _ _ = []
