@@ -76,7 +76,7 @@ instance Sentences Maude Sentence Sign Morphism Symbol where
     simplify_sen Maude = Sign.simplifySentence
     -- symbols --
     sym_name Maude = Symbol.toId
-    symKind Maude = show . pretty . Symbol.symType
+    symKind Maude = show . pretty . Symbol.sym_kind
     sym_of Maude = singletonList . Sign.symbols
     symmap_of Maude = Morphism.symbolMap
 

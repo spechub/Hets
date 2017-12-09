@@ -30,7 +30,6 @@ import ATC.ProofTree ()
 
 import Common.DefaultMorphism
 import Common.ProofTree
-import Common.Doc
 import Common.DocUtils
 
 import Control.Monad
@@ -57,7 +56,7 @@ instance Sentences Adl
       sym_name Adl = symName
       map_sen Adl _ = return . id
       print_named Adl = printNSen
-      symKind Adl = show . pretty . symType
+      symKind Adl = show . pretty . sym_kind
 
 instance Monoid Context where
     mempty = Context Nothing []

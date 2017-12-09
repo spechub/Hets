@@ -60,9 +60,9 @@ data Symbol
 data SymbolKind = ConK | RelK 
   deriving (Eq, Ord, Show, Typeable, Data)
 
-symType :: Symbol -> SymbolKind
-symType (Con _) = ConK
-symType (Rel _) = RelK
+sym_kind :: Symbol -> SymbolKind
+sym_kind (Con _) = ConK
+sym_kind (Rel _) = RelK
 
 
 instance Pretty SymbolKind where 

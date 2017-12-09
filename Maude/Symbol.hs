@@ -22,7 +22,7 @@ module Maude.Symbol (
     SymbolMap,
     SymbolRel,
     SymbolKind (..),
-    symType,
+    sym_kind,
     kindSym2sortSym,
     -- * Conversion
     toId,
@@ -75,11 +75,11 @@ data SymbolKind = SortK | KindK | LablK | OpK
 
 -- | the kind of a symbol
 
-symType :: Symbol -> SymbolKind
-symType (Sort _) = SortK
-symType (Kind _) = KindK
-symType (Labl _) = LablK
-symType _ = OpK
+sym_kind :: Symbol -> SymbolKind
+sym_kind (Sort _) = SortK
+sym_kind (Kind _) = KindK
+sym_kind (Labl _) = LablK
+sym_kind _ = OpK
 
 instance Pretty SymbolKind where 
  pretty k = case k of

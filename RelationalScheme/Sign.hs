@@ -30,7 +30,7 @@ module RelationalScheme.Sign
         , comp_rst_mor
         , RSSymbol (..)
         , RSSymbolKind (..)
-        , symType
+        , sym_kind
         )
         where
 
@@ -68,9 +68,9 @@ data RSSymbol = STable Id |     -- id of a table
 data RSSymbolKind = STableK | SColumnK 
   deriving (Eq, Ord, Show, Typeable, Data)
 
-symType :: RSSymbol -> RSSymbolKind
-symType (STable _) = STableK
-symType _ = SColumnK
+sym_kind :: RSSymbol -> RSSymbolKind
+sym_kind (STable _) = STableK
+sym_kind _ = SColumnK
 
 instance Pretty RSSymbolKind where
  pretty STableK  = text "table"
