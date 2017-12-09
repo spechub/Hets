@@ -22,8 +22,10 @@ import PGIP.Output.Proof
 import PGIP.Output.Translations
 import qualified PGIP.Output.Provers as OProvers
 
+import PGIP.GraphQL
 import PGIP.Query as Query
 import PGIP.Server.WebAssets
+import PGIP.Shared
 import qualified PGIP.Server.Examples as Examples
 
 import Driver.Options
@@ -80,8 +82,6 @@ import Logic.Logic
 import Proofs.AbstractState as AbsState
 import Proofs.ConsistencyCheck
 
-import Text.ParserCombinators.Parsec (parse)
-
 import Text.XML.Light
 import Text.XML.Light.Cursor
 
@@ -90,7 +90,7 @@ import Common.Doc
 import Common.DocUtils (pretty, showGlobalDoc, showDoc)
 import Common.ExtSign (ExtSign (..))
 import Common.GtkGoal
-import Common.Json (Json (..), pJson, ppJson)
+import Common.Json (Json (..), ppJson)
 import Common.LibName
 import Common.PrintLaTeX
 import Common.Result
@@ -126,20 +126,7 @@ import System.IO
 import System.Posix.Process (getProcessID)
 import System.Posix.Signals
 
-data Session = Session
-  { sessLibEnv :: LibEnv
-  , sessLibName :: LibName
-  , sessPath :: [String]
-  , sessKey :: Int
-  , sessStart :: UTCTime
-  , lastAccess :: UTCTime
-  , usage :: Int
-  , sessCleanable :: Bool } deriving (Show)
-
-data UsedAPI = OldWebAPI | RESTfulAPI deriving (Show, Eq, Ord)
-
-type SessMap = Map.Map [String] Session
-type Cache = IORef (IntMap.IntMap Session, SessMap)
+data UsedAPI = OldWebAPI | RESTfulAPI | GraphQLAPI deriving (Show, Eq, Ord)
 
 randomKey :: IO Int
 randomKey = randomRIO (100000000, 999999999)
@@ -169,12 +156,6 @@ matchIP4 ip mask = case mask of
 
 matchWhite :: [String] -> [[String]] -> Bool
 matchWhite ip l = null l || any (matchIP4 ip) l
-
-#ifdef WARP1
-type RsrcIO a = ResourceT IO a
-#else
-type RsrcIO a = IO a
-#endif
 
 #ifdef WARP3
 type WebResponse = (Response -> IO ResponseReceived) -> IO ResponseReceived
@@ -278,7 +259,8 @@ hetsServer' opts1 = do
          Left err -> queryFail err respond
          Right (qr2, fs2) ->
            let newOpts = foldl makeOpts opts $ fs ++ map snd fs2
-           in if isRESTful pathBits then do
+           in if isGraphQL meth pathBits then processGraphQL newOpts sessRef re
+              else if isRESTful pathBits then do
               requestBodyParams <- parseRequestParams re
               let unknown = filter (`notElem` allQueryKeys) $ map fst qr2
               if null unknown
@@ -295,11 +277,6 @@ parseRequestParams request =
   let
     noParams :: Json
     noParams = JNull
-
-    parseJson :: String -> Maybe Json
-    parseJson s = case parse pJson "" s of
-      Left _ -> Nothing
-      Right json -> Just json
 
     lookupHeader :: String -> Maybe String
     lookupHeader s =
@@ -318,19 +295,13 @@ parseRequestParams request =
         (formDataB8, _) <- parseRequestBody lbsBackEnd request
         return $ parseJson $ toJsonObject formDataB8
 
-    jsonBody :: RsrcIO (Maybe Json)
-    jsonBody = liftM (parseJson . B8.unpack) receivedRequestBody
-
-    receivedRequestBody :: RsrcIO B8.ByteString
-    receivedRequestBody = liftM (B8.pack . BS.unpack) $ lazyRequestBody request
-
 #ifdef WARP1
     lazyRequestBody :: Request -> ResourceT IO BS.ByteString
     lazyRequestBody = fmap BS.fromChunks . lazyConsume . requestBody
 #endif
   in
     liftM (fromMaybe noParams) $ case lookupHeader "Content-Type" of
-      Just "application/json" -> jsonBody
+      Just "application/json" -> jsonBody request
       Just "multipart/form-data" -> formParams
       _ -> formParams
 
