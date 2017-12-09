@@ -18,6 +18,7 @@ import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
 import Common.Result
 import Common.ProofTree
+import Common.DocUtils
 
 import CASL_DL.AS_CASL_DL
 import CASL_DL.Sign
@@ -80,6 +81,7 @@ map_DL_FORMULA mor (Cardinality ct pn varT natT qualT r) =
 instance Sentences CASL_DL DLFORMULA DLSign DLMor Symbol where
       map_sen CASL_DL m = return . mapSen map_DL_FORMULA m
       sym_of CASL_DL = symOf
+      symKind CASL_DL = show . pretty . symbolKind . symbType
       symmap_of CASL_DL = morphismToSymbMap
       sym_name CASL_DL = symName
       simplify_sen CASL_DL = simplifySen minDLForm simplifyCD

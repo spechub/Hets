@@ -60,6 +60,7 @@ instance Sentences LF
    where
    map_sen LF m = Result [] . translate m
    sym_of LF = singletonList . getSymbols
+   symKind LF _ = "const"
 
 instance Logic LF
    ()

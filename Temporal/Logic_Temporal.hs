@@ -65,6 +65,7 @@ instance Sentences Temporal
         -- Translation of sentences along signature morphism
         simplify_sen Temporal _ form = form
         -- There is nothing to leave out
+        symKind Temporal _ = "prop"
 
 instance Monoid AS_BASIC.BASIC_SPEC where
     mempty = Basic_spec

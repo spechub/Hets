@@ -50,6 +50,7 @@ instance Sentences RelScheme Sentence Sign RSMorphism RSSymbol where
     simplify_sen RelScheme _ form = form
     print_named _ = printAnnoted pretty . fromLabelledSen
     map_sen RelScheme = map_rel
+    symKind RelScheme = show . pretty . sym_kind
 
 instance Monoid RSRelationships where
     mempty = RSRelationships [] nullRange

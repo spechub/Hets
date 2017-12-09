@@ -84,6 +84,7 @@ instance Sentences ExtModal ExtModalFORMULA ExtModalSign ExtModalMorph Symbol
             (diffMapSet (predMap sig) $ flexPreds e) $ nominals e
           }
         sym_of ExtModal = symOf
+        symKind ExtModal = show . pretty . symbolKind . symbType
         symmap_of ExtModal = morphismToSymbMap
         sym_name ExtModal = symName
 

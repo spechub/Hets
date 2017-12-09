@@ -29,6 +29,8 @@ module RelationalScheme.Sign
         , uniteSig
         , comp_rst_mor
         , RSSymbol (..)
+        , RSSymbolKind (..)
+        , sym_kind
         )
         where
 
@@ -62,6 +64,17 @@ data RSSymbol = STable Id |     -- id of a table
                     RSDatatype  -- datatype of the symbol
                     RSIsKey     -- is it a key?
                 deriving (Eq, Ord, Show, Typeable, Data)
+
+data RSSymbolKind = STableK | SColumnK 
+  deriving (Eq, Ord, Show, Typeable, Data)
+
+sym_kind :: RSSymbol -> RSSymbolKind
+sym_kind (STable _) = STableK
+sym_kind _ = SColumnK
+
+instance Pretty RSSymbolKind where
+ pretty STableK  = text "table"
+ pretty SColumnK = text "colum"
 
 instance GetRange RSSymbol
 

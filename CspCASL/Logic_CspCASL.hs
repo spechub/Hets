@@ -31,6 +31,8 @@ module CspCASL.Logic_CspCASL
 import Logic.Logic
 import Logic.Prover
 
+import Common.DocUtils
+
 import CASL.Logic_CASL
 import CASL.Parse_AS_Basic
 import CASL.Morphism
@@ -86,6 +88,7 @@ instance Show a => Sentences (GenCspCASL a)
       simplify_sen (GenCspCASL _) =
         SimpSen.simplifySen (const return) SimplifySen.simplifySen
       sym_of (GenCspCASL _) = symSets
+      symKind (GenCspCASL _) = show . pretty . cspSymbType
       print_named (GenCspCASL _) = printTheoryFormula
 
 -- | Syntax of CspCASL

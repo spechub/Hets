@@ -17,6 +17,8 @@ module ConstraintCASL.Logic_ConstraintCASL where
 
 import Logic.Logic
 
+import Common.DocUtils
+
 import ConstraintCASL.AS_ConstraintCASL
 import ConstraintCASL.Formula
 import ConstraintCASL.StaticAna
@@ -55,6 +57,7 @@ instance Sentences ConstraintCASL ConstraintCASLFORMULA
                    ConstraintCASLSign ConstraintCASLMor Symbol where
       map_sen ConstraintCASL m = return . mapSen (const id) m
       sym_of ConstraintCASL = symOf
+      symKind ConstraintCASL = show . pretty . symbolKind . symbType
       symmap_of ConstraintCASL = morphismToSymbMap
       sym_name ConstraintCASL = symName
 
