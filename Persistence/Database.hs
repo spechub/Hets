@@ -5,7 +5,7 @@
 module Persistence.Database (DBMonad, onDatabase) where
 
 import Persistence.DBConfig
-import Persistence.DynamicDatabaseConnection
+import Persistence.DatabaseConnection
 import Persistence.Schema
 
 import Control.Exception.Lifted
