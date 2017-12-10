@@ -174,7 +174,7 @@ If you wish to make larger changes we generally recommend [forking](https://help
   * Ubuntu:
     ```
     sudo apt install libglib2.0-dev libcairo2-dev libpango1.0-dev libgtk2.0-dev libglade2-dev libncurses-dev
-    sudo apt install mysql-server libmysqlclient-dev postgresql postgresql-server-dev-9.5
+    sudo apt install postgresql postgresql-server-dev-9.5
     ```
   * macOS:
     ```
@@ -184,11 +184,12 @@ If you wish to make larger changes we generally recommend [forking](https://help
 * Setup Stack for Hets (this needs to be done only once after every time the stack.yaml has changed):
   ```
   stack setup
-  make stack
+  make restack
   ```
   When you invoke `make` for the first time, this will give you warnings about not having found a compiler ("No compiler found, expected minor version match with ghc-...").
   Don't let this discourage you - it's normal.
   Running `make stack` will take care of it and install the compiler.
+  Running `make restack` does the same thing, as `make stack`, but needs to be run every time the dependencies (`stack.yaml`) change.
 * Build Hets with one of the following:
   ```
     make
