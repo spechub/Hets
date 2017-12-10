@@ -151,6 +151,7 @@ Executable hets
       , case-insensitive
       , esqueleto >= 2.5.3
       , file-embed >= 0.0.10
+      , graphql-api >= 0.2.0
       , persistent >= 2.7.0
       , persistent-template >= 2.5.2
       , persistent-postgresql >= 2.6.1

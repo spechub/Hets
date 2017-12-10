@@ -1,6 +1,9 @@
 module PGIP.GraphQL (isGraphQL, processGraphQL) where
 
 import Debug.Trace
+
+import PGIP.GraphQL.Schema
+
 import PGIP.Shared
 
 import Driver.Options
