@@ -1,5 +1,12 @@
 documentation of the mapping of Hets/DG datatypes to the database
 
+Symbols in this document:
+[ ] means: Not done yet
+[x] means: Done
+[o] means: nothing to do - just an explanation
+[-] means: partially done
+[?] means: there is an open question
+
 Hets - database
 [o] LibEnv - need not be represented in the database
   [x] instead, all contained (LibName,DGraph)s will be stored as Documents
@@ -91,10 +98,10 @@ Hets - database
 
 [x] Signature to JSON: Is the symbols function in ToJson the correct one?
     anwer: yes
-[ ] There is no SymbolMapping in the schema.
+[x] There is no SymbolMapping in the schema.
     use Logic.Logic.symmap_of
 [ ] languageStandardizationStatus = "TODO" -- TODO: add to class Logic
     create a ticket for till
 [ ] languageDefinedBy = "registry" -- TODO: add to class Logic
     leave it for till - #1753
-[ ] use options to determine Document Kind
+[x] use options to determine Document Kind
