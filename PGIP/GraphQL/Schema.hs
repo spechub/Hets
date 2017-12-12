@@ -2,10 +2,12 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module PGIP.GraphQL.Schema where
 
 import Data.Char (toLower)
+import Data.Text (pack, unpack)
 import Protolude hiding (Enum, Symbol, map, show)
 import GraphQL.API
   ( GraphQLEnum(..)
@@ -18,11 +20,8 @@ import GraphQL.API
   , (:>)
   )
 import GraphQL.Resolver (Defaultable(..))
-import GraphQL.Value (pattern ValueEnum, unName)
+import GraphQL.Value (pattern ValueEnum, makeName, unName)
 import GraphQL.Value.ToValue (ToValue(..))
-
-instance ToValue Char where
-  toValue = toValue . show
 
 {- The FileVersion type is changed (from Ontohub's) to not show the repository
     and the commit.
@@ -67,7 +66,8 @@ type FileRange = Object "FileRange" '[]
 --   path: String!
 -- }
 type FileVersion = Object "FileVersion" '[]
-  '[ Field "evaluationState" EvaluationState
+  -- '[ Field "evaluationState" EvaluationState
+  '[ Field "evaluationState" Text
    , Field "path" Text
    ]
 
@@ -154,7 +154,8 @@ type Axiom = Object "Axiom" '[LocIdBase, Sentence]
 --   text: String!
 -- }
 type Conjecture = Interface "Conjecture"
-  '[ Field "evaluationState" EvaluationState
+  -- '[ Field "evaluationState" EvaluationState
+  '[ Field "evaluationState" Text
    , Field "fileRange" (Maybe FileRange)
    , Field "fileVersion" FileVersion
    , Field "locId" Text
@@ -212,7 +213,8 @@ type ConservativityStatus = Object "ConservativityStatus" '[]
 --   usedReasoner: Reasoner!
 -- }
 type ConsistencyCheckAttempt = Object "ConsistencyCheckAttempt" '[ReasoningAttempt]
-  '[ Field "evaluationState" EvaluationState
+  -- '[ Field "evaluationState" EvaluationState
+  '[ Field "evaluationState" Text
    , Field "generatedAxioms" [GeneratedAxiom]
    , Field "id" Text
    , Field "number" Int
@@ -269,7 +271,8 @@ type ConsistencyCheckAttempt = Object "ConsistencyCheckAttempt" '[ReasoningAttem
 --   text: String!
 -- }
 type CounterTheorem = Object "CounterTheorem" '[Conjecture]
-  '[ Field "evaluationState" EvaluationState
+  -- '[ Field "evaluationState" EvaluationState
+  '[ Field "evaluationState" Text
    , Field "fileRange" (Maybe FileRange)
    , Field "fileVersion" FileVersion
    , Field "locId" Text
@@ -428,7 +431,7 @@ data EvaluationState = Enqueued
                        deriving (Show, Eq, Ord, Generic)
 instance GraphQLEnum EvaluationState
 instance ToValue EvaluationState where
-  toValue = toValue . map toLower . show
+  toValue = toValue . pack . Prelude.map Data.Char.toLower . unpack . unName . enumToValue
 
 -- # An that has been generated during reasoning
 -- type GeneratedAxiom {
@@ -586,7 +589,7 @@ type Library = Object "Library" '[Document]
    -- , Argument "limit" (Maybe Int) :> Argument "skip" (Maybe Int) :> Field "importedBy" [Document] -- removed due to recursion issue (see the comment at the top of this module).
    -- , Argument "limit" (Maybe Int) :> Argument "skip" (Maybe Int) :> Field "imports" [Document] -- removed due to recursion issue (see the comment at the top of this module).
    , Field "locId" Text
-   , Argument "limit" (Maybe Int) :> Argument "skip" (Maybe Int) :> Field "oms" [OMS]
+   -- , Argument "limit" (Maybe Int) :> Argument "skip" (Maybe Int) :> Field "oms" [OMS]
    ]
 
 -- # Specifies which end of the link the current object is
@@ -606,7 +609,7 @@ data LinkOrigin = Any
                   deriving (Show, Eq, Ord, Generic)
 instance GraphQLEnum LinkOrigin
 instance ToValue LinkOrigin where
-  toValue = toValue . map toLower . show
+  toValue = toValue . pack . Prelude.map Data.Char.toLower . unpack . unName . enumToValue
 
 -- # An object with a Loc/Id
 -- interface LocIdBase {
@@ -841,7 +844,7 @@ data MappingOrigin = Dg_implies_link
                      deriving (Show, Eq, Ord, Generic)
 instance GraphQLEnum MappingOrigin
 instance ToValue MappingOrigin where
-  toValue = toValue . map toLower . show
+  toValue = toValue . pack . Prelude.map Data.Char.toLower . unpack . unName . enumToValue
 
 -- # Specifies the type of the Mapping (=link in the development graph)
 -- enum MappingType {
@@ -932,7 +935,7 @@ data MappingType = Cofree_def
                    deriving (Show, Eq, Ord, Generic)
 instance GraphQLEnum MappingType
 instance ToValue MappingType where
-  toValue = toValue . map toLower . show
+  toValue = toValue . pack . Prelude.map Data.Char.toLower . unpack . unName . enumToValue
 
 -- # A NativeDocument is a container for exactly one OMS
 -- type NativeDocument implements Document, LocIdBase {
@@ -981,7 +984,7 @@ type NativeDocument = Object "NativeDocument" '[Document]
    -- , Argument "limit" (Maybe Int) :> Argument "skip" (Maybe Int) :> Field "importedBy" [Document] -- removed due to recursion issue (see the comment at the top of this module).
    -- , Argument "limit" (Maybe Int) :> Argument "skip" (Maybe Int) :> Field "imports" [Document] -- removed due to recursion issue (see the comment at the top of this module).
    , Field "locId" Text
-   , Field "oms" OMS
+   -- , Field "oms" OMS
    ]
 
 -- # An Ontology, Model or Specification (OMS)
@@ -1231,7 +1234,7 @@ data OMSOrigin = Cofree
                  deriving (Show, Eq, Ord, Generic)
 instance GraphQLEnum OMSOrigin
 instance ToValue OMSOrigin where
-  toValue = toValue . map toLower . show
+  toValue = toValue . pack . Prelude.map Data.Char.toLower . unpack . unName . enumToValue
 
 -- # An open (unproved) conjecture
 -- type OpenConjecture implements Conjecture, LocIdBase, Sentence {
@@ -1278,7 +1281,8 @@ instance ToValue OMSOrigin where
 --   text: String!
 -- }
 type OpenConjecture = Object "OpenConjecture" '[Conjecture]
-  '[ Field "evaluationState" EvaluationState
+  -- '[ Field "evaluationState" EvaluationState
+  '[ Field "evaluationState" Text
    , Field "fileRange" (Maybe FileRange)
    , Field "fileVersion" FileVersion
    , Field "locId" Text
@@ -1346,7 +1350,8 @@ type PremiseSelection = Interface "PremiseSelection"
 --   usedReasoner: Reasoner!
 -- }
 type ProofAttempt = Object "ProofAttempt" '[ReasoningAttempt]
-  '[ Field "evaluationState" EvaluationState
+  -- '[ Field "evaluationState" EvaluationState
+  '[ Field "evaluationState" Text
    -- , Field "conjecture" Conjecture -- removed due to recursion issue (see the comment at the top of this module).
    , Field "generatedAxioms" [GeneratedAxiom]
    , Field "id" Text
@@ -1433,18 +1438,19 @@ type ProofAttempt = Object "ProofAttempt" '[ReasoningAttempt]
 --   ): SignatureMorphism
 -- }
 type Query = Object "Query" '[]
-  '[ Argument "id" (Maybe Int) :> Field "generatedAxiom" GeneratedAxiom
-   , Argument "id" (Maybe Text) :> Field "language" Language
-   , Argument "id" (Maybe Text) :> Field "languageMapping" LanguageMapping
-   , Argument "id" (Maybe Text) :> Field "logic" Logic
-   , Argument "id" (Maybe Text) :> Field "logicMapping" LogicMapping
-   , Argument "id" (Maybe Int) :> Field "premiseSelection" PremiseSelection
-   , Argument "id" (Maybe Text) :> Field "reasoner" Reasoner
-   , Argument "id" (Maybe Int) :> Field "reasoningAttempt" ReasoningAttempt
-   , Argument "id" (Maybe Text) :> Field "serialization" Serialization
-   , Argument "id" (Maybe Int) :> Field "signature" Signature
-   , Argument "id" (Maybe Int) :> Field "signatureMorphism" SignatureMorphism
-   -- TODO: Add a query field as a replacement for repository/commit
+  -- '[ Argument "id" (Maybe Int) :> Field "generatedAxiom" GeneratedAxiom
+  --  , Argument "id" (Maybe Text) :> Field "language" Language
+  --  , Argument "id" (Maybe Text) :> Field "languageMapping" LanguageMapping
+  --  , Argument "id" (Maybe Text) :> Field "logic" Logic
+  --  , Argument "id" (Maybe Text) :> Field "logicMapping" LogicMapping
+  --  , Argument "id" (Maybe Int) :> Field "premiseSelection" PremiseSelection
+  --  , Argument "id" (Maybe Text) :> Field "reasoner" Reasoner
+  --  , Argument "id" (Maybe Int) :> Field "reasoningAttempt" ReasoningAttempt
+  --  , Argument "id" (Maybe Text) :> Field "serialization" Serialization
+  --  , Argument "id" (Maybe Int) :> Field "signature" Signature
+  --  , Argument "id" (Maybe Int) :> Field "signatureMorphism" SignatureMorphism
+  --  -- TODO: Add a query field as a replacement for repository/commit
+  '[ Argument "location" Text :> Field "library" Library
    ]
 
 -- # A Reasoning system (prover or consistency checker)
@@ -1528,7 +1534,8 @@ type ReasonerOutput = Object "ReasonerOutput" '[]
 --   usedReasoner: Reasoner!
 -- }
 type ReasoningAttempt = Interface "ReasoningAttempt"
-  '[ Field "evaluationState" EvaluationState
+  -- '[ Field "evaluationState" EvaluationState
+  '[ Field "evaluationState" Text
    , Field "generatedAxioms" [GeneratedAxiom]
    , Field "id" Text
    , Field "number" Int
@@ -1578,7 +1585,7 @@ data ReasoningStatus = CONTR
                        deriving (Show, Eq, Ord, Generic)
 instance GraphQLEnum ReasoningStatus
 instance ToValue ReasoningStatus where
-  toValue = toValue . show
+  toValue = toValue . pack . Prelude.map Data.Char.toLower . unpack . unName . enumToValue
 
 -- # A logical sentence
 -- interface Sentence {
@@ -1892,7 +1899,7 @@ data SymbolOrigin = Either
                     deriving (Show, Eq, Ord, Generic)
 instance GraphQLEnum SymbolOrigin
 instance ToValue SymbolOrigin where
-  toValue = toValue . map toLower . show
+  toValue = toValue . pack . Prelude.map Data.Char.toLower . unpack . unName . enumToValue
 
 -- # A theorem (proved conjecture)
 -- type Theorem implements Conjecture, LocIdBase, Sentence {
@@ -1939,7 +1946,8 @@ instance ToValue SymbolOrigin where
 --   text: String!
 -- }
 type Theorem = Object "Theorem" '[Conjecture]
-  '[ Field "evaluationState" EvaluationState
+  -- '[ Field "evaluationState" EvaluationState
+  '[ Field "evaluationState" Text
    , Field "fileRange" (Maybe FileRange)
    , Field "fileVersion" FileVersion
    , Field "locId" Text
