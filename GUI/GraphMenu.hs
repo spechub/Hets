@@ -390,7 +390,7 @@ createMenuButtonProveStructured :: GInfo -> ButtonMenu GA.NodeValue
 createMenuButtonProveStructured gi =
   createMenuButton "Prove VSE Structured" (\ descr _ ->
     proofMenu gi (SelectCmd Prover $ "VSE structured: " ++ show descr)
-              $ VSE.prove (libName gi, descr)) gi
+              $ VSE.proveVSE (libName gi, descr)) gi
 
 #ifdef GTKGLADE
 createMenuButtonDisproveAtNode :: GInfo -> ButtonMenu GA.NodeValue
