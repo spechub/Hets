@@ -16,8 +16,8 @@ dol = "%% a simple parthood ontology in OWL\n\
       \  Parthood_OWL\n\
       \  with translation OWL22CommonLogic\n\
       \then\n\
-      \  (if (and (isProperPartOf x y) (isProperPartOf y z))\n\
-      \      (isProperPartOf x z))\n\
+      \  (forall (x y z) (if (and (isProperPartOf x y) (isProperPartOf y z))\n\
+      \                      (isProperPartOf x z)))\n\
       \end"
 
 casl :: String
