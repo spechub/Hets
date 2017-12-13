@@ -235,6 +235,14 @@ data BasicProof =
      | Handwritten
      deriving Typeable
 -}
+{- | applies basic inference to a given node. The result is a theory which is
+     either a model after a consistency check or a new theory for the node
+     label -}
+ , basicInferenceNode -- :: LogicGraph -> LibName -> DGraph -> LNode DGNodeLab
+                      --     -> LibEnv -> IORef IntState
+                      --     -> IO (Result G_theory)
+-- | applies basic inference with VSE to a given node and whole import tree above
+ , proveVSE -- :: (LibName, Node) -> LibEnv -> IO (Result LibEnv)
    
 --------------------------------------
 -- Development graph proof calculus --
@@ -294,12 +302,6 @@ data ThmLinkStatus = LeftOpen | Proven DGRule ProofBasis
  , automaticHideTheoremShift -- :: LibName -> LibEnv -> LibEnv
  , automaticHideTheoremShiftFromList
       --  :: LibName -> [LEdge DGLinkLab] -> LibEnv -> LibEnv
-{- | applies basic inference to a given node. The result is a theory which is
-     either a model after a consistency check or a new theory for the node
-     label -}
- , basicInferenceNode -- :: LogicGraph -> LibName -> DGraph -> LNode DGNodeLab
-                      --     -> LibEnv -> IORef IntState
-                      --     -> IO (Result G_theory)
 -- | local inference for all edges
  , localInference -- :: LibName -> LibEnv -> LibEnv
 -- | local inference for some edges
@@ -325,8 +327,6 @@ data ThmLinkStatus = LeftOpen | Proven DGRule ProofBasis
  , triangleCons -- :: LibName -> LibEnv -> Result LibEnv
 -- | apply rule triangle consistency rule to one edge (?)
  , triangleConsDG -- :: DGraph -> LEdge DGLinkLab -> Result DGraph
--- | applies basic inference with VSE to a given node and whole import tree above
- , proveVSE -- :: (LibName, Node) -> LibEnv -> IO (Result LibEnv)
 
 
 ----------------------------------------------------------------
@@ -420,7 +420,6 @@ of non-disjoint unions for the ingoing tree of nodes to the given node -}
 
    
 -- todo
-   -- BasicProof
    -- Proofs.StatusUtils?
  ) where
 
