@@ -14,7 +14,11 @@ are necessary to interact with Hets from the outside
 -}
 
 module Driver.Api
- ( Token (..)
+ (
+-----------------
+-- Identifiers --
+-----------------
+   Token (..)
  , SIMPLE_ID
 {-
 -- | tokens as supplied by the scanner
@@ -33,6 +37,11 @@ data LibName = LibName
     , libVersion :: Maybe VersionNumber }
   deriving (Typeable, Data)
 -}
+
+--------------------------------
+-- Options (for calling Hets) --
+--------------------------------
+
  , CASLAmalgOpt (..)
 {-   
 data CASLAmalgOpt = Sharing         -- ^ perform the sharing checks
@@ -103,6 +112,12 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , fullSign :: Bool
   , printAST :: Bool }
 -}
+ , defaultHetcatsOpts -- :: HetcatsOpts
+
+--------------------------------------------
+-- Development graph, library environment --
+--------------------------------------------
+
  , LibEnv
 {-   
 type LibEnv = Map.Map LibName DGraph
@@ -194,11 +209,38 @@ data RTLinkLab = RTLink
   { rtl_type :: RTLinkType
   } deriving (Show, Eq, Typeable)
 -}
- , defaultHetcatsOpts -- :: HetcatsOpts
+
+-----------------------------------
+-- Hets' main analysis functions --
+-----------------------------------
+   
  , read_and_analyse -- :: String -> HetcatsOpts -> IO (Maybe (LibName, LibEnv))
  , computeTheory -- :: LibEnv -> LibName -> Node -> Maybe G_theory
+
+---------------------------------------
+-- Basic proofs (in specific logics) --
+---------------------------------------
+ , BasicProof (..)
+{-
+data BasicProof =
+  forall lid sublogics
+        basic_spec sentence symb_items symb_map_items
+        sign morphism symbol raw_symbol proof_tree .
+        Logic lid sublogics
+         basic_spec sentence symb_items symb_map_items
+         sign morphism symbol raw_symbol proof_tree =>
+        BasicProof lid (ProofStatus proof_tree)
+     | Guessed
+     | Conjectured
+     | Handwritten
+     deriving Typeable
+-}
+   
+--------------------------------------
+-- Development graph proof calculus --
+--------------------------------------
+
  , DGRule  (..)
- , ThmLinkStatus (..) 
 {-   
 {- | Rules in the development graph calculus,
    Sect. IV:4.4 of the CASL Reference Manual explains them in depth
@@ -209,7 +251,9 @@ data DGRule =
   | DGRuleLocalInference [(String, String)] -- renamed theorems
   | Composition [EdgeId]
     deriving (Show, Eq, Ord, Typeable, Data)
-
+-}
+ , ThmLinkStatus (..) 
+{-
 -- | proof status of a link
 data ThmLinkStatus = LeftOpen | Proven DGRule ProofBasis
   deriving (Show, Eq, Ord, Typeable, Data)
@@ -218,53 +262,166 @@ data ThmLinkStatus = LeftOpen | Proven DGRule ProofBasis
    denoted by the library name of the given proofstatus -}
  , automatic -- :: LibName -> LibEnv -> LibEnv
  , automaticFromList -- :: LibName -> [LEdge DGLinkLab] -> LibEnv -> LibEnv
-   
-{-
-  , genSelectCmd Node cDgSelect
-  , genSelectCmd ComorphismTranslation cTranslate
-  , genSelectCmd Prover cProver
-  , genSelectCmd Goal $ cGoalsAxmGeneral ActionSet ChangeGoals
-  , proveAll
-  , disproveAll
-  , genGlobCmd CheckConsistencyCurrent cConsistCheck
-  , genGlobCmd CheckConservativityAll cConservCheckAll
-  , genGlobCmd DropTranslation cDropTranslations
-  , genSelectCmd ConsistencyChecker cConsChecker
-  , genSelectCmd ConservativityCheckerOpen cConservCheck
-  , genSelectCmd ConservativityChecker cConservCheck
-  , genCmd (TimeLimit 0) CmdNoPriority ReqNumber $ CmdWithInput cTimeLimit
-  , genCmd (SetAxioms []) CmdNoPriority (ReqAxm True) $ CmdWithInput
-    $ cGoalsAxmGeneral ActionSet ChangeAxioms ]
-  ++ map (\ b -> genCmd (IncludeProvenTheorems b) CmdNoPriority ReqNothing
-         $ CmdNoInput $ cSetUseThms b) [True, False]
-  ++
-  [ genGlobInspectCmd Nodes cNodes
-  , genGlobInspectCmd Edges cEdges
-  , genGlobInspectCmd UndoHist cUndoHistory
-  , genGlobInspectCmd RedoHist cRedoHistory
-  , genGlobInspectCmd CurrentComorphism cCurrentComorphism
-  , genGlobInspectCmd ProvenGoals $ cShowNodeProvenGoals ""
-  , genGlobInspectCmd UnprovenGoals $ cShowNodeUnprovenGoals ""
-  , genGlobInspectCmd Axioms $ cShowNodeAxioms ""
-  , genGlobInspectCmd AllGoals $ cShowTheoryGoals ""
-  , genGlobInspectCmd Theory $ cShowTheory Dont_translate ""
-  , genGlobInspectCmd TranslatedTheory $ cShowTheory Do_translate ""
-  , genGlobInspectCmd Taxonomy $ cShowTaxonomy ""
-  , genGlobInspectCmd Concept $ cShowConcept ""
-  , genGlobInspectCmd NodeInfo cInfoCurrent
-  , genCmd (InspectCmd ComorphismsTo Nothing) CmdNoPriority ReqLogic
-  . CmdWithInput $ cComorphismsTo
-  , genInspectCmd NodeInfo cInfo
-  , genInspectCmd Theory $ cShowTheory Dont_translate
-  , genInspectCmd TranslatedTheory $ cShowTheory Do_translate
-  , genInspectCmd AllGoals cShowTheoryGoals
-  , genInspectCmd ProvenGoals cShowNodeProvenGoals
-  , genInspectCmd UnprovenGoals cShowNodeUnprovenGoals
-  , genInspectCmd Axioms cShowNodeAxioms
-  , genInspectCmd Taxonomy cShowTaxonomy
-  , genInspectCmd Concept cShowConcept
-  , genInspectCmd EdgeInfo cInfo ]
+{- | gets all unproven global theorem edges in the current development graph
+   and checks, if they are a composition of a global theorem path. If so,
+   the edge is proven, with the corresponding path as its proof basis.
+   If there is more than one path, the first of them is arbitrarily taken. -}
+ , composition -- :: LibName -> LibEnv -> LibEnv
+{- | creates new edges by composing all paths of global theorem edges
+   in the current development graph. These new edges are proven global
+   theorems with the morphism and the conservativity of the corresponding
+   path. If a new edge is the proven version of a previsously existing
+   edge, that edge is deleted. -}
+ , compositionCreatingEdges -- :: LibName -> LibEnv -> LibEnv
+-- | composition without creating new new edges
+ , compositionFromList -- :: LibName -> [LEdge DGLinkLab] -> LibEnv -> LibEnv
+ , compositionCreatingEdgesFromList
+     -- :: LibName -> [LEdge DGLinkLab] -> LibEnv -> LibEnv
+-- | tries to apply global subsumption to all unproven global theorem edges
+ , globSubsume -- :: LibName -> LibEnv -> LibEnv
+{- applies global decomposition to all unproven global theorem edges
+   if possible -}
+ , globDecomp -- :: LibName -> LibEnv -> LibEnv
+{- | applies global decomposition to the list of edges given (global
+     theorem edges) if possible, if empty list is given then to all
+     unproven global theorems.
 -}
+ , globDecompFromList -- :: LibName -> [LEdge DGLinkLab] -> LibEnv -> LibEnv
+-- | applies global subsumption to a list of global theorem edges
+ , globSubsumeFromList -- :: LibName -> [LEdge DGLinkLab] -> LibEnv -> LibEnv
+-- | applies hide-theorem-shift rule
+ , interactiveHideTheoremShift -- :: LibName -> LibEnv -> IO LibEnv
+ , automaticHideTheoremShift -- :: LibName -> LibEnv -> LibEnv
+ , automaticHideTheoremShiftFromList
+      --  :: LibName -> [LEdge DGLinkLab] -> LibEnv -> LibEnv
+{- | applies basic inference to a given node. The result is a theory which is
+     either a model after a consistency check or a new theory for the node
+     label -}
+ , basicInferenceNode -- :: LogicGraph -> LibName -> DGraph -> LNode DGNodeLab
+                      --     -> LibEnv -> IORef IntState
+                      --     -> IO (Result G_theory)
+-- | local inference for all edges
+ , localInference -- :: LibName -> LibEnv -> LibEnv
+-- | local inference for some edges
+ , localInferenceFromList -- :: LibName -> [LEdge DGLinkLab] -> LibEnv -> LibEnv
+-- | local decomposition for all edges
+ , locDecomp -- :: LibName -> LibEnv -> LibEnv
+-- | local decomposition for some edges
+ , locDecompFromList -- :: LibName -> [LEdge DGLinkLab] -> LibEnv -> LibEnv
+-- | apply rule theorem hide shift to a development graph
+ , theoremHideShift -- :: LibName -> LibEnv -> Result LibEnv
+-- | apply rule theorem hide shift to a DGs in LibEnv
+ , theoremHideShiftFromList -- :: LibName -> [LNode DGNodeLab] -> LibEnv
+                            --     -> Result LibEnv
+-- | the theorem hide shift rule name
+ , thmHideShift -- :: DGRule
+{- | get all the global unproven threorem links which go into the given
+     node in the given dgraph
+-}
+ , getInComingGlobalUnprovenEdges -- :: DGraph -> Node -> [LEdge DGLinkLab]
+-- | the triangle consistency rule name   
+ , triangleConsRule -- :: DGRule
+-- | apply rule triangle consistency rule to a development graph
+ , triangleCons -- :: LibName -> LibEnv -> Result LibEnv
+-- | apply rule triangle consistency rule to one edge (?)
+ , triangleConsDG -- :: DGraph -> LEdge DGLinkLab -> Result DGraph
+-- | applies basic inference with VSE to a given node and whole import tree above
+ , proveVSE -- :: (LibName, Node) -> LibEnv -> IO (Result LibEnv)
+
+
+----------------------------------------------------------------
+-- Development graph rules for consistency and conservativity --
+----------------------------------------------------------------
+
+-- calls various rules for checking conservativity of links
+ , conservativity -- :: LibName -> LibEnv -> LibEnv
+-- data types for result of consistency checks   
+ , SType (..)
+{- data SType = CSUnchecked
+           | CSTimeout
+           | CSError
+           | CSInconsistent
+           | CSConsistent
+           deriving (Eq, Ord, Show)
+-}
+ , ConsistencyStatus (..)
+{- data ConsistencyStatus = ConsistencyStatus { sType :: SType
+                                           , sMessage :: String }
+-}
+-- invert: consistent becomes inconsistent, and vice versa
+ , cInvert -- :: ConsistencyStatus -> ConsistencyStatus
+-- devGraph rule that calls consistency checker for specific logics
+ , consistencyCheck -- :: Bool -> G_cons_checker -> AnyComorphism -> LibName -> LibEnv
+                     --    -> DGraph -> LNode DGNodeLab -> Int -> IO ConsistencyStatus
+-- convert a consistency status to a color (of the DG node)    
+ , cStatusToColor -- :: ConsistencyStatus -> String
+-- convert a consistency status to a prefix, for use in a GUI,
+-- to be displayed in front of the node name 
+ , cStatusToPrefix -- :: ConsistencyStatus -> String
+{- converts a GTheory.BasicProof to ConsistencyStatus.
+The conversion is not exact, but sufficient since this function is only
+implemented in GtkDisprove for proper display of goalstatus.
+-}
+ , basicProofToConStatus --  :: BasicProof -> ConsistencyStatus
+-- roughly transform the nodes consStatus into ConsistencyStatus
+ , getConsistencyOf --  :: DGNodeLab -> ConsistencyStatus
+
+-------------------------------------------
+-- Flattening out structuring operations --
+-------------------------------------------
+
+{- this function performs flattening of import link by deleting all
+   inclusion links, and inserting a new node, with new computed theory
+   (computeTheory).
+-}
+ , dgFlatImports -- :: LibEnv -> LibName -> DGraph -> DGraph
+-- this function performs flattening of imports for the whole library
+ , libFlatImports -- :: LibEnv -> Result LibEnv
+{- this function performs flattening of non-disjoint unions for the given
+   DGraph. 
+-}
+ , dgFlatDUnions -- :: LibEnv -> DGraph -> DGraph
+{- this functions performs flattening of
+   non-disjoint unions for the whole library -}
+ , libFlatDUnions -- :: LibEnv -> Result LibEnv
+{- this function performs flattening of imports with renaming
+   links for a given developement graph.
+-}
+ , dgFlatRenamings -- :: LibEnv -> LibName -> DGraph -> DGraph
+-- this function performs flattening of imports with renamings
+ , libFlatRenamings -- :: LibEnv -> Result LibEnv
+-- this function performs flattening of hiding links
+ , dgFlatHiding -- :: DGraph -> DGraph
+-- this function performs flattening of heterogeniety for the whole library
+ , libFlatHiding -- :: LibEnv -> Result LibEnv
+{- this function performs flattening of heterogeniety
+for a given developement graph -}
+ , dgFlatHeterogen -- :: LibEnv -> LibName -> DGraph -> DGraph
+-- this function performs flattening of heterogeniety for the whole library
+ , libFlatHeterogen -- :: LibEnv -> Result LibEnv
+{- this function takes a node and performs flattening
+of non-disjoint unions for the ingoing tree of nodes to the given node -}
+ , singleTreeFlatDUnions -- :: LibEnv -> LibName -> Node -> Result LibEnv
+    
+-------------------------------
+-- Normal forms and colimits --
+-------------------------------
+   
+-- | compute normal form for a library and imported libs
+ , normalForm -- :: LibName -> LibEnv -> Result LibEnv
+-- | compute norm form for all libraries
+ , normalFormLibEnv -- :: LibEnv -> Result LibEnv
+-- the normal form rule name  
+ , normalFormRule -- :: DGRule
+-- | computes the colimit of one development graph in a LibEnv
+ , computeColimit -- :: LibName -> LibEnv -> Result LibEnv
+-- compute normal forms for nodes with free definition links
+ , freeness -- :: LibName -> LibEnv -> Result LibEnv
+
+   
+-- todo
+   -- BasicProof
+   -- Proofs.StatusUtils?
  ) where
 
 import Common.Amalgamate (CASLAmalgOpt (..))
@@ -284,3 +441,34 @@ import Static.ComputeTheory (computeTheory)
 import Static.DgUtils (DGRule  (..), ThmLinkStatus (..))
 
 import Proofs.Automatic (automatic, automaticFromList)
+import Proofs.Composition
+          (composition, compositionCreatingEdges,
+           compositionFromList, compositionCreatingEdgesFromList)
+import Proofs.ComputeColimit (computeColimit)
+import Proofs.Conservativity (conservativity)
+import Proofs.ConsistencyCheck
+       (consistencyCheck, SType (..), ConsistencyStatus (..),
+        cStatusToColor, cStatusToPrefix, cInvert, basicProofToConStatus,
+        getConsistencyOf)
+import Proofs.DGFlattening
+       (dgFlatImports, libFlatImports , dgFlatDUnions, libFlatDUnions,
+        dgFlatRenamings, libFlatRenamings, dgFlatHiding, libFlatHiding,
+        dgFlatHeterogen, libFlatHeterogen, singleTreeFlatDUnions)
+import Proofs.Freeness (freeness)
+import Proofs.Global (globSubsume, globDecomp, 
+                      globDecompFromList, globSubsumeFromList)
+import Proofs.HideTheoremShift
+    (interactiveHideTheoremShift, automaticHideTheoremShift,
+     automaticHideTheoremShiftFromList)
+import Proofs.InferBasic (basicInferenceNode)
+import Proofs.Local
+    (localInference, locDecomp, locDecompFromList, localInferenceFromList)
+import Proofs.NormalForm
+    (normalFormLibEnv, normalForm, normalFormRule) 
+import Proofs.SimpleTheoremHideShift
+    (thmHideShift, getInComingGlobalUnprovenEdges)
+import Proofs.TheoremHideShift
+    (theoremHideShift, theoremHideShiftFromList)
+import Proofs.TriangleCons 
+import Proofs.VSE 
+import Static.GTheory (BasicProof (..))

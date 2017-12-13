@@ -73,8 +73,8 @@ getSubGraph n dg =
     in delNodesDG (Set.toList $ Set.difference (Set.fromList ns) sns) dg
 
 -- | applies basic inference to a given node and whole import tree above
-prove :: (LibName, Node) -> LibEnv -> IO (Result LibEnv)
-prove (ln, node) libEnv =
+proveVSE :: (LibName, Node) -> LibEnv -> IO (Result LibEnv)
+proveVSE (ln, node) libEnv =
   runResultT $ do
     qLibEnv <- liftR $ qualifyLibEnv libEnv
     let dg1 = lookupDGraph ln qLibEnv
