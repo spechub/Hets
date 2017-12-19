@@ -518,6 +518,7 @@ pairSymbols (Entity lb1 k1 i1) (Entity lb2 k2 i2) =
           -- these changes.
           -- @Mihai: OK, then we will leave it for another issue.
           -- Is there an existing issue? If not, could you please create one?
+          -- I have added a new comment in issue #1597 
     return $ Entity (pairLables lb1 lb2) k1 $ pairIRIs i1 i2
 
 -- * LITERALS
