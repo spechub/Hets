@@ -315,6 +315,10 @@ checkPredefAux (sl, pref, exPref) u =
       dnamedS = "hets.eu/ontology/unamed"
       nn = dnamedS ++ "#" 
       -- TODO: this is the dummy name and was removed before
+      -- @Till: here we keep the implementation of the function as it was before
+      -- making use of the dummy name for ontologies, while it has been now
+      -- commented out. We should either make sure the dummy name is used, or
+      -- implement this in a different way, without using it.
       res = Just (pref, lp)
   in case prefixName u of
     "http" -> case stripPrefix "//www." lp of
@@ -504,6 +508,10 @@ pairSymbols (Entity lb1 k1 i1) (Entity lb2 k2 i2) =
                           then iriPath iri1 
                           else appendId (iriPath iri1) (iriPath iri2)
           } -- TODO: made it compile, but most likely will cause issues!
+          -- @Till: the issues that I expect here have to do with
+          -- prefixes and URIs of symbols in the bridge and colimit. 
+          -- We need a decision here, but the issue is not new or introduced by
+          -- these changes.
     return $ Entity (pairLables lb1 lb2) k1 $ pairIRIs i1 i2
 
 -- * LITERALS
