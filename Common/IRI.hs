@@ -42,7 +42,6 @@ module Common.IRI
     , iriToStringUnsecure
     , iriToStringShortUnsecure
     , hasFullIRI
-    , isAbbrev
     , isSimple
     , addSuffixToIRI
 
@@ -149,6 +148,7 @@ nullIRI = IRI
     , iriFragment = ""
     , prefixName = ""
     , isAbbrev = False
+    , isBlankNode = False
     , hasAngles = False
     , iriPos = nullRange
     }
