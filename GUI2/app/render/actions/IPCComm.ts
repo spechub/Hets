@@ -1,4 +1,4 @@
-import { ipcRenderer, Event } from "electron";
+import { ipcRenderer, Event, remote } from "electron";
 
 import {
   QUERY_CHANNEL,
@@ -15,6 +15,14 @@ export class IPCComm {
       hostname: config.hets_hostname,
       port: config.hets_port
     };
+
+    remote.getCurrentWindow().setTitle(
+      `Hets - ${file
+        .split("/")
+        .slice(-1)
+        .pop()}`
+    );
+
     ipcRenderer.send(QUERY_CHANNEL, message);
   }
 
