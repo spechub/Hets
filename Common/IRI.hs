@@ -126,7 +126,8 @@ data IRI = IRI
     , iriQuery :: String          -- ^ @?query@
     , iriFragment :: String       -- ^ @#frag@
     , prefixName :: String        -- ^ @prefix@
-    , isAbbrev :: Bool            -- ^ is the IRI a CURIE or not?                    
+    , isAbbrev :: Bool            -- ^ is the IRI a CURIE or not?
+    , isBlankNode :: Bool         -- ^ is the IRI a blank node?                   
     , hasAngles :: Bool           -- ^ IRI in angle brackets
     , iriPos :: Range             -- ^ position
     } deriving (Typeable, Data)
@@ -154,7 +155,8 @@ nullIRI = IRI
 
 -- | special show function for Ids within IRIs
 showIRIId :: Id -> String
-showIRIId = show -- todo: to be refined
+showIRIId = show -- todo: to be refined.
+-- @Till: do we need to show Ids differently within IRIs?
 
 -- | do we have a full (possibly expanded) IRI (i.e. for comparisons)
 hasFullIRI :: IRI -> Bool
@@ -232,6 +234,8 @@ showIRI i
   | hasFullIRI i = showIRII i
   | otherwise = showIRIU i
 
+
+-- | show IRI as abbreviated
 showIRIU :: IRI -> String
 showIRIU i
   | hasFullIRI i && not (isAbbrev i) = showIRII i
@@ -239,24 +243,14 @@ showIRIU i
   | otherwise = showIRIAbbrev i
 
 showIRIAbbrev :: IRI -> String
-showIRIAbbrev (IRI { prefixName = pname
-                       , iriPath = aPath
-                       , iriQuery = aQuery
-                       , iriFragment = aFragment
-                       }) = pname ++ show aPath ++ aQuery ++ aFragment
+showIRIAbbrev i = iriToStringAbbrev i ""
+ -- don't duplicate code
 
+-- | show IRI in angle brackets as full IRI
 showIRII :: IRI -> String
-showIRII i@(IRI { iriScheme = scheme
-              , iriAuthority = authority
-              , iriPath = path
-              , iriQuery = query
-              , iriFragment = fragment
-              , hasAngles = b
-              }) = 
-  (if b then "<" else "") ++ scheme
-  ++ iriAuthToString id authority "" --TODO: replaced with id for now
-  ++ show path ++ query ++ fragment ++ (if b then ">" else "")
-
+showIRII i = iriToStringFull id i ""
+  -- this should behave like show, and there we use id
+  
 dummyIRI :: IRI
 dummyIRI = nullIRI { 
        iriScheme = "http"
