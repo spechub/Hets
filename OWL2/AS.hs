@@ -511,14 +511,7 @@ pairSymbols (Entity lb1 k1 i1) (Entity lb2 k2 i2) =
                             rest (show $ iriPath iri2) 
                           then iriPath iri1 
                           else appendId (iriPath iri1) (iriPath iri2)
-          } -- TODO: made it compile, but most likely will cause issues!
-          -- @Till: the issues that I expect here have to do with
-          -- prefixes and URIs of symbols in the bridge and colimit. 
-          -- We need a decision here, but the issue is not new or introduced by
-          -- these changes.
-          -- @Mihai: OK, then we will leave it for another issue.
-          -- Is there an existing issue? If not, could you please create one?
-          -- I have added a new comment in issue #1597 
+          } -- TODO: improve, see #1597 
     return $ Entity (pairLables lb1 lb2) k1 $ pairIRIs i1 i2
 
 -- * LITERALS

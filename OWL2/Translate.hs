@@ -19,10 +19,7 @@ import Data.Char
 
 import OWL2.Parse
 
--- now provided in Common.IRI.
--- todo: care about special characters? or is this unnecessary
---       if IRI and Id are completely unified?
--- @Till: as the code looks right now, I would expect that we need to take care of special characters if we want to use the IRI created from an Id e.g. with Ontohub. @Mihai: this is taken care of in #1755, so it could be removed here? @Till: if it's taken care of, then we don't have to do anything
+-- now provided in Common.IRI
 --idToIRI :: Id -> IRI
 --idToIRI = idToAnonIRI False
 

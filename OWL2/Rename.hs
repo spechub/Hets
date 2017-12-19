@@ -83,7 +83,7 @@ newOid id1 id2 =
   in if null $ show lid1 then id2
       else if (null $ show lid2) || id1 == id2 then id1
             else id1 { iriPath = stringToId (uriToName (show lid1) ++ "_" ++ uriToName (show lid2)) }
-  -- todo: improve. @Till: Here we probably need to follow the same decision as for alignments. @Mihai: so this is a new issue? @Till: no, I think it's also #1597
+  -- todo: improve, see #1597
 
 combineDoc :: OntologyDocument -> OntologyDocument
                       -> OntologyDocument
