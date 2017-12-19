@@ -25,11 +25,12 @@ export class OpenLogicButton extends React.Component<
     return (
       <Container fluid={true}>
         <Input
+          action={<Button onClick={() => this.onClick()}>Open Logic</Button>}
           type="text"
           value={this.state.filePath}
           onChange={(e, d) => this.updateFilePath(e, d)}
+          fluid={true}
         />
-        <Button onClick={() => this.onClick()}>Open Logic</Button>
       </Container>
     );
   }

@@ -5,9 +5,13 @@ import { Event } from "electron";
 import { IPCComm } from "../actions/IPCComm";
 import { DGraphParser } from "../actions/DGraphParser";
 import { QUERY_CHANNEL_RESPONSE } from "../../shared/SharedConstants";
-// import { DGraph, DGLink, DGNode } from "../../shared/DGraph";
 
-export class Graph extends React.Component<{}, {}> {
+export interface FDGraphProps {
+  width: string;
+  height: string;
+}
+
+export class FDGraph extends React.Component<FDGraphProps, {}> {
   svg: d3.Selection<HTMLElement, any, HTMLElement, any>;
   simulation: d3.Simulation<any, any>;
 
@@ -21,12 +25,17 @@ export class Graph extends React.Component<{}, {}> {
   }
 
   componentDidMount() {
+    this.renderGraph();
+  }
+
+  render() {
+    return <svg width={this.props.width} height={this.props.height} />;
+  }
+
+  private renderGraph() {
     this.svg = d3.select("svg");
     const width = +this.svg.attr("width");
     const height = +this.svg.attr("height");
-
-    console.log(width);
-    console.log(height);
 
     this.simulation = d3
       .forceSimulation()
@@ -40,10 +49,6 @@ export class Graph extends React.Component<{}, {}> {
       .force("center", d3.forceCenter(width / 2, height / 2));
   }
 
-  render() {
-    return <svg width="960" height="600" />;
-  }
-
   private displayResp(_e: Event, s: any) {
     const graph = new DGraphParser(s);
 
@@ -51,7 +56,11 @@ export class Graph extends React.Component<{}, {}> {
     const nodes = [];
 
     for (const node of graph.dgraph.DGNodes) {
-      nodes.push({ id: node.id, name: node.name });
+      nodes.push({
+        id: node.id,
+        name: node.name,
+        internal: node.internal
+      });
     }
 
     for (const link of graph.dgraph.DGLinks) {
@@ -83,6 +92,9 @@ export class Graph extends React.Component<{}, {}> {
       .enter()
       .append("circle")
       .attr("r", 5)
+      .attr("class", (n: any) => {
+        return n.internal ? "internal" : "";
+      })
       .call(
         d3
           .drag()
