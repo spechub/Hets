@@ -47,6 +47,7 @@ class DGNodeImpl implements DGNode, Serializable<DGNode> {
   reference: boolean;
   refname: string;
   relxpath: string;
+  internal: boolean;
 
   deserialize(input: any): DGNode {
     this.id = input["id"];
@@ -56,6 +57,7 @@ class DGNodeImpl implements DGNode, Serializable<DGNode> {
     this.reference = input["reference"];
     this.refname = input["refname"];
     this.relxpath = input["relxpath"];
+    this.internal = input["internal"];
 
     return this;
   }

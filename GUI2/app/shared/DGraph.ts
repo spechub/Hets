@@ -31,6 +31,7 @@ export interface DGNode {
   reference: boolean;
   refname: string;
   relxpath: string;
+  internal: boolean;
 }
 
 export interface Global {
