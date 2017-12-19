@@ -1,5 +1,9 @@
 import * as http from "http";
 import * as querystring from "querystring";
+import * as fs from "fs";
+import * as path from "path";
+import { ConfigDesc } from "./shared/ConfigDesc";
+import { CONFIG_FILENAME } from "./shared/SharedConstants";
 
 interface HETSApiOptions {
   readonly hostname: string;
@@ -28,6 +32,23 @@ export class Utils {
     }
   }
 
+  public static getConfig(): ConfigDesc {
+    const configStr = fs.readFileSync(
+      path.join(__dirname, CONFIG_FILENAME),
+      "utf8"
+    );
+
+    return JSON.parse(configStr) as ConfigDesc;
+  }
+
+  public static setConfig(config: ConfigDesc) {
+    fs.writeFileSync(
+      path.join(__dirname, CONFIG_FILENAME),
+      JSON.stringify(config, null, 2),
+      "utf8"
+    );
+  }
+
   /**
    * Executes a standard GET request but returns a promise.
    * @param _options Object containing request parameters.
@@ -44,9 +65,7 @@ export class Utils {
             error = new Error(`Request Failed. Status Code: ${statusCode}`);
           } else if (!/^application\/json/.test(contentType)) {
             error = new Error(
-              `Invalid content-type. Expected application/json but received ${
-                contentType
-              }`
+              `Invalid content-type. Expected application/json but received ${contentType}`
             );
           }
           if (error) {

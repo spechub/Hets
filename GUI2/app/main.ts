@@ -5,7 +5,8 @@ import * as url from "url";
 import { Utils } from "./utils";
 import {
   QUERY_CHANNEL,
-  QUERY_CHANNEL_RESPONSE
+  QUERY_CHANNEL_RESPONSE,
+  CONFIG_GET_CHANNEL
 } from "./shared/SharedConstants";
 
 // Keep a global reference of the window object, if you don't, the window will
@@ -67,4 +68,8 @@ ipcMain.on(QUERY_CHANNEL, (event: Event, message: any) => {
     .then((res: JSON) => {
       event.sender.send(QUERY_CHANNEL_RESPONSE, res);
     });
+});
+
+ipcMain.on(CONFIG_GET_CHANNEL, (event: Event, _message: any) => {
+  event.returnValue = Utils.getConfig();
 });

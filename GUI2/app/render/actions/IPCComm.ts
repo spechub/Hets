@@ -1,18 +1,24 @@
 import { ipcRenderer, Event } from "electron";
 
-import { QUERY_CHANNEL } from "../../shared/SharedConstants";
+import {
+  QUERY_CHANNEL,
+  CONFIG_GET_CHANNEL
+} from "../../shared/SharedConstants";
+import { ConfigDesc } from "../../shared/ConfigDesc";
 
 export class IPCComm {
-  static queryHets(file: string) {
+  public static queryHets(file: string) {
+    const config = ipcRenderer.sendSync(CONFIG_GET_CHANNEL) as ConfigDesc;
+
     const message = {
       file: file,
-      hostname: "172.16.186.129",
-      port: 8000
+      hostname: config.hets_hostname,
+      port: config.hets_port
     };
     ipcRenderer.send(QUERY_CHANNEL, message);
   }
 
-  static recieveMessage(
+  public static recieveMessage(
     channel: string,
     callback: (e: Event, s: string) => void
   ) {
