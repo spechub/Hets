@@ -153,11 +153,6 @@ nullIRI = IRI
     , iriPos = nullRange
     }
 
--- | special show function for Ids within IRIs
-showIRIId :: Id -> String
-showIRIId = show -- todo: to be refined.
--- @Till: do we need to show Ids differently within IRIs?
-
 -- | do we have a full (possibly expanded) IRI (i.e. for comparisons)
 hasFullIRI :: IRI -> Bool
 hasFullIRI i = not . null $ iriScheme i ++ (show $ iriPath i)

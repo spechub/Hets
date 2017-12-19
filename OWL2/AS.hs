@@ -319,6 +319,10 @@ checkPredefAux (sl, pref, exPref) u =
       -- making use of the dummy name for ontologies, while it has been now
       -- commented out. We should either make sure the dummy name is used, or
       -- implement this in a different way, without using it.
+      -- @Mihai: I would rather try avoid the use of the dummy name
+      -- However, I would need more documentation what these functions do
+      -- Can you please add documentation whereever you know about the
+      -- purpose of the functions?
       res = Just (pref, lp)
   in case prefixName u of
     "http" -> case stripPrefix "//www." lp of
@@ -512,6 +516,8 @@ pairSymbols (Entity lb1 k1 i1) (Entity lb2 k2 i2) =
           -- prefixes and URIs of symbols in the bridge and colimit. 
           -- We need a decision here, but the issue is not new or introduced by
           -- these changes.
+          -- @Mihai: OK, then we will leave it for another issue.
+          -- Is there an existing issue? If not, could you please create one?
     return $ Entity (pairLables lb1 lb2) k1 $ pairIRIs i1 i2
 
 -- * LITERALS
