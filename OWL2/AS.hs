@@ -19,7 +19,6 @@ module OWL2.AS where
 
 import Common.Id
 import Common.Keywords (stringS)
---import Common.SetColimit
 import Common.IRI
 
 import Common.Result
@@ -310,19 +309,8 @@ preDefMaps sl pref = let
  in (sl, pref, sp)
 
 checkPredefAux :: PreDefMaps -> IRI -> Maybe (String, String)
-checkPredefAux (sl, pref, exPref) u = 
+checkPredefAux (sl, pref, exPref) u =
   let lp = show $ iriPath u
-      dnamedS = "hets.eu/ontology/unamed"
-      nn = dnamedS ++ "#" 
-      -- TODO: this is the dummy name and was removed before
-      -- @Till: here we keep the implementation of the function as it was before
-      -- making use of the dummy name for ontologies, while it has been now
-      -- commented out. We should either make sure the dummy name is used, or
-      -- implement this in a different way, without using it.
-      -- @Mihai: I would rather try avoid the use of the dummy name
-      -- However, I would need more documentation what these functions do
-      -- Can you please add documentation whereever you know about the
-      -- purpose of the functions?
       res = Just (pref, lp)
   in case prefixName u of
     "http" -> case stripPrefix "//www." lp of
@@ -330,14 +318,12 @@ checkPredefAux (sl, pref, exPref) u =
             Just r -> case stripPrefix exPref r of
               Just s | elem s sl -> Just (pref, s)
               _ -> Nothing
-            Nothing -> case stripPrefix nn q of
-              Just s | elem s sl -> Just (pref, s)
-              _ -> Nothing
+            Nothing -> Nothing
         Nothing -> Nothing
     pu | elem lp sl -> case pu of
       "" -> let ex = iriToStringUnsecure u in 
             case stripPrefix "http://www." ex of
-              Just r | r == "w3.org/" ++ exPref ++ lp || r == nn ++ lp
+              Just r | r == "w3.org/" ++ exPref ++ lp -- || r == lp
                   -> res
               _ | null ex -> res
               _ -> Nothing
