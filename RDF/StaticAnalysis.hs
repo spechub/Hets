@@ -62,6 +62,7 @@ resolveAbbreviatedIRI pm new = fromJust $ expandCurie pm new
 resolveIRI :: Base -> RDFPrefixMap -> IRI -> IRI
 resolveIRI (Base current) pm new 
     | hasFullIRI new = resolveFullIRI current new
+    | isBlankNode new = new
     | otherwise = resolveAbbreviatedIRI pm new
 
 resolveBase :: Base -> RDFPrefixMap -> Base -> Base
@@ -130,7 +131,8 @@ resolveDocument doc = let newStatements = resolveStatements
 
 generateBNode :: Int -> IRI
 generateBNode i = nullIRI { iriPath = stringToId ("bnode" ++ show i)
-                          , isAbbrev = True }
+                          , isAbbrev = True 
+                          , isBlankNode = True}
 
 collectionToPOList :: [Object] -> [PredicateObjectList]
 collectionToPOList objs = case objs of

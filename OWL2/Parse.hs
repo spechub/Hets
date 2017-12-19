@@ -296,8 +296,8 @@ individualUri = uriP
 individual :: CharParser st Individual
 individual = do
     i <- individualUri
-    return $ i --if namePrefix i == "_" then i {iriType = NodeID}
-                 --                   else i
+    return $ if prefixName i == "_" then i {isBlankNode = True}
+                                    else i
 
 skipChar :: Char -> CharParser st ()
 skipChar = forget . skips . char

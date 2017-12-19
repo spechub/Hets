@@ -87,7 +87,7 @@ getIRI b e =
                  in case x of
                      Just y -> appendBase b y
                      Nothing -> error $ "could not get IRI from " ++ show anIri
-        "nodeID" -> appendBase b $ mkIRI anIri
+        "nodeID" -> appendBase b $ (mkIRI anIri){isBlankNode = True}
         _ -> error $ "wrong qName:" ++ show (attrKey a)
    
 
@@ -105,7 +105,8 @@ appendBase b qn =
 splitIRI :: IRI -> IRI
 splitIRI qn = let 
   i = iriPath qn
-  in case getTokens i of
+  in if isBlankNode qn then mkNodeID qn else 
+   case getTokens i of
     [] -> qn
     (tok:ts) ->
       let lp = tokStr tok
@@ -135,13 +136,13 @@ importIRI m b e =
 contentIRI :: XMLBase -> Element -> IRI
 contentIRI b e =
   let cont = strContent e
-      iri = nullIRI {iriPath = stringToId cont, isAbbrev = True}
+      anIri = nullIRI {iriPath = stringToId cont, isAbbrev = True}
   in case getName e of
-      "AbbreviatedIRI" -> splitIRI iri
+      "AbbreviatedIRI" -> splitIRI anIri
       "IRI" -> if ':' `elem` cont
-                then splitIRI  iri 
-                else appendBase b iri
-      "Import" -> appendBase b $ iri 
+                then splitIRI  anIri 
+                else appendBase b anIri
+      "Import" -> appendBase b $ anIri 
       _ -> err "invalid type of iri"
 
 -- | gets the name of an axiom in XML Syntax
@@ -516,7 +517,7 @@ getAnnoAxiom b e =
    let as = getAllAnnos b e
        ap = getIRI b $ filterC "AnnotationProperty" e
        [ch] = filterChL [iriK, abbreviatedIRI] e
-       iri = contentIRI b ch
+       anIri = contentIRI b ch
     in case getName e of
     "AnnotationAssertion" ->
        let [s, v] = filterChL annotationValueList e
@@ -532,11 +533,11 @@ getAnnoAxiom b e =
     "AnnotationPropertyDomain" ->
         PlainAxiom (SimpleEntity $ mkEntity AnnotationProperty ap)
                $ ListFrameBit (Just $ DRRelation ADomain)
-                      $ AnnotationBit [(as, iri)]
+                      $ AnnotationBit [(as, anIri)]
     "AnnotationPropertyRange" ->
         PlainAxiom (SimpleEntity $ mkEntity AnnotationProperty ap)
                $ ListFrameBit (Just $ DRRelation ARange)
-                      $ AnnotationBit [(as, iri)]
+                      $ AnnotationBit [(as, anIri)]
     _ -> PlainAxiom (Misc []) . AnnFrameBit [] . AnnotationFrameBit
       . XmlError $ getName e
 
@@ -571,8 +572,8 @@ getOntologyIRI b e =
   let oi = findAttr (unqual "ontologyIRI") e
   in case oi of
     Nothing -> dummyIRI
-    Just iri -> appendBase b
-        $ nullIRI {iriPath = stringToId iri, isAbbrev = True}
+    Just anIri -> appendBase b
+        $ nullIRI {iriPath = stringToId anIri, isAbbrev = True}
 
 getBase :: Element -> XMLBase
 getBase e = fromJust $ vFindAttrBy (isSmth "base") e

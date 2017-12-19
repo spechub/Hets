@@ -65,8 +65,8 @@ setIRI :: IRI -> Element -> Element
 setIRI anIri e =
     let ty
             | hasFullIRI anIri = iriK
+            | isBlankNode anIri = nodeID
             | otherwise = "abbreviatedIRI"
-            -- | otherwise = nodeID TODO:?
     in e {elAttribs = [Attr {attrKey = makeQN ty,
                              attrVal = showIRI $ setReservedPrefix anIri}]}
 

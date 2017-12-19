@@ -88,7 +88,9 @@ instance Function IRI where
                             _ -> res
                           _ -> res
                       else res
-               else let iriMap = foldl (\pm' (kp, vp) -> 
+               else if isBlankNode qn then qn else   
+                      -- @Till: before, we stored lp as expandedIRI. We don't have this anymore. Seems to me it's OK to return qn. Agreed? 
+                    let iriMap = foldl (\pm' (kp, vp) -> 
                                 case parseIRI vp of
                                   Just i -> Map.insert kp i pm'
                                   Nothing -> if null kp then 

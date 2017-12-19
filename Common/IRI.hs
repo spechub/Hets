@@ -358,7 +358,8 @@ compoundCurie :: IRIParser st IRI
 compoundCurie = do
       i <- curie
       (c, p) <- option ([], nullRange) (comps ([], []))
-      return i { iriPath = addComponents (iriPath i) (c,p) }
+      return i { iriPath = addComponents (iriPath i) (c,p),
+                 isBlankNode = prefixName i == "_" }
 
 -- | Parses a CURIE <http://www.w3.org/TR/rdfa-core/#s_curies>
 curie :: IRIParser st IRI

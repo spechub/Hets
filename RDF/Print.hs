@@ -102,8 +102,10 @@ printDocument :: TurtleDocument -> Doc
 printDocument doc = (vcat . map pretty) (statements doc)
 
 printExpandedIRI :: IRI -> Doc
-printExpandedIRI anIRI = if not $ hasFullIRI anIRI then text $ showIRIU anIRI
-    else text "<" <> text (showIRII anIRI) <> text ">"
+printExpandedIRI anIRI =
+ if (not $ hasFullIRI anIRI) || (isBlankNode anIRI) then 
+       text $ showIRIU anIRI
+  else text "<" <> text (showIRII anIRI) <> text ">"
 
 instance Pretty Term where
     pretty = printTerm
