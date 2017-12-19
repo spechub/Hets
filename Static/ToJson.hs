@@ -104,6 +104,7 @@ lnode opts ga lenv (nodeId, lbl) =
     : rangeToJPair (srcRange nm)
     ++ [("id", mkJNum nodeId)]
     ++ [("reference", mkJBool $ isDGRef lbl)]
+    ++ [("internal", mkJBool $ isInternal nm)]
     ++ case signOf $ dgn_theory lbl of
         G_sign slid _ _ -> mkJPair "logic" (show slid)
           : if not (isDGRef lbl) && dgn_origin lbl < DGProof then
