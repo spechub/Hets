@@ -14,6 +14,7 @@ export interface FDGraphProps {
 export class FDGraph extends React.Component<FDGraphProps, {}> {
   svg: d3.Selection<HTMLElement, any, HTMLElement, any>;
   simulation: d3.Simulation<any, any>;
+  base: d3.Selection<Element, any, HTMLElement, any>;
 
   link: any;
   node: any;
@@ -34,6 +35,7 @@ export class FDGraph extends React.Component<FDGraphProps, {}> {
 
   private renderGraph() {
     this.svg = d3.select("svg");
+    this.base = this.svg.append("g");
     const width = +this.svg.attr("width");
     const height = +this.svg.attr("height");
 
@@ -47,10 +49,23 @@ export class FDGraph extends React.Component<FDGraphProps, {}> {
       )
       .force("charge", d3.forceManyBody())
       .force("center", d3.forceCenter(width / 2, height / 2));
+
+    this.svg.call(
+      d3
+        .zoom()
+        .scaleExtent([1 / 2, 8])
+        .on("zoom", this.zoomed.bind(this))
+    );
+  }
+
+  private zoomed() {
+    this.base.attr("transform", d3.event.transform);
   }
 
   private displayResp(_e: Event, s: any) {
     const graph = new DGraphParser(s);
+
+    console.log(graph);
 
     const links = [];
     const nodes = [];
@@ -67,7 +82,8 @@ export class FDGraph extends React.Component<FDGraphProps, {}> {
       links.push({
         id: link.linkid,
         source: link.id_source,
-        target: link.id_target
+        target: link.id_target,
+        unproven: link.Type.includes("Unproven")
       });
     }
 
@@ -75,16 +91,19 @@ export class FDGraph extends React.Component<FDGraphProps, {}> {
   }
 
   private updateGraphRender(links: any, nodes: any) {
-    this.link = this.svg
+    this.link = this.base
       .append("g")
       .attr("class", "links")
       .selectAll("line")
       .data(links)
       .enter()
       .append("line")
-      .attr("stroke-width", 1);
+      .attr("stroke-width", 1)
+      .attr("class", (l: any) => {
+        return l.unproven ? "unproven" : "";
+      });
 
-    this.node = this.svg
+    this.node = this.base
       .append("g")
       .attr("class", "nodes")
       .selectAll("circle")
