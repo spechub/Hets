@@ -14,10 +14,7 @@ ReactDOM.render(
         .getCurrentWindow()
         .getContentSize()[0]
         .toString()}
-      height={remote
-        .getCurrentWindow()
-        .getContentSize()[1]
-        .toString()}
+      height={(remote.getCurrentWindow().getContentSize()[1] - 75).toString()}
     />
   </div>,
   document.getElementById("example")
