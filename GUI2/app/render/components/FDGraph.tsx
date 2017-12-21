@@ -5,6 +5,7 @@ import { Event } from "electron";
 import { IPCComm } from "../actions/IPCComm";
 import { DGraphParser } from "../actions/DGraphParser";
 import { QUERY_CHANNEL_RESPONSE } from "../../shared/SharedConstants";
+import Input from "semantic-ui-react/dist/commonjs/elements/Input/Input";
 
 export interface FDGraphProps {
   width: string;
@@ -30,7 +31,18 @@ export class FDGraph extends React.Component<FDGraphProps, {}> {
   }
 
   render() {
-    return <svg width={this.props.width} height={this.props.height} />;
+    return (
+      <>
+        <Input
+          type="range"
+          min="0"
+          max="1"
+          step="any"
+          onChange={this.inputted.bind(this)}
+        />
+        <svg width={this.props.width} height={this.props.height} />
+      </>
+    );
   }
 
   private renderGraph() {
@@ -43,9 +55,12 @@ export class FDGraph extends React.Component<FDGraphProps, {}> {
       .forceSimulation()
       .force(
         "link",
-        d3.forceLink().id((d: any) => {
-          return d.id;
-        })
+        d3
+          .forceLink()
+          .id((d: any) => {
+            return d.id;
+          })
+          .strength(0.5)
       )
       .force("charge", d3.forceManyBody())
       .force("center", d3.forceCenter(width / 2, height / 2));
@@ -58,11 +73,19 @@ export class FDGraph extends React.Component<FDGraphProps, {}> {
     );
   }
 
+  private inputted(_e: Event, d: any) {
+    console.log(+d.value);
+    (this.simulation.force("link") as any).strength(+d.value);
+    this.simulation.alpha(1).restart();
+  }
+
   private zoomed() {
     this.base.attr("transform", d3.event.transform);
   }
 
   private displayResp(_e: Event, s: any) {
+    this.base.remove();
+    this.base = this.svg.append("g");
     const graph = new DGraphParser(s);
 
     console.log(graph);
@@ -106,14 +129,10 @@ export class FDGraph extends React.Component<FDGraphProps, {}> {
     this.node = this.base
       .append("g")
       .attr("class", "nodes")
-      .selectAll("circle")
+      .selectAll("g")
       .data(nodes)
       .enter()
-      .append("circle")
-      .attr("r", 5)
-      .attr("class", (n: any) => {
-        return n.internal ? "internal" : "";
-      })
+      .append("g")
       .call(
         d3
           .drag()
@@ -122,10 +141,27 @@ export class FDGraph extends React.Component<FDGraphProps, {}> {
           .on("end", this.dragended.bind(this))
       );
 
+    this.node
+      .append("circle")
+      .attr("r", 5)
+      .attr("class", (n: any) => {
+        return n.internal ? "internal" : "";
+      });
+
     this.node.append("title").text((d: any) => {
       return d.name;
     });
 
+    this.node
+      .append("text")
+      .append("tspan")
+      .attr("x", 7)
+      .attr("y", 4)
+      .text((n: any) => {
+        return n.name;
+      });
+
+    this.simulation.alpha(1).restart();
     this.simulation.nodes(nodes).on("tick", this.ticked.bind(this));
     (this.simulation.force("link") as any).links(links);
   }
@@ -145,13 +181,9 @@ export class FDGraph extends React.Component<FDGraphProps, {}> {
         return d.target.y;
       });
 
-    this.node
-      .attr("cx", (d: any) => {
-        return d.x;
-      })
-      .attr("cy", (d: any) => {
-        return d.y;
-      });
+    this.node.attr("transform", (n: any) => {
+      return `translate(${n.x} ${n.y})`;
+    });
   }
 
   private dragstarted(d: any) {
