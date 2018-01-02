@@ -46,17 +46,19 @@ before_script:
   # Compile Hets
   - make stack
   - stack exec -- ghc -V
-  - make
-  - ./hets -V
 
 matrix:
   include:
     - env: JOB='make check'
       script:
+        - make
+        - ./hets -V
         # Run the test
         - make check
     - env: JOB='Hets-lib'
       script:
+        - make
+        - ./hets -V
         # Run hets through Hets-lib
         # Install Hets - this does not need to recompile Hets
         - export PREFIX=/tmp/hets-install
@@ -70,18 +72,24 @@ matrix:
       services:
         postgresql: '9.6'
       script:
+        - make hets_server
+        - ./hets_server -V
         # Run hets through Hets-lib
         # Install Hets - this does not need to recompile Hets
         - export PREFIX=/tmp/hets-install
         - export PATH=$PREFIX/bin:$PATH
         - mkdir -p $PREFIX
-        - make install-hets
+        - make install-hets_server
+        - ln $PREFIX/bin/hets-server $PREFIX/bin/hets
+        - ln $PREFIX/lib/hets/hets-server $PREFIX/lib/hets/hets
         - make install-common
         - make install-owl-tools
         - export DATABASE_CONFIG=Persistence/database_postgresql.yml
         - test/hets-lib-database-check.sh
     - env: JOB='SQLite'
       script:
+        - make hets
+        - ./hets -V
         # Run hets through Hets-lib
         # Install Hets - this does not need to recompile Hets
         - export PREFIX=/tmp/hets-install
