@@ -16,46 +16,34 @@ module Comorphisms.SuleCFOL2TPTP
   ( suleCFOL2TPTP
   ) where
 
-import Control.Exception (assert)
-import Control.Monad (foldM)
-
 import Logic.Logic as Logic
 import Logic.Comorphism
 
-import Common.AS_Annotation
+import Common.AS_Annotation hiding (sentence)
+import qualified Common.AS_Annotation as AS_Annotation (sentence)
 import Common.Id
 import Common.Result
-import Common.DocUtils
 import Common.ProofTree
-import Common.Utils
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.MapSet as MapSet
-import Control.Monad (liftM)
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-import Data.List as List
-import Data.Maybe
+import Data.List as List hiding (sort)
 import Data.Char
-import Data.Function
 import Numeric (showHex)
 
 import CASL.Logic_CASL
 import CASL.AS_Basic_CASL as CAS
-import CASL.Cycle
 import CASL.Sublogic as SL
-import CASL.Sign as CSign
-import CASL.MapSentence
+import CASL.Sign as CSign hiding (sentences)
 import CASL.Morphism
-import CASL.Quantification
 import CASL.Overload
 import CASL.Utils
-import CASL.Inject
-import CASL.Simplify
 import CASL.ToDoc
 
-import TPTP.AS as TAS
+import TPTP.AS as TAS hiding (name)
 import TPTP.Morphism as TMorphism
 import TPTP.Sign as TSign
 import TPTP.Logic_TPTP
@@ -67,7 +55,7 @@ instance Show TPTP_FOF where
   show TPTP_FOF = "TPTP_FOF"
 
 -- | The identity of the comorphisms
-data GenSuleCFOL2TPTP a = GenSuleCFOL2TPTP a deriving Show
+newtype GenSuleCFOL2TPTP a = GenSuleCFOL2TPTP a deriving Show
 
 suleCFOL2TPTP :: GenSuleCFOL2TPTP TPTP_FOF
 suleCFOL2TPTP = GenSuleCFOL2TPTP TPTP_FOF
@@ -92,15 +80,15 @@ instance Show a => Comorphism (GenSuleCFOL2TPTP a)
                       , cons_features = NoSortGen
                       , has_empty_sorts = show a == show TPTP_FOF }
     targetLogic (GenSuleCFOL2TPTP _) = TPTP.Logic_TPTP.TPTP
-    mapSublogic cid sl = Just FOF
-    map_theory (GenSuleCFOL2TPTP a) = transTheory
+    mapSublogic _ _ = Just FOF
+    map_theory (GenSuleCFOL2TPTP _) = transTheory
     has_model_expansion (GenSuleCFOL2TPTP _) = True
 
 transTheory :: (FormExtension f, Eq f)
             => (CSign.Sign f e, [Named (FORMULA f)])
             -> Result TPTPTheory
 transTheory (sign, sens) = do
-  let signWithRenamings@(preparedSign, a, _) = prepareSign sign
+  let signWithRenamings@(preparedSign, _, _) = prepareSign sign
   let preparedSens = map prepareNamedFormula sens
   (tptpSign, signSentences) <- translateSign preparedSign
   translatedSentences <- mapM (translateNamedFormula signWithRenamings) preparedSens
@@ -112,8 +100,8 @@ prepareNamedFormula formula =
   let expandedFormula =
         codeOutConditionalF id $ -- Expand conditionals
         codeOutUniqueExtF id id $ -- Expand "exists!" quantification
-        sentence formula
-  in  formula { sentence = expandedFormula }
+        AS_Annotation.sentence formula
+  in  formula { AS_Annotation.sentence = expandedFormula }
 
 translateNamedFormula :: (FormExtension f, Eq f)
                       => SignWithRenamings f e
@@ -121,18 +109,19 @@ translateNamedFormula :: (FormExtension f, Eq f)
 translateNamedFormula signWithRenamings x = do
   let nameS = toAlphaNum (map toLower $ senAttr x)
   translated <-
-    translateFormula signWithRenamings nameS (isAxiom x) $ sentence x
+    translateFormula signWithRenamings nameS (isAxiom x) $
+      AS_Annotation.sentence x
   return $ x { senAttr = nameS
-             , sentence = translated
+             , AS_Annotation.sentence = translated
              }
 
 translateFormula :: forall e f . (FormExtension f, Eq f)
                  => SignWithRenamings f e -> String -> Bool -> FORMULA f
                  -> Result TSign.Sentence
-translateFormula signWithRenamings nameS isAxiom f = do
+translateFormula signWithRenamings nameS isAxiom' formula = do
   let name = NameString $ mkSimpleId nameS
-  fofFormula <- toUnitaryFormula f
-  return $ if isAxiom
+  fofFormula <- toUnitaryFormula formula
+  return $ if isAxiom'
            then fofUnitaryFormulaToAxiom name fofFormula
            else fofUnitaryFormulaToConjecture name fofFormula
   where
@@ -317,10 +306,10 @@ prepareSign sign =
   where
     gatherConnectedComponents :: (FormExtension f, Eq f)
                               => CSign.Sign f e -> [Set.Set SORT]
-    gatherConnectedComponents sign =
-      let topSortsL = Set.toList $ Rel.mostRight $ sortRel sign
+    gatherConnectedComponents sign' =
+      let topSortsL = Set.toList $ Rel.mostRight $ sortRel sign'
           revReflTransClosureSortRel =
-            Rel.transpose $ Rel.reflexive $ Rel.transClosure $ sortRel sign
+            Rel.transpose $ Rel.reflexive $ Rel.transClosure $ sortRel sign'
       in  map (\ topSort -> Set.insert topSort $
             Rel.succs revReflTransClosureSortRel topSort) topSortsL
 
@@ -433,19 +422,19 @@ prepareSign sign =
 
     modifyOpMap :: Map.Map (OP_NAME, OpType) OP_NAME
                 -> OP_NAME -> OpType -> OpMap -> OpMap
-    modifyOpMap renamedOps opName opType opMap =
+    modifyOpMap renamedOps opName opType opMap' =
       case Map.lookup (opName, opType) renamedOps of
-        Nothing -> opMap
+        Nothing -> opMap'
         Just newOpName -> MapSet.insert newOpName opType $
-                            MapSet.delete opName opType opMap
+                            MapSet.delete opName opType opMap'
 
     modifyPredMap :: Map.Map (PRED_NAME, PredType) PRED_NAME
                   -> PRED_NAME -> PredType -> PredMap -> PredMap
-    modifyPredMap renamedPreds predName predType predMap =
+    modifyPredMap renamedPreds predName predType predMap' =
       case Map.lookup (predName, predType) renamedPreds of
-        Nothing -> predMap
+        Nothing -> predMap'
         Just newPredName -> MapSet.insert newPredName predType $
-                              MapSet.delete predName predType predMap
+                              MapSet.delete predName predType predMap'
 
 
 translateSign :: (FormExtension f, Eq f)
@@ -456,52 +445,52 @@ translateSign caslSign =
     tptpSign :: TSign.Sign
     tptpSign =
       let predicatesOfSorts =
-            Set.foldr (\ sort predicates ->
+            Set.foldr (\ sort predicates' ->
                         Map.insertWith
                           Set.union
                           (predicateOfSort sort)
                           (Set.singleton 1)
-                          predicates
+                          predicates'
                       ) Map.empty $ Rel.nodes $ sortRel caslSign
           constants =
-            MapSet.foldWithKey (\ opName opType constants ->
+            MapSet.foldWithKey (\ opName opType constants' ->
                                  if null $ opArgs opType
                                  then Set.insert
                                         (functionOfOp opName)
-                                        constants
-                                 else constants
+                                        constants'
+                                 else constants'
                                ) Set.empty $ opMap caslSign
           -- numbers cannot be generated due to prefix "function_"
           propositions =
-            MapSet.foldWithKey (\ predName predType propositions ->
+            MapSet.foldWithKey (\ predName predType propositions' ->
                                  if null $ predArgs predType
                                  then Set.insert
                                         (predicateOfPred predName)
-                                        propositions
-                                 else propositions
+                                        propositions'
+                                 else propositions'
                                ) Set.empty $ predMap caslSign
           predicatesWithoutSorts =
-            MapSet.foldWithKey (\ predName predType predicates ->
+            MapSet.foldWithKey (\ predName predType predicates' ->
                                  if not $ null $ predArgs predType
                                  then Map.insertWith
                                        Set.union
                                        (predicateOfPred predName)
                                        (Set.singleton $ length $
                                          predArgs predType)
-                                       predicates
-                                 else predicates
+                                       predicates'
+                                 else predicates'
                                ) Map.empty $ predMap caslSign
           predicates =
             Map.unionWith Set.union predicatesOfSorts predicatesWithoutSorts
           functors =
-            MapSet.foldWithKey (\ opName opType functors ->
+            MapSet.foldWithKey (\ opName opType functors' ->
                                  if not $ null $ opArgs opType
                                  then Map.insertWith
                                         Set.union
                                         (functionOfOp opName)
                                         (Set.singleton $ length $ opArgs opType)
-                                        functors
-                                 else functors
+                                        functors'
+                                 else functors'
                                ) Map.empty $ opMap caslSign
       in  TSign.emptySign { constantSet = constants
                           , propositionSet = propositions
@@ -574,9 +563,9 @@ translateSign caslSign =
         -- fof(sign_topsort_SORT, axiom,
         --   ! [X]: (SORT(X) => ~ OTHER_SORT1(X) & ... & ~ OTHER_SORTn(X)).
         createTopSortSentence :: Set.Set SORT -> SORT -> Named TSign.Sentence
-        createTopSortSentence otherTopSorts sort =
+        createTopSortSentence otherTopSorts sort' =
           let varX = variableOfVar $ mkSimpleId "X"
-              nameString = "sign_topsort_" ++ toAlphaNum (show sort)
+              nameString = "sign_topsort_" ++ toAlphaNum (show sort')
               name = NameString $ mkSimpleId nameString
 
               formula = FOFUF_quantified $
@@ -584,7 +573,7 @@ translateSign caslSign =
                 FOFUF_logic $ FOFLF_binary $ FOFBF_nonassoc $
                 FOF_binary_nonassoc
                   TAS.Implication
-                  (sortOfX varX sort) $
+                  (sortOfX varX sort') $
                   unitaryFormulaAnd $
                   Set.toList $
                   Set.map (negateUnitaryFormula . sortOfX varX) otherTopSorts
@@ -607,7 +596,7 @@ translateSign caslSign =
               (sentencesOfThisOp, _) = Set.foldr
                 (\ opType (sens, i) ->
                   (createSentenceOfOp
-                    (if useNameSuffix then "_" ++ show i else "")
+                    (if useNameSuffix then "_" ++ show (i :: Int) else "")
                     opName opType : sens, i + 1))
                 ([], 1) opTypes
           in  sentencesOfThisOp ++ sentences
@@ -655,12 +644,12 @@ translateSign caslSign =
                 if null variables
                 then unitaryFormulaConstant
                 else unitaryFormulaFunction
-              sentence = fofUnitaryFormulaToAxiom name formula
-          in  makeNamed nameString sentence
+              sentenceTptp = fofUnitaryFormulaToAxiom name formula
+          in  makeNamed nameString sentenceTptp
 
 sortOfX :: TAS.Variable -> SORT -> FOF_unitary_formula
-sortOfX var sort = FOFUF_atomic $ FOFAT_plain $
-  FOFPAF_predicate (predicateOfSort sort) [FOFT_variable var]
+sortOfX var s = FOFUF_atomic $ FOFAT_plain $
+  FOFPAF_predicate (predicateOfSort s) [FOFT_variable var]
 
 functionOfOp :: OP_NAME -> TAS.TPTP_functor
 functionOfOp opName =
@@ -673,8 +662,8 @@ predicateOfPred predName =
   in  mkSimpleId predicateName
 
 predicateOfSort :: SORT -> TAS.Predicate
-predicateOfSort sort =
-  let predicateName = "sort_" ++ toAlphaNum (show sort)
+predicateOfSort s =
+  let predicateName = "sort_" ++ toAlphaNum (show s)
   in  mkSimpleId predicateName
 
 variableOfVar :: VAR -> TAS.Variable
