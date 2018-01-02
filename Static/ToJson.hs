@@ -55,7 +55,7 @@ symbols for all nodes are shown as declarations, otherwise (the
 default) only declaration for basic spec nodes are shown as is done
 for the corresponding xml output. -}
 dGraph :: HetcatsOpts -> LibEnv -> LibName -> DGraph -> Json
-dGraph full lenv ln dg =
+dGraph opts lenv ln dg =
   let body = dgBody dg
       ga = globalAnnos dg
       lnodes = labNodes body
@@ -68,9 +68,9 @@ dGraph full lenv ln dg =
          , ("dgedges", mkJNum $ length ledges)
          , ("nextlinkid", mkJNum . getEdgeNum $ getNewEdgeId dg)
          , ("Global", mkJArr . map (anToJson ga) . convertGlobalAnnos
-                            $ removeHetCASLprefixes ga)
-         , ("DGNode", mkJArr $ map (lnode full ga lenv) lnodes)
-         , ("DGLink", mkJArr $ map (ledge full ga dg) ledges) ]
+                            $ removeDOLprefixes ga)
+         , ("DGNode", mkJArr $ map (lnode opts ga lenv) lnodes)
+         , ("DGLink", mkJArr $ map (ledge opts ga dg) ledges) ]
 
 gmorph :: HetcatsOpts -> GlobalAnnos -> GMorphism -> Json
 gmorph opts ga gm@(GMorphism cid (ExtSign ssig _) _ tmor _) =
@@ -83,7 +83,7 @@ gmorph opts ga gm@(GMorphism cid (ExtSign ssig _) _ tmor _) =
         in mkJObj
         $ mkNameJPair (language_name cid)
         : [("ComorphismAxioms", mkJArr
-            $ map (showSen (targetLogic cid) ga Nothing tsig) tsens)
+            $ map (showSen opts (targetLogic cid) ga Nothing tsig) tsens)
           | not (fullTheories opts) && not (null tsens) ]
         ++ [("Map", mkJArr $
              map (\ (s, t) -> mkJObj
@@ -94,7 +94,7 @@ prettySymbol :: (GetRange a, Pretty a) => GlobalAnnos -> a -> [JPair]
 prettySymbol = rangedToJson "Symbol"
 
 lnode :: HetcatsOpts -> GlobalAnnos -> LibEnv -> LNode DGNodeLab -> Json
-lnode full ga lenv (_, lbl) =
+lnode opts ga lenv (nodeId, lbl) =
   let nm = dgn_name lbl
       (spn, xp) = case reverse $ xpath nm of
           ElemName s : t -> (s, showXPath t)
@@ -102,6 +102,7 @@ lnode full ga lenv (_, lbl) =
   in mkJObj
   $ mkNameJPair (showName nm)
     : rangeToJPair (srcRange nm)
+    ++ [("id", mkJNum nodeId)]
     ++ [("reference", mkJBool $ isDGRef lbl)]
     ++ case signOf $ dgn_theory lbl of
         G_sign slid _ _ -> mkJPair "logic" (show slid)
@@ -131,14 +132,14 @@ lnode full ga lenv (_, lbl) =
           nThms = OMap.toList thms
           in
           [("Symbols", mkJArr . map (showSym lid) $ symlist_of lid sig)
-          | fullSign full ]
+          | fullSign opts ]
           ++ [("Axioms", mkJArr
-             $ map (showSen lid ga Nothing sig) nAxs) | not $ null nAxs ]
+             $ map (showSen opts lid ga Nothing sig) nAxs) | not $ null nAxs ]
           ++ [("Theorems", mkJArr
-             $ map (\ (s, t) -> showSen lid ga
+             $ map (\ (s, t) -> showSen opts lid ga
                          (Just $ isProvenSenStatus t) sig $ toNamed s t)
                          nThms) | not $ null nThms]
-          ++ if fullTheories full then case globalTheory lbl of
+          ++ if fullTheories opts then case globalTheory lbl of
                Just (G_theory glid _ _ _ allSens _) -> case
                    coerceThSens glid lid "xml-lnode" allSens of
                  Just gsens -> let
@@ -146,7 +147,7 @@ lnode full ga lenv (_, lbl) =
                      $ OMap.filter ((`notElem` map sentence
                                     (OMap.elems thsens)) . sentence) gsens
                      in [("ImpAxioms", mkJArr
-                          $ map (showSen lid ga Nothing sig) nSens)
+                          $ map (showSen opts lid ga Nothing sig) nSens)
                         | not $ null nSens ]
                  _ -> []
                _ -> []
@@ -180,7 +181,9 @@ ledge opts ga dg (f, t, lbl) = let
   in mkJObj
   $ [ mkJPair "source" $ getNameOfNode f dg
   , mkJPair "target" $ getNameOfNode t dg
-  , ("linkid", mkJNum . getEdgeNum $ dgl_id lbl) ]
+  , ("linkid", mkJNum . getEdgeNum $ dgl_id lbl)
+  , ("id_source", mkJNum f)
+  , ("id_target", mkJNum t) ]
   ++ case dgl_origin lbl of
          DGLinkView i _ ->
            [mkNameJPair . iriToStringShortUnsecure $ setAngles False i]
@@ -205,30 +208,30 @@ dgrule r =
       _ -> []
 
 -- | collects all symbols from dg and displays them as json
-dgSymbols :: DGraph -> Json
-dgSymbols dg = let ga = globalAnnos dg in tagJson "Ontologies"
+dgSymbols :: HetcatsOpts -> DGraph -> Json
+dgSymbols opts dg = let ga = globalAnnos dg in tagJson "Ontologies"
   $ mkJArr $ map (\ (i, lbl) -> let ins = getImportNames dg i in
-    showSymbols ins ga lbl) $ labNodesDG dg
+    showSymbols opts ins ga lbl) $ labNodesDG dg
 
-showSymbols :: [String] -> GlobalAnnos -> DGNodeLab -> Json
-showSymbols ins ga lbl = showSymbolsTh ins (getDGNodeName lbl) ga
+showSymbols :: HetcatsOpts -> [String] -> GlobalAnnos -> DGNodeLab -> Json
+showSymbols opts ins ga lbl = showSymbolsTh opts ins (getDGNodeName lbl) ga
   $ dgn_theory lbl
 
-showSymbolsTh :: [String] -> String -> GlobalAnnos -> G_theory -> Json
-showSymbolsTh ins name ga th = case th of
+showSymbolsTh :: HetcatsOpts -> [String] -> String -> GlobalAnnos -> G_theory -> Json
+showSymbolsTh opts ins name ga th = case th of
   G_theory lid _ (ExtSign sig _) _ sens _ -> mkJObj
      [ mkJPair "logic" $ language_name lid
      , mkNameJPair name
      , ("Ontology", mkJObj
        [ ("Symbols", mkJArr . map (showSym lid) $ symlist_of lid sig)
-       , ("Axioms", mkJArr . map (showSen lid ga Nothing sig)
+       , ("Axioms", mkJArr . map (showSen opts lid ga Nothing sig)
          $ toNamedList sens)
        , ("Import", mkJArr $ map mkJStr ins) ])]
 
 showSen :: ( GetRange sentence, Pretty sentence
            , Sentences lid sentence sign morphism symbol) =>
-   lid -> GlobalAnnos -> Maybe Bool -> sign -> Named sentence -> Json
-showSen lid ga mt sig ns = let s = sentence ns in mkJObj
+   HetcatsOpts -> lid -> GlobalAnnos -> Maybe Bool -> sign -> Named sentence -> Json
+showSen opts lid ga mt sig ns = let s = sentence ns in mkJObj
     $ case mt of
        Nothing -> []
        Just b -> [mkProvenJPair b]
@@ -245,7 +248,9 @@ showSen lid ga mt sig ns = let s = sentence ns in mkJObj
           ++ case senMark ns of
                "" -> []
                m -> [mkJPair "ComorphismOrigin" m]
-          ++ [("AST", asJson s)]
+          ++ if printAST opts
+             then [("AST", asJson s)]
+             else []
 
 showSym :: Sentences lid sentence sign morphism symbol => lid -> symbol -> Json
 showSym lid s = mkJObj

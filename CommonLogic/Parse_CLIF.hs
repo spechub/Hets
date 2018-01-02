@@ -20,7 +20,7 @@ import qualified Common.AS_Annotation as Annotation
 import CommonLogic.AS_CommonLogic as AS
 import Common.Id as Id
 import Common.IRI
-import Common.Lexer as Lexer hiding (oParenT, cParenT, pToken)
+import Common.Lexer as Lexer hiding (oParenT, cParenT, pToken, parens)
 import Common.Keywords (colonS, mapsTo)
 import Common.GlobalAnnotations (PrefixMap)
 import Common.Parsec

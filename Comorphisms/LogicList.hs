@@ -76,6 +76,7 @@ import LF.Logic_LF
 import Framework.Logic_Framework
 import Maude.Logic_Maude
 import CommonLogic.Logic_CommonLogic
+import TPTP.Logic_TPTP
 #endif
 #ifndef NOOWLLOGIC
 import DMU.Logic_DMU
@@ -95,7 +96,6 @@ logicList =
   , Logic SoftFOL
   , Logic Propositional
   , Logic QBF
-  , Logic HolLight
   , Logic FreeCAD
   , Logic CSL
 #ifdef PROGRAMATICA
@@ -124,6 +124,7 @@ logicList =
   , Logic Framework
   , Logic Maude
   , Logic CommonLogic
+  , Logic TPTP
 #endif
 #ifndef NOOWLLOGIC
   , Logic DMU

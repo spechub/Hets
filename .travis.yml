@@ -1,17 +1,68 @@
 sudo: required
 dist: trusty
 language: generic
+cache:
+  directories:
+  - $HOME/.stack
+  - $HOME/Hets-lib
+  - ./.stack-work
+addons:
+  apt:
+    sources:
+      - sourceline: ppa:hets/hets
+    packages:
+      - libgmp-dev
+      - latexmk
+      - software-properties-common
+      - dpkg-dev
+      - spass
+      - darwin
+      - openjdk-7-jdk
 before_install:
- - sudo apt-get update -qq
- - sudo apt-get install -qq spass software-properties-common dpkg-dev 
- - sudo apt-add-repository -y ppa:hets/hets
- - sudo apt-get update -qq
- - sudo apt-get install -qq darwin
+  # Download and unpack the stack executable
+  - mkdir -p ~/.local/bin
+  - export PATH=$HOME/.local/bin:$PATH
+  - travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
 install:
- - sudo apt-get install --no-install-recommends `dpkg-checkbuilddeps debian/control 2>&1 | cut -f3- -d":" | sed -e 's,([^)]*),,g'` || true
+  - sudo apt-get install --no-install-recommends `dpkg-checkbuilddeps debian/control 2>&1 | cut -f3- -d":" | sed -e 's,([^)]*),,g' -e 's,openjdk-.*-jdk,,'` || true
+matrix:
+  include:
+    - env: WITH_MAKE_CHECK=1
+    - env: WITH_HETS_LIB=1
+before_script:
+  - |
+    if [ -d $HOME/Hets-lib/.git ]
+    then
+      pushd $HOME/Hets-lib
+      git pull
+      popd
+    else
+      git clone --depth=1 https://github.com/spechub/Hets-lib.git $HOME/Hets-lib
+    fi
 script:
- - ghc -V
- - make
- - ./hets -V
- - export HETS_MAGIC=$PWD/magic/hets.magic
- - make check
+  # For some reason, Travis CI sets this environment variable, which breaks the
+  # tests (_JAVA_OPTIONS=-Xmx2048m -Xms512m)
+  - unset _JAVA_OPTIONS
+
+  # Prepare to run Hets
+  - export HETS_MAGIC=$PWD/magic/hets.magic
+
+  # Compile Hets
+  - make stack
+  - stack exec -- ghc -V
+  - make
+  - ./hets -V
+
+  # Run hets through Hets-lib
+  # Install Hets - this does not need to recompile Hets
+  - if [ -n "$WITH_HETS_LIB" ]; then export HETS_LIB=$HOME/Hets-lib; fi
+  - if [ -n "$WITH_HETS_LIB" ]; then export PREFIX=/tmp/hets-install; fi
+  - if [ -n "$WITH_HETS_LIB" ]; then export PATH=$PREFIX/bin:$PATH; fi
+  - if [ -n "$WITH_HETS_LIB" ]; then mkdir -p $PREFIX; fi
+  - if [ -n "$WITH_HETS_LIB" ]; then make install-hets; fi
+  - if [ -n "$WITH_HETS_LIB" ]; then make install-common; fi
+  - if [ -n "$WITH_HETS_LIB" ]; then make install-owl-tools; fi
+  - if [ -n "$WITH_HETS_LIB" ]; then test/hets-lib-check.sh; fi
+
+  # Run make check
+  - if [ -n "$WITH_MAKE_CHECK" ]; then make check; fi

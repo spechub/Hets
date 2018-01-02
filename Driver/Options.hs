@@ -23,6 +23,7 @@ module Driver.Options
   , AnaType (..)
   , GuiType (..)
   , InType (..)
+  , plainInTypes
   , OWLFormat (..)
   , plainOwlFormats
   , OutType (..)
@@ -33,6 +34,7 @@ module Driver.Options
   , ATType
   , Delta
   , hetcatsOpts
+  , printOptionsWarnings
   , isStructured
   , guess
   , rmSuffix
@@ -47,7 +49,6 @@ module Driver.Options
   , checkRecentEnv
   , downloadExtensions
   , defaultHetcatsOpts
-  , hetsVersion
   , showDiags
   , showDiags1
   , putIfVerbose
@@ -79,10 +80,6 @@ import Data.Char
 import Data.List
 import Data.Maybe
 
--- | short version without date for ATC files
-hetsVersion :: String
-hetsVersion = takeWhile (/= ',') hetcats_version
-
 -- | translate a given http reference using the URL catalog
 useCatalogURL :: HetcatsOpts -> FilePath -> FilePath
 useCatalogURL opts fname = case mapMaybe
@@ -98,7 +95,7 @@ bracket s = "[" ++ s ++ "]"
 verboseS, intypeS, outtypesS, skipS, justStructuredS, transS,
      guiS, libdirsS, outdirS, amalgS, recursiveS, namedSpecsS,
      interactiveS, modelSparQS, counterSparQS, connectS, xmlS, listenS,
-     applyAutomaticRuleS, normalFormS, unlitS :: String
+     applyAutomaticRuleS, normalFormS, unlitS, pidFileS :: String
 
 modelSparQS = "modelSparQ"
 counterSparQS = "counterSparQ"
@@ -118,6 +115,7 @@ interactiveS = "interactive"
 connectS = "connect"
 xmlS = "xml"
 listenS = "listen"
+pidFileS = "pidfile"
 applyAutomaticRuleS = "apply-automatic-rule"
 normalFormS = "normal-form"
 unlitS = "unlit"
@@ -131,11 +129,17 @@ relposS = "relative-positions"
 fullSignS :: String
 fullSignS = "full-signatures"
 
+printASTS :: String
+printASTS = "print-AST"
+
 fullTheoriesS :: String
 fullTheoriesS = "full-theories"
 
 logicGraphS :: String
 logicGraphS = "logic-graph"
+
+logicListS :: String
+logicListS = "logic-list"
 
 fileTypeS :: String
 fileTypeS = "file-type"
@@ -148,6 +152,9 @@ whitelistS = "whitelist"
 
 accessTokenS :: String
 accessTokenS = "access-token"
+
+httpRequestHeaderS :: String
+httpRequestHeaderS = "http-request-header"
 
 genTermS, treeS, bafS :: String
 genTermS = "gen_trm"
@@ -207,20 +214,25 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , applyAutomatic :: Bool
   , computeNormalForm :: Bool
   , dumpOpts :: [String]
+  , disableCertificateVerification :: Bool
   , ioEncoding :: Enc
     -- | use the library name in positions to avoid differences after uploads
   , useLibPos :: Bool
   , unlit :: Bool
   , serve :: Bool
   , listen :: Int
+  , pidFile :: FilePath
   , whitelist :: [[String]]
   , blacklist :: [[String]]
   , runMMT :: Bool
   , fullTheories :: Bool
+  , outputLogicList :: Bool
   , outputLogicGraph :: Bool
   , fileType :: Bool
   , accessToken :: String
-  , fullSign :: Bool }
+  , httpRequestHeaders :: [String]
+  , fullSign :: Bool
+  , printAST :: Bool }
 
 {- | 'defaultHetcatsOpts' defines the default HetcatsOpts, which are used as
 basic values when the user specifies nothing else -}
@@ -254,19 +266,24 @@ defaultHetcatsOpts = HcOpt
   , applyAutomatic = False
   , computeNormalForm = False
   , dumpOpts = []
+  , disableCertificateVerification = False
   , ioEncoding = Utf8
   , useLibPos = False
   , unlit = False
   , serve = False
   , listen = -1
+  , pidFile = ""
   , whitelist = []
   , blacklist = []
   , runMMT = False
   , fullTheories = False
+  , outputLogicList = False
   , outputLogicGraph = False
   , fileType = False
   , accessToken = ""
-  , fullSign = False }
+  , httpRequestHeaders = []
+  , fullSign = False
+  , printAST = False }
 
 instance Show HetcatsOpts where
   show opts =
@@ -276,6 +293,7 @@ instance Show HetcatsOpts where
     in
     showEqOpt verboseS (show $ verbose opts)
     ++ show (guiType opts)
+    ++ showFlag outputLogicList logicListS
     ++ showFlag outputLogicGraph logicGraphS
     ++ showFlag fileType fileTypeS
     ++ showFlag interactive interactiveS
@@ -286,6 +304,9 @@ instance Show HetcatsOpts where
     ++ case defSyntax opts of
           s | s /= defSyntax defaultHetcatsOpts -> showEqOpt serializationS s
           _ -> ""
+    ++ case httpRequestHeaders opts of
+          [] -> ""
+          headers -> concatMap (showEqOpt httpRequestHeaderS . show) headers
     ++ case accessToken opts of
           "" -> ""
           t -> showEqOpt accessTokenS t
@@ -300,6 +321,7 @@ instance Show HetcatsOpts where
     ++ showFlag xmlFlag xmlS
     ++ showFlag ((/= -1) . connectP) connectS
     ++ showFlag ((/= -1) . listen) listenS
+    ++ showEqOpt pidFileS (pidFile opts)
     ++ showIPLists whitelist whitelistS
     ++ showIPLists blacklist blacklistS
     ++ concatMap (showEqOpt "dump") (dumpOpts opts)
@@ -307,6 +329,7 @@ instance Show HetcatsOpts where
     ++ showFlag unlit unlitS
     ++ showFlag useLibPos relposS
     ++ showFlag fullSign fullSignS
+    ++ showFlag printAST printASTS
     ++ showFlag fullTheories fullTheoriesS
     ++ case urlCatalog opts of
          [] -> ""
@@ -333,6 +356,7 @@ data Flag =
   | Quiet
   | Uncolored
   | Version
+  | VersionNumeric
   | Recurse
   | ApplyAutomatic
   | NormalForm
@@ -356,19 +380,24 @@ data Flag =
   | Connect Int String
   | XML
   | Dump String
+  | DisableCertificateVerification
   | IOEncoding Enc
   | Unlit
   | RelPos
   | Serve
   | Listen Int
+  | PidFile FilePath
   | Whitelist String
   | Blacklist String
   | UseMMT
   | FullTheories
   | FullSign
+  | PrintAST
+  | OutputLogicList
   | OutputLogicGraph
   | FileType
   | AccessToken String
+  | HttpRequestHeader String
   | UrlCatalog [(String, String)] deriving Show
 
 -- | 'makeOpts' includes a parsed Flag in a set of HetcatsOpts
@@ -379,6 +408,7 @@ makeOpts opts flg =
     Interactive -> opts { interactive = True }
     XML -> opts { xmlFlag = True }
     Listen x -> opts { listen = x }
+    PidFile x -> opts { pidFile = x }
     Blacklist x -> opts { blacklist = splitIPs x }
     Whitelist x -> opts { whitelist = splitIPs x }
     Connect x y -> opts { connectP = x, connectH = y }
@@ -404,19 +434,25 @@ makeOpts opts flg =
     Quiet -> opts { verbose = 0 }
     Uncolored -> opts { uncolored = True }
     Dump s -> opts { dumpOpts = s : dumpOpts opts }
+    DisableCertificateVerification ->
+      opts { disableCertificateVerification = True }
     IOEncoding e -> opts { ioEncoding = e }
     Serve -> opts { serve = True }
     Unlit -> opts { unlit = True }
     RelPos -> opts { useLibPos = True }
     UseMMT -> opts { runMMT = True }
     FullTheories -> opts { fullTheories = True }
+    OutputLogicList -> opts { outputLogicList = True }
     OutputLogicGraph -> opts { outputLogicGraph = True }
     FileType -> opts { fileType = True }
     FullSign -> opts { fullSign = True }
+    PrintAST -> opts { printAST = True }
     UrlCatalog m -> opts { urlCatalog = m ++ urlCatalog opts }
     AccessToken s -> opts { accessToken = s }
+    HttpRequestHeader header -> opts { httpRequestHeaders = header : httpRequestHeaders opts }
     Help -> opts -- skipped
     Version -> opts -- skipped
+    VersionNumeric -> opts -- skipped
 
 -- | 'AnaType' describes the type of analysis to be performed
 data AnaType = Basic | Structured | Skip
@@ -573,7 +609,7 @@ data OutType =
   | FreeCADOut
   | ThyFile -- ^ isabelle theory file
   | DfgFile SPFType -- ^ SPASS input file
-  | TPTPFile SPFType
+  | TPTPFile
   | ComptableXml
   | MedusaJson
   | RDFOut
@@ -600,7 +636,7 @@ instance Show OutType where
     FreeCADOut -> "fcxml"
     ThyFile -> "thy"
     DfgFile t -> dfgS ++ show t
-    TPTPFile t -> tptpS ++ show t
+    TPTPFile -> tptpS
     ComptableXml -> "comptable.xml"
     MedusaJson -> "medusa.json"
     RDFOut -> "nt"
@@ -613,7 +649,8 @@ plainOutTypeList :: [OutType]
 plainOutTypeList =
   [ Prf, EnvOut ] ++ map OWLOut plainOwlFormats ++
   [ RDFOut, CLIFOut, KIFOut, OmdocOut, XmlOut, JsonOut, ExperimentalOut
-  , HaskellOut, ThyFile, ComptableXml, MedusaJson, FreeCADOut, SymXml, SymsXml]
+  , HaskellOut, ThyFile, ComptableXml, MedusaJson, FreeCADOut, SymXml, SymsXml
+  , TPTPFile]
 
 outTypeList :: [OutType]
 outTypeList = let dl = [Delta, Fully] in
@@ -622,7 +659,6 @@ outTypeList = let dl = [Delta, Fully] in
     ++ [ SigFile d | d <- dl ]
     ++ [ TheoryFile d | d <- dl ]
     ++ [ DfgFile x | x <- spfTypes]
-    ++ [ TPTPFile x | x <- spfTypes]
     ++ [ GraphOut f | f <- graphList ]
 
 instance Read OutType where
@@ -679,6 +715,8 @@ options = let
     , Option "q" ["quiet"] (NoArg Quiet)
       "same as -v0, no output to stdout"
     , Option "V" ["version"] (NoArg Version)
+      "print version information and exit"
+    , Option "" ["numeric-version"] (NoArg VersionNumeric)
       "print version number and exit"
     , Option "h" ["help", "usage"] (NoArg Help)
       "print usage information and exit"
@@ -691,9 +729,13 @@ options = let
     , Option "x" [xmlS] (NoArg XML)
        "use xml packets to communicate"
 #ifdef SERVER
+    , Option "P" [pidFileS] (ReqArg PidFile "FILEPATH")
+       "path to put the PID file of the hets server (omit if no pidfile is desired)"
     , Option "X" ["server"] (NoArg Serve)
        "start hets as web-server"
 #endif
+    , Option "z" [logicListS] (NoArg OutputLogicList)
+      "output logic list as plain text"
     , Option "G" [logicGraphS] (NoArg OutputLogicGraph)
       "output logic graph (as xml) or as graph (-g)"
     , Option "I" [interactiveS] (NoArg Interactive)
@@ -710,7 +752,8 @@ options = let
       "choose different logic syntax"
     , Option "L" [libdirsS] (ReqArg LibDirs "DIR")
       ("colon-separated list of directories"
-       ++ crS ++ "containing HetCASL libraries")
+       ++ crS ++ "containing DOL libraries."
+       ++ crS ++ "If an http[s] URL is specified here, it is treated as the last libdir because colons can occur in such URLs")
     , Option "m" [modelSparQS] (ReqArg ModelSparQ "FILE")
       "lisp file for SparQ definitions"
     , Option "" [counterSparQS] (ReqArg parseCounter "0-99")
@@ -735,14 +778,21 @@ options = let
         map (++ bracket bafS) [bracket treeS ++ genTermS]))
     , Option "d" ["dump"] (ReqArg Dump "STRING")
       "dump various strings"
+    , Option "" ["disable-certificate-verification"]
+      (NoArg DisableCertificateVerification)
+      "Disable TLS certificate verification"
     , Option "e" ["encoding"] (ReqArg parseEncoding "ENCODING")
       "latin1 or utf8 (default) encoding"
     , Option "" [unlitS] (NoArg Unlit) "unlit input source"
     , Option "" [relposS] (NoArg RelPos) "use relative file positions"
     , Option "" [fullSignS] (NoArg FullSign) "xml output full signatures"
+    , Option "" [printASTS] (NoArg PrintAST) ("print AST in xml/json output")
     , Option "" [fullTheoriesS] (NoArg FullTheories) "xml output full theories"
     , Option "" [accessTokenS] (ReqArg AccessToken "TOKEN")
       "add access token to URLs (for ontohub)"
+    , Option "H" [httpRequestHeaderS] (ReqArg HttpRequestHeader "HTTP_HEADER")
+      ("additional headers to use for HTTP requests"
+      ++ crS ++ "this option can be used multiple times")
     , Option "O" [outdirS] (ReqArg OutDir "DIR")
       "destination directory for output files"
     , Option "o" [outtypesS] (ReqArg parseOutTypes "OTYPES")
@@ -756,7 +806,7 @@ options = let
        ++ bS ++ ppS ++ joinBar (map show prettyList2) ++ crS
        ++ bS ++ graphE ++ joinBar (map show graphList) ++ crS
        ++ bS ++ dfgS ++ bracket cS ++ crS
-       ++ bS ++ tptpS ++ bracket cS)
+       ++ bS ++ tptpS)
     , Option "U" ["xupdate"] (ReqArg XUpdate "FILE")
       "apply additional xupdates from file"
     , Option "R" [recursiveS] (NoArg Recurse)
@@ -981,6 +1031,12 @@ hetcatsOpts argv =
                             { infiles = nonOpts }
         (_, _, errs) -> hetsIOError (concat errs)
 
+printOptionsWarnings :: HetcatsOpts -> IO ()
+printOptionsWarnings opts =
+  let v = verbose opts in
+  unless (null (pidFile opts) || serve opts)
+    (verbMsgIOLn v 1 "option -P has no effect because it is used without -X")
+
 -- | 'checkFlags' checks all parsed Flags for sanity
 checkFlags :: [Flag] -> IO [Flag]
 checkFlags fs = do
@@ -991,9 +1047,11 @@ checkFlags fs = do
                         -- collect some more here?
         h = null [ () | Help <- fs]
         v = null [ () | Version <- fs]
+        vn = null [ () | VersionNumeric <- fs]
     unless h $ putStr hetsUsage
-    unless v $ putStrLn ("version of hets: " ++ hetcats_version)
-    unless (v && h) exitSuccess
+    unless v $ putStrLn hetsVersion
+    unless vn $ putStrLn hetsVersionNumeric
+    unless (h && v && vn) exitSuccess
     collectFlags fs
 
 -- auxiliary functions: FileSystem interaction --
@@ -1030,7 +1088,10 @@ checkLibDirs fs =
 
 joinHttpLibPath :: [String] -> [String]
 joinHttpLibPath l = case l of
-  p : f : r | elem p ["http", "https"] -> (p ++ ':' : f) : joinHttpLibPath r
+  p : f : r | p  == "file" && take 2 f == "//" ->
+    (p ++ ':' : f) : joinHttpLibPath r
+  p : f : _ | elem p ["http", "https"] && take 2 f == "//" ->
+    [intercalate ":" l]
   f : r -> f : joinHttpLibPath r
   [] -> []
 
@@ -1091,8 +1152,8 @@ hetsError = error . ("command line usage error (see 'hets -h')\n" ++)
 -- | print error and usage and exit with code 2
 hetsIOError :: String -> IO a
 hetsIOError s = do
-  hPutStrLn stderr s
-  putStr hetsUsage
+  unless (null s) $ hPutStrLn stderr s
+  putStr "for Hets usage, use: hets -h\n"
   exitWith $ ExitFailure 2
 
 -- | 'hetsUsage' generates usage information for the commandline

@@ -313,6 +313,12 @@ cParenT = asSeparator ")"
 braces :: CharParser st a -> CharParser st a
 braces p = oBraceT >> p << cBraceT
 
+brackets :: CharParser st a -> CharParser st a
+brackets p = oBracketT >> p << cBracketT
+
+parens :: CharParser st a -> CharParser st a
+parens p = oParenT >> p << cParenT
+
 commaSep1 :: CharParser st a -> CharParser st [a]
 commaSep1 p = fmap fst $ separatedBy p commaT
 

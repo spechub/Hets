@@ -62,9 +62,9 @@ getMagicFileTypeAux pm fn = ResultT $ do
 
 getFileType :: Maybe FilePath -> Maybe String -> FilePath -> ResultT IO String
 getFileType mmf mp fn = ResultT $ do
-  (ex, out, err) <- executeProcess "file"
-    (maybe [] (\ mf -> ["-m", mf]) mmf
-    ++ maybeToList mp ++ ["-b", fn]) ""
+  (ex, out, err) <- executeProcessWithEnvironment "file"
+    (maybeToList mp ++ ["--brief", fn]) ""
+    $ maybe [] (\ mf -> [("MAGIC", mf)]) mmf
   let unexp = "unexpected file type "
   return $ case (ex, lines out) of
     (ExitSuccess, ls) -> if null err then case ls of

@@ -26,6 +26,8 @@ import Common.AS_Annotation
 import Common.GlobalAnnotations
 import qualified Common.IRI as IRI
 
+import qualified Data.Map as Map
+
 import Control.Monad.Trans
 import System.IO.Unsafe
 
@@ -38,7 +40,7 @@ extractModule syms onto =
 
 extractModuleAux :: [IRI.IRI] -> (Sign, [Named Axiom])
                               -> ResultT IO (Sign, [Named Axiom])
-extractModuleAux syms onto = do
+extractModuleAux syms onto@(osig,_) = do
   let ontology_content = show $ printOWLBasicTheory onto
   inFile <- lift $ getTempFile ontology_content "in"
   outFile <- lift $ getTempFile "" "out"
@@ -51,5 +53,8 @@ extractModuleAux syms onto = do
    [modOnto] -> do
      (_ontodoc, ExtSign sig _, sens) <- liftR $
          basicOWL2Analysis (modOnto, emptySign, emptyGlobalAnnos)
-     lift $ return (sig, sens)
+     lift $ return (sig {
+                      prefixMap = Map.union (prefixMap osig) 
+                                  $ prefixMap sig}, 
+                   sens)
    _ -> error "the module should be just one ontology"

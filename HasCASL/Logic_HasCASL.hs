@@ -43,8 +43,8 @@ data HasCASL = HasCASL deriving Show
 
 instance Language HasCASL where
  description _ = unlines
-  [ "HasCASL - Algebraic Specification + Functional Programming = "
-  , "            Environment for Formal Software Development"
+  [ "HasCASL - Algebraic Specification + Functional Programming"
+  , "            = Environment for Formal Software Development"
   , "This logic is based on the partial lambda calculus and"
   , "  features subtyping, overloading and type class polymorphism"
   , "See the HasCASL summary and further papers available at"
@@ -91,6 +91,7 @@ instance Sentences HasCASL Sentence Env Morphism Symbol where
     print_named _ = printSemiAnno (changeGlobalAnnos addBuiltins . pretty) True
         . fromLabelledSen
     sym_name HasCASL = symName
+    symKind HasCASL = show . pretty . symbTypeToKind . symType
     sym_of HasCASL = symOf
     mostSymsOf HasCASL = mostSyms
     symmap_of HasCASL = morphismToSymbMap
@@ -172,6 +173,6 @@ instance Logic HasCASL Sublogic
                Env
                Morphism
                Symbol RawSymbol () where
-         stability _ = Testing
+         stability _ = Stable
          all_sublogics _ = sublogics_all
          empty_proof_tree _ = ()

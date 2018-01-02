@@ -25,6 +25,7 @@ module Common.Id where
 import Data.Char
 import Data.Data
 import Data.List (isPrefixOf)
+import Data.Ratio
 import qualified Data.Set as Set
 
 -- do use in data types that derive d directly
@@ -503,6 +504,8 @@ instance GetRange ()
 instance GetRange Char
 instance GetRange Bool
 instance GetRange Int
+instance GetRange Integer
+instance GetRange (Ratio a) -- for Rational
 
 instance GetRange a => GetRange (Maybe a) where
     getRange = maybe nullRange getRange

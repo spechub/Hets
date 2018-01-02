@@ -27,6 +27,7 @@ import Common.Result
 import Common.Utils (composeMap)
 import Common.Lib.State (execState)
 import Common.Lib.MapSet (setToMap)
+import Common.Id(nullRange)
 
 import Control.Monad
 
@@ -68,13 +69,15 @@ inducedSign m t s =
     in function Rename (StringMap t) new
 
 inducedPref :: String -> String -> Sign -> (MorphMap, StringMap)
-    -> (MorphMap, StringMap)
+    -> Result (MorphMap, StringMap)
 inducedPref v u sig (m, t) =
     let pm = prefixMap sig
     in if Set.member v $ Map.keysSet pm
-         then if u == v then (m, t) else (m, Map.insert v u t)
-        else error $ "unknown symbol: " ++ showDoc v "\n" ++ shows sig ""
+         then if u == v then return (m, t) else return (m, Map.insert v u t)
+        else
+          plain_error (Map.empty, Map.empty) ("unknown symbol: " ++ showDoc v "\nin signature:\n" ++ showDoc sig "") nullRange
 
+ 
 inducedFromMor :: Map.Map RawSymb RawSymb -> Sign -> Result OWLMorphism
 inducedFromMor rm sig = do
   let syms = symOf sig
@@ -87,10 +90,10 @@ inducedFromMor rm sig = do
           $ map (`mkEntity` v) entityTypes of
           [] -> let v2 = showQU v
                     u2 = showQU u
-                in return $ inducedPref v2 u2 sig (m, t)
+                in inducedPref v2 u2 sig (m, t)
           l -> return $ if u == v then (m, t) else
                             (foldr (`Map.insert` u) m l, t)
-        (APrefix v, APrefix u) -> return $ inducedPref v u sig (m, t)
+        (APrefix v, APrefix u) -> inducedPref v u sig (m, t)
         _ -> error "OWL2.Morphism.inducedFromMor") (Map.empty, Map.empty)
                         $ Map.toList rm
   return OWLMorphism
@@ -199,3 +202,27 @@ mapSen :: OWLMorphism -> Axiom -> Result Axiom
 mapSen m a = do
     let new = function Rename (MorphMap $ mmaps m) a
     return $ function Rename (StringMap $ pmap m) new
+
+morphismUnion :: OWLMorphism -> OWLMorphism -> Result OWLMorphism
+morphismUnion mor1 mor2 = do
+ let ssig1 = osource mor1
+     tsig1 = otarget mor1
+     ssig2 = osource mor2
+     tsig2 = otarget mor2
+     ssig = addSign ssig1 ssig2
+     tsig = addSign tsig1 tsig2
+     m1 = mmaps mor1
+     m2 = mmaps mor2
+     intM = Map.intersection m1 m2
+     pairs = filter (\(a,b) -> a /= b)
+             $ map (\x -> (Map.findWithDefault (error "1") x m1, 
+                           Map.findWithDefault (error "2") x m2)) 
+             $ Map.keys intM
+ case pairs of 
+  [] -> 
+    return $  OWLMorphism {
+                 osource = ssig,
+                 otarget = tsig,
+                 mmaps = Map.union m1 m2,
+                 pmap = Map.union (pmap mor1) $ pmap mor2}
+  _ -> fail $ "can't unite morphisms:" ++ show pairs

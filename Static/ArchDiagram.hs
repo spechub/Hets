@@ -187,12 +187,14 @@ from given NodeSig -}
 extendDGraph :: DGraph    -- ^ the development graph to be extended
              -> NodeSig   -- ^ the NodeSig from which the morphism originates
              -> GMorphism -- ^ the morphism to be inserted
+             -> IRI       -- ^ the name of the node to be inserted
              -> DGOrigin
              -> Result (NodeSig, DGraph)
 -- ^ returns the target signature of the morphism and the resulting DGraph
-extendDGraph dg (NodeSig n _) morph orig = case cod morph of
+extendDGraph dg (NodeSig n _) morph i orig = case cod morph of
     targetSig@(G_sign lid tar ind) -> let
-      nodeContents = newNodeLab emptyNodeName orig
+      name = ensureUniqueNames dg i 1
+      nodeContents = newNodeLab name orig
         $ noSensGTheory lid tar ind
       linkContents = globDefLink morph SeeTarget
       node = getNewNodeDG dg
@@ -205,12 +207,13 @@ given NodeSig -}
 extendDGraphRev :: DGraph    -- ^ the development graph to be extended
              -> NodeSig   -- ^ the NodeSig to which the morphism points
              -> GMorphism -- ^ the morphism to be inserted
+             -> IRI       -- ^ the name of the node to be inserted
              -> DGOrigin
              -> Result (NodeSig, DGraph)
 -- ^ returns the source signature of the morphism and the resulting DGraph
-extendDGraphRev dg (NodeSig n _) morph orig = case dom morph of
+extendDGraphRev dg (NodeSig n _) morph i orig = case dom morph of
     sourceSig@(G_sign lid src ind) -> let
-      nodeContents = newNodeLab emptyNodeName orig
+      nodeContents = newNodeLab (ensureUniqueNames dg i 1) orig
         $ noSensGTheory lid src ind
       linkContents = globDefLink morph SeeSource
       node = getNewNodeDG dg
@@ -223,12 +226,13 @@ given NodeSig -}
 extendDGraphRevHide :: DGraph    -- ^ the development graph to be extended
              -> NodeSig   -- ^ the NodeSig to which the morphism points
              -> GMorphism -- ^ the morphism to be inserted
+             -> IRI       -- ^ the name of the node to be inserted
              -> DGOrigin
              -> Result (NodeSig, DGraph)
 -- ^ returns the source signature of the morphism and the resulting DGraph
-extendDGraphRevHide dg (NodeSig n _) morph orig = case dom morph of
+extendDGraphRevHide dg (NodeSig n _) morph i orig = case dom morph of
     sourceSig@(G_sign lid src ind) -> let
-      nodeContents = newNodeLab emptyNodeName orig
+      nodeContents = newNodeLab (ensureUniqueNames dg i 1) orig
         $ noSensGTheory lid src ind
       linkContents = defDGLink morph HidingDefLink
                                       DGLinkProof
@@ -245,14 +249,16 @@ extendDiagramWithMorphismRevHide :: Range       -- ^ the position (for diagnosti
                              -- ^ the node to which the edge should point
                              -> GMorphism
                              -- ^ the morphism as label for the new edge
+                             -> IRI       
+                             -- ^ the name of the node to be inserted
                              -> String -- ^ a diagnostic node description
                              -> DGOrigin      -- ^ the origin of the new node
                              -> Result (DiagNodeSig, Diag, DGraph)
 -- ^ returns the new node, the extended diagram and extended development graph
 extendDiagramWithMorphismRevHide pos _ diag dg (Diag_node_sig n nsig)
-                             mor desc orig =
+                             mor i desc orig =
   if getSig nsig == cod mor then
-     do (sourceSig, dg') <- extendDGraphRevHide dg nsig mor orig
+     do (sourceSig, dg') <- extendDGraphRevHide dg nsig mor i orig
         let nodeContents = DiagNode {dn_sig = sourceSig, dn_desc = desc}
             diagGr = diagGraph diag
             node = Tree.getNewNode diagGr
@@ -281,13 +287,15 @@ extendDiagramWithMorphism :: Range         -- ^ the position (for diagnostics)
                           -- ^ the node from which the edge should originate
                           -> GMorphism
                           -- ^ the morphism as label for the new edge
+                          -> IRI     
+                          -- ^ the name of the node to be inserted         
                           -> String -- ^ the node description (for diagnostics)
                           -> DGOrigin -- ^ the origin of the new node
                           -> Result (DiagNodeSig, Diag, DGraph)
 -- ^ returns the new node, the extended diagram and extended development graph
-extendDiagramWithMorphism pos _ diag dg (Diag_node_sig n nsig) mor desc orig =
+extendDiagramWithMorphism pos _ diag dg (Diag_node_sig n nsig) mor i desc orig =
   if getSig nsig == dom mor then
-     do (targetSig, dg') <- extendDGraph dg nsig mor orig
+     do (targetSig, dg') <- extendDGraph dg nsig mor i orig
         let nodeContents = DiagNode {dn_sig = targetSig, dn_desc = desc}
             diagGr = diagGraph diag
             node = Tree.getNewNode diagGr
@@ -316,13 +324,14 @@ extendDiagramWithMorphismRev :: Range       -- ^ the position (for diagnostics)
                              -> GMorphism
                              -- ^ the morphism as label for the new edge
                              -> String -- ^ a diagnostic node description
+                             -> IRI       -- ^ the name of the node to be inserted
                              -> DGOrigin      -- ^ the origin of the new node
                              -> Result (DiagNodeSig, Diag, DGraph)
 -- ^ returns the new node, the extended diagram and extended development graph
 extendDiagramWithMorphismRev pos _ diag dg (Diag_node_sig n nsig)
-                             mor desc orig =
+                             mor desc i orig =
   if getSig nsig == cod mor then
-     do (sourceSig, dg') <- extendDGraphRev dg nsig mor orig
+     do (sourceSig, dg') <- extendDGraphRev dg nsig mor i orig
         let nodeContents = DiagNode {dn_sig = sourceSig, dn_desc = desc}
             diagGr = diagGraph diag
             node = Tree.getNewNode diagGr
@@ -544,7 +553,7 @@ insertFormalParamAndVerifCond
                                  diag0 dg0
                                  _targetNode@(Diag_node_sig tNode tSig) fpi qB
                                  mor
-                                 argStr origin = do
+                                 argStr _origin = do
   let nodeContents = DiagNode {dn_sig = fpi, dn_desc = argStr}
       diagGr = diagGraph diag0
       node = Tree.getNewNode diagGr
@@ -568,10 +577,12 @@ insertFormalParamAndVerifCond
     cmor@(G_sign lid tar ind) -> do
       let f = getNode fpi
           fpiLab = labDG dg'' f
+          name = getName $ dgn_name fpiLab
           k = getNewNodeDG dg''
+          nodeName = (ensureUniqueNames dg'' (addSuffixToIRI ("_verif_" ++ argStr) name) 1){extIndex = 1} 
           labelK = newInfoNodeLab
-                    (extName "Verification" $ dgn_name fpiLab)
-                    (newNodeInfo origin) $ noSensGTheory lid tar ind
+                    nodeName
+                    (newNodeInfo DGVerificationGeneric) $ noSensGTheory lid tar ind
           dgK = insNodeDG (k, labelK) dg''
           (_, dg''') = insLEdgeDG (f, k, globDefLink mor DGLinkProof) dgK
           {- inserts the node for fpi with sigma and

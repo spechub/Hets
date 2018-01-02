@@ -131,6 +131,7 @@ data DGOrigin =
   | DGLogicQual
   | DGData
   | DGFormalParams
+  | DGVerificationGeneric
   | DGImports
   | DGInst IRI
   | DGFitSpec
@@ -169,7 +170,6 @@ data DGNodeLab =
   , nodeMod :: NodeMod
   , xnode :: Maybe XGraph.XNode
   , dgn_lock :: Maybe (MVar ())
-  , dgn_symbolpathlist :: G_symbolmap [SLinkPath]
   } deriving Typeable
 
 instance Show DGNodeLab where
@@ -432,6 +432,11 @@ isCofreeEdge :: DGLinkType -> Bool
 isCofreeEdge edge = case edge of
     FreeOrCofreeDefLink Cofree _ -> True
     _ -> False
+
+hasOutgoingFreeEdge :: DGraph -> Node -> Bool
+hasOutgoingFreeEdge dg n =
+ let nEdges = outDG dg n in
+ not $ null $ filter (\(_,_, e) -> isFreeEdge $ dgl_type e) nEdges 
 
 -- ** types for global environments
 
@@ -1029,7 +1034,7 @@ newRefInfo ln n = DGRef
 
 -- | create a new node label
 newInfoNodeLab :: NodeName -> DGNodeInfo -> G_theory -> DGNodeLab
-newInfoNodeLab name info gTh@(G_theory lid _ _ _ _ _) = DGNodeLab
+newInfoNodeLab name info gTh = DGNodeLab
   { dgn_name = name
   , dgn_theory = gTh
   , globalTheory = Nothing
@@ -1042,8 +1047,7 @@ newInfoNodeLab name info gTh@(G_theory lid _ _ _ _ _) = DGNodeLab
   , nodeInfo = info
   , nodeMod = unMod
   , xnode = Nothing
-  , dgn_lock = Nothing
-  , dgn_symbolpathlist = G_symbolmap lid Map.empty }
+  , dgn_lock = Nothing }
 
 -- | create a new node label using 'newNodeInfo' and 'newInfoNodeLab'
 newNodeLab :: NodeName -> DGOrigin -> G_theory -> DGNodeLab
@@ -1593,3 +1597,11 @@ duplicateDefEdges :: DGraph -> [Edge]
 duplicateDefEdges = concat .
   filter (not . isSingle) . group . map (\ (s, t, _) -> (s, t))
   . filter (liftE isDefEdge) . labEdgesDG
+
+ensureUniqueNames :: DGraph -> IRI -> Int -> NodeName
+ensureUniqueNames dg anIRI n = 
+ let allNames = map (getName . dgn_name . snd) $  labNodesDG dg
+     iri' = addSuffixToIRI (show n) anIRI
+ in if iri' `elem` allNames 
+     then ensureUniqueNames dg anIRI (n + 1) 
+     else makeName iri'

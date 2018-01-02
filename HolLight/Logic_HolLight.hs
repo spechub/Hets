@@ -38,7 +38,7 @@ data HolLight = HolLight deriving Show
 
 
 instance Language HolLight where
-    description _ = "Hol Light\n"
+    description _ = "input language of the theorem prover Hol Light\n"
         ++ "for more information please refer to\n"
         ++ "http://www.cl.cam.ac.uk/~jrh13/hol-light/"
 

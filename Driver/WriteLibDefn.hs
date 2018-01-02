@@ -1,6 +1,6 @@
 {- |
 Module      :  ./Driver/WriteLibDefn.hs
-Description :  Writing out a HetCASL library
+Description :  Writing out a DOL library
 Copyright   :  (c) Klaus Luettich, C.Maeder, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt
 
@@ -8,7 +8,7 @@ Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  non-portable(DevGraph)
 
-Writing out HetCASL env files as much as is needed for
+Writing out DOL env files as much as is needed for
 the static analysis
 -}
 
@@ -49,6 +49,7 @@ import Syntax.ToXml
 import Text.XML.Light (ppTopElement)
 
 import Driver.Options
+import Driver.Version
 
 import System.FilePath
 
@@ -106,9 +107,9 @@ writeShATermFile fp atcon = toShATermString atcon >>= writeFile fp
 
 versionedATermTable :: ShATermLG a => a -> IO ATermTable
 versionedATermTable atcon = do
-    (att1, versionnr) <- toShATermLG emptyATermTable hetsVersion
+    (att1, versionno) <- toShATermLG emptyATermTable hetsVersionNumeric
     (att2, aterm) <- toShATermLG att1 atcon
-    return $ fst $ addATerm (ShAAppl "hets" [versionnr, aterm] []) att2
+    return $ fst $ addATerm (ShAAppl "hets" [versionno, aterm] []) att2
 
 writeShATermFileSDoc :: ShATermLG a => FilePath -> a -> IO ()
 writeShATermFileSDoc fp atcon =

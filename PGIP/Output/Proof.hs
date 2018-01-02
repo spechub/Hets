@@ -31,6 +31,7 @@ import Data.Time.LocalTime
 import Numeric
 
 import Text.XML.Light (ppTopElement)
+import Text.Printf (printf)
 
 type ProofResult = (String, String, String, ProverOrConsChecker,
                 -- (goalName, goalResult, goalDetails, prover,
@@ -95,7 +96,7 @@ formatProofs format options proofs = case format of
 
   convertTime :: TimeOfDay -> ProofTime
   convertTime tod = ProofTime
-    { seconds = read $ init $ show $ timeOfDayToTime tod
+    { seconds = printf "%.3f" (read $ init $ show $ timeOfDayToTime tod :: Double)
     , components = convertTimeComponents tod
     }
 
@@ -142,7 +143,7 @@ data TacticScript = TacticScript
   } deriving (Show, Typeable, Data)
 
 data ProofTime = ProofTime
-  { seconds :: Int
+  { seconds :: String
   , components :: ProofTimeComponents
   } deriving (Show, Typeable, Data)
 

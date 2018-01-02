@@ -4,7 +4,7 @@ Hets is a parsing, static analysis and proof management tool incorporating vario
 
 ### Supported languages
 
-* general-purpose logics: [Propositional](http://en.wikipedia.org/wiki/Propositional_calculus), [QBF](http://en.wikipedia.org/wiki/QBF), [TPTP](http://www.tptp.org/)/SoftFOL, [CASL](http://www.cofi.info/CASL) (FOL), [HasCASL](http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/HasCASL/) (HOL)
+* general-purpose logics: [Propositional](http://en.wikipedia.org/wiki/Propositional_calculus), [QBF](http://en.wikipedia.org/wiki/QBF), [TPTP](http://www.tptp.org/)/SoftFOL, [CASL](http://www.informatik.uni-bremen.de/cofi/index.php/CASL) (FOL), [HasCASL](http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/HasCASL/) (HOL)
 * logical frameworks: [Isabelle](http://www.cl.cam.ac.uk/research/hvg/Isabelle/), [LF](http://en.wikipedia.org/wiki/LF_%28logical_framework%29), DFOL
 * modeling languages: [Meta-Object Facility (MOF)](https://en.wikipedia.org/wiki/Meta-Object_Facility), [Query/View/Transformation (QVT)](https://en.wikipedia.org/wiki/QVT)
 * ontologies and constraint languages: [OWL](http://www.w3.org/TR/owl2-overview/), [CommonLogic](http://cl.tamu.edu/), [RelScheme](http://en.wikipedia.org/wiki/Database_schema), ConstraintCASL
@@ -22,7 +22,7 @@ Hets is a parsing, static analysis and proof management tool incorporating vario
 * [CSPCASL-prover](http://dx.doi.org/10.1016/j.entcs.2009.08.018), an Isabelle-based prover for CspCASL,
 * [VSE](http://www.dfki.de/vse/systems/vse/), an interactive prover for dynamic logic.
 
-The structuring constructs of the heterogeneous specification language are those of the language [CASL](http://www.cofi.info/CASL), plus some constructs to select languages (logics) and language translations. The heterogeneous specification language of Hets is called [HetCASL](http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/HetCASL/index_e.htm). However, Hets can also read other structuring constructs, like those of Haskell, Maude or OWL. All these are mapped to so-called development graphs and processed with a proof calculus for heterogeneous development graphs that allows to decompose global proof obligations into local ones (during this, Hets also needs to compute [colimits](http://en.wikipedia.org/wiki/Limit_%28category_theory%29#Colimits_2) of theories over the involved logics).
+The structuring constructs of the heterogeneous specification language are those of the [OMG](http://www.omg.org)-standardised [Distributed Ontology, Model and Specification Language (DOL)](http://dol-omg.org), extending those of [CASL](http://www.informatik.uni-bremen.de/cofi/index.php/CASL). However, Hets can also read other structuring constructs, like those of Haskell, Maude or OWL. All these are mapped to so-called development graphs and processed with a proof calculus for heterogeneous development graphs that allows to decompose global proof obligations into local ones (during this, Hets also needs to compute [colimits](http://en.wikipedia.org/wiki/Limit_%28category_theory%29#Colimits_2) of theories over the involved logics).
 
 Hets is based on a graph of logics and logic translations. The overall architecture is depicted below. Adding new logics and logic translations to Hets can be done with moderate effort by adding some Haskell code to the Hets source. With the [Latin](https://trac.omdoc.org/LATIN/) project, this becomes much easier: logics (and in the near future also logic translations) can be declaratively specified in [LF](http://twelf.plparty.org/wiki/Bibliography_of_LF).
 
@@ -35,29 +35,39 @@ You can try out Hets using the [Web-based interface](http://rest.hets.eu/)
 #### The best way to use hets is under Ubuntu. Possibly run this OS in a virtual box.
 A compressed (1.2G, uncompressed 4.2G) virtual box image can be [downloaded from here](http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/vbox-x86-linux). username/password is ubuntu/reverse.
 
-### Installing Hets under Ubuntu Trusty Tahr (14.04)
+### Installing Hets under Ubuntu
 
 #### The basic system
 ```
+sudo apt-get install software-properties-common
 sudo apt-add-repository ppa:hets/hets
 sudo apt-get update
-sudo apt-get install hets-core
+sudo apt-get install hets-desktop
 ```
 
-* additionally, you can install (via apt-get) hets-ontology
-* for the full system including all of these, use hets instead of hets-core
+* for the full system including all provers etc., use hets-desktop-all instead of hets-desktop
+* for using Hets as a server providing a RESTful interface, use hets-server or hets-server-all. This is a smaller version without GUI dependencies. Note that also hets-desktop can be used as as server.
 
 #### Hets development
 For Hets development additionally type in
 ```
-sudo apt-add-repository -s "deb http://ppa.launchpad.net/hets/hets/ubuntu trusty main"
+sudo apt-add-repository -s "deb http://ppa.launchpad.net/hets/hets/ubuntu xenial main"
 sudo apt-get update
-sudo apt-get build-dep hets
+sudo apt-get build-dep hets-desktop
 ```
+Replace 'xenial' with the Ubuntu version that you use.
+The Hets sources should be obtained from the git repository (see the end of this page).
 
-### Hets Images for Mac OS X 10.9 (Mavericks)
+### Installing Hets under Archlinux
+We provide the AUR-packages [`hets-desktop-bin`](https://aur.archlinux.org/packages/hets-desktop-bin/) and [`hets-server-bin`](https://aur.archlinux.org/packages/hets-server-bin/) to install 64 bit binaries of Hets/Hets-server.
+If you would like to compile Hets yourself, you can install one of the AUR-packages [`hets-desktop`](https://aur.archlinux.org/packages/hets-desktop/) and [`hets-server`](https://aur.archlinux.org/packages/hets-server/).
 
-These [Disk images for the Hets application](http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/intel-mac/dmgs/) have only limited functionality. (GTK based menus are missing.)
+### Installing Hets under OS X/macOS (10.9 (Mavericks) and greater)
+* Install Homebrew: See [https://brew.sh](https://brew.sh)
+* Install Java: `brew cask install java`
+* Only for Hets-Desktop, install X11: `brew cask install xquartz`
+* Either install hets-desktop: `brew install spechub/hets/hets-desktop`
+* Or install hets-server: `brew install spechub/hets/hets-server`
 
 ### Hets binaries
 (these are usually not needed but may replace the binaries from above)
@@ -70,10 +80,6 @@ These [Disk images for the Hets application](http://www.informatik.uni-bremen.de
 	* [Daily snapshot](http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/linux64/daily/)
 	* [Latest release](http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/linux64/releasedhets.bz2)
 	* [All versions](http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/linux64/versions/)
-* Intel Mac (Mavericks)
-	* [Daily snapshot](http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/intel-mac/daily/)
-	* [Latest release](http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/intel-mac/releasedhets.bz2)
-	* [All versions](http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/intel-mac/versions/)
 * Solaris
 	* [Daily snapshot](http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/pc-solaris/daily/)
 	* [Latest release](http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/pc-solaris/releasedhets.bz2)
@@ -86,7 +92,7 @@ Just download the binary and put it somewhere in the $PATH.
 * Our current linux binaries also rely on gtk-2 and glade-2 libraries for more and better menus. Thus you may need to install additional libraries. Use ldd (or "otools -L hets" on Macs) to see which libraries are missing.)
 * For displaying development graphs (with the -g option), you need to install [uDraw(Graph)](http://www.informatik.uni-bremen.de/uDrawGraph/en/) (formerly known as daVinci) that relies on [Tcl/Tk (version 8.4 or 8.5)](http://www.tcl.tk/software/tcltk/8.4.html) (which probably has been already installed on your computer anyway). Make sure uDrawGraph and wish are in your $PATH.
 
-Download the [CASL libraries](http://www.cofi.info/Libraries) and set $HETS_LIB to the folder containing these.
+Download the [CASL libraries](http://www.informatik.uni-bremen.de/cofi/index.php/Libraries) and set $HETS_LIB to the folder containing these.
 
 ### Quickstart
 
@@ -160,6 +166,41 @@ Also have a look at the current [Release Notes](https://github.com/spechub/Hets/
 If you want to participate in the Hets development feel free to tell us via our [mailing list](http://www.informatik.uni-bremen.de/mailman/listinfo/hets-devel) for Hets developers. This mailing list can also be read via http://news.gmane.org/gmane.comp.lang.hets.devel.
 
 If you wish to make larger changes we generally recommend [forking](https://help.github.com/articles/fork-a-repo) this repository. You can however request access to this repository if you plan on contributing regularly.
+
+
+### Build Hets using Stack
+* [Install Stack](https://docs.haskellstack.org/en/stable/install_and_upgrade) (use the generic Linux option if you are on Ubuntu).
+* Install build- and GUI-dependencies
+  * Ubuntu:
+    ```
+    sudo apt-get install libglib2.0-dev libcairo2-dev libpango1.0-dev libgtk2.0-dev libglade2-dev libncurses-dev
+    ```
+  * macOS:
+    ```
+    brew cask install xquartz
+    brew install binutils glib libglade cairo gtk fontconfig freetype gettext spechub/hets/udrawgraph
+    ```
+* Setup Stack for Hets (this needs to be done only once after every time the stack.yaml has changed):
+  ```
+  stack setup
+  make stack
+  ```
+  When you invoke `make` for the first time, this will give you warnings about not having found a compiler ("No compiler found, expected minor version match with ghc-...").
+  Don't let this discourage you - it's normal.
+  Running `make stack` will take care of it and install the compiler.
+* Build Hets with one of the following:
+  ```
+    make
+    make hets
+    make hets_server
+  ```
+  This uses Stack to build the Hets[-Server] binary.
+  During this process, the specified version of GHC is installed in the user directory, all dependencies are built and finally, the Hets[-Server] binary is compiled.
+* If you want to clean the extra-dependencies of Stack that are put into the Hets working directory, run
+  ```
+  make clean_stack
+  ```
+
 
 ## Troubleshooting & Useful Tools
 

@@ -12,6 +12,10 @@ Portability :  non-portable (via imports)
 
 module PGIP.Server (hetsServer) where
 
+#ifdef WARP3
+import Control.Exception.Base (SomeException)
+#endif
+
 import PGIP.Output.Formatting
 import PGIP.Output.Mime
 import PGIP.Output.Proof
@@ -19,6 +23,8 @@ import PGIP.Output.Translations
 import qualified PGIP.Output.Provers as OProvers
 
 import PGIP.Query as Query
+import PGIP.Server.WebAssets
+import qualified PGIP.Server.Examples as Examples
 
 import Driver.Options
 import Driver.ReadFn
@@ -45,6 +51,7 @@ import Static.AnalysisLibrary
 import Static.ApplyChanges
 import Static.ComputeTheory
 import Static.DevGraph
+import Static.DGTranslation
 import Static.DgUtils
 import Static.DotGraph
 import Static.FromXml
@@ -91,9 +98,11 @@ import Common.ResultT
 import Common.ToXml
 import Common.Utils
 import Common.XUpdate
+import Common.GlobalAnnotations
 
 import Control.Monad
-import Control.Exception.Base (SomeException)
+import Control.Exception (throwTo)
+import Control.Concurrent (myThreadId, ThreadId)
 
 import qualified Data.IntMap as IntMap
 import qualified Data.Map as Map
@@ -114,6 +123,8 @@ import System.Directory
 import System.Exit
 import System.FilePath
 import System.IO
+import System.Posix.Process (getProcessID)
+import System.Posix.Signals
 
 data Session = Session
   { sessLibEnv :: LibEnv
@@ -176,9 +187,37 @@ catchException e =
 type WebResponse = (Response -> RsrcIO Response) -> RsrcIO Response
 #endif
 
+deletePidFileAndExit :: HetcatsOpts -> ThreadId -> ExitCode -> IO ()
+deletePidFileAndExit opts threadId exitCode = do
+  deletePidFile opts
+  throwTo threadId exitCode
 
 hetsServer :: HetcatsOpts -> IO ()
-hetsServer opts1 = do
+hetsServer opts = do
+  tid <- myThreadId
+  writePidFile opts
+  installHandler sigINT (Catch $ deletePidFileAndExit opts tid ExitSuccess) Nothing
+  installHandler sigTERM (Catch $ deletePidFileAndExit opts tid ExitSuccess) Nothing
+  hetsServer' opts
+  deletePidFile opts
+
+writePidFile :: HetcatsOpts -> IO ()
+writePidFile opts =
+  let pidFilePath = pidFile opts
+      v = verbose opts
+  in (unless (null pidFilePath) $
+     do unless (null pidFilePath)
+          (verbMsgIOLn v 2 ("Writing PIDfile " ++ show pidFilePath))
+        pid <- getProcessID
+        writeFile pidFilePath (show pid))
+
+deletePidFile :: HetcatsOpts -> IO ()
+deletePidFile opts =
+  let pidFilePath = pidFile opts
+  in (unless (null pidFilePath) $ removeFile $ pidFile opts)
+
+hetsServer' :: HetcatsOpts -> IO ()
+hetsServer' opts1 = do
   tempDir <- getTemporaryDirectory
   let tempLib = tempDir </> "MyHetsLib"
       logFile = tempDir </>
@@ -250,6 +289,7 @@ hetsServer opts1 = do
            -- only otherwise stick to the old response methods
            else oldWebApi newOpts tempLib sessRef re pathBits qr2
              meth respond
+
 parseRequestParams :: Request -> RsrcIO Json
 parseRequestParams request =
   let
@@ -297,13 +337,13 @@ parseRequestParams request =
 -- | the old API that supports downloading files and interactive stuff
 oldWebApi :: HetcatsOpts -> FilePath -> Cache -> Request -> [String]
   -> [QueryPair] -> String -> WebResponse
-oldWebApi opts tempLib sessRef re pathBits splitQuery meth respond
-  = case meth of
+oldWebApi opts tempLib sessRef re pathBits splitQuery meth respond =
+  case meth of
       "GET" -> if isJust $ lookup "menus" splitQuery
          then mkMenuResponse respond else do
          let path = intercalate "/" pathBits
          dirs@(_ : cs) <- liftIO $ getHetsLibContent opts path splitQuery
-         if not (null cs) || null path then mkHtmlPage path dirs respond
+         if not (null cs) || null path then htmlResponse path dirs respond
            -- AUTOMATIC PROOFS (parsing)
            else if isJust $ getVal splitQuery "autoproof" then
              let qr k = Query (DGQuery k Nothing) $
@@ -314,12 +354,17 @@ oldWebApi opts tempLib sessRef re pathBits splitQuery meth respond
                  Just k' -> getHetsResult opts [] sessRef (qr k')
                               Nothing OldWebAPI proofFormatterOptions
                respond $ case ms of
-                 Just (t, s) | not $ hasErrors ds-> mkOkResponse t s
-                 _ -> mkResponse textC status422 $ showRelDiags 1 ds
+                 Nothing -> mkResponse textC status422 $ showRelDiags 1 ds
+                 Just (t, s) -> mkOkResponse t s
            -- AUTOMATIC PROOFS E.N.D.
            else getHetsResponse opts [] sessRef pathBits splitQuery respond
       "POST" -> do
         (params, files) <- parseRequestBody lbsBackEnd re
+        let opts' = case lookup (B8.pack "input-type") params of
+                      Nothing -> opts
+                      Just inputType -> if null $ B8.unpack inputType
+                                        then opts
+                                        else opts { intype = read $ B8.unpack inputType }
         mTmpFile <- case lookup "content"
                    $ map (\ (a, b) -> (B8.unpack a, b)) params of
               Nothing -> return Nothing
@@ -328,12 +373,12 @@ oldWebApi opts tempLib sessRef re pathBits splitQuery meth respond
                    tmpFile <- getTempFile content "temp.het"
                    return $ Just tmpFile
         let res tmpFile =
-              getHetsResponse opts [] sessRef [tmpFile] splitQuery respond
+              getHetsResponse opts' [] sessRef [tmpFile] splitQuery respond
             mRes = maybe (queryFail "nothing submitted" respond)
               res mTmpFile
         case files of
           [] -> if isJust $ getVal splitQuery "prove" then
-               getHetsResponse opts [] sessRef pathBits
+               getHetsResponse opts' [] sessRef pathBits
                  (splitQuery ++ map (\ (a, b)
                  -> (B8.unpack a, Just $ B8.unpack b)) params) respond
             else mRes
@@ -345,7 +390,7 @@ oldWebApi opts tempLib sessRef re pathBits splitQuery meth respond
              maybe (res tmpFile) res mTmpFile
             else mRes
           _ -> getHetsResponse
-                 opts (map snd files) sessRef pathBits splitQuery respond
+                 opts' (map snd files) sessRef pathBits splitQuery respond
       _ -> respond $ mkResponse "" status400 ""
 
 -- extract what we need to know from an autoproof request
@@ -370,7 +415,7 @@ anaAutoProofQuery splitQuery = let
 isRESTful :: [String] -> Bool
 isRESTful pathBits = case pathBits of
   [] -> False
-  [h] | elem h ["version", "robots.txt"] -> True
+  [h] | elem h ["numeric-version", "version", "robots.txt"] -> True
   h : _ -> elem h listRESTfulIdentifiers
 
 listRESTfulIdentifiers :: [String]
@@ -385,7 +430,7 @@ nodeEdgeIdes = ["nodes", "edges"]
 newRESTIdes :: [String]
 newRESTIdes =
   [ "dg", "translations", "provers", "consistency-checkers", "prove"
-  , "consistency-check" ]
+  , "consistency-check", "theory" ]
 
 queryFail :: String -> WebResponse
 queryFail msg respond = respond $ mkResponse textC status400 msg
@@ -464,11 +509,12 @@ parseRESTful
       in return . Query (DGQuery sId (Just p)) . nodeQuery (getFragment p)
   -- call getHetsResult with the properly generated query (Final Result)
   getResponseAux myOpts qr = do
+    let format' = Just $ fromMaybe "xml" format
     Result ds ms <- liftIO $ runResultT $
-      getHetsResult myOpts [] sessRef qr format RESTfulAPI pfOptions
+      getHetsResult myOpts [] sessRef qr format' RESTfulAPI pfOptions
     respond $ case ms of
-      Just (t, s) | not $ hasErrors ds -> mkOkResponse t s
-      _ -> mkResponse textC status422 $ showRelDiags 1 ds
+      Nothing -> mkResponse textC status422 $ showRelDiags 1 ds
+      Just (t, s) -> mkOkResponse t s
   getResponse = getResponseAux opts
   -- respond depending on request Method
   in case meth of
@@ -481,8 +527,10 @@ parseRESTful
       "dir" : r -> do
         let path' = intercalate "/" r
         dirs <- liftIO $ getHetsLibContent opts path' splitQuery
-        mkHtmlPage path' dirs respond
-      ["version"] -> respond $ mkOkResponse textC hetcats_version
+        htmlResponse path' dirs respond
+      ["version"] -> respond $ mkOkResponse textC hetsVersion
+      ["numeric-version"] ->
+        respond $ mkOkResponse textC hetsVersionNumeric
       ["available-provers"] ->
          liftIO (usableProvers logicGraph)
          >>= respond . mkOkResponse xmlC . ppTopElement
@@ -533,9 +581,8 @@ parseRESTful
             newOpts = foldl makeOpts opts $ mapMaybe (`lookup` optionFlags)
               optFlags
         in if elem newIde newRESTIdes && all (`elem` globalCommands) cmdList
-        then getResponseAux newOpts . Query (NewDGQuery libIri $ cmdList
-            ++ Set.toList (Set.fromList $ optFlags ++ qOpts))
-         $ case newIde of
+        then let
+         qkind = case newIde of
            "translations" -> case nodeM of
              Nothing -> GlTranslations
              Just n -> nodeQuery n $ NcTranslations Nothing
@@ -554,8 +601,22 @@ parseRESTful
              in case nodeM of
              Nothing -> GlAutoProve pc
              Just n -> nodeQuery n $ ProveNode pc
-           _ -> DisplayQuery (Just $ fromMaybe "xml" format)
-        else queryFailure
+           "dg" -> case transM of
+             Nothing -> DisplayQuery (Just $ fromMaybe "xml" format)
+             Just tr -> Query.DGTranslation tr
+           "theory" -> case transM of
+             Nothing -> case nodeM of
+                         Just x -> NodeQuery (maybe (Right x) Left $ readMaybe x)
+                                   $ NcCmd Query.Theory
+                         Nothing -> error "REST: theory"
+             Just tr -> case nodeM of
+                         Just x -> NodeQuery (maybe (Right x) Left $ readMaybe x)
+                                   $ NcCmd $ Query.Translate tr
+                         Nothing -> error "REST: theory"
+           _ -> error $ "REST: unknown " ++ newIde
+         in getResponseAux newOpts . Query (NewDGQuery libIri $ cmdList
+            ++ Set.toList (Set.fromList $ optFlags ++ qOpts)) $ qkind
+                 else queryFailure
       _ -> queryFailure
     "PUT" -> case pathBits of
       {- execute global commands
@@ -643,39 +704,263 @@ menuTriple q d c = unode "triple"
                 , unode "displayname" d
                 , unode "command" c ]
 
-metaRobots :: Element
-metaRobots = add_attrs
-  [mkNameAttr "robots", mkAttr "content" "noindex,nofollow"]
-  $ unode "meta" ()
+htmlResponse :: FilePath -> [Element] -> WebResponse
+htmlResponse path listElements respond = respond . mkOkResponse htmlC
+  $ htmlPageWithTopContent path listElements
 
-mkHtmlString :: FilePath -> [Element] -> String
-mkHtmlString path dirs = htmlHead ++ mkHtmlElem
-  ("Listing of" ++ if null path then " repository" else ": " ++ path)
-  (unode "h1" ("Hets " ++ hetcats_version) : unode "p"
-     [ bold "Hompage:"
-     , aRef "http://hets.eu" "hets.eu"
-     , bold "Contact:"
-     , aRef "mailto:hets-devel@informatik.uni-bremen.de"
-       "hets-devel@informatik.uni-bremen.de" ]
-   : headElems path ++ [unode "ul" dirs])
+htmlPageWithTopContent :: FilePath -> [Element] -> String
+htmlPageWithTopContent path listElements =
+  htmlPage (if null path then "Start Page" else path) []
+    (pageHeader ++ pageOptions path listElements)
+    ""
 
-mkHtmlElem :: String -> [Element] -> String
-mkHtmlElem title = mkHtmlElemAux title [metaRobots]
+htmlPage :: String -> String -> [Element] -> String -> String
+htmlPage title javascripts body rawHtmlPageFooter = htmlHead title javascripts
+  ++ intercalate "\n" (map ppElement body)
+  ++ htmlWrapBottomContent rawHtmlPageFooter
+  ++ htmlFoot
 
-mkHtmlElemAux :: String -> [Element] -> [Element] -> String
-mkHtmlElemAux title headers body = ppElement $ unode "html"
-      [ unode "head" $ unode "title" title : headers, unode "body" body ]
+htmlHead :: String -> String -> String
+htmlHead title javascript =
+  "<!DOCTYPE html>\n"
+  ++ "<html lang=\"en\">\n"
+  ++ "  <head>\n"
+  ++ "    <meta charset=\"utf-8\">\n"
+  ++ "    <meta content=\"width=device-width,initial-scale=1,shrink-to-fit=no\" name=\"viewport\">\n"
+  ++ "    <meta content=\"#000000\" name=\"theme-color\">\n"
+  ++ "    <meta name=\"robots\" content=\"noindex,nofollow\">\n"
+  ++ "    <title>Hets, the DOLiator - " ++ title ++ "</title>\n"
+  ++ "    <!-- Semantic UI stylesheet -->\n"
+  ++ "    <style type=\"text/css\">\n"
+  ++ semanticUiCss ++ "\n"
+  ++ "    </style>\n"
+  ++ "    <!-- Hets stylesheet -->\n"
+  ++ "    <style type=\"text/css\">\n"
+  ++ hetsCss ++ "\n"
+  ++ "    </style>\n"
+  ++ "  </head>\n"
+  ++ "  <body>\n"
+  ++ "    <!-- jQuery -->\n"
+  ++ "    <script type=\"text/javascript\">\n"
+  ++ jQueryJs ++ "\n"
+  ++ "    </script>\n"
+  ++ "    <!-- Semantic UI Javascript -->\n"
+  ++ "    <script type=\"text/javascript\">\n"
+  ++ semanticUiJs ++ "\n"
+  ++ "    </script>\n"
+  ++ "    <!-- Static Hets Javascript -->\n"
+  ++ "    <script type=\"text/javascript\">\n"
+  ++ hetsJs ++ "\n"
+  ++ "    </script>\n"
+  ++ "    <!-- Dynamic Hets Javascript -->\n"
+  ++ "    <script type=\"text/javascript\">\n"
+  ++ javascript ++ "\n"
+  ++ "    </script>\n"
+  ++ "    <div class=\"ui left aligned doubling stackable centered relaxed grid container\">\n"
 
--- include a script within page
-mkHtmlElemScript :: String -> String -> [Element] -> String
-mkHtmlElemScript title scr =
-  mkHtmlElemAux title [ metaRobots
-  , add_attr (mkAttr "type" "text/javascript") . unode "script"
-    . Text $ CData CDataRaw scr Nothing] -- scr must not be encoded!
+htmlWrapBottomContent :: String -> String
+htmlWrapBottomContent content =
+  if null content then "" else
+    "      <div class=\"ui segment pushable left aligned\" style=\"overflow: auto;\">\n"
+    ++ content
+    ++ "       </div>\n"
 
-mkHtmlPage :: FilePath -> [Element] -> WebResponse
-mkHtmlPage path es respond = respond . mkOkResponse htmlC
-  $ mkHtmlString path es
+htmlFoot :: String
+htmlFoot =
+  "    </div>\n"
+  ++ "  </body>\n"
+  ++ "</html>\n"
+
+pageHeader :: [Element]
+pageHeader =
+  [ add_attr (mkAttr "class" "row") $ unode "div" $ unode "h1" "Hets, the DOLiator"
+  , add_attr (mkAttr "class" "row") $ unode "div" $
+      add_attr (mkAttr "class" "ui text container raised segment center aligned") $
+      unode "div" [ unode "p" "Welcome to DOLiator, the web interface to our implementation of the \"Ontology, Modeling and Specification Language\""
+                  , add_attr (mkAttr "class" "ui horizontal list") $ unode "div"
+                      [ add_attr (mkAttr "target" "_blank") $ add_attr (mkAttr "class" "item") $ aRef "http://dol-omg.org/" "DOL Homepage"
+                      , add_attr (mkAttr "target" "_blank") $ add_attr (mkAttr "class" "item") $ aRef "http://hets.eu/" "Hets Homepage"
+                      , add_attr (mkAttr "class" "item") $ aRef "mailto:hets-devel@informatik.uni-bremen.de" "Contact"
+                      ]
+                  ]
+  ]
+
+pageOptions :: String -> [Element] -> [Element]
+pageOptions path listElements =
+  [ add_attr (mkAttr "class" "row") $ unode "div" $
+      add_attr (mkAttr "class" "ui relaxed grid container segment") $ unode "div"
+        [ add_attr (mkAttr "class" "row centered") $ unode "div" $
+            unode "p" "Select a local DOL file as library or enter a DOL specification in the text area or choose one of the minimal examples from the right hand side and press \"Submit\"."
+        , add_attr (mkAttr "class" "three column row") $ unode "div"
+            [ pageOptionsFile
+            , pageOptionsExamples (not $ null path) listElements
+            ]
+        ]
+  ]
+
+pageOptionsFile :: Element
+pageOptionsFile =
+  add_attr (mkAttr "class" "ui container ten wide column left aligned") $ unode "div" $
+    add_attr (mkAttr "class" "ui row") $ unode "div" pageOptionsFileForm
+
+
+pageOptionsExamples :: Bool -> [Element] -> Element
+pageOptionsExamples moreExamplesAreOpen listElements =
+  add_attr (mkAttr "class" "ui container six wide column left aligned") $ unode "div"
+    [ unode "h4" "Minimal Examples"
+    , add_attr (mkAttr "class" "ui list") $ unode "div" $
+        map (\ (elementName, inputType, exampleText) ->
+              add_attr (mkAttr "class" "item") $ unode "div" $
+                add_attrs [ mkAttr "class" "insert-example-into-user-input-text"
+                          , mkAttr "data-text" exampleText
+                          , mkAttr "data-input-type" inputType
+                          ] $ unode "span" elementName
+              ) [ ("DOL", "dol", Examples.dol)
+                , ("CASL", "casl", Examples.casl)
+                , ("OWL", "owl", Examples.owl)
+                , ("CLIF", "clif", Examples.clif)
+                , ("Propositional", "het", Examples.propositional)
+                , ("RDF", "rdf", Examples.rdf)
+                , ("TPTP", "tptp", Examples.tptp)
+                , ("HasCASL", "het", Examples.hascasl)
+                , ("Modal", "het", Examples.modal)
+                ]
+    , pageMoreExamples moreExamplesAreOpen listElements
+    ]
+
+pageOptionsFileForm :: Element
+pageOptionsFileForm = add_attr (mkAttr "id" "user-file-form") $
+  mkForm "/" [ pageOptionsFilePickerInput
+             , horizontalDivider "OR"
+             , pageOptionsFileTextArea
+             , add_attrs [mkAttr "class" "ui relaxed grid", mkAttr "style" "margin-top: 1em"] $ unode "div"
+                 [ add_attr (mkAttr "class" "six wide column") $ unode "div" inputTypeDropDown
+                 , add_attr (mkAttr "class" "ten wide column right aligned") $ unode "div" submitButton
+                 ]
+             ]
+
+inputTypeDropDown :: Element
+inputTypeDropDown = singleSelectionDropDown
+  "Input Type of File or Text Field"
+  "input-type"
+  (Just "user-file-input-type")
+  ( ("", "[Try to determine automatically]", [])
+    : map (\ inType -> (show inType, show inType, [])) plainInTypes
+  )
+
+singleSelectionDropDown :: String -> String -> Maybe String -> [(String, String, [Attr])] -> Element
+singleSelectionDropDown label inputName htmlIdM options = unode "div"
+   [ add_attr (mkAttr "class" "ui sub header") $ unode "div" label
+   , add_attrs ( mkAttr "name" inputName
+               : maybe [] (\ htmlId -> [mkAttr "id" htmlId]) htmlIdM
+               ) $ unode "select" $
+         map (\ (optionValue, optionLabel, attributes) ->
+               add_attrs (mkAttr "value" optionValue : attributes) $
+                 unode "option" optionLabel
+             ) options
+   ]
+
+checkboxElement :: String -> [Attr] -> Element
+checkboxElement label attributes =
+  add_attr (mkAttr "class" "four wide column") $ unode "div" $
+    add_attr (mkAttr "class" "ui checkbox") $ unode "div"
+      [ add_attrs
+          ([ mkAttr "type" "checkbox"
+          , mkAttr "tabindex" "0"
+          , mkAttr "class" "hidden"
+          ] ++ attributes) $ unode "input" ""
+      , unode "label" label
+      ]
+
+pageOptionsFileTextArea :: Element
+pageOptionsFileTextArea = add_attrs
+  [ mkAttr "cols" "68"
+  , mkAttr "rows" "22"
+  , mkAttr "name" "content"
+  , mkAttr "id" "user-input-text"
+  , mkAttr "style" "font-family: monospace;"
+  ] $ unode "textarea" ""
+
+pageOptionsFilePickerInput :: Element
+pageOptionsFilePickerInput = filePickerInputElement "file" "file" "Choose File..."
+
+pageOptionsFormat :: String -> String -> Element
+pageOptionsFormat delimiter path =
+  let defaultFormat = "default"
+  in  dropDownElement "Output Format" $
+        map (\ f ->
+              aRef (if f == defaultFormat then "/" </> path else "/" </> path ++ delimiter ++ f) f
+            ) (defaultFormat : displayTypes)
+
+filePickerInputElement :: String -> String -> String -> Element
+filePickerInputElement idArgument nameArgument title =
+  add_attr (mkAttr "class" "field") $ unode "div" $
+    add_attr (mkAttr "class" "ui fluid file input action") $ unode "div"
+      [ add_attrs [mkAttr "type" "text", mkAttr "readonly" "true"] $ unode "input" ""
+      , add_attrs [ mkAttr "type" "file"
+                  , mkAttr "id" idArgument
+                  , mkAttr "name" nameArgument
+                  , mkAttr "autocomplete" "off"
+                  ] $ unode "input" ""
+      , add_attr (mkAttr "class" "ui button") $ unode "div" title
+      ]
+
+dropDownElement :: String -> [Element] -> Element
+dropDownElement title items =
+  add_attr (mkAttr "class" "ui dropdown button") $ unode "div"
+    [ add_attr (mkAttr "class" "text") $ unode "div" title
+    , add_attr (mkAttr "class" "dropdown icon") $ unode "i" ""
+    , dropDownSubMenu items
+    ]
+
+linkButtonElement :: String -> String -> Element
+linkButtonElement address label =
+  add_attr (mkAttr "class" "ui button") $ aRef address label
+
+htmlRow :: Element -> Element
+htmlRow = add_attr (mkAttr "class" "row") . unode "div"
+
+dropDownToLevelsElement :: String -> [(Element, [Element])] -> Element
+dropDownToLevelsElement title twoLeveledItems =
+  add_attr (mkAttr "class" "ui dropdown button") $ unode "div"
+    [ add_attr (mkAttr "class" "text") $ unode "div" title
+    , add_attr (mkAttr "class" "dropdown icon") $ unode "i" ""
+    , add_attr (mkAttr "class" "menu") $ unode "div" $
+        map (\ (label, items) ->
+              add_attr (mkAttr "class" "item") $ unode "div"
+                (
+                  ( if null items
+                    then []
+                    else [add_attr (mkAttr "class" "dropdown icon") $ unode "i" ""]
+                  )
+                  ++ [add_attr (mkAttr "class" "text") $ unode "div" label]
+                  ++ if null items then [] else [dropDownSubMenu items]
+                )
+            ) twoLeveledItems
+    ]
+
+dropDownSubMenu :: [Element] -> Element
+dropDownSubMenu items =
+  add_attr (mkAttr "class" "menu") $ unode "div" $
+    map (add_attr (mkAttr "class" "item")) items
+
+pageMoreExamples :: Bool -> [Element] -> Element
+pageMoreExamples isOpen listElements =
+  let activeClass = if isOpen then "active " else "" in
+  add_attr (mkAttr "class" "ui ten wide column container left aligned") $ unode "div" $
+    add_attr (mkAttr "class" "ui styled accordion") $ unode "div"
+      [ add_attr (mkAttr "class" (activeClass ++ "title")) $ unode "div"
+          [ add_attr (mkAttr "class" "dropdown icon") $ unode "i" ""
+          , unode "span" "More Examples"
+          ]
+      , add_attr (mkAttr "class" (activeClass ++ "content")) $ unode "div" $
+          add_attr (mkAttr "class" "transistion hidden") $ unode "div" $
+            unode "ul" listElements
+      ]
+
+horizontalDivider :: String -> Element
+horizontalDivider label =
+  add_attr (mkAttr "class" "ui horizontal divider") $ unode "div" label
 
 mkResponse :: String -> Status -> String -> Response
 mkResponse ty st = responseLBS st
@@ -776,7 +1061,7 @@ ppDGraph dg mt = let ga = globalAnnos dg in case optLibDefn dg of
         PrettyXml -> return
           (xmlC, ppTopElement $ xmlLibDefn logicGraph ga ld)
         PrettyAscii _ -> return (textC, renderText ga d ++ "\n")
-        PrettyHtml -> return (htmlC, htmlHead ++ renderHtml ga d)
+        PrettyHtml -> return (htmlC, renderHtml ga d)
         PrettyLatex _ -> return ("application/latex", latex)
       Nothing -> lift $ do
          tmpDir <- getTemporaryDirectory
@@ -925,6 +1210,11 @@ getHetsResult :: HetcatsOpts -> [W.FileInfo BS.ByteString]
   -> Cache -> Query.Query -> Maybe String -> UsedAPI -> ProofFormatterOptions
   -> ResultT IO (String, String)
 getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
+      let getCom n = let ncoms = filter (\(Comorphism cid) -> language_name cid == n) comorphismList
+                     in case ncoms of
+                         [c] -> c
+                         [] -> error $ "comorphism not found:" ++ n
+                         _ -> error $ "more than one comorphism found for:" ++ n
       sk@(sess', k) <- getDGraph opts sessRef dgQ
       sess <- lift $ makeSessCleanable sess' sessRef k
       let libEnv = sessLibEnv sess
@@ -942,12 +1232,19 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
               Just "dot" -> liftR $ return
                 (dotC, dotGraph title False title dg)
               Just "symbols" -> liftR $ return (xmlC, ppTopElement
-                $ ToXml.dgSymbols dg)
+                $ ToXml.dgSymbols opts dg)
               Just "session" -> liftR $ return (htmlC, ppElement
                 $ aRef (mkPath sess ln k) $ show k)
               Just str | elem str ppList
                 -> ppDGraph dg $ lookup str $ zip ppList prettyList
               _ -> sessAns ln svg sk
+            Query.DGTranslation path -> do
+              -- compose the comorphisms passed in translation
+               let coms = map getCom $ splitOn ',' path
+               com <- foldM compComorphism (head coms) $ tail coms
+               dg' <- liftR $ dg_translation libEnv dg com
+               liftR $ return (xmlC, ppTopElement
+                $ ToXml.dGraph opts libEnv ln dg')
             GlProvers mp mt -> do
               availableProvers <- liftIO $ getFullProverList mp mt dg
               return $ case api of
@@ -1009,14 +1306,14 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
                   Just dgnode -> return (i, dgnode)
               let fstLine = (if isDGRef dgnode then ("reference " ++) else
                     if isInternalNode dgnode then ("internal " ++) else id)
-                    "node " ++ getDGNodeName dgnode ++ " (#" ++ show i ++ ")\n"
+                    "Node " ++ getDGNodeName dgnode ++ " (#" ++ show i ++ ")\n"
                   ins = getImportNames dg i
                   showN d = showGlobalDoc (globalAnnos dg) d "\n"
               case nc of
                 NcCmd cmd | elem cmd [Query.Node, Info, Symbols]
                   -> case cmd of
                    Symbols -> return (xmlC, ppTopElement
-                           $ showSymbols ins (globalAnnos dg) dgnode)
+                           $ showSymbols opts ins (globalAnnos dg) dgnode)
                    _ -> return (textC, fstLine ++ showN dgnode)
                 _ -> case maybeResult $ getGlobalTheory dgnode of
                   Nothing -> fail $
@@ -1033,8 +1330,9 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
                           lift $ nextSess newLib sess sessRef k
                           return $ case api of
                             OldWebAPI -> (htmlC,
-                              formatResults xForm k i . unode "results" $
-                                formatGoals True proofResults)
+                              formatResults xForm k i .
+                                add_attr (mkAttr "class" "results") $
+                                unode "div" $ formatGoals True proofResults)
                             RESTfulAPI -> formatProofs
                               format
                               pfOptions
@@ -1045,8 +1343,31 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
                         lift $ nextSess newLib sess sessRef k
                         return (xmlC, ppTopElement $ formatConsNode res txt)
                     _ -> case nc of
-                      NcCmd Query.Theory -> lift $ fmap (\ t -> (htmlC, t))
-                          $ showGlobalTh dg i gTh k fstLine
+                      NcCmd Query.Theory -> case api of
+                          OldWebAPI -> lift $ fmap (\ t -> (htmlC, t))
+                                       $ showGlobalTh dg i gTh k fstLine
+                          RESTfulAPI -> lift $ fmap (\ t -> (xmlC, t))
+                                       $ showNodeXml opts (globalAnnos dg) libEnv dg i
+                      NcCmd (Query.Translate x) -> do
+                          -- compose the comorphisms passed in translation
+                          let coms = map getCom $ splitOn ',' x
+                          com <- foldM compComorphism (head coms) $ tail coms
+                          -- translate the theory of i along com
+                          gTh1 <- liftR $ mapG_theory com gTh
+                          -- insert the translation of i in dg
+                          let n1 = getNewNodeDG dg
+                              labN1 = newInfoNodeLab
+                                       emptyNodeName
+                                       (newNodeInfo DGBasic) -- to be corrected
+                                       gTh1
+                              dg1 = insLNodeDG (n1, labN1) dg
+                          gmor <- liftR $ gEmbedComorphism com $ signOf $ dgn_theory dgnode
+                          -- add a link from i to n1 labeled with (com, id)
+                          let (_, dg2) = insLEdgeDG
+                                          (i, n1, globDefLink gmor SeeSource) -- origin to be corrected
+                                          dg1
+                          -- show the theory of n1 in xml format
+                          lift $ fmap (\ t -> (xmlC, t)) $ showNodeXml opts (globalAnnos dg2) libEnv dg2 n1
                       NcProvers mp mt -> do
                         availableProvers <- liftIO $ getProverList mp mt subL
                         return $ case api of
@@ -1071,31 +1392,33 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
 
 formatGoals :: Bool -> [ProofResult] -> [Element]
 formatGoals includeDetails =
-  map (\ (n, e, d, _, _, mps) -> unode "goal"
-    ([unode "name" n, unode "result" e]
-    ++ [unode "details" d | includeDetails]
+  map (\ (n, e, d, _, _, mps) -> add_attr (mkAttr "class" "results-goal") $ unode "div"
+    ([ unode "h3" ("Results for " ++ n ++ " (" ++ e ++ ")") ]
+    ++ [add_attr (mkAttr "class" "results-details") $ unode "div" d | includeDetails]
     ++ case mps of
         Nothing -> []
         Just ps -> formatProofStatus ps))
 
 formatProofStatus :: ProofStatus G_proof_tree -> [Element]
 formatProofStatus ps =
-  [ unode "usedProver" $ usedProver ps
+  [ unode "h5" "Used Prover"
+  , add_attr (mkAttr "class" "usedProver") $ unode "p" $ usedProver ps
   -- `read` makes this type-unsafe
-  , unode "tacticScript" $ formatTacticScript $ read $
+  , unode "h5" "Tactic Script"
+  , add_attr (mkAttr "class" "tacticScript") $ unode "p" $ formatTacticScript $ read $
       (\ (TacticScript ts) -> ts) $ tacticScript ps
-  , unode "proofTree" $ show $ proofTree ps
-  , unode "usedTime" $ formatUsedTime $ usedTime ps
-  , unode "usedAxioms" $ formatUsedAxioms $ usedAxioms ps
-  , unode "proverOutput" $ formatProverOutput $ proofLines ps
+  , unode "h5" "Proof Tree"
+  , add_attr (mkAttr "class" "proofTree") $ unode "div" $ show $ proofTree ps
+  , unode "h5" "Used Time"
+  , add_attr (mkAttr "class" "usedTime") $ unode "div" $ formatUsedTime $ usedTime ps
+  , unode "h5" "Used Axioms"
+  , add_attr (mkAttr "class" "usedAxioms") $ unode "div" $ formatUsedAxioms $ usedAxioms ps
+  , unode "h5" "Prover Output"
+  , add_attr (mkAttr "class" "proverOutput") $ unode "div" $ formatProverOutput $ proofLines ps
   ]
 
-formatProverOutput :: [String] -> CData
-formatProverOutput ls =
-  CData { cdVerbatim = CDataVerbatim
-        , cdData = unlines ls
-        , cdLine = Nothing
-        }
+formatProverOutput :: [String] -> Element
+formatProverOutput = unode "pre" . unlines
 
 formatTacticScript :: ATPTacticScript -> [Element]
 formatTacticScript ts =
@@ -1126,30 +1449,34 @@ formatResultsMultiple xForm sessId rs prOrCons =
     GlConsistency -> aRef ('/' : show sessId ++ "?consistency") "return"
     GlProofs -> aRef ('/' : show sessId ++ "?autoproof") "return"
   goBack2 = aRef ('/' : show sessId) "return to DGraph"
-  in ppElement $ unode "html" ( unode "head"
-    [ unode "title" "Results", add_attr ( mkAttr "type" "text/css" )
-    $ unode "style" resultStyles, goBack1, plain " ", goBack2 ]
-    : foldr (\ el r -> unode "h4" (qName $ elName el) : el : r) [] rs )
+  in htmlPage "Results" []
+       [ htmlRow $ unode "h1" "Results"
+       , htmlRow $ unode "div" [goBack1, goBack2]
+       , htmlRow $ unode "div" $
+           foldr (\ el r -> unode "h4" (qName $ elName el) : el : r) [] rs
+       ] ""
 
 -- | display results of proving session (single node)
 formatResults :: Bool -> Int -> Int -> Element -> String
 formatResults xForm sessId i rs =
   if xForm || sessId <= 0 then ppTopElement rs else let
-  goBack1 = aRef ('/' : show sessId ++ "?theory=" ++ show i) "return to Theory"
-  goBack2 = aRef ('/' : show sessId) "return to DGraph"
-  in ppElement $ unode "html" [ unode "head"
-    [ unode "title" "Results", add_attr ( mkAttr "type" "text/css" )
-    $ unode "style" resultStyles, goBack1, plain " ", goBack2 ], rs ]
-
-resultStyles :: String
-resultStyles = unlines
-  [ "results { margin: 5px; padding:5px; display:block; }"
-  , "goal { display:block; margin-left:15px; }"
-  , "name { display:inline; margin:5px; padding:10px; font-weight:bold; }"
-  , "result { display:inline; padding:30px; }" ]
+  goBack1 = linkButtonElement ('/' : show sessId ++ "?theory=" ++ show i) "return to Theory"
+  goBack2 = linkButtonElement ('/' : show sessId) "return to DGraph"
+  in htmlPage "Results" []
+       [ htmlRow $ unode "h1" "Results"
+       , htmlRow $ unode "div" [goBack1, goBack2]
+       , htmlRow $ add_attr (mkAttr "class" "ui relaxed grid raised segment container left aligned") $ unode "div" rs
+       ] ""
 
 showBool :: Bool -> String
 showBool = map toLower . show
+
+showNodeXml :: HetcatsOpts -> GlobalAnnos -> LibEnv -> DGraph -> Int -> IO String
+showNodeXml opts ga lenv dg n = let
+ lNodeN = lab (dgBody dg) n
+ in case lNodeN of
+     Just lNode -> return $ ppTopElement $ ToXml.lnode opts ga lenv (n,lNode)
+     Nothing -> error $ "no node for " ++ show n
 
 {- | displays the global theory for a node with the option to prove theorems
 and select proving options -}
@@ -1158,25 +1485,31 @@ showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
   sGTh@(G_theory lid _ (ExtSign sig _) _ thsens _) -> let
     ga = globalAnnos dg
     -- links to translations and provers xml view
-    transBt = aRef ('/' : show sessId ++ "?translations=" ++ show i)
+    transBt = linkButtonElement ('/' : show sessId ++ "?translations=" ++ show i)
       "translations"
-    prvsBt = aRef ('/' : show sessId ++ "?provers=" ++ show i) "provers"
-    headr = unode "h3" fstLine
+    prvsBt = linkButtonElement ('/' : show sessId ++ "?provers=" ++ show i) "provers"
+    headr = htmlRow $ unode "h3" fstLine
     thShow = renderHtml ga $ vcat $ map (print_named lid) $ toNamedList thsens
     sbShow = renderHtml ga $ pretty sig
     in case getThGoals sGTh of
       -- show simple view if no goals are found
-      [] -> return $ mkHtmlElem fstLine [ headr, transBt, prvsBt,
-        unode "h4" "Theory" ] ++ sbShow ++ "\n<br />" ++ thShow
+      [] -> return $ htmlPage fstLine ""
+                       [ headr
+                       , transBt
+                       , prvsBt
+                       , htmlRow $ unode "h4" "Theory"
+                       ] $ "<pre>\n" ++ sbShow ++ "\n<br />" ++ thShow ++ "\n</pre>\n"
       -- else create proving functionality
       gs -> do
         -- create list of theorems, selectable for proving
-        let thmSl = map (\ (nm, bp) ->
-              let gSt = maybe GOpen basicProofToGStatus bp
-              in add_attrs
-                 [ mkAttr "type" "checkbox", mkAttr "name" $ escStr nm
-                 , mkAttr "unproven" $ showBool $ elem gSt [GOpen, GTimeout]]
-              $ unode "input" $ nm ++ "   (" ++ showSimple gSt ++ ")" ) gs
+        let thmSl =
+              map (\ (nm, bp) ->
+                    let gSt = maybe GOpen basicProofToGStatus bp
+                    in checkboxElement (nm ++ "   (" ++ showSimple gSt ++ ")")
+                       [ mkAttr "name" $ escStr nm
+                       , mkAttr "unproven" $ showBool $ elem gSt [GOpen, GTimeout]
+                       ]
+                ) gs
         -- select unproven, all or none theorems by button
             (btUnpr, btAll, btNone, jvScr1) = showSelectionButtons True
         -- create prove button and prover/comorphism selection
@@ -1187,16 +1520,26 @@ showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
               , mkAttr "type" "hidden", mkAttr "style" "display:none;"
               , mkAttr "value" $ show i ] inputNode
         -- combine elements within a form
-            thmMenu = let br = unode "br " () in add_attrs
-              [ mkAttr "name" "thmSel", mkAttr "method" "get"]
-              . unode "form"
-              $ [hidStr, prSl, cmrSl, br, btUnpr, btAll, btNone, timeout]
-              ++ intersperse br (prBt : thmSl)
+            thmMenu =
+              add_attrs [ mkAttr "name" "thmSel", mkAttr "method" "get"]
+                . add_attr (mkAttr "class" "ui form") $ unode "form"
+                $ add_attr (mkAttr "class" "ui relaxed grid container left aligned") $ unode "div"
+                $ [ add_attr (mkAttr "class" "row") $ unode "div" [hidStr, prSl, cmrSl]
+                  , add_attr (mkAttr "class" "row") $ unode "div" [btUnpr, btAll, btNone, timeout]
+                  , add_attr (mkAttr "class" "row") $ unode "div" thmSl
+                  , add_attr (mkAttr "class" "row") $ unode "div" prBt
+                  ]
         -- save dg and return to svg-view
-            goBack = aRef ('/' : show sessId) "return to DGraph"
-        return $ mkHtmlElemScript fstLine (jvScr1 ++ jvScr2)
-          [ headr, transBt, prvsBt, plain " ", goBack, unode "h4" "Theorems"
-          , thmMenu, unode "h4" "Theory" ] ++ sbShow ++ "\n<br />" ++ thShow
+            goBack = linkButtonElement ('/' : show sessId) "Return to DGraph"
+        return $ htmlPage fstLine (jvScr1 ++ jvScr2)
+          [ headr
+          , transBt
+          , prvsBt
+          , goBack
+          , htmlRow $ unode "h4" "Theorems"
+          , thmMenu
+          , htmlRow $ unode "h4" "Theory"
+          ] $ "<pre>\n" ++ sbShow ++ "\n<br />" ++ thShow ++ "\n</pre>\n"
 
 -- | show window of the autoproof function
 showAutoProofWindow :: DGraph -> Int -> ProverMode
@@ -1244,30 +1587,47 @@ showAutoProofWindow dg sessId prOrCons = let
             . unode "form" $
             [ hidStr, prSel, cmSel, br, btAll, btNone, btUnpr, timeout
             , include ] ++ intersperse br (prBt : nodeSel))
-    return (htmlC, mkHtmlElemScript title (jvScr1 ++ jvScr2)
-               [ goBack, plain " ", nodeMenu ])
+    return (htmlC, htmlPage title (jvScr1 ++ jvScr2)
+               [ goBack, plain " ", nodeMenu ] "")
 
 showProveButton :: Bool -> (Element, Element)
 showProveButton isProver = (prBt, timeout) where
-        prBt = [ mkAttr "type" "submit", mkAttr "value"
-               $ if isProver then "Prove" else "Check"]
-               `add_attrs` inputNode
+        prBt = add_attrs
+          [ mkAttr "type" "submit"
+          , mkAttr "class" "ui button"
+          , mkAttr "value" $ if isProver then "Prove" else "Check"
+          ] inputNode
         -- create timeout field
-        timeout = add_attrs [mkAttr "type" "text", mkAttr "name" "timeout"
-               , mkAttr "value" "1", mkAttr "size" "3"]
-               $ unode "input" "Sec/Goal "
+        timeout = add_attr (mkAttr "class" "three wide field") $ unode "div"
+          [ unode "label" "Timeout (Sec/Goal)"
+          , add_attrs
+              [ mkAttr "type" "text"
+              , mkAttr "name" "timeout"
+              , mkAttr "placeholder" "Timeout (Sec/Goal)"
+              , mkAttr "value" "1"
+              ] $ unode "input" ""
+          ]
 
 -- | select unproven, all or none theorems by button
 showSelectionButtons :: Bool -> (Element, Element, Element, String)
 showSelectionButtons isProver = (selUnPr, selAll, selNone, jvScr)
   where prChoice = if isProver then "SPASS" else "darwin"
-        selUnPr = add_attrs [mkAttr "type" "button"
+        selUnPr = add_attrs
+          [ mkAttr "type" "button"
+          , mkAttr "class" "ui button"
           , mkAttr "value" $ if isProver then "Unproven" else "Unchecked"
-          , mkAttr "onClick" "chkUnproven()"] inputNode
-        selAll = add_attrs [mkAttr "type" "button", mkAttr "value" "All"
-          , mkAttr "onClick" "chkAll(true)"] inputNode
-        selNone = add_attrs [mkAttr "type" "button", mkAttr "value" "None"
-          , mkAttr "onClick" "chkAll(false)"] inputNode
+          , mkAttr "onClick" "chkUnproven()"
+          ] inputNode
+        selAll = add_attrs
+          [ mkAttr "type" "button", mkAttr "value" "All"
+          , mkAttr "class" "ui button"
+          , mkAttr "onClick" "chkAll(true)"
+          ] inputNode
+        selNone = add_attrs
+          [ mkAttr "type" "button", mkAttr "value" "None"
+          , mkAttr "class" "ui button"
+          , mkAttr "onClick" "chkAll(false)"
+          ] inputNode
         -- javascript features
         jvScr = unlines
           -- select unproven goals by button
@@ -1347,15 +1707,17 @@ showProverSelection prOrCons subLs = do
     GlConsistency -> getConsCheckersAux) Nothing) subLs
   let allPrCm = nub $ concat pcs
   -- create prover selection (drop-down)
-      prs = add_attr (mkAttr "name" "prover") $ unode "select" $ map (\ p ->
-        add_attrs [mkAttr "value" p, mkAttr "onClick"
-                  $ "updCmSel('" ++ p ++ "')"]
-        $ unode "option" p) $ showProversOnly allPrCm
+      prs = add_attr (mkAttr "class" "eight wide column") $ unode "div" $
+        singleSelectionDropDown "Prover" "prover" Nothing $
+          map (\ p ->
+                (p, p, [mkAttr "onClick" $ "updCmSel('" ++ p ++ "')"])
+              ) $ showProversOnly allPrCm
   -- create comorphism selection (drop-down)
-      cmrs = add_attr (mkAttr "name" "translation") $ unode "select"
-        $ map (\ (cm, ps) -> let c = showComorph cm in
-        add_attrs [mkAttr "value" c, mkAttr "4prover" $ intercalate ";" ps]
-          $ unode "option" c) allPrCm
+      cmrs = add_attr (mkAttr "class" "eight wide column") $ unode "div" $
+        singleSelectionDropDown "Translation" "translation" Nothing $
+          map (\ (cm, ps) -> let c = showComorph cm in
+                (c, c, [mkAttr "4prover" $ intercalate ";" ps])
+              ) allPrCm
   return (prs, cmrs, jvScr)
 
 showHtml :: FNode -> String
@@ -1544,7 +1906,7 @@ proveMultiNodes pm le ln dg useTh mp mt tl nodeSel axioms = let
 formatResultsAux :: Bool -> ProverMode -> String -> [ProofResult] -> Element
 formatResultsAux xF pm nm sens = unode nm $ case (sens, pm) of
     ([(_, e, d, _, _, _)], GlConsistency) | xF -> formatConsNode e d
-    _ -> unode "results" $ formatGoals xF sens
+    _ -> add_attr (mkAttr "class" "results") $ unode "div" $ formatGoals xF sens
 
 mkPath :: Session -> LibName -> Int -> String
 mkPath sess l k =
@@ -1569,24 +1931,30 @@ sessAnsAux libName svg (sess, k) =
   let libEnv = sessLibEnv sess
       ln = libToFileName libName
       libref l =
-        aRef (mkPath sess l k) (libToFileName l) : map (\ d ->
-         aRef (extPath sess l k ++ d) d) displayTypes
+        ( aRef (mkPath sess l k) (libToFileName l)
+        , aRef (mkPath sess l k) "default"
+            : map (\ d -> aRef (extPath sess l k ++ d) d) displayTypes
+        )
       libPath = extPath sess libName k
       ref d = aRef (libPath ++ d) d
       autoProofBt = aRef ('/' : show k ++ "?autoproof") "automatic proofs"
       consBt = aRef ('/' : show k ++ "?consistency") "consistency checker"
 -- the html quicklinks to nodes and edges have been removed with R.16827
-  in (htmlC, htmlHead ++ mkHtmlElem
-           ('(' : shows k ")" ++ ln)
-           (bold ("library " ++ ln)
-            : map ref displayTypes
-            ++ menuElement : loadXUpdate (libPath ++ updateS)
-            : plain "tools:" : mkUnorderedList [autoProofBt, consBt]
-            : plain "commands:"
-            : mkUnorderedList (map ref globalCommands)
-            : plain "imported libraries:"
-            : [mkUnorderedList $ map libref $ Map.keys libEnv]
-           ) ++ svg)
+  in  ( htmlC
+      , htmlPage
+          ("Hets, the DOLiator - (" ++ shows k ")" ++ ln)
+          []
+          [ add_attr (mkAttr "class" "row") (unode "div" $ unode "h1" ("Library " ++ ln))
+          , add_attr (mkAttr "class" "row") $ unode "div"
+              [ pageOptionsFormat "" libPath
+              , dropDownElement "Tools" [autoProofBt, consBt]
+              , dropDownElement "Commands" (map ref globalCommands)
+              , dropDownToLevelsElement "Imported Libraries" $ map libref $ Map.keys libEnv
+              ]
+          , add_attr (mkAttr "class" "row") $ unode "div" $ unode "h3" "Development Graph"
+          ]
+          svg
+      )
 
 getHetsLibContent :: HetcatsOpts -> String -> [QueryPair] -> IO [Element]
 getHetsLibContent opts dir query = do
@@ -1616,75 +1984,23 @@ mkHtmlRef query entry = unode "dir" $ aRef
   (entry ++ if null query then "" else '?' : intercalate "&"
          (map (\ (x, ms) -> x ++ maybe "" ('=' :) ms) query)) entry
 
-mkUnorderedList :: Node t => [t] -> Element
-mkUnorderedList = unode "ul" . map (unode "li")
-
-italic :: String -> Element
-italic = unode "i"
-
-bold :: String -> Element
-bold = unode "b"
-
 plain :: String -> Element
 plain = unode "p"
-
-headElems :: String -> [Element]
-headElems path = let d = "default" in unode "strong" "Choose a display type:" :
-  map (\ q -> aRef (if q == d then "/" </> path else '?' : q) q)
-      (d : displayTypes)
-  ++ [ unode "p"
-       [ unode "small" "internal command overview as XML:"
-       , menuElement ]
-     , plain $ "Select a local file as library or "
-       ++ "enter a HetCASL specification in the text area and press \"submit\""
-       ++ ", or browse through our Hets-lib library below."
-     , uploadHtml ]
-
-menuElement :: Element
-menuElement = aRef "?menus" "menus"
-
-htmlHead :: String
-htmlHead =
-    let dtd = "PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\""
-        url = "\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\""
-    in concat ["<!DOCTYPE html ", dtd, " ", url, ">\n"]
 
 inputNode :: Element
 inputNode = unode "input" ()
 
-loadNode :: String -> Element
-loadNode nm = add_attrs
-    [ mkAttr "type" "file"
-    , mkAttr "name" nm
-    , mkAttr "size" "40"]
-    inputNode
-
-submitNode :: Element
-submitNode = add_attrs
+submitButton :: Element
+submitButton = add_attrs
     [ mkAttr "type" "submit"
-    , mkAttr "value" "submit"]
-    inputNode
+    , mkAttr "value" "submit"
+    , mkAttr "class" "ui button"
+    ] inputNode
 
 mkForm :: String -> [Element] -> Element
-mkForm a = add_attrs
-  [ mkAttr "action" a
-  , mkAttr "enctype" "multipart/form-data"
-  , mkAttr "method" "post" ]
-  . unode "form"
-
-uploadHtml :: Element
-uploadHtml = mkForm "/"
-  [ loadNode "file"
-  , unode "p" $ add_attrs
-    [ mkAttr "cols" "68"
-    , mkAttr "rows" "22"
-    , mkAttr "name" "content" ] $ unode "textarea" ""
-  , submitNode ]
-
-loadXUpdate :: String -> Element
-loadXUpdate a = mkForm a
-  [ italic xupdateS
-  , loadNode xupdateS
-  , italic "impacts"
-  , loadNode "impacts"
-  , submitNode ]
+mkForm a =
+  add_attrs [ mkAttr "action" a
+            , mkAttr "enctype" "multipart/form-data"
+            , mkAttr "method" "post"
+            , mkAttr "class" "ui basic form"
+            ] . unode "form"

@@ -11,6 +11,11 @@ Portability :  non-portable (imports Logic.Logic)
 
 Instance of class Logic for the CSL logic
    Also the instances for Syntax and Category.
+
+see
+Dominik Dietrich, Lutz Schröder, and Ewaryst Schulz:
+Formalizing and Operationalizing Industrial Standards.
+D. Giannakopoulou and F. Orejas (Eds.): FASE 2011, LNCS 6603, pp. 81–95, 2011.
 -}
 
 
@@ -40,7 +45,7 @@ instance Show CSL where
     show _ = "EnCL"
 
 instance Language CSL where
-    description _ = "EnCL Logic\n"
+    description _ = "A Domain-Specific Language for Engineering Calculations\n"
 -- language_name _ = "EnCL"
 
 -- | Instance of Category for CSL logic
@@ -73,6 +78,7 @@ instance Sentences CSL CMD
     map_sen CSL = mapSentence
     -- there is nothing to leave out
     simplify_sen CSL _ = id
+    symKind CSL _ = "op"
 
 instance Monoid BASIC_SPEC where
     mempty = Basic_spec []

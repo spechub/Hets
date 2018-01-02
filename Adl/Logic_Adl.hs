@@ -9,6 +9,12 @@ Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  non-portable (import Logic.Logic)
 
+see
+Stef Joosten:
+Deriving Functional Specifications from Business Requirements with Ampersand
+
+and
+https://lab.cs.ru.nl/BusinessRules/Requirements_engineering
 -}
 
 module Adl.Logic_Adl where
@@ -24,6 +30,7 @@ import ATC.ProofTree ()
 
 import Common.DefaultMorphism
 import Common.ProofTree
+import Common.DocUtils
 
 import Control.Monad
 import qualified Data.Map as Map
@@ -34,7 +41,7 @@ import Logic.Logic
 data Adl = Adl deriving Show
 
 instance Language Adl where
-    description _ = "A description language"
+    description _ = "A description language for business rules"
 
 type Morphism = DefaultMorphism Sign
 
@@ -49,6 +56,7 @@ instance Sentences Adl
       sym_name Adl = symName
       map_sen Adl _ = return . id
       print_named Adl = printNSen
+      symKind Adl = show . pretty . sym_kind
 
 instance Monoid Context where
     mempty = Context Nothing []

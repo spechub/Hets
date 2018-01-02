@@ -34,6 +34,7 @@ module CASL.Sublogic
     , top
     , caslTop
     , cFol
+    , cPrenex
     , sublogics_max
     , comp_list
     -- * functions for the creation of minimal sublogics
@@ -102,6 +103,7 @@ datatypes for CASL sublogics
 data CASL_Formulas = Atomic  -- ^ atomic logic
                    | Horn    -- ^ positive conditional logic
                    | GHorn   -- ^ generalized positive conditional logic
+                   | Prenex  -- ^ formulas in prenex normal form
                    | FOL     -- ^ first-order logic
                    | SOL     -- ^ second-order logic
                    deriving (Show, Eq, Ord, Typeable, Data)
@@ -180,6 +182,9 @@ cFol = caslTop
   { sub_features = NoSub -- no subsorting
   , has_part = False -- no partiality
   }
+
+cPrenex :: Lattice a => CASL_SL a
+cPrenex = cFol {which_logic = Prenex}
 
 mkBot :: a -> CASL_SL a
 mkBot = CASL_SL NoSub False NoSortGen False False Atomic False
@@ -275,7 +280,7 @@ sDims l = let
   , [b { has_eq = t } ]
   , [b { has_pred = t } ]
   , [b { has_empty_sorts = t } ]
-  , [b { which_logic = fo } | fo <- reverse [SOL, FOL, GHorn, Horn]]]
+  , [b { which_logic = fo } | fo <- reverse [SOL, FOL, Prenex, GHorn, Horn]]]
 
 {- ----------------------------------------------------------------------------
 Conversion functions (to String)
@@ -290,6 +295,8 @@ nameList =
   , ((False, SOL), "SOAlg")
   , ((True, FOL), "FOL")
   , ((False, FOL), "FOAlg")
+  , ((True, Prenex), "Prenex")
+  , ((False,Prenex), "PrenexAlg")
   , ((True, GHorn), "GHorn")
   , ((False, GHorn), "GCond")
   , ((True, Horn), "Horn")
@@ -437,22 +444,31 @@ Functions to analyse formulae
 
 sl_form_level :: (f -> CASL_Formulas)
               -> (Bool, Bool) -> FORMULA f -> CASL_Formulas
-sl_form_level ff (isCompound, leftImp) phi =
+sl_form_level ff (isCompound, leftImp) phi = let
+     subl = sl_form_level_aux ff (isCompound, leftImp) phi
+  in if subl == FOL 
+      then if testPrenex True ff phi then Prenex
+                                  else FOL
+      else subl 
+
+sl_form_level_aux :: (f -> CASL_Formulas)
+              -> (Bool, Bool) -> FORMULA f -> CASL_Formulas
+sl_form_level_aux ff (isCompound, leftImp) phi =
  case phi of
    Quantification q _ f _ ->
-       let ql = sl_form_level ff (isCompound, leftImp) f
+       let ql = sl_form_level_aux ff (isCompound, leftImp) f
        in if is_atomic_q q then ql else max FOL ql
    Junction j l _ -> maximum $ case j of
-      Con -> map (sl_form_level ff (True, leftImp)) l
-      Dis -> FOL : map (sl_form_level ff (False, False)) l
-   Relation l1 c l2 _ -> maximum $ sl_form_level ff (True, True) l1
+      Con -> FOL : map (sl_form_level_aux ff (True, leftImp)) l
+      Dis -> FOL : map (sl_form_level_aux ff (False, False)) l
+   Relation l1 c l2 _ -> maximum $ sl_form_level_aux ff (True, True) l1
      : case c of
-         Equivalence -> [ sl_form_level ff (True, True) l2
+         Equivalence -> [ sl_form_level_aux ff (True, True) l2
                         , if leftImp then FOL else GHorn ]
-         _ -> [ sl_form_level ff (True, False) l2
+         _ -> [ sl_form_level_aux ff (True, False) l2
               , if leftImp then FOL else
                     if isCompound then GHorn else Horn ]
-   Negation f _ -> max FOL $ sl_form_level ff (False, False) f
+   Negation f _ -> max FOL $ sl_form_level_aux ff (False, False) f
    Atom b _ -> if b then Atomic else FOL
    Equation _ e _ _
      | e == Existl -> Atomic
@@ -462,6 +478,21 @@ sl_form_level ff (isCompound, leftImp) phi =
    QuantPred {} -> SOL
    ExtFORMULA f -> ff f
    _ -> Atomic
+
+testPrenex :: Bool -> (f -> CASL_Formulas) -> FORMULA f -> Bool
+testPrenex topQ ff phi = 
+  case phi of 
+    Quantification _ _ phi' _ -> if topQ then testPrenex True ff phi' else False
+    Junction _ l _ -> foldl (\b x -> b && testPrenex False ff x) True l
+    Relation l1 _ l2 _ -> testPrenex False ff l1 && testPrenex False ff l2
+    Negation f _ -> testPrenex False ff f
+    Atom _ _ -> True
+    Equation _ _ _ _ -> True 
+    QuantOp {} -> error "should not get quant ops in FOL"
+    QuantPred {} -> error "should not get quant preds in FOL"
+    ExtFORMULA f -> if ff f == Prenex then True else False
+    _ -> True 
+    
 
 -- QUANTIFIER
 is_atomic_q :: QUANTIFIER -> Bool

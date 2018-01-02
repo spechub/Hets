@@ -16,6 +16,9 @@ module Maude.Logic_Maude where
 
 import Logic.Logic
 
+import Common.Doc
+import Common.DocUtils
+
 import Maude.AS_Maude (MaudeText (..))
 import Maude.Parse (mStuff)
 import Maude.Symbol (Symbol)
@@ -73,6 +76,7 @@ instance Sentences Maude Sentence Sign Morphism Symbol where
     simplify_sen Maude = Sign.simplifySentence
     -- symbols --
     sym_name Maude = Symbol.toId
+    symKind Maude = show . pretty . Symbol.sym_kind
     sym_of Maude = singletonList . Sign.symbols
     symmap_of Maude = Morphism.symbolMap
 

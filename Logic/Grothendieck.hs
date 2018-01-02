@@ -904,7 +904,8 @@ findComorphismPaths lg (G_sublogics lid sub) =
 logicGraph2Graph :: LogicGraph
                     -> Graph (G_sublogics, Maybe AnyComorphism) AnyComorphism
 logicGraph2Graph lg =
- let relevantMorphisms = filter hasModelExpansion . Map.elems $ comorphisms lg
+ let relevantMorphisms = filter (\x -> hasModelExpansion x && isRps x && isEps x) . Map.elems 
+                         $ comorphisms lg
  in Graph {
   neighbours = \ (G_sublogics lid sl, c1) ->
   let coerce c = forceCoerceSublogic lid (sourceLogic c)

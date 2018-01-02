@@ -14,24 +14,24 @@ Ubuntu:
   # add the hets PPA site to your system unless already done
   apt-add-repository ppa:hets/hets
   apt-add-repository -s \
-    "deb http://ppa.launchpad.net/hets/hets/ubuntu trusty main
+    "deb http://ppa.launchpad.net/hets/hets/ubuntu xenial main"
 
   # update the system's package catalog and install hets incl. dependencies
   apt-get update
-  apt-get install hets
+  apt-get install hets-desktop
 
   # to update your installation to a recent version do from time to time:
   apt-get update
-  apt-get upgrade [hets]
+  apt-get upgrade [hets-desktop]
 
 Solaris 11+:
   # add the package publisher info of the Uni Magedeburg to your system
   # if not already done (see "pkg publisher" output)
   pkg set-publisher --add-origin http://pkg.cs.ovgu.de/lnf lnf
   # install hets incl. dependencies
-  pkg install hets
+  pkg install hets-desktop
   # to update your installation to a recent version do from time to time:
-  pkg update [hets]
+  pkg update [hets-desktop]
 
 To get optional TeX/PDF support, you also need to install the related pdflatex
 packages (Ubuntu: texlive-latex-base, texlive-latex-extra, texlive-pictures,
@@ -45,6 +45,14 @@ In non-desktop environments like servers, where no GUI is needed or hets is
 running as a service, you may prefer to install the package 'hets-server'
 instead. This one gets compiled without GTK+/Glade/TclTk support and thus
 reduces the number of dependencies and required ressources noteworthy.
+
+For your convenience there are also the hets-server-all and hets-desktop-all
+packages: these are meta packages, which bundle hets-server and hets-desktop
+with other hets related tools (e.g. misc. provers) repectively.
+
+All mentioned packages can be installed side-by-side. The GUI version gets
+usually started using the hets(1) command, a server instance can be started
+using the hets-server(1) command.
 
 
 Building from source
@@ -65,7 +73,7 @@ command may automatically install all dependencies:
 	apt-add-repository \
 		-s "deb http://ppa.launchpad.net/hets/hets/ubuntu ${DISTRO} main"
 	apt-get update
-	apt-get build-dep hets
+	apt-get build-dep hets-src
 
 For Solaris 11+ have a look at http://pkg.cs.ovgu.de/lnf/en/catalog.shtml or
 the output of e.g. "pkg list -a 'library/haskell/*'".
@@ -92,7 +100,8 @@ NOTE that since version 0.99.10 programatica support is disabled by default.
 If you want programatica support you need to extract the sources first into
 programatica/tools (this folder should than contain the Setup.hs file). One
 may try 'make get-programatica' as an alternative - it tries to fetch the
-source[s] defined in var.mk and extract them to the right place. To compile
+source[s] defined in var.mk and extract them to the right place. On Ubuntu you
+should also install the package 'libghc-programatica-dev'. To compile
 without programatica support again, just rename or delete ./programatica/
 and do a 'make distclean' before building the new binaries. 'make realclean'
 is almost the same, but it leaves the derived aka generated sources untouched
@@ -244,7 +253,7 @@ The last optional part [.c]* is used (simply incremented by 1 on demand), if
 neither source nor pkg build procedure has been changed, but a new version is
 needed to be able to overwrite old stuff, e.g. if the PPA goes mad again.
 
-So e.g. to be able to overwrite the current installed hets package with your
+So e.g. to be able to overwrite the current installed hets packages with your
 own version without getting into trouble, and getting this in turn automatically
 replaced on e.g. 'apt-get update; apt-get upgrade' when a new version arrived,
 one should just set FULL_DEBVERS to the same of the latest or installed package,

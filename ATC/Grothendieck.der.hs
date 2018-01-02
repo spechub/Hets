@@ -52,7 +52,6 @@ import Control.Concurrent.MVar
 {-! for Common.Lib.Graph.Gr derive : ShATermLG !-}
 {-! for Common.Lib.Graph.GrContext derive : ShATermLG !-}
 {-! for Common.OrderedMap.ElemWOrd derive : ShATermLG !-}
-{-! for Common.LibName.LinkPath derive : ShATermLG !-}
 
 atcLogicLookup :: LogicGraph -> String -> String -> AnyLogic
 atcLogicLookup lg s l =
@@ -82,7 +81,7 @@ fromShATermLG' lg i att = case getATerm' i att of
                (attN, t) -> (setATerm' i t attN, t)
 
 -- generic undecidable instance
-instance ShATermConvertible a => ShATermLG a where
+instance (ShATermConvertible a, Typeable a) => ShATermLG a where
   toShATermLG = toShATermAux
   fromShATermLG _ = fromShATermAux
 

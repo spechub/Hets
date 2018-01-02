@@ -27,6 +27,7 @@ import Driver.ReadFn (showFileType)
 import Driver.WriteFn
 
 import Static.DevGraph
+import Logic.PrintLogics
 
 #ifdef UNI_PACKAGE
 import GUI.ShowGraph
@@ -62,6 +63,7 @@ import Isabelle.Isa2DG (anaIsaFile, anaThyFile)
 main :: IO ()
 main =
     getArgs >>= hetcatsOpts >>= \ opts -> let imode = interactive opts in
+    printOptionsWarnings opts >>
 #ifdef SERVER
      if serve opts then hetsServer opts else
 #endif
@@ -69,7 +71,10 @@ main =
        then cmdlRun opts >>= displayGraph "" opts . getMaybeLib . intState
        else do
          putIfVerbose opts 3 $ "Options: " ++ show opts
-         case (infiles opts, outputLogicGraph opts) of
+         if outputLogicList opts
+            then printLogics
+         else  
+          case (infiles opts, outputLogicGraph opts) of
            ([], lg) -> case guiType opts of
              UseGui ->
 #ifdef UNI_PACKAGE
@@ -116,7 +121,7 @@ processFile opts file =
     case res of
       Just (ln, nEnv) ->
         writeSpecFiles opts file nEnv ln $ lookupDGraph ln nEnv
-      _ -> return ()
+      _ -> hetsIOError ""
     if guess file (intype opts) /= ProofCommand && interactive opts
       then cmdlRun opts >> return ()
       else displayGraph file opts res

@@ -48,6 +48,7 @@ module Common.Utils
   , filterMapWithList
   , timeoutSecs
   , executeProcess
+  , executeProcessWithEnvironment
   , timeoutCommand
   , withinDirectory
   , writeTempFile
@@ -411,6 +412,31 @@ executeProcess cmd args input = do
   case mp of
     Nothing -> return (ExitFailure 127, "", "command not found: " ++ cmd)
     Just exe -> readProcessWithExitCode exe args input
+
+executeProcessWithEnvironment :: FilePath
+                              -> [String]
+                              -> String
+                              -> [(String, String)]
+                              -> IO (ExitCode, String, String)
+executeProcessWithEnvironment cmd args input environment = do
+  mp <- findExecutable cmd
+  case mp of
+    Nothing -> return (ExitFailure 127, "", "command not found: " ++ cmd)
+    Just exe -> do
+      (Just hin, mHout, mHerr, processHandle) <-
+        createProcess $ (proc exe args) { env = Just environment
+                                        , std_in = CreatePipe
+                                        , std_out = CreatePipe
+                                        }
+      hPutStr hin input
+      out <- case mHout of
+        Just hout -> hGetContents hout
+        _ -> return ""
+      err <- case mHerr of
+        Just herr -> hGetContents herr
+        _ -> return ""
+      exitCode <- waitForProcess processHandle
+      return (exitCode, out, err)
 
 -- | runs a command with timeout
 timeoutCommand :: Int -> FilePath -> [String]

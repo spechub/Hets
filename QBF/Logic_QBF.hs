@@ -53,7 +53,7 @@ import Data.Monoid
 data QBF = QBF deriving Show
 
 instance Language QBF where
-    description _ = "Propositional Logic extended with QBFs\n"
+    description _ = "Propositional Logic extended with quantified boolean formulas\n"
         ++ "for more information please refer to\n"
         ++ "http://en.wikipedia.org/wiki/Propositional_logic"
         ++ "http://www.voronkov.com/lics.cgi"
@@ -79,6 +79,8 @@ instance Sentences QBF FORMULA
     negation QBF = Just . negateFormula
     -- returns the set of symbols
     sym_of QBF = singletonList . symOf
+    -- kind of symbols is always prop
+    symKind QBF _ = "prop"
     -- returns the symbol map
     symmap_of QBF = getSymbolMap
     -- returns the name of a symbol
@@ -112,7 +114,7 @@ instance Logic QBF
     Symbol                    -- raw_symbol
     ProofTree                 -- proof_tree
     where
-      stability QBF = Experimental
+      stability QBF = Stable
       top_sublogic QBF = Sublogic.top
       all_sublogics QBF = sublogicsAll
       empty_proof_tree QBF = emptyProofTree

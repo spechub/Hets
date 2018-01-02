@@ -184,6 +184,10 @@ class Show lid => Language lid where
     -- default implementation
     description _ = ""
 
+-- short description = first line of description
+short_description :: Language lid => lid -> String
+short_description l = head ((lines $ description l) ++ [""])
+      
 {- | Categories are given as usual: objects, morphisms, identities,
      domain, codomain and composition. The type id is the name, or
      the identity of the category. It is an argument to all functions
@@ -376,7 +380,7 @@ class (Language lid, Category sign morphism, Ord sentence,
       fullSymName l = show . sym_name l
       -- | a logic dependent kind of a symbol
       symKind :: lid -> symbol -> String
-      symKind _ _ = ""
+      symKind _ _ = "defaultKind"
       -- | the symbols occuring in a sentence (any order)
       symsOfSen :: lid -> sign -> sentence -> [symbol]
       symsOfSen _ _ _ = []
@@ -393,16 +397,6 @@ symset_of :: forall lid sentence sign morphism symbol .
              Sentences lid sentence sign morphism symbol =>
              lid -> sign -> Set.Set symbol
 symset_of lid sig = Set.unions $ sym_of lid sig
-
--- | check that all sentence names in a theory do not appear as symbol names
-checkSenNames :: forall lid sentence sign morphism symbol . 
-                 Sentences lid sentence sign morphism symbol =>
-                 lid -> sign -> [Named sentence] -> Set.Set String
-checkSenNames lid aSig nsens = 
- let senNames = map senAttr nsens
-     symNames = map (show . (sym_name lid)) $ Set.toList $
-                symset_of lid aSig
- in Set.intersection (Set.fromList symNames) $ Set.fromList senNames 
 
 -- | dependency ordered list of symbols for a signature
 symlist_of :: forall lid sentence sign morphism symbol .
@@ -627,7 +621,7 @@ class ( Syntax lid basic_spec symbol symb_items symb_map_items
          equiv2cospan :: lid -> sign -> sign -> [symb_items] -> [symb_items]
            -> Result (sign, sign, sign, EndoMap symbol, EndoMap symbol)
          equiv2cospan _ _ _ _ _ = error "equiv2cospan nyi"
-         -- | extract the module 
+         -- | extract the module
          extract_module :: lid -> [IRI] -> (sign, [Named sentence])
                         -> Result (sign, [Named sentence])
          extract_module _ _ = return
@@ -648,8 +642,12 @@ inclusion :: StaticAnalysis lid basic_spec sentence symb_items symb_map_items
 inclusion l s1 s2 = if is_subsig l s1 s2 then subsig_inclusion l s1 s2
   else fail $ show $ fsep
        [ text (language_name l)
-       , text "symbol(s) missing in target:"
-       , pretty $ Set.difference (symset_of l s1) $ symset_of l s2 ]
+       , text "cannot construct inclusion. Symbol(s) missing in target:"
+       , pretty $ Set.difference (symset_of l s1) $ symset_of l s2
+       , text "\nSource is: "
+       , pretty $ symset_of l s1
+       , text "\nTarget is: "
+       , pretty $ symset_of l s2 ]
 
 {- | semi lattices with top (needed for sublogics). Note that `Ord` is
 only used for efficiency and is not related to the /partial/ order given
@@ -849,6 +847,17 @@ class (StaticAnalysis lid
                           -> Result (sign, [Named sentence])
          -- no logic should throw an error here
          addOmdocToTheory _ _ t _ = return t
+
+
+-- | sublogic of a theory
+sublogicOfTheo :: (Logic lid sublogics
+        basic_spec sentence symb_items symb_map_items
+        sign morphism symbol raw_symbol proof_tree) =>
+    lid -> (sign, [sentence]) -> sublogics
+sublogicOfTheo _ (sig, axs) =
+  foldl lub (minSublogic sig) $
+  map minSublogic axs
+
 
 {- The class of logics which can be used as logical frameworks, in which object
    logics can be specified by the user. Currently the only logics implementing

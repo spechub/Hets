@@ -44,6 +44,7 @@ module Common.IRI
     , hasFullIRI
     , isAbbrev
     , isSimple
+    , addSuffixToIRI
 
     -- * Parsing
     , iri
@@ -597,6 +598,9 @@ isUcsChar :: Char -> Bool
 isUcsChar c =
   let n = ord c
   in (0xA0 <= n && n <= 0xD7FF) ||
+     (0xF900 <= n && n <= 0xFDCF) ||
+     (0xFDF0 <= n && n <= 0xFFEF) ||
+     (0x10000 <= n && n <= 0x1FFFD) ||
      (0x20000 <= n && n <= 0x2FFFD) ||
      (0x30000 <= n && n <= 0x3FFFD) ||
      (0x40000 <= n && n <= 0x4FFFD) ||
@@ -609,7 +613,11 @@ isUcsChar c =
      (0xB0000 <= n && n <= 0xBFFFD) ||
      (0xC0000 <= n && n <= 0xCFFFD) ||
      (0xD0000 <= n && n <= 0xDFFFD) ||
-     (0xE0000 <= n && n <= 0xEFFFD)
+     (0xE1000 <= n && n <= 0xEFFFD) ||
+     -- The following line is a custom extension. It is *not* part of the IRI
+     -- standard, but necessary for the TPTP library (all THF examples) to
+     -- work:
+     c == '^'
 
 isIprivate :: Char -> Bool
 isIprivate c =
@@ -914,3 +922,8 @@ mergeCurie c i =
 
 deleteQuery :: IRI -> IRI
 deleteQuery i = i { abbrevQuery = "" }
+
+addSuffixToIRI :: String -> IRI -> IRI
+addSuffixToIRI s i = if not $ null $ abbrevQuery i 
+                   then i{abbrevQuery = abbrevQuery i ++ s}
+                   else i{abbrevPath  = abbrevPath i ++ s}

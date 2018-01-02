@@ -10,10 +10,6 @@
 
 include var.mk
 
-HETS_VERSION ?= $(shell printf `cat version_nr`)
-
-# We assume ghc 7+
-GHCVERSION := $(shell ghc --numeric-version)
 NO_BIND_WARNING := -fno-warn-unused-do-bind
 HC_WARN := -Wall -fwarn-tabs \
   -fwarn-unrecognised-pragmas -fno-warn-orphans $(NO_BIND_WARNING)
@@ -36,10 +32,21 @@ all: hets.bin hets_server.bin
 # papers (doc/*.pdf) are already pre-generated.
 docs: doc/UserGuide.pdf
 
+# Upgrade haskell-stack
+stack_upgrade:
+	$(STACK) upgrade
+	$(STACK_EXEC) -- ghc-pkg recache
+# Create the build environment
+stack: $(STACK_UPGRADE_TARGET)
+	$(STACK) build --install-ghc --only-dependencies $(STACK_DEPENDENCIES_FLAGS)
+	touch stack
 
 SED := $(shell [ "$(OSNAME)" = 'SunOS' ] && printf 'gsed' || printf 'sed')
 TAR := $(shell [ "$(OSNAME)" = 'SunOS' ] && printf 'gtar' || printf 'tar')
 INSTALL := $(shell [ "$(OSNAME)" = 'SunOS' ] && printf 'ginstall' || printf 'install')
+HETS_VERSION ?= $(shell ${SED} -n \
+	-e '/^hetsVersionNumeric =/ { s/.*"\([^"]*\)".*/\1/; p; q; }' \
+	Driver/Version.hs )
 
 define EOL
 
@@ -47,8 +54,7 @@ define EOL
 endef
 
 # indicate, whether working on an exported repo
-GIT_TIMESTAMP := $(shell [ -d .git ] && git log -1 --format=%ct -- . )
-EXPORTED := $(shell [ -n "$(GIT_TIMESTAMP)" ] || printf 1)
+EXPORTED := $(shell [ -d .git ] || printf 1)
 
 # the 'replacing spaces' example was taken from the (GNU) Make info manual
 empty =
@@ -93,7 +99,7 @@ logics = CASL HasCASL Isabelle Modal Hybrid TopHybrid Temporal \
     CoCASL COL CspCASL CASL_DL \
     SoftFOL ConstraintCASL Propositional RelationalScheme VSE OMDoc DFOL \
     LF Framework Maude ExtModal CommonLogic CSL QBF Adl HolLight Fpl THF \
-    FreeCAD OWL2 RDF CSMOF QVTR
+    FreeCAD OWL2 RDF CSMOF QVTR TPTP
 
 TESTTARGETFILES += Scratch.hs CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     Haskell/wrap.hs Isabelle/isa.hs Syntax/hetpa.hs \
@@ -182,6 +188,7 @@ drifted_files = Common/AS_Annotation.hs \
     RelationalScheme/AS.hs ATC/Grothendieck.hs \
     ExtModal/AS_ExtModal.hs QBF/AS_BASIC_QBF.hs \
     CommonLogic/AS_CommonLogic.hs Fpl/As.hs \
+	TPTP/AS.hs \
     $(gendrifted_files)
 
 # files to extract data types from to generate ShATermConvertible instances
@@ -332,6 +339,8 @@ CSMOF_files = CSMOF/As.hs CSMOF/Sign.hs
 
 QVTR_files = QVTR/As.hs QVTR/Sign.hs
 
+TPTP_files = TPTP/AS.hs TPTP/Sign.hs TPTP/Sublogic.hs
+
 # ATC DrIFT-rule generation for logics
 CASL/ATC_CASL.der.hs: $(CASL_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.GlobalAnnotations -o $@ $(CASL_files)
@@ -437,6 +446,9 @@ QVTR/ATC_QVTR.der.hs: $(QVTR_files) CSMOF/ATC_CSMOF.hs $(GENRULES)
 	$(GENRULECALL) -i CSMOF.ATC_CSMOF -i Common.ATerm.ConvInstances \
  -o $@ $(QVTR_files)
 
+TPTP/ATC_TPTP.der.hs: $(TPTP_files) $(GENRULES)
+	$(GENRULECALL)  -i ATC.AS_Annotation -o $@ $(TPTP_files)
+
 # all ATC .der.hs files for all logics
 atc_logic_files = $(foreach logic, $(logics), $(logic)/ATC_$(logic).der.hs)
 
@@ -449,7 +461,7 @@ genRules: $(generated_rule_files)
 gendrifted_files = $(patsubst %.der.hs, %.hs, $(generated_rule_files))
 
 # all sources that need to be created before ghc can be called
-derived_sources += $(drifted_files) Driver/Version.hs $(hs_der_files)
+derived_sources += $(drifted_files) $(hs_der_files)
 
 
 ####################################################################
@@ -523,7 +535,7 @@ updateHeaders: $(derived_sources)
 	@find . -name '*.hs' -exec fgrep -l '$$Header$$' {} + | xargs -I@ \
 		${SED} -i -e 's|\$$Header\$$|@|g' @
 
-GHC_LIBDIR := $(shell ghc --print-libdir)
+GHC_LIBDIR := $(shell $(STACK_EXEC) ghc --print-libdir)
 GHC_BASEDIR := $(shell cd $(GHC_LIBDIR)/../.. && printf "$${PWD}")
 
 # scanning the "whole" NFS server isn't so smart, so restrict to wellknown dirs
@@ -577,12 +589,17 @@ pretty/LaTeX_maps.hs: utils/words.pl utils/genItCorrections \
 	$(info $(EOL)Done.$(EOL)Please copy the file manually to Common$(EOL))
 
 ### clean up
+clean_stack:
+	@$(RM) -rf .stack-work stack
+
 clean_genRules:
 	@$(RM) $(generated_rule_files) $(gendrifted_files) $(hs_clean_files)
 
-### removes all *.o, *.hi and *.p_o files in all subdirectories
+### removes all *.o, *.hi and *.p_o files in all subdirectories except for
+### .stack-work, where the compiled dependencies reside
 o_clean:
-	@find . \( -name '*.o' -o -name '*.hi' -o -name '*.p_o' \
+	@find . -path ./.stack-work -prune -type f \
+	    -o \( -name '*.o' -o -name '*.hi' -o -name '*.p_o' \
         -o -name '*.dyn_hi' -o -name '*.dyn_o' \) -exec rm -f {} +
 	@$(RM) -f .hets*
 
@@ -616,7 +633,7 @@ realclean: clean java_clean
 	@$(RM) -f *.bin debian/changelog*
 
 ### additionally removes generated files not in the repository tree
-distclean: realclean clean_genRules
+distclean: clean_stack realclean clean_genRules
 	@$(RM) -rf $(derived_sources) \
 		utils/appendHaskellPreludeString \
 		utils/DrIFT utils/genRules \
@@ -624,11 +641,10 @@ distclean: realclean clean_genRules
 		utils/DtdToHaskell-src/DtdToHaskell \
 		utils/genItCorrections pretty/LaTeX_maps.hs pretty/words.pl.log \
 		docs
-	@[ -n "$(EXPORTED)" ] || $(RM) rev.txt
 
 ### interactive
 ghci: $(derived_sources)
-	ghci $(HC_OPTS)
+	$(STACK_EXEC) ghci $(HC_OPTS)
 
 ### build only, don't link. Target was formerly known as 'build'.
 build-hets: hets.hs
@@ -670,22 +686,6 @@ check: $(TESTTARGETS)
 test:
 	yes X | $(MAKE) check
 
-## Preparing the version of Hets
-Driver/Version.hs: Driver/Version.in version_nr rev.txt
-	@$(RM) $@
-	@${SED} -e "s|\$$Header\$$|./$@|" Driver/Version.in >$@
-	@printf '  ++ "$(shell cat version_nr), $(shell cat rev.txt)"\n' >> $@
-
-rev.txt:
-	@if [ -z "$(EXPORTED)" ]; then \
-		printf '$(GIT_TIMESTAMP)\n' > rev.txt ; \
-	elif [ ! -e rev.txt  ]; then \
-		printf 'Unable to create rev.txt (no git repo infos available)\n' ; \
-		exit 1; \
-	else \
-		printf 'Keeping rev.txt (no git repo infos available)\n' ; \
-	fi
-
 ATC/DevGraph.hs: Static/DevGraph.hs
 
 ## two dependencies to avoid circular prerequisites
@@ -700,7 +700,7 @@ $(CASL_DEPENDENT_BINARIES): $(derived_sources)
 .SUFFIXES:
 
 ## rule for GHC
-%: %.hs callghc
+%: %.hs $(STACK_TARGET) callghc
 	@touch .hets-oow
 	$(HC) --make $(HC_OPTS) -o $@ $<
 
@@ -777,13 +777,13 @@ get-programatica:
 		printf 'Failed! No programatica support available!\n' ; exit 4 ; \
 	fi
 
-ARC_NAME ?= /tmp/hets-$(HETS_VERSION)-$(GIT_TIMESTAMP)-src.tar.xz
+ARC_NAME ?= /tmp/hets-$(HETS_VERSION)-src.tar.xz
 
 # remove trailing .txz or .tar.xz
 archive: ARC_BNAME = \
 	$(patsubst %.txz,%, $(patsubst %.tar.xz,%,$(notdir $(ARC_NAME))))
 
-archive: rev.txt $(USER_GUIDE)
+archive: $(USER_GUIDE)
 	@[ -n "$(EXPORTED)" ] && \
 		printf '\nThis source tree is already exported.\n' && exit 1 ; \
 	FNAME=$(dir $(ARC_NAME))/$(ARC_BNAME).tar.xz ; \
@@ -791,7 +791,6 @@ archive: rev.txt $(USER_GUIDE)
 	rm -rf tmp ; mkdir tmp || exit 3 ; \
 	git archive --format=tar --prefix=$(ARC_BNAME)/ HEAD | \
 		( cd tmp ; $(TAR) xf - ) ; \
-	cp rev.txt tmp/$(ARC_BNAME)/ ; \
 	if [ -e $(USER_GUIDE) ]; then \
 		cp $(USER_GUIDE) tmp/$(ARC_BNAME)/$(USER_GUIDE) ; \
 	else \
@@ -925,7 +924,7 @@ install: install-hets install-hets_server install-common install-owl-tools
 ############################################################################
 build-indep: jars docs
 
-build-arch: hets.bin hets_server.bin
+build-arch: $(STACK_TARGET) hets.bin hets_server.bin
 
 build: build-indep build-arch
 
@@ -955,7 +954,7 @@ debian/changelog.tmp: debian/control
 
 # NOTE: dpkg-gencontrol is not POSIX conform wrt. arg processing!
 binary-indep: build-indep install-common $(CHANGELOG)
-	@[ "$${USERNAME}" != 'root' -o -z "$${FAKEROOTKEY}" ] && \
+	-@[ "$${USERNAME}" != 'root' -o -z "$${FAKEROOTKEY}" ] && \
 		printf '\nWARNING: The $<  target should be called using fakeroot!\n\n'
 	$(INSTALL) -m 0755 -d $(DESTDIR)$(SUBDIR_common)/DEBIAN
 	dpkg-gencontrol -P$(DESTDIR)$(SUBDIR_common) -phets-common \
@@ -964,7 +963,7 @@ binary-indep: build-indep install-common $(CHANGELOG)
 	dpkg-name -o ../hets-A.deb
 
 binary-arch: build-arch install-hets install-hets_server $(CHANGELOG)
-	@[ "$${USERNAME}" != 'root' -o -z "$${FAKEROOTKEY}" ] && \
+	-@[ "$${USERNAME}" != 'root' -o -z "$${FAKEROOTKEY}" ] && \
 		printf '\nWARNING: The $<  target should be called using fakeroot!\n\n'
 	$(INSTALL) -m 0755 -d \
 		$(DESTDIR)$(SUBDIR_hets)/DEBIAN \

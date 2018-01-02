@@ -38,7 +38,7 @@ import Data.Typeable
 data DMU = DMU deriving Show
 
 instance Language DMU where
-  description _ = "wrap Catia output"
+  description _ = "a logic to wrap output of the CAD tool Catia"
 
 newtype Text = Text { fromText :: String }
   deriving (Show, Eq, Ord, GetRange, Typeable, ShATermConvertible)

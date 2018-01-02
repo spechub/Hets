@@ -176,11 +176,12 @@ instance Language cid => Language (SpanDomain cid) where
 {- the category of signatures is exactly the category of signatures of
 the sublogic on which the morphism is defined, but with another name -}
 
-instance Morphism cid
+instance (Morphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                 sign1 morphism1 sign_symbol1 symbol1 proof_tree1
             lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 sign_symbol2 symbol2 proof_tree2
+         , Pretty sign_symbol1)
          => Syntax (SpanDomain cid) () sign_symbol1 () ()
 -- default is ok
 
@@ -188,11 +189,12 @@ newtype S2 s = S2 { sentence2 :: s }
   deriving (Eq, Ord, Show, Typeable, Data, ShATermConvertible, Pretty
            , GetRange, ToJson, ToXml)
 
-instance Morphism cid
+instance (Morphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                 sign1 morphism1 sign_symbol1 symbol1 proof_tree1
             lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 sign_symbol2 symbol2 proof_tree2
+         , Category sign1 morphism1, Ord sign_symbol1, GetRange sign_symbol1)
     => Sentences (SpanDomain cid) (S2 sentence2) sign1 morphism1
        sign_symbol1 where
 
@@ -220,7 +222,8 @@ instance (Morphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                 sign1 morphism1 sign_symbol1 symbol1 proof_tree1
             lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
-                sign2 morphism2 sign_symbol2 symbol2 proof_tree2)
+                sign2 morphism2 sign_symbol2 symbol2 proof_tree2
+         , Ord symbol1, GetRange symbol1, Pretty symbol1, Typeable symbol1)
         => StaticAnalysis (SpanDomain cid) () (S2 sentence2) () ()
            sign1 morphism1 sign_symbol1 symbol1 where
  ensures_amalgamability l _ = statFail l "ensures_amalgamability"
@@ -297,7 +300,8 @@ instance ( MinSublogic sublogics1 ()
                 sign1 morphism1 sign_symbol1 symbol1 proof_tree1
             lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 sign_symbol2 symbol2 proof_tree2
-         ) => Logic (SpanDomain cid) (SublogicsPair sublogics1 sublogics2) ()
+         , Ord proof_tree2, Show proof_tree2)
+         => Logic (SpanDomain cid) (SublogicsPair sublogics1 sublogics2) ()
           (S2 sentence2) () () sign1 morphism1 sign_symbol1 symbol1 proof_tree2
     where
       stability (SpanDomain _) = Experimental

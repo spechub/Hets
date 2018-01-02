@@ -31,6 +31,8 @@ module CspCASL.Logic_CspCASL
 import Logic.Logic
 import Logic.Prover
 
+import Common.DocUtils
+
 import CASL.Logic_CASL
 import CASL.Parse_AS_Basic
 import CASL.Morphism
@@ -66,8 +68,8 @@ instance Show a => Language (GenCspCASL a) where
       language_name (GenCspCASL a) = "CspCASL"
         ++ let s = show a in if s == "()" then "" else '_' : s
       description _ =
-        "CspCASL - see\n\n" ++
-        "http://www.cs.swan.ac.uk/~csmarkus/ProcessesAndData/"
+        "CspCASL - extension of CASL with the process algebra CSP\n" ++
+        "See http://www.cs.swan.ac.uk/~csmarkus/ProcessesAndData/"
 
 -- | Instance of Sentences for CspCASL
 instance Show a => Sentences (GenCspCASL a)
@@ -86,6 +88,7 @@ instance Show a => Sentences (GenCspCASL a)
       simplify_sen (GenCspCASL _) =
         SimpSen.simplifySen (const return) SimplifySen.simplifySen
       sym_of (GenCspCASL _) = symSets
+      symKind (GenCspCASL _) = show . pretty . cspSymbType
       print_named (GenCspCASL _) = printTheoryFormula
 
 -- | Syntax of CspCASL
@@ -150,7 +153,7 @@ instance CspCASLSemantics a => Logic (GenCspCASL a)
     -- proof_tree (missing)
     ()
     where
-      stability (GenCspCASL _) = Experimental
+      stability (GenCspCASL _) = Testing
       data_logic (GenCspCASL _) = Just (Logic CASL)
       empty_proof_tree _ = ()
       provers (GenCspCASL _) = cspProvers (undefined :: a)

@@ -1,6 +1,6 @@
 {- |
 Module      :  ./Syntax/hetpa.hs
-Description :  standalone HetCASL parser
+Description :  standalone DOL parser
 Copyright   :  (c) C. Maeder, DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt
 
@@ -8,7 +8,7 @@ Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  experimental
 Portability :  non-portable (Grothendieck)
 
-standalone HetCASL parser
+standalone DOL parser
 -}
 
 module Main where

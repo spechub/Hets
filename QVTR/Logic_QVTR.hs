@@ -27,7 +27,7 @@ import Data.Monoid
 data QVTR = QVTR deriving Show
 
 instance Language QVTR where
-  description _ = "QVT-Relations transformation"
+  description _ = "OMG's QVT-Relations transformation, a language for the specification of model transformations"
 
 type Morphism = DefaultMorphism Sign
 

@@ -15,7 +15,7 @@ module Common.ConvertGlobalAnnos
   ( mergeGlobalAnnos
   , convertGlobalAnnos
   , convertLiteralAnnos
-  , removeHetCASLprefixes
+  , removeDOLprefixes
   ) where
 
 import Common.Id
@@ -34,10 +34,10 @@ import Data.Ord
 import Data.Function (on)
 
 instance Pretty GlobalAnnos where
-  pretty = printAnnotationList . convertGlobalAnnos . removeHetCASLprefixes
+  pretty = printAnnotationList . convertGlobalAnnos . removeDOLprefixes
 
-removeHetCASLprefixes :: GlobalAnnos -> GlobalAnnos
-removeHetCASLprefixes ga = ga
+removeDOLprefixes :: GlobalAnnos -> GlobalAnnos
+removeDOLprefixes ga = ga
   { prefix_map = Map.filter (not . null . iriScheme) $ prefix_map ga }
 
 convertGlobalAnnos :: GlobalAnnos -> [Annotation]
