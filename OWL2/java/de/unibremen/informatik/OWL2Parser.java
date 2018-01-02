@@ -441,23 +441,24 @@ public class OWL2Parser {
 				// ignore the first line containing <?xml version="1.0"?>
 				while ((chomp != -2) && (c = in.read(buf, 0, 8192)) != -1) {
 					if (chomp == -1) {
-						for (int i=0; i < c; i++) {
-							if (buf[i] == '\n' || buf[i] == '\r') {
-								chomp = i;
-								break;
-							}
+						n = 0;
+						while (n < c && buf[n] != '\n' && buf[n] != '\r') {
+							n++;
+						}
+						if (n < c) {
+							chomp = n;
 						}
 					}
 					if (chomp != -1) {
 						// chomp trailing LF and CR
 						n = chomp;
 						chomp = 0;
-						for (int i=n; i < c; i++) {
-							if (buf[i] != '\n' && buf[i] != '\r') {
-								write(buf, i, c - i);
-								chomp = -2;
-								break;
-							}
+						while (n < c && (buf[n] == '\n' || buf[n] == '\r')) {
+							n++;
+						}
+						if (n < c) {
+							write(buf, n, c - n);
+							chomp = -2;
 						}
 					}
 				}
