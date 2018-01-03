@@ -153,11 +153,11 @@ nullIRI = IRI
     , iriPos = nullRange
     }
 
--- | do we have a full (possibly expanded) IRI (i.e. for comparisons)
+-- | check that we have a full (possibly expanded) IRI (i.e. for comparisons)
 hasFullIRI :: IRI -> Bool
 hasFullIRI i = not . null $ iriScheme i ++ (show $ iriPath i)
 
-{- | do we have a simple IRI that is a (possibly expanded) abbreviated IRI
+{- | check that we have a simple IRI that is a (possibly expanded) abbreviated IRI
 without prefix -}
 isSimple :: IRI -> Bool
 isSimple i = null (prefixName i) && isAbbrev i
@@ -203,7 +203,7 @@ simpleIdToIRI sid = nullIRI { iriPath = simpleIdToId sid
                             }
 
 -- * new functions for OWL.AS
--- | do we have a nullIRI
+-- | check that we have a nullIRI
 isNullIRI :: IRI -> Bool
 isNullIRI i = i == nullIRI
 
