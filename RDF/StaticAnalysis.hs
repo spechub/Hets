@@ -49,14 +49,14 @@ resolveAbbreviatedIRI :: RDFPrefixMap -> IRI -> IRI
 resolveAbbreviatedIRI pm new = fromJust $ expandCurie pm new
   {-case Map.lookup (namePrefix new) pm of
     Nothing -> error $ namePrefix new ++ ": prefix not declared"
-    Just anIRI -> let new2 = if null (namePrefix new)
+    Just iri -> let new2 = if null (namePrefix new)
                                         {- FIXME: If null (localPart new)
                                                   then head will fail! -}
                                         && null (localPart new)
                                         && head (localPart new) == ':'
                             then new {localPart = tail $ localPart new}
                             else new
-                in new2 {expandedIRI = expandedIRI anIRI ++ localPart new2}
+                in new2 {expandedIRI = expandedIRI iri ++ localPart new2}
  -}
 
 resolveIRI :: Base -> RDFPrefixMap -> IRI -> IRI
@@ -82,7 +82,7 @@ resolvePredicate b pm (Predicate p) = Predicate $
 
 resolveSubject :: Base -> RDFPrefixMap -> Subject -> Subject
 resolveSubject b pm s = case s of
-    Subject anIRI -> Subject $ resolveIRI b pm anIRI
+    Subject iri -> Subject $ resolveIRI b pm iri
     SubjectList ls -> SubjectList $ map (resolvePOList b pm) ls
     SubjectCollection ls -> SubjectCollection $ map (resolveObject b pm) ls
 
@@ -117,7 +117,7 @@ extractPrefixMap :: RDFPrefixMap -> [Statement] -> RDFPrefixMap
 extractPrefixMap pm ls = case ls of
     [] -> pm
     h : t -> case h of
-        PrefixStatement (PrefixR p anIRI) -> extractPrefixMap (Map.insert p anIRI pm) t
+        PrefixStatement (PrefixR p iri) -> extractPrefixMap (Map.insert p iri pm) t
         _ -> extractPrefixMap pm t
 
 resolveDocument :: TurtleDocument -> TurtleDocument
