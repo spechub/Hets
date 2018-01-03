@@ -89,8 +89,8 @@ inducedFromMor rm sig = do
             else fail $ "unknown symbol: " ++ showDoc s "\n" ++ shows sig ""
         (AnUri v, AnUri u) -> case filter (`Set.member` syms)
           $ map (`mkEntity` v) entityTypes of
-          [] -> let v2 = showIRICase v
-                    u2 = showIRICase u
+          [] -> let v2 = showIRICompact v
+                    u2 = showIRICompact u
                 in inducedPref v2 u2 sig (m, t)
           l -> return $ if u == v then (m, t) else
                             (foldr (`Map.insert` u) m l, t)
@@ -183,9 +183,9 @@ statSymbMapItems sig mtsig =
       (AnUri su, ASymbol (Entity _ _ tu)) | su == tu ->
         return $ Map.insert s t m
       (ASymbol (Entity _ _ su), AnUri tu) | su == tu -> return m
-      (AnUri su, APrefix tu) | showIRICase su == tu ->
+      (AnUri su, APrefix tu) | showIRICompact su == tu ->
         return $ Map.insert s t m
-      (APrefix su, AnUri tu) | su == showIRICase tu -> return m
+      (APrefix su, AnUri tu) | su == showIRICompact tu -> return m
       _ -> if u == t then return m else
         fail $ "differently mapped symbol: " ++ showDoc s "\nmapped to "
              ++ showDoc u " and " ++ showDoc t "")
@@ -198,7 +198,7 @@ statSymbMapItems sig mtsig =
             let mS = ASymbol . mkEntity ty
             in map (\ (s, t) -> (mS s, mS t)) ps
         PrefixO ->
-            map (\ (s, t) -> (APrefix (showIRICase s), APrefix $ showIRICase t)) ps)
+            map (\ (s, t) -> (APrefix (showIRICompact s), APrefix $ showIRICompact t)) ps)
 
 mapSen :: OWLMorphism -> Axiom -> Result Axiom
 mapSen m a = do

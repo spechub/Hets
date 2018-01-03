@@ -104,7 +104,7 @@ printDocument doc = (vcat . map pretty) (statements doc)
 printExpandedIRI :: IRI -> Doc
 printExpandedIRI iri =
  if (not $ hasFullIRI iri) || (isBlankNode iri) then 
-       text $ showIRICase iri
+       text $ showIRICompact iri
   else text "<" <> text (showIRIFull iri) <> text ">"
 
 instance Pretty Term where

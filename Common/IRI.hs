@@ -69,7 +69,7 @@ module Common.IRI
     , isNullIRI
     , iRIRange
     , showIRI
-    , showIRICase
+    , showIRICompact
     , showIRIFull
     , dummyIRI
     , mkIRI
@@ -227,12 +227,12 @@ iRIRange i = let Range rs = iriPos i in case rs of
 showIRI :: IRI -> String
 showIRI i 
   | hasFullIRI i = showIRIFull i
-  | otherwise = showIRICase i
+  | otherwise = showIRICompact i
 
 
 -- | show IRI as abbreviated, when possible
-showIRICase :: IRI -> String
-showIRICase i
+showIRICompact :: IRI -> String
+showIRICompact i
   | hasFullIRI i && not (isAbbrev i) = showIRIFull i
   | not $ null $ iriQuery i = tail $ iriQuery i
   | otherwise = showIRIAbbrev i
