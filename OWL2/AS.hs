@@ -46,7 +46,7 @@ predefPrefixes = Map.fromList
       , ("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
       , ("rdfs", "http://www.w3.org/2000/01/rdf-schema#")
       , ("xsd", "http://www.w3.org/2001/XMLSchema#")
-      , ("", showIRIU dummyIRI ++ "#") ]
+      , ("", showIRICase dummyIRI ++ "#") ]
 
 type LexicalForm = String
 type LanguageTag = String
@@ -246,7 +246,7 @@ makeOWLPredefMaps sl = preDefMaps sl "owl"
 setDatatypePrefix :: IRI -> IRI
 setDatatypePrefix i = case isDatatypeKeyAux i of
   (p, l) : _ -> setPrefix p $ mkIRI l
-  _ -> error $ showIRIU i ++ " is not a predefined datatype"
+  _ -> error $ showIRICase i ++ " is not a predefined datatype"
 
 -- | checks if the IRI is part of the built-in ones and puts the correct prefix
 setReservedPrefix :: IRI -> IRI
@@ -272,10 +272,10 @@ uriToId i =
            && null (iriFragment i)
            && isNothing (iriAuthority i))
         then iriPath i
-        else stringToId $ case mapMaybe (`stripPrefix` showIRIU i)
+        else stringToId $ case mapMaybe (`stripPrefix` showIRICase i)
                     $ Map.elems predefPrefixes of
                 [s] -> s
-                _ -> showIRII i
+                _ -> showIRIFull i
 
 getPredefName :: IRI -> String
 getPredefName = show . uriToId
@@ -289,7 +289,7 @@ entityToId :: Entity -> Id
 entityToId = uriToId . cutIRI
 
 printDatatype :: IRI -> String
-printDatatype dt = showIRIU $
+printDatatype dt = showIRICase $
     if isDatatypeKey dt then stripReservedPrefix dt else dt
 
 data DatatypeCat = OWL2Number | OWL2String | OWL2Bool | Other

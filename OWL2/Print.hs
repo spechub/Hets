@@ -133,7 +133,7 @@ printFV (facet, restValue) = pretty (fromCF facet) <+> pretty restValue
 
 fromCF :: ConstrainingFacet -> String
 fromCF f
-    | hasFullIRI f = showIRIU f \\ "http://www.w3.org/2001/XMLSchema#"
+    | hasFullIRI f = showIRICase f \\ "http://www.w3.org/2001/XMLSchema#"
     | otherwise = show $ iriPath f
 
 instance Pretty DatatypeFacet where

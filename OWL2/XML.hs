@@ -244,7 +244,7 @@ getObjProp b e = case getName e of
 properFacet :: ConstrainingFacet -> ConstrainingFacet
 properFacet cf
     | hasFullIRI cf =
-        let p = showIRIU cf \\ "http://www.w3.org/2001/XMLSchema#"
+        let p = showIRICase cf \\ "http://www.w3.org/2001/XMLSchema#"
         in case p of
             "minInclusive" -> facetToIRI MININCLUSIVE
             "minExclusive" -> facetToIRI MINEXCLUSIVE

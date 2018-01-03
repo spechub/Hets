@@ -264,7 +264,7 @@ basicSpec pm = do
     if null nss && null ie && null ans && null as && ou == nullIRI
       then fail "empty ontology"
       else return $ OntologyDocument
-        (Map.union (Map.fromList $ map (\ (p, q) -> (p, showIRIU q)) nss)
+        (Map.union (Map.fromList $ map (\ (p, q) -> (p, showIRICase q)) nss)
          (convertPrefixMap pm))
         (emptyOntology as)
             { imports = ie

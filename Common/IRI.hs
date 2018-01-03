@@ -69,8 +69,8 @@ module Common.IRI
     , isNullIRI
     , iRIRange
     , showIRI
-    , showIRIU
-    , showIRII
+    , showIRICase
+    , showIRIFull
     , dummyIRI
     , mkIRI
     , idToIRI  
@@ -226,14 +226,14 @@ iRIRange i = let Range rs = iriPos i in case rs of
 
 showIRI :: IRI -> String
 showIRI i 
-  | hasFullIRI i = showIRII i
-  | otherwise = showIRIU i
+  | hasFullIRI i = showIRIFull i
+  | otherwise = showIRICase i
 
 
--- | show IRI as abbreviated
-showIRIU :: IRI -> String
-showIRIU i
-  | hasFullIRI i && not (isAbbrev i) = showIRII i
+-- | show IRI as abbreviated, when possible
+showIRICase :: IRI -> String
+showIRICase i
+  | hasFullIRI i && not (isAbbrev i) = showIRIFull i
   | not $ null $ iriQuery i = tail $ iriQuery i
   | otherwise = showIRIAbbrev i
 
@@ -242,8 +242,8 @@ showIRIAbbrev i = iriToStringAbbrev i ""
  -- don't duplicate code
 
 -- | show IRI in angle brackets as full IRI
-showIRII :: IRI -> String
-showIRII i = iriToStringFull id i ""
+showIRIFull :: IRI -> String
+showIRIFull i = iriToStringFull id i ""
   -- this should behave like show, and there we use id
   
 dummyIRI :: IRI
