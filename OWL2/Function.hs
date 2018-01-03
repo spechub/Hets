@@ -65,30 +65,30 @@ instance Function PrefixMap where
         _ -> err
 
 instance Function IRI where
-  function a m qn = case m of
+  function a m iri = case m of
     StringMap pm -> case a of
-     Rename -> let pre = prefixName qn in
-              qn { prefixName = Map.findWithDefault pre pre pm}
+     Rename -> let pre = prefixName iri in
+              iri { prefixName = Map.findWithDefault pre pre pm}
      Expand ->
-      let np = prefixName qn
-          lp = show $ iriPath qn
-          iRi = if hasFullIRI qn then let
+      let np = prefixName iri
+          lp = show $ iriPath iri
+          iRi = if hasFullIRI iri then let
                   ex = np ++ ":" ++ lp
-                  res = let x = expandCurie (Map.map mkIRI pm) qn in
+                  res = let x = expandCurie (Map.map mkIRI pm) iri in
                          case x of
                           Just y -> y
-                          Nothing -> error $ "could not expand:" ++ showIRI qn 
+                          Nothing -> error $ "could not expand:" ++ showIRI iri 
                 in if elem np ["http", "https"] then -- abbreviate
                         case Map.lookup "" pm of
                           Just ep | length ep > 5 -> case stripPrefix ep ex of
                             Just rl@(_ : _) -> res
                               { prefixName = ""
-                              , iriPath = stringToId rl -- todo: maybe we should keep the Id structure of iriPath qn
+                              , iriPath = stringToId rl -- todo: maybe we should keep the Id structure of iriPath iri
                               }
                             _ -> res
                           _ -> res
                       else res
-               else if isBlankNode qn then qn else   
+               else if isBlankNode iri then iri else   
                     let iriMap = foldl (\pm' (kp, vp) -> 
                                 case parseIRI vp of
                                   Just i -> Map.insert kp i pm'
@@ -99,12 +99,12 @@ instance Function IRI where
                                               else pm') 
                               Map.empty $  
                               Map.toList $ Map.union pm predefPrefixes
-                        x = expandCurie iriMap qn 
+                        x = expandCurie iriMap iri 
                     in case x of
                         Just y -> y
-                        Nothing -> error $ "could not expand curie:" ++ showIRI qn
+                        Nothing -> error $ "could not expand curie:" ++ showIRI iri
       in setReservedPrefix iRi
-    _ -> qn
+    _ -> iri
 
 instance Function Sign where
    function t mp (Sign p1 p2 p3 p4 p5 p6 p7 p8) = case mp of

@@ -95,34 +95,34 @@ getIRI b e =
 else, the xml:base needs to be prepended to the local part
 and then the IRI must be splitted -}
 appendBase :: XMLBase -> IRI -> IRI
-appendBase b qn =
-    let r = iriPath qn
+appendBase b iri =
+    let r = iriPath iri
     in splitIRI $ if ':' `elem` show r
-                   then qn
-                   else qn {iriPath = prependString b r}
+                   then iri
+                   else iri {iriPath = prependString b r}
 
 -- | splits an IRI at the colon
 splitIRI :: IRI -> IRI
-splitIRI qn = let 
-  i = iriPath qn
-  in if isBlankNode qn then mkNodeID qn else 
+splitIRI iri = let 
+  i = iriPath iri
+  in if isBlankNode iri then mkNodeID iri else 
    case getTokens i of
-    [] -> qn
+    [] -> iri
     (tok:ts) ->
       let lp = tokStr tok
           (np, ':' : nlp) = span (/= ':') lp
-      in qn { prefixName = np
+      in iri { prefixName = np
             , iriPath = i { getTokens = tok { tokStr = nlp } : ts}
             }
 
 -- | prepends "_:" to the nodeID if is not there already
 mkNodeID :: IRI -> IRI
-mkNodeID qn =
-    let lp = show $ iriPath qn
+mkNodeID iri =
+    let lp = show $ iriPath iri
     in case lp of
-        '_' : ':' : r -> qn {prefixName = "_", iriPath = stringToId r}
-        -- todo: maybe we should keep the Id structure of iriPath qn
-        _ -> qn {prefixName = "_"}
+        '_' : ':' : r -> iri {prefixName = "_", iriPath = stringToId r}
+        -- todo: maybe we should keep the Id structure of iriPath iri
+        _ -> iri {prefixName = "_"}
 
 -- | gets the content of an element with name Import
 importIRI :: Map.Map String String -> XMLBase -> Element -> IRI
