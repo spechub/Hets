@@ -349,11 +349,16 @@ createAxioms s fl = do
     return (map anaAxiom . filter noDecl $ concatMap getAxioms cf, cf)
 
 check1Prefix :: Maybe String -> String -> Bool
-check1Prefix ms s = case ms of
-    Nothing -> True
-    Just iri -> iri == s || "<"++iri++">" == s || iri == "<"++s++">"
-      -- todo: ensure that addition of angle brackets is not necessary
-      
+check1Prefix ms s =
+  let
+    dropCharPre c str = if isPrefixOf [c] str then drop 1 str else str
+    dropBracketSuf str = reverse $ dropCharPre '>' $ reverse str
+  in case ms of
+      Nothing -> True
+      Just iri -> let iri' = dropBracketSuf $ dropCharPre '<' iri
+                      s' = dropBracketSuf $ dropCharPre '<' s
+                  in iri' == s'
+
 checkPrefixMap :: PrefixMap -> Bool
 checkPrefixMap pm =
     let pl = map (`Map.lookup` pm) ["owl", "rdf", "rdfs", "xsd"]
