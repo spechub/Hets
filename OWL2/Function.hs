@@ -83,7 +83,7 @@ instance Function IRI where
                           Just ep | length ep > 5 -> case stripPrefix ep ex of
                             Just rl@(_ : _) -> res
                               { prefixName = ""
-                              , iriPath = stringToId rl -- todo: maybe we should keep the Id structure of iriPath iri
+                              , iriPath = stringToId rl -- todo: maybe we should keep the Id structure of iriPath iri. See #1820
                               }
                             _ -> res
                           _ -> res
