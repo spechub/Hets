@@ -61,13 +61,13 @@ checkEntity s t@(Entity _ ty e) =
 
 -- | takes an iri and finds out what entities it belongs to
 correctEntity :: Sign -> IRI -> [Entity]
-correctEntity s iRi =
-    [mkEntity AnnotationProperty iRi | Set.member iRi (annotationRoles s)] ++
-    [mkEntity Class iRi | Set.member iRi (concepts s)] ++
-    [mkEntity ObjectProperty iRi | Set.member iRi (objectProperties s)] ++
-    [mkEntity DataProperty iRi | Set.member iRi (dataProperties s)] ++
-    [mkEntity Datatype iRi | Set.member iRi (datatypes s)] ++
-    [mkEntity NamedIndividual iRi | Set.member iRi (individuals s)]
+correctEntity s iri =
+    [mkEntity AnnotationProperty iri | Set.member iri (annotationRoles s)] ++
+    [mkEntity Class iri | Set.member iri (concepts s)] ++
+    [mkEntity ObjectProperty iri | Set.member iri (objectProperties s)] ++
+    [mkEntity DataProperty iri | Set.member iri (dataProperties s)] ++
+    [mkEntity Datatype iri | Set.member iri (datatypes s)] ++
+    [mkEntity NamedIndividual iri | Set.member iri (individuals s)]
 
 checkLiteral :: Sign -> Literal -> Result ()
 checkLiteral s l = case l of
@@ -143,33 +143,33 @@ checkClassExpression s desc =
     ObjectOneOf _ -> return desc
     ObjectValuesFrom q opExpr d -> if isDeclObjProp s opExpr
         then fmap (ObjectValuesFrom q opExpr) $ checkClassExpression s d
-        else let iRi = objPropToIRI opExpr
-             in if isDeclDataProp s iRi then
-                    fmap (DataValuesFrom q iRi)
+        else let iri = objPropToIRI opExpr
+             in if isDeclDataProp s iri then
+                    fmap (DataValuesFrom q iri)
                       $ classExpressionToDataRange s d
-                else objErr iRi
+                else objErr iri
     ObjectHasSelf opExpr -> if isDeclObjProp s opExpr then return desc
         else objErr $ objPropToIRI opExpr
     ObjectHasValue opExpr _ -> if isDeclObjProp s opExpr then return desc
         else objErr $ objPropToIRI opExpr
     ObjectCardinality (Cardinality a b opExpr md) -> do
-        let iRi = objPropToIRI opExpr
-            mbrOP = Set.member iRi $ objectProperties s
+        let iri = objPropToIRI opExpr
+            mbrOP = Set.member iri $ objectProperties s
         case md of
             Nothing
                 | mbrOP -> return desc
-                | isDeclDataProp s iRi ->
-                        return $ DataCardinality $ Cardinality a b iRi Nothing
-                | otherwise -> objErr iRi
+                | isDeclDataProp s iri ->
+                        return $ DataCardinality $ Cardinality a b iri Nothing
+                | otherwise -> objErr iri
             Just d ->
                 if mbrOP then fmap (ObjectCardinality . Cardinality a b opExpr
                             . Just) $ checkClassExpression s d
                 else do
                     dr <- classExpressionToDataRange s d
-                    if isDeclDataProp s iRi then
+                    if isDeclDataProp s iri then
                         return $ DataCardinality
-                          $ Cardinality a b iRi $ Just dr
-                        else datErr iRi
+                          $ Cardinality a b iri $ Just dr
+                        else datErr iri
     DataValuesFrom _ dExp r -> checkDataRange s r
         >> if isDeclDataProp s dExp then return desc else datErr dExp
     DataHasValue dExp l -> do
@@ -265,11 +265,11 @@ checkAnnBit s fb = case fb of
     _ -> return fb
 
 checkAssertion :: Sign -> IRI -> Annotations -> Result [Axiom]
-checkAssertion s iRi ans = do
-    let entList = correctEntity s iRi
+checkAssertion s iri ans = do
+    let entList = correctEntity s iri
         ab = AnnFrameBit ans $ AnnotationFrameBit Assertion
     if null entList
-        then let misc = Misc [Annotation [] iRi $ AnnValue iRi]
+        then let misc = Misc [Annotation [] iri $ AnnValue iri]
              in return [PlainAxiom misc ab] -- only for anonymous individuals
         else return $ map (\ x -> PlainAxiom (SimpleEntity x) ab) entList
 
@@ -297,11 +297,11 @@ checkAxiom s ax@(PlainAxiom ext fb) = case fb of
         AnnotationFrameBit ty -> case ty of
             Assertion -> case ext of
                     -- this can only come from XML
-                Misc [Annotation _ iRi _] -> checkAssertion s iRi ans
+                Misc [Annotation _ iri _] -> checkAssertion s iri ans
                     -- these can only come from Manchester Syntax
-                SimpleEntity (Entity _ _ iRi) -> checkAssertion s iRi ans
-                ClassEntity (Expression iRi) -> checkAssertion s iRi ans
-                ObjectEntity (ObjectProp iRi) -> checkAssertion s iRi ans
+                SimpleEntity (Entity _ _ iri) -> checkAssertion s iri ans
+                ClassEntity (Expression iri) -> checkAssertion s iri ans
+                ObjectEntity (ObjectProp iri) -> checkAssertion s iri ans
                 _ -> do
                   next <- checkExtended s ext
                   -- could rarely happen, and only in our extended syntax
@@ -351,7 +351,7 @@ createAxioms s fl = do
 check1Prefix :: Maybe String -> String -> Bool
 check1Prefix ms s = case ms of
     Nothing -> True
-    Just iRi -> iRi == s || "<"++iRi++">" == s || iRi == "<"++s++">"
+    Just iri -> iri == s || "<"++iri++">" == s || iri == "<"++s++">"
       -- todo: ensure that addition of angle brackets is not necessary
       
 checkPrefixMap :: PrefixMap -> Bool
