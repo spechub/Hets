@@ -49,7 +49,7 @@ getIri :: EntityType -> IRI -> Map.Map Entity IRI -> IRI
 getIri ty u = fromMaybe u . Map.lookup (mkEntity ty u)
 
 cutWith :: EntityType -> Action -> AMap -> IRI -> IRI
-cutWith ty t s anIri= cutIRI $ function t s $ mkEntity ty anIri
+cutWith ty t s anIri = cutIRI $ function t s $ mkEntity ty anIri
 
 err :: t
 err = error "operation not allowed"
