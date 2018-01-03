@@ -245,7 +245,9 @@ showIRIAbbrev i = iriToStringAbbrev i ""
 showIRIFull :: IRI -> String
 showIRIFull i = iriToStringFull id i ""
   -- this should behave like show, and there we use id
-  
+
+
+-- | a default ontology name  
 dummyIRI :: IRI
 dummyIRI = nullIRI { 
        iriScheme = "http"
@@ -275,17 +277,17 @@ setPrefix s i = i{prefixName = s}
 Returns 'Nothing' if the string is not a valid IRI;
 (an absolute IRI with optional fragment identifier). -}
 parseIRI :: String -> Maybe IRI
-parseIRI s = parseIRIAny iriParser s
+parseIRI = parseIRIAny iriParser
 
 {- | Parse a IRI reference to an 'IRI' value.
 Returns 'Nothing' if the string is not a valid IRI reference.
 (an absolute or relative IRI with optional fragment identifier). -}
 parseIRIReference :: String -> Maybe IRI
-parseIRIReference s = parseIRIAny iriReference s
+parseIRIReference = parseIRIAny iriReference
 
 -- | Turn a string containing a CURIE into an 'IRI'
 parseCurie :: String -> Maybe IRI
-parseCurie s = parseIRIAny curie s
+parseCurie = parseIRIAny curie
 
 {- | Turn a string containing an IRI or a CURIE into an 'IRI'.
 Returns 'Nothing' if the string is not a valid IRI;
