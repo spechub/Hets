@@ -161,7 +161,7 @@ uriQ :: CharParser st IRI
 uriQ = Common.IRI.compoundIriCurie
 
 fullIri :: CharParser st IRI
-fullIri = angles iri
+fullIri = angles iriParser
 
 uriP :: CharParser st IRI
 uriP =

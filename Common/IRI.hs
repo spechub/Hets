@@ -46,7 +46,7 @@ module Common.IRI
     , addSuffixToIRI
 
     -- * Parsing
-    , iri
+    , iriParser
     , angles
     , iriCurie
     , compoundIriCurie  
@@ -275,7 +275,7 @@ setPrefix s i = i{prefixName = s}
 Returns 'Nothing' if the string is not a valid IRI;
 (an absolute IRI with optional fragment identifier). -}
 parseIRI :: String -> Maybe IRI
-parseIRI s = parseIRIAny iri s
+parseIRI s = parseIRIAny iriParser s
 
 {- | Parse a IRI reference to an 'IRI' value.
 Returns 'Nothing' if the string is not a valid IRI reference.
@@ -340,10 +340,10 @@ iriWithPos parser = do
 
 -- | Parses an IRI reference enclosed in '<', '>' or a CURIE
 iriCurie :: IRIParser st IRI
-iriCurie = angles iri <|> curie 
+iriCurie = angles iriParser <|> curie 
 
 compoundIriCurie :: IRIParser st IRI
-compoundIriCurie = angles iri <|> compoundCurie 
+compoundIriCurie = angles iriParser <|> compoundCurie 
 
 angles :: IRIParser st IRI -> IRIParser st IRI
 angles p = char '<' >> fmap (\ i -> i { hasAngles = True }) p << char '>'
@@ -452,8 +452,8 @@ pnCharsPAux c =
 / ipath-rootless
 / ipath-empty -}
 
-iri :: IRIParser st IRI
-iri = iriWithPos $ do
+iriParser :: IRIParser st IRI
+iriParser = iriWithPos $ do
   us <- try uscheme
   (ua, up) <- ihierPart
   uq <- option "" uiquery
@@ -674,7 +674,7 @@ uifragment = char '#' <:> flat (many $ uchar ":@/?")
 -- RFC3987, section 2.2
 
 iriReference :: IRIParser st IRI
-iriReference = iri <|> irelativeRef
+iriReference = iriParser <|> irelativeRef
 
 -- RFC3987, section 2.2
 
