@@ -25,6 +25,7 @@ import Control.Monad.IO.Class
 import Control.Monad.Trans.Control
 import Control.Monad.Logger
 
+import Data.Maybe (fromMaybe)
 import Data.Pool (Pool)
 
 import Database.Persist.Sql
@@ -45,16 +46,21 @@ getConnection dbConfig = case adapter dbConfig of
   Just "mysql2" -> fail mySQLErrorMessage
   -- #### /Deactivate MySQL
   -- #### Activate MySQL
-  -- Just "mysql" -> return $ MySQL.connection dbConfig defaultPoolSize
-  -- Just "mysql" -> return $ MySQL.connection dbConfig defaultPoolSize
+  -- Just "mysql" -> return $ MySQL.connection dbConfig $
+  --                   fromMaybe defaultPoolSize $ pool dbConfig
+  -- Just "mysql" -> return $ MySQL.connection dbConfig $
+  --                   fromMaybe defaultPoolSize $ pool dbConfig
   -- #### /Activate MySQL
 #ifdef UNI_PACKAGE
   Just "postgresql" -> fail postgreSQLErrorMessage
 #else
-  Just "postgresql" -> return $ PSQL.connection dbConfig defaultPoolSize
+  Just "postgresql" -> return $ PSQL.connection dbConfig $
+                         fromMaybe defaultPoolSize $ pool dbConfig
 #endif
-  Just "sqlite" -> return $ SQLite.connection dbConfig defaultPoolSize
-  Just "sqlite3" -> return $ SQLite.connection dbConfig defaultPoolSize
+  Just "sqlite" -> return $ SQLite.connection dbConfig $
+                     fromMaybe defaultPoolSize $ pool dbConfig
+  Just "sqlite3" -> return $ SQLite.connection dbConfig $
+                      fromMaybe defaultPoolSize $ pool dbConfig
   _ -> fail ("Persistence.Database: No database adapter specified "
                ++ "or adapter unsupported.")
   where

@@ -4,7 +4,6 @@ default: &default
   # password:
   # host: localhost # Optional
   # port: 5432 # Optional
-  locale: en_US.UTF-8 # Optional
   pool: 10
 
 development:
