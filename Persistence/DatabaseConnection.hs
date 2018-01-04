@@ -2,14 +2,21 @@
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE GADTs                      #-}
 
+-- MySQL is dactivated. To activate it,
+--   * uncomment the import of the MySQL module in
+--     Persistence/DatabaseConnection.hs
+--   * and switch the "mysql" and "mysql2" cases in `getConnection` with the
+--     commented out code underneath them in Persistence/DatabaseConnection.hs.
 module Persistence.DatabaseConnection (getConnection) where
 
 import Persistence.DBConfig
 
 import qualified Persistence.SQLite as SQLite
+-- #### Deactivate MySQL
 -- MySQL support is deactivated because it requires users to install MySQL even
 -- if they want to use SQLite or PostgreSQL.
 -- import qualified Persistence.MySQL as MySQL
+-- #### /Deactivate MySQL
 #ifndef UNI_PACKAGE
 import qualified Persistence.PostgreSQL as PSQL
 #endif
@@ -33,10 +40,14 @@ getConnection :: ( BaseBackend backend ~ SqlBackend
                  )
               => DBConfig -> IO ((Pool backend -> m a) -> m a)
 getConnection dbConfig = case adapter dbConfig of
+  -- #### Deactivate MySQL
   Just "mysql" -> fail mySQLErrorMessage
   Just "mysql2" -> fail mySQLErrorMessage
+  -- #### /Deactivate MySQL
+  -- #### Activate MySQL
   -- Just "mysql" -> return $ MySQL.connection dbConfig defaultPoolSize
   -- Just "mysql" -> return $ MySQL.connection dbConfig defaultPoolSize
+  -- #### /Activate MySQL
 #ifdef UNI_PACKAGE
   Just "postgresql" -> fail postgreSQLErrorMessage
 #else

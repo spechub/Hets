@@ -47,13 +47,13 @@ packages:
   - '.'
   - location: './_dependencies/persistent/persistent'
     extra-dep: true
-  - location: './_dependencies/persistent/persistent-mysql'
-    extra-dep: true
   - location: './_dependencies/persistent/persistent-postgresql'
     extra-dep: true
   - location: './_dependencies/persistent/persistent-sqlite'
     extra-dep: true
   - location: './_dependencies/persistent/persistent-template'
+    extra-dep: true
+  - location: './_dependencies/persistent/persistent-mysql'
     extra-dep: true
 
 # Dependency packages to be pulled from upstream that are not in the resolver

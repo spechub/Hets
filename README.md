@@ -169,12 +169,17 @@ If you wish to make larger changes we generally recommend [forking](https://help
 
 
 ### Build Hets using Stack
+* Get the git repository and its submodules
+    ```
+    git clone https://github.com/spechub/Hets.git
+    git submodule update --init --recursive
+    ```
 * [Install Stack](https://docs.haskellstack.org/en/stable/install_and_upgrade) (use the generic Linux option if you are on Ubuntu).
 * Install build- and GUI-dependencies
   * Ubuntu:
     ```
     sudo apt install libglib2.0-dev libcairo2-dev libpango1.0-dev libgtk2.0-dev libglade2-dev libncurses-dev
-    sudo apt install postgresql postgresql-server-dev-9.5
+    sudo apt install postgresql postgresql-server-dev-9.5 mysql-server libmysqlclient-dev
     ```
   * macOS:
     ```
