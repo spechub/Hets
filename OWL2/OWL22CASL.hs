@@ -17,6 +17,7 @@ import Logic.Comorphism
 import Common.AS_Annotation
 import Common.Result
 import Common.Id
+import Common.IRI
 import Control.Monad
 import Data.Char
 import qualified Data.Set as Set
@@ -117,7 +118,9 @@ uriToIdM = return . uriToCaslId
 
 -- | Extracts Id from URI
 uriToCaslId :: IRI -> Id
-uriToCaslId urI = let
+uriToCaslId urI =  stringToId $ showIRI urI
+
+{- let
   repl a = if isAlphaNum a then [a] else if a/=':' then "_" else ""
   getId = stringToId . (concatMap repl)
  in
@@ -131,6 +134,7 @@ uriToCaslId urI = let
         getId $ expandedIRI urI
       else -}
         getId $ localPart urI
+-}
 
 tokDecl :: Token -> VAR_DECL
 tokDecl = flip mkVarDecl thing
@@ -231,8 +235,8 @@ mapMorphism oMor = do
                  , pred_map = preds }
 
 mapSymbol :: Entity -> Set.Set Symbol
-mapSymbol (Entity _ ty iri) = let
-  syN = Set.singleton . Symbol (uriToCaslId iri)
+mapSymbol (Entity _ ty iRi) = let
+  syN = Set.singleton . Symbol (uriToCaslId iRi)
   in case ty of
     Class -> syN $ PredAsItemType conceptPred
     ObjectProperty -> syN $ PredAsItemType objectPropPred
@@ -573,8 +577,8 @@ mapFact cSig ex f = case f of
             return oProp
         _ -> fail $ "ObjectPropertyFactsFacts Entity fail: " ++ show f
     DataPropertyFact posneg dpe lit -> case ex of
-        SimpleEntity (Entity _ NamedIndividual iri) -> do
-            inS <- mapIndivURI cSig iri
+        SimpleEntity (Entity _ NamedIndividual iRi) -> do
+            inS <- mapIndivURI cSig iRi
             inT <- mapLiteral lit
             oPropH <- mapDataProp cSig dpe 1 2
             let oProp = case posneg of
@@ -671,15 +675,15 @@ mapListFrameBit cSig ex rel lfb =
           Misc _ -> let cel = map snd cls in do
             (els, s) <- mapDescriptionListP cSig 1 $ comPairs cel cel
             mkEDPairs (uniteCASLSign cSig s) [1] rel els
-          SimpleEntity (Entity _ ty iri) -> do
+          SimpleEntity (Entity _ ty iRi) -> do
               (els, s) <- mapAndUnzipM (\ (_, c) -> mapDescription cSig c 1) cls
               case ty of
                 NamedIndividual | rel == Just Types -> do
-                  inD <- mapIndivURI cSig iri
+                  inD <- mapIndivURI cSig iRi
                   let els' = map (substitute (mkNName 1) thing inD) els
                   return ( els', uniteL $ cSig : s)
                 DataProperty | rel == (Just $ DRRelation ADomain) -> do
-                  oEx <- mapDataProp cSig iri 1 2
+                  oEx <- mapDataProp cSig iRi 1 2
                   let vars = (mkNName 1, mkNName 2)
                   return (map (mkFI [tokDecl $ fst vars]
                        [mkVarDecl (snd vars) dataS] oEx) els, uniteL $ cSig : s)
@@ -737,14 +741,14 @@ mapListFrameBit cSig ex rel lfb =
         Misc _ -> do
             pairs <- mapComDataPropsList cSig Nothing dl 1 2
             mkEDPairs' cSig [1, 2] rel pairs
-        SimpleEntity (Entity _ DataProperty iri) -> case r of
+        SimpleEntity (Entity _ DataProperty iRi) -> case r of
             SubPropertyOf -> do
                 os1 <- mapM (\ o1 -> mapDataProp cSig o1 1 2) dl
-                o2 <- mapDataProp cSig iri 1 2 -- was 2 1
+                o2 <- mapDataProp cSig iRi 1 2 -- was 2 1
                 return (map (mkForall [thingDecl 1, dataDecl 2]
                     . mkImpl o2) os1, cSig)
             EDRelation _ -> do
-                pairs <- mapComDataPropsList cSig (Just iri) dl 1 2
+                pairs <- mapComDataPropsList cSig (Just iRi) dl 1 2
                 mkEDPairs' cSig [1, 2] rel pairs
             _ -> return ([], cSig)
         _ -> err
@@ -752,14 +756,14 @@ mapListFrameBit cSig ex rel lfb =
         Nothing -> err
         Just (SDRelation re) -> do
             let mi = case ex of
-                    SimpleEntity (Entity _ NamedIndividual iri) -> Just iri
+                    SimpleEntity (Entity _ NamedIndividual iRi) -> Just iRi
                     _ -> Nothing
             fs <- mapComIndivList cSig re mi $ map snd al
             return (fs, cSig)
         _ -> err
     DataPropRange dpr -> case ex of
-        SimpleEntity (Entity _ DataProperty iri) -> do
-            oEx <- mapDataProp cSig iri 1 2
+        SimpleEntity (Entity _ DataProperty iRi) -> do
+            oEx <- mapDataProp cSig iRi 1 2
             (odes, s) <- mapAndUnzipM (\ (_, c) -> mapDataRange cSig c 2) dpr
             let vars = (mkNName 1, mkNName 2)
             return (map (mkFEI [tokDecl $ fst vars]
@@ -782,24 +786,24 @@ mapAnnFrameBit cSig ex ans afb =
     in case afb of
     AnnotationFrameBit _ -> return ([], cSig)
     DataFunctional -> case ex of
-        SimpleEntity (Entity _ _ iri) -> do
-            so1 <- mapDataProp cSig iri 1 2
-            so2 <- mapDataProp cSig iri 1 3
+        SimpleEntity (Entity _ _ iRi) -> do
+            so1 <- mapDataProp cSig iRi 1 2
+            so2 <- mapDataProp cSig iRi 1 3
             return ([mkForall (thingDecl 1 : map dataDecl [2, 3]) $ implConj
                         [so1, so2] $ mkEqVar (dataDecl 2) $ qualData 3], cSig)
         _ -> err
     DatatypeBit dr -> case ex of
-        SimpleEntity (Entity _ Datatype iri) -> do
+        SimpleEntity (Entity _ Datatype iRi) -> do
             (odes, s) <- mapDataRange cSig dr 2
             return ([mkVDataDecl [2] $ mkEqv odes $ mkMember
-                    (qualData 2) $ uriToCaslId iri], uniteCASLSign cSig s)
+                    (qualData 2) $ uriToCaslId iRi], uniteCASLSign cSig s)
         _ -> err
     ClassDisjointUnion clsl -> case ex of
-        ClassEntity (Expression iri) -> do
+        ClassEntity (Expression iRi) -> do
             (decrs, s1) <- mapDescriptionList cSig 1 clsl
             (decrsS, s2) <- mapDescriptionListP cSig 1 $ comPairs clsl clsl
             let decrsP = map (\ (x, y) -> conjunct [x, y]) decrsS
-            mcls <- mapClassURI cSig iri $ mkNName 1
+            mcls <- mapClassURI cSig iRi $ mkNName 1
             return ([mk1VDecl $ mkEqv mcls $ conjunct
                     [disjunct decrs, mkNC decrsP]], uniteL [cSig, s1, s2])
         _ -> err

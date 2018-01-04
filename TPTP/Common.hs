@@ -12,6 +12,7 @@ Stability   :  provisional
 module TPTP.Common where
 
 import Common.IRI
+import Common.Id
 
 import Data.Text (pack, replace, unpack)
 
@@ -27,5 +28,11 @@ escapeTPTPFilePath s = unpack $ replace (pack "^") (pack "%5E") (pack s)
 unescapeTPTPFilePath :: String -> String
 unescapeTPTPFilePath s = unpack $ replace (pack "%5E") (pack "^") (pack s)
 
+unescapeTPTPFileToken :: Token -> Token
+unescapeTPTPFileToken t = t { tokStr = unescapeTPTPFilePath $ tokStr t }
+
+unescapeTPTPFileId :: Id -> Id
+unescapeTPTPFileId i = i { getTokens = map unescapeTPTPFileToken $ getTokens i }
+
 unescapeTPTPFileIRI :: IRI -> IRI
-unescapeTPTPFileIRI i = i { abbrevPath = unescapeTPTPFilePath $ abbrevPath i }
+unescapeTPTPFileIRI i = i { iriPath = unescapeTPTPFileId $ iriPath i }

@@ -28,11 +28,12 @@ import qualified Data.Map as Map
 -- OWL2 = domain
 import OWL2.Logic_OWL2
 import OWL2.AS
+import Common.IRI
 import OWL2.Keywords
 import OWL2.MS
 import OWL2.ProfilesAndSublogics
 import OWL2.Morphism
-import OWL2.Symbols
+import OWL2.Symbols hiding (idToRaw)
 import qualified OWL2.Sign as OS
 -- CommonLogic = codomain
 import Common.DocUtils
@@ -282,7 +283,7 @@ dataIncl :: IRI -> CommonAnno.Named TEXT
 dataIncl iri = CommonAnno.makeNamed "" $ senToText
     $ mk1QU $ mkBI (mk1TermAtom $ uriToTok iri) $ mkSAtom "Datatype"
 
-propertyIncl :: String -> QName -> CommonAnno.Named TEXT
+propertyIncl :: String -> IRI -> CommonAnno.Named TEXT
 propertyIncl s prop = CommonAnno.makeNamed "" $ senToText $
     let [d, pr] = map (`mkTermAtoms` map mkNTERM [1, 2])
             [uriToTok prop, mkSimpleId s]
@@ -295,7 +296,7 @@ declarations s =
         dp = Set.toList $ OS.dataProperties s
         op = Set.toList $ OS.objectProperties s
     in map thingIncl c
-        ++ map dataIncl (map (setPrefix "xsd" . mkQName) datatypeKeys ++ dt)
+        ++ map dataIncl (map (setPrefix "xsd" . mkIRI) datatypeKeys ++ dt)
         ++ map (propertyIncl topDataProp) dp
         ++ map (propertyIncl bottomDataProp) dp
         ++ map (propertyIncl topObjProp) op
@@ -315,7 +316,7 @@ mapTheory (owlSig, owlSens) = do
                 return (x ++ sen, unite sig y)
                 ) ([], cSig) owlSens
     let sig = unite (emptySig {discourseNames = Set.fromList $ map (uriToId .
-            setReservedPrefix . mkQName) $ "Datatype" : predefClass
+            setReservedPrefix . mkIRI) $ "Datatype" : predefClass
             ++ [topDataProp, bottomDataProp, topObjProp, bottomObjProp]
             ++ datatypeKeys}) nSig
         cSens = map (CommonAnno.markSen "OWLbuiltin")
@@ -441,7 +442,7 @@ mapFacet :: Sign -> VarOrIndi -> TERM -> (ConstrainingFacet, RestrictionValue)
 mapFacet sig i var (f, r) = let v = varToInt i + 1 in do
     l <- mapLit v r
     let sign = unite sig $ emptySig {
-                  discourseNames = Set.fromList [stringToId $ showQN
+                  discourseNames = Set.fromList [stringToId $ showIRI
                                                   $ stripReservedPrefix f]}
     case l of
         Right lit -> return (mkTermAtoms (uriToTok f) [lit, var], sign)

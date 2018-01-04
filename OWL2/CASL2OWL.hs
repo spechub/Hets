@@ -32,6 +32,7 @@ import Data.Maybe
 import OWL2.Logic_OWL2
 import OWL2.MS
 import OWL2.AS
+import Common.IRI
 import OWL2.ProfilesAndSublogics
 import OWL2.ManchesterPrint ()
 import OWL2.Morphism
@@ -128,7 +129,7 @@ getPropSens i args mres = let
       maybeToList (fmap (mki " domain" . mkDR ADomain) mres)
       ++ [mki " range" $ mkDR ARange a]) ncs
 
-getPropNames :: (a -> [b]) -> MapSet.MapSet Id a -> Set.Set QName
+getPropNames :: (a -> [b]) -> MapSet.MapSet Id a -> Set.Set IRI
 getPropNames f = Map.foldWithKey (\ i s l ->
     case Set.toList s of
       [] -> l

@@ -20,6 +20,8 @@ import OWL2.Sign
 import Control.Monad
 import Common.Lib.State
 
+import Common.IRI
+
 import qualified Data.Set as Set
 
 fromObjPropExpr :: ObjectPropertyExpression -> State Sign ()
@@ -29,8 +31,8 @@ fromDataPropExpr :: DataPropertyExpression -> State Sign ()
 fromDataPropExpr = addEntity . mkEntity DataProperty
 
 fromIndividual :: Individual -> State Sign ()
-fromIndividual ind =
-    unless (iriType ind == NodeID) $ addEntity $ mkEntity NamedIndividual ind
+fromIndividual ind =  unless (isBlankNode ind) $
+ addEntity $ mkEntity NamedIndividual ind
 
 fromAnnoProp :: AnnotationProperty -> State Sign ()
 fromAnnoProp = addEntity . mkEntity AnnotationProperty

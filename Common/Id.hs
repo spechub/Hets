@@ -232,6 +232,20 @@ appendString (Id tokList idList range) s = let
            ++ tokens
  in Id (genTok tokList [] s) idList range
 
+-- | prepend a string to the first token of an Id
+prependString :: String -> Id -> Id
+prependString s (Id [] comps range) =
+  Id [Token s nullRange] comps range
+prependString s (Id (Token t range1:toks) comps range2) =
+  Id (Token (s++t) range1:toks) comps range2
+
+-- | append two Ids
+appendId :: Id -> Id -> Id
+appendId i1 i2 =
+  Id (getTokens i1 ++ getTokens i2)
+     (getComps i1 ++ getComps i2)
+     (appRange (rangeOfId i1) (rangeOfId i2))
+
 -- | the name of injections
 injToken :: Token
 injToken = genToken "inj"
@@ -466,6 +480,11 @@ idRange :: Id -> [Pos]
 idRange (Id ts _ r) =
     let (fs, rs) = splitMixToken ts
     in joinRanges $ map tokenRange fs ++ [outerRange r] ++ map tokenRange rs
+
+-- | add components to an Id
+addComponents :: Id -> ([Id], Range) -> Id
+addComponents i (comps,rs) = i { getComps = getComps i ++ comps
+                               , rangeOfId = appRange (rangeOfId i) rs}
 
 -- -- helper class -------------------------------------------------------
 

@@ -15,6 +15,8 @@ Instances for some of the functions used in OWL 2
 module OWL2.Function where
 
 import OWL2.AS
+import Common.IRI
+import Common.Id (stringToId)
 import OWL2.MS
 import OWL2.Sign
 import OWL2.Symbols
@@ -47,7 +49,7 @@ getIri :: EntityType -> IRI -> Map.Map Entity IRI -> IRI
 getIri ty u = fromMaybe u . Map.lookup (mkEntity ty u)
 
 cutWith :: EntityType -> Action -> AMap -> IRI -> IRI
-cutWith ty t s iri = cutIRI $ function t s $ mkEntity ty iri
+cutWith ty t s anIri = cutIRI $ function t s $ mkEntity ty anIri
 
 err :: t
 err = error "operation not allowed"
@@ -63,34 +65,46 @@ instance Function PrefixMap where
         _ -> err
 
 instance Function IRI where
-  function a m qn = case m of
+  function a m iri = case m of
     StringMap pm -> case a of
-        Rename -> let pre = namePrefix qn in
-            qn { namePrefix = Map.findWithDefault pre pre pm}
-        Expand ->
-            let np = namePrefix qn
-                lp = localPart qn
-                iri = case iriType qn of
-                    Full -> let
-                      ex = np ++ ":" ++ lp
-                      res = qn {expandedIRI = ex}
-                      in if elem np ["http", "https"] then -- abbreviate
+     Rename -> let pre = prefixName iri in
+              iri { prefixName = Map.findWithDefault pre pre pm}
+     Expand ->
+      let np = prefixName iri
+          lp = show $ iriPath iri
+          iRi = if hasFullIRI iri then let
+                  ex = np ++ ":" ++ lp
+                  res = let x = expandCurie (Map.map mkIRI pm) iri in
+                         case x of
+                          Just y -> y
+                          Nothing -> error $ "could not expand:" ++ showIRI iri 
+                in if elem np ["http", "https"] then -- abbreviate
                         case Map.lookup "" pm of
                           Just ep | length ep > 5 -> case stripPrefix ep ex of
                             Just rl@(_ : _) -> res
-                              { namePrefix = ""
-                              , localPart = rl
-                              , iriType = Abbreviated }
+                              { prefixName = ""
+                              , iriPath = stringToId rl -- todo: maybe we should keep the Id structure of iriPath iri. See #1820
+                              }
                             _ -> res
                           _ -> res
                       else res
-                    NodeID -> qn {expandedIRI = lp}
-                    _ -> let miri = Map.lookup np $ Map.union pm predefPrefixes
-                         in case miri of
-                            Just expn -> qn {expandedIRI = expn ++ lp}
-                            Nothing -> error $ np ++ ": prefix not found"
-            in setReservedPrefix iri
-    _ -> qn
+               else if isBlankNode iri then iri else   
+                    let iriMap = foldl (\pm' (kp, vp) -> 
+                                case parseIRI vp of
+                                  Just i -> Map.insert kp i pm'
+                                  Nothing -> if null kp then 
+                                               Map.insert kp 
+                                                 ((mkIRI vp)) 
+                                                 pm'
+                                              else pm') 
+                              Map.empty $  
+                              Map.toList $ Map.union pm predefPrefixes
+                        x = expandCurie iriMap iri 
+                    in case x of
+                        Just y -> y
+                        Nothing -> error $ "could not expand curie:" ++ showIRI iri
+      in setReservedPrefix iRi
+    _ -> iri
 
 instance Function Sign where
    function t mp (Sign p1 p2 p3 p4 p5 p6 p7 p8) = case mp of
@@ -155,7 +169,7 @@ instance Function Annotation where
 
 instance Function AnnotationValue where
     function t s av = case av of
-        AnnValue iri -> AnnValue $ function t s iri
+        AnnValue anIri -> AnnValue $ function t s anIri
         AnnValLit l -> AnnValLit $ function t s l
 
 instance Function Annotations where

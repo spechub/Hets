@@ -14,10 +14,10 @@ Symbol items for Hets
 module RDF.Symbols where
 
 import Common.Id
+import Common.IRI
 import Data.Data
 
 import RDF.AS
-import OWL2.AS
 
 -- * SYMBOL ITEMS FOR HETS
 

@@ -14,6 +14,7 @@ Printer for N-triples
 module RDF.Print where
 
 import Common.AS_Annotation
+import Common.IRI
 import Common.Doc hiding (sepBySemis, sepByCommas)
 import Common.DocUtils hiding (ppWithCommas)
 
@@ -101,8 +102,10 @@ printDocument :: TurtleDocument -> Doc
 printDocument doc = (vcat . map pretty) (statements doc)
 
 printExpandedIRI :: IRI -> Doc
-printExpandedIRI iri = if iriType iri == NodeID then text $ showQU iri
-    else text "<" <> text (expandedIRI iri) <> text ">"
+printExpandedIRI iri =
+ if (not $ hasFullIRI iri) || (isBlankNode iri) then 
+       text $ showIRICompact iri
+  else text "<" <> text (showIRIFull iri) <> text ">"
 
 instance Pretty Term where
     pretty = printTerm
