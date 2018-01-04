@@ -1,9 +1,10 @@
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.net.HttpURLConnection;
@@ -14,6 +15,8 @@ import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import org.coode.owlapi.owlxml.renderer.OWLXMLRenderer;
 import org.coode.owlapi.rdf.rdfxml.RDFXMLRenderer;
@@ -402,32 +405,93 @@ public class OWL2Parser {
 		}
 
 		void renderAsXml(OWLOntology onto) {
+			FileOutputStream fos = null;
+			FileInputStream fis = null;
+			OutputStreamWriter out = null;
+			InputStreamReader in = null;
+			char[] buf = new char[8192];
+			int c, n;
+			int chomp = -1;
 			try {
 				OWLXMLRenderer xmlren = new OWLXMLRenderer();
-				File tempFile = File.createTempFile("owlTemp_1", ".xml");
-				FileWriter buf = new FileWriter(tempFile);
+				String t = System.getenv("HETS_GZIP");
+				boolean gz = t == null || t.equalsIgnoreCase("on");
+				t = gz ? ".xml.gz" : ".xml";
+				String tmpDir = System.getenv("TMPDIR");
+				File tempFile = File.createTempFile("owlTemp_1", t,
+					tmpDir == null ? null : new File(tmpDir));
+				fos = new FileOutputStream(tempFile);
+				out = new OutputStreamWriter(gz
+					? new GZIPOutputStream(fos, 4096)
+					: fos,
+					"UTF-8");
 				if (quick) {
 					onto.getOWLOntologyManager()
 						.removeAxioms(onto,onto.getAxioms());
 				}
-				xmlren.render(onto, buf);
-				_close(buf);
-				BufferedReader rBuf =
-					new BufferedReader(new FileReader(tempFile));
-				rBuf.readLine(); // ignore the first line containing <?xml version="1.0"?>
-				while (rBuf.ready()) {
-					append(rBuf.readLine()).append("\n");
+				xmlren.render(onto, out);
+				out.close();
+				out = null;
+				fos = null;
+				fis = new FileInputStream(tempFile);
+				in = new InputStreamReader(gz
+					? new GZIPInputStream(fis, 4096)
+					: fis,
+					"UTF-8");
+				// ignore the first line containing <?xml version="1.0"?>
+				while ((chomp != -2) && (c = in.read(buf, 0, 8192)) != -1) {
+					if (chomp == -1) {
+						n = 0;
+						while (n < c && buf[n] != '\n' && buf[n] != '\r') {
+							n++;
+						}
+						if (n < c) {
+							chomp = n;
+						}
+					}
+					if (chomp != -1) {
+						// chomp trailing LF and CR
+						n = chomp;
+						chomp = 0;
+						while (n < c && (buf[n] == '\n' || buf[n] == '\r')) {
+							n++;
+						}
+						if (n < c) {
+							write(buf, n, c - n);
+							chomp = -2;
+						}
+					}
 				}
-				rBuf.close();
-				tempFile.deleteOnExit();
+				// copy the remaining stuff as is
+				while ((c = in.read(buf, 0, 8192)) != -1) {
+					write(buf, 0, c);
+				}
+				in.close();
+				in = null;
+				fis = null;
+				t = System.getenv("HETS_KEEPTMP");
+				if (t == null || ! t.equalsIgnoreCase("on")) {
+					tempFile.deleteOnExit();
+				}
 				append("<Loaded name=\"")
-					.append(manager.getOntologyDocumentIRI(onto));
-				append("\" ontiri=\"")
-					.append(onto.getOntologyID().getOntologyIRI());
-				append("\"/>\n");
+					.append(manager.getOntologyDocumentIRI(onto))
+					.append("\" ontiri=\"")
+					.append(onto.getOntologyID().getOntologyIRI())
+					.append("\"/>\n");
 			} catch (Exception ex) {
 				System.err.println("Error by XMLParser!");
 				ex.printStackTrace();
+			} finally {
+				if (out != null) {
+					try { out.close(); } catch (Exception e) { /* nwcd */ }
+				} else if (fos != null) {
+					try { fos.close(); } catch (Exception e) { /* nwcd */ }
+				}
+				if (in != null) {
+					try { in.close(); } catch (Exception e) { /* nwcd */ }
+				} else if (fis != null) {
+					try { fis.close(); } catch (Exception e) { /* nwcd */ }
+				}
 			}
 		}
 
