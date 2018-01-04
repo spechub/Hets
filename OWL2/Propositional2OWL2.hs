@@ -21,6 +21,7 @@ import Common.Id
 import Common.Result
 
 import OWL2.AS
+import Common.IRI
 import OWL2.Keywords
 import OWL2.MS
 import OWL2.Translate
@@ -77,16 +78,16 @@ instance Comorphism Propositional2OWL2
 
 mkOWLDeclaration :: ClassExpression -> Axiom
 mkOWLDeclaration ex = PlainAxiom (ClassEntity $ Expression $ setPrefix "owl"
-    $ mkQName thingS) $ ListFrameBit (Just SubClass) $ ExpressionBit [([], ex)]
+    $ mkIRI thingS) $ ListFrameBit (Just SubClass) $ ExpressionBit [([], ex)]
 
-tokToQName :: Token -> QName
-tokToQName = idToIRI . simpleIdToId
+tokToIRI :: Token -> IRI
+tokToIRI = idToIRI . simpleIdToId
 
 mapFormula :: FORMULA -> ClassExpression
 mapFormula f = case f of
-    False_atom _ -> Expression $ mkQName nothingS
-    True_atom _ -> Expression $ mkQName thingS
-    Predication p -> Expression $ tokToQName p
+    False_atom _ -> Expression $ mkIRI nothingS
+    True_atom _ -> Expression $ mkIRI thingS
+    Predication p -> Expression $ tokToIRI p
     Negation nf _ -> ObjectComplementOf $ mapFormula nf
     Conjunction fl _ -> ObjectJunction IntersectionOf $ map mapFormula fl
     Disjunction fl _ -> ObjectJunction UnionOf $ map mapFormula fl
@@ -97,7 +98,7 @@ mapFormula f = case f of
 
 mapPredDecl :: PRED_ITEM -> [Axiom]
 mapPredDecl (Pred_item il _) = map (mkOWLDeclaration . Expression
-    . tokToQName) il
+    . tokToIRI) il
 
 mapAxiomItems :: Annoted FORMULA -> Axiom
 mapAxiomItems = mkOWLDeclaration . mapFormula . item

@@ -42,14 +42,14 @@ module Common.IRI
     , iriToStringUnsecure
     , iriToStringShortUnsecure
     , hasFullIRI
-    , isAbbrev
     , isSimple
     , addSuffixToIRI
 
     -- * Parsing
-    , iri
+    , iriParser
     , angles
     , iriCurie
+    , compoundIriCurie  
     , parseCurie
     , parseIRICurie
     , parseIRIReference
@@ -64,6 +64,17 @@ module Common.IRI
     , simpleIdToIRI
     , deleteQuery
     , setAngles
+   
+    -- * methods from OWL2.AS
+    , isNullIRI
+    , iRIRange
+    , showIRI
+    , showIRICompact
+    , showIRIFull
+    , dummyIRI
+    , mkIRI
+    , idToIRI  
+    , setPrefix
     ) where
 
 import Text.ParserCombinators.Parsec
@@ -73,11 +84,19 @@ import Data.Data
 import Data.Ord (comparing)
 import Data.Map as Map (Map, lookup)
 import Data.Maybe
+import Data.List
+import qualified Data.Map as Map
 
-import Common.Id
+import Control.Monad (when)
+
+import OWL2.ColonKeywords
+import OWL2.Keywords
+
+import Common.Id as Id
 import Common.Lexer
 import Common.Parsec
 import Common.Percent
+import Common.Token (mixId, comps)
 
 -- * The IRI datatype
 
@@ -90,22 +109,24 @@ For example, for the (full) IRI
 
 or the abbreviated IRI
 
->   prefix:abbrevPath?abbrevQuery#abbrevFragment
+>   prefix:iriPath?iriQuery#iriFragment
 
 or the simple IRI
 
->  abbrevPath
+>  iriPath
 -}
+
+
+
 data IRI = IRI
     { iriScheme :: String         -- ^ @foo:@
     , iriAuthority :: Maybe IRIAuth -- ^ @\/\/anonymous\@www.haskell.org:42@
-    , iriPath :: String           -- ^ local part @\/ghc@
+    , iriPath :: Id               -- ^ local part @\/ghc@
     , iriQuery :: String          -- ^ @?query@
     , iriFragment :: String       -- ^ @#frag@
     , prefixName :: String        -- ^ @prefix@
-    , abbrevPath :: String        -- ^ @abbrevPath@
-    , abbrevQuery :: String       -- ^ @abbrevQueryh@
-    , abbrevFragment :: String    -- ^ @abbrevFragment@
+    , isAbbrev :: Bool            -- ^ is the IRI a CURIE or not?
+    , isBlankNode :: Bool         -- ^ is the IRI a blank node?                   
     , hasAngles :: Bool           -- ^ IRI in angle brackets
     , iriPos :: Range             -- ^ position
     } deriving (Typeable, Data)
@@ -122,26 +143,21 @@ nullIRI :: IRI
 nullIRI = IRI
     { iriScheme = ""
     , iriAuthority = Nothing
-    , iriPath = ""
+    , iriPath = mkId []
     , iriQuery = ""
     , iriFragment = ""
     , prefixName = ""
-    , abbrevPath = ""
-    , abbrevQuery = ""
-    , abbrevFragment = ""
+    , isAbbrev = False
+    , isBlankNode = False
     , hasAngles = False
     , iriPos = nullRange
     }
 
--- | do we have a full (possibly expanded) IRI (i.e. for comparisons)
+-- | check that we have a full (possibly expanded) IRI (i.e. for comparisons)
 hasFullIRI :: IRI -> Bool
-hasFullIRI i = not . null $ iriScheme i ++ iriPath i
+hasFullIRI i = not . null $ iriScheme i ++ (show $ iriPath i)
 
--- | do we have an abbreviated IRI (i.e. for pretty printing)
-isAbbrev :: IRI -> Bool
-isAbbrev i = not . null $ prefixName i ++ abbrevPath i
-
-{- | do we have a simple IRI that is a (possibly expanded) abbreviated IRI
+{- | check that we have a simple IRI that is a (possibly expanded) abbreviated IRI
 without prefix -}
 isSimple :: IRI -> Bool
 isSimple i = null (prefixName i) && isAbbrev i
@@ -160,13 +176,12 @@ instance Eq IRI where
 -- compares full/expanded IRI (if expanded) or abbreviated part if not expanded
 instance Ord IRI where
   compare i k = case (hasFullIRI i, hasFullIRI k) of
-    (True, True) -> comparing (\ j ->
+    (False, False) -> comparing
+      (\ j -> (prefixName j, iriPath j, iriQuery j, iriFragment j))
+      i k
+    _ -> comparing (\ j ->
       (iriScheme j, iriAuthority j, iriPath j,
        iriQuery j, iriFragment j)) i k
-    (False, False) -> comparing
-      (\ j -> (prefixName j, abbrevPath j, abbrevQuery j, abbrevFragment j))
-      i k
-    (b1, b2) -> compare b1 b2
 
 -- |converts IRI to String of expanded form. if available. Also showing Auth
 iriToStringUnsecure :: IRI -> String
@@ -182,17 +197,87 @@ instance GetRange IRI where
 
 -- | Converts a Simple_ID to an IRI
 simpleIdToIRI :: SIMPLE_ID -> IRI
-simpleIdToIRI sid = nullIRI { abbrevPath = tokStr sid
+simpleIdToIRI sid = nullIRI { iriPath = simpleIdToId sid
                             , iriPos = tokPos sid
+                            , isAbbrev = True
                             }
 
--- * Parse a IRI
+-- * new functions for OWL.AS
+-- | check that we have a nullIRI
+isNullIRI :: IRI -> Bool
+isNullIRI i = i == nullIRI
+
+-- | set the Range attribute of IRIs
+setIRIRange :: Range -> IRI -> IRI
+setIRIRange r i = i { iriPos = r }
+
+-- | checks if a string (bound to be localPart of an IRI) contains \":\/\/\"
+cssIRI :: String -> String
+cssIRI i 
+  | isInfixOf "://" i = "Full"
+  | otherwise = "Abbreviated"
+
+iRIRange :: IRI -> [Pos]
+iRIRange i = let Range rs = iriPos i in case rs of
+  [p] -> let
+    p0 = if hasFullIRI i then Id.incSourceColumn p (-1) else p
+    in tokenRange $ Token (showIRI i) $ Range [p0]
+  _ -> rs
+
+showIRI :: IRI -> String
+showIRI i 
+  | hasFullIRI i = showIRIFull i
+  | otherwise = showIRICompact i
+
+
+-- | show IRI as abbreviated, when possible
+showIRICompact :: IRI -> String
+showIRICompact i
+  | hasFullIRI i && not (isAbbrev i) = showIRIFull i
+  | not $ null $ iriQuery i = tail $ iriQuery i
+  | otherwise = showIRIAbbrev i
+
+showIRIAbbrev :: IRI -> String
+showIRIAbbrev i = iriToStringAbbrev i ""
+ -- don't duplicate code
+
+-- | show IRI in angle brackets as full IRI
+showIRIFull :: IRI -> String
+showIRIFull i = iriToStringFull id i ""
+  -- this should behave like show, and there we use id
+
+
+-- | a default ontology name  
+dummyIRI :: IRI
+dummyIRI = nullIRI { 
+       iriScheme = "http"
+     , iriAuthority = Just IRIAuth
+                       { iriUserInfo = ""
+                       , iriRegName = "hets.eu"
+                       , iriPort = "" }
+     , iriPath = stringToId "/ontology/unamed"
+    }
+
+mkIRI :: String -> IRI
+mkIRI = simpleIdToIRI. mkSimpleId
+
+idToIRI :: Id -> IRI
+idToIRI i =  nullIRI { iriScheme = ""
+                     , iriAuthority = Nothing
+                     , iriPath = i
+                     , isAbbrev = True
+                     }
+
+setPrefix :: String -> IRI -> IRI
+setPrefix s i = i{prefixName = s}
+
+-- * Parse an IRI
 
 {- | Turn a string containing an RFC3987 IRI into an 'IRI'.
 Returns 'Nothing' if the string is not a valid IRI;
 (an absolute IRI with optional fragment identifier). -}
 parseIRI :: String -> Maybe IRI
-parseIRI = parseIRIAny iri
+parseIRI = parseIRIAny iriParser
 
 {- | Parse a IRI reference to an 'IRI' value.
 Returns 'Nothing' if the string is not a valid IRI reference.
@@ -257,10 +342,21 @@ iriWithPos parser = do
 
 -- | Parses an IRI reference enclosed in '<', '>' or a CURIE
 iriCurie :: IRIParser st IRI
-iriCurie = angles iri <|> curie
+iriCurie = angles iriParser <|> curie 
+
+compoundIriCurie :: IRIParser st IRI
+compoundIriCurie = angles iriParser <|> compoundCurie 
 
 angles :: IRIParser st IRI -> IRIParser st IRI
 angles p = char '<' >> fmap (\ i -> i { hasAngles = True }) p << char '>'
+
+-- | Parses a CURIE possibly followed by components of a compound Id
+compoundCurie :: IRIParser st IRI
+compoundCurie = do
+      i <- curie
+      (c, p) <- option ([], nullRange) (comps ([], []))
+      return i { iriPath = addComponents (iriPath i) (c,p),
+                 isBlankNode = prefixName i == "_" }
 
 -- | Parses a CURIE <http://www.w3.org/TR/rdfa-core/#s_curies>
 curie :: IRIParser st IRI
@@ -271,7 +367,7 @@ curie = iriWithPos $ do
         return $ n ++ c
       )
     i <- reference
-    return $ i { prefixName = pn }
+    return i { prefixName = pn }
   <|> referenceAux False
 
 reference :: IRIParser st IRI
@@ -288,12 +384,14 @@ referenceAux allowEmpty = iriWithPos $ do
   uq <- option "" uiquery
   uf <- (if allowEmpty || not (null up) || not (null uq)
          then option "" else id) uifragment
-  return nullIRI
-          { abbrevPath = up
-          , abbrevQuery = uq
-          , abbrevFragment = uf
+  let iri = nullIRI
+          { iriPath = stringToId up
+          , iriQuery = uq
+          , iriFragment = uf
+          , isAbbrev = True  
           }
-
+  return iri
+  
 {- | Prefix part of CURIE in @prefix_part:reference@
   <http://www.w3.org/TR/2009/REC-xml-names-20091208/#NT-NCName> -}
 ncname :: GenParser Char st String
@@ -356,8 +454,8 @@ pnCharsPAux c =
 / ipath-rootless
 / ipath-empty -}
 
-iri :: IRIParser st IRI
-iri = iriWithPos $ do
+iriParser :: IRIParser st IRI
+iriParser = iriWithPos $ do
   us <- try uscheme
   (ua, up) <- ihierPart
   uq <- option "" uiquery
@@ -370,17 +468,16 @@ iri = iriWithPos $ do
             , iriFragment = uf
             }
 
-
-ihierOrIrelativePart :: IRIParser st (Maybe IRIAuth, String)
-ihierOrIrelativePart =
-  try (string "//") >> pair uiauthority ipathAbEmpty
-
-ihierPart :: IRIParser st (Maybe IRIAuth, String)
+ihierPart :: IRIParser st (Maybe IRIAuth, Id)
 ihierPart = ihierOrIrelativePart
     <|> fmap (\ s -> (Nothing, s)) ihierPartNoAuth
 
-ihierPartNoAuth :: IRIParser st String
-ihierPartNoAuth = ipathAbs <|> ipathRootLess <|> return ""
+ihierOrIrelativePart :: IRIParser st (Maybe IRIAuth, Id)
+ihierOrIrelativePart =
+  try (string "//") >> pair uiauthority ipathAbEmpty
+
+ihierPartNoAuth :: IRIParser st Id
+ihierPartNoAuth = ipathAbs <|> ipathRootLessId <|> (return $ stringToId "")
 
 -- RFC3986, section 3.1
 
@@ -492,17 +589,49 @@ iisegment-nz-nc = 1*( iunreserved / pct-encoded / sub-delims
 {- iipchar         = iunreserved / pct-encoded / sub-delims / ":"
 / "@" -}
 
-ipathAbEmpty :: IRIParser st String
-ipathAbEmpty = flat $ many slashIsegment
+idParser :: IRIParser st Id
+idParser = mixId ([],[]) ([],[]) 
 
-ipathAbs :: IRIParser st String
-ipathAbs = char '/' <:> option "" ipathRootLess
+ipathAbEmpty :: IRIParser st Id
+ipathAbEmpty = do
+  s <- flat $ many slashIsegment
+  return $ stringToId s
+
+ipathAbEmpty1 :: Bool -> IRIParser st Id
+ipathAbEmpty1 slash = do
+  when slash $ do char '/'; return ()
+  si <- isegmentorId "/"
+  case si of
+    Left s ->     do char '/'
+                     i <- ipathAbEmpty1 False
+                     return $ prependString s i
+              <|> do return $ stringToId ""  
+    Right i -> return i
+
+isegmentorId :: String -> IRIParser st (Either String Id)
+isegmentorId lead =
+      do s <- isegment
+         return (Left ('/':s))
+--  <|> do id <- idParser
+--         return (Right (prependString "/" id))
+  
+ipathAbs :: IRIParser st Id
+ipathAbs = do
+  s <- char '/' <:> option "" ipathRootLess
+  return $ stringToId s
+
+ipathRootLessId :: IRIParser st Id
+ipathRootLessId = do
+  s <- ipathRootLess
+  return $ stringToId s
 
 ipathRootLess :: IRIParser st String
 ipathRootLess = flat $ isegmentNz <:> many slashIsegment
 
-ipathNoScheme :: IRIParser st String
-ipathNoScheme = flat $ isegmentNzc <:> many slashIsegment
+ipathNoScheme :: IRIParser st Id
+ipathNoScheme =  do
+  s <- flat $ isegmentNzc <:> many slashIsegment
+  return $ stringToId s
 
 slashIsegment :: IRIParser st String
 slashIsegment = char '/' <:> isegment
@@ -547,7 +676,7 @@ uifragment = char '#' <:> flat (many $ uchar ":@/?")
 -- RFC3987, section 2.2
 
 iriReference :: IRIParser st IRI
-iriReference = iri <|> irelativeRef
+iriReference = iriParser <|> irelativeRef
 
 -- RFC3987, section 2.2
 
@@ -569,9 +698,9 @@ irelativeRef = iriWithPos $ do
             , iriFragment = uf
             }
 
-irelativePart :: IRIParser st (Maybe IRIAuth, String)
+irelativePart :: IRIParser st (Maybe IRIAuth, Id)
 irelativePart = ihierOrIrelativePart
-  <|> fmap (\ s -> (Nothing, s)) (ipathAbs <|> ipathNoScheme <|> return "")
+  <|> fmap (\ s -> (Nothing, s)) (ipathAbs <|> ipathNoScheme <|> return (stringToId ""))
 
 -- RFC3987, section 2.2 omitted absoluteIRI
 
@@ -658,7 +787,7 @@ iriToString iuserinfomap i
 iriToStringShort :: (String -> String) -> IRI -> ShowS
 iriToStringShort iuserinfomap i
   | hasFullIRI i && not (isAbbrev i) = iriToStringFull iuserinfomap i
-  | not $ null $ abbrevQuery i = tail . (abbrevQuery i ++)
+  | not $ null $ iriQuery i = tail . (iriQuery i ++)
   | otherwise = iriToStringAbbrev i
 
 iriToStringFull :: (String -> String) -> IRI -> ShowS
@@ -668,25 +797,26 @@ iriToStringFull iuserinfomap (IRI { iriScheme = scheme
                                   , iriQuery = query
                                   , iriFragment = fragment
                                   , hasAngles = b
-                                  }) s =
+                                  }) s = 
   (if b then "<" else "") ++ scheme
   ++ iriAuthToString iuserinfomap authority ""
-  ++ path ++ query ++ fragment ++ (if b then ">" else "") ++ s
+  ++ show path ++ query ++ fragment ++ (if b then ">" else "") ++ s
+
 
 iriToStringAbbrev :: IRI -> ShowS
 iriToStringAbbrev (IRI { prefixName = pname
-                       , abbrevPath = aPath
-                       , abbrevQuery = aQuery
-                       , abbrevFragment = aFragment
+                       , iriPath = aPath
+                       , iriQuery = aQuery
+                       , iriFragment = aFragment
                        }) =
-  (pname ++) . (aPath ++) . (aQuery ++) . (aFragment ++)
+  (pname ++) . (show aPath ++) . (aQuery ++) . (aFragment ++)
 
 iriToStringAbbrevMerge :: IRI -> ShowS
-iriToStringAbbrevMerge (IRI { abbrevPath = aPath
-                            , abbrevQuery = aQuery
-                            , abbrevFragment = aFragment
+iriToStringAbbrevMerge (IRI { iriPath = aPath
+                            , iriQuery = aQuery
+                            , iriFragment = aFragment
                             }) =
-  (aPath ++) . (aQuery ++) . (aFragment ++)
+  (show aPath ++) . (aQuery ++) . (aFragment ++)
 
 iriAuthToString :: (String -> String) -> Maybe IRIAuth -> ShowS
 iriAuthToString _ Nothing = id          -- shows ""
@@ -717,12 +847,13 @@ relativeTo ref base
         just_isegments ref
     | isJust ( iriAuthority ref ) =
         just_isegments ref { iriScheme = iriScheme base }
-    | isDefined ( iriPath ref ) =
+    | isDefined $ getFstString $ iriPath ref = 
             just_isegments ref
                 { iriScheme = iriScheme base
                 , iriAuthority = iriAuthority base
-                , iriPath = if head (iriPath ref) == '/' then iriPath ref
-                            else mergePaths base ref
+                , iriPath = if head (getFstString $ iriPath ref) == '/' 
+                            then iriPath ref
+                            else stringToId $ mergePaths base ref
                 }
     | isDefined ( iriQuery ref ) =
         just_isegments ref
@@ -738,20 +869,32 @@ relativeTo ref base
             , iriQuery = iriQuery base
             }
     where
+        getFstString anId = case getTokens anId of 
+           (Token s _):_ -> s
+           _ -> error $ "can't get first string from an empty id"        
         just_isegments u =
             Just $ u { iriPath = removeDotSegments (iriPath u) }
         mergePaths b r
-            | isJust (iriAuthority b) && null pb = '/' : pr
-            | otherwise = dropLast pb ++ pr
+            | isJust (iriAuthority b) && null pbs = '/' : prs
+            | otherwise = dropLast pbs ++ prs
             where
                 pb = iriPath b
                 pr = iriPath r
+                pbs = getFstString pb
+                prs = getFstString pr
         dropLast = fst . splitLast -- reverse . dropWhile (/='/') . reverse
 
 -- Remove dot isegments, but protect leading '/' character
-removeDotSegments :: String -> String
-removeDotSegments ('/' : ps) = '/' : elimDots ps []
-removeDotSegments ps = elimDots ps []
+removeDotSegments :: Id -> Id
+removeDotSegments i = case getTokens i of
+  [] -> error $ "Common/IRI.hs: Cannot remove dots from empty id:" ++ show i
+  (Token s r):_ -> let 
+    t' = Token (removeDotSegmentsString s) r
+   in simpleIdToId t' 
+
+removeDotSegmentsString :: String -> String
+removeDotSegmentsString ('/' : ps) = '/' : elimDots ps []
+removeDotSegmentsString ps = elimDots ps []
 
 -- Second arg accumulates isegments processed so far in reverse order
 elimDots :: String -> [String] -> String
@@ -806,27 +949,34 @@ relativeFrom uabs base
     | diff iriPath uabs base = uabs
         { iriScheme = ""
         , iriAuthority = Nothing
-        , iriPath = relPathFrom (removeBodyDotSegments $ iriPath uabs)
-                                     (removeBodyDotSegments $ iriPath base)
+        , iriPath = let
+                      i1 = iriPath uabs
+                      i2 = iriPath base
+                    in case (getTokens i1, getTokens i2) of
+                        ((Token s1 _):_ , (Token s2 _):_) ->  
+                             stringToId $ relPathFrom 
+                                  (removeBodyDotSegments s1)
+                                  (removeBodyDotSegments s2)
+                        _ -> error $ "empty id:" ++ show i1 ++ " " ++ show i2
         }
     | diff iriQuery uabs base = uabs
         { iriScheme = ""
         , iriAuthority = Nothing
-        , iriPath = ""
+        , iriPath = mkId []
         }
     | otherwise = uabs          -- Always carry fragment from uabs
         { iriScheme = ""
         , iriAuthority = Nothing
-        , iriPath = ""
+        , iriPath = mkId []
         , iriQuery = ""
         }
     where
         diff :: Eq b => (a -> b) -> a -> a -> Bool
         diff sel u1 u2 = sel u1 /= sel u2
         -- Remove dot isegments except the final isegment
-        removeBodyDotSegments p = removeDotSegments p1 ++ p2
+        removeBodyDotSegments p = removeDotSegmentsString p1 ++ p2
             where
-                (p1, p2) = splitLast p
+               (p1, p2) = splitLast p
 
 relPathFrom :: String -> String -> String
 relPathFrom [] _ = "/"
@@ -892,10 +1042,10 @@ difSegsFrom sabs base = difSegsFrom ("../" ++ sabs) (snd $ nextSegment base)
 -- * Other normalization functions
 
 {- |Expands a CURIE to an IRI. @Nothing@ iff there is no IRI @i@ assigned
-to the prefix of @c@ or the concatenation of @i@ and @abbrevPath c@
+to the prefix of @c@ or the concatenation of @i@ and @iriPath c@
 is not a valid IRI. -}
 expandCurie :: Map String IRI -> IRI -> Maybe IRI
-expandCurie prefixMap c =
+expandCurie prefixMap c =  
   if hasFullIRI c then Just c else
   case Map.lookup (filter (/= ':') $ prefixName c) prefixMap of
     Nothing -> Nothing
@@ -904,9 +1054,9 @@ expandCurie prefixMap c =
       Just j -> Just $ if null $ iriScheme i then j { iriPos = iriPos c }
         else j
         { prefixName = prefixName c
-        , abbrevPath = abbrevPath c
-        , abbrevQuery = abbrevQuery c
-        , abbrevFragment = abbrevFragment c
+        , iriPath = iriPath c
+        , iriQuery = iriQuery c
+        , iriFragment = iriFragment c
         , iriPos = iriPos c }
 
 setAngles :: Bool -> IRI -> IRI
@@ -921,9 +1071,10 @@ mergeCurie c i =
   in parseIRICurie $ if null $ iriScheme i then s else '<' : s ++ ">"
 
 deleteQuery :: IRI -> IRI
-deleteQuery i = i { abbrevQuery = "" }
+deleteQuery i = i { iriQuery = "" }
 
 addSuffixToIRI :: String -> IRI -> IRI
-addSuffixToIRI s i = if not $ null $ abbrevQuery i 
-                   then i{abbrevQuery = abbrevQuery i ++ s}
-                   else i{abbrevPath  = abbrevPath i ++ s}
+addSuffixToIRI s i = if not $ null $ iriQuery i 
+                   then i{iriQuery = iriQuery i ++ s}
+                  else  
+                        i{iriPath  = appendId (iriPath i) (stringToId s)}

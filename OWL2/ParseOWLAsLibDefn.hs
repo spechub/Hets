@@ -42,10 +42,6 @@ parseOWLAsLibDefn quick fn = do
    (imap, ontodocs) <- parseOWL quick fn
    return $ map (convertToLibDefN imap) ontodocs
 
-qNameToIRI :: QName -> SPEC_NAME
-qNameToIRI qn = let s = showQN qn in
-  fromMaybe (error $ "qNameToIRI " ++ s) $ parseIRICurie s
-
 createSpec :: OntologyDocument -> [SPEC_NAME] -> Annoted SPEC
 createSpec o imps = addImports imps . makeSpec $ G_basic_spec OWL2 o
 
@@ -62,8 +58,8 @@ convertToLibDefN imap o = Lib_defn ln
             Just s -> setFilePath $ fromMaybe s $ stripPrefix "file:" s
             Nothing -> setFilePath libstr
           $ iriLibName oname
-        imps = map qNameToIRI $ imports ont
+        imps = imports ont
         imps2 = filter ((`elem` is) . show . setAngles False) imps
-        oname = qNameToIRI $ name ont
+        oname = name ont
         libstr = show $ setAngles False oname
         imp_libs = map (addDownload False) imps2

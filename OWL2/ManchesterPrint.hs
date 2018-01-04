@@ -16,6 +16,7 @@ import Common.Doc
 import Common.DocUtils
 import Common.AS_Annotation as Anno
 import Common.Lib.State
+import Common.IRI
 
 import OWL2.AS
 import OWL2.Extract
@@ -197,7 +198,7 @@ instance Pretty Ontology where
 
 printOntology :: Ontology -> Doc
 printOntology Ontology {name = a, imports = b, ann = c, ontFrames = d} =
-    (if nullQName == a then empty else keyword ontologyC <+> pretty a)
+    (if nullIRI == a then empty else keyword ontologyC <+> pretty a)
     $++$ vcat (map printImport b)
     $++$ vcat (map printAnnotations c) $+$ vcat (map pretty d)
 

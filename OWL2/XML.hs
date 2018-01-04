@@ -17,6 +17,8 @@ module OWL2.XML
  ) where
 
 import Common.Lexer (value)
+import Common.IRI
+import Common.Id (stringToId, prependString, tokStr, getTokens)
 
 import OWL2.AS
 import OWL2.Extract
@@ -78,59 +80,69 @@ filterCL l e = fromMaybe (err "child not found")
 getIRI :: XMLBase -> Element -> IRI
 getIRI b e =
     let [a] = elAttribs e
-        iri = attrVal a
-        ty = case qName $ attrKey a of
-            "abbreviatedIRI" -> Abbreviated
-            "IRI" -> Full
-            "nodeID" -> NodeID
-            _ -> cssIRI iri
-    in appendBase b $ nullQName {localPart = iri, iriType = ty}
+        anIri = attrVal a
+    in case qName $ attrKey a of
+        "abbreviatedIRI" -> appendBase b $ nullIRI {iriPath = stringToId anIri, isAbbrev = True }
+        "IRI" -> let x = parseIRIReference anIri -- todo: or combine parseIRI and parseIRIReference
+                 in case x of
+                     Just y -> appendBase b y
+                     Nothing -> error $ "could not get IRI from " ++ show anIri
+        "nodeID" -> appendBase b $ (mkIRI anIri){isBlankNode = True}
+        _ -> error $ "wrong qName:" ++ show (attrKey a)
+   
 
 {- | if the IRI contains colon, it is split there;
 else, the xml:base needs to be prepended to the local part
 and then the IRI must be splitted -}
 appendBase :: XMLBase -> IRI -> IRI
-appendBase b qn =
-    let r = localPart qn
-    in splitIRI $ if ':' `elem` r
-        then qn
-        else qn {localPart = b ++ r, iriType = Full}
+appendBase b iri =
+    let r = iriPath iri
+    in splitIRI $ if ':' `elem` show r
+                   then iri
+                   else iri {iriPath = prependString b r}
 
 -- | splits an IRI at the colon
 splitIRI :: IRI -> IRI
-splitIRI qn = case iriType qn of
-    NodeID -> mkNodeID qn
-    _ -> let lp = localPart qn
-             (np, ':' : nlp) = span (/= ':') lp
-         in qn {namePrefix = np, localPart = nlp}
+splitIRI iri = let 
+  i = iriPath iri
+  in if isBlankNode iri then mkNodeID iri else 
+   case getTokens i of
+    [] -> iri
+    (tok:ts) ->
+      let lp = tokStr tok
+          (np, ':' : nlp) = span (/= ':') lp
+      in iri { prefixName = np
+            , iriPath = i { getTokens = tok { tokStr = nlp } : ts}
+            }
 
 -- | prepends "_:" to the nodeID if is not there already
 mkNodeID :: IRI -> IRI
-mkNodeID qn =
-    let lp = localPart qn
+mkNodeID iri =
+    let lp = show $ iriPath iri
     in case lp of
-        '_' : ':' : r -> qn {namePrefix = "_", localPart = r}
-        _ -> qn {namePrefix = "_"}
+        '_' : ':' : r -> iri {prefixName = "_", iriPath = stringToId r}
+        -- todo: maybe we should keep the Id structure of iriPath iri
+        _ -> iri {prefixName = "_"}
 
 -- | gets the content of an element with name Import
 importIRI :: Map.Map String String -> XMLBase -> Element -> IRI
 importIRI m b e =
   let cont1 = strContent e
       cont = Map.findWithDefault cont1 cont1 m
-      iri = nullQName {localPart = cont}
-  in appendBase b $ iri {iriType = cssIRI cont}
+      anIri = nullIRI {iriPath = stringToId cont, isAbbrev = True}
+  in appendBase b anIri
 
 -- | gets the content of an element with name IRI, AbbreviatedIRI or Import
 contentIRI :: XMLBase -> Element -> IRI
 contentIRI b e =
   let cont = strContent e
-      iri = nullQName {localPart = cont}
+      anIri = nullIRI {iriPath = stringToId cont, isAbbrev = True}
   in case getName e of
-      "AbbreviatedIRI" -> splitIRI iri
+      "AbbreviatedIRI" -> splitIRI anIri
       "IRI" -> if ':' `elem` cont
-                then splitIRI $ iri {iriType = Full}
-                else appendBase b iri
-      "Import" -> appendBase b $ iri {iriType = cssIRI cont}
+                then splitIRI  anIri 
+                else appendBase b anIri
+      "Import" -> appendBase b $ anIri 
       _ -> err "invalid type of iri"
 
 -- | gets the name of an axiom in XML Syntax
@@ -170,7 +182,7 @@ isPlainLiteral s =
 correctLit :: Literal -> Literal
 correctLit l = case l of
     Literal lf (Typed dt) ->
-        let nlf = if isSuffixOf "float" (localPart dt) && last lf /= 'f'
+        let nlf = if isSuffixOf "float" (show $ iriPath dt) && last lf /= 'f'
                 then lf ++ "f"
                 else lf
         in Literal nlf (Typed dt)
@@ -191,7 +203,7 @@ getLiteral b e = case getName e of
              Nothing -> if isPlainLiteral dt then
                           Literal lf $ Untyped Nothing
                          else correctLit $ Literal lf $ Typed $ appendBase b $
-                            nullQName {localPart = dt, iriType = cssIRI dt}
+                            nullIRI{iriPath = stringToId dt}
     _ -> err "not literal"
 
 getValue :: XMLBase -> Element -> AnnotationValue
@@ -231,8 +243,8 @@ getObjProp b e = case getName e of
 -- | replaces eg. "minExclusive" with ">"
 properFacet :: ConstrainingFacet -> ConstrainingFacet
 properFacet cf
-    | iriType cf == Full =
-        let p = showQU cf \\ "http://www.w3.org/2001/XMLSchema#"
+    | hasFullIRI cf =
+        let p = showIRICompact cf \\ "http://www.w3.org/2001/XMLSchema#"
         in case p of
             "minInclusive" -> facetToIRI MININCLUSIVE
             "minExclusive" -> facetToIRI MINEXCLUSIVE
@@ -505,7 +517,7 @@ getAnnoAxiom b e =
    let as = getAllAnnos b e
        ap = getIRI b $ filterC "AnnotationProperty" e
        [ch] = filterChL [iriK, abbreviatedIRI] e
-       iri = contentIRI b ch
+       anIri = contentIRI b ch
     in case getName e of
     "AnnotationAssertion" ->
        let [s, v] = filterChL annotationValueList e
@@ -521,11 +533,11 @@ getAnnoAxiom b e =
     "AnnotationPropertyDomain" ->
         PlainAxiom (SimpleEntity $ mkEntity AnnotationProperty ap)
                $ ListFrameBit (Just $ DRRelation ADomain)
-                      $ AnnotationBit [(as, iri)]
+                      $ AnnotationBit [(as, anIri)]
     "AnnotationPropertyRange" ->
         PlainAxiom (SimpleEntity $ mkEntity AnnotationProperty ap)
                $ ListFrameBit (Just $ DRRelation ARange)
-                      $ AnnotationBit [(as, iri)]
+                      $ AnnotationBit [(as, anIri)]
     _ -> PlainAxiom (Misc []) . AnnFrameBit [] . AnnotationFrameBit
       . XmlError $ getName e
 
@@ -559,9 +571,9 @@ getOntologyIRI :: XMLBase -> Element -> OntologyIRI
 getOntologyIRI b e =
   let oi = findAttr (unqual "ontologyIRI") e
   in case oi of
-    Nothing -> dummyQName
-    Just iri -> appendBase b
-        $ nullQName {localPart = iri, iriType = cssIRI iri}
+    Nothing -> dummyIRI
+    Just anIri -> appendBase b
+        $ nullIRI {iriPath = stringToId anIri, isAbbrev = True}
 
 getBase :: Element -> XMLBase
 getBase e = fromJust $ vFindAttrBy (isSmth "base") e

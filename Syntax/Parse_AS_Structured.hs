@@ -102,12 +102,13 @@ logicName :: LogicGraph -> AParser st Logic_name
 logicName l = do
       i <- hetIriCurie >>= expandCurieMConservative l
       let (ft, rt) = if isSimple i
-                     then break (== '.') $ abbrevPath i -- DOL
-                     else (abbrevPath i, [])
+                     then break (== '.') $ show $ iriPath i -- DOL
+                     else (show $ iriPath i, [])
       (e, ms) <- if null rt then return (i, Nothing)
          else do
            s <- sublogicChars -- try more sublogic characters
-           return (i { abbrevPath = ft}, Just . mkSimpleId $ tail rt ++ s)
+           return (i { iriPath = stringToId ft},
+                   Just . mkSimpleId $ tail rt ++ s)
       skipSmart
       -- an optional spec name for a sublogic based on a theory #171
       mt <- optionMaybe

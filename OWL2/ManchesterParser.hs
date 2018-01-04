@@ -20,6 +20,7 @@ import OWL2.Parse
 import OWL2.Keywords
 import OWL2.ColonKeywords
 
+import Common.IRI
 import Common.Keywords
 import Common.Parsec
 import qualified Common.GlobalAnnotations as GA (PrefixMap)
@@ -256,14 +257,14 @@ frames = many $ datatypeBit <|> classFrame
 basicSpec :: GA.PrefixMap -> CharParser st OntologyDocument
 basicSpec pm = do
     nss <- many nsEntry
-    ou <- option nullQName $ pkeyword ontologyC >> option nullQName uriP
+    ou <- option nullIRI $ pkeyword ontologyC >> option nullIRI uriP
     ie <- many importEntry
     ans <- many annotations
     as <- frames
-    if null nss && null ie && null ans && null as && ou == nullQName
+    if null nss && null ie && null ans && null as && ou == nullIRI
       then fail "empty ontology"
       else return $ OntologyDocument
-        (Map.union (Map.fromList $ map (\ (p, q) -> (p, showQU q)) nss)
+        (Map.union (Map.fromList $ map (\ (p, q) -> (p, showIRICompact q)) nss)
          (convertPrefixMap pm))
         (emptyOntology as)
             { imports = ie

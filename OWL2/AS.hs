@@ -4,7 +4,7 @@ Module      :  ./OWL2/AS.hs
 Copyright   :  (c) C. Maeder, Felix Gabriel Mance
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  Christian.Maeder@dfki.de
+Maintainer  :  Alexander.Koslowski@st.ovgu.de
 Stability   :  provisional
 Portability :  portable
 
@@ -19,7 +19,7 @@ module OWL2.AS where
 
 import Common.Id
 import Common.Keywords (stringS)
-import Common.SetColimit
+import Common.IRI
 
 import Common.Result
 
@@ -33,97 +33,9 @@ import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-data IRIType = Full | Abbreviated | NodeID
-    deriving (Show, Eq, Ord, Typeable, Data)
-
-{- | full or abbreviated IRIs with a possible uri for the prefix
-     or a local part following a hash sign -}
-data QName = QN
-  { namePrefix :: String
-  -- ^ the name prefix part of a qualified name \"namePrefix:localPart\"
-  , localPart :: String
-  -- ^ the local part of a qualified name \"namePrefix:localPart\"
-  , iriType :: IRIType
-  , expandedIRI :: String
-  -- ^ the associated namespace uri (not printed)
-  , iriPos :: Range
-  } deriving (Show, Typeable, Data)
-
-instance Eq QName where
-    p == q = compare p q == EQ
-
-instance Ord QName where
-  compare (QN p1 l1 b1 n1 _) (QN p2 l2 b2 n2 _) =
-    if null n1 || null n2 then compare (b1, p1, l1) (b2, p2, l2) else
-      compare n1 n2 -- compare fully expanded names only
-
-qNameRange :: QName -> [Pos]
-qNameRange q = let Range rs = iriPos q in case rs of
-  [p] -> let
-    p0 = if iriType q == Full then incSourceColumn p (-1) else p
-    in tokenRange $ Token (showQN q) $ Range [p0]
-  _ -> rs
-
-instance GetRange QName where
-  getRange = iriPos
-  rangeSpan = qNameRange
-
-showQN :: QName -> String
-showQN q = (if iriType q == Full then showQI else showQU) q
-
--- | show QName as abbreviated iri
-showQU :: QName -> String
-showQU (QN pre local _ _ _) =
-    if null pre then local else pre ++ ":" ++ local
-
--- | show QName in angle brackets as full iris
-showQI :: QName -> String
-showQI n = '<' : showQU n ++ ">"
-
-nullQName :: QName
-nullQName = QN "" "" Abbreviated "" nullRange
-
-isNullQName :: QName -> Bool
-isNullQName qn = case qn of
-    QN "" "" _ "" _ -> True
-    _ -> False
-
-unamedS :: String
-unamedS = "//www." ++ dnamedS
-
-dnamedS :: String
-dnamedS = "hets.eu/ontology/unamed"
-
-dummyQName :: QName
-dummyQName = QN "http" unamedS Full ("http:" ++ unamedS) nullRange
-
-mkQName :: String -> QName
-mkQName s = nullQName { localPart = s }
-
-setQRange :: Range -> QName -> QName
-setQRange r q = q { iriPos = r }
-
-setPrefix :: String -> QName -> QName
-setPrefix s q = q { namePrefix = s }
-
-setFull :: QName -> QName
-setFull q = q {iriType = Full}
-
-type IRI = QName
-
-instance SymbolName QName where
- addString (q, s) = q { localPart = localPart q ++ s,
-                             expandedIRI = expandedIRI q ++ s
-                           }
-
-
 -- | checks if an IRI is an anonymous individual
 isAnonymous :: IRI -> Bool
-isAnonymous iri = iriType iri == NodeID || namePrefix iri == "_"
-
--- | checks if a string (bound to be localPart of an IRI) contains \":\/\/\"
-cssIRI :: String -> IRIType
-cssIRI iri = if isInfixOf "://" iri then Full else Abbreviated
+isAnonymous i = prefixName i == "_" && isBlankNode i
 
 -- | prefix -> localname
 type PrefixMap = Map.Map String String
@@ -134,7 +46,7 @@ predefPrefixes = Map.fromList
       , ("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
       , ("rdfs", "http://www.w3.org/2000/01/rdf-schema#")
       , ("xsd", "http://www.w3.org/2001/XMLSchema#")
-      , ("", showQU dummyQName ++ "#") ]
+      , ("", showIRICompact dummyIRI ++ "#") ]
 
 type LexicalForm = String
 type LanguageTag = String
@@ -261,17 +173,17 @@ isPredefOWLAnnoProp :: IRI -> Bool
 isPredefOWLAnnoProp = checkPredef makePredefOWLAnnoProp
 
 isPredefAnnoProp :: IRI -> Bool
-isPredefAnnoProp iri = isPredefOWLAnnoProp iri || isPredefRDFSAnnoProp iri
+isPredefAnnoProp i = isPredefOWLAnnoProp i || isPredefRDFSAnnoProp i
 
 isPredefPropOrClass :: IRI -> Bool
-isPredefPropOrClass iri = isPredefAnnoProp iri || isPredefDataProp iri
-    || isPredefObjProp iri || isThing iri
+isPredefPropOrClass i = isPredefAnnoProp i || isPredefDataProp i
+    || isPredefObjProp i || isThing i
 
 predefIRIs :: Set.Set IRI
-predefIRIs = Set.fromList $ map (setPrefix "xsd" . mkQName) xsdKeys
-    ++ map (setPrefix "owl" . mkQName) owlNumbers
-    ++ map (setPrefix "rdf" . mkQName) [rdfsLiteral, stringS]
-    ++ [setPrefix "rdfs" $ mkQName xmlLiteral]
+predefIRIs = Set.fromList $ map (setPrefix "xsd" . mkIRI) xsdKeys
+    ++ map (setPrefix "owl" . mkIRI) owlNumbers
+    ++ map (setPrefix "rdf" . mkIRI) [rdfsLiteral, stringS]
+    ++ [setPrefix "rdfs" $ mkIRI xmlLiteral]
 
 isDatatypeKey :: IRI -> Bool
 isDatatypeKey = not . null . isDatatypeKeyAux
@@ -289,7 +201,7 @@ rdfsMap :: PreDefMaps
 rdfsMap = preDefMaps [rdfsLiteral] "rdfs"
 
 isDatatypeKeyAux :: IRI -> [(String, String)]
-isDatatypeKeyAux iri = mapMaybe (`checkPredefAux` iri)
+isDatatypeKeyAux i = mapMaybe (`checkPredefAux` i)
   [ xsdMap, owlNumbersMap, rdfMap, rdfsMap ]
 
 type PreDefMaps = ([String], String, String)
@@ -302,29 +214,27 @@ preDefMaps sl pref = let
 
 checkPredefAux :: PreDefMaps -> IRI -> Maybe (String, String)
 checkPredefAux (sl, pref, exPref) u =
-  let lp = localPart u
-      nn = dnamedS ++ "#"
+  let lp = show $ iriPath u
       res = Just (pref, lp)
-  in case namePrefix u of
+  in case prefixName u of
     "http" -> case stripPrefix "//www." lp of
         Just q -> case stripPrefix "w3.org/" q of
             Just r -> case stripPrefix exPref r of
               Just s | elem s sl -> Just (pref, s)
               _ -> Nothing
-            Nothing -> case stripPrefix nn q of
-              Just s | elem s sl -> Just (pref, s)
-              _ -> Nothing
+            Nothing -> Nothing
         Nothing -> Nothing
     pu | elem lp sl -> case pu of
-      "" -> let ex = expandedIRI u in
+      "" -> let ex = iriToStringUnsecure u in 
             case stripPrefix "http://www." ex of
-              Just r | r == "w3.org/" ++ exPref ++ lp || r == nn ++ lp
+              Just r | r == "w3.org/" ++ exPref ++ lp -- || r == lp
                   -> res
               _ | null ex -> res
               _ -> Nothing
-      _ | pu == pref -> Just (pref, lp)
+      _ | pref == pu || pref ++ ":" == pu -> Just (pref, lp)
       _ -> Nothing
     _ -> Nothing
+
 
 checkPredef :: PreDefMaps -> IRI -> Bool
 checkPredef ms = isJust . checkPredefAux ms
@@ -334,60 +244,64 @@ makeOWLPredefMaps sl = preDefMaps sl "owl"
 
 -- | sets the correct prefix for the predefined datatypes
 setDatatypePrefix :: IRI -> IRI
-setDatatypePrefix iri = case isDatatypeKeyAux iri of
-  (p, l) : _ -> setPrefix p $ mkQName l
-  _ -> error $ showQU iri ++ " is not a predefined datatype"
+setDatatypePrefix i = case isDatatypeKeyAux i of
+  (p, l) : _ -> setPrefix p $ mkIRI l
+  _ -> error $ showIRICompact i ++ " is not a predefined datatype"
 
 -- | checks if the IRI is part of the built-in ones and puts the correct prefix
 setReservedPrefix :: IRI -> IRI
-setReservedPrefix iri = case namePrefix iri of
+setReservedPrefix i = case prefixName i of
   ""
-    | isDatatypeKey iri -> setDatatypePrefix iri
-    | isThing iri || isPredefDataProp iri || isPredefOWLAnnoProp iri
-        || isPredefObjProp iri -> setPrefix "owl" iri
-    | isPredefRDFSAnnoProp iri -> setPrefix "rdfs" iri
-  _ -> iri
+    | isDatatypeKey i -> setDatatypePrefix i
+    | isThing i || isPredefDataProp i || isPredefOWLAnnoProp i
+        || isPredefObjProp i -> setPrefix "owl" i
+    | isPredefRDFSAnnoProp i -> setPrefix "rdfs" i
+  _ -> i
 
 stripReservedPrefix :: IRI -> IRI
-stripReservedPrefix = mkQName . getPredefName
+stripReservedPrefix = idToIRI . uriToId
 
-{- | returns the name of the predefined IRI (e.g <xsd:string> returns "string"
-    or <http://www.w3.org/2002/07/owl#real> returns "real") -}
-getPredefName :: IRI -> String
-getPredefName iri =
-    if namePrefix iri `elem` ["", "xsd", "rdf", "rdfs", "owl"]
-        then localPart iri
-        else case mapMaybe (`stripPrefix` showQU iri)
+{- | Extracts Id from IRI
+     returns the name of the predefined IRI (e.g <xsd:string> returns "string"
+     or <http://www.w3.org/2002/07/owl#real> returns "real") -}
+uriToId :: IRI -> Id
+uriToId i =
+    if (prefixName i `elem` ["", "xsd", "rdf", "rdfs", "owl"])
+       || (   null (iriScheme i)
+           && null (iriQuery i)
+           && null (iriFragment i)
+           && isNothing (iriAuthority i))
+        then iriPath i
+        else stringToId $ case mapMaybe (`stripPrefix` showIRICompact i)
                     $ Map.elems predefPrefixes of
                 [s] -> s
-                _ -> showQN iri
+                _ -> showIRIFull i
+
+getPredefName :: IRI -> String
+getPredefName = show . uriToId
 
 -- | Extracts Token from IRI
 uriToTok :: IRI -> Token
-uriToTok urI = mkSimpleId $ getPredefName urI
-
--- | Extracts Id from IRI
-uriToId :: IRI -> Id
-uriToId = simpleIdToId . uriToTok
+uriToTok = mkSimpleId . show . getPredefName
 
 -- | Extracts Id from Entities
 entityToId :: Entity -> Id
 entityToId = uriToId . cutIRI
 
 printDatatype :: IRI -> String
-printDatatype dt = showQU $
+printDatatype dt = showIRICompact $
     if isDatatypeKey dt then stripReservedPrefix dt else dt
 
 data DatatypeCat = OWL2Number | OWL2String | OWL2Bool | Other
     deriving (Show, Eq, Ord, Typeable, Data)
 
 getDatatypeCat :: IRI -> DatatypeCat
-getDatatypeCat iri = case isDatatypeKey iri of
+getDatatypeCat i = case isDatatypeKey i of
     True
-        | checkPredef xsdBooleanMap iri -> OWL2Bool
-        | checkPredef xsdNumbersMap iri || checkPredef owlNumbersMap iri
+        | checkPredef xsdBooleanMap i -> OWL2Bool
+        | checkPredef xsdNumbersMap i || checkPredef owlNumbersMap i
             -> OWL2Number
-        | checkPredef xsdStringsMap iri -> OWL2String
+        | checkPredef xsdStringsMap i -> OWL2String
         | otherwise -> Other
     False -> Other
 
@@ -404,7 +318,7 @@ xsdStringsMap :: PreDefMaps
 xsdStringsMap = makeXsdMap xsdStrings
 
 facetToIRI :: DatatypeFacet -> ConstrainingFacet
-facetToIRI = setPrefix "xsd" . mkQName . showFacet
+facetToIRI = setPrefix "xsd" . mkIRI . showFacet
 
 -- * Cardinalities
 
@@ -448,7 +362,7 @@ instance Eq Entity where
 
 instance GetRange Entity where
   getRange = iriPos . cutIRI
-  rangeSpan = qNameRange . cutIRI
+  rangeSpan = iRIRange . cutIRI
 
 data EntityType =
     Datatype
@@ -481,15 +395,13 @@ pairSymbols (Entity lb1 k1 i1) (Entity lb2 k2 i2) =
             (Nothing, _) -> pairLables lbl2 lbl1
             (Just l1, Just l2) | l1 /= l2 -> Just $ l1 ++ ", " ++ l2
             _ -> lbl1
-        pairIRIs (QN p1 l1 t1 _e1 r1)
-                 (QN _p2 l2 _t2 _e2 _r2) =
-         QN
-          { namePrefix = p1
-          , localPart = if rest l1 == rest l2 then l1 else l1 ++ "_" ++ rest l2
-          , iriType = t1
-          , expandedIRI = ""
-          , iriPos = r1
-          }
+        pairIRIs iri1 iri2 = nullIRI
+          { prefixName = prefixName iri1
+          , iriPath = if rest (show $ iriPath iri1) == 
+                            rest (show $ iriPath iri2) 
+                          then iriPath iri1 
+                          else appendId (iriPath iri1) (iriPath iri2)
+          } -- TODO: improve, see #1597 
     return $ Entity (pairLables lb1 lb2) k1 $ pairIRIs i1 i2
 
 -- * LITERALS

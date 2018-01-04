@@ -24,6 +24,7 @@ module Common.SetColimit (
  where
 
 import Common.Id
+import Common.IRI
 import Common.Lib.Graph
 import Common.Lib.Rel (leqClasses)
 
@@ -109,6 +110,9 @@ class (Eq a, Ord a) => SymbolName a where
 
 instance SymbolName Id where
  addString (x, y) = appendString x y
+
+instance SymbolName IRI where
+ addString (x, y) = x {iriPath  = appendString (iriPath x) y}
 
 addIntToSymbols :: (SymbolName a) =>
                (Set.Set (a, Node), Map.Map Node (Map.Map a (a, Node))) ->

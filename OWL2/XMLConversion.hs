@@ -13,6 +13,8 @@ Conversion from Manchester Syntax to XML Syntax
 module OWL2.XMLConversion where
 
 import Common.AS_Annotation (Named, sentence)
+import Common.IRI hiding (showIRI)
+import Common.Id
 
 import OWL2.AS
 import OWL2.MS
@@ -28,9 +30,7 @@ import qualified Data.Map as Map
 
 -- | prints the IRI with a colon separating the prefix and the local part
 showIRI :: IRI -> String
-showIRI (QN pre local ty _ _) = case ty of
-    NodeID -> local
-    _ -> pre ++ ":" ++ local
+showIRI iri = prefixName iri ++ show (iriPath iri)
 
 nullQN :: Text.XML.Light.QName
 nullQN = QName "" Nothing Nothing
@@ -63,11 +63,10 @@ setName s e = e {elName = nullQN {qName = s,
  and the attribute value to the actual content of the IRI -}
 setIRI :: IRI -> Element -> Element
 setIRI iri e =
-    let fan = iriType iri
-        ty
-            | fan == Full = iriK
-            | fan == Abbreviated = "abbreviatedIRI"
-            | otherwise = nodeID
+    let ty
+            | hasFullIRI iri = iriK
+            | isBlankNode iri = nodeID
+            | otherwise = "abbreviatedIRI"
     in e {elAttribs = [Attr {attrKey = makeQN ty,
                              attrVal = showIRI $ setReservedPrefix iri}]}
 
@@ -96,7 +95,7 @@ mwText s = setText s nullElem
 
 -- | makes a new element with the IRI as the text content
 mwSimpleIRI :: IRI -> Element
-mwSimpleIRI s = setName (if iriType s /= Abbreviated then iriK
+mwSimpleIRI s = setName (if hasFullIRI s then iriK
                           else abbreviatedIRI) $ mwText $ showIRI
                           $ setReservedPrefix s
 
@@ -123,7 +122,7 @@ setInt i e = e {elAttribs = [Attr {attrKey = makeQN "cardinality",
 
 -- | the reverse of @properFacet@ in "OWL2.XML"
 correctFacet :: ConstrainingFacet -> ConstrainingFacet
-correctFacet c = let d = getPredefName c in setPrefix "http" $ mkQName $
+correctFacet c = let d = getPredefName c in setPrefix "http" $ mkIRI $
     "//www.w3.org/2001/XMLSchema#" ++ case d of
         ">" -> "minExclusive"
         "<" -> "maxExclusive"
@@ -158,11 +157,11 @@ xmlLiteral l = case l of
     let part = setName literalK $ mwText lf
     in case tu of
         Typed dt -> setDt True dt part
-        Untyped lang -> setLangTag lang $ setDt True (splitIRI $ mkQName
+        Untyped lang -> setLangTag lang $ setDt True (splitIRI $ mkIRI
             "http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral")
             part
-  NumberLit f -> setDt True (nullQName {namePrefix = "http",
-        localPart = "//www.w3.org/2001/XMLSchema#" ++ numberName f})
+  NumberLit f -> setDt True (nullIRI {iriScheme = "http",
+        iriPath = stringToId $ "//www.w3.org/2001/XMLSchema#" ++ numberName f})
         $ setName literalK $ mwText $ show f
 
 xmlIndividual :: IRI -> Element
@@ -473,7 +472,7 @@ setPref s e = e {elAttribs = Attr {attrKey = makeQN "name"
     , attrVal = s} : elAttribs e}
 
 set1Map :: (String, String) -> Element
-set1Map (s, iri) = setPref s $ mwIRI $ setFull $ splitIRI $ mkQName iri
+set1Map (s, iri) = setPref s $ mwIRI $ splitIRI $ mkIRI iri
 
 xmlPrefixes :: PrefixMap -> [Element]
 xmlPrefixes pm = let allpm = Map.union pm predefPrefixes in
@@ -481,7 +480,7 @@ xmlPrefixes pm = let allpm = Map.union pm predefPrefixes in
 
 setOntIRI :: OntologyIRI -> Element -> Element
 setOntIRI iri e =
-    if elem iri [nullQName, dummyQName] then e
+    if elem iri [nullIRI, dummyIRI] then e
      else e {elAttribs = Attr {attrKey = makeQN "ontologyIRI",
         attrVal = showIRI iri} : elAttribs e}
 
@@ -497,7 +496,7 @@ xmlOntologyDoc :: Sign -> OntologyDocument -> Element
 xmlOntologyDoc s od =
     let ont = ontology od
         pd = prefixDeclaration od
-        emptyPref = fromMaybe (showIRI dummyQName) $ Map.lookup "" pd
+        emptyPref = fromMaybe (showIRI dummyIRI) $ Map.lookup "" pd
     in setBase emptyPref $ setXMLNS $ setOntIRI (name ont)
         $ makeElement "Ontology" $ xmlPrefixes pd
             ++ map xmlImport (imports ont)

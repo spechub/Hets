@@ -24,6 +24,7 @@ import Common.Doc
 import Common.DocUtils
 import Common.ProofTree
 import Common.ProverTools
+import Common.IRI
 
 import Common.ExtSign
 import Common.Result
@@ -102,7 +103,7 @@ instance Sentences OWL2 Axiom Sign OWLMorphism Entity where
     sym_label OWL2 = label
     fullSymName OWL2 s = let
       i = cutIRI s
-      x = expandedIRI i
+      x = showIRI i --expandedIRI i
       in if null x then getPredefName i else x
     symKind OWL2 = takeWhile isAlpha . showEntityType . entityKind
     symsOfSen OWL2 _ = Set.toList . symsOfAxiom
@@ -162,6 +163,7 @@ instance StaticAnalysis OWL2 OntologyDocument Axiom
       subsig_inclusion OWL2 s = return . inclOWLMorphism s
       matches OWL2 = matchesSym
       symbol_to_raw OWL2 = ASymbol
+      id_to_raw OWL2 = idToRaw
       add_symb_to_sign OWL2 = addSymbToSign
       induced_from_morphism OWL2 = inducedFromMor
       induced_from_to_morphism OWL2 = inducedFromToMor

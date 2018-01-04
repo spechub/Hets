@@ -16,11 +16,12 @@ no prefix clashes
 module OWL2.Rename where
 
 import OWL2.AS
+import Common.IRI
+import Common.Id (stringToId)
 import OWL2.MS
 import OWL2.Sign
 import OWL2.Function
 
-import Data.Maybe
 import Data.Char (isDigit)
 import Data.List (find, nub)
 import qualified Data.Map as Map
@@ -31,8 +32,8 @@ import Common.Result
 testAndInteg :: (String, String)
      -> (PrefixMap, StringMap) -> (PrefixMap, StringMap)
 testAndInteg (pre, oiri) (old, tm) = case Map.lookup pre old of
-  Just iri ->
-   if oiri == iri then (old, tm)
+  Just anIri ->
+   if oiri == anIri then (old, tm)
     else let pre' = disambiguateName pre old
          in (Map.insert pre' oiri old, Map.insert pre pre' tm)
   Nothing -> (Map.insert pre oiri old, tm)
@@ -41,8 +42,12 @@ disambiguateName :: String -> PrefixMap -> String
 disambiguateName n nameMap =
   let nm = if null n then "n" else n  -- change other empty prefixes to "n..."
       newname = reverse . dropWhile isDigit $ reverse nm
-  in fromJust $ find (not . flip Map.member nameMap)
-      [newname ++ show (i :: Int) | i <- [1 ..]]
+      x =  find (not . flip Map.member nameMap)
+           [newname ++ show (i :: Int) | i <- [1 ..]]
+  in case x of
+      Just y -> y
+      Nothing -> error $ "could not disambiguate " ++ n ++ 
+                         " using " ++ show nameMap 
 
 uniteSign :: Sign -> Sign -> Result Sign
 uniteSign s1 s2 = do
@@ -73,11 +78,12 @@ integPref oldMap testMap =
 
 newOid :: OntologyIRI -> OntologyIRI -> OntologyIRI
 newOid id1 id2 =
-  let lid1 = localPart id1
-      lid2 = localPart id2
-  in if null lid1 then id2
-      else if null lid2 || id1 == id2 then id1
-            else id1 { localPart = uriToName lid1 ++ "_" ++ uriToName lid2 }
+  let lid1 = iriPath id1
+      lid2 = iriPath id2
+  in if null $ show lid1 then id2
+      else if (null $ show lid2) || id1 == id2 then id1
+            else id1 { iriPath = stringToId (uriToName (show lid1) ++ "_" ++ uriToName (show lid2)) }
+  -- todo: improve, see #1597
 
 combineDoc :: OntologyDocument -> OntologyDocument
                       -> OntologyDocument

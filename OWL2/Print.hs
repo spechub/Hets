@@ -16,6 +16,7 @@ import Common.Doc
 import Common.DocUtils
 import Common.Id
 import Common.Keywords
+import Common.IRI
 
 import OWL2.AS
 import OWL2.MS
@@ -31,18 +32,15 @@ instance Pretty Character where
 printCharact :: String -> Doc
 printCharact = text
 
-instance Pretty QName where
-    pretty = printIRI
-
-printIRI :: QName -> Doc
+printIRI :: IRI -> Doc
 printIRI q
-    | ((iriType q == Full || namePrefix q `elem` ["", "owl", "rdfs"])
+    | ((hasFullIRI q || prefixName q `elem` ["", "owl", "rdfs"])
        && isPredefPropOrClass q)
        || isDatatypeKey q = keyword $ getPredefName q
-    | otherwise = text $ showQN q
+    | otherwise = text $ showIRI q
 
-printDataIRI :: QName -> Doc
-printDataIRI q = if isDatatypeKey q then text $ showQN $ setDatatypePrefix q
+printDataIRI :: IRI -> Doc
+printDataIRI q = if isDatatypeKey q then text $ showIRI $ setDatatypePrefix q
  else printIRI q
 
 -- | Symbols printing
@@ -135,8 +133,8 @@ printFV (facet, restValue) = pretty (fromCF facet) <+> pretty restValue
 
 fromCF :: ConstrainingFacet -> String
 fromCF f
-    | iriType f == Full = showQU f \\ "http://www.w3.org/2001/XMLSchema#"
-    | otherwise = localPart f
+    | hasFullIRI f = showIRICompact f \\ "http://www.w3.org/2001/XMLSchema#"
+    | otherwise = show $ iriPath f
 
 instance Pretty DatatypeFacet where
     pretty = keyword . showFacet
