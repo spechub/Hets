@@ -169,11 +169,17 @@ If you wish to make larger changes we generally recommend [forking](https://help
 
 
 ### Build Hets using Stack
+* Get the git repository and its submodules
+    ```
+    git clone https://github.com/spechub/Hets.git
+    git submodule update --init --recursive
+    ```
 * [Install Stack](https://docs.haskellstack.org/en/stable/install_and_upgrade) (use the generic Linux option if you are on Ubuntu).
 * Install build- and GUI-dependencies
   * Ubuntu:
     ```
-    sudo apt-get install libglib2.0-dev libcairo2-dev libpango1.0-dev libgtk2.0-dev libglade2-dev libncurses-dev
+    sudo apt install libglib2.0-dev libcairo2-dev libpango1.0-dev libgtk2.0-dev libglade2-dev libncurses-dev
+    sudo apt install postgresql postgresql-server-dev-9.5 mysql-server libmysqlclient-dev
     ```
   * macOS:
     ```
@@ -183,11 +189,12 @@ If you wish to make larger changes we generally recommend [forking](https://help
 * Setup Stack for Hets (this needs to be done only once after every time the stack.yaml has changed):
   ```
   stack setup
-  make stack
+  make restack
   ```
   When you invoke `make` for the first time, this will give you warnings about not having found a compiler ("No compiler found, expected minor version match with ghc-...").
   Don't let this discourage you - it's normal.
   Running `make stack` will take care of it and install the compiler.
+  Running `make restack` does the same thing, as `make stack`, but needs to be run every time the dependencies (`stack.yaml`) change.
 * Build Hets with one of the following:
   ```
     make

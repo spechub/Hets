@@ -23,7 +23,7 @@
 # resolver:
 #  name: custom-snapshot
 #  location: "./custom-snapshot.yaml"
-resolver: lts-9.0
+resolver: lts-9.17
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -45,6 +45,16 @@ resolver: lts-9.0
 # will not be run. This is useful for tweaking upstream packages.
 packages:
   - '.'
+  - location: './_dependencies/persistent/persistent'
+    extra-dep: true
+  - location: './_dependencies/persistent/persistent-postgresql'
+    extra-dep: true
+  - location: './_dependencies/persistent/persistent-sqlite'
+    extra-dep: true
+  - location: './_dependencies/persistent/persistent-template'
+    extra-dep: true
+  - location: './_dependencies/persistent/persistent-mysql'
+    extra-dep: true
 
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)

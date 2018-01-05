@@ -13,7 +13,10 @@ Json of Hets DGs
 module Static.ToJson
   ( dGraph
   , lnode
+  , gmorph
   , dgSymbols
+  , declarations
+  , symbols
   , showSymbols
   , showSymbolsTh
   ) where
@@ -119,20 +122,20 @@ lnode opts ga lenv (nodeId, lbl) =
           DGNode orig cs -> consStatus cs ++ case orig of
                    DGBasicSpec _ (G_sign lid (ExtSign dsig _) _) _ ->
                      let syms = mostSymsOf lid dsig in
-                     [ ("Declarations", mkJArr
-                       $ map (showSym lid) syms) | not $ null syms ]
+                         [ ("Declarations", declarations lid syms)
+                           | not $ null syms ]
                    DGRestriction _ hidSyms ->
                      [ ("Hidden", mkJArr
                        . map (mkJObj . prettySymbol ga)
                        $ Set.toList hidSyms) ]
                    _ -> []
       ++ case dgn_theory lbl of
-        G_theory lid _ (ExtSign sig _) _ thsens _ -> let
+        G_theory lid _ extSig@(ExtSign sig _) _ thsens _ -> let
           (axs, thms) = OMap.partition isAxiom thsens
           nAxs = toNamedList axs
           nThms = OMap.toList thms
           in
-          [("Symbols", mkJArr . map (showSym lid) $ symlist_of lid sig)
+          [("Symbols", symbols lid extSig)
           | fullSign opts ]
           ++ [("Axioms", mkJArr
              $ map (showSen opts lid ga Nothing sig) nAxs) | not $ null nAxs ]
@@ -252,6 +255,14 @@ showSen opts lid ga mt sig ns = let s = sentence ns in mkJObj
           ++ if printAST opts
              then [("AST", asJson s)]
              else []
+
+declarations :: Sentences lid sentence sign morphism symbol
+             => lid -> [symbol] -> Json
+declarations lid syms = mkJArr $ map (showSym lid) syms
+
+symbols :: Sentences lid sentence sign morphism symbol
+        => lid -> ExtSign sign symbol -> Json
+symbols lid (ExtSign sig _) = mkJArr . map (showSym lid) $ symlist_of lid sig
 
 showSym :: Sentences lid sentence sign morphism symbol => lid -> symbol -> Json
 showSym lid s = mkJObj

@@ -61,6 +61,9 @@ module Driver.Options
 
 import Driver.Version
 
+import qualified Persistence.DBConfig as DBConfig
+import Persistence.Diagnosis
+
 import Common.Utils
 import Common.IO
 import Common.Id
@@ -94,7 +97,7 @@ bracket s = "[" ++ s ++ "]"
 -- use the same strings for parsing and printing!
 verboseS, intypeS, outtypesS, skipS, justStructuredS, transS,
      guiS, libdirsS, outdirS, amalgS, recursiveS, namedSpecsS,
-     interactiveS, modelSparQS, counterSparQS, connectS, xmlS, listenS,
+     interactiveS, modelSparQS, counterSparQS, connectS, xmlS, dbS, listenS,
      applyAutomaticRuleS, normalFormS, unlitS, pidFileS :: String
 
 modelSparQS = "modelSparQ"
@@ -114,6 +117,7 @@ recursiveS = "recursive"
 interactiveS = "interactive"
 connectS = "connect"
 xmlS = "xml"
+dbS = "db"
 listenS = "listen"
 pidFileS = "pidfile"
 applyAutomaticRuleS = "apply-automatic-rule"
@@ -199,6 +203,14 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , counterSparQ :: Int
   , outdir :: FilePath
   , outtypes :: [OutType]
+  , databaseDoMigrate :: Bool
+  , databaseOutputFile :: FilePath
+  , databaseConfigFile :: FilePath
+  , databaseSubConfigKey :: String
+  , databaseFileVersionId :: String
+  , databaseReanalyze :: Bool
+  , databaseConfig :: DBConfig.DBConfig
+  , databaseContext :: DBConfig.DBContext
   , xupdate :: FilePath
   , recurse :: Bool
   , verbose :: Int
@@ -251,6 +263,14 @@ defaultHetcatsOpts = HcOpt
   , counterSparQ = 3
   , outdir = ""
   , outtypes = [] -- no default
+  , databaseDoMigrate = True
+  , databaseOutputFile = ""
+  , databaseConfigFile = ""
+  , databaseSubConfigKey = ""
+  , databaseFileVersionId = ""
+  , databaseReanalyze = False
+  , databaseConfig = DBConfig.emptyDBConfig
+  , databaseContext = DBConfig.emptyDBContext
   , xupdate = ""
   , recurse = False
   , defLogic = "CASL"
@@ -372,6 +392,12 @@ data Flag =
   | ModelSparQ FilePath
   | CounterSparQ Int
   | OutTypes [OutType]
+  | DatabaseDoNotMigrate
+  | DatabaseOutputFile FilePath
+  | DatabaseConfigFile FilePath
+  | DatabaseSubConfigKey String
+  | DatabaseFileVersionId String
+  | DatabaseReanalyze
   | Specs [SIMPLE_ID]
   | Trans [SIMPLE_ID]
   | Views [SIMPLE_ID]
@@ -420,6 +446,12 @@ makeOpts opts flg =
     CounterSparQ x -> opts { counterSparQ = x }
     OutDir x -> opts { outdir = x }
     OutTypes x -> opts { outtypes = x }
+    DatabaseDoNotMigrate -> opts { databaseDoMigrate = False }
+    DatabaseOutputFile x -> opts { databaseOutputFile = x }
+    DatabaseConfigFile x -> opts { databaseConfigFile = x }
+    DatabaseSubConfigKey x -> opts { databaseSubConfigKey = x }
+    DatabaseFileVersionId x -> opts { databaseFileVersionId = x }
+    DatabaseReanalyze -> opts { databaseReanalyze = True }
     XUpdate x -> opts { xupdate = x }
     Recurse -> opts { recurse = True }
     ApplyAutomatic -> opts { applyAutomatic = True }
@@ -603,6 +635,7 @@ data OutType =
   | KIFOut
   | OmdocOut
   | XmlOut -- ^ development graph xml output
+  | DbOut -- ^ development graph database output
   | JsonOut -- ^ development graph json output
   | ExperimentalOut -- ^ for testing new functionality
   | HaskellOut
@@ -630,6 +663,7 @@ instance Show OutType where
     KIFOut -> "kif"
     OmdocOut -> omdocS
     XmlOut -> xmlS
+    DbOut -> dbS
     JsonOut -> "json"
     ExperimentalOut -> experimentalS
     HaskellOut -> hsS
@@ -648,7 +682,7 @@ instance Show OutType where
 plainOutTypeList :: [OutType]
 plainOutTypeList =
   [ Prf, EnvOut ] ++ map OWLOut plainOwlFormats ++
-  [ RDFOut, CLIFOut, KIFOut, OmdocOut, XmlOut, JsonOut, ExperimentalOut
+  [ RDFOut, CLIFOut, KIFOut, OmdocOut, XmlOut, JsonOut, DbOut, ExperimentalOut
   , HaskellOut, ThyFile, ComptableXml, MedusaJson, FreeCADOut, SymXml, SymsXml
   , TPTPFile]
 
@@ -806,7 +840,22 @@ options = let
        ++ bS ++ ppS ++ joinBar (map show prettyList2) ++ crS
        ++ bS ++ graphE ++ joinBar (map show graphList) ++ crS
        ++ bS ++ dfgS ++ bracket cS ++ crS
-       ++ bS ++ tptpS)
+       ++ bS ++ tptpS ++ bracket cS)
+    , Option "" ["database-do-not-migrate"] (NoArg DatabaseDoNotMigrate)
+       ("Disallow Hets to create or alter the database tables" ++ crS
+       ++ "This option is ignored if the option --database-config is given.")
+    , Option "" ["database-file"] (ReqArg DatabaseOutputFile "FILEPATH")
+       ("path to the sqlite database file" ++ crS
+       ++ "This option is ignored if the option --database-config is given.")
+    , Option "" ["database-config"] (ReqArg DatabaseConfigFile "FILEPATH")
+       "path to the database configuration (yaml) file"
+    , Option "" ["database-subconfig"] (ReqArg DatabaseSubConfigKey "KEY")
+       ("subconfig of the database-config" ++ crS
+       ++ "one of: production, development, test")
+    , Option "" ["database-fileversion-id"] (ReqArg DatabaseFileVersionId "ID")
+       "ID (sha1-hash) of the file version to associate the data with"
+    , Option "" ["database-reanalyze"] (NoArg DatabaseReanalyze)
+       "Overwrite data of this document and its imports in the database"
     , Option "U" ["xupdate"] (ReqArg XUpdate "FILE")
       "apply additional xupdates from file"
     , Option "R" [recursiveS] (NoArg Recurse)
@@ -1027,9 +1076,34 @@ hetcatsOpts argv =
    in case getOpt Permute options argv' of
         (opts, nonOpts, []) ->
             do flags <- checkFlags opts
-               return (foldr (flip makeOpts) defaultHetcatsOpts flags)
+               let opts' = (foldr (flip makeOpts) defaultHetcatsOpts flags)
                             { infiles = nonOpts }
+               setupDatabaseOptions opts'
         (_, _, errs) -> hetsIOError (concat errs)
+  where
+    setupDatabaseOptions :: HetcatsOpts -> IO HetcatsOpts
+    setupDatabaseOptions opts = do
+      let dbContext = DBConfig.emptyDBContext
+            { DBConfig.contextFileVersion = databaseFileVersionId opts
+            , DBConfig.contextFilePath = head $ infiles opts
+            }
+      -- If the fileVersionId is not given, Hets has not been called by Ontohub.
+      -- Hence, there is no git handling and we always need to reanalyze the
+      -- file.
+      let databaseReanalyze' =
+            null (databaseFileVersionId opts) || databaseReanalyze opts
+      dbConfig <- if DbOut `elem` outtypes opts
+                  then DBConfig.parseDatabaseConfig
+                         (databaseOutputFile opts)
+                         (databaseConfigFile opts)
+                         (databaseSubConfigKey opts)
+                         (databaseDoMigrate opts)
+                  else return DBConfig.emptyDBConfig
+      return opts { databaseConfig = dbConfig
+                  , databaseContext = dbContext
+                  , databaseReanalyze = databaseReanalyze'
+                  }
+
 
 printOptionsWarnings :: HetcatsOpts -> IO ()
 printOptionsWarnings opts =
@@ -1178,9 +1252,12 @@ showDiags opts ds =
 -- | show diagnostic messages (see Result.hs), according to verbosity level
 showDiags1 :: HetcatsOpts -> ResultT IO a -> ResultT IO a
 showDiags1 opts res =
-  if outputToStdout opts then do
+  let dbout = DbOut `elem` outtypes opts in
+  if outputToStdout opts || dbout then do
     Result ds res' <- lift $ runResultT res
-    lift $ printDiags (verbose opts) ds
+    when (outputToStdout opts) $ lift $ printDiags (verbose opts) ds
+    when dbout $ lift $
+      saveDiagnoses (databaseConfig opts) (databaseContext opts) (verbose opts) ds
     case res' of
       Just res'' -> return res''
       Nothing -> liftR $ Result [] Nothing

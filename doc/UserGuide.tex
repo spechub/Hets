@@ -1353,6 +1353,7 @@ Specify \texttt{DIR} as destination directory for output files.
   | omn
   | omdoc
   | xml
+  | db
   | exp
   | hs
   | thy
@@ -1378,6 +1379,17 @@ can be output in this format; support for further logics is planned.
 
 The \texttt{xml} option will produce an XML-version of the development graph
 for our change management broker.
+
+The \texttt{db} option will save the development graph to a database.
+This can be either an SQLite database or a PostgreSQL database (only available
+in the \texttt{hets-server} package). For an SQLite database, you need to pass
+the parameter \texttt{--database-file=FILEPATH} to specify the database file to
+save to. If the file does not yet exist, \Hets will create it.
+For a PostgreSQL database, you need to pass the
+\texttt{--database-config=FILEPATH} and \texttt{--database-subconfig=KEY}
+parameters that point to a Ruby-on-Rails-compatible \texttt{database.yml}
+configuration file.\footnote{An example for a \texttt{database.yml} file can be
+found at \url{https://github.com/spechub/Hets/blob/master/Persistence/database_postgresql.yml}}
 
 The \texttt{exp} format is the new experimental omdoc format.
 
