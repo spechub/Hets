@@ -1478,7 +1478,12 @@ showNodeXml opts ga lenv dg n = let
 and select proving options -}
 showGlobalTh :: DGraph -> Int -> G_theory -> Int -> String -> IO String
 showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
-  sGTh@(G_theory lid _ (ExtSign sig _) _ thsens _) -> let
+  sGTh@(G_theory lid _ (ExtSign sig _) _ thsens _) -> do
+   comorProvers <- getFullComorphList dg
+   let
+    comorSelection = map (\ (ps,cm) -> let c = showComorph cm in
+                             (c, c, [])
+                         ) comorProvers
     ga = globalAnnos dg
     -- links to translations and provers xml view
     transBt = linkButtonElement ('/' : show sessId ++ "?translations=" ++ show i)
