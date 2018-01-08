@@ -75,7 +75,7 @@ resolvePrefix b pm (PrefixR s new) = let res = resolveIRI b pm new
 resolvePredicate :: Base -> RDFPrefixMap -> Predicate -> Predicate
 resolvePredicate b pm (Predicate p) = Predicate $
     if null (prefixName p) && show (iriPath p) == "a" then
-        p { iriScheme = "http",
+        p { iriScheme = "http:",
             iriPath = stringToId "//www.w3.org/1999/02/22-rdf-syntax-ns#type"
           }
     else resolveIRI b pm p

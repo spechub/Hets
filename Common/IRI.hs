@@ -250,7 +250,7 @@ showIRIFull i = iriToStringFull id i ""
 -- | a default ontology name  
 dummyIRI :: IRI
 dummyIRI = nullIRI { 
-       iriScheme = "http"
+       iriScheme = "http:"
      , iriAuthority = Just IRIAuth
                        { iriUserInfo = ""
                        , iriRegName = "hets.eu"
