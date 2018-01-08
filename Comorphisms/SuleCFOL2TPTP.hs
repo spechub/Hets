@@ -64,7 +64,7 @@ suleCFOL2TPTP = GenSuleCFOL2TPTP TPTP_FOF
 type TPTPTheory = (TSign.Sign, [Named Sentence])
 
 instance Show a => Language (GenSuleCFOL2TPTP a) where
-  language_name (GenSuleCFOL2TPTP a) = "CASL2" ++ show a
+  language_name (GenSuleCFOL2TPTP _) = "CASL2TPTP_FOF"
 
 instance Show a => Comorphism (GenSuleCFOL2TPTP a)
                CASL CASL_Sublogics
