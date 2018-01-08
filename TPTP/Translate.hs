@@ -56,7 +56,7 @@ transId t = mkSimpleId . transIdString t . concatMap transToSPChar . show
 
 transIdString :: CKType -> String -> String
 transIdString t str = case str of
-  "" -> error "SoftFOL.Translate.transId: empty string not allowed"
+  "" -> error "TPTP.Translate.transIdString: empty string not allowed"
   c : r -> if isDigit c then transIdString t $ substDigit c ++ r
     else case t of
       CKOp | '_' == c -> 'o' : str
