@@ -55,18 +55,18 @@ instance Show TPTP_FOF where
   show TPTP_FOF = "TPTP_FOF"
 
 -- | The identity of the comorphisms
-newtype GenSuleCFOL2TPTP a = GenSuleCFOL2TPTP a deriving Show
+data GenSuleCFOL2TPTP = GenSuleCFOL2TPTP deriving Show
 
-suleCFOL2TPTP :: GenSuleCFOL2TPTP TPTP_FOF
-suleCFOL2TPTP = GenSuleCFOL2TPTP TPTP_FOF
+suleCFOL2TPTP :: GenSuleCFOL2TPTP
+suleCFOL2TPTP = GenSuleCFOL2TPTP
 
 -- | TPTP theories
 type TPTPTheory = (TSign.Sign, [Named Sentence])
 
-instance Show a => Language (GenSuleCFOL2TPTP a) where
-  language_name (GenSuleCFOL2TPTP _) = "CASL2TPTP_FOF"
+instance Language GenSuleCFOL2TPTP where
+  language_name GenSuleCFOL2TPTP = "CASL2TPTP_FOF"
 
-instance Show a => Comorphism (GenSuleCFOL2TPTP a)
+instance Comorphism GenSuleCFOL2TPTP
                CASL CASL_Sublogics
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CASLSign
@@ -74,15 +74,15 @@ instance Show a => Comorphism (GenSuleCFOL2TPTP a)
                CSign.Symbol RawSymbol ProofTree
                TPTP.Logic_TPTP.TPTP Sublogic TAS.BASIC_SPEC Sentence () ()
                TSign.Sign TMorphism.Morphism TSign.Symbol () ProofTree where
-    sourceLogic (GenSuleCFOL2TPTP _) = CASL
-    sourceSublogic (GenSuleCFOL2TPTP a) = SL.cFol
+    sourceLogic GenSuleCFOL2TPTP = CASL
+    sourceSublogic GenSuleCFOL2TPTP = SL.cFol
                       { sub_features = LocFilSub
                       , cons_features = NoSortGen
-                      , has_empty_sorts = show a == show TPTP_FOF }
-    targetLogic (GenSuleCFOL2TPTP _) = TPTP.Logic_TPTP.TPTP
+                      , has_empty_sorts = True }
+    targetLogic GenSuleCFOL2TPTP = TPTP.Logic_TPTP.TPTP
     mapSublogic _ _ = Just FOF
-    map_theory (GenSuleCFOL2TPTP _) = transTheory
-    has_model_expansion (GenSuleCFOL2TPTP _) = True
+    map_theory GenSuleCFOL2TPTP = transTheory
+    has_model_expansion GenSuleCFOL2TPTP = True
 
 transTheory :: (FormExtension f, Eq f)
             => (CSign.Sign f e, [Named (FORMULA f)])
