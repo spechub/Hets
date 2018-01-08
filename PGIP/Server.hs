@@ -1542,6 +1542,11 @@ showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
           , htmlRow $ unode "h4" "Theory"
           ] $ "<pre>\n" ++ sbShow ++ "\n<br />" ++ thShow ++ "\n</pre>\n"
 
+{- | displays translated theory -}
+showtransTh :: DGraph -> Int -> G_theory -> AnyComorphism -> Int -> String -> IO String
+showtransTh dg i gTh comor sessId fstLine = undefined
+
+
 -- | show window of the autoproof function
 showAutoProofWindow :: DGraph -> Int -> ProverMode
   -> ResultT IO (String, String)
