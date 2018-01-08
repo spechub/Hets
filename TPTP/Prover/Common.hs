@@ -122,7 +122,7 @@ mkProver binary_name prover_name sublogics runTheProver =
 
 mkTheoryFileName :: String -> Named Sentence -> String
 mkTheoryFileName theoryName namedGoal =
-  theoryName ++ '_' : senAttr namedGoal ++ ".tptp"
+  basename (theoryName ++ '_' : senAttr namedGoal ++ ".tptp")
 
 getTimeLimit :: GenericConfig ProofTree -> Int
 getTimeLimit cfg = fromMaybe 100 $ timeLimit cfg
