@@ -1498,6 +1498,8 @@ showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
                        [ headr
                        , transBt
                        , prvsBt
+                       , htmlRow $ unode "h4" "Translate Theory"
+                       , translationForm
                        , htmlRow $ unode "h4" "Theory"
                        ] $ "<pre>\n" ++ sbShow ++ "\n<br />" ++ thShow ++ "\n</pre>\n"
       -- else create proving functionality
@@ -1537,10 +1539,27 @@ showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
           , transBt
           , prvsBt
           , goBack
+          , htmlRow $ unode "h4" "Translate Theory"
+          , translationForm
           , htmlRow $ unode "h4" "Theorems"
           , thmMenu
           , htmlRow $ unode "h4" "Theory"
           ] $ "<pre>\n" ++ sbShow ++ "\n<br />" ++ thShow ++ "\n</pre>\n"
+  where
+    translationForm =
+      let selectElement =
+            add_attr (mkAttr "class" "eight wide column") $ unode "div" $
+              singleSelectionDropDown "Translation" "translation" Nothing [] -- last element is list of comorphisms as [(String <label>, String <value>, [Attr] <additional attributes like "selected" or "disabled">)]
+          translateButton =
+            add_attr (mkAttr "class" "eight wide column") $ unode "div" $
+              add_attrs [mkAttr "value" "Translate"] submitButton
+      in  add_attrs [ mkAttr "name" "translation-form", mkAttr "method" "get"]
+            $ add_attr (mkAttr "class" "ui form")
+            $ unode "form"
+            $ add_attr (mkAttr "class" "ui relaxed grid container left aligned")
+            $ unode "div"
+            $ add_attr (mkAttr "class" "row")
+            $ unode "div" [selectElement, translateButton]
 
 {- | displays translated theory -}
 showtransTh :: DGraph -> Int -> G_theory -> AnyComorphism -> Int -> String -> IO String
