@@ -259,7 +259,9 @@ hetsServer' opts1 = do
          Left err -> queryFail err respond
          Right (qr2, fs2) ->
            let newOpts = foldl makeOpts opts $ fs ++ map snd fs2
-           in if isGraphQL meth pathBits then processGraphQL newOpts sessRef re
+           in if isGraphQL meth pathBits then do
+                   responseString <- processGraphQL newOpts sessRef re
+                   respond $ mkOkResponse "application/json" responseString
               else if isRESTful pathBits then do
               requestBodyParams <- parseRequestParams re
               let unknown = filter (`notElem` allQueryKeys) $ map fst qr2
