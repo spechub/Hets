@@ -2,7 +2,8 @@ import { ipcRenderer, Event, remote } from "electron";
 
 import {
   QUERY_CHANNEL,
-  CONFIG_GET_CHANNEL
+  CONFIG_GET_CHANNEL,
+  OPEN_FILE
 } from "../../shared/SharedConstants";
 import { ConfigDesc } from "../../shared/ConfigDesc";
 
@@ -31,5 +32,9 @@ export class IPCComm {
     callback: (e: Event, s: string) => void
   ) {
     ipcRenderer.on(channel, callback);
+  }
+
+  public static openFileDialog() {
+    ipcRenderer.send(OPEN_FILE);
   }
 }

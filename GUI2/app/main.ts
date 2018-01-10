@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Event } from "electron";
+import { app, dialog, BrowserWindow, ipcMain, Event } from "electron";
 import * as path from "path";
 import * as url from "url";
 
@@ -6,7 +6,8 @@ import { Utils } from "./utils";
 import {
   QUERY_CHANNEL,
   QUERY_CHANNEL_RESPONSE,
-  CONFIG_GET_CHANNEL
+  CONFIG_GET_CHANNEL,
+  OPEN_FILE
 } from "./shared/SharedConstants";
 
 // Keep a global reference of the window object, if you don't, the window will
@@ -72,4 +73,21 @@ ipcMain.on(QUERY_CHANNEL, (event: Event, message: any) => {
 
 ipcMain.on(CONFIG_GET_CHANNEL, (event: Event, _message: any) => {
   event.returnValue = Utils.getConfig();
+});
+
+ipcMain.on(OPEN_FILE, (event: Event, _message: any) => {
+  dialog.showOpenDialog(
+    {
+      filters: [
+        { name: "Hets", extensions: ["casl", "het", "hpf", "thy"] },
+        { name: "All Files", extensions: ["*"] }
+      ],
+      properties: ["openFile"]
+    },
+    (paths: string[]) => {
+      if (paths != undefined) {
+        event.sender.send(QUERY_CHANNEL_RESPONSE, paths[0]);
+      }
+    }
+  );
 });
