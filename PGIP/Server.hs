@@ -1332,7 +1332,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format_ api pfOptions = do
                     _ -> case nc of
                       NcCmd Query.Theory -> case api of
                           OldWebAPI -> lift $ fmap (\ t -> (htmlC, t))
-                                       $ showGlobalTh dg i gTh k fstLine
+                                       $ showGlobalTh dg i gTh k fstLine False
                           RESTfulAPI -> lift $ fmap (\ t -> (xmlC, t))
                                        $ showNodeXml opts (globalAnnos dg) libEnv dg i
                       NcCmd (Query.Translate x) -> do
@@ -1353,8 +1353,13 @@ getHetsResult opts updates sessRef (Query dgQ qk) format_ api pfOptions = do
                           let (_, dg2) = insLEdgeDG
                                           (i, n1, globDefLink gmor SeeSource) -- origin to be corrected
                                           dg1
-                          -- show the theory of n1 in xml format
-                          lift $ fmap (\ t -> (xmlC, t)) $ showNodeXml opts (globalAnnos dg2) libEnv dg2 n1
+                          case api of
+                            OldWebAPI -> 
+                                 lift $ fmap (\ t -> (htmlC, t))
+                                          $ showGlobalTh dg n1 gTh1 k fstLine True
+                            RESTfulAPI ->
+                            -- show the theory of n1 in xml format
+                              lift $ fmap (\ t -> (xmlC, t)) $ showNodeXml opts (globalAnnos dg2) libEnv dg2 n1
                       NcProvers mp mt -> do
                         availableProvers <- liftIO $ getProverList mp mt subL
                         return $ case api of
@@ -1476,34 +1481,32 @@ showNodeXml opts ga lenv dg n = let
 
 {- | displays the global theory for a node with the option to prove theorems
 and select proving options -}
-showGlobalTh :: DGraph -> Int -> G_theory -> Int -> String -> IO String
-showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
+showGlobalTh :: DGraph -> Int -> G_theory -> Int -> String -> Bool -> IO String
+showGlobalTh dg i gTh sessId fstLine isTrans = case simplifyTh gTh of
   sGTh@(G_theory lid _ (ExtSign sig _) _ thsens _) -> do
    comorProvers <- getFullComorphList dg
    let
-    comorSelection = map (\ (ps,cm) -> let c = showComorph cm in
+    comorSelection = map (\ (_,cm) -> let c = showComorph cm in
                              (c, c, [])
                          ) comorProvers
     ga = globalAnnos dg
     -- links to translations and provers xml view
-    transBt = linkButtonElement ('/' : show sessId ++ "?translations=" ++ show i)
-      "translations"
-    prvsBt = linkButtonElement ('/' : show sessId ++ "?provers=" ++ show i) "provers"
     headr = htmlRow $ unode "h3" fstLine
     thShow = renderHtml ga $ vcat $ map (print_named lid) $ toNamedList thsens
     sbShow = renderHtml ga $ pretty sig
-    in case getThGoals sGTh of
+    theoryHeader = htmlRow $ unode "h4" (if isTrans then "Translated theory" else "Theory")
+    transForm = if isTrans then []
+                else [ htmlRow $ unode "h4" "Translate Theory"
+                     , translationForm comorSelection]
+    gs = getThGoals sGTh
+    in if null gs || isTrans
       -- show simple view if no goals are found
-      [] -> return $ htmlPage fstLine ""
-                       [ headr
-                       , transBt
-                       , prvsBt
-                       , htmlRow $ unode "h4" "Translate Theory"
-                       , translationForm
-                       , htmlRow $ unode "h4" "Theory"
-                       ] $ "<pre>\n" ++ sbShow ++ "\n<br />" ++ thShow ++ "\n</pre>\n"
+       then return $ htmlPage fstLine ""
+                       ([ headr ] ++ transForm ++
+                        [ theoryHeader
+                        ]) $ "<pre>\n" ++ sbShow ++ "\n<br />" ++ thShow ++ "\n</pre>\n"
       -- else create proving functionality
-      gs -> do
+       else do
         -- create list of theorems, selectable for proving
         let thmSl =
               map (\ (nm, bp) ->
@@ -1518,7 +1521,7 @@ showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
         -- create prove button and prover/comorphism selection
         (prSl, cmrSl, jvScr2) <- showProverSelection GlProofs [sublogicOfTh gTh]
         let (prBt, timeout) = showProveButton True
-        -- hidden param field
+        -- hidden param field with "prove=nodeid"
             hidStr = add_attrs [ mkAttr "name" "prove"
               , mkAttr "type" "hidden", mkAttr "style" "display:none;"
               , mkAttr "value" $ show i ] inputNode
@@ -1535,21 +1538,21 @@ showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
         -- save dg and return to svg-view
             goBack = linkButtonElement ('/' : show sessId) "Return to DGraph"
         return $ htmlPage fstLine (jvScr1 ++ jvScr2)
-          [ headr
-          , transBt
-          , prvsBt
-          , goBack
-          , htmlRow $ unode "h4" "Translate Theory"
-          , translationForm
-          , htmlRow $ unode "h4" "Theorems"
+         ([ headr
+          , goBack ] ++ transForm ++
+          [ htmlRow $ unode "h4" "Theorems"
           , thmMenu
-          , htmlRow $ unode "h4" "Theory"
-          ] $ "<pre>\n" ++ sbShow ++ "\n<br />" ++ thShow ++ "\n</pre>\n"
+          , theoryHeader
+          ]) $ "<pre>\n" ++ sbShow ++ "\n<br />" ++ thShow ++ "\n</pre>\n"
   where
-    translationForm =
+    translationForm comorSelection =
       let selectElement =
             add_attr (mkAttr "class" "eight wide column") $ unode "div" $
-              singleSelectionDropDown "Translation" "translation" Nothing [] -- last element is list of comorphisms as [(String <label>, String <value>, [Attr] <additional attributes like "selected" or "disabled">)]
+              singleSelectionDropDown "Translation" "translation" Nothing comorSelection -- last element is list of comorphisms as [(String <label>, String <value>, [Attr] <additional attributes like "selected" or "disabled">)]
+        -- hidden param field with "theory=nodeid"
+          hideStr = add_attrs [ mkAttr "name" "theory"
+              , mkAttr "type" "hidden", mkAttr "style" "display:none;"
+              , mkAttr "value" $ show i ] inputNode
           translateButton =
             add_attr (mkAttr "class" "eight wide column") $ unode "div" $
               add_attrs [mkAttr "value" "Translate"] submitButton
@@ -1559,11 +1562,7 @@ showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
             $ add_attr (mkAttr "class" "ui relaxed grid container left aligned")
             $ unode "div"
             $ add_attr (mkAttr "class" "row")
-            $ unode "div" [selectElement, translateButton]
-
-{- | displays translated theory -}
-showtransTh :: DGraph -> Int -> G_theory -> AnyComorphism -> Int -> String -> IO String
-showtransTh dg i gTh comor sessId fstLine = undefined
+            $ unode "div" [hideStr, selectElement, translateButton]
 
 
 -- | show window of the autoproof function
