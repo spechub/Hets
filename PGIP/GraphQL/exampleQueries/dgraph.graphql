@@ -1,0 +1,162 @@
+query DGraph {
+  repository(id: "ada/fixtures") {
+    commit(revision: "master") {
+      document(locId: "Basic/RelationsAndOrders.casl") {
+        __typename
+        documentLinks(limit: null) {
+          source {
+            locId
+          }
+          target {
+            locId
+          }
+        }
+        ... on NativeDocument {
+          oms {
+            ...omsFields
+          }
+        }
+        ... on Library {
+          omsList: oms(limit: null) {
+            ...omsFields
+          }
+        }
+      }
+    }
+  }
+}
+
+fragment omsFields on OMS {
+  __typename
+  conservativityStatus {
+    required
+    proved
+  }
+  consistencyCheckAttempts(limit: null) {
+    evaluationState
+    reasonerConfiguration {
+      configuredReasoner {
+        id
+        displayName
+      }
+      premiseSelections {
+        selectedPremises(limit: null) {
+          locId
+        }
+      }
+    }
+    reasonerOutput {
+      text
+    }
+    reasoningStatus
+    timeTaken
+    usedReasoner {
+      id
+      displayName
+    }
+  }
+  description
+  displayName
+  freeNormalForm {
+    locId
+  }
+  freeNormalFormSignatureMorphism {
+    id
+  }
+  labelHasFree
+  labelHasHiding
+  language {
+    id
+    name
+    description
+  }
+  locId
+  logic {
+    id
+    name
+  }
+  mappings(limit: null) {
+    ... mappingsFields
+  }
+  name
+  nameExtension
+  nameExtensionIndex
+  nameFileRange {
+    ...fileRangeFields
+  }
+  normalForm {
+    locId
+  }
+  normalFormSignatureMorphism {
+    id
+  }
+  origin
+  sentences(limit: null) {
+    __typename
+    fileRange {
+      ...fileRangeFields
+    }
+    locId
+    name
+    symbols(limit: null) {
+      ...symbolFields
+    }
+    text
+    ... on Conjecture {
+      ...conjectureFields
+    }
+  }
+  serialization {
+    id
+  }
+  signature {
+    id
+  }
+}
+
+fragment conjectureFields on Conjecture {
+  evaluationState
+  proofAttempts {
+    evaluationState
+    reasonerConfiguration {
+      configuredReasoner {
+        id
+        displayName
+      }
+      premiseSelections {
+        selectedPremises(limit: null) {
+          locId
+        }
+      }
+    }
+    reasonerOutput {
+      text
+    }
+    reasoningStatus
+    timeTaken
+    usedReasoner {
+      id
+      displayName
+    }
+  }
+  reasoningStatus
+}
+
+fragment symbolFields on Symbol {
+  __typename
+  fileRange {
+    ...fileRangeFields
+  }
+  fullName
+  kind
+  locId
+  name
+}
+
+fragment fileRangeFields on FileRange {
+  path
+  startLine
+  startColumn
+  endLine
+  endColumn
+}
