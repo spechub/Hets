@@ -1548,7 +1548,7 @@ showGlobalTh dg i gTh sessId fstLine isTrans = case simplifyTh gTh of
     translationForm comorSelection =
       let selectElement =
             add_attr (mkAttr "class" "eight wide column") $ unode "div" $
-              singleSelectionDropDown "Translation" "translation" Nothing comorSelection -- last element is list of comorphisms as [(String <label>, String <value>, [Attr] <additional attributes like "selected" or "disabled">)]
+              singleSelectionDropDown "Translation" "translation" Nothing comorSelection
         -- hidden param field with "theory=nodeid"
           hideStr = add_attrs [ mkAttr "name" "theory"
               , mkAttr "type" "hidden", mkAttr "style" "display:none;"
