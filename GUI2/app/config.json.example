@@ -1,4 +1,4 @@
 {
-  "hets_hostname": "172.16.186.129",
+  "hets_hostname": "127.0.0.1",
   "hets_port": 8000
 }
