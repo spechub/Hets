@@ -65,6 +65,7 @@ ipcMain.on(QUERY_CHANNEL, (event: Event, message: any) => {
   Utils.queryHETSApi(message.hostname, message.port, message.file)
     .catch((err: Error) => {
       console.error(err.message);
+      dialog.showErrorBox("Network Error", err.message);
     })
     .then((res: JSON) => {
       event.sender.send(QUERY_CHANNEL_RESPONSE, res);

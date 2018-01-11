@@ -33,15 +33,25 @@ export class Utils {
   }
 
   public static getConfig(): ConfigDesc {
-    const configStr = fs.readFileSync(
-      path.join(__dirname, CONFIG_FILENAME),
-      "utf8"
-    );
+    let filename = CONFIG_FILENAME;
+
+    if (!fs.existsSync(path.join(__dirname, CONFIG_FILENAME))) {
+      console.warn("WARN: No custom config.json found, using defaults!");
+      filename = "config.json.example";
+    }
+
+    const configStr = fs.readFileSync(path.join(__dirname, filename), "utf8");
 
     return JSON.parse(configStr) as ConfigDesc;
   }
 
   public static setConfig(config: ConfigDesc) {
+    if (!fs.existsSync(path.join(__dirname, CONFIG_FILENAME))) {
+      console.warn(
+        "WARN: No custom config.json found, a new one will be created!"
+      );
+    }
+
     fs.writeFileSync(
       path.join(__dirname, CONFIG_FILENAME),
       JSON.stringify(config, null, 2),
