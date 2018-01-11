@@ -3,3 +3,4 @@ dist/
 app/main.js
 app/main.js.map
 .vscode
+config.json
