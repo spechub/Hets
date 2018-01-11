@@ -1,29 +1,49 @@
 import * as React from "react";
 import * as d3 from "d3";
-import { Event } from "electron";
+import { Event, remote } from "electron";
 
 import { IPCComm } from "../actions/IPCComm";
 import { DGraphParser } from "../actions/DGraphParser";
 import { QUERY_CHANNEL_RESPONSE } from "../../shared/SharedConstants";
-import Input from "semantic-ui-react/dist/commonjs/elements/Input/Input";
+import { GraphControls } from "./GraphControls";
 
 export interface FDGraphProps {
   width: string;
   height: string;
 }
 
-export class FDGraph extends React.Component<FDGraphProps, {}> {
+interface FDGraphState {
+  width: number;
+  height: number;
+}
+
+export class FDGraph extends React.Component<FDGraphProps, FDGraphState> {
   svg: d3.Selection<HTMLElement, any, HTMLElement, any>;
   simulation: d3.Simulation<any, any>;
   base: d3.Selection<Element, any, HTMLElement, any>;
 
+  graph: DGraphParser;
+
   link: any;
   node: any;
+
+  internalEdges: boolean;
+  internalNodes: boolean;
 
   constructor(props: any) {
     super(props);
 
     IPCComm.recieveMessage(QUERY_CHANNEL_RESPONSE, this.displayResp.bind(this));
+    this.internalEdges = false;
+    this.internalNodes = true;
+
+    remote.getCurrentWindow().on("resize", () => {
+      console.log("resize");
+      this.setState({
+        width: remote.getCurrentWindow().getContentSize()[0] - 16,
+        height: remote.getCurrentWindow().getContentSize()[1] - 150
+      });
+    });
   }
 
   componentDidMount() {
@@ -33,14 +53,15 @@ export class FDGraph extends React.Component<FDGraphProps, {}> {
   render() {
     return (
       <>
-        <Input
-          type="range"
-          min="0"
-          max="1"
-          step="any"
-          onChange={this.inputted.bind(this)}
+        <svg
+          width={this.state ? this.state.width : this.props.width}
+          height={this.state ? this.state.height : this.props.height}
         />
-        <svg width={this.props.width} height={this.props.height} />
+        <GraphControls
+          edgeStrengthsChanged={this.inputted.bind(this)}
+          showInternalEdges={this.showInternalEdges.bind(this)}
+          showInternalNodes={this.showInternalNodes.bind(this)}
+        />
       </>
     );
   }
@@ -74,9 +95,22 @@ export class FDGraph extends React.Component<FDGraphProps, {}> {
   }
 
   private inputted(_e: Event, d: any) {
-    console.log(+d.value);
     (this.simulation.force("link") as any).strength(+d.value);
     this.simulation.alpha(1).restart();
+  }
+
+  private showInternalEdges() {
+    this.internalEdges = !this.internalEdges;
+    if (this.graph) {
+      this.prepareData(this.graph);
+    }
+  }
+
+  private showInternalNodes() {
+    this.internalNodes = !this.internalNodes;
+    if (this.graph) {
+      this.prepareData(this.graph);
+    }
   }
 
   private zoomed() {
@@ -84,16 +118,25 @@ export class FDGraph extends React.Component<FDGraphProps, {}> {
   }
 
   private displayResp(_e: Event, s: any) {
+    this.graph = new DGraphParser(s);
+    this.prepareData(this.graph);
+  }
+
+  private prepareData(graph: DGraphParser) {
     this.base.remove();
     this.base = this.svg.append("g");
-    const graph = new DGraphParser(s);
-
     console.log(graph);
 
     const links = [];
     const nodes = [];
+    const excludedNodes = [];
 
     for (const node of graph.dgraph.DGNodes) {
+      if (!this.internalNodes && node.internal) {
+        excludedNodes.push(node.id);
+        continue;
+      }
+
       nodes.push({
         id: node.id,
         name: node.name,
@@ -102,6 +145,17 @@ export class FDGraph extends React.Component<FDGraphProps, {}> {
     }
 
     for (const link of graph.dgraph.DGLinks) {
+      if (!this.internalEdges && !link.Type.includes("GlobalDef")) {
+        continue;
+      }
+
+      if (
+        excludedNodes.includes(link.id_source) ||
+        excludedNodes.includes(link.id_target)
+      ) {
+        continue;
+      }
+
       links.push({
         id: link.linkid,
         source: link.id_source,
