@@ -76,7 +76,7 @@ ipcMain.on(CONFIG_GET_CHANNEL, (event: Event, _message: any) => {
   event.returnValue = Utils.getConfig();
 });
 
-ipcMain.on(OPEN_FILE, (event: Event, _message: any) => {
+ipcMain.on(OPEN_FILE, (event: Event, message: any) => {
   dialog.showOpenDialog(
     {
       filters: [
@@ -87,7 +87,15 @@ ipcMain.on(OPEN_FILE, (event: Event, _message: any) => {
     },
     (paths: string[]) => {
       if (paths != undefined) {
-        event.sender.send(QUERY_CHANNEL_RESPONSE, paths[0]);
+        console.log(paths[0]);
+        Utils.queryHETSApi(message.hostname, message.port, paths[0])
+          .catch((err: Error) => {
+            console.error(err.message);
+            dialog.showErrorBox("Network Error", err.message);
+          })
+          .then((res: JSON) => {
+            event.sender.send(QUERY_CHANNEL_RESPONSE, res);
+          });
       }
     }
   );

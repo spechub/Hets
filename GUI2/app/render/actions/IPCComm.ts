@@ -35,6 +35,12 @@ export class IPCComm {
   }
 
   public static openFileDialog() {
-    ipcRenderer.send(OPEN_FILE);
+    const config = ipcRenderer.sendSync(CONFIG_GET_CHANNEL) as ConfigDesc;
+    const message = {
+      hostname: config.hets_hostname,
+      port: config.hets_port
+    };
+
+    ipcRenderer.send(OPEN_FILE, message);
   }
 }
