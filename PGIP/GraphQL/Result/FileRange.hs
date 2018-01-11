@@ -6,7 +6,7 @@ import Data.Data
 
 data FileRange = FileRange { startLine :: Int
                            , startColumn :: Int
-                           , endLine :: Int
-                           , endColumn :: Int
+                           , endLine :: Maybe Int
+                           , endColumn :: Maybe Int
                            , path :: String
                            } deriving (Show, Typeable, Data)
