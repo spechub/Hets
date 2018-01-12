@@ -6,7 +6,7 @@ import PGIP.GraphQL.Result.StringReference
 
 import Data.Data
 
-data LanguageMapping = LanguageMapping { id :: String
+data LanguageMapping = LanguageMapping { id :: Int
                                        , source :: StringReference
                                        , target :: StringReference
                                        } deriving (Show, Typeable, Data)

@@ -9,7 +9,7 @@ import PGIP.GraphQL.Result.LocIdReference
 
 import Data.Data
 
-data Mapping = Mapping { conservativityStatus :: ConservativityStatus
+data Mapping = Mapping { conservativityStatus :: Maybe ConservativityStatus
                        , displayName :: String
                        , freenessParameterOMS :: Maybe LocIdReference
                        , freenessParameterLanguage :: Maybe Language
@@ -18,7 +18,7 @@ data Mapping = Mapping { conservativityStatus :: ConservativityStatus
                        , origin :: String
                        , pending :: Bool
                        , signatureMorphism :: IdReference
-                       , source :: [LocIdReference]
-                       , target :: [LocIdReference]
+                       , source :: LocIdReference
+                       , target :: LocIdReference
                        , mappingType :: String
                        } deriving (Show, Typeable, Data)

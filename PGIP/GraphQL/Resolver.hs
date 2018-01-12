@@ -3,6 +3,7 @@
 module PGIP.GraphQL.Resolver (resolve) where
 
 import qualified PGIP.GraphQL.Resolver.Signature as SignatureResolver
+import qualified PGIP.GraphQL.Resolver.SignatureMorphism as SignatureMorphismResolver
 
 import PGIP.GraphQL.Result as GraphQLResult
 
@@ -25,7 +26,9 @@ resolve opts sessionReference query variables = do
     QTSignature -> case Map.lookup "id" variables of
       Nothing -> fail "Signature query: Variable \"id\" not provided."
       Just idVar -> SignatureResolver.resolve opts sessionReference $ read $ Text.unpack idVar
-    QTSignatureMorphism -> undefined
+    QTSignatureMorphism -> case Map.lookup "id" variables of
+      Nothing -> fail "SignatureMorphism query: Variable \"id\" not provided."
+      Just idVar -> SignatureMorphismResolver.resolve opts sessionReference $ read $ Text.unpack idVar
   return $ resultToResponse resultM
 
 resultToResponse :: Maybe GraphQLResult.Result -> String

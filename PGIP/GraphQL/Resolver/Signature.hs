@@ -2,12 +2,12 @@
 
 module PGIP.GraphQL.Resolver.Signature (resolve) where
 
+import PGIP.GraphQL.Resolver.Utils
+
 import PGIP.GraphQL.Result as GraphQLResult
 import PGIP.GraphQL.Result.IdReference (IdReference (..))
 import PGIP.GraphQL.Result.LocIdReference (LocIdReference (..))
-import PGIP.GraphQL.Result.FileRange as GraphQLResultFileRange
 import PGIP.GraphQL.Result.Signature as GraphQLResultSignature
-import PGIP.GraphQL.Result.Symbol as GraphQLResultSymbol
 
 import PGIP.Shared
 
@@ -16,7 +16,6 @@ import Persistence.Database
 import Persistence.Utils
 import Persistence.Schema as DatabaseSchema
 
-import qualified Data.Text as Text
 import Database.Esqueleto
 
 import Control.Monad.IO.Class (MonadIO (..))
@@ -55,35 +54,10 @@ resolveDB idVar = do
           on (signature_symbols ^. SignatureSymbolSignatureId ==. signatures ^. SignatureId)
           where_ (signatures ^. SignatureId ==. val signatureKey)
           return (loc_id_bases, symbolsSql, file_ranges)
-      symbolResults <- mapM toSymbolResult symbolsWithFileRanges
 
       return $ Just $ SignatureResult $ GraphQLResultSignature.Signature
         (fromIntegral $ fromSqlKey signatureKey)
         (map LocIdReference omsLocIds)
         (map (IdReference . fromIntegral . fromSqlKey . entityKey) signatureMorphismsAsSourceL)
         (map (IdReference . fromIntegral . fromSqlKey . entityKey) signatureMorphismsAsTargetL)
-        symbolResults
-
-toSymbolResult :: MonadIO m
-               => ( Entity DatabaseSchema.LocIdBase
-                  , Entity DatabaseSchema.Symbol
-                  , Maybe (Entity DatabaseSchema.FileRange)
-                  )
-               -> DBMonad m GraphQLResultSymbol.Symbol
-toSymbolResult (Entity _ locIdBaseValue, Entity _ symbolValue, fileRangeM) = do
-  let fileRangeResult =
-        fmap (\(Entity _ fileRangeValue) -> GraphQLResultFileRange.FileRange
-               { GraphQLResultFileRange.startLine = fileRangeStartLine fileRangeValue
-               , GraphQLResultFileRange.startColumn = fileRangeStartColumn fileRangeValue
-               , GraphQLResultFileRange.endLine = fileRangeEndLine fileRangeValue
-               , GraphQLResultFileRange.endColumn = fileRangeEndColumn fileRangeValue
-               , GraphQLResultFileRange.path = fileRangePath fileRangeValue
-               }) fileRangeM
-  return GraphQLResultSymbol.Symbol
-    { GraphQLResultSymbol.__typename = "Symbol"
-    , GraphQLResultSymbol.fileRange = fileRangeResult
-    , GraphQLResultSymbol.fullName = Text.unpack $ symbolFullName symbolValue
-    , GraphQLResultSymbol.kind = symbolSymbolKind symbolValue
-    , GraphQLResultSymbol.locId = locIdBaseLocId locIdBaseValue
-    , GraphQLResultSymbol.name = symbolName symbolValue
-    }
+        (map symbolEntityToSymbolResult symbolsWithFileRanges)
