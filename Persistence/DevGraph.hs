@@ -74,8 +74,9 @@ import Data.Maybe
 import Data.Set (Set)
 import qualified Data.Set as Set
 import qualified Data.Text as Text
-import Database.Persist
-import Database.Persist.Sql
+import Database.Persist hiding ((==.))
+import Database.Persist.Sql hiding ((==.))
+import Database.Esqueleto
 
 -- TODO: replace this by the `symbol` type variable and find a string representation that is unique such that there can be a unique index in the database
 type SymbolMapIndex = (String, String) -- (SymbolKind, FullSymbolName)
@@ -181,17 +182,18 @@ createDocument opts libEnv parentFileVersion dbCache0 libName =
         let fileVersionKeyS =
               show $ unSqlBackendKey $ unFileVersionKey fileVersionKey
         advisoryLocked opts (fileVersionKeyS ++ "-" ++ show kind ++ "-" ++ locId) $ do
-          documentM <- selectFirst [ LocIdBaseLocId ==. locId
-                                   , LocIdBaseFileVersionId ==. fileVersionKey
-                                   , LocIdBaseKind ==. kind
-                                   ] []
-          case documentM of
-            Just document -> when (databaseReanalyze opts) $
+          documentL <- select $ from $ \loc_id_bases -> do
+            where_ (loc_id_bases ^. LocIdBaseLocId ==. val locId
+                      &&. loc_id_bases ^. LocIdBaseFileVersionId ==. val fileVersionKey
+                      &&. loc_id_bases ^. LocIdBaseKind ==. val kind)
+            return loc_id_bases
+          case documentL of
+            [] -> return ()
+            document : _ -> when (databaseReanalyze opts) $
               Persistence.DevGraph.Cleaning.clean document
-            Nothing -> return ()
           (doSave, documentKey, documentLocIdBaseValue) <-
-            case (databaseReanalyze opts, documentM) of
-              (False, Just (Entity documentKey documentLocIdBaseValue)) ->
+            case (databaseReanalyze opts, documentL) of
+              (False, Entity documentKey documentLocIdBaseValue : _) ->
                 return (False, documentKey, documentLocIdBaseValue)
               _ -> do
                 let documentLocIdBaseValue = LocIdBase
@@ -410,14 +412,16 @@ createOMS opts libEnv fileVersionKey dbCache0 doSave globalAnnotations libName
         omsLocIdBaseEntity@(Entity omsKey _) <-
           if not doSave
           then do
-            omsM <- selectFirst [ LocIdBaseLocId ==. locId
-                                , LocIdBaseFileVersionId ==. fileVersionKey
-                                , LocIdBaseKind ==. Enums.OMS
-                                ] []
-            case omsM of
-              Just entity -> return entity
-              Nothing -> fail ("Persistence.DevGraph.createOMS: OMS not found"
-                               ++ locId)
+            omsL <- select $ from $ \loc_id_bases -> do
+              where_ (loc_id_bases ^. LocIdBaseLocId ==. val locId
+                        &&. loc_id_bases ^. LocIdBaseFileVersionId ==. val fileVersionKey
+                        &&. loc_id_bases ^. LocIdBaseKind ==. val Enums.OMS)
+              return loc_id_bases
+
+            case omsL of
+              [] -> fail ("Persistence.DevGraph.createOMS: OMS not found"
+                          ++ locId)
+              entity : _ -> return entity
           else do
             conservativityStatusKey <- createConservativityStatus consStatus
             nodeNameRangeKey <- createRange $ srcRange internalNodeName
@@ -589,15 +593,15 @@ findOrCreateSignatureMorphism opts libEnv dbCache doSave libName edge
                         , signatureMorphismTargetId = targetSignatureKey
                         }
                   else do
-                    signatureMorphismM <-
-                      selectFirst [ SignatureMorphismLogicMappingId ==. logicMappingKey
-                                  , SignatureMorphismSourceId ==. sourceSignatureKey
-                                  , SignatureMorphismTargetId ==. targetSignatureKey
-                                  , SignatureMorphismAsJson ==. json
-                                  ] []
-                    case signatureMorphismM of
-                      Nothing -> fail "Persistence.DevGraph.findOrCreateSignatureMorphism: not found "
-                      Just (Entity key _) -> return key
+                    signatureMorphismL <- select $ from $ \signature_morphisms -> do
+                      where_ (signature_morphisms ^. SignatureMorphismLogicMappingId ==. val logicMappingKey
+                                &&. signature_morphisms ^. SignatureMorphismSourceId ==. val sourceSignatureKey
+                                &&. signature_morphisms ^. SignatureMorphismTargetId ==. val targetSignatureKey
+                                &&. signature_morphisms ^. SignatureMorphismAsJson ==. val json)
+                      return signature_morphisms
+                    case signatureMorphismL of
+                      [] -> fail "Persistence.DevGraph.findOrCreateSignatureMorphism: not found "
+                      Entity key _ : _ -> return key
 
                 (symbolMappingKeys, dbCache1) <-
                   findOrCreateSymbolMappings libEnv dbCache doSave libName edge
@@ -663,14 +667,14 @@ findOrCreateSymbolMapping libEnv dbCache doSave libName (sourceId, targetId)
     fromJustFail (symbolErrorMessage libEnv libName targetId targetSymbol targetLid "target") $
       findSymbolInCache libEnv libName targetId targetLid targetSymbol dbCache
 
-  symbolMappingM <-
-    selectFirst [ SymbolMappingSignatureMorphismId ==. signatureMorphismKey
-                , SymbolMappingSourceId ==. sourceKey
-                , SymbolMappingTargetId ==. targetKey
-                ] []
-  case symbolMappingM of
-    Just (Entity symbolMappingKey _) -> return symbolMappingKey
-    Nothing ->
+  symbolMappingL <- select $ from $ \symbol_mappings -> do
+    where_ (symbol_mappings ^. SymbolMappingSignatureMorphismId ==. val signatureMorphismKey
+              &&. symbol_mappings ^. SymbolMappingSourceId ==. val sourceKey
+              &&. symbol_mappings ^. SymbolMappingTargetId ==. val targetKey)
+    return symbol_mappings
+  case symbolMappingL of
+    Entity symbolMappingKey _ : _ -> return symbolMappingKey
+    [] ->
       if doSave
       then insert SymbolMapping
             { symbolMappingSignatureMorphismId = signatureMorphismKey
@@ -704,10 +708,12 @@ findOrCreateSerializationM languageKey syntaxM =
     Nothing -> return Nothing
     Just syntaxIRI -> do
       let syntaxIRIString = show $ setAngles False syntaxIRI
-      serializationM <- selectFirst [SerializationName ==. syntaxIRIString] []
-      case serializationM of
-        Just (Entity serializationKey _) -> return $ Just serializationKey
-        Nothing -> do
+      serializationL <- select $ from $ \serializations -> do
+        where_ (serializations ^. SerializationName ==. val syntaxIRIString)
+        return serializations
+      case serializationL of
+        Entity serializationKey _ : _ -> return $ Just serializationKey
+        [] -> do
           serializationKey <- insert Serialization
             { serializationLanguageId = languageKey
             , serializationSlug = parameterize syntaxIRIString
@@ -722,10 +728,12 @@ findLanguage :: ( MonadIO m
                 )
              => lid -> DBMonad m LanguageId
 findLanguage lid = do
-  languageM <- selectFirst [LanguageSlug ==. parameterize (show lid)] []
-  case languageM of
-    Just (Entity key _) -> return key
-    Nothing -> fail ("Language not found in the database: " ++ show lid)
+  languageL <- select $ from $ \languages -> do
+    where_ (languages ^. LanguageSlug ==. val (parameterize $ show lid))
+    return languages
+  case languageL of
+    Entity key _ : _ -> return key
+    [] -> fail ("Language not found in the database: " ++ show lid)
 
 findOrCreateLogic' :: ( MonadIO m
                       , Logic.Logic lid sublogics
@@ -803,14 +811,15 @@ findOrCreateSymbol libEnv fileVersionKey dbCache doSave libName nodeId
               insertEntityMany [Entity (toSqlKey $ fromSqlKey symbolKey) symbolValue]
               return symbolKey
             else do
-              symbolM <- selectFirst [ LocIdBaseLocId ==. locId
-                                     , LocIdBaseFileVersionId ==. fileVersionKey
-                                     , LocIdBaseKind ==. Enums.Symbol
-                                     ] []
-              case symbolM of
-                Nothing -> fail ("Persistence.DevGraph.findOrCreateSymbol: "
+              symbolL <- select $ from $ \loc_id_bases -> do
+                where_ (loc_id_bases ^. LocIdBaseLocId ==. val locId
+                          &&. loc_id_bases ^. LocIdBaseFileVersionId ==. val fileVersionKey
+                          &&. loc_id_bases ^. LocIdBaseKind ==. val Enums.Symbol)
+                return loc_id_bases
+              case symbolL of
+                [] -> fail ("Persistence.DevGraph.findOrCreateSymbol: "
                                  ++ "Symbol not found: " ++ locId)
-                Just (Entity symbolKey _) -> return symbolKey
+                Entity symbolKey _ : _ -> return symbolKey
           return $ addSymbolToCache libEnv libName nodeId lid symbol symbolKey dbCache
 
 createSentences :: ( MonadIO m
@@ -929,14 +938,15 @@ createSentence fileVersionKey dbCache doSave globalAnnotations
                     in insertEntityMany [Entity (toSqlKey $ fromSqlKey sentenceKey) axiom]
                return sentenceKey
             else do
-              sentenceM <- selectFirst [ LocIdBaseLocId ==. locId
-                                       , LocIdBaseFileVersionId ==. fileVersionKey
-                                       , LocIdBaseKind ==. kind
-                                       ] []
-              case sentenceM of
-                Nothing -> fail ("Persistence.DevGraph.createSentence: Sentence not found"
-                                 ++ locId)
-                Just (Entity sentenceKey _) -> return sentenceKey
+              sentenceL <- select $ from $ \loc_id_bases -> do
+                where_ (loc_id_bases ^. LocIdBaseLocId ==. val locId
+                          &&. loc_id_bases ^. LocIdBaseFileVersionId ==. val fileVersionKey
+                          &&. loc_id_bases ^. LocIdBaseKind ==. val kind)
+                return loc_id_bases
+              case sentenceL of
+                [] -> fail ("Persistence.DevGraph.createSentence: Sentence not found"
+                            ++ locId)
+                Entity sentenceKey _ : _-> return sentenceKey
         return (sentenceKey, dbCache)
 
 associateSymbolsOfSentence :: ( MonadIO m
@@ -1033,13 +1043,13 @@ createMapping opts libEnv fileVersionKey dbCache doSave globalAnnotations
                     then show (dgl_id linkLabel)
                     else dglName linkLabel
   let locId = locIdBaseLocId documentLocIdBaseValue ++ "//mappings/" ++ displayName
-  mappingM <- selectFirst [ LocIdBaseFileVersionId ==. fileVersionKey
-                          , LocIdBaseKind ==. Enums.Mapping
-                          , LocIdBaseLocId ==. locId
-                          ] []
-  if isJust mappingM
-  then return dbCache1
-  else do
+  mappingL <- select $ from $ \loc_id_bases -> do
+    where_ (loc_id_bases ^. LocIdBaseFileVersionId ==. val fileVersionKey
+              &&. loc_id_bases ^. LocIdBaseKind ==. val Enums.Mapping
+              &&. loc_id_bases ^. LocIdBaseLocId ==. val locId)
+    return loc_id_bases
+  if null mappingL
+  then do
     conservativityStatusKeyM <- case dgl_type linkLabel of
       ScopedLink _ _ consStatus ->
         fmap Just $ createConservativityStatus consStatus
@@ -1079,6 +1089,7 @@ createMapping opts libEnv fileVersionKey dbCache doSave globalAnnotations
           }
     insertEntityMany [Entity (toSqlKey $ fromSqlKey mappingKey) mapping]
     return dbCache2
+  else return dbCache1
   where
     mappingOriginOfLinkLabel :: MappingOrigin
     mappingOriginOfLinkLabel = case dgl_origin linkLabel of
@@ -1190,20 +1201,23 @@ findOMSAndSignature :: MonadIO m
                     => FileVersionId -> Entity LocIdBase -> DGNodeLab
                     -> DBMonad m (Maybe (LocIdBaseId, SignatureId))
 findOMSAndSignature fileVersionKey documentLocIdBase nodeLabel = do
-  omsLocIdM <- selectFirst [ LocIdBaseFileVersionId ==. fileVersionKey
-                           , LocIdBaseKind ==. Enums.OMS
-                           , LocIdBaseLocId ==. locIdOfOMS documentLocIdBase nodeLabel
-                           ] []
-  case omsLocIdM of
-    Just (Entity omsKey _) -> do
-      omsValueM <- selectFirst [OMSId ==. toSqlKey (fromSqlKey omsKey)] []
-      omsValue <- case omsValueM of
-        Nothing ->
+  omsLocIdL <- select $ from $ \loc_id_bases -> do
+    where_ (loc_id_bases ^. LocIdBaseFileVersionId ==. val fileVersionKey
+              &&. loc_id_bases ^. LocIdBaseKind ==. val Enums.OMS
+              &&. loc_id_bases ^. LocIdBaseLocId ==. val (locIdOfOMS documentLocIdBase nodeLabel))
+    return loc_id_bases
+  case omsLocIdL of
+    [] -> return Nothing
+    Entity omsKey _ : _-> do
+      omsValueL <- select $ from $ \omsSql -> do
+        where_ (omsSql ^. OMSId ==. val (toSqlKey $ fromSqlKey omsKey))
+        return omsSql
+      omsValue <- case omsValueL of
+        [] ->
           fail ("Persistence.DevGraph.findOMSAndSignature could not find OMS with ID "
                 ++ show (unSqlBackendKey $ unLocIdBaseKey omsKey))
-        Just (Entity _ omsValue) -> return omsValue
+        Entity _ omsValue : _ -> return omsValue
       return $ Just (omsKey, oMSSignatureId omsValue)
-    Nothing -> return Nothing
 
 locIdOfOMS :: Entity LocIdBase -> DGNodeLab -> String
 locIdOfOMS (Entity _ documentLocIdBaseValue) nodeLabel =
