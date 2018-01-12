@@ -29,13 +29,20 @@ resolve opts sessionReference query variables = do
     QTSignatureMorphism -> case Map.lookup "id" variables of
       Nothing -> fail "SignatureMorphism query: Variable \"id\" not provided."
       Just idVar -> SignatureMorphismResolver.resolve opts sessionReference $ read $ Text.unpack idVar
-  return $ resultToResponse resultM
+  return $ resultToResponse queryType resultM
 
-resultToResponse :: Maybe GraphQLResult.Result -> String
-resultToResponse = maybe noData (responseData . GraphQLResult.toJson)
+resultToResponse :: QueryType -> Maybe GraphQLResult.Result -> String
+resultToResponse queryType = maybe noData (responseData queryType . GraphQLResult.toJson)
 
-responseData :: String -> String
-responseData json = "{\"data\": " ++ json ++ "}"
+responseData :: QueryType -> String -> String
+responseData queryType json =
+  let keyword = case queryType of
+        QTDGraph -> "dgraph"
+        QTOMS -> "oms"
+        QTSerialization -> "serialization"
+        QTSignature -> "signature"
+        QTSignatureMorphism -> "signatureMorphism"
+  in  "{\"data\": {\n  \"" ++ keyword ++ "\":" ++ json ++ "}}"
 
 noData :: String
 noData = "{\"data\": null}"
