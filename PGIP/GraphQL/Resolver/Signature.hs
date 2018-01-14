@@ -30,7 +30,7 @@ resolveDB idVar = do
     [] -> return Nothing
     signatureEntity@(Entity signatureKey _) : _ -> do
       omsL <- select $ from $ \(omsSql `InnerJoin` loc_id_bases) -> do
-        on (coerceLocIdBaseId (omsSql ^. OMSId) ==. loc_id_bases ^. LocIdBaseId)
+        on (coerceId (omsSql ^. OMSId) ==. loc_id_bases ^. LocIdBaseId)
         where_ (omsSql ^. OMSSignatureId ==. val signatureKey)
         return loc_id_bases
 
@@ -45,7 +45,7 @@ resolveDB idVar = do
       symbolsWithFileRanges <- select $ from $
         \(signatures `InnerJoin` signature_symbols `InnerJoin` loc_id_bases `InnerJoin` symbolsSql `LeftOuterJoin` file_ranges) -> do
           on (file_ranges ?. FileRangeId ==. symbolsSql ^. SymbolFileRangeId)
-          on (coerceLocIdBaseId (symbolsSql ^. SymbolId) ==. loc_id_bases ^. LocIdBaseId)
+          on (coerceId (symbolsSql ^. SymbolId) ==. loc_id_bases ^. LocIdBaseId)
           on (loc_id_bases ^. LocIdBaseId ==. signature_symbols ^. SignatureSymbolSymbolId)
           on (signature_symbols ^. SignatureSymbolSignatureId ==. signatures ^. SignatureId)
           where_ (signatures ^. SignatureId ==. val signatureKey)

@@ -12,13 +12,17 @@ import Common.Json (ppJson, asJson)
 
 import Data.Data
 
-data Result = SerializationResult Serialization
+data Result = DGraphResult DGraph
+            | OMSResult OMS
+            | SerializationResult Serialization
             | SignatureResult Signature
             | SignatureMorphismResult SignatureMorphism
               deriving (Show, Typeable, Data)
 
 toJson :: Result -> String
 toJson result = case result of
-  SerializationResult serializationVar -> ppJson $ asJson serializationVar
-  SignatureResult signatureVar -> ppJson $ asJson signatureVar
-  SignatureMorphismResult signatureMorphismVar -> ppJson $ asJson signatureMorphismVar
+  DGraphResult dgraph -> ppJson $ asJson dgraph
+  OMSResult oms_ -> ppJson $ asJson oms_
+  SerializationResult serialization_ -> ppJson $ asJson serialization_
+  SignatureResult signature_ -> ppJson $ asJson signature_
+  SignatureMorphismResult signatureMorphism -> ppJson $ asJson signatureMorphism

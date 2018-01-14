@@ -58,7 +58,10 @@ fragment omsFields on OMS {
     id
     name
   }
-  mappings(limit: null) {
+  mappingsSource: mappings(limit: null, origin: source) {
+    ... mappingsFields
+  }
+  mappingsTarget: mappings(limit: null, origin: target) {
     ... mappingsFields
   }
   name

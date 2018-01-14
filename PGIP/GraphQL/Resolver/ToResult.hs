@@ -1,14 +1,24 @@
 module PGIP.GraphQL.Resolver.ToResult where
 
+import PGIP.GraphQL.Result.Axiom as GraphQLResultAxiom
+import PGIP.GraphQL.Result.Conjecture as GraphQLResultConjecture
 import PGIP.GraphQL.Result.ConservativityStatus as GraphQLResultConservativityStatus
 import PGIP.GraphQL.Result.FileRange as GraphQLResultFileRange
 import PGIP.GraphQL.Result.IdReference (IdReference (..))
 import PGIP.GraphQL.Result.Language as GraphQLResultLanguage
 import PGIP.GraphQL.Result.LanguageMapping as GraphQLResultLanguageMapping
 import PGIP.GraphQL.Result.LocIdReference (LocIdReference (..))
+import PGIP.GraphQL.Result.Logic as GraphQLResultLogic
 import PGIP.GraphQL.Result.LogicMapping as GraphQLResultLogicMapping
 import PGIP.GraphQL.Result.Mapping as GraphQLResultMapping
+import PGIP.GraphQL.Result.OMS as GraphQLResultOMS
+import PGIP.GraphQL.Result.PremiseSelection as GraphQLResultPremiseSelection
+import PGIP.GraphQL.Result.Reasoner as GraphQLResultReasoner
+import PGIP.GraphQL.Result.ReasonerConfiguration as GraphQLResultReasonerConfiguration
+import PGIP.GraphQL.Result.ReasonerOutput as GraphQLResultReasonerOutput
+import PGIP.GraphQL.Result.ReasoningAttempt as GraphQLResultReasoningAttempt
 import PGIP.GraphQL.Result.Serialization as GraphQLResultSerialization
+import PGIP.GraphQL.Result.Sentence as GraphQLResultSentence
 import PGIP.GraphQL.Result.Signature as GraphQLResultSignature
 import PGIP.GraphQL.Result.SignatureMorphism as GraphQLResultSignatureMorphism
 import PGIP.GraphQL.Result.StringReference (StringReference (..))
@@ -20,6 +30,41 @@ import Persistence.Schema as DatabaseSchema
 import qualified Data.Text as Text
 import Database.Esqueleto
 
+axiomToResult :: Entity DatabaseSchema.Sentence
+              -> Entity DatabaseSchema.LocIdBase
+              -> Maybe (Entity DatabaseSchema.FileRange)
+              -> [GraphQLResultSymbol.Symbol]
+              -> GraphQLResultSentence.Sentence
+axiomToResult (Entity _ sentenceValue) (Entity _ locIdBaseValue) fileRangeM symbolResults =
+  GraphQLResultSentence.Axiom GraphQLResultAxiom.Axiom
+    { GraphQLResultAxiom.__typename = "Axiom"
+    , GraphQLResultAxiom.fileRange = fmap fileRangeToResult fileRangeM
+    , GraphQLResultAxiom.locId = locIdBaseLocId locIdBaseValue
+    , GraphQLResultAxiom.name = sentenceName sentenceValue
+    , GraphQLResultAxiom.symbols = symbolResults
+    , GraphQLResultAxiom.text = Text.unpack $ sentenceText sentenceValue
+    }
+
+conjectureToResult :: Entity DatabaseSchema.Sentence
+                   -> Entity DatabaseSchema.LocIdBase
+                   -> Maybe (Entity DatabaseSchema.FileRange)
+                   -> Entity DatabaseSchema.Conjecture
+                   -> [GraphQLResultSymbol.Symbol]
+                   -> [GraphQLResultReasoningAttempt.ReasoningAttempt]
+                   -> GraphQLResultSentence.Sentence
+conjectureToResult (Entity _ sentenceValue) (Entity _ locIdBaseValue) fileRangeM (Entity _ conjectureValue) symbolResults proofAttemptResults =
+  GraphQLResultSentence.Conjecture GraphQLResultConjecture.Conjecture
+    { GraphQLResultConjecture.__typename = "Conjecture"
+    , GraphQLResultConjecture.fileRange = fmap fileRangeToResult fileRangeM
+    , GraphQLResultConjecture.locId = locIdBaseLocId locIdBaseValue
+    , GraphQLResultConjecture.name = sentenceName sentenceValue
+    , GraphQLResultConjecture.symbols = symbolResults
+    , GraphQLResultConjecture.text = Text.unpack $ sentenceText sentenceValue
+    , GraphQLResultConjecture.evaluationState = show $ conjectureEvaluationState conjectureValue
+    , GraphQLResultConjecture.proofAttempts = proofAttemptResults
+    , GraphQLResultConjecture.reasoningStatus = show $ conjectureReasoningStatus conjectureValue
+    }
+
 conservativityStatusToResult :: Entity DatabaseSchema.ConservativityStatus
                              -> GraphQLResultConservativityStatus.ConservativityStatus
 conservativityStatusToResult (Entity _ conservativityStatusValue) =
@@ -28,6 +73,16 @@ conservativityStatusToResult (Entity _ conservativityStatusValue) =
     , GraphQLResultConservativityStatus.proved = conservativityStatusProved conservativityStatusValue
     }
 
+fileRangeToResult :: Entity DatabaseSchema.FileRange
+                  -> GraphQLResultFileRange.FileRange
+fileRangeToResult (Entity _ fileRangeValue) =
+  GraphQLResultFileRange.FileRange
+     { GraphQLResultFileRange.startLine = fileRangeStartLine fileRangeValue
+     , GraphQLResultFileRange.startColumn = fileRangeStartColumn fileRangeValue
+     , GraphQLResultFileRange.endLine = fileRangeEndLine fileRangeValue
+     , GraphQLResultFileRange.endColumn = fileRangeEndColumn fileRangeValue
+     , GraphQLResultFileRange.path = fileRangePath fileRangeValue
+     }
 
 languageToResult :: Entity DatabaseSchema.Language
                  -> GraphQLResultLanguage.Language
@@ -47,6 +102,14 @@ languageMappingToResult languageMappingEntity languageSource languageTarget =
     { GraphQLResultLanguageMapping.id = fromIntegral $ fromSqlKey $ entityKey languageMappingEntity
     , GraphQLResultLanguageMapping.source = StringReference $ DatabaseSchema.languageSlug $ entityVal languageSource
     , GraphQLResultLanguageMapping.target = StringReference $ DatabaseSchema.languageSlug $ entityVal languageTarget
+    }
+
+logicToResult :: Entity DatabaseSchema.Logic
+              -> GraphQLResultLogic.Logic
+logicToResult (Entity _ logicValue) =
+  GraphQLResultLogic.Logic
+    { GraphQLResultLogic.id = logicSlug logicValue
+    , GraphQLResultLogic.name = logicName logicValue
     }
 
 logicMappingToResult :: Entity DatabaseSchema.LogicMapping
@@ -90,6 +153,105 @@ mappingToResult (Entity _ mappingValue) mappingLocIdBase (Entity signatureMorphi
         , GraphQLResultMapping.target = LocIdReference $ locIdBaseLocId $ entityVal locIdBaseTarget
         , GraphQLResultMapping.mappingType = show $ DatabaseSchema.mappingType mappingValue
         }
+
+omsToResult :: Entity DatabaseSchema.OMS
+            -> Entity DatabaseSchema.LocIdBase
+            -> Entity DatabaseSchema.ConservativityStatus
+            -> Maybe (Entity DatabaseSchema.FileRange)
+            -> Maybe (Entity DatabaseSchema.LocIdBase)
+            -> Maybe (Entity DatabaseSchema.SignatureMorphism)
+            -> Entity DatabaseSchema.Language
+            -> Entity DatabaseSchema.Logic
+            -> Maybe (Entity DatabaseSchema.LocIdBase)
+            -> Maybe (Entity DatabaseSchema.SignatureMorphism)
+            -> [GraphQLResultReasoningAttempt.ReasoningAttempt]
+            -> [GraphQLResultMapping.Mapping]
+            -> [GraphQLResultMapping.Mapping]
+            -> [GraphQLResultSentence.Sentence]
+            -> Maybe StringReference
+            -> GraphQLResultOMS.OMS
+omsToResult (Entity _ omsValue) locIdBaseOMS conservativityStatusEntity
+  fileRangeM freeNormalFormLocIdBaseM freeNormalFormSignatureMorphismM
+  languageEntity logicEntity
+  normalFormLocIdBaseM normalFormSignatureMorphismM
+  consistencyCheckAttemptResults mappingSourceResults mappingTargetResults sentenceResults
+  serializationResult =
+  let conservativityStatusResult = conservativityStatusToResult conservativityStatusEntity
+      fileRangeResult = fmap fileRangeToResult fileRangeM
+  in  GraphQLResultOMS.OMS
+        { GraphQLResultOMS.conservativityStatus = conservativityStatusResult
+        , GraphQLResultOMS.consistencyCheckAttempts = consistencyCheckAttemptResults
+        , GraphQLResultOMS.description = Nothing
+        , GraphQLResultOMS.displayName = oMSDisplayName omsValue
+        , GraphQLResultOMS.freeNormalForm = fmap (LocIdReference . locIdBaseLocId . entityVal) freeNormalFormLocIdBaseM
+        , GraphQLResultOMS.freeNormalFormSignatureMorphism = fmap (IdReference . fromIntegral . fromSqlKey . entityKey) freeNormalFormSignatureMorphismM
+        , GraphQLResultOMS.labelHasFree = oMSLabelHasFree omsValue
+        , GraphQLResultOMS.labelHasHiding = oMSLabelHasHiding omsValue
+        , GraphQLResultOMS.language = languageToResult languageEntity
+        , GraphQLResultOMS.locId = locIdBaseLocId $ entityVal locIdBaseOMS
+        , GraphQLResultOMS.logic = logicToResult logicEntity
+        , GraphQLResultOMS.mappingsSource = mappingSourceResults
+        , GraphQLResultOMS.mappingsTarget = mappingTargetResults
+        , GraphQLResultOMS.name = oMSName omsValue
+        , GraphQLResultOMS.nameExtension = oMSNameExtension omsValue
+        , GraphQLResultOMS.nameExtensionIndex = oMSNameExtensionIndex omsValue
+        , GraphQLResultOMS.nameFileRange = fileRangeResult
+        , GraphQLResultOMS.normalForm = fmap (LocIdReference . locIdBaseLocId . entityVal) normalFormLocIdBaseM
+        , GraphQLResultOMS.normalFormSignatureMorphism = fmap (IdReference . fromIntegral . fromSqlKey . entityKey) normalFormSignatureMorphismM
+        , GraphQLResultOMS.origin = show $ oMSOrigin omsValue
+        , GraphQLResultOMS.sentences = sentenceResults
+        , GraphQLResultOMS.serialization = serializationResult
+        , GraphQLResultOMS.omsSignature = IdReference $ fromIntegral $ fromSqlKey $ oMSSignatureId omsValue
+        }
+
+premiseSelectionToResult :: [Entity DatabaseSchema.LocIdBase] -- Of Sentence
+                         -> GraphQLResultPremiseSelection.PremiseSelection
+premiseSelectionToResult premises =
+  GraphQLResultPremiseSelection.PremiseSelection
+    { GraphQLResultPremiseSelection.selectedPremises = map (LocIdReference . locIdBaseLocId . entityVal) premises
+    }
+
+reasonerToResult :: Entity DatabaseSchema.Reasoner
+                 -> GraphQLResultReasoner.Reasoner
+reasonerToResult (Entity _ reasonerValue) =
+  GraphQLResultReasoner.Reasoner
+    { GraphQLResultReasoner.id = reasonerSlug reasonerValue
+    , GraphQLResultReasoner.displayName = reasonerDisplayName reasonerValue
+    }
+
+reasonerConfigurationToResult :: Entity DatabaseSchema.ReasonerConfiguration
+                              -> Maybe (Entity DatabaseSchema.Reasoner)
+                              -> [GraphQLResultPremiseSelection.PremiseSelection]
+                              -> GraphQLResultReasonerConfiguration.ReasonerConfiguration
+reasonerConfigurationToResult (Entity reasonerConfigurationKey reasonerConfigurationValue) reasonerM premiseSelectionResults =
+  GraphQLResultReasonerConfiguration.ReasonerConfiguration
+    { GraphQLResultReasonerConfiguration.configuredReasoner = fmap reasonerToResult reasonerM
+    , GraphQLResultReasonerConfiguration.id = fromIntegral $ fromSqlKey reasonerConfigurationKey
+    , GraphQLResultReasonerConfiguration.premiseSelections = premiseSelectionResults
+    , GraphQLResultReasonerConfiguration.timeLimit = reasonerConfigurationTimeLimit reasonerConfigurationValue
+    }
+
+reasonerOutputToResult :: Entity DatabaseSchema.ReasonerOutput
+                       -> GraphQLResultReasonerOutput.ReasonerOutput
+reasonerOutputToResult (Entity _ reasonerOutputValue) =
+  GraphQLResultReasonerOutput.ReasonerOutput
+    { GraphQLResultReasonerOutput.text = Text.unpack $ reasonerOutputText reasonerOutputValue
+    }
+
+reasoningAttemptToResult :: Entity DatabaseSchema.ReasoningAttempt
+                         -> Maybe (Entity DatabaseSchema.ReasonerOutput)
+                         -> Maybe (Entity DatabaseSchema.Reasoner)
+                         -> GraphQLResultReasonerConfiguration.ReasonerConfiguration
+                         -> GraphQLResultReasoningAttempt.ReasoningAttempt
+reasoningAttemptToResult (Entity _ reasoningAttemptValue) reasonerOutputEntity reasonerEntityM reasonerConfigurationResult =
+  GraphQLResultReasoningAttempt.ReasoningAttempt
+    { GraphQLResultReasoningAttempt.evaluationState = show $ reasoningAttemptEvaluationState reasoningAttemptValue
+    , GraphQLResultReasoningAttempt.reasonerOutput = fmap reasonerOutputToResult reasonerOutputEntity
+    , GraphQLResultReasoningAttempt.reasonerConfiguration = reasonerConfigurationResult
+    , GraphQLResultReasoningAttempt.reasoningStatus = show $ reasoningAttemptReasoningStatus reasoningAttemptValue
+    , GraphQLResultReasoningAttempt.timeTaken = reasoningAttemptTimeTaken reasoningAttemptValue
+    , GraphQLResultReasoningAttempt.usedReasoner = fmap reasonerToResult reasonerEntityM
+    }
 
 serializationToResult :: Entity DatabaseSchema.Serialization
                       -> Entity DatabaseSchema.Language
@@ -143,14 +305,7 @@ symbolToResult :: Entity DatabaseSchema.LocIdBase
                -> Maybe (Entity DatabaseSchema.FileRange)
                -> GraphQLResultSymbol.Symbol
 symbolToResult (Entity _ locIdBaseValue) (Entity _ symbolValue) fileRangeM =
-  let fileRangeResult =
-        fmap (\(Entity _ fileRangeValue) -> GraphQLResultFileRange.FileRange
-               { GraphQLResultFileRange.startLine = fileRangeStartLine fileRangeValue
-               , GraphQLResultFileRange.startColumn = fileRangeStartColumn fileRangeValue
-               , GraphQLResultFileRange.endLine = fileRangeEndLine fileRangeValue
-               , GraphQLResultFileRange.endColumn = fileRangeEndColumn fileRangeValue
-               , GraphQLResultFileRange.path = fileRangePath fileRangeValue
-               }) fileRangeM
+  let fileRangeResult = fmap fileRangeToResult fileRangeM
   in  GraphQLResultSymbol.Symbol
         { GraphQLResultSymbol.__typename = "Symbol"
         , GraphQLResultSymbol.fileRange = fileRangeResult

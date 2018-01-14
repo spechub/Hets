@@ -1,6 +1,6 @@
 module Persistence.Utils ( parameterize
                          , advisoryLocked
-                         , coerceLocIdBaseId
+                         , coerceId
                          ) where
 
 import Persistence.DBConfig
@@ -73,7 +73,7 @@ advisoryLockKeyConvert =
 -- Usage example:
 --     selectedSymbols <- select $ from $
 --       \(loc_id_bases `InnerJoin` symbols) -> do
---         on (coerceLocIdBaseId (symbols ^. SymbolId) ==. loc_id_bases ^. LocIdBaseId)
+--         on (coerceId (symbols ^. SymbolId) ==. loc_id_bases ^. LocIdBaseId)
 --         return symbols
-coerceLocIdBaseId :: EIS.SqlExpr (EIL.Value a) -> EIS.SqlExpr (EIL.Value b)
-coerceLocIdBaseId = EIS.veryUnsafeCoerceSqlExprValue
+coerceId :: EIS.SqlExpr (EIL.Value a) -> EIS.SqlExpr (EIL.Value b)
+coerceId = EIS.veryUnsafeCoerceSqlExprValue

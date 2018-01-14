@@ -51,7 +51,7 @@ toGraphQLQueryBody :: QueryBodyAux -> QueryBody
 toGraphQLQueryBody QueryBodyAux { query = q, variables = aesonVariables } =
   QueryBody { graphQLQuery = q
             , graphQLVariables = Map.map convert $
-                                          fromMaybe Map.empty aesonVariables
+                                           fromMaybe Map.empty aesonVariables
             }
   where
     convert = LText.toStrict . LEncoding.decodeUtf8 . Aeson.encode

@@ -2,10 +2,11 @@
 
 module PGIP.GraphQL.Result.Sentence where
 
-import PGIP.GraphQL.Result.Axiom
-import PGIP.GraphQL.Result.Conjecture
+import qualified PGIP.GraphQL.Result.Axiom as GraphQLResultAxiom
+import qualified PGIP.GraphQL.Result.Conjecture as GraphQLResultConjecture
 
 import Data.Data
 
-data Sentence = SenAxiom Axiom | SenConjecture Conjecture
+data Sentence = Axiom GraphQLResultAxiom.Axiom
+              | Conjecture GraphQLResultConjecture.Conjecture
                 deriving (Show, Typeable, Data)

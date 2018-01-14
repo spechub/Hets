@@ -2,6 +2,7 @@
 
 module PGIP.GraphQL.Resolver (resolve) where
 
+import qualified PGIP.GraphQL.Resolver.OMS as OMSResolver
 import qualified PGIP.GraphQL.Resolver.Serialization as SerializationResolver
 import qualified PGIP.GraphQL.Resolver.Signature as SignatureResolver
 import qualified PGIP.GraphQL.Resolver.SignatureMorphism as SignatureMorphismResolver
@@ -23,9 +24,11 @@ resolve opts sessionReference query variables = do
   resultM <- case queryType of
     QTSerialization -> case Map.lookup "id" variables of
       Nothing -> fail "Serialization query: Variable \"id\" not provided."
-      Just idVar -> SerializationResolver.resolve opts sessionReference $ Text.unpack idVar
+      Just idVar -> SerializationResolver.resolve opts sessionReference $ unencloseQuotesAndUnpack idVar
     QTDGraph -> undefined
-    QTOMS -> undefined
+    QTOMS -> case Map.lookup "locId" variables of
+      Nothing -> fail "OMS query: Variable \"locId\" not provided."
+      Just idVar -> OMSResolver.resolve opts sessionReference $ unencloseQuotesAndUnpack idVar
     QTSignature -> case Map.lookup "id" variables of
       Nothing -> fail "Signature query: Variable \"id\" not provided."
       Just idVar -> SignatureResolver.resolve opts sessionReference $ read $ Text.unpack idVar
@@ -33,6 +36,9 @@ resolve opts sessionReference query variables = do
       Nothing -> fail "SignatureMorphism query: Variable \"id\" not provided."
       Just idVar -> SignatureMorphismResolver.resolve opts sessionReference $ read $ Text.unpack idVar
   return $ resultToResponse queryType resultM
+
+unencloseQuotesAndUnpack :: Text.Text -> String
+unencloseQuotesAndUnpack = Text.unpack . Text.init . Text.tail
 
 resultToResponse :: QueryType -> Maybe GraphQLResult.Result -> String
 resultToResponse queryType = maybe noData (responseData queryType . GraphQLResult.toJson)

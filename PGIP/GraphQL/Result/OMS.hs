@@ -15,8 +15,7 @@ import PGIP.GraphQL.Result.StringReference
 
 import Data.Data
 
-data OMS = OMS { id :: Int
-               , conservativityStatus :: ConservativityStatus
+data OMS = OMS { conservativityStatus :: ConservativityStatus
                , consistencyCheckAttempts :: [ReasoningAttempt]
                , description :: Maybe String
                , displayName :: String
@@ -27,13 +26,16 @@ data OMS = OMS { id :: Int
                , language :: Language
                , locId :: String
                , logic :: Logic
-               , mappings :: [Mapping]
+               , mappingsSource :: [Mapping]
+               , mappingsTarget :: [Mapping]
                , name :: String
                , nameExtension :: String
                , nameExtensionIndex :: Int
                , nameFileRange :: Maybe FileRange
+               , normalForm :: Maybe LocIdReference
+               , normalFormSignatureMorphism :: Maybe IdReference
                , origin :: String
                , sentences :: [Sentence]
-               , serialization :: StringReference
+               , serialization :: Maybe StringReference
                , omsSignature :: IdReference
                } deriving (Show, Typeable, Data)
