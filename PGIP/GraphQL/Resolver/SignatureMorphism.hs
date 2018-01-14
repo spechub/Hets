@@ -2,17 +2,12 @@
 
 module PGIP.GraphQL.Resolver.SignatureMorphism (resolve) where
 
-import PGIP.GraphQL.Resolver.Utils
+import PGIP.GraphQL.Resolver.ToResult
 
 import PGIP.GraphQL.Result as GraphQLResult
-import PGIP.GraphQL.Result.ConservativityStatus as GraphQLResultConservativityStatus
-import PGIP.GraphQL.Result.IdReference (IdReference (..))
 import PGIP.GraphQL.Result.LanguageMapping as GraphQLResultLanguageMapping
-import PGIP.GraphQL.Result.LocIdReference (LocIdReference (..))
 import PGIP.GraphQL.Result.LogicMapping as GraphQLResultLogicMapping
 import PGIP.GraphQL.Result.Mapping as GraphQLResultMapping
-import PGIP.GraphQL.Result.SignatureMorphism as GraphQLResultSignatureMorphism
-import PGIP.GraphQL.Result.StringReference (StringReference (..))
 import PGIP.GraphQL.Result.SymbolMapping as GraphQLResultSymbolMapping
 
 import PGIP.Shared
@@ -40,25 +35,19 @@ resolveDB idVar = do
       return (signature_morphisms, signaturesSource, signaturesTarget)
   case signatureMorphismL of
     [] -> return Nothing
-    (Entity signatureMorphismKey _, signatureSource, signatureTarget) : _ -> do
+    (signatureMorphismEntity@(Entity signatureMorphismKey _), signatureSource, signatureTarget) : _ -> do
       logicMappingResult <- getLogicMappingResult signatureMorphismKey
-      mappingsResults <- getMappingsResults signatureMorphismKey
+      mappingResults <- getMappingsResults signatureMorphismKey
       symbolMappingResults <- getSymbolMappingResults signatureMorphismKey
-      return $ Just $ GraphQLResult.SignatureMorphismResult
-        GraphQLResultSignatureMorphism.SignatureMorphism
-          { GraphQLResultSignatureMorphism.id = fromIntegral $ fromSqlKey signatureMorphismKey
-          , GraphQLResultSignatureMorphism.logicMapping = logicMappingResult
-          , GraphQLResultSignatureMorphism.mappings = mappingsResults
-          , GraphQLResultSignatureMorphism.source = IdReference $ fromIntegral $ fromSqlKey $ entityKey signatureSource
-          , GraphQLResultSignatureMorphism.symbolMappings = symbolMappingResults
-          , GraphQLResultSignatureMorphism.target = IdReference $ fromIntegral $ fromSqlKey $ entityKey signatureTarget
-          }
+      return $ Just $ GraphQLResult.SignatureMorphismResult $
+        signatureMorphismToResult signatureMorphismEntity signatureSource
+          signatureTarget logicMappingResult mappingResults symbolMappingResults
 
 getLogicMappingResult :: MonadIO m
                       => SignatureMorphismId
                       -> DBMonad m GraphQLResultLogicMapping.LogicMapping
 getLogicMappingResult signatureMorphismKey = do
-  (Entity logicMappingKey logicMappingValue, logicSource, logicTarget) : _ <-
+  (logicMappingEntity@(Entity logicMappingKey _), logicSource, logicTarget) : _ <-
     select $ from $ \(signature_morphisms `InnerJoin` logic_mappings `InnerJoin` logicsSource `InnerJoin` logicsTarget) -> do
       on (logic_mappings ^. LogicMappingTargetId ==. logicsTarget ^. LogicId)
       on (logic_mappings ^. LogicMappingSourceId ==. logicsSource ^. LogicId)
@@ -66,12 +55,7 @@ getLogicMappingResult signatureMorphismKey = do
       where_ (signature_morphisms ^. SignatureMorphismId ==. val signatureMorphismKey)
       return (logic_mappings, logicsSource, logicsTarget)
   languageMappingResult <- getLanguageMapping logicMappingKey
-  return GraphQLResultLogicMapping.LogicMapping
-    { GraphQLResultLogicMapping.id = DatabaseSchema.logicMappingSlug logicMappingValue
-    , GraphQLResultLogicMapping.languageMapping = languageMappingResult
-    , GraphQLResultLogicMapping.source = StringReference $ DatabaseSchema.logicSlug $ entityVal logicSource
-    , GraphQLResultLogicMapping.target = StringReference $ DatabaseSchema.logicSlug $ entityVal logicTarget
-    }
+  return $ logicMappingToResult logicMappingEntity logicSource logicTarget languageMappingResult
 
 getMappingsResults :: MonadIO m
                    => SignatureMorphismId
@@ -93,29 +77,12 @@ getMappingsResults signatureMorphismKey = do
       on (loc_id_bases ^. LocIdBaseId ==. coerceLocIdBaseId (mappingsSql ^. MappingId))
       on (mappingsSql ^. MappingSignatureMorphismId ==. signature_morphisms ^. SignatureMorphismId)
       where_ (signature_morphisms ^. SignatureMorphismId ==. val signatureMorphismKey)
-      return (mappingsSql, loc_id_bases, conservativity_statuses, loc_id_basesSource, loc_id_basesTarget, loc_id_basesOMS, languages)
+      return (mappingsSql, loc_id_bases, signature_morphisms, conservativity_statuses, loc_id_basesSource, loc_id_basesTarget, loc_id_basesOMS, languages)
   return $
-    map (\ (Entity _ mappingValue, locIdBase, conservativityStatusM, locIdBaseSource, locIdBaseTarget, freenesParameterOMSLocIdM, freenessParameterLanguageM) ->
-          let conservativityStatusResult = fmap (\ (Entity _ conservativityStatusValue) ->
-                GraphQLResultConservativityStatus.ConservativityStatus
-                  { GraphQLResultConservativityStatus.required = conservativityStatusRequired conservativityStatusValue
-                  , GraphQLResultConservativityStatus.proved = conservativityStatusProved conservativityStatusValue
-                  }) conservativityStatusM
-              freenessParameterLanguageResult = fmap languageEntityToLanguageResult freenessParameterLanguageM
-          in  GraphQLResultMapping.Mapping
-                { GraphQLResultMapping.conservativityStatus = conservativityStatusResult
-                , GraphQLResultMapping.displayName = mappingDisplayName mappingValue
-                , GraphQLResultMapping.freenessParameterOMS = fmap (LocIdReference . locIdBaseLocId . entityVal) freenesParameterOMSLocIdM
-                , GraphQLResultMapping.freenessParameterLanguage = freenessParameterLanguageResult
-                , GraphQLResultMapping.locId = locIdBaseLocId $ entityVal locIdBase
-                , GraphQLResultMapping.name = mappingName mappingValue
-                , GraphQLResultMapping.origin = show $ mappingOrigin mappingValue
-                , GraphQLResultMapping.pending = mappingPending mappingValue
-                , GraphQLResultMapping.signatureMorphism = IdReference $ fromIntegral $ fromSqlKey signatureMorphismKey
-                , GraphQLResultMapping.source = LocIdReference $ locIdBaseLocId $ entityVal locIdBaseSource
-                , GraphQLResultMapping.target = LocIdReference $ locIdBaseLocId $ entityVal locIdBaseTarget
-                , GraphQLResultMapping.mappingType = show $ DatabaseSchema.mappingType mappingValue
-                }
+    map (\ (mapping, locIdBase, signatureMorphismEntity, conservativityStatusM, locIdBaseSource, locIdBaseTarget, freenesParameterOMSLocIdM, freenessParameterLanguageM) ->
+          mappingToResult mapping locIdBase signatureMorphismEntity
+            conservativityStatusM locIdBaseSource locIdBaseTarget
+            freenesParameterOMSLocIdM freenessParameterLanguageM
         ) mappingData
 
 getSymbolMappingResults :: MonadIO m
@@ -141,13 +108,7 @@ getSymbolMappingResults signatureMorphismKey = do
       return ( (symbolLoc_id_basesSource, symbolsSource, file_rangesSource)
              , (symbolLoc_id_basesTarget, symbolsTarget, file_rangesTarget)
              )
-  return $
-    map (\ (sourceSymbolData, targetSymbolData) ->
-           GraphQLResultSymbolMapping.SymbolMapping
-             { GraphQLResultSymbolMapping.source = symbolEntityToSymbolResult sourceSymbolData
-             , GraphQLResultSymbolMapping.target = symbolEntityToSymbolResult targetSymbolData
-             }
-        ) symbolData
+  return $ map (uncurry symbolMappingToResult) symbolData
 
 getLanguageMapping :: MonadIO m
                    => LogicMappingId
@@ -160,8 +121,4 @@ getLanguageMapping logicMappingKey = do
       on (logic_mappings ^. LogicMappingLanguageMappingId ==. language_mappings ^. LanguageMappingId)
       where_ (logic_mappings ^. LogicMappingId ==. val logicMappingKey)
       return (language_mappings, languagesSource, languagesTarget)
-  return GraphQLResultLanguageMapping.LanguageMapping
-    { GraphQLResultLanguageMapping.id = fromIntegral $ fromSqlKey $ entityKey languageMappingEntity
-    , GraphQLResultLanguageMapping.source = StringReference $ DatabaseSchema.languageSlug $ entityVal languageSource
-    , GraphQLResultLanguageMapping.target = StringReference $ DatabaseSchema.languageSlug $ entityVal languageTarget
-    }
+  return $ languageMappingToResult languageMappingEntity languageSource languageTarget

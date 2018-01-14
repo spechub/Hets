@@ -1,9 +1,8 @@
 module PGIP.GraphQL.Resolver.Serialization (resolve) where
 
-import PGIP.GraphQL.Resolver.Utils
+import PGIP.GraphQL.Resolver.ToResult
 
 import PGIP.GraphQL.Result as GraphQLResult
-import PGIP.GraphQL.Result.Serialization as GraphQLResultSerialization
 
 import PGIP.Shared
 
@@ -28,11 +27,6 @@ serializationL <-
     return (serializations, languages)
 case serializationL of
   [] -> return Nothing
-  (Entity _ serializationValue, languageEntity) : _ -> do
-      let languageResult = languageEntityToLanguageResult languageEntity
-      return $ Just $ GraphQLResult.SerializationResult
-        GraphQLResultSerialization.Serialization
-          { GraphQLResultSerialization.id = serializationSlug serializationValue
-          , GraphQLResultSerialization.language = languageResult
-          , GraphQLResultSerialization.name = serializationName serializationValue
-          }
+  (serializationEntity, languageEntity) : _ ->
+      return $ Just $ GraphQLResult.SerializationResult $
+        serializationToResult serializationEntity languageEntity
