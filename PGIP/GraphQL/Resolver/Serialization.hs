@@ -20,13 +20,13 @@ resolve opts sessionReference idVar =
 
 resolveDB :: MonadIO m => String -> DBMonad m (Maybe GraphQLResult.Result)
 resolveDB idVar = do
-serializationL <-
-  select $ from $ \(serializations `InnerJoin` languages) -> do
-    on (serializations ^. SerializationLanguageId ==. languages ^. LanguageId)
-    where_ (serializations ^. SerializationSlug ==. val idVar)
-    return (serializations, languages)
-case serializationL of
-  [] -> return Nothing
-  (serializationEntity, languageEntity) : _ ->
-      return $ Just $ GraphQLResult.SerializationResult $
-        serializationToResult serializationEntity languageEntity
+  serializationL <-
+    select $ from $ \(serializations `InnerJoin` languages) -> do
+      on (serializations ^. SerializationLanguageId ==. languages ^. LanguageId)
+      where_ (serializations ^. SerializationSlug ==. val idVar)
+      return (serializations, languages)
+  case serializationL of
+    [] -> return Nothing
+    (serializationEntity, languageEntity) : _ ->
+        return $ Just $ GraphQLResult.SerializationResult $
+          serializationToResult serializationEntity languageEntity
