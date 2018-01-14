@@ -7,7 +7,6 @@ import PGIP.GraphQL.Resolver.Utils
 import PGIP.GraphQL.Result as GraphQLResult
 import PGIP.GraphQL.Result.ConservativityStatus as GraphQLResultConservativityStatus
 import PGIP.GraphQL.Result.IdReference (IdReference (..))
-import PGIP.GraphQL.Result.Language as GraphQLResultLanguage
 import PGIP.GraphQL.Result.LanguageMapping as GraphQLResultLanguageMapping
 import PGIP.GraphQL.Result.LocIdReference (LocIdReference (..))
 import PGIP.GraphQL.Result.LogicMapping as GraphQLResultLogicMapping
@@ -102,12 +101,7 @@ getMappingsResults signatureMorphismKey = do
                   { GraphQLResultConservativityStatus.required = conservativityStatusRequired conservativityStatusValue
                   , GraphQLResultConservativityStatus.proved = conservativityStatusProved conservativityStatusValue
                   }) conservativityStatusM
-              freenessParameterLanguageResult = fmap (\ (Entity _ languageValue) ->
-                GraphQLResultLanguage.Language
-                  { GraphQLResultLanguage.id = languageSlug languageValue
-                  , GraphQLResultLanguage.name = languageName languageValue
-                  , GraphQLResultLanguage.description = languageDescription languageValue
-                  }) freenessParameterLanguageM
+              freenessParameterLanguageResult = fmap languageEntityToLanguageResult freenessParameterLanguageM
           in  GraphQLResultMapping.Mapping
                 { GraphQLResultMapping.conservativityStatus = conservativityStatusResult
                 , GraphQLResultMapping.displayName = mappingDisplayName mappingValue

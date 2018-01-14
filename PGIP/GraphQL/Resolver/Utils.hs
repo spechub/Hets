@@ -1,12 +1,22 @@
 module PGIP.GraphQL.Resolver.Utils where
 
-import PGIP.GraphQL.Result.Symbol as GraphQLResultSymbol
 import PGIP.GraphQL.Result.FileRange as GraphQLResultFileRange
+import PGIP.GraphQL.Result.Language as GraphQLResultLanguage
+import PGIP.GraphQL.Result.Symbol as GraphQLResultSymbol
 
 import Persistence.Schema as DatabaseSchema
 
 import qualified Data.Text as Text
 import Database.Esqueleto
+
+languageEntityToLanguageResult :: Entity DatabaseSchema.Language
+                               -> GraphQLResultLanguage.Language
+languageEntityToLanguageResult (Entity _ languageValue) =
+  GraphQLResultLanguage.Language
+    { GraphQLResultLanguage.id = languageSlug languageValue
+    , GraphQLResultLanguage.name = languageName languageValue
+    , GraphQLResultLanguage.description = languageDescription languageValue
+    }
 
 symbolEntityToSymbolResult :: ( Entity DatabaseSchema.LocIdBase
                               , Entity DatabaseSchema.Symbol

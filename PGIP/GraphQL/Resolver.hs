@@ -2,6 +2,7 @@
 
 module PGIP.GraphQL.Resolver (resolve) where
 
+import qualified PGIP.GraphQL.Resolver.Serialization as SerializationResolver
 import qualified PGIP.GraphQL.Resolver.Signature as SignatureResolver
 import qualified PGIP.GraphQL.Resolver.SignatureMorphism as SignatureMorphismResolver
 
@@ -20,7 +21,9 @@ resolve :: HetcatsOpts -> Cache -> Text -> Map Text Text -> IO String
 resolve opts sessionReference query variables = do
   queryType <- determineQueryType query
   resultM <- case queryType of
-    QTSerialization -> undefined
+    QTSerialization -> case Map.lookup "id" variables of
+      Nothing -> fail "Serialization query: Variable \"id\" not provided."
+      Just idVar -> SerializationResolver.resolve opts sessionReference $ Text.unpack idVar
     QTDGraph -> undefined
     QTOMS -> undefined
     QTSignature -> case Map.lookup "id" variables of
