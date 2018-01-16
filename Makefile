@@ -7,6 +7,9 @@
 
 # This GNU Makefile will compile the hets system and provides also
 # targets for test programs during implementation phases.
+#
+# If the following environment variables are set, their values get passed to
+# the corresponding tool as is: GHC_PKG_FLAGS (ghc-pkg), GHC_FLAGS (ghc).
 
 include var.mk
 
@@ -16,7 +19,7 @@ HC_WARN := -Wall -fwarn-tabs \
 # uncomment HC_PROF for profiling (and comment out packages in var.mk)
 # call resulting binary with a final +RTS -p to get a file <binary>.prof
 #HC_PROF := -prof -auto-all -osuf p_o +RTS -K100m -RTS
-HC_OPTS += $(HC_WARN) $(HC_PROF)
+HC_OPTS += $(HC_WARN) $(HC_PROF) $(GHC_FLAGS)
 # -ddump-minimal-imports
 # uncomment the above line to generate .imports files for displayDependencyGraph
 
