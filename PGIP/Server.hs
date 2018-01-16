@@ -12,10 +12,6 @@ Portability :  non-portable (via imports)
 
 module PGIP.Server (hetsServer) where
 
-#ifdef WARP3
-import Control.Exception.Base (SomeException)
-#endif
-
 import PGIP.Output.Formatting
 import PGIP.Output.Mime
 import PGIP.Output.Proof
@@ -64,6 +60,8 @@ import Static.PrintDevGraph
 import qualified Static.ToJson as ToJson
 import Static.ToXml as ToXml
 
+import qualified Persistence.DevGraph
+
 import Logic.LGToXml
 
 import Syntax.ToXml
@@ -102,7 +100,8 @@ import Common.XUpdate
 import Common.GlobalAnnotations
 
 import Control.Monad
-import Control.Exception (throwTo)
+import Control.Exception (catch, throwTo)
+import Control.Exception.Base (SomeException)
 import Control.Concurrent (myThreadId, ThreadId)
 
 import qualified Data.IntMap as IntMap
@@ -590,7 +589,7 @@ parseRESTful
            _ -> error $ "REST: unknown " ++ newIde
          in getResponseAux newOpts . Query (NewDGQuery libIri $ cmdList
             ++ Set.toList (Set.fromList $ optFlags ++ qOpts)) $ qkind
-                 else queryFailure
+        else queryFailure
       _ -> queryFailure
     "PUT" -> case pathBits of
       {- execute global commands
@@ -1198,6 +1197,16 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
       let svg = getSVG title ('/' : show k) dg
       case qk of
             DisplayQuery ms -> case format `mplus` ms of
+              Just "db" -> do
+                result <- liftIO $ Control.Exception.catch
+                  (do
+                    Persistence.DevGraph.exportLibEnv opts libEnv
+                    return (jsonC, "{\"savedToDatabase\": true}")
+                  )
+                  (\ exception ->
+                    return (jsonC, "{\"savedToDatabase\": false, \"error\": " ++ show (exception :: SomeException) ++ "}")
+                  )
+                liftR $ return result
               Just "svg" -> fmap (\ s -> (svgC, s)) svg
               Just "xml" -> liftR $ return (xmlC, ppTopElement
                 $ ToXml.dGraph opts libEnv ln dg)
