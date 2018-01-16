@@ -2,6 +2,7 @@
 
 module PGIP.GraphQL.Resolver (resolve) where
 
+import qualified PGIP.GraphQL.Resolver.DGraph as DGraphResolver
 import qualified PGIP.GraphQL.Resolver.OMS as OMSResolver
 import qualified PGIP.GraphQL.Resolver.Serialization as SerializationResolver
 import qualified PGIP.GraphQL.Resolver.Signature as SignatureResolver
@@ -25,7 +26,9 @@ resolve opts sessionReference query variables = do
     QTSerialization -> case Map.lookup "id" variables of
       Nothing -> fail "Serialization query: Variable \"id\" not provided."
       Just idVar -> SerializationResolver.resolve opts sessionReference $ unencloseQuotesAndUnpack idVar
-    QTDGraph -> undefined
+    QTDGraph -> case Map.lookup "locId" variables of
+      Nothing -> fail "OMS query: Variable \"locId\" not provided."
+      Just idVar -> DGraphResolver.resolve opts sessionReference $ unencloseQuotesAndUnpack idVar
     QTOMS -> case Map.lookup "locId" variables of
       Nothing -> fail "OMS query: Variable \"locId\" not provided."
       Just idVar -> OMSResolver.resolve opts sessionReference $ unencloseQuotesAndUnpack idVar

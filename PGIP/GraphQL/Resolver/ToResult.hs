@@ -3,22 +3,26 @@ module PGIP.GraphQL.Resolver.ToResult where
 import PGIP.GraphQL.Result.Axiom as GraphQLResultAxiom
 import PGIP.GraphQL.Result.Conjecture as GraphQLResultConjecture
 import PGIP.GraphQL.Result.ConservativityStatus as GraphQLResultConservativityStatus
+import PGIP.GraphQL.Result.DocumentLink as GraphQLResultDocumentLink
 import PGIP.GraphQL.Result.FileRange as GraphQLResultFileRange
 import PGIP.GraphQL.Result.IdReference (IdReference (..))
 import PGIP.GraphQL.Result.Language as GraphQLResultLanguage
 import PGIP.GraphQL.Result.LanguageMapping as GraphQLResultLanguageMapping
+import PGIP.GraphQL.Result.Library as GraphQLResultLibrary
 import PGIP.GraphQL.Result.LocIdReference (LocIdReference (..))
 import PGIP.GraphQL.Result.Logic as GraphQLResultLogic
 import PGIP.GraphQL.Result.LogicMapping as GraphQLResultLogicMapping
 import PGIP.GraphQL.Result.Mapping as GraphQLResultMapping
+import PGIP.GraphQL.Result.NativeDocument as GraphQLResultNativeDocument
 import PGIP.GraphQL.Result.OMS as GraphQLResultOMS
+import PGIP.GraphQL.Result.OMSSimple as GraphQLResultOMSSimple
 import PGIP.GraphQL.Result.PremiseSelection as GraphQLResultPremiseSelection
 import PGIP.GraphQL.Result.Reasoner as GraphQLResultReasoner
 import PGIP.GraphQL.Result.ReasonerConfiguration as GraphQLResultReasonerConfiguration
 import PGIP.GraphQL.Result.ReasonerOutput as GraphQLResultReasonerOutput
 import PGIP.GraphQL.Result.ReasoningAttempt as GraphQLResultReasoningAttempt
-import PGIP.GraphQL.Result.Serialization as GraphQLResultSerialization
 import PGIP.GraphQL.Result.Sentence as GraphQLResultSentence
+import PGIP.GraphQL.Result.Serialization as GraphQLResultSerialization
 import PGIP.GraphQL.Result.Signature as GraphQLResultSignature
 import PGIP.GraphQL.Result.SignatureMorphism as GraphQLResultSignatureMorphism
 import PGIP.GraphQL.Result.StringReference (StringReference (..))
@@ -73,6 +77,15 @@ conservativityStatusToResult (Entity _ conservativityStatusValue) =
     , GraphQLResultConservativityStatus.proved = conservativityStatusProved conservativityStatusValue
     }
 
+documentLinkToResult :: Entity DatabaseSchema.LocIdBase
+                     -> Entity DatabaseSchema.LocIdBase
+                     -> GraphQLResultDocumentLink.DocumentLink
+documentLinkToResult sourceLocId targetLocId =
+  GraphQLResultDocumentLink.DocumentLink
+    { GraphQLResultDocumentLink.source = LocIdReference $ locIdBaseLocId $ entityVal sourceLocId
+    , GraphQLResultDocumentLink.target = LocIdReference $ locIdBaseLocId $ entityVal targetLocId
+    }
+
 fileRangeToResult :: Entity DatabaseSchema.FileRange
                   -> GraphQLResultFileRange.FileRange
 fileRangeToResult (Entity _ fileRangeValue) =
@@ -102,6 +115,24 @@ languageMappingToResult languageMappingEntity languageSource languageTarget =
     { GraphQLResultLanguageMapping.id = fromIntegral $ fromSqlKey $ entityKey languageMappingEntity
     , GraphQLResultLanguageMapping.source = StringReference $ DatabaseSchema.languageSlug $ entityVal languageSource
     , GraphQLResultLanguageMapping.target = StringReference $ DatabaseSchema.languageSlug $ entityVal languageTarget
+    }
+
+libraryToResult :: Entity DatabaseSchema.Document
+                -> Entity DatabaseSchema.LocIdBase
+                -> [GraphQLResultDocumentLink.DocumentLink]
+                -> [GraphQLResultDocumentLink.DocumentLink]
+                -> [GraphQLResultOMSSimple.OMSSimple]
+                -> GraphQLResultLibrary.Library
+libraryToResult (Entity _ documentValue) (Entity _ locIdBaseValue) documentLinksSourceResults documentLinksTargetResults omsResults =
+  GraphQLResultLibrary.Library
+    { GraphQLResultLibrary.__typename = "Library"
+    , GraphQLResultLibrary.displayName = documentDisplayName documentValue
+    , GraphQLResultLibrary.locId = locIdBaseLocId locIdBaseValue
+    , GraphQLResultLibrary.name = documentName documentValue
+    , GraphQLResultLibrary.version = documentVersion documentValue
+    , GraphQLResultLibrary.documentLinksSource = documentLinksSourceResults
+    , GraphQLResultLibrary.documentLinksTarget = documentLinksTargetResults
+    , GraphQLResultLibrary.omsList = omsResults
     }
 
 logicToResult :: Entity DatabaseSchema.Logic
@@ -154,6 +185,24 @@ mappingToResult (Entity _ mappingValue) mappingLocIdBase (Entity signatureMorphi
         , GraphQLResultMapping.mappingType = show $ DatabaseSchema.mappingType mappingValue
         }
 
+nativeDocumentToResult :: Entity DatabaseSchema.Document
+                       -> Entity DatabaseSchema.LocIdBase
+                       -> [GraphQLResultDocumentLink.DocumentLink]
+                       -> [GraphQLResultDocumentLink.DocumentLink]
+                       -> GraphQLResultOMSSimple.OMSSimple
+                       -> GraphQLResultNativeDocument.NativeDocument
+nativeDocumentToResult (Entity _ documentValue) (Entity _ locIdBaseValue) documentLinksSourceResults documentLinksTargetResults omsResult =
+  GraphQLResultNativeDocument.NativeDocument
+    { GraphQLResultNativeDocument.__typename = "NativeDocument"
+    , GraphQLResultNativeDocument.displayName = documentDisplayName documentValue
+    , GraphQLResultNativeDocument.locId = locIdBaseLocId locIdBaseValue
+    , GraphQLResultNativeDocument.name = documentName documentValue
+    , GraphQLResultNativeDocument.version = documentVersion documentValue
+    , GraphQLResultNativeDocument.documentLinksSource = documentLinksSourceResults
+    , GraphQLResultNativeDocument.documentLinksTarget = documentLinksTargetResults
+    , GraphQLResultNativeDocument.oms = omsResult
+    }
+
 omsToResult :: Entity DatabaseSchema.OMS
             -> Entity DatabaseSchema.LocIdBase
             -> Entity DatabaseSchema.ConservativityStatus
@@ -203,6 +252,22 @@ omsToResult (Entity _ omsValue) locIdBaseOMS conservativityStatusEntity
         , GraphQLResultOMS.serialization = serializationResult
         , GraphQLResultOMS.omsSignature = IdReference $ fromIntegral $ fromSqlKey $ oMSSignatureId omsValue
         }
+
+omsToResultSimple :: Entity DatabaseSchema.OMS
+                  -> Entity DatabaseSchema.LocIdBase
+                  -> GraphQLResultOMSSimple.OMSSimple
+omsToResultSimple (Entity _ omsValue) (Entity _ locIdBaseValue) =
+  GraphQLResultOMSSimple.OMSSimple
+    { GraphQLResultOMSSimple.description = Nothing
+    , GraphQLResultOMSSimple.displayName = oMSDisplayName omsValue
+    , GraphQLResultOMSSimple.labelHasFree = oMSLabelHasFree omsValue
+    , GraphQLResultOMSSimple.labelHasHiding = oMSLabelHasHiding omsValue
+    , GraphQLResultOMSSimple.locId = locIdBaseLocId locIdBaseValue
+    , GraphQLResultOMSSimple.name = oMSName omsValue
+    , GraphQLResultOMSSimple.nameExtension = oMSNameExtension omsValue
+    , GraphQLResultOMSSimple.nameExtensionIndex = oMSNameExtensionIndex omsValue
+    , GraphQLResultOMSSimple.origin = show $ oMSOrigin omsValue
+    }
 
 premiseSelectionToResult :: [Entity DatabaseSchema.LocIdBase] -- Of Sentence
                          -> GraphQLResultPremiseSelection.PremiseSelection
