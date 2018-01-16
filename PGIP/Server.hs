@@ -22,6 +22,7 @@ import PGIP.Output.Proof
 import PGIP.Output.Translations
 import qualified PGIP.Output.Provers as OProvers
 
+
 import PGIP.GraphQL
 import PGIP.Query as Query
 import PGIP.Server.WebAssets
@@ -126,7 +127,7 @@ import System.IO
 import System.Posix.Process (getProcessID)
 import System.Posix.Signals
 
-data UsedAPI = OldWebAPI | RESTfulAPI | GraphQLAPI deriving (Show, Eq, Ord)
+data UsedAPI = OldWebAPI | RESTfulAPI deriving (Show, Eq, Ord)
 
 randomKey :: IO Int
 randomKey = randomRIO (100000000, 999999999)
