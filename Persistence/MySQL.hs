@@ -1,7 +1,9 @@
+{-# LANGUAGE CPP                        #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 
+#ifdef MYSQL
 module Persistence.MySQL (connection) where
 
 import Persistence.DBConfig
@@ -38,3 +40,4 @@ connectionInfo config =
                          , connectPassword = passArg
                          , connectDatabase = database config
                          }
+#endif

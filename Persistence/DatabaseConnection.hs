@@ -2,21 +2,16 @@
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE GADTs                      #-}
 
--- MySQL is dactivated. To activate it,
---   * uncomment the import of the MySQL module in
---     Persistence/DatabaseConnection.hs
---   * and switch the "mysql" and "mysql2" cases in `getConnection` with the
---     commented out code underneath them in Persistence/DatabaseConnection.hs.
 module Persistence.DatabaseConnection (getConnection) where
 
 import Persistence.DBConfig
 
 import qualified Persistence.SQLite as SQLite
--- #### Deactivate MySQL
--- MySQL support is deactivated because it requires users to install MySQL even
--- if they want to use SQLite or PostgreSQL.
--- import qualified Persistence.MySQL as MySQL
--- #### /Deactivate MySQL
+#ifdef MYSQL
+-- NOTE: MySQL support requires users to install MySQL even if they want to use
+-- SQLite or PostgreSQL.
+import qualified Persistence.MySQL as MySQL
+#endif
 #ifndef UNI_PACKAGE
 import qualified Persistence.PostgreSQL as PSQL
 #endif
@@ -41,16 +36,14 @@ getConnection :: ( BaseBackend backend ~ SqlBackend
                  )
               => DBConfig -> IO ((Pool backend -> m a) -> m a)
 getConnection dbConfig = case adapter dbConfig of
-  -- #### Deactivate MySQL
+#ifdef MYSQL
   Just "mysql" -> fail mySQLErrorMessage
   Just "mysql2" -> fail mySQLErrorMessage
-  -- #### /Deactivate MySQL
-  -- #### Activate MySQL
-  -- Just "mysql" -> return $ MySQL.connection dbConfig $
-  --                   fromMaybe defaultPoolSize $ pool dbConfig
-  -- Just "mysql" -> return $ MySQL.connection dbConfig $
-  --                   fromMaybe defaultPoolSize $ pool dbConfig
-  -- #### /Activate MySQL
+  Just "mysql" -> return $ MySQL.connection dbConfig $
+                    fromMaybe defaultPoolSize $ pool dbConfig
+  Just "mysql" -> return $ MySQL.connection dbConfig $
+                    fromMaybe defaultPoolSize $ pool dbConfig
+#endif
 #ifdef UNI_PACKAGE
   Just "postgresql" -> fail postgreSQLErrorMessage
 #else
@@ -64,7 +57,9 @@ getConnection dbConfig = case adapter dbConfig of
   _ -> fail ("Persistence.Database: No database adapter specified "
                ++ "or adapter unsupported.")
   where
-    mySQLErrorMessage = "MySQL support is deactivated. If you need it, please let us know by filing an issue at https://github.com/spechub/Hets or write an email to hets-devel@informatik.uni-bremen.de"
+#ifdef MYSQL
+    mySQLErrorMessage = "MySQL support is deactivated. If you need it, please use a hets-server package compiled with the mysql flag instead of hets-desktop."
+#endif
 #ifdef UNI_PACKAGE
     postgreSQLErrorMessage = "PostgreSQL support is deactivated. If you need it, please use the package hets-server instead of hets-desktop."
 #endif

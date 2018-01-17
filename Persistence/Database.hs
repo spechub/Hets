@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                        #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
@@ -51,9 +52,14 @@ runFullMigrationSet dbConfig =
 
     runRawSql :: MonadIO m => String -> DBMonad m [Single (Maybe Text)]
     runRawSql sql =
-      let query = pack $ if isMySql dbConfig
-                         then sql
-                         else sql ++ " SELECT ('dummy');"
+      let query = pack $
+#ifdef MYSQL
+                         if isMySql dbConfig
+                         then
+                             sql
+                         else
+#endif
+                             sql ++ " SELECT ('dummy');"
       in  rawSql query []
 
     -- MySQL does not have "CREATE INDEX IF NOT EXISTS", so we work around this
@@ -67,9 +73,13 @@ runFullMigrationSet dbConfig =
                 => String -> SomeException -> DBMonad m [Single (Maybe Text)]
     ignoreError searchInfix exception =
       let message = show exception in
+#ifdef MYSQL
       if isMySql dbConfig && (searchInfix `isInfixOf` message)
-      then return []
-      else fail message
+      then
+          return []
+      else
+#endif
+          fail message
 
 indexesSQL :: DBConfig -> [String]
 indexesSQL dbConfig =
@@ -78,17 +88,21 @@ indexesSQL dbConfig =
     sqlString :: (String, [String]) -> String
     sqlString (table, columns) =
       let indexName = "ix_" ++ table ++ "__" ++ intercalate "__" columns
-          indexNameMySql = take 64 indexName
           indexedColumns = intercalate ", " columns
+#ifdef MYSQL
+          indexNameMySql = take 64 indexName
           mysqlString =
             "CREATE INDEX " ++ indexNameMySql ++ " ON " ++ table ++ ""
             ++ "(" ++ indexedColumns ++ ");"
+#endif
           genericString =
             "CREATE INDEX IF NOT EXISTS " ++ indexName ++ " ON " ++ table ++ ""
             ++ "(" ++ indexedColumns ++ ");"
       in  case adapter dbConfig of
+#ifdef MYSQL
             Just "mysql" -> mysqlString
             Just "mysql2" -> mysqlString
+#endif
             Just "postgresql" -> genericString
             Just "sqlite" -> genericString
             Just "sqlite3" -> genericString

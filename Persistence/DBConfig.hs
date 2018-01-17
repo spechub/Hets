@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE CPP, DeriveGeneric #-}
 
 module Persistence.DBConfig where
 
@@ -57,12 +57,13 @@ emptyDBConfig = DBConfig { adapter = Nothing
                          , pool = Nothing
                          , needMigration = Just True
                          }
-
+#ifdef MYSQL
 isMySql :: DBConfig -> Bool
 isMySql dbConfig = case adapter dbConfig of
   Just "mysql" -> True
   Just "mysql2" -> True
   _ -> False
+#endif
 
 parseDatabaseConfig :: FilePath -> FilePath -> String -> Bool -> IO DBConfig
 parseDatabaseConfig dbFile dbConfigFile subconfigKey performMigration =

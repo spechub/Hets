@@ -61,6 +61,9 @@ flag haxml
 flag httpclient
   description: use native http-client implementation instead of wget
 
+flag mysql
+  description: enable persistent support for MySQL
+
 Executable hets
   Main-is: hets.hs
   build-depends:
@@ -133,6 +136,11 @@ Executable hets
       , gtk >= 0.11.2
     cpp-options: -DGTKGLADE
 
+  if flag(mysql)
+    build-depends:
+      persistent-mysql >= 2.6.1
+    cpp-options: -DMYSQL
+
   if flag(server)
     build-depends:
         wai-extra >= 3.0 && < 4.0
@@ -145,7 +153,6 @@ Executable hets
       , file-embed >= 0.0.10
       , persistent >= 2.7.0
       , persistent-template >= 2.5.2
-      , persistent-mysql >= 2.6.1
       , persistent-postgresql >= 2.6.1
       , persistent-sqlite >= 2.6.2
       , yaml >= 0.8.23.3
