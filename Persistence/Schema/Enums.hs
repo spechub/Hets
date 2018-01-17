@@ -13,3 +13,11 @@ derivePersistField "DiagnosisKindType"
 data ReasoningAttemptKindType = ProofAttempt | ConsistencyCheckAttempt
                                 deriving (Show, Read, Eq)
 derivePersistField "ReasoningAttemptKindType"
+
+data ReasonerKindType = Prover | ConsistencyChecker
+                         deriving (Show, Read, Eq)
+derivePersistField "ReasonerKindType"
+
+data PremiseSelectionKindType = ManualPremiseSelection | SinePremiseSelection
+                                deriving (Show, Read, Eq)
+derivePersistField "PremiseSelectionKindType"

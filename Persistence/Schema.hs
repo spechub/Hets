@@ -88,6 +88,25 @@ LogicMapping sql=logic_mappings
   isWeaklyAmalgamable Bool
   deriving Show
 
+LogicInclusion sql=logic_inclusions
+  sourceLogicId LogicId
+  targetLogicId LogicId
+  deriving Show
+
+LogicTranslation sql=logic_translations
+  slug String
+  UniqueLogicTranslationSlug slug
+  deriving Show
+
+-- Make sure that exactly one of logicMappingId or logicInclusionId is not Nothing
+LogicTranslationStep sql=logic_translation_steps
+  translationId LogicTranslationId
+  number Int
+  UniqueLogicTranlationStepListEntry translationId number
+  logicMappingId LogicMappingId Maybe
+  logicInclusionId LogicInclusionId Maybe
+  deriving Show
+
 Serialization sql=serializations
   languageId LanguageId
   slug String maxlen=247 -- 255 - 8 (8 for the languageId)
@@ -125,12 +144,17 @@ Repository sql=repositories
   ownerId OrganizationalUnitId
   deriving Show
 
+Action sql=actions
+  evaluationState EvaluationStateType
+  message Text Maybe
+  deriving Show
+
 -- We leave out the other columns here because we don't need them in Hets
 FileVersion sql=file_versions
+  actionId ActionId
   repositoryId RepositoryId
   path String
   commitSha String
-  evaluationState EvaluationStateType
   deriving Show
 
 -- This table is only needed for a SELECT JOIN by Ontohub. It needs to at least
@@ -224,7 +248,7 @@ Axiom sql=axioms
   deriving Show
 
 Conjecture sql=conjectures
-  evaluationState EvaluationStateType
+  actionId ActionId
   reasoningStatus ReasoningStatusOnConjectureType
   deriving Show
 
@@ -257,8 +281,9 @@ SignatureSymbol sql=signature_symbols
 
 Reasoner sql=reasoners
   slug String maxlen=255
-  UniqueReasonerSlug slug
+  kind Enums.ReasonerKindType
   displayName String
+  UniqueReasonerSlugAndKind slug kind
   deriving Show
 
 ReasonerConfiguration sql=reasoner_configurations
@@ -268,6 +293,9 @@ ReasonerConfiguration sql=reasoner_configurations
 
 PremiseSelection sql=premise_selections
   reasonerConfigurationId ReasonerConfigurationId
+  proofAttemptId ProofAttemptId
+  kind Enums.PremiseSelectionKindType
+  timeTaken Int Maybe
   deriving Show
 
 PremiseSelectedSentence sql=premise_selected_sentences
@@ -299,10 +327,11 @@ SineSymbolCommonness sql=sine_symbol_commonnesses
   deriving Show
 
 ReasoningAttempt sql=reasoning_attempts
+  actionId ActionId
   reasonerConfigurationId ReasonerConfigurationId
   usedReasonerId ReasonerId Maybe
+  usedLogicTranslationId LogicTranslationId Maybe
   timeTaken Int Maybe
-  evaluationState EvaluationStateType
   reasoningStatus ReasoningStatusOnReasoningAttemptType
   deriving Show
 

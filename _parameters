@@ -1,0 +1,17 @@
+{
+  "reasonerConfiguration": {
+    "timeLimit": 10
+    "reasoner": "SPASS"
+  },
+  "premiseSelection": {
+    "type": "manual",
+    "premises": ["premiseFoo", "premiseBar"]
+  },
+  // or:
+  "premiseSelection": {
+    "type": "SInE",
+    "depthLimit": 0,
+    "tolerance": 1.0,
+    "axiomNumberLimit": 500
+  }
+}
