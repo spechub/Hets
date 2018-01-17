@@ -63,6 +63,7 @@ extra-deps:
 # Override default flag values for local packages and extra-deps
 flags:
   Hets:
+    httpclient: true
     uniform: true
     tar: true
     unix: true

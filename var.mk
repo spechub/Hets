@@ -98,6 +98,9 @@ HEXPAT_PACKAGE := $(shell [ $(HEXPATVERSION) -gt 0 ] && echo '-DHEXPAT')
 HTTPVERSION = $(call version, $(shell $(HCPKG) latest HTTP))
 HTTP_PACKAGE = $(shell [ $(HTTPVERSION) -lt 4000000000 ] && echo '-DNOHTTP')
 
+HTTPCVERSION := $(call version, $(shell $(HCPKG) latest http-client))
+WGET := $(shell [ $(HTTPCVERSION) -ge 5007 ] && echo '-DNO_WGET' )
+
 UNIVERSION := $(call version, $(shell $(HCPKG) latest uni-uDrawGraph))
 UNI_PACKAGE := $(shell [ $(UNIVERSION) -ge 2000000 ] && echo '-DUNI_PACKAGE')
 
@@ -126,7 +129,7 @@ ifneq ($(strip $(UNI_PACKAGE)),)
 endif
 
 HC_OPTS_WITHOUTGLADE = $(PARSEC_FLAG) \
-  $(TIME_PACKAGE) $(TAR_PACKAGE) $(HTTP_PACKAGE) $(UNIX_PACKAGE) \
+  $(TIME_PACKAGE) $(TAR_PACKAGE) $(HTTP_PACKAGE) $(WGET) $(UNIX_PACKAGE) \
   $(UNI_PACKAGE) $(HASKELINE_PACKAGE) $(HEXPAT_PACKAGE) \
   $(PFE_FLAGS) $(SERVER_FLAG) $(HAXML_PACKAGE) $(HAXML_PACKAGE_COMPAT) \
   -DRDFLOGIC -DCASLEXTENSIONS

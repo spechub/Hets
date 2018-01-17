@@ -58,13 +58,13 @@ flag server
 flag haxml
   description: convert Isabelle theories to development graphs
 
+flag httpclient
+  description: use native http-client implementation instead of wget
+
 Executable hets
   Main-is: hets.hs
   build-depends:
       HTTP >= 4000.2.4
-    , http-client >= 0.5.7.0
-    , http-client-tls >= 0.3.5.1
-    , connection >= 0.2.8
     , array >= 0.1.0.0
     , aterm >= 0.1.0.1
     , base >= 4.0.0.0
@@ -87,6 +87,13 @@ Executable hets
     , xml >= 1.3.7 && < 1.4
   cpp-options: -DCASLEXTENSIONS -DRDFLOGIC
   ghc-options: -threaded -fcontext-stack=31
+
+  if flag(httpclient)
+    build-depends:
+        http-client >= 0.5.7.0
+      , http-client-tls >= 0.3.5.1
+      , connection >= 0.2.8
+    cpp-options: -DNO_WGET
 
   if flag(uniform)
     build-depends:

@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP, OverloadedStrings #-}
 {- |
 Module      :  ./Common/Http.hs
 Description :  wrapper for simple http
@@ -15,6 +15,7 @@ module Common.Http where
 
 import Driver.Options
 
+#ifdef NO_WGET
 import Control.Exception (try)
 import qualified Data.ByteString.Lazy.Char8 as LChar8
 import qualified Data.ByteString.Char8 as Char8
@@ -24,8 +25,13 @@ import Network.Connection (TLSSettings(..))
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS
 import Network.HTTP.Types (statusCode)
+#else
+import Common.Utils
+import System.Exit
+#endif
 
 loadFromUri :: HetcatsOpts -> String -> IO (Either String String)
+#ifdef NO_WGET
 loadFromUri opts uri = do
   manager <-
     if disableCertificateVerification opts
@@ -65,3 +71,14 @@ noVerifyTlsSettings =
                     , settingDisableSession = True
                     , settingUseServerName = False
                     }
+#else
+loadFromUri opts str = do
+  let args = if disableCertificateVerification opts
+             then ["--no-check-certificate"]
+             else []
+  (code, out, err) <- executeProcess "wget"
+     (args ++ ["--header=Accept: */*; q=0.1, text/plain", "-O", "-", str]) ""
+  return $ case code of
+    ExitSuccess -> Right out
+    _ -> Left err
+#endif
