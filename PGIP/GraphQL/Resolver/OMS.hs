@@ -82,9 +82,12 @@ resolveConsistencyChecks omsKey = do
                                          `InnerJoin` reasoner_configurations
                                          `LeftOuterJoin` reasoners) -> do
       on (reasoners ?. ReasonerId ==. reasoning_attempts ^. ReasoningAttemptUsedReasonerId)
-      on (reasoner_configurations ^. ReasonerConfigurationId ==. reasoning_attempts ^. ReasoningAttemptReasonerConfigurationId)
-      on (coerceId (consistency_check_attempts ^. ConsistencyCheckAttemptId) ==. reasoning_attempts ^. ReasoningAttemptId)
-      where_ (consistency_check_attempts ^. ConsistencyCheckAttemptOmsId ==. just (val omsKey))
+      on (reasoner_configurations ^. ReasonerConfigurationId ==.
+            reasoning_attempts ^. ReasoningAttemptReasonerConfigurationId)
+      on (coerceId (consistency_check_attempts ^. ConsistencyCheckAttemptId) ==.
+            reasoning_attempts ^. ReasoningAttemptId)
+      where_ (consistency_check_attempts ^. ConsistencyCheckAttemptOmsId ==.
+                just (val omsKey))
       return (reasoning_attempts, reasoners, reasoner_configurations)
   mapM resolveReasoningAttempt consistencyCheckAttemptL
 
@@ -105,13 +108,19 @@ resolveMappings omsKey column = do
       on (loc_id_basesOMS ?. LocIdBaseId ==. mappingsSql ^. MappingFreenessParameterOMSId)
       on (loc_id_basesTarget ^. LocIdBaseId ==. mappingsSql ^. MappingTargetId)
       on (loc_id_basesSource ^. LocIdBaseId ==. mappingsSql ^. MappingSourceId)
-      on (conservativity_statuses ?. ConservativityStatusId ==. mappingsSql ^. MappingConservativityStatusId)
-      on (mappingsSql ^. MappingSignatureMorphismId ==. signature_morphisms ^. SignatureMorphismId)
+      on (conservativity_statuses ?. ConservativityStatusId ==.
+            mappingsSql ^. MappingConservativityStatusId)
+      on (mappingsSql ^. MappingSignatureMorphismId ==.
+            signature_morphisms ^. SignatureMorphismId)
       on (loc_id_bases ^. LocIdBaseId ==. coerceId (mappingsSql ^. MappingId))
       where_ (mappingsSql ^. column ==. val omsKey)
-      return (mappingsSql, loc_id_bases, signature_morphisms, conservativity_statuses, loc_id_basesSource, loc_id_basesTarget, loc_id_basesOMS, languages)
+      return (mappingsSql, loc_id_bases, signature_morphisms,
+              conservativity_statuses, loc_id_basesSource, loc_id_basesTarget,
+              loc_id_basesOMS, languages)
   return $
-    map (\ (mapping, locIdBase, signatureMorphismEntity, conservativityStatusM, locIdBaseSource, locIdBaseTarget, freenesParameterOMSLocIdM, freenessParameterLanguageM) ->
+    map (\ (mapping, locIdBase, signatureMorphismEntity, conservativityStatusM,
+            locIdBaseSource, locIdBaseTarget, freenesParameterOMSLocIdM,
+            freenessParameterLanguageM) ->
           mappingToResult mapping locIdBase signatureMorphismEntity
             conservativityStatusM locIdBaseSource locIdBaseTarget
             freenesParameterOMSLocIdM freenessParameterLanguageM
@@ -122,7 +131,8 @@ getReasonerOutput :: MonadIO m
                   -> DBMonad m (Maybe (Entity DatabaseSchema.ReasonerOutput))
 getReasonerOutput reasoningAttemptKey = do
   reasonerOutputL <- select $ from $ \ reasoner_outputs -> do
-    where_ (reasoner_outputs ^. ReasonerOutputReasoningAttemptId ==. val reasoningAttemptKey)
+    where_ (reasoner_outputs ^. ReasonerOutputReasoningAttemptId ==.
+              val reasoningAttemptKey)
     return reasoner_outputs
   return $ case reasonerOutputL of
     [] -> Nothing
@@ -137,7 +147,8 @@ resolveReasoningAttempt :: MonadIO m
 resolveReasoningAttempt (reasoningAttemptEntity, reasonerEntityM, reasonerConfigurationEntity) = do
   reasonerOutputEntityM <- getReasonerOutput $ entityKey reasoningAttemptEntity
   reasonerConfigurationResult <- resolveReasonerConfiguration reasonerConfigurationEntity
-  return $ reasoningAttemptToResult reasoningAttemptEntity reasonerOutputEntityM reasonerEntityM reasonerConfigurationResult
+  return $ reasoningAttemptToResult reasoningAttemptEntity reasonerOutputEntityM
+    reasonerEntityM reasonerConfigurationResult
 
 resolveSentences :: MonadIO m
                  => LocIdBaseId -> DBMonad m [GraphQLResultSentence.Sentence]
@@ -154,9 +165,10 @@ resolveSentences omsKey = do
   mapM (\ (sentenceEntity, locIdBaseEntity, fileRangeM, conjectureM) -> do
           symbolResults <- resolveSymbols $ entityKey sentenceEntity
           case conjectureM of
-            Nothing -> return $ axiomToResult sentenceEntity locIdBaseEntity fileRangeM symbolResults
-            Just conjectureEntity ->
-              resolveConjecture sentenceEntity locIdBaseEntity fileRangeM conjectureEntity symbolResults
+            Nothing -> return $
+              axiomToResult sentenceEntity locIdBaseEntity fileRangeM symbolResults
+            Just conjectureEntity -> resolveConjecture sentenceEntity
+              locIdBaseEntity fileRangeM conjectureEntity symbolResults
        ) sentenceL
 
 resolveConjecture :: MonadIO m
@@ -168,7 +180,8 @@ resolveConjecture :: MonadIO m
                   -> DBMonad m GraphQLResultSentence.Sentence
 resolveConjecture sentenceEntity locIdBaseEntity fileRangeM conjectureEntity symbolResults = do
   proofAttemptResults <- resolveProofAttempts $ entityKey locIdBaseEntity
-  return $ conjectureToResult sentenceEntity locIdBaseEntity fileRangeM conjectureEntity symbolResults proofAttemptResults
+  return $ conjectureToResult sentenceEntity locIdBaseEntity fileRangeM
+    conjectureEntity symbolResults proofAttemptResults
 
 resolveProofAttempts :: MonadIO m
                      => LocIdBaseId
@@ -178,10 +191,14 @@ resolveProofAttempts conjectureKey = do
     select $ from $ \(reasoning_attempts `InnerJoin` proof_attempts
                                          `InnerJoin` reasoner_configurations
                                          `LeftOuterJoin` reasoners) -> do
-      on (reasoners ?. ReasonerId ==. reasoning_attempts ^. ReasoningAttemptUsedReasonerId)
-      on (reasoner_configurations ^. ReasonerConfigurationId ==. reasoning_attempts ^. ReasoningAttemptReasonerConfigurationId)
-      on (coerceId (proof_attempts ^. ProofAttemptId) ==. reasoning_attempts ^. ReasoningAttemptId)
-      where_ (proof_attempts ^. ProofAttemptConjectureId ==. just (val conjectureKey))
+      on (reasoners ?. ReasonerId ==.
+            reasoning_attempts ^. ReasoningAttemptUsedReasonerId)
+      on (reasoner_configurations ^. ReasonerConfigurationId ==.
+            reasoning_attempts ^. ReasoningAttemptReasonerConfigurationId)
+      on (coerceId (proof_attempts ^. ProofAttemptId) ==.
+            reasoning_attempts ^. ReasoningAttemptId)
+      where_ (proof_attempts ^. ProofAttemptConjectureId ==.
+                just (val conjectureKey))
       return (reasoning_attempts, reasoners, reasoner_configurations)
   mapM resolveReasoningAttempt proofAttemptL
 
@@ -191,7 +208,8 @@ resolveReasonerConfiguration :: MonadIO m
 resolveReasonerConfiguration reasonerConfigurationEntity@(Entity reasonerConfigurationKey reasonerConfigurationValue) = do
   reasonerL <-
     select $ from $ \ reasoners -> do
-      where_ (reasoners ?. ReasonerId ==. val (reasonerConfigurationConfiguredReasonerId reasonerConfigurationValue))
+      where_ (reasoners ?. ReasonerId ==.
+                val (reasonerConfigurationConfiguredReasonerId reasonerConfigurationValue))
       return reasoners
   let reasonerResultM = case reasonerL of
         [] -> Nothing
@@ -199,11 +217,13 @@ resolveReasonerConfiguration reasonerConfigurationEntity@(Entity reasonerConfigu
 
   premiseSelectionsL <-
     select $ from $ \ premise_selections -> do
-      where_ (premise_selections ^. PremiseSelectionReasonerConfigurationId ==. val reasonerConfigurationKey)
+      where_ (premise_selections ^. PremiseSelectionReasonerConfigurationId ==.
+                val reasonerConfigurationKey)
       return premise_selections
 
   premiseSelectionResults <- mapM resolvePremiseSelection premiseSelectionsL
-  return $ reasonerConfigurationToResult reasonerConfigurationEntity reasonerResultM premiseSelectionResults
+  return $ reasonerConfigurationToResult reasonerConfigurationEntity
+    reasonerResultM premiseSelectionResults
 
 resolvePremiseSelection :: MonadIO m
                         => Entity DatabaseSchema.PremiseSelection
@@ -212,8 +232,10 @@ resolvePremiseSelection (Entity premiseSelectionKey _) = do
   premises <-
     select $ from $ \ (loc_id_bases `InnerJoin` premise_selected_sentences
                                     `InnerJoin` premise_selections) -> do
-      on (loc_id_bases ^. LocIdBaseId ==. premise_selected_sentences ^. PremiseSelectedSentencePremiseId)
-      on (premise_selected_sentences ^. PremiseSelectedSentencePremiseSelectionId ==. premise_selections ^. PremiseSelectionId)
+      on (loc_id_bases ^. LocIdBaseId ==.
+            premise_selected_sentences ^. PremiseSelectedSentencePremiseId)
+      on (premise_selected_sentences ^. PremiseSelectedSentencePremiseSelectionId ==.
+            premise_selections ^. PremiseSelectionId)
       where_ (premise_selections ^. PremiseSelectionId ==. val premiseSelectionKey)
       return loc_id_bases
   return $ premiseSelectionToResult premises
@@ -241,8 +263,11 @@ resolveSymbols sentenceKey = do
                               `LeftOuterJoin` file_ranges) -> do
       on (file_ranges ?. FileRangeId ==. symbols ^. SymbolFileRangeId)
       on (loc_id_bases ^. LocIdBaseId ==. coerceId (symbols ^. SymbolId))
-      on (coerceId (sentencesSql ^. SentenceId) ==. sentences_symbols ^. SentenceSymbolSentenceId)
-      on (sentences_symbols ^. SentenceSymbolSymbolId ==. coerceId (symbols ^. SymbolId))
-      where_ (sentences_symbols ^. SentenceSymbolSentenceId ==. val (toSqlKey $ fromSqlKey sentenceKey))
+      on (coerceId (sentencesSql ^. SentenceId) ==.
+            sentences_symbols ^. SentenceSymbolSentenceId)
+      on (sentences_symbols ^. SentenceSymbolSymbolId ==.
+            coerceId (symbols ^. SymbolId))
+      where_ (sentences_symbols ^. SentenceSymbolSentenceId ==.
+                val (toSqlKey $ fromSqlKey sentenceKey))
       return (loc_id_bases, symbols, file_ranges)
   return $ map symbolToResultUncurried symbolL

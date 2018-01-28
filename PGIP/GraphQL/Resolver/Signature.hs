@@ -43,7 +43,10 @@ resolveDB idVar = do
         return signature_morphisms
 
       symbolsWithFileRanges <- select $ from $
-        \(signatures `InnerJoin` signature_symbols `InnerJoin` loc_id_bases `InnerJoin` symbolsSql `LeftOuterJoin` file_ranges) -> do
+        \ (signatures `InnerJoin` signature_symbols
+                      `InnerJoin` loc_id_bases
+                      `InnerJoin` symbolsSql
+                      `LeftOuterJoin` file_ranges) -> do
           on (file_ranges ?. FileRangeId ==. symbolsSql ^. SymbolFileRangeId)
           on (coerceId (symbolsSql ^. SymbolId) ==. loc_id_bases ^. LocIdBaseId)
           on (loc_id_bases ^. LocIdBaseId ==. signature_symbols ^. SignatureSymbolSymbolId)
@@ -51,4 +54,5 @@ resolveDB idVar = do
           where_ (signatures ^. SignatureId ==. val signatureKey)
           return (loc_id_bases, symbolsSql, file_ranges)
 
-      return $ Just $ SignatureResult $ signatureToResult signatureEntity omsL signatureMorphismsAsSourceL signatureMorphismsAsTargetL symbolsWithFileRanges
+      return $ Just $ SignatureResult $ signatureToResult signatureEntity omsL
+        signatureMorphismsAsSourceL signatureMorphismsAsTargetL symbolsWithFileRanges

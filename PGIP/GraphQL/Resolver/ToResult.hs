@@ -56,7 +56,8 @@ conjectureToResult :: Entity DatabaseSchema.Sentence
                    -> [GraphQLResultSymbol.Symbol]
                    -> [GraphQLResultReasoningAttempt.ReasoningAttempt]
                    -> GraphQLResultSentence.Sentence
-conjectureToResult (Entity _ sentenceValue) (Entity _ locIdBaseValue) fileRangeM (Entity _ conjectureValue) symbolResults proofAttemptResults =
+conjectureToResult (Entity _ sentenceValue) (Entity _ locIdBaseValue) fileRangeM
+  (Entity _ conjectureValue) symbolResults proofAttemptResults =
   GraphQLResultSentence.Conjecture GraphQLResultConjecture.Conjecture
     { GraphQLResultConjecture.__typename = "Conjecture"
     , GraphQLResultConjecture.fileRange = fmap fileRangeToResult fileRangeM
@@ -64,17 +65,21 @@ conjectureToResult (Entity _ sentenceValue) (Entity _ locIdBaseValue) fileRangeM
     , GraphQLResultConjecture.name = sentenceName sentenceValue
     , GraphQLResultConjecture.symbols = symbolResults
     , GraphQLResultConjecture.text = Text.unpack $ sentenceText sentenceValue
-    , GraphQLResultConjecture.evaluationState = show $ conjectureEvaluationState conjectureValue
+    , GraphQLResultConjecture.evaluationState =
+        show $ conjectureEvaluationState conjectureValue
     , GraphQLResultConjecture.proofAttempts = proofAttemptResults
-    , GraphQLResultConjecture.reasoningStatus = show $ conjectureReasoningStatus conjectureValue
+    , GraphQLResultConjecture.reasoningStatus =
+        show $ conjectureReasoningStatus conjectureValue
     }
 
 conservativityStatusToResult :: Entity DatabaseSchema.ConservativityStatus
                              -> GraphQLResultConservativityStatus.ConservativityStatus
 conservativityStatusToResult (Entity _ conservativityStatusValue) =
   GraphQLResultConservativityStatus.ConservativityStatus
-    { GraphQLResultConservativityStatus.required = conservativityStatusRequired conservativityStatusValue
-    , GraphQLResultConservativityStatus.proved = conservativityStatusProved conservativityStatusValue
+    { GraphQLResultConservativityStatus.required =
+        conservativityStatusRequired conservativityStatusValue
+    , GraphQLResultConservativityStatus.proved =
+        conservativityStatusProved conservativityStatusValue
     }
 
 documentLinkToResult :: Entity DatabaseSchema.LocIdBase
@@ -82,8 +87,10 @@ documentLinkToResult :: Entity DatabaseSchema.LocIdBase
                      -> GraphQLResultDocumentLink.DocumentLink
 documentLinkToResult sourceLocId targetLocId =
   GraphQLResultDocumentLink.DocumentLink
-    { GraphQLResultDocumentLink.source = LocIdReference $ locIdBaseLocId $ entityVal sourceLocId
-    , GraphQLResultDocumentLink.target = LocIdReference $ locIdBaseLocId $ entityVal targetLocId
+    { GraphQLResultDocumentLink.source =
+        LocIdReference $ locIdBaseLocId $ entityVal sourceLocId
+    , GraphQLResultDocumentLink.target =
+        LocIdReference $ locIdBaseLocId $ entityVal targetLocId
     }
 
 fileRangeToResult :: Entity DatabaseSchema.FileRange
@@ -112,9 +119,12 @@ languageMappingToResult :: Entity DatabaseSchema.LanguageMapping
                         -> GraphQLResultLanguageMapping.LanguageMapping
 languageMappingToResult languageMappingEntity languageSource languageTarget =
   GraphQLResultLanguageMapping.LanguageMapping
-    { GraphQLResultLanguageMapping.id = fromIntegral $ fromSqlKey $ entityKey languageMappingEntity
-    , GraphQLResultLanguageMapping.source = StringReference $ DatabaseSchema.languageSlug $ entityVal languageSource
-    , GraphQLResultLanguageMapping.target = StringReference $ DatabaseSchema.languageSlug $ entityVal languageTarget
+    { GraphQLResultLanguageMapping.id =
+        fromIntegral $ fromSqlKey $ entityKey languageMappingEntity
+    , GraphQLResultLanguageMapping.source =
+        StringReference $ DatabaseSchema.languageSlug $ entityVal languageSource
+    , GraphQLResultLanguageMapping.target =
+        StringReference $ DatabaseSchema.languageSlug $ entityVal languageTarget
     }
 
 libraryToResult :: Entity DatabaseSchema.Document
@@ -123,7 +133,8 @@ libraryToResult :: Entity DatabaseSchema.Document
                 -> [GraphQLResultDocumentLink.DocumentLink]
                 -> [GraphQLResultOMSSimple.OMSSimple]
                 -> GraphQLResultLibrary.Library
-libraryToResult (Entity _ documentValue) (Entity _ locIdBaseValue) documentLinksSourceResults documentLinksTargetResults omsResults =
+libraryToResult (Entity _ documentValue) (Entity _ locIdBaseValue)
+  documentLinksSourceResults documentLinksTargetResults omsResults =
   GraphQLResultLibrary.Library
     { GraphQLResultLibrary.__typename = "Library"
     , GraphQLResultLibrary.displayName = documentDisplayName documentValue
@@ -152,8 +163,10 @@ logicMappingToResult (Entity _ logicMappingValue) logicSource logicTarget langua
   GraphQLResultLogicMapping.LogicMapping
     { GraphQLResultLogicMapping.id = DatabaseSchema.logicMappingSlug logicMappingValue
     , GraphQLResultLogicMapping.languageMapping = languageMappingResult
-    , GraphQLResultLogicMapping.source = StringReference $ DatabaseSchema.logicSlug $ entityVal logicSource
-    , GraphQLResultLogicMapping.target = StringReference $ DatabaseSchema.logicSlug $ entityVal logicTarget
+    , GraphQLResultLogicMapping.source =
+        StringReference $ DatabaseSchema.logicSlug $ entityVal logicSource
+    , GraphQLResultLogicMapping.target =
+        StringReference $ DatabaseSchema.logicSlug $ entityVal logicTarget
     }
 
 mappingToResult :: Entity DatabaseSchema.Mapping
@@ -173,16 +186,23 @@ mappingToResult (Entity _ mappingValue) mappingLocIdBase (Entity signatureMorphi
   in  GraphQLResultMapping.Mapping
         { GraphQLResultMapping.conservativityStatus = conservativityStatusResult
         , GraphQLResultMapping.displayName = mappingDisplayName mappingValue
-        , GraphQLResultMapping.freenessParameterOMS = fmap (LocIdReference . locIdBaseLocId . entityVal) freenesParameterOMSLocIdM
-        , GraphQLResultMapping.freenessParameterLanguage = freenessParameterLanguageResult
+        , GraphQLResultMapping.freenessParameterOMS =
+            fmap (LocIdReference . locIdBaseLocId . entityVal)
+            freenesParameterOMSLocIdM
+        , GraphQLResultMapping.freenessParameterLanguage =
+            freenessParameterLanguageResult
         , GraphQLResultMapping.locId = locIdBaseLocId $ entityVal mappingLocIdBase
         , GraphQLResultMapping.name = mappingName mappingValue
         , GraphQLResultMapping.origin = show $ mappingOrigin mappingValue
         , GraphQLResultMapping.pending = mappingPending mappingValue
-        , GraphQLResultMapping.signatureMorphism = IdReference $ fromIntegral $ fromSqlKey signatureMorphismKey
-        , GraphQLResultMapping.source = LocIdReference $ locIdBaseLocId $ entityVal locIdBaseSource
-        , GraphQLResultMapping.target = LocIdReference $ locIdBaseLocId $ entityVal locIdBaseTarget
-        , GraphQLResultMapping.mappingType = show $ DatabaseSchema.mappingType mappingValue
+        , GraphQLResultMapping.signatureMorphism =
+            IdReference $ fromIntegral $ fromSqlKey signatureMorphismKey
+        , GraphQLResultMapping.source =
+            LocIdReference $ locIdBaseLocId $ entityVal locIdBaseSource
+        , GraphQLResultMapping.target =
+            LocIdReference $ locIdBaseLocId $ entityVal locIdBaseTarget
+        , GraphQLResultMapping.mappingType =
+            show $ DatabaseSchema.mappingType mappingValue
         }
 
 nativeDocumentToResult :: Entity DatabaseSchema.Document
@@ -191,7 +211,8 @@ nativeDocumentToResult :: Entity DatabaseSchema.Document
                        -> [GraphQLResultDocumentLink.DocumentLink]
                        -> GraphQLResultOMSSimple.OMSSimple
                        -> GraphQLResultNativeDocument.NativeDocument
-nativeDocumentToResult (Entity _ documentValue) (Entity _ locIdBaseValue) documentLinksSourceResults documentLinksTargetResults omsResult =
+nativeDocumentToResult (Entity _ documentValue) (Entity _ locIdBaseValue)
+  documentLinksSourceResults documentLinksTargetResults omsResult =
   GraphQLResultNativeDocument.NativeDocument
     { GraphQLResultNativeDocument.__typename = "NativeDocument"
     , GraphQLResultNativeDocument.displayName = documentDisplayName documentValue
@@ -232,8 +253,11 @@ omsToResult (Entity _ omsValue) locIdBaseOMS conservativityStatusEntity
         , GraphQLResultOMS.consistencyCheckAttempts = consistencyCheckAttemptResults
         , GraphQLResultOMS.description = Nothing
         , GraphQLResultOMS.displayName = oMSDisplayName omsValue
-        , GraphQLResultOMS.freeNormalForm = fmap (LocIdReference . locIdBaseLocId . entityVal) freeNormalFormLocIdBaseM
-        , GraphQLResultOMS.freeNormalFormSignatureMorphism = fmap (IdReference . fromIntegral . fromSqlKey . entityKey) freeNormalFormSignatureMorphismM
+        , GraphQLResultOMS.freeNormalForm =
+            fmap (LocIdReference . locIdBaseLocId . entityVal) freeNormalFormLocIdBaseM
+        , GraphQLResultOMS.freeNormalFormSignatureMorphism =
+            fmap (IdReference . fromIntegral . fromSqlKey . entityKey)
+            freeNormalFormSignatureMorphismM
         , GraphQLResultOMS.labelHasFree = oMSLabelHasFree omsValue
         , GraphQLResultOMS.labelHasHiding = oMSLabelHasHiding omsValue
         , GraphQLResultOMS.language = languageToResult languageEntity
@@ -245,12 +269,16 @@ omsToResult (Entity _ omsValue) locIdBaseOMS conservativityStatusEntity
         , GraphQLResultOMS.nameExtension = oMSNameExtension omsValue
         , GraphQLResultOMS.nameExtensionIndex = oMSNameExtensionIndex omsValue
         , GraphQLResultOMS.nameFileRange = fileRangeResult
-        , GraphQLResultOMS.normalForm = fmap (LocIdReference . locIdBaseLocId . entityVal) normalFormLocIdBaseM
-        , GraphQLResultOMS.normalFormSignatureMorphism = fmap (IdReference . fromIntegral . fromSqlKey . entityKey) normalFormSignatureMorphismM
+        , GraphQLResultOMS.normalForm =
+            fmap (LocIdReference . locIdBaseLocId . entityVal) normalFormLocIdBaseM
+        , GraphQLResultOMS.normalFormSignatureMorphism =
+            fmap (IdReference . fromIntegral . fromSqlKey . entityKey)
+            normalFormSignatureMorphismM
         , GraphQLResultOMS.origin = show $ oMSOrigin omsValue
         , GraphQLResultOMS.sentences = sentenceResults
         , GraphQLResultOMS.serialization = serializationResult
-        , GraphQLResultOMS.omsSignature = IdReference $ fromIntegral $ fromSqlKey $ oMSSignatureId omsValue
+        , GraphQLResultOMS.omsSignature =
+            IdReference $ fromIntegral $ fromSqlKey $ oMSSignatureId omsValue
         }
 
 omsToResultSimple :: Entity DatabaseSchema.OMS
@@ -273,7 +301,8 @@ premiseSelectionToResult :: [Entity DatabaseSchema.LocIdBase] -- Of Sentence
                          -> GraphQLResultPremiseSelection.PremiseSelection
 premiseSelectionToResult premises =
   GraphQLResultPremiseSelection.PremiseSelection
-    { GraphQLResultPremiseSelection.selectedPremises = map (LocIdReference . locIdBaseLocId . entityVal) premises
+    { GraphQLResultPremiseSelection.selectedPremises =
+        map (LocIdReference . locIdBaseLocId . entityVal) premises
     }
 
 reasonerToResult :: Entity DatabaseSchema.Reasoner
@@ -288,19 +317,25 @@ reasonerConfigurationToResult :: Entity DatabaseSchema.ReasonerConfiguration
                               -> Maybe (Entity DatabaseSchema.Reasoner)
                               -> [GraphQLResultPremiseSelection.PremiseSelection]
                               -> GraphQLResultReasonerConfiguration.ReasonerConfiguration
-reasonerConfigurationToResult (Entity reasonerConfigurationKey reasonerConfigurationValue) reasonerM premiseSelectionResults =
+reasonerConfigurationToResult (Entity reasonerConfigurationKey
+  reasonerConfigurationValue) reasonerM premiseSelectionResults =
   GraphQLResultReasonerConfiguration.ReasonerConfiguration
-    { GraphQLResultReasonerConfiguration.configuredReasoner = fmap reasonerToResult reasonerM
-    , GraphQLResultReasonerConfiguration.id = fromIntegral $ fromSqlKey reasonerConfigurationKey
-    , GraphQLResultReasonerConfiguration.premiseSelections = premiseSelectionResults
-    , GraphQLResultReasonerConfiguration.timeLimit = reasonerConfigurationTimeLimit reasonerConfigurationValue
+    { GraphQLResultReasonerConfiguration.configuredReasoner =
+        fmap reasonerToResult reasonerM
+    , GraphQLResultReasonerConfiguration.id =
+        fromIntegral $ fromSqlKey reasonerConfigurationKey
+    , GraphQLResultReasonerConfiguration.premiseSelections =
+        premiseSelectionResults
+    , GraphQLResultReasonerConfiguration.timeLimit =
+        reasonerConfigurationTimeLimit reasonerConfigurationValue
     }
 
 reasonerOutputToResult :: Entity DatabaseSchema.ReasonerOutput
                        -> GraphQLResultReasonerOutput.ReasonerOutput
 reasonerOutputToResult (Entity _ reasonerOutputValue) =
   GraphQLResultReasonerOutput.ReasonerOutput
-    { GraphQLResultReasonerOutput.text = Text.unpack $ reasonerOutputText reasonerOutputValue
+    { GraphQLResultReasonerOutput.text =
+        Text.unpack $ reasonerOutputText reasonerOutputValue
     }
 
 reasoningAttemptToResult :: Entity DatabaseSchema.ReasoningAttempt
@@ -308,14 +343,21 @@ reasoningAttemptToResult :: Entity DatabaseSchema.ReasoningAttempt
                          -> Maybe (Entity DatabaseSchema.Reasoner)
                          -> GraphQLResultReasonerConfiguration.ReasonerConfiguration
                          -> GraphQLResultReasoningAttempt.ReasoningAttempt
-reasoningAttemptToResult (Entity _ reasoningAttemptValue) reasonerOutputEntity reasonerEntityM reasonerConfigurationResult =
+reasoningAttemptToResult (Entity _ reasoningAttemptValue) reasonerOutputEntity
+  reasonerEntityM reasonerConfigurationResult =
   GraphQLResultReasoningAttempt.ReasoningAttempt
-    { GraphQLResultReasoningAttempt.evaluationState = show $ reasoningAttemptEvaluationState reasoningAttemptValue
-    , GraphQLResultReasoningAttempt.reasonerOutput = fmap reasonerOutputToResult reasonerOutputEntity
-    , GraphQLResultReasoningAttempt.reasonerConfiguration = reasonerConfigurationResult
-    , GraphQLResultReasoningAttempt.reasoningStatus = show $ reasoningAttemptReasoningStatus reasoningAttemptValue
-    , GraphQLResultReasoningAttempt.timeTaken = reasoningAttemptTimeTaken reasoningAttemptValue
-    , GraphQLResultReasoningAttempt.usedReasoner = fmap reasonerToResult reasonerEntityM
+    { GraphQLResultReasoningAttempt.evaluationState =
+        show $ reasoningAttemptEvaluationState reasoningAttemptValue
+    , GraphQLResultReasoningAttempt.reasonerOutput =
+        fmap reasonerOutputToResult reasonerOutputEntity
+    , GraphQLResultReasoningAttempt.reasonerConfiguration =
+        reasonerConfigurationResult
+    , GraphQLResultReasoningAttempt.reasoningStatus =
+        show $ reasoningAttemptReasoningStatus reasoningAttemptValue
+    , GraphQLResultReasoningAttempt.timeTaken =
+        reasoningAttemptTimeTaken reasoningAttemptValue
+    , GraphQLResultReasoningAttempt.usedReasoner =
+        fmap reasonerToResult reasonerEntityM
     }
 
 serializationToResult :: Entity DatabaseSchema.Serialization
@@ -338,13 +380,20 @@ signatureToResult :: Entity DatabaseSchema.Signature
                       , Maybe (Entity DatabaseSchema.FileRange)
                       )]
                   -> GraphQLResultSignature.Signature
-signatureToResult (Entity signatureKey _) omsL signatureMorphismsAsSourceL signatureMorphismsAsTargetL symbolsWithFileRanges =
+signatureToResult (Entity signatureKey _) omsL signatureMorphismsAsSourceL
+  signatureMorphismsAsTargetL symbolsWithFileRanges =
   GraphQLResultSignature.Signature
     { GraphQLResultSignature.id = fromIntegral $ fromSqlKey signatureKey
-    , GraphQLResultSignature.oms = map (LocIdReference . locIdBaseLocId . entityVal) omsL
-    , GraphQLResultSignature.signatureMorphismsSource = map (IdReference . fromIntegral . fromSqlKey . entityKey) signatureMorphismsAsSourceL
-    , GraphQLResultSignature.signatureMorphismsTarget = map (IdReference . fromIntegral . fromSqlKey . entityKey) signatureMorphismsAsTargetL
-    , GraphQLResultSignature.symbols = map symbolToResultUncurried symbolsWithFileRanges
+    , GraphQLResultSignature.oms =
+        map (LocIdReference . locIdBaseLocId . entityVal) omsL
+    , GraphQLResultSignature.signatureMorphismsSource =
+        map (IdReference . fromIntegral . fromSqlKey . entityKey)
+        signatureMorphismsAsSourceL
+    , GraphQLResultSignature.signatureMorphismsTarget =
+        map (IdReference . fromIntegral . fromSqlKey . entityKey)
+        signatureMorphismsAsTargetL
+    , GraphQLResultSignature.symbols =
+        map symbolToResultUncurried symbolsWithFileRanges
     }
 
 signatureMorphismToResult :: Entity DatabaseSchema.SignatureMorphism
@@ -357,12 +406,15 @@ signatureMorphismToResult :: Entity DatabaseSchema.SignatureMorphism
 signatureMorphismToResult (Entity signatureMorphismKey _) signatureSource
   signatureTarget logicMappingResult mappingResults symbolMappingResults =
   GraphQLResultSignatureMorphism.SignatureMorphism
-    { GraphQLResultSignatureMorphism.id = fromIntegral $ fromSqlKey signatureMorphismKey
+    { GraphQLResultSignatureMorphism.id =
+        fromIntegral $ fromSqlKey signatureMorphismKey
     , GraphQLResultSignatureMorphism.logicMapping = logicMappingResult
     , GraphQLResultSignatureMorphism.mappings = mappingResults
-    , GraphQLResultSignatureMorphism.source = IdReference $ fromIntegral $ fromSqlKey $ entityKey signatureSource
+    , GraphQLResultSignatureMorphism.source =
+        IdReference $ fromIntegral $ fromSqlKey $ entityKey signatureSource
     , GraphQLResultSignatureMorphism.symbolMappings = symbolMappingResults
-    , GraphQLResultSignatureMorphism.target = IdReference $ fromIntegral $ fromSqlKey $ entityKey signatureTarget
+    , GraphQLResultSignatureMorphism.target =
+        IdReference $ fromIntegral $ fromSqlKey $ entityKey signatureTarget
     }
 
 symbolToResult :: Entity DatabaseSchema.LocIdBase
@@ -397,8 +449,10 @@ symbolMappingToResult :: ( Entity DatabaseSchema.LocIdBase
                       -> GraphQLResultSymbolMapping.SymbolMapping
 symbolMappingToResult sourceSymbolData targetSymbolData =
   GraphQLResultSymbolMapping.SymbolMapping
-    { GraphQLResultSymbolMapping.source = symbolToResultUncurried sourceSymbolData
-    , GraphQLResultSymbolMapping.target = symbolToResultUncurried targetSymbolData
+    { GraphQLResultSymbolMapping.source =
+        symbolToResultUncurried sourceSymbolData
+    , GraphQLResultSymbolMapping.target =
+        symbolToResultUncurried targetSymbolData
     }
 
 uncurry3 :: (a -> b -> c -> d) -> (a, b, c) -> d

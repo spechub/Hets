@@ -33,19 +33,25 @@ resolveDB locIdVar = do
   case dgraphL of
     [] -> return Nothing
     (documentEntity, locIdBaseEntity@(Entity documentKey _)) : _ -> do
-      documentLinksSourceResults <- resolveDocumentLinks documentKey DocumentLinkSourceId
-      documentLinksTargetResults <- resolveDocumentLinks documentKey DocumentLinkTargetId
+      documentLinksSourceResults <-
+        resolveDocumentLinks documentKey DocumentLinkSourceId
+      documentLinksTargetResults <-
+        resolveDocumentLinks documentKey DocumentLinkTargetId
       omsResults <- resolveOMS documentKey
       case locIdBaseKind $ entityVal locIdBaseEntity of
         DatabaseSchemaEnums.Library ->
-          return $ Just $ GraphQLResult.DGraphResult $ GraphQLResultDGraph.DGLibrary $
-            libraryToResult documentEntity locIdBaseEntity documentLinksSourceResults documentLinksTargetResults omsResults
+          return $ Just $ GraphQLResult.DGraphResult $
+            GraphQLResultDGraph.DGLibrary $
+              libraryToResult documentEntity locIdBaseEntity
+              documentLinksSourceResults documentLinksTargetResults omsResults
         DatabaseSchemaEnums.NativeDocument -> do
           omsResult <- case omsResults of
             [] -> fail ("No OMS found for document " ++ locIdVar)
             oms : _ -> return oms
-          return $ Just $ GraphQLResult.DGraphResult $ GraphQLResultDGraph.DGNativeDocument $
-            nativeDocumentToResult documentEntity locIdBaseEntity documentLinksSourceResults documentLinksTargetResults omsResult
+          return $ Just $ GraphQLResult.DGraphResult $
+            GraphQLResultDGraph.DGNativeDocument $
+              nativeDocumentToResult documentEntity locIdBaseEntity
+              documentLinksSourceResults documentLinksTargetResults omsResult
         _ -> fail ("Bad kind of document in database at locId " ++ locIdVar)
 
 resolveDocumentLinks :: MonadIO m
@@ -67,7 +73,8 @@ resolveOMS :: MonadIO m
            -> DBMonad m [GraphQLResultOMSSimple.OMSSimple]
 resolveOMS documentKey = do
   omsL <-
-    select $ from $ \ (oms `InnerJoin` loc_id_basesDocument `InnerJoin` loc_id_bases) -> do
+    select $ from $ \ (oms `InnerJoin` loc_id_basesDocument
+                           `InnerJoin` loc_id_bases) -> do
       on (loc_id_bases ^. LocIdBaseId ==. coerceId (oms ^. OMSId))
       on (loc_id_basesDocument ^. LocIdBaseId ==. oms ^. OMSDocumentId)
       where_ (loc_id_basesDocument ^. LocIdBaseId ==. val documentKey)
