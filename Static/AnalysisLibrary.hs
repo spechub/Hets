@@ -97,6 +97,7 @@ anaSource mln lg opts topLns libenv initDG origName = ResultT $ do
         s -> Just $ simpleIdToIRI $ mkSimpleId s
       lgraph = setSyntax syn $ setCurLogic (defLogic opts) lg
   fname' <- getContentAndFileType opts fname
+  dir <- getCurrentDirectory
   case fname' of
     Left err -> return $ fail err
     Right (mr, _, file, inputLit) ->
@@ -112,11 +113,13 @@ anaSource mln lg opts topLns libenv initDG origName = ResultT $ do
                 Just $ emptyLibName libStr
               _ -> mln
         fn2 = keepOrigClifName opts origName file
+        fnAbs = if isAbsolute fn2 then fn2 else dir++fn2
+        url = if checkUri fnAbs then fnAbs else "file://" ++ fnAbs
         in
         if runMMT opts then mmtRes fname else
             if takeExtension file /= ('.' : show TwelfIn)
             then runResultT $
-                 anaString nLn lgraph opts topLns libenv initDG input fn2 mr
+                 anaString nLn lgraph opts topLns libenv initDG input url mr
             else do
               res <- anaTwelfFile opts file
               return $ case res of
