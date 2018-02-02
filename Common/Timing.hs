@@ -40,6 +40,14 @@ getHetsTime = liftM HetsTime
   getCurrentTime
 #endif
 
+measureWallTime :: IO a -> IO (a, TimeOfDay)
+measureWallTime f = do
+  startTime <- getHetsTime
+  result <- f
+  endTime <- getHetsTime
+  let wallTimeUsed = diffHetsTime endTime startTime
+  return (result, wallTimeUsed)
+
 diffHetsTime :: HetsTime -> HetsTime -> TimeOfDay
 diffHetsTime (HetsTime t1) (HetsTime t2) =
    timeToTimeOfDay $ secondsToDiffTime $ round

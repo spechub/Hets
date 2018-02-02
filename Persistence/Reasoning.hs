@@ -28,6 +28,7 @@ import qualified Persistence.Schema.ReasoningStatusOnReasoningAttemptType as Rea
 import qualified Persistence.Schema.ReasoningStatusOnConjectureType as ReasoningStatusOnConjectureType
 import Persistence.Utils
 
+import Persistence.Reasoning.PremiseSelectionSInE as SInE
 import PGIP.ReasoningParameters as ReasoningParameters
 
 import Driver.Options
@@ -86,6 +87,12 @@ createReasonerConfiguration reasoningParameters = do
     }
 
 preprocessReasoning :: HetcatsOpts
+                    -> LibEnv
+                    -> LibName
+                    -> DGraph
+                    -> (Int, DGNodeLab)
+                    -> G_theory
+                    -> G_sublogics
                     -> String
                     -> String
                     -> String
@@ -94,7 +101,7 @@ preprocessReasoning :: HetcatsOpts
                     -> G_prover
                     -> AnyComorphism
                     -> IO (Maybe [String], Maybe ReasoningAttemptId)
-preprocessReasoning opts location nodeName goalName reasoningParametersM reasonerConfigurationKeyM prover comorphism = trace ("preprocessReasoning.reasonerConfigurationKeyM: " ++ show reasonerConfigurationKeyM) $
+preprocessReasoning opts libEnv libName dGraph nodeLabel gTheory gSublogics location nodeName goalName reasoningParametersM reasonerConfigurationKeyM prover comorphism = trace ("preprocessReasoning.reasonerConfigurationKeyM: " ++ show reasonerConfigurationKeyM) $
   case reasoningParametersM of
     Nothing -> return (Nothing, Nothing)
     Just reasoningParameters ->
@@ -104,28 +111,46 @@ preprocessReasoning opts location nodeName goalName reasoningParametersM reasone
           let premiseSelectionKindV = case map toLower $ kind premiseSelectionParameters of
                 "sine" -> Enums.SinePremiseSelection
                 _ -> Enums.ManualPremiseSelection
-          premisesAndTimeTakenM <-
-            performPremiseSelection opts premiseSelectionParameters premiseSelectionKindV
-          let premisesM = fmap fst premisesAndTimeTakenM
+          (premisesM, timeTaken, premiseSelectionResult) <-
+            performPremiseSelection opts libEnv libName dGraph nodeLabel gTheory
+              gSublogics goalName premiseSelectionParameters premiseSelectionKindV
           case reasonerConfigurationKeyM of
               Nothing -> return (premisesM, Nothing)
               Just reasonerConfigurationKey -> onDatabase (databaseConfig opts) $ do
                 (reasoningAttemptEntity@(Entity reasoningAttemptKey _), omsEntity) <-
-                  createProofAttempt opts location nodeName goalName reasonerConfigurationKey prover comorphism
-                createPremiseSelection opts location nodeName goalName reasoningAttemptEntity premiseSelectionParameters premiseSelectionKindV premisesAndTimeTakenM omsEntity
+                  createProofAttempt opts location nodeName goalName
+                    reasonerConfigurationKey prover comorphism
+                createPremiseSelection opts location nodeName goalName
+                  reasoningAttemptEntity premiseSelectionParameters
+                  premiseSelectionKindV premisesAndTimeTakenM
+                  premiseSelectionResult omsEntity
                 trace ("preprocessReasoning.premisesM: " ++ show premisesM) $ return (premisesM, Just reasoningAttemptKey)
                 trace ("preprocessReasoning.reasoningAttemptKey: " ++ show reasoningAttemptKey) $ return (premisesM, Just reasoningAttemptKey)
                 return (premisesM, Just reasoningAttemptKey)
 
+data PremiseSelectionResultForDatabase = NoResult
+                                       | SineResult SInE.SInEResult
+
 performPremiseSelection :: HetcatsOpts
+                        -> LibEnv
+                        -> LibName
+                        -> DGraph
+                        -> (Int, DGNodeLab)
+                        -> G_theory
+                        -> G_sublogics
+                        -> String
                         -> ReasoningParameters.PremiseSelection
                         -> Enums.PremiseSelectionKindType
-                        -> IO (Maybe ([String], Int))
-performPremiseSelection opts premiseSelectionParameters premiseSelectionKindV =
+                        -> IO (Maybe [String], Int, PremiseSelectionResultForDatabase)
+performPremiseSelection opts libEnv libName dGraph nodeLabel gTheory gSublogics goalName premiseSelectionParameters premiseSelectionKindV =
   case premiseSelectionKindV of
     Enums.ManualPremiseSelection ->
-      return $ fmap (\ premises -> (premises, 0)) $ manualPremises premiseSelectionParameters
-    _ -> return Nothing
+      return (manualPremises premiseSelectionParameters, 0, NoResult)
+    Enums.SinePremiseSelection -> do
+      (premisesM, timeTaken, sineResult) <-
+        SInE.perform opts libEnv libName dGraph nodeLabel gTheory gSublogics
+          goalName premiseSelectionParameters
+      return (premisesM, timeTaken, SineResult sineResult)
 
 createProofAttempt :: MonadIO m
                    => HetcatsOpts
@@ -196,9 +221,13 @@ createPremiseSelection :: MonadIO m
                        -> ReasoningParameters.PremiseSelection
                        -> Enums.PremiseSelectionKindType
                        -> Maybe ([String], Int)
+                       -> PremiseSelectionResultForDatabase
                        -> Entity LocIdBase
                        -> DBMonad m ()
-createPremiseSelection opts location nodeName goalName (Entity reasoningAttemptKey reasoningAttemptValue) premiseSelectionParameters premiseSelectionKindV premisesAndTimeTakenM omsEntity = do
+createPremiseSelection opts location nodeName goalName
+  (Entity reasoningAttemptKey reasoningAttemptValue)
+  premiseSelectionParameters premiseSelectionKindV
+  premisesAndTimeTakenM premiseSelectionResult omsEntity = do
   let (premises, timeTaken) = fromMaybe ([], 0) premisesAndTimeTakenM
   let proofAttemptKey = toSqlKey $ fromSqlKey reasoningAttemptKey
   let premiseSelectionValue = DatabaseSchema.PremiseSelection
@@ -236,7 +265,7 @@ createPremiseSelection opts location nodeName goalName (Entity reasoningAttemptK
         insertEntityMany [Entity (toSqlKey $ fromSqlKey premiseSelectionKey) DatabaseSchema.SinePremiseSelection
           { sinePremiseSelectionDepthLimit = sineDepthLimit premiseSelectionParameters
           , sinePremiseSelectionTolerance = sineTolerance premiseSelectionParameters
-          , sinePremiseSelectionAxiomNumberLimit = sineAxiomNumberLimit premiseSelectionParameters
+          , sinePremiseSelectionAxiomNumberLimit = sinePremiseNumberLimit premiseSelectionParameters
           }]
 
 postprocessReasoning :: HetcatsOpts

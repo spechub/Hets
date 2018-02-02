@@ -1415,6 +1415,12 @@ setupProof opts format location reasoningParametersM = do
   liftR $ return result
 
 preprocessProof :: HetcatsOpts
+                -> LibEnv
+                -> LibName
+                -> DGraph
+                -> (Int, DGNodeLab)
+                -> G_theory
+                -> G_sublogics
                 -> String
                 -> String
                 -> String
@@ -1422,9 +1428,9 @@ preprocessProof :: HetcatsOpts
                 -> Maybe DatabaseSchema.ReasonerConfigurationId
                 -> (G_prover, AnyComorphism)
                 -> ResultT IO (Maybe [String], Maybe DatabaseSchema.ReasoningAttemptId)
-preprocessProof opts location nodeName goalName reasoningParametersM reasonerConfigurationKeyM (prover, comorphism) = do
+preprocessProof opts libEnv libName dGraph nodeLabel gTheory gSublogics location nodeName goalName reasoningParametersM reasonerConfigurationKeyM (prover, comorphism) = do
   result <- liftIO $
-    Persistence.Reasoning.preprocessReasoning opts location nodeName goalName reasoningParametersM reasonerConfigurationKeyM prover comorphism
+    Persistence.Reasoning.preprocessReasoning opts libEnv libName dGraph nodeLabel gTheory gSublogics location nodeName goalName reasoningParametersM reasonerConfigurationKeyM prover comorphism
   liftR $ return result
 
 postprocessProof :: HetcatsOpts
@@ -1939,7 +1945,7 @@ proveNode opts le ln dg nl gTh subL useTh mp mt tl thms axioms location reasonin
         preprocessingResults <-
           foldM (\ acc goalName -> do
                   (premisesM, reasoningAttemptKeyM) <-
-                    preprocessProof opts location nodeName goalName reasoningParametersM reasonerConfigurationKeyM cp
+                    preprocessProof opts le ln dg nl gTh subL location nodeName goalName reasoningParametersM reasonerConfigurationKeyM cp
                   return ((goalName , premisesM , reasoningAttemptKeyM) : acc)
                 ) [] selectedGoals
         foldM (\ (nThAcc, sensAcc, proofStatusesAcc) (goalName, premisesM, reasoningAttemptKeyM) -> do

@@ -24,7 +24,7 @@ data PremiseSelection = PremiseSelection { kind :: String
                                          , manualPremises :: Maybe [String]
                                          , sineDepthLimit :: Maybe Int
                                          , sineTolerance :: Maybe Double
-                                         , sineAxiomNumberLimit :: Maybe Int
+                                         , sinePremiseNumberLimit :: Maybe Int
                                          }
                         deriving (Show, Generic)
 instance FromJSON PremiseSelection
