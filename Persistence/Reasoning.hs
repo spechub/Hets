@@ -28,14 +28,18 @@ import qualified Persistence.Schema.ReasoningStatusOnReasoningAttemptType as Rea
 import qualified Persistence.Schema.ReasoningStatusOnConjectureType as ReasoningStatusOnConjectureType
 import Persistence.Utils
 
-import Persistence.Reasoning.PremiseSelectionSInE as SInE
+-- import Persistence.Reasoning.PremiseSelectionSInE as SInE
 import PGIP.ReasoningParameters as ReasoningParameters
 
+import Common.LibName
 import Driver.Options
 import Interfaces.GenericATPState (tsTimeLimit, tsExtraOpts)
 import Logic.Comorphism (AnyComorphism)
+import Logic.Grothendieck
 import qualified Logic.Prover as LP
 import Proofs.AbstractState (G_proof_tree, G_prover (..), ProverOrConsChecker (..), getProverName, getCcName)
+import Static.DevGraph
+import Static.GTheory
 
 import Control.Exception (catch)
 import Control.Exception.Base (SomeException)
@@ -111,7 +115,7 @@ preprocessReasoning opts libEnv libName dGraph nodeLabel gTheory gSublogics loca
           let premiseSelectionKindV = case map toLower $ kind premiseSelectionParameters of
                 "sine" -> Enums.SinePremiseSelection
                 _ -> Enums.ManualPremiseSelection
-          (premisesM, timeTaken, premiseSelectionResult) <-
+          premiseSelectionResultData@(premisesM, _, _) <-
             performPremiseSelection opts libEnv libName dGraph nodeLabel gTheory
               gSublogics goalName premiseSelectionParameters premiseSelectionKindV
           case reasonerConfigurationKeyM of
@@ -122,14 +126,13 @@ preprocessReasoning opts libEnv libName dGraph nodeLabel gTheory gSublogics loca
                     reasonerConfigurationKey prover comorphism
                 createPremiseSelection opts location nodeName goalName
                   reasoningAttemptEntity premiseSelectionParameters
-                  premiseSelectionKindV premisesAndTimeTakenM
-                  premiseSelectionResult omsEntity
+                  premiseSelectionKindV premiseSelectionResultData omsEntity
                 trace ("preprocessReasoning.premisesM: " ++ show premisesM) $ return (premisesM, Just reasoningAttemptKey)
                 trace ("preprocessReasoning.reasoningAttemptKey: " ++ show reasoningAttemptKey) $ return (premisesM, Just reasoningAttemptKey)
                 return (premisesM, Just reasoningAttemptKey)
 
 data PremiseSelectionResultForDatabase = NoResult
-                                       | SineResult SInE.SInEResult
+                                       -- | SineResult SInE.SInEResult
 
 performPremiseSelection :: HetcatsOpts
                         -> LibEnv
@@ -147,10 +150,11 @@ performPremiseSelection opts libEnv libName dGraph nodeLabel gTheory gSublogics 
     Enums.ManualPremiseSelection ->
       return (manualPremises premiseSelectionParameters, 0, NoResult)
     Enums.SinePremiseSelection -> do
-      (premisesM, timeTaken, sineResult) <-
-        SInE.perform opts libEnv libName dGraph nodeLabel gTheory gSublogics
-          goalName premiseSelectionParameters
-      return (premisesM, timeTaken, SineResult sineResult)
+      -- (premisesM, timeTaken, sineResult) <-
+      --   SInE.perform opts libEnv libName dGraph nodeLabel gTheory gSublogics
+      --     goalName premiseSelectionParameters
+      -- return (premisesM, timeTaken, SineResult sineResult)
+      undefined
 
 createProofAttempt :: MonadIO m
                    => HetcatsOpts
@@ -165,7 +169,7 @@ createProofAttempt opts location nodeName goalName reasonerConfigurationKey prov
   documentEntity <- findDocument opts location
   omsEntity <- findOMS documentEntity nodeName
   (Entity reasonerKey _) <- findReasonerByGProver prover
-  logicTranslationEntityM <- findOrCreateLogicTranslation comorphism
+  logicTranslationEntityM <- findOrCreateLogicTranslation opts comorphism
   conjectureKeyOrError <- liftIO $ Control.Exception.catch
     (do
       Entity conjectureKey _ <- onDatabase (databaseConfig opts) $
@@ -196,7 +200,8 @@ createProofAttempt opts location nodeName goalName reasonerConfigurationKey prov
                              (fmap entityKey logicTranslationEntityM)
       fail message
   where
-    insertReasoningAttempt evaluationState messageM reasoningStatus reasonerKey logicTranslationKey = do
+    insertReasoningAttempt evaluationState messageM reasoningStatus reasonerKey
+      logicTranslationKey = do
       actionKey <- insert Action
         { actionEvaluationState = evaluationState
         , actionMessage = messageM
@@ -205,7 +210,7 @@ createProofAttempt opts location nodeName goalName reasonerConfigurationKey prov
             { reasoningAttemptActionId = actionKey
             , reasoningAttemptReasonerConfigurationId = reasonerConfigurationKey
             , reasoningAttemptUsedReasonerId = reasonerKey
-            , reasoningAttemptUsedLogicTranslationId = logicMappingKey
+            , reasoningAttemptUsedLogicTranslationId = logicTranslationKey
             , reasoningAttemptTimeTaken = Nothing
             , reasoningAttemptReasoningStatus = reasoningStatus
             }
@@ -220,15 +225,14 @@ createPremiseSelection :: MonadIO m
                        -> Entity ReasoningAttempt
                        -> ReasoningParameters.PremiseSelection
                        -> Enums.PremiseSelectionKindType
-                       -> Maybe ([String], Int)
-                       -> PremiseSelectionResultForDatabase
+                       -> (Maybe [String], Int, PremiseSelectionResultForDatabase)
                        -> Entity LocIdBase
                        -> DBMonad m ()
 createPremiseSelection opts location nodeName goalName
   (Entity reasoningAttemptKey reasoningAttemptValue)
   premiseSelectionParameters premiseSelectionKindV
-  premisesAndTimeTakenM premiseSelectionResult omsEntity = do
-  let (premises, timeTaken) = fromMaybe ([], 0) premisesAndTimeTakenM
+  (premisesM, timeTaken, premiseSelectionResult) omsEntity = do
+  let premises = fromMaybe [] premisesM
   let proofAttemptKey = toSqlKey $ fromSqlKey reasoningAttemptKey
   let premiseSelectionValue = DatabaseSchema.PremiseSelection
         { premiseSelectionReasonerConfigurationId = reasoningAttemptReasonerConfigurationId reasoningAttemptValue
@@ -295,21 +299,21 @@ postprocessReasoning opts
            ]
     return ()
 
-exportReasoningResults :: HetcatsOpts -> String -> [(String, [ProofResult])]
-                       -> Maybe ReasonerConfigurationId -> IO LocIdBaseId
-exportReasoningResults opts location nodesAndProofResults reasonerConfigurationKeyM =
-  onDatabase (databaseConfig opts) $ do
-    reasonerConfigurationKey <- liftIO $ getReasonerConfigurationKey reasonerConfigurationKeyM
-    documentEntity <- findDocument opts location
-    trace ("found document: " ++ show (fromIntegral $ fromSqlKey $ entityKey documentEntity)) $ return ()
-    mapM_ (exportNodeReslults opts documentEntity reasonerConfigurationKey) nodesAndProofResults
-    return $ entityKey documentEntity
+-- exportReasoningResults :: HetcatsOpts -> String -> [(String, [ProofResult])]
+--                        -> Maybe ReasonerConfigurationId -> IO LocIdBaseId
+-- exportReasoningResults opts location nodesAndProofResults reasonerConfigurationKeyM =
+--   onDatabase (databaseConfig opts) $ do
+--     reasonerConfigurationKey <- liftIO $ getReasonerConfigurationKey reasonerConfigurationKeyM
+--     documentEntity <- findDocument opts location
+--     trace ("found document: " ++ show (fromIntegral $ fromSqlKey $ entityKey documentEntity)) $ return ()
+--     mapM_ (exportNodeReslults opts documentEntity reasonerConfigurationKey) nodesAndProofResults
+--     return $ entityKey documentEntity
 
-getReasonerConfigurationKey :: Maybe ReasonerConfigurationId -> IO ReasonerConfigurationId
-getReasonerConfigurationKey reasonerConfigurationKeyM =
-  case reasonerConfigurationKeyM of
-    Nothing -> fail "Persistence.Reasoning.exportReasoningResults: No reasonerConfigurationKey supplied"
-    Just reasonerConfigurationKey -> return reasonerConfigurationKey
+-- getReasonerConfigurationKey :: Maybe ReasonerConfigurationId -> IO ReasonerConfigurationId
+-- getReasonerConfigurationKey reasonerConfigurationKeyM =
+--   case reasonerConfigurationKeyM of
+--     Nothing -> fail "Persistence.Reasoning.exportReasoningResults: No reasonerConfigurationKey supplied"
+--     Just reasonerConfigurationKey -> return reasonerConfigurationKey
 
 findDocument :: MonadIO m
              => HetcatsOpts -> String -> DBMonad m (Entity LocIdBase)
@@ -353,59 +357,59 @@ findPremise omsEntity name = do
                           , Enums.Axiom
                           ] locId
 
-exportNodeReslults :: MonadIO m
-                   => HetcatsOpts
-                   -> Entity LocIdBase
-                   -> ReasonerConfigurationId
-                   -> (String, [ProofResult])
-                   -> DBMonad m ()
-exportNodeReslults opts documentEntity reasonerConfigurationKey (nodeName, proofResults) = do
-  omsEntity <- findOMS documentEntity nodeName
-  trace ("found oms: " ++ show (fromIntegral $ fromSqlKey $ entityKey omsEntity)) $ return ()
-  mapM_ (exportGoalResult opts documentEntity omsEntity reasonerConfigurationKey) proofResults
-  return ()
+-- exportNodeReslults :: MonadIO m
+--                    => HetcatsOpts
+--                    -> Entity LocIdBase
+--                    -> ReasonerConfigurationId
+--                    -> (String, [ProofResult])
+--                    -> DBMonad m ()
+-- exportNodeReslults opts documentEntity reasonerConfigurationKey (nodeName, proofResults) = do
+--   omsEntity <- findOMS documentEntity nodeName
+--   trace ("found oms: " ++ show (fromIntegral $ fromSqlKey $ entityKey omsEntity)) $ return ()
+--   mapM_ (exportGoalResult opts documentEntity omsEntity reasonerConfigurationKey) proofResults
+--   return ()
 
-exportGoalResult :: MonadIO m
-                 => HetcatsOpts
-                 -> Entity LocIdBase
-                 -> Entity LocIdBase
-                 -> ReasonerConfigurationId
-                 -> ProofResult
-                 -> DBMonad m ()
-exportGoalResult opts documentEntity omsEntity reasonerConfigurationKey
-  (goalName, goalResult, goalDetails, proverOrConsChecker, comorphism, proofStatusM) = do
-  conjectureEntity <- findConjecture omsEntity goalName
-  trace ("found conjecture: " ++ show (fromIntegral $ fromSqlKey $ entityKey omsEntity)) $ return ()
-  -- Should always be "Just" at this point
-  when (isJust proofStatusM) $ do
-    let proofStatus = fromJust proofStatusM
-    reasonerKey <- findOrCreateProverOrConsChecker proverOrConsChecker
-    (_, logicMappingKey) <- findOrCreateLanguageMappingAndLogicMapping opts comorphism
-    actionKey <- insert Action
-      { actionEvaluationState = EvaluationStateType.FinishedSuccessfully
-      , actionMessage = Nothing
-      }
-    reasoningAttemptKey <- insert ReasoningAttempt
-      { reasoningAttemptActionId = actionKey
-      , reasoningAttemptReasonerConfigurationId = reasonerConfigurationKey
-      , reasoningAttemptUsedReasonerId = Just reasonerKey
-      , reasoningAttemptUsedLogicMappingId = Just logicMappingKey
-      , reasoningAttemptTimeTaken = Just $ convertTime $ LP.usedTime proofStatus
-      , reasoningAttemptReasoningStatus = convertGoalResult goalResult
-      }
-    let proofAttempt = ProofAttempt
-          { proofAttemptConjectureId = Just $ toSqlKey $ fromSqlKey $ entityKey conjectureEntity }
-    insertEntityMany [Entity (toSqlKey $ fromSqlKey reasoningAttemptKey) proofAttempt]
-    createGeneratedAxioms reasoningAttemptKey proofStatus
-    createReasonerOutput reasoningAttemptKey reasonerKey proofStatus
-    return ()
-  return ()
+-- exportGoalResult :: MonadIO m
+--                  => HetcatsOpts
+--                  -> Entity LocIdBase
+--                  -> Entity LocIdBase
+--                  -> ReasonerConfigurationId
+--                  -> ProofResult
+--                  -> DBMonad m ()
+-- exportGoalResult opts documentEntity omsEntity reasonerConfigurationKey
+--   (goalName, goalResult, goalDetails, proverOrConsChecker, comorphism, proofStatusM) = do
+--   conjectureEntity <- findConjecture omsEntity goalName
+--   trace ("found conjecture: " ++ show (fromIntegral $ fromSqlKey $ entityKey omsEntity)) $ return ()
+--   -- Should always be "Just" at this point
+--   when (isJust proofStatusM) $ do
+--     let proofStatus = fromJust proofStatusM
+--     reasonerKey <- findOrCreateProverOrConsChecker proverOrConsChecker
+--     (_, logicMappingKey) <- findOrCreateLanguageMappingAndLogicMapping opts comorphism
+--     actionKey <- insert Action
+--       { actionEvaluationState = EvaluationStateType.FinishedSuccessfully
+--       , actionMessage = Nothing
+--       }
+--     reasoningAttemptKey <- insert ReasoningAttempt
+--       { reasoningAttemptActionId = actionKey
+--       , reasoningAttemptReasonerConfigurationId = reasonerConfigurationKey
+--       , reasoningAttemptUsedReasonerId = Just reasonerKey
+--       , reasoningAttemptUsedLogicTranslationId = Just logicTranslationKey
+--       , reasoningAttemptTimeTaken = Just $ convertTime $ LP.usedTime proofStatus
+--       , reasoningAttemptReasoningStatus = convertGoalResult goalResult
+--       }
+--     let proofAttempt = ProofAttempt
+--           { proofAttemptConjectureId = Just $ toSqlKey $ fromSqlKey $ entityKey conjectureEntity }
+--     insertEntityMany [Entity (toSqlKey $ fromSqlKey reasoningAttemptKey) proofAttempt]
+--     createGeneratedAxioms reasoningAttemptKey proofStatus
+--     createReasonerOutput reasoningAttemptKey reasonerKey proofStatus
+--     return ()
+--   return ()
 
-findOrCreateProverOrConsChecker :: MonadIO m
-                                => ProverOrConsChecker -> DBMonad m ReasonerId
-findOrCreateProverOrConsChecker proverOrConsChecker = case proverOrConsChecker of
-  Prover gProver -> findOrCreateProver gProver
-  ConsChecker gConsistencyChecker -> findOrCreateConsistencyChecker gConsistencyChecker
+-- findOrCreateProverOrConsChecker :: MonadIO m
+--                                 => ProverOrConsChecker -> DBMonad m ReasonerId
+-- findOrCreateProverOrConsChecker proverOrConsChecker = case proverOrConsChecker of
+--   Prover gProver -> findOrCreateProver gProver
+--   ConsChecker gConsistencyChecker -> findOrCreateConsistencyChecker gConsistencyChecker
 
 createGeneratedAxioms :: MonadIO m
                       => ReasoningAttemptId

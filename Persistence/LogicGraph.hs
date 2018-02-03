@@ -219,31 +219,6 @@ findLogicMappingByComorphism comorphism@(Comorphism.Comorphism cid) =
       [] -> fail ("Persistence.LogicGraph.findLogicMappingByComorphism: Could not find LogicMapping " ++ logicMappingSlugS)
       logicMappingEntity : _ -> return $ Just logicMappingEntity
 
-findOrCreateLogicTranslation :: MonadIO m
-                        => HetcatsOpts
-                        -> AnyComorphism
-                        -> DBMonad m (Maybe (Entity LogicTranslation))
-findOrCreateLogicTranslation opts comorphism@(Comorphism.Comorphism cid) =
-  undefined
-  -- if isIdComorphism comorphism
-  -- then return Nothing
-  -- else do
-  --   let logicTranslationSlugS = slugOfTranslation comorphism
-  --   translationL <- select $ from $ \ translations -> do
-  --     where_ (translations ^. LogicTranslationSlug ==. val logicTranslationSlugS)
-  --     return translations
-  --   case translationL of
-  --     translationEntity : _ -> return $ Just translationEntity
-  --     [] -> do
-  --       let logicTranslationValue =
-  --             LogicTranslation { logicTranslationSlug = logicTranslationSlugS }
-  --       logicTranslationKey <- insert logicTranslationValue
-  --       mapM_ (\ (number, Comorphism.Comorphism cid) ->
-  --               createLogicTranslationStep opts logicTranslationKey (number, cid)
-  --             ) $ zip [1..] $ flattenComposition cid
-  --       return $ Just $ Entity logicTranslationKey logicTranslationValue
-
-
 sublogicNameForDB :: Logic.Logic lid sublogics basic_spec sentence symb_items
                        symb_map_items sign morphism symbol raw_symbol proof_tree
                   => lid -> sublogics -> String
@@ -309,23 +284,47 @@ findReasonerByGProver gProver = do
     Just reasonerEntity -> return reasonerEntity
 
 
--- class Comorphism cid
---                 lid1 sublogics1 basic_spec1 sentence1
---                 symb_items1 symb_map_items1
---                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1
---                 lid2 sublogics2 basic_spec2 sentence2
---                 symb_items2 symb_map_items2
---                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2 =>
---   FlattenComposition cid  lid1 sublogics1 basic_spec1 sentence1
---             symb_items1 symb_map_items1
---             sign1 morphism1 symbol1 raw_symbol1 proof_tree1
---             lid2 sublogics2 basic_spec2 sentence2
---             symb_items2 symb_map_items2
---             sign2 morphism2 symbol2 raw_symbol2 proof_tree2
---   where
---     flattenComposition :: cid -> [AnyComorphism]
---     flattenComposition cid = undefined
---       -- [Comorphism.Comorphism cid]
+findOrCreateLogicTranslation :: MonadIO m
+                             => HetcatsOpts
+                             -> AnyComorphism
+                             -> DBMonad m (Maybe (Entity LogicTranslation))
+findOrCreateLogicTranslation opts comorphism@(Comorphism.Comorphism cid) =
+  if isIdComorphism comorphism
+  then return Nothing
+  else do
+    let logicTranslationSlugS = slugOfTranslation comorphism
+    translationL <- select $ from $ \ translations -> do
+      where_ (translations ^. LogicTranslationSlug ==. val logicTranslationSlugS)
+      return translations
+    case translationL of
+      translationEntity : _ -> return $ Just translationEntity
+      [] -> do
+        let logicTranslationValue =
+              LogicTranslation { logicTranslationSlug = logicTranslationSlugS }
+        logicTranslationKey <- insert logicTranslationValue
+        mapM_ (\ (number, Comorphism.Comorphism cid') ->
+                createLogicTranslationStep opts logicTranslationKey (number, cid')
+              ) $ zip [1..] $ flattenComposition cid
+        return $ Just $ Entity logicTranslationKey logicTranslationValue
+
+createLogicTranslationStep = undefined
+
+class Comorphism cid lid1 sublogics1
+                 basic_spec1 sentence1 symb_items1 symb_map_items1
+                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1
+                 lid2 sublogics2
+                 basic_spec2 sentence2 symb_items2 symb_map_items2
+                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2 =>
+  FlattenComposition cid  lid1 sublogics1 basic_spec1 sentence1
+                     symb_items1 symb_map_items1
+                     sign1 morphism1 symbol1 raw_symbol1 proof_tree1
+                     lid2 sublogics2 basic_spec2 sentence2
+                     symb_items2 symb_map_items2
+                     sign2 morphism2 symbol2 raw_symbol2 proof_tree2
+  where
+    flattenComposition :: cid -> [AnyComorphism]
+    flattenComposition cid = undefined
+      -- [Comorphism.Comorphism cid]
 
 -- instance (Comorphism cid1
 --             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
