@@ -3,6 +3,7 @@ module Persistence.Utils ( firstLibdir
                          , locIdOfOMS
                          , locIdOfSentence
                          , locIdOfSymbol
+                         , symbolDetails
                          , locIdOfMapping
                          , slugOfReasoner
                          , slugOfProver
@@ -59,6 +60,20 @@ locIdOfOMS (Entity _ documentLocIdBaseValue) nodeName =
 locIdOfSentence :: Entity LocIdBase -> String -> String
 locIdOfSentence (Entity _ omsLocIdBaseValue) name =
   locIdBaseLocId omsLocIdBaseValue ++ "/sentences/" ++ name
+
+symbolDetails :: Logic.Logic lid sublogics
+                   basic_spec sentence symb_items symb_map_items
+                   sign morphism symbol raw_symbol proof_tree
+              => Entity LocIdBase
+              -> lid
+              -> symbol
+              -> (String, String, String, String)
+symbolDetails omsEntity lid symbol =
+  let name = show $ sym_name lid symbol
+      fullName = fullSymName lid symbol
+      symbolKind' = symKind lid symbol
+      symbolKind = if null symbolKind' then "symbol" else symbolKind'
+  in  (locIdOfSymbol omsEntity symbolKind name, name, fullName, symbolKind)
 
 locIdOfSymbol :: Entity LocIdBase -> String -> String -> String
 locIdOfSymbol (Entity _ omsLocIdBaseValue) symbolKind' name =

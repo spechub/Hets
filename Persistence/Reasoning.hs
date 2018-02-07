@@ -28,7 +28,7 @@ import qualified Persistence.Schema.ReasoningStatusOnReasoningAttemptType as Rea
 import qualified Persistence.Schema.ReasoningStatusOnConjectureType as ReasoningStatusOnConjectureType
 import Persistence.Utils
 
--- import Persistence.Reasoning.PremiseSelectionSInE as SInE
+import Persistence.Reasoning.PremiseSelectionSInE as SInE
 import PGIP.ReasoningParameters as ReasoningParameters
 
 import Common.LibName
@@ -132,7 +132,7 @@ preprocessReasoning opts libEnv libName dGraph nodeLabel gTheory gSublogics loca
                 return (premisesM, Just reasoningAttemptKey)
 
 data PremiseSelectionResultForDatabase = NoResult
-                                       -- | SineResult SInE.SInEResult
+                                       | SineResult SInE.SInEResult
 
 performPremiseSelection :: HetcatsOpts
                         -> LibEnv
@@ -150,11 +150,10 @@ performPremiseSelection opts libEnv libName dGraph nodeLabel gTheory gSublogics 
     Enums.ManualPremiseSelection ->
       return (manualPremises premiseSelectionParameters, 0, NoResult)
     Enums.SinePremiseSelection -> do
-      -- (premisesM, timeTaken, sineResult) <-
-      --   SInE.perform opts libEnv libName dGraph nodeLabel gTheory gSublogics
-      --     goalName premiseSelectionParameters
-      -- return (premisesM, timeTaken, SineResult sineResult)
-      undefined
+      (premisesM, timeTaken, sineResult) <-
+        SInE.perform opts libEnv libName dGraph nodeLabel gTheory gSublogics
+          goalName premiseSelectionParameters
+      return (premisesM, timeTaken, SineResult sineResult)
 
 createProofAttempt :: MonadIO m
                    => HetcatsOpts
@@ -265,12 +264,16 @@ createPremiseSelection opts location nodeName goalName
     createSpecificPremiseSelection premiseSelectionKey = case premiseSelectionKindV of
       Enums.ManualPremiseSelection ->
         insertEntityMany [Entity (toSqlKey $ fromSqlKey premiseSelectionKey) DatabaseSchema.ManualPremiseSelection]
-      Enums.SinePremiseSelection ->
-        insertEntityMany [Entity (toSqlKey $ fromSqlKey premiseSelectionKey) DatabaseSchema.SinePremiseSelection
+      Enums.SinePremiseSelection -> do
+        let sinePremiseSelectionKey = toSqlKey $ fromSqlKey premiseSelectionKey
+        insertEntityMany [Entity sinePremiseSelectionKey DatabaseSchema.SinePremiseSelection
           { sinePremiseSelectionDepthLimit = sineDepthLimit premiseSelectionParameters
           , sinePremiseSelectionTolerance = sineTolerance premiseSelectionParameters
           , sinePremiseSelectionAxiomNumberLimit = sinePremiseNumberLimit premiseSelectionParameters
           }]
+        case premiseSelectionResultData of
+          SineResult sineResult -> SInE.saveToDatabase opts sineResult sinePremiseSelectionKey
+          _ -> return ()
 
 postprocessReasoning :: HetcatsOpts
                      -> ProofResult

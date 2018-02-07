@@ -308,23 +308,24 @@ findOrCreateLogicTranslation opts comorphism@(Comorphism.Comorphism cid) =
         return $ Just $ Entity logicTranslationKey logicTranslationValue
 
 createLogicTranslationStep = undefined
+flattenComposition = undefined
 
-class Comorphism cid lid1 sublogics1
-                 basic_spec1 sentence1 symb_items1 symb_map_items1
-                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1
-                 lid2 sublogics2
-                 basic_spec2 sentence2 symb_items2 symb_map_items2
-                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2 =>
-  FlattenComposition cid  lid1 sublogics1 basic_spec1 sentence1
-                     symb_items1 symb_map_items1
-                     sign1 morphism1 symbol1 raw_symbol1 proof_tree1
-                     lid2 sublogics2 basic_spec2 sentence2
-                     symb_items2 symb_map_items2
-                     sign2 morphism2 symbol2 raw_symbol2 proof_tree2
-  where
-    flattenComposition :: cid -> [AnyComorphism]
-    flattenComposition cid = undefined
-      -- [Comorphism.Comorphism cid]
+-- class Comorphism cid lid1 sublogics1
+--                  basic_spec1 sentence1 symb_items1 symb_map_items1
+--                  sign1 morphism1 symbol1 raw_symbol1 proof_tree1
+--                  lid2 sublogics2
+--                  basic_spec2 sentence2 symb_items2 symb_map_items2
+--                  sign2 morphism2 symbol2 raw_symbol2 proof_tree2 =>
+--   FlattenComposition cid  lid1 sublogics1 basic_spec1 sentence1
+--                      symb_items1 symb_map_items1
+--                      sign1 morphism1 symbol1 raw_symbol1 proof_tree1
+--                      lid2 sublogics2 basic_spec2 sentence2
+--                      symb_items2 symb_map_items2
+--                      sign2 morphism2 symbol2 raw_symbol2 proof_tree2
+--   where
+--     flattenComposition :: cid -> [AnyComorphism]
+--     flattenComposition cid = undefined
+--       -- [Comorphism.Comorphism cid]
 
 -- instance (Comorphism cid1
 --             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1

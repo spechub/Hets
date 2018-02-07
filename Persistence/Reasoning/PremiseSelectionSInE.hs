@@ -1,47 +1,68 @@
-module Persistence.Reasoning.PremiseSelectionSInE ( SInEResult (..)
+{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE GADTs                      #-}
+{-# LANGUAGE RecordWildCards #-}
+
+module Persistence.Reasoning.PremiseSelectionSInE ( G_SInEResult (..)
                                                   , SInEParameters (..)
                                                   , perform
+                                                  , saveToDatabase
                                                   ) where
 
 import PGIP.ReasoningParameters as ReasoningParameters
+
+import Persistence.Database
+import Persistence.Schema as DatabaseSchema
+import Persistence.Utils
 
 import Common.AS_Annotation
 import Common.ExtSign
 import Common.LibName
 import qualified Common.OrderedMap as OMap
-import Common.Timing (measureWallTime)
+import Common.Timing (measureWallTime, timeOfDayToSeconds)
 import Driver.Options
 import Logic.Grothendieck
-import Logic.Logic
+import Logic.Coerce
+import Logic.Logic as Logic
+import Logic.Prover (toNamed)
 import Static.DevGraph
 import Static.GTheory
 
-import Data.List
+import Control.Monad.IO.Class (MonadIO (..))
+import Data.List as List hiding (insert)
 import Data.Map (Map)
 import qualified Data.Map as Map
+import Data.Maybe
 import Data.Set (Set)
 import qualified Data.Set as Set
+import Data.Typeable
 import Data.Time.LocalTime
 import Data.Time.Clock
+import Database.Persist hiding ((==.))
+import Database.Persist.Sql hiding ((==.))
+import Database.Esqueleto hiding (insertBy)
 
-data SInEResult symbol sentence =
-  SInEResult { parameters :: SInEParameters
-             , symbolCommonnesses :: Map symbol Int
-             , premiseTriggers :: Map symbol [(Double, Named sentence)] -- this list is ordered by the Double
-             , leastCommonSymbols :: Map (Named sentence) (symbol, Int)
-             , selectedPremises :: Set (Named sentence)
-             , selectedPremiseNames :: Set String
-             } deriving Show
+data G_SInEResult =
+  forall lid sublogics
+    basic_spec sentence symb_items symb_map_items
+    sign morphism symbol raw_symbol proof_tree .
+  Logic.Logic lid sublogics
+    basic_spec sentence symb_items symb_map_items
+    sign morphism symbol raw_symbol proof_tree =>
+  G_SInEResult { gSineLogic :: lid
+               , parameters :: SInEParameters
+               , symbolCommonnesses :: Map symbol Int
+               , premiseTriggers :: Map symbol [(Double, Named sentence)] -- this list is ordered by the Double
+               , leastCommonSymbols :: Map (Named sentence) (symbol, Int)
+               , selectedPremises :: Set (Named sentence)
+               , selectedPremiseNames :: Set String
+               } deriving Typeable
 
 data SInEParameters = SInEParameters { depthLimit :: Maybe Int
                                      , tolerance :: Maybe Double
                                      , premiseNumberLimit :: Maybe Int
-                                     } deriving Show
+                                     } deriving Typeable
 
-perform :: Logic lid sublogics basic_spec sentence symb_items
-                 symb_map_items sign morphism symbol
-                 raw_symbol proof_tree
-        => HetcatsOpts
+perform :: HetcatsOpts
         -> LibEnv
         -> LibName
         -> DGraph
@@ -50,88 +71,115 @@ perform :: Logic lid sublogics basic_spec sentence symb_items
         -> G_sublogics
         -> ReasoningParameters.PremiseSelection
         -> String
-        -> IO (Maybe [String], Int, SInEResult symbol sentence)
-perform opts libEnv libName dGraph nodeLabel gTheory gSublogics
+        -> IO (Maybe [String], Int, G_SInEResult)
+perform opts libEnv libName dGraph nodeLabel gTheory@G_theory{gTheoryLogic = gTheoryLid} gSublogics
   premiseSelectionParameters goalName = do
   let parameters_ = SInEParameters
-        { depthLimit = ReasoningParameters.sineDepthLimit reasoningParameters
-        , tolerance = ReasoningParameters.sineTolerance reasoningParameters
-        , premiseNumberLimit = ReasoningParameters.sinePremiseNumberLimit reasoningParameters
+        { depthLimit = ReasoningParameters.sineDepthLimit premiseSelectionParameters
+        , tolerance = ReasoningParameters.sineTolerance premiseSelectionParameters
+        , premiseNumberLimit = ReasoningParameters.sinePremiseNumberLimit premiseSelectionParameters
         }
-  let sineResult0 = SInEResult
-        { parameters = parameters_
+  let sineResult0 = G_SInEResult
+        { gSineLogic = gTheoryLid
+        , parameters = parameters_
         , symbolCommonnesses = Map.empty
         , premiseTriggers = Map.empty
         , leastCommonSymbols = Map.empty
         , selectedPremises = Set.empty
         , selectedPremiseNames = Set.empty
         }
-  (premisesM, wallTimeOfDay) <- measureWallTime $ do
+  ((premisesM, sineResult), wallTimeOfDay) <- measureWallTime $ do
     let (sineResult1, goal) =
-          preprocess opts libEnv libName dGraph nodeLabel gTheory gSublogics
-            sineResult0 goalName
+          preprocess opts libEnv libName dGraph nodeLabel gTheoryLid
+            gTheory gSublogics sineResult0 goalName
     let sineResult2 =
-          selectPremises opts libEnv libName dGraph nodeLabel gTheory gSublogics
+          selectPremises opts libEnv libName dGraph nodeLabel gTheoryLid gTheory gSublogics
             sineResult1 goal
-    let premisesM =
-         Just $ Set.toList $ Set.map senAttr $ selectedPremises sineResult2
-    return premisesM
+    let premisesM = case sineResult2 of
+          G_SInEResult { selectedPremises = premises } ->
+            Just $ Set.toList $ Set.map senAttr premises
+    return (premisesM, sineResult2)
   return ( premisesM
-         , timeToTimeOfDay $ secondsToDiffTime $ toInteger wallTimeOfDay
+         , timeOfDayToSeconds wallTimeOfDay
+         , sineResult
          )
 
-preprocess :: Logic lid sublogics basic_spec sentence symb_items
-                    symb_map_items sign morphism symbol
-                    raw_symbol proof_tree
+preprocess :: Logic.Logic lid sublogics basic_spec sentence symb_items
+              symb_map_items sign morphism symbol
+              raw_symbol proof_tree
            => HetcatsOpts
            -> LibEnv
            -> LibName
            -> DGraph
            -> (Int, DGNodeLab)
+           -> lid
            -> G_theory
            -> G_sublogics
-           -> SInEResult symbol sentence
+           -> G_SInEResult
            -> String
-           -> (SInEResult symbol sentence, Named sentence)
-preprocess opts libEnv libName dGraph nodeLabel G_theory { gTheoryLogic = lid, gTheorySens = sentences, gTheorySign = sign } gSublogics sineResult0 goalName =
+           -> (G_SInEResult, Named sentence)
+preprocess opts libEnv libName dGraph nodeLabel sentenceLid G_theory { gTheoryLogic = gTheoryLid, gTheorySens = sentences, gTheorySign = sign } gSublogics sineResult0 goalName =
   let namedSentences = map (uncurry toNamed) $ OMap.toList sentences
-      goal = fromJust $ find ((goalName ==) . senAttr) namedSentences
-      sineResult1 = computeSymbolCommonnesses lid sign sineResult0 namedSentences
-      sineResult2 = computeLeastCommonSymbols lid sign sineResult1 namedSentences
-      sineResult3 = computePremiseTriggers lid sign sineResult1 namedSentences
+      goal' = fromJust $ find ((goalName ==) . senAttr) namedSentences
+      [goal] = coerce "preprocess" gTheoryLid sentenceLid [goal']
+      sineResult1 = computeSymbolCommonnesses gTheoryLid sign sineResult0 namedSentences
+      sineResult2 = computeLeastCommonSymbols gTheoryLid sign sineResult1 namedSentences
+      sineResult3 = computePremiseTriggers gTheoryLid sign sineResult1 namedSentences
   in  (sineResult3, goal)
 
-computeSymbolCommonnesses :: Logic lid sublogics basic_spec sentence symb_items
-                                   symb_map_items sign morphism symbol
-                                   raw_symbol proof_tree
+computeSymbolCommonnesses :: Logic.Logic lid sublogics basic_spec sentence
+                                         symb_items symb_map_items sign
+                                         morphism symbol raw_symbol proof_tree
                           => lid
                           -> ExtSign sign symbol
-                          -> SInEResult symbol sentence
+                          -> G_SInEResult
                           -> [Named sentence]
-                          -> SInEResult symbol sentence
-computeSymbolCommonnesses lid sign sineResult0 namedSentences =
-  let result =
-        foldr (\ namedSentence symbolCommonnessesAcc ->
-                foldr (\ symbol symbolCommonnessesAcc' ->
-                        Map.insertWith (+) symbol 1 symbolCommonnessesAcc'
-                      ) symbolCommonnessesAcc $ nub $ symsOfSen lid sign $ sentence namedSentence
-              ) (symbolCommonnesses sineResult0) namedSentences
-  in  sineResult0 { symbolCommonnesses = result }
+                          -> G_SInEResult
+computeSymbolCommonnesses gTheoryLid ExtSign{plainSign = sign}
+  sineResult0@G_SInEResult{..} namedSentences =
+    let result =
+          foldr (\ namedSentence symbolCommonnessesAcc ->
+                  foldr (\ symbol symbolCommonnessesAcc' ->
+                          Map.insertWith (+) symbol 1 symbolCommonnessesAcc'
+                        )
+                        symbolCommonnessesAcc $
+                        nub $ symsOfSen gTheoryLid sign $ sentence namedSentence
+                )
+                (coerce "computeSymbolCommonnesses 1" gSineLogic gTheoryLid symbolCommonnesses)
+                namedSentences
+    in  withSymbolCommonnesses gTheoryLid result sineResult0
+  where
+    withSymbolCommonnesses :: Logic.Logic lid sublogics basic_spec sentence
+                                          symb_items symb_map_items sign
+                                          morphism symbol raw_symbol proof_tree
+                           => lid
+                           -> Map symbol Int
+                           -> G_SInEResult
+                           -> G_SInEResult
+    withSymbolCommonnesses lid symbolCommonnesses' G_SInEResult{..} =
+      G_SInEResult gSineLogic parameters
+        (coerce "withSymbolCommonnesses" gSineLogic lid symbolCommonnesses')
+        premiseTriggers leastCommonSymbols selectedPremises selectedPremiseNames
 
-computeLeastCommonSymbols :: Logic lid sublogics basic_spec sentence symb_items
-                                   symb_map_items sign morphism symbol
-                                   raw_symbol proof_tree
+computeLeastCommonSymbols :: Logic.Logic lid sublogics basic_spec sentence
+                                         symb_items symb_map_items sign
+                                         morphism symbol raw_symbol proof_tree
                           => lid
                           -> ExtSign sign symbol
-                          -> SInEResult symbol sentence
+                          -> G_SInEResult
                           -> [Named sentence]
-                          -> SInEResult symbol sentence
-computeLeastCommonSymbols lid sign sineResult0 namedSentences =
-  let result =
+                          -> G_SInEResult
+computeLeastCommonSymbols gTheoryLid ExtSign{plainSign = sign}
+  sineResult0@G_SInEResult{..} namedSentences =
+  let symbolCommonnesses' =
+        coerce "computeLeastCommonSymbols 1" gSineLogic gTheoryLid symbolCommonnesses
+      leastCommonSymbols' =
+        coerce "computeLeastCommonSymbols 2" gSineLogic gTheoryLid leastCommonSymbols
+      result =
         foldr (\ namedSentence leastCommonSymbolsAcc ->
                 foldr (\ symbol leastCommonSymbolsAcc' ->
-                        let commonness = fromJust $ Map.lookup symbol $
-                              symbolCommonnesses sineResult0
+                        let commonness =
+                              fromJust $ Map.lookup symbol symbolCommonnesses'
                         in  Map.insertWith (\ new (oldSymbol, oldCommonness) ->
                                              if commonness < oldCommonness
                                              then new
@@ -142,34 +190,51 @@ computeLeastCommonSymbols lid sign sineResult0 namedSentences =
                                            leastCommonSymbolsAcc'
                       )
                       leastCommonSymbolsAcc $
-                      nub $ symsOfSen lid sign $ sentence namedSentence
-              ) (leastCommonSymbols sineResult0) namedSentences
-  in  sineResult0 { leastCommonSymbols = result }
+                      nub $ symsOfSen gTheoryLid sign $ sentence namedSentence
+              ) leastCommonSymbols' namedSentences
+  in  withLeastCommonSymbols gTheoryLid result sineResult0
+  where
+    withLeastCommonSymbols :: Logic.Logic lid sublogics basic_spec sentence symb_items
+                                          symb_map_items sign morphism symbol
+                                          raw_symbol proof_tree
+                           => lid
+                           -> Map (Named sentence) (symbol, Int)
+                           -> G_SInEResult
+                           -> G_SInEResult
+    withLeastCommonSymbols lid leastCommonSymbols' G_SInEResult{..} =
+      G_SInEResult gSineLogic parameters symbolCommonnesses premiseTriggers
+        (coerce "withLeastCommonSymbols" gSineLogic lid leastCommonSymbols')
+        selectedPremises selectedPremiseNames
 
-computePremiseTriggers :: Logic lid sublogics basic_spec sentence symb_items
-                                symb_map_items sign morphism symbol
-                                raw_symbol proof_tree
+computePremiseTriggers :: Logic.Logic lid sublogics basic_spec sentence symb_items
+                                      symb_map_items sign morphism symbol
+                                      raw_symbol proof_tree
                        => lid
                        -> ExtSign sign symbol
-                       -> SInEResult symbol sentence
+                       -> G_SInEResult
                        -> [Named sentence]
-                       -> SInEResult symbol sentence
-computePremiseTriggers lid sign sineResult0 namedSentences =
-  let commonnesses = symbolCommonnesses sineResult0
-      leastCommonSymbols_ = leastCommonSymbols sineResult0
+                       -> G_SInEResult
+computePremiseTriggers gTheoryLid ExtSign{plainSign = sign}
+  sineResult0@G_SInEResult{..} namedSentences =
+  let symbolCommonnesses' =
+        coerce "computePremiseTriggers 1" gSineLogic gTheoryLid symbolCommonnesses
+      leastCommonSymbols' =
+        coerce "computePremiseTriggers 2" gSineLogic gTheoryLid leastCommonSymbols
+      premiseTriggers' =
+        coerce "computePremiseTriggers 3" gSineLogic gTheoryLid premiseTriggers
       result =
         foldr (\ namedSentence premiseTriggersAcc ->
                 let (_, leastCommonness) = fromJust $
-                      Map.lookup namedSentence leastCommonSymbols_
+                      Map.lookup namedSentence leastCommonSymbols'
                 in  foldr (\ symbol premiseTriggersAcc' ->
                             let symbolCommonness = fromJust $
-                                  Map.lookup symbol commonnesses
+                                  Map.lookup symbol symbolCommonnesses
                                 minimalTolerance =
-                                  symbolCommonnesses / leastCommonness
+                                  symbolCommonnesses' / leastCommonness
                             in  Map.insertWith
                                   (\ _ triggers ->
-                                    insertBy
-                                      (compare . fst)
+                                    List.insertBy
+                                      (\ (a, _) (b, _) -> compare a b)
                                       (minimalTolerance, namedSentence)
                                       triggers
                                   )
@@ -178,87 +243,177 @@ computePremiseTriggers lid sign sineResult0 namedSentences =
                                   premiseTriggersAcc'
                           )
                           premiseTriggersAcc $
-                          nub $ symsOfSen lid sign $ sentence namedSentence
-              ) (premiseTriggers sineResult0) namedSentences
-  in  sineResult0 { premiseTriggers = result }
+                          nub $ symsOfSen gTheoryLid sign $ sentence namedSentence
+              ) premiseTriggers' namedSentences
+  in  withPremiseTriggers gTheoryLid result sineResult0
+  where
+    withPremiseTriggers :: Logic.Logic lid sublogics basic_spec sentence
+                                       symb_items symb_map_items sign morphism
+                                       symbol raw_symbol proof_tree
+                        => lid
+                        -> Map symbol [(Double, Named sentence)]
+                        -> G_SInEResult
+                        -> G_SInEResult
+    withPremiseTriggers lid premiseTriggers' G_SInEResult{..} =
+      G_SInEResult gSineLogic parameters symbolCommonnesses
+        (coerce "withPremiseTriggers" gSineLogic lid premiseTriggers')
+        leastCommonSymbols selectedPremises selectedPremiseNames
 
-selectPremises :: Logic lid sublogics basic_spec sentence symb_items
-                        symb_map_items sign morphism symbol
-                        raw_symbol proof_tree
+selectPremises :: Logic.Logic lid sublogics basic_spec sentence
+                              symb_items symb_map_items sign morphism
+                              symbol raw_symbol proof_tree
                => HetcatsOpts
                -> LibEnv
                -> LibName
                -> DGraph
                -> (Int, DGNodeLab)
+               -> lid
                -> G_theory
                -> G_sublogics
-               -> SInEResult symbol sentence
+               -> G_SInEResult
                -> Named sentence
-               -> SInEResult symbol sentence
-selectPremises opts libEnv libName dGraph nodeLabel gTheory gSublogics sineResult0 goal =
-  let premiseLimitM = premiseNumberLimit $ parameters sineResult0
-      depthLimitM = depthLimit $ parameters sineResult0
-      tolerance = fromMaybe 1.0 $ tolerance $ parameters sineResult0
-  in  selectPremises' opts tolerance depthLimitM premiseLimitM 0 sineResult0 [goal]
+               -> G_SInEResult
+selectPremises opts libEnv libName dGraph nodeLabel gTheoryLid
+  G_theory{gTheorySign = extSign} gSublogics sineResult0@G_SInEResult{..} goal =
+  let premiseLimitM = premiseNumberLimit parameters
+      depthLimitM = depthLimit parameters
+      tolerance_ = fromMaybe 1.0 $ tolerance parameters
+  in  selectPremises' opts tolerance_ depthLimitM premiseLimitM 0 gTheoryLid
+        extSign sineResult0 [goal]
 
-selectPremises' :: Logic lid sublogics basic_spec sentence symb_items
-                         symb_map_items sign morphism symbol
-                         raw_symbol proof_tree
+selectPremises' :: Logic.Logic lid sublogics basic_spec sentence symb_items
+                               symb_map_items sign morphism symbol
+                               raw_symbol proof_tree
                 => HetcatsOpts
                 -> Double
                 -> Maybe Int
                 -> Maybe Int
                 -> Int
-                -> SInEResult symbol sentence
+                -> lid
+                -> ExtSign sign symbol
+                -> G_SInEResult
                 -> [Named sentence]
-                -> SInEResult symbol sentence
-selectPremises' opts tolerance depthLimitM premiseLimitM currentDepth
-  sineResult@SInEResult { premiseTriggers = premiseTriggers_
-                        , selectedPremises = selectedPremises_
-                        } =
-  if isJust depthLimitM && currentDepth >= fromJust depthLimitM
-  then sineResult
-  else if isJust premiseLimitM && Set.size selectedPremises_ >= fromJust premiseLimitM
-  then sineResult
-  else foldr (\ previouslySelectedNamedSentence sineResultAcc ->
+                -> G_SInEResult
+selectPremises' opts tolerance_ depthLimitM premiseLimitM currentDepth
+  gTheoryLid extSign@ExtSign{plainSign = sign}
+  sineResult@G_SInEResult {..} previouslySelectedNamedSentences
+  | isJust depthLimitM && currentDepth >= fromJust depthLimitM = sineResult
+  | isJust premiseLimitM && Set.size selectedPremises >= fromJust premiseLimitM = sineResult
+  | otherwise =
+  let premiseTriggers' =
+        coerce "selectPremises' 1" gSineLogic gTheoryLid premiseTriggers
+      selectedPremises' =
+        coerce "selectPremises' 2" gSineLogic gTheoryLid selectedPremises
+  in  foldr (\ previouslySelectedNamedSentence sineResultAcc ->
                 foldr (\ symbol sineResultAcc' ->
                         let possiblyTriggeredSentences =
-                              fromJust $ Map.lookup symbol premiseTriggers_
+                              fromJust $ Map.lookup symbol premiseTriggers'
                             triggeredSentences =
-                              map snd $ takeWhile ((<= tolerance) . fst)
+                              map snd $ takeWhile ((<= tolerance_) . fst)
                                 possiblyTriggeredSentences
                             nextSelectedSentences =
-                              filter (isSelected sineResultAcc'') triggeredSentences
-                            sineResult' =
-                              foldr selectPremise sineResultAcc' nextSelectedSentences
-                        in  selectPremises' opts tolerance depthLimitM
-                              premiseLimitM (currentDepth + 1) sineResult'
-                              nextSelectedSentences
+                              filter (isSelected sineResultAcc' gTheoryLid)
+                                triggeredSentences
+                            sineResultAcc'' =
+                              foldr (selectPremise gTheoryLid) sineResultAcc'
+                                nextSelectedSentences
+                        in  selectPremises' opts tolerance_ depthLimitM
+                              premiseLimitM (currentDepth + 1) gTheoryLid
+                              extSign sineResultAcc'' nextSelectedSentences
                       )
                       sineResultAcc $
-                      nub $ symsOfSen lid sign $ sentence previouslySelectedNamedSentence
-             ) sineResult
+                      nub $ symsOfSen gTheoryLid sign $
+                      sentence previouslySelectedNamedSentence
+             ) sineResult previouslySelectedNamedSentences
 
-isSelected :: Logic lid sublogics basic_spec sentence symb_items
-                    symb_map_items sign morphism symbol
-                    raw_symbol proof_tree
-           => SInEResult symbol sentence
+isSelected :: Logic.Logic lid sublogics basic_spec sentence symb_items
+                          symb_map_items sign morphism symbol
+                          raw_symbol proof_tree
+           => G_SInEResult
+           -> lid
            -> Named sentence
            -> Bool
-isSelected sineResult namedSentence =
-  Set.member (senAttr namedSentence) $ selectedPremiseNames sineResult
+isSelected G_SInEResult{..} gTheoryLid namedSentence =
+  Set.member (senAttr namedSentence) selectedPremiseNames
 
-selectPremise :: Logic lid sublogics basic_spec sentence symb_items
-                       symb_map_items sign morphism symbol
-                       raw_symbol proof_tree
-              => Named sentence
-              -> SInEResult symbol sentence
-              -> SInEResult symbol sentence
-selectPremise triggeredSentence
-  sineResult@SInEResult { selectedPremises = selectedPremises_
-                        , selectedPremiseNames = selectedPremiseNames_
-                        } =
-  sineResult { selectedPremises = Set.insert triggeredSentence selectedPremises_
-             , selectedPremiseNames =
-                 Set.insert (senAttr triggeredSentence) selectedPremiseNames_
-             }
+selectPremise :: Logic.Logic lid sublogics basic_spec sentence symb_items
+                             symb_map_items sign morphism symbol
+                             raw_symbol proof_tree
+              => lid
+              -> Named sentence
+              -> G_SInEResult
+              -> G_SInEResult
+selectPremise gTheoryLid triggeredSentence
+  sineResult@G_SInEResult {..} =
+  let symbolCommonnesses' =
+        coerce "selectPremise 1" gSineLogic gTheoryLid symbolCommonnesses
+      premiseTriggers' =
+        coerce "selectPremise 2" gSineLogic gTheoryLid premiseTriggers
+      leastCommonSymbols' =
+        coerce "selectPremise 3" gSineLogic gTheoryLid leastCommonSymbols
+      selectedPremises' =
+        coerce "selectPremise 4" gSineLogic gTheoryLid selectedPremises
+  in  G_SInEResult gTheoryLid parameters symbolCommonnesses' premiseTriggers'
+        leastCommonSymbols' selectedPremises' selectedPremiseNames
+
+saveToDatabase :: HetcatsOpts
+               -> G_SInEResult
+               -> Entity LocIdBase
+               -> SinePremiseSelectionId
+               -> IO ()
+saveToDatabase opts G_SInEResult{..} omsEntity sinePremiseSelectionKey =
+  onDatabase (databaseConfig opts) $ do
+    saveSymbolPremiseTriggers
+    saveSymbolCommonnesses
+    return ()
+  where
+    saveSymbolPremiseTriggers =
+      mapM_ (\ (symbol, triggers) -> do
+              symbolKey <- fetchSymbolId symbol
+              mapM_ (\ (minimalTolerance, namedSentence) -> do
+                      premiseKey <- fetchSentenceId namedSentence
+                      insert SineSymbolPremiseTrigger
+                        { sineSymbolPremiseTriggerSinePremiseSelectionId = sinePremiseSelectionKey
+                        , sineSymbolPremiseTriggerPremiseId = premiseKey
+                        , sineSymbolPremiseTriggerSymbolId = symbolKey
+                        , sineSymbolPremiseTriggerMinTolerance = minimalTolerance
+                        }
+                    ) triggers
+            ) $ Map.toList premiseTriggers
+
+    saveSymbolCommonnesses =
+      mapM_ (\ (symbol, commonness) -> do
+              symbolKey <- fetchSymbolId symbol
+              insert SineSymbolCommonness
+                { sineSymbolCommonnessSinePremiseSelectionId = sinePremiseSelectionKey
+                , sineSymbolCommonnessSymbolId = symbolKey
+                , sineSymbolCommonnessCommonness = commonness
+                }
+            ) $ Map.toList symbolCommonnesses
+
+    fetchSymbolId symbol =
+      let (locId, _, _, _) = symbolDetails omsEntity gSineLogic symbol
+      in  fetchLocId locId "Symbol"
+
+    fetchSentenceId namedSentence =
+      let name = senAttr namedSentence
+          locId = locIdOfSentence omsEntity name
+      in  fetchLocId locId "Sentence"
+
+    fetchLocId locId kind = do
+      sentenceL <- select $ from $ \ loc_id_bases -> do
+        where_ (loc_id_bases ^. LocIdBaseLocId ==. val locId)
+        limit 1
+        return loc_id_bases
+      case sentenceL of
+        [] -> fail ("Persistence.Reasoning.saveToDatabase: Could not find " ++ kind ++ " " ++ locId)
+        Entity key _ : _ -> return key
+
+
+
+coerce :: (Typeable a, Typeable b, Logic.Language lid1, Logic.Language lid2)
+       => String -> lid1 -> lid2 -> a -> b
+coerce errorMessage lid1 lid2 a =
+  let errorMessage' =
+        "PremiseSelectionSInE." ++ errorMessage ++ ": Coercion failed."
+  in  fromMaybe (error errorMessage') $ primCoerce lid1 lid2 errorMessage' a

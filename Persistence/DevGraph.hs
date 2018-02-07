@@ -753,7 +753,9 @@ findOrCreateSignature dbCache libName lid extSign sigId languageKey =
              )
 
 createSymbols :: ( MonadIO m
-                 , Sentences lid sentence sign morphism symbol
+                 , Logic.Logic lid sublogics
+                     basic_spec sentence symb_items symb_map_items
+                     sign morphism symbol raw_symbol proof_tree
                  )
               => LibEnv -> FileVersionId -> DBCache -> Bool -> LibName -> Int
               -> Entity LocIdBase -> lid -> ExtSign sign symbol
@@ -766,18 +768,17 @@ createSymbols libEnv fileVersionKey dbCache doSave libName nodeId omsLocIdBase
         ) dbCache $ symlist_of lid sign
 
 findOrCreateSymbol :: ( MonadIO m
-                      , Sentences lid sentence sign morphism symbol
+                      , Logic.Logic lid sublogics
+                          basic_spec sentence symb_items symb_map_items
+                          sign morphism symbol raw_symbol proof_tree
                       )
                    => LibEnv -> FileVersionId -> DBCache -> Bool -> LibName
                    -> Int -> Entity LocIdBase -> lid -> symbol
                    -> DBMonad m DBCache
 findOrCreateSymbol libEnv fileVersionKey dbCache doSave libName nodeId
   omsLocIdBase@(Entity omsKey _) lid symbol =
-    let name = show $ sym_name lid symbol
-        fullName = fullSymName lid symbol
-        symbolKind' = symKind lid symbol
-        symbolKind = if null symbolKind' then "symbol" else symbolKind'
-        locId = locIdOfSymbol omsLocIdBase symbolKind' name
+    let (locId, name, fullName, symbolKind) =
+          symbolDetails omsLocIdBase lid symbol
     in  if symbolIsCached libEnv libName nodeId lid symbol dbCache
         then return dbCache
         else do
@@ -813,7 +814,9 @@ findOrCreateSymbol libEnv fileVersionKey dbCache doSave libName nodeId
 createSentences :: ( MonadIO m
                    , GetRange sentence
                    , Pretty sentence
-                   , Sentences lid sentence sign morphism symbol
+                   , Logic.Logic lid sublogics basic_spec sentence symb_items
+                       symb_map_items sign morphism symbol
+                       raw_symbol proof_tree
                    )
                 => LibEnv -> FileVersionId -> DBCache -> Bool -> GlobalAnnos
                 -> LibName -> Int -> Entity LocIdBase -> lid -> sign
@@ -832,7 +835,9 @@ createSentences libEnv fileVersionKey dbCache0 doSave globalAnnotations libName
 
 createAxioms :: ( MonadIO m
                 , Foldable t
-                , Sentences lid sentence sign morphism symbol
+                , Logic.Logic lid sublogics basic_spec sentence symb_items
+                    symb_map_items sign morphism symbol
+                    raw_symbol proof_tree
                 )
              => LibEnv -> FileVersionId -> DBCache -> Bool -> GlobalAnnos
              -> LibName -> Int -> Entity LocIdBase -> lid -> sign
@@ -850,7 +855,9 @@ createAxioms libEnv fileVersionKey dbCache doSave globalAnnotations libName
 
 createConjectures :: ( MonadIO m
                      , Foldable t
-                     , Sentences lid sentence sign morphism symbol
+                     , Logic.Logic lid sublogics basic_spec sentence symb_items
+                         symb_map_items sign morphism symbol
+                         raw_symbol proof_tree
                      )
                   => LibEnv -> FileVersionId -> DBCache -> Bool -> GlobalAnnos
                   -> LibName -> Int -> Entity LocIdBase -> lid -> sign
@@ -872,7 +879,9 @@ createConjectures libEnv fileVersionKey dbCache doSave globalAnnotations libName
 createSentence :: ( MonadIO m
                   , GetRange sentence
                   , Pretty sentence
-                  , Sentences lid sentence sign morphism symbol
+                  , Logic.Logic lid sublogics basic_spec sentence symb_items
+                      symb_map_items sign morphism symbol
+                      raw_symbol proof_tree
                   )
                => FileVersionId -> DBCache -> Bool -> GlobalAnnos
                -> Entity LocIdBase -> lid -> sign -> Bool -> Bool
@@ -945,7 +954,9 @@ createSentence fileVersionKey dbCache doSave globalAnnotations
 associateSymbolsOfSentence :: ( MonadIO m
                               , GetRange sentence
                               , Pretty sentence
-                              , Sentences lid sentence sign morphism symbol
+                              , Logic.Logic lid sublogics basic_spec sentence
+                                  symb_items symb_map_items sign morphism symbol
+                                  raw_symbol proof_tree
                               )
                            => LibEnv -> FileVersionId -> DBCache -> Bool
                            -> LibName -> Int -> Entity LocIdBase -> LocIdBaseId
