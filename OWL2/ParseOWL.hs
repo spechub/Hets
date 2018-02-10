@@ -41,7 +41,8 @@ import Text.XML.Light hiding (QName)
 parseOWL :: Bool                  -- ^ Sets Option.quick
          -> FilePath              -- ^ local filepath or uri
          -> ResultT IO (Map.Map String String, [OntologyDocument]) -- ^ map: uri -> OntologyFile
-parseOWL quick fn = do
+parseOWL quick fullFileName = do
+    let fn = fromMaybe fullFileName $ stripPrefix "file://" fullFileName
     tmpFile <- lift $ getTempFile "" "owlTemp.xml"
     (exitCode, _, errStr) <- parseOWLAux quick fn ["-o", "xml", tmpFile]
     case (exitCode, errStr) of
