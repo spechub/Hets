@@ -26,6 +26,9 @@ import Common.IRI
 import Common.Id
 import Common.LibName
 
+import Data.List (stripPrefix)
+import Data.Maybe
+
 import Text.XML.Light
 
 import System.IO
@@ -53,8 +56,9 @@ replaceName fp = replaceBaseName (replaceExtension fp "xmi")
 
 
 parseXmiMetamodel :: FilePath -> IO Metamodel
-parseXmiMetamodel fp =
+parseXmiMetamodel fullFileName =
   do
+    let fp = fromMaybe fullFileName $ stripPrefix "file://" fullFileName
     handle <- openFile fp ReadMode
     contents <- hGetContents handle
     case parseXMLDoc contents of
