@@ -36,7 +36,7 @@ import Interfaces.History
 import Control.Monad (unless, filterM)
 
 import Data.Graph.Inductive.Graph
-import Data.Maybe (fromMaybe, isNothing)
+import Data.Maybe (isNothing)
 import Data.List
 import Data.IORef
 
@@ -69,6 +69,7 @@ import Common.Consistency
 import Common.ExtSign
 import Common.AS_Annotation (SenAttr (..), makeNamed, mapNamed)
 import qualified Common.Doc as Pretty
+import Common.Utils
 
 
 #ifdef UNI_PACKAGE
@@ -122,7 +123,7 @@ tryRemoveAbsolutePathComponent :: String -> IO String
 tryRemoveAbsolutePathComponent f
    | "/" `isPrefixOf` f = do
                            dir <- getCurrentDirectory
-                           return $ fromMaybe f (stripPrefix (dir ++ "/") f)
+                           return $ tryToStripPrefix (dir ++ "/") f
    | otherwise = return f
 
 -- Converts a list of proof-trees to a prove

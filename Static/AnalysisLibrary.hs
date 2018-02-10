@@ -53,6 +53,7 @@ import Common.Id
 import Common.IRI
 import Common.DocUtils
 import qualified Common.Unlit as Unlit
+import Common.Utils
 
 import Driver.Options
 import Driver.ReadFn
@@ -91,7 +92,7 @@ anaSource :: Maybe LibName -- ^ suggested library name
   -> FilePath -> ResultT IO (LibName, LibEnv)
 anaSource mln lg opts topLns libenv initDG origName = ResultT $ do
   let mName = useCatalogURL opts origName
-      fname = fromMaybe mName $ stripPrefix "file://" mName
+      fname = tryToStripPrefix "file://" mName
       syn = case defSyntax opts of
         "" -> Nothing
         s -> Just $ simpleIdToIRI $ mkSimpleId s

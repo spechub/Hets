@@ -24,6 +24,7 @@ import Common.IRI
 import Common.LibName
 import Common.ResultT
 import Common.AS_Annotation
+import Common.Utils
 
 import Logic.Grothendieck
 
@@ -55,7 +56,7 @@ convertToLibDefN imap o = Lib_defn ln
         il = Map.toList imap
         is = map snd il
         ln = case lookup libstr $ map (\ (a, b) -> (b, a)) il of
-            Just s -> setFilePath $ fromMaybe s $ stripPrefix "file:" s
+            Just s -> setFilePath $ tryToStripPrefix "file:" s
             Nothing -> setFilePath libstr
           $ iriLibName oname
         imps = imports ont

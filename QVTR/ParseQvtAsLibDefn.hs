@@ -25,9 +25,7 @@ import Common.AS_Annotation
 import Common.IRI
 import Common.Id
 import Common.LibName
-
-import Data.List (stripPrefix)
-import Data.Maybe
+import Common.Utils
 
 import Text.XML.Light
 
@@ -58,7 +56,7 @@ replaceName fp = replaceBaseName (replaceExtension fp "xmi")
 parseXmiMetamodel :: FilePath -> IO Metamodel
 parseXmiMetamodel fullFileName =
   do
-    let fp = fromMaybe fullFileName $ stripPrefix "file://" fullFileName
+    let fp = tryToStripPrefix "file://" fullFileName
     handle <- openFile fp ReadMode
     contents <- hGetContents handle
     case parseXMLDoc contents of
