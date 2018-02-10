@@ -33,12 +33,9 @@ import System.FilePath (replaceBaseName, replaceExtension, takeBaseName)
 
 import Text.ParserCombinators.Parsec
 
-parseQvt :: FilePath -> IO LIB_DEFN
-parseQvt fp =
-  do
-    handle <- openFile fp ReadMode
-    input <- hGetContents handle
-    case runParser pTransformation () fp input of  -- Either ParseError String
+parseQvt :: FilePath -> String -> IO LIB_DEFN
+parseQvt fp input =
+  case runParser pTransformation () fp input of  -- Either ParseError String
       Left erro -> do
                   print erro
                   return (Lib_defn (emptyLibName (convertFileToLibStr fp)) [] nullRange [])

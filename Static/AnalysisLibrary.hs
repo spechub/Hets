@@ -113,7 +113,7 @@ anaSource mln lg opts topLns libenv initDG origName = ResultT $ do
                 Just $ emptyLibName libStr
               _ -> mln
         fn2 = keepOrigClifName opts origName file
-        fnAbs = if isAbsolute fn2 then fn2 else dir++fn2
+        fnAbs = if isAbsolute fn2 then fn2 else dir </> fn2
         url = if checkUri fn2 then fn2 else "file://" ++ fnAbs
         in
         if runMMT opts then mmtRes fname else

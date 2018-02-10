@@ -24,17 +24,13 @@ import Common.Id
 import Common.LibName
 
 import Text.XML.Light
-import System.IO
 
 
-parseXmi :: FilePath -> IO LIB_DEFN
-parseXmi fp =
-  do
-    handle <- openFile fp ReadMode
-    contents <- hGetContents handle
-    case parseXMLDoc contents of
-      Nothing -> return (Lib_defn (emptyLibName (convertFileToLibStr fp)) [] nullRange [])
-      Just el -> return (parseCSMOFXmi fp el)
+parseXmi :: FilePath -> String -> LIB_DEFN
+parseXmi fp contents =
+  case parseXMLDoc contents of
+    Nothing -> Lib_defn (emptyLibName (convertFileToLibStr fp)) [] nullRange []
+    Just el -> parseCSMOFXmi fp el
 
 
 parseCSMOFXmi :: FilePath -> Element -> LIB_DEFN
