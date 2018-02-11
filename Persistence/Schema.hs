@@ -263,7 +263,7 @@ Reasoner sql=reasoners
 
 ReasonerConfiguration sql=reasoner_configurations
   configuredReasonerId ReasonerId Maybe
-  timeLimit Int
+  timeLimit Int Maybe
   deriving Show
 
 PremiseSelection sql=premise_selections

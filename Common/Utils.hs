@@ -55,6 +55,7 @@ module Common.Utils
   , getTempFile
   , getTempFifo
   , readFifo
+  , tryToStripPrefix  
   , verbMsg
   , verbMsgLn
   , verbMsgIO
@@ -173,6 +174,10 @@ toSnakeCase c = if hasBump c then unScream c else mkSnake c where
     _ | hasBump s -> newSnake s
     _ -> unScream s
 
+-- | strip a prefix from a string, if possible
+tryToStripPrefix :: String -> String -> String
+tryToStripPrefix prefix s = fromMaybe s $ stripPrefix prefix s
+  
 {- | The 'nubWith' function accepts as an argument a \"stop list\" update
 function and an initial stop list. The stop list is a set of list elements
 that 'nubWith' uses as a filter to remove duplicate elements.  The stop list

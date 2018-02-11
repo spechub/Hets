@@ -109,8 +109,8 @@ readLibDefn lgraph opts mr file fileForPos input =
 #ifdef RDFLOGIC
      -- RDFIn -> liftIO $ parseRDF file
 #endif
-      Xmi -> liftIO $ fmap (: []) $ parseXmi file
-      Qvt -> liftIO $ fmap (: []) $ parseQvt file
+      Xmi -> return [parseXmi file input]
+      Qvt -> liftIO $ fmap (: []) $ parseQvt file input
       TPTPIn -> parseTPTP opts file input
 #ifndef NOOWLLOGIC
       OWLIn _ -> parseOWLAsLibDefn (isStructured opts) file

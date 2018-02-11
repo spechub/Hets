@@ -1083,9 +1083,10 @@ hetcatsOpts argv =
   where
     setupDatabaseOptions :: HetcatsOpts -> IO HetcatsOpts
     setupDatabaseOptions opts = do
+      let filepath = if null $ infiles opts then "" else head $ infiles opts
       let dbContext = DBConfig.emptyDBContext
             { DBConfig.contextFileVersion = databaseFileVersionId opts
-            , DBConfig.contextFilePath = head $ infiles opts
+            , DBConfig.contextFilePath = filepath
             }
       -- If the fileVersionId is not given, Hets has not been called by Ontohub.
       -- Hence, there is no git handling and we always need to reanalyze the

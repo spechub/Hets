@@ -22,6 +22,7 @@ import Common.AS_Annotation
 import Common.Result
 import Taxonomy.MMiSSOntology
 import Common.Taxonomy
+import Common.Utils
 
 import System.IO.Unsafe
 
@@ -50,7 +51,7 @@ onto2Tax gk inOnto sig sens = case gk of
     makeMiss inOnto superMap classes
 
 dropClutter :: String -> String
-dropClutter a = fromMaybe a (stripPrefix "unamed:" a)
+dropClutter = tryToStripPrefix "unamed:"
 
 -- | Generation of a MissOntology
 makeMiss :: MMiSSOntology

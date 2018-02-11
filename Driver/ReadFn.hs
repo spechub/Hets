@@ -56,7 +56,7 @@ import System.Directory
 import Control.Monad
 
 import Data.Char (isSpace)
-import Data.List (isPrefixOf, stripPrefix)
+import Data.List (isPrefixOf)
 import Data.Maybe
 
 noPrefix :: QName -> Bool
@@ -182,7 +182,7 @@ tryDownload :: HetcatsOpts -> [FilePath] -> FilePath
 tryDownload opts fnames fn = case fnames of
   [] -> return $ Left $ "no input found for: " ++ fn
   fname : fnames' -> do
-       let fname' = fromMaybe fname $ stripPrefix "file://" fname
+       let fname' = tryToStripPrefix "file://" fname
        mRes <- downloadSource opts fname'
        case mRes of
          Left err -> do
@@ -201,7 +201,7 @@ getContent opts = getExtContent opts (getExtensions opts)
 getExtContent :: HetcatsOpts -> [String] -> FilePath
   -> IO (Either String (FilePath, String))
 getExtContent opts exts fp =
-  let fn = fromMaybe fp $ stripPrefix "file://" fp
+  let fn = tryToStripPrefix "file://" fp
       fs = getFileNames exts fn
       ffs = if checkUri fn || isAbsolute fn then fs else
            concatMap (\ d -> map (d </>) fs) $ "" : libdirs opts

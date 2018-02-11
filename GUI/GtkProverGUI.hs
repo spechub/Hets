@@ -334,7 +334,7 @@ setSelectedTheorems ths listThs s = do
   return s { includedTheorems = map snd theorems }
 
 stripPrefixAxiom :: String -> String
-stripPrefixAxiom a = fromMaybe a $ stripPrefix "(Th) " a
+stripPrefixAxiom a = tryToStripPrefix "(Th) " a
 
 -- | Called whenever a prover is selected from the "Pick Theorem Prover" list.
 setSelectedProver :: TreeView -> ListStore GProver -> ComboBox

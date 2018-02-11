@@ -1,0 +1,89 @@
+query SignatureMorphism {
+  signatureMorphism(id: 1) {
+    id
+    logicMapping {
+      id
+      languageMapping {
+        id
+        source {
+          id
+        }
+        target {
+          id
+        }
+      }
+      source {
+        id
+      }
+      target {
+        id
+      }
+    }
+    mappings {
+      ...mappingFields
+    }
+    source {
+      id
+    }
+    symbolMappings {
+      source {
+        ...symbolFields
+      }
+      target {
+        ...symbolFields
+      }
+    }
+    target {
+      id
+    }
+  }
+}
+
+fragment mappingFields on Mapping {
+  conservativityStatus {
+    required
+    proved
+  }
+  displayName
+  freenessParameterOMS {
+    locId
+  }
+  freenessParameterLanguage {
+    id
+    name
+    description
+  }
+  locId
+  name
+  origin
+  pending
+  signatureMorphism {
+    id
+  }
+  source {
+    locId
+  }
+  target {
+    locId
+  }
+  mappingType: type
+}
+
+fragment symbolFields on Symbol {
+  __typename
+  fileRange {
+    ...fileRangeFields
+  }
+  fullName
+  kind
+  locId
+  name
+}
+
+fragment fileRangeFields on FileRange {
+  path
+  startLine
+  startColumn
+  endLine
+  endColumn
+}

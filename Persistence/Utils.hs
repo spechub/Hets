@@ -1,5 +1,6 @@
 module Persistence.Utils ( parameterize
                          , advisoryLocked
+                         , coerceId
                          ) where
 
 import Persistence.DBConfig
@@ -11,6 +12,8 @@ import Persistence.Database
 import Control.Monad.IO.Class (MonadIO (..))
 import Data.Char
 import qualified Data.Text as Text
+import qualified Database.Esqueleto.Internal.Language as EIL
+import qualified Database.Esqueleto.Internal.Sql as EIS
 import Database.Persist hiding (replace)
 import Database.Persist.Sql hiding (replace)
 
@@ -63,3 +66,14 @@ advisoryLock key = do
 advisoryLockKeyConvert :: String
 advisoryLockKeyConvert =
   "(SELECT ('x' || lpad(md5(?),16,'0'))::bit(64)::bigint)"
+
+-- This is used for Esqueleto JOIN statements with
+-- "ON subclass.id = loc_id_bases.id"
+-- Do NOT use this in other contexts.
+-- Usage example:
+--     selectedSymbols <- select $ from $
+--       \(loc_id_bases `InnerJoin` symbols) -> do
+--         on (coerceId (symbols ^. SymbolId) ==. loc_id_bases ^. LocIdBaseId)
+--         return symbols
+coerceId :: EIS.SqlExpr (EIL.Value a) -> EIS.SqlExpr (EIL.Value b)
+coerceId = EIS.veryUnsafeCoerceSqlExprValue

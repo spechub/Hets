@@ -219,7 +219,7 @@ locIdOfDocument opts location displayName =
   let base = fromMaybe displayName location
   in  if null $ libdirs opts
       then base
-      else fromMaybe base $ stripPrefix (firstLibdir opts) base
+      else tryToStripPrefix (firstLibdir opts) base
 
 firstLibdir :: HetcatsOpts -> String
 firstLibdir opts =

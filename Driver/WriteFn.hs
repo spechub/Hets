@@ -42,6 +42,7 @@ import Common.GlobalAnnotations (GlobalAnnos)
 import qualified Data.Map as Map
 import Common.SExpr
 import Common.IO
+import Common.Utils
 
 import Comorphisms.LogicGraph
 
@@ -123,7 +124,8 @@ import OMDoc.XmlInterface (xmlOut)
 import OMDoc.Export (exportLibEnv)
 
 writeVerbFile :: HetcatsOpts -> FilePath -> String -> IO ()
-writeVerbFile opts f str = do
+writeVerbFile opts fullFileName str = do
+    let f = tryToStripPrefix "file://" fullFileName
     putIfVerbose opts 2 $ "Writing file: " ++ f
     writeEncFile (ioEncoding opts) f str
 
