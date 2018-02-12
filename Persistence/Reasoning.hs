@@ -302,25 +302,10 @@ postprocessReasoning opts
            ]
     return ()
 
--- exportReasoningResults :: HetcatsOpts -> String -> [(String, [ProofResult])]
---                        -> Maybe ReasonerConfigurationId -> IO LocIdBaseId
--- exportReasoningResults opts location nodesAndProofResults reasonerConfigurationKeyM =
---   onDatabase (databaseConfig opts) $ do
---     reasonerConfigurationKey <- liftIO $ getReasonerConfigurationKey reasonerConfigurationKeyM
---     documentEntity <- findDocument opts location
---     trace ("found document: " ++ show (fromIntegral $ fromSqlKey $ entityKey documentEntity)) $ return ()
---     mapM_ (exportNodeReslults opts documentEntity reasonerConfigurationKey) nodesAndProofResults
---     return $ entityKey documentEntity
-
--- getReasonerConfigurationKey :: Maybe ReasonerConfigurationId -> IO ReasonerConfigurationId
--- getReasonerConfigurationKey reasonerConfigurationKeyM =
---   case reasonerConfigurationKeyM of
---     Nothing -> fail "Persistence.Reasoning.exportReasoningResults: No reasonerConfigurationKey supplied"
---     Just reasonerConfigurationKey -> return reasonerConfigurationKey
-
 findDocument :: MonadIO m
              => HetcatsOpts -> String -> DBMonad m (Entity LocIdBase)
 findDocument opts location = do
+  trace ("findDocument: " ++ location) $ return ()
   let locId = locIdOfDocument opts (Just location) ""
   trace ("searching for document with locId: " ++ locId) $ return ()
   findLocIdBase "Document" [Enums.Library, Enums.NativeDocument] locId

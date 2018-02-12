@@ -36,7 +36,6 @@ import Proofs.AbstractState
 
 import Control.Monad.IO.Class (MonadIO (..))
 import Data.Char
-import Data.List (stripPrefix)
 import Data.Maybe
 import qualified Data.Text as Text
 import qualified Database.Esqueleto.Internal.Language as EIL
@@ -50,8 +49,12 @@ firstLibdir opts =
   in  if last libdir' == '/' then libdir' else libdir' ++ "/"
 
 locIdOfDocument :: HetcatsOpts -> Maybe String -> String -> String
-locIdOfDocument opts location displayName =
-  let base = fromMaybe displayName location
+locIdOfDocument opts locationM displayName =
+  let fullLocation =
+        if fmap head locationM == Just '/'
+        then fmap ("file://" ++) locationM
+        else locationM
+      base = fromMaybe displayName fullLocation
   in  if null $ libdirs opts
       then base
       else tryToStripPrefix (firstLibdir opts) base
@@ -133,8 +136,8 @@ logicNameForDB lid sublogic =
   logicNameForDBByName (language_name lid) $ sublogicName sublogic
 
 logicNameForDBByName :: String -> String -> String
-logicNameForDBByName languageName logicName =
-  if null logicName then languageName else logicName
+logicNameForDBByName languageName_ logicName =
+  if null logicName then languageName_ else logicName
 
 
 parameterize :: String -> String

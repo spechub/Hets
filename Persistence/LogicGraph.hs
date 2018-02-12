@@ -161,8 +161,8 @@ findOrCreateLanguageMappingAndLogicMapping :: MonadIO m
                                                         , LogicMappingId
                                                         )
 findOrCreateLanguageMappingAndLogicMapping opts (Comorphism.Comorphism cid) =
-  let sourceLanguageSlugS = parameterize $ show $ sourceLogic cid
-      targetLanguageSlugS = parameterize $ show $ targetLogic cid
+  let sourceLanguageSlugS = slugOfLanguageByName $ language_name $ sourceLogic cid
+      targetLanguageSlugS = slugOfLanguageByName $ language_name $ targetLogic cid
   in do
     -- Find the IDs in the databases:
     Entity sourceLanguageKey _ : _ <- select $ from $ \languages -> do

@@ -270,6 +270,8 @@ hetsServer' opts1 = do
               else if isRESTful pathBits then do
               requestBodyBS <- strictRequestBody re
               requestBodyParams <- parseRequestParams re requestBodyBS
+              trace ("requestBodyBS: " ++ show requestBodyBS) $ return ()
+              trace ("requestBodyParams: " ++ show requestBodyParams) $ return ()
               let unknown = filter (`notElem` allQueryKeys) $ map fst qr2
               if null unknown
               then parseRESTful newOpts sessRef pathBits
@@ -309,7 +311,7 @@ parseRequestParams request requestBodyBS =
 #endif
   in
     liftM (fromMaybe noParams) $ case lookupHeader "Content-Type" of
-      Just "application/json" -> jsonBody request
+      Just "application/json" -> jsonBody requestBodyBS
       Just "multipart/form-data" -> formParams
       _ -> formParams
 
@@ -1197,6 +1199,7 @@ getHetsResult :: HetcatsOpts -> [W.FileInfo BS.ByteString]
   -> Cache -> Query.Query -> Maybe String -> UsedAPI -> ProofFormatterOptions -> Maybe ReasoningParameters
   -> ResultT IO (String, String)
 getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions reasoningParametersM = do
+      trace ("getHetsResult.format: " ++ show format) $ return ()
       let getCom n = let ncoms = filter (\(Comorphism cid) -> language_name cid == n) comorphismList
                      in case ncoms of
                          [c] -> c
@@ -1258,6 +1261,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions reasoning
             GlShowProverWindow prOrCons -> showAutoProofWindow dg k prOrCons
             GlAutoProve (ProveCmd prOrCons incl mp mt tl nds xForm axioms) -> do
               reasonerConfigurationKeyM <- setupProof opts format (queryLib dgQ) reasoningParametersM
+              trace ("proveMultiNodes - reasonerConfigurationKeyM: " ++  show reasonerConfigurationKeyM) $ return ()
               (newLib, nodesAndProofResults) <-
                 proveMultiNodes opts prOrCons libEnv ln dg incl mp mt tl nds axioms (queryLib dgQ) reasoningParametersM reasonerConfigurationKeyM
               if all (null . snd) nodesAndProofResults
@@ -1324,6 +1328,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions reasoning
                       case pm of
                       GlProofs -> do
                         reasonerConfigurationKeyM <- setupProof opts format (queryLib dgQ) reasoningParametersM
+                        trace ("proveNode - reasonerConfigurationKeyM: " ++  show reasonerConfigurationKeyM) $ return ()
                         (newLib, proofResults) <- proveNode opts libEnv ln dg nl
                           gTh subL incl mp mt tl thms axioms (queryLib dgQ)
                           reasoningParametersM reasonerConfigurationKeyM
@@ -1404,6 +1409,7 @@ setupProof :: HetcatsOpts
 setupProof opts format location reasoningParametersM = do
   trace ("setupProof.format: " ++ show format) $ return ()
   trace ("setupProof.reasoningParametersM: " ++ show reasoningParametersM) $ return ()
+  trace ("setupProof.useDatabase: " ++ show (format == Just "db")) $ return ()
   result <- liftIO $
     Persistence.Reasoning.setupReasoning opts location reasoningParametersM (format == Just "db")
   liftR $ return result
@@ -1943,6 +1949,9 @@ proveNode opts le ln dg nl gTh subL useTh mp mt tl thms axioms location reasonin
                   return ((goalName , premisesM , reasoningAttemptKeyM) : acc)
                 ) [] selectedGoals
         foldM (\ (nThAcc, sensAcc, proofStatusesAcc) (goalName, premisesM, reasoningAttemptKeyM) -> do
+                trace ("proveNode.goalName: " ++ goalName) $ return ()
+                trace ("proveNode.premisesM: " ++ show premisesM) $ return ()
+                trace ("proveNode.reasoningAttemptKeyM: " ++ show reasoningAttemptKeyM) $ return ()
                 let premises = fromMaybe [] $ premisesM `mplus` Just axioms
                 ((nTh, sens), (_, proofStatuses)) <-
                   autoProofAtNode useTh timeLimit [goalName] premises nThAcc cp
