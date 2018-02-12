@@ -218,12 +218,20 @@ computePremiseTriggers :: Logic.Logic lid sublogics basic_spec sentence symb_ite
                        -> G_SInEResult
 computePremiseTriggers gTheoryLid ExtSign{plainSign = sign}
   sineResult0@G_SInEResult{..} namedSentences =
-  let result =
+  let symbolCommonnesses' =
+        coerce "computePremiseTriggers 1" gSineLogic gTheoryLid symbolCommonnesses
+      leastCommonnesses' = coerce "computePremiseTriggers 2" gSineLogic gTheoryLid $ Map.map snd leastCommonSymbols
+      premiseTriggers' =
+        coerce "computePremiseTriggers 3" gSineLogic gTheoryLid premiseTriggers
+
+      result =
         foldr (\ namedSentence premiseTriggersAcc ->
-                let (_, leastCommonness) = fromJust $
-                      Map.lookup namedSentence leastCommonSymbols'
+                let leastCommonness :: Int
+                    leastCommonness = fromJust $
+                      Map.lookup namedSentence leastCommonnesses'
                 in  foldr (\ symbol premiseTriggersAcc' ->
-                            let symbolCommonness = fromJust $
+                            let symbolCommonness :: Int
+                                symbolCommonness = fromJust $
                                   Map.lookup symbol symbolCommonnesses'
                                 minimalTolerance =
                                   ((fromIntegral symbolCommonness /
@@ -244,16 +252,6 @@ computePremiseTriggers gTheoryLid ExtSign{plainSign = sign}
               ) premiseTriggers' namedSentences
   in  withPremiseTriggers gTheoryLid result sineResult0
   where
-    symbolCommonnesses' :: Map symbol Int
-    symbolCommonnesses' =
-        coerce "computePremiseTriggers 1" gSineLogic gTheoryLid symbolCommonnesses
-    leastCommonSymbols' :: Map (Named sentence) (symbol, Int)
-    leastCommonSymbols' =
-        coerce "computePremiseTriggers 2" gSineLogic gTheoryLid leastCommonSymbols
-    premiseTriggers' :: Map symbol [(Double, Named sentence)]
-    premiseTriggers' =
-        coerce "computePremiseTriggers 3" gSineLogic gTheoryLid premiseTriggers
-
     withPremiseTriggers :: Logic.Logic lid sublogics basic_spec sentence
                                        symb_items symb_map_items sign morphism
                                        symbol raw_symbol proof_tree
@@ -331,12 +329,12 @@ selectPremises' opts tolerance_ depthLimitM premiseLimitM currentDepth
                     sentence previouslySelectedNamedSentence
            ) sineResult previouslySelectedNamedSentences
   where
-    premiseTriggers' :: Map symbol [(Double, Named sentence)]
+--    premiseTriggers' :: Map symbol [(Double, Named sentence)]
     premiseTriggers' =
       coerce "selectPremises' 1" gSineLogic gTheoryLid premiseTriggers
-    selectedPremises' :: Set (Named sentence)
-    selectedPremises' =
-      coerce "selectPremises' 2" gSineLogic gTheoryLid selectedPremises
+--    selectedPremises' :: Set (Named sentence)
+--    selectedPremises' =
+--      coerce "selectPremises' 2" gSineLogic gTheoryLid selectedPremises
 
 isSelected :: Logic.Logic lid sublogics basic_spec sentence symb_items
                           symb_map_items sign morphism symbol
