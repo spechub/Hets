@@ -23,6 +23,7 @@ import Persistence.Utils
 import qualified Persistence.Schema.Enums as Enums
 
 import qualified Comorphisms.LogicGraph as LogicGraph (logicGraph)
+import Common.Utils (splitByList)
 import Driver.Options
 import Driver.Version
 import Logic.Grothendieck
@@ -32,6 +33,7 @@ import Proofs.AbstractState (G_prover (..), G_cons_checker (..), getProverName, 
 
 import Control.Monad (unless)
 import Control.Monad.IO.Class (MonadIO (..))
+import Data.List (isPrefixOf)
 import Database.Persist hiding ((==.))
 import Database.Esqueleto
 
@@ -79,19 +81,28 @@ findOrCreateLanguage :: ( MonadIO m
                         )
                      => lid -> DBMonad m LanguageId
 findOrCreateLanguage lid = do
-  let languageSlugS = parameterize $ show lid
-  languageL <- select $ from $ \languages -> do
-    where_ (languages ^. LanguageSlug ==. val languageSlugS)
-    return languages
-  case languageL of
-    [] -> insert Language
+  let languageSlugS = slugOfLanguageByName $ language_name lid
+  languageM <- findLanguage languageSlugS
+  case languageM of
+    Nothing -> insert Language
         { languageSlug = languageSlugS
         , languageName = show lid
         , languageDescription = description lid
         , languageStandardizationStatus = "TODO" -- TODO: add to class Logic
         , languageDefinedBy = "registry" -- TODO: add to class Logic (URL)
         }
-    Entity key _ : _-> return key
+    Just (Entity key _) -> return key
+
+findLanguage :: MonadIO m
+             => String -> DBMonad m (Maybe (Entity DatabaseSchema.Language))
+findLanguage languageSlugS = do
+  languageL <- select $ from $ \languages -> do
+    where_ (languages ^. LanguageSlug ==. val languageSlugS)
+    return languages
+  case languageL of
+    [] -> return Nothing
+    entity : _ -> return $ Just entity
+
 
 findOrCreateLogic :: ( MonadIO m
                      , Logic.Logic lid sublogics basic_spec sentence
@@ -101,13 +112,11 @@ findOrCreateLogic :: ( MonadIO m
                   => HetcatsOpts -> LanguageId -> lid -> sublogics
                   -> DBMonad m LogicId
 findOrCreateLogic opts languageKey lid sublogic = do
-  let logicNameS = sublogicNameForDB lid sublogic
-  let logicSlugS = parameterize logicNameS
-  logicL <- select $ from $ \logicsSql -> do
-    where_ (logicsSql ^. LogicSlug ==. val logicSlugS)
-    return logicsSql
-  case logicL of
-    [] ->
+  let logicNameS = logicNameForDB lid sublogic
+  let logicSlugS = slugOfLogicByName logicNameS
+  logicM <- findLogic logicSlugS
+  case logicM of
+    Nothing ->
       -- This is a two-staged process to save some performance:
       -- Case 1: If the logic existed beforehand, then we don't lock the
       -- database and return the logic ID. This is expected to happen very
@@ -116,17 +125,25 @@ findOrCreateLogic opts languageKey lid sublogic = do
       -- it atomically. To do this, we do a find-or-create pattern inside a
       -- mutex. This is expected to happen only a few times.
       advisoryLocked opts migrateLogicGraphKey $ do
-        logicL' <- select $ from $ \logicsSql -> do
-          where_ (logicsSql ^. LogicSlug ==. val logicSlugS)
-          return logicsSql
-        case logicL' of
-          [] -> insert DatabaseSchema.Logic
+        logicM' <- findLogic logicSlugS
+        case logicM' of
+          Nothing -> insert DatabaseSchema.Logic
             { logicLanguageId = languageKey
             , logicSlug = logicSlugS
             , logicName = logicNameS
             }
-          Entity key _ : _ -> return key
-    Entity key _ : _ -> return key
+          Just (Entity key _) -> return key
+    Just (Entity key _) -> return key
+
+findLogic :: MonadIO m
+          => String -> DBMonad m (Maybe (Entity DatabaseSchema.Logic))
+findLogic logicSlugS = do
+  logicL <- select $ from $ \logicsSql -> do
+    where_ (logicsSql ^. LogicSlug ==. val logicSlugS)
+    return logicsSql
+  case logicL of
+    [] -> return Nothing
+    entity : _ -> return $ Just entity
 
 -- Export all LanguageMappings and LogicMappings. Add those that have been added
 -- since a previous version of Hets. This does not delete any of the old
@@ -212,19 +229,18 @@ findLogicMappingByComorphism :: MonadIO m
 findLogicMappingByComorphism comorphism@(Comorphism.Comorphism cid) =
   if isIdComorphism comorphism then return Nothing else do
     let logicMappingSlugS = slugOfLogicMapping comorphism
-    logicMappingL <- select $ from $ \ logic_mappings -> do
-      where_ (logic_mappings ^. LogicMappingSlug ==. val logicMappingSlugS)
-      return logic_mappings
-    case logicMappingL of
-      [] -> fail ("Persistence.LogicGraph.findLogicMappingByComorphism: Could not find LogicMapping " ++ logicMappingSlugS)
-      logicMappingEntity : _ -> return $ Just logicMappingEntity
+    findLogicMappingBySlug logicMappingSlugS
 
-sublogicNameForDB :: Logic.Logic lid sublogics basic_spec sentence symb_items
-                       symb_map_items sign morphism symbol raw_symbol proof_tree
-                  => lid -> sublogics -> String
-sublogicNameForDB lid sublogic =
-  let hetsName = sublogicName sublogic
-  in  if null hetsName then show lid else hetsName
+findLogicMappingBySlug :: MonadIO m
+                       => String
+                       -> DBMonad m (Maybe (Entity LogicMapping))
+findLogicMappingBySlug logicMappingSlugS = do
+  logicMappingL <- select $ from $ \ logic_mappings -> do
+    where_ (logic_mappings ^. LogicMappingSlug ==. val logicMappingSlugS)
+    return logic_mappings
+  case logicMappingL of
+    [] -> fail ("Persistence.LogicGraph.findLogicMappingBySlug: Could not find LogicMapping " ++ logicMappingSlugS)
+    logicMappingEntity : _ -> return $ Just logicMappingEntity
 
 exportReasoners :: MonadIO m => HetcatsOpts -> LogicGraph -> DBMonad m ()
 exportReasoners _ logicGraph =
@@ -302,13 +318,109 @@ findOrCreateLogicTranslation opts comorphism@(Comorphism.Comorphism cid) =
         let logicTranslationValue =
               LogicTranslation { logicTranslationSlug = logicTranslationSlugS }
         logicTranslationKey <- insert logicTranslationValue
-        mapM_ (\ (number, Comorphism.Comorphism cid') ->
-                createLogicTranslationStep opts logicTranslationKey (number, cid')
-              ) $ zip [1..] $ flattenComposition cid
+        mapM_ (\ (number, name) ->
+                createLogicTranslationStep opts logicTranslationKey (number, name)
+              ) $ zip [1..] $ constituents cid
         return $ Just $ Entity logicTranslationKey logicTranslationValue
 
-createLogicTranslationStep = undefined
-flattenComposition = undefined
+createLogicTranslationStep :: MonadIO m
+                           => HetcatsOpts
+                           -> LogicTranslationId
+                           -> (Int, String)
+                           -> DBMonad m (Entity LogicTranslationStep)
+createLogicTranslationStep opts logicTranslationKey (number, name)
+  | isInclusion name = do
+      Entity logicInclusionKey _ <- findOrCreateLogicInclusion opts name
+      let translationStepValue = LogicTranslationStep
+            { logicTranslationStepTranslationId = logicTranslationKey
+            , logicTranslationStepNumber = number
+            , logicTranslationStepLogicMappingId = Nothing
+            , logicTranslationStepLogicInclusionId = Just logicInclusionKey
+            }
+      translationStepKey <- insert translationStepValue
+      return $ Entity translationStepKey translationStepValue
+  | otherwise = do
+      Just (Entity logicMappingKey _) <-
+        findLogicMappingBySlug $ slugOfLogicMappingByName name
+      let translationStepValue = LogicTranslationStep
+            { logicTranslationStepTranslationId = logicTranslationKey
+            , logicTranslationStepNumber = number
+            , logicTranslationStepLogicMappingId = Just logicMappingKey
+            , logicTranslationStepLogicInclusionId = Nothing
+            }
+      translationStepKey <- insert translationStepValue
+      return $ Entity translationStepKey translationStepValue
+  where
+    isInclusion :: String -> Bool
+    isInclusion name = "id_" `isPrefixOf` name || "incl_" `isPrefixOf` name
+
+findOrCreateLogicInclusion :: MonadIO m
+                           => HetcatsOpts
+                           -> String
+                           -> DBMonad m (Entity LogicInclusion)
+findOrCreateLogicInclusion opts name = do
+  let logicInclusionSlugS = slugOfLogicInclusionByName name
+  logicInclusionL <- select $ from $ \ logic_inclusions -> do
+    where_ (logic_inclusions ^. LogicInclusionSlug ==. val logicInclusionSlugS)
+    return logic_inclusions
+  case logicInclusionL of
+    logicInclusionEntity : _ -> return logicInclusionEntity
+    [] -> do
+      let (languageSlugS, sourceSlugS, targetSlugM) = slugsFromName
+
+      languageM <- findLanguage languageSlugS
+      languageKey <- case languageM of
+        Nothing -> fail ("Persistence.LogicGraph.findOrCreateLogicInclusion: "
+          ++ "Could not find the language " ++ languageSlugS)
+        Just (Entity key _) -> return key
+
+      sourceM <- findLogic sourceSlugS
+      sourceKey <- case sourceM of
+        Nothing -> fail ("Persistence.LogicGraph.findOrCreateLogicInclusion: "
+          ++ "Could not find the source logic " ++ sourceSlugS)
+        Just (Entity key _) -> return key
+
+      targetKeyM <- case targetSlugM of
+        Nothing -> return Nothing
+        Just targetSlugS -> do
+          targetM <- findLogic targetSlugS
+          case targetM of
+            Nothing -> fail ("Persistence.LogicGraph.findOrCreateLogicInclusion: "
+              ++ "Could not find the target logic " ++ targetSlugS)
+            Just (Entity key _) -> return $ Just key
+
+      let logicInclusionValue = LogicInclusion
+            { logicInclusionSlug = logicInclusionSlugS
+            , logicInclusionLanguageId = languageKey
+            , logicInclusionSourceLogicId = sourceKey
+            , logicInclusionTargetLogicId = targetKeyM
+            }
+      logicInclusionKey <- insert logicInclusionValue
+      return $ Entity logicInclusionKey logicInclusionValue
+  where
+    slugsFromName :: (String, String, Maybe String)
+    slugsFromName
+      | "id_" `isPrefixOf` name =
+          let languageName = takeWhile (/= '.') $ drop 3 name
+              logicName = tail $ dropWhile (/= '.') name
+              logicSlugS =
+                slugOfLogicByName $ logicNameForDBByName languageName logicName
+          in  ( slugOfLanguageByName languageName
+              , logicSlugS
+              , Nothing
+              )
+      | "incl_" `isPrefixOf` name =
+          let languageName = takeWhile (/= ':') $ drop 5 name
+              logicNames = tail $ dropWhile (/= ':') name
+              [sourceName, targetName] = splitByList "->" logicNames
+              sourceSlugS =
+                slugOfLogicByName $ logicNameForDBByName languageName sourceName
+              targetSlugS =
+                slugOfLogicByName $ logicNameForDBByName languageName targetName
+          in  ( slugOfLanguageByName languageName
+              , sourceSlugS
+              , Just targetSlugS
+              )
 
 -- class Comorphism cid lid1 sublogics1
 --                  basic_spec1 sentence1 symb_items1 symb_map_items1

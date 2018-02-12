@@ -9,7 +9,13 @@ module Persistence.Utils ( firstLibdir
                          , slugOfProver
                          , slugOfConsistencyChecker
                          , slugOfTranslation
+                         , slugOfLanguageByName
                          , slugOfLogicMapping
+                         , slugOfLogicMappingByName
+                         , slugOfLogicInclusionByName
+                         , slugOfLogicByName
+                         , logicNameForDB
+                         , logicNameForDBByName
                          , parameterize
                          , advisoryLocked
                          , coerceId
@@ -100,9 +106,35 @@ slugOfTranslation :: AnyComorphism -> String
 slugOfTranslation (Comorphism.Comorphism cid) =
   parameterize $ language_name cid
 
+slugOfLanguageByName :: String -> String
+slugOfLanguageByName = parameterize
+
 slugOfLogicMapping :: AnyComorphism -> String
 slugOfLogicMapping (Comorphism.Comorphism cid) =
-  parameterize $ language_name cid
+  slugOfLogicMappingByName $ language_name cid
+
+slugOfLogicMappingByName :: String -> String
+slugOfLogicMappingByName = parameterize
+
+slugOfLogicInclusionByName :: String -> String
+slugOfLogicInclusionByName =
+  parameterize .
+  replace "->" "-Arrow-" .
+  replace "_" "-Sub-" .
+  replace "." "-Dot-"
+
+slugOfLogicByName :: String -> String
+slugOfLogicByName = parameterize
+
+logicNameForDB :: Logic.Logic lid sublogics basic_spec sentence symb_items
+                    symb_map_items sign morphism symbol raw_symbol proof_tree
+               => lid -> sublogics -> String
+logicNameForDB lid sublogic =
+  logicNameForDBByName (language_name lid) $ sublogicName sublogic
+
+logicNameForDBByName :: String -> String -> String
+logicNameForDBByName languageName logicName =
+  if null logicName then languageName else logicName
 
 
 parameterize :: String -> String

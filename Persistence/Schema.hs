@@ -89,8 +89,11 @@ LogicMapping sql=logic_mappings
   deriving Show
 
 LogicInclusion sql=logic_inclusions
+  slug String
+  UniqueLogicInclusionSlug slug
+  languageId LanguageId
   sourceLogicId LogicId
-  targetLogicId LogicId
+  targetLogicId LogicId Maybe
   deriving Show
 
 LogicTranslation sql=logic_translations
