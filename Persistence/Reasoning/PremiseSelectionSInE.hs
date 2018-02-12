@@ -73,8 +73,9 @@ perform :: HetcatsOpts
         -> ReasoningParameters.PremiseSelection
         -> String
         -> IO (Maybe [String], Int, G_SInEResult)
-perform opts libEnv libName dGraph nodeLabel gTheory@G_theory{gTheoryLogic = gTheoryLid} gSublogics
-  premiseSelectionParameters goalName = do
+perform opts libEnv libName dGraph nodeLabel
+  gTheory@G_theory{gTheoryLogic = gTheoryLid, gTheorySign = extSign}
+  gSublogics premiseSelectionParameters goalName = do
   let parameters_ = SInEParameters
         { depthLimit = ReasoningParameters.sineDepthLimit premiseSelectionParameters
         , tolerance = ReasoningParameters.sineTolerance premiseSelectionParameters
@@ -94,7 +95,7 @@ perform opts libEnv libName dGraph nodeLabel gTheory@G_theory{gTheoryLogic = gTh
           preprocess opts libEnv libName dGraph nodeLabel gTheoryLid
             gTheory gSublogics sineResult0 goalName
     let sineResult2 =
-          selectPremises opts libEnv libName dGraph nodeLabel gTheoryLid gTheory gSublogics
+          selectPremises opts libEnv libName dGraph nodeLabel gTheoryLid extSign gSublogics
             sineResult1 goal
     let premisesM = case sineResult2 of
           G_SInEResult { selectedPremises = premises } ->
@@ -223,9 +224,10 @@ computePremiseTriggers gTheoryLid ExtSign{plainSign = sign}
                       Map.lookup namedSentence leastCommonSymbols'
                 in  foldr (\ symbol premiseTriggersAcc' ->
                             let symbolCommonness = fromJust $
-                                  Map.lookup symbol symbolCommonnesses
+                                  Map.lookup symbol symbolCommonnesses'
                                 minimalTolerance =
-                                  symbolCommonnesses' / leastCommonness
+                                  ((fromIntegral symbolCommonness /
+                                    fromIntegral leastCommonness) :: Double)
                             in  Map.insertWith
                                   (\ _ triggers ->
                                     List.insertBy
@@ -246,12 +248,12 @@ computePremiseTriggers gTheoryLid ExtSign{plainSign = sign}
     symbolCommonnesses' =
         coerce "computePremiseTriggers 1" gSineLogic gTheoryLid symbolCommonnesses
     leastCommonSymbols' :: Map (Named sentence) (symbol, Int)
-    leastCommonSymbols' = 
+    leastCommonSymbols' =
         coerce "computePremiseTriggers 2" gSineLogic gTheoryLid leastCommonSymbols
     premiseTriggers' :: Map symbol [(Double, Named sentence)]
-    premiseTriggers' = 
+    premiseTriggers' =
         coerce "computePremiseTriggers 3" gSineLogic gTheoryLid premiseTriggers
-      
+
     withPremiseTriggers :: Logic.Logic lid sublogics basic_spec sentence
                                        symb_items symb_map_items sign morphism
                                        symbol raw_symbol proof_tree
@@ -274,13 +276,13 @@ selectPremises :: Logic.Logic lid sublogics basic_spec sentence
                -> DGraph
                -> (Int, DGNodeLab)
                -> lid
-               -> G_theory
+               -> ExtSign sign symbol
                -> G_sublogics
                -> G_SInEResult
                -> Named sentence
                -> G_SInEResult
 selectPremises opts libEnv libName dGraph nodeLabel gTheoryLid
-  G_theory{gTheorySign = extSign} gSublogics sineResult0@G_SInEResult{..} goal =
+  extSign gSublogics sineResult0@G_SInEResult{..} goal =
   let premiseLimitM = premiseNumberLimit parameters
       depthLimitM = depthLimit parameters
       tolerance_ = fromMaybe 1.0 $ tolerance parameters
@@ -307,31 +309,34 @@ selectPremises' opts tolerance_ depthLimitM premiseLimitM currentDepth
   | isJust depthLimitM && currentDepth >= fromJust depthLimitM = sineResult
   | isJust premiseLimitM && Set.size selectedPremises >= fromJust premiseLimitM = sineResult
   | otherwise =
-  let premiseTriggers' =
-        coerce "selectPremises' 1" gSineLogic gTheoryLid premiseTriggers
-      selectedPremises' =
-        coerce "selectPremises' 2" gSineLogic gTheoryLid selectedPremises
-  in  foldr (\ previouslySelectedNamedSentence sineResultAcc ->
-                foldr (\ symbol sineResultAcc' ->
-                        let possiblyTriggeredSentences =
-                              fromJust $ Map.lookup symbol premiseTriggers'
-                            triggeredSentences =
-                              map snd $ takeWhile ((<= tolerance_) . fst)
-                                possiblyTriggeredSentences
-                            nextSelectedSentences =
-                              filter (isSelected sineResultAcc' gTheoryLid)
-                                triggeredSentences
-                            sineResultAcc'' =
-                              foldr (selectPremise gTheoryLid) sineResultAcc'
-                                nextSelectedSentences
-                        in  selectPremises' opts tolerance_ depthLimitM
-                              premiseLimitM (currentDepth + 1) gTheoryLid
-                              extSign sineResultAcc'' nextSelectedSentences
-                      )
-                      sineResultAcc $
-                      nub $ symsOfSen gTheoryLid sign $
-                      sentence previouslySelectedNamedSentence
-             ) sineResult previouslySelectedNamedSentences
+    foldr (\ previouslySelectedNamedSentence sineResultAcc ->
+              foldr (\ symbol sineResultAcc' ->
+                      let possiblyTriggeredSentences =
+                            fromJust $ Map.lookup symbol premiseTriggers'
+                          triggeredSentences =
+                            map snd $ takeWhile ((<= tolerance_) . fst)
+                              possiblyTriggeredSentences
+                          nextSelectedSentences =
+                            filter (isSelected sineResultAcc' gTheoryLid)
+                              triggeredSentences
+                          sineResultAcc'' =
+                            foldr (selectPremise gTheoryLid) sineResultAcc'
+                              nextSelectedSentences
+                      in  selectPremises' opts tolerance_ depthLimitM
+                            premiseLimitM (currentDepth + 1) gTheoryLid
+                            extSign sineResultAcc'' nextSelectedSentences
+                    )
+                    sineResultAcc $
+                    nub $ symsOfSen gTheoryLid sign $
+                    sentence previouslySelectedNamedSentence
+           ) sineResult previouslySelectedNamedSentences
+  where
+    premiseTriggers' :: Map symbol [(Double, Named sentence)]
+    premiseTriggers' =
+      coerce "selectPremises' 1" gSineLogic gTheoryLid premiseTriggers
+    selectedPremises' :: Set (Named sentence)
+    selectedPremises' =
+      coerce "selectPremises' 2" gSineLogic gTheoryLid selectedPremises
 
 isSelected :: Logic.Logic lid sublogics basic_spec sentence symb_items
                           symb_map_items sign morphism symbol
