@@ -87,7 +87,7 @@ createReasonerConfiguration reasoningParameters = do
   insert DatabaseSchema.ReasonerConfiguration
     { reasonerConfigurationConfiguredReasonerId = reasonerKeyM
     , reasonerConfigurationTimeLimit =
-        timeLimit $ reasonerConfiguration reasoningParameters
+        Just $ timeLimit $ reasonerConfiguration reasoningParameters
     }
 
 preprocessReasoning :: HetcatsOpts
