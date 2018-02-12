@@ -2,6 +2,7 @@
 
 module PGIP.GraphQL.Result.ReasoningAttempt where
 
+import PGIP.GraphQL.Result.Action
 import PGIP.GraphQL.Result.Reasoner
 import PGIP.GraphQL.Result.ReasonerConfiguration
 import PGIP.GraphQL.Result.ReasonerOutput
@@ -9,7 +10,7 @@ import PGIP.GraphQL.Result.ReasonerOutput
 import Data.Data
 
 data ReasoningAttempt =
-  ReasoningAttempt { evaluationState :: String
+  ReasoningAttempt { action :: Action
                    , reasonerConfiguration :: ReasonerConfiguration
                    , reasonerOutput :: Maybe ReasonerOutput
                    , reasoningStatus :: String
