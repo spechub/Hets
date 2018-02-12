@@ -132,7 +132,7 @@ preprocessReasoning opts libEnv libName dGraph nodeLabel gTheory gSublogics loca
                 return (premisesM, Just reasoningAttemptKey)
 
 data PremiseSelectionResultForDatabase = NoResult
-                                       | SineResult SInE.SInEResult
+                                       | SineResult SInE.G_SInEResult
 
 performPremiseSelection :: HetcatsOpts
                         -> LibEnv
@@ -145,14 +145,15 @@ performPremiseSelection :: HetcatsOpts
                         -> ReasoningParameters.PremiseSelection
                         -> Enums.PremiseSelectionKindType
                         -> IO (Maybe [String], Int, PremiseSelectionResultForDatabase)
-performPremiseSelection opts libEnv libName dGraph nodeLabel gTheory gSublogics goalName premiseSelectionParameters premiseSelectionKindV =
+performPremiseSelection opts libEnv libName dGraph nodeLabel gTheory gSublogics
+  goalName premiseSelectionParameters premiseSelectionKindV =
   case premiseSelectionKindV of
     Enums.ManualPremiseSelection ->
       return (manualPremises premiseSelectionParameters, 0, NoResult)
     Enums.SinePremiseSelection -> do
       (premisesM, timeTaken, sineResult) <-
         SInE.perform opts libEnv libName dGraph nodeLabel gTheory gSublogics
-          goalName premiseSelectionParameters
+          premiseSelectionParameters goalName
       return (premisesM, timeTaken, SineResult sineResult)
 
 createProofAttempt :: MonadIO m
@@ -271,8 +272,9 @@ createPremiseSelection opts location nodeName goalName
           , sinePremiseSelectionTolerance = sineTolerance premiseSelectionParameters
           , sinePremiseSelectionAxiomNumberLimit = sinePremiseNumberLimit premiseSelectionParameters
           }]
-        case premiseSelectionResultData of
-          SineResult sineResult -> SInE.saveToDatabase opts sineResult sinePremiseSelectionKey
+        case premiseSelectionResult of
+          SineResult sineResult -> liftIO $
+            SInE.saveToDatabase opts sineResult omsEntity sinePremiseSelectionKey
           _ -> return ()
 
 postprocessReasoning :: HetcatsOpts
