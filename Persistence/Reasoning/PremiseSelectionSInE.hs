@@ -1,6 +1,7 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Persistence.Reasoning.PremiseSelectionSInE ( G_SInEResult (..)
                                                   , SInEParameters (..)
@@ -216,13 +217,7 @@ computePremiseTriggers :: Logic.Logic lid sublogics basic_spec sentence symb_ite
                        -> G_SInEResult
 computePremiseTriggers gTheoryLid ExtSign{plainSign = sign}
   sineResult0@G_SInEResult{..} namedSentences =
-  let symbolCommonnesses' =
-        coerce "computePremiseTriggers 1" gSineLogic gTheoryLid symbolCommonnesses
-      leastCommonSymbols' =
-        coerce "computePremiseTriggers 2" gSineLogic gTheoryLid leastCommonSymbols
-      premiseTriggers' =
-        coerce "computePremiseTriggers 3" gSineLogic gTheoryLid premiseTriggers
-      result =
+  let result =
         foldr (\ namedSentence premiseTriggersAcc ->
                 let (_, leastCommonness) = fromJust $
                       Map.lookup namedSentence leastCommonSymbols'
@@ -247,6 +242,16 @@ computePremiseTriggers gTheoryLid ExtSign{plainSign = sign}
               ) premiseTriggers' namedSentences
   in  withPremiseTriggers gTheoryLid result sineResult0
   where
+    symbolCommonnesses' :: Map symbol Int
+    symbolCommonnesses' =
+        coerce "computePremiseTriggers 1" gSineLogic gTheoryLid symbolCommonnesses
+    leastCommonSymbols' :: Map (Named sentence) (symbol, Int)
+    leastCommonSymbols' = 
+        coerce "computePremiseTriggers 2" gSineLogic gTheoryLid leastCommonSymbols
+    premiseTriggers' :: Map symbol [(Double, Named sentence)]
+    premiseTriggers' = 
+        coerce "computePremiseTriggers 3" gSineLogic gTheoryLid premiseTriggers
+      
     withPremiseTriggers :: Logic.Logic lid sublogics basic_spec sentence
                                        symb_items symb_map_items sign morphism
                                        symbol raw_symbol proof_tree
@@ -258,6 +263,7 @@ computePremiseTriggers gTheoryLid ExtSign{plainSign = sign}
       G_SInEResult gSineLogic parameters symbolCommonnesses
         (coerce "withPremiseTriggers" gSineLogic lid premiseTriggers')
         leastCommonSymbols selectedPremises selectedPremiseNames
+
 
 selectPremises :: Logic.Logic lid sublogics basic_spec sentence
                               symb_items symb_map_items sign morphism
@@ -280,6 +286,7 @@ selectPremises opts libEnv libName dGraph nodeLabel gTheoryLid
       tolerance_ = fromMaybe 1.0 $ tolerance parameters
   in  selectPremises' opts tolerance_ depthLimitM premiseLimitM 0 gTheoryLid
         extSign sineResult0 [goal]
+
 
 selectPremises' :: Logic.Logic lid sublogics basic_spec sentence symb_items
                                symb_map_items sign morphism symbol
