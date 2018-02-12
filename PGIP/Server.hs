@@ -303,12 +303,6 @@ parseRequestParams request requestBodyBS =
         (formDataB8, _) <- parseRequestBody lbsBackEnd request
         return $ parseJson $ toJsonObject formDataB8
 
-    jsonBody :: RsrcIO (Maybe Json)
-    jsonBody = liftM (parseJson . B8.unpack) receivedRequestBody
-
-    receivedRequestBody :: RsrcIO B8.ByteString
-    receivedRequestBody = return $ B8.pack $ BS.unpack requestBodyBS
-
 #ifdef WARP1
     lazyRequestBody :: Request -> ResourceT IO BS.ByteString
     lazyRequestBody = fmap BS.fromChunks . lazyConsume . requestBody
