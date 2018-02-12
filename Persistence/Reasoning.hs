@@ -308,6 +308,7 @@ findDocument :: MonadIO m
              => HetcatsOpts -> String -> DBMonad m (Entity LocIdBase)
 findDocument opts location = do
   trace ("findDocument: " ++ location) $ return ()
+  trace ("libdirs: " ++ show (libdirs opts)) $ return ()
   let locId = locIdOfDocument opts (Just location) ""
   trace ("searching for document with locId: " ++ locId) $ return ()
   findLocIdBase "Document" [Enums.Library, Enums.NativeDocument] locId

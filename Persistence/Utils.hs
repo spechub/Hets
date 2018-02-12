@@ -46,7 +46,8 @@ import Database.Persist.Sql hiding (replace)
 firstLibdir :: HetcatsOpts -> String
 firstLibdir opts =
   let libdir' = head $ libdirs opts
-  in  if last libdir' == '/' then libdir' else libdir' ++ "/"
+      libdir'' = if head libdir' == '/' then "file://" ++ libdir' else libdir'
+  in  if last libdir'' == '/' then libdir'' else libdir'' ++ "/"
 
 locIdOfDocument :: HetcatsOpts -> Maybe String -> String -> String
 locIdOfDocument opts locationM displayName =
@@ -136,8 +137,8 @@ logicNameForDB lid sublogic =
   logicNameForDBByName (language_name lid) $ sublogicName sublogic
 
 logicNameForDBByName :: String -> String -> String
-logicNameForDBByName languageName_ logicName =
-  if null logicName then languageName_ else logicName
+logicNameForDBByName languageName_ logicName_ =
+  if null logicName_ then languageName_ else logicName_
 
 
 parameterize :: String -> String
