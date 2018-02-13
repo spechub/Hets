@@ -327,12 +327,8 @@ selectPremises' opts tolerance_ depthLimitM premiseLimitM currentDepth
                     sentence previouslySelectedNamedSentence
            ) sineResult previouslySelectedNamedSentences
   where
---    premiseTriggers' :: Map symbol [(Double, Named sentence)]
     premiseTriggers' =
       coercePremiseTriggers "selectPremises' 1" gSineLogic gTheoryLid premiseTriggers
---    selectedPremises' :: Set (Named sentence)
---    selectedPremises' =
---      coerce "selectPremises' 2" gSineLogic gTheoryLid selectedPremises
 
 isSelected :: Logic.Logic lid sublogics basic_spec sentence symb_items
                           symb_map_items sign morphism symbol
