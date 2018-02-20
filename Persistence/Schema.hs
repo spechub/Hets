@@ -28,12 +28,11 @@ import Database.Persist.TH
 import Data.Text (Text)
 
 import qualified Persistence.Schema.Enums as Enums
+import Persistence.Schema.ConsistencyStatusType (ConsistencyStatusType)
 import Persistence.Schema.EvaluationStateType (EvaluationStateType)
 import Persistence.Schema.MappingOrigin (MappingOrigin)
 import Persistence.Schema.MappingType (MappingType)
 import Persistence.Schema.OMSOrigin (OMSOrigin)
-import Persistence.Schema.ReasoningStatusOnConjectureType (ReasoningStatusOnConjectureType)
-import Persistence.Schema.ReasoningStatusOnReasoningAttemptType (ReasoningStatusOnReasoningAttemptType)
 
 indexes :: [(String, [String])]
 indexes =
@@ -204,6 +203,7 @@ Diagnosis sql=diagnoses
 
 OMS sql=oms
   documentId LocIdBaseId -- DocumentId is LocIdBaseId
+  actionId ActionId
   logicId LogicId
   languageId LanguageId
   serializationId SerializationId Maybe
@@ -221,6 +221,7 @@ OMS sql=oms
   nameExtensionIndex Int    -- Represents NodeName
   labelHasHiding Bool
   labelHasFree Bool
+  consistencyStatus ConsistencyStatusType
   deriving Show
 
 Mapping sql=mappings
@@ -252,7 +253,7 @@ Axiom sql=axioms
 
 Conjecture sql=conjectures
   actionId ActionId
-  reasoningStatus ReasoningStatusOnConjectureType
+  proofStatus Enums.ProofStatusType
   deriving Show
 
 Symbol sql=symbols
@@ -330,19 +331,21 @@ SineSymbolCommonness sql=sine_symbol_commonnesses
   deriving Show
 
 ReasoningAttempt sql=reasoning_attempts
+  kind Enums.ReasoningAttemptKindType maxlen=16
   actionId ActionId
   reasonerConfigurationId ReasonerConfigurationId
   usedReasonerId ReasonerId Maybe
   usedLogicTranslationId LogicTranslationId Maybe
   timeTaken Int Maybe
-  reasoningStatus ReasoningStatusOnReasoningAttemptType
   deriving Show
 
 ProofAttempt sql=proof_attempts
   conjectureId LocIdBaseId Maybe
+  proofStatus Enums.ProofStatusType
 
 ConsistencyCheckAttempt sql=consistency_check_attempts
   omsId LocIdBaseId Maybe
+  consistencyStatus ConsistencyStatusType
 
 GeneratedAxiom sql=generated_axioms
   reasoningAttemptId ReasoningAttemptId

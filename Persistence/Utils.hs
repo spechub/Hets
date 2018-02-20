@@ -1,5 +1,6 @@
 module Persistence.Utils ( firstLibdir
                          , locIdOfDocument
+                         , locIdOfOMSWithName
                          , locIdOfOMS
                          , locIdOfSentence
                          , locIdOfSymbol
@@ -29,10 +30,11 @@ import Persistence.Schema
 import Common.Utils (replace, tryToStripPrefix)
 import Driver.Options
 import Persistence.Database
-
 import Logic.Comorphism as Comorphism
 import Logic.Logic as Logic
 import Proofs.AbstractState
+import Static.DevGraph (DGNodeLab (..))
+import Static.DgUtils (showName)
 
 import Control.Monad.IO.Class (MonadIO (..))
 import Data.Char
@@ -60,12 +62,16 @@ locIdOfDocument opts locationM displayName =
       then base
       else tryToStripPrefix (firstLibdir opts) base
 
-locIdOfOMS :: Entity LocIdBase -> String -> String
-locIdOfOMS (Entity _ documentLocIdBaseValue) nodeName =
+locIdOfOMSWithName :: Entity LocIdBase -> String -> String
+locIdOfOMSWithName (Entity _ documentLocIdBaseValue) nodeName =
   case locIdBaseKind documentLocIdBaseValue of
     Enums.NativeDocument -> nodeName
     _ -> locIdBaseLocId documentLocIdBaseValue
          ++ "//oms/" ++ nodeName
+
+locIdOfOMS :: Entity LocIdBase -> DGNodeLab -> String
+locIdOfOMS documentEntity nodeLabel =
+  locIdOfOMSWithName documentEntity $ showName $ dgn_name nodeLabel
 
 locIdOfSentence :: Entity LocIdBase -> String -> String
 locIdOfSentence (Entity _ omsLocIdBaseValue) name =

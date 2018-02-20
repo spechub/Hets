@@ -14,6 +14,8 @@ module Persistence.LogicGraph ( migrateLogicGraphKey
                               , findOrCreateConsistencyChecker
                               , findLogicMappingByComorphism
                               , findOrCreateLogicTranslation
+                              , findReasonerByProverOrConsChecker
+                              , findReasonerByGConsChecker
                               , findReasonerByGProver
                               ) where
 
@@ -29,7 +31,7 @@ import Driver.Version
 import Logic.Grothendieck
 import Logic.Logic as Logic
 import Logic.Comorphism as Comorphism
-import Proofs.AbstractState (G_prover (..), G_cons_checker (..), getProverName, getCcName)
+import Proofs.AbstractState (ProverOrConsChecker (..), G_prover (..), G_cons_checker (..), getProverName, getCcName)
 
 import Control.Monad (unless)
 import Control.Monad.IO.Class (MonadIO (..))
@@ -289,6 +291,16 @@ findOrCreateReasoner reasonerSlugS name reasonerKindValue = do
       , reasonerKind = reasonerKindValue
       }
 
+findReasonerByGConsChecker :: MonadIO m
+                           => G_cons_checker
+                           -> DBMonad m (Entity Reasoner)
+findReasonerByGConsChecker gConsChecker = do
+  let reasonerSlugS = slugOfConsistencyChecker gConsChecker
+  reasonerM <- findReasoner reasonerSlugS Enums.ConsistencyChecker
+  case reasonerM of
+    Nothing -> fail ("Persistence.LogicGraph.findReasonerByGConsChecker: Could not find Consistency Checker " ++ reasonerSlugS)
+    Just reasonerEntity -> return reasonerEntity
+
 findReasonerByGProver :: MonadIO m
                       => G_prover
                       -> DBMonad m (Entity Reasoner)
@@ -299,6 +311,12 @@ findReasonerByGProver gProver = do
     Nothing -> fail ("Persistence.LogicGraph.findReasonerByGProver: Could not find Prover " ++ reasonerSlugS)
     Just reasonerEntity -> return reasonerEntity
 
+findReasonerByProverOrConsChecker :: MonadIO m
+                                  => ProverOrConsChecker
+                                  -> DBMonad m (Entity Reasoner)
+findReasonerByProverOrConsChecker reasoner = case reasoner of
+  Prover gProver -> findReasonerByGProver gProver
+  ConsChecker gConsChecker -> findReasonerByGConsChecker gConsChecker
 
 findOrCreateLogicTranslation :: MonadIO m
                              => HetcatsOpts

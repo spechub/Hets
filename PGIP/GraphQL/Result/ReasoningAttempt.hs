@@ -13,7 +13,6 @@ data ReasoningAttempt =
   ReasoningAttempt { action :: Action
                    , reasonerConfiguration :: ReasonerConfiguration
                    , reasonerOutput :: Maybe ReasonerOutput
-                   , reasoningStatus :: String
                    , timeTaken :: Maybe Int
                    , usedReasoner :: Maybe Reasoner
                    } deriving (Show, Typeable, Data)

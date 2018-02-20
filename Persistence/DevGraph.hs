@@ -25,12 +25,12 @@ import Persistence.Schema.MappingOrigin (MappingOrigin)
 import qualified Persistence.Schema.MappingOrigin as MappingOrigin
 import Persistence.Range
 import Persistence.Schema.MappingType (MappingType)
+import qualified Persistence.Schema.ConsistencyStatusType as ConsistencyStatusType
 import qualified Persistence.Schema.Enums as Enums
 import qualified Persistence.Schema.EvaluationStateType as EvaluationStateType
 import qualified Persistence.Schema.MappingType as MappingType
 import Persistence.Schema.OMSOrigin (OMSOrigin)
 import qualified Persistence.Schema.OMSOrigin as OMSOrigin
-import qualified Persistence.Schema.ReasoningStatusOnConjectureType as ReasoningStatusOnConjectureType
 import Persistence.Utils
 
 import Common.AS_Annotation
@@ -355,7 +355,7 @@ createOMS opts libEnv fileVersionKey dbCache0 doSave globalAnnotations libName
       nameExtension = extString internalNodeName
       nameExtensionIndex = extIndex internalNodeName
       displayName = showName internalNodeName
-      locId = locIdOfOMSWithDGNodeLab documentLocIdBase nodeLabel
+      locId = locIdOfOMS documentLocIdBase nodeLabel
   in  do
         languageKey <- case gTheory of
           G_theory { gTheoryLogic = lid } -> findLanguage lid
@@ -421,6 +421,10 @@ createOMS opts libEnv fileVersionKey dbCache0 doSave globalAnnotations libName
             logicKey <- case sublogicOfTh gTheory of
               G_sublogics lid sublogics -> findOrCreateLogic' opts lid sublogics
 
+            actionKey <- insert Action
+              { actionEvaluationState = EvaluationStateType.FinishedSuccessfully
+              , actionMessage = Nothing
+              }
             let omsLocIdBaseValue = LocIdBase
                   { locIdBaseFileVersionId = fileVersionKey
                   , locIdBaseKind = Enums.OMS
@@ -446,6 +450,8 @@ createOMS opts libEnv fileVersionKey dbCache0 doSave globalAnnotations libName
                   , oMSNameExtensionIndex = nameExtensionIndex
                   , oMSLabelHasHiding = labelHasHiding nodeLabel
                   , oMSLabelHasFree = labelHasFree nodeLabel
+                  , oMSActionId = actionKey
+                  , oMSConsistencyStatus = ConsistencyStatusType.Open
                   }
             insertEntityMany [Entity (toSqlKey $ fromSqlKey omsKey) oms]
             return $ Entity omsKey omsLocIdBaseValue
@@ -904,10 +910,10 @@ createSentence fileVersionKey dbCache doSave globalAnnotations
         if isProved
         then EvaluationStateType.FinishedSuccessfully
         else EvaluationStateType.NotYetEnqueued
-      reasoningStatus =
+      proofStatus =
         if isProved
-        then ReasoningStatusOnConjectureType.THM
-        else ReasoningStatusOnConjectureType.OPN
+        then Enums.THM
+        else Enums.OPN
   in  do
         sentenceKey <-
           if doSave
@@ -933,7 +939,7 @@ createSentence fileVersionKey dbCache doSave globalAnnotations
                         }
                       let conjecture = Conjecture
                             { conjectureActionId = actionKey
-                            , conjectureReasoningStatus = reasoningStatus
+                            , conjectureProofStatus = proofStatus
                             }
                       insertEntityMany [Entity (toSqlKey $ fromSqlKey sentenceKey) conjecture]
                else let axiom = Axiom { }
@@ -1207,7 +1213,7 @@ findOMSAndSignature fileVersionKey documentLocIdBase nodeLabel = do
   omsLocIdL <- select $ from $ \loc_id_bases -> do
     where_ (loc_id_bases ^. LocIdBaseFileVersionId ==. val fileVersionKey
               &&. loc_id_bases ^. LocIdBaseKind ==. val Enums.OMS
-              &&. loc_id_bases ^. LocIdBaseLocId ==. val (locIdOfOMSWithDGNodeLab documentLocIdBase nodeLabel))
+              &&. loc_id_bases ^. LocIdBaseLocId ==. val (locIdOfOMS documentLocIdBase nodeLabel))
     return loc_id_bases
   case omsLocIdL of
     [] -> return Nothing
@@ -1221,10 +1227,6 @@ findOMSAndSignature fileVersionKey documentLocIdBase nodeLabel = do
                 ++ show (unSqlBackendKey $ unLocIdBaseKey omsKey))
         Entity _ omsValue : _ -> return omsValue
       return $ Just (omsKey, oMSSignatureId omsValue)
-
-locIdOfOMSWithDGNodeLab :: Entity LocIdBase -> DGNodeLab -> String
-locIdOfOMSWithDGNodeLab documentEntity nodeLabel =
-  locIdOfOMS documentEntity $ showName $ dgn_name nodeLabel
 
 symbolMapIndex :: Sentences lid sentence sign morphism symbol
                => lid -> symbol -> SymbolMapIndex

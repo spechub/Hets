@@ -14,6 +14,13 @@ data ReasoningAttemptKindType = ProofAttempt | ConsistencyCheckAttempt
                                 deriving (Show, Read, Eq)
 derivePersistField "ReasoningAttemptKindType"
 
+-- "CONTR" is only used on Conjecture while the others can be used on
+-- ProofAttempt. "CONTR" is used when there are some ProofAttempts with "THM"
+-- and some with "CSA".
+data ProofStatusType = OPN | ERR | UNK | RSO | THM | CSA | CSAS | CONTR
+                       deriving (Show, Read, Eq)
+derivePersistField "ProofStatusType"
+
 data ReasonerKindType = Prover | ConsistencyChecker
                          deriving (Show, Read, Eq)
 derivePersistField "ReasonerKindType"

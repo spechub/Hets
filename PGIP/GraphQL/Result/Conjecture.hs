@@ -17,5 +17,4 @@ data Conjecture = Conjecture { __typename :: String
                              , text :: String
                              , action :: Action
                              , proofAttempts :: [ReasoningAttempt]
-                             , reasoningStatus :: String
                              } deriving (Show, Typeable, Data)

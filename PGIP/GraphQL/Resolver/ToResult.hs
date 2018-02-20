@@ -78,8 +78,6 @@ conjectureToResult (Entity _ sentenceValue) (Entity _ locIdBaseValue) fileRangeM
     , GraphQLResultConjecture.text = Text.unpack $ sentenceText sentenceValue
     , GraphQLResultConjecture.action = actionResult
     , GraphQLResultConjecture.proofAttempts = proofAttemptResults
-    , GraphQLResultConjecture.reasoningStatus =
-        show $ conjectureReasoningStatus conjectureValue
     }
 
 conservativityStatusToResult :: Entity DatabaseSchema.ConservativityStatus
@@ -362,8 +360,6 @@ reasoningAttemptToResult (Entity _ reasoningAttemptValue) reasonerOutputEntity
         fmap reasonerOutputToResult reasonerOutputEntity
     , GraphQLResultReasoningAttempt.reasonerConfiguration =
         reasonerConfigurationResult
-    , GraphQLResultReasoningAttempt.reasoningStatus =
-        show $ reasoningAttemptReasoningStatus reasoningAttemptValue
     , GraphQLResultReasoningAttempt.timeTaken =
         reasoningAttemptTimeTaken reasoningAttemptValue
     , GraphQLResultReasoningAttempt.usedReasoner =

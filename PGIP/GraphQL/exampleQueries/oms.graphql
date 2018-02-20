@@ -30,7 +30,6 @@ fragment omsFields on OMS {
     reasonerOutput {
       text
     }
-    reasoningStatus
     timeTaken
     usedReasoner {
       id
@@ -123,14 +122,12 @@ fragment conjectureFields on Conjecture {
     reasonerOutput {
       text
     }
-    reasoningStatus
     timeTaken
     usedReasoner {
       id
       displayName
     }
   }
-  reasoningStatus
 }
 
 fragment symbolFields on Symbol {

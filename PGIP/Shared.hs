@@ -4,6 +4,9 @@ module PGIP.Shared where
 
 import Common.LibName
 import Common.Json (Json (..), pJson)
+import Logic.Comorphism (AnyComorphism)
+import qualified Logic.Prover as LP
+import Proofs.AbstractState (G_proof_tree, ProverOrConsChecker)
 import Static.DevGraph
 
 import qualified Data.ByteString.Char8 as B8
@@ -20,6 +23,13 @@ type RsrcIO a = ResourceT IO a
 #else
 type RsrcIO a = IO a
 #endif
+
+data ProverMode = GlProofs | GlConsistency deriving (Show, Eq)
+
+type ProofResult = (String, String, String, ProverOrConsChecker,
+                -- (goalName, goalResult, goalDetails, prover,
+                    AnyComorphism, Maybe (LP.ProofStatus G_proof_tree))
+                -- comorphism, proofStatusM)
 
 data Session = Session
   { sessLibEnv :: LibEnv
