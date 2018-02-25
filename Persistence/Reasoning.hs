@@ -8,7 +8,6 @@ module Persistence.Reasoning ( setupReasoning
                              , preprocessReasoning
                              , postprocessReasoning
                              ) where
-import Debug.Trace
 
 import Persistence.Database
 import Persistence.LogicGraph
@@ -22,13 +21,10 @@ import Persistence.Reasoning.PremiseSelectionSInE as SInE
 import PGIP.ReasoningParameters as ReasoningParameters
 import PGIP.Shared
 
-import Common.LibName
 import Driver.Options
-import Logic.Grothendieck
 import qualified Logic.Prover as LP
 import Proofs.AbstractState (G_proof_tree)
 import Static.DevGraph
-import Static.DgUtils
 import Static.GTheory
 
 import Control.Exception (catch)
@@ -68,13 +64,10 @@ createReasonerConfiguration reasoningCacheGoal = do
     }
 
 preprocessReasoning :: HetcatsOpts
-                    -> LibEnv
-                    -> LibName
-                    -> DGraph
                     -> String
                     -> ReasoningCacheGoal
                     -> IO (Maybe [String], ReasoningCacheGoal)
-preprocessReasoning opts libEnv libName dGraph location reasoningCacheGoal = do
+preprocessReasoning opts location reasoningCacheGoal = do
   premiseSelectionResultData@(premisesM, _, _) <-
     case rceProverMode reasoningCacheGoal of
       GlConsistency -> return (Nothing, 0, NoResult)
@@ -84,12 +77,10 @@ preprocessReasoning opts libEnv libName dGraph location reasoningCacheGoal = do
           Just premiseSelectionParameters -> do
             let premiseSelectionKindV =
                   getPremiseSelectionKind premiseSelectionParameters
-            let node_ = rceNode reasoningCacheGoal
             let gTheory = rceGTheory reasoningCacheGoal
-            let gSublogics = rceGSublogic reasoningCacheGoal
             let goalName = fromJust $ rceGoalNameM reasoningCacheGoal
-            performPremiseSelection opts libEnv libName dGraph node_ gTheory
-              gSublogics goalName premiseSelectionParameters premiseSelectionKindV
+            performPremiseSelection opts gTheory goalName
+              premiseSelectionParameters premiseSelectionKindV
 
   reasoningCacheGoal' <- case rceReasonerConfigurationKeyM reasoningCacheGoal of
     Nothing -> return reasoningCacheGoal
@@ -123,25 +114,19 @@ data PremiseSelectionResultForDatabase = NoResult
                                        | SineResult SInE.G_SInEResult
 
 performPremiseSelection :: HetcatsOpts
-                        -> LibEnv
-                        -> LibName
-                        -> DGraph
-                        -> (Int, DGNodeLab)
                         -> G_theory
-                        -> G_sublogics
                         -> String
                         -> ReasoningParameters.PremiseSelection
                         -> Enums.PremiseSelectionKindType
                         -> IO (Maybe [String], Int, PremiseSelectionResultForDatabase)
-performPremiseSelection opts libEnv libName dGraph node_ gTheory gSublogics
+performPremiseSelection opts gTheory
   goalName premiseSelectionParameters premiseSelectionKindV =
   case premiseSelectionKindV of
     Enums.ManualPremiseSelection ->
       return (manualPremises premiseSelectionParameters, 0, NoResult)
     Enums.SinePremiseSelection -> do
       (premisesM, timeTaken, sineResult) <-
-        SInE.perform opts libEnv libName dGraph node_ gTheory gSublogics
-          premiseSelectionParameters goalName
+        SInE.perform opts gTheory premiseSelectionParameters goalName
       return (premisesM, timeTaken, SineResult sineResult)
 
 createReasoningAttempt :: forall m . MonadIO m

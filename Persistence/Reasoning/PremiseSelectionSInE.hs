@@ -17,18 +17,14 @@ import Persistence.Utils
 
 import Common.AS_Annotation
 import Common.ExtSign
-import Common.LibName
 import qualified Common.OrderedMap as OMap
 import Common.Timing (measureWallTime, timeOfDayToSeconds)
 import Driver.Options
-import Logic.Grothendieck
 import Logic.Coerce
 import Logic.Logic as Logic
 import Logic.Prover (toNamed)
-import Static.DevGraph
 import Static.GTheory
 
-import Control.Monad.IO.Class (MonadIO (..))
 import Data.List as List hiding (insert)
 import Data.Map (Map)
 import qualified Data.Map as Map
@@ -36,10 +32,7 @@ import Data.Maybe
 import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.Typeable
-import Data.Time.LocalTime
-import Data.Time.Clock
 import Database.Persist hiding ((==.))
-import Database.Persist.Sql hiding ((==.))
 import Database.Esqueleto hiding (insertBy)
 
 data G_SInEResult =
@@ -64,18 +57,12 @@ data SInEParameters = SInEParameters { depthLimit :: Maybe Int
                                      } deriving Typeable
 
 perform :: HetcatsOpts
-        -> LibEnv
-        -> LibName
-        -> DGraph
-        -> (Int, DGNodeLab)
         -> G_theory
-        -> G_sublogics
         -> ReasoningParameters.PremiseSelection
         -> String
         -> IO (Maybe [String], Int, G_SInEResult)
-perform opts libEnv libName dGraph nodeLabel
-  gTheory@G_theory{gTheoryLogic = gTheoryLid, gTheorySign = extSign}
-  gSublogics premiseSelectionParameters goalName = do
+perform opts gTheory@G_theory{gTheoryLogic = gTheoryLid, gTheorySign = extSign}
+  premiseSelectionParameters goalName = do
   let parameters_ = SInEParameters
         { depthLimit = ReasoningParameters.sineDepthLimit premiseSelectionParameters
         , tolerance = ReasoningParameters.sineTolerance premiseSelectionParameters
@@ -92,11 +79,8 @@ perform opts libEnv libName dGraph nodeLabel
         }
   ((premisesM, sineResult), wallTimeOfDay) <- measureWallTime $ do
     let (sineResult1, goal) =
-          preprocess opts libEnv libName dGraph nodeLabel gTheoryLid
-            gTheory gSublogics sineResult0 goalName
-    let sineResult2 =
-          selectPremises opts libEnv libName dGraph nodeLabel gTheoryLid extSign gSublogics
-            sineResult1 goal
+          preprocess gTheoryLid gTheory sineResult0 goalName
+    let sineResult2 = selectPremises opts gTheoryLid extSign sineResult1 goal
     let premisesM = case sineResult2 of
           G_SInEResult { selectedPremises = premises } ->
             Just $ Set.toList $ Set.map senAttr premises
@@ -109,24 +93,20 @@ perform opts libEnv libName dGraph nodeLabel
 preprocess :: Logic.Logic lid sublogics basic_spec sentence symb_items
               symb_map_items sign morphism symbol
               raw_symbol proof_tree
-           => HetcatsOpts
-           -> LibEnv
-           -> LibName
-           -> DGraph
-           -> (Int, DGNodeLab)
-           -> lid
+           => lid
            -> G_theory
-           -> G_sublogics
            -> G_SInEResult
            -> String
            -> (G_SInEResult, Named sentence)
-preprocess opts libEnv libName dGraph nodeLabel sentenceLid G_theory { gTheoryLogic = gTheoryLid, gTheorySens = sentences, gTheorySign = sign } gSublogics sineResult0 goalName =
+preprocess sentenceLid
+  G_theory{ gTheoryLogic = gTheoryLid, gTheorySens = sentences, gTheorySign = sign }
+  sineResult0 goalName =
   let namedSentences = map (uncurry toNamed) $ OMap.toList sentences
       goal' = fromJust $ find ((goalName ==) . senAttr) namedSentences
       goal = coerceSen "preprocess" gTheoryLid sentenceLid goal'
       sineResult1 = computeSymbolCommonnesses gTheoryLid sign sineResult0 namedSentences
       sineResult2 = computeLeastCommonSymbols gTheoryLid sign sineResult1 namedSentences
-      sineResult3 = computePremiseTriggers gTheoryLid sign sineResult1 namedSentences
+      sineResult3 = computePremiseTriggers gTheoryLid sign sineResult2 namedSentences
   in  (sineResult3, goal)
 
 computeSymbolCommonnesses :: Logic.Logic lid sublogics basic_spec sentence
@@ -267,18 +247,12 @@ selectPremises :: Logic.Logic lid sublogics basic_spec sentence
                               symb_items symb_map_items sign morphism
                               symbol raw_symbol proof_tree
                => HetcatsOpts
-               -> LibEnv
-               -> LibName
-               -> DGraph
-               -> (Int, DGNodeLab)
                -> lid
                -> ExtSign sign symbol
-               -> G_sublogics
                -> G_SInEResult
                -> Named sentence
                -> G_SInEResult
-selectPremises opts libEnv libName dGraph nodeLabel gTheoryLid
-  extSign gSublogics sineResult0@G_SInEResult{..} goal =
+selectPremises opts gTheoryLid extSign sineResult0@G_SInEResult{..} goal =
   let premiseLimitM = premiseNumberLimit parameters
       depthLimitM = depthLimit parameters
       tolerance_ = fromMaybe 1.0 $ tolerance parameters
@@ -337,7 +311,7 @@ isSelected :: Logic.Logic lid sublogics basic_spec sentence symb_items
            -> lid
            -> Named sentence
            -> Bool
-isSelected G_SInEResult{..} gTheoryLid namedSentence =
+isSelected G_SInEResult{..} _ namedSentence =
   Set.member (senAttr namedSentence) selectedPremiseNames
 
 selectPremise :: Logic.Logic lid sublogics basic_spec sentence symb_items
@@ -347,8 +321,7 @@ selectPremise :: Logic.Logic lid sublogics basic_spec sentence symb_items
               -> Named sentence
               -> G_SInEResult
               -> G_SInEResult
-selectPremise gTheoryLid triggeredSentence
-  sineResult@G_SInEResult {..} =
+selectPremise gTheoryLid triggeredSentence G_SInEResult{..} =
   let symbolCommonnesses' =
         coerceSymbolCommonnesses "selectPremise 1" gSineLogic gTheoryLid symbolCommonnesses
       premiseTriggers' =

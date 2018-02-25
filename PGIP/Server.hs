@@ -1989,8 +1989,8 @@ performReasoning opts libEnv libName dGraph_ location reasoningCache = do
 
             -- preprocess (with database)
             (premisesM, reasoningCacheGoal3) <-
-              Persistence.Reasoning.preprocessReasoning opts libEnvAcc3
-                libName dGraph_ location reasoningCacheGoal'
+              Persistence.Reasoning.preprocessReasoning opts location
+                reasoningCacheGoal'
 
             -- run the reasoner
             Result _ (Just (libEnvAcc4, proofResult : _)) <- runResultT $
