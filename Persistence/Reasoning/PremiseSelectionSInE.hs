@@ -355,10 +355,11 @@ selectPremise gTheoryLid triggeredSentence
         coercePremiseTriggers "selectPremise 2" gSineLogic gTheoryLid premiseTriggers
       leastCommonSymbols' =
         coerceLeastCommonSymbols "selectPremise 3" gSineLogic gTheoryLid leastCommonSymbols
-      selectedPremises' =
+      selectedPremises' = Set.insert triggeredSentence $
         coerceSelectedPremises "selectPremise 4" gSineLogic gTheoryLid selectedPremises
+      selectedPremiseNames' = Set.insert (senAttr triggeredSentence) selectedPremiseNames
   in  G_SInEResult gTheoryLid parameters symbolCommonnesses' premiseTriggers'
-        leastCommonSymbols' selectedPremises' selectedPremiseNames
+        leastCommonSymbols' selectedPremises' selectedPremiseNames'
 
 saveToDatabase :: HetcatsOpts
                -> G_SInEResult
