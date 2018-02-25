@@ -11,7 +11,6 @@ Portability :  non-portable (via imports)
 -}
 
 module PGIP.Server (hetsServer) where
-import Debug.Trace
 
 import PGIP.Output.Formatting
 import PGIP.Output.Mime
@@ -64,7 +63,6 @@ import Static.ToXml as ToXml
 
 import qualified Persistence.DevGraph
 import qualified Persistence.Reasoning
-import qualified Persistence.Schema as DatabaseSchema
 
 import Logic.LGToXml
 
@@ -446,13 +444,6 @@ parseRESTful
           Just (Single s) -> Just s
           _ -> Nothing
 
-  lookupListParam :: String -> [String]
-  lookupListParam key = case meth of
-    "GET" -> mSplitOnComma $ lookupQueryStringParam key
-    _ -> case lookupBodyParam key requestBodyParams of
-          Just (List ps) -> ps
-          _ -> []
-
   isParamTrue :: Bool -> String -> Bool
   isParamTrue def key = case fmap (map toLower) $ lookupSingleParam key of
     Nothing -> def
@@ -461,19 +452,11 @@ parseRESTful
 
   session = lookupSingleParam "session" >>= readMaybe
   library = lookupSingleParam "library"
-  format = lookupSingleParam "format"
+  format_ = lookupSingleParam "format"
   nodeM = lookupSingleParam "node"
   includeDetails = isParamTrue True "includeDetails"
   includeProof = isParamTrue True "includeProof"
-  theorems = lookupListParam "theorems"
   transM = lookupSingleParam "translation"
-  proverM = lookupSingleParam "prover" -- this is deprecated for the value in reasoningParametersM
-  consM = lookupSingleParam "consistency-checker" -- this is deprecated for the value in reasoningParametersM
-  inclM = lookupSingleParam "include"
-  axioms = lookupListParam "axioms" -- this is deprecated for the value in reasoningParametersM
-  incl = maybe False (\ s ->
-              notElem (map toLower s) ["f", "false"]) inclM
-  reasoningParametersM = parseReasoningParameters requestBodyBS
   reasoningParametersE = parseReasoningParametersEither requestBodyBS
   queryFailure = queryFail
     ("this query does not comply with RESTful interface: "
@@ -489,7 +472,7 @@ parseRESTful
       in return . Query (DGQuery sId (Just p)) . nodeQuery (getFragment p)
   -- call getHetsResult with the properly generated query (Final Result)
   getResponseAux myOpts qr = do
-    let format' = Just $ fromMaybe "xml" format
+    let format' = Just $ fromMaybe "xml" format_
     Result ds ms <- liftIO $ runResultT $
       getHetsResult myOpts [] sessRef qr format' RESTfulAPI pfOptions
     respond $ case ms of
@@ -517,10 +500,10 @@ parseRESTful
       -- get dgraph from file
       "filetype" : libIri : _ -> mkFiletypeResponse opts libIri respond
       "hets-lib" : r -> let file = intercalate "/" r in
-        getResponse $ Query (NewDGQuery file []) $ DisplayQuery format
+        getResponse $ Query (NewDGQuery file []) $ DisplayQuery format_
       -- get library (complies with get/hets-lib for now)
       ["libraries", libIri, "development_graph"] ->
-        getResponse $ Query (NewDGQuery libIri []) $ DisplayQuery format
+        getResponse $ Query (NewDGQuery libIri []) $ DisplayQuery format_
       -- get previously created session
       "sessions" : sessId : cmd -> case readMaybe sessId of
           Nothing -> queryFail ("failed to read session number from " ++ sessId)
@@ -533,7 +516,7 @@ parseRESTful
                 _ -> fail $ "unknown node command for a GET-request: "
                       ++ intercalate "/" cmd
               Nothing -> fmap (Query (DGQuery sId Nothing)) $ case cmd of
-                [] -> return $ DisplayQuery format
+                [] -> return $ DisplayQuery format_
                 ["provers"] -> return $ GlProvers GlProofs transM
                 ["translations"] -> return GlTranslations
                 _ -> fail $ "unknown global command for a GET-request: "
@@ -588,7 +571,7 @@ parseRESTful
                                   else GlConsistency
                  in GlAutoProveREST proverMode reasoningParameters
            "dg" -> case transM of
-             Nothing -> DisplayQuery (Just $ fromMaybe "xml" format)
+             Nothing -> DisplayQuery (Just $ fromMaybe "xml" format_)
              Just tr -> Query.DGTranslation tr
            "theory" -> case transM of
              Nothing -> case nodeM of
@@ -655,9 +638,6 @@ parseRESTful
     {- create failure response if request method is not known
     (should never happen) -}
     _ -> respond $ mkResponse "" status400 ""
-
-parseReasoningParameters :: BS.ByteString -> Maybe ReasoningParameters
-parseReasoningParameters requestBodyBS = Aeson.decode requestBodyBS
 
 parseReasoningParametersEither :: BS.ByteString -> Either String ReasoningParameters
 parseReasoningParametersEither requestBodyBS = Aeson.eitherDecode requestBodyBS
@@ -1275,7 +1255,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format_ api pfOptions = do
                          ++ "available in the REST interface.")
             GlAutoProve (ProveCmd prOrCons incl mp mt tl nds xForm axioms) -> do
               (newLib, nodesAndProofResults) <-
-                proveMultiNodes opts prOrCons libEnv ln dg incl mp mt tl nds axioms
+                proveMultiNodes prOrCons libEnv ln dg incl mp mt tl nds axioms
               if all (null . snd) nodesAndProofResults
               then return (textC, "nothing to prove")
               else do
@@ -1334,7 +1314,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format_ api pfOptions = do
                     ProveNode (ProveCmd pm incl mp mt tl thms xForm axioms) ->
                       case pm of
                       GlProofs -> do
-                        (newLib, proofResults) <- proveNode opts libEnv ln dg nl
+                        (newLib, proofResults) <- proveNode libEnv ln dg nl
                           gTh subL incl mp mt tl thms axioms
                         if null proofResults
                         then return (textC, "nothing to prove")
@@ -1869,14 +1849,14 @@ findConsChecker translationM gSublogic consCheckerNameM = do
 reasonREST :: HetcatsOpts -> LibEnv -> LibName -> DGraph -> ProverMode
            -> String -> ReasoningParameters
            -> ResultT IO (LibEnv, [(String, [ProofResult])])
-reasonREST opts libEnv libName dGraph proverMode location reasoningParameters = do
+reasonREST opts libEnv libName dGraph_ proverMode location reasoningParameters = do
   reasoningCacheE <- liftIO $ buildReasoningCache
   failOnLefts reasoningCacheE
   let reasoningCache1 = map unRight $ filter (not . isLeft) reasoningCacheE
   reasoningCache2 <- liftIO $ PGIP.Server.setupReasoning opts reasoningCache1
   (libEnv', cacheGoalsAndProofResults) <-
     PGIP.Server.performReasoning opts libEnv libName
-      dGraph proverMode location reasoningCache2
+      dGraph_ location reasoningCache2
   let nodesAndProofResults = map
         (\ (nodeLabel, proofResults) ->
           (show (getName $ dgn_name nodeLabel), proofResults)
@@ -1908,7 +1888,7 @@ reasonREST opts libEnv libName dGraph proverMode location reasoningParameters = 
         let nodeName = ReasoningParameters.node $ head goalConfigByNode
             nodeM = find (\ (_, nodeLabel) ->
                            showName (dgn_name nodeLabel) == nodeName
-                         ) $ labNodesDG dGraph
+                         ) $ labNodesDG dGraph_
         in  case nodeM of
               Nothing ->
                 return (Left ("Node \"" ++ nodeName ++ "\" not found")
@@ -1988,10 +1968,10 @@ setupReasoning opts reasoningCache =
        ) reasoningCache
 
 
-performReasoning :: HetcatsOpts -> LibEnv -> LibName -> DGraph -> ProverMode
+performReasoning :: HetcatsOpts -> LibEnv -> LibName -> DGraph
                  -> String -> ReasoningCache
                  -> ResultT IO (LibEnv, [(DGNodeLab, [ProofResult])])
-performReasoning opts libEnv libName dGraph proverMode location reasoningCache = do
+performReasoning opts libEnv libName dGraph_ location reasoningCache = do
   (libEnv', nodesAndProofResults') <- liftIO $ foldM
     (\ (libEnvAcc1, nodesAndProofResults1) reasoningCacheGoalsByNode -> do
       let nodeLabel = snd $ rceNode $ head reasoningCacheGoalsByNode
@@ -1999,24 +1979,22 @@ performReasoning opts libEnv libName dGraph proverMode location reasoningCache =
         foldM
           (\ (libEnvAcc3, proofResults3) reasoningCacheGoal -> do
             -- update state
-            let nodeLabel = snd $ rceNode reasoningCacheGoal
             let gTheoryM = maybeResult $ getGlobalTheory nodeLabel
-            gTheory <- case gTheoryM of
+            gTheory_ <- case gTheoryM of
               Nothing ->
                 fail ("Cannot compute global theory of: "
-                      ++ (showName $ dgn_name nodeLabel) ++ "\n")
-              Just gTheory -> return gTheory
-            let reasoningCacheGoal' = reasoningCacheGoal { rceGTheory = gTheory }
+                      ++ showName (dgn_name nodeLabel) ++ "\n")
+              Just gTheory_ -> return gTheory_
+            let reasoningCacheGoal' = reasoningCacheGoal { rceGTheory = gTheory_ }
 
             -- preprocess (with database)
             (premisesM, reasoningCacheGoal3) <-
               Persistence.Reasoning.preprocessReasoning opts libEnvAcc3
-                libName dGraph location reasoningCacheGoal'
+                libName dGraph_ location reasoningCacheGoal'
 
             -- run the reasoner
             Result _ (Just (libEnvAcc4, proofResult : _)) <- runResultT $
-              runReasoning opts libEnvAcc3 libName dGraph
-                reasoningCacheGoal3 gTheory premisesM
+              runReasoning libEnvAcc3 libName dGraph_ reasoningCacheGoal3 premisesM
 
             -- postprocess (with database)
             Persistence.Reasoning.postprocessReasoning opts reasoningCacheGoal3
@@ -2037,34 +2015,33 @@ performReasoning opts libEnv libName dGraph proverMode location reasoningCache =
     sameNode :: ReasoningCacheGoal -> ReasoningCacheGoal -> Bool
     sameNode a b = fst (rceNode a) == fst (rceNode b)
 
-runReasoning :: HetcatsOpts -> LibEnv -> LibName -> DGraph
-             -> ReasoningCacheGoal -> G_theory -> Maybe [String]
+runReasoning :: LibEnv -> LibName -> DGraph
+             -> ReasoningCacheGoal -> Maybe [String]
              -> ResultT IO (LibEnv, [ProofResult])
-runReasoning opts libEnv libName dGraph reasoningCacheGoal gTheory premisesM =
+runReasoning libEnv libName dGraph_ reasoningCacheGoal premisesM =
   let node_ = rceNode reasoningCacheGoal
-      gTheory = rceGTheory reasoningCacheGoal
+      gTheory_ = rceGTheory reasoningCacheGoal
       gSublogic = rceGSublogic reasoningCacheGoal
       useTheorems_ = fromMaybe True $ useTheorems $ rceGoalConfig reasoningCacheGoal
       reasonerM = reasoner $ reasonerConfiguration $ rceGoalConfig reasoningCacheGoal
       translationM = translation $ rceGoalConfig reasoningCacheGoal
       timeLimitM = Just $ ReasoningParameters.timeLimit $ reasonerConfiguration $
                      rceGoalConfig reasoningCacheGoal
-      goalName = fromJust $ rceGoalNameM reasoningCacheGoal
+      goalName_ = fromJust $ rceGoalNameM reasoningCacheGoal
       premises = fromMaybe [] premisesM
   in  case rceProverMode reasoningCacheGoal of
-        GlConsistency -> consNode libEnv libName dGraph node_ gSublogic
+        GlConsistency -> consNode libEnv libName dGraph_ node_ gSublogic
           useTheorems_ reasonerM translationM timeLimitM
-        GlProofs -> proveNode opts libEnv libName dGraph node_ gTheory gSublogic
-          useTheorems_ reasonerM translationM timeLimitM [goalName] premises
+        GlProofs -> proveNode libEnv libName dGraph_ node_ gTheory_ gSublogic
+          useTheorems_ reasonerM translationM timeLimitM [goalName_] premises
 
-proveNode :: HetcatsOpts -> LibEnv -> LibName -> DGraph -> (Int, DGNodeLab)
+proveNode :: LibEnv -> LibName -> DGraph -> (Int, DGNodeLab)
   -> G_theory -> G_sublogics -> Bool
   -> Maybe String -> Maybe String -> Maybe Int
   -> [String] -> [String]
   -> ResultT IO (LibEnv, [ProofResult])
-proveNode opts le ln dg nl gTh subL useTh mp mt tl thms axioms = do
+proveNode le ln dg nl gTh subL useTh mp mt tl thms axioms = do
  ps <- lift $ getProverAndComorph mp mt subL
- let nodeName = show $ getName $ dgn_name $ snd nl
  case ps of
   [] -> fail "no matching translation or prover found"
   cp : _ -> do
@@ -2073,12 +2050,12 @@ proveNode opts le ln dg nl gTh subL useTh mp mt tl thms axioms = do
                 $ Set.fromList ks
     unless (Set.null diffs) . fail $ "unknown theorems: " ++ show diffs
     when (null thms && null ks) $ fail "no theorems to prove"
-    let selectedGoals = if null thms then ks else thms
-    let timeLimit = maybe 1 (max 1) tl
+    let selectedGoals_ = if null thms then ks else thms
+    let timeLimit_ = maybe 1 (max 1) tl
     (nTh, sens, proofStatuses) <- do
       let premises = axioms
       ((nTh, sens), (_, proofStatuses)) <-
-        autoProofAtNode useTh timeLimit selectedGoals premises gTh cp
+        autoProofAtNode useTh timeLimit_ selectedGoals_ premises gTh cp
       return (nTh, sens, proofStatuses)
     return ( if null sens
              then le
@@ -2100,10 +2077,10 @@ combineToProofResult sens (prover, comorphism) proofStatuses = let
   in map combineSens sens
 
 -- run over multiple dgnodes and prove available goals for each
-proveMultiNodes :: HetcatsOpts -> ProverMode -> LibEnv -> LibName -> DGraph
+proveMultiNodes :: ProverMode -> LibEnv -> LibName -> DGraph
   -> Bool -> Maybe String -> Maybe String -> Maybe Int -> [String] -> [String]
   -> ResultT IO (LibEnv, [(String, [ProofResult])])
-proveMultiNodes opts pm le ln dg useTh mp mt tl nodeSel axioms = let
+proveMultiNodes pm le ln dg useTh mp mt tl nodeSel axioms = let
   runProof :: LibEnv -> G_theory -> (Int, DGNodeLab)
     -> ResultT IO (LibEnv, [ProofResult])
   runProof le' gTh nl = let
@@ -2111,7 +2088,7 @@ proveMultiNodes opts pm le ln dg useTh mp mt tl nodeSel axioms = let
     dg' = lookupDGraph ln le' in case pm of
     GlConsistency -> consNode le' ln dg' nl subL useTh mp mt tl
     GlProofs ->
-      proveNode opts le' ln dg' nl gTh subL useTh mp mt tl
+      proveNode le' ln dg' nl gTh subL useTh mp mt tl
         (map fst $ getThGoals gTh) axioms
   nodes2check = filter (case nodeSel of
     [] -> case pm of
