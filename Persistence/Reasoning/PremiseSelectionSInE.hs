@@ -25,6 +25,7 @@ import Logic.Logic as Logic
 import Logic.Prover (toNamed)
 import Static.GTheory
 
+import Control.Monad.IO.Class (MonadIO (..))
 import Data.List as List hiding (insert)
 import Data.Map (Map)
 import qualified Data.Map as Map
@@ -287,7 +288,7 @@ selectPremises' opts tolerance_ depthLimitM premiseLimitM currentDepth
                             map snd $ takeWhile ((<= tolerance_) . fst)
                               possiblyTriggeredSentences
                           nextSelectedSentences =
-                            filter (isSelected sineResultAcc' gTheoryLid)
+                            filter (not . isSelected sineResultAcc' gTheoryLid)
                               triggeredSentences
                           sineResultAcc'' =
                             foldr (selectPremise gTheoryLid) sineResultAcc'
@@ -334,16 +335,16 @@ selectPremise gTheoryLid triggeredSentence G_SInEResult{..} =
   in  G_SInEResult gTheoryLid parameters symbolCommonnesses' premiseTriggers'
         leastCommonSymbols' selectedPremises' selectedPremiseNames'
 
-saveToDatabase :: HetcatsOpts
+saveToDatabase :: MonadIO m
+               => HetcatsOpts
                -> G_SInEResult
                -> Entity LocIdBase
                -> SinePremiseSelectionId
-               -> IO ()
-saveToDatabase opts G_SInEResult{..} omsEntity sinePremiseSelectionKey =
-  onDatabase (databaseConfig opts) $ do
-    saveSymbolPremiseTriggers
-    saveSymbolCommonnesses
-    return ()
+               -> DBMonad m ()
+saveToDatabase opts G_SInEResult{..} omsEntity sinePremiseSelectionKey = do
+  saveSymbolPremiseTriggers
+  saveSymbolCommonnesses
+  return ()
   where
     saveSymbolPremiseTriggers =
       mapM_ (\ (symbol, triggers) -> do

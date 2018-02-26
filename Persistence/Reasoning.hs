@@ -282,18 +282,17 @@ createPremiseSelection opts
       Enums.SinePremiseSelection -> do
         let sinePremiseSelectionKey = toSqlKey $ fromSqlKey premiseSelectionKey
         insertEntityMany
-          [Entity
-            sinePremiseSelectionKey
-            DatabaseSchema.SinePremiseSelection
-              { sinePremiseSelectionDepthLimit =
-                  sineDepthLimit premiseSelectionParameters
-              , sinePremiseSelectionTolerance =
-                  sineTolerance premiseSelectionParameters
-              , sinePremiseSelectionAxiomNumberLimit =
-                  sinePremiseNumberLimit premiseSelectionParameters
-              }]
+          [Entity sinePremiseSelectionKey
+                  DatabaseSchema.SinePremiseSelection
+                    { sinePremiseSelectionDepthLimit =
+                        sineDepthLimit premiseSelectionParameters
+                    , sinePremiseSelectionTolerance =
+                        sineTolerance premiseSelectionParameters
+                    , sinePremiseSelectionAxiomNumberLimit =
+                        sinePremiseNumberLimit premiseSelectionParameters
+                    }]
         case premiseSelectionResult of
-          SineResult sineResult -> liftIO $
+          SineResult sineResult ->
             SInE.saveToDatabase opts sineResult omsEntity sinePremiseSelectionKey
           _ -> return ()
 
