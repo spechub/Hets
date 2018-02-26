@@ -84,7 +84,7 @@ import Proofs.AbstractState as AbsState
 import Proofs.ConsistencyCheck
 
 import Text.XML.Light
-import Text.XML.Light.Cursor
+import Text.XML.Light.Cursor hiding (lefts, rights)
 
 import Common.AutoProofUtils
 import Common.Doc
@@ -1849,7 +1849,7 @@ reasonREST :: HetcatsOpts -> LibEnv -> LibName -> DGraph -> ProverMode
 reasonREST opts libEnv libName dGraph_ proverMode location reasoningParameters = do
   reasoningCacheE <- liftIO $ buildReasoningCache
   failOnLefts reasoningCacheE
-  let reasoningCache1 = map unRight $ filter (not . isLeft) reasoningCacheE
+  let reasoningCache1 = rights reasoningCacheE
   reasoningCache2 <- liftIO $ PGIP.Server.setupReasoning opts reasoningCache1
   (libEnv', cacheGoalsAndProofResults) <-
     PGIP.Server.performReasoning opts libEnv libName
@@ -1866,15 +1866,8 @@ reasonREST opts libEnv libName dGraph_ proverMode location reasoningParameters =
 
     failOnLefts :: ReasoningCacheE -> ResultT IO ()
     failOnLefts reasoningCache =
-      let lefts_ = filter isLeft reasoningCache
-      in  if null lefts_
-          then return ()
-          else fail $ unlines $ map (\ (Left message_) -> message_) lefts_
-
-    -- Rights have been filtered, so the error cannot happen
-    unRight :: Either a b -> b
-    unRight (Right x) = x
-    unRight _ = error "PGIP.Server.unRight received a Left."
+      let lefts_ = lefts reasoningCache
+      in  unless (null lefts_) $ fail $ unlines lefts_
 
     buildReasoningCache :: IO ReasoningCacheE
     buildReasoningCache = foldM
