@@ -544,7 +544,7 @@ parseRESTful
             newOpts = foldl makeOpts opts $ mapMaybe (`lookup` optionFlags)
               optFlags
             validReasoningParams =
-              if elem newIde ["provers", "consistency-checkers"]
+              if elem newIde ["prove", "consistency-check"]
               then case reasoningParametersE of
                      Left _ -> False
                      Right _ -> True
