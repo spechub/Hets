@@ -302,7 +302,7 @@ postprocessReasoning :: HetcatsOpts
                      -> ProofResult
                      -> IO ()
 postprocessReasoning opts reasoningCacheGoal premisesM
-  (_, goalResult, _, _, _, proofStatusM) =
+  (_, goalResult, _, _, _, proofStatusM, consCheckerOutputM) =
   case rceReasoningAttemptKeyM reasoningCacheGoal of
     Nothing -> return ()
     Just reasoningAttemptKey -> onDatabase (databaseConfig opts) $ do
@@ -313,6 +313,8 @@ postprocessReasoning opts reasoningCacheGoal premisesM
         GlConsistency -> do
           let consistencyStatus_ = convertGoalResultConsistencyStatus goalResult
           omsEntity <- getOmsFromReasoningAttempt reasoningAttemptKey
+          createReasonerOutput reasoningAttemptKey reasonerKey $
+            fromJust consCheckerOutputM
           advisoryLocked opts (omsLockKey $ entityKey omsEntity) $ do
             finishReasoningAttempt reasoningAttemptEntity Nothing
             updateConsistencyCheckAttempt reasoningAttemptKey consistencyStatus_
@@ -326,7 +328,8 @@ postprocessReasoning opts reasoningCacheGoal premisesM
           let proofStatus = fromJust proofStatusM
           let timeTakenM = Just $ convertTime $ LP.usedTime proofStatus
           createGeneratedAxioms reasoningAttemptKey proofStatus
-          createReasonerOutput reasoningAttemptKey reasonerKey proofStatus
+          createReasonerOutput reasoningAttemptKey reasonerKey $
+            unlines $ LP.proofLines proofStatus
           let proofStatusSZS = convertGoalResultProofStatus goalResult premisesM
           conjectureEntity <- getConjectureFromReasoningAttempt reasoningAttemptKey
           advisoryLocked opts (conjectureLockKey $ entityKey conjectureEntity) $ do
@@ -617,13 +620,13 @@ createGeneratedAxioms reasoningAttemptKey proofStatus =
 createReasonerOutput :: MonadIO m
                      => ReasoningAttemptId
                      -> ReasonerId
-                     -> LP.ProofStatus G_proof_tree
+                     -> String
                      -> DBMonad m ReasonerOutputId
-createReasonerOutput reasoningAttemptKey reasonerKey proofStatus =
+createReasonerOutput reasoningAttemptKey reasonerKey text =
   insert ReasonerOutput
     { reasonerOutputReasoningAttemptId = reasoningAttemptKey
     , reasonerOutputReasonerId = reasonerKey
-    , reasonerOutputText = Text.pack $ unlines $ LP.proofLines proofStatus
+    , reasonerOutputText = Text.pack text
     }
 
 findLocIdBase :: MonadIO m

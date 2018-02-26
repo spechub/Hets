@@ -71,7 +71,7 @@ formatProofs format options proofs = case format of
 
   convertGoal :: ProofResult -> ProofGoal
   convertGoal (goalName, goalResult, goalDetails, proverOrConsChecker,
-               translation, proofStatusM) =
+               translation, proofStatusM, _) =
     ProofGoal
       { name = goalName
       , result = goalResult

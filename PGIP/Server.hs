@@ -1328,7 +1328,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format_ api pfOptions = do
                             RESTfulAPI -> processProofResult format_ pfOptions
                               [(getDGNodeName dgnode, proofResults)]
                       GlConsistency -> do
-                        (newLib, [(_, res, txt, _, _, _)]) <-
+                        (newLib, [(_, res, txt, _, _, _, _)]) <-
                           consNode libEnv ln dg nl subL incl mp mt tl
                         lift $ nextSess newLib sess sessRef k
                         return (xmlC, ppTopElement $ formatConsNode res txt)
@@ -1391,7 +1391,7 @@ processProofResult format_ options nodesAndProofResults =
 
 formatGoals :: Bool -> [ProofResult] -> [Element]
 formatGoals includeDetails =
-  map (\ (n, e, d, _, _, mps) -> add_attr (mkAttr "class" "results-goal") $ unode "div"
+  map (\ (n, e, d, _, _, mps, _) -> add_attr (mkAttr "class" "results-goal") $ unode "div"
     ([ unode "h3" ("Results for " ++ n ++ " (" ++ e ++ ")") ]
     ++ [add_attr (mkAttr "class" "results-details") $ unode "div" d | includeDetails]
     ++ case mps of
@@ -1834,7 +1834,7 @@ consNode le ln dg nl@(i, lb) subL useTh mp mt tl = do
                        CSConsistent -> markNodeConsistent "" lb
                        _ -> lb)) le
     return (le'', [(" ", drop 2 $ show cSt, show cstat,
-                    AbsState.ConsChecker cc, c, Nothing)])
+                    AbsState.ConsChecker cc, c, Nothing, Just $ sMessage cstat)])
 
 findConsChecker :: Maybe String -> G_sublogics -> Maybe String
                 -> IO (G_cons_checker, AnyComorphism)
@@ -2073,7 +2073,7 @@ combineToProofResult sens (prover, comorphism) proofStatuses = let
       (ps : _) -> Just ps
   combineSens :: (String, String, String) -> ProofResult
   combineSens (n, e, d) = (n, e, d, AbsState.Prover prover, comorphism,
-                           findProofStatusByName n)
+                           findProofStatusByName n, Nothing)
   in map combineSens sens
 
 -- run over multiple dgnodes and prove available goals for each
@@ -2109,7 +2109,7 @@ proveMultiNodes pm le ln dg useTh mp mt tl nodeSel axioms = let
 
 formatResultsAux :: Bool -> ProverMode -> String -> [ProofResult] -> Element
 formatResultsAux xF pm nm sens = unode nm $ case (sens, pm) of
-    ([(_, e, d, _, _, _)], GlConsistency) | xF -> formatConsNode e d
+    ([(_, e, d, _, _, _, _)], GlConsistency) | xF -> formatConsNode e d
     _ -> add_attr (mkAttr "class" "results") $ unode "div" $ formatGoals xF sens
 
 mkPath :: Session -> LibName -> Int -> String

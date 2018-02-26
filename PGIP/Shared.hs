@@ -28,8 +28,10 @@ data ProverMode = GlProofs | GlConsistency deriving (Show, Eq)
 
 type ProofResult = (String, String, String, ProverOrConsChecker,
                 -- (goalName, goalResult, goalDetails, prover,
-                    AnyComorphism, Maybe (LP.ProofStatus G_proof_tree))
+                    AnyComorphism, Maybe (LP.ProofStatus G_proof_tree),
                 -- comorphism, proofStatusM)
+                    Maybe String)
+                -- ConsistencyChecker output
 
 data Session = Session
   { sessLibEnv :: LibEnv
