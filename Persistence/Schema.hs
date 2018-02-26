@@ -146,6 +146,10 @@ Repository sql=repositories
   ownerId OrganizationalUnitId
   deriving Show
 
+-- This data type could be extended in the future by
+-- * ETA
+-- * URL of the resulting resource
+-- * more information about the job
 Action sql=actions
   evaluationState EvaluationStateType
   message Text Maybe
