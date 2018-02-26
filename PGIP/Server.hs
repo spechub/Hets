@@ -107,6 +107,7 @@ import Control.Exception.Base (SomeException)
 import Control.Concurrent (myThreadId, ThreadId)
 
 import qualified Data.Aeson as Aeson
+import Data.Either
 import qualified Data.IntMap as IntMap
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -543,15 +544,11 @@ parseRESTful
               cmdOptList
             newOpts = foldl makeOpts opts $ mapMaybe (`lookup` optionFlags)
               optFlags
-            validReasoningParams =
-              if elem newIde ["prove", "consistency-check"]
-              then case reasoningParametersE of
-                     Left _ -> False
-                     Right _ -> True
-              else True
+            validReasoningParams = isRight reasoningParametersE <=
+              elem newIde ["prove", "consistency-check"]
         in if elem newIde newRESTIdes
                 && all (`elem` globalCommands) cmdList
-                &&  validReasoningParams
+                && validReasoningParams
         then let
          qkind = case newIde of
            "translations" -> case nodeM of
@@ -1874,10 +1871,7 @@ reasonREST opts libEnv libName dGraph_ proverMode location reasoningParameters =
           then return ()
           else fail $ unlines $ map (\ (Left message_) -> message_) lefts_
 
-    isLeft :: Either a b -> Bool
-    isLeft (Left _) = True
-    isLeft _ = False
-
+    -- Rights have been filtered, so the error cannot happen
     unRight :: Either a b -> b
     unRight (Right x) = x
     unRight _ = error "PGIP.Server.unRight received a Left."
