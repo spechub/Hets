@@ -102,9 +102,9 @@ LogicTranslation sql=logic_translations
 
 -- Make sure that exactly one of logicMappingId or logicInclusionId is not Nothing
 LogicTranslationStep sql=logic_translation_steps
-  translationId LogicTranslationId
+  logicTranslationId LogicTranslationId
   number Int
-  UniqueLogicTranlationStepListEntry translationId number
+  UniqueLogicTranlationStepListEntry logicTranslationId number
   logicMappingId LogicMappingId Maybe
   logicInclusionId LogicInclusionId Maybe
   deriving Show

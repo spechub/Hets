@@ -350,7 +350,7 @@ createLogicTranslationStep opts logicTranslationKey (number, name)
   | isInclusion name = do
       Entity logicInclusionKey _ <- findOrCreateLogicInclusion opts name
       let translationStepValue = LogicTranslationStep
-            { logicTranslationStepTranslationId = logicTranslationKey
+            { logicTranslationStepLogicTranslationId = logicTranslationKey
             , logicTranslationStepNumber = number
             , logicTranslationStepLogicMappingId = Nothing
             , logicTranslationStepLogicInclusionId = Just logicInclusionKey
@@ -361,7 +361,7 @@ createLogicTranslationStep opts logicTranslationKey (number, name)
       Just (Entity logicMappingKey _) <-
         findLogicMappingBySlug $ slugOfLogicMappingByName name
       let translationStepValue = LogicTranslationStep
-            { logicTranslationStepTranslationId = logicTranslationKey
+            { logicTranslationStepLogicTranslationId = logicTranslationKey
             , logicTranslationStepNumber = number
             , logicTranslationStepLogicMappingId = Just logicMappingKey
             , logicTranslationStepLogicInclusionId = Nothing
@@ -504,7 +504,7 @@ findOrCreateLogicInclusion opts name = do
 --       Just (Entity logicMappingKey _) <-
 --         findLogicMappingByComorphism (Comorphism.Comorphism cid)
 --       let translationStepValue = LogicTranslationStep
---             { logicTranslationStepTranslationId = logicTranslationKey
+--             { logicTranslationStepLogicTranslationId = logicTranslationKey
 --             , logicTranslationStepNumber = number
 --             , logicTranslationStepLogicMappingId = Just logicMappingKey
 --             , logicTranslationStepLogicInclusionId = Nothing
@@ -530,7 +530,7 @@ findOrCreateLogicInclusion opts name = do
 --       --   , logicInclusionTargetLogicId = targetLogicKey
 --       --   }
 --       -- let translationStepValue = LogicTranslationStep
---       --      { logicTranslationStepTranslationId = logicTranslationKey
+--       --      { logicTranslationStepLogicTranslationId = logicTranslationKey
 --       --      , logicTranslationStepNumber = number
 --       --      , logicTranslationStepLogicMappingId = Nothing
 --       --      , logicTranslationStepLogicInclusionId = Just logicInclusionKey
