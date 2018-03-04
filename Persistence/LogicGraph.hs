@@ -228,7 +228,7 @@ findOrCreateLogicMapping sourceLogicKey targetLogicKey languageMappingKey (Comor
 findLogicMappingByComorphism :: MonadIO m
                              => AnyComorphism
                              -> DBMonad m (Maybe (Entity LogicMapping))
-findLogicMappingByComorphism comorphism@(Comorphism.Comorphism cid) =
+findLogicMappingByComorphism comorphism =
   if isIdComorphism comorphism then return Nothing else do
     let logicMappingSlugS = slugOfLogicMapping comorphism
     findLogicMappingBySlug logicMappingSlugS
@@ -322,33 +322,35 @@ findOrCreateLogicTranslation :: MonadIO m
                              => HetcatsOpts
                              -> AnyComorphism
                              -> DBMonad m (Maybe (Entity LogicTranslation))
-findOrCreateLogicTranslation opts comorphism@(Comorphism.Comorphism cid) =
+findOrCreateLogicTranslation _ comorphism@(Comorphism.Comorphism cid) =
   if isIdComorphism comorphism
   then return Nothing
   else do
     let logicTranslationSlugS = slugOfTranslation comorphism
+    let logicTranslationNameS = language_name cid
     translationL <- select $ from $ \ translations -> do
       where_ (translations ^. LogicTranslationSlug ==. val logicTranslationSlugS)
       return translations
     case translationL of
       translationEntity : _ -> return $ Just translationEntity
       [] -> do
-        let logicTranslationValue =
-              LogicTranslation { logicTranslationSlug = logicTranslationSlugS }
+        let logicTranslationValue = LogicTranslation
+              { logicTranslationSlug = logicTranslationSlugS
+              , logicTranslationName = logicTranslationNameS
+              }
         logicTranslationKey <- insert logicTranslationValue
         mapM_ (\ (number, name) ->
-                createLogicTranslationStep opts logicTranslationKey (number, name)
+                createLogicTranslationStep logicTranslationKey (number, name)
               ) $ zip [1..] $ constituents cid
         return $ Just $ Entity logicTranslationKey logicTranslationValue
 
 createLogicTranslationStep :: MonadIO m
-                           => HetcatsOpts
-                           -> LogicTranslationId
+                           => LogicTranslationId
                            -> (Int, String)
                            -> DBMonad m (Entity LogicTranslationStep)
-createLogicTranslationStep opts logicTranslationKey (number, name)
-  | isInclusion name = do
-      Entity logicInclusionKey _ <- findOrCreateLogicInclusion opts name
+createLogicTranslationStep logicTranslationKey (number, name)
+  | isInclusion_ name = do
+      Entity logicInclusionKey _ <- findOrCreateLogicInclusion name
       let translationStepValue = LogicTranslationStep
             { logicTranslationStepLogicTranslationId = logicTranslationKey
             , logicTranslationStepNumber = number
@@ -369,14 +371,13 @@ createLogicTranslationStep opts logicTranslationKey (number, name)
       translationStepKey <- insert translationStepValue
       return $ Entity translationStepKey translationStepValue
   where
-    isInclusion :: String -> Bool
-    isInclusion name = "id_" `isPrefixOf` name || "incl_" `isPrefixOf` name
+    isInclusion_ :: String -> Bool
+    isInclusion_ name_ = "id_" `isPrefixOf` name_ || "incl_" `isPrefixOf` name_
 
 findOrCreateLogicInclusion :: MonadIO m
-                           => HetcatsOpts
-                           -> String
+                           => String
                            -> DBMonad m (Entity LogicInclusion)
-findOrCreateLogicInclusion opts name = do
+findOrCreateLogicInclusion name = do
   let logicInclusionSlugS = slugOfLogicInclusionByName name
   logicInclusionL <- select $ from $ \ logic_inclusions -> do
     where_ (logic_inclusions ^. LogicInclusionSlug ==. val logicInclusionSlugS)
@@ -419,23 +420,25 @@ findOrCreateLogicInclusion opts name = do
     slugsFromName :: (String, String, Maybe String)
     slugsFromName
       | "id_" `isPrefixOf` name =
-          let languageName = takeWhile (/= '.') $ drop 3 name
-              logicName = tail $ dropWhile (/= '.') name
+          let languageName_ = takeWhile (/= '.') $ drop 3 name
+              logicName_ = tail $ dropWhile (/= '.') name
               logicSlugS =
-                slugOfLogicByName $ logicNameForDBByName languageName logicName
-          in  ( slugOfLanguageByName languageName
+                slugOfLogicByName $ logicNameForDBByName languageName_ logicName_
+          in  ( slugOfLanguageByName languageName_
               , logicSlugS
               , Nothing
               )
       | "incl_" `isPrefixOf` name =
-          let languageName = takeWhile (/= ':') $ drop 5 name
+          let languageName_ = takeWhile (/= ':') $ drop 5 name
               logicNames = tail $ dropWhile (/= ':') name
               [sourceName, targetName] = splitByList "->" logicNames
               sourceSlugS =
-                slugOfLogicByName $ logicNameForDBByName languageName sourceName
+                slugOfLogicByName $ logicNameForDBByName languageName_ sourceName
               targetSlugS =
-                slugOfLogicByName $ logicNameForDBByName languageName targetName
-          in  ( slugOfLanguageByName languageName
+                slugOfLogicByName $ logicNameForDBByName languageName_ targetName
+          in  ( slugOfLanguageByName languageName_
               , sourceSlugS
               , Just targetSlugS
               )
+      | otherwise = error ("Persistence.LogicGraph.findOrCreateLogicInclusion.slugsFromName "
+                           ++ "encountered a bad comorphism name: " ++ name)

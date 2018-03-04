@@ -98,6 +98,8 @@ LogicInclusion sql=logic_inclusions
 LogicTranslation sql=logic_translations
   slug String
   UniqueLogicTranslationSlug slug
+  name String
+  UniqueLogicTranslationName name
   deriving Show
 
 -- Make sure that exactly one of logicMappingId or logicInclusionId is not Nothing
