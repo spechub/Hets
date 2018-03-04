@@ -56,6 +56,7 @@ import Logic.Comorphism
 import Logic.Grothendieck hiding (gMorphism)
 import Logic.Logic as Logic
 import Logic.Prover
+import Static.ComputeTheory (computeTheory)
 import Static.DevGraph hiding (getLogic)
 import Static.DgUtils
 import Static.GTheory
@@ -349,7 +350,7 @@ createOMS :: MonadIO m
           -> ConsStatus -> DBMonad m (LocIdBaseId, SignatureId, DBCache)
 createOMS opts libEnv fileVersionKey dbCache0 doSave globalAnnotations libName
   documentLocIdBase@(Entity documentKey _) (nodeId, nodeLabel) consStatus =
-  let gTheory = dgn_theory nodeLabel
+  let gTheory = fromJust $ computeTheory libEnv libName nodeId
       internalNodeName = dgn_name nodeLabel
       name = show $ getName internalNodeName
       nameExtension = extString internalNodeName
