@@ -1847,7 +1847,7 @@ reasonREST :: HetcatsOpts -> LibEnv -> LibName -> DGraph -> ProverMode
            -> String -> ReasoningParameters
            -> ResultT IO (LibEnv, [(String, [ProofResult])])
 reasonREST opts libEnv libName dGraph_ proverMode location reasoningParameters = do
-  reasoningCacheE <- liftIO $ buildReasoningCache
+  reasoningCacheE <- liftIO buildReasoningCache
   failOnLefts reasoningCacheE
   let reasoningCache1 = rights reasoningCacheE
   reasoningCache2 <- liftIO $ PGIP.Server.setupReasoning opts reasoningCache1
@@ -1870,80 +1870,91 @@ reasonREST opts libEnv libName dGraph_ proverMode location reasoningParameters =
       in  unless (null lefts_) $ fail $ unlines lefts_
 
     buildReasoningCache :: IO ReasoningCacheE
-    buildReasoningCache = foldM
-      (\ reasoningCacheE1 goalConfigByNode ->
-        let nodeName = ReasoningParameters.node $ head goalConfigByNode
-            nodeM = find (\ (_, nodeLabel) ->
-                           showName (dgn_name nodeLabel) == nodeName
-                         ) $ labNodesDG dGraph_
-        in  case nodeM of
-              Nothing ->
-                return (Left ("Node \"" ++ nodeName ++ "\" not found")
-                         : reasoningCacheE1)
-              Just node_@(_, nodeLabel) -> do
-                let gTheoryM = maybeResult $ getGlobalTheory nodeLabel
-                gTheory <- case gTheoryM of
-                  Nothing ->
-                    fail ("Cannot compute global theory of: "
-                          ++ (showName $ dgn_name nodeLabel) ++ "\n")
-                  Just gTheory -> return gTheory
-                let gSublogic = sublogicOfTh gTheory
-                foldM
-                  (\ reasoningCacheE2 goalConfig -> do
-                    let reasonerM = reasoner $ reasonerConfiguration goalConfig
-                    let translationM = translation goalConfig
-                    let timeLimit_ = ReasoningParameters.timeLimit $
-                          reasonerConfiguration goalConfig
-                    let caseReasoningCacheEntry = ReasoningCacheGoal
-                          { rceProverMode = proverMode
-                          , rceNode = node_
-                          , rceGoalNameM = Nothing
-                          , rceGoalConfig = goalConfig
-                          , rceGTheory = gTheory
-                          , rceGSublogic = gSublogic
-                          , rceReasoner = undefined -- will be overwritten a few lines below
-                          , rceComorphism = undefined -- will be overwritten a few lines below
-                          , rceTimeLimit = timeLimit_
-                          , rceUseDatabase = useDatabase
-                          , rceReasonerConfigurationKeyM = Nothing
-                          , rceReasoningAttemptKeyM = Nothing
-                          }
-                    case proverMode of
-                      GlConsistency -> do
-                        (gConsChecker, comorphism) <-
-                          findConsChecker translationM gSublogic reasonerM
-                        return ((Right $ caseReasoningCacheEntry
-                                 { rceReasoner = AbsState.ConsChecker gConsChecker
-                                 , rceComorphism = comorphism
-                                 }
-                               ) : reasoningCacheE2)
-                      GlProofs -> do
-                        proversAndComorphisms <-
-                          getProverAndComorph reasonerM translationM gSublogic
-                        (gProver, comorphism) <- case proversAndComorphisms of
-                          [] -> fail ("No matching translation or prover found for "
-                                      ++ nodeName ++ "\n")
-                          (gProver, comorphism) : _ ->
-                            return (gProver, comorphism)
-                        let possibleGoalNames = map fst $ getThGoals gTheory :: [String]
-                        let goalNames = (case conjecture goalConfig of
-                              Nothing -> possibleGoalNames
-                              Just goalName_ ->
-                                filter (== goalName_) possibleGoalNames) :: [String]
-                        return
-                          (map (\ goalName_ -> Right $ caseReasoningCacheEntry
-                                 { rceGoalNameM = Just goalName_
-                                 , rceReasoner = AbsState.Prover gProver
-                                 , rceComorphism = comorphism
-                                 }
-                               ) goalNames ++ reasoningCacheE2)
-                  )
-                  reasoningCacheE1
-                  goalConfigByNode
-      )
-      [] $
-      groupBy (\ a b -> ReasoningParameters.node a == ReasoningParameters.node b) $
-        ReasoningParameters.goals reasoningParameters
+    buildReasoningCache =
+      let reasoningParametersGroupedByNodeName =
+            groupBy (\ a b ->
+                      ReasoningParameters.node a == ReasoningParameters.node b
+                    ) $ ReasoningParameters.goals reasoningParameters
+      in  foldM buildReasoningCacheForNode [] reasoningParametersGroupedByNodeName
+
+    buildReasoningCacheForNode :: ReasoningCacheE
+                               -> [ReasoningParameters.GoalConfig]
+                               -> IO ReasoningCacheE
+    buildReasoningCacheForNode reasoningCacheE goalConfigsOfSameNode =
+      let nodeName = ReasoningParameters.node $ head goalConfigsOfSameNode
+          nodeM = find (\ (_, nodeLabel) ->
+                         showName (dgn_name nodeLabel) == nodeName
+                       ) $ labNodesDG dGraph_
+      in  case nodeM of
+            Nothing ->
+              return (Left ("Node \"" ++ nodeName ++ "\" not found")
+                       : reasoningCacheE)
+            Just node_@(_, nodeLabel) -> do
+              let gTheoryM = maybeResult $ getGlobalTheory nodeLabel
+              gTheory <- case gTheoryM of
+                Nothing ->
+                  fail ("Cannot compute global theory of: "
+                        ++ showName (dgn_name nodeLabel) ++ "\n")
+                Just gTheory -> return gTheory
+              let gSublogic = sublogicOfTh gTheory
+              foldM (buildReasoningCacheForGoal nodeName node_ gTheory gSublogic)
+                reasoningCacheE goalConfigsOfSameNode
+
+    buildReasoningCacheForGoal :: String
+                               -> (Int, DGNodeLab)
+                               -> G_theory
+                               -> G_sublogics
+                               -> ReasoningCacheE
+                               -> ReasoningParameters.GoalConfig
+                               -> IO ReasoningCacheE
+    buildReasoningCacheForGoal nodeName node_ gTheory gSublogic reasoningCacheE goalConfig =
+      let reasonerM = reasoner $ reasonerConfiguration goalConfig
+          translationM = translation goalConfig
+          timeLimit_ = ReasoningParameters.timeLimit $
+            reasonerConfiguration goalConfig
+          caseReasoningCacheEntry = ReasoningCacheGoal
+            { rceProverMode = proverMode
+            , rceNode = node_
+            , rceGoalNameM = Nothing
+            , rceGoalConfig = goalConfig
+            , rceGTheory = gTheory
+            , rceGSublogic = gSublogic
+            , rceReasoner = undefined -- will be overwritten a few lines below
+            , rceComorphism = undefined -- will be overwritten a few lines below
+            , rceTimeLimit = timeLimit_
+            , rceUseDatabase = useDatabase
+            , rceReasonerConfigurationKeyM = Nothing
+            , rceReasoningAttemptKeyM = Nothing
+            }
+      in  case proverMode of
+            GlConsistency -> do
+              (gConsChecker, comorphism) <-
+                findConsChecker translationM gSublogic reasonerM
+              return ((Right $ caseReasoningCacheEntry
+                       { rceReasoner = AbsState.ConsChecker gConsChecker
+                       , rceComorphism = comorphism
+                       }
+                     ) : reasoningCacheE)
+            GlProofs -> do
+              proversAndComorphisms <-
+                getProverAndComorph reasonerM translationM gSublogic
+              (gProver, comorphism) <- case proversAndComorphisms of
+                [] -> fail ("No matching translation or prover found for "
+                            ++ nodeName ++ "\n")
+                (gProver, comorphism) : _ ->
+                  return (gProver, comorphism)
+              let possibleGoalNames = map fst $ getThGoals gTheory :: [String]
+              let goalNames = (case conjecture goalConfig of
+                    Nothing -> possibleGoalNames
+                    Just goalName_ ->
+                      filter (== goalName_) possibleGoalNames) :: [String]
+              return
+                (map (\ goalName_ -> Right $ caseReasoningCacheEntry
+                       { rceGoalNameM = Just goalName_
+                       , rceReasoner = AbsState.Prover gProver
+                       , rceComorphism = comorphism
+                       }
+                     ) goalNames ++ reasoningCacheE)
 
 setupReasoning :: HetcatsOpts -> ReasoningCache -> IO ReasoningCache
 setupReasoning opts reasoningCache =
