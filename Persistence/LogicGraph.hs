@@ -409,7 +409,8 @@ findOrCreateLogicInclusion name = do
             Just (Entity key _) -> return $ Just key
 
       let logicInclusionValue = LogicInclusion
-            { logicInclusionSlug = logicInclusionSlugS
+            { logicInclusionName = name
+            , logicInclusionSlug = logicInclusionSlugS
             , logicInclusionLanguageId = languageKey
             , logicInclusionSourceId = sourceKey
             , logicInclusionTargetId = targetKeyM

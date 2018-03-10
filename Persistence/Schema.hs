@@ -88,6 +88,8 @@ LogicMapping sql=logic_mappings
   deriving Show
 
 LogicInclusion sql=logic_inclusions
+  name String
+  UniqueLogicInclusionName name
   slug String
   UniqueLogicInclusionSlug slug
   languageId LanguageId
