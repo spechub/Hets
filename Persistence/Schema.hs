@@ -91,8 +91,8 @@ LogicInclusion sql=logic_inclusions
   slug String
   UniqueLogicInclusionSlug slug
   languageId LanguageId
-  sourceLogicId LogicId
-  targetLogicId LogicId Maybe
+  sourceId LogicId
+  targetId LogicId Maybe
   deriving Show
 
 LogicTranslation sql=logic_translations

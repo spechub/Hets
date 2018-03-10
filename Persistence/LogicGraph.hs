@@ -411,8 +411,8 @@ findOrCreateLogicInclusion name = do
       let logicInclusionValue = LogicInclusion
             { logicInclusionSlug = logicInclusionSlugS
             , logicInclusionLanguageId = languageKey
-            , logicInclusionSourceLogicId = sourceKey
-            , logicInclusionTargetLogicId = targetKeyM
+            , logicInclusionSourceId = sourceKey
+            , logicInclusionTargetId = targetKeyM
             }
       logicInclusionKey <- insert logicInclusionValue
       return $ Entity logicInclusionKey logicInclusionValue
