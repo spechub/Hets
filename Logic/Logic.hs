@@ -155,6 +155,14 @@ import Data.Ord
 import Data.Typeable
 import Control.Monad (unless)
 
+data SemanticConstraint = 
+     ReflexiveMod | TransitiveMod | SymmetricMod | 
+     SerialMod | EuclideanMod | FunctionalMod | 
+     LinearMod | TotalMod | SameInterpretation String |
+     SameDomain Bool  -- True for rigid partial, False for partial
+     deriving (Eq, Show)
+    
+
 -- | Stability of logic implementations
 data Stability = Stable | Testing | Unstable | Experimental
      deriving (Eq, Show)
@@ -736,6 +744,11 @@ class (StaticAnalysis lid
          -- Parser of sentence (Added for Hybridized logics)
          parse_basic_sen :: lid -> Maybe (basic_spec -> AParser st sentence)
          parse_basic_sen _ = Nothing
+
+         -- semantic constraints, that will determine sentences when translating from a hybrid logic to FOL
+   
+         sem_constr :: lid -> [SemanticConstraint]
+         sem_constr _ = []
 
          -- | stability of the implementation
          stability :: lid -> Stability

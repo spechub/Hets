@@ -28,6 +28,8 @@ items and formulas.
 
 module CASL.StaticAna where
 
+import Debug.Trace
+
 import CASL.AS_Basic_CASL
 import CASL.MixfixParser
 import CASL.Overload
@@ -311,7 +313,7 @@ ana_SIG_ITEMS :: (FormExtension f, TermExtension f)
 ana_SIG_ITEMS mef anas mix gk si =
     case si of
     Sort_items sk al ps ->
-        do ul <- mapM (ana_SORT_ITEM mef mix sk) al
+        do ul <- trace ("si:" ++ show al) $ mapM (ana_SORT_ITEM mef mix sk) al
            closeSubsortRel
            return $ Sort_items sk ul ps
     Op_items al ps ->
@@ -869,6 +871,14 @@ anaTerm mef mixIn sign msrt pos t = do
       (\ srt -> Sorted_term resT srt pos) msrt
     return (resT, anaT)
 
+getAllIds :: (FormExtension f, TermExtension f) => 
+             BASIC_SPEC b s f -> Mix b s f e -> Sign f e -> IdSets
+getAllIds bs mix inSig = 
+                 unite $ ids_BASIC_SPEC (getBaseIds mix) (getSigIds mix) bs
+                 : getExtIds mix (extendedInfo inSig) :
+                  [mkIdSets (allConstIds inSig) (allOpIds inSig)
+                  $ allPredIds inSig]
+
 basicAnalysis :: (FormExtension f, TermExtension f)
               => Min f e -- ^ type analysis of f
               -> Ana b b s f e  -- ^ static analysis of basic item b
@@ -879,10 +889,7 @@ basicAnalysis :: (FormExtension f, TermExtension f)
             {- ^ (BS with analysed mixfix formulas for pretty printing,
             differences to input Sig,accumulated Sig,analysed Sentences) -}
 basicAnalysis mef anab anas mix (bs, inSig, ga) =
-    let allIds = unite $ ids_BASIC_SPEC (getBaseIds mix) (getSigIds mix) bs
-                 : getExtIds mix (extendedInfo inSig) :
-                  [mkIdSets (allConstIds inSig) (allOpIds inSig)
-                  $ allPredIds inSig]
+    let allIds = getAllIds bs mix inSig
         (newBs, accSig) = runState (ana_BASIC_SPEC mef anab anas
                mix { mixRules = makeRules ga allIds }
                bs) inSig { globAnnos = addAssocs inSig ga }
@@ -911,12 +918,7 @@ cASLsen_analysis ::
         (BASIC_SPEC () () (), Sign () (), FORMULA ()) -> Result (FORMULA ())
 cASLsen_analysis (bs, s, f) = let
                          mix = emptyMix
-                         allIds = unite $
-                                ids_BASIC_SPEC (getBaseIds mix)
-                                               (getSigIds mix) bs
-                                : getExtIds mix (extendedInfo s) :
-                                [mkIdSets (allConstIds s) (allOpIds s)
-                                $ allPredIds s]
+                         allIds = getAllIds bs mix s
                          mix' = mix { mixRules = makeRules emptyGlobalAnnos
                                                            allIds }
                          in liftM fst $ anaForm (const return) mix' s f

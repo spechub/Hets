@@ -645,3 +645,21 @@ withS = "with"
 
 withinS :: String
 withinS = "within"
+
+hybrid_keywords :: [String]
+hybrid_keywords = [
+        rigidS,
+        modalityS,
+        modalitiesS,
+        nominalS,
+        nominalsS
+        ]
+
+nominalS, nominalsS :: String
+nominalS = "nominal"
+nominalsS = "nominals"
+
+hExistsS, hForallS :: String
+hExistsS = "existsH"
+hForallS = "forallH"
+
