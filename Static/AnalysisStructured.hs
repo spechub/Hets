@@ -65,7 +65,6 @@ import Common.LibName
 import Common.Result
 import Common.Utils (number)
 import Common.Lib.MapSet (imageSet, setInsert)
-import qualified Common.OrderedMap as OMap
 
 import Data.Graph.Inductive.Graph
 import qualified Data.Set as Set
@@ -339,8 +338,7 @@ anaSpecAux conser addSyms optNodes lg
                $ Set.intersection
                      (if addSyms then Set.union sys sysd else sysd)
                $ symset_of lid sigma_complete)
-             startSigId ( -- OMap.mapWithKey (\k a -> setOrigin ln name k a) $ 
-                          toThSens ax) startThId
+             startSigId (toThSens ax) startThId
        dg'' <- createConsLink DefLink conser lg dg' nsig' ns DGLinkExtension
        return (Basic_spec (G_basic_spec lid bspec') pos, ns, dg'')
   EmptySpec pos -> case nsig of

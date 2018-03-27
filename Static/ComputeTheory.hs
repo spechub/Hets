@@ -145,7 +145,7 @@ computeLabelTheory le ln dg (n, lbl) = let
           Just dg' -> do
             _refTh@(G_theory gtl gsub gts gind1 sens gind2) <- getGlobalTheory $ labDG dg' lblNode
             let refTh' = G_theory gtl gsub gts gind1 
-                            (OMap.mapWithKey (\k a -> setOriginIfLocal (libNameToId lblName) lblNode k a) sens) 
+                            (OMap.mapWithKey (\k a -> setOriginIfLocal (filePathToLibId $ libToFileName lblName) lblNode k a) sens) 
                              gind2
             joinG_sentences refTh' localTh
     else do
@@ -154,7 +154,7 @@ computeLabelTheory le ln dg (n, lbl) = let
                    return $ dgn_theory sl
                else getGlobalTheory sl
          let th = G_theory gtl gsub gts gind1 
-                   (OMap.mapWithKey (\k a -> setOriginIfLocal (libNameToId ln) s k a) sens) 
+                   (OMap.mapWithKey (\k a -> setOriginIfLocal (filePathToLibId $ libToFileName ln) s k a) sens) 
                    gind2
          -- translate theory and turn all imported theorems into axioms
          translateG_theory (dgl_morphism l) $ theoremsToAxioms th)

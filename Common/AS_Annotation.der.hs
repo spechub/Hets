@@ -177,7 +177,7 @@ notImplied = not . any isImplied . r_annos
 -- | origin of sentences
 
 data SenOrigin = SenOrigin 
-     { dGraphName :: Id
+     { dGraphName :: IRI
      , originNodeId :: Node
      , senName :: String } deriving (Eq, Ord, Show, Typeable, Data)
 
@@ -211,11 +211,11 @@ makeNamed a s = SenAttr
   , sentence = s }
 
 -- | set the origin of a named sentence
-setOrigin :: Id -> Node -> String -> SenAttr s a -> SenAttr s a
+setOrigin :: IRI -> Node -> String -> SenAttr s a -> SenAttr s a
 setOrigin lib node sen nsen = nsen {senOrigin = Just $ SenOrigin lib node sen} 
 
 -- | set the origin of a named sentence, if the sentence does not already have an origin, owise leave unchanged
-setOriginIfLocal :: Id -> Node -> String -> SenAttr s a -> SenAttr s a
+setOriginIfLocal :: IRI -> Node -> String -> SenAttr s a -> SenAttr s a
 setOriginIfLocal lib node sen nsen = 
  case senOrigin nsen of
   Nothing -> setOrigin lib node sen nsen
