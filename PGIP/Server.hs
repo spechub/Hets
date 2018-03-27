@@ -1225,7 +1225,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
               -- compose the comorphisms passed in translation
                let coms = map getCom $ splitOn ',' path
                com <- foldM compComorphism (head coms) $ tail coms
-               dg' <- liftR $ dg_translation libEnv dg com
+               dg' <- liftR $ dg_translation libEnv ln dg com
                liftR $ return (xmlC, ppTopElement
                 $ ToXml.dGraph opts libEnv ln dg')
             GlProvers mp mt -> do
@@ -1841,7 +1841,7 @@ proveNode le ln dg nl gTh subL useTh mp mt tl thms axioms = do
                                             (maybe 1 (max 1) tl)
       (if null thms then ks else thms) axioms gTh cp
     return (if null sens then le else
-        Map.insert ln ( updateLabelTheory le dg nl nTh) le
+        Map.insert ln ( updateLabelTheory le ln dg nl nTh) le
                       , combineToProofResult sens cp proofStatuses
                       )
 

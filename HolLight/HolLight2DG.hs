@@ -353,12 +353,12 @@ treeLevels l =
 makeNamedSentence :: String -> Term -> Named Sentence
 makeNamedSentence n t = makeNamed n Sentence { term = t, proof = Nothing }
 
-_insNodeDG :: Sign -> [Named Sentence] -> String
+_insNodeDG :: Sign -> [Named Sentence] -> FilePath -> String
               -> (DGraph, Map.Map String
                (String, Data.Graph.Inductive.Graph.Node, DGNodeLab))
               -> (DGraph, Map.Map String
                (String, Data.Graph.Inductive.Graph.Node, DGNodeLab))
-_insNodeDG sig sens n (dg, m) =
+_insNodeDG sig sens path n (dg, m) =
  let gt = G_theory HolLight Nothing (makeExtSign HolLight sig) startSigId
            (toThSens sens) startThId
      n' = snd (System.FilePath.splitFileName n)
@@ -371,7 +371,8 @@ _insNodeDG sig sens n (dg, m) =
      insN = [InsertNode (k, labelK)]
      newDG = changesDGH dg insN
      labCh = [SetNodeLab labelK (k, labelK
-      { globalTheory = computeLabelTheory Map.empty newDG
+      { globalTheory = computeLabelTheory Map.empty (emptyLibName
+            (System.FilePath.takeBaseName path)) newDG
         (k, labelK) })]
      newDG1 = changesDGH newDG labCh in (newDG1, m')
 
@@ -406,7 +407,7 @@ imported files not imported by the file imported last -}
  let (dg', node_m) = foldr (\ (lname, lterms) (dg, node_m') ->
            let sig = Map.findWithDefault emptySig lname m'
                sens = map (uncurry makeNamedSentence) lterms in
-           _insNodeDG sig sens lname (dg, node_m')) (emptyDG, Map.empty) libs
+           _insNodeDG sig sens path lname (dg, node_m')) (emptyDG, Map.empty) libs
      dg'' = foldr (\ (source, target) dg ->
       case Map.lookup source node_m of
        Just (n, k, _) ->
