@@ -178,7 +178,7 @@ notImplied = not . any isImplied . r_annos
 
 data SenOrigin = SenOrigin 
      { dGraphName :: Id
-     , nodeId :: Node
+     , originNodeId :: Node
      , senName :: String } deriving (Eq, Ord, Show, Typeable, Data)
 
 -- | naming or labelling sentences
