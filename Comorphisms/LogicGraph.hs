@@ -84,6 +84,7 @@ import Comorphisms.QVTR2CASL
 
 import Comorphisms.CASL2Hybrid
 import Comorphisms.Hybrid2CASL
+import Comorphisms.HPAR2CASL
 
 
 #ifdef CASLEXTENSIONS
@@ -116,6 +117,7 @@ import Comorphisms.CommonLogicModuleElimination
 import Comorphisms.Prop2CommonLogic
 import Comorphisms.SoftFOL2CommonLogic
 import Comorphisms.Adl2CASL
+import Comorphisms.Rigid2HPAR
 #endif
 #ifndef NOOWLLOGIC
 import OWL2.DMU2OWL2
@@ -202,6 +204,8 @@ comorphismList =
     , Comorphism Prop2CommonLogic
     , Comorphism SoftFOL2CommonLogic
     , Comorphism Adl2CASL
+    , Comorphism Rigid2HPAR
+    , Comorphism HPAR2CASL
 #endif
 #ifndef NOOWLLOGIC
     , Comorphism OWL22CASL

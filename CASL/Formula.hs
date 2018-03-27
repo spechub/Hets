@@ -61,6 +61,8 @@ module CASL.Formula
     , qualPredName
     , implKey
     , ifKey
+    , orKey
+    , andKey
     ) where
 
 import Common.AnnoState

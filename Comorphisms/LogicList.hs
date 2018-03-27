@@ -40,6 +40,7 @@ import qualified Data.Map as Map
 import Logic.Logic
 import Logic.Grothendieck
 import CASL.Logic_CASL  -- also serves as default logic
+import RigidCASL.Logic_RigidCASL
 import HasCASL.Logic_HasCASL
 import Propositional.Logic_Propositional
 import QBF.Logic_QBF
@@ -59,6 +60,7 @@ import Fpl.Logic_Fpl
 import Adl.Logic_Adl
 import Modal.Logic_Modal
 import Hybrid.Logic_Hybrid
+import HPAR.Logic_HPAR
 import TopHybrid.Logic_TopHybrid
 import ExtModal.Logic_ExtModal
 import CoCASL.Logic_CoCASL
@@ -90,6 +92,7 @@ import Comorphisms.DynLogicList
 logicList :: [AnyLogic]
 logicList =
   [ Logic CASL
+  , Logic RigidCASL
   , Logic HasCASL
   , Logic HolLight
   , Logic Isabelle
