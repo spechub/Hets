@@ -133,7 +133,7 @@ anaHFORMULA hf = case item hf of
    --let (asens , _bsig') = trace ("\n\ncall for:" ++ show bsen ++ "\n\n in sig " ++ show bsig1) $ runState (CAna.anaVarForms (const return) emptyMix [] [emptyAnno bsen] r) bsig1
    case mf of 
     Nothing -> error $ "could not analyse " ++ show f ++ "error:\n" ++ show ds3
-    Just (_, f') -> return $ hf {item = HBasic.Base_formula f' r} 
+    Just (_, f') -> return $ hf {item = HBasic.Base_formula f' r}
  HBasic.Negation f r -> do
    af' <- anaHFORMULA $ emptyAnno f
    return $ hf { item = HBasic.Negation (item af') r}

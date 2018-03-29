@@ -33,6 +33,8 @@ import Text.ParserCombinators.Parsec
 
 import qualified HPAR.AS_Basic_HPAR as HPAR_AS 
 
+import Debug.Trace
+
 -- | Toplevel parser for basic specs
 basicSpec :: PrefixMap -> AParser st HPAR_AS.H_BASIC_SPEC
 basicSpec ks = 
@@ -90,7 +92,7 @@ parseAxItems = do
 parenFormula :: AParser st HPAR_AS.HFORMULA
 parenFormula = do
        oParenT << addAnnos
-       f <- topformula << addAnnos
+       f <- trace "bracket" $ topformula << addAnnos
        cParenT >> return f
 
 -- | Parser for at 
@@ -107,7 +109,7 @@ hFormula =
       c <- atKey
       n <- simpleId
       _ <- colonT
-      f <- topformula -- here should be formula without @
+      f <- topformula -- here should be formula without @?
       return $ HPAR_AS.AtState n f $ tokPos c
  <|> 
    do
@@ -128,16 +130,17 @@ hFormula =
         c2 <- cBracketT
         f <- topformula
         return $ HPAR_AS.BoxFormula md f $ toRange c1 [] c2
+ <|> 
+     parenFormula 
  <|>
      do
        (q, p) <- quant
-       parseQFormula (q, p)
+       trace ("q:" ++ show q) $ parseQFormula (q, p)
  <|>
      do 
         f <- primFormula hybrid_keywords
         return $ HPAR_AS.Base_formula f nullRange    -- this should also catch nominals as terms. We have to make sure during static analysis that this is reverted!
- <|> 
-     parenFormula 
+ 
 
 parseQFormula :: (HPAR_AS.HQUANT, Token) -> AParser st HPAR_AS.HFORMULA
 parseQFormula (q, p) = 
