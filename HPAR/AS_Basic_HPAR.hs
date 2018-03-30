@@ -114,7 +114,7 @@ data H_SYMB_ITEMS = Symb_items H_SYMB_KIND [CASLBasic.SYMB] Id.Range
 {- All about pretty printing
 we chose the easy way here :) -}
 instance Pretty HFORMULA where
-    pretty = printFormula
+    pretty = printFormula False
 instance Pretty H_BASIC_SPEC where
     pretty = printBasicSpec
 instance Pretty H_SYMB_ITEMS where
@@ -135,25 +135,54 @@ forallH = text "forallH"
 existsH = text "existsH"
 
 -- Pretty printing for formulas
-printFormula :: HFORMULA -> Doc
-printFormula aFrm = 
+printFormula :: Bool -> HFORMULA -> Doc
+printFormula inJunct aFrm = 
   case aFrm of
    Base_formula pfrm _ -> CPrint.printFormula pfrm 
    Nominal _ nom _ -> pretty nom  
-   AtState nom frm _ -> prettyAt <+> pretty nom <+> colon <+> printFormula frm 
-   BoxFormula md frm _ -> lbrack <+> pretty md <+> rbrack <+> printFormula frm
-   DiamondFormula md frm _ -> text "<" <+> pretty md <+> text ">" <+> printFormula frm
-   Negation frm _ -> notDoc <+> printFormula frm
+   AtState nom frm _ -> let pf = prettyAt <+> pretty nom <+> colon <+> printFormula False frm 
+                         in if inJunct then parens pf else pf
+   BoxFormula md frm _ -> let pf = lbrack <+> pretty md <+> rbrack <+> printFormula False frm
+                          in if inJunct then parens pf else pf
+   DiamondFormula md frm _ -> let pf =  text "<" <+> pretty md <+> text ">" <+> printFormula False frm
+                              in if inJunct then parens pf else pf
+   Negation frm _ -> notDoc <+> printFormula inJunct frm
    Conjunction xs _ -> sepByArbitrary andDoc $ 
-                        map printFormula xs
+                        map (printFormula True) xs
    Disjunction xs _ -> sepByArbitrary orDoc $ 
-                         map printFormula xs
-   Implication x y _ -> printFormula x <+> 
-                          implies <+> printFormula y
-   Equivalence x y _ -> printFormula x <+> 
-                          equiv <+> printFormula y
-   QuantRigidVars q vdecls frm _ -> printQuant q <+> CPrint.printVarDecls vdecls <+> bullet <+> printFormula frm
-   QuantNominals q noms frm _ -> printQuant q <+> keyword nomS <+> sepByCommas (map pretty noms) <+> bullet <+> printFormula frm
+                         map (printFormula True) xs
+   Implication x y _ -> let 
+                           ls = if leftParens x then parens (printFormula False x) else printFormula False x
+                           rs = if rightParens y then parens (printFormula False y) else printFormula False y 
+                        in if inJunct then ls <+> implies <+> rs else parens (ls <+> implies <+> rs)
+   Equivalence x y _ -> let 
+                           ls = if leftParens x then parens (printFormula False x) else printFormula False x
+                           rs = if rightParens y then parens (printFormula False y) else printFormula False y 
+                        in if inJunct then ls <+> equiv <+> rs else parens (ls <+> implies <+> rs)
+   QuantRigidVars q vdecls frm _ -> let pf = printQuant q <+> CPrint.printVarDecls vdecls <+> bullet <+> printFormula False frm
+                                    in if inJunct then parens pf else pf
+   QuantNominals q noms frm _ -> let pf = printQuant q <+> keyword nomS <+> sepByCommas (map pretty noms) <+> bullet <+> printFormula False frm
+                                 in if inJunct then parens pf else pf
+
+leftParens :: HFORMULA -> Bool
+leftParens sen = 
+ case sen of
+  AtState _ _ _ -> True
+  BoxFormula _ _ _ -> True
+  DiamondFormula _ _ _ -> True
+  Implication _ _ _ -> True
+  Equivalence _ _ _ -> True
+  QuantRigidVars _ _ _ _ -> True
+  QuantNominals _ _ _ _ -> True
+  _ -> False
+
+rightParens :: HFORMULA -> Bool
+rightParens sen = 
+ case sen of
+  Implication _ _ _ -> True
+  QuantRigidVars _ _ _ _ -> True
+  QuantNominals _ _ _ _ -> True
+  _ -> False
 
 printQuant :: HQUANT -> Doc
 printQuant HUniversal = forallH
