@@ -72,9 +72,12 @@ printSign :: HSign -> Doc
 printSign s = 
     pretty (baseSig s)
     $+$
-    hsep [text ("nominal" ++ (case Set.toList $ noms s of 
+    let nomss = Set.toList $ noms s in
+    case nomss of 
+     [] -> empty
+     _ -> hsep [text ("nominal" ++ (case nomss of 
                               [_] -> ""
-                              _ -> "s")), sepByCommas $ map pretty $ Set.toList $ noms s]
+                              _ -> "s")), sepByCommas $ map pretty nomss]
     $+$
     (foldl (\aDoc (i,n) -> aDoc $+$ 
                             hsep [text ( case Map.toList $ mods s of 
