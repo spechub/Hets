@@ -33,6 +33,7 @@ module HPAR.Sign
 import Data.Data
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+import qualified Common.Lib.Rel as Rel
 
 import Common.Id
 import Common.Result
@@ -70,7 +71,11 @@ isLegalSignature sig = let
 -- | pretty printing for signatures
 printSign :: HSign -> Doc
 printSign s = 
-    pretty (baseSig s)
+    let bsig = baseSig s in 
+    pretty (bsig {CSign.sortRel = Rel.difference (Rel.transReduce $ CSign.sortRel bsig)
+                             . Rel.transReduce $ Rel.fromSet $ Set.map (\x->(x,x)) $ PARSign.rigidSorts $ CSign.extendedInfo bsig,
+                  CSign.opMap = CSign.diffOpMapSet (CSign.opMap bsig) $ PARSign.rigidOps $ CSign.extendedInfo bsig,
+                  CSign.predMap = CSign.diffMapSet (CSign.predMap bsig) $ PARSign.rigidPreds $ CSign.extendedInfo bsig})
     $+$
     let nomss = Set.toList $ noms s in
     case nomss of 
