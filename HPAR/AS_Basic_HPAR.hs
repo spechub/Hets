@@ -39,6 +39,8 @@ import qualified CASL.AS_Basic_CASL as CASLBasic
 import qualified CASL.ToDoc as CPrint
 import RigidCASL.Print_AS ()
 
+import Debug.Trace
+
 -- DrIFT command
 {-! global: GetRange !-}
 
@@ -111,8 +113,6 @@ data H_SYMB_ITEMS = Symb_items H_SYMB_KIND [CASLBasic.SYMB] Id.Range
                   -- pos: SYMB_KIND, commas
                   deriving (Show, Eq, Ord, Typeable, Data)
 
-{- All about pretty printing
-we chose the easy way here :) -}
 instance Pretty HFORMULA where
     pretty = printFormula False
 instance Pretty H_BASIC_SPEC where
@@ -138,7 +138,7 @@ existsH = text "existsH"
 printFormula :: Bool -> HFORMULA -> Doc
 printFormula inJunct aFrm = 
   case aFrm of
-   Base_formula pfrm _ -> CPrint.printFormula pfrm 
+   Base_formula pfrm _ -> CPrint.printFormula pfrm
    Nominal _ nom _ -> pretty nom  
    AtState nom frm _ -> let pf = prettyAt <+> pretty nom <+> colon <+> printFormula False frm 
                          in if inJunct then parens pf else pf
@@ -206,7 +206,7 @@ printModItem (Mod_item xs i _) = undefined
   
 
 printBasicSpec :: H_BASIC_SPEC -> Doc
-printBasicSpec (Basic_spec xs) = vcat $ map pretty xs
+printBasicSpec (Basic_spec xs) = trace ("displaying: " ++ show xs) $ vcat $ map pretty xs
 
 printBasicItems :: H_BASIC_ITEMS -> Doc
 printBasicItems (Axiom_items xs) = vcat $ map (addBullet . pretty) xs

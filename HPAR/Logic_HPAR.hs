@@ -24,7 +24,7 @@ import qualified CASL.Parse_AS_Basic as CParse
 import qualified CASL.Sign as CSign
 import qualified CASL.Morphism as CMor
 --import CASL.MapSentence
---import CASL.SimplifySen
+import HPAR.SimplifySen
 --import CASL.SymbolParser
 --import CASL.Taxonomy
 --import CASL.ToDoc
@@ -49,9 +49,7 @@ instance Category HSign HMorphism where
     legal_mor = undefined
 
 instance Syntax HPAR H_BASIC_SPEC CSign.Symbol H_SYMB_ITEMS CBasic.SYMB_MAP_ITEMS where
-    parsersAndPrinters HPAR = 
-           addSyntax "Hets" (basicSpec, pretty)
-           $ makeDefault (basicSpec, pretty)
+    parsersAndPrinters HPAR = makeDefault (basicSpec, pretty)
     parse_basic_spec HPAR = Just $ basicSpec
     parse_symb_items HPAR = undefined -- Just $ symbItems [rigidS]
     parse_symb_map_items HPAR = undefined -- Just $ symbMapItems hybrid_reserved_words
@@ -61,7 +59,7 @@ instance Sentences HPAR HFORMULA HSign HMorphism CSign.Symbol where
       sym_of HPAR = undefined -- symOf
       symmap_of HPAR = undefined --morphismToSymbMap
       sym_name HPAR = undefined --symName
-      --simplify_sen HPAR = undefined --simplifyCASLSen
+      simplify_sen HPAR = simplifyHPARSen
       --print_sign HPAR = pretty
       --print_named HPAR = undefined --printTheoryFormula
 

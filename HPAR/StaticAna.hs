@@ -64,7 +64,7 @@ basicAnalysis (bs, inSig, ga) =
         outSig = hSign accTh
         sents = -- map (\x -> x{sentence = nomsInSens outSig $ sentence x}) $ 
                 hSens accTh
-   in trace ("basic spec before analysis:\n" ++ show bs ++ "\n\nbasic spec after analysis:" ++ show newBs) $ 
+   in trace ("basic spec after analysis:" ++ show newBs ++ "\n sents:" ++ show sents) $ 
       Result ds $  Just (newBs, ExtSign outSig (declSyms accTh), sents)
 
 anaBasicSpec :: HBasic.H_BASIC_SPEC -> State HTheoryAna HBasic.H_BASIC_SPEC
@@ -102,17 +102,19 @@ anaBasicItems bs bi =
                                               in (h', f':l)) (hth, []) annofs 
     let replfs = -- map (\x -> x {item = nomsInSens (hSign hth') $ item x} ) $ 
                  reverse annofs'
-        nfs = map makeNamedSen replfs
+        nfs = -- trace (show replfs) $ 
+              map (makeNamedSen.snd) replfs
     put $ hth' {hSens = nfs ++ hSens hth'}
-    return $ HBasic.Axiom_items replfs 
+    return $ HBasic.Axiom_items $ map fst replfs
   
-anaHFORMULA :: Annoted HBasic.HFORMULA -> State HTheoryAna (Annoted HBasic.HFORMULA)
+anaHFORMULA :: Annoted HBasic.HFORMULA -> State HTheoryAna (Annoted HBasic.HFORMULA, Annoted HBasic.HFORMULA)
 anaHFORMULA hf = case item hf of
  HBasic.Base_formula bsen r -> case bsen of
-  Mixfix_formula (Mixfix_token i) -> trace ("Checking for " ++ show i ) $ do
+  Mixfix_formula (Mixfix_token i) -> do
    hth <- get
-   if i `elem` (Map.keys $ hVars hth) then return $ hf { item = HBasic.Nominal True i r}
-   else return $ hf{ item = HBasic.Nominal False i r} -- here we check whether the nominal is a variable or not!
+   let hf' = if i `elem` (Map.keys $ hVars hth) then hf { item = HBasic.Nominal True i r}
+              else hf{ item = HBasic.Nominal False i r} -- here we check whether the nominal is a variable or not!
+   return (hf', hf')
   f -> do
    hth <- get
    let bsig = HSign.baseSig $ hSign hth
@@ -133,34 +135,37 @@ anaHFORMULA hf = case item hf of
    --let (asens , _bsig') = trace ("\n\ncall for:" ++ show bsen ++ "\n\n in sig " ++ show bsig1) $ runState (CAna.anaVarForms (const return) emptyMix [] [emptyAnno bsen] r) bsig1
    case mf of 
     Nothing -> error $ "could not analyse " ++ show f ++ "error:\n" ++ show ds3
-    Just (_, f') -> return $ hf {item = HBasic.Base_formula f' r}
+    Just (f1, f2) -> let hf1 = hf {item = HBasic.Base_formula f1 r}
+                         hf2 = hf {item = HBasic.Base_formula f2 r}
+                    in return (hf1, hf2)
  HBasic.Negation f r -> do
-   af' <- anaHFORMULA $ emptyAnno f
-   return $ hf { item = HBasic.Negation (item af') r}
+   (af1, af2) <- anaHFORMULA $ emptyAnno f
+   let hf'= hf { item = HBasic.Negation (item af2) r}
+   return (hf{item = HBasic.Negation (item af1) r}, hf')
  HBasic.Conjunction fs r -> do 
    afs' <- mapM anaHFORMULA $ map emptyAnno fs 
-   return $ hf { item = HBasic.Conjunction (map item afs') r}
+   return $ (hf { item = HBasic.Conjunction (map (item.fst) afs') r}, hf { item = HBasic.Conjunction (map (item.snd) afs') r})
  HBasic.Disjunction fs r -> do 
    afs' <- mapM anaHFORMULA $ map emptyAnno fs 
-   return $ hf { item = HBasic.Disjunction (map item afs') r}
+   return $ (hf { item = HBasic.Disjunction (map (item.fst) afs') r}, hf { item = HBasic.Disjunction (map (item.snd) afs') r})
  HBasic.Implication f1 f2 r -> do
    f1' <- anaHFORMULA $ emptyAnno f1
    f2' <- anaHFORMULA $ emptyAnno f2
-   return $ hf {item = HBasic.Implication (item f1') (item f2') r} 
+   return $ (hf {item = HBasic.Implication (item $ fst f1') (item $ fst f2') r}, hf {item = HBasic.Implication (item $ snd f1') (item $ snd f2') r}) 
  HBasic.Equivalence f1 f2 r -> do
    f1' <- anaHFORMULA $ emptyAnno f1
    f2' <- anaHFORMULA $ emptyAnno f2
-   return $ hf { item = HBasic.Equivalence (item f1') (item f2') r }
- HBasic.Nominal b i r -> return hf
+   return $ (hf {item = HBasic.Equivalence (item $ fst f1') (item $ fst f2') r}, hf {item = HBasic.Equivalence (item $ snd f1') (item $ snd f2') r})
+ HBasic.Nominal b i r -> return (hf,hf)
  HBasic.AtState i f r -> do 
    f' <- anaHFORMULA $ emptyAnno f 
-   return $ hf { item = HBasic.AtState i (item f') r} 
+   return $ (hf { item = HBasic.AtState i (item $ fst f') r}, hf { item = HBasic.AtState i (item $ snd f') r})
  HBasic.BoxFormula i f r -> do 
    f' <- anaHFORMULA $ emptyAnno f
-   return $ hf { item = HBasic.BoxFormula i (item f') r}  
+   return $ (hf { item = HBasic.BoxFormula i (item $ fst f') r}, hf { item = HBasic.BoxFormula i (item $ snd f') r})  
  HBasic.DiamondFormula i f r -> do 
    f' <- anaHFORMULA $ emptyAnno f
-   return $ hf{item = HBasic.DiamondFormula i (item f') r}
+   return $ (hf { item = HBasic.DiamondFormula i (item $ fst f') r}, hf { item = HBasic.DiamondFormula i (item $ snd f') r})  
  HBasic.QuantRigidVars q vs f r -> do 
    hth <- get
    let bsig = HSign.baseSig $ hSign hth
@@ -170,11 +175,11 @@ anaHFORMULA hf = case item hf of
        --         Nothing -> error "can't add vars as sorts"
        --         Just x -> x
        (f', _) = runState (anaHFORMULA $ emptyAnno f) $ hth {hVars = Map.union (hVars hth) $ Map.fromList $ varPars } -- here we must add the variables to the signature, and then remove them
-   return $ hf{item = HBasic.QuantRigidVars q vs (item f') r}
+   return $ (hf{item = HBasic.QuantRigidVars q vs (item $ fst f') r}, hf{item = HBasic.QuantRigidVars q vs (item $ snd f') r})
  HBasic.QuantNominals q ns f r -> do
    hth <- get
    let (f',_) = runState  (anaHFORMULA $ emptyAnno f) $ hth {hVars = Map.union (hVars hth) $ Map.fromList $ map (\i -> (i, genName "ST") ) ns}
-   return $ hf { item = HBasic.QuantNominals q ns (item f') r} 
+   return $ (hf { item = HBasic.QuantNominals q ns (item $ fst f') r}, hf { item = HBasic.QuantNominals q ns (item $ snd f') r})
 
 
 {-
