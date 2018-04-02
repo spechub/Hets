@@ -103,7 +103,8 @@ prettyGTheory :: Maybe IRI -> G_theory -> Doc
 prettyGTheory sm g = case simplifyTh g of
      G_theory lid _ sign@(ExtSign s _) _ sens _ -> let l = toNamedList sens in
          if null l && ext_is_subsig lid sign (ext_empty_signature lid) then
-             specBraces Common.Doc.empty else printTheory sm lid (s, l)
+             specBraces Common.Doc.empty
+         else vcat (printTheory sm lid (s, l):map (\s  -> text (senAttr s++" "++show (senOrigin s))) l)
 
 -- | compute sublogic of a theory
 sublogicOfTh :: G_theory -> G_sublogics
