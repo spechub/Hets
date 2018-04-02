@@ -355,6 +355,11 @@ ConsistencyCheckAttempt sql=consistency_check_attempts
   omsId LocIdBaseId Maybe
   consistencyStatus ConsistencyStatusType
 
+ProofAttemptUsedSentence sql=proof_attempts_used_sentences
+  proofAttemptId ProofAttemptId
+  sentenceId LocIdBaseId
+  deriving Show
+
 GeneratedAxiom sql=generated_axioms
   reasoningAttemptId ReasoningAttemptId
   text Text

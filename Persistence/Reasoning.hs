@@ -312,7 +312,7 @@ postprocessReasoning opts reasoningCacheGoal premisesM
       case rceProverMode reasoningCacheGoal of
         GlConsistency -> do
           let consistencyStatus_ = convertGoalResultConsistencyStatus goalResult
-          omsEntity <- getOmsFromReasoningAttempt reasoningAttemptKey
+          omsEntity <- getOmsFromConsistencyCheckAttempt reasoningAttemptKey
           createReasonerOutput reasoningAttemptKey reasonerKey $
             fromJust consCheckerOutputM
           advisoryLocked opts (omsLockKey $ entityKey omsEntity) $ do
@@ -331,10 +331,13 @@ postprocessReasoning opts reasoningCacheGoal premisesM
           createReasonerOutput reasoningAttemptKey reasonerKey $
             unlines $ LP.proofLines proofStatus
           let proofStatusSZS = convertGoalResultProofStatus goalResult premisesM
+          omsEntity <- getOmsFromProofAttempt reasoningAttemptKey
+          usedSentencesIds <- getUsedSentencesIds omsEntity $
+            fmap LP.usedAxioms proofStatusM
           conjectureEntity <- getConjectureFromReasoningAttempt reasoningAttemptKey
           advisoryLocked opts (conjectureLockKey $ entityKey conjectureEntity) $ do
             finishReasoningAttempt reasoningAttemptEntity timeTakenM
-            updateProofAttempt reasoningAttemptKey proofStatusSZS
+            updateProofAttempt reasoningAttemptKey proofStatusSZS usedSentencesIds
             evaluationStates <- fetchConjectureEvaluationStates conjectureEntity
             proofStatusesSZS <- fetchProofStatuses conjectureEntity
             setConjectureEvaluationState conjectureEntity $
@@ -343,10 +346,10 @@ postprocessReasoning opts reasoningCacheGoal premisesM
               chooseProofStatus proofStatusesSZS
       return ()
   where
-    getOmsFromReasoningAttempt :: MonadIO m
-                               => DatabaseSchema.ReasoningAttemptId
-                               -> DBMonad m (Entity LocIdBase)
-    getOmsFromReasoningAttempt reasoningAttemptKey = do
+    getOmsFromConsistencyCheckAttempt :: MonadIO m
+                                      => DatabaseSchema.ReasoningAttemptId
+                                      -> DBMonad m (Entity LocIdBase)
+    getOmsFromConsistencyCheckAttempt reasoningAttemptKey = do
       omsL <- select $ from $
         \ (reasoning_attempts `InnerJoin` consistency_check_attempts
                               `InnerJoin` loc_id_bases) -> do
@@ -358,6 +361,28 @@ postprocessReasoning opts reasoningCacheGoal premisesM
                      val reasoningAttemptKey
           limit 1
           return loc_id_bases
+      case omsL of
+        [] -> fail "Persistence.Reasoning.postprocessReasoning: could not find OMS"
+        omsEntity : _ -> return omsEntity
+
+    getOmsFromProofAttempt :: MonadIO m
+                           => DatabaseSchema.ReasoningAttemptId
+                           -> DBMonad m (Entity LocIdBase)
+    getOmsFromProofAttempt reasoningAttemptKey = do
+      omsL <- select $ from $
+        \ (reasoning_attempts `InnerJoin` proof_attempts
+                              `InnerJoin` sentences
+                              `InnerJoin` loc_id_bases_oms) -> do
+          on $ loc_id_bases_oms ^. LocIdBaseId ==.
+                 (sentences ^. SentenceOmsId)
+          on $ just (coerceId (sentences ^. SentenceId)) ==.
+                 proof_attempts ^. ProofAttemptConjectureId
+          on $ proof_attempts ^. ProofAttemptId ==.
+                 coerceId (reasoning_attempts ^. ReasoningAttemptId)
+          where_ $ reasoning_attempts ^. ReasoningAttemptId ==.
+                     val reasoningAttemptKey
+          limit 1
+          return loc_id_bases_oms
       case omsL of
         [] -> fail "Persistence.Reasoning.postprocessReasoning: could not find OMS"
         omsEntity : _ -> return omsEntity
@@ -380,6 +405,21 @@ postprocessReasoning opts reasoningCacheGoal premisesM
       case conjectureL of
         [] -> fail "Persistence.Reasoning.postprocessReasoning: could not find Conjecture"
         conjectureEntity : _ -> return conjectureEntity
+
+    getUsedSentencesIds :: MonadIO m
+                        => Entity LocIdBase
+                        -> Maybe [String]
+                        -> DBMonad m [LocIdBaseId] -- Sentence IDs
+    getUsedSentencesIds omsEntity sentenceNamesM =
+      case sentenceNamesM of
+        Nothing -> return []
+        Just sentenceNames ->
+          let sentenceLocIds = map (locIdOfSentence omsEntity) sentenceNames
+          in  do
+                sentences <- select $ from $ \ loc_id_bases -> do
+                  where_ $ loc_id_bases ^. LocIdBaseLocId `in_` valList sentenceLocIds
+                  return loc_id_bases
+                return $ map (\ (Entity sentenceKey _) -> sentenceKey) sentences
 
     finishReasoningAttempt :: MonadIO m
                            => Entity DatabaseSchema.ReasoningAttempt
@@ -405,11 +445,18 @@ postprocessReasoning opts reasoningCacheGoal premisesM
     updateProofAttempt :: MonadIO m
                        => DatabaseSchema.ReasoningAttemptId
                        -> Enums.ProofStatusType
+                       -> [LocIdBaseId]
                        -> DBMonad m ()
-    updateProofAttempt reasoningAttemptKey proofStatus =
+    updateProofAttempt reasoningAttemptKey proofStatus usedSentencesIds = do
       update (toSqlKey $ fromSqlKey reasoningAttemptKey)
              [ ProofAttemptProofStatus =. proofStatus
              ]
+      mapM_ (\ sentenceKey -> insert ProofAttemptUsedSentence
+              { proofAttemptUsedSentenceProofAttemptId =
+                  toSqlKey $ fromSqlKey reasoningAttemptKey
+              , proofAttemptUsedSentenceSentenceId = sentenceKey
+              }
+            ) usedSentencesIds
 
 fetchOmsEvaluationStates :: MonadIO m
                          => Entity DatabaseSchema.LocIdBase
