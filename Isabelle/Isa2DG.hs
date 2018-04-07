@@ -62,7 +62,7 @@ _insNodeDG sig sens n dg =
      insN = [InsertNode (k, labelK)]
      newDG = changesDGH dg insN
      labCh = [SetNodeLab labelK (k, labelK
-      { globalTheory = computeLabelTheory Map.empty newDG
+      { globalTheory = computeLabelTheory Map.empty (emptyLibName "Imported Theory") newDG
         (k, labelK) })]
      newDG1 = changesDGH newDG labCh in (newDG1, k)
 

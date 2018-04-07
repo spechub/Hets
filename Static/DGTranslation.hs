@@ -43,18 +43,18 @@ import Control.Monad (foldM)
 libEnv_translation :: LibEnv -> AnyComorphism -> Result LibEnv
 libEnv_translation libEnv com =
   foldM (\ le ln -> do
-    dgTr <- dg_translation le (lookupDGraph ln libEnv) com
+    dgTr <- dg_translation le ln (lookupDGraph ln libEnv) com
     return $ Map.insert ln dgTr le) Map.empty $ getTopsortedLibs libEnv
 
-dg_translation :: LibEnv -> DGraph -> AnyComorphism -> Result DGraph
-dg_translation le gc acm@(Comorphism cidMor) =
+dg_translation :: LibEnv -> LibName -> DGraph -> AnyComorphism -> Result DGraph
+dg_translation le ln gc acm@(Comorphism cidMor) =
     let labNodesList = labNodesDG gc
         labEdgesList = labEdgesDG gc
     in addErrorDiag ("translation failed via: " ++ language_name cidMor) ()
        $ do
         resOfEdges <- mapM (updateEdges acm gc) labEdgesList
         resOfNodes <- mapM (updateNodes acm) labNodesList
-        return $ computeDGraphTheories le
+        return $ computeDGraphTheories le ln
           $ mkGraphDG resOfNodes resOfEdges emptyDG
 
 updateEdges :: AnyComorphism -> DGraph -> LEdge DGLinkLab

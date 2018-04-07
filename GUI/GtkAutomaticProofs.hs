@@ -217,7 +217,7 @@ showProverWindow ginf res ln le = postGUIAsync $ do
                       {- where the proving did not return anything, the node is
                       not updated -}
                       if unchecked fn then cs
-                          else updateLabelTheory le cs (node fn) (results fn)
+                          else updateLabelTheory le ln cs (node fn) (results fn)
                     ) dg nodes'
 
     putMVar res $ Map.insert ln (groupHistory dg (DGRule "autoproof") dg') le
