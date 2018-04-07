@@ -193,7 +193,8 @@ data SenAttr s a = SenAttr
     , simpAnno :: Maybe Bool -- for %simp or %nosimp annotations
     , attrOrigin :: Maybe Id
     , senMark :: String -- a marker for theoroidal comorphisms
-    , senOrigin :: Maybe SenOrigin
+    , senOrigin :: Maybe SenOrigin 
+       -- Nothing for local sentences, Just (libName as iri, node, sentence name) for imported ones
     , sentence :: s } deriving (Eq, Ord, Show, Typeable, Data)
 
 -- | equip a sentence with a name
