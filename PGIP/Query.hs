@@ -53,6 +53,8 @@ The default display for a LibEnv should be:
 
 import Common.Utils
 
+import PGIP.ReasoningParameters
+import PGIP.Shared
 import Control.Exception
 
 import Data.Char
@@ -133,11 +135,10 @@ data QueryKind =
   | GlProvers ProverMode (Maybe String)
   | GlTranslations
   | GlShowProverWindow ProverMode
+  | GlAutoProveREST ProverMode ReasoningParameters
   | GlAutoProve ProveCmd
   | NodeQuery NodeIdOrName NodeCommand
   | EdgeQuery Int String deriving (Show, Eq)
-
-data ProverMode = GlProofs | GlConsistency deriving (Show, Eq)
 
 data ProveCmd = ProveCmd
   { pcProverMode :: ProverMode
@@ -335,13 +336,13 @@ anaNodeQuery ans i moreTheorems incls pss =
           ++ case lookup "theorems" pps of
         Nothing -> []
         Just str -> map unEsc $ splitOn ' ' $ decodeQuery str
-      timeLimit = maybe Nothing readMaybe $ lookup "timeout" pps
+      timeLimit_ = maybe Nothing readMaybe $ lookup "timeout" pps
       pp = ProveNode $ ProveCmd GlProofs (not (null incls) || case incl of
         Nothing -> True
         Just str -> map toLower str `notElem` ["f", "false"])
-        prover trans timeLimit theorems False []
+        prover trans timeLimit_ theorems False []
       noPP = null incls && null pps
-      noIncl = null incls && isNothing incl && isNothing timeLimit
+      noIncl = null incls && isNothing incl && isNothing timeLimit_
       cmds = map (\ a -> (showNodeCmd a, a)) nodeCmds
   in case ans of
        [] -> Right $ NodeQuery i

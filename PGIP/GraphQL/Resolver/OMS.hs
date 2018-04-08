@@ -3,6 +3,7 @@ module PGIP.GraphQL.Resolver.OMS (resolve) where
 import PGIP.GraphQL.Resolver.ToResult
 
 import PGIP.GraphQL.Result as GraphQLResult
+import PGIP.GraphQL.Result.Action as GraphQLResultAction
 import PGIP.GraphQL.Result.Mapping as GraphQLResultMapping
 import PGIP.GraphQL.Result.PremiseSelection as GraphQLResultPremiseSelection
 import PGIP.GraphQL.Result.ReasonerConfiguration as GraphQLResultReasonerConfiguration
@@ -145,18 +146,28 @@ resolveReasoningAttempt :: MonadIO m
                            )
                         -> DBMonad m GraphQLResultReasoningAttempt.ReasoningAttempt
 resolveReasoningAttempt (reasoningAttemptEntity, reasonerEntityM, reasonerConfigurationEntity) = do
+  actionResult <-
+    resolveAction $ reasoningAttemptActionId $ entityVal reasoningAttemptEntity
   reasonerOutputEntityM <- getReasonerOutput $ entityKey reasoningAttemptEntity
-  reasonerConfigurationResult <- resolveReasonerConfiguration reasonerConfigurationEntity
+  reasonerConfigurationResult <-
+    resolveReasonerConfiguration reasonerConfigurationEntity
   return $ reasoningAttemptToResult reasoningAttemptEntity reasonerOutputEntityM
-    reasonerEntityM reasonerConfigurationResult
+    reasonerEntityM actionResult reasonerConfigurationResult
+
+resolveAction :: MonadIO m
+              => DatabaseSchema.ActionId
+              -> DBMonad m GraphQLResultAction.Action
+resolveAction actionKey = do
+  Just actionValue <- get actionKey
+  return $ actionToResult $ Entity actionKey actionValue
 
 resolveSentences :: MonadIO m
                  => LocIdBaseId -> DBMonad m [GraphQLResultSentence.Sentence]
 resolveSentences omsKey = do
   sentenceL <-
     select $ from $ \(sentencesSql `InnerJoin` loc_id_bases
-                                `LeftOuterJoin` file_ranges
-                                `LeftOuterJoin` conjectures) -> do
+                                   `LeftOuterJoin` file_ranges
+                                   `LeftOuterJoin` conjectures) -> do
       on (coerceId (conjectures ?. ConjectureId) ==. loc_id_bases ^. LocIdBaseId)
       on (file_ranges ?. FileRangeId ==. sentencesSql ^. SentenceFileRangeId)
       on (loc_id_bases ^. LocIdBaseId ==. coerceId (sentencesSql ^. SentenceId))
@@ -179,9 +190,10 @@ resolveConjecture :: MonadIO m
                   -> [GraphQLResultSymbol.Symbol]
                   -> DBMonad m GraphQLResultSentence.Sentence
 resolveConjecture sentenceEntity locIdBaseEntity fileRangeM conjectureEntity symbolResults = do
+  actionResult <- resolveAction $ conjectureActionId $ entityVal conjectureEntity
   proofAttemptResults <- resolveProofAttempts $ entityKey locIdBaseEntity
   return $ conjectureToResult sentenceEntity locIdBaseEntity fileRangeM
-    conjectureEntity symbolResults proofAttemptResults
+    conjectureEntity actionResult symbolResults proofAttemptResults
 
 resolveProofAttempts :: MonadIO m
                      => LocIdBaseId

@@ -28,12 +28,11 @@ import Database.Persist.TH
 import Data.Text (Text)
 
 import qualified Persistence.Schema.Enums as Enums
+import Persistence.Schema.ConsistencyStatusType (ConsistencyStatusType)
 import Persistence.Schema.EvaluationStateType (EvaluationStateType)
 import Persistence.Schema.MappingOrigin (MappingOrigin)
 import Persistence.Schema.MappingType (MappingType)
 import Persistence.Schema.OMSOrigin (OMSOrigin)
-import Persistence.Schema.ReasoningStatusOnConjectureType (ReasoningStatusOnConjectureType)
-import Persistence.Schema.ReasoningStatusOnReasoningAttemptType (ReasoningStatusOnReasoningAttemptType)
 
 indexes :: [(String, [String])]
 indexes =
@@ -88,6 +87,32 @@ LogicMapping sql=logic_mappings
   isWeaklyAmalgamable Bool
   deriving Show
 
+LogicInclusion sql=logic_inclusions
+  name String
+  UniqueLogicInclusionName name
+  slug String
+  UniqueLogicInclusionSlug slug
+  languageId LanguageId
+  sourceId LogicId
+  targetId LogicId Maybe
+  deriving Show
+
+LogicTranslation sql=logic_translations
+  slug String
+  UniqueLogicTranslationSlug slug
+  name String
+  UniqueLogicTranslationName name
+  deriving Show
+
+-- Make sure that exactly one of logicMappingId or logicInclusionId is not Nothing
+LogicTranslationStep sql=logic_translation_steps
+  logicTranslationId LogicTranslationId
+  number Int
+  UniqueLogicTranlationStepListEntry logicTranslationId number
+  logicMappingId LogicMappingId Maybe
+  logicInclusionId LogicInclusionId Maybe
+  deriving Show
+
 Serialization sql=serializations
   languageId LanguageId
   slug String maxlen=247 -- 255 - 8 (8 for the languageId)
@@ -125,12 +150,21 @@ Repository sql=repositories
   ownerId OrganizationalUnitId
   deriving Show
 
+-- This data type could be extended in the future by
+-- * ETA
+-- * URL of the resulting resource
+-- * more information about the job
+Action sql=actions
+  evaluationState EvaluationStateType
+  message Text Maybe
+  deriving Show
+
 -- We leave out the other columns here because we don't need them in Hets
 FileVersion sql=file_versions
+  actionId ActionId
   repositoryId RepositoryId
   path String
   commitSha String
-  evaluationState EvaluationStateType
   deriving Show
 
 -- This table is only needed for a SELECT JOIN by Ontohub. It needs to at least
@@ -177,6 +211,7 @@ Diagnosis sql=diagnoses
 
 OMS sql=oms
   documentId LocIdBaseId -- DocumentId is LocIdBaseId
+  actionId ActionId
   logicId LogicId
   languageId LanguageId
   serializationId SerializationId Maybe
@@ -194,6 +229,7 @@ OMS sql=oms
   nameExtensionIndex Int    -- Represents NodeName
   labelHasHiding Bool
   labelHasFree Bool
+  consistencyStatus ConsistencyStatusType
   deriving Show
 
 Mapping sql=mappings
@@ -224,8 +260,8 @@ Axiom sql=axioms
   deriving Show
 
 Conjecture sql=conjectures
-  evaluationState EvaluationStateType
-  reasoningStatus ReasoningStatusOnConjectureType
+  actionId ActionId
+  proofStatus Enums.ProofStatusType
   deriving Show
 
 Symbol sql=symbols
@@ -257,8 +293,9 @@ SignatureSymbol sql=signature_symbols
 
 Reasoner sql=reasoners
   slug String maxlen=255
-  UniqueReasonerSlug slug
+  kind Enums.ReasonerKindType
   displayName String
+  UniqueReasonerSlugAndKind slug kind
   deriving Show
 
 ReasonerConfiguration sql=reasoner_configurations
@@ -268,6 +305,9 @@ ReasonerConfiguration sql=reasoner_configurations
 
 PremiseSelection sql=premise_selections
   reasonerConfigurationId ReasonerConfigurationId
+  proofAttemptId ProofAttemptId
+  kind Enums.PremiseSelectionKindType
+  timeTaken Int Maybe
   deriving Show
 
 PremiseSelectedSentence sql=premise_selected_sentences
@@ -299,18 +339,26 @@ SineSymbolCommonness sql=sine_symbol_commonnesses
   deriving Show
 
 ReasoningAttempt sql=reasoning_attempts
+  kind Enums.ReasoningAttemptKindType maxlen=16
+  actionId ActionId
   reasonerConfigurationId ReasonerConfigurationId
   usedReasonerId ReasonerId Maybe
+  usedLogicTranslationId LogicTranslationId Maybe
   timeTaken Int Maybe
-  evaluationState EvaluationStateType
-  reasoningStatus ReasoningStatusOnReasoningAttemptType
   deriving Show
 
 ProofAttempt sql=proof_attempts
   conjectureId LocIdBaseId Maybe
+  proofStatus Enums.ProofStatusType
 
 ConsistencyCheckAttempt sql=consistency_check_attempts
   omsId LocIdBaseId Maybe
+  consistencyStatus ConsistencyStatusType
+
+ProofAttemptUsedSentence sql=proof_attempts_used_sentences
+  proofAttemptId ProofAttemptId
+  sentenceId LocIdBaseId
+  deriving Show
 
 GeneratedAxiom sql=generated_axioms
   reasoningAttemptId ReasoningAttemptId

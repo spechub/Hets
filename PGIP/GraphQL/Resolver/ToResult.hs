@@ -1,6 +1,7 @@
 module PGIP.GraphQL.Resolver.ToResult where
 
 import PGIP.GraphQL.Result.Axiom as GraphQLResultAxiom
+import PGIP.GraphQL.Result.Action as GraphQLResultAction
 import PGIP.GraphQL.Result.Conjecture as GraphQLResultConjecture
 import PGIP.GraphQL.Result.ConservativityStatus as GraphQLResultConservativityStatus
 import PGIP.GraphQL.Result.DocumentLink as GraphQLResultDocumentLink
@@ -34,6 +35,15 @@ import Persistence.Schema as DatabaseSchema
 import qualified Data.Text as Text
 import Database.Esqueleto
 
+actionToResult :: Entity DatabaseSchema.Action
+               -> GraphQLResultAction.Action
+actionToResult (Entity _ actionValue) =
+  GraphQLResultAction.Action
+    { GraphQLResultAction.evaluationState =
+        show $ actionEvaluationState actionValue
+    , GraphQLResultAction.message = fmap Text.unpack $ actionMessage actionValue
+    }
+
 axiomToResult :: Entity DatabaseSchema.Sentence
               -> Entity DatabaseSchema.LocIdBase
               -> Maybe (Entity DatabaseSchema.FileRange)
@@ -53,11 +63,12 @@ conjectureToResult :: Entity DatabaseSchema.Sentence
                    -> Entity DatabaseSchema.LocIdBase
                    -> Maybe (Entity DatabaseSchema.FileRange)
                    -> Entity DatabaseSchema.Conjecture
+                   -> GraphQLResultAction.Action
                    -> [GraphQLResultSymbol.Symbol]
                    -> [GraphQLResultReasoningAttempt.ReasoningAttempt]
                    -> GraphQLResultSentence.Sentence
 conjectureToResult (Entity _ sentenceValue) (Entity _ locIdBaseValue) fileRangeM
-  (Entity _ conjectureValue) symbolResults proofAttemptResults =
+  (Entity _ conjectureValue) actionResult symbolResults proofAttemptResults =
   GraphQLResultSentence.Conjecture GraphQLResultConjecture.Conjecture
     { GraphQLResultConjecture.__typename = "Conjecture"
     , GraphQLResultConjecture.fileRange = fmap fileRangeToResult fileRangeM
@@ -65,11 +76,8 @@ conjectureToResult (Entity _ sentenceValue) (Entity _ locIdBaseValue) fileRangeM
     , GraphQLResultConjecture.name = sentenceName sentenceValue
     , GraphQLResultConjecture.symbols = symbolResults
     , GraphQLResultConjecture.text = Text.unpack $ sentenceText sentenceValue
-    , GraphQLResultConjecture.evaluationState =
-        show $ conjectureEvaluationState conjectureValue
+    , GraphQLResultConjecture.action = actionResult
     , GraphQLResultConjecture.proofAttempts = proofAttemptResults
-    , GraphQLResultConjecture.reasoningStatus =
-        show $ conjectureReasoningStatus conjectureValue
     }
 
 conservativityStatusToResult :: Entity DatabaseSchema.ConservativityStatus
@@ -341,19 +349,17 @@ reasonerOutputToResult (Entity _ reasonerOutputValue) =
 reasoningAttemptToResult :: Entity DatabaseSchema.ReasoningAttempt
                          -> Maybe (Entity DatabaseSchema.ReasonerOutput)
                          -> Maybe (Entity DatabaseSchema.Reasoner)
+                         -> GraphQLResultAction.Action
                          -> GraphQLResultReasonerConfiguration.ReasonerConfiguration
                          -> GraphQLResultReasoningAttempt.ReasoningAttempt
 reasoningAttemptToResult (Entity _ reasoningAttemptValue) reasonerOutputEntity
-  reasonerEntityM reasonerConfigurationResult =
+  reasonerEntityM actionResult reasonerConfigurationResult =
   GraphQLResultReasoningAttempt.ReasoningAttempt
-    { GraphQLResultReasoningAttempt.evaluationState =
-        show $ reasoningAttemptEvaluationState reasoningAttemptValue
+    { GraphQLResultReasoningAttempt.action = actionResult
     , GraphQLResultReasoningAttempt.reasonerOutput =
         fmap reasonerOutputToResult reasonerOutputEntity
     , GraphQLResultReasoningAttempt.reasonerConfiguration =
         reasonerConfigurationResult
-    , GraphQLResultReasoningAttempt.reasoningStatus =
-        show $ reasoningAttemptReasoningStatus reasoningAttemptValue
     , GraphQLResultReasoningAttempt.timeTaken =
         reasoningAttemptTimeTaken reasoningAttemptValue
     , GraphQLResultReasoningAttempt.usedReasoner =

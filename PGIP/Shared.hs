@@ -3,7 +3,10 @@
 module PGIP.Shared where
 
 import Common.LibName
-import Common.Json (Json (..), pJson, ppJson)
+import Common.Json (Json (..), pJson)
+import Logic.Comorphism (AnyComorphism)
+import qualified Logic.Prover as LP
+import Proofs.AbstractState (G_proof_tree, ProverOrConsChecker)
 import Static.DevGraph
 
 import qualified Data.ByteString.Char8 as B8
@@ -20,6 +23,15 @@ type RsrcIO a = ResourceT IO a
 #else
 type RsrcIO a = IO a
 #endif
+
+data ProverMode = GlProofs | GlConsistency deriving (Show, Eq)
+
+type ProofResult = (String, String, String, ProverOrConsChecker,
+                -- (goalName, goalResult, goalDetails, prover,
+                    AnyComorphism, Maybe (LP.ProofStatus G_proof_tree),
+                -- comorphism, proofStatusM)
+                    Maybe String)
+                -- ConsistencyChecker output
 
 data Session = Session
   { sessLibEnv :: LibEnv
@@ -39,8 +51,8 @@ parseJson s = case parse pJson "" s of
   Left _ -> Nothing
   Right json -> Just json
 
-jsonBody :: Request -> RsrcIO (Maybe Json)
-jsonBody = fmap (parseJson . B8.unpack) . receivedRequestBody
+jsonBody :: BS.ByteString -> RsrcIO (Maybe Json)
+jsonBody = return . parseJson . BS.unpack
 
 receivedRequestBody :: Request -> RsrcIO B8.ByteString
 receivedRequestBody = fmap (B8.pack . BS.unpack) . lazyRequestBody
