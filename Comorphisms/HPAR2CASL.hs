@@ -71,6 +71,8 @@ instance Comorphism HPAR2CASL
     map_morphism HPAR2CASL = undefined
     map_sentence HPAR2CASL =  undefined
     map_symbol HPAR2CASL _ = undefined
+    -- has_model_expansion HPAR2CASL = True 
+    -- this makes proofs by translation available, but on a weird path
 
 mapTheory :: (HSign.HSign, [Named HBasic.HFORMULA]) ->
              Result (CSign.CASLSign, [Named CBasic.CASLFORMULA])
@@ -187,7 +189,7 @@ constrToSens hsig sc =
                 totals
    SameDomain True -> let
       xs ot = zip (CSign.opArgs ot) [1..]
-      extOt i ot = CBasic.Qual_op_name i (CBasic.Op_type CBasic.Partial (st:CSign.opArgs ot) (CSign.opRes ot) nullRange) nullRange
+      extOt i ot = CBasic.Qual_op_name i (CBasic.Op_type CBasic.Total (st:CSign.opArgs ot) (CSign.opRes ot) nullRange) nullRange
     in
      map (\(i,ot) -> makeNamed ("ga_sem_constr_" ++ show i)
                 $ CBasic.mkForall 
