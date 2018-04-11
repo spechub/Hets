@@ -34,6 +34,7 @@ import qualified HPAR.AS_Basic_HPAR as HBasic
 import qualified HPAR.Sign as HSign
 import qualified RigidCASL.Sign as RSign
 import qualified HPAR.Morphism as HMorphism
+import qualified HPAR.StaticAna as HAna
 
 -- CASL
 import qualified CASL.Logic_CASL as CLogic
@@ -76,13 +77,15 @@ instance Comorphism HPAR2CASL
 
 mapTheory :: (HSign.HSign, [Named HBasic.HFORMULA]) ->
              Result (CSign.CASLSign, [Named CBasic.CASLFORMULA])
-mapTheory (hsig, nhsens) = trace ("nhsens:" ++ show nhsens) $ do 
+mapTheory (hsig, nhsens) = -- trace ("nhsens:" ++ show nhsens) $ 
+                           do 
   (csig, csens) <- map_theory (BaseCom.CASL2SubCFOL True BaseCom.NoMembershipOrCast) $ (RSign.caslSign $ HSign.baseSig $ hsig, []) 
   let st = genName "ST"
       v = genToken "X"
       domain = genName "domain"
       cvars = foldl (\vars asen -> getVarSorts vars $ sentence asen) Set.empty csens -- variables in \Gamma_\Sigma
-      csens' = trace ("cvars:" ++ show cvars) $ map (\f -> f { sentence = CBasic.Quantification CBasic.Universal [CBasic.Var_decl [v] st nullRange] (addX v $ sentence f) nullRange} ) csens
+      csens' = -- trace ("cvars:" ++ show cvars) $ 
+               map (\f -> f { sentence = CBasic.Quantification CBasic.Universal [CBasic.Var_decl [v] st nullRange] (addX v $ sentence f) nullRange} ) csens
   stsig <- CSign.addSymbToSign (CSign.emptySign ()) $ CSign.Symbol st CSign.SortAsItemType -- this one has gn_ST
   sortsig <- foldM (\aSig x -> CSign.addSymbToSign aSig $ CSign.Symbol x CSign.SortAsItemType) 
                    stsig $ Set.toList $ CSign.sortSet csig         -- this one has [S_\Sigma]
@@ -128,7 +131,7 @@ mapTheory (hsig, nhsens) = trace ("nhsens:" ++ show nhsens) $ do
                                                                                                 [CBasic.Qual_var (genToken "w") st nullRange,
                                                                                                  CBasic.Qual_var (genToken "x") s nullRange]
       vsens = map makeVSen $ Set.toList cvars -- this is V(\Gamma_Sigma)
-  return (lamsig, csens' ++ vsens ++ domsens ++ ncsens ++ constrsens)
+  trace (concatMap (\x -> show x ++ "\n") ncsens) $ return (lamsig, csens' ++ vsens ++ domsens ++ ncsens ++ constrsens)
 
 getVarSorts :: Set.Set CBasic.SORT -> CBasic.CASLFORMULA -> Set.Set CBasic.SORT
 getVarSorts oldS sen = 
@@ -295,47 +298,56 @@ mapNamedSentence :: HSign.HSign -> Named HBasic.HFORMULA -> Named CBasic.CASLFOR
 mapNamedSentence hsig nsen = nsen {sentence = mapSentence hsig $ sentence nsen}
 
 mapSentence :: HSign.HSign -> HBasic.HFORMULA -> CBasic.CASLFORMULA
-mapSentence hsig sen = trace ("mapping:" ++ show sen) $ let 
+mapSentence hsig sen = -- trace ("mapping:" ++ show sen) $ 
+ let 
   x = genToken "X"
   st = genName "ST"
+  hth = HAna.HTheoryAna hsig Set.empty [] Map.empty []
  in CBasic.mkForall [CBasic.mkVarDecl x st] $ 
-       mapSentenceAux hsig x st sen
+       mapSentenceAux hth x st sen
 
-mapSentenceAux :: HSign.HSign -> CBasic.VAR -> CBasic.SORT -> HBasic.HFORMULA -> CBasic.CASLFORMULA
-mapSentenceAux hsig x st sen = case sen of
- HBasic.Nominal _ i _ -> CBasic.mkStEq 
-                          (CBasic.Qual_var x st nullRange)
-                          (CBasic.Application (CBasic.mkQualOp (simpleIdToId i) $ CBasic.Op_type CBasic.Total [] st nullRange) [] nullRange)-- TODO: var nominal vs signature nominals
- HBasic.Base_formula f _ -> let Result ds f' = map_sentence (BaseCom.CASL2SubCFOL True BaseCom.NoMembershipOrCast) (RSign.caslSign $ HSign.baseSig hsig) f
-                            in case f' of
-                                 Nothing  -> error $ "can't translate sentence " ++ show f ++ " msg:" ++ show ds
-                                 Just f'' -> addX x f''
- HBasic.Negation hf _ -> CBasic.Negation (mapSentenceAux hsig x st hf) nullRange
- HBasic.Conjunction hfs _ -> CBasic.Junction CBasic.Con (map (mapSentenceAux hsig x st) hfs) nullRange
- HBasic.Disjunction hfs _ -> CBasic.Junction CBasic.Dis (map (mapSentenceAux hsig x st) hfs) nullRange
- HBasic.Implication hf1 hf2 _ -> CBasic.Relation (mapSentenceAux hsig x st hf1) CBasic.Implication (mapSentenceAux hsig x st hf2) nullRange
- HBasic.Equivalence hf1 hf2 _ -> CBasic.Relation (mapSentenceAux hsig x st hf1) CBasic.Equivalence (mapSentenceAux hsig x st hf2) nullRange
- HBasic.AtState nom hf _ -> let cf = mapSentenceAux hsig x st hf 
-                            in CInd.substitute x st (CBasic.mkAppl (CBasic.mkQualOp (simpleIdToId nom) $ CBasic.Op_type CBasic.Total [] st nullRange) []) cf 
+mapSentenceAux :: HAna.HTheoryAna -> CBasic.VAR -> CBasic.SORT -> HBasic.HFORMULA -> CBasic.CASLFORMULA
+mapSentenceAux hth x st sen = case sen of
+ HBasic.Nominal b i _ -> CBasic.mkStEq 
+                          (CBasic.Qual_var x st nullRange) $ 
+                          if b then CBasic.Qual_var i st nullRange
+                          else CBasic.Application (CBasic.mkQualOp (simpleIdToId i) $ CBasic.Op_type CBasic.Total [] st nullRange) [] nullRange
+ HBasic.Base_formula f _ -> let
+   hsig = HAna.hSign hth 
+   Result ds f' = map_sentence (BaseCom.CASL2SubCFOL True BaseCom.NoMembershipOrCast) (RSign.caslSign $ HSign.baseSig hsig) f
+  in case f' of
+      Nothing  -> error $ "can't translate sentence " ++ show f ++ " msg:" ++ show ds
+      Just f'' -> addX x f''
+ HBasic.Negation hf _ -> CBasic.Negation (mapSentenceAux hth x st hf) nullRange
+ HBasic.Conjunction hfs _ -> CBasic.Junction CBasic.Con (map (mapSentenceAux hth x st) hfs) nullRange
+ HBasic.Disjunction hfs _ -> CBasic.Junction CBasic.Dis (map (mapSentenceAux hth x st) hfs) nullRange
+ HBasic.Implication hf1 hf2 _ -> CBasic.Relation (mapSentenceAux hth x st hf1) CBasic.Implication (mapSentenceAux hth x st hf2) nullRange
+ HBasic.Equivalence hf1 hf2 _ -> CBasic.Relation (mapSentenceAux hth x st hf1) CBasic.Equivalence (mapSentenceAux hth x st hf2) nullRange
+ HBasic.AtState nom hf _ -> let cf = mapSentenceAux hth x st hf 
+                                t = if nom `elem` (Map.keys $ HAna.hVars hth) then CBasic.Qual_var nom st nullRange else 
+                                      CBasic.mkAppl (CBasic.mkQualOp (simpleIdToId nom) $ CBasic.Op_type CBasic.Total [] st nullRange) []
+                            in CInd.substitute x st t cf 
                          -- mapSentenceAux i st sen does not work, because i should not be a var. apply a substitution of x with i instead 
  HBasic.BoxFormula md hf _ -> CBasic.mkForall [CBasic.mkVarDecl (genToken "Y") st] $ 
                                                CBasic.mkImpl 
                                                  (CBasic.mkPredication (CBasic.mkQualPred (simpleIdToId md) $ CBasic.Pred_type [st,st] nullRange) 
                                                                        [CBasic.Qual_var x st nullRange, CBasic.Qual_var (genToken "Y") st nullRange]) $ 
-                                                 mapSentenceAux hsig (genToken "Y") st hf
+                                                 mapSentenceAux hth (genToken "Y") st hf
  HBasic.DiamondFormula md hf _ -> CBasic.mkExist [CBasic.mkVarDecl (genToken "Y") st] $ 
                                                CBasic.Junction CBasic.Con 
                                                  [CBasic.mkPredication (CBasic.mkQualPred (simpleIdToId md) $ CBasic.Pred_type [st,st] nullRange) 
                                                                        [CBasic.Qual_var x st nullRange, CBasic.Qual_var (genToken "Y") st nullRange],
-                                                  mapSentenceAux hsig (genToken "Y") st hf]
+                                                  mapSentenceAux hth (genToken "Y") st hf]
                                                  nullRange
  HBasic.QuantNominals q noms hf _ -> (case q of 
                                           HBasic.HUniversal -> CBasic.mkForall
                                           HBasic.HExistential -> CBasic.mkExist) 
                                       (map (\n -> CBasic.mkVarDecl n st) noms)
-                                      $ mapSentenceAux hsig x st hf
+                                      $ mapSentenceAux (hth{HAna.hVars = foldl (\f n -> Map.insert n st f) (HAna.hVars hth) noms}) x st hf 
+                                      -- here we must make sure that noms are known to be variables and not nominals!
  HBasic.QuantRigidVars q vdecls hf _ -> 
   let
+   hsig = HAna.hSign hth
    domainSen xi si = CBasic.mkPredication (CBasic.mkQualPred (genName "domain") $ CBasic.Pred_type [st, si] nullRange)
                                            [CBasic.Qual_var x st nullRange,
                                             CBasic.mkAppl (CBasic.Qual_op_name (simpleIdToId xi) (addSortToOpType $ CBasic.Op_type CBasic.Total [] si nullRange) nullRange) 
@@ -372,9 +384,9 @@ mapSentenceAux hsig x st sen = case sen of
                                           concatMap (\(xi,si)-> gamma_xi xi si) allVars
                                       ) ++ (map (\(xi,si) -> domainSen xi si) allVars)
                                    ) nullRange)
-                    $ mapSentenceAux hsig' x st hf'
+                    $ mapSentenceAux (hth {HAna.hSign = hsig'}) x st hf'
    senRepl = foldl (\csen (xi,si) -> replaceVarAppls xi si csen) senWithVarAppl allVars
-  in trace ("hf':" ++ show hf') $ 
+  in -- trace ("hf':" ++ show hf') $ 
        (case q of 
          HBasic.HUniversal -> CBasic.mkForall
          HBasic.HExistential -> CBasic.mkExist) vdecls senRepl
