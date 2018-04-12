@@ -114,7 +114,7 @@ hFormula =
  <|> 
    do
     c <- asKey notS <|> asKey negS <?> "\"not\""
-    f <- topformula
+    f <- hFormula --topformula
     return $ HPAR_AS.Negation f $ tokPos c
    <|>
      do
