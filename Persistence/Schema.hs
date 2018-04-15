@@ -254,6 +254,7 @@ Sentence sql=sentences
   fileRangeId FileRangeId Maybe
   name String
   text Text
+  originalSentenceId LocIdBaseId Maybe
   deriving Show
 
 Axiom sql=axioms
