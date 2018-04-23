@@ -74,7 +74,7 @@ instance Comorphism HPAR2CASL
     map_sentence HPAR2CASL =  undefined
     map_symbol HPAR2CASL _ = undefined
     -- has_model_expansion HPAR2CASL = True 
-    -- this makes proofs by translation available, but on a weird path
+    -- @Till: this makes proofs by translation available, but on a weird path
 
 mapTheory :: (HSign.HSign, [Named HBasic.HFORMULA]) ->
              Result (CSign.CASLSign, [Named CBasic.CASLFORMULA])
