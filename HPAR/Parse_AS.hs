@@ -12,9 +12,7 @@ Parser for HPAR
 
 module HPAR.Parse_AS where
 
-import CASL.Formula
-import CASL.OpItem
-import CASL.SortItem
+--import CASL.Formula
 import qualified CASL.Parse_AS_Basic as CParse
 import qualified CASL.Formula as CFormula
 
@@ -27,17 +25,15 @@ import Common.Keywords
 import Common.Lexer
 import Common.Token
 import Common.GlobalAnnotations
-import qualified RigidCASL.AS_Rigid as PAR_AS
+--import qualified RigidCASL.AS_Rigid as PAR_AS
 import RigidCASL.Parse_AS ()
 import Text.ParserCombinators.Parsec
 
 import qualified HPAR.AS_Basic_HPAR as HPAR_AS 
 
-import Debug.Trace
-
 -- | Toplevel parser for basic specs
 basicSpec :: PrefixMap -> AParser st HPAR_AS.H_BASIC_SPEC
-basicSpec ks = 
+basicSpec _ks = 
   fmap HPAR_AS.Basic_spec (annosParser parseBasicItems) 
                                        -- should be the method for H_BASIC_ITEMS
   <|> (oBraceT >> cBraceT >> return (HPAR_AS.Basic_spec []))
@@ -92,7 +88,7 @@ parseAxItems = do
 parenFormula :: AParser st HPAR_AS.HFORMULA
 parenFormula = do
        oParenT << addAnnos
-       f <- trace "bracket" $ topformula << addAnnos
+       f <- topformula << addAnnos
        cParenT >> return f
 
 -- | Parser for at 
@@ -135,23 +131,25 @@ hFormula =
  <|>
      do
        (q, p) <- quant
-       trace ("q:" ++ show q) $ parseQFormula (q, p)
+       parseQFormula (q, p)
  <|>
      do 
-        f <- primFormula hybrid_keywords
-        return $ HPAR_AS.Base_formula f nullRange    -- this should also catch nominals as terms. We have to make sure during static analysis that this is reverted!
+        f <- CFormula.primFormula hybrid_keywords
+        return $ HPAR_AS.Base_formula f nullRange    
+        -- this should also catch nominals as terms. 
+        -- We have to make sure during static analysis that this is reverted!
  
 
 parseQFormula :: (HPAR_AS.HQUANT, Token) -> AParser st HPAR_AS.HFORMULA
 parseQFormula (q, p) = 
   do -- first try quantification on nominals, or the parser will complain 
-     (vs, ps) <- keyThenList nomP simpleId
-     d <- dotT
+     (vs, _ps) <- keyThenList nomP simpleId
+     _d <- dotT -- TODO: range
      f <- topformula
      return $ HPAR_AS.QuantNominals q vs f nullRange
     <|> 
   do  
-     (vs, ps) <- varDecls []
+     (vs, ps) <- CFormula.varDecls []
      d <- dotT
      f <- topformula
      return $ HPAR_AS.QuantRigidVars q vs f $ toRange p ps d
@@ -161,12 +159,12 @@ andOrFormula = hFormula >>= optAndOr
 
 optAndOr :: HPAR_AS.HFORMULA -> AParser st HPAR_AS.HFORMULA
 optAndOr f = do
-      c <- andKey
-      (fs, ps) <- hFormula `separatedBy` andKey
+      c <- CFormula.andKey
+      (fs, ps) <- hFormula `separatedBy` CFormula.andKey
       return $ HPAR_AS.Conjunction (f : fs) $ catRange $ c : ps
     <|> do
-      c <- orKey
-      (fs, ps) <- hFormula `separatedBy` orKey
+      c <- CFormula.orKey
+      (fs, ps) <- hFormula `separatedBy` CFormula.orKey
       return $ HPAR_AS.Disjunction (f : fs) $ catRange $ c : ps
     <|> return f
  
@@ -175,8 +173,8 @@ topformula = andOrFormula >>= optImplForm
 
 optImplForm :: HPAR_AS.HFORMULA -> AParser st HPAR_AS.HFORMULA
 optImplForm f = do
-      c <- implKey
-      (fs, ps) <- andOrFormula `separatedBy` implKey
+      _c <- CFormula.implKey
+      (fs, _ps) <- andOrFormula `separatedBy` CFormula.implKey --TODO: range?
       return $ makeImpl (f : fs)
     <|> do
       c <- asKey equivS
