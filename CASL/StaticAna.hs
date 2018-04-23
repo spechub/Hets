@@ -28,8 +28,6 @@ items and formulas.
 
 module CASL.StaticAna where
 
-import Debug.Trace
-
 import CASL.AS_Basic_CASL
 import CASL.MixfixParser
 import CASL.Overload
@@ -313,7 +311,7 @@ ana_SIG_ITEMS :: (FormExtension f, TermExtension f)
 ana_SIG_ITEMS mef anas mix gk si =
     case si of
     Sort_items sk al ps ->
-        do ul <- trace ("si:" ++ show al) $ mapM (ana_SORT_ITEM mef mix sk) al
+        do ul <- mapM (ana_SORT_ITEM mef mix sk) al
            closeSubsortRel
            return $ Sort_items sk ul ps
     Op_items al ps ->
