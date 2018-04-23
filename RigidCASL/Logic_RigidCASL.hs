@@ -14,18 +14,14 @@ import RigidCASL.AS_Rigid
 import RigidCASL.Sign
 import RigidCASL.Morphism
 import RigidCASL.ATC_RigidCASL ()
-import RigidCASL.Parse_AS
+import RigidCASL.Parse_AS ()
 import RigidCASL.Print_AS
 import RigidCASL.StaticAna
 import CASL.Sign
 import CASL.Morphism
-import CASL.SymbolMapAnalysis
 import CASL.AS_Basic_CASL
 import CASL.Parse_AS_Basic
-import CASL.MapSentence
 import CASL.SimplifySen
-import CASL.SymbolParser
-import CASL.Taxonomy
 import CASL.ToDoc
 import CASL.Logic_CASL ()
 import Common.Keywords (rigidS)
@@ -52,11 +48,12 @@ instance Sentences RigidCASL CASLFORMULA RSign RigidMor Symbol where
       symmap_of RigidCASL = undefined --morphismToSymbMap
       sym_name RigidCASL = undefined --symName
       simplify_sen RigidCASL = simplifyCASLSen
-      print_sign RigidCASL sig = printSign printRigidExt $ sig {sortRel = Rel.difference (Rel.transReduce $ sortRel sig)
-                                                                          . Rel.transReduce $ Rel.fromSet $ Set.map (\x->(x,x)) $ rigidSorts $ extendedInfo sig,
-                                                                opMap = diffOpMapSet (opMap sig) $ rigidOps $ extendedInfo sig,
-                                                                predMap = diffMapSet (predMap sig) $ rigidPreds $ extendedInfo sig}
-          -- (printHybridSign $ simplifySen minExpForm simHybrid sig) sig
+      print_sign RigidCASL sig = printSign printRigidExt $ 
+                                   sig {sortRel = Rel.difference (Rel.transReduce $ sortRel sig)
+                                                  . Rel.transReduce $ Rel.fromSet $
+                                                  Set.map (\x->(x,x)) $ rigidSorts $ extendedInfo sig,
+                                        opMap = diffOpMapSet (opMap sig) $ rigidOps $ extendedInfo sig,
+                                        predMap = diffMapSet (predMap sig) $ rigidPreds $ extendedInfo sig}
       print_named RigidCASL = printTheoryFormula
 
 instance StaticAnalysis RigidCASL R_BASIC_SPEC CASLFORMULA

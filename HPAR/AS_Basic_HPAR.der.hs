@@ -19,18 +19,13 @@ module HPAR.AS_Basic_HPAR
     , H_SYMB_ITEMS (..)          -- List of symbols
     , H_SYMB_KIND (..)           -- symbol kinds
     , HQUANT (..)                -- quantifiers
-    --, H_SYMB (..)                -- Symbols
-    --, H_SYMB_MAP_ITEMS (..)      -- Symbol map
-    --, SYMB_OR_MAP (..)         -- Symbol or symbol map
     , NOM_ITEM (..)              -- nominals
     , MOD_ITEM (..)              -- modalities
-    --, isPrimForm
     ) where
 
 import Common.Id as Id
 import Common.Doc
 import Common.DocUtils
-import Common.Keywords
 import Common.AS_Annotation as AS_Anno
 
 import Data.Data

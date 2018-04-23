@@ -113,7 +113,9 @@ anaHFORMULA hf = case item hf of
        allIds = CAna.getAllIds (Basic_spec []) emptyMix bsig0
        mix = emptyMix { mixRules = makeRules (CSign.globAnnos bsig0) allIds }
        Result ds3 mf = CAna.anaForm (const return) mix 
-                                    bsig0{CSign.varMap = Map.union (CSign.varMap bsig0) $ hVars hth} f
+                                    bsig0{CSign.varMap = Map.union (CSign.varMap bsig0) $ 
+                                                          hVars hth}
+                                    f
    case mf of 
     Nothing -> error $ "could not analyse " ++ show f ++ "\n error:\n" ++ show ds3
     Just (f1, f2) -> let hf1 = hf {item = HBasic.Base_formula f1 r}

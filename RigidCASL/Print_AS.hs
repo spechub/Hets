@@ -14,9 +14,9 @@ printing rigid declarations
 module RigidCASL.Print_AS where
 
 import CASL.ToDoc
+import qualified CASL.AS_Basic_CASL as CBasic
 
 import Common.Doc
-import Common.Lexer
 import Common.DocUtils
 import Common.Keywords
 import qualified Common.Lib.MapSet as MapSet
@@ -38,7 +38,7 @@ instance Pretty R_SIG_ITEM where
 instance Pretty RigidExt where
     pretty = printRigidExt
 
---printRigidSorts :: Doc
+printRigidSorts :: [CBasic.SORT] -> Doc
 printRigidSorts xs = case xs of 
    [] -> empty 
    _ -> 

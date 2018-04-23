@@ -20,22 +20,18 @@ import CASL.Sign
 import CASL.MixfixParser
 import CASL.StaticAna
 import CASL.AS_Basic_CASL
-import CASL.ShowMixfix
 import CASL.Overload
-import CASL.Quantification
 
 import Common.AS_Annotation
 import Common.GlobalAnnotations
-import Common.Keywords
-import Common.Lib.State
 import Common.Id
 import Common.Result
 import Common.ExtSign
 import qualified Common.Lib.MapSet as MapSet
 
-import qualified Data.Map as Map
 import qualified Data.Set as Set
-import Data.List as List
+
+-- TODO: for now, no checking that a rigid symbol is already in use etc.
 
 basicRigidAnalysis
   :: (R_BASIC_SPEC, RSign, GlobalAnnos)

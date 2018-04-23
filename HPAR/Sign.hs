@@ -76,6 +76,7 @@ printSign s =
                              . Rel.transReduce $ Rel.fromSet $ Set.map (\x->(x,x)) $ PARSign.rigidSorts $ CSign.extendedInfo bsig,
                   CSign.opMap = CSign.diffOpMapSet (CSign.opMap bsig) $ PARSign.rigidOps $ CSign.extendedInfo bsig,
                   CSign.predMap = CSign.diffMapSet (CSign.predMap bsig) $ PARSign.rigidPreds $ CSign.extendedInfo bsig})
+    -- this ensures that the rigid symbols are not displayed as non-rigid
     $+$
     let nomss = Set.toList $ noms s in
     case nomss of 
@@ -123,7 +124,7 @@ isSubSigOf sig1 sig2 =
 
 -- | difference of Signatures
 sigDiff :: HSign -> HSign -> HSign
-sigDiff sig1 sig2 = emptySig
+sigDiff _sig1 _sig2 = undefined 
                     --HSign {
                     -- propSig = PSign.sigDiff (propSig sig1) $ propSig sig2,
                     -- noms = Set.difference (noms sig1) $ noms sig2}
@@ -133,4 +134,4 @@ sigUnion :: HSign -> HSign -> Result HSign
 sigUnion = undefined
 
 symOf :: HSign -> Set.Set CSign.Symbol
-symOf sig = undefined
+symOf _sig = undefined

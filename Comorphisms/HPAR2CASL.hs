@@ -25,6 +25,7 @@ import Common.AS_Annotation
 import Common.Id
 import qualified Common.Lib.MapSet as MapSet
 
+
 import Control.Monad (foldM)
 import Data.List(partition)
 
@@ -96,7 +97,7 @@ mapTheory (hsig, nhsens) = -- trace ("nhsens:" ++ show nhsens) $
   let domsens = 
                 foldl (\sens (f, o@(CSign.OpType _ w s)) -> 
                           let ydecl = CBasic.mkVarDecl (genToken "w") st
-                              xsdecl = map (\(si, ii) -> CBasic.mkVarDecl (genToken $ "x" ++ show ii) si) $ zip w [1..]
+                              xsdecl = map (\(si, ii) -> CBasic.mkVarDecl (genToken $ "x" ++ show ii) si) $ zip w [1::Int ..]
                               df = CBasic.mkForall [ydecl] $
                                    CBasic.mkForall xsdecl $
                                    CBasic.mkImpl 
@@ -175,7 +176,7 @@ constrToSens hsig sc =
                 $ Set.toList $ RSign.rigidSorts $ CSign.extendedInfo rsig
    SameInterpretation "rigid op" ->
     let
-      xs ot = zip (CSign.opArgs ot) [1..]
+      xs ot = zip (CSign.opArgs ot) [1::Int ..]
       extOt i ot = CBasic.Qual_op_name i (CBasic.Op_type CBasic.Total (st:CSign.opArgs ot) (CSign.opRes ot) nullRange) nullRange
     in
      map (\(i,ot) -> makeNamed ("ga_sem_constr_" ++ show i)
@@ -191,7 +192,7 @@ constrToSens hsig sc =
           ) 
                 totals
    SameDomain True -> let
-      xs ot = zip (CSign.opArgs ot) [1..]
+      xs ot = zip (CSign.opArgs ot) [1::Int ..]
       extOt i ot = CBasic.Qual_op_name i (CBasic.Op_type CBasic.Total (st:CSign.opArgs ot) (CSign.opRes ot) nullRange) nullRange
     in
      map (\(i,ot) -> makeNamed ("ga_sem_constr_" ++ show i)
@@ -288,7 +289,7 @@ replaceVarAppls v s sen = case sen of
 
 replTermWithVar :: CBasic.VAR -> CBasic.SORT -> CBasic.TERM () -> CBasic.TERM ()
 replTermWithVar v s t = case t of 
-  CBasic.Application op@(CBasic.Qual_op_name f o r2) args r -> 
+  CBasic.Application op@(CBasic.Qual_op_name f _o _r2) args r -> 
      if simpleIdToId v == f 
         then CBasic.Qual_var v s nullRange
         else CBasic.Application op (map (replTermWithVar v s) args) r                   

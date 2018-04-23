@@ -15,23 +15,14 @@ import HPAR.Sign
 import HPAR.Morphism
 import HPAR.ATC_HPAR ()
 import HPAR.Parse_AS
-import HPAR.Print_AS
 import HPAR.StaticAna
 
 
 import qualified CASL.AS_Basic_CASL as CBasic
-import qualified CASL.Parse_AS_Basic as CParse
 import qualified CASL.Sign as CSign
 import qualified CASL.Morphism as CMor
---import CASL.MapSentence
 import HPAR.SimplifySen
---import CASL.SymbolParser
---import CASL.Taxonomy
---import CASL.ToDoc
 import CASL.Logic_CASL ()
-import Common.Keywords (rigidS)
-
-import Debug.Trace
 
 data HPAR = HPAR deriving Show
 
@@ -75,8 +66,8 @@ instance StaticAnalysis HPAR H_BASIC_SPEC HFORMULA
                 id_to_raw HPAR = undefined --idToRaw
                 matches HPAR = undefined --CASL.Morphism.matches
                 empty_signature HPAR = emptySig
-                signature_union HPAR s = undefined --return . addSig addRigidExt s
-                intersection HPAR s = undefined --return . interSig interRigidExt s
+                signature_union HPAR = undefined --return . addSig addRigidExt s
+                intersection HPAR = undefined --return . interSig interRigidExt s
                 morphism_union HPAR = undefined --plainMorphismUnion (addSig addRigidExt)
                 final_union HPAR = undefined --finalUnion (addSig addRigidExt)
                 is_subsig HPAR = isSubSigOf
@@ -95,5 +86,7 @@ instance Logic HPAR ()
         CSign.Symbol CMor.RawSymbol () where
                 stability _ = Experimental
                 empty_proof_tree _ = ()
-                sem_constr _ = [SameInterpretation "rigid sort", SameInterpretation "rigid op", SameDomain True]
+                sem_constr _ = [ SameInterpretation "rigid sort"
+                               , SameInterpretation "rigid op" 
+                               , SameDomain True]
 
