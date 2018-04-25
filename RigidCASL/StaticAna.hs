@@ -30,6 +30,7 @@ import Common.ExtSign
 import qualified Common.Lib.MapSet as MapSet
 
 import qualified Data.Set as Set
+import qualified Data.Map as Map
 
 -- TODO: for now, no checking that a rigid symbol is already in use etc.
 
@@ -77,17 +78,27 @@ anaRSigItem mix ritem =
            return $ Rigid_pred_items ul ps 
 
 addRigidSort :: Id -> RigidExt -> Result RigidExt
-addRigidSort i ext = return 
-             ext {rigidSorts = Set.insert i $ rigidSorts ext} 
+addRigidSort i ext = 
+ let rsorts = rigidSorts ext 
+ in 
+  if Set.member i rsorts then Result [mkDiag Hint "repeated rigid sort" i] $ Just ext
+   else return 
+         ext {rigidSorts = Set.insert i $ rigidSorts ext} 
 
 addRigidOp :: OpType -> Id -> RigidExt -> Result RigidExt
-addRigidOp ty i ext = return
-       ext {  rigidOps = MapSet.insert i ty $ rigidOps ext}
+addRigidOp ty i ext = let 
+  rops = rigidOps ext 
+ in 
+   if MapSet.member i ty rops then Result [mkDiag Hint "repeated rigid op" i] $ Just ext
+    else return ext {rigidOps = MapSet.insert i ty $ rigidOps ext}
           
 
 addRigidPred :: PredType -> Id -> RigidExt -> Result RigidExt
-addRigidPred ty i ext = return
-       ext {  rigidPreds = MapSet.insert i ty $ rigidPreds ext}
+addRigidPred ty i ext = let 
+  rpreds = rigidPreds ext 
+ in 
+   if MapSet.member i ty rpreds then Result [mkDiag Hint "repeated rigid pred" i] $ Just ext
+    else return ext {rigidPreds = MapSet.insert i ty $ rigidPreds ext}
 
 anaMix :: Mix () R_SIG_ITEM () RigidExt
 anaMix = emptyMix
