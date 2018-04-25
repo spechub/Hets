@@ -84,7 +84,7 @@ addRigidSort sig i ext =
      ssorts = sortSet sig 
      extI = ext {rigidSorts = Set.insert i $ rigidSorts ext} 
  in 
-  if Set.member i ssorts then Result [mkDiag Hint "redeclaring sort as rigid" i] $ Just extI
+  if Set.member i ssorts then Result [mkDiag Warning "redeclaring sort as rigid" i] $ Just extI
    else 
      if Set.member i rsorts then Result [mkDiag Hint "repeated rigid sort" i] $ Just ext
       else return extI
@@ -95,7 +95,7 @@ addRigidOp sig ty i ext = let
   ops = opMap sig
   extI = ext {rigidOps = MapSet.insert i ty $ rigidOps ext}
  in 
-   if MapSet.member i ty ops then Result [mkDiag Hint "redeclaring op as rigid" i] $ Just extI 
+   if MapSet.member i ty ops then Result [mkDiag Warning "redeclaring op as rigid" i] $ Just extI 
     else
      if MapSet.member i ty rops then Result [mkDiag Hint "repeated rigid op" i] $ Just ext
       else return extI
@@ -107,7 +107,7 @@ addRigidPred sig ty i ext = let
   preds = predMap sig
   extI = ext {rigidPreds = MapSet.insert i ty $ rigidPreds ext}
  in 
-   if MapSet.member i ty preds then Result [mkDiag Hint "redeclaring pred as rigid" i] $ Just extI
+   if MapSet.member i ty preds then Result [mkDiag Warning "redeclaring pred as rigid" i] $ Just extI
    else if MapSet.member i ty rpreds then Result [mkDiag Hint "repeated rigid pred" i] $ Just ext
          else return extI
 
