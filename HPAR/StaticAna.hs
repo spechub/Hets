@@ -30,9 +30,14 @@ import Common.Lib.State
 import Common.Id
 import Common.Result
 import Common.ExtSign
+import Control.Monad (foldM)
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+
+-- in addition to what CASL static analysis does
+-- must check that all modalities and nominals that appear in formulas have been declared
+
 
 data HTheoryAna = HTheoryAna {
                    hSign :: HSign.HSign,
@@ -75,15 +80,21 @@ anaBasicItems bi =
   HBasic.Nom_decl (HBasic.Nom_item noms _) -> do 
     hth <- get
     let hsign = hSign hth
-    let hsign' = foldl (\s n -> HSign.addNomToSig s $ mkId [n]) hsign noms
-    put $ hth {hSign = hsign'}
-    return bi
+    let Result ds mhsign' = foldM (\s n -> HSign.addNomToSig s $ mkId [n]) hsign noms
+    case mhsign' of 
+     Nothing -> error $ "cannot add nominals" ++ show ds
+     Just hsign' -> do
+      put $ hth {hSign = hsign', anaDiags = ds ++ anaDiags hth}
+      return bi
   HBasic.Mod_decl (HBasic.Mod_item mods i _) -> do
     hth <- get
     let hsign = hSign hth 
-    let hsign' = foldl (\s m -> HSign.addModToSig s (mkId [m]) i) hsign mods
-    put $ hth { hSign = hsign' } 
-    return bi
+    let Result ds mhsign' = foldM (\s m -> HSign.addModToSig s (mkId [m]) i) hsign mods 
+    case mhsign' of
+      Nothing -> error $ "cannot add modalities" ++ show ds
+      Just hsign' -> do  
+       put $ hth { hSign = hsign', anaDiags = ds ++ anaDiags hth } 
+       return bi
   HBasic.Axiom_items annofs -> do
     hth <- get
     let (hth', annofs') = foldl (\(h, l) f -> let (f', h') = runState (anaHFORMULA f) h

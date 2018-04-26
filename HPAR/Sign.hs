@@ -97,12 +97,20 @@ printSign s =
 
 
 -- | Adds a nominal to the signature
-addNomToSig :: HSign -> Id -> HSign
-addNomToSig sig nom = sig {noms = Set.insert nom $ noms sig}
+addNomToSig :: HSign -> Id -> Result HSign
+addNomToSig sig nom = 
+ let 
+  snoms = noms sig
+ in if Set.member nom snoms then Result [mkDiag Warning "redeclaring nominal" nom] $ Just sig
+    else return sig {noms = Set.insert nom snoms}
 
 -- | Adds a modality to the signature
-addModToSig :: HSign -> Id -> Int -> HSign
-addModToSig sig md ar = sig {mods = Map.insert md ar $ mods sig}
+addModToSig :: HSign -> Id -> Int -> Result HSign
+addModToSig sig md ar = 
+ let
+  smods = mods sig
+ in if Map.member md smods then Result [mkDiag Warning "redeclaring modality" md] $ Just sig  
+     else return sig {mods = Map.insert md ar smods}
 
 -- | The empty signature
 emptySig :: HSign
