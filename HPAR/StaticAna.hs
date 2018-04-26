@@ -123,21 +123,25 @@ anaHFORMULA hf = case item hf of
    hth <- get
    let bsig = HSign.baseSig $ hSign hth
        Result ds1 msig = CSign.addSymbToSign (RSign.caslSign bsig) $
-                           CSign.Symbol (genName "ST") CSign.SortAsItemType  
-       bsig0 = case msig of
-                 Nothing -> error $ "could not add sort to sign \n error:\n:" ++ show ds1
-                 Just x -> x
-       allIds = CAna.getAllIds (Basic_spec []) emptyMix bsig0
-       mix = emptyMix { mixRules = makeRules (CSign.globAnnos bsig0) allIds }
-       Result ds3 mf = CAna.anaForm (const return) mix 
+                           CSign.Symbol (genName "ST") CSign.SortAsItemType
+   case msig of 
+        Nothing -> do 
+                    put $ hth {anaDiags = ds1 ++ anaDiags hth} 
+                    return (hf, hf)
+        Just bsig0 -> do
+         let allIds = CAna.getAllIds (Basic_spec []) emptyMix bsig0
+             mix = emptyMix { mixRules = makeRules (CSign.globAnnos bsig0) allIds }
+             Result ds3 mf = CAna.anaForm (const return) mix 
                                     bsig0{CSign.varMap = Map.union (CSign.varMap bsig0) $ 
                                                           hVars hth}
                                     f
-   case mf of 
-    Nothing -> error $ "could not analyse " ++ show f ++ "\n error:\n" ++ show ds3
-    Just (f1, f2) -> let hf1 = hf {item = HBasic.Base_formula f1 r}
-                         hf2 = hf {item = HBasic.Base_formula f2 r}
-                    in return (hf1, hf2)
+         case mf of 
+          Nothing -> do 
+           put $ hth {anaDiags = ds3 ++ anaDiags hth}
+           return (hf, hf)
+          Just (f1, f2) -> let hf1 = hf {item = HBasic.Base_formula f1 r}
+                               hf2 = hf {item = HBasic.Base_formula f2 r}
+                           in return (hf1, hf2)
  HBasic.Negation f r -> do
    (af1, af2) <- anaHFORMULA $ emptyAnno f
    let hf'= hf { item = HBasic.Negation (item af2) r}
