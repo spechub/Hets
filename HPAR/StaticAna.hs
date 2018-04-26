@@ -109,10 +109,16 @@ anaHFORMULA hf = case item hf of
  HBasic.Base_formula bsen r -> case bsen of
   Mixfix_formula (Mixfix_token i) -> do
    hth <- get
-   let hf' = if i `elem` (Map.keys $ hVars hth) then hf { item = HBasic.Nominal True i r}
-              else hf{ item = HBasic.Nominal False i r} 
+   let (d, hf') = if i `elem` (Map.keys $ hVars hth) then (Nothing, hf { item = HBasic.Nominal True i r})
+                   else if Set.member (simpleIdToId i) (HSign.noms $ hSign hth)
+                         then (Nothing, hf { item = HBasic.Nominal False i r})
+                         else (Just $ mkDiag Error "undeclared nominal" i, hf)                                    
              -- here we check whether the nominal is a variable or not!
-   return (hf', hf')
+   case d of 
+    Nothing -> return (hf', hf')
+    Just x -> do 
+      put $ hth {anaDiags = x : (anaDiags hth) }
+      return (hf, hf)            
   f -> do
    hth <- get
    let bsig = HSign.baseSig $ hSign hth
@@ -154,19 +160,43 @@ anaHFORMULA hf = case item hf of
    f2' <- anaHFORMULA $ emptyAnno f2
    return $ (hf {item = HBasic.Equivalence (item $ fst f1') (item $ fst f2') r}, 
              hf {item = HBasic.Equivalence (item $ snd f1') (item $ snd f2') r})
- HBasic.Nominal _b _i _r -> return (hf,hf)
- HBasic.AtState i f r -> do 
-   f' <- anaHFORMULA $ emptyAnno f 
-   return $ (hf { item = HBasic.AtState i (item $ fst f') r}, 
-             hf { item = HBasic.AtState i (item $ snd f') r})
+ HBasic.Nominal _b i _r -> do
+  hth <- get
+  if Set.member (simpleIdToId i) (HSign.noms $ hSign hth)
+           then return (hf, hf)
+           else do 
+    put $ hth {anaDiags = (mkDiag Error "undeclared nominal" i) : (anaDiags hth)}
+    return (hf,hf)
+ HBasic.AtState i f r -> do
+   hth <- get
+   if Set.member (simpleIdToId i) (HSign.noms $ hSign hth)
+           then do
+    f' <- anaHFORMULA $ emptyAnno f 
+    return $ (hf { item = HBasic.AtState i (item $ fst f') r}, 
+              hf { item = HBasic.AtState i (item $ snd f') r})
+           else do 
+    put $ hth {anaDiags = (mkDiag Error "undeclared nominal" i) : (anaDiags hth)}
+    return (hf,hf)
  HBasic.BoxFormula i f r -> do 
+  hth <- get
+  if (simpleIdToId i) `elem` (Map.keys $ HSign.mods $ hSign hth)
+           then do
    f' <- anaHFORMULA $ emptyAnno f
    return $ (hf { item = HBasic.BoxFormula i (item $ fst f') r}, 
-             hf { item = HBasic.BoxFormula i (item $ snd f') r})  
+             hf { item = HBasic.BoxFormula i (item $ snd f') r})
+  else do
+   put $ hth {anaDiags = (mkDiag Error "undeclared modality" i) : (anaDiags hth)}
+   return (hf,hf)
  HBasic.DiamondFormula i f r -> do 
+  hth <- get
+  if (simpleIdToId i) `elem` (Map.keys $ HSign.mods $ hSign hth)
+           then do
    f' <- anaHFORMULA $ emptyAnno f
    return $ (hf { item = HBasic.DiamondFormula i (item $ fst f') r}, 
              hf { item = HBasic.DiamondFormula i (item $ snd f') r})  
+  else do
+   put $ hth {anaDiags = (mkDiag Error "undeclared modality" i) : (anaDiags hth)}
+   return (hf,hf)
  HBasic.QuantRigidVars q vs f r -> do 
    hth <- get
    let -- bsig = HSign.baseSig $ hSign hth
