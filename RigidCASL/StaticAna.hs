@@ -32,7 +32,7 @@ import Common.Lib.State
 
 import qualified Data.Set as Set
 
--- TODO: for now, no checking that a rigid symbol is already in use etc.
+import Debug.Trace
 
 basicRigidAnalysis
   :: (R_BASIC_SPEC, RSign, GlobalAnnos)

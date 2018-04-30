@@ -66,16 +66,17 @@ anaBasicSpec (HBasic.Basic_spec al) = fmap HBasic.Basic_spec $
       mapAnM anaBasicItems al
 
 anaBasicItems :: HBasic.H_BASIC_ITEMS -> State HTheoryAna HBasic.H_BASIC_ITEMS
-anaBasicItems bi = 
+anaBasicItems bi =
  case bi of
   HBasic.PAR_decl pbi -> do
     hth <- get
-    let hsign = hSign hth 
-    let (pbi', asig) = runState (CAna.ana_BASIC_ITEMS RAna.typeAnaF 
+    let hsign = hSign hth
+        csign = HSign.baseSig hsign
+        (pbi', asig) = runState (CAna.ana_BASIC_ITEMS RAna.typeAnaF 
                                  RAna.anaRBasicItem RAna.anaRSigItem 
-                                 RAna.anaMix pbi) $ HSign.baseSig hsign
+                                 RAna.anaMix pbi) csign
         hsign' = hsign {HSign.baseSig = asig}
-    put $ hth { hSign = hsign' }
+    put $ hth { hSign = hsign', anaDiags = CSign.envDiags asig ++ anaDiags hth}
     return $ HBasic.PAR_decl pbi' 
   HBasic.Nom_decl (HBasic.Nom_item noms _) -> do 
     hth <- get
