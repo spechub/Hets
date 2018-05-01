@@ -167,14 +167,16 @@ anaHFORMULA hf = case item hf of
              hf {item = HBasic.Equivalence (item $ snd f1') (item $ snd f2') r})
  HBasic.Nominal _b i _r -> do
   hth <- get
-  if Set.member (simpleIdToId i) (HSign.noms $ hSign hth)
+  if ( Set.member (simpleIdToId i) (HSign.noms $ hSign hth) ) || 
+      ( (i, genName "ST") `elem` (Map.toList $ hVars hth))
            then return (hf, hf)
            else do 
     put $ hth {anaDiags = (mkDiag Error "undeclared nominal" i) : (anaDiags hth)}
     return (hf,hf)
  HBasic.AtState i f r -> do
    hth <- get
-   if Set.member (simpleIdToId i) (HSign.noms $ hSign hth)
+   if ( Set.member (simpleIdToId i) (HSign.noms $ hSign hth) ) || 
+      ( (i, genName "ST") `elem` (Map.toList $ hVars hth))
            then do
     f' <- anaHFORMULA $ emptyAnno f 
     return $ (hf { item = HBasic.AtState i (item $ fst f') r}, 

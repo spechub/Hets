@@ -48,8 +48,6 @@ import qualified CASL.Induction as CInd
 -- base comorphism
 import qualified Comorphisms.CASL2SubCFOL as BaseCom
 
-import Debug.Trace
-
 -- | The identity of the comorphism
 data HPAR2CASL = HPAR2CASL deriving (Show)
 
@@ -132,7 +130,8 @@ mapTheory (hsig, nhsens) = -- trace ("nhsens:" ++ show nhsens) $
                                                                                                 [CBasic.Qual_var (genToken "w") st nullRange,
                                                                                                  CBasic.Qual_var (genToken "x") s nullRange]
       vsens = map makeVSen $ Set.toList cvars -- this is V(\Gamma_Sigma)
-  trace (concatMap (\x -> show x ++ "\n") ncsens) $ return (lamsig, csens' ++ vsens ++ domsens ++ ncsens ++ constrsens)
+  -- trace (concatMap (\x -> show x ++ "\n") ncsens) $ 
+  return (lamsig, csens' ++ vsens ++ domsens ++ ncsens ++ constrsens)
 
 getVarSorts :: Set.Set CBasic.SORT -> CBasic.CASLFORMULA -> Set.Set CBasic.SORT
 getVarSorts oldS sen = 
@@ -285,7 +284,7 @@ replaceVarAppls v s sen = case sen of
   CBasic.Definedness t r -> CBasic.Definedness (replTermWithVar v s t) r
   CBasic.Predication p terms r -> CBasic.Predication p (map (replTermWithVar v s) terms) r
   CBasic.Equation t1 eq t2 r -> CBasic.Equation (replTermWithVar v s t1) eq (replTermWithVar v s t2) r
-  _ -> error $ "Illegal argument for addX in HPAR2CASL.hs: " ++  show sen
+  _ -> error $ "Illegal argument for replaceVarAppls in HPAR2CASL.hs: " ++  show sen
 
 replTermWithVar :: CBasic.VAR -> CBasic.SORT -> CBasic.TERM () -> CBasic.TERM ()
 replTermWithVar v s t = case t of 
