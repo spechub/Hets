@@ -51,6 +51,7 @@ import Comorphisms.CFOL2IsabelleHOL
 import Comorphisms.CommonLogic2IsabelleHOL
 import Comorphisms.CSMOF2CASL
 #ifdef CASLEXTENSIONS
+import Comorphisms.HPAR2CASL
 import Comorphisms.CoCASL2CoPCFOL
 import Comorphisms.CoCASL2CoSubCFOL
 import Comorphisms.CoCFOL2IsabelleHOL
@@ -189,6 +190,7 @@ spassComorphisms =
        csmof2casl <- compSPASS (Comorphism CSMOF2CASL)
 #ifdef CASLEXTENSIONS
 -- hybrid
+       hpar2SPASS <- compSPASS (Comorphism HPAR2CASL)
        hybr2SPASS <- compComorphism (Comorphism Hybrid2CASL) partOut
        prop2SPASS <- compComorphism (Comorphism Prop2CASL) partOut
        casl_dl2SPASS <- compComorphism (Comorphism CASL_DL2CASL) partOut
@@ -208,6 +210,7 @@ spassComorphisms =
          , partOut
          , partSubOut
 #ifdef CASLEXTENSIONS
+         , hpar2SPASS
          , prop2SPASS
          , casl_dl2SPASS
          , maude2SPASS

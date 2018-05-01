@@ -66,13 +66,12 @@ instance Comorphism HPAR2CASL
     sourceLogic HPAR2CASL = HLogic.HPAR
     sourceSublogic HPAR2CASL = ()
     targetLogic HPAR2CASL = CLogic.CASL
-    mapSublogic HPAR2CASL _ = Just cFol
+    mapSublogic HPAR2CASL _ = Just cFol { cons_features = emptyMapConsFeature }
     map_theory HPAR2CASL = mapTheory
     map_morphism HPAR2CASL = undefined
     map_sentence HPAR2CASL =  undefined
     map_symbol HPAR2CASL _ = undefined
-    -- has_model_expansion HPAR2CASL = True 
-    -- @Till: this makes proofs by translation available, but on a weird path
+    has_model_expansion HPAR2CASL = True 
 
 mapTheory :: (HSign.HSign, [Named HBasic.HFORMULA]) ->
              Result (CSign.CASLSign, [Named CBasic.CASLFORMULA])
