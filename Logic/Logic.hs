@@ -387,6 +387,9 @@ class (Language lid, Category sign morphism, Ord sentence,
       -- | combine two symbols into another one
       pair_symbols :: lid -> symbol -> symbol -> Result symbol
       pair_symbols lid _ _ = error $ "pair_symbols nyi for logic " ++ show lid
+      -- | rename a symbol 
+      rename_symbol :: lid -> symbol -> Id -> symbol
+      rename_symbol lid _ _ = error $ "symbol renaming nyi for logic " ++ show lid
 
 -- | makes a singleton list from the given value
 singletonList :: a -> [a]

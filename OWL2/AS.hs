@@ -354,6 +354,9 @@ mkEntity = Entity Nothing
 mkEntityLbl :: String -> EntityType -> IRI -> Entity
 mkEntityLbl = Entity . Just
 
+renEntity :: Entity -> Id -> Entity
+renEntity e i = e{cutIRI = idToIRI i}
+
 instance Ord Entity where
   compare (Entity _ ek1 ir1) (Entity _ ek2 ir2) = compare (ek1, ir1) (ek2, ir2)
 

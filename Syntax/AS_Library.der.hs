@@ -177,6 +177,56 @@ getDeclSpecNames li = case li of
   Download_items _ di _ -> getImportNames di
   _ -> []
 
+getGenSpecArgNames :: LIB_ITEM -> ([IRI], LIB_ITEM)
+getGenSpecArgNames li = case li of
+  Spec_defn sn g as r -> let (iris, s') = getActualParams $ item as 
+                       in  (iris, Spec_defn sn g as{item = s'} r)
+  _ -> ([], li)
+
+getActualParams :: SPEC -> ([IRI], SPEC)
+getActualParams sp = 
+ let f c aspec r = let (iris, sp') = getActualParams $ item aspec
+                   in (iris, c aspec{item = sp'} r)
+     fs c aspecs r = let resl = map (getActualParams.item) aspecs
+                         iris = concat $ map fst resl
+                         aspecs' = map (\(as, s) -> as {item = s}) $ zip aspecs $ map snd resl
+                     in (iris, c aspecs' r)
+ in case sp of
+     Extraction aspec r -> f Extraction aspec r
+     Translation aspec r -> f Translation aspec r
+     Reduction aspec r -> f Reduction aspec r
+     Approximation aspec r -> f Approximation aspec r
+     Minimization aspec r -> f Minimization aspec r
+     Filtering aspec r -> f Filtering aspec r   
+     Bridge aspec1 rens aspec2 r -> let (iris1, sp1) = getActualParams $ item aspec1 
+                                        (iris2, sp2) = getActualParams $ item aspec2
+                                        aspec1' = aspec1{item = sp1}
+                                        aspec2' = aspec2{item = sp2}
+                                    in (iris1 ++ iris2, Bridge aspec1' rens aspec2' r) 
+     Union aspecs r -> fs Union aspecs r
+     Intersection aspecs r -> fs Intersection aspecs r
+     Extension aspecs r -> fs Extension aspecs r
+     Free_spec aspec r -> f Free_spec aspec r
+     Cofree_spec aspec r -> f Cofree_spec aspec r
+     Minimize_spec aspec r -> f Minimize_spec aspec r
+     Closed_spec aspec r -> f Closed_spec aspec r
+     Group aspec r -> f Group aspec r
+     Qualified_spec ld aspec r -> f (Qualified_spec ld) aspec r
+     Data l1 l2 aspec1 aspec2 r -> let (iris1, sp1) = getActualParams $ item aspec1 
+                                       (iris2, sp2) = getActualParams $ item aspec2
+                                       aspec1' = aspec1{item = sp1}
+                                       aspec2' = aspec2{item = sp2}
+                                    in (iris1 ++ iris2, Data l1 l2 aspec1' aspec2' r) 
+     Spec_inst sn aargs miri r -> let 
+                  resL = map (\p -> case p of 
+                                    Fit_spec aspec [] r' -> 
+                                     case item aspec of 
+                                       Spec_inst x [] Nothing _ -> ([x], Fit_spec (aspec{item=Unsolved_IRI x}) [] r')
+                                       _ -> ([], p)
+                                    _ -> ([],p)) $ map item aargs
+                                  in (concat $ map fst resL, Spec_inst sn (map (\(as, s) -> as {item = s}) $ zip aargs $ map snd resL) miri r)    
+     _-> ([], sp) 
+
 getImportNames :: DownloadItems -> [IRI]
 getImportNames di = case di of
   ItemMaps im -> map (\ (ItemNameMap i mi) -> fromMaybe i mi) im

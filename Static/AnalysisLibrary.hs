@@ -159,10 +159,16 @@ anaStringAux mln lgraph opts topLns initDG mt file posFileName (_, libenv)
         $ concatMap (getSpecDef . item) is'
       declNs = Set.fromList . map expnd
         $ concatMap (getDeclSpecNames . item) is'
-      missNames = Set.toList $ spNs Set.\\ declNs
+      -- all missing names
+      missNames' = spNs Set.\\ declNs 
+      -- if a missing name appears as argument of a generic spec, mark it as unsolved iri
+      (unsolvedNames, is'') =  foldl (\(nl, il) li -> let (n, i') = getGenSpecArgNames $ item li
+                                                     in (n:nl, il ++ [li{item = i'}])) ([],[]) is'
+      -- the missing names that are not unsolved iris must be solved as downloads
+      missNames = Set.toList $ missNames' Set.\\ (Set.fromList $ concat unsolvedNames)                         
       unDecls = map (addDownload True) $ filter
           (isNothing . (`lookupGlobalEnvDG` initDG)) missNames
-      is = unDecls ++ is'
+      is = unDecls ++ is''
       spN = convertFileToLibStr file
       noLibName = getLibId pln == nullIRI
       nIs = case is of
@@ -376,7 +382,7 @@ expCurieT ga eo = liftR . expCurieR ga eo
 anaLibItem :: LogicGraph -> HetcatsOpts -> LNS -> LibName -> LibEnv -> DGraph
   -> ExpOverrides -> LIB_ITEM
   -> ResultT IO (LIB_ITEM, DGraph, LibEnv, LogicGraph, ExpOverrides)
-anaLibItem lg opts topLns currLn libenv dg eo itm =
+anaLibItem lg opts topLns currLn libenv dg eo itm = 
  case itm of
   Spec_defn spn2 gen asp pos -> do
     let spn' = if null (iriToStringUnsecure spn2) then
