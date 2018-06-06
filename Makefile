@@ -917,7 +917,7 @@ install-%: %.bin
 		>$(DESTDIR)$(SUBDIR_$*)$(PREFIX)/bin/$(subst _,-,$*)
 	chmod 0755 $(DESTDIR)$(SUBDIR_$*)$(PREFIX)/bin/$(subst _,-,$*)
 	ln $< $(DESTDIR)$(SUBDIR_$*)$(PREFIX)/$(HETS_DIR)/$(subst _,-,$*) 2>/dev/null || \
-		cp $< $(DESTDIR)$(SUBDIR_$*)$(PREFIX)/$(HETS_DIR)/$(subst _,-,$*)
+		cp -f $< $(DESTDIR)$(SUBDIR_$*)$(PREFIX)/$(HETS_DIR)/$(subst _,-,$*)
 	[ $* = 'hets' ] && RMSECT='SERVER' || RMSECT='DESKTOP' ; \
 		$(SED) -e "/@S$${RMSECT}@/,/@E$${RMSECT}@/ d" debian/hets.1 \
 			>$(DESTDIR)$(SUBDIR_$*)$(PREFIX)/$(MAN_DIR)/$(subst _,-,$*).1
@@ -941,9 +941,17 @@ CHANGELOG := $(shell [ -f debian/changelog ] && \
 	printf 'debian/changelog' || printf 'debian/changelog.tmp')
 
 # See Versioning in ./README
-# NOTE: The dash crap sucks again here! So we assume only the 2nd rev num
-# might be padded with a single '0' to avoid more clutter.
+# NOTE: The dash crap sucks! So make sure, we have a ksh93 or bash set as SHELL!
+#       We assume only the 2nd rev num might be padded with a single '0'
+#       to avoid more clutter.
 debian/changelog.tmp: debian/control
+	[[ -e debian/control.0 ]] || cp -p debian/control debian/control.0 ; \
+	cp -p debian/control.0 debian/control ; \
+	echo "# HC_OPTS='$(HC_OPTS)'" >> debian/control ; \
+	[[ "$(HC_OPTS)" =~ -DMYSQL ]] || \
+		$(SED) -i -e 's/libmysqlclient20, //' debian/control ; \
+	[[ ! "$(HC_OPTS)" =~ -DNO_WGET ]] || \
+		$(SED) -i -e 's/wget, //' debian/control
 	@SRCPKG=`grep ^Source: debian/control |awk '{ print $$2 ; }'` ; \
 	if [ -z "${FULL_DEBVERS}" ]; then \
 		LSB=`lsb_release -rs`; A="$${LSB%.*}"; B="$${LSB#*.}"; B="$${B##0}"; \
