@@ -1,5 +1,5 @@
 sudo: required
-dist: trusty
+dist: xenial
 language: generic
 cache:
   directories:
@@ -17,14 +17,14 @@ addons:
       - dpkg-dev
       - spass
       - darwin
-      - openjdk-7-jdk
+      - openjdk-8-jdk-headless
   postgresql: '9.6'
 install:
   # Download and unpack the stack executable
   - mkdir -p ~/.local/bin
   - export PATH=$HOME/.local/bin:$PATH
   - travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
-  - sudo apt-get install --no-install-recommends `dpkg-checkbuilddeps debian/control 2>&1 | cut -f3- -d":" | sed -e 's,([^)]*),,g' -e 's,openjdk-.*-jdk,,'` || true
+  - sudo apt-get install --no-install-recommends `dpkg-checkbuilddeps debian/control 2>&1 | sed -e 's/.*dependencies\:\ //' -e 's,([^)]*),,g' -e 's,openjdk-.*-jdk,,'` || true
 
 before_script:
   - export HETS_LIB=$HOME/Hets-lib
