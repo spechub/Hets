@@ -37,15 +37,15 @@ docs: doc/UserGuide.pdf
 
 # Upgrade haskell-stack
 stack_upgrade:
-	$(STACK) upgrade
+	$(STACK) $(STACK_OPTS) upgrade
 	$(STACK_EXEC) -- ghc-pkg recache
 # Create the build environment
 stack: $(STACK_UPGRADE_TARGET)
-	$(STACK) build --install-ghc --only-dependencies $(STACK_DEPENDENCIES_FLAGS)
+	$(STACK) $(STACK_OPTS) build --install-ghc --only-dependencies $(STACK_DEPENDENCIES_FLAGS)
 	touch stack
 restack:
 	rm -f stack
-	$(STACK) build --install-ghc --only-dependencies $(STACK_DEPENDENCIES_FLAGS)
+	$(STACK) $(STACK_OPTS) build --install-ghc --only-dependencies $(STACK_DEPENDENCIES_FLAGS)
 	touch stack
 
 SED := $(shell [ "$(OSNAME)" = 'SunOS' ] && printf 'gsed' || printf 'sed')
@@ -908,21 +908,23 @@ install-common: docs install-owl-tools
 	$(MAKE) $*-opt
 
 # for now install-{common,hets,hets_server} are supported, only.
+install-%: IDIR := $(DESTDIR)$(SUBDIR_$*)$(PREFIX)
 install-%: %.bin
 	$(INSTALL) -m 0755 -d \
-		$(DESTDIR)$(SUBDIR_$*)$(PREFIX)/bin \
-		$(DESTDIR)$(SUBDIR_$*)$(PREFIX)/$(HETS_DIR) \
-		$(DESTDIR)$(SUBDIR_$*)$(PREFIX)/$(MAN_DIR)
+		$(IDIR)/bin \
+		$(IDIR)/$(HETS_DIR) \
+		$(IDIR)/$(MAN_DIR)
 	$(SED) -e "s,@CLIENT_BASEDIR@,$(PREFIX)," debian/hets_script \
-		>$(DESTDIR)$(SUBDIR_$*)$(PREFIX)/bin/$(subst _,-,$*)
-	chmod 0755 $(DESTDIR)$(SUBDIR_$*)$(PREFIX)/bin/$(subst _,-,$*)
-	ln $< $(DESTDIR)$(SUBDIR_$*)$(PREFIX)/$(HETS_DIR)/$(subst _,-,$*) 2>/dev/null || \
-		cp -f $< $(DESTDIR)$(SUBDIR_$*)$(PREFIX)/$(HETS_DIR)/$(subst _,-,$*)
+		>$(IDIR)/bin/$(subst _,-,$*)
+	chmod 0755 $(IDIR)/bin/$(subst _,-,$*)
+	ln $< $(IDIR)/$(HETS_DIR)/$(subst _,-,$*) 2>/dev/null || \
+		{ cp -f $< $(IDIR)/$(HETS_DIR)/$(subst _,-,$*) || true ; }
+	chmod 0755 $(IDIR)/$(HETS_DIR)/$(subst _,-,$*)
 	[ $* = 'hets' ] && RMSECT='SERVER' || RMSECT='DESKTOP' ; \
 		$(SED) -e "/@S$${RMSECT}@/,/@E$${RMSECT}@/ d" debian/hets.1 \
-			>$(DESTDIR)$(SUBDIR_$*)$(PREFIX)/$(MAN_DIR)/$(subst _,-,$*).1
+			>$(IDIR)/$(MAN_DIR)/$(subst _,-,$*).1
 	[ "$(OSNAME)" = 'SunOS' ] || ${SED} -i -e '/@SSOLARIS@/,/@ESOLARIS@/ d' \
-		$(DESTDIR)$(SUBDIR_$*)$(PREFIX)/$(MAN_DIR)/$(subst _,-,$*).1
+		$(IDIR)/$(MAN_DIR)/$(subst _,-,$*).1
 
 install: install-hets install-hets_server install-common install-owl-tools
 
