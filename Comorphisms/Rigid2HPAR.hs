@@ -35,6 +35,7 @@ import qualified HPAR.Logic_HPAR as HLogic
 import qualified HPAR.AS_Basic_HPAR as HBasic
 import qualified HPAR.Sign as HSign
 import qualified HPAR.Morphism as HMorphism
+import qualified HPAR.Symbol as HSym
 
 -- CASL
 import qualified CASL.AS_Basic_CASL as CBasic
@@ -55,7 +56,7 @@ instance Comorphism Rigid2HPAR
                HLogic.HPAR ()
                HBasic.H_BASIC_SPEC HBasic.HFORMULA HBasic.H_SYMB_ITEMS 
                CBasic.SYMB_MAP_ITEMS
-               HSign.HSign HMorphism.HMorphism CSign.Symbol CMor.RawSymbol () where
+               HSign.HSign HMorphism.HMorphism HSym.HSymbol CMor.RawSymbol () where
     sourceLogic Rigid2HPAR = RLogic.RigidCASL
     sourceSublogic Rigid2HPAR = ()
     targetLogic Rigid2HPAR = HLogic.HPAR

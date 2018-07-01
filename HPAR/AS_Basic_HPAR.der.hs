@@ -90,12 +90,12 @@ data HFORMULA =
    -- pos: "< >"
   | DiamondFormula Id.Token HFORMULA Id.Range
    -- pos: "[ ]"
-  | QuantRigidVars HQUANT [CASLBasic.VAR_DECL] HFORMULA Id.Range
+  | QuantRigidVars HQUANT [CASLBasic.VAR_DECL] HFORMULA Id.Range -- always use these, because we only have first-order variables
    -- pos: QUANTIFIER, semi colons, dot
-  | QuantNominals HQUANT [Id.Token] HFORMULA Id.Range
+  | QuantNominals HQUANT [Id.Token] HFORMULA Id.Range -- need to change this from Token to Token.Logic_name to allow layered hybridization
     deriving (Show, Eq, Ord, Typeable, Data)
 
-data HQUANT = HUniversal | HExistential
+data HQUANT = HUniversal | HExistential -- the quantifier must have a logic identifier, and if it's missing it defaults to the current logic
                   deriving (Show, Eq, Ord, Typeable, Data)
 
 data H_SYMB_KIND = BaseSymbol CASLBasic.SYMB_KIND
@@ -133,7 +133,7 @@ existsH = text "existsH"
 printFormula :: HFORMULA -> Doc
 printFormula aFrm = 
   case aFrm of
-   Base_formula pfrm _ -> CPrint.printFormula pfrm 
+   Base_formula pfrm _ -> pretty pfrm -- we know that it must be an instance of pretty so we can call pretty instead of CPrint.printFormula pfrm 
    Nominal _ nom _ -> pretty nom  
    AtState nom frm _ -> prettyAt <+> pretty nom <+> colon <+> printFormula frm 
    BoxFormula md frm _ -> lbrack <+> pretty md <+> rbrack <+> printFormula frm

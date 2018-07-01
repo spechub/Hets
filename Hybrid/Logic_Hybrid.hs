@@ -28,8 +28,6 @@ import CASL.Taxonomy
 import CASL.ToDoc
 import CASL.Logic_CASL ()
 
-import Debug.Trace
-
 data Hybrid = Hybrid deriving Show
 
 instance Language Hybrid where
@@ -69,7 +67,7 @@ instance Sentences Hybrid HybridFORMULA HSign HybridMor Symbol where
       symmap_of Hybrid = morphismToSymbMap
       sym_name Hybrid = symName
       simplify_sen Hybrid = simplifySen minExpForm simHybrid
-      print_sign Hybrid sig = trace ("sig:" ++ show sig) $ printSign
+      print_sign Hybrid sig = printSign
           (printHybridSign $ simplifySen minExpForm simHybrid sig) sig
       print_named Hybrid = printTheoryFormula
 

@@ -245,6 +245,7 @@ instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA
 
          qualify CASL = qualifySig
          symbol_to_raw CASL = symbolToRaw
+         raw_to_symbol CASL = rawToSymbol
          id_to_raw CASL = idToRaw
          matches CASL = CASL.Morphism.matches
          is_transportable CASL = isSortInjective

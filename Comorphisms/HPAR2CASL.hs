@@ -17,6 +17,7 @@ module Comorphisms.HPAR2CASL where
 
 import Logic.Logic
 import Logic.Comorphism
+import Logic.SemConstr
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Common.ProofTree
@@ -36,6 +37,7 @@ import qualified HPAR.Sign as HSign
 import qualified RigidCASL.Sign as RSign
 import qualified HPAR.Morphism as HMorphism
 import qualified HPAR.StaticAna as HAna
+import qualified HPAR.Symbol as HSym
 
 -- CASL
 import qualified CASL.Logic_CASL as CLogic
@@ -57,7 +59,7 @@ instance Comorphism HPAR2CASL
                HLogic.HPAR ()
                HBasic.H_BASIC_SPEC HBasic.HFORMULA HBasic.H_SYMB_ITEMS 
                CBasic.SYMB_MAP_ITEMS
-               HSign.HSign HMorphism.HMorphism CSign.Symbol CMor.RawSymbol () 
+               HSign.HSign HMorphism.HMorphism HSym.HSymbol CMor.RawSymbol () 
                CLogic.CASL CASL_Sublogics
                CLogic.CASLBasicSpec CBasic.CASLFORMULA CBasic.SYMB_ITEMS CBasic.SYMB_MAP_ITEMS
                CSign.CASLSign

@@ -44,9 +44,9 @@ instance Syntax RigidCASL R_BASIC_SPEC Symbol SYMB_ITEMS SYMB_MAP_ITEMS where
 
 instance Sentences RigidCASL CASLFORMULA RSign RigidMor Symbol where
       map_sen RigidCASL = undefined -- return . mapSen map_H_FORMULA h
-      sym_of RigidCASL = undefined -- symOf
+      sym_of RigidCASL = symOf -- this loses rigidity information
       symmap_of RigidCASL = undefined --morphismToSymbMap
-      sym_name RigidCASL = undefined --symName
+      sym_name RigidCASL = symName
       simplify_sen RigidCASL = simplifyCASLSen
       print_sign RigidCASL sig = printSign printRigidExt $ 
                                    sig {sortRel = Rel.difference (Rel.transReduce $ sortRel sig)

@@ -154,14 +154,7 @@ import Data.Monoid
 import Data.Ord
 import Data.Typeable
 import Control.Monad (unless)
-
-data SemanticConstraint = 
-     ReflexiveMod | TransitiveMod | SymmetricMod | 
-     SerialMod | EuclideanMod | FunctionalMod | 
-     LinearMod | TotalMod | SameInterpretation String |
-     SameDomain Bool  -- True for rigid partial, False for partial
-     deriving (Eq, Show)
-    
+import Logic.SemConstr
 
 -- | Stability of logic implementations
 data Stability = Stable | Testing | Unstable | Experimental
@@ -466,9 +459,12 @@ class ( Syntax lid basic_spec symbol symb_items symb_map_items
            -> Maybe ((basic_spec, sign, GlobalAnnos)
              -> Result (basic_spec, ExtSign sign symbol, [Named sentence]))
          basic_analysis _ = Nothing
-         -- | Analysis of just sentences
+         {- | Analysis of just sentences
+            the result is a pair because in CASL logics we want to use both
+            representations of the formula - for display and for translation
+          -}
          sen_analysis :: lid
-           -> Maybe ((basic_spec, sign, sentence) -> Result sentence)
+           -> Maybe ((basic_spec, sign, sentence) -> Result (sentence, sentence))
          sen_analysis _ = Nothing
          -- | a basic analysis with additional arguments
          extBasicAnalysis :: lid -> IRI -> LibName
@@ -533,6 +529,10 @@ class ( Syntax lid basic_spec symbol symb_items symb_map_items
             in the CASL RefMan p. 192. -}
          symbol_to_raw :: lid -> symbol -> raw_symbol
          symbol_to_raw l _ = statError l "symbol_to_raw"
+         {- | convert a raw symbol to symbol, when possible
+         -}
+         raw_to_symbol :: lid -> raw_symbol -> Maybe symbol
+         raw_to_symbol _ _ = Nothing
          {- | Construe an identifier, like f, as a raw symbol.
             See CASL RefMan p. 192, function IDAsSym -}
          id_to_raw :: lid -> Id -> raw_symbol
@@ -745,6 +745,11 @@ class (StaticAnalysis lid
          parse_basic_sen :: lid -> Maybe (basic_spec -> AParser st sentence)
          parse_basic_sen _ = Nothing
 
+         -- formula parser, no extra argument of type basic_spec
+
+         parse_formula :: lid -> Maybe (AParser st sentence)
+         parse_formula _  = Nothing         
+
          -- semantic constraints, that will determine sentences when translating from a hybrid logic to FOL
    
          sem_constr :: lid -> [SemanticConstraint]
@@ -860,6 +865,29 @@ class (StaticAnalysis lid
                           -> Result (sign, [Named sentence])
          -- no logic should throw an error here
          addOmdocToTheory _ _ t _ = return t
+         -- helpers for hybridization
+           -- for each type, its name and the file were it is defined
+           -- ("","") for default ()
+         sublogicsTypeName :: lid -> (String, String)
+         sublogicsTypeName _ = ("","")
+         basicSpecTypeName :: lid -> (String, String)
+         basicSpecTypeName _ = ("","")
+         sentenceTypeName :: lid -> (String, String)
+         sentenceTypeName _ = ("","")
+         symbItemsTypeName :: lid -> (String, String)
+         symbItemsTypeName _ = ("","")
+         symbMapItemsTypeName :: lid -> (String, String)
+         symbMapItemsTypeName _ = ("","")
+         signTypeName :: lid -> (String, String)
+         signTypeName _ = ("","")
+         morphismTypeName :: lid -> (String, String)
+         morphismTypeName _ = ("","")
+         symbolTypeName :: lid -> (String, String)
+         symbolTypeName _ = ("","")
+         rawSymbolTypeName :: lid -> (String, String)
+         rawSymbolTypeName _ = ("","")
+         proofTreeTypeName :: lid -> (String, String)
+         proofTreeTypeName _ = ("","") 
 
 
 -- | sublogic of a theory
@@ -870,6 +898,8 @@ sublogicOfTheo :: (Logic lid sublogics
 sublogicOfTheo _ (sig, axs) =
   foldl lub (minSublogic sig) $
   map minSublogic axs
+
+   
 
 
 {- The class of logics which can be used as logical frameworks, in which object

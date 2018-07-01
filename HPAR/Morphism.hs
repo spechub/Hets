@@ -20,6 +20,7 @@ module HPAR.Morphism
   --, isLegalMorphism             -- check if morhpism is ok
   , composeMor                  -- composition
   , inclusionMap                -- inclusion map
+  , isInclusionMor
   --, mapSentence                 -- map of sentences
   --, mapSentenceH                -- map of sentences, without Result type
   --, applyMap                    -- application function for maps
@@ -50,7 +51,7 @@ maps of sets -}
 data HMorphism = HMorphism
   { source :: HSign
   , target :: HSign
-  , baseMor :: CASL_Mor.Morphism () () ()
+  , baseMor :: CASL_Mor.Morphism () () ()  -- TODO:this should be a morphism in RigidCASL!!!
   , nomMap :: Map.Map Id Id
   , modMap :: Map.Map Id Id
   } deriving (Show, Eq, Ord, Typeable, Data)
@@ -58,10 +59,20 @@ data HMorphism = HMorphism
 instance Pretty HMorphism where
     pretty = printMorphism
 
+isInclusionMor :: HMorphism -> Bool
+isInclusionMor hmor = CASL_Mor.isInclusionMorphism (const True) $ baseMor hmor
+                                                   -- ^ this might have to change if baseMor also changes
+
 
 -- | Constructs an id-morphism
 idMor :: HSign -> HMorphism
-idMor a = inclusionMap a a
+idMor a = HMorphism{
+            source = a,
+            target = a,
+            baseMor = CASL_Mor.embedMorphism () (PARSign.caslSign $ baseSig a) (PARSign.caslSign $ baseSig a),
+            nomMap = Map.empty,
+            modMap = Map.empty
+          }
 
 {-
 -- | Determines whether a morphism is valid
@@ -134,7 +145,8 @@ inclusionMap :: HSign -> HSign -> HMorphism
 inclusionMap s1 s2 = HMorphism
   { source  = s1
   , target  = s2
-  , baseMor = undefined -- should be inclusion between the base sigs
+  , baseMor = CASL_Mor.embedMorphism () (PARSign.caslSign $ baseSig s1) (PARSign.caslSign $ baseSig s2) 
+              --CASL_Mor.sigInclusion CASL_Mor.emptyMorExt (baseSig s1) $ baseSig s2 -- undefined -- should be inclusion between the base sigs
   , nomMap = Map.empty
   , modMap  = Map.empty }
 

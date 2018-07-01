@@ -44,6 +44,9 @@ import qualified RigidCASL.Sign as PARSign
 import RigidCASL.Print_AS ()
 import qualified CASL.Sign as CSign
 
+import Logic.Logic
+import qualified RigidCASL.Logic_RigidCASL as Base
+
 {- | Datatype for hybrid propositional Signatures
 Signatures consist of a propositional signature and a set of nominals.
 -}
@@ -121,8 +124,9 @@ emptySig = HSign {
 
 -- | Determines if sig1 is subsignature of sig2
 isSubSigOf :: HSign -> HSign -> Bool
-isSubSigOf sig1 sig2 = 
-         (CSign.isSubSig PARSign.isSubRigidExt (baseSig sig1) $ baseSig sig2)
+isSubSigOf sig1 sig2 =
+         (is_subsig (Base.RigidCASL) (baseSig sig1) $ baseSig sig2)
+         --(CSign.isSubSig PARSign.isSubRigidExt (baseSig sig1) $ baseSig sig2)
          &&
          (Set.isSubsetOf (noms sig1) $ noms sig2)
          && 

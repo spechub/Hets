@@ -75,6 +75,8 @@ import System.FilePath
 import LF.Twelf2DG
 import Framework.Analysis
 
+import GenHyb.WriteFile
+
 import MMT.Hets2mmt (mmtRes)
 import Proofs.ComputeColimit
 
@@ -560,6 +562,9 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
             return (itm, dg1, libenv', lg, eo')
   Newlogic_defn ld _ -> ResultT $ do
     dg' <- anaLogicDef ld dg
+    return $ Result [] $ Just (itm, dg', libenv, lg, eo)
+  Hlogic_defn hld _ -> ResultT $ do
+    dg' <- anaHLogicDef hld dg lg
     return $ Result [] $ Just (itm, dg', libenv, lg, eo)
   Newcomorphism_defn com _ -> ResultT $ do
     dg' <- anaComorphismDef com dg

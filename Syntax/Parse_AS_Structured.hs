@@ -30,6 +30,7 @@ module Syntax.Parse_AS_Structured
     , restriction
     , hetIRI
     , parseNetwork
+    , logicName
     ) where
 
 import Logic.Logic

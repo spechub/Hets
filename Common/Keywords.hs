@@ -245,6 +245,53 @@ ren_proc_openS = "[["
 ren_proc_closeS :: String
 ren_proc_closeS = "]]"
 
+-- * definitions of hybrid logics
+
+newhlogicS :: String
+newhlogicS = "newhlogic"
+
+baselogicS :: String
+baselogicS = "base"
+
+hlogicS :: String
+hlogicS = "hlogic"
+
+quantS :: String
+quantS = "quant"
+
+constrS :: String
+constrS = "constr"
+
+reflexiveS :: String
+reflexiveS = "Reflexive"
+
+transitiveS :: String
+transitiveS = "Transitive"
+
+symmetricS :: String
+symmetricS = "Symmetric"
+
+serialS :: String
+serialS = "Serial"
+
+euclideanS :: String
+euclideanS = "Euclidean"
+
+functionalConstrS :: String
+functionalConstrS = "Functional"
+
+linearS :: String
+linearS = "Linear"
+
+totalS :: String
+totalS = "Total"
+   
+sameInterpretationS :: String
+sameInterpretationS = "SameInterpretation"
+
+sameDomainS :: String
+sameDomainS = "SameDomain"
+
 -- * logic definition symbols
 
 newlogicS :: String

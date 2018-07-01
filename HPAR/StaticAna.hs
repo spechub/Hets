@@ -32,6 +32,8 @@ import Common.Result
 import Common.ExtSign
 import Control.Monad (foldM)
 
+import qualified HPAR.Symbol as HSym
+
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -49,7 +51,7 @@ data HTheoryAna = HTheoryAna {
       deriving Show
 
 basicAnalysis :: (HBasic.H_BASIC_SPEC, HSign.HSign, GlobalAnnos)
-                  -> Result (HBasic.H_BASIC_SPEC, ExtSign HSign.HSign CSign.Symbol, [Named HBasic.HFORMULA])
+                  -> Result (HBasic.H_BASIC_SPEC, ExtSign HSign.HSign HSym.HSymbol, [Named HBasic.HFORMULA])
 basicAnalysis (bs, inSig, ga) = 
    let  bSig' = let bSig = HSign.baseSig inSig 
                 in bSig {CSign.globAnnos = CAna.addAssocs bSig ga } 
@@ -59,7 +61,7 @@ basicAnalysis (bs, inSig, ga) =
         ds = reverse $ anaDiags accTh
         outSig = hSign accTh
         sents = hSens accTh
-   in Result ds $  Just (newBs, ExtSign outSig (declSyms accTh), sents)
+   in Result ds $  Just (newBs, ExtSign outSig (Set.map (\x -> HSym.BSymbol x) $ declSyms accTh), sents)
 
 anaBasicSpec :: HBasic.H_BASIC_SPEC -> State HTheoryAna HBasic.H_BASIC_SPEC
 anaBasicSpec (HBasic.Basic_spec al) = fmap HBasic.Basic_spec $

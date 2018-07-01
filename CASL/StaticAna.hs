@@ -913,10 +913,10 @@ basicCASLAnalysis = basicAnalysis (const return) (const return)
 
 -- | extra
 cASLsen_analysis ::
-        (BASIC_SPEC () () (), Sign () (), FORMULA ()) -> Result (FORMULA ())
+        (BASIC_SPEC () () (), Sign () (), FORMULA ()) -> Result (FORMULA (), FORMULA ())
 cASLsen_analysis (bs, s, f) = let
                          mix = emptyMix
                          allIds = getAllIds bs mix s
                          mix' = mix { mixRules = makeRules emptyGlobalAnnos
                                                            allIds }
-                         in liftM fst $ anaForm (const return) mix' s f
+                         in anaForm (const return) mix' s f
