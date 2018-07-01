@@ -88,11 +88,15 @@ writeLogic hld lg = let
       Nothing -> error $ "logic not found:" ++ show ds
       Just (Logic baseLid) -> let
       -- module declaration
-        header = mkCompOpt [multiOpt, synOpt]
+        header = mkCompOpt [multiOpt, synOpt, flexOpt]
         mod_decl = mkModDecl $ l ++ "." ++ "Logic_" ++ l
 
-        gimports = ["import qualified GenHyb.GenTypes as GTypes",
-                    "import qualified GenHyb.GenMethods as GMethods"]
+        gimports = ["import Logic.Logic",
+                    "import Logic.SemConstr",
+                    "import qualified Data.Map as Map",
+                    "import qualified GenHyb.GenTypes as GTypes",
+                    "import qualified GenHyb.GenMethods as GMethods"] ++
+                   ["import " ++ logic ++ "." ++ "Logic_" ++ logic]
 
         (_sublType, sublPath) = sublogicsTypeName baseLid
         (_basicSpecType, basicSpecPath) = basicSpecTypeName baseLid
@@ -104,26 +108,30 @@ writeLogic hld lg = let
         (symType, symPath) = symbolTypeName baseLid
         (rsymType, rsymPath) = rawSymbolTypeName baseLid
         (_ptType, ptPath) = proofTreeTypeName baseLid
-        import1 = mkImports $ nub $ [sublPath, basicSpecPath, 
-                   senPath, siPath, smiPath, signPath, morPath, 
-                   symPath, rsymPath, ptPath]
+        import1 = let importFiles = nub $ [sublPath, basicSpecPath, 
+                                     senPath, siPath, smiPath, signPath, morPath, 
+                                     symPath, rsymPath, ptPath]
+                  in if null importFiles then error "empty imports, helpers for base logic not set"
+                      else mkImports importFiles
+
+        inBracks s = "(" ++ s ++ ")" 
 
         hSublType = "()"
          -- H_BASIC_SPEC sen symb_items raw_sym
-        hBasicSpecType = "GTypes.H_BASIC_SPEC " ++ senType ++ " " ++ siType ++ " " ++ rsymType
+        hBasicSpecType = inBracks $ "GTypes.H_BASIC_SPEC " ++ senType ++ " " ++ siType ++ " " ++ rsymType
          -- HFORMULA sen symb_items raw_sym
-        hSenType = "GTypes.FORMULA " ++ senType ++ " " ++ siType ++ " " ++ rsymType
+        hSenType = inBracks $ "GTypes.HFORMULA " ++ senType ++ " " ++ siType ++ " " ++ rsymType
          -- H_SYMB_ITEMS sym symb_items
-        hSiType = "GTypes.H_SYMB_ITEMS " ++ symType ++ " " ++ siType
+        hSiType = inBracks $ "GTypes.H_SYMB_ITEMS " ++ symType ++ " " ++ siType
         hSmiType = "()" -- for now!
          -- HSign sig
-        hSignType = "GTypes.HSign " ++ signType
+        hSignType = inBracks $ "GTypes.HSign " ++ signType
          -- HMorphism sig mor
-        hMorType = "GTypes.HMorphism " ++ signType ++ " " ++ morType
+        hMorType = inBracks $ "GTypes.HMorphism " ++ signType ++ " " ++ morType
          -- HSymbol sym
-        hSymType = "GTypes.HSymbol " ++ symType
+        hSymType = inBracks $  "GTypes.HSymbol " ++ symType
          -- HRawSymbol sym raw_sym
-        hRSymType = "GTypes.HRawSymbol " ++ symType ++ " " ++ rsymType
+        hRSymType = inBracks $ "GTypes.HRawSymbol " ++ symType ++ " " ++ rsymType
         hPtType = "()"
 
         -- lid
@@ -139,100 +147,101 @@ writeLogic hld lg = let
         genCod = mkImpl "cod" "" "GTypes.target"
         genIde = mkImpl "ide" "" "GMethods.idMor"
         genIsIncl = mkImpl "isInclusion" "" "GMethods.isHIncl"
-        genCompMor = mkImpl "composeMorphism" "" "GMethods.compHMor"
+        genCompMor = mkImpl "composeMorphisms" "" "GMethods.compHMor"
 
         category = mkInst "Category" "" [hSignType, hMorType]
                      [genDom, genCod, genIde, genIsIncl, genCompMor]
 
         -- syntax
 
-        genParseBasicSpec = mkImpl "parse_basic_spec" newLid $ --TODO: check args, they are wrong now!
-                             "Just $ GMthods.parseHBasicSpec " ++ 
+        genParseBasicSpec = mkImpl "parse_basic_spec" l $ --TODO: check args, they are wrong now!
+                             "Just $ GMethods.parseHBasicSpec " ++ 
                               if hasQNominals then "True " else "False " ++
                               (show kVars) ++ " " ++ logic ++ " Map.empty"
-        genParseSymbItems = mkImpl "parse_symb_items" newLid 
+        genParseSymbItems = mkImpl "parse_symb_items" l
                               "error \"nyi\" "
-        genParseSymbMapItems = mkImpl "parse_symb_map_items" newLid 
+        genParseSymbMapItems = mkImpl "parse_symb_map_items" l 
                               "error \"nyi\" "
 
-        syntax = mkInst "Syntax" newLid
-                [hBasicSpecType, hSiType, hSmiType]
+        syntax = mkInst "Syntax" l
+                [hBasicSpecType, hSymType, hSiType, hSmiType]
                 [genParseBasicSpec, genParseSymbItems, genParseSymbMapItems]
 
         -- sentences
 
-        genMapSen = mkImpl "map_sen" newLid $
+        genMapSen = mkImpl "map_sen" l $
                      "GMethods.mapSentence " ++ logic
   
-        genNegation = mkImpl "negation" newLid "GMethods.hNegation"
+        genNegation = mkImpl "negation" l "GMethods.hNegation"
  
-        genSymOf = mkImpl "sym_of" newLid $ "GMethods.hSymOf " ++ logic
+        genSymOf = mkImpl "sym_of" l $ "GMethods.hSymOf " ++ logic
 
-        genSymName = mkImpl "sym_name" newLid $ "GMethods.hSymName " ++ logic
+        genSymName = mkImpl "sym_name" l $ "GMethods.hSymName " ++ logic
   
-        genSymKind = mkImpl "symKind" newLid $ "GMethods.symKindH " ++ logic
+        genSymKind = mkImpl "symKind" l $ "GMethods.symKindH " ++ logic
   
-        genSymsOfSen = mkImpl "symsOfSen" newLid $ "GMethods.symsOfHSen " ++ logic 
+        genSymsOfSen = mkImpl "symsOfSen" l $ "GMethods.symsOfHSen " ++ logic 
+     
+        genMostSymsOf = mkImpl "mostSymsOf" l $           
+                         "GMethods.mostSymsOfDiff " ++ logic 
+
         
-        sentences = mkInst "Sentences" newLid 
+        sentences = mkInst "Sentences" l 
                      [hSenType, hSignType, hMorType, hSymType]  
                      [genMapSen, genNegation, genSymOf, genSymName, 
-                      genSymKind, genSymsOfSen]
+                      genSymKind, genSymsOfSen, genMostSymsOf]
 
         -- static
         genBasicAnalysis = 
-                  mkImpl "basic_analysis" newLid $ -- TODO: check that args are right!
+                  mkImpl "basic_analysis" l $ -- TODO: check that args are right!
                    "Just $ GMethods.basicHAnalysis " ++ 
                    if hasQNominals then "True " else "False " ++
                    (show kVars) ++ " " ++ logic
   
         genSenAnalysis = 
-              mkImpl "sen_analysis" newLid $ -- TODO: check args!
+              mkImpl "sen_analysis" l $ -- TODO: check args!
                 "Just $ GMethods.anaHFORMULA " ++ 
                    if hasQNominals then "True " else "False " ++
                    (show kVars) ++ " " ++ logic
 
-        genSigColimit = mkImpl "signature_colimit" newLid $ 
+        genSigColimit = mkImpl "signature_colimit" l $ 
                           "GMethods.signatureColimit " ++ logic
 
-        genSymbolToRaw = mkImpl "symbol_to_raw" newLid "GTypes.ASymbol"
+        genSymbolToRaw = mkImpl "symbol_to_raw" l "GTypes.ASymbol"
 
-        genRawToSymbol = mkImpl "raw_to_symbol" newLid $ 
+        genRawToSymbol = mkImpl "raw_to_symbol" l $ 
                           "GMethods.rawToSymbol " ++ logic
   
-        genIdToRaw = mkImpl "id_to_raw" newLid $
+        genIdToRaw = mkImpl "id_to_raw" l $
                           "GMethods.idToRaw " ++ logic 
 
-        genEmptySig = mkImpl "empty_signature" newLid $
+        genEmptySig = mkImpl "empty_signature" l $
                           "GMethods.emptyHSign " ++ logic 
 
-        genAddSymbToSign = mkImpl "addSymbToSign" newLid $ 
+        genAddSymbToSign = mkImpl "add_symb_to_sign" l $ 
                             "GMethods.addSymbToHSign " ++ logic
 
-        genSigDiff = mkImpl "signatureDiff" newLid $ 
+        genSigDiff = mkImpl "signatureDiff" l $ 
                          "GMethods.signatureDifference " ++ logic
  
-        genMostSymsOf = mkImpl "mostSymsOf" newLid $           
-                         "GMethods.mostSymsOfDiff " ++ logic 
-
-        genSubsigIncl = mkImpl "" newLid $ 
+        genSubsigIncl = mkImpl "subsig_inclusion" l $ 
                          "GMethods.subsigInclusion " ++ logic
      
-        genSigUnion = mkImpl "signature_union" newLid $ 
+        genSigUnion = mkImpl "signature_union" l $ 
                          "GMethods.sigUnion " ++ logic
 
-        static = mkInst "StaticAnalysis" newLid
+        static = mkInst "StaticAnalysis" l
                   [hBasicSpecType, hSenType, hSiType, hSmiType,
                    hSignType, hMorType, hSymType, hRSymType] 
                   [genBasicAnalysis, genSenAnalysis, genSigColimit,
                    genSymbolToRaw, genRawToSymbol, genIdToRaw,
-                   genEmptySig, genAddSymbToSign, genSigUnion, genSigDiff, genMostSymsOf,
+                   genEmptySig, genAddSymbToSign, genSigUnion, genSigDiff,
                    genSubsigIncl] -- TODO: add methods here as you implement them in GMethods
 
 
         -- logic
 
-        genSemConstr = mkImpl "sem_constr" newLid
+        genSemConstr = mkImpl "sem_constr" l
                         constrs
 
         logicInst = mkInst "Logic" l 

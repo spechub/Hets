@@ -133,6 +133,17 @@ instance Logic Propositional
           [ ConservativityChecker "sKizzo" (checkBinary "sKizzo") conserCheck
           , ConservativityChecker "Truth Tables" (return Nothing)
               ttConservativityChecker]
+      -- helpers for generic hyridization
+      sublogicsTypeName Propositional = ("PropSL","Propositional.Sublogic")
+      basicSpecTypeName Propositional = ("BASIC_SPEC","Propositional.AS_BASIC_Propositional")
+      sentenceTypeName Propositional = ("FORMULA","Propositional.AS_BASIC_Propositional")
+      symbItemsTypeName Propositional = ("SYMB_ITEMS","Propositional.AS_BASIC_Propositional")
+      symbMapItemsTypeName Propositional = ("SYMB_MAP_ITEMS","Propositional.AS_BASIC_Propositional")
+      signTypeName Propositional = ("Sign","Propositional.Sign")
+      morphismTypeName Propositional = ("Morphism","Propositional.Morphism")
+      symbolTypeName Propositional = ("Symbol","Propositional.Symbol")
+      rawSymbolTypeName Propositional = ("Symbol","Propositional.Symbol")
+      proofTreeTypeName Propositional = ("ProofTree","Common.ProofTree") 
 
 -- | Static Analysis for propositional logic
 instance StaticAnalysis Propositional

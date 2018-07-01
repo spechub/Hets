@@ -12,6 +12,7 @@ Portability :  portable -}
 module Comorphisms.DynLogicList where
 
 import Logic.Logic
+import PropS4.Logic_PropS4
 
 dynLogicList :: [AnyLogic]
-dynLogicList = []
+dynLogicList = [Logic PropS4]
