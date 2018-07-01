@@ -154,10 +154,10 @@ writeLogic hld lg = let
 
         -- syntax
 
-        genParseBasicSpec = mkImpl "parse_basic_spec" l $ --TODO: check args, they are wrong now!
+        genParseBasicSpec = mkImpl "parse_basic_spec" l $
                              "Just $ GMethods.parseHBasicSpec " ++ 
                               if hasQNominals then "True " else "False " ++
-                              (show kVars) ++ " " ++ logic ++ " Map.empty"
+                              (show $ not $ null kVars) ++ " " ++ logic
         genParseSymbItems = mkImpl "parse_symb_items" l
                               "error \"nyi\" "
         genParseSymbMapItems = mkImpl "parse_symb_map_items" l 
@@ -199,10 +199,10 @@ writeLogic hld lg = let
                    (show kVars) ++ " " ++ logic
   
         genSenAnalysis = 
-              mkImpl "sen_analysis" l $ -- TODO: check args!
-                "Just $ GMethods.anaHFORMULA " ++ 
+              mkImpl "sen_analysis" l $ "Nothing" -- TODO: for now
+               {- "Just $ GMethods.anaHFORMULA " ++ 
                    if hasQNominals then "True " else "False " ++
-                   (show kVars) ++ " " ++ logic
+                   (show kVars) ++ " " ++ logic -}
 
         genSigColimit = mkImpl "signature_colimit" l $ 
                           "GMethods.signatureColimit " ++ logic
