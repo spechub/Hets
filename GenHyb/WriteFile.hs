@@ -71,9 +71,65 @@ buildLogicInstance hld lg = do
      error $ "The directory " ++ l ++ " already exists.\n" ++
              "Please choose a different object logic name." else do
      createDirectory l
-     let logicInst = writeLogic hld lg
+     let typeDefs = writeTypes hld lg
+         logicInst = writeLogic hld lg
+     writeFile (l ++ "/" ++ "AS_" ++ l ++ ".hs") typeDefs -- TODO: move back to .der.hs
      writeFile (l ++ "/" ++ "Logic_" ++ l ++ ".hs") logicInst
      return ()
+
+writeTypes :: HLogicDef -> LogicGraph -> String
+writeTypes hld lg = 
+ let 
+  l = newHybridLogicName hld
+  (logic, _msubl) = baseLogicName hld
+  Result ds maybeLid = lookupLogic "GenHyb.writeLogic" logic lg
+ in case maybeLid of 
+     Nothing -> error $ "logic not found:" ++ show ds
+     Just (Logic baseLid) -> 
+      let
+       header = mkCompOpt [multiOpt, synOpt, flexOpt]
+       mod_decl = mkModDecl $ l ++ "." ++ "AS_" ++ l
+       gimports = [ "import qualified Data.Map as Map",
+                    "import qualified GenHyb.GenTypes as GTypes"] ++
+                   ["import " ++ logic ++ "." ++ "Logic_" ++ logic]
+       (_sublType, sublPath) = sublogicsTypeName baseLid
+       (_basicSpecType, basicSpecPath) = basicSpecTypeName baseLid
+       (senType, senPath) = sentenceTypeName baseLid
+       (siType, siPath) = symbItemsTypeName baseLid
+       (_smiType, smiPath) = symbMapItemsTypeName baseLid
+       (signType, signPath) = signTypeName baseLid
+       (morType, morPath) = morphismTypeName baseLid
+       (symType, symPath) = symbolTypeName baseLid
+       (rsymType, rsymPath) = rawSymbolTypeName baseLid
+       (_ptType, ptPath) = proofTreeTypeName baseLid
+       import1 = let importFiles = nub $ [sublPath, basicSpecPath, 
+                                     senPath, siPath, smiPath, signPath, morPath, 
+                                     symPath, rsymPath, ptPath]
+                  in if null importFiles then error "empty imports, helpers for base logic not set"
+                      else mkImports importFiles
+       drift = "--DrIFT command \n {-! global: GetRange !-}"
+ 
+       hSublType = "()"
+         -- H_BASIC_SPEC sen symb_items raw_sym
+       hBasicSpecType = "type " ++ l ++ "_BASIC_SPEC = GTypes.H_BASIC_SPEC " ++ senType ++ " " ++ siType ++ " " ++ rsymType
+         -- HFORMULA sen symb_items raw_sym
+       hSenType = "type " ++ l ++ "_FORMULA = GTypes.HFORMULA " ++ senType ++ " " ++ siType ++ " " ++ rsymType
+         -- H_SYMB_ITEMS sym symb_items
+       hSiType = "type " ++ l ++ "_SYMB_ITEMS = GTypes.H_SYMB_ITEMS " ++ symType ++ " " ++ siType
+       hSmiType = "()" -- for now!
+         -- HSign sig
+       hSignType = "type " ++ l ++ "_Sign = GTypes.HSign " ++ signType
+         -- HMorphism sig mor
+       hMorType = "type " ++ l ++ "_Morphism = GTypes.HMorphism " ++ signType ++ " " ++ morType
+         -- HSymbol sym
+       hSymType = "type " ++ l ++ "_Symbol = GTypes.HSymbol " ++ symType
+         -- HRawSymbol sym raw_sym
+       hRSymType = "type " ++ l ++ "_RawSymbol = GTypes.HRawSymbol " ++ symType ++ " " ++ rsymType
+       hPtType = "()"
+   
+       body = intercalate "\n\n" $ 
+                [mod_decl] ++ gimports ++ [import1, drift, hBasicSpecType, hSenType, hSiType, hSignType, hMorType, hSymType, hRSymType]
+      in header ++ "\n" ++ body
 
 writeLogic :: HLogicDef -> LogicGraph -> String
 writeLogic hld lg = let
@@ -96,7 +152,8 @@ writeLogic hld lg = let
                     "import qualified Data.Map as Map",
                     "import qualified GenHyb.GenTypes as GTypes",
                     "import qualified GenHyb.GenMethods as GMethods"] ++
-                   ["import " ++ logic ++ "." ++ "Logic_" ++ logic]
+                   ["import " ++ logic ++ "." ++ "Logic_" ++ logic, 
+                    "import " ++ l ++ ".AS_" ++ l ]
 
         (_sublType, sublPath) = sublogicsTypeName baseLid
         (_basicSpecType, basicSpecPath) = basicSpecTypeName baseLid
@@ -118,20 +175,27 @@ writeLogic hld lg = let
 
         hSublType = "()"
          -- H_BASIC_SPEC sen symb_items raw_sym
-        hBasicSpecType = inBracks $ "GTypes.H_BASIC_SPEC " ++ senType ++ " " ++ siType ++ " " ++ rsymType
+        hBasicSpecType = l ++ "_BASIC_SPEC"
+         -- inBracks $ "GTypes.H_BASIC_SPEC " ++ senType ++ " " ++ siType ++ " " ++ rsymType
          -- HFORMULA sen symb_items raw_sym
-        hSenType = inBracks $ "GTypes.HFORMULA " ++ senType ++ " " ++ siType ++ " " ++ rsymType
+        hSenType = l ++ "_FORMULA" 
+          -- inBracks $ "GTypes.HFORMULA " ++ senType ++ " " ++ siType ++ " " ++ rsymType
          -- H_SYMB_ITEMS sym symb_items
-        hSiType = inBracks $ "GTypes.H_SYMB_ITEMS " ++ symType ++ " " ++ siType
+        hSiType = l ++ "_SYMB_ITEMS" 
+          -- inBracks $ "GTypes.H_SYMB_ITEMS " ++ symType ++ " " ++ siType
         hSmiType = "()" -- for now!
          -- HSign sig
-        hSignType = inBracks $ "GTypes.HSign " ++ signType
+        hSignType = l ++ "_Sign"
+          -- inBracks $ "GTypes.HSign " ++ signType
          -- HMorphism sig mor
-        hMorType = inBracks $ "GTypes.HMorphism " ++ signType ++ " " ++ morType
+        hMorType = l ++ "_Morphism"
+         -- inBracks $ "GTypes.HMorphism " ++ signType ++ " " ++ morType
          -- HSymbol sym
-        hSymType = inBracks $  "GTypes.HSymbol " ++ symType
+        hSymType = l ++ "_Symbol"
+         -- inBracks $  "GTypes.HSymbol " ++ symType
          -- HRawSymbol sym raw_sym
-        hRSymType = inBracks $ "GTypes.HRawSymbol " ++ symType ++ " " ++ rsymType
+        hRSymType = l ++ "_RawSymbol" 
+         -- inBracks $ "GTypes.HRawSymbol " ++ symType ++ " " ++ rsymType
         hPtType = "()"
 
         -- lid

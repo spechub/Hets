@@ -245,6 +245,12 @@ instance (Pretty raw_sym, Pretty sym) => Pretty (HRawSymbol sym raw_sym) where
  pretty (ASymbol x) = pretty x
  pretty (AKindedSymb _ x) = pretty x
 
-
+instance (GetRange sym, GetRange raw_sym) => GetRange (HRawSymbol sym raw_sym) where
+    getRange (BaseRawSymbol rs) = getRange rs
+    getRange (ASymbol x) = getRange x
+    getRange (AKindedSymb _ x) = getRange x
+    rangeSpan (BaseRawSymbol rs) = rangeSpan rs
+    rangeSpan (ASymbol x) = rangeSpan x
+    rangeSpan (AKindedSymb _ x) = rangeSpan x
 
 
