@@ -22,7 +22,7 @@ module Static.AnalysisLibrary
     , LNS
     ) where
 
-import Debug.Trace
+-- import Debug.Trace
 
 import           Logic.Coerce
 import           Logic.Grothendieck
@@ -162,23 +162,24 @@ anaStringAux mln lgraph opts topLns initDG mt file posFileName (_, libenv)
       declNs = Set.fromList . map expnd
         $ concatMap (getDeclSpecNames . item) is'
       -- all missing names
-      missNames' = trace ("declNs:" ++ show declNs) $ spNs Set.\\ declNs
+      missNames' = -- trace ("declNs:" ++ show declNs) $ 
+                   spNs Set.\\ declNs
       -- if a missing name appears as argument of a generic spec,
       -- mark it as unsolved iri
       (unsolvedNames, is'') =  foldl (\(nl, il) li ->
                               let (n, i') = getGenSpecArgNames (Set.toList declNs) $ item li
                               in (n:nl, il ++ [li{item = i'}])) ([],[]) is'
       -- the missing names that are not unsolved iris must be solved as downloads
-      missIds = trace ("unsolvedNames:" ++ show unsolvedNames) $
-                trace ("missNames':" ++ show missNames') $
+      missIds = -- trace ("unsolvedNames:" ++ show unsolvedNames) $
+                --  trace ("missNames':" ++ show missNames') $
                 concat $ map (\anIri -> getTokens $ iriPath anIri) $
                 Set.toList $ missNames'
       unsolvedIds = concat $ map (\anIri -> (getTokens $ iriPath anIri) ++
                               ( concatMap getTokens $ getComps $ iriPath anIri))
                   $ concat unsolvedNames
-      missNames = trace ("unsolvedIds:" ++ show unsolvedIds) $
-                  trace ("missIds:" ++ show missIds) $
-                  trace ("unsolvedNames:" ++ show unsolvedNames) $
+      missNames = -- trace ("unsolvedIds:" ++ show unsolvedIds) $
+                  -- trace ("missIds:" ++ show missIds) $
+                  -- trace ("unsolvedNames:" ++ show unsolvedNames) $
                   map simpleIdToIRI $
                   filter (\x -> (not $ x `elem` unsolvedIds) && (not $ (simpleIdToIRI x) `elem` declNs)) missIds
       unDecls = map (addDownload True) $ filter

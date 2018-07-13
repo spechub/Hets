@@ -19,7 +19,7 @@ module Syntax.AS_Library where
 -- DrIFT command:
 {-! global: GetRange !-}
 
-import Debug.Trace
+-- import Debug.Trace
 
 import           Common.AS_Annotation
 import           Common.Id
@@ -232,12 +232,12 @@ getActualParams knownSpecs sp =
 
 handleArg :: [IRI] -> FIT_ARG -> ([SPEC_NAME], FIT_ARG)
 handleArg knownSpecs p = case p of
-          Fit_spec aspec [] r' -> trace ("item aspec:" ++ show (item aspec)) $ 
+          Fit_spec aspec [] r' -> -- trace ("item aspec:" ++ show (item aspec)) $ 
             case item aspec of
               Spec_inst x [] Nothing _ ->
                 if x `elem` knownSpecs then ([],p)
                  else ([x], Fit_spec (aspec{item=Unsolved_IRI x}) [] r')
-              Spec_inst x [aarg] Nothing r'' -> trace "here" $ 
+              Spec_inst x [aarg] Nothing r'' -> 
                 let argSpec = (\(Fit_spec aspec' _ _) -> item aspec') $ item aarg
                     argNames = case argSpec of
                                  Spec_inst y [] Nothing _ -> [Just y]
