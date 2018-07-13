@@ -224,30 +224,31 @@ getActualParams knownSpecs sp =
             aspec2' = aspec2{item = sp2}
         in (iris1 ++ iris2, Data l1 l2 aspec1' aspec2' r)
      Spec_inst sn aargs miri r -> let
-       resL = map (\p -> trace ("p:" ++ show p) $ case p of
+       resL = map (handleArg knownSpecs) $ map item aargs
+      in (concat $ map fst resL,
+          Spec_inst sn (map (\(as, s) -> as {item = s}) $
+          zip aargs $ map snd resL) miri r)
+     _-> ([], sp)
+
+handleArg :: [IRI] -> FIT_ARG -> ([SPEC_NAME], FIT_ARG)
+handleArg knownSpecs p = case p of
           Fit_spec aspec [] r' -> trace ("item aspec:" ++ show (item aspec)) $ 
             case item aspec of
               Spec_inst x [] Nothing _ ->
                 if x `elem` knownSpecs then ([],p)
                  else ([x], Fit_spec (aspec{item=Unsolved_IRI x}) [] r')
-              Spec_inst x aargs' Nothing _ -> 
-                let argSpecs = map (\(Fit_spec aspec' _ _) -> item aspec') $
-                               map item aargs'
-                    argNames = concatMap (\as -> case as of
-                                            Spec_inst y [] Nothing _ -> [Just y]
-                                            {-Spec_inst y aargs'' Nothing _ -> 
-                                               let argSpecs' = map (\(Fit_spec aspec' _ _) -> item aspec') $
-                                                               map item aargs''
-                                                   argNames' = map (\as' -> case as' of 
-                                                                              Spec_inst z [] Nothing _ -> Just z
-                                                                              _ -> Nothing) argSpecs'
-                                               in if Nothing `elem` argNames' 
-                                                    then [Nothing]
-                                                    else [Just $ idToIRI $ Id [idToSimpleId $ iriPath y] (map (iriPath . fromJust) argNames') nullRange]-}
-                                            _ -> [Nothing]) 
-                               argSpecs
+              Spec_inst x [aarg] Nothing r'' -> trace "here" $ 
+                let argSpec = (\(Fit_spec aspec' _ _) -> item aspec') $ item aarg
+                    argNames = case argSpec of
+                                 Spec_inst y [] Nothing _ -> [Just y]
+                                 _ -> [Nothing] 
                 in if Nothing `elem` argNames then ([],p)
                     else
+                     if x `elem` knownSpecs then let
+                        [y] = map fromJust argNames
+                        unsolvedAnnoFitSpec = Annoted (Fit_spec (Annoted (Unsolved_IRI y) nullRange [] []) [] nullRange) nullRange [] []
+                        in ([y], Fit_spec(aspec{item = Spec_inst x [unsolvedAnnoFitSpec] Nothing r''}) [] r')
+                      else 
                       let
                         iriToToken anIri = idToSimpleId $ iriPath anIri
                         compId = Id [iriToToken x]
@@ -256,12 +257,13 @@ getActualParams knownSpecs sp =
                         cIRI = idToIRI compId
                       in ([cIRI],
                            Fit_spec (aspec{item=Unsolved_IRI cIRI}) [] r')
+              Spec_inst x aargs' Nothing r ->
+                 let aSpecs = map item aargs'
+                     hSpecs = map (handleArg knownSpecs) aSpecs
+                 in (concatMap fst hSpecs, 
+                     Fit_spec (Annoted (Spec_inst x (map (\sp -> Annoted (snd sp) nullRange [] []) hSpecs) Nothing r) nullRange [] []) [] r')
               _ -> ([], p)
-          _ -> ([],p)) $ map item aargs
-      in (concat $ map fst resL,
-          Spec_inst sn (map (\(as, s) -> as {item = s}) $
-          zip aargs $ map snd resL) miri r)
-     _-> ([], sp)
+          _ -> ([],p)
 
 getImportNames :: DownloadItems -> [IRI]
 getImportNames di = case di of
