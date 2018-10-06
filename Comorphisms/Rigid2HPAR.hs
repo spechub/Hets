@@ -52,7 +52,7 @@ instance Comorphism Rigid2HPAR
                RBasic.R_BASIC_SPEC CBasic.CASLFORMULA CBasic.SYMB_ITEMS CBasic.SYMB_MAP_ITEMS
                RSign.RSign
                RMorphism.RigidMor
-               CSign.Symbol CMor.RawSymbol ()
+               RBasic.RigidSymbol CMor.RawSymbol ()
                HLogic.HPAR ()
                HBasic.H_BASIC_SPEC HBasic.HFORMULA HBasic.H_SYMB_ITEMS 
                CBasic.SYMB_MAP_ITEMS

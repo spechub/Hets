@@ -79,20 +79,29 @@ mapTheory :: (HSign.HSign, [Named HBasic.HFORMULA]) ->
              Result (CSign.CASLSign, [Named CBasic.CASLFORMULA])
 mapTheory (hsig, nhsens) = -- trace ("nhsens:" ++ show nhsens) $ 
                            do 
+  -- 1. translate base signature
   (csig, csens) <- map_theory (BaseCom.CASL2SubCFOL True BaseCom.NoMembershipOrCast) $ (RSign.caslSign $ HSign.baseSig $ hsig, []) 
+  -- 2. auxiliaries
   let st = genName "ST"
       v = genToken "X"
       domain = genName "domain"
-      cvars = foldl (\vars asen -> getVarSorts vars $ sentence asen) Set.empty csens -- variables in \Gamma_\Sigma
+  -- 3. variables in \Gamma_\Sigma
+      cvars = foldl (\vars asen -> getVarSorts vars $ sentence asen) Set.empty csens 
+  -- 4. e -> forall gn_X : gn_ST . e(X) 
       csens' = -- trace ("cvars:" ++ show cvars) $ 
                map (\f -> f { sentence = CBasic.Quantification CBasic.Universal [CBasic.Var_decl [v] st nullRange] (addX v $ sentence f) nullRange} ) csens
-  stsig <- CSign.addSymbToSign (CSign.emptySign ()) $ CSign.Symbol st CSign.SortAsItemType -- this one has gn_ST
+  -- 5. this one has gn_ST
+  stsig <- CSign.addSymbToSign (CSign.emptySign ()) $ CSign.Symbol st CSign.SortAsItemType
+  -- 6. this one has [S_\Sigma]
   sortsig <- foldM (\aSig x -> CSign.addSymbToSign aSig $ CSign.Symbol x CSign.SortAsItemType) 
-                   stsig $ Set.toList $ CSign.sortSet csig         -- this one has [S_\Sigma]
+                   stsig $ Set.toList $ CSign.sortSet csig
+  -- 7. this one has \overline{Nom}
   nomsig <- foldM (\aSig x -> CSign.addSymbToSign aSig $ CSign.Symbol x $ CSign.OpAsItemType $ CSign.OpType CBasic.Total [] st) 
-                  sortsig $ HSign.noms hsig -- this one has \overline{Nom}
+                  sortsig $ HSign.noms hsig
+  -- 8. this one has [F_\Sigma]
   opsig <- foldM (\aSig (i, CSign.OpType k w s) -> CSign.addSymbToSign aSig $ CSign.Symbol i $ CSign.OpAsItemType $ CSign.OpType k (st:w) s)
-                 nomsig $ MapSet.toPairList $ CSign.opMap csig -- this one has [F_\Sigma]
+                 nomsig $ MapSet.toPairList $ CSign.opMap csig
+  -- 9. this is D_F_\Sigma
   let domsens = 
                 foldl (\sens (f, o@(CSign.OpType _ w s)) -> 
                           let ydecl = CBasic.mkVarDecl (genToken "w") st
@@ -116,21 +125,28 @@ mapTheory (hsig, nhsens) = -- trace ("nhsens:" ++ show nhsens) $
                                     )
                           in (makeNamed ("ga_domain_"++show f) df):sens
                       ) 
-                      [] $ MapSet.toPairList $ CSign.opMap csig -- this is D_F_\Sigma
+                      [] $ MapSet.toPairList $ CSign.opMap csig
+  -- 10. this one has [P_\Sigma]
   predsig <- foldM (\aSig (i, CSign.PredType w) -> CSign.addSymbToSign aSig $ CSign.Symbol i $ CSign.PredAsItemType $ CSign.PredType (st:w))
-                   opsig $ MapSet.toPairList $ CSign.predMap csig -- this one has [P_\Sigma]
+                   opsig $ MapSet.toPairList $ CSign.predMap csig
+  -- 11. this one has D_s
   domsig <- foldM (\aSig s -> CSign.addSymbToSign aSig $ CSign.Symbol domain $ CSign.PredAsItemType $ CSign.PredType [st, s])
-            predsig $ Set.toList $ CSign.sortSet csig -- this one has D_s
+            predsig $ Set.toList $ CSign.sortSet csig
+  -- 12. this one has \overline{\Lambda}
   lamsig <- foldM (\aSig (l, x) -> CSign.addSymbToSign aSig $ CSign.Symbol l $ CSign.PredAsItemType $ CSign.PredType $ take x $ repeat st)
-            domsig $ Map.toList $ HSign.mods hsig -- this one has \overline{\Lambda}
+            domsig $ Map.toList $ HSign.mods hsig 
+  -- 13. translate sentences from HPAR to CASL
   let ncsens = map (mapNamedSentence hsig) nhsens
+  -- 14. add constraints as CASL sentences 
       constrsens = constrsToSens hsig $ sem_constr HLogic.HPAR
+  -- 15. this is V(\Gamma_Sigma)
       makeVSen s = makeNamed ("ga_V_"++show s)
                    $ CBasic.mkForall [CBasic.mkVarDecl (genToken "w") st, CBasic.mkVarDecl (genToken "x") s] 
                    $ CBasic.mkPredication (CBasic.mkQualPred domain $ CBasic.Pred_type [st, s] nullRange)
                                                                                                 [CBasic.Qual_var (genToken "w") st nullRange,
                                                                                                  CBasic.Qual_var (genToken "x") s nullRange]
-      vsens = map makeVSen $ Set.toList cvars -- this is V(\Gamma_Sigma)
+      vsens = map makeVSen $ Set.toList cvars 
+  -- 16. return results
   -- trace (concatMap (\x -> show x ++ "\n") ncsens) $ 
   return (lamsig, csens' ++ vsens ++ domsens ++ ncsens ++ constrsens)
 

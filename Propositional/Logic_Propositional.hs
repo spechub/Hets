@@ -50,6 +50,7 @@ import Common.ProofTree
 import Common.Id
 
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Data.Monoid
 
 -- | Lid for propositional logic
@@ -90,6 +91,15 @@ instance Sentences Propositional FORMULA
     map_sen Propositional = mapSentence
     -- there is nothing to leave out
     simplify_sen Propositional _ = simplify
+    -- symbols of a sentence
+    symsOfSen Propositional = pSymsOfSen
+    -- test nominals
+    is_nominal_sen Propositional noms aSen = 
+     case aSen of
+      Predication p ->
+        let pId = simpleIdToId p 
+        in if Set.member pId noms then (True, Just pId) else (False, Nothing)
+      _ -> (False, Nothing)
 
 instance Monoid BASIC_SPEC where
     mempty = Basic_spec []
@@ -119,6 +129,8 @@ instance Logic Propositional
     where
         -- hybridization
       parse_basic_sen Propositional = Just $ const impFormula
+      parse_formula Propositional = Just $ impFormula
+      parse_prim_formula Propositional = Just $ primFormula
       stability Propositional = Stable
       top_sublogic Propositional = Sublogic.top
       all_sublogics Propositional = sublogics_all
@@ -143,7 +155,8 @@ instance Logic Propositional
       morphismTypeName Propositional = ("Morphism","Propositional.Morphism")
       symbolTypeName Propositional = ("Symbol","Propositional.Symbol")
       rawSymbolTypeName Propositional = ("Symbol","Propositional.Symbol")
-      proofTreeTypeName Propositional = ("ProofTree","Common.ProofTree") 
+      proofTreeTypeName Propositional = ("ProofTree","Common.ProofTree")
+      constr_to_sens Propositional = constrToSens
 
 -- | Static Analysis for propositional logic
 instance StaticAnalysis Propositional
@@ -159,11 +172,13 @@ instance StaticAnalysis Propositional
           basic_analysis Propositional =
               Just basicPropositionalAnalysis
           sen_analysis Propositional = Just pROPsen_analysis
+          add_symb_to_sign Propositional = addSymbToSign
           empty_signature Propositional = emptySig
           is_subsig Propositional = isSubSigOf
           subsig_inclusion Propositional s = return . inclusionMap s
           signature_union Propositional = sigUnion
           symbol_to_raw Propositional = symbolToRaw
+          raw_to_symbol Propositional = rawToSymbol
           id_to_raw Propositional = idToRaw
           matches Propositional = Symbol.matches
           stat_symb_items Propositional _ = mkStatSymbItems
@@ -172,6 +187,7 @@ instance StaticAnalysis Propositional
           induced_from_morphism Propositional = inducedFromMorphism
           induced_from_to_morphism Propositional = inducedFromToMorphism
           signature_colimit Propositional = signatureColimit
+          
 
 -- | Sublogics
 instance SemiLatticeWithTop PropSL where

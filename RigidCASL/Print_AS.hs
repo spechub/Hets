@@ -35,6 +35,11 @@ instance Pretty R_SIG_ITEM where
         cat [keyword (rigidS ++ predS ++ pluralS ls),
              space <> semiAnnos pretty ls]
 
+
+instance Pretty RigidSymbol where
+ pretty (CSym s) = pretty s
+ pretty (RSym s) = pretty s
+
 instance Pretty RigidExt where
     pretty = printRigidExt
 

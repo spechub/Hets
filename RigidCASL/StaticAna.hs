@@ -31,6 +31,8 @@ import qualified Common.Lib.MapSet as MapSet
 import Common.Lib.State
 
 import qualified Data.Set as Set
+import Logic.SemConstr
+import Data.List
 
 import Debug.Trace
 
@@ -40,6 +42,15 @@ basicRigidAnalysis
              ExtSign RSign Symbol,
              [Named CASLFORMULA])
 basicRigidAnalysis = basicAnalysis typeAnaF anaRBasicItem anaRSigItem anaMix
+
+basicRigidAnalysis'
+  :: (R_BASIC_SPEC, RSign, GlobalAnnos)
+  -> Result (R_BASIC_SPEC,
+             ExtSign RSign RigidSymbol,
+             [Named CASLFORMULA])
+basicRigidAnalysis' (rbs, rsig, ga) = do
+ (rbs', ExtSign sig syms, nsens) <- basicAnalysis typeAnaF anaRBasicItem anaRSigItem anaMix (rbs, rsig, ga)
+ return (rbs', ExtSign sig (Set.map CSym syms), nsens) -- TODO: this is wrong but may do for now. Need to make rigid symbols rigid in ExtSign also
 
 typeAnaF :: Min () RigidExt
 typeAnaF = const return
@@ -132,3 +143,131 @@ type Ana a b s f e = Mix b s f e -> a -> State (Sign f e) a
 
 
 -}
+
+-- | extra
+rigidCASLsen_analysis ::
+        (R_BASIC_SPEC, RSign, FORMULA()) -> Result (FORMULA (), FORMULA ())
+rigidCASLsen_analysis (bs, s, f) = let
+                         mix = emptyMix
+                         allIds = getAllIds bs mix s
+                         mix' = mix { mixRules = makeRules emptyGlobalAnnos
+                                                           allIds }
+                         in anaForm (const return) mix' (caslSign s) f
+
+-- | CASL hybridization: constraints to CASL sentences
+
+rigidConstrToSens :: Sign () RigidExt -> SemanticConstraint -> Result [Named (FORMULA ())]
+rigidConstrToSens sig sc = -- TODO: add a String argument so the error message is different for RigidCASL and CASL
+ let 
+   st = genName "ST"
+   domain = genName "domain"
+   defined = genName "defined"
+   (totals, partials) = partition (\(_, ot) -> opKind ot == Total) $ MapSet.toPairList $ rigidOps $ extendedInfo sig
+ in
+ case sc of
+  {-SameInterpretation "sort" -> 
+    return $
+    map (\s -> makeNamed ("ga_sem_constr_"++show s)
+                $ mkForall [mkVarDecl (genToken "w1") st, 
+                            mkVarDecl (genToken "w2") st, 
+                            mkVarDecl (genToken "x") s]
+                $ mkEqv 
+                  (mkPredication (mkQualPred domain $ Pred_type [st, s] nullRange)
+                                 [Qual_var (genToken "w1") st nullRange,
+                                  Qual_var (genToken "x") s nullRange])
+                  (mkPredication (mkQualPred domain $ Pred_type [st, s] nullRange)
+                                 [Qual_var (genToken "w2") st nullRange,
+                                  Qual_var (genToken "x") s nullRange]) 
+          ) 
+                $ Set.toList $ sortSet sig-}
+  SameInterpretation "rigid sort" -> 
+    return $
+    map (\s -> makeNamed ("ga_sem_constr_"++show s)
+                $ mkForall [mkVarDecl (genToken "w1") st, 
+                            mkVarDecl (genToken "w2") st, 
+                            mkVarDecl (genToken "x") s]
+                $ mkEqv 
+                  (mkPredication (mkQualPred domain $ Pred_type [st, s] nullRange)
+                                 [Qual_var (genToken "w1") st nullRange,
+                                  Qual_var (genToken "x") s nullRange])
+                  (mkPredication (mkQualPred domain $ Pred_type [st, s] nullRange)
+                                 [Qual_var (genToken "w2") st nullRange,
+                                  Qual_var (genToken "x") s nullRange]) 
+          ) 
+                $ Set.toList $ rigidSorts $ extendedInfo sig
+  SameInterpretation "rigid const" -> error "nyi for rigid const"
+  SameInterpretation "rigid op" ->
+   let
+      xs ot = zip (opArgs ot) [1::Int ..]
+      extOt i ot = Qual_op_name i (Op_type Total (st:opArgs ot) (opRes ot) nullRange) nullRange
+    in return $
+        map (\(i,ot) -> makeNamed ("ga_sem_constr_" ++ show i)
+                $ mkForall 
+                                ( [mkVarDecl (genToken "w1") st, 
+                                   mkVarDecl (genToken "w2") st]
+                                  ++ 
+                                  (map (\(si, ii) -> mkVarDecl (genToken $ "x" ++ show ii) si) $ xs ot)
+                                 ) 
+                                 $ mkStEq 
+                                      (mkAppl (extOt i ot) $ map (\(a,b) -> mkVarTerm a b) $ (genToken "w1", st):(map (\(si, ii) -> (genToken $ "x" ++ show ii, si)) $ xs ot))
+                                      (mkAppl (extOt i ot) $ map (\(a,b) -> mkVarTerm a b) $ (genToken "w2", st):(map (\(si, ii) -> (genToken $ "x" ++ show ii, si)) $ xs ot))
+          ) totals
+  {-SameInterpretation "pred" ->
+    let
+      xs pt = zip (predArgs pt) [1::Int ..]  
+      extPt (Pred_type ss r) = Pred_type (st:ss) r 
+    in return $
+        map (\(i, pt) -> makeNamed ("ga_sem_constr_" ++ show i) $ 
+                          mkForall 
+                           ( [mkVarDecl (genToken "w1") st, 
+                              mkVarDecl (genToken "w2") st]
+                              ++ 
+                              (map (\(si, ii) -> mkVarDecl (genToken $ "x" ++ show ii) si) $ xs pt)
+                           )
+                           $ mkEqv (mkPredication (mkQualPred i $ extPt $ toPRED_TYPE pt) $ 
+                                     map (\(a,b) -> mkVarTerm a b) $ (genToken "w1", st):(map (\(si, ii) -> (genToken $ "x" ++ show ii, si)) $ xs pt))
+                                   (mkPredication (mkQualPred i $ extPt $ toPRED_TYPE pt) $
+                                     map (\(a,b) -> mkVarTerm a b) $ (genToken "w2", st):(map (\(si, ii) -> (genToken $ "x" ++ show ii, si)) $ xs pt)) 
+            ) $ MapSet.toPairList $ predMap sig -}
+  SameInterpretation "rigid pred" ->
+    let
+      xs pt = zip (predArgs pt) [1::Int ..]  
+      extPt (Pred_type ss r) = Pred_type (st:ss) r 
+    in return $
+        map (\(i, pt) -> makeNamed ("ga_sem_constr_" ++ show i) $ 
+                          mkForall 
+                           ( [mkVarDecl (genToken "w1") st, 
+                              mkVarDecl (genToken "w2") st]
+                              ++ 
+                              (map (\(si, ii) -> mkVarDecl (genToken $ "x" ++ show ii) si) $ xs pt)
+                           )
+                           $ mkEqv (mkPredication (mkQualPred i $ extPt $ toPRED_TYPE pt) $ 
+                                     map (\(a,b) -> mkVarTerm a b) $ (genToken "w1", st):(map (\(si, ii) -> (genToken $ "x" ++ show ii, si)) $ xs pt))
+                                   (mkPredication (mkQualPred i $ extPt $ toPRED_TYPE pt) $
+                                     map (\(a,b) -> mkVarTerm a b) $ (genToken "w2", st):(map (\(si, ii) -> (genToken $ "x" ++ show ii, si)) $ xs pt)) 
+            ) $ MapSet.toPairList $ rigidPreds $ extendedInfo sig
+  SameDomain True -> let
+      xs ot = zip (opArgs ot) [1::Int ..]
+      extOt i ot = Qual_op_name i (Op_type Total (st:opArgs ot) (opRes ot) nullRange) nullRange
+    in return $
+     map (\(i,ot) -> makeNamed ("ga_sem_constr_" ++ show i)
+                $ mkForall 
+                                ( [mkVarDecl (genToken "w1") st, 
+                                   mkVarDecl (genToken "w2") st]
+                                  ++ 
+                                  (map (\(si, ii) -> mkVarDecl (genToken $ "x" ++ show ii) si) $ xs ot)
+                                 ) 
+                                 $ mkEqv 
+                                      (mkPredication (mkQualPred defined $ Pred_type [st, opRes ot] nullRange) $ 
+                                       [mkVarTerm (genToken "w1") st,
+                                        mkAppl (extOt i ot) $ map (\(a,b) -> mkVarTerm a b) $ (genToken "w1", st):(map (\(si, ii) -> (genToken $ "x" ++ show ii, si)) $ xs ot)
+                                       ]
+                                       )
+                                      (mkPredication (mkQualPred defined $ Pred_type [st, opRes ot] nullRange) $ 
+                                       [mkVarTerm (genToken "w2") st,
+                                        mkAppl (extOt i ot) $ map (\(a,b) -> mkVarTerm a b) $ (genToken "w2", st):(map (\(si, ii) -> (genToken $ "x" ++ show ii, si)) $ xs ot)
+                                       ]
+                                       )
+          ) 
+                partials 
+  _ -> constrToSens (caslSign sig) sc -- error $ "Constraint not supported for CASL logic:" ++ show sc  

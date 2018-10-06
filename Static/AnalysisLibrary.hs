@@ -26,6 +26,7 @@ import Logic.Logic
 import Logic.Grothendieck
 import Logic.Coerce
 import Logic.Prover
+import Logic.HDef
 
 import Syntax.AS_Structured
 import Syntax.Print_AS_Structured
@@ -564,10 +565,14 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
     dg' <- anaLogicDef ld dg
     return $ Result [] $ Just (itm, dg', libenv, lg, eo)
   Hlogic_defn hld _ -> ResultT $ do
-    dg' <- anaHLogicDef hld dg lg
-    return $ Result [] $ Just (itm, dg', libenv, lg, eo)
+    (dg', lg') <- anaHLogicDef hld dg lg
+    --let lg' = lg {knownHybLogics = Map.insert (newHybridLogicName hld) (hld{isExtension = False}) $ knownHybLogics lg}
+    return $ Result [] $ Just (itm, dg', libenv, lg', eo)
   Newcomorphism_defn com _ -> ResultT $ do
     dg' <- anaComorphismDef com dg
+    return $ Result [] $ Just (itm, dg', libenv, lg, eo)
+  Hcom_defn hcd _ -> ResultT $ do
+    dg' <- anaHComDef hcd dg lg
     return $ Result [] $ Just (itm, dg', libenv, lg, eo)
   _ -> return (itm, dg, libenv, lg, eo)
 

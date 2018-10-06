@@ -11,8 +11,17 @@ Portability :  portable -}
 
 module Comorphisms.DynLogicList where
 
+import Common.Id
 import Logic.Logic
-import PropS4.Logic_PropS4
+import Logic.HDef
+import Logic.SemConstr
+import HRigidCASLQuant.Logic_HRigidCASLQuant
+import HRigidCASLQuantConstr.Logic_HRigidCASLQuantConstr
 
 dynLogicList :: [AnyLogic]
-dynLogicList = [Logic PropS4]
+dynLogicList = [Logic HRigidCASLQuant, Logic HRigidCASLQuantConstr]
+
+dynHLogicList :: [(String, HLogicDef)]
+dynHLogicList = [
+   ("HRigidCASLQuant", HLogicDef "HRigidCASLQuant" ("RigidCASL", Nothing) False [] [("const", Nothing)])
+  ,("HRigidCASLQuantConstr", HLogicDef "HRigidCASLQuantConstr" ("RigidCASL",Nothing) True [SameInterpretation "rigid sort",SameInterpretation "rigid op",SameDomain True] [("const",Nothing)]) ]

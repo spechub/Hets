@@ -132,6 +132,10 @@ class (Language cid,
     -- expansion preserves satisfaction
     eps :: cid -> Bool
     eps _ = True
+    -- helpers for hybridization
+    com_path :: cid -> String
+    com_path _ = ""
+    
 
 targetSublogic :: Comorphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1

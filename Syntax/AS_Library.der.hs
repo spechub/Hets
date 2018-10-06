@@ -85,7 +85,9 @@ data LIB_ITEM = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) Range
               | Newcomorphism_defn ComorphismDef Range
               -- pos: "newcomorphism", Comorphism_name, "=", opt "end"
               | Hlogic_defn HLogicDef Range
-              -- pos: "hlogic", Logic_name, "=", opt "end"
+              -- pos: "newhlogic", Logic_name, "=", opt "end"
+              | Hcom_defn HComDef Range
+              -- pos: "newhcomorphism", Comorphism_name, "=", opt "end"
                 deriving (Show, Typeable)
 
 data AlignSem = SingleDomain | GlobalDomain | ContextualizedDomain

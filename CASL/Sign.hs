@@ -34,7 +34,7 @@ import Common.DocUtils
 import Data.Data
 import Data.Maybe (fromMaybe)
 import Data.List (isPrefixOf)
-import Control.Monad (when, unless)
+import Control.Monad (when, unless, foldM)
 
 -- constants have empty argument lists
 data OpType = OpType {opKind :: OpKind, opArgs :: [SORT], opRes :: SORT}
@@ -80,6 +80,15 @@ symbolKind t = case t of
   OpAsItemType _ -> Ops_kind
   PredAsItemType _ -> Preds_kind
   _ -> Sorts_kind
+
+extSymbolKind :: SymbType -> String
+extSymbolKind t = case t of 
+  OpAsItemType (OpType k l _) -> 
+     case (k, l) of 
+      (Total, []) -> "const"
+      _ -> "op"
+  PredAsItemType _ -> "pred"
+  _ -> "sort"
 
 data Symbol = Symbol {symName :: Id, symbType :: SymbType}
               deriving (Show, Eq, Ord, Typeable, Data)
@@ -591,6 +600,14 @@ addSymbToSign sig sy =
         PredAsItemType pt -> return $ addPred' sig' n pt
         OpAsItemType ot -> return $ addOp' sig' n ot
 
+addNomsToSign :: Sign e f -> Set.Set Id -> Result (Sign e f)
+addNomsToSign sig noms = do 
+ -- add a fake sort for nominals
+ sig0 <- addSymbToSign sig $ Symbol (genName "ST") SortAsItemType
+ sig' <- foldM (\aSig nom -> addSymbToSign aSig $ Symbol nom $ 
+                              PredAsItemType $ PredType []) 
+         sig0 $ Set.toList noms
+ return sig'
 
 -- The function below belong in a different file. But I put them here for now.
 -- dual of a quantifier

@@ -48,6 +48,7 @@ module CASL.Morphism
   , typedSymbKindToRaw
   , symbolToRaw
   , rawToSymbol
+  , rawToVar
   , insertRsys
   , mapSort
   , mapOpSym
@@ -212,6 +213,10 @@ rawToSymbol (AKindedSymb k i) =
    case k of
     Sorts_kind -> Just $ Symbol i SortAsItemType
     _ -> Nothing 
+
+rawToVar :: RawSymbol -> Maybe (Token, Id)
+rawToVar (ASymbol (Symbol n (OpAsItemType (OpType Total [] s)))) = Just (idToSimpleId n, s)
+rawToVar _ = Nothing
 
 idToRaw :: Id -> RawSymbol
 idToRaw = AKindedSymb Implicit

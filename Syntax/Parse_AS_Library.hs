@@ -295,10 +295,13 @@ libItem l = specDefn l
        q <- optEnd
        return (Newlogic_defn (LogicDef n ml s m f p pa)
           (catRange ([s1, s2, s3, s4, s5, s6, s7, s8] ++ maybeToList q)))
-  <|> -- newlogic
+  <|> -- newhlogic
     do (n, s1) <- newhlogicP
        s2 <- equalT
        (Logic_name ln msubln _, b, s3) <-  baselogicP l <|> hlogicP l
+       let msubln' = case msubln of 
+                       Nothing -> Nothing
+                       Just tok -> Just $ tokStr tok
        (semcs, _) <- do
                      asKey constrS
                      _ <- colonT
@@ -308,11 +311,14 @@ libItem l = specDefn l
        (lvars,_) <- do 
                     asKey quantS
                     _ <- colonT
-                    varP `separatedBy` commaT
+                    _ <- oParenT
+                    vars <- varP `separatedBy` commaT
+                    _ <- cParenT
+                    return vars
                     <|>
                     return ([],[])
        q <- optEnd
-       let newHL = (Hlogic_defn (HLogicDef (show n) (ln, msubln) b (concat semcs) (map (\(x, y, _) -> (x,y)) lvars)) 
+       let newHL = (Hlogic_defn (HLogicDef (show n) (ln, msubln') b (concat semcs) lvars) 
                   (catRange $ [s1, s2, s3] ++ maybeToList q))
        trace ("newHL:" ++ show newHL) $ return newHL
    <|> -- newcomorphism
@@ -327,6 +333,14 @@ libItem l = specDefn l
         q <- optEnd
         return (Newcomorphism_defn (ComorphismDef n ml s t sv pv mv)
            (catRange ([s1, s2, s3, s4, s5, s6, s7, s8] ++ maybeToList q)))
+  <|> --newhcomorphism
+     do (n, s1) <- newhcomorphismP
+        s2 <- equalT
+        (baseCom, _) <- basecomP 
+        (sourceH, _) <- sourceHLogicP
+        q <- optEnd
+        let newHCom = Hcom_defn (HComDef n baseCom sourceH) $ catRange $ [s1, s2] ++ maybeToList q
+        trace ("newHCom:" ++ show newHCom) $ return newHCom
   <|> -- just a spec (turned into "spec spec = sp")
      do p1 <- getPos
         a <- aSpec l
@@ -462,6 +476,26 @@ baselogicP lg = do
   ln <- logicName lg
   return (ln, False, s)
 
+newhcomorphismP :: AParser st (String, Token)
+newhcomorphismP = do
+  s <- asKey hcomS
+  n <- simpleId
+  return (show n, s)
+
+basecomP :: AParser st (String, Token)
+basecomP = do 
+  s <- asKey basecomS
+  _ <- colonT
+  n <- simpleId
+  return (show n, s)
+
+sourceHLogicP :: AParser st (String, Token)
+sourceHLogicP = do 
+  s <- asKey sourceHLogicS
+  _ <- colonT
+  n <- simpleId
+  return (show n, s)
+
 hlogicP :: LogicGraph -> AParser st (Logic_name, Bool, Token)
 hlogicP lg = do 
   s <- asKey hlogicS
@@ -505,27 +539,45 @@ constrP = do
    _ <- oParenT
    (s, _) <- (scanAnyWords `separatedBy` skip) `separatedBy` commaT
    _ <- cParenT
-   return $ map (SameInterpretation . show) s
+   return $ map (\x -> SameInterpretation $ concat $ intersperse " " $ fst x ) s
   <|> do
    _ <- asKey sameDomainS
    _ <- oParenT
-   s <- simpleId
+   s <- do 
+         i1 <- simpleId
+         s2 <- do 
+           _ <- skip
+           i2 <- simpleId
+           return $ show i2
+           <|> do
+           return ""
+         return $ if null s2 then show i1 else show i1 ++ " " ++ s2
    _ <- cParenT
-   case show s of 
+   case s of 
      "partial" -> return $ [SameDomain False]
      "rigid partial" -> return $ [SameDomain True]
      _ -> error $ "unknown same domain contraint:" ++ show s
 
-varP :: AParser st (Token, Maybe Token, Token)
-varP =  do 
- s1 <- simpleId
- (mt, t) <- do 
-    s <- dotT
-    s2 <- simpleId
-    return (Just s2, s)
-    <|>
-    return (Nothing, nullTok)
- return (s1, mt, t)
+varP :: AParser st (String, Maybe Token)
+varP = {- do
+   (s, _) <- simpleId `separatedBy` skip
+   return (concat $ map show s, Nothing) 
+   <|> -} do 
+   s1 <- simpleId
+   (tailStr, mt) <- do 
+     _s <- doubleColonT
+     s2 <- simpleId
+     return $ ("", Just s2)
+     <|> do
+     _ <- skip
+     (s, _) <- simpleId `separatedBy` skip
+     let strs = intersperse " " $ map show s
+     return (concat strs, Nothing)
+     <|> do
+     return ("", Nothing)
+   return (show s1 ++ (if null tailStr then "" else " " ++ tailStr), mt)
+    
+  
  
  
 metaP :: AParser st (FRAM, Token)

@@ -17,6 +17,7 @@ import Common.Id
 import Common.AS_Annotation
 
 import CASL.AS_Basic_CASL
+import CASL.Sign
 
 import Data.Data
 
@@ -31,3 +32,5 @@ data R_SIG_ITEM =
         | Rigid_pred_items [Annoted (PRED_ITEM ())] Range
              deriving (Show, Typeable, Data)
 
+data RigidSymbol = CSym Symbol | RSym Symbol
+  deriving (Show, Eq, Ord, Typeable, Data)

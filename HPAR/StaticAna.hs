@@ -37,6 +37,8 @@ import qualified HPAR.Symbol as HSym
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
+import Debug.Trace
+
 -- in addition to what CASL static analysis does
 -- must check that all modalities and nominals that appear in formulas have been declared
 
@@ -100,7 +102,7 @@ anaBasicItems bi =
        return bi
   HBasic.Axiom_items annofs -> do
     hth <- get
-    let (hth', annofs') = foldl (\(h, l) f -> let (f', h') = runState (anaHFORMULA f) h
+    let (hth', annofs') = foldl (\(h, l) f -> let (f', h') = trace ("f:" ++ show (item f)) $ runState (anaHFORMULA f) h
                                               in (h', f':l)) (hth, []) annofs 
     let replfs = reverse annofs'
         nfs = map (makeNamedSen.snd) replfs

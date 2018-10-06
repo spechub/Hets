@@ -18,6 +18,8 @@ import RigidCASL.Parse_AS ()
 import RigidCASL.Print_AS
 import RigidCASL.StaticAna
 import CASL.Sign
+import CASL.Formula(primFormula)
+import CASL.StaticAna(convertCASLTheory, isNominalSen)
 import CASL.Morphism
 import CASL.AS_Basic_CASL
 import CASL.Parse_AS_Basic
@@ -28,52 +30,57 @@ import Common.Keywords (rigidS)
 import qualified Common.Lib.Rel as Rel
 import qualified Data.Set as Set
 
+import CASL.SymbolParser
+
 data RigidCASL = RigidCASL deriving Show
 
 instance Language RigidCASL where
  description _ = "RigidCASL\n" ++
                  "Extends CASL with rigid symbols."
 
-instance Syntax RigidCASL R_BASIC_SPEC Symbol SYMB_ITEMS SYMB_MAP_ITEMS where
+instance Syntax RigidCASL R_BASIC_SPEC RigidSymbol SYMB_ITEMS SYMB_MAP_ITEMS where
     parse_basic_spec RigidCASL = Just $ basicSpec [rigidS]
-    parse_symb_items RigidCASL = undefined -- Just $ symbItems [rigidS]
+    parse_symb_items RigidCASL = Just $ symbItems [rigidS] -- this could be wrong!
     parse_symb_map_items RigidCASL = undefined -- Just $ symbMapItems hybrid_reserved_words
 
 -- Important convention: we use CASL syntax for quantifiers but variables are rigid! 
 -- This must be taken into account when writing translations.
 
-instance Sentences RigidCASL CASLFORMULA RSign RigidMor Symbol where
+instance Sentences RigidCASL CASLFORMULA RSign RigidMor RigidSymbol where
       map_sen RigidCASL = undefined -- return . mapSen map_H_FORMULA h
-      sym_of RigidCASL = symOf -- this loses rigidity information
+      sym_of RigidCASL = symOfRigid-- symOf -- this loses rigid symbols for now
       symmap_of RigidCASL = undefined --morphismToSymbMap
-      sym_name RigidCASL = symName
+      sym_name RigidCASL = rigidSymName -- symName
+      extSymKind RigidCASL = rigidExtSymKind
       simplify_sen RigidCASL = simplifyCASLSen
-      print_sign RigidCASL sig = printSign printRigidExt $ 
-                                   sig {sortRel = Rel.difference (Rel.transReduce $ sortRel sig)
-                                                  . Rel.transReduce $ Rel.fromSet $
-                                                  Set.map (\x->(x,x)) $ rigidSorts $ extendedInfo sig,
-                                        opMap = diffOpMapSet (opMap sig) $ rigidOps $ extendedInfo sig,
-                                        predMap = diffMapSet (predMap sig) $ rigidPreds $ extendedInfo sig}
+      print_sign RigidCASL sig = printSign printRigidExt $ removeRigidDupl sig
       print_named RigidCASL = printTheoryFormula
+      is_nominal_sen RigidCASL = isNominalSen 
 
 instance StaticAnalysis RigidCASL R_BASIC_SPEC CASLFORMULA
         SYMB_ITEMS SYMB_MAP_ITEMS
         RSign
         RigidMor
-        Symbol RawSymbol where
-                basic_analysis RigidCASL = Just basicRigidAnalysis
+        RigidSymbol RawSymbol where
+                basic_analysis RigidCASL = Just basicRigidAnalysis' -- was without '
+                sen_analysis RigidCASL = Just rigidCASLsen_analysis
+                convertTheory RigidCASL = Just convertCASLTheory
+                add_noms_to_sign RigidCASL = addNomsToSign
                 stat_symb_map_items RigidCASL = statSymbMapItems
                 stat_symb_items RigidCASL = statSymbItems
-                symbol_to_raw RigidCASL = symbolToRaw
+                symbol_to_raw RigidCASL = rigidSymToRaw -- symbolToRaw
+                raw_to_symbol RigidCASL = rigidRawToSymbol
+                raw_to_var RigidCASL = rawToVar
                 id_to_raw RigidCASL = idToRaw
-                matches RigidCASL = CASL.Morphism.matches
+                matches RigidCASL = rigidMatches -- CASL.Morphism.matches
                 empty_signature RigidCASL = emptySign emptyRigidExt
+                add_symb_to_sign RigidCASL = rigidAddSymbToSign
                 signature_union RigidCASL s = return . addSig addRigidExt s
                 intersection RigidCASL s = return . interSig interRigidExt s
                 morphism_union RigidCASL = undefined --plainMorphismUnion (addSig addRigidExt)
                 final_union RigidCASL = undefined --finalUnion (addSig addRigidExt)
                 is_subsig RigidCASL = isSubSig isSubRigidExt
-                subsig_inclusion RigidCASL = undefined -- sigInclusion emptyMorExt
+                subsig_inclusion RigidCASL = sigInclusion emptyMorExt
                 cogenerated_sign RigidCASL = undefined --cogeneratedSign emptyMorExt
                 generated_sign RigidCASL = undefined -- generatedSign emptyMorExt
                 induced_from_morphism RigidCASL = undefined -- inducedFromMorphism emptyMorExt
@@ -85,6 +92,20 @@ instance Logic RigidCASL ()
         R_BASIC_SPEC CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
         RSign
         RigidMor
-        Symbol RawSymbol () where
-                stability _ = Experimental
-                empty_proof_tree _ = ()
+        RigidSymbol RawSymbol () where
+         stability _ = Experimental
+         empty_proof_tree _ = ()
+         -- helpers for hybridization
+         constr_to_sens RigidCASL = rigidConstrToSens
+         parse_prim_formula RigidCASL = Just (primFormula [])
+           -- for each type, its name and the file where it is defined
+         sublogicsTypeName RigidCASL = ("","")
+         basicSpecTypeName RigidCASL = ("R_BASIC_SPEC","RigidCASL.AS_Rigid")
+         sentenceTypeName RigidCASL = ("CASLFORMULA","CASL.AS_Basic_CASL")
+         symbItemsTypeName RigidCASL = ("SYMB_ITEMS","CASL.AS_Basic_CASL")
+         symbMapItemsTypeName RigidCASL = ("SYMB_MAP_ITEMS","CASL.AS_Basic_CASL")
+         signTypeName RigidCASL = ("RSign","RigidCASL.Sign")
+         morphismTypeName RigidCASL = ("RigidMor","RigidCASL.Morphism")
+         symbolTypeName RigidCASL = ("RigidSymbol","RigidCASL.AS_Rigid")
+         rawSymbolTypeName RigidCASL = ("RawSymbol","CASL.Morphism")
+         proofTreeTypeName RigidCASL = ("","") 

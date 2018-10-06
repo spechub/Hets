@@ -292,6 +292,17 @@ sameInterpretationS = "SameInterpretation"
 sameDomainS :: String
 sameDomainS = "SameDomain"
 
+-- * definition of hybridizations of comorphisms
+
+hcomS :: String
+hcomS = "newhcomorphism"
+
+basecomS :: String
+basecomS = "basecomorphism"
+
+sourceHLogicS :: String
+sourceHLogicS = "sourcehlogic"
+
 -- * logic definition symbols
 
 newlogicS :: String

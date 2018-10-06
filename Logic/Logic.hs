@@ -156,6 +156,8 @@ import Data.Typeable
 import Control.Monad (unless)
 import Logic.SemConstr
 
+import CASL.AS_Basic_CASL 
+
 -- | Stability of logic implementations
 data Stability = Stable | Testing | Unstable | Experimental
      deriving (Eq, Show)
@@ -350,6 +352,9 @@ class (Language lid, Category sign morphism, Ord sentence,
       print_named :: lid -> Named sentence -> Doc
       print_named _ = printAnnoted (addBullet . pretty) . fromLabelledSen
 
+      is_nominal_sen :: lid -> Set.Set Id -> sentence -> (Bool, Maybe Id)
+      is_nominal_sen _ _ _ = (False, Nothing)
+
       -- --------------------- symbols ---------------------------
 
       -- | dependency ordered list of symbol sets for a signature
@@ -382,6 +387,9 @@ class (Language lid, Category sign morphism, Ord sentence,
       -- | a logic dependent kind of a symbol
       symKind :: lid -> symbol -> String
       symKind _ _ = "defaultKind"
+      -- | extended kind of symbol, to allow consts in CASL
+      extSymKind :: lid -> symbol -> String
+      extSymKind = symKind
       -- | the symbols occuring in a sentence (any order)
       symsOfSen :: lid -> sign -> sentence -> [symbol]
       symsOfSen _ _ _ = []
@@ -541,14 +549,20 @@ class ( Syntax lid basic_spec symbol symb_items symb_map_items
             example, f:s->t matches f. See CASL RefMan p. 192 -}
          matches :: lid -> symbol -> raw_symbol -> Bool
          matches _ _ _ = True
+         {- | convert a raw symbol to a CASL variable -}
+         raw_to_var :: lid -> raw_symbol -> Maybe (Token, Id) 
+         raw_to_var _ _ = Nothing
 
          -- ------------- operations on signatures and morphisms -----------
 
          -- | the empty (initial) signature, see CASL RefMan p. 193
          empty_signature :: lid -> sign
-         -- | adds a symbol to a given signature
+         -- TODO: remove this! adds a symbol to a given signature
          add_symb_to_sign :: lid -> sign -> symbol -> Result sign
          add_symb_to_sign l _ _ = statFail l "add_symb_to_sign"
+         -- | extend the signature with nominals
+         add_noms_to_sign :: lid -> sign -> Set.Set Id -> Result sign
+         add_noms_to_sign _ s _ = return s
          -- | union of signatures, see CASL RefMan p. 193
          signature_union :: lid -> sign -> sign -> Result sign
          signature_union l _ _ = statFail l "signature_union"
@@ -640,7 +654,7 @@ printTheory :: StaticAnalysis lid basic_spec sentence symb_items symb_map_items
   => Maybe IRI -> lid -> (sign, [Named sentence]) -> Doc
 printTheory sm lid th@(s, l) = case
            (convertTheory lid, basicSpecPrinter sm lid) of
-             (Just c, Just p) -> p (c th)
+             -- TODO: for now (Just c, Just p) -> p (c th)
              _ -> print_sign lid s $++$ vsep (map (print_named lid) l)
 
 -- | guarded inclusion
@@ -748,12 +762,22 @@ class (StaticAnalysis lid
          -- formula parser, no extra argument of type basic_spec
 
          parse_formula :: lid -> Maybe (AParser st sentence)
-         parse_formula _  = Nothing         
+         parse_formula _  = Nothing   
+
+         -- prim formula parser, for hybridization
+
+         parse_prim_formula :: lid -> Maybe (AParser st sentence)
+         parse_prim_formula _ = Nothing      
 
          -- semantic constraints, that will determine sentences when translating from a hybrid logic to FOL
    
          sem_constr :: lid -> [SemanticConstraint]
          sem_constr _ = []
+
+         -- logic dependent translation of constraints to CASL formulas
+ 
+         constr_to_sens :: lid -> sign -> SemanticConstraint -> Result ([Named CASLFORMULA])
+         constr_to_sens lid _ _ = fail $ "translation of constraints to CASL formulas not implemented for logic " ++ show lid
 
          -- | stability of the implementation
          stability :: lid -> Stability
@@ -866,7 +890,7 @@ class (StaticAnalysis lid
          -- no logic should throw an error here
          addOmdocToTheory _ _ t _ = return t
          -- helpers for hybridization
-           -- for each type, its name and the file were it is defined
+           -- for each type, its name and the file where it is defined
            -- ("","") for default ()
          sublogicsTypeName :: lid -> (String, String)
          sublogicsTypeName _ = ("","")
