@@ -15,13 +15,9 @@ import Common.Id
 import Logic.Logic
 import Logic.HDef
 import Logic.SemConstr
-import HRigidCASLQuant.Logic_HRigidCASLQuant
-import HRigidCASLQuantConstr.Logic_HRigidCASLQuantConstr
 
 dynLogicList :: [AnyLogic]
-dynLogicList = [Logic HRigidCASLQuant, Logic HRigidCASLQuantConstr]
+dynLogicList = []
 
 dynHLogicList :: [(String, HLogicDef)]
-dynHLogicList = [
-   ("HRigidCASLQuant", HLogicDef "HRigidCASLQuant" ("RigidCASL", Nothing) False [] [("const", Nothing)])
-  ,("HRigidCASLQuantConstr", HLogicDef "HRigidCASLQuantConstr" ("RigidCASL",Nothing) True [SameInterpretation "rigid sort",SameInterpretation "rigid op",SameDomain True] [("const",Nothing)]) ]
+dynHLogicList = []
