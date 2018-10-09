@@ -302,18 +302,21 @@ libItem l = specDefn l
        let msubln' = case msubln of 
                        Nothing -> Nothing
                        Just tok -> Just $ tokStr tok
+       _ <- dotT
        (semcs, _) <- do
                      asKey constrS
                      _ <- colonT
-                     constrP `separatedBy` commaT
+                     constrs <- constrP `separatedBy` commaT
+                     _ <- dotT
+                     return constrs
                      <|>
                      return ([], [])
        (lvars,_) <- do 
                     asKey quantS
                     _ <- colonT
-                    _ <- oParenT
+                    --_ <- oParenT
                     vars <- varP `separatedBy` commaT
-                    _ <- cParenT
+                    _ <- dotT -- cParenT
                     return vars
                     <|>
                     return ([],[])

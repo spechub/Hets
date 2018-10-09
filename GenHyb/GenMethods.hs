@@ -44,8 +44,6 @@ import Debug.Trace
 -- in Static - stat_symb_items, stat_symb_map_items,
 -- intersection, final_union, morphism_union,
 -- generated_sign, cogenerated_sign, induced_from_morphism, induced_from_to_morphism, sen_analysis
- 
-
 
 -- for class Category
 

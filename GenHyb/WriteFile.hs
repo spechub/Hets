@@ -575,14 +575,17 @@ writeLogic hld lg = let
                               "(\"" ++ hSymType ++ "\", \"" ++ typeDefFile ++ "\")"
         genRSymType = mkImpl "rawSymbolTypeName" l $ 
                               "(\"" ++ hRSymType ++ "\", \"" ++ typeDefFile ++ "\")"
+
+        genEmptyProofTree = mkImpl "empty_proof_tree" l "()"
         
 
         logicInst = mkInst "Logic" l 
                      [hSublType, hBasicSpecType, hSenType, 
                       hSiType, hSmiType, hSignType, hMorType,
                       hSymType, hRSymType, hPtType] 
-                     [genSemConstr, genConstrToSens, genParsePrimFormula, genData, genBasicSpecType,
-                      genSenType, genSymbItemsType, 
+                     [genSemConstr, genConstrToSens, genParsePrimFormula, genData, 
+                      genEmptyProofTree,
+                      genBasicSpecType, genSenType, genSymbItemsType, 
                       genSignType, genMorType, genSymType,genRSymType]
 
 
