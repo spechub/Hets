@@ -15,7 +15,7 @@ generated version module of Hets
 module Driver.Version where
 
 hetsVersionNumeric :: String
-hetsVersionNumeric = "0.100.0"
+hetsVersionNumeric = "0.101.1"
 
 hetsVersion :: String
 hetsVersion =
