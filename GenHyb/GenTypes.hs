@@ -99,6 +99,16 @@ data H_SYMB_ITEMS sym symb_items =
                        | HSymbItems H_SYMB_KIND [HSymbol sym] Id.Range
                   deriving (Show, Eq, Ord, Typeable, Data)
 
+-- | generic symb_map_items
+
+data H_SYMB_MAP_ITEMS symb_map_items = 
+                    BaseSymbMapItems symb_map_items 
+                  | HSymbMapItems [H_SYMB_OR_MAP] Id.Range
+                deriving (Show, Eq, Ord, Typeable, Data)
+
+data H_SYMB_OR_MAP = HSymbItem Id | HMapItem Id Id Id.Range
+                deriving (Show, Eq, Ord, Typeable, Data)
+
 -- | generic hybrid symbols
 
 data HSymbol sym =  BaseSymb sym

@@ -609,7 +609,7 @@ addNomsToSign sig noms = do
          sig0 $ Set.toList noms
  return sig'
 
--- The function below belong in a different file. But I put them here for now.
+-- TODO: The function below belong in a different file. But I put them here for now.
 -- dual of a quantifier
 
 dualQuant :: QUANTIFIER -> QUANTIFIER

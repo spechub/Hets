@@ -528,6 +528,77 @@ instance (ShATermConvertible sym, ShATermConvertible symb_items) => ShATermConve
       (att3, HSymbItems a' b' c') }}}
     u -> fromShATermError "H_SYMB_ITEMS" u
 
+-- for symb_map_items
+
+instance (Pretty symb_map_items) => Pretty (H_SYMB_MAP_ITEMS symb_map_items) where
+  pretty (BaseSymbMapItems sitems) = pretty sitems
+  pretty (HSymbMapItems hsm _) = pretty hsm
+
+instance Pretty H_SYMB_OR_MAP where
+ pretty (HSymbItem i) = pretty i
+ pretty (HMapItem i1 i2 _) = fsep [pretty i1, mapsto <+> pretty i2]
+
+instance (GetRange symb_map_items) => GetRange (H_SYMB_MAP_ITEMS symb_map_items) where
+  getRange (BaseSymbMapItems sitems) = getRange sitems
+  getRange (HSymbMapItems hsm _) = getRange hsm
+  rangeSpan (BaseSymbMapItems sitems) = rangeSpan sitems
+  rangeSpan (HSymbMapItems hsm _) = rangeSpan hsm
+  
+instance GetRange H_SYMB_OR_MAP where
+  getRange (HSymbItem _) = nullRange
+  getRange (HMapItem _ _ p) = p
+  rangeSpan x = case x of
+    HSymbItem a -> joinRanges [rangeSpan a]
+    HMapItem a b c -> joinRanges [rangeSpan a, rangeSpan b,
+                                  rangeSpan c]
+
+instance ShATermConvertible H_SYMB_OR_MAP where
+  toShATermAux att0 xv = case xv of
+    HSymbItem a -> do
+      (att1, a') <- toShATerm' att0 a
+      return $ addATerm (ShAAppl "HSymbItem" [a'] []) att1
+    HMapItem a b c -> do
+      (att1, a') <- toShATerm' att0 a
+      (att2, b') <- toShATerm' att1 b
+      (att3, c') <- toShATerm' att2 c
+      return $ addATerm (ShAAppl "HMapItem" [a', b', c'] []) att3
+  fromShATermAux ix att0 = case getShATerm ix att0 of
+    ShAAppl "HSymbItem" [a] _ ->
+      case fromShATerm' a att0 of
+      { (att1, a') ->
+      (att1, HSymbItem a') }
+    ShAAppl "HMapItem" [a, b, c] _ ->
+      case fromShATerm' a att0 of
+      { (att1, a') ->
+      case fromShATerm' b att1 of
+      { (att2, b') ->
+      case fromShATerm' c att2 of
+      { (att3, c') ->
+      (att3, HMapItem a' b' c') }}}
+    u -> fromShATermError "SYMB_OR_MAP" u
+
+instance (ShATermConvertible symb_map_items) => 
+          ShATermConvertible (H_SYMB_MAP_ITEMS symb_map_items) where
+    toShATermAux att0 xv = case xv of
+      BaseSymbMapItems sitems -> do
+        (att1, sitems') <- toShATerm' att0 sitems
+        return $ addATerm (ShAAppl "BaseSymbMapItems" [sitems'] []) att1
+      HSymbMapItems a b -> do
+        (att1, a') <- toShATerm' att0 a
+        (att2, b') <- toShATerm' att1 b
+        return $ addATerm (ShAAppl "HSymbMapItems" [a', b'] []) att2
+    fromShATermAux ix att0 = case getShATerm ix att0 of
+      ShAAppl "BaseSymbMapItems" [a] _ -> 
+        case fromShATerm' a att0 of
+         { (att1, a') -> 
+            (att1, BaseSymbMapItems a') }
+      ShAAppl "HSymbMapItems" [a, b] _ -> 
+         case fromShATerm' a att0 of
+          { (att1, a') ->
+            case fromShATerm' b att1 of
+            { (att2, b') -> 
+              (att2, HSymbMapItems a' b') }} 
+      u -> fromShATermError "H_SYMB_MAP_ITEMS" u  
 
 -- for HSymbol
 

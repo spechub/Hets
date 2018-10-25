@@ -341,7 +341,8 @@ writeTypes hld lg =
        hSenType = "type " ++ l ++ "_FORMULA = GTypes.HFORMULA " ++ senType ++ " " ++ siType ++ " " ++ rsymType
          -- H_SYMB_ITEMS sym symb_items
        hSiType = "type " ++ l ++ "_SYMB_ITEMS = GTypes.H_SYMB_ITEMS " ++ symType ++ " " ++ siType
-       hSmiType = "()" -- for now!
+         -- H_SYMB_MAP_ITEMS symb_map_items
+       hSmiType = "type " ++ l ++ "_SYMB_MAP_ITEMS = GTypes.H_SYMB_MAP_ITEMS "  ++ smiType
          -- HSign sig
        hSignType = "type " ++ l ++ "_Sign = GTypes.HSign " ++ signType
          -- HMorphism sig mor
@@ -354,7 +355,7 @@ writeTypes hld lg =
    
        body = intercalate "\n\n" $ 
                 [mod_decl] ++ gimports ++ [import1, -- drift, 
-                                           hBasicSpecType, hSenType, hSiType, hSignType, hMorType, hSymType, hRSymType]
+                                           hBasicSpecType, hSenType, hSiType, hSmiType, hSignType, hMorType, hSymType, hRSymType]
       in header ++ "\n" ++ body
 
 writeLogic :: HLogicDef -> LogicGraph -> String
@@ -386,7 +387,7 @@ writeLogic hld lg = let
         (_basicSpecType, basicSpecPath) = basicSpecTypeName baseLid
         (senType, senPath) = sentenceTypeName baseLid
         (siType, siPath) = symbItemsTypeName baseLid
-        (_smiType, smiPath) = symbMapItemsTypeName baseLid
+        (smiType, smiPath) = symbMapItemsTypeName baseLid
         (signType, signPath) = signTypeName baseLid
         (morType, morPath) = morphismTypeName baseLid
         (symType, symPath) = symbolTypeName baseLid
@@ -410,7 +411,7 @@ writeLogic hld lg = let
          -- H_SYMB_ITEMS sym symb_items
         hSiType = l ++ "_SYMB_ITEMS" 
           -- inBracks $ "GTypes.H_SYMB_ITEMS " ++ symType ++ " " ++ siType
-        hSmiType = "()" -- for now!
+        hSmiType = l ++ "_SYMB_MAP_ITEMS"
          -- HSign sig
         hSignType = l ++ "_Sign"
           -- inBracks $ "GTypes.HSign " ++ signType
@@ -449,14 +450,20 @@ writeLogic hld lg = let
                              "Just $ GMethods.parseHBasicSpecEng " ++ 
                              (if hasQNominals then "True " else "False ") ++
                              (show $ not $ null kVars) ++ " " ++ logic
-        genParseSymbItems = mkImpl "parse_symb_items" l
-                              "error \"nyi\" "
-        genParseSymbMapItems = mkImpl "parse_symb_map_items" l 
-                              "error \"nyi\" "
+
+        genParseSymbItems = mkImpl "parse_symb_items" l $
+                              "GMethods.parseSymbItems " ++ logic
+ 
+        genParseSymbMapItems = mkImpl "parse_symb_map_items" l $ 
+                              "GMethods.parseSymbMapItems " ++ logic
+
+        genSymbItemsName = mkImpl "symb_items_name" l $
+                              "GMethods.hSymbItemsName " ++ logic
 
         syntax = mkInst "Syntax" l
                 [hBasicSpecType, hSymType, hSiType, hSmiType]
-                [genParseBasicSpec, genParseSymbItems, genParseSymbMapItems]
+                [genParseBasicSpec, genParseSymbItems, genParseSymbMapItems,
+                 genSymbItemsName]
 
         -- sentences
 
@@ -497,13 +504,28 @@ writeLogic hld lg = let
                    ) 
   
         genSenAnalysis = 
-              mkImpl "sen_analysis" l $ "Nothing" -- TODO: for now
-               {- "Just $ GMethods.anaHFORMULA " ++ 
-                   if hasQNominals then "True " else "False " ++
-                   (show kVars) ++ " " ++ logic -}
+              mkImpl "sen_analysis" l $ 
+                  "GMethods.senAnalysis " ++ 
+                  (if hasQNominals then "True " else "False ") ++
+                   (show kVars) ++ " " ++ logic
+ 
+        genStatSymbMapItems = mkImpl "stat_symb_map_items" l $ 
+                           "GMethods.statSymbMapItems " ++ logic  
+ 
+        genStatSymbItems = mkImpl "stat_symb_items" l $
+                            "GMethods.hStatSymbItems " ++ logic
+
+        genSigIntersection = mkImpl "intersection" l $
+                             "GMethods.sigIntersection " ++ logic
 
         genSigColimit = mkImpl "signature_colimit" l $ 
                           "GMethods.signatureColimit " ++ logic
+
+        genGeneratedSig = mkImpl "generated_sign" l 
+                          $ "GMethods.hGeneratedSign " ++ logic
+
+        genCoGeneratedSig = mkImpl "cogenerated_sign" l 
+                          $ "GMethods.hCoGeneratedSign " ++ logic
 
         genSymbolToRaw = mkImpl "symbol_to_raw" l "GTypes.ASymbol"
 
@@ -530,14 +552,24 @@ writeLogic hld lg = let
      
         genSigUnion = mkImpl "signature_union" l $ 
                          "GMethods.sigUnion " ++ logic
+        
+        genInducedFromMorphism = mkImpl "induced_from_morphism" l $  
+                          "GMethods.inducedFromMorphism " ++ logic
+
+        genInducedFromToMorphism = mkImpl "induced_from_to_morphism" l $  
+                          "GMethods.inducedFromToMorphism " ++ logic
 
         static = mkInst "StaticAnalysis" l
                   [hBasicSpecType, hSenType, hSiType, hSmiType,
                    hSignType, hMorType, hSymType, hRSymType] 
-                  [genBasicAnalysis, genSenAnalysis, genSigColimit,
+                  [genBasicAnalysis, genSenAnalysis, 
+                   genStatSymbItems, genStatSymbMapItems, 
+                   genSigIntersection, genSigColimit,
+                   genGeneratedSig, genCoGeneratedSig,
                    genSymbolToRaw, genRawToSymbol, genIdToRaw,
                    genEmptySig, genAddSymbToSign, genSigUnion, genSigDiff,
-                   genIsSubsig, genSubsigIncl] -- TODO: add methods here as you implement them in GMethods
+                   genIsSubsig, genSubsigIncl,
+                   genInducedFromMorphism, genInducedFromToMorphism]
 
 
         -- logic

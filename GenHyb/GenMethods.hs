@@ -40,10 +40,17 @@ import Debug.Trace
 
 --TODO:
 -- sort the methods coming from Static 
--- in Syntax - parse_symb_items, parse_symb_map_items, symb_items_name
--- in Static - stat_symb_items, stat_symb_map_items,
--- intersection, final_union, morphism_union,
--- generated_sign, cogenerated_sign, induced_from_morphism, induced_from_to_morphism, sen_analysis
+-- in Static   
+   -- stat_symb_items, 
+   -- stat_symb_map_items, 
+   -- intersection, 
+   -- final_union, TODO: where is this needed at all? can wait
+   -- morphism_union, TODO: can wait
+   -- generated_sign, 
+   -- cogenerated_sign, 
+   -- induced_from_morphism, TODO: link in WriteFile
+   -- induced_from_to_morphism, TODO: link in WriteFile
+   -- sen_analysis
 
 -- for class Category
 
@@ -80,6 +87,58 @@ instance
 -}
 
 -- for class Syntax
+
+parseSymbItems :: Logic lid sublogics basic_spec sen
+                  symb_items symb_map_items sig
+                  mor sym raw_sym proof_tree
+      => lid -> Maybe (AParser st (GTypes.H_SYMB_ITEMS sym symb_items))
+parseSymbItems baseLid = Just $ do 
+      let bParser = case parse_symb_items baseLid of
+                     Just f -> f
+                     Nothing -> error $ "parser for symbol items not available for base logic " ++ show baseLid
+      x <- bParser
+      return $ GTypes.BaseSymbItems x
+     <|> do
+      _ <- nomP
+      _ <- asKey "::" -- TODO: make this optional
+      _logQ <- simpleId
+      aNom <- simpleId
+      return $ GTypes.HSymbItems GTypes.NomKind 
+                [GTypes.HSymb (simpleIdToId aNom) GTypes.Nom] nullRange
+    <|> do
+     _ <- modP
+     _ <- asKey "::" -- TODO: make this optional
+     _logQ <- simpleId
+     aMod <- simpleId
+     return $ GTypes.HSymbItems GTypes.ModKind 
+                [GTypes.HSymb (simpleIdToId aMod) $ GTypes.Mod 2] nullRange -- TODO: only binaries for now
+
+parseSymbMapItems :: Logic lid sublogics basic_spec sen
+                  symb_items symb_map_items sig
+                  mor sym raw_sym proof_tree
+      => lid -> Maybe (AParser st (GTypes.H_SYMB_MAP_ITEMS symb_map_items))
+parseSymbMapItems baseLid = Just $ do 
+  let bParser = case parse_symb_map_items baseLid of
+                     Just f -> f
+                     Nothing -> error $ "parser for symbol items not available for base logic " ++ show baseLid
+  x <- bParser
+  return $ GTypes.BaseSymbMapItems x
+ <|> do
+      _ <- nomP <|> modP
+      _ <- asKey "::" -- TODO: make this optional
+      _logQ <- simpleId
+      anId <- simpleId
+      do f <- pToken $ toKey mapsTo
+         anId' <- simpleId
+         return (GTypes.HSymbMapItems [GTypes.HMapItem (simpleIdToId anId)  (simpleIdToId anId') $ tokPos f] nullRange) 
+        <|> return (GTypes.HSymbMapItems [GTypes.HSymbItem $ simpleIdToId anId] nullRange)
+
+hSymbItemsName :: Logic lid sublogics basic_spec sen
+                  symb_items symb_map_items sig
+                  mor sym raw_sym proof_tree
+      => lid -> GTypes.H_SYMB_ITEMS sym symb_items -> [String]
+hSymbItemsName lid (GTypes.BaseSymbItems sitems) = symb_items_name lid sitems
+hSymbItemsName lid (GTypes.HSymbItems _ hs _) = map (show . (hSymName lid)) hs
 
 parseHBasicSpecEng :: Logic lid sublogics basic_spec sen
                   symb_items symb_map_items sig
@@ -771,6 +830,17 @@ emptyHSign baseLid =
  let emptyBSign = empty_signature baseLid
  in GTypes.HSign emptyBSign Set.empty Map.empty
 
+sigIntersection :: Logic lid sublogics basic_spec sen
+                  symb_items symb_map_items sig
+                  mor sym raw_sym proof_tree
+          => 
+              lid -> GTypes.HSign sig -> GTypes.HSign sig -> Result (GTypes.HSign sig)
+sigIntersection baseLid hsig1 hsig2 = do
+ bsig <- intersection baseLid (GTypes.baseSig hsig1) $ GTypes.baseSig hsig2
+ let uNoms = Set.intersection (GTypes.noms hsig1) $ GTypes.noms hsig2
+     uMods = Map.intersection (GTypes.mods hsig1) $ GTypes.mods hsig2 -- TODO: fail if a modality appears in both sigs with different arities?
+ return $ GTypes.HSign bsig uNoms uMods 
+
 sigUnion :: Logic lid sublogics basic_spec sen
                   symb_items symb_map_items sig
                   mor sym raw_sym proof_tree
@@ -791,7 +861,175 @@ isSubsig baseLid sig1 sig2 =
   (is_subsig baseLid (GTypes.baseSig sig1) $ GTypes.baseSig sig1) &&
   (Set.isSubsetOf (GTypes.noms sig1) $ GTypes.noms sig2) &&
   (Map.isSubmapOf (GTypes.mods sig1) $ GTypes.mods sig2)
+
+hGeneratedSign :: Logic lid sublogics basic_spec sen
+                  symb_items symb_map_items sig
+                  mor sym raw_sym proof_tree
+          => 
+              lid -> Set.Set (GTypes.HSymbol sym) -> GTypes.HSign sig -> Result (GTypes.HMorphism sig mor)
+hGeneratedSign baseLid kSyms hSig = do
+ let hSyms = Set.unions $ hSymOf baseLid hSig
+ if not $ Set.isSubsetOf kSyms hSyms then do
+    let diff = kSyms Set.\\ hSyms
+    error $ "Revealing: The following symbols "
+                     ++ show diff ++ " are not in the signature"
+  else do
+   let (bSyms, nSyms, mSyms) = 
+         foldl (\(bs, ns, ms) s -> 
+                  case s of
+                   GTypes.BaseSymb x -> (Set.insert x bs, ns, ms)
+                   GTypes.HSymb i GTypes.Nom -> (bs, Set.insert i ns, ms)
+                   GTypes.HSymb i (GTypes.Mod a) -> (bs, ns, Set.insert (i, a) ms)
+               ) (Set.empty, Set.empty, Set.empty) kSyms
+   bIncl <- generated_sign baseLid bSyms $ GTypes.baseSig hSig
+   let bSig = dom bIncl
+       bhSig = GTypes.HSign bSig nSyms $ Map.fromList $ Set.toList mSyms
+       iMor = GTypes.HMorphism bhSig hSig bIncl Map.empty Map.empty
+   return iMor
+
+hCoGeneratedSign :: Logic lid sublogics basic_spec sen
+                  symb_items symb_map_items sig
+                  mor sym raw_sym proof_tree
+          => 
+              lid -> Set.Set (GTypes.HSymbol sym) -> GTypes.HSign sig -> Result (GTypes.HMorphism sig mor)
+hCoGeneratedSign baseLid kSyms hSig = do
+ let hSyms = Set.unions $ hSymOf baseLid hSig
+ if not $ Set.isSubsetOf kSyms hSyms then do
+    let diff = kSyms Set.\\ hSyms
+    error $ "Hiding: The following symbols "
+                     ++ show diff ++ " are not in the signature"
+  else do
+   let (bSyms, nSyms, mSyms) = 
+         foldl (\(bs, ns, ms) s -> 
+                  case s of
+                   GTypes.BaseSymb x -> (Set.insert x bs, ns, ms)
+                   GTypes.HSymb i GTypes.Nom -> (bs, Set.insert i ns, ms)
+                   GTypes.HSymb i (GTypes.Mod a) -> (bs, ns, Set.insert (i, a) ms)
+               ) (Set.empty, Set.empty, Set.empty) kSyms
+   bIncl <- generated_sign baseLid bSyms $ GTypes.baseSig hSig
+   let bSig = dom bIncl
+       bhSig = GTypes.HSign bSig ((GTypes.noms hSig) Set.\\ nSyms) $
+               Map.difference (GTypes.mods hSig) $ Map.fromList $ Set.toList mSyms
+       iMor = GTypes.HMorphism bhSig hSig bIncl Map.empty Map.empty
+   return iMor
+
+hStatSymbItems :: Logic lid sublogics basic_spec sen
+                  symb_items symb_map_items sig
+                  mor sym raw_sym proof_tree
+          => 
+              lid -> GTypes.HSign sig -> 
+              [GTypes.H_SYMB_ITEMS sym symb_items] ->
+              Result [GTypes.HRawSymbol sym raw_sym]
+hStatSymbItems baseLid hsig sitems = do
+ rsyms <- foldM (\rsl sitem -> 
+           case sitem of
+             GTypes.BaseSymbItems bsitems -> do
+               brSyms <- stat_symb_items baseLid (GTypes.baseSig hsig) [bsitems] 
+               return $ rsl ++ map GTypes.BaseRawSymbol brSyms
+             GTypes.HSymbItems _hk hsyms _ -> return $ rsl ++ map GTypes.ASymbol hsyms --TODO: would it be better to use AKindedSymb?
+                ) 
+   [] sitems 
+ return $ reverse rsyms
+
 -- for StaticAnalysis
+
+statSymbMapItems :: Logic lid sublogics basic_spec sen
+                    symb_items symb_map_items sig
+                    mor sym raw_sym proof_tree
+          =>  lid -> GTypes.HSign sig -> Maybe (GTypes.HSign sig) 
+             -> [GTypes.H_SYMB_MAP_ITEMS symb_map_items]
+             -> Result (EndoMap (GTypes.HRawSymbol sym raw_sym))
+statSymbMapItems baseLid sig1 msig2 sitems = do
+ let (bm, hm) = foldl (\(b, h) x -> case x of 
+                         GTypes.BaseSymbMapItems si -> (b ++ [si], h)
+                         _ -> (b, h ++ [x])
+                      ) ([],[]) sitems
+ bmap <- stat_symb_map_items baseLid (GTypes.baseSig sig1) 
+            (case msig2 of 
+               Nothing -> Nothing
+               Just sig2 -> Just $ GTypes.baseSig sig2)
+            bm
+ let bmap' = Map.fromList $ 
+             map (\(x,y) -> (GTypes.BaseRawSymbol x, GTypes.BaseRawSymbol y)) $
+             Map.toList bmap
+     getIdKind i sig = if Set.member i $ GTypes.noms sig then GTypes.ASymbol $ GTypes.HSymb i GTypes.Nom 
+                   else if i `elem` (Map.keys $ GTypes.mods sig) then GTypes.ASymbol $ GTypes.HSymb i $ GTypes.Mod 2
+                        else error $ "unknown symbol " ++ show i -- TODO: improve
+     statSymbMapItem sf si = 
+       case si of 
+         GTypes.HSymbMapItems smis _ -> 
+           foldl (\f x -> case x of 
+                            GTypes.HSymbItem i -> let rsym = getIdKind i sig1 in Map.insert rsym rsym f
+                            GTypes.HMapItem i j _ -> let rsym1 = getIdKind i sig1 
+                                                         rsym2 = case msig2 of
+                                                                  Nothing -> case rsym1 of
+                                                                              GTypes.ASymbol (GTypes.HSymb _ k) -> 
+                                                                                GTypes.ASymbol $ GTypes.HSymb j k
+                                                                              _ -> error "should never happen" -- TODO: improve
+                                                                  Just sig2 -> getIdKind j sig2
+                                                     in Map.insert rsym1 rsym2 f) -- TODO: improve, kinds should match
+                 sf smis
+         _ -> error "should not happen" -- TODO: better error message
+     bmap'' = foldl statSymbMapItem Map.empty hm
+ return $ Map.union bmap' bmap''
+
+inducedFromMorphism :: Logic lid sublogics basic_spec sen
+                       symb_items symb_map_items sig
+                       mor sym raw_sym proof_tree
+        => lid -> EndoMap (GTypes.HRawSymbol sym raw_sym) -> GTypes.HSign sig -> Result (GTypes.HMorphism sig mor)
+inducedFromMorphism baseLid sm hsign = do
+ let (bm, nm, mm) = foldl (\(b, n, m) (rs1, rs2) -> case (rs1, rs2) of
+                                               (GTypes.BaseRawSymbol s1, GTypes.BaseRawSymbol s2) -> (b ++ [(s1, s2)], n, m)
+                                               (GTypes.AKindedSymb k1 i, GTypes.AKindedSymb k2 i') -> case (k1, k2) of 
+                                                    (GTypes.HKindAsG GTypes.Nom, GTypes.HKindAsG GTypes.Nom) -> (b, n ++ [(i, i')], m)
+                                                    (GTypes.HKindAsG (GTypes.Mod _), GTypes.HKindAsG (GTypes.Mod _)) -> (b, n, m ++ [(i, i')])
+                                                    _ -> error "kind mismatch" -- TODO:improve message
+                                               (GTypes.ASymbol hsym1, GTypes.ASymbol hsym2) -> case (hsym1, hsym2) of
+                                                     (GTypes.HSymb i k1, GTypes.HSymb i' k2) -> case (k1, k2) of 
+                                                      (GTypes.Nom, GTypes.Nom) -> (b, n ++ [(i, i')], m)
+                                                      (GTypes.Mod _, GTypes.Mod _) -> (b, n, m ++ [(i, i')])
+                                                      _ -> error "kind mismatch" -- TODO:improve message
+                                                     _ -> error "mismatch" -- TODO: better error message 
+                                               _ -> error "mismatch" -- TODO: better error message
+                           ) ([], [], []) $ Map.toList sm
+ bMor <- induced_from_morphism baseLid (Map.fromList bm) $ GTypes.baseSig hsign
+ let tbSig = cod bMor
+     tsign = GTypes.HSign tbSig (Set.map (\x -> Map.findWithDefault x x $ Map.fromList nm) $ GTypes.noms hsign)
+                                (Map.mapKeys (\x -> Map.findWithDefault x x $ Map.fromList mm) $ GTypes.mods hsign)
+     hMor = GTypes.HMorphism hsign tsign bMor (Map.fromList nm) (Map.fromList mm)
+ return hMor
+
+inducedFromToMorphism :: Logic lid sublogics basic_spec sen
+                       symb_items symb_map_items sig
+                       mor sym raw_sym proof_tree
+        => lid -> EndoMap (GTypes.HRawSymbol sym raw_sym) -> ExtSign (GTypes.HSign sig) (GTypes.HSymbol sym)
+                 -> ExtSign (GTypes.HSign sig) (GTypes.HSymbol sym) -> Result (GTypes.HMorphism sig mor)
+inducedFromToMorphism baseLid sm (ExtSign hsign1 hsyms1) (ExtSign hsign2 hsyms2) = do 
+ let (bm, nm, mm) = foldl (\(b, n, m) (rs1, rs2) -> case (rs1, rs2) of
+                                               (GTypes.BaseRawSymbol s1, GTypes.BaseRawSymbol s2) -> (b ++ [(s1, s2)], n, m)
+                                               (GTypes.AKindedSymb k1 i, GTypes.AKindedSymb k2 i') -> case (k1, k2) of 
+                                                    (GTypes.HKindAsG GTypes.Nom, GTypes.HKindAsG GTypes.Nom) -> (b, n ++ [(i, i')], m)
+                                                    (GTypes.HKindAsG (GTypes.Mod _), GTypes.HKindAsG (GTypes.Mod _)) -> (b, n, m ++ [(i, i')])
+                                                    _ -> error "kind mismatch" -- TODO:improve message
+                                               (GTypes.ASymbol hsym1, GTypes.ASymbol hsym2) -> case (hsym1, hsym2) of
+                                                     (GTypes.HSymb i k1, GTypes.HSymb i' k2) -> case (k1, k2) of 
+                                                      (GTypes.Nom, GTypes.Nom) -> (b, n ++ [(i, i')], m)
+                                                      (GTypes.Mod _, GTypes.Mod _) -> (b, n, m ++ [(i, i')])
+                                                      _ -> error "kind mismatch" -- TODO:improve message
+                                                     _ -> error "mismatch" -- TODO: better error message 
+                                               _ -> error "mismatch" -- TODO: better error message
+                           ) ([], [], []) $ Map.toList sm
+     bsyms1 = concatMap (\x -> case x of 
+                                 GTypes.BaseSymb s -> [s]
+                                 _ -> []) $ Set.toList hsyms1
+     bsyms2 = concatMap (\x -> case x of 
+                                 GTypes.BaseSymb s -> [s]
+                                 _ -> []) $ Set.toList hsyms2
+ bMor <- induced_from_to_morphism baseLid (Map.fromList bm) 
+                                          (ExtSign (GTypes.baseSig hsign1) $ Set.fromList bsyms1) 
+                                          (ExtSign (GTypes.baseSig hsign2) $ Set.fromList bsyms2)
+ return $ GTypes.HMorphism hsign1 hsign2 bMor (Map.fromList nm) (Map.fromList mm) -- TODO: should check that these actually fit the signatures
+
 
 data HTheoryAna sig sen symb_items raw_sym sym = HTheoryAna {
                    hSign :: GTypes.HSign sig,
@@ -1279,4 +1517,22 @@ constrToSens lid hsign c = trace ("c:"++ show c) $
      _ -> constr_to_sens lid (GTypes.baseSig hsign) c -- should be GTypes.baseSig hsign
   
  
+senAnalysis :: Logic lid sublogics basic_spec sen
+                  symb_items symb_map_items sig
+                   mor sym raw_sym proof_tree
+               => Bool -> [String] -> lid -> 
+                          Maybe ((GTypes.H_BASIC_SPEC sen symb_items raw_sym, 
+                                  GTypes.HSign sig, 
+                                  GTypes.HFORMULA sen symb_items raw_sym
+                                 ) -> 
+                                 Result (GTypes.HFORMULA sen symb_items raw_sym, 
+                                         GTypes.HFORMULA sen symb_items raw_sym)
+                                )
+senAnalysis hasQNominals kVars baseLid = Just $ 
+  \ (_hBSpec, hsign, hsen) -> do 
+      let
+        hth = HTheoryAna hsign Set.empty [] [] emptyGlobalAnnos [] 
+        f = Annoted hsen nullRange [] []
+        (annofs, _hth') = CState.runState (anaHFORMULA hasQNominals kVars baseLid f) hth
+      return (item $ fst annofs, item $ snd annofs) 
 
