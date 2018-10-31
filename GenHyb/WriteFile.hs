@@ -248,7 +248,7 @@ writeImplicitCom hld lg = let
        hBasicSpecType = l ++ "_BASIC_SPEC"
        hSenType = l ++ "_FORMULA"
        hSiType = l ++ "_SYMB_ITEMS"
-       hSmiType = "()" -- for now!
+       hSmiType = l ++ "_SYMB_MAP_ITEMS"
        hSignType = l ++ "_Sign"
        hMorType = l ++ "_Morphism"
        hSymType = l ++ "_Symbol"
@@ -284,7 +284,7 @@ writeImplicitCom hld lg = let
 
        genMapTheory = mkImpl "map_theory" (cid ++ " (sig, nsens)") $
                        "do\n"++
-                       "         let tsig = GTypes.HSign sig (Set.singleton $ genName \"i\") Map.empty\n" ++
+                       "         let tsig = GTypes.HSign sig (Set.singleton $ genName $ \"i_\" ++ (show " ++ cid ++ ") ) Map.empty\n" ++
                        "             tsens = map ( \\nsen -> nsen{sentence = GTypes.Base_formula (sentence nsen) nullRange} ) nsens\n" ++
                        "         return (tsig, tsens)" 
 
@@ -447,7 +447,7 @@ writeLogic hld lg = let
         -- syntax
 
         genParseBasicSpec = mkImpl "parse_basic_spec" l $
-                             "Just $ GMethods.parseHBasicSpecEng " ++ 
+                             "Just $ GMethods.parseHBasicSpec " ++         -- IMPORTANT: toggle parseHBasicSpec and parseHBasicSpecEng for the two syntaxes
                              (if hasQNominals then "True " else "False ") ++
                              (show $ not $ null kVars) ++ " " ++ logic
 
@@ -485,29 +485,46 @@ writeLogic hld lg = let
      
         genMostSymsOf = mkImpl "mostSymsOf" l $           
                          "GMethods.mostSymsOfDiff " ++ logic 
+        
+        genIsNominalSen = mkImpl "is_nominal_sen" l $ 
+                                "GMethods.isNominalSenH " ++ logic 
 
         
         sentences = mkInst "Sentences" l 
                      [hSenType, hSignType, hMorType, hSymType]  
                      [genMapSen, genSimplifySen, genNegation, genSymOf, genSymName, 
+                      genIsNominalSen,
                       genSymKind, genSymsOfSen, genMostSymsOf]
 
         -- static
+
+        genConvertTheory = mkImpl "convertTheory" l $
+                     "GMethods.convertTheoryH " ++ logic
+
+        anaF = case data_logic baseLid of 
+                 Nothing -> "basicHAnalysis"
+                 _ -> "basicHHAnalysis"
+
         genBasicAnalysis = 
-                  mkImpl "basic_analysis" l $ -- TODO: check that args are right!
-                   "Just $ GMethods.basicHAnalysis " ++ 
-                   (if hasQNominals then "True " else "False ") ++
-                   (show kVars) ++ " " ++ logic ++ 
+                  mkImpl "basic_analysis" l $
+                   "Just $ GMethods." ++ anaF ++ 
+                   (if hasQNominals then " True " else " False ") ++
+                   (show kVars) ++ " " ++ logic
+                   ++ " \"" ++ l ++ "\"" ++
                    (case msubl of 
                       Nothing -> " Nothing"
                       Just sName -> " (" ++ (show $ parseSublogic baseLid sName)  ++ ")"
-                   ) 
-  
+                   )
+   
+        senAnaF = case data_logic baseLid of 
+                   Nothing -> "senAnalysis"
+                   _ -> "senHAnalysis"
+ 
         genSenAnalysis = 
               mkImpl "sen_analysis" l $ 
-                  "GMethods.senAnalysis " ++ 
-                  (if hasQNominals then "True " else "False ") ++
-                   (show kVars) ++ " " ++ logic
+                  "GMethods." ++ senAnaF ++ 
+                  (if hasQNominals then " True " else " False ") ++
+                   (show kVars) ++ " " ++ logic ++ " \"" ++ l ++ "\"" 
  
         genStatSymbMapItems = mkImpl "stat_symb_map_items" l $ 
                            "GMethods.statSymbMapItems " ++ logic  
@@ -568,7 +585,7 @@ writeLogic hld lg = let
                    genGeneratedSig, genCoGeneratedSig,
                    genSymbolToRaw, genRawToSymbol, genIdToRaw,
                    genEmptySig, genAddSymbToSign, genSigUnion, genSigDiff,
-                   genIsSubsig, genSubsigIncl,
+                   genIsSubsig, genSubsigIncl, genConvertTheory,
                    genInducedFromMorphism, genInducedFromToMorphism]
 
 
@@ -584,10 +601,10 @@ writeLogic hld lg = let
         genParsePrimFormula = mkImpl "parse_prim_formula" l $  
                                 "Just $ GMethods.hFormula " ++ 
                                 (if hasQNominals then "True " else "False ") ++
-                                (show $ not $ null kVars) ++ " " ++ logic --TODO: check that this fits with the modified version 
+                                (show $ not $ null kVars) ++ " " ++ logic
 
         typeDefFile = l ++ ".AS_" ++ l
-  
+
         genBasicSpecType = mkImpl "basicSpecTypeName" l $ 
                               "(\"" ++ hBasicSpecType ++ "\", \"" ++ typeDefFile ++ "\")"
 
@@ -598,6 +615,9 @@ writeLogic hld lg = let
                               "(\"" ++ hSenType ++ "\", \"" ++ typeDefFile ++ "\")"
         genSymbItemsType = mkImpl "symbItemsTypeName" l $ 
                               "(\"" ++ hSiType ++ "\", \"" ++ typeDefFile ++ "\")"
+
+        genSymbMapItemsType = mkImpl "symbMapItemsTypeName" l $ 
+                              "(\"" ++ hSmiType ++ "\", \"" ++ typeDefFile ++ "\")"
         
         genSignType = mkImpl "signTypeName" l $ 
                               "(\"" ++ hSignType ++ "\", \"" ++ typeDefFile ++ "\")" 
@@ -617,7 +637,7 @@ writeLogic hld lg = let
                       hSymType, hRSymType, hPtType] 
                      [genSemConstr, genConstrToSens, genParsePrimFormula, genData, 
                       genEmptyProofTree,
-                      genBasicSpecType, genSenType, genSymbItemsType, 
+                      genBasicSpecType, genSenType, genSymbItemsType, genSymbMapItemsType,
                       genSignType, genMorType, genSymType,genRSymType]
 
 

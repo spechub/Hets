@@ -9,7 +9,7 @@ Instance of class Logic for rigid logic.
 
 module GenHyb.GenInsts where
 
-import Logic.Logic
+--import Logic.Logic
 import Common.Id
 import Common.Doc
 import Common.DocUtils
@@ -18,8 +18,8 @@ import qualified Data.Map as Map
 import GenHyb.GenTypes
 
 import ATerm.Lib
-import ATC.Id
-import ATC.AS_Annotation
+import ATC.Id ()
+import ATC.AS_Annotation ()
 
 -- for HSign
 
@@ -29,11 +29,7 @@ instance (Pretty sig) => Pretty (HSign sig) where
 printSign :: (Pretty sig) => HSign sig -> Doc
 printSign hsig = 
  let bsig = baseSig hsig in 
-    pretty bsig {- (bsig {CSign.sortRel = Rel.difference (Rel.transReduce $ CSign.sortRel bsig)
-                             . Rel.transReduce $ Rel.fromSet $ Set.map (\x->(x,x)) $ PARSign.rigidSorts $ CSign.extendedInfo bsig,
-                  CSign.opMap = CSign.diffOpMapSet (CSign.opMap bsig) $ PARSign.rigidOps $ CSign.extendedInfo bsig,
-                  CSign.predMap = CSign.diffMapSet (CSign.predMap bsig) $ PARSign.rigidPreds $ CSign.extendedInfo bsig}) -}
-    -- this ensures that the rigid symbols are not displayed as non-rigid
+    pretty bsig
     $+$
     let nomss = Set.toList $ noms hsig in
     case nomss of 
@@ -75,7 +71,7 @@ instance (Pretty sig, Pretty mor) => Pretty (HMorphism sig mor) where
     pretty = printMorphism
 
 printMorphism :: (Pretty sig, Pretty mor) => HMorphism sig mor -> Doc
-printMorphism hmor = error "printmorphism nyi"
+printMorphism _hmor = error "printmorphism nyi"
 
 instance (ShATermConvertible sig, ShATermConvertible mor) 
    => ShATermConvertible (HMorphism sig mor) where
@@ -112,10 +108,12 @@ instance (Pretty sen, Pretty raw_sym, Show symb_items) => Pretty (HFORMULA sen s
 printFormula :: (Pretty sen, Pretty raw_sym, Show symb_items) => HFORMULA sen symb_items raw_sym -> Doc
 printFormula aFrm = case aFrm of
    Base_formula pfrm _ -> pretty pfrm
-   Nominal _s _ nom _ -> pretty nom -- TODO: add the optional qualification  
-   AtState nom frm _ -> prettyAt <+> pretty nom <+> colon <+> printFormula frm 
-   BoxFormula md frm _ -> lbrack <+> pretty md <+> rbrack <+> printFormula frm
-   DiamondFormula md frm _ -> text "<" <+> pretty md <+> text ">" <+> printFormula frm
+   Nominal s _ nom _ -> if s == "" 
+                          then pretty nom 
+                          else pretty nom <+> text "::" <+> pretty s
+   AtState s nom frm _ -> prettyAt <+> (if s == "" then pretty nom else pretty nom <+> text "::" <+> pretty s) <+> colon <+> printFormula frm 
+   BoxFormula s md frm _ -> lbrack <+> (if s == "" then pretty md else pretty md <+> text "::" <+> pretty s) <+> rbrack <+> printFormula frm
+   DiamondFormula s md frm _ -> text "<" <+> (if s == "" then pretty md else pretty md <+> text "::" <+> pretty s) <+> text ">" <+> printFormula frm
    Negation frm _ -> notDoc <+> printFormula frm
    Conjunction xs _ -> sepByArbitrary andDoc $ 
                         map printFormula xs
@@ -125,8 +123,7 @@ printFormula aFrm = case aFrm of
                           implies <+> printFormula y
    Equivalence x y _ -> printFormula x <+> 
                           equiv <+> printFormula y
-   --QuantRigidVars q vdecls frm _ -> printQuant q <+> CPrint.printVarDecls vdecls <+> bullet <+> printFormula frm
-   QuantVarsParse _ _ _ _ -> error $ "formula not yet analyzed" --  ++ show aFrm
+   QuantVarsParse _ _ _ _ -> error $ "formula not yet analyzed"
    QuantVars q rsyms frm _ -> printQuant q <+> pretty rsyms <+> bullet <+> printFormula frm -- TODO: this is now bad because we get brackets around the rsyms
    QuantNominals q nomVars frm _ -> printQuant q <+> keyword nomS <+> sepByCommas (map pretty nomVars) <+> bullet <+> printFormula frm
 
@@ -143,10 +140,10 @@ instance (GetRange sen, GetRange raw_sym, GetRange symb_items) => GetRange (HFOR
     Equivalence a b c -> joinRanges [rangeSpan a, rangeSpan b,
                                      rangeSpan c]
     Nominal s a b c -> joinRanges [rangeSpan s, rangeSpan a, rangeSpan b, rangeSpan c]
-    AtState a b c -> joinRanges [rangeSpan a, rangeSpan b, rangeSpan c]
-    BoxFormula a b c -> joinRanges [rangeSpan a, rangeSpan b,
+    AtState s a b c -> joinRanges [rangeSpan s, rangeSpan a, rangeSpan b, rangeSpan c]
+    BoxFormula s a b c -> joinRanges [rangeSpan s, rangeSpan a, rangeSpan b,
                                     rangeSpan c]
-    DiamondFormula a b c -> joinRanges [rangeSpan a, rangeSpan b,
+    DiamondFormula s a b c -> joinRanges [rangeSpan s, rangeSpan a, rangeSpan b,
                                         rangeSpan c]
     QuantVarsParse a b c d -> joinRanges [rangeSpan a, rangeSpan b,
                                           rangeSpan c, rangeSpan d]
@@ -155,9 +152,9 @@ instance (GetRange sen, GetRange raw_sym, GetRange symb_items) => GetRange (HFOR
     QuantNominals a b c d -> joinRanges [rangeSpan a, rangeSpan b,
                                          rangeSpan c, rangeSpan d]
 
-printQuant :: HQUANT -> Doc -- TODO: add the optional string
-printQuant (HUniversal _) = forallH 
-printQuant (HExistential _) = existsH
+printQuant :: HQUANT -> Doc
+printQuant (HUniversal s) = if s == "" then forallH else forallH <+> text "::" <+> pretty s 
+printQuant (HExistential s) = if s == "" then existsH else forallH <+> text "::" <+> pretty s 
 
 instance GetRange HQUANT where
   getRange = const nullRange
@@ -209,21 +206,24 @@ instance (ShATermConvertible sen, ShATermConvertible raw_sym, ShATermConvertible
       (att2, b') <- toShATerm' att1 b
       (att3, c') <- toShATerm' att2 c
       return $ addATerm (ShAAppl "Nominal" [s', a', b', c'] []) att3
-    AtState a b c -> do
-      (att1, a') <- toShATerm' att0 a
+    AtState s a b c -> do
+      (att', s') <- toShATerm' att0 s
+      (att1, a') <- toShATerm' att' a
       (att2, b') <- toShATerm' att1 b
       (att3, c') <- toShATerm' att2 c
-      return $ addATerm (ShAAppl "AtState" [a', b', c'] []) att3
-    BoxFormula a b c -> do
-      (att1, a') <- toShATerm' att0 a
+      return $ addATerm (ShAAppl "AtState" [s', a', b', c'] []) att3
+    BoxFormula s a b c -> do
+      (att', s') <- toShATerm' att0 s
+      (att1, a') <- toShATerm' att' a
       (att2, b') <- toShATerm' att1 b
       (att3, c') <- toShATerm' att2 c
-      return $ addATerm (ShAAppl "BoxFormula" [a', b', c'] []) att3
-    DiamondFormula a b c -> do
-      (att1, a') <- toShATerm' att0 a
+      return $ addATerm (ShAAppl "BoxFormula" [s', a', b', c'] []) att3
+    DiamondFormula s a b c -> do
+      (att', s') <- toShATerm' att0 s
+      (att1, a') <- toShATerm' att' a
       (att2, b') <- toShATerm' att1 b
       (att3, c') <- toShATerm' att2 c
-      return $ addATerm (ShAAppl "DiamondFormula" [a', b', c'] []) att3
+      return $ addATerm (ShAAppl "DiamondFormula" [s', a', b', c'] []) att3
     QuantVarsParse a b c d -> do
       (att1, a') <- toShATerm' att0 a
       (att2, b') <- toShATerm' att1 b
@@ -296,30 +296,36 @@ instance (ShATermConvertible sen, ShATermConvertible raw_sym, ShATermConvertible
       case fromShATerm' c att2 of
       { (att3, c') ->
       (att3, Nominal s' a' b' c') }}}}
-    ShAAppl "AtState" [a, b, c] _ ->
-      case fromShATerm' a att0 of
+    ShAAppl "AtState" [s, a, b, c] _ ->
+      case fromShATerm' s att0 of
+      { (att', s') -> 
+      case fromShATerm' a att' of
       { (att1, a') ->
       case fromShATerm' b att1 of
       { (att2, b') ->
       case fromShATerm' c att2 of
       { (att3, c') ->
-      (att3, AtState a' b' c') }}}
-    ShAAppl "BoxFormula" [a, b, c] _ ->
-      case fromShATerm' a att0 of
+      (att3, AtState s' a' b' c') }}}}
+    ShAAppl "BoxFormula" [s, a, b, c] _ ->
+      case fromShATerm' s att0 of
+      { (att', s') -> 
+      case fromShATerm' a att' of
       { (att1, a') ->
       case fromShATerm' b att1 of
       { (att2, b') ->
       case fromShATerm' c att2 of
       { (att3, c') ->
-      (att3, BoxFormula a' b' c') }}}
-    ShAAppl "DiamondFormula" [a, b, c] _ ->
-      case fromShATerm' a att0 of
+      (att3, BoxFormula s' a' b' c') }}}}
+    ShAAppl "DiamondFormula" [s, a, b, c] _ ->
+      case fromShATerm' s att0 of
+      { (att', s') -> 
+      case fromShATerm' a att' of
       { (att1, a') ->
       case fromShATerm' b att1 of
       { (att2, b') ->
       case fromShATerm' c att2 of
       { (att3, c') ->
-      (att3, DiamondFormula a' b' c') }}}
+      (att3, DiamondFormula s' a' b' c') }}}}
     ShAAppl "QuantVarsParse" [a, b, c, d] _ ->
       case fromShATerm' a att0 of
       { (att1, a') ->

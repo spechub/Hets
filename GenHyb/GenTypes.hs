@@ -54,11 +54,11 @@ data HFORMULA sen symb_items raw_sym =
   | Nominal String Bool Id.Token Id.Range -- the String is the optional qualification, leave empty for the topmost logic
                                           -- the bool flag is true for nominal variables! 
    -- nominals as sentences
-  | AtState Id.Token (HFORMULA sen symb_items raw_sym) Id.Range -- TODO: add a string to the token for the qualification!
+  | AtState String Id.Token (HFORMULA sen symb_items raw_sym) Id.Range
    -- at_i formulas
-  | BoxFormula Id.Token (HFORMULA sen symb_items raw_sym) Id.Range -- TODO: add a string to the token for the qualification!
+  | BoxFormula String Id.Token (HFORMULA sen symb_items raw_sym) Id.Range
    -- pos: "< >"
-  | DiamondFormula Id.Token (HFORMULA sen symb_items raw_sym) Id.Range -- TODO: add a string to the token for the qualification!
+  | DiamondFormula String Id.Token (HFORMULA sen symb_items raw_sym) Id.Range
    -- pos: "[ ]"
   | QuantVarsParse HQUANT [symb_items] (HFORMULA sen symb_items raw_sym) Id.Range 
    -- pos: QUANTIFIER, semi colons, dot

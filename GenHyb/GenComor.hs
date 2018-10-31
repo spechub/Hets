@@ -11,7 +11,7 @@ module GenHyb.GenComor where
 
 import Logic.Logic
 import Logic.Comorphism
-import Logic.SemConstr
+--import Logic.SemConstr
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Common.ProofTree
@@ -23,7 +23,7 @@ import qualified Common.Lib.MapSet as MapSet
 
 
 import Control.Monad (foldM)
-import Data.List(partition)
+--import Data.List(partition)
 
 -- CASL
 import qualified CASL.Logic_CASL as CLogic
@@ -191,9 +191,6 @@ mapTheoryConstr cid hlid (hsig, nhsens) = do
  constrsens <- foldM (\l1 sc -> do 
                          l2 <- constr_to_sens hlid hsig sc
                          return $ l1 ++ l2) [] $ sem_constr hlid   
-                  -- concatMap (constr_to_sens hlid hsig) $ sem_constr hlid
-                  -- concatMap (constr_to_sens baseLid (GTypes.baseSig hsig)) semConstr 
-                  -- TODO: these should be from hLid
      -- 15. this is V(\Gamma_Sigma)
  let makeVSen s = makeNamed ("ga_V_"++show s)
                    $ CBasic.mkForall [CBasic.mkVarDecl (genToken "w") st, CBasic.mkVarDecl (genToken "x") s] 
@@ -261,7 +258,8 @@ mapSentenceAux hl mapBTheory mapBSen baseLid hth x st hsen = case hsen of
   in case f' of
       Nothing  -> error $ "can't translate sentence: " ++ show ds
       Just f'' -> addX st x f''
- GTypes.AtState nom hf _ -> let cf = mapSentenceAux hl mapBTheory mapBSen baseLid hth x st hf 
+ GTypes.AtState _s nom hf _ -> 
+                            let cf = mapSentenceAux hl mapBTheory mapBSen baseLid hth x st hf 
                                 t = if isVar nom hth then CBasic.Qual_var nom st nullRange else 
                                       CBasic.mkAppl (CBasic.mkQualOp (simpleIdToId nom) $ CBasic.Op_type CBasic.Total [] st nullRange) []
                             in CInd.substitute x st t cf 
@@ -277,12 +275,12 @@ mapSentenceAux hl mapBTheory mapBSen baseLid hth x st hsen = case hsen of
                                                  CBasic.Equivalence 
                                                  (mapSentenceAux hl mapBTheory mapBSen baseLid hth x st hf2) 
                                                  nullRange
- GTypes.BoxFormula md hf _ -> CBasic.mkForall [CBasic.mkVarDecl (genToken "Y") st] $ 
+ GTypes.BoxFormula _s md hf _ -> CBasic.mkForall [CBasic.mkVarDecl (genToken "Y") st] $ 
                                                CBasic.mkImpl 
                                                  (CBasic.mkPredication (CBasic.mkQualPred (simpleIdToId md) $ CBasic.Pred_type [st,st] nullRange) 
                                                                        [CBasic.Qual_var x st nullRange, CBasic.Qual_var (genToken "Y") st nullRange]) $ 
                                                  mapSentenceAux hl mapBTheory mapBSen baseLid hth (genToken "Y") st hf
- GTypes.DiamondFormula md hf _ -> CBasic.mkExist [CBasic.mkVarDecl (genToken "Y") st] $ 
+ GTypes.DiamondFormula _s md hf _ -> CBasic.mkExist [CBasic.mkVarDecl (genToken "Y") st] $ 
                                                CBasic.Junction CBasic.Con 
                                                  [CBasic.mkPredication (CBasic.mkQualPred (simpleIdToId md) $ CBasic.Pred_type [st,st] nullRange) 
                                                                        [CBasic.Qual_var x st nullRange, CBasic.Qual_var (genToken "Y") st nullRange],
