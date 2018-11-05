@@ -158,6 +158,8 @@ import Logic.SemConstr
 
 import CASL.AS_Basic_CASL 
 
+import qualified GenHyb.GenTypes as GTypes
+
 -- | Stability of logic implementations
 data Stability = Stable | Testing | Unstable | Experimental
      deriving (Eq, Show)
@@ -767,13 +769,33 @@ class (StaticAnalysis lid
          -- prim formula parser, for hybridization
 
          parse_prim_formula :: lid -> Maybe (AParser st sentence)
-         parse_prim_formula _ = Nothing      
+         parse_prim_formula _ = Nothing
+
+         {-
+        case data_logic hlid of
+         Just (Logic baseLid) -> do
+          f <- parseQFormula eng hasQNominalsBase (not $ null kVarsBase) baseLid (q, p) 
+              -- gives a type mismatch, although the required Logic instance has the same baseLid and 
+              -- the types should be determined by the functional dependency
+              -- to fix this, we record in parse_q_formula the method (parseQFormula baseLid) for each logic and we call it for hlid
+              -- UGLY solution!
+         -}  
+
+         parse_q_formula :: lid -> Maybe (Bool -> Bool -> Bool -> (GTypes.HQUANT, Token) -> AParser st sentence)
+         parse_q_formula _ = Nothing
 
          -- semantic constraints, that will determine sentences when translating from a hybrid logic to FOL
    
          sem_constr :: lid -> [SemanticConstraint]
          sem_constr _ = []
 
+         -- for each hybrid logic, store the kinds allowed in quantifications and if it allows 
+         -- quantification on nominals, to be able to set the right parameters for the analysis
+         -- in recursive calls, for double hybridization
+ 
+         hyb_params :: lid -> Maybe (Bool, [String])
+         hyb_params _ = Nothing 
+         
          -- logic dependent translation of constraints to CASL formulas
  
          constr_to_sens :: lid -> sign -> SemanticConstraint -> Result ([Named CASLFORMULA])

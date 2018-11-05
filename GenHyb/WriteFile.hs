@@ -40,7 +40,7 @@ import qualified Framework.Analysis as FAna
 import Framework.WriteLogicUtils
 
 import Data.List
-import Debug.Trace
+-- import Debug.Trace
 -- import Syntax.AS_Structured
 
 import qualified CASL.Logic_CASL as CLogic
@@ -172,7 +172,8 @@ anaHLogicDef hld dg lg = do
              ++ (show $ isExtension hld') ++ " "
              ++ (show $ semConstrs hld') ++ " " 
              ++ (show $ varKinds hld')
-  trace ("hlds:" ++ hlds) $ buildLogicInstance hld' lg
+  -- trace ("hlds:" ++ hlds) $ 
+  buildLogicInstance hld' lg
   FAna.addLogic2LogicList l
   FAna.addHLogic $ "(\"" ++ l ++ "\", " ++ hlds ++ ")"
   let dg' = addHLogicDef2DG hld' dg
@@ -446,8 +447,12 @@ writeLogic hld lg = let
 
         -- syntax
 
+        bspecParser = case data_logic baseLid of
+                          Nothing -> "parseHBasicSpec"
+                          _ -> "parseHHBasicSpec"
+
         genParseBasicSpec = mkImpl "parse_basic_spec" l $
-                             "Just $ GMethods.parseHBasicSpec " ++         -- IMPORTANT: toggle parseHBasicSpec and parseHBasicSpecEng for the two syntaxes
+                             "Just $ GMethods." ++ bspecParser ++ " False " ++         -- IMPORTANT: toggle True and False for the two syntaxes
                              (if hasQNominals then "True " else "False ") ++
                              (show $ not $ null kVars) ++ " " ++ logic
 
@@ -480,6 +485,8 @@ writeLogic hld lg = let
         genSymName = mkImpl "sym_name" l $ "GMethods.hSymName " ++ logic
   
         genSymKind = mkImpl "symKind" l $ "GMethods.symKindH " ++ logic
+
+        genExtSymKind = mkImpl "extSymKind" l $ "GMethods.extSymKindH " ++ logic
   
         genSymsOfSen = mkImpl "symsOfSen" l $ "GMethods.symsOfHSen " ++ logic 
      
@@ -494,12 +501,12 @@ writeLogic hld lg = let
                      [hSenType, hSignType, hMorType, hSymType]  
                      [genMapSen, genSimplifySen, genNegation, genSymOf, genSymName, 
                       genIsNominalSen,
-                      genSymKind, genSymsOfSen, genMostSymsOf]
+                      genSymKind, genExtSymKind, genSymsOfSen, genMostSymsOf]
 
         -- static
 
         genConvertTheory = mkImpl "convertTheory" l $
-                     "GMethods.convertTheoryH " ++ logic
+                     "GMethods.convertHTheory " ++ logic
 
         anaF = case data_logic baseLid of 
                  Nothing -> "basicHAnalysis"
@@ -598,10 +605,19 @@ writeLogic hld lg = let
  
         genData = mkImpl "data_logic" l $ "Just $ Logic " ++ logic
 
+        genHybParams = let
+                         qn = if hasQNominals then "True " else "False "
+                         -- qKinds = 
+                       in mkImpl "hyb_params" l $ 
+                           "Just $ (" ++ qn ++ ", " ++  show kVars ++ ")"
+
         genParsePrimFormula = mkImpl "parse_prim_formula" l $  
-                                "Just $ GMethods.hFormula " ++ 
+                                "Just $ GMethods.hFormula False " ++  -- IMPORTANT: toggle True/False for the two syntaxes!
                                 (if hasQNominals then "True " else "False ") ++
                                 (show $ not $ null kVars) ++ " " ++ logic
+
+        genParseQFormula = mkImpl "parse_q_formula" l $
+                               "Just $ GMethods.parseQFormula " ++ logic 
 
         typeDefFile = l ++ ".AS_" ++ l
 
@@ -636,7 +652,7 @@ writeLogic hld lg = let
                       hSiType, hSmiType, hSignType, hMorType,
                       hSymType, hRSymType, hPtType] 
                      [genSemConstr, genConstrToSens, genParsePrimFormula, genData, 
-                      genEmptyProofTree,
+                      genEmptyProofTree, genHybParams, genParseQFormula,
                       genBasicSpecType, genSenType, genSymbItemsType, genSymbMapItemsType,
                       genSignType, genMorType, genSymType,genRSymType]
 

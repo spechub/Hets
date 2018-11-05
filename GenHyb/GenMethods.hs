@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, FlexibleContexts, ExistentialQuantification, DeriveDataTypeable #-}
+{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, TypeSynonymInstances, FlexibleInstances, FlexibleContexts, ExistentialQuantification, DeriveDataTypeable #-}
 {- |
 Module      :  ./GenHyb/GenMethods
 Description :  Instance of class Logic for rigid CASL
@@ -36,7 +36,7 @@ import Text.ParserCombinators.Parsec
 import Data.Maybe (fromJust)
 import Logic.SemConstr
 
-import Debug.Trace
+-- import Debug.Trace
 
 --TODO:
 -- sort the methods coming from Static 
@@ -95,19 +95,17 @@ parseSymbItems baseLid = Just $ do
       x <- bParser
       return $ GTypes.BaseSymbItems x
      <|> do
-      _ <- nomP
-      _ <- asKey "::" -- TODO: make this optional
-      _logQ <- simpleId
+      _ <- nomP False -- TODO: add a flag for the two notations!!!
+      _s <- optQual
       aNom <- simpleId
       return $ GTypes.HSymbItems GTypes.NomKind 
                 [GTypes.HSymb (simpleIdToId aNom) GTypes.Nom] nullRange
     <|> do
-     _ <- modP
-     _ <- asKey "::" -- TODO: make this optional
-     _logQ <- simpleId
+     _ <- modP False -- TODO: add a flag for the two notations!!!
+     _s <- optQual
      aMod <- simpleId
      return $ GTypes.HSymbItems GTypes.ModKind 
-                [GTypes.HSymb (simpleIdToId aMod) $ GTypes.Mod 2] nullRange -- TODO: only binaries for now
+                [GTypes.HSymb (simpleIdToId aMod) $ GTypes.Mod 2] nullRange -- Note: only binaries for now
 
 parseSymbMapItems :: Logic lid sublogics basic_spec sen
                   symb_items symb_map_items sig
@@ -120,9 +118,8 @@ parseSymbMapItems baseLid = Just $ do
   x <- bParser
   return $ GTypes.BaseSymbMapItems x
  <|> do
-      _ <- nomP <|> modP
-      _ <- asKey "::" -- TODO: make this optional
-      _logQ <- simpleId
+      _ <- nomP False <|> modP False -- TODO: add a flag for the two notations!!!
+      _s <- optQual
       anId <- simpleId
       do f <- pToken $ toKey mapsTo
          anId' <- simpleId
@@ -136,79 +133,45 @@ hSymbItemsName :: Logic lid sublogics basic_spec sen
 hSymbItemsName lid (GTypes.BaseSymbItems sitems) = symb_items_name lid sitems
 hSymbItemsName lid (GTypes.HSymbItems _ hs _) = map (show . (hSymName lid)) hs
 
-parseHBasicSpecEng :: Logic lid sublogics basic_spec sen
-                  symb_items symb_map_items sig
-                  mor sym raw_sym proof_tree
-      =>           Bool -- admits quantification on nominals 
-                -> Bool -- admits quantification on symbols of base logic
-                -> lid -- lid for base logic
-                -> PrefixMap ->  AParser st (GTypes.H_BASIC_SPEC sen symb_items raw_sym)
-parseHBasicSpecEng hasQNominals kVars baseLid _ks =
-  fmap GTypes.Basic_spec (annosParser (parseBasicItemsEng hasQNominals kVars baseLid))  -- TODO: pass baseLid, it's easier to call functions from WriteFile
-  <|> (oBraceT >> cBraceT >> return (GTypes.Basic_spec []))
-
 parseHBasicSpec :: Logic lid sublogics basic_spec sen
                   symb_items symb_map_items sig
                   mor sym raw_sym proof_tree
-      =>           Bool -- admits quantification on nominals 
+      =>           Bool -- True for eng. notation, False for math. notation
+                -> Bool -- admits quantification on nominals 
                 -> Bool -- admits quantification on symbols of base logic
                 -> lid -- lid for base logic
                 -> PrefixMap ->  AParser st (GTypes.H_BASIC_SPEC sen symb_items raw_sym)
-parseHBasicSpec hasQNominals kVars baseLid _ks =
-  fmap GTypes.Basic_spec (annosParser (parseBasicItems hasQNominals kVars baseLid))  -- TODO: pass baseLid, it's easier to call functions from WriteFile
+parseHBasicSpec eng hasQNominals kVars baseLid _ks =
+  fmap GTypes.Basic_spec (annosParser (parseBasicItems eng hasQNominals kVars baseLid))
   <|> (oBraceT >> cBraceT >> return (GTypes.Basic_spec []))
-  {- where 
-    fparser = case parse_prim_formula baseLid of
-                Nothing -> error $ "no prim formula parser for logic " ++ show baseLid
-                Just f -> f
-    symParser = case parse_symb_items baseLid of
-                  Nothing -> error $ "no symbol parser for logic " ++ show baseLid
-                  Just f -> f
-  -} 
 
 parseBasicItems :: Logic lid sublogics basic_spec sen
                   symb_items symb_map_items sig
                   mor sym raw_sym proof_tree
-      => Bool -> Bool -> lid -> AParser st (GTypes.H_BASIC_ITEMS sen symb_items raw_sym) -- TODO: take into account ks
-parseBasicItems hasQNominals kVars baseLid = 
-     parseAxItems hasQNominals kVars baseLid -- if this is not first, the parser for basic items consumes more than it should
+      => Bool -> Bool -> Bool -> lid -> AParser st (GTypes.H_BASIC_ITEMS sen symb_items raw_sym) -- TODO: take into account ks
+parseBasicItems eng hasQNominals kVars baseLid = 
+     parseAxItems eng hasQNominals kVars baseLid -- if this is not first, the parser for basic items consumes more than it should
   <|>
-  do (as, ps) <- keyThenList nomP simpleId
+  do (as, ps) <- keyThenList (nomP eng) simpleId
      return $ GTypes.Nom_decl $ GTypes.Nom_item as ps
   <|>
-  do (as, ps) <- keyThenList modP simpleId
+  do (as, ps) <- keyThenList (modP eng) simpleId
      _c <- colonT
      ni <- getNumber
      let i = read ni :: Int
      return $ GTypes.Mod_decl $ GTypes.Mod_item as i ps
 
-parseBasicItemsEng :: Logic lid sublogics basic_spec sen
-                  symb_items symb_map_items sig
-                  mor sym raw_sym proof_tree
-      => Bool -> Bool -> lid -> AParser st (GTypes.H_BASIC_ITEMS sen symb_items raw_sym) -- TODO: take into account ks
-parseBasicItemsEng hasQNominals kVars baseLid = 
-     parseAxItemsEng hasQNominals kVars baseLid -- if this is not first, the parser for basic items consumes more than it should
-  <|>
-  do (as, ps) <- keyThenList nomPEng simpleId
-     return $ GTypes.Nom_decl $ GTypes.Nom_item as ps
-  <|>
-  do (as, ps) <- keyThenList modPEng simpleId
-     _c <- colonT
-     ni <- getNumber
-     let i = read ni :: Int
-     return $ GTypes.Mod_decl $ GTypes.Mod_item as i ps
+modP :: Bool -> AParser st Token
+modP eng = 
+  if eng 
+    then asKey "event" <|> asKey "events"
+    else asKey modalityS <|> asKey modalitiesS
 
-modP :: AParser st Token
-modP = asKey modalityS <|> asKey modalitiesS
-
-modPEng :: AParser st Token
-modPEng = asKey "event" <|> asKey "events"
-
-nomP :: AParser st Token
-nomP = asKey nominalS <|> asKey nominalsS
-
-nomPEng :: AParser st Token
-nomPEng = asKey "state" <|> asKey "states"
+nomP :: Bool -> AParser st Token
+nomP eng = 
+  if eng 
+   then asKey "state" <|> asKey "states"
+   else asKey nominalS <|> asKey nominalsS
 
 keyThenList :: AParser st Token -> AParser st a ->
            AParser st ([a], Range)
@@ -221,92 +184,46 @@ keyThenList k p = do
 parseAxItems :: Logic lid sublogics basic_spec sen
                   symb_items symb_map_items sig
                   mor sym raw_sym proof_tree
-      => Bool -> Bool -> lid -> AParser st (GTypes.H_BASIC_ITEMS sen symb_items raw_sym)
-parseAxItems hasQNominals kVars baseLid = do
+      => Bool -> Bool -> Bool -> lid -> AParser st (GTypes.H_BASIC_ITEMS sen symb_items raw_sym)
+parseAxItems eng hasQNominals kVars baseLid = do
        d <- dotT
-       (fs, ds) <- (aFormula hasQNominals kVars baseLid) `separatedBy` dotT
+       (fs, ds) <- (aFormula eng hasQNominals kVars baseLid) `separatedBy` dotT
        (_, an) <- optSemi
        let _ = catRange (d : ds)
            ns = init fs ++ [appendAnno (last fs) an]
-       return $ GTypes.Axiom_items ns
-
-parseAxItemsEng :: Logic lid sublogics basic_spec sen
-                  symb_items symb_map_items sig
-                  mor sym raw_sym proof_tree
-      => Bool -> Bool -> lid -> AParser st (GTypes.H_BASIC_ITEMS sen symb_items raw_sym)
-parseAxItemsEng hasQNominals kVars baseLid = do
-       d <- dotT
-       (fs, ds) <- (aFormulaEng hasQNominals kVars baseLid) `separatedBy` dotT
-       (_, an) <- optSemi
-       let _ = catRange (d : ds)
-           ns = init fs ++ [appendAnno (last fs) an]
-       -- trace ("fs:" ++ show fs) $ 
        return $ GTypes.Axiom_items ns
 
 -- | parser for annoted formulae
 aFormula :: Logic lid sublogics basic_spec sen
                   symb_items symb_map_items sig
                   mor sym raw_sym proof_tree
-      => Bool -> Bool -> lid -> AParser st (Annoted (GTypes.HFORMULA sen symb_items raw_sym))
-aFormula hasQNominals kVars baseLid = allAnnoParser (topformula hasQNominals kVars baseLid)
-
-aFormulaEng :: Logic lid sublogics basic_spec sen
-                  symb_items symb_map_items sig
-                  mor sym raw_sym proof_tree
-      => Bool -> Bool -> lid -> AParser st (Annoted (GTypes.HFORMULA sen symb_items raw_sym))
-aFormulaEng hasQNominals kVars baseLid = allAnnoParser (topformulaEng hasQNominals kVars baseLid)
-
+      => Bool -> Bool -> Bool -> lid -> AParser st (Annoted (GTypes.HFORMULA sen symb_items raw_sym))
+aFormula eng hasQNominals kVars baseLid = allAnnoParser (topformula eng hasQNominals kVars baseLid)
 
 -- | toplevel formula parser
 topformula :: Logic lid sublogics basic_spec sen
                   symb_items symb_map_items sig
                   mor sym raw_sym proof_tree
-      => Bool -> Bool -> lid -> AParser st (GTypes.HFORMULA sen symb_items raw_sym)
-topformula hasQNominals kVars baseLid = (andOrFormula hasQNominals kVars baseLid) >>= (optImplForm hasQNominals kVars baseLid)
-
-topformulaEng :: Logic lid sublogics basic_spec sen
-                  symb_items symb_map_items sig
-                  mor sym raw_sym proof_tree
-      => Bool -> Bool -> lid -> AParser st (GTypes.HFORMULA sen symb_items raw_sym)
-topformulaEng hasQNominals kVars baseLid = (andOrFormulaEng hasQNominals kVars baseLid) >>= (optImplFormEng hasQNominals kVars baseLid)
+      => Bool -> Bool -> Bool -> lid -> AParser st (GTypes.HFORMULA sen symb_items raw_sym)
+topformula eng hasQNominals kVars baseLid = (andOrFormula eng hasQNominals kVars baseLid) >>= (optImplForm eng hasQNominals kVars baseLid)
 
 andOrFormula :: Logic lid sublogics basic_spec sen
                   symb_items symb_map_items sig
                   mor sym raw_sym proof_tree
-      => Bool -> Bool -> lid -> AParser st (GTypes.HFORMULA sen symb_items raw_sym)
-andOrFormula hasQNominals kVars baseLid = (hFormula hasQNominals kVars baseLid) >>= (optAndOr hasQNominals kVars baseLid)
-
-andOrFormulaEng :: Logic lid sublogics basic_spec sen
-                  symb_items symb_map_items sig
-                  mor sym raw_sym proof_tree
-      => Bool -> Bool -> lid -> AParser st (GTypes.HFORMULA sen symb_items raw_sym)
-andOrFormulaEng hasQNominals kVars baseLid = (hFormulaEng hasQNominals kVars baseLid) >>= (optAndOrEng hasQNominals kVars baseLid)
+      => Bool -> Bool -> Bool -> lid -> AParser st (GTypes.HFORMULA sen symb_items raw_sym)
+andOrFormula eng hasQNominals kVars baseLid = (hFormula eng hasQNominals kVars baseLid) >>= (optAndOr eng hasQNominals kVars baseLid)
 
 optImplForm :: Logic lid sublogics basic_spec sen
                   symb_items symb_map_items sig
                   mor sym raw_sym proof_tree
-      => Bool -> Bool -> lid -> GTypes.HFORMULA sen symb_items raw_sym -> AParser st (GTypes.HFORMULA sen symb_items raw_sym)
-optImplForm hasQNominals kVars baseLid f = do
+      => Bool -> Bool -> Bool -> lid -> GTypes.HFORMULA sen symb_items raw_sym -> AParser st (GTypes.HFORMULA sen symb_items raw_sym)
+optImplForm eng hasQNominals kVars baseLid f = do
       _c <- CFormula.implKey
-      (fs, _ps) <- (andOrFormula hasQNominals kVars baseLid) `separatedBy` CFormula.implKey --TODO: range?
+      (fs, _ps) <- (andOrFormula eng hasQNominals kVars baseLid) `separatedBy` CFormula.implKey
       return $ makeImpl (f : fs)
     <|> do
       c <- asKey equivS
-      g <- andOrFormula hasQNominals kVars baseLid
-      return $ GTypes.Equivalence f g $ tokPos c
-    <|> return f
-
-optImplFormEng :: Logic lid sublogics basic_spec sen
-                  symb_items symb_map_items sig
-                  mor sym raw_sym proof_tree
-      => Bool -> Bool -> lid -> GTypes.HFORMULA sen symb_items raw_sym -> AParser st (GTypes.HFORMULA sen symb_items raw_sym)
-optImplFormEng hasQNominals kVars baseLid f = do
-      _c <- CFormula.implKey
-      (fs, _ps) <- (andOrFormulaEng hasQNominals kVars baseLid) `separatedBy` CFormula.implKey --TODO: range?
-      return $ makeImpl (f : fs)
-    <|> do
-      c <- asKey equivS
-      g <- andOrFormulaEng hasQNominals kVars baseLid
+      g <- andOrFormula eng hasQNominals kVars baseLid
       return $ GTypes.Equivalence f g $ tokPos c
     <|> return f
 
@@ -321,121 +238,57 @@ makeImpl l =
 optAndOr :: Logic lid sublogics basic_spec sen
                   symb_items symb_map_items sig
                   mor sym raw_sym proof_tree
-      => Bool -> Bool -> lid -> GTypes.HFORMULA sen symb_items raw_sym -> AParser st (GTypes.HFORMULA sen symb_items raw_sym)
-optAndOr hasQNominals kVars baseLid f = do
+      => Bool -> Bool -> Bool -> lid -> GTypes.HFORMULA sen symb_items raw_sym -> AParser st (GTypes.HFORMULA sen symb_items raw_sym)
+optAndOr eng hasQNominals kVars baseLid f = do
       c <- CFormula.andKey
-      (fs, ps) <- (hFormula hasQNominals kVars baseLid) `separatedBy` CFormula.andKey
+      (fs, ps) <- (hFormula eng hasQNominals kVars baseLid) `separatedBy` CFormula.andKey
       return $ GTypes.Conjunction (f : fs) $ catRange $ c : ps
     <|> do
       c <- CFormula.orKey
-      (fs, ps) <- (hFormula hasQNominals kVars baseLid) `separatedBy` CFormula.orKey
-      return $ GTypes.Disjunction (f : fs) $ catRange $ c : ps
-    <|> return f
-
-optAndOrEng :: Logic lid sublogics basic_spec sen
-                  symb_items symb_map_items sig
-                  mor sym raw_sym proof_tree
-      => Bool -> Bool -> lid -> GTypes.HFORMULA sen symb_items raw_sym -> AParser st (GTypes.HFORMULA sen symb_items raw_sym)
-optAndOrEng hasQNominals kVars baseLid f = do
-      c <- CFormula.andKey
-      (fs, ps) <- (hFormulaEng hasQNominals kVars baseLid) `separatedBy` CFormula.andKey
-      return $ GTypes.Conjunction (f : fs) $ catRange $ c : ps
-    <|> do
-      c <- CFormula.orKey
-      (fs, ps) <- (hFormulaEng hasQNominals kVars baseLid) `separatedBy` CFormula.orKey
+      (fs, ps) <- (hFormula eng hasQNominals kVars baseLid) `separatedBy` CFormula.orKey
       return $ GTypes.Disjunction (f : fs) $ catRange $ c : ps
     <|> return f
 
 hFormula :: Logic lid sublogics basic_spec sen
                   symb_items symb_map_items sig
                   mor sym raw_sym proof_tree
-      => Bool -> Bool -> lid -> AParser st (GTypes.HFORMULA sen symb_items raw_sym)
-hFormula hasQNominals kVars baseLid = 
+      => Bool -> Bool -> Bool -> lid -> AParser st (GTypes.HFORMULA sen symb_items raw_sym)
+hFormula eng hasQNominals kVars baseLid =
+ if eng 
+ then
    do 
-      c <- atKey
-      s <- optQual
+      c <- asKey "At state"
       n <- simpleId
+      s <- optQual
       _ <- colonT
-      f <- topformula hasQNominals kVars baseLid
+      f <- topformula eng hasQNominals kVars baseLid -- here should be formula without @?
       return $ GTypes.AtState s n f $ tokPos c
  <|> 
    do
     c <- asKey notS <|> asKey negS <?> "\"not\""
-    f <- hFormula hasQNominals kVars baseLid --topformula
-    return $ GTypes.Negation f $ tokPos c
-   <|>
-     do
-        c1 <- asKey lessS
-        md <- propId [greaterS]
-        c2 <- asKey greaterS
-        s <- optQual
-        f <- topformula hasQNominals kVars baseLid
-        return $ GTypes.DiamondFormula s md f $ toRange c1 [] c2
- <|>
-     do
-        c1 <- oBracketT
-        md <- propId ["]"]
-        c2 <- cBracketT
-        s <- optQual
-        f <- topformula hasQNominals kVars baseLid
-        return $ GTypes.BoxFormula s md f $ toRange c1 [] c2
- <|> 
-     parenFormula hasQNominals kVars baseLid
- <|>
-     do
-       (q, p) <- quant
-       parseQFormula hasQNominals kVars baseLid (q, p)
- <|>
-     do 
-        let fparser = case parse_prim_formula baseLid of
-                Nothing -> error $ "no prim formula parser for logic " ++ show baseLid
-                Just f -> f
-        f <- fparser 
-        return $ GTypes.Base_formula f nullRange    
-        -- this should also catch nominals as terms. 
-        -- We have to make sure during static analysis that this is reverted!
- <|> do -- qualified symbols are nominals
-       nom <- simpleId
-       _ <- asKey "::"
-       qual <- simpleId
-       return $ GTypes.Nominal (show qual) False nom nullRange -- TODO: always False here, no qualifications for variables
-
-hFormulaEng :: Logic lid sublogics basic_spec sen
-                  symb_items symb_map_items sig
-                  mor sym raw_sym proof_tree
-      => Bool -> Bool -> lid -> AParser st (GTypes.HFORMULA sen symb_items raw_sym)
-hFormulaEng hasQNominals kVars baseLid = 
-   do 
-      c <- atKeyEng
-      n <- simpleId
-      _ <- colonT
-      f <- topformulaEng hasQNominals kVars baseLid -- here should be formula without @?
-      return $ GTypes.AtState "" n f $ tokPos c -- TODO: parse the optional string and replace the ""
- <|> 
-   do
-    c <- asKey notS <|> asKey negS <?> "\"not\""
-    f <- hFormulaEng hasQNominals kVars baseLid --topformula
+    f <- hFormula eng hasQNominals kVars baseLid --topformula
     return $ GTypes.Negation f $ tokPos c
    <|>
      do
         c1 <- asKey "Through" --lessS
         md <- propId ["sometimes", "always"]
+        s <- optQual
         _ <- commaT
         sen <- do
                  c2 <- asKey "sometimes" 
-                 f <- topformulaEng hasQNominals kVars baseLid
-                 return $ GTypes.DiamondFormula "" md f $ toRange c1 [] c2 -- TODO: parse the optional string and replace the ""
+                 f <- topformula eng hasQNominals kVars baseLid
+                 return $ GTypes.DiamondFormula s md f $ toRange c1 [] c2
                <|> do
                  c2 <- asKey "always" 
-                 f <- topformulaEng hasQNominals kVars baseLid
-                 return $ GTypes.BoxFormula "" md f $ toRange c1 [] c2 -- TODO: parse the optional string and replace the ""
+                 f <- topformula eng hasQNominals kVars baseLid
+                 return $ GTypes.BoxFormula s md f $ toRange c1 [] c2
         return sen
  <|> 
-     parenFormulaEng hasQNominals kVars baseLid
+     parenFormula eng hasQNominals kVars baseLid
  <|>
      do
        (q, p) <- quant
-       parseQFormulaEng hasQNominals kVars baseLid (q, p)
+       parseQFormula baseLid eng hasQNominals kVars(q, p)
  <|>
      do 
         let fparser = case parse_prim_formula baseLid of
@@ -449,25 +302,66 @@ hFormulaEng hasQNominals kVars baseLid =
        nom <- simpleId
        _ <- asKey "::"
        qual <- simpleId
-       return $ GTypes.Nominal (show qual) False nom nullRange -- TODO: always False here, no qualifications for variables
+       return $ GTypes.Nominal (show qual) False nom nullRange
 
+ else 
+   do 
+      c <- asKey asP
+      n <- simpleId
+      s <- optQual
+      _ <- colonT
+      f <- topformula eng hasQNominals kVars baseLid
+      return $ GTypes.AtState s n f $ tokPos c
+ <|> 
+   do
+    c <- asKey notS <|> asKey negS <?> "\"not\""
+    f <- hFormula eng hasQNominals kVars baseLid
+    return $ GTypes.Negation f $ tokPos c
+   <|>
+     do
+        c1 <- asKey lessS
+        md <- propId [greaterS]
+        s <- optQual
+        c2 <- asKey greaterS
+        f <- topformula eng hasQNominals kVars baseLid
+        return $ GTypes.DiamondFormula s md f $ toRange c1 [] c2
+ <|>
+     do
+        c1 <- oBracketT
+        md <- propId ["]"]
+        s <- optQual
+        c2 <- cBracketT
+        f <- topformula eng hasQNominals kVars baseLid
+        return $ GTypes.BoxFormula s md f $ toRange c1 [] c2
+ <|> 
+     parenFormula eng hasQNominals kVars baseLid
+ <|>
+     do
+       (q, p) <- quant
+       parseQFormula baseLid eng hasQNominals kVars (q, p)
+ <|>
+     do 
+        let fparser = case parse_prim_formula baseLid of
+                Nothing -> error $ "no prim formula parser for logic " ++ show baseLid
+                Just f -> f
+        f <- fparser 
+        return $ GTypes.Base_formula f nullRange    
+        -- this should also catch nominals as terms. 
+        -- We have to make sure during static analysis that this is reverted!
+ <|> do -- qualified symbols are nominals
+       nom <- simpleId
+       _ <- asKey "::"
+       qual <- simpleId
+       return $ GTypes.Nominal (show qual) False nom nullRange 
+                     -- Note: always False here, no qualifications for variables
 
 parenFormula :: Logic lid sublogics basic_spec sen
                   symb_items symb_map_items sig
                   mor sym raw_sym proof_tree
-      => Bool -> Bool -> lid -> AParser st (GTypes.HFORMULA sen symb_items raw_sym)
-parenFormula hasQNominals kVars baseLid = do
+      => Bool -> Bool -> Bool -> lid -> AParser st (GTypes.HFORMULA sen symb_items raw_sym)
+parenFormula eng hasQNominals kVars baseLid = do
        oParenT << addAnnos
-       f <- topformula hasQNominals kVars baseLid << addAnnos
-       cParenT >> return f
-
-parenFormulaEng :: Logic lid sublogics basic_spec sen
-                  symb_items symb_map_items sig
-                  mor sym raw_sym proof_tree
-      => Bool -> Bool -> lid -> AParser st (GTypes.HFORMULA sen symb_items raw_sym)
-parenFormulaEng hasQNominals kVars baseLid = do
-       oParenT << addAnnos
-       f <- topformulaEng hasQNominals kVars baseLid << addAnnos
+       f <- topformula eng hasQNominals kVars baseLid << addAnnos
        cParenT >> return f
 
 quant :: AParser st (GTypes.HQUANT, Token)
@@ -490,12 +384,12 @@ optQual = do
 parseQFormula :: Logic lid sublogics basic_spec sen
                   symb_items symb_map_items sig
                   mor sym raw_sym proof_tree
-      => Bool -> Bool -> lid -> (GTypes.HQUANT, Token) -> AParser st (GTypes.HFORMULA sen symb_items raw_sym)
-parseQFormula hasQNominals kVars baseLid (q, p) = 
+      => lid -> Bool -> Bool -> Bool -> (GTypes.HQUANT, Token) -> AParser st (GTypes.HFORMULA sen symb_items raw_sym)
+parseQFormula baseLid eng hasQNominals kVars (q, p) =
   do -- first try quantification on nominals, or the parser will complain 
-     (vs, _ps) <- keyThenList nomP simpleId
-     _d <- dotT -- TODO: range
-     f <- topformula hasQNominals kVars baseLid
+     (vs, _ps) <- keyThenList (nomP eng) simpleId
+     _d <- dotT
+     f <- topformula eng hasQNominals kVars baseLid
      if hasQNominals then 
       return $ GTypes.QuantNominals q vs f nullRange
      else error $ "the logic does not admit quantification on nominals"
@@ -506,60 +400,14 @@ parseQFormula hasQNominals kVars baseLid (q, p) =
                   Just f -> f
      (sitems, ps) <- symParser `separatedBy` commaT
      d <- dotT
-     f <- topformula hasQNominals kVars baseLid
+     f <- topformula eng hasQNominals kVars baseLid
      if kVars then 
       return $ GTypes.QuantVarsParse q sitems f $ toRange p ps d
      else error $ "the logic does not admit quantification on base symbols"
-
-parseQFormulaEng :: Logic lid sublogics basic_spec sen
-                  symb_items symb_map_items sig
-                  mor sym raw_sym proof_tree
-      => Bool -> Bool -> lid -> (GTypes.HQUANT, Token) -> AParser st (GTypes.HFORMULA sen symb_items raw_sym)
-parseQFormulaEng hasQNominals kVars baseLid (q, p) = 
-  do -- first try quantification on nominals, or the parser will complain 
-     (vs, _ps) <- keyThenList nomPEng simpleId
-     _d <- dotT -- TODO: range
-     f <- topformulaEng hasQNominals kVars baseLid
-     if hasQNominals then 
-      return $ GTypes.QuantNominals q vs f nullRange
-     else error $ "the logic does not admit quantification on nominals"
-    <|> 
-  do 
-     let symParser = case parse_symb_items baseLid of
-                  Nothing -> error $ "no symbol parser for logic " ++ show baseLid
-                  Just f -> f
-     (sitems, ps) <- symParser `separatedBy` commaT
-     d <- dotT
-     f <- topformulaEng hasQNominals kVars baseLid
-     if kVars then 
-      return $ GTypes.QuantVarsParse q sitems f $ toRange p ps d
-     else error $ "the logic does not admit quantification on base symbols"
-
 
 -- | Any word to token
 propId :: [String] -> GenParser Char st Token
 propId k = pToken $ reserved (k ++ hybrid_keywords) scanAnyWords
-
--- | Parser for at 
-atKey :: AParser st Token
-atKey = asKey asP
-
--- | Parser for at, eng
-atKeyEng :: AParser st Token
-atKeyEng = asKey "At state"
-
-
-{-
-will write the following instance:
-
-instance Syntax lid (H_BASIC_SPEC sen) (HSymbol sym) (H_SYMB_ITEMS kind sym) symb_map_items
- where 
-  parse_basic_spec lid  = case (parse_formula baseLid, parse_symb_items baseLid) of 
-                             (Just f, Just g) -> Just $ parseHBasicSpec f g
-                             _ -> Nothing
-  parse_symb_items lid = error "parse symb items nyi" -- Just $ symbItems [rigidS]
-  parse_symb_map_items lid = error "parse symb map items nyi" -- Just $ symbMapItems hybrid_reserved_words
--}
 
 -- for class Sentences
 
@@ -641,7 +489,6 @@ mapSentence baseLid hmor hsen =
       let spanGr = Graph.mkGraph [(0, ssig), (1, ssig'), (2, tsig)] [(0, 1, (0, hincl)), (0, 2, (1, hmor))]
       (csig, cmors) <- signatureColimit baseLid spanGr
       let hmor'  = Map.findWithDefault (error "cmor  missing") 1 cmors
-          -- cincl = Map.findWithDefault (error "cincl missing") 2 cmors
       dsig <- signatureDifference baseLid csig tsig
       let rsyms' = map (symbol_to_raw baseLid) $ mostSymsOf baseLid $ GTypes.baseSig dsig
                                                -- only base symbols, so we don't lose anything here
@@ -762,7 +609,7 @@ symKindH baseLid s =
 extSymKindH :: Logic lid sublogics basic_spec sen
                   symb_items symb_map_items sig
                   mor sym raw_sym proof_tree
-          => lid -> GTypes.HSymbol sym -> String -- TODO: add to logic instance
+          => lid -> GTypes.HSymbol sym -> String
 extSymKindH baseLid s = 
  case s of 
   GTypes.BaseSymb x -> extSymKind baseLid x
@@ -1118,8 +965,7 @@ anaBasicHItems hasQNominals kVars baseLid hLogic bi =
        return bi
   GTypes.Axiom_items annofs -> do
     hth <- CState.get
-    let (hth', annofs') = foldl (\(h, l) f -> let (f', h') = trace ("f:" ++ show (item f)) $ 
-                                                              CState.runState 
+    let (hth', annofs') = foldl (\(h, l) f -> let (f', h') = CState.runState 
                                                               (anaHFORMULA hasQNominals kVars
                                                                baseLid hLogic f) h
                                               in (h', f':l)) (hth, []) annofs 
@@ -1198,7 +1044,7 @@ anaHFORMULA :: Logic lid sublogics basic_spec sen
 anaHFORMULA hasQNominals kVars baseLid hLogic hf = case item hf of
  GTypes.Base_formula bsen r -> do 
    hth <- CState.get
-   let (isNom, mNomName) = is_nominal_sen baseLid (GTypes.noms $ hSign hth) bsen -- isNominalSen baseLid (hSign hth) bsen
+   let (isNom, mNomName) = is_nominal_sen baseLid (GTypes.noms $ hSign hth) bsen
    if not isNom then do
      let senAnaBase = case sen_analysis baseLid of
                        Nothing -> error $ "sentence analysis not implemented for logic " ++ show baseLid
@@ -1375,30 +1221,6 @@ convertRawSyms baseLid rawSymList = -- trace ("rawSymList:" ++ show rawSymList) 
                else -- trace "convertRawSyms2" $ 
                     Just $ map fromJust mSymList 
 
-{-
-isNominalSen :: Logic lid sublogics basic_spec sen
-                  symb_items symb_map_items sig
-                   mor sym raw_sym proof_tree
-                => lid -> GTypes.HSign sig -> sen -> (Bool, Maybe Id)
-isNominalSen lid hsig sen = trace ("sen in isNominalSen:" ++ show sen) $ 
- let
-  -- first add the nominals, or they will not be in the base signature
-  -- and symsOfSen will not return them as symbols!
-  Result ds mbsig = add_noms_to_sign lid (GTypes.baseSig hsig) $ GTypes.noms hsig
- in 
-  case mbsig of 
-   Nothing -> error $ show ds
-   Just bsig -> let
-     sSyms = -- symsOfHSen lid hsig (GTypes.Base_formula sen nullRange)  
-             trace ("bsig:" ++ show bsig) $ symsOfSen lid bsig sen
-    in trace ("sSyms:" ++ show sSyms) $ 
-       case sSyms of
-        [x] -> let i = sym_name lid x
-                     -- hSymName lid x
-             in (i `elem` (GTypes.noms hsig), Just i)
-        _ -> (False, Nothing)
--}
-
 -- translate constraints to CASL sentences
 -- for some this can be done independent of the underlying logic
 -- for others, this requires logic-dependent analysis
@@ -1546,7 +1368,7 @@ constrToSens lid hsign c = -- trace ("c:"++ show c) $
                   ]
           )
        binMods
-     _ -> constr_to_sens lid (GTypes.baseSig hsign) c -- should be GTypes.baseSig hsign
+     _ -> constr_to_sens lid (GTypes.baseSig hsign) c
   
  
 senAnalysis :: Logic lid sublogics basic_spec sen
@@ -1580,27 +1402,6 @@ isNominalSenH _ _ _ = (False, Nothing)
 --------------------------------------------------------------------
 -- double hybridization
 --------------------------------------------------------------------
-
-{-
-isNominalSenHH :: (Logic hlid 
-                       sublogics' 
-                       (GTypes.H_BASIC_SPEC sen symb_items raw_sym) 
-                       (GTypes.HFORMULA sen symb_items raw_sym)
-                       (GTypes.H_SYMB_ITEMS sym symb_items) 
-                       (GTypes.H_SYMB_MAP_ITEMS symb_map_items)
-                       (GTypes.HSign sig) 
-                       (GTypes.HMorphism sig mor) 
-                       (GTypes.HSymbol sym) 
-                       (GTypes.HRawSymbol sym raw_sym) 
-                       proof_tree')
-                  => hlid -> Set.Set Id -> 
-                     (GTypes.HFORMULA (GTypes.HFORMULA sen symb_items raw_sym) 
-                                      (GTypes.H_SYMB_MAP_ITEMS symb_map_items)
-                                      (GTypes.HRawSymbol sym raw_sym)
-                     ) 
-                     -> (Bool, Maybe Id)
-isNominalSenHH hlid noms (GTypes.Base_formula hsen _) = is_nominal_sen hlid noms hsen
-isNominalSenHH _ _ _ = (False, Nothing) -}
 
 senHAnalysis :: (Show sym,
                  Show raw_sym,
@@ -1672,7 +1473,7 @@ basicHHAnalysis :: (Show sym,
                                          (GTypes.HRawSymbol sym raw_sym)
                          )]
                 )
-basicHHAnalysis hasQNominals kVars hlid hhLogic mSubl (bs, inSig, ga) = let
+basicHHAnalysis hasQNominals kVars hlid hhLogic mSubl (bs, inSig, ga) =  let
   hth = HTheoryAna inSig Set.empty [] [] ga []
   (newBs, accTh) = CState.runState (anaBasicHHSpec hasQNominals kVars hlid hhLogic bs) hth
   ds = reverse $ anaDiags accTh
@@ -1682,7 +1483,7 @@ basicHHAnalysis hasQNominals kVars hlid hhLogic mSubl (bs, inSig, ga) = let
                                                                  GTypes.Base_formula f _ -> [f]
                                                                  _ -> []) sents)
  in case mSubl of 
-     Nothing -> -- trace ("sents:" ++ show sents) $ 
+     Nothing -> --trace ("sents:" ++ show sents) $ 
                 Result ds $ Just (newBs, ExtSign outSig $ declSyms accTh, sents)
      Just aSub -> -- trace ("aSub:" ++ show aSub ++ " " ++ "sents:" ++ show sents) $ 
                   do 
@@ -1764,13 +1565,14 @@ anaBasicHHItems hasQNominals kVars hlid hhLogic bi =
       Just hsign' -> do  
        CState.put $ hth { hSign = hsign', anaDiags = ds ++ anaDiags hth } 
        return bi
-  GTypes.Axiom_items annofs -> trace ("=====") $ do
+  GTypes.Axiom_items annofs -> do
     hth <- CState.get
-    let (hth', annofs') = foldl (\(h, l) f -> let (f', h') = trace ("f:" ++ show (item f)) $ 
+    let (hth', annofs') = foldl (\(h, l) f -> let (f', h') = --trace ("f:" ++ show (item f)) $ 
                                                               CState.runState 
                                                                (anaLHFORMULA hasQNominals kVars
                                                                hlid hhLogic f) h
-                                              in trace ("\nf':" ++ show (item $ fst f')++ "\n") $ (h', f':l)) (hth, []) annofs 
+                                              in -- trace ("\nf':" ++ show (item $ fst f')++ "\n") $ 
+                                                 (h', f':l)) (hth, []) annofs 
     let replfs = reverse annofs'
         nfs = map (makeNamedSen.snd) replfs
     CState.put $ hth' {hSens = nfs ++ hSens hth'}
@@ -1785,7 +1587,7 @@ downcastHSen hLogic hhsen =
  case hhsen of 
   GTypes.Base_formula hsen _ -> return hsen
   GTypes.Nominal s b i r-> 
-    if (s == hLogic) then  -- TODO: if s is "", warning that the default logic changes from hLogic to its base
+    if (s == hLogic) then  -- TODO: if s is "", warning that the default logic changes from hLogic to its base?
      error $ "Cannot convert nominal from " ++ hLogic ++ "to a sentence in the base logic"
     else return $ GTypes.Nominal s b i r
   GTypes.AtState s nom frm r ->
@@ -2048,3 +1850,349 @@ anaLHFORMULA hasQNominals kVars hlid hhLogic hhf = case item hhf of
     Just hsen ->
      anaLHFORMULA hasQNominals kVars hlid hhLogic $ emptyAnno $ GTypes.Base_formula (GTypes.QuantNominals q ns hsen r) nullRange
 
+------------------------------------
+-- parser for double hybridization
+------------------------------------
+
+parseHHBasicSpec :: Logic hlid 
+                       sublogics' 
+                       (GTypes.H_BASIC_SPEC sen symb_items raw_sym) 
+                       (GTypes.HFORMULA sen symb_items raw_sym)
+                       (GTypes.H_SYMB_ITEMS sym symb_items) 
+                       (GTypes.H_SYMB_MAP_ITEMS symb_map_items)
+                       (GTypes.HSign sig) 
+                       (GTypes.HMorphism sig mor) 
+                       (GTypes.HSymbol sym) 
+                       (GTypes.HRawSymbol sym raw_sym) 
+                       proof_tree'
+      =>           Bool -- True for eng. notation, False for math. notation
+                -> Bool -- admits quantification on nominals 
+                -> Bool -- admits quantification on symbols of base logic
+                -> hlid -- lid for base logic
+                -> PrefixMap ->  AParser st (GTypes.H_BASIC_SPEC (GTypes.HFORMULA sen symb_items raw_sym) (GTypes.H_SYMB_ITEMS sym symb_items) (GTypes.HRawSymbol sym raw_sym))
+parseHHBasicSpec eng hasQNominals kVars hlid _ks = -- trace ("parseHHBasicSpec:" ++ show hasQNominals ++ " " ++ show kVars)$
+  fmap GTypes.Basic_spec (annosParser (parseHHBasicItems eng hasQNominals kVars hlid))
+  <|> (oBraceT >> cBraceT >> return (GTypes.Basic_spec []))
+
+parseHHBasicItems :: Logic hlid 
+                       sublogics' 
+                       (GTypes.H_BASIC_SPEC sen symb_items raw_sym) 
+                       (GTypes.HFORMULA sen symb_items raw_sym)
+                       (GTypes.H_SYMB_ITEMS sym symb_items) 
+                       (GTypes.H_SYMB_MAP_ITEMS symb_map_items)
+                       (GTypes.HSign sig) 
+                       (GTypes.HMorphism sig mor) 
+                       (GTypes.HSymbol sym) 
+                       (GTypes.HRawSymbol sym raw_sym) 
+                       proof_tree'
+      => Bool -> Bool -> Bool -> hlid -> AParser st (GTypes.H_BASIC_ITEMS (GTypes.HFORMULA sen symb_items raw_sym) (GTypes.H_SYMB_ITEMS sym symb_items) (GTypes.HRawSymbol sym raw_sym)) 
+ -- TODO: take into account ks
+parseHHBasicItems eng hasQNominals kVars hlid =  
+     parseHHAxItems eng hasQNominals kVars hlid -- if this is not first, the parser for basic items consumes more than it should
+  <|>
+  do (as, ps) <- keyThenList (nomP eng) simpleId
+     return $ GTypes.Nom_decl $ GTypes.Nom_item as ps
+  <|>
+  do (as, ps) <- keyThenList (modP eng) simpleId
+     _c <- colonT
+     ni <- getNumber
+     let i = read ni :: Int
+     return $ GTypes.Mod_decl $ GTypes.Mod_item as i ps
+
+parseHHAxItems :: Logic hlid 
+                       sublogics' 
+                       (GTypes.H_BASIC_SPEC sen symb_items raw_sym) 
+                       (GTypes.HFORMULA sen symb_items raw_sym)
+                       (GTypes.H_SYMB_ITEMS sym symb_items) 
+                       (GTypes.H_SYMB_MAP_ITEMS symb_map_items)
+                       (GTypes.HSign sig) 
+                       (GTypes.HMorphism sig mor) 
+                       (GTypes.HSymbol sym) 
+                       (GTypes.HRawSymbol sym raw_sym) 
+                       proof_tree'
+      => Bool -> Bool -> Bool -> hlid -> AParser st (GTypes.H_BASIC_ITEMS (GTypes.HFORMULA sen symb_items raw_sym) (GTypes.H_SYMB_ITEMS sym symb_items) (GTypes.HRawSymbol sym raw_sym))
+parseHHAxItems eng hasQNominals kVars hlid = do
+       d <- dotT
+       (fs, ds) <- (aHHFormula eng hasQNominals kVars hlid) `separatedBy` dotT
+       (_, an) <- optSemi
+       let _ = catRange (d : ds)
+           ns = init fs ++ [appendAnno (last fs) an]
+       return $ GTypes.Axiom_items ns
+
+-- | parser for annoted formulae
+aHHFormula :: Logic hlid 
+                       sublogics' 
+                       (GTypes.H_BASIC_SPEC sen symb_items raw_sym) 
+                       (GTypes.HFORMULA sen symb_items raw_sym)
+                       (GTypes.H_SYMB_ITEMS sym symb_items) 
+                       (GTypes.H_SYMB_MAP_ITEMS symb_map_items)
+                       (GTypes.HSign sig) 
+                       (GTypes.HMorphism sig mor) 
+                       (GTypes.HSymbol sym) 
+                       (GTypes.HRawSymbol sym raw_sym) 
+                       proof_tree'
+      => Bool -> Bool -> Bool -> hlid -> AParser st (Annoted (GTypes.HFORMULA (GTypes.HFORMULA sen symb_items raw_sym) (GTypes.H_SYMB_ITEMS sym symb_items) (GTypes.HRawSymbol sym raw_sym)))
+aHHFormula eng hasQNominals kVars hlid = allAnnoParser (topHHformula eng hasQNominals kVars hlid)
+
+-- | toplevel formula parser
+topHHformula :: Logic hlid 
+                       sublogics' 
+                       (GTypes.H_BASIC_SPEC sen symb_items raw_sym) 
+                       (GTypes.HFORMULA sen symb_items raw_sym)
+                       (GTypes.H_SYMB_ITEMS sym symb_items) 
+                       (GTypes.H_SYMB_MAP_ITEMS symb_map_items)
+                       (GTypes.HSign sig) 
+                       (GTypes.HMorphism sig mor) 
+                       (GTypes.HSymbol sym) 
+                       (GTypes.HRawSymbol sym raw_sym) 
+                       proof_tree'
+      => Bool -> Bool -> Bool -> hlid -> AParser st (GTypes.HFORMULA (GTypes.HFORMULA sen symb_items raw_sym) (GTypes.H_SYMB_ITEMS sym symb_items) (GTypes.HRawSymbol sym raw_sym))
+topHHformula eng hasQNominals kVars hlid = (andOrHHFormula eng hasQNominals kVars hlid) >>= (optImplHHForm eng hasQNominals kVars hlid)
+
+andOrHHFormula :: Logic hlid 
+                       sublogics' 
+                       (GTypes.H_BASIC_SPEC sen symb_items raw_sym) 
+                       (GTypes.HFORMULA sen symb_items raw_sym)
+                       (GTypes.H_SYMB_ITEMS sym symb_items) 
+                       (GTypes.H_SYMB_MAP_ITEMS symb_map_items)
+                       (GTypes.HSign sig) 
+                       (GTypes.HMorphism sig mor) 
+                       (GTypes.HSymbol sym) 
+                       (GTypes.HRawSymbol sym raw_sym) 
+                       proof_tree'
+      => Bool -> Bool -> Bool -> hlid -> AParser st (GTypes.HFORMULA (GTypes.HFORMULA sen symb_items raw_sym) (GTypes.H_SYMB_ITEMS sym symb_items) (GTypes.HRawSymbol sym raw_sym))
+andOrHHFormula eng hasQNominals kVars hlid = (hhFormula eng hasQNominals kVars hlid) >>= (optAndOrHH eng hasQNominals kVars hlid)
+
+optImplHHForm :: Logic hlid 
+                       sublogics' 
+                       (GTypes.H_BASIC_SPEC sen symb_items raw_sym) 
+                       (GTypes.HFORMULA sen symb_items raw_sym)
+                       (GTypes.H_SYMB_ITEMS sym symb_items) 
+                       (GTypes.H_SYMB_MAP_ITEMS symb_map_items)
+                       (GTypes.HSign sig) 
+                       (GTypes.HMorphism sig mor) 
+                       (GTypes.HSymbol sym) 
+                       (GTypes.HRawSymbol sym raw_sym) 
+                       proof_tree'
+      => Bool -> Bool -> Bool -> hlid 
+      -> GTypes.HFORMULA (GTypes.HFORMULA sen symb_items raw_sym) (GTypes.H_SYMB_ITEMS sym symb_items) (GTypes.HRawSymbol sym raw_sym) 
+      -> AParser st (GTypes.HFORMULA (GTypes.HFORMULA sen symb_items raw_sym) (GTypes.H_SYMB_ITEMS sym symb_items) (GTypes.HRawSymbol sym raw_sym))
+optImplHHForm eng hasQNominals kVars hlid f = do
+      _c <- CFormula.implKey
+      (fs, _ps) <- (andOrHHFormula eng hasQNominals kVars hlid) `separatedBy` CFormula.implKey
+      return $ makeImpl (f : fs)
+    <|> do
+      c <- asKey equivS
+      g <- andOrHHFormula eng hasQNominals kVars hlid
+      return $ GTypes.Equivalence f g $ tokPos c
+    <|> return f
+
+optAndOrHH :: Logic hlid 
+                       sublogics' 
+                       (GTypes.H_BASIC_SPEC sen symb_items raw_sym) 
+                       (GTypes.HFORMULA sen symb_items raw_sym)
+                       (GTypes.H_SYMB_ITEMS sym symb_items) 
+                       (GTypes.H_SYMB_MAP_ITEMS symb_map_items)
+                       (GTypes.HSign sig) 
+                       (GTypes.HMorphism sig mor) 
+                       (GTypes.HSymbol sym) 
+                       (GTypes.HRawSymbol sym raw_sym) 
+                       proof_tree'
+      => Bool -> Bool -> Bool -> hlid -> GTypes.HFORMULA (GTypes.HFORMULA sen symb_items raw_sym) (GTypes.H_SYMB_ITEMS sym symb_items) (GTypes.HRawSymbol sym raw_sym) 
+      -> AParser st (GTypes.HFORMULA (GTypes.HFORMULA sen symb_items raw_sym) (GTypes.H_SYMB_ITEMS sym symb_items) (GTypes.HRawSymbol sym raw_sym))
+optAndOrHH eng hasQNominals kVars hlid f = do
+      c <- CFormula.andKey
+      (fs, ps) <- (hhFormula eng hasQNominals kVars hlid) `separatedBy` CFormula.andKey
+      return $ GTypes.Conjunction (f : fs) $ catRange $ c : ps
+    <|> do
+      c <- CFormula.orKey
+      (fs, ps) <- (hhFormula eng hasQNominals kVars hlid) `separatedBy` CFormula.orKey
+      return $ GTypes.Disjunction (f : fs) $ catRange $ c : ps
+    <|> return f
+
+hhFormula :: Logic hlid 
+                       sublogics' 
+                       (GTypes.H_BASIC_SPEC sen symb_items raw_sym) 
+                       (GTypes.HFORMULA sen symb_items raw_sym)
+                       (GTypes.H_SYMB_ITEMS sym symb_items) 
+                       (GTypes.H_SYMB_MAP_ITEMS symb_map_items)
+                       (GTypes.HSign sig) 
+                       (GTypes.HMorphism sig mor) 
+                       (GTypes.HSymbol sym) 
+                       (GTypes.HRawSymbol sym raw_sym) 
+                       proof_tree'
+      => Bool -> Bool -> Bool -> hlid -> AParser st (GTypes.HFORMULA (GTypes.HFORMULA sen symb_items raw_sym) (GTypes.H_SYMB_ITEMS sym symb_items) (GTypes.HRawSymbol sym raw_sym))
+hhFormula eng hasQNominals kVars hlid = -- trace ("hhFormula:" ++ show hasQNominals ++ " " ++ show kVars)$ 
+ if eng 
+ then
+   do 
+      c <- asKey "At state"
+      n <- simpleId
+      s <- optQual
+      _ <- colonT
+      f <- topHHformula eng hasQNominals kVars hlid -- here should be formula without @?
+      return $ GTypes.AtState s n f $ tokPos c
+ <|> 
+   do
+    c <- asKey notS <|> asKey negS <?> "\"not\""
+    f <- hhFormula eng hasQNominals kVars hlid --topformula
+    return $ GTypes.Negation f $ tokPos c
+   <|>
+     do
+        c1 <- asKey "Through" --lessS
+        md <- propId ["sometimes", "always"]
+        s <- optQual
+        _ <- commaT
+        sen <- do
+                 c2 <- asKey "sometimes" 
+                 f <- topHHformula eng hasQNominals kVars hlid
+                 return $ GTypes.DiamondFormula s md f $ toRange c1 [] c2
+               <|> do
+                 c2 <- asKey "always" 
+                 f <- topHHformula eng hasQNominals kVars hlid
+                 return $ GTypes.BoxFormula s md f $ toRange c1 [] c2
+        return sen
+ <|> 
+     parenHHFormula eng hasQNominals kVars hlid
+ <|>
+     do
+       (q, p) <- quant
+       let s = case q of 
+                GTypes.HUniversal x ->  x
+                GTypes.HExistential x -> x
+       if (s /= show hlid) then 
+        parseQHHFormula eng hasQNominals kVars hlid (q, p)
+       else do
+          let (hasQNominalsBase, kVarsBase) = fromJust $ hyb_params hlid
+          case parse_q_formula hlid of
+           Nothing -> error "should never happen" -- TODO: improve error message
+           Just qFormParser -> do
+            f <- qFormParser eng hasQNominalsBase (not $ null kVarsBase) (q, p)
+            return $ GTypes.Base_formula f nullRange
+ <|>
+     do 
+        let fparser = case parse_prim_formula hlid of
+                Nothing -> error $ "no prim formula parser for logic " ++ show hlid
+                Just f -> f
+        f <- fparser 
+        return $ GTypes.Base_formula f nullRange    
+        -- this should also catch nominals as terms. 
+        -- We have to make sure during static analysis that this is reverted!
+ <|> do -- qualified symbols are nominals
+       nom <- simpleId
+       _ <- asKey "::"
+       qual <- simpleId
+       return $ GTypes.Nominal (show qual) False nom nullRange
+
+ else 
+   do 
+      c <- asKey asP
+      n <- simpleId
+      s <- optQual
+      _ <- colonT
+      f <- topHHformula eng hasQNominals kVars hlid
+      return $ GTypes.AtState s n f $ tokPos c
+ <|> 
+   do
+    c <- asKey notS <|> asKey negS <?> "\"not\""
+    f <- hhFormula eng hasQNominals kVars hlid
+    return $ GTypes.Negation f $ tokPos c
+   <|>
+     do
+        c1 <- asKey lessS
+        md <- propId [greaterS]
+        s <- optQual
+        c2 <- asKey greaterS
+        f <- topHHformula eng hasQNominals kVars hlid
+        return $ GTypes.DiamondFormula s md f $ toRange c1 [] c2
+ <|>
+     do
+        c1 <- oBracketT
+        md <- propId ["]"]
+        s <- optQual
+        c2 <- cBracketT
+        f <- topHHformula eng hasQNominals kVars hlid
+        return $ GTypes.BoxFormula s md f $ toRange c1 [] c2
+ <|> 
+     parenHHFormula eng hasQNominals kVars hlid
+ <|>
+     do
+       (q, p) <- quant
+       let s = case q of 
+                GTypes.HUniversal x -> x
+                GTypes.HExistential x -> x
+       if (s /= show hlid) then 
+        parseQHHFormula eng hasQNominals kVars hlid (q, p)
+       else do
+          let (hasQNominalsBase, kVarsBase) = fromJust $ hyb_params hlid
+          case parse_q_formula hlid of
+           Nothing -> error "should never happen" -- TODO: improve error message
+           Just qFormParser -> do
+            f <- qFormParser eng hasQNominalsBase (not $ null kVarsBase) (q, p)
+            return $ GTypes.Base_formula f nullRange
+ <|>
+     do 
+        let fparser = case parse_prim_formula hlid of
+                Nothing -> error $ "no prim formula parser for logic " ++ show hlid
+                Just f -> f
+        f <- fparser 
+        return $ GTypes.Base_formula f nullRange    
+        -- this should also catch nominals as terms. 
+        -- We have to make sure during static analysis that this is reverted!
+ <|> do -- qualified symbols are nominals
+       nom <- simpleId
+       _ <- asKey "::"
+       qual <- simpleId
+       return $ GTypes.Nominal (show qual) False nom nullRange 
+                     -- Note: always False here, no qualifications for variables
+
+parenHHFormula :: Logic hlid 
+                       sublogics' 
+                       (GTypes.H_BASIC_SPEC sen symb_items raw_sym) 
+                       (GTypes.HFORMULA sen symb_items raw_sym)
+                       (GTypes.H_SYMB_ITEMS sym symb_items) 
+                       (GTypes.H_SYMB_MAP_ITEMS symb_map_items)
+                       (GTypes.HSign sig) 
+                       (GTypes.HMorphism sig mor) 
+                       (GTypes.HSymbol sym) 
+                       (GTypes.HRawSymbol sym raw_sym) 
+                       proof_tree'
+      => Bool -> Bool -> Bool -> hlid -> AParser st (GTypes.HFORMULA (GTypes.HFORMULA sen symb_items raw_sym) (GTypes.H_SYMB_ITEMS sym symb_items) (GTypes.HRawSymbol sym raw_sym))
+parenHHFormula eng hasQNominals kVars hlid = do
+       oParenT << addAnnos
+       f <- topHHformula eng hasQNominals kVars hlid << addAnnos
+       cParenT >> return f
+
+parseQHHFormula :: Logic hlid 
+                       sublogics' 
+                       (GTypes.H_BASIC_SPEC sen symb_items raw_sym) 
+                       (GTypes.HFORMULA sen symb_items raw_sym)
+                       (GTypes.H_SYMB_ITEMS sym symb_items) 
+                       (GTypes.H_SYMB_MAP_ITEMS symb_map_items)
+                       (GTypes.HSign sig) 
+                       (GTypes.HMorphism sig mor) 
+                       (GTypes.HSymbol sym) 
+                       (GTypes.HRawSymbol sym raw_sym) 
+                       proof_tree'
+      => Bool -> Bool -> Bool -> hlid -> (GTypes.HQUANT, Token) 
+      -> AParser st (GTypes.HFORMULA (GTypes.HFORMULA sen symb_items raw_sym) (GTypes.H_SYMB_ITEMS sym symb_items) (GTypes.HRawSymbol sym raw_sym))
+parseQHHFormula eng hasQNominals kVars hlid (q, p) = 
+  do -- first try quantification on nominals, or the parser will complain 
+     (vs, _ps) <- keyThenList (nomP eng) simpleId
+     _d <- dotT
+     f <- topHHformula eng hasQNominals kVars hlid
+     if hasQNominals then 
+      return $ GTypes.QuantNominals q vs f nullRange
+     else error $ "the logic does not admit quantification on nominals"
+    <|> 
+  do 
+     let symParser = case parse_symb_items hlid of
+                  Nothing -> error $ "no symbol parser for logic " ++ show hlid
+                  Just f -> f
+     (sitems, ps) <- symParser `separatedBy` commaT
+     d <- dotT
+     f <- topHHformula eng hasQNominals kVars hlid
+     if kVars then 
+      return $ GTypes.QuantVarsParse q sitems f $ toRange p ps d
+     else error $ "the logic does not admit quantification on base symbols"
+    

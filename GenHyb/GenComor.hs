@@ -37,7 +37,7 @@ import qualified CASL.Induction as CInd
 import qualified GenHyb.GenTypes as GTypes
 import qualified GenHyb.GenMethods as GMethods
 
-import Debug.Trace
+-- import Debug.Trace
 
 -- methods only on CASL types, copied from HPAR2CASL
 
