@@ -88,13 +88,7 @@ parseSymbItems :: Logic lid sublogics basic_spec sen
                   symb_items symb_map_items sig
                   mor sym raw_sym proof_tree
       => lid -> Maybe (AParser st (GTypes.H_SYMB_ITEMS sym symb_items))
-parseSymbItems baseLid = Just $ do 
-      let bParser = case parse_symb_items baseLid of
-                     Just f -> f
-                     Nothing -> error $ "parser for symbol items not available for base logic " ++ show baseLid
-      x <- bParser
-      return $ GTypes.BaseSymbItems x
-     <|> do
+parseSymbItems baseLid = Just $ do
       _ <- nomP False -- TODO: add a flag for the two notations!!!
       _s <- optQual
       aNom <- simpleId
@@ -106,18 +100,19 @@ parseSymbItems baseLid = Just $ do
      aMod <- simpleId
      return $ GTypes.HSymbItems GTypes.ModKind 
                 [GTypes.HSymb (simpleIdToId aMod) $ GTypes.Mod 2] nullRange -- Note: only binaries for now
+    <|> do 
+      let bParser = case parse_symb_items baseLid of
+                     Just f -> f
+                     Nothing -> error $ "parser for symbol items not available for base logic " ++ show baseLid
+      x <- bParser
+      return $ GTypes.BaseSymbItems x
+     
 
 parseSymbMapItems :: Logic lid sublogics basic_spec sen
                   symb_items symb_map_items sig
                   mor sym raw_sym proof_tree
       => lid -> Maybe (AParser st (GTypes.H_SYMB_MAP_ITEMS symb_map_items))
-parseSymbMapItems baseLid = Just $ do 
-  let bParser = case parse_symb_map_items baseLid of
-                     Just f -> f
-                     Nothing -> error $ "parser for symbol items not available for base logic " ++ show baseLid
-  x <- bParser
-  return $ GTypes.BaseSymbMapItems x
- <|> do
+parseSymbMapItems baseLid = Just $  do
       _ <- nomP False <|> modP False -- TODO: add a flag for the two notations!!!
       _s <- optQual
       anId <- simpleId
@@ -125,6 +120,13 @@ parseSymbMapItems baseLid = Just $ do
          anId' <- simpleId
          return (GTypes.HSymbMapItems [GTypes.HMapItem (simpleIdToId anId)  (simpleIdToId anId') $ tokPos f] nullRange) 
         <|> return (GTypes.HSymbMapItems [GTypes.HSymbItem $ simpleIdToId anId] nullRange)
+ <|> do 
+  let bParser = case parse_symb_map_items baseLid of
+                     Just f -> f
+                     Nothing -> error $ "parser for symbol items not available for base logic " ++ show baseLid
+  x <- bParser
+  return $ GTypes.BaseSymbMapItems x
+
 
 hSymbItemsName :: Logic lid sublogics basic_spec sen
                   symb_items symb_map_items sig
@@ -1031,6 +1033,13 @@ simplifyHSen baseLid hsig hsen =
   GTypes.QuantNominals q noms frm r -> 
     GTypes.QuantNominals q noms (simplifyHSen baseLid hsig frm) r
 
+getNomVars :: HTheoryAna sig sen symb_items raw_sym sym -> Set.Set Id
+getNomVars hth = Set.fromList $
+                  concatMap (\i -> case i of 
+                                    GTypes.ASymbol (GTypes.HSymb v GTypes.Nom) -> [v]
+                                    _ -> []) 
+                 $ hVars hth
+
 anaHFORMULA :: Logic lid sublogics basic_spec sen
                   symb_items symb_map_items sig
                    mor sym raw_sym proof_tree
@@ -1044,7 +1053,7 @@ anaHFORMULA :: Logic lid sublogics basic_spec sen
 anaHFORMULA hasQNominals kVars baseLid hLogic hf = case item hf of
  GTypes.Base_formula bsen r -> do 
    hth <- CState.get
-   let (isNom, mNomName) = is_nominal_sen baseLid (GTypes.noms $ hSign hth) bsen
+   let (isNom, mNomName) = is_nominal_sen baseLid (Set.union (GTypes.noms $ hSign hth) $ getNomVars hth) bsen
    if not isNom then do
      let senAnaBase = case sen_analysis baseLid of
                        Nothing -> error $ "sentence analysis not implemented for logic " ++ show baseLid
@@ -1228,12 +1237,12 @@ convertRawSyms baseLid rawSymList = -- trace ("rawSymList:" ++ show rawSymList) 
 constrToSens :: Logic lid sublogics basic_spec sen
                   symb_items symb_map_items sig
                    mor sym raw_sym proof_tree
-             => lid -> GTypes.HSign sig -> SemanticConstraint -> Result ([Named CBasic.CASLFORMULA])
-constrToSens lid hsign c = -- trace ("c:"++ show c) $ 
+             => lid -> GTypes.HSign sig -> String -> SemanticConstraint -> Result ([Named CBasic.CASLFORMULA])
+constrToSens lid hsign a c = -- trace ("c:"++ show c) $ 
  let binMods = map fst $
                filter (\(_, y) -> y == 2) $ 
                Map.toList $ GTypes.mods hsign
-     st = genName "ST"
+     st = genName $ "ST_" ++ a
  in case c of 
      ReflexiveMod -> -- forall w : st . m(w,w)
       return $
@@ -1368,7 +1377,7 @@ constrToSens lid hsign c = -- trace ("c:"++ show c) $
                   ]
           )
        binMods
-     _ -> constr_to_sens lid (GTypes.baseSig hsign) c
+     _ -> constr_to_sens lid (GTypes.baseSig hsign) a c
   
  
 senAnalysis :: Logic lid sublogics basic_spec sen
@@ -1653,7 +1662,8 @@ anaLHFORMULA :: (Show sym,
 anaLHFORMULA hasQNominals kVars hlid hhLogic hhf = case item hhf of
  GTypes.Base_formula hsen r -> do
   hth <- CState.get
-  let (isNom, mNomName) = is_nominal_sen hlid (Set.union (GTypes.noms $ hSign hth) (GTypes.noms $ GTypes.baseSig $ hSign hth)) hsen -- TODO: perhaps add the variables too?
+  let allNoms = Set.union (getNomVars hth) $ Set.union (GTypes.noms $ hSign hth) (GTypes.noms $ GTypes.baseSig $ hSign hth)
+  let (isNom, mNomName) = is_nominal_sen hlid allNoms hsen -- TODO: perhaps add the variables too?
   if not isNom then do
      let senAnaBase = case sen_analysis hlid of
                        Nothing -> error $ "sentence analysis not implemented for logic " ++ show hlid

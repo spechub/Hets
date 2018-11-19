@@ -798,8 +798,8 @@ class (StaticAnalysis lid
          
          -- logic dependent translation of constraints to CASL formulas
  
-         constr_to_sens :: lid -> sign -> SemanticConstraint -> Result ([Named CASLFORMULA])
-         constr_to_sens lid _ _ = fail $ "translation of constraints to CASL formulas not implemented for logic " ++ show lid
+         constr_to_sens :: lid -> sign -> String -> SemanticConstraint -> Result ([Named CASLFORMULA])
+         constr_to_sens lid _ _ _ = fail $ "translation of constraints to CASL formulas not implemented for logic " ++ show lid
 
          -- | stability of the implementation
          stability :: lid -> Stability

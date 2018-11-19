@@ -189,7 +189,7 @@ mapTheoryConstr cid hlid (hsig, nhsens) = do
  let ncsens = map (mapNamedSentence (show hlid) mapBTheory mapBSen baseLid hsig) nhsens
  -- 14. add constraints as CASL sentences 
  constrsens <- foldM (\l1 sc -> do 
-                         l2 <- constr_to_sens hlid hsig sc
+                         l2 <- constr_to_sens hlid hsig (show hlid) sc
                          return $ l1 ++ l2) [] $ sem_constr hlid   
      -- 15. this is V(\Gamma_Sigma)
  let makeVSen s = makeNamed ("ga_V_"++show s)

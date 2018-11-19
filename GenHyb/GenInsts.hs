@@ -24,24 +24,28 @@ import ATC.AS_Annotation ()
 -- for HSign
 
 instance (Pretty sig) => Pretty (HSign sig) where
-    pretty = printSign
+    pretty = printSign False -- IMPORTANT: True for engineering syntax 
 
-printSign :: (Pretty sig) => HSign sig -> Doc
-printSign hsig = 
+printSign :: (Pretty sig) => Bool -> HSign sig -> Doc
+printSign eng hsig = 
  let bsig = baseSig hsig in 
     pretty bsig
     $+$
-    let nomss = Set.toList $ noms hsig in
+    let nomss = Set.toList $ noms hsig 
+        nomKey = if eng then "state" else "nominal" 
+        modKey = if eng then "event" else "modality"
+        modsKey = if eng then "events" else "modalities"
+    in
     case nomss of 
      [] -> empty
-     _ -> hsep [text ("nominal" ++ (case nomss of 
+     _ -> hsep [text (nomKey ++ (case nomss of 
                               [_] -> ""
                               _ -> "s")), sepByCommas $ map pretty nomss]
     $+$
     (foldl (\aDoc (i,n) -> aDoc $+$ 
                             hsep [text ( case Map.toList $ mods hsig of 
-                                           [_] -> "modality"
-                                           _ -> "modalities"
+                                           [_] -> modKey
+                                           _ -> modsKey
                                        ),
                                   pretty i, 
                                   text ":", 
@@ -103,29 +107,41 @@ instance (ShATermConvertible sig, ShATermConvertible mor)
 
 instance (Pretty sen, Pretty raw_sym, Show symb_items) => Pretty (HFORMULA sen symb_items raw_sym)
  where
-   pretty = printFormula
+   pretty = printFormula False -- IMPORTANT: True for engineering syntax
 
-printFormula :: (Pretty sen, Pretty raw_sym, Show symb_items) => HFORMULA sen symb_items raw_sym -> Doc
-printFormula aFrm = case aFrm of
+printFormula :: (Pretty sen, Pretty raw_sym, Show symb_items) => Bool -> HFORMULA sen symb_items raw_sym -> Doc
+printFormula eng aFrm = case aFrm of
    Base_formula pfrm _ -> pretty pfrm
    Nominal s _ nom _ -> if s == "" 
                           then pretty nom 
                           else pretty nom <+> text "::" <+> pretty s
-   AtState s nom frm _ -> prettyAt <+> (if s == "" then pretty nom else pretty nom <+> text "::" <+> pretty s) <+> colon <+> printFormula frm 
-   BoxFormula s md frm _ -> lbrack <+> (if s == "" then pretty md else pretty md <+> text "::" <+> pretty s) <+> rbrack <+> printFormula frm
-   DiamondFormula s md frm _ -> text "<" <+> (if s == "" then pretty md else pretty md <+> text "::" <+> pretty s) <+> text ">" <+> printFormula frm
-   Negation frm _ -> notDoc <+> printFormula frm
+   AtState s nom frm _ -> 
+     if eng then
+      keyword "At state"<+> (if s == "" then pretty nom else pretty nom <+> text "::" <+> pretty s) <+> comma <+> printFormula eng aFrm                  
+     else 
+      prettyAt <+> (if s == "" then pretty nom else pretty nom <+> text "::" <+> pretty s) <+> colon <+> printFormula eng frm 
+   BoxFormula s md frm _ -> 
+    if eng then
+      keyword "Through" <+> (if s == "" then pretty md else pretty md <+> text "::" <+> pretty s) <+> comma <+> keyword "always" <+> printFormula eng frm
+    else 
+       lbrack <+> (if s == "" then pretty md else pretty md <+> text "::" <+> pretty s) <+> rbrack <+> printFormula eng frm
+   DiamondFormula s md frm _ -> 
+    if eng then
+       keyword "Through" <+> (if s == "" then pretty md else pretty md <+> text "::" <+> pretty s) <+> comma <+> keyword "sometimes" <+> printFormula eng frm
+     else 
+       text "<" <+> (if s == "" then pretty md else pretty md <+> text "::" <+> pretty s) <+> text ">" <+> printFormula eng frm
+   Negation frm _ -> notDoc <+> printFormula eng frm
    Conjunction xs _ -> sepByArbitrary andDoc $ 
-                        map printFormula xs
+                        map (printFormula eng) xs
    Disjunction xs _ -> sepByArbitrary orDoc $ 
-                         map printFormula xs
-   Implication x y _ -> printFormula x <+> 
-                          implies <+> printFormula y
-   Equivalence x y _ -> printFormula x <+> 
-                          equiv <+> printFormula y
+                         map (printFormula eng) xs
+   Implication x y _ -> printFormula eng x <+> 
+                          implies <+> printFormula eng y
+   Equivalence x y _ -> printFormula eng x <+> 
+                          equiv <+> printFormula eng y
    QuantVarsParse _ _ _ _ -> error $ "formula not yet analyzed"
-   QuantVars q rsyms frm _ -> printQuant q <+> pretty rsyms <+> bullet <+> printFormula frm -- TODO: this is now bad because we get brackets around the rsyms
-   QuantNominals q nomVars frm _ -> printQuant q <+> keyword nomS <+> sepByCommas (map pretty nomVars) <+> bullet <+> printFormula frm
+   QuantVars q rsyms frm _ -> printQuant q <+> pretty rsyms <+> bullet <+> printFormula eng frm -- TODO: this is now bad because we get brackets around the rsyms
+   QuantNominals q nomVars frm _ -> printQuant q <+> keyword nomS <+> sepByCommas (map pretty nomVars) <+> bullet <+> printFormula eng frm
 
 instance (GetRange sen, GetRange raw_sym, GetRange symb_items) => GetRange (HFORMULA sen symb_items raw_sym)
  where

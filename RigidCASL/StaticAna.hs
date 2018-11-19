@@ -156,10 +156,10 @@ rigidCASLsen_analysis (bs, s, f) = let
 
 -- | CASL hybridization: constraints to CASL sentences
 
-rigidConstrToSens :: Sign () RigidExt -> SemanticConstraint -> Result [Named (FORMULA ())]
-rigidConstrToSens sig sc = -- TODO: add a String argument so the error message is different for RigidCASL and CASL
+rigidConstrToSens :: Sign () RigidExt -> String -> SemanticConstraint -> Result [Named (FORMULA ())]
+rigidConstrToSens sig s sc = -- TODO: add a String argument so the error message is different for RigidCASL and CASL
  let 
-   st = genName "ST"
+   st = genName $ "ST_" ++ s
    domain = genName "domain"
    defined = genName "defined"
    (totals, partials) = partition (\(_, ot) -> opKind ot == Total) $ MapSet.toPairList $ rigidOps $ extendedInfo sig
@@ -270,4 +270,4 @@ rigidConstrToSens sig sc = -- TODO: add a String argument so the error message i
                                        )
           ) 
                 partials 
-  _ -> constrToSens (caslSign sig) sc -- error $ "Constraint not supported for CASL logic:" ++ show sc  
+  _ -> constrToSens (caslSign sig) s sc -- error $ "Constraint not supported for CASL logic:" ++ show sc  

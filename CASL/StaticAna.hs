@@ -56,8 +56,6 @@ import Data.List
 
 import Logic.SemConstr
 
-import Debug.Trace
-
 checkPlaces :: [SORT] -> Id -> [Diagnosis]
 checkPlaces args i = let n = placeCount i in
     [mkDiag Error "wrong number of places" i | n > 0 && n /= length args ]
@@ -928,7 +926,7 @@ cASLsen_analysis (bs, s, f) = let
 -- | convert theory
 
 convertCASLTheory :: (Sign f e, [Named (FORMULA f)]) -> BASIC_SPEC b s f
-convertCASLTheory (sig, nsens) = trace ("in convertCASLTheory:" ++ (show $ length nsens)) $ 
+convertCASLTheory (sig, nsens) =
  case (sig, nsens) of
   (_, []) -> Basic_spec [] -- TODO: the sig should be empty
   _ -> error "convert theory nyi for CASL logic"
@@ -945,10 +943,10 @@ isNominalSen noms aSen =
 
 -- | CASL hybridization: constraints to CASL sentences
 
-constrToSens :: Sign () () -> SemanticConstraint -> Result [Named (FORMULA ())]
-constrToSens sig sc = 
+constrToSens :: Sign () () -> String -> SemanticConstraint -> Result [Named (FORMULA ())]
+constrToSens sig cname sc = 
  let 
-   st = genName "ST"
+   st = genName $ "ST_" ++ cname
    domain = genName "domain"
    defined = genName "defined"
    (totals, partials) = partition (\(_, ot) -> opKind ot == Total) $ MapSet.toPairList $ opMap sig

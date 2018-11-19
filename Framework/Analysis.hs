@@ -548,7 +548,8 @@ hLogParser = do
  let parseHQ = do 
       l1 <- asStr "("
       char '"'
-      lg <- simpleId
+      (strs, _) <- scanAnyWords `separatedBy` skip --TODO: this should only work for quants but not for logics!
+      let lg = concat $ intersperse " " strs
       char '"'
       c1 <- asStr ","
       subl <- do 
@@ -561,7 +562,7 @@ hLogParser = do
          char '"'
          return $ j ++ " \"" ++ tokStr sub ++ "\""
       r1 <- asStr ")"
-      return $ l1 ++ "\"" ++ tokStr lg ++ "\"" ++ c1 ++ " " ++ subl ++ r1  
+      return $ l1 ++ "\"" ++ lg ++ "\"" ++ c1 ++ " " ++ subl ++ r1  
       <|> return ""
       
      parseConstr =  do
@@ -575,10 +576,10 @@ hLogParser = do
            <|> asStr "TotalMod"
            <|> do
             s1 <- asStr sameInterpretationS
-            _oP <- oParenT
+            char '"' -- _oP <- oParenT
             (str, _) <- scanAnyWords `separatedBy` skip -- ) `separatedBy` commaT
-            _cP <- cParenT
-            return $ s1 ++ "("  ++ (concat $ intersperse " " str) ++ ")" 
+            char '"' -- _cP <- cParenT
+            return $ s1 ++ "\""  ++ (concat $ intersperse " " str) ++ "\"" 
             -- this needs testing!
            <|> do
             s1 <- asStr sameDomainS

@@ -19,4 +19,12 @@ import qualified CASL.Morphism as CMor
 import RigidCASL.Sign
 
 type RigidMor = CMor.Morphism () RigidExt (CMor.DefMorExt RigidExt)
-  
+
+caslMor :: RigidMor -> CMor.CASLMor
+caslMor m = CMor.Morphism  
+             (caslSign $ CMor.msource m)
+             (caslSign $ CMor.mtarget m)
+             (CMor.sort_map m)
+             (CMor.op_map m)
+             (CMor.pred_map m)
+             ()

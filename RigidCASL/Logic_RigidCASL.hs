@@ -17,6 +17,7 @@ import RigidCASL.ATC_RigidCASL ()
 import RigidCASL.Parse_AS ()
 import RigidCASL.Print_AS
 import RigidCASL.StaticAna
+import RigidCASL.Sublogic
 import CASL.Sign
 import CASL.Formula(primFormula)
 import CASL.StaticAna(convertCASLTheory, isNominalSen)
@@ -26,6 +27,7 @@ import CASL.Parse_AS_Basic
 import CASL.SimplifySen
 import CASL.ToDoc
 import CASL.Logic_CASL ()
+import CASL.MapSentence
 import Common.Keywords (rigidS)
 import qualified Common.Lib.Rel as Rel
 import qualified Data.Set as Set
@@ -47,7 +49,7 @@ instance Syntax RigidCASL R_BASIC_SPEC RigidSymbol SYMB_ITEMS SYMB_MAP_ITEMS whe
 -- This must be taken into account when writing translations.
 
 instance Sentences RigidCASL CASLFORMULA RSign RigidMor RigidSymbol where
-      map_sen RigidCASL = undefined -- return . mapSen map_H_FORMULA h
+      map_sen RigidCASL m = return . mapSen (const id) (caslMor m) -- return . mapSen map_H_FORMULA h
       sym_of RigidCASL = symOfRigid-- symOf -- this loses rigid symbols for now
       symmap_of RigidCASL = undefined --morphismToSymbMap
       sym_name RigidCASL = rigidSymName -- symName

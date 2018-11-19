@@ -43,13 +43,11 @@ import qualified Propositional.AS_BASIC_Propositional as AS_BASIC
 import qualified Propositional.Morphism as Morphism
 import qualified Propositional.Symbol as Symbol
 
-import Debug.Trace
-
 import Logic.SemConstr
 import qualified CASL.AS_Basic_CASL as CBasic
 
-constrToSens :: Sign.Sign -> SemanticConstraint -> Result.Result ([AS_Anno.Named CBasic.CASLFORMULA])
-constrToSens _ sc =
+constrToSens :: Sign.Sign -> String -> SemanticConstraint -> Result.Result ([AS_Anno.Named CBasic.CASLFORMULA])
+constrToSens _ _ sc =
  case sc of
   SameInterpretation "prop" -> error $ "Same interpretation of propositions implies identical local models"
   SameInterpretation k -> error $ "invalid kind for logic Propositional:" ++ k
@@ -167,7 +165,7 @@ addFormula formulae nf sign
                            , Result.diagPos = lnum
                            }
                          }]
-    | otherwise = trace ("sign addFormula:" ++ show sign) $ formulae ++
+    | otherwise = formulae ++
                         [DiagForm
                          {
                            formula = makeNamed f i
@@ -185,7 +183,7 @@ addFormula formulae nf sign
       i = nfnum nf
       nakedFormula = AS_Anno.item f
       varsOfFormula = propsOfFormula nakedFormula
-      isLegal = trace ("varsOfFormula:" ++ show varsOfFormula ++ "sign AF: " ++ show sign ++ " isLegal: " ++ show (Sign.isSubSigOf varsOfFormula sign)) $ Sign.isSubSigOf varsOfFormula sign
+      isLegal = Sign.isSubSigOf varsOfFormula sign
       difference = Sign.sigDiff varsOfFormula sign
       lnum = AS_Anno.opt_pos f
 
@@ -350,13 +348,13 @@ signatureColimit graph = do
 
 pROPsen_analysis :: (AS_BASIC.BASIC_SPEC, Sign.Sign, AS_BASIC.FORMULA)
   -> Result.Result (AS_BASIC.FORMULA, AS_BASIC.FORMULA)
-pROPsen_analysis (_, s, f) = trace ("s:" ++ show s ++ " f:" ++ show f) $ 
+pROPsen_analysis (_, s, f) =
         let x = addFormula [] (NumForm annoF 0) s
             h = return . diagnosis . head
             g = AS_Anno.sentence . formula . head
             annoF = AS_Anno.Annoted f Id.nullRange [] []
             gx = g x
-        in trace ("annoF:" ++ show annoF ++ "head:" ++ show (h x)) $ Result.Result (h x) $ Just (gx, gx)
+        in Result.Result (h x) $ Just (gx, gx)
 
 pSymsOfSen :: Sign.Sign -> AS_BASIC.FORMULA -> [Symbol.Symbol]
 pSymsOfSen sig sen = 
