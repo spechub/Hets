@@ -601,7 +601,8 @@ writeLogic hld lg = let
         genSemConstr = mkImpl "sem_constr" l
                         constrs
      
-        genConstrToSens = mkImpl "constr_to_sens" l $ "GMethods.constrToSens " ++ logic 
+        genConstrToSens = mkImpl "constr_to_sens" (l ++ " sig _") $ 
+                          "GMethods.constrToSens " ++ logic ++ " sig " ++ l
  
         genData = mkImpl "data_logic" l $ "Just $ Logic " ++ logic
 
