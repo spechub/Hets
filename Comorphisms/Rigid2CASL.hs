@@ -44,8 +44,6 @@ import qualified CASL.Morphism as CMor
 import CASL.Sublogic 
 import qualified CASL.Induction as CInd
 
-import Debug.Trace
-
 -- base comorphism
 import qualified Comorphisms.CASL2SubCFOL as BaseCom
 -- | The identity of the comorphism
@@ -79,5 +77,5 @@ mapTheory :: (RSign.RSign, [Named CBasic.CASLFORMULA]) ->
              Result (CSign.CASLSign, [Named CBasic.CASLFORMULA])
 mapTheory (sig, nsens) = do
  let csig = RSign.caslSign sig
- (csig', csens') <- trace ("nsens:" ++ show nsens) $  map_theory (BaseCom.CASL2SubCFOL True BaseCom.NoMembershipOrCast) (csig, nsens)
- trace ("csens':" ++ show csens') $ return (csig', csens')
+ (csig', csens') <- map_theory (BaseCom.CASL2SubCFOL True BaseCom.NoMembershipOrCast) (csig, nsens)
+ return (csig', csens')

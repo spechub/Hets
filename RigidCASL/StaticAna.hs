@@ -15,12 +15,16 @@ module RigidCASL.StaticAna where
 import RigidCASL.AS_Rigid
 import RigidCASL.Print_AS ()
 import RigidCASL.Sign
+import RigidCASL.Morphism
 
 import CASL.Sign
+import CASL.Morphism
 import CASL.MixfixParser
 import CASL.StaticAna
 import CASL.AS_Basic_CASL
 import CASL.Overload
+import CASL.ColimSign
+import CASL.Logic_CASL
 
 import Common.AS_Annotation
 import Common.GlobalAnnotations
@@ -29,12 +33,13 @@ import Common.Result
 import Common.ExtSign
 import qualified Common.Lib.MapSet as MapSet
 import Common.Lib.State
+import qualified Common.Lib.Graph as Gr
+import Data.Graph.Inductive.Graph
 
 import qualified Data.Set as Set
 import Logic.SemConstr
 import Data.List
-
-import Debug.Trace
+import qualified Data.Map as Map
 
 basicRigidAnalysis
   :: (R_BASIC_SPEC, RSign, GlobalAnnos)
@@ -154,12 +159,49 @@ rigidCASLsen_analysis (bs, s, f) = let
                                                            allIds }
                          in anaForm (const return) mix' (caslSign s) f
 
+sigColim     :: Gr.Gr RSign (Int, RigidMor)
+             -> Result
+                  (RSign, Map.Map Int RigidMor)
+sigColim gr = do
+ let cgr = emap (\(i,m) -> (i, caslMor m)) $ nmap caslSign gr
+     (csig, cmors) = signColimit cgr extCASLColimit
+     sortExt = foldl (\aSet (i,iSig) -> Set.union 
+                                       aSet $ 
+                                       Set.map (\x -> let iMor = Map.findWithDefault (error "morphism not found") i cmors
+                                                      in Map.findWithDefault x x $ sort_map iMor)
+                  $ rigidSorts $ extendedInfo iSig ) Set.empty $ labNodes gr
+     opsExt = foldl (\aMap (i, iSig) -> let iMor = Map.findWithDefault (error "morphism not found") i cmors
+                                            sMap = sort_map iMor
+                                            oMap = op_map iMor
+                                        in
+                                         foldl (\f (sn,ot) -> MapSet.insert sn ot f) aMap $
+                                         map (mapOpSym sMap oMap) $
+                                         MapSet.toPairList $ rigidOps $ extendedInfo iSig
+                    )  
+               MapSet.empty $ labNodes gr
+     predExt = foldl (\aMap (i, iSig) -> let iMor = Map.findWithDefault (error "morphism not found") i cmors
+                                             sMap = sort_map iMor
+                                             pMap = pred_map iMor
+                                         in foldl (\f (sn,ot) -> MapSet.insert sn ot f) aMap $
+                                             map (mapPredSym sMap pMap) $
+                                             MapSet.toPairList $ rigidPreds $ extendedInfo iSig
+                     )
+                MapSet.empty $ labNodes gr
+     rext = RigidExt sortExt opsExt predExt
+     rsign = toRSign csig rext
+     -- TODO: rigid ops, rigid preds, morphisms
+ return (rsign, Map.fromList $ 
+                map (\(i, rsig) -> let iMor = Map.findWithDefault (error "morphism not found") i cmors 
+                                   in (i, toRigidMor iMor (extendedInfo rsig) rext)
+                    ) $ labNodes gr)
+ 
+
 -- | CASL hybridization: constraints to CASL sentences
 
 rigidConstrToSens :: Sign () RigidExt -> String -> SemanticConstraint -> Result [Named (FORMULA ())]
-rigidConstrToSens sig s sc = -- TODO: add a String argument so the error message is different for RigidCASL and CASL
+rigidConstrToSens sig str sc = -- TODO: add a String argument so the error message is different for RigidCASL and CASL
  let 
-   st = genName $ "ST_" ++ s
+   st = genName $ "ST_" ++ str
    domain = genName "domain"
    defined = genName "defined"
    (totals, partials) = partition (\(_, ot) -> opKind ot == Total) $ MapSet.toPairList $ rigidOps $ extendedInfo sig
@@ -270,4 +312,4 @@ rigidConstrToSens sig s sc = -- TODO: add a String argument so the error message
                                        )
           ) 
                 partials 
-  _ -> constrToSens (caslSign sig) s sc -- error $ "Constraint not supported for CASL logic:" ++ show sc  
+  _ -> constrToSens (caslSign sig) str sc -- error $ "Constraint not supported for CASL logic:" ++ show sc  

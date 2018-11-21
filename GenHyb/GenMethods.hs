@@ -36,7 +36,7 @@ import Text.ParserCombinators.Parsec
 import Data.Maybe (fromJust)
 import Logic.SemConstr
 
--- import Debug.Trace
+import Debug.Trace
 
 --TODO:
 -- sort the methods coming from Static 
@@ -487,15 +487,20 @@ mapSentence baseLid hmor hsen =
           tsig = GTypes.target hmor
       ssig' <- foldM (addSymbToHSign baseLid) ssig $ 
                map GTypes.BaseSymb syms
-      hincl <- subsigInclusion baseLid ssig ssig'
+      hincl <- --trace ("ssig:" ++ show ssig ++ "ssig':" ++ show ssig') $ 
+               subsigInclusion baseLid ssig ssig'
       let spanGr = Graph.mkGraph [(0, ssig), (1, ssig'), (2, tsig)] [(0, 1, (0, hincl)), (0, 2, (1, hmor))]
       (csig, cmors) <- signatureColimit baseLid spanGr
       let hmor'  = Map.findWithDefault (error "cmor  missing") 1 cmors
       dsig <- signatureDifference baseLid csig tsig
-      let rsyms' = map (symbol_to_raw baseLid) $ mostSymsOf baseLid $ GTypes.baseSig dsig
+      let rsyms' = map (symbol_to_raw baseLid) $ 
+                                               -- filter (\x -> not $ Set.member (GTypes.BaseSymb x) $ Set.unions $ hSymOf baseLid ssig) $
+                                               -- this is an ugly hack, cause signature colimits don't preserve inclusions
+                                               mostSymsOf baseLid $ GTypes.baseSig dsig
                                                -- only base symbols, so we don't lose anything here
       tsen' <- mapSentence baseLid hmor' hsen'
-      return $ GTypes.QuantVars hq rsyms' tsen' nullRange
+      let transSen = GTypes.QuantVars hq rsyms' tsen' nullRange
+      return transSen 
 
 mostSymsOfDiff :: Logic lid sublogics basic_spec sen
                   symb_items symb_map_items sig
@@ -550,16 +555,18 @@ signatureColimit baseLid hgr = do
  let ngr = emap (\(i, m) -> (i, GTypes.nomMap m)) $ nmap GTypes.noms hgr
      (nomSet0, nomFuns0) = computeColimitSet ngr
      (nomSet, nomFuns) = addIntToSymbols (nomSet0, nomFuns0)
-     csig = GTypes.HSign cbsig nomSet Map.empty
+     mgr = emap (\(i, m) -> (i, GTypes.modMap m)) $ nmap (\ s -> Set.fromList $ Map.keys $ GTypes.mods s) hgr
+     (modSet0, modFuns0) = computeColimitSet mgr
+     (modSet, modFuns) = addIntToSymbols (modSet0, modFuns0)
+     csig = GTypes.HSign cbsig nomSet $ Map.fromList $ map (\m -> (m, 2)) $ Set.toList modSet
      cmors = Map.fromList $ map (\(n, hsig) -> (n, GTypes.HMorphism
                                                  hsig csig 
                                                  (Map.findWithDefault (error "missing morphism") n cbmors) 
                                                  (Map.findWithDefault Map.empty n nomFuns) 
-                                                 Map.empty
+                                                 (Map.findWithDefault Map.empty n modFuns)
                                            )
                             ) 
              $ labNodes hgr
-    -- TODO: colimit on modalities!
  return (csig, cmors)
 
 hNegation :: GTypes.HFORMULA sen symb_items raw_sym -> Maybe (GTypes.HFORMULA sen symb_items raw_sym)
@@ -1198,8 +1205,9 @@ anaHFORMULA hasQNominals kVars baseLid hLogic hf = case item hf of
         let symsKinds = filter (\x -> not (x `elem` kVars)) $ map (extSymKind baseLid) syms
         case symsKinds of 
          [] -> do  
-           let (f', _) = CState.runState (anaHFORMULA hasQNominals kVars baseLid hLogic $ emptyAnno f) $ 
+           let (f', hth') = CState.runState (anaHFORMULA hasQNominals kVars baseLid hLogic $ emptyAnno f) $ 
                          hth {hVars = hVars hth ++ map GTypes.BaseRawSymbol rsyms }
+           CState.put $ hth {anaDiags = anaDiags hth' ++ anaDiags hth}
            -- trace ("f' : " ++ show f' ) $ 
            return $ (hf{item = GTypes.QuantVars q rsyms (item $ fst f') r}, 
                     hf{item = GTypes.QuantVars q rsyms (item $ snd f') r})
@@ -1211,9 +1219,10 @@ anaHFORMULA hasQNominals kVars baseLid hLogic hf = case item hf of
  GTypes.QuantNominals q ns f r -> 
   if hasQNominals then do
    hth <- CState.get
-   let (f',_) = CState.runState  (anaHFORMULA hasQNominals kVars baseLid hLogic $ emptyAnno f) $ 
+   let (f', hth') = CState.runState  (anaHFORMULA hasQNominals kVars baseLid hLogic $ emptyAnno f) $ 
                  hth {hVars = hVars hth ++  
                               map (\i -> GTypes.ASymbol $ GTypes.HSymb (simpleIdToId i) GTypes.Nom) ns}
+   CState.put $ hth {anaDiags = anaDiags hth' ++ anaDiags hth}
    return $ (hf { item = GTypes.QuantNominals q ns (item $ fst f') r}, 
              hf { item = GTypes.QuantNominals q ns (item $ snd f') r})
   else error "the logic does not allow quantification on nominals"

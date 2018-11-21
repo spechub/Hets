@@ -25,8 +25,6 @@ import qualified Common.Lib.Rel as Rel
 
 import RigidCASL.AS_Rigid
 
-import Debug.Trace
-
 data RigidExt = RigidExt
   { rigidSorts :: Set.Set CBasic.SORT
   , rigidOps :: OpMap

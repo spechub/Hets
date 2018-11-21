@@ -28,3 +28,12 @@ caslMor m = CMor.Morphism
              (CMor.op_map m)
              (CMor.pred_map m)
              ()
+
+toRigidMor :: CMor.CASLMor -> RigidExt -> RigidExt -> RigidMor
+toRigidMor m extS extT = CMor.Morphism  
+             (toRSign (CMor.msource m) extS)
+             (toRSign (CMor.mtarget m) extT)
+             (CMor.sort_map m)
+             (CMor.op_map m)
+             (CMor.pred_map m)
+             (CMor.DefMorExt emptyRigidExt)

@@ -28,6 +28,7 @@ import CASL.SimplifySen
 import CASL.ToDoc
 import CASL.Logic_CASL ()
 import CASL.MapSentence
+import CASL.SymbolMapAnalysis
 import Common.Keywords (rigidS)
 import qualified Common.Lib.Rel as Rel
 import qualified Data.Set as Set
@@ -43,7 +44,7 @@ instance Language RigidCASL where
 instance Syntax RigidCASL R_BASIC_SPEC RigidSymbol SYMB_ITEMS SYMB_MAP_ITEMS where
     parse_basic_spec RigidCASL = Just $ basicSpec [rigidS]
     parse_symb_items RigidCASL = Just $ symbItems [rigidS] -- this could be wrong!
-    parse_symb_map_items RigidCASL = undefined -- Just $ symbMapItems hybrid_reserved_words
+    parse_symb_map_items RigidCASL = Just $ symbMapItems [rigidS]
 
 -- Important convention: we use CASL syntax for quantifiers but variables are rigid! 
 -- This must be taken into account when writing translations.
@@ -70,6 +71,8 @@ instance StaticAnalysis RigidCASL R_BASIC_SPEC CASLFORMULA
                 add_noms_to_sign RigidCASL = addNomsToSign
                 stat_symb_map_items RigidCASL = statSymbMapItems
                 stat_symb_items RigidCASL = statSymbItems
+                signature_colimit RigidCASL = sigColim
+                signatureDiff RigidCASL s1 s2 = return $ diffSig diffRigidExt s1 s2
                 symbol_to_raw RigidCASL = rigidSymToRaw -- symbolToRaw
                 raw_to_symbol RigidCASL = rigidRawToSymbol
                 raw_to_var RigidCASL = rawToVar
@@ -85,10 +88,11 @@ instance StaticAnalysis RigidCASL R_BASIC_SPEC CASLFORMULA
                 subsig_inclusion RigidCASL = sigInclusion emptyMorExt
                 cogenerated_sign RigidCASL = undefined --cogeneratedSign emptyMorExt
                 generated_sign RigidCASL = undefined -- generatedSign emptyMorExt
-                induced_from_morphism RigidCASL = undefined -- inducedFromMorphism emptyMorExt
+                induced_from_morphism RigidCASL = inducedFromMorphism emptyMorExt
                 induced_from_to_morphism RigidCASL = undefined --inducedFromToMorphism
                  -- emptyMorExt isSubRigidExt diffRigidExt
                 theory_to_taxonomy RigidCASL = undefined --convTaxo
+                -- TODO: signature difference is missing!
 
 instance Logic RigidCASL ()
         R_BASIC_SPEC CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
