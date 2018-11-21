@@ -17,7 +17,7 @@ import RigidCASL.ATC_RigidCASL ()
 import RigidCASL.Parse_AS ()
 import RigidCASL.Print_AS
 import RigidCASL.StaticAna
-import RigidCASL.Sublogic
+
 import CASL.Sign
 import CASL.Formula(primFormula)
 import CASL.StaticAna(convertCASLTheory, isNominalSen)
