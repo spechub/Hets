@@ -908,7 +908,7 @@ install-common: docs install-owl-tools
 	$(MAKE) $*-opt
 
 # for now install-{common,hets,hets_server} are supported, only.
-install-%: IDIR := $(DESTDIR)$(SUBDIR_$*)$(PREFIX)
+install-%: IDIR = $(DESTDIR)$(SUBDIR_$*)$(PREFIX)
 install-%: %.bin
 	$(INSTALL) -m 0755 -d \
 		$(IDIR)/bin \
