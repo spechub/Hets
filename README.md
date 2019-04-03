@@ -30,7 +30,7 @@ Hets is based on a graph of logics and logic translations. The overall architect
 
 ### User Documentation
 
-A good starting point is the [Hets user guide](https://github.com/spechub/Hets/raw/master/doc/UserGuide.pdf) and the [Hets user guide for Common Logic users](http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/UserGuideCommonLogic.pdf). Furthermore two vidoes showing a heterogeneous proof are available:
+A good starting point is the [Hets user guide](https://github.com/spechub/Hets/blob/master/doc/UserGuide.pdf) and the [Hets user guide for Common Logic users](http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/UserGuideCommonLogic.pdf). Furthermore two vidoes showing a heterogeneous proof are available:
 
 * [A small video showing a heterogeneous proof](http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/hets.m2v)
 * [A new video (H.264-Codec) showing a heterogeneous proof](http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/Hets.mov)
