@@ -611,6 +611,15 @@ anaSpecAux conser addSyms optNodes lg
                    (replaceAnnoted sp1' asp1)
                    (replaceAnnoted sp2' asp2)
                    pos, nsig3, udg3)
+  HSpec hln bs hs pos -> adjustPos pos $ do
+    hl@(Logic hlid) <- lookupLogic "anaSpec" (show hln) lg
+    case data_logic hlid of
+      Nothing -> error $ "expected a hybrid logic, but got " ++ show hlid
+      Just dl -> do
+       let dSpec = emptyAnno $ (Spec_inst bs [] Nothing nullRange)
+           hAsDataSpec = Data dl hl dSpec hs nullRange
+       anaSpecAux conser addSyms optNodes (setCurLogic (show hln) lg)
+                            libEnv ln dg nsig name opts eo hAsDataSpec rg
   Combination (Network cItems eItems _) pos -> adjustPos pos $ do
     let (cNodes', cEdges') = networkDiagram dg cItems eItems
     (ns, dg') <- insertColimitInGraph libEnv dg cNodes' cEdges' name

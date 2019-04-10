@@ -227,7 +227,7 @@ mapHSentence hl mapBTheory mapBSen baseLid hsig hsen =
   st = genName $ "ST_" ++ hl
   hth = GMethods.HTheoryAna hsig Set.empty [] [] emptyGlobalAnnos []
  in CBasic.mkForall [CBasic.mkVarDecl x st] $ 
-       mapSentenceAux hl mapBTheory mapBSen baseLid hth x st hsen
+       mapSentenceAux hl mapBTheory mapBSen baseLid hth x st 0 hsen
 
 isVar :: Token -> GMethods.HTheoryAna sig sen symb_items raw_sym sym -> Bool
 isVar nom hth = 
@@ -245,9 +245,9 @@ mapSentenceAux :: Logic lid sublogics basic_spec sen
                   (sig -> sen -> Result CBasic.CASLFORMULA) ->
                   lid ->
                   GMethods.HTheoryAna sig sen symb_items raw_sym sym ->
-                  CBasic.VAR -> CBasic.SORT ->
+                  CBasic.VAR -> CBasic.SORT -> Int ->
                   GTypes.HFORMULA sen symb_items raw_sym -> CBasic.CASLFORMULA
-mapSentenceAux hl mapBTheory mapBSen baseLid hth x st hsen = case hsen of
+mapSentenceAux hl mapBTheory mapBSen baseLid hth x st index hsen = case hsen of
  GTypes.Nominal _s b i _ -> CBasic.mkStEq 
                           (CBasic.Qual_var x st nullRange) $ 
                           if b then CBasic.Qual_var i st nullRange
@@ -259,32 +259,34 @@ mapSentenceAux hl mapBTheory mapBSen baseLid hth x st hsen = case hsen of
       Nothing  -> error $ "can't translate sentence: " ++ show ds
       Just f'' -> addX st x f''
  GTypes.AtState _s nom hf _ -> 
-                            let cf = mapSentenceAux hl mapBTheory mapBSen baseLid hth x st hf 
+                            let cf = mapSentenceAux hl mapBTheory mapBSen baseLid hth x st index hf 
                                 t = if isVar nom hth then CBasic.Qual_var nom st nullRange else 
                                       CBasic.mkAppl (CBasic.mkQualOp (simpleIdToId nom) $ CBasic.Op_type CBasic.Total [] st nullRange) []
                             in CInd.substitute x st t cf 
                          -- mapSentenceAux i st sen does not work, because i should not be a var. apply a substitution of x with i instead 
- GTypes.Negation hf _ -> CBasic.Negation (mapSentenceAux hl mapBTheory mapBSen baseLid hth x st hf) nullRange
- GTypes.Conjunction hfs _ -> CBasic.Junction CBasic.Con (map (mapSentenceAux hl mapBTheory mapBSen baseLid hth x st) hfs) nullRange
- GTypes.Disjunction hfs _ -> CBasic.Junction CBasic.Dis (map (mapSentenceAux hl mapBTheory mapBSen baseLid hth x st) hfs) nullRange
- GTypes.Implication hf1 hf2 _ -> CBasic.Relation (mapSentenceAux hl mapBTheory mapBSen baseLid hth x st hf1) 
+ GTypes.Negation hf _ -> CBasic.Negation (mapSentenceAux hl mapBTheory mapBSen baseLid hth x st index hf) nullRange
+ GTypes.Conjunction hfs _ -> CBasic.Junction CBasic.Con (map (mapSentenceAux hl mapBTheory mapBSen baseLid hth x st index) hfs) nullRange
+ GTypes.Disjunction hfs _ -> CBasic.Junction CBasic.Dis (map (mapSentenceAux hl mapBTheory mapBSen baseLid hth x st index) hfs) nullRange
+ GTypes.Implication hf1 hf2 _ -> CBasic.Relation (mapSentenceAux hl mapBTheory mapBSen baseLid hth x st index hf1) 
                                                  CBasic.Implication 
-                                                 (mapSentenceAux hl mapBTheory mapBSen baseLid hth x st hf2) 
+                                                 (mapSentenceAux hl mapBTheory mapBSen baseLid hth x st index hf2) 
                                                  nullRange
- GTypes.Equivalence hf1 hf2 _ -> CBasic.Relation (mapSentenceAux hl mapBTheory mapBSen baseLid hth x st hf1) 
+ GTypes.Equivalence hf1 hf2 _ -> CBasic.Relation (mapSentenceAux hl mapBTheory mapBSen baseLid hth x st index hf1) 
                                                  CBasic.Equivalence 
-                                                 (mapSentenceAux hl mapBTheory mapBSen baseLid hth x st hf2) 
+                                                 (mapSentenceAux hl mapBTheory mapBSen baseLid hth x st index hf2) 
                                                  nullRange
- GTypes.BoxFormula _s md hf _ -> CBasic.mkForall [CBasic.mkVarDecl (genToken "Y") st] $ 
+ GTypes.BoxFormula _s md hf _ -> let yName = genToken $ "Y" ++ show index in
+                                  CBasic.mkForall [CBasic.mkVarDecl yName st] $ 
                                                CBasic.mkImpl 
                                                  (CBasic.mkPredication (CBasic.mkQualPred (simpleIdToId md) $ CBasic.Pred_type [st,st] nullRange) 
-                                                                       [CBasic.Qual_var x st nullRange, CBasic.Qual_var (genToken "Y") st nullRange]) $ 
-                                                 mapSentenceAux hl mapBTheory mapBSen baseLid hth (genToken "Y") st hf
- GTypes.DiamondFormula _s md hf _ -> CBasic.mkExist [CBasic.mkVarDecl (genToken "Y") st] $ 
+                                                                       [CBasic.Qual_var x st nullRange, CBasic.Qual_var yName st nullRange]) $ 
+                                                 mapSentenceAux hl mapBTheory mapBSen baseLid hth yName st (index+1) hf
+ GTypes.DiamondFormula _s md hf _ -> let yName = genToken $ "Y" ++ show index in
+                               CBasic.mkExist [CBasic.mkVarDecl yName st] $ 
                                                CBasic.Junction CBasic.Con 
                                                  [CBasic.mkPredication (CBasic.mkQualPred (simpleIdToId md) $ CBasic.Pred_type [st,st] nullRange) 
-                                                                       [CBasic.Qual_var x st nullRange, CBasic.Qual_var (genToken "Y") st nullRange],
-                                                  mapSentenceAux hl mapBTheory mapBSen baseLid hth (genToken "Y") st hf]
+                                                                       [CBasic.Qual_var x st nullRange, CBasic.Qual_var yName st nullRange],
+                                                  mapSentenceAux hl mapBTheory mapBSen baseLid hth yName st (index+1) hf]
                                                  nullRange
  GTypes.QuantNominals q noms hf _ -> (case q of 
                                           GTypes.HUniversal _ -> CBasic.mkForall
@@ -292,7 +294,7 @@ mapSentenceAux hl mapBTheory mapBSen baseLid hth x st hsen = case hsen of
                                       (map (\n -> CBasic.mkVarDecl n st) noms)
                                       $ mapSentenceAux hl mapBTheory mapBSen baseLid
                                           (hth{GMethods.hVars = foldl (\l n -> (GTypes.ASymbol $ GTypes.HSymb (simpleIdToId n) GTypes.Nom):l) (GMethods.hVars hth) noms}) 
-                                          x st hf 
+                                          x st index hf 
  GTypes.QuantVarsParse _ _ _ _ -> error "GenHyb.GenComor.mapSentenceAux: sentence not parsed"
  GTypes.QuantVars q vars hf _ -> let 
    hsig = GMethods.hSign hth
@@ -326,15 +328,18 @@ mapSentenceAux hl mapBTheory mapBSen baseLid hth x st hsen = case hsen of
    cvars = map (\rs -> case raw_to_var baseLid rs of
                         Nothing -> error $ "could not convert symbol to variable: " ++ show rs
                         Just (v, s) -> (v, s) ) vars
-   senWithVarAppl = CBasic.mkImpl 
-                     (CBasic.Junction CBasic.Con (
+   senWithVarAppl = let 
+                      conds = CBasic.Junction CBasic.Con (
                                       (map sentence $ 
                                           concatMap gamma_xi vis
                                       ) ++ (map (\(xi,si) -> domainSen xi si) cvars)
                                                  ) 
                                       nullRange
-                     )
-                    $ mapSentenceAux hl mapBTheory mapBSen baseLid (hth {GMethods.hSign = hsig'}) x st hf
+                      mapHF = mapSentenceAux hl mapBTheory mapBSen baseLid (hth {GMethods.hSign = hsig'}) x st index hf
+                    in
+                      case q of 
+                        GTypes.HUniversal _ -> CBasic.mkImpl conds mapHF 
+                        GTypes.HExistential _ -> CBasic.conjunct [conds, mapHF]
    senRepl = foldl (\csen (xi,si) -> replaceVarAppls xi si csen) senWithVarAppl cvars
   in (case q of 
        GTypes.HUniversal _ -> CBasic.mkForall

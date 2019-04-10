@@ -947,7 +947,7 @@ constrToSens :: Sign () () -> String -> SemanticConstraint -> Result [Named (FOR
 constrToSens sig cname sc = 
  let 
    st = genName $ "ST_" ++ cname
-   domain = genName "domain"
+   domain = genName $ "domain_" ++ cname
    defined = genName "defined"
    (totals, partials) = partition (\(_, ot) -> opKind ot == Total) $ MapSet.toPairList $ opMap sig
  in

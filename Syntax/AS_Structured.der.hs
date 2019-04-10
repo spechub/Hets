@@ -75,6 +75,8 @@ data SPEC = Basic_spec G_basic_spec Range
             -- pos: "combine"
           | Apply IRI G_basic_spec Range
             -- pos: "apply", use a basic spec parser to parse a sentence
+          | HSpec Id SPEC_NAME (Annoted SPEC) Range
+            -- logic name, name of the spec in data part, spec in hybrid part
             deriving (Show, Typeable)
 
 data Network = Network [LABELED_ONTO_OR_INTPR_REF] [IRI] Range

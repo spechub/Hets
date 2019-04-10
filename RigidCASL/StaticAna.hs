@@ -75,7 +75,7 @@ anaRSigItem mix ritem = do
                             _ -> error "no subsorts or isos should be rigid")
                  ul
            return $ Rigid_sorts ul ps 
-    Rigid_op_items al ps ->
+    Rigid_op_items al ps -> 
         do ul <- mapM (ana_OP_ITEM typeAnaF mix) al
            mapM_ (\ aoi -> case item aoi of
                    Op_decl ops ty _ _ ->
@@ -202,7 +202,7 @@ rigidConstrToSens :: Sign () RigidExt -> String -> SemanticConstraint -> Result 
 rigidConstrToSens sig str sc = -- TODO: add a String argument so the error message is different for RigidCASL and CASL
  let 
    st = genName $ "ST_" ++ str
-   domain = genName "domain"
+   domain = genName $ "domain_" ++ str
    defined = genName "defined"
    (totals, partials) = partition (\(_, ot) -> opKind ot == Total) $ MapSet.toPairList $ rigidOps $ extendedInfo sig
  in

@@ -924,9 +924,7 @@ basicHAnalysis hasQNominals kVars baseLid hLogic mSubl (bs, inSig, ga) = let
   ds = reverse $ anaDiags accTh
   outSig = hSign accTh
   sents = hSens accTh
-  (baseSig, baseSens) = (GTypes.baseSig outSig, concatMap (\s -> case sentence s of
-                                                                 GTypes.Base_formula f _ -> [f]
-                                                                 _ -> []) sents)
+  (baseSig, baseSens) = (GTypes.baseSig outSig, concatMap (getBaseSens . sentence) sents)
  in case mSubl of 
      Nothing -> -- trace ("sents:" ++ show sents) $ 
                 Result ds $ Just (newBs, ExtSign outSig $ declSyms accTh, sents)
@@ -935,8 +933,21 @@ basicHAnalysis hasQNominals kVars baseLid hLogic mSubl (bs, inSig, ga) = let
        let tSub = sublogicOfTheo baseLid (baseSig, baseSens)
        if isSubElem tSub aSub then -- trace ("tSub:" ++ show tSub ++ " baseSens:" ++ show baseSens) $ 
                                    Result ds $ Just (newBs, ExtSign outSig $ declSyms accTh, sents)
-                              else fail $ "The sublogic of the analyzed theory should be " ++ show aSub ++ "but it is " ++ show tSub
+                              else fail $ "The sublogic of the analyzed theory should be " ++ sublogicName aSub ++ ", but it is " ++ sublogicName tSub
 
+getBaseSens :: GTypes.HFORMULA sen symb_items raw_sym -> [sen]
+getBaseSens s = case s of
+ GTypes.Base_formula f _ -> [f]
+ GTypes.Negation hf _ -> getBaseSens hf
+ GTypes.Conjunction hfs _ -> concatMap getBaseSens hfs
+ GTypes.Disjunction hfs _ -> concatMap getBaseSens hfs
+ GTypes.Implication hf1 hf2 _ -> getBaseSens hf1 ++ getBaseSens hf2
+ GTypes.Equivalence hf1 hf2 _ -> getBaseSens hf1 ++ getBaseSens hf2
+ GTypes.AtState _ _ hf _ -> getBaseSens hf
+ GTypes.BoxFormula  _ _ hf _ -> getBaseSens hf
+ GTypes.DiamondFormula  _ _ hf _ -> getBaseSens hf
+ _ -> []
+ 
 anaBasicHSpec :: Logic lid sublogics basic_spec sen
                   symb_items symb_map_items sig
                    mor sym raw_sym proof_tree
@@ -1101,7 +1112,7 @@ anaHFORMULA hasQNominals kVars baseLid hLogic hf = case item hf of
                  else if i `elem` (GTypes.noms $ hSign hth) then 
                          let hf' = hf { item = GTypes.Nominal "" False (idToSimpleId i) nullRange }
                          in return (hf', hf')
-                       else do -- TODO: undeclared nominals are not identified as nominals in isNominalSen!
+                       else trace ("hVars:" ++ show (hVars hth)) $ do -- TODO: undeclared nominals are not identified as nominals in isNominalSen!
                           CState.put $ hth {anaDiags = (mkDiag Error "undeclared nominal" i) : (anaDiags hth) }
                           return (hf, hf)  
  GTypes.Negation f r -> do
@@ -1508,7 +1519,7 @@ basicHHAnalysis hasQNominals kVars hlid hhLogic mSubl (bs, inSig, ga) =  let
        let tSub = sublogicOfTheo hlid (baseSig, baseSens)
        if isSubElem tSub aSub then -- trace ("tSub:" ++ show tSub ++ " baseSens:" ++ show baseSens) $ 
                                    Result ds $ Just (newBs, ExtSign outSig $ declSyms accTh, sents)
-                              else fail $ "The sublogic of the analyzed theory should be " ++ show aSub ++ "but it is " ++ show tSub
+                              else fail $ "The sublogic of the analyzed theory should be " ++ sublogicName aSub ++ ", but it is " ++ sublogicName tSub
 
 anaBasicHHSpec :: (Show sym,
                  Show raw_sym,

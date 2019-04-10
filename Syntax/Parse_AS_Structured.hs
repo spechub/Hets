@@ -33,6 +33,8 @@ module Syntax.Parse_AS_Structured
     , logicName
     ) where
 
+import Debug.Trace
+
 import Logic.Logic
 import Logic.Comorphism
 import Logic.Grothendieck
@@ -446,6 +448,17 @@ specD l = do
 specE :: LogicGraph -> AParser st SPEC
 specE l = logicSpec l
       <|> combineSpec l
+      <|> do
+              _ <- asKey "hlogic"
+              _ <- colonT
+              ln <- simpleId
+              _ <- asKey "data"
+              _ <- colonT
+              bs <- hetIRI l
+              _ <- asKey "configuration"
+              _ <- colonT
+              sp <- annoParser $ specD $ setCurLogic (show ln) l
+              return $ HSpec (simpleIdToId ln) bs sp nullRange
       <|> (lookAhead (groupSpecLookhead l) >> groupSpec l)
       <|> (lookupCurrentSyntax "basic spec" l >>= basicSpec l)
 
