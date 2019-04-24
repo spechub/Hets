@@ -189,3 +189,6 @@ TPTP/ATC_TPTP.hs
 test/*/*.th
 test/*/*.xml
 /_dependencies
+
+# Ignore Hets-lib folder in Docker directory
+Docker/Hets-lib
