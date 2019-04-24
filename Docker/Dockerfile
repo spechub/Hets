@@ -13,5 +13,4 @@ WORKDIR /data
 
 EXPOSE 8000
 
-# TODO: add Hets-lib
 CMD ["hets-server", "--server"]

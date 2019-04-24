@@ -1,0 +1,10 @@
+#!/bin/bash
+
+if [ ! -d "Hets-lib" ]
+then
+    echo 'Hets-lib does not exist in this directory, please download Hets-lib in this directory.'
+    exit 1
+fi
+
+# Starts the containers in detached mode
+docker-compose up -d

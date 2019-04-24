@@ -1,0 +1,17 @@
+version: '3.2'
+services:
+   hets:
+     build: .
+     image: spechub:hets-server
+     ports:
+       - "8000:8000"
+     volumes:
+       - type: bind
+         source: ./Hets-lib
+         target: /data/Hets-lib
+         read_only: true
+
+   postgresql:
+     image: "postgres:11.2-alpine"
+     environment:
+       POSTGRES_PASSWORD: postgres
