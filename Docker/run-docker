@@ -2,9 +2,24 @@
 
 if [ ! -d "Hets-lib" ]
 then
-    echo 'Hets-lib does not exist in this directory, please download Hets-lib in this directory.'
-    exit 1
+    echo 'Hets-lib does not exist in this directory, downloading Hets-Lib from github...'
+    git clone https://github.com/spechub/Hets-lib.git
+    rm -rf Hets-lib/.git
+    echo ''
 fi
 
-# Starts the containers in detached mode
+read -s -n1 -p "Do you want to build all containers? (y/n)[n] " input
+case $input in
+  [yY])
+    echo 'Building docker containers...'
+    docker-compose build
+    echo '' ;;
+  ""|[nN])
+    echo '' ;;
+  *)
+    echo "Invalid input..."
+    exit 1;;
+esac
+
+echo 'Starting docker containers...'
 docker-compose up -d

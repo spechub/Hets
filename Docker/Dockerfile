@@ -7,10 +7,12 @@ RUN apt-add-repository ppa:hets/hets
 RUN apt-get update && apt-get install -y hets-server libatomic1 && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir /data
+COPY database_postgresql.yml /data/database_postgresql.yml
+
 VOLUME /data
 
 WORKDIR /data
 
 EXPOSE 8000
 
-CMD ["hets-server", "--server"]
+CMD ["hets-server", "--server", "--database-config=/data/database_postgresql.yml", "--database-subconfig=/data/database_postgresql.yml"]
