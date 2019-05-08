@@ -7,11 +7,13 @@ services:
        - "8000:8000"
      volumes:
        - type: bind
-         source: ./Hets-lib
-         target: /data/Hets-lib/
+         source: ./data/
+         target: /data/
          read_only: true
 
    postgresql:
      image: "postgres:11.2-alpine"
      environment:
        POSTGRES_PASSWORD: postgres
+     ports:
+       - "5432:5432"

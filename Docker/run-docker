@@ -1,13 +1,4 @@
 #!/bin/bash
-
-if [ ! -d "Hets-lib" ]
-then
-    echo 'Hets-lib does not exist in this directory, downloading Hets-Lib from github...'
-    git clone https://github.com/spechub/Hets-lib.git
-    rm -rf Hets-lib/.git
-    echo ''
-fi
-
 read -s -n1 -p "Do you want to build all containers? (y/n)[n] " input
 case $input in
   [yY])
