@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Workaround for wrong hets-lib location entry in hets-server script
-sed -i 's/HETS_LIB="${BASEDIR}\/lib\/hets\/hets-lib"/HETS_LIB="${BASEDIR}\/lib\/hets\/hets-lib\/hets-lib"/g' /usr/bin/hets-server
-
 # Create postgresql database configuration file
 echo "default: &default
   adapter: postgresql
