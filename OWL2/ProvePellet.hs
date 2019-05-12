@@ -57,6 +57,9 @@ import Control.Concurrent
 pelletS :: String
 pelletS = "Pellet"
 
+pelletELS :: String
+pelletELS = "PelletEL"
+
 pelletJar :: String
 pelletJar = "lib/pellet-cli.jar"
 
@@ -82,7 +85,7 @@ pelletProver =
 
 pelletEL :: Prover Sign Axiom OWLMorphism ProfSub ProofTree
 pelletEL =
-  (mkAutomaticProver "java" pelletS (ProfSub elProfile slTop) pelletGUI
+  (mkAutomaticProver "java" pelletELS (ProfSub elProfile slTop) pelletGUI
   pelletCMDLautomaticBatch)
   { proverUsable = pelletCheck }
 
