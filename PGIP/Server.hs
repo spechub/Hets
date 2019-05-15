@@ -1180,11 +1180,10 @@ getHetsResult :: HetcatsOpts -> [W.FileInfo BS.ByteString]
   -> Cache -> Query.Query -> Maybe String -> UsedAPI -> ProofFormatterOptions
   -> ResultT IO (String, String)
 getHetsResult opts updates sessRef (Query dgQ qk) format_ api pfOptions = do
-      let getCom n = let ncoms = filter (\(Comorphism cid) -> language_name cid == n) comorphismList
-                     in case ncoms of
-                         [c] -> c
-                         [] -> error $ "comorphism not found:" ++ n
-                         _ -> error $ "more than one comorphism found for:" ++ n
+      let semicolon n = map (\ c -> if c == ':' then ';' else c) n
+      let getCom n = case lookupComorphism (semicolon n) logicGraph of
+                         Just c -> c
+                         Nothing -> error $ "comorphism not found: " ++ n
       sk@(sess', k) <- getDGraph opts sessRef dgQ
       sess <- lift $ makeSessCleanable sess' sessRef k
       let libEnv = sessLibEnv sess
@@ -1484,11 +1483,11 @@ and select proving options -}
 showGlobalTh :: DGraph -> Int -> G_theory -> Int -> String -> Bool -> IO String
 showGlobalTh dg i gTh sessId fstLine isTrans = case simplifyTh gTh of
   sGTh@(G_theory lid _ (ExtSign sig _) _ thsens _) -> do
-   comorProvers <- getFullComorphList dg
    let
-    comorSelection = map (\ (_,cm) -> let c = showComorph cm in
-                             (c, c, [])
-                         ) comorProvers
+    paths = findComorphismPaths logicGraph (sublogicOfTh gTh) 
+    comorSelection = map (\ cm -> let c = showComorph cm in
+                              (c, c, [])
+                         ) paths
     ga = globalAnnos dg
     -- links to translations and provers xml view
     headr = htmlRow $ unode "h3" fstLine
