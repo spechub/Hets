@@ -1332,8 +1332,8 @@ getHetsResult opts updates sessRef (Query dgQ qk) format_ api pfOptions = do
                       NcCmd Query.Theory -> case api of
                           OldWebAPI -> lift $ fmap (\ t -> (htmlC, t))
                                        $ showGlobalTh dg i gTh k fstLine False
-                          RESTfulAPI -> lift $ fmap (\ t -> (xmlC, t))
-                                       $ showNodeXml opts (globalAnnos dg) libEnv dg i
+                          RESTfulAPI -> lift $ 
+                                          showNode opts (globalAnnos dg) libEnv dg i format_
                       NcCmd (Query.Translate x) -> do
                           -- compose the comorphisms passed in translation
                           let coms = map getCom $ splitOn ',' x
@@ -1358,7 +1358,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format_ api pfOptions = do
                                           $ showGlobalTh dg n1 gTh1 k fstLine True
                             RESTfulAPI ->
                             -- show the theory of n1 in xml format
-                              lift $ fmap (\ t -> (xmlC, t)) $ showNodeXml opts (globalAnnos dg2) libEnv dg2 n1
+                              lift $ showNode opts (globalAnnos dg2) libEnv dg2 n1 format_
                       NcProvers mp mt -> do
                         availableProvers <- liftIO $ getProverList mp mt subL
                         return $ case api of
@@ -1471,12 +1471,17 @@ formatResults xForm sessId i rs =
 showBool :: Bool -> String
 showBool = map toLower . show
 
-showNodeXml :: HetcatsOpts -> GlobalAnnos -> LibEnv -> DGraph -> Int -> IO String
-showNodeXml opts ga lenv dg n = let
- lNodeN = lab (dgBody dg) n
- in case lNodeN of
-     Just lNode -> return $ ppTopElement $ ToXml.lnode opts ga lenv (n,lNode)
-     Nothing -> error $ "no node for " ++ show n
+showNode :: HetcatsOpts -> GlobalAnnos -> LibEnv -> DGraph -> Int -> Maybe String -> IO (String,String)
+showNode opts ga lenv dg n format_ = do
+ let lNodeN = case lab (dgBody dg) n of
+       Just lNode -> lNode
+       Nothing -> error $ "no node for " ++ show n
+ return $ case format_ of 
+           Just "xml" -> (xmlC,ppTopElement $ ToXml.lnode opts ga lenv (n,lNodeN)) 
+           Just "json" -> (jsonC,ppJson $ ToJson.lnode opts ga lenv (n,lNodeN))
+           Just str | elem str ["dol","het","text"]
+                      -> (textC,showGlobalDoc (globalAnnos dg) (n,lNodeN) "\n")
+           _ -> error ("unknown format: "++show format_)
 
 {- | displays the global theory for a node with the option to prove theorems
 and select proving options -}
