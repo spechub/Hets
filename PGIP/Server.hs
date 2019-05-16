@@ -574,11 +574,11 @@ parseRESTful
              Nothing -> case nodeM of
                          Just x -> NodeQuery (maybe (Right x) Left $ readMaybe x)
                                    $ NcCmd Query.Theory
-                         Nothing -> error "REST: theory"
+                         Nothing -> error "development graph node missing. Please use <url>?node=<number>"
              Just tr -> case nodeM of
                          Just x -> NodeQuery (maybe (Right x) Left $ readMaybe x)
                                    $ NcCmd $ Query.Translate tr
-                         Nothing -> error "REST: theory"
+                         Nothing -> error "development graph node missing. Please specifiy ?node=<number>"
            _ -> error $ "REST: unknown " ++ newIde
          in getResponseAux newOpts . Query (NewDGQuery libIri $ cmdList
             ++ Set.toList (Set.fromList $ optFlags ++ qOpts)) $ qkind
@@ -1373,7 +1373,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format_ api pfOptions = do
                             (xmlC, formatComorphs availableComorphisms)
                           RESTfulAPI ->
                             formatTranslations format_ availableComorphisms
-                      _ -> error "getHetsResult.NodeQuery."
+                      q -> error ("getHetsResult.NodeQuery: unnkown query"++show q)
             EdgeQuery i _ ->
               case getDGLinksById (EdgeId i) dg of
               [e@(_, _, l)] ->
