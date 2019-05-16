@@ -1332,7 +1332,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format_ api pfOptions = do
                       NcCmd Query.Theory -> case api of
                           OldWebAPI -> lift $ fmap (\ t -> (htmlC, t))
                                        $ showGlobalTh dg i gTh k fstLine False
-                          RESTfulAPI -> lift $ 
+                          RESTfulAPI -> return $ 
                                           showNode opts (globalAnnos dg) libEnv dg i format_
                       NcCmd (Query.Translate x) -> do
                           -- compose the comorphisms passed in translation
@@ -1358,7 +1358,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format_ api pfOptions = do
                                           $ showGlobalTh dg n1 gTh1 k fstLine True
                             RESTfulAPI ->
                             -- show the theory of n1 in xml format
-                              lift $ showNode opts (globalAnnos dg2) libEnv dg2 n1 format_
+                              return $ showNode opts (globalAnnos dg2) libEnv dg2 n1 format_
                       NcProvers mp mt -> do
                         availableProvers <- liftIO $ getProverList mp mt subL
                         return $ case api of
@@ -1471,12 +1471,12 @@ formatResults xForm sessId i rs =
 showBool :: Bool -> String
 showBool = map toLower . show
 
-showNode :: HetcatsOpts -> GlobalAnnos -> LibEnv -> DGraph -> Int -> Maybe String -> IO (String,String)
-showNode opts ga lenv dg n format_ = do
+showNode :: HetcatsOpts -> GlobalAnnos -> LibEnv -> DGraph -> Int -> Maybe String -> (String,String)
+showNode opts ga lenv dg n format_ = 
  let lNodeN = case lab (dgBody dg) n of
        Just lNode -> lNode
        Nothing -> error $ "no node for " ++ show n
- return $ case format_ of 
+ in case format_ of 
            Just "xml" -> (xmlC,ppTopElement $ ToXml.lnode opts ga lenv (n,lNodeN)) 
            Just "json" -> (jsonC,ppJson $ ToJson.lnode opts ga lenv (n,lNodeN))
            Just str | elem str ["dol","het","text"]
