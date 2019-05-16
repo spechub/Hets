@@ -789,11 +789,11 @@ pageOptionsExamples moreExamplesAreOpen listElements =
                 , ("CASL", "casl", Examples.casl)
                 , ("OWL", "owl", Examples.owl)
                 , ("CLIF", "clif", Examples.clif)
-                , ("Propositional", "het", Examples.propositional)
+                , ("Propositional", "dol", Examples.propositional)
                 , ("RDF", "rdf", Examples.rdf)
                 , ("TPTP", "tptp", Examples.tptp)
-                , ("HasCASL", "het", Examples.hascasl)
-                , ("Modal", "het", Examples.modal)
+                , ("HasCASL", "dol", Examples.hascasl)
+                , ("Modal", "dol", Examples.modal)
                 ]
     , pageMoreExamples moreExamplesAreOpen listElements
     ]
