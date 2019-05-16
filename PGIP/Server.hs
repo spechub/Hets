@@ -1480,7 +1480,7 @@ showNode opts ga lenv dg n format_ =
            Just "xml" -> (xmlC,ppTopElement $ ToXml.lnode opts ga lenv (n,lNodeN)) 
            Just "json" -> (jsonC,ppJson $ ToJson.lnode opts ga lenv (n,lNodeN))
            Just str | elem str ["dol","het","text"]
-                      -> (textC,showGlobalDoc (globalAnnos dg) (n,lNodeN) "\n")
+                      -> (textC,showGlobalDoc (globalAnnos dg) (dgn_theory lNodeN) "\n")
            _ -> error ("unknown format: "++show format_)
 
 {- | displays the global theory for a node with the option to prove theorems
