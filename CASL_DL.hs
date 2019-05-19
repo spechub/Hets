@@ -51,7 +51,7 @@ with subsorting.
 /Predefined Datatypes/
 
 "CASL_DL.PredefinedDatatypes" is generated from some CASL datatypes
-defined in CASL_DL\/Datatypes.het.
+defined in CASL_DL\/Datatypes.dol.
 
 -}
 
