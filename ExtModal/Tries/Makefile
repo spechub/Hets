@@ -2,9 +2,9 @@
 
 .PHONY: check
 
-check:.dols
-	../...dols -v2 -o pp.dol,th Try?.het
-	../...dols -v2 -o pp.dol,th Try?.pp.het
+check: hets
+	../../hets -v2 -o pp.dol,th Try?.het
+	../../hets -v2 -o pp.dol,th Try?.pp.dol
 
 %:
 	(cd ../..; $(MAKE) $@)
