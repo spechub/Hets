@@ -19,7 +19,7 @@ do
   ../../hets -v2 -i owl -o th,pp.dol,omn $i
 done
 
-for i in *.het
+for i in *.dol
 do
   ../../hets -l OWL -v2 -o th,pp.dol,omn $i
 done

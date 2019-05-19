@@ -4,7 +4,7 @@
 
 check: hets
 	../../hets -v2 -o th *.clf
-	../../hets -v2 -o pp.dol,th *.het
+	../../hets -v2 -o pp.dol,th *.dol
 
 %:
 	(cd ../..; $(MAKE) $@)
