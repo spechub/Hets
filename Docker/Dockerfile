@@ -6,6 +6,8 @@ RUN apt-get update && apt-get install software-properties-common -y
 RUN apt-add-repository ppa:hets/hets
 RUN apt-get update && apt-get install -y hets-server hets-libs libatomic1 && rm -rf /var/lib/apt/lists/*
 
+#USER hets_user
+
 RUN mkdir /data
 
 # These values need to be partially altered when running in production
