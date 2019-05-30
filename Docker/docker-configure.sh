@@ -5,7 +5,7 @@ echo "default: &default
   username: $POSTGRES_USERNAME
   password: $POSTGRES_PASSWORD
   host: $POSTGRES_HOST
-  port $POSTGRES_PORT
+  port: $POSTGRES_PORT
   pool: 10
 
 development:
