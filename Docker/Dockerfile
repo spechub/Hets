@@ -13,12 +13,10 @@ RUN mkdir /data
 # These values need to be partially altered when running in production
 ENV POSTGRES_USERNAME postgres
 ENV POSTGRES_PASSWORD postgres
-ENV POSTGRES_HOST localhost
+ENV POSTGRES_HOST 172.28.0.2
 ENV POSTGRES_PORT 5432
 
-VOLUME /data
-
-WORKDIR /data
+WORKDIR /data/host
 
 COPY docker-configure.sh /usr/local/bin/
 

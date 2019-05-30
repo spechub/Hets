@@ -1,23 +1,36 @@
 version: '3.2'
 services:
-   hets:
-     build: .
-     image: spechub:hets-server
-     ports:
-       - "8000:8000"
-     volumes:
-       - type: bind
-         source: ./data/
-         target: /data/
-         read_only: true
+  hets:
+    build: .
+    image: spechub:hets-server
+    ports:
+      - "8000:8000"
+    volumes:
+      - type: bind
+        source: ./data/
+        target: /data/host
+        read_only: true
+    networks:
+      db:
 
-   postgresql:
-     image: "postgres:11.2-alpine"
-     environment:
-       POSTGRES_PASSWORD: postgres
-     ports:
-       - "5432:5432"
-     #volumes:
-       #- type: bind
-         #source: ./postgres_data/
-         #target: /var/lib/postgresql/data/
+  postgresql:
+    image: "postgres:11.2-alpine"
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: hets_development
+    expose:
+      - "5432"
+    networks:
+      db:
+        ipv4_address: 172.28.0.2
+    volumes:
+      - type: bind
+        source: ./postgres_data/
+        target: /var/lib/postgresql/data/
+networks:
+  db:
+    driver: "bridge"
+    ipam:
+      driver: default
+      config:
+      - subnet: 172.28.0.0/24
