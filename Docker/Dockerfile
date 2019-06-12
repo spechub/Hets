@@ -10,18 +10,10 @@ RUN apt-get update && apt-get install -y hets-server hets-libs libatomic1 && rm 
 
 RUN mkdir /data
 
-# These values need to be partially altered when running in production
-ENV POSTGRES_USERNAME postgres
-ENV POSTGRES_PASSWORD postgres
-ENV POSTGRES_HOST 172.28.0.2
-ENV POSTGRES_PORT 5432
-
 WORKDIR /data/host
 
-COPY docker-configure.sh /usr/local/bin/
+COPY docker-entrypoint.sh /usr/local/bin/
 
-RUN /usr/local/bin/docker-configure.sh
+ENTRYPOINT [ "/usr/local/bin/docker-entrypoint.sh" ]
 
-EXPOSE 8000
-
-CMD ["hets-server", "--server", "--database-config=/data/database_postgresql.yml", "--database-subconfig=development"]
+CMD ["hets-server", "--server"]
