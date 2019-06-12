@@ -42,8 +42,7 @@ For questions related to hets there is a [mailing list](http://www.informatik.un
 ## Using Hets
 
 You can try out Hets using the [Web-based interface](http://rest.hets.eu/)
-
-#### The best way to use hets is under Ubuntu. Possibly run this OS in a virtual box.
+or install it easily in a [docker container](https://github.com/spechub/Hets/wiki/How-to-use-the-Hets-Docker-Container).
 
 ### Installing Hets under Ubuntu
 
