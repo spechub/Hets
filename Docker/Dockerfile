@@ -6,9 +6,9 @@ RUN apt-get update && apt-get install software-properties-common -y
 RUN apt-add-repository ppa:hets/hets
 RUN apt-get update && apt-get install -y hets-server hets-libs libatomic1 && rm -rf /var/lib/apt/lists/*
 
-RUN mkdir /data
+RUN mkdir /data/
 
-WORKDIR /data/host
+WORKDIR /data/
 
 COPY docker-entrypoint.sh /usr/local/bin/
 
