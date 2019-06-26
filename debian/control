@@ -28,7 +28,7 @@ Homepage: https://github.com/spechub/Hets
 
 Package: hets-common
 Architecture: all
-Depends: libc6, libgcc1, libstdc++6, openjdk-8-jre-headless | openjdk-7-jre-headless
+Depends: libatomic1, libc6, libgcc1, libstdc++6, openjdk-8-jre-headless | openjdk-7-jre-headless
 Description: Data used by the hets-server as well as hets-desktop package.
  This package contains the intersection of architecture independent libraries,
  supporting scripts and other data of the hets-server and hets-desktop working
