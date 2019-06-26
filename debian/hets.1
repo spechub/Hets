@@ -196,7 +196,7 @@ Known output types are:
 .BR syms.xml ,
 (\fBsig\fR|\fBth\fR)[\fB.delta\fR],
 \fBpp.\fR(\fBhet\fR|\fBtex\fR|\fBxml\fR|\fBhtml\fR),
-\fBpp.\fR(\fBstripped.het\fR|\fBlabelled.tex\fR),
+\fBpp.\fR(\fBstripped.dol\fR|\fBlabelled.tex\fR),
 \fBgraph.\fR(\fBexp.dot\fR|\fBdot\fR),
 .BR dfg [ .c ] ,
 .BR tptp [ .c ] .
@@ -247,7 +247,7 @@ In the following examples \fB${HETS_LIB}\fR denotes the directory containing
 the hets specification and it is assumed, that the current working directory
 is writable, e.g. /tmp/.
 .HP
-.B \*(CL\ \-A\ ${HETS_LIB}/Calculi/Space/RCCVerification.het
+.B \*(CL\ \-A\ ${HETS_LIB}/Calculi/Space/RCCVerification.dol
 .br
 Check if all nodes can be proven. Only one node is heterogeneous and needs
 the Isabelle prover. To allow hets the reuse of the given proofs, copy the
@@ -266,12 +266,12 @@ Check out the OWL parser.
 .br
 Check conservativity of the link. This will result in "The link is mono".
 .HP
-.B \*(CL\ ${HETS_LIB}/Ontology/Examples/Family.het
+.B \*(CL\ ${HETS_LIB}/Ontology/Examples/Family.dol
 .br
 Check OWL conservativity checker on the Family <-> FamilyBase links. One
 can be proven, while the other cannot.
 .HP
-.B \*(CL\ \-A ${HETS_LIB}/HidingOWL.het
+.B \*(CL\ \-A ${HETS_LIB}/HidingOWL.dol
 .br
 Choose Edit/Consistency Checker and prove the goals.
 .HP

@@ -746,7 +746,7 @@ pageHeader =
   [ add_attr (mkAttr "class" "row") $ unode "div" $ unode "h1" "Hets, the DOLiator"
   , add_attr (mkAttr "class" "row") $ unode "div" $
       add_attr (mkAttr "class" "ui text container raised segment center aligned") $
-      unode "div" [ unode "p" "Welcome to DOLiator, the web interface to our implementation of the \"Ontology, Modeling and Specification Language\""
+      unode "div" [ unode "p" "Welcome to DOLiator, the web interface to our implementation of the Distributed Ontology, Modeling and Specification Language (DOL)"
                   , add_attr (mkAttr "class" "ui horizontal list") $ unode "div"
                       [ add_attr (mkAttr "target" "_blank") $ add_attr (mkAttr "class" "item") $ aRef "http://dol-omg.org/" "DOL Homepage"
                       , add_attr (mkAttr "target" "_blank") $ add_attr (mkAttr "class" "item") $ aRef "http://hets.eu/" "Hets Homepage"
@@ -789,11 +789,11 @@ pageOptionsExamples moreExamplesAreOpen listElements =
                 , ("CASL", "casl", Examples.casl)
                 , ("OWL", "owl", Examples.owl)
                 , ("CLIF", "clif", Examples.clif)
-                , ("Propositional", "het", Examples.propositional)
+                , ("Propositional", "dol", Examples.propositional)
                 , ("RDF", "rdf", Examples.rdf)
                 , ("TPTP", "tptp", Examples.tptp)
-                , ("HasCASL", "het", Examples.hascasl)
-                , ("Modal", "het", Examples.modal)
+                , ("HasCASL", "dol", Examples.hascasl)
+                , ("Modal", "dol", Examples.modal)
                 ]
     , pageMoreExamples moreExamplesAreOpen listElements
     ]

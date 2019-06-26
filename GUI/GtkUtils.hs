@@ -449,7 +449,7 @@ displayTheoryWithWarning :: String -- ^ Kind of theory
                          -> G_theory -- ^ Theory
                          -> IO ()
 displayTheoryWithWarning k n w t =
-  textView (k ++ " of " ++ n) (w ++ showDoc t "\n") $ Just $ n ++ ".het"
+  textView (k ++ " of " ++ n) (w ++ showDoc t "\n") $ Just $ n ++ ".dol"
 
 -- | displays a theory with warning in a window
 displayTheoryWithWarningExt :: String -- ^ Kind of theory

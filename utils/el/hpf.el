@@ -18,7 +18,7 @@
 (setq hpf-mode-directory (hpf-mode-directory-fn))
 
 (add-to-list 'load-path hpf-mode-directory)
-;; Files whose extension is .hpf or .het will be edited in HPF mode
+;; Files whose extension is .hpf will be edited in HPF mode
 (setq auto-mode-alist
       (append
        '(("\\.hpf\\'"  . hpf-mode))
