@@ -2,12 +2,12 @@
 
 for i in *.rdf *.nt
 do
-    hets -i rdf $i -o th,pp.het
+    hets -i rdf $i -o th,pp.dol
 done
 
-for i in *.pp.het *.th
+for i in *.pp.dol *.th
 do
-    hets -l RDF $i -o th,pp.het
+    hets -l RDF $i -o th,pp.dol
 done
 
 for i in *pp* *th*

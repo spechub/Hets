@@ -71,7 +71,7 @@ esHeader :: String
 esHeader = unlines
            [ "Usage: evalspec [OPTION...] [file]"
                   , ""
-                  , "evalspec /tmp/f.het -sFlangeComplete"
+                  , "evalspec /tmp/f.dol -sFlangeComplete"
                   , ""
                   ]
 

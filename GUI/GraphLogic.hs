@@ -449,7 +449,7 @@ getTheoryOfNode gInfo descr dgraph = do
 displayTheoryOfNode :: String -- ^ Name of theory
                     -> String -- ^ Body text
                     -> IO ()
-displayTheoryOfNode n = createTextSaveDisplay ("Theory of " ++ n) (n ++ ".het")
+displayTheoryOfNode n = createTextSaveDisplay ("Theory of " ++ n) (n ++ ".dol")
 
 {- | translate the theory of a node in a window;
      used by the node menu -}

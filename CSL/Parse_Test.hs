@@ -188,7 +188,7 @@ time p = do
   return res
 
 
--- Run e.g.: time $ testBS "Hets-lib/EnCL/antlr/t2.het" "/tmp/t2.out"
+-- Run e.g.: time $ testBS "Hets-lib/EnCL/antlr/t2.dol" "/tmp/t2.out"
 testBS fpin fpout = do
   putStr "Reading time was "
   s <- time $ do

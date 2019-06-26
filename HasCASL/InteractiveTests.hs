@@ -65,7 +65,7 @@ import Static.DGNavigation
 
 -- Use this for new testing:
 
-(sigs, dgn) <- env "HasCASL/Real3D/SolidWorks/flange.het" "Component"
+(sigs, dgn) <- env "HasCASL/Real3D/SolidWorks/flange.dol" "Component"
 
 sigs <- siggy 4
 
@@ -78,7 +78,7 @@ fromSigsNiceL sigs "FlangePattern" "Component" allMatches
 fromSigsNice sigs "FlangePattern" "Component" (findMatch noConstraints)
 
 -- shortcut for the above statement
-matchDesign "/tmp/flange.het" "Match" "FlangePattern" "Component"
+matchDesign "/tmp/flange.dol" "Match" "FlangePattern" "Component"
 
 -- get the actual parameter spec of FlangePattern
 navi sigs $ getActualParameterSpec "FlangePattern"
@@ -87,11 +87,11 @@ navi sigs $ getActualParameterSpec "FlangePattern"
 naviGen sigs (show . pretty) $ (\ a -> getLocalSyms a $ fst $ fromJust $ getActualParameterSpec "FlangePattern" a)
 
 
-(res, m1) <- getMatchMap "/tmp/flange.het" "Match" "FlangePattern" "Component"
+(res, m1) <- getMatchMap "/tmp/flange.dol" "Match" "FlangePattern" "Component"
 
-tmpl <- readFile "/home/ewaryst/Hets-lib/EnCL/flangeExported.het"
+tmpl <- readFile "/home/ewaryst/Hets-lib/EnCL/flangeExported.dol"
 
-writeFile "/tmp/f1.het" $ processTemplate (\ k v -> " . " ++ k ++ " := " ++ show (v * 1000)) m1 tmpl
+writeFile "/tmp/f1.dol" $ processTemplate (\ k v -> " . " ++ k ++ " := " ++ show (v * 1000)) m1 tmpl
 
 
 -}
@@ -276,10 +276,10 @@ naviTest sigs s =
 
 testspecs :: [(Int, (String, String))]
 testspecs =
-    [ (1, ("HasCASL/Real3D/SolidWorks/Matchtest.het", "Matching1"))
-    , (2, ("HasCASL/Real3D/SolidWorks/Matchtest2.het", "Matching0"))
-    , (3, ("HasCASL/Real3D/SolidWorks/Matchtest2.het", "Matching1"))
-    , (4, ("HasCASL/Real3D/SolidWorks/flange.het", "Match"))
+    [ (1, ("HasCASL/Real3D/SolidWorks/Matchtest.dol", "Matching1"))
+    , (2, ("HasCASL/Real3D/SolidWorks/Matchtest2.dol", "Matching0"))
+    , (3, ("HasCASL/Real3D/SolidWorks/Matchtest2.dol", "Matching1"))
+    , (4, ("HasCASL/Real3D/SolidWorks/flange.dol", "Match"))
     ]
 
 env :: String -> String -> IO (SigSens Env Sentence, DGNav)
@@ -495,7 +495,7 @@ matchTranslate :: String -- ^ The filename of the library containing the specs t
 matchTranslate lb sp patN cN = do
   (_, m) <- getMatchMap lb sp patN cN
   hlib <- getEnvDef "HETS_LIB" $ error "Missing HETS_LIB environment variable"
-  tmpl <- readFile $ hlib ++ "/EnCL/flangeExported.het"
+  tmpl <- readFile $ hlib ++ "/EnCL/flangeExported.dol"
   let f k v = " . " ++ k ++ " := " ++ show (v * 1000)
   return $ processTemplate f m tmpl
 
@@ -514,9 +514,9 @@ getMatchMap lb sp patN cN = do
 
 
 {-
-(sigs, dgn) <- env "HasCASL/Real3D/SolidWorks/flange.het" "Component"
+(sigs, dgn) <- env "HasCASL/Real3D/SolidWorks/flange.dol" "Component"
 pretty $ linkSource $ snd $ fromJust $ searchLink (isJust . dglPredActualParam "FlangePattern") dgn
-liftM (pretty . linkSource . snd . fromJust . searchLink (isJust . dglPredActualParam "FlangePattern") . snd) $ env "HasCASL/Real3D/SolidWorks/flange.het" "Component"
+liftM (pretty . linkSource . snd . fromJust . searchLink (isJust . dglPredActualParam "FlangePattern") . snd) $ env "HasCASL/Real3D/SolidWorks/flange.dol" "Component"
 
 Temp -}
 

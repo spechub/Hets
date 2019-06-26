@@ -66,7 +66,7 @@ fit on the same line (as nest is used for indenting).
 
 Further functions are documented in "Common.DocUtils".
 
-Examples can be produced using: hets -v2 -o pp.het,pp.tex
+Examples can be produced using: hets -v2 -o pp.dol,pp.tex
 -}
 
 module Common.Doc
