@@ -166,7 +166,7 @@
   (interactive)
   (message "Matching selected pattern with the design spec")
 ;; example command
-;; matchcad /tmp/flange.het -sMatch -pFlangePattern -dComponent
+;; matchcad /tmp/flange.dol -sMatch -pFlangePattern -dComponent
 ;  (message (concatenate 'string "asd" (buffer-file-name (current-buffer))))
 ;  (call-process "/bin/ls" nil (get-buffer-create "*Match-Result*") t "-lh" "/tmp/")
 
@@ -180,7 +180,7 @@
   (switch-to-buffer (get-buffer "*Match-Result*"))
 
   (when (string= trans "Export parameter")
-    (set-visited-file-name (concatenate 'string (make-temp-file "flangeParams") ".het"))
+    (set-visited-file-name (concatenate 'string (make-temp-file "flangeParams") ".dol"))
     (save-buffer)
     (refresh-evalmenu)
     )
@@ -191,7 +191,7 @@
   (interactive)
 ;;  (message "selected %s and %s and %s" spec1 spec2 trans)
 ;; example command
-;; matchcad /tmp/flange.het -sMatch -pFlangePattern -dComponent
+;; matchcad /tmp/flange.dol -sMatch -pFlangePattern -dComponent
 ;  (message (concatenate 'string "asd" (buffer-file-name (current-buffer))))
 
 ;  (message "Evaluating EnCL spec")

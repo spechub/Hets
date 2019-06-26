@@ -10,4 +10,4 @@ main :: IO ()
 
 main = do
   doc <- processFile "./FreeCAD/test.fcstd"
-  writeFile "./FreeCAD/test.het" $ show $ printDoc "nametest" doc
+  writeFile "./FreeCAD/test.dol" $ show $ printDoc "nametest" doc

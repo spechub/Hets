@@ -27,8 +27,8 @@ Some Hets and CASL Libraries are located in this folder.
 Open a terminal and change directory to /root/Hets-lib. Typical examples to
 try out SPASS, darwin, Isabelle, Pellet, Fact and conservativity checkers are:
 
-hets -g -A Calculi/Space/RCCVerification.het
-hets -g Ontology/Examples/Family.het
+hets -g -A Calculi/Space/RCCVerification.dol
+hets -g Ontology/Examples/Family.dol
 
 4. Changing keyboard layout
 

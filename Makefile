@@ -622,10 +622,10 @@ USER_GUIDE := $(shell [ -n "$(EXPORTED)" ] || printf 'doc/UserGuide.pdf')
 clean_pretty:
 	@ksh -c "rm -rf pretty/*.c.* pretty/*.h.* pretty/gen_it_* \
 			pretty/generated_words.tex \
-		test/*/*.{thy,pp.het,pp.tex,th,dfg.c,xml,log,dvi,aux,sty} \
+		test/*/*.{thy,pp.dol,pp.tex,th,dfg.c,xml,log,dvi,aux,sty} \
 			test/*/log */test/temp* ToHaskell/test/*.{out,output} \
-			ExtModal/Tries/*.{pp.het,th} Fpl/test/*.{pp.het,th} \
-			CommonLogic/TestData/*.{pp.het,th} Common/testxmldiff \
+			ExtModal/Tries/*.{pp.dol,th} Fpl/test/*.{pp.dol,th} \
+			CommonLogic/TestData/*.{pp.dol,th} Common/testxmldiff \
 		doc/UserGuide.{log,aux,bbl,blg,out,fdb_latexmk,fls} doc/hs2isa.ps \
 			$(USER_GUIDE) log.haddock \
 		debian/{root,files,hets-*,tmp} \

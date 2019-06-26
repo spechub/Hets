@@ -139,6 +139,7 @@ pdftitle={Hets for Common Logic Users}]
 \newcommand{\CoCASL}{\normalTEXTSC{C}{O}\normalTEXTSC{C}{ASL}\xspace}
 \newcommand{\CspCASL}{\normalTEXTSC{C}{SP}-\normalTEXTSC{C}{ASL}\xspace}
 \newcommand{\Csp}{\normalTEXTSC{C}{SP}\xspace}
+\newcommand{\DOL}{\normalTEXTSC{D}{OL}\xspace}
 \newcommand{\CcsCASL}{CCS-\normalTEXTSC{C}{ASL}\xspace}
 \newcommand{\CASLLtl}{\normalTEXTSC{C}{ASL}-\normalTEXTSC{L}{TL}\xspace}
 \newcommand{\CASLChart}{\normalTEXTSC{C}{ASL}-\normalTEXTSC{C}{HART}\xspace}
@@ -153,7 +154,7 @@ pdftitle={Hets for Common Logic Users}]
 -- Version 0.99 --}
 \author{Till Mossakowski, Christian Maeder,
   Mihai Codescu, Eugen Kuksa, Christoph Lange\\[1em]
-DFKI GmbH, Bremen, Germany.\\[1em]
+Otto-von-Guericke-Universität Magdeburg, Germany.\\[1em]
 Comments to: \href{mailto:hets-users@informatik.uni-bremen.de}{hets-users@informatik.uni-bremen.de} \\
 (the latter needs subscription to the mailing list)
 }
@@ -233,7 +234,7 @@ out in \cite{Habil}. A short overview of \Hets is given in
 \cite{MossakowskiEA06,MossakowskiEtAl07b}.
 
 \Hets supports a number of input languages directly, such as Common
-Logic and OWL2 and \HetCASL. They will be described in the next
+Logic and OWL2 and \DOL. They will be described in the next
 sections.
 
 \subsection{Common Logic and the Common Logic Interchange Format (CLIF)}
@@ -248,9 +249,9 @@ features that speak about structuring and comparing logical
 theories. Michael Gr\"uninger has suggested certain special annotations comments for
 this purpose, which are supported by \Hets, see
 Sect.~\ref{relationsInCL}.  Alternatively, CLIF syntax can be used
-for specifications within \HetCASL files, or CLIF files can be referred to within \HetCASL
-files.  \HetCASL is a structuring language supporting relative theory
-interpretations and other things, see Sect.~\ref{HetCASL} below.
+for specifications within \DOL files, or CLIF files can be referred to within \DOL
+files.  \DOL is a structuring language supporting relative theory
+interpretations and other things, see Sect.~\ref{DOL} below.
 
 \subsection{OWL2}
 
@@ -260,20 +261,20 @@ the native OWL XML syntax \cite{w3c:owl2-xml},  the human-readable
 Manchester syntax \cite{w3c:owl2-manchester}, as well as RDF \cite{w3c:owl2-RDF-mapping}.  The RDF data model has multiple possible syntaxes itself, including RDF/XML \cite{w3c04:rdf-xml} and the text-oriented Turtle syntax \cite{w3c:turtle}.
 
 Since OWL2 does not support relative theory interpretations and other
-structuring features, such things can only be expressed in \HetCASL
+structuring features, such things can only be expressed in \DOL
 files. For this purpose, OWL2 Manchester syntax can be used within
-\HetCASL files, or OWL2 files can be referred to within \HetCASL files.
+\DOL files, or OWL2 files can be referred to within \DOL files.
 
-\subsection{HetCASL}
-\label{HetCASL}
+\subsection{DOL}
+\label{DOL}
 For heterogeneous specification, \Hets offers the Heterogeneous
-language \HetCASL.  \HetCASL is not so much a logic, but a meta
+language \DOL.  \DOL is not so much a logic, but a meta
 language that can express relations of theories written in different
 logics, like logical consequences, relative interpretations of
 theories, conservative extensions, translations of theories
 along logic translations, etc.
 
- \HetCASL generalises the structuring
+ \DOL generalises the structuring
 constructs of
 \CASL (Common Algebraic Specification Language \cite{CASL-UM,CASL/RefManual}) to arbitrary logics
 (if they are formalised as institutions and plugged into
@@ -281,11 +282,12 @@ the \Hets motherboard), as well as to heterogeneous
 combinations of specifications written in different logics.
 See
 Fig.~\ref{fig:lang} for a simple subset of the
-\HetCASL syntax, where \emph{basic specifications} are unstructured
+\DOL syntax, where \emph{basic specifications} are unstructured
 specifications or modules written in a specific logic.  The graph of
 currently supported logics and logic translations (the latter are also
-called comorphisms) is shown in Fig.~\ref{fig:LogicGraph}, and the
-degree of support by \Hets in Fig.~\ref{fig:Languages}.
+called comorphisms) is shown in Fig.~\ref{fig:LogicGraph}.
+%, and the
+%degree of support by \Hets in Fig.~\ref{fig:Languages}.
 
 % We give an ad hoc listing language definition of EBNF here.  This should probably go into lstlang0.sty.
 \begin{lstlisting}[float,label={fig:lang},caption={Syntax of a simple subset of the heterogeneous specification language. \texttt{BASIC-SPEC} and \texttt{SYMBOL-MAP} have a logic specific syntax, while \texttt{ID} stands for some form of identifiers.},basicstyle=\ttfamily\small,morecomment={[l]{\%\%\ }},morekeywords={then,with,logic,spec,end,view,to},escapeinside={<>}]
@@ -307,12 +309,11 @@ LIBRARY = DEFINITION*
 
 With \emph{heterogeneous structured specifications}, it is possible to
 combine and rename specifications, hide parts thereof, and also
-translate them to other logics. \emph{Architectural specifications}
-prescribe the structure of implementations.  \emph{Specification
-  libraries} are collections of named structured and architectural
+translate them to other logics.  \emph{Specification
+  libraries} are collections of named structured 
 specifications. \emph{Refinements} express the fact the a specification
-is becoming more specific. All this is supported by \HetCASL.
-For details, see \cite{Mossakowski04,Habil,CASL/RefManual}.
+is becoming more specific. All this is supported by \DOL.
+For details, see \cite{DOL-OMG,MossakowskiEtAl13d,mossakowski2015distributed,Mossakowski04,Habil,CASL/RefManual}.
 
 
 \section{Logics supported by Hets}
@@ -410,10 +411,9 @@ the \CASL Reference Manual \cite{CASL/RefManual}.  These documents
 explain both the \CASL logic and language of basic specifications as
 well as the logic-independent constructs for structured and
 architectural specifications.  The corresponding document explaining the
-\HetCASL language constructs for \emph{heterogeneous} structured specifications
-is the \HetCASL language summary \cite{Mossakowski04}; a formal
-semantics as well as a user manual with more examples are in preparation.
-Some of \HetCASL's heterogeneous constructs will be illustrated
+\DOL language constructs for \emph{heterogeneous} structured specifications
+is the \DOL standard \cite{DOL-OMG,MossakowskiEtAl13d,mossakowski2015distributed}.
+Some of \DOL's heterogeneous constructs will be illustrated
 in Sect.~\ref{sec:HetSpec} below.\\
 
 For further information on logics supported by \Hets, see the \Hets user guide  
@@ -467,7 +467,7 @@ user guide \cite{HetsUserGuide}.
 The latest \Hets version can be obtained from the
 \Hets tools home page
 \begin{quote}
-\url{http://www.dfki.de/sks/hets}
+\url{http://hets.eu}
 \end{quote}
  Since \Hets is being
 improved constantly, it is recommended always to use the latest version.
@@ -618,17 +618,18 @@ presented logics) with the following endings:
 filename extension & default logic & structuring language\\\hline
 \texttt{.casl} & \CASL & \CASL \\\hline
 \texttt{.het} & \CASL & \CASL \\\hline
+\texttt{.dol} & \CASL & \DOL \\\hline
 \texttt{.owl} & OWL2 & OWL2 \\\hline
 \texttt{.clf} or \texttt{.clif} & CommonLogic & custom, see Sect.~\ref{relationsInCL} \\\hline
 \end{tabular}
 
 \medskip
 
-Although the endings \texttt{.casl} and \texttt{.het} are
-interchangeable, the former should be used for libraries of
-homogeneous \CASL specifications and the latter for \HetCASL libraries
-of heterogeneous specifications (that use the \CASL structuring
-constructs). Within a \HetCASL library, the current logic can be changed, e.g.,
+Although the endings \texttt{.casl}, \texttt{.dol} and \texttt{.het} are
+interchangeable, \texttt{.casl} should be used for libraries of
+homogeneous \CASL specifications and \texttt{.dol} for \DOL libraries
+of heterogeneous specifications.
+Within a \DOL library, the current logic can be changed, e.g.,
 to Common Logic in the following way:
 
 \begin{lstlisting}[morekeywords=logic]
@@ -645,8 +646,8 @@ for explicit translations between logics, see \cite{Mossakowski04}.)
 
 The endings \texttt{.clf} and \texttt{.clif} are available for directly reading in
 Common Logic CLIF texts, as in the example of \texttt{Cat-AllInOne.clif}.
-By contrast, in \HetCASL libraries (ending with \texttt{.het}),
-the logic Common Logic has to be chosen explicitly, and the \CASL structuring
+By contrast, in \DOL libraries (ending with \texttt{.dol}),
+the logic Common Logic has to be chosen explicitly, and the \DOL structuring
 syntax needs to be used:
 
 \begin{lstlisting}[language=hetcasl,alsolanguage=clif]
@@ -672,7 +673,7 @@ end
 Note that the dot at the beginning of a line indicates that a new text begins.
 Hence, it is possible to have multiple texts in a \CASL specification.
 
-This specification is the \HetCASL-structured equivalent to the following three
+This specification is the \DOL-structured equivalent to the following three
 CLIF files:\footnote{Note that the ``cl:text'' syntax specified in the Common Logic standard \cite{CommonLogic:oldfashioned} has subsequently been recorded as a defect \cite{CommonLogicDefects:oldfashioned}, in favor of ``cl-text''.  \Hets supports both.}\\
 
 \begin{description}
@@ -701,7 +702,7 @@ CLIF files:\footnote{Note that the ``cl:text'' syntax specified in the Common Lo
 \end{description}
 
 Both can be directly used with \Hets, where the former content would be in a 
-file with the extension \texttt{.het} and the latter in a file with one of the extensions 
+file with the extension \texttt{.dol} and the latter in a file with one of the extensions 
 \texttt{.clf} or \texttt{.clif}.\footnote{These files can be found in the \texttt{CommonLogic/Examples} directory in the \Hets library \cite{hets-library:URL}.} This specification is divided into three 
 parts, which are linked to each other. These links and some more information can 
 be seen in the development graph of the file.
@@ -797,7 +798,7 @@ see the \Hets User Guide \cite{HetsUserGuide}.
 \label{relationsInCL}
 \Hets supports several relations between Common Logic Texts. However only one of
 them, the importation, is defined in ISO/IEC 24707:2007 \cite{CommonLogic:oldfashioned}, and has a syntax within Common Logic. All the other relations are 
-unofficial extensions used e.g.\ by the Common Logic Repository COLORE \cite{Colore}, and represented externally of Common Logic texts.  COLORE currently represents them in external XML documents, and any required symbol maps in external CLIF files.  \Hets, in contrast, allows for declaring them as \emph{views} within \HetCASL files, outside of specifications, as can be seen from the syntax specification in List.~\ref{fig:lang}.
+unofficial extensions used e.g.\ by the Common Logic Repository COLORE \cite{Colore}, and represented externally of Common Logic texts.  COLORE currently represents them in external XML documents, and any required symbol maps in external CLIF files.  \Hets, in contrast, allows for declaring them as \emph{views} within \DOL files, outside of specifications, as can be seen from the syntax specification in List.~\ref{fig:lang}.
 
 \begin{description}
 \item[Importation] \label{descr:link_import}
@@ -831,7 +832,7 @@ unofficial extensions used e.g.\ by the Common Logic Repository COLORE \cite{Col
   \Hets represents relative interpretation by a theorem link 
   (red arrow) in the development graph.
 
-  The \HetCASL syntax for relative interpretations is
+  The \DOL syntax for relative interpretations is
 \begin{quote}
 \textbf{view} \textit{v} : \textit{someCLText} \textbf{to} \textit{someTargetCLText}  \textbf{end}
 \end{quote}
@@ -863,14 +864,14 @@ or
   to show other theories in the development graph, without any connection 
   to the current theory.
   
-  For loading such theories, \HetCASL employs the same syntax as for loading theories that are connected to other theories, i.e.\ on loading theories, \Hets does not care about their relations:
+  For loading such theories, \DOL employs the same syntax as for loading theories that are connected to other theories, i.e.\ on loading theories, \Hets does not care about their relations:
 \begin{quote}
 \textbf{from} \textit{library} \textbf{get} \textit{spec$_1$}, \dots, \texttt{spec$_n$}
 \end{quote}
 \end{description}
 
 Except for importation and inclusion, you can specify an optional symbol map 
-(name map) in a relation.\footnote{While the ``copy'' semantics of Common Logic importations does not permit renamings, \HetCASL's extension mechanism offers an alternative possibility to reuse ontologies and rename some of their symbols, using the ``\textit{importedSpec} \textbf{with} \textit{name1Old} |-> \textit{name1New}, \textit{name2Old} |-> \textit{name2New} \textbf{then} \textit{importingSpec}'' syntax.}
+(name map) in a relation.\footnote{While the ``copy'' semantics of Common Logic importations does not permit renamings, \DOL's extension mechanism offers an alternative possibility to reuse ontologies and rename some of their symbols, using the ``\textit{importedSpec} \textbf{with} \textit{name1Old} |-> \textit{name1New}, \textit{name2Old} |-> \textit{name2New} \textbf{then} \textit{importingSpec}'' syntax.}
  Names from the target file are mapped to names from the current 
 file (including the translation file, if the relation uses one).  Note that is is possible to use cyclic relations in \Hets. Only the cyclic 
 importation is not supported.
@@ -904,7 +905,7 @@ uses lowercase predicates:
 \end{lstlisting}
 \end{description}
 
-The heterogeneous library \texttt{CommonLogic/Examples/SymbolMap.het} in the \Hets library \cite{hets-library:URL} establishes a mapping (actually: a relative interpretation) between these two Common Logic texts:
+The heterogeneous library \texttt{CommonLogic/Examples/SymbolMap.dol} in the \Hets library \cite{hets-library:URL} establishes a mapping (actually: a relative interpretation) between these two Common Logic texts:
 
 \begin{lstlisting}[language=hetcasl]
 library SymbolMap
@@ -938,9 +939,9 @@ The COLORE \cite{Colore} module \texttt{Region\-Boolean\-Contact\-Algebra} relat
 \label{fig:colore-graph}
 \end{figure}
 
-For use with \Hets, we have made a dump of the COLORE contents available in \texttt{CommonLogic/colore} in the \Hets library \cite{hets-library:URL}.  The \HetCASL variant of expressing the relative interpretation can be found in \texttt{CommonLogic/Examples/COLORE-RelativeInterpretation}.  Here, it is not necessary to rename symbols, as both modules have the same signature.
+For use with \Hets, we have made a dump of the COLORE contents available in \texttt{CommonLogic/colore} in the \Hets library \cite{hets-library:URL}.  The \DOL variant of expressing the relative interpretation can be found in \texttt{CommonLogic/Examples/COLORE-RelativeInterpretation}.  Here, it is not necessary to rename symbols, as both modules have the same signature.
 
-For easier understanding, the \HetCASL implementation includes literal copies of the \texttt{Region\-Boolean\-Contact\-Algebra} and \texttt{Atomless\-Boolean\-Lattice} modules; actually, they could as well have been included from their respective files using \texttt{from ... get ...}.
+For easier understanding, the \DOL implementation includes literal copies of the \texttt{Region\-Boolean\-Contact\-Algebra} and \texttt{Atomless\-Boolean\-Lattice} modules; actually, they could as well have been included from their respective files using \texttt{from ... get ...}.
 
 \begin{lstlisting}[language=hetcasl,alsolanguage=clif]
 library COLORE-RelativeInterpretation
@@ -977,7 +978,7 @@ view v : AtomlessBooleanLattice to RegionBooleanContactAlgebra
 
 This example defines a partial order twice: once as an extension of a strict partial order, and once directly.  Then, we connect both definitions by a view that expresses the relative interpretation.
 
-The source is available as \texttt{CommonLogic/Examples/Partial\_Orders.het} directory in the \Hets library \cite{hets-library:URL}.
+The source is available as \texttt{CommonLogic/Examples/Partial\_Orders.dol} directory in the \Hets library \cite{hets-library:URL}.
 
 \begin{lstlisting}[language=hetcasl,alsolanguage=clif]
 logic CommonLogic
@@ -1045,7 +1046,7 @@ More concretely, Common Logic is useful in this scenario for expressing knowledg
 (“Two areas in a house (e.g.\ a working area in a room) are either the same, or intersecting, or bordering, or separated, or one is a proper part of the other.”)
 
 The following listing shows a relevant excerpt of the heterogeneous specification, which can be found 
-under \texttt{Ontology/Examples/AAL.het} in the \Hets library \cite{hets-library:URL}.  The key features include:
+under \texttt{Ontology/Examples/AAL.dol} in the \Hets library \cite{hets-library:URL}.  The key features include:
 
 \begin{itemize}
 \item Heterogeneous specification allows for reusing the OpenAAL OWL ontology, but at the same time formalizing a first-order spatial calculus.
@@ -1116,9 +1117,9 @@ spec OurAAL =
 
 In the previous example, we established a link between an OWL ontology and a Common Logic ontology by reusing elements of the signature of the OWL ontology (concretely: OpenAAL's \texttt{is-in-room} predicate) in the Common Logic ontology.
 
-\HetCASL's view mechanism offers an alternative to that.  A view from one ontology to another ontology in the same logic has been shown in Sect.~\ref{sec:relat-interpr}, but it is also possible to have views across logics, as long as there is a translation between these logics that is known to \Hets (cf.\ Sect.~\ref{comorphisms}).
+\DOL's view mechanism offers an alternative to that.  A view from one ontology to another ontology in the same logic has been shown in Sect.~\ref{sec:relat-interpr}, but it is also possible to have views across logics, as long as there is a translation between these logics that is known to \Hets (cf.\ Sect.~\ref{comorphisms}).
 
-The following example, which is available as \texttt{Ontology/Examples/TimeInOWLandCL.het} in the \Hets library \cite{hets-library:URL}, establishes a view between the OWL Time ontology and its reimplementation in Common Logic, \ednote{CL: There is no way to make that explicit in \HetCASL, is there?\\ TM: you mean the datatype stuff that the OWL to CL translation generates? We should modify the translation to generate this only if really needed.\\ CL: No, I just thought (and was wrong) that \HetCASL had no way of explicitly choosing a logic translation.  But not I don't understand what \emph{you} mean.  Maybe it's related to the error that I get when loading the file; see my ticket.}using the ``OWL22CommonLogic'' translation:
+The following example, which is available as \texttt{Ontology/Examples/TimeInOWLandCL.dol} in the \Hets library \cite{hets-library:URL}, establishes a view between the OWL Time ontology and its reimplementation in Common Logic, \ednote{CL: There is no way to make that explicit in \DOL, is there?\\ TM: you mean the datatype stuff that the OWL to CL translation generates? We should modify the translation to generate this only if really needed.\\ CL: No, I just thought (and was wrong) that \DOL had no way of explicitly choosing a logic translation.  But not I don't understand what \emph{you} mean.  Maybe it's related to the error that I get when loading the file; see my ticket.}using the ``OWL22CommonLogic'' translation:
 
 \begin{lstlisting}[language=hetcasl,alsolanguage=clif,alsolanguage=owl2Manchester]
 logic OWL
@@ -1240,7 +1241,7 @@ spec ToProve =
 end
 \end{lstlisting}
 
-In this specification\footnote{\texttt{HelloWorldExamples/ToProve.het} in the \Hets library \cite{hets-library:URL}} the theorems, annotated (named) by \texttt{correct} and 
+In this specification\footnote{\texttt{HelloWorldExamples/ToProve.dol} in the \Hets library \cite{hets-library:URL}} the theorems, annotated (named) by \texttt{correct} and 
 \texttt{incorrect} are the ones, that can be proven or disproven.
 Note that they are separate texts inside the specification \texttt{ToProve}.
 The annotations are optional. For proving, they are the names shown in the 
@@ -1454,6 +1455,7 @@ that are read and written.
 The possible input types are:
 \begin{lstlisting}
     casl
+  | dol
   | het
   | owl
   | hs
@@ -1487,7 +1489,7 @@ Specify \texttt{DIR} as destination directory for output files.
   | thy
   | comptable.xml
   | (sig|th)[.delta]
-  | pp.(het|tex|xml|html)
+  | pp.(dol|tex|xml|html)
   | graph.(exp.dot|dot)
   | dfg[.c]
   | tptp[.c]
@@ -1526,16 +1528,16 @@ specification(s) (selected with the \texttt{-n} or \texttt{-{}-spec}
 option). It is assumed that the relation algebra is
 generated by basic relations, and that the specification is written
 in the \CASL logic. A sample specification of a relation
-algebra can be found under \texttt{Calculi/Space/RCC8.het} in the \Hets library \cite{hets-library:URL}.
+algebra can be found under \texttt{Calculi/Space/RCC8.dol} in the \Hets library \cite{hets-library:URL}.
 The output format is XML, the URL of the DTD is included in the
 XML file.
 
-The \texttt{sig} or \texttt{th} option will create \HetCASL signature or
+The \texttt{sig} or \texttt{th} option will create \DOL signature or
 theory files for each development graph node. (The \texttt{.delta} extension
 is not yet supported.)
 
 The \texttt{pp} format is for pretty printing, either as plain text
-(\texttt{het}), \LaTeX\ input (\texttt{tex}), HTML (\texttt{html}) or XML
+(\texttt{dol}), \LaTeX\ input (\texttt{tex}), HTML (\texttt{html}) or XML
 (\texttt{xml}).  For example, it is possible to generate a pretty printed
 \LaTeX\ version of \texttt{Cat.clif} by typing:
 
@@ -1601,7 +1603,7 @@ chooses a list of named views for processing
 Large parts of \Hets are now also available via a web interface. A running
 server should be accessible on
 \url{http://pollux.informatik.uni-bremen.de:8000/}. It allows to browse the
-\Hets library, upload a file or just a \HetCASL specification. Development
+\Hets library, upload a file or just a \DOL specification. Development
 graphs for well-formed specifications can be displayed in various formats
 where the \texttt{svg} format is supposed to look like the graphs displayed by
 uDrawGraph. Besides browsing, the web server is supposed to be accessed by
