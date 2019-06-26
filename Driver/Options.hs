@@ -712,7 +712,7 @@ data PrettyType = PrettyAscii Bool | PrettyLatex Bool | PrettyXml | PrettyHtml
 
 instance Show PrettyType where
   show p = case p of
-    PrettyAscii b -> (if b then "stripped." else "") ++ "het"
+    PrettyAscii b -> (if b then "stripped." else "") ++ "dol"
     PrettyLatex b -> (if b then "labelled." else "") ++ "tex"
     PrettyXml -> xmlS
     PrettyHtml -> "html"
@@ -961,7 +961,7 @@ getExtensions opts = case intype opts of
         GuessIn
           | defLogicIsDMU opts -> [".xml"]
           | isDefLogic "Framework" opts
-            -> [".elf", ".thy", ".maude", ".het"]
+            -> [".elf", ".thy", ".maude", ".het", ".dol"]
         GuessIn -> downloadExtensions
         e@(ATermIn _) -> ['.' : show e, '.' : treeS ++ show e]
         e -> ['.' : show e]
