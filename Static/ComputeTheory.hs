@@ -35,6 +35,8 @@ import Static.History
 
 import Common.LibName
 import Common.Result
+import Common.AS_Annotation
+import qualified Common.OrderedMap as OMap
 
 import Data.Graph.Inductive.Graph as Graph
 import Data.List (sortBy)
@@ -97,32 +99,32 @@ computeLibEnvTheories :: LibEnv -> LibEnv
 computeLibEnvTheories le =
     let lns = getTopsortedLibs le
         upd le' ln = let dg0 = lookupDGraph ln le
-                         dg = computeDGraphTheories le' dg0
+                         dg = computeDGraphTheories le' ln dg0
                      in Map.insert ln dg le'
     in foldl upd Map.empty lns
 
-computeDGraphTheories :: LibEnv -> DGraph -> DGraph
-computeDGraphTheories le dgraph =
-  let newDg = computeDGraphTheoriesAux le dgraph
+computeDGraphTheories :: LibEnv -> LibName -> DGraph -> DGraph
+computeDGraphTheories le ln dgraph =
+  let newDg = computeDGraphTheoriesAux le ln dgraph
   in groupHistory dgraph (DGRule "Compute theory") newDg
 
 
-computeDGraphTheoriesAux :: LibEnv -> DGraph -> DGraph
-computeDGraphTheoriesAux le dgraph =
+computeDGraphTheoriesAux :: LibEnv -> LibName -> DGraph -> DGraph
+computeDGraphTheoriesAux le ln dgraph =
   foldl (\ dg l@(n, lbl) -> updatePending dg lbl
-    (n, recomputeNodeLabel le dg l))
+    (n, recomputeNodeLabel le ln dg l))
      dgraph $ topsortedNodes dgraph
 
-recomputeNodeLabel :: LibEnv -> DGraph -> LNode DGNodeLab -> DGNodeLab
-recomputeNodeLabel le dg l@(n, lbl) =
-  case computeLabelTheory le dg l of
+recomputeNodeLabel :: LibEnv -> LibName -> DGraph -> LNode DGNodeLab -> DGNodeLab
+recomputeNodeLabel le ln dg l@(n, lbl) =
+  case computeLabelTheory le ln dg l of
     gTh@(Just th) ->
       let (chg, lbl1) = case globalTheory lbl of
             Nothing -> (False, lbl)
             Just oTh -> let
               (same, nLocTh) = invalidateProofs oTh th $ dgn_theory lbl
               in (not same, lbl { dgn_theory = nLocTh })
-          ngTh = if chg then computeLabelTheory le dg (n, lbl1) else gTh
+          ngTh = if chg then computeLabelTheory le ln dg (n, lbl1) else gTh
       in case ngTh of
         Just nth@(G_theory _ _ _ _ sens _) ->
           (if Map.null sens then markNodeConsistent "ByNoSentences" lbl1
@@ -131,19 +133,29 @@ recomputeNodeLabel le dg l@(n, lbl) =
         Nothing -> lbl1
     Nothing -> lbl
 
-computeLabelTheory :: LibEnv -> DGraph -> LNode DGNodeLab -> Maybe G_theory
-computeLabelTheory le dg (n, lbl) = let localTh = dgn_theory lbl in
+computeLabelTheory :: LibEnv -> LibName -> DGraph -> LNode DGNodeLab -> Maybe G_theory
+computeLabelTheory le ln dg (n, lbl) = let 
+  localTh = dgn_theory lbl 
+  lblName = dgn_libname lbl 
+  lblNode = dgn_node lbl 
+ in
     fmap reduceTheory . maybeResult $ if isDGRef lbl then
-        case Map.lookup (dgn_libname lbl) le of
+        case Map.lookup lblName le of
           Nothing -> return localTh -- do not crash here
           Just dg' -> do
-            refTh <- getGlobalTheory $ labDG dg' $ dgn_node lbl
-            joinG_sentences refTh localTh
+            _refTh@(G_theory gtl gsub gts gind1 sens gind2) <- getGlobalTheory $ labDG dg' lblNode
+            let refTh' = G_theory gtl gsub gts gind1 
+                            (OMap.mapWithKey (\k a -> setOriginIfLocal (filePathToLibId $ libToFileName lblName) lblNode k a) sens) 
+                             gind2
+            joinG_sentences refTh' localTh
     else do
       ths <- mapM (\ (s, _, l) -> do
-         th <- let sl = labDG dg s in if isLocalDef $ dgl_type l then
+         _th@(G_theory gtl gsub gts gind1 sens gind2) <- let sl = labDG dg s in if isLocalDef $ dgl_type l then
                    return $ dgn_theory sl
                else getGlobalTheory sl
+         let th = G_theory gtl gsub gts gind1 
+                   (OMap.mapWithKey (\k a -> setOriginIfLocal (filePathToLibId $ libToFileName ln) s k a) sens) 
+                   gind2
          -- translate theory and turn all imported theorems into axioms
          translateG_theory (dgl_morphism l) $ theoremsToAxioms th)
          $ sortBy
@@ -162,10 +174,10 @@ reduceTheory :: G_theory -> G_theory
 reduceTheory (G_theory lid syn sig ind sens _) =
   G_theory lid syn sig ind (reduceSens sens) startThId
 
-updateLabelTheory :: LibEnv -> DGraph -> LNode DGNodeLab -> G_theory -> DGraph
-updateLabelTheory le dg (i, l) gth = let
+updateLabelTheory :: LibEnv -> LibName -> DGraph -> LNode DGNodeLab -> G_theory -> DGraph
+updateLabelTheory le ln dg (i, l) gth = let
     l' = l { dgn_theory = gth }
-    n = (i, l' { globalTheory = computeLabelTheory le dg (i, l') })
+    n = (i, l' { globalTheory = computeLabelTheory le ln dg (i, l') })
     in updatePending dg l n
 
 updatePending :: DGraph

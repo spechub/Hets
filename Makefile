@@ -37,15 +37,15 @@ docs: doc/UserGuide.pdf
 
 # Upgrade haskell-stack
 stack_upgrade:
-	$(STACK) upgrade
+	$(STACK) $(STACK_OPTS) upgrade
 	$(STACK_EXEC) -- ghc-pkg recache
 # Create the build environment
 stack: $(STACK_UPGRADE_TARGET)
-	$(STACK) build --install-ghc --only-dependencies $(STACK_DEPENDENCIES_FLAGS)
+	$(STACK) $(STACK_OPTS) build --install-ghc --only-dependencies $(STACK_DEPENDENCIES_FLAGS)
 	touch stack
 restack:
 	rm -f stack
-	$(STACK) build --install-ghc --only-dependencies $(STACK_DEPENDENCIES_FLAGS)
+	$(STACK) $(STACK_OPTS) build --install-ghc --only-dependencies $(STACK_DEPENDENCIES_FLAGS)
 	touch stack
 
 SED := $(shell [ "$(OSNAME)" = 'SunOS' ] && printf 'gsed' || printf 'sed')
@@ -642,10 +642,10 @@ USER_GUIDE := $(shell [ -n "$(EXPORTED)" ] || printf 'doc/UserGuide.pdf')
 clean_pretty:
 	@ksh -c "rm -rf pretty/*.c.* pretty/*.h.* pretty/gen_it_* \
 			pretty/generated_words.tex \
-		test/*/*.{thy,pp.het,pp.tex,th,dfg.c,xml,log,dvi,aux,sty} \
+		test/*/*.{thy,pp.dol,pp.tex,th,dfg.c,xml,log,dvi,aux,sty} \
 			test/*/log */test/temp* ToHaskell/test/*.{out,output} \
-			ExtModal/Tries/*.{pp.het,th} Fpl/test/*.{pp.het,th} \
-			CommonLogic/TestData/*.{pp.het,th} Common/testxmldiff \
+			ExtModal/Tries/*.{pp.dol,th} Fpl/test/*.{pp.dol,th} \
+			CommonLogic/TestData/*.{pp.dol,th} Common/testxmldiff \
 		doc/UserGuide.{log,aux,bbl,blg,out,fdb_latexmk,fls} doc/hs2isa.ps \
 			$(USER_GUIDE) log.haddock \
 		debian/{root,files,hets-*,tmp} \
@@ -928,21 +928,23 @@ install-common: docs install-owl-tools
 	$(MAKE) $*-opt
 
 # for now install-{common,hets,hets_server} are supported, only.
+install-%: IDIR = $(DESTDIR)$(SUBDIR_$*)$(PREFIX)
 install-%: %.bin
 	$(INSTALL) -m 0755 -d \
-		$(DESTDIR)$(SUBDIR_$*)$(PREFIX)/bin \
-		$(DESTDIR)$(SUBDIR_$*)$(PREFIX)/$(HETS_DIR) \
-		$(DESTDIR)$(SUBDIR_$*)$(PREFIX)/$(MAN_DIR)
+		$(IDIR)/bin \
+		$(IDIR)/$(HETS_DIR) \
+		$(IDIR)/$(MAN_DIR)
 	$(SED) -e "s,@CLIENT_BASEDIR@,$(PREFIX)," debian/hets_script \
-		>$(DESTDIR)$(SUBDIR_$*)$(PREFIX)/bin/$(subst _,-,$*)
-	chmod 0755 $(DESTDIR)$(SUBDIR_$*)$(PREFIX)/bin/$(subst _,-,$*)
-	ln $< $(DESTDIR)$(SUBDIR_$*)$(PREFIX)/$(HETS_DIR)/$(subst _,-,$*) 2>/dev/null || \
-		cp $< $(DESTDIR)$(SUBDIR_$*)$(PREFIX)/$(HETS_DIR)/$(subst _,-,$*)
+		>$(IDIR)/bin/$(subst _,-,$*)
+	chmod 0755 $(IDIR)/bin/$(subst _,-,$*)
+	ln $< $(IDIR)/$(HETS_DIR)/$(subst _,-,$*) 2>/dev/null || \
+		{ cp -f $< $(IDIR)/$(HETS_DIR)/$(subst _,-,$*) || true ; }
+	chmod 0755 $(IDIR)/$(HETS_DIR)/$(subst _,-,$*)
 	[ $* = 'hets' ] && RMSECT='SERVER' || RMSECT='DESKTOP' ; \
 		$(SED) -e "/@S$${RMSECT}@/,/@E$${RMSECT}@/ d" debian/hets.1 \
-			>$(DESTDIR)$(SUBDIR_$*)$(PREFIX)/$(MAN_DIR)/$(subst _,-,$*).1
+			>$(IDIR)/$(MAN_DIR)/$(subst _,-,$*).1
 	[ "$(OSNAME)" = 'SunOS' ] || ${SED} -i -e '/@SSOLARIS@/,/@ESOLARIS@/ d' \
-		$(DESTDIR)$(SUBDIR_$*)$(PREFIX)/$(MAN_DIR)/$(subst _,-,$*).1
+		$(IDIR)/$(MAN_DIR)/$(subst _,-,$*).1
 
 install: install-hets install-hets_server install-common install-owl-tools
 
@@ -961,9 +963,17 @@ CHANGELOG := $(shell [ -f debian/changelog ] && \
 	printf 'debian/changelog' || printf 'debian/changelog.tmp')
 
 # See Versioning in ./README
-# NOTE: The dash crap sucks again here! So we assume only the 2nd rev num
-# might be padded with a single '0' to avoid more clutter.
+# NOTE: The dash crap sucks! So make sure, we have a ksh93 or bash set as SHELL!
+#       We assume only the 2nd rev num might be padded with a single '0'
+#       to avoid more clutter.
 debian/changelog.tmp: debian/control
+	[[ -e debian/control.0 ]] || cp -p debian/control debian/control.0 ; \
+	cp -p debian/control.0 debian/control ; \
+	echo "# HC_OPTS='$(HC_OPTS)'" >> debian/control ; \
+	[[ "$(HC_OPTS)" =~ -DMYSQL ]] || \
+		$(SED) -i -e 's/libmysqlclient20, //' debian/control ; \
+	[[ ! "$(HC_OPTS)" =~ -DNO_WGET ]] || \
+		$(SED) -i -e 's/wget, //' debian/control
 	@SRCPKG=`grep ^Source: debian/control |awk '{ print $$2 ; }'` ; \
 	if [ -z "${FULL_DEBVERS}" ]; then \
 		LSB=`lsb_release -rs`; A="$${LSB%.*}"; B="$${LSB#*.}"; B="$${B##0}"; \

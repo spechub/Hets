@@ -13,6 +13,7 @@ module PGIP.Output.Proof
 import PGIP.Output.Formatting
 import PGIP.Output.Mime
 import PGIP.Output.Provers (Prover, prepareFormatProver)
+import PGIP.Shared
 
 import Interfaces.GenericATPState (tsTimeLimit, tsExtraOpts)
 import Logic.Comorphism (AnyComorphism)
@@ -33,10 +34,6 @@ import Numeric
 import Text.XML.Light (ppTopElement)
 import Text.Printf (printf)
 
-type ProofResult = (String, String, String, ProverOrConsChecker,
-                -- (goalName, goalResult, goalDetails, prover,
-                    AnyComorphism, Maybe (LP.ProofStatus G_proof_tree))
-                -- translation, proofStatusM)
 type ProofFormatter =
     ProofFormatterOptions -> [(String, [ProofResult])] -> (String, String)
                           -- [(dgNodeName, result)]  -> (responseType, response)
@@ -74,7 +71,7 @@ formatProofs format options proofs = case format of
 
   convertGoal :: ProofResult -> ProofGoal
   convertGoal (goalName, goalResult, goalDetails, proverOrConsChecker,
-               translation, proofStatusM) =
+               translation, proofStatusM, _) =
     ProofGoal
       { name = goalName
       , result = goalResult

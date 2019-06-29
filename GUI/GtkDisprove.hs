@@ -62,7 +62,7 @@ showDisproveGUI gi le dg (i, lbl) = case globalTheory lbl of
   Just gt@(G_theory _ _ _ _ sens _) -> let
     fg g th = let
       l = lbl { dgn_theory = th }
-      l' = l { globalTheory = computeLabelTheory le dg (i, l) }
+      l' = l { globalTheory = computeLabelTheory le (libName gi) dg (i, l) }
       no_cs = ConsistencyStatus CSUnchecked ""
       stat = case OMap.lookup g sens of
         Nothing -> no_cs

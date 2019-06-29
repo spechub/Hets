@@ -100,18 +100,17 @@
 0       search/4096/t   interpretation\         DOL document
 !:mime  text/dol
 
-# HetCASL
-0       search/4096/t   spec\                   HetCASL document
-!:mime  text/het
+0       search/4096/t   spec\                   DOL document
+!:mime  text/dol
 
-0       search/4096/t   library\                HetCASL document
-!:mime  text/het
+0       search/4096/t   library\                DOL document
+!:mime  text/dol
 
-0       search/4096/t   view\                   HetCASL document
-!:mime  text/het
+0       search/4096/t   view\                   DOL document
+!:mime  text/dol
 
-0       search/4096/t   logic\                  HetCASL document
-!:mime  text/het
+0       search/4096/t   logic\                  DOL document
+!:mime  text/dol
 
 # CASL
 0       search/4096/t   sort\                   CASL document

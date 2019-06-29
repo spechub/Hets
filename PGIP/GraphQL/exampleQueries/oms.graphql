@@ -11,7 +11,10 @@ fragment omsFields on OMS {
     proved
   }
   consistencyCheckAttempts(limit: null) {
-    evaluationState
+    action {
+      evaluationState
+      message
+    }
     reasonerConfiguration {
       configuredReasoner {
         id
@@ -27,7 +30,6 @@ fragment omsFields on OMS {
     reasonerOutput {
       text
     }
-    reasoningStatus
     timeTaken
     usedReasoner {
       id
@@ -97,9 +99,15 @@ fragment omsFields on OMS {
 }
 
 fragment conjectureFields on Conjecture {
-  evaluationState
-  proofAttempts {
+  action {
     evaluationState
+    message
+  }
+  proofAttempts {
+    action {
+      evaluationState
+      message
+    }
     reasonerConfiguration {
       configuredReasoner {
         id
@@ -114,14 +122,12 @@ fragment conjectureFields on Conjecture {
     reasonerOutput {
       text
     }
-    reasoningStatus
     timeTaken
     usedReasoner {
       id
       displayName
     }
   }
-  reasoningStatus
 }
 
 fragment symbolFields on Symbol {

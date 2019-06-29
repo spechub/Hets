@@ -1,21 +1,151 @@
-module Persistence.Utils ( parameterize
+module Persistence.Utils ( firstLibdir
+                         , locIdOfDocument
+                         , locIdOfOMSWithName
+                         , locIdOfOMS
+                         , locIdOfSentence
+                         , locIdOfSymbol
+                         , symbolDetails
+                         , locIdOfMapping
+                         , slugOfReasoner
+                         , slugOfProver
+                         , slugOfConsistencyChecker
+                         , slugOfTranslation
+                         , slugOfLanguageByName
+                         , slugOfLogicMapping
+                         , slugOfLogicMappingByName
+                         , slugOfLogicInclusionByName
+                         , slugOfLogicByName
+                         , logicNameForDB
+                         , logicNameForDBByName
+                         , parameterize
                          , advisoryLocked
                          , coerceId
                          ) where
 
 import Persistence.DBConfig
 
-import Common.Utils (replace)
+import qualified Persistence.Schema.Enums as Enums
+import Persistence.Schema
+
+import Common.Utils (replace, tryToStripPrefix)
 import Driver.Options
 import Persistence.Database
+import Logic.Comorphism as Comorphism
+import Logic.Logic as Logic
+import Proofs.AbstractState
+import Static.DevGraph (DGNodeLab (..))
+import Static.DgUtils (showName)
 
 import Control.Monad.IO.Class (MonadIO (..))
 import Data.Char
+import Data.Maybe
 import qualified Data.Text as Text
 import qualified Database.Esqueleto.Internal.Language as EIL
 import qualified Database.Esqueleto.Internal.Sql as EIS
 import Database.Persist hiding (replace)
 import Database.Persist.Sql hiding (replace)
+
+firstLibdir :: HetcatsOpts -> String
+firstLibdir opts =
+  let libdir' = head $ libdirs opts
+      libdir'' = if head libdir' == '/' then "file://" ++ libdir' else libdir'
+  in  if last libdir'' == '/' then libdir'' else libdir'' ++ "/"
+
+locIdOfDocument :: HetcatsOpts -> Maybe String -> String -> String
+locIdOfDocument opts locationM displayName =
+  let fullLocation =
+        if fmap head locationM == Just '/'
+        then fmap ("file://" ++) locationM
+        else locationM
+      base = fromMaybe displayName fullLocation
+  in  if null $ libdirs opts
+      then base
+      else tryToStripPrefix (firstLibdir opts) base
+
+locIdOfOMSWithName :: Entity LocIdBase -> String -> String
+locIdOfOMSWithName (Entity _ documentLocIdBaseValue) nodeName =
+  case locIdBaseKind documentLocIdBaseValue of
+    Enums.NativeDocument -> nodeName
+    _ -> locIdBaseLocId documentLocIdBaseValue
+         ++ "//oms/" ++ nodeName
+
+locIdOfOMS :: Entity LocIdBase -> DGNodeLab -> String
+locIdOfOMS documentEntity nodeLabel =
+  locIdOfOMSWithName documentEntity $ showName $ dgn_name nodeLabel
+
+locIdOfSentence :: Entity LocIdBase -> String -> String
+locIdOfSentence (Entity _ omsLocIdBaseValue) name =
+  locIdBaseLocId omsLocIdBaseValue ++ "/sentences/" ++ name
+
+symbolDetails :: Logic.Logic lid sublogics
+                   basic_spec sentence symb_items symb_map_items
+                   sign morphism symbol raw_symbol proof_tree
+              => Entity LocIdBase
+              -> lid
+              -> symbol
+              -> (String, String, String, String)
+symbolDetails omsEntity lid symbol =
+  let name = show $ sym_name lid symbol
+      fullName = fullSymName lid symbol
+      symbolKind' = symKind lid symbol
+      symbolKind = if null symbolKind' then "symbol" else symbolKind'
+  in  (locIdOfSymbol omsEntity symbolKind name, name, fullName, symbolKind)
+
+locIdOfSymbol :: Entity LocIdBase -> String -> String -> String
+locIdOfSymbol (Entity _ omsLocIdBaseValue) symbolKind' name =
+  let symbolKind = if null symbolKind' then "symbol" else symbolKind'
+  in  locIdBaseLocId omsLocIdBaseValue ++ "/symbols/" ++ symbolKind ++ "/" ++ name
+
+locIdOfMapping :: Entity LocIdBase -> String -> String
+locIdOfMapping (Entity _ documentLocIdBaseValue) displayName =
+  locIdBaseLocId documentLocIdBaseValue ++ "//mappings/" ++ displayName
+
+slugOfReasoner :: ProverOrConsChecker -> String
+slugOfReasoner proverOrConsChecker =
+  case proverOrConsChecker of
+    Prover gProver -> slugOfProver gProver
+    ConsChecker gConsChecker -> slugOfConsistencyChecker gConsChecker
+
+slugOfProver :: G_prover -> String
+slugOfProver = parameterize . getProverName
+
+slugOfConsistencyChecker :: G_cons_checker -> String
+slugOfConsistencyChecker = parameterize . getCcName
+
+slugOfTranslation :: AnyComorphism -> String
+slugOfTranslation (Comorphism.Comorphism cid) =
+  parameterize $ language_name cid
+
+slugOfLanguageByName :: String -> String
+slugOfLanguageByName = parameterize
+
+slugOfLogicMapping :: AnyComorphism -> String
+slugOfLogicMapping (Comorphism.Comorphism cid) =
+  slugOfLogicMappingByName $ language_name cid
+
+slugOfLogicMappingByName :: String -> String
+slugOfLogicMappingByName = parameterize
+
+slugOfLogicInclusionByName :: String -> String
+slugOfLogicInclusionByName =
+  parameterize .
+  replace "->" "-Arrow-" .
+  replace "_" "-Sub-" .
+  replace "." "-Dot-"
+
+slugOfLogicByName :: String -> String
+slugOfLogicByName = parameterize
+
+logicNameForDB :: Logic.Logic lid sublogics basic_spec sentence symb_items
+                    symb_map_items sign morphism symbol raw_symbol proof_tree
+               => lid -> sublogics -> String
+logicNameForDB lid sublogic =
+  logicNameForDBByName (language_name lid) $ sublogicName sublogic
+
+logicNameForDBByName :: String -> String -> String
+logicNameForDBByName languageName_ logicName_ =
+  if null logicName_ then languageName_ else logicName_
+
 
 parameterize :: String -> String
 parameterize =

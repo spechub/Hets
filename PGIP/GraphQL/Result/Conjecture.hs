@@ -2,6 +2,7 @@
 
 module PGIP.GraphQL.Result.Conjecture where
 
+import PGIP.GraphQL.Result.Action
 import PGIP.GraphQL.Result.FileRange
 import PGIP.GraphQL.Result.ReasoningAttempt
 import PGIP.GraphQL.Result.Symbol
@@ -14,7 +15,6 @@ data Conjecture = Conjecture { __typename :: String
                              , name :: String
                              , symbols :: [Symbol]
                              , text :: String
-                             , evaluationState :: String
+                             , action :: Action
                              , proofAttempts :: [ReasoningAttempt]
-                             , reasoningStatus :: String
                              } deriving (Show, Typeable, Data)

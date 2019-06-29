@@ -373,7 +373,7 @@ anaSpecAux conser addSyms optNodes lg
         rname = extName "Extension" name
     (sp', nsig', dg0) <- anaSpec addSyms optNodes lg libEnv 
                                  ln dg nsig rname opts eo sp0 rg
-    (ns', dg1) <- anaExtraction lg libEnv dg0 nsig' name rg extr
+    (ns', dg1) <- anaExtraction lg libEnv ln dg0 nsig' name rg extr
     return (Extraction (replaceAnnoted sp' asp) extr, ns', dg1)
   Reduction asp restr ->
    do let sp1 = item asp
@@ -414,7 +414,7 @@ anaSpecAux conser addSyms optNodes lg
            rname = extName "Filtering" name
        (sp', nsig', dg') <- anaSpec addSyms optNodes lg libEnv ln dg 
                                     nsig rname opts eo sp1 rg
-       (nf, dgF) <- anaFiltering lg libEnv dg' nsig' name filtering
+       (nf, dgF) <- anaFiltering lg libEnv ln dg' nsig' name filtering
        return (Filtering (replaceAnnoted sp' asp) filtering, nf, dgF)
        -- error "analysis of filterings not yet implemented"
   Minimization asp (Mini kw cm cv poss) -> do
@@ -622,7 +622,7 @@ anaSpecAux conser addSyms optNodes lg
                             libEnv ln dg nsig name opts eo hAsDataSpec rg
   Combination (Network cItems eItems _) pos -> adjustPos pos $ do
     let (cNodes', cEdges') = networkDiagram dg cItems eItems
-    (ns, dg') <- insertColimitInGraph libEnv dg cNodes' cEdges' name
+    (ns, dg') <- insertColimitInGraph libEnv ln dg cNodes' cEdges' name
     return (sp, ns, dg')
   _ -> fail $ "AnalysisStructured: " ++ show (prettyLG lg sp)
 
@@ -734,9 +734,9 @@ gsigUnionMaybe lg both mn gsig = case mn of
   EmptyNode _ -> return gsig
   JustNode ns -> gsigUnion lg both (getSig ns) gsig
 
-anaExtraction :: LogicGraph -> LibEnv -> DGraph -> NodeSig -> NodeName -> Range ->
+anaExtraction :: LogicGraph -> LibEnv -> LibName -> DGraph -> NodeSig -> NodeName -> Range ->
               EXTRACTION -> Result (NodeSig, DGraph)
-anaExtraction lg libEnv dg nsig name rg (ExtractOrRemove b iris _) = if not b then
+anaExtraction lg libEnv ln dg nsig name rg (ExtractOrRemove b iris _) = if not b then
   fail "analysis of remove not implemented yet"
  else do
   let dg0 = markHiding libEnv dg
@@ -744,7 +744,7 @@ anaExtraction lg libEnv dg nsig name rg (ExtractOrRemove b iris _) = if not b th
   if labelHasHiding $ labDG dg0 n then
     fail "cannot extract module from a non-flattenable OMS"
    else do
-    let dgThm = computeDGraphTheories libEnv dg0
+    let dgThm = computeDGraphTheories libEnv ln dg0
         gth = case (globalTheory . labDG dgThm) n  of
                Nothing -> error "not able to compute theory"
                Just th -> th
@@ -814,7 +814,7 @@ anaIntersect addSyms lg libEnv ln dg nsig name opts eo asps rg = case asps of
           case hasHiding of
             True -> fail "Intersection is defined only for flattenable theories"
             False -> do
-             let dgThm = computeDGraphTheories libEnv dg
+             let dgThm = computeDGraphTheories libEnv ln dg
                  theo:theos = map (\x -> case (globalTheory . labDG dgThm . getNode) x of
                                             Nothing -> error $ "not able to compute theory of node" ++ (show $ getNode x)
                                             Just th -> th) nsigs'
@@ -828,13 +828,13 @@ anaIntersect addSyms lg libEnv ln dg nsig name opts eo asps rg = case asps of
              dg3 <- foldM insE dg2 nsigs'
              return (newAsps, nsigs', ns, dg3)
 
-anaFiltering :: LogicGraph -> LibEnv -> DGraph -> NodeSig -> NodeName-> FILTERING
+anaFiltering :: LogicGraph -> LibEnv -> LibName -> DGraph -> NodeSig -> NodeName-> FILTERING
    -> Result (NodeSig, DGraph)
-anaFiltering lg libEnv dg nsig nname filtering = case filtering of
+anaFiltering lg libEnv ln dg nsig nname filtering = case filtering of
   FilterSymbolList selectOrReject (G_symb_items_list lidS sItems) _ ->
    if not selectOrReject then do
      let strs = concatMap (symb_items_name lidS) sItems
-         dgThm = computeDGraphTheories libEnv dg
+         dgThm = computeDGraphTheories libEnv ln dg
          th =
             case (globalTheory . labDG dgThm . getNode) nsig of
                   Nothing -> error "error computing theory"

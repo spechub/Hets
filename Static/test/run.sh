@@ -2,7 +2,7 @@
 
 createXUpdate ()
 {
-f=`dirname $1`/`basename $1 .het`
+f=`dirname $1`/`basename $1 .dol`
 ../../hets -v2 --relative-positions -o xml $f
 mv $f.xml $f.xh
 ../../hets -v2 --relative-positions -A -o xml $f
@@ -13,7 +13,7 @@ propagateDiff $1 $1 $2
 mv $f.xml $f.new.xh
 cp $1.bak $1
 dir=`pwd`
-b2=`basename $2 .het`
+b2=`basename $2 .dol`
 # pushd $HETS_GMOC
 # rm -f tmp/*.xupdate
 # rm -f tmp/*.imp
@@ -41,7 +41,7 @@ patch $2 patch
 
 createUpdates ()
 {
-for i in Spec.het
+for i in Spec.dol
 do
    for j in Add Remove Modify
    do
@@ -50,7 +50,7 @@ do
        done
    done
 done
-for i in Spec2.het Spec3.het
+for i in Spec2.dol Spec3.dol
 do
    for j in Add Remove
    do createXUpdate $i ${j}Node$i
@@ -62,17 +62,17 @@ callHets ()
 {
 for i in *Spec.xupdate3
 do
-../../hets -v2 --relative-positions -U $i Spec.het
+../../hets -v2 --relative-positions -U $i Spec.dol
 cp Spec.xml $i.xml
 done
 for i in *Spec2.xupdate3
 do
-../../hets -v2 --relative-positions -U $i Spec2.het
+../../hets -v2 --relative-positions -U $i Spec2.dol
 cp Spec2.xml $i.xml
 done
 for i in *Spec3.xupdate3
 do
-../../hets -A -v2 --relative-positions -U $i Spec3.het
+../../hets -A -v2 --relative-positions -U $i Spec3.dol
 cp Spec3.xml $i.xml
 done
 }

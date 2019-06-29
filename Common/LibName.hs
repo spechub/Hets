@@ -30,6 +30,7 @@ module Common.LibName
   , mkLibStr
   , setMimeType
   , mkLibName
+  , libNameToId
   ) where
 
 import Common.Doc

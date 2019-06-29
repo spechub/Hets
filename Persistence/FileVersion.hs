@@ -31,7 +31,8 @@ import Database.Persist.Sql (toSqlKey)
 setFileVersionStateOn :: MonadIO m
                       => FileVersionId -> EvaluationStateType -> DBMonad m ()
 setFileVersionStateOn fileVersionKey state = do
-  update fileVersionKey [FileVersionEvaluationState =. state]
+  Just fileVersionValue <- get fileVersionKey
+  update (fileVersionActionId fileVersionValue) [ActionEvaluationState =. state]
   return ()
 
 setFileVersionState :: MonadIO m
@@ -69,11 +70,15 @@ findOrCreateFileVersion dbContext = do
     create :: MonadIO m => FilePath -> DBMonad m (Entity FileVersion)
     create path = do
         Entity repositoryKey _ <- repositoryFirstOrCreate
+        actionKey <- insert Action
+          { actionEvaluationState = NotYetEnqueued
+          , actionMessage = Nothing
+          }
         let fileVersionValue = FileVersion
-              { fileVersionRepositoryId = repositoryKey
+              { fileVersionActionId = actionKey
+              , fileVersionRepositoryId = repositoryKey
               , fileVersionPath = path
               , fileVersionCommitSha = nonGitFileVersion
-              , fileVersionEvaluationState = NotYetEnqueued
               }
         fileVersionKey <- insert fileVersionValue
         return $ Entity fileVersionKey fileVersionValue

@@ -1071,9 +1071,9 @@ anaMaudeFile opts file = do
     (dg1, dg2) <- directMaudeParsing opts file
     let ln = emptyLibName file
         lib1 = Map.singleton preludeLib $
-                 computeDGraphTheories Map.empty $ markFree Map.empty $
+                 computeDGraphTheories Map.empty ln $ markFree Map.empty $
                  markHiding Map.empty dg1
         lib2 = Map.insert ln
-                 (computeDGraphTheories lib1 $ markFree lib1 $
+                 (computeDGraphTheories lib1 ln $ markFree lib1 $
                  markHiding lib1 dg2) lib1
     return $ Just (ln, lib2)
