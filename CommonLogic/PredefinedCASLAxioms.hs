@@ -79,7 +79,7 @@ baseListAxioms =
   , ga_nil_append
   , ga_cons_append ]
 
--- currently a list annotation is needed in the .het file %list [__], nil, cons
+-- currently a list annotation is needed in the .dol file %list [__], nil, cons
 brId :: Id
 brId = mkId [mkSimpleId "[", placeTok, mkSimpleId "]"]
 

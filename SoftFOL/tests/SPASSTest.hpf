@@ -1,4 +1,4 @@
-use SPASS/tests/SPASSTest.het
+use SPASS/tests/SPASSTest.dol
 dg-all auto
 dg basic Eq_Pred
 translate SuleCFOL2SoftFOL
