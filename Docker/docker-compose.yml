@@ -1,25 +1,31 @@
 version: '3.7'
 services:
   hets:
-    build: .
-    image: spechub:hets-server
-    command: hets-server --server --database-config=/data/database_postgresql.yml --database-subconfig=development
+    image: spechub2/hets:latest
+    command: hets-server --server --database-config=/etc/hets_db_postgresql.yml --database-subconfig=production
     ports:
       - "8000:8000"
-    env_file:
-      - ./hets.env
+    environment:
+      POSTGRES_HOST: 172.28.0.2
+      POSTGRES_PASSWORD: /run/secrets/db_password
+      POSTGRES_PORT: 5432
+      POSTGRES_USERNAME: /run/secrets/db_username
     volumes:
       - type: bind
         source: ./hets_data/
-        target: /data/host
+        target: /data/
         read_only: true
     networks:
       db:
-
+    secrets:
+      - db_password
+      - db_username
   postgresql:
-    image: "postgres:11.2-alpine"
-    env_file:
-      - ./postgres.env
+    image: "postgres:11-alpine"
+    command: --user postgres postgres
+    environment:
+      POSTGRES_DB: hets
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
     expose:
       - "5432"
     networks:
@@ -27,6 +33,9 @@ services:
         ipv4_address: 172.28.0.2
     volumes:
       - ./pg_data/:/var/lib/postgresql/data/
+    secrets:
+      - db_password
+
 networks:
   db:
     driver: "bridge"
@@ -34,3 +43,9 @@ networks:
       driver: default
       config:
       - subnet: 172.28.0.0/24
+
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt
+  db_username:
+    file: ./secrets/db_username.txt

@@ -1,25 +1,17 @@
 #!/usr/bin/env bash
 
-if [ "$1" = 'hets-server' ] && [ "$3" = "--database-config=/data/database_postgresql.yml" ]; then
+if [ "$1" = 'hets-server' ] && [ "$3" = "--database-config=/etc/hets_db_postgresql.yml" ]; then
     echo "default: &default
   adapter: postgresql
-  username: $POSTGRES_USERNAME
-  password: $POSTGRES_PASSWORD
+  username: $(cat $POSTGRES_USERNAME)
+  password: $(cat $POSTGRES_PASSWORD)
   host: $POSTGRES_HOST
   port: $POSTGRES_PORT
   pool: 10
 
-development:
-  <<: *default
-  database: hets_development
-
-test:
-  <<: *default
-  database: hets_test
-
 production:
   <<: *default
-  database: hets" > /data/database_postgresql.yml
+  database: hets" > /etc/hets_db_postgresql.yml
 fi
 
 exec "$@"
