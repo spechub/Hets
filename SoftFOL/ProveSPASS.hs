@@ -56,7 +56,7 @@ import Data.Time (TimeOfDay (..), midnight)
 -}
 
 spassName :: String
-spassName = "SPASS"
+spassName = "SPASS_SoftFOL"
 
 spassProver :: Prover Sign Sentence SoftFOLMorphism () ProofTree
 spassProver = mkAutomaticProver spassName spassName () spassProveGUI

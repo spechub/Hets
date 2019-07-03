@@ -74,7 +74,7 @@ import Comorphisms.HasCASL2PCoClTyConsHOL
 #ifdef PROGRAMATICA
 import Comorphisms.Haskell2IsabelleHOLCF
 #endif
-import Comorphisms.SuleCFOL2SoftFOL
+import Comorphisms.SuleCFOL2TPTP
 import Comorphisms.LogicList
 
 import Comorphisms.DynComorphismList
@@ -183,7 +183,8 @@ spassComorphisms =
            max_sub_SPASS = max_nosub_SPASS { sub_features = LocFilSub }
            idCASL_sub = Comorphism (mkIdComorphism CASL max_sub_SPASS)
            idCASL_nosub = Comorphism (mkIdComorphism CASL max_nosub_SPASS)
-           compSPASS x = compComorphism x (Comorphism suleCFOL2SoftFOL)
+           compSPASS x = compComorphism x (Comorphism suleCFOL2TPTP) 
+                         -- use translation to TPTP instead of one to SoftFOL
        partOut <- compComorphism idCASL_sub (Comorphism defaultCASL2SubCFOL)
                    >>= compSPASS
        partSubOut <- compComorphism (Comorphism CASL2PCFOL)
@@ -213,7 +214,7 @@ spassComorphisms =
                        $ filter (\(Comorphism cid) -> let tLid = targetLogic cid in language_name tLid == "CASL")
                        dynComorphismList
        return $
-         [ Comorphism suleCFOL2SoftFOL
+         [ Comorphism suleCFOL2TPTP
          , partOut
          , partSubOut
 #ifdef CASLEXTENSIONS

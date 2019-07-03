@@ -77,7 +77,7 @@ instance Comorphism GenSuleCFOL2TPTP
     sourceLogic GenSuleCFOL2TPTP = CASL
     sourceSublogic GenSuleCFOL2TPTP = SL.cFol
                       { sub_features = LocFilSub
-                      , cons_features = NoSortGen
+                      , cons_features = emptyMapConsFeature
                       , has_empty_sorts = True }
     targetLogic GenSuleCFOL2TPTP = TPTP.Logic_TPTP.TPTP
     mapSublogic _ _ = Just FOF
