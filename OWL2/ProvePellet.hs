@@ -18,7 +18,6 @@ module OWL2.ProvePellet
   , pelletJar
   , pelletEnv
   , pelletProver
-  , pelletEL
   , pelletConsChecker
   ) where
 
@@ -57,9 +56,6 @@ import Control.Concurrent
 pelletS :: String
 pelletS = "Pellet"
 
-pelletELS :: String
-pelletELS = "PelletEL"
-
 pelletJar :: String
 pelletJar = "lib/pellet-cli.jar"
 
@@ -81,12 +77,6 @@ pelletCheck = fmap
 pelletProver :: Prover Sign Axiom OWLMorphism ProfSub ProofTree
 pelletProver =
   (mkAutomaticProver "java" pelletS topS pelletGUI pelletCMDLautomaticBatch)
-  { proverUsable = pelletCheck }
-
-pelletEL :: Prover Sign Axiom OWLMorphism ProfSub ProofTree
-pelletEL =
-  (mkAutomaticProver "java" pelletELS (ProfSub elProfile slTop) pelletGUI
-  pelletCMDLautomaticBatch)
   { proverUsable = pelletCheck }
 
 pelletConsChecker :: ConsChecker Sign Axiom ProfSub OWLMorphism ProofTree
