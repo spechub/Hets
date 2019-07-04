@@ -6,7 +6,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      POSTGRES_HOST: 172.28.0.2
+      POSTGRES_HOST: db_postgresql
       POSTGRES_PASSWORD: /run/secrets/db_password
       POSTGRES_PORT: 5432
       POSTGRES_USERNAME: /run/secrets/db_username
@@ -20,9 +20,9 @@ services:
     secrets:
       - db_password
       - db_username
-  postgresql:
+  db_postgresql:
     image: "postgres:11-alpine"
-    command: --user postgres postgres
+    #user: "123:129"
     environment:
       POSTGRES_DB: hets
       POSTGRES_PASSWORD_FILE: /run/secrets/db_password
@@ -30,7 +30,6 @@ services:
       - "5432"
     networks:
       db:
-        ipv4_address: 172.28.0.2
     volumes:
       - ./pg_data/:/var/lib/postgresql/data/
     secrets:
@@ -41,8 +40,6 @@ networks:
     driver: "bridge"
     ipam:
       driver: default
-      config:
-      - subnet: 172.28.0.0/24
 
 secrets:
   db_password:
