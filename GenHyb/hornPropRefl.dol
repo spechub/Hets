@@ -1,0 +1,4 @@
+newhlogic HornPropRefl = 
+ hlogic: HornProp
+ constrs: ReflexiveMod
+end
