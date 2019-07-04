@@ -13,9 +13,6 @@ module Comorphisms.DynComorphismList where
 
 import Logic.Logic
 import Logic.Comorphism
-import Comorphisms.RigidCASL2HRigidCASL
-import Comorphisms.RigidCASL2HRigidCASLQuant
-import Comorphisms.HRigid2CASL
 
 dynComorphismList :: [AnyComorphism]
-dynComorphismList = [Comorphism RigidCASL2HRigidCASL, Comorphism RigidCASL2HRigidCASLQuant, Comorphism HRigid2CASL]
+dynComorphismList = []

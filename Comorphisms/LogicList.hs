@@ -60,7 +60,6 @@ import Fpl.Logic_Fpl
 import Adl.Logic_Adl
 import Modal.Logic_Modal
 import Hybrid.Logic_Hybrid
-import HPAR.Logic_HPAR
 import TopHybrid.Logic_TopHybrid
 import ExtModal.Logic_ExtModal
 import CoCASL.Logic_CoCASL
