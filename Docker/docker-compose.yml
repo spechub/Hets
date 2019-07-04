@@ -22,7 +22,6 @@ services:
       - db_username
   db_postgresql:
     image: "postgres:11-alpine"
-    #user: "123:129"
     environment:
       POSTGRES_DB: hets
       POSTGRES_PASSWORD_FILE: /run/secrets/db_password
@@ -31,7 +30,9 @@ services:
     networks:
       db:
     volumes:
-      - ./pg_data/:/var/lib/postgresql/data/
+      - type: volume
+        source: postgres_data
+        target: /var/lib/postgresql/data/
     secrets:
       - db_password
 
@@ -46,3 +47,6 @@ secrets:
     file: ./secrets/db_password.txt
   db_username:
     file: ./secrets/db_username.txt
+
+volumes:
+  postgres_data:
