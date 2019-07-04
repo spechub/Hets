@@ -578,11 +578,9 @@ varP = {- do
      return (concat strs, Nothing)
      <|> do
      return ("", Nothing)
-   return (show s1 ++ (if null tailStr then "" else " " ++ tailStr), mt)
+   if show s1 == "rigid" then return (tailStr, mt)
+   else return (show s1 ++ (if null tailStr then "" else " " ++ tailStr), mt)
     
-  
- 
- 
 metaP :: AParser st (FRAM, Token)
 metaP = do
   s <- asKey metaS

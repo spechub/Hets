@@ -150,13 +150,12 @@ import Common.ToXml
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
-import Data.Monoid
 import Data.Ord
 import Data.Typeable
 import Control.Monad (unless)
 import Logic.SemConstr
 
-import CASL.AS_Basic_CASL 
+import CASL.AS_Basic_CASL
 
 import qualified GenHyb.GenTypes as GTypes
 
@@ -192,7 +191,7 @@ class Show lid => Language lid where
 -- short description = first line of description
 short_description :: Language lid => lid -> String
 short_description l = head ((lines $ description l) ++ [""])
-      
+
 {- | Categories are given as usual: objects, morphisms, identities,
      domain, codomain and composition. The type id is the name, or
      the identity of the category. It is an argument to all functions
@@ -552,7 +551,7 @@ class ( Syntax lid basic_spec symbol symb_items symb_map_items
          matches :: lid -> symbol -> raw_symbol -> Bool
          matches _ _ _ = True
          {- | convert a raw symbol to a CASL variable -}
-         raw_to_var :: lid -> raw_symbol -> Maybe (Token, Id) 
+         raw_to_var :: lid -> raw_symbol -> Maybe (Token, Id)
          raw_to_var _ _ = Nothing
 
          -- ------------- operations on signatures and morphisms -----------
@@ -654,9 +653,9 @@ class ( Syntax lid basic_spec symbol symb_items symb_map_items
 printTheory :: StaticAnalysis lid basic_spec sentence symb_items symb_map_items
                sign morphism symbol raw_symbol
   => Maybe IRI -> lid -> (sign, [Named sentence]) -> Doc
-printTheory sm lid th@(s, l) = case
+printTheory sm lid (s, l) = case
            (convertTheory lid, basicSpecPrinter sm lid) of
-             -- TODO: for now (Just c, Just p) -> p (c th)
+             -- TODO: for now (Just c, Just p) -> p (c (s,l))
              _ -> print_sign lid s $++$ vsep (map (print_named lid) l)
 
 -- | guarded inclusion
@@ -764,7 +763,7 @@ class (StaticAnalysis lid
          -- formula parser, no extra argument of type basic_spec
 
          parse_formula :: lid -> Maybe (AParser st sentence)
-         parse_formula _  = Nothing   
+         parse_formula _  = Nothing
 
          -- prim formula parser, for hybridization
 
@@ -774,32 +773,45 @@ class (StaticAnalysis lid
          {-
         case data_logic hlid of
          Just (Logic baseLid) -> do
-          f <- parseQFormula eng hasQNominalsBase (not $ null kVarsBase) baseLid (q, p) 
-              -- gives a type mismatch, although the required Logic instance has the same baseLid and 
-              -- the types should be determined by the functional dependency
-              -- to fix this, we record in parse_q_formula the method (parseQFormula baseLid) for each logic and we call it for hlid
-              -- UGLY solution!
-         -}  
+          f <- parseQFormula eng hasQNominalsBase
+                  (not $ null kVarsBase) baseLid (q, p)
+        gives a type mismatch,
+        although the required Logic instance has the same baseLid and
+        the types should be determined by the functional dependency
+        to fix this, we record in parse_q_formula
+        the method (parseQFormula baseLid) for each logic
+        and we call it for hlid
+        UGLY solution!
+         -}
 
-         parse_q_formula :: lid -> Maybe (Bool -> Bool -> Bool -> (GTypes.HQUANT, Token) -> AParser st sentence)
+         parse_q_formula :: lid ->
+                            Maybe (Bool -> Bool -> Bool ->
+                                   (GTypes.HQUANT, Token) ->
+                                   AParser st sentence)
          parse_q_formula _ = Nothing
 
-         -- semantic constraints, that will determine sentences when translating from a hybrid logic to FOL
-   
+         -- semantic constraints, that will determine sentences when
+         -- translating from a hybrid logic to FOL
+
          sem_constr :: lid -> [SemanticConstraint]
          sem_constr _ = []
 
-         -- for each hybrid logic, store the kinds allowed in quantifications and if it allows 
-         -- quantification on nominals, to be able to set the right parameters for the analysis
-         -- in recursive calls, for double hybridization
- 
+         -- for each hybrid logic, store the kinds allowed in quantifications
+         -- and if it allows quantification on nominals, to be able to set
+         -- the right parameters for the analysis in recursive calls,
+         -- for double hybridization
+
          hyb_params :: lid -> Maybe (Bool, [String])
-         hyb_params _ = Nothing 
-         
+         hyb_params _ = Nothing
+
          -- logic dependent translation of constraints to CASL formulas
- 
-         constr_to_sens :: lid -> sign -> String -> SemanticConstraint -> Result ([Named CASLFORMULA])
-         constr_to_sens lid _ _ _ = fail $ "translation of constraints to CASL formulas not implemented for logic " ++ show lid
+
+         constr_to_sens :: lid -> sign -> String -> SemanticConstraint ->
+                           Result ([Named CASLFORMULA])
+         constr_to_sens lid _ _ _ =
+           fail $
+            "translation of constraints to CASL formulas " ++
+            "not implemented for logic " ++ show lid
 
          -- | stability of the implementation
          stability :: lid -> Stability
@@ -933,7 +945,7 @@ class (StaticAnalysis lid
          rawSymbolTypeName :: lid -> (String, String)
          rawSymbolTypeName _ = ("","")
          proofTreeTypeName :: lid -> (String, String)
-         proofTreeTypeName _ = ("","") 
+         proofTreeTypeName _ = ("","")
 
 
 -- | sublogic of a theory
@@ -945,7 +957,7 @@ sublogicOfTheo _ (sig, axs) =
   foldl lub (minSublogic sig) $
   map minSublogic axs
 
-   
+
 
 
 {- The class of logics which can be used as logical frameworks, in which object
