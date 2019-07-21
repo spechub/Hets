@@ -78,6 +78,10 @@ class (Language cid,
     sourceLogic :: cid -> lid1
     sourceSublogic :: cid -> sublogics1
     sourceSublogic cid = top_sublogic $ sourceLogic cid
+    {- needed for lossy translations. Is stricter than sourceSublogic.
+       Should be merged with sourceSublogic once #1706 has been fixed. -}
+    sourceSublogicLossy :: cid -> sublogics1
+    sourceSublogicLossy = sourceSublogic
     minSourceTheory :: cid -> Maybe (LibName, String)
     minSourceTheory _ = Nothing
     targetLogic :: cid -> lid2
@@ -195,7 +199,7 @@ wrapMapTheoryPossiblyLossy lossy cid (sign, sens) =
   in
   if isIdComorphism $ Comorphism cid
   then res
-  else let sub = sourceSublogic cid 
+  else let sub = if lossy then sourceSublogicLossy cid else sourceSublogic cid
            sigLog = minSublogic sign
            senLog = foldl lub sigLog $ map (minSublogic . sentence) sens
            isInSub s = isSubElem (minSublogic $ sentence s) sub 

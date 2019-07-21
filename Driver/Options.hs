@@ -95,7 +95,7 @@ bracket :: String -> String
 bracket s = "[" ++ s ++ "]"
 
 -- use the same strings for parsing and printing!
-verboseS, intypeS, outtypesS, skipS, justStructuredS, transS,
+verboseS, intypeS, outtypesS, skipS, justStructuredS, transS, lossyTransS,
      guiS, libdirsS, outdirS, amalgS, recursiveS, namedSpecsS,
      interactiveS, modelSparQS, counterSparQS, connectS, xmlS, dbS, listenS,
      applyAutomaticRuleS, normalFormS, unlitS, pidFileS :: String
