@@ -113,6 +113,7 @@ outdirS = "output-dir"
 amalgS = "casl-amalg"
 namedSpecsS = "named-specs"
 transS = "translation"
+lossyTransS = "lossy"
 recursiveS = "recursive"
 interactiveS = "interactive"
 connectS = "connect"
@@ -196,6 +197,7 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , infiles :: [FilePath] -- ^ files to be read
   , specNames :: [SIMPLE_ID] -- ^ specs to be processed
   , transNames :: [SIMPLE_ID] -- ^ comorphism to be processed
+  , lossyTrans :: Bool                
   , viewNames :: [SIMPLE_ID] -- ^ views to be processed
   , intype :: InType
   , libdirs :: [FilePath]
@@ -256,6 +258,7 @@ defaultHetcatsOpts = HcOpt
   , infiles = []
   , specNames = []
   , transNames = []
+  , lossyTrans = False  
   , viewNames = []
   , intype = GuessIn
   , libdirs = []
@@ -363,6 +366,7 @@ instance Show HetcatsOpts where
     ++ showFlag computeNormalForm normalFormS
     ++ showEqOpt namedSpecsS (intercalate "," $ map show $ specNames opts)
     ++ showEqOpt transS (intercalate ":" $ map show $ transNames opts)
+    ++ showFlag lossyTrans lossyTransS
     ++ showEqOpt viewS (intercalate "," $ map show $ viewNames opts)
     ++ showEqOpt amalgS (tail $ init $ show $
                                       case caslAmalg opts of
@@ -400,6 +404,7 @@ data Flag =
   | DatabaseReanalyze
   | Specs [SIMPLE_ID]
   | Trans [SIMPLE_ID]
+  | LossyTrans   
   | Views [SIMPLE_ID]
   | CASLAmalg [CASLAmalgOpt]
   | Interactive
@@ -458,6 +463,7 @@ makeOpts opts flg =
     NormalForm -> opts { computeNormalForm = True }
     Specs x -> opts { specNames = x }
     Trans x -> opts { transNames = x }
+    LossyTrans -> opts { lossyTrans = True }
     Views x -> opts { viewNames = x }
     Verbose x -> opts { verbose = x }
     DefaultLogic x -> opts { defLogic = x }
@@ -872,6 +878,8 @@ options = let
       ("translation option " ++ crS ++
           "is a colon-separated list" ++
           crS ++ "of one or more from: SIMPLE-ID")
+    , Option "Y" [lossyTransS] (NoArg LossyTrans)
+      "apply translations in a lossy way"
     , Option "a" [amalgS] (ReqArg parseCASLAmalg "ANALYSIS")
       ("CASL amalgamability analysis options" ++ crS ++ cslst ++
        crS ++ joinBar (map show caslAmalgOpts)),
