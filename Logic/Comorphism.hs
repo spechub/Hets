@@ -28,6 +28,7 @@ module Logic.Comorphism
     , targetSublogic
     , map_sign
     , wrapMapTheory
+    , wrapMapTheoryPossiblyLossy
     , mkTheoryMapping
     , AnyComorphism (..)
     , idComorphism
@@ -180,14 +181,14 @@ errMapSymbol :: Comorphism cid
 errMapSymbol cid _ _ = error $ "no symbol mapping for " ++ show cid
 
 -- | use this function instead of 'mapMarkedTheory'
-wrapMapTheory :: Comorphism cid
+wrapMapTheoryPossiblyLossy :: Comorphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1
             lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2
-            => cid -> (sign1, [Named sentence1])
+            => Bool -> cid -> (sign1, [Named sentence1])
                    -> Result (sign2, [Named sentence2])
-wrapMapTheory cid (sign, sens) =
+wrapMapTheoryPossiblyLossy lossy cid (sign, sens) =
   let res = mapMarkedTheory cid (sign, sens)
       lid1 = sourceLogic cid
       thDoc = show (vcat $ pretty sign : map (print_named lid1) sens)
@@ -209,6 +210,15 @@ wrapMapTheory cid (sign, sens) =
                            sublogicName senLog ++
                            "' with signature sublogic '" ++
                            sublogicName sigLog ++ "'") nullRange] Nothing
+
+wrapMapTheory :: Comorphism cid
+            lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+                sign1 morphism1 symbol1 raw_symbol1 proof_tree1
+            lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
+                sign2 morphism2 symbol2 raw_symbol2 proof_tree2
+            => cid -> (sign1, [Named sentence1])
+                   -> Result (sign2, [Named sentence2])
+wrapMapTheory = wrapMapTheoryPossiblyLossy False
 
 mkTheoryMapping :: Monad m => (sign1 -> m (sign2, [Named sentence2]))
                    -> (sign1 -> sentence1 -> m sentence2)

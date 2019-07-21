@@ -299,7 +299,7 @@ computeCoeqs graph funDesc (n1, gt1) (n2, gt2)
  com1 <- compComorphism (Comorphism cid1) (Comorphism cid3)
  com2 <- compComorphism (Comorphism cid1) (Comorphism cid3)
  if com1 /= com2 then fail "Unable to compute coequalizer" else do
-   _gtM@(G_theory lidM _ signM _idxM _ _) <- mapG_theory com1 gt
+   _gtM@(G_theory lidM _ signM _idxM _ _) <- mapG_theory False com1 gt
    s1 <- coerceSign lidM tlid "coequalizers" signM
    mor3' <- coerceMorphism (targetLogic cid3) (sourceLogic cid1) "coeqs" mor3
    mor4' <- coerceMorphism (targetLogic cid4) (sourceLogic cid2) "coeqs" mor4
@@ -394,9 +394,9 @@ buildSpan graph
           n n1 n2
           maxNodes
            = do
- sig@(G_theory _lid0 _ _sign0 _ _ _) <- mapG_theory d gt -- phi^d(Sigma)
- sig1 <- mapG_theory e1 gt1 -- phi^e1(Sigma1)
- sig2 <- mapG_theory e2 gt2 -- phi^e2(Sigma2)
+ sig@(G_theory _lid0 _ _sign0 _ _ _) <- mapG_theory False d gt -- phi^d(Sigma)
+ sig1 <- mapG_theory False e1 gt1 -- phi^e1(Sigma1)
+ sig2 <- mapG_theory False e2 gt2 -- phi^e2(Sigma2)
  mor1' <- coerceMorphism (targetLogic cid1) (sourceLogic cidE1) "buildSpan" mor1
  eps1 <- map_morphism cidE1 mor1' -- phi^e1(sigma1)
  sign' <- coerceSign lid (sourceLogic $ sourceComorphism cidM1) "buildSpan" sign

@@ -1339,7 +1339,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format_ api pfOptions = do
                           let coms = map getCom $ splitOn ',' x
                           com <- foldM compComorphism (head coms) $ tail coms
                           -- translate the theory of i along com
-                          gTh1 <- liftR $ mapG_theory com gTh
+                          gTh1 <- liftR $ mapG_theory False com gTh
                           -- insert the translation of i in dg
                           let n1 = getNewNodeDG dg
                               labN1 = newInfoNodeLab
