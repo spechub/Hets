@@ -75,9 +75,8 @@ instance Comorphism GenSuleCFOL2TPTP
                TPTP.Logic_TPTP.TPTP Sublogic TAS.BASIC_SPEC Sentence () ()
                TSign.Sign TMorphism.Morphism TSign.Symbol () ProofTree where
     sourceLogic GenSuleCFOL2TPTP = CASL
-    sourceSublogic GenSuleCFOL2TPTP = SL.cFol
+    sourceSublogic GenSuleCFOL2TPTP = SL.fol
                       { sub_features = LocFilSub
-                      , cons_features = emptyMapConsFeature
                       , has_empty_sorts = True }
     targetLogic GenSuleCFOL2TPTP = TPTP.Logic_TPTP.TPTP
     mapSublogic _ _ = Just FOF

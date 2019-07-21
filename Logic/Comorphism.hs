@@ -193,23 +193,29 @@ wrapMapTheoryPossiblyLossy lossy cid (sign, sens) =
       lid1 = sourceLogic cid
       thDoc = show (vcat $ pretty sign : map (print_named lid1) sens)
   in
-  if isIdComorphism $ Comorphism cid then res else case sourceSublogic cid of
-        sub -> case minSublogic sign of
-          sigLog -> case foldl lub sigLog
-                    $ map (minSublogic . sentence) sens of
-            senLog ->
-              if isSubElem senLog sub
+  if isIdComorphism $ Comorphism cid
+  then res
+  else let sub = sourceSublogic cid 
+           sigLog = minSublogic sign
+           senLog = foldl lub sigLog $ map (minSublogic . sentence) sens
+           isInSub s = isSubElem (minSublogic $ sentence s) sub 
+           sensLossy = filter isInSub sens
+           resLossy = mapMarkedTheory cid (sign, sensLossy)
+        in if isSubElem senLog sub
                  then res
-                 else Result
-                  [ Diag Hint thDoc nullRange
-                  , Diag Error
-                      ("for '" ++ language_name cid ++
-                           "' expected sublogic '" ++
-                           sublogicName sub ++
-                           "'\n but found sublogic '" ++
-                           sublogicName senLog ++
-                           "' with signature sublogic '" ++
-                           sublogicName sigLog ++ "'") nullRange] Nothing
+                 else
+                    if lossy && isSubElem sigLog sub
+                    then resLossy 
+                    else Result
+                     [ Diag Hint thDoc nullRange
+                     , Diag Error
+                         ("for '" ++ language_name cid ++
+                              "' expected sublogic '" ++
+                              sublogicName sub ++
+                              "'\n but found sublogic '" ++
+                              sublogicName senLog ++
+                              "' with signature sublogic '" ++
+                              sublogicName sigLog ++ "'") nullRange] Nothing
 
 wrapMapTheory :: Comorphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
