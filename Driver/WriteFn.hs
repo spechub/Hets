@@ -215,6 +215,10 @@ writeIsaFile opts filePrefix raw_gTh ln i = do
            in writeVerbFile opts tf $ shows
                    (printIsaTheory tnf sign $ s : axs) "\n") rest
 
+wrongLogicMsg :: String -> String -> String -> String            
+wrongLogicMsg file expected found =
+  "expected " ++ expected ++ " theory for: " ++ file ++ " but found " ++ found
+
 writeTheory :: [String] -> String -> HetcatsOpts -> FilePath -> GlobalAnnos
   -> G_theory -> LibName -> IRI -> OutType -> IO ()
 writeTheory ins nam opts filePrefix ga
@@ -233,7 +237,7 @@ writeTheory ins nam opts filePrefix ga
             th2 <- coerceBasicTheory lid TPTP "" th
             let tptpText = show (TPTPPretty.printBasicTheory th2)
             writeVerbFile opts f tptpText
-        | otherwise -> putIfVerbose opts 0 $ "expected RDF theory for: " ++ f
+        | otherwise -> putIfVerbose opts 0 $ wrongLogicMsg f "TPTP" lang
     TheoryFile d -> do
       if null $ show d then
         writeVerbFile opts f $ shows (DG.printTh ga i raw_gTh) "\n"
@@ -268,7 +272,7 @@ writeTheory ins nam opts filePrefix ga
           case res of
             Just td -> writeVerbFile opts f $ tableXmlStr td
             Nothing -> return ()
-        else putIfVerbose opts 0 $ "expected CASL theory for: " ++ f
+        else putIfVerbose opts 0 $ wrongLogicMsg f "CASL" lang
     MedusaJson -> if lang == language_name OWL2 then do
           th2 <- coerceBasicTheory lid OWL2 "" th
           let Result ds res = medusa i th2
@@ -276,20 +280,20 @@ writeTheory ins nam opts filePrefix ga
           case res of
             Just td -> writeVerbFile opts f $ medusaToJsonString td
             Nothing -> return ()
-        else putIfVerbose opts 0 $ "expected OWL2 theory for: " ++ f
+        else putIfVerbose opts 0 $ wrongLogicMsg f "OWL2" lang
 #ifdef RDFLOGIC
     RDFOut
         | lang == language_name RDF -> do
             th2 <- coerceBasicTheory lid RDF "" th
             let rdftext = shows (RDF.printRDFBasicTheory th2) "\n"
             writeVerbFile opts f rdftext
-        | otherwise -> putIfVerbose opts 0 $ "expected RDF theory for: " ++ f
+        | otherwise -> putIfVerbose opts 0 $ wrongLogicMsg f "RDF" lang
 #endif
 #ifndef NOOWLLOGIC
     OWLOut ty -> case ty of
       Manchester -> case createOWLTheory raw_gTh of
         Result _ Nothing ->
-          putIfVerbose opts 0 $ "expected OWL theory for: " ++ f
+          putIfVerbose opts 0 $ wrongLogicMsg f "Manchester OWL" $ show ty
         Result ds (Just th2) -> do
             let sy = defSyntax opts
                 ms = if null sy then Nothing
@@ -316,15 +320,13 @@ writeTheory ins nam opts filePrefix ga
               Left err -> putIfVerbose opts 0 $ show err
               _ -> putIfVerbose opts 3 $ "reparsed: " ++ f
             writeVerbFile opts f cltext
-      | otherwise -> putIfVerbose opts 0 $ "expected Common Logic theory for: "
-                                                                            ++ f
+      | otherwise -> putIfVerbose opts 0 $ wrongLogicMsg f "Common Logic" lang
     KIFOut
       | lang == language_name CommonLogic -> do
             (_, th2) <- coerceBasicTheory lid CommonLogic "" th
             let kiftext = shows (Print_KIF.exportKIF th2) "\n"
             writeVerbFile opts f kiftext
-      | otherwise -> putIfVerbose opts 0 $ "expected Common Logic theory for: "
-                                                                            ++ f
+      | otherwise -> putIfVerbose opts 0 $ wrongLogicMsg f "Common Logic" lang
     _ -> return () -- ignore other file types
 
 modelSparQCheck :: HetcatsOpts -> G_theory -> IO ()
