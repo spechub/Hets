@@ -209,7 +209,10 @@ translateFormula signWithRenamings nameS isAxiom' formula = do
                  FOFPAF_predicate (predicateOfSort sort) [fofTerm]
       -- Sort_gen_ax cannot be translated. Fail:
       -- See https://github.com/spechub/Hets/issues/1706
-      Sort_gen_ax _ _ -> fail "SuleCFOL2TPTP: Sort generation axioms are not yet supported."
+      Sort_gen_ax _ _ ->
+        justWarn (FOFUF_atomic $ FOFAT_defined $ FOFDAF_plain $
+                  FOFDPF_proposition $ TPTP_true)
+                 "SuleCFOL2TPTP: Sort generation axioms are not yet supported."
       -- There is no Definedness in SuleCFOL
       -- There is no Mixfix_formula - it only occurs during parsing
       -- There is no Unparsed_formula
