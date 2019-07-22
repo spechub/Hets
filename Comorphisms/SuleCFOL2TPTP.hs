@@ -110,7 +110,7 @@ translateNamedFormula :: (FormExtension f, Eq f)
                       => SignWithRenamings f e
                       -> Named (FORMULA f) -> Result (Named TSign.Sentence)
 translateNamedFormula signWithRenamings x = do
-  let nameS = toAlphaNum (map toLower $ senAttr x)
+  let nameS = "ax_" ++ toAlphaNum (map toLower $ senAttr x)
   translated <-
     translateFormula signWithRenamings nameS (isAxiom x) $
       AS_Annotation.sentence x
