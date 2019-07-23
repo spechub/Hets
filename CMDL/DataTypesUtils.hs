@@ -176,7 +176,7 @@ getTh useTrans x st
               case fn x of
                Nothing -> Nothing
                Just sth ->
-                case mapG_theory cm sth of
+                case mapG_theory False cm sth of
                   Result _ Nothing -> Just sth
                   Result _ (Just sth') -> Just sth'
 

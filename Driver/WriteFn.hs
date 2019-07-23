@@ -363,7 +363,7 @@ writeTheoryFiles opts specOutTypes filePrefix lenv ga ln i n =
             let tr = transNames opts
                 Result es mTh = if null tr then return (raw_gTh0, "") else do
                    comor <- lookupCompComorphism (map tokStr tr) logicGraph
-                   tTh <- mapG_theory comor raw_gTh0
+                   tTh <- mapG_theory (lossyTrans opts) comor raw_gTh0
                    return (tTh, "Translated using comorphism " ++ show comor)
                 (raw_gTh, tStr) =
                   fromMaybe (raw_gTh0, "Keeping untranslated theory") mTh
