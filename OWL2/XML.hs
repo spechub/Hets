@@ -91,7 +91,7 @@ getIRI b e =
         _ -> error $ "wrong qName:" ++ show (attrKey a)
    
 
-{- | if the IRI contains colon, it is split there;
+{- | if the IRI contains colon, it is spglit there;
 else, the xml:base needs to be prepended to the local part
 and then the IRI must be splitted -}
 appendBase :: XMLBase -> IRI -> IRI
@@ -111,7 +111,7 @@ splitIRI iri = let
     (tok:ts) ->
       let lp = tokStr tok
           (np, ':' : nlp) = span (/= ':') lp
-      in iri { prefixName = np
+      in iri { iriScheme = np ++ ":"
             , iriPath = i { getTokens = tok { tokStr = nlp } : ts}
             }
 
@@ -573,7 +573,7 @@ getOntologyIRI b e =
   in case oi of
     Nothing -> dummyIRI
     Just anIri -> appendBase b
-        $ nullIRI {iriPath = stringToId anIri, isAbbrev = True}
+        $ nullIRI {iriPath = stringToId anIri}
 
 getBase :: Element -> XMLBase
 getBase e = fromJust $ vFindAttrBy (isSmth "base") e

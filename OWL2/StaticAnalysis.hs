@@ -325,7 +325,7 @@ correctFrames s = fmap concat . mapM (checkFrame s)
 
 collectEntities :: Frame -> State Sign ()
 collectEntities f = case f of
-    Frame (SimpleEntity e) _ -> addEntity e
+    Frame (SimpleEntity e) _ ->  addEntity e
     Frame (ClassEntity (Expression e)) _ -> addEntity $ mkEntity Class e
     Frame (ObjectEntity (ObjectProp e)) _ ->
         addEntity $ mkEntity ObjectProperty e
@@ -388,7 +388,7 @@ basicOWL2Analysis (inOnt, inSign, ga) = do
     return (newdoc
       , ExtSign accSign {labelMap = generateLabelMap accSign nfl} syms, axl)
 
--- | extrace labels from Frame-List (after processing with correctFrames)
+-- | extract labels from Frame-List (after processing with correctFrames)
 generateLabelMap :: Sign -> [Frame] -> Map.Map IRI String
 generateLabelMap sig = foldr (\ (Frame ext fbl) -> case ext of
         SimpleEntity (Entity _ _ ir) -> case fbl of

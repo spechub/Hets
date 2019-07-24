@@ -44,7 +44,7 @@ module Common.IRI
     , hasFullIRI
     , isSimple
     , addSuffixToIRI
-
+    , showTrace
     -- * Parsing
     , iriParser
     , angles
@@ -161,6 +161,18 @@ hasFullIRI i = not . null $ iriScheme i ++ (show $ iriPath i)
 without prefix -}
 isSimple :: IRI -> Bool
 isSimple i = null (prefixName i) && isAbbrev i
+
+showTrace :: IRI -> String
+showTrace i = 
+ "scheme:" ++ iriScheme i ++
+ (case iriAuthority i of
+   Just x -> "\nauthority:" ++ show x
+   _ -> "\nno authority") ++
+ "\npath:" ++ show (iriPath i) ++
+ "\nquery:" ++ iriQuery i ++
+ "\nfragment:" ++ iriFragment i ++
+ "\nprefix:" ++ prefixName i ++
+ "\nisAbbrev:" ++ show (isAbbrev i)
 
 {- IRI as instance of Show.  Note that for security reasons, the default
 behaviour should suppress any iuserinfo field (see RFC3986, section 7.5).
