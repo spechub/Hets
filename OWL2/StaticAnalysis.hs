@@ -400,9 +400,9 @@ generateLabelMap sig = foldr (\ (Frame ext fbl) -> case ext of
 
 -- | adding annotations for theorems
 anaAxiom :: Axiom -> Named Axiom
-anaAxiom ax = findImplied ax $ makeNamed name ax
+anaAxiom ax = findImplied ax $ makeNamed nm ax
    where names = getNames ax
-         name = concat $ intersperse "_" names
+         nm = concat $ intersperse "_" names
          
 findImplied :: Axiom -> Named Axiom -> Named Axiom
 findImplied ax sent =

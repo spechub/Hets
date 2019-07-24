@@ -98,8 +98,6 @@ import Common.Parsec
 import Common.Percent
 import Common.Token (mixId, comps)
 
-import Debug.Trace
-
 -- * The IRI datatype
 
 {- | Represents a general universal resource identifier using
@@ -132,18 +130,6 @@ data IRI = IRI
     , hasAngles :: Bool           -- ^ IRI in angle brackets
     , iriPos :: Range             -- ^ position
     } deriving (Typeable, Data)
-
-showTrace :: IRI -> String
-showTrace i = 
- "scheme:" ++ iriScheme i ++
- (case iriAuthority i of
-   Just x -> "\nauthority:" ++ show x
-   _ -> "\nno authority") ++
- "\npath:" ++ show (iriPath i) ++
- "\nquery:" ++ iriQuery i ++
- "\nfragment:" ++ iriFragment i ++
- "\nprefix:" ++ prefixName i ++
- "\nisAbbrev:" ++ show (isAbbrev i)
 
 -- | Type for authority value within a IRI
 data IRIAuth = IRIAuth
@@ -194,7 +180,7 @@ instance Ord IRI where
       (\ j -> (prefixName j, iriPath j, iriQuery j, iriFragment j))
       i k
     _ -> comparing (\ j ->
-      (iriScheme j, iriAuthority j, iriPath j,
+      (prefixName j, iriScheme j, iriAuthority j, iriPath j,
        iriQuery j, iriFragment j)) i k
 
 -- |converts IRI to String of expanded form. if available. Also showing Auth
@@ -240,7 +226,7 @@ iRIRange i = let Range rs = iriPos i in case rs of
 
 showIRI :: IRI -> String
 showIRI i 
-  | hasFullIRI i = showIRIFull i
+  | hasFullIRI i && not (isAbbrev i)  = showIRIFull i
   | otherwise = showIRICompact i
 
 
@@ -795,8 +781,8 @@ that may be present in the IRI.  Use this function with argument @id@
 to preserve the password in the formatted output. -}
 iriToString :: (String -> String) -> IRI -> ShowS
 iriToString iuserinfomap i
-  | hasFullIRI i = trace ("===FULL\n" ++ showTrace i) $ iriToStringFull iuserinfomap i
-  | otherwise = trace ("===ABBREV\n" ++ showTrace i) $  iriToStringAbbrev i
+  | hasFullIRI i && not (isAbbrev i) = iriToStringFull iuserinfomap i
+  | otherwise = iriToStringAbbrev i
 
 iriToStringShort :: (String -> String) -> IRI -> ShowS
 iriToStringShort iuserinfomap i
@@ -1059,7 +1045,7 @@ difSegsFrom sabs base = difSegsFrom ("../" ++ sabs) (snd $ nextSegment base)
 to the prefix of @c@ or the concatenation of @i@ and @iriPath c@
 is not a valid IRI. -}
 expandCurie :: Map String IRI -> IRI -> Maybe IRI
-expandCurie prefixMap c =  
+expandCurie prefixMap c =
   if hasFullIRI c then Just c else
   case Map.lookup (filter (/= ':') $ prefixName c) prefixMap of
     Nothing -> Nothing

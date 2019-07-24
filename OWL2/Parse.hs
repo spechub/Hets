@@ -382,7 +382,7 @@ dataPrimary = do
 
 mkDataJunction :: JunctionType -> [DataRange] -> DataRange
 mkDataJunction ty ds = case nubOrd ds of
-  [] -> error "mkObjectJunction"
+  [] -> error "mkDataJunction"
   [x] -> x
   ns -> DataJunction ty ns
 
