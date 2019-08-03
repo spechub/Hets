@@ -121,6 +121,7 @@ pdftitle={Hets User Guide}]
 \newcommand{\CoCASL}{\normalTEXTSC{C}{O}\normalTEXTSC{C}{ASL}\xspace}
 \newcommand{\CspCASL}{\normalTEXTSC{C}{SP}-\normalTEXTSC{C}{ASL}\xspace}
 \newcommand{\Csp}{\normalTEXTSC{C}{SP}\xspace}
+\newcommand{\DOL}{\normalTEXTSC{D}{OL}\xspace}
 \newcommand{\CcsCASL}{CCS-\normalTEXTSC{C}{ASL}\xspace}
 \newcommand{\CASLLtl}{\normalTEXTSC{C}{ASL}-\normalTEXTSC{L}{TL}\xspace}
 \newcommand{\CASLChart}{\normalTEXTSC{C}{ASL}-\normalTEXTSC{C}{HART}\xspace}
@@ -166,18 +167,15 @@ hand.
 \caption{The \Hets motherboard and some expansion cards}
 \end{figure}
 
-\Hets supports a number of input languages directly, such as \CASL,
-Common Logic, OWL 2, LF, THF, HOL, Haskell, and Maude. For heterogeneous
-specification, \Hets offers the language heterogeneous \CASL.
-Heterogeneous \CASL (\HetCASL) generalises the structuring
+ \DOL generalises the structuring
 constructs of
-\CASL \cite{CASL-UM,CASL/RefManual} to arbitrary logics
+\CASL (Common Algebraic Specification Language \cite{CASL-UM,CASL/RefManual}) to arbitrary logics
 (if they are formalised as institutions and plugged into
 the \Hets motherboard), as well as to heterogeneous
-combination of specification written in different logics.
+combinations of specifications written in different logics.
 See
 Fig.~\ref{fig:lang} for a simple subset of the
-\HetCASL syntax, where \emph{basic specifications} are unstructured
+\DOL syntax, where \emph{basic specifications} are unstructured
 specifications or modules written in a specific logic.  The graph of
 currently supported logics and logic translations (the latter are also
 called comorphisms) is shown in Fig.~\ref{fig:LogicGraph}, and the
@@ -470,11 +468,11 @@ An introduction to \CASL can be found in the \CASL User Manual
 the \CASL Reference Manual \cite{CASL/RefManual}.  These documents
 explain both the \CASL logic and language of basic specifications as
 well as the logic-independent constructs for structured and
-architectural specifications.  The corresponding document explaining the
-\HetCASL language constructs for \emph{heterogeneous} structured specifications
-is the \HetCASL language summary \cite{Mossakowski04}; a formal
-semantics as well as a user manual with more examples are in preparation.
-Some of \HetCASL's heterogeneous constructs will be illustrated
+architectural specifications. 
+The corresponding document explaining the
+\DOL language constructs for \emph{heterogeneous} structured specifications
+is the \DOL standard \cite{DOL-OMG,MossakowskiEtAl13d,mossakowski2015distributed}.
+Some of \DOL's heterogeneous constructs will be illustrated
 in Sect.~\ref{sec:HetSpec} below.
 
 \section{Logic translations supported
@@ -742,6 +740,7 @@ calling \Hets).
 Ending & default logic & structuring language\\\hline
 \texttt{.casl} & \CASL & \CASL \\\hline
 \texttt{.het} & \CASL & \CASL \\\hline
+\texttt{.dol} & \CASL & \DOL \\\hline
 \texttt{.hol} & HolLight & HolLight \\\hline
 \texttt{.hs} & Haskell & Haskell \\\hline
 \texttt{.owl} & OWL 2 & OWL \\\hline
@@ -757,12 +756,12 @@ logic is set to DMU before a library import or by the ``\texttt{-l DMU}''
 command line option of \Hets. In all other cases \texttt{.xml} files are
 assumed to be development graph files as produced by ``\texttt{-o xml}''.
 
-Although the endings \texttt{.casl} and \texttt{.het} are
-interchangeable, the former should be used for libraries of
-homogeneous \CASL specifications and the latter for \HetCASL libraries
-of heterogeneous specifications (that use the \CASL structuring
-constructs). Within a \HetCASL library, the current logic can be changed e.g.\
-to \HasCASL in the following way:
+Although the endings \texttt{.casl}, \texttt{.dol} and \texttt{.het} are
+interchangeable, \texttt{.casl} should be used for libraries of
+homogeneous \CASL specifications and \texttt{.dol} for \DOL libraries
+of heterogeneous specifications.
+Within a \DOL library, the current logic can be changed, e.g.,
+to Common Logic in the following way:
 
 \begin{verbatim}
 logic HasCASL
@@ -779,7 +778,7 @@ for explicit translations between logics, see \cite{Mossakowski04}.)
 \eat{
 A \CspCASL specification consists of a \CASL specification
 for the data part and a \Csp process built over this data part.
-Therefore, \HetCASL provides a heterogeneous language construct
+Therefore, \DOL provides a heterogeneous language construct
 \texttt{data} as follows:
 
 \begin{verbatim}
@@ -814,7 +813,7 @@ Here, the construct \texttt{data List} refers to the \CASL specification
 The ending \texttt{.hs} is available for directly reading in
 Haskell programs % and HasSLe specifications,
 and hence supports the Haskell module system.
-By contrast, in \HetCASL libraries (ending with \texttt{.het}),
+By contrast, in \DOL libraries (ending with \texttt{.dol}),
 the logic Haskell has to be chosen explicitly, and the \CASL structuring
 syntax needs to be used:
 
@@ -1278,7 +1277,7 @@ library hierarchy. The Edit menu has the following submenus:
 \begin{description}
 \item[Edit] This menu for library graphs has the following submenus:
 \begin{description}
-\item[Reload Library] Reloads all \HetCASL sources in order to avoid closing
+\item[Reload Library] Reloads all \DOL sources in order to avoid closing
   and restarting the application after sources have changed. However, all
   previous proof steps will be lost, therefore you have to confirm this
   action. (A change management tool to keep proofs is in preparation.)
@@ -1309,10 +1308,10 @@ that are read and written.
 \item[\texttt{-i ITYPE}, \texttt{--input-type=ITYPE}] Specify \texttt{ITYPE}
   as explicit type of the input file.  By default \texttt{env}, \texttt{casl},
   or \texttt{het} extensions are tried in this order.  An \texttt{env} file
-  contains a shared ATerm of a development graph, whereas \texttt{casl} or
-  \texttt{het} files contain plain \HetCASL text. An \texttt{env} file will
+  contains a shared ATerm of a development graph, whereas \texttt{casl}, \texttt{dol} or
+  \texttt{het} files contain plain \DOL text. An \texttt{env} file will
   always be read if it exists and is consistent (aka newer) than the
-  corresponding \HetCASL file.
+  corresponding \DOL file.
 
   \texttt{exp} files contain a development graph in a new experimental omdoc
   format.  \texttt{prf} files contain additional development steps (as shared
@@ -1326,6 +1325,7 @@ that are read and written.
 The possible input types are:
 \begin{verbatim}
     casl
+  | dol
   | het
   | owl
   | hs
@@ -1359,7 +1359,7 @@ Specify \texttt{DIR} as destination directory for output files.
   | thy
   | comptable.xml
   | (sig|th)[.delta]
-  | pp.(het|tex|xml|html)
+  | pp.(dol|tex|xml|html)
   | graph.(exp.dot|dot)
   | dfg[.c]
   | tptp[.c]
@@ -1406,12 +1406,12 @@ specification(s) (selected with the \texttt{-n} or \texttt{--spec}
 option). It is assumed that the relation algebra is
 generated by basic relations, and that the specification is written
 in the \CASL logic. A sample specification of a relation
-algebra can be found in the \Hets library \texttt{Calculi/Space/RCC8.het},
+algebra can be found in the \Hets library \texttt{Calculi/Space/RCC8.dol},
 available from \texttt{www.cofi.info/Libraries}.
 The output format is XML, the URL of the DTD is included in the
 XML file.
 
-The \texttt{sig} or \texttt{th} option will create \HetCASL signature or
+The \texttt{sig} or \texttt{th} option will create \DOL signature or
 theory files for each development graph node. (The \texttt{.delta} extension
 is not supported, yet.)
 
@@ -1482,7 +1482,7 @@ chooses a list of named views for processing
 Large parts of \Hets are now also available via a web interface. A running
 server should be accessible on
 \url{http://pollux.informatik.uni-bremen.de:8000/}. It allows to browse the
-\Hets library, upload a file or just a \HetCASL specification. Development
+\Hets library, upload a file or just a \DOL specification. Development
 graphs for well-formed specifications can be displayed in various formats
 where the \texttt{svg} format is supposed to look like the graphs displayed by
 uDrawGraph. Besides browsing, the web server is supposed to be accessed by

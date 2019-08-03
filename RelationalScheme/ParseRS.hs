@@ -183,7 +183,7 @@ testParse par = runParser par (emptyAnnos ()) ""
 
 longTest :: IO (Either ParseError RSScheme)
 longTest = do
-  x <- readFile "RelationalScheme/test/rel.het"
+  x <- readFile "RelationalScheme/test/rel.dol"
   return $ testParse (parseRSScheme Map.empty) x
 
 -- boring parser for rel types

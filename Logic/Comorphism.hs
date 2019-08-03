@@ -28,6 +28,7 @@ module Logic.Comorphism
     , targetSublogic
     , map_sign
     , wrapMapTheory
+    , wrapMapTheoryPossiblyLossy
     , mkTheoryMapping
     , AnyComorphism (..)
     , idComorphism
@@ -77,6 +78,10 @@ class (Language cid,
     sourceLogic :: cid -> lid1
     sourceSublogic :: cid -> sublogics1
     sourceSublogic cid = top_sublogic $ sourceLogic cid
+    {- needed for lossy translations. Is stricter than sourceSublogic.
+       Should be merged with sourceSublogic once #1706 has been fixed. -}
+    sourceSublogicLossy :: cid -> sublogics1
+    sourceSublogicLossy = sourceSublogic
     minSourceTheory :: cid -> Maybe (LibName, String)
     minSourceTheory _ = Nothing
     targetLogic :: cid -> lid2
@@ -180,6 +185,42 @@ errMapSymbol :: Comorphism cid
 errMapSymbol cid _ _ = error $ "no symbol mapping for " ++ show cid
 
 -- | use this function instead of 'mapMarkedTheory'
+wrapMapTheoryPossiblyLossy :: Comorphism cid
+            lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+                sign1 morphism1 symbol1 raw_symbol1 proof_tree1
+            lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
+                sign2 morphism2 symbol2 raw_symbol2 proof_tree2
+            => Bool -> cid -> (sign1, [Named sentence1])
+                   -> Result (sign2, [Named sentence2])
+wrapMapTheoryPossiblyLossy lossy cid (sign, sens) =
+  let res = mapMarkedTheory cid (sign, sens)
+      lid1 = sourceLogic cid
+      thDoc = show (vcat $ pretty sign : map (print_named lid1) sens)
+  in
+  if isIdComorphism $ Comorphism cid
+  then res
+  else let sub = if lossy then sourceSublogicLossy cid else sourceSublogic cid
+           sigLog = minSublogic sign
+           senLog = foldl lub sigLog $ map (minSublogic . sentence) sens
+           isInSub s = isSubElem (minSublogic $ sentence s) sub 
+           sensLossy = filter isInSub sens
+           resLossy = mapMarkedTheory cid (sign, sensLossy)
+        in if isSubElem senLog sub
+                 then res
+                 else
+                    if lossy && isSubElem sigLog sub
+                    then resLossy 
+                    else Result
+                     [ Diag Hint thDoc nullRange
+                     , Diag Error
+                         ("for '" ++ language_name cid ++
+                              "' expected sublogic '" ++
+                              sublogicName sub ++
+                              "'\n but found sublogic '" ++
+                              sublogicName senLog ++
+                              "' with signature sublogic '" ++
+                              sublogicName sigLog ++ "'") nullRange] Nothing
+
 wrapMapTheory :: Comorphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1
@@ -187,28 +228,7 @@ wrapMapTheory :: Comorphism cid
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2
             => cid -> (sign1, [Named sentence1])
                    -> Result (sign2, [Named sentence2])
-wrapMapTheory cid (sign, sens) =
-  let res = mapMarkedTheory cid (sign, sens)
-      lid1 = sourceLogic cid
-      thDoc = show (vcat $ pretty sign : map (print_named lid1) sens)
-  in
-  if isIdComorphism $ Comorphism cid then res else case sourceSublogic cid of
-        sub -> case minSublogic sign of
-          sigLog -> case foldl lub sigLog
-                    $ map (minSublogic . sentence) sens of
-            senLog ->
-              if isSubElem senLog sub
-                 then res
-                 else Result
-                  [ Diag Hint thDoc nullRange
-                  , Diag Error
-                      ("for '" ++ language_name cid ++
-                           "' expected sublogic '" ++
-                           sublogicName sub ++
-                           "'\n but found sublogic '" ++
-                           sublogicName senLog ++
-                           "' with signature sublogic '" ++
-                           sublogicName sigLog ++ "'") nullRange] Nothing
+wrapMapTheory = wrapMapTheoryPossiblyLossy False
 
 mkTheoryMapping :: Monad m => (sign1 -> m (sign2, [Named sentence2]))
                    -> (sign1 -> sentence1 -> m sentence2)

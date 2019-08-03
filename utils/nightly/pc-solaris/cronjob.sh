@@ -29,8 +29,8 @@ latexBasicLibraries
 createLogFiles
 
 checkConsOf Calculi/Space/Interval.casl Inter
-checkConsOf Calculi/Space/OrientationCalculi.het Ori
-checkConsOf Calculi/Algebra/FuzzySystems.het Fuzzy
+checkConsOf Calculi/Space/OrientationCalculi.dol Ori
+checkConsOf Calculi/Algebra/FuzzySystems.dol Fuzzy
 
 runIsaBasic
 runSPASSBasic

@@ -286,7 +286,7 @@ fNames ns input = let i = trimLeft input in
 
 {- | Given a list of files and folders the function filters
    only directory names and files ending in extenstion
-   .casl or .het -}
+   .casl or .het or .dol -}
 fileFilter :: String -> [String] -> [String] -> IO [String]
 fileFilter lPath ls cons = case ls of
     [] -> return cons
@@ -298,7 +298,7 @@ fileFilter lPath ls cons = case ls of
            then addTrailingPathSeparator x : cons
            {- if it is not a folder then it must be a file
               so check the extension -}
-           else if elem (takeExtensions x) [".casl", ".het" ]
+           else if elem (takeExtensions x) [".casl", ".het", ".dol" ]
                 then x : cons else cons
 
 {- | Given a list of files and folders the function expands

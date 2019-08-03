@@ -110,11 +110,13 @@ splitIRI iri = let
     [] -> iri
     (tok:ts) ->
       let lp = tokStr tok
-          (np, ':' : nlp) = span (/= ':') lp
-      in iri { iriScheme = np ++ ":"
-            , iriPath = i { getTokens = tok { tokStr = nlp } : ts}
-            }
-
+          sp = span (/= ':') lp
+      in case sp of
+         (np, ':' : nlp) -> iri { iriScheme = np ++ ":"
+                                , iriPath = i { getTokens = tok { tokStr = nlp } : ts}
+                                }
+         _ -> iri
+         
 -- | prepends "_:" to the nodeID if is not there already
 mkNodeID :: IRI -> IRI
 mkNodeID iri =

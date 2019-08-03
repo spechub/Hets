@@ -353,8 +353,9 @@ anaNodeQuery ans i moreTheorems incls pss =
             Right $ NodeQuery i $ NcProvers GlProofs trans
          "translations" | noIncl && isNothing trans ->
             Right $ NodeQuery i $ NcTranslations prover
-         _ -> case lookup cmd cmds of
-           Just nc | noPP -> Right $ NodeQuery i $ NcCmd nc
+         _ -> case (lookup cmd cmds,trans) of
+           (Just nc,_) | noPP -> Right $ NodeQuery i $ NcCmd nc
+           (Just Theory, Just tr) -> Right $ NodeQuery i $ NcCmd $ Translate tr
            _ -> Left $ "unknown node command '" ++ cmd ++ "' "
                 ++ shows incls " " ++ show pss
        _ -> Left $ "non-unique node command " ++ show ans

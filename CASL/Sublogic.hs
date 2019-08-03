@@ -34,6 +34,7 @@ module CASL.Sublogic
     , top
     , caslTop
     , cFol
+    , fol
     , cPrenex
     , sublogics_max
     , comp_list
@@ -181,6 +182,13 @@ cFol :: Lattice a => CASL_SL a
 cFol = caslTop
   { sub_features = NoSub -- no subsorting
   , has_part = False -- no partiality
+  }
+
+fol :: Lattice a => CASL_SL a
+fol = caslTop
+  { sub_features = NoSub -- no subsorting
+  , has_part = False -- no partiality
+  , cons_features = NoSortGen -- no sort generation constraints 
   }
 
 cPrenex :: Lattice a => CASL_SL a
