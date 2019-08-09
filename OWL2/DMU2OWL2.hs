@@ -81,7 +81,7 @@ runOntoDMU str = if null str then return "" else do
   return out
 
 readOWL :: Monad m => String -> m (Sign, [Named Axiom])
-readOWL str = case runParser (liftM2 const (basicSpec Map.empty) eof) () "" str of
+readOWL str = case runParser (liftM2 const ((basicSpec True) Map.empty) eof) () "" str of
   Left er -> fail $ show er
   Right ontoFile -> let
     newont = function Expand (StringMap $ prefixDeclaration ontoFile) ontoFile

@@ -119,7 +119,7 @@ unitSpec l =
      NOTE: this can also be a spec name. If this is the case, this unit spec
            will be converted on the static analysis stage.
            See Static.AnalysisArchitecture.ana_UNIT_SPEC. -}
-    do gps@(gs : gss, _) <- annoParser (caslGroupSpec l) `separatedBy` crossT
+    do gps@(gs : gss, _) <- annoParser (caslGroupSpec l True) `separatedBy` crossT
        let rest = unitRestType l gps
        if null gss then
             option ( {- case item gs of
@@ -130,7 +130,7 @@ unitSpec l =
 unitRestType :: LogicGraph -> ([Annoted SPEC], [Token]) -> AParser st UNIT_SPEC
 unitRestType l (gs, ps) = do
     a <- asKey funS -- see Note
-    g <- annoParser $ caslGroupSpec l
+    g <- annoParser $ caslGroupSpec l True -- TODO: if wrong here and line 122, set True to False
     return (Unit_type gs g $ catRange (ps ++ [a]))
 
 {- Note: the minus from funS (and crossT) would be misinterpreted as

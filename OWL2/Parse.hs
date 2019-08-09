@@ -329,15 +329,15 @@ keyword :: String -> CharParser st String
 keyword s = keywordNotFollowedBy s (alphaNum <|> char '_')
 
 -- base OWLClass excluded
-atomic :: CharParser st ClassExpression
-atomic = parensP description
+atomic :: Bool -> CharParser st ClassExpression
+atomic flag = parensP (description flag)
   <|> fmap ObjectOneOf (bracesP $ sepByComma individual)
 
-objectPropertyExpr :: CharParser st ObjectPropertyExpression
-objectPropertyExpr = do
+objectPropertyExpr :: Bool -> CharParser st ObjectPropertyExpression
+objectPropertyExpr flag = do
     keyword inverseS
-    fmap ObjectInverseOf objectPropertyExpr
-  <|> fmap ObjectProp uriP
+    fmap ObjectInverseOf (objectPropertyExpr flag)
+  <|> fmap (if flag then ObjectProp else UnsolvedObjProp) uriP
 
 -- creating the facet-value pairs
 facetValuePair :: CharParser st (ConstrainingFacet, RestrictionValue)
@@ -416,23 +416,23 @@ individualOrConstantList = do
       Right c -> fmap (Right . (c :)) $ optionL
         $ commaP >> sepByComma literal
 
-primaryOrDataRange :: CharParser st (Either ClassExpression DataRange)
-primaryOrDataRange = do
+primaryOrDataRange :: Bool -> CharParser st (Either ClassExpression DataRange)
+primaryOrDataRange flag = do
   ns <- many $ keyword notS  -- allows multiple not before primary
   ed <- do
       u <- datatypeUri
-      fmap Left (restrictionAny $ ObjectProp u)
+      fmap Left ((restrictionAny flag) $ ObjectProp u)
         <|> fmap (Right . DataType u)
             (bracketsP $ sepByComma facetValuePair)
         <|> return (if isDatatypeKey u
               then Right $ DataType u []
-              else Left $ Expression u) -- could still be a datatypeUri
+              else Left $ (if flag then Expression else UnsolvedClass) u) -- could still be a datatypeUri
     <|> do
       e <- bracesP individualOrConstantList
       return $ case e of
         Left us -> Left $ ObjectOneOf us
         Right cs -> Right $ DataOneOf cs
-    <|> fmap Left restrictionOrAtomic
+    <|> fmap Left (restrictionOrAtomic flag)
   return $ if even (length ns) then ed else
     case ed of
       Left d -> Left $ ObjectComplementOf d
@@ -444,8 +444,8 @@ mkObjectJunction ty ds = case nubOrd ds of
   [x] -> x
   ns -> ObjectJunction ty ns
 
-restrictionAny :: ObjectPropertyExpression -> CharParser st ClassExpression
-restrictionAny opExpr = do
+restrictionAny :: Bool -> ObjectPropertyExpression -> CharParser st ClassExpression
+restrictionAny flag opExpr = do
       keyword valueS
       e <- individualOrConstant
       case e of
@@ -458,7 +458,7 @@ restrictionAny opExpr = do
       return $ ObjectHasSelf opExpr
     <|> do -- sugar
       keyword onlysomeS
-      ds <- bracketsP $ sepByComma description
+      ds <- bracketsP $ sepByComma (description flag)
       let as = map (ObjectValuesFrom SomeValuesFrom opExpr) ds
           o = ObjectValuesFrom AllValuesFrom opExpr
               $ mkObjectJunction UnionOf ds
@@ -469,7 +469,7 @@ restrictionAny opExpr = do
       return $ ObjectValuesFrom SomeValuesFrom opExpr $ ObjectOneOf [iu]
     <|> do
       v <- someOrOnly
-      pr <- primaryOrDataRange
+      pr <- primaryOrDataRange flag
       case pr of
         Left p -> return $ ObjectValuesFrom v opExpr p
         Right r -> case opExpr of
@@ -477,7 +477,7 @@ restrictionAny opExpr = do
           _ -> unexpected $ "dataRange after " ++ showQuantifierType v
     <|> do
       (c, n) <- card
-      mp <- optionMaybe primaryOrDataRange
+      mp <- optionMaybe (primaryOrDataRange flag)
       case mp of
          Nothing -> return $ ObjectCardinality $ Cardinality c n opExpr Nothing
          Just pr -> case pr of
@@ -488,34 +488,44 @@ restrictionAny opExpr = do
                return $ DataCardinality $ Cardinality c n dpExpr $ Just r
              _ -> unexpected $ "dataRange after " ++ showCardinalityType c
 
-restriction :: CharParser st ClassExpression
-restriction = objectPropertyExpr >>= restrictionAny
+restriction :: Bool -> CharParser st ClassExpression
+restriction flag = (objectPropertyExpr flag) >>= (restrictionAny flag)
 
-restrictionOrAtomic :: CharParser st ClassExpression
-restrictionOrAtomic = do
-    opExpr <- objectPropertyExpr
-    restrictionAny opExpr <|> case opExpr of
-       ObjectProp euri -> return $ Expression euri
+restrictionOrAtomic :: Bool -> CharParser st ClassExpression
+restrictionOrAtomic flag = do
+    opExpr <- objectPropertyExpr flag
+    (restrictionAny flag) opExpr <|> case opExpr of
+       ObjectProp euri -> return $ (if flag then Expression else UnsolvedClass) euri
+       UnsolvedObjProp euri -> return $ UnsolvedClass euri
        _ -> unexpected "inverse object property"
-  <|> atomic
+  <|> atomic flag
 
 optNot :: (a -> a) -> CharParser st a -> CharParser st a
 optNot f p = (keyword notS >> fmap f p) <|> p
 
-primary :: CharParser st ClassExpression
-primary = optNot ObjectComplementOf restrictionOrAtomic
+primary :: Bool -> CharParser st ClassExpression
+primary flag = optNot ObjectComplementOf (restrictionOrAtomic flag)
 
-conjunction :: CharParser st ClassExpression
-conjunction = do
-    curi <- fmap Expression $ try (owlClassUri << keyword thatS)
-    rs <- sepBy1 (optNot ObjectComplementOf restriction) $ keyword andS
+conjunction :: Bool -> CharParser st ClassExpression
+conjunction flag = do
+    _ <- keyword andS
+    _ <- oParenT
+    hd <- uriP
+    _ <- commaT
+    tl <- uriP
+    _ <- cParenT
+    return $ VarExpression $ MUnion hd tl
+  <|> do
+    curi <- fmap (if flag then Expression else UnsolvedClass) 
+             $ try (owlClassUri << keyword thatS)
+    rs <- sepBy1 (optNot ObjectComplementOf (restriction flag)) $ keyword andS
     return $ mkObjectJunction IntersectionOf $ curi : rs
   <|> fmap (mkObjectJunction IntersectionOf)
-      (sepBy1 primary $ keyword andS)
+      (sepBy1 (primary flag) $ keyword andS)
 
-description :: CharParser st ClassExpression
-description =
-  fmap (mkObjectJunction UnionOf) $ sepBy1 conjunction $ keyword orS
+description :: Bool -> CharParser st ClassExpression
+description flag =
+  fmap (mkObjectJunction UnionOf) $ sepBy1 (conjunction flag) $ keyword orS
 
 entityType :: CharParser st EntityType
 entityType = choice $ map (\ f -> keyword (show f) >> return f)

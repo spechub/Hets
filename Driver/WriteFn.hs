@@ -302,7 +302,7 @@ writeTheory ins nam opts filePrefix ga
                   (printTheory ms OWL2 $ OWL2.prepareBasicTheory th2) "\n"
             showDiags opts ds
             when (null sy)
-                $ case parse (OWL2.basicSpec Map.empty >> eof) f owltext of
+                $ case parse ((OWL2.basicSpec True) Map.empty >> eof) f owltext of
               Left err -> putIfVerbose opts 0 $ show err
               _ -> putIfVerbose opts 3 $ "reparsed: " ++ f
             writeVerbFile opts f owltext

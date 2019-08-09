@@ -38,6 +38,8 @@ import Control.Monad
 
 import Logic.Logic
 
+import Debug.Trace
+
 -- | Error messages for static analysis
 failMsg :: Entity -> ClassExpression -> Result a
 failMsg (Entity _ ty e) desc =
@@ -96,7 +98,8 @@ checkObjPropList s ol = do
     unless (and ls) $ fail $ "undeclared object properties:\n" ++
                       showDoc (map (\o -> case o of
                                      ObjectProp _ -> o
-                                     ObjectInverseOf x -> x) ol) ""
+                                     ObjectInverseOf x -> x
+                                     _ -> error "unsolved string or variable") ol) ""
 
 checkDataPropList :: Sign -> [DataPropertyExpression] -> Result ()
 checkDataPropList s dl = do
@@ -181,6 +184,7 @@ checkClassExpression s desc =
             Nothing -> return desc
             Just d -> checkDataRange s d >> return desc
         else datErr dExp
+    _ -> error "unsolved string or class variable"
 
 checkFact :: Sign -> Fact -> Result ()
 checkFact s f = case f of
@@ -400,9 +404,9 @@ generateLabelMap sig = foldr (\ (Frame ext fbl) -> case ext of
 
 -- | adding annotations for theorems
 anaAxiom :: Axiom -> Named Axiom
-anaAxiom ax = findImplied ax $ makeNamed name ax
+anaAxiom ax = findImplied ax $ makeNamed nm ax
    where names = getNames ax
-         name = concat $ intersperse "_" names
+         nm = concat $ intersperse "_" names
          
 findImplied :: Axiom -> Named Axiom -> Named Axiom
 findImplied ax sent =

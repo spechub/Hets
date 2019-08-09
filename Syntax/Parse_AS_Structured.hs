@@ -271,51 +271,51 @@ flatExts = concatMap $ \ as -> case item as of
      sps -> sps
    _ -> [as]
 
-spec :: LogicGraph -> AParser st (Annoted SPEC)
-spec l = do
-  sp1 <- annoParser2 (specThen l)
+spec :: LogicGraph -> Bool -> AParser st (Annoted SPEC)
+spec l flag = do
+  sp1 <- annoParser2 (specThen l flag)
   option sp1 $ do
     k <- asKey "bridge"
     rs <- many (renaming l)
-    sp2 <- annoParser2 (specThen l)
+    sp2 <- annoParser2 (specThen l flag)
     return . emptyAnno . Bridge sp1 rs sp2 $ tokPos k
 
-specThen :: LogicGraph -> AParser st (Annoted SPEC)
-specThen l = do
-  (sps, ps) <- annoParser2 (specA l) `separatedBy` asKey thenS
+specThen :: LogicGraph -> Bool -> AParser st (Annoted SPEC)
+specThen l flag = do
+  (sps, ps) <- annoParser2 (specA l flag) `separatedBy` asKey thenS
   return $ case sps of
     [sp] -> sp
     _ -> emptyAnno (Extension (flatExts sps) $ catRange ps)
 
-specA :: LogicGraph -> AParser st (Annoted SPEC)
-specA l = do
-  sp <- annoParser2 $ specB l
+specA :: LogicGraph -> Bool -> AParser st (Annoted SPEC)
+specA l flag = do
+  sp <- annoParser2 $ specB l flag
   option sp $ do
     t <- asKey andS <|> asKey intersectS
-    (sps, ts) <- annoParser2 (specB l) `separatedBy` asKey (tokStr t)
+    (sps, ts) <- annoParser2 (specB l flag) `separatedBy` asKey (tokStr t)
     let cons = case tokStr t of
                  "and" -> Union
                  _ -> Intersection
     return $ emptyAnno (cons (sp : sps) $ catRange (t : ts))
 
-specB :: LogicGraph -> AParser st (Annoted SPEC)
-specB l = do
+specB :: LogicGraph -> Bool -> AParser st (Annoted SPEC)
+specB l flag = do
     p1 <- asKey localS
-    sp1 <- aSpec l
+    sp1 <- aSpec l flag
     p2 <- asKey withinS
-    sp2 <- annoParser2 $ specB l
+    sp2 <- annoParser2 $ specB l flag
     return (emptyAnno $ Local_spec sp1 sp2 $ tokPos p1 `appRange` tokPos p2)
-  <|> specC l
+  <|> specC l flag
 
-specC :: LogicGraph -> AParser st (Annoted SPEC)
-specC lG = do
-    let spD = annoParser $ specD lG
+specC :: LogicGraph -> Bool -> AParser st (Annoted SPEC)
+specC lG flag = do
+    let spD = annoParser $ specD lG flag
         rest = spD >>= translationList
           [ (`fmap` extraction lG) . Extraction
           , (`fmap` renaming lG) . Translation
           , (`fmap` restriction lG) . Reduction
           , (`fmap` approximation lG) . Approximation
-          , (`fmap` filtering lG) . Filtering
+          , (`fmap` filtering lG flag) . Filtering
           , (`fmap` minimization lG) . Minimization]
     l@(Logic lid) <- lookupCurrentLogic "specC" lG
     {- if the current logic has an associated data_logic,
@@ -326,8 +326,8 @@ specC lG = do
           Nothing -> rest
           Just lD@(Logic dl) -> do
               p1 <- asKey dataS -- not a keyword
-              sp1 <- annoParser $ basicSpec lG (lD, Nothing)
-                  <|> caslGroupSpec (setCurLogic (language_name dl) lG)
+              sp1 <- annoParser $ basicSpec lG flag (lD, Nothing)
+                  <|> caslGroupSpec (setCurLogic (language_name dl) lG) flag
               sp2 <- spD
               return (emptyAnno $ Data lD l sp1 sp2 $ tokPos p1)
             <|> rest
@@ -393,16 +393,16 @@ extraction lg = do
   (is,commas) <- separatedBy (hetIRI lg) commaT
   return . ExtractOrRemove (tokStr p == extractS) is $ catRange (p:commas)
 
-filtering :: LogicGraph -> AParser st FILTERING
-filtering lg = do
+filtering :: LogicGraph -> Bool -> AParser st FILTERING
+filtering lg flag = do
   p <- asKey selectS <|> asKey rejectS
-  filtering_aux p lg
+  filtering_aux p lg flag
 
-filtering_aux :: Token -> LogicGraph -> AParser st FILTERING
-filtering_aux p lg =
+filtering_aux :: Token -> LogicGraph -> Bool -> AParser st FILTERING
+filtering_aux p lg flag =
   do 
     s <- lookupCurrentSyntax "filtering" lg
-    Basic_spec bs _ <- basicSpec lg s
+    Basic_spec bs _ <- basicSpec lg flag s
     return . FilterBasicSpec (tokStr p == selectS) bs $ tokPos p
  <|>
   do
@@ -422,52 +422,53 @@ groupSpecLookhead lG =
 minimizeKey :: AParser st Token
 minimizeKey = choice $ map asKey [minimizeS, closedworldS, "maximize"]
 
-specD :: LogicGraph -> AParser st SPEC
+specD :: LogicGraph -> Bool -> AParser st SPEC
            -- do some lookahead for free spec, to avoid clash with free type
-specD l = do
+specD l flag = do
     p <- asKey freeS `followedWith` groupSpecLookhead l
-    sp <- annoParser $ groupSpec l
+    sp <- annoParser $ groupSpec l flag
     return (Free_spec sp $ tokPos p)
   <|> do
     p <- asKey cofreeS `followedWith` groupSpecLookhead l
-    sp <- annoParser $ groupSpec l
+    sp <- annoParser $ groupSpec l flag
     return (Cofree_spec sp $ tokPos p)
   <|> do
     p <- minimizeKey `followedWith` groupSpecLookhead l
-    sp <- annoParser $ groupSpec l
+    sp <- annoParser $ groupSpec l flag
     return (Minimize_spec sp $ tokPos p)
   <|> do
     p <- asKey closedS `followedWith` groupSpecLookhead l
-    sp <- annoParser $ groupSpec l
+    sp <- annoParser $ groupSpec l flag
     return (Closed_spec sp $ tokPos p)
-  <|> specE l
+  <|> specE l flag
 
-specE :: LogicGraph -> AParser st SPEC
-specE l = logicSpec l
+specE :: LogicGraph -> Bool -> AParser st SPEC
+specE l flag = logicSpec l flag
       <|> combineSpec l
-      <|> (lookAhead (groupSpecLookhead l) >> groupSpec l)
-      <|> (lookupCurrentSyntax "basic spec" l >>= basicSpec l)
+      <|> (lookAhead (groupSpecLookhead l) >> groupSpec l flag)
+      <|> (lookupCurrentSyntax "basic spec" l >>= basicSpec l flag)
 
 -- | call a logic specific parser if it exists
 callParser :: Maybe (AParser st a) -> String -> String -> AParser st a
 callParser p name itemType =
   fromMaybe (unexpected $ "no " ++ itemType ++ " parser for " ++ name) p
 
-basicSpec :: LogicGraph -> (AnyLogic, Maybe IRI) -> AParser st SPEC
-basicSpec lG (Logic lid, sm) = do
+basicSpec :: LogicGraph -> Bool -> (AnyLogic, Maybe IRI) -> AParser st SPEC
+basicSpec lG flag (Logic lid, sm) = do
     p <- getPos
+    let whichParser = if flag then basicSpecParser sm lid else macroParser sm lid
     bspec <- callParser
-             (liftM (\ ps -> ps (prefixes lG)) (basicSpecParser sm lid))
+             (liftM (\ ps -> ps (prefixes lG)) whichParser)
              (showSyntax lid sm) "basic specification"
     q <- getPos
     return $ Basic_spec (G_basic_spec lid bspec) $ Range [p, q]
 
-logicSpec :: LogicGraph -> AParser st SPEC
-logicSpec lG = do
+logicSpec :: LogicGraph -> Bool -> AParser st SPEC
+logicSpec lG flag = do
    (s1, ln) <- qualification lG
    many $ qualification lG -- ignore multiple qualifications for now
    s2 <- colonT
-   sp <- annoParser $ specD $ setLogicName ln lG
+   sp <- annoParser $ specD (setLogicName ln lG) flag
    return $ Qualified_spec ln sp $ toRange s1 [] s2
 
 combineSpec :: LogicGraph -> AParser st SPEC
@@ -499,55 +500,76 @@ lookupAndSetComorphismName c lg = do
     Comorphism cid <- lookupComorphism c lg
     return $ setCurLogic (language_name $ targetLogic cid) lg
 
-aSpec :: LogicGraph -> AParser st (Annoted SPEC)
-aSpec = annoParser2 . spec
+aSpec :: LogicGraph -> Bool -> AParser st (Annoted SPEC)
+aSpec lg flag = annoParser2 $  spec lg flag
 
 -- | grouped spec or spec-inst without optional DOL import
-caslGroupSpec :: LogicGraph -> AParser st SPEC
+caslGroupSpec :: LogicGraph -> Bool -> AParser st SPEC
 caslGroupSpec = groupSpecAux False
 
 -- | grouped spec or spec-inst with optional import
-groupSpec :: LogicGraph -> AParser st SPEC
-groupSpec = groupSpecAux True
+groupSpec :: LogicGraph -> Bool -> AParser st SPEC
+groupSpec  = groupSpecAux True
 
-groupSpecAux :: Bool -> LogicGraph -> AParser st SPEC
-groupSpecAux withImport l = do
+groupSpecAux :: Bool -> LogicGraph -> Bool -> AParser st SPEC
+groupSpecAux withImport l flag = do
     b <- oBraceT
     do
       c <- cBraceT
       return $ EmptySpec $ catRange [b, c]
      <|> do
-      a <- aSpec l
+      a <- aSpec l flag
       addAnnos
       c <- cBraceT
       return $ Group a $ catRange [b, c]
   <|> do
     n <- hetIRI l
-    (f, ps) <- fitArgs l
+    {- (f, ps) <- fitArgs l flag
     mi <- if withImport then optionMaybe (hetIRI l) else return Nothing
-    return (Spec_inst n f mi ps)
+    case f of
+     [] -> return $ UnsolvedName n nullRange
+     _ -> return (Spec_inst n f mi ps)
+    -} 
+    mf <- optionMaybe (fitArgsPattern l flag withImport) 
+    case mf of
+     Nothing -> return $ UnsolvedName n nullRange
+     Just ((f, mi), ps) -> return $ Spec_inst n f mi ps 
 
-fitArgs :: LogicGraph -> AParser st ([Annoted FIT_ARG], Range)
-fitArgs l = do
-  fas <- many (fitArg l)
+fitArgsPattern :: LogicGraph -> Bool -> Bool -> AParser st (([Annoted FIT_ARG], Maybe IRI), Range)
+fitArgsPattern l flag withImport = do
+  o <- oBracketT
+  (fas, _) <- separatedBy (fitArg l flag) semiT 
+  let (fas1, _ps) = unzip fas
+  c <- cBracketT
+  return ((fas1, Nothing), toRange o [] c)
+
+fitArgs :: LogicGraph -> Bool -> AParser st ([Annoted FIT_ARG], Range)
+fitArgs l flag = do
+  fas <- many (fitArg l flag)
   let (fas1, ps) = unzip fas
   return (fas1, concatMapRange id ps)
 
-fitArg :: LogicGraph -> AParser st (Annoted FIT_ARG, Range)
-fitArg l = do
-  b <- oBracketT
-  fa <- annoParser (fittingArg l)
-  c <- cBracketT
-  return (fa, toRange b [] c)
+fitArg :: LogicGraph -> Bool -> AParser st (Annoted FIT_ARG, Range)
+fitArg l flag = do
+ -- b <- oBracketT
+  fa <- annoParser (fitString l flag) -- TODO: this should be a :: separated list of fittingArgs
+  -- TODO: how to parse SP[a; ; c] if the optional argument is missing?
+ -- c <- cBracketT
+  return (fa, nullRange)
 
-fittingArg :: LogicGraph -> AParser st FIT_ARG
-fittingArg l = do
+fitString :: LogicGraph -> Bool -> AParser st FIT_ARG
+fitString _l _ = do
+  s <- compoundIriCurie -- TODO: hetIRI did not parse compound Ids 
+  return $ Fit_spec (Annoted (UnsolvedName s nullRange) nullRange [][]) [] nullRange
+
+fittingArg :: LogicGraph -> Bool -> AParser st FIT_ARG
+fittingArg l flag = do
     s <- asKey viewS
     vn <- hetIRI l
-    (fa, ps) <- fitArgs l
+    (fa, ps) <- fitArgs l flag
     return (Fit_view vn fa (tokPos s `appRange` ps))
   <|> do
-    sp <- aSpec l
+    sp <- aSpec l flag
     (symbit, ps) <- option ([], nullRange) $ do
         s <- asKey fitS
         (m, qs) <- parseMapping l

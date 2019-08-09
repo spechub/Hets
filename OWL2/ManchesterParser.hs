@@ -28,6 +28,8 @@ import qualified Common.GlobalAnnotations as GA (PrefixMap)
 import Text.ParserCombinators.Parsec
 import qualified Data.Map as Map
 
+import Debug.Trace
+
 optAnnos :: CharParser st a -> CharParser st (Annotations, a)
 optAnnos p = do
     as <- optionalAnnos
@@ -43,8 +45,8 @@ annotations = do
     fmap (map $ \ (as, (i, v)) -> Annotation as i v)
      . sepByComma . optAnnos $ pair uriP annotationValue
 
-descriptionAnnotatedList :: CharParser st [(Annotations, ClassExpression)]
-descriptionAnnotatedList = sepByComma $ optAnnos description
+descriptionAnnotatedList :: Bool -> CharParser st [(Annotations, ClassExpression)]
+descriptionAnnotatedList flag = sepByComma $ optAnnos (description flag)
 
 makeFrame :: Extended -> [FrameBit] -> Frame
 makeFrame ext fbl = Frame ext
@@ -85,45 +87,45 @@ datatypeBit = do
           Just (ans, dr) -> [AnnFrameBit ans $ DatatypeBit dr]
         ++ map (`AnnFrameBit` AnnotationFrameBit Assertion) as2
 
-classFrame :: CharParser st Frame
-classFrame = do
+classFrame :: Bool -> CharParser st Frame
+classFrame flag = do
     pkeyword classC
-    i <- description
-    plain <- many classFrameBit
+    i <- description flag
+    plain <- many (classFrameBit flag) 
     -- ignore Individuals: ... !
     optional $ pkeyword individualsC >> sepByComma individual
     return $ makeFrame (ClassEntity i) plain
 
-classFrameBit :: CharParser st FrameBit
-classFrameBit = do
+classFrameBit :: Bool -> CharParser st FrameBit
+classFrameBit flag = do
     pkeyword subClassOfC
-    ds <- descriptionAnnotatedList
+    ds <- descriptionAnnotatedList flag
     return $ ListFrameBit (Just SubClass) $ ExpressionBit ds
   <|> do
     e <- equivOrDisjoint
-    ds <- descriptionAnnotatedList
+    ds <- descriptionAnnotatedList flag
     return $ ListFrameBit (Just $ EDRelation e) $ ExpressionBit ds
   <|> do
     pkeyword disjointUnionOfC
     as <- optionalAnnos
-    ds <- sepByComma description
+    ds <- sepByComma (description flag)
     return $ AnnFrameBit as $ ClassDisjointUnion ds
   <|> do
     pkeyword hasKeyC
     as <- optionalAnnos
-    o <- sepByComma objectPropertyExpr
+    o <- sepByComma (objectPropertyExpr flag)
     return $ AnnFrameBit as $ ClassHasKey o []
   <|> do
     as <- annotations
     return $ AnnFrameBit as $ AnnotationFrameBit Assertion
 
-objPropExprAList :: CharParser st [(Annotations, ObjectPropertyExpression)]
-objPropExprAList = sepByComma $ optAnnos objectPropertyExpr
+objPropExprAList :: Bool -> CharParser st [(Annotations, ObjectPropertyExpression)]
+objPropExprAList flag = sepByComma $ optAnnos (objectPropertyExpr flag)
 
-objectFrameBit :: CharParser st FrameBit
-objectFrameBit = do
+objectFrameBit :: Bool -> CharParser st FrameBit
+objectFrameBit flag = do
     r <- domainOrRange
-    ds <- descriptionAnnotatedList
+    ds <- descriptionAnnotatedList flag
     return $ ListFrameBit (Just $ DRRelation r) $ ExpressionBit ds
   <|> do
     characterKey
@@ -131,39 +133,39 @@ objectFrameBit = do
     return $ ListFrameBit Nothing $ ObjectCharacteristics ds
   <|> do
     subPropertyKey
-    ds <- objPropExprAList
+    ds <- objPropExprAList flag
     return $ ListFrameBit (Just SubPropertyOf) $ ObjectBit ds
   <|> do
     e <- equivOrDisjoint
-    ds <- objPropExprAList
+    ds <- objPropExprAList flag
     return $ ListFrameBit (Just $ EDRelation e) $ ObjectBit ds
   <|> do
     pkeyword inverseOfC
-    ds <- objPropExprAList
+    ds <- objPropExprAList flag
     return $ ListFrameBit (Just InverseOf) $ ObjectBit ds
   <|> do
     pkeyword subPropertyChainC
     as <- optionalAnnos
-    os <- sepBy1 objectPropertyExpr (keyword oS)
+    os <- sepBy1 (objectPropertyExpr flag) (keyword oS)
     return $ AnnFrameBit as $ ObjectSubPropertyChain os
   <|> do
     as <- annotations
     return $ AnnFrameBit as $ AnnotationFrameBit Assertion
 
-objectPropertyFrame :: CharParser st Frame
-objectPropertyFrame = do
+objectPropertyFrame :: Bool -> CharParser st Frame
+objectPropertyFrame flag = do
     pkeyword objectPropertyC
-    ouri <- objectPropertyExpr
-    as <- many objectFrameBit
+    ouri <- objectPropertyExpr flag
+    as <- many (objectFrameBit flag)
     return $ makeFrame (ObjectEntity ouri) as
 
 dataPropExprAList :: CharParser st [(Annotations, DataPropertyExpression)]
 dataPropExprAList = sepByComma $ optAnnos uriP
 
-dataFrameBit :: CharParser st FrameBit
-dataFrameBit = do
+dataFrameBit :: Bool -> CharParser st FrameBit
+dataFrameBit flag = do
     pkeyword domainC
-    ds <- descriptionAnnotatedList
+    ds <- descriptionAnnotatedList flag
     return $ ListFrameBit (Just (DRRelation ADomain)) $ ExpressionBit ds
   <|> do
     pkeyword rangeC
@@ -186,11 +188,11 @@ dataFrameBit = do
     as <- annotations
     return $ AnnFrameBit as $ AnnotationFrameBit Assertion
 
-dataPropertyFrame :: CharParser st Frame
-dataPropertyFrame = do
+dataPropertyFrame :: Bool -> CharParser st Frame
+dataPropertyFrame flag = do
     pkeyword dataPropertyC
     duri <- uriP
-    as <- many dataFrameBit
+    as <- many (dataFrameBit flag)
     return $ makeFrame (SimpleEntity $ mkEntity DataProperty duri) as
 
 fact :: CharParser st Fact
@@ -204,10 +206,10 @@ fact = do
         t <- individual
         return $ ObjectPropertyFact pn (ObjectProp u) t
 
-iFrameBit :: CharParser st FrameBit
-iFrameBit = do
+iFrameBit :: Bool -> CharParser st FrameBit
+iFrameBit flag = do
     pkeyword typesC
-    ds <- descriptionAnnotatedList
+    ds <- descriptionAnnotatedList flag
     return $ ListFrameBit (Just Types) $ ExpressionBit ds
   <|> do
     s <- sameOrDifferent
@@ -221,24 +223,26 @@ iFrameBit = do
     a <- annotations
     return $ AnnFrameBit a $ AnnotationFrameBit Assertion
 
-individualFrame :: CharParser st Frame
-individualFrame = do
+individualFrame :: Bool -> CharParser st Frame
+individualFrame flag = do
     pkeyword individualC
     iuri <- individual
-    as <- many iFrameBit
-    return $ makeFrame (SimpleEntity $ mkEntity NamedIndividual iuri) as
+    as <- many (iFrameBit flag)
+    let ent = if flag then SimpleEntity $ mkEntity NamedIndividual iuri
+              else SimpleEntity $ mkEntity UnsolvedEntity iuri
+    return $ makeFrame ent as
 
-misc :: CharParser st Frame
-misc = do
+misc :: Bool -> CharParser st Frame
+misc flag = do
     e <- equivOrDisjointKeyword classesC
     as <- optionalAnnos
-    ds <- sepByComma description
+    ds <- sepByComma (description flag)
     return $ Frame (Misc as) [ListFrameBit (Just $ EDRelation e)
         $ ExpressionBit $ emptyAnnoList ds]
   <|> do
     e <- equivOrDisjointKeyword propertiesC
     as <- optionalAnnos
-    es <- sepByComma objectPropertyExpr
+    es <- sepByComma (objectPropertyExpr flag)
     -- indistinguishable from dataProperties
     return $ Frame (Misc as) [ListFrameBit (Just $ EDRelation e)
         $ ObjectBit $ emptyAnnoList es]
@@ -249,24 +253,28 @@ misc = do
     return $ Frame (Misc as) [ListFrameBit (Just $ SDRelation s)
         $ IndividualSameOrDifferent $ emptyAnnoList is]
 
-frames :: CharParser st [Frame]
-frames = many $ datatypeBit <|> classFrame
-    <|> objectPropertyFrame <|> dataPropertyFrame <|> individualFrame
-    <|> annotationPropertyFrame <|> misc
+frames :: Bool -> CharParser st [Frame]
+frames flag = 
+        many $ datatypeBit <|> classFrame flag
+    <|> objectPropertyFrame flag <|> dataPropertyFrame flag <|> individualFrame flag
+    <|> annotationPropertyFrame <|> misc flag
 
-basicSpec :: GA.PrefixMap -> CharParser st OntologyDocument
-basicSpec pm = do
+-- the Bool flag is true for ontologies and false for macros
+basicSpec :: Bool -> GA.PrefixMap -> CharParser st OntologyDocument
+basicSpec flag pm = do
     nss <- many nsEntry
     ou <- option nullIRI $ pkeyword ontologyC >> option nullIRI uriP
     ie <- many importEntry
     ans <- many annotations
-    as <- frames
+    as <- frames flag
     if null nss && null ie && null ans && null as && ou == nullIRI
       then fail "empty ontology"
-      else return $ OntologyDocument
-        (Map.union (Map.fromList $ map (\ (p, q) -> (p, showIRICompact q)) nss)
-         (convertPrefixMap pm))
-        (emptyOntology as)
-            { imports = ie
-            , ann = ans
-            , name = ou }
+      else do 
+       let o = OntologyDocument
+                 (Map.union (Map.fromList $ map (\ (p, q) -> (p, showIRICompact q)) nss)
+                  (convertPrefixMap pm))
+                 (emptyOntology as)
+                  { imports = ie
+                  , ann = ans
+                  , name = ou }
+       trace ("o:" ++ show o) $ return o

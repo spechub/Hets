@@ -291,6 +291,10 @@ commaT = asSeparator ","
 semiT :: CharParser st Token
 semiT = pToken $ string ";" << notFollowedBy (char ';')
 
+-- a double colon
+doubleColonT :: CharParser st Token
+doubleColonT = pToken $ string "::" << notFollowedBy (char ':')
+
 oBraceT :: CharParser st Token
 oBraceT = asSeparator "{"
 

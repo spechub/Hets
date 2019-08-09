@@ -82,7 +82,12 @@ data LIB_ITEM = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) Range
               -- pos:  "newlogic", Logic_name, "=", opt "end"
               | Newcomorphism_defn ComorphismDef Range
               -- pos: "newcomorphism", Comorphism_name, "=", opt "end"
+              | Pattern_defn SPEC_NAME [PatternParam] IMPORTED LocalOrSpec Range
                 deriving (Show, Typeable)
+
+data LocalOrSpec = Local_pattern [LIB_ITEM] (Annoted SPEC) | 
+                   Spec_pattern (Annoted SPEC)
+                  deriving (Show, Typeable)
 
 data AlignSem = SingleDomain | GlobalDomain | ContextualizedDomain
   deriving (Show, Typeable, Bounded, Enum)
@@ -109,6 +114,12 @@ addDownloadAux unique j =
   in Download_items (iriLibName i)
     (if unique then UniqueItem i else ItemMaps [ItemNameMap i Nothing])
     $ iriPos i
+
+data PatternParam = OntoParam Bool (Annoted SPEC) | ListParam OntoList 
+  deriving (Show, Typeable)
+ -- the bool flag is true for optional parameters
+
+data OntoList = EmptyParamList | OntoListCons [Annoted SPEC] deriving (Show, Typeable)
 
 data GENERICITY = Genericity PARAMS IMPORTED Range deriving (Show, Typeable)
                   -- pos: many of "[","]" opt ("given", commas)

@@ -57,6 +57,7 @@ import OWL2.Symbols
 import OWL2.Taxonomy
 import OWL2.Theorem
 import OWL2.ExtractModule
+-- import OWL2.Macros
 
 data OWL2 = OWL2
 
@@ -86,9 +87,10 @@ instance Monoid OntologyDocument where
       OntologyDocument (Map.union p1 p2) $ mappend o1 o2
 
 instance Syntax OWL2 OntologyDocument Entity SymbItems SymbMapItems where
-    parsersAndPrinters OWL2 = addSyntax "Ship" (basicSpec, ppShipOnt)
-      $ addSyntax "Manchester" (basicSpec, pretty)
-      $ makeDefault (basicSpec, pretty)
+    parsersAndPrinters OWL2 = addSyntax "Ship" (basicSpec True, ppShipOnt)
+      $ addSyntax "Manchester" (basicSpec True, pretty)
+      $ makeDefault (basicSpec True, pretty)
+    parse_macro OWL2 = Just (basicSpec False)
     parseSingleSymbItem OWL2 = Just symbItem
     parse_symb_items OWL2 = Just symbItems
     parse_symb_map_items OWL2 = Just symbMapItems
@@ -176,6 +178,7 @@ instance StaticAnalysis OWL2 OntologyDocument Axiom
 #ifdef UNI_PACKAGE
       theory_to_taxonomy OWL2 = onto2Tax
 #endif
+
 instance Logic OWL2 ProfSub OntologyDocument Axiom SymbItems SymbMapItems
                Sign
                OWLMorphism Entity RawSymb ProofTree where

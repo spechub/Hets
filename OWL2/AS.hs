@@ -371,6 +371,7 @@ data EntityType =
   | DataProperty
   | AnnotationProperty
   | NamedIndividual
+  | UnsolvedEntity
     deriving (Enum, Bounded, Show, Read, Eq, Ord, Typeable, Data)
 
 showEntityType :: EntityType -> String
@@ -409,7 +410,7 @@ pairSymbols (Entity lb1 k1 i1) (Entity lb2 k2 i2) =
 data TypedOrUntyped = Typed Datatype | Untyped (Maybe LanguageTag)
     deriving (Show, Eq, Ord, Typeable, Data)
 
-data Literal = Literal LexicalForm TypedOrUntyped | NumberLit FloatLit
+data Literal = Literal LexicalForm TypedOrUntyped | NumberLit FloatLit | LiteralVar IRI
     deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | non-negative integers given by the sequence of digits
@@ -515,12 +516,15 @@ type InverseObjectProperty = ObjectPropertyExpression
 
 data ObjectPropertyExpression = ObjectProp ObjectProperty
   | ObjectInverseOf InverseObjectProperty
+  | ObjectPropertyVar IRI
+  | UnsolvedObjProp IRI
         deriving (Show, Eq, Ord, Typeable, Data)
 
 objPropToIRI :: ObjectPropertyExpression -> Individual
 objPropToIRI opExp = case opExp of
     ObjectProp u -> u
     ObjectInverseOf objProp -> objPropToIRI objProp
+    _ -> error "nyi"
 
 type DataPropertyExpression = DataProperty
 
@@ -533,10 +537,12 @@ data DataRange =
   | DataOneOf [Literal]
     deriving (Show, Eq, Ord, Typeable, Data)
 
--- * CLASS EXPERSSIONS
+-- * CLASS EXPRESSIONS
 
 data ClassExpression =
     Expression Class
+  | UnsolvedClass IRI
+  | VarExpression MVarOrTerm
   | ObjectJunction JunctionType [ClassExpression]
   | ObjectComplementOf ClassExpression
   | ObjectOneOf [Individual]
@@ -548,6 +554,9 @@ data ClassExpression =
   | DataHasValue DataPropertyExpression Literal
   | DataCardinality (Cardinality DataPropertyExpression DataRange)
     deriving (Show, Eq, Ord, Typeable, Data)
+
+data MVarOrTerm = MVar IRI | MUnion IRI IRI -- the name of the head and the name of the tail TODO: should be extended with other terms
+ deriving (Show, Eq, Ord, Typeable, Data)
 
 -- * ANNOTATIONS
 

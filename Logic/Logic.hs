@@ -257,6 +257,9 @@ class (Language lid, PrintTypeConv basic_spec, GetRange basic_spec,
             Just p -> makeDefault (p, pretty)
          -- | parser for basic specifications
          parse_basic_spec :: lid -> Maybe (PrefixMap -> AParser st basic_spec)
+         -- | parser for macros
+         parse_macro :: lid -> Maybe (PrefixMap -> AParser st basic_spec)
+         parse_macro _ = Nothing
          -- | parser for a single symbol returned as list
          parseSingleSymbItem :: lid -> Maybe (AParser st symb_items)
          -- | parser for symbol lists
@@ -276,6 +279,10 @@ class (Language lid, PrintTypeConv basic_spec, GetRange basic_spec,
 basicSpecParser :: Syntax lid basic_spec symbol symb_items symb_map_items
   => Maybe IRI -> lid -> Maybe (PrefixMap -> AParser st basic_spec)
 basicSpecParser sm = fmap fst . parserAndPrinter sm
+
+macroParser :: Syntax lid basic_spec symbol symb_items symb_map_items
+  => Maybe IRI -> lid -> Maybe (PrefixMap -> AParser st basic_spec)
+macroParser _ = parse_macro
 
 basicSpecPrinter :: Syntax lid basic_spec symbol symb_items symb_map_items
   => Maybe IRI -> lid -> Maybe (basic_spec -> Doc)
