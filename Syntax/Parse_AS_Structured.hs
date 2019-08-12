@@ -554,23 +554,29 @@ fitArgs l flag = do
 
 fitArg :: LogicGraph -> Bool -> AParser st (Annoted FIT_ARG, Range)
 fitArg l flag = do
-    -- b <- oBracketT
-    fa <- annoParser (fitString l flag) -- TODO: this should be a :: separated list of fittingArgs
-    -- TODO: how to parse SP[a; ; c] if the optional argument is missing?
-    -- c <- cBracketT
-    return (fa, nullRange)
- <|> do
     let emptyParam = do
           _ <- lookAhead $ try semiT
           return $ Missing_arg nullRange
     fa <- annoParser emptyParam
-    return (fa, nullRange) 
+    return (fa, nullRange)
+  <|> do
+    -- b <- oBracketT
+    fa <- annoParser $ fitString l flag
+    -- c <- cBracketT
+    return (fa, nullRange)
  
 
 fitString :: LogicGraph -> Bool -> AParser st FIT_ARG
 fitString _l _ = do
-  s <- compoundIriCurie -- TODO: hetIRI did not parse compound Ids 
-  return $ Fit_spec (Annoted (UnsolvedName s nullRange) nullRange [][]) [] nullRange
+  let iParser = do
+        i <- compoundIriCurie 
+        _ <- skip
+        return i
+  (s, _) <- separatedBy iParser doubleColonT
+  case s of
+   [] -> error "should be caught by the other case"
+   [x] -> return $ Fit_spec (Annoted (UnsolvedName x nullRange) nullRange [][]) [] nullRange
+   _ -> return $ Fit_list (map (\x -> Annoted (UnsolvedName x nullRange) nullRange [][]) s) nullRange
 
 fittingArg :: LogicGraph -> Bool -> AParser st FIT_ARG
 fittingArg l flag = do
