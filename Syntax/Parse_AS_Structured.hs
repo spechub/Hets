@@ -564,13 +564,16 @@ fitArg l flag = do
     fa <- annoParser $ fitString l flag
     -- c <- cBracketT
     return (fa, nullRange)
+  <|> do 
+    fa <- annoParser $ fittingArg l flag
+    return (fa, nullRange)
  
 
 fitString :: LogicGraph -> Bool -> AParser st FIT_ARG
 fitString _l _ = do
   let iParser = do
         i <- compoundIriCurie 
-        _ <- skip
+        _ <- option () skip
         return i
   (s, _) <- separatedBy iParser doubleColonT
   case s of
