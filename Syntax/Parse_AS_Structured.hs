@@ -55,6 +55,8 @@ import Data.Char
 import Data.Maybe
 import Control.Monad
 
+import Debug.Trace
+
 expandCurieM :: LogicGraph -> IRI -> GenParser Char st IRI
 expandCurieM lG i =
   case expandCurie (prefixes lG) i of
@@ -533,7 +535,8 @@ groupSpecAux withImport l flag = do
     mf <- optionMaybe (fitArgsPattern l flag withImport) 
     case mf of
      Nothing -> return $ UnsolvedName n nullRange
-     Just ((f, mi), ps) -> return $ Spec_inst n f mi ps 
+     Just ((f, mi), ps) -> let inst =  Spec_inst n f mi ps 
+                           in trace ("inst:" ++ show inst) $ return inst
 
 fitArgsPattern :: LogicGraph -> Bool -> Bool -> AParser st (([Annoted FIT_ARG], Maybe IRI), Range)
 fitArgsPattern l flag withImport = do
@@ -551,11 +554,18 @@ fitArgs l flag = do
 
 fitArg :: LogicGraph -> Bool -> AParser st (Annoted FIT_ARG, Range)
 fitArg l flag = do
- -- b <- oBracketT
-  fa <- annoParser (fitString l flag) -- TODO: this should be a :: separated list of fittingArgs
-  -- TODO: how to parse SP[a; ; c] if the optional argument is missing?
- -- c <- cBracketT
-  return (fa, nullRange)
+    -- b <- oBracketT
+    fa <- annoParser (fitString l flag) -- TODO: this should be a :: separated list of fittingArgs
+    -- TODO: how to parse SP[a; ; c] if the optional argument is missing?
+    -- c <- cBracketT
+    return (fa, nullRange)
+ <|> do
+    let emptyParam = do
+          _ <- lookAhead $ try semiT
+          return $ Missing_arg nullRange
+    fa <- annoParser emptyParam
+    return (fa, nullRange) 
+ 
 
 fitString :: LogicGraph -> Bool -> AParser st FIT_ARG
 fitString _l _ = do

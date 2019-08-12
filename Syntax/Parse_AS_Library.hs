@@ -331,7 +331,7 @@ patternParser l = do
 localOrSpec :: LogicGraph -> AParser st LocalOrSpec
 localOrSpec l = do
        _s1 <- asKey "let"
-       (locals, _) <- separatedBy (patternParser l) skip -- this might have problems
+       locals <- many1 (patternParser l) -- separatedBy (patternParser l) skip -- this might have problems
        _s2 <- asKey "in"
        a <- aSpec l False
        return $ Local_pattern locals a 
