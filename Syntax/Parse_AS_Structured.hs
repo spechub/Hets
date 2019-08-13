@@ -570,16 +570,17 @@ fitArg l flag = do
  
 
 fitString :: LogicGraph -> Bool -> AParser st FIT_ARG
-fitString _l _ = do
+fitString l flag = do
   let iParser = do
-        i <- compoundIriCurie 
-        _ <- option () skip
-        return i
+          i <- compoundIriCurie
+          _ <- option () skip
+          return $ Annoted (UnsolvedName i nullRange) nullRange [][]
+        <|> aSpec l flag
   (s, _) <- separatedBy iParser doubleColonT
   case s of
    [] -> error "should be caught by the other case"
-   [x] -> return $ Fit_spec (Annoted (UnsolvedName x nullRange) nullRange [][]) [] nullRange
-   _ -> return $ Fit_list (map (\x -> Annoted (UnsolvedName x nullRange) nullRange [][]) s) nullRange
+   [x] -> return $ Fit_spec x [] nullRange
+   _ -> return $ Fit_list s nullRange
 
 fittingArg :: LogicGraph -> Bool -> AParser st FIT_ARG
 fittingArg l flag = do

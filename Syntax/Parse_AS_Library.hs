@@ -322,7 +322,7 @@ patternParser l = do
         (pars, ps1) <- macroParams l
         (imp, ps2) <- option ([], nullRange) (imports l)
         s2 <- equalT
-        a <- localOrSpec l 
+        a <- trace ("parsed equal:" ++ show pars) $ localOrSpec l 
         q <- optEnd
         let pattern = Pattern_defn n pars (Imported imp) a nullRange
         trace ("pattern:" ++ show pattern) $ return .  Pattern_defn n pars (Imported imp) a 
