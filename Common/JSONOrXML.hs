@@ -16,7 +16,13 @@ prettyprint :: JSONOrXML -> String
 prettyprint (JSON json) = ppJson json
 prettyprint (XML xml) = ppElement xml
 
-union :: JSONOrXML -> JSONOrXML -> JSONOrXML
-union (JSON json1) (JSON json2) = undefined
-union (XML xml1) (XML xml2) = undefined
-union _ _ = undefined
+joinData :: JSONOrXML -> JSONOrXML -> JSONOrXML
+joinData (JSON json1) (JSON json2) =
+    let
+        prover_results = ("prover_results", json1)
+        development_graph = ("development_graph", json2)
+    in
+        JSON $ JObject [prover_results, development_graph]
+joinData (XML xml1) (XML xml2) =
+    XML $ Element "joint_data" [xml1, xml2]
+joinData _ _ = undefined
