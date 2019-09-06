@@ -277,4 +277,5 @@ basicSpec flag pm = do
                   { imports = ie
                   , ann = ans
                   , name = ou }
-       trace ("o:" ++ show o) $ return o
+       -- trace ("o:" ++ show o) $ 
+       return o

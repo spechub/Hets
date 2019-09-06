@@ -379,6 +379,9 @@ class (Language lid, Category sign morphism, Ord sentence,
       -- | symbols have a name, see CASL RefMan p. 192
       sym_name :: lid -> symbol -> Id
       sym_name l _ = statError l "sym_name"
+      -- | allow to change name
+      rename_symbol :: lid -> symbol -> Id -> symbol
+      rename_symbol lid _ _ = error $ "symbol renaming nyi for logic " ++ show lid
       -- | some symbols have a label for better readability
       sym_label :: lid -> symbol -> Maybe String
       sym_label _ _ = Nothing
@@ -632,6 +635,21 @@ class ( Syntax lid basic_spec symbol symb_items symb_map_items
          extract_module :: lid -> [IRI] -> (sign, [Named sentence])
                         -> Result (sign, [Named sentence])
          extract_module _ _ = return
+         -- solving symbols in patterns
+         solve_symbols :: lid -> Set.Set symbol -> PatternVarMap -> basic_spec -> Result basic_spec
+         solve_symbols _ _ _ = error "solve_symbols nyi"
+         -- instantiating macros
+         instantiate_macro :: lid -> PatternVarMap -> Map.Map (IRI, String) IRI -> basic_spec -> Result basic_spec
+         instantiate_macro _ _ _ _ = error "instantiate_macro nyi"
+         -- delete all occurences of a set of symbols in a solved macro
+         delete_symbols_macro :: lid -> Set.Set symbol -> basic_spec -> Result basic_spec
+         delete_symbols_macro _ _ _ = error "delete_symbols_macro nyi"
+
+type PatternVarMap = Map.Map IRI (Bool, String)
+-- Bool is true for list- and false for non-list variables
+-- TODO: ideally we should have logic-dependent kinds, but strings will do
+-- TODO: this does not allow to have same name for different kinds. 
+-- One idea would be to work with lists of strings. Future work, should be easy.
 
 -- | print a whole theory
 printTheory :: StaticAnalysis lid basic_spec sentence symb_items symb_map_items

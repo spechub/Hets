@@ -585,3 +585,113 @@ corr2theo _aname flag ssig tsig l1 l2 eMap1 eMap2 rref = do
           _ -> fail $ "non-unique symbol match:" ++ showDoc l1 " "
                                                  ++ showDoc l2 " "
     _ -> fail "terms not yet supported in alignments"
+
+
+solveSymbols :: Set.Set Entity -> PatternVarMap -> OntologyDocument -> Result OntologyDocument
+solveSymbols impSyms vMap (OntologyDocument pd (Ontology n is as fs)) = do
+ (declSyms, usedSyms, fs') <- 
+         foldM (\(ds, us, flist) f -> do
+                   (f', ds', us') <- solveFrame impSyms vMap f
+                   return (Set.union ds ds', Set.union us us', flist++[f']) ) 
+               (Set.empty, Set.empty, []) fs
+ let getKind str = case str of
+                    "Class" -> Class
+                    "ObjectProperty" -> ObjectProperty
+                    "Individual" -> NamedIndividual
+                    _ -> error $ "nyi:" ++ str
+     varSyms = foldl Set.union Set.empty $ map (\(x, (f, k)) -> if f then Set.empty else Set.singleton $ Entity Nothing (getKind k) x) $ Map.toList vMap
+     diffSyms = Set.difference usedSyms (Set.union declSyms $ Set.union impSyms varSyms) 
+     -- each used symbol must be declared, imported or variable
+ if Set.null diffSyms then 
+  return $ OntologyDocument pd $ Ontology n is as fs'
+ else error $ "undeclared symbols in the body of the pattern. impSyms:" ++ show impSyms ++  
+              " declSyms:" ++ show declSyms ++ " usedSyms:" ++ show usedSyms ++ 
+              " varSyms:" ++ show varSyms ++ " diffSyms:" ++ show diffSyms 
+   
+solveFrame :: Set.Set Entity  -> PatternVarMap -> Frame -> Result (Frame, Set.Set Entity, Set.Set Entity)
+solveFrame impSyms vMap (Frame ext fBits) = do
+ let (ext', decl) = 
+          case ext of 
+             Misc _ -> (ext, Set.empty) 
+             ClassEntity (UnsolvedClass i) -> 
+               if i `elem` Map.keys vMap then (ClassEntity $ VarExpression $ MVar i, Set.empty)
+                else (ClassEntity $ Expression i, Set.singleton $ Entity Nothing Class i)  -- add only if not member of impSyms
+             ClassEntity _ -> error $ show ext
+             ObjectEntity oExp -> (ext, Set.empty) 
+             SimpleEntity ent -> (ext, Set.empty)
+ (fBits', used) <- foldM (\(fbs, us) fbit -> do 
+                                (fbit', us') <- solveFrameBit impSyms vMap fbit
+                                return (fbs ++ [fbit'], Set.union us us')) ([], Set.empty) fBits
+ {- | ObjectBit (AnnotatedList ObjectPropertyExpression) -- relation
+  | DataBit (AnnotatedList DataPropertyExpression) -- relation
+  | IndividualSameOrDifferent (AnnotatedList Individual) -- relation
+  | ObjectCharacteristics (AnnotatedList Character)
+  | DataPropRange (AnnotatedList DataRange)
+  | IndividualFacts (AnnotatedList Fact) -}
+ return (Frame ext' fBits', decl, used)
+
+solveFrameBit :: Set.Set Entity -> PatternVarMap -> FrameBit -> Result (FrameBit, Set.Set Entity)
+solveFrameBit impSyms vMap fbit = 
+ case fbit of 
+            ListFrameBit mr lft ->
+              case lft of 
+               AnnotationBit _ -> return (fbit, Set.empty)
+               ExpressionBit aces -> do
+                                      let (aces', used') = foldl (\(as, us) ace -> let (ace', us') = solveClassExpression impSyms vMap ace
+                                                                                   in (as ++ [ace'], Set.union us us')) ([], Set.empty) aces 
+                                      return (ListFrameBit mr $ ExpressionBit aces', used')
+               _ -> error "nyi"
+
+solveClassExpression :: Set.Set Entity  -> PatternVarMap -> (Annotations, ClassExpression) -> ((Annotations, ClassExpression), Set.Set Entity) 
+solveClassExpression impSyms vMap (annos, cexp) = 
+ let (cexp', used) = case cexp of 
+                       UnsolvedClass i -> if i `elem` Map.keys vMap then (VarExpression $ MVar i, Set.empty)
+                                          else (Expression i, Set.singleton $ Entity Nothing Class i)
+                       _ -> error "nyi"
+ in ((annos, cexp'), used)
+
+
+-- TODO: 
+ -- write a method that solves a class, an obj prop etc.
+ -- cover all cases in OWL in the methods above
+
+
+instantiateMacro :: PatternVarMap -> Map.Map (IRI, String) IRI -> OntologyDocument -> Result OntologyDocument
+instantiateMacro vars subst (OntologyDocument pd (Ontology n is as fs)) = do
+  fs'<- instantiateFrames subst vars fs
+  return $ OntologyDocument pd $ Ontology n is as fs'
+
+instantiateFrames :: Map.Map (IRI, String) IRI -> PatternVarMap -> [Frame] -> Result [Frame]
+instantiateFrames subst vars = 
+ mapM (instantiateFrame subst vars)
+
+instantiateFrame :: Map.Map (IRI, String) IRI -> PatternVarMap -> Frame -> Result Frame
+instantiateFrame subst var (Frame ext fBits) = do
+ ext' <- case ext of
+           ClassEntity (VarExpression (MVar i)) -> 
+             if (i, "Class") `elem` Map.keys subst then do
+                let j = Map.findWithDefault (error "instantiateFrame") (i, "Class") subst
+                return $ ClassEntity $ Expression j
+              else fail $ "unknown class variable: " ++ show i
+           _ -> return ext -- TODO: missing cases
+ return $ Frame ext' fBits -- TODO: fBits can also have variables!
+
+
+-- delete symbols from a solved macro
+deleteSymbolsMacro :: Set.Set Entity -> OntologyDocument -> Result OntologyDocument
+deleteSymbolsMacro delSyms (OntologyDocument pd (Ontology n is as fs)) = do
+ fs' <- deleteSymbolsFrames delSyms fs
+ return $ OntologyDocument pd $ Ontology n is as fs'
+
+deleteSymbolsFrames :: Set.Set Entity -> [Frame] -> Result [Frame]
+deleteSymbolsFrames delSyms fs = do
+ fs' <- mapM (deleteSymbolsFrame delSyms) fs
+ return $ concat fs'
+
+deleteSymbolsFrame :: Set.Set Entity -> Frame -> Result [Frame]
+deleteSymbolsFrame delSyms f@(Frame ext fBits) =
+ case ext of
+   ClassEntity (VarExpression (MVar i)) -> 
+     if Set.member i $ Set.map (\x -> idToIRI $ entityToId x) delSyms 
+      then return []
+      else return [f]

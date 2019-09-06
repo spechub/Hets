@@ -102,6 +102,7 @@ instance Sentences OWL2 Axiom Sign OWLMorphism Entity where
     sym_of OWL2 = singletonList . symOf
     symmap_of OWL2 = symMapOf
     sym_name OWL2 = entityToId
+    rename_symbol OWL2 = renameSymbol
     sym_label OWL2 = label
     fullSymName OWL2 s = let
       i = cutIRI s
@@ -175,6 +176,9 @@ instance StaticAnalysis OWL2 OntologyDocument Axiom
       corresp2th OWL2 = corr2theo
       equiv2cospan OWL2 = addEquiv
       extract_module OWL2 = extractModule
+      solve_symbols OWL2 = solveSymbols
+      instantiate_macro OWL2 = instantiateMacro
+      delete_symbols_macro OWL2 = deleteSymbolsMacro
 #ifdef UNI_PACKAGE
       theory_to_taxonomy OWL2 = onto2Tax
 #endif

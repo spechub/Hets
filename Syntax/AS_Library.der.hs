@@ -186,6 +186,7 @@ getDeclSpecNames :: LIB_ITEM -> [IRI]
 getDeclSpecNames li = case li of
   Spec_defn sn _ _ _ -> [sn]
   Download_items _ di _ -> getImportNames di
+  Pattern_defn sn _ _ _ _ -> [sn]
   _ -> []
 
 getImportNames :: DownloadItems -> [IRI]
@@ -207,4 +208,6 @@ getSpecDef li = case li of
     getOms s1 ++ getOms s2 ++ getOms as
   Align_defn _ _ (View_type s1 s2 _) _ _ _ -> [item s1, item s2]
   Module_defn _ (Module_type s1 s2 _) _ _ -> [item s1, item s2]
+  Pattern_defn _ _ _ (Spec_pattern s) _ -> [item s]
+  Pattern_defn _ _ _ (Local_pattern lis s) _ -> concatMap getSpecDef lis ++ [item s]
   _ -> []

@@ -555,7 +555,7 @@ fitArgs l flag = do
 fitArg :: LogicGraph -> Bool -> AParser st (Annoted FIT_ARG, Range)
 fitArg l flag = do
     let emptyParam = do
-          _ <- lookAhead $ try semiT
+          _ <- lookAhead $ try semiT <|> try cBracketT
           return $ Missing_arg nullRange
     fa <- annoParser emptyParam
     return (fa, nullRange)

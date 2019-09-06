@@ -386,6 +386,9 @@ showEntityType e = case e of
 entityTypes :: [EntityType]
 entityTypes = [minBound .. maxBound]
 
+renameSymbol :: Entity -> Id -> Entity
+renameSymbol e i = e {cutIRI = idToIRI i}
+
 pairSymbols :: Entity -> Entity -> Result Entity -- TODO: improve!
 pairSymbols (Entity lb1 k1 i1) (Entity lb2 k2 i2) =
   if k1 /= k2 then

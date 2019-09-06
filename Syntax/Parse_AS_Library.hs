@@ -123,8 +123,9 @@ specDefn l = do
     e <- equalT
     a <- aSpec l True -- OMS, not macros
     q <- optEnd
-    return . Spec_defn n g a
-      . catRange $ [s, e] ++ maybeToList q
+    trace ("spec:" ++ show (Spec_defn n g a nullRange)) $
+     return . Spec_defn n g a
+       . catRange $ [s, e] ++ maybeToList q
 
 -- CASL view-defn or DOL IntprDefn
 viewDefn :: LogicGraph -> AParser st LIB_ITEM
@@ -322,11 +323,13 @@ patternParser l = do
         (pars, ps1) <- macroParams l
         (imp, ps2) <- option ([], nullRange) (imports l)
         s2 <- equalT
-        a <- trace ("parsed equal:" ++ show pars) $ localOrSpec l 
+        a <- --trace ("parsed equal:" ++ show pars) $ 
+             localOrSpec l 
         q <- optEnd
         let pattern = Pattern_defn n pars (Imported imp) a nullRange
-        trace ("pattern:" ++ show pattern) $ return .  Pattern_defn n pars (Imported imp) a 
-         . catRange $ [s1, s2] ++ maybeToList q
+        trace ("pattern:" ++ show pattern) $ 
+         return .  Pattern_defn n pars (Imported imp) a 
+          . catRange $ [s1, s2] ++ maybeToList q
 
 localOrSpec :: LogicGraph -> AParser st LocalOrSpec
 localOrSpec l = do

@@ -120,6 +120,7 @@ printSPEC lg spec = case spec of
       sep [keyword "apply" <+> pretty i, prettyLG lg $ Basic_spec bs nullRange]
     Bridge s1 rs s2 _ -> fsep $ [condBraces lg s1, keyword "bridge"]
       ++ map pretty rs ++ [condBraces lg s2]
+    _ -> text $ show spec
 
 instance Pretty Network where
     pretty (Network cs es _) = fsep $ ppWithCommas cs
