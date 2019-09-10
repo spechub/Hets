@@ -852,7 +852,7 @@ anaViewDefn lg ln libenv dg opts eo vn gen vt gsis pos = do
           tmor <- gEmbedComorphism imor gsigmaS''
           fmor <- comp mor tmor
           return (gsigmaS', fmor)
-      emor <- fmap gEmbed $ anaGmaps lg opts pos gsigmaS' gsigmaT hsis
+      emor <- fmap gEmbed $ anaGmaps lg opts pos gsigmaS' gsigmaT Nothing hsis -- TODO: Nothing for now!
       gmor <- comp tmor emor
       let vsig = ExtViewSig src gmor $ ExtGenSig gsig tar
           voidView = nodeS == nodeT && isInclusion gmor
