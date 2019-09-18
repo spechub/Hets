@@ -111,6 +111,7 @@ instance Sentences OWL2 Axiom Sign OWLMorphism Entity where
     symKind OWL2 = takeWhile isAlpha . showEntityType . entityKind
     symsOfSen OWL2 _ = Set.toList . symsOfAxiom
     pair_symbols OWL2 = pairSymbols
+    new_symbol OWL2 = newSymbol
 
 inducedFromToMor :: Map.Map RawSymb RawSymb -> 
                     ExtSign Sign Entity -> 

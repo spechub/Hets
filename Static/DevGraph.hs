@@ -707,9 +707,18 @@ data AlignSig = AlignMor NodeSig GMorphism NodeSig
                           NodeSig                     -- b
   deriving (Show, Eq, Typeable)
 
--- imports, list of nodes for those parameters that are ontologies, kinded vars, body
-data PatternSig = PatternSig MaybeNode [PatternParamInfo] PatternVarMap LocalOrSpec
+-- true for local patterns, imports, list of nodes for those parameters that are ontologies, kinded vars, body
+data PatternSig = PatternSig Bool MaybeNode [PatternParamInfo] PatternVarMap LocalOrSpecSig
   deriving (Show, Typeable)
+
+data LocalOrSpecSig = SpecSig LocalOrSpec 
+                    | LocalSig (Map.Map IRI PatternSig) LocalOrSpec
+                    -- store the varmaps of local subpatterns so they dont get recomputed every time
+  deriving (Show, Typeable)
+
+getBody :: LocalOrSpecSig -> LocalOrSpec
+getBody (SpecSig x) = x
+getBody (LocalSig _ x) = x
 
 data PatternParamInfo = SingleParamInfo Bool NodeSig -- optional or not, node in graph
                | ListParamInfo Int Bool MaybeNode -- length, exact or minimal, node of template

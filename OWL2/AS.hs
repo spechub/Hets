@@ -348,6 +348,14 @@ data Entity = Entity
   , cutIRI :: IRI }
   deriving (Show, Typeable, Data)
 
+newSymbol :: IRI -> String -> Entity
+newSymbol i s = 
+ case s of
+  "Class" -> mkEntity Class i
+  "ObjectProperty" -> mkEntity ObjectProperty i
+  "Individual" -> mkEntity NamedIndividual i
+  _ -> error $ "nyi:" ++ show s
+
 mkEntity :: EntityType -> IRI -> Entity
 mkEntity = Entity Nothing
 

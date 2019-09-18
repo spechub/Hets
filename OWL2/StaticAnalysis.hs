@@ -633,14 +633,16 @@ solveFrame impSyms vMap (Frame ext fBits) = do
 solveFrameBit :: Set.Set Entity -> PatternVarMap -> FrameBit -> Result (FrameBit, Set.Set Entity)
 solveFrameBit impSyms vMap fbit = 
  case fbit of 
-            ListFrameBit mr lft ->
-              case lft of 
-               AnnotationBit _ -> return (fbit, Set.empty)
-               ExpressionBit aces -> do
-                                      let (aces', used') = foldl (\(as, us) ace -> let (ace', us') = solveClassExpression impSyms vMap ace
-                                                                                   in (as ++ [ace'], Set.union us us')) ([], Set.empty) aces 
-                                      return (ListFrameBit mr $ ExpressionBit aces', used')
-               _ -> error "nyi"
+  ListFrameBit mr lft ->
+    case lft of 
+      AnnotationBit _ -> return (fbit, Set.empty)
+      ExpressionBit aces -> do
+       let (aces', used') = foldl (\(as, us) ace -> let (ace', us') = solveClassExpression impSyms vMap ace
+                                                    in (as ++ [ace'], Set.union us us')) ([], Set.empty) aces 
+       return (ListFrameBit mr $ ExpressionBit aces', used')
+      _ -> error "nyi"
+  AnnFrameBit annos (AnnotationFrameBit _) -> return (fbit, Set.empty)
+  _ -> error $ "nyi:" ++ show fbit
 
 solveClassExpression :: Set.Set Entity  -> PatternVarMap -> (Annotations, ClassExpression) -> ((Annotations, ClassExpression), Set.Set Entity) 
 solveClassExpression impSyms vMap (annos, cexp) = 

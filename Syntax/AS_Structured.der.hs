@@ -79,6 +79,7 @@ data SPEC = Basic_spec G_basic_spec Range
           | Apply IRI G_basic_spec Range
             -- pos: "apply", use a basic spec parser to parse a sentence
           | UnsolvedName IRI Range
+          | NormalVariable IRI
           | ListVariable IRI
           | EmptyList
             deriving (Show, Typeable)

@@ -532,14 +532,15 @@ anaSpecAux conser addSyms optNodes lg
    spname <- expCurieR (globalAnnos dg) eo spname'
    let pos = if null afitargs then iriPos spname else pos0
    adjustPos pos $ case lookupGlobalEnvDG spname dg of
-    Just (PatternEntry patSig@(PatternSig imp params vMap body)) -> -- trace ("patSig:" ++ show patSig) $
+    Just (PatternEntry patSig@(PatternSig _local imp params vMap _body)) -> -- trace ("patSig:" ++ show patSig) $
      -- 1. solve afitargs using params and imp
      case (length afitargs, length params) of
       (la, lp) -> do
        if (la == lp) && la > 0 then do
-         (afitargs', patSig'@(PatternSig _imp' _params' vMap' body'), dg', nsig', subst) <- anaPatternInstArgs lg libEnv opts eo ln dg imp nsig name spname patSig afitargs
+         (afitargs', patSig'@(PatternSig _local _imp' _params' vMap' bodySig), dg', nsig', gm', subst) <- anaPatternInstArgs lg libEnv opts eo ln dg imp nsig name spname patSig afitargs
+         -- let body' = getBody bodySig
          (Logic cl) <- lookupCurrentLogic "anaGmaps" lg
-         spB <- instantiateMacro subst vMap' body'
+         spB <- trace ("calling instMacro:" ++  show nsig') $ instantiateMacro lg libEnv opts eo ln dg' imp (JustNode nsig') name spname subst vMap' gm' bodySig
          -- the body should extend the last argument
          (sp', nsig'', dg'') <- -- trace ("spB:" ++ show spB) $ 
                                 anaSpecTop conser addSyms lg libEnv ln dg' (JustNode nsig') (extName "Body" name) opts eo (item spB) nullRange
@@ -1162,7 +1163,7 @@ anaFitArg lg libEnv ln dg spname nsigI nsigP@(NodeSig nP gsigmaP) opts name eo c
         let gmor = mkG_morphism slid mor
             dg'' = insLink dg' (gEmbed gmor) globalThm (DGLinkInstArg spname) nP na
         return (fv, dg'', (gmor, nsigA))   
-  Fit_new (G_symbol slid ssym) (G_symbol tlid tsym) pos -> do
+  Fit_new (G_symbol slid ssym) (G_symbol tlid tsym) pos -> trace ("____mgm in fit_new:" ++ show mgm ++ " nsigP:" ++ show nsigP ++ " prevSig:" ++ show prevSig) $ do
     let tRSym = symbol_to_raw slid $ coerceSymbol tlid slid tsym
         sRSym = symbol_to_raw slid ssym
     sigA <- add_symb_to_sign tlid (empty_signature tlid) tsym
@@ -1180,7 +1181,7 @@ anaFitArg lg libEnv ln dg spname nsigI nsigP@(NodeSig nP gsigmaP) opts name eo c
     let (usig@(NodeSig unode _), dg1) =
                insGSig dg0 (extName "Union" name) DGUnion gUnionSig
         insE dgl (NodeSig n gs) = do
-          incl <- ginclusion lg gs gUnionSig
+          incl <- trace ("inclusion from " ++ show gs ++ " to " ++ show gUnionSig) $ ginclusion lg gs gUnionSig
           return $ insLink dgl incl globalDef SeeTarget n unode
     dg2 <- foldM insE dg1 $ asig:uNodes
     ssig <- case gsigmaP of 
@@ -1199,9 +1200,9 @@ anaFitArg lg libEnv ln dg spname nsigI nsigP@(NodeSig nP gsigmaP) opts name eo c
         crtMap = if Map.intersection crtMapAux prevMap == Map.empty 
                   then Map.union prevMap crtMapAux
                   else error $ "trying to map previously mapped symbol:" ++ (show $ Map.intersection crtMapAux prevMap) -- TODO: don't fail if the symbols are mapped in the same way                 
-    mor <- induced_from_to_morphism slid crtMap ssig tsig
+    mor <- trace ("ssig:"++ show ssig ++ " tsig:" ++ show tsig ++ " crtMap:" ++ show crtMap ) $ induced_from_to_morphism slid crtMap ssig tsig
     let gmor = mkG_morphism slid mor
-        dg'' = insLink dg2 (gEmbed gmor) globalThm (DGLinkInstArg spname) nP unode
+        dg'' = trace ("gmor after induced:" ++ show gmor) $ insLink dg2 (gEmbed gmor) globalThm (DGLinkInstArg spname) nP unode
     return (fv, dg'', (gmor, usig))                     
     -- trace ("sigA:" ++ show usig) $ error "fit_new nyi" 
   Fit_view vn' afitargs pos -> do
@@ -1291,8 +1292,8 @@ type GSubst = Map.Map (IRI, String) IRI
 anaPatternInstArgs :: LogicGraph -> LibEnv -> HetcatsOpts -> ExpOverrides -> LibName -> DGraph
   -> MaybeNode -> MaybeNode 
   -> NodeName -> IRI -> PatternSig -> [Annoted FIT_ARG]
-  -> Result ([Annoted FIT_ARG], PatternSig, DGraph, NodeSig, GSubst)
-anaPatternInstArgs lg libEnv opts eo ln dg isig csig name spname psig@(PatternSig imps params vMap body) afitargs = trace ("all args:" ++ show afitargs ++ "\n params:" ++ show params) $ do
+  -> Result ([Annoted FIT_ARG], PatternSig, DGraph, NodeSig, Maybe G_morphism, GSubst)
+anaPatternInstArgs lg libEnv opts eo ln dg isig csig name spname psig@(PatternSig local imps params vMap body) afitargs = do
    l@(Logic crtLid) <- lookupCurrentLogic "anaPatternInstArgs" lg
    -- before the arguments are analysed, we have to go through their list
    -- and check if any Missing_arg nullRange appears
@@ -1326,7 +1327,7 @@ anaPatternInstArgs lg libEnv opts eo ln dg isig csig name spname psig@(PatternSi
                                                                               SingleParamInfo _ xs -> dgn_theory $ labDG dgP $ getNode xs
                                                                               _ -> error "nyi") $  map fst zipped')) $ 
          foldM (\(args0, dg0, nsig0, subst0, gm0) (par0, arg0) -> do
-                   (arg1, dg1, nsig1, subst1, gm1) <- -- trace ("subst0:" ++ show subst0) $ 
+                   (arg1, dg1, nsig1, subst1, gm1) <- trace ("subst0:" ++ show subst0) $ 
                                                  anaPatternInstArg lg libEnv opts eo ln dg0 isig csig nsig0 name spname subst0 gm0 par0 arg0
                    return (args0 ++ [arg1], dg1, nsig1, subst1, gm1))
                ([], dgP, EmptyNode l, Map.empty, idImps) $ zipped'
@@ -1334,10 +1335,10 @@ anaPatternInstArgs lg libEnv opts eo ln dg isig csig name spname psig@(PatternSi
                            EmptyNode _ -> error "should not happen"
                            JustNode x -> x
    case missingNodes of
-    [] -> return (afitargs', psig, dg', lastParamSig, subst)
+    [] -> return (afitargs', psig, dg', lastParamSig, gm', subst)
     _ -> do
      (vMap', body') <- removeMissingOptionalSymbols lg libEnv ln missingNodes vMap body 
-     return (afitargs', PatternSig imps (map fst zipped') vMap' body', dg', lastParamSig, subst)
+     return (afitargs', PatternSig local imps (map fst zipped') vMap' body', dg', lastParamSig, gm', subst)
 
 removeMissingSymbolsParam :: LogicGraph -> LibEnv -> LibName -> DGraph -> MaybeNode -> [NodeSig] -> PatternParamInfo -> Result (DGraph, MaybeNode, PatternParamInfo)
 removeMissingSymbolsParam lg libEnv ln dg lastParam ns p = do
@@ -1366,9 +1367,9 @@ removeMissingSymbolsParam lg libEnv ln dg lastParam ns p = do
       trace ("newParNode:" ++ show newParNode) $ return (dg'', JustNode newParNode, SingleParamInfo optFlag newParNode)
   _ -> return (dg, lastParam, p) -- don't remove from lists yet
 
-removeMissingOptionalSymbols :: LogicGraph -> LibEnv -> LibName -> [NodeSig] -> PatternVarMap -> LocalOrSpec
-                             -> Result (PatternVarMap, LocalOrSpec)
-removeMissingOptionalSymbols lg libEnv ln missingNodes vMap body = do
+removeMissingOptionalSymbols :: LogicGraph -> LibEnv -> LibName -> [NodeSig] -> PatternVarMap -> LocalOrSpecSig
+                             -> Result (PatternVarMap, LocalOrSpecSig)
+removeMissingOptionalSymbols lg libEnv ln missingNodes vMap bodySig = do
  Logic lid <- lookupCurrentLogic "removeMissingOptionalSymbols" lg
  let delSyms = concatMap (\n -> let gs = getSig n in 
                                      case gs of
@@ -1381,18 +1382,18 @@ removeMissingOptionalSymbols lg libEnv ln missingNodes vMap body = do
         return $ Basic_spec (G_basic_spec blid bsp') rg
        _ -> error "only basic specs for now"
      vMap' = foldl (\f s -> Map.delete ( idToIRI $ sym_name lid s) f) vMap delSyms
- body' <- case body of
+ bodySig' <- case getBody bodySig of
            Spec_pattern asp -> do
              sp' <- removeSymbolsFromSpec $ item asp
-             return $ Spec_pattern $ asp{item = sp'}
+             return $ SpecSig $ Spec_pattern $ asp{item = sp'}
            Local_pattern locals asp -> error "2" 
- trace ("body:" ++ show body ++" body':"++ show body') $ return (vMap', body')
+ trace ("body:" ++ show bodySig ++" body':"++ show bodySig') $ return (vMap', bodySig')
 
 anaPatternInstArg :: LogicGraph -> LibEnv -> HetcatsOpts -> ExpOverrides -> LibName -> DGraph
   -> MaybeNode -> MaybeNode -> MaybeNode
   -> NodeName -> IRI -> GSubst -> Maybe G_morphism -> PatternParamInfo -> Annoted FIT_ARG
   -> Result (Annoted FIT_ARG, DGraph, MaybeNode, GSubst, Maybe G_morphism)
-anaPatternInstArg lg libEnv opts eo ln dg0 isig csig prevSig name spname subst0 mgm0 par0 arg0 = 
+anaPatternInstArg lg libEnv opts eo ln dg0 isig csig prevSig name spname subst0 mgm0 par0 arg0 = trace ("***** arg0 in argInst:" ++ show arg0 ++ " subst0:" ++ show subst0) $ 
  case item arg0 of 
   Fit_spec asp gm r -> 
    case item asp of
@@ -1423,15 +1424,16 @@ anaPatternInstArg lg libEnv opts eo ln dg0 isig csig prevSig name spname subst0 
          G_sign lid (ExtSign _ newDecls) _ -> 
            case Set.toList newDecls of
             [sym] -> do
-              let noCtxOrNoMatch = do
+              let noCtxOrNoMatch = do 
                    let arg1 = Fit_new (G_symbol lid sym) (G_symbol lid (rename_symbol lid sym (stringToId $ show i))) nullRange
-                   (arg2, dg1, (gmor, nsigA)) <- anaFitArg lg libEnv ln dg0 spname isig pNSig opts (extName "Arg" name) eo csig prevSig mgm0 arg1
+                   (arg2, dg1, (gmor, nsigA)) <- trace ("================ calling anaFitArg. prevSig:" ++ show prevSig ++ " arg1:" ++ show arg1) $ 
+                                                 anaFitArg lg libEnv ln dg0 spname isig pNSig opts (extName "Arg" name) eo csig prevSig mgm0 arg1
                    case gmor of
-                    G_morphism lid mor _ -> do
-                      let smap = symmap_of lid mor
+                    G_morphism glid mor _ -> do
+                      let smap = symmap_of glid mor
                           subst1 = foldl (\f (ssym, tsym) -> 
-                                     let (sn, sk) = (idToIRI $ sym_name lid ssym, symKind lid ssym)
-                                         tn = idToIRI $ sym_name lid tsym
+                                     let (sn, sk) = (idToIRI $ sym_name glid ssym, symKind glid ssym)
+                                         tn = idToIRI $ sym_name glid tsym
                                      in Map.insert (sn, sk) tn f) 
                                    subst0 $ Map.toList smap
                       -- TODO: any compatibility checks must be done here
@@ -1448,11 +1450,11 @@ anaPatternInstArg lg libEnv opts eo ln dg0 isig csig prevSig name spname subst0 
                         let arg1 = Fit_ctx (G_symbol lid sym) (G_symbol lid1 ctxSym) nullRange
                         (arg2, dg1, (gmor, nsigA)) <- anaFitArg lg libEnv ln dg0 spname isig pNSig opts (extName "Arg" name) eo csig prevSig mgm0 arg1
                         case gmor of
-                          G_morphism lid mor _ -> do
-                            let smap = symmap_of lid mor
+                          G_morphism glid mor _ -> do
+                            let smap = symmap_of glid mor
                                 subst1 = foldl (\f (ssym, tsym) -> 
-                                           let (sn, sk) = (idToIRI $ sym_name lid ssym, symKind lid ssym)
-                                               tn = idToIRI $ sym_name lid tsym
+                                           let (sn, sk) = (idToIRI $ sym_name glid ssym, symKind glid ssym)
+                                               tn = idToIRI $ sym_name glid tsym
                                            in Map.insert (sn, sk) tn f) 
                                          subst0 $ Map.toList smap
                             -- TODO: any compatibility checks must be done here
@@ -1469,11 +1471,17 @@ anaPatternInstArg lg libEnv opts eo ln dg0 isig csig prevSig name spname subst0 
     _ -> error "only unsolved names for now"
   _ -> trace ("itm:" ++ (show $ item arg0)) $ error "only fit_spec for now"
 
-instantiateMacro :: GSubst -> PatternVarMap -> LocalOrSpec -> Result (Annoted SPEC)
-instantiateMacro subst vars macro = 
+instantiateMacro :: LogicGraph -> LibEnv ->HetcatsOpts -> ExpOverrides -> LibName -> 
+                    DGraph -> MaybeNode -> MaybeNode 
+                    -> NodeName -> IRI -> GSubst -> PatternVarMap -> Maybe G_morphism -> LocalOrSpecSig -> Result (Annoted SPEC)
+instantiateMacro lg libEnv opts eo ln dg imp nsig name spname subst vars mgmPrev macro = trace ("~~~~~~~~~~~~~~~~instantiateMacro:" ++ show macro ++ " \n mgmPrev:" ++ show mgmPrev) $
  case macro of
-   Local_pattern _ _ -> error "local patterns nyi"
-   Spec_pattern asp -> do 
+   LocalSig localVarMaps (Local_pattern _ localBody) -> do
+    let gEnv' = foldl (\g (n, s) -> Map.insert n (PatternEntry s) g) (globalEnv dg) $ Map.toList localVarMaps
+        dg' = dg {globalEnv = gEnv'}
+    instantiateMacro lg libEnv opts eo ln dg' imp nsig name spname subst vars mgmPrev (SpecSig $ Spec_pattern localBody) -- TODO: will this be enough?
+    -- trace ("known:" ++ show (Map.keys gEnv')) $ error "local patterns nyi"
+   SpecSig (Spec_pattern asp) -> do
     let
      instMacroAux asp0 = 
       case item asp0 of
@@ -1482,9 +1490,82 @@ instantiateMacro subst vars macro =
          G_basic_spec lid bsp -> do 
            bsp'<- instantiate_macro lid vars subst bsp
            return asp0{item = Basic_spec (G_basic_spec lid bsp') rg}
-       Group asp1 rg -> instMacroAux asp1 
-       _ -> error "only non-structured bodies for now"
+       Group asp1 _rg -> instMacroAux asp1 
+       Extension asps rg -> do
+         asps'<- mapM instMacroAux asps
+         return $ asp{item = Extension asps' rg}
+       Union asps rg -> do
+         asps'<- mapM instMacroAux asps
+         return $ asp{item = Union asps' rg}
+       Spec_inst sn afitargs _ _ -> trace ("\n\nspec_inst:" ++ show (item asp0)) $ do -- here afitargs must be instantiated if they are variables!!!
+        let snEntry = Map.findWithDefault (error $ "unknown pattern:" ++ show sn) sn $ globalEnv dg
+        case snEntry of
+         PatternEntry patSig@(PatternSig isLocal _ pParams pMap pBody) -> do
+          l@(Logic crtLid) <- lookupCurrentLogic "anaPatternInstArgs" lg
+          idImps <- case imp of
+                     EmptyNode _ -> return Nothing
+                     JustNode (NodeSig _ gisig) -> 
+                       case gisig of
+                        G_sign ilid (ExtSign esig _) _ -> do  
+                          esig' <- coercePlainSign ilid crtLid "coerceSign in anaPatternInstArgs" esig
+                          let emor = ide esig'
+                          return $ Just $ G_morphism crtLid emor startMorId
+          let solveVars aFitArg = 
+               case item aFitArg of 
+                 Fit_spec asp gm rg ->
+                   case item asp of
+                     NormalVariable i ->
+                       if i `elem` Map.keys vars then
+                         let (b, k) = Map.findWithDefault (error "notPossible") i vars
+                             val = Map.findWithDefault (error "variable not mapped") (i,k) subst
+                         in ([((i,k), (val,k))], aFitArg{item = Fit_spec asp{item= UnsolvedName val nullRange} gm rg})
+                       else error $ "unknown variable:" ++ show i
+                     _ -> ([], aFitArg)
+                 _ -> ([], aFitArg)
+              solved = map solveVars afitargs
+              afitargs0 = map snd solved
+              newVars = concatMap fst solved
+              zipped = trace ("~~~~~~~~~~~~~newVars:"++ show newVars) $  zip pParams afitargs0 -- TODO: allow optionals in locals!!!!
+                                            -- TODO: if isLocal start with subst1 else start with empty subst?
+          gmor' <- case mgmPrev of
+                    Nothing -> extendWithSubst l idImps newVars
+                    Just agm -> return $ Just agm
+          (afitargs', dg', nsig', subst', gm') <- 
+           foldM (\(args0, dg0, nsig0, subst0, gm0) (par0, arg0) -> do
+                    (arg1, dg1, nsig1, subst1, gm1) <- trace ("subst0 in spec_inst:" ++ show subst0 ++ " nsig0:" ++ show nsig0) $ 
+                      anaPatternInstArg lg libEnv opts eo ln dg0 
+                                        imp (EmptyNode l) nsig0 -- TODO: context is always empty now
+                                        name spname subst0 gm0 par0 arg0 
+                    trace ("after analysis nsig':" ++ show nsig1 ++ " gm1:" ++ show gm1) $ return (args0 ++ [arg1], dg1, nsig1, subst1, gm1))
+                 ([], dg, nsig, subst, gmor') -- the last argument node should not be EmptyNode, but the target of gmor'. Try with nsig?
+                 zipped
+          -- (afitargs', patSig'@(PatternSig _local _imp' _params' vMap' bodySig), dg', nsig', subst') <- anaPatternInstArgs lg libEnv opts eo ln dg imp nsig name spname patSig afitargs
+          instantiateMacro lg libEnv opts eo ln dg' imp nsig' name spname (Map.union subst subst') vars gm' pBody
+          -- error $ "spec_inst:" ++ show sn ++ " args:" ++ show afitargs ++ " vars:" ++ show vars ++ " subst:" ++ show subst
+          -- 1. afitargs should give raise to signature morphisms from the nodes of the params to the nodes of the args
+          -- 2.                        and to a subst'
+          -- 3. the body of sn should be instantiated in the new dgraph, with the union of subst and subst', with the varmap taken from the signature of sn in the globalEnv
+         _ -> fail $ "expected a pattern entry but found:" ++ show snEntry
+       _ -> fail $ "only non-structured bodies for now:" ++ show (globalEnv dg)
     instMacroAux asp
+   _ -> fail $ "illegal pattern signature:" ++ show macro
+
+extendWithSubst :: AnyLogic -> Maybe G_morphism -> [((IRI, String),(IRI, String))] -> Result (Maybe G_morphism)
+extendWithSubst (Logic l) mgm newVars = do
+ case mgm of 
+  Nothing -> return Nothing -- TODO: wrong, should still generate a morphism!
+  Just gm ->
+   case gm of
+    G_morphism crtLid emor _ -> do
+     let 
+         ssyms = map (\(x,y) -> new_symbol crtLid x y) $ map fst newVars
+         tsyms = map (\(x,y) -> new_symbol crtLid x y) $ map snd newVars 
+         crtMap = Map.fromList $ map (\(x, y) -> (symbol_to_raw crtLid x, symbol_to_raw crtLid y)) $ zip ssyms tsyms
+     ssig <- foldM (add_symb_to_sign crtLid) (empty_signature crtLid) ssyms
+     tsig <- foldM (add_symb_to_sign crtLid) (empty_signature crtLid) tsyms
+     mor <- induced_from_to_morphism crtLid crtMap (ExtSign ssig Set.empty) (ExtSign tsig Set.empty)
+     rmor <- morphism_union crtLid emor mor
+     trace ("ssig:" ++ show ssig ++ "tsig:" ++ show tsig ++ "rmor:" ++ show rmor) $ return $ Just $ G_morphism crtLid rmor startMorId
  
 parLink :: LogicGraph -> MaybeNode -> DGLinkOrigin -> NodeSig -> DGraph
            -> NodeSig -> Result DGraph

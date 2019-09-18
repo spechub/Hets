@@ -397,6 +397,9 @@ class (Language lid, Category sign morphism, Ord sentence,
       -- | combine two symbols into another one
       pair_symbols :: lid -> symbol -> symbol -> Result symbol
       pair_symbols lid _ _ = error $ "pair_symbols nyi for logic " ++ show lid
+      -- | create symbol from a name and a kind
+      new_symbol :: lid -> IRI -> String -> symbol
+      new_symbol _ _ _ = error "new_symbol nyi"
 
 -- | makes a singleton list from the given value
 singletonList :: a -> [a]

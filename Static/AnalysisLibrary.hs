@@ -161,7 +161,8 @@ anaStringAux mln lgraph opts topLns initDG mt file posFileName (_, libenv)
         $ concatMap (getSpecDef . item) is'
       declNs = Set.fromList . map expnd
         $ concatMap (getDeclSpecNames . item) is'
-      missNames = Set.toList $ spNs Set.\\ declNs
+      missNames = -- trace ("spNs:" ++ show spNs ++ " declNs:" ++ show declNs) $ 
+                  Set.toList $ spNs Set.\\ declNs
       unDecls = map (addDownload True) $ filter
           (isNothing . (`lookupGlobalEnvDG` initDG)) missNames
       is = unDecls ++ is'
@@ -207,7 +208,7 @@ anaStringAux mln lgraph opts topLns initDG mt file posFileName (_, libenv)
 -- lookup or read a library
 anaLibFile :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph -> LibName
            -> ResultT IO (LibName, LibEnv)
-anaLibFile lgraph opts topLns libenv initDG ln = trace ("known:" ++ show (Map.keys libenv)) $ 
+anaLibFile lgraph opts topLns libenv initDG ln = -- trace ("known:" ++ show (Map.keys libenv)) $ 
     let lnstr = show ln in case find (== ln) $ Map.keys libenv of
     Just ln' -> do
         analyzing opts $ "from " ++ lnstr
@@ -393,7 +394,7 @@ expCurieT ga eo = liftR . expCurieR ga eo
 anaLibItem :: LogicGraph -> HetcatsOpts -> LNS -> LibName -> LibEnv -> DGraph
   -> ExpOverrides -> LIB_ITEM
   -> ResultT IO (LIB_ITEM, DGraph, LibEnv, LogicGraph, ExpOverrides)
-anaLibItem lg opts topLns currLn libenv dg eo itm = trace ("itm:" ++ show itm) $
+anaLibItem lg opts topLns currLn libenv dg eo itm = -- trace ("itm:" ++ show itm) $
  case itm of
   Spec_defn spn2 gen asp pos -> do
     let spn' = if null (iriToStringUnsecure spn2) then
@@ -597,17 +598,18 @@ anaLibItem lg opts topLns currLn libenv dg eo itm = trace ("itm:" ++ show itm) $
                            _ -> asp) 
                      asps
     (imps', nsigI, dg1) <- liftR $ anaImports lg libenv currLn dg opts eo nName imps''
-    (params', pinfos, vMap, _, dg2) <- liftR $ anaPatternParams lg libenv currLn dg1 opts eo nName nsigI params
-    expBody <- liftR $ anaPatternBody lg libenv currLn dg2 opts eo nName vMap nsigI body
-    let entry = PatternEntry $ PatternSig nsigI pinfos vMap expBody
-        itm' = Pattern_defn sname params' imps' expBody r
-        genv = globalEnv dg2
+    (params', pinfos, vMap, lastParam, dg2) <- liftR $ anaPatternParams lg libenv currLn dg1 opts eo nName nsigI params
+    (dg3, expBodySig) <- liftR $ anaPatternBody lg libenv currLn dg2 opts eo nName pinfos vMap nsigI lastParam body 
+                         -- pinfos are sent for locals, lastParam is needed to solve their parameters correctly
+    let entry = PatternEntry $ PatternSig False nsigI pinfos vMap expBodySig
+        itm' = Pattern_defn sname params' imps' (getBody expBodySig) r
+        genv = globalEnv dg3
     if Map.member spn genv 
        then
         liftR $ plain_error (itm, dg, libenv, lg, eo)
                (alreadyDefined spstr) r
-       else trace ("inserting:" ++ show spn) $
-        return (itm', dg2{globalEnv = Map.insert spn entry genv},
+       else -- trace ("inserting:" ++ show spn) $
+        return (itm', dg3{globalEnv = Map.insert spn entry genv},
                 libenv, lg, eo)
   _ -> return (itm, dg, libenv, lg, eo)
 
@@ -719,20 +721,59 @@ addSigSymsToVarMap vMap exclSig aSig =
       return (vMap', newKinds)   
 
 anaPatternBody :: LogicGraph -> LibEnv -> LibName -> DGraph -> HetcatsOpts
- -> ExpOverrides -> NodeName -> PatternVarMap -> MaybeNode -> LocalOrSpec ->
-    Result  LocalOrSpec
-anaPatternBody lg lenv ln dg opts eo name vMap impNode body =
+ -> ExpOverrides -> NodeName -> [PatternParamInfo] -> PatternVarMap -> MaybeNode -> MaybeNode -> LocalOrSpec ->
+    Result (DGraph, LocalOrSpecSig)
+anaPatternBody lg lenv ln dg opts eo name pinfos vMap impNode lastParam body =
  case body of
   Spec_pattern aspec -> do 
     sp'<- solveBody lg lenv ln dg opts eo name vMap impNode $ item aspec
-    trace ("sp':" ++ show sp') $ return $ Spec_pattern aspec{item = sp'}
-  Local_pattern locals aspec -> error "nyi"
+    -- trace ("sp':" ++ show sp') $ 
+    return (dg, SpecSig $ Spec_pattern aspec{item = sp'})
+  Local_pattern locals aspec -> do 
+   (dg', psigs, items) <- solveLocals lg lenv ln dg opts eo name pinfos vMap impNode lastParam locals
+   --let vMap' = foldl Map.union vMap $ map (\(PatternSig _ _ _ f _) -> f) $ Map.elems psigs
+   sp' <- solveBody lg lenv ln dg' opts eo name vMap impNode $ item aspec
+   return (dg', LocalSig psigs $ Local_pattern items $ aspec{item = sp'})
+   
+solveLocals :: LogicGraph -> LibEnv -> LibName -> DGraph -> HetcatsOpts
+ -> ExpOverrides -> NodeName -> [PatternParamInfo] -> PatternVarMap -> MaybeNode -> MaybeNode -> [LIB_ITEM] ->
+    Result (DGraph ,Map.Map IRI PatternSig, [LIB_ITEM])
+solveLocals lg lenv ln dg opts eo name pinfos vMap impNode lastParam locals = do
+ (dg', psigs, items) <- 
+   foldM (\(dg0, psigs0, items0) l -> do
+             (dg1, psigs1, lItem) <- solveLocal lg lenv ln dg0 opts eo name pinfos vMap impNode lastParam l
+             return (dg1, Map.union psigs0 psigs1, items0 ++ [lItem])) 
+         (dg, Map.empty, []) locals 
+ return (dg', psigs, items)
+
+solveLocal :: LogicGraph -> LibEnv -> LibName -> DGraph -> HetcatsOpts
+ -> ExpOverrides -> NodeName -> [PatternParamInfo] -> PatternVarMap -> MaybeNode -> MaybeNode -> LIB_ITEM ->
+    Result (DGraph, Map.Map IRI PatternSig, LIB_ITEM)
+solveLocal lg lenv ln dg opts eo name pinfos vMap impNode lastParam local = 
+ case local of
+  Pattern_defn lname lparams limp (Spec_pattern asp) lRange -> do
+    (lparams', pinfos', vMap', _aNode, dg1) <- anaPatternParams lg lenv ln dg opts eo name lastParam lparams
+    let intVMap = Map.intersection vMap vMap'
+    if  intVMap == Map.empty 
+     then do 
+       sp' <- solveBody lg lenv ln dg1 opts eo name (Map.union vMap vMap') impNode $ item asp
+       let asp' = asp {item = sp'}
+           lpsig = PatternSig True impNode (pinfos') vMap' $ SpecSig $ Spec_pattern asp'
+                   -- here always add the parameters of the global pattern before those of the local one
+                   -- should be pinfos ++ pinfos'
+                   -- but: if we don't do this,then the lists of formal and actual params with match during instantiation
+       trace ("solved local:" ++ show lpsig) $ return (dg1, Map.fromAscList [(lname, lpsig)], Pattern_defn lname lparams' limp (Spec_pattern asp') lRange)
+       -- trace ("sp':" ++ show sp') $ error "solveLocal nyi"
+     else fail $ "redeclaring variables in local pattern:" ++ (show $ Map.keys intVMap) 
+  _ -> fail $ "only pattern definitions allowed in local part of a pattern"
 
 solveBody :: LogicGraph -> LibEnv -> LibName -> DGraph -> HetcatsOpts
  -> ExpOverrides -> NodeName -> PatternVarMap -> MaybeNode -> SPEC ->
     Result SPEC
 solveBody lg lenv ln dg opts eo name vMap impNode sp = 
  case sp of
+  UnsolvedName i rg -> if i `elem` Map.keys vMap then return $ NormalVariable i
+                       else return sp -- can't solve now, will be solved later
   Basic_spec (G_basic_spec lid bspec) r -> do
     iSyms <- case impNode of
                  EmptyNode _ -> return Set.empty
@@ -746,10 +787,21 @@ solveBody lg lenv ln dg opts eo name vMap impNode sp =
   Extension aspecs r -> do
     aspecs' <- mapM (solveBody lg lenv ln dg opts eo name vMap impNode) (map item aspecs)
     return $ Extension (map (\(x,y) -> x{item = y}) $ zip aspecs aspecs') r
+  Union aspecs r -> do
+    aspecs' <- mapM (solveBody lg lenv ln dg opts eo name vMap impNode) (map item aspecs)
+    return $ Union (map (\(x,y) -> x{item = y}) $ zip aspecs aspecs') r
   Group aspec r -> do
     sp' <- solveBody lg lenv ln dg opts eo name vMap impNode $ item aspec
     return $ Group (aspec{item = sp'}) r
-  Spec_inst n fitArgs miri r -> return sp
+  Spec_inst n fitArgs miri r -> do
+    let solveFitArgs f = 
+         case item f of 
+          Fit_spec asp gm rg -> do
+            sp'<- solveBody lg lenv ln dg opts eo name vMap impNode $ item asp
+            return $ f{item = Fit_spec asp{item = sp'} gm rg}
+          _ -> return f
+    fitArgs' <- mapM solveFitArgs fitArgs 
+    return $ Spec_inst n fitArgs' miri r -- maybe here unsolved arguments should be solved to variables!
   _ -> error $ show sp
 
 symbolsOf :: LogicGraph -> G_sign -> G_sign -> [CORRESPONDENCE]

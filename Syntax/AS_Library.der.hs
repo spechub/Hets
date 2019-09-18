@@ -36,6 +36,8 @@ import Syntax.AS_Structured
 import Framework.AS
 import Framework.ATC_Framework ()
 
+import Debug.Trace
+
 data LIB_DEFN = Lib_defn LibName [Annoted LIB_ITEM] Range [Annotation]
                 {- pos: "library"
                 list of annotations is parsed preceding the first LIB_ITEM
@@ -186,7 +188,12 @@ getDeclSpecNames :: LIB_ITEM -> [IRI]
 getDeclSpecNames li = case li of
   Spec_defn sn _ _ _ -> [sn]
   Download_items _ di _ -> getImportNames di
-  Pattern_defn sn _ _ _ _ -> [sn]
+  Pattern_defn sn _ _ (Spec_pattern _) _ -> [sn]
+  Pattern_defn sn _ _ (Local_pattern lis _) _ -> 
+    [sn] ++ concatMap getDeclSpecNames lis
+    -- here we add as declared the local subpatterns
+    -- should this have local visibility? 
+    -- things get complicated
   _ -> []
 
 getImportNames :: DownloadItems -> [IRI]
@@ -200,7 +207,7 @@ getOms o = case o of
   MkNetwork _ -> []
 
 getSpecDef :: LIB_ITEM -> [SPEC]
-getSpecDef li = case li of
+getSpecDef li = trace ("li:" ++ show li) $ case li of
   Spec_defn _ _ as _ -> [item as]
   View_defn _ _ (View_type s1 s2 _) _ _ -> [item s1, item s2]
   Entail_defn _ (Entail_type s1 s2 _) _ -> getOms s1 ++ getOms s2
