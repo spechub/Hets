@@ -8,21 +8,30 @@ Maintainer  :  Daniel Hackbarth <da_ha@uni-bremen.de>
 module Common.JSONOrXML where
 
 import Common.Json
+import Common.Result
+
+import PGIP.Output.Mime
+
 import Text.XML.Light
 
 data JSONOrXML = JSON Json | XML Element
 
-prettyprint :: JSONOrXML -> String
-prettyprint (JSON json) = ppJson json
-prettyprint (XML xml) = ppElement xml
+prettyPrint :: JSONOrXML -> String
+prettyPrint (JSON json) = ppJson json
+prettyPrint (XML xml) = ppElement xml
 
-joinData :: JSONOrXML -> JSONOrXML -> JSONOrXML
+joinData :: JSONOrXML -> JSONOrXML -> Result JSONOrXML
 joinData (JSON json1) (JSON json2) =
     let
-        prover_results = ("prover_results", json1)
-        development_graph = ("development_graph", json2)
+        elem1 = ("elem1", json1)
+        elem2 = ("elem2", json2)
     in
-        JSON $ JObject [prover_results, development_graph]
+        return $ JSON $ JObject [elem1, elem2]
 joinData (XML xml1) (XML xml2) =
-    XML $ Element "joint_data" [xml1, xml2]
-joinData _ _ = undefined
+    return $ XML $ Element (QName "pair" Nothing Nothing) [] [Elem xml1, Elem xml2] Nothing
+joinData _ _ = fail "Cannot join JSON and XML!"
+
+-- gibt json/xml aus mit einem tag, ob es json oder xml ist,
+prettyWithTag :: JSONOrXML -> (String, JSONOrXML)
+prettyWithTag (JSON json) = (jsonC, JSON json)
+prettyWithTag (XML xml) = (xmlC, XML xml)
