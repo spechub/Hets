@@ -31,7 +31,7 @@ HC_OPTS += $(HC_WARN) $(HC_PROF) $(GHC_FLAGS)
 all: hets.bin hets_server.bin
 
 # Documentation (no haddock stuff, i.e. "docs/index.html", since developer can
-# generated it on demand by themselves and other users dont't need it). Other
+# generate it on demand by themselves and other users dont't need it). Other
 # papers (doc/*.pdf) are already pre-generated.
 docs: doc/UserGuide.pdf
 
