@@ -752,7 +752,7 @@ solveLocal :: LogicGraph -> LibEnv -> LibName -> DGraph -> HetcatsOpts
 solveLocal lg lenv ln dg opts eo name pinfos vMap impNode lastParam local = 
  case local of
   Pattern_defn lname lparams limp (Spec_pattern asp) lRange -> do
-    (lparams', pinfos', vMap', _aNode, dg1) <- anaPatternParams lg lenv ln dg opts eo name lastParam lparams
+    (lparams', pinfos', vMap', _aNode, dg1) <- anaPatternParams lg lenv ln dg opts eo (makeName lname) lastParam lparams
     let intVMap = Map.intersection vMap vMap'
     if  intVMap == Map.empty 
      then do 

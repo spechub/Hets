@@ -540,13 +540,13 @@ anaSpecAux conser addSyms optNodes lg
          (afitargs', patSig'@(PatternSig _local _imp' _params' vMap' bodySig), dg', nsig', gm', subst) <- anaPatternInstArgs lg libEnv opts eo ln dg imp nsig name spname patSig afitargs
          -- let body' = getBody bodySig
          (Logic cl) <- lookupCurrentLogic "anaGmaps" lg
-         spB <- trace ("calling instMacro:" ++  show nsig') $ instantiateMacro lg libEnv opts eo ln dg' imp (JustNode nsig') name spname subst vMap' gm' bodySig
-         -- the body should extend the last argument
-         (sp', nsig'', dg'') <- -- trace ("spB:" ++ show spB) $ 
-                                anaSpecTop conser addSyms lg libEnv ln dg' (JustNode nsig') (extName "Body" name) opts eo (item spB) nullRange
+         (dg2, spB) <- trace ("calling instMacro:" ++  show nsig') $ instantiateMacro lg libEnv opts eo ln dg' imp (JustNode nsig') name spname subst vMap' gm' bodySig
+         --the body should extend the last argument
+         (sp', nsig'', dg3) <- -- trace ("spB:" ++ show spB) $ 
+                                anaSpecTop conser addSyms lg libEnv ln dg2 (JustNode nsig') (extName "Body" name) opts eo (item spB) nullRange
          --incl <- ginclusion lg (getSig nsig') (getSig nsig'')
          --let dg3 = insLink dg'' incl globalDef SeeTarget (getNode nsig') (getNode nsig'')
-         return (Spec_inst spname' afitargs' mImp pos0, nsig'', dg'')
+         return (Spec_inst spname' afitargs' mImp pos0, nsig'', dg3) -- was nsig''
         else if la == 0 then error "arguments missing in instantiation"
              else if lp == 0 then error "pattern without arguments"
                   else error "mismatch in length of arguments" 
@@ -1473,7 +1473,7 @@ anaPatternInstArg lg libEnv opts eo ln dg0 isig csig prevSig name spname subst0 
 
 instantiateMacro :: LogicGraph -> LibEnv ->HetcatsOpts -> ExpOverrides -> LibName -> 
                     DGraph -> MaybeNode -> MaybeNode 
-                    -> NodeName -> IRI -> GSubst -> PatternVarMap -> Maybe G_morphism -> LocalOrSpecSig -> Result (Annoted SPEC)
+                    -> NodeName -> IRI -> GSubst -> PatternVarMap -> Maybe G_morphism -> LocalOrSpecSig -> Result (DGraph, Annoted SPEC)
 instantiateMacro lg libEnv opts eo ln dg imp nsig name spname subst vars mgmPrev macro = trace ("~~~~~~~~~~~~~~~~instantiateMacro:" ++ show macro ++ " \n mgmPrev:" ++ show mgmPrev) $
  case macro of
    LocalSig localVarMaps (Local_pattern _ localBody) -> do
@@ -1489,14 +1489,18 @@ instantiateMacro lg libEnv opts eo ln dg imp nsig name spname subst vars mgmPrev
         case gbsp of
          G_basic_spec lid bsp -> do 
            bsp'<- instantiate_macro lid vars subst bsp
-           return asp0{item = Basic_spec (G_basic_spec lid bsp') rg}
+           return (dg, asp0{item = Basic_spec (G_basic_spec lid bsp') rg})
        Group asp1 _rg -> instMacroAux asp1 
        Extension asps rg -> do
-         asps'<- mapM instMacroAux asps
-         return $ asp{item = Extension asps' rg}
+         (dg', asps')<- foldM (\(aDg, as) a -> do 
+                                  (dg',a') <- instMacroAux a
+                                  return (dg', as ++ [a'])  ) (dg, []) asps
+         return $ (dg', asp{item = Extension asps' rg})
        Union asps rg -> do
-         asps'<- mapM instMacroAux asps
-         return $ asp{item = Union asps' rg}
+         (dg', asps')<- foldM (\(aDg, as) a -> do 
+                                  (dg',a') <- instMacroAux a
+                                  return (dg', as ++ [a'])  ) (dg, []) asps
+         return $ (dg', asp{item = Union asps' rg})
        Spec_inst sn afitargs _ _ -> trace ("\n\nspec_inst:" ++ show (item asp0)) $ do -- here afitargs must be instantiated if they are variables!!!
         let snEntry = Map.findWithDefault (error $ "unknown pattern:" ++ show sn) sn $ globalEnv dg
         case snEntry of
