@@ -1398,8 +1398,13 @@ processProofResult format_ options nodesAndProofResults (opts, libEnv, ln, dg) =
     Just "xml" -> undefined
     _ -> return $ formatProofs format_ options nodesAndProofResults
 
-getJSONOrXML :: HetcatsOpts -> LibEnv -> LibName -> DGraph -> JSONOrXML
-getJSONOrXML opts libEnv ln dg = XML $ ToXml.dGraph opts libEnv ln dg
+getJSONOrXML :: Maybe String -> ProofFormatterOptions -> [(String, [ProofResult])] -> HetcatsOpts -> LibEnv -> LibName -> DGraph -> JSONOrXML
+getJSONOrXML format_ options nodesAndProofResults opts libEnv ln dg =
+  let
+    developmentGraph = XML $ ToXml.dGraph opts libEnv ln dg
+    proverResults = formatProofs format_ options nodesAndProofResults
+  in
+    undefined
 
 formatGoals :: Bool -> [ProofResult] -> [Element]
 formatGoals includeDetails =
