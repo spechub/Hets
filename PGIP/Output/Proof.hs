@@ -23,6 +23,7 @@ import qualified Logic.Prover as LP
 import Proofs.AbstractState (G_proof_tree, ProverOrConsChecker)
 
 import Common.Json (ppJson, asJson)
+import Common.JSONOrXML
 import Common.ToXml (asXml)
 import Common.Utils (readMaybe)
 
@@ -35,7 +36,7 @@ import Text.XML.Light (ppTopElement)
 import Text.Printf (printf)
 
 type ProofFormatter =
-    ProofFormatterOptions -> [(String, [ProofResult])] -> (String, String)
+    ProofFormatterOptions -> [(String, [ProofResult])] -> JSONOrXML
                           -- [(dgNodeName, result)]  -> (responseType, response)
 
 data ProofFormatterOptions = ProofFormatterOptions
@@ -57,11 +58,11 @@ formatProofs format options proofs = case format of
   proof :: [Proof]
   proof = map convertProof proofs
 
-  formatAsJSON :: (String, String)
-  formatAsJSON = (jsonC, ppJson $ asJson proof)
+  formatAsJSON :: JSONOrXML
+  formatAsJSON = JSON $ asJson proof
 
-  formatAsXML :: (String, String)
-  formatAsXML = (xmlC, ppTopElement $ asXml proof)
+  formatAsXML :: JSONOrXML
+  formatAsXML = XML $ asXml proof
 
   convertProof :: (String, [ProofResult]) -> Proof
   convertProof (nodeName, proofResults) = Proof

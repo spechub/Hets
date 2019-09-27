@@ -16,10 +16,12 @@ import Text.XML.Light
 
 data JSONOrXML = JSON Json | XML Element
 
+-- return a JSONOrXML as String
 prettyPrint :: JSONOrXML -> String
 prettyPrint (JSON json) = ppJson json
 prettyPrint (XML xml) = ppElement xml
 
+-- join two JSON or XML data types
 joinData :: JSONOrXML -> JSONOrXML -> Result JSONOrXML
 joinData (JSON json1) (JSON json2) =
     let
@@ -31,7 +33,7 @@ joinData (XML xml1) (XML xml2) =
     return $ XML $ Element (QName "pair" Nothing Nothing) [] [Elem xml1, Elem xml2] Nothing
 joinData _ _ = fail "Cannot join JSON and XML!"
 
--- gibt json/xml aus mit einem tag, ob es json oder xml ist,
-prettyWithTag :: JSONOrXML -> (String, JSONOrXML)
-prettyWithTag (JSON json) = (jsonC, JSON json)
-prettyWithTag (XML xml) = (xmlC, XML xml)
+-- return a tupel with the type as string and the data as string
+prettyWithTag :: JSONOrXML -> (String, String)
+prettyWithTag (JSON json) = (jsonC, prettyPrint (JSON json))
+prettyWithTag (XML xml) = (xmlC, prettyPrint (XML xml))

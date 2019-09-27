@@ -1388,23 +1388,23 @@ processProofResult :: Maybe String
                    -> [(String, [ProofResult])]
                    -> (HetcatsOpts, LibEnv, LibName, DGraph)
                    -> ResultT IO (String, String)
+processProofResult (Just "db") _ _ _ =
+  return (jsonC, "{\"savedToDatabase\": true}")
 processProofResult format_ options nodesAndProofResults (opts, libEnv, ln, dg) =
-  --if format_ == Just "db"
-  --then return (jsonC, "{\"savedToDatabase\": true}")
-  --else return $ formatProofs format_ options nodesAndProofResults
-  case format_ of
-    Just "db" -> return (jsonC, "{\"savedToDatabase\": true}")
-    Just "json" -> undefined --liftR $ return (xmlC, ppTopElement $ ToXml.dGraph opts libEnv ln dg)
-    Just "xml" -> undefined
-    _ -> return $ formatProofs format_ options nodesAndProofResults
+  do
+    joinedResult <- liftR $ getJSONOrXMLResult format_ options nodesAndProofResults opts libEnv ln dg
+    let result = prettyWithTag joinedResult
+    return result
 
-getJSONOrXML :: Maybe String -> ProofFormatterOptions -> [(String, [ProofResult])] -> HetcatsOpts -> LibEnv -> LibName -> DGraph -> JSONOrXML
+-- returns the joined data consisting of the development graph and prover results
+getJSONOrXMLResult :: Maybe String -> ProofFormatterOptions -> [(String, [ProofResult])] -> HetcatsOpts -> LibEnv -> LibName -> DGraph -> Result JSONOrXML
 getJSONOrXML format_ options nodesAndProofResults opts libEnv ln dg =
   let
-    developmentGraph = XML $ ToXml.dGraph opts libEnv ln dg
     proverResults = formatProofs format_ options nodesAndProofResults
   in
-    undefined
+    case format_ of
+      Just "xml" -> joinData (XML (ToXml.dGraph opts libEnv ln dg)) proverResults
+      _ -> joinData (JSON (ToJson.dGraph opts libEnv ln dg)) proverResults
 
 formatGoals :: Bool -> [ProofResult] -> [Element]
 formatGoals includeDetails =
