@@ -1398,7 +1398,7 @@ processProofResult format_ options nodesAndProofResults (opts, libEnv, ln, dg) =
 
 -- returns the joined data consisting of the development graph and prover results
 getJSONOrXMLResult :: Maybe String -> ProofFormatterOptions -> [(String, [ProofResult])] -> HetcatsOpts -> LibEnv -> LibName -> DGraph -> Result JSONOrXML
-getJSONOrXML format_ options nodesAndProofResults opts libEnv ln dg =
+getJSONOrXMLResult format_ options nodesAndProofResults opts libEnv ln dg =
   let
     proverResults = formatProofs format_ options nodesAndProofResults
   in
