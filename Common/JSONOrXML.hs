@@ -33,7 +33,7 @@ joinData (XML xml1) (XML xml2) =
     return $ XML $ Element (QName "pair" Nothing Nothing) [] [Elem xml1, Elem xml2] Nothing
 joinData _ _ = fail "Cannot join JSON and XML!"
 
--- return a tupel with the type as string and the data as string
+-- return a tuple with the type as string and the data as string
 prettyWithTag :: JSONOrXML -> (String, String)
 prettyWithTag (JSON json) = (jsonC, prettyPrint (JSON json))
 prettyWithTag (XML xml) = (xmlC, prettyPrint (XML xml))

@@ -1322,7 +1322,6 @@ getHetsResult opts updates sessRef (Query dgQ qk) format_ api pfOptions = do
                               formatResults xForm k i .
                                 add_attr (mkAttr "class" "results") $
                                 unode "div" $ formatGoals True proofResults)
-                                -- libenv mit übergeben
                             RESTfulAPI -> processProofResult format_ pfOptions
                               [(getDGNodeName dgnode, proofResults)] (opts, libEnv, ln, dg)
                       GlConsistency -> do
