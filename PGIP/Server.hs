@@ -273,7 +273,9 @@ hetsServer' opts1 = do
               let unknown = filter (`notElem` allQueryKeys) $ map fst qr2
               if null unknown
               then do pathBits' <- case pathBits of
-                        _ : "upload" : _ -> ...
+                        p1 : "upload" : prest -> do
+                            ...
+                            return  p1 : filepath : prest
                         _ -> return pathBits
                       parseRESTful newOpts sessRef pathBits'
                         (map fst fs2 ++ map (\ (a, b) -> a ++ "=" ++ b) vs)
