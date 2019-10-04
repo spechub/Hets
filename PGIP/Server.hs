@@ -272,9 +272,12 @@ hetsServer' opts1 = do
               requestBodyParams <- parseRequestParams re requestBodyBS
               let unknown = filter (`notElem` allQueryKeys) $ map fst qr2
               if null unknown
-              then parseRESTful newOpts sessRef pathBits
-                    (map fst fs2 ++ map (\ (a, b) -> a ++ "=" ++ b) vs)
-                    qr2 requestBodyBS requestBodyParams meth respond
+              then do pathBits' <- case pathBits of
+                        _ : "upload" : _ -> ...
+                        _ -> return pathBits
+                      parseRESTful newOpts sessRef pathBits'
+                        (map fst fs2 ++ map (\ (a, b) -> a ++ "=" ++ b) vs)
+                        qr2 requestBodyBS requestBodyParams meth respond
               else queryFail ("unknown query key(s): " ++ show unknown) respond
            -- only otherwise stick to the old response methods
            else oldWebApi newOpts tempLib sessRef re pathBits qr2
