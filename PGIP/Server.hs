@@ -12,6 +12,10 @@ Portability :  non-portable (via imports)
 
 module PGIP.Server (hetsServer) where
 
+-- IMPORTANT: Delete these two before merge!
+import Debug.Trace
+import Data.Typeable
+
 import PGIP.Output.Formatting
 import PGIP.Output.Mime
 import PGIP.Output.Proof
@@ -274,8 +278,8 @@ hetsServer' opts1 = do
               if null unknown
               then do pathBits' <- case pathBits of
                         p1 : "upload" : prest -> do
-                            ...
-                            return  p1 : filepath : prest
+                          writeFile (tempDir </> ("upload_file")) (BS.unpack requestBodyBS)
+                          return (p1 : (tempDir ++ "/" ++ "upload_file") : prest)
                         _ -> return pathBits
                       parseRESTful newOpts sessRef pathBits'
                         (map fst fs2 ++ map (\ (a, b) -> a ++ "=" ++ b) vs)
@@ -430,7 +434,7 @@ data RequestBodyParam = Single String | List [String]
 parseRESTful :: HetcatsOpts -> Cache -> [String] -> [String] -> [QueryPair]
   -> BS.ByteString -> Json -> String -> WebResponse
 parseRESTful
-  opts sessRef pathBits qOpts splitQuery requestBodyBS requestBodyParams meth tempDir respond = let
+  opts sessRef pathBits qOpts splitQuery requestBodyBS requestBodyParams meth respond = let
   {- some parameters from the paths query part might be needed more than once
   (when using lookup upon querybits, you need to unpack Maybe twice) -}
   lookupQueryStringParam :: String -> Maybe String
@@ -553,58 +557,49 @@ parseRESTful
             validReasoningParams = isRight reasoningParametersE <=
               elem newIde ["prove", "consistency-check"]
         in 
-          if libIri == "upload"
+          if elem newIde newRESTIdes
+                  && all (`elem` globalCommands) cmdList
+                  && validReasoningParams
             then let
-                tempDir = getTemporaryDirectory
-                filePath = "file://" ++ tempDir ++ "/" ++ "upload_file"
-              in
-                writeFile (tempDir </> ("upload_file")) (BS.unpack requestBodyBS)
-                getResponseAux newOpts . Query (NewDGQuery filePath $ cmdList
-                    ++ Set.toList (Set.fromList $ optFlags ++ qOpts)) $ qkind
-            else
-              if elem newIde newRESTIdes
-                    && all (`elem` globalCommands) cmdList
-                    && validReasoningParams
-              then let
-              qkind = case newIde of
-                "translations" -> case nodeM of
-                  Nothing -> GlTranslations
-                  Just n -> nodeQuery n $ NcTranslations Nothing
-                _ | elem newIde ["provers", "consistency-checkers"] ->
-                  let pm = if newIde == "provers" then GlProofs else GlConsistency
-                  in case nodeM of
-                  Nothing -> GlProvers pm transM
-                  Just n -> nodeQuery n $ NcProvers pm transM
-                _ | elem newIde ["prove", "consistency-check"] ->
-                  case reasoningParametersE of
-                    Left message_ -> error ("Invalid parameters: " ++ message_) -- cannot happen
-                    Right reasoningParameters ->
-                      let proverMode = if newIde == "prove"
-                                        then GlProofs
-                                        else GlConsistency
-                      in GlAutoProveREST proverMode reasoningParameters
-                "dg" -> case transM of
-                  Nothing -> DisplayQuery (Just $ fromMaybe "xml" format_)
-                  Just tr -> Query.DGTranslation tr
-                "theory" -> case transM of
-                  Nothing -> case nodeM of
-                              Just x -> NodeQuery (maybe (Right x) Left $ readMaybe x)
-                                        $ NcCmd Query.Theory
-                              Nothing -> error "development graph node missing. Please use <url>?node=<number>"
-                  Just tr -> case nodeM of
-                              Just x -> NodeQuery (maybe (Right x) Left $ readMaybe x)
-                                        $ NcCmd $ Query.Translate tr
-                              Nothing -> error "development graph node missing. Please specifiy ?node=<number>"
-                _ -> error $ "REST: unknown " ++ newIde
-              in getResponseAux newOpts . Query (NewDGQuery libIri $ cmdList
-                  ++ Set.toList (Set.fromList $ optFlags ++ qOpts)) $ qkind
-              else if validReasoningParams
-                  then queryFailure
-                  else case reasoningParametersE of
-                          Left message_ ->
-                            queryFail ("Invalid parameters: " ++ message_) respond
-                          Right _ ->
-                            error "Unexpected error in PGIP.Server.parseRESTful"
+            qkind = case newIde of
+              "translations" -> case nodeM of
+                Nothing -> GlTranslations
+                Just n -> nodeQuery n $ NcTranslations Nothing
+              _ | elem newIde ["provers", "consistency-checkers"] ->
+                let pm = if newIde == "provers" then GlProofs else GlConsistency
+                in case nodeM of
+                Nothing -> GlProvers pm transM
+                Just n -> nodeQuery n $ NcProvers pm transM
+              _ | elem newIde ["prove", "consistency-check"] ->
+                case reasoningParametersE of
+                  Left message_ -> error ("Invalid parameters: " ++ message_) -- cannot happen
+                  Right reasoningParameters ->
+                    let proverMode = if newIde == "prove"
+                                      then GlProofs
+                                      else GlConsistency
+                    in GlAutoProveREST proverMode reasoningParameters
+              "dg" -> case transM of
+                Nothing -> DisplayQuery (Just $ fromMaybe "xml" format_)
+                Just tr -> Query.DGTranslation tr
+              "theory" -> case transM of
+                Nothing -> case nodeM of
+                            Just x -> NodeQuery (maybe (Right x) Left $ readMaybe x)
+                                      $ NcCmd Query.Theory
+                            Nothing -> error "development graph node missing. Please use <url>?node=<number>"
+                Just tr -> case nodeM of
+                            Just x -> NodeQuery (maybe (Right x) Left $ readMaybe x)
+                                      $ NcCmd $ Query.Translate tr
+                            Nothing -> error "development graph node missing. Please specifiy ?node=<number>"
+              _ -> error $ "REST: unknown " ++ newIde
+            in getResponseAux newOpts . Query (NewDGQuery libIri $ cmdList
+                ++ Set.toList (Set.fromList $ optFlags ++ qOpts)) $ qkind
+            else if validReasoningParams
+                then queryFailure
+                else case reasoningParametersE of
+                        Left message_ ->
+                          queryFail ("Invalid parameters: " ++ message_) respond
+                        Right _ ->
+                          error "Unexpected error in PGIP.Server.parseRESTful"
       _ -> queryFailure
     "PUT" -> case pathBits of
       {- execute global commands
