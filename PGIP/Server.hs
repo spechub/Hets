@@ -276,11 +276,20 @@ hetsServer' opts1 = do
               requestBodyParams <- parseRequestParams re requestBodyBS
               let unknown = filter (`notElem` allQueryKeys) $ map fst qr2
               if null unknown
-              then do pathBits' <- case pathBits of
-                        p1 : "upload" : prest -> do
-                          writeFile (tempDir </> ("upload_file")) (BS.unpack requestBodyBS)
-                          return (p1 : (tempDir ++ "/" ++ "upload_file") : prest)
-                        _ -> return pathBits
+              then do pathBits' <- case requestBodyParams of
+                        JObject jsonPairs -> do
+                          let uploadFileData = fmap snd $ find ( \(x,y) -> x == "document" ) jsonPairs
+                          case uploadFileData of
+                            Just (JString fileData) -> do
+                              writeFile (tempDir </> ("upload_file")) fileData
+                              {-
+                                Dieser Part ist problematisch, da tail auch [] sein könnte, da "upload" als Keyword wegfällt.
+                                Man muss hier auf das dritte Element der Liste zugreifen, schwierig, wenn's das nicht gibt.
+                              -}
+                              return ((head pathBits) : (tempDir ++ "/" ++ "upload_file") : tail pathBits)
+                            _ -> return pathBits
+                        _ ->
+                          return pathBits
                       parseRESTful newOpts sessRef pathBits'
                         (map fst fs2 ++ map (\ (a, b) -> a ++ "=" ++ b) vs)
                         qr2 requestBodyBS requestBodyParams meth respond
