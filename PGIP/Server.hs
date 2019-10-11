@@ -12,7 +12,7 @@ Portability :  non-portable (via imports)
 
 module PGIP.Server (hetsServer) where
 
--- IMPORTANT: Delete these two before merge!
+-- TODO: Delete these two before merge!
 import Debug.Trace
 import Data.Typeable
 
@@ -278,15 +278,15 @@ hetsServer' opts1 = do
               if null unknown
               then do pathBits' <- case requestBodyParams of
                         JObject jsonPairs -> do
-                          let uploadFileData = fmap snd $ find ( \(x,y) -> x == "document" ) jsonPairs
+                          let uploadFileData = fmap snd $ find ( \(x,_) -> x == "document" ) jsonPairs
                           case uploadFileData of
                             Just (JString fileData) -> do
                               writeFile (tempDir </> ("upload_file")) fileData
                               {-
-                                Dieser Part ist problematisch, da tail auch [] sein könnte, da "upload" als Keyword wegfällt.
-                                Man muss hier auf das dritte Element der Liste zugreifen, schwierig, wenn's das nicht gibt.
+                                TODO:
+                                Prüfen, ob pathBits richtig gesetzt wird.
                               -}
-                              return ((head pathBits) : (tempDir ++ "/" ++ "upload_file") : tail pathBits)
+                              return ((head pathBits) : (tempDir ++ "/" ++ "upload_file") : tail (tail pathBits))
                             _ -> return pathBits
                         _ ->
                           return pathBits
@@ -566,6 +566,7 @@ parseRESTful
             validReasoningParams = isRight reasoningParametersE <=
               elem newIde ["prove", "consistency-check"]
         in 
+          -- if libIri == "upload"    -- TODO: hier für die Rückgabe des Ordners ansetzen
           if elem newIde newRESTIdes
                   && all (`elem` globalCommands) cmdList
                   && validReasoningParams
