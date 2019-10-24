@@ -508,12 +508,12 @@ parseRESTful
          >>= respond . mkOkResponse xmlC . ppTopElement
       -- return an unique folder for uploading a file
       ["folder"] -> do
-        uniqueFolderName <- mkdtemp (tempDir ++ "/hetsUserFolder_")
-        respond $ mkOkResponse textC (uniqueFolderName)
+        uniqueFolderName <- mkdtemp (tempDir ++ [pathSeparator] ++ "hetsUserFolder_")
+        respond $ mkOkResponse textC (uniqueFolderName ++ [pathSeparator])
       -- upload a user file to folder for future proving etc.
       "uploadFile" : folderIri : fileType : _-> do
         let fileContent = BS.unpack requestBodyBS
-        tempFile <- mkstemps (folderIri ++ "/userfile_") ("." ++ fileType)
+        tempFile <- mkstemps (folderIri ++ "userfile_") ("." ++ fileType)
         let handleTempFile = snd tempFile
         hPutStr handleTempFile fileContent
         hClose handleTempFile
