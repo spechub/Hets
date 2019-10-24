@@ -91,7 +91,6 @@ import Text.XML.Light
 import Text.XML.Light.Cursor hiding (lefts, rights)
 
 import Common.AutoProofUtils
-import Common.Counter
 import Common.Doc
 import Common.DocUtils (pretty, showGlobalDoc, showDoc)
 import Common.ExtSign (ExtSign (..))
@@ -135,6 +134,7 @@ import System.FilePath
 import System.IO
 import System.Posix.Process (getProcessID)
 import System.Posix.Signals
+import System.Posix.Temp
 
 data UsedAPI = OldWebAPI | RESTfulAPI deriving (Show, Eq, Ord)
 
@@ -210,7 +210,6 @@ deletePidFile opts =
 hetsServer' :: HetcatsOpts -> IO ()
 hetsServer' opts1 = do
   tempDir <- getTemporaryDirectory
-  tempDirCounter <- makeCounter 0
   let tempLib = tempDir </> "MyHetsLib"
       logFile = tempDir </>
         ("hets-" ++ show port ++ ".log")
@@ -278,25 +277,10 @@ hetsServer' opts1 = do
               requestBodyParams <- parseRequestParams re requestBodyBS
               let unknown = filter (`notElem` allQueryKeys) $ map fst qr2
               if null unknown
-              then {-do pathBits' <- case requestBodyParams of
-                        JObject jsonPairs -> do
-                          let uploadFileData = fmap snd $ find ( \(x,_) -> x == "document" ) jsonPairs
-                          case uploadFileData of
-                            Just (JString fileData) -> do
-                              writeFile (tempDir </> ("upload_file")) fileData
-                              {-
-                                TODO:
-                                Prüfen, ob pathBits richtig gesetzt wird.
-                              -}
-                              return ((head pathBits) : (tempDir ++ "/" ++ "upload_file") : tail (tail pathBits))
-                            _ -> return pathBits
-                        _ ->
-                          return pathBits
-                          -}
-                      parseRESTful newOpts sessRef pathBits --pathBits'
-                        (map fst fs2 ++ map (\ (a, b) -> a ++ "=" ++ b) vs)
-                        qr2 requestBodyBS requestBodyParams meth tempDirCounter
-                        tempDir respond
+              then
+                parseRESTful newOpts sessRef pathBits
+                  (map fst fs2 ++ map (\ (a, b) -> a ++ "=" ++ b) vs)
+                  qr2 requestBodyBS requestBodyParams meth tempDir respond
               else queryFail ("unknown query key(s): " ++ show unknown) respond
            -- only otherwise stick to the old response methods
            else oldWebApi newOpts tempLib sessRef re pathBits qr2
@@ -423,7 +407,7 @@ listRESTfulIdentifiers :: [String]
 listRESTfulIdentifiers =
   [ "libraries", "sessions", "menus", "filetype", "hets-lib", "dir", "folder"]
   ++ nodeEdgeIdes ++ newRESTIdes
-  ++ ["available-provers"]
+  ++ ["available-provers", "uploadFile"]
 
 nodeEdgeIdes :: [String]
 nodeEdgeIdes = ["nodes", "edges"]
@@ -445,10 +429,10 @@ data RequestBodyParam = Single String | List [String]
 
 -- query is analysed and processed in accordance with RESTful interface
 parseRESTful :: HetcatsOpts -> Cache -> [String] -> [String] -> [QueryPair]
-  -> BS.ByteString -> Json -> String -> Counter -> FilePath -> WebResponse
+  -> BS.ByteString -> Json -> String -> FilePath -> WebResponse
 parseRESTful
   opts sessRef pathBits qOpts splitQuery requestBodyBS requestBodyParams meth
-  tempDirCounter tempDir respond = let
+  tempDir respond = let
   {- some parameters from the paths query part might be needed more than once
   (when using lookup upon querybits, you need to unpack Maybe twice) -}
   lookupQueryStringParam :: String -> Maybe String
@@ -522,11 +506,18 @@ parseRESTful
       ["available-provers"] ->
          liftIO (usableProvers logicGraph)
          >>= respond . mkOkResponse xmlC . ppTopElement
-      -- TODO: return a folder for uploading a file
+      -- return an unique folder for uploading a file
       ["folder"] -> do
-        dirName <- showCounter tempDirCounter
-        incCounter 1 tempDirCounter
-        respond $ mkOkResponse textC ("userfolder_" ++ show dirName)
+        uniqueFolderName <- mkdtemp (tempDir ++ "/hetsUserFolder_")
+        respond $ mkOkResponse textC (uniqueFolderName)
+      -- upload a user file to folder for future proving etc.
+      "uploadFile" : folderIri : fileType : _-> do
+        let fileContent = BS.unpack requestBodyBS
+        tempFile <- mkstemps (folderIri ++ "/userfile_") ("." ++ fileType)
+        let handleTempFile = snd tempFile
+        hPutStr handleTempFile fileContent
+        hClose handleTempFile
+        respond $ mkOkResponse textC (fst tempFile)
       -- get dgraph from file
       "filetype" : libIri : _ -> mkFiletypeResponse opts libIri respond
       "hets-lib" : r -> let file = intercalate "/" r in
@@ -575,7 +566,7 @@ parseRESTful
               optFlags
             validReasoningParams = isRight reasoningParametersE <=
               elem newIde ["prove", "consistency-check"]
-        in 
+        in
           -- if libIri == "upload"    -- TODO: hier für die Rückgabe des Ordners ansetzen
           if elem newIde newRESTIdes
                   && all (`elem` globalCommands) cmdList
