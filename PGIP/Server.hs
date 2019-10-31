@@ -508,16 +508,18 @@ parseRESTful
          >>= respond . mkOkResponse xmlC . ppTopElement
       -- return an unique folder for uploading a file
       ["folder"] -> do
+        putStrLn (ppJson requestBodyParams)
         uniqueFolderName <- mkdtemp (tempDir ++ [pathSeparator] ++ "hetsUserFolder_")
-        respond $ mkOkResponse textC (uniqueFolderName ++ [pathSeparator])
+        respond $ mkOkResponse textC (drop (length tempDir + 1) uniqueFolderName)
       -- upload a user file to folder for future proving etc.
-      "uploadFile" : folderIri : fileType : _-> do
-        let fileContent = BS.unpack requestBodyBS
-        tempFile <- mkstemps (folderIri ++ "userfile_") ("." ++ fileType)
-        let handleTempFile = snd tempFile
-        hPutStr handleTempFile fileContent
-        hClose handleTempFile
-        respond $ mkOkResponse textC (fst tempFile)
+      "uploadFile" : folderIri : fileName : _-> do
+        let userFileContent = BS.unpack requestBodyBS
+        let userFilePath = tempDir ++ [pathSeparator] ++ folderIri ++ [pathSeparator] ++ fileName
+        if isFile userFilePath
+          handleUserFile <- openFile userFilePath ReadWriteMode
+          hPutStr handleUserFile userFileContent
+          hClose handleUserFile
+          respond $ mkOkResponse textC userFilePath
       -- get dgraph from file
       "filetype" : libIri : _ -> mkFiletypeResponse opts libIri respond
       "hets-lib" : r -> let file = intercalate "/" r in
