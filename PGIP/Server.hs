@@ -12,9 +12,7 @@ Portability :  non-portable (via imports)
 
 module PGIP.Server (hetsServer) where
 
--- TODO: Delete these two before merge!
 import Debug.Trace
-import Data.Typeable
 
 import PGIP.Output.Formatting
 import PGIP.Output.Mime
@@ -421,7 +419,7 @@ queryFail :: String -> WebResponse
 queryFail msg respond = respond $ mkResponse textC status400 msg
 
 allQueryKeys :: [String]
-allQueryKeys = [updateS, "library", "consistency-checker"]
+allQueryKeys = [updateS, "library", "consistency-checker", "overwrite"]
   ++ globalCommands ++ knownQueryKeys
 
 
@@ -508,18 +506,24 @@ parseRESTful
          >>= respond . mkOkResponse xmlC . ppTopElement
       -- return an unique folder for uploading a file
       ["folder"] -> do
-        putStrLn (ppJson requestBodyParams)
-        uniqueFolderName <- mkdtemp (tempDir ++ [pathSeparator] ++ "hetsUserFolder_")
+        uniqueFolderName <- mkdtemp (tempDir ++ [pathSeparator]
+                                     ++ "hetsUserFolder_")
         respond $ mkOkResponse textC (drop (length tempDir + 1) uniqueFolderName)
       -- upload a user file to folder for future proving etc.
       "uploadFile" : folderIri : fileName : _-> do
         let userFileContent = BS.unpack requestBodyBS
         let userFilePath = tempDir ++ [pathSeparator] ++ folderIri ++ [pathSeparator] ++ fileName
-        if isFile userFilePath
-          handleUserFile <- openFile userFilePath ReadWriteMode
-          hPutStr handleUserFile userFileContent
-          hClose handleUserFile
-          respond $ mkOkResponse textC userFilePath
+        fileExists <- doesFileExist userFilePath
+        -- Check if file already exists and no overwrite flag is set
+        if fileExists && not (elem ("overwrite", Just "true") splitQuery)
+          then
+            fail ("the file you wish to upload already exists, for overwrite" ++
+                      "please set the corresponding flag") --respond
+          else do
+            handleUserFile <- openFile userFilePath ReadWriteMode
+            hPutStr handleUserFile userFileContent
+            hClose handleUserFile
+            respond $ mkOkResponse textC (drop (length tempDir + 1) userFilePath)
       -- get dgraph from file
       "filetype" : libIri : _ -> mkFiletypeResponse opts libIri respond
       "hets-lib" : r -> let file = intercalate "/" r in
@@ -569,7 +573,6 @@ parseRESTful
             validReasoningParams = isRight reasoningParametersE <=
               elem newIde ["prove", "consistency-check"]
         in
-          -- if libIri == "upload"    -- TODO: hier für die Rückgabe des Ordners ansetzen
           if elem newIde newRESTIdes
                   && all (`elem` globalCommands) cmdList
                   && validReasoningParams
