@@ -508,8 +508,8 @@ parseRESTful
       ["folder"] -> do
         uniqueFolderName <- mkdtemp (tempDir ++ [pathSeparator]
                                      ++ "hetsUserFolder_")
-        respond $ mkOkResponse textC (drop (length tempDir + 1) uniqueFolderName)
-      -- upload a user file to folder for future proving etc.
+        respond $ mkOkResponse textC uniqueFolderName
+      -- upload a user file to folder for future proving
       "uploadFile" : folderIri : fileName : _-> do
         let userFileContent = BS.unpack requestBodyBS
         let userFilePath = tempDir ++ [pathSeparator] ++ folderIri ++ [pathSeparator] ++ fileName
@@ -518,12 +518,13 @@ parseRESTful
         if fileExists && not (elem ("overwrite", Just "true") splitQuery)
           then
             fail ("the file you wish to upload already exists, for overwrite" ++
-                      "please set the corresponding flag") --respond
+                      "please set the corresponding flag")
           else do
+            -- write file
             handleUserFile <- openFile userFilePath ReadWriteMode
             hPutStr handleUserFile userFileContent
             hClose handleUserFile
-            respond $ mkOkResponse textC (drop (length tempDir + 1) userFilePath)
+            respond $ mkOkResponse textC userFilePath
       -- get dgraph from file
       "filetype" : libIri : _ -> mkFiletypeResponse opts libIri respond
       "hets-lib" : r -> let file = intercalate "/" r in
