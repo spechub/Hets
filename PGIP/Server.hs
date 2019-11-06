@@ -1396,14 +1396,18 @@ processProofResult format_ options nodesAndProofResults (opts, libEnv, ln, dg) =
     return result
 
 -- returns the joined data consisting of the development graph and prover results
-getJSONOrXMLResult :: Maybe String -> ProofFormatterOptions -> [(String, [ProofResult])] -> HetcatsOpts -> LibEnv -> LibName -> DGraph -> Result JSONOrXML
+getJSONOrXMLResult :: Maybe String -> ProofFormatterOptions
+                   -> [(String, [ProofResult])] -> HetcatsOpts -> LibEnv
+                   -> LibName -> DGraph -> Result JSONOrXML
 getJSONOrXMLResult format_ options nodesAndProofResults opts libEnv ln dg =
   let
-    proverResults = formatProofs format_ options nodesAndProofResults
+    proverResults = ("prover_output", formatProofs format_ options nodesAndProofResults)
   in
     case format_ of
-      Just "xml" -> joinData (XML (ToXml.dGraph opts libEnv ln dg)) proverResults
-      _ -> joinData (JSON (ToJson.dGraph opts libEnv ln dg)) proverResults
+      Just "xml" -> joinData ("dgraph", (XML (ToXml.dGraph opts libEnv ln dg)))
+                             proverResults
+      _ -> joinData ("dgraph", (JSON (ToJson.dGraph opts libEnv ln dg)))
+                    proverResults
 
 formatGoals :: Bool -> [ProofResult] -> [Element]
 formatGoals includeDetails =

@@ -22,15 +22,19 @@ prettyPrint (JSON json) = ppJson json
 prettyPrint (XML xml) = ppElement xml
 
 -- join two JSON or XML data types
-joinData :: JSONOrXML -> JSONOrXML -> Result JSONOrXML
-joinData (JSON json1) (JSON json2) =
+joinData :: (String, JSONOrXML) -> (String, JSONOrXML) -> Result JSONOrXML
+joinData (str1, (JSON json1)) (str2, (JSON json2)) =
     let
-        elem1 = ("elem1", json1)
-        elem2 = ("elem2", json2)
+        elem1 = (str1, json1)
+        elem2 = (str2, json2)
     in
         return $ JSON $ JObject [elem1, elem2]
-joinData (XML xml1) (XML xml2) =
-    return $ XML $ Element (QName "pair" Nothing Nothing) [] [Elem xml1, Elem xml2] Nothing
+joinData (str1, (XML xml1)) (str2, (XML xml2)) =
+    let
+        elem1 = Element (QName str1 Nothing Nothing) [] [Elem xml1] Nothing
+        elem2 = Element (QName str2 Nothing Nothing) [] [Elem xml2] Nothing
+    in
+    return $ XML $ Element (QName "pair" Nothing Nothing) [] [Elem elem1, Elem elem2] Nothing
 joinData _ _ = fail "Cannot join JSON and XML!"
 
 -- return a tuple with the type as string and the data as string
