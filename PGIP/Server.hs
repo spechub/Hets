@@ -92,6 +92,7 @@ import Common.DocUtils (pretty, showGlobalDoc, showDoc)
 import Common.ExtSign (ExtSign (..))
 import Common.GtkGoal
 import Common.Json (Json (..), ppJson)
+import Common.JSONOrXML
 import Common.LibName
 import Common.PrintLaTeX
 import Common.Result
@@ -1246,7 +1247,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format_ api pfOptions = do
                 then return (textC, "nothing to prove")
                 else do
                   lift $ nextSess newLib sess sessRef k
-                  processProofResult format_ pfOptions nodesAndProofResults
+                  processProofResult format_ pfOptions nodesAndProofResults (opts, libEnv, ln, dg)
               _ -> fail ("The GlAutoProveREST path is only "
                          ++ "available in the REST interface.")
             GlAutoProve (ProveCmd prOrCons incl mp mt tl nds xForm axioms) -> do
@@ -1264,7 +1265,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format_ api pfOptions = do
                       ) [] nodesAndProofResults
                     in return (htmlC, formatResultsMultiple xForm k sens prOrCons)
                   RESTfulAPI ->
-                    processProofResult format_ pfOptions nodesAndProofResults
+                    processProofResult format_ pfOptions nodesAndProofResults (opts, libEnv, ln, dg)
             GlobCmdQuery s ->
               case find ((s ==) . cmdlGlobCmd . fst) allGlobLibAct of
               Nothing -> if s == updateS then
@@ -1322,7 +1323,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format_ api pfOptions = do
                                 add_attr (mkAttr "class" "results") $
                                 unode "div" $ formatGoals True proofResults)
                             RESTfulAPI -> processProofResult format_ pfOptions
-                              [(getDGNodeName dgnode, proofResults)]
+                              [(getDGNodeName dgnode, proofResults)] (opts, libEnv, ln, dg)
                       GlConsistency -> do
                         (newLib, [(_, res, txt, _, _, _, _)]) <-
                           consNode libEnv ln dg nl subL incl mp mt tl
@@ -1384,11 +1385,29 @@ getHetsResult opts updates sessRef (Query dgQ qk) format_ api pfOptions = do
 processProofResult :: Maybe String
                    -> ProofFormatterOptions
                    -> [(String, [ProofResult])]
+                   -> (HetcatsOpts, LibEnv, LibName, DGraph)
                    -> ResultT IO (String, String)
-processProofResult format_ options nodesAndProofResults =
-  if format_ == Just "db"
-  then return (jsonC, "{\"savedToDatabase\": true}")
-  else return $ formatProofs format_ options nodesAndProofResults
+processProofResult (Just "db") _ _ _ =
+  return (jsonC, "{\"savedToDatabase\": true}")
+processProofResult format_ options nodesAndProofResults (opts, libEnv, ln, dg) =
+  do
+    joinedResult <- liftR $ getJSONOrXMLResult format_ options nodesAndProofResults opts libEnv ln dg
+    let result = prettyWithTag joinedResult
+    return result
+
+-- returns the joined data consisting of the development graph and prover results
+getJSONOrXMLResult :: Maybe String -> ProofFormatterOptions
+                   -> [(String, [ProofResult])] -> HetcatsOpts -> LibEnv
+                   -> LibName -> DGraph -> Result JSONOrXML
+getJSONOrXMLResult format_ options nodesAndProofResults opts libEnv ln dg =
+  let
+    proverResults = ("prover_output", formatProofs format_ options nodesAndProofResults)
+  in
+    case format_ of
+      Just "xml" -> joinData ("dgraph", (XML (ToXml.dGraph opts libEnv ln dg)))
+                             proverResults
+      _ -> joinData ("dgraph", (JSON (ToJson.dGraph opts libEnv ln dg)))
+                    proverResults
 
 formatGoals :: Bool -> [ProofResult] -> [Element]
 formatGoals includeDetails =
