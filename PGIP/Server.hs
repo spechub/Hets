@@ -12,8 +12,6 @@ Portability :  non-portable (via imports)
 
 module PGIP.Server (hetsServer) where
 
-import Debug.Trace
-
 import PGIP.Output.Formatting
 import PGIP.Output.Mime
 import PGIP.Output.Proof
@@ -506,13 +504,12 @@ parseRESTful
          >>= respond . mkOkResponse xmlC . ppTopElement
       -- return an unique folder for uploading a file
       ["folder"] -> do
-        uniqueFolderName <- mkdtemp (tempDir ++ [pathSeparator]
-                                     ++ "hetsUserFolder_")
+        uniqueFolderName <- mkdtemp (tempDir ++ [pathSeparator] ++ "hetsUserFolder_")
         respond $ mkOkResponse textC uniqueFolderName
       -- upload a user file to folder for future proving
-      "uploadFile" : folderIri : fileName : _-> do
+      "uploadFile" : folderIri : fileNameIri : _-> do
         let userFileContent = BS.unpack requestBodyBS
-        let userFilePath = tempDir ++ [pathSeparator] ++ folderIri ++ [pathSeparator] ++ fileName
+        let userFilePath = tempDir ++ [pathSeparator] ++ folderIri ++ [pathSeparator] ++ fileNameIri
         fileExists <- doesFileExist userFilePath
         -- Check if file already exists and no overwrite flag is set
         if fileExists && not (elem ("overwrite", Just "true") splitQuery)
