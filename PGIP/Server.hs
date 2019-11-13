@@ -12,6 +12,10 @@ Portability :  non-portable (via imports)
 
 module PGIP.Server (hetsServer) where
 
+-- TODO: Remove before merge
+import Debug.Trace
+import Data.Typeable
+
 import PGIP.Output.Formatting
 import PGIP.Output.Mime
 import PGIP.Output.Proof
@@ -216,6 +220,8 @@ hetsServer' opts1 = do
       bl = blacklist opts1
       prList ll = intercalate ", " $ map (intercalate ".") ll
   createDirectoryIfMissing False tempLib
+  -- create a mutable Cache that saves all Requests/Responses
+  cachedRequestsResponses <- newIORef Map.empty
   writeFile logFile ""
   unless (null wl) . appendFile logFile
     $ "white list: " ++ prList wl ++ "\n"
@@ -228,12 +234,13 @@ hetsServer' opts1 = do
   runSettings (setOnExceptionResponse catchException $
                setPort port $
                setTimeout 86400 defaultSettings)
-    $ \ re respond -> do
+    $ \ re respond' -> do
 #else
   run port $ \ re -> do
-   let respond = liftIO . return
+   let respond' = liftIO . return
 #endif
-   let rhost = shows (remoteHost re) "\n"
+   let respond = respond'
+       rhost = shows (remoteHost re) "\n"
        ip = getIP4 rhost
        white = matchWhite ip wl
        black = any (matchIP4 ip) bl
@@ -419,7 +426,11 @@ queryFail msg respond = respond $ mkResponse textC status400 msg
 allQueryKeys :: [String]
 allQueryKeys = [updateS, "library", "consistency-checker", "overwrite"]
   ++ globalCommands ++ knownQueryKeys
-
+{-
+updateCache :: Request -> ResponseReceived
+  -> IORef (Map.Map Request, ResponseReceived) -> IO ()
+updateCache request response cacheRef =
+  undefined-}
 
 data RequestBodyParam = Single String | List [String]
 
