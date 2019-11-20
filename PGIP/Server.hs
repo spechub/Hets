@@ -221,7 +221,7 @@ hetsServer' opts1 = do
       prList ll = intercalate ", " $ map (intercalate ".") ll
   createDirectoryIfMissing False tempLib
   -- create a mutable Cache that saves all Requests/Responses
-  cachedRequestsResponses <- newIORef Map.empty
+  cachedRequestsResponses <- newIORef (Map.empty :: Map.Map Request ResponseReceived)
   writeFile logFile ""
   unless (null wl) . appendFile logFile
     $ "white list: " ++ prList wl ++ "\n"
@@ -239,7 +239,10 @@ hetsServer' opts1 = do
   run port $ \ re -> do
    let respond' = liftIO . return
 #endif
-   let respond = respond'
+   let respond = \response -> do
+         y <- trace (show $ typeOf response) $ respond' response
+         updateCache cachedRequestsResponses re y
+         trace (show $ typeOf y) $ return y
        rhost = shows (remoteHost re) "\n"
        ip = getIP4 rhost
        white = matchWhite ip wl
@@ -250,6 +253,14 @@ hetsServer' opts1 = do
        meth = B8.unpack (requestMethod re)
        query = showPathQuery pathBits splitQuery
    liftIO $ do
+     -- TODO: remove this later!
+     {-
+     cachedRequestsResponsesMap <- readIORef cachedRequestsResponses
+     myRandomNumber <- randomRIO (1000,9999) :: IO Int
+     let cacheMap = Map.insert myRandomNumber (show myRandomNumber) cachedRequestsResponsesMap
+     putStrLn $ show cacheMap
+     writeIORef cachedRequestsResponses cacheMap
+     -}
      time <- getCurrentTime
      createDirectoryIfMissing False tempLib
      (m, _) <- readIORef sessRef
@@ -426,11 +437,13 @@ queryFail msg respond = respond $ mkResponse textC status400 msg
 allQueryKeys :: [String]
 allQueryKeys = [updateS, "library", "consistency-checker", "overwrite"]
   ++ globalCommands ++ knownQueryKeys
-{-
-updateCache :: Request -> ResponseReceived
-  -> IORef (Map.Map Request, ResponseReceived) -> IO ()
-updateCache request response cacheRef =
-  undefined-}
+
+updateCache :: IORef ((Map.Map Request ResponseReceived)) -> Request
+ -> ResponseReceived -> IO ()
+updateCache cacheRef request response = do
+  cachedRequestsResponsesMap <- readIORef cacheRef
+  let cacheMap = Map.insert request response cachedRequestsResponsesMap
+  writeIORef cacheRef cacheMap
 
 data RequestBodyParam = Single String | List [String]
 
