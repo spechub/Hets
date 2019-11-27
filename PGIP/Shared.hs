@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP, DoAndIfThenElse #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module PGIP.Shared where
 
@@ -12,11 +13,15 @@ import Static.DevGraph
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy.Char8 as BS
 import Data.IORef
+import qualified Data.Text as T
 import Data.Time
 import qualified Data.Map as Map
 import qualified Data.IntMap as IntMap
+import Network.HTTP.Types.Method as NetworkMethods
 import Network.Wai
+import Network.Wai.Internal
 import Text.ParserCombinators.Parsec (parse)
+
 
 #ifdef WARP1
 type RsrcIO a = ResourceT IO a
@@ -45,6 +50,25 @@ data Session = Session
 
 type SessMap = Map.Map [String] Session
 type Cache = IORef (IntMap.IntMap Session, SessMap)
+
+-- Holds all necessary informations for caching a request
+data RequestMapKey = RequestMapKey
+  { requestMethod' :: NetworkMethods.Method
+  , pathInfo' :: [T.Text]
+  , requestBody' :: B8.ByteString
+  } deriving (Show, Ord, Eq)--(Show, Ord)
+-- See Network.Wai.Internal for implementation
+-- TODO cleanup
+{-
+instance Show RequestMapKey where
+  show RequestMapKey{..} = "RequestMapKey {" ++ intercalate ", " [a ++ " = " ++ b | (a,b) <- fields] ++ "}"
+      where
+          fields =
+              [("requestMethod",show requestMethod)
+              ,("pathInfo",show pathInfo)
+              ,("requestBody","<IO ByteString>")
+              ]
+-}
 
 parseJson :: String -> Maybe Json
 parseJson s = case parse pJson "" s of

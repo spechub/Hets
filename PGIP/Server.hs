@@ -221,7 +221,7 @@ hetsServer' opts1 = do
       prList ll = intercalate ", " $ map (intercalate ".") ll
   createDirectoryIfMissing False tempLib
   -- create a mutable Cache that saves all Requests/Responses
-  cachedRequestsResponses <- newIORef (Map.empty :: Map.Map Request ResponseReceived)
+  cachedRequestsResponses <- newIORef (Map.empty :: Map.Map RequestMapKey Response)
   writeFile logFile ""
   unless (null wl) . appendFile logFile
     $ "white list: " ++ prList wl ++ "\n"
@@ -239,10 +239,12 @@ hetsServer' opts1 = do
   run port $ \ re -> do
    let respond' = liftIO . return
 #endif
-   let respond = \response -> do
-         y <- trace (show $ typeOf response) $ respond' response
-         updateCache cachedRequestsResponses re y
-         trace (show $ typeOf y) $ return y
+   let
+       respond = \response -> do
+         --y <- trace (show $ typeOf response) $ respond' response
+         requestKey <- convertRequestToMapKey re
+         updateCache requestKey response cachedRequestsResponses--y
+         trace ("Print some debug stuff:\n" ++ (show $ typeOf response) ++ "\n" ++ show requestKey ++ "\n" ) $ respond' response --return $ respond' response
        rhost = shows (remoteHost re) "\n"
        ip = getIP4 rhost
        white = matchWhite ip wl
@@ -274,6 +276,7 @@ hetsServer' opts1 = do
    if not white || black then respond $ mkResponse "" status403 ""
     -- if path could be a RESTful request, try to parse it
     else do
+     
      eith <- liftIO $ getArgFlags splitQuery
      case eith of
        Left err -> queryFail err respond
@@ -287,14 +290,18 @@ hetsServer' opts1 = do
                    responseString <- processGraphQL newOpts sessRef re
                    respond $ mkOkResponse "application/json" responseString
               else if isRESTful pathBits then do
+              requestKey <- convertRequestToMapKey re
               requestBodyBS <- strictRequestBody re
               requestBodyParams <- parseRequestParams re requestBodyBS
               let unknown = filter (`notElem` allQueryKeys) $ map fst qr2
+              cacheEntry <- lookupCache requestKey cachedRequestsResponses
               if null unknown
               then
-                parseRESTful newOpts sessRef pathBits
-                  (map fst fs2 ++ map (\ (a, b) -> a ++ "=" ++ b) vs)
-                  qr2 requestBodyBS requestBodyParams meth tempDir respond
+                -- return cache if request was made in the past
+                --Map.lookup
+                case cacheEntry of
+                  Nothing -> do parseRESTful newOpts sessRef pathBits (map fst fs2 ++ map (\ (a, b) -> a ++ "=" ++ b) vs) qr2 requestBodyBS requestBodyParams meth tempDir respond
+                  Just cacheResponse -> trace "Responding from cache..." $ respond cacheResponse
               else queryFail ("unknown query key(s): " ++ show unknown) respond
            -- only otherwise stick to the old response methods
            else oldWebApi newOpts tempLib sessRef re pathBits qr2
@@ -438,12 +445,25 @@ allQueryKeys :: [String]
 allQueryKeys = [updateS, "library", "consistency-checker", "overwrite"]
   ++ globalCommands ++ knownQueryKeys
 
-updateCache :: IORef ((Map.Map Request ResponseReceived)) -> Request
- -> ResponseReceived -> IO ()
-updateCache cacheRef request response = do
+updateCache :: RequestMapKey -> Response -> IORef ((Map.Map RequestMapKey Response))
+  -> IO ()
+updateCache requestKey response cacheRef= do
   cachedRequestsResponsesMap <- readIORef cacheRef
-  let cacheMap = Map.insert request response cachedRequestsResponsesMap
+  let cacheMap = Map.insert requestKey response cachedRequestsResponsesMap
   writeIORef cacheRef cacheMap
+
+lookupCache :: RequestMapKey -> IORef ((Map.Map RequestMapKey Response)) -> IO (Maybe Response)
+lookupCache cacheKey cacheRef = do
+  cachedRequestsResponsesMap <- readIORef cacheRef
+  return $ Map.lookup cacheKey cachedRequestsResponsesMap
+
+
+-- TODO This has to happen earlier in code because of the RequestBody!
+-- TODO RequestBody seems to be always empty
+convertRequestToMapKey :: Request -> IO RequestMapKey
+convertRequestToMapKey request = do
+  reBody<- requestBody request
+  return $ RequestMapKey (requestMethod request) (pathInfo request) reBody
 
 data RequestBodyParam = Single String | List [String]
 
