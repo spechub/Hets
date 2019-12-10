@@ -38,7 +38,7 @@ updateCache :: RequestMapKey -> Response -> IORef ((Map.Map RequestMapKey Respon
 updateCache requestKey response cacheRef= do
   cachedRequestsResponsesMap <- readIORef cacheRef
   let cacheMap = Map.insert requestKey response cachedRequestsResponsesMap
-  writeIORef cacheRef cacheMap
+  atomicWriteIORef cacheRef cacheMap
 
 -- | Checks the request cache for a request that could already be cached.
 -- Returns the cached response or Nothing if the request is not cached.

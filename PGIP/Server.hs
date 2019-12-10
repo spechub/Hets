@@ -291,7 +291,7 @@ hetsServer' opts1 = do
               let unknown = filter (`notElem` allQueryKeys) $ map fst qr2
 
               -- store the requestBody because the original one in the request is consumed
-              writeIORef currentRequestBodyBS requestBodyBS
+              atomicWriteIORef currentRequestBodyBS requestBodyBS
               requestKey <- convertRequestToMapKey re requestBodyBS
               cacheLookupResult <- lookupCache requestKey cachedRequestsResponses
               -- check if cache should be used
