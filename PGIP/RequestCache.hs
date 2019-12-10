@@ -28,21 +28,30 @@ data RequestMapKey = RequestMapKey {
   }
   deriving (Show, Ord, Eq)
 
+type RequestCacheMap = Map.Map RequestMapKey Response
+
 -- | Returns a new request cache.
-createNewRequestCache :: IO (IORef (Map.Map RequestMapKey Response))
+createNewRequestCache :: IO (IORef (RequestCacheMap))
 createNewRequestCache =
-  newIORef (Map.empty :: Map.Map RequestMapKey Response)
+  newIORef (Map.empty :: RequestCacheMap)
+
+-- | Update the request cache by first building the key and then perform the update
+updateCache :: IORef (BS.ByteString) -> Request -> Response -> IORef ((RequestCacheMap)) -> IO ()
+updateCache requestBodyRef request response cacheMap = do
+  requestBodyBS <- readIORef requestBodyRef
+  requestKey <- convertRequestToMapKey request requestBodyBS
+  updateCacheWithKey requestKey response cacheMap
 
 -- | Update the request cache with a new request/response pair.
-updateCache :: RequestMapKey -> Response -> IORef ((Map.Map RequestMapKey Response)) -> IO ()
-updateCache requestKey response cacheRef= do
+updateCacheWithKey :: RequestMapKey -> Response -> IORef ((RequestCacheMap)) -> IO ()
+updateCacheWithKey requestKey response cacheRef= do
   cachedRequestsResponsesMap <- readIORef cacheRef
   let cacheMap = Map.insert requestKey response cachedRequestsResponsesMap
   atomicWriteIORef cacheRef cacheMap
 
 -- | Checks the request cache for a request that could already be cached.
 -- Returns the cached response or Nothing if the request is not cached.
-lookupCache :: RequestMapKey -> IORef ((Map.Map RequestMapKey Response)) -> IO (Maybe Response)
+lookupCache :: RequestMapKey -> IORef ((RequestCacheMap)) -> IO (Maybe Response)
 lookupCache cacheKey cacheRef = do
   cachedRequestsResponsesMap <- readIORef cacheRef
   return $ Map.lookup cacheKey cachedRequestsResponsesMap

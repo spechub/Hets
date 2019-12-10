@@ -244,10 +244,7 @@ hetsServer' opts1 = do
        respond = \response -> do
           -- Before updating cache check if request was successful
           if statusCode (responseStatus response) == 200 then do
-            -- Update cache with new response
-            requestBodyBS <- readIORef currentRequestBodyBS
-            requestKey <- convertRequestToMapKey re requestBodyBS
-            updateCache requestKey response cachedRequestsResponses
+            updateCache currentRequestBodyBS re response cachedRequestsResponses
             respond' response
           else respond' response
        rhost = shows (remoteHost re) "\n"
