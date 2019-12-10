@@ -12,10 +12,6 @@ Portability :  non-portable (via imports)
 
 module PGIP.Server (hetsServer) where
 
--- TODO: Remove before merge
-import Debug.Trace
-import Data.Typeable
-
 import PGIP.Output.Formatting
 import PGIP.Output.Mime
 import PGIP.Output.Proof
@@ -26,6 +22,7 @@ import PGIP.GraphQL
 
 import PGIP.ReasoningParameters as ReasoningParameters
 import PGIP.Query as Query
+import PGIP.RequestCache
 import PGIP.Server.WebAssets
 import PGIP.Shared
 import qualified PGIP.Server.Examples as Examples
@@ -220,8 +217,12 @@ hetsServer' opts1 = do
       bl = blacklist opts1
       prList ll = intercalate ", " $ map (intercalate ".") ll
   createDirectoryIfMissing False tempLib
+
   -- create a mutable Cache that saves all Requests/Responses
-  cachedRequestsResponses <- newIORef (Map.empty :: Map.Map RequestMapKey Response)
+  cachedRequestsResponses <- createNewRequestCache
+  -- store the current requestBody bytestring
+  currentRequestBodyBS <- newIORef (BS.empty)
+
   writeFile logFile ""
   unless (null wl) . appendFile logFile
     $ "white list: " ++ prList wl ++ "\n"
@@ -241,10 +242,14 @@ hetsServer' opts1 = do
 #endif
    let
        respond = \response -> do
-         --y <- trace (show $ typeOf response) $ respond' response
-         requestKey <- convertRequestToMapKey re
-         updateCache requestKey response cachedRequestsResponses--y
-         trace ("Print some debug stuff:\n" ++ (show $ typeOf response) ++ "\n" ++ show requestKey ++ "\n" ) $ respond' response --return $ respond' response
+          -- Before updating cache check if request was successful
+          if statusCode (responseStatus response) == 200 then do
+            -- Update cache with new response
+            requestBodyBS <- readIORef currentRequestBodyBS
+            requestKey <- convertRequestToMapKey re requestBodyBS
+            updateCache requestKey response cachedRequestsResponses
+            respond' response
+          else respond' response
        rhost = shows (remoteHost re) "\n"
        ip = getIP4 rhost
        white = matchWhite ip wl
@@ -255,14 +260,6 @@ hetsServer' opts1 = do
        meth = B8.unpack (requestMethod re)
        query = showPathQuery pathBits splitQuery
    liftIO $ do
-     -- TODO: remove this later!
-     {-
-     cachedRequestsResponsesMap <- readIORef cachedRequestsResponses
-     myRandomNumber <- randomRIO (1000,9999) :: IO Int
-     let cacheMap = Map.insert myRandomNumber (show myRandomNumber) cachedRequestsResponsesMap
-     putStrLn $ show cacheMap
-     writeIORef cachedRequestsResponses cacheMap
-     -}
      time <- getCurrentTime
      createDirectoryIfMissing False tempLib
      (m, _) <- readIORef sessRef
@@ -276,7 +273,6 @@ hetsServer' opts1 = do
    if not white || black then respond $ mkResponse "" status403 ""
     -- if path could be a RESTful request, try to parse it
     else do
-     
      eith <- liftIO $ getArgFlags splitQuery
      case eith of
        Left err -> queryFail err respond
@@ -290,18 +286,29 @@ hetsServer' opts1 = do
                    responseString <- processGraphQL newOpts sessRef re
                    respond $ mkOkResponse "application/json" responseString
               else if isRESTful pathBits then do
-              requestKey <- convertRequestToMapKey re
               requestBodyBS <- strictRequestBody re
               requestBodyParams <- parseRequestParams re requestBodyBS
               let unknown = filter (`notElem` allQueryKeys) $ map fst qr2
-              cacheEntry <- lookupCache requestKey cachedRequestsResponses
+
+              -- store the requestBody because the original one in the request is consumed
+              writeIORef currentRequestBodyBS requestBodyBS
+              requestKey <- convertRequestToMapKey re requestBodyBS
+              cacheLookupResult <- lookupCache requestKey cachedRequestsResponses
+              -- check if cache should be used
+              let cacheEntry = if (elem ("useCache", Just "true") qr2)
+                               then cacheLookupResult
+                               else Nothing
               if null unknown
               then
-                -- return cache if request was made in the past
-                --Map.lookup
+                -- return cache if request is already cached and should be used
                 case cacheEntry of
-                  Nothing -> do parseRESTful newOpts sessRef pathBits (map fst fs2 ++ map (\ (a, b) -> a ++ "=" ++ b) vs) qr2 requestBodyBS requestBodyParams meth tempDir respond
-                  Just cacheResponse -> trace "Responding from cache..." $ respond cacheResponse
+                  Nothing -> do
+                    parseRESTful newOpts sessRef pathBits
+                      (map fst fs2 ++ map (\ (a, b) -> a ++ "=" ++ b) vs) qr2
+                      requestBodyBS requestBodyParams meth tempDir respond
+                  Just cacheResponse ->
+                    -- Return directly cached response without updating the cache
+                    respond' cacheResponse
               else queryFail ("unknown query key(s): " ++ show unknown) respond
            -- only otherwise stick to the old response methods
            else oldWebApi newOpts tempLib sessRef re pathBits qr2
@@ -442,28 +449,8 @@ queryFail :: String -> WebResponse
 queryFail msg respond = respond $ mkResponse textC status400 msg
 
 allQueryKeys :: [String]
-allQueryKeys = [updateS, "library", "consistency-checker", "overwrite"]
-  ++ globalCommands ++ knownQueryKeys
-
-updateCache :: RequestMapKey -> Response -> IORef ((Map.Map RequestMapKey Response))
-  -> IO ()
-updateCache requestKey response cacheRef= do
-  cachedRequestsResponsesMap <- readIORef cacheRef
-  let cacheMap = Map.insert requestKey response cachedRequestsResponsesMap
-  writeIORef cacheRef cacheMap
-
-lookupCache :: RequestMapKey -> IORef ((Map.Map RequestMapKey Response)) -> IO (Maybe Response)
-lookupCache cacheKey cacheRef = do
-  cachedRequestsResponsesMap <- readIORef cacheRef
-  return $ Map.lookup cacheKey cachedRequestsResponsesMap
-
-
--- TODO This has to happen earlier in code because of the RequestBody!
--- TODO RequestBody seems to be always empty
-convertRequestToMapKey :: Request -> IO RequestMapKey
-convertRequestToMapKey request = do
-  reBody<- requestBody request
-  return $ RequestMapKey (requestMethod request) (pathInfo request) reBody
+allQueryKeys = [updateS, "library", "consistency-checker", "overwrite",
+  "useCache"] ++ globalCommands ++ knownQueryKeys
 
 data RequestBodyParam = Single String | List [String]
 
