@@ -22,6 +22,7 @@ import PGIP.GraphQL
 
 import PGIP.ReasoningParameters as ReasoningParameters
 import PGIP.Query as Query
+import PGIP.RequestCache
 import PGIP.Server.WebAssets
 import PGIP.Shared
 import qualified PGIP.Server.Examples as Examples
@@ -216,6 +217,12 @@ hetsServer' opts1 = do
       bl = blacklist opts1
       prList ll = intercalate ", " $ map (intercalate ".") ll
   createDirectoryIfMissing False tempLib
+
+  -- create a mutable Cache that saves all Requests/Responses
+  cachedRequestsResponses <- createNewRequestCache
+  -- store the current requestBody bytestring
+  currentRequestBodyBS <- newIORef (BS.empty)
+
   writeFile logFile ""
   unless (null wl) . appendFile logFile
     $ "white list: " ++ prList wl ++ "\n"
@@ -228,12 +235,19 @@ hetsServer' opts1 = do
   runSettings (setOnExceptionResponse catchException $
                setPort port $
                setTimeout 86400 defaultSettings)
-    $ \ re respond -> do
+    $ \ re respond' -> do
 #else
   run port $ \ re -> do
-   let respond = liftIO . return
+   let respond' = liftIO . return
 #endif
-   let rhost = shows (remoteHost re) "\n"
+   let
+       respond = \response -> do
+          -- Before updating cache check if request was successful
+          if statusCode (responseStatus response) == 200 then do
+            updateCache currentRequestBodyBS re response cachedRequestsResponses
+            respond' response
+          else respond' response
+       rhost = shows (remoteHost re) "\n"
        ip = getIP4 rhost
        white = matchWhite ip wl
        black = any (matchIP4 ip) bl
@@ -272,11 +286,26 @@ hetsServer' opts1 = do
               requestBodyBS <- strictRequestBody re
               requestBodyParams <- parseRequestParams re requestBodyBS
               let unknown = filter (`notElem` allQueryKeys) $ map fst qr2
+
+              -- store the requestBody because the original one in the request is consumed
+              atomicWriteIORef currentRequestBodyBS requestBodyBS
+              requestKey <- convertRequestToMapKey re requestBodyBS
+              cacheLookupResult <- lookupCache requestKey cachedRequestsResponses
+              -- check if cache should be used
+              let cacheEntry = if (elem ("useCache", Just "true") qr2)
+                               then cacheLookupResult
+                               else Nothing
               if null unknown
               then
-                parseRESTful newOpts sessRef pathBits
-                  (map fst fs2 ++ map (\ (a, b) -> a ++ "=" ++ b) vs)
-                  qr2 requestBodyBS requestBodyParams meth tempDir respond
+                -- return cache if request is already cached and should be used
+                case cacheEntry of
+                  Nothing -> do
+                    parseRESTful newOpts sessRef pathBits
+                      (map fst fs2 ++ map (\ (a, b) -> a ++ "=" ++ b) vs) qr2
+                      requestBodyBS requestBodyParams meth tempDir respond
+                  Just cacheResponse ->
+                    -- Return directly cached response without updating the cache
+                    respond' cacheResponse
               else queryFail ("unknown query key(s): " ++ show unknown) respond
            -- only otherwise stick to the old response methods
            else oldWebApi newOpts tempLib sessRef re pathBits qr2
@@ -417,9 +446,8 @@ queryFail :: String -> WebResponse
 queryFail msg respond = respond $ mkResponse textC status400 msg
 
 allQueryKeys :: [String]
-allQueryKeys = [updateS, "library", "consistency-checker", "overwrite"]
-  ++ globalCommands ++ knownQueryKeys
-
+allQueryKeys = [updateS, "library", "consistency-checker", "overwrite",
+  "useCache"] ++ globalCommands ++ knownQueryKeys
 
 data RequestBodyParam = Single String | List [String]
 
