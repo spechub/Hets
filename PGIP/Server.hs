@@ -135,6 +135,8 @@ import System.Posix.Temp
 
 data UsedAPI = OldWebAPI | RESTfulAPI deriving (Show, Eq, Ord)
 
+type LibEnvCache = Map.Map LibName (LibName, LibEnv)
+
 randomKey :: IO Int
 randomKey = randomRIO (100000000, 999999999)
 
@@ -223,6 +225,9 @@ hetsServer' opts1 = do
   -- store the current requestBody bytestring
   currentRequestBodyBS <- newIORef (BS.empty)
 
+  -- create a mutable cache that saves all LibEnvs with LibName as a key
+  cachedLibEnvs <- newIORef (Map.empty :: LibEnvCache)
+
   writeFile logFile ""
   unless (null wl) . appendFile logFile
     $ "white list: " ++ prList wl ++ "\n"
@@ -302,7 +307,7 @@ hetsServer' opts1 = do
                   Nothing -> do
                     parseRESTful newOpts sessRef pathBits
                       (map fst fs2 ++ map (\ (a, b) -> a ++ "=" ++ b) vs) qr2
-                      requestBodyBS requestBodyParams meth tempDir respond
+                      requestBodyBS requestBodyParams meth tempDir cachedLibEnvs respond
                   Just cacheResponse ->
                     -- Return directly cached response without updating the cache
                     respond' cacheResponse
@@ -362,7 +367,7 @@ oldWebApi opts tempLib sessRef re pathBits splitQuery meth respond =
                  $ case readMaybe $ head pathBits of
                  Nothing -> fail "cannot read session id for automatic proofs"
                  Just k' -> getHetsResult opts [] sessRef (qr k')
-                              Nothing OldWebAPI proofFormatterOptions
+                              Nothing OldWebAPI proofFormatterOptions Nothing
                respond $ case ms of
                  Nothing -> mkResponse textC status422 $ showRelDiags 1 ds
                  Just (t, s) -> mkOkResponse t s
@@ -453,10 +458,10 @@ data RequestBodyParam = Single String | List [String]
 
 -- query is analysed and processed in accordance with RESTful interface
 parseRESTful :: HetcatsOpts -> Cache -> [String] -> [String] -> [QueryPair]
-  -> BS.ByteString -> Json -> String -> FilePath -> WebResponse
+  -> BS.ByteString -> Json -> String -> FilePath -> IORef LibEnvCache -> WebResponse
 parseRESTful
   opts sessRef pathBits qOpts splitQuery requestBodyBS requestBodyParams meth
-  tempDir respond = let
+  tempDir libEnvCache respond = let
   {- some parameters from the paths query part might be needed more than once
   (when using lookup upon querybits, you need to unpack Maybe twice) -}
   lookupQueryStringParam :: String -> Maybe String
@@ -507,7 +512,7 @@ parseRESTful
   getResponseAux myOpts qr = do
     let format' = Just $ fromMaybe "xml" format_
     Result ds ms <- liftIO $ runResultT $
-      getHetsResult myOpts [] sessRef qr format' RESTfulAPI pfOptions
+      getHetsResult myOpts [] sessRef qr format' RESTfulAPI pfOptions (Just libEnvCache)
     respond $ case ms of
       Nothing -> mkResponse textC status422 $ showRelDiags 1 ds
       Just (t, s) -> mkOkResponse t s
@@ -1118,9 +1123,9 @@ increaseUsage sessRef sess = do
   k <- lift $ addSess sessRef s2
   return (s2, k)
 
-getDGraph :: HetcatsOpts -> Cache -> DGQuery
+getDGraph :: HetcatsOpts -> Cache -> DGQuery -> Maybe (IORef LibEnvCache)
   -> ResultT IO (Session, Int)
-getDGraph opts sessRef dgQ = do
+getDGraph opts sessRef dgQ libEnvCache = do
   (m, lm) <- lift $ readIORef sessRef
   case dgQ of
     NewDGQuery file cmdList -> do
@@ -1137,7 +1142,7 @@ getDGraph opts sessRef dgQ = do
             Nothing -> do
               (ln, le1) <- if isDgXmlFile opts f cont
                 then readDGXmlR opts f Map.empty
-                else anaSourceFile logicGraph opts
+                else anaSourceFile libEnvCache logicGraph opts
                   { outputToStdout = False }
                   Set.empty emptyLibEnv emptyDG file
               le2 <- foldM (\ e c -> liftR
@@ -1224,20 +1229,20 @@ getHetsResponse opts updates sessRef pathBits query respond = do
     $ updateS : globalCommands of
     Left err -> fail err
     Right q -> getHetsResult opts updates sessRef q Nothing OldWebAPI
-                  proofFormatterOptions
+                  proofFormatterOptions Nothing
   respond $ case ms of
     Just (t, s) | not $ hasErrors ds -> mkOkResponse t s
     _ -> mkResponse textC status422 $ showRelDiags 1 ds
 
 getHetsResult :: HetcatsOpts -> [W.FileInfo BS.ByteString]
-  -> Cache -> Query.Query -> Maybe String -> UsedAPI -> ProofFormatterOptions
+  -> Cache -> Query.Query -> Maybe String -> UsedAPI -> ProofFormatterOptions -> Maybe (IORef LibEnvCache)
   -> ResultT IO (String, String)
-getHetsResult opts updates sessRef (Query dgQ qk) format_ api pfOptions = do
+getHetsResult opts updates sessRef (Query dgQ qk) format_ api pfOptions libEnvCache = do
       let semicolon n = map (\ c -> if c == ':' then ';' else c) n
       let getCom n = case lookupComorphism (semicolon n) logicGraph of
                          Just c -> c
                          Nothing -> error $ "comorphism not found: " ++ n
-      sk@(sess', k) <- getDGraph opts sessRef dgQ
+      sk@(sess', k) <- getDGraph opts sessRef dgQ libEnvCache
       sess <- lift $ makeSessCleanable sess' sessRef k
       let libEnv = sessLibEnv sess
       (ln, dg) <- maybe (fail "unknown development graph") return

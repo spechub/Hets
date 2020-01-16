@@ -63,6 +63,7 @@ import Driver.WriteLibDefn
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Either (lefts, rights)
+import Data.IORef
 import Data.List
 import Data.Maybe
 
@@ -78,19 +79,42 @@ import Framework.Analysis
 import MMT.Hets2mmt (mmtRes)
 import Proofs.ComputeColimit
 
+import Debug.Trace
+import Data.Typeable
+
 -- a set of library names to check for cyclic imports
 type LNS = Set.Set LibName
 
+type LibEnvCache = Map.Map LibName (LibName, LibEnv)
+
 {- | parsing and static analysis for files
 Parameters: logic graph, default logic, file name -}
-anaSourceFile :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph
+anaSourceFile :: Maybe (IORef LibEnvCache) -> LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph
   -> FilePath -> ResultT IO (LibName, LibEnv)
-anaSourceFile = anaSource Nothing
+anaSourceFile libEnvCache lg opts topLns libenv initDG origName = do
+  --let pln = case analysis opts of
+  --           Skip -> [last libdefns]
+  --            _ -> libdefns
+  res <- case libEnvCache of
+              Nothing -> trace ("Libenv is (map ist nothing)") $ anaSource Nothing lg opts topLns libenv initDG origName
+              Just libEnvCacheIORef -> do
+                libEnvCacheMap <- readIORef libEnvCacheIORef
+                --Map.lookup cacheKey libEnvCacheMap
+                trace ("Libenv is (map ist something)") $ return $ anaSource Nothing lg opts topLns libenv initDG origName
+  --res <- trace ("Libenv is: " ++ show d) $ anaSource Nothing a b c d e f
+  --ln = setMimeType mt $ if emptyFilePath 
+  --                      then setFilePath posFileName
+  --                          $ if noLibName 
+  --                            then fromMaybe (emptyLibName spN) mln 
+  --                            else pln
+  --                      else pln
+  trace ("res ist: " ++ show res) $ return res
 
 anaSource :: Maybe LibName -- ^ suggested library name
   -> LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph
   -> FilePath -> ResultT IO (LibName, LibEnv)
 anaSource mln lg opts topLns libenv initDG origName = ResultT $ do
+  traceIO ("filepath is: " ++ show origName ++ "\nmln is: " ++ show mln)
   let mName = useCatalogURL opts origName
       fname = tryToStripPrefix "file://" mName
       syn = case defSyntax opts of
@@ -98,9 +122,11 @@ anaSource mln lg opts topLns libenv initDG origName = ResultT $ do
         s -> Just $ simpleIdToIRI $ mkSimpleId s
       lgraph = setSyntax syn $ setCurLogic (defLogic opts) lg
   fname' <- getContentAndFileType opts fname
+  --traceIO ("fname' is: " ++ show fname')
   dir <- getCurrentDirectory
   case fname' of
     Left err -> return $ fail err
+    -- hier ist der Mimetype in mr
     Right (mr, _, file, inputLit) ->
         if any (`isSuffixOf` file) [envSuffix, prfSuffix] then
           return . fail $ "no matching source file for '" ++ fname ++ "' found."
@@ -113,7 +139,7 @@ anaSource mln lg opts topLns libenv initDG origName = ResultT $ do
               Nothing | useLibPos opts && not (checkUri fname) ->
                 Just $ emptyLibName libStr
               _ -> mln
-        fn2 = keepOrigClifName opts origName file
+        fn2 = trace ("nLn is: " ++ show nLn) $ keepOrigClifName opts origName file
         fnAbs = if isAbsolute fn2 then fn2 else dir </> fn2
         url = if checkUri fn2 then fn2 else "file://" ++ fnAbs
         in
@@ -172,10 +198,10 @@ anaStringAux mln lgraph opts topLns initDG mt file posFileName (_, libenv)
                              gn as qs) rs [] []]
         _ -> is
       emptyFilePath = null $ getFilePath pln
-      ln = setMimeType mt $ if emptyFilePath then setFilePath posFileName
+      ln = trace ("emptyfilepath is: " ++ show emptyFilePath) $ setMimeType mt $ if emptyFilePath then setFilePath posFileName
             $ if noLibName then fromMaybe (emptyLibName spN) mln else pln
            else pln
-      ast = Lib_defn ln nIs ps ans
+      ast = trace ("ln is: " ++ show ln) $ Lib_defn ln nIs ps ans
   case analysis opts of
       Skip -> do
           lift $ putIfVerbose opts 1 $
@@ -200,7 +226,7 @@ anaStringAux mln lgraph opts topLns initDG mt file posFileName (_, libenv)
                   writeLibDefn lgraph ga file opts ld
                   when (hasEnvOut opts)
                         (writeFileInfo opts lnFinal file ld dg)
-                  return (lnFinal, lenv)
+                  trace ("lnFinal is: " ++ show lnFinal ++ "\nlenv is: " ++ show lenv) $ return (lnFinal, lenv)
 
 -- lookup or read a library
 anaLibFile :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph -> LibName
