@@ -133,9 +133,11 @@ import System.Posix.Process (getProcessID)
 import System.Posix.Signals
 import System.Posix.Temp
 
+import Debug.Trace
+
 data UsedAPI = OldWebAPI | RESTfulAPI deriving (Show, Eq, Ord)
 
-type LibEnvCache = Map.Map LibName (LibName, LibEnv)
+type LibEnvCache = Map.Map FilePath (LibName, LibEnv)
 
 randomKey :: IO Int
 randomKey = randomRIO (100000000, 999999999)
@@ -512,7 +514,7 @@ parseRESTful
   getResponseAux myOpts qr = do
     let format' = Just $ fromMaybe "xml" format_
     Result ds ms <- liftIO $ runResultT $
-      getHetsResult myOpts [] sessRef qr format' RESTfulAPI pfOptions (Just libEnvCache)
+      trace "Running getHetsResult" $ getHetsResult myOpts [] sessRef qr format' RESTfulAPI pfOptions (Just libEnvCache)
     respond $ case ms of
       Nothing -> mkResponse textC status422 $ showRelDiags 1 ds
       Just (t, s) -> mkOkResponse t s
@@ -1126,6 +1128,7 @@ increaseUsage sessRef sess = do
 getDGraph :: HetcatsOpts -> Cache -> DGQuery -> Maybe (IORef LibEnvCache)
   -> ResultT IO (Session, Int)
 getDGraph opts sessRef dgQ libEnvCache = do
+  liftIO $ traceIO "running something in getDGraph"
   (m, lm) <- lift $ readIORef sessRef
   case dgQ of
     NewDGQuery file cmdList -> do
@@ -1138,9 +1141,9 @@ getDGraph opts sessRef dgQ libEnvCache = do
           Nothing -> fail $ "could determine checksum for: " ++ file
           Just h -> let q = file : h : cmdList in
             case Map.lookup q lm of
-            Just sess -> increaseUsage sessRef sess
+            Just sess -> trace "increasing something..." $ increaseUsage sessRef sess
             Nothing -> do
-              (ln, le1) <- if isDgXmlFile opts f cont
+              (ln, le1) <- if trace "checking this thing here... " $ isDgXmlFile opts f cont
                 then readDGXmlR opts f Map.empty
                 else anaSourceFile libEnvCache logicGraph opts
                   { outputToStdout = False }
@@ -1242,7 +1245,9 @@ getHetsResult opts updates sessRef (Query dgQ qk) format_ api pfOptions libEnvCa
       let getCom n = case lookupComorphism (semicolon n) logicGraph of
                          Just c -> c
                          Nothing -> error $ "comorphism not found: " ++ n
+      liftIO $ (traceIO "running something here 1")
       sk@(sess', k) <- getDGraph opts sessRef dgQ libEnvCache
+      liftIO $ (traceIO "running something here 1")
       sess <- lift $ makeSessCleanable sess' sessRef k
       let libEnv = sessLibEnv sess
       (ln, dg) <- maybe (fail "unknown development graph") return

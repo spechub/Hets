@@ -85,22 +85,33 @@ import Data.Typeable
 -- a set of library names to check for cyclic imports
 type LNS = Set.Set LibName
 
-type LibEnvCache = Map.Map LibName (LibName, LibEnv)
+type LibEnvCache = Map.Map FilePath (LibName, LibEnv)
 
 {- | parsing and static analysis for files
 Parameters: logic graph, default logic, file name -}
 anaSourceFile :: Maybe (IORef LibEnvCache) -> LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph
   -> FilePath -> ResultT IO (LibName, LibEnv)
-anaSourceFile libEnvCache lg opts topLns libenv initDG origName = do
-  --let pln = case analysis opts of
-  --           Skip -> [last libdefns]
-  --            _ -> libdefns
-  res <- case libEnvCache of
-              Nothing -> trace ("Libenv is (map ist nothing)") $ anaSource Nothing lg opts topLns libenv initDG origName
-              Just libEnvCacheIORef -> do
-                libEnvCacheMap <- readIORef libEnvCacheIORef
-                --Map.lookup cacheKey libEnvCacheMap
-                trace ("Libenv is (map ist something)") $ return $ anaSource Nothing lg opts topLns libenv initDG origName
+anaSourceFile libEnvCache lg opts topLns libenv initDG origName =
+  --res <- case libEnvCache of
+  case libEnvCache of
+    Nothing -> trace ("Libenv is (map ist nothing)") $ anaSource Nothing lg opts topLns libenv initDG origName
+    Just libEnvCacheIORef -> do
+        libEnvCacheMap <- liftIO $ readIORef libEnvCacheIORef
+        let lookupCacheResult = Map.lookup origName libEnvCacheMap
+        --Map.lookup cacheKey libEnvCacheMap
+        --trace ("Libenv is (map ist something) ++ \nAnd the type of libEnvCacheMap is: " ++ (show (typeOf libEnvCacheMap))) $ anaSource Nothing lg opts topLns libenv initDG origName
+        case lookupCacheResult of
+          Nothing -> do
+            --liftIO (putStrLn "hi");
+            res <- trace "no entry in cache found..." $ anaSource Nothing lg opts topLns libenv initDG origName
+            let cacheMap = Map.insert origName res libEnvCacheMap
+            trace "updating cache with new result..." $ liftIO $ atomicWriteIORef libEnvCacheIORef cacheMap
+            return res
+          Just cacheEntry -> do
+            liftIO (traceIO "IM DOING SOMETHING REALLY IMPORTANT")
+            trace "using cache entry..." $ return cacheEntry
+        --res <- trace ("Libenv is (map ist something)") $ anaSource Nothing lg opts topLns libenv initDG origName
+        --return res
   --res <- trace ("Libenv is: " ++ show d) $ anaSource Nothing a b c d e f
   --ln = setMimeType mt $ if emptyFilePath 
   --                      then setFilePath posFileName
@@ -108,7 +119,7 @@ anaSourceFile libEnvCache lg opts topLns libenv initDG origName = do
   --                            then fromMaybe (emptyLibName spN) mln 
   --                            else pln
   --                      else pln
-  trace ("res ist: " ++ show res) $ return res
+  --trace ("type von res ist: " ++ show (typeOf res)) $ return res
 
 anaSource :: Maybe LibName -- ^ suggested library name
   -> LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph
