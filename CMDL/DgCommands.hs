@@ -241,7 +241,7 @@ cExpand input state = let iState = intState state in case i_state iState of
         libenv = i_libEnv ist
         dg = lookupDGraph ln libenv
     Result ds mres <- runResultT
-      $ anaSourceFile Nothing lg opts Set.empty libenv dg fname
+      $ anaSourceFile lg opts Set.empty libenv dg fname
     return $ case mres of
       Nothing -> genMsgAndCode
         ("Analysis failed:\n" ++ showRelDiags (verbose opts) ds) 1 state

@@ -41,7 +41,7 @@ import Comorphisms.LogicGraph
 
 
 proceed' :: HetcatsOpts -> FilePath -> ResultT IO (LibName, LibEnv)
-proceed' hopts = anaSourceFile Nothing logicGraph hopts Set.empty emptyLibEnv emptyDG
+proceed' hopts = anaSourceFile logicGraph hopts Set.empty emptyLibEnv emptyDG
 
 data SigSens sign sentence =
     SigSens
