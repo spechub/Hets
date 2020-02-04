@@ -33,6 +33,8 @@ type ProofResult = (String, String, String, ProverOrConsChecker,
                     Maybe String)
                 -- ConsistencyChecker output
 
+-- | This data type represents a session of a specific analysis library.
+-- | It is first created when a library is accessed for the first time.
 data Session = Session
   { sessLibEnv :: LibEnv
   , sessLibName :: LibName
@@ -44,6 +46,8 @@ data Session = Session
   , sessCleanable :: Bool } deriving (Show)
 
 type SessMap = Map.Map [String] Session
+
+-- | In this IORef a cache of all accessed libraries is saved
 type Cache = IORef (IntMap.IntMap Session, SessMap)
 
 parseJson :: String -> Maybe Json
