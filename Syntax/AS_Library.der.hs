@@ -36,7 +36,7 @@ import Syntax.AS_Structured
 import Framework.AS
 import Framework.ATC_Framework ()
 
-import Debug.Trace
+-- import Debug.Trace
 
 data LIB_DEFN = Lib_defn LibName [Annoted LIB_ITEM] Range [Annotation]
                 {- pos: "library"
@@ -117,7 +117,7 @@ addDownloadAux unique j =
     (if unique then UniqueItem i else ItemMaps [ItemNameMap i Nothing])
     $ iriPos i
 
-data PatternParam = OntoParam Bool (Annoted SPEC) | ListParam OntoList 
+data PatternParam = OntoParam Bool (Annoted SPEC) | ListParam OntoList
   deriving (Show, Typeable)
  -- the bool flag is true for optional parameters
 
@@ -207,7 +207,8 @@ getOms o = case o of
   MkNetwork _ -> []
 
 getSpecDef :: LIB_ITEM -> [SPEC]
-getSpecDef li = trace ("li:" ++ show li) $ case li of
+getSpecDef li = -- trace ("li:" ++ show li) $ 
+ case li of
   Spec_defn _ _ as _ -> [item as]
   View_defn _ _ (View_type s1 s2 _) _ _ -> [item s1, item s2]
   Entail_defn _ (Entail_type s1 s2 _) _ -> getOms s1 ++ getOms s2

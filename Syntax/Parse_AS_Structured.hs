@@ -55,7 +55,7 @@ import Data.Char
 import Data.Maybe
 import Control.Monad
 
-import Debug.Trace
+-- import Debug.Trace
 
 expandCurieM :: LogicGraph -> IRI -> GenParser Char st IRI
 expandCurieM lG i =
@@ -536,7 +536,8 @@ groupSpecAux withImport l flag = do
     case mf of
      Nothing -> return $ UnsolvedName n nullRange
      Just ((f, mi), ps) -> let inst =  Spec_inst n f mi ps 
-                           in trace ("inst:" ++ show inst) $ return inst
+                           in -- trace ("inst:" ++ show inst) $ 
+                              return inst
 
 fitArgsPattern :: LogicGraph -> Bool -> Bool -> AParser st (([Annoted FIT_ARG], Maybe IRI), Range)
 fitArgsPattern l flag withImport = do
@@ -567,16 +568,22 @@ fitArg l flag = do
   <|> do 
     fa <- annoParser $ fittingArg l flag
     return (fa, nullRange)
- 
+  <|> do
+    _b <- oBracketT
+    (aspecs, _) <- separatedBy (iParser l flag) commaT
+    _c <- cBracketT
+    return (Annoted (Fit_spec (Annoted (OntoList aspecs) nullRange [] []) [] nullRange) nullRange [] [], nullRange)
 
-fitString :: LogicGraph -> Bool -> AParser st FIT_ARG
-fitString l flag = do
-  let iParser = do
+iParser :: LogicGraph -> Bool -> AParser st (Annoted SPEC)
+iParser l flag = do
           i <- compoundIriCurie
           _ <- option () skip
           return $ Annoted (UnsolvedName i nullRange) nullRange [][]
         <|> aSpec l flag
-  (s, _) <- separatedBy iParser doubleColonT
+ 
+fitString :: LogicGraph -> Bool -> AParser st FIT_ARG
+fitString l flag = do
+  (s, _) <- separatedBy (iParser l flag) doubleColonT
   case s of
    [] -> error "should be caught by the other case"
    [x] -> return $ Fit_spec x [] nullRange

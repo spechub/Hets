@@ -128,7 +128,7 @@ printObjPropExp :: ObjectPropertyExpression -> Doc
 printObjPropExp obExp = case obExp of
     ObjectProp ou -> pretty ou
     ObjectInverseOf iopExp -> keyword inverseS <+> printObjPropExp iopExp
-    ObjectPropertyVar ou -> text "var" <+> pretty ou
+    ObjectPropertyVar _ ou -> text "var" <+> pretty ou
     UnsolvedObjProp ou -> text "unsolved" <+> pretty ou
 
 printFV :: (ConstrainingFacet, RestrictionValue) -> Doc

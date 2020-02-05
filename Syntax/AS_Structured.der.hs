@@ -36,7 +36,7 @@ import Logic.Grothendieck
     , setCurLogic
     , setSyntax )
 
-import Debug.Trace
+-- import Debug.Trace
 
 -- for spec-defn and view-defn see AS_Library
 
@@ -81,6 +81,8 @@ data SPEC = Basic_spec G_basic_spec Range
           | UnsolvedName IRI Range
           | NormalVariable IRI
           | ListVariable IRI
+          | ListValue [IRI]
+          | OntoList [(Annoted SPEC)]
           | EmptyList
             deriving (Show, Typeable)
 
@@ -248,5 +250,5 @@ getSpecs :: FIT_ARG -> [Annoted SPEC]
 getSpecs fa = case fa of
   Fit_spec as _ _ -> [as]
   Fit_view _ fas _ -> concatMap (getSpecs . item) fas
-  _ -> trace (show fa) []
+  _ -> [] -- trace (show fa) []
   

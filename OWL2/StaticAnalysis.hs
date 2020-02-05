@@ -586,6 +586,7 @@ corr2theo _aname flag ssig tsig l1 l2 eMap1 eMap2 rref = do
                                                  ++ showDoc l2 " "
     _ -> fail "terms not yet supported in alignments"
 
+-- solving symbols of a pattern
 
 solveSymbols :: Set.Set Entity -> PatternVarMap -> OntologyDocument -> Result OntologyDocument
 solveSymbols impSyms vMap (OntologyDocument pd (Ontology n is as fs)) = do
@@ -607,6 +608,8 @@ solveSymbols impSyms vMap (OntologyDocument pd (Ontology n is as fs)) = do
  else error $ "undeclared symbols in the body of the pattern. impSyms:" ++ show impSyms ++  
               " declSyms:" ++ show declSyms ++ " usedSyms:" ++ show usedSyms ++ 
               " varSyms:" ++ show varSyms ++ " diffSyms:" ++ show diffSyms 
+
+-- solving symbols for each frame, also keep track of declared and used symbols
    
 solveFrame :: Set.Set Entity  -> PatternVarMap -> Frame -> Result (Frame, Set.Set Entity, Set.Set Entity)
 solveFrame impSyms vMap (Frame ext fBits) = do
@@ -614,24 +617,29 @@ solveFrame impSyms vMap (Frame ext fBits) = do
           case ext of 
              Misc _ -> (ext, Set.empty) 
              ClassEntity (UnsolvedClass i) -> 
-               if i `elem` Map.keys vMap then (ClassEntity $ VarExpression $ MVar i, Set.empty)
-                else (ClassEntity $ Expression i, Set.singleton $ Entity Nothing Class i)  -- add only if not member of impSyms
-             ClassEntity _ -> error $ show ext
-             ObjectEntity oExp -> (ext, Set.empty) 
-             SimpleEntity ent -> (ext, Set.empty)
+               if i `elem` Map.keys vMap 
+                then (ClassEntity $ VarExpression $ MVar False i, Set.empty) -- TODO: handle lists
+                else if (Entity Nothing Class i) `elem` impSyms 
+                      then (ClassEntity $ Expression i, Set.empty) -- add only if not member of impSyms
+                      else (ClassEntity $ Expression i, Set.singleton $ Entity Nothing Class i)  
+             ClassEntity _ -> error $ show ext 
+             ObjectEntity (UnsolvedObjProp i) -> 
+               if i `elem` Map.keys vMap
+                then (ObjectEntity $ ObjectPropertyVar False i, Set.empty) -- TODO: handle lists
+                else if (Entity Nothing ObjectProperty i) `elem` impSyms 
+                      then (ObjectEntity $ ObjectProp i, Set.empty) -- add only if not member of impSyms
+                      else (ObjectEntity $ ObjectProp i, Set.singleton $ Entity Nothing ObjectProperty i)
+             ObjectEntity _ -> error $ show ext -- TODO: handle oexp
+             SimpleEntity ent -> (ext, Set.empty) -- TODO: when do we get this?
  (fBits', used) <- foldM (\(fbs, us) fbit -> do 
                                 (fbit', us') <- solveFrameBit impSyms vMap fbit
                                 return (fbs ++ [fbit'], Set.union us us')) ([], Set.empty) fBits
- {- | ObjectBit (AnnotatedList ObjectPropertyExpression) -- relation
-  | DataBit (AnnotatedList DataPropertyExpression) -- relation
-  | IndividualSameOrDifferent (AnnotatedList Individual) -- relation
-  | ObjectCharacteristics (AnnotatedList Character)
-  | DataPropRange (AnnotatedList DataRange)
-  | IndividualFacts (AnnotatedList Fact) -}
  return (Frame ext' fBits', decl, used)
 
+-- solve symbols for each frame bit
+
 solveFrameBit :: Set.Set Entity -> PatternVarMap -> FrameBit -> Result (FrameBit, Set.Set Entity)
-solveFrameBit impSyms vMap fbit = 
+solveFrameBit impSyms vMap fbit = trace ("fbit:" ++ show fbit) $ 
  case fbit of 
   ListFrameBit mr lft ->
     case lft of 
@@ -639,47 +647,183 @@ solveFrameBit impSyms vMap fbit =
       ExpressionBit aces -> do
        let (aces', used') = foldl (\(as, us) ace -> let (ace', us') = solveClassExpression impSyms vMap ace
                                                     in (as ++ [ace'], Set.union us us')) ([], Set.empty) aces 
-       return (ListFrameBit mr $ ExpressionBit aces', used')
-      _ -> error "nyi"
+       trace ("solved lft:" ++ show (ExpressionBit aces')) $ return (ListFrameBit mr $ ExpressionBit aces', used')
+      ObjectBit aopes -> error "nyi"
+      DataBit adpes -> error "nyi"
+      IndividualSameOrDifferent ainds -> error "nyi"
+      ObjectCharacteristics achars -> return (fbit, Set.empty)
+      IndividualFacts afacts -> error "nyi"
   AnnFrameBit annos (AnnotationFrameBit _) -> return (fbit, Set.empty)
-  _ -> error $ "nyi:" ++ show fbit
+  AnnFrameBit annos DataFunctional -> return (fbit, Set.empty)
+  AnnFrameBit annos (DatatypeBit drg) -> error "nyi"
+  AnnFrameBit annos (ClassDisjointUnion cexps) -> error "nyi"
+  AnnFrameBit annos (ClassHasKey opexps dpexps) -> error "nyi"
+  AnnFrameBit annos (ObjectSubPropertyChain opexps) -> error "nyi"
+
+-- solve class expressions
 
 solveClassExpression :: Set.Set Entity  -> PatternVarMap -> (Annotations, ClassExpression) -> ((Annotations, ClassExpression), Set.Set Entity) 
 solveClassExpression impSyms vMap (annos, cexp) = 
  let (cexp', used) = case cexp of 
-                       UnsolvedClass i -> if i `elem` Map.keys vMap then (VarExpression $ MVar i, Set.empty)
+                       UnsolvedClass i -> if i `elem` Map.keys vMap then 
+                                             let (b, _) = Map.findWithDefault (error "just checked") i vMap
+                                             in (VarExpression $ MVar b i, Set.empty)
                                           else (Expression i, Set.singleton $ Entity Nothing Class i)
-                       _ -> error "nyi"
+                       ObjectJunction j cexps -> let  (cexps', used')  = foldl (\(cs, u) c -> let ((_a, c'), u') = solveClassExpression impSyms vMap ([], c)
+                                                                                              in (cs ++ [c'], Set.union u u')) ([], Set.empty) cexps
+                                                 in (ObjectJunction j cexps', used')
+                       Expression i -> error "nyi"
+                       ObjectComplementOf cexp -> let ((_a, cexp'), u) = solveClassExpression impSyms vMap ([], cexp)
+                                                  in (ObjectComplementOf cexp', u) 
+                       VarExpression _ -> error $ "should get a class expression but instead got " ++ show cexp
+                       ObjectOneOf indivs -> error "nyi"
+                       ObjectValuesFrom q opexp cexp -> let ((_, cexp'),  u1) = solveClassExpression impSyms vMap ([], cexp)
+                                                            ((_, opexp'), u2) = solveObjPropExpression impSyms vMap ([], opexp)
+                                                        in (ObjectValuesFrom q opexp' cexp', Set.union u1 u2)
+                       ObjectHasValue opexp indiv -> error "nyi"
+                       ObjectHasSelf opexp -> let ((_, opexp'), u) = solveObjPropExpression impSyms vMap ([], opexp)
+                                              in (ObjectHasSelf opexp', u)
+                       ObjectCardinality (Cardinality cType aInt opexp mcexp) -> 
+                          let 
+                            (mcexp', u1) = 
+                              case mcexp of
+                               Nothing -> (Nothing, Set.empty)
+                               Just cexp ->   let ((_a, cexp'), u) = solveClassExpression impSyms vMap ([], cexp)
+                                              in (Just cexp', u)
+                            ((_, opexp'), u2) = solveObjPropExpression impSyms vMap ([], opexp)
+                           in ( ObjectCardinality (Cardinality cType aInt opexp' mcexp'), Set.union u1 u2)                  
+                       DataValuesFrom q dpexp drg -> error "nyi"
+                       DataHasValue dpexp lit -> error "nyi" 
+                       DataCardinality (Cardinality cType aInt dpexp mdrg) -> error "nyi"
+                       -- _ -> error $ "nyi:" ++ show cexp
  in ((annos, cexp'), used)
 
+solveObjPropExpression :: Set.Set Entity  -> PatternVarMap -> (Annotations,  ObjectPropertyExpression) -> ((Annotations,  ObjectPropertyExpression), Set.Set Entity)
+solveObjPropExpression impSyms vMap (annos, opexp) =
+ let (opexp', used) = 
+       case opexp of
+        ObjectProp r -> (opexp, Set.singleton $ Entity Nothing ObjectProperty r)
+        ObjectInverseOf opexp0 -> let ((_, opexp1), u) = solveObjPropExpression impSyms vMap ([], opexp0)
+                                  in (ObjectInverseOf opexp1, u)
+        ObjectPropertyVar _ _ -> error $ "expected object property expression but got " ++ show opexp
+        UnsolvedObjProp i -> if i `elem` Map.keys vMap then 
+                                             let (b, _) = Map.findWithDefault (error "just checked") i vMap
+                                             in (ObjectPropertyVar b i, Set.empty)
+                                          else (ObjectProp i, Set.singleton $ Entity Nothing ObjectProperty i)
+ in ((annos, opexp'), used)
+
+solveIndividual :: Set.Set Entity  -> PatternVarMap -> (Annotations,  IndExpression) -> ((Annotations,  IndExpression), Set.Set Entity) 
+solveIndividual _ _ _ = error "nyi"
 
 -- TODO: 
- -- write a method that solves a class, an obj prop etc.
- -- cover all cases in OWL in the methods above
+ -- write a method that solves an obj prop expression, data property expression etc.
 
+
+-- instantiate a macro with the values stored in a substitution
 
 instantiateMacro :: PatternVarMap -> Map.Map (IRI, String) IRI -> OntologyDocument -> Result OntologyDocument
 instantiateMacro vars subst (OntologyDocument pd (Ontology n is as fs)) = do
   fs'<- instantiateFrames subst vars fs
   return $ OntologyDocument pd $ Ontology n is as fs'
 
+-- instantiate frames
+
 instantiateFrames :: Map.Map (IRI, String) IRI -> PatternVarMap -> [Frame] -> Result [Frame]
 instantiateFrames subst vars = 
  mapM (instantiateFrame subst vars)
 
+-- instantiate a single frame
+
 instantiateFrame :: Map.Map (IRI, String) IRI -> PatternVarMap -> Frame -> Result Frame
 instantiateFrame subst var (Frame ext fBits) = do
  ext' <- case ext of
-           ClassEntity (VarExpression (MVar i)) -> 
+           ClassEntity (VarExpression (MVar b i)) -> -- TODO: handle lists! 
              if (i, "Class") `elem` Map.keys subst then do
                 let j = Map.findWithDefault (error "instantiateFrame") (i, "Class") subst
                 return $ ClassEntity $ Expression j
               else fail $ "unknown class variable: " ++ show i
-           _ -> return ext -- TODO: missing cases
- return $ Frame ext' fBits -- TODO: fBits can also have variables!
+           ClassEntity _ -> error $ show ext
+           ObjectEntity (ObjectPropertyVar b i) -> -- TODO: handle lists!
+             if (i, "ObjectProperty") `elem` Map.keys subst then do
+               let j = Map.findWithDefault (error "instantiateFrame") (i, "ObjectProperty") subst
+               return $ ObjectEntity $ ObjectProp j
+             else fail $ "unknown object property variable: " ++ show i
+           ObjectEntity _oExp ->  error $ show ext -- TODO: handle oexp
+           SimpleEntity ent ->  error $ show ext -- TODO: when do we get this? 
+           Misc _ -> error $ show ext
+ fBits' <- mapM (instantiateFrameBit subst var) fBits 
+ return $ Frame ext' fBits'
 
+instantiateFrameBit :: Map.Map (IRI, String) IRI -> PatternVarMap -> FrameBit -> Result FrameBit
+instantiateFrameBit subst var fbit =
+ case fbit of
+  ListFrameBit mr lfb -> 
+    case lfb of 
+     AnnotationBit _ -> return fbit
+     ExpressionBit aces -> do
+      aces' <- mapM (instantiateClassExpression subst var) aces
+      return $ ListFrameBit mr $ ExpressionBit aces'
+     ObjectBit aopexps -> error $ show lfb 
+     DataBit adpexps -> error $ show lfb 
+     IndividualSameOrDifferent aindivs -> error $ show lfb 
+     ObjectCharacteristics _achars -> return fbit
+     DataPropRange _ -> return fbit
+     IndividualFacts afacts -> error $ show fbit 
+  AnnFrameBit annos afb -> error $ show afb 
 
--- delete symbols from a solved macro
+instantiateClassExpression :: Map.Map (IRI, String) IRI -> PatternVarMap -> (Annotations, ClassExpression) -> Result (Annotations, ClassExpression)
+instantiateClassExpression subst var (annos, cexp) = 
+ case cexp of 
+   UnsolvedClass _ -> error $ "unsolved class at instantiation: " ++ show cexp
+   VarExpression (MVar b x) -> do
+    let v = Map.findWithDefault (error $ "unknown var:" ++ show x) (x, "Class") subst
+    return (annos, Expression v)
+   ObjectJunction q cexps -> do
+    acexps <- mapM (instantiateClassExpression subst var) $ 
+                     map (\x -> ([], x)) cexps
+    return (annos, ObjectJunction q $ map snd acexps)
+   ObjectComplementOf cexp -> do  
+     (_, cexp') <- instantiateClassExpression subst var ([], cexp)
+     return (annos, ObjectComplementOf cexp')
+   ObjectOneOf indivs -> error "nyi"
+   ObjectValuesFrom q opexp cexp -> do
+    (_, opexp') <- instantiateObjectPropertyExpression subst var ([], opexp)
+    (_, cexp') <- instantiateClassExpression subst var ([], cexp)
+    return (annos, ObjectValuesFrom q opexp' cexp')
+   ObjectHasValue opexp indiv -> do
+    (_, opexp') <- instantiateObjectPropertyExpression subst var ([], opexp)
+    error "nyi"
+   ObjectHasSelf opexp -> do 
+    (_, opexp') <- instantiateObjectPropertyExpression subst var ([], opexp)
+    return (annos, ObjectHasSelf opexp')
+   ObjectCardinality (Cardinality cType aInt opexp mcexp) -> do 
+    mcexp' <- case mcexp of
+                  Nothing -> return Nothing
+                  Just cexp0 -> do 
+                    (_, cexp') <- instantiateClassExpression subst var ([], cexp0)
+                    return $ Just cexp'
+    (_, opexp') <- instantiateObjectPropertyExpression subst var ([], opexp)
+    return (annos, ObjectCardinality (Cardinality cType aInt opexp' mcexp'))
+   _ -> return (annos, cexp)
+{-  Expression Class -- nothing to instantiate
+  | DataValuesFrom QuantifierType DataPropertyExpression DataRange --TODO: once we have data properties as well!
+  | DataHasValue DataPropertyExpression Literal
+  | DataCardinality (Cardinality DataPropertyExpression DataRange)
+-}
+
+instantiateObjectPropertyExpression :: Map.Map (IRI, String) IRI -> PatternVarMap -> (Annotations, ObjectPropertyExpression) -> Result (Annotations, ObjectPropertyExpression)
+instantiateObjectPropertyExpression subst var (annos, obexp) = 
+ case obexp of
+  ObjectProp _ -> return (annos, obexp) -- nothing to instantiate
+  ObjectInverseOf opexp -> do
+   (_, opexp') <- instantiateObjectPropertyExpression subst var ([], opexp)
+   return (annos, ObjectInverseOf opexp')
+  ObjectPropertyVar b x -> do -- TODO: lists
+   let v = Map.findWithDefault (error $ "unknown var:" ++ show x) (x, "ObjectProperty") subst
+   return (annos, ObjectProp v)
+  UnsolvedObjProp _ -> error $ "unsolved object property at instantiation: " ++ show obexp 
+
+-- delete symbols from a solved macro, for optional parameters
 deleteSymbolsMacro :: Set.Set Entity -> OntologyDocument -> Result OntologyDocument
 deleteSymbolsMacro delSyms (OntologyDocument pd (Ontology n is as fs)) = do
  fs' <- deleteSymbolsFrames delSyms fs
@@ -693,7 +837,8 @@ deleteSymbolsFrames delSyms fs = do
 deleteSymbolsFrame :: Set.Set Entity -> Frame -> Result [Frame]
 deleteSymbolsFrame delSyms f@(Frame ext fBits) =
  case ext of
-   ClassEntity (VarExpression (MVar i)) -> 
-     if Set.member i $ Set.map (\x -> idToIRI $ entityToId x) delSyms 
+   ClassEntity (VarExpression (MVar b i)) -> 
+     if Set.member i $ Set.map (\x -> idToIRI $ entityToId x) delSyms  --TODO: handle lists
       then return []
       else return [f]
+   _ -> error "nyi"

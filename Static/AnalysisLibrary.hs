@@ -22,7 +22,7 @@ module Static.AnalysisLibrary
     , LNS
     ) where
 
-import Debug.Trace
+--import Debug.Trace
 
 import Logic.Logic
 import Logic.Grothendieck
@@ -728,6 +728,7 @@ anaPatternBody lg lenv ln dg opts eo name pinfos vMap impNode lastParam body =
   Spec_pattern aspec -> do 
     sp'<- solveBody lg lenv ln dg opts eo name vMap impNode $ item aspec
     -- trace ("sp':" ++ show sp') $ 
+    -- trace ("solvedBody:" ++ show sp') $ 
     return (dg, SpecSig $ Spec_pattern aspec{item = sp'})
   Local_pattern locals aspec -> do 
    (dg', psigs, items) <- solveLocals lg lenv ln dg opts eo name pinfos vMap impNode lastParam locals
@@ -762,7 +763,9 @@ solveLocal lg lenv ln dg opts eo name pinfos vMap impNode lastParam local =
                    -- here always add the parameters of the global pattern before those of the local one
                    -- should be pinfos ++ pinfos'
                    -- but: if we don't do this,then the lists of formal and actual params with match during instantiation
-       trace ("solved local:" ++ show lpsig) $ return (dg1, Map.fromAscList [(lname, lpsig)], Pattern_defn lname lparams' limp (Spec_pattern asp') lRange)
+       -- trace ("solved local:" ++ show lpsig) $ 
+       return (dg1, Map.fromAscList [(lname, lpsig)], 
+               Pattern_defn lname lparams' limp (Spec_pattern asp') lRange)
        -- trace ("sp':" ++ show sp') $ error "solveLocal nyi"
      else fail $ "redeclaring variables in local pattern:" ++ (show $ Map.keys intVMap) 
   _ -> fail $ "only pattern definitions allowed in local part of a pattern"

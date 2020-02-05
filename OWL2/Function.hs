@@ -134,6 +134,7 @@ instance Function ObjectPropertyExpression where
     function t s opr = case opr of
         ObjectProp op -> ObjectProp $ cutWith ObjectProperty t s op
         ObjectInverseOf op -> ObjectInverseOf $ function t s op
+        _ -> error $ show opr
 
 instance Function DataRange where
     function t s dra = case dra of
@@ -162,6 +163,7 @@ instance Function ClassExpression where
             $ function t s l
         DataCardinality (Cardinality ct i dp mdr) -> DataCardinality
               $ Cardinality ct i (cutWith DataProperty t s dp) $ maybeDo t s mdr
+        _ -> error $ show cle
 
 instance Function Annotation where
     function t s (Annotation al ap av) = Annotation (map (function t s) al)

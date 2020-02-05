@@ -123,8 +123,8 @@ specDefn l = do
     e <- equalT
     a <- aSpec l True -- OMS, not macros
     q <- optEnd
-    trace ("spec:" ++ show (Spec_defn n g a nullRange)) $
-     return . Spec_defn n g a
+    --trace ("spec:" ++ show (Spec_defn n g a nullRange)) $
+    return . Spec_defn n g a
        . catRange $ [s, e] ++ maybeToList q
 
 -- CASL view-defn or DOL IntprDefn

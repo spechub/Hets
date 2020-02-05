@@ -527,7 +527,7 @@ type InverseObjectProperty = ObjectPropertyExpression
 
 data ObjectPropertyExpression = ObjectProp ObjectProperty
   | ObjectInverseOf InverseObjectProperty
-  | ObjectPropertyVar IRI
+  | ObjectPropertyVar Bool IRI
   | UnsolvedObjProp IRI
         deriving (Show, Eq, Ord, Typeable, Data)
 
@@ -566,9 +566,19 @@ data ClassExpression =
   | DataCardinality (Cardinality DataPropertyExpression DataRange)
     deriving (Show, Eq, Ord, Typeable, Data)
 
-data MVarOrTerm = MVar IRI | MUnion IRI IRI -- the name of the head and the name of the tail TODO: should be extended with other terms
+data MVarOrTerm = MVar Bool IRI | MUnion IRI IRI 
+ -- the name of the head and the name of the tail TODO: should be extended with other terms
+ -- True for lists!
  deriving (Show, Eq, Ord, Typeable, Data)
 
+-- * INDIVIDUAL EXPRESSIONS
+
+data IndExpression = 
+   IndAsExpression Individual
+ | UnsolvedInd IRI
+ | IndVar IRI
+   deriving (Show, Eq, Ord, Typeable, Data)
+ 
 -- * ANNOTATIONS
 
 data Annotation = Annotation [Annotation] AnnotationProperty AnnotationValue
