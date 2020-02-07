@@ -465,6 +465,10 @@ macroParam l = do
  case elems of
   [(x, isOpt)] -> return $ OntoParam isOpt x
   _ -> return $ ListParam $ OntoListCons $ map fst elems
+ <|> do
+  _ <- asKey "xsd:string"
+  i <- hetIRI l
+  return $ StringParam i
 
 elemParser :: LogicGraph -> AParser st (Annoted SPEC, Bool)
 elemParser lg =  do

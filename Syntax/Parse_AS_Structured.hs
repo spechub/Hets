@@ -569,6 +569,9 @@ fitArg l flag = do
     fa <- annoParser $ fittingArg l flag
     return (fa, nullRange)
   <|> do
+   s <- scanString
+   return (Annoted (Fit_string (mkIRI s) nullRange) nullRange [][], nullRange)
+  <|> do
     _b <- oBracketT
     (aspecs, _) <- separatedBy (iParser l flag) commaT
     _c <- cBracketT

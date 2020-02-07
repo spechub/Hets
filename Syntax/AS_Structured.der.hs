@@ -129,6 +129,7 @@ data FIT_ARG = Fit_spec (Annoted SPEC) [G_mapping] Range
                -- pos: opt "fit"
              | Fit_view IRI [Annoted FIT_ARG] Range
                -- annotations before the view keyword are stored in Spec_inst
+             | Fit_string IRI Range
              | Fit_ctx G_symbol G_symbol Range
              | Fit_new G_symbol G_symbol Range
              | Fit_list [Annoted SPEC] Range

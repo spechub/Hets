@@ -83,7 +83,7 @@ import Common.Lib.Graph
 import Static.ComputeTheory
 import Static.History
 
--- import Debug.Trace
+import Debug.Trace
 
 -- overrides CUIRIE expansion for Download_items
 type ExpOverrides = Map.Map IRI FilePath
@@ -532,7 +532,7 @@ anaSpecAux conser addSyms optNodes lg
    spname <- expCurieR (globalAnnos dg) eo spname'
    let pos = if null afitargs then iriPos spname else pos0
    adjustPos pos $ case lookupGlobalEnvDG spname dg of
-    Just (PatternEntry patSig@(PatternSig _local imp params vMap _body)) -> -- trace ("patSig:" ++ show patSig) $
+    Just (PatternEntry patSig@(PatternSig _local imp params vMap _body)) -> trace ("patSig:" ++ show patSig) $
      -- 1. solve afitargs using params and imp
      case (length afitargs, length params) of
       (la, lp) -> do
@@ -1079,6 +1079,7 @@ anaFitArg :: LogicGraph -> LibEnv -> LibName -> DGraph -> IRI -> MaybeNode
 anaFitArg lg libEnv ln dg spname nsigI nsigP@(NodeSig nP gsigmaP) opts name eo csig prevSig mgm fv =
   let ga = globalAnnos dg in
   case fv of
+  Fit_string s _ -> error $ "nyi for " ++ (show s)
   Fit_spec asp gsis pos -> do
    (sp', nsigA', dg0) <- -- trace ("calling ana spec:" ++ show asp) $ 
                         anaSpec False True lg libEnv ln
@@ -1403,6 +1404,12 @@ anaPatternInstArg :: LogicGraph -> LibEnv -> HetcatsOpts -> ExpOverrides -> LibN
   -> Result (Annoted FIT_ARG, DGraph, MaybeNode, GSubst, Maybe G_morphism)
 anaPatternInstArg lg libEnv opts eo ln dg0 isig csig prevSig name spname subst0 mgm0 par0 arg0 = --trace ("***** arg0 in argInst:" ++ show arg0 ++ " subst0:" ++ show subst0) $ 
  case item arg0 of 
+  Fit_string s r -> 
+   case par0 of
+    StringParamInfo i -> do
+      l <- lookupCurrentLogic "fit string" lg
+      return (arg0, dg0, EmptyNode l, Map.insert (i, "String") s subst0, mgm0)
+    _ -> error $ "parameter mismatch, got a string when expecting a " ++ show par0
   Fit_spec asp gm r -> 
    case item asp of
     UnsolvedName i rg -> 
@@ -1512,7 +1519,7 @@ instantiateMacro lg libEnv opts eo ln dg imp nsig name spname subst vars mgmPrev
                                   (dg',a') <- instMacroAux a
                                   return (dg', as ++ [a'])  ) (dg, []) asps
          return $ (dg', asp{item = Union asps' rg})
-       Spec_inst sn afitargs _ _ -> -- trace ("\n\nspec_inst:" ++ show (item asp0)) $ 
+       Spec_inst sn afitargs _ _ -> trace ("\n\nspec_inst:" ++ show (item asp0)) $ 
                                     do -- here afitargs must be instantiated if they are variables!!!
         let snEntry = Map.findWithDefault (error $ "unknown pattern:" ++ show sn) sn $ globalEnv dg
         case snEntry of
@@ -1528,20 +1535,20 @@ instantiateMacro lg libEnv opts eo ln dg imp nsig name spname subst vars mgmPrev
                           return $ Just $ G_morphism crtLid emor startMorId
           let solveVars aFitArg = 
                case item aFitArg of 
-                 Fit_spec asp gm rg ->
-                   case item asp of
+                 Fit_spec asp1 gm rg ->
+                   case item asp1 of
                      NormalVariable i ->
                        if i `elem` Map.keys vars then
                          let (b, k) = Map.findWithDefault (error "notPossible") i vars
                              val = Map.findWithDefault (error "variable not mapped") (i,k) subst
-                         in ([((i,k), (val,k))], aFitArg{item = Fit_spec asp{item= UnsolvedName val nullRange} gm rg})
+                         in ([((i,k), (val,k))], aFitArg{item = Fit_spec asp1{item= UnsolvedName val nullRange} gm rg})
                        else error $ "unknown variable:" ++ show i
                      _ -> ([], aFitArg)
                  _ -> ([], aFitArg)
               solved = map solveVars afitargs
               afitargs0 = map snd solved
               newVars = concatMap fst solved
-              zipped = -- trace ("~~~~~~~~~~~~~newVars:"++ show newVars) $  
+              zipped = trace ("~~~~~~~~~~~~~newVars:"++ show newVars) $  
                        zip pParams afitargs0 -- TODO: allow optionals in locals!!!!
                                             -- TODO: if isLocal start with subst1 else start with empty subst?
           gmor' <- case mgmPrev of

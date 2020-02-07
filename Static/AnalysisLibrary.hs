@@ -22,7 +22,7 @@ module Static.AnalysisLibrary
     , LNS
     ) where
 
---import Debug.Trace
+import Debug.Trace
 
 import Logic.Logic
 import Logic.Grothendieck
@@ -608,7 +608,7 @@ anaLibItem lg opts topLns currLn libenv dg eo itm = -- trace ("itm:" ++ show itm
        then
         liftR $ plain_error (itm, dg, libenv, lg, eo)
                (alreadyDefined spstr) r
-       else -- trace ("inserting:" ++ show spn) $
+       else trace ("inserting:" ++ show entry) $
         return (itm', dg3{globalEnv = Map.insert spn entry genv},
                 libenv, lg, eo)
   _ -> return (itm, dg, libenv, lg, eo)
@@ -627,6 +627,9 @@ anaPatternParam :: LogicGraph -> LibEnv -> LibName -> DGraph -> HetcatsOpts
  -> Result (PatternParam, PatternParamInfo, PatternVarMap, MaybeNode, DGraph)
 anaPatternParam lg lenv ln dg opts eo name vMap prevParamNode pParam = 
  case pParam of
+  StringParam i -> do
+   l <- lookupCurrentLogic "anaPatternParam" lg 
+   return (pParam, StringParamInfo i, Map.insert i (False, "String") vMap, EmptyNode l, dg)
   OntoParam isOpt aSpec -> do
     (sp', psig, dg') <- anaSpecTop None False lg lenv ln dg prevParamNode name opts eo (item aSpec) nullRange
     let aSpec' = aSpec{item = sp'}

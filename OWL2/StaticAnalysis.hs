@@ -639,7 +639,7 @@ solveFrame impSyms vMap (Frame ext fBits) = do
 -- solve symbols for each frame bit
 
 solveFrameBit :: Set.Set Entity -> PatternVarMap -> FrameBit -> Result (FrameBit, Set.Set Entity)
-solveFrameBit impSyms vMap fbit = trace ("fbit:" ++ show fbit) $ 
+solveFrameBit impSyms vMap fbit = -- trace ("fbit:" ++ show fbit) $ 
  case fbit of 
   ListFrameBit mr lft ->
     case lft of 
@@ -647,8 +647,14 @@ solveFrameBit impSyms vMap fbit = trace ("fbit:" ++ show fbit) $
       ExpressionBit aces -> do
        let (aces', used') = foldl (\(as, us) ace -> let (ace', us') = solveClassExpression impSyms vMap ace
                                                     in (as ++ [ace'], Set.union us us')) ([], Set.empty) aces 
-       trace ("solved lft:" ++ show (ExpressionBit aces')) $ return (ListFrameBit mr $ ExpressionBit aces', used')
-      ObjectBit aopes -> error "nyi"
+       -- trace ("solved lft:" ++ show (ExpressionBit aces')) $ 
+       return (ListFrameBit mr $ ExpressionBit aces', used')
+      ObjectBit aopes -> do
+       let (aopes', used') = foldl (\(as, us) aope -> 
+                                        let (aope', us') = solveObjPropExpression impSyms vMap aope
+                                        in (as ++ [aope'], Set.union us us')) ([], Set.empty) aopes 
+       -- trace ("solved lft:" ++ show (ObjectBit aopes')) $ 
+       return (ListFrameBit mr $ ObjectBit aopes', used')
       DataBit adpes -> error "nyi"
       IndividualSameOrDifferent ainds -> error "nyi"
       ObjectCharacteristics achars -> return (fbit, Set.empty)
@@ -658,7 +664,12 @@ solveFrameBit impSyms vMap fbit = trace ("fbit:" ++ show fbit) $
   AnnFrameBit annos (DatatypeBit drg) -> error "nyi"
   AnnFrameBit annos (ClassDisjointUnion cexps) -> error "nyi"
   AnnFrameBit annos (ClassHasKey opexps dpexps) -> error "nyi"
-  AnnFrameBit annos (ObjectSubPropertyChain opexps) -> error "nyi"
+  AnnFrameBit annos (ObjectSubPropertyChain opexps) -> do
+      let (opexps', used') = foldl (\(as, us) ope -> 
+                                        let (aope', us') = solveObjPropExpression impSyms vMap ([], ope)
+                                        in (as ++ [snd aope'], Set.union us us')) ([], Set.empty) opexps
+      -- trace ("solved lft:" ++ show (ObjectSubPropertyChain opexps')) $ 
+      return (AnnFrameBit annos $ ObjectSubPropertyChain opexps', used')
 
 -- solve class expressions
 
@@ -742,13 +753,13 @@ instantiateFrame subst var (Frame ext fBits) = do
                 let j = Map.findWithDefault (error "instantiateFrame") (i, "Class") subst
                 return $ ClassEntity $ Expression j
               else fail $ "unknown class variable: " ++ show i
-           ClassEntity _ -> error $ show ext
+           ClassEntity _ -> return ext
            ObjectEntity (ObjectPropertyVar b i) -> -- TODO: handle lists!
              if (i, "ObjectProperty") `elem` Map.keys subst then do
                let j = Map.findWithDefault (error "instantiateFrame") (i, "ObjectProperty") subst
                return $ ObjectEntity $ ObjectProp j
              else fail $ "unknown object property variable: " ++ show i
-           ObjectEntity _oExp ->  error $ show ext -- TODO: handle oexp
+           ObjectEntity _ -> return ext
            SimpleEntity ent ->  error $ show ext -- TODO: when do we get this? 
            Misc _ -> error $ show ext
  fBits' <- mapM (instantiateFrameBit subst var) fBits 
@@ -763,13 +774,43 @@ instantiateFrameBit subst var fbit =
      ExpressionBit aces -> do
       aces' <- mapM (instantiateClassExpression subst var) aces
       return $ ListFrameBit mr $ ExpressionBit aces'
-     ObjectBit aopexps -> error $ show lfb 
+     ObjectBit aopexps -> do
+      aopexps' <- mapM (instantiateObjectPropertyExpression subst var) aopexps
+      return $ ListFrameBit mr $ ObjectBit aopexps'
      DataBit adpexps -> error $ show lfb 
      IndividualSameOrDifferent aindivs -> error $ show lfb 
      ObjectCharacteristics _achars -> return fbit
      DataPropRange _ -> return fbit
      IndividualFacts afacts -> error $ show fbit 
-  AnnFrameBit annos afb -> error $ show afb 
+  AnnFrameBit annos afb -> do
+    annos' <-
+     case annos of 
+      [] -> return annos
+      _ -> mapM (instantiateAnno subst var) annos 
+    case afb of
+     AnnotationFrameBit at -> return $ AnnFrameBit annos' afb
+     DataFunctional -> return $ AnnFrameBit annos' afb
+     DatatypeBit drg -> error $ show fbit
+     ClassDisjointUnion cexps -> do
+      aexps' <- mapM (instantiateClassExpression subst var) $ map (\x -> ([], x)) cexps
+      return $ AnnFrameBit annos' $ ClassDisjointUnion $ map snd aexps'
+     ClassHasKey opexps dpexps -> error $ show fbit
+     ObjectSubPropertyChain opexps -> do
+      aopexps' <- mapM (instantiateObjectPropertyExpression subst var) $ map (\x -> ([], x)) opexps
+      return $ AnnFrameBit annos' $ ObjectSubPropertyChain $ map snd aopexps'
+
+instantiateAnno :: Map.Map (IRI, String) IRI -> PatternVarMap -> Annotation -> Result Annotation
+instantiateAnno subst var anno = 
+ case anno of
+   Annotation annos aprop aval -> do
+    case aval of
+     AnnValue x -> 
+      if (x, "String") `elem` Map.keys subst then do
+       let v = Map.findWithDefault (error "already checked") (x, "String") subst
+       return $ Annotation annos aprop $ AnnValue v -- should be AnnValLit but I don't know yet what to put in it! TODO
+      else return anno
+     _ -> return anno
+    
 
 instantiateClassExpression :: Map.Map (IRI, String) IRI -> PatternVarMap -> (Annotations, ClassExpression) -> Result (Annotations, ClassExpression)
 instantiateClassExpression subst var (annos, cexp) = 
@@ -782,13 +823,13 @@ instantiateClassExpression subst var (annos, cexp) =
     acexps <- mapM (instantiateClassExpression subst var) $ 
                      map (\x -> ([], x)) cexps
     return (annos, ObjectJunction q $ map snd acexps)
-   ObjectComplementOf cexp -> do  
-     (_, cexp') <- instantiateClassExpression subst var ([], cexp)
+   ObjectComplementOf cexp0 -> do  
+     (_, cexp') <- instantiateClassExpression subst var ([], cexp0)
      return (annos, ObjectComplementOf cexp')
    ObjectOneOf indivs -> error "nyi"
-   ObjectValuesFrom q opexp cexp -> do
+   ObjectValuesFrom q opexp cexp0 -> do
     (_, opexp') <- instantiateObjectPropertyExpression subst var ([], opexp)
-    (_, cexp') <- instantiateClassExpression subst var ([], cexp)
+    (_, cexp') <- instantiateClassExpression subst var ([], cexp0)
     return (annos, ObjectValuesFrom q opexp' cexp')
    ObjectHasValue opexp indiv -> do
     (_, opexp') <- instantiateObjectPropertyExpression subst var ([], opexp)

@@ -117,7 +117,7 @@ addDownloadAux unique j =
     (if unique then UniqueItem i else ItemMaps [ItemNameMap i Nothing])
     $ iriPos i
 
-data PatternParam = OntoParam Bool (Annoted SPEC) | ListParam OntoList
+data PatternParam = StringParam IRI | OntoParam Bool (Annoted SPEC) | ListParam OntoList
   deriving (Show, Typeable)
  -- the bool flag is true for optional parameters
 
