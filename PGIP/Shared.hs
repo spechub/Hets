@@ -1,4 +1,12 @@
 {-# LANGUAGE CPP, DoAndIfThenElse #-}
+{- |
+Module      : ./PGIP/Shared.hs
+Description : Provides various Hets resources.
+License     : GPLv2 or higher, see LICENSE.txt
+
+This module provides various Hets resources that are used t.e. for caching of an analysis
+library, proving data types etc.
+-}
 
 module PGIP.Shared where
 
