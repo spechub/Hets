@@ -55,8 +55,7 @@ sudo apt-get update
 sudo apt-get install hets-desktop
 ```
 
-* for the full system including all provers etc., use hets-desktop-all instead of hets-desktop
-* for using Hets as a server providing a RESTful interface, use hets-server or hets-server-all. This is a smaller version without GUI dependencies. Note that also hets-desktop can be used as as server.
+* for using Hets as a server providing a RESTful interface, use hets-server or hets-server. This is a smaller version without GUI dependencies. Note that also hets-desktop can be used as as server.
 
 #### Hets development
 For Hets development additionally type in
