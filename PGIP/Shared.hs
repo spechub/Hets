@@ -1,11 +1,11 @@
 {-# LANGUAGE CPP, DoAndIfThenElse #-}
 {- |
 Module      : ./PGIP/Shared.hs
-Description : Provides various Hets resources.
+Description : Provides resources for caching requests to the RESTful interface.
 License     : GPLv2 or higher, see LICENSE.txt
 
 This module provides various Hets resources that are used t.e. for caching of an analysis
-library, proving data types etc.
+library during a request to the RESTful interface, proving data types etc.
 -}
 
 module PGIP.Shared where
