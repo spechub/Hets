@@ -92,6 +92,7 @@ import Common.Doc
 import Common.DocUtils (pretty, showGlobalDoc, showDoc)
 import Common.ExtSign (ExtSign (..))
 import Common.GtkGoal
+import Common.IO
 import Common.Json (Json (..), ppJson)
 import Common.JSONOrXML
 import Common.LibName
@@ -1111,6 +1112,8 @@ ppDGraph dg mt = let ga = globalAnnos dg in case optLibDefn dg of
              else return (textC, "could not create pdf:\n"
                   ++ unlines [out1, err1, out2, err2])
 
+-- | Increase the amount how often a library has been accessed.
+-- | Returns the analysis library from cache.
 increaseUsage :: Cache -> Session -> ResultT IO (Session, Int)
 increaseUsage sessRef sess = do
   time <- lift getCurrentTime
@@ -1126,20 +1129,29 @@ getDGraph opts sessRef dgQ = do
     NewDGQuery file cmdList -> do
       let cl = mapMaybe (\ s -> find ((== s) . cmdlGlobCmd)
                   $ map fst allGlobLibAct) cmdList
-      mf <- lift $ getContentAndFileType opts file
+      -- use the file path if file is an url to a web ressource
+      -- otherwise if file is a local file use the absolute path instead
+      absolutPathToFile <- if checkUri file
+                             then return file
+                             else do
+                               fileExists <- liftIO $ doesFileExist file
+                               if fileExists
+                                 then liftIO $ catchIOException file $ makeAbsolute file
+                                 else return file
+      mf <- lift $ getContentAndFileType opts absolutPathToFile
       case mf of
         Left err -> fail err
         Right (_, mh, f, cont) -> case mh of
           Nothing -> fail $ "could determine checksum for: " ++ file
-          Just h -> let q = file : h : cmdList in
+          Just h -> let q = absolutPathToFile : h : cmdList in
             case Map.lookup q lm of
-            Just sess -> increaseUsage sessRef sess
+            Just sess -> increaseUsage sessRef sess -- Return result from cache.
             Nothing -> do
               (ln, le1) <- if isDgXmlFile opts f cont
                 then readDGXmlR opts f Map.empty
                 else anaSourceFile logicGraph opts
                   { outputToStdout = False }
-                  Set.empty emptyLibEnv emptyDG file
+                  Set.empty emptyLibEnv emptyDG absolutPathToFile
               le2 <- foldM (\ e c -> liftR
                   $ fromJust (lookup c allGlobLibAct) ln e) le1 cl
               time <- lift getCurrentTime
