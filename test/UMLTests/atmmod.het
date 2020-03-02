@@ -1,0 +1,76 @@
+logic UMLStateO
+spec ATM =
+  name ATM;
+
+  vars cardId
+     , pin
+     , trialsNum
+     ;
+
+  inputs userCom.card(c)
+       , userCom.PIN(p)
+       , bankCom.verified
+       , bankCom.reenterPIN
+       ;
+
+  outputs bankCom.verify(card, pin)
+        , userCom.ejectCard
+        , userCom.keepCard
+        ;
+
+  states Idle, CardEntered, PINEntered, Verifying, Verified;
+
+  init Idle : [ true ];
+
+  trans Idle --> CardEntered : userCom.card(c) / { cardId:=c };
+  trans CardEntered --> PINEntered : userCom.PIN(p) / { pin:=p };
+  trans PINEntered --> Verifying :  / { bankCom.verify(cardId,pin) };
+  trans Verifying --> Verified : bankCom.verified;
+  trans Verified --> Idle : / { userCom.ejectCard; trialsNum := 0 };
+
+  trans Verifying --> Idle : bankCom.reenterPIN [ trialsNum >= 3 ] / { userCom.keepCard; trialsNum := 0 };
+  trans Verifying --> CardEntered : bankCom.reenterPIN [ trialsNum < 3 ] / { trialsNum := trialsNum+1 }
+end
+
+spec Bank =
+  name Bank;
+
+  vars wasVerified;
+
+  inputs atmCom.verify;
+
+  outputs atmCom.verified
+        , atmCom.reenterPIN
+        ;
+
+  states Idle, Verifying, VeriSuccess, VeriFail;
+
+  init Idle : [ true ];
+
+  trans Idle --> Verifying : atmCom.verify / { wasVerified := 0 };
+  trans Verifying --> VeriSuccess : / { wasVerified :=1 };
+  trans Verifying --> VeriFail : ;
+  trans VeriSuccess --> Idle : / { atmCom.verified };
+  trans VeriFail --> Idle : / { atmCom.reenterPIN }
+end
+
+logic UMLComp
+spec Composite =
+  name ATMSystem;
+
+  comp atm : ATM;
+  comp bank : Bank;
+
+  export atm.userCom ;
+  conn atm.bankCom -- bank.atmCom
+end
+
+logic CASL
+spec System =
+  {Composite with translation UMLComp2CASL}
+  and
+  {ATM  with translation UMLStateO2CASL}
+  and
+  {Bank with translation UMLStateO2CASL}
+end
+

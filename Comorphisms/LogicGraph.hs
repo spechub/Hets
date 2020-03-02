@@ -88,6 +88,9 @@ import Comorphisms.QVTR2CASL
 
 import Comorphisms.CASL2Hybrid
 import Comorphisms.Hybrid2CASL
+import Comorphisms.UMLState2CASL  (UMLState2CASL  (UMLState2CASL))
+import Comorphisms.UMLStateO2CASL (UMLStateO2CASL (UMLStateO2CASL))
+import UMLComp.Logic_UMLComp      (UMLComp2CASL   (UMLComp2CASL))
 
 
 #ifdef CASLEXTENSIONS
@@ -174,6 +177,9 @@ comorphismList =
     , Comorphism THFP_P2THFP
     , Comorphism CASL2Hybrid
     , Comorphism Hybrid2CASL
+    , Comorphism UMLState2CASL
+    , Comorphism UMLStateO2CASL
+    , Comorphism UMLComp2CASL
 #ifdef CASLEXTENSIONS
     , Comorphism CASL2Modal
     , Comorphism CASL2ExtModal

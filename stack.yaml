@@ -69,6 +69,7 @@ extra-deps:
   - uni-util-2.3.0.3
   - relation-0.5.2.0
 
+
 # Override default flag values for local packages and extra-deps
 flags:
   Hets:
@@ -82,6 +83,8 @@ flags:
     server: true
     haxml: true
     mysql: false
+#    gtk:
+#      have-quartz-gtk: true
 
 # Extra package databases containing global packages
 extra-package-dbs: []
