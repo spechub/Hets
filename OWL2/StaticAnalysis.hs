@@ -630,7 +630,11 @@ solveFrame impSyms vMap (Frame ext fBits) = do
                       then (ObjectEntity $ ObjectProp i, Set.empty) -- add only if not member of impSyms
                       else (ObjectEntity $ ObjectProp i, Set.singleton $ Entity Nothing ObjectProperty i)
              ObjectEntity _ -> error $ show ext -- TODO: handle oexp
-             SimpleEntity ent -> (ext, Set.empty) -- TODO: when do we get this?
+             SimpleEntity (Entity l UnsolvedEntity i) ->
+                if i `elem` Map.keys vMap 
+                 then -- TODO: tests that it's an individual!
+                      (IndividualVar i, Set.empty)
+                else (SimpleEntity $ Entity l NamedIndividual i, Set.singleton $ Entity l NamedIndividual i)
  (fBits', used) <- foldM (\(fbs, us) fbit -> do 
                                 (fbit', us') <- solveFrameBit impSyms vMap fbit
                                 return (fbs ++ [fbit'], Set.union us us')) ([], Set.empty) fBits
@@ -656,9 +660,16 @@ solveFrameBit impSyms vMap fbit = -- trace ("fbit:" ++ show fbit) $
        -- trace ("solved lft:" ++ show (ObjectBit aopes')) $ 
        return (ListFrameBit mr $ ObjectBit aopes', used')
       DataBit adpes -> error "nyi"
-      IndividualSameOrDifferent ainds -> error "nyi"
+      IndividualSameOrDifferent ainds -> return (fbit, Set.empty)
       ObjectCharacteristics achars -> return (fbit, Set.empty)
-      IndividualFacts afacts -> error "nyi"
+      IndividualFacts afacts -> do
+       let (afacts', used') = foldl (\(afs, usyms) (a, af) -> do
+                                       case af of
+                                         ObjectPropertyFact pn ope i -> let ((_, ope'), us') = solveObjPropExpression impSyms vMap ([], ope)
+                                                                        in (afs ++ [(a,ObjectPropertyFact pn ope' i)], Set.union usyms us')
+                                         DataPropertyFact _ _ _ -> error "data property nyi") 
+                                   ([], Set.empty) afacts
+       return (ListFrameBit mr $ IndividualFacts afacts', used')
   AnnFrameBit annos (AnnotationFrameBit _) -> return (fbit, Set.empty)
   AnnFrameBit annos DataFunctional -> return (fbit, Set.empty)
   AnnFrameBit annos (DatatypeBit drg) -> error "nyi"
@@ -760,7 +771,12 @@ instantiateFrame subst var (Frame ext fBits) = do
                return $ ObjectEntity $ ObjectProp j
              else fail $ "unknown object property variable: " ++ show i
            ObjectEntity _ -> return ext
-           SimpleEntity ent ->  error $ show ext -- TODO: when do we get this? 
+           SimpleEntity ent ->  error $ show ext -- TODO: when do we get this?
+           IndividualVar i -> 
+              if (i, "Individual") `elem` Map.keys subst then do
+                let j = Map.findWithDefault (error "instantiateFrame") (i, "Individual") subst
+                return $ SimpleEntity $ Entity Nothing NamedIndividual j
+              else fail $ "unknown individual variable: " ++ show i
            Misc _ -> error $ show ext
  fBits' <- mapM (instantiateFrameBit subst var) fBits 
  return $ Frame ext' fBits'
@@ -778,10 +794,24 @@ instantiateFrameBit subst var fbit =
       aopexps' <- mapM (instantiateObjectPropertyExpression subst var) aopexps
       return $ ListFrameBit mr $ ObjectBit aopexps'
      DataBit adpexps -> error $ show lfb 
-     IndividualSameOrDifferent aindivs -> error $ show lfb 
+     IndividualSameOrDifferent aindivs -> 
+       return $ ListFrameBit mr $ IndividualSameOrDifferent $
+       map (\(a,i) -> if (i,"Individual")`elem` Map.keys subst then 
+                       let j = Map.findWithDefault (error "instantiateFrameBit") (i, "Individual") subst
+                       in (a, j)
+                      else (a,i)) aindivs
      ObjectCharacteristics _achars -> return fbit
      DataPropRange _ -> return fbit
-     IndividualFacts afacts -> error $ show fbit 
+     IndividualFacts afacts -> do 
+      afacts' <- mapM (\(a, af) -> case af of
+                                       ObjectPropertyFact pn ope i -> do
+                                         (_, ope') <- instantiateObjectPropertyExpression subst var ([], ope)
+                                         let j = if (i,"Individual")`elem` Map.keys subst then 
+                                                    Map.findWithDefault (error "instantiateFrameBit") (i, "Individual") subst
+                                                 else i
+                                         return (a, ObjectPropertyFact pn ope' j)
+                                       DataPropertyFact pn dpe lit -> error "data property fact nyi") afacts
+      return $ ListFrameBit mr $ IndividualFacts afacts' 
   AnnFrameBit annos afb -> do
     annos' <-
      case annos of 
@@ -860,7 +890,7 @@ instantiateObjectPropertyExpression subst var (annos, obexp) =
    (_, opexp') <- instantiateObjectPropertyExpression subst var ([], opexp)
    return (annos, ObjectInverseOf opexp')
   ObjectPropertyVar b x -> do -- TODO: lists
-   let v = Map.findWithDefault (error $ "unknown var:" ++ show x) (x, "ObjectProperty") subst
+   let v = Map.findWithDefault (error $ "unknown var:" ++ show x ++ " subst:" ++ show subst) (x, "ObjectProperty") subst
    return (annos, ObjectProp v)
   UnsolvedObjProp _ -> error $ "unsolved object property at instantiation: " ++ show obexp 
 
@@ -882,4 +912,4 @@ deleteSymbolsFrame delSyms f@(Frame ext fBits) =
      if Set.member i $ Set.map (\x -> idToIRI $ entityToId x) delSyms  --TODO: handle lists
       then return []
       else return [f]
-   _ -> error "nyi"
+   _ -> error $ "nyi: " ++ show ext

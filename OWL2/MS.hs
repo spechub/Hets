@@ -35,6 +35,7 @@ data Extended =
   | ClassEntity ClassExpression
   | ObjectEntity ObjectPropertyExpression
   | SimpleEntity Entity
+  | IndividualVar IRI
     deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | frames with annotated lists

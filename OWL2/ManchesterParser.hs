@@ -195,8 +195,8 @@ dataPropertyFrame flag = do
     as <- many (dataFrameBit flag)
     return $ makeFrame (SimpleEntity $ mkEntity DataProperty duri) as
 
-fact :: CharParser st Fact
-fact = do
+fact :: Bool -> CharParser st Fact
+fact flag = do
     pn <- option Positive $ keyword notS >> return Negative
     u <- uriP
     do
@@ -204,7 +204,8 @@ fact = do
         return $ DataPropertyFact pn u c
       <|> do
         t <- individual
-        return $ ObjectPropertyFact pn (ObjectProp u) t
+        let ope = if flag then ObjectProp u else UnsolvedObjProp u 
+        return $ ObjectPropertyFact pn ope t
 
 iFrameBit :: Bool -> CharParser st FrameBit
 iFrameBit flag = do
@@ -217,7 +218,7 @@ iFrameBit flag = do
     return $ ListFrameBit (Just $ SDRelation s) $ IndividualSameOrDifferent is
   <|> do
     pkeyword factsC
-    fs <- sepByComma $ optAnnos fact
+    fs <- sepByComma $ optAnnos (fact flag)
     return $ ListFrameBit Nothing $ IndividualFacts fs
   <|> do
     a <- annotations
