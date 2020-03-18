@@ -32,6 +32,7 @@ import Common.GlobalAnnotations hiding (PrefixMap)
 import Common.ExtSign
 import Common.Lib.State
 import Common.IRI --(iriToStringUnsecure, setAngles)
+import Common.Id
 import Common.SetColimit
 
 import Control.Monad
@@ -738,7 +739,8 @@ solveIndividual :: Set.Set Entity  -> PatternVarMap -> (Annotations,  IndExpress
 solveIndividual _ _ _ = error "nyi"
 
 -- TODO: 
- -- write a method that solves an obj prop expression, data property expression etc.
+-- write a method that solves a data property expression etc.
+-- note: individuals are not stored as vars at any moment.
 
 
 -- instantiate a macro with the values stored in a substitution
@@ -764,14 +766,19 @@ instantiateFrame subst var (Frame ext fBits) = do
                 let j = Map.findWithDefault (error "instantiateFrame") (i, "Class") subst
                 return $ ClassEntity $ Expression j
               else fail $ "unknown class variable: " ++ show i
+           ClassEntity (Expression i) -> return $ ClassEntity $ Expression $ instParamName subst i
            ClassEntity _ -> return ext
            ObjectEntity (ObjectPropertyVar b i) -> -- TODO: handle lists!
              if (i, "ObjectProperty") `elem` Map.keys subst then do
                let j = Map.findWithDefault (error "instantiateFrame") (i, "ObjectProperty") subst
                return $ ObjectEntity $ ObjectProp j
              else fail $ "unknown object property variable: " ++ show i
+           ObjectEntity (ObjectProp i) -> 
+             return $ ObjectEntity $ ObjectProp 
+                    $ instParamName subst i
            ObjectEntity _ -> return ext
-           SimpleEntity ent ->  error $ show ext -- TODO: when do we get this?
+           SimpleEntity ent -> return $ SimpleEntity $ ent{cutIRI = instParamName subst $ cutIRI ent}
+             -- TODO: we get this for individuals declared in the bodies! what about data props?
            IndividualVar i -> 
               if (i, "Individual") `elem` Map.keys subst then do
                 let j = Map.findWithDefault (error "instantiateFrame") (i, "Individual") subst
@@ -780,6 +787,26 @@ instantiateFrame subst var (Frame ext fBits) = do
            Misc _ -> error $ show ext
  fBits' <- mapM (instantiateFrameBit subst var) fBits 
  return $ Frame ext' fBits'
+
+-- instantiate paramerized names
+-- p[X] becomes p[V] if subst maps X to V
+-- the string argument is the kind
+
+instParamName :: Map.Map (IRI, String) IRI -> IRI -> IRI
+instParamName subst p = 
+ let pPath = iriPath p
+     comps = getComps pPath
+     solveId t = 
+       let tIRI = idToIRI t
+           k = let tSubsts = filter (\(x,y) -> x == tIRI) $ Map.keys subst
+               in case tSubsts of 
+                    [(a,b)] -> b
+                    []-> "Class" -- does not matter  
+                    (a,b):_ -> b
+       in  Map.findWithDefault tIRI (tIRI,k) subst -- this will most likely need to change for complex nesting!
+     comps' = map (\t -> iriPath $ solveId t) comps
+     newPath = trace ("comps:" ++ show comps ++ " comps':" ++ show comps') $ pPath{getComps = comps'}  
+ in p{iriPath = newPath}
 
 instantiateFrameBit :: Map.Map (IRI, String) IRI -> PatternVarMap -> FrameBit -> Result FrameBit
 instantiateFrameBit subst var fbit =
@@ -846,6 +873,7 @@ instantiateClassExpression :: Map.Map (IRI, String) IRI -> PatternVarMap -> (Ann
 instantiateClassExpression subst var (annos, cexp) = 
  case cexp of 
    UnsolvedClass _ -> error $ "unsolved class at instantiation: " ++ show cexp
+   Expression i -> return (annos, Expression $ instParamName subst i)
    VarExpression (MVar b x) -> do
     let v = Map.findWithDefault (error $ "unknown var:" ++ show x) (x, "Class") subst
     return (annos, Expression v)
@@ -885,7 +913,7 @@ instantiateClassExpression subst var (annos, cexp) =
 instantiateObjectPropertyExpression :: Map.Map (IRI, String) IRI -> PatternVarMap -> (Annotations, ObjectPropertyExpression) -> Result (Annotations, ObjectPropertyExpression)
 instantiateObjectPropertyExpression subst var (annos, obexp) = 
  case obexp of
-  ObjectProp _ -> return (annos, obexp) -- nothing to instantiate
+  ObjectProp i -> return (annos, ObjectProp $ instParamName subst i) -- nothing to instantiate
   ObjectInverseOf opexp -> do
    (_, opexp') <- instantiateObjectPropertyExpression subst var ([], opexp)
    return (annos, ObjectInverseOf opexp')

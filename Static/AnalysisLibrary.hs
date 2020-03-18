@@ -675,7 +675,7 @@ anaPatternParam lg lenv ln dg opts eo name vMap prevParamNode pParam =
                ([], [], dg) $ map item $ reverse $ lastSpecSolved : sps'
         let oList' = map (\(x,y) -> x{item = y}) $ zip aSpecs aSpecs'
             pParam' = ListParam $ OntoListCons oList'
-            size = length aSpecs - 1 
+            size = length aSpecs - 1 -- TODO: this needs to be 3, not 1!
             firstNode = head nsigs
             iSig = case prevParamNode of
                  EmptyNode _ -> Nothing

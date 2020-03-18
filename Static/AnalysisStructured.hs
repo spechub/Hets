@@ -1172,7 +1172,7 @@ anaFitArg lg libEnv ln dg spname nsigI nsigP@(NodeSig nP gsigmaP) opts name eo c
             dg'' = insLink dg' (gEmbed gmor) globalThm (DGLinkInstArg spname) nP na
         return (fv, dg'', (gmor, nsigA))   
   Fit_new (G_symbol slid ssym) (G_symbol tlid tsym) pos -> do
-    trace ("____mgm in fit_new:" ++ show mgm ++ " nsigP:" ++ show nsigP ++ " prevSig:" ++ show prevSig) $ do
+    -- trace ("____mgm in fit_new:" ++ show mgm ++ " nsigP:" ++ show nsigP ++ " prevSig:" ++ show prevSig) $ do
     let tRSym = symbol_to_raw slid $ coerceSymbol tlid slid tsym
         sRSym = symbol_to_raw slid ssym
     sigA <- add_symb_to_sign tlid (empty_signature tlid) tsym
@@ -1190,7 +1190,7 @@ anaFitArg lg libEnv ln dg spname nsigI nsigP@(NodeSig nP gsigmaP) opts name eo c
     let (usig@(NodeSig unode _), dg1) =
                insGSig dg0 (extName "Union" name) DGUnion gUnionSig
         insE dgl (NodeSig n gs) = do
-          incl <- trace ("inclusion from " ++ show gs ++ " to " ++ show gUnionSig) $ 
+          incl <- -- trace ("inclusion from " ++ show gs ++ " to " ++ show gUnionSig) $ 
                   ginclusion lg gs gUnionSig
           return $ insLink dgl incl globalDef SeeTarget n unode
     dg2 <- foldM insE dg1 $ asig:uNodes
@@ -1217,10 +1217,10 @@ anaFitArg lg libEnv ln dg spname nsigI nsigP@(NodeSig nP gsigmaP) opts name eo c
                     in if allMappedSameWay then  Map.union prevMap crtMapAux 
                        else 
                          error $ "trying to map previously mapped symbol:" ++ (show $ Map.intersection crtMapAux prevMap)               
-    mor <- trace ("ssig:"++ show ssig ++ " tsig:" ++ show tsig ++ " crtMap:" ++ show crtMap ) $ 
+    mor <- -- trace ("ssig:"++ show ssig ++ " tsig:" ++ show tsig ++ " crtMap:" ++ show crtMap ) $ 
            induced_from_to_morphism slid crtMap ssig tsig
     let gmor = mkG_morphism slid mor
-        dg'' = trace ("gmor after induced:" ++ show gmor) $ 
+        dg'' = -- trace ("gmor after induced:" ++ show gmor) $ 
                insLink dg2 (gEmbed gmor) globalThm (DGLinkInstArg spname) nP unode
     return (fv, dg'', (gmor, usig))                     
     -- trace ("sigA:" ++ show usig) $ error "fit_new nyi" 
@@ -1414,7 +1414,7 @@ anaPatternInstArg :: LogicGraph -> LibEnv -> HetcatsOpts -> ExpOverrides -> LibN
   -> MaybeNode -> MaybeNode -> MaybeNode
   -> NodeName -> IRI -> GSubst -> Maybe G_morphism -> PatternParamInfo -> Annoted FIT_ARG
   -> Result (Annoted FIT_ARG, DGraph, MaybeNode, GSubst, Maybe G_morphism)
-anaPatternInstArg lg libEnv opts eo ln dg0 isig csig prevSig name spname subst0 mgm0 par0 arg0 = trace ("***** arg0 in argInst:" ++ show arg0 ++ " subst0:" ++ show subst0 ++ " par0 in argInst:" ++ show par0) $ 
+anaPatternInstArg lg libEnv opts eo ln dg0 isig csig prevSig name spname subst0 mgm0 par0 arg0 = -- trace ("***** arg0 in argInst:" ++ show arg0 ++ " subst0:" ++ show subst0 ++ " par0 in argInst:" ++ show par0) $ 
  case item arg0 of 
   Fit_string s r -> 
    case par0 of
@@ -1453,7 +1453,7 @@ anaPatternInstArg lg libEnv opts eo ln dg0 isig csig prevSig name spname subst0 
             [sym] -> do
               let noCtxOrNoMatch = do 
                    let arg1 = Fit_new (G_symbol lid sym) (G_symbol lid (rename_symbol lid sym (stringToId $ show i))) nullRange
-                   (arg2, dg1, (gmor, nsigA)) <- trace ("================ calling anaFitArg. prevSig:" ++ show prevSig ++ " arg1:" ++ show arg1) $ 
+                   (arg2, dg1, (gmor, nsigA)) <- -- trace ("================ calling anaFitArg. prevSig:" ++ show prevSig ++ " arg1:" ++ show arg1) $ 
                                                  anaFitArg lg libEnv ln dg0 spname isig pNSig opts (extName "Arg" name) eo csig prevSig mgm0 arg1
                    case gmor of
                     G_morphism glid mor _ -> do
@@ -1497,7 +1497,9 @@ anaPatternInstArg lg libEnv opts eo ln dg0 isig csig prevSig name spname subst0 
      -- where x is the unique symbol declared in the param
      -- 3. otherwise, i is a new symbol of same kind as x 
      -- and the substitution maps x to i
-    _ -> error "only unsolved names for now"
+    OntoList aspecs -> error $ "lists as args not yet supported: " ++ show aspecs ++ " par0:" ++ show par0
+    _ -> -- trace ("itm:" ++ (show $ item arg0) ) $ 
+         error "only unsolved names for now"
   _ -> -- trace ("itm:" ++ (show $ item arg0)) $ 
        error "only fit_spec for now"
 
@@ -1531,11 +1533,11 @@ instantiateMacro lg libEnv opts eo ln dg imp nsig name spname subst vars mgmPrev
                                   (dg',a') <- instMacroAux a
                                   return (dg', as ++ [a'])  ) (dg, []) asps
          return $ (dg', asp{item = Union asps' rg})
-       Spec_inst sn afitargs _ _ -> trace ("\n\nspec_inst:" ++ show (item asp0)) $ 
+       Spec_inst sn afitargs _ _ -> -- trace ("\n\nspec_inst:" ++ show (item asp0)) $ 
                                     do -- here afitargs must be instantiated if they are variables!!!
         let snEntry = Map.findWithDefault (error $ "unknown pattern:" ++ show sn) sn $ globalEnv dg
         case snEntry of
-         PatternEntry patSig@(PatternSig isLocal _ pParams pMap pBody) -> trace ("isLocal:" ++ show isLocal) $ do
+         PatternEntry patSig@(PatternSig isLocal _ pParams pMap pBody) -> do
           l@(Logic crtLid) <- lookupCurrentLogic "anaPatternInstArgs" lg
           idImps <- case imp of
                      EmptyNode _ -> return Nothing
@@ -1560,18 +1562,18 @@ instantiateMacro lg libEnv opts eo ln dg imp nsig name spname subst vars mgmPrev
               solved = map solveVars afitargs
               afitargs0 = map snd solved
               newVars = concatMap fst solved
-              zipped = trace ("~~~~~~~~~~~~~newVars:"++ show newVars) $  
+              zipped = -- trace ("~~~~~~~~~~~~~newVars:"++ show newVars) $  
                        zip pParams afitargs0 -- TODO: allow optionals in locals!!!!
                                             -- TODO: if isLocal start with subst1 else start with empty subst?
-          gmor' <- trace ("~~~~~~~~~~~~~zipped:"++ show zipped) $ 
+          gmor' <- -- trace ("~~~~~~~~~~~~~zipped:"++ show zipped) $ 
                    if isLocal then 
                     case mgmPrev of
                      Nothing -> extendWithSubst l idImps newVars
                      Just agm -> return $ Just agm
                     else extendWithSubst l idImps newVars
-          (afitargs', dg', nsig', subst', gm') <- trace ("~~~~~~~~~~~~~gmor':"++ show gmor') $
+          (afitargs', dg', nsig', subst', gm') <- -- trace ("~~~~~~~~~~~~~gmor':"++ show gmor') $
            foldM (\(args0, dg0, nsig0, subst0, gm0) (par0, arg0) -> do
-                    (arg1, dg1, nsig1, subst1, gm1) <- trace ("subst0 in spec_inst:" ++ show subst0 ++ " nsig0:" ++ show nsig0) $ 
+                    (arg1, dg1, nsig1, subst1, gm1) <- -- trace ("subst0 in spec_inst:" ++ show subst0 ++ " nsig0:" ++ show nsig0) $ 
                       anaPatternInstArg lg libEnv opts eo ln dg0 
                                         imp (EmptyNode l) nsig0 -- TODO: context is always empty now
                                         name spname subst0 gm0 par0 arg0 
