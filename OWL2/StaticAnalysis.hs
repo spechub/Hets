@@ -674,7 +674,10 @@ solveFrameBit impSyms vMap fbit = -- trace ("fbit:" ++ show fbit) $
   AnnFrameBit annos (AnnotationFrameBit _) -> return (fbit, Set.empty)
   AnnFrameBit annos DataFunctional -> return (fbit, Set.empty)
   AnnFrameBit annos (DatatypeBit drg) -> error "nyi"
-  AnnFrameBit annos (ClassDisjointUnion cexps) -> error "nyi"
+  AnnFrameBit annos (ClassDisjointUnion cexps) -> do
+   let (aces', used') = foldl (\(as, us) ce -> let (ace', us') = solveClassExpression impSyms vMap ([], ce)
+                                               in (as ++ [ace'], Set.union us us')) ([], Set.empty) cexps
+   return (AnnFrameBit annos $ ClassDisjointUnion $ map snd aces', used')
   AnnFrameBit annos (ClassHasKey opexps dpexps) -> error "nyi"
   AnnFrameBit annos (ObjectSubPropertyChain opexps) -> do
       let (opexps', used') = foldl (\(as, us) ope -> 
@@ -745,33 +748,33 @@ solveIndividual _ _ _ = error "nyi"
 
 -- instantiate a macro with the values stored in a substitution
 
-instantiateMacro :: PatternVarMap -> Map.Map (IRI, String) IRI -> OntologyDocument -> Result OntologyDocument
+instantiateMacro :: PatternVarMap -> GSubst -> OntologyDocument -> Result OntologyDocument
 instantiateMacro vars subst (OntologyDocument pd (Ontology n is as fs)) = do
   fs'<- instantiateFrames subst vars fs
   return $ OntologyDocument pd $ Ontology n is as fs'
 
 -- instantiate frames
 
-instantiateFrames :: Map.Map (IRI, String) IRI -> PatternVarMap -> [Frame] -> Result [Frame]
+instantiateFrames :: GSubst -> PatternVarMap -> [Frame] -> Result [Frame]
 instantiateFrames subst vars = 
  mapM (instantiateFrame subst vars)
 
 -- instantiate a single frame
 
-instantiateFrame :: Map.Map (IRI, String) IRI -> PatternVarMap -> Frame -> Result Frame
+instantiateFrame :: GSubst -> PatternVarMap -> Frame -> Result Frame
 instantiateFrame subst var (Frame ext fBits) = do
  ext' <- case ext of
            ClassEntity (VarExpression (MVar b i)) -> -- TODO: handle lists! 
              if (i, "Class") `elem` Map.keys subst then do
                 let j = Map.findWithDefault (error "instantiateFrame") (i, "Class") subst
-                return $ ClassEntity $ Expression j
+                return $ ClassEntity $ Expression $ getIRIVal j
               else fail $ "unknown class variable: " ++ show i
            ClassEntity (Expression i) -> return $ ClassEntity $ Expression $ instParamName subst i
            ClassEntity _ -> return ext
            ObjectEntity (ObjectPropertyVar b i) -> -- TODO: handle lists!
              if (i, "ObjectProperty") `elem` Map.keys subst then do
                let j = Map.findWithDefault (error "instantiateFrame") (i, "ObjectProperty") subst
-               return $ ObjectEntity $ ObjectProp j
+               return $ ObjectEntity $ ObjectProp $ getIRIVal j
              else fail $ "unknown object property variable: " ++ show i
            ObjectEntity (ObjectProp i) -> 
              return $ ObjectEntity $ ObjectProp 
@@ -782,7 +785,7 @@ instantiateFrame subst var (Frame ext fBits) = do
            IndividualVar i -> 
               if (i, "Individual") `elem` Map.keys subst then do
                 let j = Map.findWithDefault (error "instantiateFrame") (i, "Individual") subst
-                return $ SimpleEntity $ Entity Nothing NamedIndividual j
+                return $ SimpleEntity $ Entity Nothing NamedIndividual $ getIRIVal j
               else fail $ "unknown individual variable: " ++ show i
            Misc _ -> error $ show ext
  fBits' <- mapM (instantiateFrameBit subst var) fBits 
@@ -792,7 +795,7 @@ instantiateFrame subst var (Frame ext fBits) = do
 -- p[X] becomes p[V] if subst maps X to V
 -- the string argument is the kind
 
-instParamName :: Map.Map (IRI, String) IRI -> IRI -> IRI
+instParamName :: GSubst -> IRI -> IRI
 instParamName subst p = 
  let pPath = iriPath p
      comps = getComps pPath
@@ -803,12 +806,12 @@ instParamName subst p =
                     [(a,b)] -> b
                     []-> "Class" -- does not matter  
                     (a,b):_ -> b
-       in  Map.findWithDefault tIRI (tIRI,k) subst -- this will most likely need to change for complex nesting!
-     comps' = map (\t -> iriPath $ solveId t) comps
+       in  Map.findWithDefault (PlainVal tIRI) (tIRI,k) subst -- this will most likely need to change for complex nesting!
+     comps' = map (\t -> iriPath $ getIRIVal $ solveId t) comps
      newPath = trace ("comps:" ++ show comps ++ " comps':" ++ show comps') $ pPath{getComps = comps'}  
  in p{iriPath = newPath}
 
-instantiateFrameBit :: Map.Map (IRI, String) IRI -> PatternVarMap -> FrameBit -> Result FrameBit
+instantiateFrameBit :: GSubst -> PatternVarMap -> FrameBit -> Result FrameBit
 instantiateFrameBit subst var fbit =
  case fbit of
   ListFrameBit mr lfb -> 
@@ -825,7 +828,7 @@ instantiateFrameBit subst var fbit =
        return $ ListFrameBit mr $ IndividualSameOrDifferent $
        map (\(a,i) -> if (i,"Individual")`elem` Map.keys subst then 
                        let j = Map.findWithDefault (error "instantiateFrameBit") (i, "Individual") subst
-                       in (a, j)
+                       in (a, getIRIVal j)
                       else (a,i)) aindivs
      ObjectCharacteristics _achars -> return fbit
      DataPropRange _ -> return fbit
@@ -834,7 +837,7 @@ instantiateFrameBit subst var fbit =
                                        ObjectPropertyFact pn ope i -> do
                                          (_, ope') <- instantiateObjectPropertyExpression subst var ([], ope)
                                          let j = if (i,"Individual")`elem` Map.keys subst then 
-                                                    Map.findWithDefault (error "instantiateFrameBit") (i, "Individual") subst
+                                                   getIRIVal $ Map.findWithDefault (error "instantiateFrameBit") (i, "Individual") subst
                                                  else i
                                          return (a, ObjectPropertyFact pn ope' j)
                                        DataPropertyFact pn dpe lit -> error "data property fact nyi") afacts
@@ -856,31 +859,34 @@ instantiateFrameBit subst var fbit =
       aopexps' <- mapM (instantiateObjectPropertyExpression subst var) $ map (\x -> ([], x)) opexps
       return $ AnnFrameBit annos' $ ObjectSubPropertyChain $ map snd aopexps'
 
-instantiateAnno :: Map.Map (IRI, String) IRI -> PatternVarMap -> Annotation -> Result Annotation
+instantiateAnno :: GSubst -> PatternVarMap -> Annotation -> Result Annotation
 instantiateAnno subst var anno = 
  case anno of
    Annotation annos aprop aval -> do
     case aval of
      AnnValue x -> 
       if (x, "String") `elem` Map.keys subst then do
-       let v = Map.findWithDefault (error "already checked") (x, "String") subst
+       let v = getIRIVal $ Map.findWithDefault (error "already checked") (x, "String") subst
        return $ Annotation annos aprop $ AnnValue v -- should be AnnValLit but I don't know yet what to put in it! TODO
       else return anno
      _ -> return anno
     
 
-instantiateClassExpression :: Map.Map (IRI, String) IRI -> PatternVarMap -> (Annotations, ClassExpression) -> Result (Annotations, ClassExpression)
+-- TODO: this needs an aux that gives back a list of classexpressions!
+instantiateClassExpression :: GSubst -> PatternVarMap -> (Annotations, ClassExpression) -> Result (Annotations, ClassExpression)
 instantiateClassExpression subst var (annos, cexp) = 
  case cexp of 
    UnsolvedClass _ -> error $ "unsolved class at instantiation: " ++ show cexp
    Expression i -> return (annos, Expression $ instParamName subst i)
-   VarExpression (MVar b x) -> do
-    let v = Map.findWithDefault (error $ "unknown var:" ++ show x) (x, "Class") subst
+   VarExpression (MVar b x) -> 
+    if b then error "list occuring in not allowed position"
+    else do
+    let v = getIRIVal $ Map.findWithDefault (error $ "unknown var:" ++ show x ++ " b:" ++ show b ++ " subst:" ++ show subst) (x, "Class") subst
     return (annos, Expression v)
    ObjectJunction q cexps -> do
-    acexps <- mapM (instantiateClassExpression subst var) $ 
+    acexps <- mapM (instClassExprAux subst var) $ 
                      map (\x -> ([], x)) cexps
-    return (annos, ObjectJunction q $ map snd acexps)
+    return (annos, ObjectJunction q $ map snd $ concat acexps)
    ObjectComplementOf cexp0 -> do  
      (_, cexp') <- instantiateClassExpression subst var ([], cexp0)
      return (annos, ObjectComplementOf cexp')
@@ -910,7 +916,55 @@ instantiateClassExpression subst var (annos, cexp) =
   | DataCardinality (Cardinality DataPropertyExpression DataRange)
 -}
 
-instantiateObjectPropertyExpression :: Map.Map (IRI, String) IRI -> PatternVarMap -> (Annotations, ObjectPropertyExpression) -> Result (Annotations, ObjectPropertyExpression)
+instClassExprAux :: GSubst -> PatternVarMap -> (Annotations, ClassExpression) -> Result [(Annotations, ClassExpression)]
+instClassExprAux subst var (annos, cexp) = 
+ case cexp of 
+   UnsolvedClass _ -> error $ "unsolved class at instantiation: " ++ show cexp
+   Expression i -> return [(annos, Expression $ instParamName subst i)]
+   VarExpression (MVar b x) -> 
+    if b then do
+      let v =  Map.findWithDefault (error $ "unknown var:" ++ show x ++ " b:" ++ show b ++ " subst:" ++ show subst) (x, "list") subst
+      case v of
+       ListVal str iris -> 
+         if str == "Class" then return $ map (\i -> ([], Expression i)) iris
+         else error $ "expected list of classes, kind mismatch"
+       _ -> error $ "list variable with non-list value"
+    else do
+       let v = getIRIVal $ Map.findWithDefault (error $ "unknown var:" ++ show x ++ " b:" ++ show b ++ " subst:" ++ show subst) (x, "Class") subst
+       return [(annos, Expression v)]
+   ObjectJunction q cexps -> do
+    acexps <- mapM (instClassExprAux subst var) $ 
+                     map (\x -> ([], x)) cexps
+    return [(annos, ObjectJunction q $ map snd $ concat acexps)]
+   ObjectComplementOf cexp0 -> do  
+     (_, cexp') <- instantiateClassExpression subst var ([], cexp0)
+     return [(annos, ObjectComplementOf cexp')]
+   ObjectOneOf indivs -> error "nyi"
+   ObjectValuesFrom q opexp cexp0 -> do 
+    (_, opexp') <- instantiateObjectPropertyExpression subst var ([], opexp)
+    (_, cexp') <- instantiateClassExpression subst var ([], cexp0)
+    return [(annos, ObjectValuesFrom q opexp' cexp')]
+   ObjectHasValue opexp indiv -> do
+    (_, opexp') <- instantiateObjectPropertyExpression subst var ([], opexp)
+    error "nyi"
+   ObjectHasSelf opexp -> do 
+    (_, opexp') <- instantiateObjectPropertyExpression subst var ([], opexp)
+    return [(annos, ObjectHasSelf opexp')]
+   ObjectCardinality (Cardinality cType aInt opexp mcexp) -> do 
+    mcexp' <- case mcexp of
+                  Nothing -> return Nothing
+                  Just cexp0 -> do 
+                    (_, cexp') <- instantiateClassExpression subst var ([], cexp0) -- TODO: test for this, are lists allowed here?
+                    return $ Just cexp'
+    (_, opexp') <- instantiateObjectPropertyExpression subst var ([], opexp)
+    return [(annos, ObjectCardinality (Cardinality cType aInt opexp' mcexp'))]
+   _ -> return [(annos, cexp)]
+
+
+
+
+
+instantiateObjectPropertyExpression :: GSubst -> PatternVarMap -> (Annotations, ObjectPropertyExpression) -> Result (Annotations, ObjectPropertyExpression)
 instantiateObjectPropertyExpression subst var (annos, obexp) = 
  case obexp of
   ObjectProp i -> return (annos, ObjectProp $ instParamName subst i) -- nothing to instantiate
@@ -918,7 +972,7 @@ instantiateObjectPropertyExpression subst var (annos, obexp) =
    (_, opexp') <- instantiateObjectPropertyExpression subst var ([], opexp)
    return (annos, ObjectInverseOf opexp')
   ObjectPropertyVar b x -> do -- TODO: lists
-   let v = Map.findWithDefault (error $ "unknown var:" ++ show x ++ " subst:" ++ show subst) (x, "ObjectProperty") subst
+   let v = getIRIVal $ Map.findWithDefault (error $ "unknown var:" ++ show x ++ " subst:" ++ show subst) (x, "ObjectProperty") subst
    return (annos, ObjectProp v)
   UnsolvedObjProp _ -> error $ "unsolved object property at instantiation: " ++ show obexp 
 

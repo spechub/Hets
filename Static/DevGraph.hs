@@ -721,7 +721,9 @@ getBody (SpecSig x) = x
 getBody (LocalSig _ x) = x
 
 data PatternParamInfo = SingleParamInfo Bool NodeSig -- optional or not, node in graph
-               | ListParamInfo Int Bool MaybeNode -- length, exact or minimal, node of template
+               | ListParamInfo Int Bool MaybeNode (Maybe IRI)
+                 -- length (currrently saves the number of elements before last),
+                 --  exact or minimal, node of list template, name of tail if not empty list
                | StringParamInfo IRI
  deriving (Show, Eq, Typeable)
 -- TODO: extend for data parameters

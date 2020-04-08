@@ -642,11 +642,23 @@ class ( Syntax lid basic_spec symbol symb_items symb_map_items
          solve_symbols :: lid -> Set.Set symbol -> PatternVarMap -> basic_spec -> Result basic_spec
          solve_symbols _ _ _ = error "solve_symbols nyi"
          -- instantiating macros
-         instantiate_macro :: lid -> PatternVarMap -> Map.Map (IRI, String) IRI -> basic_spec -> Result basic_spec
+         instantiate_macro :: lid -> PatternVarMap -> GSubst -> basic_spec -> Result basic_spec
          instantiate_macro _ _ _ _ = error "instantiate_macro nyi"
          -- delete all occurences of a set of symbols in a solved macro
          delete_symbols_macro :: lid -> Set.Set symbol -> basic_spec -> Result basic_spec
          delete_symbols_macro _ _ _ = error "delete_symbols_macro nyi"
+
+
+type GSubst = Map.Map (IRI, String) GSubstVal -- TODO: use GSubstVal instead of IRI!
+  
+data GSubstVal = PlainVal IRI | 
+                 ListVal String [IRI] -- the string stores the kind!
+                 deriving (Eq, Show)
+
+getIRIVal :: GSubstVal -> IRI
+getIRIVal v = case v of
+               PlainVal x -> x
+               _ -> error $ "expecting plain value but got list:" ++ show v
 
 type PatternVarMap = Map.Map IRI (Bool, String)
 -- Bool is true for list- and false for non-list variables

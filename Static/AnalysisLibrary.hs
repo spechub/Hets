@@ -637,7 +637,7 @@ anaPatternParam lg lenv ln dg opts eo name vMap prevParamNode pParam =
         iSig = case prevParamNode of
                  EmptyNode _ -> Nothing
                  JustNode x -> Just $ getSig x
-    (vMap', _) <- addSigSymsToVarMap vMap iSig aSig
+    (vMap', _) <- addSigSymsToVarMap vMap (mkIRI "") iSig aSig
     return (OntoParam isOpt aSpec', 
             SingleParamInfo isOpt psig,
             vMap',
@@ -648,7 +648,7 @@ anaPatternParam lg lenv ln dg opts eo name vMap prevParamNode pParam =
     EmptyParamList ->  do
           l <- lookupCurrentLogic "anaPatternParam" lg 
           return (ListParam oList, 
-                  ListParamInfo 0 True (EmptyNode l),
+                  ListParamInfo 0 True (EmptyNode l) Nothing,
                   vMap,
                   EmptyNode l,
                   dg)
@@ -660,7 +660,7 @@ anaPatternParam lg lenv ln dg opts eo name vMap prevParamNode pParam =
             (lastSpecSolved, exactSize, listVar) = 
               case item lastSpec of
                UnsolvedName x rg -> if x == emptyListName 
-                                    then (lastSpec{item = EmptyList}, True, mkIRI "") 
+                                    then (lastSpec{item = EmptyList}, True, emptyListName) 
                                     else (lastSpec{item = ListVariable x}, False, x)
                _ -> error "Last element of the list must be empty or a variable name"
         (aSpecs', nsigs, dg') <- 
@@ -675,13 +675,13 @@ anaPatternParam lg lenv ln dg opts eo name vMap prevParamNode pParam =
                ([], [], dg) $ map item $ reverse $ lastSpecSolved : sps'
         let oList' = map (\(x,y) -> x{item = y}) $ zip aSpecs aSpecs'
             pParam' = ListParam $ OntoListCons oList'
-            size = length aSpecs - 1 -- TODO: this needs to be 3, not 1!
+            size = length aSpecs - 1 -- TODO: check this!
             firstNode = head nsigs
             iSig = case prevParamNode of
                  EmptyNode _ -> Nothing
                  JustNode x -> Just $ getSig x
         (vMap', newKinds) <- 
-                  foldM (\(f, k) nsig -> addSigSymsToVarMap f iSig $ getSig nsig) (vMap, Set.empty) $ 
+                  foldM (\(f, k) nsig -> addSigSymsToVarMap f listVar iSig $ getSig nsig) (vMap, Set.empty) $ 
                         map (\n -> case n of 
                                      JustNode x -> x
                                      _ -> error "should never happen"
@@ -689,7 +689,8 @@ anaPatternParam lg lenv ln dg opts eo name vMap prevParamNode pParam =
         let newK = case Set.toList newKinds of
                      [x] -> x
                      _ -> "ontology"
-        return (pParam', ListParamInfo size exactSize firstNode, Map.insert listVar (True, newK) vMap', firstNode, dg')
+            (vMap'', tailName) = if listVar == emptyListName then (vMap', Nothing) else (Map.insert listVar (True, "list") vMap', Just listVar)
+        return (pParam', ListParamInfo size exactSize firstNode tailName, vMap'', firstNode, dg')
 
 anaListElem :: LogicGraph -> LibEnv -> LibName -> DGraph -> HetcatsOpts
  -> ExpOverrides -> NodeName -> PatternVarMap -> MaybeNode -> SPEC
@@ -705,8 +706,8 @@ anaListElem lg lenv ln dg opts eo name vMap prevParamNode sp = do
                                                   sp nullRange
     return (sp', JustNode nsig, bDg)
 
-addSigSymsToVarMap :: PatternVarMap -> Maybe G_sign -> G_sign -> Result (PatternVarMap, Set.Set String)
-addSigSymsToVarMap vMap exclSig aSig = 
+addSigSymsToVarMap :: PatternVarMap -> IRI -> Maybe G_sign -> G_sign -> Result (PatternVarMap, Set.Set String)
+addSigSymsToVarMap vMap tailName exclSig aSig = 
  case aSig of
    G_sign lid (ExtSign sig _) _ -> do
       let syms = symset_of lid sig
@@ -719,8 +720,8 @@ addSigSymsToVarMap vMap exclSig aSig =
            let sIRI = idToIRI $ sym_name lid s in
             if sIRI `elem` Map.keys f then
                 error $ "variable named " ++ show s ++ "already used in " ++ show f
-               else (Map.insert sIRI (False, symKind lid s) f, Set.insert (symKind lid s) k)  
-          (vMap', newKinds) = foldl (\(f, k) s -> insertOrFail f s k) (vMap, Set.empty) $ Set.toList $ Set.difference syms symsExcl
+               else (Map.insert sIRI (if sIRI == tailName then (True, "list") else (False, symKind lid s)) f, Set.insert (symKind lid s) k)  
+          (vMap', newKinds) = foldl (\(f, k) s -> trace ("f:" ++ show f) $ insertOrFail f s k) (vMap, Set.empty) $ Set.toList $ Set.difference syms symsExcl
       return (vMap', newKinds)   
 
 anaPatternBody :: LogicGraph -> LibEnv -> LibName -> DGraph -> HetcatsOpts
@@ -778,7 +779,10 @@ solveBody :: LogicGraph -> LibEnv -> LibName -> DGraph -> HetcatsOpts
     Result SPEC
 solveBody lg lenv ln dg opts eo name vMap impNode sp = 
  case sp of
-  UnsolvedName i rg -> if i `elem` Map.keys vMap then return $ NormalVariable i
+  UnsolvedName i rg -> if i `elem` Map.keys vMap then 
+                         let (_, j) = Map.findWithDefault (error "just checked") i vMap 
+                         in if j == "list" then return $ ListVariable i 
+                                           else return $ NormalVariable i
                        else return sp -- can't solve now, will be solved later
   Basic_spec (G_basic_spec lid bspec) r -> do
     iSyms <- case impNode of
