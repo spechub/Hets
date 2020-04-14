@@ -1558,7 +1558,16 @@ anaPatternInstArg lg libEnv opts eo ln dg0 isig csig prevSig name spname subst0 
                                                                                 kind1 = symKind lid1 sym1
                                                                                 name2 = idToIRI $ sym_name lid2 sym2 
                                                                             in (kind1, iris0 ++ [name2]) 
-                                                                       _ -> error "only fit new for now!"
+                                                                       Fit_ctx gsym1 gsym2 _ -> 
+                                                                        case gsym1 of
+                                                                         G_symbol lid1 sym1 ->
+                                                                          case gsym2 of
+                                                                           G_symbol lid2 sym2 -> 
+                                                                            let -- name1 = idToIRI $ sym_name lid1 sym1
+                                                                                kind1 = symKind lid1 sym1
+                                                                                name2 = idToIRI $ sym_name lid2 sym2 
+                                                                            in (kind1, iris0 ++ [name2]) 
+                                                                       _ -> error "only fit new/ctx for now!"
                                                 )
                                                                         
                                                   ("", []) asps
