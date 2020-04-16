@@ -21,6 +21,8 @@ import Common.DocUtils
 import Common.ExtSign
 import Logic.Logic
 
+import Debug.Trace
+
 
 ext_sym_of :: Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
@@ -138,7 +140,7 @@ checkRawSyms :: Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol proof_tree
         => lid -> [raw_symbol] -> Set.Set symbol -> Result ()
-checkRawSyms l rsyms syms = do
+checkRawSyms l rsyms syms = trace ("rsyms:" ++ show rsyms ++ " syms:" ++ show syms) $ do
   let unknownSyms = filter
           ( \ rsy -> Set.null $ Set.filter (flip (matches l) rsy) syms)
           rsyms
@@ -154,7 +156,7 @@ ext_induced_from_to_morphism l r s@(ExtSign p sy) t = do
     checkExtSign l "from" s
     checkExtSign l "to" t
     checkRawMap l r p
-    checkRawSyms l (Map.elems r) $ nonImportedSymbols t
+    -- checkRawSyms l (Map.elems r) $ nonImportedSymbols t
     mor <- induced_from_to_morphism l r s t
     let sysI = Set.toList $ Set.difference (symset_of l p) sy
         morM = symmap_of l mor

@@ -52,7 +52,7 @@ failMsg (Entity _ ty e) desc =
 -- | checks if an entity is in the signature
 checkEntity :: Sign -> Entity -> Result ()
 checkEntity s t@(Entity _ ty e) =
-  let errMsg = mkError ("unknown " ++ showEntityType ty) e
+  let errMsg = mkError ("unknown " ++ showEntityType ty ++ " in " ++ show s) e
   in case ty of
    Datatype -> unless (Set.member e (datatypes s) || isDatatypeKey e) errMsg
    Class -> unless (Set.member e (concepts s) || isThing e) errMsg
