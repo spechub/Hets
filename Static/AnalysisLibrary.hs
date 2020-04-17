@@ -721,7 +721,7 @@ addSigSymsToVarMap vMap tailName exclSig aSig =
             if sIRI `elem` Map.keys f then
                 error $ "variable named " ++ show s ++ "already used in " ++ show f
                else (Map.insert sIRI (if sIRI == tailName then (True, "list") else (False, symKind lid s)) f, Set.insert (symKind lid s) k)  
-          (vMap', newKinds) = foldl (\(f, k) s -> trace ("f:" ++ show f) $ insertOrFail f s k) (vMap, Set.empty) $ Set.toList $ Set.difference syms symsExcl
+          (vMap', newKinds) = foldl (\(f, k) s -> insertOrFail f s k) (vMap, Set.empty) $ Set.toList $ Set.difference syms symsExcl
       return (vMap', newKinds)   
 
 anaPatternBody :: LogicGraph -> LibEnv -> LibName -> DGraph -> HetcatsOpts

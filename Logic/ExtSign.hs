@@ -21,9 +21,6 @@ import Common.DocUtils
 import Common.ExtSign
 import Logic.Logic
 
-import Debug.Trace
-
-
 ext_sym_of :: Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol proof_tree
@@ -140,7 +137,7 @@ checkRawSyms :: Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol proof_tree
         => lid -> [raw_symbol] -> Set.Set symbol -> Result ()
-checkRawSyms l rsyms syms = trace ("rsyms:" ++ show rsyms ++ " syms:" ++ show syms) $ do
+checkRawSyms l rsyms syms = do
   let unknownSyms = filter
           ( \ rsy -> Set.null $ Set.filter (flip (matches l) rsy) syms)
           rsyms

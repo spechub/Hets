@@ -808,7 +808,8 @@ instParamName subst p =
                     (a,b):_ -> b
        in  Map.findWithDefault (PlainVal tIRI) (tIRI,k) subst -- this will most likely need to change for complex nesting!
      comps' = map (\t -> iriPath $ getIRIVal $ solveId t) comps
-     newPath = trace ("comps:" ++ show comps ++ " comps':" ++ show comps') $ pPath{getComps = comps'}  
+     newPath = -- trace ("comps:" ++ show comps ++ " comps':" ++ show comps') $ 
+               pPath{getComps = comps'}  
  in p{iriPath = newPath}
 
 instantiateFrameBit :: GSubst -> PatternVarMap -> FrameBit -> Result FrameBit
