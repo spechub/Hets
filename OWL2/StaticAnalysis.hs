@@ -791,27 +791,6 @@ instantiateFrame subst var (Frame ext fBits) = do
  fBits' <- mapM (instantiateFrameBit subst var) fBits 
  return $ Frame ext' fBits'
 
--- instantiate paramerized names
--- p[X] becomes p[V] if subst maps X to V
--- the string argument is the kind
-
-instParamName :: GSubst -> IRI -> IRI
-instParamName subst p = 
- let pPath = iriPath p
-     comps = getComps pPath
-     solveId t = 
-       let tIRI = idToIRI t
-           k = let tSubsts = filter (\(x,y) -> x == tIRI) $ Map.keys subst
-               in case tSubsts of 
-                    [(a,b)] -> b
-                    []-> "Class" -- does not matter  
-                    (a,b):_ -> b
-       in  Map.findWithDefault (PlainVal tIRI) (tIRI,k) subst -- this will most likely need to change for complex nesting!
-     comps' = map (\t -> iriPath $ getIRIVal $ solveId t) comps
-     newPath = -- trace ("comps:" ++ show comps ++ " comps':" ++ show comps') $ 
-               pPath{getComps = comps'}  
- in p{iriPath = newPath}
-
 instantiateFrameBit :: GSubst -> PatternVarMap -> FrameBit -> Result FrameBit
 instantiateFrameBit subst var fbit =
  case fbit of
@@ -960,10 +939,6 @@ instClassExprAux subst var (annos, cexp) =
     (_, opexp') <- instantiateObjectPropertyExpression subst var ([], opexp)
     return [(annos, ObjectCardinality (Cardinality cType aInt opexp' mcexp'))]
    _ -> return [(annos, cexp)]
-
-
-
-
 
 instantiateObjectPropertyExpression :: GSubst -> PatternVarMap -> (Annotations, ObjectPropertyExpression) -> Result (Annotations, ObjectPropertyExpression)
 instantiateObjectPropertyExpression subst var (annos, obexp) = 
