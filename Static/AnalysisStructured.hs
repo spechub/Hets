@@ -546,7 +546,7 @@ anaSpecAux conser addSyms optNodes lg
                        instantiateMacro lg libEnv opts eo ln dg' imp (JustNode nsig') name spname subst vMap' gm' bodySig
          (dgI, allPrevDefs) <- unionNodes lg dg2 (makeName $ mkIRI "TESTNAME") $ nub lastParamAndNewNodes
          --the body should extend the last argument
-         (sp', nsig'', dg3) <-  trace ("spB:" ++ show spB) $ 
+         (sp', nsig'', dg3) <-  -- trace ("spB:" ++ show spB) $ 
                                 anaSpecTop conser addSyms lg libEnv ln dgI (JustNode allPrevDefs) (makeName $ addSuffixToIRI "_source" $ getName name) opts eo (item spB) nullRange
                                 -- TODO: nsig' should be the node of instantiateMacro!!!
          --incl <- ginclusion lg (getSig nsig') (getSig nsig'')
@@ -1676,7 +1676,7 @@ instMacroAux lg libEnv opts eo ln crtDG imp crtNSig name spname crtSubst vars cr
                                   return (dg', ns ++ ns', as ++ [a'])  ) (crtDG, [], []) asps
          -- trace ("ns1:" ++ show ns1) $
          return (dg1, ns1, asp0{item = Union asps1 rg})
-       Spec_inst sn afitargs _ _ -> trace ("\n\nspec_inst:" ++ show (item asp0)) $ 
+       Spec_inst sn afitargs _ _ -> -- trace ("\n\nspec_inst:" ++ show (item asp0)) $ 
                                     do -- here afitargs must be instantiated if they are variables!!!
         let snEntry = Map.findWithDefault (error $ "unknown pattern:" ++ show sn) sn $ globalEnv crtDG
         case snEntry of

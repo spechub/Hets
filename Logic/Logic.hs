@@ -155,6 +155,8 @@ import Data.Ord
 import Data.Typeable
 import Control.Monad (unless)
 
+import Debug.Trace
+
 -- | Stability of logic implementations
 data Stability = Stable | Testing | Unstable | Experimental
      deriving (Eq, Show)
@@ -666,20 +668,20 @@ getIRIVal v = case v of
 
 instParamName :: GSubst -> IRI -> IRI
 instParamName subst p = -- trace ("\nsubst:"++ show subst ++ " i:" ++ show p ) $ 
- let pPath = iriPath p
-     comps = getComps pPath
-     solveId t = 
-       let tIRI = idToIRI t
-           k = let tSubsts = filter (\(x,y) -> x == tIRI) $ Map.keys subst
-               in case tSubsts of 
-                    [(a,b)] -> b
-                    []-> "Class" -- does not matter  
-                    (a,b):_ -> b
-       in  Map.findWithDefault (PlainVal tIRI) (tIRI,k) subst -- this will most likely need to change for complex nesting!
-     comps' = map (\t -> iriPath $ getIRIVal $ solveId t) comps
-     newPath = -- trace ("comps:" ++ show comps ++ " comps':" ++ show comps') $ 
-               pPath{getComps = comps'}  
- in p{iriPath = newPath}
+ p{iriPath = solveId subst (iriPath p)}
+
+solveId :: GSubst -> Id -> Id
+solveId subst t =
+ case getComps t of
+  [] -> let tIRI = idToIRI t
+            k = let tSubsts = filter (\(x,y) -> x == tIRI) $ Map.keys subst
+                 in case tSubsts of 
+                      [(a,b)] -> b
+                      []-> "Class" -- does not matter  
+                      (a,b):_ -> b
+         in iriPath $ getIRIVal $ Map.findWithDefault (PlainVal tIRI) (tIRI,k) subst
+  cs -> let cs' = map (solveId subst) cs
+        in t{getComps = cs'}
 
 type PatternVarMap = Map.Map IRI (Bool, String)
 -- Bool is true for list- and false for non-list variables
