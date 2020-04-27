@@ -590,7 +590,7 @@ fitString l flag = do
   case s of
    [] -> error "should be caught by the other case"
    [x] -> return $ Fit_spec x [] nullRange
-   _ -> return $ Fit_list s nullRange
+   _ -> return $ Fit_spec (Annoted (OntoList s) nullRange [][]) [] nullRange --  Fit_list s nullRange
 
 fittingArg :: LogicGraph -> Bool -> AParser st FIT_ARG
 fittingArg l flag = do

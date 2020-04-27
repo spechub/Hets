@@ -82,7 +82,7 @@ data SPEC = Basic_spec G_basic_spec Range
           | NormalVariable IRI
           | ListVariable IRI
           | ListValue [IRI]
-          | OntoList [(Annoted SPEC)]
+          | OntoList [Annoted SPEC]
           | EmptyList
             deriving (Show, Typeable)
 

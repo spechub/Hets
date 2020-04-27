@@ -812,6 +812,9 @@ solveBody lg lenv ln dg opts eo name vMap impNode sp =
           _ -> return f
     fitArgs' <- mapM solveFitArgs fitArgs 
     return $ Spec_inst n fitArgs' miri r -- maybe here unsolved arguments should be solved to variables!
+  OntoList aspecs -> do
+    aspecs' <- mapM (solveBody lg lenv ln dg opts eo name vMap impNode) $ map item aspecs
+    return $ OntoList $ map (\(x,y) -> x{item = y}) $ zip aspecs aspecs'
   _ -> error $ show sp
 
 symbolsOf :: LogicGraph -> G_sign -> G_sign -> [CORRESPONDENCE]

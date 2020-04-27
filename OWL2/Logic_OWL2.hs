@@ -59,6 +59,8 @@ import OWL2.Theorem
 import OWL2.ExtractModule
 -- import OWL2.Macros
 
+import Debug.Trace
+
 data OWL2 = OWL2
 
 instance Show OWL2 where
@@ -142,7 +144,7 @@ inducedFromToMorphismAux :: Map.Map RawSymb RawSymb ->
                     ExtSign Sign Entity -> 
                     ExtSign Sign Entity -> 
                     Result OWLMorphism
-inducedFromToMorphismAux rm s@(ExtSign ssig _) t@(ExtSign tsig _) = do
+inducedFromToMorphismAux rm s@(ExtSign ssig _) t@(ExtSign tsig _) = do -- trace ("\n aux ssig:" ++ show ssig ++ "\ntsig:" ++ show tsig ++ "\nrm:" ++ show rm) $ do
     mor <- inducedFromMor rm ssig
     let csig = cod mor
     incl <- inclusion OWL2 csig tsig              
