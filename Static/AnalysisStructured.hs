@@ -1464,7 +1464,7 @@ anaPatternInstArg :: LogicGraph -> LibEnv -> HetcatsOpts -> ExpOverrides -> LibN
   -> MaybeNode -> MaybeNode -> MaybeNode
   -> NodeName -> IRI -> GSubst -> Maybe G_morphism -> PatternParamInfo -> Annoted FIT_ARG
   -> Result (Annoted FIT_ARG, DGraph, MaybeNode, GSubst, Maybe G_morphism)
-anaPatternInstArg lg libEnv opts eo ln dg0 isig csig prevSig name spname subst0 mgm0 par0 arg0 = -- trace ("***** arg0 in argInst:" ++ show arg0 ++ " subst0:" ++ show subst0 ++ " par0 in argInst:" ++ show par0) $ 
+anaPatternInstArg lg libEnv opts eo ln dg0 isig csig prevSig name spname subst0 mgm0 par0 arg0 = trace ("***** arg0 in argInst:" ++ show arg0 ++ " subst0:" ++ show subst0 ++ " par0 in argInst:" ++ show par0) $ 
  case item arg0 of 
   Fit_string s r -> 
    case par0 of
@@ -1475,7 +1475,7 @@ anaPatternInstArg lg libEnv opts eo ln dg0 isig csig prevSig name spname subst0 
   Fit_spec asp gm r -> 
    case item asp of
     NormalVariable i -> error "vars should be solved by now!"
-    UnsolvedName i rg -> -- trace ("solving an unsolved name in inst arg:" ++ show i) $ 
+    UnsolvedName i rg -> trace ("solving an unsolved name in inst arg:" ++ show i) $ 
      -- TODO: here we must also pass the parameter, so we can check its symbols
      -- 1. if i is the name of a spec entry in globalEnv
      --    solve to Spec_inst i [] Nothing nullRange
@@ -1558,7 +1558,7 @@ anaPatternInstArg lg libEnv opts eo ln dg0 isig csig prevSig name spname subst0 
                             trace ("++++++ computed subst1:"++ show subst1) $ return (arg0{item=arg2}, dg1, JustNode nsigA, subst1, Just gmor)
                     _ -> fail $ "multiple occurences of abbreviated name in the context:" ++ show ctxSyms
             _ -> fail "ambiguity in use of abbreviation notation, parameter has more than one symbol" 
-       _ -> fail $ "abbreviation notation can be used only for single ontology arguments, not for lists: " ++ show i
+       _ -> fail $ "abbreviation notation can be used only for single ontology arguments, not for lists: " ++ show i ++ " par0:" ++ show par0
      -- 2. if i is a symbol from the context (nsig)
      --    solve to context fit x |-> i
      -- and the substitution maps x to i

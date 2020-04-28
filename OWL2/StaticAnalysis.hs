@@ -818,7 +818,7 @@ instantiateFrameBit subst var fbit =
                                          (_, ope') <- instantiateObjectPropertyExpression subst var ([], ope)
                                          let j = if (i,"Individual")`elem` Map.keys subst then 
                                                    getIRIVal $ Map.findWithDefault (error "instantiateFrameBit") (i, "Individual") subst
-                                                 else i
+                                                 else instParamName subst i
                                          return (a, ObjectPropertyFact pn ope' j)
                                        DataPropertyFact pn dpe lit -> error "data property fact nyi") afacts
       return $ ListFrameBit mr $ IndividualFacts afacts' 
