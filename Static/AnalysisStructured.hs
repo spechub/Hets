@@ -552,7 +552,7 @@ anaSpecAux conser addSyms optNodes lg
          --incl <- ginclusion lg (getSig nsig') (getSig nsig'')
          --let dg3 = insLink dg'' incl globalDef SeeTarget (getNode nsig') (getNode nsig'')
          -- trace ("sp':" ++ show sp' ++ " nsig'':" ++ show nsig'' ++ "dg3:"++ show (labEdges $ dgBody dg3)) $ 
-         return (Spec_inst spname' afitargs' mImp pos0, nsig'', dg3) -- was nsig''
+         trace ("dg3:"++ show (length $ nodes $ dgBody dg3)) $ return (Spec_inst spname' afitargs' mImp pos0, nsig'', dg3) -- was nsig''
         else if la == 0 then error "arguments missing in instantiation"
              else if lp == 0 then error "pattern without arguments"
                   else error "mismatch in length of arguments" 
@@ -1262,10 +1262,12 @@ anaFitArg lg libEnv ln dg spname nsigI nsigP@(NodeSig nP gsigmaP) opts name eo c
                     let intersMapKeys = Map.keys $ Map.intersection crtMapAux prevMap
                         allMappedSameWay = foldl (\b k -> let v1 = Map.findWithDefault (error "not in crt") k crtMapAux
                                                               v2 = Map.findWithDefault (error "not in prev") k prevMap
-                                                          in (v1 == v2) && b ) True intersMapKeys
-                    in if allMappedSameWay then  Map.union prevMap crtMapAux 
-                       else 
-                         error $ "trying to map previously mapped symbol:" ++ (show $ Map.intersection crtMapAux prevMap)               
+                                                          in if v1 == v2 then (v1 == v2) && b
+                                                             else trace ("K:"++ show k ++ " v1:" ++ show v1 ++ " v2:" ++ show v2) $ (v1==v2) && b ) True intersMapKeys
+                    in Map.union crtMapAux prevMap -- TODO: why does the check fail?
+                       --if allMappedSameWay then  Map.union prevMap crtMapAux 
+                       --else 
+                       --  error $ "trying to map previously mapped symbol:" ++ (show $ Map.intersection crtMapAux prevMap)               
     mor <- -- trace ("\n=============\nssig:"++ show ssig ++ "\n tsig:" ++ show tsig ++ "\n prevMap:" ++ show prevMap ++ "\n substMap:" ++ show substMap) $ 
            induced_from_to_morphism slid (Map.union crtMap substMap) ssig tsig
     let gmor = mkG_morphism slid mor
@@ -1569,7 +1571,7 @@ anaPatternInstArg lg libEnv opts eo ln dg0 isig csig prevSig name spname subst0 
       -- 1. generate a temporary param for the template node of the param list
       --  SingleParamInfo False n where the signature of the head of the param list is JustNode n
       let (par1, tailName) = case par0 of
-                  SingleParamInfo _ _ -> error $ "expecting single argument: " ++ show par0 ++ " but got a list: " ++ show aspecs
+                  SingleParamInfo _ _ -> error $ "\nexpecting single argument: " ++ show par0 ++ "\nbut got a list: " ++ show aspecs
                   ListParamInfo _ _ (JustNode n) tn -> let x = case tn of
                                                                  Nothing -> nullIRI
                                                                  Just y -> y

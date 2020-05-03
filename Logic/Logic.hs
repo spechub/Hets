@@ -155,8 +155,6 @@ import Data.Ord
 import Data.Typeable
 import Control.Monad (unless)
 
-import Debug.Trace
-
 -- | Stability of logic implementations
 data Stability = Stable | Testing | Unstable | Experimental
      deriving (Eq, Show)
@@ -667,21 +665,35 @@ getIRIVal v = case v of
 -- the string argument is the kind
 
 instParamName :: GSubst -> IRI -> IRI
-instParamName subst p = -- trace ("\nsubst:"++ show subst ++ " i:" ++ show p ) $ 
+instParamName subst p =
  p{iriPath = solveId subst (iriPath p)}
 
 solveId :: GSubst -> Id -> Id
 solveId subst t =
  case getComps t of
   [] -> let tIRI = idToIRI t
-            k = let tSubsts = filter (\(x,y) -> x == tIRI) $ Map.keys subst
+            k = let tSubsts = filter (\(x,_) -> x == tIRI) $ Map.keys subst
                  in case tSubsts of 
-                      [(a,b)] -> b
+                      [(_,b)] -> b
                       []-> "Class" -- does not matter  
-                      (a,b):_ -> b
+                      (_, b):_ -> b
          in iriPath $ getIRIVal $ Map.findWithDefault (PlainVal tIRI) (tIRI,k) subst
-  cs -> let cs' = map (solveId subst) cs
-        in t{getComps = cs'}
+  cs -> let ts' = map (solveToken subst) $ getTokens t
+            cs' = map (solveId subst) cs
+        in t{getTokens = ts', getComps = cs'}
+
+solveToken :: GSubst -> Token  -> Token
+solveToken subst tok = 
+ let tIRI = idToIRI $ mkId [tok]
+     k = let tSubsts = filter (\(x,_) -> x == tIRI) $ Map.keys subst
+                 in case tSubsts of 
+                      [(_,b)] -> b
+                      []-> "Class" -- does not matter  
+                      (_,b):_ -> b
+     idVal = iriPath $ getIRIVal $ Map.findWithDefault (PlainVal tIRI) (tIRI,k) subst
+ in case getTokens idVal of
+     [y] -> y
+     _ -> error $  "expecting simple id but got a composed one: " ++ show idVal
 
 type PatternVarMap = Map.Map IRI (Bool, String)
 -- Bool is true for list- and false for non-list variables
