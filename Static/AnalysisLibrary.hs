@@ -22,7 +22,7 @@ module Static.AnalysisLibrary
     , LNS
     ) where
 
-import Debug.Trace
+--import Debug.Trace
 
 import Logic.Logic
 import Logic.Grothendieck
@@ -608,7 +608,7 @@ anaLibItem lg opts topLns currLn libenv dg eo itm = -- trace ("itm:" ++ show itm
        then
         liftR $ plain_error (itm, dg, libenv, lg, eo)
                (alreadyDefined spstr) r
-       else trace ("inserting:" ++ show entry) $
+       else -- trace ("inserting:" ++ show entry) $
         return (itm', dg3{globalEnv = Map.insert spn entry genv},
                 libenv, lg, eo)
   _ -> return (itm, dg, libenv, lg, eo)
