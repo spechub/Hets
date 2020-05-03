@@ -83,7 +83,7 @@ import Common.Lib.Graph
 import Static.ComputeTheory
 import Static.History
 
---import Debug.Trace
+import Debug.Trace
 
 -- overrides CUIRIE expansion for Download_items
 type ExpOverrides = Map.Map IRI FilePath
@@ -651,7 +651,7 @@ anaSpecAux conser addSyms optNodes lg
     let (cNodes', cEdges') = networkDiagram dg cItems eItems
     (ns, dg') <- insertColimitInGraph libEnv ln dg cNodes' cEdges' name
     return (sp, ns, dg')
-  UnsolvedName x pos -> -- this should not happen, but when it does, solve as spec_inst
+  UnsolvedName x pos -> -- this should not happen, but when it does, solve as spec_inst.
     anaSpecAux conser addSyms optNodes lg 
            libEnv ln dg nsig name opts eo (Spec_inst x [] Nothing pos) rg
   _ -> fail $ "in AnalysisStructured: " ++ show (prettyLG lg sp)
@@ -1583,21 +1583,25 @@ anaPatternInstArg lg libEnv opts eo ln dg0 isig csig prevSig name spname subst0 
       -- use anaPatternInstArg lg libEnv opts eo ln dg0 isig csig prevSig name spname subst0 mgm0 par0 arg0
       -- it returns the analysed arg, the dgraph, justnode node of argument, substitution, generated morphism
       -- but update prevSig name spname subst0 mgm0 par0 arg0; fold the dgs; store the nodes of args
+      let emptyOntoName = mkIRI "empty" 
       (aspecs', aNodes, subst1, dg1) <- 
-         foldM (\(anaSpecs, specNodes, substI, aDg) crtSp -> do
-                   (crtSp', aDg', argNode, aSubst, aMor) <- 
-                      anaPatternInstArg lg libEnv opts eo ln
-                                        aDg isig csig prevSig -- TODO: check that prevSig is fine here
-                                        name spname -- TODO: give proper names
-                                        subst0  
-                                        mgm0 -- TODO: check that this is ok
-                                        par1 $ 
-                                        emptyAnno $ Fit_spec crtSp [] nullRange
-                   -- trace ("\naMor:" ++ show aMor) $ 
-                   return (anaSpecs ++ [crtSp'], 
-                           specNodes ++ [argNode],
-                           if substI == Map.empty then aSubst else substI, -- only interested in the first substitution. TODO: add it to mgm0?
-                           aDg')
+         foldM (\(anaSpecs, specNodes, substI, aDg) crtSp -> trace ("crtSp:" ++ show crtSp) $ 
+                   case item crtSp of 
+                     UnsolvedName x _ | x == emptyOntoName -> trace "1" $ return (anaSpecs, specNodes, substI, aDg)
+                     _ -> do
+                      (crtSp', aDg', argNode, aSubst, aMor) <- 
+                        anaPatternInstArg lg libEnv opts eo ln
+                                         aDg isig csig prevSig -- TODO: check that prevSig is fine here
+                                         name spname -- TODO: give proper names
+                                         subst0  
+                                         mgm0 -- TODO: check that this is ok
+                                         par1 $ 
+                                         emptyAnno $ Fit_spec crtSp [] nullRange
+                        -- trace ("\naMor:" ++ show aMor) $ 
+                      return (anaSpecs ++ [crtSp'], 
+                              specNodes ++ [argNode],
+                              if substI == Map.empty then aSubst else substI, -- only interested in the first substitution. TODO: add it to mgm0?
+                              aDg')
                ) ([], [], Map.empty, dg0) aspecs 
       -- 3. unite the resulting nodes
       (dg2, argUnion) <- unionNodes lg dg1 (makeName $ mkIRI "UnionNode") $ concatMap (\aN -> case aN of 
