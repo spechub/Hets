@@ -55,7 +55,7 @@ import Data.Char
 import Data.Maybe
 import Control.Monad
 
--- import Debug.Trace
+import Debug.Trace
 
 expandCurieM :: LogicGraph -> IRI -> GenParser Char st IRI
 expandCurieM lG i =
@@ -559,18 +559,18 @@ fitArg l flag = do
           _ <- lookAhead $ try semiT <|> try cBracketT
           return $ Missing_arg nullRange
     fa <- annoParser emptyParam
-    return (fa, nullRange)
+    trace ("**** just scanned 1: " ++ show fa) $ return (fa, nullRange)
   <|> do
     -- b <- oBracketT
     fa <- annoParser $ fitString l flag
     -- c <- cBracketT
-    return (fa, nullRange)
+    trace ("**** just scanned 2: " ++ show fa) $  return (fa, nullRange)
   <|> do 
     fa <- annoParser $ fittingArg l flag
-    return (fa, nullRange)
+    trace ("**** just scanned 3: " ++ show fa) $ return (fa, nullRange)
   <|> do
    s <- scanString
-   return (Annoted (Fit_string (mkIRI s) nullRange) nullRange [][], nullRange)
+   trace ("**** just scanned 4: " ++ s) $ return (Annoted (Fit_string (mkIRI s) nullRange) nullRange [][], nullRange)
   <|> do
     _b <- oBracketT
     (aspecs, _) <- separatedBy (iParser l flag) commaT
@@ -581,7 +581,7 @@ iParser :: LogicGraph -> Bool -> AParser st (Annoted SPEC)
 iParser l flag = do
           i <- compoundIriCurie
           _ <- option () skip
-          return $ Annoted (UnsolvedName i nullRange) nullRange [][]
+          trace ("tks:" ++ show (getTokens $ iriPath i) ++ " cmps:" ++ show (getComps $ iriPath i)) $ return $ Annoted (UnsolvedName i nullRange) nullRange [][]
         <|> aSpec l flag
  
 fitString :: LogicGraph -> Bool -> AParser st FIT_ARG

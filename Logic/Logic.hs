@@ -678,11 +678,13 @@ solveId subst t =
                       []-> "Class" -- does not matter  
                       (_, b):_ -> b
          in iriPath $ getIRIVal $ Map.findWithDefault (PlainVal tIRI) (tIRI,k) subst
-  cs -> let ts' = map (solveToken subst) $ getTokens t
+  cs -> let its' = map (solveToken subst) $ getTokens t
+            ts' =  concatMap getTokens its'
+            cs'' = concat $ map getComps its' 
             cs' = map (solveId subst) cs
-        in t{getTokens = ts', getComps = cs'}
+        in t{getTokens = ts', getComps = cs'' ++ cs'}
 
-solveToken :: GSubst -> Token  -> Token
+solveToken :: GSubst -> Token  -> Id
 solveToken subst tok = 
  let tIRI = idToIRI $ mkId [tok]
      k = let tSubsts = filter (\(x,_) -> x == tIRI) $ Map.keys subst
@@ -691,9 +693,9 @@ solveToken subst tok =
                       []-> "Class" -- does not matter  
                       (_,b):_ -> b
      idVal = iriPath $ getIRIVal $ Map.findWithDefault (PlainVal tIRI) (tIRI,k) subst
- in case getTokens idVal of
-     [y] -> y
-     _ -> error $  "expecting simple id but got a composed one: " ++ show idVal
+ in idVal --case getComps idVal of
+    -- [] -> head $ getTokens idVal
+    -- _ -> error $  "expecting simple id but got a composed one: " ++ show idVal
 
 type PatternVarMap = Map.Map IRI (Bool, String)
 -- Bool is true for list- and false for non-list variables
