@@ -604,11 +604,12 @@ solveSymbols impSyms vMap (OntologyDocument pd (Ontology n is as fs)) = do
      varSyms = foldl Set.union Set.empty $ map (\(x, (f, k)) -> if f then Set.empty else Set.singleton $ Entity Nothing (getKind k) x) $ Map.toList vMap
      diffSyms = Set.difference usedSyms (Set.union declSyms $ Set.union impSyms varSyms) 
      -- each used symbol must be declared, imported or variable
- if Set.null diffSyms then 
-  return $ OntologyDocument pd $ Ontology n is as fs'
- else error $ "undeclared symbols in the body of the pattern. impSyms:" ++ show impSyms ++  
-              " declSyms:" ++ show declSyms ++ " usedSyms:" ++ show usedSyms ++ 
-              " varSyms:" ++ show varSyms ++ " diffSyms:" ++ show diffSyms 
+ -- TODO: this test should take into account imports. Commented out for now!
+ --if Set.null diffSyms then 
+ return $ OntologyDocument pd $ Ontology n is as fs'
+ --else error $ "undeclared symbols in the body of the pattern. impSyms:" ++ show impSyms ++  
+ --             " declSyms:" ++ show declSyms ++ " usedSyms:" ++ show usedSyms ++ 
+ --             " varSyms:" ++ show varSyms ++ " diffSyms:" ++ show diffSyms 
 
 -- solving symbols for each frame, also keep track of declared and used symbols
    
@@ -804,12 +805,12 @@ instantiateFrameBit subst var fbit =
       aopexps' <- mapM (instantiateObjectPropertyExpression subst var) aopexps
       return $ ListFrameBit mr $ ObjectBit aopexps'
      DataBit adpexps -> error $ show lfb 
-     IndividualSameOrDifferent aindivs -> 
+     IndividualSameOrDifferent aindivs -> trace ("subst:" ++ show subst ++ " var:" ++ show var ++ " fbit:" ++ show fbit) $  
        return $ ListFrameBit mr $ IndividualSameOrDifferent $
        map (\(a,i) -> if (i,"Individual")`elem` Map.keys subst then 
                        let j = Map.findWithDefault (error "instantiateFrameBit") (i, "Individual") subst
-                       in (a, getIRIVal j)
-                      else (a,i)) aindivs
+                       in (a, instParamName subst $ getIRIVal j)
+                      else (a, instParamName subst $ i)) aindivs
      ObjectCharacteristics _achars -> return fbit
      DataPropRange _ -> return fbit
      IndividualFacts afacts -> do 
@@ -970,4 +971,4 @@ deleteSymbolsFrame delSyms f@(Frame ext fBits) =
      if Set.member i $ Set.map (\x -> idToIRI $ entityToId x) delSyms  --TODO: handle lists
       then return []
       else return [f]
-   _ -> error $ "nyi: " ++ show ext
+   _ -> return [f] -- error $ "nyi: " ++ show ext

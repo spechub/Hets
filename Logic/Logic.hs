@@ -680,7 +680,7 @@ solveId subst t =
          in iriPath $ getIRIVal $ Map.findWithDefault (PlainVal tIRI) (tIRI,k) subst
   cs -> let its' = map (solveToken subst) $ getTokens t
             ts' =  concatMap getTokens its'
-            cs'' = concat $ map getComps its' 
+            cs'' = concatMap getComps its' 
             cs' = map (solveId subst) cs
         in t{getTokens = ts', getComps = cs'' ++ cs'}
 

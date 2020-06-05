@@ -1506,7 +1506,7 @@ anaPatternInstArg lg libEnv opts eo ln dg0 isig csig prevSig name spname subst0 
        _ -> error $ "argument mismatch in instantiation. parameter: " ++ show par0 ++ "\n argument: " ++ show arg0  
      else do
       case par0 of
-       SingleParamInfo b pNSig ->  
+       SingleParamInfo b pNSig ->  trace "here" $ 
         case getSig pNSig of
          G_sign lid (ExtSign _ newDecls) _ -> 
            case Set.toList newDecls of
@@ -1642,7 +1642,7 @@ anaPatternInstArg lg libEnv opts eo ln dg0 isig csig prevSig name spname subst0 
       -- this should happen elsewhere! 
     _ -> -- trace ("itm:" ++ (show $ item arg0) ) $ 
          error "only unsolved names for now"
-  _ -> -- trace ("itm:" ++ (show $ item arg0)) $ 
+  _ -> trace ("itm:" ++ (show $ item arg0)) $ 
        error "only fit_spec for now"
 
 instantiateMacro :: LogicGraph -> LibEnv ->HetcatsOpts -> ExpOverrides -> LibName -> 
