@@ -604,12 +604,12 @@ solveSymbols impSyms vMap (OntologyDocument pd (Ontology n is as fs)) = do
      varSyms = foldl Set.union Set.empty $ map (\(x, (f, k)) -> if f then Set.empty else Set.singleton $ Entity Nothing (getKind k) x) $ Map.toList vMap
      diffSyms = Set.difference usedSyms (Set.union declSyms $ Set.union impSyms varSyms) 
      -- each used symbol must be declared, imported or variable
- -- TODO: this test should take into account imports. Commented out for now!
- --if Set.null diffSyms then 
- return $ OntologyDocument pd $ Ontology n is as fs'
- --else error $ "undeclared symbols in the body of the pattern. impSyms:" ++ show impSyms ++  
- --             " declSyms:" ++ show declSyms ++ " usedSyms:" ++ show usedSyms ++ 
- --             " varSyms:" ++ show varSyms ++ " diffSyms:" ++ show diffSyms 
+ -- TODO: this test should take into account imports. Commented out for now because of structuring!
+ if Set.null diffSyms then 
+  return $ OntologyDocument pd $ Ontology n is as fs'
+ else error $ "undeclared symbols in the body of the pattern. impSyms:" ++ show impSyms ++  
+              " declSyms:" ++ show declSyms ++ " usedSyms:" ++ show usedSyms ++ 
+              " varSyms:" ++ show varSyms ++ " diffSyms:" ++ show diffSyms 
 
 -- solving symbols for each frame, also keep track of declared and used symbols
    
@@ -620,18 +620,18 @@ solveFrame impSyms vMap (Frame ext fBits) = do
              Misc _ -> (ext, Set.empty) 
              ClassEntity (UnsolvedClass i) -> 
                if i `elem` Map.keys vMap 
-                then (ClassEntity $ VarExpression $ MVar False i, Set.empty) -- TODO: handle lists
+                then (ClassEntity $ VarExpression $ MVar False i, Set.empty) -- lists are not allowed in this position, so always simple class
                 else if (Entity Nothing Class i) `elem` impSyms 
                       then (ClassEntity $ Expression i, Set.empty) -- add only if not member of impSyms
                       else (ClassEntity $ Expression i, Set.singleton $ Entity Nothing Class i)  
-             ClassEntity _ -> error $ show ext 
+             ClassEntity _ -> error $ show ext -- no GCIs for now
              ObjectEntity (UnsolvedObjProp i) -> 
                if i `elem` Map.keys vMap
-                then (ObjectEntity $ ObjectPropertyVar False i, Set.empty) -- TODO: handle lists
+                then (ObjectEntity $ ObjectPropertyVar False i, Set.empty) -- lists are not allowed in this position, always object properties
                 else if (Entity Nothing ObjectProperty i) `elem` impSyms 
                       then (ObjectEntity $ ObjectProp i, Set.empty) -- add only if not member of impSyms
                       else (ObjectEntity $ ObjectProp i, Set.singleton $ Entity Nothing ObjectProperty i)
-             ObjectEntity _ -> error $ show ext -- TODO: handle oexp
+             ObjectEntity _ -> error $ show ext -- no GCIs for now
              SimpleEntity (Entity l UnsolvedEntity i) ->
                 if i `elem` Map.keys vMap 
                  then -- TODO: tests that it's an individual!
@@ -662,7 +662,7 @@ solveFrameBit impSyms vMap fbit = -- trace ("fbit:" ++ show fbit) $
        -- trace ("solved lft:" ++ show (ObjectBit aopes')) $ 
        return (ListFrameBit mr $ ObjectBit aopes', used')
       DataBit adpes -> error "nyi"
-      IndividualSameOrDifferent ainds -> return (fbit, Set.empty)
+      IndividualSameOrDifferent ainds -> return (fbit, Set.fromList $ map (\ai -> Entity Nothing NamedIndividual $ snd ai) ainds)
       ObjectCharacteristics achars -> return (fbit, Set.empty)
       IndividualFacts afacts -> do
        let (afacts', used') = foldl (\(afs, usyms) (a, af) -> do
