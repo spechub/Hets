@@ -703,7 +703,7 @@ solveClassExpression impSyms vMap (annos, cexp) =
                        ObjectComplementOf cexp -> let ((_a, cexp'), u) = solveClassExpression impSyms vMap ([], cexp)
                                                   in (ObjectComplementOf cexp', u) 
                        VarExpression _ -> error $ "should get a class expression but instead got " ++ show cexp
-                       ObjectOneOf indivs -> error "nyi"
+                       ObjectOneOf indivs -> (cexp, Set.fromList $ map (\i -> Entity Nothing NamedIndividual i) indivs)
                        ObjectValuesFrom q opexp cexp -> let ((_, cexp'),  u1) = solveClassExpression impSyms vMap ([], cexp)
                                                             ((_, opexp'), u2) = solveObjPropExpression impSyms vMap ([], opexp)
                                                         in (ObjectValuesFrom q opexp' cexp', Set.union u1 u2)
@@ -739,8 +739,8 @@ solveObjPropExpression impSyms vMap (annos, opexp) =
                                           else (ObjectProp i, Set.singleton $ Entity Nothing ObjectProperty i)
  in ((annos, opexp'), used)
 
-solveIndividual :: Set.Set Entity  -> PatternVarMap -> (Annotations,  IndExpression) -> ((Annotations,  IndExpression), Set.Set Entity) 
-solveIndividual _ _ _ = error "nyi"
+-- solveIndividual :: Set.Set Entity  -> PatternVarMap -> (Annotations,  IndExpression) -> ((Annotations,  IndExpression), Set.Set Entity) 
+-- solveIndividual _ _ _ = error "nyi"
 
 -- TODO: 
 -- write a method that solves a data property expression etc.
@@ -853,7 +853,6 @@ instantiateAnno subst var anno =
      _ -> return anno
     
 
--- TODO: this needs an aux that gives back a list of classexpressions!
 instantiateClassExpression :: GSubst -> PatternVarMap -> (Annotations, ClassExpression) -> Result (Annotations, ClassExpression)
 instantiateClassExpression subst var (annos, cexp) = 
  case cexp of 
@@ -871,7 +870,7 @@ instantiateClassExpression subst var (annos, cexp) =
    ObjectComplementOf cexp0 -> do  
      (_, cexp') <- instantiateClassExpression subst var ([], cexp0)
      return (annos, ObjectComplementOf cexp')
-   ObjectOneOf indivs -> error "nyi"
+   ObjectOneOf indivs -> error "nyi" -- TODO: instantiate individuals!
    ObjectValuesFrom q opexp cexp0 -> do
     (_, opexp') <- instantiateObjectPropertyExpression subst var ([], opexp)
     (_, cexp') <- instantiateClassExpression subst var ([], cexp0)
@@ -967,8 +966,111 @@ deleteSymbolsFrames delSyms fs = do
 deleteSymbolsFrame :: Set.Set Entity -> Frame -> Result [Frame]
 deleteSymbolsFrame delSyms f@(Frame ext fBits) =
  case ext of
-   ClassEntity (VarExpression (MVar b i)) -> 
-     if Set.member i $ Set.map (\x -> idToIRI $ entityToId x) delSyms  --TODO: handle lists
+   ClassEntity (VarExpression (MVar b i)) -> -- lists can't occur here
+     if Set.member i $ Set.map (\x -> idToIRI $ entityToId x) delSyms
       then return []
-      else return [f]
-   _ -> return [f] -- error $ "nyi: " ++ show ext
+      else do
+       fBits' <- mapM (deleteSymbolsFrameBit delSyms) fBits 
+       return [Frame ext $ concat fBits']
+   _ -> do
+      fBits' <- mapM (deleteSymbolsFrameBit delSyms) fBits 
+      return [Frame ext $ concat fBits']
+
+deleteSymbolsFrameBit :: Set.Set Entity -> FrameBit -> Result [FrameBit]
+deleteSymbolsFrameBit delSyms fbit = 
+ case fbit of
+  ListFrameBit mr lfb ->
+   case lfb of 
+     ExpressionBit acexps -> do
+      let acexps' = filter (\ac -> classExpNoDeletedSymbol delSyms $ snd ac) acexps
+      case acexps' of
+       [] -> return []
+       _ -> return [ListFrameBit mr $ ExpressionBit acexps'] 
+     ObjectBit aopexps -> do 
+      let aopexps' = filter (\ao -> objPropExpNoDeletedSymbol delSyms $ snd ao) aopexps 
+      case aopexps' of
+       [] -> return []
+       _ -> return [ListFrameBit mr $ ObjectBit aopexps'] 
+     DataBit _adpexp -> return [] 
+     IndividualSameOrDifferent ainds -> do 
+      let ainds' = filter (\ai -> checkIRI delSyms NamedIndividual $ snd ai ) ainds
+      case ainds' of 
+       [] -> return []
+       _ -> return [ListFrameBit mr $ IndividualSameOrDifferent ainds']
+     IndividualFacts afacts -> do
+       let afacts' = filter (\af -> factNoDelSym delSyms $ snd af) afacts
+       case afacts' of 
+         [] -> return []
+         _ -> return [ListFrameBit mr $ IndividualFacts afacts']
+     _ -> return [fbit]
+  AnnFrameBit annos afb ->
+   case afb of
+    ClassDisjointUnion cexps -> do
+      let cexps' = filter (classExpNoDeletedSymbol delSyms) cexps
+      if length cexps' == length cexps then return [fbit]
+      else return []
+    ClassHasKey opexps dpexps -> return [] -- TODO: no data properties yet
+    ObjectSubPropertyChain opexps -> do
+      let opexps' = filter (objPropExpNoDeletedSymbol delSyms) opexps
+      if length opexps' == length opexps then return [fbit] else return []
+    _ -> return [fbit]
+
+factNoDelSym :: Set.Set Entity -> Fact -> Bool
+factNoDelSym delSyms fact = 
+ case fact of 
+  ObjectPropertyFact _pn ope i -> 
+   let 
+    x = objPropExpNoDeletedSymbol delSyms ope
+    y = checkIRI delSyms NamedIndividual i
+   in x && y
+  _ -> False -- TODO: for now!
+
+checkIRI :: Set.Set Entity -> EntityType -> IRI -> Bool
+checkIRI delSyms ck c = 
+ case Set.toList $ Set.filter (\(Entity _ ik i) -> i == c && ik == ck) delSyms of
+  [] -> True
+  _ -> False
+
+classExpNoDeletedSymbol :: Set.Set Entity -> ClassExpression -> Bool
+classExpNoDeletedSymbol delSyms cexp = trace ("checking:" ++ show  cexp) $ 
+ case cexp of 
+  Expression c -> checkIRI delSyms Class c
+  UnsolvedClass c -> checkIRI delSyms Class c -- TODO: is this possible?
+  VarExpression (MVar b c) -> if b then True 
+                              else checkIRI delSyms Class c 
+  ObjectJunction _jt cexps -> foldl (\a b -> a && b) True $ map (classExpNoDeletedSymbol delSyms) cexps
+  ObjectComplementOf cexp' -> classExpNoDeletedSymbol delSyms cexp'
+  ObjectOneOf inds -> foldl (\a b -> a && b) True $ map (checkIRI delSyms NamedIndividual) inds
+  ObjectValuesFrom _qt opexp cexp' -> 
+   let
+    x = classExpNoDeletedSymbol delSyms cexp'
+    y = objPropExpNoDeletedSymbol delSyms opexp
+   in x && y
+  ObjectHasValue opexp ind -> 
+   let 
+    x = objPropExpNoDeletedSymbol delSyms opexp
+    y = checkIRI delSyms NamedIndividual ind
+   in x && y
+  ObjectHasSelf opexp -> 
+   objPropExpNoDeletedSymbol delSyms opexp
+  ObjectCardinality (Cardinality _ _ opexp mcexp ) -> 
+   let
+    x = case mcexp of 
+         Nothing -> True
+         Just cexp' -> classExpNoDeletedSymbol delSyms cexp'
+    y = objPropExpNoDeletedSymbol delSyms opexp
+   in x && y 
+ {- TODO: add these after handling dpexp!
+  | DataValuesFrom QuantifierType DataPropertyExpression DataRange
+  | DataHasValue DataPropertyExpression Literal
+  | DataCardinality (Cardinality DataPropertyExpression DataRange) -}
+  _ -> False
+
+objPropExpNoDeletedSymbol :: Set.Set Entity -> ObjectPropertyExpression -> Bool
+objPropExpNoDeletedSymbol delSyms opexp = 
+ case opexp of
+  ObjectProp op -> checkIRI delSyms ObjectProperty op
+  ObjectInverseOf opexp' -> objPropExpNoDeletedSymbol delSyms opexp'
+  ObjectPropertyVar b i -> if b then True else checkIRI delSyms ObjectProperty i
+  UnsolvedObjProp i -> checkIRI delSyms ObjectProperty i
+

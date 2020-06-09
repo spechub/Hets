@@ -1452,7 +1452,7 @@ removeMissingOptionalSymbols lg libEnv ln missingNodes vMap bodySig = do
        Basic_spec (G_basic_spec blid bsp) rg -> do
         let delSyms' = map (coerceSymbol lid blid) delSyms
         bsp' <- delete_symbols_macro blid (Set.fromList delSyms') bsp
-        return $ Basic_spec (G_basic_spec blid bsp') rg
+        trace ("\n\n\nspec after deleting symbols: " ++ show bsp') $ return $ Basic_spec (G_basic_spec blid bsp') rg
        _ -> error "only basic specs for now"
      vMap' = foldl (\f s -> Map.delete ( idToIRI $ sym_name lid s) f) vMap delSyms
  bodySig' <- case getBody bodySig of
