@@ -1417,3 +1417,29 @@ type Distinct_object = Token
 
 -- <file_name>            ::= <single_quoted>
 type File_name = IRI
+
+
+set_formula_role :: Annotated_formula -> Formula_role -> Annotated_formula
+set_formula_role (AF_THF_Annotated (THF_annotated n _ f an)) role =
+     (AF_THF_Annotated (THF_annotated n role f an))
+set_formula_role (AF_TFX_Annotated (TFX_annotated n _ f an)) role =
+     (AF_TFX_Annotated (TFX_annotated n role f an))
+set_formula_role (AF_TFF_Annotated (TFF_annotated n _ f an)) role =
+     (AF_TFF_Annotated (TFF_annotated n role f an))
+set_formula_role (AF_TCF_Annotated (TCF_annotated n _ f an)) role =
+     (AF_TCF_Annotated (TCF_annotated n role f an))
+set_formula_role (AF_FOF_Annotated (FOF_annotated n _ f an)) role =
+     (AF_FOF_Annotated (FOF_annotated n role f an))
+set_formula_role (AF_CNF_Annotated (CNF_annotated n _ f an)) role =
+     (AF_CNF_Annotated (CNF_annotated n role f an))
+set_formula_role (AF_TPI_Annotated (TPI_annotated n _ f an)) role =
+     (AF_TPI_Annotated (TPI_annotated n role f an))
+
+adjust_formula_role :: AS_Anno.Named Annotated_formula -> AS_Anno.Named Annotated_formula
+adjust_formula_role anno_sen = 
+  let sen1 = AS_Anno.sentence anno_sen
+      sen2 = if AS_Anno.isAxiom anno_sen
+             then set_formula_role sen1 Axiom
+             else sen1
+  in anno_sen { AS_Anno.sentence = sen2 }                
+
