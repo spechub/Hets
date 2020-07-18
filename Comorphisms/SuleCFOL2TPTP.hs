@@ -114,8 +114,7 @@ translateNamedFormula signWithRenamings x = do
   translated <-
     translateFormula signWithRenamings nameS (isAxiom x) $
       AS_Annotation.sentence x
-  return $ x { senAttr = nameS
-             , AS_Annotation.sentence = translated
+  return $ x { AS_Annotation.sentence = translated
              }
 
 translateFormula :: forall e f . (FormExtension f, Eq f)
