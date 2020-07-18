@@ -38,7 +38,7 @@ import qualified Data.Map as Map
 
 import Logic.Prover
 
-genericATPgui :: (Ord proof_tree, Ord sentence)
+genericATPgui :: (Show sentence, Ord proof_tree, Ord sentence)
               => ATPFunctions sign sentence mor proof_tree pst
               -- ^ prover specific functions
               -> Bool -- ^ prover supports extra options

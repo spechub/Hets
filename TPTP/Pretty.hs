@@ -504,7 +504,7 @@ printBasicTheory :: (Sign, [Named Sentence]) -> Doc
 printBasicTheory (_, l) = vsep (map printNamedSentence l) $+$ text ""
 
 printNamedSentence :: Named Sentence -> Doc
-printNamedSentence = printAnnotated_formula . sentence
+printNamedSentence = printAnnotated_formula . sentence . adjust_formula_role
 
 printSymbol :: Symbol -> Doc
 printSymbol = pretty . symbolId
