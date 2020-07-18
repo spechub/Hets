@@ -190,7 +190,7 @@ genericProveBatch useStOpt tLimit extraOptions inclProvedThs saveProblem_batch
     openGoals = filterOpenGoals (configsMap st)
     addToLP g res pst =
         if isProvedStat res && inclProvedThs
-        then inSen pst (g {AS_Anno.isAxiom = True})
+        then inSen pst (g {AS_Anno.isAxiom = True, AS_Anno.wasTheorem = True})
         else pst
     batchProve _ _ resDone [] = return (reverse resDone)
     batchProve pst goalsProcessedSoFar resDone (g : gs) =
