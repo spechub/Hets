@@ -52,7 +52,7 @@ sudo apt-get install software-properties-common
 sudo dpkg --add-architecture i386			# not needed for hets-server
 sudo apt-add-repository ppa:hets/hets
 sudo apt-get update
-sudo apt-get install hets-desktop
+sudo apt-get install hets-desktop hets-lib
 ```
 
 * for using Hets as a server providing a RESTful interface, use hets-server. This is a smaller version without GUI dependencies. Note that also hets-desktop can be used as as server.
