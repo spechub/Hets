@@ -159,7 +159,7 @@ goalProcRetVal stateMVar tLimit extOpts numGoals prName processedGoalsSoFar
   A non-GUI batch mode prover. The list of goals is processed sequentially.
   Proved goals are inserted as axioms.
 -}
-genericProveBatch :: (Ord sentence, Ord proof_tree) =>
+genericProveBatch :: (Show sentence, Ord sentence, Ord proof_tree) =>
                      Bool -- ^ True means use tLimit\/options from GenericState
                   -> Int -- ^ batch time limit
                   -> [String] -- ^ extra options passed
@@ -267,7 +267,7 @@ atpRetvalToDiags gName err = case err of
   Automatic command line prover using batch mode.
 -}
 genericCMDLautomaticBatch ::
-        (Ord proof_tree, Ord sentence)
+        (Show sentence, Ord proof_tree, Ord sentence)
         => ATPFunctions sign sentence mor proof_tree pst {- ^ prover specific
                                                      functions -}
         -> Bool -- ^ True means include proved theorems
