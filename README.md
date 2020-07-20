@@ -86,7 +86,7 @@ For instance, you can run `brew install spechub/hets/hets-desktop --without-leo2
 For a list of these flags, run `brew info hets-desktop`.
 
 ### Hets libraries
-Download the [Hets libraries](https://github.com/spechub/Hets-lib) and set $HETS_LIB to the folder containing these.
+Download the [Hets libraries](https://github.com/spechub/Hets-lib) and set $HETS_LIB to the folder containing these. Alternatively, they will be also installed via the Ubuntu package `hets-lib` (see above).
 
 ### Quickstart
 
