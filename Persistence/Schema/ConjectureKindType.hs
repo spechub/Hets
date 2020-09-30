@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 module Persistence.Schema.ConjectureKindType where
 
 import Database.Persist.TH

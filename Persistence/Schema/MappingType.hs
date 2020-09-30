@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 module Persistence.Schema.MappingType where
 
 import Data.List (isPrefixOf)

@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 module Persistence.Schema.EvaluationStateType where
 
 import Data.List (isPrefixOf)

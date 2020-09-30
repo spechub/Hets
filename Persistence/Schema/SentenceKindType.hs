@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 module Persistence.Schema.SentenceKindType where
 
 import Database.Persist.TH
