@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 module Persistence.Schema.MappingOrigin where
 
 import Data.List (isPrefixOf)
