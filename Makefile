@@ -553,19 +553,16 @@ HAD_INTS = $(foreach file, $(HADDOCK_INTERFACES),\
  -i http://hackage.haskell.org/packages/archive/$(basename $(notdir $(file)))/latest/doc/html,$(file))
 
 HADDOCK_OPTS := $(addprefix --optghc=, $(HC_OPTS))
-docs/index.html: $(derived_sources)
+#$(derived_sources)
+docs/index.html: $(STACK_UPGRADE_TARGET) 
 	@$(RM) -r docs && mkdir docs && \
 		printf '\nCheck log.haddock for results ...\n'
-	$(HADDOCK) -o docs -h -s ../%F $(HAD_INTS) \
+	$(STACK) exec -- haddock --html \
+            $(filter-out Scratch.hs, $(wildcard *.hs)) \
             -t 'Hets - the Heterogeneous Tool Set' \
             -p Hets-Haddock-Prologue.txt $(HADDOCK_OPTS) \
-             $(filter-out Scratch.hs, $(wildcard *.hs)) \
+	    --hyperlinked-source --odir=docs \
 		>log.haddock 2>&1
-haddock: $(STACK_UPGRADE_TARGET) 
-	@$(RM) -r docs && mkdir docs
-	$(STACK) exec -- haddock --html \
-	    $(filter-out Scratch.hs, $(wildcard *.hs)) \
-	    --hyperlinked-source --odir=docs
 $(DRIFT): $(DRIFT_deps)
 	cd utils/DrIFT-src; $(HC) --make -o ../DrIFT DrIFT.hs
 
