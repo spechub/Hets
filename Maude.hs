@@ -1,4 +1,7 @@
 {- |
+Description :  logic for Maude (rewriting logic)
+Copyright   :  (c) Otto-von-Guericke University of Magdeburg
+License     :  GPLv2 or higher, see LICENSE.txt
 
 The "Maude" folder contains the skeleton of
 an instance of "Logic.Logic" for Maude, see
