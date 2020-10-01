@@ -561,8 +561,11 @@ docs/index.html: $(derived_sources)
             -p Hets-Haddock-Prologue.txt $(HADDOCK_OPTS) \
              $(filter-out Scratch.hs, $(wildcard *.hs)) \
 		>log.haddock 2>&1
-
-
+haddock: $(STACK_UPGRADE_TARGET) 
+	@$(RM) -r docs && mkdir docs
+	$(STACK) exec -- haddock --html \
+	    $(filter-out Scratch.hs, $(wildcard *.hs)) \
+	    --hyperlinked-source --odir=docs
 $(DRIFT): $(DRIFT_deps)
 	cd utils/DrIFT-src; $(HC) --make -o ../DrIFT DrIFT.hs
 
