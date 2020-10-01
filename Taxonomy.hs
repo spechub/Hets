@@ -1,4 +1,7 @@
 {- |
+Description :  Visualisation of taxonomies
+Copyright   :  (c) Otto-von-Guericke University of Magdeburg
+License     :  GPLv2 or higher, see LICENSE.txt
 
 This folder provides visualisation of taxonomies in the same style as the
 MMiSSOntology tool written by Achim Mahnke. In fact his modules where only
