@@ -30,10 +30,10 @@ HC_OPTS += $(HC_WARN) $(HC_PROF) $(GHC_FLAGS)
 # *.bin variants here to let them survive a 'make clean'
 all: hets.bin hets_server.bin
 
-# Documentation (no haddock stuff, i.e. "docs/index.html", since developer can
+# Documentation (no haddock stuff, i.e. "docs", since developer can
 # generate it on demand by themselves and other users dont't need it). Other
 # papers (doc/*.pdf) are already pre-generated.
-docs: doc/UserGuide.pdf
+doc: doc/UserGuide.pdf
 
 # Upgrade haskell-stack
 stack_upgrade:
@@ -553,7 +553,7 @@ HAD_INTS = $(foreach file, $(HADDOCK_INTERFACES),\
  -i http://hackage.haskell.org/packages/archive/$(basename $(notdir $(file)))/latest/doc/html,$(file))
 
 HADDOCK_OPTS := $(addprefix --optghc=, $(HC_OPTS))
-docs/index.html: $(derived_sources) $(STACK_UPGRADE_TARGET) 
+docs: $(derived_sources) $(STACK_UPGRADE_TARGET) 
 	@$(RM) -r docs && mkdir docs && \
 		printf '\nCheck log.haddock for results ...\n'
 	$(STACK) exec -- haddock --html \
@@ -561,7 +561,7 @@ docs/index.html: $(derived_sources) $(STACK_UPGRADE_TARGET)
             -t 'Hets - the Heterogeneous Tool Set' \
             -p Hets-Haddock-Prologue.txt $(HADDOCK_OPTS) \
 	    --hyperlinked-source --odir=docs \
-		>log.haddock 2>&1
+		>log.haddock 
 $(DRIFT): $(DRIFT_deps)
 	cd utils/DrIFT-src; $(HC) --make -o ../DrIFT DrIFT.hs
 
