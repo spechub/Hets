@@ -553,8 +553,7 @@ HAD_INTS = $(foreach file, $(HADDOCK_INTERFACES),\
  -i http://hackage.haskell.org/packages/archive/$(basename $(notdir $(file)))/latest/doc/html,$(file))
 
 HADDOCK_OPTS := $(addprefix --optghc=, $(HC_OPTS))
-#$(derived_sources)
-docs/index.html: $(STACK_UPGRADE_TARGET) 
+docs/index.html: $(derived_sources) $(STACK_UPGRADE_TARGET) 
 	@$(RM) -r docs && mkdir docs && \
 		printf '\nCheck log.haddock for results ...\n'
 	$(STACK) exec -- haddock --html \
