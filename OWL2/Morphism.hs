@@ -154,7 +154,7 @@ generatedSign s sign = cogeneratedSign (Set.difference (symOf sign) s) sign
 matchesSym :: Entity -> RawSymb -> Bool
 matchesSym e@(Entity _ _ u) r = case r of
        ASymbol s -> s == e
-       AnUri s -> s == u  -- || expandedIRI s == expandedIRI u 
+       AnUri s -> s == u  -- expandedIRI s == expandedIRI u 
                 || case
          stripPrefix (reverse $ show $ iriPath s) (reverse $ show $ iriPath u) of
            Just (c : _) | null (prefixName s) -> elem c "/#"
