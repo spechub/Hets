@@ -1,4 +1,7 @@
 {- |
+Description :  persistence layer for Hets
+Copyright   :  (c) Otto-von-Guericke University of Magdeburg
+License     :  GPLv2 or higher, see LICENSE.txt
 
 The "Persistence" folder contains a persistence layer for Hets.
 The central Hets data structures like the development graph can

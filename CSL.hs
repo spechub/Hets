@@ -1,4 +1,7 @@
 {- |
+Description :  logic CSL for computer algebra systems
+Copyright   :  (c) Otto-von-Guericke University of Magdeburg
+License     :  GPLv2 or higher, see LICENSE.txt
 
 The "CSL" folder contains the skeleton of
 an instance of "Logic.Logic" for the logic EnCL used for computer algebra systems, see

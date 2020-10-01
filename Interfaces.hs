@@ -1,7 +1,10 @@
 {- |
+Description :  datastructures and functions shared between interfaces (PGIP and GUI)
+Copyright   :  (c) Otto-von-Guericke University of Magdeburg
+License     :  GPLv2 or higher, see LICENSE.txt
 
- The "Interfaces" folder contains 
- There are datastructures and functions that are 
+
+ The "Interfaces" folder contains datastructures and functions that are 
  shared between interfaces (PGIP and GUI). For example
  history should be stored in the same way by both , so 
  that one could in principle switch from one to the other.
