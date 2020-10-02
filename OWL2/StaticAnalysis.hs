@@ -605,11 +605,11 @@ solveSymbols impSyms vMap (OntologyDocument pd (Ontology n is as fs)) = do
      diffSyms = Set.difference usedSyms (Set.union declSyms $ Set.union impSyms varSyms) 
      -- each used symbol must be declared, imported or variable
  -- TODO: this test should take into account imports. Commented out for now because of structuring!
- if Set.null diffSyms then 
-  return $ OntologyDocument pd $ Ontology n is as fs'
- else error $ "undeclared symbols in the body of the pattern. impSyms:" ++ show impSyms ++  
-              " declSyms:" ++ show declSyms ++ " usedSyms:" ++ show usedSyms ++ 
-              " varSyms:" ++ show varSyms ++ " diffSyms:" ++ show diffSyms 
+ --if Set.null diffSyms then 
+ return $ OntologyDocument pd $ Ontology n is as fs'
+ --else error $ "undeclared symbols in the body of the pattern. impSyms:" ++ show impSyms ++  
+ --             " declSyms:" ++ show declSyms ++ " usedSyms:" ++ show usedSyms ++ 
+ --             " varSyms:" ++ show varSyms ++ " diffSyms:" ++ show diffSyms 
 
 -- solving symbols for each frame, also keep track of declared and used symbols
    
@@ -788,7 +788,7 @@ instantiateFrame subst var (Frame ext fBits) = do
                 let j = Map.findWithDefault (error "instantiateFrame") (i, "Individual") subst
                 return $ SimpleEntity $ Entity Nothing NamedIndividual $ getIRIVal j
               else fail $ "unknown individual variable: " ++ show i
-           Misc _ -> error $ show ext
+           Misc _ -> return ext -- TODO: check if ok! error $ show ext
  fBits' <- mapM (instantiateFrameBit subst var) fBits 
  return $ Frame ext' fBits'
 
@@ -807,10 +807,18 @@ instantiateFrameBit subst var fbit =
      DataBit adpexps -> error $ show lfb 
      IndividualSameOrDifferent aindivs -> trace ("subst:" ++ show subst ++ " var:" ++ show var ++ " fbit:" ++ show fbit) $  
        return $ ListFrameBit mr $ IndividualSameOrDifferent $
-       map (\(a,i) -> if (i,"Individual")`elem` Map.keys subst then 
-                       let j = Map.findWithDefault (error "instantiateFrameBit") (i, "Individual") subst
-                       in (a, instParamName subst $ getIRIVal j)
-                      else (a, instParamName subst $ i)) aindivs
+       concatMap (\(a,i) -> if (i,"Individual")`elem` Map.keys subst then 
+                       let j = Map.findWithDefault (error "instantiateFrameBit, individual") (i, "Individual") subst
+                       in [(a, instParamName subst $ getIRIVal j)]
+                      else if (i,"list") `elem` Map.keys subst then
+                            let j = Map.findWithDefault (error "instantiateFrameBit, list") (i, "list") subst
+                            in case j of
+                                ListVal k inds ->
+                                   if (k == "Individual") || null inds then 
+                                     map (\x -> (a,x)) inds
+                                   else error $ "expected a list of individuals but got a list of "++ show k ++"s instead"
+                                _ -> error $ "expected a list of individuals but got " ++ show j
+                           else [(a, instParamName subst $ i)]) aindivs --TODO: this is wrong and needs to be fixed, we get a list and this should be concatenated
      ObjectCharacteristics _achars -> return fbit
      DataPropRange _ -> return fbit
      IndividualFacts afacts -> do 
@@ -870,7 +878,9 @@ instantiateClassExpression subst var (annos, cexp) =
    ObjectComplementOf cexp0 -> do  
      (_, cexp') <- instantiateClassExpression subst var ([], cexp0)
      return (annos, ObjectComplementOf cexp')
-   ObjectOneOf indivs -> error "nyi" -- TODO: instantiate individuals!
+   ObjectOneOf indivs -> do
+    indivs' <- mapM (instIndiv subst var) indivs
+    return (annos, ObjectOneOf $ concat indivs') -- TODO: instantiate individuals!
    ObjectValuesFrom q opexp cexp0 -> do
     (_, opexp') <- instantiateObjectPropertyExpression subst var ([], opexp)
     (_, cexp') <- instantiateClassExpression subst var ([], cexp0)
@@ -919,7 +929,9 @@ instClassExprAux subst var (annos, cexp) =
    ObjectComplementOf cexp0 -> do  
      (_, cexp') <- instantiateClassExpression subst var ([], cexp0)
      return [(annos, ObjectComplementOf cexp')]
-   ObjectOneOf indivs -> error "nyi"
+   ObjectOneOf indivs -> do
+    indivs' <- mapM (instIndiv subst var) indivs
+    return [(annos, ObjectOneOf $ concat indivs')]
    ObjectValuesFrom q opexp cexp0 -> do 
     (_, opexp') <- instantiateObjectPropertyExpression subst var ([], opexp)
     (_, cexp') <- instantiateClassExpression subst var ([], cexp0)
@@ -951,6 +963,22 @@ instantiateObjectPropertyExpression subst var (annos, obexp) =
    let v = getIRIVal $ Map.findWithDefault (error $ "unknown var:" ++ show x ++ " subst:" ++ show subst) (x, "ObjectProperty") subst
    return (annos, ObjectProp v)
   UnsolvedObjProp _ -> error $ "unsolved object property at instantiation: " ++ show obexp 
+
+instIndiv :: GSubst -> PatternVarMap -> IRI -> Result [IRI]
+instIndiv subst var i = 
+ if (i, "Individual") `elem` Map.keys subst then
+  let j = Map.findWithDefault (error "instIndiv") (i, "Individual") subst
+  in case j of 
+      PlainVal v -> return [v]
+      _ -> error $ "expected plain value but got " ++ show j
+ else if (i, "list") `elem` Map.keys subst then
+        let j = Map.findWithDefault (error "instIndiv") (i, "list") subst
+        in case j of
+             ListVal k vs -> trace ("j:" ++ show j) $  if k == "Individual" then return vs else 
+                                                        if null vs then return vs else error $ "expected a list of individuals but got a list of "++ show k ++ "s instead"
+             _ -> error "plain value when expecting a list"
+     else return [instParamName subst i]
+  
 
 -- delete symbols from a solved macro, for optional parameters
 deleteSymbolsMacro :: Set.Set Entity -> OntologyDocument -> Result OntologyDocument
@@ -1074,3 +1102,8 @@ objPropExpNoDeletedSymbol delSyms opexp =
   ObjectPropertyVar b i -> if b then True else checkIRI delSyms ObjectProperty i
   UnsolvedObjProp i -> checkIRI delSyms ObjectProperty i
 
+convertEntities :: Entity -> Entity -> SymbMapItems
+convertEntities sym1 sym2 = 
+ if entityKind sym1 == entityKind sym2 then
+   SymbMapItems (EntityType $ entityKind sym1) [(cutIRI sym1, Just $ cutIRI sym2)]
+ else error $ "kind mismatch:" ++ show sym1 ++ " " ++ show sym2

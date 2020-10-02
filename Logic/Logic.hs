@@ -494,6 +494,10 @@ class ( Syntax lid basic_spec symbol symb_items symb_map_items
          convertTheory :: lid -> Maybe ((sign, [Named sentence]) -> basic_spec)
          convertTheory _ = Nothing
 
+         -- | convert a pair of symbols to symb_map_items
+         convertSymbols :: lid -> Maybe(symbol -> symbol -> symb_map_items)
+         convertSymbols _ = Nothing 
+
          {- ----------------------- amalgamation ---------------------------
             Computation of colimits of signature diagram.
             Indeed, it suffices to compute a cocone that is weakly amalgamable

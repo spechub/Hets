@@ -159,6 +159,7 @@ instance StaticAnalysis OWL2 OntologyDocument Axiom
       stat_symb_items OWL2 s = return . statSymbItems s
       stat_symb_map_items OWL2 = statSymbMapItems
       convertTheory OWL2 = Just convertBasicTheory
+      convertSymbols OWL2 = Just convertEntities
       empty_signature OWL2 = emptySign
       signature_union OWL2 = uniteSign
       intersection OWL2 = intersectSign

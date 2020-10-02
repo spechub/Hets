@@ -525,7 +525,7 @@ groupSpecAux withImport l flag = do
       c <- cBraceT
       return $ Group a $ catRange [b, c]
   <|> do
-    n <- hetIRI l
+    n <- hetIRI l -- TODO: here we should try to parse a compoundIRI and if that fails, try to parse a spec inst!
     {- (f, ps) <- fitArgs l flag
     mi <- if withImport then optionMaybe (hetIRI l) else return Nothing
     case f of
@@ -559,18 +559,22 @@ fitArg l flag = do
           _ <- lookAhead $ try semiT <|> try cBracketT
           return $ Missing_arg nullRange
     fa <- annoParser emptyParam
-    trace ("**** just scanned 1: " ++ show fa) $ return (fa, nullRange)
-  <|> do
+    -- trace ("**** just scanned 1: " ++ show fa) $ 
+    return (fa, nullRange)
+    <|> do
     -- b <- oBracketT
     fa <- annoParser $ fitString l flag
     -- c <- cBracketT
-    trace ("**** just scanned 2: " ++ show fa) $  return (fa, nullRange)
-  <|> do 
+    -- trace ("**** just scanned 2: " ++ show fa) $  
+    return (fa, nullRange)
+    <|> do 
     fa <- annoParser $ fittingArg l flag
-    trace ("**** just scanned 3: " ++ show fa) $ return (fa, nullRange)
-  <|> do
+    -- trace ("**** just scanned 3: " ++ show fa) $ 
+    return (fa, nullRange)
+    <|> do
    s <- scanString
-   trace ("**** just scanned 4: " ++ s) $ return (Annoted (Fit_string (mkIRI s) nullRange) nullRange [][], nullRange)
+   -- trace ("**** just scanned 4: " ++ s) $ 
+   return (Annoted (Fit_string (mkIRI s) nullRange) nullRange [][], nullRange)
   <|> do
     _b <- oBracketT
     (aspecs, _) <- separatedBy (iParser l flag) commaT
@@ -579,9 +583,32 @@ fitArg l flag = do
 
 iParser :: LogicGraph -> Bool -> AParser st (Annoted SPEC)
 iParser l flag = do
-          i <- compoundIriCurie
-          _ <- option () skip
-          trace ("tks:" ++ show (getTokens $ iriPath i) ++ " cmps:" ++ show (getComps $ iriPath i)) $ return $ Annoted (UnsolvedName i nullRange) nullRange [][]
+          i <- hetIRI l --compoundIriCurie
+          asp <- option (Annoted (UnsolvedName i nullRange) nullRange [][]) $
+                 do
+               b <- oBracketT -- after a bracket, check if there's a separator. If there's a comma, it's a compound id. If theres a ;, it's a spec_inst.
+               fstI <- compoundIriCurie --hetIRI l
+               asp' <- 
+                    do 
+                  _ <- commaT 
+                  (ts, ps) <- mixId ([],[]) ([],[]) `separatedBy` commaT
+                  c <- cBracketT
+                  _ <- option () skip
+                  return $ Annoted (UnsolvedName (i {iriPath = addComponents (iriPath i) ((iriPath fstI):ts, toRange b ps c)}) nullRange) nullRange [] []
+                <|> do
+                  _ <- semiT
+                  (fas, _) <- (fitArg l flag) `separatedBy` semiT 
+                  let (f, _ps) = unzip fas
+                  _c <- cBracketT
+                  _ <- option () skip
+                  let fstArg = Annoted (Fit_spec (Annoted (UnsolvedName fstI nullRange) nullRange [][]) [] nullRange) nullRange [][]
+                      inst =  Spec_inst i (fstArg:f) Nothing nullRange
+                  return $ Annoted inst nullRange [] []
+                <|> do
+                  _ <- cBracketT
+                  return $ Annoted (UnsolvedName i{iriPath = addComponents (iriPath i) ([iriPath fstI], nullRange)} nullRange) nullRange [][]
+               return asp'
+          return asp 
         <|> aSpec l flag
  
 fitString :: LogicGraph -> Bool -> AParser st FIT_ARG

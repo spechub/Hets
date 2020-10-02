@@ -310,9 +310,9 @@ showSepList s f l = case l of
 
 -- | shows a compound list
 showIds :: [Id] -> ShowS
-showIds is = noShow (null is) $ showString "_"
-             . showSepList (showString "_") showId is
-             . showString ""
+showIds is = noShow (null is) $ showString "["
+             . showSepList (showString ",") showId is
+             . showString "]"
 
 -- | shows an 'Id', puts final places behind a compound list
 showId :: Id -> ShowS
