@@ -142,7 +142,7 @@ Dependencies can be installed as specified in [Hets Development](#hets-developme
 
 Before committing haskell source files you may check compliance to the programming guidelines:
 * Use scan which can be installed by `cabal install scan`.
-* The comments in your haskell sources should not cause `haddock` to fail. After `make` (for re-compiling changed sources) `make doc` will call `haddock`.
+* The comments in your haskell sources should not cause `haddock` to fail. After `make` (for re-compiling changed sources) `make docs` will call `haddock`.
 * Also check your source with hlint which you may install by `cabal install hlint`.
 
 Also have a look at the current [Release Notes](https://github.com/spechub/Hets/releases/latest), [Debugging and Testing Hets](https://github.com/spechub/Hets/wiki/Debugging-and-Testing-Hets),[Code Review](https://github.com/spechub/Hets/wiki/Code-Review) and [Branching](https://github.com/spechub/Hets/wiki/Branching).
