@@ -290,7 +290,7 @@ data THF_conn_term = THFC_pair THF_pair_connective
 
 -- <thf_conditional>      ::= $ite(<thf_logic_formula>,<thf_logic_formula>,
 --                             <thf_logic_formula>)
-data THF_conditional = THF_conditional THF_logic_formula THF_logic_formula THF_logic_formula -- $ite
+data THF_conditional = THF_conditional THF_logic_formula THF_logic_formula THF_logic_formula --  $ite
                        deriving (Show, Ord, Eq, Data, Typeable)
 
 -- %----The LHS of a term or formula binding must be a non-variable term that
@@ -560,7 +560,7 @@ type TFF_atomic_formula = FOF_atomic_formula
 
 -- <tff_conditional>      ::= $ite_f(<tff_logic_formula>,<tff_logic_formula>,
 --                            <tff_logic_formula>)
-data TFF_conditional = TFF_conditional TFF_logic_formula TFF_logic_formula TFF_logic_formula -- $ite_f
+data TFF_conditional = TFF_conditional TFF_logic_formula TFF_logic_formula TFF_logic_formula --  $ite_f
                        deriving (Show, Ord, Eq, Data, Typeable)
 
 -- <tff_let>              ::= $let_tf(<tff_let_term_defns>,<tff_formula>) |
