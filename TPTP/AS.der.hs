@@ -1014,14 +1014,14 @@ type Type_functor = Token
 -- <defined_type>         ::= <atomic_defined_word>
 -- <defined_type>         :== $oType | $o | $iType | $i | $tType |
 --                            $real | $rat | $int
-data Defined_type = OType -- $oType/$o is the Boolean type, i.e., the type of $true and $false.
-                  | O     -- $oType/$o is the Boolean type, i.e., the type of $true and $false.
-                  | IType -- $iType/$i is non-empty type of individuals, which may be finite or infinite.
-                  | I     -- $iType/$i is non-empty type of individuals, which may be finite or infinite.
-                  | TType -- $tType is the type (kind) of all types.
-                  | Real  -- $real is the type of <real>s.
-                  | Rat   -- $rat is the type of <rational>s.
-                  | Int   -- $int is the type of <signed_integer>s and <unsigned_integer>s.
+data Defined_type = OType --  $oType/$o is the Boolean type, i.e., the type of $true and $false.
+                  | O     --  $oType/$o is the Boolean type, i.e., the type of $true and $false.
+                  | IType --  $iType/$i is non-empty type of individuals, which may be finite or infinite.
+                  | I     --  $iType/$i is non-empty type of individuals, which may be finite or infinite.
+                  | TType --  $tType is the type (kind) of all types.
+                  | Real  --  $real is the type of <real>s.
+                  | Rat   --  $rat is the type of <rational>s.
+                  | Int   --  $int is the type of <signed_integer>s and <unsigned_integer>s.
                     deriving (Show, Ord, Eq, Data, Typeable)
 
 -- <system_type>          :== <atomic_system_word>
