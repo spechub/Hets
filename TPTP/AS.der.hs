@@ -821,7 +821,7 @@ data FOF_defined_term = FOFDT_term Defined_term
 -- <fof_defined_atomic_term>  ::= <fof_defined_plain_term>
 -- %----None yet             | <defined_infix_term>
 data FOF_defined_atomic_term = FOFDAT_plain FOF_defined_plain_term
-                             -- | FOFDAT_indix Defined_infix_term
+                             --  | FOFDAT_indix Defined_infix_term
                                deriving (Show, Ord, Eq, Data, Typeable)
 
 -- %----None yet <defined_infix_term> ::= <fof_term> <defined_infix_func> <fof_term>
