@@ -184,8 +184,9 @@ If you wish to make larger changes we generally recommend [forking](https://help
     make
     make hets
     make hets_server
+    make docs
   ```
-  This uses Stack to build the Hets[-Server] binary.
+  This uses Stack to build the Hets[-Server] binary (or, in the last case, the Hets code documentation, using haddock).
   During this process, the specified version of GHC is installed in the user directory, all dependencies are built and finally, the Hets[-Server] binary is compiled.
 * If you want to clean the extra-dependencies of Stack that are put into the Hets working directory, run
   ```
