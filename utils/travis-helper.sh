@@ -396,6 +396,19 @@ function myUpload {
 	return 0
 }
 
+function myUploadDocs {
+	if [[ ! -d docs ]] ; then
+		echo 'docs/ unavailable - skipping upload.'
+		return 0
+	fi
+	if ! tar cplzf /tmp/docs.tgz docs ; then
+		echo 'Archiving docs/ failed - skipping upload.'
+		return 0
+	fi
+	curl -q --no-remote-time -F "job=${TRAVIS_BUILD_NUMBER}.0" \
+		-F 'button=1' -F "upfile=@${TRAVIS_EVENT_TYPE}-docs.tgz" ${PUSH_URL}
+}
+
 function myPrepareBuildDir {
 	local X
 	[[ ${JOB_NAME} =~ ^(server|pg)$ ]] && X='server' || X='desktop'
