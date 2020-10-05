@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {- |
 Module      :  ./atermlib/src/ATerm/SimpPretty.hs
 Description :  simple pretty printing combinators
@@ -37,6 +38,10 @@ module ATerm.SimpPretty (
 
         render, fullRender, writeFileSDoc
   ) where
+
+#if __GLASGOW_HASKELL__ >= 803
+import Prelude hiding ((<>))
+#endif
 
 import System.IO
 
