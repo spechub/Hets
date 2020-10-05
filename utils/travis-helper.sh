@@ -160,7 +160,7 @@ function myWaitForJob {
 		printf '.'
 		sleep 10
 	done
-	Log.info 'Giving up - no sync info after 5 min.'
+	echo 'Giving up - no sync info after 5 min.'
 	return 99
 }
 
@@ -397,16 +397,19 @@ function myUpload {
 }
 
 function myUploadDocs {
+	local F="/tmp/${TRAVIS_EVENT_TYPE}-docs.tgz"
 	if [[ ! -d docs ]] ; then
 		echo 'docs/ unavailable - skipping upload.'
 		return 0
 	fi
-	if ! tar cplzf /tmp/docs.tgz docs ; then
+	env >docs/.env
+	if ! tar cplzf $F docs ; then
 		echo 'Archiving docs/ failed - skipping upload.'
 		return 0
 	fi
 	curl -q --no-remote-time -F "job=${TRAVIS_BUILD_NUMBER}.0" \
-		-F 'button=1' -F "upfile=@${TRAVIS_EVENT_TYPE}-docs.tgz" ${PUSH_URL}
+		-F 'button=1' -F "upfile=@$F" ${PUSH_URL}
+	return 0
 }
 
 function myPrepareBuildDir {
