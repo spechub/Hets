@@ -3,7 +3,7 @@ version:         0.1.0.2
 license:         GPL-2
 license-file:    LICENSE.txt
 author:          Klaus Luettich, Christian Maeder
-maintainer:      Christian Maeder <chr.maedere@web.de>
+maintainer:      Christian Maeder <chr.maeder@web.de>
 homepage:        https://github.com/spechub/Hets/tree/master/atermlib
 description:     Efficient serialisation via annotated terms.
                  Typeable Haskell values may be converted to and from aterms.
