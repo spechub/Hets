@@ -160,7 +160,7 @@ function myWaitForJob {
 		printf '.'
 		sleep 10
 	done
-	Log.info 'Giving up - no sync info after 5 min.'
+	echo 'Giving up - no sync info after 5 min.'
 	return 99
 }
 
@@ -290,7 +290,7 @@ function myGetMissingPkgs {
 	# we do not need any packages from there - reduce apt-get update time
 	sudo rm -f /etc/apt/sources.list.d/{computology_apt-backport,docker,git-ppa,github_git-lfs,heroku-toolbelt,pollinate}.list
 	# DB tests require PostgreSQL 9.5+ because of 'CREATE INDEX IF NOT EXISTS'
-	# and xenial is the 1st realease, which ships it
+	# and xenial is the 1st release, which ships it
 	(( ${_system_version//.} >= 1604 )) && \
 		sudo rm -f /etc/apt/sources.list.d/pgdg.list
 
@@ -331,6 +331,9 @@ function myGetMissingPkgs {
 			ADD_PKGS+=' postgresql'
 			(( ${_system_version//.} < 1604 )) && ADD_PKGS+='-9.5'
 		fi
+	elif [[ ${JOB_NAME} == 'haddock' ]]; then
+		# we use 'marked' to convert README.md into docs/README.html
+		ADD_PKGS+=' npm'
 	fi
 	echo "Add. Packages: '${ADD_PKGS}' ..."
 	SECONDS=0
@@ -393,6 +396,29 @@ function myUpload {
 		curl -s --no-remote-time -F "job=${TRAVIS_JOB_NUMBER}" -F 'button=1' \
 			-F "upfile=@$F" ${PUSH_URL}
 	done
+	return 0
+}
+
+function myUploadDocs {
+	local F="/tmp/${TRAVIS_EVENT_TYPE}-docs.tgz"
+	if [[ ! -d docs ]] ; then
+		echo 'docs/ unavailable - skipping upload.'
+		return 0
+	fi
+	env >docs/.env
+	# convert the README.md into docs/README.html
+	npm install --only=production --no-optional marked commander
+	utils/md2html.js -t 'Hets (The heterogeneous tool set)' -i README.md \
+		-o docs/README.html 
+	[[ -s docs/README.html ]] || rm -f docs/README.html
+	# archive
+	if ! tar cplzf $F docs ; then
+		echo 'Archiving docs/ failed - skipping upload.'
+		return 0
+	fi
+	# and upload
+	curl -q --no-remote-time -F "job=${TRAVIS_BUILD_NUMBER}.0" \
+		-F 'button=1' -F "upfile=@$F" ${PUSH_URL}
 	return 0
 }
 
