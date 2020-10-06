@@ -11,7 +11,7 @@ synopsis:        serialisation for Haskell values with sharing support
 category:        Data, Parsing
 stability:       provisional
 build-type:      Simple
-cabal-version:   >= 1.4
+cabal-version:   >= 1.10
 tested-with:     GHC ==8.6.5
 
 library
@@ -30,6 +30,8 @@ library
     , ATerm.SimpPretty
     , ATerm.Unshared
 
-  extensions: CPP, MagicHash
+  other-extensions: CPP, MagicHash
+
+  default-language: Haskell98
 
   ghc-options: -Wall
