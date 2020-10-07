@@ -186,6 +186,7 @@ instance Logic OWL2 ProfSub OntologyDocument Axiom SymbItems SymbMapItems
          sublogicDimensions OWL2 = allProfSubs
          parseSublogic OWL2 _ = Just topS -- ignore sublogics
          provers OWL2 = [pelletProver, factProver]
+         default_prover OWL2 = "Fact"
          cons_checkers OWL2 = [pelletConsChecker, factConsChecker]
          conservativityCheck OWL2 = map
            (\ ct -> ConservativityChecker ("Locality_" ++ ct)
