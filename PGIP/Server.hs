@@ -22,6 +22,7 @@ import PGIP.GraphQL
 
 import PGIP.ReasoningParameters as ReasoningParameters
 import PGIP.Query as Query
+import PGIP.RequestCache
 import PGIP.Server.WebAssets
 import PGIP.Shared
 import qualified PGIP.Server.Examples as Examples
@@ -91,7 +92,9 @@ import Common.Doc
 import Common.DocUtils (pretty, showGlobalDoc, showDoc)
 import Common.ExtSign (ExtSign (..))
 import Common.GtkGoal
+import Common.IO
 import Common.Json (Json (..), ppJson)
+import Common.JSONOrXML
 import Common.LibName
 import Common.PrintLaTeX
 import Common.Result
@@ -129,6 +132,7 @@ import System.FilePath
 import System.IO
 import System.Posix.Process (getProcessID)
 import System.Posix.Signals
+import System.Posix.Temp
 
 data UsedAPI = OldWebAPI | RESTfulAPI deriving (Show, Eq, Ord)
 
@@ -214,6 +218,12 @@ hetsServer' opts1 = do
       bl = blacklist opts1
       prList ll = intercalate ", " $ map (intercalate ".") ll
   createDirectoryIfMissing False tempLib
+
+  -- create a mutable Cache that saves all Requests/Responses
+  cachedRequestsResponses <- createNewRequestCache
+  -- store the current requestBody bytestring
+  currentRequestBodyBS <- newIORef (BS.empty)
+
   writeFile logFile ""
   unless (null wl) . appendFile logFile
     $ "white list: " ++ prList wl ++ "\n"
@@ -226,12 +236,19 @@ hetsServer' opts1 = do
   runSettings (setOnExceptionResponse catchException $
                setPort port $
                setTimeout 86400 defaultSettings)
-    $ \ re respond -> do
+    $ \ re respond' -> do
 #else
   run port $ \ re -> do
-   let respond = liftIO . return
+   let respond' = liftIO . return
 #endif
-   let rhost = shows (remoteHost re) "\n"
+   let
+       respond = \response -> do
+          -- Before updating cache check if request was successful
+          if statusCode (responseStatus response) == 200 then do
+            updateCache currentRequestBodyBS re response cachedRequestsResponses
+            respond' response
+          else respond' response
+       rhost = shows (remoteHost re) "\n"
        ip = getIP4 rhost
        white = matchWhite ip wl
        black = any (matchIP4 ip) bl
@@ -270,10 +287,26 @@ hetsServer' opts1 = do
               requestBodyBS <- strictRequestBody re
               requestBodyParams <- parseRequestParams re requestBodyBS
               let unknown = filter (`notElem` allQueryKeys) $ map fst qr2
+
+              -- store the requestBody because the original one in the request is consumed
+              atomicWriteIORef currentRequestBodyBS requestBodyBS
+              requestKey <- convertRequestToMapKey re requestBodyBS
+              cacheLookupResult <- lookupCache requestKey cachedRequestsResponses
+              -- check if cache should be used
+              let cacheEntry = if (elem ("useCache", Just "true") qr2)
+                               then cacheLookupResult
+                               else Nothing
               if null unknown
-              then parseRESTful newOpts sessRef pathBits
-                    (map fst fs2 ++ map (\ (a, b) -> a ++ "=" ++ b) vs)
-                    qr2 requestBodyBS requestBodyParams meth respond
+              then
+                -- return cache if request is already cached and should be used
+                case cacheEntry of
+                  Nothing -> do
+                    parseRESTful newOpts sessRef pathBits
+                      (map fst fs2 ++ map (\ (a, b) -> a ++ "=" ++ b) vs) qr2
+                      requestBodyBS requestBodyParams meth tempDir respond
+                  Just cacheResponse ->
+                    -- Return directly cached response without updating the cache
+                    respond' cacheResponse
               else queryFail ("unknown query key(s): " ++ show unknown) respond
            -- only otherwise stick to the old response methods
            else oldWebApi newOpts tempLib sessRef re pathBits qr2
@@ -398,9 +431,9 @@ isRESTful pathBits = case pathBits of
 
 listRESTfulIdentifiers :: [String]
 listRESTfulIdentifiers =
-  [ "libraries", "sessions", "menus", "filetype", "hets-lib", "dir"]
+  [ "libraries", "sessions", "menus", "filetype", "hets-lib", "dir", "folder"]
   ++ nodeEdgeIdes ++ newRESTIdes
-  ++ ["available-provers"]
+  ++ ["available-provers", "uploadFile"]
 
 nodeEdgeIdes :: [String]
 nodeEdgeIdes = ["nodes", "edges"]
@@ -414,17 +447,17 @@ queryFail :: String -> WebResponse
 queryFail msg respond = respond $ mkResponse textC status400 msg
 
 allQueryKeys :: [String]
-allQueryKeys = [updateS, "library", "consistency-checker"]
-  ++ globalCommands ++ knownQueryKeys
-
+allQueryKeys = [updateS, "library", "consistency-checker", "overwrite",
+  "useCache"] ++ globalCommands ++ knownQueryKeys
 
 data RequestBodyParam = Single String | List [String]
 
 -- query is analysed and processed in accordance with RESTful interface
 parseRESTful :: HetcatsOpts -> Cache -> [String] -> [String] -> [QueryPair]
-  -> BS.ByteString -> Json -> String -> WebResponse
+  -> BS.ByteString -> Json -> String -> FilePath -> WebResponse
 parseRESTful
-  opts sessRef pathBits qOpts splitQuery requestBodyBS requestBodyParams meth respond = let
+  opts sessRef pathBits qOpts splitQuery requestBodyBS requestBodyParams meth
+  tempDir respond = let
   {- some parameters from the paths query part might be needed more than once
   (when using lookup upon querybits, you need to unpack Maybe twice) -}
   lookupQueryStringParam :: String -> Maybe String
@@ -498,6 +531,26 @@ parseRESTful
       ["available-provers"] ->
          liftIO (usableProvers logicGraph)
          >>= respond . mkOkResponse xmlC . ppTopElement
+      -- return an unique folder for uploading a file
+      ["folder"] -> do
+        uniqueFolderName <- mkdtemp (tempDir ++ [pathSeparator] ++ "hetsUserFolder_")
+        respond $ mkOkResponse textC uniqueFolderName
+      -- upload a user file to folder for future proving
+      "uploadFile" : folderIri : fileNameIri : _-> do
+        let userFileContent = BS.unpack requestBodyBS
+        let userFilePath = tempDir ++ [pathSeparator] ++ folderIri ++ [pathSeparator] ++ fileNameIri
+        fileExists <- doesFileExist userFilePath
+        -- Check if file already exists and no overwrite flag is set
+        if fileExists && not (elem ("overwrite", Just "true") splitQuery)
+          then
+            fail ("the file you wish to upload already exists, for overwrite" ++
+                      "please set the corresponding flag")
+          else do
+            -- write file
+            handleUserFile <- openFile userFilePath ReadWriteMode
+            hPutStr handleUserFile userFileContent
+            hClose handleUserFile
+            respond $ mkOkResponse textC userFilePath
       -- get dgraph from file
       "filetype" : libIri : _ -> mkFiletypeResponse opts libIri respond
       "hets-lib" : r -> let file = intercalate "/" r in
@@ -546,49 +599,50 @@ parseRESTful
               optFlags
             validReasoningParams = isRight reasoningParametersE <=
               elem newIde ["prove", "consistency-check"]
-        in if elem newIde newRESTIdes
-                && all (`elem` globalCommands) cmdList
-                && validReasoningParams
-        then let
-         qkind = case newIde of
-           "translations" -> case nodeM of
-             Nothing -> GlTranslations
-             Just n -> nodeQuery n $ NcTranslations Nothing
-           _ | elem newIde ["provers", "consistency-checkers"] ->
-             let pm = if newIde == "provers" then GlProofs else GlConsistency
-             in case nodeM of
-             Nothing -> GlProvers pm transM
-             Just n -> nodeQuery n $ NcProvers pm transM
-           _ | elem newIde ["prove", "consistency-check"] ->
-             case reasoningParametersE of
-               Left message_ -> error ("Invalid parameters: " ++ message_) -- cannot happen
-               Right reasoningParameters ->
-                 let proverMode = if newIde == "prove"
-                                  then GlProofs
-                                  else GlConsistency
-                 in GlAutoProveREST proverMode reasoningParameters
-           "dg" -> case transM of
-             Nothing -> DisplayQuery (Just $ fromMaybe "xml" format_)
-             Just tr -> Query.DGTranslation tr
-           "theory" -> case transM of
-             Nothing -> case nodeM of
-                         Just x -> NodeQuery (maybe (Right x) Left $ readMaybe x)
-                                   $ NcCmd Query.Theory
-                         Nothing -> error "development graph node missing. Please use <url>?node=<number>"
-             Just tr -> case nodeM of
-                         Just x -> NodeQuery (maybe (Right x) Left $ readMaybe x)
-                                   $ NcCmd $ Query.Translate tr
-                         Nothing -> error "development graph node missing. Please specifiy ?node=<number>"
-           _ -> error $ "REST: unknown " ++ newIde
-         in getResponseAux newOpts . Query (NewDGQuery libIri $ cmdList
-            ++ Set.toList (Set.fromList $ optFlags ++ qOpts)) $ qkind
-        else if validReasoningParams
-             then queryFailure
-             else case reasoningParametersE of
-                    Left message_ ->
-                      queryFail ("Invalid parameters: " ++ message_) respond
-                    Right _ ->
-                      error "Unexpected error in PGIP.Server.parseRESTful"
+        in
+          if elem newIde newRESTIdes
+                  && all (`elem` globalCommands) cmdList
+                  && validReasoningParams
+            then let
+            qkind = case newIde of
+              "translations" -> case nodeM of
+                Nothing -> GlTranslations
+                Just n -> nodeQuery n $ NcTranslations Nothing
+              _ | elem newIde ["provers", "consistency-checkers"] ->
+                let pm = if newIde == "provers" then GlProofs else GlConsistency
+                in case nodeM of
+                Nothing -> GlProvers pm transM
+                Just n -> nodeQuery n $ NcProvers pm transM
+              _ | elem newIde ["prove", "consistency-check"] ->
+                case reasoningParametersE of
+                  Left message_ -> error ("Invalid parameters: " ++ message_) -- cannot happen
+                  Right reasoningParameters ->
+                    let proverMode = if newIde == "prove"
+                                      then GlProofs
+                                      else GlConsistency
+                    in GlAutoProveREST proverMode reasoningParameters
+              "dg" -> case transM of
+                Nothing -> DisplayQuery (Just $ fromMaybe "xml" format_)
+                Just tr -> Query.DGTranslation tr
+              "theory" -> case transM of
+                Nothing -> case nodeM of
+                            Just x -> NodeQuery (maybe (Right x) Left $ readMaybe x)
+                                      $ NcCmd Query.Theory
+                            Nothing -> error "development graph node missing. Please use <url>?node=<number>"
+                Just tr -> case nodeM of
+                            Just x -> NodeQuery (maybe (Right x) Left $ readMaybe x)
+                                      $ NcCmd $ Query.Translate tr
+                            Nothing -> error "development graph node missing. Please specifiy ?node=<number>"
+              _ -> error $ "REST: unknown " ++ newIde
+            in getResponseAux newOpts . Query (NewDGQuery libIri $ cmdList
+                ++ Set.toList (Set.fromList $ optFlags ++ qOpts)) $ qkind
+            else if validReasoningParams
+                then queryFailure
+                else case reasoningParametersE of
+                        Left message_ ->
+                          queryFail ("Invalid parameters: " ++ message_) respond
+                        Right _ ->
+                          error "Unexpected error in PGIP.Server.parseRESTful"
       _ -> queryFailure
     "PUT" -> case pathBits of
       {- execute global commands
@@ -1058,6 +1112,8 @@ ppDGraph dg mt = let ga = globalAnnos dg in case optLibDefn dg of
              else return (textC, "could not create pdf:\n"
                   ++ unlines [out1, err1, out2, err2])
 
+-- | Increase the amount how often a library has been accessed.
+-- | Returns the analysis library from cache.
 increaseUsage :: Cache -> Session -> ResultT IO (Session, Int)
 increaseUsage sessRef sess = do
   time <- lift getCurrentTime
@@ -1073,20 +1129,29 @@ getDGraph opts sessRef dgQ = do
     NewDGQuery file cmdList -> do
       let cl = mapMaybe (\ s -> find ((== s) . cmdlGlobCmd)
                   $ map fst allGlobLibAct) cmdList
-      mf <- lift $ getContentAndFileType opts file
+      -- use the file path if file is an url to a web ressource
+      -- otherwise if file is a local file use the absolute path instead
+      absolutPathToFile <- if checkUri file
+                             then return file
+                             else do
+                               fileExists <- liftIO $ doesFileExist file
+                               if fileExists
+                                 then liftIO $ catchIOException file $ makeAbsolute file
+                                 else return file
+      mf <- lift $ getContentAndFileType opts absolutPathToFile
       case mf of
         Left err -> fail err
         Right (_, mh, f, cont) -> case mh of
           Nothing -> fail $ "could determine checksum for: " ++ file
-          Just h -> let q = file : h : cmdList in
+          Just h -> let q = absolutPathToFile : h : cmdList in
             case Map.lookup q lm of
-            Just sess -> increaseUsage sessRef sess
+            Just sess -> increaseUsage sessRef sess -- Return result from cache.
             Nothing -> do
               (ln, le1) <- if isDgXmlFile opts f cont
                 then readDGXmlR opts f Map.empty
                 else anaSourceFile logicGraph opts
                   { outputToStdout = False }
-                  Set.empty emptyLibEnv emptyDG file
+                  Set.empty emptyLibEnv emptyDG absolutPathToFile
               le2 <- foldM (\ e c -> liftR
                   $ fromJust (lookup c allGlobLibAct) ln e) le1 cl
               time <- lift getCurrentTime
@@ -1246,7 +1311,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format_ api pfOptions = do
                 then return (textC, "nothing to prove")
                 else do
                   lift $ nextSess newLib sess sessRef k
-                  processProofResult format_ pfOptions nodesAndProofResults
+                  processProofResult format_ pfOptions nodesAndProofResults (opts, libEnv, ln, dg)
               _ -> fail ("The GlAutoProveREST path is only "
                          ++ "available in the REST interface.")
             GlAutoProve (ProveCmd prOrCons incl mp mt tl nds xForm axioms) -> do
@@ -1264,7 +1329,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format_ api pfOptions = do
                       ) [] nodesAndProofResults
                     in return (htmlC, formatResultsMultiple xForm k sens prOrCons)
                   RESTfulAPI ->
-                    processProofResult format_ pfOptions nodesAndProofResults
+                    processProofResult format_ pfOptions nodesAndProofResults (opts, libEnv, ln, dg)
             GlobCmdQuery s ->
               case find ((s ==) . cmdlGlobCmd . fst) allGlobLibAct of
               Nothing -> if s == updateS then
@@ -1322,7 +1387,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format_ api pfOptions = do
                                 add_attr (mkAttr "class" "results") $
                                 unode "div" $ formatGoals True proofResults)
                             RESTfulAPI -> processProofResult format_ pfOptions
-                              [(getDGNodeName dgnode, proofResults)]
+                              [(getDGNodeName dgnode, proofResults)] (opts, libEnv, ln, dg)
                       GlConsistency -> do
                         (newLib, [(_, res, txt, _, _, _, _)]) <-
                           consNode libEnv ln dg nl subL incl mp mt tl
@@ -1384,11 +1449,29 @@ getHetsResult opts updates sessRef (Query dgQ qk) format_ api pfOptions = do
 processProofResult :: Maybe String
                    -> ProofFormatterOptions
                    -> [(String, [ProofResult])]
+                   -> (HetcatsOpts, LibEnv, LibName, DGraph)
                    -> ResultT IO (String, String)
-processProofResult format_ options nodesAndProofResults =
-  if format_ == Just "db"
-  then return (jsonC, "{\"savedToDatabase\": true}")
-  else return $ formatProofs format_ options nodesAndProofResults
+processProofResult (Just "db") _ _ _ =
+  return (jsonC, "{\"savedToDatabase\": true}")
+processProofResult format_ options nodesAndProofResults (opts, libEnv, ln, dg) =
+  do
+    joinedResult <- liftR $ getJSONOrXMLResult format_ options nodesAndProofResults opts libEnv ln dg
+    let result = prettyWithTag joinedResult
+    return result
+
+-- returns the joined data consisting of the development graph and prover results
+getJSONOrXMLResult :: Maybe String -> ProofFormatterOptions
+                   -> [(String, [ProofResult])] -> HetcatsOpts -> LibEnv
+                   -> LibName -> DGraph -> Result JSONOrXML
+getJSONOrXMLResult format_ options nodesAndProofResults opts libEnv ln dg =
+  let
+    proverResults = ("prover_output", formatProofs format_ options nodesAndProofResults)
+  in
+    case format_ of
+      Just "xml" -> joinData ("dgraph", (XML (ToXml.dGraph opts libEnv ln dg)))
+                             proverResults
+      _ -> joinData ("dgraph", (JSON (ToJson.dGraph opts libEnv ln dg)))
+                    proverResults
 
 formatGoals :: Bool -> [ProofResult] -> [Element]
 formatGoals includeDetails =

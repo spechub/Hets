@@ -1,5 +1,4 @@
 {- |
-Module      :
 Description :  extended modal logic extension of CASL
 Copyright   :
 License     :  GPLv2 or higher, see LICENSE.txt

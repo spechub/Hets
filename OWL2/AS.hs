@@ -230,7 +230,7 @@ checkPredefAux (sl, pref, exPref) u =
     pu | elem lp sl -> case pu of
       "" -> let ex = iriToStringUnsecure u in 
             case stripPrefix "http://www." ex of
-              Just r | r == "w3.org/" ++ exPref ++ lp -- || r == lp
+              Just r | r == "w3.org/" ++ exPref ++ lp -- r == lp
                   -> res
               _ | null ex -> res
               _ -> Nothing

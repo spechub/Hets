@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 module Persistence.Schema.ConsistencyStatusType where
 
 import Database.Persist.TH

@@ -28,7 +28,7 @@ import qualified GUI.HTkGenericATP as HTk
   Invokes the prover GUI. Users may start the batch prover run on all goals,
   or use a detailed GUI for proving each goal manually.
 -}
-genericATPgui :: (Ord proof_tree, Ord sentence)
+genericATPgui :: (Show sentence, Ord proof_tree, Ord sentence)
               => ATPFunctions sign sentence mor proof_tree pst
               -- ^ prover specific -- functions
               -> Bool -- ^ prover supports extra options

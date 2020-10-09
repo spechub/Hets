@@ -778,7 +778,7 @@ anaFitArgUnit lgraph libEnv ln dg opts eo uctx nsig
          ext_induced_from_to_morphism lid rmap sigmaS' sigmaT'
        let gMorph = mkG_morphism lid mor
            i = addSuffixToNode ("_fit_"++argStr) $ getNode nsig
-              -- ^ this ensures unique names
+              --  ^ this ensures unique names
        (nsig', dg'') <- extendDGraph dg' nsig (gEmbed gMorph) i DGFitSpec
        return (gMorph, nsig', p, dg'', diag')
 

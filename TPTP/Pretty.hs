@@ -504,7 +504,7 @@ printBasicTheory :: (Sign, [Named Sentence]) -> Doc
 printBasicTheory (_, l) = vsep (map printNamedSentence l) $+$ text ""
 
 printNamedSentence :: Named Sentence -> Doc
-printNamedSentence = printAnnotated_formula . sentence
+printNamedSentence = printAnnotated_formula . sentence . adjust_formula_role
 
 printSymbol :: Symbol -> Doc
 printSymbol = pretty . symbolId
@@ -735,7 +735,7 @@ printAnnotations (Annotations mAnno) = case mAnno of
 printFormula_role :: Formula_role -> Doc
 printFormula_role x = case x of
   Other_formula_role t -> pretty t
-  -- ^ For future updates. Should not be used.
+  --  ^ For future updates. Should not be used.
   _ -> text $ map toLower $ show x
 
 -- %----THF formulae.
@@ -1512,7 +1512,7 @@ printFOF_defined_term x = case x of
 printFOF_defined_atomic_term :: FOF_defined_atomic_term -> Doc
 printFOF_defined_atomic_term x = case x of
   FOFDAT_plain a -> pretty a
-  -- | FOFDAT_indix a -> pretty a
+  --  | FOFDAT_indix a -> pretty a
 
 -- %----None yet <defined_infix_term> ::= <fof_term> <defined_infix_func> <fof_term>
 -- data Defined_infix_term = Defined_infix_term Defined_infix_func FOF_term FOF_term

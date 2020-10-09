@@ -85,15 +85,15 @@ parseDatabaseConfig dbFile dbConfigFile subconfigKey performMigration =
     configFromYaml = do
       fileExist <- doesFileExist dbConfigFile
       if fileExist
-      then do
-        content <- BS.readFile dbConfigFile
-        case subconfigKey of
-          "" -> parseDBConfig content
-          _ | subconfigKey `elem` ["production", "development", "test"] ->
-            parseExtDBConfig subconfigKey content
-          _ -> fail "Persistence.DBConfig: Bad database-subconfig specified."
-      else
-        fail "Persistence.DBConfig: Database configuration file does not exist."
+       then do
+         content <- BS.readFile dbConfigFile
+         case subconfigKey of
+           "" -> parseDBConfig content
+           _ | subconfigKey `elem` ["production", "development", "test"] ->
+             parseExtDBConfig subconfigKey content
+           _ -> fail "Persistence.DBConfig: Bad database-subconfig specified."
+       else
+         fail "Persistence.DBConfig: Database configuration file does not exist."
 
     parseDBConfig :: BS.ByteString -> IO DBConfig
     parseDBConfig content =

@@ -1,7 +1,10 @@
 sudo: required
-dist: xenial
+dist: bionic
 language: minimal
 
+branches:
+  only:
+  - master
 
 addons:
   apt:
@@ -15,7 +18,7 @@ addons:
 env:
   global:
     # Set to 1 to skip the related stage
-    - SKIP_STACK=0  SKIP_BUILD=0  SKIP_TEST=0
+    - SKIP_STACK=0  SKIP_BUILD=0  SKIP_TEST=0  SKIP_HADDOCK=0
 
     # Unset to disable caching of native packages
     - PKG_CACHE=/var/tmp/pkgs
@@ -171,3 +174,15 @@ jobs:
         # Install Hets - this does not need to recompile Hets
         - test/hets-lib-database-check.sh 'SQLite'
 
+    # .8
+    - stage: test
+      # docs can be buid in parallel to testing to safe a little bit time.
+      # Furthermore we do not want generated docs go into the travis-cache.
+      if: env(SKIP_HADDOCK) != 1
+      before_install:
+        - echo haddock >/tmp/JOB_NAME
+      script:
+        - ${TH} myPrepareBuildDir
+        - cd ${HETS_BUILD_DIR}
+        - make docs
+        - ${TH} myUploadDocs
