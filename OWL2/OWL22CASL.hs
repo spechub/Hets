@@ -118,7 +118,21 @@ uriToIdM = return . uriToCaslId
 
 -- | Extracts Id from URI
 uriToCaslId :: IRI -> Id
-uriToCaslId urI =  stringToId $ showIRI urI
+uriToCaslId urI = 
+ let urS = showIRI urI
+     urS' = concatMap 
+            (\c ->  if isAlpha c || 
+                       isDigit c || 
+                       c == '\'' ||
+                       c == '_' 
+                   then [c] 
+                   else "_u" ) urS
+ in case urS of
+      x : _ -> 
+         if isDigit x then genName urS' 
+         else stringToId urS'
+      _ -> error "translating empty IRI" 
+           -- should never happen
 
 {- let
   repl a = if isAlphaNum a then [a] else if a/=':' then "_" else ""
