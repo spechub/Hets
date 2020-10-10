@@ -204,3 +204,4 @@ If you wish to make larger changes we generally recommend [forking](https://help
 ## License
 
 The Hets source code is licensed under the GPLv2 or higher
+
