@@ -82,7 +82,9 @@ getIRI b e =
     let [a] = elAttribs e
         anIri = attrVal a
     in case qName $ attrKey a of
-        "abbreviatedIRI" -> appendBase b $ nullIRI {iriPath = stringToId anIri, isAbbrev = True }
+        "abbreviatedIRI" ->  
+          let (p, _:v) = span (/= ':') anIri
+          in appendBase b $ nullIRI {iriPath = stringToId v, prefixName = p, isAbbrev = True }
         "IRI" -> let x = parseIRIReference anIri -- todo: or combine parseIRI and parseIRIReference
                  in case x of
                      Just y -> appendBase b y

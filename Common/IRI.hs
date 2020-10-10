@@ -376,7 +376,7 @@ curie = iriWithPos $ do
     pn <- try (do
         n <- ncname
         c <- string ":"
-        return $ n ++ c
+        return $ n -- ++ c Don't add the colon to the prefix!
       )
     i <- reference
     return i { prefixName = pn }
@@ -821,7 +821,8 @@ iriToStringAbbrev (IRI { prefixName = pname
                        , iriQuery = aQuery
                        , iriFragment = aFragment
                        }) =
-  (pname ++) . (show aPath ++) . (aQuery ++) . (aFragment ++)
+  let pref = if null pname then "" else pname ++ ":" in
+  (pref ++) . (show aPath ++) . (aQuery ++) . (aFragment ++)
 
 iriToStringAbbrevMerge :: IRI -> ShowS
 iriToStringAbbrevMerge (IRI { iriPath = aPath
