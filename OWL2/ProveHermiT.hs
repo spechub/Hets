@@ -1,5 +1,5 @@
 {- |
-Module      :  ./OWL2/ProvePellet.hs
+Module      :  ./OWL2/ProveHermiT.hs
 Description :  Interface to the OWL Ontology prover via Pellett.
 Copyright   :  (c) Heng Jiang, Uni Bremen 2004-2008
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -51,14 +51,14 @@ import System.Directory
 import Control.Monad (when)
 import Control.Concurrent
 
-pelletS :: String
-pelletS = "Pellet"
+hermitS :: String
+hermitS = "HermiT"
 
-pelletJar :: String
-pelletJar = "lib/pellet-cli.jar"
+hermitJar :: String --tbd
+hermitJar = "lib/pellet-cli.jar"
 
-pelletEnv :: String
-pelletEnv = "PELLET_PATH"
+hermitEnv :: String
+hermitEnv = "HERMIT_PATH"
 
 pelletCheck :: IO (Maybe String)
 pelletCheck = fmap
