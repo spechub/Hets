@@ -54,8 +54,8 @@ import Control.Concurrent
 hermitS :: String
 hermitS = "HermiT"
 
-hermitJar :: String --tbd
-hermitJar = "lib/pellet-cli.jar"
+hermitJar :: String -- ? placeholdername ? 
+hermitJar = "lib/HermiT.jar"
 
 hermitEnv :: String
 hermitEnv = "HERMIT_PATH"
@@ -168,19 +168,19 @@ consCheck thName (TacticScript tl) tm freedefs = case tTarget tm of
           in (pStatus out tUsed) { ccResult = exCode }
         else pStatus ["Pellet not found"] (0 :: Int)
 
-runTimedPellet :: String -- ^ pellet subcommand
+runTimedHermit :: String -- ^ pellet subcommand
   -> FilePath            -- ^ basename of problem file
   -> String              -- ^ problem content
   -> Maybe String        -- ^ entail content
   -> Int                 -- ^ time limit in seconds
   -> IO (Maybe (Bool, String, String)) -- ^ timeout or (success, stdout, stderr)
-runTimedPellet opts tmpFileName prob entail secs = do
-  (progTh, pPath) <- check4jarFile pelletEnv pelletJar
+runTimedHermit opts tmpFileName prob entail secs = do
+  (progTh, pPath) <- check4jarFile hermitEnv hermitJar
   if progTh then withinDirectory pPath $ do
       timeTmpFile <- getTempFile prob tmpFileName
       let entFile = timeTmpFile ++ ".entail.owl"
           doEntail = isJust entail
-          args = "-Xmx512m" : "-jar" : pelletJar
+          args = "-Xmx1024M" : "-jar" : hermitJar
            : (if doEntail then ["entail", "-e", entFile] else words opts)
            ++ ["file://" ++ timeTmpFile]
       case entail of
