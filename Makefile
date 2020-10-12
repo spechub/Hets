@@ -18,7 +18,7 @@ HC_WARN := -Wall -fwarn-tabs \
   -fwarn-unrecognised-pragmas -fno-warn-orphans $(NO_BIND_WARNING)
 # uncomment HC_PROF for profiling (and comment out packages in var.mk)
 # call resulting binary with a final +RTS -p to get a file <binary>.prof
-HC_PROF := -prof -auto-all -osuf p_o +RTS -K100m -RTS
+#HC_PROF := -prof -auto-all -osuf p_o +RTS -K100m -RTS
 HC_OPTS += $(HC_WARN) $(HC_PROF) $(GHC_FLAGS)
 # -ddump-minimal-imports
 # uncomment the above line to generate .imports files for displayDependencyGraph

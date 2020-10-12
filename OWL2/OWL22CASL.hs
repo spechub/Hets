@@ -56,6 +56,8 @@ import Common.DocUtils
 import Data.Maybe
 import Text.ParserCombinators.Parsec
 
+import Data.List(foldl')
+
 data OWL22CASL = OWL22CASL deriving Show
 
 instance Language OWL22CASL
@@ -253,7 +255,7 @@ mapSign sig =
           cPreds = thing : nothing : cvrt conc
           oPreds = cvrt $ OS.objectProperties sig
           dPreds = cvrt $ OS.dataProperties sig
-          aPreds = foldr MapSet.union MapSet.empty
+          aPreds = foldl' MapSet.union MapSet.empty
             [ tMp conceptPred cPreds
             , tMp objectPropPred oPreds
             , tMp dataPropPred dPreds ]
