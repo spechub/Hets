@@ -12,8 +12,7 @@ See <http://www.w3.org/2004/OWL/> for details on OWL, and
 -}
 
 module OWL2.ProveHermit
-  ( hermitProver
-  , hermitConsChecker
+  ( hermitConsChecker    --entailmentchecking included in consistencychecking?
   ) where
 
 import Logic.Prover
@@ -156,7 +155,7 @@ consCheck thName (TacticScript tl) tm freedefs = case tTarget tm of
           , ccUsedTime = timeToTimeOfDay $ secondsToDiffTime $ toInteger tUsed }
         tLim = readMaybe tl
     res <- runTimedHermit "consistency" (basename thName ++ ".owl") prob Nothing
-      $ fromMaybe maxBound $ readMaybe tl --c
+      $ fromMaybe maxBound $ readMaybe tl                                               --c
     return $ case res of
       Nothing -> pStatus ["Timeout after " ++ tl ++ " seconds"]
                  (fromMaybe (0 :: Int) tLim)
@@ -177,9 +176,9 @@ runTimedHermit opts tmpFileName prob entail secs = do
       timeTmpFile <- getTempFile prob tmpFileName
       let entFile = timeTmpFile ++ ".entail.owl"
           doEntail = isJust entail
-          args = "-Xmx1024M" : "-jar" : hermitJar : "-k"
-          -- : (if doEntail then ["entail", "-e", entFile] else words opts)
-           ++ ["file://" ++ timeTmpFile] --c
+          args = "-Xmx1024M" : "-jar" : hermitJar : "-l" 
+           : (if doEntail then ["-E", "premise=":prob , "--conclusion=": entFile] else ["-k"])
+           ++ ["file://" ++ timeTmpFile]                           --c
       case entail of
         Just c -> writeFile entFile c
         Nothing -> return ()
