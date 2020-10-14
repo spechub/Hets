@@ -11,12 +11,9 @@ See <http://www.w3.org/2004/OWL/> for details on OWL, and
 <http://pellet.owldl.com/> for Pellet (version 2.0.0-rc6)
 -}
 
-module OWL2.ProvePellet
-  ( runTimedPellet
-  , pelletJar
-  , pelletEnv
-  , pelletProver
-  , pelletConsChecker
+module OWL2.ProveHermit
+  ( hermitProver
+  , hermitConsChecker
   ) where
 
 import Logic.Prover
@@ -60,13 +57,13 @@ hermitJar = "lib/HermiT.jar"
 hermitEnv :: String
 hermitEnv = "HERMIT_PATH"
 
-pelletCheck :: IO (Maybe String)
-pelletCheck = fmap
+hermitCheck :: IO (Maybe String)
+hermitCheck = fmap
   (\ l ->
     if null l
-    then Just $ pelletJar ++ " not found in $" ++ pelletEnv
+    then Just $ hermitJar ++ " not found in $" ++ hermitEnv
     else Nothing)
-  $ check4FileAux pelletJar pelletEnv
+  $ check4FileAux hermitJar hermitEnv
 
 {- |
   The Prover implementation. First runs the batch prover (with graphical
@@ -77,10 +74,10 @@ pelletProver =
   (mkAutomaticProver "java" pelletS topS pelletGUI pelletCMDLautomaticBatch)
   { proverUsable = pelletCheck }
 
-pelletConsChecker :: ConsChecker Sign Axiom ProfSub OWLMorphism ProofTree
-pelletConsChecker = (mkConsChecker pelletS topS consCheck)
+hermitConsChecker :: ConsChecker Sign Axiom ProfSub OWLMorphism ProofTree
+hermitConsChecker = (mkConsChecker hermitS topS consCheck)
   { ccNeedsTimer = False
-  , ccUsable = pelletCheck }
+  , ccUsable = hermitCheck }
 
 {- |
   Record for prover specific functions. This is used by both GUI and command
@@ -142,7 +139,7 @@ pelletCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
 -- * Main prover functions
 
 {- |
-  Runs the Pellet service.
+  Runs the HermiT service.
 -}
 consCheck :: String
           -> TacticScript
@@ -158,15 +155,15 @@ consCheck thName (TacticScript tl) tm freedefs = case tTarget tm of
           , ccProofTree = ProofTree $ unlines out ++ "\n\n" ++ prob
           , ccUsedTime = timeToTimeOfDay $ secondsToDiffTime $ toInteger tUsed }
         tLim = readMaybe tl
-    res <- runTimedPellet "consistency" (basename thName ++ ".owl") prob Nothing
-      $ fromMaybe maxBound $ readMaybe tl
+    res <- runTimedHermit "consistency" (basename thName ++ ".owl") prob Nothing
+      $ fromMaybe maxBound $ readMaybe tl --c
     return $ case res of
       Nothing -> pStatus ["Timeout after " ++ tl ++ " seconds"]
                  (fromMaybe (0 :: Int) tLim)
       Just (progTh, outp, eOut) -> if progTh then
           let (_, exCode, out, tUsed) = analyseOutput outp eOut
           in (pStatus out tUsed) { ccResult = exCode }
-        else pStatus ["Pellet not found"] (0 :: Int)
+        else pStatus ["HermiT not found"] (0 :: Int)
 
 runTimedHermit :: String -- ^ pellet subcommand
   -> FilePath            -- ^ basename of problem file
@@ -180,9 +177,9 @@ runTimedHermit opts tmpFileName prob entail secs = do
       timeTmpFile <- getTempFile prob tmpFileName
       let entFile = timeTmpFile ++ ".entail.owl"
           doEntail = isJust entail
-          args = "-Xmx1024M" : "-jar" : hermitJar
-           : (if doEntail then ["entail", "-e", entFile] else words opts)
-           ++ ["file://" ++ timeTmpFile]
+          args = "-Xmx1024M" : "-jar" : hermitJar : "-k"
+          -- : (if doEntail then ["entail", "-e", entFile] else words opts)
+           ++ ["file://" ++ timeTmpFile] --c
       case entail of
         Just c -> writeFile entFile c
         Nothing -> return ()
