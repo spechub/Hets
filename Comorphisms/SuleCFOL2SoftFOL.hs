@@ -166,6 +166,9 @@ instance Show a => Comorphism (GenSuleCFOL2SoftFOL a)
                       { sub_features = LocFilSub
                       , cons_features = emptyMapConsFeature
                       , has_empty_sorts = show a == show PlainSoftFOL }
+    sourceSublogicLossy (GenSuleCFOL2SoftFOL a) = SL.fol
+                      { sub_features = LocFilSub
+                      , has_empty_sorts = show a == show PlainSoftFOL }
     targetLogic (GenSuleCFOL2SoftFOL _) = SoftFOL
     mapSublogic cid sl =
         if isSubElem sl $ sourceSublogic cid

@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP #-}
 {- |
 Module      :  $Id$
+Description :  main Hets module (providing binary executable)
 Copyright   :  (c) Uni Bremen 2003-2005
 License     :  GPLv2 or higher, see LICENSE.txt
 

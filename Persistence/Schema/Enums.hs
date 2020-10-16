@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 module Persistence.Schema.Enums where
 
 import Database.Persist.TH

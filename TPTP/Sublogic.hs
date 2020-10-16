@@ -24,14 +24,14 @@ import Data.Data
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-              -- | EPR -- Effectively Propositional CNF
+              --  | EPR -- Effectively Propositional CNF
 data Sublogic = CNF -- Clausal Normal Form
               | FOF -- First Order Form
-              -- | TCF
+              --  | TCF
               | TFF -- Typed First Order Form
-              -- | TFX
+              --  | TFX
               | THF -- Typed Higher Order Form
-              -- | TPI
+              --  | TPI
                 deriving (Show, Ord, Eq, Data, Typeable)
 
 {- ----------------------------------------------------------------------------

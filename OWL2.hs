@@ -1,4 +1,7 @@
-{- |
+{- | 
+Description :  Web Ontology Language OWL2
+Copyright   :  (c) Otto-von-Guericke University of Magdeburg
+License     :  GPLv2 or higher, see LICENSE.txt
 
 The "OWL2" directory contains the OWL2 instance of "Logic.Logic".
 The data for this instance is found in "OWL2.Logic_OWL2".

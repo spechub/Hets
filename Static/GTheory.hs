@@ -139,13 +139,14 @@ simplifyTh (G_theory lid gsyn sigma@(ExtSign s _) ind1 sens ind2) =
       (OMap.map (mapValue $ simplify_sen lid s) sens) ind2
 
 -- | apply a comorphism to a theory
-mapG_theory :: AnyComorphism -> G_theory -> Result G_theory
-mapG_theory (Comorphism cid) (G_theory lid _ (ExtSign sign _) ind1 sens ind2) =
+mapG_theory :: Bool -> AnyComorphism -> G_theory -> Result G_theory
+mapG_theory lossy (Comorphism cid) (G_theory lid _ (ExtSign sign _)
+            ind1 sens ind2) =
   do
   bTh <- coerceBasicTheory lid (sourceLogic cid)
     ("unapplicable comorphism '" ++ language_name cid ++ "'\n")
     (sign, toNamedList sens)
-  (sign', sens') <- wrapMapTheory cid bTh
+  (sign', sens') <- wrapMapTheoryPossiblyLossy lossy cid bTh
   return $ G_theory (targetLogic cid) Nothing (mkExtSign sign')
          ind1 (toThSens sens') ind2
 

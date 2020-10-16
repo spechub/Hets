@@ -30,10 +30,10 @@ HC_OPTS += $(HC_WARN) $(HC_PROF) $(GHC_FLAGS)
 # *.bin variants here to let them survive a 'make clean'
 all: hets.bin hets_server.bin
 
-# Documentation (no haddock stuff, i.e. "docs/index.html", since developer can
-# generated it on demand by themselves and other users dont't need it). Other
+# Documentation (no haddock stuff, i.e. "docs", since developer can
+# generate it on demand by themselves and other users dont't need it). Other
 # papers (doc/*.pdf) are already pre-generated.
-docs: doc/UserGuide.pdf
+doc: doc/UserGuide.pdf
 
 # Upgrade haskell-stack
 stack_upgrade:
@@ -494,7 +494,7 @@ derived_sources += $(drifted_files) $(hs_der_files)
 ####################################################################
 # BUILD related targets
 ####################################################################
-.PHONY: all hets-opt hets-optimized hets_server-opt docs jars \
+.PHONY: all hets-opt hets-optimized hets_server-opt doc docs jars \
 	clean o_clean clean_pretty bin_clean java_clean realclean distclean \
 	annos check test capa hacapa h2h h2hf showKP clean_genRules genRules \
     count fromKif release cgi ghci build-hets callghc \
@@ -573,16 +573,15 @@ HAD_INTS = $(foreach file, $(HADDOCK_INTERFACES),\
  -i http://hackage.haskell.org/packages/archive/$(basename $(notdir $(file)))/latest/doc/html,$(file))
 
 HADDOCK_OPTS := $(addprefix --optghc=, $(HC_OPTS))
-docs/index.html: $(derived_sources)
+docs: $(derived_sources) $(STACK_UPGRADE_TARGET) 
 	@$(RM) -r docs && mkdir docs && \
 		printf '\nCheck log.haddock for results ...\n'
-	$(HADDOCK) -o docs -h -s ../%F $(HAD_INTS) \
+	$(STACK) exec -- haddock --html \
+            $(filter-out Scratch.hs, $(wildcard *.hs)) \
             -t 'Hets - the Heterogeneous Tool Set' \
             -p Hets-Haddock-Prologue.txt $(HADDOCK_OPTS) \
-             $(filter-out Scratch.hs, $(wildcard *.hs)) \
-		>log.haddock 2>&1
-
-
+	    --hyperlinked-source --odir=docs \
+		>log.haddock 
 $(DRIFT): $(DRIFT_deps)
 	cd utils/DrIFT-src; $(HC) --make -o ../DrIFT DrIFT.hs
 
@@ -902,7 +901,7 @@ install-owl-tools: jars
 # If one would add haddocs as well, add
 #	-m 0755 -d $(DESTDIR)$(SUBDIR_common)$(PREFIX)/$(DOC_DIR)/html/
 #	-m 0644 docs/* $(DESTDIR)$(SUBDIR_common)$(PREFIX)/$(DOC_DIR)/html/
-install-common: docs install-owl-tools
+install-common: doc install-owl-tools
 	$(INSTALL) -m 0755 -d \
 		$(DESTDIR)$(SUBDIR_common)$(PREFIX)/$(HETS_DIR)/hets-isa-tools \
 		$(DESTDIR)$(SUBDIR_common)$(PREFIX)/$(HETS_DIR)/hets-maude-lib \
@@ -951,7 +950,7 @@ install: install-hets install-hets_server install-common install-owl-tools
 ############################################################################
 # DEBIAN rules
 ############################################################################
-build-indep: jars docs
+build-indep: jars doc
 
 build-arch: $(STACK_TARGET) hets.bin hets_server.bin
 

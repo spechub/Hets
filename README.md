@@ -55,8 +55,7 @@ sudo apt-get update
 sudo apt-get install hets-desktop
 ```
 
-* for the full system including all provers etc., use hets-desktop-all instead of hets-desktop
-* for using Hets as a server providing a RESTful interface, use hets-server or hets-server-all. This is a smaller version without GUI dependencies. Note that also hets-desktop can be used as as server.
+* for using Hets as a server providing a RESTful interface, use hets-server. This is a smaller version without GUI dependencies. Note that also hets-desktop can be used as as server.
 
 #### Hets development
 For Hets development additionally type in
@@ -143,7 +142,7 @@ Dependencies can be installed as specified in [Hets Development](#hets-developme
 
 Before committing haskell source files you may check compliance to the programming guidelines:
 * Use scan which can be installed by `cabal install scan`.
-* The comments in your haskell sources should not cause `haddock` to fail. After `make` (for re-compiling changed sources) `make doc` will call `haddock`.
+* The comments in your haskell sources should not cause `haddock` to fail. After `make` (for re-compiling changed sources) `make docs` will call `haddock`.
 * Also check your source with hlint which you may install by `cabal install hlint`.
 
 Also have a look at the current [Release Notes](https://github.com/spechub/Hets/releases/latest), [Debugging and Testing Hets](https://github.com/spechub/Hets/wiki/Debugging-and-Testing-Hets),[Code Review](https://github.com/spechub/Hets/wiki/Code-Review) and [Branching](https://github.com/spechub/Hets/wiki/Branching).
@@ -185,8 +184,9 @@ If you wish to make larger changes we generally recommend [forking](https://help
     make
     make hets
     make hets_server
+    make docs
   ```
-  This uses Stack to build the Hets[-Server] binary.
+  This uses Stack to build the Hets[-Server] binary (or, in the last case, the Hets code documentation, using haddock).
   During this process, the specified version of GHC is installed in the user directory, all dependencies are built and finally, the Hets[-Server] binary is compiled.
 * If you want to clean the extra-dependencies of Stack that are put into the Hets working directory, run
   ```

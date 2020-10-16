@@ -853,6 +853,11 @@ class (StaticAnalysis lid
          -- | several provers can be provided. See module "Logic.Prover"
          provers :: lid -> [Prover sign sentence morphism sublogics proof_tree]
          provers _ = []
+
+         -- | name of default prover, empty if none available
+         default_prover :: lid -> String
+         default_prover _ = ""
+         
          -- | consistency checkers
          cons_checkers :: lid
                        -> [ConsChecker sign sentence

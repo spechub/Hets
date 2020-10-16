@@ -76,8 +76,11 @@ instance Comorphism GenSuleCFOL2TPTP
                TSign.Sign TMorphism.Morphism TSign.Symbol () ProofTree where
     sourceLogic GenSuleCFOL2TPTP = CASL
     sourceSublogic GenSuleCFOL2TPTP = SL.cFol
-                      { sub_features = LocFilSub
+                       { sub_features = LocFilSub
                       , cons_features = emptyMapConsFeature
+                       , has_empty_sorts = True }
+    sourceSublogicLossy GenSuleCFOL2TPTP = SL.fol
+                      { sub_features = LocFilSub
                       , has_empty_sorts = True }
     targetLogic GenSuleCFOL2TPTP = TPTP.Logic_TPTP.TPTP
     mapSublogic _ _ = Just FOF
@@ -107,12 +110,11 @@ translateNamedFormula :: (FormExtension f, Eq f)
                       => SignWithRenamings f e
                       -> Named (FORMULA f) -> Result (Named TSign.Sentence)
 translateNamedFormula signWithRenamings x = do
-  let nameS = toAlphaNum (map toLower $ senAttr x)
+  let nameS = "ax_" ++ toAlphaNum (map toLower $ senAttr x)
   translated <-
     translateFormula signWithRenamings nameS (isAxiom x) $
       AS_Annotation.sentence x
-  return $ x { senAttr = nameS
-             , AS_Annotation.sentence = translated
+  return $ x { AS_Annotation.sentence = translated
              }
 
 translateFormula :: forall e f . (FormExtension f, Eq f)
@@ -206,7 +208,10 @@ translateFormula signWithRenamings nameS isAxiom' formula = do
                  FOFPAF_predicate (predicateOfSort sort) [fofTerm]
       -- Sort_gen_ax cannot be translated. Fail:
       -- See https://github.com/spechub/Hets/issues/1706
-      Sort_gen_ax _ _ -> fail "SuleCFOL2TPTP: Sort generation axioms are not yet supported."
+      Sort_gen_ax _ _ ->
+        justWarn (FOFUF_atomic $ FOFAT_defined $ FOFDAF_plain $
+                  FOFDPF_proposition $ TPTP_true)
+                 "SuleCFOL2TPTP: Sort generation axioms are not yet supported."
       -- There is no Definedness in SuleCFOL
       -- There is no Mixfix_formula - it only occurs during parsing
       -- There is no Unparsed_formula

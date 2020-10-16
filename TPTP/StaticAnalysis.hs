@@ -775,7 +775,7 @@ signOfFOF_defined_term x = case x of
 signOfFOF_defined_atomic_term :: FOF_defined_atomic_term -> Sign
 signOfFOF_defined_atomic_term x = case x of
   FOFDAT_plain a -> signOfFOF_defined_plain_term a
-  -- | FOFDAT_indix a -> signOfDefined_infix_term a
+  --  | FOFDAT_indix a -> signOfDefined_infix_term a
 
 signOfFOF_defined_plain_term :: FOF_defined_plain_term -> Sign
 signOfFOF_defined_plain_term x = case x of
