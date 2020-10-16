@@ -474,7 +474,7 @@ derived_sources += $(drifted_files) $(hs_der_files)
 ####################################################################
 # BUILD related targets
 ####################################################################
-.PHONY: all hets-opt hets-optimized hets_server-opt docs jars \
+.PHONY: all hets-opt hets-optimized hets_server-opt doc docs jars \
 	clean o_clean clean_pretty bin_clean java_clean realclean distclean \
 	annos check test capa hacapa h2h h2hf showKP clean_genRules genRules \
     count fromKif release cgi ghci build-hets callghc \
@@ -881,7 +881,7 @@ install-owl-tools: jars
 # If one would add haddocs as well, add
 #	-m 0755 -d $(DESTDIR)$(SUBDIR_common)$(PREFIX)/$(DOC_DIR)/html/
 #	-m 0644 docs/* $(DESTDIR)$(SUBDIR_common)$(PREFIX)/$(DOC_DIR)/html/
-install-common: docs install-owl-tools
+install-common: doc install-owl-tools
 	$(INSTALL) -m 0755 -d \
 		$(DESTDIR)$(SUBDIR_common)$(PREFIX)/$(HETS_DIR)/hets-isa-tools \
 		$(DESTDIR)$(SUBDIR_common)$(PREFIX)/$(HETS_DIR)/hets-maude-lib \
