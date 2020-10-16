@@ -930,7 +930,7 @@ install: install-hets install-hets_server install-common install-owl-tools
 ############################################################################
 # DEBIAN rules
 ############################################################################
-build-indep: jars docs
+build-indep: jars doc
 
 build-arch: $(STACK_TARGET) hets.bin hets_server.bin
 
