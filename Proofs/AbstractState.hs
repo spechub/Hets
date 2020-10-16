@@ -230,7 +230,9 @@ initialState :: String
     -> G_theory
     -> KnownProversMap
     -> ProofState
-initialState thN th pm = resetSelection
+initialState thN th pm = 
+    case th of 
+     G_theory lid _ _ _ _ _ -> resetSelection
        ProofState
          { theoryName = thN
          , currentTheory = th
@@ -245,10 +247,14 @@ initialState thN th pm = resetSelection
              let prvs = Map.keys pm
              in if null prvs
                 then Nothing
-                else
-                    if defaultGUIProver `elem` prvs
-                    then Just defaultGUIProver
-                    else Nothing
+                else 
+                 let lidProver = default_prover lid
+                 in if lidProver `elem` prvs 
+                    then Just lidProver
+                    else 
+                     if defaultGUIProver `elem` prvs
+                     then Just defaultGUIProver
+                     else Nothing
          , selectedConsChecker = Nothing
          , selectedTheory = th }
 

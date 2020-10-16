@@ -400,7 +400,12 @@ function myUpload {
 }
 
 function myUploadDocs {
-	local F="/tmp/${TRAVIS_EVENT_TYPE}-docs.tgz"
+	# Just make sure, that we upload docs only on a master merge to save
+	# some time and space on the remote store.
+	[[ ${TRAVIS_BRANCH} != 'master' || ${TRAVIS_EVENT_TYPE} != 'push' ]] && \
+		return 0
+
+	local F="/tmp/docs.tgz"
 	if [[ ! -d docs ]] ; then
 		echo 'docs/ unavailable - skipping upload.'
 		return 0
