@@ -307,7 +307,7 @@ newOptionsFrame con updateFn isExtraOps = do
   or use a detailed GUI for proving each goal manually.
 -}
 genericATPgui
-    :: (Ord proofTree, Ord sentence)
+    :: (Show sentence, Ord proofTree, Ord sentence)
     => ATPFunctions sign sentence mor proofTree pst
        -- ^ prover specific functions
     -> Bool   -- ^ prover supports extra options
