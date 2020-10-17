@@ -51,14 +51,13 @@ PROGRAMATICA_SRC_FILE ?= \
 GHCVERSION := $(call version, $(shell $(STACK_EXEC) ghc --numeric-version))
 GHCRTSOPTS := $(shell [ $(GHCVERSION) -ge 7000000 ] && echo '-rtsopts')
 
+FIXED_GLADE = 1
 ifneq ($(findstring SunOS, $(OSNAME)),)
   TAR = gtar
   PATCH = gpatch
     ifneq ($(findstring Generic, $(OSVERS)),)
       SUNRUNPATH = -optl-R/opt/csw/lib
       FIXED_GLADE = 0
-    else
-      FIXED_GLADE = 1
     endif
 else
   TAR = tar
