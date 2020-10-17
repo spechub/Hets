@@ -272,7 +272,7 @@ loadDataInformation sl = let
        Rel.fromList  [(x, dataS)]}
   sigs = Set.toList $
          Set.map (\x -> Map.findWithDefault (eSig x) x datatypeSigns) dts
- in  foldl uniteCASLSign (emptySign ()) sigs
+ in  foldl' uniteCASLSign (emptySign ()) sigs
 
 mapTheory :: (OS.Sign, [Named Axiom]) -> Result (CASLSign, [Named CASLFORMULA])
 mapTheory (owlSig, owlSens) = let
@@ -283,7 +283,7 @@ mapTheory (owlSig, owlSens) = let
         {- dTypes = (emptySign ()) {sortRel = Rel.transClosure . Rel.fromSet
                     . Set.map (\ d -> (uriToCaslId d, dataS))
                     . Set.union predefIRIs $ OS.datatypes owlSig} -}
-    (cSens, nSig) <- foldM (\ (x, y) z -> do
+    (cSens, nSig) <- foldM' (\ (x, y) z -> do
             (sen, sig) <- mapSentence y z
             return (sen ++ x, uniteCASLSign sig y)) ([], cSig) owlSens
     return (foldl1 uniteCASLSign [nSig, pSig],  -- , dTypes],
