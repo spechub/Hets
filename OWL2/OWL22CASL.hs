@@ -57,6 +57,7 @@ import Data.Maybe
 import Text.ParserCombinators.Parsec
 
 import Data.List(foldl')
+import qualified Data.Vector as Vector
 
 data OWL22CASL = OWL22CASL deriving Show
 
@@ -283,9 +284,9 @@ mapTheory (owlSig, owlSens) = let
         {- dTypes = (emptySign ()) {sortRel = Rel.transClosure . Rel.fromSet
                     . Set.map (\ d -> (uriToCaslId d, dataS))
                     . Set.union predefIRIs $ OS.datatypes owlSig} -}
-    (cSens, nSig) <- foldM' (\ (x, y) z -> do
+    (cSens, nSig) <- Vector.foldM' (\ (x, y) z -> do
             (sen, sig) <- mapSentence y z
-            return (sen ++ x, uniteCASLSign sig y)) ([], cSig) owlSens
+            return (sen ++ x, uniteCASLSign sig y)) ([], cSig) $ Vector.fromList owlSens
     return (foldl1 uniteCASLSign [nSig, pSig],  -- , dTypes],
             predefinedAxioms ++ (reverse cSens))
 
