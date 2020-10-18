@@ -567,10 +567,4 @@ activate :: [Widget] -> Bool -> IO ()
 activate widgets active = mapM_ (`widgetSetSensitive` active) widgets
 
 toComboBoxText :: Show a => [a] -> [ComboBoxText]
-#ifdef GTK12
-toComboBoxText = map show
-
-type ComboBoxText = String
-#else
 toComboBoxText = map (Text.pack . show)
-#endif

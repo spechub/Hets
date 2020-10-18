@@ -51,14 +51,9 @@ PROGRAMATICA_SRC_FILE ?= \
 GHCVERSION := $(call version, $(shell $(STACK_EXEC) ghc --numeric-version))
 GHCRTSOPTS := $(shell [ $(GHCVERSION) -ge 7000000 ] && echo '-rtsopts')
 
-FIXED_GLADE = 1
 ifneq ($(findstring SunOS, $(OSNAME)),)
   TAR = gtar
   PATCH = gpatch
-    ifneq ($(findstring Generic, $(OSVERS)),)
-      SUNRUNPATH = -optl-R/opt/csw/lib
-      FIXED_GLADE = 0
-    endif
 else
   TAR = tar
   PATCH = patch
@@ -81,11 +76,8 @@ TAR_PACKAGE := $(shell [ $(TARVERSION) -gt 0 ] && echo '-DTAR_PACKAGE')
 UNIXVERSION := $(call version, $(shell $(HCPKG) latest unix))
 UNIX_PACKAGE := $(shell [ $(UNIXVERSION) -ge 2000000 ] && echo '-DUNIX')
 
-GTKVERSION := $(call version, $(shell $(HCPKG) latest gtk))
-GTK_PACKAGE := \
-	$(shell [ $(GTKVERSION) -ge 12000 ] && echo '-DGTKGLADE $(SUNRUNPATH)')
-GTK_PACKAGE += $(shell [ $(GTKVERSION) -lt 13000 ] && \
-	[ $(FIXED_GLADE) = '0' ] && echo '-DGTK12')
+GTKVERSION := $(call version, $(shell $(HCPKG) latest gtk3))
+GTK_PACKAGE := $(shell [ $(GTKVERSION) -ge 14000 ] && echo '-DGTKGLADE')
 
 HASKELINEVERSION := $(call version, $(shell $(HCPKG) latest haskeline))
 HASKELINE_PACKAGE := \

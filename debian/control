@@ -19,7 +19,7 @@ Build-Depends:
  libghc-persistent-sqlite-dev (>= 2.6.2),
  libghc-persistent-mysql-dev,
  libghc-hexpat-dev, libghc-aterm-dev,
- libghc-uni-udrawgraph-dev, libghc-glade-dev
+ libghc-uni-udrawgraph-dev, libghc-gtk3-dev
 # Previous two packages are only required to build the desktop version.
 # For Ubuntu >= 18.04 one may add:
 #	,libghc-http-client-dev (>= 0.5.7.1), libghc-http-client-tls-dev (>= 0.3.5.1)
