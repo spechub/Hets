@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, BangPatterns #-}
 {- |
 Module      :  ./Common/Lib/MapSet.hs
 Description :  Maps of sets
@@ -194,7 +194,7 @@ delete k v m@(MapSet r) = MapSet
 
 -- | union of two maps
 union :: (Ord a, Ord b) => MapSet a b -> MapSet a b -> MapSet a b
-union (MapSet m) = MapSet . Map.unionWith Set.union m . toMap
+union !a !b = MapSet . Map.unionWith Set.union (toMap a) $ toMap b
 
 -- | difference of two maps
 difference :: (Ord a, Ord b) => MapSet a b -> MapSet a b -> MapSet a b
