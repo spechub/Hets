@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, BangPatterns #-}
 {- |
 Module      :  ./CASL/Sign.hs
 Description :  CASL signatures and local environments for basic analysis
@@ -331,7 +331,7 @@ addMapSet :: PredMap -> PredMap -> PredMap
 addMapSet = MapSet.union
 
 addSig :: (e -> e -> e) -> Sign f e -> Sign f e -> Sign f e
-addSig ad a b = let s = sortSet a `Set.union` sortSet b in
+addSig ad !a !b = let s = sortSet a `Set.union` sortSet b in
   closeSortRel a
   { emptySortSet = Set.difference s
       $ nonEmptySortSet a `Set.union` nonEmptySortSet b
@@ -343,7 +343,7 @@ addSig ad a b = let s = sortSet a `Set.union` sortSet b in
   , extendedInfo = ad (extendedInfo a) $ extendedInfo b }
 
 uniteCASLSign :: CASLSign -> CASLSign -> CASLSign
-uniteCASLSign = addSig (\ _ _ -> ())
+uniteCASLSign = addSig (\ _ _ -> ()) 
 
 interRel :: (Show a, Ord a) => Rel.Rel a -> Rel.Rel a -> Rel.Rel a
 interRel a =
