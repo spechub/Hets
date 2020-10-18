@@ -56,6 +56,9 @@ import Common.DocUtils
 import Data.Maybe
 import Text.ParserCombinators.Parsec
 
+import Data.List(foldl')
+import qualified Data.Vector as Vector
+
 data OWL22CASL = OWL22CASL deriving Show
 
 instance Language OWL22CASL
@@ -253,7 +256,7 @@ mapSign sig =
           cPreds = thing : nothing : cvrt conc
           oPreds = cvrt $ OS.objectProperties sig
           dPreds = cvrt $ OS.dataProperties sig
-          aPreds = foldr MapSet.union MapSet.empty
+          aPreds = foldl' MapSet.union MapSet.empty
             [ tMp conceptPred cPreds
             , tMp objectPropPred oPreds
             , tMp dataPropPred dPreds ]
@@ -270,7 +273,7 @@ loadDataInformation sl = let
        Rel.fromList  [(x, dataS)]}
   sigs = Set.toList $
          Set.map (\x -> Map.findWithDefault (eSig x) x datatypeSigns) dts
- in  foldl uniteCASLSign (emptySign ()) sigs
+ in  foldl' uniteCASLSign (emptySign ()) sigs
 
 mapTheory :: (OS.Sign, [Named Axiom]) -> Result (CASLSign, [Named CASLFORMULA])
 mapTheory (owlSig, owlSens) = let
@@ -281,9 +284,9 @@ mapTheory (owlSig, owlSens) = let
         {- dTypes = (emptySign ()) {sortRel = Rel.transClosure . Rel.fromSet
                     . Set.map (\ d -> (uriToCaslId d, dataS))
                     . Set.union predefIRIs $ OS.datatypes owlSig} -}
-    (cSens, nSig) <- foldM (\ (x, y) z -> do
+    (cSens, nSig) <- Vector.foldM' (\ (x, y) z -> do
             (sen, sig) <- mapSentence y z
-            return (sen ++ x, uniteCASLSign sig y)) ([], cSig) owlSens
+            return (sen ++ x, uniteCASLSign sig y)) ([], cSig) $ Vector.fromList owlSens
     return (foldl1 uniteCASLSign [nSig, pSig],  -- , dTypes],
             predefinedAxioms ++ (reverse cSens))
 
