@@ -62,7 +62,7 @@ module Common.Lib.MapSet
 import Prelude hiding (all, filter, map, null, lookup)
 
 import Data.Data
-import qualified Data.Map as Map
+import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import qualified Data.List as List
 
@@ -219,7 +219,7 @@ mapSet f = fromMap . Map.map f . toMap
 
 -- | fold over all elements
 foldWithKey :: (a -> b -> c -> c) -> c -> MapSet a b -> c
-foldWithKey f e = Map.foldWithKey (\ a bs c -> Set.fold (f a) c bs) e . toMap
+foldWithKey f e = Map.foldrWithKey (\ a bs c -> Set.fold (f a) c bs) e . toMap
 
 -- | filter elements
 filter :: (Ord a, Ord b) => (b -> Bool) -> MapSet a b -> MapSet a b
@@ -244,7 +244,7 @@ isSubmapOf (MapSet m) = Map.isSubmapOfBy Set.isSubsetOf m . toMap
 
 -- | pre-image of a map
 preImage :: (Ord a, Ord b) => Map.Map a b -> MapSet b a
-preImage = Map.foldWithKey (flip insert) empty
+preImage = Map.foldrWithKey (flip insert) empty
 
 -- | transpose a map set
 transpose :: (Ord a, Ord b) => MapSet a b -> MapSet b a
