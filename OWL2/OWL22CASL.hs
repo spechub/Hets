@@ -260,7 +260,7 @@ mapSign sig =
             [ tMp conceptPred cPreds
             , tMp objectPropPred oPreds
             , tMp dataPropPred dPreds ]
-     in return $  uniteCASLSign predefSign2
+     in return $!  uniteCASLSign predefSign2
          (emptySign ())
              { predMap = aPreds
              , opMap = tMp indiConst . cvrt $ OS.individuals sig
@@ -298,7 +298,7 @@ mapSentence cSig inSen = do
 
 mapVar :: CASLSign -> VarOrIndi -> Result (TERM ())
 mapVar cSig v = case v of
-    OVar n -> return $ qualThing n
+    OVar n -> return $! qualThing n
     OIndi i -> mapIndivURI cSig i
 
 -- | Mapping of Class URIs
@@ -309,7 +309,7 @@ mapClassURI _ c t = fmap (mkPred conceptPred [mkThingVar t]) $ uriToIdM c
 mapIndivURI :: CASLSign -> Individual -> Result (TERM ())
 mapIndivURI _ uriI = do
     ur <- uriToIdM uriI
-    return $ mkAppl (mkQualOp ur (Op_type Total [] thing nullRange)) []
+    return $! mkAppl (mkQualOp ur (Op_type Total [] thing nullRange)) []
 
 mapNNInt :: NNInt -> TERM ()
 mapNNInt int = let NNInt uInt = int in foldr1 joinDigits $ map mkDigit uInt
@@ -343,7 +343,7 @@ mapNrLit l = case l of
     _ -> error "not number literal"
 
 mapLiteral :: Literal -> Result (TERM ())
-mapLiteral lit = return $ case lit of
+mapLiteral lit = return $! case lit of
     Literal l ty -> Sorted_term (case ty of
         Untyped _ -> foldr consChar emptyStringTerm l
         Typed dt -> case getDatatypeCat dt of
@@ -386,11 +386,11 @@ mapComIndivList :: CASLSign -> SameOrDifferent -> Maybe Individual
 mapComIndivList cSig sod mol inds = do
     fs <- mapM (mapIndivURI cSig) inds
     tps <- case mol of
-        Nothing -> return $ comPairs fs fs
+        Nothing -> return $! comPairs fs fs
         Just ol -> do
             f <- mapIndivURI cSig ol
-            return $ mkPairs f fs
-    return $ map (\ (x, y) -> case sod of
+            return $! mkPairs f fs
+    return $! map (\ (x, y) -> case sod of
         Same -> mkStEq x y
         Different -> mkNeg $ mkStEq x y) tps
 
@@ -402,7 +402,7 @@ mapComDataPropsList :: CASLSign -> Maybe DataPropertyExpression
 mapComDataPropsList cSig md props a b = do
     fs <- mapM (\ x -> mapDataProp cSig x a b) props
     case md of
-        Nothing -> return $ comPairs fs fs
+        Nothing -> return $! comPairs fs fs
         Just dp -> fmap (`mkPairs` fs) $ mapDataProp cSig dp a b
 
 {- | Mapping along ObjectPropsList for creation of pairs for commutative
@@ -413,7 +413,7 @@ mapComObjectPropsList :: CASLSign -> Maybe ObjectPropertyExpression
 mapComObjectPropsList cSig mol props a b = do
     fs <- mapM (\ x -> mapObjProp cSig x a b) props
     case mol of
-        Nothing -> return $ comPairs fs fs
+        Nothing -> return $! comPairs fs fs
         Just ol -> fmap (`mkPairs` fs) $ mapObjProp cSig ol a b
 
 -- | mapping of Data Range
@@ -429,7 +429,7 @@ mapDataRange cSig dr i = case dr of
     DataJunction jt drl -> do
         (jl, sl) <- mapAndUnzipM ((\ s v r -> mapDataRange s r v) cSig i) drl
         let usig = uniteL sl
-        return $ case jt of
+        return $! case jt of
                 IntersectionOf -> (conjunct jl, usig)
                 UnionOf -> (disjunct jl, usig)
     DataOneOf cs -> do
@@ -498,7 +498,7 @@ mapCard b cSig ct n prop d var = do
         exactLst' = mkImpl (conjunct $ oPropsE ++ fOut) $ disjunct dlstM
         exactLst = mkExist qVars $ conjunct [minLst, mkForall qVarsE exactLst']
         ts = uniteL $ [cSig] ++ s ++ s' ++ s''
-    return $ case ct of
+    return $! case ct of
             MinCardinality -> (mkExist qVars minLst, ts)
             MaxCardinality -> (mkForall qVarsM maxLst, ts)
             ExactCardinality -> (exactLst, ts)
@@ -525,7 +525,7 @@ mapDescription cSig desc var = case desc of
     ObjectValuesFrom ty o d -> let n = var + 1 in do
         oprop0 <- mapObjProp cSig o var n
         (desc0, s) <- mapDescription cSig d n
-        return $ case ty of
+        return $! case ty of
             SomeValuesFrom -> (mkExist [thingDecl n] $ conjunct [oprop0, desc0],
                     uniteCASLSign cSig s)
             AllValuesFrom -> (mkVDecl [n] $ mkImpl oprop0 desc0,
@@ -542,7 +542,7 @@ mapDescription cSig desc var = case desc of
         oprop0 <- mapDataProp cSig dpe var n
         (desc0, s) <- mapDataRange cSig dr n
         let ts = uniteCASLSign cSig s
-        return $ case ty of
+        return $! case ty of
             SomeValuesFrom -> (mkExist [dataDecl n] $ conjunct [oprop0, desc0],
                 ts)
             AllValuesFrom -> (mkVDataDecl [n] $ mkImpl oprop0 desc0, ts)
@@ -587,7 +587,7 @@ mapFact cSig ex f = case f of
             let oProp = case posneg of
                     Positive -> oPropH
                     Negative -> Negation oPropH nullRange
-            return $ mkForall [thingDecl 1, dataDecl 2] $ implConj
+            return $! mkForall [thingDecl 1, dataDecl 2] $ implConj
                 [mkEqDecl 1 inS, mkEqVar (dataDecl 2) $ upcast inT dataS] oProp
         _ -> fail $ "DataPropertyFact Entity fail " ++ show f
 
@@ -597,34 +597,34 @@ mapCharact cSig ope c = case c of
     Functional -> do
         so1 <- mapObjProp cSig ope 1 2
         so2 <- mapObjProp cSig ope 1 3
-        return $ mkFIE [1, 2, 3] [so1, so2] 2 3
+        return $! mkFIE [1, 2, 3] [so1, so2] 2 3
     InverseFunctional -> do
         so1 <- mapObjProp cSig ope 1 3
         so2 <- mapObjProp cSig ope 2 3
-        return $ mkFIE [1, 2, 3] [so1, so2] 1 2
+        return $! mkFIE [1, 2, 3] [so1, so2] 1 2
     Reflexive -> do
         so <- mapObjProp cSig ope 1 1
-        return $ mkRI [1] 1 so
+        return $! mkRI [1] 1 so
     Irreflexive -> do
         so <- mapObjProp cSig ope 1 1
-        return $ mkRI [1] 1 $ mkNeg so
+        return $! mkRI [1] 1 $ mkNeg so
     Symmetric -> do
         so1 <- mapObjProp cSig ope 1 2
         so2 <- mapObjProp cSig ope 2 1
-        return $ mkVDecl [1, 2] $ mkImpl so1 so2
+        return $! mkVDecl [1, 2] $ mkImpl so1 so2
     Asymmetric -> do
         so1 <- mapObjProp cSig ope 1 2
         so2 <- mapObjProp cSig ope 2 1
-        return $ mkVDecl [1, 2] $ mkImpl so1 $ mkNeg so2
+        return $! mkVDecl [1, 2] $ mkImpl so1 $ mkNeg so2
     Antisymmetric -> do
         so1 <- mapObjProp cSig ope 1 2
         so2 <- mapObjProp cSig ope 2 1
-        return $ mkFIE [1, 2] [so1, so2] 1 2
+        return $! mkFIE [1, 2] [so1, so2] 1 2
     Transitive -> do
         so1 <- mapObjProp cSig ope 1 2
         so2 <- mapObjProp cSig ope 2 3
         so3 <- mapObjProp cSig ope 1 3
-        return $ mkVDecl [1, 2, 3] $ implConj [so1, so2] so3
+        return $! mkVDecl [1, 2, 3] $ implConj [so1, so2] so3
 
 -- | Mapping of ObjectSubPropertyChain
 mapSubObjPropChain :: CASLSign -> [ObjectPropertyExpression]
@@ -635,7 +635,7 @@ mapSubObjPropChain cSig props oP = do
      oProps <- mapM (\ (z, x) -> mapObjProp cSig z x (x+1)) $
                  zip props vars
      ooP <- mapObjProp cSig oP 1 (head $ reverse vars)
-     return $ mkVDecl vars $ implConj oProps ooP
+     return $! mkVDecl vars $ implConj oProps ooP
 
 -- | Mapping of subobj properties
 mapSubObjProp :: CASLSign -> ObjectPropertyExpression
@@ -644,7 +644,7 @@ mapSubObjProp cSig e1 e2 a = do
     let b = a + 1
     l <- mapObjProp cSig e1 a b
     r <- mapObjProp cSig e2 a b
-    return $ mkForallRange (map thingDecl [a, b]) (mkImpl l r) nullRange
+    return $! mkForallRange (map thingDecl [a, b]) (mkImpl l r) nullRange
 
 mkEDPairs :: CASLSign -> [Int] -> Maybe O.Relation -> [(FORMULA f, FORMULA f)]
     -> Result ([FORMULA f], CASLSign)
