@@ -1,7 +1,7 @@
 # to be included by Makefile
 
 PROFILE :=
-# call make with PROFILE=on (and comment out packages in var.mk)
+# for profiling, call make with PROFILE=on 
 # call resulting binary with a final +RTS -p to get a file <binary>.prof
 ifeq ($(PROFILE),on)
 	HC_PROF := -prof -auto-all -osuf p_o +RTS -K100m -RTS
