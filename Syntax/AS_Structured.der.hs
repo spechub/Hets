@@ -75,6 +75,7 @@ data SPEC = Basic_spec G_basic_spec Range
             -- pos: "combine"
           | Apply IRI G_basic_spec Range
             -- pos: "apply", use a basic spec parser to parse a sentence
+          | Unsolved_IRI IRI
             deriving (Show, Typeable)
 
 data Network = Network [LABELED_ONTO_OR_INTPR_REF] [IRI] Range

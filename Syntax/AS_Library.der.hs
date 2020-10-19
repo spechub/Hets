@@ -19,22 +19,24 @@ module Syntax.AS_Library where
 -- DrIFT command:
 {-! global: GetRange !-}
 
-import Common.Id
-import Common.IRI
-import Common.AS_Annotation
-import Common.LibName
+-- import Debug.Trace
 
-import Data.Maybe
-import Data.Typeable
+import           Common.AS_Annotation
+import           Common.Id
+import           Common.IRI
+import           Common.LibName
 
-import Logic.Grothendieck
-import Logic.Logic
+import           Data.Maybe
+import           Data.Typeable
 
-import Syntax.AS_Architecture
-import Syntax.AS_Structured
+import           Logic.Grothendieck
+import           Logic.Logic
 
-import Framework.AS
-import Framework.ATC_Framework ()
+import           Syntax.AS_Architecture
+import           Syntax.AS_Structured
+
+import           Framework.AS
+import           Framework.ATC_Framework ()
 
 data LIB_DEFN = Lib_defn LibName [Annoted LIB_ITEM] Range [Annotation]
                 {- pos: "library"
@@ -103,8 +105,8 @@ addDownloadAux unique j =
   let libPath = deleteQuery j
       query = iriQuery j -- this used to be the fragment
       i = case query of
-        "" -> j
-        "?" -> libPath
+        ""    -> j
+        "?"   -> libPath
         _ : r -> fromMaybe libPath $ parseIRICurie r
   in Download_items (iriLibName i)
     (if unique then UniqueItem i else ItemMaps [ItemNameMap i Nothing])
@@ -149,9 +151,9 @@ data ENTAIL_TYPE = Entail_type OmsOrNetwork OmsOrNetwork Range
 
 showAlignArity :: ALIGN_ARITY -> String
 showAlignArity ar = case ar of
-  AA_InjectiveAndTotal -> "1"
-  AA_Injective -> "?"
-  AA_Total -> "+"
+  AA_InjectiveAndTotal        -> "1"
+  AA_Injective                -> "?"
+  AA_Total                    -> "+"
   AA_NeitherInjectiveNorTotal -> "*"
 
 data ItemNameMap =
@@ -173,18 +175,104 @@ fromBasicSpec ln sn gbs =
 
 getDeclSpecNames :: LIB_ITEM -> [IRI]
 getDeclSpecNames li = case li of
-  Spec_defn sn _ _ _ -> [sn]
+  Spec_defn sn _ _ _    -> [sn]
   Download_items _ di _ -> getImportNames di
-  _ -> []
+  _                     -> []
+
+getGenSpecArgNames :: [IRI] -> LIB_ITEM -> ([IRI], LIB_ITEM)
+getGenSpecArgNames knownSpecs li = case li of
+  Spec_defn sn g as r ->
+    let (iris, s') = getActualParams knownSpecs $ item as
+    in  (iris, Spec_defn sn g as{item = s'} r)
+  _ -> ([], li)
+
+getActualParams :: [IRI] -> SPEC -> ([IRI], SPEC)
+getActualParams knownSpecs sp =
+ let f c aspec r = let (iris, sp') = getActualParams knownSpecs $ item aspec
+                   in (iris, c aspec{item = sp'} r)
+     fs c aspecs r = let resl = map ((getActualParams knownSpecs).item) aspecs
+                         iris = concat $ map fst resl
+                         aspecs' = map (\(as, s) -> as {item = s})
+                                 $ zip aspecs $ map snd resl
+                     in (iris, c aspecs' r)
+ in case sp of
+     Extraction aspec r -> f Extraction aspec r
+     Translation aspec r -> f Translation aspec r
+     Reduction aspec r -> f Reduction aspec r
+     Approximation aspec r -> f Approximation aspec r
+     Minimization aspec r -> f Minimization aspec r
+     Filtering aspec r -> f Filtering aspec r
+     Bridge aspec1 rens aspec2 r ->
+        let (iris1, sp1) = getActualParams knownSpecs $ item aspec1
+            (iris2, sp2) = getActualParams knownSpecs $ item aspec2
+            aspec1' = aspec1{item = sp1}
+            aspec2' = aspec2{item = sp2}
+        in (iris1 ++ iris2, Bridge aspec1' rens aspec2' r)
+     Union aspecs r -> fs Union aspecs r
+     Intersection aspecs r -> fs Intersection aspecs r
+     Extension aspecs r -> fs Extension aspecs r
+     Free_spec aspec r -> f Free_spec aspec r
+     Cofree_spec aspec r -> f Cofree_spec aspec r
+     Minimize_spec aspec r -> f Minimize_spec aspec r
+     Closed_spec aspec r -> f Closed_spec aspec r
+     Group aspec r -> f Group aspec r
+     Qualified_spec ld aspec r -> f (Qualified_spec ld) aspec r
+     Data l1 l2 aspec1 aspec2 r ->
+        let (iris1, sp1) = getActualParams knownSpecs $ item aspec1
+            (iris2, sp2) = getActualParams knownSpecs $ item aspec2
+            aspec1' = aspec1{item = sp1}
+            aspec2' = aspec2{item = sp2}
+        in (iris1 ++ iris2, Data l1 l2 aspec1' aspec2' r)
+     Spec_inst sn aargs miri r -> let
+       resL = map (handleArg knownSpecs) $ map item aargs
+      in (concat $ map fst resL,
+          Spec_inst sn (map (\(as, s) -> as {item = s}) $
+          zip aargs $ map snd resL) miri r)
+     _-> ([], sp)
+
+handleArg :: [IRI] -> FIT_ARG -> ([SPEC_NAME], FIT_ARG)
+handleArg knownSpecs p = case p of
+          Fit_spec aspec [] r' -> -- trace ("item aspec:" ++ show (item aspec)) $ 
+            case item aspec of
+              Spec_inst x [] Nothing _ ->
+                if x `elem` knownSpecs then ([],p)
+                 else ([x], Fit_spec (aspec{item=Unsolved_IRI x}) [] r')
+              Spec_inst x [aarg] Nothing r'' -> 
+                let argSpec = (\(Fit_spec aspec' _ _) -> item aspec') $ item aarg
+                    argNames = case argSpec of
+                                 Spec_inst y [] Nothing _ -> [Just y]
+                                 _ -> [Nothing] 
+                in if Nothing `elem` argNames then ([],p)
+                    else
+                     if x `elem` knownSpecs then let
+                        [y] = map fromJust argNames
+                        unsolvedAnnoFitSpec = Annoted (Fit_spec (Annoted (Unsolved_IRI y) nullRange [] []) [] nullRange) nullRange [] []
+                        in ([y], Fit_spec(aspec{item = Spec_inst x [unsolvedAnnoFitSpec] Nothing r''}) [] r')
+                      else 
+                      let
+                        iriToToken anIri = idToSimpleId $ iriPath anIri
+                        compId = Id [iriToToken x]
+                                    (map (iriPath . fromJust) argNames)
+                                    nullRange
+                        cIRI = idToIRI compId
+                      in ([cIRI],
+                           Fit_spec (aspec{item=Unsolved_IRI cIRI}) [] r')
+              Spec_inst x aargs' Nothing r ->
+                 let aSpecs = map item aargs'
+                     hSpecs = map (handleArg knownSpecs) aSpecs
+                 in (concatMap fst hSpecs, 
+                     Fit_spec (Annoted (Spec_inst x (map (\sp -> Annoted (snd sp) nullRange [] []) hSpecs) Nothing r) nullRange [] []) [] r')
+              _ -> ([], p)
+          _ -> ([],p)
 
 getImportNames :: DownloadItems -> [IRI]
 getImportNames di = case di of
-  ItemMaps im -> map (\ (ItemNameMap i mi) -> fromMaybe i mi) im
+  ItemMaps im  -> map (\ (ItemNameMap i mi) -> fromMaybe i mi) im
   UniqueItem i -> [i]
 
 getOms :: OmsOrNetwork -> [SPEC]
 getOms o = case o of
-  MkOms s -> [item s]
+  MkOms s     -> [item s]
   MkNetwork _ -> []
 
 getSpecDef :: LIB_ITEM -> [SPEC]

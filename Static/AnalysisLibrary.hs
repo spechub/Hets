@@ -22,61 +22,63 @@ module Static.AnalysisLibrary
     , LNS
     ) where
 
-import Logic.Logic
-import Logic.Grothendieck
-import Logic.Coerce
-import Logic.Prover
+-- import Debug.Trace
 
-import Syntax.AS_Structured
-import Syntax.Print_AS_Structured
-import Syntax.Print_AS_Library ()
-import Syntax.AS_Library
+import           Logic.Coerce
+import           Logic.Grothendieck
+import           Logic.Logic
+import           Logic.Prover
 
-import Static.GTheory
-import Static.DevGraph
-import Static.DgUtils
-import Static.ComputeTheory
-import Static.AnalysisStructured
-import Static.AnalysisArchitecture
-import Static.ArchDiagram (emptyExtStUnitCtx)
+import           Syntax.AS_Library
+import           Syntax.AS_Structured
+import           Syntax.Print_AS_Library     ()
+import           Syntax.Print_AS_Structured
 
-import Common.AS_Annotation hiding (isAxiom, isDef)
-import Common.Consistency
-import Common.GlobalAnnotations
-import Common.ConvertGlobalAnnos
-import Common.AnalyseAnnos
-import Common.ExtSign
-import Common.Result
-import Common.ResultT
-import Common.LibName
-import Common.Id
-import Common.IRI
-import Common.DocUtils
-import qualified Common.Unlit as Unlit
-import Common.Utils
+import           Static.AnalysisArchitecture
+import           Static.AnalysisStructured
+import           Static.ArchDiagram          (emptyExtStUnitCtx)
+import           Static.ComputeTheory
+import           Static.DevGraph
+import           Static.DgUtils
+import           Static.GTheory
 
-import Driver.Options
-import Driver.ReadFn
-import Driver.ReadLibDefn
-import Driver.WriteLibDefn
+import           Common.AnalyseAnnos
+import           Common.AS_Annotation        hiding (isAxiom, isDef)
+import           Common.Consistency
+import           Common.ConvertGlobalAnnos
+import           Common.DocUtils
+import           Common.ExtSign
+import           Common.GlobalAnnotations
+import           Common.Id
+import           Common.IRI
+import           Common.LibName
+import           Common.Result
+import           Common.ResultT
+import qualified Common.Unlit                as Unlit
+import           Common.Utils
 
-import qualified Data.Map as Map
-import qualified Data.Set as Set
-import Data.Either (lefts, rights)
-import Data.List
-import Data.Maybe
+import           Driver.Options
+import           Driver.ReadFn
+import           Driver.ReadLibDefn
+import           Driver.WriteLibDefn
 
-import Control.Monad
-import Control.Monad.Trans
+import           Data.Either                 (lefts, rights)
+import           Data.List
+import qualified Data.Map                    as Map
+import           Data.Maybe
+import qualified Data.Set                    as Set
 
-import System.Directory
-import System.FilePath
+import           Control.Monad
+import           Control.Monad.Trans
 
-import LF.Twelf2DG
-import Framework.Analysis
+import           System.Directory
+import           System.FilePath
 
-import MMT.Hets2mmt (mmtRes)
-import Proofs.ComputeColimit
+import           Framework.Analysis
+import           LF.Twelf2DG
+
+import           MMT.Hets2mmt                (mmtRes)
+import           Proofs.ComputeColimit
 
 -- a set of library names to check for cyclic imports
 type LNS = Set.Set LibName
@@ -95,7 +97,7 @@ anaSource mln lg opts topLns libenv initDG origName = ResultT $ do
       fname = tryToStripPrefix "file://" mName
       syn = case defSyntax opts of
         "" -> Nothing
-        s -> Just $ simpleIdToIRI $ mkSimpleId s
+        s  -> Just $ simpleIdToIRI $ mkSimpleId s
       lgraph = setSyntax syn $ setCurLogic (defLogic opts) lg
   fname' <- getContentAndFileType opts fname
   dir <- getCurrentDirectory
@@ -137,7 +139,7 @@ anaString mln lgraph opts topLns libenv initDG input file mr = do
   let realFileName = curDir </> file
       posFileName = case mln of
           Just gLn | useLibPos opts -> libToFileName gLn
-          _ -> if checkUri file then file else realFileName
+          _        -> if checkUri file then file else realFileName
   lift $ putIfVerbose opts 2 $ "Reading file " ++ file
   libdefns <- readLibDefn lgraph opts mr file posFileName input
   when (null libdefns) . fail $ "failed to read contents of file: " ++ file
@@ -145,7 +147,7 @@ anaString mln lgraph opts topLns libenv initDG input file mr = do
         (error "Static.AnalysisLibrary.anaString", libenv)
     $ case analysis opts of
       Skip -> [last libdefns]
-      _ -> libdefns
+      _    -> libdefns
 
 -- | calling static analysis for parsed library-defn
 anaStringAux :: Maybe LibName -- ^ suggested library name
@@ -159,10 +161,30 @@ anaStringAux mln lgraph opts topLns initDG mt file posFileName (_, libenv)
         $ concatMap (getSpecDef . item) is'
       declNs = Set.fromList . map expnd
         $ concatMap (getDeclSpecNames . item) is'
-      missNames = Set.toList $ spNs Set.\\ declNs
+      -- all missing names
+      missNames' = -- trace ("declNs:" ++ show declNs) $ 
+                   spNs Set.\\ declNs
+      -- if a missing name appears as argument of a generic spec,
+      -- mark it as unsolved iri
+      (unsolvedNames, is'') =  foldl (\(nl, il) li ->
+                              let (n, i') = getGenSpecArgNames (Set.toList declNs) $ item li
+                              in (n:nl, il ++ [li{item = i'}])) ([],[]) is'
+      -- the missing names that are not unsolved iris must be solved as downloads
+      missIds = -- trace ("unsolvedNames:" ++ show unsolvedNames) $
+                --  trace ("missNames':" ++ show missNames') $
+                concat $ map (\anIri -> getTokens $ iriPath anIri) $
+                Set.toList $ missNames'
+      unsolvedIds = concat $ map (\anIri -> (getTokens $ iriPath anIri) ++
+                              ( concatMap getTokens $ getComps $ iriPath anIri))
+                  $ concat unsolvedNames
+      missNames = -- trace ("unsolvedIds:" ++ show unsolvedIds) $
+                  -- trace ("missIds:" ++ show missIds) $
+                  -- trace ("unsolvedNames:" ++ show unsolvedNames) $
+                  map simpleIdToIRI $
+                  filter (\x -> (not $ x `elem` unsolvedIds) && (not $ (simpleIdToIRI x) `elem` declNs)) missIds
       unDecls = map (addDownload True) $ filter
           (isNothing . (`lookupGlobalEnvDG` initDG)) missNames
-      is = unDecls ++ is'
+      is = unDecls ++ is''
       spN = convertFileToLibStr file
       noLibName = getLibId pln == nullIRI
       nIs = case is of
@@ -296,7 +318,7 @@ shortcutUnions dgraph = let spNs = getGlobNodes $ globalEnv dgraph in
                 _ -> False) innNs
            && case nodeInfo nl of
                 DGNode DGUnion _ -> True
-                _ -> False
+                _                -> False
          -> foldM (\ dg' (s, _, el) -> do
              newMor <- composeMorphisms (dgl_morphism el) $ dgl_morphism et
              return $ insLink dg' newMor
@@ -446,7 +468,7 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
     analyzing opts $ "unit spec " ++ usstr
     l <- lookupCurrentLogic "Unit_spec_defn" lg
     (rSig, dg', usp') <-
-      liftR $ anaUnitSpec lg libenv currLn dg opts eo 
+      liftR $ anaUnitSpec lg libenv currLn dg opts eo
                           usn' (EmptyNode l) Nothing usp
     unitSig <- liftR $ getUnitSigFromRef rSig
     let usd' = Unit_spec_defn usn usp' pos
@@ -461,7 +483,7 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
     rn <- expCurieT (globalAnnos dg) eo rn'
     let rnstr = iriToStringUnsecure rn
     l <- lookupCurrentLogic "Ref_spec_defn" lg
-    (_, _, _, rsig, dg', rsp') <- liftR $ 
+    (_, _, _, rsig, dg', rsp') <- liftR $
         anaRefSpec True lg libenv currLn dg opts eo
       (EmptyNode l) rn emptyExtStUnitCtx Nothing rsp
     analyzing opts $ "ref spec " ++ rnstr
@@ -496,7 +518,7 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
     let (cNodes, cEdges) = networkDiagram dg cItems eItems
         diag = makeDiagram dg cNodes cEdges
         genv = globalEnv dg
-    if Map.member nn genv 
+    if Map.member nn genv
        then
         liftR $ plain_error (itm, dg, libenv, lg, eo)
                (alreadyDefined nnstr) pos
@@ -540,7 +562,7 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
                     let is = Map.keys $ globalEnv dg'
                         ks = case is of
                                [_] -> is
-                               _ -> filter (== getLibId ln') is
+                               _   -> filter (== getLibId ln') is
                     in case ks of
                     [j] -> case expCurie (globalAnnos dg) eo i of
                       Nothing -> ([], [prefixErrorIRI i], [i])
@@ -591,14 +613,14 @@ symbolsOf lg gs1@(G_sign l1 (ExtSign sig1 sys1) _)
             , filter (\ sy -> matches l2 sy r2) $ Set.toList sys2) of
           ([s1], [s2]) ->
             return (G_symbol l1 s1, G_symbol l2 s2)
-          (ll1, ll2) -> 
+          (ll1, ll2) ->
                  plain_error (G_symbol l1 $ head ll1, G_symbol l2 $ head ll2) -- this is a hack!
-                  ("Missing or non-unique symbol match " ++ 
-                   "for correspondence\nMatches for first symbol: " ++ 
+                  ("Missing or non-unique symbol match " ++
+                   "for correspondence\nMatches for first symbol: " ++
                    showDoc rs1 "\n" ++
-                   showDoc ll1 "\nMatches for second symbol: " ++ 
+                   showDoc ll1 "\nMatches for second symbol: " ++
                    showDoc rs2 "\n" ++
-                   showDoc ll2 "\n") 
+                   showDoc ll2 "\n")
                   nullRange
         _ -> fail $ "non-unique raw symbols"
       ps <- symbolsOf lg gs1 gs2 corresps'
@@ -618,10 +640,10 @@ anaEntailmentDefn lg ln libEnv dg opts eo en et pos = do
             spT = item asp2
             name = makeName en
         l <- lookupCurrentLogic "ENTAIL_DEFN" lg
-        (_spSrc', srcNsig, dg') <- anaSpec False True lg libEnv ln 
+        (_spSrc', srcNsig, dg') <- anaSpec False True lg libEnv ln
                           dg (EmptyNode l) (extName "Source" name)
                           opts eo spS $ getRange spS
-        (_spTgt', tgtNsig, dg'') <- anaSpec True True lg libEnv ln 
+        (_spTgt', tgtNsig, dg'') <- anaSpec True True lg libEnv ln
                           dg' (EmptyNode l)
                           (extName "Target" name) opts eo spT $ getRange spT
         incl <- ginclusion lg (getSig tgtNsig) (getSig srcNsig)
@@ -904,7 +926,7 @@ anaItemNameOrMap1 libenv ln refDG (genv, dg) (old, new) = do
   maybeToResult (iriPos new) (iriToStringUnsecure new ++ " already used")
     $ case Map.lookup new genv of
     Nothing -> Just ()
-    Just _ -> Nothing
+    Just _  -> Nothing
   case entry of
     SpecEntry extsig ->
       return $ snd $ refExtsigAndInsert libenv ln refDG (genv, dg) new extsig
@@ -984,7 +1006,7 @@ expandCurieItemNameMap fn newFn (ItemNameMap i1 mi2) =
             Nothing -> Right $ ItemNameMap i mi2
             Just j -> case expandCurieByPath newFn j of
                 Nothing -> Left $ prefixErrorIRI j
-                mj -> Right $ ItemNameMap i mj
+                mj      -> Right $ ItemNameMap i mj
         Nothing -> Left $ prefixErrorIRI i1
 
 itemNameMapsToIRIs :: [ItemNameMap] -> [IRI]

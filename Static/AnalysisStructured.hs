@@ -523,7 +523,7 @@ anaSpecAux conser addSyms optNodes lg
           anaSpecTop conser addSyms lg libEnv ln 
                      dg nsig name opts eo (item asp) rg
       return (Group (replaceAnnoted sp' asp) pos, nsig', dg')
-  Spec_inst spname' afitargs mImp pos0 -> do
+  s@(Spec_inst spname' afitargs mImp pos0) -> do
    spname <- expCurieR (globalAnnos dg) eo spname'
    let pos = if null afitargs then iriPos spname else pos0
    adjustPos pos $ case lookupGlobalEnvDG spname dg of
@@ -1117,8 +1117,12 @@ anaAllFitArgs lg libEnv opts eo ln dg nsig name spname
   gs@(ExtGenSig (GenSig imps params _) _)
   afitargs = do
   let fitargs = map item afitargs
+  -- first solve Unsolved_IRIs: for now, always generate specs. Have to think how to call analysis of download_items from this level.
+  fitargs'' <- solveIRIs lg libEnv opts eo ln dg nsig name spname gs $ zip params fitargs
+  -- there is a duplication: during solveIRIs we actually do the analysis of the argument and then we analyze again the generated spec
+  -- but this was the simplest way to try if things work
   (fitargs', dg', args, _) <- foldM (anaFitArgs lg libEnv opts eo ln spname imps)
-           ([], dg, [], extName "Actuals" name) (zip params fitargs)
+           ([], dg, [], extName "Actuals" name) (zip params fitargs'')
   let actualargs = reverse args
   (gsigma', morDelta) <- applyGS lg gs actualargs
   gsigmaRes <- gsigUnionMaybe lg True nsig gsigma'
@@ -1127,6 +1131,42 @@ anaAllFitArgs lg libEnv opts eo ln dg nsig name spname
     $ map snd actualargs
   return ( zipWith replaceAnnoted (reverse fitargs') afitargs, dg3
          , (morDelta, gsigma', ns))
+
+solveIRIs :: LogicGraph -> LibEnv -> HetcatsOpts -> ExpOverrides -> LibName -> DGraph
+  -> MaybeNode
+  -> NodeName -> IRI -> ExtGenSig -> [(NodeSig, FIT_ARG)] -> Result [FIT_ARG]
+solveIRIs lg libEnv opts eo ln dg nsig name spname gs args = do -- TODO: remove unneeded arguments
+ fitargs <- mapM (solveIRI lg libEnv opts eo ln dg nsig name spname gs) args
+ return fitargs
+
+solveIRI :: LogicGraph -> LibEnv -> HetcatsOpts -> ExpOverrides -> LibName -> DGraph
+  -> MaybeNode
+  -> NodeName -> IRI -> ExtGenSig -> (NodeSig, FIT_ARG) -> Result FIT_ARG
+solveIRI lg libEnv opts eo ln dg nsig name spname gs (par, arg) = 
+ case arg of 
+   Fit_spec aspec [] r-> 
+      case item aspec of 
+        Unsolved_IRI x -> do
+          let gsig = getSig par
+              gn = getNode par
+          case gsig of
+            G_sign lid (ExtSign sig _) _ -> do 
+              let sset = symset_of lid sig
+              case Set.toList sset of 
+               [sym] -> do 
+                 let rsym1 = symbol_to_raw lid sym
+                     rsym2 = symbol_to_raw lid $ rename_symbol lid sym $ iriPath x -- TODO: better conversion from IRI to Id?
+                 fitmor <- induced_from_morphism lid (Map.fromList [(rsym1, rsym2)]) sig
+                 fsens <- case dgn_theory $ labDG dg gn of -- computeTheory libEnv ln gn does not work as the libEnv is empty
+                           G_theory lid1 _ _ _ tsens _ -> coerceThSens lid1 lid "Static.AnalysisStructured.solveIRI" tsens
+                 let tsig = cod fitmor
+                     bspec = case convertTheory lid of 
+                              Just f -> f (tsig, toNamedList fsens)
+                              Nothing -> error $ "cannot convert theory to basic spec in logic " ++ show lid  
+                 return $ Fit_spec aspec{item = Basic_spec (G_basic_spec lid bspec) nullRange} [] r
+               _ -> fail $ "try to instantiate a formal parameter with more than one symbol with a single-symbol spec:" ++ show x
+        _ -> return arg
+   _ -> return arg
 
 parLink :: LogicGraph -> MaybeNode -> DGLinkOrigin -> NodeSig -> DGraph
            -> NodeSig -> Result DGraph
