@@ -1,5 +1,16 @@
 # to be included by Makefile
 
+PROFILE :=
+# for profiling, call make with PROFILE=on 
+# call resulting binary with a final +RTS -p to get a file <binary>.prof
+ifeq ($(PROFILE),on)
+	HC_PROF := -prof -auto-all -osuf p_o +RTS -K100m -RTS
+        STACK_PROF := --profile
+else
+	HC_PROF := 
+        STACK_PROF := 
+endif
+
 SHELL := $(shell [ -x /bin/ksh93 ] && echo '/bin/ksh93' || echo '/bin/bash' )
 OSNAME := $(shell uname -s)
 OSVERS := $(shell uname -v 2>/dev/null)
@@ -21,7 +32,7 @@ STACK_TARGET :=
 STACK_UPGRADE_TARGET :=
 STACK_DEPENDENCIES_FLAGS :=
 ifneq ($(STACK),)
-    STACK_EXEC := $(STACK) exec --
+    STACK_EXEC := $(STACK) exec $(STACK_PROF) --
     # Upgrade Haskell-Stack if the version requirement of 1.4.0 is not met
     STACK_VERSION := $(call version, $(shell stack --numeric-version))
     STACK_TARGET := stack
@@ -51,14 +62,13 @@ PROGRAMATICA_SRC_FILE ?= \
 GHCVERSION := $(call version, $(shell $(STACK_EXEC) ghc --numeric-version))
 GHCRTSOPTS := $(shell [ $(GHCVERSION) -ge 7000000 ] && echo '-rtsopts')
 
+FIXED_GLADE = 1
 ifneq ($(findstring SunOS, $(OSNAME)),)
   TAR = gtar
   PATCH = gpatch
     ifneq ($(findstring Generic, $(OSVERS)),)
       SUNRUNPATH = -optl-R/opt/csw/lib
       FIXED_GLADE = 0
-    else
-      FIXED_GLADE = 1
     endif
 else
   TAR = tar
@@ -131,10 +141,12 @@ endif
 HC_OPTS_WITHOUTGTK = $(PARSEC_FLAG) \
   $(TIME_PACKAGE) $(TAR_PACKAGE) $(HTTP_PACKAGE) $(WGET) $(UNIX_PACKAGE) \
   $(UNI_PACKAGE) $(HASKELINE_PACKAGE) $(HEXPAT_PACKAGE) \
-  $(PFE_FLAGS) $(SERVER_FLAG) $(HAXML_PACKAGE) $(HAXML_PACKAGE_COMPAT) \
-  -DRDFLOGIC -DCASLEXTENSIONS
+  $(PFE_FLAGS) $(SERVER_FLAG) $(HAXML_PACKAGE)
+ifneq ($(PROFILE),on)
+  HC_OPTS_WITHOUTGTK += $(HAXML_PACKAGE_COMPAT) -DRDFLOGIC -DCASLEXTENSIONS
+endif
 
-# for profiling (or a minimal hets) comment out the previous two package lines
-# and the $(GTK_PACKAGE) below
-
-HC_OPTS = $(HC_OPTS_WITHOUTGTK) $(GTK_PACKAGE)
+HC_OPTS = $(HC_OPTS_WITHOUTGTK)
+ifneq ($(PROFILE),on)
+  HC_OPTS += $(GTK_PACKAGE)
+endif
