@@ -271,3 +271,4 @@ analyseOutput err outp =
   in case atpr of
        ATPError s | null s -> (ATPError "unexpected hermit output", st, ls, tmo)
        _ -> (atpr, st, ls, tmo)
+--test
