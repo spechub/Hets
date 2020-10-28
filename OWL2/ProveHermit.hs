@@ -57,10 +57,10 @@ hermitS :: String
 hermitS = "Hermit"
 
 hermitJar :: String
-hermitJar = "lib/HermiT.jar"
+hermitJar = "HermiT.jar"
 
 hermitEnv :: String
-hermitEnv = "HERTMIT_PATH"
+hermitEnv = "HERMIT_PATH"
 
 hermitCheck :: IO (Maybe String)
 hermitCheck = fmap
@@ -262,7 +262,7 @@ analyseOutput err outp =
             (ATPSuccess, Just True, to)
           ne : _ | isPrefixOf "Non-entailments" ne ->
             (ATPSuccess, Just False, to)
-          "Usage:" : "java" : "Pellet" : _ -> (ATPError line, Nothing, to)
+          "Usage:" : "java" : "Hermit" : _ -> (ATPError line, Nothing, to)
           "ERROR:" : _ -> (ATPError line, Nothing, to)
           tm : num : _ | isPrefixOf "Time" tm && all isDigit num ->
             (atp, exCode, read num)
