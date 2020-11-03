@@ -17,17 +17,18 @@ module Common.Prec where
 import Common.Id
 import Common.GlobalAnnotations
 import Common.AS_Annotation
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
 
 import Data.Data
 import Data.Maybe
 import Data.List (partition)
+import Data.Hashable
 
 -- | a precedence map using numbers for faster lookup
 data PrecMap = PrecMap
-    { precMap :: Map.Map Id Int
+    { precMap :: Map.HashMap Id Int
     , maxWeight :: Int
     } deriving (Show, Typeable, Data)
 

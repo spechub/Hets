@@ -22,13 +22,15 @@ import Common.Id
 
 import Data.Data
 import qualified Data.List as List
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
+
+import Data.Hashable
 
 data ModalSign = ModalSign
   { flexOps :: OpMap
   , flexPreds :: PredMap
-  , modies :: Map.Map SIMPLE_ID [AnModFORM]
-  , termModies :: Map.Map Id [AnModFORM] -- SORT
+  , modies :: Map.HashMap SIMPLE_ID [AnModFORM]
+  , termModies :: Map.HashMap Id [AnModFORM] -- SORT
   } deriving (Show, Eq, Ord, Typeable, Data)
 
 emptyModalSign :: ModalSign
@@ -41,8 +43,8 @@ addModalSign a b = a
   , modies = Map.unionWith List.union (modies a) $ modies b
   , termModies = Map.unionWith List.union (termModies a) $ termModies b }
 
-interMap :: Ord a => ([b] -> [b] -> [b]) -> Map.Map a [b] -> Map.Map a [b]
-         -> Map.Map a [b]
+interMap :: (Ord a, Hashable a) => ([b] -> [b] -> [b]) -> Map.HashMap a [b] -> Map.HashMap a [b]
+         -> Map.HashMap a [b]
 interMap f m = Map.filter (not . null) . Map.intersectionWith f m
 
 interModalSign :: ModalSign -> ModalSign -> ModalSign

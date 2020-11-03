@@ -37,7 +37,7 @@ import Common.Result
 import Data.Graph.Inductive.Graph
 import Data.List
 import Data.Maybe
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Control.Monad
 
@@ -50,7 +50,7 @@ qualifyLibEnv libEnv = fmap fst
            , Map.insert ln trm m))
     (libEnv, Map.empty) $ getTopsortedLibs libEnv
 
-type RenameMap = Map.Map Int (GMorphism, GMorphism)
+type RenameMap = Map.HashMap Int (GMorphism, GMorphism)
 
 qualifyDGraph :: LibName -> DGraph -> Result (DGraph, RenameMap)
 qualifyDGraph ln dg =
@@ -85,7 +85,7 @@ constructUnion lid hd l = case l of
       Nothing -> constructUnion lid sd tl
     Nothing -> constructUnion lid sd tl
 
-updateRefNodes :: (LibEnv, Map.Map LibName RenameMap) -> DGraph
+updateRefNodes :: (LibEnv, Map.HashMap LibName RenameMap) -> DGraph
                -> Result DGraph
 updateRefNodes (le, trm) dgraph =
   foldM (\ dg (n, lb) ->

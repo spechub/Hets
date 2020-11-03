@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveGeneric #-}
+
 {- |
 Module      :  ./Common/XmlDiff.hs
 Description :  compute xml diffs
@@ -20,9 +22,15 @@ import Common.Lib.MapSet (setToMap)
 
 import Data.List
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 import Text.XML.Light as XML
+
+import GHC.Generics (Generic)
+import Data.Hashable
+
+instance Hashable QName where
+ hashWithSalt s (QName qn qu qp) = s + hash qn + hash qu + hash qp
 
 hetsTags :: UnordTags
 hetsTags = Map.fromList
@@ -45,10 +53,10 @@ hetsXmlDiff e = mkMods . hetsXmlChanges e
 {- for elements, whose order does not matter, use the given attribute keys to
 determine their equality. An empty set indicates an element that only contains
 text to be compared. -}
-type UnordTags = Map.Map QName (Set.Set QName)
+type UnordTags = Map.HashMap QName (Set.Set QName)
 
 -- keep track of the nth element with a given tag
-type Count = Map.Map QName Int
+type Count = Map.HashMap QName Int
 
 {- we assume an element contains other elements and no text entries or just a
 single text content -}
@@ -103,10 +111,10 @@ removeIns stps em cs = case cs of
     _ -> Change (Update "") (pathToExpr stps) : removeIns stps em rs
          -- does not work for multiple text entries
 
-attrMap :: [Attr] -> Map.Map QName String
+attrMap :: [Attr] -> Map.HashMap QName String
 attrMap = Map.fromList . map (\ a -> (attrKey a, attrVal a))
 
-matchElems :: QName -> String -> Map.Map QName String -> Content -> Bool
+matchElems :: QName -> String -> Map.HashMap QName String -> Content -> Bool
 matchElems en t atts c = case c of
   Elem e -> elName e == en
     && if Map.null atts then null (elChildren e) && strContent e == t else

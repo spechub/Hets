@@ -27,7 +27,7 @@ import Common.Utils
 import Data.Char
 import Data.Maybe
 import Data.List
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import System.Process
 import System.IO
 import Text.ParserCombinators.Parsec
@@ -217,7 +217,7 @@ prepareAndCallVSE = do
   return (inp, out, cp)
 
 readFinalVSEOutput :: ProcessHandle -> Handle
-                   -> IO (Maybe (Map.Map String [String]))
+                   -> IO (Maybe (Map.HashMap String [String]))
 readFinalVSEOutput cp out = do
   ms <- getProcessExitCode cp
   case ms of
@@ -235,7 +235,7 @@ readFinalVSEOutput cp out = do
           appendFile vseErrFile $ res ++ "\n"
           return Nothing
 
-readLemmas :: [SExpr] -> Map.Map String [String]
+readLemmas :: [SExpr] -> Map.HashMap String [String]
 readLemmas =
   foldr (\ (node, sen) -> Map.insertWith (++) node [sen]) Map.empty
   . mapMaybe findState

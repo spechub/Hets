@@ -20,7 +20,8 @@ import Logic.Prover
 
 import Control.Monad
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
+import qualified Data.Map as PlainMap
 import Data.Maybe
 
 import Common.Consistency
@@ -41,7 +42,7 @@ proversOfLogic (Logic lid) = do
 lGToJson :: LogicGraph -> IO Json
 lGToJson lg = do
   let cs = Map.elems $ comorphisms lg
-      groupC = Map.toList . Map.fromListWith (++)
+      groupC = PlainMap.toList . PlainMap.fromListWith (++)
       ssubs = groupC
         $ map (\ (Comorphism cid) -> (G_sublogics (sourceLogic cid)
            $ sourceSublogic cid, [language_name cid])) cs

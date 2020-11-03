@@ -22,7 +22,7 @@ import Common.AS_Annotation
 import Common.Id (Pos (..), Range (..))
 import Common.Result
 import Common.GlobalAnnotations
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Common.Doc
 import Common.DocUtils
@@ -37,10 +37,10 @@ type Scope = Rel (SN HsName) (Ent (SN String))
 
 data Sign = Sign
     { instances :: [Instance PNT]
-    , types :: Map.Map (HsIdentI PNT) (Kind, TypeInfo PNT)
-    , values :: Map.Map (HsIdentI PNT) (Scheme PNT)
+    , types :: Map.HashMap (HsIdentI PNT) (Kind, TypeInfo PNT)
+    , values :: Map.HashMap (HsIdentI PNT) (Scheme PNT)
     , scope :: Scope
-    , fixities :: Map.Map (HsIdentI (SN String)) HsFixity
+    , fixities :: Map.HashMap (HsIdentI (SN String)) HsFixity
     } deriving Show
 
 instance Eq Sign where
@@ -48,10 +48,10 @@ instance Eq Sign where
 
 instance Ord Sign where
   compare a b = compare
-    ( Map.keysSet $ types a, Map.keysSet $ values a, scope a
-    , Map.keysSet $ fixities a, length $ instances a)
-    ( Map.keysSet $ types b, Map.keysSet $ values b, scope b
-    , Map.keysSet $ fixities b, length $ instances b)
+    ( Set.fromList $ Map.keys $ types a, Set.fromList $ Map.keys $ values a, scope a
+    , Set.fromList $ Map.keys $ fixities a, length $ instances a)
+    ( Set.fromList $ Map.keys $ types b, Set.fromList $ Map.keys $ values b, scope b
+    , Set.fromList $ Map.keys $ fixities b, length $ instances b)
 
 diffSign :: Sign -> Sign -> Sign
 diffSign e1 e2 = emptySign

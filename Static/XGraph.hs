@@ -22,6 +22,7 @@ import Common.LibName
 import Common.Result (Result (..))
 import Common.Utils (readMaybe)
 import Common.XUpdate (getAttrVal, readAttrVal)
+import qualified Common.OrderedMap as OMap
 
 import Control.Monad
 
@@ -30,7 +31,7 @@ import Data.List
 import Data.Maybe (fromMaybe)
 
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 import Text.XML.Light
 
@@ -50,7 +51,7 @@ data XGraph = XGraph { libName :: LibName
 -node bundles that can be processed in one step -}
 type XTree = [[([XLink], XNode)]]
 
-type EdgeMap = Map.Map String (Map.Map String [XLink])
+type EdgeMap = Map.HashMap String (Map.HashMap String [XLink])
 
 data XNode = XNode { nodeName :: NodeName
                    , logicName :: String
@@ -112,12 +113,12 @@ xGraph xml = do
                          ThmType {} -> True
                          _ -> False) allLinks
       edgeMap = mkEdgeMap defLk
-      (initN, restN) = Map.partitionWithKey
-         (\ n _ -> Set.notMember n $ Map.keysSet edgeMap)
+      (initN, restN) = OMap.partitionMapWithKey
+         (\ n _ -> Set.notMember n $ Set.fromList $ Map.keys edgeMap)
          nodeMap
-      tgts = Map.keysSet nodeMap
-      missingTgts = Set.difference (Map.keysSet edgeMap) tgts
-      srcs = Set.unions $ map Map.keysSet $ Map.elems edgeMap
+      tgts = Set.fromList $ Map.keys nodeMap
+      missingTgts = Set.difference (Set.fromList $ Map.keys edgeMap) tgts
+      srcs = Set.unions $ map (\f -> Set.fromList $ Map.keys f) $ Map.elems edgeMap
       missingSrcs = Set.difference srcs tgts
   unless (Set.null missingTgts)
     $ fail $ "missing nodes for edge targets " ++ show missingTgts
@@ -128,22 +129,23 @@ xGraph xml = do
   let ln = setFilePath fl $ emptyLibName nm
   ga <- extractGlobalAnnos xml
   i' <- fmap readEdgeId $ getAttrVal "nextlinkid" xml
-  xg <- builtXGraph (Map.keysSet initN) edgeMap restN []
+  xg <- builtXGraph (Set.fromList $ Map.keys initN) edgeMap restN []
   return $ XGraph ln ga i' thmLk (Map.elems initN) xg
 
-builtXGraph :: Monad m => Set.Set String -> EdgeMap -> Map.Map String XNode
+builtXGraph :: Monad m => Set.Set String -> EdgeMap -> Map.HashMap String XNode
             -> XTree -> m XTree
 builtXGraph ns xls xns xg = if Map.null xls && Map.null xns then return xg
   else do
-  when (Map.null xls) $ fail $ "unprocessed nodes: " ++ show (Map.keysSet xns)
+  when (Map.null xls) $ fail $ "unprocessed nodes: " ++ show (Set.fromList $ Map.keys xns)
   when (Map.null xns) $ fail $ "unprocessed links: "
        ++ show (map edgeId $ concat $ concatMap Map.elems $ Map.elems xls)
-  let (sls, rls) = Map.partition ((`Set.isSubsetOf` ns) . Map.keysSet) xls
+  let (sls, rls) = 
+        OMap.partitionMapWithKey (\ _ x -> Set.isSubsetOf ns $ Set.fromList $ Map.keys x) xls
       bs = Map.intersectionWith (,) sls xns
   when (Map.null bs) $ fail $ "cannot continue with source nodes:\n "
-    ++ show (Set.difference (Set.unions $ map Map.keysSet $ Map.elems rls) ns)
+    ++ show (Set.difference (Set.unions $ map (Set.fromList . Map.keys) $ Map.elems rls) ns)
     ++ "\nfor given nodes: " ++ show ns
-  builtXGraph (Set.union ns $ Map.keysSet bs) rls
+  builtXGraph (Set.union ns $ Set.fromList $ Map.keys bs) rls
     (Map.difference xns bs) $
        map (\ (m, x) -> (concat $ Map.elems m, x)) (Map.elems bs) : xg
 

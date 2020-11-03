@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./CommonLogic/AS_CommonLogic.der.hs
 Description :  Abstract syntax for common logic
@@ -29,6 +29,10 @@ import qualified Common.AS_Annotation as AS_Anno
 import Data.Data
 import Data.Set (Set)
 
+import GHC.Generics (Generic)
+import Data.Hashable
+import Common.Utils
+
 -- DrIFT command
 {-! global: GetRange !-}
 
@@ -50,65 +54,93 @@ data TEXT_META = Text_meta { getText :: TEXT
                            , textIri :: Maybe IRI
                            , nondiscourseNames :: Maybe (Set NAME)
                            , prefix_map :: [PrefixMapping]
-                           } deriving (Show, Eq, Ord, Typeable, Data)
+                           } deriving (Show, Eq, Ord, Typeable, Data, Generic)
 {- TODO: check static analysis and other features on discourse names,
 as soon as parsers of segregated dialects are implemented -}
+
+instance Hashable TEXT_META
 
 -- Common Logic Syntax
 data TEXT = Text [PHRASE] Id.Range
           | Named_text NAME TEXT Id.Range
-            deriving (Show, Ord, Eq, Typeable, Data)
+            deriving (Show, Ord, Eq, Typeable, Data, Generic)
+
+instance Hashable TEXT
 
 data PHRASE = Module MODULE
             | Sentence SENTENCE
             | Importation IMPORTATION
             | Comment_text COMMENT TEXT Id.Range
-              deriving (Show, Ord, Eq, Typeable, Data)
+              deriving (Show, Ord, Eq, Typeable, Data, Generic)
+
+instance Hashable PHRASE
 
 data COMMENT = Comment String Id.Range
-               deriving (Show, Ord, Eq, Typeable, Data)
+               deriving (Show, Ord, Eq, Typeable, Data, Generic)
+
+instance Hashable COMMENT
 
 data MODULE = Mod NAME TEXT Id.Range
             | Mod_ex NAME [NAME] TEXT Id.Range
-              deriving (Show, Ord, Eq, Typeable, Data)
+              deriving (Show, Ord, Eq, Typeable, Data, Generic)
+
+instance Hashable MODULE
 
 data IMPORTATION = Imp_name NAME
-                   deriving (Show, Ord, Eq, Typeable, Data)
+                   deriving (Show, Ord, Eq, Typeable, Data, Generic)
+
+instance Hashable IMPORTATION
 
 data SENTENCE = Quant_sent QUANT [NAME_OR_SEQMARK] SENTENCE Id.Range
               | Bool_sent BOOL_SENT Id.Range
               | Atom_sent ATOM Id.Range
               | Comment_sent COMMENT SENTENCE Id.Range
               | Irregular_sent SENTENCE Id.Range
-                deriving (Show, Ord, Eq, Typeable, Data)
+                deriving (Show, Ord, Eq, Typeable, Data, Generic)
+
+instance Hashable SENTENCE
 
 data QUANT = Universal | Existential
-             deriving (Show, Ord, Eq, Typeable, Data)
+             deriving (Show, Ord, Eq, Typeable, Data, Generic)
+
+instance Hashable QUANT
 
 data BOOL_SENT = Junction AndOr [SENTENCE]
                | Negation SENTENCE
                | BinOp ImplEq SENTENCE SENTENCE
-                 deriving (Show, Ord, Eq, Typeable, Data)
+                 deriving (Show, Ord, Eq, Typeable, Data, Generic)
+
+instance Hashable BOOL_SENT
 
 data AndOr = Conjunction | Disjunction
-             deriving (Show, Ord, Eq, Typeable, Data)
+             deriving (Show, Ord, Eq, Typeable, Data, Generic)
+
+instance Hashable AndOr
 
 data ImplEq = Implication | Biconditional
-              deriving (Show, Ord, Eq, Typeable, Data)
+              deriving (Show, Ord, Eq, Typeable, Data, Generic)
+
+instance Hashable ImplEq
 
 data ATOM = Equation TERM TERM
           | Atom TERM [TERM_SEQ]
-            deriving (Show, Ord, Eq, Typeable, Data)
+            deriving (Show, Ord, Eq, Typeable, Data, Generic)
+
+instance Hashable ATOM
 
 data TERM = Name_term NAME
           | Funct_term TERM [TERM_SEQ] Id.Range
           | Comment_term TERM COMMENT Id.Range
           | That_term SENTENCE Id.Range
-            deriving (Show, Ord, Eq, Typeable, Data)
+            deriving (Show, Ord, Eq, Typeable, Data, Generic)
+
+instance Hashable TERM
 
 data TERM_SEQ = Term_seq TERM
               | Seq_marks SEQ_MARK
-                deriving (Show, Ord, Eq, Typeable, Data)
+                deriving (Show, Ord, Eq, Typeable, Data, Generic)
+
+instance Hashable TERM_SEQ
 
 
 type NAME = Id.Token

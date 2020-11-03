@@ -16,7 +16,7 @@ native Isabelle lists.
 module Comorphisms.CommonLogic2IsabelleHOL where
 
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Maybe (fromMaybe)
 
 import Logic.Logic
@@ -103,7 +103,7 @@ ax_that = makeNamed "Ax_that" $ forceSimp $ mkSen $
         senTrm = conDouble "sen"
         forceSimp sen = sen { isSimp = True }
 
-type RENAMES = Map.Map String VName
+type RENAMES = Map.HashMap String VName
 
 mkIndName :: String -> VName
 mkIndName name = mkIsaConstT True emptyGlobalAnnos (-1)

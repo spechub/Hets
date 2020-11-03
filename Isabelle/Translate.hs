@@ -26,7 +26,7 @@ import Common.ProofUtils
 import Common.Utils
 import qualified Common.Lib.Rel as Rel
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 import Data.Char
@@ -39,13 +39,13 @@ import Isabelle.IsaStrings
 
 -- ----------------- Id translation functions -------------------
 data IsaPreludes = IsaPreludes
-  { preTypes :: Map.Map BaseSig (Set.Set String)
-  , preConsts :: Map.Map BaseSig (Set.Set String) }
+  { preTypes :: Map.HashMap BaseSig (Set.Set String)
+  , preConsts :: Map.HashMap BaseSig (Set.Set String) }
 
 isaKeyset :: Set.Set String
 isaKeyset = Set.fromList isaKeywords
 
-mkPreludeMap :: [(BaseSig, Set.Set String)] -> Map.Map BaseSig (Set.Set String)
+mkPreludeMap :: [(BaseSig, Set.Set String)] -> Map.HashMap BaseSig (Set.Set String)
 mkPreludeMap = Map.fromList . map (\ (b, s) -> (b, Set.union s isaKeyset))
 
 hc2isaNames :: [String]
@@ -192,7 +192,7 @@ getConstIsaToksAux ide i =
 transIsaInternalName :: String -> String
 transIsaInternalName s = if last s == '_' then s ++ "X" else s
 
-transIsaStringT :: Map.Map BaseSig (Set.Set String) -> BaseSig
+transIsaStringT :: Map.HashMap BaseSig (Set.Set String) -> BaseSig
                 -> String -> String
 transIsaStringT m i s = let t = transStringAux False s in
   transIsaInternalName $ if Set.member t

@@ -34,7 +34,7 @@ import Common.IRI
 import Driver.Options (HetcatsOpts (uncolored), defaultHetcatsOpts)
 
 import Data.IORef
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 import Control.Concurrent.MVar
 import Control.Monad (when)
@@ -58,7 +58,7 @@ data GInfo = GInfo
              , globalLock :: MVar ()
              , functionLock :: MVar ()
              , libGraphLock :: MVar ()
-             , openGraphs :: IORef (Map.Map LibName GInfo)
+             , openGraphs :: IORef (Map.HashMap LibName GInfo)
                -- Local
              , libName :: LibName
              , graphInfo :: GraphInfo
@@ -161,7 +161,7 @@ unlockGlobal gi =
   tryTakeMVar (globalLock gi) >> return ()
 
 -- | Generates the colortable
-colors :: Map.Map (Colors, Bool, Bool) (String, String)
+colors :: Map.HashMap (Colors, Bool, Bool) (String, String)
 colors = Map.fromList
   [ ((Black, False, False), ("gray0", "gray0" ))
   , ((Black, False, True ), ("gray30", "gray5" ))

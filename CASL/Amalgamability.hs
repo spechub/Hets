@@ -39,8 +39,10 @@ import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Graph as Tree
 import qualified Common.Lib.Rel as Rel
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
+
+import Data.Hashable
 
 -- Miscellaneous types
 type CASLDiag = Tree.Gr CASLSign (Int, CASLMor)
@@ -65,7 +67,7 @@ instance (Pretty a, Pretty b) => Pretty (Tree.Gr a (Int, b)) where
         <+> pretty (map (\ (_, _, label) -> snd label) $ labEdges diag)
 
 -- | find in Map
-findInMap :: Ord k => k -> Map.Map k a -> a
+findInMap :: (Ord k, Hashable k) => k -> Map.HashMap k a -> a
 findInMap k = fromMaybe (error "Amalgamability.findInMap") .
                 Map.lookup k
 
@@ -89,7 +91,7 @@ ops diag =
         mkNodeOps n opId opTypes ol =
             ol ++ Set.fold (mkNodeOp n opId) [] opTypes
         appendOps ol (n, Sign { opMap = m }) =
-            ol ++ Map.foldWithKey (mkNodeOps n) [] (MapSet.toMap m)
+            ol ++ Map.foldrWithKey (mkNodeOps n) [] (MapSet.toMap m)
     in foldl appendOps [] (labNodes diag)
 
 
@@ -102,13 +104,13 @@ preds diag =
         mkNodePreds n predId predTypes pl =
             pl ++ Set.fold (mkNodePred n predId) [] predTypes
         appendPreds pl (n, Sign { predMap = m }) =
-            pl ++ Map.foldWithKey (mkNodePreds n) [] (MapSet.toMap m)
+            pl ++ Map.foldrWithKey (mkNodePreds n) [] (MapSet.toMap m)
     in foldl appendPreds [] (labNodes diag)
 
 
 {- | Convert the relation representation from list of pairs
 (val, equiv. class tag) to a list of equivalence classes. -}
-taggedValsToEquivClasses :: Ord b
+taggedValsToEquivClasses :: (Ord b, Hashable b)
                          => EquivRelTagged a b -- ^ a list of (value,tag) pairs
                          -> EquivRel a
 taggedValsToEquivClasses [] = []
@@ -127,7 +129,7 @@ taggedValsToEquivClasses rel' =
 
 {- | Convert the relation representation from list of
 equivalence classes to list of (value, tag) pairs. -}
-equivClassesToTaggedVals :: Ord a
+equivClassesToTaggedVals :: (Ord a, Hashable a)
                          => EquivRel a
                          -> EquivRelTagged a a
 equivClassesToTaggedVals rel =
@@ -174,7 +176,7 @@ data TagEqcl a b = Eqcl [a] | TagRef b
                    deriving Show
 
 -- | Merge the equivalence classes for elements fulfilling given condition.
-mergeEquivClassesBy :: (Ord b)
+mergeEquivClassesBy :: (Ord b, Hashable b)
                     => (a -> a -> Bool)
                   -- ^ the condition stating when two elements are in relation
                     -> EquivRelTagged a b -- ^ the input relation

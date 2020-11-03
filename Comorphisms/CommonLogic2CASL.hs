@@ -32,7 +32,7 @@ import Common.Id
 
 import Data.Function (on)
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 -- Common Logic
 import qualified CommonLogic.Logic_CommonLogic as ClLogic
@@ -149,13 +149,13 @@ mapMor b mor = return (CMor.embedMorphism ()
   { CMor.pred_map = trMor $ ClMor.propMap mor }
 
 -- | Helper for map mor
-trMor :: Map.Map Id Id -> Map.Map (Id, PredType) Id
+trMor :: Map.HashMap Id Id -> Map.HashMap (Id, PredType) Id
 trMor mp =
     let
         pt = PredType {predArgs = []}
         id2Id = tok2Id . mkSimpleId . show
     in
-      Map.foldWithKey
+      Map.foldrWithKey
              (\ k a ->
               Map.insert (id2Id k, pt) $ id2Id a
              )

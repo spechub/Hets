@@ -44,8 +44,9 @@ import Common.Result
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.MapSet as MapSet
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
+import qualified Common.OrderedMap as OMap
 
 -- | lid of the morphism
 data Maude2CASL = Maude2CASL deriving Show
@@ -135,7 +136,7 @@ morExtension :: MMor.Morphism ->  -- sigma:\Sigma -> \Sigma'
                 (CMor.CASLMor, CMor.CASLMor)
 morExtension phi tExt sCASL tCASL =
  let
-   changeMap f mapF = Map.mapKeys f $
+   changeMap f mapF = OMap.mapMapKeys f $
                        Map.map f mapF
    sortF = changeMap MSymbol.toId $ MMor.sortMap phi
    iotaN = CMor.embedMorphism () tCASL tExt

@@ -30,30 +30,30 @@ import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.MapSet as MapSet
 
 import Data.Graph.Inductive.Graph as Graph
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Data.List
 
 import Logic.Logic
 
 extCASLColimit :: Gr () (Int, ()) ->
-                  Map.Map Int CASLMor ->
-                  ((), Map.Map Int ())
+                  Map.HashMap Int CASLMor ->
+                  ((), Map.HashMap Int ())
 extCASLColimit graph _ = ((), Map.fromList $ zip (nodes graph) (repeat ()))
 
 -- central function for computing CASL signature colimits
 signColimit :: (Category (Sign f e) (Morphism f e m)) =>
                Gr (Sign f e) (Int, Morphism f e m) ->
                ( Gr e (Int, m) ->
-                 Map.Map Int (Morphism f e m)
-                 -> (e, Map.Map Int m)
+                 Map.HashMap Int (Morphism f e m)
+                 -> (e, Map.HashMap Int m)
                )
                ->
-               (Sign f e, Map.Map Int (Morphism f e m))
+               (Sign f e, Map.HashMap Int (Morphism f e m))
 signColimit graph extColimit =
  case labNodes graph of
   [] -> error "empty graph"
-  (n, sig) : [] -> (sig, Map.fromAscList [(n, ide sig)])
+  (n, sig) : [] -> (sig, Map.fromList [(n, ide sig)])
   _ -> let
    getSortMap (x, phi) = (x, sort_map phi)
    sortGraph = emap getSortMap $ nmap sortSet graph
@@ -88,7 +88,7 @@ the subsort relation in the colimit is the transitive closure
 of the subsort relations in the diagram
 mapped along the structural morphisms of the colimit -}
 computeSubsorts :: Gr (Sign f e) (Int, Morphism f e m) ->
-    Map.Map Node (EndoMap Id) -> Rel.Rel Id
+    Map.HashMap Node (EndoMap Id) -> Rel.Rel Id
 computeSubsorts graph funSort = let
   getPhiSort (x, phi) = (x, sort_map phi)
   graph1 = nmap sortSet $ emap getPhiSort graph
@@ -100,7 +100,7 @@ computeSubsorts graph funSort = let
 the subsort relation of its label's elements -}
 
 subsorts :: [Node] -> Gr (Set.Set SORT) (Int, Sort_map) ->
-   Map.Map Node (Rel.Rel SORT) -> Map.Map Node (EndoMap Id) -> Rel.Rel SORT ->
+   Map.HashMap Node (Rel.Rel SORT) -> Map.HashMap Node (EndoMap Id) -> Rel.Rel SORT ->
    Rel.Rel SORT
 subsorts listNode graph rels colimF rel =
  case listNode of
@@ -140,15 +140,15 @@ then assign that name to the class, otherwise generate a name
 also the morphisms have to be built -}
 
 computeColimitOp :: Gr (Sign f e) (Int, Morphism f e m) ->
-                    Sign f e -> Map.Map Node (Morphism f e m) ->
-                    (Sign f e, Map.Map Node (Morphism f e m))
+                    Sign f e -> Map.HashMap Node (Morphism f e m) ->
+                    (Sign f e, Map.HashMap Node (Morphism f e m))
 computeColimitOp graph sigmaRel phiSRel = let
  graph' = buildOpGraph graph
  (colim, morMap') = computeColimitSet graph'
  (ovrl, names, totalOps) = buildColimOvrl graph graph' colim morMap'
  (colim1, morMap1) = nameSymbols graph' morMap' phiSRel names ovrl totalOps
  morMap2 = Map.map (Map.map (\ ((i, o), _) -> (i, opKind o))) morMap1
- morMap3 = Map.map (Map.fromAscList . map
+ morMap3 = Map.map (Map.fromList . map
             (\ ((i, o), y) -> ((i, mkPartial o), y)) . Map.toList) morMap2
  sigmaOps = sigmaRel {opMap = colim1}
  phiOps = Map.mapWithKey
@@ -159,7 +159,7 @@ computeColimitOp graph sigmaRel phiSRel = let
 
 buildOpGraph :: Gr (Sign f e) (Int, Morphism f e m) ->
                 Gr (Set.Set (Id, OpType))
-                   (Int, Map.Map (Id, OpType) (Id, OpType))
+                   (Int, Map.HashMap (Id, OpType) (Id, OpType))
 buildOpGraph graph = let
   getOps = mapSetToList . opMap
   getOpFun mor = let
@@ -174,11 +174,11 @@ buildOpGraph graph = let
 buildColimOvrl :: Gr (Sign f e) (Int, Morphism f e m) ->
                   Gr (Set.Set (Id, OpType)) (Int, EndoMap (Id, OpType)) ->
                   Set.Set ((Id, OpType), Int) ->
-                  Map.Map Int (Map.Map (Id, OpType) ((Id, OpType), Int)) ->
+                  Map.HashMap Int (Map.HashMap (Id, OpType) ((Id, OpType), Int)) ->
                   (Rel.Rel ((Id, OpType), Int),
-                   Map.Map ((Id, OpType), Int)
-                           (Map.Map Id Int),
-                   Map.Map ((Id, OpType), Int) Bool)
+                   Map.HashMap ((Id, OpType), Int)
+                           (Map.HashMap Id Int),
+                   Map.HashMap ((Id, OpType), Int) Bool)
 buildColimOvrl graph graph' colim morMap = let
    (ovrl, names) = (Rel.empty, Map.fromList $ zip (Set.toList colim) $
                                                   repeat Map.empty )
@@ -188,14 +188,14 @@ buildColimOvrl graph graph' colim morMap = let
 
 buildOvrlAtNode :: Gr (Set.Set (Id, OpType)) (Int, EndoMap (Id, OpType)) ->
                    Set.Set ((Id, OpType), Int) ->
-                   Map.Map Int (Map.Map (Id, OpType) ((Id, OpType), Int)) ->
+                   Map.HashMap Int (Map.HashMap (Id, OpType) ((Id, OpType), Int)) ->
                    Rel.Rel ((Id, OpType), Int) ->
-                   Map.Map ((Id, OpType), Int) (Map.Map Id Int) ->
-                   Map.Map ((Id, OpType), Int) Bool ->
+                   Map.HashMap ((Id, OpType), Int) (Map.HashMap Id Int) ->
+                   Map.HashMap ((Id, OpType), Int) Bool ->
                    [(Int, Sign f e)] ->
                    (Rel.Rel ((Id, OpType), Int),
-                   Map.Map ((Id, OpType), Int) (Map.Map Id Int),
-                   Map.Map ((Id, OpType), Int) Bool )
+                   Map.HashMap ((Id, OpType), Int) (Map.HashMap Id Int),
+                   Map.HashMap ((Id, OpType), Int) Bool )
 buildOvrlAtNode graph' colim morMap ovrl names totalF nodeList =
  case nodeList of
    [] -> (ovrl, names, totalF)
@@ -233,7 +233,7 @@ buildOvrlAtNode graph' colim morMap ovrl names totalF nodeList =
      in buildOvrlAtNode graph' colim morMap ovrl' names' totalF' lists
 
 assignName :: (Set.Set ((Id, OpType), Int), Int) -> [Id] ->
-              Map.Map ((Id, OpType), Int) (Map.Map Id Int) ->
+              Map.HashMap ((Id, OpType), Int) (Map.HashMap Id Int) ->
               (Id, [Id])
 assignName (opSet, idx) givenNames namesFun =
  let opSetNames = Set.fold (\ x f -> Map.unionWith (+) f
@@ -261,13 +261,13 @@ assignName (opSet, idx) givenNames namesFun =
         in (idN, idN : givenNames)
 
 nameSymbols :: Gr (Set.Set (Id, OpType))
-                   (Int, Map.Map (Id, OpType) (Id, OpType)) ->
-               Map.Map Int (Map.Map (Id, OpType) ((Id, OpType), Int)) ->
-               Map.Map Int (Morphism f e m) ->
-               Map.Map ((Id, OpType), Int) (Map.Map Id Int) ->
+                   (Int, Map.HashMap (Id, OpType) (Id, OpType)) ->
+               Map.HashMap Int (Map.HashMap (Id, OpType) ((Id, OpType), Int)) ->
+               Map.HashMap Int (Morphism f e m) ->
+               Map.HashMap ((Id, OpType), Int) (Map.HashMap Id Int) ->
                Rel.Rel ((Id, OpType), Int) ->
-               Map.Map ((Id, OpType), Int) Bool ->
-               (OpMap, Map.Map Int (Map.Map (Id, OpType) ((Id, OpType), Int)))
+               Map.HashMap ((Id, OpType), Int) Bool ->
+               (OpMap, Map.HashMap Int (Map.HashMap (Id, OpType) ((Id, OpType), Int)))
 nameSymbols graph morMap phi names ovrl totalOps = let
   colimOvrl = Rel.sccOfClosure ovrl
   nameClass opFun gNames (set, idx) morFun = let
@@ -313,7 +313,7 @@ only minor changes because of different types
 - -}
 
 computeColimitPred :: Gr (Sign f e) (Int, Morphism f e m) -> Sign f e ->
-      Map.Map Node (Morphism f e m) -> (Sign f e, Map.Map Node (Morphism f e m))
+      Map.HashMap Node (Morphism f e m) -> (Sign f e, Map.HashMap Node (Morphism f e m))
 computeColimitPred graph sigmaOp phiOp = let
   graph' = buildPredGraph graph
   (colim, morMap') = computeColimitSet graph'
@@ -329,7 +329,7 @@ computeColimitPred graph sigmaOp phiOp = let
 
 buildPredGraph :: Gr (Sign f e) (Int, Morphism f e m) ->
                 Gr (Set.Set (Id, PredType))
-                   (Int, Map.Map (Id, PredType) (Id, PredType))
+                   (Int, Map.HashMap (Id, PredType) (Id, PredType))
 buildPredGraph graph = let
   getPreds = mapSetToList . predMap
   getPredFun mor = let
@@ -345,9 +345,9 @@ buildPredGraph graph = let
 buildPColimOvrl :: Gr (Sign f e) (Int, Morphism f e m) ->
                   Gr (Set.Set (Id, PredType)) (Int, EndoMap (Id, PredType)) ->
                   Set.Set ((Id, PredType), Int) ->
-                  Map.Map Int (Map.Map (Id, PredType) ((Id, PredType), Int)) ->
+                  Map.HashMap Int (Map.HashMap (Id, PredType) ((Id, PredType), Int)) ->
                   (Rel.Rel ((Id, PredType), Int),
-                   Map.Map ((Id, PredType), Int) (Map.Map Id Int))
+                   Map.HashMap ((Id, PredType), Int) (Map.HashMap Id Int))
 buildPColimOvrl graph graph' colim morMap = let
    (ovrl, names) = (Rel.empty, Map.fromList $ zip (Set.toList colim) $
                                                   repeat Map.empty )
@@ -357,12 +357,12 @@ buildPColimOvrl graph graph' colim morMap = let
 
 buildPOvrlAtNode :: Gr (Set.Set (Id, PredType)) (Int, EndoMap (Id, PredType)) ->
                    Set.Set ((Id, PredType), Int) ->
-                   Map.Map Int (Map.Map (Id, PredType) ((Id, PredType), Int)) ->
+                   Map.HashMap Int (Map.HashMap (Id, PredType) ((Id, PredType), Int)) ->
                    Rel.Rel ((Id, PredType), Int) ->
-                   Map.Map ((Id, PredType), Int) (Map.Map Id Int) ->
+                   Map.HashMap ((Id, PredType), Int) (Map.HashMap Id Int) ->
                    [(Int, Sign f e)] ->
                    (Rel.Rel ((Id, PredType), Int),
-                   Map.Map ((Id, PredType), Int) (Map.Map Id Int))
+                   Map.HashMap ((Id, PredType), Int) (Map.HashMap Id Int))
 buildPOvrlAtNode graph' colim morMap ovrl names nodeList =
  case nodeList of
    [] -> (ovrl, names)
@@ -396,7 +396,7 @@ buildPOvrlAtNode graph' colim morMap ovrl names nodeList =
      in buildPOvrlAtNode graph' colim morMap ovrl' names' lists
 
 assignPName :: (Set.Set ((Id, PredType), Int), Int) -> [Id] ->
-              Map.Map ((Id, PredType), Int) (Map.Map Id Int) ->
+              Map.HashMap ((Id, PredType), Int) (Map.HashMap Id Int) ->
               (Id, [Id])
 assignPName (pSet, idx) givenNames namesFun =
  let pSetNames = Set.fold (\ x f -> Map.unionWith (+) f
@@ -419,12 +419,12 @@ assignPName (pSet, idx) givenNames namesFun =
         in (idN, idN : givenNames)
 
 namePSymbols :: Gr (Set.Set (Id, PredType))
-                   (Int, Map.Map (Id, PredType) (Id, PredType)) ->
-               Map.Map Int (Map.Map (Id, PredType) ((Id, PredType), Int)) ->
-               Map.Map Int (Morphism f e m) ->
-               Map.Map ((Id, PredType), Int) (Map.Map Id Int) ->
+                   (Int, Map.HashMap (Id, PredType) (Id, PredType)) ->
+               Map.HashMap Int (Map.HashMap (Id, PredType) ((Id, PredType), Int)) ->
+               Map.HashMap Int (Morphism f e m) ->
+               Map.HashMap ((Id, PredType), Int) (Map.HashMap Id Int) ->
                Rel.Rel ((Id, PredType), Int) ->
-               (PredMap, Map.Map Int (Map.Map (Id, PredType)
+               (PredMap, Map.HashMap Int (Map.HashMap (Id, PredType)
                                               ((Id, PredType), Int)))
 namePSymbols graph morMap phi names ovrl = let
   colimOvrl = Rel.sccOfClosure ovrl
@@ -464,7 +464,7 @@ assocSymbols :: Sign f e -> [(Id, OpType)]
 assocSymbols = mapSetToList . assocOps
 
 colimitAssoc :: Gr (Sign f e) (Int, Morphism f e m) -> Sign f e ->
-   Map.Map Int (Morphism f e m) -> (Sign f e, Map.Map Int (Morphism f e m))
+   Map.HashMap Int (Morphism f e m) -> (Sign f e, Map.HashMap Int (Morphism f e m))
 colimitAssoc graph sig morMap = let
   assocOpList = nubOrd $ concatMap
     (\ (node, sigma) -> map (applyMor ((Map.!) morMap node)) $

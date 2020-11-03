@@ -65,7 +65,7 @@ import Common.Lib.Graph as Tree
 
 import Data.IORef
 import Data.List (nub)
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Graph.Inductive.Graph (LEdge)
 import qualified Data.Graph.Inductive.Graph as Graph
 
@@ -109,8 +109,8 @@ data AbstractionGraph = AbstractionGraph
   { theGraph :: OurGraph
   , nodeTypes :: [(String, DaVinciNodeType (String, Int, Int))]
   , edgeTypes :: [(String, DaVinciArcType EdgeValue)]
-  , nodes :: Map.Map Int (String, DaVinciNode (String, Int, Int))
-  , edges :: Map.Map Int (Int, Int, String, DaVinciArc EdgeValue)
+  , nodes :: Map.HashMap Int (String, DaVinciNode (String, Int, Int))
+  , edges :: Map.HashMap Int (Int, Int, String, DaVinciArc EdgeValue)
   {- probably, also the abstracted graph needs to be stored,
      and a list of hide/abstract events with the hidden nodes/edges (for
      each event), which is used to restore things when showIt is called -}
@@ -123,7 +123,7 @@ data AbstractionGraph = AbstractionGraph
   , nodeMap :: NodeMapping
   }
 
-type NodeMapping = Map.Map Int Descr
+type NodeMapping = Map.HashMap Int Descr
 type Descr = Int
 type EdgeValue = (String, Int, Maybe (LEdge DGLinkLab))
 type GraphInfo = IORef ([(Descr, AbstractionGraph)], Descr)
@@ -166,7 +166,7 @@ get d list =
     Nothing -> error $ "get: descriptor unknown: " ++ show d
                ++ '\n' : show (map fst list)
 
-getFromMap :: Descr -> Map.Map Descr a -> (Descr, a)
+getFromMap :: Descr -> Map.HashMap Descr a -> (Descr, a)
 getFromMap d list =
   case Map.lookup d list of
     Just r -> (d, r)

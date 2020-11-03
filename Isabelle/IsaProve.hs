@@ -39,7 +39,7 @@ import Common.DefaultMorphism
 import Common.ProofUtils
 import Common.Result
 import Common.Utils (getEnvDef, executeProcess)
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 import Text.ParserCombinators.Parsec
@@ -115,7 +115,7 @@ consCheck thName _tac tm freedefs = case tTarget tm of
         _ -> Nothing -- consistency cannot be recorded automatically
 
 prepareTheory :: Theory Sign Sentence ()
-    -> (Sign, [Named Sentence], [Named Sentence], Map.Map String String)
+    -> (Sign, [Named Sentence], [Named Sentence], Map.HashMap String String)
 prepareTheory (Theory sig nSens) = let
     oSens = toNamedList nSens
     nSens' = prepareSenNames transString oSens
@@ -133,7 +133,7 @@ removeDepFiles thName = mapM_ $ \ thm -> do
 getDepsFileName :: String -> String -> String
 getDepsFileName thName thm = thName ++ "_" ++ thm ++ ".deps"
 
-getProofDeps :: Map.Map String String -> String -> String
+getProofDeps :: Map.HashMap String String -> String -> String
              -> IO (ProofStatus ())
 getProofDeps m thName thm = do
     let file = getDepsFileName thName thm
@@ -147,7 +147,7 @@ getProofDeps m thName thm = do
                Set.fromList $ map strip $ lines s
       else return $ openIsaProofStatus $ mapN thm
 
-getAllProofDeps :: Map.Map String String -> String -> [String]
+getAllProofDeps :: Map.HashMap String String -> String -> [String]
                 -> IO [ProofStatus ()]
 getAllProofDeps m = mapM . getProofDeps m
 

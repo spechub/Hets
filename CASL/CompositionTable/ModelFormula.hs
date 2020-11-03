@@ -16,7 +16,7 @@ import CASL.AS_Basic_CASL
 import CASL.Fold
 
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.List
 
 data Form
@@ -47,7 +47,7 @@ vars = foldFormula (constRecord (const Set.empty) Set.unions Set.empty)
            Set.union phiVars $ Set.fromList $ getVars vdecl
     }
 
-lkup :: Map.Map VAR Int -> VAR -> Int
+lkup :: Map.HashMap VAR Int -> VAR -> Int
 lkup = flip $ Map.findWithDefault (error "CompositionTable.lkup")
 
 getOp :: String -> Op
@@ -68,7 +68,7 @@ getOp s = let err = error "CompositionTable.getOp" in
     _ -> err
   Nothing -> err
 
-fromCASL :: Map.Map OP_SYMB String -> Map.Map VAR Int -> Record f Form Term
+fromCASL :: Map.HashMap OP_SYMB String -> Map.HashMap VAR Int -> Record f Form Term
 fromCASL oM m = let err = error "CompositionTable.CASLFormula" in Record
     { foldQuantification = \ _ q vs f _ ->
         Quant q (map (lkup m) $ getVars vs) f

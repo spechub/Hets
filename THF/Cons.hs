@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./THF/Cons.hs
 Description :  A collection of data-structures, functions and instances for
@@ -21,6 +21,9 @@ import THF.As
 import Common.Id
 
 import Data.Data
+
+import GHC.Generics (Generic)
+import Data.Hashable
 
 -- Some empty instances
 
@@ -61,7 +64,11 @@ data Type =
   | SType Token
   | VType Token
   | ParType Type
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable Type
 
 data Kind = Kind
- deriving (Show, Eq, Ord, Typeable, Data)
+ deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable Kind

@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, DeriveDataTypeable
   , FlexibleInstances, UndecidableInstances, OverlappingInstances
-  , ExistentialQuantification, GeneralizedNewtypeDeriving #-}
+  , ExistentialQuantification, GeneralizedNewtypeDeriving, DeriveGeneric #-}
 {- |
 Module      :  ./Logic/Morphism.hs
 Description :  interface (type class) for logic projections (morphisms) in Hets
@@ -38,6 +38,9 @@ import Common.AS_Annotation
 import Common.Id
 import Common.Json
 import Common.ToXml
+
+import GHC.Generics (Generic)
+import Data.Hashable
 
 class (Language cid,
        Logic lid1 sublogics1
@@ -187,7 +190,10 @@ instance (Morphism cid
 
 newtype S2 s = S2 { sentence2 :: s }
   deriving (Eq, Ord, Show, Typeable, Data, ShATermConvertible, Pretty
-           , GetRange, ToJson, ToXml)
+           , GetRange, ToJson, ToXml, Generic)
+
+instance Hashable x => Hashable (S2 x)
+
 
 instance (Morphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1

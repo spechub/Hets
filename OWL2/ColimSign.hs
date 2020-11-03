@@ -23,10 +23,11 @@ import Common.SetColimit
 import Common.Lib.Graph
 
 import Data.Graph.Inductive.Graph as Graph
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
+import qualified Data.Set as Set
 
 signColimit :: Gr Sign (Int, OWLMorphism) ->
-               (Sign, Map.Map Int OWLMorphism)
+               (Sign, Map.HashMap Int OWLMorphism)
 signColimit graph = let
    conGraph = emap (getEntityTypeMap Class) $ nmap concepts graph
    dataGraph = emap (getEntityTypeMap Datatype) $ nmap datatypes graph
@@ -38,7 +39,7 @@ signColimit graph = let
    annPropGraph = emap (getEntityTypeMap AnnotationProperty) $
                nmap annotationRoles graph
    _prefixGraph = emap getPrefixMap
-                    $ nmap (Map.keysSet . toQName . prefixMap) graph
+                    $ nmap (Set.fromList . Map.keys . toQName . prefixMap) graph
    (con, funC) = addIntToSymbols $ computeColimitSet conGraph
    (dat, funD) = addIntToSymbols $ computeColimitSet dataGraph
    (ind, funI) = addIntToSymbols $ computeColimitSet indGraph
@@ -60,7 +61,7 @@ signColimit graph = let
                  setEntityTypeMap AnnotationProperty $
                    Map.findWithDefault (error "maps") i funAP
                 ]
-   morMaps = Map.fromAscList $
+   morMaps = Map.fromList $
               map (\ x -> (x, morFun x)) $ nodes graph
 
    nameMap = foldl Map.union Map.empty $
@@ -74,7 +75,7 @@ signColimit graph = let
                   annotationRoles = ap,
                   prefixMap = nameMap
                 }
-   colimMor = Map.fromAscList $
+   colimMor = Map.fromList $
                 map (\ (i, ssig) -> let
                          mm = Map.findWithDefault (error "mor") i morMaps
                          om = OWLMorphism {
@@ -88,24 +89,25 @@ signColimit graph = let
   in (colimSign, colimMor)
 
 getEntityTypeMap :: EntityType -> (Int, OWLMorphism)
-                    -> (Int, Map.Map IRI IRI)
+                    -> (Int, Map.HashMap IRI IRI)
 getEntityTypeMap e (i, phi) = let
  f = Map.filterWithKey
       (\ (Entity _ x _) _ -> x == e) $ mmaps phi
  in (i, Map.fromList $
     map (\ (Entity _ _ x, y) -> (x, y)) $
-    Map.toAscList f)
+    Map.toList f)
 
-setEntityTypeMap :: EntityType -> Map.Map IRI IRI
-                    -> Map.Map Entity IRI
-setEntityTypeMap = Map.mapKeys . mkEntity
+setEntityTypeMap :: EntityType -> Map.HashMap IRI IRI
+                    -> Map.HashMap Entity IRI
+setEntityTypeMap et f = Map.fromList $ map (\(x,y) -> (mkEntity et x, y)) $ 
+                        Map.toList f
 
-getPrefixMap :: (Int, OWLMorphism) -> (Int, Map.Map IRI IRI)
+getPrefixMap :: (Int, OWLMorphism) -> (Int, Map.HashMap IRI IRI)
 getPrefixMap (i, phi) = let
     f = pmap phi
     in (i, Map.fromList $
         map (\ (x, y) -> (mkIRI x, mkIRI y)) $
-            Map.toAscList f)
+            Map.toList f)
 
-toQName :: PrefixMap -> Map.Map IRI String
+toQName :: PrefixMap -> Map.HashMap IRI String
 toQName pm = Map.fromList $ map (\ (p, s) -> (mkIRI p, s)) $ Map.toList pm

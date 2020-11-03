@@ -39,7 +39,7 @@ import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
 import Common.Id
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Common.Keywords
 import Common.Result
@@ -47,6 +47,8 @@ import Common.Result
 import Control.Monad (foldM)
 import Data.List
 import Data.Maybe
+
+import Data.Hashable
 
 instance Pretty ClassInfo where
     pretty (ClassInfo rk ks) = less <+>
@@ -258,10 +260,10 @@ getArgsAndType ty = case ty of
   TypeAbs arg t _ -> let (l, r) = getArgsAndType t in (arg : l, r)
   _ -> ([], ty)
 
-printMap0 :: (Pretty a, Ord a, Pretty b) => Map.Map a b -> Doc
+printMap0 :: (Pretty a, Ord a, Hashable a, Pretty b) => Map.HashMap a b -> Doc
 printMap0 = printMap id (vcat . punctuate semi) $ \ a b -> fsep [a, b]
 
-printMap1 :: (Pretty a, Ord a, Pretty b) => Map.Map a b -> Doc
+printMap1 :: (Pretty a, Ord a, Hashable a, Pretty b) => Map.HashMap a b -> Doc
 printMap1 = printMap id vcat $ \ a b -> fsep [a, mapsto, b]
 
 instance Pretty Morphism where
@@ -271,7 +273,7 @@ instance Pretty Morphism where
           fm = funMap m
           {- the types in funs are already mapped
           key und value types only differ wrt. partiality -}
-          ds = Map.foldWithKey ( \ (i, _) (j, t) ->
+          ds = Map.foldrWithKey ( \ (i, _) (j, t) ->
                 ((pretty i <+> mapsto <+>
                   pretty j <+> colon <+> pretty t) :))
                [] fm
@@ -309,8 +311,8 @@ improveDiag v d = d
       unlines $ (f ++ " of '" ++ showDoc v "'") : l
   , diagPos = getRange v }
 
-mergeMap :: (Ord a, GetRange a, Pretty a) => (b -> b -> Result b)
-         -> Map.Map a b -> Map.Map a b -> Result (Map.Map a b)
+mergeMap :: (Ord a, GetRange a, Pretty a, Hashable a) => (b -> b -> Result b)
+         -> Map.HashMap a b -> Map.HashMap a b -> Result (Map.HashMap a b)
 mergeMap f m1 = foldM ( \ m (k, v) -> case Map.lookup k m of
     Nothing -> return $ Map.insert k v m
     Just w -> let

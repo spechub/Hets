@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./RelationalScheme/AS.der.hs
 Description :  abstract syntax for Relational Schemes
@@ -25,7 +25,7 @@ module RelationalScheme.AS
         ) where
 
 import Data.Data
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 import Common.Id
 import Common.AS_Annotation
@@ -36,12 +36,17 @@ import Common.Result
 import RelationalScheme.Keywords
 import RelationalScheme.Sign
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 
 -- DrIFT command
 {-! global: GetRange !-}
 
 data RSRelType = RSone_to_one | RSone_to_many | RSmany_to_one | RSmany_to_many
-                 deriving (Eq, Ord, Typeable, Data)
+                 deriving (Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable RSRelType
 
 -- first Id is TableId, second is columnId
 data RSQualId = RSQualId
@@ -50,7 +55,9 @@ data RSQualId = RSQualId
                 , column :: Id
                 , q_pos :: Range
                 }
-                deriving (Eq, Ord, Show, Typeable, Data)
+                deriving (Eq, Ord, Show, Typeable, Data, Generic)
+
+instance Hashable RSQualId
 
 data RSRel = RSRel
              {
@@ -59,7 +66,9 @@ data RSRel = RSRel
              , r_type :: RSRelType
              , r_pos :: Range
              }
-             deriving (Eq, Ord, Show, Typeable, Data)
+             deriving (Eq, Ord, Show, Typeable, Data, Generic)
+
+instance Hashable RSRel
 
 data RSRelationships = RSRelationships [Annoted RSRel] Range
                         deriving (Eq, Ord, Show, Typeable, Data)

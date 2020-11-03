@@ -17,7 +17,7 @@ import Common.IRI
 import RDF.AS
 -- import RDF.Sign
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 {- import qualified Data.Set as Set
 }
 {- | this class contains general functions which operate on the ontology
@@ -28,8 +28,8 @@ class Function a where
 data Action = Rename | Expand
     deriving (Show, Eq, Ord)
 -}
-type StringMap = Map.Map String String
-type MorphMap = Map.Map RDFEntity IRI
+type StringMap = Map.HashMap String String
+type MorphMap = Map.HashMap RDFEntity IRI
 {- }
 data AMap =
       StringMap StringMap

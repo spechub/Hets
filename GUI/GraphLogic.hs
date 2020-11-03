@@ -88,7 +88,7 @@ import Data.IORef
 import Data.Char (toLower)
 import Data.List (partition, deleteBy, isPrefixOf)
 import Data.Graph.Inductive.Graph (Node, LEdge, LNode)
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 import Control.Monad
 import Control.Concurrent.MVar
@@ -717,8 +717,8 @@ translateGraph gInfo@(GInfo { hetcatsOpts = opts }) = do
                         return Nothing
 
 -- | saves the uDrawGraph graph to a file
-saveUDGraph :: GInfo -> Map.Map DGNodeType (Shape value, String)
-            -> Map.Map DGEdgeType (EdgePattern GA.EdgeValue, String) -> IO ()
+saveUDGraph :: GInfo -> Map.HashMap DGNodeType (Shape value, String)
+            -> Map.HashMap DGEdgeType (EdgePattern GA.EdgeValue, String) -> IO ()
 saveUDGraph gInfo@(GInfo { graphInfo = gi
                          , libName = ln }) nodemap linkmap = do
   ost <- readIORef $ intState gInfo
@@ -737,8 +737,8 @@ saveUDGraph gInfo@(GInfo { graphInfo = gi
      Nothing -> GA.showTemporaryMessage gi "Aborted!"
 
 -- | Converts the nodes of the graph to String representation
-nodes2String :: GInfo -> Map.Map DGNodeType (Shape value, String)
-             -> Map.Map DGEdgeType (EdgePattern GA.EdgeValue, String)
+nodes2String :: GInfo -> Map.HashMap DGNodeType (Shape value, String)
+             -> Map.HashMap DGEdgeType (EdgePattern GA.EdgeValue, String)
              -> IO String
 nodes2String gInfo@(GInfo { graphInfo = gi
                           , libName = ln }) nodemap linkmap = do
@@ -756,8 +756,8 @@ nodes2String gInfo@(GInfo { graphInfo = gi
    return $ "[" ++ nstring ++ "]"
 
 -- | Converts a node to String representation
-node2String :: GInfo -> Map.Map DGNodeType (Shape value, String)
-            -> Map.Map DGEdgeType (EdgePattern GA.EdgeValue, String)
+node2String :: GInfo -> Map.HashMap DGNodeType (Shape value, String)
+            -> Map.HashMap DGEdgeType (EdgePattern GA.EdgeValue, String)
             -> LNode DGNodeLab -> IO String
 node2String gInfo nodemap linkmap (nid, dgnode) = do
   label <- getNodeLabel gInfo dgnode
@@ -775,7 +775,7 @@ node2String gInfo nodemap linkmap (nid, dgnode) = do
            ++ "\n  [" ++ links ++ "]))"
 
 -- | Converts all links of a node to String representation
-links2String :: GInfo -> Map.Map DGEdgeType (EdgePattern GA.EdgeValue, String)
+links2String :: GInfo -> Map.HashMap DGEdgeType (EdgePattern GA.EdgeValue, String)
              -> Int -> IO String
 links2String gInfo@(GInfo { graphInfo = gi
                           , libName = ln }) linkmap nodeid = do
@@ -794,7 +794,7 @@ links2String gInfo@(GInfo { graphInfo = gi
            return $ (if null s then "" else s ++ ",\n") ++ s') "" edges
 
 -- | Converts a link to String representation
-link2String :: Map.Map DGEdgeType (EdgePattern GA.EdgeValue, String)
+link2String :: Map.HashMap DGEdgeType (EdgePattern GA.EdgeValue, String)
             -> LEdge DGLinkLab -> IO String
 link2String linkmap (nodeid1, nodeid2, edge) = do
   let (EdgeId linkid) = dgl_id edge

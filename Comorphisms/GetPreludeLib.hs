@@ -28,7 +28,7 @@ import Common.ResultT
 import Common.Utils
 
 import Data.Maybe
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 import System.FilePath
@@ -44,7 +44,7 @@ readLib fp0 = do
     Nothing -> fail $ "library could not be read from: " ++ fp
     Just (ln, le) -> do
       let dg = lookupDGraph ln le
-      return . catMaybes . Map.fold (\ ge -> case ge of
+      return . catMaybes . Map.foldr' (\ ge -> case ge of
         SpecEntry (ExtGenSig _ (NodeSig n _)) ->
            if null $ outDG dg n then (computeTheory le ln n :)
            else id

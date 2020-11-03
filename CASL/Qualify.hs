@@ -30,8 +30,9 @@ import Common.Result
 import qualified Common.Lib.MapSet as MapSet
 
 import Control.Monad
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
+import Data.Hashable
 
 mkOrReuseQualSortName :: Sort_map -> SIMPLE_ID -> LibName -> Id -> Id
 mkOrReuseQualSortName sm nodeId libId i =
@@ -56,7 +57,7 @@ qualifySigExt extInd extEm nodeId libId m sig = do
       sMap = Set.fold (`Map.insert` 1) Map.empty ss
       om = createOpMorMap $ qualOverloaded sMap (Map.map fst $ op_map m)
            nodeId libId (mapOpType sm) mkPartial os
-      oMap = Map.foldWithKey (\ i ->
+      oMap = Map.foldrWithKey (\ i ->
              Map.insertWith (+) i . Set.size) sMap $ MapSet.toMap os
       pm = Map.map fst $ qualOverloaded oMap (pred_map m) nodeId libId
            (mapPredType sm) id ps
@@ -65,11 +66,11 @@ qualifySigExt extInd extEm nodeId libId m sig = do
     , op_map = om
     , pred_map = pm }, monotonicities sig)
 
-qualOverloaded :: Ord a => Map.Map Id Int -> Map.Map (Id, a) Id -> SIMPLE_ID
+qualOverloaded :: (Ord a, Hashable a) => Map.HashMap Id Int -> Map.HashMap (Id, a) Id -> SIMPLE_ID
                -> LibName -> (a -> a) -> (a -> a) -> MapSet.MapSet Id a
-               -> Map.Map (Id, a) (Id, a)
+               -> Map.HashMap (Id, a) (Id, a)
 qualOverloaded oMap rn nodeId libId f g =
-  Map.foldWithKey (\ i s m -> foldr (\ (e, n) -> let ge = g e in
+  Map.foldrWithKey (\ i s m -> foldr (\ (e, n) -> let ge = g e in
     Map.insert (i, ge)
       (case Map.lookup (i, ge) rn of
          Just j | isQualName j -> j

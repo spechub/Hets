@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./OMDoc/DataTypes.hs
 Description :  The OMDoc Data Types
@@ -25,7 +25,10 @@ import Common.Percent (encodeBut)
 import Data.List
 import Data.Typeable
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
+
+import GHC.Generics (Generic)
+import Data.Hashable
 
 {-
   OMDoc represented in 3 layers:
@@ -195,7 +198,9 @@ instance Read Assoc where
 
 -- | Names used for OpenMath variables and symbols
 data OMName = OMName { name :: String, path :: [String] }
-              deriving (Show, Read, Eq, Ord, Typeable)
+              deriving (Show, Read, Eq, Ord, Typeable, Generic)
+
+instance Hashable OMName
 
 {- | Attribute-name/attribute-value pair used to represent the type
 of a type-annotated term -}
@@ -235,15 +240,15 @@ nameToToken = mkSimpleId
 -- * Utils for Translation
 
 type UniqName = (String, Int)
-type NameMap a = Map.Map a UniqName
+type NameMap a = Map.HashMap a UniqName
 
 -- | Mapping of symbols and sentence names to unique ids (used in export)
 data SigMap a = SigMap (NameMap a) (NameMap String)
 
 {- | Mapping of OMDoc names to hets strings, for signature creation,
 and strings to symbols, for lookup in terms (used in import) -}
-data SigMapI a = SigMapI { sigMapISymbs :: Map.Map OMName a
-                         , sigMapINotations :: Map.Map OMName String }
+data SigMapI a = SigMapI { sigMapISymbs :: Map.HashMap OMName a
+                         , sigMapINotations :: Map.HashMap OMName String }
 
 sigMapSymbs :: SigMap a -> NameMap a
 sigMapSymbs (SigMap sm _) = sm
@@ -335,7 +340,7 @@ simpleOMS = OMS . mkSimpleQualName
 lookupNotation :: SigMapI a -> OMName -> String
 lookupNotation smi = lookupNotationInMap $ sigMapINotations smi
 
-lookupNotationInMap :: Map.Map OMName String -> OMName -> String
+lookupNotationInMap :: Map.HashMap OMName String -> OMName -> String
 lookupNotationInMap m n = Map.findWithDefault (name n) n m
 
 -- * Pretty instances

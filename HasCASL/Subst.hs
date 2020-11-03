@@ -24,7 +24,7 @@ import HasCASL.Le
 import Common.Id
 import Common.Lib.State
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Data.Maybe
 
@@ -47,12 +47,12 @@ scName :: SubstConst -> String
 scName (SConst n _) = show n
 
 newtype Subst =
-    Subst ( Map.Map SubstConst (SRule Term) -- the const->term mapping
-          , Map.Map SubstType (SRule Type) {- the const->type mapping
+    Subst ( Map.HashMap SubstConst (SRule Term) -- the const->term mapping
+          , Map.HashMap SubstType (SRule Type) {- the const->type mapping
                                            if a constant c occurs in the term t of a
           const-term mapping (c',t) then c' is entered in the
           by this mapping corresponding set s: (c, insert c' s) -}
-          , Map.Map SubstConst (Set.Set SubstConst)) deriving Show
+          , Map.HashMap SubstConst (Set.Set SubstConst)) deriving Show
 
 emptySubstitution :: Subst
 emptySubstitution = Subst (Map.empty, Map.empty, Map.empty)

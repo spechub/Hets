@@ -19,7 +19,7 @@ module HasCASL.OpDecl
 
 import Data.Maybe
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Text.ParserCombinators.Parsec (parse, eof)
 import Control.Monad
 

@@ -40,8 +40,9 @@ import Common.Result
 
 import Data.List (partition, find)
 import Data.Maybe
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
+import Data.Hashable
 
 {-
 inducedFromMorphism :: RawSymbolMap -> sign -> Result morphism
@@ -131,10 +132,10 @@ inducedFromMorphismExt extInd extEm rmap sigma = do
                 return $ if s' == s then m1 else Map.insert s s' m1)
               (return Map.empty) (sortSet sigma)
   -- compute the op map (as a Map)
-  op_Map <- Map.foldWithKey (opFun sigma rmap sort_Map)
+  op_Map <- Map.foldrWithKey (opFun sigma rmap sort_Map)
               (return Map.empty) (MapSet.toMap $ opMap sigma)
   -- compute the pred map (as a Map)
-  pred_Map <- Map.foldWithKey (predFun sigma rmap sort_Map)
+  pred_Map <- Map.foldrWithKey (predFun sigma rmap sort_Map)
               (return Map.empty) (MapSet.toMap $ predMap sigma)
   em <- extEm rmap $ extendedInfo sigma
   -- return assembled morphism
@@ -584,8 +585,8 @@ profileContainsSort s symbT = elem s $ case symbT of
     SubsortAsItemType t -> [t]
     SortAsItemType -> []
 
-leCl :: Ord a => (a -> a -> Bool) -> MapSet.MapSet Id a
-     -> Map.Map Id [Set.Set a]
+leCl :: (Ord a, Hashable a) => (a -> a -> Bool) -> MapSet.MapSet Id a
+     -> Map.HashMap Id [Set.Set a]
 leCl f = Map.map (Rel.partSet f) . MapSet.toMap
 
 mkp :: OpMap -> OpMap

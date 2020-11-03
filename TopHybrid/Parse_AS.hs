@@ -19,7 +19,7 @@ import Common.AS_Annotation
 import Common.GlobalAnnotations (PrefixMap)
 import Common.Token
 import Data.Maybe
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Text.ParserCombinators.Parsec
 import Logic.Logic
 import TopHybrid.AS_TopHybrid

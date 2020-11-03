@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, DeriveDataTypeable #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./Maude/Sign.hs
 Description :  Maude Signatures
@@ -55,9 +55,8 @@ import qualified Maude.Sentence as Sen
 
 import Data.Data
 import Data.Set (Set)
-import Data.Map (Map)
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Foldable as Fold
 import qualified Common.Lib.Rel as Rel
 import qualified Data.List as List
@@ -66,6 +65,9 @@ import Common.Doc hiding (empty)
 import qualified Common.Doc as Doc
 import Common.DocUtils (Pretty (..))
 import Common.Utils (nubOrd)
+
+import GHC.Generics (Generic)
+import Data.Hashable
 
 -- * Types
 
@@ -76,9 +78,9 @@ type KindSet = SymbolSet
 type SubsortRel = SymbolRel
 type OpDecl = (Set Symbol, [Attr])
 type OpDeclSet = Set OpDecl
-type OpMap = Map Qid OpDeclSet
+type OpMap = Map.HashMap Qid OpDeclSet
 type Sentences = Set Sentence
-type KindRel = Map Symbol Symbol
+type KindRel = Map.HashMap Symbol Symbol
 
 -- ** The Signature type
 
@@ -108,13 +110,13 @@ instance Pretty Sign where
         pr'sups = hsep . map pretty . Set.elems
         pr'pair sub sups = (:) . hsep $
             [keyword "subsort", pretty sub, less, pr'sups sups, dot]
-        pr'subs = vcat . Map.foldWithKey pr'pair []
+        pr'subs = vcat . Map.foldrWithKey pr'pair []
         -- print operator declarations
         pr'decl attrs symb = hsep
             [keyword "op", pretty symb, pretty attrs, dot]
         pr'ods (decls, attrs) = descend ((:) . pr'decl attrs) decls
         pr'ocs = descend pr'ods
-        pr'ops = vcat . Map.fold pr'ocs []
+        pr'ops = vcat . Map.foldr' pr'ocs []
         in vcat [ pr'sorts $ Set.elems $ sorts sign
                 , pr'kinds $ Set.elems $ kinds sign
                 , pr'subs $ Rel.toMap $ Rel.transReduce $ subsorts sign
@@ -144,13 +146,13 @@ instance HasOps Sign where
     getOps = let
         descend = flip . Set.fold
         insert = descend $ descend Set.insert . fst
-        in Map.fold insert Set.empty . ops
+        in Map.foldr' insert Set.empty . ops
     mapOps mp sign = let
         subrel = subsorts sign
         opmap = ops sign
         update src tgt = mapOpDecl subrel src tgt []
         in sign {
-            ops = Map.foldWithKey update opmap mp
+            ops = Map.foldrWithKey update opmap mp
             -- NOTE: Leaving out Sentences for now.
         }
 
@@ -210,6 +212,10 @@ sortSym2kindSym :: Symbol -> Symbol
 sortSym2kindSym (Sort q) = Kind q
 sortSym2kindSym s = s
 
+
+testFun :: Map.HashMap (Set.Set OpDecl) Int -> Int
+testFun f = length $ Map.toList f
+
 -- | The empty 'Sign'ature.
 empty :: Sign
 empty = Sign {
@@ -231,13 +237,13 @@ inlineSign sign = let
         pr'sups = hsep . map pretty . Set.elems
         pr'pair sub sups = (:) . hsep $
             [keyword "subsort", pretty sub, less, pr'sups sups, dot]
-        pr'subs = vcat . Map.foldWithKey pr'pair []
+        pr'subs = vcat . Map.foldrWithKey pr'pair []
         -- print operator decparations
         pr'decl attrs symb = hsep
             [keyword "op", pretty symb, pretty attrs, dot]
         pr'ods (decls, attrs) = descend ((:) . pr'decl attrs) decls
         pr'ocs = descend pr'ods
-        pr'ops = vcat . Map.fold pr'ocs []
+        pr'ops = vcat . Map.foldr' pr'ocs []
         in vcat [ pr'sorts $ Set.elems $ sorts sign
                 , pr'subs $ Rel.toMap $ Rel.transReduce $ subsorts sign
                 , pr'ops $ ops sign ]
@@ -431,10 +437,10 @@ kindsFromMap kr = foldr (\ (_, y) z -> Set.insert y z) Set.empty krl
       where krl = Map.toList kr
 
 getSortsKindRel :: KindRel -> SymbolSet
-getSortsKindRel = Map.foldWithKey f Set.empty
+getSortsKindRel = Map.foldrWithKey f Set.empty
       where f k _ = Set.insert k
 
-renameSortKindRel :: Map Symbol Symbol -> KindRel -> KindRel
+renameSortKindRel :: Map.HashMap Symbol Symbol -> KindRel -> KindRel
 renameSortKindRel m kr = kr'
       where krl = Map.toList kr
             f mss (x, y) = ((mapSorts mss x, mapSorts mss y) :)

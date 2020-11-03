@@ -43,7 +43,7 @@ import qualified THF.Sublogic as SL
 
 import Control.Monad
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import qualified Data.List as List
 
@@ -113,11 +113,11 @@ transTheory (env, hcnsl) = do
 
 -- Translation methods for the components a signature
 
-transTypeMap :: HCLe.TypeMap -> Result (THFSign.TypeMap, Map.Map Id Constant)
+transTypeMap :: HCLe.TypeMap -> Result (THFSign.TypeMap, Map.HashMap Id Constant)
 transTypeMap tm = foldM trans (Map.empty, Map.empty) (Map.toList tm)
     where
-        trans :: (THFSign.TypeMap, Map.Map Id Constant) -> (Id, HCLe.TypeInfo)
-                    -> Result (THFSign.TypeMap, Map.Map Id Constant)
+        trans :: (THFSign.TypeMap, Map.HashMap Id Constant) -> (Id, HCLe.TypeInfo)
+                    -> Result (THFSign.TypeMap, Map.HashMap Id Constant)
         trans (ttm, icm) (i, ti) = do
          c <- transTypeId i
          ti' <- transTypeInfo ti c
@@ -136,7 +136,7 @@ transRawKind rk = case rk of
     ClassKind () -> return Kind
     _ -> mkError "Type constructors are not supported!" nullRange
 
-transAssumps :: HCLe.Assumps -> Map.Map Id Constant -> Result THFSign.ConstMap
+transAssumps :: HCLe.Assumps -> Map.HashMap Id Constant -> Result THFSign.ConstMap
 transAssumps am icm = foldM insertConsts Map.empty (Map.toList am)
     where
         insertConsts :: THFSign.ConstMap -> (Id, Set.Set OpInfo)
@@ -165,7 +165,7 @@ transAssumps am icm = foldM insertConsts Map.empty (Map.toList am)
         transOp (TypeScheme _ op _) = transType icm op
 
 -- a mapping between ids of hascasl types and their representation in THF
-type IdConstantMap = Map.Map Id THFAs.Constant
+type IdConstantMap = Map.HashMap Id THFAs.Constant
 
 genIdConstantMap :: Env -> Result IdConstantMap
 genIdConstantMap e = foldM (\ icm (i, _) -> do

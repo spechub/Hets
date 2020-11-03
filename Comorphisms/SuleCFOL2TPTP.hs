@@ -27,7 +27,7 @@ import Common.ProofTree
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.MapSet as MapSet
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 import Data.List as List hiding (sort)
@@ -286,8 +286,8 @@ lookupPredName (_, _, renamedPreds) predName predType =
 -- This type contains the Sign with renaming applied and the information what
 -- each original op+type or pred+type was renamed to.
 type SignWithRenamings f e = (CSign.Sign f e,
-                              Map.Map (OP_NAME, OpType) OP_NAME,
-                              Map.Map (PRED_NAME, PredType) PRED_NAME)
+                              Map.HashMap (OP_NAME, OpType) OP_NAME,
+                              Map.HashMap (PRED_NAME, PredType) PRED_NAME)
 
 -- finds ops and preds that have the same name but operate on different connected components. Renames these ops and preds.
 prepareSign :: (FormExtension f, Eq f)
@@ -319,7 +319,7 @@ prepareSign sign =
             Rel.succs revReflTransClosureSortRel topSort) topSortsL
 
     -- Maps a SORT to the index of the connected Component
-    connectedComponentsToMap :: [Set.Set SORT] -> Map.Map SORT Int
+    connectedComponentsToMap :: [Set.Set SORT] -> Map.HashMap SORT Int
     connectedComponentsToMap connectedComponents =
       let indexedCCs = zip connectedComponents [1..]
       in  foldr (\ (cc, i) ccMap ->
@@ -328,17 +328,17 @@ prepareSign sign =
                             ) ccMap cc
                 ) Map.empty indexedCCs
 
-    addOpIfConflicting :: Map.Map SORT Int -> OP_NAME -> Set.Set OpType
-                       -> Map.Map (OP_NAME, OpType) OP_NAME
-                       -> Map.Map (OP_NAME, OpType) OP_NAME
+    addOpIfConflicting :: Map.HashMap SORT Int -> OP_NAME -> Set.Set OpType
+                       -> Map.HashMap (OP_NAME, OpType) OP_NAME
+                       -> Map.HashMap (OP_NAME, OpType) OP_NAME
     addOpIfConflicting connectedComponentMap opName opTypes conflicts =
       let opTypesL = Set.toList opTypes
           opTypeCombinations = [(x,y) | x <- opTypesL, y <- opTypesL, x < y]
       in  foldr addIfConflicting conflicts opTypeCombinations
       where
         addIfConflicting :: (OpType, OpType)
-                         -> Map.Map (OP_NAME, OpType) OP_NAME
-                         -> Map.Map (OP_NAME, OpType) OP_NAME
+                         -> Map.HashMap (OP_NAME, OpType) OP_NAME
+                         -> Map.HashMap (OP_NAME, OpType) OP_NAME
         addIfConflicting (t1, t2) conflicts' =
           if isConflicting t1 t2
           then Map.insert (opName, t1) (renameCurrentOp t1) $
@@ -374,9 +374,9 @@ prepareSign sign =
                 toAlphaNum (show opName) ++ "_" ++ argsS ++ "_" ++ resultS
           in  opName { getTokens = [mkSimpleId newOpNameS] }
 
-    addPredIfConflicting :: Map.Map SORT Int -> PRED_NAME -> Set.Set PredType
-                         -> Map.Map (PRED_NAME, PredType) PRED_NAME
-                         -> Map.Map (PRED_NAME, PredType) PRED_NAME
+    addPredIfConflicting :: Map.HashMap SORT Int -> PRED_NAME -> Set.Set PredType
+                         -> Map.HashMap (PRED_NAME, PredType) PRED_NAME
+                         -> Map.HashMap (PRED_NAME, PredType) PRED_NAME
     addPredIfConflicting connectedComponentMap predName predTypes conflicts =
       let predTypesL = Set.toList predTypes
           predTypeCombinations =
@@ -384,8 +384,8 @@ prepareSign sign =
       in  foldr addIfConflicting conflicts predTypeCombinations
       where
         addIfConflicting :: (PredType, PredType)
-                         -> Map.Map (PRED_NAME, PredType) PRED_NAME
-                         -> Map.Map (PRED_NAME, PredType) PRED_NAME
+                         -> Map.HashMap (PRED_NAME, PredType) PRED_NAME
+                         -> Map.HashMap (PRED_NAME, PredType) PRED_NAME
         addIfConflicting (t1, t2) conflicts' =
           if isConflicting t1 t2
           then Map.insert (predName, t1) (renameCurrentPred t1) $
@@ -419,13 +419,13 @@ prepareSign sign =
               newPredNameS = toAlphaNum (show predName) ++ "_" ++ argsS
           in  predName { getTokens = [mkSimpleId newPredNameS] }
 
-    isInSameCC :: Map.Map SORT Int -> (SORT, SORT) -> Bool
+    isInSameCC :: Map.HashMap SORT Int -> (SORT, SORT) -> Bool
     isInSameCC connectedComponentMap (s1, s2) =
       let cc1 = Map.lookup s1 connectedComponentMap
           cc2 = Map.lookup s2 connectedComponentMap
       in  cc1 == cc2 && cc1 /= Nothing -- Nothing can not occur
 
-    modifyOpMap :: Map.Map (OP_NAME, OpType) OP_NAME
+    modifyOpMap :: Map.HashMap (OP_NAME, OpType) OP_NAME
                 -> OP_NAME -> OpType -> OpMap -> OpMap
     modifyOpMap renamedOps opName opType opMap' =
       case Map.lookup (opName, opType) renamedOps of
@@ -433,7 +433,7 @@ prepareSign sign =
         Just newOpName -> MapSet.insert newOpName opType $
                             MapSet.delete opName opType opMap'
 
-    modifyPredMap :: Map.Map (PRED_NAME, PredType) PRED_NAME
+    modifyPredMap :: Map.HashMap (PRED_NAME, PredType) PRED_NAME
                   -> PRED_NAME -> PredType -> PredMap -> PredMap
     modifyPredMap renamedPreds predName predType predMap' =
       case Map.lookup (predName, predType) renamedPreds of

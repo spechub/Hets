@@ -22,8 +22,10 @@ import Common.Id
 import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
+
+import Data.Hashable
 
 mkOverloadedId :: Int -> Id -> Id
 mkOverloadedId n i@(Id ts cs rs) = if n <= 1 then i else
@@ -40,24 +42,24 @@ disambigSigExt extInd extEm sig =
       ss = sortSet sig
       sMap = Set.fold (`Map.insert` 1) Map.empty ss
       om = createOpMorMap $ disambOverloaded sMap mkPartial os
-      oMap = Map.foldWithKey (\ i ->
+      oMap = Map.foldrWithKey (\ i ->
              Map.insertWith (+) i . length) sMap os
       pm = Map.map fst $ disambOverloaded oMap id ps
   in (embedMorphism extEm sig $ inducedSignAux extInd Map.empty om pm extEm sig)
     { op_map = om
     , pred_map = pm }
 
-disambOverloaded :: Ord a => Map.Map Id Int
+disambOverloaded :: (Ord a, Hashable a) => Map.HashMap Id Int
                -> (a -> a)
-               -> Map.Map Id [Set.Set a]
-               -> Map.Map (Id, a) (Id, a)
+               -> Map.HashMap Id [Set.Set a]
+               -> Map.HashMap (Id, a) (Id, a)
 disambOverloaded oMap g =
-  Map.foldWithKey (\ i l m ->
+  Map.foldrWithKey (\ i l m ->
     foldr (\ (s, n) m2 -> let j = mkOverloadedId n i in
       Set.fold (\ t -> Map.insert (i, g t) (j, t)) m2 s) m
     $ zip l [1 + Map.findWithDefault 0 i oMap ..])
     Map.empty
 
-createOpMorMap :: Map.Map (Id, OpType) (Id, OpType)
-             -> Map.Map (Id, OpType) (Id, OpKind)
+createOpMorMap :: Map.HashMap (Id, OpType) (Id, OpType)
+             -> Map.HashMap (Id, OpType) (Id, OpKind)
 createOpMorMap = Map.map (\ (i, t) -> (i, opKind t))

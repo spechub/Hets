@@ -24,6 +24,8 @@ import Data.Time (TimeOfDay (..))
 import Data.Fixed (Pico)
 import Data.Ratio (Ratio)
 import System.Time
+import Data.Hashable
+import qualified Data.HashMap.Strict as Map
 
 instance ShATermConvertible a => ShATermConvertible (SizedList.SizedList a)
     where
@@ -44,7 +46,14 @@ instance (Ord a, ShATermConvertible a, Ord b, ShATermConvertible b)
         (att2, InjMap.unsafeConstructInjMap a' b') }}
     u -> fromShATermError "InjMap" u
 
-instance (Ord a, ShATermConvertible a, Ord b, ShATermConvertible b)
+-- TODO: get this right!
+instance (Ord a, Hashable a, Typeable a, Typeable b)--, ShATermConvertible a, ShATermConvertible b)
+ => ShATermConvertible (Map.HashMap a b) where
+   toShATermAux att0 x = error "nyi"--toShATermAux att0 $ Map.toList x
+   fromShATermAux ix att0 = error "nyi"--fromShATermError "HashMap" $ getShATerm ix att0
+   
+
+instance (Ord a, Hashable a, ShATermConvertible a, Ord b, ShATermConvertible b)
   => ShATermConvertible (MapSet.MapSet a b) where
   toShATermAux att0 r = do
         (att1, a') <- toShATerm' att0 $ MapSet.toMap r
@@ -55,7 +64,7 @@ instance (Ord a, ShATermConvertible a, Ord b, ShATermConvertible b)
         (att1, MapSet.fromDistinctMap a') }
     u -> fromShATermError "MapSet" u
 
-instance (Ord a, ShATermConvertible a) => ShATermConvertible (Rel.Rel a) where
+instance (Ord a, Hashable a, ShATermConvertible a) => ShATermConvertible (Rel.Rel a) where
   toShATermAux att0 r = do
         (att1, a') <- toShATerm' att0 $ Rel.toMap r
         return $ addATerm (ShAAppl "Rel" [a'] []) att1

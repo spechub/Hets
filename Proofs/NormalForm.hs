@@ -37,7 +37,7 @@ import Common.Lib.Graph
 import Common.Utils (nubOrd)
 
 import Data.Graph.Inductive.Graph as Graph
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Control.Monad
 
 normalFormRule :: DGRule
@@ -160,8 +160,8 @@ normalFormDG libEnv ln dgraph = foldM (\ dg (node, nodelab) ->
    adding common origins for multiple occurences of nodes, whenever
    needed
 -}
-computeDiagram :: DGraph -> [Node] -> (GDiagram, Map.Map Node Node)
-               -> (GDiagram, Map.Map Node Node)
+computeDiagram :: DGraph -> [Node] -> (GDiagram, Map.HashMap Node Node)
+               -> (GDiagram, Map.HashMap Node Node)
   -- as described in the paper for now
 computeDiagram dgraph nodeList (gd, g) =
  case nodeList of

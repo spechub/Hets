@@ -14,7 +14,7 @@ pretty printing
 module COL.Print_AS where
 
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Common.Doc
 import Common.DocUtils
 import CASL.ToDoc

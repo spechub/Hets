@@ -47,7 +47,7 @@ import qualified Common.Lib.Rel as Rel
 import Control.Monad
 
 import Data.Data
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 -- Morphisms
@@ -64,9 +64,9 @@ respect to the CASL signature sub-sort relation (at source) and also the
 target communications alphabet must be downward closed with respect to the
 CASL signature sub-sort relation (at target). -}
 type ProcessMap =
-  Map.Map (PROCESS_NAME, ProcProfile) PROCESS_NAME
+  Map.HashMap (PROCESS_NAME, ProcProfile) PROCESS_NAME
 
-type ChanMap = Map.Map (CHANNEL_NAME, SORT) CHANNEL_NAME
+type ChanMap = Map.HashMap (CHANNEL_NAME, SORT) CHANNEL_NAME
 
 -- | CspAddMorphism - This is just the extended part
 data CspAddMorphism = CspAddMorphism
@@ -296,7 +296,7 @@ cspAddMorphismUnion mor1 mor2 = let
         else Result pds Nothing
 
 toCspSymbMap :: Bool -> Morphism f CspSign CspAddMorphism
-  -> Map.Map CspSymbol CspSymbol
+  -> Map.HashMap CspSymbol CspSymbol
 toCspSymbMap b mor = let
     src = extendedInfo $ msource mor
     chanSymMap = MapSet.foldWithKey
@@ -316,7 +316,7 @@ toCspSymbMap b mor = let
       Map.empty $ procSet src
   in Map.union chanSymMap procSymMap
 
-cspMorphismToCspSymbMap :: CspCASLMorphism -> Map.Map CspSymbol CspSymbol
+cspMorphismToCspSymbMap :: CspCASLMorphism -> Map.HashMap CspSymbol CspSymbol
 cspMorphismToCspSymbMap mor =
   Map.union (Map.fromList
     . map (\ (a, b) -> (caslToCspSymbol a, caslToCspSymbol b))

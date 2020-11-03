@@ -24,7 +24,7 @@ import Logic.Coerce
 import Data.Graph.Inductive.Graph as Graph
 import qualified Common.Lib.Graph as Tree
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Common.Doc
 import Common.DocUtils
 import Common.ExtSign
@@ -78,7 +78,7 @@ instance Show BasedUnitSig where
  show (Based_par_unit_sig mdn _) = show mdn
  show (Based_lambda_unit_sig _ usig) = show usig
 
-type StBasedUnitCtx = Map.Map IRI BasedUnitSig
+type StBasedUnitCtx = Map.HashMap IRI BasedUnitSig
 emptyStBasedUnitCtx :: StBasedUnitCtx
 emptyStBasedUnitCtx = Map.empty
 
@@ -486,14 +486,14 @@ matchDiagram n diag =
  let (mc, b) = match n $ diagGraph diag in (mc, diag {diagGraph = b})
 
 copyDiagram :: LogicGraph -> [Node] -> Diag ->
-               Result (Diag, Map.Map Node Node)
+               Result (Diag, Map.HashMap Node Node)
 copyDiagram lg ns diag = do
  (diag1, c) <- copyDiagramAux Map.empty lg ns diag
  let (_, diag2) = copyEdges ns diag1 c Map.empty
  return (diag2, c)
 
-copyEdges :: [Node] -> Diag -> Map.Map Node Node -> Map.Map Edge Bool ->
-             (Map.Map Edge Bool, Diag)
+copyEdges :: [Node] -> Diag -> Map.HashMap Node Node -> Map.HashMap Edge Bool ->
+             (Map.HashMap Edge Bool, Diag)
 copyEdges ns diag c visit =
  case ns of
    [] -> (visit, diag)
@@ -502,8 +502,8 @@ copyEdges ns diag c visit =
             (visit', diag') = foldl (\ (v, d) e -> copyEdge d c e v) (visit, diag) sEdges
           in copyEdges sucs diag' c visit'
 
-copyEdge :: Diag -> Map.Map Node Node -> LEdge DiagLinkLab -> Map.Map Edge Bool ->
-            (Map.Map Edge Bool, Diag)
+copyEdge :: Diag -> Map.HashMap Node Node -> LEdge DiagLinkLab -> Map.HashMap Edge Bool ->
+            (Map.HashMap Edge Bool, Diag)
 copyEdge diag c (s, t, llab) visit =
  if (s, t) `elem` Map.keys visit then (visit, diag)
   else
@@ -516,8 +516,8 @@ copyEdge diag c (s, t, llab) visit =
                             numberOfEdges = numberOfEdges diag + 1 }
     in (visit', diag')
 
-copyDiagramAux :: Map.Map Node Node -> LogicGraph -> [Node] -> Diag ->
-                  Result (Diag, Map.Map Node Node)
+copyDiagramAux :: Map.HashMap Node Node -> LogicGraph -> [Node] -> Diag ->
+                  Result (Diag, Map.HashMap Node Node)
 copyDiagramAux c lgraph ns diag =
  case ns of
   [] -> return (diag, c)

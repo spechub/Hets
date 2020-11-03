@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./CspCASL/SymbItems.hs
 Description :  syntactic csp-casl symbols
@@ -37,21 +37,32 @@ import Data.Data
 
 import qualified Data.Set as Set
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 data CspSymbItems = CspSymbItems CspSymbKind [CspSymb]
-  deriving (Show, Eq, Ord, Typeable, Data)
+  deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable CspSymbItems
 
 data CspSymbMapItems = CspSymbMapItems CspSymbKind [CspSymbMap]
   deriving (Show, Eq, Ord, Typeable, Data)
 
 data CspSymbKind = CaslKind SYMB_KIND | ProcessKind | ChannelKind
-  deriving (Show, Eq, Ord, Typeable, Data)
+  deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable CspSymbKind
 
 data CspSymb = CspSymb Id (Maybe CspType)
-  deriving (Show, Eq, Ord, Typeable, Data)
+  deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable CspSymb
 
 -- for channels with sorts we may re-use A_type that is ambiguous
 data CspType = CaslType TYPE | ProcType ProcProfile
-  deriving (Show, Eq, Ord, Typeable, Data)
+  deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable CspType
 
 data CspSymbMap = CspSymbMap CspSymb (Maybe CspSymb)
   deriving (Show, Eq, Ord, Typeable, Data)

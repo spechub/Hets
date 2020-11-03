@@ -35,7 +35,7 @@ import HasCASL.ClassAna
 import HasCASL.VarDecl
 
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Common.Lib.Rel as Rel
 import Common.Lib.State
 import Common.Doc
@@ -300,7 +300,7 @@ shapeRel te subL =
            Just (s1, atoms0) ->
                let atoms = filter isAtomic atoms0
                    r = Rel.transClosure $ Rel.fromList atoms
-                   es = Map.foldWithKey ( \ t1 st l1 ->
+                   es = Map.foldrWithKey ( \ t1 st l1 ->
                              case t1 of
                              TypeName _ _ 0 -> Set.fold ( \ t2 l2 ->
                                  case t2 of
@@ -383,10 +383,10 @@ monoSubst r t =
                       $ Set.toList s
                  in Map.singleton i $ Set.findMin
                     $ if Set.null sl then s else sl
-          else Map.fromDistinctAscList $ map ( \ (i, (n, rk)) ->
+          else Map.fromList $ map ( \ (i, (n, rk)) ->
                 (i, Set.findMin $ Rel.predecessors r $
                   TypeName n rk i)) monos
-       else Map.fromDistinctAscList $ map ( \ (i, (n, rk)) ->
+       else Map.fromList $ map ( \ (i, (n, rk)) ->
                 (i, Set.findMin $ Rel.succs r $
                   TypeName n rk i)) antis
 
@@ -432,14 +432,14 @@ shapeRelAndSimplify doFail te cs mTy = do
 
 -- | Downsets of type variables made monomorphic need to be considered
 fromTypeVars :: LocalTypeVars -> [(Type, Type)]
-fromTypeVars = Map.foldWithKey
+fromTypeVars = Map.foldrWithKey
     (\ t (TypeVarDefn _ vk rk _) c -> case vk of
               Downset ty -> (TypeName t rk 0, monoType ty) : c
               _ -> c) []
 
 -- | the type relation of declared types
 fromTypeMap :: TypeMap -> Rel.Rel Type
-fromTypeMap = Map.foldWithKey (\ t ti r -> let k = typeKind ti in
+fromTypeMap = Map.foldrWithKey (\ t ti r -> let k = typeKind ti in
                     Set.fold ( \ j -> Rel.insertPair (TypeName t k 0)
                                 $ TypeName j k 0) r
                                     $ superTypes ti) Rel.empty

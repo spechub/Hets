@@ -29,7 +29,7 @@ import Common.Result
 import Common.Utils
 import qualified Common.Lib.Rel as Rel
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Maybe (fromMaybe)
 import Data.List (partition)
 import Control.Monad (foldM)
@@ -217,8 +217,8 @@ setNumberLit = foldM $ \ m a -> case a of
   _ -> return m
 
 -- | add (and check for consistency) (possibly several) list annotations
-setListLit :: Map.Map Id (Id, Id) -> [Annotation]
-  -> Result (Map.Map Id (Id, Id))
+setListLit :: Map.HashMap Id (Id, Id) -> [Annotation]
+  -> Result (Map.HashMap Id (Id, Id))
 setListLit =
   let showListAnno i1 (i2, i3) =
           " %list " ++ showId i1 "," ++ showId i2 "," ++ showId i3 ""

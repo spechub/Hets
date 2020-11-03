@@ -202,7 +202,7 @@ import qualified Common.Lib.Pretty as Pretty
 import Data.Char
 import Data.List
 import Data.Maybe
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 infixl 6 <>
@@ -882,7 +882,7 @@ textToLatex lbl@(MkLabel mkLbl) dis b k s = case s of
 escapeLabel :: String -> String
 escapeLabel = map ( \ c -> if c == '_' then ':' else c)
 
-latexSymbols :: Map.Map String Pretty.Doc
+latexSymbols :: Map.HashMap String Pretty.Doc
 latexSymbols = Map.union (Map.fromList
     [ ("{", casl_normal_latex "\\{")
     , ("}", casl_normal_latex "\\}")
@@ -928,7 +928,7 @@ latexSymbols = Map.union (Map.fromList
 global annotations like precedences, associativities, and literal
 annotations. -}
 codeOut :: StripComment -> GlobalAnnos -> PrecMap -> Maybe Display_format
-        -> Map.Map Id [Token] -> Doc -> Doc
+        -> Map.HashMap Id [Token] -> Doc -> Doc
 codeOut stripCs ga precs d m = foldDoc idRecord
     { foldAnnoDoc = \ _ -> small . codeOutAnno stripCs m
     , foldIdDoc = \ _ lk -> codeOutId lk m
@@ -944,7 +944,7 @@ codeOut stripCs ga precs d m = foldDoc idRecord
 codeToken :: String -> Doc
 codeToken = Text IdSymb
 
-codeOrigId :: LabelKind -> Map.Map Id [Token] -> Id -> [Doc]
+codeOrigId :: LabelKind -> Map.HashMap Id [Token] -> Id -> [Doc]
 codeOrigId lk m i@(Id ts cs _) = let
     (toks, places) = splitMixToken ts
     conv = reverse . snd . foldl ( \ (b, l) t ->
@@ -955,13 +955,13 @@ codeOrigId lk m i@(Id ts cs _) = let
     in if null cs then conv ts
        else conv toks ++ codeCompIds m cs : conv places
 
-cCommaT :: Map.Map Id [Token] -> [Id] -> [Doc]
+cCommaT :: Map.HashMap Id [Token] -> [Id] -> [Doc]
 cCommaT m = punctuate comma . map (codeOutId IdAppl m)
 
-codeCompIds :: Map.Map Id [Token] -> [Id] -> Doc
+codeCompIds :: Map.HashMap Id [Token] -> [Id] -> Doc
 codeCompIds m = brackets . fcat . cCommaT m
 
-codeOutId :: LabelKind -> Map.Map Id [Token] -> Id -> Doc
+codeOutId :: LabelKind -> Map.HashMap Id [Token] -> Id -> Doc
 codeOutId lk m i = fcat $ case Map.lookup i m of
     Nothing -> codeOrigId lk m i
     Just ts -> reverse $ snd $ foldl ( \ (b, l) t ->
@@ -1008,13 +1008,13 @@ percent = symbol percentS
 annoRparen :: Doc
 annoRparen = rparen <> percent
 
-hCommaT :: Map.Map Id [Token] -> [Id] -> Doc
+hCommaT :: Map.HashMap Id [Token] -> [Id] -> Doc
 hCommaT m = hsep . cCommaT m
 
-fCommaT :: Map.Map Id [Token] -> [Id] -> Doc
+fCommaT :: Map.HashMap Id [Token] -> [Id] -> Doc
 fCommaT m = fsep . cCommaT m
 
-codeOutAnno :: StripComment -> Map.Map Id [Token] -> Annotation -> Doc
+codeOutAnno :: StripComment -> Map.HashMap Id [Token] -> Annotation -> Doc
 codeOutAnno (StripComment stripCs) m a = case a of
     Unparsed_anno aw at _ -> if stripCs then empty else case at of
         Line_anno s -> (case aw of
@@ -1108,7 +1108,7 @@ parenApplArgs ga precs origDoc = case origDoc of
 
 -- print literal terms and mixfix applications
 codeOutAppl :: StripComment -> GlobalAnnos -> PrecMap -> Maybe Display_format
-            -> Map.Map Id [Token] -> Doc -> [Doc] -> Doc
+            -> Map.HashMap Id [Token] -> Doc -> [Doc] -> Doc
 codeOutAppl stripCs ga precs md m origDoc args = case origDoc of
   IdApplDoc _ i@(Id ts cs _) aas ->
     let mk = codeToken . tokStr

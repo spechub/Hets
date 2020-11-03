@@ -20,7 +20,7 @@ import Common.AS_Annotation
 
 import qualified Common.Lib.Rel as Rel
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 
 basicAna :: (Metamodel, Sign, GlobalAnnos) -> Result (Metamodel, ExtSign Sign (), [Named Sen])
@@ -78,7 +78,7 @@ toTypeClass :: Class -> TypeClass
 toTypeClass c = TypeClass (namedElementName (typeSuper (classSuperType c))) ClassKind
 
 
-buildInstances :: Metamodel -> Map.Map String TypeClass
+buildInstances :: Metamodel -> Map.HashMap String TypeClass
 buildInstances m =
   let models = model m
   in case models of
@@ -86,7 +86,7 @@ buildInstances m =
        -- There is assumed that there is only one model to process, the thers are discarded
        mo : _ -> foldr createInstanceFromObject Map.empty (object mo)
 
-createInstanceFromObject :: Object -> Map.Map String TypeClass -> Map.Map String TypeClass
+createInstanceFromObject :: Object -> Map.HashMap String TypeClass -> Map.HashMap String TypeClass
 createInstanceFromObject ob mapp =
   let targetClassType =
         case typeSubClasses (objectType ob) of

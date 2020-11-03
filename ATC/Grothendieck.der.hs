@@ -35,7 +35,7 @@ import Logic.Prover
 import Data.Typeable
 import Data.List
 import qualified Data.IntMap as IntMap
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 import ATC.Prover ()
@@ -44,6 +44,7 @@ import Static.GTheory
 
 import Control.Monad
 import Control.Concurrent.MVar
+import Data.Hashable
 
 {-! for Common.AS_Annotation.SenAttr derive : ShATermLG !-}
 {-! for Common.AS_Annotation.Annoted derive : ShATermLG !-}
@@ -126,7 +127,7 @@ instance ShATermLG G_symbol where
                 (att2, G_symbol lid i2') }}}
             u -> fromShATermError "G_symbol" u
 
-instance (Ord a, ShATermLG a) => ShATermLG (G_symbolmap a) where
+instance (Ord a, ShATermLG a, ShATermConvertible a) => ShATermLG (G_symbolmap a) where
   toShATermLG att0 (G_symbolmap lid m) = do
          (att1, i1) <- toShATermLG' att0 (language_name lid)
          (att2, i2) <- toShATermLG' att1 m
@@ -139,7 +140,7 @@ instance (Ord a, ShATermLG a) => ShATermLG (G_symbolmap a) where
                 (att2, G_symbolmap lid i2') }}}
             u -> fromShATermError "G_symbolmap" u
 
-instance (Ord a, ShATermLG a) => ShATermLG (G_mapofsymbol a) where
+instance (Ord a, Hashable a, ShATermLG a, ShATermConvertible a) => ShATermLG (G_mapofsymbol a) where
   toShATermLG att0 (G_mapofsymbol lid m) = do
          (att1, i1) <- toShATermLG' att0 (language_name lid)
          (att2, i2) <- toShATermLG' att1 m
@@ -334,7 +335,7 @@ instance (Ord a, ShATermLG a) => ShATermLG (Set.Set a) where
         case getShATerm ix att0 of
             ShAAppl "Set" [a] _ ->
                     case fromShATermLG' lg a att0 of { (att1, a') ->
-                    (att1, Set.fromDistinctAscList a') }
+                    (att1, Set.fromList a') }
             u -> fromShATermError "Set.Set" u
 
 instance ShATermLG a => ShATermLG (SizedList.SizedList a) where
@@ -342,15 +343,15 @@ instance ShATermLG a => ShATermLG (SizedList.SizedList a) where
   fromShATermLG lg ix att0 = case fromShATermLG lg ix att0 of
     (att, l) -> (att, SizedList.fromList l)
 
-instance (Ord a, ShATermLG a, ShATermLG b) => ShATermLG (Map.Map a b) where
+instance (Ord a, Hashable a, ShATermLG a, ShATermLG b) => ShATermLG (Map.HashMap a b) where
   toShATermLG att fm = do
       (att1, i) <- toShATermLG' att $ Map.toList fm
       return $ addATerm (ShAAppl "Map" [i] []) att1
   fromShATermLG lg ix att0 = case getShATerm ix att0 of
-            ShAAppl "Map" [a] _ ->
+            ShAAppl "HashMap" [a] _ ->
                     case fromShATermLG' lg a att0 of { (att1, a') ->
-                    (att1, Map.fromDistinctAscList a') }
-            u -> fromShATermError "Map.Map" u
+                    (att1, Map.fromList a') }
+            u -> fromShATermError "Map.HashMap" u
 
 instance (ShATermLG a) => ShATermLG (IntMap.IntMap a) where
   toShATermLG att fm = do
@@ -359,7 +360,7 @@ instance (ShATermLG a) => ShATermLG (IntMap.IntMap a) where
   fromShATermLG lg ix att0 = case getShATerm ix att0 of
             ShAAppl "IntMap" [a] _ ->
                     case fromShATermLG' lg a att0 of { (att1, a') ->
-                    (att1, IntMap.fromDistinctAscList a') }
+                    (att1, IntMap.fromList a') }
             u -> fromShATermError "IntMap.IntMap" u
 
 

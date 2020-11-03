@@ -40,7 +40,7 @@ import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.MapSet as MapSet
 
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Maybe (fromMaybe)
 
 -- | lid of the morphism
@@ -172,7 +172,7 @@ insertPredicate prop (predM, form) =
                makeNamed nam sent : form)
 
 
-getOperations :: Map.Map String TypeClass -> OpMap
+getOperations :: Map.HashMap String TypeClass -> OpMap
 getOperations ops = foldr insertOperations MapSet.empty (Map.toList ops)
 
 insertOperations :: (String, TypeClass) -> OpMap -> OpMap
@@ -184,18 +184,18 @@ insertOperations (na, tc) opM =
     MapSet.insert opName opType opM
 
 
-getSentencesRels :: Set.Set LinkT -> Map.Map String TypeClass ->
+getSentencesRels :: Set.Set LinkT -> Map.HashMap String TypeClass ->
                     [Named CASLFORMULA]
 getSentencesRels = completenessOfRelations
 
 
-completenessOfRelations :: Set.Set LinkT -> Map.Map String TypeClass ->
+completenessOfRelations :: Set.Set LinkT -> Map.HashMap String TypeClass ->
                            [Named CASLFORMULA]
 completenessOfRelations linkk ops =
   let ordLinks = getLinksByProperty linkk
   in foldr ((++) . createComplFormula ops) [] (Map.toList ordLinks)
 
-createComplFormula :: Map.Map String TypeClass -> (String, [LinkT]) ->
+createComplFormula :: Map.HashMap String TypeClass -> (String, [LinkT]) ->
                       [Named CASLFORMULA]
 createComplFormula ops (nam, linksL) =
   let
@@ -219,7 +219,7 @@ createComplFormula ops (nam, linksL) =
            sentQuan = Quantification Universal varsD sent nullRange
        in [makeNamed ("compRel_" ++ nam) sentQuan]
 
-getPropHold :: Map.Map String TypeClass -> VAR -> SORT -> VAR -> SORT -> LinkT
+getPropHold :: Map.HashMap String TypeClass -> VAR -> SORT -> VAR -> SORT -> LinkT
                -> CASLFORMULA
 getPropHold ops varA sorA varB sorB lin =
   let
@@ -247,12 +247,12 @@ getPropHold ops varA sorA varB sorB lin =
     Junction Con (eqA : [eqB]) nullRange
 
 
-getLinksByProperty :: Set.Set LinkT -> Map.Map String [LinkT]
+getLinksByProperty :: Set.Set LinkT -> Map.HashMap String [LinkT]
 getLinksByProperty linkk =
   let elems = Set.elems linkk
   in foldr getByProperty Map.empty elems
 
-getByProperty :: LinkT -> Map.Map String [LinkT] -> Map.Map String [LinkT]
+getByProperty :: LinkT -> Map.HashMap String [LinkT] -> Map.HashMap String [LinkT]
 getByProperty lin mapL =
   let
     prope = CSMOF.property lin
@@ -266,7 +266,7 @@ getByProperty lin mapL =
 
 
 getSortGen :: Rel.Rel TypeClass -> Set.Set TypeClass -> Set.Set TypeClass ->
-              Map.Map String TypeClass -> [Named CASLFORMULA]
+              Map.HashMap String TypeClass -> [Named CASLFORMULA]
 getSortGen typpR absCl typCl inst = disjointEmbedding absCl typpR ++
  sortGeneration inst ++
  sortGenerationNonAbstractSuperClasses typpR typCl absCl inst
@@ -274,7 +274,7 @@ getSortGen typpR absCl typCl inst = disjointEmbedding absCl typpR ++
 
 -- Free type of non-abstract superclasses
 sortGenerationNonAbstractSuperClasses :: Rel.Rel TypeClass -> Set.Set TypeClass
- -> Set.Set TypeClass -> Map.Map String TypeClass -> [Named CASLFORMULA]
+ -> Set.Set TypeClass -> Map.HashMap String TypeClass -> [Named CASLFORMULA]
 sortGenerationNonAbstractSuperClasses typpR typCl absCl inst =
   let
     ordObj = foldr orderByClass Map.empty (Map.toList inst)
@@ -288,14 +288,14 @@ sortGenerationNonAbstractSuperClasses typpR typCl absCl inst =
 
 
 -- Takes the objects, and a class with its child classes and returns the descendent objects of such class
-getClassSubObjects :: Map.Map TypeClass [String] -> (TypeClass, [TypeClass]) ->
+getClassSubObjects :: Map.HashMap TypeClass [String] -> (TypeClass, [TypeClass]) ->
                       (TypeClass, [String])
 getClassSubObjects objs (tc, subCl) =
   let objTC = findObjectInMap objs tc
   in
     (tc, objTC ++ foldr ((++) . findObjectInMap objs) [] subCl)
 
-findObjectInMap :: Map.Map TypeClass [String] -> TypeClass -> [String]
+findObjectInMap :: Map.HashMap TypeClass [String] -> TypeClass -> [String]
 findObjectInMap objs tc = fromMaybe [] $ Map.lookup tc objs
 
 getNonAbstractClasess :: Set.Set TypeClass -> Set.Set TypeClass -> Set.Set TypeClass
@@ -310,7 +310,7 @@ getSubClasses typpR tc =
 isParent :: TypeClass -> (TypeClass, TypeClass) -> Bool
 isParent tc (_, tc2) = tc == tc2
 
-toSortConstraintNonAbsClass :: Map.Map String TypeClass -> (TypeClass, [String])
+toSortConstraintNonAbsClass :: Map.HashMap String TypeClass -> (TypeClass, [String])
                                -> Named CASLFORMULA
 toSortConstraintNonAbsClass inst (tc, lisObj) =
   let
@@ -322,7 +322,7 @@ toSortConstraintNonAbsClass inst (tc, lisObj) =
   in
     makeNamed ("sortGenCon_" ++ name tc) constr
 
-getEqualityVarObject :: SORT -> Map.Map String TypeClass -> String -> CASLFORMULA
+getEqualityVarObject :: SORT -> Map.HashMap String TypeClass -> String -> CASLFORMULA
 getEqualityVarObject sor inst obj =
   let oTyp = case Map.lookup obj inst of
                 Nothing -> stringToId obj -- If happens, there is an error
@@ -337,7 +337,7 @@ getEqualityVarObject sor inst obj =
 
 
 -- Sorts are generated as a free type of object functions
-sortGeneration :: Map.Map String TypeClass -> [Named CASLFORMULA]
+sortGeneration :: Map.HashMap String TypeClass -> [Named CASLFORMULA]
 sortGeneration inst =
   let
     ordObj = foldr orderByClass Map.empty (Map.toList inst)
@@ -353,15 +353,15 @@ mapFilterJust list =
                   Nothing -> mapFilterJust rest
                   Just el -> el : mapFilterJust rest
 
-orderByClass :: (String, TypeClass) -> Map.Map TypeClass [String] ->
-                Map.Map TypeClass [String]
+orderByClass :: (String, TypeClass) -> Map.HashMap TypeClass [String] ->
+                Map.HashMap TypeClass [String]
 orderByClass (ob, tc) mapTC =
   case Map.lookup tc mapTC of
     Nothing -> Map.insert tc [ob] mapTC
     Just listObj -> Map.insert tc (ob : listObj) (Map.delete tc mapTC)
 
 
-getNoConfusionBetweenSets :: Map.Map String TypeClass -> Rel.Rel TypeClass ->
+getNoConfusionBetweenSets :: Map.HashMap String TypeClass -> Rel.Rel TypeClass ->
                              [Named CASLFORMULA]
 getNoConfusionBetweenSets inst relC =
   let ordObj = Map.toList $ foldr orderByClass Map.empty (Map.toList inst)

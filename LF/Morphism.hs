@@ -31,7 +31,7 @@ import Common.Result
 import Common.Doc hiding (space)
 import Common.DocUtils
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Data.Data
 import Data.Maybe (isNothing, fromMaybe)
@@ -50,7 +50,7 @@ data Morphism = Morphism
   , source :: Sign
   , target :: Sign
   , morphType :: MorphType
-  , symMap :: Map.Map Symbol EXP
+  , symMap :: Map.HashMap Symbol EXP
   } deriving (Ord, Show, Typeable)
 
 -- constructs an identity morphism
@@ -126,7 +126,7 @@ eqMorph (Morphism b1 m1 n1 s1 t1 k1 map1) (Morphism b2 m2 n2 s2 t2 k2 map2) =
 instance Pretty Morphism where
   pretty m = printSymMap $ symMap $ canForm m
 
-printSymMap :: Map.Map Symbol EXP -> Doc
+printSymMap :: Map.HashMap Symbol EXP -> Doc
 printSymMap m =
   vcat $ map (\ (s, e) -> pretty s <+> mapsto <+> pretty e) $ Map.toList m
 
@@ -137,14 +137,14 @@ inclusionMorph sig1 sig2 =
       in Result [] $ Just m
 
 -- induces a morphism from the source and target sigs and a symbol map
-inducedFromToMorphism :: Map.Map Symbol (EXP, EXP) -> Sign ->
+inducedFromToMorphism :: Map.HashMap Symbol (EXP, EXP) -> Sign ->
                          Sign -> Result Morphism
 inducedFromToMorphism m sig1 sig2 =
   let mor = Morphism gen_base gen_module "" sig1 sig2 Unknown Map.empty
       defs = filter (\ (Def _ _ v) -> isNothing v) $ getLocalDefs sig1
       in buildFromToMorph defs m mor
 
-buildFromToMorph :: [DEF] -> Map.Map Symbol (EXP, EXP) -> Morphism ->
+buildFromToMorph :: [DEF] -> Map.HashMap Symbol (EXP, EXP) -> Morphism ->
                     Result Morphism
 buildFromToMorph [] _ mor = return mor
 buildFromToMorph (Def s t _ : ds) m mor = do
@@ -171,7 +171,7 @@ buildFromToMorph (Def s t _ : ds) m mor = do
         buildFromToMorph ds m $ mor {symMap = Map.insert s (Const s1) m1}
 
 -- induces a morphism from the source signature and a symbol map
-inducedFromMorphism :: Map.Map Symbol Symbol -> Sign -> Result Morphism
+inducedFromMorphism :: Map.HashMap Symbol Symbol -> Sign -> Result Morphism
 inducedFromMorphism m sig1 = do
   let mor = Morphism gen_base gen_module "" sig1 emptySig Unknown $
               Map.map Const m

@@ -69,8 +69,7 @@ import Data.Char (toLower)
 import qualified Data.IntMap as IntMap
 import Data.Graph.Inductive.Graph as Graph
 import Data.List (intercalate, isPrefixOf, stripPrefix)
-import Data.Map (Map)
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Maybe
 import Data.Set (Set)
 import qualified Data.Set as Set
@@ -83,13 +82,13 @@ import Database.Esqueleto
 type SymbolMapIndex = (String, String) -- (SymbolKind, FullSymbolName)
 
 data DBCache = DBCache
-  { documentMap :: Map LibName LocIdBaseId -- Here, LocIdBaseId is DocumentId
-  , documentByLibNameIRIMap :: Map IRI LocIdBaseId -- Here, LocIdBaseId is DocumentId
-  , nodeMap :: Map (LibName, Node) (LocIdBaseId, SignatureId) -- Here, LocIdBaseId is OMSId
-  , signatureMap :: Map (LibName, SigId) SignatureId
-  , signatureMorphismMap :: Map (LibName, MorId)
+  { documentMap :: Map.HashMap LibName LocIdBaseId -- Here, LocIdBaseId is DocumentId
+  , documentByLibNameIRIMap :: Map.HashMap IRI LocIdBaseId -- Here, LocIdBaseId is DocumentId
+  , nodeMap :: Map.HashMap (LibName, Node) (LocIdBaseId, SignatureId) -- Here, LocIdBaseId is OMSId
+  , signatureMap :: Map.HashMap (LibName, SigId) SignatureId
+  , signatureMorphismMap :: Map.HashMap (LibName, MorId)
                              (SignatureMorphismId, [SymbolMappingId], GMorphism)
-  , symbolKeyMap :: Map (LibName, Int, SymbolMapIndex) LocIdBaseId -- Here, LocIdBaseId is SymbolId
+  , symbolKeyMap :: Map.HashMap (LibName, Int, SymbolMapIndex) LocIdBaseId -- Here, LocIdBaseId is SymbolId
   } deriving Show
 
 emptyDBCache :: DBCache

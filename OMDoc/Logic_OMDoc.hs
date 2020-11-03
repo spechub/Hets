@@ -20,7 +20,7 @@ import OMDoc.ATC_OMDoc ()
 import Common.Id
 import Data.Maybe (fromMaybe)
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Control.Monad (unless)
 
 data OMDoc_PUN = OMDoc_PUN

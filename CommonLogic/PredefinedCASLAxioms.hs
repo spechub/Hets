@@ -24,7 +24,7 @@ import CASL.AS_Basic_CASL
 import CASL.Sign
 
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 list :: Id
 list = stringToId "list"

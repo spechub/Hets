@@ -67,7 +67,7 @@ import Data.List
 import Data.Maybe
 import Data.Ord
 import Data.Typeable
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 import Common.Result
@@ -481,7 +481,7 @@ getUnitSigNodes (UnitSig ns n m) =
 data ImpUnitSigOrSig = ImpUnitSig MaybeNode UnitSig | Sig NodeSig
    deriving (Show, Eq, Typeable)
 
-type StUnitCtx = Map.Map IRI ImpUnitSigOrSig
+type StUnitCtx = Map.HashMap IRI ImpUnitSigOrSig
 
 emptyStUnitCtx :: StUnitCtx
 emptyStUnitCtx = Map.empty
@@ -489,12 +489,12 @@ emptyStUnitCtx = Map.empty
 {- data ArchSig = ArchSig StUnitCtx UnitSig deriving (Show, Typeable)
 this type is superseeded by RefSig -}
 
-type RefSigMap = Map.Map IRI RefSig
+type RefSigMap = Map.HashMap IRI RefSig
 
 getSigMapNodes :: RefSigMap -> Set.Set Node
 getSigMapNodes = Set.unions . map getRefSigNodes . Map.elems
 
-type BStContext = Map.Map IRI RefSig
+type BStContext = Map.HashMap IRI RefSig
 
 getBStContextNodes :: BStContext -> Set.Set Node
 getBStContextNodes = Set.unions . map getRefSigNodes . Map.elems
@@ -564,7 +564,7 @@ getBranchSigNodes bs = case bs of
   UnitSigAsBranchSig u -> getUnitSigNodes u
   BranchStaticContext b -> getBStContextNodes b
 
-type RefStUnitCtx = Map.Map IRI RefSig
+type RefStUnitCtx = Map.HashMap IRI RefSig
 -- only BranchRefSigs allowed
 
 emptyRefStUnitCtx :: RefStUnitCtx
@@ -605,7 +605,7 @@ namesMatchCtx (un : unitNames) bstc rsmap = -- trace ("nMC:" ++ show un)$
   matching the signature from rsmap' -}
          _ -> Map.size bstc' == 1 &&
                 let un1 = head $ Map.keys bstc'
-                    rsmap' = Map.mapKeys (\ x -> if x == un then un1 else x)
+                    rsmap' = OMap.mapMapKeys (\ x -> if x == un then un1 else x)
                                rsmap
                 in namesMatchCtx [un1] bstc' rsmap' &&
                    namesMatchCtx unitNames bstc rsmap
@@ -635,7 +635,7 @@ modifyCtx (un : unitNames) rsmap bstc =
              bstc
             _ -> let f = if Map.size bstc' == 1 then
                              let un1 = head $ Map.keys bstc'
-                                 rsmap' = Map.mapKeys
+                                 rsmap' = OMap.mapMapKeys
                                           (\ x -> if x == un then un1 else x)
                                            rsmap
                                  bstc'' = modifyCtx [un1] rsmap' bstc'
@@ -706,7 +706,7 @@ data AlignSig = AlignMor NodeSig GMorphism NodeSig
                           NodeSig                     -- b
   deriving (Show, Eq, Typeable)
 
-type GlobalEnv = Map.Map IRI GlobalEntry
+type GlobalEnv = Map.HashMap IRI GlobalEntry
 
 getGlobNodes :: GlobalEnv -> Set.Set Node
 getGlobNodes = Set.unions . map getGlobEntryNodes . Map.elems
@@ -843,7 +843,7 @@ addSubTree dg (Just (RTLeaves g)) (NPComp h) =
    (dg, NPComp Map.empty) $ Map.toList h
 addSubTree _ _ _ = error "addSubTree"
 
-copySubTree :: DGraph -> Node -> Maybe Node -> (DGraph, Map.Map Node Node)
+copySubTree :: DGraph -> Node -> Maybe Node -> (DGraph, Map.HashMap Node Node)
 copySubTree dg n mN =
  case mN of
    Nothing -> let
@@ -854,8 +854,8 @@ copySubTree dg n mN =
     in copySubTreeN dg {refTree = rTree'} [n] $ Map.fromList [(n, n')]
    Just y -> copySubTreeN dg [n] $ Map.fromList [(n, y)]
 
-copySubTreeN :: DGraph -> [Node] -> Map.Map Node Node
-             -> (DGraph, Map.Map Node Node)
+copySubTreeN :: DGraph -> [Node] -> Map.HashMap Node Node
+             -> (DGraph, Map.HashMap Node Node)
 copySubTreeN dg nList pairs =
  case nList of
   [] -> (dg, pairs)
@@ -866,8 +866,8 @@ copySubTreeN dg nList pairs =
     (dg', pairs') = foldl (copyNode pairsN) (dg, pairs) descs
    in copySubTreeN dg' (nub $ nList' ++ map fst descs) pairs'
 
-copyNode :: Node -> (DGraph, Map.Map Node Node) -> LNode RTLinkLab
-           -> (DGraph, Map.Map Node Node)
+copyNode :: Node -> (DGraph, Map.HashMap Node Node) -> LNode RTLinkLab
+           -> (DGraph, Map.HashMap Node Node)
 copyNode s (dg, nMap) (n, eLab) = let
    rTree = refTree dg
    nLab = fromMaybe (error "copyNode") $ lab rTree n
@@ -930,15 +930,15 @@ data DGraph = DGraph
   , dgBody :: Tree.Gr DGNodeLab DGLinkLab  -- ^ actual 'DGraph` tree
   , currentBaseTheory :: Maybe NodeSig
   , refTree :: Tree.Gr RTNodeLab RTLinkLab -- ^ the refinement tree
-  , specRoots :: Map.Map String Node -- ^ root nodes for named specs
+  , specRoots :: Map.HashMap String Node -- ^ root nodes for named specs
   , nameMap :: MapSet.MapSet String Node -- ^ all nodes by name
-  , archSpecDiags :: Map.Map String Diag
+  , archSpecDiags :: Map.HashMap String Diag
       -- ^ dependency diagrams between units
   , getNewEdgeId :: EdgeId  -- ^ edge counter
-  , allRefNodes :: Map.Map (LibName, Node) Node -- ^ all DGRef's
-  , sigMap :: Map.Map SigId G_sign -- ^ signature map
-  , thMap :: Map.Map ThId G_theory -- ^ theory map
-  , morMap :: Map.Map MorId G_morphism -- ^ morphism map
+  , allRefNodes :: Map.HashMap (LibName, Node) Node -- ^ all DGRef's
+  , sigMap :: Map.HashMap SigId G_sign -- ^ signature map
+  , thMap :: Map.HashMap ThId G_theory -- ^ theory map
+  , morMap :: Map.HashMap MorId G_morphism -- ^ morphism map
   , proofHistory :: ProofHistory -- ^ applied proof steps
   , redoHistory :: ProofHistory -- ^ undone proofs steps
   } deriving Typeable
@@ -965,7 +965,7 @@ emptyDG = DGraph
   , proofHistory = SizedList.empty
   , redoHistory = SizedList.empty }
 
-type LibEnv = Map.Map LibName DGraph
+type LibEnv = Map.HashMap LibName DGraph
 
 -- | an empty environment
 emptyLibEnv :: LibEnv
@@ -1103,13 +1103,13 @@ cpIndexMaps from to =
      , thMap = thMap from
      , morMap = morMap from }
 
-setSigMapDG :: Map.Map SigId G_sign -> DGraph -> DGraph
+setSigMapDG :: Map.HashMap SigId G_sign -> DGraph -> DGraph
 setSigMapDG m dg = dg { sigMap = m }
 
-setThMapDG :: Map.Map ThId G_theory -> DGraph -> DGraph
+setThMapDG :: Map.HashMap ThId G_theory -> DGraph -> DGraph
 setThMapDG m dg = dg { thMap = m }
 
-setMorMapDG :: Map.Map MorId G_morphism -> DGraph -> DGraph
+setMorMapDG :: Map.HashMap MorId G_morphism -> DGraph -> DGraph
 setMorMapDG m dg = dg { morMap = m }
 
 -- ** looking up in index maps
@@ -1125,13 +1125,13 @@ lookupMorMapDG i = Map.lookup i . morMap
 
 -- ** getting index maps and their maximal index
 
-sigMapI :: DGraph -> (Map.Map SigId G_sign, SigId)
+sigMapI :: DGraph -> (Map.HashMap SigId G_sign, SigId)
 sigMapI = getMapAndMaxIndex startSigId sigMap
 
-thMapI :: DGraph -> (Map.Map ThId G_theory, ThId)
+thMapI :: DGraph -> (Map.HashMap ThId G_theory, ThId)
 thMapI = getMapAndMaxIndex startThId thMap
 
-morMapI :: DGraph -> (Map.Map MorId G_morphism, MorId)
+morMapI :: DGraph -> (Map.HashMap MorId G_morphism, MorId)
 morMapI = getMapAndMaxIndex startMorId morMap
 
 -- ** lookup other graph parts
@@ -1142,7 +1142,7 @@ lookupGlobalEnvDG sid dg = let
     shortIRI = iriToStringShortUnsecure sid
     in case Map.lookup sid gEnv of
     Nothing -> Map.lookup shortIRI $
-               Map.mapKeys iriToStringShortUnsecure gEnv
+               OMap.mapMapKeys iriToStringShortUnsecure gEnv
     m -> m
 
 -- | lookup a reference node for a given libname and node
@@ -1534,7 +1534,7 @@ getConservativityOfPath path = minimum [getConservativity e | e <- path]
 -- | Creates a LibName relation wrt dependencies via reference nodes
 getLibDepRel :: LibEnv -> Rel.Rel LibName
 getLibDepRel = Rel.transClosure
-  . Rel.fromSet . Map.foldWithKey (\ ln dg s ->
+  . Rel.fromSet . Map.foldrWithKey (\ ln dg s ->
     foldr ((\ x -> if isDGRef x then Set.insert (ln, dgn_libname x) else id)
            . snd) s $ labNodesDG dg) Set.empty
 
@@ -1542,7 +1542,7 @@ getTopsortedLibs :: LibEnv -> [LibName]
 getTopsortedLibs le = let
   rel = getLibDepRel le
   ls = reverse $ topsortedLibsWithImports rel
-  restLs = Set.toList $ Set.difference (Map.keysSet le) $ Rel.nodes rel
+  restLs = Set.toList $ Set.difference (Set.fromList $ Map.keys le) $ Rel.nodes rel
   in ls ++ restLs
 
 {- | Get imported libs in topological order, i.e.  lib(s) without imports first.
@@ -1570,7 +1570,7 @@ changedPendingEdges dg = let
           , if b && isLocalEdge ty then Set.insert e es else es))
     (Map.empty, Set.empty) ls
   close known =
-      let nxt = Map.keysSet $ Map.filter
+      let nxt = Set.fromList $ Map.keys $ Map.filter
                 (\ (_, _, _, s) -> not $ Set.null $ Set.intersection s known)
                 ms
           new = Set.union nxt known
@@ -1584,7 +1584,7 @@ changedLocalTheorems dg (v, lbl) =
     G_theory _ _ _ _ sens _ ->
       foldr (\ e@(_, _, el) l ->
         let pend = dglPending el
-            psens = Map.keysSet $ OMap.filter isProvenSenStatus sens
+            psens = Set.fromList $ Map.keys $ OMap.filter isProvenSenStatus sens
         in case thmLinkStatus $ dgl_type el of
         Just (Proven (DGRuleLocalInference nms) _) | pend
           == Set.isSubsetOf (Set.fromList $ map snd nms) psens -> e : l

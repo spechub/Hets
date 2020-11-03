@@ -54,7 +54,7 @@ import Common.GlobalAnnotations
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.MapSet as MapSet
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 import Data.Char
 
@@ -377,7 +377,7 @@ stringSignAux = (emptySign ())
 stringSign :: CASLSign
 stringSign = uniteCASLSign stringSignAux charSign
 
-datatypeSigns :: Map.Map SORT CASLSign
+datatypeSigns :: Map.HashMap SORT CASLSign
 datatypeSigns = Map.fromList
    [ (charS, charSign)
    , (integer, integerSign)

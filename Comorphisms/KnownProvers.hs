@@ -26,7 +26,7 @@ module Comorphisms.KnownProvers
   , isaComorphisms
   ) where
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 import System.Exit (exitFailure)
 
@@ -75,8 +75,8 @@ import Comorphisms.Haskell2IsabelleHOLCF
 import Comorphisms.SuleCFOL2TPTP
 import Comorphisms.LogicList
 
-type KnownProversMap = Map.Map String [AnyComorphism]
-type KnownConsCheckersMap = Map.Map String [AnyComorphism]
+type KnownProversMap = Map.HashMap String [AnyComorphism]
+type KnownConsCheckersMap = Map.HashMap String [AnyComorphism]
 
 -- | the default prover selected in the GUI
 defaultGUIProver :: String

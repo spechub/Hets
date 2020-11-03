@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./SoftFOL/Sign.hs
 Description :  Data structures representing SPASS signatures.
@@ -19,13 +19,16 @@ module SoftFOL.Sign where
 import Data.Data
 import Data.Char
 import Data.Maybe (isNothing)
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 import qualified Common.Lib.Rel as Rel
 import Common.AS_Annotation hiding (Name)
 import Common.Id
 import Common.DefaultMorphism
+
+import GHC.Generics (Generic)
+import Data.Hashable
 
 -- * Externally used data structures
 
@@ -34,11 +37,11 @@ import Common.DefaultMorphism
 -}
 type SoftFOLMorphism = DefaultMorphism Sign
 
-type SortMap = Map.Map SPIdentifier (Maybe Generated)
+type SortMap = Map.HashMap SPIdentifier (Maybe Generated)
 
-type FuncMap = Map.Map SPIdentifier (Set.Set ([SPIdentifier], SPIdentifier))
+type FuncMap = Map.HashMap SPIdentifier (Set.Set ([SPIdentifier], SPIdentifier))
 
-type PredMap = Map.Map SPIdentifier (Set.Set [SPIdentifier])
+type PredMap = Map.HashMap SPIdentifier (Set.Set [SPIdentifier])
 
 {- |
   This Signature data type will be translated to the SoftFOL data types
@@ -278,9 +281,11 @@ data SPTerm =
                       qFormula :: SPTerm }
       | SPComplexTerm { symbol :: SPSymbol,
                         arguments :: [SPTerm]}
-      deriving (Show, Eq, Ord, Typeable, Data)
+      deriving (Show, Eq, Ord, Typeable, Data, Generic)
 
 instance GetRange SPTerm
+
+instance Hashable SPTerm
 
 data FileName = FileName String deriving (Show, Typeable, Data)
 
@@ -359,7 +364,9 @@ data SPQuantSym =
         SPForall
       | SPExists
       | SPCustomQuantSym SPIdentifier
-      deriving (Show, Eq, Ord, Typeable, Data)
+      deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable SPQuantSym
 
 {- |
   SPASS Symbols.
@@ -380,7 +387,9 @@ data SPSymbol =
       | SPSum
       | SPConv
       | SPCustomSymbol SPIdentifier
-      deriving (Show, Eq, Ord, Typeable, Data)
+      deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable SPSymbol
 
 mkSPCustomSymbol :: String -> SPSymbol
 mkSPCustomSymbol = SPCustomSymbol . mkSimpleId
@@ -424,9 +433,11 @@ data SPUserRuleAppl = GeR | SpL | SpR | EqF | Rew | Obv | EmS | SoR | EqR
 
 data SPParent = PParTerm SPTerm deriving (Show, Eq, Ord, Typeable, Data)
 
-type SPAssocList = Map.Map SPKey SPValue
+type SPAssocList = Map.HashMap SPKey SPValue
 
-data SPKey = PKeyTerm SPTerm deriving (Show, Eq, Ord, Typeable, Data)
+data SPKey = PKeyTerm SPTerm deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable SPKey
 
 data SPValue = PValTerm SPTerm deriving (Show, Eq, Ord, Typeable, Data)
 

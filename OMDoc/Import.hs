@@ -79,7 +79,7 @@ import System.Directory
 import Data.Graph.Inductive.Graph (LNode, Node)
 import Data.Maybe
 import Data.List
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Control.Monad
 import Control.Monad.Trans
 
@@ -97,8 +97,8 @@ type NameSymbolMap = G_mapofsymbol OMName
 -- | The keys of libMap consist of the filepaths without suffix!
 data ImpEnv =
     ImpEnv {
-      libMap :: Map.Map FilePath (LibName, DGraph)
-    , nsymbMap :: Map.Map (LibName, String) NameSymbolMap
+      libMap :: Map.HashMap FilePath (LibName, DGraph)
+    , nsymbMap :: Map.HashMap (LibName, String) NameSymbolMap
     , hetsOptions :: HetcatsOpts
     }
 
@@ -381,7 +381,7 @@ completeMorphism idT gmorph = compInclusion logicGraph gmorph idT
 
 
 computeMorphisms :: ImpEnv -> LibName
-                 -> Map.Map OMName String -- ^ Notations
+                 -> Map.HashMap OMName String -- ^ Notations
                  -> (NameSymbolMap, G_sign)
                  -> [ImportInfo LinkNode]
                  -> ResultT IO ((NameSymbolMap, G_sign), [LinkInfo])
@@ -391,7 +391,7 @@ computeMorphisms e ln nots = mapAccumLM (computeMorphism e ln nots)
 and the name symbol map with the imported symbols -}
 computeMorphism :: ImpEnv -- ^ The import environment for lookup purposes
                 -> LibName -- ^ Current libname
-                -> Map.Map OMName String -- ^ Notations of target signature
+                -> Map.HashMap OMName String -- ^ Notations of target signature
                 -> (NameSymbolMap, G_sign) {- ^ OMDoc symbol to Hets symbol map
                                            and target signature -}
                 -> ImportInfo LinkNode -- ^ source label with OMDoc morphism
@@ -498,7 +498,7 @@ computeSymbolMap :: forall lid sublogics
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
-        Maybe (Map.Map OMName String) -- ^ Notations for missing symbols in map
+        Maybe (Map.HashMap OMName String) -- ^ Notations for missing symbols in map
             -> NameSymbolMap -> NameSymbolMap -> TCMorphism -> lid
             -> ResultT IO [(symbol, Either (OMName, raw_symbol) symbol)]
 computeSymbolMap mNots nsmapS nsmapT morph lid =
@@ -682,7 +682,7 @@ data TCClassification = TCClf {
     , sigElems :: [TCElement] -- ^ Signature symbols
     , sentences :: [TCElement] -- ^ Theory sentences
     , adts :: [[OmdADT]] -- ^ ADTs
-    , notations :: Map.Map OMName String -- ^ Notations
+    , notations :: Map.HashMap OMName String -- ^ Notations
     }
 
 

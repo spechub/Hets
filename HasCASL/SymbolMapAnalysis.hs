@@ -33,7 +33,7 @@ import Common.Id
 import Common.ExtSign
 import Common.Result
 import Common.Lib.State
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Control.Monad
 
@@ -77,14 +77,14 @@ inducedFromMorphism rmap sigma = do
     let tarTypeMap = addUnit (addCpoMap srcClassMap) tarTypeMap0
         tarAliases = filterAliases tarTypeMap
   -- compute the op map (as a Map)
-    op_Map <- Map.foldWithKey
+    op_Map <- Map.foldrWithKey
       (opFun rmap sigma myClassIdMap tarAliases myTypeIdMap)
       (return Map.empty) assMap
   -- compute target signature
     let tarTypeMap2 = Map.map
           (mapRestTypeInfo myClassIdMap tarAliases myTypeIdMap op_Map)
                         tarTypeMap
-        sigma' = Map.foldWithKey
+        sigma' = Map.foldrWithKey
           (mapOps myClassIdMap tarAliases myTypeIdMap op_Map) sigma
                    { typeMap = tarTypeMap2
                    , classMap = tarClassMap

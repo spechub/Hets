@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./Fpl/As.der.hs
 Description :  abstract syntax for FPL
@@ -38,6 +38,8 @@ import CASL.ToDoc
 import Data.Data
 import Data.List (delete)
 import Data.Maybe (isNothing)
+import GHC.Generics (Generic)
+import Data.Hashable
 
 type FplBasicSpec = BASIC_SPEC FplExt () TermExt
 
@@ -95,7 +97,9 @@ instance Pretty FplOpItem where
     CaslOpItem s -> printOpItem s
 
 data FunDef = FunDef OP_NAME OP_HEAD (Annoted FplTerm) Range
-  deriving (Show, Eq, Ord, Typeable, Data)
+  deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable FunDef
 
 kindHead :: OpKind -> OP_HEAD -> OP_HEAD
 kindHead k (Op_head _ args r ps) = Op_head k args r ps
@@ -118,7 +122,9 @@ data TermExt =
   | IfThenElse FplTerm FplTerm FplTerm Range
   | EqTerm FplTerm FplTerm Range
   | BoolTerm FplTerm
-  deriving (Show, Eq, Ord, Typeable, Data)
+  deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable TermExt
 
 instance FormExtension TermExt
 

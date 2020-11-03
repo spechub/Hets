@@ -24,7 +24,7 @@ import HasCASL.AsUtils
 import THF.As as THFAs
 
 import Data.Char
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 
 mkTypesName :: THFAs.Constant -> THFAs.Name
@@ -113,7 +113,7 @@ isTHFChar c = isAlphaNum c && isAscii c || c == '_'
 isLowerTHFChar :: Char -> Bool
 isLowerTHFChar c = isLower c && isAscii c
 
-preDefHCTypeIds :: Map.Map Id String
+preDefHCTypeIds :: Map.HashMap Id String
 preDefHCTypeIds = Map.fromList
     [ (logId, "hct" ++ show logId)
     , (predTypeId, "hct" ++ show predTypeId)
@@ -128,7 +128,7 @@ preDefHCTypeIds = Map.fromList
     , (productId 4 nullRange, "hct__X__X__X__")
     , (productId 5 nullRange, "hct__X__X__X__X__") ]
 
-preDefHCAssumpIds :: Map.Map Id String
+preDefHCAssumpIds :: Map.HashMap Id String
 preDefHCAssumpIds = Map.fromList
     [ (botId, "hcc" ++ show botId)
     , (defId, "hcc" ++ show defId)
@@ -146,7 +146,7 @@ preDefHCAssumpIds = Map.fromList
     , (implId, "hcc__Impl__")
     , (infixIf, "hcc" ++ show infixIf) ]
 
-maybeElem :: Id -> Map.Map Id a -> Maybe a
+maybeElem :: Id -> Map.HashMap Id a -> Maybe a
 maybeElem id1 m = helper id1 (Map.toList m)
     where
         helper :: Id -> [(Id, a)] -> Maybe a
@@ -158,7 +158,7 @@ myEqId :: Id -> Id -> Bool
 myEqId (Id t1 c1 _) (Id t2 c2 _) = (t1, c1) == (t2, c2)
 
 -- | a separate Map speeds up lookup
-charMap :: Map.Map Char String
+charMap :: Map.HashMap Char String
 charMap = Map.insert '\'' "Apostrophe"
   . Map.insert '.' "Dot"
   $ Map.map stringToVariable CM.charMap

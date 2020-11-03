@@ -30,7 +30,7 @@ import qualified Common.Lib.MapSet as MapSet
 import Data.Char
 import Data.Maybe
 import Data.List (groupBy, elemIndex)
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 -- | main function, in charge of computing the quotient term algebra
@@ -607,7 +607,7 @@ iota_pred_map = MapSet.foldWithKey
        $ PredType $ map mkFreeName args) MapSet.empty
 
 -- | applies the iota renaming to a variable map
-iota_var_map :: Map.Map SIMPLE_ID SORT -> Map.Map SIMPLE_ID SORT
+iota_var_map :: Map.HashMap SIMPLE_ID SORT -> Map.HashMap SIMPLE_ID SORT
 iota_var_map = Map.map mkFreeName
 
 -- | applies the iota renaming to symbols
@@ -627,7 +627,9 @@ iota_symbol (Symbol name ty) = Symbol (mkFreeName name) $ case ty of
 -- | applies the iota renaming to the annotations
 iota_anno_map :: MapSet.MapSet Symbol Annotation
   -> MapSet.MapSet Symbol Annotation
-iota_anno_map = MapSet.fromMap . Map.mapKeys iota_symbol . MapSet.toMap
+iota_anno_map = MapSet.fromMap . 
+                (\f -> Map.fromList $ map (\(x,y) -> (iota_symbol x, y)) $ Map.toList f) . 
+                MapSet.toMap -- TODO: this wont work !!!
 
 -- Some auxiliary functions
 
@@ -668,7 +670,7 @@ pred_symb_name (Qual_pred_name pn _ _) = pn
 {- | extract the variables from a CASL formula and put them in a map
 with keys the sort of the variables and value the set of variables
 in this sort -}
-getVars :: CASLFORMULA -> Map.Map Id (Set.Set Token)
+getVars :: CASLFORMULA -> Map.HashMap Id (Set.Set Token)
 getVars (Quantification _ _ f _) = getVars f
 getVars (QuantOp _ _ f) = getVars f
 getVars (QuantPred _ _ f) = getVars f
@@ -689,7 +691,7 @@ getVars (Mixfix_formula t) = getVarsTerm t
 getVars _ = Map.empty
 
 -- | extract the variables of a CASL term
-getVarsTerm :: CASLTERM -> Map.Map Id (Set.Set Token)
+getVarsTerm :: CASLTERM -> Map.HashMap Id (Set.Set Token)
 getVarsTerm (Qual_var var sort _) =
     Map.insert sort (Set.singleton var) Map.empty
 getVarsTerm (Application _ ts _) =
@@ -721,8 +723,8 @@ quantifyUniversally form = if null var_decl
 
 {- | traverses a map with sorts as keys and sets of variables as value
 and creates a list of variable declarations -}
-listVarDecl :: Map.Map Id (Set.Set Token) -> [VAR_DECL]
-listVarDecl = Map.foldWithKey f []
+listVarDecl :: Map.HashMap Id (Set.Set Token) -> [VAR_DECL]
+listVarDecl = Map.foldrWithKey f []
       where f sort var_set = (Var_decl (Set.toList var_set) sort nullRange :)
 
 -- | generates a new variable qualified with the given number

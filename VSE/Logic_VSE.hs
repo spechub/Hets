@@ -37,7 +37,7 @@ import VSE.ATC_VSE ()
 import VSE.Prove (vse)
 import Logic.Logic
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 data VSE = VSE deriving Show
 

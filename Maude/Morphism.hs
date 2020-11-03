@@ -60,7 +60,7 @@ import Data.Data
 import Data.List (partition)
 import Data.Maybe (fromJust)
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 import Common.Result (Result)
 
@@ -229,7 +229,7 @@ inclusion src tgt = Morphism {
 -- | the inverse 'Morphism'
 inverse :: Morphism -> Result Morphism
 inverse mor = let
-    invertMap = Map.foldWithKey (flip Map.insert) Map.empty
+    invertMap = Map.foldrWithKey (flip Map.insert) Map.empty
     in return $ kindMorph Morphism {
         source = target mor,
         target = source mor,

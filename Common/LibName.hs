@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./Common/LibName.hs
 Description :  library names for DOL and development graphs
@@ -46,6 +46,8 @@ import Data.Data
 import Data.List
 import Data.Maybe
 import Data.Ord
+import Data.Hashable
+import GHC.Generics (Generic)
 
 import System.FilePath
 
@@ -83,7 +85,9 @@ data LibName = LibName
     , locIRI :: Maybe IRI
     , mimeType :: Maybe String
     , libVersion :: Maybe VersionNumber }
-  deriving (Typeable, Data)
+  deriving (Typeable, Data, Generic)
+
+instance Hashable LibName
 
 iriLibName :: IRI -> LibName
 iriLibName i = LibName i Nothing Nothing Nothing
@@ -122,8 +126,10 @@ getFilePath :: LibName -> FilePath
 getFilePath = maybe "" iriToStringUnsecure . locIRI
 
 data VersionNumber = VersionNumber [String] Range
-  deriving (Typeable, Data)
+  deriving (Typeable, Data, Generic)
                     -- pos: "version", start of first string
+
+instance Hashable VersionNumber
 
 instance GetRange LibName where
   getRange = getRange . getLibId

@@ -33,7 +33,7 @@ import Common.ExtSign
 import Common.Prec
 import Common.Lib.State
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Data.Maybe
 
@@ -144,7 +144,7 @@ anaBasicSpec :: GlobalAnnos -> BasicSpec -> State Env BasicSpec
 anaBasicSpec ga b@(BasicSpec l) = do
     e <- get
     let newAs = assumps e
-        preds = Map.keysSet $ Map.filter (not . Set.null . Set.filter ( \ oi ->
+        preds = Set.fromList $ Map.keys $ Map.filter (not . Set.null . Set.filter ( \ oi ->
                                  case opDefn oi of
                                  NoOpDefn Pred -> True
                                  Definition Pred _ -> True

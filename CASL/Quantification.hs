@@ -24,7 +24,7 @@ import Common.Utils (nubOrdOn)
 
 import Data.List
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 symbolsRecord :: (f -> Set.Set Symbol)
   -> Record f (Set.Set Symbol) (Set.Set Symbol)
@@ -123,7 +123,7 @@ getQuantVars f = case f of
 getTopVars :: [Named (FORMULA f)] -> VarSet
 getTopVars = Set.unions . map (getQuantVars . sentence)
 
-diffVars :: Map.Map VAR SORT -> VarSet -> Map.Map VAR SORT
+diffVars :: Map.HashMap VAR SORT -> VarSet -> Map.HashMap VAR SORT
 diffVars = Set.fold (\ (v, s) m -> case Map.lookup v m of
     Just t | t == s -> Map.delete v m
     _ -> m)

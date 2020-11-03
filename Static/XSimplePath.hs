@@ -22,7 +22,7 @@ import Control.Monad
 
 import Data.List
 import Data.Maybe
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 import Static.DgUtils
@@ -84,8 +84,8 @@ mkAttr l = case l of
 data ChangeList = ChangeList
   { deleteNodes :: Set.Set NodeName
   , deleteLinks :: Set.Set XLink -- ^ stores additional information
-  , changeNodes :: Map.Map NodeName ChangeAction
-  , changeLinks :: Map.Map EdgeId ChangeAction } deriving (Eq, Show)
+  , changeNodes :: Map.HashMap NodeName ChangeAction
+  , changeLinks :: Map.HashMap EdgeId ChangeAction } deriving (Eq, Show)
 
 data ChangeAction = MkUpdate NodeMod | MkInsert deriving (Eq, Show)
 

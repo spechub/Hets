@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./CspCASL/SignCSP.hs
 Description :  CspCASL signatures
@@ -62,15 +62,18 @@ import Common.Lib.Rel (Rel, predecessors, member)
 import qualified Common.Lib.MapSet as MapSet
 import Common.Utils (keepMins)
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Data.Data
 import Data.List
 import Data.Ord
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 type ChanNameMap = MapSet.MapSet CHANNEL_NAME SORT
 type ProcNameMap = MapSet.MapSet PROCESS_NAME ProcProfile
-type ProcVarMap = Map.Map SIMPLE_ID SORT
+type ProcVarMap = Map.HashMap SIMPLE_ID SORT
 type ProcVarList = [(SIMPLE_ID, SORT)]
 
 -- | Add a process name and its profile to a process name map.  exist.
@@ -307,7 +310,9 @@ process equation has on the LHS a process name, a list of parameters which
 are qualified variables (which are terms), a constituent( or is it permitted
 ?) communication alphabet and finally on the RHS a fully qualified process. -}
 data CspSen = ProcessEq FQ_PROCESS_NAME FQProcVarList CommAlpha PROCESS
-      deriving (Show, Eq, Ord, Typeable, Data)
+      deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable CspSen
 
 type CspCASLSen = FORMULA CspSen
 

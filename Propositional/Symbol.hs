@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./Propositional/Symbol.hs
 Description :  Symbols of propositional logic
@@ -32,14 +32,19 @@ import Common.DocUtils
 
 import Data.Data
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 import qualified Propositional.Sign as Sign
 import Propositional.Morphism as Morphism
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 -- | Datatype for symbols
 newtype Symbol = Symbol {symName :: Id.Id}
-            deriving (Show, Eq, Ord, Typeable, Data)
+            deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable Symbol
 
 instance Id.GetRange Symbol where
     getRange = Id.getRange . symName
@@ -56,7 +61,7 @@ symOf x = Set.fold (\ y -> Set.insert Symbol {symName = y}) Set.empty $
            Sign.items x
 
 -- | Determines the symbol map of a morhpism
-getSymbolMap :: Morphism.Morphism -> Map.Map Symbol Symbol
+getSymbolMap :: Morphism.Morphism -> Map.HashMap Symbol Symbol
 getSymbolMap f =
   foldr (\ x -> Map.insert (Symbol x) (Symbol $ applyMap (propMap f) x))
   Map.empty $ Set.toList $ Sign.items $ source f
@@ -78,5 +83,5 @@ matches :: Symbol -> Symbol -> Bool
 matches s1 s2 = s1 == s2
 
 -- | application function for Symbol Maps
-applySymMap :: Map.Map Symbol Symbol -> Symbol -> Symbol
+applySymMap :: Map.HashMap Symbol Symbol -> Symbol -> Symbol
 applySymMap smap idt = Map.findWithDefault idt idt smap

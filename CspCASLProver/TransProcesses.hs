@@ -39,7 +39,7 @@ import CspCASLProver.Consts
 import CspCASLProver.CspProverConsts
 
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 import Isabelle.IsaSign
 import Isabelle.IsaConsts
@@ -75,7 +75,7 @@ data TermTarget
     | ChanSendOrParam CASL_AS_Basic_CASL.SORT
 
 -- | Variable source map, which maps variables to the source of the variable.
-type VSM = Map.Map CASL_AS_Basic_CASL.VAR VarSource
+type VSM = Map.HashMap CASL_AS_Basic_CASL.VAR VarSource
 
 {- | Translate a Process into CspProver (Isabelle). We need the data part (CASL
 signature) for translating the translation of terms. We also need the

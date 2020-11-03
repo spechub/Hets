@@ -1,5 +1,5 @@
 {-# LANGUAGE ExistentialQuantification, MultiParamTypeClasses
- , DeriveDataTypeable, GeneralizedNewtypeDeriving #-}
+ , DeriveDataTypeable, GeneralizedNewtypeDeriving, DeriveGeneric #-}
 {- |
 Module      :  ./Logic/Grothendieck.hs
 Description :  Grothendieck logic (flattening of logic graph to a single logic)
@@ -126,8 +126,12 @@ import Common.GraphAlgo
 import Control.Monad (foldM)
 import Data.Maybe
 import Data.Typeable
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
+import qualified Data.Map as PlainMap -- need this to avoid Hashable instance for existential type
+
+import GHC.Generics (Generic)
+import Data.Hashable
 
 import Text.ParserCombinators.Parsec (Parser, parse, eof, (<|>))
 -- for looking up modifications
@@ -161,7 +165,9 @@ instance Eq G_basic_spec where
 
 -- | index for signatures
 newtype SigId = SigId Int
-  deriving (Typeable, Show, Eq, Ord, Enum, ShATermConvertible)
+  deriving (Typeable, Show, Eq, Ord, Enum, ShATermConvertible, Generic)
+
+instance Hashable SigId
 
 startSigId :: SigId
 startSigId = SigId 0
@@ -227,10 +233,10 @@ symsOfGsign (G_sign lid (ExtSign sgn _) _) = Set.map (G_symbol lid)
 data G_symbolmap a = forall lid sublogics
         basic_spec sentence symb_items symb_map_items
          sign morphism symbol raw_symbol proof_tree .
-        Logic lid sublogics
+         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
-  G_symbolmap lid (Map.Map symbol a)
+  G_symbolmap lid (PlainMap.Map symbol a)
   deriving Typeable
 
 instance Show a => Show (G_symbolmap a) where
@@ -242,7 +248,7 @@ instance (Typeable a, Ord a) => Eq (G_symbolmap a) where
 instance (Typeable a, Ord a) => Ord (G_symbolmap a) where
   compare (G_symbolmap l1 sm1) (G_symbolmap l2 sm2) =
     case compare (Logic l1) $ Logic l2 of
-      EQ -> compare (coerceSymbolmap l1 l2 sm1) sm2
+      EQ -> compare (coercePlainsymbolmap l1 l2 sm1) sm2
       r -> r
 
 
@@ -253,7 +259,7 @@ data G_mapofsymbol a = forall lid sublogics
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
-  G_mapofsymbol lid (Map.Map a symbol)
+  G_mapofsymbol lid (Map.HashMap a symbol)
   deriving Typeable
 
 instance Show a => Show (G_mapofsymbol a) where
@@ -381,7 +387,9 @@ joinSublogics (G_sublogics lid1 l1) (G_sublogics lid2 l2) =
 
 -- | index for morphisms
 newtype MorId = MorId Int
-  deriving (Typeable, Show, Eq, Ord, Enum, ShATermConvertible)
+  deriving (Typeable, Show, Eq, Ord, Enum, ShATermConvertible, Generic)
+
+instance Hashable MorId
 
 startMorId :: MorId
 startMorId = MorId 0
@@ -421,24 +429,24 @@ lessSublogicComor (G_sublogics lid1 sub1) (Comorphism cid) =
     in Logic lid2 == Logic lid1
         && isSubElem (forceCoerceSublogic lid1 lid2 sub1) (sourceSublogic cid)
 
-type SublogicBasedTheories = Map.Map IRI (LibName, String)
+type SublogicBasedTheories = Map.HashMap IRI (LibName, String)
 
 -- | Logic graph
 data LogicGraph = LogicGraph
-    { logics :: Map.Map String AnyLogic
+    { logics :: Map.HashMap String AnyLogic
     , currentLogic :: String
     , currentSyntax :: Maybe IRI
     , currentSublogic :: Maybe G_sublogics
     , currentTargetBase :: Maybe (LibName, String)
-    , sublogicBasedTheories :: Map.Map AnyLogic SublogicBasedTheories
-    , comorphisms :: Map.Map String AnyComorphism
-    , inclusions :: Map.Map (String, String) AnyComorphism
-    , unions :: Map.Map (String, String) (AnyComorphism, AnyComorphism)
-    , morphisms :: Map.Map String AnyMorphism
-    , modifications :: Map.Map String AnyModification
-    , squares :: Map.Map (AnyComorphism, AnyComorphism) [Square]
-    , qTATranslations :: Map.Map String AnyComorphism
-    , prefixes :: Map.Map String IRI
+    , sublogicBasedTheories :: Map.HashMap AnyLogic SublogicBasedTheories
+    , comorphisms :: Map.HashMap String AnyComorphism
+    , inclusions :: Map.HashMap (String, String) AnyComorphism
+    , unions :: Map.HashMap (String, String) (AnyComorphism, AnyComorphism)
+    , morphisms :: Map.HashMap String AnyMorphism
+    , modifications :: Map.HashMap String AnyModification
+    , squares :: PlainMap.Map (AnyComorphism, AnyComorphism) [Square]
+    , qTATranslations :: Map.HashMap String AnyComorphism
+    , prefixes :: Map.HashMap String IRI
     , dolOnly :: Bool
     } deriving Show
 
@@ -455,7 +463,7 @@ emptyLogicGraph = LogicGraph
     , unions = Map.empty
     , morphisms = Map.empty
     , modifications = Map.empty
-    , squares = Map.empty
+    , squares = PlainMap.empty
     , qTATranslations = Map.empty
     , prefixes = Map.empty
     , dolOnly = False
@@ -1004,7 +1012,7 @@ mirrorSquare s = Square {
 
 lookupSquare :: AnyComorphism -> AnyComorphism -> LogicGraph -> Result [Square]
 lookupSquare com1 com2 lg = maybe (fail "lookupSquare") return $ do
-  sqL1 <- Map.lookup (com1, com2) $ squares lg
-  sqL2 <- Map.lookup (com2, com1) $ squares lg
+  sqL1 <- PlainMap.lookup (com1, com2) $ squares lg
+  sqL2 <- PlainMap.lookup (com2, com1) $ squares lg
   return $ nubOrd $ sqL1 ++ map mirrorSquare sqL2
   -- maybe adjusted if comparing AnyModifications change

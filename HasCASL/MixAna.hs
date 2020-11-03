@@ -33,7 +33,7 @@ import Common.Parsec
 import Common.Prec
 import Common.Result
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 import HasCASL.As
@@ -82,9 +82,9 @@ anaPolyId (PolyId i@(Id _ cs _) _ _) sc = do
       Just newSc@(TypeScheme tvars _ _) -> do
           e <- get
           let ids = Set.unions
-                [ Map.keysSet $ classMap e
-                , Map.keysSet $ typeMap e
-                , Map.keysSet $ assumps e ]
+                [ Set.fromList $ Map.keys $ classMap e
+                , Set.fromList $ Map.keys $ typeMap e
+                , Set.fromList $ Map.keys $ assumps e ]
               es = filter (not . flip Set.member ids) cs
           addDiags $ map (mkDiag (if null tvars then Hint else Warning)
             "unexpected identifier in compound list") es
@@ -276,9 +276,9 @@ resolve trm = do
     let ass = assumps e
         ga = globAnnos e
         (addRule, ruleS, sIds) = makeRules ga (preIds e) (getPolyIds ass)
-                 $ Set.union (Map.keysSet $ binders e)
-                 $ Set.union (Map.keysSet ass)
-                 $ Map.keysSet $ localVars e
+                 $ Set.union (Set.fromList $ Map.keys $ binders e)
+                 $ Set.union (Set.fromList $ Map.keys ass)
+                 $ Set.fromList $ Map.keys $ localVars e
     chart <- iterateCharts ga sIds (getCompoundLists e) [trm]
       $ initChart addRule ruleS
     let Result ds mr = getResolved (showDoc . parenTerm) (getRange trm)

@@ -31,7 +31,7 @@ import THF.As
 import THF.Utils (RewriteFuns (..), rewriteSenFun, rewriteTHF0, recreateSymbols,
                   toToken, typeToTopLevelType, thfTopLevelTypeToType, mkNames)
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Control.Monad (liftM)
 
 data THFP2THF0 = THFP2THF0 deriving Show
@@ -64,7 +64,7 @@ trans_theory (sig, sentences1) = do
  sentences <- rewriteSen cs_trans sentences1
  return (recreateSymbols sig2, sentences)
 
-type TransMap = Map.Map Constant [Constant]
+type TransMap = Map.HashMap Constant [Constant]
 
 -- note: does not do anything on non-map-types
 curryConstType :: Type -> Type
@@ -259,14 +259,14 @@ makeExplicitProducts (cs_trans1, sig) =
  let (cs_trans, cs) = mkExplicitProductsT cs_trans1 (consts sig)
  in (cs_trans, sig {consts = cs})
 
-mkExplicitProductsT :: TransMap -> Map.Map Constant ConstInfo
-                       -> (TransMap, Map.Map Constant ConstInfo)
-mkExplicitProductsT cs_trans1 cs1 = Map.fold
+mkExplicitProductsT :: TransMap -> Map.HashMap Constant ConstInfo
+                       -> (TransMap, Map.HashMap Constant ConstInfo)
+mkExplicitProductsT cs_trans1 cs1 = Map.foldr
  (\ c (trans, cs) -> prodTToTuple trans cs (constId c) (constName c)
                      (constType c)) (cs_trans1, cs1) cs1
 
-prodTToTuple :: TransMap -> Map.Map Constant ConstInfo -> Constant
-                -> Name -> Type -> (TransMap, Map.Map Constant ConstInfo)
+prodTToTuple :: TransMap -> Map.HashMap Constant ConstInfo -> Constant
+                -> Name -> Type -> (TransMap, Map.HashMap Constant ConstInfo)
 prodTToTuple trans cs c n t = case t of
  MapType t1 t2 ->
   let (_, cs') = prodTToTuple Map.empty Map.empty c n t2

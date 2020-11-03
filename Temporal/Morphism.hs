@@ -34,7 +34,7 @@ module Temporal.Morphism
   ) where
 
 import Data.Data
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 import Temporal.Sign as Sign
@@ -53,7 +53,7 @@ maps of sets -}
 data Morphism = Morphism
   { source :: Sign
   , target :: Sign
-  , propMap :: Map.Map Id Id
+  , propMap :: Map.HashMap Id Id
   } deriving (Eq, Ord, Show, Typeable)
 
 instance Pretty Morphism where
@@ -68,7 +68,7 @@ isLegalMorphism :: Morphism -> Result ()
 isLegalMorphism pmor =
     let psource = items $ source pmor
         ptarget = items $ target pmor
-        pdom = Map.keysSet $ propMap pmor
+        pdom = Set.fromList $ Map.keys $ propMap pmor
         pcodom = Set.map (applyMorphism pmor) psource
     in unless (Set.isSubsetOf pcodom ptarget && Set.isSubsetOf pdom psource) $
         fail "illegal Temporal morphism"
@@ -78,7 +78,7 @@ applyMorphism :: Morphism -> Id -> Id
 applyMorphism mor idt = Map.findWithDefault idt idt $ propMap mor
 
 -- | Application function for propMaps
-applyMap :: Map.Map Id Id -> Id -> Id
+applyMap :: Map.HashMap Id Id -> Id -> Id
 applyMap pmap idt = Map.findWithDefault idt idt pmap
 
 -- | Composition of morphisms in temporal Logic
@@ -100,7 +100,7 @@ composeMor f g =
 printMorphism :: Morphism -> Doc
 printMorphism m = pretty (source m) <> text "-->" <> pretty (target m)
   <> vcat (map ( \ (x, y) -> lparen <> pretty x <> text ","
-  <> pretty y <> rparen) $ Map.assocs $ propMap m)
+  <> pretty y <> rparen) $ Map.toList $ propMap m) -- TODO:might need sorting!
 
 -- | Inclusion map of a subsig into a supersig
 inclusionMap :: Sign.Sign -> Sign.Sign -> Morphism

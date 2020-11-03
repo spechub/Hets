@@ -25,9 +25,9 @@ import Static.DgUtils
 import Control.Monad (filterM)
 
 import Data.IORef
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
-mapEdgeTypesToNames :: Map.Map String (DGEdgeType, DGEdgeType)
+mapEdgeTypesToNames :: Map.HashMap String (DGEdgeType, DGEdgeType)
 mapEdgeTypesToNames = Map.fromList $ map
   (\ e -> ("cb" ++ getDGEdgeTypeName e, (e, e { isInc = True })))
   (filter (not . isInc) listDGEdgeTypes)

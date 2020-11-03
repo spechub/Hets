@@ -40,7 +40,7 @@ import CommonLogic.Sign as Sign
 import CommonLogic.ExpandCurie
 
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Common.Lib.MapSet as MapSet
 import qualified Data.List as List
 import Data.Graph.Inductive.Graph as Graph
@@ -240,11 +240,11 @@ basicCommonLogicAnalysis (bs', sig, ga) =
       exErrs = False
 
 -- | creates a morphism from a symbol map
-inducedFromMorphism :: Map.Map Symbol.Symbol Symbol.Symbol
+inducedFromMorphism :: Map.HashMap Symbol.Symbol Symbol.Symbol
                     -> Sign.Sign
                     -> Result.Result Morphism.Morphism
 inducedFromMorphism m s = let
-  p = Map.mapKeys symName $ Map.map symName m
+  p = Map.fromList $ map (\(x,y) -> (symName x, symName y)) $  Map.toList m 
   t = Sign.emptySig { discourseNames = Set.map (applyMap p) $ discourseNames s
                     , nondiscourseNames = Set.map (applyMap p) $ nondiscourseNames s
                     , sequenceMarkers = Set.map (applyMap p) $ sequenceMarkers s
@@ -254,7 +254,7 @@ inducedFromMorphism m s = let
 splitFragment :: Id -> (String, String)
 splitFragment = span (/= '#') . show
 
-inducedFromToMorphism :: Map.Map Symbol.Symbol Symbol.Symbol
+inducedFromToMorphism :: Map.HashMap Symbol.Symbol Symbol.Symbol
                     -> ExtSign Sign.Sign Symbol.Symbol
                     -> ExtSign Sign.Sign Symbol.Symbol
                     -> Result.Result Morphism.Morphism
@@ -312,7 +312,7 @@ negForm_sen f = case f of
 
 -- | Static analysis for symbol maps
 mkStatSymbMapItem :: [AS.SYMB_MAP_ITEMS]
-                  -> Result.Result (Map.Map Symbol.Symbol Symbol.Symbol)
+                  -> Result.Result (Map.HashMap Symbol.Symbol Symbol.Symbol)
 mkStatSymbMapItem xs =
     Result.Result
     {
@@ -329,7 +329,7 @@ mkStatSymbMapItem xs =
                            xs
     }
 
-statSymbMapItem :: [AS.SYMB_OR_MAP] -> Map.Map Symbol.Symbol Symbol.Symbol
+statSymbMapItem :: [AS.SYMB_OR_MAP] -> Map.HashMap Symbol.Symbol Symbol.Symbol
 statSymbMapItem =
     foldl
     (
@@ -372,7 +372,7 @@ symsOfTextMeta tm =
 
 -- | compute colimit of CL signatures
 signColimit :: Gr Sign.Sign (Int, Morphism.Morphism)
-                           -> Result (Sign.Sign, Map.Map Int Morphism.Morphism)
+                           -> Result (Sign.Sign, Map.HashMap Int Morphism.Morphism)
 signColimit diag = do
  let mor2fun (x,mor) = (x, Morphism.propMap mor)
      dGraph = emap mor2fun $ nmap Sign.discourseNames diag

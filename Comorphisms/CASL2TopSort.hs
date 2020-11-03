@@ -46,7 +46,7 @@ import CASL.StaticAna (sortsOfArgs)
 import CASL.Morphism
 import CASL.Sublogic as SL
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 -- | The identity of the comorphism
@@ -105,7 +105,7 @@ data PredInfo = PredInfo { topSortPI :: SORT
                          , predicatePI :: PRED_NAME
                          } deriving Show
 
-type SubSortMap = Map.Map SORT PredInfo
+type SubSortMap = Map.HashMap SORT PredInfo
 
 generateSubSortMap :: Rel.Rel SORT -> PredMap -> SubSortMap
 generateSubSortMap sortRels pMap =
@@ -156,7 +156,7 @@ transSig sig = return
     in (sig
         { sortRel = Rel.fromKeysSet
             $ Set.fromList (map topSortPI $ Map.elems subSortMap)
-              `Set.union` (sortSet sig `Set.difference` Map.keysSet subSortMap)
+              `Set.union` (sortSet sig `Set.difference` (Set.fromList $ Map.keys subSortMap))
         , opMap = newOpMap
         , assocOps = interOpMapSet newAssOpMap0 newOpMap
         , predMap = newPredMap
@@ -185,7 +185,7 @@ transOpMap sRel subSortMap = rmOrAddPartsMap True . MapSet.map transType
 procOpMapping :: SubSortMap -> OP_NAME -> Set.Set OpType
   -> [Named (FORMULA ())] -> [Named (FORMULA ())]
 procOpMapping subSortMap opName =
-  (++) . Map.foldWithKey procProfMapOpMapping [] . mkProfMapOp subSortMap
+  (++) . Map.foldrWithKey procProfMapOpMapping [] . mkProfMapOp subSortMap
   where
     procProfMapOpMapping :: [SORT] -> (OpKind, Set.Set [Maybe PRED_NAME])
                          -> [Named (FORMULA ())] -> [Named (FORMULA ())]
@@ -214,12 +214,12 @@ symmetryAxioms ssMap sortRels =
 generateAxioms :: SubSortMap -> PredMap -> OpMap -> [Named (FORMULA ())]
 generateAxioms subSortMap pMap oMap = hi_axs ++ p_axs ++ axs
     where -- generate argument restrictions for operations
-          axs = Map.foldWithKey (procOpMapping subSortMap) []
+          axs = Map.foldrWithKey (procOpMapping subSortMap) []
                 $ MapSet.toMap oMap
           p_axs =
           -- generate argument restrictions for predicates
-           Map.foldWithKey (\ pName ->
-              (++) . Map.foldWithKey
+           Map.foldrWithKey (\ pName ->
+              (++) . Map.foldrWithKey
                              (\ sl -> genArgRest
                                       (genSenName "p" pName $ length sl)
                                       (genPredication pName)
@@ -248,14 +248,14 @@ generateAxioms subSortMap pMap oMap = hi_axs ++ p_axs ++ axs
              ) $ Map.elems subSortMap
 
 mkProfMapPred :: SubSortMap -> Set.Set PredType
-              -> Map.Map [SORT] (Set.Set [Maybe PRED_NAME])
+              -> Map.HashMap [SORT] (Set.Set [Maybe PRED_NAME])
 mkProfMapPred ssm = Set.fold seperate Map.empty
     where seperate pt = MapSet.setInsert (pt2topSorts pt) (pt2preds pt)
           pt2topSorts = map (lkupTop ssm) . predArgs
           pt2preds = map (lkupPredM ssm) . predArgs
 
 mkProfMapOp :: SubSortMap -> Set.Set OpType
-            -> Map.Map [SORT] (OpKind, Set.Set [Maybe PRED_NAME])
+            -> Map.HashMap [SORT] (OpKind, Set.Set [Maybe PRED_NAME])
 mkProfMapOp ssm = Set.fold seperate Map.empty
     where seperate ot =
               Map.insertWith (\ (k1, s1) (k2, s2) ->

@@ -18,7 +18,7 @@ import HasCASL.AsUtils
 import HasCASL.PrintAs ()
 import Common.Id
 import HasCASL.Le
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Common.Lib.State
 import Common.Result

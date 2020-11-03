@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, BangPatterns #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./CASL/Sign.hs
 Description :  CASL signatures and local environments for basic analysis
@@ -17,7 +17,7 @@ module CASL.Sign where
 import CASL.AS_Basic_CASL
 import CASL.Fold
 import CASL.ToDoc ()
-import qualified Data.Map.Strict as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
@@ -36,9 +36,14 @@ import Data.Maybe (fromMaybe)
 import Data.List (isPrefixOf)
 import Control.Monad (when, unless)
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 -- constants have empty argument lists
 data OpType = OpType {opKind :: OpKind, opArgs :: [SORT], opRes :: SORT}
-              deriving (Show, Eq, Ord, Typeable, Data)
+              deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable OpType
 
 -- | result sort added to argument sorts
 opSorts :: OpType -> [SORT]
@@ -53,7 +58,9 @@ sortToOpType = mkTotOpType []
 isSingleArgOp :: OpType -> Bool
 isSingleArgOp = isSingle . opArgs
 
-data PredType = PredType {predArgs :: [SORT]} deriving (Show, Eq, Ord, Typeable, Data)
+data PredType = PredType {predArgs :: [SORT]} deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable PredType
 
 sortToPredType :: SORT -> PredType
 sortToPredType s = PredType [s]
@@ -73,7 +80,9 @@ data SymbType = SortAsItemType
                 {- since symbols do not speak about totality, the totality
                 information in OpType has to be ignored -}
               | PredAsItemType PredType
-                deriving (Show, Eq, Ord, Typeable, Data)
+                deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable SymbType
 
 symbolKind :: SymbType -> SYMB_KIND
 symbolKind t = case t of
@@ -82,7 +91,9 @@ symbolKind t = case t of
   _ -> Sorts_kind
 
 data Symbol = Symbol {symName :: Id, symbType :: SymbType}
-              deriving (Show, Eq, Ord, Typeable, Data)
+              deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable Symbol
 
 instance GetRange Symbol where
     getRange = getRange . symName
@@ -113,7 +124,7 @@ data Sign f e = Sign
     , opMap :: OpMap
     , assocOps :: OpMap -- ^ the subset of associative operators
     , predMap :: PredMap
-    , varMap :: Map.Map SIMPLE_ID SORT -- ^ temporary variables
+    , varMap :: Map.HashMap SIMPLE_ID SORT -- ^ temporary variables
     , sentences :: [Named (FORMULA f)] -- ^ current sentences
     , declaredSymbols :: Set.Set Symbol -- ^ introduced or redeclared symbols
     , envDiags :: [Diagnosis] -- ^ diagnostics for basic spec
@@ -331,7 +342,7 @@ addMapSet :: PredMap -> PredMap -> PredMap
 addMapSet = MapSet.union
 
 addSig :: (e -> e -> e) -> Sign f e -> Sign f e -> Sign f e
-addSig ad !a !b = let s = sortSet a `Set.union` sortSet b in
+addSig ad a b = let s = sortSet a `Set.union` sortSet b in
   closeSortRel a
   { emptySortSet = Set.difference s
       $ nonEmptySortSet a `Set.union` nonEmptySortSet b
@@ -345,7 +356,7 @@ addSig ad !a !b = let s = sortSet a `Set.union` sortSet b in
 uniteCASLSign :: CASLSign -> CASLSign -> CASLSign
 uniteCASLSign = addSig (\ _ _ -> ()) 
 
-interRel :: (Show a, Ord a) => Rel.Rel a -> Rel.Rel a -> Rel.Rel a
+interRel :: (Show a, Ord a, Hashable a) => Rel.Rel a -> Rel.Rel a -> Rel.Rel a
 interRel a =
   Rel.fromSet
   . Set.intersection (Rel.toSet a) . Rel.toSet
@@ -386,7 +397,7 @@ isSubSig isSubExt a b =
   && isSubMap (predMap a) (predMap b)
   && isSubExt (extendedInfo a) (extendedInfo b)
 
-mapSetToList :: MapSet.MapSet a b -> [(a, b)]
+mapSetToList :: (Ord a, Hashable a) => MapSet.MapSet a b -> [(a, b)]
 mapSetToList = MapSet.toPairList
 
 addDiags :: [Diagnosis] -> State.State (Sign f e) ()
@@ -488,7 +499,7 @@ alsoWarning new old i = let is = ' ' : showId i "'" in
     [Diag Warning ("new '" ++ new ++ is ++ " is also known as '" ++ old ++ is)
      $ posOfId i]
 
-checkWithMap :: String -> String -> Map.Map Id a -> Id -> [Diagnosis]
+checkWithMap :: String -> String -> Map.HashMap Id a -> Id -> [Diagnosis]
 checkWithMap s1 s2 m i = if Map.member i m then alsoWarning s1 s2 i else []
 
 checkWithOtherMap :: String -> String -> MapSet.MapSet Id a -> Id -> [Diagnosis]

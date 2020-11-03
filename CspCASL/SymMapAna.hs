@@ -30,12 +30,12 @@ import Common.Result
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.MapSet as MapSet
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Data.List (partition)
 import Data.Maybe
 
-type CspRawMap = Map.Map CspRawSymbol CspRawSymbol
+type CspRawMap = Map.HashMap CspRawSymbol CspRawSymbol
 
 cspInducedFromToMorphism :: CspRawMap -> ExtSign CspCASLSign CspSymbol
   -> ExtSign CspCASLSign CspSymbol -> Result CspCASLMorphism
@@ -70,10 +70,10 @@ cspInducedFromMorphism rmap sigma = do
       csig = extendedInfo sigma
       newSRel = Rel.transClosure . sortRel $ mtarget m
   -- compute the channel name map (as a Map)
-  cm <- Map.foldWithKey (chanFun sigma rmap sm)
+  cm <- Map.foldrWithKey (chanFun sigma rmap sm)
               (return Map.empty) (MapSet.toMap $ chans csig)
   -- compute the process name map (as a Map)
-  proc_Map <- Map.foldWithKey (procFun sigma rmap sm newSRel cm)
+  proc_Map <- Map.foldrWithKey (procFun sigma rmap sm newSRel cm)
               (return Map.empty) (MapSet.toMap $ procSet csig)
   let em = emptyCspAddMorphism
         { channelMap = cm

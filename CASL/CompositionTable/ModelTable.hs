@@ -17,8 +17,9 @@ import Common.Utils
 
 import qualified Data.IntSet as IntSet
 import qualified Data.IntMap as IntMap
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.List
+import Data.Hashable
 
 data Table2 = Table2 String Int (IntMap.IntMap Baserel) BSet CmpTbl ConTables
 
@@ -30,7 +31,7 @@ type ConTable = IntMap.IntMap IntSet.IntSet
 
 type ConTables = (ConTable, ConTable, ConTable, ConTable)
 
-lkup :: (Show a, Ord a) => a -> Map.Map a Int -> Int
+lkup :: (Show a, Ord a, Hashable a) => a -> Map.HashMap a Int -> Int
 lkup i = Map.findWithDefault
   (error $ "CASL.CompositionTable.ModelTable.lkup" ++ show i) i
 
@@ -45,7 +46,7 @@ toTable2 (Table (Table_Attrs name id_ baserels)
     (toCmpTbl m comptbl)
     $ toConTables m convtbl
 
-toCmpTbl :: Map.Map Baserel Int -> [Cmptabentry] -> CmpTbl
+toCmpTbl :: Map.HashMap Baserel Int -> [Cmptabentry] -> CmpTbl
 toCmpTbl m =
   foldl' (\ t (Cmptabentry (Cmptabentry_Attrs rel1 rel2) bs)
               -> IntMap.insertWith IntMap.union (lkup rel1 m)
@@ -53,17 +54,17 @@ toCmpTbl m =
                  (IntSet.fromList $ map (`lkup` m) bs) IntMap.empty) t)
   IntMap.empty
 
-toConTab :: Map.Map Baserel Int -> (a -> Baserel) -> (a -> [Baserel]) -> [a]
+toConTab :: Map.HashMap Baserel Int -> (a -> Baserel) -> (a -> [Baserel]) -> [a]
   -> ConTable
 toConTab m s1 s2 = foldl' (\ t a ->
     IntMap.insertWith IntSet.union (lkup (s1 a) m)
            (IntSet.fromList $ map (`lkup` m) $ s2 a) t) IntMap.empty
 
-toConTab2 :: Map.Map Baserel Int -> [Contabentry_Ternary] -> ConTable
+toConTab2 :: Map.HashMap Baserel Int -> [Contabentry_Ternary] -> ConTable
 toConTab2 m =
   toConTab m contabentry_TernaryArgBaseRel contabentry_TernaryConverseBaseRels
 
-toConTables :: Map.Map Baserel Int -> Conversetable -> ConTables
+toConTables :: Map.HashMap Baserel Int -> Conversetable -> ConTables
 toConTables m c = case c of
   Conversetable l ->
     (toConTab m contabentryArgBaseRel contabentryConverseBaseRel l

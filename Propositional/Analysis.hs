@@ -35,7 +35,7 @@ import qualified Common.GlobalAnnotations as GlobalAnnos
 import qualified Common.Id as Id
 import qualified Common.Result as Result
 import qualified Data.List as List
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import qualified Propositional.AS_BASIC_Propositional as AS_BASIC
 import qualified Propositional.Morphism as Morphism
@@ -225,7 +225,7 @@ basicPropositionalAnalysis (bs, sig, _) =
 
 -- | Static analysis for symbol maps
 mkStatSymbMapItem :: [AS_BASIC.SYMB_MAP_ITEMS]
-                  -> Result.Result (Map.Map Symbol.Symbol Symbol.Symbol)
+                  -> Result.Result (Map.HashMap Symbol.Symbol Symbol.Symbol)
 mkStatSymbMapItem xs =
     Result.Result
     {
@@ -243,7 +243,7 @@ mkStatSymbMapItem xs =
     }
 
 statSymbMapItem :: [AS_BASIC.SYMB_OR_MAP]
-                 -> Map.Map Symbol.Symbol Symbol.Symbol
+                 -> Map.HashMap Symbol.Symbol Symbol.Symbol
 statSymbMapItem =
     foldl
     (
@@ -274,15 +274,15 @@ symbToSymbol :: AS_BASIC.SYMB -> Symbol.Symbol
 symbToSymbol (AS_BASIC.Symb_id tok) =
     Symbol.Symbol {Symbol.symName = Id.simpleIdToId tok}
 
-makePMap :: Map.Map Symbol.Symbol Symbol.Symbol -> Sign.Sign
-  -> Map.Map Id.Id Id.Id
+makePMap :: Map.HashMap Symbol.Symbol Symbol.Symbol -> Sign.Sign
+  -> Map.HashMap Id.Id Id.Id
 makePMap imap sig = Set.fold ( \ x ->
   let symOf = Symbol.Symbol { Symbol.symName = x }
       y = Symbol.symName $ Symbol.applySymMap imap symOf
   in Map.insert x y ) Map.empty $ Sign.items sig
 
 -- | Induce a signature morphism from a source signature and a raw symbol map
-inducedFromMorphism :: Map.Map Symbol.Symbol Symbol.Symbol
+inducedFromMorphism :: Map.HashMap Symbol.Symbol Symbol.Symbol
                     -> Sign.Sign
                     -> Result.Result Morphism.Morphism
 inducedFromMorphism imap sig = let pMap = makePMap imap sig in
@@ -296,14 +296,14 @@ inducedFromMorphism imap sig = let pMap = makePMap imap sig in
                           }
 
 -- | Induce a signature morphism from a source signature and a raw symbol map
-inducedFromToMorphism :: Map.Map Symbol.Symbol Symbol.Symbol
+inducedFromToMorphism :: Map.HashMap Symbol.Symbol Symbol.Symbol
                     -> ExtSign Sign.Sign Symbol.Symbol
                     -> ExtSign Sign.Sign Symbol.Symbol
                     -> Result.Result Morphism.Morphism
 inducedFromToMorphism imap (ExtSign sig _) (ExtSign tSig _) =
               let
                   sigItems = Sign.items sig
-                  pMap :: Map.Map Id.Id Id.Id
+                  pMap :: Map.HashMap Id.Id Id.Id
                   pMap = Set.fold ( \ x ->
                     let symOf = Symbol.Symbol { Symbol.symName = x }
                         y = Symbol.symName $ Symbol.applySymMap imap symOf
@@ -320,7 +320,7 @@ inducedFromToMorphism imap (ExtSign sig _) (ExtSign tSig _) =
                      else fail "Incompatible mapping"
 
 signatureColimit :: Gr Sign.Sign (Int, Morphism.Morphism)
-                 -> Result.Result (Sign.Sign, Map.Map Int Morphism.Morphism)
+                 -> Result.Result (Sign.Sign, Map.HashMap Int Morphism.Morphism)
 signatureColimit graph = do
  let graph1 = nmap Sign.items $ emap (\ (x, y) -> (x, Morphism.propMap y)) graph
      (set, maps) = addIntToSymbols $ computeColimitSet graph1

@@ -55,7 +55,7 @@ import Common.ProofTree
 import Common.Utils
 import qualified Common.Lib.MapSet as MapSet
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Data.List
 
@@ -121,8 +121,8 @@ transTheory trSig trForm (sign, sens) =
                Set.fold (\ s -> let s1 = showIsaTypeT s baseSign in
                                  Map.insert s1 [(isaTerm, [])])
                                Map.empty (sortSet sign)},
-    constTab = Map.foldWithKey insertPreds
-                (Map.foldWithKey insertOps Map.empty
+    constTab = Map.foldrWithKey insertPreds
+                (Map.foldrWithKey insertOps Map.empty
                  . MapSet.toMap $ opMap sign) . MapSet.toMap $ predMap sign,
     domainTab = dtDefs},
          map (\ (s, n) -> makeNamed ("ga_induction_" ++ show n) $ myMapSen s)
@@ -185,11 +185,11 @@ transPredType pt = mkCurryFunType (map transSort $ predArgs pt) boolType
 -- ---------------------------- Formulas ------------------------------
 
 getAssumpsToks :: CASL.Sign.Sign f e -> Set.Set String
-getAssumpsToks sign = Map.foldWithKey ( \ i ops s ->
+getAssumpsToks sign = Map.foldrWithKey ( \ i ops s ->
     Set.union s $ Set.unions
         $ map ( \ (_, o) -> getConstIsaToks i o baseSign)
               $ number $ Set.toList ops)
-    (Map.foldWithKey ( \ i prds s ->
+    (Map.foldrWithKey ( \ i prds s ->
     Set.union s $ Set.unions
         $ map ( \ (_, o) -> getConstIsaToks i o baseSign)
               $ number $ Set.toList prds) Set.empty . MapSet.toMap

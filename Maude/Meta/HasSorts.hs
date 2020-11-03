@@ -28,12 +28,13 @@ import Maude.Meta.AsSymbol
 import Maude.Meta.HasName
 
 import Data.Set (Set)
-import Data.Map (Map)
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 import Common.Lib.Rel (Rel)
 import qualified Common.Lib.Rel as Rel
+
+import Data.Hashable
 
 -- * The HasSorts type class
 
@@ -79,11 +80,11 @@ instance (Ord a, HasSorts a) => HasSorts (Set a) where
     getSorts = Set.fold (Set.union . getSorts) Set.empty
     mapSorts = Set.map . mapSorts
 
-instance (Ord a, HasSorts a) => HasSorts (Map k a) where
-    getSorts = Map.fold (Set.union . getSorts) Set.empty
+instance (Ord a, Hashable a, HasSorts a) => HasSorts (Map.HashMap k a) where
+    getSorts = Map.foldr' (Set.union . getSorts) Set.empty
     mapSorts = Map.map . mapSorts
 
-instance (Ord a, HasSorts a) => HasSorts (Rel a) where
+instance (Ord a, Hashable a, HasSorts a) => HasSorts (Rel a) where
     getSorts = getSorts . Rel.nodes
     mapSorts = Rel.map . mapSorts
 

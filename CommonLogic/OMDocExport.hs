@@ -27,7 +27,8 @@ import OMDoc.DataTypes
 import Common.Id
 import Common.Result
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
+import Data.Hashable
 
 
 type Env = NameMap Symbol
@@ -135,7 +136,7 @@ oms e x =
                   -- printId1 (symName s) ++ "\n" ++ show e ++ "\n\n\n" ++ ""
            in simpleOMS $ findInEnv err e s
 
-findInEnv :: (Ord k) => a -> Map.Map k a -> k -> a
+findInEnv :: (Ord k, Hashable k) => a -> Map.HashMap k a -> k -> a
 findInEnv err m x = Map.findWithDefault err x m
 
 -- transform a NAME_OR_SEQMARK into a symbol.

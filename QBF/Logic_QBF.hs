@@ -46,7 +46,7 @@ import ATC.ProofTree ()
 
 import Common.ProofTree
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Monoid
 
 -- | Lid for propositional logic

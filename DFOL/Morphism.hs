@@ -38,7 +38,7 @@ import Common.Id
 import Common.ExtSign
 import qualified Common.Result as Result
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Data.Data
 
@@ -46,7 +46,7 @@ import Data.Data
 data Morphism = Morphism
   { source :: Sign
   , target :: Sign
-  , symMap :: Map.Map NAME NAME
+  , symMap :: Map.HashMap NAME NAME
   } deriving (Ord, Show, Typeable)
 
 -- constructs an identity morphism
@@ -70,7 +70,7 @@ isValidMorph :: Morphism -> Bool
 isValidMorph m@(Morphism sig1 sig2 map1) =
   let sym1 = getSymbols sig1
       sym2 = getSymbols sig2
-      checkDom = Set.isSubsetOf (Map.keysSet map1) sym1
+      checkDom = Set.isSubsetOf (Set.fromList $ Map.keys map1) sym1
       checkCod = Set.isSubsetOf (Set.map (mapSymbol m) sym1) sym2
       checkTypes = map (checkTypePres m) $ Set.toList sym1
       in and $ [checkDom, checkCod] ++ checkTypes
@@ -207,12 +207,12 @@ morphUnion m1@(Morphism sig1D sig1C map1) m2@(Morphism sig2D sig2C map2) =
                                      else Result.Result
                                             [invalidMorphError m1 m2] Nothing
 
-combineMaps :: Map.Map NAME NAME -> Map.Map NAME NAME ->
-               Result.Result (Map.Map NAME NAME)
+combineMaps :: Map.HashMap NAME NAME -> Map.HashMap NAME NAME ->
+               Result.Result (Map.HashMap NAME NAME)
 combineMaps map1 map2 = combineMapsH map1 $ Map.toList map2
 
-combineMapsH :: Map.Map NAME NAME -> [(NAME, NAME)] ->
-                Result.Result (Map.Map NAME NAME)
+combineMapsH :: Map.HashMap NAME NAME -> [(NAME, NAME)] ->
+                Result.Result (Map.HashMap NAME NAME)
 combineMapsH map1 [] = Result.Result [] $ Just map1
 combineMapsH map1 ((k, v) : ds) =
   if Map.member k map1
@@ -234,7 +234,7 @@ applyMorph m t =
       map1 = toTermMap $ symMap m
       in translate map1 syms t
 
-toTermMap :: Map.Map NAME NAME -> Map.Map NAME TERM
+toTermMap :: Map.HashMap NAME NAME -> Map.HashMap NAME TERM
 toTermMap m = Map.fromList $ map (\ (k, a) -> (k, Identifier a))
                $ Map.toList m
 
@@ -258,12 +258,12 @@ printMorph m =
            text "Target signature:", pretty $ target m,
            text "Mapping:", printSymMap $ symMap m]
 
-printSymMap :: Map.Map NAME NAME -> Doc
+printSymMap :: Map.HashMap NAME NAME -> Doc
 printSymMap m = vcat $ map (\ (k, a) -> pretty k <+> text "|->" <+> pretty a)
                      $ Map.toList m
 
 -- induces a signature morphism from the source signature and a symbol map
-inducedFromMorphism :: Map.Map Symbol Symbol -> Sign -> Result.Result Morphism
+inducedFromMorphism :: Map.HashMap Symbol Symbol -> Sign -> Result.Result Morphism
 inducedFromMorphism map1 sig1 =
   let map2 = toNameMap map1
       Result.Result dgs sig2M = buildSig sig1 map2
@@ -271,10 +271,10 @@ inducedFromMorphism map1 sig1 =
               Nothing -> Result.Result dgs Nothing
               Just sig2 -> Result.Result [] $ Just $ Morphism sig1 sig2 map2
 
-buildSig :: Sign -> Map.Map NAME NAME -> Result.Result Sign
+buildSig :: Sign -> Map.HashMap NAME NAME -> Result.Result Sign
 buildSig (Sign ds) = buildSigH (expandDecls ds) emptySig
 
-buildSigH :: [SDECL] -> Sign -> Map.Map NAME NAME -> Result.Result Sign
+buildSigH :: [SDECL] -> Sign -> Map.HashMap NAME NAME -> Result.Result Sign
 buildSigH [] sig _ = Result.Result [] $ Just sig
 buildSigH ((n1, t1) : ds) sig map1 =
   let n2 = Map.findWithDefault n1 n1 map1
@@ -291,7 +291,7 @@ buildSigH ((n1, t1) : ds) sig map1 =
             else buildSigH ds (addSymbolDecl ([n2], t2) sig) map1
 
 -- induces a signature morphism from the source and target sigs and a symbol map
-inducedFromToMorphism :: Map.Map Symbol Symbol -> ExtSign Sign Symbol ->
+inducedFromToMorphism :: Map.HashMap Symbol Symbol -> ExtSign Sign Symbol ->
                          ExtSign Sign Symbol -> Result.Result Morphism
 inducedFromToMorphism map1 (ExtSign sig1 _) (ExtSign sig2 _) =
   let map2 = toNameMap map1

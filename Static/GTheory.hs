@@ -1,5 +1,5 @@
 {-# LANGUAGE ExistentialQuantification, DeriveDataTypeable
-  , GeneralizedNewtypeDeriving #-}
+  , GeneralizedNewtypeDeriving, DeriveGeneric #-}
 {- |
 Module      :  ./Static/GTheory.hs
 Description :  theory datastructure for development graphs
@@ -37,16 +37,21 @@ import Common.Result
 import Data.Graph.Inductive.Graph as Graph
 
 import Data.List
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 import Data.Typeable
 
 import Control.Monad (foldM)
 import Control.Exception
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 -- a theory index describing a set of sentences
 newtype ThId = ThId Int
-  deriving (Typeable, Show, Eq, Ord, Enum, ShATermConvertible)
+  deriving (Typeable, Show, Eq, Ord, Enum, ShATermConvertible, Generic)
+
+instance Hashable ThId
 
 startThId :: ThId
 startThId = ThId 0

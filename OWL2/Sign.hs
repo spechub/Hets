@@ -18,7 +18,7 @@ import Common.IRI
 import OWL2.AS
 
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 import Common.Lib.State
 import Common.Result
@@ -38,7 +38,7 @@ data Sign = Sign
             , annotationRoles :: Set.Set AnnotationProperty
               -- annotation properties
             , individuals :: Set.Set Individual  -- named individuals
-            , labelMap :: Map.Map IRI String -- labels (for better readability)
+            , labelMap :: Map.HashMap IRI String -- labels (for better readability)
             , prefixMap :: PrefixMap
             } deriving (Show, Typeable, Data)
 

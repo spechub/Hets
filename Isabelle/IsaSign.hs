@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./Isabelle/IsaSign.hs
 Description :  abstract Isabelle HOL and HOLCF syntax
@@ -16,10 +16,13 @@ Data structures for Isabelle signatures and theories.
 
 module Isabelle.IsaSign where
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Data
 import Data.List
 import Common.Utils (splitOn)
+
+import GHC.Generics (Generic)
+import Data.Hashable
 
 {- ------------- not quite from src/Pure/term.ML ------------------------
 ---------------------- Names ----------------------------------------- -}
@@ -28,13 +31,17 @@ import Common.Utils (splitOn)
 type TName = String
 
 data AltSyntax = AltSyntax String [Int] Int
-  deriving (Show, Eq, Ord, Typeable, Data)
+  deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable AltSyntax
 
 -- | names for values or constants (non-classes and non-types)
 data VName = VName
     { new :: String -- ^ name within Isabelle
     , altSyn :: Maybe AltSyntax  -- ^ mixfix template syntax
-    } deriving (Show, Typeable, Data)
+    } deriving (Show, Typeable, Data, Generic)
+
+instance Hashable VName
 
 instance Eq VName where
     v1 == v2 = new v1 == new v2
@@ -49,7 +56,9 @@ orig = new
 data QName = QName
     { qname :: String
     , qualifiers :: [String] }
-  deriving (Eq, Ord, Typeable, Data)
+  deriving (Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable QName
 
 instance Show QName where
     show q = intercalate "." $ qualifiers q ++ [qname q]
@@ -64,11 +73,15 @@ mkQName s = case splitOn '.' s of
 data Indexname = Indexname
     { unindexed :: String
     , indexOffset :: Int
-    } deriving (Ord, Eq, Show, Typeable, Data)
+    } deriving (Ord, Eq, Show, Typeable, Data, Generic)
+
+instance Hashable Indexname
 
 -- Types are classified by sorts.
 
-data IsaClass = IsaClass String deriving (Ord, Eq, Show, Typeable, Data)
+data IsaClass = IsaClass String deriving (Ord, Eq, Show, Typeable, Data, Generic)
+
+instance Hashable IsaClass
 
 type Sort = [IsaClass]
 
@@ -81,7 +94,9 @@ data Typ = Type { typeId :: TName,
                    typeSort :: Sort }
          | TVar { indexname :: Indexname,
                    typeSort :: Sort }
-         deriving (Eq, Ord, Show, Typeable, Data)
+         deriving (Eq, Ord, Show, Typeable, Data, Generic)
+
+instance Hashable Typ
 
 {- Terms.  Bound variables are indicated by depth number.
   Free variables, (scheme) variables and constants have names.
@@ -92,9 +107,13 @@ data Typ = Type { typeId :: TName,
   or type mismatches.  But such terms are not allowed in rules. -}
 
 -- IsCont True - lifted; IsCont False - not lifted, used for constructors
-data Continuity = IsCont Bool | NotCont deriving (Eq, Ord, Show, Typeable, Data)
+data Continuity = IsCont Bool | NotCont deriving (Eq, Ord, Show, Typeable, Data, Generic)
 
-data TAttr = TFun | TMet | TCon | NA deriving (Eq, Ord, Show, Typeable, Data)
+instance Hashable Continuity
+
+data TAttr = TFun | TMet | TCon | NA deriving (Eq, Ord, Show, Typeable, Data, Generic)
+
+instance Hashable TAttr
 
 data DTyp = Hide { typ :: Typ,
                    kon :: TAttr,
@@ -102,7 +121,9 @@ data DTyp = Hide { typ :: Typ,
           | Disp { typ :: Typ,
                    kon :: TAttr,
                    arit :: Maybe Int }
-      deriving (Eq, Ord, Show, Typeable, Data)
+      deriving (Eq, Ord, Show, Typeable, Data, Generic)
+
+instance Hashable DTyp
 
 data Term =
         Const { termName :: VName,
@@ -126,16 +147,22 @@ data Term =
                 secondTerm :: Term }
       | Tuplex [Term] Continuity
       | Set SetDecl
-      deriving (Eq, Ord, Show, Typeable, Data)
+      deriving (Eq, Ord, Show, Typeable, Data, Generic)
+
+instance Hashable Term
 
 data Prop = Prop {
    prop :: Term
- , propPats :: [Term] } deriving (Eq, Ord, Show, Typeable, Data)
+ , propPats :: [Term] } deriving (Eq, Ord, Show, Typeable, Data, Generic)
+
+instance Hashable Prop
 
 data Props = Props {
    propsName :: Maybe QName
  , propsArgs :: Maybe String
- , props :: [Prop] } deriving (Eq, Ord, Show, Typeable, Data)
+ , props :: [Prop] } deriving (Eq, Ord, Show, Typeable, Data, Generic)
+
+instance Hashable Props
 
 data Sentence =
     Sentence { isSimp :: Bool   -- True for "[simp]"
@@ -227,42 +254,56 @@ data Sentence =
       defsUnchecked :: Bool,
       defsOverloaded :: Bool,
       defsEquations :: [DefEquation] }
-    deriving (Eq, Ord, Show, Typeable, Data)
+    deriving (Eq, Ord, Show, Typeable, Data, Generic)
+
+instance Hashable Sentence
 
 data DefEquation = DefEquation {
  defEquationName :: QName,
  defEquationConst :: String,
  defEquationConstType :: Typ,
  defEquationTerm :: Term,
- defEquationArgs :: String } deriving (Eq, Ord, Show, Typeable, Data)
+ defEquationArgs :: String } deriving (Eq, Ord, Show, Typeable, Data, Generic)
+
+instance Hashable DefEquation
 
 data FixrecEquation = FixrecEquation {
  fixrecEquationUnchecked :: Bool,
  fixrecEquationPremises :: [Term],
  fixrecEquationPatterns :: [Term],
- fixrecEquationTerm :: Term } deriving (Eq, Ord, Show, Typeable, Data)
+ fixrecEquationTerm :: Term } deriving (Eq, Ord, Show, Typeable, Data, Generic)
+
+instance Hashable FixrecEquation
 
 data Ctxt = Ctxt {
         fixes :: [(String, Maybe Mixfix, Typ)],
-        assumes :: [(String, Term)] } deriving (Eq, Ord, Show, Typeable, Data)
+        assumes :: [(String, Term)] } deriving (Eq, Ord, Show, Typeable, Data, Generic)
+
+instance Hashable Ctxt
 
 data Mixfix = Mixfix {
  mixfixNargs :: Int,
  mixfixPrio :: Int,
  mixfixPretty :: String,
  mixfixTemplate :: [MixfixTemplate] }
- deriving (Eq, Ord, Show, Typeable, Data)
+ deriving (Eq, Ord, Show, Typeable, Data, Generic)
+
+instance Hashable Mixfix
 
 data MixfixTemplate = Arg Int | Str String | Break Int |
                       Block Int [MixfixTemplate]
-  deriving (Eq, Ord, Show, Typeable, Data)
+  deriving (Eq, Ord, Show, Typeable, Data, Generic)
+
+instance Hashable MixfixTemplate
 
 data Datatype = Datatype {
       datatypeName :: QName,
       datatypeTVars :: [Typ],
       datatypeMixfix :: Maybe Mixfix,
       datatypeConstructors :: [DatatypeConstructor] }
-  deriving (Eq, Ord, Show, Typeable, Data)
+  deriving (Eq, Ord, Show, Typeable, Data, Generic)
+
+instance Hashable Datatype
 
 data DatatypeConstructor = DatatypeConstructor {
       constructorName :: QName,
@@ -271,31 +312,41 @@ data DatatypeConstructor = DatatypeConstructor {
       constructorArgs :: [Typ] } |
      DatatypeNoConstructor {
       constructorArgs :: [Typ] }
-  deriving (Eq, Ord, Show, Typeable, Data)
+  deriving (Eq, Ord, Show, Typeable, Data, Generic)
+
+instance Hashable DatatypeConstructor
 
 data Domain = Domain {
       domainName :: QName,
       domainTVars :: [Typ],
       domainMixfix :: Maybe Mixfix,
       domainConstructors :: [DomainConstructor] }
-  deriving (Eq, Ord, Show, Typeable, Data)
+  deriving (Eq, Ord, Show, Typeable, Data, Generic)
+
+instance Hashable Domain
 
 data DomainConstructor = DomainConstructor {
       domainConstructorName :: QName,
       domainConstructorType :: Typ,
       domainConstructorArgs :: [DomainConstructorArg] }
-  deriving (Eq, Ord, Show, Typeable, Data)
+  deriving (Eq, Ord, Show, Typeable, Data, Generic)
+
+instance Hashable DomainConstructor
 
 data DomainConstructorArg = DomainConstructorArg {
       domainConstructorArgSel :: Maybe QName,
       domainConstructorArgType :: Typ,
       domainConstructorArgLazy :: Bool }
-  deriving (Eq, Ord, Show, Typeable, Data)
+  deriving (Eq, Ord, Show, Typeable, Data, Generic)
+
+instance Hashable DomainConstructorArg
 
 data Axiom = Axiom {
       axiomName :: QName,
       axiomArgs :: String,
-      axiomTerm :: Term } deriving (Eq, Ord, Show, Typeable, Data)
+      axiomTerm :: Term } deriving (Eq, Ord, Show, Typeable, Data, Generic)
+
+instance Hashable Axiom
 
 data FunSig = FunSig {
        funSigName :: QName,
@@ -310,11 +361,15 @@ data SetDecl
     = SubSet Term Typ Term
     -- | A set declared using a list of terms. e.g. {1,2,3} would be Set [1,2,3]
     | FixedSet [Term]
-               deriving (Eq, Ord, Show, Typeable, Data)
+               deriving (Eq, Ord, Show, Typeable, Data, Generic)
+
+instance Hashable SetDecl
 
 data MetaTerm = Term Term
               | Conditional [Term] Term -- List of preconditions, conclusion.
-                deriving (Eq, Ord, Show, Typeable, Data)
+                deriving (Eq, Ord, Show, Typeable, Data, Generic)
+
+instance Hashable MetaTerm
 
 mkSenAux :: Bool -> MetaTerm -> Sentence
 mkSenAux b t = Sentence
@@ -363,17 +418,17 @@ isRefute s = case s of
 -}
 
 type ClassDecl = ([IsaClass], [(String, Term)], [(String, Typ)])
-type Classrel = Map.Map IsaClass ClassDecl
+type Classrel = Map.HashMap IsaClass ClassDecl
 type LocaleDecl = ([String], [(String, Term)], [(String, Term)],
       [(String, Typ, Maybe AltSyntax)])
       -- parents * internal axioms * external axiosm * params
 type Def = (Typ, [(String, Typ)], Term)
 type FunDef = (Typ, [([Term], Term)])
-type Locales = Map.Map String LocaleDecl
-type Defs = Map.Map String Def
-type Funs = Map.Map String FunDef
-type Arities = Map.Map TName [(IsaClass, [(Typ, Sort)])]
-type Abbrs = Map.Map TName ([TName], Typ)
+type Locales = Map.HashMap String LocaleDecl
+type Defs = Map.HashMap String Def
+type Funs = Map.HashMap String FunDef
+type Arities = Map.HashMap TName [(IsaClass, [(Typ, Sort)])]
+type Abbrs = Map.HashMap TName ([TName], Typ)
 
 data TypeSig =
   TySg {
@@ -428,9 +483,11 @@ data BaseSig =
   | MHsHOL_thy
   | MHsHOLCF_thy
   | CspHOLComplex_thy
-    deriving (Eq, Ord, Show, Typeable)
+    deriving (Eq, Ord, Show, Typeable, Generic)
              {- possibly simply supply a theory like MainHC as string
                 or recursively as Isabelle.Sign -}
+
+instance Hashable BaseSig
 
 data Sign = Sign
   { theoryName :: String
@@ -452,7 +509,7 @@ data Sign = Sign
     types
  -}
 
-type ConstTab = Map.Map VName Typ
+type ConstTab = Map.HashMap VName Typ
 
 {- same types for data types and domains
 the optional string is only relevant for alternative type names -}
@@ -528,7 +585,9 @@ values of functions.
 data IsaProof = IsaProof
     { proof :: [ProofCommand],
       end :: ProofEnd
-    } deriving (Show, Eq, Ord, Typeable, Data)
+    } deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable IsaProof
 
 data ProofCommand
     {- | Apply a list of proof methods, which will be applied in sequence
@@ -541,7 +600,9 @@ data ProofCommand
     | Defer Int
     | Prefer Int
     | Refute
-      deriving (Show, Eq, Ord, Typeable, Data)
+      deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable ProofCommand
 
 data ProofEnd
     = By ProofMethod
@@ -549,7 +610,9 @@ data ProofEnd
     | Done
     | Oops
     | Sorry
-      deriving (Show, Eq, Ord, Typeable, Data)
+      deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable ProofEnd
 
 data Modifier
     -- | No_asm means that assumptions are completely ignored.
@@ -561,7 +624,9 @@ data Modifier
     not used in the simplification of each other or the
     conclusion. -}
     | No_asm_use
-      deriving (Show, Eq, Ord, Typeable, Data)
+      deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable Modifier
 
 data ProofMethod
     {- | This is a plain auto with no parameters - it is used
@@ -595,7 +660,9 @@ data ProofMethod
     {- | Used for proof methods that have not been implemented yet.
     This includes auto and simp with parameters -}
     | Other String
-      deriving (Show, Eq, Ord, Typeable, Data)
+      deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable ProofMethod
 
 toIsaProof :: ProofEnd -> IsaProof
 toIsaProof = IsaProof []

@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveGeneric #-}
+
 {- |
 Module      :  ./CASL/CompositionTable/CompositionTable.hs
 Description :  composition tables of qualitative calculi
@@ -12,6 +14,9 @@ composition tables
 -}
 
 module CASL.CompositionTable.CompositionTable where
+
+import GHC.Generics (Generic)
+import Data.Hashable
 
 data Table = Table Table_Attrs Compositiontable Conversetable
              Reflectiontable Models
@@ -67,7 +72,9 @@ data Model = Model
 
 newtype Baserel = Baserel
     { baserelBaserel :: String
-    } deriving (Eq, Ord)
+    } deriving (Eq, Ord, Generic)
+
+instance Hashable Baserel
 
 instance Show Baserel where
  show (Baserel b) = "Baserel: " ++ b

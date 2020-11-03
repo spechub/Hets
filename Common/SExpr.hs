@@ -23,7 +23,7 @@ import Common.Doc
 import Common.Id
 import Common.LibName
 import Common.ProofUtils
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Char
 
 data SExpr = SSymbol String | SList [SExpr] deriving (Eq, Ord, Show)
@@ -59,5 +59,5 @@ transString s = case s of
   c : r | isDigit c -> "_D" ++ c : transStringAux r
   _ -> transStringAux s
 
-cMap :: Map.Map Char String
+cMap :: Map.HashMap Char String
 cMap = Map.map ('_' :) $ Map.insert '_' "1" charMap

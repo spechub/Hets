@@ -20,7 +20,7 @@ import GUI.UDGUtils
 import qualified GUI.HTkUtils as S
 import Taxonomy.MMiSSOntology
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Common.Lib.Graph
 import Data.Graph.Inductive.Graph
 import Data.Graph.Inductive.Basic

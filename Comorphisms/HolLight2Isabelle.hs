@@ -24,7 +24,7 @@ import Isabelle.Translate
 import Common.Result
 import Common.AS_Annotation
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.List ((\\))
 
 import HolLight.Sign
@@ -81,7 +81,7 @@ tp2DTyp tp = IsaSign.Hide {
                 IsaSign.arit = Nothing
               }
 
-constMap :: Map.Map String IsaSign.VName
+constMap :: Map.HashMap String IsaSign.VName
 constMap = Map.fromList [("+", IsaConsts.plusV)
                         , ("-", IsaConsts.minusV)
                         , ("*", IsaConsts.timesV)
@@ -238,7 +238,7 @@ mapSign (Sign t o) = IsaSign.emptySign {
                           IsaSign.tsig = mapTypes t
                          }
 
-mapOps :: Map.Map String HolType -> IsaSign.ConstTab
+mapOps :: Map.HashMap String HolType -> IsaSign.ConstTab
 mapOps f = Map.fromList
              $ map (\ (x, y) -> (transConstS x y, tp2Typ y))
              $ Map.toList (foldl (flip Map.delete) f ignore)
@@ -256,7 +256,7 @@ arity2tp :: Int -> [(IsaSign.IsaClass, [(IsaSign.Typ, IsaSign.Sort)])]
 arity2tp i = [(isaTerm, map (\ k -> (IsaSign.TFree ("'a" ++ show k) [],
   [isaTerm])) [1 .. i])]
 
-mapTypes :: Map.Map String Int -> IsaSign.TypeSig
+mapTypes :: Map.HashMap String Int -> IsaSign.TypeSig
 mapTypes tps = IsaSign.emptyTypeSig {
                     IsaSign.arities = Map.fromList $ map extractTypeName
                   $ Map.toList $ foldr Map.delete tps

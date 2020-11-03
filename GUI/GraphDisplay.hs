@@ -40,7 +40,7 @@ import GUI.GraphAbstraction
 import qualified GUI.HTkUtils as HTk
 
 import Data.IORef
-import qualified Data.Map as Map (lookup)
+import qualified Data.HashMap.Strict as Map (lookup)
 
 import Control.Monad
 

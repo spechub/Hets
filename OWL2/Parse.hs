@@ -34,7 +34,7 @@ import qualified Common.GlobalAnnotations as GA (PrefixMap)
 import Text.ParserCombinators.Parsec
 import Control.Monad (liftM2)
 import Data.Char
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 characters :: [Character]
 characters = [minBound .. maxBound]
@@ -583,5 +583,5 @@ nsEntry = do
 importEntry :: CharParser st IRI
 importEntry = pkeyword importC >> uriP
 
-convertPrefixMap :: GA.PrefixMap -> Map.Map String String
+convertPrefixMap :: GA.PrefixMap -> Map.HashMap String String
 convertPrefixMap = Map.map $ IRI.iriToStringUnsecure . IRI.setAngles False

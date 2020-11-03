@@ -23,7 +23,7 @@ import OWL2.Symbols
 
 import Data.List (stripPrefix)
 import Data.Maybe
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 {- | this class contains general functions which operate on the ontology
@@ -34,8 +34,8 @@ class Function a where
 data Action = Rename | Expand
     deriving (Show, Eq, Ord)
 
-type StringMap = Map.Map String String
-type MorphMap = Map.Map Entity IRI
+type StringMap = Map.HashMap String String
+type MorphMap = Map.HashMap Entity IRI
 
 data AMap =
       StringMap StringMap
@@ -45,7 +45,7 @@ data AMap =
 maybeDo :: (Function a) => Action -> AMap -> Maybe a -> Maybe a
 maybeDo t mp = fmap $ function t mp
 
-getIri :: EntityType -> IRI -> Map.Map Entity IRI -> IRI
+getIri :: EntityType -> IRI -> Map.HashMap Entity IRI -> IRI
 getIri ty u = fromMaybe u . Map.lookup (mkEntity ty u)
 
 cutWith :: EntityType -> Action -> AMap -> IRI -> IRI
@@ -115,8 +115,9 @@ instance Function Sign where
             (Set.map (function t mp) p4)
             (Set.map (function t mp) p5)
             (Set.map (function t mp) p6)
-            (Map.mapKeys (function t mp) p7)
-            (function t mp p8)
+            (Map.fromList $ map (\(x,y) -> ((function t mp) x, y)) $
+                          Map.toList p7)
+            (function t mp p8) 
     _ -> err
 
 instance Function Entity where

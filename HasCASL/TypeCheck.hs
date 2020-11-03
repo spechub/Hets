@@ -38,7 +38,7 @@ import HasCASL.Constrain
 import HasCASL.ProgEq
 import HasCASL.MinType
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Common.Id
 import Common.GlobalAnnotations
@@ -201,7 +201,7 @@ freshTypeVar t =
     do (var, c) <- toEnvState $ freshVar $ Id [] [] $ getRange t
        return $ TypeName var rStar c
 
-substVarTypes :: Subst -> Map.Map Id VarDefn -> Map.Map Id VarDefn
+substVarTypes :: Subst -> Map.HashMap Id VarDefn -> Map.HashMap Id VarDefn
 substVarTypes s = Map.map ( \ (VarDefn t) -> VarDefn $ subst s t)
 
 warnEmpty :: Maybe Type -> Term -> [a] -> State Env ()

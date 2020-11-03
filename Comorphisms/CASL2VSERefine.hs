@@ -36,7 +36,7 @@ import Common.Lib.State
 import qualified Common.Lib.MapSet as MapSet
 
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 -- | The identity of the comorphism
 data CASL2VSERefine = CASL2VSERefine deriving (Show)

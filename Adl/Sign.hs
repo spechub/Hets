@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./Adl/Sign.hs
 Description :  ADL signature and sentences
@@ -24,10 +24,13 @@ import Common.Result
 import qualified Common.Lib.Rel as Rel
 
 import Data.Data
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
-type RelMap = Map.Map Id (Set.Set RelType)
+import GHC.Generics (Generic)
+import Data.Hashable
+
+type RelMap = Map.HashMap Id (Set.Set RelType)
 
 data Sign = Sign
   { rels :: RelMap
@@ -141,7 +144,9 @@ instance Pretty Sign where
 data Sen
   = DeclProp Relation RangedProp
   | Assertion (Maybe RuleKind) Rule
-    deriving (Eq, Ord, Show, Typeable, Data)
+    deriving (Eq, Ord, Show, Typeable, Data, Generic)
+
+instance Hashable Sen
 
 instance GetRange Sen where
   getRange s = case s of

@@ -21,7 +21,7 @@ import OWL2.Theorem
 import OWL2.Function
 import OWL2.Symbols
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Data.List
 
@@ -389,7 +389,7 @@ basicOWL2Analysis (inOnt, inSign, ga) = do
       , ExtSign accSign {labelMap = generateLabelMap accSign nfl} syms, axl)
 
 -- | extrace labels from Frame-List (after processing with correctFrames)
-generateLabelMap :: Sign -> [Frame] -> Map.Map IRI String
+generateLabelMap :: Sign -> [Frame] -> Map.HashMap IRI String
 generateLabelMap sig = foldr (\ (Frame ext fbl) -> case ext of
         SimpleEntity (Entity _ _ ir) -> case fbl of
             [AnnFrameBit [Annotation _ apr (AnnValLit (Literal s' _))] _]
@@ -492,8 +492,8 @@ corr2theo _aname flag ssig tsig l1 l2 eMap1 eMap2 rref = do
            let e1' = if flag then e1 {cutIRI =  addString (cutIRI e1, "_source")} else e1
                e2' = if flag then e2 {cutIRI =  addString (cutIRI e2, "_target")} else e2
                sig = emptySign
-               eMap1' = Map.union eMap1 $ Map.fromAscList [(e1', e1)]
-               eMap2' = Map.union eMap2 $ Map.fromAscList [(e2', e2)]
+               eMap1' = Map.union eMap1 $ Map.fromList [(e1', e1)]
+               eMap2' = Map.union eMap2 $ Map.fromList [(e2', e2)]
            sig1 <- addSymbToSign sig e1'
            sig2 <- addSymbToSign sig e2'
            sigB <- addSymbToSign sig1 e2'

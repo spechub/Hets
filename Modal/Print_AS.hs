@@ -25,7 +25,7 @@ import qualified Common.Lib.MapSet as MapSet
 import Modal.AS_Modal
 import Modal.ModalSign
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 printFormulaOfModalSign :: FormExtension f => (FORMULA f -> FORMULA f)
                         -> [[Annoted (FORMULA f)]] -> Doc

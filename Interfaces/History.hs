@@ -29,7 +29,7 @@ import Proofs.AbstractState
 import Static.DevGraph
 import Static.History
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 {- | Datatype used to differentiate between the two actions (so that code does
 not get duplicated -}

@@ -20,8 +20,10 @@ import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.Morphism
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
+
+import Data.Hashable
 
 world :: SORT
 world = genName "World"
@@ -38,10 +40,14 @@ addPlace i@(Id ts ids ps)
     | otherwise = i
 
 -- | the changed mapping
-addWorld :: Ord a => (a -> a) -> (Id -> Id) -> MapSet.MapSet Id a
+addWorld :: (Ord a, Hashable a) => (a -> a) -> (Id -> Id) -> MapSet.MapSet Id a
   -> MapSet.MapSet Id a
 addWorld f ren =
-  MapSet.fromMap . Map.mapKeys ren . MapSet.toMap . MapSet.map f
+  MapSet.fromMap . mapKeys . MapSet.toMap . MapSet.map f
+  where mapKeys g = 
+         let l1 = map (\(x,y) -> (ren x, y)) $ Map.toList g 
+         in foldl (\h (x,y) -> if x `elem` Map.keys h then h else Map.insert x y h) 
+            Map.empty $ reverse l1 
 
 worldOpType :: SORT -> OpType -> OpType
 worldOpType ws t = t { opArgs = ws : opArgs t}
@@ -75,11 +81,11 @@ modPredType :: SORT -> Bool -> SORT -> PredType
 modPredType ws term m = PredType $ (if term then (m :) else id) [ws, ws]
 
 -- | the renaming as part of a morphism
-renMorphism :: Ord a => (Id -> Id) -> MapSet.MapSet Id a -> Map.Map (Id, a) Id
-renMorphism ren = Map.foldWithKey (\ i s ->
+renMorphism :: (Ord a, Hashable a) => (Id -> Id) -> MapSet.MapSet Id a -> Map.HashMap (Id, a) Id
+renMorphism ren = Map.foldrWithKey (\ i s ->
    let j = ren i in
    if j == i then id else
-       Map.union . Map.fromAscList . map (\ a -> ((j, a), j)) $ Set.toList s)
+       Map.union . Map.fromList . map (\ a -> ((j, a), j)) $ Set.toList s)
    Map.empty . MapSet.toMap
 
 renOpMorphism :: (Id -> Id) -> OpMap -> Op_map

@@ -26,7 +26,9 @@ module Common.OrderedMap
   , map, mapWithKey
   , update
   , filter, filterWithKey
-  , partition, partitionWithKey
+  , partition, partitionWithKey, partitionMap
+  , partitionMapWithKey, updateMapWithKey
+  , mapMapKeys
   , fromList, toList
   , keys, elems
   ) where
@@ -36,7 +38,8 @@ import Prelude hiding (lookup, map, filter, null)
 import Data.Data
 import Data.Ord
 import qualified Data.List as List
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
+import Data.Hashable
 
 data ElemWOrd a = EWOrd
   { order :: Int
@@ -49,57 +52,86 @@ instance Ord a => Eq (ElemWOrd a) where
 instance Ord a => Ord (ElemWOrd a) where
     compare = comparing ele
 
-type OMap a b = Map.Map a (ElemWOrd b)
+type OMap a b = Map.HashMap a (ElemWOrd b)
 
-null :: OMap k a -> Bool
+null :: (Ord k, Hashable k) => OMap k a -> Bool
 null = Map.null
 
-lookup :: (Monad m, Ord k) => k -> OMap k a -> m a
+lookup :: (Monad m, Ord k, Hashable k) => k -> OMap k a -> m a
 lookup k = maybe (fail "Common.OrderedMap.lookup")
   (return . ele) . Map.lookup k
 
-insert :: Ord k => k -> a -> OMap k a -> OMap k a
+insert :: (Ord k, Hashable k) => k -> a -> OMap k a -> OMap k a
 insert k e m = Map.insertWith (\ ne oe -> oe {ele = ele ne})
                k (EWOrd (succ $ Map.size m) e) m
 
-update :: Ord k => (a -> Maybe a) -> k -> OMap k a -> OMap k a
+update :: (Ord k, Hashable k) => (a -> Maybe a) -> k -> OMap k a -> OMap k a
 update = updateWithKey . const
 
-updateWithKey :: Ord k => (k -> a -> Maybe a) -> k -> OMap k a -> OMap k a
+updateWithKey :: (Ord k, Hashable k) => (k -> a -> Maybe a) -> k -> OMap k a -> OMap k a
 updateWithKey f =
-    Map.updateWithKey $ \ k1 e -> case f k1 (ele e) of
+    updateMapWithKey $ \ k1 e -> case f k1 (ele e) of
                                          Nothing -> Nothing
                                          Just x -> Just e {ele = x}
-filter :: Ord k => (a -> Bool) -> OMap k a -> OMap k a
+filter :: (Ord k, Hashable k) => (a -> Bool) -> OMap k a -> OMap k a
 filter = filterWithKey . const
 
-filterWithKey :: Ord k => (k -> a -> Bool) -> OMap k a -> OMap k a
+filterWithKey :: (Ord k, Hashable k) => (k -> a -> Bool) -> OMap k a -> OMap k a
 filterWithKey p = Map.filterWithKey (\ k -> p k . ele)
 
-map :: Ord k => (a -> b) -> OMap k a -> OMap k b
+map :: (Ord k, Hashable k) => (a -> b) -> OMap k a -> OMap k b
 map = mapWithKey . const
 
-mapWithKey :: (k -> a -> b) -> OMap k a -> OMap k b
+mapWithKey :: (Ord k, Hashable k) => (k -> a -> b) -> OMap k a -> OMap k b
 mapWithKey f = Map.mapWithKey ( \ k x -> x {ele = f k (ele x)})
 
-partition :: Ord k => (a -> Bool) -> OMap k a -> (OMap k a, OMap k a)
+-- TODO: does this module make sense at all when using hash maps?
+
+mapMapKeys :: (Ord k1, Hashable k1, Ord k2, Hashable k2) => 
+              (k1 -> k2) -> Map.HashMap k1 a -> Map.HashMap k2 a
+mapMapKeys kmap f = 
+ foldl (\g (x, y) -> let x' = kmap x in Map.insert x' y g ) Map.empty $ Map.toList f
+
+
+partition :: (Ord k, Hashable k) => (a -> Bool) -> OMap k a -> (OMap k a, OMap k a)
 partition = partitionWithKey . const
 
-partitionWithKey :: Ord k => (k -> a -> Bool) -> OMap k a
+partitionWithKey :: (Ord k, Hashable k) => (k -> a -> Bool) -> OMap k a
                  -> (OMap k a, OMap k a)
-partitionWithKey p = Map.partitionWithKey (\ k -> p k . ele)
+partitionWithKey p = partitionMapWithKey (\ k -> p k . ele)
 
-fromList :: Ord k => [(k, a)] -> OMap k a
+partitionMap :: (Ord k, Hashable k) => (a -> Bool) -> Map.HashMap k a 
+                       -> (Map.HashMap k a, Map.HashMap k a)
+partitionMap test = partitionMapWithKey (\_ a -> test a)
+
+partitionMapWithKey :: (Ord k, Hashable k) => (k -> a -> Bool) -> Map.HashMap k a 
+                       -> (Map.HashMap k a, Map.HashMap k a)
+partitionMapWithKey test f = 
+ let flist = Map.toList f
+     ylist = List.filter (\(x,y) -> test x y) flist
+     nlist = List.filter (\(x,y) -> not $ test x y) flist
+ in (Map.fromList ylist, Map.fromList nlist)
+
+updateMapWithKey :: (Ord k, Hashable k) => 
+  (k -> a -> Maybe a) -> k -> Map.HashMap k a -> Map.HashMap k a
+updateMapWithKey test k f = 
+ if not $ k `elem` Map.keys f then f
+ else let v = Map.findWithDefault (error "updateMapWithKey") k f
+      in case test k v of 
+          Nothing -> Map.delete k f
+          Just y -> Map.insert k y f  
+
+fromList :: (Ord k, Hashable k) => [(k, a)] -> OMap k a
 fromList = List.foldl ins Map.empty
     where ins m (k, e) = insert k e m
 
-toList :: Ord k => OMap k a -> [(k, a)]
+toList :: (Ord k, Hashable k) => OMap k a -> [(k, a)]
 toList = List.map (\ (k, e) -> (k, ele e))
   . List.sortBy (comparing $ order . snd)
   . Map.toList
 
-keys :: Ord k => OMap k a -> [k]
+keys :: (Ord k, Hashable k) => OMap k a -> [k]
 keys = List.map fst . toList
 
-elems :: Ord k => OMap k a -> [a]
+elems :: (Ord k, Hashable k) => OMap k a -> [a]
 elems = List.map snd . toList

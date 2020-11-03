@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./Propositional/AS_BASIC_Propositional.der.hs
 Description :  Abstract syntax for propositional logic
@@ -34,6 +34,9 @@ import Common.Doc
 import Common.DocUtils
 import Common.Keywords
 import Common.AS_Annotation as AS_Anno
+
+import GHC.Generics (Generic)
+import Data.Hashable
 
 import Data.Data
 
@@ -71,7 +74,9 @@ data FORMULA =
     -- pos: "=>"
   | Equivalence FORMULA FORMULA Id.Range
     -- pos: "<=>"
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable FORMULA
 
 data SYMB_ITEMS = Symb_items [SYMB] Id.Range
                   -- pos: SYMB_KIND, commas

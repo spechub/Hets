@@ -35,7 +35,7 @@ import qualified Common.Lib.SizedList as SizedList
 import Driver.Options
 import Driver.ReadFn
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Data.List (isSuffixOf)
 import Control.Monad

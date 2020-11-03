@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./QVTR/As.hs
 Description :  abstract QVT-Relational syntax
@@ -17,6 +17,8 @@ import Common.Id
 import Data.Data
 
 import qualified CSMOF.As as CSMOF
+import GHC.Generics (Generic)
+import Data.Hashable
 
 -- Simplified QVTR Tranformation
 
@@ -37,7 +39,9 @@ data Key = Key
         { metamodel :: String
         , typeName :: String
         , properties :: [PropKey]
-        } deriving (Eq, Ord, Typeable, Data)
+        } deriving (Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable Key
 
 instance GetRange Key where
   getRange _ = nullRange
@@ -46,7 +50,9 @@ instance GetRange Key where
 
 data PropKey = SimpleProp { propName :: String }
              | OppositeProp { oppPropType :: String, oppPropName :: String }
-             deriving (Eq, Ord, Typeable, Data)
+             deriving (Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable PropKey
 
 instance GetRange PropKey where
   getRange _ = nullRange
@@ -72,7 +78,9 @@ instance GetRange Relation where
 data RelVar = RelVar
             { varType :: String
             , varName :: String
-            } deriving (Eq, Ord, Typeable, Data)
+            } deriving (Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable RelVar
 
 instance GetRange RelVar where
   getRange _ = nullRange
@@ -123,7 +131,9 @@ instance GetRange PropertyTemplate where
 
 
 data WhenWhere = WhenWhere { relInvokWhen :: [RelInvok], oclExpreWhen :: [OCL] }
-  deriving (Eq, Ord, Typeable, Data)
+  deriving (Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable WhenWhere
 
 instance GetRange WhenWhere where
   getRange _ = nullRange
@@ -133,7 +143,9 @@ instance GetRange WhenWhere where
 data RelInvok = RelInvok
               { name :: String
               , params :: [String]
-              } deriving (Eq, Ord, Typeable, Data)
+              } deriving (Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable RelInvok
 
 instance GetRange RelInvok where
   getRange _ = nullRange
@@ -149,7 +161,9 @@ data OCL = Paren { exp :: OCL }
          | AndB { lExpA :: OCL, rExpA :: OCL }
          | OrB { lExpO :: OCL, rExpO :: OCL }
          | Equal { lExpre :: STRING, rExpre :: STRING }
-         deriving (Eq, Ord, Typeable, Data)
+         deriving (Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable OCL
 
 instance GetRange OCL where
   getRange _ = nullRange
@@ -159,7 +173,9 @@ instance GetRange OCL where
 data STRING = Str { simpleStr :: String }
             | ConcatExp { lStr :: STRING, rStr :: STRING }
             | VarExp { varExp :: String }
-            deriving (Eq, Ord, Typeable, Data)
+            deriving (Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable STRING
 
 instance GetRange STRING where
   getRange _ = nullRange

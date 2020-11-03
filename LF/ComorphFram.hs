@@ -12,7 +12,7 @@ import Common.Result
 import Common.DocUtils
 import Common.AS_Annotation
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Data.Maybe (fromMaybe, isNothing)
 
@@ -47,7 +47,7 @@ mapMorphH mor (Def sym stp _ , e) =
                              _ -> (Def sym2 stp2 sval2, Nothing)
        Left err -> error $ show err
 
-mkPairs :: [DEF] -> Map.Map Symbol EXP -> [(DEF, EXP)]
+mkPairs :: [DEF] -> Map.HashMap Symbol EXP -> [(DEF, EXP)]
 mkPairs defs m = case defs of
    [] -> []
    Def s t v : ds -> case Map.lookup s m of
@@ -57,8 +57,8 @@ mkPairs defs m = case defs of
                                                         show (pretty s) ++
                                                         " is not in the map.\n"
 
-makeSigMap :: ([DEF], Map.Map Symbol EXP) -> [(DEF, Maybe EXP)]
-               -> ([DEF], Map.Map Symbol EXP)
+makeSigMap :: ([DEF], Map.HashMap Symbol EXP) -> [(DEF, Maybe EXP)]
+               -> ([DEF], Map.HashMap Symbol EXP)
 makeSigMap dms defs = case defs of
    [] -> dms
    (Def s t v, e) : des -> let (ds, m) = dms

@@ -16,12 +16,12 @@ module COL.COLSign where
 
 import Data.Data
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 import Common.Id
 
 data COLSign = COLSign { constructors :: Set.Set Id
-                       , observers :: Map.Map Id Int
+                       , observers :: Map.HashMap Id Int
                        } deriving (Show, Eq, Ord, Typeable, Data)
 
 emptyCOLSign :: COLSign
@@ -40,4 +40,4 @@ diffCOLSign s1 s2 =
 isSubCOLSign :: COLSign -> COLSign -> Bool
 isSubCOLSign s1 s2 =
     Set.null (constructors s2 Set.\\ constructors s1)
-    && Map.null (observers s2 Map.\\ observers s1)
+    && Map.null (Map.difference (observers s1) $ observers s2)

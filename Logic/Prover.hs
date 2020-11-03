@@ -21,7 +21,7 @@ import Common.ProofUtils
 import Common.ProverTools
 import qualified Common.OrderedMap as OMap
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Data.List
 import Data.Maybe (isJust)
@@ -82,7 +82,7 @@ joinSensAux s1 s2 = let
     m = if null l1 then 0 else maximum $ map (OMap.order . snd) l1
     l2 = map (\ (x, e) -> (x, e {OMap.order = m + OMap.order e }))
          $ Map.toList s2
-    sl2 = genericDisambigSens m fst updN (Map.keysSet s1) l2
+    sl2 = genericDisambigSens m fst updN (Set.fromList $ Map.keys s1) l2
     in (Map.fromList $ l1 ++ sl2,
          zipWith (\ (n1, _) (n2, _) -> (n1, n2)) l2 sl2)
 

@@ -36,7 +36,7 @@ import qualified Common.GlobalAnnotations as GlobalAnnos
 import qualified Common.Id as Id
 import qualified Common.Result as Result
 import qualified Data.List as List
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import qualified QBF.AS_BASIC_QBF as AS_BASIC
 import qualified QBF.Morphism as Morphism
@@ -267,7 +267,7 @@ basicPropositionalAnalysis (bs, sig, _) =
 
 -- | Static analysis for symbol maps
 mkStatSymbMapItem :: [AS_BASIC.SYMBMAPITEMS]
-                  -> Result.Result (Map.Map Symbol.Symbol Symbol.Symbol)
+                  -> Result.Result (Map.HashMap Symbol.Symbol Symbol.Symbol)
 mkStatSymbMapItem xs =
     Result.Result
     {
@@ -285,7 +285,7 @@ mkStatSymbMapItem xs =
     }
 
 statSymbMapItem :: [AS_BASIC.SYMBORMAP]
-                 -> Map.Map Symbol.Symbol Symbol.Symbol
+                 -> Map.HashMap Symbol.Symbol Symbol.Symbol
 statSymbMapItem =
     foldl
     (
@@ -317,8 +317,8 @@ symbToSymbol :: AS_BASIC.SYMB -> Symbol.Symbol
 symbToSymbol (AS_BASIC.SymbId tok) =
     Symbol.Symbol {Symbol.symName = Id.simpleIdToId tok}
 
-pMap :: Map.Map Symbol.Symbol Symbol.Symbol -> Set.Set Id.Id
-         -> Map.Map Id.Id Id.Id
+pMap :: Map.HashMap Symbol.Symbol Symbol.Symbol -> Set.Set Id.Id
+         -> Map.HashMap Id.Id Id.Id
 pMap imap =
  Set.fold (
   \ x ->
@@ -331,7 +331,7 @@ pMap imap =
  ) Map.empty
 
 -- | Induce a signature morphism from a source signature and a raw symbol map
-inducedFromMorphism :: Map.Map Symbol.Symbol Symbol.Symbol
+inducedFromMorphism :: Map.HashMap Symbol.Symbol Symbol.Symbol
                     -> Sign.Sign
                     -> Result.Result Morphism.Morphism
 inducedFromMorphism imap sig =
@@ -357,7 +357,7 @@ inducedFromMorphism imap sig =
           }
 
 -- | Induce a signature morphism from a source signature and a raw symbol map
-inducedFromToMorphism :: Map.Map Symbol.Symbol Symbol.Symbol
+inducedFromToMorphism :: Map.HashMap Symbol.Symbol Symbol.Symbol
                     -> ExtSign Sign.Sign Symbol.Symbol
                     -> ExtSign Sign.Sign Symbol.Symbol
                     -> Result.Result Morphism.Morphism
@@ -402,7 +402,7 @@ inducedFromToMorphism imap (ExtSign sig _) (ExtSign tSig _) =
                     }
 
 signatureColimit :: Gr Sign.Sign (Int, Morphism.Morphism)
-                 -> Result.Result (Sign.Sign, Map.Map Int Morphism.Morphism)
+                 -> Result.Result (Sign.Sign, Map.HashMap Int Morphism.Morphism)
 signatureColimit graph = do
  let graph1 = nmap Sign.items $ emap (Control.Arrow.second Morphism.propMap)
                                      graph

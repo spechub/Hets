@@ -23,7 +23,7 @@ import HasCASL.RawSym
 import Common.Id
 import Common.Result
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 instance GetRange Symbol where
@@ -110,7 +110,7 @@ closeSymbSet :: SymbolSet -> SymbolSet
 closeSymbSet s = Set.unions (s : map subSymsOf (Set.toList s))
 
 opSymOf :: Env -> SymbolSet
-opSymOf sigma = Map.foldWithKey ( \ i ts s ->
+opSymOf sigma = Map.foldrWithKey ( \ i ts s ->
                       if Map.member i bOps then s else
                       Set.fold (Set.insert . idToOpSymbol i . opType)
                          s ts)
@@ -118,14 +118,14 @@ opSymOf sigma = Map.foldWithKey ( \ i ts s ->
 
 symOf :: Env -> [SymbolSet]
 symOf sigma =
-    let classes = Map.foldWithKey ( \ i ->
+    let classes = Map.foldrWithKey ( \ i ->
                           Set.insert . idToClassSymbol i . rawKind)
                   Set.empty $ classMap sigma
-        types = Map.foldWithKey ( \ i ti ->
+        types = Map.foldrWithKey ( \ i ti ->
                         if Map.member i bTypes then id else
                         Set.insert $ idToTypeSymbol i $ typeKind ti)
                 Set.empty $ typeMap sigma
-        ops = Map.foldWithKey ( \ i ts s ->
+        ops = Map.foldrWithKey ( \ i ts s ->
                       if Map.member i bOps then s else
                       Set.fold (Set.insert . idToOpSymbol i . opType)
                          s ts)

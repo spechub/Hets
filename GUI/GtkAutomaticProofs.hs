@@ -48,7 +48,7 @@ import Control.Monad.Trans
 
 import Proofs.AbstractState
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.List
 import Data.Maybe
 

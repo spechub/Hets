@@ -48,7 +48,7 @@ import Control.Applicative
 import Control.Monad.State
 import Control.Monad.Identity
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Maybe (fromJust, isJust)
 
 -- taken from http://www.haskell.org/haskellwiki/New_monads/MonadUnique

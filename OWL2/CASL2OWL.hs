@@ -24,7 +24,7 @@ import Common.Utils
 import qualified Common.Lib.MapSet as MapSet
 
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.List
 import Data.Maybe
 
@@ -130,7 +130,7 @@ getPropSens i args mres = let
       ++ [mki " range" $ mkDR ARange a]) ncs
 
 getPropNames :: (a -> [b]) -> MapSet.MapSet Id a -> Set.Set IRI
-getPropNames f = Map.foldWithKey (\ i s l ->
+getPropNames f = Map.foldrWithKey (\ i s l ->
     case Set.toList s of
       [] -> l
       h : _ -> Set.union l $ Set.fromList
@@ -211,12 +211,12 @@ mapSign csig = let
     , individuals = toIris $ MapSet.keysSet cs
     }
   in do
-  s1 <- Map.foldWithKey (\ i s ml -> do
+  s1 <- Map.foldrWithKey (\ i s ml -> do
       l <- ml
       return $ mkIndi False i
         (keepMinimals csig id $ map opRes $ Set.toList s) : l)
     (return sortSens) (MapSet.toMap cs)
-  s2 <- Map.foldWithKey (\ i s ml -> do
+  s2 <- Map.foldrWithKey (\ i s ml -> do
     l <- ml
     let sl = Set.toList s
         mki = mk "plain function " i
@@ -229,7 +229,7 @@ mapSign csig = let
       (as, rs) -> fail $ "CASL2OWL.mapSign2: " ++ show i ++ " args: "
                    ++ show as ++ " resulttypes: " ++ show rs)
     (return s1) (MapSet.toMap sos)
-  s3 <- Map.foldWithKey (\ i s ml -> do
+  s3 <- Map.foldrWithKey (\ i s ml -> do
     l <- ml
     let mkp = mk "binary predicate " i
     pTy <- commonPredType csig s
@@ -239,19 +239,19 @@ mapSign csig = let
          ++ l
       ts -> fail $ "CASL2OWL.mapSign3: " ++ show i ++ " types: " ++ show ts)
     (return s2) (MapSet.toMap bps)
-  s4 <- Map.foldWithKey (\ i s ml ->
+  s4 <- Map.foldrWithKey (\ i s ml ->
      case keepMaxs $ concatMap predArgs $ Set.toList s of
        [r] -> do
          l <- ml
          return $ makeNamed ("plain predicate " ++ show i) (toSC i [r]) : l
        ts -> fail $ "CASL2OWL.mapSign4: " ++ show i ++ " types: " ++ show ts)
      (return s3) (MapSet.toMap sps)
-  s5 <- Map.foldWithKey (\ i s ml -> do
+  s5 <- Map.foldrWithKey (\ i s ml -> do
      l <- ml
      ot <- commonOpType csig s
      return $ getPropSens i (opArgs ot) (Just $ opRes ot) ++ l
      ) (return s4) (MapSet.toMap os)
-  s6 <- Map.foldWithKey (\ i s ml -> do
+  s6 <- Map.foldrWithKey (\ i s ml -> do
      l <- ml
      pt <- commonPredType csig s
      return $ getPropSens i (predArgs pt) Nothing ++ l

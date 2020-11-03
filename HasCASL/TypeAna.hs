@@ -19,7 +19,7 @@ import HasCASL.AsUtils
 import HasCASL.Le
 import HasCASL.ClassAna
 import HasCASL.TypeMixAna
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Common.DocUtils
 import Common.Id
@@ -247,7 +247,7 @@ hasAlias :: TypeMap -> Type -> [Diagnosis]
 hasAlias tm t =
      map ( \ i -> mkDiag Error ("unexpanded alias '" ++ showId i "' in") t)
      $ Set.toList $ Set.intersection (idsOf (const True) t) $
-       Map.keysSet $ filterAliases tm
+       Set.fromList $ Map.keys $ filterAliases tm
 
 -- * resolve and analyse types
 

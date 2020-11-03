@@ -28,7 +28,7 @@ import Logic.Logic
 import Common.Result
 import Common.ExtSign
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Monoid
 
 data LF = LF deriving Show

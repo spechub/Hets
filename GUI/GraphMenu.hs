@@ -27,7 +27,7 @@ import GUI.GtkAddSentence
 #endif
 
 import Data.IORef
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 import System.Directory (getCurrentDirectory)
 import System.FilePath
@@ -67,7 +67,7 @@ nodeTypes opts = map
   ) listDGNodeTypes
 
 -- | A Map of all nodetypes and their properties.
-mapNodeTypes :: HetcatsOpts -> Map.Map DGNodeType (Shape GA.NodeValue, String)
+mapNodeTypes :: HetcatsOpts -> Map.HashMap DGNodeType (Shape GA.NodeValue, String)
 mapNodeTypes = Map.fromList . map (\ (n, s, c) -> (n, (s, c))) . nodeTypes
 
 -- | Adds to the DGEdgeType list style options for each type
@@ -125,7 +125,7 @@ edgeTypes opts = map
 
 -- | A Map of all edgetypes and their properties.
 mapEdgeTypes
-  :: HetcatsOpts -> Map.Map DGEdgeType (EdgePattern GA.EdgeValue, String)
+  :: HetcatsOpts -> Map.HashMap DGEdgeType (EdgePattern GA.EdgeValue, String)
 mapEdgeTypes =
   Map.fromList . map (\ (e, l, c, _) -> (e, (l, c))) . edgeTypes
 

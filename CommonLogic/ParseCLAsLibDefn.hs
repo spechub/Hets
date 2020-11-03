@@ -223,4 +223,4 @@ topSortSpecs specMap =
   let (fm, rm) = Map.partition (\ (_, _, is) -> Set.null is) specMap
   in if Map.null fm then [] else
      map (\ (n, (b, f, _)) -> (n, b, f)) (Map.toList fm) ++ topSortSpecs
-         (Map.map (\ (b, f, is) -> (b, f, is Set.\\ Map.keysSet fm)) rm)
+         (Map.map (\ (b, f, is) -> (b, f, is Set.\\ (Set.fromList $ Map.keys fm))) rm)

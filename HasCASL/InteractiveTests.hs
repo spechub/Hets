@@ -35,7 +35,7 @@ import HasCASL.Logic_HasCASL
 import Common.AS_Annotation
 
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Maybe
 import Data.List
 
@@ -148,7 +148,7 @@ c3 :: Point -> RealType
 c3 (P (_, _, x)) = x
 
 
-type EvalEnv = Map.Map String EvalTerm
+type EvalEnv = Map.HashMap String EvalTerm
 
 data ETBinFun = ETdiff | ETdiam | ETprod | ETdist deriving Show
 
@@ -197,10 +197,10 @@ evalInEnv e (ETconst s) =
 evalInEnv _ x = x
 
 
-getRconsts :: Env -> Subst -> Map.Map String RealType
+getRconsts :: Env -> Subst -> Map.HashMap String RealType
 getRconsts e s = getRealConstMap e s constsForEval
 
-getRealConstMap :: Env -> Subst -> [(String, EvalTerm)] -> Map.Map String RealType
+getRealConstMap :: Env -> Subst -> [(String, EvalTerm)] -> Map.HashMap String RealType
 getRealConstMap e sbst l = Map.fromList $ map f l where
     ee = envFromSubst e sbst
     f (s, et) = (s, etReal $ evalInEnv ee et)
@@ -465,7 +465,7 @@ testSpecMatchM sigs patN cN =
 -- ----------------------- Template filler -------------------------
 
 
-processTemplate :: (String -> a -> String) -> Map.Map String a -> String -> String
+processTemplate :: (String -> a -> String) -> Map.HashMap String a -> String -> String
 processTemplate f m s = unlines $ map g $ lines s where
     l = Map.toList m
     g ln = h ln l
@@ -504,7 +504,7 @@ getMatchMap :: String -- ^ The filename of the library containing the specs to m
             -> String -- ^ The specname importing the specs to match
             -> String -- ^ The pattern specname
             -> String -- ^ The concrete design specname
-            -> IO (MatchResult, Map.Map String RealType)
+            -> IO (MatchResult, Map.HashMap String RealType)
 getMatchMap lb sp patN cN = do
   sigs <- sigsensGen lb sp
   res <- fromSigs sigs patN cN (findMatch noConstraints)

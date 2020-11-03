@@ -20,7 +20,7 @@ import CASL.StaticAna
 
 import Common.AS_Annotation
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Maybe (fromMaybe)
 import Common.Id
 import Common.Result

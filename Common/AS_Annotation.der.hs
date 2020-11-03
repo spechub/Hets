@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./Common/AS_Annotation.der.hs
 Description :  datastructures for annotations of (Het)CASL.
@@ -20,7 +20,10 @@ import Common.IRI (IRI)
 
 import Data.Data
 import Data.Maybe
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
+
+import Data.Hashable
+import GHC.Generics (Generic)
 
 import Data.Graph.Inductive.Graph as Graph
 
@@ -29,16 +32,22 @@ import Data.Graph.Inductive.Graph as Graph
 
 -- | start of an annote with its WORD or a comment
 data Annote_word = Annote_word String | Comment_start
-  deriving (Show, Eq, Ord, Typeable, Data)
+  deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable Annote_word
 
 -- | line or group for 'Unparsed_anno'
 data Annote_text = Line_anno String | Group_anno [String]
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable Annote_text
 
 {- | formats to be displayed (may be extended in the future).
 Drop 3 from the show result to get the string for parsing and printing -}
 data Display_format = DF_HTML | DF_LATEX | DF_RTF
-  deriving (Show, Eq, Ord, Typeable, Data)
+  deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable Display_format
 
 -- | swap the entries of a lookup table
 swapTable :: [(a, b)] -> [(b, a)]
@@ -64,16 +73,22 @@ lookupDisplayFormat df =
 'NoDirection' can also not be specified explicitly,
 but covers those ids that are not mentionend in precedences. -}
 data PrecRel = Higher | Lower | BothDirections | NoDirection
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable PrecRel
 
 -- | either left or right associative
-data AssocEither = ALeft | ARight deriving (Show, Eq, Ord, Typeable, Data)
+data AssocEither = ALeft | ARight deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable AssocEither
 
 {- | semantic (line) annotations without further information.
 Use the same drop-3-trick as for the 'Display_format'. -}
 data Semantic_anno = SA_cons | SA_def | SA_implies | SA_mono | SA_implied
                    | SA_mcons | SA_ccons | SA_wdef
-    deriving (Show, Eq, Ord, Typeable, Data, Enum, Bounded)
+    deriving (Show, Eq, Ord, Typeable, Data, Enum, Bounded, Generic)
+
+instance Hashable Semantic_anno
 
 -- | a lookup table for the textual representation of semantic annos
 semantic_anno_table :: [(Semantic_anno, String)]
@@ -114,7 +129,9 @@ data Annotation = -- | constructor for comments or unparsed annotes
                 | Semantic_anno Semantic_anno Range
                 {- position information for annotations is provided
                 by every annotation -}
-                  deriving (Show, Eq, Ord, Typeable, Data)
+                  deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable Annotation
 
 {- | 'isLabel' tests if the given 'Annotation' is a label
 (a 'Label' typically follows a formula) -}
@@ -151,7 +168,7 @@ isAnnote :: Annotation -> Bool
 isAnnote = not . isComment
 
 -- | separate prefix annotations and put them into a map
-partPrefixes :: [Annotation] -> (Map.Map String IRI, [Annotation])
+partPrefixes :: [Annotation] -> (Map.HashMap String IRI, [Annotation])
 partPrefixes = foldr (\ a (m, l) -> case a of
     Prefix_anno p _ -> (Map.union m $ Map.fromList p, l)
     _ -> (m, a : l)) (Map.empty, [])
@@ -164,7 +181,9 @@ data Annoted a = Annoted
     { item :: a
     , opt_pos :: Range
     , l_annos :: [Annotation]
-    , r_annos :: [Annotation] } deriving (Show, Ord, Eq, Typeable, Data)
+    , r_annos :: [Annotation] } deriving (Show, Ord, Eq, Typeable, Data, Generic)
+
+instance Hashable a => Hashable (Annoted a)
 
 annoRange :: (a -> [Pos]) -> Annoted a -> [Pos]
 annoRange f a =

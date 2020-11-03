@@ -20,7 +20,7 @@ import Common.GlobalAnnotations
 import Common.Id
 
 import Data.List
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 instance Pretty Concept where
   pretty c = case c of

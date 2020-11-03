@@ -28,7 +28,7 @@ import System.IO.Unsafe
 
 import qualified Data.Foldable as Fold
 import qualified Common.Lib.Rel as Rel
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.List
 import Data.Maybe
 
@@ -55,7 +55,7 @@ dropClutter = tryToStripPrefix "unamed:"
 
 -- | Generation of a MissOntology
 makeMiss :: MMiSSOntology
-         -> Map.Map String (Set.Set String)
+         -> Map.HashMap String (Set.Set String)
          -> [String]
          -> Result MMiSSOntology
 makeMiss o r =

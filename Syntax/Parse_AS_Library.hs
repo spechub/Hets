@@ -36,7 +36,7 @@ import Common.Token
 import Text.ParserCombinators.Parsec
 import Data.List
 import Data.Maybe (maybeToList)
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Control.Monad
 
 import Framework.AS

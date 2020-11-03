@@ -23,7 +23,7 @@ import Common.Utils
 import System.Directory
 import System.Exit
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 -- Propositional Stuff
@@ -78,7 +78,7 @@ doConservCheck inSig oSig form = do
 -- | Printer for QDimacs Format
 showQDimacs :: Set.Set Id               -- ^ Symbols of initial  Sign
             -> Set.Set Id               -- ^ New symbols of extended Sign
-            -> Map.Map Token Integer    -- ^ Map of Symbols
+            -> Map.HashMap Token Integer    -- ^ Map of Symbols
             -> [FORMULA]          -- ^ Formulas to Translate
             -> String
 showQDimacs inSym exSym sigMap fforms =

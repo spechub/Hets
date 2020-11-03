@@ -53,9 +53,10 @@ import Static.DgUtils
 
 import Data.IORef
 import Data.List (partition)
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Graph.Inductive.Graph (LEdge)
 import Data.Maybe (isNothing)
+import Data.Hashable
 
 import Control.Monad (foldM)
 import Control.Concurrent (threadDelay)
@@ -130,11 +131,11 @@ data GAEdgeType = GAEdgeType
      both internally (nodes as integers), and at the daVinci level -}
 data AbstractionGraph = AbstractionGraph
   { theGraph :: OurGraph
-  , nodes :: Map.Map NodeId GANode
-  , edges :: Map.Map EdgeId GAEdge
-  , nodeTypes :: Map.Map DGNodeType GANodeType
-  , edgeTypes :: Map.Map DGEdgeType GAEdgeType
-  , compressedEdges :: Map.Map (NodeId, NodeId, DGEdgeType, Bool) GAEdge
+  , nodes :: Map.HashMap NodeId GANode
+  , edges :: Map.HashMap EdgeId GAEdge
+  , nodeTypes :: Map.HashMap DGNodeType GANodeType
+  , edgeTypes :: Map.HashMap DGEdgeType GAEdgeType
+  , compressedEdges :: Map.HashMap (NodeId, NodeId, DGEdgeType, Bool) GAEdge
   }
 
 -- | IORef for main datastructure
@@ -250,7 +251,7 @@ makeGraph gi title open save saveAs close exit menus nTypeParms eTypeParms
 
 {- | similar to lookup (for Map), but returns just the value if lookup was
      successful otherwise an error is raised. -}
-get :: (Show k, Ord k) => k -> Map.Map k a -> a
+get :: (Show k, Ord k, Hashable k) => k -> Map.HashMap k a -> a
 get key = Map.findWithDefault (error $ "get: id unknown: " ++ show key) key
 
 -- Functions for adding, deleting, changing and hidding nodes.
@@ -451,7 +452,7 @@ hideSetOfEdgeTypes' :: AbstractionGraph -- ^ The graph
                     -> [DGEdgeType] -- ^ IDs of the edgetypes to hide
                     -> IO AbstractionGraph
 hideSetOfEdgeTypes' g eTypes = do
-  let (hEdges, sEdges) = Map.foldWithKey (\ eid e (he, se) ->
+  let (hEdges, sEdges) = Map.foldrWithKey (\ eid e (he, se) ->
          if elem (gaeType e) eTypes then (eid : he, se) else (he, eid : se))
          ([], []) $ edges g'
       g' = g { edgeTypes = Map.mapWithKey

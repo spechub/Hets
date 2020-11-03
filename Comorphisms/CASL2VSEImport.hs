@@ -35,7 +35,7 @@ import Common.Result
 import qualified Common.Lib.MapSet as MapSet
 
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 -- | The identity of the comorphism
 data CASL2VSEImport = CASL2VSEImport deriving (Show)

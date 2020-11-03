@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./OWL2/Symbols.hs
 Copyright   :  (c) Felix Gabriel Mance
@@ -18,6 +18,8 @@ import Common.IRI
 import Common.Id (Id)
 
 import Data.Data
+import GHC.Generics (Generic)
+import Data.Hashable
 
 -- * SYMBOL ITEMS FOR HETS
 
@@ -36,7 +38,9 @@ data SymbMapItems = SymbMapItems ExtEntityType [(IRI, Maybe IRI)]
 
 -- | raw symbols
 data RawSymb = ASymbol Entity | AnUri IRI | APrefix String
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable RawSymb
 
 idToRaw :: Id -> RawSymb
 idToRaw = AnUri . idToIRI

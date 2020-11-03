@@ -15,7 +15,7 @@ Pretty printing for SoftFOL signatures.
 
 module SoftFOL.Print (printFormula) where
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils

@@ -30,7 +30,7 @@ import CASL.Simplify
 
 import Common.Id
 import Common.DocUtils
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.MapSet as MapSet

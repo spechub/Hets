@@ -1,5 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, DeriveDataTypeable
-  , FlexibleInstances, UndecidableInstances, ExistentialQuantification #-}
+  , FlexibleInstances, UndecidableInstances, ExistentialQuantification, DeriveGeneric #-}
 {- |
 Module      :  ./Logic/Comorphism.hs
 Description :  interface and class for logic translations
@@ -55,6 +55,9 @@ import Common.Result
 import Data.Data
 import Data.Maybe
 import qualified Data.Set as Set
+
+import GHC.Generics (Generic)
+import Data.Hashable
 
 class (Language cid,
        Logic lid1 sublogics1

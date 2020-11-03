@@ -23,7 +23,7 @@ import Common.Lib.State
 import Common.Doc
 import Common.ExampleMixIds
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 import HasCASL.MixAna
 import HasCASL.As
@@ -42,7 +42,7 @@ resolveTerm ga = do
        let ps = (mkPrecIntMap $ prec_annos ga, stdPreds)
            iEnv = preEnv { preIds = ps, globAnnos = ga }
            ids = Set.union stdPreds $ Set.union stdOps
-                 $ Map.keysSet $ assumps iEnv
+                 $ Set.fromList $ Map.keys $ assumps iEnv
            (addRule, ruleS, sIds) = makeRules ga ps (getPolyIds $ assumps iEnv)
                                  ids
            (chart, fEnv) = runState (iterateCharts ga sIds

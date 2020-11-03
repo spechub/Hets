@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./Adl/As.hs
 Description :  abstract ADL syntax
@@ -20,10 +20,15 @@ import Data.List (sortBy)
 import Common.Id
 import Common.Keywords
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 data Concept
   = C Token -- ^ The name of this Concept
   | Anything -- ^ Really anything as introduced by I and V
-    deriving (Eq, Ord, Show, Typeable, Data)
+    deriving (Eq, Ord, Show, Typeable, Data, Generic)
+
+instance Hashable Concept
 
 instance GetRange Concept where
     getRange c = case c of
@@ -36,7 +41,9 @@ instance GetRange Concept where
 data RelType = RelType
   { relSrc :: Concept -- ^ the source concept
   , relTrg :: Concept -- ^ the target concept
-  } deriving (Eq, Ord, Show, Typeable, Data)
+  } deriving (Eq, Ord, Show, Typeable, Data, Generic)
+
+instance Hashable RelType
 
 instance GetRange RelType where
     getRange = getRange . relSrc
@@ -46,7 +53,9 @@ instance GetRange RelType where
 data Relation = Sgn
   { decnm :: Token  -- ^ the name
   , relType :: RelType
-  } deriving (Eq, Ord, Show, Typeable, Data)
+  } deriving (Eq, Ord, Show, Typeable, Data, Generic)
+
+instance Hashable Relation
 
 instance GetRange Relation where
     getRange = getRange . decnm
@@ -65,7 +74,9 @@ data UnOp
   | K1 -- ^ Transitive closure +
   | Cp -- ^ Complement -
   | Co -- ^ Converse ~
-    deriving (Eq, Ord, Typeable, Data)
+    deriving (Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable UnOp
 
 instance Show UnOp where
   show o = case o of
@@ -82,7 +93,9 @@ data MulOp
   | Ri -- ^ Rule implication |-
   | Rr -- ^ Rule reverse implication -|
   | Re -- ^ Rule equivalence
-    deriving (Eq, Ord, Typeable, Data)
+    deriving (Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable MulOp
 
 instance Show MulOp where
   show o = case o of
@@ -98,7 +111,9 @@ data Rule
   = Tm Relation
   | MulExp MulOp [Rule]
   | UnExp UnOp Rule
-    deriving (Eq, Ord, Show, Typeable, Data)
+    deriving (Eq, Ord, Show, Typeable, Data, Generic)
+
+instance Hashable Rule
 
 instance GetRange Rule where
   getRange e = case e of
@@ -120,7 +135,9 @@ data Prop
   | Trn          -- ^ transitive
   | Rfx          -- ^ reflexive
   | Prop         -- ^ meta property
-    deriving (Enum, Eq, Ord, Show, Typeable, Data)
+    deriving (Enum, Eq, Ord, Show, Typeable, Data, Generic)
+
+instance Hashable Prop
 
 showUp :: Show a => a -> String
 showUp = map toUpper . show
@@ -131,8 +148,10 @@ allProps = [Uni .. Rfx]
 data RangedProp = RangedProp
   { propProp :: Prop
   , propRange :: Range }
-    deriving (Eq, Ord, Show, Typeable, Data)
+    deriving (Eq, Ord, Show, Typeable, Data, Generic)
   -- should be fine since ranges are always equal
+
+instance Hashable RangedProp
 
 instance GetRange RangedProp where
    getRange = propRange
@@ -166,7 +185,9 @@ instance GetRange KeyDef where
   rangeSpan (KeyDef _ c as) = joinRanges [rangeSpan c, rangeSpan as]
 
 data RuleKind = SignalOn | Signals | Maintains
-  deriving (Eq, Ord, Show, Typeable, Data)
+  deriving (Eq, Ord, Show, Typeable, Data, Generic)
+
+instance Hashable RuleKind
 
 showRuleKind :: RuleKind -> String
 showRuleKind k = if k == SignalOn then "ON"

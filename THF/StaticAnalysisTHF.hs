@@ -31,7 +31,7 @@ import Common.DocUtils
 
 import Control.Monad
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 {- -----------------------------------------------------------------------------

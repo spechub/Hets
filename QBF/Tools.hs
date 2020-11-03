@@ -17,7 +17,7 @@ module QBF.Tools where
 import Common.Id
 import QBF.AS_BASIC_QBF
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 import Data.List (nub, (\\))
 
@@ -264,7 +264,7 @@ getVars _ = []
 uniqueQuantifiedVars :: Int -> String -> FORMULA -> (Int, FORMULA)
 uniqueQuantifiedVars c = uniqueQuantifiedVars' c Map.empty
 
-uniqueQuantifiedVars' :: Int -> Map.Map Token Token
+uniqueQuantifiedVars' :: Int -> Map.HashMap Token Token
   -> String -> FORMULA -> (Int, FORMULA)
 uniqueQuantifiedVars' c m p f = let
   u = uniqueQuantifiedVars' c m p

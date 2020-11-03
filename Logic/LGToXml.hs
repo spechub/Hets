@@ -20,7 +20,8 @@ import Logic.Prover
 
 import Control.Monad
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
+import qualified Data.Map as PlainMap
 import Data.Char
 import Data.Maybe
 
@@ -45,7 +46,7 @@ proversOfLogic (Logic lid) = do
 lGToXml :: LogicGraph -> IO Element
 lGToXml lg = do
   let cs = Map.elems $ comorphisms lg
-      groupC = Map.toList . Map.fromListWith (++)
+      groupC = PlainMap.toList . PlainMap.fromListWith (++)
       ssubs = groupC
         $ map (\ (Comorphism cid) -> (G_sublogics (sourceLogic cid)
            $ sourceSublogic cid, [language_name cid])) cs

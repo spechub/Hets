@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./CSMOF/Sign.hs
 Description :  CSMOF signature and sentences
@@ -20,18 +20,25 @@ import Common.DocUtils
 import Common.Id
 
 import Data.Data
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 data TypeKind = DataTypeKind | ClassKind
-  deriving (Show, Eq, Ord, Typeable, Data)
+  deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable TypeKind
 
 instance Pretty TypeKind where
   pretty DataTypeKind = text "datatype"
   pretty ClassKind = text "class"
 
 data TypeClass = TypeClass { name :: String, kind :: TypeKind }
- deriving (Show, Eq, Ord, Typeable, Data)
+ deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable TypeClass
 
 instance Pretty TypeClass where
   pretty (TypeClass nam _) = text nam
@@ -44,7 +51,9 @@ data PropertyT = PropertyT { sourceRole :: Role
                            , sourceType :: TypeClass
                            , targetRole :: Role
                            , targetType :: TypeClass
-                           } deriving (Show, Eq, Ord, Typeable, Data)
+                           } deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable PropertyT
 
 instance Pretty PropertyT where
   pretty (PropertyT souR souT tarR tarT) = text "property" <> lparen <>
@@ -69,7 +78,7 @@ data Sign = Sign { types :: Set.Set TypeClass
                  , abstractClasses :: Set.Set TypeClass
                  , roles :: Set.Set Role
                  , properties :: Set.Set PropertyT
-                 , instances :: Map.Map String TypeClass
+                 , instances :: Map.HashMap String TypeClass
                  , links :: Set.Set LinkT
                  } deriving (Show, Eq, Ord, Typeable, Data)
 
@@ -121,13 +130,17 @@ signUnion s1 s2 = return s1
 
 data MultConstr = MultConstr { getType :: TypeClass
                              , getRole :: Role
-                             } deriving (Show, Eq, Ord, Typeable, Data)
+                             } deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable MultConstr
 
 instance Pretty MultConstr where
   pretty (MultConstr tc ro) = pretty tc <> text "." <> text ro
 
 
-data ConstraintType = EQUAL | LEQ | GEQ deriving (Show, Eq, Ord, Typeable, Data)
+data ConstraintType = EQUAL | LEQ | GEQ deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable ConstraintType
 
 instance Pretty ConstraintType where
   pretty EQUAL = equals
@@ -138,7 +151,9 @@ instance Pretty ConstraintType where
 data Sen = Sen { constraint :: MultConstr
                , cardinality :: Integer
                , constraintType :: ConstraintType
-               } deriving (Show, Eq, Ord, Typeable, Data)
+               } deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable Sen
 
 instance GetRange Sen where
   getRange _ = nullRange

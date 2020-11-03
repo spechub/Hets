@@ -14,7 +14,7 @@ Translation of identifiers to Haskell.
 module Haskell.TranslateId (IdCase (..), translateIdWithType) where
 
 import Common.Id
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Data.Char
 

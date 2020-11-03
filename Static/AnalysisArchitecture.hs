@@ -45,7 +45,7 @@ import Common.LibName
 import Common.Result
 import Common.Amalgamate
 import Common.Doc
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 import Data.Maybe
 import Data.Graph.Inductive.Graph as Graph (Node, lab)
@@ -138,7 +138,7 @@ anaUnitDeclDefns :: LogicGraph -> LibEnv -> LibName -> DGraph
     -> HetcatsOpts
     -> ExpOverrides
     -> ExtStUnitCtx -> [Annoted UNIT_DECL_DEFN]
-    -> Result (Map.Map IRI RTPointer, ExtStUnitCtx,
+    -> Result (Map.HashMap IRI RTPointer, ExtStUnitCtx,
                DGraph, [Annoted UNIT_DECL_DEFN])
 {- ^ returns 1. extended static unit context 2. possibly modified
 development graph 3. possibly modified list of unit declarations and
@@ -148,9 +148,9 @@ anaUnitDeclDefns lgraph libEnv ln dg opts eo sharedCtx =
 
 anaUnitDeclDefns' :: LogicGraph -> LibEnv -> LibName -> DGraph -> HetcatsOpts
     -> ExpOverrides
-    -> ExtStUnitCtx -> Map.Map IRI RTPointer
+    -> ExtStUnitCtx -> Map.HashMap IRI RTPointer
     -> [Annoted UNIT_DECL_DEFN]
-    -> Result (Map.Map IRI RTPointer, ExtStUnitCtx,
+    -> Result (Map.HashMap IRI RTPointer, ExtStUnitCtx,
                DGraph, [Annoted UNIT_DECL_DEFN])
 anaUnitDeclDefns' lgraph libEnv ln dg opts eo uctx rNodes uds = case uds of
   udd : udds -> do
@@ -193,7 +193,7 @@ nodeSigUnion lgraph dg nodeSigs orig sname =
 anaUnitDeclDefn :: LogicGraph -> LibEnv -> LibName -> DGraph -> HetcatsOpts
   -> ExpOverrides
   -> ExtStUnitCtx -> UNIT_DECL_DEFN
-  -> Result (Map.Map IRI RTPointer, ExtStUnitCtx, DGraph, UNIT_DECL_DEFN)
+  -> Result (Map.HashMap IRI RTPointer, ExtStUnitCtx, DGraph, UNIT_DECL_DEFN)
 {- ^ returns 1. extended static unit context 2. possibly modified
 development graph 3. possibly modified UNIT_DECL_DEFN -}
 anaUnitDeclDefn lgraph libEnv ln dg opts eo uctx@(buc, _) udd = case udd of

@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./Hybrid/AS_Hybrid.der.hs
 Copyright   :  (c) T.Mossakowski, W.Herding, C.Maeder, Uni Bremen 2004-2006
@@ -20,6 +20,8 @@ import Common.AS_Annotation
 import CASL.AS_Basic_CASL
 
 import Data.Data
+import GHC.Generics (Generic)
+import Data.Hashable
 
 -- DrIFT command
 {-! global: GetRange !-}
@@ -43,14 +45,20 @@ data H_SIG_ITEM =
              deriving (Show, Typeable, Data)
 
 data MODALITY = Simple_mod SIMPLE_ID | Term_mod (TERM H_FORMULA)
-             deriving (Show, Eq, Ord, Typeable, Data)
+             deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable MODALITY
 
 data NOMINAL = Simple_nom SIMPLE_ID
-        deriving (Show, Eq, Ord, Typeable, Data)
+        deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable NOMINAL
 
 data H_FORMULA = At NOMINAL (FORMULA H_FORMULA) Range
                 | BoxOrDiamond Bool MODALITY (FORMULA H_FORMULA) Range
                 | Here NOMINAL Range
                 | Univ NOMINAL (FORMULA H_FORMULA) Range
                 | Exist NOMINAL (FORMULA H_FORMULA) Range
-             deriving (Show, Eq, Ord, Typeable, Data)
+             deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable H_FORMULA

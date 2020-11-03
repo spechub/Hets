@@ -63,7 +63,7 @@ import Control.Exception
 
 import Data.List
 import Data.Maybe
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 -- | take the difference of the two input lists take (length l2 - length l1) l2
@@ -236,7 +236,7 @@ listRules inf g =
                listRule (c, n) (b1 ++ [termTok, commaTok, termTok] ++ b2)]
                  ) $ Map.toList lists
 
-type Table a = Map.Map Int [Item a]
+type Table a = Map.HashMap Int [Item a]
 
 lookUp :: Table a -> Int -> [Item a]
 lookUp ce k = Map.findWithDefault [] k ce

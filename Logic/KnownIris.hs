@@ -12,14 +12,14 @@ Portability :  portable
 
 module Logic.KnownIris where
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 logPrefix, serPrefix :: String
 
 logPrefix = "http://purl.net/dol/logics/"
 serPrefix = "http://purl.net/dol/serializations/"
 
-logicNames :: Map.Map String String
+logicNames :: Map.HashMap String String
 logicNames = -- IRI -> local name
   Map.fromList
   [ (logPrefix ++ "CommonLogic", "CommonLogic"),
@@ -29,7 +29,7 @@ logicNames = -- IRI -> local name
 lookupLogicName :: String -> Maybe String
 lookupLogicName = (`Map.lookup` logicNames)
 
-serializations :: String -> Map.Map String String
+serializations :: String -> Map.HashMap String String
 serializations l
   | l == "CommonLogic" =
     Map.fromList [ (serPrefix ++ "CommonLogic/CLIF", "CLIF"),

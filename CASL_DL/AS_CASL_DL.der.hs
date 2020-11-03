@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./CASL_DL/AS_CASL_DL.der.hs
 Description :  abstract syntax for CASL_DL logic extension of CASL
@@ -21,6 +21,8 @@ import Common.Id
 import Common.AS_Annotation
 
 import CASL.AS_Basic_CASL
+import GHC.Generics (Generic)
+import Data.Hashable
 
 -- DrIFT command
 {-! global: GetRange !-}
@@ -29,7 +31,9 @@ type DL_BASIC_SPEC = BASIC_SPEC () () DL_FORMULA
 
 type AnDLFORM = Annoted (FORMULA DL_FORMULA)
 
-data CardType = CMin | CMax | CExact deriving (Eq, Ord, Typeable, Data)
+data CardType = CMin | CMax | CExact deriving (Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable CardType
 
 minCardinalityS, maxCardinalityS, cardinalityS :: String
 cardinalityS = "cardinality"
@@ -56,8 +60,10 @@ data DL_FORMULA =
                -- an optional qualification for the number restriction
                 Range
                -- position of keyword, brackets, parens and comma
-             deriving (Show, Eq, Ord, Typeable, Data)
+             deriving (Show, Eq, Ord, Typeable, Data, Generic)
                -- TODO: Erweiterung ueber maybe
+
+instance Hashable DL_FORMULA
 
 caslDLCardTypes :: [CardType]
 caslDLCardTypes = [CExact, CMin, CMax]

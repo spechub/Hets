@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./THF/Sign.hs
 Description :  Signature for THF
@@ -23,7 +23,10 @@ import Common.Id hiding (typeId)
 import Common.Result
 
 import Data.Data
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
+
+import GHC.Generics (Generic)
+import Data.Hashable
 
 {- -----------------------------------------------------------------------------
 Definitions and instances of data structures
@@ -47,13 +50,13 @@ instance Ord SignTHF where
 instance GetRange SignTHF
 
 -- Map for Types.
-type TypeMap = Map.Map Constant TypeInfo
+type TypeMap = Map.HashMap Constant TypeInfo
 
 -- Map for Constants.
-type ConstMap = Map.Map Constant ConstInfo
+type ConstMap = Map.HashMap Constant ConstInfo
 
 -- Map for Symbols. These are symbols and types.
-type SymbolMap = Map.Map Constant SymbolTHF
+type SymbolMap = Map.HashMap Constant SymbolTHF
 
 {- TypeInfo are containers for types, their name and Kind.
 In addition the original Annotaions can be stored as
@@ -63,7 +66,9 @@ data TypeInfo = TypeInfo
     , typeName :: Name
     , typeKind :: Kind
     , typeAnno :: Annotations }
-    deriving (Show, Typeable, Data)
+    deriving (Show, Typeable, Data, Generic)
+
+instance Hashable TypeInfo
 
 -- Ord instance that neither uses typeDef nor typeAnno
 instance Ord TypeInfo where
@@ -84,7 +89,9 @@ data ConstInfo = ConstInfo
     , constName :: Name
     , constType :: Type
     , constAnno :: Annotations }
-    deriving (Show, Typeable, Data)
+    deriving (Show, Typeable, Data, Generic)
+
+instance Hashable ConstInfo
 
 -- Ord instance that neither uses constDef nor constAnno
 instance Ord ConstInfo where
@@ -110,29 +117,29 @@ Some helper data structures and functions for the
 union, difference and insersection methods
 ----------------------------------------------------------------------------- -}
 
-type EitherMap c x = Map.Map c (Either x Diagnosis)
+type EitherMap c x = Map.HashMap c (Either x Diagnosis)
 
 -- Convert a map into an EitherMap.
-toEitherLeftMap :: Map.Map c x -> EitherMap c x
+toEitherLeftMap :: Map.HashMap c x -> EitherMap c x
 toEitherLeftMap = Map.map Left
 
 eitherMapHasDiagnosis :: EitherMap c x -> Bool
-eitherMapHasDiagnosis = Map.fold (\ a b -> case a of
+eitherMapHasDiagnosis = Map.foldr (\ a b -> case a of
     Right _ -> True
     _ -> b ) False
 
 -- only use after eitherMapHasDiagnosis returned true
 eitherMapGetDiagnosis :: EitherMap c x -> [Diagnosis]
 eitherMapGetDiagnosis =
-    Map.fold (\ e dl -> either (const dl) (: dl) e) []
+    Map.foldr (\ e dl -> either (const dl) (: dl) e) []
 
 -- only use after eitherMapHasDiagnosis returned false
-eitherMapGetMap :: EitherMap c x -> Map.Map c x
+eitherMapGetMap :: EitherMap c x -> Map.HashMap c x
 eitherMapGetMap = Map.map (\ (Left a) -> a)
 
 {- If the EitherMap contains diagnosis they will be returned in a list.
 Otherwise the map will be converted back. -}
-genRes :: EitherMap c x -> Either (Map.Map c x) [Diagnosis]
+genRes :: EitherMap c x -> Either (Map.HashMap c x) [Diagnosis]
 genRes em = if eitherMapHasDiagnosis em
             then Right (eitherMapGetDiagnosis em)
             else Left (eitherMapGetMap em)
@@ -176,7 +183,7 @@ symbolMapUnion s1 s2 =
         ems2 = toEitherLeftMap s2
     in genRes $ unite "Symbols" ems1 ems2
 
-unite :: (Ord c, Eq x, Show x) => String -> EitherMap c x -> EitherMap c x
+unite :: (Ord c, Eq x, Show x, Hashable c) => String -> EitherMap c x -> EitherMap c x
                                                           -> EitherMap c x
 unite s = Map.unionWith (\ (Left e1) (Left e2) -> if e1 == e2 then Left e1
             else Right (mkDiag Error
@@ -195,7 +202,7 @@ sigDiff s1 s2 = Result [] (Just $
        , consts = diff (consts s1) (consts s2)
        , symbols = diff (symbols s1) (symbols s2) })
 
-diff :: (Ord c, Eq x) => Map.Map c x -> Map.Map c x -> Map.Map c x
+diff :: (Ord c, Eq x, Hashable c) => Map.HashMap c x -> Map.HashMap c x -> Map.HashMap c x
 diff = Map.differenceWith (\ e1 e2 -> if e1 == e2 then Nothing else Just e1)
 
 {- -----------------------------------------------------------------------------
@@ -236,7 +243,7 @@ symbolMapIntersect s1 s2 =
         ems2 = toEitherLeftMap s2
     in genRes $ intersect "Symbols" ems1 ems2
 
-intersect :: (Ord c, Eq x, Show x) => String -> EitherMap c x -> EitherMap c x
+intersect :: (Ord c, Eq x, Show x, Hashable c) => String -> EitherMap c x -> EitherMap c x
                                                          -> EitherMap c x
 intersect s = Map.intersectionWith (\ (Left e1) (Left e2) ->
                 if e1 == e2 then Left e1 else Right (mkDiag Error

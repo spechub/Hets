@@ -30,7 +30,7 @@ import Common.DocUtils
 
 import System.IO.Unsafe
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 -- basic analysis for object logics of LF
 basicAnalysisOL :: Morphism -> (BASIC_SPEC, Sign, GlobalAnnos) ->
@@ -83,7 +83,7 @@ printLocalDefs sig =
 --------------------------------------------------------------- -}
 
 -- induced_from_to_morphism for object logics
-inducedFromToMorphismOL :: Morphism -> Map.Map RAW_SYM RAW_SYM ->
+inducedFromToMorphismOL :: Morphism -> Map.HashMap RAW_SYM RAW_SYM ->
                            ExtSign Sign Symbol -> ExtSign Sign Symbol ->
                            Result Morphism
 inducedFromToMorphismOL ltruth m (ExtSign sig1 _) (ExtSign sig2 _) =
@@ -91,15 +91,15 @@ inducedFromToMorphismOL ltruth m (ExtSign sig1 _) (ExtSign sig2 _) =
 
 {- converts a mapping of raw symbols to a mapping of symbols to expressions
    annotated with their type -}
-translMapAnalysisOL :: Morphism -> Map.Map RAW_SYM RAW_SYM -> Sign ->
-                       Sign -> Map.Map Symbol (EXP, EXP)
+translMapAnalysisOL :: Morphism -> Map.HashMap RAW_SYM RAW_SYM -> Sign ->
+                       Sign -> Map.HashMap Symbol (EXP, EXP)
 translMapAnalysisOL ltruth m sig1 sig2 =
   let syms = getUnknownSyms (Map.keys m) sig1
       in if not (null syms) then error $ badSymsError syms else
          unsafePerformIO $ codAnalysisOL ltruth m sig2
 
-codAnalysisOL :: Morphism -> Map.Map RAW_SYM RAW_SYM -> Sign ->
-                 IO (Map.Map Symbol (EXP, EXP))
+codAnalysisOL :: Morphism -> Map.HashMap RAW_SYM RAW_SYM -> Sign ->
+                 IO (Map.HashMap Symbol (EXP, EXP))
 codAnalysisOL ltruth m sig2 = do
   -- make a Twelf file
   let lSyn = target ltruth

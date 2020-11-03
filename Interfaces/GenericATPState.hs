@@ -17,7 +17,7 @@ module Interfaces.GenericATPState where
 
 import Logic.Prover
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 import qualified Common.OrderedMap as OMap
@@ -90,13 +90,13 @@ getConfig prName genid pt m = fromMaybe (emptyConfig prName genid pt) lookupId
 {- |
   We need to store one GenericConfig per goal.
 -}
-type GenericConfigsMap proof_tree = Map.Map ATPIdentifier
+type GenericConfigsMap proof_tree = Map.HashMap ATPIdentifier
                                             (GenericConfig proof_tree)
 
 {- |
   New goal name mapped to old goal name
 -}
-type GenericGoalNameMap = Map.Map String String
+type GenericGoalNameMap = Map.HashMap String String
 
 {- |
   Represents the global state of the prover GUI.
@@ -306,12 +306,12 @@ parseTacticScript tLimit extOpts (TacticScript ts) =
 {- |
   Pretty printing of prover configuration.
 -}
-printCfgText :: Map.Map ATPIdentifier (GenericConfig proof_tree)
+printCfgText :: Map.HashMap ATPIdentifier (GenericConfig proof_tree)
              -> Doc -- ^ prover configuration
 printCfgText mp = text "* Configuration *" $+$ dc
              $++$ text "* Results *" $+$ dr
   where
-  (dc, dr) = Map.foldWithKey (\ k cfg (dCfg, dRes) ->
+  (dc, dr) = Map.foldrWithKey (\ k cfg (dCfg, dRes) ->
       let r = proofStatus cfg
       in
       (quotes (text k) <+> equals <+> specBraces (

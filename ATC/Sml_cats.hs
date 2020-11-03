@@ -31,7 +31,7 @@ import Control.Monad
 import Data.List (isPrefixOf)
 import Data.Maybe
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 -- better recompilation checking without 'import ATerm.Lib'
 import ATerm.AbstractSyntax
 import ATerm.ReadWrite
@@ -116,7 +116,7 @@ instance ATermConvertibleSML Char where
                        where at = getATerm att
 
 instance (Ord a, ATermConvertibleSML a, ATermConvertibleSML b)
-    => ATermConvertibleSML (Map.Map a b) where
+    => ATermConvertibleSML (Map.HashMap a b) where
     from_sml_ShATerm att = Map.fromList $ from_sml_ShATerm att
 
 instance ATermConvertibleSML a => ATermConvertibleSML [a] where

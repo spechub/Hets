@@ -20,7 +20,8 @@ import Common.Id
 import Common.Result
 import Common.AS_Annotation
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
+import qualified Data.Map as PlainMap
 import Data.Dynamic
 import ATC.LibName ()
 import ATC.Prover ()
@@ -128,9 +129,19 @@ coerceSymbolmap ::
    Logic lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2,
    Typeable a)
-   => lid1 -> lid2 -> Map.Map symbol1 a
-           -> Map.Map symbol2 a
+   => lid1 -> lid2 -> Map.HashMap symbol1 a
+           -> Map.HashMap symbol2 a
 coerceSymbolmap = unsafeCoerce
+
+coercePlainsymbolmap ::
+   (Logic lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+                sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
+   Logic lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
+                sign2 morphism2 symbol2 raw_symbol2 proof_tree2,
+   Typeable a)
+   => lid1 -> lid2 -> PlainMap.Map symbol1 a
+           -> PlainMap.Map symbol2 a
+coercePlainsymbolmap = unsafeCoerce
 
 coerceMapofsymbol ::
    (Logic lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
@@ -138,8 +149,8 @@ coerceMapofsymbol ::
    Logic lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2,
    Typeable a)
-   => lid1 -> lid2 -> Map.Map a symbol1
-           -> Map.Map a symbol2
+   => lid1 -> lid2 -> Map.HashMap a symbol1
+           -> Map.HashMap a symbol2
 coerceMapofsymbol = unsafeCoerce
 
 coerceSymbItemsList ::

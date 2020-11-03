@@ -38,7 +38,7 @@ import Events.Events (sync)
 import Events.Destructible (destroy, destroyed)
 import qualified HTk.Toplevel.HTk as HTk
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
 

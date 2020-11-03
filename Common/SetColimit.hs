@@ -29,13 +29,14 @@ import Common.Lib.Graph
 import Common.Lib.Rel (leqClasses)
 
 import Data.Graph.Inductive.Graph
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
+import Data.Hashable
 
-compose :: (Ord a) => Set.Set (a, Int) ->
-                      Map.Map (a, Int) (a, Int) ->
-                      Map.Map (a, Int) (a, Int) ->
-                      Map.Map (a, Int) (a, Int)
+compose :: (Ord a, Hashable a) => Set.Set (a, Int) ->
+                      Map.HashMap (a, Int) (a, Int) ->
+                      Map.HashMap (a, Int) (a, Int) ->
+                      Map.HashMap (a, Int) (a, Int)
 compose s f g = Set.fold ( \ i h ->
                                let
                                 i' = Map.findWithDefault i i f
@@ -43,10 +44,10 @@ compose s f g = Set.fold ( \ i h ->
                                if i == j then h else Map.insert i j h)
                 Map.empty s
 
-coeq :: (Ord a) =>
+coeq :: (Ord a, Hashable a) =>
         Set.Set (a, Int) -> Set.Set (a, Int) ->
-        Map.Map (a, Int) (a, Int) -> Map.Map (a, Int) (a, Int) ->
-        (Set.Set (a, Int), Map.Map (a, Int) (a, Int))
+        Map.HashMap (a, Int) (a, Int) -> Map.HashMap (a, Int) (a, Int) ->
+        (Set.Set (a, Int), Map.HashMap (a, Int) (a, Int))
 coeq sSet tSet f1 f2 =
  case Set.elems sSet of
    [] -> (tSet, Map.empty)
@@ -66,24 +67,24 @@ coeq sSet tSet f1 f2 =
              coeqf = compose tSet cf df
             in (d, coeqf)
 
-computeColimitSet :: (Ord a) =>
-                     Gr (Set.Set a) (Int, Map.Map a a) ->
-                     (Set.Set (a, Node), Map.Map Node (Map.Map a (a, Node)))
+computeColimitSet :: (Ord a, Hashable a) =>
+                     Gr (Set.Set a) (Int, Map.HashMap a a) ->
+                     (Set.Set (a, Node), Map.HashMap Node (Map.HashMap a (a, Node)))
 computeColimitSet graph = let
    unionSet = foldl Set.union Set.empty $
                map (\ (n, s) -> Set.map (\ x -> (x, n)) s) $ labNodes graph
-   inclMap = Map.fromAscList $ map (\ (n, s) -> (n, Map.fromList $ map (\x -> ((x,n),(x,n))) $ Set.toList s)) $ labNodes graph
+   inclMap = Map.fromList $ map (\ (n, s) -> (n, Map.fromList $ map (\x -> ((x,n),(x,n))) $ Set.toList s)) $ labNodes graph
    (colim, morMap) = computeCoeqs graph (unionSet, inclMap) $ labEdges graph
    morMap' = Map.map
-               (Map.fromAscList . map (\ ((x, _), z) -> (x, z)) . Map.toList)
+               (Map.fromList . map (\ ((x, _), z) -> (x, z)) . Map.toList)
                morMap
   in (colim, morMap')
 
-computeCoeqs :: (Ord a) =>
-      Gr (Set.Set a) (Int, Map.Map a a) ->
-      (Set.Set (a, Node), Map.Map Node (Map.Map (a, Node) (a, Node))) ->
-      [LEdge (Int, Map.Map a a)] ->
-      (Set.Set (a, Node), Map.Map Node (Map.Map (a, Node) (a, Node)))
+computeCoeqs :: (Ord a, Hashable a) =>
+      Gr (Set.Set a) (Int, Map.HashMap a a) ->
+      (Set.Set (a, Node), Map.HashMap Node (Map.HashMap (a, Node) (a, Node))) ->
+      [LEdge (Int, Map.HashMap a a)] ->
+      (Set.Set (a, Node), Map.HashMap Node (Map.HashMap (a, Node) (a, Node)))
 computeCoeqs graph (colim, morMap) edgeList =
   case edgeList of
    [] -> (colim, morMap)
@@ -97,7 +98,7 @@ computeCoeqs graph (colim, morMap) edgeList =
      morMap' = Map.fromList $
                map (\ (n, g) -> let
                      Just nset = lab graph n
-                              in (n, Map.fromAscList $
+                              in (n, Map.fromList $
                                map (\ x -> let
                                       y = Map.findWithDefault x x g
                                      in (x, Map.findWithDefault y y coeqMor)) $
@@ -105,7 +106,7 @@ computeCoeqs graph (colim, morMap) edgeList =
                $ Map.toList morMap
     in computeCoeqs graph (colim', morMap') edges'
 
-class (Eq a, Ord a) => SymbolName a where
+class (Eq a, Ord a, Hashable a) => SymbolName a where
   addString :: (a, String) -> a
 
 instance SymbolName Id where
@@ -114,9 +115,9 @@ instance SymbolName Id where
 instance SymbolName IRI where
  addString (x, y) = x {iriPath  = appendString (iriPath x) y}
 
-addIntToSymbols :: (SymbolName a) =>
-               (Set.Set (a, Node), Map.Map Node (Map.Map a (a, Node))) ->
-               (Set.Set a, Map.Map Node (Map.Map a a))
+addIntToSymbols :: (SymbolName a, Ord a, Hashable a) =>
+               (Set.Set (a, Node), Map.HashMap Node (Map.HashMap a (a, Node))) ->
+               (Set.Set a, Map.HashMap Node (Map.HashMap a a))
 addIntToSymbols (set, fun) = let
   fstEqual (x1, _) (x2, _) = x1 == x2
   partList = leqClasses fstEqual

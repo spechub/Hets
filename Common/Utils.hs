@@ -65,8 +65,9 @@ module Common.Utils
 import Data.Char
 import Data.List
 import Data.Maybe
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
+import Data.Hashable
 
 import System.Directory
 import System.Environment
@@ -90,6 +91,9 @@ import System.IO.Unsafe (unsafeInterleaveIO)
 #endif
 
 import Control.Monad
+
+instance (Hashable a) => Hashable (Set.Set a) where 
+ hashWithSalt s aSet = s + (sum $ map hash $ Set.toList aSet)
 
 {- | Writes the message to the given handle unless the verbosity is less than
 the message level. -}
@@ -242,9 +246,9 @@ concatMapM :: (Traversable t, Monad m) => (a -> m [b]) -> t a -> m [b]
 concatMapM f = liftM concat . mapM f
 
 -- | composition of arbitrary maps
-composeMap :: Ord a => Map.Map a b -> Map.Map a a -> Map.Map a a -> Map.Map a a
+composeMap :: (Ord a, Hashable a) => Map.HashMap a b -> Map.HashMap a a -> Map.HashMap a a -> Map.HashMap a a
 composeMap s m1 m2 = if Map.null m2 then m1 else Map.intersection
-  (Map.foldWithKey ( \ i j ->
+  (Map.foldrWithKey ( \ i j ->
     let k = Map.findWithDefault j j m2 in
     if i == k then Map.delete i else Map.insert i k) m2 m1) s
 
@@ -371,12 +375,12 @@ makeRelativeDesc dp fp = f dp fp []
 
 {- | filter a map according to a given list of keys (it dosen't hurt
    if a key is not present in the map) -}
-filterMapWithList :: Ord k => [k] -> Map.Map k e -> Map.Map k e
+filterMapWithList :: Ord k => [k] -> Map.HashMap k e -> Map.HashMap k e
 filterMapWithList = filterMapWithSet . Set.fromList
 
 {- | filter a map according to a given set of keys (it dosen't hurt if
    a key is not present in the map) -}
-filterMapWithSet :: Ord k => Set.Set k -> Map.Map k e -> Map.Map k e
+filterMapWithSet :: Ord k => Set.Set k -> Map.HashMap k e -> Map.HashMap k e
 filterMapWithSet s = Map.filterWithKey (\ k _ -> Set.member k s)
 
 {- | get, parse and check an environment variable; provide the default

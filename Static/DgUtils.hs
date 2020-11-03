@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./Static/DgUtils.hs
 Description :  auxiliary datastructures for development graphs
@@ -23,12 +23,17 @@ import Data.Data
 import Data.List
 import Data.Maybe
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
+
+import GHC.Generics (Generic)
+import Data.Hashable
 
 -- ** node label types
 
-data XPathPart = ElemName String | ChildIndex Int deriving (Show, Typeable, Data)
+data XPathPart = ElemName String | ChildIndex Int deriving (Show, Typeable, Data, Generic)
+
+instance Hashable XPathPart
 
 {- | name of a node in a DG; auxiliary nodes may have extension string
      and non-zero number (for these, names are usually hidden). -}
@@ -38,7 +43,9 @@ data NodeName = NodeName
   , extIndex :: Int
   , xpath :: [XPathPart]
   , srcRange :: Range
-  } deriving (Show, Typeable, Data)
+  } deriving (Show, Typeable, Data, Generic)
+
+instance Hashable NodeName
 
 instance Ord NodeName where
   compare n1 n2 = compare (showName n1) (showName n2)
@@ -147,7 +154,9 @@ mergeNodeMod NodeMod
 
 -- | unique number for edges
 newtype EdgeId = EdgeId { getEdgeNum :: Int }
-  deriving (Eq, Ord, Typeable, Data)
+  deriving (Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable EdgeId
 
 instance Show EdgeId where
   show = show . getEdgeNum
@@ -321,17 +330,17 @@ isDefEdgeType edgeTp = case edgeTypeModInc edgeTp of
 data RTPointer =
    RTNone
  | NPUnit Int
- | NPBranch Int (Map.Map IRI RTPointer)
+ | NPBranch Int (Map.HashMap IRI RTPointer)
         -- here the leaves can be either NPUnit or NPComp
  | NPRef Int Int
- | NPComp (Map.Map IRI RTPointer)
+ | NPComp (Map.HashMap IRI RTPointer)
          {- here the leaves can be NPUnit or NPComp
          and roots are needed for inserting edges -}
  deriving (Show, Eq, Ord, Typeable, Data)
 
 -- map nodes
 
-mapRTNodes :: Map.Map Int Int -> RTPointer -> RTPointer
+mapRTNodes :: Map.HashMap Int Int -> RTPointer -> RTPointer
 mapRTNodes f rtp = let app = flip $ Map.findWithDefault (error "mapRTNodes")
   in case rtp of
   RTNone -> RTNone
@@ -362,7 +371,7 @@ refSource (NPBranch n _) = n
 refSource (NPRef n _) = n
 refSource x = error ("refSource:" ++ show x)
 
-data RTLeaves = RTLeaf Int | RTLeaves (Map.Map IRI RTLeaves)
+data RTLeaves = RTLeaf Int | RTLeaves (Map.HashMap IRI RTLeaves)
  deriving (Show, Typeable, Data)
 
 refTarget :: RTPointer -> RTLeaves
@@ -454,9 +463,13 @@ edgeInProofBasis e = Set.member e . proofBasis
 topsortedLibsWithImports :: Rel.Rel LibName -> [LibName]
 topsortedLibsWithImports = concatMap Set.toList . Rel.topSort
 
-getMapAndMaxIndex :: Ord k => k -> (b -> Map.Map k a) -> b -> (Map.Map k a, k)
+getMapAndMaxIndex :: (Ord k, Hashable k) => k -> (b -> Map.HashMap k a) -> b -> (Map.HashMap k a, k)
 getMapAndMaxIndex c f gctx =
-    let m = f gctx in (m, if Map.null m then c else fst $ Map.findMax m)
+    let m = f gctx in (m, if Map.null m then c 
+                          else let slist = sortOn fst $ Map.toList m
+                               in case slist of 
+                                   [] -> error "impossible"
+                                   (x, _):_ -> x) 
 
 -- | or two predicates
 liftOr :: (a -> Bool) -> (a -> Bool) -> a -> Bool

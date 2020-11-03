@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./HolLight/Term.hs
 Description :  Tern for HolLight logic
@@ -21,19 +21,32 @@ module HolLight.Term where
 
 import Data.Data
 
-data HolType = TyVar String | TyApp String [HolType]
-  deriving (Eq, Ord, Show, Read, Typeable, Data)
+import GHC.Generics (Generic)
+import Data.Hashable
 
-data HolProof = NoProof deriving (Eq, Ord, Show, Typeable, Data)
+data HolType = TyVar String | TyApp String [HolType]
+  deriving (Eq, Ord, Show, Read, Typeable, Data, Generic)
+
+instance Hashable HolType
+
+data HolProof = NoProof deriving (Eq, Ord, Show, Typeable, Data, Generic)
+
+instance Hashable HolProof
 
 data HolParseType = Normal | PrefixT
  | InfixL Int | InfixR Int | Binder
- deriving (Eq, Ord, Show, Read, Typeable, Data)
+ deriving (Eq, Ord, Show, Read, Typeable, Data, Generic)
+
+instance Hashable HolParseType
 
 data HolTermInfo = HolTermInfo (HolParseType, Maybe (String, HolParseType))
-  deriving (Eq, Ord, Show, Read, Typeable, Data)
+  deriving (Eq, Ord, Show, Read, Typeable, Data, Generic)
+
+instance Hashable HolTermInfo
 
 data Term = Var String HolType HolTermInfo
      | Const String HolType HolTermInfo
      | Comb Term Term
-     | Abs Term Term deriving (Eq, Ord, Show, Read, Typeable, Data)
+     | Abs Term Term deriving (Eq, Ord, Show, Read, Typeable, Data, Generic)
+
+instance Hashable Term

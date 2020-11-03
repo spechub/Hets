@@ -17,7 +17,7 @@ import qualified Common.Doc as Pretty
 import qualified Common.OrderedMap as OMap
 import Common.AS_Annotation
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Maybe
 import Data.List
 import Data.IORef

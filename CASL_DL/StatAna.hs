@@ -42,7 +42,7 @@ import Common.ExtSign
 import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 instance TermExtension DL_FORMULA where
@@ -358,7 +358,7 @@ checkSymbolMapDL rsm =
     let checkSourceSymbol sSym _ =
               if any (`matches` sSym) symOfPredefinedSign then
                   (sSym :) else id
-        syms = Map.foldWithKey checkSourceSymbol [] rsm
+        syms = Map.foldrWithKey checkSourceSymbol [] rsm
     in if null syms
        then return rsm
        else mkError "Predefined CASL_DL symbols cannot be mapped" syms

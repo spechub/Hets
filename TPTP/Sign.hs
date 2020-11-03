@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./TPTP/Sign.hs
 Description :  Data structures representing TPTP signatures.
@@ -19,8 +19,11 @@ import TPTP.AS
 import Common.Id
 
 import Data.Data
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
+
+import GHC.Generics (Generic)
+import Data.Hashable
 
 type Sentence = Annotated_formula
 
@@ -47,25 +50,27 @@ symbolTypeS :: Symbol -> String
 symbolTypeS = show . symbolType
 
 type ConstantSet = Set.Set Constant
-type FunctorMap = Map.Map TPTP_functor FunctorType
+type FunctorMap = Map.HashMap TPTP_functor FunctorType
 type NumberSet = Set.Set Number
 type PropositionSet = Set.Set Proposition
-type THFTypeDeclarationMap = Map.Map THFTypeable THF_top_level_type
-type TFFTypeDeclarationMap = Map.Map Untyped_atom TFF_top_level_type
+type THFTypeDeclarationMap = Map.HashMap THFTypeable THF_top_level_type
+type TFFTypeDeclarationMap = Map.HashMap Untyped_atom TFF_top_level_type
 type THFPredicateMap = THFTypeDeclarationMap
 type TFFPredicateMap = TFFTypeDeclarationMap
-type FOFPredicateMap = Map.Map Predicate (Set.Set Int)
-type FOFFunctorMap = Map.Map TPTP_functor (Set.Set Int)
+type FOFPredicateMap = Map.HashMap Predicate (Set.Set Int)
+type FOFFunctorMap = Map.HashMap TPTP_functor (Set.Set Int)
 type THFTypeConstantMap = THFTypeDeclarationMap
 type TFFTypeConstantMap = TFFTypeDeclarationMap
 type THFTypeFunctorMap = THFTypeDeclarationMap
 type TFFTypeFunctorMap = TFFTypeDeclarationMap
-type THFSubTypeMap = Map.Map THF_atom THF_atom
-type TFFSubTypeMap = Map.Map Untyped_atom Atom
+type THFSubTypeMap = Map.HashMap THF_atom THF_atom
+type TFFSubTypeMap = Map.HashMap Untyped_atom Atom
 
 data THFTypeable = THFTypeFormula THF_typeable_formula
                  | THFTypeConstant Constant
-                   deriving (Show, Eq, Ord, Data, Typeable)
+                   deriving (Show, Eq, Ord, Data, Typeable, Generic)
+
+instance Hashable THFTypeable
 
 data FunctorType = FunctorTHF THF_arguments
                  | FunctorFOF FOF_arguments

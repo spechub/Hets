@@ -19,7 +19,7 @@ import Isabelle.IsaSign
 import qualified Data.Set as Set
 import Data.List
 import Data.Maybe
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 -- | a topological sort with a @uses@ predicate
 topSort :: (a -> a -> Bool) -> [a] -> [a]
@@ -611,7 +611,7 @@ imageV = VName imageS $ Just $ AltSyntax "(_ `/ _)" [65, 66] 65
 rangeV :: VName
 rangeV = VName rangeS Nothing
 
-vMap' :: Map.Map String VName
+vMap' :: Map.HashMap String VName
 vMap' = Map.fromList [(conj, conjV), (disj, disjV), (impl, implV), (eq, eqV),
         (neq, neqV), (plusS, plusV), (minusS, minusV), (divS, divV),
         (modS, modV),
@@ -619,7 +619,7 @@ vMap' = Map.fromList [(conj, conjV), (disj, disjV), (impl, implV), (eq, eqV),
         (eqvSimS, eqvSimV), (unionS, unionV), (membershipS, membershipV),
         (imageS, imageV), (rangeS, rangeV)]
 
-vMap :: Map.Map String VName
+vMap :: Map.HashMap String VName
 vMap = Map.union vMap' . Map.fromList
  . map (\ (k, v) -> case stripPrefix "op " k of
                      Just r -> (r, v)

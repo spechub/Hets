@@ -26,7 +26,7 @@ import Common.Result
 import Common.Utils
 import Common.Lib.State
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 import DMU.Logic_DMU
 

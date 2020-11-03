@@ -60,7 +60,8 @@ import Driver.ReadFn
 import Driver.ReadLibDefn
 import Driver.WriteLibDefn
 
-import qualified Data.Map as Map
+import qualified Common.OrderedMap as OMap
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Data.Either (lefts, rights)
 import Data.List
@@ -859,9 +860,9 @@ generateWAlign an
      gth = G_theory lid1 Nothing (mkExtSign sig'') startSigId
                                  (toThSens sens'') startThId
  -- prepare the maps for morphism generation
-     rsMap1 = Map.mapKeys (symbol_to_raw lid1) $
+     rsMap1 = OMap.mapMapKeys (symbol_to_raw lid1) $
               Map.map (symbol_to_raw lid1) sMap1
-     rsMap2 = Map.mapKeys (symbol_to_raw lid1) $
+     rsMap2 = OMap.mapMapKeys (symbol_to_raw lid1) $
               Map.map (symbol_to_raw lid1) sMap2
  -- mor1 should go from A_source to O1: sig1'' to ssig
  mor1 <- induced_from_to_morphism

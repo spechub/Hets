@@ -45,7 +45,7 @@ import Common.Result
 import qualified Common.OrderedMap as OMap
 
 import Data.Graph.Inductive.Graph
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Maybe
 
 -- | local decomposition

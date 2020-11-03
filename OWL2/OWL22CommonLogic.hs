@@ -23,7 +23,8 @@ import Data.Char
 import Data.Either
 import Data.Maybe
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
+import qualified Common.OrderedMap as OMap
 
 -- OWL2 = domain
 import OWL2.Logic_OWL2
@@ -254,8 +255,8 @@ mapMorphism oMor = do
     mapp <- mapMap $ mmaps oMor
     return (CLM.mkMorphism dm cd mapp)
 
-mapMap :: Map.Map Entity IRI -> Result (Map.Map Id Id)
-mapMap m = return $ Map.map uriToId $ Map.mapKeys entityToId m
+mapMap :: Map.HashMap Entity IRI -> Result (Map.HashMap Id Id)
+mapMap m = return $ Map.map uriToId $ OMap.mapMapKeys entityToId m
 
 mapSymbol :: Entity -> Set.Set Symbol
 mapSymbol (Entity _ _ iri) = Set.singleton $ idToRaw $ uriToId iri

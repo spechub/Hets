@@ -36,7 +36,7 @@ import HasCASL.Unify
 import Control.Monad
 
 import Data.Maybe (mapMaybe)
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 {- | description of polymorphic data types. The top-level identifier is
@@ -229,7 +229,7 @@ mkConclusion dp@(DataPat _ _ _ _ ty) =
   let v = mkVarDecl (mkId [mkSimpleId "x"]) ty
   in mkForall [GenVarDecl v] $ mkPredToVarAppl dp v
 
-mkPremise :: Map.Map Type DataPat -> DataPat -> AltDefn -> [Term]
+mkPremise :: Map.HashMap Type DataPat -> DataPat -> AltDefn -> [Term]
 mkPremise m dp (Construct mc ts p sels) =
     case mc of
     Nothing -> []
@@ -250,11 +250,11 @@ mkConjunct :: [Term] -> Term
 mkConjunct ts = if null ts then error "HasCASL.DataAna.mkConjunct" else
   toBinJunctor andId ts nullRange
 
-mkPremises :: Map.Map Type DataPat -> DataEntry -> [Term]
+mkPremises :: Map.HashMap Type DataPat -> DataEntry -> [Term]
 mkPremises m de@(DataEntry _ _ _ _ _ alts) =
     concatMap (mkPremise m $ toDataPat de) $ Set.toList alts
 
-joinTypeArgs :: [DataPat] -> Map.Map Id TypeArg
+joinTypeArgs :: [DataPat] -> Map.HashMap Id TypeArg
 joinTypeArgs = foldr (\ (DataPat _ _ iargs _ _) m ->
    foldr (\ ta -> Map.insert (getTypeVar ta) ta) m iargs) Map.empty
 

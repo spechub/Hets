@@ -36,7 +36,7 @@ import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Error
 
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 -- ^ parse a simple word not in 'rskeywords'
 rsVarId :: [String] -> AParser st Token

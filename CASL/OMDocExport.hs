@@ -36,7 +36,7 @@ import CASL.Fold
 import CASL.Quantification
 import CASL.OMDoc
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Maybe
 
 -- --------------------------- TOPLEVEL Interface -----------------------------

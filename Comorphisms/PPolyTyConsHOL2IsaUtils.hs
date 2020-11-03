@@ -42,7 +42,7 @@ import Common.Lib.State
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Data.List
 import Data.Maybe
@@ -85,14 +85,14 @@ transAssumps ga toks = foldM insertOps Map.empty . Map.toList where
 
 -- all possible tokens of mixfix identifiers that must not be used as variables
 getAssumpsToks :: Assumps -> Set.Set String
-getAssumpsToks = Map.foldWithKey (\ i ops s ->
+getAssumpsToks = Map.foldrWithKey (\ i ops s ->
     Set.union s $ Set.unions
         $ map (\ (_, o) -> getConstIsaToks i o baseSign)
                      $ number $ Set.toList ops) Set.empty
 
 typeToks :: Env -> Set.Set String
 typeToks =
-    Set.map (`showIsaTypeT` baseSign) . Map.keysSet . typeMap
+    Set.map (`showIsaTypeT` baseSign) . Set.fromList . Map.keys . typeMap
 
 transSignature :: Env -> Set.Set String -> Result Isa.Sign
 transSignature env toks = do
@@ -109,7 +109,7 @@ transSignature env toks = do
         { baseSig = baseSign
     -- translation of typeconstructors
         , tsig = emptyTypeSig
-             { arities = Map.foldWithKey extractTypeName Map.empty
+             { arities = Map.foldrWithKey extractTypeName Map.empty
                $ typeMap env }
         , constTab = ct }
 

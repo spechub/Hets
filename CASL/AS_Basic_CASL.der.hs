@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./CASL/AS_Basic_CASL.der.hs
 Description :  Abstract syntax of CASL basic specifications
@@ -23,6 +23,9 @@ import Data.Data
 import Data.Function
 import Data.List
 import qualified Data.Set as Set
+
+import GHC.Generics (Generic)
+import Data.Hashable
 
 -- DrIFT command
 {-! global: GetRange !-}
@@ -77,11 +80,15 @@ data OP_ITEM f = Op_decl [OP_NAME] OP_TYPE [OP_ATTR f] Range
                -- pos: "="
                deriving (Show, Typeable, Data)
 
-data OpKind = Total | Partial deriving (Show, Eq, Ord, Typeable, Data)
+data OpKind = Total | Partial deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable OpKind
 
 data OP_TYPE = Op_type OpKind [SORT] SORT Range
                -- pos: "*"s, "->" ; if null [SORT] then Range = [] or pos: "?"
-               deriving (Show, Eq, Ord, Typeable, Data)
+               deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable OP_TYPE
 
 args_OP_TYPE :: OP_TYPE -> [SORT]
 args_OP_TYPE (Op_type _ args _ _) = args
@@ -91,7 +98,9 @@ res_OP_TYPE (Op_type _ _ res _) = res
 
 data OP_HEAD = Op_head OpKind [VAR_DECL] (Maybe SORT) Range
                -- pos: "(", semicolons, ")", colon
-               deriving (Show, Eq, Ord, Typeable, Data)
+               deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable OP_HEAD
 
 data OP_ATTR f = Assoc_op_attr | Comm_op_attr | Idem_op_attr
              | Unit_op_attr (TERM f)
@@ -105,7 +114,9 @@ data PRED_ITEM f = Pred_decl [PRED_NAME] PRED_TYPE Range
 
 data PRED_TYPE = Pred_type [SORT] Range
                  -- pos: if null [SORT] then "(",")" else "*"s
-                 deriving (Show, Eq, Ord, Typeable, Data)
+                 deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable PRED_TYPE
 
 data PRED_HEAD = Pred_head [VAR_DECL] Range
                  -- pos: "(",semi colons , ")"
@@ -128,7 +139,9 @@ data COMPONENTS = Cons_select OpKind [OP_NAME] SORT Range
 
 data VAR_DECL = Var_decl [VAR] SORT Range
                 -- pos: commas, colon
-                deriving (Show, Eq, Ord, Typeable, Data)
+                deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable VAR_DECL
 
 varDeclRange :: VAR_DECL -> [Pos]
 varDeclRange (Var_decl vs s _) = case vs of
@@ -141,16 +154,22 @@ varDeclRange (Var_decl vs s _) = case vs of
    other Pos informations which encode the brackets of every kind
 -}
 
-data Junctor = Con | Dis deriving (Show, Eq, Ord, Typeable, Data)
+data Junctor = Con | Dis deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable Junctor
 
 dualJunctor :: Junctor -> Junctor
 dualJunctor Con = Dis
 dualJunctor Dis = Con
 
 data Relation = Implication | RevImpl | Equivalence
-  deriving (Show, Eq, Ord, Typeable, Data)
+  deriving (Show, Eq, Ord, Typeable, Data, Generic)
 
-data Equality = Strong | Existl deriving (Show, Eq, Ord, Typeable, Data)
+instance Hashable Relation
+
+data Equality = Strong | Existl deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable Equality
 
 data FORMULA f = Quantification QUANTIFIER [VAR_DECL] (FORMULA f) Range
                -- pos: QUANTIFIER, semi colons, dot
@@ -183,7 +202,9 @@ data FORMULA f = Quantification QUANTIFIER [VAR_DECL] (FORMULA f) Range
              | QuantPred PRED_NAME PRED_TYPE (FORMULA f)
              | ExtFORMULA f
              -- needed for CASL extensions
-               deriving (Show, Eq, Ord, Typeable, Data)
+               deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable f => Hashable (FORMULA f)
 
 mkSort_gen_ax :: [Constraint] -> Bool -> FORMULA f
 mkSort_gen_ax = Sort_gen_ax . sortConstraints
@@ -231,7 +252,9 @@ and the coding into second order logic (p. 429 of Theoret. Comp. Sci. 286).
 data Constraint = Constraint { newSort :: SORT,
                                opSymbs :: [(OP_SYMB, [Int])],
                                origSort :: SORT }
-                  deriving (Show, Typeable, Data)
+                  deriving (Show, Typeable, Data, Generic)
+
+instance Hashable Constraint
 
 instance Ord Constraint where
   compare (Constraint s1 cs1 _) (Constraint s2 cs2 _) =
@@ -298,12 +321,16 @@ isSortGen f = case f of
   _ -> False
 
 data QUANTIFIER = Universal | Existential | Unique_existential
-                  deriving (Show, Eq, Ord, Typeable, Data)
+                  deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable QUANTIFIER
 
 data PRED_SYMB = Pred_name PRED_NAME
                | Qual_pred_name PRED_NAME PRED_TYPE Range
                  -- pos: "(", pred, colon, ")"
-                 deriving (Show, Eq, Ord, Typeable, Data)
+                 deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable PRED_SYMB
 
 predSymbName :: PRED_SYMB -> PRED_NAME
 predSymbName p = case p of
@@ -338,7 +365,9 @@ data TERM f = Qual_var VAR SORT Range -- pos: "(", var, colon, ")"
             {- also for list-notation
             pos: "{", "}" -}
           | ExtTERM f
-            deriving (Show, Eq, Ord, Typeable, Data)
+            deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable f => Hashable (TERM f)
 
 -- | state after mixfix- but before overload resolution
 varOrConst :: Token -> TERM f
@@ -347,7 +376,9 @@ varOrConst t = Application (Op_name $ simpleIdToId t) [] $ tokPos t
 data OP_SYMB = Op_name OP_NAME
              | Qual_op_name OP_NAME OP_TYPE Range
                  -- pos: "(", op, colon, ")"
-               deriving (Show, Eq, Ord, Typeable, Data)
+               deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable OP_SYMB
 
 opSymbName :: OP_SYMB -> OP_NAME
 opSymbName o = case o of
@@ -468,7 +499,9 @@ data SYMB_MAP_ITEMS = Symb_map_items SYMB_KIND [SYMB_OR_MAP] Range
 
 data SYMB_KIND = Implicit | Sorts_kind
                | Ops_kind | Preds_kind
-                 deriving (Show, Eq, Ord, Typeable, Data)
+                 deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable SYMB_KIND
 
 data SYMB = Symb_id Id
           | Qual_id Id TYPE Range
@@ -478,7 +511,9 @@ data SYMB = Symb_id Id
 data TYPE = O_type OP_TYPE
           | P_type PRED_TYPE
           | A_type SORT -- ambiguous pred or (constant total) op
-            deriving (Show, Eq, Ord, Typeable, Data)
+            deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable TYPE
 
 data SYMB_OR_MAP = Symb SYMB
                  | Symb_map SYMB SYMB Range

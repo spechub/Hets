@@ -26,7 +26,7 @@ import Common.Parsec
 import qualified Common.GlobalAnnotations as GA (PrefixMap)
 
 import Text.ParserCombinators.Parsec
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 optAnnos :: CharParser st a -> CharParser st (Annotations, a)
 optAnnos p = do

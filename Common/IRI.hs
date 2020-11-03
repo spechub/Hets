@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./Common/IRI.hs
 Copyright   :  (c) DFKI GmbH 2012
@@ -82,10 +82,9 @@ import Text.ParserCombinators.Parsec
 import Data.Char
 import Data.Data
 import Data.Ord (comparing)
-import Data.Map as Map (Map, lookup)
 import Data.Maybe
 import Data.List
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 import Control.Monad (when)
 
@@ -97,6 +96,10 @@ import Common.Lexer
 import Common.Parsec
 import Common.Percent
 import Common.Token (mixId, comps)
+
+import GHC.Generics (Generic)
+import Data.Hashable
+
 
 -- * The IRI datatype
 
@@ -129,14 +132,18 @@ data IRI = IRI
     , isBlankNode :: Bool         -- ^ is the IRI a blank node?                   
     , hasAngles :: Bool           -- ^ IRI in angle brackets
     , iriPos :: Range             -- ^ position
-    } deriving (Typeable, Data)
+    } deriving (Typeable, Data, Generic)
+
+instance Hashable IRI
 
 -- | Type for authority value within a IRI
 data IRIAuth = IRIAuth
     { iriUserInfo :: String       -- ^ @anonymous\@@
     , iriRegName :: String        -- ^ @www.haskell.org@
     , iriPort :: String           -- ^ @:42@
-    } deriving (Eq, Ord, Show, Typeable, Data)
+    } deriving (Eq, Ord, Show, Typeable, Data, Generic)
+
+instance Hashable IRIAuth
 
 -- | Blank IRI
 nullIRI :: IRI
@@ -1044,7 +1051,7 @@ difSegsFrom sabs base = difSegsFrom ("../" ++ sabs) (snd $ nextSegment base)
 {- |Expands a CURIE to an IRI. @Nothing@ iff there is no IRI @i@ assigned
 to the prefix of @c@ or the concatenation of @i@ and @iriPath c@
 is not a valid IRI. -}
-expandCurie :: Map String IRI -> IRI -> Maybe IRI
+expandCurie :: Map.HashMap String IRI -> IRI -> Maybe IRI
 expandCurie prefixMap c =  
   if hasFullIRI c then Just c else
   case Map.lookup (filter (/= ':') $ prefixName c) prefixMap of

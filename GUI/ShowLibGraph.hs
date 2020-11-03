@@ -44,7 +44,7 @@ import Common.XmlDiff
 import Text.XML.Light
 
 import Data.IORef
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 import Control.Concurrent.MVar
@@ -212,8 +212,8 @@ addNodesAndEdges gi graphR graph nodesEdges = do
     opts = hetcatsOpts gi
     lookup' x y = Map.findWithDefault
       (error $ "lookup2': node not found " ++ show y) y x
-    keySet = Map.keysSet le
-    keys = Set.toList keySet
+    -- keySet = Map.keysSet le
+    keys = Map.keys le -- Set.toList keySet
     subNodeMenu = LocalMenu (UDG.Menu Nothing [
       Button "Show Graph" $ mShowGraph gi,
       Button "Show spec/View Names" $ showSpec le])
@@ -235,7 +235,7 @@ addNodesAndEdges gi graphR graph nodesEdges = do
    let insertSubArc (node1, node2) = newArc graph subArcType (return "")
                                             (lookup' nodes' node1)
                                             (lookup' nodes' node2)
-   subArcList <- mapM insertSubArc $ getLibDeps keySet le
+   subArcList <- mapM insertSubArc $ getLibDeps (Set.fromList keys) le
    writeIORef nodesEdges (subNodeList, subArcList)
    writeIORef graphR graph
    redraw graph

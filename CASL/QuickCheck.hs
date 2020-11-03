@@ -34,7 +34,7 @@ import Common.ProofTree
 import Common.Result
 import Common.Utils (timeoutSecs)
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Maybe
 import Data.List
 
@@ -51,10 +51,10 @@ import Proofs.BatchProcessing
 data QModel = QModel
         { sign :: CASLSign
         -- sentences determining the set of terms for a sort
-        , carrierSens :: Map.Map SORT [CASLFORMULA]
+        , carrierSens :: Map.HashMap SORT [CASLFORMULA]
         -- definitions of predicates and operations
-        , predDefs :: Map.Map PRED_SYMB [([CASLTERM], CASLFORMULA)]
-        , opDefs :: Map.Map OP_SYMB [([CASLTERM], CASLTERM)]
+        , predDefs :: Map.HashMap PRED_SYMB [([CASLTERM], CASLFORMULA)]
+        , opDefs :: Map.HashMap OP_SYMB [([CASLTERM], CASLTERM)]
         -- currently evaluated items, for avoiding infinite recursion
         , evaluatedPreds :: [(PRED_SYMB, [CASLTERM])]
         , evaluatedOps :: [(OP_SYMB, [CASLTERM])]

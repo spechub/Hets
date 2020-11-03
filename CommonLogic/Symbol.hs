@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./CommonLogic/Symbol.hs
 Description :  Symbols of common logic
@@ -33,13 +33,18 @@ import Common.Result
 
 import Data.Data
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 import qualified CommonLogic.Sign as Sign
 import CommonLogic.Morphism as Morphism
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 newtype Symbol = Symbol {symName :: Id.Id}
-                 deriving (Show, Eq, Ord, Typeable)
+                 deriving (Show, Eq, Ord, Typeable, Generic)
+
+instance Hashable Symbol
 
 instance Id.GetRange Symbol where
     getRange = Id.getRange . symName
@@ -57,7 +62,7 @@ symOf x = Set.fold (\ y -> Set.insert Symbol {symName = y}) Set.empty $
            Sign.allItems x
 
 -- | Determines the symbol map of a morhpism
-getSymbolMap :: Morphism.Morphism -> Map.Map Symbol Symbol
+getSymbolMap :: Morphism.Morphism -> Map.HashMap Symbol Symbol
 getSymbolMap f =
   foldr (\ x -> Map.insert (Symbol x) (Symbol $ applyMap (propMap f) x))
   Map.empty $ Set.toList $ Sign.allItems $ source f

@@ -21,7 +21,7 @@ import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy.Char8 as BS
 import Data.IORef
 import Data.Time
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.IntMap as IntMap
 import Network.Wai
 import Text.ParserCombinators.Parsec (parse)
@@ -53,7 +53,7 @@ data Session = Session
   , usage :: Int
   , sessCleanable :: Bool } deriving (Show)
 
-type SessMap = Map.Map [String] Session
+type SessMap = Map.HashMap [String] Session
 
 -- | In this IORef a cache of all accessed libraries is saved
 type Cache = IORef (IntMap.IntMap Session, SessMap)

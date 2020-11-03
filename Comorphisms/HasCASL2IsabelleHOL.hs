@@ -34,12 +34,13 @@ import Common.DocUtils
 import Common.Id
 import Common.Result
 import Common.Utils
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Common.AS_Annotation
 
 import Data.List (elemIndex)
 import Data.Maybe
+import Data.Hashable
 
 -- | The identity of the comorphism
 data HasCASL2IsabelleHOL = HasCASL2IsabelleHOL deriving Show
@@ -79,11 +80,11 @@ transSignature sign =
     baseSig = baseSign,
     -- translation of typeconstructors
     tsig = emptyTypeSig
-             { arities = Map.foldWithKey extractTypeName
+             { arities = Map.foldrWithKey extractTypeName
                                         Map.empty
                                         (typeMap sign) },
     -- translation of operation declarations
-    constTab = Map.foldWithKey insertOps
+    constTab = Map.foldrWithKey insertOps
                                Map.empty
                                (assumps sign),
     -- translation of datatype declarations
@@ -149,7 +150,7 @@ transType t = case getTypeAppl t of
 -- * translation of a datatype declaration
 
 transDatatype :: TypeMap -> DomainTab
-transDatatype tm = map transDataEntry (Map.fold extractDataypes [] tm)
+transDatatype tm = map transDataEntry (Map.foldr extractDataypes [] tm)
   where extractDataypes ti des = case typeDefn ti of
                                    DatatypeDefn de -> des ++ [de]
                                    _ -> des
@@ -395,7 +396,7 @@ getCons sign tyId =
           mapMaybe stripConstruct $ Set.toList altDefns
         extractIds _ = error "HasCASL2Isabelle.extractIds"
         stripConstruct (Construct i _ _ _) = i
-        findInMap :: Ord k => k -> Map.Map k a -> a
+        findInMap :: (Ord k, Hashable k) => k -> Map.HashMap k a -> a
         findInMap = Map.findWithDefault (error "HasCASL2isabelleHOL.findInMap")
 
 -- Extracts the type of the used datatype in case patterns

@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./OMDoc/OMDocInterface.hs
 Description :  Handpicked model of OMDoc subset
@@ -23,6 +23,9 @@ import qualified Data.Word as Word
 import Common.Doc
 import Common.DocUtils
 import Common.Id
+
+import GHC.Generics (Generic)
+import Data.Hashable
 
 omdocDefaultNamespace :: String
 omdocDefaultNamespace = "http://www.mathweb.org/omdoc"
@@ -168,7 +171,9 @@ data SymbolRole =
   | SRAttribution
   | SRSemanticAttribution
   | SRError
-  deriving (Eq, Ord, Typeable, Data)
+  deriving (Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable SymbolRole
 
 instance Show SymbolRole where
   show SRType = "type"
@@ -200,7 +205,9 @@ data Symbol =
       , symbolRole :: SymbolRole
       , symbolType :: Maybe Type
     }
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable Symbol
 
 instance GetRange Symbol
 
@@ -221,7 +228,9 @@ data Type =
         typeSystem :: Maybe IRI.IRI
       , typeOMDocMathObject :: OMDocMathObject
     }
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable Type
 
 mkType :: Maybe OMDocRef -> OMDocMathObject -> Type
 mkType = Type
@@ -484,11 +493,15 @@ data MText = MTextText String | MTextTerm String | MTextPhrase String | MTextOM 
 
 -- OMDoc Mathematical Object
 data OMDocMathObject = OMOMOBJ OMObject | OMLegacy String | OMMath String
-  deriving (Show, Eq, Ord, Typeable, Data)
+  deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable OMDocMathObject
 
 -- | OMOBJ
 data OMObject = OMObject OMElement
-  deriving (Show, Eq, Ord, Typeable, Data)
+  deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable OMObject
 
 mkOMOBJ :: OMElementClass e => e -> OMObject
 mkOMOBJ e = OMObject (toElement e)
@@ -501,7 +514,9 @@ data OMSymbol =
       , omsCD :: XmlId
       , omsName :: XmlId
     }
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable OMSymbol
 
 mkOMS :: Maybe OMDocRef -> XmlId -> XmlId -> OMSymbol
 mkOMS = OMS
@@ -515,7 +530,9 @@ data OMInteger =
     {
       omiInt :: Int
     }
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable OMInteger
 
 mkOMI :: Int -> OMInteger
 mkOMI = OMI
@@ -525,7 +542,9 @@ mkOMIE i = toElement $ mkOMI i
 
 -- | A Variable can be a OMV or an OMATTR
 data OMVariable = OMVS OMSimpleVariable | OMVA OMAttribution
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable OMVariable
 
 -- | Class to use something as a Variable
 class OMVariableClass a where
@@ -554,8 +573,9 @@ data OMSimpleVariable =
     {
       omvName :: XmlString
     }
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
 
+instance Hashable OMSimpleVariable
 
 mkOMSimpleVar :: XmlString -> OMSimpleVariable
 mkOMSimpleVar = OMV
@@ -576,7 +596,9 @@ data OMAttribution =
         omattrATP :: OMAttributionPart
       , omattrElem :: OMElement
     }
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable OMAttribution
 
 instance OMVariableClass OMAttribution where
   toVariable = OMVA
@@ -595,7 +617,9 @@ data OMAttributionPart =
     {
       omatpAttribs :: [(OMSymbol, OMElement)]
     }
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable OMAttributionPart
 
 mkOMATP :: OMElementClass e => [(OMSymbol, e)] -> OMAttributionPart
 mkOMATP = OMATP . map (\ (s, e) -> (s, toElement e))
@@ -606,7 +630,9 @@ data OMBindingVariables =
     {
       ombvarVars :: [OMVariable]
     }
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable OMBindingVariables
 
 mkOMBVAR :: OMVariableClass e => [e] -> OMBindingVariables
 mkOMBVAR = OMBVAR . map toVariable
@@ -621,7 +647,9 @@ data OMBase64 =
       -- decoded Content
       ombContent :: [Word.Word8]
     }
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable OMBase64
 
 mkOMB :: [Word.Word8] -> OMBase64
 mkOMB = OMB
@@ -644,7 +672,9 @@ data OMString =
     {
       omstrText :: String
     }
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable OMString
 
 mkOMSTR :: String -> OMString
 mkOMSTR = OMSTR
@@ -658,7 +688,9 @@ data OMFloat =
     {
       omfFloat :: Float
     }
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable OMFloat
 
 mkOMF :: Float -> OMFloat
 mkOMF = OMF
@@ -672,7 +704,9 @@ data OMApply =
     {
       omaElements :: [OMElement]
     }
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable OMApply
 
 mkOMA :: OMElementClass e => [e] -> OMApply
 mkOMA [] = error "Empty list of elements for OMA!"
@@ -688,7 +722,9 @@ data OMError =
         omeSymbol :: OMSymbol
       , omeExtra :: [OMElement]
     }
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable OMError
 
 mkOME :: OMElementClass e => OMSymbol -> [e] -> OMError
 mkOME _ [] = error "Empty list of elements for OME!"
@@ -703,7 +739,9 @@ data OMReference =
     {
       omrHRef :: IRI.IRI
     }
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable OMReference
 
 mkOMR :: IRI.IRI -> OMReference
 mkOMR = OMR
@@ -719,7 +757,9 @@ data OMBind =
       , ombindVariables :: OMBindingVariables
       , ombindExpression :: OMElement
     }
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable OMBind
 
 mkOMBIND :: (OMElementClass e1, OMElementClass e2)
   => e1 -> OMBindingVariables -> e2 -> OMBind
@@ -749,7 +789,9 @@ data OMElement =
   | OMEATTR OMAttribution
   | OMER OMReference
   | OMEC (Maybe OMElement) String
-  deriving (Show, Eq, Ord, Typeable, Data)
+  deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable OMElement
 
 -- | insert a comment into an open-math structure (use with caution...)
 mkOMComment :: String -> OMElement

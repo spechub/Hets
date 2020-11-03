@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./Common/GlobalAnnotations.hs
 Description :  data structures for global annotations
@@ -15,12 +15,15 @@ Data structures for global annotations
 module Common.GlobalAnnotations where
 
 import Data.Data
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 import qualified Common.Lib.Rel as Rel
 import Common.AS_Annotation
 import Common.Id
 import Common.IRI (IRI)
+
+import GHC.Generics (Generic)
+import Data.Hashable
 
 -- | all global annotations and a field for pretty printing stuff
 data GlobalAnnos = GA
@@ -45,7 +48,7 @@ emptyGlobalAnnos = GA
 -- | literal annotations for string, lists, number and floating
 data LiteralAnnos = LA
   { string_lit :: Maybe (Id, Id)
-  , list_lit :: Map.Map Id (Id, Id)
+  , list_lit :: Map.HashMap Id (Id, Id)
   , number_lit :: Maybe Id
   , float_lit :: Maybe (Id, Id)
   } deriving (Show, Eq, Typeable, Data)
@@ -59,13 +62,13 @@ emptyLiteralAnnos = LA
   , float_lit = Nothing }
 
 -- | ids to be displayed according to a format
-type DisplayMap = Map.Map Id (Map.Map Display_format [Token])
+type DisplayMap = Map.HashMap Id (Map.HashMap Display_format [Token])
 
 -- | a redundant map for 'LiteralAnnos'
-type LiteralMap = Map.Map Id LiteralType
+type LiteralMap = Map.HashMap Id LiteralType
 
 -- | a map for expansion of abbreviated/simple IRI to full IRI
-type PrefixMap = Map.Map String IRI
+type PrefixMap = Map.HashMap String IRI
 
 -- | description of the type of a literal for a given 'Id' in 'LiteralMap'
 data LiteralType =
@@ -77,7 +80,9 @@ data LiteralType =
   | Fraction
   | Floating
   | NoLiteral -- ^ and error value for a 'getLiteralType'
-    deriving (Show, Eq, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable LiteralType
 
 -- | the 'LiteralType' of an 'Id' (possibly 'NoLiteral')
 getLiteralType :: GlobalAnnos -> Id -> LiteralType
@@ -85,7 +90,7 @@ getLiteralType ga i =
     Map.findWithDefault NoLiteral i $ literal_map ga
 
 -- | a map of associative ids
-type AssocMap = Map.Map Id AssocEither
+type AssocMap = Map.HashMap Id AssocEither
 
 -- | check if 'Id' has a given associativity
 isAssoc :: AssocEither -> AssocMap -> Id -> Bool

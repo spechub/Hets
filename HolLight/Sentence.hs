@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./HolLight/Sentence.hs
 Description :  Sentence for HolLight logic
@@ -26,10 +26,15 @@ import Data.Data
 import Data.Maybe (fromJust, catMaybes, isNothing)
 import qualified Data.Char as Char
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 data Sentence = Sentence {
   term :: Term,
   proof :: Maybe HolProof
-  } deriving (Eq, Ord, Show, Typeable, Data)
+  } deriving (Eq, Ord, Show, Typeable, Data, Generic)
+
+instance Hashable Sentence
 
 instance Pretty Sentence where
   pretty = ppPrintTerm . term

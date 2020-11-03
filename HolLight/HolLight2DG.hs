@@ -46,7 +46,7 @@ import HolLight.Helper (names)
 import Driver.Options
 
 import Data.Graph.Inductive.Graph
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Maybe (fromMaybe)
 
 import System.Exit
@@ -87,14 +87,14 @@ readInt = do
 readInt' :: MSaxState Int
 readInt' = readWithTag readInt "i"
 
-readMappedInt :: Map.Map Int a -> MSaxState a
+readMappedInt :: Map.HashMap Int a -> MSaxState a
 readMappedInt m = do
  i <- readInt
  case Map.lookup i m of
   Just a -> return a
   _ -> debugS $ "readMappedInt: Integer " ++ show i ++ " not mapped"
 
-listToTypes :: Map.Map Int HolType -> [Int] -> Maybe [HolType]
+listToTypes :: Map.HashMap Int HolType -> [Int] -> Maybe [HolType]
 listToTypes m l = case l of
  x : xs -> case Map.lookup x m of
   Just t -> case listToTypes m xs of
@@ -103,8 +103,8 @@ listToTypes m l = case l of
   _ -> Nothing
  [] -> Just []
 
-readSharedHolType :: Map.Map Int String -> Map.Map Int HolType
-                      -> MSaxState (Map.Map Int HolType)
+readSharedHolType :: Map.HashMap Int String -> Map.HashMap Int HolType
+                      -> MSaxState (Map.HashMap Int HolType)
 readSharedHolType sl m = do
  d <- getM
  (b, t) <- tag
@@ -165,8 +165,8 @@ readTermInfo = do
    Just _ -> return $ Just $ HolTermInfo (p, v)
    _ -> return $ Just $ HolTermInfo (p, Nothing)
 
-readSharedHolTerm :: Map.Map Int HolType -> Map.Map Int String
-                      -> Map.Map Int Term -> MSaxState (Map.Map Int Term)
+readSharedHolTerm :: Map.HashMap Int HolType -> Map.HashMap Int String
+                      -> Map.HashMap Int Term -> MSaxState (Map.HashMap Int Term)
 readSharedHolTerm ts sl m = do
  d <- getM
  (b, tg) <- tag
@@ -263,20 +263,20 @@ importData opts fp' = do
     removeFile tempFile
     return r
 
-getTypes :: Map.Map String Int -> HolType -> Map.Map String Int
+getTypes :: Map.HashMap String Int -> HolType -> Map.HashMap String Int
 getTypes m t = case t of
  TyVar _ -> m
  TyApp s ts -> let m' = foldl getTypes m ts in
                      Map.insert s (length ts) m'
 
-mergeTypesOps :: (Map.Map String Int, Map.Map String HolType)
-                 -> (Map.Map String Int, Map.Map String HolType)
-                 -> (Map.Map String Int, Map.Map String HolType)
+mergeTypesOps :: (Map.HashMap String Int, Map.HashMap String HolType)
+                 -> (Map.HashMap String Int, Map.HashMap String HolType)
+                 -> (Map.HashMap String Int, Map.HashMap String HolType)
 mergeTypesOps (ts1, ops1) (ts2, ops2) =
  (ts1 `Map.union` ts2, ops1 `Map.union` ops2)
 
 getOps :: Term
-           -> (Map.Map String Int, Map.Map String HolType)
+           -> (Map.HashMap String Int, Map.HashMap String HolType)
 getOps tm = case tm of
  Var _ t _ -> let ts = getTypes Map.empty t
                      in (ts, Map.empty)
@@ -301,8 +301,8 @@ sigDepends :: Sign -> Sign -> Bool
 sigDepends s1 s2 = (Map.size (Map.intersection (types s1) (types s2)) /= 0) ||
                    (Map.size (Map.intersection (ops s1) (ops s2)) /= 0)
 
-prettifyTypeVarsTp :: HolType -> Map.Map String String
-                      -> (HolType, Map.Map String String)
+prettifyTypeVarsTp :: HolType -> Map.HashMap String String
+                      -> (HolType, Map.HashMap String String)
 prettifyTypeVarsTp (TyVar s) m = case Map.lookup s m of
  Just s' -> (TyVar s', m)
  Nothing -> let s' = '\'' : (names !! Map.size m)
@@ -313,8 +313,8 @@ prettifyTypeVarsTp (TyApp s ts) m =
       in (t' : ts'', m''')) ([], m) ts
  in (TyApp s ts', m')
 
-prettifyTypeVarsTm :: Term -> Map.Map String String
-                      -> (Term, Map.Map String String)
+prettifyTypeVarsTm :: Term -> Map.HashMap String String
+                      -> (Term, Map.HashMap String String)
 prettifyTypeVarsTm (Const s t p) _ =
  let (t1, m1) = prettifyTypeVarsTp t Map.empty
  in (Const s t1 p, m1)
@@ -340,7 +340,7 @@ prettifyTypeVars (libs, lnks) =
       ) libs
  in (libs', lnks)
 
-treeLevels :: [(String, String)] -> Map.Map Int [(String, String)]
+treeLevels :: [(String, String)] -> Map.HashMap Int [(String, String)]
 treeLevels l =
  let lk = foldr (\ (imp, t) l' ->
       case lookup t l' of
@@ -354,9 +354,9 @@ makeNamedSentence :: String -> Term -> Named Sentence
 makeNamedSentence n t = makeNamed n Sentence { term = t, proof = Nothing }
 
 _insNodeDG :: Sign -> [Named Sentence] -> FilePath -> String
-              -> (DGraph, Map.Map String
+              -> (DGraph, Map.HashMap String
                (String, Data.Graph.Inductive.Graph.Node, DGNodeLab))
-              -> (DGraph, Map.Map String
+              -> (DGraph, Map.HashMap String
                (String, Data.Graph.Inductive.Graph.Node, DGNodeLab))
 _insNodeDG sig sens path n (dg, m) =
  let gt = G_theory HolLight Nothing (makeExtSign HolLight sig) startSigId

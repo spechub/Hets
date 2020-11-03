@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./Temporal/AS_BASIC_Temporal.hs
 Description :  Abstract syntax of temporal basic specifications
@@ -28,6 +28,9 @@ import Common.Id
 
 import Data.Data
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 data BASIC_SPEC = Basic_spec
                   deriving (Show, Typeable, Data)
 
@@ -37,7 +40,9 @@ instance Pretty BASIC_SPEC where
    pretty = text . show
 
 data FORMULA = Formula
-               deriving (Show, Eq, Ord, Typeable, Data)
+               deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable FORMULA
 
 instance GetRange FORMULA
 

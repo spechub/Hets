@@ -38,7 +38,7 @@ import CASL.Sign
 import CASL.Morphism
 
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Common.AS_Annotation
 import Common.Id
 import Common.Result
@@ -102,7 +102,7 @@ mapMor :: CASLMor -> Result PMor.Morphism
 mapMor mor = return PMor.Morphism
   { PMor.source = mapSig (msource mor)
   , PMor.target = mapSig (mtarget mor)
-  , PMor.propMap = Map.foldWithKey (\ (i, pt) j ->
+  , PMor.propMap = Map.foldrWithKey (\ (i, pt) j ->
       if null (predArgs pt) then Map.insert i j else id) Map.empty
       $ pred_map mor }
 

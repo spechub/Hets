@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./Maude/AS_Maude.hs
 Description :  Abstract Maude Syntax
@@ -25,6 +25,9 @@ import Common.Doc (specBraces, text)
 import Common.DocUtils (Pretty (..))
 
 import Data.Data
+
+import GHC.Generics (Generic)
+import Data.Hashable
 
 -- * Types
 
@@ -88,19 +91,27 @@ data Operator = Op OpId [Type] Type [Attr]
               deriving (Show, Read, Ord, Eq, Typeable, Data)
 
 data Membership = Mb Term Sort [Condition] [StmntAttr]
-                deriving (Show, Read, Ord, Eq, Typeable, Data)
+                deriving (Show, Read, Ord, Eq, Typeable, Data, Generic)
+
+instance Hashable Membership
 
 data Equation = Eq Term Term [Condition] [StmntAttr]
-              deriving (Show, Read, Ord, Eq, Typeable, Data)
+              deriving (Show, Read, Ord, Eq, Typeable, Data, Generic)
+
+instance Hashable Equation
 
 data Rule = Rl Term Term [Condition] [StmntAttr]
-          deriving (Show, Read, Ord, Eq, Typeable, Data)
+          deriving (Show, Read, Ord, Eq, Typeable, Data, Generic)
+
+instance Hashable Rule
 
 data Condition = EqCond Term Term
                | MbCond Term Sort
                | MatchCond Term Term
                | RwCond Term Term
-               deriving (Show, Read, Ord, Eq, Typeable, Data)
+               deriving (Show, Read, Ord, Eq, Typeable, Data, Generic)
+
+instance Hashable Condition
 
 data Attr = Assoc
           | Comm
@@ -121,34 +132,48 @@ data Attr = Assoc
           | Frozen [Int]
           | Poly [Int]
           | Special [Hook]
-          deriving (Show, Read, Ord, Eq, Typeable, Data)
+          deriving (Show, Read, Ord, Eq, Typeable, Data, Generic)
+
+instance Hashable Attr
 
 data StmntAttr = Label Qid
                | Metadata String
                | Owise
                | Nonexec
                | Print [Qid]
-               deriving (Show, Read, Ord, Eq, Typeable, Data)
+               deriving (Show, Read, Ord, Eq, Typeable, Data, Generic)
+
+instance Hashable StmntAttr
 
 data Hook = IdHook Qid [Qid]
           | OpHook Qid Qid [Qid] Qid
           | TermHook Qid Term
-          deriving (Show, Read, Ord, Eq, Typeable, Data)
+          deriving (Show, Read, Ord, Eq, Typeable, Data, Generic)
+
+instance Hashable Hook
 
 data Term = Const Qid Type
           | Var Qid Type
           | Apply Qid [Term] Type
-          deriving (Show, Read, Ord, Eq, Typeable, Data)
+          deriving (Show, Read, Ord, Eq, Typeable, Data, Generic)
+
+instance Hashable Term
 
 data Type = TypeSort Sort
           | TypeKind Kind
-          deriving (Show, Read, Ord, Eq, Typeable, Data)
+          deriving (Show, Read, Ord, Eq, Typeable, Data, Generic)
+
+instance Hashable Type
 
 newtype Sort = SortId Qid
-          deriving (Show, Read, Ord, Eq, Typeable, Data)
+          deriving (Show, Read, Ord, Eq, Typeable, Data, Generic)
+
+instance Hashable Sort
 
 newtype Kind = KindId Qid
-             deriving (Show, Read, Ord, Eq, Typeable, Data)
+             deriving (Show, Read, Ord, Eq, Typeable, Data, Generic)
+
+instance Hashable Kind
 
 newtype ParamId = ParamId Qid
                 deriving (Show, Read, Ord, Eq, Typeable, Data)

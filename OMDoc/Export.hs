@@ -57,7 +57,8 @@ import OMDoc.DataTypes
 import Data.Graph.Inductive.Graph
 import Data.Maybe
 import Data.List
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
+import qualified Common.OrderedMap as OMap
 import qualified Data.Set as Set
 import Control.Monad (liftM)
 
@@ -73,7 +74,7 @@ data GSigMap = GSigMap (G_symbolmap (Int, UniqName)) (NameMap String)
 
 {- | We need this type to store the original dependency order.
 This type is the logic dependent analogue to the GSigMap -}
-type NumberedSigMap a = (Map.Map a (Int, UniqName), NameMap String)
+type NumberedSigMap a = (Map.HashMap a (Int, UniqName), NameMap String)
 
 -- | Removes the numbering from the symbol map
 nSigMapToSigMap :: NumberedSigMap a -> SigMap a
@@ -88,16 +89,16 @@ nSigMapToOrderedList (nMap, _) = let
 
 
 -- | Mapping of Specs to SigMaps
-newtype SpecSymNames = SpecSymNames (Map.Map (LibName, String) GSigMap)
+newtype SpecSymNames = SpecSymNames (Map.HashMap (LibName, String) GSigMap)
 
 
 -- | The export environment
 data ExpEnv = ExpEnv { getSSN :: SpecSymNames
                      , getInitialLN :: LibName
-                     , getFilePathMapping :: Map.Map LibName FilePath }
+                     , getFilePathMapping :: Map.HashMap LibName FilePath }
 
-fmapNM :: (Ord a, Ord b) => (a -> b) -> NameMap a -> NameMap b
-fmapNM = Map.mapKeys
+fmapNM :: (Ord a Hashable a, Ord b, Hashable b) => (a -> b) -> NameMap a -> NameMap b
+fmapNM = OMap.mapMapKeys
 
 emptyEnv :: LibName -> ExpEnv
 emptyEnv ln = ExpEnv { getSSN = SpecSymNames Map.empty
@@ -173,7 +174,7 @@ exportLibEnv b odir ln le =
       l <- liftM snd $ mapAccumLCM cmbnF (exportDGraph le) im inputList
       return $ map f l
 
-initFilePathMapping :: FilePath -> LibEnv -> Map.Map LibName FilePath
+initFilePathMapping :: FilePath -> LibEnv -> Map.HashMap LibName FilePath
 initFilePathMapping fp le =
     let f k _ = snd (getFilePrefixGeneric downloadExtensions fp
                          $ getFilePath k) ++ ".omdoc"

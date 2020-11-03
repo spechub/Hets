@@ -66,7 +66,7 @@ import Common.AS_Annotation
 import Common.AnnoParser
 import Common.AnalyseAnnos
 import Common.Result
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
 
@@ -142,7 +142,7 @@ addBuiltins ga =
                   (whenElse, ARight)]
         precs = prec_annos ga
         pMap = Rel.toMap precs
-        opIds = Set.unions (Map.keysSet pMap : Map.elems pMap)
+        opIds = Set.unions (Set.fromList (Map.keys pMap) : Map.elems pMap)
         opIs = Set.toList
                (((Set.filter (\ i -> begPlace i || endPlace i) opIds
                 Set.\\ builtinRelIds) Set.\\ builtinLogIds)

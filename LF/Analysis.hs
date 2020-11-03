@@ -21,7 +21,7 @@ import Common.Result
 import Common.DocUtils
 
 import Data.List
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 import System.IO.Unsafe
@@ -164,11 +164,11 @@ symbAnalysis :: [SYMB_ITEMS] -> Result [RAW_SYM]
 symbAnalysis ss = Result [] $ Just $ concatMap (\ (Symb_items s) -> s) ss
 
 -- symbol map analysis for LF
-symbMapAnalysis :: [SYMB_MAP_ITEMS] -> Result (Map.Map RAW_SYM RAW_SYM)
+symbMapAnalysis :: [SYMB_MAP_ITEMS] -> Result (Map.HashMap RAW_SYM RAW_SYM)
 symbMapAnalysis ss = Result [] $ Just $
   foldl (\ m s -> Map.union m (makeSymbMap s)) Map.empty ss
 
-makeSymbMap :: SYMB_MAP_ITEMS -> Map.Map RAW_SYM RAW_SYM
+makeSymbMap :: SYMB_MAP_ITEMS -> Map.HashMap RAW_SYM RAW_SYM
 makeSymbMap (Symb_map_items ss) =
    foldl (\ m s -> case s of
                      Symb s1 -> Map.insert s1 s1 m
@@ -179,7 +179,7 @@ makeSymbMap (Symb_map_items ss) =
 --------------------------------------------------------------- -}
 
 -- converts a mapping of raw symbols to a mapping of symbols
-renamMapAnalysis :: Map.Map RAW_SYM RAW_SYM -> Sign -> Map.Map Symbol Symbol
+renamMapAnalysis :: Map.HashMap RAW_SYM RAW_SYM -> Sign -> Map.HashMap Symbol Symbol
 renamMapAnalysis m sig =
   let syms1 = getUnknownSyms (Map.keys m) sig
       syms2 = filter (not . isSym) $ Map.elems m
@@ -189,14 +189,14 @@ renamMapAnalysis m sig =
 
 {- converts a mapping of raw symbols to a mapping of symbols to expressions
    annotated with their type -}
-translMapAnalysis :: Map.Map RAW_SYM RAW_SYM -> Sign -> Sign ->
-                     Map.Map Symbol (EXP, EXP)
+translMapAnalysis :: Map.HashMap RAW_SYM RAW_SYM -> Sign -> Sign ->
+                     Map.HashMap Symbol (EXP, EXP)
 translMapAnalysis m sig1 sig2 =
   let syms = getUnknownSyms (Map.keys m) sig1
       in if not (null syms) then error $ badSymsError syms else
          unsafePerformIO $ codAnalysis m sig2
 
-codAnalysis :: Map.Map RAW_SYM RAW_SYM -> Sign -> IO (Map.Map Symbol (EXP, EXP))
+codAnalysis :: Map.HashMap RAW_SYM RAW_SYM -> Sign -> IO (Map.HashMap Symbol (EXP, EXP))
 codAnalysis m sig2 = do
   -- make a Twelf file
   let cont1 = show (pretty sig2) ++ "\n"
@@ -214,7 +214,7 @@ codAnalysis m sig2 = do
   sig' <- getSigFromLibs gen_sig2 libs
   return $ getMap sig'
 
-getMap :: Sign -> Map.Map Symbol (EXP, EXP)
+getMap :: Sign -> Map.HashMap Symbol (EXP, EXP)
 getMap sig = Map.fromList $ map
     (\ (Def s t v) ->
        case v of

@@ -22,7 +22,7 @@ import System.Exit
 import Common.Utils (executeProcess)
 import Common.Doc (renderText)
 import Common.GlobalAnnotations (emptyGlobalAnnos)
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Char (toLower)
 import Data.Maybe (fromJust, fromMaybe, isNothing)
 import Data.List (foldl', intercalate)
@@ -175,7 +175,7 @@ conjectures :: [(String, String)] -> ProofStep -> [(String, String)]
 conjectures l p = if role p == Conjecture
                   then (formulaName . inference $ p, name p) : l else l
 
-alias :: Map.Map String String -> ProofStep -> Map.Map String String
+alias :: Map.HashMap String String -> ProofStep -> Map.HashMap String String
 alias m p = case inference p of
              NoRule s -> case Map.lookup s m of
                           Just s' -> Map.insert (name p) s' m
@@ -218,11 +218,11 @@ edge inv v1 v2 attrs' =
  in if inv then v2 ++ " -> " ++ v1 ++ attributes attrs
     else v1 ++ " -> " ++ v2 ++ attributes attrs
 
-digraph :: Set.Set String -> Map.Map String String ->
+digraph :: Set.Set String -> Map.HashMap String String ->
            (Set.Set String, Set.Set String, String,
-            Map.Map (String, [String]) String) -> ProofStep ->
+            Map.HashMap (String, [String]) String) -> ProofStep ->
            (Set.Set String, Set.Set String,
-            String, Map.Map (String, [String]) String)
+            String, Map.HashMap (String, [String]) String)
 digraph p_set aliases (s, neg, d, m) p =
  let s' = facts s p
      neg_ = Set.insert (name p) neg

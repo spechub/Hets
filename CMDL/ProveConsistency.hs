@@ -52,7 +52,7 @@ import qualified Common.OrderedMap as OMap
 import Common.AS_Annotation
 
 import Data.List
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 import Control.Concurrent (ThreadId, killThread)
 import Control.Concurrent.MVar (MVar, newMVar, putMVar, takeMVar, readMVar,

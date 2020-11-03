@@ -16,7 +16,7 @@ module Propositional.Prop2CASLHelpers
     where
 
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Id as Id
 import qualified Common.Result as Result
@@ -101,12 +101,12 @@ trForm form =
                                  []
 
 -- | Helper for map mor
-trMor :: Map.Map Id.Id Id.Id -> Map.Map (Id.Id, CSign.PredType) Id.Id
+trMor :: Map.HashMap Id.Id Id.Id -> Map.HashMap (Id.Id, CSign.PredType) Id.Id
 trMor mp =
     let
         pt = CSign.PredType {CSign.predArgs = []}
     in
-      Map.foldWithKey
+      Map.foldrWithKey
              (\ k a ->
               Map.insert (k, pt) a
              )

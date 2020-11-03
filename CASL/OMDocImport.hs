@@ -33,7 +33,7 @@ import CASL.OMDoc
 
 import Control.Monad
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.List
 import Data.Function (on)
 
@@ -231,7 +231,7 @@ omdocToType _ ome = error $ "omdocToType: Non-supported element: " ++ show ome
 
 -- * Terms and Formulas
 
-type VarMap = Map.Map VAR SORT
+type VarMap = Map.HashMap VAR SORT
 
 type TermEnv = (Env, VarMap)
 

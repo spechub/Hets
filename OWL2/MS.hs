@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./OWL2/MS.hs
 Copyright   :  (c) Felix Gabriel Mance
@@ -20,8 +20,10 @@ import Common.IRI
 import OWL2.AS
 
 import Data.Data
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
+import GHC.Generics (Generic)
+import Data.Hashable
 
 {- | annotions are annotedAnnotationList that must be preceded by the keyword
   @Annotations:@ if non-empty -}
@@ -35,7 +37,9 @@ data Extended =
   | ClassEntity ClassExpression
   | ObjectEntity ObjectPropertyExpression
   | SimpleEntity Entity
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable Extended
 
 -- | frames with annotated lists
 data ListFrameBit =
@@ -47,10 +51,14 @@ data ListFrameBit =
   | ObjectCharacteristics (AnnotatedList Character)
   | DataPropRange (AnnotatedList DataRange)
   | IndividualFacts (AnnotatedList Fact)
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable ListFrameBit
 
 data AnnoType = Declaration | Assertion | XmlError String
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable AnnoType
 
 -- | frames which start with annotations
 data AnnFrameBit =
@@ -60,17 +68,23 @@ data AnnFrameBit =
   | ClassDisjointUnion [ClassExpression]
   | ClassHasKey [ObjectPropertyExpression] [DataPropertyExpression]
   | ObjectSubPropertyChain [ObjectPropertyExpression]
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable AnnFrameBit
 
 data Fact =
     ObjectPropertyFact PositiveOrNegative ObjectPropertyExpression Individual
   | DataPropertyFact PositiveOrNegative DataPropertyExpression Literal
-  deriving (Show, Eq, Ord, Typeable, Data)
+  deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable Fact
 
 data FrameBit =
     ListFrameBit (Maybe Relation) ListFrameBit
   | AnnFrameBit Annotations AnnFrameBit
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable FrameBit
 
 data Frame = Frame Extended [FrameBit]
     deriving (Show, Eq, Ord, Typeable, Data)
@@ -78,7 +92,9 @@ data Frame = Frame Extended [FrameBit]
 data Axiom = PlainAxiom
   { axiomTopic :: Extended -- the Class or Individual
   , axiomBit :: FrameBit -- the property expressed by the sentence
-  } deriving (Show, Eq, Ord, Typeable, Data)
+  } deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable Axiom
 
 {-
 

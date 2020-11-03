@@ -22,7 +22,7 @@ import Common.GlobalAnnotations
 import Common.ExtSign
 import Common.AS_Annotation
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
 
@@ -54,7 +54,7 @@ buildSignature (Transformation _ souMet tarMet kS rels) =
 
 
 buildRelations :: CSMOFSign.Sign -> CSMOFSign.Sign -> [Relation] ->
-                  ((Map.Map String RuleDef, Map.Map String RuleDef), [Diagnosis])
+                  ((Map.HashMap String RuleDef, Map.HashMap String RuleDef), [Diagnosis])
 buildRelations souMetSign tarMetSign rels =
   let
     (nonTopRel, topRel) = separateTopFromNonTop rels
@@ -83,8 +83,8 @@ isTop (Relation tp _ _ _ _ _ _ _) = tp
 
 
 createRuleDef :: CSMOFSign.Sign -> CSMOFSign.Sign -> Relation ->
-                   (Map.Map String RuleDef, [Diagnosis]) ->
-                   (Map.Map String RuleDef, [Diagnosis])
+                   (Map.HashMap String RuleDef, [Diagnosis]) ->
+                   (Map.HashMap String RuleDef, [Diagnosis])
 createRuleDef souMetSign tarMetSign (Relation tp rName _ prD souD tarD _ _)
                                     (mapRD, diag) =
   let (varTyp, diag2) = getTypesFromVars souMetSign tarMetSign prD souD tarD

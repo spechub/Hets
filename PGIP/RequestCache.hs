@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveGeneric #-}
+
 {- |
 Module      :  ./PGIP/RequestCache.hs
 Description :  hets server request cache
@@ -11,11 +13,14 @@ module PGIP.RequestCache where
 
 import qualified Data.ByteString.Lazy.Char8 as BS
 import Data.IORef
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Text as T
 
 import Network.HTTP.Types.Method
 import Network.Wai.Internal
+
+import GHC.Generics (Generic)
+import Data.Hashable
 
 -- | Holds all necessary informations for caching a request
 data RequestMapKey = RequestMapKey {
@@ -26,9 +31,11 @@ data RequestMapKey = RequestMapKey {
   -- | The send request body.
   , requestBody' :: BS.ByteString
   }
-  deriving (Show, Ord, Eq)
+  deriving (Show, Ord, Eq, Generic)
 
-type RequestCacheMap = Map.Map RequestMapKey Response
+instance Hashable RequestMapKey
+
+type RequestCacheMap = Map.HashMap RequestMapKey Response
 
 -- | Returns a new request cache.
 createNewRequestCache :: IO (IORef (RequestCacheMap))

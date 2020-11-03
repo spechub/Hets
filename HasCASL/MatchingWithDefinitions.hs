@@ -26,7 +26,7 @@ import Common.ConvertGlobalAnnos ()
 import Common.Doc
 import Common.DocUtils
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Map as Map
 import qualified Data.Set as Set
 
 -- For candidate generation and DG navigation
@@ -303,7 +303,7 @@ candTerm (_, _, t) = t
 typePartition :: ((Id, TypeScheme) -> Maybe Term) -- ^ Definiens extractor
               -> (TypeScheme -> Bool) -- ^ Filter predicate for types
               -> Set.Set Symbol -- ^ MatchOp symbol set
-              -> Map.Map TypeScheme [MatchOp]
+              -> Map.HashMap TypeScheme [MatchOp]
 typePartition df tPred s =
     Map.fromListWith (++) $ mapMaybe g $ Set.toList s
         where f x = let typ = candType x
@@ -317,10 +317,10 @@ candFromSymbol df (Symbol {symName = opid, symType = OpAsItemType typ}) =
 candFromSymbol _ _ = Nothing
 
 -- *** b.
-candidatesAux :: Map.Map TypeScheme [MatchOp]
-           -> Map.Map TypeScheme [MatchOp]
+candidatesAux :: Map.HashMap TypeScheme [MatchOp]
+           -> Map.HashMap TypeScheme [MatchOp]
            -> [Injection MatchOp MatchOp]
-candidatesAux patMap cMap = crossInjs $ Map.foldWithKey f [] patMap where
+candidatesAux patMap cMap = crossInjs $ Map.foldrWithKey f [] patMap where
     f typ l injL = let l' = Map.findWithDefault err typ cMap
                        err = error $ "candidates: No concrete ops for type: "
                              ++ show (pretty typ)

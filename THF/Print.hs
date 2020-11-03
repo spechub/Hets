@@ -22,7 +22,7 @@ import THF.Sign
 import THF.PrintTHF
 import THF.As (THFFormula, FormulaRole (..))
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Maybe (fromMaybe)
 
 {- -----------------------------------------------------------------------------
@@ -40,8 +40,8 @@ instance Pretty SymbolTHF where
 
 instance Pretty SignTHF where
     pretty s =
-        let ts = Map.fold (\ ti d -> d $+$ pretty ti) empty (types s)
-            cs = Map.fold (\ ci d -> d $+$ pretty ci) empty (consts s)
+        let ts = Map.foldr (\ ti d -> d $+$ pretty ti) empty (types s)
+            cs = Map.foldr (\ ci d -> d $+$ pretty ci) empty (consts s)
         in text "%Types:" $+$ ts $++$ text "%Constants: " $+$ cs
 
 instance Pretty Kind where

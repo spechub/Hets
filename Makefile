@@ -10,6 +10,7 @@
 #
 # If the following environment variables are set, their values get passed to
 # the corresponding tool as is: GHC_PKG_FLAGS (ghc-pkg), GHC_FLAGS (ghc).
+# For profiling, call make with PROFILE=on 
 
 include var.mk
 
@@ -995,4 +996,3 @@ binary: binary-indep binary-arch
 	@[ -f debian/changelog ] || ln -s changelog.tmp debian/changelog
 
 # vim: ts=4 sw=4 filetype=make
-

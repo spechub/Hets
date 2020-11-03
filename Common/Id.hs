@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./Common/Id.hs
 Description :  positions, simple and mixfix identifiers
@@ -28,19 +28,24 @@ import Data.List (isPrefixOf)
 import Data.Ratio
 import qualified Data.Set as Set
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 -- do use in data types that derive d directly
 data Pos = SourcePos
   { sourceName :: String
   , sourceLine :: !Int
   , sourceColumn :: !Int
-  } deriving (Eq, Ord, Typeable, Data)
+  } deriving (Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable Pos
 
 instance Show Pos where
     showsPrec _ = showPos
 
 -- | position lists with trivial equality
 newtype Range = Range { rangeToList :: [Pos] }
-  deriving (Typeable, Data)
+  deriving (Typeable, Data, Generic)
 
 -- let InlineAxioms recognize positions
 instance Show Range where
@@ -53,6 +58,8 @@ instance Eq Range where
 -- Ord must be consistent with Eq
 instance Ord Range where
    compare _ _ = EQ
+
+instance Hashable Range
 
 nullRange :: Range
 nullRange = Range []
@@ -88,13 +95,15 @@ showPos p = let name = sourceName p
 -- | tokens as supplied by the scanner
 data Token = Token { tokStr :: String
                    , tokPos :: Range
-                   } deriving (Eq, Ord, Typeable, Data)
+                   } deriving (Eq, Ord, Typeable, Data, Generic)
 
 instance Show Token where
   show = tokStr
 
 instance Read Token where
   readsPrec i = map (\ (a, r) -> (mkSimpleId a, r)) . readsPrec i
+
+instance Hashable Token
 
 -- | simple ids are just tokens
 type SIMPLE_ID = Token
@@ -167,8 +176,10 @@ data Id = Id
     { getTokens :: [Token]
     , getComps :: [Id]
     , rangeOfId :: Range }
-    deriving (Eq, Ord, Typeable, Data)
+    deriving (Eq, Ord, Typeable, Data, Generic)
     -- pos of square brackets and commas of a compound list
+
+instance Hashable Id
 
 instance Show Id where
   showsPrec _ = showId

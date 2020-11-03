@@ -52,7 +52,7 @@ import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.Graph as Tree
 
 import Data.Graph.Inductive.Graph as Graph
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Data.List
 import Data.Char
@@ -67,7 +67,7 @@ printTh oga sn g =
 
 removeProblematicListAnnos :: GlobalAnnos -> GlobalAnnos
 removeProblematicListAnnos ga = let
-    is = Map.keysSet $ Rel.toMap $ prec_annos ga
+    is = Set.fromList $ Map.keys $ Rel.toMap $ prec_annos ga
     la = literal_annos ga
     nla = la { list_lit = Map.filterWithKey ( \ li _ ->
         let (op, cl, cs) = getListBrackets li in

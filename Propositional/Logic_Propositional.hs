@@ -49,7 +49,7 @@ import Common.Consistency
 import Common.ProofTree
 import Common.Id
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Monoid
 
 -- | Lid for propositional logic

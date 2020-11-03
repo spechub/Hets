@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./CspCASL/AS_CspCASL.der.hs
 Description :  Abstract syntax fo CspCASL
@@ -22,6 +22,9 @@ import CASL.AS_Basic_CASL (SORT, VAR, VAR_DECL)
 import CspCASL.AS_CspCASL_Process
 
 import Data.Data
+
+import GHC.Generics (Generic)
+import Data.Hashable
 
 -- DrIFT command
 {-! global: GetRange !-}

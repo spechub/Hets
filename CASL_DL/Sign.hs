@@ -15,7 +15,7 @@ Signatures for DL logics, as extension of CASL signatures.
 module CASL_DL.Sign where
 
 import Data.Data
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 import Common.Id
 import Common.Doc
@@ -29,7 +29,7 @@ import Data.List (union, (\\), isPrefixOf)
 import Control.Exception
 
 data CASL_DLSign =
-    CASL_DLSign { annoProperties :: Map.Map SIMPLE_ID PropertyType
+    CASL_DLSign { annoProperties :: Map.HashMap SIMPLE_ID PropertyType
                 , annoPropertySens :: [AnnoAppl]
                 } deriving (Show, Eq, Ord, Typeable, Data)
 

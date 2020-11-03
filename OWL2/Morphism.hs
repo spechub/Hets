@@ -35,7 +35,7 @@ import Control.Monad
 import Data.Data
 import Data.List (stripPrefix)
 import Data.Maybe
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 data OWLMorphism = OWLMorphism
@@ -56,7 +56,7 @@ isOWLInclusion :: OWLMorphism -> Bool
 isOWLInclusion m = Map.null (pmap m)
   && Map.null (mmaps m) && isSubSign (osource m) (otarget m)
 
-symMap :: MorphMap -> Map.Map Entity Entity
+symMap :: MorphMap -> Map.HashMap Entity Entity
 symMap = Map.mapWithKey (\ (Entity lb ty _) -> Entity lb ty)
 
 inducedElems :: MorphMap -> [Entity]
@@ -73,13 +73,13 @@ inducedPref :: String -> String -> Sign -> (MorphMap, StringMap)
     -> Result (MorphMap, StringMap)
 inducedPref v u sig (m, t) =
     let pm = prefixMap sig
-    in if Set.member v $ Map.keysSet pm
+    in if Set.member v $ Set.fromList $ Map.keys pm
          then if u == v then return (m, t) else return (m, Map.insert v u t)
         else
           plain_error (Map.empty, Map.empty) ("unknown symbol: " ++ showDoc v "\nin signature:\n" ++ showDoc sig "") nullRange
 
  
-inducedFromMor :: Map.Map RawSymb RawSymb -> Sign -> Result OWLMorphism
+inducedFromMor :: Map.HashMap RawSymb RawSymb -> Sign -> Result OWLMorphism
 inducedFromMor rm sig = do
   let syms = symOf sig
   (mm, tm) <- foldM (\ (m, t) p -> case p of
@@ -103,7 +103,7 @@ inducedFromMor rm sig = do
     , pmap = tm
     , mmaps = mm }
 
-symMapOf :: OWLMorphism -> Map.Map Entity Entity
+symMapOf :: OWLMorphism -> Map.HashMap Entity Entity
 symMapOf mor = Map.union (symMap $ mmaps mor) $ setToMap $ symOf $ osource mor
 
 instance Pretty OWLMorphism where
@@ -126,7 +126,7 @@ instance Pretty OWLMorphism where
 
 legalMor :: OWLMorphism -> Result ()
 legalMor m = let mm = mmaps m in unless
-  (Set.isSubsetOf (Map.keysSet mm) (symOf $ osource m)
+  (Set.isSubsetOf (Set.fromList $ Map.keys mm) (symOf $ osource m)
   && Set.isSubsetOf (Set.fromList $ inducedElems mm) (symOf $ otarget m))
         $ fail "illegal OWL2 morphism"
 
@@ -170,7 +170,7 @@ statSymbItems sig = map (function Expand . StringMap $ prefixMap sig)
                PrefixO -> map (APrefix . showIRI) us)
 
 statSymbMapItems :: Sign -> Maybe Sign -> [SymbMapItems]
-  -> Result (Map.Map RawSymb RawSymb)
+  -> Result (Map.HashMap RawSymb RawSymb)
 statSymbMapItems sig mtsig =
   fmap (Map.fromList . map (\ (r1, r2) ->
         let f = function Expand . StringMap . prefixMap

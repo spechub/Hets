@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./LF/Sign.hs
 Description :  Definition of signatures for the Edinburgh
@@ -64,7 +64,10 @@ import Data.Data
 import Data.Maybe
 import Data.List
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
+
+import GHC.Generics (Generic)
+import Data.Hashable
 
 type VAR = String
 type NAME = String
@@ -81,7 +84,9 @@ data Symbol = Symbol
             { symBase :: BASE
             , symModule :: MODULE
             , symName :: NAME
-            } deriving (Ord, Eq, Show, Typeable, Data)
+            } deriving (Ord, Eq, Show, Typeable, Data, Generic)
+
+instance Hashable Symbol
 
 type RAW_SYM = String
 
@@ -94,7 +99,9 @@ data EXP = Type
          | Func [EXP] EXP
          | Pi CONTEXT EXP
          | Lamb CONTEXT EXP
-           deriving (Ord, Show, Typeable, Data)
+           deriving (Ord, Show, Typeable, Data, Generic)
+
+instance Hashable EXP
 
 instance GetRange EXP
 
@@ -334,10 +341,10 @@ getConstantsH _ = Set.empty
    - the first argument specifies the desired variable renamings
    - the second argument specifies the set of variables which cannot
      be used as new variable names -}
-rename :: Map.Map VAR VAR -> Set.Set VAR -> EXP -> EXP
+rename :: Map.HashMap VAR VAR -> Set.Set VAR -> EXP -> EXP
 rename m s e = renameH m s (recForm e)
 
-renameH :: Map.Map VAR VAR -> Set.Set VAR -> EXP -> EXP
+renameH :: Map.HashMap VAR VAR -> Set.Set VAR -> EXP -> EXP
 renameH _ _ Type = Type
 renameH _ _ (Const n) = Const n
 renameH m _ (Var n) = Var $ Map.findWithDefault n n m

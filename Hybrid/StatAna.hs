@@ -33,7 +33,7 @@ import Common.Result
 import Common.ExtSign
 import qualified Common.Lib.MapSet as MapSet
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Data.List as List
 
@@ -116,7 +116,7 @@ minExpForm s form =
                           supers = supersortsOf srt s
                       if Set.null $ Set.intersection
                         (Set.insert srt supers)
-                         $ Map.keysSet $ termModies $ extendedInfo s
+                         $ Set.fromList $ Map.keys $ termModies $ extendedInfo s
                          then Result [mkDiag Error
                               ("unknown term modality sort '"
                                ++ showId srt "' for term") t ]

@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./QBF/AS_BASIC_QBF.der.hs
 Description :  Abstract syntax for propositional logic extended with QBFs
@@ -38,6 +38,8 @@ import Common.AS_Annotation as AS_Anno
 import Data.Data
 import Data.Maybe (isJust)
 import qualified Data.List as List
+import GHC.Generics (Generic)
+import Data.Hashable
 
 -- DrIFT command
 {-! global: GetRange !-}
@@ -75,7 +77,9 @@ data FORMULA =
     -- pos: "<=>"
   | ForAll [Id.Token] FORMULA Id.Range
   | Exists [Id.Token] FORMULA Id.Range
-    deriving (Show, Ord, Typeable, Data)
+    deriving (Show, Ord, Typeable, Data, Generic)
+
+instance Hashable FORMULA
 
 data ID = ID Id.Token (Maybe Id.Token) deriving (Typeable, Data)
 

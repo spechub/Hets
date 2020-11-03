@@ -18,8 +18,9 @@ import Common.Doc
 import Common.Id
 import Common.IRI
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Common.GlobalAnnotations
+import Data.Hashable
 
 -- * the class stuff
 class Show a => Pretty a where
@@ -189,18 +190,18 @@ optBraces c = case c of
 printSet :: Pretty a => (Doc -> Doc) -> ([Doc] -> Doc) -> Set.Set a -> Doc
 printSet = ppSet pretty . const
 
-printSetMap :: (Pretty k, Pretty a) => Doc -> Doc -> Map.Map k (Set.Set a)
+printSetMap :: (Pretty k, Pretty a, Hashable k) => Doc -> Doc -> Map.HashMap k (Set.Set a)
   -> Doc
 printSetMap header sepa = vcat . concatMap ( \ (i, s) ->
     map ( \ e -> header <+> pretty i <+> colon <> sepa <> pretty e)
             $ Set.toList s) . Map.toList
 
-printMap :: (Pretty a, Pretty b) => (Doc -> Doc) -> ([Doc] -> Doc)
-         -> (Doc -> Doc -> Doc) -> Map.Map a b -> Doc
+printMap :: (Pretty a, Pretty b, Hashable a) => (Doc -> Doc) -> ([Doc] -> Doc)
+         -> (Doc -> Doc -> Doc) -> Map.HashMap a b -> Doc
 printMap = ppMap pretty pretty . const
 
-ppMap :: (a -> Doc) -> (b -> Doc) -> (CSize -> Doc -> Doc) -> ([Doc] -> Doc)
-      -> (Doc -> Doc -> Doc) -> Map.Map a b -> Doc
+ppMap :: (Hashable a) => (a -> Doc) -> (b -> Doc) -> (CSize -> Doc -> Doc) -> ([Doc] -> Doc)
+      -> (Doc -> Doc -> Doc) -> Map.HashMap a b -> Doc
 ppMap fa fb brace inter pairDoc =
     ppPairlist fa fb brace inter pairDoc . Map.toList
 
@@ -212,7 +213,7 @@ ppPairlist fa fb brace inter pairDoc =
 pairElems :: Doc -> Doc -> Doc
 pairElems a b = a <+> mapsto <+> b
 
-instance (Pretty a, Pretty b) => Pretty (Map.Map a b) where
+instance (Pretty a, Pretty b, Hashable a) => Pretty (Map.HashMap a b) where
     pretty = printMap braces sepByCommas pairElems
 
 -- | start with a bullet, i.e. formulas

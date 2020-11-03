@@ -36,7 +36,7 @@ module Comorphisms.LogicList
     , preLogicGraph
     ) where
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Logic.Logic
 import Logic.Grothendieck
 import CASL.Logic_CASL  -- also serves as default logic

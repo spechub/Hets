@@ -35,7 +35,7 @@ import Common.AS_Annotation
 import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 {- | convert a generic CASL signature into the MMiSS ontology
@@ -72,7 +72,7 @@ convSign KSubsort onto sign =
 convPred :: Sign f e -> MMiSSOntology -> WithError MMiSSOntology
 convPred s o =
     -- first only binary preds; later also unary preds
-    Map.foldWithKey addPred (hasValue o) $ MapSet.toMap $ predMap s
+    Map.foldrWithKey addPred (hasValue o) $ MapSet.toMap $ predMap s
     where addPred pn tSet wOnto =
            weither (const wOnto) insBinaryPred wOnto
            where insBinaryPred on =

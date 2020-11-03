@@ -43,7 +43,7 @@ import Common.Id
 import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 
@@ -112,9 +112,9 @@ mapSign s =
     addStringSignature (replacePredMap (replaceSentences sUnion sentRels) everyProp)
 
 
-getPropertiesFromRelations :: Map.Map String RuleDef -> Map.Map String RuleDef -> PredMap
-getPropertiesFromRelations nonTopRel topRel = getRelDef $ Map.assocs nonTopRel
-                                               ++ Map.assocs topRel
+getPropertiesFromRelations :: Map.HashMap String RuleDef -> Map.HashMap String RuleDef -> PredMap
+getPropertiesFromRelations nonTopRel topRel = getRelDef $ Map.toList nonTopRel
+                                               ++ Map.toList topRel -- TODO: might need sorting!
 
 
 getRelDef :: [(String, RuleDef)] -> PredMap

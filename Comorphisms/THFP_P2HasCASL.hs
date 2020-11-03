@@ -38,7 +38,7 @@ import qualified THF.Sublogic as SL
 
 import Control.Monad
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 data THFP_P2HasCASL = THFP_P2HasCASL deriving Show

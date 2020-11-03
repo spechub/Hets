@@ -22,7 +22,7 @@ import TPTP.Sign as Sign
 
 import Common.DefaultMorphism
 import Common.Id
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 import Data.Maybe
 import qualified Data.Set as Set
@@ -34,7 +34,7 @@ mkSymbol i t = Symbol { symbolId = i , symbolType = t }
 
 gatherTHFSymbols :: SymbolType -> THFTypeDeclarationMap -> Set.Set Symbol
 gatherTHFSymbols symType = Set.map fromJust . Set.filter isJust .
-  Set.map (\ x -> mkSymbolFromTHFType x symType) . Map.keysSet
+  Set.map (\ x -> mkSymbolFromTHFType x symType) . Set.fromList . Map.keys
   where
     mkSymbolFromTHFType :: THFTypeable -> SymbolType -> Maybe Symbol
     mkSymbolFromTHFType x t = case x of
@@ -55,12 +55,12 @@ symbolsOfSign sign = Set.unions [
   , Set.map (\ x -> mkSymbol (mkToken x) Sign.Number) $ numberSet sign
   , Set.map (\ x -> mkSymbol x Sign.Proposition) $ propositionSet sign
   , gatherTHFSymbols Sign.TypeConstant $ thfTypeConstantMap sign
-  , Set.map (\ x -> mkSymbolFromTFFType x Sign.TypeConstant) $ Map.keysSet $ tffTypeConstantMap sign
+  , Set.map (\ x -> mkSymbolFromTFFType x Sign.TypeConstant) $ Set.fromList $ Map.keys $ tffTypeConstantMap sign
   , gatherTHFSymbols Sign.Predicate $ thfPredicateMap sign
-  , Set.map (\ x -> mkSymbolFromTFFType x Sign.Predicate) $ Map.keysSet $ tffPredicateMap sign
-  , Set.map (\ x -> mkSymbol x Sign.Predicate) $ Map.keysSet $ fofPredicateMap sign
+  , Set.map (\ x -> mkSymbolFromTFFType x Sign.Predicate) $ Set.fromList $ Map.keys $ tffPredicateMap sign
+  , Set.map (\ x -> mkSymbol x Sign.Predicate) $ Set.fromList $ Map.keys $ fofPredicateMap sign
   , gatherTHFSymbols Sign.Function $ thfTypeFunctorMap sign
-  , Set.map (\ x -> mkSymbolFromTFFType x Sign.Function) $ Map.keysSet $ tffTypeFunctorMap sign
+  , Set.map (\ x -> mkSymbolFromTFFType x Sign.Function) $ Set.fromList $ Map.keys $ tffTypeFunctorMap sign
   ]
 
 symbolToId :: Symbol -> Id

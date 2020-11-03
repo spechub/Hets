@@ -18,14 +18,14 @@ import SoftFOL.Sign
 import Common.Id
 
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Monoid
 
 symOf :: Sign -> Set.Set SFSymbol
 symOf sig =
     let opSymbs = Set.unions $ map toOpSymb $ Map.toList $ funcMap sig
         predSymbs = Set.unions $ map toPredSymb $ Map.toList $ predMap sig
-        sortSymbs = Set.map toSortSymb $ Map.keysSet $ sortMap sig
+        sortSymbs = Set.map toSortSymb $ Set.fromList $ Map.keys $ sortMap sig
     in Set.unions [opSymbs, predSymbs, sortSymbs]
 
 toOpSymb :: (SPIdentifier, Set.Set ([SPIdentifier], SPIdentifier))

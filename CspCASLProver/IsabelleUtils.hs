@@ -31,7 +31,7 @@ import Comorphisms.CFOL2IsabelleHOL (IsaTheory)
 
 -- import CspCASLProver.Consts
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 import Isabelle.IsaParse (parseTheory)
 import Isabelle.IsaPrint (getAxioms, printIsaTheory)
@@ -124,7 +124,7 @@ the function Isabelle.IsaProve.prepareTheory. The difference being that
 this function does not mark axioms nor theorms as to be added to the
 simplifier in Isabelle. -}
 prepareTheory :: Theory Sign Sentence ()
-    -> (Sign, [Named Sentence], [Named Sentence], Map.Map String String)
+    -> (Sign, [Named Sentence], [Named Sentence], Map.HashMap String String)
 prepareTheory (Theory sig nSens) = let
     oSens = toNamedList nSens
     nSens' = prepareSenNames transString oSens

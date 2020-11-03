@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./CspCASL/AS_CspCASL_Process.der.hs
 Description :  Abstract syntax of CSP-CASL processes
@@ -36,9 +36,13 @@ module CspCASL.AS_CspCASL_Process
 import CASL.AS_Basic_CASL (FORMULA, SORT, TERM (..), VAR)
 
 import Common.Id
+import Common.Utils
 
 import Data.Data
 import qualified Data.Set as Set
+
+import GHC.Generics (Generic)
+import Data.Hashable
 
 -- DrIFT command
 {-! global: GetRange !-}
@@ -73,20 +77,31 @@ data EVENT
     {- | @c ? var :: s -> p@ - Fully Qualified Channel recieve. The term here
     holds the fully qualified variable (name and sort). -}
     | FQChanRecv (CHANNEL_NAME, SORT) (TERM ()) Range
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable EVENT
 
 -- | Event sets are sets of communication types.
 data EVENT_SET = EventSet [CommType] Range
-                 deriving (Show, Eq, Ord, Typeable, Data)
+                 deriving (Show, Eq, Ord, Typeable, Data, Generic)
 
-data RenameKind = TotOp | PartOp | BinPred deriving (Show, Eq, Ord, Typeable, Data)
+instance Hashable EVENT_SET
+
+data RenameKind = TotOp | PartOp | BinPred 
+ deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable RenameKind
 
 data Rename = Rename Id (Maybe (RenameKind, Maybe (SORT, SORT)))
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable Rename
 
 -- | CSP renamings are predicate names or op names.
 data RENAMING = Renaming [Rename]
-                deriving (Show, Eq, Ord, Typeable, Data)
+                deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable RENAMING
 
 type CHANNEL_NAME = Id
 
@@ -106,7 +121,9 @@ splitCASLVar _ =
 alphabet (a Set of sorts). The CommAlpha here should always contain the minimal
 super sorts only. The communication over subsorts is implied -}
 data ProcProfile = ProcProfile PROC_ARGS CommAlpha
-                   deriving (Show, Eq, Ord, Typeable, Data)
+                   deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable ProcProfile
 
 {- | A process name is either a fully qualified process name or a plain process
 name. -}
@@ -116,7 +133,9 @@ data FQ_PROCESS_NAME
   {- | A name with parameter sorts and communication ids from the parser.
   This is where the user has tried to specify a fully qualified process name -}
   | FQ_PROCESS_NAME PROCESS_NAME ProcProfile
-                  deriving (Show, Eq, Ord, Typeable, Data)
+                  deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable FQ_PROCESS_NAME
 
 procNameToSimpProcName :: FQ_PROCESS_NAME -> PROCESS_NAME
 procNameToSimpProcName (PROCESS_NAME pn) = pn
@@ -125,11 +144,15 @@ procNameToSimpProcName (FQ_PROCESS_NAME pn _) = pn
 {- | A process communication alphabet consists of a set of sort names
 and typed channel names. -}
 data TypedChanName = TypedChanName CHANNEL_NAME SORT
-                     deriving (Show, Eq, Ord, Typeable, Data)
+                     deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable TypedChanName
 
 data CommType = CommTypeSort SORT
               | CommTypeChan TypedChanName
-                deriving (Eq, Ord, Typeable, Data)
+                deriving (Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable CommType
 
 {- | Type of communication types, either a sort communication or a typed channel
 communications. -}
@@ -179,4 +202,6 @@ data PROCESS
     {- | Fully qualified process. The range here shall be the same as
     in the process. -}
     | FQProcess PROCESS CommAlpha Range
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable PROCESS

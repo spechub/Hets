@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./DFOL/Symbol.hs
 Description :  Symbol definition for first-order logic with
@@ -20,10 +20,15 @@ import Common.Doc
 import Common.DocUtils
 
 import Data.Data
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
+
+import GHC.Generics (Generic)
+import Data.Hashable
 
 -- a symbol is just a name
-data Symbol = Symbol {name :: NAME} deriving (Show, Eq, Ord, Typeable, Data)
+data Symbol = Symbol {name :: NAME} deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable Symbol
 
 -- pretty printing
 instance Pretty Symbol where
@@ -36,11 +41,11 @@ printSymbol :: Symbol -> Doc
 printSymbol (Symbol s) = pretty s
 
 -- interface to name maps
-toSymMap :: Map.Map NAME NAME -> Map.Map Symbol Symbol
+toSymMap :: Map.HashMap NAME NAME -> Map.HashMap Symbol Symbol
 toSymMap map1 = Map.fromList $ map (\ (k, a) -> (Symbol k, Symbol a))
                  $ Map.toList map1
 
-toNameMap :: Map.Map Symbol Symbol -> Map.Map NAME NAME
+toNameMap :: Map.HashMap Symbol Symbol -> Map.HashMap NAME NAME
 toNameMap map1 = Map.fromList $ map (\ (Symbol k, Symbol a) -> (k, a))
                     $ Map.toList map1
 

@@ -1,5 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies
-  , FlexibleInstances, DeriveDataTypeable #-}
+  , FlexibleInstances, DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./CASL/Morphism.hs
 Description :  Symbols and signature morphisms for the CASL logic
@@ -70,7 +70,7 @@ import CASL.Sign
 import CASL.AS_Basic_CASL
 
 import Data.Data
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 import qualified Common.Lib.MapSet as MapSet
@@ -82,24 +82,28 @@ import Common.Result
 import Common.Utils (composeMap)
 
 import Control.Monad
+import GHC.Generics (Generic)
+import Data.Hashable
 
 type SymbolSet = Set.Set Symbol
-type SymbolMap = Map.Map Symbol Symbol
+type SymbolMap = Map.HashMap Symbol Symbol
 
 data RawSymbol = ASymbol Symbol | AKindedSymb SYMB_KIND Id
-                 deriving (Show, Eq, Ord, Typeable, Data)
+                 deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable RawSymbol
 
 instance GetRange RawSymbol where
     getRange rs = case rs of
         ASymbol s -> getRange s
         AKindedSymb _ i -> getRange i
 
-type RawSymbolMap = Map.Map RawSymbol RawSymbol
+type RawSymbolMap = Map.HashMap RawSymbol RawSymbol
 
-type Sort_map = Map.Map SORT SORT
+type Sort_map = Map.HashMap SORT SORT
 -- always use the partial profile as key!
-type Op_map = Map.Map (Id, OpType) (Id, OpKind)
-type Pred_map = Map.Map (Id, PredType) Id
+type Op_map = Map.HashMap (Id, OpType) (Id, OpKind)
+type Pred_map = Map.HashMap (Id, PredType) Id
 
 data Morphism f e m = Morphism
   { msource :: Sign f e
@@ -248,10 +252,10 @@ checkSymbList l = case l of
          _ : r -> checkSymbList r
          [] -> []
 
-insertRsys :: (Pretty r, GetRange r, Ord r)
+insertRsys :: (Pretty r, GetRange r, Ord r, Hashable r)
   => (r -> Id) -> (r -> Maybe Id) -> (Id -> r)
-    -> (r -> Maybe Id) -> (Id -> r) -> Map.Map r r -> (r, r)
-      -> Result (Map.Map r r)
+    -> (r -> Maybe Id) -> (Id -> r) -> Map.HashMap r r -> (r, r)
+      -> Result (Map.HashMap r r)
 insertRsys rawId getSort mkSort getImplicit mkImplicit m1 (rsy1, rsy2) =
   let m3 = Map.insert rsy1 rsy2 m1 in
         case Map.lookup rsy1 m1 of
@@ -621,8 +625,8 @@ morphismUnionM uniteM addSigExt mor1 mor2 =
       smap2 = sort_map mor2
       s1 = msource mor1
       s2 = msource mor2
-      us1 = Set.difference (sortSet s1) $ Map.keysSet smap1
-      us2 = Set.difference (sortSet s2) $ Map.keysSet smap2
+      us1 = Set.difference (sortSet s1) $ Set.fromList $ Map.keys smap1
+      us2 = Set.difference (sortSet s2) $ Set.fromList $ Map.keys smap2
       omap1 = op_map mor1
       omap2 = op_map mor2
       uo1 = foldr delOp (opMap s1) $ Map.keys omap1
@@ -724,7 +728,8 @@ printMorphism isSubSigExt isInclMorExt fE fM mor =
                  , if Map.null ops then empty
                    else fsep
                    [text "by totalizing",
-                    pretty $ Set.map (uncurry idToOpSymbol) $ Map.keysSet ops]]
+                    pretty $ Set.map (uncurry idToOpSymbol) $ 
+                             Set.fromList $ Map.keys ops]]
     else
       [ braces $ printMap id sepByCommas pairElems
           (morphismToSymbMapAux True mor) $+$ fM mor

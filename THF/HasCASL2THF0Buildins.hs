@@ -31,7 +31,7 @@ import Text.ParserCombinators.Parsec
 
 import Data.Maybe
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 {- -----------------------------------------------------------------------------
 Assumps

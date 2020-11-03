@@ -149,10 +149,11 @@ import Common.Taxonomy
 import Common.ToXml
 
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Monoid
 import Data.Ord
 import Data.Typeable
+import Data.Hashable
 import Control.Monad (unless)
 
 -- | Stability of logic implementations
@@ -172,7 +173,7 @@ class (Eq a, PrintTypeConv a) => EqPrintTypeConv a
 instance (Eq a, PrintTypeConv a) => EqPrintTypeConv a
 
 -- | maps from a to a
-type EndoMap a = Map.Map a a
+type EndoMap a = Map.HashMap a a
 
 {- | the name of a logic.
      Define instances like "data CASL = CASL deriving (Show, Typeable, Data)"
@@ -250,7 +251,7 @@ class (Language lid, PrintTypeConv basic_spec, GetRange basic_spec,
         | lid -> basic_spec symbol symb_items symb_map_items
       where
          -- | parsers and printers
-         parsersAndPrinters :: lid -> Map.Map String
+         parsersAndPrinters :: lid -> Map.HashMap String
             (PrefixMap -> AParser st basic_spec, basic_spec -> Doc)
          parsersAndPrinters li = case parse_basic_spec li of
             Nothing -> Map.empty
@@ -292,7 +293,7 @@ parserAndPrinter sm l = lookupDefault l sm (parsersAndPrinters l)
 
 -- | function to lookup parser or printer
 lookupDefault :: Syntax lid basic_spec symbol symb_items symb_map_items
-  => lid -> Maybe IRI -> Map.Map String b -> Maybe b
+  => lid -> Maybe IRI -> Map.HashMap String b -> Maybe b
 lookupDefault l im m = case im of
      Just i -> do
        let s = iriToStringUnsecure i
@@ -306,10 +307,10 @@ showSyntax :: Language lid => lid -> Maybe IRI -> String
 showSyntax lid = (("logic " ++ language_name lid) ++)
    . maybe "" ((" serialization " ++) . iriToStringUnsecure)
 
-makeDefault :: b -> Map.Map String b
+makeDefault :: b -> Map.HashMap String b
 makeDefault = Map.singleton ""
 
-addSyntax :: String -> b -> Map.Map String b -> Map.Map String b
+addSyntax :: String -> b -> Map.HashMap String b -> Map.HashMap String b
 addSyntax = Map.insert
 
 {- | Sentences, provers and symbols.
@@ -509,7 +510,7 @@ class ( Syntax lid basic_spec symbol symb_items symb_map_items
          quotient_term_algebra l _ _ = statFail l "quotient_term_algebra"
          -- | signature colimits
          signature_colimit :: lid -> Gr sign (Int, morphism)
-                           -> Result (sign, Map.Map Int morphism)
+                           -> Result (sign, Map.HashMap Int morphism)
          signature_colimit l _ = statFail l "signature_colimit"
          {- | rename and qualify the symbols considering a united incoming
             morphisms, code out overloading and
@@ -725,7 +726,8 @@ class (StaticAnalysis lid
        Convertible sublogics,
        SublogicName sublogics,
        Ord proof_tree, Show proof_tree,
-       Convertible proof_tree)
+       Convertible proof_tree,
+       Hashable sentence)--, Hashable symbol, Hashable raw_symbol)
     => Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol proof_tree

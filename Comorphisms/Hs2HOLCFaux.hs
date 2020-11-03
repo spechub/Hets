@@ -80,7 +80,7 @@ module Comorphisms.Hs2HOLCFaux
     ) where
 
 import Data.List
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Maybe (fromMaybe)
 
 import Common.AS_Annotation
@@ -124,8 +124,8 @@ type PrPat = TiDecorate.TiPat PNT
 
 type HId i = HsIdentI i
 
-type VaMap = Map.Map HsId HsScheme
-type TyMap = Map.Map HsId (Kind, HsTypeInfo)
+type VaMap = Map.HashMap HsId HsScheme
+type TyMap = Map.HashMap HsId (Kind, HsTypeInfo)
 
 -- ---------------- Isabelle --------------------------------------------
 
@@ -552,7 +552,7 @@ transPath s1 s2 = showIsaName s1 ++ "_" ++ showIsaName s2
 
 -- --------------- getting info about domaintab -------------------------
 
-type AConstTab = Map.Map VName (Typ, IsaVT)
+type AConstTab = Map.HashMap VName (Typ, IsaVT)
 data IsaVT = IsaConst | IsaVal deriving (Eq, Show)
 
 getDomType :: AConstTab -> VName -> IsaType
@@ -888,7 +888,7 @@ makeRecDef n t ls =
  RecDef Nothing (mkVName n)
   Nothing (map (\ (a, b) -> holEq (App t a NotCont) b) ls)
 
-reassemble :: [[(Term, Term)]] -> Map.Map Term [Term]
+reassemble :: [[(Term, Term)]] -> Map.HashMap Term [Term]
 reassemble ls = foldr
  (\ (ft, sd) ms ->
      Map.insert ft (sd : Map.findWithDefault [] ft ms) ms)
@@ -984,19 +984,19 @@ headTailsMT ls = let
                in (w, zz)
 
 -- !!!!!!!!!!!!
-renMap :: Map.Map Typ Typ -> Map.Map Typ Typ -> Map.Map Typ Typ
+renMap :: Map.HashMap Typ Typ -> Map.HashMap Typ Typ -> Map.HashMap Typ Typ
 renMap f g = if Map.size f == Map.size g then
      Map.fromList [(fst $ Map.elemAt n g, snd $ Map.elemAt n f)
                                      | n <- [0 .. (Map.size f - 1)]]
   else error "HsHOLCFaux, renMap"
 -- !!!!!!!!!!!!
 
-mkTVarMap :: (Typ -> Typ) -> Typ -> Map.Map Typ Typ
+mkTVarMap :: (Typ -> Typ) -> Typ -> Map.HashMap Typ Typ
 mkTVarMap f t = case t of
    Type _ _ xs -> Map.unions [mkTVarMap f y | y <- xs]
    _ -> Map.singleton t (f t)
 
-applyTVM :: Map.Map Typ Typ -> Typ -> Typ
+applyTVM :: Map.HashMap Typ Typ -> Typ -> Typ
 applyTVM f t = case t of
     IsaSign.Type n s vs -> IsaSign.Type n s (map (applyTVM f) vs)
     _ -> fromMaybe t $ Map.lookup t f

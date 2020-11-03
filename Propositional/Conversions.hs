@@ -23,7 +23,7 @@ import qualified Common.Id as Id
 import Common.DocUtils
 
 import Data.Maybe
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 import qualified Propositional.AS_BASIC_Propositional as AS
@@ -71,8 +71,8 @@ showDIMACSProblem name fSig axs mcons = do
 -- | Create signature map
 createSignMap :: Sig.Sign
               -> Integer -- ^ Starting number of the variables
-              -> Map.Map Id.Token Integer
-              -> Map.Map Id.Token Integer
+              -> Map.HashMap Id.Token Integer
+              -> Map.HashMap Id.Token Integer
 createSignMap sig inNum inMap =
     let it = Sig.items sig
         minL = Set.findMin it
@@ -83,13 +83,13 @@ createSignMap sig inNum inMap =
 
 -- | Mapping of a single Clause
 mapClause :: AS.FORMULA
-          -> Map.Map Id.Token Integer
+          -> Map.HashMap Id.Token Integer
           -> String
 mapClause form = unlines . map (++ " 0") . mapClauseAux form
 
 -- | Mapping of a single Clause
 mapClauseAux :: AS.FORMULA
-          -> Map.Map Id.Token Integer
+          -> Map.HashMap Id.Token Integer
           -> [String]
 mapClauseAux form mapL = case form of
       -- unused case: AS.Conjunction ts _ -> map (`mapLiteral` mapL) ts
@@ -99,7 +99,7 @@ mapClauseAux form mapL = case form of
 
 -- | Mapping of a single literal
 mapLiteral :: AS.FORMULA
-           -> Map.Map Id.Token Integer
+           -> Map.HashMap Id.Token Integer
            -> String
 mapLiteral f mapL = case f of
       AS.Disjunction ts _ -> unwords $ map (`mapLiteral` mapL) ts

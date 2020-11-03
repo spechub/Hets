@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./DFOL/AS_DFOL.hs
 Description :  Abstract syntax for first-order logic with dependent types (DFOL)
@@ -47,10 +47,13 @@ import Common.DocUtils
 
 import DFOL.Utils
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Data.Data
 import Data.List
+
+import GHC.Generics (Generic)
+import Data.Hashable
 
 type NAME = Token
 type DECL = ([NAME], TYPE)
@@ -71,11 +74,15 @@ data TYPE = Sort
           | Univ TERM
           | Func [TYPE] TYPE
           | Pi [DECL] TYPE
-            deriving (Show, Ord, Typeable, Data)
+            deriving (Show, Ord, Typeable, Data, Generic)
+
+instance Hashable TYPE
 
 data TERM = Identifier NAME
           | Appl TERM [TERM]
-            deriving (Show, Ord, Typeable, Data)
+            deriving (Show, Ord, Typeable, Data, Generic)
+
+instance Hashable TERM
 
 data FORMULA = T
              | F
@@ -88,7 +95,9 @@ data FORMULA = T
              | Equivalence FORMULA FORMULA
              | Forall [DECL] FORMULA
              | Exists [DECL] FORMULA
-               deriving (Show, Ord, Eq, Typeable, Data)
+               deriving (Show, Ord, Eq, Typeable, Data, Generic)
+
+instance Hashable FORMULA
 
 instance GetRange FORMULA
 
@@ -206,7 +215,7 @@ class Translatable a where
    {- substitutions and renamings: the first argument specifies the desired
       term/identifier substitutions and the second the set of identifiers which
       cannot be used as new variable names -}
-   translate :: Map.Map NAME TERM -> Set.Set NAME -> a -> a
+   translate :: Map.HashMap NAME TERM -> Set.Set NAME -> a -> a
 
 instance Translatable TERM where
    translate m _ = translateTerm m . termRecForm
@@ -218,12 +227,12 @@ instance Translatable FORMULA where
                          in translateFormula m (Set.union s s1)
                                (formulaRecForm f)
 
-translateTerm :: Map.Map NAME TERM -> TERM -> TERM
+translateTerm :: Map.HashMap NAME TERM -> TERM -> TERM
 translateTerm m (Identifier x) = Map.findWithDefault (Identifier x) x m
 translateTerm m (Appl f [a]) = Appl (translateTerm m f) [translateTerm m a]
 translateTerm _ t = t
 
-translateType :: Map.Map NAME TERM -> Set.Set NAME -> TYPE -> TYPE
+translateType :: Map.HashMap NAME TERM -> Set.Set NAME -> TYPE -> TYPE
 translateType _ _ Sort = Sort
 translateType _ _ Form = Form
 translateType m s (Univ t) = Univ $ translate m s t
@@ -235,7 +244,7 @@ translateType m s (Pi [([x], t)] a) =
       in Pi [([x1], t1)] a1
 translateType _ _ t = t
 
-translateFormula :: Map.Map NAME TERM -> Set.Set NAME -> FORMULA -> FORMULA
+translateFormula :: Map.HashMap NAME TERM -> Set.Set NAME -> FORMULA -> FORMULA
 translateFormula _ _ T = T
 translateFormula _ _ F = F
 translateFormula m s (Pred t) = Pred $ translate m s t

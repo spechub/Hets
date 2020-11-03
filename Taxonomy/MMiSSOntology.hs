@@ -70,7 +70,7 @@ import Data.Char (toLower)
 import Data.Graph.Inductive.Graph
 import Data.Graph.Inductive.Basic
 import Common.Lib.Graph
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Common.Taxonomy
 
 type ClassName = String
@@ -120,9 +120,9 @@ data ClassType = SubSort | Predicate deriving (Eq, Read, Show)
 
 data MMiSSOntology = MMiSSOntology
     { getOntologyName :: String
-    , classes :: Map.Map String ClassDecl
-    , objects :: Map.Map String ObjectDecl
-    , relations :: Map.Map String RelationDecl
+    , classes :: Map.HashMap String ClassDecl
+    , objects :: Map.HashMap String ObjectDecl
+    , relations :: Map.HashMap String RelationDecl
     , objectLinks :: [ObjectLink]
     , mode :: InsertMode
     , getClassGraph :: ClassGraph
@@ -407,8 +407,8 @@ insertLink onto source target relName = do
 isComplete :: MMiSSOntology -> [String]
 isComplete onto = case mode onto of
     ThrowError -> []
-    _ -> Map.foldWithKey checkClass [] (classes onto)
-            ++ Map.foldWithKey checkRel [] (relations onto)
+    _ -> Map.foldrWithKey checkClass [] (classes onto)
+            ++ Map.foldrWithKey checkRel [] (relations onto)
   where
     mkMsg str nam = [str ++ nam ++ " is not properly defined."]
     checkClass className (ClassDecl _ _ _ _ inserted _) l =

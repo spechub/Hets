@@ -32,7 +32,7 @@ import CommonLogic.OMDocImport as OMDocImport
 import CommonLogic.OMDoc
 import CommonLogic.Sublogic
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Monoid
 
 import Logic.Logic

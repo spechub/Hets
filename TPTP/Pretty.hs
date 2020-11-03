@@ -23,7 +23,7 @@ import Common.Doc hiding (defn)
 import Common.DocUtils
 
 import Data.Char (toLower)
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 {- -----------------------------------------------------------------------------

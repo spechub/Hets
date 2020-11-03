@@ -14,7 +14,7 @@ The Lisp interface
 module Omega.ToLisp ( printLibrary ) where
 
 import Data.List
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 import Omega.DataTypes
 
@@ -72,7 +72,7 @@ instance SExprPrintable [String] where
 data SymbolFormat = Infix | Other deriving (Show, Eq, Ord)
 
 -- | Omegas built in symbols
-symbolMap :: Map.Map String (Term, SymbolFormat)
+symbolMap :: Map.HashMap String (Term, SymbolFormat)
 symbolMap = Map.fromList [("__/\\__", (Symbol "/\\", Infix)),
                           ("__\\/__", (Symbol "\\/", Infix)),
                           ("__=>__", (Symbol "=>", Infix)),

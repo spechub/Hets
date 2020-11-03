@@ -17,7 +17,7 @@ module GUI.HTkProverGUI (proofManagementGUI, GUIMVar) where
 import Common.AS_Annotation as AS_Anno
 import qualified Common.Doc as Pretty
 import Common.Result as Result
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Common.ExtSign
 import Common.Utils
 

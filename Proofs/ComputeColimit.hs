@@ -35,7 +35,7 @@ import Common.Id
 import Common.IRI
 import Common.Utils (nubOrd)
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Data.Graph.Inductive.Graph
 
@@ -92,7 +92,7 @@ makeDiagramAux diagram dgraph (node : list) es =
 
 -- | weakly amalgamable cocones
 gWeaklyAmalgamableCocone :: GDiagram
-                         -> Result (G_theory, Map.Map Int GMorphism)
+                         -> Result (G_theory, Map.HashMap Int GMorphism)
 gWeaklyAmalgamableCocone diag
  | isHomogeneousGDiagram diag = case head $ labNodes diag of
    (_, G_theory lid _ _ _ _ _) -> do

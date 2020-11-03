@@ -49,7 +49,7 @@ import qualified Common.Lib.Rel as Rel
 
 import Control.Monad
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Data.Maybe
 import Data.List
@@ -58,7 +58,7 @@ checkPlaces :: [SORT] -> Id -> [Diagnosis]
 checkPlaces args i = let n = placeCount i in
     [mkDiag Error "wrong number of places" i | n > 0 && n /= length args ]
 
-checkWithVars :: String -> Map.Map SIMPLE_ID a -> Id -> [Diagnosis]
+checkWithVars :: String -> Map.HashMap SIMPLE_ID a -> Id -> [Diagnosis]
 checkWithVars s m i@(Id ts _ _) = if isSimpleId i then
     case Map.lookup (head ts) m of
     Nothing -> []
@@ -852,7 +852,7 @@ anaForm :: (FormExtension f, TermExtension f)
   => Min f e -> Mix b s f e -> Sign f e -> FORMULA f
     -> Result (FORMULA f, FORMULA f)
 anaForm mef mixIn sign f = do
-    let mix = extendMix (Map.keysSet $ varMap sign) mixIn
+    let mix = extendMix (Set.fromList $ Map.keys $ varMap sign) mixIn
     resF <- resolveFormula (putParen mix) (mixResolve mix)
             (globAnnos sign) (mixRules mix) f
     anaF <- minExpFORMULA mef sign resF
@@ -862,7 +862,7 @@ anaTerm :: (FormExtension f, TermExtension f)
   => Min f e -> Mix b s f e -> Sign f e -> Maybe SORT -> Range -> TERM f
     -> Result (TERM f, TERM f)
 anaTerm mef mixIn sign msrt pos t = do
-    let mix = extendMix (Map.keysSet $ varMap sign) mixIn
+    let mix = extendMix (Set.fromList $ Map.keys $ varMap sign) mixIn
     resT <- resolveMixfix (putParen mix) (mixResolve mix)
             (globAnnos sign) (mixRules mix) t
     anaT <- oneExpTerm mef sign $ maybe resT

@@ -36,7 +36,7 @@ import Isabelle.IsaImport (importIsaDataIO, IsaData)
 
 import Driver.Options
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Graph.Inductive.Graph (Node)
 import Data.List (intercalate)
 import Data.Maybe (catMaybes)
@@ -103,8 +103,8 @@ anaThyFile opts path = do
    removeFile tempFile
    return ret
 
-mkNode :: (DGraph, Map.Map String (Node, Sign)) -> IsaData ->
-     (DGraph, Map.Map String (Node, Sign))
+mkNode :: (DGraph, Map.HashMap String (Node, Sign)) -> IsaData ->
+     (DGraph, Map.HashMap String (Node, Sign))
 mkNode (dg, m) (name, header', imps, keywords', uses', body) =
  let sens = map (\ sen ->
              let name' = case sen of
@@ -124,7 +124,7 @@ mkNode (dg, m) (name, header', imps, keywords', uses', body) =
                                             (map (\ (n', _, _, _) -> n') fsigs)
                   _ -> ""
              in makeNamed name' sen) body
-     sgns = Map.foldWithKey (\ k a l ->
+     sgns = Map.foldrWithKey (\ k a l ->
              if elem k imps then snd a : l else l) [] m
      sgn = foldl union_sig (emptySign { imports = imps,
                                          header = header',

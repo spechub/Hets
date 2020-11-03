@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/SuleCFOL2SoftFOL.hs
 Description :  Coding of a CASL subset into SoftFOL
@@ -34,7 +34,7 @@ import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.MapSet as MapSet
 
 import Text.ParserCombinators.Parsec
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 import Data.List as List
@@ -61,6 +61,9 @@ import SoftFOL.Sign as SPSign
 import SoftFOL.Logic_SoftFOL
 import SoftFOL.Translate
 import SoftFOL.ParseTPTP
+
+import GHC.Generics (Generic)
+import Data.Hashable
 
 data PlainSoftFOL = PlainSoftFOL
 
@@ -89,7 +92,9 @@ data CType = CSort
            | CVar SORT
            | CPred CSign.PredType
            | COp CSign.OpType
-             deriving (Eq, Ord, Show)
+             deriving (Eq, Ord, Show, Generic)
+
+instance Hashable CType
 
 toCKType :: CType -> CKType
 toCKType ct = case ct of
@@ -99,7 +104,7 @@ toCKType ct = case ct of
   COp _ -> CKOp
 
 -- | CASL Ids with Types mapped to SPIdentifier
-type IdTypeSPIdMap = Map.Map Id (Map.Map CType SPIdentifier)
+type IdTypeSPIdMap = Map.HashMap Id (Map.HashMap CType SPIdentifier)
 
 -- | specialized lookup for IdTypeSPIdMap
 lookupSPId :: Id -> CType -> IdTypeSPIdMap ->
@@ -130,7 +135,7 @@ deleteSPId i t m =
 
 -- | specialized elems into a set for IdTypeSPIdMap
 elemsSPIdSet :: IdTypeSPIdMap -> Set.Set SPIdentifier
-elemsSPIdSet = Map.fold (\ m res -> Set.union res
+elemsSPIdSet = Map.foldr (\ m res -> Set.union res
                                       (Set.fromList (Map.elems m)))
                          Set.empty
 
@@ -186,7 +191,7 @@ instance Show a => Comorphism (GenSuleCFOL2SoftFOL a)
 transFuncMap :: IdTypeSPIdMap ->
                 CSign.Sign e f ->
                 (FuncMap, IdTypeSPIdMap)
-transFuncMap idMap sign = Map.foldWithKey toSPOpType (Map.empty, idMap)
+transFuncMap idMap sign = Map.foldrWithKey toSPOpType (Map.empty, idMap)
   . MapSet.toMap $ CSign.opMap sign
     where toSPOpType iden typeSet (fm, im) =
               if isSingleton typeSet then
@@ -203,14 +208,14 @@ transFuncMap idMap sign = Map.foldWithKey toSPOpType (Map.empty, idMap)
                                      im' tset)
                     sid fma t = disSPOId CKOp (transId CKOp iden)
                                        (uType (transOpType t))
-                                       (Set.union (Map.keysSet fma)
+                                       (Set.union (Set.fromList $ Map.keys fma)
                                            (elemsSPIdSet idMap))
                     uType t = fst t ++ [snd t]
 
 transPredMap :: IdTypeSPIdMap -> CSign.Sign e f
   -> (SPSign.PredMap, IdTypeSPIdMap)
 transPredMap idMap sign =
-    Map.foldWithKey toSPPredType (Map.empty, idMap) . MapSet.toMap
+    Map.foldrWithKey toSPPredType (Map.empty, idMap) . MapSet.toMap
       $ CSign.predMap sign
     where toSPPredType iden typeSet (fm, im) =
               if isSingleton typeSet then
@@ -228,7 +233,7 @@ transPredMap idMap sign =
                                      im' tset)
                     sid fma t = disSPOId CKPred (transId CKPred iden)
                                        (transPredType t)
-                                       (Set.union (Map.keysSet fma)
+                                       (Set.union (Set.fromList $ Map.keys fma)
                                            (elemsSPIdSet idMap))
 
 {- left typing implies right typing; explicit overloading sentences
@@ -457,7 +462,7 @@ mkInjOp (opM, idMap) qo@(Qual_op_name i ot _) =
                         (utype (transOpType ot')) usedNames
           ot' = CSign.toOpType ot
           lsid = lookupSPId i (COp ot') idMap
-          usedNames = Map.keysSet opM
+          usedNames = Set.fromList $ Map.keys opM
           err = error ("SuleCFOL2SoftFOL.mkInjOp: Cannot find SPId for '"
                        ++ show qo ++ "'")
           utype t = fst t ++ [snd t]
@@ -466,7 +471,7 @@ mkInjOp _ _ = error "SuleCFOL2SoftFOL.mkInjOp: Wrong constructor!!"
 mkInjSentences :: IdTypeSPIdMap
                -> FuncMap
                -> [Named SPTerm]
-mkInjSentences idMap = Map.foldWithKey genInjs []
+mkInjSentences idMap = Map.foldrWithKey genInjs []
     where genInjs k tset fs = Set.fold (genInj k) fs tset
           genInj k (args, res) =
               assert (length args == 1)
@@ -501,7 +506,7 @@ transSign sign = (SPSign.emptySign { SPSign.sortRel =
             Set.fold (\ i (sm, im) ->
                           let sid = disSPOId CKSort (transIdSort i)
                                        [mkSimpleId $ take 20 (cycle "So")]
-                                       (Map.keysSet sm)
+                                       (Set.fromList $ Map.keys sm)
                           in (Map.insert sid Nothing sm,
                               insertSPId i CSort sid im))
                                         (Map.empty, Map.empty)
@@ -514,7 +519,7 @@ nonEmptySortSens sig idMap sm =
   let es = Set.difference (sortSet sig) $ emptySortSet sig
   in [ extSen s | nes <- Set.toList es
      , let s = fromMaybe (transIdSort nes) $ lookupSPId nes CSort idMap
-     , Set.member s $ Map.keysSet sm ]
+     , Set.member s $ Set.fromList $ Map.keys sm ]
     where extSen s = makeNamed ("ga_non_empty_sort_" ++ show s) $ SPQuantTerm
                      SPExists [varTerm] $ compTerm (spSym s) [varTerm]
               where varTerm = simpTerm $ spSym $ mkSimpleId $ newVar s
@@ -832,7 +837,7 @@ extractCASLModel sign (ProofTree output) =
       return (nsign, doms ++ distfs ++ terms ++ sens)
     Left err -> fail $ showErr err
 
-type RMap = Map.Map SPIdentifier (CType, Maybe Id)
+type RMap = Map.HashMap SPIdentifier (CType, Maybe Id)
 
 getSignMap :: IdTypeSPIdMap -> RMap
 getSignMap =

@@ -17,7 +17,7 @@ module GUI.HTkGenericATP (genericATPgui) where
 import Logic.Prover
 
 import qualified Common.AS_Annotation as AS_Anno
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Common.Utils (getEnvSave, readMaybe)
 import Common.Result
 

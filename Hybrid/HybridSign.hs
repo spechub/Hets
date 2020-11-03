@@ -20,14 +20,15 @@ import Common.Id
 
 import Data.Data
 import qualified Data.List as List
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
+import Data.Hashable
 
 data HybridSign = HybridSign
   { rigidOps :: OpMap
   , rigidPreds :: PredMap
-  , modies :: Map.Map SIMPLE_ID [AnHybFORM]
-  , nomies :: Map.Map SIMPLE_ID [AnHybFORM]
-  , termModies :: Map.Map Id [AnHybFORM] -- SORT
+  , modies :: Map.HashMap SIMPLE_ID [AnHybFORM]
+  , nomies :: Map.HashMap SIMPLE_ID [AnHybFORM]
+  , termModies :: Map.HashMap Id [AnHybFORM] -- SORT
   } deriving (Show, Eq, Ord, Typeable, Data)
 
 emptyHybridSign :: HybridSign
@@ -42,8 +43,8 @@ addHybridSign a b = a
   , nomies = Map.unionWith List.union (nomies a) (nomies b)
   , termModies = Map.unionWith List.union (termModies a) $ termModies b }
 
-interMap :: Ord a => ([b] -> [b] -> [b]) -> Map.Map a [b] -> Map.Map a [b]
-         -> Map.Map a [b]
+interMap :: (Ord a, Hashable a) => ([b] -> [b] -> [b]) -> Map.HashMap a [b] -> Map.HashMap a [b]
+         -> Map.HashMap a [b]
 interMap f m = Map.filter (not . null) . Map.intersectionWith f m
 
 interHybridSign :: HybridSign -> HybridSign -> HybridSign

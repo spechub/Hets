@@ -30,7 +30,7 @@ import Text.XML.Light
 
 import Data.Maybe
 import Data.List
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 import Debug.Trace
 
@@ -127,7 +127,7 @@ mkNodeID iri =
         _ -> iri {prefixName = "_"}
 
 -- | gets the content of an element with name Import
-importIRI :: Map.Map String String -> XMLBase -> Element -> IRI
+importIRI :: Map.HashMap String String -> XMLBase -> Element -> IRI
 importIRI m b e =
   let cont1 = strContent e
       cont = Map.findWithDefault cont1 cont1 m
@@ -558,7 +558,7 @@ getFrames b e ax =
 getOnlyAxioms :: XMLBase -> Element -> [Axiom]
 getOnlyAxioms b e = map (getClassAxiom b) $ filterChildrenName isNotSmth e
 
-getImports :: Map.Map String String -> XMLBase -> Element -> [ImportIRI]
+getImports :: Map.HashMap String String -> XMLBase -> Element -> [ImportIRI]
 getImports m b e = map (importIRI m b) $ filterCh importK e
 
 get1Map :: Element -> (String, String)
@@ -581,7 +581,7 @@ getBase :: Element -> XMLBase
 getBase e = fromJust $ vFindAttrBy (isSmth "base") e
 
 -- | parses an ontology document
-xmlBasicSpec :: Map.Map String String -> Element -> OntologyDocument
+xmlBasicSpec :: Map.HashMap String String -> Element -> OntologyDocument
 xmlBasicSpec imap e =
     let b = getBase e
         ax = getOnlyAxioms b e

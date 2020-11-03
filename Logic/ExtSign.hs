@@ -14,12 +14,13 @@ extended to work over signatures with symbol sets.
 module Logic.ExtSign where
 
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Control.Monad
 import Common.Result
 import Common.DocUtils
 import Common.ExtSign
 import Logic.Logic
+import Data.Hashable
 
 
 ext_sym_of :: Logic lid sublogics
@@ -145,9 +146,9 @@ checkRawSyms l rsyms syms = do
   unless (null unknownSyms)
     $ Result [mkDiag Error "unknown symbols" unknownSyms] $ Just ()
 
-ext_induced_from_to_morphism :: Logic lid sublogics
+ext_induced_from_to_morphism :: (Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
-        sign morphism symbol raw_symbol proof_tree
+        sign morphism symbol raw_symbol proof_tree, Hashable symbol)
         => lid -> EndoMap raw_symbol -> ExtSign sign symbol
                -> ExtSign sign symbol -> Result morphism
 ext_induced_from_to_morphism l r s@(ExtSign p sy) t = do

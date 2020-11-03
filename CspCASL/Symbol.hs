@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./CspCASL/Symbol.hs
 Description :  semantic csp-casl symbols
@@ -28,16 +28,21 @@ import Common.Result
 import qualified Common.Lib.MapSet as MapSet
 
 import Data.Data
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 import Control.Monad
+
+import GHC.Generics (Generic)
+import Data.Hashable
 
 data CspSymbType
   = CaslSymbType SymbType
   | ProcAsItemType ProcProfile
   | ChanAsItemType Id -- the SORT
-  deriving (Show, Eq, Ord, Typeable, Data)
+  deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable CspSymbType
 
 instance Pretty CspSymbType where
  pretty (CaslSymbType st)  = pretty $ symbolKind st
@@ -45,10 +50,14 @@ instance Pretty CspSymbType where
  pretty (ChanAsItemType _) = text "channel"
 
 data CspSymbol = CspSymbol {cspSymName :: Id, cspSymbType :: CspSymbType}
-  deriving (Show, Eq, Ord, Typeable, Data)
+  deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable CspSymbol
 
 data CspRawSymbol = ACspSymbol CspSymbol | CspKindedSymb CspSymbKind Id
-  deriving (Show, Eq, Ord, Typeable, Data)
+  deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable CspRawSymbol
 
 rawId :: CspRawSymbol -> Id
 rawId r = case r of
@@ -220,7 +229,7 @@ cspSymbOrMapToRaw sig msig k (CspSymbMap s mt) = case mt of
         _ -> return [(w, x)]
 
 cspStatSymbMapItems :: CspCASLSign -> Maybe CspCASLSign -> [CspSymbMapItems]
-  -> Result (Map.Map CspRawSymbol CspRawSymbol)
+  -> Result (Map.HashMap CspRawSymbol CspRawSymbol)
 cspStatSymbMapItems sig msig sl = do
   let st (CspSymbMapItems kind l) = do
         appendDiags $ cspCheckSymbList l
@@ -256,9 +265,9 @@ toRawSymbol r = case r of
   CspKindedSymb (CaslKind k) i -> Just (AKindedSymb k i)
   _ -> Nothing
 
-splitSymbolMap :: Map.Map CspRawSymbol CspRawSymbol
-  -> (RawSymbolMap, Map.Map CspRawSymbol CspRawSymbol)
-splitSymbolMap = Map.foldWithKey (\ s t (cm, ccm) ->
+splitSymbolMap :: Map.HashMap CspRawSymbol CspRawSymbol
+  -> (RawSymbolMap, Map.HashMap CspRawSymbol CspRawSymbol)
+splitSymbolMap = Map.foldrWithKey (\ s t (cm, ccm) ->
   case (toRawSymbol s, toRawSymbol t) of
     (Just c, Just d) -> (Map.insert c d cm, ccm)
     _ -> (cm, Map.insert s t ccm)) (Map.empty, Map.empty)

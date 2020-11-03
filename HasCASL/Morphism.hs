@@ -34,11 +34,13 @@ import Common.Lib.MapSet (setToMap)
 import Control.Monad
 
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
+import Data.Hashable
 
-disjointKeys :: (Ord a, Pretty a, Monad m) => Map.Map a b -> Map.Map a c
+
+disjointKeys :: (Ord a, Hashable a, Pretty a, Monad m) => Map.HashMap a b -> Map.HashMap a c
              -> m ()
-disjointKeys m1 m2 = let d = Map.keysSet $ Map.intersection m1 m2 in
+disjointKeys m1 m2 = let d = Set.fromList $ Map.keys $ Map.intersection m1 m2 in
   unless (Set.null d) $ fail $ show
          (sep [ text "overlapping identifiers for types and classes:"
               , pretty d])
@@ -176,7 +178,7 @@ compMor m1 m2 = let
       { typeIdMap = ctm
       , classIdMap = ccm
       , funMap = Map.intersection
-          (Map.foldWithKey ( \ p1@(i, sc) p2 ->
+          (Map.foldrWithKey ( \ p1@(i, sc) p2 ->
                        let p3 = mapFunSym ccm tm tm2 fm2 p2
                            nSc = mapTypeScheme ccm tm ctm sc
                        in if (i, nSc) == p3 then Map.delete p1 else
@@ -218,8 +220,8 @@ morphismUnion m1 m2 = do
       im1 = typeIdMap m1
       im2 = typeIdMap m2
       -- unchanged types
-      ut1 = Map.keysSet tm1 Set.\\ Map.keysSet im1
-      ut2 = Map.keysSet tm2 Set.\\ Map.keysSet im2
+      ut1 = (Set.fromList $ Map.keys tm1) Set.\\ (Set.fromList $ Map.keys im1)
+      ut2 = (Set.fromList $ Map.keys tm2) Set.\\ (Set.fromList $ Map.keys im2)
       ima1 = Map.union im1 $ setToMap ut1
       ima2 = Map.union im2 $ setToMap ut2
       sAs = filterAliases $ typeMap s
@@ -229,8 +231,8 @@ morphismUnion m1 m2 = do
       jm1 = classIdMap m1
       jm2 = classIdMap m2
       -- unchanged classes
-      cut1 = Map.keysSet cm1 Set.\\ Map.keysSet jm1
-      cut2 = Map.keysSet cm2 Set.\\ Map.keysSet jm2
+      cut1 = (Set.fromList $ Map.keys cm1) Set.\\ (Set.fromList $ Map.keys jm1)
+      cut2 = (Set.fromList $ Map.keys cm2) Set.\\ (Set.fromList $ Map.keys jm2)
       cima1 = Map.union jm1 $ setToMap cut1
       cima2 = Map.union jm2 $ setToMap cut2
       expP = Map.fromList . map ( \ ((i, o), (j, p)) ->
@@ -243,8 +245,8 @@ morphismUnion m1 m2 = do
                                     $ expand sAs $ opType o)) os)
                       . Map.toList
                  -- unchanged functions
-      uf1 = af jm1 im1 (assumps s1) Set.\\ Map.keysSet fm1
-      uf2 = af jm2 im2 (assumps s2) Set.\\ Map.keysSet fm2
+      uf1 = af jm1 im1 (assumps s1) Set.\\ (Set.fromList $ Map.keys fm1)
+      uf2 = af jm2 im2 (assumps s2) Set.\\ (Set.fromList $ Map.keys fm2)
       fma1 = Map.union fm1 $ setToMap uf1
       fma2 = Map.union fm2 $ setToMap uf2
       showFun (i, ty) = showId i . (" : " ++) . showDoc ty
@@ -270,17 +272,17 @@ morphismToSymbMap mor = let
     im = typeIdMap mor
     jm = classIdMap mor
     tm = filterAliases $ typeMap tar
-    classSymMap = Map.foldWithKey ( \ i ti ->
+    classSymMap = Map.foldrWithKey ( \ i ti ->
        let j = Map.findWithDefault i i jm
            k = rawKind ti
            in Map.insert (idToClassSymbol i k)
                $ idToClassSymbol j k) Map.empty $ classMap src
-    typeSymMap = Map.foldWithKey ( \ i ti ->
+    typeSymMap = Map.foldrWithKey ( \ i ti ->
        let j = Map.findWithDefault i i im
            k = typeKind ti
            in Map.insert (idToTypeSymbol i k)
                $ idToTypeSymbol j k) classSymMap $ typeMap src
-   in Map.foldWithKey
+   in Map.foldrWithKey
          ( \ i s m ->
              Set.fold ( \ oi ->
              let ty = opType oi

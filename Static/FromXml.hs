@@ -30,7 +30,7 @@ import Control.Monad.Trans (lift)
 import Control.Monad (foldM, unless)
 
 import qualified Data.Graph.Inductive.Graph as Graph (Node)
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Set (Set)
 import qualified Data.Set as Set
 
@@ -113,7 +113,7 @@ insertThmLinks lg p = foldM (\ dg (tgt, sm) -> do
   insertTarThmLinks lg j gsig dg sm) p . Map.toList
 
 insertTarThmLinks :: LogicGraph -> Graph.Node -> G_sign
-  -> DGraph -> Map.Map String [XLink] -> ResultT IO DGraph
+  -> DGraph -> Map.HashMap String [XLink] -> ResultT IO DGraph
 insertTarThmLinks lg j tgt p = foldM (\ dg (src, ls) -> do
   (i, gsig) <- signOfNode src dg
   foldM (\ dg' xLk -> do

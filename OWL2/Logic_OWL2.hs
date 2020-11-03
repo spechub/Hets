@@ -31,7 +31,7 @@ import Common.Result
 
 import Data.Char (isAlpha)
 import Data.Monoid
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 import Logic.Logic
@@ -109,7 +109,7 @@ instance Sentences OWL2 Axiom Sign OWLMorphism Entity where
     symsOfSen OWL2 _ = Set.toList . symsOfAxiom
     pair_symbols OWL2 = pairSymbols
 
-inducedFromToMor :: Map.Map RawSymb RawSymb -> 
+inducedFromToMor :: Map.HashMap RawSymb RawSymb -> 
                     ExtSign Sign Entity -> 
                     ExtSign Sign Entity -> 
                     Result OWLMorphism
@@ -134,7 +134,7 @@ inducedFromToMor rm s@(ExtSign ssig _) t@(ExtSign tsig _) =
       in inducedFromToMorphismAux rm' s t 
    _ ->  inducedFromToMorphismAux rm  s t
 
-inducedFromToMorphismAux :: Map.Map RawSymb RawSymb -> 
+inducedFromToMorphismAux :: Map.HashMap RawSymb RawSymb -> 
                     ExtSign Sign Entity -> 
                     ExtSign Sign Entity -> 
                     Result OWLMorphism

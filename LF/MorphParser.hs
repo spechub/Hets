@@ -12,7 +12,7 @@ import Text.ParserCombinators.Parsec
 import System.Directory
 import System.IO.Unsafe
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Maybe (fromMaybe)
 
 
@@ -204,7 +204,7 @@ parse1Map = do
     skipChar ')'
     return (s, e)
 
-parseMap :: CharParser st (Map.Map Symbol EXP)
+parseMap :: CharParser st (Map.HashMap Symbol EXP)
 parseMap = do
      pkeyword "fromList"
      fmap Map.fromList $ bracketsP $ option [] $ sepByComma parse1Map

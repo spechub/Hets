@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, DeriveDataTypeable #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./CSL/AS_BASIC_CSL.hs
 Description :  Abstract syntax for EnCL
@@ -72,10 +72,13 @@ import Common.Id as Id
 import Common.AS_Annotation as AS_Anno
 
 import Data.Data
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Ratio
 
 import CSL.TreePO
+
+import GHC.Generics (Generic)
+import Data.Hashable
 
 
 {- ---------------------------------------------------------------------------
@@ -106,7 +109,9 @@ data VAR_ITEM = Var_item [Id.Token] Domain Id.Range
 newtype BASIC_SPEC = Basic_spec [AS_Anno.Annoted BASIC_ITEM]
                   deriving (Show, Typeable, Data)
 
-data GroundConstant = GCI APInt | GCR APFloat deriving (Show, Typeable, Data)
+data GroundConstant = GCI APInt | GCR APFloat deriving (Show, Typeable, Data, Generic)
+
+instance Hashable GroundConstant
 
 cmpGCs :: GroundConstant -> GroundConstant -> Ordering
 cmpGCs (GCI a) (GCI b) = compare a b
@@ -146,7 +151,9 @@ data BASIC_ITEM =
 
 -- | Extended Parameter Datatype
 data EXTPARAM = EP Id.Token String APInt
-  deriving (Eq, Ord, Show, Typeable, Data)
+  deriving (Eq, Ord, Show, Typeable, Data, Generic)
+
+instance Hashable EXTPARAM
 
 data EPDecl = EPDecl Id.Token -- name
               EPDomain -- a domain over which the ep ranges
@@ -193,7 +200,9 @@ data OPNAME =
   -- types
   | OP_hastype | OP_real
 
-    deriving (Eq, Ord, Typeable, Data)
+    deriving (Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable OPNAME
 
 instance Show OPNAME where
     show = showOPNAME
@@ -256,12 +265,16 @@ showOPNAME x =
           OP_real -> "real"
 
 data OPID = OpId OPNAME | OpUser ConstantName
-  deriving (Eq, Ord, Show, Typeable, Data)
+  deriving (Eq, Ord, Show, Typeable, Data, Generic)
+
+instance Hashable OPID
 
 {- | We differentiate between simple constant names and indexed constant names
 resulting from the extended parameter elimination. -}
 data ConstantName = SimpleConstant String | ElimConstant String Int
-                    deriving (Eq, Ord, Show, Typeable, Data)
+                    deriving (Eq, Ord, Show, Typeable, Data, Generic)
+
+instance Hashable ConstantName
 
 {-
 instance Show OPID where
@@ -282,13 +295,19 @@ data EXPRESSION =
   | Interval Double Double Id.Range
   | Int APInt Id.Range
   | Rat APFloat Id.Range
-  deriving (Eq, Ord, Show, Typeable, Data)
+  deriving (Eq, Ord, Show, Typeable, Data, Generic)
+
+instance Hashable EXPRESSION
 
 data VarDecl = VarDecl Id.Token (Maybe Domain)
-  deriving (Show, Eq, Ord, Typeable, Data)
+  deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable VarDecl
 
 data OpDecl = OpDecl ConstantName [EXTPARAM] [VarDecl] Id.Range
-              deriving (Show, Eq, Ord, Typeable, Data)
+              deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable OpDecl
 
 -- TODO: add Range-support to this type
 data CMD = Ass OpDecl EXPRESSION
@@ -296,7 +315,9 @@ data CMD = Ass OpDecl EXPRESSION
          | Sequence [CMD] -- program sequence
          | Cond [(EXPRESSION, [CMD])]
          | Repeat EXPRESSION [CMD] -- constraint, statements
-           deriving (Show, Eq, Ord, Typeable, Data)
+           deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable CMD
 
 -- | symbol lists for hiding
 data SYMB_ITEMS = Symb_items [SYMB] Id.Range
@@ -327,7 +348,9 @@ data BindInfo = BindInfo { bindingVarPos :: [Int] {- ^ argument positions of
                                                   binding variables -}
                          , boundBodyPos :: [Int] {- ^ argument positions of
                                                  bound terms -}
-                         } deriving (Eq, Ord, Show, Typeable, Data)
+                         } deriving (Eq, Ord, Show, Typeable, Data, Generic)
+
+instance Hashable BindInfo
 
 data OpInfo = OpInfo { prec :: Int -- ^ precedence between 0 and maxPrecedence
                      , infx :: Bool -- ^ True = infix
@@ -336,18 +359,20 @@ data OpInfo = OpInfo { prec :: Int -- ^ precedence between 0 and maxPrecedence
                                         during construction into binary ones -}
                      , opname :: OPNAME -- ^ The actual operator name
                      , bind :: Maybe BindInfo -- ^ More info for binders
-                     } deriving (Eq, Ord, Show, Typeable, Data)
+                     } deriving (Eq, Ord, Show, Typeable, Data, Generic)
 
-type ArityMap = Map.Map Int OpInfo
-type OpInfoArityMap a = Map.Map a ArityMap
+instance Hashable OpInfo
+
+type ArityMap = Map.HashMap Int OpInfo
+type OpInfoArityMap a = Map.HashMap a ArityMap
 type OpInfoMap = OpInfoArityMap String
 type OpInfoNameMap = OpInfoArityMap OPNAME
-type BindInfoMap = Map.Map String OpInfo
+type BindInfoMap = Map.HashMap String OpInfo
 
 
 {- | Merges two OpInfoArityMaps together with the first map as default map
 and the second overwriting the default values -}
-mergeOpArityMap :: Ord a => OpInfoArityMap a -> OpInfoArityMap a
+mergeOpArityMap :: (Ord a, Hashable a) => OpInfoArityMap a -> OpInfoArityMap a
                 -> OpInfoArityMap a
 mergeOpArityMap = flip $ Map.unionWith Map.union
 

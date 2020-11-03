@@ -27,7 +27,7 @@ import Control.Monad
 
 import Data.Char (isSpace)
 import Data.Maybe
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 -- * lexical matter
 

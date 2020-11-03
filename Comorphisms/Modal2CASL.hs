@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/Modal2CASL.hs
 Copyright   :  (c) Klaus Luettich, Uni Bremen 2004, DFKI GmbH 2011
@@ -44,8 +44,11 @@ import Modal.Utils
 import Modal.ModalSystems
 
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Maybe
+
+import GHC.Generics (Generic)
+import Data.Hashable
 
 -- | The identity of the comorphism
 data Modal2CASL = Modal2CASL deriving (Show)
@@ -81,10 +84,12 @@ instance Comorphism Modal2CASL
 
 data ModName = SimpleM SIMPLE_ID
              | SortM SORT
-               deriving (Show, Ord, Eq)
+               deriving (Show, Ord, Eq, Generic)
+
+instance Hashable ModName
 
 -- | relations on possible worlds
-type ModalityRelMap = Map.Map ModName PRED_NAME
+type ModalityRelMap = Map.HashMap ModName PRED_NAME
 
 data ModMapEnv = MME
     { caslSign :: CASLSign
@@ -107,10 +112,10 @@ transSig sign =
        rigOps' = diffOpMapSet (opMap sign) flexibleOps
        rigPreds' = diffMapSet (predMap sign) flexiblePreds
        relations = Map.union relsMod relsTermMod
-       genRels f = Map.foldWithKey (\ me _ nm -> f me nm) Map.empty
+       genRels f = Map.foldrWithKey (\ me _ nm -> f me nm) Map.empty
        relSymbS = relName False . simpleIdToId
        relSymbT = relName True
-       genModFrms f = Map.foldWithKey f []
+       genModFrms f = Map.foldrWithKey f []
        modiesInf = modies extInf
        trmMods = termModies extInf
        relsMod = genRels (\ me nm -> Map.insert (SimpleM me) (relSymbS me) nm)
@@ -130,7 +135,7 @@ transSig sign =
               let argSorts rs = if isTermMod
                              then [getModTermSort rs, fws, fws]
                              else [fws, fws] in
-               Map.fold (\ rs nm -> Map.insert rs
+               Map.foldr (\ rs nm -> Map.insert rs
                                               (Set.singleton $
                                                     PredType $ argSorts rs)
                                               nm)

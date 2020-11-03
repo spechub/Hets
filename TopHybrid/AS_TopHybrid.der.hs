@@ -30,6 +30,9 @@ import Data.Monoid
 
 import Text.XML.Light
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 -- DrIFT command
 {-! global: GetRange !-}
 

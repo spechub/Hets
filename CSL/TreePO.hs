@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, DeriveDataTypeable #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./CSL/TreePO.hs
 Description :  Handling of tree-like partial ordering relations
@@ -25,6 +25,10 @@ module CSL.TreePO
 
 import Data.Data
 import qualified Data.Set as Set
+
+import GHC.Generics (Generic)
+import Data.Hashable
+import Common.Utils()
 
 {- ----------------------------------------------------------------------
 Datatypes for comparison
@@ -90,7 +94,10 @@ instance Ord a => Ord (CIType a) where
 -- | A finite set or an interval. True = closed, False = opened interval border.
 data SetOrInterval a = Set (Set.Set a)
                      | IntVal (a, Bool) (a, Bool)
-                       deriving (Eq, Ord, Show, Typeable, Data)
+                       deriving (Eq, Ord, Show, Typeable, Data, Generic)
+
+instance Hashable a => Hashable (SetOrInterval a)
+
 
 -- | A closed interval
 data ClosedInterval a = ClosedInterval a a

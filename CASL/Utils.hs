@@ -18,14 +18,14 @@ import Data.Maybe
 import Data.List
 
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 import Common.Id
 
 import CASL.AS_Basic_CASL
 import CASL.Fold
 
-type Subst f = Map.Map VAR (TERM f)
+type Subst f = Map.HashMap VAR (TERM f)
 
 -- | specialized delete that deletes all shadowed variables
 deleteVMap :: [VAR_DECL] -> Subst f -> Subst f

@@ -42,7 +42,7 @@ import qualified Maude.Meta.HasName as HasName
 import Data.Char
 import Data.Maybe
 import Data.List (intersect)
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Data.Graph.Inductive.Graph
 
@@ -74,7 +74,7 @@ The list of sorts "parameterized" (of the form List{X}). -}
 type ProcInfo = (Node, Sign, Symbols, [(Token, Token, Symbols)], [ParamSort])
 
 -- | map from module expression identifiers to ProcInfo
-type TokenInfoMap = Map.Map Token ProcInfo
+type TokenInfoMap = Map.HashMap Token ProcInfo
 
 getProcInfo :: Token -> TokenInfoMap -> ProcInfo
 getProcInfo t m = Map.findWithDefault
@@ -114,7 +114,7 @@ type ParamInfo = ([(Token, Token, Symbols)], TokenInfoMap, [Morphism], DGraph)
 {- | Map from view identifiers to tuples containing the target node of the
 view, the morphism, and a Boolean value indicating if the view instantiates
 all the values -}
-type ViewMap = Map.Map Token (Node, Token, Morphism, [Renaming], Bool)
+type ViewMap = Map.HashMap Token (Node, Token, Morphism, [Renaming], Bool)
 
 {- | Tuple of data structures updated when a specification is introduced into
 a development graph -}

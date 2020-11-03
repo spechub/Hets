@@ -50,7 +50,7 @@ module Proofs.AbstractState
     , autoProofAtNode
     ) where
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Maybe
 import Data.Typeable
 
@@ -424,7 +424,7 @@ getProvers pk (G_sublogics lid sl) =
                   then (G_prover tlid p, cm) : l else l)
              [] (provers tlid)
 
-knownProvers :: LogicGraph -> ProverKind -> Map.Map G_sublogics [G_prover]
+knownProvers :: LogicGraph -> ProverKind -> Map.HashMap G_sublogics [G_prover]
 knownProvers lg pk =
  let l = Map.elems $ logics lg
  in foldl (\ m (Logic lid) -> foldl (\ m' p ->
@@ -471,7 +471,7 @@ getAllProvers pk start lg =
        yen 10 (start, Nothing) (\ (l, _) -> isSubElemG l end) g)
        (Map.keys kp)
  where
-  mkComorphism :: Map.Map G_sublogics [t2]
+  mkComorphism :: Map.HashMap G_sublogics [t2]
    -> ([((G_sublogics, t1), AnyComorphism)], (G_sublogics, t))
    -> [(t2, AnyComorphism)]
   mkComorphism kp path@(_, (end, _)) =

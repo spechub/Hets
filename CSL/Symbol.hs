@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./CSL/Symbol.hs
 Description :  symbols for CSL
@@ -19,14 +19,19 @@ import Common.DocUtils
 
 import Data.Data
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 import CSL.Sign
 import CSL.Morphism
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 -- | Datatype for symbols
 newtype Symbol = Symbol {symName :: Id}
-            deriving (Show, Eq, Ord, Typeable, Data)
+            deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable Symbol
 
 instance GetRange Symbol where
     getRange = getRange . symName
@@ -42,7 +47,7 @@ symOf :: Sign -> Set.Set Symbol
 symOf = Set.map Symbol . opIds
 
 -- | Determines the symbol map of a morhpism
-getSymbolMap :: Morphism -> Map.Map Symbol Symbol
+getSymbolMap :: Morphism -> Map.HashMap Symbol Symbol
 getSymbolMap f =
   Set.fold (\ x -> Map.insert (Symbol x) (Symbol $ applyMap (operatorMap f) x))
   Map.empty $ opIds $ source f
@@ -64,5 +69,5 @@ matches :: Symbol -> Symbol -> Bool
 matches s1 s2 = s1 == s2
 
 -- | application function for Symbol Maps
-applySymMap :: Map.Map Symbol Symbol -> Symbol -> Symbol
+applySymMap :: Map.HashMap Symbol Symbol -> Symbol -> Symbol
 applySymMap smap idt = Map.findWithDefault idt idt smap

@@ -28,7 +28,7 @@ import Common.Utils
 
 import qualified Data.IntSet as IntSet
 import qualified Data.IntMap as IntMap
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Char
 import Data.List
 
@@ -108,7 +108,7 @@ parseContabent m = inParens $
 parseRelIds :: BMap -> Parser IntSet.IntSet
 parseRelIds = fmap IntSet.fromList . many1 . parseRel
 
-type BMap = Map.Map Baserel Int
+type BMap = Map.HashMap Baserel Int
 
 parseRel :: BMap -> Parser Int
 parseRel m = fmap (`lkup` m) parseRelationId

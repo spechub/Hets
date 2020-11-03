@@ -32,7 +32,7 @@ import Logic.Logic
 import Logic.Comorphism
 
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 -- SoftFOL
 import qualified SoftFOL.Logic_SoftFOL as FOLLogic
@@ -138,10 +138,10 @@ signToTexts srcSign =
       ]
 
 -- creates one-sentence-phrases: forall x. (subSort x) => (superSort x)
-sortRelText :: Map.Map FOLSign.SPIdentifier (Set.Set FOLSign.SPIdentifier)
+sortRelText :: Map.HashMap FOLSign.SPIdentifier (Set.Set FOLSign.SPIdentifier)
                 -> Maybe TEXT_META
 sortRelText m =
-  let ps = Map.foldWithKey (\ subSrt set phrs ->
+  let ps = Map.foldrWithKey (\ subSrt set phrs ->
         Set.fold (\ superSrt phrs2 ->
             Sentence (Quant_sent Universal [Name xName]
                       (Bool_sent (BinOp Implication
@@ -162,9 +162,9 @@ typesWithIndv args =
 
 {- creates one-sentence-phrases:
 forall x y z. (if (and (T1 x) (T2 y) (T3 z)) (T4 f[x,y,z])) -}
-funcMapText :: Map.Map Token (Set.Set ([Token], Token)) -> Maybe TEXT_META
+funcMapText :: Map.HashMap Token (Set.Set ([Token], Token)) -> Maybe TEXT_META
 funcMapText m =
-  let ps = Map.foldWithKey (\ f set phrs ->
+  let ps = Map.foldrWithKey (\ f set phrs ->
           Set.fold (\ (args, res) phrs2 ->
             let argsAndNames = typesWithIndv args
             in Sentence (
@@ -195,9 +195,9 @@ funcMapText m =
 
 {- creates one-sentence-phrases:
 forall x y z. (P[x,y,z]) => (and (T1 x) (T2 y) (T3 z)) -}
-predMapText :: Map.Map Token (Set.Set [Token]) -> Maybe TEXT_META
+predMapText :: Map.HashMap Token (Set.Set [Token]) -> Maybe TEXT_META
 predMapText m =
-  let ps = Map.foldWithKey (\ prd set phrs ->
+  let ps = Map.foldrWithKey (\ prd set phrs ->
           Set.fold (\ args phrs2 ->
             let argsAndNames = typesWithIndv args
             in Sentence (Quant_sent Universal

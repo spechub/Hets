@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./HasCASL/As.hs
 Description :  abstract syntax for HasCASL
@@ -25,6 +25,9 @@ import qualified Data.Set as Set
 
 import Common.Doc
 import Common.DocUtils
+
+import GHC.Generics (Generic)
+import Data.Hashable
 
 -- * abstract syntax entities with small utility functions
 
@@ -60,7 +63,9 @@ data SigItems =
     deriving (Show, Typeable, Data)
 
 -- | indicator for predicate, operation or function
-data OpBrand = Pred | Op | Fun deriving (Eq, Ord, Typeable, Data)
+data OpBrand = Pred | Op | Fun deriving (Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable OpBrand
 
 -- | test if the function was declared as predicate
 isPred :: OpBrand -> Bool
@@ -93,7 +98,9 @@ data ClassDecl = ClassDecl [Id] Kind Range deriving (Show, Typeable, Data)
 
 -- | co- or contra- variance indicator
 data Variance = InVar | CoVar | ContraVar | NonVar
-  deriving (Eq, Ord, Typeable, Data)
+  deriving (Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable Variance
 
 instance Show Variance where
     show v = case v of
@@ -107,7 +114,9 @@ data AnyKind a =
     ClassKind a
   | FunKind Variance (AnyKind a) (AnyKind a) Range
     -- pos "+" or "-"
-    deriving (Show, Typeable, Data)
+    deriving (Show, Typeable, Data, Generic)
+
+instance (Hashable a) => Hashable (AnyKind a)
 
 instance Ord a => Eq (AnyKind a) where
    k1 == k2 = compare k1 k2 == EQ
@@ -122,6 +131,9 @@ instance Ord a => Ord (AnyKind a) where
 
 type Kind = AnyKind Id
 type RawKind = AnyKind ()
+
+instance (Hashable a) => Hashable (Set.Set a) where 
+ hashWithSalt s aSet = s + (sum $ map hash $ Set.toList aSet)
 
 -- | the possible type items
 data TypeItem =
@@ -168,7 +180,9 @@ data Type =
   | BracketType BracketKind [Type] Range
   -- pos "," (between type arguments)
   | MixfixType [Type]
-    deriving (Show, Typeable, Data)
+    deriving (Show, Typeable, Data, Generic)
+
+instance Hashable Type
 
 -- | change the type within a scheme
 mapTypeOfScheme :: (Type -> Type) -> TypeScheme -> TypeScheme
@@ -180,12 +194,16 @@ argument list. The type arguments store proper kinds (including
 downsets) whereas the kind within the type names are only raw
 kinds. -}
 data TypeScheme = TypeScheme [TypeArg] Type Range
-  deriving (Show, Eq, Ord, Typeable, Data)
+  deriving (Show, Eq, Ord, Typeable, Data, Generic)
     {- pos "forall", ";"s,  dot (singleton list)
     pos "\" "("s, ")"s, dot for type aliases -}
 
+instance Hashable TypeScheme
+
 -- | indicator for partial or total functions
-data Partiality = Partial | Total deriving (Eq, Ord, Typeable, Data)
+data Partiality = Partial | Total deriving (Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable Partiality
 
 instance Show Partiality where
     show p = case p of
@@ -250,18 +268,26 @@ data Component =
 
 -- | the possible quantifiers
 data Quantifier = Universal | Existential | Unique
-  deriving (Show, Eq, Ord, Typeable, Data)
+  deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable Quantifier
 
 -- | the possibly type annotations of terms
 data TypeQual = OfType | AsType | InType | Inferred
-  deriving (Show, Eq, Ord, Typeable, Data)
+  deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable TypeQual
 
 -- | an indicator of (otherwise equivalent) let or where equations
-data LetBrand = Let | Where | Program deriving (Show, Eq, Ord, Typeable, Data)
+data LetBrand = Let | Where | Program deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable LetBrand
 
 -- | the possible kinds of brackets (that should match when parsed)
 data BracketKind = Parens | Squares | Braces | NoBrackets
-  deriving (Show, Eq, Ord, Typeable, Data)
+  deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable BracketKind
 
 -- | the brackets as strings for printing
 getBrackets :: BracketKind -> (String, String)
@@ -271,7 +297,9 @@ getBrackets b = case b of
     Braces -> ("{", "}")
     NoBrackets -> ("", "") -- for printing only
 
-data InstKind = UserGiven | Infer deriving (Show, Eq, Ord, Typeable, Data)
+data InstKind = UserGiven | Infer deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable InstKind
 
 {- | The possible terms and patterns. Formulas are also kept as
 terms. Local variables and constants are kept separatetly. The variant
@@ -306,19 +334,27 @@ data Term =
   | MixfixTerm [Term]
   | BracketTerm BracketKind [Term] Range
     -- pos brackets, ","s
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable Term
 
 -- | an equation or a case as pair of a pattern and a term
-data ProgEq = ProgEq Term Term Range deriving (Show, Eq, Ord, Typeable, Data)
+data ProgEq = ProgEq Term Term Range deriving (Show, Eq, Ord, Typeable, Data, Generic)
             -- pos "=" (or "->" following case-of)
 
+instance Hashable ProgEq
+
 -- | an identifier with an optional list of type declarations
-data PolyId = PolyId Id [TypeArg] Range deriving (Show, Eq, Ord, Typeable, Data)
+data PolyId = PolyId Id [TypeArg] Range deriving (Show, Eq, Ord, Typeable, Data, Generic)
               -- pos "[", ",", "]"
+
+instance Hashable PolyId
 
 {- | an indicator if variables were separated by commas or by separate
 declarations -}
-data SeparatorKind = Comma | Other deriving (Show, Typeable, Data)
+data SeparatorKind = Comma | Other deriving (Show, Typeable, Data, Generic)
+
+instance Hashable SeparatorKind
 
 -- ignore all separator kinds in comparisons
 instance Eq SeparatorKind where
@@ -330,24 +366,33 @@ instance Ord SeparatorKind where
 
 -- | a variable with its type
 data VarDecl = VarDecl Id Type SeparatorKind Range
-  deriving (Show, Eq, Ord, Typeable, Data)
+  deriving (Show, Eq, Ord, Typeable, Data, Generic)
                -- pos "," or ":"
+
+instance Hashable VarDecl
 
 -- | the kind of a type variable (or a type argument in schemes)
 data VarKind = VarKind Kind | Downset Type | MissingKind
- deriving (Show, Eq, Ord, Typeable, Data)
+ deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable VarKind
 
 -- | a (simple) type variable with its kind (or supertype)
 data TypeArg =
     TypeArg Id Variance VarKind RawKind Int SeparatorKind Range
     -- pos "," or ":", "+" or "-"
-    deriving (Show, Typeable, Data)
+    deriving (Show, Typeable, Data, Generic)
+
+instance Hashable TypeArg
 
 -- | a value or type variable
 data GenVarDecl =
     GenVarDecl VarDecl
   | GenTypeVarDecl TypeArg
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+
+instance Hashable GenVarDecl
 
 {- * symbol data types
 symbols -}
@@ -371,7 +416,9 @@ data SymbKind =
   | SyKop
   | SyKpred
   | SyKclass
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable SymbKind
 
 instance Pretty SymbKind where
   pretty symbol_kind = case symbol_kind of

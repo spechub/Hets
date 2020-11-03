@@ -68,7 +68,7 @@ import Common.Lib.MapSet (imageSet, setInsert)
 
 import Data.Graph.Inductive.Graph
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Maybe
 import Data.List
 import Data.Function
@@ -81,7 +81,7 @@ import Common.Lib.Graph
 import Static.ComputeTheory
 
 -- overrides CUIRIE expansion for Download_items
-type ExpOverrides = Map.Map IRI FilePath
+type ExpOverrides = Map.HashMap IRI FilePath
 
 coerceMaybeNode :: LogicGraph -> DGraph -> MaybeNode -> NodeName -> AnyLogic
                 -> Result (MaybeNode, DGraph)
@@ -1141,7 +1141,7 @@ parLink lg nsig orig (NodeSig node gsigma') dg (NodeSig nA_i sigA_i) =
 {- Extension of signature morphisms (for instantitations)
 first some auxiliary functions -}
 
-mapID :: Map.Map Id (Set.Set Id) -> Id -> Result Id
+mapID :: Map.HashMap Id (Set.Set Id) -> Id -> Result Id
 mapID idmap i@(Id toks comps pos1) =
   case Map.lookup i idmap of
     Nothing -> do
@@ -1155,7 +1155,7 @@ mapID idmap i@(Id toks comps pos1) =
               " can be mapped in various ways:\n"
               ++ showDoc ids "") $ getRange i
 
-extID1 :: Map.Map Id (Set.Set Id) -> Id
+extID1 :: Map.HashMap Id (Set.Set Id) -> Id
               -> Result (EndoMap Id) -> Result (EndoMap Id)
 extID1 idmap i@(Id toks comps pos1) m = do
   m1 <- m
@@ -1163,7 +1163,7 @@ extID1 idmap i@(Id toks comps pos1) m = do
   return $ if comps == compsnew then m1 else
     Map.insert i (Id toks compsnew pos1) m1
 
-extID :: Set.Set Id -> Map.Map Id (Set.Set Id) -> Result (EndoMap Id)
+extID :: Set.Set Id -> Map.HashMap Id (Set.Set Id) -> Result (EndoMap Id)
 extID ids idmap = Set.fold (extID1 idmap) (return Map.empty) ids
 
 extendMorphism :: Bool -- ^ check sharing (False for lambda expressions)
@@ -1183,12 +1183,12 @@ extendMorphism sharing (G_sign lid sigmaP _) (G_sign lidB sigmaB1 _)
       symsB = ext_sym_of lid sigmaB
       idsB = Set.map (sym_name lid) symsB
       h = symmap_of lid fittingMor
-      symbMapToRawSymbMap = Map.foldWithKey
+      symbMapToRawSymbMap = Map.foldrWithKey
           (on Map.insert $ symbol_to_raw lid) Map.empty
       rh = symbMapToRawSymbMap h
-      idh = Map.foldWithKey (on setInsert $ sym_name lid) Map.empty h
+      idh = Map.foldrWithKey (on setInsert $ sym_name lid) Map.empty h
   idhExt <- extID idsB idh
-  let rIdExt = Map.foldWithKey (on Map.insert $ id_to_raw lid) Map.empty
+  let rIdExt = Map.foldrWithKey (on Map.insert $ id_to_raw lid) Map.empty
                 (foldr Map.delete idhExt $ Map.keys idh)
       r = rh `Map.union` rIdExt
       -- do we need combining function catching the clashes???

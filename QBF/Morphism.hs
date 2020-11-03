@@ -34,7 +34,7 @@ module QBF.Morphism
   ) where
 
 import Data.Data
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 import Propositional.Sign as Sign
@@ -54,7 +54,7 @@ maps of sets -}
 data Morphism = Morphism
   { source :: Sign
   , target :: Sign
-  , propMap :: Map.Map Id Id
+  , propMap :: Map.HashMap Id Id
   } deriving (Show, Eq, Ord, Typeable, Data)
 
 instance Pretty Morphism where
@@ -69,7 +69,7 @@ isLegalMorphism :: Morphism -> Result ()
 isLegalMorphism pmor =
     let psource = items $ source pmor
         ptarget = items $ target pmor
-        pdom = Map.keysSet $ propMap pmor
+        pdom = Set.fromList $ Map.keys $ propMap pmor
         pcodom = Set.map (applyMorphism pmor) psource
     in unless (Set.isSubsetOf pcodom ptarget && Set.isSubsetOf pdom psource)
         $ fail "illegal QBF morphism"
@@ -79,7 +79,7 @@ applyMorphism :: Morphism -> Id -> Id
 applyMorphism mor idt = Map.findWithDefault idt idt $ propMap mor
 
 -- | Application function for propMaps
-applyMap :: Map.Map Id Id -> Id -> Id
+applyMap :: Map.HashMap Id Id -> Id -> Id
 applyMap pmap idt = Map.findWithDefault idt idt pmap
 
 -- | Composition of morphisms in propositional Logic
@@ -101,7 +101,7 @@ composeMor f g =
 printMorphism :: Morphism -> Doc
 printMorphism m = pretty (source m) <> text "-->" <> pretty (target m)
   <> vcat (map ( \ (x, y) -> lparen <> pretty x <> text ","
-  <> pretty y <> rparen) $ Map.assocs $ propMap m)
+  <> pretty y <> rparen) $ Map.toList $ propMap m) -- TODO: might have to sort!
 
 -- | Inclusion map of a subsig into a supersig
 inclusionMap :: Sign.Sign -> Sign.Sign -> Morphism
@@ -143,8 +143,8 @@ morphismUnion mor1 mor2 =
       pmap2 = propMap mor2
       p1 = source mor1
       p2 = source mor2
-      up1 = Set.difference (items p1) $ Map.keysSet pmap1
-      up2 = Set.difference (items p2) $ Map.keysSet pmap2
+      up1 = Set.difference (items p1) $ Set.fromList $ Map.keys pmap1
+      up2 = Set.difference (items p2) $ Set.fromList $ Map.keys pmap2
       (pds, pmap) = foldr ( \ (i, j) (ds, m) -> case Map.lookup i m of
           Nothing -> (ds, Map.insert i j m)
           Just k -> if j == k then (ds, m) else

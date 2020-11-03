@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./Maude/Symbol.hs
 Description :  Maude Symbols
@@ -43,7 +43,7 @@ import Maude.Meta.HasName
 
 import Data.Data
 import Data.Set (Set)
-import Data.Map (Map)
+import qualified Data.HashMap.Strict as Map
 import Common.Lib.Rel (Rel)
 import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
@@ -53,6 +53,8 @@ import Common.Doc
 import Common.DocUtils (Pretty (..))
 
 import Data.Maybe (fromJust)
+import GHC.Generics (Generic)
+import Data.Hashable
 
 -- * Types
 
@@ -63,11 +65,14 @@ data Symbol = Sort Qid                      -- ^ A 'Sort' Symbol
             | Labl Qid                      -- ^ A 'Label' Symbol
             | Operator Qid Symbols Symbol   -- ^ A qualified 'Operator' Symbol
             | OpWildcard Qid                -- ^ A wildcard 'Operator' Symbol
-            deriving (Show, Read, Ord, Eq, Typeable)
+            deriving (Show, Read, Ord, Eq, Typeable, Generic)
+
+instance Hashable Symbol
+
 -- ** Auxiliary types
 type Symbols = [Symbol]
 type SymbolSet = Set Symbol
-type SymbolMap = Map Symbol Symbol
+type SymbolMap = Map.HashMap Symbol Symbol
 type SymbolRel = Rel Symbol
 
 data SymbolKind = SortK | KindK | LablK | OpK 

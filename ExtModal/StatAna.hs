@@ -37,7 +37,7 @@ import Common.ExtSign
 import qualified Common.Lib.MapSet as MapSet
 
 import Data.Function
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 import Control.Monad
@@ -364,7 +364,7 @@ resolveFrameForm ga ids (FrameForm vs fs r) = do
 anaFORMULA :: Mix b s EM_FORMULA EModalSign -> Sign EM_FORMULA EModalSign
   -> FORMULA EM_FORMULA -> Result (FORMULA EM_FORMULA, FORMULA EM_FORMULA)
 anaFORMULA mix sig f = do
-    let mix2 = extendMix (Map.keysSet $ varMap sig) mix
+    let mix2 = extendMix (Set.fromList $ Map.keys $ varMap sig) mix
     -- the unknown predicates are not needed for mixfix resolution
     r <- resolveFormula parenExtForm
                   resolveExtForm (globAnnos sig) (mixRules mix2) f

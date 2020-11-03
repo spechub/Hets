@@ -13,8 +13,7 @@ import Data.Aeson as Aeson
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Text.Lazy.Encoding as LEncoding
 import Data.Maybe
-import Data.Map (Map)
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Text.Lazy as LText
 import Data.Text as Text
 import Network.Wai
@@ -35,13 +34,13 @@ processGraphQL opts sessionReference request = do
 
 -- This structure contains the data that is passed to the GraphQL API
 data QueryBody = QueryBody { graphQLQuery :: Text
-                           , graphQLVariables :: Map Text Text
+                           , graphQLVariables :: Map.HashMap Text Text
                            } deriving (Show, Generic)
 
 -- This is an auxiliary strucutre that helps to parse the request body.
 -- It is then converted to QueryBody.
 data QueryBodyAux = QueryBodyAux { query :: Text
-                                 , variables :: Maybe (Map Text Aeson.Value)
+                                 , variables :: Maybe (Map.HashMap Text Aeson.Value)
                                  } deriving (Show, Generic)
 instance FromJSON QueryBodyAux
 

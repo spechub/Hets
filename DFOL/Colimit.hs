@@ -52,12 +52,12 @@ import Common.Id
 import Common.Lib.Graph
 import qualified Data.Graph.Inductive.Graph as Graph
 import qualified Common.Lib.Rel as Rel
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import qualified Data.IntMap as IntMap
 
 -- main functions
-sigColimit :: Gr Sign (Int, Morphism) -> Result (Sign, Map.Map Int Morphism)
+sigColimit :: Gr Sign (Int, Morphism) -> Result (Sign, Map.HashMap Int Morphism)
 sigColimit gr =
   let sigs = Graph.labNodes gr
       rel = computeRel gr
@@ -70,23 +70,23 @@ sigColimit gr =
       in Result [] $ Just (sig, maps2)
 
 -- preparation for computing the colimit
-addSig :: Sign -> IntMap.IntMap (Map.Map NAME NAME) -> Set.Set (Int, NAME) ->
+addSig :: Sign -> IntMap.IntMap (Map.HashMap NAME NAME) -> Set.Set (Int, NAME) ->
           Rel.Rel (Int, NAME) -> [(Int, Sign)] ->
-          (Sign, IntMap.IntMap (Map.Map NAME NAME))
+          (Sign, IntMap.IntMap (Map.HashMap NAME NAME))
 addSig sig maps _ _ [] = (sig, maps)
 addSig sig maps doneSyms rel ((i, Sign ds) : sigs) =
   processSig sig maps Map.empty i (expandDecls ds) doneSyms rel sigs
 
 -- main function for computing the colimit
 processSig :: Sign ->                        -- the signature determined so far
-       IntMap.IntMap (Map.Map NAME NAME) ->  -- the morphisms determined so far
-       Map.Map NAME NAME ->                  -- the current map
+       IntMap.IntMap (Map.HashMap NAME NAME) ->  -- the morphisms determined so far
+       Map.HashMap NAME NAME ->                  -- the current map
        Int ->                                -- the number or the current sig
        [SDECL] ->                            -- the declarations to be processed
        Set.Set (Int, NAME) ->                -- the symbols done so far
        Rel.Rel (Int, NAME) ->                -- the equality relation
        [(Int, Sign)] ->                      -- the signatures to be processed
-       (Sign, IntMap.IntMap (Map.Map NAME NAME))     -- the determined colimit
+       (Sign, IntMap.IntMap (Map.HashMap NAME NAME))     -- the determined colimit
 
 processSig sig maps m i [] doneSyms rel sigs =
   let maps1 = IntMap.insert i m maps
@@ -111,7 +111,7 @@ processSig sig maps m i ((n, t) : ds) doneSyms rel sigs =
                      in processSig sig maps m1 i ds doneSyms1 rel sigs
 
 -- helper functions
-findValue :: (Int, NAME) -> IntMap.IntMap (Map.Map NAME NAME) -> NAME
+findValue :: (Int, NAME) -> IntMap.IntMap (Map.HashMap NAME NAME) -> NAME
 findValue (i, k) maps = let Just m = IntMap.lookup i maps
                            in Map.findWithDefault k k m
 

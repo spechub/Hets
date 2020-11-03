@@ -21,7 +21,7 @@ module Proofs.Global
     ) where
 
 import Data.Graph.Inductive.Graph
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Maybe
 
 import Static.GTheory

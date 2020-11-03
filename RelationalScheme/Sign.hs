@@ -44,7 +44,7 @@ import Common.Result
 import Common.Utils
 
 import Data.Data
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 type RSIsKey = Bool
@@ -115,20 +115,20 @@ type Sign = RSTables
 
 data RSTMap = RSTMap
                 {
-                   col_map :: Map.Map Id Id
+                   col_map :: Map.HashMap Id Id
                 }
                 deriving (Eq, Ord, Show, Typeable, Data)
 
 data RSMorphism = RSMorphism
                     { domain :: RSTables
                     , codomain :: RSTables
-                    , table_map :: Map.Map Id Id
-                    , column_map :: Map.Map Id RSTMap
+                    , table_map :: Map.HashMap Id Id
+                    , column_map :: Map.HashMap Id RSTMap
                     }
                     deriving (Eq, Ord, Show, Typeable, Data)
 
 -- I hope that this works right, I do not want to debug this
-apply_comp_c_map :: RSTable -> Map.Map Id Id -> RSMorphism -> RSMorphism
+apply_comp_c_map :: RSTable -> Map.HashMap Id Id -> RSMorphism -> RSMorphism
                  -> (Id, RSTMap)
 apply_comp_c_map rst t_map imap imor =
     let i = t_name rst

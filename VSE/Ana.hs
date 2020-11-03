@@ -44,7 +44,7 @@ module VSE.Ana
 import Control.Monad
 import Data.Char (toLower)
 import Data.List
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 import qualified Common.Lib.MapSet as MapSet
@@ -595,8 +595,8 @@ mapProfile m (Profile l r) = Profile
   $ fmap (mapSort m) r
 
 extVSEColimit :: Gr Procs (Int, VSEMorExt) ->
-                  Map.Map Int VSEMor ->
-                  (Procs, Map.Map Int VSEMorExt)
+                  Map.HashMap Int VSEMor ->
+                  (Procs, Map.HashMap Int VSEMorExt)
 extVSEColimit graph morMap = let
   procs = Map.fromList $ nub $
           concatMap (\ (n, Procs p) -> let

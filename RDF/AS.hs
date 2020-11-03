@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./RDF/AS.hs
 Copyright   :  (c) Felix Gabriel Mance, Francisc-Nicolae Bungiu
@@ -24,11 +24,14 @@ import OWL2.AS
 
 import Data.Data
 import Data.List
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
+
+import GHC.Generics (Generic)
+import Data.Hashable
 
 -- * RDF Turtle Document
 
-type RDFPrefixMap = Map.Map String IRI
+type RDFPrefixMap = Map.HashMap String IRI
 
 data TurtleDocument = TurtleDocument
     { documentName :: IRI
@@ -69,7 +72,9 @@ data PredicateObjectList = PredicateObjectList Predicate [Object]
 
 data RDFLiteral = RDFLiteral Bool LexicalForm TypedOrUntyped
   | RDFNumberLit FloatLit
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable RDFLiteral
 
 -- * Datatypes for Hets manipulation
 
@@ -77,17 +82,25 @@ data Term =
     SubjectTerm IRI
   | PredicateTerm IRI
   | ObjectTerm (Either IRI RDFLiteral)
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable Term
 
 data Axiom = Axiom Term Term Term
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable Axiom
 
 data RDFEntityType = SubjectEntity | PredicateEntity | ObjectEntity
-    deriving (Show, Eq, Ord, Bounded, Enum, Typeable, Data)
+    deriving (Show, Eq, Ord, Bounded, Enum, Typeable, Data, Generic)
+
+instance Hashable RDFEntityType
 
 -- | entities used for morphisms
 data RDFEntity = RDFEntity RDFEntityType Term
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable RDFEntity
 
 rdfEntityTypes :: [RDFEntityType]
 rdfEntityTypes = [minBound .. maxBound]

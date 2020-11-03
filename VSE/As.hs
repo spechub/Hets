@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./VSE/As.hs
 Description :  abstract syntax of VSE programs and dynamic logic
@@ -18,7 +18,7 @@ module VSE.As where
 
 import Data.Char
 import Data.Data
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Control.Monad (foldM)
 
 import Common.AS_Annotation
@@ -31,6 +31,9 @@ import Common.Utils (number)
 
 import CASL.AS_Basic_CASL
 import CASL.ToDoc
+
+import GHC.Generics (Generic)
+import Data.Hashable
 
 -- | input or output procedure parameter kind
 data Paramkind = In | Out deriving (Show, Eq, Ord, Typeable, Data)
@@ -55,7 +58,9 @@ instance GetRange Procdecls where
 
 -- | wrapper for positions
 data Ranged a = Ranged { unRanged :: a, range :: Range }
-  deriving (Show, Eq, Ord, Typeable, Data)
+  deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable a => Hashable (Ranged a)
 
 -- | attach a nullRange
 mkRanged :: a -> Ranged a
@@ -75,7 +80,9 @@ data PlainProgram =
   | Seq Program Program
   | If (FORMULA ()) Program Program
   | While (FORMULA ()) Program
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable PlainProgram
 
 -- | alternative variable declaration
 data VarDecl = VarDecl VAR SORT (Maybe (TERM ())) Range
@@ -99,22 +106,30 @@ addInits vs p = case vs of
 data VSEforms =
     Dlformula BoxOrDiamond Program Sentence
   | Defprocs [Defproc]
-  | RestrictedConstraint [Constraint] (Map.Map SORT Id) Bool
-    deriving (Show, Eq, Ord, Typeable, Data)
+  | RestrictedConstraint [Constraint] (Map.HashMap SORT Id) Bool
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable VSEforms
 
 type Dlformula = Ranged VSEforms
 type Sentence = FORMULA Dlformula
 
 -- | box or diamond indicator
-data BoxOrDiamond = Box | Diamond deriving (Show, Eq, Ord, Typeable, Data)
+data BoxOrDiamond = Box | Diamond deriving (Show, Eq, Ord, Typeable, Data, Generic)
 
-data ProcKind = Proc | Func deriving (Show, Eq, Ord, Typeable, Data)
+instance Hashable BoxOrDiamond
+
+data ProcKind = Proc | Func deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable ProcKind
 
 -- | procedure definitions as basic items becoming sentences
 data Defproc = Defproc ProcKind Id [VAR] Program Range
-  deriving (Show, Eq, Ord, Typeable, Data)
+  deriving (Show, Eq, Ord, Typeable, Data, Generic)
 
-data Procs = Procs { procsMap :: Map.Map Id Profile }
+instance Hashable Defproc
+
+data Procs = Procs { procsMap :: Map.HashMap Id Profile }
   deriving (Show, Eq, Ord, Typeable, Data)
 
 emptyProcs :: Procs
@@ -264,7 +279,7 @@ xVar = genToken "x"
 yVar :: Token
 yVar = genToken "y"
 
-printRestrTypedecl :: Map.Map SORT Id -> DATATYPE_DECL -> Doc
+printRestrTypedecl :: Map.HashMap SORT Id -> DATATYPE_DECL -> Doc
 printRestrTypedecl restr (Datatype_decl s a r) =
     let pa = printAnnoted printALTERNATIVE in case a of
     [] -> printRestrTypedecl restr

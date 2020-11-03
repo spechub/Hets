@@ -45,7 +45,8 @@ module Comorphisms.LogicGraph
     , lookupQTA_in_LG
     ) where
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
+import qualified Data.Map as PlainMap
 
 import Common.Result
 import Logic.Logic
@@ -242,18 +243,18 @@ inclusionList :: [AnyComorphism]
 inclusionList =
     filter (\ (Comorphism cid) -> isInclusionComorphism cid) comorphismList
 
-addComps :: Map.Map (String, String) AnyComorphism
-         -> Map.Map (String, String) AnyComorphism
+addComps :: Map.HashMap (String, String) AnyComorphism
+         -> Map.HashMap (String, String) AnyComorphism
 addComps cm = Map.unions
    $ cm : map (\ ((l1, l2), c1) ->
-         Map.foldWithKey (\ (l3, l4) c2 m -> if l3 == l2 then
+         Map.foldrWithKey (\ (l3, l4) c2 m -> if l3 == l2 then
               case compComorphism c1 c2 of
                 Just c3 -> Map.insert (l1, l4) c3 m
                 _ -> m
               else m) Map.empty cm) (Map.toList cm)
 
-addCompsN :: Map.Map (String, String) AnyComorphism
-          -> Map.Map (String, String) AnyComorphism
+addCompsN :: Map.HashMap (String, String) AnyComorphism
+          -> Map.HashMap (String, String) AnyComorphism
 addCompsN m = let n = addComps m in
     if Map.keys m == Map.keys n then m else addCompsN n
 
@@ -270,7 +271,7 @@ morphismList = [] -- for now
 modificationList :: [AnyModification]
 modificationList = [Modification MODAL_EMBEDDING]
 
-squareMap :: Map.Map (AnyComorphism, AnyComorphism) [Square]
+squareMap :: PlainMap.Map (AnyComorphism, AnyComorphism) [Square]
 squareMap = Map.empty -- for now
 
 logicGraph :: LogicGraph

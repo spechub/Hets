@@ -21,7 +21,7 @@ import Common.AS_Annotation (item)
 import Common.DefaultMorphism
 
 import Data.Data
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
               --  | EPR -- Effectively Propositional CNF

@@ -35,7 +35,8 @@ import Text.ParserCombinators.Parsec
 import Control.Monad
 
 import Data.List
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
+import Data.Hashable
 
 -- | should be only ascii letters
 latin :: Parser String
@@ -465,25 +466,25 @@ instance Eq a => Eq (SimpValue a) where
 
 -- | The axioms, goals, constants and data types of a theory
 data Body = Body
-    { axiomsF :: Map.Map Token (SimpValue Token)
-    , goalsF :: Map.Map Token (SimpValue [Token])
-    , constsF :: Map.Map Token Token
-    , datatypesF :: Map.Map Token ([Token], [[Token]])
+    { axiomsF :: Map.HashMap Token (SimpValue Token)
+    , goalsF :: Map.HashMap Token (SimpValue [Token])
+    , constsF :: Map.HashMap Token Token
+    , datatypesF :: Map.HashMap Token ([Token], [[Token]])
     } deriving Show
 
-addAxiom :: Axiom -> Map.Map Token (SimpValue Token)
-         -> Map.Map Token (SimpValue Token)
+addAxiom :: Axiom -> Map.HashMap Token (SimpValue Token)
+         -> Map.HashMap Token (SimpValue Token)
 addAxiom (Axiom (SenDecl n b) a) = Map.insert n (SimpValue b a)
 
-addGoal :: Goal -> Map.Map Token (SimpValue [Token])
-        -> Map.Map Token (SimpValue [Token])
+addGoal :: Goal -> Map.HashMap Token (SimpValue [Token])
+        -> Map.HashMap Token (SimpValue [Token])
 addGoal (Goal (SenDecl n b) a) = Map.insert n (SimpValue b a)
 
-addConst :: Const -> Map.Map Token Token -> Map.Map Token Token
+addConst :: Const -> Map.HashMap Token Token -> Map.HashMap Token Token
 addConst (Const n a) = Map.insert n a
 
-addDatatype :: Dtspec -> Map.Map Token ([Token], [[Token]])
-            -> Map.Map Token ([Token], [[Token]])
+addDatatype :: Dtspec -> Map.HashMap Token ([Token], [[Token]])
+            -> Map.HashMap Token ([Token], [[Token]])
 addDatatype (Dtspec (Typespec ps n) a) = Map.insert n (map fst ps, a)
 
 emptyBody :: Body
@@ -524,8 +525,8 @@ warnSimpAttr =
           ++ " [simp]' for proper Isabelle proof details") $ tokPos a)
         . Map.keys . Map.filter hasSimp . axiomsF
 
-diffMap :: (Ord a, Pretty a, GetRange a, Eq b, Show b)
-          => String -> Ordering -> Map.Map a b -> Map.Map a b -> [Diagnosis]
+diffMap :: (Ord a, Pretty a, GetRange a, Hashable a, Eq b, Show b)
+          => String -> Ordering -> Map.HashMap a b -> Map.HashMap a b -> [Diagnosis]
 diffMap msg o m1 m2 =
     let k1 = Map.keys m1
         k2 = Map.keys m2

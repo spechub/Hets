@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./Maude/Sentence.hs
 Description :  Maude Sentences
@@ -31,6 +31,8 @@ import Common.Doc (vcat)
 import Common.DocUtils (Pretty (..))
 
 import Data.Data
+import GHC.Generics (Generic)
+import Data.Hashable
 
 -- * The Sentence type
 
@@ -38,9 +40,11 @@ import Data.Data
 data Sentence = Membership Membership
               | Equation Equation
               | Rule Rule
-              deriving (Show, Read, Ord, Eq, Typeable, Data)
+              deriving (Show, Read, Ord, Eq, Typeable, Data, Generic)
 
 -- ** Sentence Instances
+
+instance Hashable Sentence
 
 instance GetRange Sentence
 

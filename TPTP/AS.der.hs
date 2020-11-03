@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./TPTP/AS.der.hs
 Description :  Abstract syntax for TPTP v6.4.0.11
@@ -35,6 +35,9 @@ import Syntax.AS_Structured ()
 import qualified Common.AS_Annotation as AS_Anno
 
 import Data.Data
+
+import GHC.Generics (Generic)
+import Data.Hashable
 
 -- DrIFT command
 {-! global: GetRange !-}
@@ -82,11 +85,15 @@ data Annotated_formula = AF_THF_Annotated THF_annotated
                        | AF_FOF_Annotated FOF_annotated
                        | AF_CNF_Annotated CNF_annotated
                        | AF_TPI_Annotated TPI_annotated
-                         deriving (Show, Ord, Eq, Data, Typeable)
+                         deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable Annotated_formula
 
 -- <tpi_annotated>        ::= tpi(<name>,<formula_role>,<tpi_formula><annotations>).
 data TPI_annotated = TPI_annotated Name Formula_role TPI_formula Annotations
-                     deriving (Show, Ord, Eq, Data, Typeable)
+                     deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TPI_annotated
 
 -- <tpi_formula>          ::= <fof_formula>
 type TPI_formula = FOF_formula
@@ -94,32 +101,44 @@ type TPI_formula = FOF_formula
 -- <thf_annotated>        ::= thf(<name>,<formula_role>,<thf_formula>
 --                            <annotations>).
 data THF_annotated = THF_annotated Name Formula_role THF_formula Annotations
-                     deriving (Show, Ord, Eq, Data, Typeable)
+                     deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable THF_annotated
 
 -- <tfx_annotated>        ::= tfx(<name>,<formula_role>,<tfx_formula>
 --                            <annotations>).
 data TFX_annotated = TFX_annotated Name Formula_role TFX_formula Annotations
-                     deriving (Show, Ord, Eq, Data, Typeable)
+                     deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TFX_annotated
 
 -- <tff_annotated>        ::= tff(<name>,<formula_role>,<tff_formula>
 --                            <annotations>).
 data TFF_annotated = TFF_annotated Name Formula_role TFF_formula Annotations
-                     deriving (Show, Ord, Eq, Data, Typeable)
+                     deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TFF_annotated
 
 -- <tcf_annotated>        ::= tcf(<name>,<formula_role>,<tcf_formula>
 --                            <annotations>).
 data TCF_annotated = TCF_annotated Name Formula_role TCF_formula Annotations
-                     deriving (Show, Ord, Eq, Data, Typeable)
+                     deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TCF_annotated
 
 -- <fof_annotated>        ::= fof(<name>,<formula_role>,<fof_formula>
 --                            <annotations>).
 data FOF_annotated = FOF_annotated Name Formula_role FOF_formula Annotations
-                     deriving (Show, Ord, Eq, Data, Typeable)
+                     deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable FOF_annotated
 
 -- <cnf_annotated>        ::= cnf(<name>,<formula_role>,<cnf_formula>
 --                            <annotations>).
 data CNF_annotated = CNF_annotated Name Formula_role CNF_formula Annotations
-                     deriving (Show, Ord, Eq, Data, Typeable)
+                     deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable CNF_annotated
 
 name :: Annotated_formula -> Name
 name f = case f of
@@ -153,7 +172,9 @@ annotations f = case f of
 
 -- <annotations>          ::= ,<source><optional_info> | <null>
 newtype Annotations = Annotations (Maybe (Source, Optional_info))
-                      deriving (Show, Ord, Eq, Data, Typeable)
+                      deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable Annotations
 
 -- Types for problems
 
@@ -180,13 +201,17 @@ data Formula_role = Axiom
                   | Unknown
                   | Other_formula_role Token
                     -- ^ For future updates. Should not be used.
-                    deriving (Show, Ord, Eq, Data, Typeable)
+                    deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable Formula_role
 
 -- %----THF formulae.
 -- <thf_formula>          ::= <thf_logic_formula> | <thf_sequent>
 data THF_formula = THFF_logic THF_logic_formula
                  | THFF_sequent THF_sequent
-                   deriving (Show, Ord, Eq, Data, Typeable)
+                   deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable THF_formula
 
 -- <thf_logic_formula>    ::= <thf_binary_formula> | <thf_unitary_formula> |
 --                            <thf_type_formula> | <thf_subtype>
@@ -194,26 +219,34 @@ data THF_logic_formula = THFLF_binary THF_binary_formula
                        | THFLF_unitary THF_unitary_formula
                        | THFLF_type THF_type_formula
                        | THFLF_subtype THF_subtype
-                         deriving (Show, Ord, Eq, Data, Typeable)
+                         deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable THF_logic_formula
 
 -- <thf_binary_formula>   ::= <thf_binary_pair> | <thf_binary_tuple>
 data THF_binary_formula = THFBF_pair THF_binary_pair
                         | THFBF_tuple THF_binary_tuple
-                          deriving (Show, Ord, Eq, Data, Typeable)
+                          deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable THF_binary_formula
 
 -- %----Only some binary connectives can be written without ()s.
 -- %----There's no precedence among binary connectives
 -- <thf_binary_pair>      ::= <thf_unitary_formula> <thf_pair_connective>
 --                            <thf_unitary_formula>
 data THF_binary_pair = THF_binary_pair THF_pair_connective THF_unitary_formula THF_unitary_formula
-                       deriving (Show, Ord, Eq, Data, Typeable)
+                       deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable THF_binary_pair
 
 -- <thf_binary_tuple>     ::= <thf_or_formula> | <thf_and_formula> |
 --                            <thf_apply_formula>
 data THF_binary_tuple = THFBT_or THF_or_formula
                       | THFBT_and THF_and_formula
                       | THFBT_apply THF_apply_formula
-                        deriving (Show, Ord, Eq, Data, Typeable)
+                        deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable THF_binary_tuple
 
 -- <thf_or_formula>       ::= <thf_unitary_formula> <vline> <thf_unitary_formula> |
 --                            <thf_or_formula> <vline> <thf_unitary_formula>
@@ -238,15 +271,21 @@ data THF_unitary_formula = THFUF_quantified THF_quantified_formula
                          | THFUF_let THF_let
                          | THFUF_tuple THF_tuple
                          | THFUF_logic THF_logic_formula
-                           deriving (Show, Ord, Eq, Data, Typeable)
+                           deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable THF_unitary_formula
 
 -- <thf_quantified_formula> ::= <thf_quantification> <thf_unitary_formula>
 data THF_quantified_formula = THF_quantified_formula THF_quantification THF_unitary_formula
-                              deriving (Show, Ord, Eq, Data, Typeable)
+                              deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable THF_quantified_formula
 
 -- <thf_quantification>   ::= <thf_quantifier> [<thf_variable_list>] :
 data THF_quantification = THF_quantification THF_quantifier THF_variable_list
-                          deriving (Show, Ord, Eq, Data, Typeable)
+                          deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable THF_quantification
 
 -- <thf_variable_list>    ::= <thf_variable> | <thf_variable>,<thf_variable_list>
 type THF_variable_list = [THF_variable]
@@ -254,15 +293,21 @@ type THF_variable_list = [THF_variable]
 -- <thf_variable>         ::= <thf_typed_variable> | <variable>
 data THF_variable = THFV_typed THF_typed_variable
                   | THFV_variable Variable
-                    deriving (Show, Ord, Eq, Data, Typeable)
+                    deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable THF_variable
 
 -- <thf_typed_variable>   ::= <variable> : <thf_top_level_type>
 data THF_typed_variable = THF_typed_variable Variable THF_top_level_type
-                          deriving (Show, Ord, Eq, Data, Typeable)
+                          deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable THF_typed_variable
 
 -- <thf_unary_formula>    ::= <thf_unary_connective> (<thf_logic_formula>)
 data THF_unary_formula = THF_unary_formula THF_unary_connective THF_logic_formula
-                         deriving (Show, Ord, Eq, Data, Typeable)
+                         deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable THF_unary_formula
 
 -- <thf_atom>             ::= <thf_function> | <variable> | <defined_term> |
 --                            <thf_conn_term>
@@ -270,7 +315,9 @@ data THF_atom = THF_atom_function THF_function
               | THF_atom_variable Variable
               | THF_atom_defined Defined_term
               | THF_atom_conn THF_conn_term
-                deriving (Show, Ord, Eq, Data, Typeable)
+                deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable THF_atom
 
 -- <thf_function>         ::= <atom> | <functor>(<thf_arguments>) |
 --                            <defined_functor>(<thf_arguments>) |
@@ -279,19 +326,25 @@ data THF_function = THFF_atom Atom
                   | THFF_functor TPTP_functor THF_arguments
                   | THFF_defined Defined_functor THF_arguments
                   | THFF_system System_functor THF_arguments
-                    deriving (Show, Ord, Eq, Data, Typeable)
+                    deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable THF_function
 
 -- <thf_conn_term>        ::= <thf_pair_connective> | <assoc_connective> |
 --                            <thf_unary_connective>
 data THF_conn_term = THFC_pair THF_pair_connective
                    | THFC_assoc Assoc_connective
                    | THFC_unary THF_unary_connective
-                     deriving (Show, Ord, Eq, Data, Typeable)
+                     deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable THF_conn_term
 
 -- <thf_conditional>      ::= $ite(<thf_logic_formula>,<thf_logic_formula>,
 --                             <thf_logic_formula>)
 data THF_conditional = THF_conditional THF_logic_formula THF_logic_formula THF_logic_formula --  $ite
-                       deriving (Show, Ord, Eq, Data, Typeable)
+                       deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable THF_conditional
 
 -- %----The LHS of a term or formula binding must be a non-variable term that
 -- %----is flat with pairwise distinct variable arguments, and the variables in
@@ -306,12 +359,16 @@ data THF_conditional = THF_conditional THF_logic_formula THF_logic_formula THF_l
 -- <thf_let>              ::= $let(<thf_unitary_formula>,<thf_formula>)
 -- <thf_let>              :== $let(<thf_let_defns>,<thf_formula>)
 data THF_let = THF_let THF_let_defns THF_formula
-               deriving (Show, Ord, Eq, Data, Typeable)
+               deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable THF_let
 
 -- <thf_let_defns>        :== <thf_let_defn> | [<thf_let_defn_list>]
 data THF_let_defns = THFLD_single THF_let_defn
                    | THFLD_many THF_let_defn_list
-                     deriving (Show, Ord, Eq, Data, Typeable)
+                     deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable THF_let_defns
 
 -- <thf_let_defn_list>    :== <thf_let_defn> | <thf_let_defn>,<thf_let_defn_list>
 type THF_let_defn_list = [THF_let_defn]
@@ -319,15 +376,21 @@ type THF_let_defn_list = [THF_let_defn]
 -- <thf_let_defn>         :== <thf_let_quantified_defn> | <thf_let_plain_defn>
 data THF_let_defn = THFLD_quantified THF_let_quantified_defn
                   | THFLD_plain THF_let_plain_defn
-                    deriving (Show, Ord, Eq, Data, Typeable)
+                    deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable THF_let_defn
 
 -- <thf_let_quantified_defn> :== <thf_quantification> (<thf_let_plain_defn>)
 data THF_let_quantified_defn = THF_let_quantified_defn THF_quantification THF_let_plain_defn
-                               deriving (Show, Ord, Eq, Data, Typeable)
+                               deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable THF_let_quantified_defn
 
 -- <thf_let_plain_defn>   :== <thf_let_defn_LHS> <assignment> <thf_formula>
 data THF_let_plain_defn = THF_let_plain_defn THF_let_defn_LHS THF_formula
-                          deriving (Show, Ord, Eq, Data, Typeable)
+                          deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable THF_let_plain_defn
 
 -- <thf_let_defn_LHS>     :== <constant> | <functor>(<fof_arguments>) |
 --                            <thf_tuple>
@@ -336,7 +399,9 @@ data THF_let_plain_defn = THF_let_plain_defn THF_let_defn_LHS THF_formula
 data THF_let_defn_LHS = THFLDL_constant Constant
                       | THFLDL_functor TPTP_functor FOF_arguments
                       | THFLDL_tuple THF_tuple
-                        deriving (Show, Ord, Eq, Data, Typeable)
+                        deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable THF_let_defn_LHS
 
 -- <thf_arguments>        ::= <thf_formula_list>
 type THF_arguments = THF_formula_list
@@ -345,16 +410,22 @@ type THF_arguments = THF_formula_list
 -- <thf_type_formula>     :== <constant> : <thf_top_level_type>
 data THF_type_formula = THFTF_typeable THF_typeable_formula THF_top_level_type
                       | THFTF_constant Constant THF_top_level_type
-                        deriving (Show, Ord, Eq, Data, Typeable)
+                        deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable THF_type_formula
 
 -- <thf_typeable_formula> ::= <thf_atom> | (<thf_logic_formula>)
 data THF_typeable_formula = THFTF_atom THF_atom
                           | THFTF_logic THF_logic_formula
-                            deriving (Show, Ord, Eq, Data, Typeable)
+                            deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable THF_typeable_formula
 
 -- <thf_subtype>          ::= <thf_atom> <subtype_sign> <thf_atom>
 data THF_subtype = THF_subtype THF_atom THF_atom
-                   deriving (Show, Ord, Eq, Data, Typeable)
+                   deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable THF_subtype
 
 
 -- %----<thf_top_level_type> appears after ":", where a type is being specified
@@ -368,12 +439,16 @@ data THF_subtype = THF_subtype THF_atom THF_atom
 -- <thf_top_level_type>   ::= <thf_unitary_type> | <thf_mapping_type>
 data THF_top_level_type = THFTLT_unitary THF_unitary_type
                         | THFTLT_mapping THF_mapping_type
-                          deriving (Show, Ord, Eq, Data, Typeable)
+                          deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable THF_top_level_type
 
 -- <thf_unitary_type>     ::= <thf_unitary_formula> | (<thf_binary_type>)
 data THF_unitary_type = THFUT_unitary THF_unitary_formula
                       | THFUT_binary THF_binary_type
-                        deriving (Show, Ord, Eq, Data, Typeable)
+                        deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable THF_unitary_type
 
 -- Each of these binary types has at least two (!) list entries.
 -- <thf_binary_type>      ::= <thf_mapping_type> | <thf_xprod_type> |
@@ -381,7 +456,9 @@ data THF_unitary_type = THFUT_unitary THF_unitary_formula
 data THF_binary_type = THFBT_mapping THF_mapping_type
                      | THFBT_xprod THF_xprod_type
                      | THFBT_union THF_union_type
-                       deriving (Show, Ord, Eq, Data, Typeable)
+                       deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable THF_binary_type
 
 -- <thf_mapping_type>     ::= <thf_unitary_type> <arrow> <thf_unitary_type> |
 --                            <thf_unitary_type> <arrow> <thf_mapping_type>
@@ -400,11 +477,15 @@ type THF_union_type = [THF_unitary_type] -- right associative
 --                            (<thf_sequent>)
 data THF_sequent = THFS_plain THF_tuple THF_tuple
                  | THFS_parens THF_sequent
-                   deriving (Show, Ord, Eq, Data, Typeable)
+                   deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable THF_sequent
 
 -- <thf_tuple>            ::= [] | [<thf_formula_list>]
 newtype THF_tuple = THF_tuple THF_formula_list
-                    deriving (Show, Ord, Eq, Data, Typeable)
+                    deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable THF_tuple
 
 -- <thf_formula_list>     ::= <thf_logic_formula> |
 --                            <thf_logic_formula>,<thf_formula_list>
@@ -472,7 +553,9 @@ type THF_formula_list = [THF_logic_formula]
 -- <tfx_formula>          ::= <tfx_logic_formula> | <thf_sequent>
 data TFX_formula = TFXF_logic TFX_logic_formula
                  | TFXF_sequent THF_sequent
-                   deriving (Show, Ord, Eq, Data, Typeable)
+                   deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TFX_formula
 
 -- <tfx_logic_formula>    ::= <thf_logic_formula>
 -- % <tfx_logic_formula>    ::= <thf_binary_formula> | <thf_unitary_formula> |
@@ -481,7 +564,9 @@ data TFX_logic_formula = TFXLF_binary THF_binary_formula
                        | TFXLF_unitary THF_unitary_formula
                        | TFXLF_typed TFF_typed_atom
                        | TFXLF_subtype TFF_subtype
-                         deriving (Show, Ord, Eq, Data, Typeable)
+                         deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TFX_logic_formula
 
 -- %----TFF formulae.
 -- <tff_formula>          ::= <tff_logic_formula> | <tff_typed_atom> |
@@ -489,29 +574,39 @@ data TFX_logic_formula = TFXLF_binary THF_binary_formula
 data TFF_formula = TFFF_logic TFF_logic_formula
                  | TFFF_atom TFF_typed_atom
                  | TFFF_sequent TFF_sequent
-                   deriving (Show, Ord, Eq, Data, Typeable)
+                   deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TFF_formula
 
 -- <tff_logic_formula>    ::= <tff_binary_formula> | <tff_unitary_formula> |
 --                            <tff_subtype>
 data TFF_logic_formula = TFFLF_binary TFF_binary_formula
                        | TFFLF_unitary TFF_unitary_formula
                        | TFFLF_subtype TFF_subtype
-                         deriving (Show, Ord, Eq, Data, Typeable)
+                         deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TFF_logic_formula
 
 -- <tff_binary_formula>   ::= <tff_binary_nonassoc> | <tff_binary_assoc>
 data TFF_binary_formula = TFFBF_nonassoc TFF_binary_nonassoc
                         | TFFBF_assoc TFF_binary_assoc
-                          deriving (Show, Ord, Eq, Data, Typeable)
+                          deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TFF_binary_formula
 
 -- <tff_binary_nonassoc>  ::= <tff_unitary_formula> <binary_connective>
 --                            <tff_unitary_formula>
 data TFF_binary_nonassoc = TFF_binary_nonassoc Binary_connective TFF_unitary_formula TFF_unitary_formula
-                           deriving (Show, Ord, Eq, Data, Typeable)
+                           deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TFF_binary_nonassoc
 
 -- <tff_binary_assoc>     ::= <tff_or_formula> | <tff_and_formula>
 data TFF_binary_assoc = TFFBA_or TFF_or_formula
                       | TFFBA_and TFF_and_formula
-                        deriving (Show, Ord, Eq, Data, Typeable)
+                        deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TFF_binary_assoc
 
 -- <tff_or_formula>       ::= <tff_unitary_formula> <vline> <tff_unitary_formula> |
 --                            <tff_or_formula> <vline> <tff_unitary_formula>
@@ -530,12 +625,16 @@ data TFF_unitary_formula = TFFUF_quantified TFF_quantified_formula
                          | TFFUF_conditional TFF_conditional
                          | TFFUF_let TFF_let
                          | TFFUF_logic TFF_logic_formula
-                           deriving (Show, Ord, Eq, Data, Typeable)
+                           deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TFF_unitary_formula
 
 -- <tff_quantified_formula> ::= <fof_quantifier> [<tff_variable_list>] :
 --                            <tff_unitary_formula>
 data TFF_quantified_formula = TFF_quantified_formula FOF_quantifier TFF_variable_list TFF_unitary_formula
-                              deriving (Show, Ord, Eq, Data, Typeable)
+                              deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TFF_quantified_formula
 
 -- <tff_variable_list>    ::= <tff_variable> | <tff_variable>,<tff_variable_list>
 type TFF_variable_list = [TFF_variable]
@@ -543,17 +642,23 @@ type TFF_variable_list = [TFF_variable]
 -- <tff_variable>         ::= <tff_typed_variable> | <variable>
 data TFF_variable = TFFV_typed TFF_typed_variable
                   | TFFV_variable Variable
-                    deriving (Show, Ord, Eq, Data, Typeable)
+                    deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TFF_variable
 
 -- <tff_typed_variable>   ::= <variable> : <tff_atomic_type>
 data TFF_typed_variable = TFF_typed_variable Variable TFF_atomic_type
-                          deriving (Show, Ord, Eq, Data, Typeable)
+                          deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TFF_typed_variable
 
 -- <tff_unary_formula>    ::= <unary_connective> <tff_unitary_formula> |
 --                            <fof_infix_unary>
 data TFF_unary_formula = TFFUF_connective Unary_connective TFF_unitary_formula
                        | TFFUF_infix FOF_infix_unary
-                         deriving (Show, Ord, Eq, Data, Typeable)
+                         deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TFF_unary_formula
 
 -- <tff_atomic_formula>   ::= <fof_atomic_formula>
 type TFF_atomic_formula = FOF_atomic_formula
@@ -561,19 +666,25 @@ type TFF_atomic_formula = FOF_atomic_formula
 -- <tff_conditional>      ::= $ite_f(<tff_logic_formula>,<tff_logic_formula>,
 --                            <tff_logic_formula>)
 data TFF_conditional = TFF_conditional TFF_logic_formula TFF_logic_formula TFF_logic_formula --  $ite_f
-                       deriving (Show, Ord, Eq, Data, Typeable)
+                       deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TFF_conditional
 
 -- <tff_let>              ::= $let_tf(<tff_let_term_defns>,<tff_formula>) |
 --                            $let_ff(<tff_let_formula_defns>,<tff_formula>)
 data TFF_let = TFF_let_term_defns TFF_let_term_defns TFF_formula
              | TFF_let_formula_defns TFF_let_formula_defns TFF_formula
-               deriving (Show, Ord, Eq, Data, Typeable)
+               deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TFF_let
 
 -- %----See the commentary for <thf_let>.
 -- <tff_let_term_defns>   ::= <tff_let_term_defn> | [<tff_let_term_list>]
 data TFF_let_term_defns = TFFLTD_single TFF_let_term_defn
                         | TFFLTD_many TFF_let_term_list
-                          deriving (Show, Ord, Eq, Data, Typeable)
+                          deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TFF_let_term_defns
 
 -- <tff_let_term_list>    ::= <tff_let_term_defn> |
 --                            <tff_let_term_defn>,<tff_let_term_list>
@@ -583,18 +694,24 @@ type TFF_let_term_list = [TFF_let_term_defn]
 --                            <tff_let_term_binding>
 data TFF_let_term_defn = TFFLTD_variable TFF_variable_list TFF_let_term_defn
                        | TFFLTD_binding TFF_let_term_binding
-                         deriving (Show, Ord, Eq, Data, Typeable)
+                         deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TFF_let_term_defn
 
 -- <tff_let_term_binding> ::= <fof_plain_term> = <fof_term> |
 --                            (<tff_let_term_binding>)
 data TFF_let_term_binding = TFFLTB_plain FOF_plain_term FOF_term
                           | TFFLTB_binding TFF_let_term_binding
-                            deriving (Show, Ord, Eq, Data, Typeable)
+                            deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TFF_let_term_binding
 
 -- <tff_let_formula_defns> ::= <tff_let_formula_defn> | [<tff_let_formula_list>]
 data TFF_let_formula_defns = TFFLFD_single TFF_let_formula_defn
                            | TFFLFD_many TFF_let_formula_list
-                             deriving (Show, Ord, Eq, Data, Typeable)
+                             deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TFF_let_formula_defns
 
 -- <tff_let_formula_list> ::= <tff_let_formula_defn> |
 --                            <tff_let_formula_defn>,<tff_let_formula_list>
@@ -604,23 +721,31 @@ type TFF_let_formula_list = [TFF_let_formula_defn]
 --                            <tff_let_formula_binding>
 data TFF_let_formula_defn = TFFLFD_variable TFF_variable_list TFF_let_formula_defn
                           | TFFLFD_binding TFF_let_formula_binding
-                            deriving (Show, Ord, Eq, Data, Typeable)
+                            deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TFF_let_formula_defn
 
 -- <tff_let_formula_binding> ::= <fof_plain_atomic_formula> <=>
 --                            <tff_unitary_formula> | (<tff_let_formula_binding>)
 data TFF_let_formula_binding = TFFLFB_plain FOF_plain_atomic_formula TFF_unitary_formula
                              | TFFLFB_binding TFF_let_formula_binding
-                               deriving (Show, Ord, Eq, Data, Typeable)
+                               deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TFF_let_formula_binding
 
 -- <tff_sequent>          ::= <tff_formula_tuple> <gentzen_arrow>
 --                            <tff_formula_tuple> | (<tff_sequent>)
 data TFF_sequent = TFFS_plain TFF_formula_tuple TFF_formula_tuple
                  | TFFS_parens TFF_sequent
-                   deriving (Show, Ord, Eq, Data, Typeable)
+                   deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TFF_sequent
 
 -- <tff_formula_tuple>    ::= [] | [<tff_formula_tuple_list>]
 newtype TFF_formula_tuple = TFF_formula_tuple TFF_formula_tuple_list
-                            deriving (Show, Ord, Eq, Data, Typeable)
+                            deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TFF_formula_tuple
 
 -- <tff_formula_tuple_list> ::= <tff_logic_formula> |
 --                            <tff_logic_formula>,<tff_formula_tuple_list>
@@ -631,11 +756,15 @@ type TFF_formula_tuple_list = [TFF_logic_formula]
 --                            (<tff_typed_atom>)
 data TFF_typed_atom = TFFTA_plain Untyped_atom TFF_top_level_type
                     | TFFTA_parens TFF_typed_atom
-                      deriving (Show, Ord, Eq, Data, Typeable)
+                      deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TFF_typed_atom
 
 -- <tff_subtype>          ::= <untyped_atom> <subtype_sign> <atom>
 data TFF_subtype = TFF_subtype Untyped_atom Atom
-                   deriving (Show, Ord, Eq, Data, Typeable)
+                   deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TFF_subtype
 
 -- %----See <thf_top_level_type> for commentary.
 -- <tff_top_level_type>   ::= <tff_atomic_type> | <tff_mapping_type> |
@@ -644,28 +773,39 @@ data TFF_top_level_type = TFFTLT_atomic TFF_atomic_type
                         | TFFTLT_mapping TFF_mapping_type
                         | TFFTLT_quantified TF1_quantified_type
                         | TFFTLT_parens TFF_top_level_type
-                          deriving (Show, Ord, Eq, Data, Typeable)
+                          deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TFF_top_level_type
 
 -- <tf1_quantified_type>  ::= !> [<tff_variable_list>] : <tff_monotype>
 data TF1_quantified_type = TF1_quantified_type TFF_variable_list TFF_monotype
-                           deriving (Show, Ord, Eq, Data, Typeable)
+                           deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TF1_quantified_type
 
 -- <tff_monotype>         ::= <tff_atomic_type> | (<tff_mapping_type>)
 data TFF_monotype = TFFMT_atomic TFF_atomic_type
                   | TFFMT_mapping TFF_mapping_type
-                    deriving (Show, Ord, Eq, Data, Typeable)
+                    deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TFF_monotype
 
 -- <tff_unitary_type>     ::= <tff_atomic_type> | (<tff_xprod_type>)
 data TFF_unitary_type = TFFUT_atomic TFF_atomic_type
                       | TFFUT_xprod TFF_xprod_type
-                        deriving (Show, Ord, Eq, Data, Typeable)
+                        deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TFF_unitary_type
+
 -- <tff_atomic_type>      ::= <type_constant> | <defined_type> |
 --                            <type_functor>(<tff_type_arguments>) | <variable>
 data TFF_atomic_type = TFFAT_constant Type_constant
                      | TFFAT_defined Defined_type
                      | TFFAT_functor Type_functor TFF_type_arguments
                      | TFFAT_variable Variable
-                       deriving (Show, Ord, Eq, Data, Typeable)
+                       deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TFF_atomic_type
 
 -- <tff_type_arguments>   ::= <tff_atomic_type> |
 --                            <tff_atomic_type>,<tff_type_arguments>
@@ -676,59 +816,79 @@ type TFF_type_arguments = [TFF_atomic_type]
 -- %----ambiguity.
 -- <tff_mapping_type>     ::= <tff_unitary_type> <arrow> <tff_atomic_type>
 data TFF_mapping_type = TFF_mapping_type TFF_unitary_type TFF_atomic_type
-                        deriving (Show, Ord, Eq, Data, Typeable)
+                        deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TFF_mapping_type
 
 -- <tff_xprod_type>       ::= <tff_unitary_type> <star> <tff_atomic_type> |
 --                            <tff_xprod_type> <star> <tff_atomic_type>
 data TFF_xprod_type = TFF_xprod_type TFF_unitary_type [TFF_atomic_type]
-                      deriving (Show, Ord, Eq, Data, Typeable)
+                      deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TFF_xprod_type
 
 
 -- %----TCF formulae.
 -- <tcf_formula>          ::= <tcf_logic_formula> | <tff_typed_atom>
 data TCF_formula = TCFF_logic TCF_logic_formula
                  | TCFF_atom TFF_typed_atom
-                   deriving (Show, Ord, Eq, Data, Typeable)
+                   deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TCF_formula
 
 -- <tcf_logic_formula>    ::= <tcf_quantified_formula> | <cnf_formula>
 data TCF_logic_formula = TCFLF_quantified TCF_quantified_formula
                        | TCFLF_cnf CNF_formula
-                         deriving (Show, Ord, Eq, Data, Typeable)
+                         deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TCF_logic_formula
 
 -- <tcf_quantified_formula> ::= ! [<tff_variable_list>] : <cnf_formula>
 data TCF_quantified_formula = TCF_quantified TFF_variable_list CNF_formula
-                              deriving (Show, Ord, Eq, Data, Typeable)
+                              deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TCF_quantified_formula
 
 
 -- %----FOF formulae.
 -- <fof_formula>          ::= <fof_logic_formula> | <fof_sequent>
 data FOF_formula = FOFF_logic FOF_logic_formula
                  | FOFF_sequent FOF_sequent
-                   deriving (Show, Ord, Eq, Data, Typeable)
+                   deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable FOF_formula
 
 -- <fof_logic_formula>    ::= <fof_binary_formula> | <fof_unitary_formula>
 data FOF_logic_formula = FOFLF_binary FOF_binary_formula
                        | FOFLF_unitary FOF_unitary_formula
-                         deriving (Show, Ord, Eq, Data, Typeable)
+                         deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable FOF_logic_formula
 
 -- %----Future answer variable ideas | <answer_formula>
 -- <fof_binary_formula>   ::= <fof_binary_nonassoc> | <fof_binary_assoc>
 data FOF_binary_formula = FOFBF_nonassoc FOF_binary_nonassoc
                         | FOFBF_assoc FOF_binary_assoc
-                          deriving (Show, Ord, Eq, Data, Typeable)
+                          deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable FOF_binary_formula
 
 -- %----Only some binary connectives are associative
 -- %----There's no precedence among binary connectives
 -- <fof_binary_nonassoc>  ::= <fof_unitary_formula> <binary_connective>
 --                            <fof_unitary_formula>
 data FOF_binary_nonassoc = FOF_binary_nonassoc Binary_connective FOF_unitary_formula FOF_unitary_formula
-                           deriving (Show, Ord, Eq, Data, Typeable)
+                           deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable FOF_binary_nonassoc
 
 -- %----Associative connectives & and | are in <binary_assoc>
 -- <fof_binary_assoc>     ::= <fof_or_formula> | <fof_and_formula>
 data FOF_binary_assoc = FOFBA_or FOF_or_formula
                       | FOFBA_and FOF_and_formula
-                        deriving (Show, Ord, Eq, Data, Typeable)
+                        deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable FOF_binary_assoc
 
 -- <fof_or_formula>       ::= <fof_unitary_formula> <vline> <fof_unitary_formula> |
 --                            <fof_or_formula> <vline> <fof_unitary_formula>
@@ -746,12 +906,16 @@ data FOF_unitary_formula = FOFUF_quantified FOF_quantified_formula
                          | FOFUF_unary FOF_unary_formula
                          | FOFUF_atomic FOF_atomic_formula
                          | FOFUF_logic FOF_logic_formula
-                           deriving (Show, Ord, Eq, Data, Typeable)
+                           deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable FOF_unitary_formula
 
 -- <fof_quantified_formula> ::= <fof_quantifier> [<fof_variable_list>] :
 --                            <fof_unitary_formula>
 data FOF_quantified_formula = FOF_quantified_formula FOF_quantifier FOF_variable_list FOF_unitary_formula
-                              deriving (Show, Ord, Eq, Data, Typeable)
+                              deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable FOF_quantified_formula
 
 -- <fof_variable_list>    ::= <variable> | <variable>,<fof_variable_list>
 type FOF_variable_list = [Variable]
@@ -760,11 +924,15 @@ type FOF_variable_list = [Variable]
 --                            <fof_infix_unary>
 data FOF_unary_formula = FOFUF_connective Unary_connective FOF_unitary_formula
                        | FOFUF_infix FOF_infix_unary
-                         deriving (Show, Ord, Eq, Data, Typeable)
+                         deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable FOF_unary_formula
 
 -- <fof_infix_unary>      ::= <fof_term> <infix_inequality> <fof_term>
 data FOF_infix_unary = FOF_infix_unary FOF_term FOF_term
-                       deriving (Show, Ord, Eq, Data, Typeable)
+                       deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable FOF_infix_unary
 
 -- <fof_atomic_formula>   ::= <fof_plain_atomic_formula> |
 --                            <fof_defined_atomic_formula> |
@@ -772,30 +940,40 @@ data FOF_infix_unary = FOF_infix_unary FOF_term FOF_term
 data FOF_atomic_formula = FOFAT_plain FOF_plain_atomic_formula
                         | FOFAT_defined FOF_defined_atomic_formula
                         | FOFAT_system FOF_system_atomic_formula
-                          deriving (Show, Ord, Eq, Data, Typeable)
+                          deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable FOF_atomic_formula
 
 -- <fof_plain_atomic_formula> ::= <fof_plain_term>
 -- <fof_plain_atomic_formula> :== <proposition> | <predicate>(<fof_arguments>)
 data FOF_plain_atomic_formula = FOFPAF_proposition Proposition
                               | FOFPAF_predicate Predicate FOF_arguments
-                                deriving (Show, Ord, Eq, Data, Typeable)
+                                deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable FOF_plain_atomic_formula
 
 -- <fof_defined_atomic_formula> ::= <fof_defined_plain_formula> |
 --                            <fof_defined_infix_formula>
 data FOF_defined_atomic_formula = FOFDAF_plain FOF_defined_plain_formula
                                 | FOFDAF_infix FOF_defined_infix_formula
-                                  deriving (Show, Ord, Eq, Data, Typeable)
+                                  deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable FOF_defined_atomic_formula
 
 -- <fof_defined_plain_formula> ::= <fof_defined_plain_term>
 -- <fof_defined_plain_formula> :== <defined_proposition> |
 --                            <defined_predicate>(<fof_arguments>)
 data FOF_defined_plain_formula = FOFDPF_proposition Defined_proposition
                                | FOFDPF_predicate Defined_predicate FOF_arguments
-                                 deriving (Show, Ord, Eq, Data, Typeable)
+                                 deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable FOF_defined_plain_formula
 
 -- <fof_defined_infix_formula> ::= <fof_term> <defined_infix_pred> <fof_term>
 data FOF_defined_infix_formula = FOF_defined_infix_formula Defined_infix_pred FOF_term FOF_term
-                                 deriving (Show, Ord, Eq, Data, Typeable)
+                                 deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable FOF_defined_infix_formula
 
 -- %----System terms have system specific interpretations
 -- <fof_system_atomic_formula> ::= <fof_system_term>
@@ -804,25 +982,33 @@ data FOF_defined_infix_formula = FOF_defined_infix_formula Defined_infix_pred FO
 -- %----by the TPTP syntax, so use with due care. The same is true for
 -- %----<fof_system_term>s.
 newtype FOF_system_atomic_formula = FOF_system_atomic_formula FOF_system_term
-                                    deriving (Show, Ord, Eq, Data, Typeable)
+                                    deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable FOF_system_atomic_formula
 
 -- %----FOF terms.
 -- <fof_plain_term>       ::= <constant> | <functor>(<fof_arguments>)
 data FOF_plain_term = FOFPT_constant Constant
                     | FOFPT_functor TPTP_functor FOF_arguments
-                      deriving (Show, Ord, Eq, Data, Typeable)
+                      deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable FOF_plain_term
 
 -- %----Defined terms have TPTP specific interpretations
 -- <fof_defined_term>     ::= <defined_term> | <fof_defined_atomic_term>
 data FOF_defined_term = FOFDT_term Defined_term
                       | FOFDT_atomic FOF_defined_atomic_term
-                        deriving (Show, Ord, Eq, Data, Typeable)
+                        deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable FOF_defined_term
 
 -- <fof_defined_atomic_term>  ::= <fof_defined_plain_term>
 -- %----None yet             | <defined_infix_term>
 data FOF_defined_atomic_term = FOFDAT_plain FOF_defined_plain_term
                              --  | FOFDAT_indix Defined_infix_term
-                               deriving (Show, Ord, Eq, Data, Typeable)
+                               deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable FOF_defined_atomic_term
 
 -- %----None yet <defined_infix_term> ::= <fof_term> <defined_infix_func> <fof_term>
 -- data Defined_infix_term = Defined_infix_term Defined_infix_func FOF_term FOF_term
@@ -836,13 +1022,17 @@ data FOF_defined_atomic_term = FOFDAT_plain FOF_defined_plain_term
 -- %----Add $tuple for tuples, because [<fof_arguments>] doesn't work.
 data FOF_defined_plain_term = FOFDPT_constant Defined_constant
                             | FOFDPT_functor Defined_functor FOF_arguments
-                              deriving (Show, Ord, Eq, Data, Typeable)
+                              deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable FOF_defined_plain_term
 
 -- %----System terms have system specific interpretations
 -- <fof_system_term>      ::= <system_constant> | <system_functor>(<fof_arguments>)
 data FOF_system_term = FOFST_constant System_constant
                      | FOFST_functor System_functor FOF_arguments
-                       deriving (Show, Ord, Eq, Data, Typeable)
+                       deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable FOF_system_term
 
 -- %----Arguments recurse back up to terms (this is the FOF world here)
 -- <fof_arguments>        ::= <fof_term> | <fof_term>,<fof_arguments>
@@ -856,7 +1046,9 @@ data FOF_term = FOFT_function FOF_function_term
               | FOFT_variable Variable
               | FOFT_conditional TFF_conditional_term
               | FOFT_let TFF_let_term
-                deriving (Show, Ord, Eq, Data, Typeable)
+                deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable FOF_term
 
 -- %% DAMN THIS JUST WON'T WORK | <tuple_term>
 -- %----<tuple_term> is for TFF only, but it's here because it's used in
@@ -867,12 +1059,16 @@ data FOF_term = FOFT_function FOF_function_term
 data FOF_function_term = FOFFT_plain FOF_plain_term
                        | FOFFT_defined FOF_defined_term
                        | FOFFT_system FOF_system_term
-                         deriving (Show, Ord, Eq, Data, Typeable)
+                         deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable FOF_function_term
 
 -- %----Conditional terms should be used by only TFF.
 -- <tff_conditional_term> ::= $ite_t(<tff_logic_formula>,<fof_term>,<fof_term>)
 data TFF_conditional_term = TFF_conditional_term TFF_logic_formula FOF_term FOF_term
-                            deriving (Show, Ord, Eq, Data, Typeable)
+                            deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TFF_conditional_term
 
 -- %----Let terms should be used by only TFF. $let_ft is for use when there is
 -- %----a $ite_t in the <fof_term>. See the commentary for $let_tf and $let_ff.
@@ -880,7 +1076,9 @@ data TFF_conditional_term = TFF_conditional_term TFF_logic_formula FOF_term FOF_
 --                            $let_tt(<tff_let_term_defns>,<fof_term>)
 data TFF_let_term = TFFLT_formula TFF_let_formula_defns FOF_term
                   | TFFLT_term TFF_let_term_defns FOF_term
-                    deriving (Show, Ord, Eq, Data, Typeable)
+                    deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TFF_let_term
 
 {-
 %----This section is the FOFX syntax. Not yet in use.
@@ -900,11 +1098,15 @@ data TFF_let_term = TFFLT_formula TFF_let_formula_defns FOF_term
 --                            <fof_formula_tuple> | (<fof_sequent>)
 data FOF_sequent = FOFS_plain FOF_formula_tuple FOF_formula_tuple
                  | FOFS_parens FOF_sequent
-                   deriving (Show, Ord, Eq, Data, Typeable)
+                   deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable FOF_sequent
 
 -- <fof_formula_tuple>    ::= [] | [<fof_formula_tuple_list>]
 newtype FOF_formula_tuple = FOF_formula_tuple FOF_formula_tuple_list
-                            deriving (Show, Ord, Eq, Data, Typeable)
+                            deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable FOF_formula_tuple
 
 -- <fof_formula_tuple_list> ::= <fof_logic_formula> |
 --                            <fof_logic_formula>,<fof_formula_tuple_list>
@@ -915,18 +1117,24 @@ type FOF_formula_tuple_list = [FOF_logic_formula]
 -- <cnf_formula>          ::= <disjunction> | (<disjunction>)
 data CNF_formula = CNFF_plain Disjunction
                  | CNFF_parens Disjunction
-                   deriving (Show, Ord, Eq, Data, Typeable)
+                   deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable CNF_formula
 
 -- <disjunction>          ::= <literal> | <disjunction> <vline> <literal>
 newtype Disjunction = Disjunction [Literal]
-                      deriving (Show, Ord, Eq, Data, Typeable)
+                      deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable Disjunction
 
 -- <literal>              ::= <fof_atomic_formula> | ~ <fof_atomic_formula> |
 --                            <fof_infix_unary>
 data Literal = Lit_atomic FOF_atomic_formula
              | Lit_negative FOF_atomic_formula
              | Lit_fof_infix FOF_infix_unary
-               deriving (Show, Ord, Eq, Data, Typeable)
+               deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable Literal
 
 
 
@@ -936,20 +1144,26 @@ data Literal = Lit_atomic FOF_atomic_formula
 data THF_quantifier = THFQ_fof FOF_quantifier
                     | THFQ_th0 TH0_quantifier
                     | THFQ_th1 TH1_quantifier
-                      deriving (Show, Ord, Eq, Data, Typeable)
+                      deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable THF_quantifier
 
 
 -- %----TH0 quantifiers are also available in TH1
 -- <th1_quantifier>       ::= !> | ?*
 data TH1_quantifier = TH1_DependentProduct       -- !>
                     | TH1_DependentSum           -- ?*
-                      deriving (Show, Ord, Eq, Data, Typeable)
+                      deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TH1_quantifier
 
 -- <th0_quantifier>       ::= ^ | @+ | @-
 data TH0_quantifier = TH0_LambdaBinder           -- ^
                     | TH0_IndefiniteDescription  -- @+
                     | TH0_DefiniteDescription    -- @-
-                      deriving (Show, Ord, Eq, Data, Typeable)
+                      deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TH0_quantifier
 
 -- <thf_pair_connective>  ::= <infix_equality> | <infix_inequality> |
 --                            <binary_connective> | <assignment>
@@ -957,12 +1171,16 @@ data THF_pair_connective = THF_infix_equality
                          | Infix_inequality
                          | THFPC_binary Binary_connective
                          | THF_assignment
-                           deriving (Show, Ord, Eq, Data, Typeable)
+                           deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable THF_pair_connective
 
 -- <thf_unary_connective> ::= <unary_connective> | <th1_unary_connective>
 data THF_unary_connective = THFUC_unary Unary_connective
                           | THFUC_th1 TH1_unary_connective
-                            deriving (Show, Ord, Eq, Data, Typeable)
+                            deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable THF_unary_connective 
 
 -- <th1_unary_connective> ::= !! | ?? | @@+ | @@- | @=
 data TH1_unary_connective = TH1_PiForAll                -- !!
@@ -970,7 +1188,9 @@ data TH1_unary_connective = TH1_PiForAll                -- !!
                           | TH1_PiIndefiniteDescription -- @@+
                           | TH1_PiDefiniteDescription   -- @@-
                           | TH1_PiEquality              -- @=
-                            deriving (Show, Ord, Eq, Data, Typeable)
+                            deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable TH1_unary_connective
 
 
 -- %----Connectives - TFF
@@ -984,7 +1204,9 @@ data TH1_unary_connective = TH1_PiForAll                -- !!
 -- <fof_quantifier>       ::= ! | ?
 data FOF_quantifier = ForAll -- !
                     | Exists -- ?
-                      deriving (Show, Ord, Eq, Data, Typeable)
+                      deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable FOF_quantifier
 
 -- <binary_connective>    ::= <=> | => | <= | <~> | ~<vline> | ~&
 data Binary_connective = Equivalence
@@ -993,15 +1215,21 @@ data Binary_connective = Equivalence
                        | XOR
                        | NOR
                        | NAND
-                         deriving (Show, Ord, Eq, Data, Typeable)
+                         deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable Binary_connective
 
 -- <assoc_connective>     ::= <vline> | &
 data Assoc_connective = OR
                       | AND
-                        deriving (Show, Ord, Eq, Data, Typeable)
+                        deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable Assoc_connective
 
 -- <unary_connective>     ::= ~
-data Unary_connective = NOT deriving (Show, Ord, Eq, Data, Typeable)
+data Unary_connective = NOT deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable Unary_connective
 
 
 -- %----Types for THF and TFF
@@ -1022,7 +1250,9 @@ data Defined_type = OType --  $oType/$o is the Boolean type, i.e., the type of $
                   | Real  --  $real is the type of <real>s.
                   | Rat   --  $rat is the type of <rational>s.
                   | Int   --  $int is the type of <signed_integer>s and <unsigned_integer>s.
-                    deriving (Show, Ord, Eq, Data, Typeable)
+                    deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable Defined_type
 
 -- <system_type>          :== <atomic_system_word>
 -- Note: not used
@@ -1032,12 +1262,16 @@ data Defined_type = OType --  $oType/$o is the Boolean type, i.e., the type of $
 -- <atom>                 ::= <untyped_atom> | <defined_constant>
 data Atom = Atom_untyped Untyped_atom
           | Atom_constant Defined_constant
-            deriving (Show, Ord, Eq, Data, Typeable)
+            deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable Atom
 
 -- <untyped_atom>         ::= <constant> | <system_constant>
 data Untyped_atom = UA_constant Constant
                   | UA_system System_constant
-                    deriving (Show, Ord, Eq, Data, Typeable)
+                    deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable Untyped_atom
 
 type Proposition = Predicate
 type Predicate = Token
@@ -1046,7 +1280,9 @@ type Predicate = Token
 -- <defined_proposition>  :== $true | $false
 data Defined_proposition = TPTP_true
                          | TPTP_false
-                           deriving (Show, Ord, Eq, Data, Typeable)
+                           deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable Defined_proposition
 
 -- <defined_predicate>    :== <atomic_defined_word>
 -- <defined_predicate>    :== $distinct |
@@ -1072,14 +1308,18 @@ data Defined_predicate = Distinct
                        | Dia_i
                        | Dia_int
                        | Dia
-                         deriving (Show, Ord, Eq, Data, Typeable)
+                         deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable Defined_predicate
 
 -- <defined_infix_pred>   ::= <infix_equality> | <assignment>
 -- <infix_equality>       ::= =
 -- <infix_inequality>     ::= !=
 data Defined_infix_pred = Defined_infix_equality
                         | Defined_assignment
-                          deriving (Show, Ord, Eq, Data, Typeable)
+                          deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable Defined_infix_pred
 
 -- <constant>             ::= <functor>
 type Constant = TPTP_functor
@@ -1121,12 +1361,16 @@ data Defined_functor = Uminus
                      | To_rat
                      | To_real
                      | DF_atomic_defined_word Atomic_defined_word
-                       deriving (Show, Ord, Eq, Data, Typeable)
+                       deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable Defined_functor
 
 -- <defined_term>         ::= <number> | <distinct_object>
 data Defined_term = DT_number Number
                   | DT_object Distinct_object
-                    deriving (Show, Ord, Eq, Data, Typeable)
+                    deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable Defined_term
 
 -- <variable>             ::= <upper_word>
 type Variable = Token
@@ -1141,7 +1385,9 @@ data Source = Source_DAG DAG_source
             | Source_external External_source
             | Unknown_source
             | Source_many Sources
-              deriving (Show, Ord, Eq, Data, Typeable)
+              deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable Source
 
 -- %----Alternative sources are recorded like this, thus allowing representation
 -- %----of alternative derivations with shared parts.
@@ -1153,12 +1399,16 @@ type Sources = [Source]
 -- <dag_source>           :== <name> | <inference_record>
 data DAG_source = DAGS_name Name
                 | DAGS_record Inference_record
-                  deriving (Show, Ord, Eq, Data, Typeable)
+                  deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable DAG_source
 
 -- <inference_record>     :== inference(<inference_rule>,<useful_info>,
 --                            <inference_parents>)
 data Inference_record = Inference_record Inference_rule Useful_info Inference_parents
-                        deriving (Show, Ord, Eq, Data, Typeable)
+                        deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable Inference_record
 
 -- <inference_rule>       :== <atomic_word>
 -- %----Examples are          deduction | modus_tollens | modus_ponens | rewrite |
@@ -1177,14 +1427,18 @@ type Parent_list = [Parent_info]
 
 -- <parent_info>          :== <source><parent_details>
 data Parent_info = Parent_info Source Parent_details
-                   deriving (Show, Ord, Eq, Data, Typeable)
+                   deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable Parent_info
 
 -- <parent_details>       :== :<general_list> | <null>
 type Parent_details = Maybe General_list
 
 -- <internal_source>      :== introduced(<intro_type><optional_info>)
 data Internal_source = Internal_source Intro_type Optional_info
-                       deriving (Show, Ord, Eq, Data, Typeable)
+                       deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable Internal_source
 
 -- <intro_type>           :== definition | axiom_of_choice | tautology | assumption
 -- %----This should be used to record the symbol being defined, or the function
@@ -1193,36 +1447,48 @@ data Intro_type = IntroTypeDefinition
                 | AxiomOfChoice
                 | Tautology
                 | IntroTypeAssumption
-                  deriving (Show, Ord, Eq, Data, Typeable)
+                  deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable Intro_type
 
 -- <external_source>      :== <file_source> | <theory> | <creator_source>
 data External_source = ExtSrc_file File_source
                      | ExtSrc_theory Theory
                      | ExtSrc_creator Creator_source
-                       deriving (Show, Ord, Eq, Data, Typeable)
+                       deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable External_source
 
 -- <file_source>          :== file(<file_name><file_info>)
 data File_source = File_source File_name File_info
-                   deriving (Show, Ord, Eq, Data, Typeable)
+                   deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable File_source
 
 -- <file_info>            :== ,<name> | <null>
 type File_info = Maybe Name
 
 -- <theory>               :== theory(<theory_name><optional_info>)
 data Theory = Theory Theory_name Optional_info
-              deriving (Show, Ord, Eq, Data, Typeable)
+              deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable Theory
 
 -- <theory_name>          :== equality | ac
 data Theory_name = TN_equality
                  | TN_ac
-                   deriving (Show, Ord, Eq, Data, Typeable)
+                   deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable Theory_name
 
 -- %----More theory names may be added in the future. The <optional_info> is
 -- %----used to store, e.g., which axioms of equality have been implicitly used,
 -- %----e.g., theory(equality,[rst]). Standard format still to be decided.
 -- <creator_source>       :== creator(<creator_name><optional_info>)
 data Creator_source = Creator_source Creator_name Optional_info
-                      deriving (Show, Ord, Eq, Data, Typeable)
+                      deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable Creator_source
 
 -- <creator_name>         :== <atomic_word>
 type Creator_name = Token
@@ -1236,7 +1502,9 @@ type Optional_info = Maybe Useful_info
 -- <useful_info>          :== [] | [<info_items>]
 data Useful_info = UI_items Info_items
                  | UI_general_list General_list
-                   deriving (Show, Ord, Eq, Data, Typeable)
+                   deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable Useful_info
 
 -- <info_items>           :== <info_item> | <info_item>,<info_items>
 type Info_items = [Info_item]
@@ -1246,13 +1514,17 @@ type Info_items = [Info_item]
 data Info_item = Info_formula Formula_item
                | Info_inference Inference_item
                | Info_general General_function
-                 deriving (Show, Ord, Eq, Data, Typeable)
+                 deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable Info_item
 
 -- %----Useful info for formula records
 -- <formula_item>         :== <description_item> | <iquote_item>
 data Formula_item = FI_description Description_item
                   | FI_iquote Iquote_item
-                    deriving (Show, Ord, Eq, Data, Typeable)
+                    deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable Formula_item
 
 -- <description_item>     :== description(<atomic_word>)
 type Description_item = Token
@@ -1270,12 +1542,16 @@ data Inference_item = Inf_status Inference_status
                     | Inf_assumption Assumptions_record
                     | Inf_symbol New_symbol_record
                     | Inf_refutation Refutation
-                      deriving (Show, Ord, Eq, Data, Typeable)
+                      deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable Inference_item
 
 -- <inference_status>     :== status(<status_value>) | <inference_info>
 data Inference_status = Inf_value Status_value
                       | Inf_info Inference_info
-                        deriving (Show, Ord, Eq, Data, Typeable)
+                        deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable Inference_status
 
 -- %----These are the success status values from the SZS ontology. The most
 -- %----commonly used values are:
@@ -1295,7 +1571,9 @@ data Status_value = SUC | UNP | SAP | ESA | SAT | FSA | THM | EQV | TAC
                   | WEC | ETH | TAU | WTC | WTH | CAX | SCA | TCA | WCA
                   | CUP | CSP | ECS | CSA | CTH | CEQ | UNC | WCC | ECT
                   | FUN | UNS | WUC | WCT | SCC | UCA | NOC
-                    deriving (Show, Ord, Eq, Data, Typeable)
+                    deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable Status_value
 
 -- %----<inference_info> is used to record standard information associated with an
 -- %----arbitrary inference rule. The <inference_rule> is the same as the
@@ -1305,7 +1583,9 @@ data Status_value = SUC | UNP | SAP | ESA | SAT | FSA | THM | EQV | TAC
 -- %----discharge.
 -- <inference_info>       :== <inference_rule>(<atomic_word>,<general_list>)
 data Inference_info = Inference_info Inference_rule Atomic_word General_list
-                      deriving (Show, Ord, Eq, Data, Typeable)
+                      deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable Inference_info
 
 -- %----An <assumptions_record> lists the names of assumptions upon which this
 -- %----inferred formula depends. These must be discharged in a completed proof.
@@ -1320,7 +1600,9 @@ type Refutation = File_source
 -- %----A <new_symbol_record> provides information about a newly introduced symbol.
 -- <new_symbol_record>    :== new_symbols(<atomic_word>,[<new_symbol_list>])
 data New_symbol_record = New_symbol_record Atomic_word  New_symbol_list
-                         deriving (Show, Ord, Eq, Data, Typeable)
+                         deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable New_symbol_record
 
 -- <new_symbol_list>      :== <principal_symbol> |
 --                            <principal_symbol>,<new_symbol_list>
@@ -1330,7 +1612,9 @@ type New_symbol_list = [Principal_symbol]
 -- <principal_symbol>   :== <functor> | <variable>
 data Principal_symbol = PS_functor TPTP_functor
                       | PS_variable Variable
-                        deriving (Show, Ord, Eq, Data, Typeable)
+                        deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable Principal_symbol
 
 -- %----Include directives
 -- <include>              ::= include(<file_name><formula_selection>).
@@ -1350,7 +1634,9 @@ type Name_list = [Name]
 data General_term = GT_data General_data
                   | GT_DataTerm General_data General_term
                   | GT_list General_list
-                    deriving (Show, Ord, Eq, Data, Typeable)
+                    deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable General_term
 
 -- <general_data>         ::= <atomic_word> | <general_function> |
 --                            <variable> | <number> | <distinct_object> |
@@ -1365,11 +1651,15 @@ data General_data = GD_atomic_word Atomic_word
 -- %----inference, as an element of the <parent_details> list.
 -- <general_data>         :== bind(<variable>,<formula_data>)
                   | GD_bind Variable Formula_data -- only used in inference
-                    deriving (Show, Ord, Eq, Data, Typeable)
+                    deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable General_data
 
 -- <general_function>     ::= <atomic_word>(<general_terms>)
 data General_function = General_function Atomic_word General_terms
-                        deriving (Show, Ord, Eq, Data, Typeable)
+                        deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable General_function
 
 -- <formula_data>         ::= $thf(<thf_formula>) | $tff(<tff_formula>) |
 --                            $fof(<fof_formula>) | $cnf(<cnf_formula>) |
@@ -1380,7 +1670,9 @@ data Formula_data = FD_THF THF_formula
                   | FD_FOF FOF_formula
                   | FD_CNF CNF_formula
                   | FD_FOT FOF_term
-                    deriving (Show, Ord, Eq, Data, Typeable)
+                    deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable Formula_data
 
 -- <general_list>         ::= [] | [<general_terms>]
 type General_list = [General_term]
@@ -1394,7 +1686,9 @@ type General_terms = [General_term]
 -- %----Integer names are expected to be unsigned
 data Name = NameString Token
           | NameInteger Integer
-            deriving (Show, Ord, Eq, Data, Typeable)
+            deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable Name
 
 -- <atomic_word>          ::= <lower_word> | <single_quoted>
 type Atomic_word = Token
@@ -1409,7 +1703,9 @@ type Atomic_system_word = Token
 data Number = NumInteger Integer
             | NumRational Rational
             | NumReal Double
-              deriving (Show, Ord, Eq, Data, Typeable)
+              deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable Number
 
 
 -- <distinct_object>      ::- <double_quote><do_char>*<double_quote>

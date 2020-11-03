@@ -24,7 +24,9 @@ import HasCASL.SimplifyTerm
 import Common.Doc
 import Common.DocUtils
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
+import Data.Hashable
+
 
 class PrettyInEnv a where
     prettyInEnv :: Env -> a -> Doc
@@ -46,8 +48,8 @@ instance Pretty Subst where
                  <> vcat [ text "titution"
                          , prettyRuleMap "Terms" a, prettyRuleMap "Types" b]
 
-prettyRuleMap :: (Pretty key, Pretty val)
-                 => String -> Map.Map key (SRule val) -> Doc
+prettyRuleMap :: (Pretty key, Pretty val, Hashable key)
+                 => String -> Map.HashMap key (SRule val) -> Doc
 prettyRuleMap t m | Map.null m = empty
                   | otherwise =
                       vcat $ (if null t then [] else
@@ -76,8 +78,8 @@ instance PrettyInEnv Subst where
                          , prettyInEnvRuleMap e "Terms" a
                          , prettyInEnvRuleMap e "Types" b]
 
-prettyInEnvRuleMap :: (Pretty key, PrettyInEnv val)
-                 => Env -> String -> Map.Map key (SRule val) -> Doc
+prettyInEnvRuleMap :: (Pretty key, PrettyInEnv val, Hashable key)
+                 => Env -> String -> Map.HashMap key (SRule val) -> Doc
 prettyInEnvRuleMap e t m
     | Map.null m = empty
     | otherwise =

@@ -21,7 +21,7 @@ import HasCASL.ClassAna
 import HasCASL.TypeAna
 import HasCASL.Le
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Common.DocUtils
 import Common.Id
@@ -102,7 +102,7 @@ mkSingleSubst (i, rk) = do
 mkSubst :: [(Id, RawKind)] -> State Int [Type]
 mkSubst = mapM mkSingleSubst
 
-type Subst = Map.Map Int Type
+type Subst = Map.HashMap Int Type
 
 eps :: Subst
 eps = Map.empty

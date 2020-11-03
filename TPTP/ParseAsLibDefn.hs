@@ -32,7 +32,7 @@ import Syntax.AS_Structured
 
 import Data.Maybe
 import Data.List
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import System.FilePath.Posix
 import Text.ParserCombinators.Parsec
 

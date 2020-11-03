@@ -29,7 +29,7 @@ import CASL.SimplifySen
 import CASL.Quantification
 import CASL.AlphaConvert
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 plainBasicSpec :: AParser st (BASIC_SPEC () () ())
 plainBasicSpec = basicSpec [] Map.empty

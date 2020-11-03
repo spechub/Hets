@@ -21,7 +21,7 @@ import Common.DefaultMorphism
 import Common.ProofTree
 
 import Data.Monoid
-import Data.Map (isSubmapOf, fold)
+import qualified Data.HashMap.Strict as Map
 
 import Logic.Logic
 
@@ -68,7 +68,7 @@ instance Sentences THF THFFormula SignTHF MorphismTHF SymbolTHF where
     symKind THF s = case symType s of
                      ST_Type _ -> "type"
                      ST_Const _ -> "constant"
-    sym_of THF s = [Data.Set.fromList . map snd . Data.Map.toList . symbols $ s]
+    sym_of THF s = [Data.Set.fromList . map snd . Map.toList . symbols $ s]
     {- negation THF _ =
     other default implementations are fine -}
 
@@ -79,8 +79,8 @@ instance StaticAnalysis THF BasicSpecTHF THFFormula () ()
     signature_union THF = sigUnion
     signatureDiff THF = sigDiff
     intersection THF = sigIntersect
-    is_subsig THF s1 s2 = Data.Map.isSubmapOf (types s1) (types s2) &&
-                          Data.Map.isSubmapOf (consts s1) (consts s2)
+    is_subsig THF s1 s2 = Map.isSubmapOf (types s1) (types s2) &&
+                          Map.isSubmapOf (consts s1) (consts s2)
     subsig_inclusion THF = defaultInclusion
 
 {- In order to find the LeoII prover there must be an entry in the
@@ -118,10 +118,10 @@ instance MinSublogic SL.THFSl () where
  minSublogic _ = SL.tHF0
 
 instance MinSublogic SL.THFSl SignTHF where
- minSublogic (Sign tp c _) = lub (Data.Map.fold
+ minSublogic (Sign tp c _) = lub (Map.foldr
    (\ t sl -> lub sl $ minSublogic $ typeKind t)
    SL.tHF0 tp)
-  (Data.Map.fold
+  (Map.foldr
    (\ cs sl -> lub sl $ minSublogic $ constType cs)
    SL.tHF0 c)
 

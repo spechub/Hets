@@ -17,7 +17,7 @@ import OWL2.MS
 
 import Data.List
 import Data.Maybe
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 import Common.Id
 import Common.IRI
@@ -49,7 +49,7 @@ createSpec o imps = addImports imps . makeSpec $ G_basic_spec OWL2 o
 convertone :: OntologyDocument -> SPEC_NAME -> [SPEC_NAME] -> Annoted LIB_ITEM
 convertone o oname i = makeSpecItem oname $ createSpec o i
 
-convertToLibDefN :: Map.Map String String -> OntologyDocument -> LIB_DEFN
+convertToLibDefN :: Map.HashMap String String -> OntologyDocument -> LIB_DEFN
 convertToLibDefN imap o = Lib_defn ln
     (makeLogicItem OWL2 : imp_libs ++ [convertone o oname imps2]) nullRange []
   where ont = ontology o

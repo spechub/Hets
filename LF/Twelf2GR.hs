@@ -21,7 +21,7 @@ import System.IO (hGetContents)
 import LF.Sign
 import LF.Morphism
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Data.Maybe (fromMaybe)
 
@@ -39,11 +39,11 @@ import Text.XML.Light.Proc
 type NODE = (BASE, MODULE)
 type LINK = (BASE, MODULE, NAME)
 
-type SIGS = Map.Map MODULE Sign
-type MORPHS = Map.Map ((MODULE, NAME), NODE, NODE) Morphism
+type SIGS = Map.HashMap MODULE Sign
+type MORPHS = Map.HashMap ((MODULE, NAME), NODE, NODE) Morphism
 
 type GRAPH = (SIGS, MORPHS)
-type LIBS = Map.Map BASE GRAPH
+type LIBS = Map.HashMap BASE GRAPH
 type LIBS_EXT = ((LIBS, [BASE]), (BASE, GRAPH))
 
 data Namespace = LATIN | HETS
@@ -390,7 +390,7 @@ addMorphToGraph m (lb, (b, (sigs, morphs))) =
 -- computes the correct targets of morphisms
 computeTargets :: GRAPH -> LIBS_EXT -> GRAPH
 computeTargets (sigs, morphs) libs =
-   let morphs2 = Map.foldWithKey
+   let morphs2 = Map.foldrWithKey
           (\ k@((_, _), _, t) morph morphs1 ->
              let morph1 = morph { target = lookupSig t libs }
                  in Map.insert k morph1 morphs1
@@ -726,7 +726,7 @@ processStruct ns name srcSig tarSig els libs = do
 
   -- constructs the translation part of the structure
 constructMap :: Namespace -> [Element] -> NODE -> NODE -> LIBS_EXT ->
-                IO (Map.Map Symbol EXP, LIBS_EXT)
+                IO (Map.HashMap Symbol EXP, LIBS_EXT)
 constructMap ns els src tar libs =
   foldM (\ ml el ->
            let n = elName el
@@ -737,8 +737,8 @@ constructMap ns els src tar libs =
         ) (Map.empty, libs) els
 
 -- converts the constant assignment into a map
-conass2map :: Namespace -> Element -> (Map.Map Symbol EXP, LIBS_EXT) ->
-              NODE -> NODE -> IO (Map.Map Symbol EXP, LIBS_EXT)
+conass2map :: Namespace -> Element -> (Map.HashMap Symbol EXP, LIBS_EXT) ->
+              NODE -> NODE -> IO (Map.HashMap Symbol EXP, LIBS_EXT)
 conass2map ns e (mapp, libs) src tar = do
   (b, m, n) <- getBMN ns e src
   case findChildren omobjQN e of
@@ -748,8 +748,8 @@ conass2map ns e (mapp, libs) src tar = do
        _ -> fail "Constant assignment element must have a unique OMOBJ child."
 
 -- converts the included morphism into a map
-incl2map :: Namespace -> Element -> (Map.Map Symbol EXP, LIBS_EXT) ->
-            NODE -> NODE -> IO (Map.Map Symbol EXP, LIBS_EXT)
+incl2map :: Namespace -> Element -> (Map.HashMap Symbol EXP, LIBS_EXT) ->
+            NODE -> NODE -> IO (Map.HashMap Symbol EXP, LIBS_EXT)
 incl2map ns e (mapp, libs) _ tar =
   case findChildren ommorQN e of
        [ommor] -> do (mor, libs1) <- ommor2mor ns ommor tar libs
@@ -758,8 +758,8 @@ incl2map ns e (mapp, libs) _ tar =
        _ -> fail "Include element must have a unique OMMOR child."
 
 -- converts the structure assignment into a map
-strass2map :: Namespace -> Element -> (Map.Map Symbol EXP, LIBS_EXT) ->
-              NODE -> NODE -> IO (Map.Map Symbol EXP, LIBS_EXT)
+strass2map :: Namespace -> Element -> (Map.HashMap Symbol EXP, LIBS_EXT) ->
+              NODE -> NODE -> IO (Map.HashMap Symbol EXP, LIBS_EXT)
 strass2map ns e (mapp, libs) src tar = do
   (b, m, n) <- getBMN ns e src
   case findChildren ommorQN e of
@@ -832,7 +832,7 @@ retrieveMorphH ns b m names libs = do
         return (mor, libs2)
 
 -- combines two morphisms according to the structure assignment
-combineMorphs :: Morphism -> Morphism -> Map.Map Symbol EXP
+combineMorphs :: Morphism -> Morphism -> Map.HashMap Symbol EXP
 combineMorphs mor1 mor2 =
   let local = getLocalSyms $ source mor1
       declared = getDeclaredSyms $ source mor1

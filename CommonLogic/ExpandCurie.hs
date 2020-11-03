@@ -22,53 +22,53 @@ import Common.IRI
 import CommonLogic.AS_CommonLogic
 import CommonLogic.Lexer_CLIF (clLetters)
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 {- | Expands each abbreviated IRI to a full IRI in the basic spec according to
 the supplemented map @gpm@. An IRI is stored in a name (quoted string). If
 the prefix of an abbreviated IRI is not in the map, the IRI won't be expanded.
 -}
-expandCurieBS :: Map.Map String IRI -> BASIC_SPEC -> BASIC_SPEC
+expandCurieBS :: Map.HashMap String IRI -> BASIC_SPEC -> BASIC_SPEC
 expandCurieBS gpm (Basic_spec abis) = Basic_spec $ map
     (\ abi@Anno.Annoted {Anno.item = bi} -> abi {Anno.item = expBI gpm bi})
     abis
 
-expBI :: Map.Map String IRI -> BASIC_ITEMS -> BASIC_ITEMS
+expBI :: Map.HashMap String IRI -> BASIC_ITEMS -> BASIC_ITEMS
 expBI gpm (Axiom_items atms) =
   Axiom_items $ map (expAnTextMeta gpm) atms
 
-expAnTextMeta :: Map.Map String IRI
+expAnTextMeta :: Map.HashMap String IRI
   -> Anno.Annoted TEXT_META -> Anno.Annoted TEXT_META
 expAnTextMeta gpm an@Anno.Annoted {Anno.item = tm} =
   an {Anno.item = expTextMeta gpm tm}
 
-expTextMeta :: Map.Map String IRI -> TEXT_META -> TEXT_META
+expTextMeta :: Map.HashMap String IRI -> TEXT_META -> TEXT_META
 expTextMeta gpm tm =
   tm { getText = expTxt (Map.unionWith (\ _ p2 -> p2) gpm $
                             Map.fromList $ prefix_map tm) (getText tm) }
 
-expTxt :: Map.Map String IRI -> TEXT -> TEXT
+expTxt :: Map.HashMap String IRI -> TEXT -> TEXT
 expTxt pm t = case t of
   Text phrs rn -> Text (map (expPhr pm) phrs) rn
   Named_text n txt rn -> Named_text (expName pm n) (expTxt pm txt) rn
 
-expPhr :: Map.Map String IRI -> PHRASE -> PHRASE
+expPhr :: Map.HashMap String IRI -> PHRASE -> PHRASE
 expPhr pm p = case p of
   Module m -> Module (expMod pm m)
   Sentence s -> Sentence (expSen pm s)
   Importation i -> Importation (expImp pm i)
   Comment_text c t rn -> Comment_text c (expTxt pm t) rn
 
-expMod :: Map.Map String IRI -> MODULE -> MODULE
+expMod :: Map.HashMap String IRI -> MODULE -> MODULE
 expMod pm m = case m of
   Mod n t rn -> Mod (expName pm n) (expTxt pm t) rn
   Mod_ex n ns t rn ->
       Mod_ex (expName pm n) (map (expName pm) ns) (expTxt pm t) rn
 
-expImp :: Map.Map String IRI -> IMPORTATION -> IMPORTATION
+expImp :: Map.HashMap String IRI -> IMPORTATION -> IMPORTATION
 expImp pm (Imp_name n) = Imp_name $ expName pm n
 
-expSen :: Map.Map String IRI -> SENTENCE -> SENTENCE
+expSen :: Map.HashMap String IRI -> SENTENCE -> SENTENCE
 expSen pm s = case s of
   Quant_sent q noss s2 rn ->
     Quant_sent q (map (expNos pm) noss) (expSen pm s2) rn
@@ -84,12 +84,12 @@ expSen pm s = case s of
   Comment_sent c cs rn -> Comment_sent c (expSen pm cs) rn
   Irregular_sent is rn -> Irregular_sent (expSen pm is) rn
 
-expNos :: Map.Map String IRI -> NAME_OR_SEQMARK -> NAME_OR_SEQMARK
+expNos :: Map.HashMap String IRI -> NAME_OR_SEQMARK -> NAME_OR_SEQMARK
 expNos pm nos = case nos of
   Name n -> Name $ expName pm n
   SeqMark s -> SeqMark $ expName pm s
 
-expTrm :: Map.Map String IRI -> TERM -> TERM
+expTrm :: Map.HashMap String IRI -> TERM -> TERM
 expTrm pm trm = case trm of
   Name_term n -> Name_term $ expName pm n
   Funct_term t tseqs rn ->
@@ -97,12 +97,12 @@ expTrm pm trm = case trm of
   Comment_term t c rn -> Comment_term (expTrm pm t) c rn
   That_term s rn -> That_term (expSen pm s) rn
 
-expTseq :: Map.Map String IRI -> TERM_SEQ -> TERM_SEQ
+expTseq :: Map.HashMap String IRI -> TERM_SEQ -> TERM_SEQ
 expTseq pm nos = case nos of
   Term_seq t -> Term_seq $ expTrm pm t
   Seq_marks s -> Seq_marks $ expName pm s
 
-expName :: Map.Map String IRI -> NAME -> NAME
+expName :: Map.HashMap String IRI -> NAME -> NAME
 expName pm n = case fmap (expandCurie pm) $ parseCurie (strippedQuotesStr n) of
   Just (Just x) -> let s = iriToStringShortUnsecure x
                    in Token (if not $ all clLetters s

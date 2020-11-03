@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./CoCASL/AS_CoCASL.der.hs
 Description :  Abstract syntax for CoCASL
@@ -21,6 +21,9 @@ import Common.AS_Annotation
 import CASL.AS_Basic_CASL
 
 import Data.Data
+
+import GHC.Generics (Generic)
+import Data.Hashable
 
 -- DrIFT command
 {-! global: GetRange !-}
@@ -54,11 +57,15 @@ data COCOMPONENTS = CoSelect [OP_NAME] OP_TYPE Range
                   deriving (Show, Typeable, Data)
 
 data MODALITY = Simple_mod SIMPLE_ID | Term_mod (TERM C_FORMULA)
-             deriving (Show, Eq, Ord, Typeable, Data)
+             deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable MODALITY
 
 data C_FORMULA = BoxOrDiamond Bool MODALITY (FORMULA C_FORMULA) Range
                {- The identifier and the term specify the kind of the modality
                pos: "[]" or  "<>", True if Box, False if Diamond -}
                | CoSort_gen_ax [SORT] [OP_SYMB] Bool
                -- flag: belongs to a cofree type and hence is cofreeness axiom?
-             deriving (Show, Eq, Ord, Typeable, Data)
+             deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable C_FORMULA

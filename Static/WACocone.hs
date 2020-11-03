@@ -25,7 +25,7 @@ module Static.WACocone (isConnected,
 
 import Control.Monad
 import Data.List (nub)
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Data.Graph.Inductive.Graph as Graph
 
@@ -46,7 +46,7 @@ weakly_amalgamable_colimit :: StaticAnalysis lid
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol
     => lid -> Tree.Gr sign (Int, morphism)
-           -> Result (sign, Map.Map Int morphism)
+           -> Result (sign, Map.HashMap Int morphism)
 weakly_amalgamable_colimit l diag = do
           (sig, sink) <- signature_colimit l diag
           return (sig, sink)
@@ -75,7 +75,7 @@ isConnected graph = let
 isThin :: Gr a b -> Bool
 isThin = checkThinness Map.empty . edges
 
-checkThinness :: Map.Map Edge Int -> [Edge] -> Bool
+checkThinness :: Map.HashMap Edge Int -> [Edge] -> Bool
 checkThinness paths eList =
   case eList of
    [] -> True
@@ -121,7 +121,7 @@ removeIdentities graph = let
  in addEdges (insNodes (labNodes graph) Graph.empty) $ labEdges graph
 
 -- assigns to a node all proper descendents
-initDescList :: (Eq a, Eq b) => Gr a b -> Map.Map Node [(Node, a)]
+initDescList :: (Eq a, Eq b) => Gr a b -> Map.HashMap Node [(Node, a)]
 initDescList graph = let
  descsOf n = let
   nodeList = filter (n /=) $ pre graph n
@@ -142,13 +142,13 @@ initDescList graph = let
                                                    descsOf node)
                                        $ labNodes graph )) $ nodes graph
 
-commonBounds :: (Eq a) => Map.Map Node [(Node, a)] -> Node -> Node -> [(Node, a)]
+commonBounds :: (Eq a) => Map.HashMap Node [(Node, a)] -> Node -> Node -> [(Node, a)]
 commonBounds funDesc n1 n2 = filter
   (\ x -> x `elem` (Map.!) funDesc n1 && x `elem` (Map.!) funDesc n2 )
   $ nub $ (Map.!) funDesc n1 ++ (Map.!) funDesc n2
 
 -- returns the greatest lower bound of two maximal nodes,if it exists
-glb :: (Eq a) => Map.Map Node [(Node, a)] -> Node -> Node -> Maybe (Node, a)
+glb :: (Eq a) => Map.HashMap Node [(Node, a)] -> Node -> Node -> Maybe (Node, a)
 glb funDesc n1 n2 = let
  cDescs = commonBounds funDesc n1 n2
  subList [] _ = True
@@ -163,7 +163,7 @@ glb funDesc n1 n2 = let
      x : _ -> Just x -- because if it exists, there can be only one
 
 -- if no greatest lower bound exists, compute all maximal bounds of the nodes
-maxBounds :: (Eq a) => Map.Map Node [(Node, a)] -> Node -> Node -> [(Node, a)]
+maxBounds :: (Eq a) => Map.HashMap Node [(Node, a)] -> Node -> Node -> [(Node, a)]
 maxBounds funDesc n1 n2 = let
   cDescs = commonBounds funDesc n1 n2
   isDesc n0 (n, y) = (n, y) `elem` funDesc Map.! n0
@@ -224,7 +224,7 @@ dijkstra graph source target = do
 to the unique maximal node of the obtained graph -}
 
 buildStrMorphisms :: GDiagram -> GDiagram
-                    -> Result (G_theory, Map.Map Node GMorphism)
+                    -> Result (G_theory, Map.HashMap Node GMorphism)
 buildStrMorphisms initGraph newGraph = do
  let (maxNode, sigma) = head $ filter (\ (node, _) -> outdeg newGraph node == 0) $
                         labNodes newGraph
@@ -239,8 +239,8 @@ buildStrMorphisms initGraph newGraph = do
 -- computes the colimit and inserts it into the graph
 addNodeToGraph :: GDiagram -> G_theory -> G_theory -> G_theory -> Int -> Int
                -> Int -> GMorphism -> GMorphism
-               -> Map.Map Node [(Node, G_theory)] -> [(Int, G_theory)]
-               -> Result (GDiagram, Map.Map Node [(Node, G_theory)])
+               -> Map.HashMap Node [(Node, G_theory)] -> [(Int, G_theory)]
+               -> Result (GDiagram, Map.HashMap Node [(Node, G_theory)])
 addNodeToGraph oldGraph
                (G_theory lid _ extSign _ _ _)
                gt1@(G_theory lid1 _ extSign1 idx1 _ _)
@@ -280,10 +280,10 @@ addNodeToGraph oldGraph
 
 {- for each node in the list, check whether the coequalizer can be computed
 if so, modify the maximal node of graph and the edges to it from n1 and n2 -}
-computeCoeqs :: GDiagram -> Map.Map Node [(Node, G_theory)]
+computeCoeqs :: GDiagram -> Map.HashMap Node [(Node, G_theory)]
                    -> (Node, G_theory) -> (Node, G_theory) -> (Node, G_theory)
                    -> GMorphism -> GMorphism -> [(Node, G_theory)] ->
-                       Result (GDiagram, Map.Map Node [(Node, G_theory)])
+                       Result (GDiagram, Map.HashMap Node [(Node, G_theory)])
 computeCoeqs oldGraph funDesc (n1, _) (n2, _) (newN, newGt) gmor1 gmor2 [] = do
  let newGraph = insEdges [(n1, newN, (1, gmor1)), (n2, newN, (1, gmor2))] $
                 insNode (newN, newGt) oldGraph
@@ -332,7 +332,7 @@ pickMaxNode graph = msum $ map return $
 
 {- returns a list of common descendants of two maximal nodes:
 one node if a glb exists, or all maximal descendants otherwise -}
-commonDesc :: Map.Map Node [(Node, G_theory)] -> Node -> Node
+commonDesc :: Map.HashMap Node [(Node, G_theory)] -> Node -> Node
             -> [(Node, G_theory)]
 commonDesc funDesc n1 n2 = case glb funDesc n1 n2 of
                             Just x -> [x]
@@ -361,7 +361,7 @@ pickSquare _ (Result _ Nothing) = fail "Error computing comorphisms"
 
 -- builds the span for which the colimit is computed
 buildSpan :: GDiagram ->
-             Map.Map Node [(Node, G_theory)] ->
+             Map.HashMap Node [(Node, G_theory)] ->
              AnyComorphism ->
              AnyComorphism ->
              AnyComorphism ->
@@ -376,7 +376,7 @@ buildSpan :: GDiagram ->
              GMorphism ->
              Int -> Int -> Int ->
              [(Int, G_theory)] ->
-             Result (GDiagram, Map.Map Node [(Node, G_theory)])
+             Result (GDiagram, Map.HashMap Node [(Node, G_theory)])
 buildSpan graph
           funDesc
           d@(Comorphism _cidD)
@@ -427,7 +427,7 @@ nrMaxNodes graph = length $ filter (\ n -> outdeg graph n == 0) $ nodes graph
 
 -- | backtracking function for heterogeneous weak amalgamable cocones
 hetWeakAmalgCocone :: (Monad m, LogicT t, MonadPlus (t m)) =>
-                     GDiagram -> Map.Map Int [(Int, G_theory)] -> t m GDiagram
+                     GDiagram -> Map.HashMap Int [(Int, G_theory)] -> t m GDiagram
 hetWeakAmalgCocone graph funDesc =
  if nrMaxNodes graph == 1 then return graph
  else once $ do

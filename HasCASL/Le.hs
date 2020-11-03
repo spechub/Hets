@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./HasCASL/Le.hs
 Description :  the abstract syntax for analysis and final signature instance
@@ -27,8 +27,11 @@ import Common.Prec
 
 import Data.Data
 import Data.Ord
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
+
+import GHC.Generics (Generic)
+import Data.Hashable
 
 -- * class info
 
@@ -39,26 +42,32 @@ data ClassInfo = ClassInfo
     } deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | mapping class identifiers to their definition
-type ClassMap = Map.Map Id ClassInfo
+type ClassMap = Map.HashMap Id ClassInfo
 
 -- * type info
 
 -- | data type generatedness indicator
-data GenKind = Free | Generated | Loose deriving (Show, Eq, Ord, Typeable, Data)
+data GenKind = Free | Generated | Loose deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable GenKind
 
 -- | an analysed alternative with a list of (product) types
 data AltDefn =
     Construct (Maybe Id) [Type] Partiality [[Selector]]
     -- only argument types
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable AltDefn
 
 -- | an analysed component
 data Selector =
-    Select (Maybe Id) Type Partiality deriving (Show, Eq, Ord, Typeable, Data)
+    Select (Maybe Id) Type Partiality deriving (Show, Eq, Ord, Typeable, Data, Generic)
     -- only result type
 
+instance Hashable Selector
+
 -- | a mapping of type (and disjoint class) identifiers
-type IdMap = Map.Map Id Id
+type IdMap = Map.HashMap Id Id
 
 {- | data entries are produced from possibly mutual recursive data types. The
 top-level identifiers of these types are never renamed but there renaming is
@@ -67,7 +76,9 @@ without renamings) because (the domain of) this map is used to store the
 other (recursively dependent) top-level identifiers. -}
 data DataEntry =
     DataEntry IdMap Id GenKind [TypeArg] RawKind (Set.Set AltDefn)
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable DataEntry
 
 -- | possible definitions for type identifiers
 data TypeDefn =
@@ -94,7 +105,7 @@ instance Ord TypeInfo where
      (typeKind t2, otherTypeKinds t2, superTypes t2)
 
 -- | mapping type identifiers to their definition
-type TypeMap = Map.Map Id TypeInfo
+type TypeMap = Map.HashMap Id TypeInfo
 
 -- | the minimal information for a sort
 starTypeInfo :: TypeInfo
@@ -116,7 +127,9 @@ data Sentence =
     Formula Term
   | DatatypeSen [DataEntry]
   | ProgEqSen Id TypeScheme ProgEq
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable Sentence
 
 instance GetRange Sentence where
   getRange s = case s of
@@ -130,7 +143,7 @@ data TypeVarDefn = TypeVarDefn Variance VarKind RawKind Int
   deriving (Show, Typeable, Data)
 
 -- | mapping type variables to their definition
-type LocalTypeVars = Map.Map Id TypeVarDefn
+type LocalTypeVars = Map.HashMap Id TypeVarDefn
 
 -- | the type of a local variable
 data VarDefn = VarDefn Type deriving (Show, Typeable, Data)
@@ -171,7 +184,7 @@ isConstructor o = case opDefn o of
     _ -> False
 
 -- | mapping operation identifiers to their definition
-type Assumps = Map.Map Id (Set.Set OpInfo)
+type Assumps = Map.HashMap Id (Set.Set OpInfo)
 
 -- * the local environment and final signature
 
@@ -181,8 +194,8 @@ data Env = Env
     , typeMap :: TypeMap
     , localTypeVars :: LocalTypeVars
     , assumps :: Assumps
-    , binders :: Map.Map Id Id -- binder with associated op-id
-    , localVars :: Map.Map Id VarDefn
+    , binders :: Map.HashMap Id Id -- binder with associated op-id
+    , localVars :: Map.HashMap Id VarDefn
     , sentences :: [Named Sentence]
     , declSymbs :: Set.Set Symbol
     , envDiags :: [Diagnosis]
@@ -245,7 +258,7 @@ putClassMap ce = do
     State.put e { classMap = ce }
 
 -- | store local assumptions
-putLocalVars :: Map.Map Id VarDefn -> State.State Env ()
+putLocalVars :: Map.HashMap Id VarDefn -> State.State Env ()
 putLocalVars vs = do
     e <- State.get
     State.put e { localVars = vs }
@@ -283,7 +296,7 @@ putAssumps ops = do
     State.put e { assumps = ops }
 
 -- | store assumptions
-putBinders :: Map.Map Id Id -> State.State Env ()
+putBinders :: Map.HashMap Id Id -> State.State Env ()
 putBinders bs = do
     e <- State.get
     State.put e { binders = bs }
@@ -299,7 +312,7 @@ checkUniqueVars = addDiags . checkUniqueness . map getVar
 -- * morphisms
 
 -- mapping qualified operation identifiers (aka renamings)
-type FunMap = Map.Map (Id, TypeScheme) (Id, TypeScheme)
+type FunMap = Map.HashMap (Id, TypeScheme) (Id, TypeScheme)
 
 -- | keep types and class disjoint and use a single identifier map for both
 data Morphism = Morphism
@@ -335,12 +348,16 @@ data SymbolType =
   | SuperTypeSymbol Id
   | TypeAliasSymbol Type
   | PredAsItemType TypeScheme
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable SymbolType
 
 -- | symbols with their type
 data Symbol =
     Symbol { symName :: Id, symType :: SymbolType }
-    deriving (Show, Typeable, Data)
+    deriving (Show, Typeable, Data, Generic)
+
+instance Hashable Symbol
 
 instance Eq Symbol where
     s1 == s2 = compare s1 s2 == EQ
@@ -349,7 +366,7 @@ instance Ord Symbol where
     compare s1 s2 = compare (symName s1, symType s1) (symName s2, symType s2)
 
 -- | mapping symbols to symbols
-type SymbolMap = Map.Map Symbol Symbol
+type SymbolMap = Map.HashMap Symbol Symbol
 
 -- | a set of symbols
 type SymbolSet = Set.Set Symbol
@@ -372,10 +389,12 @@ data RawSymbol =
     AnID Id
   | AKindedId SymbKind Id
   | ASymbol Symbol
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable RawSymbol
 
 -- | mapping raw symbols to raw symbols
-type RawSymbolMap = Map.Map RawSymbol RawSymbol
+type RawSymbolMap = Map.HashMap RawSymbol RawSymbol
 
 -- | create a raw symbol from an identifier
 idToRaw :: Id -> RawSymbol
@@ -416,5 +435,5 @@ symbKindToRaw sk = case sk of
 
 getCompoundLists :: Env -> Set.Set [Id]
 getCompoundLists e = Set.delete [] $ Set.map getCompound $ Set.union
-    (Map.keysSet $ assumps e) $ Map.keysSet $ typeMap e
+    (Set.fromList $ Map.keys $ assumps e) $ Set.fromList $ Map.keys $ typeMap e
     where getCompound (Id _ cs _) = cs

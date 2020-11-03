@@ -29,7 +29,7 @@ import qualified Common.Result as Result
 import qualified Common.AS_Annotation as Anno
 
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 -- BASIC SPEC ANALYSIS
 basicAnalysis :: (BASIC_SPEC, Sign, GlobalAnnos) ->
@@ -142,12 +142,12 @@ isValidFormula (Exists (d : ds) f) sig cont =
 
 {- SYMBOL LIST AND MAP ANALYSIS
 creates a symbol map out of a list of symbol map items -}
-symbMapAnalysis :: [SYMB_MAP_ITEMS] -> Result.Result (Map.Map Symbol Symbol)
+symbMapAnalysis :: [SYMB_MAP_ITEMS] -> Result.Result (Map.HashMap Symbol Symbol)
 symbMapAnalysis xs = Result.Result []
      $ Just $ foldl (\ m x -> Map.union m (makeSymbMap x)) Map.empty xs
 
 -- creates a symbol map out of symbol map items
-makeSymbMap :: SYMB_MAP_ITEMS -> Map.Map Symbol Symbol
+makeSymbMap :: SYMB_MAP_ITEMS -> Map.HashMap Symbol Symbol
 makeSymbMap (Symb_map_items xs) =
    foldl (\ m x -> case x of
                         Symb s -> Map.insert (Symbol s) (Symbol s) m

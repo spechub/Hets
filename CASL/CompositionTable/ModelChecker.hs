@@ -33,7 +33,7 @@ import Common.Utils
 import qualified Data.Set as Set
 import qualified Data.IntSet as IntSet
 import qualified Data.IntMap as IntMap
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 import Data.Function
 import Data.Maybe
@@ -69,7 +69,7 @@ getAnnoAux a = case a of
     Unparsed_anno (Annote_word word) _ _ -> word
     _ -> ""
 
-modelCheckTest :: Int -> Map.Map OP_SYMB String -> Sign () () -> Table2
+modelCheckTest :: Int -> Map.HashMap OP_SYMB String -> Sign () () -> Table2
   -> Named (FORMULA ()) -> Result ()
 modelCheckTest c symbs sign t x = let
     (n, d) = modelCheckTest1 c (sentence x) t symbs
@@ -83,7 +83,7 @@ modelCheckTest c symbs sign t x = let
 ifind :: Int -> IntMap.IntMap a -> a
 ifind = IntMap.findWithDefault (error "CompositionTable.ifind")
 
-modelCheckTest1 :: Int -> FORMULA () -> Table2 -> Map.Map OP_SYMB String
+modelCheckTest1 :: Int -> FORMULA () -> Table2 -> Map.HashMap OP_SYMB String
   -> (Int, [String])
 modelCheckTest1 c sen t symbs = let
   vs = number $ Set.toList $ vars sen

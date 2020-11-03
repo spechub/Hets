@@ -26,8 +26,9 @@ import Common.GlobalAnnotations
 import Common.Id
 import Common.Result
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
+import qualified Common.OrderedMap as OMap
 
 basicAnalysis :: (BASIC_SPEC, Sign, GlobalAnnos)
               -> Result (BASIC_SPEC, ExtSign Sign Symbol, [Named Sentence])
@@ -116,11 +117,11 @@ postProcessSign = partitionTypeDeclarations . removeTypeDeclarationsFromConstant
     partitionTypeDeclarations :: Sign -> Sign
     partitionTypeDeclarations sign =
       let (thfPredicates, thfRemainder) =
-            Map.partition isTHFBooleanType $ thfTypeDeclarationMap sign
-          (thfTypes, thfRemainder') = Map.partition isTHFType thfRemainder
+            OMap.partitionMap isTHFBooleanType $ thfTypeDeclarationMap sign
+          (thfTypes, thfRemainder') = OMap.partitionMap isTHFType thfRemainder
           (tffPredicates, tffRemainder) =
-            Map.partition isTFFBooleanType $ tffTypeDeclarationMap sign
-          (tffTypes, tffRemainder') = Map.partition isTFFType tffRemainder
+            OMap.partitionMap isTFFBooleanType $ tffTypeDeclarationMap sign
+          (tffTypes, tffRemainder') = OMap.partitionMap isTFFType tffRemainder
       in sign { thfPredicateMap = thfPredicates
               , thfTypeConstantMap = thfTypes
               , thfTypeFunctorMap = thfRemainder'
@@ -153,9 +154,9 @@ postProcessSign = partitionTypeDeclarations . removeTypeDeclarationsFromConstant
 
     removeTypeDeclarationsFromConstantSet :: Sign -> Sign
     removeTypeDeclarationsFromConstantSet sign =
-      let tffTypeKeys = Map.keysSet $ tffTypeDeclarationMap sign
+      let tffTypeKeys = Set.fromList $ Map.keys $ tffTypeDeclarationMap sign
           tffTypeNames = Set.map unpackConstant $ Set.filter isConstant $ tffTypeKeys
-          thfTypeKeys = Map.keysSet $ thfTypeDeclarationMap sign
+          thfTypeKeys = Set.fromList $ Map.keys $ thfTypeDeclarationMap sign
           thfTypeNames = Set.map unpackConstantTHF $ Set.filter isConstantTHF $
                            thfTypeKeys
           typeNames = tffTypeNames `Set.union` thfTypeNames

@@ -26,7 +26,7 @@ import qualified Common.Lib.MapSet as MapSet
 import Common.Id
 
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 
 import Hybrid.Logic_Hybrid
 import Hybrid.AS_Hybrid
@@ -37,6 +37,8 @@ import CASL.AS_Basic_CASL
 import CASL.Morphism
 import CASL.Sign
 import CASL.Sublogic as SL
+
+import Data.Hashable
 
 
 data Hybrid2CASL = Hybrid2CASL deriving Show
@@ -287,7 +289,7 @@ toName s = fmap $ makeNamed s
 
 {- Adds the constraints associated with the rigidity
 of predicates or operations. -}
-applRig :: (Ord k) => MapSet.MapSet k a ->
+applRig :: (Ord k, Hashable k) => MapSet.MapSet k a ->
            String ->
            (k -> a -> CForm) ->
            [Named CForm]
@@ -296,7 +298,7 @@ applRig m s f = toName s $ glueDs ks f m
 
 {- Given a list of designators, generates the rigidity constraints
 associated, and concats them into a single list -}
-glueDs :: (Ord k) => [k] ->
+glueDs :: (Ord k, Hashable k) => [k] ->
           (k -> a -> CForm) ->
           MapSet.MapSet k a ->
           [CForm]

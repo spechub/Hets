@@ -30,7 +30,8 @@ import Logic.Coerce
 
 import Control.Monad
 
-import qualified Data.Map as Map
+import qualified Common.OrderedMap as OMap
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Data.Maybe
 import Data.List
@@ -39,14 +40,14 @@ import Data.List
 this graph only contains interesting Sublogics plus comorphisms relating
 these sublogics; a comorphism might be mentioned multiple times -}
 data HetSublogicGraph = HetSublogicGraph
-    { sublogicNodes :: Map.Map String G_sublogics
-    , comorphismEdges :: Map.Map (String, String) [AnyComorphism]}
+    { sublogicNodes :: Map.HashMap String G_sublogics
+    , comorphismEdges :: Map.HashMap (String, String) [AnyComorphism]}
 
 emptyHetSublogicGraph :: HetSublogicGraph
 emptyHetSublogicGraph = HetSublogicGraph Map.empty Map.empty
 
-toTopSublogicAndProverSupported :: Map.Map String G_sublogics
-  -> AnyLogic -> IO (Map.Map String G_sublogics)
+toTopSublogicAndProverSupported :: Map.HashMap String G_sublogics
+  -> AnyLogic -> IO (Map.HashMap String G_sublogics)
 toTopSublogicAndProverSupported mp (Logic lid) = do
   ps <- filterM (fmap isNothing . proverUsable) $ provers lid
   cs <- filterM (fmap isNothing . ccUsable) $ cons_checkers lid
@@ -102,7 +103,7 @@ hetSublogicGraph = do
 {- | adds the interesting comorphisms without adding new nodes;
 considering as start and end points only existing nodes -}
 addComorphismEdges :: HetSublogicGraph -> HetSublogicGraph
-addComorphismEdges hsg = Map.fold insComs hsg $ sublogicNodes hsg
+addComorphismEdges hsg = Map.foldr insComs hsg $ sublogicNodes hsg
     where insComs gsl h = foldr (insCom gsl) h comorphismList
           insCom gsl acm hsg' =
              case acm of
@@ -134,9 +135,9 @@ addComorphismEdges hsg = Map.fold insComs hsg $ sublogicNodes hsg
 
 {- | compute all the pre-images of the list of G_sublogics
 under all suitable comorphisms -}
-compute_preImageOfG_sublogics :: Map.Map String G_sublogics
+compute_preImageOfG_sublogics :: Map.HashMap String G_sublogics
              -- ^ initial interesting sublogics
-                              -> Map.Map String G_sublogics
+                              -> Map.HashMap String G_sublogics
 compute_preImageOfG_sublogics =
     iterComor Map.empty Map.empty
     where iterComor newSublMap alreadyTried queue
@@ -207,7 +208,7 @@ preImageMaybe :: (Ord a, Ord b) =>
                  (a -> Maybe b) -> [a]
               -> Map.Map b (Set.Set a)
 preImageMaybe f vs =
-    (Map.mapKeysMonotonic fromJust . Map.delete Nothing) $ preImage f vs
+    (OMap.mapMapKeys fromJust . Map.delete Nothing) $ preImage f vs
 
 mapSublogic_preImage :: (Comorphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
@@ -216,7 +217,7 @@ mapSublogic_preImage :: (Comorphism cid
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2)
                    => cid -> Map.Map G_sublogics (Set.Set G_sublogics)
 mapSublogic_preImage cid =
-    Map.foldWithKey toG_sublogics Map.empty $
+    Map.foldrWithKey toG_sublogics Map.empty $
     preImageMaybe (mapSublogic cid) $ all_sublogics $ sourceLogic cid
     where toG_sublogics s2 set_s1 =
              Map.insert (G_sublogics (targetLogic cid) s2)
