@@ -38,6 +38,8 @@ import Control.Monad
 
 import Logic.Logic
 
+import Debug.Trace
+
 -- | Error messages for static analysis
 failMsg :: Entity -> ClassExpression -> Result a
 failMsg (Entity _ ty e) desc =
@@ -357,13 +359,13 @@ check1Prefix ms s =
       Nothing -> True
       Just iri -> let iri' = dropBracketSuf $ dropCharPre '<' iri
                       s' = dropBracketSuf $ dropCharPre '<' s
-                  in iri' == s'
+                  in trace ("iri':"++ show iri' ++ " s':" ++ show s') $ iri' == s'
 
 checkPrefixMap :: PrefixMap -> Bool
-checkPrefixMap pm =
+checkPrefixMap pm = True {-
     let pl = map (`Map.lookup` pm) ["owl", "rdf", "rdfs", "xsd"]
     in and $ zipWith check1Prefix pl
-            (map snd $ tail $ Map.toList predefPrefixes)
+            (map snd $ tail $ Map.toList predefPrefixes)-}
 
 newODoc :: OntologyDocument -> [Frame] -> Result OntologyDocument
 newODoc OntologyDocument {ontology = mo, prefixDeclaration = pd} fl =
