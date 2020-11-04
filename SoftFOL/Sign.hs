@@ -105,7 +105,9 @@ singleSortNotGen spSig = singleSorted spSig &&
 -}
 data SFSymbol = SFSymbol { sym_ident :: SPIdentifier
                          , sym_type :: SFSymbType}
-              deriving (Show, Eq, Ord, Typeable, Data)
+              deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable SFSymbol
 
 instance GetRange SFSymbol
 
@@ -116,7 +118,9 @@ instance GetRange SFSymbol
 data SFSymbType = SFOpType [SPIdentifier] SPIdentifier
               | SFPredType [SPIdentifier]
               | SFSortType
-                deriving (Show, Eq, Ord, Typeable, Data)
+                deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable SFSymbType
 
 sfSymbKind :: SFSymbType -> String
 sfSymbKind t = case t of

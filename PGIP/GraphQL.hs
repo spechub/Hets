@@ -14,6 +14,7 @@ import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Text.Lazy.Encoding as LEncoding
 import Data.Maybe
 import qualified Data.HashMap.Strict as Map
+import qualified Data.Map as PlainMap
 import qualified Data.Text.Lazy as LText
 import Data.Text as Text
 import Network.Wai
@@ -34,13 +35,13 @@ processGraphQL opts sessionReference request = do
 
 -- This structure contains the data that is passed to the GraphQL API
 data QueryBody = QueryBody { graphQLQuery :: Text
-                           , graphQLVariables :: Map.HashMap Text Text
+                           , graphQLVariables :: PlainMap.Map Text Text
                            } deriving (Show, Generic)
 
 -- This is an auxiliary strucutre that helps to parse the request body.
 -- It is then converted to QueryBody.
 data QueryBodyAux = QueryBodyAux { query :: Text
-                                 , variables :: Maybe (Map.HashMap Text Aeson.Value)
+                                 , variables :: Maybe (PlainMap.Map Text Aeson.Value)
                                  } deriving (Show, Generic)
 instance FromJSON QueryBodyAux
 
@@ -49,8 +50,8 @@ instance FromJSON QueryBodyAux
 toGraphQLQueryBody :: QueryBodyAux -> QueryBody
 toGraphQLQueryBody QueryBodyAux { query = q, variables = aesonVariables } =
   QueryBody { graphQLQuery = q
-            , graphQLVariables = Map.map convert $
-                                           fromMaybe Map.empty aesonVariables
+            , graphQLVariables = PlainMap.map convert $
+                                           fromMaybe PlainMap.empty aesonVariables
             }
   where
     convert = LText.toStrict . LEncoding.decodeUtf8 . Aeson.encode

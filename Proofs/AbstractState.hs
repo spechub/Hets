@@ -51,6 +51,7 @@ module Proofs.AbstractState
     ) where
 
 import qualified Data.HashMap.Strict as Map
+import qualified Data.Map as PlainMap
 import Data.Maybe
 import Data.Typeable
 
@@ -424,17 +425,17 @@ getProvers pk (G_sublogics lid sl) =
                   then (G_prover tlid p, cm) : l else l)
              [] (provers tlid)
 
-knownProvers :: LogicGraph -> ProverKind -> Map.HashMap G_sublogics [G_prover]
+knownProvers :: LogicGraph -> ProverKind -> PlainMap.Map G_sublogics [G_prover]
 knownProvers lg pk =
  let l = Map.elems $ logics lg
  in foldl (\ m (Logic lid) -> foldl (\ m' p ->
      let lgx = G_sublogics lid (proverSublogic p)
          p' = G_prover lid p
-     in case Map.lookup lgx m' of
-         Just ps -> Map.insert lgx (p' : ps) m'
-         Nothing -> Map.insert lgx [p'] m') m $
+     in case PlainMap.lookup lgx m' of
+         Just ps -> PlainMap.insert lgx (p' : ps) m'
+         Nothing -> PlainMap.insert lgx [p'] m') m $
      filter (hasProverKind pk)
-            (provers lid)) Map.empty l
+            (provers lid)) PlainMap.empty l
 
 unsafeCompComorphism :: AnyComorphism -> AnyComorphism -> AnyComorphism
 unsafeCompComorphism c1 c2 = case compComorphism c1 c2 of
@@ -469,14 +470,14 @@ getAllProvers pk start lg =
   in concatMap (mkComorphism kp) $
       concatMap (\ end ->
        yen 10 (start, Nothing) (\ (l, _) -> isSubElemG l end) g)
-       (Map.keys kp)
+       (PlainMap.keys kp)
  where
-  mkComorphism :: Map.HashMap G_sublogics [t2]
+  mkComorphism :: PlainMap.Map G_sublogics [t2]
    -> ([((G_sublogics, t1), AnyComorphism)], (G_sublogics, t))
    -> [(t2, AnyComorphism)]
   mkComorphism kp path@(_, (end, _)) =
    let fullComorphism = pathToComorphism path
-       cs = Map.toList $ Map.filterWithKey (\ l _ -> isSubElemG end l) kp
+       cs = PlainMap.toList $ PlainMap.filterWithKey (\ l _ -> isSubElemG end l) kp
    in concatMap (\ x -> case x of
                         (_, ps) -> map (\ p -> (p, fullComorphism)) ps) cs
 

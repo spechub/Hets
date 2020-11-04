@@ -77,7 +77,9 @@ data DGNodeType = DGNodeType
   , isProvenNode :: Bool
   , isProvenCons :: Bool
   , isInternalSpec :: Bool }
-  deriving (Show, Eq, Ord, Typeable, Data)
+  deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable DGNodeType
 
 listDGNodeTypes :: [DGNodeType]
 listDGNodeTypes = let bs = [False, True] in
@@ -208,13 +210,17 @@ updProofBasisOfThmLinkStatus tls pB = case tls of
   LeftOpen -> tls
   Proven r _ -> Proven r pB
 
-data Scope = Local | Global deriving (Show, Eq, Ord, Typeable, Data)
+data Scope = Local | Global deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable Scope
 
 data LinkKind = DefLink | ThmLink ThmLinkStatus
   deriving (Show, Eq, Ord, Typeable, Data)
 
 data FreeOrCofree = Free | Cofree | NPFree | Minimize
-  deriving (Show, Eq, Ord, Enum, Bounded, Read, Typeable, Data)
+  deriving (Show, Eq, Ord, Enum, Bounded, Read, Typeable, Data, Generic)
+
+instance Hashable FreeOrCofree
 
 fcList :: [FreeOrCofree]
 fcList = [minBound .. maxBound]
@@ -268,7 +274,9 @@ getDGEdgeTypeModIncName et = case et of
 data DGEdgeType = DGEdgeType
   { edgeTypeModInc :: DGEdgeTypeModInc
   , isInc :: Bool }
-  deriving (Show, Eq, Ord, Typeable, Data)
+  deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable DGEdgeType
 
 data DGEdgeTypeModInc =
     GlobalDef
@@ -280,14 +288,18 @@ data DGEdgeTypeModInc =
             , isProvenEdge :: Bool
             , isConservativ :: Bool
             , isPending :: Bool }
-  deriving (Show, Eq, Ord, Typeable, Data)
+  deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable DGEdgeTypeModInc
 
 data ThmTypes =
     HidingThm
   | FreeOrCofreeThm FreeOrCofree
   | GlobalOrLocalThm { thmScope :: Scope
                      , isHomThm :: Bool }
-  deriving (Show, Eq, Ord, Typeable, Data)
+  deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable ThmTypes
 
 -- | Creates a list with all DGEdgeType types
 listDGEdgeTypes :: [DGEdgeType]

@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./RelationalScheme/Sign.hs
 Description :  signaturefor Relational Schemes
@@ -47,13 +47,18 @@ import Data.Data
 import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 type RSIsKey = Bool
 
 data RSDatatype
   = RSboolean | RSbinary | RSdate | RSdatetime | RSdecimal | RSfloat
   | RSinteger | RSstring | RStext | RStime | RStimestamp | RSdouble
   | RSnonPosInteger | RSnonNegInteger | RSlong | RSPointer
-    deriving (Eq, Ord, Typeable, Data)
+    deriving (Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable RSDatatype
 
 type RSRawSymbol = Id
 
@@ -63,7 +68,9 @@ data RSSymbol = STable Id |     -- id of a table
                     Id          -- id of the table
                     RSDatatype  -- datatype of the symbol
                     RSIsKey     -- is it a key?
-                deriving (Eq, Ord, Show, Typeable, Data)
+                deriving (Eq, Ord, Show, Typeable, Data, Generic)
+
+instance Hashable RSSymbol
 
 data RSSymbolKind = STableK | SColumnK 
   deriving (Eq, Ord, Show, Typeable, Data)

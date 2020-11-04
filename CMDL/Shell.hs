@@ -50,6 +50,7 @@ import Static.GTheory
 import Data.Char (isSpace)
 import Data.List
 import qualified Data.Map
+import qualified Data.HashMap.Strict as HMap
 import Data.Maybe (mapMaybe, isNothing)
 import System.Directory (doesDirectoryExist, getDirectoryContents)
 
@@ -314,7 +315,7 @@ cmdlCompletionFn allcmds allState input =
         i = unwords (init $ words input) ++ " "
     in if elem '.' l'
        then let (l, _ : sl) = Data.List.break (== '.') l'
-            in case Data.Map.lookup l $ logics logicGraph of
+            in case HMap.lookup l $ logics logicGraph of
                 Just (Logic lid) -> return $ map ((i ++ l ++ ".") ++) $
                                      filter (Data.List.isPrefixOf sl)
                                      (map sublogicName $ all_sublogics lid)
@@ -326,7 +327,7 @@ cmdlCompletionFn allcmds allState input =
                          sls -> (i ++ n) : map
                           (\ sl -> i ++ n ++ "." ++ sl) sls) $
                      filter (Data.List.isPrefixOf l' . fst) $
-                     Data.Map.toList $ logics logicGraph
+                     HMap.toList $ logics logicGraph
    ReqFile -> do
         -- the incomplete path introduced until now
         let initwd = if isSpace $ lastChar input

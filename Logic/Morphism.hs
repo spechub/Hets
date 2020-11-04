@@ -301,6 +301,7 @@ instance (SublogicName sublogics1, SublogicName sublogics2)
               s1 ++ "|" ++ s2
 
 instance ( MinSublogic sublogics1 ()
+         , Hashable sign_symbol1 -- TODO: should this not be derived from the logic instance?
          , Morphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                 sign1 morphism1 sign_symbol1 symbol1 proof_tree1

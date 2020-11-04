@@ -20,6 +20,7 @@ import Common.AnnoState
 import Common.Parsec
 import Common.Result
 import Common.ResultT
+import qualified Common.OrderedMap as OMap
 
 import Driver.Options
 import Driver.ReadFn
@@ -39,12 +40,12 @@ import Control.Monad (foldM)
 import Control.Monad.Trans
 
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.List
 
 import System.FilePath
 
-type SpecMap = Map.Map FilePath SpecInfo
+type SpecMap = Map.HashMap FilePath SpecInfo
 type SpecInfo = (BASIC_SPEC, FilePath, Set.Set String, Set.Set FilePath)
                 -- (spec, topTexts, importedBy)
 
@@ -217,10 +218,10 @@ impName ph = case ph of
   Importation (Imp_name n) -> n
   _ -> error "CL.impName"
 
-topSortSpecs :: Map.Map FilePath (BASIC_SPEC, FilePath, Set.Set FilePath)
+topSortSpecs :: Map.HashMap FilePath (BASIC_SPEC, FilePath, Set.Set FilePath)
   -> [(FilePath, BASIC_SPEC, FilePath)]
 topSortSpecs specMap =
-  let (fm, rm) = Map.partition (\ (_, _, is) -> Set.null is) specMap
+  let (fm, rm) = OMap.partitionMap (\ (_, _, is) -> Set.null is) specMap
   in if Map.null fm then [] else
      map (\ (n, (b, f, _)) -> (n, b, f)) (Map.toList fm) ++ topSortSpecs
          (Map.map (\ (b, f, is) -> (b, f, is Set.\\ (Set.fromList $ Map.keys fm))) rm)

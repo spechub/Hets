@@ -29,7 +29,9 @@ type Sentence = Annotated_formula
 
 data Symbol = Symbol { symbolId :: Token
                      , symbolType :: SymbolType
-                     } deriving (Show, Ord, Eq, Data, Typeable)
+                     } deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable Symbol
 
 instance GetRange Symbol where
   getRange = Range . rangeSpan
@@ -42,7 +44,9 @@ data SymbolType = Constant
                 | Function
                 | TypeConstant
                 | TypeFunctor
-                  deriving (Show, Ord, Eq, Data, Typeable)
+                  deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable SymbolType
 
 instance GetRange SymbolType
 

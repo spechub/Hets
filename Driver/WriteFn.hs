@@ -431,7 +431,7 @@ writeSpecFiles opts file lenv ln dg = do
          (simpleIdToIRI $ genToken $ 'n' : show n) n)
       $ if ignore || not allSpecs then [] else
       nodesDG dg
-      \\ Map.fold ( \ e l -> case e of
+      \\ Map.foldr ( \ e l -> case e of
             SpecEntry (ExtGenSig _ (NodeSig n _)) -> n : l
             _ -> l) [] gctx
     doDump opts "GlobalAnnos" $ putStrLn $ showGlobalDoc ga ga ""

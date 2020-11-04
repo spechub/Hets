@@ -69,6 +69,8 @@ import qualified Data.HashMap.Strict as Map
 import Data.Graph.Inductive.Graph (LEdge)
 import qualified Data.Graph.Inductive.Graph as Graph
 
+import qualified Common.OrderedMap as OMap
+
 import Control.Concurrent
 
 -- | wait for this amount of microseconds to let uDrawGraph redraw
@@ -486,7 +488,7 @@ hidenodes gid node_list gv =
                         let
                           g' = snd (get gid (fst info3))
                           newEdges'' = [edge | edge <- Map.toList (edges g'),
-                                       Map.notMember (fst edge) (edges g)]
+                                       OMap.notMember (fst edge) (edges g)]
                           newEvent = createEntry [] oldNodes' newEdges''
                                        oldEdges' ev_cnt
                         return (g' {eventTable = newEvent : eventTable g'}

@@ -27,8 +27,8 @@ module Common.OrderedMap
   , update
   , filter, filterWithKey
   , partition, partitionWithKey, partitionMap
-  , partitionMapWithKey, updateMapWithKey
-  , mapMapKeys
+  , partitionMapWithKey, updateMapWithKey, notMember
+  , mapMapKeys, insertLookupWithKey
   , fromList, toList
   , keys, elems
   ) where
@@ -119,7 +119,25 @@ updateMapWithKey test k f =
  else let v = Map.findWithDefault (error "updateMapWithKey") k f
       in case test k v of 
           Nothing -> Map.delete k f
-          Just y -> Map.insert k y f  
+          Just y -> Map.insert k y f
+
+notMember :: (Ord k, Hashable k) => k -> Map.HashMap k a -> Bool
+notMember k f = not $ k `elem` Map.keys f
+
+insertLookupWithKey :: (Ord k, Hashable k) => 
+  (k -> a -> a -> a) -> k -> a -> Map.HashMap k a -> 
+  (Maybe a, Map.HashMap k a)
+insertLookupWithKey f k a m = 
+ let a' = Map.lookup k m
+     m' = insertWithKey f k a m
+ in (a', m')
+
+insertWithKey :: (Ord k, Hashable k) => 
+  (k -> a -> a -> a) -> k -> a -> Map.HashMap k a -> 
+  Map.HashMap k a
+insertWithKey f k a m = 
+ if not (k `elem` Map.keys m) then Map.insert k a m
+ else Map.insert k (f k a $ Map.findWithDefault (error "not possible") k m) m
 
 fromList :: (Ord k, Hashable k) => [(k, a)] -> OMap k a
 fromList = List.foldl ins Map.empty

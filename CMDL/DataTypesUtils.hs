@@ -52,6 +52,7 @@ import Static.ComputeTheory (computeTheory)
 import Data.Graph.Inductive.Graph (LNode, Node)
 import Data.List (find, break)
 import Data.Map (lookup)
+import qualified Data.HashMap.Strict as HMap
 
 import Common.Result (Result (Result))
 
@@ -111,13 +112,13 @@ getCurrentSublogic dgState =
 parseSublogics :: String -> Maybe G_sublogics
 parseSublogics input =
  if elem '.' input then let (l, _ : sl) = Data.List.break (== '.') input
-                        in case Data.Map.lookup l $ logics logicGraph of
+                        in case HMap.lookup l $ logics logicGraph of
                             Just (Logic lid) ->
                              case parseSublogic lid sl of
                               Just subl -> Just $ G_sublogics lid subl
                               Nothing -> Nothing
                             Nothing -> Nothing
- else case Data.Map.lookup input $ logics logicGraph of
+ else case HMap.lookup input $ logics logicGraph of
        Just (Logic lid) -> Just $ G_sublogics lid (top_sublogic lid)
        Nothing -> Nothing
 

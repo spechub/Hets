@@ -727,7 +727,7 @@ class (StaticAnalysis lid
        SublogicName sublogics,
        Ord proof_tree, Show proof_tree,
        Convertible proof_tree,
-       Hashable sentence)--, Hashable symbol, Hashable raw_symbol)
+       Hashable sentence, Hashable symbol, Hashable raw_symbol)
     => Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol proof_tree

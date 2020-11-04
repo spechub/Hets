@@ -58,7 +58,9 @@ signUnion s1 s2 = return s1
 data Symbol
   = Con Concept
   | Rel Relation
-    deriving (Eq, Ord, Show, Typeable, Data)
+    deriving (Eq, Ord, Show, Typeable, Data, Generic)
+
+instance Hashable Symbol
 
 data SymbolKind = ConK | RelK 
   deriving (Eq, Ord, Show, Typeable, Data)

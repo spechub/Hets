@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 {- |
 Module      :  ./GUI/GraphTypes.hs
 Description :  Types for the Central GUI of Hets
@@ -41,6 +42,9 @@ import Control.Monad (when)
 
 import Interfaces.DataTypes
 import Interfaces.Utils
+
+import GHC.Generics (Generic)
+import Data.Hashable
 
 data Flags = Flags
              { flagHideNodes :: Bool
@@ -98,7 +102,9 @@ data Colors = Black
             | Green
             | Yellow
             | Purple
-            deriving (Eq, Ord, Show)
+            deriving (Eq, Ord, Show, Generic)
+
+instance Hashable Colors
 
 -- | Creates an empty GInfo
 emptyGInfo :: IO GInfo

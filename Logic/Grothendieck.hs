@@ -236,7 +236,7 @@ data G_symbolmap a = forall lid sublogics
          Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
-  G_symbolmap lid (PlainMap.Map symbol a)
+  G_symbolmap lid (Map.HashMap symbol a)
   deriving Typeable
 
 instance Show a => Show (G_symbolmap a) where
@@ -248,7 +248,7 @@ instance (Typeable a, Ord a) => Eq (G_symbolmap a) where
 instance (Typeable a, Ord a) => Ord (G_symbolmap a) where
   compare (G_symbolmap l1 sm1) (G_symbolmap l2 sm2) =
     case compare (Logic l1) $ Logic l2 of
-      EQ -> compare (coercePlainsymbolmap l1 l2 sm1) sm2
+      EQ -> compare (coerceSymbolmap l1 l2 sm1) sm2
       r -> r
 
 
@@ -438,7 +438,7 @@ data LogicGraph = LogicGraph
     , currentSyntax :: Maybe IRI
     , currentSublogic :: Maybe G_sublogics
     , currentTargetBase :: Maybe (LibName, String)
-    , sublogicBasedTheories :: Map.HashMap AnyLogic SublogicBasedTheories
+    , sublogicBasedTheories :: PlainMap.Map AnyLogic SublogicBasedTheories
     , comorphisms :: Map.HashMap String AnyComorphism
     , inclusions :: Map.HashMap (String, String) AnyComorphism
     , unions :: Map.HashMap (String, String) (AnyComorphism, AnyComorphism)
@@ -457,7 +457,7 @@ emptyLogicGraph = LogicGraph
     , currentSyntax = Nothing
     , currentSublogic = Nothing
     , currentTargetBase = Nothing
-    , sublogicBasedTheories = Map.empty
+    , sublogicBasedTheories = PlainMap.empty
     , comorphisms = Map.empty
     , inclusions = Map.empty
     , unions = Map.empty

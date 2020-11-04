@@ -87,6 +87,9 @@ data Frm_Wrap = forall l sub bs f s sm si mo sy rw pf .
     => Frm_Wrap l (TH_FORMULA f)
   deriving Typeable
 
+instance Hashable Frm_Wrap where 
+ hashWithSalt salt _ = salt -- TODO: this is wrong, to be fixed once I figure out how to make the proper instance
+
 instance Show Frm_Wrap where
   show (Frm_Wrap l f) = "Frm_Wrap " ++ show l ++ " (" ++ show f ++ ")"
 

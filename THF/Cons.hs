@@ -45,14 +45,18 @@ data SymbolTHF = Symbol
     { symId :: Constant
     , symName :: Name
     , symType :: SymbolType
-    } deriving (Show, Eq, Ord, Typeable, Data)
+    } deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable SymbolTHF
 
 instance GetRange SymbolTHF
 
 data SymbolType =
     ST_Const Type
   | ST_Type Kind
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable SymbolType
 
 data Type =
     TType

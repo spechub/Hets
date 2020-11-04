@@ -63,6 +63,7 @@ import qualified Data.Set as Set
 import Control.Monad (liftM)
 
 import System.FilePath
+import Data.Hashable
 
 -- * Name Mapping interface
 
@@ -97,7 +98,7 @@ data ExpEnv = ExpEnv { getSSN :: SpecSymNames
                      , getInitialLN :: LibName
                      , getFilePathMapping :: Map.HashMap LibName FilePath }
 
-fmapNM :: (Ord a Hashable a, Ord b, Hashable b) => (a -> b) -> NameMap a -> NameMap b
+fmapNM :: (Ord a, Hashable a, Ord b, Hashable b) => (a -> b) -> NameMap a -> NameMap b
 fmapNM = OMap.mapMapKeys
 
 emptyEnv :: LibName -> ExpEnv
@@ -118,7 +119,7 @@ fromSignAndNamedSens lid sig nsens =
         the next identifier to use for this name to make it unique.
         acc: Map String Int -}
         newName acc s =
-            let (v, acc') = Map.insertLookupWithKey (const (+)) s 1 acc
+            let (v, acc') = OMap.insertLookupWithKey (const (+)) s 1 acc
             in (acc', (s, fromMaybe 0 v))
         {- We need to store in addition to the name-int-map an integer to
         increment in order to remember the original order of the signature

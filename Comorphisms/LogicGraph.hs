@@ -272,7 +272,7 @@ modificationList :: [AnyModification]
 modificationList = [Modification MODAL_EMBEDDING]
 
 squareMap :: PlainMap.Map (AnyComorphism, AnyComorphism) [Square]
-squareMap = Map.empty -- for now
+squareMap = PlainMap.empty -- for now
 
 logicGraph :: LogicGraph
 logicGraph = emptyLogicGraph

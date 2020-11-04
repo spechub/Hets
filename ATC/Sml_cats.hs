@@ -58,6 +58,8 @@ import Common.AnnoParser (annotations, parseAnno)
 import Common.Lexer (skip)
 import Common.Utils (trimRight)
 
+import Data.Hashable
+
 -- | cats creates latin1 files
 read_sml_ATerm :: FilePath -> IO LIB_DEFN
 read_sml_ATerm fn = liftM from_sml_ATermString $ readEncFile Latin1 fn
@@ -115,7 +117,7 @@ instance ATermConvertibleSML Char where
                          _ -> from_sml_ShATermError "String" at
                        where at = getATerm att
 
-instance (Ord a, ATermConvertibleSML a, ATermConvertibleSML b)
+instance (Ord a, Hashable a, ATermConvertibleSML a, ATermConvertibleSML b)
     => ATermConvertibleSML (Map.HashMap a b) where
     from_sml_ShATerm att = Map.fromList $ from_sml_ShATerm att
 

@@ -69,6 +69,7 @@ import Common.Lib.MapSet (imageSet, setInsert)
 import Data.Graph.Inductive.Graph
 import qualified Data.Set as Set
 import qualified Data.HashMap.Strict as Map
+import qualified Data.Map as PlainMap
 import Data.Maybe
 import Data.List
 import Data.Function
@@ -226,7 +227,7 @@ anaSublogic _opts itm ln dg libenv lG
                   ++ "' has sublogic '" ++ shows gs2 "' and not '"
                   ++ shows gs "'!"
             let sbMap = sublogicBasedTheories lG1
-                lMap = Map.findWithDefault Map.empty logN sbMap
+                lMap = PlainMap.findWithDefault Map.empty logN sbMap
                 nName = getDGNodeName lbl
             nMap <- case Map.lookup sp lMap of
               Nothing -> return $ Map.insert sp (libName, nName) lMap
@@ -243,7 +244,7 @@ anaSublogic _opts itm ln dg libenv lG
                     ++ nName ++ "'!"
                 return lMap
             return (Just (s, t), lG1
-              { sublogicBasedTheories = Map.insert logN nMap sbMap
+              { sublogicBasedTheories = PlainMap.insert logN nMap sbMap
               , currentTargetBase = Just (libName, nName) })
   _ -> return (Nothing, lG)
 
@@ -1183,7 +1184,7 @@ extendMorphism sharing (G_sign lid sigmaP _) (G_sign lidB sigmaB1 _)
       symsB = ext_sym_of lid sigmaB
       idsB = Set.map (sym_name lid) symsB
       h = symmap_of lid fittingMor
-      symbMapToRawSymbMap = Map.foldrWithKey
+      symbMapToRawSymbMap = Map.foldWithKey
           (on Map.insert $ symbol_to_raw lid) Map.empty
       rh = symbMapToRawSymbMap h
       idh = Map.foldrWithKey (on setInsert $ sym_name lid) Map.empty h
