@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Fpl/Logic_Fpl.hs
 Description :  logic instance for FPL
@@ -32,8 +32,12 @@ import CASL.Taxonomy
 import CASL.Logic_CASL ()
 
 import Common.DocUtils
+import GHC.Generics (Generic)
+import Data.Hashable
 
-data Fpl = Fpl deriving Show
+data Fpl = Fpl deriving (Show, Generic)
+
+instance Hashable Fpl
 
 instance Language Fpl where
   description _ = unlines

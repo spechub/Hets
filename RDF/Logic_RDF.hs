@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, DeriveGeneric #-}
 {-# OPTIONS -w #-}
 {- |
 Module      :  ./RDF/Logic_RDF.hs
@@ -40,7 +40,14 @@ import RDF.Morphism
 import RDF.Sublogic
 import RDF.StaticAnalysis
 
-data RDF = RDF deriving Show
+import GHC.Generics (Generic)
+import Data.Hashable
+
+import Common.ATerm.ConvInstances() -- for ATC
+
+data RDF = RDF deriving (Show, Generic)
+
+instance Hashable RDF
 
 instance Language RDF where
   language_name _ = "RDF"

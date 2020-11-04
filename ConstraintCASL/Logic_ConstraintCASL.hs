@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./ConstraintCASL/Logic_ConstraintCASL.hs
 Description :  instance of the class Logic for ConstraintCASL
@@ -36,8 +36,12 @@ import CASL.Sign
 import CASL.Morphism
 import CASL.SymbolMapAnalysis
 import CASL.Logic_CASL
+import GHC.Generics (Generic)
+import Data.Hashable
 
-data ConstraintCASL = ConstraintCASL deriving Show
+data ConstraintCASL = ConstraintCASL deriving (Show, Generic)
+
+instance Hashable ConstraintCASL
 
 instance Language ConstraintCASL where
  description _ =

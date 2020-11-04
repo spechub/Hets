@@ -1,5 +1,5 @@
 {-# LANGUAGE CPP, MultiParamTypeClasses, TypeSynonymInstances
-  , FlexibleInstances #-}
+  , FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./CASL/Logic_CASL.hs
 Description :  Instance of class Logic for the CASL logic
@@ -61,8 +61,12 @@ import Data.Monoid
 import qualified Data.Set as Set
 
 import Logic.Logic
+import GHC.Generics (Generic)
+import Data.Hashable
 
-data CASL = CASL deriving Show
+data CASL = CASL deriving (Show, Generic)
+
+instance Hashable CASL
 
 instance Language CASL where
  description _ = unlines

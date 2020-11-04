@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./LF/Logic_LF.hs
 Description :  Instances of classes defined in Logic.hs for the Edinburgh
@@ -30,8 +30,12 @@ import Common.ExtSign
 
 import qualified Data.HashMap.Strict as Map
 import Data.Monoid
+import GHC.Generics (Generic)
+import Data.Hashable
 
-data LF = LF deriving Show
+data LF = LF deriving (Show, Generic)
+
+instance Hashable LF
 
 instance Language LF where
    description LF = "Edinburgh Logical Framework"

@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE MultiParamTypeClasses, DeriveGeneric #-}
 {- |
 Module      :  ./HasCASL/Logic_HasCASL.hs
 Description :  instance of class Logic
@@ -38,8 +38,12 @@ import Common.Doc
 import Common.DocUtils
 
 import Data.Monoid
+import GHC.Generics (Generic)
+import Data.Hashable
 
-data HasCASL = HasCASL deriving Show
+data HasCASL = HasCASL deriving (Show, Generic)
+
+instance Hashable HasCASL
 
 instance Language HasCASL where
  description _ = unlines

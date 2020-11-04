@@ -1,5 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, DeriveDataTypeable
-  , GeneralizedNewtypeDeriving #-}
+  , GeneralizedNewtypeDeriving, DeriveGeneric #-}
 {- |
 Module      :  ./DMU/Logic_DMU.hs
 Description :  Instance of class Logic for DMU
@@ -34,8 +34,12 @@ import Data.Monoid
 import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Data.Typeable
+import GHC.Generics (Generic)
+import Data.Hashable
 
-data DMU = DMU deriving Show
+data DMU = DMU deriving (Show, Generic)
+
+instance Hashable DMU
 
 instance Language DMU where
   description _ = "a logic to wrap output of the CAD tool Catia"

@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE MultiParamTypeClasses, DeriveGeneric #-}
 {- |
 Module      :  ./Temporal/Logic_Temporal.hs
 Description :  Instance of class Logic for temporal logic
@@ -26,9 +26,13 @@ import qualified Temporal.Symbol as Symbol
 import Temporal.AS_BASIC_Temporal as AS_BASIC
 import Temporal.ATC_Temporal ()
 
--- | Lid for termporal logic
-data Temporal = Temporal deriving Show
+import GHC.Generics (Generic)
+import Data.Hashable
 
+-- | Lid for termporal logic
+data Temporal = Temporal deriving (Show, Generic)
+
+instance Hashable Temporal
 
 -- | Instance of Language for temporal logic
 instance Language Temporal

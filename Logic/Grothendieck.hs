@@ -358,6 +358,11 @@ data G_sublogics = forall lid sublogics
         G_sublogics lid sublogics
   deriving Typeable
 
+instance Hashable G_sublogics where
+ hashWithSalt salt g = 
+  case g of
+   G_sublogics lid subl -> hashWithSalt salt lid + hashWithSalt salt subl
+
 instance Show G_sublogics where
     show (G_sublogics lid sub) = language_name lid ++ case sublogicName sub of
       [] -> ""

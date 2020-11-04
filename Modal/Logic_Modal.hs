@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Modal/Logic_Modal.hs
 Description :  Instance of class Logic for Modal CASL
@@ -34,8 +34,12 @@ import CASL.SymbolParser
 import CASL.Taxonomy
 import CASL.ToDoc
 import CASL.Logic_CASL ()
+import GHC.Generics (Generic)
+import Data.Hashable
 
-data Modal = Modal deriving Show
+data Modal = Modal deriving (Show, Generic)
+
+instance Hashable Modal
 
 instance Language Modal where
  description _ = unlines

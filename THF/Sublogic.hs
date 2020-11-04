@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, DeriveDataTypeable #-}
+{-# LANGUAGE MultiParamTypeClasses, DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./THF/Sublogic.hs
 Description :  Sublogics for THF
@@ -19,12 +19,18 @@ import THF.As
 import Logic.Logic
 
 import Data.Data
+import GHC.Generics (Generic)
+import Data.Hashable
 
-data THFCoreSl = THF | THFP | THF0 deriving (Show, Eq, Ord, Typeable, Data)
+data THFCoreSl = THF | THFP | THF0 deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable THFCoreSl
 
 data THFSl = THFSl {
  core :: THFCoreSl,
- ext_Poly :: Bool } deriving (Eq, Ord, Typeable, Data)
+ ext_Poly :: Bool } deriving (Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable THFSl
 
 instance Show THFSl where
  show sl = show (core sl) ++

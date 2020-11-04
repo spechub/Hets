@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses, DeriveGeneric #-}
 {- |
 Module      :  ./CSMOF/Logic_CSMOF.hs
 Description :  Instance of class Logic for the CSMOF logic
@@ -22,8 +22,12 @@ import Logic.Logic
 import Common.DefaultMorphism
 
 import Data.Monoid
+import GHC.Generics (Generic)
+import Data.Hashable
 
-data CSMOF = CSMOF deriving Show
+data CSMOF = CSMOF deriving (Show, Generic)
+
+instance Hashable CSMOF
 
 instance Language CSMOF where
   description _ = "OMG's meta-object facility, a language for the specification of metamodels"

@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Framework/Logic_Framework.hs
 Description :  Instances of Logic and other classes for the logic Framework
@@ -29,11 +29,15 @@ import Logic.Logic
 import Data.Monoid
 
 import Common.DefaultMorphism
+import GHC.Generics (Generic)
+import Data.Hashable
 
 type Morphism = DefaultMorphism LogicDef
 
 -- lid for logical frameworks
-data Framework = Framework deriving Show
+data Framework = Framework deriving (Show, Generic)
+
+instance Hashable Framework
 
 instance Language Framework where
    description _ = "A framework allowing to add logics dynamically."
@@ -62,7 +66,9 @@ instance Logic Framework () LogicDef () () () LogicDef Morphism () () ()
 FrameworkCom -     logical framework for the analysis of comorphisms -}
 type MorphismCom = DefaultMorphism ComorphismDef
 
-data FrameworkCom = FrameworkCom deriving Show
+data FrameworkCom = FrameworkCom deriving (Show, Generic)
+
+instance Hashable FrameworkCom
 
 instance Language FrameworkCom where
    description _ = "A framework allowing to add comorphisms between " ++

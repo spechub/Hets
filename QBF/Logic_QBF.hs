@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE MultiParamTypeClasses, DeriveGeneric #-}
 {- |
 Module      :  ./QBF/Logic_QBF.hs
 Description :  Instance of class Logic for propositional logic
@@ -48,9 +48,13 @@ import Common.ProofTree
 
 import qualified Data.HashMap.Strict as Map
 import Data.Monoid
+import GHC.Generics (Generic)
+import Data.Hashable
 
 -- | Lid for propositional logic
-data QBF = QBF deriving Show
+data QBF = QBF deriving (Show, Generic)
+
+instance Hashable QBF
 
 instance Language QBF where
     description _ = "Propositional Logic extended with quantified boolean formulas\n"

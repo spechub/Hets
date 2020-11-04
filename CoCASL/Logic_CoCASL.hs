@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./CoCASL/Logic_CoCASL.hs
 Description :  Instance of class Logic for CoCASL
@@ -34,8 +34,12 @@ import Data.List
 import Common.DocUtils
 
 import Logic.Logic
+import GHC.Generics (Generic)
+import Data.Hashable
 
-data CoCASL = CoCASL deriving Show
+data CoCASL = CoCASL deriving (Show, Generic)
+
+instance Hashable CoCASL
 
 instance Language CoCASL where
   description _ = "CoCASL is the coalgebraic extension of CASL."

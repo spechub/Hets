@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE MultiParamTypeClasses, DeriveGeneric #-}
 {- |
 Module      :  ./Maude/Logic_Maude.hs
 Description :  Instance of class Logic for Maude
@@ -39,10 +39,14 @@ import Common.ExtSign
 import Data.Monoid
 
 import System.IO.Unsafe
+import GHC.Generics (Generic)
+import Data.Hashable
 
 -- | Lid for Maude
 data Maude = Maude
-           deriving (Show, Eq)
+           deriving (Show, Eq, Generic)
+
+instance Hashable Maude
 
 
 -- | Instance of Language for Maude

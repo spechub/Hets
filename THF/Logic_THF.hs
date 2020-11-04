@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./THF/Logic_THF.hs
 Description :  Instance of class Logic for THF.
@@ -40,10 +40,14 @@ import THF.Poly (getSymbols)
 import THF.Utils (toId)
 import qualified Data.Map (toList)
 import qualified Data.Set (fromList)
+import GHC.Generics (Generic)
+import Data.Hashable
 
 -- TODO implement more instance methods
 
-data THF = THF deriving Show
+data THF = THF deriving (Show, Generic)
+
+instance Hashable THF
 
 instance Language THF where
     description _ =

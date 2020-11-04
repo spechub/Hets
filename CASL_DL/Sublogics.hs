@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./CASL_DL/Sublogics.hs
 Description :  sublogic analysis for CASL_DL
@@ -20,8 +20,12 @@ This module provides the sublogic functions (as required by Logic.hs)
 module CASL_DL.Sublogics where
 
 import Data.Data
+import GHC.Generics (Generic)
+import Data.Hashable
 
-data CASL_DL_SL = SROIQ deriving (Eq, Ord, Typeable, Data)
+data CASL_DL_SL = SROIQ deriving (Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable CASL_DL_SL
 
 instance Show CASL_DL_SL where
     show SROIQ = "SROIQ"

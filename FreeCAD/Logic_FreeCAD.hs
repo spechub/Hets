@@ -1,5 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, DeriveDataTypeable
-  , GeneralizedNewtypeDeriving, TypeSynonymInstances #-}
+  , GeneralizedNewtypeDeriving, TypeSynonymInstances, DeriveGeneric #-}
 {- |
 Module      :  ./FreeCAD/Logic_FreeCAD.hs
 Description :  Instance of class Logic for FreeCAD
@@ -42,8 +42,12 @@ import FreeCAD.Translator (processFile)
 
 import Logic.Grothendieck (G_basic_spec (..))
 import Syntax.AS_Library (fromBasicSpec, LIB_DEFN)
+import GHC.Generics (Generic)
+import Data.Hashable
 
-data FreeCAD = FreeCAD deriving Show
+data FreeCAD = FreeCAD deriving (Show, Generic)
+
+instance Hashable FreeCAD
 
 instance Language FreeCAD where
   description _ = "FreeCAD object representation language"

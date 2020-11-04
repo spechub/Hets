@@ -42,7 +42,7 @@ import Common.ToXml
 import GHC.Generics (Generic)
 import Data.Hashable
 
-class (Language cid,
+class (Language cid, Hashable cid,
        Logic lid1 sublogics1
         basic_spec1 sentence1 symb_items1 symb_map_items1
         sign1 morphism1 sign_symbol1 symbol1 proof_tree1,
@@ -89,7 +89,10 @@ class (Language cid,
 
 -- | identity morphisms
 data IdMorphism lid sublogics =
-    IdMorphism lid sublogics deriving (Typeable, Show)
+    IdMorphism lid sublogics deriving (Typeable, Show, Generic)
+
+instance (Hashable lid, Hashable sublogics) => 
+         Hashable (IdMorphism lid sublogics)
 
 instance Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
@@ -169,9 +172,13 @@ sign_symbol - sign_symbols of I
 symbol - symbols of I
 proof_tree - proof_tree of J -}
 
-data SpanDomain cid = SpanDomain cid deriving (Eq, Show)
+data SpanDomain cid = SpanDomain cid deriving (Eq, Show, Generic)
 
-data SublogicsPair a b = SublogicsPair a b deriving (Eq, Ord, Show, Typeable)
+instance Hashable cid => Hashable (SpanDomain cid)
+
+data SublogicsPair a b = SublogicsPair a b deriving (Eq, Ord, Show, Typeable, Generic)
+
+instance (Hashable a, Hashable b) => Hashable (SublogicsPair a b)
 
 instance Language cid => Language (SpanDomain cid) where
   language_name (SpanDomain cid) = "SpanDomain" ++ language_name cid
@@ -302,6 +309,7 @@ instance (SublogicName sublogics1, SublogicName sublogics2)
 
 instance ( MinSublogic sublogics1 ()
          , Hashable sign_symbol1 -- TODO: should this not be derived from the logic instance?
+         , Hashable symbol1 -- same as above
          , Morphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                 sign1 morphism1 sign_symbol1 symbol1 proof_tree1

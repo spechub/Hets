@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./OWL2/Profiles.hs
 Copyright   :  (c) Felix Gabriel Mance
@@ -20,12 +20,16 @@ import OWL2.MS
 
 import Data.Data
 import Data.Maybe
+import GHC.Generics (Generic)
+import Data.Hashable
 
 data Profiles = Profiles
     { el :: Bool
     , ql :: Bool
     , rl :: Bool
-    } deriving (Show, Eq, Ord, Typeable, Data)
+    } deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable Profiles
 
 allProfiles :: [[Profiles]]
 allProfiles =

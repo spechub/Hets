@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./CASL_DL/Logic_CASL_DL.hs
 Description :  Instance of class Logic for CASL DL
@@ -40,8 +40,12 @@ import CASL.Logic_CASL ()
 import CASL_DL.Sublogics
 
 import Logic.Logic
+import GHC.Generics (Generic)
+import Data.Hashable
 
-data CASL_DL = CASL_DL deriving Show
+data CASL_DL = CASL_DL deriving (Show, Generic)
+
+instance Hashable CASL_DL
 
 instance Language CASL_DL where
  description _ = unlines

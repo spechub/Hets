@@ -149,7 +149,9 @@ type SEQ_MARK = Id.Token
 -- binding seq
 data NAME_OR_SEQMARK = Name NAME
                      | SeqMark SEQ_MARK
-                       deriving (Show, Eq, Ord, Typeable, Data)
+                       deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable NAME_OR_SEQMARK
 
 data SYMB_MAP_ITEMS = Symb_map_items [SYMB_OR_MAP] Id.Range
                       deriving (Show, Ord, Eq, Typeable, Data)

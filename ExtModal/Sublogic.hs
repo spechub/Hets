@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./ExtModal/Sublogic.hs
 Description :  Sublogics for ExtModal logic
@@ -26,9 +26,13 @@ import qualified Data.Set as Set
 
 import ExtModal.AS_ExtModal
 import ExtModal.ExtModalSign
+import GHC.Generics (Generic)
+import Data.Hashable
 
 data Frequency = None | One | Many
-  deriving (Show, Eq, Ord, Enum, Typeable, Data)
+  deriving (Show, Eq, Ord, Enum, Typeable, Data, Generic)
+
+instance Hashable Frequency
 
 data Sublogic = Sublogic
     { hasModalities :: Frequency
@@ -38,7 +42,9 @@ data Sublogic = Sublogic
     , hasTimeMods :: Frequency
     , hasFixPoints :: Bool
     , hasFrameAxioms :: Bool
-    } deriving (Show, Eq, Ord, Typeable, Data)
+    } deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable Sublogic
 
 maxSublogic :: Sublogic
 maxSublogic = Sublogic

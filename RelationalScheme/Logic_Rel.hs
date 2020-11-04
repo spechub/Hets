@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, DeriveGeneric #-}
 {- |
 Module      :  ./RelationalScheme/Logic_Rel.hs
 Description :  Instance of class Logic for Rel
@@ -27,8 +27,12 @@ import RelationalScheme.Sign
 import RelationalScheme.ParseRS
 import RelationalScheme.ATC_RelationalScheme ()
 import RelationalScheme.StaticAnalysis
+import GHC.Generics (Generic)
+import Data.Hashable
 
-data RelScheme = RelScheme deriving (Show)
+data RelScheme = RelScheme deriving (Show, Generic)
+
+instance Hashable RelScheme
 
 instance Language RelScheme where
     description _ =

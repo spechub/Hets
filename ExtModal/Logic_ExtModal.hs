@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./ExtModal/Logic_ExtModal.hs
 Description :  Instance of class Logic for ExtModal
@@ -39,8 +39,12 @@ import Logic.Logic
 import Common.DocUtils
 import qualified Common.Lib.MapSet as MapSet
 import qualified Data.Set as Set
+import GHC.Generics (Generic)
+import Data.Hashable
 
-data ExtModal = ExtModal deriving Show
+data ExtModal = ExtModal deriving (Show, Generic)
+
+instance Hashable ExtModal
 
 instance Language ExtModal where
         description _ = unlines

@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Isabelle/Logic_Isabelle.hs
 Description :  Isabelle instance of class Logic
@@ -23,12 +23,16 @@ import Isabelle.ATC_Isabelle ()
 import Isabelle.IsaSign
 import Isabelle.IsaPrint
 import Isabelle.IsaProve
+import GHC.Generics (Generic)
+import Data.Hashable
 
 type IsabelleMorphism = DefaultMorphism Sign
 
 {- a dummy datatype for the LogicGraph and for identifying the right
 instances -}
-data Isabelle = Isabelle deriving Show
+data Isabelle = Isabelle deriving (Show, Generic)
+
+instance Hashable Isabelle
 
 instance Language Isabelle where
  description _ =

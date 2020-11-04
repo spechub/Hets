@@ -25,6 +25,7 @@ import CspCASL.SymbItems
 import CspCASL.Symbol
 
 import qualified Data.Set as Set
+import Data.Hashable
 
 -- | The identity of the comorphism
 data CspCASL2CspCASL a b = CspCASL2CspCASL a b deriving Show
@@ -40,7 +41,7 @@ instance (Show a, Show b) => Language (CspCASL2CspCASL a b) where
       language_name (GenCspCASL a)
       ++ "2" ++ language_name (GenCspCASL b)
 
-instance (CspCASLSemantics a, CspCASLSemantics b)
+instance (CspCASLSemantics a, CspCASLSemantics b, Hashable a, Hashable b)
   => Comorphism (CspCASL2CspCASL a b)
     (GenCspCASL a) ()
       CspBasicSpec CspCASLSen CspSymbItems CspSymbMapItems

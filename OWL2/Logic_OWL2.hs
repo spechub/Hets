@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, MultiParamTypeClasses, TypeSynonymInstances #-}
+{-# LANGUAGE CPP, MultiParamTypeClasses, TypeSynonymInstances, DeriveGeneric #-}
 {-# OPTIONS -w #-}
 {- |
 Module      :  ./OWL2/Logic_OWL2.hs
@@ -58,7 +58,12 @@ import OWL2.Taxonomy
 import OWL2.Theorem
 import OWL2.ExtractModule
 
-data OWL2 = OWL2
+import GHC.Generics (Generic)
+import Data.Hashable
+
+data OWL2 = OWL2 deriving Generic
+
+instance Hashable OWL2
 
 instance Show OWL2 where
   show _ = "OWL"

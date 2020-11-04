@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./COL/Logic_COL.hs
 Description :  COL instance of class Logic
@@ -33,8 +33,12 @@ import CASL.Logic_CASL ()
 import Logic.Logic
 
 import Common.DocUtils
+import GHC.Generics (Generic)
+import Data.Hashable
 
-data COL = COL deriving Show
+data COL = COL deriving (Show, Generic)
+
+instance Hashable COL
 
 instance Language COL where
  description _ =

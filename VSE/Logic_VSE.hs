@@ -1,5 +1,5 @@
 {-# LANGUAGE CPP, MultiParamTypeClasses, TypeSynonymInstances
-  , FlexibleInstances #-}
+  , FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./VSE/Logic_VSE.hs
 Description :  the incomplete Logic instance for VSE
@@ -36,10 +36,14 @@ import VSE.Ana
 import VSE.ATC_VSE ()
 import VSE.Prove (vse)
 import Logic.Logic
+import GHC.Generics (Generic)
+import Data.Hashable
 
 import qualified Data.HashMap.Strict as Map
 
-data VSE = VSE deriving Show
+data VSE = VSE deriving (Show, Generic)
+
+instance Hashable VSE
 
 instance Language VSE where
  description _ =

@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./TPTP/Sublogic.hs
 Description :  Data structures representing TPTP sublogics.
@@ -23,6 +23,8 @@ import Common.DefaultMorphism
 import Data.Data
 import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
+import GHC.Generics (Generic)
+import Data.Hashable
 
               --  | EPR -- Effectively Propositional CNF
 data Sublogic = CNF -- Clausal Normal Form
@@ -32,7 +34,9 @@ data Sublogic = CNF -- Clausal Normal Form
               --  | TFX
               | THF -- Typed Higher Order Form
               --  | TPI
-                deriving (Show, Ord, Eq, Data, Typeable)
+                deriving (Show, Ord, Eq, Data, Typeable, Generic)
+
+instance Hashable Sublogic
 
 {- ----------------------------------------------------------------------------
  - Special Sublogics

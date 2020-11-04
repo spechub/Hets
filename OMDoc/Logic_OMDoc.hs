@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeSynonymInstances, MultiParamTypeClasses, FlexibleInstances #-}
+{-# LANGUAGE TypeSynonymInstances, MultiParamTypeClasses, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./OMDoc/Logic_OMDoc.hs
 Description :  Rudimentary Logic-instances for OMDoc
@@ -22,8 +22,12 @@ import Data.Maybe (fromMaybe)
 import qualified Data.Set as Set
 import qualified Data.HashMap.Strict as Map
 import Control.Monad (unless)
+import GHC.Generics (Generic)
+import Data.Hashable
 
-data OMDoc_PUN = OMDoc_PUN
+data OMDoc_PUN = OMDoc_PUN deriving Generic
+
+instance Hashable OMDoc_PUN
 
 type OMDoc_Sign = OMDoc.Theory
 

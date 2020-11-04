@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./HasCASL/Sublogic.hs
 Description :  HasCASL's sublogics
@@ -69,6 +69,8 @@ import HasCASL.AsUtils
 import HasCASL.Le as Le
 import HasCASL.Builtin
 import HasCASL.FoldTerm
+import GHC.Generics (Generic)
+import Data.Hashable
 
 -- | formula kinds of HasCASL sublogics
 data Formulas
@@ -77,10 +79,14 @@ data Formulas
     | GHorn   -- ^ generalized positive conditional logic
     | FOL     -- ^ first-order logic
     | HOL     -- ^ higher-order logic
-      deriving (Show, Eq, Ord, Typeable, Data)
+      deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable Formulas
 
 data Classes = NoClasses | SimpleTypeClasses | ConstructorClasses
-               deriving (Show, Eq, Ord, Typeable, Data)
+               deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable Classes
 
 -- | HasCASL sublogics
 data Sublogic = Sublogic
@@ -93,7 +99,9 @@ data Sublogic = Sublogic
     , has_type_constructors :: Bool
     , has_products :: Bool
     , which_logic :: Formulas
-    } deriving (Show, Eq, Ord, Typeable, Data)
+    } deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable Sublogic
 
 -- * special sublogic elements
 

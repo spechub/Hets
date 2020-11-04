@@ -1,5 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances,
-             UndecidableInstances, ExistentialQuantification #-}
+             UndecidableInstances, ExistentialQuantification, DeriveGeneric #-}
 {- |
 Module      :  ./TopHybrid/Logic_TopHybrid.hs
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -25,6 +25,8 @@ import TopHybrid.Utilities
 import CASL.Morphism
 import CASL.AS_Basic_CASL
 import CASL.Sign
+import GHC.Generics (Generic)
+import Data.Hashable
 
 -- Import of logics
 import CASL.Logic_CASL
@@ -32,7 +34,9 @@ import Propositional.Logic_Propositional
 import CoCASL.Logic_CoCASL
 -- End of import of logics
 
-data Hybridize = Hybridize deriving Show
+data Hybridize = Hybridize deriving (Show, Generic)
+
+instance Hashable Hybridize
 
 instance Language Hybridize where
  description _ = "Hybridization of an arbitrary logic"

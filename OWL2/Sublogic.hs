@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./OWL2/Sublogic.hs
 Copyright   :  (c) Dominik Luecke, Felix Gabriel Mance
@@ -24,9 +24,13 @@ import Data.Maybe
 
 import Data.Data
 import qualified Data.Set as Set
+import GHC.Generics (Generic)
+import Data.Hashable
 
 data NumberRestrictions = None | Unqualified | Qualified
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable NumberRestrictions
 
 owlDatatypes :: Set.Set Datatype
 owlDatatypes = predefIRIs
@@ -40,7 +44,9 @@ data OWLSub = OWLSub
     , complexRoleInclusions :: Bool
     , addFeatures :: Bool
     , datatype :: Set.Set Datatype
-    } deriving (Show, Eq, Ord, Typeable, Data)
+    } deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable OWLSub
 
 allSublogics :: [[OWLSub]]
 allSublogics = let

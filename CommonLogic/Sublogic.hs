@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./CommonLogic/Sublogic.hs
 Description :  Sublogics for CommonLogic
@@ -52,6 +52,8 @@ import Common.AS_Annotation (Annoted (..))
 import CommonLogic.Sign
 import CommonLogic.Symbol
 import CommonLogic.Morphism
+import GHC.Generics (Generic)
+import Data.Hashable
 
 {- -----------------------------------------------------------------------------
 datatypes                                                                 --
@@ -62,7 +64,9 @@ data CLTextType =
     Propositional      -- ^ Text without quantifiers
   | FirstOrder         -- ^ Text in First Order Logic
   | Impredicative
-  deriving (Show, Eq, Ord, Enum, Bounded, Typeable)
+  deriving (Show, Eq, Ord, Enum, Bounded, Typeable, Generic)
+
+instance Hashable CLTextType
 
 -- for comparison of sublogics use the Ord instance
 
@@ -70,7 +74,9 @@ data CLTextType =
 data CommonLogicSL = CommonLogicSL
     { format :: CLTextType     -- Structural restrictions
     , compact :: Bool
-    } deriving (Show, Eq, Ord, Typeable)
+    } deriving (Show, Eq, Ord, Typeable, Generic)
+
+instance Hashable CommonLogicSL
 
 -- | all sublogics
 sublogics_all :: [CommonLogicSL]

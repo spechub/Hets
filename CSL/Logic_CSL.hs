@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./CSL/Logic_CSL.hs
 Description :  Instance of class Logic for CSL
@@ -37,9 +37,13 @@ import qualified Data.Map as Map
 import Data.Monoid
 
 import Logic.Logic
+import GHC.Generics (Generic)
+import Data.Hashable
 
 -- | Lid for reduce logic
-data CSL = CSL
+data CSL = CSL deriving Generic
+
+instance Hashable CSL
 
 instance Show CSL where
     show _ = "EnCL"

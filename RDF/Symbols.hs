@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./RDF/Symbols.hs
 Copyright   :  (c) Francisc-Nicolae Bungiu
@@ -17,6 +17,9 @@ import Common.Id
 import Common.IRI
 import Data.Data
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 import RDF.AS
 
 -- * SYMBOL ITEMS FOR HETS
@@ -29,6 +32,8 @@ data SymbMapItems = SymbMapItems (Maybe RDFEntityType) [(IRI, Maybe IRI)]
 
 -- | raw symbols
 data RawSymb = ASymbol RDFEntity | AnUri IRI
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable RawSymb
 
 instance GetRange RawSymb

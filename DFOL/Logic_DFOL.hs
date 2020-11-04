@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE MultiParamTypeClasses, DeriveGeneric #-}
 {- |
 Module      :  ./DFOL/Logic_DFOL.hs
 Description :  Instances of classes defined in Logic.hs for first-order logic
@@ -33,9 +33,13 @@ import DFOL.Symbol
 import DFOL.Colimit
 
 import Logic.Logic
+import GHC.Generics (Generic)
+import Data.Hashable
 
 -- lid for first-order logic with dependent types
-data DFOL = DFOL deriving Show
+data DFOL = DFOL deriving (Show, Generic)
+
+instance Hashable DFOL
 
 instance Language DFOL where
    description DFOL = "First-Order Logic with Dependent Types\n" ++

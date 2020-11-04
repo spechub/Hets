@@ -1,5 +1,5 @@
 {-# LANGUAGE CPP, MultiParamTypeClasses, TypeSynonymInstances
-  , FlexibleInstances #-}
+  , FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./TPTP/Logic_TPTP.hs
 Description :  Instance of class Logic for TPTP.
@@ -41,8 +41,12 @@ import Logic.Logic as Logic
 
 import Data.Monoid
 import qualified Data.Set as Set
+import GHC.Generics (Generic)
+import Data.Hashable
 
-data TPTP = TPTP deriving (Show, Ord, Eq)
+data TPTP = TPTP deriving (Show, Ord, Eq, Generic)
+
+instance Hashable TPTP
 
 instance Language TPTP
   where

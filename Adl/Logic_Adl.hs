@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Adl/Logic_Adl.hs
 Description :  the Logic instance for ADL
@@ -37,8 +37,12 @@ import qualified Data.HashMap.Strict as Map
 import Data.Monoid
 
 import Logic.Logic
+import GHC.Generics (Generic)
+import Data.Hashable
 
-data Adl = Adl deriving Show
+data Adl = Adl deriving (Show, Generic)
+
+instance Hashable Adl
 
 instance Language Adl where
     description _ = "A description language for business rules"

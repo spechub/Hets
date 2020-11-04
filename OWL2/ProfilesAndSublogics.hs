@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./OWL2/ProfilesAndSublogics.hs
 Copyright   :  (c) Felix Gabriel Mance
@@ -22,11 +22,15 @@ import OWL2.Sign
 import OWL2.Morphism
 
 import Data.Data
+import GHC.Generics (Generic)
+import Data.Hashable
 
 data ProfSub = ProfSub
     { profiles :: Profiles
     , sublogic :: OWLSub
-    } deriving (Show, Eq, Ord, Typeable, Data)
+    } deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable ProfSub
 
 allProfSubs :: [[ProfSub]]
 allProfSubs = map (map (`ProfSub` slBottom)) allProfiles

@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE MultiParamTypeClasses, DeriveGeneric #-}
 {- |
 Module      :  ./Propositional/Logic_Propositional.hs
 Description :  Instance of class Logic for propositional logic
@@ -52,8 +52,13 @@ import Common.Id
 import qualified Data.HashMap.Strict as Map
 import Data.Monoid
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 -- | Lid for propositional logic
-data Propositional = Propositional deriving Show
+data Propositional = Propositional deriving (Show, Generic)
+
+instance Hashable Propositional
 
 instance Language Propositional where
     description _ = "Propositional Logic\n"

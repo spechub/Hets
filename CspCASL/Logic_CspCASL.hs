@@ -1,5 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses, ScopedTypeVariables
-  , TypeSynonymInstances, FlexibleInstances #-}
+  , TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./CspCASL/Logic_CspCASL.hs
 Description :  CspCASL instance of type class logic
@@ -54,9 +54,13 @@ import CspCASL.Symbol
 import CspCASL.SymMapAna
 
 import CspCASLProver.CspCASLProver (cspCASLProver)
+import GHC.Generics (Generic)
+import Data.Hashable
 
 -- | a generic logic id for CspCASL with different semantics
-data GenCspCASL a = GenCspCASL a deriving Show
+data GenCspCASL a = GenCspCASL a deriving (Show, Generic)
+
+instance Hashable a => Hashable (GenCspCASL a)
 
 cspCASL :: GenCspCASL ()
 cspCASL = GenCspCASL ()
@@ -118,8 +122,13 @@ class Show a => CspCASLSemantics a where
 
 instance CspCASLSemantics ()
 
-data Trace = Trace deriving Show
-data Failure = Failure deriving Show
+data Trace = Trace deriving (Show, Generic)
+
+instance Hashable Trace
+
+data Failure = Failure deriving (Show, Generic)
+
+instance Hashable Failure
 
 traceCspCASL :: GenCspCASL Trace
 traceCspCASL = GenCspCASL Trace
@@ -133,7 +142,7 @@ instance CspCASLSemantics Trace where
 instance CspCASLSemantics Failure
 
 -- | Instance of Logic for CspCASL
-instance CspCASLSemantics a => Logic (GenCspCASL a)
+instance (CspCASLSemantics a, Hashable a) => Logic (GenCspCASL a)
     -- Sublogics (missing)
     ()
     -- basic_spec

@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, DeriveGeneric #-}
 {- |
 Module      :  ./CommonLogic/Logic_CommonLogic.hs
 Description :  Instance of class Logic for common logic
@@ -36,8 +36,12 @@ import qualified Data.HashMap.Strict as Map
 import Data.Monoid
 
 import Logic.Logic
+import GHC.Generics (Generic)
+import Data.Hashable
 
-data CommonLogic = CommonLogic deriving Show
+data CommonLogic = CommonLogic deriving (Show, Generic)
+
+instance Hashable CommonLogic
 
 instance Language CommonLogic where
     description _ = "CommonLogic (an ISO standard)\n"

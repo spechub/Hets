@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./HolLight/Logic_HolLight.hs
 Description :  Instance of class Logic for HolLight
@@ -30,11 +30,15 @@ import HolLight.ATC_HolLight ()
 
 import Common.DefaultMorphism
 import Common.Id
+import GHC.Generics (Generic)
+import Data.Hashable
 
 type HolLightMorphism = DefaultMorphism Sign
 
 -- | Lid for HolLight logic
-data HolLight = HolLight deriving Show
+data HolLight = HolLight deriving (Show, Generic)
+
+instance Hashable HolLight
 
 
 instance Language HolLight where

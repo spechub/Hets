@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Hybrid/Logic_Hybrid.hs
 Description :  Instance of class Logic for Hybrid CASL
@@ -28,7 +28,12 @@ import CASL.Taxonomy
 import CASL.ToDoc
 import CASL.Logic_CASL ()
 
-data Hybrid = Hybrid deriving Show
+import GHC.Generics (Generic)
+import Data.Hashable
+
+data Hybrid = Hybrid deriving (Show, Generic)
+
+instance Hashable Hybrid
 
 instance Language Hybrid where
  description _ = "Hybrid CASL\n" ++

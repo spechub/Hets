@@ -1,5 +1,5 @@
 {-# LANGUAGE CPP, MultiParamTypeClasses, TypeSynonymInstances
-  , FlexibleInstances #-}
+  , FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./SoftFOL/Logic_SoftFOL.hs
 Description :  Instance of class Logic for SoftFOL.
@@ -42,6 +42,9 @@ import SoftFOL.ProveVampire
 import SoftFOL.ProveDarwin
 import SoftFOL.ProveMetis
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 instance Pretty Sign where
   pretty = pretty . signToSPLogicalPart
 
@@ -49,7 +52,9 @@ instance Pretty Sign where
   A dummy datatype for the LogicGraph and for identifying the right
   instances
 -}
-data SoftFOL = SoftFOL deriving (Show)
+data SoftFOL = SoftFOL deriving (Show, Generic)
+
+instance Hashable SoftFOL
 
 instance Language SoftFOL where
  description _ =

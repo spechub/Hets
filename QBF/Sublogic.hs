@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./QBF/Sublogic.hs
 Description :  Sublogics for propositional logic
@@ -62,17 +62,23 @@ import qualified Common.Lib.State as State
 import qualified Common.AS_Annotation as AS_Anno
 
 import Data.Data
+import GHC.Generics (Generic)
+import Data.Hashable
 
 -- | types of propositional formulae
 data QBFFormulae = PlainFormula      -- Formula without structural constraints
                   | HornClause        -- Horn Clause Formulae
-                  deriving (Show, Eq, Ord, Typeable, Data)
+                  deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable QBFFormulae
 
 -- | sublogics for propositional logic
 data QBFSL = QBFSL
     {
       format :: QBFFormulae     -- Structural restrictions
-    } deriving (Show, Eq, Ord, Typeable, Data)
+    } deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable QBFSL
 
 isProp :: QBFSL -> Bool
 isProp sl = format sl == PlainFormula

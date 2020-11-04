@@ -100,7 +100,9 @@ symName s = case s of
 data RawSymbol
   = Symbol Symbol
   | AnId Id
-    deriving (Eq, Ord, Show, Typeable, Data)
+    deriving (Eq, Ord, Show, Typeable, Data, Generic)
+
+instance Hashable RawSymbol
 
 instance GetRange RawSymbol where
   getRange r = case r of

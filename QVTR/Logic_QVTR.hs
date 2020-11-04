@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses, DeriveGeneric #-}
 {- |
 Module      :  ./QVTR/Logic_QVTR.hs
 Description :  Instance of class Logic for the QVTR logic
@@ -23,8 +23,12 @@ import Logic.Logic
 import Common.DefaultMorphism
 
 import Data.Monoid
+import GHC.Generics (Generic)
+import Data.Hashable
 
-data QVTR = QVTR deriving Show
+data QVTR = QVTR deriving (Show, Generic)
+
+instance Hashable QVTR
 
 instance Language QVTR where
   description _ = "OMG's QVT-Relations transformation, a language for the specification of model transformations"
