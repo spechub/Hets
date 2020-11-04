@@ -43,8 +43,6 @@ import RDF.StaticAnalysis
 import GHC.Generics (Generic)
 import Data.Hashable
 
-import Common.ATerm.ConvInstances() -- for ATC
-
 data RDF = RDF deriving (Show, Generic)
 
 instance Hashable RDF

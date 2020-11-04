@@ -14,6 +14,8 @@ import Common.Result
 import Data.Data
 import qualified Data.Set as Set
 
+import Common.ATerm.ConvInstances() -- for ATC
+
 data Sign = Sign
     { subjects :: Set.Set Term
     , predicates :: Set.Set Term

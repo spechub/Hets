@@ -36,6 +36,9 @@ import qualified Data.Set as Set
 import GHC.Generics (Generic)
 import Data.Hashable
 
+
+import Common.ATerm.ConvInstances() -- for ATC
+
 -- | checks if an IRI is an anonymous individual
 isAnonymous :: IRI -> Bool
 isAnonymous i = prefixName i == "_" && isBlankNode i

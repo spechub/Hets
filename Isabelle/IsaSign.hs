@@ -24,6 +24,9 @@ import Common.Utils (splitOn)
 import GHC.Generics (Generic)
 import Data.Hashable
 
+
+import Common.ATerm.ConvInstances() -- for ATC
+
 {- ------------- not quite from src/Pure/term.ML ------------------------
 ---------------------- Names ----------------------------------------- -}
 
