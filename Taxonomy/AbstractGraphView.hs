@@ -65,7 +65,7 @@ import Common.Lib.Graph as Tree
 
 import Data.IORef
 import Data.List (nub)
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import Data.Graph.Inductive.Graph (LEdge)
 import qualified Data.Graph.Inductive.Graph as Graph
 

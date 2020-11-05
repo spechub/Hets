@@ -28,7 +28,7 @@ import Common.Result
 import qualified Common.Lib.MapSet as MapSet
 
 import Data.Data
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import qualified Data.Set as Set
 
 import Control.Monad

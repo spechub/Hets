@@ -26,7 +26,7 @@ import Logic.Prover
 
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Id as Id
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import Common.Result
 
 import Data.List

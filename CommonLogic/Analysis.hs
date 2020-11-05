@@ -40,7 +40,7 @@ import CommonLogic.Sign as Sign
 import CommonLogic.ExpandCurie
 
 import qualified Data.Set as Set
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import qualified Common.Lib.MapSet as MapSet
 import qualified Data.List as List
 import Data.Graph.Inductive.Graph as Graph

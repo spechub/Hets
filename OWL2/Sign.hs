@@ -18,7 +18,7 @@ import Common.IRI
 import OWL2.AS
 
 import qualified Data.Set as Set
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 
 import Common.Lib.State
 import Common.Result

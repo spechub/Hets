@@ -13,7 +13,7 @@ theory translation for the embedding comorphism from Haskell to Isabelle.
 
 module Comorphisms.Hs2HOLCF (transTheory) where
 
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import Data.Maybe (catMaybes, fromMaybe)
 
 import Common.Utils (number)

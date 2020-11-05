@@ -52,7 +52,7 @@ import Static.ComputeTheory (computeTheory)
 import Data.Graph.Inductive.Graph (LNode, Node)
 import Data.List (find, break)
 import Data.Map (lookup)
-import qualified Data.HashMap.Strict as HMap
+import qualified Data.HashMap.Lazy as HMap
 
 import Common.Result (Result (Result))
 

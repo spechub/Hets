@@ -25,7 +25,7 @@ module RelationalScheme.AS
         ) where
 
 import Data.Data
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 
 import Common.Id
 import Common.AS_Annotation

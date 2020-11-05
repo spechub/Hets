@@ -39,7 +39,7 @@ import Common.Result
 import Common.Parsec (forget)
 import Common.Percent
 import Common.GlobalAnnotations (GlobalAnnos)
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import Common.SExpr
 import Common.IO
 import Common.Utils

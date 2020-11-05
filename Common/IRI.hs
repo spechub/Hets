@@ -84,7 +84,7 @@ import Data.Data
 import Data.Ord (comparing)
 import Data.Maybe
 import Data.List
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 
 import Control.Monad (when)
 

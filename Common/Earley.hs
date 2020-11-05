@@ -63,7 +63,7 @@ import Control.Exception
 
 import Data.List
 import Data.Maybe
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import qualified Data.Set as Set
 
 -- | take the difference of the two input lists take (length l2 - length l1) l2

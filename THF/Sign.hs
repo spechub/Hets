@@ -23,7 +23,7 @@ import Common.Id hiding (typeId)
 import Common.Result
 
 import Data.Data
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 
 import GHC.Generics (Generic)
 import Data.Hashable

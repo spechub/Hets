@@ -19,7 +19,7 @@ module SoftFOL.Sign where
 import Data.Data
 import Data.Char
 import Data.Maybe (isNothing)
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import qualified Data.Set as Set
 
 import qualified Common.Lib.Rel as Rel

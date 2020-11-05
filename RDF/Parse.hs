@@ -25,7 +25,7 @@ import RDF.AS
 import RDF.Symbols
 
 import Data.Either
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import Text.ParserCombinators.Parsec
 
 uriP :: CharParser st IRI

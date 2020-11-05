@@ -34,7 +34,7 @@ import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.MapSet as MapSet
 
 import Text.ParserCombinators.Parsec
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import qualified Data.Set as Set
 
 import Data.List as List

@@ -25,7 +25,7 @@ import Common.AS_Annotation
 import Common.DocUtils
 
 import Control.Monad.State
-import qualified Data.HashMap.Strict (HashMap, lookup, insert, empty,
+import qualified Data.HashMap.Lazy (HashMap, lookup, insert, empty,
                            foldrWithKey,
                            mapWithKey, toList, fromList) 
 import qualified Data.List (mapAccumL, elemIndex)
@@ -275,7 +275,7 @@ getTypeCUF cm uf = case uf of
                       ++ sh t ++ ") is expected to be of type OType"
          return (t, cs ++ [(t, NormalC (errMsg, getRangeSpan uf', OType))])
         c = A_Single_Quoted
-        ins t tp = Data.HashMap.Strict.insert (c t)
+        ins t tp = Data.HashMap.Lazy.insert (c t)
           ConstInfo {
             constId = c t,
             constName = N_Atomic_Word $ c t,
@@ -301,7 +301,7 @@ getTypeCUF cm uf = case uf of
    TCT_Assoc_Connective _ -> return (MapType OType (MapType OType OType),[])
    TCT_THF_Pair_Connective _ -> return (MapType OType (MapType OType OType),[])
    _ -> not_supported a
-  T0A_Constant c -> case Data.HashMap.Strict.lookup c cm of
+  T0A_Constant c -> case Data.HashMap.Lazy.lookup c cm of
    Just ti -> return (constType ti, [])
    Nothing -> case show $ toToken c of
      'p' : 'r' : '_' : i' -> do
@@ -316,7 +316,7 @@ getTypeCUF cm uf = case uf of
    then return (OType, [])
    else not_supported a
   T0A_System_Constant _ -> not_supported a
-  T0A_Variable v -> case Data.HashMap.Strict.lookup (A_Single_Quoted v) cm of
+  T0A_Variable v -> case Data.HashMap.Lazy.lookup (A_Single_Quoted v) cm of
    Just ti -> return (constType ti, [])
    Nothing -> do
     v' <- numberedTok tmpV
@@ -345,7 +345,7 @@ getTypeCUF cm uf = case uf of
                              ++ show uf) (getRange uf)
    _ -> return (genFn (vst ++ [uf'']), cs)
   where c = A_Single_Quoted
-        ins t tp = Data.HashMap.Strict.insert (c t)
+        ins t tp = Data.HashMap.Lazy.insert (c t)
                  ConstInfo {
                    constId = c t,
                    constName = N_Atomic_Word $ c t,
@@ -358,30 +358,30 @@ genFn (tp : []) = tp
 genFn (tp : tps) = MapType tp (genFn tps)
 genFn _ = error "This shouldn't happen!"
 
-insertAndIdx :: (Ord a, Eq b, Hashable a) => Data.HashMap.Strict.HashMap a [b] -> a -> b
-                 -> (Data.HashMap.Strict.HashMap a [b], Maybe Int)
-insertAndIdx m k v = case Data.HashMap.Strict.lookup k m of
+insertAndIdx :: (Ord a, Eq b, Hashable a) => Data.HashMap.Lazy.HashMap a [b] -> a -> b
+                 -> (Data.HashMap.Lazy.HashMap a [b], Maybe Int)
+insertAndIdx m k v = case Data.HashMap.Lazy.lookup k m of
  Just l -> case Data.List.elemIndex v l of
   Just i -> (m, Just i)
-  Nothing -> (Data.HashMap.Strict.insert k (l ++ [v]) m,
+  Nothing -> (Data.HashMap.Lazy.insert k (l ++ [v]) m,
    Just $ length l)
- Nothing -> (Data.HashMap.Strict.insert k [v] m, Just 0)
+ Nothing -> (Data.HashMap.Lazy.insert k [v] m, Just 0)
 
 intToStr :: Int -> String
 intToStr 0 = ""
 intToStr i = '_' : show i
 
-flattenMap :: Data.HashMap.Strict.HashMap Constant [a] -> Data.HashMap.Strict.HashMap Constant a
-flattenMap = Data.HashMap.Strict.foldrWithKey
+flattenMap :: Data.HashMap.Lazy.HashMap Constant [a] -> Data.HashMap.Lazy.HashMap Constant a
+flattenMap = Data.HashMap.Lazy.foldrWithKey
  (\ k v new_m ->
   let ks = evalUnique $ replicateM (length v) $ do
        f <- fresh
        let s = intToStr $ fromIntegral (f - 1)
        return $ addSuffix s k
-  in foldl (\ new_m' (k', v') -> Data.HashMap.Strict.insert k' v' new_m')
-      new_m (zip ks v)) Data.HashMap.Strict.empty
+  in foldl (\ new_m' (k', v') -> Data.HashMap.Lazy.insert k' v' new_m')
+      new_m (zip ks v)) Data.HashMap.Lazy.empty
 
-type RewriteArg = Data.HashMap.Strict.HashMap Constant (Maybe Int)
+type RewriteArg = Data.HashMap.Lazy.HashMap Constant (Maybe Int)
 
 rewriteVariableList_ :: (RewriteFuns RewriteArg, RewriteArg) ->
                         [THFVariable] -> Result [THFVariable]
@@ -389,7 +389,7 @@ rewriteVariableList_ (_, cm) vs = return $
  map (\ v -> let t = case v of
                      TV_THF_Typed_Variable t' _ -> t'
                      TV_Variable t' -> t'
-            in case Data.HashMap.Strict.lookup (A_Single_Quoted t) cm of
+            in case Data.HashMap.Lazy.lookup (A_Single_Quoted t) cm of
                 Just (Just i) -> TV_Variable $
                  t { tokStr = tokStr t ++ intToStr i }
                 _ -> v) vs
@@ -397,7 +397,7 @@ rewriteVariableList_ (_, cm) vs = return $
 rewriteConst_ :: (RewriteFuns RewriteArg, RewriteArg) ->
                  Constant -> Result THFUnitaryFormula
 rewriteConst_ (_, cm) c = return . TUF_THF_Atom . T0A_Constant $
- case Data.HashMap.Strict.lookup c cm of
+ case Data.HashMap.Lazy.lookup c cm of
   Just (Just i) -> addSuffix (intToStr i) c
   _ -> c
 
@@ -435,8 +435,8 @@ infer cm fs =
                            (apply u (constType ci))
                      else (cm''', Nothing)) cm'_ cm
              in (cm'', m1))
-           Data.HashMap.Strict.empty (zip fs unis)
-          new_cm = Data.HashMap.Strict.mapWithKey (\ k v ->
+           Data.HashMap.Lazy.empty (zip fs unis)
+          new_cm = Data.HashMap.Lazy.mapWithKey (\ k v ->
            ConstInfo { constId = k,
                        constName = N_Atomic_Word k,
                        constType = v,
@@ -451,12 +451,12 @@ infer cm fs =
            return (new_cm, fs')
 
 mapAccumWithKey :: (Hashable k, Eq k) => 
-   (a -> k -> b -> (a,c)) -> a -> Data.HashMap.Strict.HashMap k b -> 
-   (a, Data.HashMap.Strict.HashMap k c)
+   (a -> k -> b -> (a,c)) -> a -> Data.HashMap.Lazy.HashMap k b -> 
+   (a, Data.HashMap.Lazy.HashMap k c)
 mapAccumWithKey f acc hm1 = 
- let hl1 = Data.HashMap.Strict.toList hm1
+ let hl1 = Data.HashMap.Lazy.toList hm1
      (acc', hl2) = foldl (\(a, l2) (k, b) -> let (a', c) = f a k b in (a', (k, c):l2)) (acc, []) hl1 -- TODO: should sort hl1!
- in (acc', Data.HashMap.Strict.fromList hl2)
+ in (acc', Data.HashMap.Lazy.fromList hl2)
 
 typeConstsOf :: Type -> [Constant]
 typeConstsOf (MapType tp1 tp2) = (typeConstsOf tp1) ++ (typeConstsOf tp2)
@@ -476,7 +476,7 @@ collectVariableTypes _ vs =
 getSymbols :: SignTHF -> THFFormula -> [SymbolTHF]
 getSymbols s f =
  let f' = makeNamed "tmp" f
-     cs = Data.HashMap.Strict.toList $ fst $ propagateErrors "THF.Poly.getSymbols" $
+     cs = Data.HashMap.Lazy.toList $ fst $ propagateErrors "THF.Poly.getSymbols" $
                             infer (consts s) [f']
      r = anaTHF0 { anaVariableList = collectVariableTypes }
      ts' = propagateErrors "THF.Poly.getSymbols" $ anaSenFun (r, []) f'
@@ -485,7 +485,7 @@ getSymbols s f =
      symsC = map (\(_,ci) -> Symbol { symId = constId ci,
                                       symName = constName ci,
                                       symType = ST_Const $ constType ci }) cs
-     symsT = map (\n -> case Data.HashMap.Strict.lookup n (types s) of
+     symsT = map (\n -> case Data.HashMap.Lazy.lookup n (types s) of
                          Just t -> Symbol { symId = THF.Sign.typeId t,
                                             symName = typeName t,
                                             symType = ST_Type Kind}

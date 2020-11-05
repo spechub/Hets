@@ -17,7 +17,7 @@ module Interfaces.GenericATPState where
 
 import Logic.Prover
 
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import qualified Data.Set as Set
 
 import qualified Common.OrderedMap as OMap

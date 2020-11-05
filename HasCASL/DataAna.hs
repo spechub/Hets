@@ -36,7 +36,7 @@ import HasCASL.Unify
 import Control.Monad
 
 import Data.Maybe (mapMaybe)
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import qualified Data.Set as Set
 
 {- | description of polymorphic data types. The top-level identifier is

@@ -24,7 +24,7 @@ import Common.Utils
 import qualified Common.Lib.MapSet as MapSet
 
 import qualified Data.Set as Set
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import Data.List
 import Data.Maybe
 

@@ -32,7 +32,7 @@ import Common.Consistency
 import Common.LibName
 import qualified Common.Lib.Graph as Tree
 
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import Data.Graph.Inductive.Graph
 
 compositionCreatingEdgesFromList :: LibName -> [LEdge DGLinkLab] -> LibEnv

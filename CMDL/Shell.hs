@@ -50,7 +50,7 @@ import Static.GTheory
 import Data.Char (isSpace)
 import Data.List
 import qualified Data.Map
-import qualified Data.HashMap.Strict as HMap
+import qualified Data.HashMap.Lazy as HMap
 import Data.Maybe (mapMaybe, isNothing)
 import System.Directory (doesDirectoryExist, getDirectoryContents)
 

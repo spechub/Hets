@@ -36,7 +36,7 @@ import Isabelle.IsaImport (importIsaDataIO, IsaData)
 
 import Driver.Options
 
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import Data.Graph.Inductive.Graph (Node)
 import Data.List (intercalate)
 import Data.Maybe (catMaybes)

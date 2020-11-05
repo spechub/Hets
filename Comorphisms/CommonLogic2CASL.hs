@@ -32,7 +32,7 @@ import Common.Id
 
 import Data.Function (on)
 import qualified Data.Set as Set
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 
 -- Common Logic
 import qualified CommonLogic.Logic_CommonLogic as ClLogic

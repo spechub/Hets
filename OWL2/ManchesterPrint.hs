@@ -29,7 +29,7 @@ import OWL2.ColonKeywords
 
 import Data.Function
 import Data.List
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import qualified Data.Set as Set
 
 -- | OWL2 signature printing

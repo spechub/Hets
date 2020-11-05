@@ -31,7 +31,7 @@ import Common.Result
 
 import ATerm.Lib
 
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import qualified Data.Set as Set
 import Data.Typeable
 

@@ -37,7 +37,7 @@ import Common.Result
 import Data.Graph.Inductive.Graph as Graph
 
 import Data.List
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 
 import Data.Typeable
 

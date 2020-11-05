@@ -50,7 +50,7 @@ module Proofs.AbstractState
     , autoProofAtNode
     ) where
 
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import qualified Data.Map as PlainMap
 import Data.Maybe
 import Data.Typeable

@@ -18,7 +18,7 @@ import Test.QuickCheck
 import Common.Lib.Rel
 import qualified Common.Lib.MapSet as MapSet
 
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import qualified Data.Set as Set
 
 instance Arbitrary (Rel Int) where

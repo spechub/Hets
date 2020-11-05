@@ -23,7 +23,7 @@ import Common.Lib.State
 import Common.Doc
 import Common.ExampleMixIds
 import qualified Data.Set as Set
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 
 import HasCASL.MixAna
 import HasCASL.As

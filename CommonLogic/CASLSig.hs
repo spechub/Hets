@@ -15,7 +15,7 @@ module CommonLogic.CASLSig where
 import qualified CASL.Sign as CSign
 import qualified Driver.AnaLib as AnaLib
 import qualified Driver.Options as Options
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import qualified System.IO.Unsafe as SysUnsafe
 import qualified Static.DevGraph as DevGraph
 import qualified Logic.Grothendieck as Grothendieck

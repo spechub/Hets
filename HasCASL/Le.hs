@@ -27,7 +27,7 @@ import Common.Prec
 
 import Data.Data
 import Data.Ord
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import qualified Data.Set as Set
 
 import GHC.Generics (Generic)

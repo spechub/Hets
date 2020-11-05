@@ -37,7 +37,7 @@ import Static.History
 import Common.LibName
 import qualified Common.Lib.SizedList as SizedList
 
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import Data.Maybe (fromMaybe)
 import Data.Graph.Inductive.Graph
 import Common.Result

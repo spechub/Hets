@@ -16,7 +16,7 @@ module Propositional.Prop2CASLHelpers
     where
 
 import qualified Data.Set as Set
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Id as Id
 import qualified Common.Result as Result

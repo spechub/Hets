@@ -22,7 +22,7 @@ import TPTP.Sign as Sign
 
 import Common.DefaultMorphism
 import Common.Id
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 
 import Data.Maybe
 import qualified Data.Set as Set

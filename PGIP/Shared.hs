@@ -21,7 +21,7 @@ import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy.Char8 as BS
 import Data.IORef
 import Data.Time
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import qualified Data.IntMap as IntMap
 import Network.Wai
 import Text.ParserCombinators.Parsec (parse)

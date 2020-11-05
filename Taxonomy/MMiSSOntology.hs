@@ -70,7 +70,7 @@ import Data.Char (toLower)
 import Data.Graph.Inductive.Graph
 import Data.Graph.Inductive.Basic
 import Common.Lib.Graph
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import Common.Taxonomy
 
 type ClassName = String

@@ -19,7 +19,7 @@ import TPTP.AS
 import Common.Id
 
 import Data.Data
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import qualified Data.Set as Set
 
 import GHC.Generics (Generic)

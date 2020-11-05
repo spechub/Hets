@@ -14,7 +14,7 @@ The Lisp interface
 module Omega.ToLisp ( printLibrary ) where
 
 import Data.List
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 
 import Omega.DataTypes
 

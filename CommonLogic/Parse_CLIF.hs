@@ -28,7 +28,7 @@ import Common.Token
 
 import Data.Either (lefts, rights)
 import qualified Data.Set as Set
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import qualified CommonLogic.Tools as Tools
 
 import CommonLogic.Lexer_CLIF

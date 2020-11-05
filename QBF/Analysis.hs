@@ -36,7 +36,7 @@ import qualified Common.GlobalAnnotations as GlobalAnnos
 import qualified Common.Id as Id
 import qualified Common.Result as Result
 import qualified Data.List as List
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import qualified Data.Set as Set
 import qualified QBF.AS_BASIC_QBF as AS_BASIC
 import qualified QBF.Morphism as Morphism

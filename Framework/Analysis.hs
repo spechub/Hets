@@ -24,7 +24,7 @@ import qualified Maude.Logic_Maude as Logic_Maude
 
 import Data.List
 import Data.Maybe
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 
 import Static.DevGraph
 import Static.DgUtils

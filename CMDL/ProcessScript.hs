@@ -29,7 +29,7 @@ import System.IO
 import System.Exit
 
 import Static.GTheory
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import Common.AS_Annotation
 import Proofs.AbstractState
 import qualified Common.OrderedMap as OMap

@@ -52,7 +52,7 @@ import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.Graph as Tree
 
 import Data.Graph.Inductive.Graph as Graph
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import qualified Data.Set as Set
 import Data.List
 import Data.Char

@@ -20,7 +20,7 @@ import Logic.Prover
 
 import Control.Monad
 
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import qualified Data.Map as PlainMap
 import Data.Maybe
 

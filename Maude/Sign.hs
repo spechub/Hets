@@ -56,7 +56,7 @@ import qualified Maude.Sentence as Sen
 import Data.Data
 import Data.Set (Set)
 import qualified Data.Set as Set
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import qualified Data.Foldable as Fold
 import qualified Common.Lib.Rel as Rel
 import qualified Data.List as List

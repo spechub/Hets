@@ -12,7 +12,7 @@ import Common.Result
 import Common.DocUtils
 import Common.AS_Annotation
 
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import qualified Data.Set as Set
 import Data.Maybe (fromMaybe, isNothing)
 

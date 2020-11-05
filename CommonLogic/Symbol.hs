@@ -33,7 +33,7 @@ import Common.Result
 
 import Data.Data
 import qualified Data.Set as Set
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 
 import qualified CommonLogic.Sign as Sign
 import CommonLogic.Morphism as Morphism

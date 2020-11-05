@@ -67,7 +67,7 @@ import Data.List
 import Data.Maybe
 import Data.Ord
 import Data.Typeable
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import qualified Data.Set as Set
 
 import Common.Result

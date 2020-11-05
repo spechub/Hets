@@ -24,7 +24,7 @@ import HasCASL.SimplifyTerm
 import Common.Doc
 import Common.DocUtils
 
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import Data.Hashable
 
 

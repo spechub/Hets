@@ -45,7 +45,7 @@ import Common.LibName
 import Common.Result
 import Common.Amalgamate
 import Common.Doc
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 
 import Data.Maybe
 import Data.Graph.Inductive.Graph as Graph (Node, lab)

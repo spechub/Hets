@@ -17,7 +17,7 @@ import System.Environment
 import Text.ParserCombinators.Parsec
 import Isabelle.IsaParse
 import Isabelle.IsaConsts
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import Common.Doc as Doc
 import Common.DocUtils
 

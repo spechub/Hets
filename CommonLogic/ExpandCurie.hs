@@ -22,7 +22,7 @@ import Common.IRI
 import CommonLogic.AS_CommonLogic
 import CommonLogic.Lexer_CLIF (clLetters)
 
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 
 {- | Expands each abbreviated IRI to a full IRI in the basic spec according to
 the supplemented map @gpm@. An IRI is stored in a name (quoted string). If

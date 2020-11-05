@@ -60,7 +60,7 @@ import Common.Id
 import Common.IRI (simpleIdToIRI)
 
 import Data.Graph.Inductive.Graph (LEdge)
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import qualified Data.Set as Set
 
 -- | Wraps Result structure around the result of a dg all style command

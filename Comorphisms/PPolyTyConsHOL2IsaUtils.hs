@@ -42,7 +42,7 @@ import Common.Lib.State
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import qualified Data.Set as Set
 import Data.List
 import Data.Maybe

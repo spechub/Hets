@@ -42,7 +42,7 @@ import Common.ExtSign
 import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
 
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import qualified Data.Set as Set
 
 instance TermExtension DL_FORMULA where

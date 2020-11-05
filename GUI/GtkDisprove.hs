@@ -47,7 +47,7 @@ import Control.Monad (unless)
 
 import Data.Graph.Inductive.Graph (LNode)
 import Data.IORef
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import Data.List
 import Data.Maybe
 

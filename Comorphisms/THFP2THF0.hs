@@ -31,7 +31,7 @@ import THF.As
 import THF.Utils (RewriteFuns (..), rewriteSenFun, rewriteTHF0, recreateSymbols,
                   toToken, typeToTopLevelType, thfTopLevelTypeToType, mkNames)
 
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import Control.Monad (liftM)
 
 data THFP2THF0 = THFP2THF0 deriving Show

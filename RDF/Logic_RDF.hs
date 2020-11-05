@@ -25,7 +25,7 @@ import Common.DocUtils
 import Common.ProofTree
 import Common.ProverTools
 
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import Data.Monoid
 
 import Logic.Logic

@@ -24,7 +24,7 @@ import Common.Utils (nubOrdOn)
 
 import Data.List
 import qualified Data.Set as Set
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 
 symbolsRecord :: (f -> Set.Set Symbol)
   -> Record f (Set.Set Symbol) (Set.Set Symbol)

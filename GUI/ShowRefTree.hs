@@ -33,7 +33,7 @@ import Static.DgUtils
 import Static.PrintDevGraph
 import Static.History
 
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 
 showRefTree :: LibFunc
 showRefTree gInfo = do

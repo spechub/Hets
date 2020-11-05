@@ -28,7 +28,7 @@ import Logic.Logic
 import Common.Result
 import Common.ExtSign
 
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import Data.Monoid
 import GHC.Generics (Generic)
 import Data.Hashable

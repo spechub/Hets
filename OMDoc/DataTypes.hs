@@ -25,7 +25,7 @@ import Common.Percent (encodeBut)
 import Data.List
 import Data.Typeable
 
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 
 import GHC.Generics (Generic)
 import Data.Hashable

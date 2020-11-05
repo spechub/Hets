@@ -54,7 +54,7 @@ import Common.GlobalAnnotations
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.MapSet as MapSet
 
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 
 import Data.Char
 

@@ -20,7 +20,7 @@ import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.Morphism
 
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import qualified Data.Set as Set
 
 import Data.Hashable

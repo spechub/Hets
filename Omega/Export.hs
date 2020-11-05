@@ -44,7 +44,7 @@ import Omega.Terms
 import Data.Graph.Inductive.Graph
 import Data.List
 import Data.Maybe
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 
 -- | DGraph to Omega Library translation
 exportDGraph :: LibName -> DGraph -> Library

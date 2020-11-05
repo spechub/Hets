@@ -20,7 +20,7 @@ import Common.Id
 
 import Data.Data
 import qualified Data.List as List
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import Data.Hashable
 
 data HybridSign = HybridSign

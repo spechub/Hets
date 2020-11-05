@@ -30,7 +30,7 @@ import Control.Monad (replicateM_)
 import Data.Time (midnight)
 import Data.Maybe (maybeToList)
 import Data.List (intercalate)
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 
 import System.IO
 import System.Process

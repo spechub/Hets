@@ -32,7 +32,7 @@ import Common.ExtSign
 import Common.LibName
 import Common.Result
 
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import qualified Data.Set as Set
 
 import Data.Graph.Inductive.Graph

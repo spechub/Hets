@@ -13,7 +13,7 @@ module PGIP.RequestCache where
 
 import qualified Data.ByteString.Lazy.Char8 as BS
 import Data.IORef
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import qualified Data.Text as T
 
 import Network.HTTP.Types.Method

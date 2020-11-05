@@ -41,7 +41,7 @@ import CspCASL.SignCSP
 import CspCASL.Symbol
 
 import qualified Data.Set as Set
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import Data.Maybe
 
 import Control.Monad

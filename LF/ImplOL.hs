@@ -30,7 +30,7 @@ import Common.DocUtils
 
 import System.IO.Unsafe
 
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 
 -- basic analysis for object logics of LF
 basicAnalysisOL :: Morphism -> (BASIC_SPEC, Sign, GlobalAnnos) ->

@@ -41,7 +41,7 @@ import Control.Monad.Trans (lift)
 import Data.Graph.Inductive.Graph (Node, match, lab)
 import qualified Data.List as List (nub)
 import qualified Data.Set as Set
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 
 import Text.XML.Light hiding (Node)
 

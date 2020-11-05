@@ -22,7 +22,7 @@ import System.Exit
 import Common.Utils (executeProcess)
 import Common.Doc (renderText)
 import Common.GlobalAnnotations (emptyGlobalAnnos)
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import Data.Char (toLower)
 import Data.Maybe (fromJust, fromMaybe, isNothing)
 import Data.List (foldl', intercalate)

@@ -27,7 +27,7 @@ module CommonLogic.Morphism
   , morphismUnion
   ) where
 
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import qualified Data.Set as Set
 import qualified Common.Result as Result
 import Common.Id as Id

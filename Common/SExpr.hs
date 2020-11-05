@@ -23,7 +23,7 @@ import Common.Doc
 import Common.Id
 import Common.LibName
 import Common.ProofUtils
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import Data.Char
 
 data SExpr = SSymbol String | SList [SExpr] deriving (Eq, Ord, Show)

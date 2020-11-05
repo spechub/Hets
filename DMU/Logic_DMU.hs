@@ -31,7 +31,7 @@ import Text.ParserCombinators.Parsec
 
 import Data.List
 import Data.Monoid
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import qualified Data.Set as Set
 import Data.Typeable
 import GHC.Generics (Generic)

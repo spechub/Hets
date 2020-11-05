@@ -39,7 +39,7 @@ import CspCASLProver.Consts
 import CspCASLProver.CspProverConsts
 
 import qualified Data.Set as Set
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 
 import Isabelle.IsaSign
 import Isabelle.IsaConsts

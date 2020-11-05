@@ -40,7 +40,7 @@ import Common.Keywords
 import Common.AS_Annotation
 import Common.Utils (trimRight)
 
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import Data.List
 
 comment :: GenParser Char st Annotation

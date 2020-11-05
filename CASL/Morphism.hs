@@ -70,7 +70,7 @@ import CASL.Sign
 import CASL.AS_Basic_CASL
 
 import Data.Data
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import qualified Data.Set as Set
 
 import qualified Common.Lib.MapSet as MapSet

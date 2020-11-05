@@ -57,7 +57,7 @@ import OMDoc.DataTypes
 import Data.Graph.Inductive.Graph
 import Data.Maybe
 import Data.List
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import qualified Common.OrderedMap as OMap
 import qualified Data.Set as Set
 import Control.Monad (liftM)

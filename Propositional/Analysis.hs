@@ -35,7 +35,7 @@ import qualified Common.GlobalAnnotations as GlobalAnnos
 import qualified Common.Id as Id
 import qualified Common.Result as Result
 import qualified Data.List as List
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import qualified Data.Set as Set
 import qualified Propositional.AS_BASIC_Propositional as AS_BASIC
 import qualified Propositional.Morphism as Morphism

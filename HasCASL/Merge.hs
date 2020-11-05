@@ -32,7 +32,7 @@ import HasCASL.TypeAna
 import HasCASL.Builtin
 import HasCASL.MapTerm
 
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import qualified Data.Set as Set
 import Data.Maybe
 import Control.Monad (foldM)

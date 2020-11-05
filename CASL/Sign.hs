@@ -17,7 +17,7 @@ module CASL.Sign where
 import CASL.AS_Basic_CASL
 import CASL.Fold
 import CASL.ToDoc ()
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import qualified Data.Set as Set
 import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel

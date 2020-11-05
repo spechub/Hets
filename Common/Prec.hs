@@ -17,7 +17,7 @@ module Common.Prec where
 import Common.Id
 import Common.GlobalAnnotations
 import Common.AS_Annotation
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
 

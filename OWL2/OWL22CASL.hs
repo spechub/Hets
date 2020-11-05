@@ -21,7 +21,7 @@ import Common.IRI
 import Control.Monad
 import Data.Char
 import qualified Data.Set as Set
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
 

@@ -26,7 +26,7 @@ module Comorphisms.KnownProvers
   , isaComorphisms
   ) where
 
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 
 import System.Exit (exitFailure)
 

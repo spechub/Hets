@@ -23,7 +23,7 @@ import Common.Utils
 import System.Directory
 import System.Exit
 
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import qualified Data.Set as Set
 
 -- Propositional Stuff

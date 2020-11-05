@@ -20,7 +20,7 @@ import Common.Id
 import Common.Result
 import Common.AS_Annotation
 import qualified Data.Set as Set
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import qualified Data.Map as PlainMap
 import Data.Dynamic
 import ATC.LibName ()

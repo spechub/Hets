@@ -61,7 +61,7 @@ import Driver.ReadLibDefn
 import Driver.WriteLibDefn
 
 import qualified Common.OrderedMap as OMap
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import qualified Data.Set as Set
 import Data.Either (lefts, rights)
 import Data.List

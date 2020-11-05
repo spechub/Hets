@@ -30,7 +30,7 @@ import Common.Result
 import qualified Common.Lib.MapSet as MapSet
 
 import Control.Monad
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import qualified Data.Set as Set
 import Data.Hashable
 

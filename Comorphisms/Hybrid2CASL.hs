@@ -26,7 +26,7 @@ import qualified Common.Lib.MapSet as MapSet
 import Common.Id
 
 import qualified Data.Set as Set
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 
 import Hybrid.Logic_Hybrid
 import Hybrid.AS_Hybrid

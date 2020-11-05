@@ -13,7 +13,7 @@ Utility functions used in the Maude language module.
 
 module Maude.Util where
 
-import qualified Data.HashMap.Strict as Map
+import qualified Data.HashMap.Lazy as Map
 import Data.Hashable
 
 {- | Apply the given Map as a function.  Works as the identity function
