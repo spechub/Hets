@@ -18,7 +18,7 @@ import qualified Common.Lib.Rel as Rel
 
 import Data.Maybe
 import qualified Data.Set as Set
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 
 import DFOL.Sign
 import DFOL.AS_DFOL

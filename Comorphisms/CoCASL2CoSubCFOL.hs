@@ -30,7 +30,7 @@ import CASL.Fold
 import CASL.Simplify
 import Comorphisms.CASL2SubCFOL
 
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Common.AS_Annotation
 import Common.ProofUtils

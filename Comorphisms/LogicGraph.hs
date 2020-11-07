@@ -45,7 +45,7 @@ module Comorphisms.LogicGraph
     , lookupQTA_in_LG
     ) where
 
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Map as PlainMap
 
 import Common.Result

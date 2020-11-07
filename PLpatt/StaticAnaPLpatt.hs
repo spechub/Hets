@@ -19,7 +19,7 @@ import System.IO.Temp
 import System.IO
 import qualified MMT.Hets2mmt as MMT
 import Data.List
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import System.Directory (removeFile)
 import Common.Utils (getEnvDef)
 

@@ -15,7 +15,7 @@ module HasCASL.ProgEq where
 
 import Common.Result
 import Common.Id
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 import HasCASL.As

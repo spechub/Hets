@@ -34,7 +34,7 @@ import qualified Common.GlobalAnnotations as GA (PrefixMap)
 import Text.ParserCombinators.Parsec
 import Control.Monad (liftM2)
 import Data.Char
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 
 characters :: [Character]
 characters = [minBound .. maxBound]

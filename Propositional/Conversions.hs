@@ -23,7 +23,7 @@ import qualified Common.Id as Id
 import Common.DocUtils
 
 import Data.Maybe
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 import qualified Propositional.AS_BASIC_Propositional as AS

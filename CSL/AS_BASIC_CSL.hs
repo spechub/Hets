@@ -72,7 +72,7 @@ import Common.Id as Id
 import Common.AS_Annotation as AS_Anno
 
 import Data.Data
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Ratio
 
 import CSL.TreePO

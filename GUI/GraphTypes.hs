@@ -35,7 +35,7 @@ import Common.IRI
 import Driver.Options (HetcatsOpts (uncolored), defaultHetcatsOpts)
 
 import Data.IORef
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 
 import Control.Concurrent.MVar
 import Control.Monad (when)

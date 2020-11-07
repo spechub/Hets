@@ -21,7 +21,7 @@ import Common.DefaultMorphism
 import Common.ProofTree
 
 import Data.Monoid
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 
 import Logic.Logic
 

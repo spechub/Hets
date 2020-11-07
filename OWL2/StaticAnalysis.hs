@@ -21,7 +21,7 @@ import OWL2.Theorem
 import OWL2.Function
 import OWL2.Symbols
 
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Data.List
 

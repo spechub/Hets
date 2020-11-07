@@ -24,7 +24,7 @@ import OWL2.AS
 
 import Data.Data
 import Data.List
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 
 import GHC.Generics (Generic)
 import Data.Hashable

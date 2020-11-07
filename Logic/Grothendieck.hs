@@ -126,7 +126,7 @@ import Common.GraphAlgo
 import Control.Monad (foldM)
 import Data.Maybe
 import Data.Typeable
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import qualified Data.Map as PlainMap -- need this to avoid Hashable instance for existential type
 

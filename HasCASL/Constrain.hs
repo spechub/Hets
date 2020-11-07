@@ -35,7 +35,7 @@ import HasCASL.ClassAna
 import HasCASL.VarDecl
 
 import qualified Data.Set as Set
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Common.Lib.Rel as Rel
 import Common.Lib.State
 import Common.Doc

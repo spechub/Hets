@@ -8,7 +8,7 @@ import RDF.Print
 import Common.DocUtils
 import Common.Parsec
 
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import Text.ParserCombinators.Parsec
 
 processFile :: String -> IO ()

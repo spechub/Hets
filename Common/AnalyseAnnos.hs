@@ -29,7 +29,7 @@ import Common.Result
 import Common.Utils
 import qualified Common.Lib.Rel as Rel
 
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Maybe (fromMaybe)
 import Data.List (partition)
 import Control.Monad (foldM)

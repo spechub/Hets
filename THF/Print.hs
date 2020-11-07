@@ -22,7 +22,7 @@ import THF.Sign
 import THF.PrintTHF
 import THF.As (THFFormula, FormulaRole (..))
 
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Maybe (fromMaybe)
 
 {- -----------------------------------------------------------------------------

@@ -25,7 +25,7 @@ import qualified Common.Lib.MapSet as MapSet
 import Hybrid.AS_Hybrid
 import Hybrid.HybridSign
 import Hybrid.Keywords
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 
 
 printFormulaOfHybridSign :: FormExtension f => (FORMULA f -> FORMULA f)

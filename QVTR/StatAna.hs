@@ -22,7 +22,7 @@ import Common.GlobalAnnotations
 import Common.ExtSign
 import Common.AS_Annotation
 
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
 

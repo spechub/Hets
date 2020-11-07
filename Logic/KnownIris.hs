@@ -12,7 +12,7 @@ Portability :  portable
 
 module Logic.KnownIris where
 
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 
 logPrefix, serPrefix :: String
 

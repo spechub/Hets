@@ -21,7 +21,7 @@ import System.IO (hGetContents)
 import LF.Sign
 import LF.Morphism
 
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Data.Maybe (fromMaybe)
 

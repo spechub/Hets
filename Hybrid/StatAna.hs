@@ -33,7 +33,7 @@ import Common.Result
 import Common.ExtSign
 import qualified Common.Lib.MapSet as MapSet
 
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Data.List as List
 

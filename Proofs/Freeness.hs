@@ -33,7 +33,7 @@ import Common.LibName
 import Common.Result
 
 import Data.Graph.Inductive.Graph as Graph
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import Control.Monad
 
 import Data.List (nub)

@@ -20,7 +20,7 @@ import Common.IRI (IRI)
 
 import Data.Data
 import Data.Maybe
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 
 import Data.Hashable
 import GHC.Generics (Generic)

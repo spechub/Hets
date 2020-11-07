@@ -31,7 +31,7 @@ import Comorphisms.CFOL2IsabelleHOL (IsaTheory)
 
 -- import CspCASLProver.Consts
 
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 
 import Isabelle.IsaParse (parseTheory)
 import Isabelle.IsaPrint (getAxioms, printIsaTheory)

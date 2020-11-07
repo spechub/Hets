@@ -16,7 +16,7 @@ module Maude.PreComorphism where
 import Data.Maybe
 import qualified Data.List as List
 import qualified Data.Set as Set
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 
 import qualified Maude.Sign as MSign
 import qualified Maude.Sentence as MSentence

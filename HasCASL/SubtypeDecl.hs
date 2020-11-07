@@ -29,7 +29,7 @@ import HasCASL.ClassAna
 import HasCASL.Unify
 import HasCASL.VarDecl
 
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 import Control.Monad

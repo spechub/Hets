@@ -23,7 +23,7 @@ import HasCASL.TypeAna
 
 import Common.Lib.State
 
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 
 -- | simplify terms and patterns (if True)
 simplifyRec :: Bool -> Env -> MapRec

@@ -23,7 +23,7 @@ import HasCASL.RawSym
 import Common.Id
 import Common.Result
 
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 instance GetRange Symbol where

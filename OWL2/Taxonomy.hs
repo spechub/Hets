@@ -28,7 +28,7 @@ import System.IO.Unsafe
 
 import qualified Data.Foldable as Fold
 import qualified Common.Lib.Rel as Rel
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import Data.List
 import Data.Maybe
 

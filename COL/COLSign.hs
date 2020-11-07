@@ -16,7 +16,7 @@ module COL.COLSign where
 
 import Data.Data
 import qualified Data.Set as Set
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 
 import Common.Id
 

@@ -35,7 +35,7 @@ import Text.ParserCombinators.Parsec
 import Control.Monad
 
 import Data.List
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Hashable
 
 -- | should be only ascii letters

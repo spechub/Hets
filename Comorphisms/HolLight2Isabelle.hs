@@ -24,7 +24,7 @@ import Isabelle.Translate
 import Common.Result
 import Common.AS_Annotation
 
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import Data.List ((\\))
 
 import HolLight.Sign

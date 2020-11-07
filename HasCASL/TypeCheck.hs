@@ -38,7 +38,7 @@ import HasCASL.Constrain
 import HasCASL.ProgEq
 import HasCASL.MinType
 
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Common.Id
 import Common.GlobalAnnotations

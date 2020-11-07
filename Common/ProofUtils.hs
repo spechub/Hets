@@ -17,7 +17,7 @@ Isabelle.IsaProve.
 module Common.ProofUtils where
 
 import Data.Char
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Common.AS_Annotation
 import Common.Utils (number)

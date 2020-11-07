@@ -26,7 +26,7 @@ import Logic.Logic
 import Logic.Comorphism
 import Logic.Prover
 
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import Data.List
 import qualified Common.Lib.Rel as Rel
 import Common.Consistency

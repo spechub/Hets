@@ -43,7 +43,7 @@ import Proofs.AbstractState
 import Proofs.ConsistencyCheck
 
 import Data.Graph.Inductive.Graph (LNode)
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import Data.List
 import Data.Maybe
 

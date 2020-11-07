@@ -20,7 +20,7 @@ import Common.AS_Annotation
 
 import qualified Common.Lib.Rel as Rel
 import qualified Data.Set as Set
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 
 
 basicAna :: (Metamodel, Sign, GlobalAnnos) -> Result (Metamodel, ExtSign Sign (), [Named Sen])

@@ -88,7 +88,7 @@ import Data.IORef
 import Data.Char (toLower)
 import Data.List (partition, deleteBy, isPrefixOf)
 import Data.Graph.Inductive.Graph (Node, LEdge, LNode)
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 
 import Control.Monad
 import Control.Concurrent.MVar

@@ -34,7 +34,7 @@ import Common.ProofTree
 import Common.Result
 import Common.Utils (timeoutSecs)
 
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Maybe
 import Data.List
 

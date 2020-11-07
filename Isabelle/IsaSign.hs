@@ -16,7 +16,7 @@ Data structures for Isabelle signatures and theories.
 
 module Isabelle.IsaSign where
 
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Data
 import Data.List
 import Common.Utils (splitOn)

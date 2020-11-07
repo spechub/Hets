@@ -13,7 +13,7 @@ import Data.Aeson as Aeson
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Text.Lazy.Encoding as LEncoding
 import Data.Maybe
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Map as PlainMap
 import qualified Data.Text.Lazy as LText
 import Data.Text as Text

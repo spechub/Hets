@@ -14,7 +14,7 @@ process Haskell files
 module Haskell.Haskell2DG (anaHaskellFile) where
 
 import Text.ParserCombinators.Parsec
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import Common.Result
 import Common.Id
 import Common.IRI (simpleIdToIRI)

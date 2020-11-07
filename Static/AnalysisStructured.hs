@@ -68,7 +68,7 @@ import Common.Lib.MapSet (imageSet, setInsert)
 
 import Data.Graph.Inductive.Graph
 import qualified Data.Set as Set
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Map as PlainMap
 import Data.Maybe
 import Data.List

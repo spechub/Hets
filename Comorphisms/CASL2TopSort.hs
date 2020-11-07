@@ -46,7 +46,7 @@ import CASL.StaticAna (sortsOfArgs)
 import CASL.Morphism
 import CASL.Sublogic as SL
 
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 -- | The identity of the comorphism

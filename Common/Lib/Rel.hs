@@ -51,7 +51,7 @@ module Common.Lib.Rel
 import Prelude hiding (map, null)
 import Data.Data
 import Data.Hashable
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import qualified Data.List as List
 

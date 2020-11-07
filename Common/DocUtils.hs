@@ -18,7 +18,7 @@ import Common.Doc
 import Common.Id
 import Common.IRI
 import qualified Data.Set as Set
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import Common.GlobalAnnotations
 import Data.Hashable
 

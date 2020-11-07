@@ -39,7 +39,7 @@ import Static.History
 
 import Common.LibName
 
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Graph.Inductive.Graph
 import Data.Maybe (fromMaybe)
 

@@ -69,7 +69,7 @@ import Data.Char (toLower)
 import qualified Data.IntMap as IntMap
 import Data.Graph.Inductive.Graph as Graph
 import Data.List (intercalate, isPrefixOf, stripPrefix)
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Maybe
 import Data.Set (Set)
 import qualified Data.Set as Set

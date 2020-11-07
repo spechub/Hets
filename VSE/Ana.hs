@@ -44,7 +44,7 @@ module VSE.Ana
 import Control.Monad
 import Data.Char (toLower)
 import Data.List
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 import qualified Common.Lib.MapSet as MapSet

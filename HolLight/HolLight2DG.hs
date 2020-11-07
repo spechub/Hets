@@ -46,7 +46,7 @@ import HolLight.Helper (names)
 import Driver.Options
 
 import Data.Graph.Inductive.Graph
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Maybe (fromMaybe)
 
 import System.Exit

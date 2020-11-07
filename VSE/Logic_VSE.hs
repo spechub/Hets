@@ -39,7 +39,7 @@ import Logic.Logic
 import GHC.Generics (Generic)
 import Data.Hashable
 
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 
 data VSE = VSE deriving (Show, Generic)
 

@@ -26,7 +26,7 @@ import Text.XML.Light
 
 import Data.Maybe
 import qualified Data.Set as Set
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 
 -- | prints the IRI with a colon separating the prefix and the local part
 showIRI :: IRI -> String

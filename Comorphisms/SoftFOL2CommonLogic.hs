@@ -32,7 +32,7 @@ import Logic.Logic
 import Logic.Comorphism
 
 import qualified Data.Set as Set
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 
 -- SoftFOL
 import qualified SoftFOL.Logic_SoftFOL as FOLLogic

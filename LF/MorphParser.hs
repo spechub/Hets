@@ -12,7 +12,7 @@ import Text.ParserCombinators.Parsec
 import System.Directory
 import System.IO.Unsafe
 
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Maybe (fromMaybe)
 
 

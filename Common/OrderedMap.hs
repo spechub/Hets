@@ -38,7 +38,7 @@ import Prelude hiding (lookup, map, filter, null)
 import Data.Data
 import Data.Ord
 import qualified Data.List as List
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Hashable
 
 data ElemWOrd a = EWOrd

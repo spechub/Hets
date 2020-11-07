@@ -30,7 +30,7 @@ import Control.Monad.Trans (lift)
 import Control.Monad (foldM, unless)
 
 import qualified Data.Graph.Inductive.Graph as Graph (Node)
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Set (Set)
 import qualified Data.Set as Set
 

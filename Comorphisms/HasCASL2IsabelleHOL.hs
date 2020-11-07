@@ -34,7 +34,7 @@ import Common.DocUtils
 import Common.Id
 import Common.Result
 import Common.Utils
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Common.AS_Annotation
 

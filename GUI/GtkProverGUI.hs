@@ -39,7 +39,7 @@ import qualified Comorphisms.KnownProvers as KnownProvers
 
 import Static.GTheory
 
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import Data.List
 import Data.Maybe (fromMaybe, isJust )
 

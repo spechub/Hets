@@ -29,7 +29,7 @@ import Static.GTheory (gEnsuresAmalgamability)
 import Static.History
 
 import Data.Graph.Inductive.Graph (LEdge, LNode)
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 
 -- * Conservativity rules
 

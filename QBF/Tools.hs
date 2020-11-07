@@ -17,7 +17,7 @@ module QBF.Tools where
 import Common.Id
 import QBF.AS_BASIC_QBF
 
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 
 import Data.List (nub, (\\))
 

@@ -31,7 +31,7 @@ import Control.Monad
 import Data.List (isPrefixOf)
 import Data.Maybe
 
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 -- better recompilation checking without 'import ATerm.Lib'
 import ATerm.AbstractSyntax
 import ATerm.ReadWrite

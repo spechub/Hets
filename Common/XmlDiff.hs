@@ -22,7 +22,7 @@ import Common.Lib.MapSet (setToMap)
 
 import Data.List
 import qualified Data.Set as Set
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 
 import Text.XML.Light as XML
 

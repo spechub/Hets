@@ -34,7 +34,7 @@ module Temporal.Morphism
   ) where
 
 import Data.Data
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 import Temporal.Sign as Sign

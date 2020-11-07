@@ -33,7 +33,7 @@ import Common.Id
 import Common.ExtSign
 import Common.Result
 import Common.Lib.State
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Control.Monad
 

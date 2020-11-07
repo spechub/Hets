@@ -21,7 +21,7 @@ import Common.ProofUtils
 import Common.ProverTools
 import qualified Common.OrderedMap as OMap
 
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Data.List
 import Data.Maybe (isJust)

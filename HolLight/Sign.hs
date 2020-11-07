@@ -14,7 +14,7 @@ Portability :  portable
 module HolLight.Sign where
 
 import Data.Typeable
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import Common.DocUtils
 import Common.Doc
 import Common.Result

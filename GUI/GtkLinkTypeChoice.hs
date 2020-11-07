@@ -25,7 +25,7 @@ import Static.DgUtils
 import Control.Monad (filterM)
 
 import Data.IORef
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 
 mapEdgeTypesToNames :: Map.HashMap String (DGEdgeType, DGEdgeType)
 mapEdgeTypesToNames = Map.fromList $ map

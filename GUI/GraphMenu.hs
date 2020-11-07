@@ -27,7 +27,7 @@ import GUI.GtkAddSentence
 #endif
 
 import Data.IORef
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 
 import System.Directory (getCurrentDirectory)
 import System.FilePath

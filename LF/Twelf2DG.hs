@@ -25,7 +25,7 @@ import LF.Morphism
 import LF.Logic_LF
 
 import Data.Graph.Inductive.Graph (Node)
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 
 import Common.LibName
 import Common.Id

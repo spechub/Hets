@@ -65,7 +65,7 @@ module Common.Utils
 import Data.Char
 import Data.List
 import Data.Maybe
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Data.Hashable
 

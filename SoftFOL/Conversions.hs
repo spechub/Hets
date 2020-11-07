@@ -18,7 +18,7 @@ import Data.Time
 import Data.Maybe
 import Data.List
 
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
 

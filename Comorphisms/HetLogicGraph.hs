@@ -31,7 +31,7 @@ import Logic.Coerce
 import Control.Monad
 
 import qualified Common.OrderedMap as OMap
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Map as PlainMap
 import qualified Data.Set as Set
 import Data.Maybe

@@ -14,7 +14,7 @@ extended to work over signatures with symbol sets.
 module Logic.ExtSign where
 
 import qualified Data.Set as Set
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import Control.Monad
 import Common.Result
 import Common.DocUtils

@@ -26,7 +26,7 @@ import Common.AS_Annotation
 import Common.GlobalAnnotations
 import qualified Common.IRI as IRI
 
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 
 import Control.Monad.Trans
 import System.IO.Unsafe

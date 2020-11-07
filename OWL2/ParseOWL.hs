@@ -18,7 +18,7 @@ import OWL2.Rename
 import qualified Data.ByteString.Lazy as L
 import Data.List
 import Data.Maybe
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 
 import Common.XmlParser
 import Common.ProverTools

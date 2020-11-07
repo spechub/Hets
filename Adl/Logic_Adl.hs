@@ -33,7 +33,7 @@ import Common.ProofTree
 import Common.DocUtils
 
 import Control.Monad
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Monoid
 
 import Logic.Logic

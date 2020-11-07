@@ -30,7 +30,7 @@ import Data.Graph.Inductive.Basic (elfilter)
 import Data.List
 import Data.Maybe (isNothing)
 import qualified Data.Set as Set
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import Control.Exception (assert)
 
 -- * other methods on edges

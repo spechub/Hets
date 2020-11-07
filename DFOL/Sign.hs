@@ -51,7 +51,7 @@ import qualified Common.Result as Result
 
 import Data.Data
 import qualified Data.Set as Set
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 
 -- symbol kinds
 data KIND = SortKind

@@ -24,7 +24,7 @@ import HasCASL.AsUtils
 import THF.As as THFAs
 
 import Data.Char
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 
 
 mkTypesName :: THFAs.Constant -> THFAs.Name

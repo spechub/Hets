@@ -43,7 +43,7 @@ import qualified THF.Sublogic as SL
 
 import Control.Monad
 
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import qualified Data.List as List
 

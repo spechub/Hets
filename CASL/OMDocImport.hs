@@ -33,7 +33,7 @@ import CASL.OMDoc
 
 import Control.Monad
 
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import Data.List
 import Data.Function (on)
 

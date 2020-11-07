@@ -45,7 +45,7 @@ import Common.LibName
 import Common.Result
 
 import Control.Monad.Identity
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Graph.Inductive.Graph
 import Data.Maybe (isJust)
 

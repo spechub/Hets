@@ -17,7 +17,7 @@ import Common.IRI
 import RDF.AS
 -- import RDF.Sign
 
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 {- import qualified Data.Set as Set
 }
 {- | this class contains general functions which operate on the ontology

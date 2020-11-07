@@ -21,7 +21,7 @@ import HasCASL.ClassAna
 import HasCASL.TypeAna
 import HasCASL.Le
 
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 import Common.DocUtils
 import Common.Id

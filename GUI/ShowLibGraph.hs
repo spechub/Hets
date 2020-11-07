@@ -44,7 +44,7 @@ import Common.XmlDiff
 import Text.XML.Light
 
 import Data.IORef
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Set as Set
 
 import Control.Concurrent.MVar

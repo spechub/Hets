@@ -80,7 +80,7 @@ module Comorphisms.Hs2HOLCFaux
     ) where
 
 import Data.List
-import qualified Data.HashMap.Lazy as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Maybe (fromMaybe)
 
 import Common.AS_Annotation
