@@ -493,7 +493,8 @@ mapCard b cSig ct n prop d var = do
         maxLst = mkImpl (conjunct $ oPropsM ++ eOut)
                         $ disjunct dlstM
         exactLst' = mkImpl (conjunct $ oPropsE ++ fOut) $ disjunct dlstM
-        exactLst = mkExist qVars $ conjunct [minLst, mkForall qVarsE exactLst']
+        senAux = conjunct [minLst, mkForall qVarsE exactLst']
+        exactLst =  if null qVars then senAux else mkExist qVars senAux
         ts = uniteL $ [cSig] ++ s ++ s' ++ s''
     return $ case ct of
             MinCardinality -> (mkExist qVars minLst, ts)
