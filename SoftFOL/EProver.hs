@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 {- |
 Module      :  ./SoftFOL/EProver.hs
 Description :  Analyze eprover output
@@ -17,7 +18,7 @@ import Common.Parsec
 import SoftFOL.ParseTPTP (singleQuoted, form, genTerm, ppGenTerm)
 import SoftFOL.PrintTPTP (printTPTP)
 import SoftFOL.Sign (SPTerm (..))
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import System.Exit
 import Common.Utils (executeProcess)
 import Common.Doc (renderText)
@@ -27,30 +28,36 @@ import Data.Char (toLower)
 import Data.Maybe (fromJust, fromMaybe, isNothing)
 import Data.List (foldl', intercalate)
 import Control.Monad (liftM)
+import GHC.Generics (Generic)
+import Data.Hashable
 
 data Role = Axiom | Conjecture | Other deriving (Show, Eq)
 
 data InferenceParent = PTerm String |
                        PInferred InferenceRule |
-                       PBuiltinTheory String deriving (Show, Eq, Ord)
+                       PBuiltinTheory String deriving (Show, Eq, Ord, Generic)
+
+instance Hashable InferenceParent
 
 data InferenceRule = ProofOf String
    | File { _fileName :: String, formulaName :: String }
    | Rule { rule :: String, parent :: String }
    | NoRule { parent :: String }
    | InferenceRule { rule :: String, status :: String,
-                     parents :: Set.Set InferenceParent,
+                     parents :: Set.HashSet InferenceParent,
                      _fact :: Bool }
-     deriving (Show, Eq, Ord)
+     deriving (Show, Eq, Ord, Generic)
 
-parentsOf :: InferenceRule -> Set.Set InferenceParent
+instance Hashable InferenceRule
+
+parentsOf :: InferenceRule -> Set.HashSet InferenceParent
 parentsOf (ProofOf s) = Set.singleton $ PTerm s
 parentsOf (File _ _) = Set.empty
 parentsOf (Rule _ s) = Set.singleton $ PTerm s
 parentsOf (NoRule s) = Set.singleton $ PTerm s
 parentsOf (InferenceRule _ _ ps _) = ps
 
-termParents :: Set.Set InferenceParent -> [String]
+termParents :: Set.HashSet InferenceParent -> [String]
 termParents s = foldl (\ l p -> case p of
                                 PTerm s' -> s' : l
                                 PInferred ir ->
@@ -182,7 +189,7 @@ alias m p = case inference p of
                           Nothing -> Map.insert (name p) s m
              _ -> m
 
-proofInfo :: Set.Set String -> ProofStep -> Set.Set String
+proofInfo :: Set.HashSet String -> ProofStep -> Set.HashSet String
 proofInfo p_set p =
  if Set.null p_set || Set.member (name p) p_set
  then Set.union p_set $ Set.fromList $
@@ -192,7 +199,7 @@ proofInfo p_set p =
 showTerm :: ProofStep -> String
 showTerm = renderText emptyGlobalAnnos . printTPTP . fromJust . formula
 
-facts :: Set.Set String -> ProofStep -> Set.Set String
+facts :: Set.HashSet String -> ProofStep -> Set.HashSet String
 facts s p =
  let isFact n = case n of
                  PTerm n' -> Set.member n' s
@@ -218,10 +225,10 @@ edge inv v1 v2 attrs' =
  in if inv then v2 ++ " -> " ++ v1 ++ attributes attrs
     else v1 ++ " -> " ++ v2 ++ attributes attrs
 
-digraph :: Set.Set String -> Map.HashMap String String ->
-           (Set.Set String, Set.Set String, String,
+digraph :: Set.HashSet String -> Map.HashMap String String ->
+           (Set.HashSet String, Set.HashSet String, String,
             Map.HashMap (String, [String]) String) -> ProofStep ->
-           (Set.Set String, Set.Set String,
+           (Set.HashSet String, Set.HashSet String,
             String, Map.HashMap (String, [String]) String)
 digraph p_set aliases (s, neg, d, m) p =
  let s' = facts s p

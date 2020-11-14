@@ -20,7 +20,7 @@ import HasCASL.Le
 import HasCASL.ClassAna
 import HasCASL.TypeMixAna
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Common.DocUtils
 import Common.Id
 import Common.Result
@@ -35,7 +35,7 @@ import Control.Monad
 -- * infer kind
 
 -- | extract kinds of type identifier
-getIdKind :: Env -> Id -> Result ((Variance, RawKind, Set.Set Kind), Type)
+getIdKind :: Env -> Id -> Result ((Variance, RawKind, Set.HashSet Kind), Type)
 getIdKind te i =
     case Map.lookup i $ localTypeVars te of
        Nothing -> case Map.lookup i $ typeMap te of
@@ -47,7 +47,7 @@ getIdKind te i =
 
 -- | extract kinds of co- or invariant type identifiers
 getCoVarKind :: Maybe Bool -> Env -> Id
-             -> Result ((RawKind, Set.Set Kind), Type)
+             -> Result ((RawKind, Set.HashSet Kind), Type)
 getCoVarKind b te i = do
     ((v, rk, l), ty) <- getIdKind te i
     case (v, b) of
@@ -60,8 +60,8 @@ getCoVarKind b te i = do
            _ -> return ((rk, l), ty)
 
 -- | check if there is at least one solution
-subKinds :: DiagKind -> ClassMap -> Type -> Set.Set Kind -> Set.Set Kind
-         -> Set.Set Kind -> Result (Set.Set Kind)
+subKinds :: DiagKind -> ClassMap -> Type -> Set.HashSet Kind -> Set.HashSet Kind
+         -> Set.HashSet Kind -> Result (Set.HashSet Kind)
 subKinds dk cm ty sk ks res =
    if Set.null $ Set.filter (flip (newKind cm) ks) sk then return res
    else Result [Diag dk
@@ -91,7 +91,7 @@ addLocalTypeVar warn tvd i = do
 
 -- | infer all minimal kinds
 inferKinds :: Maybe Bool -> Type -> Env
-           -> Result ((RawKind, Set.Set Kind), Type)
+           -> Result ((RawKind, Set.HashSet Kind), Type)
 inferKinds b ty te@Env {classMap = cm} = case ty of
     TypeName i _ _ -> getCoVarKind b te i
     TypeAppl t1 t2 -> do
@@ -197,24 +197,24 @@ getMinAssumps e i = keepMins (lesserOpInfo e) $ Set.toList
   $ Map.findWithDefault Set.empty i $ assumps e
 
 -- | type identifiers of a type
-idsOf :: (Int -> Bool) -> Type -> Set.Set Id
+idsOf :: (Int -> Bool) -> Type -> Set.HashSet Id
 idsOf b = Set.fromList . map (fst . snd) . leaves b
 
 -- * super type ids
 
 -- | compute super type ids of one type id
-superIds :: TypeMap -> Id -> Set.Set Id
+superIds :: TypeMap -> Id -> Set.HashSet Id
 superIds tm = supIds tm Set.empty . Set.singleton
 
 -- | compute all super type ids for several type ids given as second argument
-supIds :: TypeMap -> Set.Set Id -> Set.Set Id -> Set.Set Id
+supIds :: TypeMap -> Set.HashSet Id -> Set.HashSet Id -> Set.HashSet Id
 supIds tm known new =
     if Set.null new then known else
        let more = Set.unions $ map ( \ i -> superTypes
                             $ Map.findWithDefault starTypeInfo i tm)
                   $ Set.toList new
            newKnown = Set.union known new
-    in supIds tm newKnown (more Set.\\ newKnown)
+    in supIds tm newKnown (more `Set.difference` newKnown)
 
 -- * expand alias types
 
@@ -252,7 +252,7 @@ hasAlias tm t =
 -- * resolve and analyse types
 
 -- | resolve type and infer minimal kinds
-anaTypeM :: (Maybe Kind, Type) -> Env -> Result ((RawKind, Set.Set Kind), Type)
+anaTypeM :: (Maybe Kind, Type) -> Env -> Result ((RawKind, Set.HashSet Kind), Type)
 anaTypeM (mk, parsedType) te =
     do resolvedType <- mkTypeConstrAppl te parsedType
        let tm = typeMap te
@@ -269,7 +269,7 @@ anaTypeM (mk, parsedType) te =
        return ((rk, l), expandedType)
 
 -- | resolve the type and check if it is of the universe class
-anaStarTypeM :: Type -> Env -> Result ((RawKind, Set.Set Kind), Type)
+anaStarTypeM :: Type -> Env -> Result ((RawKind, Set.HashSet Kind), Type)
 anaStarTypeM t = anaTypeM (Just universe, t)
 
 -- * misc functions on types

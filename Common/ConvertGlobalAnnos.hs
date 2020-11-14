@@ -28,7 +28,7 @@ import Common.Result
 import Common.DocUtils
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Data.List (partition, groupBy, sortBy)
 import Data.Ord
 import Data.Function (on)

@@ -34,12 +34,12 @@ import Common.Prec
 import Common.Lib.State
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Data.Maybe
 
 -- * extract predicate ids from As for mixfix analysis
 
-type Ids = Set.Set Id
+type Ids = Set.HashSet Id
 
 unite :: [Ids] -> Ids
 unite = Set.unions
@@ -125,8 +125,8 @@ diffEnv e1 e2 = let
            (binders e1) $ binders e2 }
 
 -- | compute difference of operations
-diffAss :: Set.Set OpInfo -> Set.Set OpInfo
-        -> Maybe (Set.Set OpInfo)
+diffAss :: Set.HashSet OpInfo -> Set.HashSet OpInfo
+        -> Maybe (Set.HashSet OpInfo)
 diffAss s1 s2 =
     let s3 = Set.difference s1 s2 in
         if Set.null s3 then Nothing else Just s3

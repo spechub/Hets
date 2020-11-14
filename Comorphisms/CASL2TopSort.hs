@@ -47,7 +47,7 @@ import CASL.Morphism
 import CASL.Sublogic as SL
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 -- | The identity of the comorphism
 data CASL2TopSort = CASL2TopSort deriving Show
@@ -101,7 +101,7 @@ instance Comorphism CASL2TopSort
     has_model_expansion CASL2TopSort = True
 
 data PredInfo = PredInfo { topSortPI :: SORT
-                         , directSuperSortsPI :: Set.Set SORT
+                         , directSuperSortsPI :: Set.HashSet SORT
                          , predicatePI :: PRED_NAME
                          } deriving Show
 
@@ -182,12 +182,12 @@ transOpMap sRel subSortMap = rmOrAddPartsMap True . MapSet.map transType
                            (\ a na -> a == na || Rel.member na a sRel)
                            args newArgs) then kd else Partial }
 
-procOpMapping :: SubSortMap -> OP_NAME -> Set.Set OpType
+procOpMapping :: SubSortMap -> OP_NAME -> Set.HashSet OpType
   -> [Named (FORMULA ())] -> [Named (FORMULA ())]
 procOpMapping subSortMap opName =
   (++) . Map.foldrWithKey procProfMapOpMapping [] . mkProfMapOp subSortMap
   where
-    procProfMapOpMapping :: [SORT] -> (OpKind, Set.Set [Maybe PRED_NAME])
+    procProfMapOpMapping :: [SORT] -> (OpKind, Set.HashSet [Maybe PRED_NAME])
                          -> [Named (FORMULA ())] -> [Named (FORMULA ())]
     procProfMapOpMapping sl (kind, spl) = genArgRest
         (genSenName "o" opName $ length sl) (genOpEquation kind opName) sl spl
@@ -247,16 +247,16 @@ generateAxioms subSortMap pMap oMap = hi_axs ++ p_axs ++ axs
                          supPreds
              ) $ Map.elems subSortMap
 
-mkProfMapPred :: SubSortMap -> Set.Set PredType
-              -> Map.HashMap [SORT] (Set.Set [Maybe PRED_NAME])
-mkProfMapPred ssm = Set.fold seperate Map.empty
-    where seperate pt = MapSet.setInsert (pt2topSorts pt) (pt2preds pt)
+mkProfMapPred :: SubSortMap -> Set.HashSet PredType
+              -> Map.HashMap [SORT] (Set.HashSet [Maybe PRED_NAME])
+mkProfMapPred ssm = Set.foldr seperate Map.empty
+    where seperate pt = MapSet.HashSetInsert (pt2topSorts pt) (pt2preds pt)
           pt2topSorts = map (lkupTop ssm) . predArgs
           pt2preds = map (lkupPredM ssm) . predArgs
 
-mkProfMapOp :: SubSortMap -> Set.Set OpType
-            -> Map.HashMap [SORT] (OpKind, Set.Set [Maybe PRED_NAME])
-mkProfMapOp ssm = Set.fold seperate Map.empty
+mkProfMapOp :: SubSortMap -> Set.HashSet OpType
+            -> Map.HashMap [SORT] (OpKind, Set.HashSet [Maybe PRED_NAME])
+mkProfMapOp ssm = Set.foldr seperate Map.empty
     where seperate ot =
               Map.insertWith (\ (k1, s1) (k2, s2) ->
                                            (min k1 k2, Set.union s1 s2))
@@ -279,7 +279,7 @@ lkupPred ssm = fromMaybe (error "CASL2TopSort.lkupPred") . lkupPredM ssm
 genArgRest :: String -> ([VAR_DECL] -> FORMULA f)
                {- ^ generates from a list of variables
                either the predication or function equation -}
-           -> [SORT] -> Set.Set [Maybe PRED_NAME]
+           -> [SORT] -> Set.HashSet [Maybe PRED_NAME]
            -> [Named (FORMULA f)] -> [Named (FORMULA f)]
 genArgRest sen_name genProp sl spl fs =
     let vars = genVars sl
@@ -317,13 +317,13 @@ genSenName suff symbName arity =
 genQuantification :: FORMULA f {- ^ either the predication or
                                function equation -}
                   -> [VAR_DECL] -- ^ Qual_vars
-                  -> Set.Set [Maybe PRED_NAME]
+                  -> Set.HashSet [Maybe PRED_NAME]
                   -> Maybe (FORMULA f)
 genQuantification prop vars spl = do
      dis <- genDisjunction vars spl
      return $ mkForall vars $ mkImpl prop dis
 
-genDisjunction :: [VAR_DECL] -> Set.Set [Maybe PRED_NAME] -> Maybe (FORMULA f)
+genDisjunction :: [VAR_DECL] -> Set.HashSet [Maybe PRED_NAME] -> Maybe (FORMULA f)
 genDisjunction vars spn
     | Set.size spn == 1 =
         case disjs of

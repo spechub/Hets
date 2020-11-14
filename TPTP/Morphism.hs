@@ -25,14 +25,14 @@ import Common.Id
 import qualified Data.HashMap.Strict as Map
 
 import Data.Maybe
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 type Morphism = DefaultMorphism Sign
 
 mkSymbol :: Token -> SymbolType -> Symbol
 mkSymbol i t = Symbol { symbolId = i , symbolType = t }
 
-gatherTHFSymbols :: SymbolType -> THFTypeDeclarationMap -> Set.Set Symbol
+gatherTHFSymbols :: SymbolType -> THFTypeDeclarationMap -> Set.HashSet Symbol
 gatherTHFSymbols symType = Set.map fromJust . Set.filter isJust .
   Set.map (\ x -> mkSymbolFromTHFType x symType) . Set.fromList . Map.keys
   where
@@ -49,7 +49,7 @@ mkSymbolFromTFFType x t = case x of
 mkToken :: Show a => a -> Token
 mkToken = mkSimpleId . show
 
-symbolsOfSign :: Sign -> Set.Set Symbol
+symbolsOfSign :: Sign -> Set.HashSet Symbol
 symbolsOfSign sign = Set.unions [
     Set.map (\ x -> mkSymbol x Sign.Constant) $ constantSet sign
   , Set.map (\ x -> mkSymbol (mkToken x) Sign.Number) $ numberSet sign

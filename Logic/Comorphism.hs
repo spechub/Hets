@@ -54,7 +54,7 @@ import Common.Result
 
 import Data.Data
 import Data.Maybe
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import GHC.Generics (Generic)
 import Data.Hashable
@@ -111,7 +111,7 @@ class (Language cid,
           with no sentence translation
           - but these are spans! -}
     map_sentence = failMapSentence
-    map_symbol :: cid -> sign1 -> symbol1 -> Set.Set symbol2
+    map_symbol :: cid -> sign1 -> symbol1 -> Set.HashSet symbol2
     map_symbol = errMapSymbol
     extractModel :: cid -> sign1 -> proof_tree2
                  -> Result (sign1, [Named sentence1])
@@ -184,7 +184,7 @@ errMapSymbol :: Comorphism cid
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1
             lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2
-         => cid -> sign1 -> symbol1 -> Set.Set symbol2
+         => cid -> sign1 -> symbol1 -> Set.HashSet symbol2
 errMapSymbol cid _ _ = error $ "no symbol mapping for " ++ show cid
 
 -- | use this function instead of 'mapMarkedTheory'

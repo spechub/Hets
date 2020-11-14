@@ -16,7 +16,7 @@ module Common.ExampleMixIds (stdOpsL, stdPreds, mkIds) where
 import Common.Id
 import Common.AnnoParser
 import Common.Lexer
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 stdOpsL :: [String]
 stdOpsL =
@@ -33,8 +33,8 @@ stdPredsL =
   [ "__<__", "__<=__", "__>__", "__>=__", "__!=__", "__<>__"
   , "__/=__", "even__", "odd__", "__isEmpty", "__<=__<=__" ]
 
-mkIds :: [String] -> Set.Set Id
+mkIds :: [String] -> Set.HashSet Id
 mkIds = Set.fromList . map (parseString parseAnnoId)
 
-stdPreds :: Set.Set Id
+stdPreds :: Set.HashSet Id
 stdPreds = mkIds stdPredsL

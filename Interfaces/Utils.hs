@@ -59,7 +59,7 @@ import Logic.Coerce
 import Comorphisms.LogicGraph (logicGraph)
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Common.IRI
 import Common.Utils (splitOn)
 import Common.Result

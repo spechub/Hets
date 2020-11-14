@@ -28,7 +28,7 @@ import Common.Prec
 import Data.Data
 import Data.Ord
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import GHC.Generics (Generic)
 import Data.Hashable
@@ -38,7 +38,7 @@ import Data.Hashable
 -- | store the raw kind and all superclasses of a class identifier
 data ClassInfo = ClassInfo
     { rawKind :: RawKind
-    , classKinds :: Set.Set Kind
+    , classKinds :: Set.HashSet Kind
     } deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | mapping class identifiers to their definition
@@ -75,7 +75,7 @@ stored in the identifier map. This identifier map must never be empty (even
 without renamings) because (the domain of) this map is used to store the
 other (recursively dependent) top-level identifiers. -}
 data DataEntry =
-    DataEntry IdMap Id GenKind [TypeArg] RawKind (Set.Set AltDefn)
+    DataEntry IdMap Id GenKind [TypeArg] RawKind (Set.HashSet AltDefn)
     deriving (Show, Eq, Ord, Typeable, Data, Generic)
 
 instance Hashable DataEntry
@@ -91,8 +91,8 @@ data TypeDefn =
 -- | for type identifiers also store the raw kind, instances and supertypes
 data TypeInfo = TypeInfo
     { typeKind :: RawKind
-    , otherTypeKinds :: Set.Set Kind
-    , superTypes :: Set.Set Id -- only declared or direct supertypes?
+    , otherTypeKinds :: Set.HashSet Kind
+    , superTypes :: Set.HashSet Id -- only declared or direct supertypes?
     , typeDefn :: TypeDefn
     } deriving (Show, Typeable, Data)
 
@@ -154,22 +154,28 @@ data VarDefn = VarDefn Type deriving (Show, Typeable, Data)
 data ConstrInfo = ConstrInfo
     { constrId :: Id
     , constrType :: TypeScheme
-    } deriving (Show, Eq, Ord, Typeable, Data)
+    } deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable ConstrInfo
 
 -- | possible definitions of functions
 data OpDefn =
     NoOpDefn OpBrand
   | ConstructData Id     -- ^ target type
-  | SelectData (Set.Set ConstrInfo) Id   -- ^ constructors of source type
+  | SelectData (Set.HashSet ConstrInfo) Id   -- ^ constructors of source type
   | Definition OpBrand Term
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable OpDefn
 
 -- | scheme, attributes and definition for function identifiers
 data OpInfo = OpInfo
     { opType :: TypeScheme
-    , opAttrs :: Set.Set OpAttr
+    , opAttrs :: Set.HashSet OpAttr
     , opDefn :: OpDefn
-    } deriving (Show, Typeable, Data)
+    } deriving (Show, Typeable, Data, Generic)
+
+instance Hashable OpInfo
 
 instance Eq OpInfo where
     o1 == o2 = compare o1 o2 == EQ
@@ -184,7 +190,7 @@ isConstructor o = case opDefn o of
     _ -> False
 
 -- | mapping operation identifiers to their definition
-type Assumps = Map.HashMap Id (Set.Set OpInfo)
+type Assumps = Map.HashMap Id (Set.HashSet OpInfo)
 
 -- * the local environment and final signature
 
@@ -197,9 +203,9 @@ data Env = Env
     , binders :: Map.HashMap Id Id -- binder with associated op-id
     , localVars :: Map.HashMap Id VarDefn
     , sentences :: [Named Sentence]
-    , declSymbs :: Set.Set Symbol
+    , declSymbs :: Set.HashSet Symbol
     , envDiags :: [Diagnosis]
-    , preIds :: (PrecMap, Set.Set Id)
+    , preIds :: (PrecMap, Set.HashSet Id)
     , globAnnos :: GlobalAnnos
     , counter :: Int
     } deriving (Show, Typeable, Data)
@@ -235,7 +241,9 @@ function that is only linear. -}
 
 data Constrain = Kinding Type Kind
                | Subtyping Type Type
-                 deriving (Show, Eq, Ord, Typeable, Data)
+                 deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable Constrain
 
 -- * accessing the environment
 
@@ -369,7 +377,7 @@ instance Ord Symbol where
 type SymbolMap = Map.HashMap Symbol Symbol
 
 -- | a set of symbols
-type SymbolSet = Set.Set Symbol
+type SymbolSet = Set.HashSet Symbol
 
 -- | create a type symbol
 idToTypeSymbol :: Id -> RawKind -> Symbol
@@ -433,7 +441,7 @@ symbKindToRaw sk = case sk of
         SyKsort -> SyKtype
         _ -> sk
 
-getCompoundLists :: Env -> Set.Set [Id]
+getCompoundLists :: Env -> Set.HashSet [Id]
 getCompoundLists e = Set.delete [] $ Set.map getCompound $ Set.union
     (Set.fromList $ Map.keys $ assumps e) $ Set.fromList $ Map.keys $ typeMap e
     where getCompound (Id _ cs _) = cs

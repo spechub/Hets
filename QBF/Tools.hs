@@ -18,10 +18,11 @@ import Common.Id
 import QBF.AS_BASIC_QBF
 
 import qualified Data.HashMap.Strict as Map
+import qualified Common.HashSetUtils as HSU
 
 import Data.List (nub, (\\))
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 data FoldRecord a = FoldRecord
   { foldNegation :: a -> Range -> a
@@ -81,17 +82,17 @@ isQuantified f = case f of
   ForAll {} -> True
   Exists {} -> True
 
-getLits :: Set.Set FORMULA -> Set.Set FORMULA
-getLits = Set.fold (\ f -> case f of
+getLits :: Set.HashSet FORMULA -> Set.HashSet FORMULA
+getLits = Set.foldr (\ f -> case f of
   Negation x _ -> Set.insert x
   ForAll ts f1 n -> case f1 of
     Negation x _ -> Set.insert (ForAll ts x n)
     _ -> Set.insert (ForAll ts f n)
   _ -> Set.insert f) Set.empty
 
-bothLits :: Set.Set FORMULA -> Bool
+bothLits :: Set.HashSet FORMULA -> Bool
 bothLits fs = let
-  (ns, ps) = Set.partition isNeg fs
+  (ns, ps) = HSU.partition isNeg fs
   in not $ Set.null $ Set.intersection (getLits ns) (getLits ps)
 
 getConj :: FORMULA -> [FORMULA]
@@ -104,7 +105,7 @@ getDisj f = case f of
   Disjunction xs _ -> xs
   _ -> [f]
 
-flatConj :: [FORMULA] -> Set.Set FORMULA
+flatConj :: [FORMULA] -> Set.HashSet FORMULA
 flatConj = Set.fromList
   . concatMap (\ f -> case f of
       TrueAtom _ -> []
@@ -124,7 +125,7 @@ mkConj fs n = let s = flatConj fs in
           . Set.fromList . getConj)
         [] ls) n
 
-flatDisj :: [FORMULA] -> Set.Set FORMULA
+flatDisj :: [FORMULA] -> Set.HashSet FORMULA
 flatDisj = Set.fromList
   . concatMap (\ f -> case f of
       FalseAtom _ -> []

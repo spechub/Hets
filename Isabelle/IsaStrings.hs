@@ -17,18 +17,18 @@ obtained by manually taking @lexicon@ and @consts@ from
 
 module Isabelle.IsaStrings where
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 -- | convert pasted strings to a relevant set of strings
-mkIsaSet :: [String] -> Set.Set String
+mkIsaSet :: [String] -> Set.HashSet String
 mkIsaSet = Set.fromList . concatMap words
 {- fewer list elements are better to optimize ("\",\"" -> "   ")
    but keep all words in case we also want to use symbols
 -}
 
 data IsaSets = IsaSets
-    { types :: Set.Set String
-    , consts :: Set.Set String
+    { types :: Set.HashSet String
+    , consts :: Set.HashSet String
     }
 
 holcfS :: IsaSets

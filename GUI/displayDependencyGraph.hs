@@ -39,7 +39,7 @@ import Events.Destructible (destroy, destroyed)
 import qualified HTk.Toplevel.HTk as HTk
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Common.Lib.Rel as Rel
 
 import System.Directory

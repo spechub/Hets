@@ -21,7 +21,7 @@ import RDF.Parse (predefinedPrefixes)
 
 import Data.Maybe
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import Text.ParserCombinators.Parsec hiding (State)
 
@@ -223,7 +223,8 @@ createAxioms doc = map simpleTripleToAxiom $ snd $ expandTripleList 1
                                     $ triplesOfDocument $ resolveDocument doc
 
 -- | takes an entity and modifies the sign according to the given function
-modEntity :: (Term -> Set.Set Term -> Set.Set Term) -> RDFEntity -> State Sign ()
+modEntity :: (Term -> Set.HashSet Term -> Set.HashSet Term) -> 
+          RDFEntity -> State Sign ()
 modEntity f (RDFEntity ty u) = do
   s <- get
   let chg = f u

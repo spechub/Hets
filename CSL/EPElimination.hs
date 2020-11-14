@@ -26,7 +26,7 @@ import CSL.GuardedDependencies
 
 import Control.Monad
 import qualified Data.Tree as Tr
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.Map as Map
 import Data.Maybe
 
@@ -70,7 +70,7 @@ dependencySortAS grdm = mapMaybe f $ topsortDirect $ getDependencyRelation grdm
     where f x = fmap ((,) x) $ Map.lookup x grdm
 
 
-type Rel2 a = Map.Map a (Set.Set a)
+type Rel2 a = Map.Map a (Set.HashSet a)
 type BackRef a = Map.Map a [a]
 
 {- | @r dependsOn r'@ if @r'@ occurs in the definition term of @r@. In this case
@@ -86,7 +86,7 @@ getBackRef :: Ord a => Rel2 a -> BackRef a
 getBackRef d =
     let uf k n = Map.insertWith (++) n [k]
         -- for each entry in the set insert k into the list
-        f k s m = Set.fold (uf k) m s
+        f k s m = Set.foldr (uf k) m s
     -- from each entry in d add entries in the map
     in Map.foldWithKey f Map.empty d
 
@@ -254,7 +254,7 @@ refineDefPartition pm (c, ps) = do
 -- * Various Outputs of Guarded Assignments
 
 -- | All in the given AssignmentStore undefined constants
-undefinedConstants :: GuardedMap a -> Set.Set String
+undefinedConstants :: GuardedMap a -> Set.HashSet String
 undefinedConstants gm =
      Map.keysSet
             $ Map.difference (Map.filter Set.null $ getDependencyRelation gm) gm

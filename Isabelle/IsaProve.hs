@@ -40,7 +40,7 @@ import Common.ProofUtils
 import Common.Result
 import Common.Utils (getEnvDef, executeProcess)
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import Text.ParserCombinators.Parsec
 

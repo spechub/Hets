@@ -23,7 +23,7 @@ import Common.ProofTree
 import Common.Utils
 import qualified Common.Lib.MapSet as MapSet
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 import Data.List
 import Data.Maybe
@@ -129,7 +129,7 @@ getPropSens i args mres = let
       maybeToList (fmap (mki " domain" . mkDR ADomain) mres)
       ++ [mki " range" $ mkDR ARange a]) ncs
 
-getPropNames :: (a -> [b]) -> MapSet.MapSet Id a -> Set.Set IRI
+getPropNames :: (a -> [b]) -> MapSet.MapSet Id a -> Set.HashSet IRI
 getPropNames f = Map.foldrWithKey (\ i s l ->
     case Set.toList s of
       [] -> l
@@ -143,21 +143,21 @@ commonType csig l =
     hl | all (not . null) hl -> return $ map head hl
     _ -> fail $ "no common types for " ++ show l
 
-commonOpType :: CS.Sign f e -> Set.Set OpType -> Result OpType
+commonOpType :: CS.Sign f e -> Set.HashSet OpType -> Result OpType
 commonOpType csig os = do
   l <- commonType csig $ map (\ o -> opRes o : opArgs o) $ Set.toList os
   case l of
     r : args -> return $ mkTotOpType args r
     _ -> fail $ "no common types for " ++ showDoc os ""
 
-commonPredType :: CS.Sign f e -> Set.Set PredType -> Result PredType
+commonPredType :: CS.Sign f e -> Set.HashSet PredType -> Result PredType
 commonPredType csig ps = do
   args <- commonType csig $ map predArgs $ Set.toList ps
   case args of
     _ : _ -> return $ PredType args
     _ -> fail $ "no common types for " ++ showDoc ps ""
 
-getCommonSupers :: CS.Sign f e -> [SORT] -> Set.Set SORT
+getCommonSupers :: CS.Sign f e -> [SORT] -> Set.HashSet SORT
 getCommonSupers csig s = let supers t = Set.insert t $ supersortsOf t csig in
    if null s then Set.empty else foldr1 Set.intersection $ map supers s
 

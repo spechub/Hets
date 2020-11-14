@@ -40,7 +40,7 @@ import CspCASL.Print_CspCASL
 import CspCASL.SignCSP
 import CspCASL.Symbol
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 import Data.Maybe
 
@@ -691,7 +691,7 @@ anaRenaming renaming = case renaming of
     return ( Set.map CommTypeSort $ Set.unions $ map alphaOfRename rs
            , Renaming rs)
 
-alphaOfRename :: Rename -> Set.Set SORT
+alphaOfRename :: Rename -> Set.HashSet SORT
 alphaOfRename (Rename _ cm) = case cm of
   Just (_, Just (s1, s2)) -> Set.fromList [s1, s2]
   _ -> Set.empty
@@ -748,7 +748,7 @@ list of corresponding profiles, i.e. kind, argument sort and result sort. -}
 getUnaryOpsById :: Id -> State CspCASLSign [(OpKind, (SORT, SORT))]
 getUnaryOpsById ri = do
   om <- gets opMap
-  return $ Set.fold (\ oty -> case oty of
+  return $ Set.foldr (\ oty -> case oty of
      OpType k [s1] s2 -> ((k, (s1, s2)) :)
      _ -> id) [] $ MapSet.lookup ri om
 
@@ -757,7 +757,7 @@ CASL signature, and return a list of corresponding profiles. -}
 getBinPredsById :: Id -> State CspCASLSign [(SORT, SORT)]
 getBinPredsById ri = do
   pm <- gets predMap
-  return $ Set.fold (\ pty -> case pty of
+  return $ Set.foldr (\ pty -> case pty of
      PredType [s1, s2] -> ((s1, s2) :)
      _ -> id) [] $ MapSet.lookup ri pm
 

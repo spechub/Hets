@@ -25,12 +25,12 @@ import qualified Common.Lib.Rel as Rel
 
 import Data.Data
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import GHC.Generics (Generic)
 import Data.Hashable
 
-type RelMap = Map.HashMap Id (Set.Set RelType)
+type RelMap = Map.HashMap Id (Set.HashSet RelType)
 
 data Sign = Sign
   { rels :: RelMap
@@ -122,7 +122,7 @@ symMatch s r = case r of
   Symbol t -> s == t
   AnId i -> symName s == i
 
-symOf :: Sign -> Set.Set Symbol
+symOf :: Sign -> Set.HashSet Symbol
 symOf = Set.unions . map (\ (i, l) ->
           Set.fromList
             . concatMap

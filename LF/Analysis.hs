@@ -22,7 +22,7 @@ import Common.DocUtils
 
 import Data.List
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import System.IO.Unsafe
 

@@ -19,12 +19,14 @@ import CASL.Fold
 import Common.Id
 import Common.Utils (nubOrd)
 
+import Data.Hashable
+
 negateFormula :: FORMULA f -> Maybe (FORMULA f)
 negateFormula f = case f of
   Sort_gen_ax {} -> Nothing
   _ -> Just $ negateForm f nullRange
 
-mkJunction :: Ord f => Junctor -> [FORMULA f] -> Range -> FORMULA f
+mkJunction :: (Ord f, Hashable f) => Junctor -> [FORMULA f] -> Range -> FORMULA f
 mkJunction j fs ps = let
     (isTop, top, join) = case j of
         Con -> (is_False_atom, False, conjunctRange)
@@ -61,7 +63,7 @@ mkEquation :: Ord f => TERM f -> Equality -> TERM f -> Range -> FORMULA f
 mkEquation t1 e t2 ps =
   if e == Strong && t1 == t2 then Atom True ps else Equation t1 e t2 ps
 
-simplifyRecord :: Ord f => (f -> f) -> Record f (FORMULA f) (TERM f)
+simplifyRecord :: (Ord f, Hashable f) => (f -> f) -> Record f (FORMULA f) (TERM f)
 simplifyRecord mf = (mapRecord mf)
     { foldConditional = \ _ t1 f t2 ps -> case f of
       Atom b _ -> if b then t1 else t2
@@ -80,8 +82,8 @@ simplifyRecord mf = (mapRecord mf)
     , foldEquation = const mkEquation
     }
 
-simplifyTerm :: Ord f => (f -> f) -> TERM f -> TERM f
+simplifyTerm :: (Ord f, Hashable f) => (f -> f) -> TERM f -> TERM f
 simplifyTerm = foldTerm . simplifyRecord
 
-simplifyFormula :: Ord f => (f -> f) -> FORMULA f -> FORMULA f
+simplifyFormula :: (Ord f, Hashable f) => (f -> f) -> FORMULA f -> FORMULA f
 simplifyFormula = foldFormula . simplifyRecord

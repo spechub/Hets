@@ -28,7 +28,7 @@ import Common.Id
 import Common.DocUtils
 import Control.Monad
 import Data.List
-import Data.Set
+import qualified Data.HashSet as Set
 import Unsafe.Coerce
 import ATerm.Lib
 
@@ -51,8 +51,8 @@ topAna :: (Logic l sub bs sen si smi sign mor symb raw pf) =>
 topAna ds l sig = if not rep then return newSig else mkHint newSig msg
                 where
                 x = colnomsMods ds
-                x' = bimap fromList fromList x
-                rep = size (uncurry Data.Set.union x') /=
+                x' = bimap Set.fromList Set.fromList x
+                rep = Set.size (uncurry Set.union x') /=
                       length (uncurry (++) x)
                 s = uncurry THybridSign x' sig
                 newSig = Sgn_Wrap l s
@@ -60,9 +60,9 @@ topAna ds l sig = if not rep then return newSig else mkHint newSig msg
 
 {- Checks if the modalities and nominals referred in a sentence, really exist
 in the signature -}
-nomOrModCheck :: (Pretty f, GetRange f) => Set SIMPLE_ID -> SIMPLE_ID ->
+nomOrModCheck :: (Pretty f, GetRange f) => Set.HashSet SIMPLE_ID -> SIMPLE_ID ->
                                            TH_FORMULA f -> Result (TH_FORMULA f)
-nomOrModCheck xs x = if member x xs then return else mkError msg
+nomOrModCheck xs x = if Set.member x xs then return else mkError msg
      where msg = maybeE 1 Nothing
 
 
@@ -126,12 +126,12 @@ unroll _ _ EmptySign _ = error "Signature not computable"
 -- helper function
 addNomToSig :: NOMINAL -> Sgn_Wrap -> Sgn_Wrap
 addNomToSig n (Sgn_Wrap l s) = Sgn_Wrap l s
- { nomies = Data.Set.insert n $ nomies s}
+ { nomies = Set.insert n $ nomies s}
 addNomToSig _ EmptySign = error "Signature not computable"
 
 checkForRepNom :: (Pretty f, GetRange f) =>
-        NOMINAL -> Set NOMINAL -> TH_FORMULA f -> Result (TH_FORMULA f)
-checkForRepNom n s = if member n s
+        NOMINAL -> Set.HashSet NOMINAL -> TH_FORMULA f -> Result (TH_FORMULA f)
+checkForRepNom n s = if Set.member n s
         then mkError "conflict in nominal decl and quantification"
         else return
 {- | Lift of the formula analyser

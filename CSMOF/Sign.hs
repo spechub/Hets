@@ -21,7 +21,7 @@ import Common.Id
 
 import Data.Data
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import GHC.Generics (Generic)
 import Data.Hashable
@@ -63,7 +63,9 @@ instance Pretty PropertyT where
 data LinkT = LinkT { sourceVar :: Role
                    , targetVar :: Role
                    , property :: PropertyT
-                   } deriving (Show, Eq, Ord, Typeable, Data)
+                   } deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable LinkT
 
 instance Pretty LinkT where
   pretty (LinkT souV tarV pro) = text "link" <> lparen <> text souV <+>
@@ -73,13 +75,13 @@ instance Pretty LinkT where
                                  <+> colon <+> pretty (targetType pro) <+>
                                  rparen
 
-data Sign = Sign { types :: Set.Set TypeClass
+data Sign = Sign { types :: Set.HashSet TypeClass
                  , typeRel :: Rel.Rel TypeClass
-                 , abstractClasses :: Set.Set TypeClass
-                 , roles :: Set.Set Role
-                 , properties :: Set.Set PropertyT
+                 , abstractClasses :: Set.HashSet TypeClass
+                 , roles :: Set.HashSet Role
+                 , properties :: Set.HashSet PropertyT
                  , instances :: Map.HashMap String TypeClass
-                 , links :: Set.Set LinkT
+                 , links :: Set.HashSet LinkT
                  } deriving (Show, Eq, Ord, Typeable, Data)
 
 instance GetRange Sign where
@@ -88,19 +90,19 @@ instance GetRange Sign where
 
 instance Pretty Sign where
   pretty (Sign typ tyR abst rol pro ins lin) =
-    Set.fold (($+$) . toType abst) empty typ
+    Set.foldr (($+$) . toType abst) empty typ
     $++$
     foldr (($+$) . toSubRel) empty (Rel.toList tyR)
     $++$
-    Set.fold (($+$) . text . ("role " ++)) empty rol
+    Set.foldr (($+$) . text . ("role " ++)) empty rol
     $++$
-    Set.fold (($+$) . pretty) empty pro
+    Set.foldr (($+$) . pretty) empty pro
     $++$
     foldr (($+$) . toInstance) empty (Map.toList ins)
     $++$
-    Set.fold (($+$) . pretty) empty lin
+    Set.foldr (($+$) . pretty) empty lin
 
-toType :: Set.Set TypeClass -> TypeClass -> Doc
+toType :: Set.HashSet TypeClass -> TypeClass -> Doc
 toType setTC (TypeClass nam ki) =
   if Set.member (TypeClass nam ki) setTC then
     text "abstract" <+> pretty ki <+> text nam

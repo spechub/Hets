@@ -29,7 +29,8 @@ import Common.Result
 import Control.Monad
 
 import Data.Maybe
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
+import qualified Common.HashSetUtils as HSU
 
 basic_Rel_analysis :: (RSScheme, Sign, GlobalAnnos) ->
                       Result (RSScheme, ExtSign Sign RSSymbol, [Named Sentence])
@@ -51,9 +52,9 @@ basic_Rel_analysis (spec, sign, _) =
                     map makeNamedSen sens)
 
 -- ^ Function to determine the symbols of a spec
-getSymbols :: RSTables -> Set.Set RSSymbol
+getSymbols :: RSTables -> Set.HashSet RSSymbol
 getSymbols inTbl =
-        Set.fold (\ x y ->
+        Set.foldr (\ x y ->
              Set.union
                 (foldl (\ b a -> SColumn (t_name x) (c_name a) (c_data a) (c_key a)
                         `Set.insert` b) Set.empty $ columns x) $
@@ -122,7 +123,7 @@ codoN = collectNames tbi relCo -}
              rn)
             return reli
 
-analyse_RSQualid :: Range -> Set.Set RSTable -> RSQualId -> Result RSQualId
+analyse_RSQualid :: Range -> Set.HashSet RSTable -> RSQualId -> Result RSQualId
 analyse_RSQualid rn st quid =
     let
         (tname, cname) = case quid of
@@ -131,11 +132,11 @@ analyse_RSQualid rn st quid =
         cols = Set.fromList $ map c_name $ columns $ head $ Set.toList ft
     in
       do
-        when (cname `Set.notMember` cols) (fatal_error (show cname ++
+        when (cname `HSU.notMember` cols) (fatal_error (show cname ++
          " is not" ++ " defined") rn)
         return quid
 
-analyse_RSQualidK :: Range -> Set.Set RSTable -> RSQualId -> Result (RSQualId, Maybe Id)
+analyse_RSQualidK :: Range -> Set.HashSet RSTable -> RSQualId -> Result (RSQualId, Maybe Id)
 analyse_RSQualidK rn st quid =
     let
         (tname, cname) = case quid of
@@ -147,7 +148,7 @@ analyse_RSQualidK rn st quid =
             1 -> do
                         let tid = head $ Set.toList ft
                             keyz = Set.map fst $ t_keys tid
-                        when (cname `Set.notMember` keyz) (fatal_error
+                        when (cname `HSU.notMember` keyz) (fatal_error
                          (show cname ++ " is used " ++
                           "as a key, but not defined as one") rn)
                         return (quid, Just cname)

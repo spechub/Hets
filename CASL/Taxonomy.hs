@@ -36,7 +36,7 @@ import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 {- | convert a generic CASL signature into the MMiSS ontology
 datastructure for display as taxonomy graph -}
@@ -55,7 +55,7 @@ convSign KConcept o s =
     case convSign KSubsort o s of
     wOnto -> weither (const wOnto) (convPred s) wOnto
 convSign KSubsort onto sign =
-    Set.fold addSor (hasValue onto) $ sortSet sign
+    Set.foldr addSor (hasValue onto) $ sortSet sign
     -- start with top sorts (maybe use Rel.mostRight?)
     where relMap = Rel.toMap $ Rel.intransKernel $ sortRel sign
           addSor sort weOnto =
@@ -79,7 +79,7 @@ convPred s o =
                   let binT = Set.filter isBinPredType tSet
                   in if Set.null binT
                         then hasValue on
-                        else Set.fold insType (insName on) binT
+                        else Set.foldr insType (insName on) binT
                  insName on = insertBaseRelation on (show pn) (show pn)
                                      Nothing Nothing
                  insType t wOn =

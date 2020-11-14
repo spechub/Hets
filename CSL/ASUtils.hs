@@ -40,7 +40,7 @@ module CSL.ASUtils
 
 import Common.Id as Id
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Data.List (sort, mapAccumL)
 
 import CSL.AS_BASIC_CSL
@@ -134,7 +134,7 @@ mapExpr f e =
 
 
 -- | Transforms Op-Expressions to a set of op-names and a Var-list
-varSet :: [EXPRESSION] -> (Set.Set String, [EXPRESSION])
+varSet :: [EXPRESSION] -> (Set.HashSet String, [EXPRESSION])
 varSet l =
     let opToVar' s (Op v _ _ rg') =
             ( Set.insert (simpleName v) s
@@ -145,7 +145,7 @@ varSet l =
     in mapAccumL opToVar' Set.empty l
 
 -- | Replaces Op occurrences to Var if the op is in the given set
-constsToVars :: Set.Set String -> EXPRESSION -> EXPRESSION
+constsToVars :: Set.HashSet String -> EXPRESSION -> EXPRESSION
 constsToVars env e =
     let substRec =
          idRecord
@@ -206,7 +206,7 @@ opDeclToOp :: OpDecl -> EXPRESSION
 opDeclToOp (OpDecl n epl vdl rg ) = Op (OpUser n) epl (map varDeclToVar vdl) rg
 
 -- | Returns a set of user defined constants ignoring 'EXTPARAM' instantiation.
-setOfUserDefined :: EXPRESSION -> Set.Set String
+setOfUserDefined :: EXPRESSION -> Set.HashSet String
 setOfUserDefined = g Set.empty
     where
       g s x =
@@ -218,7 +218,7 @@ setOfUserDefined = g Set.empty
          _ -> s
 
 -- | Returns a set of user defined constants and 'EXTPARAM' specifications.
-setOfConstsAndEPSpecs :: EXPRESSION -> (Set.Set String, Set.Set EXTPARAM)
+setOfConstsAndEPSpecs :: EXPRESSION -> (Set.HashSet String, Set.HashSet EXTPARAM)
 setOfConstsAndEPSpecs = g (Set.empty, Set.empty)
     where
       g s@(s1, s2) x =

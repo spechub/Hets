@@ -64,7 +64,7 @@ import Control.Exception
 import Data.List
 import Data.Maybe
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 -- | take the difference of the two input lists take (length l2 - length l1) l2
 takeDiff :: [a] -> [b] -> [b]
@@ -372,7 +372,7 @@ mergeItems (i1 : r1) (i2 : r2) =
     EQ -> ambigItems i1 i2 : mergeItems r1 r2
     GT -> i2 : mergeItems (i1 : r1) r2
 
-type TokRules = Token -> Set.Set Rule
+type TokRules = Token -> Set.HashSet Rule
 
 -- | the whole state for mixfix resolution
 data Chart a = Chart
@@ -417,8 +417,8 @@ mixDiags ds st = st { solveDiags = ds ++ solveDiags st }
 
 -- | postfix and prefix rules
 data Rules = Rules
-  { postRules :: Set.Set Rule
-  , scanRules :: Set.Set Rule }
+  { postRules :: Set.HashSet Rule
+  , scanRules :: Set.HashSet Rule }
 
 emptyRules :: Rules
 emptyRules = Rules

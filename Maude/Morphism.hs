@@ -59,7 +59,7 @@ import qualified Maude.Sign as Sign
 import Data.Data
 import Data.List (partition)
 import Data.Maybe (fromJust)
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 
 import Common.Result (Result)
@@ -279,7 +279,7 @@ compose f g
             {- otherwise we start with the SymbolSet from |source f|
             and construct a combined SymbolMap by applying both
             SymbolMaps (from |f| and |g|) to each item in |insert| -}
-            else Set.fold (insert mp) Map.empty $ items (source f)
+            else Set.foldr (insert mp) Map.empty $ items (source f)
         -- We want a morphism from |source f| to |target g|.
         mor = inclusion (source f) (target g)
         in return $ kindMorph mor {

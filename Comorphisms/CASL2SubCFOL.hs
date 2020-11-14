@@ -31,7 +31,7 @@ import CASL.Simplify
 import Common.Id
 import Common.DocUtils
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.MapSet as MapSet
 import Common.AS_Annotation
@@ -131,7 +131,7 @@ totalizeSymbType t = case t of
   OpAsItemType ot -> OpAsItemType $ mkTotal ot
   _ -> t
 
-sortsWithBottom :: FormulaTreatment -> Sign f e -> Set.Set SORT -> Set.Set SORT
+sortsWithBottom :: FormulaTreatment -> Sign f e -> Set.HashSet SORT -> Set.HashSet SORT
 sortsWithBottom m sig formBotSrts =
     let bsrts = treatFormula m Set.empty formBotSrts
           (Rel.keysSet . Rel.rmNullSets $ sortRel sig) (sortSet sig)
@@ -152,19 +152,19 @@ sortsWithBottom m sig formBotSrts =
 defPred :: Id
 defPred = genName "defined"
 
-defined :: TermExtension f => Set.Set SORT -> TERM f -> Range -> FORMULA f
+defined :: TermExtension f => Set.HashSet SORT -> TERM f -> Range -> FORMULA f
 defined bsorts t ps = let s = sortOfTerm t in
   if Set.member s bsorts then Predication
          (Qual_pred_name defPred (Pred_type [s] nullRange) nullRange) [t] ps
   else Atom True ps
 
-defVards :: TermExtension f => Set.Set SORT -> [VAR_DECL] -> FORMULA f
+defVards :: TermExtension f => Set.HashSet SORT -> [VAR_DECL] -> FORMULA f
 defVards bs = conjunct . concatMap (defVars bs)
 
-defVars :: TermExtension f => Set.Set SORT -> VAR_DECL -> [FORMULA f]
+defVars :: TermExtension f => Set.HashSet SORT -> VAR_DECL -> [FORMULA f]
 defVars bs (Var_decl vns s _) = map (defVar bs s) vns
 
-defVar :: TermExtension f => Set.Set SORT -> SORT -> Token -> FORMULA f
+defVar :: TermExtension f => Set.HashSet SORT -> SORT -> Token -> FORMULA f
 defVar bs s v = defined bs (Qual_var v s nullRange) nullRange
 
 totalizeOpSymb :: OP_SYMB -> OP_SYMB
@@ -177,13 +177,13 @@ addBottomAlt :: Constraint -> Constraint
 addBottomAlt c = let t = Op_type Total [] (newSort c) nullRange in c
     {opSymbs = opSymbs c ++ [(Qual_op_name (uniqueBotName t) t nullRange, [])]}
 
-argSorts :: Constraint -> Set.Set SORT
+argSorts :: Constraint -> Set.HashSet SORT
 argSorts c = Set.unions $ map (argsOpSymb . fst) $ opSymbs c
     where argsOpSymb op = case op of
               Qual_op_name _ ot _ -> Set.fromList $ args_OP_TYPE ot
               _ -> error "argSorts"
 
-totalizeConstraint :: Set.Set SORT -> Constraint -> Constraint
+totalizeConstraint :: Set.HashSet SORT -> Constraint -> Constraint
 totalizeConstraint bsrts c =
     (if Set.member (newSort c) bsrts then addBottomAlt else id)
     c { opSymbs = map ( \ (o, is) -> (totalizeOpSymb o, is)) $ opSymbs c }
@@ -192,11 +192,11 @@ botType :: SORT -> OpType
 botType = sortToOpType
 
 -- | Add projections to the signature
-encodeSig :: Set.Set SORT -> Sign f e -> Sign f e
+encodeSig :: Set.HashSet SORT -> Sign f e -> Sign f e
 encodeSig bsorts sig = if Set.null bsorts then sig else
     sig { opMap = projOpMap, predMap = newpredMap } where
    newTotalMap = MapSet.map mkTotal $ opMap sig
-   botOpMap = Set.fold (\ bt -> addOpTo (uniqueBotName $ toOP_TYPE bt) bt)
+   botOpMap = Set.foldr (\ bt -> addOpTo (uniqueBotName $ toOP_TYPE bt) bt)
        newTotalMap $ Set.map botType bsorts
    defType x = PredType {predArgs = [x]}
    defTypes = Set.map defType bsorts
@@ -205,7 +205,7 @@ encodeSig bsorts sig = if Set.null bsorts then sig else
    total (s, s') = mkTotOpType [s'] s
    setprojOptype = Set.map total $ Set.filter ( \ (s, _) ->
        Set.member s bsorts) $ Rel.toSet rel
-   projOpMap = Set.fold (\ t -> addOpTo (uniqueProjName $ toOP_TYPE t) t)
+   projOpMap = Set.foldr (\ t -> addOpTo (uniqueProjName $ toOP_TYPE t) t)
        botOpMap setprojOptype
 
 -- | Make the name for the non empty axiom from s to s' to s''
@@ -221,7 +221,7 @@ mkTotalityAxiomName :: OP_NAME -> String
 mkTotalityAxiomName f = "ga_strictness_" ++ show f
 
 generateAxioms :: (Ord f, TermExtension f) =>
-  Bool -> Set.Set SORT -> Sign f e -> [Named (FORMULA f)]
+  Bool -> Set.HashSet SORT -> Sign f e -> [Named (FORMULA f)]
 generateAxioms uniqBot bsorts sig = concatMap (\ s -> let
       vx = mkVarDeclStr "x" s
       xt = toQualVar vx
@@ -293,7 +293,7 @@ generateAxioms uniqBot bsorts sig = concatMap (\ s -> let
         opList = mapSetToList $ opMap sig
         predList = mapSetToList $ predMap sig
 
-codeRecord :: TermExtension f => Bool -> Set.Set SORT -> (f -> f)
+codeRecord :: TermExtension f => Bool -> Set.HashSet SORT -> (f -> f)
   -> Record f (FORMULA f) (TERM f)
 codeRecord uniBot bsrts mf = (mapRecord mf)
     { foldQuantification = \ _ q vs qf ps ->
@@ -315,21 +315,21 @@ codeRecord uniBot bsrts mf = (mapRecord mf)
     , foldApplication = const $ Application . totalizeOpSymb
     , foldCast = \ _ t s ps -> projectUnique Total ps t s }
 
-codeFormula :: Bool -> Set.Set SORT -> FORMULA () -> FORMULA ()
+codeFormula :: Bool -> Set.HashSet SORT -> FORMULA () -> FORMULA ()
 codeFormula b bsorts = foldFormula (codeRecord b bsorts $ error "CASL2SubCFol")
 
-codeTerm :: Bool -> Set.Set SORT -> TERM () -> TERM ()
+codeTerm :: Bool -> Set.HashSet SORT -> TERM () -> TERM ()
 codeTerm b bsorts = foldTerm (codeRecord b bsorts $ error "CASL2SubCFol")
 
 -- | find sorts that need a bottom in membership formulas and casts
 
-botSorts :: (f -> Set.Set SORT) -> Record f (Set.Set SORT) (Set.Set SORT)
+botSorts :: (f -> Set.HashSet SORT) -> Record f (Set.HashSet SORT) (Set.HashSet SORT)
 botSorts mf = (constRecord mf Set.unions Set.empty)
      { foldMembership = \ _ _ s _ -> Set.singleton s
      , foldCast = \ _ _ s _ -> Set.singleton s }
 
-botFormulaSorts :: FORMULA f -> Set.Set SORT
+botFormulaSorts :: FORMULA f -> Set.HashSet SORT
 botFormulaSorts = foldFormula (botSorts $ const Set.empty)
 
-botTermSorts :: TERM f -> Set.Set SORT
+botTermSorts :: TERM f -> Set.HashSet SORT
 botTermSorts = foldTerm (botSorts $ const Set.empty)

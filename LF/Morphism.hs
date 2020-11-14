@@ -32,7 +32,7 @@ import Common.Doc hiding (space)
 import Common.DocUtils
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Data.Data
 import Data.Maybe (isNothing, fromMaybe)
 
@@ -61,7 +61,7 @@ idMorph sig = Morphism gen_base gen_module "" sig sig Unknown Map.empty
 compMorph :: Morphism -> Morphism -> Result Morphism
 compMorph m1 m2 = do
   let newmap =
-        Set.fold (\ s ->
+        Set.foldr (\ s ->
                     let Just e1 = mapSymbol s m1
                         Just e2 = translate m2 e1
                         in Map.insert s e2

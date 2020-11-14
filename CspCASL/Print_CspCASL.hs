@@ -21,7 +21,7 @@ import Common.Keywords (elseS, ifS, thenS, opS, predS)
 import CspCASL.AS_CspCASL
 import CspCASL.AS_CspCASL_Process
 import CspCASL.CspCASL_Keywords
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 instance Pretty CspBasicExt where
     pretty = printCspBasicExt

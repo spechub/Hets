@@ -30,14 +30,14 @@ import Common.Lib.Rel (leqClasses)
 
 import Data.Graph.Inductive.Graph
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Data.Hashable
 
-compose :: (Ord a, Hashable a) => Set.Set (a, Int) ->
+compose :: (Ord a, Hashable a) => Set.HashSet (a, Int) ->
                       Map.HashMap (a, Int) (a, Int) ->
                       Map.HashMap (a, Int) (a, Int) ->
                       Map.HashMap (a, Int) (a, Int)
-compose s f g = Set.fold ( \ i h ->
+compose s f g = Set.foldr ( \ i h ->
                                let
                                 i' = Map.findWithDefault i i f
                                 j = Map.findWithDefault i' i' g in
@@ -45,11 +45,11 @@ compose s f g = Set.fold ( \ i h ->
                 Map.empty s
 
 coeq :: (Ord a, Hashable a) =>
-        Set.Set (a, Int) -> Set.Set (a, Int) ->
+        Set.HashSet (a, Int) -> Set.HashSet (a, Int) ->
         Map.HashMap (a, Int) (a, Int) -> Map.HashMap (a, Int) (a, Int) ->
-        (Set.Set (a, Int), Map.HashMap (a, Int) (a, Int))
+        (Set.HashSet (a, Int), Map.HashMap (a, Int) (a, Int))
 coeq sSet tSet f1 f2 =
- case Set.elems sSet of
+ case Set.toList sSet of
    [] -> (tSet, Map.empty)
    x : xs -> if null xs then let
              f1x = Map.findWithDefault x x f1
@@ -68,8 +68,8 @@ coeq sSet tSet f1 f2 =
             in (d, coeqf)
 
 computeColimitSet :: (Ord a, Hashable a) =>
-                     Gr (Set.Set a) (Int, Map.HashMap a a) ->
-                     (Set.Set (a, Node), Map.HashMap Node (Map.HashMap a (a, Node)))
+                     Gr (Set.HashSet a) (Int, Map.HashMap a a) ->
+                     (Set.HashSet (a, Node), Map.HashMap Node (Map.HashMap a (a, Node)))
 computeColimitSet graph = let
    unionSet = foldl Set.union Set.empty $
                map (\ (n, s) -> Set.map (\ x -> (x, n)) s) $ labNodes graph
@@ -81,10 +81,10 @@ computeColimitSet graph = let
   in (colim, morMap')
 
 computeCoeqs :: (Ord a, Hashable a) =>
-      Gr (Set.Set a) (Int, Map.HashMap a a) ->
-      (Set.Set (a, Node), Map.HashMap Node (Map.HashMap (a, Node) (a, Node))) ->
+      Gr (Set.HashSet a) (Int, Map.HashMap a a) ->
+      (Set.HashSet (a, Node), Map.HashMap Node (Map.HashMap (a, Node) (a, Node))) ->
       [LEdge (Int, Map.HashMap a a)] ->
-      (Set.Set (a, Node), Map.HashMap Node (Map.HashMap (a, Node) (a, Node)))
+      (Set.HashSet (a, Node), Map.HashMap Node (Map.HashMap (a, Node) (a, Node)))
 computeCoeqs graph (colim, morMap) edgeList =
   case edgeList of
    [] -> (colim, morMap)
@@ -116,8 +116,8 @@ instance SymbolName IRI where
  addString (x, y) = x {iriPath  = appendString (iriPath x) y}
 
 addIntToSymbols :: (SymbolName a, Ord a, Hashable a) =>
-               (Set.Set (a, Node), Map.HashMap Node (Map.HashMap a (a, Node))) ->
-               (Set.Set a, Map.HashMap Node (Map.HashMap a a))
+               (Set.HashSet (a, Node), Map.HashMap Node (Map.HashMap a (a, Node))) ->
+               (Set.HashSet a, Map.HashMap Node (Map.HashMap a a))
 addIntToSymbols (set, fun) = let
   fstEqual (x1, _) (x2, _) = x1 == x2
   partList = leqClasses fstEqual

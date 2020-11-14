@@ -20,7 +20,7 @@ import Common.Result
 
 import Data.Monoid
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Control.Monad (unless)
 
 import DFOL.AS_DFOL

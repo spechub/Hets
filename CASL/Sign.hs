@@ -18,7 +18,7 @@ import CASL.AS_Basic_CASL
 import CASL.Fold
 import CASL.ToDoc ()
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.State as State
@@ -38,6 +38,7 @@ import Control.Monad (when, unless)
 
 import GHC.Generics (Generic)
 import Data.Hashable
+import qualified Common.HashSetUtils as HSU
 
 -- constants have empty argument lists
 data OpType = OpType {opKind :: OpKind, opArgs :: [SORT], opRes :: SORT}
@@ -119,21 +120,21 @@ data Sign f e = Sign
     -- ^ every sort is a subsort of itself
     , revSortRel :: Maybe (Rel.Rel SORT)
     -- ^ reverse sort relation for more efficient lookup of subsorts
-    , emptySortSet :: Set.Set SORT
+    , emptySortSet :: Set.HashSet SORT
     -- ^ a subset of the sort set of possibly empty sorts
     , opMap :: OpMap
     , assocOps :: OpMap -- ^ the subset of associative operators
     , predMap :: PredMap
     , varMap :: Map.HashMap SIMPLE_ID SORT -- ^ temporary variables
     , sentences :: [Named (FORMULA f)] -- ^ current sentences
-    , declaredSymbols :: Set.Set Symbol -- ^ introduced or redeclared symbols
+    , declaredSymbols :: Set.HashSet Symbol -- ^ introduced or redeclared symbols
     , envDiags :: [Diagnosis] -- ^ diagnostics for basic spec
     , annoMap :: AnnoMap -- ^ annotated symbols
     , globAnnos :: GlobalAnnos -- ^ global annotations to use
     , extendedInfo :: e
     } deriving (Show, Typeable, Data)
 
-sortSet :: Sign f e -> Set.Set SORT
+sortSet :: Sign f e -> Set.HashSet SORT
 sortSet = Rel.keysSet . sortRel
 
 -- better ignore assoc flags for equality
@@ -196,7 +197,7 @@ instance SignExtension () where
     isSubSignExtension _ _ = True
 
 -- | proper subsorts (possibly excluding input sort)
-subsortsOf :: SORT -> Sign f e -> Set.Set SORT
+subsortsOf :: SORT -> Sign f e -> Set.HashSet SORT
 subsortsOf s e = case revSortRel e of
   Nothing -> Rel.predecessors (sortRel e) s
   Just r -> Rel.succs r s
@@ -205,7 +206,7 @@ setRevSortRel :: Sign f e -> Sign f e
 setRevSortRel s = s { revSortRel = Just . Rel.transpose $ sortRel s }
 
 -- | proper supersorts (possibly excluding input sort)
-supersortsOf :: SORT -> Sign f e -> Set.Set SORT
+supersortsOf :: SORT -> Sign f e -> Set.HashSet SORT
 supersortsOf s e = Rel.succs (sortRel e) s
 
 toOP_TYPE :: OpType -> OP_TYPE
@@ -282,7 +283,7 @@ closeSortRel :: Sign f e -> Sign f e
 closeSortRel s =
   s { sortRel = Rel.transClosure $ sortRel s }
 
-nonEmptySortSet :: Sign f e -> Set.Set Id
+nonEmptySortSet :: Sign f e -> Set.HashSet Id
 nonEmptySortSet s = Set.difference (sortSet s) $ emptySortSet s
 
 -- op kinds of op types
@@ -302,11 +303,11 @@ isTotal = (== Total) . opKind
 isPartial :: OpType -> Bool
 isPartial = not . isTotal
 
-makePartial :: Set.Set OpType -> Set.Set OpType
-makePartial = Set.mapMonotonic mkPartial
+makePartial :: Set.HashSet OpType -> Set.HashSet OpType
+makePartial = Set.map mkPartial
 
 -- | remove (True) or add (False) partial op if it is included as total
-rmOrAddParts :: Bool -> Set.Set OpType -> Set.Set OpType
+rmOrAddParts :: Bool -> Set.HashSet OpType -> Set.HashSet OpType
 rmOrAddParts b s =
   let t = makePartial $ Set.filter isTotal s
   in (if b then Set.difference else Set.union) s t
@@ -397,7 +398,8 @@ isSubSig isSubExt a b =
   && isSubMap (predMap a) (predMap b)
   && isSubExt (extendedInfo a) (extendedInfo b)
 
-mapSetToList :: (Ord a, Hashable a) => MapSet.MapSet a b -> [(a, b)]
+mapSetToList :: (Ord a, Hashable a, Eq b, Hashable b) => 
+                MapSet.MapSet a b -> [(a, b)]
 mapSetToList = MapSet.toPairList
 
 addDiags :: [Diagnosis] -> State.State (Sign f e) ()
@@ -526,7 +528,7 @@ addVar s v =
 addOpTo :: Id -> OpType -> OpMap -> OpMap
 addOpTo = MapSet.insert
 
-type VarSet = Set.Set (VAR, SORT)
+type VarSet = Set.HashSet (VAR, SORT)
 
 {- | extract the sort and free variables from an analysed term. The input
 signature for free variables is (currently only) used for statements in the
@@ -574,7 +576,7 @@ built from the sort list -}
 toSortGenNamed :: FORMULA f -> [SORT] -> Named (FORMULA f)
 toSortGenNamed f sl = makeNamed (mkSortGenName sl) f
 
-getConstructors :: [Named (FORMULA f)] -> Set.Set (Id, OpType)
+getConstructors :: [Named (FORMULA f)] -> Set.HashSet (Id, OpType)
 getConstructors = foldr (\ f s -> case sentence f of
    Sort_gen_ax cs _ -> let
        (_, ops, _) = recover_Sort_gen_ax cs

@@ -43,7 +43,7 @@ import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 instance TermExtension DL_FORMULA where
     freeVarsOfExt sign (Cardinality _ _ t1 t2 mf _) =
@@ -79,7 +79,7 @@ generateSubsorting sig =
     in
       sig
       {
-        sortRel = Set.fold (\ x y -> Rel.insertDiffPair x thing y) inR inS
+        sortRel = Set.foldr (\ x y -> Rel.insertDiffPair x thing y) inR inS
       }
 
 transformSortDeclarations :: Bool
@@ -171,7 +171,7 @@ postAna ds1 in_sig i@(_, ExtSign acc_sig _, _) =
     Result (ds1 ++ ds_sig) $ if null ds_sig then Just i else Nothing
     where ds_sig = chkSorts ++ checkPreds ++ checkOps
           diff_sig = diffSig diffCASL_DLSign acc_sig in_sig
-          chkSorts = Set.fold chSort [] (sortSet diff_sig) ++
+          chkSorts = Set.foldr chSort [] (sortSet diff_sig) ++
              [Diag Error
                         ("\n     new subsort relations with data " ++
                          "topsort are not allowed") nullRange

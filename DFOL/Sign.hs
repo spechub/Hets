@@ -50,7 +50,7 @@ import Common.DocUtils
 import qualified Common.Result as Result
 
 import Data.Data
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 
 -- symbol kinds
@@ -74,7 +74,7 @@ addVarDecl :: DECL -> CONTEXT -> CONTEXT
 addVarDecl d (Context ds) = Context (ds ++ [d])
 
 -- get the list of declared variables
-getVars :: CONTEXT -> Set.Set NAME
+getVars :: CONTEXT -> Set.HashSet NAME
 getVars (Context ds) = Set.fromList $ getVarsFromDecls ds
 
 -- get the variable type
@@ -94,7 +94,7 @@ addSymbolDecl :: DECL -> Sign -> Sign
 addSymbolDecl d (Sign ds) = Sign (ds ++ [d])
 
 -- get the set of defined symbols
-getSymbols :: Sign -> Set.Set NAME
+getSymbols :: Sign -> Set.HashSet NAME
 getSymbols (Sign ds) = Set.fromList $ getVarsFromDecls ds
 
 -- checks if the symbol is defined in the signature
@@ -120,7 +120,7 @@ getSymbolArity n sig = case getArgumentTypes n sig of
                             Just ts -> Just $ length ts
 
 -- get a list of symbols of the given kind
-getSymbolsByKind :: Sign -> KIND -> Set.Set NAME
+getSymbolsByKind :: Sign -> KIND -> Set.HashSet NAME
 getSymbolsByKind sig kind =
    Set.filter (\ n -> getSymbolKind n sig == Just kind) $ getSymbols sig
 
@@ -353,7 +353,7 @@ substitute :: NAME -> TERM -> TYPE -> TYPE
 substitute n val = translate (Map.singleton n val) Set.empty
 
 -- ERROR MESSAGES
-redeclaredNamesError :: Set.Set NAME -> CONTEXT -> Result.Diagnosis
+redeclaredNamesError :: Set.HashSet NAME -> CONTEXT -> Result.Diagnosis
 redeclaredNamesError ns cont =
   Result.Diag
     { Result.diagKind = Result.Error

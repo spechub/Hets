@@ -11,7 +11,7 @@ import Common.Result
 import Common.ExtSign
 import Common.Id
 import Data.Maybe
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import System.IO.Unsafe (unsafePerformIO)
 import qualified MMT.XMLtoPT as XML
 import qualified MMT.Tools as PT
@@ -51,7 +51,7 @@ lid = "PLpatt"
 hetslib :: String
 hetslib = unsafePerformIO $ getEnvDef "HETS_LIB" ""
 
-mmtAna :: String -> As.Basic_spec -> ([As.Decl], Set.Set As.Symb)
+mmtAna :: String -> As.Basic_spec -> ([As.Decl], Set.HashSet As.Symb)
 mmtAna namespace (As.Basic_spec bs) = let
                           tdecls = unsafePerformIO $
                                   getDecls namespace bs
@@ -136,6 +136,6 @@ getSens (Sign.Sigs decls) = let
 decl2symb :: PT.Decl -> As.Symb
 decl2symb (PT.Decl _ iname _) = As.Symb iname
 
-newSymbs :: [PT.Decl] -> Set.Set As.Symb
+newSymbs :: [PT.Decl] -> Set.HashSet As.Symb
 newSymbs dcls = let sls = map decl2symb dcls
                 in foldr Set.insert Set.empty sls

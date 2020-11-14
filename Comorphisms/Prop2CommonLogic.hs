@@ -26,7 +26,7 @@ import qualified Common.AS_Annotation as AS_Anno
 import Logic.Logic
 import Logic.Comorphism
 
-import qualified Data.Set as Set (fromList)
+import qualified Data.HashSet as Set (fromList)
 
 -- Propositional
 import qualified Propositional.Logic_Propositional as PLogic

@@ -18,9 +18,10 @@ module Common.ProofUtils where
 
 import Data.Char
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Common.AS_Annotation
 import Common.Utils (number)
+import qualified Common.HashSetUtils as HSU
 
 {-
  * generic names are added
@@ -43,16 +44,16 @@ prepareSenNames :: (String -> String) -> [Named a] -> [Named a]
 prepareSenNames = map . reName
 
 -- | disambiguate sentence names
-disambiguateSens :: Set.Set String -> [Named a] -> [Named a]
+disambiguateSens :: Set.HashSet String -> [Named a] -> [Named a]
 disambiguateSens =
     genericDisambigSens 0 senAttr $ reName . const
 
 -- | generically disambiguate lists with names
 genericDisambigSens :: Int -> (a -> String) -> (String -> a -> a)
-                    -> Set.Set String -> [a] -> [a]
+                    -> Set.HashSet String -> [a] -> [a]
 genericDisambigSens _ _ _ _ [] = []
 genericDisambigSens c sel upd nameSet (ax : rest) =
-  let name = sel ax in case Set.splitMember name nameSet of
+  let name = sel ax in case HSU.splitMember name nameSet of
   (_, False, _) ->
       ax : genericDisambigSens c sel upd (Set.insert name nameSet) rest
   (_, _, greater) -> let

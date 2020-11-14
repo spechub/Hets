@@ -49,7 +49,7 @@ import qualified Data.HashMap.Strict as Map
 
 import Data.Maybe
 import Data.Graph.Inductive.Graph as Graph (Node, lab)
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Control.Monad (foldM)
 
 first :: (a, b, c) -> a

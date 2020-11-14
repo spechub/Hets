@@ -31,7 +31,7 @@ import Data.Char
 import Data.Maybe
 import Data.List (groupBy, elemIndex)
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 -- | main function, in charge of computing the quotient term algebra
 quotientTermAlgebra :: CASLMor -- sigma : Sigma -> SigmaM
@@ -50,7 +50,7 @@ quotientTermAlgebra sigma sens =
                   in return (sigma_k, axs)
 
 -- | generates the axioms of the module K
-create_axs :: Set.Set SORT -> CASLSign -> CASLSign -> [Named CASLFORMULA]
+create_axs :: Set.HashSet SORT -> CASLSign -> CASLSign -> [Named CASLFORMULA]
               -> [Named CASLFORMULA]
 create_axs sg_ss sg_m sg_k sens = forms
       where ss_m = sortSet sg_m
@@ -74,13 +74,13 @@ create_axs sg_ss sg_m sg_k sens = forms
             forms = concat [ctor_sen, make_axs, h_axs_ops, h_axs_preds,
                             h_axs_surj, q_axs, krnl_axs]
 
-filterNoCtorSorts :: OpMap -> Set.Set SORT -> Set.Set SORT
+filterNoCtorSorts :: OpMap -> Set.HashSet SORT -> Set.HashSet SORT
 filterNoCtorSorts om = Set.filter (filterNoCtorSort om)
 
 filterNoCtorSort :: OpMap -> SORT -> Bool
 filterNoCtorSort om s = any (resultTypeSet s) . Map.elems $ MapSet.toMap om
 
-resultTypeSet :: SORT -> Set.Set OpType -> Bool
+resultTypeSet :: SORT -> Set.HashSet OpType -> Bool
 resultTypeSet s = any (resultType s) . Set.toList
 
 resultType :: SORT -> OpType -> Bool
@@ -88,8 +88,8 @@ resultType s = (s ==) . opRes
 
 {- | generates formulas of the form make(h(x)) =e= x,
 for any x of sort gn_free_s -}
-make_hom_forms :: Set.Set SORT -> [Named CASLFORMULA]
-make_hom_forms = Set.fold ((:) . make_hom_form) []
+make_hom_forms :: Set.HashSet SORT -> [Named CASLFORMULA]
+make_hom_forms = Set.foldr ((:) . make_hom_form) []
 
 {- | generates a formula of the form make(h(x)) =e= x,
 for gn_free_s given the SORT s -}
@@ -107,8 +107,8 @@ make_hom_form s = makeNamed ("ga_make_hom_" ++ show s) q_eq
             q_eq = quantifyUniversally eq
 
 -- | generates the formulas relating the make functions with the homomorphism
-make_forms :: Set.Set SORT -> [Named CASLFORMULA]
-make_forms = Set.fold ((:) . make_form) []
+make_forms :: Set.HashSet SORT -> [Named CASLFORMULA]
+make_forms = Set.foldr ((:) . make_form) []
 
 {- | generates the formulas relating the make function for this sort
 with the homomorphism -}
@@ -126,7 +126,7 @@ make_form s = makeNamed ("ga_hom_make_" ++ show s) q_eq
             q_eq = quantifyUniversally eq
 
 -- | computes the last part of the axioms to assert the kernel of h
-larger_than_ker_h :: Set.Set SORT -> PredMap -> CASLFORMULA
+larger_than_ker_h :: Set.HashSet SORT -> PredMap -> CASLFORMULA
 larger_than_ker_h ss mis = conj
      where ltkhs = ltkh_sorts ss
            ltkhp = ltkh_preds mis
@@ -155,8 +155,8 @@ ltkh_preds_aux name (PredType args) = imp'
 
 {- | computes the first part of the conjunction of the formula "largerThanKerH"
 from the kernel of H -}
-ltkh_sorts :: Set.Set SORT -> [CASLFORMULA]
-ltkh_sorts = Set.fold ((:) . ltkh_sort) []
+ltkh_sorts :: Set.HashSet SORT -> [CASLFORMULA]
+ltkh_sorts = Set.foldr ((:) . ltkh_sort) []
 
 {- | computes the first part of the conjunction of the formula "largerThanKerH"
 from the kernel of H for a concrete sort -}
@@ -242,9 +242,9 @@ congruence_ax_vars (s : ss) (x : xs) (y : ys) = form : forms
 congruence_ax_vars _ _ _ = []
 
 -- | computes the transitivity axioms for the kernel of h
-transitivity_axs :: Set.Set SORT -> CASLFORMULA
+transitivity_axs :: Set.HashSet SORT -> CASLFORMULA
 transitivity_axs ss = conj
-     where axs = Set.fold ((:) . transitivity_ax) [] ss
+     where axs = Set.foldr ((:) . transitivity_ax) [] ss
            conj = conjunct axs
 
 twoFreeVars :: SORT -> (SORT, TERM (), TERM (), VAR, VAR, PRED_SYMB, FORMULA ())
@@ -270,9 +270,9 @@ transitivity_ax s = quant
            quant = mkForall vd imp
 
 -- | computes the symmetry axioms for the kernel of h
-symmetry_axs :: Set.Set SORT -> CASLFORMULA
+symmetry_axs :: Set.HashSet SORT -> CASLFORMULA
 symmetry_axs ss = conj
-     where axs = Set.fold ((:) . symmetry_ax) [] ss
+     where axs = Set.foldr ((:) . symmetry_ax) [] ss
            conj = conjunct axs
 
 -- | computes the symmetry axiom of a concrete sort for the kernel of h
@@ -294,7 +294,7 @@ psiName s = mkId [mkSimpleId $ "Psi_" ++ show s]
 
 {- | creates the axiom for the kernel of h given the sorts and the predicates
 in M, the premises and the conclusion -}
-mkKernelAx :: Set.Set SORT -> PredMap -> CASLFORMULA
+mkKernelAx :: Set.HashSet SORT -> PredMap -> CASLFORMULA
               -> CASLFORMULA -> Named CASLFORMULA
 mkKernelAx ss preds prem conc = makeNamed "freeness_kernel" q2
      where imp = mkImpl prem conc
@@ -303,8 +303,8 @@ mkKernelAx ss preds prem conc = makeNamed "freeness_kernel" q2
 
 {- | applies the second order quantification to the formula for the given
 set of sorts -}
-quantifyPredsSorts :: Set.Set SORT -> CASLFORMULA -> CASLFORMULA
-quantifyPredsSorts ss f = Set.fold quantifyPredsSort f ss
+quantifyPredsSorts :: Set.HashSet SORT -> CASLFORMULA -> CASLFORMULA
+quantifyPredsSorts ss f = Set.foldr quantifyPredsSort f ss
 
 {- | applies the second order quantification to the formula for the given
 sort -}
@@ -387,8 +387,8 @@ homomorphy_term (Application os ts r) = t'
             t' = mkAppl name_hom [t]
 homomorphy_term t = t
 
-hom_surjectivity :: Set.Set SORT -> [Named CASLFORMULA]
-hom_surjectivity = Set.fold f []
+hom_surjectivity :: Set.HashSet SORT -> [Named CASLFORMULA]
+hom_surjectivity = Set.foldr f []
       where f x = (sort_surj x :)
 
 -- | generates the formula to state the homomorphism is surjective
@@ -470,7 +470,7 @@ createVars i (s : ss) = var : ts
             ts = createVars (i + 1) ss
 
 -- | computes the set of components from the map of operators
-ops2comp :: OpMap -> Set.Set Component
+ops2comp :: OpMap -> Set.HashSet Component
 ops2comp = MapSet.foldWithKey (\ n -> Set.insert . Component n) Set.empty
 
 -- | computes the sentence for the constructors
@@ -533,7 +533,7 @@ freeCons (sorts, rel, ops) =
            ++ freeAx ++ sortAx ++ disjToSortAx
 
 -- | given the signature in M the function computes the signature K
-create_sigma_k :: Set.Set SORT -> CASLSign -> CASLSign
+create_sigma_k :: Set.HashSet SORT -> CASLSign -> CASLSign
 create_sigma_k ss sg_m = usg'
       where iota_sg = totalSignCopy sg_m
             usg = addSig const sg_m iota_sg
@@ -543,8 +543,8 @@ create_sigma_k ss sg_m = usg'
 
 {- | adds the make functions for the sorts in the initial module to the
 operator map -}
-make_ops :: Set.Set SORT -> OpMap -> OpMap
-make_ops ss om = Set.fold make_op om ss
+make_ops :: Set.HashSet SORT -> OpMap -> OpMap
+make_ops ss om = Set.foldr make_op om ss
 
 -- | adds the make functions for the sort to the operator map
 make_op :: SORT -> OpMap -> OpMap
@@ -559,8 +559,8 @@ homId :: Id
 homId = mkId [mkSimpleId "hom"]
 
 -- | creates the homomorphism operators and adds it to the given operator map
-homomorphism_ops :: Set.Set SORT -> OpMap -> OpMap
-homomorphism_ops ss om = Set.fold f om ss
+homomorphism_ops :: Set.HashSet SORT -> OpMap -> OpMap
+homomorphism_ops ss om = Set.foldr f om ss
     where ot sort = OpType Partial [mkFreeName sort] sort
           f = MapSet.insert homId . ot
 
@@ -587,7 +587,7 @@ totalSignCopy sg = sg {
            am = iota_anno_map $ annoMap sg
 
 -- | applies the iota renaming to a set of sorts
-iota_sort_set :: Set.Set SORT -> Set.Set SORT
+iota_sort_set :: Set.HashSet SORT -> Set.HashSet SORT
 iota_sort_set = Set.map mkFreeName
 
 -- | applies the iota renaming to a sort relation
@@ -611,7 +611,7 @@ iota_var_map :: Map.HashMap SIMPLE_ID SORT -> Map.HashMap SIMPLE_ID SORT
 iota_var_map = Map.map mkFreeName
 
 -- | applies the iota renaming to symbols
-iota_syms :: Set.Set Symbol -> Set.Set Symbol
+iota_syms :: Set.HashSet Symbol -> Set.HashSet Symbol
 iota_syms = Set.map iota_symbol
 
 -- | applies the iota renaming to a symbol
@@ -670,7 +670,7 @@ pred_symb_name (Qual_pred_name pn _ _) = pn
 {- | extract the variables from a CASL formula and put them in a map
 with keys the sort of the variables and value the set of variables
 in this sort -}
-getVars :: CASLFORMULA -> Map.HashMap Id (Set.Set Token)
+getVars :: CASLFORMULA -> Map.HashMap Id (Set.HashSet Token)
 getVars (Quantification _ _ f _) = getVars f
 getVars (QuantOp _ _ f) = getVars f
 getVars (QuantPred _ _ f) = getVars f
@@ -691,7 +691,7 @@ getVars (Mixfix_formula t) = getVarsTerm t
 getVars _ = Map.empty
 
 -- | extract the variables of a CASL term
-getVarsTerm :: CASLTERM -> Map.HashMap Id (Set.Set Token)
+getVarsTerm :: CASLTERM -> Map.HashMap Id (Set.HashSet Token)
 getVarsTerm (Qual_var var sort _) =
     Map.insert sort (Set.singleton var) Map.empty
 getVarsTerm (Application _ ts _) =
@@ -723,7 +723,7 @@ quantifyUniversally form = if null var_decl
 
 {- | traverses a map with sorts as keys and sets of variables as value
 and creates a list of variable declarations -}
-listVarDecl :: Map.HashMap Id (Set.Set Token) -> [VAR_DECL]
+listVarDecl :: Map.HashMap Id (Set.HashSet Token) -> [VAR_DECL]
 listVarDecl = Map.foldrWithKey f []
       where f sort var_set = (Var_decl (Set.toList var_set) sort nullRange :)
 

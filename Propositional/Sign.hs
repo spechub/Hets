@@ -33,7 +33,7 @@ module Propositional.Sign
     ) where
 
 import Data.Data
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import Common.Id
 import Common.Result
@@ -42,7 +42,7 @@ import Common.DocUtils
 
 {- | Datatype for propositional Signatures
 Signatures are just sets -}
-newtype Sign = Sign {items :: Set.Set Id}
+newtype Sign = Sign {items :: Set.HashSet Id}
   deriving (Show, Eq, Ord, Typeable, Data)
 
 instance Pretty Sign where

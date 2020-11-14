@@ -33,7 +33,7 @@ import qualified QBF.Sublogic as QSL
 import qualified QBF.Morphism as QMor
 import qualified QBF.Symbol as QSymbol
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Common.AS_Annotation
 import Common.Result
 
@@ -99,7 +99,7 @@ mapTheory (sig, form) = do
                           return (mapSig sig, form_)
 
 -- | Translation of symbols
-mapSym :: PSymbol.Symbol -> Set.Set QSymbol.Symbol
+mapSym :: PSymbol.Symbol -> Set.HashSet QSymbol.Symbol
 mapSym = Set.singleton . QSymbol.idToRaw . PSymbol.getSymbolName
 
 -- | Helper for map sentence and map theory

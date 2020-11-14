@@ -21,7 +21,7 @@ import CASL.Sign
 import CASL.Morphism
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import Data.Hashable
 

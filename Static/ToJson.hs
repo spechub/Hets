@@ -50,7 +50,7 @@ import Common.Json
 import Data.Graph.Inductive.Graph as Graph
 import Data.Maybe
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set (toList)
+import qualified Data.HashSet as Set (toList)
 
 {- |
 Export the development graph as json. If the flag full is True then

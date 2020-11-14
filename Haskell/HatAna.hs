@@ -23,14 +23,13 @@ import Common.Id (Pos (..), Range (..))
 import Common.Result
 import Common.GlobalAnnotations
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
 import Common.Doc
 import Common.DocUtils
 import Common.ExtSign
 
 import Data.List
 import Data.Char
-import qualified Data.Set as DSet
+import qualified Data.HashSet as Set
 import Data.Maybe (fromMaybe)
 
 type Scope = Rel (SN HsName) (Ent (SN String))
@@ -67,7 +66,7 @@ addSign e1 e2 = emptySign
     { instances = let is = instances e2 in (instances e1 \\ is) ++ is
     , types = types e1 `Map.union` types e2
     , values = values e1 `Map.union` values e2
-    , scope = scope e1 `DSet.union` scope e2
+    , scope = scope e1 `Set.union` scope e2
     , fixities = fixities e1 `Map.union` fixities e2
     }
 
@@ -154,7 +153,7 @@ hatAna2 (hs@(HsDecls ds), e, _) = do
    let parsedMod = HsModule loc0 (SN mod_Prelude loc0) Nothing [] ds
        astMod = toMod parsedMod
        insc = inscope astMod (const emptyRel)
-       osc = scope e `DSet.union` insc
+       osc = scope e `Set.union` insc
        expScope :: Rel (SN String) (Ent (SN String))
        expScope = mapDom (fmap hsUnQual) osc
        wm :: WorkModuleI QName (SN String)
@@ -241,13 +240,13 @@ genPrefixes = ["$--", "default__", "derived__Prelude", "inst__Prelude"]
 prefixed :: String -> Bool
 prefixed s = any (`isPrefixOf` s) genPrefixes
 
-preludeValues :: Set.Set String
+preludeValues :: Set.HashSet String
 preludeValues = Set.fromList $ filter (not . prefixed) $ map pp
                 $ Map.keys $ values preludeSign
 
-preludeConstrs :: Set.Set String
+preludeConstrs :: Set.HashSet String
 preludeConstrs =
     Set.filter ( \ s -> not (null s) && isUpper (head s)) preludeValues
 
-preludeTypes :: Set.Set String
+preludeTypes :: Set.HashSet String
 preludeTypes = Set.fromList $ map pp $ Map.keys $ types preludeSign

@@ -39,14 +39,14 @@ import Syntax.AS_Structured
 import Control.Monad (foldM)
 import Control.Monad.Trans
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 import Data.List
 
 import System.FilePath
 
 type SpecMap = Map.HashMap FilePath SpecInfo
-type SpecInfo = (BASIC_SPEC, FilePath, Set.Set String, Set.Set FilePath)
+type SpecInfo = (BASIC_SPEC, FilePath, Set.HashSet String, Set.HashSet FilePath)
                 -- (spec, topTexts, importedBy)
 
 -- | call for CommonLogic CLIF-parser with recursive inclusion of importations
@@ -119,7 +119,7 @@ collectDownloads opts baseDir specMap (n, (b, _, topTexts, importedBy)) = do
 justErr :: a -> String -> ResultT IO a
 justErr a s = liftR $ plain_error a s nullRange
 
-downloadSpec :: HetcatsOpts -> SpecMap -> Set.Set String -> Set.Set String
+downloadSpec :: HetcatsOpts -> SpecMap -> Set.HashSet String -> Set.HashSet String
   -> Bool -> (String, String) -> String -> ResultT IO SpecMap
 downloadSpec opts specMap topTexts importedBy isImport dirFile baseDir = do
   let fn = rmSuffix $ uncurry httpCombine dirFile
@@ -181,7 +181,7 @@ getCLIFContents opts dirFile baseDir =
          [".clif", ".clf"] uStr
 
 -- retrieves all importations from the text
-directImports :: BASIC_SPEC -> Set.Set NAME
+directImports :: BASIC_SPEC -> Set.HashSet NAME
 directImports (CL.Basic_spec items) = Set.unions
   $ map (getImports_textMetas . textsFromBasicItems . Anno.item) items
 
@@ -192,7 +192,7 @@ clTexts (CL.Basic_spec items) =
 textsFromBasicItems :: BASIC_ITEMS -> [TEXT_META]
 textsFromBasicItems (Axiom_items axs) = map Anno.item axs
 
-getImports_textMetas :: [TEXT_META] -> Set.Set NAME
+getImports_textMetas :: [TEXT_META] -> Set.HashSet NAME
 getImports_textMetas = Set.unions . map (getImports_text . getText)
 
 getClTexts :: [TEXT_META] -> [NAME]
@@ -203,7 +203,7 @@ getClTextTexts txt = case txt of
   Named_text n t _ -> n : getClTextTexts t
   _ -> []
 
-getImports_text :: TEXT -> Set.Set NAME
+getImports_text :: TEXT -> Set.HashSet NAME
 getImports_text txt = case txt of
   Text p _ -> Set.fromList $ map impName $ filter isImportation p
   Named_text _ t _ -> getImports_text t
@@ -218,7 +218,7 @@ impName ph = case ph of
   Importation (Imp_name n) -> n
   _ -> error "CL.impName"
 
-topSortSpecs :: Map.HashMap FilePath (BASIC_SPEC, FilePath, Set.Set FilePath)
+topSortSpecs :: Map.HashMap FilePath (BASIC_SPEC, FilePath, Set.HashSet FilePath)
   -> [(FilePath, BASIC_SPEC, FilePath)]
 topSortSpecs specMap =
   let (fm, rm) = OMap.partitionMap (\ (_, _, is) -> Set.null is) specMap

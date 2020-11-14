@@ -28,7 +28,7 @@ import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.MapSet as MapSet
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import Data.List as List hiding (sort)
 import Data.Char
@@ -310,7 +310,7 @@ prepareSign sign =
        renamedPreds)
   where
     gatherConnectedComponents :: (FormExtension f, Eq f)
-                              => CSign.Sign f e -> [Set.Set SORT]
+                              => CSign.Sign f e -> [Set.HashSet SORT]
     gatherConnectedComponents sign' =
       let topSortsL = Set.toList $ Rel.mostRight $ sortRel sign'
           revReflTransClosureSortRel =
@@ -319,7 +319,7 @@ prepareSign sign =
             Rel.succs revReflTransClosureSortRel topSort) topSortsL
 
     -- Maps a SORT to the index of the connected Component
-    connectedComponentsToMap :: [Set.Set SORT] -> Map.HashMap SORT Int
+    connectedComponentsToMap :: [Set.HashSet SORT] -> Map.HashMap SORT Int
     connectedComponentsToMap connectedComponents =
       let indexedCCs = zip connectedComponents [1..]
       in  foldr (\ (cc, i) ccMap ->
@@ -328,7 +328,7 @@ prepareSign sign =
                             ) ccMap cc
                 ) Map.empty indexedCCs
 
-    addOpIfConflicting :: Map.HashMap SORT Int -> OP_NAME -> Set.Set OpType
+    addOpIfConflicting :: Map.HashMap SORT Int -> OP_NAME -> Set.HashSet OpType
                        -> Map.HashMap (OP_NAME, OpType) OP_NAME
                        -> Map.HashMap (OP_NAME, OpType) OP_NAME
     addOpIfConflicting connectedComponentMap opName opTypes conflicts =
@@ -374,7 +374,7 @@ prepareSign sign =
                 toAlphaNum (show opName) ++ "_" ++ argsS ++ "_" ++ resultS
           in  opName { getTokens = [mkSimpleId newOpNameS] }
 
-    addPredIfConflicting :: Map.HashMap SORT Int -> PRED_NAME -> Set.Set PredType
+    addPredIfConflicting :: Map.HashMap SORT Int -> PRED_NAME -> Set.HashSet PredType
                          -> Map.HashMap (PRED_NAME, PredType) PRED_NAME
                          -> Map.HashMap (PRED_NAME, PredType) PRED_NAME
     addPredIfConflicting connectedComponentMap predName predTypes conflicts =
@@ -514,7 +514,7 @@ translateSign caslSign =
             Set.foldr (createTopSortSentences topSorts) [] topSorts
       in  subsortSentences ++ topSortSentences
 
-    createSubsortSentences :: Set.Set SORT -> SORT -> Set.Set SORT
+    createSubsortSentences :: Set.HashSet SORT -> SORT -> Set.HashSet SORT
                            -> [Named TSign.Sentence] -> [Named TSign.Sentence]
     createSubsortSentences emptySorts sort supersorts sentences =
       let subsortSentences = Set.foldr
@@ -556,7 +556,7 @@ translateSign caslSign =
           sentence = fofUnitaryFormulaToAxiom name formula
       in  makeNamed nameString sentence
 
-    createTopSortSentences :: Set.Set SORT -> SORT
+    createTopSortSentences :: Set.HashSet SORT -> SORT
                            -> [Named TSign.Sentence] -> [Named TSign.Sentence]
     createTopSortSentences topSorts sort sentences =
       let otherTopSorts = Set.delete sort topSorts
@@ -567,7 +567,7 @@ translateSign caslSign =
         -- creates:
         -- fof(sign_topsort_SORT, axiom,
         --   ! [X]: (SORT(X) => ~ OTHER_SORT1(X) & ... & ~ OTHER_SORTn(X)).
-        createTopSortSentence :: Set.Set SORT -> SORT -> Named TSign.Sentence
+        createTopSortSentence :: Set.HashSet SORT -> SORT -> Named TSign.Sentence
         createTopSortSentence otherTopSorts sort' =
           let varX = variableOfVar $ mkSimpleId "X"
               nameString = "sign_topsort_" ++ toAlphaNum (show sort')
@@ -593,7 +593,7 @@ translateSign caslSign =
     sentencesOfOps =
       Map.foldrWithKey createSentencesOfOp [] $ MapSet.toMap $ opMap caslSign
       where
-        createSentencesOfOp :: OP_NAME -> Set.Set OpType
+        createSentencesOfOp :: OP_NAME -> Set.HashSet OpType
                             -> [Named TSign.Sentence] -> [Named TSign.Sentence]
         createSentencesOfOp opName opTypes sentences =
           -- Assign a new sentence name to each type of the op by adding a suffix

@@ -67,7 +67,7 @@ import Common.AnnoParser
 import Common.AnalyseAnnos
 import Common.Result
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Common.Lib.Rel as Rel
 
 import HasCASL.As
@@ -126,10 +126,10 @@ notId = mkId [mkSimpleId notS, placeTok]
 negId :: Id
 negId = mkId [mkSimpleId negS, placeTok]
 
-builtinRelIds :: Set.Set Id
+builtinRelIds :: Set.HashSet Id
 builtinRelIds = Set.fromList [typeId, eqId, exEq, defId]
 
-builtinLogIds :: Set.Set Id
+builtinLogIds :: Set.HashSet Id
 builtinLogIds = Set.fromList [andId, eqvId, implId, orId, infixIf, notId]
 
 -- | add builtin identifiers
@@ -145,8 +145,8 @@ addBuiltins ga =
         opIds = Set.unions (Set.fromList (Map.keys pMap) : Map.elems pMap)
         opIs = Set.toList
                (((Set.filter (\ i -> begPlace i || endPlace i) opIds
-                Set.\\ builtinRelIds) Set.\\ builtinLogIds)
-                Set.\\ Set.fromList [applId, whenElse])
+                `Set.difference` builtinRelIds) `Set.difference` builtinLogIds)
+                `Set.difference` Set.fromList [applId, whenElse])
         logs = [(eqvId, implId), (implId, andId), (implId, orId),
                 (eqvId, infixIf), (infixIf, andId), (infixIf, orId),
                  (andId, notId), (orId, notId),

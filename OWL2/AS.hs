@@ -31,7 +31,7 @@ import Data.Data
 import Data.List
 import Data.Maybe
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import GHC.Generics (Generic)
 import Data.Hashable
@@ -199,7 +199,7 @@ isPredefPropOrClass :: IRI -> Bool
 isPredefPropOrClass i = isPredefAnnoProp i || isPredefDataProp i
     || isPredefObjProp i || isThing i
 
-predefIRIs :: Set.Set IRI
+predefIRIs :: Set.HashSet IRI
 predefIRIs = Set.fromList $ map (setPrefix "xsd" . mkIRI) xsdKeys
     ++ map (setPrefix "owl" . mkIRI) owlNumbers
     ++ map (setPrefix "rdf" . mkIRI) [rdfsLiteral, stringS]

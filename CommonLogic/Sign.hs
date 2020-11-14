@@ -26,7 +26,7 @@ module CommonLogic.Sign
     , isSeqMark                     -- is an Id a sequence marker?
     ) where
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Common.Id
 import Common.Result
 import Common.Doc
@@ -37,16 +37,16 @@ import Data.List (isPrefixOf)
 
 -- | Datatype for common logic Signatures
 
-data Sign = Sign { discourseNames :: Set.Set Id
-                 , nondiscourseNames :: Set.Set Id
-                 , sequenceMarkers :: Set.Set Id
+data Sign = Sign { discourseNames :: Set.HashSet Id
+                 , nondiscourseNames :: Set.HashSet Id
+                 , sequenceMarkers :: Set.HashSet Id
                  } deriving (Eq, Ord, Show, Typeable)
 
 instance Pretty Sign where
     pretty = printSign
 
 -- | union of all signature-fields
-allItems :: Sign -> Set.Set Id
+allItems :: Sign -> Set.HashSet Id
 allItems s = Set.unions $ map (\ f -> f s) [ discourseNames
                                           , nondiscourseNames
                                           , sequenceMarkers

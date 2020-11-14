@@ -31,8 +31,7 @@ import Control.Monad (foldM, unless)
 
 import qualified Data.Graph.Inductive.Graph as Graph (Node)
 import qualified Data.HashMap.Strict as Map
-import Data.Set (Set)
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import Driver.Options
 import Driver.ReadFn (findFileOfLibNameAux)
@@ -258,7 +257,7 @@ parseHidden gt s' = do
     G_sign lid sg sId -> noSensGTheory lid sg sId
 
 parseSpecs :: G_theory -> NodeName -> DGraph -> String
-           -> ResultT IO (G_theory, Set G_symbol)
+           -> ResultT IO (G_theory, Set.HashSet G_symbol)
 parseSpecs gt' nm dg spec = let
           (response, msg) = extendByBasicSpec (globalAnnos dg) spec gt'
           in case response of

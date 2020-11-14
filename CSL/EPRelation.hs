@@ -18,7 +18,7 @@ module CSL.EPRelation where
 import Control.Monad.Trans
 import Control.Monad.Reader
 import qualified Data.Map as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Data.Char
 import Data.List
 import Data.Maybe
@@ -75,7 +75,7 @@ toEPExps = Map.fromList . mapMaybe toEPExp
 
 {- | Sets representing the Parameters for which there is a propagation break
 (filtered) and for which there is a constraint (constrained) -}
-filteredConstrainedParams :: [EXTPARAM] -> (Set.Set String, Set.Set String)
+filteredConstrainedParams :: [EXTPARAM] -> (Set.HashSet String, Set.HashSet String)
 filteredConstrainedParams = foldl f (Set.empty, Set.empty)
     where f (fs, cs) (EP t "-|" _) = (Set.insert (tokStr t) fs, cs)
           f (fs, cs) (EP t _ _) = (fs, Set.insert (tokStr t) cs)
@@ -203,7 +203,7 @@ mapRange f re =
     where g = map (mapRange f)
 
 class RangeUtils a where
-    rangeNames :: a -> Set.Set String
+    rangeNames :: a -> Set.HashSet String
 
 instance RangeUtils EPExps where
     rangeNames = Map.keysSet
@@ -211,7 +211,7 @@ instance RangeUtils EPExps where
 instance RangeUtils EPRange where
     rangeNames = Set.unions . mapRangeLeafs rangeNames
 
-namesInList :: RangeUtils a => [a] -> Set.Set String
+namesInList :: RangeUtils a => [a] -> Set.HashSet String
 namesInList = Set.unions . map rangeNames
 
 {- |

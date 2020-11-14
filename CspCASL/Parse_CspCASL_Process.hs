@@ -43,7 +43,7 @@ import Common.Token (parseId, sortId, varId)
 import CspCASL.AS_CspCASL_Process
 import CspCASL.CspCASL_Keywords
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 csp_casl_process :: AParser st PROCESS
 csp_casl_process = par_proc

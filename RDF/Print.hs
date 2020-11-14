@@ -25,7 +25,7 @@ import RDF.AS
 import RDF.Symbols
 import RDF.Sign
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Data.Maybe (isNothing)
 
 sepBySemis :: [Doc] -> Doc
@@ -135,7 +135,7 @@ printRDFBasicTheory (_, l) = vsep (map (pretty . sentence) l)
 instance Pretty Sign where
     pretty = printSign
 
-printNodes :: String -> Set.Set Term -> Doc
+printNodes :: String -> Set.HashSet Term -> Doc
 printNodes s terms = text "#" <+> text s $+$
     vcat (map ((text "#\t\t" <+>) . pretty) (Set.toList terms))
 

@@ -29,7 +29,7 @@ import qualified Common.Lib.MapSet as MapSet
 
 import Data.Data
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import Control.Monad
 
@@ -110,7 +110,7 @@ cspTypedSymbKindToRaw b sig k idt t = let
     csig = extendedInfo sig
     getSet = MapSet.lookup idt
     chs = getSet $ chans csig
-    prs = getSet $ procSet csig
+    prs = MapSet.lookup idt $ procSet csig
     reduce = reduceProcProfile $ sortRel sig
     err = plain_error (idToCspRaw idt)
               (showDoc idt " " ++ showDoc t
@@ -246,12 +246,12 @@ cspStatSymbMapItems sig msig sl = do
   foldM (insertRsys rawId getSort mkSort getImplicit mkImplicit)
                     Map.empty (concat ls)
 
-toSymbolSet :: CspSign -> [Set.Set CspSymbol]
+toSymbolSet :: CspSign -> [Set.HashSet CspSymbol]
 toSymbolSet csig = map Set.fromList
   [ map toChanSymbol $ mapSetToList $ chans csig
   , map toProcSymbol $ mapSetToList $ procSet csig ]
 
-symSets :: CspCASLSign -> [Set.Set CspSymbol]
+symSets :: CspCASLSign -> [Set.HashSet CspSymbol]
 symSets sig = map (Set.map caslToCspSymbol) (symOf sig)
   ++ toSymbolSet (extendedInfo sig)
 
@@ -272,7 +272,7 @@ splitSymbolMap = Map.foldrWithKey (\ s t (cm, ccm) ->
     (Just c, Just d) -> (Map.insert c d cm, ccm)
     _ -> (cm, Map.insert s t ccm)) (Map.empty, Map.empty)
 
-getCASLSymbols :: Set.Set CspSymbol -> Set.Set Symbol
-getCASLSymbols = Set.fold (\ (CspSymbol i ty) -> case ty of
+getCASLSymbols :: Set.HashSet CspSymbol -> Set.HashSet Symbol
+getCASLSymbols = Set.foldr (\ (CspSymbol i ty) -> case ty of
     CaslSymbType t -> Set.insert $ Symbol i t
     _ -> id) Set.empty

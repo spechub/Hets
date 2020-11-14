@@ -45,7 +45,7 @@ import CommonLogic.Tools
 
 import Data.Data
 import Data.Function
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import CommonLogic.AS_CommonLogic
 import Common.AS_Annotation (Annoted (..))
@@ -157,18 +157,18 @@ sl_sym :: CommonLogicSL -> Symbol -> CommonLogicSL
 sl_sym cs _ = cs
 
 -- | determines sublogic for texts, given predicates of the super-text
-sl_text :: Set.Set NAME -> CommonLogicSL -> TEXT -> CommonLogicSL
+sl_text :: Set.HashSet NAME -> CommonLogicSL -> TEXT -> CommonLogicSL
 sl_text prds cs t =
     case t of
         Text ps _ -> sl_phrases prds cs ps
         Named_text _ nt _ -> sl_text prds cs nt
 
 -- | determines sublogic for phrases, given predicates of the super-text
-sl_phrases :: Set.Set NAME -> CommonLogicSL -> [PHRASE] -> CommonLogicSL
+sl_phrases :: Set.HashSet NAME -> CommonLogicSL -> [PHRASE] -> CommonLogicSL
 sl_phrases prds cs ps = foldl sublogics_max cs $ map (sl_phrase prds cs) ps
 
 -- | determines sublogic for a single phrase, given predicates of the super-text
-sl_phrase :: Set.Set NAME -> CommonLogicSL -> PHRASE -> CommonLogicSL
+sl_phrase :: Set.HashSet NAME -> CommonLogicSL -> PHRASE -> CommonLogicSL
 sl_phrase prds cs p =
     case p of
         Module m -> sl_module prds cs m
@@ -177,14 +177,14 @@ sl_phrase prds cs p =
         Comment_text _ t _ -> sl_text prds cs t
 
 -- | determines sublogic for a module, given predicates of the super-text
-sl_module :: Set.Set NAME -> CommonLogicSL -> MODULE -> CommonLogicSL
+sl_module :: Set.HashSet NAME -> CommonLogicSL -> MODULE -> CommonLogicSL
 sl_module prds cs m =
     case m of
         Mod _ t _ -> sl_text prds cs t
         Mod_ex _ _ t _ -> sl_text prds cs t
 
 -- | determines sublogic for a sentence, given predicates of the super-text
-sl_sentence :: Set.Set NAME -> CommonLogicSL -> SENTENCE -> CommonLogicSL
+sl_sentence :: Set.HashSet NAME -> CommonLogicSL -> SENTENCE -> CommonLogicSL
 sl_sentence prds cs sen =
     case sen of
         Quant_sent q vs is _ -> sl_quantSent prds cs q vs is
@@ -194,13 +194,13 @@ sl_sentence prds cs sen =
         Irregular_sent s _ -> sl_sentence prds cs s
 
 -- | determines the sublogic for importations (importations are ignored)
-sl_importation :: Set.Set NAME -> CommonLogicSL -> IMPORTATION
+sl_importation :: Set.HashSet NAME -> CommonLogicSL -> IMPORTATION
     -> CommonLogicSL
 sl_importation _ cs _ = cs
 
 {- | determines the sublogic for quantified sentences,
 given predicates of the super-text -}
-sl_quantSent :: Set.Set NAME -> CommonLogicSL
+sl_quantSent :: Set.HashSet NAME -> CommonLogicSL
                 -> QUANT -> [NAME_OR_SEQMARK] -> SENTENCE
                 -> CommonLogicSL
 sl_quantSent prds cs _ noss s =
@@ -209,7 +209,7 @@ sl_quantSent prds cs _ noss s =
 
 {- | determines the sublogic for boolean sentences,
 given predicates of the super-text -}
-sl_boolSent :: Set.Set NAME -> CommonLogicSL -> BOOL_SENT -> CommonLogicSL
+sl_boolSent :: Set.HashSet NAME -> CommonLogicSL -> BOOL_SENT -> CommonLogicSL
 sl_boolSent prds cs b =
     case b of
       Junction _ ss -> comp_list $ map (sl_sentence prds cs) ss
@@ -219,7 +219,7 @@ sl_boolSent prds cs b =
 
 {- | determines the sublogic for atoms,
 given predicates of the super-text -}
-sl_atomSent :: Set.Set NAME -> CommonLogicSL -> ATOM -> CommonLogicSL
+sl_atomSent :: Set.HashSet NAME -> CommonLogicSL -> ATOM -> CommonLogicSL
 sl_atomSent prds cs a =
     case a of
         Equation t1 t2 ->
@@ -227,7 +227,7 @@ sl_atomSent prds cs a =
         Atom t [] -> sl_term prds cs t
         Atom t tseq -> slAppl prds cs t tseq
 
-slAppl :: Set.Set NAME -> CommonLogicSL -> TERM -> [TERM_SEQ] -> CommonLogicSL
+slAppl :: Set.HashSet NAME -> CommonLogicSL -> TERM -> [TERM_SEQ] -> CommonLogicSL
 slAppl prds cs t tseq = comp_list
   $ (if isNameTerm t then folsl else impsl)
   : sl_term prds cs t : map (sl_termSeq prds cs) tseq
@@ -242,7 +242,7 @@ isNameTerm term = case term of
 
 {- | determines the sublogic for NAME_OR_SEQMARK,
 given predicates of the super-text -}
-sl_nameOrSeqmark :: Set.Set NAME -> CommonLogicSL -> NAME_OR_SEQMARK
+sl_nameOrSeqmark :: Set.HashSet NAME -> CommonLogicSL -> NAME_OR_SEQMARK
     -> CommonLogicSL
 sl_nameOrSeqmark prds cs nos =
     case nos of
@@ -251,12 +251,12 @@ sl_nameOrSeqmark prds cs nos =
 
 {- | determines the sublogic for names which are next to a quantifier,
 given predicates of the super-text -}
-sl_quantName :: Set.Set NAME -> CommonLogicSL -> NAME -> CommonLogicSL
+sl_quantName :: Set.HashSet NAME -> CommonLogicSL -> NAME -> CommonLogicSL
 sl_quantName prds _ n = if Set.member n prds then impsl else folsl
 
 {- | determines the sublogic for names,
 given predicates of the super-text -}
-sl_name :: Set.Set NAME -> CommonLogicSL -> NAME -> CommonLogicSL
+sl_name :: Set.HashSet NAME -> CommonLogicSL -> NAME -> CommonLogicSL
 sl_name _ = sublogic_name
 
 {- | determines the sublogic for names,
@@ -266,7 +266,7 @@ sublogic_name _ _ = propsl
 
 {- | determines the sublogic for terms,
 given predicates of the super-text -}
-sl_term :: Set.Set NAME -> CommonLogicSL -> TERM -> CommonLogicSL
+sl_term :: Set.HashSet NAME -> CommonLogicSL -> TERM -> CommonLogicSL
 sl_term prds cs term =
     case term of
       Name_term n -> sl_name prds cs n
@@ -276,7 +276,7 @@ sl_term prds cs term =
 
 {- | determines the sublogic for term sequences,
 given predicates of the super-text -}
-sl_termSeq :: Set.Set NAME -> CommonLogicSL -> TERM_SEQ -> CommonLogicSL
+sl_termSeq :: Set.HashSet NAME -> CommonLogicSL -> TERM_SEQ -> CommonLogicSL
 sl_termSeq prds cs tseq =
     case tseq of
         Term_seq t -> sl_termInSeq prds cs t
@@ -284,12 +284,12 @@ sl_termSeq prds cs tseq =
 
 {- | determines the sublogic for names,
 given predicates of the super-text -}
-sl_nameInTermSeq :: Set.Set NAME -> CommonLogicSL -> NAME -> CommonLogicSL
+sl_nameInTermSeq :: Set.HashSet NAME -> CommonLogicSL -> NAME -> CommonLogicSL
 sl_nameInTermSeq prds _ n = if Set.member n prds then impsl else propsl
 
 {- | determines the sublogic for terms inside of a term-sequence,
 given predicates of the super-text -}
-sl_termInSeq :: Set.Set NAME -> CommonLogicSL -> TERM -> CommonLogicSL
+sl_termInSeq :: Set.HashSet NAME -> CommonLogicSL -> TERM -> CommonLogicSL
 sl_termInSeq prds cs term =
     case term of
       Name_term n -> sl_nameInTermSeq prds cs n
@@ -304,7 +304,7 @@ sl_basic_items cs (Axiom_items axs) = comp_list $ map
   (\ Annoted {item = tm} ->
     uncurry (`sl_text` cs) $ getPreds $ getText tm
   ) axs
-  where getPreds :: TEXT -> (Set.Set NAME, TEXT)
+  where getPreds :: TEXT -> (Set.HashSet NAME, TEXT)
         getPreds txt = (prd_text txt, txt)
 
 -- | determines sublogic for basic spec

@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./Common/Consistency.hs
 Description :  data types for consistency aka conservativity
@@ -19,6 +19,8 @@ import Common.DocUtils
 import Common.AS_Annotation
 import Common.Result
 
+import GHC.Generics (Generic)
+import Data.Hashable
 import Data.Data
 
 {- | Conservativity annotations. For compactness, only the greatest applicable
@@ -32,7 +34,9 @@ data Conservativity =
   | Cons
   | Mono
   | Def
-    deriving (Show, Read, Eq, Ord, Typeable, Data)
+    deriving (Show, Read, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable Conservativity
 
 showConsistencyStatus :: Conservativity -> String
 showConsistencyStatus cs = case cs of

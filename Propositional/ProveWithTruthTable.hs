@@ -38,7 +38,7 @@ import Common.ProofTree
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Id as Id
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Common.OrderedMap as OMap
 
 import Common.Consistency
@@ -73,7 +73,7 @@ ttHelpText = "An implementation of the truth table method.\n"
   Models and evaluation of sentences
 -}
 
-type Model = Set.Set Id.Id -- a model specifies which propositions are true
+type Model = Set.HashSet Id.Id -- a model specifies which propositions are true
 
 -- | show Bools in truth table
 showBool :: Bool -> String

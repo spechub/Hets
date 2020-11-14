@@ -148,7 +148,7 @@ import Common.Result
 import Common.Taxonomy
 import Common.ToXml
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 import Data.Monoid
 import Data.Ord
@@ -322,6 +322,7 @@ addSyntax = Map.insert
 -}
 class (Language lid, Category sign morphism, Ord sentence,
        Ord symbol, -- for efficient lookup
+       Hashable symbol, -- for hash sets and hash maps
        PrintTypeConv sign, PrintTypeConv morphism,
        GetRange sentence, GetRange symbol,
        PrintTypeConv sentence, ToJson sentence,
@@ -353,7 +354,7 @@ class (Language lid, Category sign morphism, Ord sentence,
       -- --------------------- symbols ---------------------------
 
       -- | dependency ordered list of symbol sets for a signature
-      sym_of :: lid -> sign -> [Set.Set symbol]
+      sym_of :: lid -> sign -> [Set.HashSet symbol]
       sym_of _ _ = []
       {- | Dependency ordered list of a bigger symbol set for a
       signature. This function contains more symbols than those being subject
@@ -395,8 +396,8 @@ singletonList x = [x]
 
 -- | set of symbols for a signature
 symset_of :: forall lid sentence sign morphism symbol .
-             Sentences lid sentence sign morphism symbol =>
-             lid -> sign -> Set.Set symbol
+             (Sentences lid sentence sign morphism symbol, Hashable symbol) =>
+             lid -> sign -> Set.HashSet symbol
 symset_of lid sig = Set.unions $ sym_of lid sig
 
 -- | dependency ordered list of symbols for a signature
@@ -571,7 +572,7 @@ class ( Syntax lid basic_spec symbol symb_items symb_map_items
             (excluding) the set of symbols. Needed for revealing and
             hiding, see CASL RefMan p. 197ff. -}
          generated_sign, cogenerated_sign ::
-             lid -> Set.Set symbol -> sign -> Result morphism
+             lid -> Set.HashSet symbol -> sign -> Result morphism
          generated_sign l _ _ = statFail l "generated_sign"
          cogenerated_sign l _ _ = statFail l "cogenerated_sign"
          {- | Induce a signature morphism from a source signature and

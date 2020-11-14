@@ -29,7 +29,7 @@ import qualified Data.HashMap.Strict (HashMap, lookup, insert, empty,
                            foldrWithKey,
                            mapWithKey, toList, fromList) 
 import qualified Data.List (mapAccumL, elemIndex)
-import qualified Data.Set (fromList, toList)
+import qualified Data.HashSet as Set
 import Data.Maybe (catMaybes)
 
 import Data.Hashable
@@ -480,7 +480,7 @@ getSymbols s f =
                             infer (consts s) [f']
      r = anaTHF0 { anaVariableList = collectVariableTypes }
      ts' = propagateErrors "THF.Poly.getSymbols" $ anaSenFun (r, []) f'
-     ts = Data.Set.toList . Data.Set.fromList $ ts' ++
+     ts = Set.toList . Set.fromList $ ts' ++
           (concat (map (typeConstsOf . constType . snd) cs))
      symsC = map (\(_,ci) -> Symbol { symId = constId ci,
                                       symName = constName ci,

@@ -20,7 +20,7 @@ import Common.Id
 
 import Data.Data
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import GHC.Generics (Generic)
 import Data.Hashable
@@ -53,16 +53,16 @@ instance GetRange SymbolType
 symbolTypeS :: Symbol -> String
 symbolTypeS = show . symbolType
 
-type ConstantSet = Set.Set Constant
+type ConstantSet = Set.HashSet Constant
 type FunctorMap = Map.HashMap TPTP_functor FunctorType
-type NumberSet = Set.Set Number
-type PropositionSet = Set.Set Proposition
+type NumberSet = Set.HashSet Number
+type PropositionSet = Set.HashSet Proposition
 type THFTypeDeclarationMap = Map.HashMap THFTypeable THF_top_level_type
 type TFFTypeDeclarationMap = Map.HashMap Untyped_atom TFF_top_level_type
 type THFPredicateMap = THFTypeDeclarationMap
 type TFFPredicateMap = TFFTypeDeclarationMap
-type FOFPredicateMap = Map.HashMap Predicate (Set.Set Int)
-type FOFFunctorMap = Map.HashMap TPTP_functor (Set.Set Int)
+type FOFPredicateMap = Map.HashMap Predicate (Set.HashSet Int)
+type FOFFunctorMap = Map.HashMap TPTP_functor (Set.HashSet Int)
 type THFTypeConstantMap = THFTypeDeclarationMap
 type TFFTypeConstantMap = TFFTypeDeclarationMap
 type THFTypeFunctorMap = THFTypeDeclarationMap

@@ -203,7 +203,7 @@ import Data.Char
 import Data.List
 import Data.Maybe
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 infixl 6 <>
 infixl 6 <+>
@@ -631,7 +631,7 @@ toHtml stripCs lbl ga d = let
   in foldDoc (toHtmlRecord lbl dis) $ codeOut stripCs ga
                  (mkPrecIntMap $ prec_annos ga) (Just DF_HTML) dm d
 
-toHtmlRecord :: Label -> Set.Set Id -> DocRecord Pretty.Doc
+toHtmlRecord :: Label -> Set.HashSet Id -> DocRecord Pretty.Doc
 toHtmlRecord lbl dis = anyRecord
     { foldEmpty = const Pretty.empty
     , foldText = const $ textToHtml lbl dis
@@ -658,7 +658,7 @@ toHtmlRecord lbl dis = anyRecord
     , foldChangeGlobalAnnos = \ _ _ d -> d
     }
 
-textToHtml :: Label -> Set.Set Id -> TextKind -> String -> Pretty.Doc
+textToHtml :: Label -> Set.HashSet Id -> TextKind -> String -> Pretty.Doc
 textToHtml lbl@(MkLabel mkLbl) dis k s = let
   e = escapeHtml s ""
   h = Pretty.text e
@@ -713,7 +713,7 @@ toLatexAux stripCs lbl ga d = let
                  (mkPrecIntMap $ prec_annos ga) (Just DF_LATEX) dm d
 
 -- avoid too many tabs
-toLatexRecord :: Label -> Set.Set Id -> Bool -> DocRecord Pretty.Doc
+toLatexRecord :: Label -> Set.HashSet Id -> Bool -> DocRecord Pretty.Doc
 toLatexRecord lbl dis tab = anyRecord
     { foldEmpty = const Pretty.empty
     , foldText = const $ textToLatex lbl dis False
@@ -831,7 +831,7 @@ symbolToLatex :: String -> Pretty.Doc
 symbolToLatex s =
     Map.findWithDefault (hc_sty_axiom $ escapeSpecial s) s latexSymbols
 
-getDeclIds :: Doc -> Set.Set Id
+getDeclIds :: Doc -> Set.HashSet Id
 getDeclIds = foldDoc anyRecord
     { foldEmpty = const Set.empty
     , foldText = \ _ _ _ -> Set.empty
@@ -844,7 +844,7 @@ getDeclIds = foldDoc anyRecord
     , foldAnnoDoc = \ _ _ -> Set.empty
     }
 
-textToLatex :: Label -> Set.Set Id -> Bool -> TextKind -> String -> Pretty.Doc
+textToLatex :: Label -> Set.HashSet Id -> Bool -> TextKind -> String -> Pretty.Doc
 textToLatex lbl@(MkLabel mkLbl) dis b k s = case s of
   "" -> Pretty.text ""
   h : _ -> let e = escapeLatex s in case k of

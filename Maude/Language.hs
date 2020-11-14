@@ -37,8 +37,7 @@ import Maude.Parse
 
 import Common.Parsec ((<:>), (<<), single)
 
-import Data.Set (Set)
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import Data.Char (isSpace)
 import Data.List (nub)
@@ -58,7 +57,7 @@ type ParseResult = [NamedSpec]
 -- | Parsed Result for a single declaration
 type RawResult = Maybe (Either FilePath NamedSpec)
 -- | Intermediate Result during module tree recursion
-type RecResult = (Set FilePath, ParseResult)
+type RecResult = (Set.HashSet FilePath, ParseResult)
 
 -- * Generic Parser combinators
 

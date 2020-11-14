@@ -22,7 +22,7 @@ import Common.Result
 import Common.LibName
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Data.Graph.Inductive.Graph
 
 import Control.Monad

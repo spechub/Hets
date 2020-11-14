@@ -27,7 +27,7 @@ import Common.Doc
 import Common.DocUtils
 
 import qualified Data.HashMap.Map as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 -- For candidate generation and DG navigation
 import Data.List
@@ -59,9 +59,9 @@ class Match a where
     addConstraint :: a -> Term -> Term -> a
 
 
-newtype DefinitionStore = DefinitionStore (Env, Set.Set Symbol)
+newtype DefinitionStore = DefinitionStore (Env, Set.HashSet Symbol)
 
-initialDefStore :: Env -> Set.Set Symbol -> DefinitionStore
+initialDefStore :: Env -> Set.HashSet Symbol -> DefinitionStore
 initialDefStore e syms = DefinitionStore (e, syms)
 
 instance DefStore DefinitionStore where
@@ -302,7 +302,7 @@ candTerm (_, _, t) = t
 -- *** a.
 typePartition :: ((Id, TypeScheme) -> Maybe Term) -- ^ Definiens extractor
               -> (TypeScheme -> Bool) -- ^ Filter predicate for types
-              -> Set.Set Symbol -- ^ MatchOp symbol set
+              -> Set.HashSet Symbol -- ^ MatchOp symbol set
               -> Map.HashMap TypeScheme [MatchOp]
 typePartition df tPred s =
     Map.fromListWith (++) $ mapMaybe g $ Set.toList s
@@ -328,7 +328,7 @@ candidatesAux patMap cMap = crossInjs $ Map.foldrWithKey f [] patMap where
 
 candidates :: ((Id, TypeScheme) -> Maybe Term) -- ^ Definiens extractor
            -> (TypeScheme -> Bool) -- ^ Filter predicate for types
-           -> Set.Set Symbol -> Set.Set Symbol -> [[(MatchOp, MatchOp)]]
+           -> Set.HashSet Symbol -> Set.HashSet Symbol -> [[(MatchOp, MatchOp)]]
 candidates df tPred s1 s2 = map toList $ candidatesAux tp1 tp2
     where (tp1, tp2) = (typePartition df tPred s1, typePartition df tPred s2)
 

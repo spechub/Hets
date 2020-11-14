@@ -24,7 +24,7 @@ import Data.List
 import Data.Maybe
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import GHC.Generics (Generic)
 import Data.Hashable
@@ -175,8 +175,10 @@ showEdgeId :: EdgeId -> String
 showEdgeId (EdgeId i) = show i
 
 -- | a set of used edges
-newtype ProofBasis = ProofBasis { proofBasis :: Set.Set EdgeId }
-    deriving (Eq, Ord, Typeable, Data)
+newtype ProofBasis = ProofBasis { proofBasis :: Set.HashSet EdgeId }
+    deriving (Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable ProofBasis
 
 instance Show ProofBasis where
   show = show . Set.toList . proofBasis
@@ -189,7 +191,9 @@ data DGRule =
   | DGRuleWithEdge String EdgeId
   | DGRuleLocalInference [(String, String)] -- renamed theorems
   | Composition [EdgeId]
-    deriving (Show, Eq, Ord, Typeable, Data)
+    deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable DGRule
 
 -- | proof status of a link
 data ThmLinkStatus = LeftOpen | Proven DGRule ProofBasis

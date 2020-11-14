@@ -27,13 +27,13 @@ import Common.AS_Annotation
 import qualified Common.Lib.Rel as Rel
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Data.Maybe
 
 typeRel :: TypeMap -> Rel.Rel Id
 typeRel = Rel.transReduce . Rel.irreflex . Rel.transClosure
   . Map.foldrWithKey ( \ i ti r ->
-    Set.fold (Rel.insertPair i) r $ superTypes ti) Rel.empty
+    Set.foldr (Rel.insertPair i) r $ superTypes ti) Rel.empty
 
 getRawKind :: TypeMap -> Id -> RawKind
 getRawKind tm i = typeKind $
@@ -50,7 +50,7 @@ injType = mkInjOrProjType FunArr
 projType :: TypeScheme
 projType = mkInjOrProjType PFunArr
 
-mkInjOrProj :: Arrow -> Set.Set OpInfo
+mkInjOrProj :: Arrow -> Set.HashSet OpInfo
 mkInjOrProj arr = Set.singleton OpInfo
     { opType = mkInjOrProjType arr
     , opAttrs = Set.empty
@@ -63,7 +63,7 @@ subtRelType :: TypeScheme
 subtRelType = TypeScheme [aTypeArg, bTypeArg]
   (mkFunArrType (mkProductType [aType, bType]) PFunArr unitType) nullRange
 
-subtRel :: Set.Set OpInfo
+subtRel :: Set.HashSet OpInfo
 subtRel = Set.singleton OpInfo
     { opType = subtRelType
     , opAttrs = Set.empty
@@ -210,7 +210,7 @@ idInj = makeNamed "ga_inj_identity"
 monos :: Env -> [Named Sentence]
 monos e = concatMap (makeMonos e) . Map.toList $ assumps e
 
-makeMonos :: Env -> (Id, Set.Set OpInfo) -> [Named Sentence]
+makeMonos :: Env -> (Id, Set.HashSet OpInfo) -> [Named Sentence]
 makeMonos e (i, s) = makeEquivMonos e i . map opType $ Set.toList s
 
 makeEquivMonos :: Env -> Id -> [TypeScheme] -> [Named Sentence]

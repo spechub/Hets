@@ -18,7 +18,7 @@ module Interfaces.GenericATPState where
 import Logic.Prover
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import qualified Common.OrderedMap as OMap
 import qualified Common.AS_Annotation as AS_Anno

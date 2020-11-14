@@ -15,7 +15,7 @@ Instance of class Logic for SoftFOL.
 
 module SoftFOL.Logic_SoftFOL where
 
-import Data.Set (toList)
+import Data.HashSet (toList)
 
 import Common.DefaultMorphism
 import Common.DocUtils

@@ -24,7 +24,7 @@ import System.Directory
 import System.Exit
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 -- Propositional Stuff
 import Propositional.Sign
@@ -76,8 +76,8 @@ doConservCheck inSig oSig form = do
                return $ return (res, [])
 
 -- | Printer for QDimacs Format
-showQDimacs :: Set.Set Id               -- ^ Symbols of initial  Sign
-            -> Set.Set Id               -- ^ New symbols of extended Sign
+showQDimacs :: Set.HashSet Id               -- ^ Symbols of initial  Sign
+            -> Set.HashSet Id               -- ^ New symbols of extended Sign
             -> Map.HashMap Token Integer    -- ^ Map of Symbols
             -> [FORMULA]          -- ^ Formulas to Translate
             -> String
@@ -88,8 +88,8 @@ showQDimacs inSym exSym sigMap fforms =
       in "c Conservativity Problem Created by Hets \n" ++
              "p cnf " ++ show numVars ++ " " ++
              show (length fforms) ++ "\n" ++
-             "a " ++ Set.fold fct "" inSym ++ "0\n" ++
-             "e " ++ Set.fold fct "" exSym ++ "0\n" ++
+             "a " ++ Set.foldr fct "" inSym ++ "0\n" ++
+             "e " ++ Set.foldr fct "" exSym ++ "0\n" ++
              case fforms of
                     [] -> ""
                     _ -> "c Axioms\n" ++ concatMap (`mapClause` sigMap)

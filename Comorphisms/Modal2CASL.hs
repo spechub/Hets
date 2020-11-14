@@ -43,7 +43,7 @@ import Modal.Utils
 -- generated function
 import Modal.ModalSystems
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 import Data.Maybe
 

@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./FreeCAD/As.hs
 Description :  definition of the datatype describing
@@ -18,11 +18,17 @@ Declaration of the abstract datatypes of FreeCAD terms
 module FreeCAD.As where
 
 import Data.Data
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
+import GHC.Generics (Generic)
+import Data.Hashable
+
+import Common.ATerm.ConvInstances () -- for ATC instances
 
 data Vector3 =
   Vector3 { x :: Double, y :: Double, z :: Double }
-  deriving (Show, Eq, Ord, Typeable, Data)
+  deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable Vector3
 
 data Matrix33 = Matrix33 { a11 :: Double , a12 :: Double , a13 :: Double
                             , a21 :: Double , a22 :: Double , a23 :: Double
@@ -31,11 +37,15 @@ data Matrix33 = Matrix33 { a11 :: Double , a12 :: Double , a13 :: Double
   -- used as a rotation matrix
 
 data Vector4 = Vector4 { q0 :: Double, q1 :: Double, q2 :: Double, q3 :: Double}
-               deriving (Show, Eq, Ord, Typeable, Data)
+               deriving (Show, Eq, Ord, Typeable, Data, Generic)
 -- quaternion rotational representation
 
+instance Hashable Vector4
+
 data Placement = Placement { position :: Vector3, orientation :: Vector4 }
-                 deriving (Show, Eq, Ord, Typeable, Data)
+                 deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable Placement
 
 {-
 --   the placement is determined by 2 vectors:
@@ -58,8 +68,10 @@ data BaseObject = Box Double Double Double -- Height, Width, Length
             | Line Double -- length
             | Circle Double Double Double -- StartAngle, EndAngle, Radius
             | Rectangle Double Double -- Height, Length
-            deriving (Show, Eq, Ord, Typeable, Data)
+            deriving (Show, Eq, Ord, Typeable, Data, Generic)
           -- TODO: Plane, Vertex, etc..
+
+instance Hashable BaseObject
 
 data Object = BaseObject BaseObject
             | Cut ExtendedObject ExtendedObject
@@ -67,7 +79,9 @@ data Object = BaseObject BaseObject
             | Fusion ExtendedObject ExtendedObject
             | Extrusion ExtendedObject Vector3
             | Section ExtendedObject ExtendedObject
-            deriving (Show, Eq, Ord, Typeable, Data)
+            deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable Object
 
 {- --| Fillet, (Base::String, Edges::Edgelist, Radius::Double)),
             --not enough data in the xml
@@ -78,16 +92,22 @@ data Object = BaseObject BaseObject
 -}
 
 data ExtendedObject = Placed PlacedObject | Ref String
-  deriving (Show, Eq, Ord, Typeable, Data)
+  deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable ExtendedObject
 
 data PlacedObject =
   PlacedObject {p :: Placement, o :: Object}
-  deriving (Show, Eq, Ord, Typeable, Data)
+  deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable PlacedObject
 
 data NamedObject = NamedObject { name :: String
                    , object :: PlacedObject}
                  | EmptyObject -- for objects that are WIP
-                   deriving (Show, Eq, Ord, Typeable, Data)
+                   deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable NamedObject
 
 {- the first parameter is the name of the object as it is stored in the
 FreeCAD document. the second parameter determines the placement of the object
@@ -100,5 +120,5 @@ type Document = [NamedObject]
 {- | Datatype for FreeCAD Signatures
 Signatures are just sets of named objects -}
 
-data Sign = Sign { objects :: Set.Set NamedObject }
+data Sign = Sign { objects :: Set.HashSet NamedObject }
   deriving (Show, Eq, Ord, Typeable, Data)

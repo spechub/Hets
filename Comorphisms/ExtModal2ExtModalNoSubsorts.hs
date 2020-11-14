@@ -18,7 +18,7 @@ module Comorphisms.ExtModal2ExtModalNoSubsorts where
 import Logic.Logic
 import Logic.Comorphism
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import Common.AS_Annotation
 

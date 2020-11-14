@@ -20,7 +20,7 @@ module TPTP.Translate
     ) where
 
 import Data.Char
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import Common.Id
 import Common.ProofUtils

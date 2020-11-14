@@ -28,7 +28,7 @@ import Common.Id
 import qualified Common.Result as Result
 import qualified Common.AS_Annotation as Anno
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 
 -- BASIC SPEC ANALYSIS

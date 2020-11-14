@@ -127,7 +127,7 @@ import Control.Monad (foldM)
 import Data.Maybe
 import Data.Typeable
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.Map as PlainMap -- need this to avoid Hashable instance for existential type
 
 import GHC.Generics (Generic)
@@ -225,7 +225,7 @@ instance Pretty G_sign where
 logicOfGsign :: G_sign -> AnyLogic
 logicOfGsign (G_sign lid _ _) = Logic lid
 
-symsOfGsign :: G_sign -> Set.Set G_symbol
+symsOfGsign :: G_sign -> Set.HashSet G_symbol
 symsOfGsign (G_sign lid (ExtSign sgn _) _) = Set.map (G_symbol lid)
     $ symset_of lid sgn
 

@@ -37,7 +37,7 @@ import CASL.Sublogic
 import CASL.Sign
 import CASL.Morphism
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 import Common.AS_Annotation
 import Common.Id
@@ -114,7 +114,7 @@ mapTheory (sig, form) = do
   return (mapSig sig, sens)
 
 -- | Translation of symbols
-mapSym :: Symbol -> Set.Set PSymbol.Symbol
+mapSym :: Symbol -> Set.HashSet PSymbol.Symbol
 mapSym sym = case symbType sym of
   PredAsItemType pt | null $ predArgs pt ->
     Set.singleton (PSymbol.Symbol $ symName sym)

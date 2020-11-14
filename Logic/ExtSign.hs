@@ -13,7 +13,7 @@ extended to work over signatures with symbol sets.
 
 module Logic.ExtSign where
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 import Control.Monad
 import Common.Result
@@ -26,7 +26,7 @@ import Data.Hashable
 ext_sym_of :: Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol proof_tree
-        => lid -> ExtSign sign symbol -> Set.Set symbol
+        => lid -> ExtSign sign symbol -> Set.HashSet symbol
 ext_sym_of l = symset_of l . plainSign
 
 -- | simply put all symbols into the symbol set
@@ -106,14 +106,14 @@ ext_inclusion l (ExtSign s1 _) (ExtSign s2 _) =
 ext_generated_sign :: Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol proof_tree
-        => lid -> Set.Set symbol -> ExtSign sign symbol -> Result morphism
+        => lid -> Set.HashSet symbol -> ExtSign sign symbol -> Result morphism
 ext_generated_sign l s (ExtSign sig _) =
     generated_sign l s sig
 
 ext_cogenerated_sign :: Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol proof_tree
-        => lid -> Set.Set symbol -> ExtSign sign symbol -> Result morphism
+        => lid -> Set.HashSet symbol -> ExtSign sign symbol -> Result morphism
 ext_cogenerated_sign l s (ExtSign sig _) =
     cogenerated_sign l s sig
 
@@ -138,7 +138,7 @@ checkRawMap l rmap = checkRawSyms l (Map.keys rmap) . symset_of l
 checkRawSyms :: Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol proof_tree
-        => lid -> [raw_symbol] -> Set.Set symbol -> Result ()
+        => lid -> [raw_symbol] -> Set.HashSet symbol -> Result ()
 checkRawSyms l rsyms syms = do
   let unknownSyms = filter
           ( \ rsy -> Set.null $ Set.filter (flip (matches l) rsy) syms)

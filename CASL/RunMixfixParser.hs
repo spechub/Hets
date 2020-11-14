@@ -25,7 +25,7 @@ import CASL.ShowMixfix
 import CASL.MixfixParser
 import CASL.AS_Basic_CASL
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 myIdSets :: IdSets
 myIdSets = mkIdSets Set.empty (mkIds stdOpsL) stdPreds

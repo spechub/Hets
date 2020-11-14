@@ -26,8 +26,8 @@ import Maude.Symbol
 import Maude.Meta.AsSymbol
 import Maude.Meta.HasName
 
-import Data.Set (Set)
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
+import Data.Hashable
 
 -- * The HasLabels  type class
 
@@ -52,8 +52,8 @@ instance (HasLabels a, HasLabels b, HasLabels c) => HasLabels (a, b, c) where
     getLabels (a, b, c) = Set.union (getLabels a) (getLabels (b, c))
     mapLabels mp (a, b, c) = (mapLabels mp a, mapLabels mp b, mapLabels mp c)
 
-instance (Ord a, HasLabels a) => HasLabels (Set a) where
-    getLabels = Set.fold (Set.union . getLabels) Set.empty
+instance (Ord a, HasLabels a, Hashable a) => HasLabels (Set.HashSet a) where
+    getLabels = Set.foldr (Set.union . getLabels) Set.empty
     mapLabels = Set.map . mapLabels
 
 instance HasLabels StmntAttr where

@@ -15,7 +15,7 @@ The helpers for translating comorphism from Propositional to CASL.
 module Propositional.Prop2CASLHelpers
     where
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Id as Id
@@ -38,7 +38,7 @@ import qualified CASL.Morphism as CMor
 -- | Translation of the signature
 mapSig :: PSign.Sign -> CSign.CASLSign
 mapSig sign = (CSign.emptySign ())
-              { CSign.predMap = Set.fold (`MapSet.insert` CSign.PredType [])
+              { CSign.predMap = Set.foldr (`MapSet.insert` CSign.PredType [])
                                 MapSet.empty $ PSign.items sign }
 
 -- | Which is the target sublogic?
@@ -63,7 +63,7 @@ mapTheory (sig, form) = Result.Result [] $
     Just (mapSig sig, map trNamedForm form)
 
 -- | Translation of symbols
-mapSym :: PSymbol.Symbol -> Set.Set CSign.Symbol
+mapSym :: PSymbol.Symbol -> Set.HashSet CSign.Symbol
 mapSym sym = Set.singleton $
     CSign.idToPredSymbol (PSymbol.symName sym) $ CSign.PredType []
 

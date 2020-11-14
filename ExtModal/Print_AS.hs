@@ -18,7 +18,7 @@ import Common.DocUtils
 import Common.Id
 import qualified Common.Lib.MapSet as MapSet
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import ExtModal.AS_ExtModal
 import ExtModal.ExtModalSign

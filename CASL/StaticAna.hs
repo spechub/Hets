@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 {- |
 Module      :  ./CASL/StaticAna.hs
 Description :  CASL static analysis for basic specifications
@@ -50,9 +51,12 @@ import qualified Common.Lib.Rel as Rel
 import Control.Monad
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Data.Maybe
 import Data.List
+
+import GHC.Generics (Generic)
+import Data.Hashable
 
 checkPlaces :: [SORT] -> Id -> [Diagnosis]
 checkPlaces args i = let n = placeCount i in
@@ -121,21 +125,21 @@ addPred a ty i =
             addDiags $ checkPlaces (predArgs ty) i ++ checkNamePrefix i ++ ds
        addAnnoSet a $ Symbol i $ PredAsItemType ty
 
-nonConsts :: OpMap -> Set.Set Id
+nonConsts :: OpMap -> Set.HashSet Id
 nonConsts = MapSet.keysSet . MapSet.filter (not . null . opArgs)
 
-opMapConsts :: OpMap -> Set.Set Id
+opMapConsts :: OpMap -> Set.HashSet Id
 opMapConsts = MapSet.keysSet . MapSet.filter (null . opArgs)
 
-allOpIds :: Sign f e -> Set.Set Id
+allOpIds :: Sign f e -> Set.HashSet Id
 allOpIds = nonConsts . opMap
 
-allConstIds :: Sign f e -> Set.Set Id
+allConstIds :: Sign f e -> Set.HashSet Id
 allConstIds = opMapConsts . opMap
 
 addAssocs :: Sign f e -> GlobalAnnos -> GlobalAnnos
 addAssocs e =
-  updAssocMap (\ m -> Set.fold addAssocId m $ MapSet.keysSet $ assocOps e)
+  updAssocMap (\ m -> Set.foldr addAssocId m $ MapSet.keysSet $ assocOps e)
 
 updAssocMap :: (AssocMap -> AssocMap) -> GlobalAnnos -> GlobalAnnos
 updAssocMap f ga = ga { assoc_annos = f $ assoc_annos ga }
@@ -145,12 +149,12 @@ addAssocId i m = case Map.lookup i m of
                    Nothing -> Map.insert i ALeft m
                    _ -> m
 
-formulaIds :: Sign f e -> Set.Set Id
+formulaIds :: Sign f e -> Set.HashSet Id
 formulaIds e = let ops = allOpIds e in
-    Set.fromDistinctAscList (map simpleIdToId $ Map.keys $ varMap e)
+    Set.fromList (map simpleIdToId $ Map.keys $ varMap e)
                `Set.union` ops
 
-allPredIds :: Sign f e -> Set.Set Id
+allPredIds :: Sign f e -> Set.HashSet Id
 allPredIds = MapSet.keysSet . predMap
 
 addSentences :: [Named (FORMULA f)] -> State (Sign f e) ()
@@ -251,7 +255,7 @@ ana_BASIC_ITEMS mef ab anas mix bi =
 mapAn :: (a -> b) -> Annoted a -> Annoted b
 mapAn f an = replaceAnnoted (f $ item an) an
 
-type GenAx = (Set.Set SORT, Rel.Rel SORT, Set.Set Component)
+type GenAx = (Set.HashSet SORT, Rel.Rel SORT, Set.HashSet Component)
 
 emptyGenAx :: GenAx
 emptyGenAx = (Set.empty, Rel.empty, Set.empty)
@@ -276,7 +280,7 @@ toSortGenAx ps isFree (sorts, rel, ops) = do
         collectOps s = (s, filter ((== s) . resType) allSyms)
         constrs0 = map collectOps sortList
         dRel = Rel.depSort . Rel.transClosure $ foldr (\ (s, os) r ->
-               Set.fold (`Rel.insertDiffPair` s) (Rel.insertKey s r)
+               Set.foldr (`Rel.insertDiffPair` s) (Rel.insertKey s r)
                $ Set.unions
                $ map (Set.intersection sorts . Set.fromList . argTypes) os)
                Rel.empty constrs0
@@ -373,7 +377,7 @@ getGenSorts si = let
       foldr (\ s r -> foldr (Rel.insertDiffPair s) r il) Rel.empty il)
     in (sorts, rel, Set.empty)
 
-getOps :: OP_ITEM f -> Set.Set Component
+getOps :: OP_ITEM f -> Set.HashSet Component
 getOps oi = case oi of
     Op_decl is ty _ _ ->
         Set.fromList $ map (flip Component $ toOpType ty) is
@@ -626,7 +630,10 @@ ana_PRED_ITEM mef mix apr = case item apr of
                return apr {item = Pred_defn i phd at { item = resF } ps}
 
 -- full function type of a selector (result sort is component sort)
-data Component = Component { compId :: Id, compType :: OpType } deriving Show
+data Component = Component { compId :: Id, compType :: OpType } 
+               deriving (Show, Generic)
+
+instance Hashable Component
 
 instance Eq Component where
     Component i1 t1 == Component i2 t2 =
@@ -808,7 +815,7 @@ selForms = makeSelForms 1 . selForms1 "X"
 
 -- | return the constructor and the set of total selectors
 ana_ALTERNATIVE :: SORT -> Annoted ALTERNATIVE
-                -> State (Sign f e) (Maybe (Component, Set.Set Component))
+                -> State (Sign f e) (Maybe (Component, Set.HashSet Component))
 ana_ALTERNATIVE s c = case item c of
     Subsorts ss _ -> do
         mapM_ (addSubsort s) ss

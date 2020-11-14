@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./Static/XGraph.hs
 Description :  xml input for Hets development graphs
@@ -25,13 +25,17 @@ import Common.XUpdate (getAttrVal, readAttrVal)
 import qualified Common.OrderedMap as OMap
 
 import Control.Monad
+import qualified Common.HashSetUtils as HSU
 
 import Data.Data
 import Data.List
 import Data.Maybe (fromMaybe)
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
+import GHC.Generics (Generic)
+import Data.Hashable
+
 
 import Text.XML.Light
 
@@ -74,7 +78,9 @@ data XLink = XLink { source :: String
                    , mr_name :: String
                    , mr_source :: Maybe String
                    , mapping :: String }
-  deriving (Typeable, Data)
+  deriving (Typeable, Data, Generic)
+
+instance Hashable XLink
 
 instance Show XNode where
   show xn = showName (nodeName xn)
@@ -114,7 +120,7 @@ xGraph xml = do
                          _ -> False) allLinks
       edgeMap = mkEdgeMap defLk
       (initN, restN) = OMap.partitionMapWithKey
-         (\ n _ -> Set.notMember n $ Set.fromList $ Map.keys edgeMap)
+         (\ n _ -> HSU.notMember n $ Set.fromList $ Map.keys edgeMap)
          nodeMap
       tgts = Set.fromList $ Map.keys nodeMap
       missingTgts = Set.difference (Set.fromList $ Map.keys edgeMap) tgts
@@ -132,7 +138,7 @@ xGraph xml = do
   xg <- builtXGraph (Set.fromList $ Map.keys initN) edgeMap restN []
   return $ XGraph ln ga i' thmLk (Map.elems initN) xg
 
-builtXGraph :: Monad m => Set.Set String -> EdgeMap -> Map.HashMap String XNode
+builtXGraph :: Monad m => Set.HashSet String -> EdgeMap -> Map.HashMap String XNode
             -> XTree -> m XTree
 builtXGraph ns xls xns xg = if Map.null xls && Map.null xns then return xg
   else do

@@ -19,7 +19,7 @@ import HasCASL.PrintAs ()
 import Common.Id
 import HasCASL.Le
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Common.Lib.State
 import Common.Result
 import Common.DocUtils
@@ -40,7 +40,7 @@ anaKindM k cm = case k of
         return $ FunKind v rk1 rk2 ps
 
 -- | get minimal function kinds of (class) kind
-getFunKinds :: Monad m => ClassMap -> Kind -> m (Set.Set Kind)
+getFunKinds :: Monad m => ClassMap -> Kind -> m (Set.HashSet Kind)
 getFunKinds cm k = case k of
     FunKind {} -> return $ Set.singleton k
     ClassKind c -> case Map.lookup c cm of
@@ -66,16 +66,16 @@ cyclicClassId cm ci k = case k of
 -- * subkinding
 
 -- | keep only minimal elements according to 'lesserKind'
-keepMinKinds :: ClassMap -> [Set.Set Kind] -> Set.Set Kind
-keepMinKinds cm = Set.fromDistinctAscList
+keepMinKinds :: ClassMap -> [Set.HashSet Kind] -> Set.HashSet Kind
+keepMinKinds cm = Set.fromList
     . keepMins (lesserKind cm) . Set.toList . Set.unions
 
 -- | no kind of the set is lesser than the new kind
-newKind :: ClassMap -> Kind -> Set.Set Kind -> Bool
+newKind :: ClassMap -> Kind -> Set.HashSet Kind -> Bool
 newKind cm k = Set.null . Set.filter (flip (lesserKind cm) k)
 
 -- | add a new kind to a set
-addNewKind :: ClassMap -> Kind -> Set.Set Kind -> Set.Set Kind
+addNewKind :: ClassMap -> Kind -> Set.HashSet Kind -> Set.HashSet Kind
 addNewKind cm k = Set.insert k . Set.filter (not . lesserKind cm k)
 
 lesserVariance :: Variance -> Variance -> Bool

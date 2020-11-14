@@ -30,14 +30,14 @@ import THF.PrintTHF ()
 import Text.ParserCombinators.Parsec
 
 import Data.Maybe
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 
 {- -----------------------------------------------------------------------------
 Assumps
 ----------------------------------------------------------------------------- -}
 
-preDefHCAssumps :: Set.Set Id -> ConstMap
+preDefHCAssumps :: Set.HashSet Id -> ConstMap
 preDefHCAssumps ids =
     let asl = [ (botId, botci)
               , (defId, defci)
@@ -115,7 +115,7 @@ defci c = ConstInfo
 Axioms
 ----------------------------------------------------------------------------- -}
 
-preDefAxioms :: Set.Set Id -> [Named THFFormula]
+preDefAxioms :: Set.HashSet Id -> [Named THFFormula]
 preDefAxioms ids =
     let axl = [ (notId, notFS)
               , (negId, notFS)

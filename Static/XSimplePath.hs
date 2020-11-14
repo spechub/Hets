@@ -23,7 +23,7 @@ import Control.Monad
 import Data.List
 import Data.Maybe
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import Static.DgUtils
 import Static.XGraph
@@ -82,8 +82,8 @@ mkAttr l = case l of
 
 -- | Describes the minimal change-effect of a .diff upon a DGraph.
 data ChangeList = ChangeList
-  { deleteNodes :: Set.Set NodeName
-  , deleteLinks :: Set.Set XLink -- ^ stores additional information
+  { deleteNodes :: Set.HashSet NodeName
+  , deleteLinks :: Set.HashSet XLink -- ^ stores additional information
   , changeNodes :: Map.HashMap NodeName ChangeAction
   , changeLinks :: Map.HashMap EdgeId ChangeAction } deriving (Eq, Show)
 

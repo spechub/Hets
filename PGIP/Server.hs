@@ -113,7 +113,7 @@ import qualified Data.Aeson as Aeson
 import Data.Either
 import qualified Data.IntMap as IntMap
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.CaseInsensitive as CI
 import Data.Char
 import Data.IORef

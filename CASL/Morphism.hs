@@ -71,7 +71,7 @@ import CASL.AS_Basic_CASL
 
 import Data.Data
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
@@ -85,7 +85,7 @@ import Control.Monad
 import GHC.Generics (Generic)
 import Data.Hashable
 
-type SymbolSet = Set.Set Symbol
+type SymbolSet = Set.HashSet Symbol
 type SymbolMap = Map.HashMap Symbol Symbol
 
 data RawSymbol = ASymbol Symbol | AKindedSymb SYMB_KIND Id
@@ -374,7 +374,7 @@ typedSymbKindToRaw b sig k idt t = let
           let pt = sortToPredType s
               ot = sortToOpType s
               pot = mkPartial ot
-              hasPred = Set.member pt $ getSet pm
+              hasPred = Set.member pt $ MapSet.lookup idt pm
               hasOp = Set.member ot $ getSet om
               hasPOp = Set.member pot $ getSet om
               bothWarn = when hasPred $
@@ -420,7 +420,7 @@ typedSymbKindToRaw b sig k idt t = let
                      O_type _ -> error "CASL.typedSymbKindToRaw.Preds_kind"
               pSymb = ASymbol $ idToPredSymbol idt pt
           in if b then
-              if Set.member pt $ getSet pm then do
+              if Set.member pt $ MapSet.lookup idt pm then do
                  appendDiags [mkDiag Hint "matched predicate" idt]
                  return pSymb
               else unKnown
@@ -436,7 +436,7 @@ morphismToSymbMapAux b mor = let
     sorts = sort_map mor
     ops = op_map mor
     preds = pred_map mor
-    sortSymMap = Set.fold
+    sortSymMap = Set.foldr
       (\ s -> let t = mapSort sorts s in
          if b && s == t then id else
              Map.insert (idToSortSymbol s) $ idToSortSymbol t)

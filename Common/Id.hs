@@ -26,7 +26,8 @@ import Data.Char
 import Data.Data
 import Data.List (isPrefixOf)
 import Data.Ratio
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
+import qualified Data.Set as PlainSet
 
 import GHC.Generics (Generic)
 import Data.Hashable
@@ -549,6 +550,10 @@ instance (GetRange a, GetRange b) => GetRange (a, b) where
     getRange = getRange . fst
     rangeSpan (a, b) = sortRange (rangeSpan a) $ rangeSpan b
 
-instance GetRange a => GetRange (Set.Set a) where
+instance GetRange a => GetRange (PlainSet.Set a) where
+    getRange = getRange . PlainSet.toList
+    rangeSpan = rangeSpan . PlainSet.toList
+
+instance GetRange a => GetRange (Set.HashSet a) where
     getRange = getRange . Set.toList
     rangeSpan = rangeSpan . Set.toList

@@ -23,7 +23,7 @@ import HasCASL.As
 import HasCASL.Le
 import HasCASL.ProgEq
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Common.AS_Annotation
 
 -- | The identity of the comorphism

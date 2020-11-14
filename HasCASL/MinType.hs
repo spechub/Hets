@@ -26,7 +26,7 @@ import HasCASL.TypeAna
 import HasCASL.Unify
 import HasCASL.Constrain
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 import qualified Common.Lib.Rel as Rel
 import Common.DocUtils
@@ -37,6 +37,7 @@ import Common.Utils
 
 import Data.List as List
 import Data.Maybe
+import qualified Common.HashSetUtils as HSU
 
 q2p :: (a, b, c, d) -> (c, d)
 q2p (_, _, c, d) = (c, d)
@@ -153,5 +154,5 @@ commonSubtype trel b (ty, l) =
          $ map (if b then Rel.predecessors trel else Rel.succs trel) l
   in case ty of
     TypeName _ _ n | not (Set.null tySet) && n > 0
-      -> Just (n, Set.findMin tySet)
+      -> Just (n, HSU.findMin tySet)
     _ -> Nothing

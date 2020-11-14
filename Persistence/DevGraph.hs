@@ -71,8 +71,7 @@ import Data.Graph.Inductive.Graph as Graph
 import Data.List (intercalate, isPrefixOf, stripPrefix)
 import qualified Data.HashMap.Strict as Map
 import Data.Maybe
-import Data.Set (Set)
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.Text as Text
 import Database.Persist hiding ((==.))
 import Database.Persist.Sql hiding ((==.))
@@ -129,7 +128,7 @@ exportLibEnv opts libEnv = do
       fail message
 
 createDocuments :: MonadIO m
-                => HetcatsOpts -> LibEnv -> DBCache -> [Set LibName]
+                => HetcatsOpts -> LibEnv -> DBCache -> [Set.HashSet LibName]
                 -> DBMonad m DBCache
 createDocuments opts libEnv dbCache0 dependencyOrderedLibsSetL = do
   fileVersion <- getFileVersion $ databaseContext opts
@@ -140,7 +139,8 @@ createDocuments opts libEnv dbCache0 dependencyOrderedLibsSetL = do
 
 createDocumentsInDependencyRelation :: MonadIO m
                                     => HetcatsOpts -> LibEnv
-                                    -> Entity FileVersion -> DBCache -> [Set LibName]
+                                    -> Entity FileVersion -> DBCache
+                                    ->   Set.HashSet[ LibName]
                                     -> DBMonad m DBCache
 createDocumentsInDependencyRelation opts libEnv fileVersion =
   foldM

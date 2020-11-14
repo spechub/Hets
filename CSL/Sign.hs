@@ -33,13 +33,14 @@ module CSL.Sign
 
 import Data.Data
 import Data.Maybe
-import qualified Data.Map as Map
-import qualified Data.Set as Set
+import qualified Data.HashMap.Strict as Map
+import qualified Data.HashSet as Set
 
 import Common.Id
 import Common.Result
 import Common.Doc
 import Common.DocUtils
+import qualified Common.OrderedMap as OMap
 
 import CSL.TreePO (ClosedInterval (ClosedInterval))
 import CSL.AS_BASIC_CSL
@@ -56,13 +57,13 @@ optypeFromArity i = defaultType { opArity = i }
 
 {- | Datatype for EnCL Signatures
 Signatures are just sets of Tokens for the operators -}
-data Sign = Sign { items :: Map.Map Token OpType
-                 , epvars :: Map.Map Token (Maybe APInt)
-                 , epdecls :: Map.Map Token EPDecl
+data Sign = Sign { items :: Map.HashMap Token OpType
+                 , epvars :: Map.HashMap Token (Maybe APInt)
+                 , epdecls :: Map.HashMap Token EPDecl
                  } deriving (Show, Eq, Ord, Typeable, Data)
 
-opIds :: Sign -> Set.Set Id
-opIds = Set.map simpleIdToId . Map.keysSet . items
+opIds :: Sign -> Set.HashSet Id
+opIds = Set.map simpleIdToId . Set.fromList . Map.keys . items
 
 -- | The empty signature, use this one to create new signatures
 emptySig :: Sign
@@ -111,7 +112,7 @@ addEPDefValToSig sig tok i
     | isNothing mD = error $ "addEPDefValToSig: The extended parameter"
                       ++ " declaration for " ++ show tok ++ " is missing"
     | otherwise = sig {epdecls = ed'}
-    where (mD, ed') = Map.insertLookupWithKey f tok err $ epdecls sig
+    where (mD, ed') = OMap.insertLookupWithKey f tok err $ epdecls sig
           err = error "addEPDefValToSig: dummyval"
           f _ _ (EPDecl _ dom Nothing) = EPDecl tok dom $ Just i
           f _ _ (EPDecl _ _ (Just j)) =
@@ -139,7 +140,7 @@ eventually implicitly defined EP domain vars, e.g., for 'I = [0, n]'
 'n' is implicitly added -}
 addEPDeclToSig :: Sign -> Token -> EPDomain -> Sign
 addEPDeclToSig sig tok dom = g $ sig {epdecls = ed'}
-    where (mD, ed') = Map.insertLookupWithKey f tok epd $ epdecls sig
+    where (mD, ed') = OMap.insertLookupWithKey f tok epd $ epdecls sig
           epd = EPDecl tok dom Nothing
           f _ _ v@(EPDecl _ dom' _)
               | dom' == dom = v

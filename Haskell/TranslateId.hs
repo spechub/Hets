@@ -15,7 +15,7 @@ module Haskell.TranslateId (IdCase (..), translateIdWithType) where
 
 import Common.Id
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Data.Char
 
 -- | Converts an identifier to a valid lower or upper case Haskell name
@@ -32,7 +32,7 @@ translateIdWithType ty i =
             then "a__" ++ s else s
 
 -- reserved Haskell keywords
-lowerCaseList :: Set.Set String
+lowerCaseList :: Set.HashSet String
 lowerCaseList = Set.fromList [
                  "case", "class", "data", "default", "deriving", "do", "else",
                  "if", "import", "in", "infix", "infixl", "infixr", "instance",

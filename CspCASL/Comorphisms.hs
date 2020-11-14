@@ -24,7 +24,7 @@ import CspCASL.SignCSP
 import CspCASL.SymbItems
 import CspCASL.Symbol
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Data.Hashable
 
 -- | The identity of the comorphism

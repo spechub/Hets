@@ -44,7 +44,7 @@ import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 
 -- | lid of the morphism
@@ -339,7 +339,7 @@ getVarIdsFromStrExpre _ _ = []
 ∀ x1 , ..., xn ∈ (VarSet\2_VarSet)\ParSet,
 (Pattern1 → ∃ y1 , ..., ym ∈ 2_VarSet\ParSet, (Pattern2 ∧ where)) -}
 
-buildEmptyWhenFormula :: QVTR.Sign -> [RelVar] -> [RelVar] -> Set.Set RelVar -> Pattern -> Pattern -> Maybe WhenWhere -> CASLFORMULA
+buildEmptyWhenFormula :: QVTR.Sign -> [RelVar] -> [RelVar] -> Set.HashSet RelVar -> Pattern -> Pattern -> Maybe WhenWhere -> CASLFORMULA
 buildEmptyWhenFormula qvtSign parS varS varSet_2 souPat tarPat whereC =
   let
     listPars = Set.fromList parS
@@ -396,7 +396,7 @@ varDeclFromRelVar = map (\ v -> Var_decl [mkSimpleId $ varName v]
 ∀ x1 , ..., xn ∈ (VarSet\(WhenVarSet ∪ 2_VarSet))\ParSet, (Pattern1 →
 ∃ y1 , ..., ym ∈ 2_VarSet\ParSet, (Pattern2 ∧ where))) -}
 
-buildNonEmptyWhenFormula :: QVTR.Sign -> [RelVar] -> [RelVar] -> [RelVar] -> Set.Set RelVar
+buildNonEmptyWhenFormula :: QVTR.Sign -> [RelVar] -> [RelVar] -> [RelVar] -> Set.HashSet RelVar
                                       -> Pattern -> Pattern -> Maybe WhenWhere -> Maybe WhenWhere -> CASLFORMULA
 buildNonEmptyWhenFormula qvtSign whenVarSet parS varS varSet_2 souPat tarPat whenC whereC =
   let
@@ -653,8 +653,8 @@ then []
 else s : getUntilUnderscore restS -}
 
 
-{- getStringOperations :: Set.Set Id -> [(Id,OpType)]
-getStringOperations ids = Set.fold (\idd lis -> (idd, (mkTotOpType [] (stringToId "String"))) : lis ) [] ids -}
+{- getStringOperations :: Set.HashSet Id -> [(Id,OpType)]
+getStringOperations ids = Set.foldr (\idd lis -> (idd, (mkTotOpType [] (stringToId "String"))) : lis ) [] ids -}
 
 
 deleteNoConfusionString :: [Named CASLFORMULA] -> [Named CASLFORMULA]
@@ -707,7 +707,7 @@ diffOpsStr objName1 objName2 =
        nullRange | objName1 /= objName2]
 
 {- Get String instances within transformation rules
-getStringObjFromTransformation :: [Named QVTR.Sen] -> Set.Set Id
+getStringObjFromTransformation :: [Named QVTR.Sen] -> Set.HashSet Id
 getStringObjFromTransformation [] = Set.empty
 getStringObjFromTransformation (ns : restNS) =
 let
@@ -719,7 +719,7 @@ in
 Set.union idSen restId -}
 
 
-{- getStringIdsFromRelation :: RelationSen -> Set.Set Id
+{- getStringIdsFromRelation :: RelationSen -> Set.HashSet Id
 getStringIdsFromRelation (RelationSen _ _ _ souP tarP whenCl whereCl) =
 let
 souPId = getStringIdsFromPattern souP
@@ -730,21 +730,21 @@ in
 Set.unions [souPId,tarPId,whenId,whereId] -}
 
 
-{- getStringIdsFromPattern :: Pattern -> Set.Set Id
+{- getStringIdsFromPattern :: Pattern -> Set.HashSet Id
 getStringIdsFromPattern (Pattern _ _ p) = getStringIdsFromOclPred p -}
 
 
-{- getStringIdsFromOclPred :: [(String,String,OCL)] -> Set.Set Id
+{- getStringIdsFromOclPred :: [(String,String,OCL)] -> Set.HashSet Id
 getStringIdsFromOclPred [] = Set.empty
 getStringIdsFromOclPred ((_,_,ocl) : restPr) = Set.union (getStringIdsFromOCL ocl) (getStringIdsFromOclPred restPr) -}
 
 
-{- getStringIdsFromWhenWhere :: Maybe WhenWhere -> Set.Set Id
+{- getStringIdsFromWhenWhere :: Maybe WhenWhere -> Set.HashSet Id
 getStringIdsFromWhenWhere Nothing = Set.empty
 getStringIdsFromWhenWhere (Just (WhenWhere _ ocl)) = Set.unions (map (getStringIdsFromOCL) ocl) -}
 
 
-{- getStringIdsFromOCL :: OCL -> Set.Set Id
+{- getStringIdsFromOCL :: OCL -> Set.HashSet Id
 getStringIdsFromOCL (Paren e) = getStringIdsFromOCL e
 getStringIdsFromOCL (StringExp str) = getStringIdsFromString str
 getStringIdsFromOCL (BExp _) = Set.empty
@@ -754,7 +754,7 @@ getStringIdsFromOCL (OrB lE rE) = Set.union (getStringIdsFromOCL lE) (getStringI
 getStringIdsFromOCL (Equal lE rE) = Set.union (getStringIdsFromString lE) (getStringIdsFromString rE) -}
 
 
-{- getStringIdsFromString :: STRING -> Set.Set Id
+{- getStringIdsFromString :: STRING -> Set.HashSet Id
 getStringIdsFromString (Str s) = if s == ""
 then Set.insert (stringToId "EMPTY") Set.empty
 else Set.insert (stringToId s) Set.empty
@@ -776,7 +776,7 @@ separateStringConstraintFromOthers (f : restF) =
 
 
 -- Get String names from Qual_op_name
-getStringObjects :: [Named CASLFORMULA] -> Set.Set Id
+getStringObjects :: [Named CASLFORMULA] -> Set.HashSet Id
 getStringObjects [] = Set.empty
 getStringObjects (f : restF) =
   case sentence f of
@@ -785,7 +785,7 @@ getStringObjects (f : restF) =
     _ -> getStringObjects restF
 
 
-getObjNamesFromOp :: [(OP_SYMB, [Int])] -> Set.Set Id
+getObjNamesFromOp :: [(OP_SYMB, [Int])] -> Set.HashSet Id
 getObjNamesFromOp [] = Set.empty
 getObjNamesFromOp ((op, _) : restOp) =
   case op of

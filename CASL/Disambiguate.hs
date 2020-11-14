@@ -23,7 +23,7 @@ import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import Data.Hashable
 
@@ -40,7 +40,7 @@ disambigSigExt extInd extEm sig =
   let ps = Map.map (Rel.partSet $ leqP sig) $ MapSet.toMap $ predMap sig
       os = Map.map (Rel.partSet $ leqF sig) $ MapSet.toMap $ opMap sig
       ss = sortSet sig
-      sMap = Set.fold (`Map.insert` 1) Map.empty ss
+      sMap = Set.foldr (`Map.insert` 1) Map.empty ss
       om = createOpMorMap $ disambOverloaded sMap mkPartial os
       oMap = Map.foldrWithKey (\ i ->
              Map.insertWith (+) i . length) sMap os
@@ -51,12 +51,12 @@ disambigSigExt extInd extEm sig =
 
 disambOverloaded :: (Ord a, Hashable a) => Map.HashMap Id Int
                -> (a -> a)
-               -> Map.HashMap Id [Set.Set a]
+               -> Map.HashMap Id [Set.HashSet a]
                -> Map.HashMap (Id, a) (Id, a)
 disambOverloaded oMap g =
   Map.foldrWithKey (\ i l m ->
     foldr (\ (s, n) m2 -> let j = mkOverloadedId n i in
-      Set.fold (\ t -> Map.insert (i, g t) (j, t)) m2 s) m
+      Set.foldr (\ t -> Map.insert (i, g t) (j, t)) m2 s) m
     $ zip l [1 + Map.findWithDefault 0 i oMap ..])
     Map.empty
 

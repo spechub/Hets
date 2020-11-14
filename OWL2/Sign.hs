@@ -17,7 +17,7 @@ module OWL2.Sign where
 import Common.IRI
 import OWL2.AS
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 
 import Common.Lib.State
@@ -28,16 +28,16 @@ import Control.Monad
 import Data.Data
 
 data Sign = Sign
-            { concepts :: Set.Set Class
+            { concepts :: Set.HashSet Class
               -- classes
-            , datatypes :: Set.Set Datatype -- datatypes
-            , objectProperties :: Set.Set ObjectProperty
+            , datatypes :: Set.HashSet Datatype -- datatypes
+            , objectProperties :: Set.HashSet ObjectProperty
               -- object properties
-            , dataProperties :: Set.Set DataProperty
+            , dataProperties :: Set.HashSet DataProperty
               -- data properties
-            , annotationRoles :: Set.Set AnnotationProperty
+            , annotationRoles :: Set.HashSet AnnotationProperty
               -- annotation properties
-            , individuals :: Set.Set Individual  -- named individuals
+            , individuals :: Set.HashSet Individual  -- named individuals
             , labelMap :: Map.HashMap IRI String -- labels (for better readability)
             , prefixMap :: PrefixMap
             } deriving (Show, Typeable, Data)
@@ -129,7 +129,7 @@ isSubSign a b =
        && Set.isSubsetOf (annotationRoles a) (annotationRoles b)
        && Set.isSubsetOf (individuals a) (individuals b)
 
-symOf :: Sign -> Set.Set Entity
+symOf :: Sign -> Set.HashSet Entity
 symOf s = Set.unions
   [ Set.map (\ ir -> Entity (Map.lookup ir $ labelMap s) Class ir) $ concepts s
   , Set.map (mkEntity Datatype) $ datatypes s
@@ -139,7 +139,7 @@ symOf s = Set.unions
   , Set.map (mkEntity AnnotationProperty) $ annotationRoles s ]
 
 -- | takes an entity and modifies the sign according to the given function
-modEntity :: (IRI -> Set.Set IRI -> Set.Set IRI) -> Entity -> State Sign ()
+modEntity :: (IRI -> Set.HashSet IRI -> Set.HashSet IRI) -> Entity -> State Sign ()
 modEntity f (Entity _ ty u) = do
   s <- get
   let chg = f u

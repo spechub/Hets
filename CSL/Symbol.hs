@@ -18,7 +18,7 @@ import Common.Doc
 import Common.DocUtils
 
 import Data.Data
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 
 import CSL.Sign
@@ -43,13 +43,13 @@ printSymbol :: Symbol -> Doc
 printSymbol x = pretty $ symName x
 
 -- | Extraction of symbols from a signature
-symOf :: Sign -> Set.Set Symbol
+symOf :: Sign -> Set.HashSet Symbol
 symOf = Set.map Symbol . opIds
 
 -- | Determines the symbol map of a morhpism
 getSymbolMap :: Morphism -> Map.HashMap Symbol Symbol
 getSymbolMap f =
-  Set.fold (\ x -> Map.insert (Symbol x) (Symbol $ applyMap (operatorMap f) x))
+  Set.foldr (\ x -> Map.insert (Symbol x) (Symbol $ applyMap (operatorMap f) x))
   Map.empty $ opIds $ source f
 
 -- | Determines the name of a symbol

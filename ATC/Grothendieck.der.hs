@@ -36,7 +36,7 @@ import Data.Typeable
 import Data.List
 import qualified Data.IntMap as IntMap
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import ATC.Prover ()
 import ATC.ExtSign ()
@@ -327,7 +327,7 @@ instance (ShATermLG a, ShATermLG b, ShATermLG c) => ShATermLG (a, b, c) where
                     (att3, (a', b', c'))}}}
             u -> fromShATermError "(,,)" u
 
-instance (Ord a, ShATermLG a) => ShATermLG (Set.Set a) where
+instance (Ord a, ShATermLG a) => ShATermLG (Set.HashSet a) where
   toShATermLG att set = do
       (att1, i) <- toShATermLG' att $ Set.toList set
       return $ addATerm (ShAAppl "Set" [i] []) att1
@@ -336,7 +336,7 @@ instance (Ord a, ShATermLG a) => ShATermLG (Set.Set a) where
             ShAAppl "Set" [a] _ ->
                     case fromShATermLG' lg a att0 of { (att1, a') ->
                     (att1, Set.fromList a') }
-            u -> fromShATermError "Set.Set" u
+            u -> fromShATermError "Set.HashSet" u
 
 instance ShATermLG a => ShATermLG (SizedList.SizedList a) where
   toShATermLG att0 = toShATermLG att0 . SizedList.toList

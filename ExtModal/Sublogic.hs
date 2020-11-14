@@ -22,7 +22,7 @@ import Common.AS_Annotation
 import Data.Data
 import Data.Function
 import Data.List
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import ExtModal.AS_ExtModal
 import ExtModal.ExtModalSign

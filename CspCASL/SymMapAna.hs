@@ -31,7 +31,7 @@ import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.MapSet as MapSet
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Data.List (partition)
 import Data.Maybe
 
@@ -84,7 +84,7 @@ cspInducedFromMorphism rmap sigma = do
     , op_map = om
     , pred_map = pm }
 
-chanFun :: CspCASLSign -> CspRawMap -> Sort_map -> Id -> Set.Set SORT
+chanFun :: CspCASLSign -> CspRawMap -> Sort_map -> Id -> Set.HashSet SORT
   -> Result ChanMap -> Result ChanMap
 chanFun sig rmap sm cn ss m =
   let sls = Rel.partSet (relatedSorts sig) ss
@@ -92,16 +92,16 @@ chanFun sig rmap sm cn ss m =
   in case (Map.lookup (CspKindedSymb ChannelKind cn) rmap,
                 Map.lookup (CspKindedSymb (CaslKind Implicit) cn) rmap) of
        (Just rsy1, Just rsy2) -> let
-          m2 = Set.fold (insertChanSym sm cn rsy1) m1 ss
-          in Set.fold (insertChanSym sm cn rsy2) m2 ss
+          m2 = Set.foldr (insertChanSym sm cn rsy1) m1 ss
+          in Set.foldr (insertChanSym sm cn rsy2) m2 ss
        (Just rsy, Nothing) ->
-          Set.fold (insertChanSym sm cn rsy) m1 ss
+          Set.foldr (insertChanSym sm cn rsy) m1 ss
        (Nothing, Just rsy) ->
-          Set.fold (insertChanSym sm cn rsy) m1 ss
+          Set.foldr (insertChanSym sm cn rsy) m1 ss
        -- Anything not mapped explicitly is left unchanged
        (Nothing, Nothing) -> m1
 
-directChanMap :: CspRawMap -> Sort_map -> Id -> Set.Set SORT
+directChanMap :: CspRawMap -> Sort_map -> Id -> Set.HashSet SORT
   -> Result ChanMap -> Result ChanMap
 directChanMap rmap sm cn ss m =
   let sl = Set.toList ss
@@ -160,7 +160,7 @@ mappedChanSym sm cn s rsy =
                $ getRange rsy
 
 procFun :: CspCASLSign -> CspRawMap -> Sort_map -> Rel.Rel SORT -> ChanMap -> Id
-  -> Set.Set ProcProfile -> Result ProcessMap -> Result ProcessMap
+  -> Set.HashSet ProcProfile -> Result ProcessMap -> Result ProcessMap
 procFun sig rmap sm rel cm pn ps m =
     let pls = Rel.partSet (relatedProcs sig) ps
         m1 = foldr (directProcMap rmap sm rel cm pn) m pls
@@ -168,17 +168,17 @@ procFun sig rmap sm rel cm pn ps m =
     in case (Map.lookup (CspKindedSymb ProcessKind pn) rmap,
                 Map.lookup (CspKindedSymb (CaslKind Implicit) pn) rmap) of
        (Just rsy1, Just rsy2) -> let
-          m2 = Set.fold (insertProcSym sm rel cm pn rsy1) m1 ps
-          in Set.fold (insertProcSym sm rel cm pn rsy2) m2 ps
+          m2 = Set.foldr (insertProcSym sm rel cm pn rsy1) m1 ps
+          in Set.foldr (insertProcSym sm rel cm pn rsy2) m2 ps
        (Just rsy, Nothing) ->
-          Set.fold (insertProcSym sm rel cm pn rsy) m1 ps
+          Set.foldr (insertProcSym sm rel cm pn rsy) m1 ps
        (Nothing, Just rsy) ->
-          Set.fold (insertProcSym sm rel cm pn rsy) m1 ps
+          Set.foldr (insertProcSym sm rel cm pn rsy) m1 ps
        -- Anything not mapped explicitly is left unchanged
        (Nothing, Nothing) -> m1
 
 directProcMap :: CspRawMap -> Sort_map -> Rel.Rel SORT -> ChanMap
-  -> Id -> Set.Set ProcProfile -> Result ProcessMap -> Result ProcessMap
+  -> Id -> Set.HashSet ProcProfile -> Result ProcessMap -> Result ProcessMap
 directProcMap rmap sm rel cm pn ps m =
   let pl = Set.toList ps
       rl = map (lookupProcSymbol rmap pn) pl
@@ -291,7 +291,7 @@ cspMatches (CspSymbol i t) rsy = case rsy of
     (CaslKind Implicit, _) -> res
     _ -> False
 
-procProfile2Sorts :: ProcProfile -> Set.Set SORT
+procProfile2Sorts :: ProcProfile -> Set.HashSet SORT
 procProfile2Sorts (ProcProfile sorts al) =
   Set.union (Set.fromList sorts) $ Set.map commType2Sort al
 
@@ -309,16 +309,16 @@ cspRevealSym sy sig = let
     ProcAsItemType p@(ProcProfile _ al) -> sig
       { sortRel = Rel.union (Rel.fromKeysSet $ procProfile2Sorts p) r
       , extendedInfo = ext
-        { chans = Set.fold (\ ct -> case ct of
+        { chans = Set.foldr (\ ct -> case ct of
             CommTypeSort _ -> id
             CommTypeChan (TypedChanName c s) -> MapSet.insert c s) cs al
         , procSet = MapSet.insert n p $ procSet ext }
       }
 
-cspGeneratedSign :: Set.Set CspSymbol -> CspCASLSign -> Result CspCASLMorphism
+cspGeneratedSign :: Set.HashSet CspSymbol -> CspCASLSign -> Result CspCASLMorphism
 cspGeneratedSign sys sigma = let
   symset = Set.unions $ symSets sigma
-  sigma1 = Set.fold cspRevealSym sigma
+  sigma1 = Set.foldr cspRevealSym sigma
     { sortRel = Rel.empty
     , opMap = MapSet.empty
     , predMap = MapSet.empty
@@ -327,24 +327,24 @@ cspGeneratedSign sys sigma = let
     { sortRel = sortRel sigma `Rel.restrict` sortSet sigma1
     , emptySortSet = Set.intersection (sortSet sigma1) $ emptySortSet sigma }
   in if not $ Set.isSubsetOf sys symset
-   then let diffsyms = sys Set.\\ symset in
+   then let diffsyms = sys `Set.difference` symset in
         fatal_error ("Revealing: The following symbols "
                      ++ showDoc diffsyms " are not in the signature")
         $ getRange diffsyms
    else cspSubsigInclusion sigma2 sigma
 
-cspCogeneratedSign :: Set.Set CspSymbol -> CspCASLSign -> Result CspCASLMorphism
+cspCogeneratedSign :: Set.HashSet CspSymbol -> CspCASLSign -> Result CspCASLMorphism
 cspCogeneratedSign symset sigma = let
   symset0 = Set.unions $ symSets sigma
-  symset1 = Set.fold cspHideSym symset0 symset
+  symset1 = Set.foldr cspHideSym symset0 symset
   in if Set.isSubsetOf symset symset0
    then cspGeneratedSign symset1 sigma
-   else let diffsyms = symset Set.\\ symset0 in
+   else let diffsyms = symset `Set.difference` symset0 in
         fatal_error ("Hiding: The following symbols "
             ++ showDoc diffsyms " are not in the signature")
         $ getRange diffsyms
 
-cspHideSym :: CspSymbol -> Set.Set CspSymbol -> Set.Set CspSymbol
+cspHideSym :: CspSymbol -> Set.HashSet CspSymbol -> Set.HashSet CspSymbol
 cspHideSym sy set1 = let
   set2 = Set.delete sy set1
   n = cspSymName sy
@@ -364,7 +364,7 @@ cspProfileContains s ty = case ty of
 unusedChan :: Id -> SORT -> CspSymbol -> Bool
 unusedChan c s sy = case cspSymbType sy of
   ProcAsItemType (ProcProfile _ al) ->
-    Set.fold (\ ct b -> case ct of
+    Set.foldr (\ ct b -> case ct of
        CommTypeSort _ -> b
        CommTypeChan (TypedChanName c2 s2) -> b && (c, s) /= (c2, s2)) True al
   _ -> True

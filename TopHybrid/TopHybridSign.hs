@@ -20,7 +20,7 @@ import Logic.Logic
 import Common.Result
 import Common.Id
 import Data.Data
-import Data.Set
+import qualified Data.HashSet as Set
 import Unsafe.Coerce
 import Control.Monad (liftM)
 
@@ -43,8 +43,8 @@ instance Show Sgn_Wrap where
 
 data THybridSign s = THybridSign
   {
-    modies :: Set MODALITY
-  , nomies :: Set NOMINAL
+    modies :: Set.HashSet MODALITY
+  , nomies :: Set.HashSet NOMINAL
   , extended :: s
   } deriving (Show, Eq, Ord, Typeable, Data)
 
@@ -61,8 +61,8 @@ isSubTHybSgn (Sgn_Wrap l s) (Sgn_Wrap l' s') = final
                where
                resExt = (show l == show l') &&
                         is_subsig l (extended s) (unsafeCoerce $ extended s')
-               final = isSubsetOf (modies s) (modies s') &&
-                       isSubsetOf (nomies s) (nomies s') &&
+               final = Set.isSubsetOf (modies s) (modies s') &&
+                       Set.isSubsetOf (nomies s) (nomies s') &&
                        resExt
 -- An empty set is always contained in any other set
 isSubTHybSgn EmptySign _ = True
@@ -83,8 +83,8 @@ sgnDiff (Sgn_Wrap l s) (Sgn_Wrap l' s') =
                               nullRange] Nothing
                 else liftM (Sgn_Wrap l) ds
                 where
-                        dn = difference (nomies s) $ nomies s'
-                        dm = difference (modies s) $ modies s'
+                        dn = Set.difference (nomies s) $ nomies s'
+                        dm = Set.difference (modies s) $ modies s'
                         ds = liftM (THybridSign dm dn) $ signatureDiff l
                               (extended s) (unsafeCoerce $ extended s')
 

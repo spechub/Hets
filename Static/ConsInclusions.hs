@@ -29,7 +29,7 @@ import Common.Result
 import qualified Common.OrderedMap as OMap
 
 import Data.Graph.Inductive.Graph as Graph
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 dumpConsInclusions :: HetcatsOpts -> DGraph -> IO ()
 dumpConsInclusions opts dg =

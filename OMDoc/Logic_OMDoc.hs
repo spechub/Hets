@@ -19,7 +19,7 @@ import OMDoc.ATC_OMDoc ()
 
 import Common.Id
 import Data.Maybe (fromMaybe)
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 import Control.Monad (unless)
 import GHC.Generics (Generic)

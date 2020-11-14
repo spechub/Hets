@@ -39,7 +39,7 @@ import HasCASL.ProgEq
 import HasCASL.MinType
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Common.Id
 import Common.GlobalAnnotations
 import Common.Result

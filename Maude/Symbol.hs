@@ -42,10 +42,9 @@ import Maude.AS_Maude
 import Maude.Meta.HasName
 
 import Data.Data
-import Data.Set (Set)
 import qualified Data.HashMap.Strict as Map
 import Common.Lib.Rel (Rel)
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Common.Lib.Rel as Rel
 
 import Common.Id (Id, mkId, mkSimpleId, GetRange, getRange, nullRange)
@@ -71,7 +70,7 @@ instance Hashable Symbol
 
 -- ** Auxiliary types
 type Symbols = [Symbol]
-type SymbolSet = Set Symbol
+type SymbolSet = Set.HashSet Symbol
 type SymbolMap = Map.HashMap Symbol Symbol
 type SymbolRel = Rel Symbol
 

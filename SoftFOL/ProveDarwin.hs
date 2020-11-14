@@ -57,7 +57,7 @@ import Interfaces.GenericATPState
 import Proofs.BatchProcessing
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 -- * Prover implementation
 

@@ -25,7 +25,7 @@ import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.MapSet as MapSet
 import Common.Id
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 
 import Hybrid.Logic_Hybrid
@@ -307,7 +307,7 @@ glueDs ks f m = concat $ foldr (\ a b -> g a : b) [] ks
 
 {- Given a single designator, genereates the rigidity constraints
 associated, and joins them into a single list -}
-glueDe :: k -> Set.Set a -> (k -> a -> CForm) -> [CForm]
+glueDe :: (Eq a, Hashable a) => k -> Set.HashSet a -> (k -> a -> CForm) -> [CForm]
 glueDe n s f = foldr (\ a b -> f n a : b) [] $ Set.elems s
 
 {- Generates a rigid constraint from a single pred name and type

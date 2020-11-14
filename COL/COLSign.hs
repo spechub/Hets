@@ -15,12 +15,12 @@ Signatures of COL as extension of CASL signatures.
 module COL.COLSign where
 
 import Data.Data
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 
 import Common.Id
 
-data COLSign = COLSign { constructors :: Set.Set Id
+data COLSign = COLSign { constructors :: Set.HashSet Id
                        , observers :: Map.HashMap Id Int
                        } deriving (Show, Eq, Ord, Typeable, Data)
 
@@ -39,5 +39,5 @@ diffCOLSign s1 s2 =
 
 isSubCOLSign :: COLSign -> COLSign -> Bool
 isSubCOLSign s1 s2 =
-    Set.null (constructors s2 Set.\\ constructors s1)
+    Set.null (constructors s2 `Set.difference` constructors s1)
     && Map.null (Map.difference (observers s1) $ observers s2)

@@ -19,7 +19,7 @@ import Driver.WriteLibDefn
 import Driver.ReadLibDefn
 import Driver.Version
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import qualified Common.Result as CRes
 import Common.Doc (renderText)

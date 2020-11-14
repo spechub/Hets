@@ -22,7 +22,7 @@ import Common.AS_Annotation
 import Data.Data
 import Data.Function
 import Data.List
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import GHC.Generics (Generic)
 import Data.Hashable
@@ -275,7 +275,7 @@ sortConstraints cs = let
                  $ map (\ (c, is) -> (c, map updInd is)) os) o) nCs
 
 -- | no duplicate sorts, i.e. injective sort map?
-isInjectiveList :: Ord a => [a] -> Bool
+isInjectiveList :: (Hashable a, Ord a) => [a] -> Bool
 isInjectiveList l = Set.size (Set.fromList l) == length l
 
 {- | from a Sort_gex_ax, recover:

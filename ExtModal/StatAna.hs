@@ -38,7 +38,7 @@ import qualified Common.Lib.MapSet as MapSet
 
 import Data.Function
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import Control.Monad
 
@@ -51,12 +51,12 @@ instance TermExtension EM_FORMULA where
         Set.unions $ map (freeVars sign . item)
                $ concatMap (frameForms . item) afs
 
-freePrefixVars :: Sign EM_FORMULA e -> FormPrefix -> Set.Set (VAR, SORT)
+freePrefixVars :: Sign EM_FORMULA e -> FormPrefix -> Set.HashSet (VAR, SORT)
 freePrefixVars sign fp = case fp of
     BoxOrDiamond _ m _ _ -> freeModVars sign m
     _ -> Set.empty
 
-freeModVars :: Sign EM_FORMULA e -> MODALITY -> Set.Set (VAR, SORT)
+freeModVars :: Sign EM_FORMULA e -> MODALITY -> Set.HashSet (VAR, SORT)
 freeModVars sign md = case md of
   SimpleMod _ -> Set.empty
   TermMod t -> freeTermVars sign t
@@ -80,7 +80,7 @@ checkConstr :: Sign EM_FORMULA EModalSign -> [Named (FORMULA EM_FORMULA)]
   -> Result ()
 checkConstr sig sens =
   let cs = interOpMapSet
-        (Set.fold (uncurry addOpTo) MapSet.empty $ getConstructors sens)
+        (Set.foldr (uncurry addOpTo) MapSet.empty $ getConstructors sens)
         $ flexOps $ extendedInfo sig
   in unless (MapSet.null cs) $ fail $ "constructors must not be flexible:\n"
          ++ show (printSetMap empty empty $ MapSet.toMap cs)
@@ -368,19 +368,19 @@ anaFORMULA mix sig f = do
     -- the unknown predicates are not needed for mixfix resolution
     r <- resolveFormula parenExtForm
                   resolveExtForm (globAnnos sig) (mixRules mix2) f
-    let q = Set.fold
+    let q = Set.foldr
           (\ t -> QuantPred (simpleIdToId t) (Pred_type [] $ tokPos t))
           r $ getFormPredToks f
     n <- minExpFORMULA frmTypeAna sig q
     return (r, n)
 
-getEFormPredToks :: EM_FORMULA -> Set.Set Token
+getEFormPredToks :: EM_FORMULA -> Set.HashSet Token
 getEFormPredToks ef = case ef of
     PrefixForm _ f _ -> getFormPredToks f
     UntilSince _ f1 f2 _ -> on Set.union getFormPredToks f1 f2
     ModForm _ -> Set.empty
 
-getFormPredToks :: FORMULA EM_FORMULA -> Set.Set Token
+getFormPredToks :: FORMULA EM_FORMULA -> Set.HashSet Token
 getFormPredToks = foldFormula
   (constRecord getEFormPredToks Set.unions Set.empty)
     { foldMixfix_formula = \ f ts -> case f of

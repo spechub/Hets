@@ -17,25 +17,25 @@ import SoftFOL.Sign
 
 import Common.Id
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 import Data.Monoid
 
-symOf :: Sign -> Set.Set SFSymbol
+symOf :: Sign -> Set.HashSet SFSymbol
 symOf sig =
     let opSymbs = Set.unions $ map toOpSymb $ Map.toList $ funcMap sig
         predSymbs = Set.unions $ map toPredSymb $ Map.toList $ predMap sig
         sortSymbs = Set.map toSortSymb $ Set.fromList $ Map.keys $ sortMap sig
     in Set.unions [opSymbs, predSymbs, sortSymbs]
 
-toOpSymb :: (SPIdentifier, Set.Set ([SPIdentifier], SPIdentifier))
-         -> Set.Set SFSymbol
+toOpSymb :: (SPIdentifier, Set.HashSet ([SPIdentifier], SPIdentifier))
+         -> Set.HashSet SFSymbol
 toOpSymb (ident, ts) = Set.map toSymb ts
     where toSymb (args, res) =
              SFSymbol { sym_ident = ident
                       , sym_type = SFOpType args res}
 
-toPredSymb :: (SPIdentifier, Set.Set [SPIdentifier]) -> Set.Set SFSymbol
+toPredSymb :: (SPIdentifier, Set.HashSet [SPIdentifier]) -> Set.HashSet SFSymbol
 toPredSymb (ident, ts) = Set.map toSymb ts
     where toSymb args =
              SFSymbol { sym_ident = ident
@@ -49,13 +49,14 @@ symbolToId :: SFSymbol -> Id
 symbolToId = simpleIdToId . sym_ident
 
 
-idsOfTerm :: SPTerm -> Set.Set SPIdentifier
-idsOfTerm (SPQuantTerm _ vars f) = idsOfTerm f Set.\\ mconcat (map idsOfTerm vars)
+idsOfTerm :: SPTerm -> Set.HashSet SPIdentifier
+idsOfTerm (SPQuantTerm _ vars f) = idsOfTerm f `Set.difference` 
+                                   mconcat (map idsOfTerm vars)
 idsOfTerm (SPComplexTerm (SPCustomSymbol s) args) = 
   Set.insert s $ mconcat $ map idsOfTerm args
 idsOfTerm (SPComplexTerm _ args) = mconcat $ map idsOfTerm args
 
-symsOfTerm :: Sign -> SPTerm -> Set.Set SFSymbol
+symsOfTerm :: Sign -> SPTerm -> Set.HashSet SFSymbol
 symsOfTerm sig t = Set.filter in_term sig_syms
    where sig_syms = symOf sig
          term_ids = idsOfTerm t

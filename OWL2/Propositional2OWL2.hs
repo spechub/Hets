@@ -38,7 +38,7 @@ import qualified Propositional.Sign as PSign
 import qualified Propositional.Morphism as PMor
 import qualified Propositional.Symbol as PSymbol
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 data Propositional2OWL2 = Propositional2OWL2 deriving Show
 

@@ -30,7 +30,7 @@ import CSL.Sign as Sign
 -- import Control.Monad.State
 
 -- import qualified Data.Map as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 -- import Data.List
 import Data.Maybe
 

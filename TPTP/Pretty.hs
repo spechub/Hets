@@ -24,7 +24,7 @@ import Common.DocUtils
 
 import Data.Char (toLower)
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 {- -----------------------------------------------------------------------------
 Pretty instances
@@ -557,11 +557,11 @@ printSign s =
     printTFFType :: (Untyped_atom, TFF_top_level_type) -> Doc
     printTFFType (a, tlt) = pretty $ TFFTA_plain a tlt
 
-    printFOFPredicate :: (Predicate, Set.Set Int) -> Doc
+    printFOFPredicate :: (Predicate, Set.HashSet Int) -> Doc
     printFOFPredicate (p, arities) = vcat $ punctuate comma $
       map (printFOFPredicateOrFunctor p O) $ Set.toList arities
 
-    printFOFFunctor :: (TPTP_functor, Set.Set Int) -> Doc
+    printFOFFunctor :: (TPTP_functor, Set.HashSet Int) -> Doc
     printFOFFunctor (p, arities) = vcat $ punctuate comma $
       map (printFOFPredicateOrFunctor p I) $ Set.toList arities
 

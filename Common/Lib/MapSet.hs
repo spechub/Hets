@@ -64,190 +64,199 @@ import Prelude hiding (all, filter, map, null, lookup)
 import Data.Data
 import Data.Hashable
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.List as List
 
 -- * functions directly working over unwrapped maps of sets
 
 -- | remove empty elements from the map
-rmNullSets :: (Eq a, Hashable a) => Map.HashMap a (Set.Set b) -> Map.HashMap a (Set.Set b)
+rmNullSets :: (Eq a, Hashable a, Eq b, Hashable b) => 
+           Map.HashMap a (Set.HashSet b) -> Map.HashMap a (Set.HashSet b)
 rmNullSets = Map.filter (not . Set.null)
 
 -- | get elements for a key
-setLookup :: (Eq a, Hashable a) => a -> Map.HashMap a (Set.Set b) -> Set.Set b
+setLookup :: (Eq a, Hashable a, Eq b, Hashable b) => 
+          a -> Map.HashMap a (Set.HashSet b) -> Set.HashSet b
 setLookup = Map.lookupDefault Set.empty
 
 -- | all elementes united
-setElems :: (Eq a, Hashable a, Ord b) => Map.HashMap a (Set.Set b) -> Set.Set b
+setElems :: (Eq a, Hashable a, Eq b, Hashable b) => 
+         Map.HashMap a (Set.HashSet b) -> Set.HashSet b
 setElems = Set.unions . Map.elems
 
 -- | test for an element under a key
-setMember :: (Eq a, Hashable a, Ord b) => a -> b -> Map.HashMap a (Set.Set b) -> Bool
+setMember :: (Eq a, Hashable a, Eq b, Hashable b) => 
+          a -> b -> Map.HashMap a (Set.HashSet b) -> Bool
 setMember k v = Set.member v . setLookup k
 
 -- | insert into a set of values
-setInsert :: (Eq k, Hashable k, Ord a) => k -> a -> Map.HashMap k (Set.Set a)
-  -> Map.HashMap k (Set.Set a)
+setInsert :: (Eq k, Hashable k, Eq a, Hashable a) => 
+          k -> a -> Map.HashMap k (Set.HashSet a) ->
+          Map.HashMap k (Set.HashSet a)
 setInsert k v m = Map.insert k (Set.insert v $ setLookup k m) m
 
 -- | update an element set under the given key
-setUpdate :: (Eq k, Hashable k, Ord a) => (Set.Set a -> Set.Set a) -> k
-  -> Map.HashMap k (Set.Set a) -> Map.HashMap k (Set.Set a)
+setUpdate :: (Eq k, Hashable k, Eq a, Hashable a) => 
+  (Set.HashSet a -> Set.HashSet a) -> k
+  -> Map.HashMap k (Set.HashSet a) -> Map.HashMap k (Set.HashSet a)
 setUpdate f k m = let s = f $ setLookup k m in
   if Set.null s then Map.delete k m else Map.insert k s m
 
 -- | test all elements of a set
-setAll :: (a -> Bool) -> Set.Set a -> Bool
+setAll :: (Eq a, Hashable a) => (a -> Bool) -> Set.HashSet a -> Bool
 setAll p = List.all p . Set.toList
 
 -- | difference function for differenceWith, returns Nothing for empty sets
-setDifference :: (Eq a, Ord a) => Set.Set a -> Set.Set a -> Maybe (Set.Set a)
+setDifference :: (Eq a, Hashable a) => Set.HashSet a -> Set.HashSet a -> Maybe (Set.HashSet a)
 setDifference s t = let d = Set.difference s t in
     if Set.null d then Nothing else Just d
 
 -- | convert a set into an identity map
-setToMap :: (Eq a, Hashable a) => Set.Set a -> Map.HashMap a a
+setToMap :: (Eq a, Hashable a) => Set.HashSet a -> Map.HashMap a a
 setToMap = Map.fromList . List.map (\ a -> (a, a)) . Set.toList
 
 -- | restrict a map by a keys set
-restrict :: (Eq k, Hashable k) => Map.HashMap k a -> Set.Set k -> Map.HashMap k a
+restrict :: (Eq k, Hashable k) => Map.HashMap k a -> Set.HashSet k -> Map.HashMap k a
 restrict m = Map.intersection m . setToMap
 
 -- | the image of a map
-imageList :: (Eq k, Hashable k) => Map.HashMap k a -> Set.Set k -> [a]
+imageList :: (Eq k, Hashable k) => Map.HashMap k a -> Set.HashSet k -> [a]
 imageList m = Map.elems . restrict m
 
 -- | the image of a map
-imageSet :: (Eq k, Hashable k, Ord a) => Map.HashMap k a -> Set.Set k -> Set.Set a
+imageSet :: (Eq k, Hashable k, Eq a, Hashable a) => Map.HashMap k a -> Set.HashSet k -> Set.HashSet a
 imageSet m = Set.fromList . imageList m
 
 -- * protected maps of set as a newtype
 
 -- | a map to non-empty sets
-newtype MapSet a b = MapSet { toMap :: Map.HashMap a (Set.Set b) }
+newtype MapSet a b = MapSet { toMap :: Map.HashMap a (Set.HashSet b) }
   deriving (Eq, Ord, Typeable, Data)
 
 instance (Show a, Show b) => Show (MapSet a b) where
     show = show . toMap
 
-instance (Ord a, Hashable a, Read a, Ord b, Read b) => Read (MapSet a b) where
+instance (Eq a, Hashable a, Read a, 
+          Eq b, Hashable b, Read b) => Read (MapSet a b) where
     readsPrec d = List.map (\ (m, r) -> (fromMap m , r)) . readsPrec d
 
 -- | unsafe variant of fromMap (without removal of empty sets)
-fromDistinctMap :: (Eq a, Hashable a) => Map.HashMap a (Set.Set b) -> MapSet a b
+fromDistinctMap :: (Eq a, Hashable a, Eq b, Hashable b) => 
+                Map.HashMap a (Set.HashSet b) -> MapSet a b
 fromDistinctMap = MapSet
 
 -- | remove empty values from the map before applying wrapping constructor
-fromMap :: (Eq a, Hashable a) => Map.HashMap a (Set.Set b) -> MapSet a b
+fromMap :: (Eq a, Hashable a, Eq b, Hashable b) => 
+           Map.HashMap a (Set.HashSet b) -> MapSet a b
 fromMap = MapSet . rmNullSets
 
 -- | the empty relation
-empty :: (Ord a, Hashable a) => MapSet a b
+empty :: (Eq a, Hashable a, Eq b, Hashable b) => MapSet a b
 empty = MapSet Map.empty
 
 -- | test for the empty mapping
-null :: (Ord a, Hashable a) => MapSet a b -> Bool
+null :: (Eq a, Hashable a, Eq b, Hashable b) => MapSet a b -> Bool
 null (MapSet m) = Map.null m
 
 -- | convert from a list
-fromList :: (Ord a, Hashable a, Ord b) => [(a, [b])] -> MapSet a b
+fromList :: (Eq a, Hashable a, Eq b, Hashable b) => [(a, [b])] -> MapSet a b
 fromList = fromMap
   . Map.fromListWith Set.union
   . List.map (\ (a, bs) -> (a, Set.fromList bs))
 
 -- | convert to a list
-toList :: (Ord a, Hashable a) => MapSet a b -> [(a, [b])]
+toList :: (Eq a, Hashable a, Eq b, Hashable b) => MapSet a b -> [(a, [b])]
 toList = List.map (\ (a, bs) -> (a, Set.toList bs)) . Map.toList . toMap
 
-toPairList :: (Ord a, Hashable a) => MapSet a b -> [(a, b)]
+toPairList :: (Eq a, Hashable a, Eq b, Hashable b) => MapSet a b -> [(a, b)]
 toPairList = concatMap (\ (c, ts) -> List.map (\ t -> (c, t)) ts) . toList
 
 -- | keys for non-empty elements
-keysSet :: (Ord a, Hashable a) => MapSet a b -> Set.Set a
+keysSet :: (Eq a, Hashable a, Eq b, Hashable b) => MapSet a b -> Set.HashSet a
 keysSet = Set.fromList . Map.keys . toMap -- TODO: use HashSet?
 
 -- | all elementes united
-elems :: (Ord b, Ord a, Hashable a) => MapSet a b -> Set.Set b
+elems :: (Eq a, Hashable a, Eq b, Hashable b) => MapSet a b -> Set.HashSet b
 elems = setElems . toMap
 
 -- | get elements for a key
-lookup :: (Ord a, Hashable a) => a -> MapSet a b -> Set.Set b
+lookup :: (Eq a, Hashable a, Eq b, Hashable b) => a -> MapSet a b -> Set.HashSet b
 lookup k = setLookup k . toMap
 
 -- | insert an element under the given key
-insert :: (Ord a, Hashable a, Ord b) => a -> b -> MapSet a b -> MapSet a b
+insert :: (Eq a, Hashable a, Eq b, Hashable b) => a -> b -> MapSet a b -> MapSet a b
 insert k v = MapSet . setInsert k v . toMap
 
 -- | update an element set under the given key
-update :: (Ord a, Hashable a, Ord b) => (Set.Set b -> Set.Set b) -> a -> MapSet a b
+update :: (Eq a, Hashable a, Eq b, Hashable b) => (Set.HashSet b -> Set.HashSet b) -> a -> MapSet a b
   -> MapSet a b
 update f k = MapSet . setUpdate f k . toMap
 
 -- | test for an element under a key
-member :: (Ord a, Hashable a, Ord b) => a -> b -> MapSet a b -> Bool
+member :: (Eq a, Hashable a, Eq b, Hashable b) => a -> b -> MapSet a b -> Bool
 member k v = setMember k v . toMap
 
 -- | delete an element under the given key
-delete :: (Ord a, Hashable a, Ord b) => a -> b -> MapSet a b -> MapSet a b
+delete :: (Eq a, Hashable a, Eq b, Hashable b) => a -> b -> MapSet a b -> MapSet a b
 delete k v m@(MapSet r) = MapSet
   $ let s = Set.delete v $ lookup k m in
     if Set.null s then Map.delete k r else Map.insert k s r
 
 -- | union of two maps
-union :: (Ord a, Hashable a, Ord b) => MapSet a b -> MapSet a b -> MapSet a b
+union :: (Eq a, Hashable a, Eq b, Hashable b) => MapSet a b -> MapSet a b -> MapSet a b
 union a b = MapSet . Map.unionWith Set.union (toMap a) $ toMap b
 
 -- | difference of two maps
-difference :: (Ord a, Hashable a, Ord b) => MapSet a b -> MapSet a b -> MapSet a b
+difference :: (Eq a, Hashable a, Eq b, Hashable b) => MapSet a b -> MapSet a b -> MapSet a b
 difference (MapSet m) = MapSet . Map.differenceWith setDifference m . toMap
 
 -- | intersection of two maps
-intersection :: (Ord a, Hashable a, Ord b) => MapSet a b -> MapSet a b -> MapSet a b
+intersection :: (Eq a, Hashable a, Eq b, Hashable b) => MapSet a b -> MapSet a b -> MapSet a b
 intersection (MapSet m) = fromMap
   . Map.intersectionWith Set.intersection m . toMap
 
 -- | map a function to all elements
-map :: (Ord b, Ord c, Hashable a) => (b -> c) -> MapSet a b -> MapSet a c
+map :: (Eq a, Hashable a, Eq b, Hashable b, Eq c, Hashable c) => (b -> c) -> MapSet a b -> MapSet a c
 map f = MapSet . Map.map (Set.map f) . toMap
 
 -- | unsafe map a function to all elements
-mapMonotonic :: (b -> c) -> MapSet a b -> MapSet a c
-mapMonotonic f = MapSet . Map.map (Set.mapMonotonic f) . toMap
+mapMonotonic :: (Eq a, Hashable a, Eq b, Hashable b, Eq c, Hashable c) => (b -> c) -> MapSet a b -> MapSet a c
+mapMonotonic f = MapSet . Map.map (Set.map f) . toMap -- TODO: leave as such for now, but does it make sense?
 
 -- | apply a function to all element sets
-mapSet :: (Ord a,Hashable a) => (Set.Set b -> Set.Set c) -> MapSet a b -> MapSet a c
+mapSet :: (Eq a, Hashable a, Eq b, Hashable b, Eq c, Hashable c) => (Set.HashSet b -> Set.HashSet c) -> MapSet a b -> MapSet a c
 mapSet f = fromMap . Map.map f . toMap
 
 -- | fold over all elements
-foldWithKey :: (a -> b -> c -> c) -> c -> MapSet a b -> c
-foldWithKey f e = Map.foldrWithKey (\ a bs c -> Set.fold (f a) c bs) e . toMap
+foldWithKey :: (Eq a, Hashable a, Eq b, Hashable b) => (a -> b -> c -> c) -> c -> MapSet a b -> c
+foldWithKey f e = Map.foldrWithKey (\ a bs c -> Set.foldr (f a) c bs) e . toMap
 
 -- | filter elements
-filter :: (Ord a, Hashable a, Ord b) => (b -> Bool) -> MapSet a b -> MapSet a b
+filter :: (Eq a, Hashable a, Eq b, Hashable b) => (b -> Bool) -> MapSet a b -> MapSet a b
 filter p = fromMap . Map.map (Set.filter p) . toMap
 
 -- | partition elements
-partition :: (Ord a, Hashable a, Ord b) => (b -> Bool) -> MapSet a b
+partition :: (Eq a, Hashable a, Eq b, Hashable b) => (b -> Bool) -> MapSet a b
   -> (MapSet a b, MapSet a b)
 partition p m = (filter p m, filter (not . p) m)
 
 -- | filter complete entries
-filterWithKey :: (Ord a, Hashable a) => (a -> Set.Set b -> Bool) -> MapSet a b -> MapSet a b
+filterWithKey :: (Eq a, Hashable a, Eq b, Hashable b) => (a -> Set.HashSet b -> Bool) -> MapSet a b -> MapSet a b
 filterWithKey p = MapSet . Map.filterWithKey p . toMap
 
 -- | test all elements
-all :: (Ord b, Ord a, Hashable a) => (b -> Bool) -> MapSet a b -> Bool
+all :: (Eq a, Hashable a, Eq b, Hashable b) => (b -> Bool) -> MapSet a b -> Bool
 all p = setAll p . elems
 
 -- | submap test
-isSubmapOf :: (Ord a, Hashable a, Ord b) => MapSet a b -> MapSet a b -> Bool
+isSubmapOf :: (Eq a, Hashable a, Eq b, Hashable b) => MapSet a b -> MapSet a b -> Bool
 isSubmapOf (MapSet m) = Map.isSubmapOfBy Set.isSubsetOf m . toMap
 
 -- | pre-image of a map
-preImage :: (Ord a, Hashable a, Ord b, Hashable b) => Map.HashMap a b -> MapSet b a
+preImage :: (Eq a, Hashable a, Eq b, Hashable b) => Map.HashMap a b -> MapSet b a
 preImage = Map.foldrWithKey (flip insert) empty
 
 -- | transpose a map set
-transpose :: (Ord a, Hashable a, Ord b, Hashable b) => MapSet a b -> MapSet b a
+transpose :: (Eq a, Hashable a, Eq b, Hashable b) => MapSet a b -> MapSet b a
 transpose = foldWithKey (flip insert) empty
 

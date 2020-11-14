@@ -16,7 +16,7 @@ module Static.DGNavigation where
 
 import Static.DevGraph
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Data.List
 import Data.Maybe
 
@@ -209,7 +209,7 @@ fromSearchResult sf f dgnav = case sf dgnav of
 
 -- * Other utils
 
-getLocalSyms :: DevGraphNavigator a => a -> Node -> Set.Set G_symbol
+getLocalSyms :: DevGraphNavigator a => a -> Node -> Set.HashSet G_symbol
 getLocalSyms dgnav n =
     case dgn_origin $ getLocalLabel dgnav n of
       DGBasicSpec _ _ s -> s

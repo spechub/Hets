@@ -23,8 +23,9 @@ import Common.Id
 import Common.Keywords
 import Common.Parsec
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Text.ParserCombinators.Parsec as P
+import qualified Common.HashSetUtils as HSU
 
 -- | the string for the universe type
 typeUniverseS :: String
@@ -422,7 +423,7 @@ toKind :: VarKind -> Kind
 toKind vk = case vk of
     VarKind k -> k
     Downset t -> case t of
-        KindedType _ k _ | Set.size k == 1 -> Set.findMin k
+        KindedType _ k _ | Set.size k == 1 -> HSU.findMin k
         _ -> error "toKind: Downset"
     MissingKind -> error "toKind: Missing"
 

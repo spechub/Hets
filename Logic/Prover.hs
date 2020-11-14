@@ -22,11 +22,12 @@ import Common.ProverTools
 import qualified Common.OrderedMap as OMap
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Data.List
 import Data.Maybe (isJust)
 import Data.Time (TimeOfDay, midnight)
 import Data.Typeable
+import Data.Hashable
 
 import Control.Monad
 import qualified Control.Concurrent as Concurrent
@@ -89,7 +90,7 @@ joinSensAux s1 s2 = let
 joinSens :: (Ord a, Eq b) => ThSens a b -> ThSens a b -> ThSens a b
 joinSens s1 = fst . joinSensAux s1
 
-intersectSens :: (Ord a, Eq b) => ThSens a b -> ThSens a b -> ThSens a b
+intersectSens :: (Ord a, Eq b, Hashable a) => ThSens a b -> ThSens a b -> ThSens a b
 intersectSens s1 s2 = let
   sens1 = map sentence $ OMap.elems s1
   sens2 = map sentence $ OMap.elems s2

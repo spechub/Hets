@@ -14,7 +14,7 @@ The embedding comorphism from CASL to ExtModal.
 
 module Comorphisms.CASL2ExtModal (CASL2ExtModal (..)) where
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import Logic.Logic
 import Logic.Comorphism

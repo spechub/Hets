@@ -22,15 +22,15 @@ import Common.Id
 import qualified Common.Lib.MapSet as MapSet
 
 import Data.Data
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 data EModalSign = EModalSign
         { flexOps :: OpMap
         , flexPreds :: PredMap
-        , modalities :: Set.Set Id -- do not store sentences in signature
-        , timeMods :: Set.Set Id
-        , termMods :: Set.Set Id -- sorts that need to be mapped
-        , nominals :: Set.Set Id
+        , modalities :: Set.HashSet Id -- do not store sentences in signature
+        , timeMods :: Set.HashSet Id
+        , termMods :: Set.HashSet Id -- sorts that need to be mapped
+        , nominals :: Set.HashSet Id
         } deriving (Show, Eq, Ord, Typeable, Data)
 
 nomPType :: PredType

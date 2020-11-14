@@ -21,7 +21,7 @@ import HasCASL.PrintAs ()
 import Common.DocUtils
 import Common.Id
 import Common.Result
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 -- | resolve parsed mixfix type to type applications with dummy kinds
 mkTypeConstrAppl :: Env -> Type -> Result Type

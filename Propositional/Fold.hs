@@ -17,7 +17,8 @@ module Propositional.Fold where
 import Common.Id
 import Propositional.AS_BASIC_Propositional
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
+import qualified Common.HashSetUtils as HSU
 
 data FoldRecord a = FoldRecord
   { foldNegation :: a -> Range -> a
@@ -56,14 +57,14 @@ isNeg f = case f of
   Negation _ _ -> True
   _ -> False
 
-getLits :: Set.Set FORMULA -> Set.Set FORMULA
-getLits = Set.fold (\ f -> case f of
+getLits :: Set.HashSet FORMULA -> Set.HashSet FORMULA
+getLits = Set.foldr (\ f -> case f of
   Negation x _ -> Set.insert x
   _ -> Set.insert f) Set.empty
 
-bothLits :: Set.Set FORMULA -> Bool
+bothLits :: Set.HashSet FORMULA -> Bool
 bothLits fs = let
-  (ns, ps) = Set.partition isNeg fs
+  (ns, ps) = HSU.partition isNeg fs
   in not $ Set.null $ Set.intersection (getLits ns) (getLits ps)
 
 getConj :: FORMULA -> [FORMULA]
@@ -78,7 +79,7 @@ getDisj f = case f of
   False_atom _ -> []
   _ -> [f]
 
-flatConj :: [FORMULA] -> Set.Set FORMULA
+flatConj :: [FORMULA] -> Set.HashSet FORMULA
 flatConj = Set.fromList
   . concatMap (\ f -> case f of
       True_atom _ -> []
@@ -97,7 +98,7 @@ mkConj fs n = let s = flatConj fs in
           l : filter (not . Set.isSubsetOf l) ll)
           . Set.fromList . getDisj) [] ls) n
 
-flatDisj :: [FORMULA] -> Set.Set FORMULA
+flatDisj :: [FORMULA] -> Set.HashSet FORMULA
 flatDisj = Set.fromList
   . concatMap (\ f -> case f of
       False_atom _ -> []

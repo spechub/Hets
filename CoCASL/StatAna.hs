@@ -27,7 +27,7 @@ import CASL.Fold
 
 import Common.AS_Annotation
 import Common.GlobalAnnotations
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Common.Lib.Rel as Rel
 import Common.Lib.State
 import Common.Id
@@ -91,18 +91,18 @@ ids_C_SIG_ITEM :: C_SIG_ITEM -> IdSets
 ids_C_SIG_ITEM (CoDatatype_items al _) =
     (unite2 $ map (ids_CODATATYPE_DECL . item) al, Set.empty)
 
-ids_CODATATYPE_DECL :: CODATATYPE_DECL -> (Set.Set Id, Set.Set Id)
+ids_CODATATYPE_DECL :: CODATATYPE_DECL -> (Set.HashSet Id, Set.HashSet Id)
 ids_CODATATYPE_DECL (CoDatatype_decl _ al _) =
     unite2 $ map (ids_COALTERNATIVE . item) al
 
-ids_COALTERNATIVE :: COALTERNATIVE -> (Set.Set Id, Set.Set Id)
+ids_COALTERNATIVE :: COALTERNATIVE -> (Set.HashSet Id, Set.HashSet Id)
 ids_COALTERNATIVE a = let e = Set.empty in case a of
     Co_construct _ mi cs _ -> let s = maybe Set.empty Set.singleton mi in
         if null cs then (s, e) else
             (e, Set.unions $ s : map ids_COCOMPONENTS cs)
     CoSubsorts _ _ -> (e, e)
 
-ids_COCOMPONENTS :: COCOMPONENTS -> Set.Set Id
+ids_COCOMPONENTS :: COCOMPONENTS -> Set.HashSet Id
 ids_COCOMPONENTS (CoSelect l _ _) = Set.unions $ map Set.singleton l
 
 data CoRecord a b c d = CoRecord
@@ -318,7 +318,7 @@ comakeDisj a1 a2 = do
 
 -- | return the constructor and the set of total selectors
 ana_COALTERNATIVE :: SORT -> Annoted COALTERNATIVE
-                -> State CSign (Maybe (Component, Set.Set Component))
+                -> State CSign (Maybe (Component, Set.HashSet Component))
 ana_COALTERNATIVE s c = case item c of
     CoSubsorts ss _ -> do
         mapM_ (addSubsort s) ss

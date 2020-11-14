@@ -36,7 +36,7 @@ import Driver.Options
 import Driver.ReadFn
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Data.List (isSuffixOf)
 import Control.Monad
 import Data.Maybe

@@ -33,7 +33,7 @@ import Common.Lib.MapSet (setToMap)
 
 import Control.Monad
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 import Data.Hashable
 
@@ -82,7 +82,7 @@ mapTypeScheme jm tm im (TypeScheme args ty ps) =
 mapSen :: IdMap -> TypeMap -> IdMap -> FunMap -> Term -> Term
 mapSen jm tm im fm = mapTerm (mapFunSym jm tm im fm, mapTypeE jm tm im)
 
-getDatatypeIds :: DataEntry -> Set.Set Id
+getDatatypeIds :: DataEntry -> Set.HashSet Id
 getDatatypeIds (DataEntry _ i _ _ _ alts) =
     let getAltIds (Construct _ tys _ sels) = Set.union
             (Set.unions $ map getTypeIds tys)
@@ -220,8 +220,8 @@ morphismUnion m1 m2 = do
       im1 = typeIdMap m1
       im2 = typeIdMap m2
       -- unchanged types
-      ut1 = (Set.fromList $ Map.keys tm1) Set.\\ (Set.fromList $ Map.keys im1)
-      ut2 = (Set.fromList $ Map.keys tm2) Set.\\ (Set.fromList $ Map.keys im2)
+      ut1 = (Set.fromList $ Map.keys tm1) `Set.difference` (Set.fromList $ Map.keys im1)
+      ut2 = (Set.fromList $ Map.keys tm2) `Set.difference` (Set.fromList $ Map.keys im2)
       ima1 = Map.union im1 $ setToMap ut1
       ima2 = Map.union im2 $ setToMap ut2
       sAs = filterAliases $ typeMap s
@@ -231,8 +231,8 @@ morphismUnion m1 m2 = do
       jm1 = classIdMap m1
       jm2 = classIdMap m2
       -- unchanged classes
-      cut1 = (Set.fromList $ Map.keys cm1) Set.\\ (Set.fromList $ Map.keys jm1)
-      cut2 = (Set.fromList $ Map.keys cm2) Set.\\ (Set.fromList $ Map.keys jm2)
+      cut1 = (Set.fromList $ Map.keys cm1) `Set.difference` (Set.fromList $ Map.keys jm1)
+      cut2 = (Set.fromList $ Map.keys cm2) `Set.difference` (Set.fromList $ Map.keys jm2)
       cima1 = Map.union jm1 $ setToMap cut1
       cima2 = Map.union jm2 $ setToMap cut2
       expP = Map.fromList . map ( \ ((i, o), (j, p)) ->
@@ -245,8 +245,8 @@ morphismUnion m1 m2 = do
                                     $ expand sAs $ opType o)) os)
                       . Map.toList
                  -- unchanged functions
-      uf1 = af jm1 im1 (assumps s1) Set.\\ (Set.fromList $ Map.keys fm1)
-      uf2 = af jm2 im2 (assumps s2) Set.\\ (Set.fromList $ Map.keys fm2)
+      uf1 = af jm1 im1 (assumps s1) `Set.difference` (Set.fromList $ Map.keys fm1)
+      uf2 = af jm2 im2 (assumps s2) `Set.difference` (Set.fromList $ Map.keys fm2)
       fma1 = Map.union fm1 $ setToMap uf1
       fma2 = Map.union fm2 $ setToMap uf2
       showFun (i, ty) = showId i . (" : " ++) . showDoc ty
@@ -284,7 +284,7 @@ morphismToSymbMap mor = let
                $ idToTypeSymbol j k) classSymMap $ typeMap src
    in Map.foldrWithKey
          ( \ i s m ->
-             Set.fold ( \ oi ->
+             Set.foldr ( \ oi ->
              let ty = opType oi
                  (j, t2) = mapFunSym jm tm im (funMap mor) (i, ty)
              in Map.insert (idToOpSymbol i ty)

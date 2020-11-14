@@ -26,7 +26,7 @@ import qualified Common.Lib.MapSet as MapSet
 
 import Data.Function
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.List as List
 
 predToSSymbol :: Sign f e -> PRED_SYMB -> SExpr

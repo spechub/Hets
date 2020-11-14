@@ -25,7 +25,7 @@ import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.ExtSign
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import HasCASL.As
 import HasCASL.AsUtils

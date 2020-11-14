@@ -56,7 +56,7 @@ import Common.Utils
 import qualified Common.Lib.MapSet as MapSet
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Data.List
 
 -- | The identity of the comorphism
@@ -73,7 +73,7 @@ sigTrCASL :: SignTranslator () ()
 sigTrCASL _ _ = id
 
 -- extended formula translation
-type FormulaTranslator f e = CASL.Sign.Sign f e -> Set.Set String -> f -> Term
+type FormulaTranslator f e = CASL.Sign.Sign f e -> Set.HashSet String -> f -> Term
 
 -- extended formula translation for CASL
 formTrCASL :: FormulaTranslator () ()
@@ -107,7 +107,7 @@ instance Comorphism CFOL2IsabelleHOL
 baseSign :: BaseSig
 baseSign = Main_thy
 
-typeToks :: CASL.Sign.Sign f e -> Set.Set String
+typeToks :: CASL.Sign.Sign f e -> Set.HashSet String
 typeToks = Set.map (`showIsaTypeT` baseSign) . sortSet
 
 transTheory :: FormExtension f => SignTranslator f e ->
@@ -118,7 +118,7 @@ transTheory trSig trForm (sign, sens) =
   trSig sign (extendedInfo sign) (IsaSign.emptySign {
     baseSig = baseSign,
     tsig = emptyTypeSig {arities =
-               Set.fold (\ s -> let s1 = showIsaTypeT s baseSign in
+               Set.foldr (\ s -> let s1 = showIsaTypeT s baseSign in
                                  Map.insert s1 [(isaTerm, [])])
                                Map.empty (sortSet sign)},
     constTab = Map.foldrWithKey insertPreds
@@ -157,11 +157,11 @@ transTheory trSig trForm (sign, sens) =
              (mkIsaConstIT True ga (length $ predArgs t) pre i baseSign tyToks)
              (transPredType t) m1) m $ number $ Set.toList ts
 
-makeDtDefs :: CASL.Sign.Sign f e -> Set.Set String -> [[Constraint]]
+makeDtDefs :: CASL.Sign.Sign f e -> Set.HashSet String -> [[Constraint]]
            -> [[(Typ, [(VName, [Typ])])]]
 makeDtDefs sign = map . makeDtDef sign
 
-makeDtDef :: CASL.Sign.Sign f e -> Set.Set String -> [Constraint]
+makeDtDef :: CASL.Sign.Sign f e -> Set.HashSet String -> [Constraint]
           -> [(Typ, [(VName, [Typ])])]
 makeDtDef sign tyToks constrs = map makeDt srts where
     (srts, ops, _maps) = recover_Sort_gen_ax constrs
@@ -184,7 +184,7 @@ transPredType pt = mkCurryFunType (map transSort $ predArgs pt) boolType
 
 -- ---------------------------- Formulas ------------------------------
 
-getAssumpsToks :: CASL.Sign.Sign f e -> Set.Set String
+getAssumpsToks :: CASL.Sign.Sign f e -> Set.HashSet String
 getAssumpsToks sign = Map.foldrWithKey ( \ i ops s ->
     Set.union s $ Set.unions
         $ map ( \ (_, o) -> getConstIsaToks i o baseSign)
@@ -196,7 +196,7 @@ getAssumpsToks sign = Map.foldrWithKey ( \ i ops s ->
     $ predMap sign)
     . MapSet.toMap $ opMap sign
 
-transVar :: Set.Set String -> VAR -> String
+transVar :: Set.HashSet String -> VAR -> String
 transVar toks v = let
     s = showIsaConstT (simpleIdToId v) baseSign
     renVar t = if Set.member t toks then renVar $ "X_" ++ t else t
@@ -206,7 +206,7 @@ quantifyIsa :: String -> (String, Typ) -> Term -> Term
 quantifyIsa q (v, _) phi =
   termAppl (conDouble q) (Abs (mkFree v) phi NotCont)
 
-quantify :: Set.Set String -> QUANTIFIER -> (VAR, SORT) -> Term -> Term
+quantify :: Set.HashSet String -> QUANTIFIER -> (VAR, SORT) -> Term -> Term
 quantify toks q (v, t) =
   quantifyIsa (qname q) (transVar toks v, transSort t)
   where
@@ -214,7 +214,7 @@ quantify toks q (v, t) =
   qname Existential = exS
   qname Unique_existential = ex1S
 
-transOpSymb :: CASL.Sign.Sign f e -> Set.Set String -> OP_SYMB -> VName
+transOpSymb :: CASL.Sign.Sign f e -> Set.HashSet String -> OP_SYMB -> VName
 transOpSymb sign tyToks qo = case qo of
  Qual_op_name op ot _ -> let
   ga = globAnnos sign
@@ -227,7 +227,7 @@ transOpSymb sign tyToks qo = case qo of
       Nothing -> error $ "CASL2Isabelle unknown type for op: " ++ show op
  Op_name op -> error $ "CASL2Isabelle: unqualified op: " ++ show op
 
-transPredSymb :: CASL.Sign.Sign f e -> Set.Set String -> PRED_SYMB -> VName
+transPredSymb :: CASL.Sign.Sign f e -> Set.HashSet String -> PRED_SYMB -> VName
 transPredSymb sign tyToks qp =
  let ga = globAnnos sign
      d = mkIsaConstT True ga (-1) (predSymbName qp) baseSign tyToks
@@ -243,13 +243,13 @@ transPredSymb sign tyToks qp =
       Nothing -> d
  Pred_name _ -> d
 
-mapSen :: FormulaTranslator f e -> CASL.Sign.Sign f e -> Set.Set String
+mapSen :: FormulaTranslator f e -> CASL.Sign.Sign f e -> Set.HashSet String
        -> FORMULA f -> Sentence
 mapSen trForm sign tyToks =
     mkSen . transFORMULA sign tyToks trForm (getAssumpsToks sign)
 
-transRecord :: CASL.Sign.Sign f e -> Set.Set String -> FormulaTranslator f e
-            -> Set.Set String -> Record f Term Term
+transRecord :: CASL.Sign.Sign f e -> Set.HashSet String -> FormulaTranslator f e
+            -> Set.HashSet String -> Record f Term Term
 transRecord sign tyToks tr toks = Record
     { foldQuantification = \ _ qu vdecl phi _ ->
           foldr (quantify toks qu) phi (flatVAR_DECLs vdecl)
@@ -290,6 +290,6 @@ transRecord sign tyToks tr toks = Record
     , foldExtTERM = error "transRecord: ExtTERM"
     }
 
-transFORMULA :: CASL.Sign.Sign f e -> Set.Set String -> FormulaTranslator f e
-             -> Set.Set String -> FORMULA f -> Term
+transFORMULA :: CASL.Sign.Sign f e -> Set.HashSet String -> FormulaTranslator f e
+             -> Set.HashSet String -> FORMULA f -> Term
 transFORMULA sign tyToks tr = foldFormula . transRecord sign tyToks tr

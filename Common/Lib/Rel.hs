@@ -52,13 +52,13 @@ import Prelude hiding (map, null)
 import Data.Data
 import Data.Hashable
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.List as List
 
 import qualified Common.Lib.MapSet as MapSet
 
 -- | no invariant is ensured for relations!
-newtype Rel a = Rel { toMap :: Map.HashMap a (Set.Set a) }
+newtype Rel a = Rel { toMap :: Map.HashMap a (Set.HashSet a) }
   deriving (Eq, Ord, Typeable, Data)
 
 instance Show a => Show (Rel a) where
@@ -67,7 +67,7 @@ instance Show a => Show (Rel a) where
 instance (Ord a, Read a, Hashable a) => Read (Rel a) where
     readsPrec d = List.map (\ (m, r) -> (fromMap m , r)) . readsPrec d
 
-fromMap :: Map.HashMap a (Set.Set a) -> Rel a
+fromMap :: Map.HashMap a (Set.HashSet a) -> Rel a
 fromMap = Rel
 
 -- | the empty relation
@@ -79,7 +79,7 @@ nullKeys :: Rel a -> Bool
 nullKeys (Rel m) = Map.null m
 
 -- | keys of the relation
-keysSet :: (Ord a, Hashable a) => Rel a -> Set.Set a
+keysSet :: (Ord a, Hashable a) => Rel a -> Set.HashSet a
 keysSet = Set.fromList . Map.keys . toMap
 
 rmNullSets :: (Ord a, Hashable a) => Rel a -> Rel a
@@ -140,21 +140,21 @@ memberKey :: (Ord a, Hashable a) => a -> Rel a -> Bool
 memberKey k = Map.member k . toMap
 
 -- | get direct successors
-succs :: (Ord a, Hashable a) => Rel a -> a -> Set.Set a
+succs :: (Ord a, Hashable a) => Rel a -> a -> Set.HashSet a
 succs (Rel m) a = Map.findWithDefault Set.empty a m
 
 -- | get all transitive successors
-reachable :: (Ord a, Hashable a) => Rel a -> a -> Set.Set a
-reachable r a = Set.fold reach Set.empty $ succs r a where
+reachable :: (Ord a, Hashable a) => Rel a -> a -> Set.HashSet a
+reachable r a = Set.foldr reach Set.empty $ succs r a where
     reach e s = if Set.member e s then s
-                    else Set.fold reach (Set.insert e s) $ succs r e
+                    else Set.foldr reach (Set.insert e s) $ succs r e
 
 -- | predecessors of one node in the given set of a nodes
-preds :: (Ord a, Hashable a) => Rel a -> a -> Set.Set a -> Set.Set a
+preds :: (Ord a, Hashable a) => Rel a -> a -> Set.HashSet a -> Set.HashSet a
 preds r a = Set.filter ( \ s -> member s a r)
 
 -- | get direct predecessors
-predecessors :: (Ord a, Hashable a) => Rel a -> a -> Set.Set a
+predecessors :: (Ord a, Hashable a) => Rel a -> a -> Set.HashSet a
 predecessors (Rel m) a = Set.fromList $ Map.keys $ Map.filter (Set.member a) m
 
 -- | test for 'member' or transitive membership (non-empty path)
@@ -182,7 +182,7 @@ getCycles :: (Ord a, Hashable a) => Rel a -> Rel a
 getCycles = Rel . Map.filterWithKey Set.member . toMap
 
 -- | compute strongly connected components for a transitively closed relation
-sccOfClosure :: (Ord a, Hashable a) => Rel a -> [Set.Set a]
+sccOfClosure :: (Ord a, Hashable a) => Rel a -> [Set.HashSet a]
 sccOfClosure r@(Rel m) =
         if Map.null m then []
         else let mList = List.sortOn fst $ Map.toList m
@@ -200,8 +200,14 @@ sccOfClosure r@(Rel m) =
 
 {- | restrict strongly connected components to its minimal representative
      (input sets must be non-null). Direct cycles may remain. -}
-collaps :: (Ord a, Hashable a) => [Set.Set a] -> Rel a -> Rel a
-collaps = delSet . Set.unions . List.map Set.deleteMin
+collaps :: (Ord a, Hashable a) => [Set.HashSet a] -> Rel a -> Rel a
+collaps = delSet . Set.unions . List.map deleteMin
+
+deleteMin :: (Ord a, Hashable a) => Set.HashSet a -> Set.HashSet a
+deleteMin s = let as = List.sort $ Set.toList s
+              in case as of 
+                  [] -> Set.empty
+                  _ : xs -> Set.fromList xs
 
 {- | transitive reduction (minimal relation with the same transitive closure)
      of a transitively closed DAG (i.e. without cycles)! -}
@@ -236,77 +242,77 @@ map f (Rel m) = -- Rel $ Map.foldl' (\) Map.empty Map.mapKeysWith Set.union f
       Map.empty $ Map.toList m'
 
 -- | Restriction of a relation under a set
-restrict :: (Ord a, Hashable a) => Rel a -> Set.Set a -> Rel a
-restrict r s = delSet (nodes r Set.\\ s) r
+restrict :: (Ord a, Hashable a) => Rel a -> Set.HashSet a -> Rel a
+restrict r s = delSet (Set.difference (nodes r) s) r
 
 -- | restrict to elements not in the input set
-delSet :: (Ord a, Hashable a) => Set.Set a -> Rel a -> Rel a
-delSet s (Rel m) = Rel $ Map.map (Set.\\ s) $ Map.difference m $ MapSet.setToMap s
+delSet :: (Ord a, Hashable a) => Set.HashSet a -> Rel a -> Rel a
+delSet s (Rel m) = Rel $ Map.map (\x -> Set.difference x s) $ Map.difference m $ MapSet.setToMap s
 
 -- | convert a relation to a set of ordered pairs
-toSet :: (Ord a, Hashable a) => Rel a -> Set.Set (a, a)
-toSet = Set.fromDistinctAscList . toList
+toSet :: (Ord a, Hashable a) => Rel a -> Set.HashSet (a, a)
+toSet = Set.fromList . toList
 
 -- | convert a set of ordered pairs to a relation
-fromSet :: (Ord a, Hashable a) => Set.Set (a, a) -> Rel a
+fromSet :: (Ord a, Hashable a) => Set.HashSet (a, a) -> Rel a
 fromSet = fromAscList . Set.toList
 
 -- | convert a plain node set to a relation
-fromKeysSet :: (Ord a, Hashable a) => Set.Set a -> Rel a
-fromKeysSet = Rel . Set.fold (`Map.insert` Set.empty) Map.empty
+fromKeysSet :: (Ord a, Hashable a) => Set.HashSet a -> Rel a
+fromKeysSet = Rel . Set.foldr (`Map.insert` Set.empty) Map.empty
 
 -- | convert a sorted list of ordered pairs to a relation
 fromAscList :: (Ord a, Hashable a) => [(a, a)] -> Rel a
 fromAscList = Rel . Map.fromList
                   . List.map ( \ l -> (fst (head l),
-                                  Set.fromDistinctAscList $ List.map snd l))
+                                  Set.fromList $ List.map snd l))
                         . List.groupBy ( \ (a, _) (b, _) -> a == b)
 
 -- | all nodes of the edges
-nodes :: (Ord a, Hashable a) => Rel a -> Set.Set a
+nodes :: (Ord a, Hashable a) => Rel a -> Set.HashSet a
 nodes (Rel m) = Set.union (Set.fromList $ Map.keys m) $ MapSet.setElems m
 
 {- | Construct a precedence map from a closed relation. Indices range
    between 1 and the second value that is output. -}
 toPrecMap :: (Ord a, Hashable a) => Rel a -> (Map.HashMap a Int, Int)
 toPrecMap = foldl ( \ (m1, c) s -> let n = c + 1 in
-                    (Set.fold (`Map.insert` n) m1 s, n))
+                    (Set.foldr (`Map.insert` n) m1 s, n))
                  (Map.empty, 0) . topSort
 
-topSortDAG :: (Ord a, Hashable a) => Rel a -> [Set.Set a]
+topSortDAG :: (Ord a, Hashable a) => Rel a -> [Set.HashSet a]
 topSortDAG r@(Rel m) = if Map.null m then [] else
     let es = MapSet.setElems m
-        ml = (Set.fromList $ Map.keys m) Set.\\ es -- most left
+        ml = Set.difference (Set.fromList $ Map.keys m) es -- most left
         Rel m2 = delSet ml r
-        rs = es Set.\\ (Set.fromList $ Map.keys m2) -- re-insert loose ends
-    in ml : topSortDAG (Rel $ Set.fold (`Map.insert` Set.empty) m2 rs)
+        rs = Set.difference es (Set.fromList $ Map.keys m2) -- re-insert loose ends
+    in ml : topSortDAG (Rel $ Set.foldr (`Map.insert` Set.empty) m2 rs)
 
 -- | topologically sort a closed relation (ignore isolated cycles)
-topSort :: (Ord a, Hashable a) => Rel a -> [Set.Set a]
+topSort :: (Ord a, Hashable a) => Rel a -> [Set.HashSet a]
 topSort r = let cs = sccOfClosure r in
       List.map (expandCycle cs) $ topSortDAG $ irreflex $ collaps cs r
 
 -- | find the cycle and add it to the result set
-expandCycle :: (Ord a, Hashable a) => [Set.Set a] -> Set.Set a -> Set.Set a
+expandCycle :: (Ord a, Hashable a) => [Set.HashSet a] -> Set.HashSet a -> Set.HashSet a
 expandCycle cs s = case cs of
   [] -> s
   c : r ->
     if Set.null $ Set.intersection c s then expandCycle r s else Set.union c s
 
 -- dependency sort
-depSort :: (Ord a, Hashable a) => Rel a -> [Set.Set a]
+depSort :: (Ord a, Hashable a) => Rel a -> [Set.HashSet a]
 depSort r = let cs = sccOfClosure r in
   List.concatMap (List.map (depCycle cs) . Set.toList)
     $ topSortDAG $ irreflex $ collaps cs r
 
-depCycle :: (Ord a, Hashable a) => [Set.Set a] -> a -> Set.Set a
+depCycle :: (Ord a, Hashable a) => [Set.HashSet a] -> a -> Set.HashSet a
 depCycle cs a = case cs of
   [] -> Set.singleton a
   c : r ->
     if Set.member a c then c else depCycle r a
 
 -- | gets the most right elements of a relation,
-mostRightOfCollapsed :: (Ord a, Hashable a) => Rel a -> Set.Set a
+mostRightOfCollapsed :: (Ord a, Hashable a) => Rel a -> Set.HashSet a
 mostRightOfCollapsed r@(Rel m) =
   Set.difference (nodes r) . (Set.fromList . Map.keys) $ Map.filterWithKey
   (\ i s -> not (Set.null s) && s /= Set.singleton i) m
@@ -319,7 +325,7 @@ find s such that x in s => forall y . yRx or not yRx and not xRy
  * strongly connected components (cycles) are treated as a compound node
 -}
 
-mostRight :: (Ord a, Hashable a) => Rel a -> Set.Set a
+mostRight :: (Ord a, Hashable a) => Rel a -> Set.HashSet a
 mostRight r = let
     cs = sccOfClosure r
     in expandCycle cs (mostRightOfCollapsed $ collaps cs r)
@@ -336,12 +342,26 @@ intransKernel r =
     in foldr addCycle (transReduce $ collaps cs r) cs
 
 -- add a cycle given by a set in the collapsed node
-addCycle :: (Ord a, Hashable a) => Set.Set a -> Rel a -> Rel a
+addCycle :: (Ord a, Hashable a) => Set.HashSet a -> Rel a -> Rel a
 addCycle c r = if Set.null c then error "Common.Lib.Rel.addCycle" else
-    let (a, b) = Set.deleteFindMin c
-        (m, d) = Set.deleteFindMax c
+    let (a, b) = deleteFindMin c
+        (m, d) = deleteFindMax c
     in insertPair m a $ foldr (uncurry insertPair) (delete a a r) $
        zip (Set.toList d) (Set.toList b)
+
+deleteFindMin :: (Ord a, Hashable a) => Set.HashSet a -> (a, Set.HashSet a)
+deleteFindMin c = deleteFind True c
+
+deleteFindMax :: (Ord a, Hashable a) => Set.HashSet a -> (a, Set.HashSet a)
+deleteFindMax c = deleteFind False c
+
+deleteFind :: (Ord a, Hashable a) => Bool ->  -- True for min, False for max
+              Set.HashSet a -> (a, Set.HashSet a)
+deleteFind b c = 
+  let l = if b then List.sort $ Set.toList c else reverse $ List.sort $ Set.toList c
+  in case l of 
+      [] -> error "no min/max elem in empty set"
+      x:xs -> (x, Set.fromList xs)
 
 {- | calculates if two given elements have a common left element
 
@@ -353,7 +373,7 @@ haveCommonLeftElem t1 t2 =
 
 {- | partitions a set into a list of disjoint non-empty subsets
 determined by the given function as equivalence classes -}
-partSet :: (Ord a, Hashable a) => (a -> a -> Bool) -> Set.Set a -> [Set.Set a]
+partSet :: (Ord a, Hashable a) => (a -> a -> Bool) -> Set.HashSet a -> [Set.HashSet a]
 partSet f = List.map Set.fromList . leqClasses f
 
 {- | partitions a list into a list of disjoint non-empty lists
@@ -366,15 +386,18 @@ partList f l = case l of
     in (x : concat es) : ds
 
 -- | Divide a Set (List) into equivalence classes w.r.t. eq
-leqClasses :: (Ord a, Hashable a) => (a -> a -> Bool) -> Set.Set a -> [[a]]
+leqClasses :: (Ord a, Hashable a) => (a -> a -> Bool) -> Set.HashSet a -> [[a]]
 leqClasses f = partList f . Set.toList
 
 {- | flattens a list of non-empty sets and uses the minimal element of
 each set to represent the set -}
-flatSet :: (Ord a, Hashable a) => [Set.Set a] -> Set.Set a
+flatSet :: (Ord a, Hashable a) => [Set.HashSet a] -> Set.HashSet a
 flatSet = Set.fromList . List.map (\ s -> if Set.null s
                          then error "Common.Lib.Rel.flatSet"
-                         else Set.findMin s)
+                         else findMin s)
+
+findMin :: (Ord a, Hashable a) => Set.HashSet a -> a
+findMin = fst . deleteFindMin
 
 {- | checks if a given relation is locally filtered
 
@@ -384,7 +407,7 @@ locallyFiltered :: (Ord a, Hashable a) => Rel a -> Bool
 locallyFiltered rel = check . flatSet . partSet iso $ mostRight rel
     where iso x y = member x y rel && member y x rel
           check s = Set.null s ||
-                  Set.fold (\ y ->
+                  Set.foldr (\ y ->
                             (&& not (haveCommonLeftElem x y rel))) True s'
                   && check s'
-              where (x, s') = Set.deleteFindMin s
+              where (x, s') = deleteFindMin s

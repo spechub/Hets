@@ -31,7 +31,7 @@ import CSL.TreePO
 import Numeric
 import Data.Char
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import Text.ParserCombinators.Parsec as Parsec
 import Text.ParserCombinators.Parsec.Error
@@ -104,7 +104,7 @@ instance OperatorState (AnnoState.AnnoState st) where
     lookupOperator _ = lookupOperator ()
     lookupBinder _ = lookupBinder ()
 
-data OpVarState a = OpVarState a (Set.Set String)
+data OpVarState a = OpVarState a (Set.HashSet String)
 
 instance OperatorState a => OperatorState (OpVarState a) where
     lookupOperator (OpVarState x _) = lookupOperator x

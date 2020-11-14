@@ -16,7 +16,7 @@ constants for Isabelle
 module Isabelle.IsaConsts where
 
 import Isabelle.IsaSign
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Data.List
 import Data.Maybe
 import qualified Data.HashMap.Strict as Map
@@ -34,7 +34,7 @@ topSort f ls = case ls of
 liftDep :: (a -> a -> Bool) -> [a] -> [a] -> Bool
 liftDep f as bs = any (\ a -> any (f a) bs) as
 
-getTypeIds :: Typ -> Set.Set TName
+getTypeIds :: Typ -> Set.HashSet TName
 getTypeIds ty = case ty of
   Type { typeId = n, typeArgs = args }
     -> Set.insert n $ Set.unions $ map getTypeIds args

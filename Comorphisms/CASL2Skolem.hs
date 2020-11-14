@@ -29,7 +29,7 @@ import CASL.Quantification
 
 import Common.Result
 import Common.Id
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Common.AS_Annotation
 import Common.ProofTree
 import qualified Common.Lib.MapSet as MapSet

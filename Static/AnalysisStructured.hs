@@ -67,7 +67,7 @@ import Common.Utils (number)
 import Common.Lib.MapSet (imageSet, setInsert)
 
 import Data.Graph.Inductive.Graph
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 import qualified Data.Map as PlainMap
 import Data.Maybe
@@ -950,7 +950,7 @@ anaRestr lg sigEnv pos (GMorphism cid (ExtSign sigma1 sys1) _ mor _) gh =
         mor1 <- cogenerated_sign lid1 sys' sigma1
         mor1' <- map_morphism cid mor1
         mor2 <- comp mor1' mor
-        return $ GMorphism cid (ExtSign (dom mor1) $ Set.fold (\ sy ->
+        return $ GMorphism cid (ExtSign (dom mor1) $ Set.foldr (\ sy ->
           case Map.lookup sy $ symmap_of lid1 mor1 of
             Nothing -> id
             Just sy1 -> Set.insert sy1) Set.empty sys1)
@@ -1142,7 +1142,7 @@ parLink lg nsig orig (NodeSig node gsigma') dg (NodeSig nA_i sigA_i) =
 {- Extension of signature morphisms (for instantitations)
 first some auxiliary functions -}
 
-mapID :: Map.HashMap Id (Set.Set Id) -> Id -> Result Id
+mapID :: Map.HashMap Id (Set.HashSet Id) -> Id -> Result Id
 mapID idmap i@(Id toks comps pos1) =
   case Map.lookup i idmap of
     Nothing -> do
@@ -1156,7 +1156,7 @@ mapID idmap i@(Id toks comps pos1) =
               " can be mapped in various ways:\n"
               ++ showDoc ids "") $ getRange i
 
-extID1 :: Map.HashMap Id (Set.Set Id) -> Id
+extID1 :: Map.HashMap Id (Set.HashSet Id) -> Id
               -> Result (EndoMap Id) -> Result (EndoMap Id)
 extID1 idmap i@(Id toks comps pos1) m = do
   m1 <- m
@@ -1164,8 +1164,8 @@ extID1 idmap i@(Id toks comps pos1) m = do
   return $ if comps == compsnew then m1 else
     Map.insert i (Id toks compsnew pos1) m1
 
-extID :: Set.Set Id -> Map.HashMap Id (Set.Set Id) -> Result (EndoMap Id)
-extID ids idmap = Set.fold (extID1 idmap) (return Map.empty) ids
+extID :: Set.HashSet Id -> Map.HashMap Id (Set.HashSet Id) -> Result (EndoMap Id)
+extID ids idmap = Set.foldr (extID1 idmap) (return Map.empty) ids
 
 extendMorphism :: Bool -- ^ check sharing (False for lambda expressions)
                -> G_sign      -- ^ formal parameter
@@ -1200,19 +1200,19 @@ extendMorphism sharing (G_sign lid sigmaP _) (G_sign lidB sigmaB1 _)
   sigma <- ext_signature_union lid sigmaA sigmaAD
   let illShared = (ext_sym_of lid sigmaA `Set.intersection`
                               ext_sym_of lid sigmaAD )
-                   Set.\\ imageSet h symsP
+                   `Set.difference` imageSet h symsP
   unless (Set.null illShared || not sharing)
     $ plain_error () ("Symbols shared between actual parameter and body"
                      ++ "\nmust be in formal parameter:\n"
                      ++ showDoc illShared "") nullRange
-  let myKernel = Set.fromDistinctAscList . comb1 . Map.toList
+  let myKernel = Set.fromList . comb1 . Map.toList
       comb1 [] = []
       comb1 (p : qs) =
            comb2 p qs [] ++ comb1 qs
       comb2 _ [] rs = rs
       comb2 p@(a, b) ((c, d) : qs) rs =
           comb2 p qs $ if b == d then (a, c) : rs else rs
-      newIdentifications = myKernel hmor Set.\\ myKernel h
+      newIdentifications = myKernel hmor `Set.difference` myKernel h
   unless (Set.null newIdentifications)
     $ warning () (
      "Fitting morphism may lead to forbidden identifications:\n"

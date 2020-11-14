@@ -24,7 +24,8 @@ import Common.Id
 import Common.Result
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
+import qualified Common.HashSetUtils as HSU
 
 instance GetRange Symbol where
     getRange = getRange . symName
@@ -39,13 +40,13 @@ checkSymbols s1 s2 r =
 
 dependentSyms :: Symbol -> Env -> SymbolSet
 dependentSyms sym =
-    Set.fold ( \ op se ->
+    Set.foldr ( \ op se ->
                if Set.member sym $ subSymsOf op then
                Set.insert op se else se) Set.empty . Set.unions . symOf
 
 hideRelSymbol :: Symbol -> Env -> Env
 hideRelSymbol sym sig =
-    hideSymbol sym $ Set.fold hideSymbol sig $ dependentSyms sym sig
+    hideSymbol sym $ Set.foldr hideSymbol sig $ dependentSyms sym sig
 
 
 hideSymbol :: Symbol -> Env -> Env
@@ -58,11 +59,11 @@ hideSymbol sym sig =
     ClassAsItemType _ -> sig
       { classMap = Map.map
         (\ ci -> ci { classKinds = Set.filter
-                      (Set.notMember i . idsOfKind) $ classKinds ci })
+                      (HSU.notMember i . idsOfKind) $ classKinds ci })
         $ Map.delete i cm
       , typeMap = Map.map
         (\ ti -> ti { otherTypeKinds = Set.filter
-                      (Set.notMember i . idsOfKind) $ otherTypeKinds ti })
+                      (HSU.notMember i . idsOfKind) $ otherTypeKinds ti })
         tm }
     TypeAsItemType _ -> sig
       { typeMap = Map.map
@@ -75,17 +76,17 @@ hideSymbol sym sig =
                           else Map.insert i rs as }
     _ -> sig
 
-idsOfKind :: Kind -> Set.Set Id
+idsOfKind :: Kind -> Set.HashSet Id
 idsOfKind kd = case kd of
   ClassKind i -> Set.singleton i
   FunKind _ k1 k2 _ -> Set.union (idsOfKind k1) $ idsOfKind k2
 
 plainHide :: SymbolSet -> Env -> Env
 plainHide syms sigma =
-    let (opSyms, otherSyms) = Set.partition (\ sy -> case symType sy of
+    let (opSyms, otherSyms) = HSU.partition (\ sy -> case symType sy of
                                               OpAsItemType _ -> True
                                               _ -> False) syms
-    in Set.fold hideSymbol (Set.fold hideSymbol sigma otherSyms) opSyms
+    in Set.foldr hideSymbol (Set.foldr hideSymbol sigma otherSyms) opSyms
 
 -- | type ids within a type
 subSyms :: Type -> SymbolSet
@@ -112,7 +113,7 @@ closeSymbSet s = Set.unions (s : map subSymsOf (Set.toList s))
 opSymOf :: Env -> SymbolSet
 opSymOf sigma = Map.foldrWithKey ( \ i ts s ->
                       if Map.member i bOps then s else
-                      Set.fold (Set.insert . idToOpSymbol i . opType)
+                      Set.foldr (Set.insert . idToOpSymbol i . opType)
                          s ts)
               Set.empty $ assumps sigma
 
@@ -127,7 +128,7 @@ symOf sigma =
                 Set.empty $ typeMap sigma
         ops = Map.foldrWithKey ( \ i ts s ->
                       if Map.member i bOps then s else
-                      Set.fold (Set.insert . idToOpSymbol i . opType)
+                      Set.foldr (Set.insert . idToOpSymbol i . opType)
                          s ts)
               Set.empty $ assumps sigma
         in [classes, types, ops]

@@ -24,11 +24,11 @@ import Common.Id (stringToId)
 import Common.Result
 
 import Data.Maybe
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 data Medusa = Medusa {
-               indivs :: Set.Set (IRI, IRI),
-               relations :: Set.Set (IRI, IRI, IRI, IRI)}
+               indivs :: Set.HashSet (IRI, IRI),
+               relations :: Set.HashSet (IRI, IRI, IRI, IRI)}
 
 -- | given an OWL ontology (iri and theory), compute the medusa data
 medusa :: IRI.IRI -> (Sign, [Named Axiom])
@@ -40,7 +40,7 @@ medusa _ (sig, nsens) = do
       allInds = Set.map (\ i -> (i,getC i)) inds
       relTuples = foldl Set.union Set.empty $
                   map (getR allInds) $ Set.toList inds
-      images = Set.foldl Set.union Set.empty $
+      images = Set.foldl' Set.union Set.empty $
                Set.map (\(i1, _, i2, _) -> Set.fromList [i1, i2]) relTuples
   return $ Medusa {
             indivs = Set.filter (\(i,_) -> Set.member i images) allInds ,
@@ -72,12 +72,12 @@ getClassAux ind ax =
 --  look for individuals "i1" and "i2" such that
 --  i1 has_fiat_boundary p1 and i2 has_fiat_boundary p2
 --  and return i1 type(p1) i2 type(p2)
-getMeetsFacts :: [Axiom] -> Set.Set (IRI, IRI) -> IRI ->
-              Set.Set (IRI, IRI, IRI, IRI)
+getMeetsFacts :: [Axiom] -> Set.HashSet (IRI, IRI) -> IRI ->
+              Set.HashSet (IRI, IRI, IRI, IRI)
 getMeetsFacts axs tInds n =
   Set.fromList $ mapMaybe (getMeetsFactsAux axs tInds n) axs
 
-getMeetsFactsAux :: [Axiom] -> Set.Set (IRI, IRI) -> IRI -> Axiom ->
+getMeetsFactsAux :: [Axiom] -> Set.HashSet (IRI, IRI) -> IRI -> Axiom ->
                  Maybe (IRI, IRI, IRI, IRI)
 getMeetsFactsAux axs tInds point1 ax =
   case axiomTopic ax of
@@ -93,7 +93,7 @@ getMeetsFactsAux axs tInds point1 ax =
          _ -> Nothing
     _ -> Nothing
 
-getFiatBoundaryFacts :: [Axiom] -> Set.Set (IRI, IRI) -> IRI -> IRI ->
+getFiatBoundaryFacts :: [Axiom] -> Set.HashSet (IRI, IRI) -> IRI -> IRI ->
                      Maybe (IRI, IRI, IRI, IRI)
 getFiatBoundaryFacts axs tInds point1 point2 =
    let i1 = checkMapMaybe (getFiatBoundaryFactsAux point1) axs

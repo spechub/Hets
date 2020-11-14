@@ -36,7 +36,7 @@ import Data.Data
 import Data.List (stripPrefix)
 import Data.Maybe
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 data OWLMorphism = OWLMorphism
   { osource :: Sign
@@ -132,7 +132,7 @@ legalMor m = let mm = mmaps m in unless
 
 composeMor :: OWLMorphism -> OWLMorphism -> Result OWLMorphism
 composeMor m1 m2 =
-  let nm = Set.fold (\ s@(Entity _ ty u) -> let
+  let nm = Set.foldr (\ s@(Entity _ ty u) -> let
             t = getIri ty u $ mmaps m1
             r = getIri ty t $ mmaps m2
             in if r == u then id else Map.insert s r) Map.empty
@@ -142,13 +142,13 @@ composeMor m1 m2 =
      , pmap = composeMap (prefixMap $ osource m1) (pmap m1) $ pmap m2
      , mmaps = nm }
 
-cogeneratedSign :: Set.Set Entity -> Sign -> Result OWLMorphism
+cogeneratedSign :: Set.HashSet Entity -> Sign -> Result OWLMorphism
 cogeneratedSign s sign =
   let sig2 = execState (mapM_ (modEntity Set.delete) $ Set.toList s) sign
   in if isSubSign sig2 sign then return $ inclOWLMorphism sig2 sign else
          fail "non OWL2 subsignatures for (co)generatedSign"
 
-generatedSign :: Set.Set Entity -> Sign -> Result OWLMorphism
+generatedSign :: Set.HashSet Entity -> Sign -> Result OWLMorphism
 generatedSign s sign = cogeneratedSign (Set.difference (symOf sign) s) sign
 
 matchesSym :: Entity -> RawSymb -> Bool

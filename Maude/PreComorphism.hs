@@ -15,7 +15,7 @@ module Maude.PreComorphism where
 
 import Data.Maybe
 import qualified Data.List as List
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 
 import qualified Maude.Sign as MSign
@@ -36,9 +36,10 @@ import Common.AS_Annotation
 import Common.ProofUtils (charMap)
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.MapSet as MapSet
+import qualified Common.HashSetUtils as HSU
 
 type IdMap = Map.HashMap Id Id
-type OpTransTuple = (CSign.OpMap, CSign.OpMap, Set.Set Component)
+type OpTransTuple = (CSign.OpMap, CSign.OpMap, Set.HashSet Component)
 
 -- | generates a CASL morphism from a Maude morphism
 mapMorphism :: MMorphism.Morphism -> Result CMorphism.CASLMor
@@ -78,7 +79,7 @@ translateOpMapEntry im (MSym.Operator from ar co) (MSym.Operator to _ _) copm
 translateOpMapEntry _ _ _ _ = Map.empty
 
 -- | generates a set of CASL symbol from a Maude Symbol
-mapSymbol :: MSign.Sign -> MSym.Symbol -> Set.Set CSign.Symbol
+mapSymbol :: MSign.Sign -> MSym.Symbol -> Set.HashSet CSign.Symbol
 mapSymbol sg (MSym.Sort q) = Set.singleton csym
            where mk = kindMapId $ MSign.kindRel sg
                  sym_id = token2id q
@@ -215,15 +216,15 @@ maudeSbs2caslSbs sbs im = Rel.fromMap m4
             m3 = Map.fromList l3
             m4 = Map.unionWith Set.union m1 $ Map.unionWith Set.union m2 m3
 
-idList2Subsorts :: [(Id, Id)] -> [(Id, Set.Set Id)]
+idList2Subsorts :: [(Id, Id)] -> [(Id, Set.HashSet Id)]
 idList2Subsorts [] = []
 idList2Subsorts ((id1, id2) : il) = t1 : idList2Subsorts il
       where t1 = (id1, Set.singleton id2)
 
-maudeSb2caslSb :: (MSym.Symbol, Set.Set MSym.Symbol) -> (Id, Set.Set Id)
+maudeSb2caslSb :: (MSym.Symbol, Set.HashSet MSym.Symbol) -> (Id, Set.HashSet Id)
 maudeSb2caslSb (sym, st) = (sortSym2id sym, Set.map (kindId . sortSym2id) st)
 
-subsorts2Ids :: (MSym.Symbol, Set.Set MSym.Symbol) -> (Id, Set.Set Id)
+subsorts2Ids :: (MSym.Symbol, Set.HashSet MSym.Symbol) -> (Id, Set.HashSet Id)
 subsorts2Ids (sym, st) = (sortSym2id sym, Set.map sortSym2id st)
 
 sortSym2id :: MSym.Symbol -> Id
@@ -298,7 +299,7 @@ natImported ss om = b1 && b2 && b3
            b3 = not b2 || specialZeroSet (om Map.! mkSimpleId "s_")
 
 specialZeroSet :: MSign.OpDeclSet -> Bool
-specialZeroSet = Set.fold specialZero False
+specialZeroSet = Set.foldr specialZero False
 
 specialZero :: MSign.OpDecl -> Bool -> Bool
 specialZero (_, ats) b = b' || b
@@ -320,8 +321,8 @@ deleteUniversal om = om5
                om5 = Map.delete (mkSimpleId "downTerm") om4
 
 -- | generates the universal operators for all the sorts in the module
-universalOps :: Set.Set Id -> CSign.OpMap -> Bool -> CSign.OpMap
-universalOps kinds om True = Set.fold universalOpKind om kinds
+universalOps :: Set.HashSet Id -> CSign.OpMap -> Bool -> CSign.OpMap
+universalOps kinds om True = Set.foldr universalOpKind om kinds
 universalOps _ om False = om
 
 -- | generates the universal operators for a concrete module
@@ -336,8 +337,8 @@ universalOpKind kind = MapSet.union $ MapSet.fromList
               eq_opt = CSign.OpType CAS.Total [kind, kind] bool_id
 
 -- | generates the formulas for the universal operators
-universalSens :: Set.Set Id -> [Named CAS.CASLFORMULA]
-universalSens = Set.fold universalSensKind []
+universalSens :: Set.HashSet Id -> [Named CAS.CASLFORMULA]
+universalSens = Set.foldr universalSensKind []
 
 -- | generates the formulas for the universal operators for the given sort
 universalSensKind :: Id -> [Named CAS.CASLFORMULA] -> [Named CAS.CASLFORMULA]
@@ -437,11 +438,11 @@ axiomsSens im = Map.foldr (axiomsSensODS im) []
 
 axiomsSensODS :: IdMap -> MSign.OpDeclSet -> [Named CAS.CASLFORMULA]
                  -> [Named CAS.CASLFORMULA]
-axiomsSensODS im ods l = Set.fold (axiomsSensOD im) l ods
+axiomsSensODS im ods l = Set.foldr (axiomsSensOD im) l ods
 
 axiomsSensOD :: IdMap -> MSign.OpDecl -> [Named CAS.CASLFORMULA]
   -> [Named CAS.CASLFORMULA]
-axiomsSensOD im (ss, ats) l = Set.fold (axiomsSensSS im ats) l ss
+axiomsSensOD im (ss, ats) l = Set.foldr (axiomsSensSS im ats) l ss
 
 axiomsSensSS :: IdMap -> [MAS.Attr] -> MSym.Symbol -> [Named CAS.CASLFORMULA]
   -> [Named CAS.CASLFORMULA]
@@ -482,7 +483,7 @@ translateOps im = Map.foldr (translateOpDeclSet im)
 
 -- | translates an operator declaration set into a tern as described above
 translateOpDeclSet :: IdMap -> MSign.OpDeclSet -> OpTransTuple -> OpTransTuple
-translateOpDeclSet im ods tpl = Set.fold (translateOpDecl im) tpl ods
+translateOpDeclSet im ods tpl = Set.foldr (translateOpDecl im) tpl ods
 
 {- | given an operator declaration updates the accumulator with the translation
 to CASL operator, checking if the operator has the assoc attribute to insert
@@ -856,8 +857,8 @@ getType (CAS.Application op _ _) = case op of
 getType _ = Nothing
 
 -- | generates the formulas for the rewrite predicates
-rewPredicatesSens :: Set.Set Id -> [Named CAS.CASLFORMULA]
-rewPredicatesSens = Set.fold rewPredicateSens []
+rewPredicatesSens :: Set.HashSet Id -> [Named CAS.CASLFORMULA]
+rewPredicatesSens = Set.foldr rewPredicateSens []
 
 -- | generates the formulas for the rewrite predicate of the given sort
 rewPredicateSens :: Id -> [Named CAS.CASLFORMULA] -> [Named CAS.CASLFORMULA]
@@ -890,37 +891,37 @@ transSen kind = makeNamed name $ quantifyUniversally form
               name = "rew_trans_" ++ show kind
 
 -- | generate the predicates for the rewrites
-rewPredicates :: Set.Set Id -> CSign.PredMap
-rewPredicates = Set.fold rewPredicate MapSet.empty
+rewPredicates :: Set.HashSet Id -> CSign.PredMap
+rewPredicates = Set.foldr rewPredicate MapSet.empty
 
 -- | generate the predicates for the rewrites of the given sort
 rewPredicate :: Id -> CSign.PredMap -> CSign.PredMap
 rewPredicate kind = MapSet.insert rewID $ CSign.PredType [kind, kind]
 
 -- | create the predicates that assign sorts to each term
-kindPredicates :: IdMap -> Map.HashMap Id (Set.Set CSign.PredType)
+kindPredicates :: IdMap -> Map.HashMap Id (Set.HashSet CSign.PredType)
 kindPredicates = Map.foldrWithKey kindPredicate Map.empty
 
 {- | create the predicates that assign the current sort to the
 corresponding terms -}
-kindPredicate :: Id -> Id -> Map.HashMap Id (Set.Set CSign.PredType)
-                 -> Map.HashMap Id (Set.Set CSign.PredType)
+kindPredicate :: Id -> Id -> Map.HashMap Id (Set.HashSet CSign.PredType)
+                 -> Map.HashMap Id (Set.HashSet CSign.PredType)
 kindPredicate sort kind mis = if sort == str2id "Universal" then mis else
   let ar = Set.singleton $ CSign.PredType [kind]
   in Map.insertWith Set.union sort ar mis
 
 -- | extract the kinds from the map of id's
-kindsFromMap :: IdMap -> Set.Set Id
+kindsFromMap :: IdMap -> Set.HashSet Id
 kindsFromMap = Map.foldr Set.insert Set.empty
 
 {- | transform the set of Maude sorts in a set of CASL sorts, including
 only one sort for each kind. -}
-sortsTranslation :: MSign.SortSet -> MSign.SubsortRel -> Set.Set Id
+sortsTranslation :: MSign.SortSet -> MSign.SubsortRel -> Set.HashSet Id
 sortsTranslation = sortsTranslationList . Set.toList
 
 {- | transform a list representing the Maude sorts in a set of CASL sorts,
 including only one sort for each kind. -}
-sortsTranslationList :: [MSym.Symbol] -> MSign.SubsortRel -> Set.Set Id
+sortsTranslationList :: [MSym.Symbol] -> MSign.SubsortRel -> Set.HashSet Id
 sortsTranslationList [] _ = Set.empty
 sortsTranslationList (s : ss) r = Set.insert (sort2id tops) res
       where tops@(top : _) = List.sort $ getTop r s
@@ -971,7 +972,7 @@ quantifyUniversally form = CAS.mkForall var_decl form
 
 {- | traverses a map with sorts as keys and sets of variables as value and
 creates a list of variable declarations -}
-listVarDecl :: Map.HashMap Id (Set.Set Token) -> [CAS.VAR_DECL]
+listVarDecl :: Map.HashMap Id (Set.HashSet Token) -> [CAS.VAR_DECL]
 listVarDecl = Map.foldrWithKey f []
       where f sort var_set =
                 (CAS.Var_decl (Set.toList var_set) sort nullRange :)
@@ -982,7 +983,7 @@ noQuantification (CAS.Quantification _ vars form _) = (form, vars)
 noQuantification form = (form, [])
 
 -- | translate the CASL sorts to symbols
-kinds2syms :: Set.Set Id -> Set.Set CSign.Symbol
+kinds2syms :: Set.HashSet Id -> Set.HashSet CSign.Symbol
 kinds2syms = Set.map kind2sym
 
 -- | translate a CASL sort to a CASL symbol
@@ -990,29 +991,29 @@ kind2sym :: Id -> CSign.Symbol
 kind2sym k = CSign.Symbol k CSign.SortAsItemType
 
 -- | translates the CASL predicates into CASL symbols
-preds2syms :: CSign.PredMap -> Set.Set CSign.Symbol
+preds2syms :: CSign.PredMap -> Set.HashSet CSign.Symbol
 preds2syms = MapSet.foldWithKey createSym4id Set.empty
 
 -- | creates a CASL symbol for a predicate
-createSym4id :: Id -> CSign.PredType -> Set.Set CSign.Symbol
-  -> Set.Set CSign.Symbol
+createSym4id :: Id -> CSign.PredType -> Set.HashSet CSign.Symbol
+  -> Set.HashSet CSign.Symbol
 createSym4id pn pt = Set.insert sym
       where sym = CSign.Symbol pn $ CSign.PredAsItemType pt
 
 -- | translates the CASL operators into CASL symbols
-ops2symbols :: CSign.OpMap -> Set.Set CSign.Symbol
+ops2symbols :: CSign.OpMap -> Set.HashSet CSign.Symbol
 ops2symbols = MapSet.foldWithKey createSymOp4id Set.empty
 
 -- | creates a CASL symbol for an operator
-createSymOp4id :: Id -> CSign.OpType -> Set.Set CSign.Symbol
-  -> Set.Set CSign.Symbol
+createSymOp4id :: Id -> CSign.OpType -> Set.HashSet CSign.Symbol
+  -> Set.HashSet CSign.Symbol
 createSymOp4id on ot = Set.insert sym
       where sym = CSign.Symbol on $ CSign.OpAsItemType ot
 
 {- | extract the variables from a CASL formula and put them in a map
 with keys the sort of the variables and value the set of variables
 in this sort -}
-getVars :: CAS.CASLFORMULA -> Map.HashMap Id (Set.Set Token)
+getVars :: CAS.CASLFORMULA -> Map.HashMap Id (Set.HashSet Token)
 getVars (CAS.Quantification _ _ f _) = getVars f
 getVars (CAS.Junction _ fs _) =
     foldr (Map.unionWith Set.union . getVars) Map.empty fs
@@ -1031,7 +1032,7 @@ getVars (CAS.Mixfix_formula t) = getVarsTerm t
 getVars _ = Map.empty
 
 -- | extract the variables of a CASL term
-getVarsTerm :: CAS.CASLTERM -> Map.HashMap Id (Set.Set Token)
+getVarsTerm :: CAS.CASLTERM -> Map.HashMap Id (Set.HashSet Token)
 getVarsTerm (CAS.Qual_var var sort _) =
     Map.insert sort (Set.singleton var) Map.empty
 getVarsTerm (CAS.Application _ ts _) =
@@ -1168,7 +1169,7 @@ atLeastOneSortLODS ((ss, ats) : ls) = res ++ atLeastOneSortLODS ls
                  then []
                  else [(ss', ats)]
 
-atLeastOneSortSS :: Set.Set MSym.Symbol -> Set.Set MSym.Symbol
+atLeastOneSortSS :: Set.HashSet MSym.Symbol -> Set.HashSet MSym.Symbol
 atLeastOneSortSS = Set.filter hasOneSort
 
 hasOneSort :: MSym.Symbol -> Bool
@@ -1188,7 +1189,7 @@ translateOps' im = Map.foldr (translateOpDeclSet' im)
 
 -- | translates an operator declaration set into a tern as described above
 translateOpDeclSet' :: IdMap -> MSign.OpDeclSet -> OpTransTuple -> OpTransTuple
-translateOpDeclSet' im ods tpl = Set.fold (translateOpDecl' im) tpl ods
+translateOpDeclSet' im ods tpl = Set.foldr (translateOpDecl' im) tpl ods
 
 {- | given an operator declaration updates the accumulator with the translation
 to CASL operator, checking if the operator has the assoc attribute to insert
@@ -1200,7 +1201,7 @@ translateOpDecl' im (syms, ats) (ops, assoc_ops, cs) =
         if Set.null syms'
         then (ops', assoc_ops', cs')
         else translateOpDecl' im (syms', ats) (ops', assoc_ops', cs')
-      where (sym, syms') = Set.deleteFindMin syms
+      where (sym, syms') = HSU.deleteFindMin syms
             Just (cop_id, ot, _) = maudeSym2CASLOp' im sym
             ops' = MapSet.insert cop_id ot ops
             assoc_ops' = if any MAS.assoc ats

@@ -18,7 +18,7 @@ module Comorphisms.CASL2PCFOL where
 import Logic.Logic
 import Logic.Comorphism
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import qualified Common.Lib.Rel as Rel
 import Common.AS_Annotation
@@ -89,9 +89,9 @@ encodeSig sig
           $ total (s', s)
         setinjOptype = Set.map total relSet
         setprojOptype = Set.map partial relSet
-        injOpMap = Set.fold (\ t -> addOpTo (uniqueInjName $ toOP_TYPE t) t)
+        injOpMap = Set.foldr (\ t -> addOpTo (uniqueInjName $ toOP_TYPE t) t)
           (opMap sig) setinjOptype
-        projOpMap = Set.fold (\ t -> addOpTo (uniqueProjName $ toOP_TYPE t) t)
+        projOpMap = Set.foldr (\ t -> addOpTo (uniqueProjName $ toOP_TYPE t) t)
           injOpMap setprojOptype
     -- membership predicates are coded out
 

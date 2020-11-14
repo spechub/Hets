@@ -27,7 +27,7 @@ import Common.Utils
 import qualified Common.Lib.Rel as Rel
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import Data.Char
 import Data.Maybe
@@ -39,13 +39,14 @@ import Isabelle.IsaStrings
 
 -- ----------------- Id translation functions -------------------
 data IsaPreludes = IsaPreludes
-  { preTypes :: Map.HashMap BaseSig (Set.Set String)
-  , preConsts :: Map.HashMap BaseSig (Set.Set String) }
+  { preTypes :: Map.HashMap BaseSig (Set.HashSet String)
+  , preConsts :: Map.HashMap BaseSig (Set.HashSet String) }
 
-isaKeyset :: Set.Set String
+isaKeyset :: Set.HashSet String
 isaKeyset = Set.fromList isaKeywords
 
-mkPreludeMap :: [(BaseSig, Set.Set String)] -> Map.HashMap BaseSig (Set.Set String)
+mkPreludeMap :: [(BaseSig, Set.HashSet String)] -> 
+             Map.HashMap BaseSig (Set.HashSet String)
 mkPreludeMap = Map.fromList . map (\ (b, s) -> (b, Set.union s isaKeyset))
 
 hc2isaNames :: [String]
@@ -91,7 +92,7 @@ getAltTokenList newPlace over i@(Id ms cs qs) thy = let
     in getTokenList newPlace $ Id (newFs ++ ps) cs qs
 
 toAltSyntax :: Bool -> Int -> GlobalAnnos -> Int -> Id -> BaseSig
-            -> Set.Set String -> Maybe AltSyntax
+            -> Set.HashSet String -> Maybe AltSyntax
 toAltSyntax prd over ga n i thy toks = let
     (precMap, mx) = Rel.toPrecMap $ prec_annos ga
     minPrec = if prd then 42 else 52
@@ -149,12 +150,12 @@ showIsaConstT :: Id -> BaseSig -> String
 showIsaConstT ide thy = showIsaT1 (transConstStringT thy) ide
 
 -- also pass number of arguments
-mkIsaConstT :: Bool -> GlobalAnnos -> Int -> Id -> BaseSig -> Set.Set String
+mkIsaConstT :: Bool -> GlobalAnnos -> Int -> Id -> BaseSig -> Set.HashSet String
             -> VName
 mkIsaConstT = mkIsaConstVName 0 showIsaConstT
 
 mkIsaConstVName :: Int -> (Id -> BaseSig -> String) -> Bool -> GlobalAnnos
-                -> Int -> Id -> BaseSig -> Set.Set String -> VName
+                -> Int -> Id -> BaseSig -> Set.HashSet String -> VName
 mkIsaConstVName over f prd ga n ide thy toks =
   let s = f ide thy
       a = toAltSyntax prd over ga n ide thy toks
@@ -173,18 +174,18 @@ showIsaConstIT :: Id -> Int -> BaseSig -> String
 showIsaConstIT ide i thy = showIsaConstT ide thy ++ "X" ++ show i
 
 mkIsaConstIT :: Bool -> GlobalAnnos -> Int -> Id -> Int -> BaseSig
-             -> Set.Set String -> VName
+             -> Set.HashSet String -> VName
 mkIsaConstIT prd ga n ide i =
     mkIsaConstVName i (`showIsaConstIT` i) prd ga n ide
 
 {- | get the tokens of the alternative syntax that should not be used
      as variables -}
-getConstIsaToks :: Id -> Int -> BaseSig -> Set.Set String
+getConstIsaToks :: Id -> Int -> BaseSig -> Set.HashSet String
 getConstIsaToks ide i thy = if i < 2 then
    Set.union (getConstIsaToksAux ide 0 thy) (getConstIsaToksAux ide 1 thy)
    else getConstIsaToksAux ide i thy
 
-getConstIsaToksAux :: Id -> Int -> BaseSig -> Set.Set String
+getConstIsaToksAux :: Id -> Int -> BaseSig -> Set.HashSet String
 getConstIsaToksAux ide i =
    foldr (Set.insert . tokStr)
              Set.empty . getAltTokenList "" i ide
@@ -192,7 +193,7 @@ getConstIsaToksAux ide i =
 transIsaInternalName :: String -> String
 transIsaInternalName s = if last s == '_' then s ++ "X" else s
 
-transIsaStringT :: Map.HashMap BaseSig (Set.Set String) -> BaseSig
+transIsaStringT :: Map.HashMap BaseSig (Set.HashSet String) -> BaseSig
                 -> String -> String
 transIsaStringT m i s = let t = transStringAux False s in
   transIsaInternalName $ if Set.member t

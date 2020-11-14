@@ -36,7 +36,7 @@ import qualified Common.Id as Id
 import qualified Common.Result as Result
 import qualified Data.List as List
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Propositional.AS_BASIC_Propositional as AS_BASIC
 import qualified Propositional.Morphism as Morphism
 import qualified Propositional.Symbol as Symbol
@@ -276,7 +276,7 @@ symbToSymbol (AS_BASIC.Symb_id tok) =
 
 makePMap :: Map.HashMap Symbol.Symbol Symbol.Symbol -> Sign.Sign
   -> Map.HashMap Id.Id Id.Id
-makePMap imap sig = Set.fold ( \ x ->
+makePMap imap sig = Set.foldr ( \ x ->
   let symOf = Symbol.Symbol { Symbol.symName = x }
       y = Symbol.symName $ Symbol.applySymMap imap symOf
   in Map.insert x y ) Map.empty $ Sign.items sig
@@ -304,7 +304,7 @@ inducedFromToMorphism imap (ExtSign sig _) (ExtSign tSig _) =
               let
                   sigItems = Sign.items sig
                   pMap :: Map.HashMap Id.Id Id.Id
-                  pMap = Set.fold ( \ x ->
+                  pMap = Set.foldr ( \ x ->
                     let symOf = Symbol.Symbol { Symbol.symName = x }
                         y = Symbol.symName $ Symbol.applySymMap imap symOf
                     in Map.insert x y ) Map.empty sigItems

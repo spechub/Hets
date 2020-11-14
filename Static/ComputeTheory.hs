@@ -41,7 +41,7 @@ import qualified Common.OrderedMap as OMap
 import Data.Graph.Inductive.Graph as Graph
 import Data.List (sortBy)
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set (fromList, toList)
+import qualified Data.HashSet as Set (fromList, toList)
 import Data.Ord
 
 -- * nodes with incoming hiding definition links

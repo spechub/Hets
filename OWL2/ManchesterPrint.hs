@@ -30,7 +30,8 @@ import OWL2.ColonKeywords
 import Data.Function
 import Data.List
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
+import Data.Hashable
 
 -- | OWL2 signature printing
 
@@ -74,7 +75,8 @@ convertBasicTheory (sig, l) = let
 instance Pretty Sign where
     pretty = printSign
 
-printSignElem :: Pretty a => Sign -> String -> (Sign -> Set.Set a) -> Doc
+printSignElem :: (Pretty a, Hashable a) => 
+              Sign -> String -> (Sign -> Set.HashSet a) -> Doc
 printSignElem s ty f = vcat $ map (\ t -> keyword ty <+> pretty t)
     $ Set.toList $ f s
 

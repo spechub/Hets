@@ -34,7 +34,7 @@ import HasCASL.TypeAna
 import HasCASL.ClassAna
 import HasCASL.VarDecl
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 import qualified Common.Lib.Rel as Rel
 import Common.Lib.State
@@ -49,6 +49,7 @@ import Control.Monad
 
 import Data.List
 import Data.Maybe
+import qualified Common.HashSetUtils as HSU
 
 instance Pretty Constrain where
     pretty c = case c of
@@ -60,7 +61,7 @@ instance GetRange Constrain where
     Kinding ty _ -> getRange ty
     Subtyping t1 t2 -> getRange t1 `appRange` getRange t2
 
-type Constraints = Set.Set Constrain
+type Constraints = Set.HashSet Constrain
 
 noC :: Constraints
 noC = Set.empty
@@ -74,7 +75,7 @@ noVars c = case c of
   Subtyping t1 t2 -> null (freeTVars t1) && null (freeTVars t2)
 
 partitionVarC :: Constraints -> (Constraints, Constraints)
-partitionVarC = Set.partition noVars
+partitionVarC = HSU.partition noVars
 
 insertC :: Constrain -> Constraints -> Constraints
 insertC c = case c of
@@ -82,14 +83,14 @@ insertC c = case c of
             Kinding _ k -> if k == universe then id else Set.insert c
 
 substC :: Subst -> Constraints -> Constraints
-substC s = Set.fold (insertC . ( \ c -> case c of
+substC s = Set.foldr (insertC . ( \ c -> case c of
     Kinding ty k -> Kinding (subst s ty) k
     Subtyping t1 t2 -> Subtyping (subst s t1) $ subst s t2)) noC
 
 simplify :: Env -> Constraints -> ([Diagnosis], Constraints)
 simplify te rs =
     if Set.null rs then ([], noC)
-    else let (r, rt) = Set.deleteFindMin rs
+    else let (r, rt) = HSU.deleteFindMin rs
              Result ds m = entail te r
              (es, cs) = simplify te rt
              in (ds ++ es, case m of
@@ -252,29 +253,29 @@ shapeUnify l = do
 collapser :: Rel.Rel Type -> Result Subst
 collapser r =
     let t = Rel.sccOfClosure r
-        ks = map (Set.partition ( \ e -> case e of
+        ks = map (HSU.partition ( \ e -> case e of
                TypeName _ _ n -> n == 0
                _ -> error "collapser")) t
         ws = filter (hasMany . fst) ks
     in if null ws then
        return $ foldr ( \ (cs, vs) s -> extendSubst s $
-               if Set.null cs then Set.deleteFindMin vs
-               else (Set.findMin cs, vs)) eps ks
+               if Set.null cs then HSU.deleteFindMin vs
+               else (HSU.findMin cs, vs)) eps ks
     else Result
          (map ( \ (cs, _) ->
-                let (c1, rs) = Set.deleteFindMin cs
-                    c2 = Set.findMin rs
+                let (c1, rs) = HSU.deleteFindMin cs
+                    c2 = HSU.findMin rs
                 in Diag Hint ("contradicting type inclusions for '"
                          ++ showDoc c1 "' and '"
                          ++ showDoc c2 "'") nullRange) ws) Nothing
 
-extendSubst :: Subst -> (Type, Set.Set Type) -> Subst
-extendSubst s (t, vs) = Set.fold ( \ ~(TypeName _ _ n) ->
+extendSubst :: Subst -> (Type, Set.HashSet Type) -> Subst
+extendSubst s (t, vs) = Set.foldr ( \ ~(TypeName _ _ n) ->
               Map.insert n t) s vs
 
 -- | partition into qualification and subtyping constraints
 partitionC :: Constraints -> (Constraints, Constraints)
-partitionC = Set.partition ( \ c -> case c of
+partitionC = HSU.partition ( \ c -> case c of
                              Kinding _ _ -> True
                              Subtyping _ _ -> False)
 
@@ -302,7 +303,7 @@ shapeRel te subL =
                    r = Rel.transClosure $ Rel.fromList atoms
                    es = Map.foldrWithKey ( \ t1 st l1 ->
                              case t1 of
-                             TypeName _ _ 0 -> Set.fold ( \ t2 l2 ->
+                             TypeName _ _ 0 -> Set.foldr ( \ t2 l2 ->
                                  case t2 of
                                  TypeName _ _ 0 -> if lesserType te t1 t2
                                      then l2 else (t1, t2) : l2
@@ -372,7 +373,7 @@ monoSubst r t =
                         sl = Set.delete tn $ foldl1 Set.intersection
                                       $ map (Rel.succs r)
                                       $ Set.toList s
-                    in Map.singleton i $ Set.findMin
+                    in Map.singleton i $ HSU.findMin
                        $ if Set.null sl then s else sl
              else let
                  (i, (n, rk)) = head resta
@@ -381,13 +382,13 @@ monoSubst r t =
                  sl = Set.delete tn $ foldl1 Set.intersection
                       $ map (Rel.predecessors r)
                       $ Set.toList s
-                 in Map.singleton i $ Set.findMin
+                 in Map.singleton i $ HSU.findMin
                     $ if Set.null sl then s else sl
           else Map.fromList $ map ( \ (i, (n, rk)) ->
-                (i, Set.findMin $ Rel.predecessors r $
+                (i, HSU.findMin $ Rel.predecessors r $
                   TypeName n rk i)) monos
        else Map.fromList $ map ( \ (i, (n, rk)) ->
-                (i, Set.findMin $ Rel.succs r $
+                (i, HSU.findMin $ Rel.succs r $
                   TypeName n rk i)) antis
 
 monoSubsts :: Rel.Rel Type -> Type -> Subst
@@ -440,6 +441,6 @@ fromTypeVars = Map.foldrWithKey
 -- | the type relation of declared types
 fromTypeMap :: TypeMap -> Rel.Rel Type
 fromTypeMap = Map.foldrWithKey (\ t ti r -> let k = typeKind ti in
-                    Set.fold ( \ j -> Rel.insertPair (TypeName t k 0)
+                    Set.foldr ( \ j -> Rel.insertPair (TypeName t k 0)
                                 $ TypeName j k 0) r
                                     $ superTypes ti) Rel.empty

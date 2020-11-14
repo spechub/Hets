@@ -19,10 +19,11 @@ import qualified Common.Lib.MapSet as MapSet
 import Common.Result
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import SoftFOL.Sign
 import SoftFOL.Morphism
+import qualified Common.HashSetUtils as HSU
 
 basicAnalysis :: ([TPTP], Sign, GlobalAnnos)
   -> Result ([TPTP], ExtSign Sign SFSymbol, [Named Sentence])
@@ -59,7 +60,7 @@ formulaSymbols =
 universeSort :: SPIdentifier
 universeSort = mkSimpleId "U"
 
-addSyms :: Bool -> Set.Set SPTerm -> SPTerm -> Sign -> Sign
+addSyms :: Bool -> Set.HashSet SPTerm -> SPTerm -> Sign -> Sign
 addSyms isFormula boundVars t sig = case t of
   SPQuantTerm _ vs f ->
     addSyms True (Set.union boundVars $ Set.fromList vs) f sig
@@ -68,7 +69,7 @@ addSyms isFormula boundVars t sig = case t of
                sig args
     in case ssym of
        SPCustomSymbol sid | not (null args)
-         || Set.notMember t boundVars ->
+         || HSU.notMember t boundVars ->
            let pf = replicate (length args) universeSort
            in if isFormula then sig2
                 { predMap = MapSet.setInsert sid pf $ predMap sig2 }

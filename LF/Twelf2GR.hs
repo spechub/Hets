@@ -22,7 +22,7 @@ import LF.Sign
 import LF.Morphism
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Data.Maybe (fromMaybe)
 
 import Common.IRI
@@ -837,7 +837,7 @@ combineMorphs mor1 mor2 =
   let local = getLocalSyms $ source mor1
       declared = getDeclaredSyms $ source mor1
       er = error "Morphisms cannot be combined."
-      in Set.fold ( \ s ->
+      in Set.foldr ( \ s ->
                       let s1 = case mapSymbol s mor1 of
                                     Just (Const s1') -> s1'
                                     _ -> er

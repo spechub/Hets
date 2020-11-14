@@ -24,7 +24,7 @@ import Common.DocUtils
 import Common.Doc
 import Common.AS_Annotation
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Data.List
 
 -- | short cut for: if b then empty else d

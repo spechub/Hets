@@ -19,7 +19,7 @@ import Logic.Logic
 import Logic.Comorphism
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import qualified Common.Lib.MapSet as MapSet
 import Common.AS_Annotation
@@ -85,12 +85,12 @@ instance Comorphism ExtModal2ExtModalTotal
     has_model_expansion ExtModal2ExtModalTotal = True
     is_weakly_amalgamable ExtModal2ExtModalTotal = True
 
-emEncodeSig :: Set.Set SORT -> Sign f EModalSign -> Sign f EModalSign
+emEncodeSig :: Set.HashSet SORT -> Sign f EModalSign -> Sign f EModalSign
 emEncodeSig bsrts sig = (encodeSig bsrts sig)
   { extendedInfo = let extInfo = extendedInfo sig in
       extInfo { flexOps = MapSet.map mkTotal $ flexOps extInfo }}
 
-emsortsWithBottom :: Sign f e -> Set.Set SORT
+emsortsWithBottom :: Sign f e -> Set.HashSet SORT
 emsortsWithBottom sig = sortsWithBottom NoMembershipOrCast sig Set.empty
 
 simplifyEM :: EM_FORMULA -> EM_FORMULA
@@ -105,8 +105,8 @@ noCondsEM = mapExtForm noCondsEMFormula
 noCondsEMFormula :: FORMULA EM_FORMULA -> FORMULA EM_FORMULA
 noCondsEMFormula = codeOutConditionalF noCondsEM
 
-codeEM :: Set.Set SORT -> EM_FORMULA -> EM_FORMULA
+codeEM :: Set.HashSet SORT -> EM_FORMULA -> EM_FORMULA
 codeEM = mapExtForm . codeEMFormula
 
-codeEMFormula :: Set.Set SORT -> FORMULA EM_FORMULA -> FORMULA EM_FORMULA
+codeEMFormula :: Set.HashSet SORT -> FORMULA EM_FORMULA -> FORMULA EM_FORMULA
 codeEMFormula bsrts = foldFormula (codeRecord True bsrts $ codeEM bsrts)

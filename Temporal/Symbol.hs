@@ -31,7 +31,7 @@ import Common.Doc
 import Common.DocUtils
 
 import Data.Data
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 
 import qualified Temporal.Sign as Sign
@@ -56,8 +56,8 @@ printSymbol :: Symbol -> Doc
 printSymbol x = pretty $ symName x
 
 -- | Extraction of symbols from a signature
-symOf :: Sign.Sign -> Set.Set Symbol
-symOf x = Set.fold (\ y -> Set.insert Symbol {symName = y}) Set.empty $
+symOf :: Sign.Sign -> Set.HashSet Symbol
+symOf x = Set.foldr (\ y -> Set.insert Symbol {symName = y}) Set.empty $
            Sign.items x
 
 -- | Determines the symbol map of a morhpism

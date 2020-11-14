@@ -27,7 +27,7 @@ import Common.Id
 import Common.Result
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Common.OrderedMap as OMap
 
 basicAnalysis :: (BASIC_SPEC, Sign, GlobalAnnos)
@@ -160,7 +160,7 @@ postProcessSign = partitionTypeDeclarations . removeTypeDeclarationsFromConstant
           thfTypeNames = Set.map unpackConstantTHF $ Set.filter isConstantTHF $
                            thfTypeKeys
           typeNames = tffTypeNames `Set.union` thfTypeNames
-      in  sign { constantSet = constantSet sign Set.\\ typeNames }
+      in  sign { constantSet = constantSet sign `Set.difference` typeNames }
 
     isConstant :: Untyped_atom -> Bool
     isConstant ua = case ua of

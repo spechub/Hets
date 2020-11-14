@@ -30,7 +30,7 @@ import Maude.Meta.HasName
 import Maude.Util
 
 import Data.Maybe (fromJust)
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 -- * The AsSymbol type class
 

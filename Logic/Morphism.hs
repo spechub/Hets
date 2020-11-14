@@ -29,7 +29,7 @@ import Logic.Logic
 import Logic.Comorphism
 
 import Data.Data
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import ATerm.Lib
 
@@ -84,7 +84,7 @@ class (Language cid, Hashable cid,
           {- also covers semi-morphisms ??
           with no sentence translation
           - but these are spans! -}
-    morMap_sign_symbol :: cid -> sign_symbol1 -> Set.Set sign_symbol2
+    morMap_sign_symbol :: cid -> sign_symbol1 -> Set.HashSet sign_symbol2
     -- morConstituents not needed, because composition only via lax triangles
 
 -- | identity morphisms

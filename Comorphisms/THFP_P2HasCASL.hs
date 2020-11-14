@@ -39,7 +39,7 @@ import qualified THF.Sublogic as SL
 import Control.Monad
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 data THFP_P2HasCASL = THFP_P2HasCASL deriving Show
 
@@ -213,7 +213,7 @@ variable2VarDecl (TV_THF_Typed_Variable t tp) =
                (getRange t)
   Nothing -> variable2VarDecl (TV_Variable t)
 
-transSymbol :: SymbolTHF -> Result (Set.Set Symbol)
+transSymbol :: SymbolTHF -> Result (Set.HashSet Symbol)
 transSymbol (THFCons.Symbol i _ t) =
  let id' = case i of
            A_Lower_Word tok -> mkId [tok]

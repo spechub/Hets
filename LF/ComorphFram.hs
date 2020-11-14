@@ -13,7 +13,7 @@ import Common.DocUtils
 import Common.AS_Annotation
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Data.Maybe (fromMaybe, isNothing)
 
 mapTheory :: Morphism -> (Sign, [Named EXP]) -> Result (Sign, [Named EXP])
@@ -91,7 +91,7 @@ takeSymValue sym defs = case defs of
                               else takeSymValue sym ds
 
 
-mapSymb :: Morphism -> Sign -> Symbol -> Set.Set Symbol
+mapSymb :: Morphism -> Sign -> Symbol -> Set.HashSet Symbol
 mapSymb mor sig sym = Set.singleton $ mapSymb' mor sig sym
 
 mapSymb' :: Morphism -> Sign -> Symbol -> Symbol

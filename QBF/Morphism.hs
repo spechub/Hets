@@ -35,7 +35,7 @@ module QBF.Morphism
 
 import Data.Data
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import Propositional.Sign as Sign
 
@@ -93,7 +93,7 @@ composeMor f g =
   { source = fSource
   , target = gTarget
   , propMap = if Map.null gMap then fMap else
-      Set.fold ( \ i -> let j = applyMap gMap (applyMap fMap i) in
+      Set.foldr ( \ i -> let j = applyMap gMap (applyMap fMap i) in
                         if i == j then id else Map.insert i j)
                                   Map.empty $ items fSource }
 

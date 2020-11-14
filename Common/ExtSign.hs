@@ -15,7 +15,8 @@ signatures with symbol sets for every logic
 module Common.ExtSign where
 
 import Data.Data
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
+import qualified Data.Set as PlainSet
 
 import Common.Doc
 import Common.DocUtils
@@ -24,7 +25,7 @@ import Common.DocUtils
 (The Ord instance is needed for the ATC generation) -}
 data ExtSign sign symbol = ExtSign
   { plainSign :: sign
-  , nonImportedSymbols :: Set.Set symbol
+  , nonImportedSymbols :: Set.HashSet symbol
   } deriving (Show, Read, Typeable, Data)
 
 instance (Ord sign) => Eq (ExtSign sign symbol) where
@@ -40,3 +41,4 @@ instance (Pretty sign, Pretty symbol)
 
 mkExtSign :: sign -> ExtSign sign symbol
 mkExtSign s = ExtSign s Set.empty
+

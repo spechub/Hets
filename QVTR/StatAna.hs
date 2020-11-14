@@ -23,7 +23,7 @@ import Common.ExtSign
 import Common.AS_Annotation
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Common.Lib.Rel as Rel
 
 basicAna :: (Transformation, Sign, GlobalAnnos) ->
@@ -261,7 +261,7 @@ propKeyCheckOK (CSMOFSign.Sign _ typRel _ _ props _ _) kType
   findOppProperty typRel props kType oppPType oppPName
 
 
-findProperty :: Rel.Rel CSMOFSign.TypeClass -> Set.Set CSMOFSign.PropertyT ->
+findProperty :: Rel.Rel CSMOFSign.TypeClass -> Set.HashSet CSMOFSign.PropertyT ->
                 String -> String -> Bool
 findProperty typRel props kType pN =
   let classes = kType : Set.toList (superClasses
@@ -279,14 +279,14 @@ findPropertyByTypeAndRole (p : rest) classes pN =
  findPropertyByTypeAndRole rest classes pN
 
 
-superClasses :: Rel.Rel String -> String -> Set.Set String
-superClasses relT tc = Set.fold reach Set.empty $ Rel.succs relT tc where
+superClasses :: Rel.Rel String -> String -> Set.HashSet String
+superClasses relT tc = Set.foldr reach Set.empty $ Rel.succs relT tc where
          reach e s = if Set.member e s then s
-                     else Set.fold reach (Set.insert e s) $ Rel.succs relT e
+                     else Set.foldr reach (Set.insert e s) $ Rel.succs relT e
 
 
 findPropertyInHierarchy :: Rel.Rel CSMOFSign.TypeClass ->
-                           Set.Set CSMOFSign.PropertyT ->
+                           Set.HashSet CSMOFSign.PropertyT ->
                            String -> String -> Maybe CSMOFSign.PropertyT
 findPropertyInHierarchy typRel props kType pN =
   let classes = kType : Set.toList (superClasses (Rel.map CSMOFSign.name typRel) kType)
@@ -305,7 +305,7 @@ findPropertyElemByTypeAndRole (p : rest) classes pN =
   else findPropertyElemByTypeAndRole rest classes pN
 
 
-findOppProperty :: Rel.Rel CSMOFSign.TypeClass -> Set.Set CSMOFSign.PropertyT ->
+findOppProperty :: Rel.Rel CSMOFSign.TypeClass -> Set.HashSet CSMOFSign.PropertyT ->
                   String -> String -> String -> Bool
 findOppProperty typRel props kType oppPType oppPName =
   let classes = oppPType : Set.toList (superClasses (Rel.map CSMOFSign.name typRel)

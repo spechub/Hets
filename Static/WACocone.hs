@@ -26,7 +26,7 @@ module Static.WACocone (isConnected,
 import Control.Monad
 import Data.List (nub)
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Data.Graph.Inductive.Graph as Graph
 
 import Common.Lib.Graph as Tree

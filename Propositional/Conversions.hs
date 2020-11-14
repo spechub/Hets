@@ -21,10 +21,11 @@ module Propositional.Conversions
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Id as Id
 import Common.DocUtils
+import qualified Common.HashSetUtils as HSU
 
 import Data.Maybe
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import qualified Propositional.AS_BASIC_Propositional as AS
 import qualified Propositional.ProverState as PState
@@ -75,8 +76,8 @@ createSignMap :: Sig.Sign
               -> Map.HashMap Id.Token Integer
 createSignMap sig inNum inMap =
     let it = Sig.items sig
-        minL = Set.findMin it
-        nSig = Sig.Sign {Sig.items = Set.deleteMin it}
+        minL = HSU.findMin it
+        nSig = Sig.Sign {Sig.items = HSU.deleteMin it}
     in if Set.null it then inMap else
        createSignMap nSig (inNum + 1)
                  (Map.insert (Sig.id2SimpleId minL) inNum inMap)

@@ -13,7 +13,7 @@ Used by Comorphisms.CommonLogicModuleElimination and Print_KIF.
 
 module CommonLogic.ModuleElimination (eliminateModules) where
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import CommonLogic.Tools
 import Common.Id
 
@@ -110,12 +110,12 @@ me_module newName modules m =
         Mod n t _ -> Bool_sent (Junction Conjunction (
               me_text newName (n : modules) t
             : ex_conj newName (n : modules)
-            : map (ex_conj_indvC newName (n : modules)) (Set.elems $ indvC_text t)
+            : map (ex_conj_indvC newName (n : modules)) (Set.toList $ indvC_text t)
           )) nullRange
         Mod_ex n excl t _ -> Bool_sent (Junction Conjunction (
               me_text newName (n : modules) t
             : ex_conj newName (n : modules)
-            : map (ex_conj_indvC newName (n : modules)) (Set.elems $ indvC_text t)
+            : map (ex_conj_indvC newName (n : modules)) (Set.toList $ indvC_text t)
             ++ map (not_ex_conj_excl newName (n : modules)) excl
           )) nullRange
 

@@ -69,7 +69,7 @@ import Data.Graph.Inductive.Graph hiding (empty)
 import Data.List
 import Data.Maybe
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 mkFlatStr :: String -> DGRule
 mkFlatStr = DGRule . ("Flat " ++)

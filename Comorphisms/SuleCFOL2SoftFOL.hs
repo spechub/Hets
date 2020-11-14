@@ -35,7 +35,7 @@ import qualified Common.Lib.MapSet as MapSet
 
 import Text.ParserCombinators.Parsec
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import Data.List as List
 import Data.Maybe
@@ -134,7 +134,7 @@ deleteSPId i t m =
           Map.lookup i m
 
 -- | specialized elems into a set for IdTypeSPIdMap
-elemsSPIdSet :: IdTypeSPIdMap -> Set.Set SPIdentifier
+elemsSPIdSet :: IdTypeSPIdMap -> Set.HashSet SPIdentifier
 elemsSPIdSet = Map.foldr (\ m res -> Set.union res
                                       (Set.fromList (Map.elems m)))
                          Set.empty
@@ -204,7 +204,7 @@ transFuncMap idMap sign = Map.foldrWithKey toSPOpType (Map.empty, idMap)
               where insOIdSet tset (fm', im') =
                         let sid' = sid fm' (Set.findMax tset)
                         in (Map.insert sid' (Set.map transOpType tset) fm',
-                            Set.fold (\ x -> insertSPId iden (COp x) sid')
+                            Set.foldr (\ x -> insertSPId iden (COp x) sid')
                                      im' tset)
                     sid fma t = disSPOId CKOp (transId CKOp iden)
                                        (uType (transOpType t))
@@ -229,7 +229,7 @@ transPredMap idMap sign =
               where insOIdSet tset (fm', im') =
                         let sid' = sid fm' (Set.findMax tset)
                         in (Map.insert sid' (Set.map transPredType tset) fm',
-                            Set.fold (\ x -> insertSPId iden (CPred x) sid')
+                            Set.foldr (\ x -> insertSPId iden (CPred x) sid')
                                      im' tset)
                     sid fma t = disSPOId CKPred (transId CKPred iden)
                                        (transPredType t)
@@ -244,7 +244,7 @@ disSPOId :: CKType -- ^ Type of CASl identifier
          -> SPIdentifier -- ^ translated CASL Identifier
          -> [SPIdentifier] {- ^ translated Sort Symbols of the profile
                            (maybe empty) -}
-         -> Set.Set SPIdentifier -- ^ SoftFOL Identifiers already in use
+         -> Set.HashSet SPIdentifier -- ^ SoftFOL Identifiers already in use
          -> SPIdentifier {- ^ fresh Identifier generated from second argument;
     if the identifier was not in the set this is just the second argument -}
 disSPOId cType sid ty idSet
@@ -472,7 +472,7 @@ mkInjSentences :: IdTypeSPIdMap
                -> FuncMap
                -> [Named SPTerm]
 mkInjSentences idMap = Map.foldrWithKey genInjs []
-    where genInjs k tset fs = Set.fold (genInj k) fs tset
+    where genInjs k tset fs = Set.foldr (genInj k) fs tset
           genInj k (args, res) =
               assert (length args == 1)
                      . (makeNamed (newName (show k) (show $ head args)
@@ -503,7 +503,7 @@ transSign sign = (SPSign.emptySign { SPSign.sortRel =
                            }
                  , idMap'')
     where (spSortMap, idMap) =
-            Set.fold (\ i (sm, im) ->
+            Set.foldr (\ i (sm, im) ->
                           let sid = disSPOId CKSort (transIdSort i)
                                        [mkSimpleId $ take 20 (cycle "So")]
                                        (Set.fromList $ Map.keys sm)
@@ -594,7 +594,7 @@ transTheoryAux trSig trForm (sign, sens) =
         filterPreds sig =
               sig { CSign.predMap = MapSet.difference
                 (CSign.predMap sig)
-                (Set.fold (\ pl -> case pl of
+                (Set.foldr (\ pl -> case pl of
                       Pred_name pn -> MapSet.insert pn (PredType [])
                       Qual_pred_name pn pt _ ->
                         MapSet.insert pn $ CSign.toPredType pt)
@@ -606,11 +606,11 @@ transTheoryAux trSig trForm (sign, sens) =
  The given Named (FORMULA f) is checked for this and if so, will be put
  into the set of such predicates.
 -}
-findEqPredicates :: (Eq f) => (Set.Set PRED_SYMB, [Named (FORMULA f)])
+findEqPredicates :: (Eq f) => (Set.HashSet PRED_SYMB, [Named (FORMULA f)])
                     -- ^ previous list of found predicates and valid sentences
                  -> Named (FORMULA f)
                     -- ^ sentence to check
-                 -> (Set.Set PRED_SYMB, [Named (FORMULA f)])
+                 -> (Set.HashSet PRED_SYMB, [Named (FORMULA f)])
 findEqPredicates (eqPreds, sens) sen =
     case sentence sen of
       Quantification Universal var_decl quantFormula _ ->
@@ -690,9 +690,9 @@ quantify q = case q of
     Unique_existential ->
       error "SuleCFOL2SoftFOL: no translation for existential quantification."
 
-transVarTup :: (Set.Set SPIdentifier, IdTypeSPIdMap) ->
+transVarTup :: (Set.HashSet SPIdentifier, IdTypeSPIdMap) ->
                (VAR, SORT) ->
-               ((Set.Set SPIdentifier, IdTypeSPIdMap),
+               ((Set.HashSet SPIdentifier, IdTypeSPIdMap),
                 (SPIdentifier, SPIdentifier))
                 {- ^ ((new set of used Ids, new map of Ids to original Ids),
                 (var as sp_Id, sort as sp_Id)) -}
@@ -710,7 +710,7 @@ transVarTup (usedIds, idMap) (v, s) =
                     usedIds
 
 transFORM :: (Eq f, FormExtension f) => Bool -- ^ single sorted flag
-          -> Set.Set PRED_SYMB -- ^ list of predicates to substitute
+          -> Set.HashSet PRED_SYMB -- ^ list of predicates to substitute
           -> CSign.Sign f e
           -> IdTypeSPIdMap -> FormulaTranslator f e
           -> FORMULA f -> SPTerm
@@ -852,7 +852,7 @@ splitConjs trm = case trm of
      concatMap splitConjs args
   _ -> [trm]
 
-getUneqElems :: Set.Set SPTerm -> SPTerm -> Result (Set.Set SPTerm)
+getUneqElems :: Set.HashSet SPTerm -> SPTerm -> Result (Set.HashSet SPTerm)
 getUneqElems s trm = case trm of
   SPComplexTerm SPNot [SPComplexTerm SPEqual [a1, a2]] ->
       return $ Set.insert a2 $ Set.insert a1 s

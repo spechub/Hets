@@ -14,7 +14,7 @@ Instance of class Logic for CASL DL
 
 module CASL_DL.Logic_CASL_DL (CASL_DL (..), DLMor, DLFORMULA) where
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Common.Lib.Rel as Rel
 import Common.Result
 import Common.ProofTree

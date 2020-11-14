@@ -27,9 +27,9 @@ import Maude.Symbol
 import Maude.Meta.AsSymbol
 import Maude.Meta.HasName
 
-import Data.Set (Set)
-import qualified Data.Set as Set
 import qualified Data.HashMap.Strict as Map
+
+import qualified Data.HashSet as Set
 
 import Common.Lib.Rel (Rel)
 import qualified Common.Lib.Rel as Rel
@@ -76,8 +76,8 @@ instance (HasSorts a, HasSorts b, HasSorts c) => HasSorts (a, b, c) where
     getSorts (a, b, c) = Set.union (getSorts a) (getSorts (b, c))
     mapSorts mp (a, b, c) = (mapSorts mp a, mapSorts mp b, mapSorts mp c)
 
-instance (Ord a, HasSorts a) => HasSorts (Set a) where
-    getSorts = Set.fold (Set.union . getSorts) Set.empty
+instance (Ord a, HasSorts a, Hashable a) => HasSorts (Set.HashSet a) where
+    getSorts = Set.foldr (Set.union . getSorts) Set.empty
     mapSorts = Set.map . mapSorts
 
 instance (Ord a, Hashable a, HasSorts a) => HasSorts (Map.HashMap k a) where

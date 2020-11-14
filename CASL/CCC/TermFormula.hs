@@ -31,7 +31,9 @@ import Data.List
 import Data.Maybe
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
+
+import qualified Common.HashSetUtils as HSU
 
 -- | the sorted term is always ignored
 unsortedTerm :: TERM f -> TERM f
@@ -195,7 +197,7 @@ mkSTerm sig s t =
     _ -> error $ "CCC.mkSTerm " ++ show (s0, s, s2)
 
 getSubst :: (FormExtension f, TermExtension f, Ord f) => Sign f e
-  -> ([TERM f], Set.Set VAR) -> ([TERM f], Set.Set VAR)
+  -> ([TERM f], Set.HashSet VAR) -> ([TERM f], Set.HashSet VAR)
   -> Result ((Subst f, [FORMULA f]), (Subst f, [FORMULA f]))
 getSubst sig (p1, vs1) (p2, vs2) =
   let getVars = Set.map fst . freeTermVars sig
@@ -217,7 +219,7 @@ getSubst sig (p1, vs1) (p2, vs2) =
               (m1, (m2, fs2)) <- getSubst sig (tl1, vs1)
                 (tl2, Set.delete v2 vs2)
               return (m1, (Map.insert v2 hd3 m2, fs ++ fs2))
-          cond v vs hd = Set.member v vs && Set.notMember v (getVars hd)
+          cond v vs hd = Set.member v vs && HSU.notMember v (getVars hd)
           diag v = appendDiags [mkDiag Warning
                             "unsupported occurrence of variable" v] >> r
       in case (unsortedTerm hd1, unsortedTerm hd2) of
@@ -252,7 +254,7 @@ isSubsortDef f = case f of
   _ -> Nothing
 
 -- | create the obligations for subsorts
-infoSubsorts :: Set.Set SORT -> [(SORT, VAR_DECL, FORMULA f)] -> [FORMULA f]
+infoSubsorts :: Set.HashSet SORT -> [(SORT, VAR_DECL, FORMULA f)] -> [FORMULA f]
 infoSubsorts emptySorts = map (\ (_, v, f) -> mkExist [v] f)
   . filter (\ (s, _, _) -> not $ Set.member s emptySorts)
 

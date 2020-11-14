@@ -24,7 +24,7 @@ import OWL2.Symbols
 import Data.List (stripPrefix)
 import Data.Maybe
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 {- | this class contains general functions which operate on the ontology
     document, such as prefix renaming, IRI expansion or Morphism mapping -}

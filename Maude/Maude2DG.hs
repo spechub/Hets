@@ -43,7 +43,7 @@ import Data.Char
 import Data.Maybe
 import Data.List (intersect)
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Data.Graph.Inductive.Graph
 
 import Common.Consistency
@@ -369,7 +369,7 @@ newOp sg op ss sm = Maude.Sign.empty {ops = Map.singleton op ods'}
 getOpDeclSet :: OpDeclSet -> Symbols -> SymbolMap -> OpDeclSet
 getOpDeclSet ods ss sm = Set.singleton (op_sym', ats)
          where f ~(Operator _ x _) b = x == ss || b
-               g = Set.fold f False . fst
+               g = Set.foldr f False . fst
                (ods', ats) : _ = Set.toList $ Set.filter g ods
                h ~(Operator _ y _) = y == ss
                ods'' = Set.filter h ods'

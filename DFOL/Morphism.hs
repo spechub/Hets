@@ -39,7 +39,8 @@ import Common.ExtSign
 import qualified Common.Result as Result
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
+import qualified Common.HashSetUtils as HSU
 import Data.Data
 
 -- morphisms for DFOL - maps of symbol names
@@ -59,7 +60,7 @@ compMorph m1 m2 =
   if target m1 /= source m2
      then Result.Result [incompatibleMorphsError m1 m2] Nothing
      else return $ Morphism (source m1) (target m2) $
-                 Set.fold (\ sym1 -> let sym2 = mapSymbol m2
+                 Set.foldr (\ sym1 -> let sym2 = mapSymbol m2
                                                   $ mapSymbol m1 sym1
                                          in Map.insert sym1 sym2)
                           Map.empty $
@@ -148,7 +149,7 @@ Output : an inclusion morphism
 4 : Let "sig1" be the subsignature of sig containing all the symbols not
     occurring in excl and output the inclusion morphism m : sig1 -> sig
 -}
-coGenSig :: Bool -> Set.Set Symbol -> Sign -> Result Morphism
+coGenSig :: Bool -> Set.HashSet Symbol -> Sign -> Result Morphism
 coGenSig flag syms sig@(Sign ds) =
   let names = Set.map name syms
       ds1 = expandDecls ds
@@ -161,11 +162,12 @@ coGenSig flag syms sig@(Sign ds) =
                      in inclusionMorph (Sign ds2) sig
             else Result.Result [symsNotInSigError names sig] Nothing
 
-genSig :: Set.Set NAME -> Set.Set NAME -> Set.Set NAME -> Sign -> Set.Set NAME
+genSig :: Set.HashSet NAME -> Set.HashSet NAME -> Set.HashSet NAME -> Sign ->
+          Set.HashSet NAME
 genSig incl done todo sig =
   if Set.null todo
      then incl
-     else let n = Set.findMin todo
+     else let n = HSU.findMin todo
               Just t = getSymbolType n sig
               ns = getFreeVars t
               incl1 = Set.union incl ns
@@ -174,7 +176,7 @@ genSig incl done todo sig =
               todo1 = Set.union ns1 $ Set.delete n todo
               in genSig incl1 done1 todo1 sig
 
-cogSig :: Set.Set NAME -> [SDECL] -> Sign -> Set.Set NAME
+cogSig :: Set.HashSet NAME -> [SDECL] -> Sign -> Set.HashSet NAME
 cogSig excl [] sig = Set.difference (getSymbols sig) excl
 cogSig excl ((n, t) : ds) sig =
   if Set.member n excl
@@ -413,7 +415,7 @@ invalidMorphError m1 m2 =
     , Result.diagPos = nullRange
     }
 
-symsNotInSigError :: Set.Set NAME -> Sign -> Result.Diagnosis
+symsNotInSigError :: Set.HashSet NAME -> Sign -> Result.Diagnosis
 symsNotInSigError syms sig =
   Result.Diag
     { Result.diagKind = Result.Error

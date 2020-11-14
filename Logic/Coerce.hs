@@ -19,7 +19,7 @@ import Common.ExtSign
 import Common.Id
 import Common.Result
 import Common.AS_Annotation
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 import qualified Data.Map as PlainMap
 import Data.Dynamic
@@ -184,7 +184,7 @@ coerceSymbolSet ::
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
    Logic lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2,
-   Monad m) => lid1 -> lid2 -> String -> Set.Set symbol1 -> m (Set.Set symbol2)
+   Monad m) => lid1 -> lid2 -> String -> Set.HashSet symbol1 -> m (Set.HashSet symbol2)
 coerceSymbolSet = primCoerce
 
 coerceRawSymbolMap ::

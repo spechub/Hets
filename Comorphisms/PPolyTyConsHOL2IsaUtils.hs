@@ -43,7 +43,7 @@ import Common.AS_Annotation
 import Common.GlobalAnnotations
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Data.List
 import Data.Maybe
 import Control.Monad (foldM, zipWithM)
@@ -66,7 +66,7 @@ mapTheory simK simpF (env, sens) = do
 baseSign :: BaseSig
 baseSign = MainHC_thy
 
-transAssumps :: GlobalAnnos -> Set.Set String -> Assumps -> Result ConstTab
+transAssumps :: GlobalAnnos -> Set.HashSet String -> Assumps -> Result ConstTab
 transAssumps ga toks = foldM insertOps Map.empty . Map.toList where
   insertOps m (name, ops) =
       let chk = isPlainFunType
@@ -84,17 +84,17 @@ transAssumps ga toks = foldM insertOps Map.empty . Map.toList where
                          ) m $ number infos
 
 -- all possible tokens of mixfix identifiers that must not be used as variables
-getAssumpsToks :: Assumps -> Set.Set String
+getAssumpsToks :: Assumps -> Set.HashSet String
 getAssumpsToks = Map.foldrWithKey (\ i ops s ->
     Set.union s $ Set.unions
         $ map (\ (_, o) -> getConstIsaToks i o baseSign)
                      $ number $ Set.toList ops) Set.empty
 
-typeToks :: Env -> Set.Set String
+typeToks :: Env -> Set.HashSet String
 typeToks =
     Set.map (`showIsaTypeT` baseSign) . Set.fromList . Map.keys . typeMap
 
-transSignature :: Env -> Set.Set String -> Result Isa.Sign
+transSignature :: Env -> Set.HashSet String -> Result Isa.Sign
 transSignature env toks = do
     let extractTypeName tyId typeInfo m =
             let getTypeArgs n k = case k of
@@ -190,9 +190,9 @@ funType t = case getTypeAppl t of
 
 -- * translation of a datatype declaration
 
-transDataEntries :: Env -> Set.Set String
-                 -> (DomainTab, Set.Set TName, Set.Set VName) -> [DataEntry]
-                 -> Result (DomainTab, Set.Set TName, Set.Set VName)
+transDataEntries :: Env -> Set.HashSet String
+                 -> (DomainTab, Set.HashSet TName, Set.HashSet VName) -> [DataEntry]
+                 -> Result (DomainTab, Set.HashSet TName, Set.HashSet VName)
 transDataEntries env tyToks t@(dt, tys, cs) l = do
     let rs = map (transDataEntry env tyToks) l
         ms = map maybeResult rs
@@ -215,7 +215,7 @@ transDataEntries env tyToks t@(dt, tys, cs) l = do
           _ -> return t
 
 -- datatype with name (tyId) + args (tyArgs) and alternatives
-transDataEntry :: Env -> Set.Set String -> DataEntry -> Result DomainEntry
+transDataEntry :: Env -> Set.HashSet String -> DataEntry -> Result DomainEntry
 transDataEntry env tyToks de@(DataEntry _ _ gk _ _ alts) =
     let dp@(DataPat _ i tyArgs _ _) = toDataPat de
     in case gk of
@@ -232,7 +232,7 @@ transTypeArg :: TypeArg -> Typ
 transTypeArg ta = TFree (showIsaTypeT (getTypeVar ta) baseSign) []
 
 -- datatype alternatives/constructors
-transAltDefn :: Env -> Set.Set String -> DataPat -> AltDefn
+transAltDefn :: Env -> Set.HashSet String -> DataPat -> AltDefn
              -> Result (VName, [Typ])
 transAltDefn env tyToks dp@(DataPat dm _ _ _ _) alt = case alt of
   Construct mi origTs p _ -> let ts = map (mapType dm) origTs in
@@ -251,7 +251,7 @@ transAltDefn env tyToks dp@(DataPat dm _ _ _ _) alt = case alt of
 -- * Formulas
 
 -- variables
-transVar :: Set.Set String -> Id -> VName
+transVar :: Set.HashSet String -> Id -> VName
 transVar toks v = let
     s = showIsaConstT v baseSign
     renVar t = if Set.member t toks then renVar $ "X_" ++ t else t
@@ -260,7 +260,7 @@ transVar toks v = let
 mkTypedConst :: VName -> FunType -> Isa.Term
 mkTypedConst v fTy = Isa.Const v $ Disp (transFunType fTy) NA Nothing
 
-transTypedVar :: Set.Set String -> VarDecl -> Result Isa.Term
+transTypedVar :: Set.HashSet String -> VarDecl -> Result Isa.Term
 transTypedVar toks (VarDecl var ty _ _) = do
     fTy <- funType ty
     return $ mkTypedConst (transVar toks var) fTy
@@ -283,7 +283,7 @@ data OldSimpKind = NoSimpLift | Lift2Restrict | Lift2Case deriving Eq
 
 data SimpKind = New | Old OldSimpKind deriving Eq
 
-transSentence :: Env -> Set.Set String -> SimpKind -> Simplifier -> Le.Sentence
+transSentence :: Env -> Set.HashSet String -> SimpKind -> Simplifier -> Le.Sentence
               -> Result Isa.Sentence
 transSentence sign tyToks simK simpF s = case s of
     Le.Formula trm -> do
@@ -313,7 +313,7 @@ transSentence sign tyToks simK simpF s = case s of
         "translation of sentence not implemented" r
 
 -- disambiguate operation names
-transOpId :: Env -> Set.Set String -> Id -> TypeScheme -> VName
+transOpId :: Env -> Set.HashSet String -> Id -> TypeScheme -> VName
 transOpId sign tyToks op ts@(TypeScheme _ ty _) =
     let ga = globAnnos sign
         Result _ mty = funType ty
@@ -330,8 +330,8 @@ transOpId sign tyToks op ts@(TypeScheme _ ty _) =
                  return $ mkIsaConstIT (isPredType ty)
                         ga args op (i + 1) baseSign tyToks
 
-transLetEq :: Env -> Set.Set String -> Bool -> Set.Set String
-    -> Set.Set VarDecl -> ProgEq -> Result ((As.Term, Isa.Term), IsaTermCond)
+transLetEq :: Env -> Set.HashSet String -> Bool -> Set.HashSet String
+    -> Set.HashSet VarDecl -> ProgEq -> Result ((As.Term, Isa.Term), IsaTermCond)
 transLetEq sign tyToks collectConds toks pVars (ProgEq pat trm r) = do
     (_, op) <- transPattern sign tyToks toks pat
     p@(ITC ty _ _) <- transTerm sign tyToks collectConds toks pVars trm
@@ -340,9 +340,9 @@ transLetEq sign tyToks collectConds toks pVars (ProgEq pat trm r) = do
             ++ showDoc trm "") r
        else return ((pat, op), p)
 
-transLetEqs :: Env -> Set.Set String -> Bool -> Set.Set String
-            -> Set.Set VarDecl -> [ProgEq]
-            -> Result (Set.Set VarDecl, [(Isa.Term, IsaTermCond)])
+transLetEqs :: Env -> Set.HashSet String -> Bool -> Set.HashSet String
+            -> Set.HashSet VarDecl -> [ProgEq]
+            -> Result (Set.HashSet VarDecl, [(Isa.Term, IsaTermCond)])
 transLetEqs sign tyToks collectConds toks pVars es = case es of
     [] -> return (pVars, [])
     e : r -> do
@@ -437,8 +437,8 @@ condToList c = case c of
 {- pass tokens that must not be used as variable names and pass those
 variables that are partial because they have been computed in a
 let-term. -}
-transTerm :: Env -> Set.Set String -> Bool -> Set.Set String
-          -> Set.Set VarDecl -> As.Term -> Result IsaTermCond
+transTerm :: Env -> Set.HashSet String -> Bool -> Set.HashSet String
+          -> Set.HashSet VarDecl -> As.Term -> Result IsaTermCond
 transTerm sign tyToks collectConds toks pVars trm = case trm of
     QualVar vd@(VarDecl v t _ _) -> do
         fTy <- funType t
@@ -1035,8 +1035,8 @@ simplify simK simpF trm = case trm of
         return $ Abs v nT c
     _ -> return trm
 
-mkApp :: Env -> Set.Set String -> Bool -> Set.Set String
-      -> Set.Set VarDecl -> As.Term -> As.Term -> Result IsaTermCond
+mkApp :: Env -> Set.HashSet String -> Bool -> Set.HashSet String
+      -> Set.HashSet VarDecl -> As.Term -> As.Term -> Result IsaTermCond
 mkApp sign tyToks collectConds toks pVars f arg = do
     fTr@(ITC fTy fTrm fCs) <-
         transTerm sign tyToks collectConds toks pVars f
@@ -1061,7 +1061,7 @@ isPatternType trm = case trm of
     TupleTerm ts _ -> all isPatternType ts
     _ -> False
 
-transPattern :: Env -> Set.Set String -> Set.Set String -> As.Term
+transPattern :: Env -> Set.HashSet String -> Set.HashSet String -> As.Term
              -> Result (FunType, Isa.Term)
 transPattern sign tyToks toks pat = do
     ITC ty trm cs <- transTerm sign tyToks False toks Set.empty pat
@@ -1076,7 +1076,7 @@ transPattern sign tyToks toks pat = do
        else return (ty, trm)
 
 -- form Abs(pattern term)
-abstraction :: Env -> Set.Set String -> Set.Set String
+abstraction :: Env -> Set.HashSet String -> Set.HashSet String
             -> IsaTermCond -> As.Term -> Result IsaTermCond
 abstraction sign tyToks toks (ITC ty body cs) pat = do
     (pTy, nPat) <- transPattern sign tyToks toks pat

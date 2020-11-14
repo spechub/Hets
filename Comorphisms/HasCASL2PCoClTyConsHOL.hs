@@ -20,7 +20,7 @@ module Comorphisms.HasCASL2PCoClTyConsHOL (HasCASL2PCoClTyConsHOL (..)) where
 import Logic.Logic
 import Logic.Comorphism
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Common.Lib.Rel as Rel
 import Common.Id
 

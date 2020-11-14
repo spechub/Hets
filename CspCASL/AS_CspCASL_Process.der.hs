@@ -39,7 +39,7 @@ import Common.Id
 import Common.Utils
 
 import Data.Data
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import GHC.Generics (Generic)
 import Data.Hashable
@@ -161,7 +161,7 @@ instance Show CommType where
     show (CommTypeChan (TypedChanName c s)) = show (c, s)
 
 -- | Type of communication alphabet
-type CommAlpha = Set.Set CommType
+type CommAlpha = Set.HashSet CommType
 
 -- | CSP-CASL process expressions.
 data PROCESS

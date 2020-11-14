@@ -44,7 +44,8 @@ import Data.List as List
 import Data.Maybe
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
+import qualified Common.HashSetUtils as HSU
 
 -- | quantify
 mkEnvForall :: Env -> Term -> Range -> Term
@@ -78,7 +79,7 @@ anaStarType :: Type -> State Env (Maybe Type)
 anaStarType t = fmap (fmap snd) $ anaType (Just universe, t)
 
 anaType :: (Maybe Kind, Type)
-        -> State Env (Maybe ((RawKind, Set.Set Kind), Type))
+        -> State Env (Maybe ((RawKind, Set.HashSet Kind), Type))
 anaType = fromResult . anaTypeM
 
 anaTypeScheme :: TypeScheme -> State Env (Maybe TypeScheme)
@@ -197,7 +198,7 @@ addTypeKind warn d i k = do
          addDiags [mkDiag Error "cannot refine kind" i]
          return False
 
-nonUniqueKind :: (GetRange a, Pretty a) => Set.Set Kind -> RawKind -> a ->
+nonUniqueKind :: (GetRange a, Pretty a) => Set.HashSet Kind -> RawKind -> a ->
                  (Kind -> State Env (Maybe b)) -> State Env (Maybe b)
 nonUniqueKind ks rk a f = case Set.toList ks of
     [k] -> f k
@@ -245,9 +246,9 @@ anaddTypeVarDecl (TypeArg i v vk _ _ s ps) = do
                 return $ Just $ TypeArg i v0 dvk rk c s ps
 
 -- | partition information of an uninstantiated identifier
-partitionOpId :: Env -> Id -> TypeScheme -> (Set.Set OpInfo, Set.Set OpInfo)
+partitionOpId :: Env -> Id -> TypeScheme -> (Set.HashSet OpInfo, Set.HashSet OpInfo)
 partitionOpId e i sc =
-    Set.partition ((sc ==) . opType)
+    HSU.partition ((sc ==) . opType)
            $ Map.findWithDefault Set.empty i $ assumps e
 
 checkUnusedTypevars :: TypeScheme -> State Env TypeScheme
@@ -274,7 +275,7 @@ checkPlaceCount e i (TypeScheme _ ty _) =
     else []
 
 -- | storing an operation
-addOpId :: Id -> TypeScheme -> Set.Set OpAttr -> OpDefn -> State Env Bool
+addOpId :: Id -> TypeScheme -> Set.HashSet OpAttr -> OpDefn -> State Env Bool
 addOpId i oldSc attrs dfn = do
     sc@(TypeScheme _ ty _) <- checkUnusedTypevars oldSc
     e <- get

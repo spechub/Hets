@@ -42,11 +42,13 @@ import Data.Either
 import Data.Function
 import Data.List
 import Data.Maybe
+import Data.Hashable
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
+import qualified Common.HashSetUtils as HSU
 
 -- | check values of constructors (free types have only total ones)
-inhabited :: Set.Set SORT -> [OP_SYMB] -> Set.Set SORT
+inhabited :: Set.HashSet SORT -> [OP_SYMB] -> Set.HashSet SORT
 inhabited sorts cons = iterateInhabited sorts where
   argsRes = foldr (\ os -> case os of
     Qual_op_name _ (Op_type Total args res _) _ -> ((args, res) :)
@@ -73,14 +75,14 @@ constraintOfAxiom = foldr (\ f -> case f of
   Sort_gen_ax constrs _ -> (constrs :)
   _ -> id) []
 
-recoverSortsAndConstructors :: [FORMULA f] -> (Set.Set SORT, Set.Set OP_SYMB)
+recoverSortsAndConstructors :: [FORMULA f] -> (Set.HashSet SORT, Set.HashSet OP_SYMB)
 recoverSortsAndConstructors fs = let
   (srts, cons, _) = unzip3 . map recover_Sort_gen_ax
     $ constraintOfAxiom fs
   in (Set.unions $ map Set.fromList srts, Set.unions $ map Set.fromList cons)
 
 -- check that patterns do not overlap, if not, return proof obligation.
-getOverlapQuery :: (FormExtension f, TermExtension f, Ord f) => Sign f e
+getOverlapQuery :: (FormExtension f, TermExtension f, Ord f, Hashable f) => Sign f e
   -> [[FORMULA f]] -> [FORMULA f]
 getOverlapQuery sig = filter (not . is_True_atom)
   . mapMaybe (retrySubstForm sig) . concatMap pairs
@@ -96,7 +98,7 @@ convert2Forms sig f1 f2 (Result ds m) =
   Result _ (Just p) = getSubstForm sig f3 f4
   in (f3, f4, p)
 
-retrySubstForm :: (FormExtension f, TermExtension f, Ord f) => Sign f e
+retrySubstForm :: (FormExtension f, TermExtension f, Ord f, Hashable f) => Sign f e
   -> (FORMULA f, FORMULA f) -> Maybe (FORMULA f)
 retrySubstForm sig (f1, f2) =
   let r@(Result ds m) = getSubstForm sig f1 f2
@@ -110,7 +112,7 @@ retrySubstForm sig (f1, f2) =
 quant :: TermExtension f => Sign f e -> FORMULA f -> FORMULA f
 quant sig f = quantFreeVars sig f nullRange
 
-mkOverlapEq :: (TermExtension f, GetRange f, Ord f) => Sign f e
+mkOverlapEq :: (TermExtension f, GetRange f, Ord f, Hashable f) => Sign f e
   -> ((Subst f, [FORMULA f]), (Subst f, [FORMULA f]))
   -> FORMULA f -> FORMULA f -> FORMULA f
 mkOverlapEq sig ((s1, fs1), (s2, fs2)) f1 f2 = quant sig . simplifyFormula id
@@ -141,13 +143,13 @@ isFreeSortGen f = case f of
   _ -> False
 
 -- | non-inhabited non-empty sorts
-getNefsorts :: Set.Set SORT -> Set.Set SORT -> Set.Set SORT
-  -> (Set.Set SORT, [OP_SYMB]) -> Set.Set SORT
+getNefsorts :: Set.HashSet SORT -> Set.HashSet SORT -> Set.HashSet SORT
+  -> (Set.HashSet SORT, [OP_SYMB]) -> Set.HashSet SORT
 getNefsorts oldSorts nSorts esorts (srts, cons) =
   Set.difference fsorts $ inhabited oldSorts cons where
     fsorts = Set.difference (Set.intersection nSorts srts) esorts
 
-getDataStatus :: Set.Set SORT -> Set.Set SORT -> Set.Set SORT -> Conservativity
+getDataStatus :: Set.HashSet SORT -> Set.HashSet SORT -> Set.HashSet SORT -> Conservativity
 getDataStatus nSorts defSubs genSorts
   | Set.null nSorts = Def
   | Set.null $ Set.difference nSorts $ Set.union genSorts defSubs = Mono
@@ -206,7 +208,7 @@ checkDefinitional tsig fs = let
            _ -> True) domainObls
        defOpSymbs = Set.fromList $ map (snd . head) grDomainDefs
          ++ map snd correctDefs
-       wrongWithoutDefs = filter ((`Set.notMember` defOpSymbs) . snd)
+       wrongWithoutDefs = filter ((`HSU.notMember` defOpSymbs) . snd)
          withOutDefs
        ds = map (\ (a, (_, pos)) -> Diag
          Warning ("missing leading symbol in:\n  " ++ formatAxiom a) pos)
@@ -253,8 +255,8 @@ checkDefinitional tsig fs = let
                                  Implication   Predication    Equivalence
   if there are axioms not being of this form, output "don't know"
 -}
-checkSort :: Bool -> Set.Set SORT -> Set.Set SORT -> Set.Set SORT
-  -> Set.Set SORT -> Set.Set SORT -> Sign f e -> Sign f e
+checkSort :: Bool -> Set.HashSet SORT -> Set.HashSet SORT -> Set.HashSet SORT
+  -> Set.HashSet SORT -> Set.HashSet SORT -> Sign f e -> Sign f e
   -> Maybe (Result (Conservativity, [FORMULA f]))
 checkSort noSentence nSorts defSubsorts gSorts fSorts nefsorts sSig tSig
     | noSentence && Set.null nSorts =
@@ -278,7 +280,7 @@ checkSort noSentence nSorts defSubsorts gSorts fSorts nefsorts sSig tSig
         mkWarn s i r = Just $ Result [mkDiag Warning s i] r
         mkUnknown s i = mkWarn s i Nothing
 
-checkLeadingTerms :: (FormExtension f, TermExtension f, Ord f)
+checkLeadingTerms :: (FormExtension f, TermExtension f, Ord f, Hashable f)
   => Sign f e -> [FORMULA f] -> [OP_SYMB]
   -> Maybe (Result (Conservativity, [FORMULA f]))
 checkLeadingTerms tsig fsn constructors = let
@@ -304,7 +306,7 @@ checkLeadingTerms tsig fsn constructors = let
     in if null ds then Nothing else Just $ Result ds Nothing
 
 -- check the sufficient completeness
-checkIncomplete :: (FormExtension f, TermExtension f, Ord f)
+checkIncomplete :: (FormExtension f, TermExtension f, Ord f, Hashable f)
   => Sign f e -> [FORMULA f] -> [OP_SYMB] -> [[FORMULA f]] -> [OP_SYMB]
   -> Maybe (Result (Conservativity, [FORMULA f]))
 checkIncomplete sig obligations doms fsn cons =
@@ -411,7 +413,7 @@ partitionMaybe f = foldr (\ a (bs, as) ->
   - termination proof
 ------------------------------------------------------------------------
 free datatypes and recursive equations are consistent -}
-checkFreeType :: (FormExtension f, TermExtension f, Ord f)
+checkFreeType :: (FormExtension f, TermExtension f, Ord f, Hashable f)
   => (Sign f e, [Named (FORMULA f)]) -> Morphism f e m
   -> [Named (FORMULA f)] -> IO (Result (Conservativity, [FORMULA f]))
 checkFreeType (_, osens) m axs = do
@@ -532,7 +534,7 @@ overlapQuery a1 a2 =
             [resT1, resT2] = map resultTerm [a1, a2]
             [resA1, resA2] = map resultAxiom [a1, a2]
 
-getNotComplete :: (Ord f, FormExtension f, TermExtension f)
+getNotComplete :: (Ord f, FormExtension f, TermExtension f, Hashable f)
   => Sign f e -> [OP_SYMB] -> [[FORMULA f]] -> [OP_SYMB]
   -> [(Result [(String, FORMULA f)], [FORMULA f])]
 getNotComplete sig doms fsn constructors =
@@ -573,7 +575,7 @@ showLeadingArgs :: String -> LeadArgs -> String
 showLeadingArgs p l = let (_, r, _) = getNextArg True p $ reverse l in r
 
 -- | check whether the patterns of a function or predicate are complete
-completePatterns :: (Ord f, FormExtension f, TermExtension f) => Sign f e
+completePatterns :: (Ord f, FormExtension f, TermExtension f, Hashable f) => Sign f e
   -> [OP_SYMB] -> MapSet.MapSet SORT (OP_NAME, OP_TYPE)
   -> MapSet.MapSet OP_NAME OP_TYPE
   -> (LeadArgs, [(FORMULA f, [TERM f])])
@@ -653,7 +655,7 @@ getCond sig doms f =
               _ -> True
        _ -> True) cs
 
-checkExhaustive :: (Ord f, FormExtension f, TermExtension f)
+checkExhaustive :: (Ord f, FormExtension f, TermExtension f, Hashable f)
   => Sign f e -> [OP_SYMB] -> [FORMULA f] -> [FORMULA f]
 checkExhaustive sig doms es = case es of
   f1 : rs ->

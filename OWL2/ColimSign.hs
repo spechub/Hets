@@ -24,7 +24,7 @@ import Common.Lib.Graph
 
 import Data.Graph.Inductive.Graph as Graph
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 signColimit :: Gr Sign (Int, OWLMorphism) ->
                (Sign, Map.HashMap Int OWLMorphism)

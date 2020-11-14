@@ -58,7 +58,7 @@ import Common.Consistency
 import Common.DocUtils
 
 import Data.Monoid
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import Logic.Logic
 import GHC.Generics (Generic)

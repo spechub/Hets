@@ -40,7 +40,7 @@ import Common.Doc
 import Common.DocUtils
 import Common.Id
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Common.Keywords
 import Common.Result
 
@@ -49,6 +49,7 @@ import Data.List
 import Data.Maybe
 
 import Data.Hashable
+import qualified Common.HashSetUtils as HSU
 
 instance Pretty ClassInfo where
     pretty (ClassInfo rk ks) = less <+>
@@ -187,10 +188,10 @@ instance Pretty Env where
       tm = typeMap d
       tvs = localTypeVars d
       vs = localVars d
-      poMap = Map.map (Set.partition (isPredOpDefn . opDefn)) $ assumps d
+      poMap = Map.map (HSU.partition (isPredOpDefn . opDefn)) $ assumps d
       pMap = Map.map fst poMap
       aoMap = Map.map snd poMap
-      foMap = Map.map (Set.partition (isFunOpDefn . opDefn)) aoMap
+      foMap = Map.map (HSU.partition (isFunOpDefn . opDefn)) aoMap
       fMap = Map.map fst foMap
       oMap = Map.map snd foMap
       ltm = getTypeKinds tm

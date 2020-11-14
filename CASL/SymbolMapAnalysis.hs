@@ -41,8 +41,9 @@ import Common.Result
 import Data.List (partition, find)
 import Data.Maybe
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Data.Hashable
+import qualified Common.HashSetUtils as HSU
 
 {-
 inducedFromMorphism :: RawSymbolMap -> sign -> Result morphism
@@ -126,7 +127,7 @@ inducedFromMorphismExt :: (Pretty e, Show f) => InducedSign f e m e
                        -> RawSymbolMap -> Sign f e -> Result (Morphism f e m)
 inducedFromMorphismExt extInd extEm rmap sigma = do
   -- compute the sort map (as a Map)
-  sort_Map <- Set.fold (\ s m -> do
+  sort_Map <- Set.foldr (\ s m -> do
                 s' <- sortFun rmap s
                 m1 <- m
                 return $ if s' == s then m1 else Map.insert s s' m1)
@@ -151,8 +152,8 @@ sortFun :: RawSymbolMap -> Id -> Result Id
 sortFun rmap s
     -- rsys contains the raw symbols to which s is mapped to
   | Set.null rsys = return s -- use default = identity mapping
-  | Set.null $ Set.deleteMin rsys =
-          return $ rawSymName $ Set.findMin rsys -- take the unique rsy
+  | Set.null $ HSU.deleteMin rsys =
+          return $ rawSymName $ HSU.findMin rsys -- take the unique rsy
   | otherwise = plain_error s  -- ambiguity! generate an error
                  ("sort " ++ showId s
                   " is mapped ambiguously: " ++ showDoc rsys "")
@@ -165,7 +166,7 @@ sortFun rmap s
 
   {- to a Op_map, add everything resulting from mapping (id, ots)
   according to rmap -}
-opFun :: Sign f e -> RawSymbolMap -> Sort_map -> Id -> Set.Set OpType
+opFun :: Sign f e -> RawSymbolMap -> Sort_map -> Id -> Set.HashSet OpType
       -> Result Op_map -> Result Op_map
 opFun src rmap sort_Map ide ots m =
     -- first consider all directly mapped profiles
@@ -175,18 +176,18 @@ opFun src rmap sort_Map ide ots m =
     in case (Map.lookup (AKindedSymb Ops_kind ide) rmap,
                 Map.lookup (AKindedSymb Implicit ide) rmap) of
        (Just rsy1, Just rsy2) -> let
-          m2 = Set.fold (insertmapOpSym sort_Map ide rsy1) m1 ots
-          in Set.fold (insertmapOpSym sort_Map ide rsy2) m2 ots
+          m2 = Set.foldr (insertmapOpSym sort_Map ide rsy1) m1 ots
+          in Set.foldr (insertmapOpSym sort_Map ide rsy2) m2 ots
        (Just rsy, Nothing) ->
-          Set.fold (insertmapOpSym sort_Map ide rsy) m1 ots
+          Set.foldr (insertmapOpSym sort_Map ide rsy) m1 ots
        (Nothing, Just rsy) ->
-          Set.fold (insertmapOpSym sort_Map ide rsy) m1 ots
+          Set.foldr (insertmapOpSym sort_Map ide rsy) m1 ots
        -- Anything not mapped explicitly is left unchanged
        (Nothing, Nothing) -> m1
 
     {- try to map an operation symbol directly
     collect all opTypes that cannot be mapped directly -}
-directOpMap :: RawSymbolMap -> Sort_map -> Id -> Set.Set OpType
+directOpMap :: RawSymbolMap -> Sort_map -> Id -> Set.HashSet OpType
             -> Result Op_map -> Result Op_map
 directOpMap rmap sort_Map ide ots m =
   let ol = Set.toList ots
@@ -257,7 +258,7 @@ insertmapOpSym sort_Map ide rsy ot m = do
   {- to a Pred_map, add evering resulting from mapping (ide, pts)
   according to rmap -}
 
-predFun :: Sign f e -> RawSymbolMap -> Sort_map -> Id -> Set.Set PredType
+predFun :: Sign f e -> RawSymbolMap -> Sort_map -> Id -> Set.HashSet PredType
                -> Result Pred_map -> Result Pred_map
 predFun src rmap sort_Map ide pts m =
     -- first consider all directly mapped profiles
@@ -267,18 +268,18 @@ predFun src rmap sort_Map ide pts m =
     in case (Map.lookup (AKindedSymb Preds_kind ide) rmap,
                 Map.lookup (AKindedSymb Implicit ide) rmap) of
        (Just rsy1, Just rsy2) -> let
-          m2 = Set.fold (insertmapPredSym sort_Map ide rsy1) m1 pts
-          in Set.fold (insertmapPredSym sort_Map ide rsy2) m2 pts
+          m2 = Set.foldr (insertmapPredSym sort_Map ide rsy1) m1 pts
+          in Set.foldr (insertmapPredSym sort_Map ide rsy2) m2 pts
        (Just rsy, Nothing) ->
-          Set.fold (insertmapPredSym sort_Map ide rsy) m1 pts
+          Set.foldr (insertmapPredSym sort_Map ide rsy) m1 pts
        (Nothing, Just rsy) ->
-          Set.fold (insertmapPredSym sort_Map ide rsy) m1 pts
+          Set.foldr (insertmapPredSym sort_Map ide rsy) m1 pts
        -- Anything not mapped explicitly is left unchanged
        (Nothing, Nothing) -> m1
 
     {- try to map a predicate symbol directly
     collect all predTypes that cannot be mapped directly -}
-directPredMap :: RawSymbolMap -> Sort_map -> Id -> Set.Set PredType
+directPredMap :: RawSymbolMap -> Sort_map -> Id -> Set.HashSet PredType
               -> Result Pred_map -> Result Pred_map
 directPredMap rmap sort_Map ide pts m =
   let pl = Set.toList pts
@@ -508,7 +509,7 @@ Output: signature "Sigma1"<=Sigma.
 generatedSign :: m -> SymbolSet -> Sign f e -> Result (Morphism f e m)
 generatedSign extEm sys sigma = let
   symset = symsetOf sigma   -- 1.
-  sigma1 = Set.fold revealSym sigma
+  sigma1 = Set.foldr revealSym sigma
     { sortRel = Rel.empty
     , opMap = MapSet.empty
     , predMap = MapSet.empty } sys  -- 4.
@@ -516,7 +517,7 @@ generatedSign extEm sys sigma = let
     { sortRel = sortRel sigma `Rel.restrict` sortSet sigma1
     , emptySortSet = Set.intersection (sortSet sigma1) $ emptySortSet sigma }
   in if not $ Set.isSubsetOf sys symset   -- 2.
-   then let diffsyms = sys Set.\\ symset in
+   then let diffsyms = sys `Set.difference` symset in
         fatal_error ("Revealing: The following symbols "
                      ++ showDoc diffsyms " are not in the signature")
         $ getRange diffsyms
@@ -564,15 +565,15 @@ Output: signature "Sigma1"<=Sigma.
 cogeneratedSign :: m -> SymbolSet -> Sign f e -> Result (Morphism f e m)
 cogeneratedSign extEm symset sigma = let
   symset0 = symsetOf sigma   -- 1.
-  symset1 = Set.fold hideSym symset0 symset  -- 3.
+  symset1 = Set.foldr hideSym symset0 symset  -- 3.
   in if Set.isSubsetOf symset symset0   -- 2.
    then generatedSign extEm symset1 sigma -- 4./5.
-   else let diffsyms = symset Set.\\ symset0 in
+   else let diffsyms = symset `Set.difference` symset0 in
         fatal_error ("Hiding: The following symbols "
             ++ showDoc diffsyms " are not in the signature")
         $ getRange diffsyms
 
-hideSym :: Symbol -> Set.Set Symbol -> Set.Set Symbol
+hideSym :: Symbol -> Set.HashSet Symbol -> Set.HashSet Symbol
 hideSym sy set1 = let set2 = Set.delete sy set1 in case symbType sy of
     SortAsItemType ->      -- 3.1.1.
       Set.filter (not . profileContainsSort (symName sy) . symbType) set2
@@ -586,7 +587,7 @@ profileContainsSort s symbT = elem s $ case symbT of
     SortAsItemType -> []
 
 leCl :: (Ord a, Hashable a) => (a -> a -> Bool) -> MapSet.MapSet Id a
-     -> Map.HashMap Id [Set.Set a]
+     -> Map.HashMap Id [Set.HashSet a]
 leCl f = Map.map (Rel.partSet f) . MapSet.toMap
 
 mkp :: OpMap -> OpMap
@@ -617,8 +618,8 @@ finalUnion addSigExt s1 s2 =
     else fail $ "illegal overload relation identifications for profiles of:\n"
          ++ show (prM "op" d2 $+$ prM "pred" e2)
 
-listOfSetDiff :: Ord a => Bool -> [(Set.Set a, [Set.Set a], Bool)]
-              -> [Set.Set a] -> Maybe [(Set.Set a, [Set.Set a], Bool)]
+listOfSetDiff :: (Ord a, Hashable a) => Bool -> [(Set.HashSet a, [Set.HashSet a], Bool)]
+              -> [Set.HashSet a] -> Maybe [(Set.HashSet a, [Set.HashSet a], Bool)]
 listOfSetDiff b rl1 l2 = let
   fst3 (s, _, _) = s
   l1 = map fst3 rl1 in

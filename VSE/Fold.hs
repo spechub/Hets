@@ -13,9 +13,10 @@ folding functions for VSE progams
 
 module VSE.Fold where
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import CASL.AS_Basic_CASL
 import VSE.As
+import Data.Hashable
 
 -- | fold record
 data FoldRec a = FoldRec
@@ -76,6 +77,7 @@ constProg ft ff join c = FoldRec
   , foldIf = \ _ f p1 p2 -> join [ff f, p1, p2]
   , foldWhile = \ _ f p -> join [ff f, p] }
 
-progToSetRec :: Ord a => (TERM () -> Set.Set a) -> (FORMULA () -> Set.Set a)
-             -> FoldRec (Set.Set a)
+progToSetRec :: (Ord a, Hashable a) => 
+             (TERM () -> Set.HashSet a) -> (FORMULA () -> Set.HashSet a)
+             -> FoldRec (Set.HashSet a)
 progToSetRec ft ff = constProg ft ff Set.unions Set.empty

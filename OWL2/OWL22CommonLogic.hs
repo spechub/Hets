@@ -22,7 +22,7 @@ import Control.Monad
 import Data.Char
 import Data.Either
 import Data.Maybe
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 import qualified Common.OrderedMap as OMap
 
@@ -258,7 +258,7 @@ mapMorphism oMor = do
 mapMap :: Map.HashMap Entity IRI -> Result (Map.HashMap Id Id)
 mapMap m = return $ Map.map uriToId $ OMap.mapMapKeys entityToId m
 
-mapSymbol :: Entity -> Set.Set Symbol
+mapSymbol :: Entity -> Set.HashSet Symbol
 mapSymbol (Entity _ _ iri) = Set.singleton $ idToRaw $ uriToId iri
 
 mapSign :: OS.Sign -> Result Sign

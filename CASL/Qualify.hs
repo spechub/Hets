@@ -31,7 +31,7 @@ import qualified Common.Lib.MapSet as MapSet
 
 import Control.Monad
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Data.Hashable
 
 mkOrReuseQualSortName :: Sort_map -> SIMPLE_ID -> LibName -> Id -> Id
@@ -51,10 +51,10 @@ qualifySigExt extInd extEm nodeId libId m sig = do
   let ps = predMap sig
       os = opMap sig
       ss = sortSet sig
-      sm = Set.fold (\ s -> Map.insert s
+      sm = Set.foldr (\ s -> Map.insert s
                     $ mkOrReuseQualSortName (sort_map m) nodeId libId s)
            Map.empty ss
-      sMap = Set.fold (`Map.insert` 1) Map.empty ss
+      sMap = Set.foldr (`Map.insert` 1) Map.empty ss
       om = createOpMorMap $ qualOverloaded sMap (Map.map fst $ op_map m)
            nodeId libId (mapOpType sm) mkPartial os
       oMap = Map.foldrWithKey (\ i ->

@@ -17,7 +17,7 @@ import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
 
 import Data.Maybe
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 
 import DFOL.Sign
@@ -354,7 +354,7 @@ namedSenTransl :: Sign -> Named FORMULA -> Named CASL_AS.CASLFORMULA
 namedSenTransl sig nf = nf {sentence = senTransl sig $ sentence nf}
 
 -- symbol translation
-symbolTransl :: Sign -> Symbol -> Set.Set CASL_Sign.Symbol
+symbolTransl :: Sign -> Symbol -> Set.HashSet CASL_Sign.Symbol
 symbolTransl sig sym =
   Set.singleton $ CASL_Sign.Symbol (mkId [n])
     $ case kind of

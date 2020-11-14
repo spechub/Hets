@@ -32,6 +32,7 @@ import Numeric
 
 import CSL.AS_BASIC_CSL
 import CSL.TreePO
+import Data.Hashable
 
 
 -- * Pretty Printing
@@ -40,7 +41,7 @@ instance Pretty InfInt where
     pretty = printInfInt
 instance Pretty GroundConstant where
     pretty = printGC
-instance (Ord a, Pretty a) => Pretty (SetOrInterval a) where
+instance (Ord a, Pretty a, Hashable a) => Pretty (SetOrInterval a) where
     pretty = printDomain
 instance Pretty a => Pretty (ClosedInterval a) where
     pretty = printClosedInterval

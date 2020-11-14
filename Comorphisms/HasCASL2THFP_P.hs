@@ -44,7 +44,7 @@ import qualified THF.Sublogic as SL
 import Control.Monad
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.List as List
 
 import Data.Char (toLower)
@@ -139,7 +139,7 @@ transRawKind rk = case rk of
 transAssumps :: HCLe.Assumps -> Map.HashMap Id Constant -> Result THFSign.ConstMap
 transAssumps am icm = foldM insertConsts Map.empty (Map.toList am)
     where
-        insertConsts :: THFSign.ConstMap -> (Id, Set.Set OpInfo)
+        insertConsts :: THFSign.ConstMap -> (Id, Set.HashSet OpInfo)
                         -> Result THFSign.ConstMap
         insertConsts m (name, ops) = case Set.toList ops of
             [OpInfo ts _ _] -> do
@@ -246,7 +246,7 @@ constInfoToSymbol ci = THFCons.Symbol
  TypeAliasSymbol Type
 -}
 
-transSymbol :: Env -> Symbol -> Result (Set.Set SymbolTHF)
+transSymbol :: Env -> Symbol -> Result (Set.HashSet SymbolTHF)
 transSymbol sig1 sym1 = case HCLe.symType sym1 of
         TypeAsItemType rk ->
             case maybeResult (transTypeId $ HCLe.symName sym1) of
@@ -267,7 +267,7 @@ transSymbol sig1 sym1 = case HCLe.symType sym1 of
         tsPredType icm (TypeScheme _ t _) = fmap (insLast OType)
                                                 (transType icm t)
         tsHelper :: TypeScheme -> (IdConstantMap -> TypeScheme
-                                -> Result THFCons.Type) -> Set.Set SymbolTHF
+                                -> Result THFCons.Type) -> Set.HashSet SymbolTHF
         tsHelper ts f = case Map.lookup (HCLe.symName sym1) (assumps sig1) of
             Just a
                 | Set.size a <= 0 -> Set.empty
@@ -280,7 +280,7 @@ transSymbol sig1 sym1 = case HCLe.symType sym1 of
                                     (transAssumpsId (HCLe.symName sym1) num) f
             _ -> tsHelper2 ts (transAssumpId $ HCLe.symName sym1) f
         tsHelper2 :: TypeScheme -> Result THFAs.Constant -> (IdConstantMap
-                    -> TypeScheme -> Result THFCons.Type) -> Set.Set SymbolTHF
+                    -> TypeScheme -> Result THFCons.Type) -> Set.HashSet SymbolTHF
         tsHelper2 t rc f = case maybeResult rc of
             Nothing -> Set.empty
             Just c -> case maybeResult (genIdConstantMap sig1) of
@@ -495,7 +495,7 @@ lfToUf lf = case lf of
 
 -- Helper
 
-type IdSet = Set.Set Id
+type IdSet = Set.HashSet Id
 
 myFmap :: (a -> b) -> Result (a, IdSet) -> Result (b, IdSet)
 myFmap fun res = do

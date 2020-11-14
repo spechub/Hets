@@ -27,7 +27,7 @@ import CSL.Sign as Sign
 import CSL.EPRelation
 
 import Control.Monad
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.Map as Map
 
 -- ** Datatypes and guarded definitions
@@ -39,8 +39,8 @@ constrained parameters (in the extended parameter specification) -}
 data Guard a = Guard { range :: a
                      , definition :: EXPRESSION
                      , assName :: String
-                     , filtered :: Set.Set String
-                     , constrained :: Set.Set String }
+                     , filtered :: Set.HashSet String
+                     , constrained :: Set.HashSet String }
 
 
 prettyGuard :: (a -> Doc) -> Guard a -> Doc

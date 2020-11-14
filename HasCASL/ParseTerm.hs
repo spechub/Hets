@@ -27,7 +27,7 @@ import HasCASL.HToken
 import Text.ParserCombinators.Parsec
 
 import Data.List ((\\))
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 -- * key sign tokens
 

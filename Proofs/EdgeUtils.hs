@@ -29,7 +29,7 @@ import Data.Graph.Inductive.Graph
 import Data.Graph.Inductive.Basic (elfilter)
 import Data.List
 import Data.Maybe (isNothing)
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 import Control.Exception (assert)
 
@@ -163,7 +163,7 @@ selectProofBasis dg ledge paths = let
 
 {- | selects the first path that does not form a proof cycle with the given
  label (if such a path exits) and returns the labels of its edges -}
-selectProofBasisAux :: Map.HashMap EdgeId (Set.Set EdgeId) -> LEdge DGLinkLab
+selectProofBasisAux :: Map.HashMap EdgeId (Set.HashSet EdgeId) -> LEdge DGLinkLab
                     -> [[LEdge DGLinkLab]] -> ProofBasis
 selectProofBasisAux _ _ [] = emptyProofBasis
 selectProofBasisAux rel ledge (path : list) =
@@ -176,7 +176,7 @@ selectProofBasisAux rel ledge (path : list) =
  i.e. (recursively) close the list of DGLinkLabs under the relation
  'is proved using'. If a DGLinkLab has proof status LeftOpen,
  look up in the development graph for its current status -}
-calculateProofBasis :: Map.HashMap EdgeId (Set.Set EdgeId) -> [LEdge DGLinkLab]
+calculateProofBasis :: Map.HashMap EdgeId (Set.HashSet EdgeId) -> [LEdge DGLinkLab]
                     -> ProofBasis
 calculateProofBasis rel = ProofBasis . foldr
     (\ (_, _, l) -> let eid = dgl_id l in Set.insert eid

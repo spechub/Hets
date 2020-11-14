@@ -27,8 +27,8 @@ module CSL.Morphism
   ) where
 
 import Data.Data
-import qualified Data.Map as Map
-import qualified Data.Set as Set
+import qualified Data.HashMap.Strict as Map
+import qualified Data.HashSet as Set
 
 import CSL.Sign as Sign
 import CSL.AS_BASIC_CSL
@@ -43,7 +43,7 @@ import qualified Common.Result as Result
 data Morphism = Morphism
   { source :: Sign
   , target :: Sign
-  , operatorMap :: Map.Map Id Id
+  , operatorMap :: Map.HashMap Id Id
   } deriving (Show, Eq, Ord, Typeable, Data)
 
 instance Pretty Morphism where
@@ -53,7 +53,7 @@ instance Pretty Morphism where
 printMorphism :: Morphism -> Doc
 printMorphism m = pretty (source m) <> text "-->" <> pretty (target m)
   <> vcat (map ( \ (x, y) -> lparen <> pretty x <> text ","
-  <> pretty y <> rparen) $ Map.assocs $ operatorMap m)
+  <> pretty y <> rparen) $ Map.toList $ operatorMap m)
 
 
 -- | Constructs an id-morphism
@@ -71,7 +71,7 @@ composeMor f g =
   { source = fSource
   , target = gTarget
   , operatorMap = if Map.null gMap then fMap else
-      Set.fold ( \ i -> let j = applyMap gMap (applyMap fMap i) in
+      Set.foldr ( \ i -> let j = applyMap gMap (applyMap fMap i) in
                         if i == j then id else Map.insert i j)
                                   Map.empty $ opIds fSource }
 
@@ -84,7 +84,7 @@ inclusionMap s1 s2 = Morphism
 
 
 -- | Application function for propMaps
-applyMap :: Map.Map Id Id -> Id -> Id
+applyMap :: Map.HashMap Id Id -> Id -> Id
 applyMap operatormap idt = Map.findWithDefault idt idt operatormap
 
 

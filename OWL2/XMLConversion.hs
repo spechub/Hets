@@ -25,7 +25,7 @@ import OWL2.XMLKeywords
 import Text.XML.Light
 
 import Data.Maybe
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 
 -- | prints the IRI with a colon separating the prefix and the local part
@@ -450,7 +450,7 @@ xmlAxioms (PlainAxiom ext fb) = xmlFrameBit ext fb
 xmlFrames :: Frame -> [Element]
 xmlFrames (Frame ext fbl) = concatMap (xmlFrameBit ext) fbl
 
-mkElemeDecl :: Sign -> String -> (Sign -> Set.Set IRI) -> [Element]
+mkElemeDecl :: Sign -> String -> (Sign -> Set.HashSet IRI) -> [Element]
 mkElemeDecl s k f = map (makeElementWith1 declarationK . mwNameIRI k)
     $ Set.toList $ f s
 

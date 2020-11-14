@@ -21,7 +21,7 @@ import Common.Keywords
 import Common.AS_Annotation
 
 import Data.Data
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import Common.Doc
 import Common.DocUtils
@@ -132,8 +132,8 @@ instance Ord a => Ord (AnyKind a) where
 type Kind = AnyKind Id
 type RawKind = AnyKind ()
 
-instance (Hashable a) => Hashable (Set.Set a) where 
- hashWithSalt s aSet = s + (sum $ map hash $ Set.toList aSet)
+--instance (Hashable a) => Hashable (Set.HashSet a) where 
+-- hashWithSalt s aSet = s + (sum $ map hash $ Set.toList aSet)
 
 -- | the possible type items
 data TypeItem =
@@ -174,7 +174,7 @@ data Type =
   | ExpandedType Type Type    {- an alias type with its expansion
   only the following variants are parsed -}
   | TypeAbs TypeArg Type Range
-  | KindedType Type (Set.Set Kind) Range
+  | KindedType Type (Set.HashSet Kind) Range
   -- pos ":"
   | TypeToken Token
   | BracketType BracketKind [Type] Range
@@ -219,7 +219,9 @@ data OpItem =
     deriving (Show, Typeable, Data)
 
 -- | attributes without arguments for binary functions
-data BinOpAttr = Assoc | Comm | Idem deriving (Eq, Ord, Typeable, Data)
+data BinOpAttr = Assoc | Comm | Idem deriving (Eq, Ord, Typeable, Data, Generic)
+
+instance Hashable BinOpAttr
 
 instance Show BinOpAttr where
     show a = case a of
@@ -230,7 +232,9 @@ instance Show BinOpAttr where
 -- | possible function attributes (including a term as a unit element)
 data OpAttr =
     BinOpAttr BinOpAttr Range
-  | UnitOpAttr Term Range deriving (Show, Typeable, Data)
+  | UnitOpAttr Term Range deriving (Show, Typeable, Data, Generic)
+
+instance Hashable OpAttr
 
 instance Eq OpAttr where
     o1 == o2 = compare o1 o2 == EQ

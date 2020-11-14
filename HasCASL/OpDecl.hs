@@ -18,7 +18,7 @@ module HasCASL.OpDecl
   ) where
 
 import Data.Maybe
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 import Text.ParserCombinators.Parsec (parse, eof)
 import Control.Monad

@@ -35,8 +35,9 @@ import RelationalScheme.Sign
 import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Error
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
+import qualified Common.HashSetUtils as HSU
 
 -- ^ parse a simple word not in 'rskeywords'
 rsVarId :: [String] -> AParser st Token
@@ -108,7 +109,7 @@ parseRSTables =
                         tables = Set.empty
                     }
 
-setCol :: (Monad m) => [RSColumn] -> m (Set.Set RSColumn)
+setCol :: (Monad m) => [RSColumn] -> m (Set.HashSet RSColumn)
 setCol t =
     let
         names = map c_name t
@@ -117,7 +118,7 @@ setCol t =
         foldM_ (flip insertUnique) Set.empty names
         return $ foldl (flip Set.insert) Set.empty t
 
-setConv :: (Monad m) => [RSTable] -> m (Set.Set RSTable)
+setConv :: (Monad m) => [RSTable] -> m (Set.HashSet RSTable)
 setConv t =
     let
         names = map t_name t
@@ -126,9 +127,9 @@ setConv t =
         foldM_ (flip insertUnique) Set.empty names
         return $ foldl (flip Set.insert) Set.empty t
 
-insertUnique :: (Monad m) => Id -> Set.Set Id -> m (Set.Set Id)
+insertUnique :: (Monad m) => Id -> Set.HashSet Id -> m (Set.HashSet Id)
 insertUnique t s =
-    if t `Set.notMember` s then return $ Set.insert t s
+    if t `HSU.notMember` s then return $ Set.insert t s
     else fail $ "Duplicate definition of " ++ show t
 
 -- ^ parser for table

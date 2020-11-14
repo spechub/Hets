@@ -22,7 +22,7 @@ import Common.Lib.State
 
 import Common.IRI
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 fromObjPropExpr :: ObjectPropertyExpression -> State Sign ()
 fromObjPropExpr = addEntity . mkEntity ObjectProperty . objPropToIRI

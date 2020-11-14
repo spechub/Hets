@@ -26,7 +26,7 @@ import Common.Result
 import qualified Common.Lib.Rel as Rel
 
 import Data.Maybe
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 -- | given a specfication (name and theory), compute the composition table
 computeCompTable :: IRI -> (Sign f e, [Named (FORMULA f)])

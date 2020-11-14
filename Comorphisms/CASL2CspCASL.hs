@@ -32,7 +32,7 @@ import CspCASL.Morphism (CspCASLMorphism, emptyCspAddMorphism)
 import CspCASL.SymbItems
 import CspCASL.Symbol
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 -- | The identity of the comorphism
 data CASL2CspCASL = CASL2CspCASL deriving (Show)

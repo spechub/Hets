@@ -48,9 +48,10 @@ import Common.DocUtils
 import DFOL.Utils
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Data.Data
 import Data.List
+import qualified Common.HashSetUtils as HSU
 
 import GHC.Generics (Generic)
 import Data.Hashable
@@ -215,7 +216,7 @@ class Translatable a where
    {- substitutions and renamings: the first argument specifies the desired
       term/identifier substitutions and the second the set of identifiers which
       cannot be used as new variable names -}
-   translate :: Map.HashMap NAME TERM -> Set.Set NAME -> a -> a
+   translate :: Map.HashMap NAME TERM -> Set.HashSet NAME -> a -> a
 
 instance Translatable TERM where
    translate m _ = translateTerm m . termRecForm
@@ -232,7 +233,7 @@ translateTerm m (Identifier x) = Map.findWithDefault (Identifier x) x m
 translateTerm m (Appl f [a]) = Appl (translateTerm m f) [translateTerm m a]
 translateTerm _ t = t
 
-translateType :: Map.HashMap NAME TERM -> Set.Set NAME -> TYPE -> TYPE
+translateType :: Map.HashMap NAME TERM -> Set.HashSet NAME -> TYPE -> TYPE
 translateType _ _ Sort = Sort
 translateType _ _ Form = Form
 translateType m s (Univ t) = Univ $ translate m s t
@@ -244,7 +245,7 @@ translateType m s (Pi [([x], t)] a) =
       in Pi [([x1], t1)] a1
 translateType _ _ t = t
 
-translateFormula :: Map.HashMap NAME TERM -> Set.Set NAME -> FORMULA -> FORMULA
+translateFormula :: Map.HashMap NAME TERM -> Set.HashSet NAME -> FORMULA -> FORMULA
 translateFormula _ _ T = T
 translateFormula _ _ F = F
 translateFormula m s (Pred t) = Pred $ translate m s t
@@ -273,12 +274,12 @@ translateFormula _ _ f = f
 
 {- modifies the given name until it is different from each of the names
    in the input set -}
-getNewName :: NAME -> Set.Set NAME -> NAME
+getNewName :: NAME -> Set.HashSet NAME -> NAME
 getNewName var names = getNewNameH var names (tokStr var) 0
 
-getNewNameH :: NAME -> Set.Set NAME -> String -> Int -> Token
+getNewNameH :: NAME -> Set.HashSet NAME -> String -> Int -> Token
 getNewNameH var names root i =
-  if Set.notMember var names
+  if HSU.notMember var names
      then var
      else let newVar = Token (root ++ show i) nullRange
               in getNewNameH newVar names root $ i + 1
@@ -309,10 +310,10 @@ eqType (Pi [([n1], t1)] s1) (Pi [([n2], t2)] s2) =
 eqType _ _ = False
 
 -- returns a set of unbound identifiers used within a type
-getFreeVars :: TYPE -> Set.Set NAME
+getFreeVars :: TYPE -> Set.HashSet NAME
 getFreeVars e = getFreeVarsH $ typeRecForm e
 
-getFreeVarsH :: TYPE -> Set.Set NAME
+getFreeVarsH :: TYPE -> Set.HashSet NAME
 getFreeVarsH Sort = Set.empty
 getFreeVarsH Form = Set.empty
 getFreeVarsH (Univ t) = getFreeVarsInTerm t
@@ -322,10 +323,10 @@ getFreeVarsH (Pi [([n], t)] a) =
   Set.delete n $ Set.union (getFreeVarsH t) (getFreeVarsH a)
 getFreeVarsH _ = Set.empty
 
-getFreeVarsInTerm :: TERM -> Set.Set NAME
+getFreeVarsInTerm :: TERM -> Set.HashSet NAME
 getFreeVarsInTerm t = getFreeVarsInTermH $ termRecForm t
 
-getFreeVarsInTermH :: TERM -> Set.Set NAME
+getFreeVarsInTermH :: TERM -> Set.HashSet NAME
 getFreeVarsInTermH (Identifier x) = Set.singleton x
 getFreeVarsInTermH (Appl f [a]) =
   Set.union (getFreeVarsInTermH f) (getFreeVarsInTermH a)

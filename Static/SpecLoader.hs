@@ -32,7 +32,7 @@ import Common.ExtSign
 
 import Data.Graph.Inductive.Graph
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 -- Logic things
 import Logic.Coerce

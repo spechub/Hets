@@ -59,7 +59,7 @@ module HasCASL.Sublogic
 
 import Data.Data
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import Common.AS_Annotation
 import Common.Id
@@ -750,7 +750,7 @@ sl_dataEntry :: DataEntry -> Sublogic
 sl_dataEntry (DataEntry _ _ _ l _ m) =
     comp_list $ map sl_typeArg l ++ map sl_altDefn (Set.toList m)
 
-sl_opInfos :: Set.Set OpInfo -> Sublogic
+sl_opInfos :: Set.HashSet OpInfo -> Sublogic
 sl_opInfos = comp_list . map sl_opInfo . Set.toList
 
 sl_opInfo :: OpInfo -> Sublogic

@@ -23,11 +23,11 @@ import Common.Result
 import Common.Utils (nubOrdOn)
 
 import Data.List
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 
-symbolsRecord :: (f -> Set.Set Symbol)
-  -> Record f (Set.Set Symbol) (Set.Set Symbol)
+symbolsRecord :: (f -> Set.HashSet Symbol)
+  -> Record f (Set.HashSet Symbol) (Set.HashSet Symbol)
 symbolsRecord mf = (constRecord mf Set.unions Set.empty)
     { foldPredication = \ _ p ts _ -> Set.union (case p of
         Qual_pred_name i t _ -> Set.singleton . idToPredSymbol i $ toPredType t
@@ -124,7 +124,7 @@ getTopVars :: [Named (FORMULA f)] -> VarSet
 getTopVars = Set.unions . map (getQuantVars . sentence)
 
 diffVars :: Map.HashMap VAR SORT -> VarSet -> Map.HashMap VAR SORT
-diffVars = Set.fold (\ (v, s) m -> case Map.lookup v m of
+diffVars = Set.foldr (\ (v, s) m -> case Map.lookup v m of
     Just t | t == s -> Map.delete v m
     _ -> m)
 

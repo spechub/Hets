@@ -18,7 +18,8 @@ import HasCASL.AsUtils
 import HasCASL.Le
 import HasCASL.FoldTerm
 import Common.Id
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
+import qualified Common.HashSetUtils as HSU
 
 type Rename = ((Id, TypeScheme) -> (Id, TypeScheme), Type -> Type)
 
@@ -51,7 +52,7 @@ mapGenVar m g = case g of
           VarKind k -> -- extract kind renaming from type renaming
               let KindedType _ nk _ =
                       m $ KindedType unitType (Set.singleton k) r
-              in VarKind $ Set.findMin nk
+              in VarKind $ HSU.findMin nk
           Downset t -> Downset $ m t
           _ -> vk) rk c s r
 

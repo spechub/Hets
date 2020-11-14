@@ -22,7 +22,7 @@ import OWL2.Function
 import OWL2.Symbols
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Data.List
 
 import Common.AS_Annotation hiding (Annotation)

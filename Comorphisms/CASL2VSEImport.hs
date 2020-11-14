@@ -34,7 +34,7 @@ import Common.ProofTree
 import Common.Result
 import qualified Common.Lib.MapSet as MapSet
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 
 -- | The identity of the comorphism

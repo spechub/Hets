@@ -37,7 +37,7 @@ import Control.Monad
 
 import Data.Maybe (mapMaybe)
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 {- | description of polymorphic data types. The top-level identifier is
 already renamed according the IdMap. -}
@@ -205,10 +205,10 @@ relatedTypeIds :: TypeMap -> Id -> Id -> Bool
 relatedTypeIds tm i1 i2 =
     not $ Set.null $ Set.intersection (allRelIds tm i1) $ allRelIds tm i2
 
-allRelIds :: TypeMap -> Id -> Set.Set Id
+allRelIds :: TypeMap -> Id -> Set.HashSet Id
 allRelIds tm i = Set.union (superIds tm i) $ subIds tm i
 
-subIds :: TypeMap -> Id -> Set.Set Id
+subIds :: TypeMap -> Id -> Set.HashSet Id
 subIds tm i = foldr ( \ j s ->
                  if Set.member i $ superIds tm j then
                       Set.insert j s else s) Set.empty $ Map.keys tm

@@ -16,7 +16,7 @@ module OWL2.MedusaToJson (medusaToJson, medusaToJsonString) where
 import OWL2.Medusa
 import Common.Json
 import Common.IRI
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 -- render Medusa data as JSON string
 medusaToJsonString :: Medusa -> String

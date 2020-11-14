@@ -27,7 +27,7 @@ import Common.Keywords
 import qualified Common.AS_Annotation as AS_Anno
 
 import Data.Data
-import Data.Set (Set)
+import qualified Data.HashSet as Set
 
 import GHC.Generics (Generic)
 import Data.Hashable
@@ -52,7 +52,7 @@ emptyTextMeta = Text_meta { getText = Text [] nullRange
 
 data TEXT_META = Text_meta { getText :: TEXT
                            , textIri :: Maybe IRI
-                           , nondiscourseNames :: Maybe (Set NAME)
+                           , nondiscourseNames :: Maybe (Set.HashSet NAME)
                            , prefix_map :: [PrefixMapping]
                            } deriving (Show, Eq, Ord, Typeable, Data, Generic)
 {- TODO: check static analysis and other features on discourse names,

@@ -23,7 +23,7 @@ import Common.Utils
 
 import Data.Function
 import Data.Maybe
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 ppShipOnt :: OntologyDocument -> Doc
 ppShipOnt = ppBox . catBoxes . map frame2Boxes . ontFrames . ontology

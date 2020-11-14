@@ -21,7 +21,7 @@ import CASL.Morphism (Morphism, imageOfMorphism)
 import CASL.Sign (Sign, predMap, sortSet, supersortsOf, toPredType)
 
 import Data.Maybe
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import qualified Common.Lib.MapSet as MapSet
 

@@ -22,7 +22,7 @@ import Common.Result
 import Common.Lib.State
 import Common.Doc
 import Common.ExampleMixIds
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 
 import HasCASL.MixAna
@@ -32,7 +32,7 @@ import HasCASL.PrintAs
 import HasCASL.ParseTerm
 import HasCASL.Le
 
-stdOps :: Set.Set Id
+stdOps :: Set.HashSet Id
 stdOps = mkIds $ stdOpsL ++ ["__#", "D__", "if__then__else__"]
   ++ map (: []) "#0123456789abcdefghijklmnopqxABCDEFGHIJKLMNO"
 

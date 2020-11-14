@@ -34,7 +34,7 @@ import Common.Prec
 import Common.Result
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import HasCASL.As
 import HasCASL.AsUtils
@@ -49,13 +49,14 @@ import qualified Text.ParserCombinators.Parsec as P
 import Data.Maybe
 import Control.Exception (assert)
 import Control.Monad
+import qualified Common.HashSetUtils as HSU
 
 addType :: Term -> Term -> Term
 addType (MixTypeTerm q ty ps) t = TypedTerm t q ty ps
 addType _ _ = error "addType"
 
 -- | try to reparse terms as a compound list
-isCompoundList :: Set.Set [Id] -> [Term] -> Bool
+isCompoundList :: Set.HashSet [Id] -> [Term] -> Bool
 isCompoundList compIds =
     maybe False (`Set.member` compIds) . mapM reparseAsId
 
@@ -104,7 +105,7 @@ resolveQualOp i@(PolyId j _ _) sc = do
           $ addDiags [mkDiag Error "operation not found" j]
         return nSc
 
-iterateCharts :: GlobalAnnos -> Set.Set Id -> Set.Set [Id] -> [Term]
+iterateCharts :: GlobalAnnos -> Set.HashSet Id -> Set.HashSet [Id] -> [Term]
               -> Chart Term -> State Env (Chart Term)
 iterateCharts ga sIds compIds terms chart = do
     e <- get
@@ -266,7 +267,7 @@ toMixTerm e i ar qs
         in ResolvedMixTerm j (bracketTermToTypes e tar) (far ++ sar) qs
       _ -> ResolvedMixTerm i [] ar qs
 
-getKnowns :: Id -> Set.Set Token
+getKnowns :: Id -> Set.HashSet Token
 getKnowns (Id ts cs _) =
     Set.union (Set.fromList ts) $ Set.unions $ map getKnowns cs
 
@@ -286,9 +287,9 @@ resolve trm = do
     addDiags ds
     return mr
 
-getPolyIds :: Assumps -> Set.Set Id
+getPolyIds :: Assumps -> Set.HashSet Id
 getPolyIds = Set.unions . map ( \ (i, s) ->
-     Set.fold ( \ oi -> case opType oi of
+     Set.foldr ( \ oi -> case opType oi of
        TypeScheme (_ : _) _ _ -> Set.insert i
        _ -> id) Set.empty s) . Map.toList
 
@@ -298,11 +299,11 @@ uTok = mkSimpleId "_"
 builtinIds :: [Id]
 builtinIds = [unitId, parenId, tupleId, exprId, typeId, applId]
 
-makeRules :: GlobalAnnos -> (PrecMap, Set.Set Id) -> Set.Set Id
-          -> Set.Set Id -> (TokRules, Rules, Set.Set Id)
+makeRules :: GlobalAnnos -> (PrecMap, Set.HashSet Id) -> Set.HashSet Id
+          -> Set.HashSet Id -> (TokRules, Rules, Set.HashSet Id)
 makeRules ga ps@(p, _) polyIds aIds =
-    let (sIds, ids) = Set.partition isSimpleId aIds
-        ks = Set.fold (Set.union . getKnowns) Set.empty ids
+    let (sIds, ids) = HSU.partition isSimpleId aIds
+        ks = Set.foldr (Set.union . getKnowns) Set.empty ids
         rIds = Set.union ids $ Set.intersection sIds $ Set.map simpleIdToId ks
         m2 = maxWeight p + 2
     in ( \ tok -> if isSimpleToken tok && not (Set.member tok ks)
@@ -313,7 +314,7 @@ makeRules ga ps@(p, _) polyIds aIds =
              initRules ps (Set.toList polyIds) builtinIds (Set.toList rIds)
        , sIds)
 
-initRules :: (PrecMap, Set.Set Id) -> [Id] -> [Id] -> [Id] -> [Rule]
+initRules :: (PrecMap, Set.HashSet Id) -> [Id] -> [Id] -> [Id] -> [Rule]
 initRules (p, ps) polyIds bs is =
     map ( \ i -> mixRule (getIdPrec p ps i) i)
             (bs ++ is) ++

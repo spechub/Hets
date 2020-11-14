@@ -25,7 +25,7 @@ import Common.Id
 import Common.AS_Annotation
 import Common.Lib.State
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Common.Result
 
 import HasCASL.As

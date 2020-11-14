@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 {- |
 Module      :  ./CASL/Kif2CASL.hs
 Description :  Parser for SUMO (suggested upper merged ontology) .kif files
@@ -21,7 +22,7 @@ import Common.ProofUtils
 import Common.Token
 
 import qualified Data.List as List
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 
 import qualified Text.PrettyPrint.HughesPJ as Doc
@@ -30,6 +31,9 @@ import Text.ParserCombinators.Parsec
 import CASL.Kif
 import CASL.AS_Basic_CASL
 import CASL.Fold
+
+import GHC.Generics (Generic)
+import Data.Hashable
 
 -- | the universal sort
 universe :: SORT
@@ -142,7 +146,9 @@ skipComments acc l@(RangedLL _ x _ : rest) =
    else (reverse acc, l)
 
 data Predsym = Predsym Int PRED_NAME
-                deriving (Eq, Ord, Show)
+                deriving (Eq, Ord, Show, Generic)
+
+instance Hashable Predsym
 
 sameArity :: Predsym -> Predsym -> Bool
 sameArity (Predsym m _) (Predsym n _) = m == n
@@ -151,7 +157,7 @@ getName :: Predsym -> PRED_NAME
 getName (Predsym _ p) = p
 
 -- | collect all predicate symbols used in a formula
-collectPreds :: CASLFORMULA -> Set.Set Predsym
+collectPreds :: CASLFORMULA -> Set.HashSet Predsym
 collectPreds = foldFormula
     (constRecord (error "Kif2CASL.collectPreds") Set.unions Set.empty)
     { foldPredication = \ _ p args _ -> Set.insert
@@ -161,7 +167,7 @@ collectPreds = foldFormula
                           Qual_pred_name pn _ _ -> pn))
                (Set.unions args) }
 
-collectVars :: CASLFORMULA -> Set.Set Token
+collectVars :: CASLFORMULA -> Set.HashSet Token
 collectVars = foldFormula
     (constRecord (error "Kif2CASL.collectVars") Set.unions Set.empty)
     { foldMixfix_token = const Set.singleton
@@ -171,7 +177,9 @@ collectVars = foldFormula
     }
 
 data Opsym = Opsym Int OP_NAME
-                deriving (Eq, Ord, Show)
+                deriving (Eq, Ord, Show, Generic)
+
+instance Hashable Opsym
 
 sameOpArity :: Opsym -> Opsym -> Bool
 sameOpArity (Opsym m _) (Opsym n _) = m == n
@@ -179,7 +187,7 @@ sameOpArity (Opsym m _) (Opsym n _) = m == n
 getOpName :: Opsym -> OP_NAME
 getOpName (Opsym _ p) = p
 
-collectOps :: CASLFORMULA -> Set.Set Opsym
+collectOps :: CASLFORMULA -> Set.HashSet Opsym
 collectOps = foldFormula
     (constRecord (error "Kif2CASL.collectConsts") Set.unions Set.empty)
     { foldApplication = \ _ o l _ ->

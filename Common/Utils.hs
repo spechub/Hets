@@ -66,7 +66,7 @@ import Data.Char
 import Data.List
 import Data.Maybe
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Data.Hashable
 
 import System.Directory
@@ -92,8 +92,10 @@ import System.IO.Unsafe (unsafeInterleaveIO)
 
 import Control.Monad
 
-instance (Hashable a) => Hashable (Set.Set a) where 
- hashWithSalt s aSet = s + (sum $ map hash $ Set.toList aSet)
+--instance (Hashable a) => Hashable (Set.HashSet a) where 
+-- hashWithSalt s aSet = s + (sum $ map hash $ Set.toList aSet)
+--instance (Hashable a) => Hashable (Set.HashSet a) where 
+-- hashWithSalt s aSet = s + (sum $ map hash $ Set.toList aSet)
 
 {- | Writes the message to the given handle unless the verbosity is less than
 the message level. -}
@@ -132,11 +134,11 @@ number :: [a] -> [(a, Int)]
 number = flip zip [1 ..]
 
 -- | /O(1)/ test if the set's size is one
-isSingleton :: Set.Set a -> Bool
+isSingleton :: (Eq a, Hashable a) => Set.HashSet a -> Bool
 isSingleton s = Set.size s == 1
 
 -- | /O(1)/ test if the set's size is greater one
-hasMany :: Set.Set a -> Bool
+hasMany :: (Eq a, Hashable a) => Set.HashSet a -> Bool
 hasMany s = Set.size s > 1
 
 {- | Transform a list @[l1, l2, ... ln]@ to (in sloppy notation)
@@ -196,10 +198,10 @@ nubWith f s es = case es of
        Just s' -> e : nubWith f s' rs
        Nothing -> nubWith f s rs
 
-nubOrd :: Ord a => [a] -> [a]
+nubOrd :: (Ord a, Hashable a) => [a] -> [a]
 nubOrd = nubOrdOn id
 
-nubOrdOn :: Ord b => (a -> b) -> [a] -> [a]
+nubOrdOn :: (Ord b, Hashable b) => (a -> b) -> [a] -> [a]
 nubOrdOn g = let f a s = let e = g a in
                    if Set.member e s then Nothing else Just (Set.insert e s)
   in nubWith f Set.empty
@@ -375,12 +377,13 @@ makeRelativeDesc dp fp = f dp fp []
 
 {- | filter a map according to a given list of keys (it dosen't hurt
    if a key is not present in the map) -}
-filterMapWithList :: Ord k => [k] -> Map.HashMap k e -> Map.HashMap k e
+filterMapWithList :: (Ord k, Hashable k) => [k] -> Map.HashMap k e -> Map.HashMap k e
 filterMapWithList = filterMapWithSet . Set.fromList
 
 {- | filter a map according to a given set of keys (it dosen't hurt if
    a key is not present in the map) -}
-filterMapWithSet :: Ord k => Set.Set k -> Map.HashMap k e -> Map.HashMap k e
+filterMapWithSet :: (Ord k, Hashable k) => 
+                 Set.HashSet k -> Map.HashMap k e -> Map.HashMap k e
 filterMapWithSet s = Map.filterWithKey (\ k _ -> Set.member k s)
 
 {- | get, parse and check an environment variable; provide the default

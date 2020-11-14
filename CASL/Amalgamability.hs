@@ -40,7 +40,7 @@ import qualified Common.Lib.Graph as Tree
 import qualified Common.Lib.Rel as Rel
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import Data.Hashable
 
@@ -89,7 +89,7 @@ ops :: CASLDiag        -- ^ the diagram to get the ops from
 ops diag =
     let mkNodeOp n opId opType ol = ol ++ [(n, (opId, opType))]
         mkNodeOps n opId opTypes ol =
-            ol ++ Set.fold (mkNodeOp n opId) [] opTypes
+            ol ++ Set.foldr (mkNodeOp n opId) [] opTypes
         appendOps ol (n, Sign { opMap = m }) =
             ol ++ Map.foldrWithKey (mkNodeOps n) [] (MapSet.toMap m)
     in foldl appendOps [] (labNodes diag)
@@ -102,7 +102,7 @@ preds :: CASLDiag        -- ^ the diagram to get the preds from
 preds diag =
     let mkNodePred n predId predType pl = pl ++ [(n, (predId, predType))]
         mkNodePreds n predId predTypes pl =
-            pl ++ Set.fold (mkNodePred n predId) [] predTypes
+            pl ++ Set.foldr (mkNodePred n predId) [] predTypes
         appendPreds pl (n, Sign { predMap = m }) =
             pl ++ Map.foldrWithKey (mkNodePreds n) [] (MapSet.toMap m)
     in foldl appendPreds [] (labNodes diag)

@@ -44,7 +44,7 @@ import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.MapSet as MapSet
 import Common.Lib.State
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 -- | lid of the morphism
 data Adl2CASL = Adl2CASL deriving Show
@@ -101,7 +101,7 @@ relTypeToPred (RelType c1 c2) = PredType [conceptToId c1, conceptToId c2]
 mapSign :: A.Sign -> CASLSign
 mapSign s = (C.emptySign ())
   { sortRel = Rel.transClosure $ Rel.union
-       (Rel.fromKeysSet $ Set.fold (\ sy -> case sy of
+       (Rel.fromKeysSet $ Set.foldr (\ sy -> case sy of
                  A.Con (C i) -> Set.insert $ simpleIdToId i
                  _ -> id) Set.empty $ A.symOf s)
        $ Rel.map conceptToId $ isas s

@@ -25,7 +25,7 @@ import OWL2.Function
 import Data.Char (isDigit)
 import Data.List (find, nub)
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import Common.Result
 

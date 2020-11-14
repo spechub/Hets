@@ -37,7 +37,7 @@ import qualified Common.Id as Id
 import qualified Common.Result as Result
 import qualified Data.List as List
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified QBF.AS_BASIC_QBF as AS_BASIC
 import qualified QBF.Morphism as Morphism
 import qualified QBF.Symbol as Symbol
@@ -317,10 +317,10 @@ symbToSymbol :: AS_BASIC.SYMB -> Symbol.Symbol
 symbToSymbol (AS_BASIC.SymbId tok) =
     Symbol.Symbol {Symbol.symName = Id.simpleIdToId tok}
 
-pMap :: Map.HashMap Symbol.Symbol Symbol.Symbol -> Set.Set Id.Id
+pMap :: Map.HashMap Symbol.Symbol Symbol.Symbol -> Set.HashSet Id.Id
          -> Map.HashMap Id.Id Id.Id
 pMap imap =
- Set.fold (
+ Set.foldr (
   \ x ->
     let
         symOf = Symbol.Symbol

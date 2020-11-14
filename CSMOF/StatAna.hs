@@ -19,7 +19,7 @@ import Common.ExtSign
 import Common.AS_Annotation
 
 import qualified Common.Lib.Rel as Rel
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 
 
@@ -27,12 +27,12 @@ basicAna :: (Metamodel, Sign, GlobalAnnos) -> Result (Metamodel, ExtSign Sign ()
 basicAna (meta, _, _) = return (meta, mkExtSign (buildSignature meta), buildSentences meta)
 
 
-data TypeInfo = TypeInfo { typesI :: Set.Set TypeClass
+data TypeInfo = TypeInfo { typesI :: Set.HashSet TypeClass
                          , typRelI :: Rel.Rel TypeClass
-                         , absTypes :: Set.Set TypeClass }
+                         , absTypes :: Set.HashSet TypeClass }
 
-data PropInfo = PropInfo { rolInfo :: Set.Set Role
-                         , propInfo :: Set.Set PropertyT }
+data PropInfo = PropInfo { rolInfo :: Set.HashSet Role
+                         , propInfo :: Set.HashSet PropertyT }
 
 
 buildSignature :: Metamodel -> Sign
@@ -95,7 +95,7 @@ createInstanceFromObject ob mapp =
   in Map.insert (objectName ob) (TypeClass (namedElementName (typeSuper (objectType ob))) targetClassType) mapp
 
 
-buildLinks :: Metamodel -> Set.Set LinkT
+buildLinks :: Metamodel -> Set.HashSet LinkT
 buildLinks m =
   let models = model m
   in case models of
@@ -103,7 +103,7 @@ buildLinks m =
        -- There is assumed that there is only one model to process, the thers are discarded
        mo : _ -> foldr createLinksFromLinks Set.empty (link mo)
 
-createLinksFromLinks :: Link -> Set.Set LinkT -> Set.Set LinkT
+createLinksFromLinks :: Link -> Set.HashSet LinkT -> Set.HashSet LinkT
 createLinksFromLinks li linkk =
   let nam = namedElementName (typedElementSuper (propertySuper (linkType li)))
       ty = typedElementType (propertySuper (linkType li))

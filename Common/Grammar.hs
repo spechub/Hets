@@ -5,7 +5,7 @@ import Common.Parsec
 import Control.Monad
 import Data.List
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import Text.ParserCombinators.Parsec
 
@@ -22,7 +22,7 @@ data Rule = Rule { lhs :: String, rhs :: Term }
 lhss :: [Rule] -> [String]
 lhss = sort . map lhs
 
-nts :: Bool -> Term -> Set.Set String
+nts :: Bool -> Term -> Set.HashSet String
 nts b trm = let unite = Set.unions . map (nts b) in case trm of
   Terminal s -> if b || isPrefixOf "($<$" s then Set.empty
     else Set.singleton . init $ tail s
@@ -32,7 +32,7 @@ nts b trm = let unite = Set.unions . map (nts b) in case trm of
   Option t -> nts b t
   Many t _ -> nts b t
 
-terms :: Bool -> [Rule] -> Set.Set String
+terms :: Bool -> [Rule] -> Set.HashSet String
 terms b = Set.unions . map (nts b . rhs)
 
 terminals = terms False

@@ -30,7 +30,7 @@ import Common.Utils (number)
 import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 
 -- RelScheme
@@ -134,8 +134,8 @@ mapMorphism phi = let
    extended_map = ()
 }
 
-genCASLSig :: [SRel.RSTable] -> Set.Set SORT -> OpMap -> PredMap
-  -> (Set.Set SORT, OpMap, PredMap)
+genCASLSig :: [SRel.RSTable] -> Set.HashSet SORT -> OpMap -> PredMap
+  -> (Set.HashSet SORT, OpMap, PredMap)
 genCASLSig tabList sorts ops preds = case tabList of
   [] -> (sorts, ops, preds)
   t : tList -> let

@@ -25,7 +25,7 @@ import Common.Keywords
 import CommonLogic.ModuleElimination
 import qualified CommonLogic.AS_CommonLogic as AS
 import qualified Common.AS_Annotation as AS_Anno
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 printBasicSpec :: AS.BASIC_SPEC -> Doc
 printBasicSpec (AS.Basic_spec xs) = vcat $ map (printAnnoted printBasicItems) xs
@@ -72,7 +72,7 @@ These variables are prepended by a '?' sign when printed.
 Sequence markers are always prepended by '@', without checking if they
 are bounded. -}
 
-printSentence :: Set.Set String -> AS.SENTENCE -> Doc
+printSentence :: Set.HashSet String -> AS.SENTENCE -> Doc
 printSentence bv s = case s of
   AS.Quant_sent q vs is _ ->
     parens $ printQuant q <+> parens (sep $ map (printNameOrSeqMark bv') vs) <+>
@@ -83,13 +83,13 @@ printSentence bv s = case s of
   AS.Comment_sent _ y _ -> printSentence bv y
   AS.Irregular_sent xs _ -> printSentence bv xs
 
-printBoolSent :: Set.Set String -> AS.BOOL_SENT -> Doc
+printBoolSent :: Set.HashSet String -> AS.BOOL_SENT -> Doc
 printBoolSent bv s = case s of
   AS.Junction q xs -> printAndOr q <+> fsep (map (printSentence bv) xs)
   AS.Negation xs -> text notS <+> printSentence bv xs
   AS.BinOp q x y -> printImplEq q <+> printSentence bv x <+> printSentence bv y
 
-printAtom :: Set.Set String -> AS.ATOM -> Doc
+printAtom :: Set.HashSet String -> AS.ATOM -> Doc
 printAtom bv s = case s of
   AS.Equation a b -> parens $ equals <+> printTerm bv a <+> printTerm bv b
   AS.Atom t [] -> printTerm bv t
@@ -98,7 +98,7 @@ printAtom bv s = case s of
 stripVar :: String -> String
 stripVar = dropWhile (`elem` "?@.")
 
-printName :: Set.Set String -> AS.NAME -> Doc
+printName :: Set.HashSet String -> AS.NAME -> Doc
 printName bv name = text $ if Set.member cleanName bv
                            then '?' : cleanName
                            else cleanName
@@ -107,7 +107,7 @@ printName bv name = text $ if Set.member cleanName bv
 printRowVar :: Token -> Doc
 printRowVar name = text $ '@' : stripVar (tokStr name)
 
-printTerm :: Set.Set String -> AS.TERM -> Doc
+printTerm :: Set.HashSet String -> AS.TERM -> Doc
 printTerm bv s = case s of
   AS.Name_term a -> printName bv a
   AS.Funct_term t ts _ -> parens $ printTerm bv t
@@ -115,12 +115,12 @@ printTerm bv s = case s of
   AS.Comment_term t _ _ -> printTerm bv t
   AS.That_term sent _ -> printSentence bv sent
 
-printTermSeq :: Set.Set String -> AS.TERM_SEQ -> Doc
+printTermSeq :: Set.HashSet String -> AS.TERM_SEQ -> Doc
 printTermSeq bv s = case s of
   AS.Term_seq t -> printTerm bv t
   AS.Seq_marks m -> printRowVar m
 
-printNameOrSeqMark :: Set.Set String -> AS.NAME_OR_SEQMARK -> Doc
+printNameOrSeqMark :: Set.HashSet String -> AS.NAME_OR_SEQMARK -> Doc
 printNameOrSeqMark bv s = case s of
   AS.Name x -> printName bv x
   AS.SeqMark x -> printRowVar x

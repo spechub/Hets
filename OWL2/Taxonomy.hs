@@ -32,7 +32,7 @@ import qualified Data.HashMap.Strict as Map
 import Data.List
 import Data.Maybe
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 -- | Derivation of an Taxonomy for OWL
 onto2Tax :: TaxoGraphKind
@@ -55,7 +55,7 @@ dropClutter = tryToStripPrefix "unamed:"
 
 -- | Generation of a MissOntology
 makeMiss :: MMiSSOntology
-         -> Map.HashMap String (Set.Set String)
+         -> Map.HashMap String (Set.HashSet String)
          -> [String]
          -> Result MMiSSOntology
 makeMiss o r =

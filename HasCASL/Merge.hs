@@ -33,9 +33,10 @@ import HasCASL.Builtin
 import HasCASL.MapTerm
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Data.Maybe
 import Control.Monad (foldM)
+import qualified Common.HashSetUtils as HSU
 
 mergeTypeInfo :: ClassMap -> TypeInfo -> TypeInfo -> Result TypeInfo
 mergeTypeInfo cm t1 t2 = do
@@ -99,10 +100,10 @@ mergeOpDefn d1 d2 = case (d1, d2) of
 addUnit :: ClassMap -> TypeMap -> TypeMap
 addUnit cm = fromMaybe (error "addUnit") . maybeResult . mergeTypeMap cm bTypes
 
-mergeOpInfos :: Set.Set OpInfo -> Set.Set OpInfo -> Result (Set.Set OpInfo)
+mergeOpInfos :: Set.HashSet OpInfo -> Set.HashSet OpInfo -> Result (Set.HashSet OpInfo)
 mergeOpInfos s1 s2 = if Set.null s1 then return s2 else do
-    let (o, os) = Set.deleteFindMin s1
-        (es, us) = Set.partition ((opType o ==) . opType) s2
+    let (o, os) = HSU.deleteFindMin s1
+        (es, us) = HSU.partition ((opType o ==) . opType) s2
     s <- mergeOpInfos os us
     r <- foldM mergeOpInfo o $ Set.toList es
     return $ Set.insert r s

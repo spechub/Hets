@@ -15,7 +15,7 @@ native Isabelle lists.
 
 module Comorphisms.CommonLogic2IsabelleHOL where
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 import Data.Maybe (fromMaybe)
 

@@ -21,11 +21,10 @@ module CommonLogic.Tools
   ) where
 
 import Data.Char (intToDigit)
-import Data.Set (Set)
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import CommonLogic.AS_CommonLogic
 import Common.Id
-
+import Data.Hashable 
 
 {- -----------------------------------------------------------------------------
 Misc functions                                                            --
@@ -33,7 +32,7 @@ Misc functions                                                            --
 
 {- | Finds a free discourse name (appends "_" at the end until free name found)
 given the set of all discourse names -}
-freeName :: (String, Int) -> Set NAME -> (NAME, Int)
+freeName :: (String, Int) -> Set.HashSet NAME -> (NAME, Int)
 freeName (s, i) ns =
     if Set.member n ns
        then freeName (s, i + 1) ns
@@ -46,18 +45,18 @@ these work by recursing into all subelements                              --
 ----------------------------------------------------------------------------- -}
 
 -- | maps @f@ to @ts@ and unifies the results
-setUnion_list :: (Ord b) => (a -> Set b) -> [a] -> Set b
+setUnion_list :: (Ord b, Hashable b) => (a -> Set.HashSet b) -> [a] -> Set.HashSet b
 setUnion_list f = Set.unions . map f
 
 -- | retrieves the individual constants from a text
-indvC_text :: TEXT -> Set NAME
+indvC_text :: TEXT -> Set.HashSet NAME
 indvC_text t =
     case t of
          Text ps _ -> setUnion_list indvC_phrase ps
          Named_text _ txt _ -> indvC_text txt
 
 -- | retrieves the individual constants from a phrase
-indvC_phrase :: PHRASE -> Set NAME
+indvC_phrase :: PHRASE -> Set.HashSet NAME
 indvC_phrase p =
     case p of
          Module m -> indvC_module m
@@ -66,14 +65,14 @@ indvC_phrase p =
          _ -> Set.empty
 
 -- | retrieves the individual constants from a module
-indvC_module :: MODULE -> Set NAME
+indvC_module :: MODULE -> Set.HashSet NAME
 indvC_module m =
     case m of
          Mod _ t _ -> indvC_text t
          Mod_ex _ _ t _ -> indvC_text t
 
 -- | retrieves the individual constants from a sentence
-indvC_sen :: SENTENCE -> Set NAME
+indvC_sen :: SENTENCE -> Set.HashSet NAME
 indvC_sen s =
     case s of
          Quant_sent q vs is _ -> indvC_quantsent q vs is
@@ -83,19 +82,19 @@ indvC_sen s =
          Irregular_sent i _ -> indvC_sen i
 
 -- | retrieves the individual constants from a quantified sentence
-indvC_quantsent :: QUANT -> [NAME_OR_SEQMARK] -> SENTENCE -> Set NAME
+indvC_quantsent :: QUANT -> [NAME_OR_SEQMARK] -> SENTENCE -> Set.HashSet NAME
 indvC_quantsent _ = quant
-    where quant :: [NAME_OR_SEQMARK] -> SENTENCE -> Set NAME
+    where quant :: [NAME_OR_SEQMARK] -> SENTENCE -> Set.HashSet NAME
           quant nss se = Set.difference (indvC_sen se)
             $ setUnion_list nameof nss
-          nameof :: NAME_OR_SEQMARK -> Set NAME
+          nameof :: NAME_OR_SEQMARK -> Set.HashSet NAME
           nameof nsm =
               case nsm of
                    Name n -> Set.singleton n
                    SeqMark _ -> Set.empty -- see indvC_termSeq
 
 -- | retrieves the individual constants from a boolean sentence
-indvC_boolsent :: BOOL_SENT -> Set NAME
+indvC_boolsent :: BOOL_SENT -> Set.HashSet NAME
 indvC_boolsent b =
     case b of
          Junction _ ss -> setUnion_list indvC_sen ss
@@ -103,7 +102,7 @@ indvC_boolsent b =
          BinOp _ s1 s2 -> setUnion_list indvC_sen [s1, s2]
 
 -- | retrieves the individual constants from an atom
-indvC_atomsent :: ATOM -> Set NAME
+indvC_atomsent :: ATOM -> Set.HashSet NAME
 indvC_atomsent a =
     case a of
          Equation t1 t2 -> indvC_term t1 `Set.union` indvC_term t2
@@ -111,14 +110,14 @@ indvC_atomsent a =
                     $ setUnion_list indvC_termSeq ts -- arguments
 
 -- | omit predicate names
-nonToplevelNames :: TERM -> Set NAME
+nonToplevelNames :: TERM -> Set.HashSet NAME
 nonToplevelNames trm = case trm of
         Name_term _ -> Set.empty
         Comment_term t _ _ -> nonToplevelNames t
         _ -> indvC_term trm
 
 -- | retrieves the individual constants from a term
-indvC_term :: TERM -> Set NAME
+indvC_term :: TERM -> Set.HashSet NAME
 indvC_term trm =
     case trm of
         Name_term n -> Set.singleton n
@@ -128,7 +127,7 @@ indvC_term trm =
         That_term s _ -> indvC_sen s
 
 -- | retrieves the individual constant from a single argument
-indvC_termSeq :: TERM_SEQ -> Set NAME
+indvC_termSeq :: TERM_SEQ -> Set.HashSet NAME
 indvC_termSeq t =
     case t of
         Term_seq txt -> indvC_term txt
@@ -140,16 +139,16 @@ into all subelements                                                     --
 ---------------------------------------------------------------------------- -}
 
 -- | Retrieves all predicates from a text
-prd_text :: TEXT -> Set.Set NAME
+prd_text :: TEXT -> Set.HashSet NAME
 prd_text t =
     case t of
          Text ps _ -> prd_phrases ps
          Named_text _ nt _ -> prd_text nt
 
-prd_phrases :: [PHRASE] -> Set.Set NAME
+prd_phrases :: [PHRASE] -> Set.HashSet NAME
 prd_phrases = setUnion_list prd_phrase
 
-prd_phrase :: PHRASE -> Set.Set NAME
+prd_phrase :: PHRASE -> Set.HashSet NAME
 prd_phrase p =
     case p of
          Module m -> prd_module m
@@ -157,13 +156,13 @@ prd_phrase p =
          Importation _ -> Set.empty
          Comment_text _ t _ -> prd_text t
 
-prd_module :: MODULE -> Set.Set NAME
+prd_module :: MODULE -> Set.HashSet NAME
 prd_module m =
     case m of
          Mod _ t _ -> prd_text t
          Mod_ex _ _ t _ -> prd_text t
 
-prd_sentence :: SENTENCE -> Set.Set NAME
+prd_sentence :: SENTENCE -> Set.HashSet NAME
 prd_sentence s =
     case s of
          Quant_sent q vs is _ -> prd_quantSent q vs is
@@ -172,26 +171,26 @@ prd_sentence s =
          Comment_sent _ c _ -> prd_sentence c
          Irregular_sent i _ -> prd_sentence i
 
-prd_quantSent :: QUANT -> [NAME_OR_SEQMARK] -> SENTENCE -> Set.Set NAME
+prd_quantSent :: QUANT -> [NAME_OR_SEQMARK] -> SENTENCE -> Set.HashSet NAME
 prd_quantSent _ _ = prd_sentence
 {- we do not know if variables are predicates, we assume no, and only
 check the body -}
 
-prd_boolSent :: BOOL_SENT -> Set.Set NAME
+prd_boolSent :: BOOL_SENT -> Set.HashSet NAME
 prd_boolSent b =
     case b of
          Junction _ ss -> setUnion_list prd_sentence ss
          Negation s -> prd_sentence s
          BinOp _ s1 s2 -> setUnion_list prd_sentence [s1, s2]
 
-prd_atomSent :: ATOM -> Set.Set NAME
+prd_atomSent :: ATOM -> Set.HashSet NAME
 prd_atomSent a =
     case a of
          Equation t1 t2 -> setUnion_list prd_term [t1, t2]
          Atom t tseq -> -- the predicate name is in t
            Set.unions [prd_termSeqs tseq, prd_term t, prd_add_term t]
 
-prd_term :: TERM -> Set.Set NAME
+prd_term :: TERM -> Set.HashSet NAME
 prd_term t =
   case t of
     Name_term _ -> Set.empty
@@ -200,16 +199,16 @@ prd_term t =
     Comment_term ct _ _ -> prd_term ct
     That_term s _ -> prd_sentence s
 
-prd_termSeqs :: [TERM_SEQ] -> Set.Set NAME
+prd_termSeqs :: [TERM_SEQ] -> Set.HashSet NAME
 prd_termSeqs = setUnion_list prd_termSeq
 
-prd_termSeq :: TERM_SEQ -> Set.Set NAME
+prd_termSeq :: TERM_SEQ -> Set.HashSet NAME
 prd_termSeq tsec =
     case tsec of
          Term_seq t -> prd_term t
          Seq_marks _ -> Set.empty
 
-prd_add_term :: TERM -> Set.Set NAME
+prd_add_term :: TERM -> Set.HashSet NAME
 prd_add_term t =
   case t of
     Name_term n -> Set.singleton n

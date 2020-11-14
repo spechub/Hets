@@ -34,7 +34,7 @@ import Common.ExtSign
 import qualified Common.Lib.MapSet as MapSet
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Data.List as List
 import Data.Function
 
@@ -222,7 +222,7 @@ ana_FORMULA mix f = do
            put e2 {predMap = pm}
            return phi
 
-getFormPredToks :: FORMULA M_FORMULA -> Set.Set Token
+getFormPredToks :: FORMULA M_FORMULA -> Set.HashSet Token
 getFormPredToks frm = case frm of
     Quantification _ _ f _ -> getFormPredToks f
     Junction _ fs _ -> Set.unions $ map getFormPredToks fs
@@ -237,7 +237,7 @@ getFormPredToks frm = case frm of
     Membership t _ _ -> getTermPredToks t
     _ -> Set.empty
 
-getTermPredToks :: TERM M_FORMULA -> Set.Set Token
+getTermPredToks :: TERM M_FORMULA -> Set.HashSet Token
 getTermPredToks trm = case trm of
     Application _ ts _ -> Set.unions $ map getTermPredToks ts
     Sorted_term t _ _ -> getTermPredToks t

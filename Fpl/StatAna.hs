@@ -41,8 +41,9 @@ import qualified Common.Lib.MapSet as MapSet
 
 import Control.Monad
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
+import qualified Common.HashSetUtils as HSU
 
 import Data.Maybe
 
@@ -210,7 +211,7 @@ minFplTerm sig te = case te of
       (map (filter cSupers . combine) $ combine tts) r
     let nl = zip ps nts
         minSort sl = if Set.null sl then Set.empty else
-           let (hd, rt) = Set.deleteFindMin sl
+           let (hd, rt) = HSU.deleteFindMin sl
            in Set.unions . map (Set.fromList . minimalSupers sig hd)
                     . Set.toList $ Set.insert hd $ minSort rt
         mSort = minSort . Set.fromList $ map sortOfTerm nts

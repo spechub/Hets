@@ -21,7 +21,7 @@ import Common.ProofTree
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.MapSet as MapSet
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Data.Function
 import Data.Maybe
 
@@ -86,12 +86,12 @@ transSig sign = let
     rigOps' = diffOpMapSet (opMap sign) flexibleOps
     rigPreds' = diffMapSet (predMap sign) flexiblePreds
     noms = nominals extInf
-    noNomsPreds = Set.fold (`MapSet.delete` nomPType) rigPreds' noms
+    noNomsPreds = Set.foldr (`MapSet.delete` nomPType) rigPreds' noms
     termMs = termMods extInf
-    rels = Set.fold (\ m ->
+    rels = Set.foldr (\ m ->
       insertModPred world False (Set.member m termMs) m)
       MapSet.empty $ modalities extInf
-    nomOps = Set.fold (\ n -> addOpTo (nomName n) nomOpType) rigOps' noms
+    nomOps = Set.foldr (\ n -> addOpTo (nomName n) nomOpType) rigOps' noms
     in s1
     { sortRel = Rel.insertKey world $ sortRel sign
     , opMap = addOpMapSet flexOps' nomOps

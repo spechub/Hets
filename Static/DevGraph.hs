@@ -68,7 +68,7 @@ import Data.Maybe
 import Data.Ord
 import Data.Typeable
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import Common.Result
 
@@ -86,7 +86,7 @@ data NodeSig = NodeSig { getNode :: Node, getSig :: G_sign }
 data MaybeNode = JustNode NodeSig | EmptyNode AnyLogic
   deriving (Show, Eq, Typeable)
 
-getMaybeNodes :: MaybeNode -> Set.Set Node
+getMaybeNodes :: MaybeNode -> Set.HashSet Node
 getMaybeNodes m = case m of
   EmptyNode _ -> Set.empty
   JustNode n -> Set.singleton $ getNode n
@@ -116,14 +116,14 @@ instance Eq MaybeRestricted where
 data DGOrigin =
     DGEmpty
   | DGBasic
-  | DGBasicSpec (Maybe G_basic_spec) G_sign (Set.Set G_symbol)
+  | DGBasicSpec (Maybe G_basic_spec) G_sign (Set.HashSet G_symbol)
   | DGExtension
   | DGLogicCoercion
   | DGTranslation Renamed
   | DGUnion
   | DGIntersect
   | DGExtract
-  | DGRestriction (MaybeRestricted) (Set.Set G_symbol)
+  | DGRestriction (MaybeRestricted) (Set.HashSet G_symbol)
   | DGRevealTranslation
   | DGFreeOrCofree FreeOrCofree
   | DGLocal
@@ -443,7 +443,7 @@ hasOutgoingFreeEdge dg n =
 -- | import, formal parameters and united signature of formal params
 data GenSig = GenSig MaybeNode [NodeSig] MaybeNode deriving (Show, Typeable)
 
-getGenSigNodes :: GenSig -> Set.Set Node
+getGenSigNodes :: GenSig -> Set.HashSet Node
 getGenSigNodes (GenSig m1 ns m2) = Set.unions
   [ getMaybeNodes m1
   , Set.fromList $ map getNode ns
@@ -455,14 +455,14 @@ data ExtGenSig = ExtGenSig
   , extGenBody :: NodeSig }
   deriving (Show, Typeable)
 
-getExtGenSigNodes :: ExtGenSig -> Set.Set Node
+getExtGenSigNodes :: ExtGenSig -> Set.HashSet Node
 getExtGenSigNodes (ExtGenSig g n) = Set.insert (getNode n) $ getGenSigNodes g
 
 -- | source, morphism, parameterized target
 data ExtViewSig = ExtViewSig NodeSig GMorphism ExtGenSig
   deriving (Show, Typeable)
 
-getExtViewSigNodes :: ExtViewSig -> Set.Set Node
+getExtViewSigNodes :: ExtViewSig -> Set.HashSet Node
 getExtViewSigNodes (ExtViewSig n _ e) =
   Set.insert (getNode n) $ getExtGenSigNodes e
 
@@ -474,7 +474,7 @@ data UnitSig = UnitSig [NodeSig] NodeSig (Maybe NodeSig)
 {- Maybe NodeSig stores the union of the parameters
 the node is needed for consistency checks -}
 
-getUnitSigNodes :: UnitSig -> Set.Set Node
+getUnitSigNodes :: UnitSig -> Set.HashSet Node
 getUnitSigNodes (UnitSig ns n m) =
   Set.fromList $ map getNode (n : ns ++ maybeToList m)
 
@@ -491,12 +491,12 @@ this type is superseeded by RefSig -}
 
 type RefSigMap = Map.HashMap IRI RefSig
 
-getSigMapNodes :: RefSigMap -> Set.Set Node
+getSigMapNodes :: RefSigMap -> Set.HashSet Node
 getSigMapNodes = Set.unions . map getRefSigNodes . Map.elems
 
 type BStContext = Map.HashMap IRI RefSig
 
-getBStContextNodes :: BStContext -> Set.Set Node
+getBStContextNodes :: BStContext -> Set.HashSet Node
 getBStContextNodes = Set.unions . map getRefSigNodes . Map.elems
 
 -- there should be only BranchRefSigs
@@ -505,7 +505,7 @@ data RefSig = BranchRefSig RTPointer (UnitSig, Maybe BranchSig)
             | ComponentRefSig RTPointer RefSigMap
               deriving (Eq, Typeable)
 
-getRefSigNodes :: RefSig -> Set.Set Node
+getRefSigNodes :: RefSig -> Set.HashSet Node
 getRefSigNodes rs = case rs of
   BranchRefSig _ (u, m) -> Set.union (getUnitSigNodes u)
     $ maybe Set.empty getBranchSigNodes m
@@ -559,7 +559,7 @@ data BranchSig = UnitSigAsBranchSig UnitSig
                | BranchStaticContext BStContext
                  deriving (Show, Eq, Typeable)
 
-getBranchSigNodes :: BranchSig -> Set.Set Node
+getBranchSigNodes :: BranchSig -> Set.HashSet Node
 getBranchSigNodes bs = case bs of
   UnitSigAsBranchSig u -> getUnitSigNodes u
   BranchStaticContext b -> getBStContextNodes b
@@ -687,7 +687,7 @@ data GlobalEntry =
   | NetworkEntry GDiagram
     deriving (Show, Typeable)
 
-getGlobEntryNodes :: GlobalEntry -> Set.Set Node
+getGlobEntryNodes :: GlobalEntry -> Set.HashSet Node
 getGlobEntryNodes g = case g of
   SpecEntry e -> getExtGenSigNodes e
   ViewOrStructEntry _ e -> getExtViewSigNodes e
@@ -708,7 +708,7 @@ data AlignSig = AlignMor NodeSig GMorphism NodeSig
 
 type GlobalEnv = Map.HashMap IRI GlobalEntry
 
-getGlobNodes :: GlobalEnv -> Set.Set Node
+getGlobNodes :: GlobalEnv -> Set.HashSet Node
 getGlobNodes = Set.unions . map getGlobEntryNodes . Map.elems
 
 -- ** change and history types

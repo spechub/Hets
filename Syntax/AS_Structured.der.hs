@@ -24,7 +24,7 @@ import Common.IRI
 import Common.AS_Annotation
 
 import Data.Typeable
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import Logic.Logic
 import Logic.Grothendieck
@@ -210,7 +210,7 @@ type CONFIDENCE = Double -- NOTE: will be revised
 instance GetRange Double where
   getRange = const nullRange
 
-getSpecNames :: SPEC -> Set.Set SPEC_NAME
+getSpecNames :: SPEC -> Set.HashSet SPEC_NAME
 getSpecNames sp = let f = getSpecNames . item in case sp of
   Translation as _ -> f as
   Reduction as _ -> f as

@@ -31,7 +31,7 @@ import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Data.Char (toLower)
 import Data.List (sortBy)
 import Data.Ord (comparing)

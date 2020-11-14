@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 {- |
 Module      :  ./OWL2/ShipSyntax.hs
 Copyright   :  (c) C. Maeder DFKI GmbH
@@ -23,6 +24,8 @@ import Control.Monad
 import Data.Char
 
 import Text.ParserCombinators.Parsec
+import GHC.Generics (Generic)
+import Data.Hashable
 
 data Concept
   = CName String
@@ -30,19 +33,25 @@ data Concept
   | NotC Concept
   | JoinedC (Maybe JunctionType) [Concept] -- Nothing denotes disjoint union
   | Quant (Either QuantifierType (CardinalityType, Int)) Role Concept
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Generic)
+
+instance Hashable Concept
 
 topC :: Concept
 topC = CName "T"
 
-data NotOrInverse = NotR | InvR deriving (Show, Eq, Ord)
+data NotOrInverse = NotR | InvR deriving (Show, Eq, Ord, Generic)
+
+instance Hashable NotOrInverse
 
 data Role
   = RName String
   | NominalR String String
   | UnOp NotOrInverse Role
   | JoinedR (Maybe JunctionType) [Role] -- Nothing denotes composition!
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Generic)
+
+instance Hashable Role
 
 topR :: Role
 topR = RName "TxT"
@@ -231,9 +240,13 @@ andRole = binC (JoinedR $ Just IntersectionOf) '&' compRole
 role :: CharParser st Role
 role = binPP (JoinedR $ Just UnionOf) plus andRole
 
-data EqOrLess = Eq | Less deriving (Show, Eq, Ord)
+data EqOrLess = Eq | Less deriving (Show, Eq, Ord, Generic)
 
-data RoleType = RoleType Concept Concept deriving (Show, Eq, Ord)
+instance Hashable EqOrLess
+
+data RoleType = RoleType Concept Concept deriving (Show, Eq, Ord, Generic)
+
+instance Hashable RoleType
 
 -- a missing rhs may be modelled as "< T" or by no constructors
 data ConceptRhs
@@ -253,7 +266,9 @@ data RBox
   = RoleDecl Role RoleType
   | RoleRel Role EqOrLess Role
   | RoleProp Character Role
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Generic)
+
+instance Hashable RBox
 
 -- | assertions
 data ABox

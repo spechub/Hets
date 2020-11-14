@@ -20,7 +20,7 @@ import Data.Data
 import Data.Char
 import Data.Maybe (isNothing)
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import qualified Common.Lib.Rel as Rel
 import Common.AS_Annotation hiding (Name)
@@ -39,9 +39,9 @@ type SoftFOLMorphism = DefaultMorphism Sign
 
 type SortMap = Map.HashMap SPIdentifier (Maybe Generated)
 
-type FuncMap = Map.HashMap SPIdentifier (Set.Set ([SPIdentifier], SPIdentifier))
+type FuncMap = Map.HashMap SPIdentifier (Set.HashSet ([SPIdentifier], SPIdentifier))
 
-type PredMap = Map.HashMap SPIdentifier (Set.Set [SPIdentifier])
+type PredMap = Map.HashMap SPIdentifier (Set.HashSet [SPIdentifier])
 
 {- |
   This Signature data type will be translated to the SoftFOL data types

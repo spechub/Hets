@@ -39,7 +39,7 @@ import Common.Result
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.MapSet as MapSet
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 import Data.Maybe (fromMaybe)
 
@@ -120,9 +120,9 @@ mapSign s =
     , extendedInfo = ()
     }
 
-getSorts :: Set.Set TypeClass -> Rel.Rel TypeClass -> Rel.Rel SORT
+getSorts :: Set.HashSet TypeClass -> Rel.Rel TypeClass -> Rel.Rel SORT
 getSorts setC relC =
-  let relS = Set.fold (insertSort . name) Rel.empty setC
+  let relS = Set.foldr (insertSort . name) Rel.empty setC
   in foldr insertPair relS (Rel.toList relC)
 
 insertSort :: String -> Rel.Rel SORT -> Rel.Rel SORT
@@ -134,8 +134,8 @@ insertPair (t1, t2) = Rel.insertPair (stringToId $ name t1) (stringToId $ name t
 revertOrder :: (SORT, SORT) -> (SORT, SORT)
 revertOrder (a, b) = (b, a)
 
-getPredicates :: Set.Set PropertyT -> (PredMap, [Named (FORMULA f)])
-getPredicates = Set.fold insertPredicate (MapSet.empty, [])
+getPredicates :: Set.HashSet PropertyT -> (PredMap, [Named (FORMULA f)])
+getPredicates = Set.foldr insertPredicate (MapSet.empty, [])
 
 insertPredicate :: PropertyT -> (PredMap, [Named (FORMULA f)]) -> (PredMap, [Named (FORMULA f)])
 insertPredicate prop (predM, form) =
@@ -184,12 +184,12 @@ insertOperations (na, tc) opM =
     MapSet.insert opName opType opM
 
 
-getSentencesRels :: Set.Set LinkT -> Map.HashMap String TypeClass ->
+getSentencesRels :: Set.HashSet LinkT -> Map.HashMap String TypeClass ->
                     [Named CASLFORMULA]
 getSentencesRels = completenessOfRelations
 
 
-completenessOfRelations :: Set.Set LinkT -> Map.HashMap String TypeClass ->
+completenessOfRelations :: Set.HashSet LinkT -> Map.HashMap String TypeClass ->
                            [Named CASLFORMULA]
 completenessOfRelations linkk ops =
   let ordLinks = getLinksByProperty linkk
@@ -247,7 +247,7 @@ getPropHold ops varA sorA varB sorB lin =
     Junction Con (eqA : [eqB]) nullRange
 
 
-getLinksByProperty :: Set.Set LinkT -> Map.HashMap String [LinkT]
+getLinksByProperty :: Set.HashSet LinkT -> Map.HashMap String [LinkT]
 getLinksByProperty linkk =
   let elems = Set.elems linkk
   in foldr getByProperty Map.empty elems
@@ -265,7 +265,7 @@ getByProperty lin mapL =
       Just s -> Map.insert nameLook (lin : s) (Map.delete nameLook mapL)
 
 
-getSortGen :: Rel.Rel TypeClass -> Set.Set TypeClass -> Set.Set TypeClass ->
+getSortGen :: Rel.Rel TypeClass -> Set.HashSet TypeClass -> Set.HashSet TypeClass ->
               Map.HashMap String TypeClass -> [Named CASLFORMULA]
 getSortGen typpR absCl typCl inst = disjointEmbedding absCl typpR ++
  sortGeneration inst ++
@@ -273,14 +273,14 @@ getSortGen typpR absCl typCl inst = disjointEmbedding absCl typpR ++
 
 
 -- Free type of non-abstract superclasses
-sortGenerationNonAbstractSuperClasses :: Rel.Rel TypeClass -> Set.Set TypeClass
- -> Set.Set TypeClass -> Map.HashMap String TypeClass -> [Named CASLFORMULA]
+sortGenerationNonAbstractSuperClasses :: Rel.Rel TypeClass -> Set.HashSet TypeClass
+ -> Set.HashSet TypeClass -> Map.HashMap String TypeClass -> [Named CASLFORMULA]
 sortGenerationNonAbstractSuperClasses typpR typCl absCl inst =
   let
     ordObj = foldr orderByClass Map.empty (Map.toList inst)
     nonAbsClasses = getNonAbstractClasess absCl typCl
     nonAbsClassesWChilds = filter (not . null . snd)
-     (Set.fold ((:) . getSubClasses typpR) [] nonAbsClasses)
+     (Set.foldr ((:) . getSubClasses typpR) [] nonAbsClasses)
     childObjects = foldr ((:) . getClassSubObjects ordObj)
      [] nonAbsClassesWChilds -- [(TypeClass,[String])]
   in
@@ -298,7 +298,7 @@ getClassSubObjects objs (tc, subCl) =
 findObjectInMap :: Map.HashMap TypeClass [String] -> TypeClass -> [String]
 findObjectInMap objs tc = fromMaybe [] $ Map.lookup tc objs
 
-getNonAbstractClasess :: Set.Set TypeClass -> Set.Set TypeClass -> Set.Set TypeClass
+getNonAbstractClasess :: Set.HashSet TypeClass -> Set.HashSet TypeClass -> Set.HashSet TypeClass
 getNonAbstractClasess absCl classes = Set.difference classes absCl
 
 getSubClasses :: Rel.Rel TypeClass -> TypeClass -> (TypeClass, [TypeClass])
@@ -404,10 +404,10 @@ haveCommonSort t1 t2 relT =
   in not $ Set.null $ Set.intersection succT1 succT2
 
 -- This is the non exported function reachable in Rel
-superSorts :: Rel.Rel TypeClass -> TypeClass -> Set.Set TypeClass
-superSorts relT tc = Set.fold reach Set.empty $ Rel.succs relT tc where
+superSorts :: Rel.Rel TypeClass -> TypeClass -> Set.HashSet TypeClass
+superSorts relT tc = Set.foldr reach Set.empty $ Rel.succs relT tc where
          reach e s = if Set.member e s then s
-                     else Set.fold reach (Set.insert e s) $ Rel.succs relT e
+                     else Set.foldr reach (Set.insert e s) $ Rel.succs relT e
 
 
 diffOfRestOpsDiffSort :: (TypeClass, [String]) -> TypeClass -> String -> [CASLFORMULA]
@@ -467,7 +467,7 @@ toConstraint sor obName =
 
 
 -- Each abstract class is the disjoint embedding of it subsorts
-disjointEmbedding :: Set.Set TypeClass -> Rel.Rel TypeClass ->
+disjointEmbedding :: Set.HashSet TypeClass -> Rel.Rel TypeClass ->
                      [Named CASLFORMULA]
 disjointEmbedding absCl rel =
   let
@@ -504,7 +504,7 @@ minConstraint con int predM =
     predTypes = MapSet.lookup (stringToId $ getRole con) predM -- Set PredType
     souVars = generateVars "x" 1
     tarVars = generateVars "y" int
-    correctPredType = Set.fold (getCorrectPredType con) [] predTypes
+    correctPredType = Set.foldr (getCorrectPredType con) [] predTypes
     souVarDec = Var_decl souVars (head (predArgs (head correctPredType))) nullRange
     tarVarDec = Var_decl tarVars (last (predArgs (head correctPredType))) nullRange
   in
@@ -562,7 +562,7 @@ maxConstraint con int predM =
     predTypes = MapSet.lookup (stringToId $ getRole con) predM -- Set PredType
     souVars = generateVars "x" 1
     tarVars = generateVars "y" (int + 1)
-    correctPredType = Set.fold (getCorrectPredType con) [] predTypes
+    correctPredType = Set.foldr (getCorrectPredType con) [] predTypes
     souVarDec = Var_decl souVars (head (predArgs (head correctPredType))) nullRange
     tarVarDec = Var_decl tarVars (last (predArgs (head correctPredType))) nullRange
   in

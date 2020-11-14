@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, DeriveDataTypeable, DeriveGeneric #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, DeriveDataTypeable, DeriveGeneric, ExistentialQuantification, GADTs, StandaloneDeriving #-}
 {- |
 Module      :  ./CSL/TreePO.hs
 Description :  Handling of tree-like partial ordering relations
@@ -24,11 +24,14 @@ module CSL.TreePO
     where
 
 import Data.Data
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import GHC.Generics (Generic)
 import Data.Hashable
 import Common.Utils()
+import qualified Common.HashSetUtils as HSU
+
+import qualified Data.Set as PlainSet
 
 {- ----------------------------------------------------------------------
 Datatypes for comparison
@@ -90,14 +93,54 @@ instance Ord a => Ord (CIType a) where
           EQ -> compare a b
           res -> res
 
+{-
 
+-- data Test1 a = forall a . Ord a => Test1 a
+
+data Test1 a = Test1 (Set.HashSet a)
+ deriving Typeable
+
+instance Ord a => Eq (Test1 a) where 
+  a == b = compare a b == EQ
+ 
+instance Ord a => Ord (Test1 a) where
+ compare (Test1 a) (Test1 b) = compare a b 
+
+data Test2 a = Test2 (PlainSet.Set a)
+ deriving Typeable
+
+instance Ord a => Eq (Test2 a) where 
+  a == b = compare a b == EQ
+ 
+instance Ord a => Ord (Test2 a) where
+ compare (Test2 a) (Test2 b) = compare a b 
+
+-}
 -- | A finite set or an interval. True = closed, False = opened interval border.
-data SetOrInterval a = Set (Set.Set a)
+data SetOrInterval a where
+   Set :: (Ord a, Hashable a) => Set.HashSet a -> SetOrInterval a
+   IntVal :: Ord a => (a, Bool) -> (a, Bool) -> SetOrInterval a
+-- deriving (Eq, Ord, Show, Typeable, Data, Generic) -- won't work!
+
+deriving instance (Ord a, Hashable a) => Eq (SetOrInterval a)
+deriving instance (Ord a, Hashable a) => Ord (SetOrInterval a)
+deriving instance (Show a, Ord a, Hashable a) => Show (SetOrInterval a)
+deriving instance (Typeable a, Ord a, Hashable a) => Typeable (SetOrInterval a)
+deriving instance (Data a, Ord a, Hashable a) => Data (SetOrInterval a)
+-- deriving instance Generic a => Generic (SetOrInterval a) -- won't work
+
+{-
+original version won't works, a is not Ord
+
+version below won't work, instances must be written by hand
+data SetOrInterval a = forall a . Ord a => Set (Set.HashSet a)
                      | IntVal (a, Bool) (a, Bool)
                        deriving (Eq, Ord, Show, Typeable, Data, Generic)
+-}
 
-instance Hashable a => Hashable (SetOrInterval a)
-
+instance (Hashable a, Ord a) => Hashable (SetOrInterval a) where 
+ hashWithSalt salt (Set a) = salt `hashWithSalt` a 
+ hashWithSalt salt (IntVal x y) = salt `hashWithSalt` x `hashWithSalt` y
 
 -- | A closed interval
 data ClosedInterval a = ClosedInterval a a
@@ -156,37 +199,37 @@ Comparison for discrete types
 ---------------------------------------------------------------------- -}
 
 -- | Membership in 'SetOrInterval'
-membSoID :: (Discrete a, Ord a) => a -> SetOrInterval a -> Bool
+membSoID :: (Discrete a, Ord a, Hashable a) => a -> SetOrInterval a -> Bool
 membSoID x (Set s) = Set.member x s
 membSoID x i = let ClosedInterval a b = setToClosedIntD i in x >= a && x <= b
 
 -- | Checks if the set is empty.
-nullSoID :: (Discrete a, Ord a) => SetOrInterval a -> Bool
+nullSoID :: (Discrete a, Ord a, Hashable a) => SetOrInterval a -> Bool
 nullSoID (Set s) = Set.null s
 nullSoID i = let ClosedInterval a b = setToClosedIntD i in a > b
 
 {- | If the set is singular, i.e., consists only from one point, then we
 return this point. Reports error on empty SoI's. -}
-toSingularD :: (Discrete a, Ord a) => SetOrInterval a -> Maybe a
+toSingularD :: (Discrete a, Ord a, Hashable a) => SetOrInterval a -> Maybe a
 toSingularD d
     | nullSoID d = error "toSingularD: empty set"
     | otherwise =
         case d of
           Set s
-              | Set.size s == 1 -> Just $ Set.findMin s
+              | Set.size s == 1 -> Just $ HSU.findMin s
               | otherwise -> Nothing
           _ -> let ClosedInterval a b = setToClosedIntD d
                in if a == b then Just a else Nothing
 
 -- | Transforms a 'SetOrInterval' to a closed representation
-setToClosedIntD :: (Discrete a, Ord a) => SetOrInterval a -> ClosedInterval a
-setToClosedIntD (Set s) = ClosedInterval (Set.findMin s) $ Set.findMax s
+setToClosedIntD :: (Discrete a, Ord a, Hashable a) => SetOrInterval a -> ClosedInterval a
+setToClosedIntD (Set s) = ClosedInterval (HSU.findMin s) $ HSU.findMax s
 setToClosedIntD (IntVal (l, bL) (r, bR)) =
     ClosedInterval (if bL then l else nextA l) $ if bR then r else prevA r
 
 
 -- | Compare sets over discrete types
-cmpSoIsD :: (Discrete a, Ord a) =>
+cmpSoIsD :: (Discrete a, Ord a, Hashable a) =>
            SetOrInterval a -> SetOrInterval a -> SetOrdering
 cmpSoIsD d1 d2 =
     case (toSingularD d1, toSingularD d2) of
@@ -204,7 +247,7 @@ cmpSoIsD d1 d2 =
 
 {- | Compare sets helper function which only works on regular (non-singular)
 sets -}
-cmpSoIsExD :: (Discrete a, Ord a) =>
+cmpSoIsExD :: (Discrete a, Ord a, Hashable a) =>
               SetOrInterval a -> SetOrInterval a -> SetOrdering
 cmpSoIsExD i1@(IntVal _ _) i2@(IntVal _ _) =
     cmpClosedInts (setToClosedIntD i1) $ setToClosedIntD i2
@@ -233,27 +276,27 @@ Comparison for continuous types
 ---------------------------------------------------------------------- -}
 
 -- | Membership in 'SetOrInterval'
-membSoI :: Ord a => a -> SetOrInterval a -> Bool
+membSoI :: (Ord a, Hashable a) => a -> SetOrInterval a -> Bool
 membSoI x (Set s) = Set.member x s
 membSoI x i = let ClosedInterval a b = setToClosedInt i
                   x' = CIType (x, Zero) in x' >= a && x' <= b
 
 {- | Checks if the set is empty.
 Only for continuous types. -}
-nullSoI :: (Continuous a, Ord a) => SetOrInterval a -> Bool
+nullSoI :: (Continuous a, Ord a, Hashable a) => SetOrInterval a -> Bool
 nullSoI (Set s) = Set.null s
 nullSoI (IntVal (a, bA) (b, bB)) = a == b && not (bA && bB)
 
 {- | If the set is singular, i.e., consists only from one point, then we
 return this point. Reports error on empty SoI's.
 Only for continuous types. -}
-toSingular :: (Continuous a, Ord a) => SetOrInterval a -> Maybe a
+toSingular :: (Continuous a, Ord a, Hashable a) => SetOrInterval a -> Maybe a
 toSingular d
     | nullSoI d = error "toSingular: empty set"
     | otherwise =
         case d of
           Set s
-              | Set.size s == 1 -> Just $ Set.findMin s
+              | Set.size s == 1 -> Just $ HSU.findMin s
               | otherwise -> Nothing
           IntVal (a, _) (b, _)
               | a == b -> Just a
@@ -261,16 +304,16 @@ toSingular d
 
 {- | Transforms a 'SetOrInterval' to a closed representation
 Only for continuous types. -}
-setToClosedInt :: Ord a =>
+setToClosedInt :: (Ord a, Hashable a) =>
                   SetOrInterval a -> ClosedInterval (CIType a)
-setToClosedInt (Set s) = ClosedInterval (CIType (Set.findMin s, Zero))
-                         $ CIType (Set.findMax s, Zero)
+setToClosedInt (Set s) = ClosedInterval (CIType (HSU.findMin s, Zero))
+                         $ CIType (HSU.findMax s, Zero)
 setToClosedInt (IntVal (l, bL) (r, bR)) =
     ClosedInterval (CIType (l, if bL then Zero else EpsRight))
                        $ CIType (r, if bR then Zero else EpsLeft)
 
 -- | Compare sets over continuous types
-cmpSoIs :: (Continuous a, Ord a) =>
+cmpSoIs :: (Continuous a, Ord a, Hashable a) =>
            SetOrInterval a -> SetOrInterval a -> SetOrdering
 cmpSoIs d1 d2 =
     case (toSingular d1, toSingular d2) of
@@ -288,7 +331,7 @@ cmpSoIs d1 d2 =
 
 {- | Compare sets helper function which only works on regular (non-singular)
 sets -}
-cmpSoIsEx :: (Ord a) => SetOrInterval a -> SetOrInterval a -> SetOrdering
+cmpSoIsEx :: (Ord a, Hashable a) => SetOrInterval a -> SetOrInterval a -> SetOrdering
 cmpSoIsEx (Set s1) (Set s2)
     | s1 == s2 = Comparable EQ
     | s1 `Set.isSubsetOf` s2 = Comparable LT

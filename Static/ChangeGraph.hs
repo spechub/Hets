@@ -32,7 +32,7 @@ import qualified Common.OrderedMap as OMap
 import Common.Result
 
 import Data.Graph.Inductive.Graph as Graph
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Data.List
 
 import Control.Monad
@@ -398,7 +398,7 @@ Invalid sentences should have been removed before.
 This function can be easily extended to delete raw symbol via the logic
 specific matching between raw and signature symbols. -}
 
-deleteSymbols :: Node -> Set.Set G_symbol -> DGraph -> DGraph
+deleteSymbols :: Node -> Set.HashSet G_symbol -> DGraph -> DGraph
 deleteSymbols = undefined
 
 {- | extending a node's signature.

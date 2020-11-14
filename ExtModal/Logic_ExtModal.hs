@@ -38,7 +38,7 @@ import Logic.Logic
 
 import Common.DocUtils
 import qualified Common.Lib.MapSet as MapSet
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import GHC.Generics (Generic)
 import Data.Hashable
 
@@ -84,7 +84,7 @@ instance Sentences ExtModal ExtModalFORMULA ExtModalSign ExtModalMorph Symbol
         print_named ExtModal = printTheoryFormula
         print_sign ExtModal sig = let e = extendedInfo sig in pretty sig
           { opMap = diffOpMapSet (opMap sig) $ flexOps e
-          , predMap = Set.fold (`MapSet.delete` nomPType)
+          , predMap = Set.foldr (`MapSet.delete` nomPType)
             (diffMapSet (predMap sig) $ flexPreds e) $ nominals e
           }
         sym_of ExtModal = symOf

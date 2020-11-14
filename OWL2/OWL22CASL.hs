@@ -20,7 +20,7 @@ import Common.Id
 import Common.IRI
 import Control.Monad
 import Data.Char
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
@@ -237,7 +237,7 @@ mapMorphism oMor = do
                  { op_map = ops
                  , pred_map = preds }
 
-mapSymbol :: Entity -> Set.Set Symbol
+mapSymbol :: Entity -> Set.HashSet Symbol
 mapSymbol (Entity _ ty iRi) = let
   syN = Set.singleton . Symbol (uriToCaslId iRi)
   in case ty of

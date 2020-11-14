@@ -21,7 +21,7 @@ import Common.XUpdate
 import Common.Lib.MapSet (setToMap)
 
 import Data.List
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 
 import Text.XML.Light as XML
@@ -53,7 +53,7 @@ hetsXmlDiff e = mkMods . hetsXmlChanges e
 {- for elements, whose order does not matter, use the given attribute keys to
 determine their equality. An empty set indicates an element that only contains
 text to be compared. -}
-type UnordTags = Map.HashMap QName (Set.Set QName)
+type UnordTags = Map.HashMap QName (Set.HashSet QName)
 
 -- keep track of the nth element with a given tag
 type Count = Map.HashMap QName Int

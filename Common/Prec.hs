@@ -18,7 +18,7 @@ import Common.Id
 import Common.GlobalAnnotations
 import Common.AS_Annotation
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Common.Lib.Rel as Rel
 
 import Data.Data
@@ -46,7 +46,7 @@ mkPrecIntMap r =
                , maxWeight = t
                }
 
-getIdPrec :: PrecMap -> Set.Set Id -> Id -> Int
+getIdPrec :: PrecMap -> Set.HashSet Id -> Id -> Int
 getIdPrec p ps i = let PrecMap m mx = p in
     if i == applId then mx + 1
     else Map.findWithDefault

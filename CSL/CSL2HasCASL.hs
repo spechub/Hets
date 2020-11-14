@@ -15,7 +15,7 @@ The helpers for translating comorphism from Propositional to CASL.
 module CSL.CSL2HasCASL
     where
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.Map as Map
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Id as Id

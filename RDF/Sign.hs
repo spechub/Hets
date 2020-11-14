@@ -12,14 +12,14 @@ module RDF.Sign where
 import RDF.AS
 import Common.Result
 import Data.Data
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import Common.ATerm.ConvInstances() -- for ATC
 
 data Sign = Sign
-    { subjects :: Set.Set Term
-    , predicates :: Set.Set Term
-    , objects :: Set.Set Term
+    { subjects :: Set.HashSet Term
+    , predicates :: Set.HashSet Term
+    , objects :: Set.HashSet Term
     } deriving (Show, Eq, Ord, Typeable, Data)
 
 emptySign :: Sign
@@ -52,7 +52,7 @@ isSubSign a b =
 uniteSign :: Sign -> Sign -> Result Sign
 uniteSign s1 s2 = return $ addSign s1 s2
 
-symOf :: Sign -> Set.Set RDFEntity
+symOf :: Sign -> Set.HashSet RDFEntity
 symOf s = Set.unions
   [ Set.map (RDFEntity SubjectEntity) $ subjects s
   , Set.map (RDFEntity PredicateEntity) $ predicates s

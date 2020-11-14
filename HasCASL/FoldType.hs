@@ -15,7 +15,7 @@ module HasCASL.FoldType where
 
 import HasCASL.As
 import Common.Id
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Data.List as List
 
 data FoldTypeRec a = FoldTypeRec
@@ -23,7 +23,7 @@ data FoldTypeRec a = FoldTypeRec
   , foldTypeAppl :: Type -> a -> a -> a
   , foldExpandedType :: Type -> a -> a -> a
   , foldTypeAbs :: Type -> TypeArg -> a -> Range -> a
-  , foldKindedType :: Type -> a -> Set.Set Kind -> Range -> a
+  , foldKindedType :: Type -> a -> Set.HashSet Kind -> Range -> a
   , foldTypeToken :: Type -> Token -> a
   , foldBracketType :: Type -> BracketKind -> [a] -> Range -> a
   , foldMixfixType :: Type -> [a] -> a }

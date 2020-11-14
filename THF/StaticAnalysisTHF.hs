@@ -32,7 +32,7 @@ import Common.DocUtils
 import Control.Monad
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 {- -----------------------------------------------------------------------------
 Questions:
@@ -69,7 +69,7 @@ filterBS d (t : rt) = case t of
                                in (diag, t : thf)
 
 -- Append the Signature by the Types and Constants given inside the basic spec
-fillSig :: [TPTP_THF] -> State ([Diagnosis], SignTHF, Set.Set SymbolTHF) ()
+fillSig :: [TPTP_THF] -> State ([Diagnosis], SignTHF, Set.HashSet SymbolTHF) ()
 fillSig [] = return ()
 fillSig bs = mapM_ fillSingleType bs >> mapM_ fillSingleConst bs
     where
@@ -92,12 +92,12 @@ fillSig bs = mapM_ fillSingleType bs >> mapM_ fillSingleConst bs
 
 {- Append the Diagnosis-List by the given Diagnosis
 The new diag will be put on top of the existing list. -}
-appandDiag :: Diagnosis -> State ([Diagnosis], SignTHF, Set.Set SymbolTHF) ()
+appandDiag :: Diagnosis -> State ([Diagnosis], SignTHF, Set.HashSet SymbolTHF) ()
 appandDiag d = modify (\ (diag, s, syms) -> (d : diag, s, syms))
 
 -- insert the given type into the Signature
 insertType :: Constant -> As.Name -> Kind -> Annotations
-                    -> State ([Diagnosis], SignTHF, Set.Set SymbolTHF) ()
+                    -> State ([Diagnosis], SignTHF, Set.HashSet SymbolTHF) ()
 insertType c n k a = do
     (diag, sig, syms) <- get
     if sigHasConstSymbol c sig then appandDiag $ mkDiag Error
@@ -117,7 +117,7 @@ insertType c n k a = do
 
 -- insert the given constant into the Signature
 insertConst :: Constant -> As.Name -> Type -> Annotations
-                    -> State ([Diagnosis], SignTHF, Set.Set SymbolTHF) ()
+                    -> State ([Diagnosis], SignTHF, Set.HashSet SymbolTHF) ()
 insertConst c n t a = do
     (_, sig, _) <- get
     if sigHasTypeSymbol c sig then (appandDiag $ mkDiag Error
@@ -161,7 +161,7 @@ sigHasSameType c t sig = constType (consts sig Map.! c) == t
 
 {- check if all cTypes inside the given Type are elements of the signaure.
 Nothing means that everything is fine, otherwise Just diag will be returned. -}
-isTypeConsistent :: Type -> State ([Diagnosis], SignTHF, Set.Set SymbolTHF) ()
+isTypeConsistent :: Type -> State ([Diagnosis], SignTHF, Set.HashSet SymbolTHF) ()
 isTypeConsistent t = do
  (_, sig, _) <- get
  case t of

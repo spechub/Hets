@@ -20,7 +20,7 @@ module SoftFOL.Translate
     ) where
 
 import Data.Char
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import Common.Id
 import Common.ProofUtils
@@ -30,7 +30,7 @@ import SoftFOL.Sign
 data CKType = CKSort | CKVar | CKPred | CKOp
 
 -- | collect all keywords of SoftFOL
-reservedWords :: Set.Set String
+reservedWords :: Set.HashSet String
 reservedWords = Set.fromList $ map showSPSymbol
   [ SPEqual
   , SPTrue

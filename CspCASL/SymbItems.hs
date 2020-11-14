@@ -35,7 +35,7 @@ import Text.ParserCombinators.Parsec
 import Control.Monad
 import Data.Data
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import GHC.Generics (Generic)
 import Data.Hashable

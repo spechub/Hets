@@ -17,7 +17,7 @@ import Common.AS_Annotation
 import Common.Doc
 import Common.Id
 import Common.IRI
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 import Common.GlobalAnnotations
 import Data.Hashable
@@ -166,7 +166,7 @@ instance Pretty Integer where
 instance Pretty a => Pretty [a] where
     pretty = pretties
 
-instance Pretty a => Pretty (Set.Set a) where
+instance Pretty a => Pretty (Set.HashSet a) where
     pretty = printSet braces sepByCommas
 
 -- | container size
@@ -179,7 +179,7 @@ ppList fa brace inter l = case l of
   _ -> brace CMult . inter $ map fa l
 
 ppSet :: (a -> Doc) -> (CSize -> Doc -> Doc) -> ([Doc] -> Doc)
-  -> Set.Set a -> Doc
+  -> Set.HashSet a -> Doc
 ppSet fa brace inter = ppList fa brace inter . Set.toList
 
 optBraces :: CSize -> Doc -> Doc
@@ -187,10 +187,10 @@ optBraces c = case c of
   CSingle -> id
   _ -> braces
 
-printSet :: Pretty a => (Doc -> Doc) -> ([Doc] -> Doc) -> Set.Set a -> Doc
+printSet :: Pretty a => (Doc -> Doc) -> ([Doc] -> Doc) -> Set.HashSet a -> Doc
 printSet = ppSet pretty . const
 
-printSetMap :: (Pretty k, Pretty a, Hashable k) => Doc -> Doc -> Map.HashMap k (Set.Set a)
+printSetMap :: (Pretty k, Pretty a, Hashable k) => Doc -> Doc -> Map.HashMap k (Set.HashSet a)
   -> Doc
 printSetMap header sepa = vcat . concatMap ( \ (i, s) ->
     map ( \ e -> header <+> pretty i <+> colon <> sepa <> pretty e)

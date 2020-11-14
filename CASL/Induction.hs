@@ -24,7 +24,7 @@ import Common.AS_Annotation as AS_Anno
 import Common.Id
 import Common.Utils (combine, number)
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Data.List
 import Data.Maybe
 

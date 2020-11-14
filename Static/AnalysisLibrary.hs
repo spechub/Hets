@@ -62,7 +62,7 @@ import Driver.WriteLibDefn
 
 import qualified Common.OrderedMap as OMap
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Data.Either (lefts, rights)
 import Data.List
 import Data.Maybe
@@ -80,7 +80,7 @@ import MMT.Hets2mmt (mmtRes)
 import Proofs.ComputeColimit
 
 -- a set of library names to check for cyclic imports
-type LNS = Set.Set LibName
+type LNS = Set.HashSet LibName
 
 {- | parsing and static analysis for files
 Parameters: logic graph, default logic, file name -}
@@ -160,7 +160,7 @@ anaStringAux mln lgraph opts topLns initDG mt file posFileName (_, libenv)
         $ concatMap (getSpecDef . item) is'
       declNs = Set.fromList . map expnd
         $ concatMap (getDeclSpecNames . item) is'
-      missNames = Set.toList $ spNs Set.\\ declNs
+      missNames = Set.toList $ spNs `Set.difference` declNs
       unDecls = map (addDownload True) $ filter
           (isNothing . (`lookupGlobalEnvDG` initDG)) missNames
       is = unDecls ++ is'
@@ -568,7 +568,7 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
   _ -> return (itm, dg, libenv, lg, eo)
 
 symbolsOf :: LogicGraph -> G_sign -> G_sign -> [CORRESPONDENCE]
-  -> Result (Set.Set (G_symbol, G_symbol))
+  -> Result (Set.HashSet (G_symbol, G_symbol))
 symbolsOf lg gs1@(G_sign l1 (ExtSign sig1 sys1) _)
  gs2@(G_sign l2 (ExtSign sig2 sys2) _) corresps =
  case corresps of

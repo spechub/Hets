@@ -23,7 +23,7 @@ import Data.List
 import Data.Maybe
 
 import Data.Data
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import GHC.Generics (Generic)
 import Data.Hashable
 
@@ -32,7 +32,7 @@ data NumberRestrictions = None | Unqualified | Qualified
 
 instance Hashable NumberRestrictions
 
-owlDatatypes :: Set.Set Datatype
+owlDatatypes :: Set.HashSet Datatype
 owlDatatypes = predefIRIs
 
 data OWLSub = OWLSub
@@ -43,7 +43,7 @@ data OWLSub = OWLSub
     , roleHierarchy :: Bool
     , complexRoleInclusions :: Bool
     , addFeatures :: Bool
-    , datatype :: Set.Set Datatype
+    , datatype :: Set.HashSet Datatype
     } deriving (Show, Eq, Ord, Typeable, Data, Generic)
 
 instance Hashable OWLSub

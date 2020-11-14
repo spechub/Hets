@@ -22,7 +22,7 @@ import CSL.AS_BASIC_CSL
 import CSL.ASUtils
 import CSL.Sign as Sign
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.Map as Map
 import Data.Maybe
 
@@ -31,8 +31,8 @@ import Data.Maybe
 data DepGraph a b c = DepGraph
     { dataMap :: Map.Map a
                  ( b         -- the annotation
-                 , Set.Set a -- the direct successors (smaller elements)
-                 , Set.Set c -- the direct predecessors (bigger elements)
+                 , Set.HashSet a -- the direct successors (smaller elements)
+                 , Set.HashSet c -- the direct predecessors (bigger elements)
                  )
     {- function returning for a given element and value the predecessors
     of this element -}
@@ -46,7 +46,7 @@ instance (Show a, Show b, Show c) => Show (DepGraph a b c) where
     show = show . dataMap
 
 depGraphLookup :: Ord a =>
-                  DepGraph a b c -> a -> Maybe (b, Set.Set a, Set.Set c)
+                  DepGraph a b c -> a -> Maybe (b, Set.HashSet a, Set.HashSet c)
 depGraphLookup gr x = Map.lookup x $ dataMap gr
 
 prettyDepGraph :: (a -> Doc) -> (b -> Doc) -> (c -> Doc) -> DepGraph a b c
@@ -79,16 +79,16 @@ depGraphFromDescList :: (Ord a, Ord c) => (a -> b -> [c]) ->
 depGraphFromDescList f pf = foldl g (emptyDepGraph f pf) where
     g x (y, z) = updateGraph x y z
 
-maybeSetUnions :: Ord a => Set.Set (Maybe (Set.Set a)) -> Set.Set a
-maybeSetUnions = Set.fold f Set.empty where
+maybeSetUnions :: Ord a => Set.HashSet (Maybe (Set.HashSet a)) -> Set.HashSet a
+maybeSetUnions = Set.foldr f Set.empty where
     f mS s' = maybe s' (Set.union s') mS
 
-upperLevel :: (Ord a, Ord c) => DepGraph a b c -> Set.Set a -> Set.Set c
+upperLevel :: (Ord a, Ord c) => DepGraph a b c -> Set.HashSet a -> Set.HashSet c
 upperLevel gr = maybeSetUnions . Set.map f where
     f a = fmap g $ Map.lookup a $ dataMap gr
     g (_, _, dps) = dps
 
-lowerLevel :: Ord a => DepGraph a b c -> [a] -> Set.Set a
+lowerLevel :: Ord a => DepGraph a b c -> [a] -> Set.HashSet a
 lowerLevel gr = Set.unions . mapMaybe f where
     f a = fmap g $ Map.lookup a $ dataMap gr
     g (_, dss, _) = dss
@@ -98,8 +98,8 @@ setFilterLookup :: (Ord a, Ord b, Ord d, Show a) =>
                    (d -> a) -- ^ projection function
                 -> (a -> b -> Bool) -- ^ filter predicate
                 -> DepGraph a b c -- ^ dependency graph for lookup
-                -> Set.Set d -- ^ filter this set
-                -> Set.Set (d, b)
+                -> Set.HashSet d -- ^ filter this set
+                -> Set.HashSet (d, b)
 setFilterLookup pf fp gr s = Set.map h $ Set.filter g $ Set.map f s where
     f x = (x, fmap ( \ (v, _, _) -> v ) $ Map.lookup (pf x) $ dataMap gr)
     g (x, Just val) = fp (pf x) val
@@ -112,7 +112,7 @@ lowerUntil :: (Pretty a, Ord a, Ord b, Show a) =>
               (a -> b -> Bool) -- ^ cut-off predicate
            -> DepGraph a b c -- ^ dependency graph to be traversed
            -> [a] -- ^ compare entries to this element
-           -> Set.Set (a, b)
+           -> Set.HashSet (a, b)
 lowerUntil _ _ [] = Set.empty
 lowerUntil cop gr al =
     let s = lowerLevel gr al
@@ -124,8 +124,8 @@ lowerUntil cop gr al =
 upperUntil :: (Ord a, Ord b, Ord c, Show a) =>
               (a -> b -> Bool) -- ^ cut-off predicate
            -> DepGraph a b c -- ^ dependency graph to be traversed
-           -> Set.Set a -- ^ compare entries to these elements
-           -> Set.Set (c, b)
+           -> Set.HashSet a -- ^ compare entries to these elements
+           -> Set.HashSet (c, b)
 upperUntil cop gr es
     | Set.null es = Set.empty
     | otherwise =
@@ -139,8 +139,8 @@ upperUntil cop gr es
 upperUntilRefl :: (Ord a, Ord b, Show a) =>
                   (a -> b -> Bool) -- ^ cut-off predicate
                -> DepGraph a b a -- ^ dependency graph to be traversed
-               -> Set.Set a -- ^ compare entries to these elements
-               -> Set.Set (a, b)
+               -> Set.HashSet a -- ^ compare entries to these elements
+               -> Set.HashSet (a, b)
 upperUntilRefl cop gr es
     | Set.null es = Set.empty
     | otherwise =
@@ -167,7 +167,7 @@ updateGraph gr key val =
         f _ (v', _, nps) (_, oss, _) = (v', oss, nps)
         nm' = case mOv of
                 Just (_, _, ops) ->
-                    Set.fold rmFromSucc nm ops
+                    Set.foldr rmFromSucc nm ops
                 _ -> nm
         rmFromSucc c = Map.adjust g1 (getKey gr c)
         g1 (x, dss, dps) = (x, Set.delete key dss, dps)

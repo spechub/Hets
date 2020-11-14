@@ -53,7 +53,7 @@ import Common.Utils
 import Data.List
 import Data.Maybe
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import Control.Monad
 

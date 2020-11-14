@@ -63,7 +63,7 @@ import qualified Common.Lib.MapSet as MapSet
 import Common.Utils (keepMins)
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Data.Data
 import Data.List
 import Data.Ord

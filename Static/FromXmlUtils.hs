@@ -27,11 +27,11 @@ import Common.Utils
 
 import Text.ParserCombinators.Parsec
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 
 data BasicExtResponse = Failure Bool  -- True means fatal (give up)
-  | Success G_theory Int (Set.Set G_symbol) Bool
+  | Success G_theory Int (Set.HashSet G_symbol) Bool
 
 extendByBasicSpec :: GlobalAnnos -> String -> G_theory
   -> (BasicExtResponse, String)

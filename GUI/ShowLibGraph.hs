@@ -45,7 +45,7 @@ import Text.XML.Light
 
 import Data.IORef
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import Control.Concurrent.MVar
 import Control.Monad
@@ -241,7 +241,7 @@ addNodesAndEdges gi graphR graph nodesEdges = do
    redraw graph
 
 -- | Creates a list of all LibName pairs, which have a dependency
-getLibDeps :: Set.Set LibName -> LibEnv -> [(LibName, LibName)]
+getLibDeps :: Set.HashSet LibName -> LibEnv -> [(LibName, LibName)]
 getLibDeps ks =
   Rel.toList . Rel.intransKernel . (`Rel.restrict` ks) . getLibDepRel
 

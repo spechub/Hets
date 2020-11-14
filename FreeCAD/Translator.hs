@@ -16,7 +16,7 @@ module FreeCAD.Translator where
 import FreeCAD.As
 import Text.XML.Light
 import Data.Maybe
-import Data.Set as Set
+import qualified Data.HashSet as Set
 import FreeCAD.Brep
 import System.Directory
 import System.IO
@@ -71,11 +71,11 @@ childByNameAttr :: String -> Element -> Element
 childByNameAttr s el = fromJust (filterChild (hasName s) el)
 
 -- a Set constant -- TODO: find signature
-setBaseObjs :: Set.Set String
-setBaseObjs = fromList ["Box", "Sph", "Cyl", "Con", "Tor", "Cir", "Rec"]
+setBaseObjs :: Set.HashSet String
+setBaseObjs = Set.fromList ["Box", "Sph", "Cyl", "Con", "Tor", "Cir", "Rec"]
 
 isBaseObject :: Element -> Bool
-isBaseObject el = member (firstThree (getName el)) setBaseObjs
+isBaseObject el = Set.member (firstThree (getName el)) setBaseObjs
     {- identify (by its name) whether an object is simpe or extended
     returns true if it is a base object and false otherwise -}
 

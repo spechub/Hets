@@ -53,8 +53,9 @@ import Common.Lib.Graph
 import qualified Data.Graph.Inductive.Graph as Graph
 import qualified Common.Lib.Rel as Rel
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.IntMap as IntMap
+import qualified Common.HashSetUtils as HSU
 
 -- main functions
 sigColimit :: Gr Sign (Int, Morphism) -> Result (Sign, Map.HashMap Int Morphism)
@@ -70,7 +71,7 @@ sigColimit gr =
       in Result [] $ Just (sig, maps2)
 
 -- preparation for computing the colimit
-addSig :: Sign -> IntMap.IntMap (Map.HashMap NAME NAME) -> Set.Set (Int, NAME) ->
+addSig :: Sign -> IntMap.IntMap (Map.HashMap NAME NAME) -> Set.HashSet (Int, NAME) ->
           Rel.Rel (Int, NAME) -> [(Int, Sign)] ->
           (Sign, IntMap.IntMap (Map.HashMap NAME NAME))
 addSig sig maps _ _ [] = (sig, maps)
@@ -83,7 +84,7 @@ processSig :: Sign ->                        -- the signature determined so far
        Map.HashMap NAME NAME ->                  -- the current map
        Int ->                                -- the number or the current sig
        [SDECL] ->                            -- the declarations to be processed
-       Set.Set (Int, NAME) ->                -- the symbols done so far
+       Set.HashSet (Int, NAME) ->                -- the symbols done so far
        Rel.Rel (Int, NAME) ->                -- the equality relation
        [(Int, Sign)] ->                      -- the signatures to be processed
        (Sign, IntMap.IntMap (Map.HashMap NAME NAME))     -- the determined colimit
@@ -104,7 +105,7 @@ processSig sig maps m i ((n, t) : ds) doneSyms rel sigs =
                      m1 = Map.insert n n2 m
                      doneSyms1 = Set.insert n1 doneSyms
                      in processSig sig1 maps m1 i ds doneSyms1 rel sigs
-            else let k = Set.findMin eqSyms
+            else let k = HSU.findMin eqSyms
                      c = findValue k $ IntMap.insert i m maps
                      m1 = Map.insert n c m
                      doneSyms1 = Set.insert n1 doneSyms
@@ -115,9 +116,9 @@ findValue :: (Int, NAME) -> IntMap.IntMap (Map.HashMap NAME NAME) -> NAME
 findValue (i, k) maps = let Just m = IntMap.lookup i maps
                            in Map.findWithDefault k k m
 
-toName :: NAME -> Set.Set NAME -> NAME
+toName :: NAME -> Set.HashSet NAME -> NAME
 toName n names =
-  if Set.notMember n names
+  if HSU.notMember n names
      then n
      else let s = tokStr n
               n1 = Token ("gn_" ++ s) nullRange

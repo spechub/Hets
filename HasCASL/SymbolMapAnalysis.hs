@@ -34,8 +34,9 @@ import Common.ExtSign
 import Common.Result
 import Common.Lib.State
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Control.Monad
+import qualified Common.HashSetUtils as HSU
 
 inducedFromMorphism :: RawSymbolMap -> Env -> Result Morphism
 inducedFromMorphism rmap sigma = do
@@ -137,8 +138,8 @@ classFun _e rmap s k = do
                [ASymbol $ idToClassSymbol s k, AnID s, AKindedId SyKclass s]
     -- rsys contains the raw symbols to which s is mapped to
     if Set.null rsys then return s -- use default = identity mapping
-       else if Set.null $ Set.deleteMin rsys then
-            return $ rawSymName $ Set.findMin rsys
+       else if Set.null $ HSU.deleteMin rsys then
+            return $ rawSymName $ HSU.findMin rsys
             else Result [mkDiag Error ("class: " ++ showDoc s
                        " mapped ambiguously") rsys] Nothing
 
@@ -151,17 +152,17 @@ typeFun _e rmap s k = do
                [ASymbol $ idToTypeSymbol s k, AnID s, AKindedId SyKtype s]
     -- rsys contains the raw symbols to which s is mapped to
     if Set.null rsys then return s -- use default = identity mapping
-       else if Set.null $ Set.deleteMin rsys then
-            return $ rawSymName $ Set.findMin rsys
+       else if Set.null $ HSU.deleteMin rsys then
+            return $ rawSymName $ HSU.findMin rsys
             else Result [mkDiag Error ("type: " ++ showDoc s
                        " mapped ambiguously") rsys] Nothing
 
 -- | compute mapping of functions
 opFun :: RawSymbolMap -> Env -> IdMap -> TypeMap -> IdMap -> Id
-      -> Set.Set OpInfo -> Result FunMap -> Result FunMap
+      -> Set.HashSet OpInfo -> Result FunMap -> Result FunMap
 opFun rmap e jm tm im i ots m =
     -- first consider all directly mapped profiles
-    let (ots1, m1) = Set.fold (directOpMap rmap e jm tm im i)
+    let (ots1, m1) = Set.foldr (directOpMap rmap e jm tm im i)
                     (Set.empty, m) ots
     -- now try the remaining ones with (un)kinded raw symbol
     in case (Map.lookup (AKindedId SyKop i) rmap, Map.lookup (AnID i) rmap) of
@@ -169,17 +170,17 @@ opFun rmap e jm tm im i ots m =
              Result [mkDiag Error ("Operation " ++ showId i " is mapped twice")
                      (rsy1, rsy2)] Nothing
        (Just rsy, Nothing) ->
-          Set.fold (insertmapOpSym e jm tm im i rsy) m1 ots1
+          Set.foldr (insertmapOpSym e jm tm im i rsy) m1 ots1
        (Nothing, Just rsy) ->
-          Set.fold (insertmapOpSym e jm tm im i rsy) m1 ots1
+          Set.foldr (insertmapOpSym e jm tm im i rsy) m1 ots1
        -- Anything not mapped explicitly is left unchanged
        (Nothing, Nothing) -> m1
 
     {- try to map an operation symbol directly and
     collect all opTypes that cannot be mapped directly -}
 directOpMap :: RawSymbolMap -> Env -> IdMap -> TypeMap -> IdMap -> Id -> OpInfo
-            -> (Set.Set TypeScheme, Result FunMap)
-            -> (Set.Set TypeScheme, Result FunMap)
+            -> (Set.HashSet TypeScheme, Result FunMap)
+            -> (Set.HashSet TypeScheme, Result FunMap)
 directOpMap rmap e jm tm im i oi (ots, m) = let ot = opType oi in
     case Map.lookup (ASymbol $ idToOpSymbol i ot) rmap of
         Just rsy -> (ots, insertmapOpSym e jm tm im i rsy ot m)
@@ -224,10 +225,10 @@ insertmapOpSym e jm tm im i rsy ot m = do
     -- insert mapping of op symbol (i, ot) into m
 
   -- map the ops in the source signature
-mapOps :: IdMap -> TypeMap -> IdMap -> FunMap -> Id -> Set.Set OpInfo -> Env
+mapOps :: IdMap -> TypeMap -> IdMap -> FunMap -> Id -> Set.HashSet OpInfo -> Env
        -> Env
 mapOps jm tm im fm i ots e =
-    Set.fold ( \ ot e' ->
+    Set.foldr ( \ ot e' ->
         let osc = opType ot
             sc = mapTypeScheme jm tm im osc
             (id', sc') = Map.findWithDefault (i, sc)
@@ -278,8 +279,8 @@ inducedFromToMorphism rmap1 e1@(ExtSign sigma1 sy1) (ExtSign sigma2 sy2) = do
                  ++ "\ndeclared Symbols of Signature 2:\n"
                  ++ showDoc sy2 "") nullRange] Nothing
         if Set.size s1 == 1 && Set.size s2 == 1 then do
-          let Symbol n1 _ = Set.findMin s1
-              Symbol n2 _ = Set.findMin s2
+          let Symbol n1 _ = HSU.findMin s1
+              Symbol n2 _ = HSU.findMin s2
           mor2 <- inducedFromMorphism (Map.insert (AKindedId SyKtype n1)
                                        (AKindedId SyKtype n2) rmap1) sigma1
           if isSubEnv (mtarget mor2) sigma2
@@ -292,7 +293,7 @@ generatedSign :: SymbolSet -> Env -> Result Morphism
 generatedSign syms sigma =
     let signSyms = Set.unions $ symOf sigma
         closedSyms = closeSymbSet syms
-        subSigma = plainHide (signSyms Set.\\ closedSyms) sigma
+        subSigma = plainHide (signSyms `Set.difference` closedSyms) sigma
     in checkSymbols closedSyms signSyms $
        return $ mkMorphism subSigma sigma
 
@@ -300,6 +301,6 @@ generatedSign syms sigma =
 cogeneratedSign :: SymbolSet -> Env -> Result Morphism
 cogeneratedSign syms sigma =
     let signSyms = Set.unions $ symOf sigma
-        subSigma = Set.fold hideRelSymbol sigma syms
+        subSigma = Set.foldr hideRelSymbol sigma syms
         in checkSymbols syms signSyms $
            return $ mkMorphism subSigma sigma

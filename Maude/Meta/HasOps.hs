@@ -26,8 +26,8 @@ import Maude.Symbol
 import Maude.Meta.AsSymbol
 import Maude.Meta.HasName
 
-import Data.Set (Set)
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
+import Data.Hashable
 
 -- * The HasOps type class
 
@@ -62,8 +62,8 @@ instance (HasOps a, HasOps b, HasOps c) => HasOps (a, b, c) where
     getOps (a, b, c) = Set.union (getOps a) (getOps (b, c))
     mapOps mp (a, b, c) = (mapOps mp a, mapOps mp b, mapOps mp c)
 
-instance (Ord a, HasOps a) => HasOps (Set a) where
-    getOps = Set.fold (Set.union . getOps) Set.empty
+instance (Ord a, HasOps a, Hashable a) => HasOps (Set.HashSet a) where
+    getOps = Set.foldr (Set.union . getOps) Set.empty
     mapOps = Set.map . mapOps
 
 instance HasOps Operator where

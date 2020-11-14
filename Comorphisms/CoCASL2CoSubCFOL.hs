@@ -31,7 +31,7 @@ import CASL.Simplify
 import Comorphisms.CASL2SubCFOL
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Common.AS_Annotation
 import Common.ProofUtils
 
@@ -85,24 +85,24 @@ instance Comorphism CoCASL2CoSubCFOL
     has_model_expansion CoCASL2CoSubCFOL = True
     is_weakly_amalgamable CoCASL2CoSubCFOL = True
 
-codeCoRecord :: Set.Set SORT
+codeCoRecord :: Set.HashSet SORT
              -> Record C_FORMULA (FORMULA C_FORMULA) (TERM C_FORMULA)
 codeCoRecord bsrts =
     codeRecord (uniqueBottom defaultCASL2SubCFOL) bsrts $ codeC_FORMULA bsrts
 
-codeCoFormula :: Set.Set SORT -> FORMULA C_FORMULA -> FORMULA C_FORMULA
+codeCoFormula :: Set.HashSet SORT -> FORMULA C_FORMULA -> FORMULA C_FORMULA
 codeCoFormula = foldFormula . codeCoRecord
 
-codeC_FORMULA :: Set.Set SORT -> C_FORMULA -> C_FORMULA
+codeC_FORMULA :: Set.HashSet SORT -> C_FORMULA -> C_FORMULA
 codeC_FORMULA bsrts = foldC_Formula (codeCoRecord bsrts) mapCoRecord
   {foldCoSort_gen_ax = \ _ s o b -> CoSort_gen_ax s (map totalizeOpSymb o) b}
 
 simC_FORMULA :: C_FORMULA -> C_FORMULA
 simC_FORMULA = foldC_Formula (simplifyRecord simC_FORMULA) mapCoRecord
 
-botCoSorts :: C_FORMULA -> Set.Set SORT
+botCoSorts :: C_FORMULA -> Set.HashSet SORT
 botCoSorts =
     foldC_Formula (botSorts botCoSorts) (constCoRecord Set.unions Set.empty)
 
-botCoFormulaSorts :: FORMULA C_FORMULA -> Set.Set SORT
+botCoFormulaSorts :: FORMULA C_FORMULA -> Set.HashSet SORT
 botCoFormulaSorts = foldFormula $ botSorts botCoSorts

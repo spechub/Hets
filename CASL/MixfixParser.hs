@@ -36,9 +36,10 @@ import Common.Id
 import Common.Result
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import Data.Maybe
+import qualified Common.HashSetUtils as HSU
 
 data Mix b s f e = MixRecord
     { getBaseIds :: b -> IdSets -- ^ ids of extra basic items
@@ -60,7 +61,7 @@ emptyMix = MixRecord
     , mixResolve = const $ const return
     }
 
-extendMix :: Set.Set Token -> Mix b s f e -> Mix b s f e
+extendMix :: Set.HashSet Token -> Mix b s f e -> Mix b s f e
 extendMix ts r = r
   { mixRules = extendRules ts $ mixRules r
   , mixResolve = extendMixResolve ts $ mixResolve r }
@@ -68,13 +69,13 @@ extendMix ts r = r
 -- precompute non-simple op and pred identifier for mixfix rules
 
 -- | the precomputed sets of constant, op, and pred identifiers
-type IdSets = ((Set.Set Id, Set.Set Id), Set.Set Id) -- ops are first component
+type IdSets = ((Set.HashSet Id, Set.HashSet Id), Set.HashSet Id) -- ops are first component
 
 -- | the empty 'IdSets'
 emptyIdSets :: IdSets
 emptyIdSets = let e = Set.empty in ((e, e), e)
 
-unite2 :: [(Set.Set Id, Set.Set Id)] -> (Set.Set Id, Set.Set Id)
+unite2 :: [(Set.HashSet Id, Set.HashSet Id)] -> (Set.HashSet Id, Set.HashSet Id)
 unite2 l = (Set.unions $ map fst l, Set.unions $ map snd l)
 
 -- | union 'IdSets'
@@ -109,7 +110,7 @@ ids_SIG_ITEMS f si = let e = Set.empty in case si of
     Ext_SIG_ITEMS s -> f s
 
 -- | get all op ids of an op item
-ids_OP_ITEM :: OP_ITEM f -> (Set.Set Id, Set.Set Id)
+ids_OP_ITEM :: OP_ITEM f -> (Set.HashSet Id, Set.HashSet Id)
 ids_OP_ITEM o = let e = Set.empty in case o of
     Op_decl ops (Op_type _ args _ _) _ _ ->
       let s = Set.fromList ops in
@@ -119,22 +120,22 @@ ids_OP_ITEM o = let e = Set.empty in case o of
       if null args then (s, e) else (e, s)
 
 -- | get all pred ids of a pred item
-ids_PRED_ITEM :: PRED_ITEM f -> Set.Set Id
+ids_PRED_ITEM :: PRED_ITEM f -> Set.HashSet Id
 ids_PRED_ITEM p = case p of
     Pred_decl preds _ _ -> Set.unions $ map Set.singleton preds
     Pred_defn i _ _ _ -> Set.singleton i
 
-ids_DATATYPE_DECL :: DATATYPE_DECL -> (Set.Set Id, Set.Set Id)
+ids_DATATYPE_DECL :: DATATYPE_DECL -> (Set.HashSet Id, Set.HashSet Id)
 ids_DATATYPE_DECL (Datatype_decl _ al _) =
     unite2 $ map (ids_ALTERNATIVE . item) al
 
-ids_ALTERNATIVE :: ALTERNATIVE -> (Set.Set Id, Set.Set Id)
+ids_ALTERNATIVE :: ALTERNATIVE -> (Set.HashSet Id, Set.HashSet Id)
 ids_ALTERNATIVE a = let e = Set.empty in case a of
     Alt_construct _ i cs _ -> let s = Set.singleton i in
       if null cs then (s, e) else (e, Set.unions $ s : map ids_COMPONENTS cs)
     Subsorts _ _ -> (e, e)
 
-ids_COMPONENTS :: COMPONENTS -> Set.Set Id
+ids_COMPONENTS :: COMPONENTS -> Set.HashSet Id
 ids_COMPONENTS c = case c of
     Cons_select _ l _ _ -> Set.unions $ map Set.singleton l
     Sort _ -> Set.empty
@@ -169,24 +170,24 @@ addIdToRules i (tr, rs) =
 -- | additional scan rules
 addRule :: GlobalAnnos -> [Rule] -> Bool -> IdSets -> TokRules
 addRule ga uRules hasInvisible ((consts, ops), preds) tok =
-    let addP = Set.fold (\ i -> case i of
+    let addP = Set.foldr (\ i -> case i of
                  Id (t : _) _ _ -> Map.insertWith (++) t
                    [ mixRule (if Set.member i consts then 1 else 0) i
                    , mkSingleArgRule 0 i, mkArgsRule 0 i]
                  _ -> error "addRule.addP")
-        addO = Set.fold (\ i -> case i of
+        addO = Set.foldr (\ i -> case i of
                  Id (t : _) _ _ -> Map.insertWith (++) t
                    $ [mkRule i | not (isSimpleId i)
                       || Set.member i (Set.union consts preds) ]
                    ++ [mkSingleArgRule 1 i, mkArgsRule 1 i]
                  _ -> error "addRule.addO")
-        addC = Set.fold (\ i -> case i of
+        addC = Set.foldr (\ i -> case i of
                  Id (t : _) _ _ -> Map.insertWith (++) t [mkRule i]
                  _ -> error "addRule.addC")
         lm = foldr (\ r -> case r of
                (_, _, t : _) -> Map.insertWith (++) t [r]
                _ -> error "addRule.lm") Map.empty $ listRules 1 ga
-        (spreds, rpreds) = Set.partition isSimpleId preds
+        (spreds, rpreds) = HSU.partition isSimpleId preds
         {- do not add simple ids as preds as these may be variables
         with higher precedence -}
         ops2 = Set.union ops spreds
@@ -211,18 +212,18 @@ addRule ga uRules hasInvisible ((consts, ops), preds) tok =
         else Set.empty) `Set.union` Set.fromList (Map.findWithDefault [] tok m)
 
 -- insert only identifiers starting with a place
-initRules :: (Set.Set Id, Set.Set Id) -> Rules
+initRules :: (Set.HashSet Id, Set.HashSet Id) -> Rules
 initRules (opS, predS) =
-  let addR p = Set.fold (Set.insert . mixRule p)
+  let addR p = Set.foldr (Set.insert . mixRule p)
   in emptyRules
   { postRules = addR 1 (addR 0 (Set.singleton $ mkRule typeId) predS) opS }
 
 -- | construct rules from 'IdSets' to be put into a 'Mix' record
 makeRules :: GlobalAnnos -> IdSets -> (TokRules, Rules)
 makeRules ga ((constS, opS), predS) = let
-    (cOps, sOps) = Set.partition begPlace opS
-    (cPreds, sPreds) = Set.partition begPlace $ Set.difference predS opS
-    addR p = Set.fold ( \ i l ->
+    (cOps, sOps) = HSU.partition begPlace opS
+    (cPreds, sPreds) = HSU.partition begPlace $ Set.difference predS opS
+    addR p = Set.foldr ( \ i l ->
            mkSingleArgRule p i : mkArgsRule p i : l)
     uRules = addR 0 (addR 1 [] cOps) cPreds
     in (addRule ga uRules (Set.member applId $ Set.union cOps cPreds)
@@ -324,7 +325,7 @@ iterateCharts par extR g terms c =
             _ -> error "iterateCharts"
 
 -- | construct 'IdSets' from op and pred identifiers
-mkIdSets :: Set.Set Id -> Set.Set Id -> Set.Set Id -> IdSets
+mkIdSets :: Set.HashSet Id -> Set.HashSet Id -> Set.HashSet Id -> IdSets
 mkIdSets consts ops preds = ((consts, ops), preds)
 
 -- | top-level resolution like 'resolveMixTrm' that fails in case of diags
@@ -351,10 +352,10 @@ resolveFormula par extR g ruleS f =
     let r@(Result ds _) = resolveMixFrm par extR g ruleS f
         in if null ds then r else Result ds Nothing
 
-varDeclTokens :: [VAR_DECL] -> Set.Set Token
+varDeclTokens :: [VAR_DECL] -> Set.HashSet Token
 varDeclTokens = Set.unions . map (\ (Var_decl vs _ _) -> Set.fromList vs)
 
-extendRules :: Set.Set Token -> (TokRules, Rules)
+extendRules :: Set.HashSet Token -> (TokRules, Rules)
   -> (TokRules, Rules)
 extendRules ts (f, rs) =
   (\ t -> let
@@ -362,7 +363,7 @@ extendRules ts (f, rs) =
      r = mkRule $ mkId [t]
      in if Set.member t ts then Set.insert r l else l, rs)
 
-extendMixResolve :: Set.Set Token -> MixResolve f -> MixResolve f
+extendMixResolve :: Set.HashSet Token -> MixResolve f -> MixResolve f
 extendMixResolve ts f ga = f ga . extendRules ts
 
 -- | basic formula resolution that supports recursion without failure

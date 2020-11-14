@@ -31,7 +31,7 @@ import qualified Common.Lib.Rel as Rel
 import Common.Id
 
 import Data.Function (on)
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 
 -- Common Logic
@@ -106,7 +106,7 @@ data TextInfo = TextInfo
   , arityFunc :: MapSet String Int
   , boundPred :: MapSet String Int
   , boundFunc :: MapSet String Int
-  , seqMarkers :: Set.Set String
+  , seqMarkers :: Set.HashSet String
   } deriving Show
 
 emptyTI :: TextInfo
@@ -272,7 +272,7 @@ phraseForm b phr = case phr of
   -- cannot occur, because filtered
   Cl.Comment_text _ t _ -> trForm b t
 
-senForm :: CommonLogicSL -> Set.Set Cl.NAME -> Cl.SENTENCE
+senForm :: CommonLogicSL -> Set.HashSet Cl.NAME -> Cl.SENTENCE
   -> Result CBasic.CASLFORMULA
 senForm b bndVars form = case form of
   Cl.Bool_sent bs rn -> case bs of
@@ -318,7 +318,7 @@ senForm b bndVars form = case form of
   Cl.Irregular_sent s _ -> senForm b bndVars s
 
 -- checks for second order quantification
-quantSentForm :: CommonLogicSL -> QUANTIFIER -> Range -> Set.Set Cl.NAME
+quantSentForm :: CommonLogicSL -> QUANTIFIER -> Range -> Set.HashSet Cl.NAME
   -> [Cl.NAME_OR_SEQMARK] -> Cl.SENTENCE -> Result CBasic.CASLFORMULA
 quantSentForm b quantifier rn bndVars bs sen = do
   ti <- colTiSen sen
@@ -348,8 +348,8 @@ opType ar =
 predType :: Int -> CBasic.PRED_TYPE
 predType ar = CBasic.Pred_type (replicate ar individual) nullRange
 
-bndVarsToSet :: Set.Set Cl.NAME -> [Cl.NAME_OR_SEQMARK]
-  -> Result (Set.Set Cl.NAME)
+bndVarsToSet :: Set.HashSet Cl.NAME -> [Cl.NAME_OR_SEQMARK]
+  -> Result (Set.HashSet Cl.NAME)
 bndVarsToSet bndVars bs = do
   res <- mapM (\ nos -> return $ case nos of
                   Cl.Name n -> n
@@ -357,7 +357,7 @@ bndVarsToSet bndVars bs = do
         bs
   return $ foldr Set.insert bndVars res
 
-termForm :: CommonLogicSL -> Set.Set Cl.NAME -> Cl.TERM
+termForm :: CommonLogicSL -> Set.HashSet Cl.NAME -> Cl.TERM
   -> Result (CBasic.TERM ())
 termForm b bndVars trm = case trm of
   Cl.Name_term n ->
@@ -398,13 +398,13 @@ termFormPrd trm ar = case trm of
   Cl.Comment_term t _ _ -> termFormPrd t ar
   _ -> fail "CL2CFOL.termFormPrd"
 
-termSeqForm :: CommonLogicSL -> Set.Set Cl.NAME -> Cl.TERM_SEQ
+termSeqForm :: CommonLogicSL -> Set.HashSet Cl.NAME -> Cl.TERM_SEQ
   -> Result (CBasic.TERM ())
 termSeqForm b bndVars tseq = case tseq of
   Cl.Term_seq trm -> termForm b bndVars trm
   Cl.Seq_marks s -> return $ mkVarTerm (mkSimpleId $ tok2Str s) list
 
-termSeq, mapTermSeq, foldTermSeq :: CommonLogicSL -> Set.Set Cl.NAME
+termSeq, mapTermSeq, foldTermSeq :: CommonLogicSL -> Set.HashSet Cl.NAME
   -> [Cl.TERM_SEQ] -> Result [CBasic.TERM ()]
 termSeq b = if compact b then mapTermSeq b else foldTermSeq b
 
@@ -412,7 +412,7 @@ mapTermSeq b bndVars = mapM (termSeqForm b bndVars)
 
 foldTermSeq b bndVars = fmap (: []) . foldr (fTermSeq b bndVars) (return mkNil)
 
-fTermSeq :: CommonLogicSL -> Set.Set Cl.NAME -> Cl.TERM_SEQ
+fTermSeq :: CommonLogicSL -> Set.HashSet Cl.NAME -> Cl.TERM_SEQ
   -> Result (CBasic.TERM ()) -> Result (CBasic.TERM ())
 fTermSeq b bndVars tseq r = do
   l <- r

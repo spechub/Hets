@@ -28,7 +28,7 @@ import Common.Utils
 
 import Control.Monad
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 import Data.Maybe
 import Data.List
@@ -43,7 +43,7 @@ basicAna (Context m ps, sig, _) =
 
 data Env = Env
   { sign :: Sign
-  , syms :: Set.Set Symbol
+  , syms :: Set.HashSet Symbol
   , sens :: [Named Sen]
   , msgs :: [Diagnosis]
   }
@@ -61,12 +61,12 @@ addSens ns = do
    e <- get
    put e { sens = ns ++ sens e }
 
-addSyms :: Set.Set Symbol -> State Env ()
+addSyms :: Set.HashSet Symbol -> State Env ()
 addSyms sys = do
    e <- get
    put e { syms = Set.union sys $ syms e }
 
-symsOf :: Relation -> Set.Set Symbol
+symsOf :: Relation -> Set.HashSet Symbol
 symsOf r = let
     y = relType r
     s = relSrc y
@@ -152,7 +152,7 @@ typeRule s rule =
         _ -> case compatible i rs rt of
           Just c -> let y = RelType c c in [TypedRule (Tm $ Sgn n y) y]
           Nothing -> []
-      else Set.fold
+      else Set.foldr
       (\ (RelType f t) l -> maybeToList (do
               a <- compatible i f rs
               b <- compatible i t rt
@@ -206,8 +206,8 @@ anaAtts (KeyAtt m r) = do
   n <- anaRule r
   return $ KeyAtt m n
 
-conceptsOf :: Sign -> Set.Set Concept
-conceptsOf = Set.fold (\ sy -> case sy of
+conceptsOf :: Sign -> Set.HashSet Concept
+conceptsOf = Set.foldr (\ sy -> case sy of
   Con c -> Set.insert c
   _ -> id) Set.empty . symOf
 

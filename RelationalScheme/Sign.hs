@@ -45,10 +45,11 @@ import Common.Utils
 
 import Data.Data
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import GHC.Generics (Generic)
 import Data.Hashable
+import qualified Common.HashSetUtils as HSU
 
 type RSIsKey = Bool
 
@@ -90,19 +91,23 @@ data RSColumn = RSColumn
                     , c_data :: RSDatatype
                     , c_key :: RSIsKey
                     }
-                deriving (Eq, Ord, Show, Typeable, Data)
+                deriving (Eq, Ord, Show, Typeable, Data, Generic)
+
+instance Hashable RSColumn
 
 data RSTable = RSTable
                 { t_name :: Id
                 , columns :: [RSColumn]
                 , rsannos :: [Annotation]
-                , t_keys :: Set.Set (Id, RSDatatype)
+                , t_keys :: Set.HashSet (Id, RSDatatype)
                 }
-                deriving (Show, Typeable, Data)
+                deriving (Show, Typeable, Data, Generic)
+
+instance Hashable RSTable
 
 data RSTables = RSTables
                     {
-                        tables :: Set.Set RSTable
+                        tables :: Set.HashSet RSTable
                     }
                 deriving (Eq, Ord, Show, Typeable, Data)
 
@@ -270,5 +275,5 @@ isDisjoint s1 s2 =
         t1 = Set.map t_name $ tables s1
         t2 = Set.map t_name $ tables s2
     in
-        Set.fold (\ x y -> y && (x `Set.notMember` t2)) True t1 &&
-        Set.fold (\ x y -> y && (x `Set.notMember` t1)) True t2
+        Set.foldr (\ x y -> y && (x `HSU.notMember` t2)) True t1 &&
+        Set.foldr (\ x y -> y && (x `HSU.notMember` t1)) True t2

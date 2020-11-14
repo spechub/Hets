@@ -15,7 +15,7 @@ module HasCASL.FoldTerm where
 
 import HasCASL.As
 import Common.Id
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 data FoldRec a b = FoldRec
     { foldQualVar :: Term -> VarDecl -> a
@@ -110,7 +110,7 @@ getAllTypes = foldTerm FoldRec
     , foldProgEq = \ _ ps ts _ -> ps ++ ts
     }
 
-freeVars :: Term -> Set.Set VarDecl
+freeVars :: Term -> Set.HashSet VarDecl
 freeVars = foldTerm FoldRec
     { foldQualVar = const Set.singleton
     , foldQualOp = \ _ _ _ _ _ _ _ -> Set.empty
@@ -135,7 +135,7 @@ freeVars = foldTerm FoldRec
     , foldProgEq = \ _ ps ts _ -> (ps, ts)
     }
 
-opsInTerm :: Term -> Set.Set Term
+opsInTerm :: Term -> Set.HashSet Term
 opsInTerm = foldTerm FoldRec
     { foldQualVar = \ _ _ -> Set.empty
     , foldQualOp = \ _ ob n ts tl ik rg ->

@@ -54,8 +54,7 @@ import Maude.Sentence (Sentence)
 import qualified Maude.Sentence as Sen
 
 import Data.Data
-import Data.Set (Set)
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 import qualified Data.Foldable as Fold
 import qualified Common.Lib.Rel as Rel
@@ -68,6 +67,7 @@ import Common.Utils (nubOrd)
 
 import GHC.Generics (Generic)
 import Data.Hashable
+import qualified Common.HashSetUtils as HSU
 
 -- * Types
 
@@ -76,10 +76,10 @@ import Data.Hashable
 type SortSet = SymbolSet
 type KindSet = SymbolSet
 type SubsortRel = SymbolRel
-type OpDecl = (Set Symbol, [Attr])
-type OpDeclSet = Set OpDecl
+type OpDecl = (Set.HashSet Symbol, [Attr])
+type OpDeclSet = Set.HashSet OpDecl
 type OpMap = Map.HashMap Qid OpDeclSet
-type Sentences = Set Sentence
+type Sentences = Set.HashSet Sentence
 type KindRel = Map.HashMap Symbol Symbol
 
 -- ** The Signature type
@@ -99,7 +99,7 @@ data Sign = Sign {
 
 instance Pretty Sign where
     pretty sign = let
-        descend = flip . Set.fold
+        descend = flip . Set.foldr
         -- print sort declarations
         pr'sorts ss = if null ss then Doc.empty else
             hsep [keyword "sorts", hsep $ map pretty ss, dot]
@@ -107,7 +107,7 @@ instance Pretty Sign where
         pr'kinds ks = if null ks then Doc.empty else
             hsep [keyword "kinds", hsep $ map pretty ks, dot]
         -- print subsort declarations
-        pr'sups = hsep . map pretty . Set.elems
+        pr'sups = hsep . map pretty . Set.toList
         pr'pair sub sups = (:) . hsep $
             [keyword "subsort", pretty sub, less, pr'sups sups, dot]
         pr'subs = vcat . Map.foldrWithKey pr'pair []
@@ -117,8 +117,8 @@ instance Pretty Sign where
         pr'ods (decls, attrs) = descend ((:) . pr'decl attrs) decls
         pr'ocs = descend pr'ods
         pr'ops = vcat . Map.foldr' pr'ocs []
-        in vcat [ pr'sorts $ Set.elems $ sorts sign
-                , pr'kinds $ Set.elems $ kinds sign
+        in vcat [ pr'sorts $ Set.toList $ sorts sign
+                , pr'kinds $ Set.toList $ kinds sign
                 , pr'subs $ Rel.toMap $ Rel.transReduce $ subsorts sign
                 , pr'ops $ ops sign]
                 {- , pretty "op kind : Sort -> Kind ."
@@ -144,7 +144,7 @@ instance HasSorts KindRel where
 
 instance HasOps Sign where
     getOps = let
-        descend = flip . Set.fold
+        descend = flip . Set.foldr
         insert = descend $ descend Set.insert . fst
         in Map.foldr' insert Set.empty . ops
     mapOps mp sign = let
@@ -199,7 +199,7 @@ addPartial = Map.map partialODS
 partialODS :: OpDeclSet -> OpDeclSet
 partialODS = Set.map partialSet
 
-partialSet :: (Set Symbol, [Attr]) -> (Set Symbol, [Attr])
+partialSet :: (Set.HashSet Symbol, [Attr]) -> (Set.HashSet Symbol, [Attr])
 partialSet (ss, ats) = (Set.union ss ss', ats)
       where ss' = Set.map partialOp ss
 
@@ -213,7 +213,7 @@ sortSym2kindSym (Sort q) = Kind q
 sortSym2kindSym s = s
 
 
-testFun :: Map.HashMap (Set.Set OpDecl) Int -> Int
+testFun :: Map.HashMap (Set.HashSet OpDecl) Int -> Int
 testFun f = length $ Map.toList f
 
 -- | The empty 'Sign'ature.
@@ -229,12 +229,12 @@ empty = Sign {
 
 inlineSign :: Sign -> Doc
 inlineSign sign = let
-        descend = flip . Set.fold
+        descend = flip . Set.foldr
         -- print sort declarations
         pr'sorts ss = if null ss then Doc.empty else
             hsep [keyword "sorts", hsep $ map pretty ss, dot]
         -- print subsort declarations
-        pr'sups = hsep . map pretty . Set.elems
+        pr'sups = hsep . map pretty . Set.toList
         pr'pair sub sups = (:) . hsep $
             [keyword "subsort", pretty sub, less, pr'sups sups, dot]
         pr'subs = vcat . Map.foldrWithKey pr'pair []
@@ -244,7 +244,7 @@ inlineSign sign = let
         pr'ods (decls, attrs) = descend ((:) . pr'decl attrs) decls
         pr'ocs = descend pr'ods
         pr'ops = vcat . Map.foldr' pr'ocs []
-        in vcat [ pr'sorts $ Set.elems $ sorts sign
+        in vcat [ pr'sorts $ Set.toList $ sorts sign
                 , pr'subs $ Rel.toMap $ Rel.transReduce $ subsorts sign
                 , pr'ops $ ops sign ]
 
@@ -275,7 +275,7 @@ insertOpDecl rel symb attrs opmap = let
     name = getName symb
     same'kind = Fold.any (sameKind rel symb) . fst
     old'ops = Map.findWithDefault Set.empty name opmap
-    (same, rest) = Set.partition same'kind old'ops
+    (same, rest) = HSU.partition same'kind old'ops
     new'ops = merge same rest
     in Map.insert name new'ops opmap
 
@@ -293,7 +293,7 @@ mapOpDecl rel src tgt attrs opmap = let
     same'kind = Fold.any (sameKind rel src) . fst
     src'ops = Map.findWithDefault Set.empty src'name opmap
     tgt'ops = Map.findWithDefault Set.empty tgt'name opmap
-    (same, rest) = Set.partition same'kind src'ops
+    (same, rest) = HSU.partition same'kind src'ops
     has'rest = if Set.null rest then Nothing else Just rest
     set'decl = Map.insert tgt'name $ merge same tgt'ops
     set'rest = Map.update (const has'rest) src'name
@@ -380,7 +380,7 @@ subODS ods1 ods2 = Set.isSubsetOf ods1' ods2'
 removeAttsODS :: OpDeclSet -> OpDeclSet
 removeAttsODS = Set.map removeAtts
 
-removeAtts :: (Set Symbol, [Attr]) -> (Set Symbol, [Attr])
+removeAtts :: (Set.HashSet Symbol, [Attr]) -> (Set.HashSet Symbol, [Attr])
 removeAtts (ss, _) = (ss, [])
 
 -- * Modification

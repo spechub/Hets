@@ -23,7 +23,7 @@ import Common.ProofTree
 import Common.DocUtils
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 -- CASL
 import CASL.Logic_CASL
@@ -108,12 +108,12 @@ mapTheory :: (CasS.TermExtension f, FormExtension f) =>
 mapTheory (sig, sents) =
   (mapSig (CasS.getConstructors sents) sig, map (mapNamed toSentence) sents)
 
-mapSig :: Set.Set (Id, CasS.OpType) -> CasS.Sign f e -> Env
+mapSig :: Set.HashSet (Id, CasS.OpType) -> CasS.Sign f e -> Env
 mapSig = mapSigAux trId fromOpType fromPredType
 
 -- | sort names or not translated
 mapSigAux :: (Id -> Id) -> (CasS.OpType -> Type) -> (CasS.PredType -> Type)
-  -> Set.Set (Id, CasS.OpType) -> CasS.Sign f e -> Env
+  -> Set.HashSet (Id, CasS.OpType) -> CasS.Sign f e -> Env
 mapSigAux trI trO trP constr sign =
     let f1 = map ( \ (i, ty) ->
                    (trI i, trO ty,

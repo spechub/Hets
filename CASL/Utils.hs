@@ -17,7 +17,7 @@ module CASL.Utils where
 import Data.Maybe
 import Data.List
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 
 import Common.Id
@@ -225,7 +225,7 @@ substConditionalF c = foldFormula . substConditionalRecord c
 {- |
   Subsitute predications with strong equation if it is equivalent to.
 -}
-eqSubstRecord :: Set.Set PRED_SYMB -- ^ equivalent predicates
+eqSubstRecord :: Set.HashSet PRED_SYMB -- ^ equivalent predicates
               -> (f -> f) -> Record f (FORMULA f) (TERM f)
 eqSubstRecord eqPredSet extFun =
       (mapRecord extFun) {foldPredication = foldPred}
@@ -234,5 +234,5 @@ eqSubstRecord eqPredSet extFun =
               then let [f, s] = tList in Equation f Strong s rng
               else Predication psymb tList rng
 
-substEqPreds :: Set.Set PRED_SYMB -> (f -> f) -> FORMULA f -> FORMULA f
+substEqPreds :: Set.HashSet PRED_SYMB -> (f -> f) -> FORMULA f -> FORMULA f
 substEqPreds eqPredSet = foldFormula . eqSubstRecord eqPredSet

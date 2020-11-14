@@ -39,7 +39,7 @@ import qualified THF.Sublogic as SL
 import THF.Poly (getSymbols)
 import THF.Utils (toId)
 import qualified Data.Map (toList)
-import qualified Data.Set (fromList)
+import qualified Data.HashSet (fromList) as Set
 import GHC.Generics (Generic)
 import Data.Hashable
 
@@ -72,7 +72,7 @@ instance Sentences THF THFFormula SignTHF MorphismTHF SymbolTHF where
     symKind THF s = case symType s of
                      ST_Type _ -> "type"
                      ST_Const _ -> "constant"
-    sym_of THF s = [Data.Set.fromList . map snd . Map.toList . symbols $ s]
+    sym_of THF s = [Set.fromList . map snd . Map.toList . symbols $ s]
     {- negation THF _ =
     other default implementations are fine -}
 

@@ -27,7 +27,7 @@ import Common.Parsec
 import Common.Token
 
 import Data.Either (lefts, rights)
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 import qualified CommonLogic.Tools as Tools
 
@@ -223,7 +223,7 @@ quantsent3 t mg bs [] s rn =
     Nothing -> Quant_sent quantType bs s rn -- normal Quant_sent
     Just g ->                                -- Quant_sent using syntactic sugar
       let functerm = Atom (Funct_term (Name_term g) (map (Term_seq . Name_term)
-                      $ Set.elems $ Tools.indvC_sen s) nullRange) []
+                      $ Set.toList $ Tools.indvC_sen s) nullRange) []
       in if t
           then Quant_sent Universal bs (Bool_sent (BinOp Implication
               (Atom_sent functerm nullRange) s) rn) rn

@@ -16,7 +16,7 @@ module FreeCAD.XMLPrinter where
 
 import Text.XML.Light
 import FreeCAD.As
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 exportXMLFC :: Sign -> String
 exportXMLFC = ppTopElement . doc2XML . Set.toList . objects

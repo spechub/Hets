@@ -45,7 +45,7 @@ import Control.Monad
 import Data.Char (toLower)
 import Data.List
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
@@ -77,23 +77,23 @@ import Common.Lib.Graph
 
 type VSESign = Sign Dlformula Procs
 
-getVariables :: Sentence -> Set.Set Token
+getVariables :: Sentence -> Set.HashSet Token
 getVariables = foldFormula $ getVarsRec $ getVSEVars . unRanged
 
-getVarsRec :: (f -> Set.Set Token) -> Record f (Set.Set Token) (Set.Set Token)
+getVarsRec :: (f -> Set.HashSet Token) -> Record f (Set.HashSet Token) (Set.HashSet Token)
 getVarsRec f =
   (constRecord f Set.unions Set.empty)
   { foldQuantification = \ _ _ vs r _ -> Set.union r
       $ Set.fromList $ map fst $ flatVAR_DECLs vs
   , foldQual_var = \ _ v _ _ -> Set.singleton v }
 
-getVSEVars :: VSEforms -> Set.Set Token
+getVSEVars :: VSEforms -> Set.HashSet Token
 getVSEVars vf = case vf of
   Dlformula _ p s -> Set.union (getProgVars p) $ getVariables s
   Defprocs l -> Set.unions $ map getDefprogVars l
   _ -> Set.empty -- no variables in a sort generation constraint
 
-getProgVars :: Program -> Set.Set Token
+getProgVars :: Program -> Set.HashSet Token
 getProgVars =
   let vrec = getVarsRec $ const Set.empty
       getTermVars = foldTerm vrec
@@ -103,7 +103,7 @@ getProgVars =
   , foldBlock = \ _ vs p -> Set.union p
       $ Set.fromList $ map fst $ flatVAR_DECLs vs }
 
-getDefprogVars :: Defproc -> Set.Set Token
+getDefprogVars :: Defproc -> Set.HashSet Token
 getDefprogVars (Defproc _ _ vs p _) = Set.union (getProgVars p)
   $ Set.fromList vs
 
@@ -113,11 +113,11 @@ tokenToLower (Token s r) = Token (map toLower s) r
 idToLower :: Id -> Id
 idToLower (Id ts cs r) = Id (map tokenToLower ts) (map idToLower cs) r
 
-getCases :: String -> Set.Set Id -> [Diagnosis]
+getCases :: String -> Set.HashSet Id -> [Diagnosis]
 getCases msg =
   map (mkDiag Error ("overlapping " ++ msg ++ " identifiers") . Set.toList)
   . filter hasMany . Map.elems
-  . Set.fold (\ i -> MapSet.setInsert (idToLower i) i) Map.empty
+  . Set.foldr (\ i -> MapSet.setInsert (idToLower i) i) Map.empty
 
 getCaseDiags :: Sign f e -> [Diagnosis]
 getCaseDiags sig =
@@ -322,7 +322,7 @@ checkRec b = (constRecord (const False) and True)
   , foldConditional = \ _ _ _ _ _ -> False
   , foldExtFORMULA = \ _ _ -> b }
 
-minExpProg :: Set.Set VAR -> Maybe SORT -> Sign () Procs
+minExpProg :: Set.HashSet VAR -> Maybe SORT -> Sign () Procs
            -> Program -> Result Program
 minExpProg invars res sig p@(Ranged prg r) = let
   checkCond f = if foldFormula (checkRec False) f then return f else

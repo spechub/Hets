@@ -23,7 +23,7 @@ import qualified Common.Lib.Rel as Rel
 import CASL.AS_Basic_CASL
 import CASL.Sign
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 
 list :: Id

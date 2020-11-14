@@ -40,7 +40,7 @@ import CASL.Sign
 import CASL.Morphism
 import CASL.Sublogic as Sublogic
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 data CASL_DL2CASL = CASL_DL2CASL deriving Show
 
@@ -121,8 +121,8 @@ trSign inSig =
       {
         sortRel = Rel.insertKey thing
           $ Rel.insertKey dataS
-          $ Set.fold (`Rel.insertDiffPair` dataS)
-                  (Set.fold (`Rel.insertDiffPair` thing)
+          $ Set.foldr (`Rel.insertDiffPair` dataS)
+                  (Set.foldr (`Rel.insertDiffPair` thing)
                    (sortRel inC) inSorts)
           $ Set.delete dataS inData
       }

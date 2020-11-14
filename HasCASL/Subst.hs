@@ -25,7 +25,7 @@ import Common.Id
 import Common.Lib.State
 
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Data.Maybe
 
 
@@ -52,7 +52,7 @@ newtype Subst =
                                            if a constant c occurs in the term t of a
           const-term mapping (c',t) then c' is entered in the
           by this mapping corresponding set s: (c, insert c' s) -}
-          , Map.HashMap SubstConst (Set.Set SubstConst)) deriving Show
+          , Map.HashMap SubstConst (Set.HashSet SubstConst)) deriving Show
 
 emptySubstitution :: Subst
 emptySubstitution = Subst (Map.empty, Map.empty, Map.empty)

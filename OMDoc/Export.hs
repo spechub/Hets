@@ -59,7 +59,7 @@ import Data.Maybe
 import Data.List
 import qualified Data.HashMap.Strict as Map
 import qualified Common.OrderedMap as OMap
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Control.Monad (liftM)
 
 import System.FilePath
@@ -250,8 +250,8 @@ getNodeData le ln lb =
 The set is only to accumulate the mapped symbols (the targets, not
 the sources!) in order to decide whether to just map the symbol to
 a previously mapped symbol or to create an alias! -}
-makeImport :: Set.Set UniqName -> (String, OMCD, [(OMName, UniqName)])
-           -> (Set.Set UniqName, TCElement)
+makeImport :: Set.HashSet UniqName -> (String, OMCD, [(OMName, UniqName)])
+           -> (Set.HashSet UniqName, TCElement)
 makeImport s (n, cd, mapping) =
     let f s' p@(_, un)
             | Set.notMember un s' =
@@ -277,7 +277,7 @@ makeImportMapping :: forall lid sublogics
                           actual mapping as returned by makeMorphism -}
                          , Maybe ( (String, OMCD, [(OMName, UniqName)])
                                  -- symbols exported by the morphism
-                                 , Set.Set symbol))
+                                 , Set.HashSet symbol))
 makeImportMapping le ln dg toInfo s (from, _, lbl)
     | isHidingEdge $ dgl_type lbl =
         warning () (concat [ "Hiding link id ", showEdgeId (dgl_id lbl)
@@ -372,7 +372,7 @@ makeMorphism :: forall lid1 sublogics1
          sign2 morphism2 symbol2 raw_symbol2 proof_tree2) =>
        (lid1, NameMap symbol1) -> (lid2, NameMap symbol2)
                                -> GMorphism
-                               -> Result ([(OMName, UniqName)], Set.Set symbol2)
+                               -> Result ([(OMName, UniqName)], Set.HashSet symbol2)
 makeMorphism (l1, symM1) (l2, symM2)
                  (GMorphism cid (ExtSign sig _) _ mor _)
 
@@ -429,7 +429,7 @@ mapEntry _ m1 m2 (s1, s2) =
 
 
 -- | extracts the single element from singleton sets, fails otherwise
-sglElem :: String -> Set.Set a -> a
+sglElem :: (Eq a, Hashable a) => String -> Set.HashSet a -> a
 sglElem s sa
     | Set.size sa > 1 =
         error $ "OMDocExport: comorphism symbol image > 1 in " ++ s
@@ -459,7 +459,7 @@ exportSymbol :: forall lid sublogics
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
-        lid -> SigMap symbol -> Maybe SyntaxTable -> [Set.Set symbol] -> symbol
+        lid -> SigMap symbol -> Maybe SyntaxTable -> [Set.HashSet symbol] -> symbol
             -> UniqName -> Result [TCElement]
 exportSymbol lid (SigMap sm _) mSynTbl sl sym n =
     let symNotation = mkNotation n $ fmap (\ x -> (sym_name lid sym, x)) mSynTbl

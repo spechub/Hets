@@ -39,7 +39,7 @@ import CommonLogic.Morphism as Morphism
 import CommonLogic.Sign as Sign
 import CommonLogic.ExpandCurie
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 import qualified Common.Lib.MapSet as MapSet
 import qualified Data.List as List
@@ -64,7 +64,7 @@ retrieveSign sig (AS_Anno.Annoted tm _ _ _) =
   Sign.unite (Sign.unite sig $ nondiscItems $ AS.nondiscourseNames tm)
              (propsOfFormula $ AS.getText tm)
 
-nondiscItems :: Maybe (Set.Set AS.NAME) -> Sign.Sign
+nondiscItems :: Maybe (Set.HashSet AS.NAME) -> Sign.Sign
 nondiscItems s = case s of
   Nothing -> Sign.emptySig
   Just ns -> Sign.emptySig {Sign.nondiscourseNames = Set.map Id.simpleIdToId ns}
@@ -259,9 +259,9 @@ inducedFromToMorphism :: Map.HashMap Symbol.Symbol Symbol.Symbol
                     -> ExtSign Sign.Sign Symbol.Symbol
                     -> Result.Result Morphism.Morphism
 inducedFromToMorphism m (ExtSign s sys) (ExtSign t ty) = let
-  tsy = Set.fold (\ r -> let (q, f) = splitFragment $ symName r
+  tsy = Set.foldr (\ r -> let (q, f) = splitFragment $ symName r
           in MapSet.insert f q) MapSet.empty ty
-  p = Set.fold (\ sy -> let n = symName sy in case Map.lookup sy m of
+  p = Set.foldr (\ sy -> let n = symName sy in case Map.lookup sy m of
          Just r -> Map.insert n $ symName r
          Nothing -> if Set.member sy ty then id else
            let (_, f) = splitFragment n
