@@ -94,6 +94,7 @@ simpleInstance s d = hsep [text "instance"
 getSetVars :: Type -> [String]
 getSetVars ty = case ty of
    LApply (Con "Set.Set") [Var v] -> [v]
+   LApply (Con "Set.HashSet") [Var v] -> [v]
    _ -> []
 
 {- instanceSkeleton handles most instance declarations, where instance
