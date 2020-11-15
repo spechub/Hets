@@ -64,7 +64,7 @@ genericDisambigSens c sel upd nameSet (ax : rest) =
          genericDisambigSens n sel upd (Set.insert name' nameSet) rest
 
 nameAndDisambiguate :: [Named a] -> [Named a]
-nameAndDisambiguate = id --disambiguateSens Set.empty . nameSens
+nameAndDisambiguate = nameSens -- id --disambiguateSens Set.empty . nameSens
 
 -- | name unlabeled axioms with "Axnnn"
 nameSens :: [Named a] -> [Named a]
