@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/CspCASL2Modal.hs
 Copyright   :  (c) Till Mossakowski and Uni Bremen 2004
@@ -36,8 +36,13 @@ import Modal.Logic_Modal
 import Modal.AS_Modal
 import Modal.ModalSign
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 -- | The identity of the comorphism
-data CspCASL2Modal = CspCASL2Modal deriving (Show)
+data CspCASL2Modal = CspCASL2Modal deriving (Show, Generic)
+
+instance Hashable CspCASL2Modal
 
 instance Language CspCASL2Modal -- default definition is okay
 

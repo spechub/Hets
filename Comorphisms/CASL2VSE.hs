@@ -1,4 +1,5 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, 
+ FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/CASL2VSE.hs
 Description :  embedding from CASL to VSE
@@ -31,8 +32,13 @@ import VSE.Ana
 
 import Common.ProofTree
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 -- | The identity of the comorphism
-data CASL2VSE = CASL2VSE deriving Show
+data CASL2VSE = CASL2VSE deriving (Show, Generic)
+
+instance Hashable CASL2VSE
 
 instance Language CASL2VSE -- default definition is okay
 

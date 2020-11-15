@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/ExtModal2ExtModalTotal.hs
 Description :  coding out subsorting
@@ -42,8 +42,14 @@ import ExtModal.Sublogic as EM
 
 import Comorphisms.CASL2SubCFOL
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 -- | The identity of the comorphism
-data ExtModal2ExtModalTotal = ExtModal2ExtModalTotal deriving Show
+data ExtModal2ExtModalTotal = ExtModal2ExtModalTotal 
+ deriving (Show, Generic)
+
+instance Hashable ExtModal2ExtModalTotal
 
 instance Language ExtModal2ExtModalTotal -- default definition is okay
 

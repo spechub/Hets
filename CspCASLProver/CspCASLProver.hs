@@ -44,7 +44,7 @@ import CspCASLProver.IsabelleUtils
 import CspCASLProver.Utils
 
 import qualified Data.Maybe as Maybe
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import Isabelle.IsaProve
 import qualified Isabelle.IsaSign as Isa

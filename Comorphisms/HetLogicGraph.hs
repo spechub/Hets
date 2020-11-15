@@ -33,7 +33,7 @@ import Control.Monad
 import qualified Common.OrderedMap as OMap
 import qualified Data.HashMap.Strict as Map
 import qualified Data.Map as PlainMap
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Data.Maybe
 import Data.List
 import Data.Hashable
@@ -187,12 +187,12 @@ hsg_union hsg1 hsg2 =
 
 compute_mapSublogic_preImage :: AnyComorphism
                              -> (AnyComorphism,
-                                 PlainMap.Map G_sublogics (Set.Set G_sublogics))
+                                 PlainMap.Map G_sublogics (Set.HashSet G_sublogics))
 compute_mapSublogic_preImage (Comorphism cid) =
     case onlyMaximal_preImage $ mapSublogic_preImage cid of
       preImageMap -> (Comorphism cid, preImageMap)
 
-comorPreImages :: [(AnyComorphism, PlainMap.Map G_sublogics (Set.Set G_sublogics))]
+comorPreImages :: [(AnyComorphism, PlainMap.Map G_sublogics (Set.HashSet G_sublogics))]
 comorPreImages = map compute_mapSublogic_preImage comorphismList
 
 lookupPreImage :: AnyComorphism -> G_sublogics -> [G_sublogics]
@@ -209,13 +209,13 @@ deleteFindMinHash f =
       (k,v):l'-> ((k, v), Map.fromList l')
 
 -- | pre-image of a function relative to the list values
-preImage :: (Ord a, Ord b) => (a -> b) -> [a] -> PlainMap.Map b (Set.Set a)
+preImage :: (Ord a, Hashable a, Ord b) => (a -> b) -> [a] -> PlainMap.Map b (Set.HashSet a)
 preImage func = foldl ins PlainMap.empty
     where ins mp v = PlainMap.insertWith Set.union (func v) (Set.singleton v) mp
 
-preImageMaybe :: (Ord a, Ord b) =>
+preImageMaybe :: (Ord a, Hashable a, Ord b) =>
                  (a -> Maybe b) -> [a]
-              -> PlainMap.Map b (Set.Set a)
+              -> PlainMap.Map b (Set.HashSet a)
 preImageMaybe f vs =
     (PlainMap.mapKeys fromJust . PlainMap.delete Nothing) $ preImage f vs
 
@@ -224,7 +224,7 @@ mapSublogic_preImage :: (Comorphism cid
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1
             lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2)
-                   => cid -> PlainMap.Map G_sublogics (Set.Set G_sublogics)
+                   => cid -> PlainMap.Map G_sublogics (Set.HashSet G_sublogics)
 mapSublogic_preImage cid =
     PlainMap.foldWithKey toG_sublogics PlainMap.empty $
     preImageMaybe (mapSublogic cid) $ all_sublogics $ sourceLogic cid
@@ -232,10 +232,10 @@ mapSublogic_preImage cid =
              PlainMap.insert (G_sublogics (targetLogic cid) s2)
                         (Set.map (G_sublogics (sourceLogic cid)) set_s1)
 
-onlyMaximal_preImage :: PlainMap.Map G_sublogics (Set.Set G_sublogics)
-                     -> PlainMap.Map G_sublogics (Set.Set G_sublogics)
+onlyMaximal_preImage :: PlainMap.Map G_sublogics (Set.HashSet G_sublogics)
+                     -> PlainMap.Map G_sublogics (Set.HashSet G_sublogics)
 onlyMaximal_preImage = PlainMap.map shrink
-    where shrink st = Set.fromList $ shrink' [] $ Set.elems st
+    where shrink st = Set.fromList $ shrink' [] $ Set.toList st
           shrink' acc [] = acc
           shrink' acc (x : xs) = if any (isProperSublogic x) (xs ++ acc)
                                then shrink' acc xs
@@ -287,7 +287,7 @@ unionsWith f =
  foldl (Map.unionWith f) Map.empty
 
 partSetSameLogic :: Map.HashMap String G_sublogics
-                 -> [Set.Set G_sublogics]
+                 -> [Set.HashSet G_sublogics]
 partSetSameLogic = Rel.partSet sameLogic . Set.fromList . Map.elems
 
 addHomogeneousInclusions :: HetSublogicGraph -> HetSublogicGraph

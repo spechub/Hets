@@ -1,4 +1,5 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, 
+             FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/Adl2CASL.hs
 Description :  Coding a description language into CASL
@@ -45,9 +46,13 @@ import qualified Common.Lib.MapSet as MapSet
 import Common.Lib.State
 
 import qualified Data.HashSet as Set
+import GHC.Generics (Generic)
+import Data.Hashable
 
 -- | lid of the morphism
-data Adl2CASL = Adl2CASL deriving Show
+data Adl2CASL = Adl2CASL deriving (Show, Generic)
+
+instance Hashable Adl2CASL
 
 instance Language Adl2CASL -- default is ok
 

@@ -327,7 +327,7 @@ instance (ShATermLG a, ShATermLG b, ShATermLG c) => ShATermLG (a, b, c) where
                     (att3, (a', b', c'))}}}
             u -> fromShATermError "(,,)" u
 
-instance (Ord a, ShATermLG a) => ShATermLG (Set.HashSet a) where
+instance (Ord a, Hashable a, ShATermLG a) => ShATermLG (Set.HashSet a) where
   toShATermLG att set = do
       (att1, i) <- toShATermLG' att $ Set.toList set
       return $ addATerm (ShAAppl "Set" [i] []) att1

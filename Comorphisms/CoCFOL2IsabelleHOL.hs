@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/CoCFOL2IsabelleHOL.hs
 Description :  Extension of CFOL2IsabelleHOL to CoCASL
@@ -40,8 +40,13 @@ import Common.Utils (number)
 import Data.Char (ord, chr)
 import Data.Maybe (fromMaybe)
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 -- | The identity of the comorphism
-data CoCFOL2IsabelleHOL = CoCFOL2IsabelleHOL deriving Show
+data CoCFOL2IsabelleHOL = CoCFOL2IsabelleHOL deriving (Show, Generic)
+
+instance Hashable CoCFOL2IsabelleHOL
 
 instance Language CoCFOL2IsabelleHOL where
   language_name CoCFOL2IsabelleHOL = "CoCASL2Isabelle"

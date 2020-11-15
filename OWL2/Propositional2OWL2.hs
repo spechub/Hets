@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./OWL2/Propositional2OWL2.hs
 Description :  Comorphism from Propostional Logic to OWL 2
@@ -39,8 +39,12 @@ import qualified Propositional.Morphism as PMor
 import qualified Propositional.Symbol as PSymbol
 
 import qualified Data.HashSet as Set
+import GHC.Generics (Generic)
+import Data.Hashable
 
-data Propositional2OWL2 = Propositional2OWL2 deriving Show
+data Propositional2OWL2 = Propositional2OWL2 deriving (Show, Generic)
+
+instance Hashable Propositional2OWL2
 
 instance Language Propositional2OWL2
 

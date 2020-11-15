@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/THFP_P2HasCASL.hs
 Description :  Comorphism from THFP to HasCASL
@@ -41,7 +41,12 @@ import Control.Monad
 import qualified Data.HashMap.Strict as Map
 import qualified Data.HashSet as Set
 
-data THFP_P2HasCASL = THFP_P2HasCASL deriving Show
+import GHC.Generics (Generic)
+import Data.Hashable
+
+data THFP_P2HasCASL = THFP_P2HasCASL deriving (Show, Generic)
+
+instance Hashable THFP_P2HasCASL
 
 instance Language THFP_P2HasCASL
 

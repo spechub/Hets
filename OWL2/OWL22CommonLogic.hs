@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, DeriveGeneric #-}
 {- |
 Module      :  ./OWL2/OWL22CommonLogic.hs
 Description :  Comorphism from OWL2 to Common Logic
@@ -48,7 +48,12 @@ import qualified CommonLogic.Sublogic as ClSl
 
 import Common.ProofTree
 
-data OWL22CommonLogic = OWL22CommonLogic deriving Show
+import GHC.Generics (Generic)
+import Data.Hashable
+
+data OWL22CommonLogic = OWL22CommonLogic deriving (Show, Generic)
+
+instance Hashable OWL22CommonLogic
 
 instance Language OWL22CommonLogic
 

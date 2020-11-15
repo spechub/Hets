@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./CspCASL/Comorphisms.hs
 Description :  generic CspCASL instance for comorphisms
@@ -25,10 +25,13 @@ import CspCASL.SymbItems
 import CspCASL.Symbol
 
 import qualified Data.HashSet as Set
+import GHC.Generics (Generic)
 import Data.Hashable
 
 -- | The identity of the comorphism
-data CspCASL2CspCASL a b = CspCASL2CspCASL a b deriving Show
+data CspCASL2CspCASL a b = CspCASL2CspCASL a b deriving (Show, Generic)
+
+instance (Hashable a, Hashable b) => Hashable (CspCASL2CspCASL a b)
 
 cspCASLTrace :: CspCASL2CspCASL () Trace
 cspCASLTrace = CspCASL2CspCASL () Trace

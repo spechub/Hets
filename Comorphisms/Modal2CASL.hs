@@ -51,7 +51,9 @@ import GHC.Generics (Generic)
 import Data.Hashable
 
 -- | The identity of the comorphism
-data Modal2CASL = Modal2CASL deriving (Show)
+data Modal2CASL = Modal2CASL deriving (Show, Generic)
+
+instance Hashable Modal2CASL
 
 instance Language Modal2CASL -- default definition is okay
 

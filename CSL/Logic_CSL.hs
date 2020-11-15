@@ -33,7 +33,7 @@ import CSL.Sign
 import CSL.Symbol
 import CSL.Tools
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as Map
 import Data.Monoid
 
 import Logic.Logic

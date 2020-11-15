@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE MultiParamTypeClasses, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/HasCASL2HasCASL.hs
 Description :  translating executable formulas to programs
@@ -26,8 +26,13 @@ import HasCASL.ProgEq
 import qualified Data.HashSet as Set
 import Common.AS_Annotation
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 -- | The identity of the comorphism
-data HasCASL2HasCASL = HasCASL2HasCASL deriving Show
+data HasCASL2HasCASL = HasCASL2HasCASL deriving (Show, Generic)
+
+instance Hashable HasCASL2HasCASL
 
 instance Language HasCASL2HasCASL where
   language_name HasCASL2HasCASL = "HasCASL2HasCASLPrograms"

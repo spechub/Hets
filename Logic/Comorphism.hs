@@ -59,7 +59,7 @@ import qualified Data.HashSet as Set
 import GHC.Generics (Generic)
 import Data.Hashable
 
-class (Language cid,
+class (Language cid, Hashable cid,
        Logic lid1 sublogics1
         basic_spec1 sentence1 symb_items1 symb_map_items1
         sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
@@ -247,7 +247,11 @@ data InclComorphism lid sublogics = InclComorphism
   { inclusion_logic :: lid
   , inclusion_source_sublogic :: sublogics
   , inclusion_target_sublogic :: sublogics }
-  deriving (Show, Typeable, Data)
+  deriving (Show, Typeable, Data, Generic)
+
+instance (Hashable lid, Hashable sublogics) 
+  => Hashable (InclComorphism lid sublogics)
+
 
 -- | construction of an identity comorphism
 mkIdComorphism :: (Logic lid sublogics
@@ -319,7 +323,9 @@ instance Logic lid sublogics
            isInclusionComorphism _ = True
 
 data CompComorphism cid1 cid2 = CompComorphism cid1 cid2
-  deriving (Show, Typeable, Data)
+  deriving (Show, Typeable, Data, Generic)
+
+instance (Hashable cid1, Hashable cid2) => Hashable (CompComorphism cid1 cid2)
 
 instance (Language cid1, Language cid2)
           => Language (CompComorphism cid1 cid2) where
@@ -424,14 +430,19 @@ data AnyComorphism = forall cid lid1 sublogics1
         lid2 sublogics2
         basic_spec2 sentence2 symb_items2 symb_map_items2
         sign2 morphism2 symbol2 raw_symbol2 proof_tree2 .
-      Comorphism cid
+      (Comorphism cid
                  lid1 sublogics1 basic_spec1 sentence1
                  symb_items1 symb_map_items1
                  sign1 morphism1 symbol1 raw_symbol1 proof_tree1
                  lid2 sublogics2 basic_spec2 sentence2
                  symb_items2 symb_map_items2
-                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2 =>
+                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2, Hashable cid) =>
       Comorphism cid deriving Typeable -- used for GTheory
+
+instance Hashable AnyComorphism where
+ hashWithSalt salt c = 
+  case c of
+   Comorphism cid -> hashWithSalt salt cid
 
 instance Eq AnyComorphism where
     a == b = compare a b == EQ

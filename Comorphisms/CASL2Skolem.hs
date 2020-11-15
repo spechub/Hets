@@ -1,4 +1,5 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, 
+FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  $Header$
 Description :  skolemization as an institution comorphism
@@ -36,7 +37,12 @@ import qualified Common.Lib.MapSet as MapSet
 
 import qualified Common.Lib.Rel as Rel
 
-data CASL2Skolem = CASL2Skolem deriving Show
+import GHC.Generics (Generic)
+import Data.Hashable
+
+data CASL2Skolem = CASL2Skolem deriving (Show, Generic)
+
+instance Hashable CASL2Skolem
 
 instance Language CASL2Skolem where
     language_name CASL2Skolem = "CASL2Skolem"

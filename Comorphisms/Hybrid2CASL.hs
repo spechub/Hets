@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/Hybrid2CASL.hs
 Copyright   :  nevrenato@gmail.com
@@ -38,10 +38,12 @@ import CASL.Morphism
 import CASL.Sign
 import CASL.Sublogic as SL
 
+import GHC.Generics (Generic)
 import Data.Hashable
 
+data Hybrid2CASL = Hybrid2CASL deriving (Show, Generic)
 
-data Hybrid2CASL = Hybrid2CASL deriving Show
+instance Hashable Hybrid2CASL
 
 -- Just to make things easier to understand
 type HForm = HybridFORMULA
@@ -155,8 +157,8 @@ addWrldArg hs cs = let
     g (PredType a) = PredType (worldSort : a)
     ops = addOpMapSet (rigidOps $ extendedInfo hs) (opMap hs)
     preds = addMapSet (rigidPreds $ extendedInfo hs) (predMap hs)
-    ks = Set.elems $ MapSet.keysSet ops
-    ks' = Set.elems $ MapSet.keysSet preds
+    ks = Set.toList  $ MapSet.keysSet ops
+    ks' = Set.toList  $ MapSet.keysSet preds
   in cs
     { opMap = foldr (MapSet.update (Set.map f)) (opMap cs) ks
     , predMap = foldr (MapSet.update (Set.map g)) (predMap cs) ks'
@@ -289,16 +291,16 @@ toName s = fmap $ makeNamed s
 
 {- Adds the constraints associated with the rigidity
 of predicates or operations. -}
-applRig :: (Ord k, Hashable k) => MapSet.MapSet k a ->
+applRig :: (Ord k, Hashable k, Eq a, Hashable a) => MapSet.MapSet k a ->
            String ->
            (k -> a -> CForm) ->
            [Named CForm]
 applRig m s f = toName s $ glueDs ks f m
-        where ks = Set.elems $ MapSet.keysSet m
+        where ks = Set.toList  $ MapSet.keysSet m
 
 {- Given a list of designators, generates the rigidity constraints
 associated, and concats them into a single list -}
-glueDs :: (Ord k, Hashable k) => [k] ->
+glueDs :: (Ord k, Hashable k, Eq a, Hashable a) => [k] ->
           (k -> a -> CForm) ->
           MapSet.MapSet k a ->
           [CForm]
@@ -308,7 +310,7 @@ glueDs ks f m = concat $ foldr (\ a b -> g a : b) [] ks
 {- Given a single designator, genereates the rigidity constraints
 associated, and joins them into a single list -}
 glueDe :: (Eq a, Hashable a) => k -> Set.HashSet a -> (k -> a -> CForm) -> [CForm]
-glueDe n s f = foldr (\ a b -> f n a : b) [] $ Set.elems s
+glueDe n s f = foldr (\ a b -> f n a : b) [] $ Set.toList  s
 
 {- Generates a rigid constraint from a single pred name and type
 We add the extra world argument in mkPredType so that it coincides

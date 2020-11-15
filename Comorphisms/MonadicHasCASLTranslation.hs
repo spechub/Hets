@@ -1,4 +1,5 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances,
+DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/MonadicHasCASLTranslation.hs
 Description :  translating a HasCASL subset to Isabelle
@@ -29,8 +30,14 @@ import HasCASL.Le as Le
 import Isabelle.IsaSign as Isa
 import Isabelle.Logic_Isabelle
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 -- | The identity of the comorphism
-data MonadicHasCASL2IsabelleHOL = MonadicHasCASL2IsabelleHOL deriving Show
+data MonadicHasCASL2IsabelleHOL = MonadicHasCASL2IsabelleHOL 
+ deriving (Show, Generic)
+
+instance Hashable MonadicHasCASL2IsabelleHOL
 
 instance Language MonadicHasCASL2IsabelleHOL where
   language_name MonadicHasCASL2IsabelleHOL = "MonadicTranslation"

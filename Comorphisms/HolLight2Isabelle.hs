@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/HolLight2Isabelle.hs
 Description :  translating from HolLight to Isabelle
@@ -34,7 +34,13 @@ import HolLight.Logic_HolLight
 import HolLight.Sublogic
 import HolLight.Helper
 
-data HolLight2Isabelle = HolLight2Isabelle deriving Show
+import GHC.Generics (Generic)
+import Data.Hashable
+
+
+data HolLight2Isabelle = HolLight2Isabelle deriving (Show, Generic)
+
+instance Hashable HolLight2Isabelle
 
 instance Language HolLight2Isabelle
 

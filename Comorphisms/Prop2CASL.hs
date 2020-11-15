@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/Prop2CASL.hs
 Description :  Coding of Propositional into CASL
@@ -39,8 +39,13 @@ import qualified CASL.Sign as CSign
 import qualified CASL.Morphism as CMor
 import Propositional.Prop2CASLHelpers
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 -- | lid of the morphism
-data Prop2CASL = Prop2CASL deriving Show
+data Prop2CASL = Prop2CASL deriving (Show, Generic)
+
+instance Hashable Prop2CASL
 
 instance Language Prop2CASL where
   language_name Prop2CASL = "Propositional2CASL"

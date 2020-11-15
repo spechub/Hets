@@ -39,7 +39,7 @@ import qualified THF.Sublogic as SL
 import THF.Poly (getSymbols)
 import THF.Utils (toId)
 import qualified Data.Map (toList)
-import qualified Data.HashSet (fromList) as Set
+import qualified Data.HashSet as Set
 import GHC.Generics (Generic)
 import Data.Hashable
 

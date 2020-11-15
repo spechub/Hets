@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/HasCASL2Haskell.hs
 Description :  translating program equations to Haskell
@@ -40,8 +40,14 @@ import Haskell.HatParser hiding (TypeInfo, Kind)
 import Haskell.HatAna
 import Haskell.TranslateId
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
+
 -- | The identity of the comorphism
-data HasCASL2Haskell = HasCASL2Haskell deriving Show
+data HasCASL2Haskell = HasCASL2Haskell deriving (Show, Generic)
+
+instance Hashable HasCASL2Haskell
 
 instance Language HasCASL2Haskell -- default definition is okay
 

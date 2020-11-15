@@ -1,4 +1,5 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, 
+DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/PCoClTyConsHOL2IsabelleHOL.hs
 Description :  translating a HasCASL subset to Isabelle
@@ -29,8 +30,14 @@ import HasCASL.Le as Le
 import Isabelle.IsaSign as Isa
 import Isabelle.Logic_Isabelle
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 -- | The identity of the comorphism
-data PCoClTyConsHOL2IsabelleHOL = PCoClTyConsHOL2IsabelleHOL deriving Show
+data PCoClTyConsHOL2IsabelleHOL = PCoClTyConsHOL2IsabelleHOL 
+ deriving (Show, Generic)
+
+instance Hashable PCoClTyConsHOL2IsabelleHOL
 
 instance Language PCoClTyConsHOL2IsabelleHOL where
   language_name PCoClTyConsHOL2IsabelleHOL = "HasCASL2IsabelleOption"

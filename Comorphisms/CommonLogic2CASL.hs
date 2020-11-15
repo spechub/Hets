@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/CommonLogic2CASL.hs
 Description :  Comorphism from CommonLogic to CASL
@@ -53,7 +53,12 @@ import CASL.Morphism as CMor
 
 import Control.Monad
 
-newtype CL2CFOL = CL2CFOL { fol :: CommonLogicSL } deriving Show
+import GHC.Generics (Generic)
+import Data.Hashable
+
+newtype CL2CFOL = CL2CFOL { fol :: CommonLogicSL } deriving (Show, Generic)
+
+instance Hashable CL2CFOL
 
 showCLTextType :: Bool -> CLTextType -> String
 showCLTextType b s = case s of
@@ -186,7 +191,7 @@ seqFunType = mkTotOpType [individual, list] individual
 seqRelType :: PredType
 seqRelType = PredType [individual, list]
 
-mapNs :: Ord a => MapSet String a -> MapSet Id a
+mapNs :: (Ord a, Hashable a) => MapSet String a -> MapSet Id a
 mapNs = MapSet.foldWithKey (MapSet.insert . stringToId) MapSet.empty
 
 mapSig :: CommonLogicSL -> TextInfo -> CASLSign

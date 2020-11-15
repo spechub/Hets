@@ -18,7 +18,7 @@ import TPTP.Morphism
 import TPTP.Sign as Sign
 import TPTP.StaticAnalysis (signOfSentence)
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
-symbolsOfSentence :: Sentence -> Set.Set Symbol
+symbolsOfSentence :: Sentence -> Set.HashSet Symbol
 symbolsOfSentence = symbolsOfSign . signOfSentence

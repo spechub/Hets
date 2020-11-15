@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/CSMOF2CASL.hs
 Description :  Coding CSMOF into CASL
@@ -43,8 +43,13 @@ import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 import Data.Maybe (fromMaybe)
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 -- | lid of the morphism
-data CSMOF2CASL = CSMOF2CASL deriving Show
+data CSMOF2CASL = CSMOF2CASL deriving (Show, Generic)
+
+instance Hashable CSMOF2CASL
 
 instance Language CSMOF2CASL -- default is ok
 
@@ -249,7 +254,7 @@ getPropHold ops varA sorA varB sorB lin =
 
 getLinksByProperty :: Set.HashSet LinkT -> Map.HashMap String [LinkT]
 getLinksByProperty linkk =
-  let elems = Set.elems linkk
+  let elems = Set.toList linkk
   in foldr getByProperty Map.empty elems
 
 getByProperty :: LinkT -> Map.HashMap String [LinkT] -> Map.HashMap String [LinkT]

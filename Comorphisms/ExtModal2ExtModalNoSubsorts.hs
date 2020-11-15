@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/ExtModal2ExtModalNoSubsorts.hs
 Description :  coding out subsorting
@@ -38,8 +38,14 @@ import ExtModal.Sublogic as EM
 
 import Comorphisms.CASL2PCFOL
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 -- | The identity of the comorphism
-data ExtModal2ExtModalNoSubsorts = ExtModal2ExtModalNoSubsorts deriving Show
+data ExtModal2ExtModalNoSubsorts = ExtModal2ExtModalNoSubsorts 
+ deriving (Show, Generic)
+
+instance Hashable ExtModal2ExtModalNoSubsorts
 
 instance Language ExtModal2ExtModalNoSubsorts -- default definition is okay
 

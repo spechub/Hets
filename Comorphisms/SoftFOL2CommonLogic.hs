@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/SoftFOL2CommonLogic.hs
 Description :  Coding of SoftFOL into CommonLogic
@@ -46,8 +46,13 @@ import qualified CommonLogic.Symbol as ClSymbol
 import qualified CommonLogic.Morphism as ClMor
 import qualified CommonLogic.Sublogic as ClSL
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 -- | lid of the morphism
-data SoftFOL2CommonLogic = SoftFOL2CommonLogic deriving Show
+data SoftFOL2CommonLogic = SoftFOL2CommonLogic deriving (Show, Generic)
+
+instance Hashable SoftFOL2CommonLogic
 
 instance Language SoftFOL2CommonLogic where
   language_name SoftFOL2CommonLogic = "SoftFOL2CommonLogic"
@@ -339,8 +344,8 @@ typeSentenceGetTypes sig symN args =
       Nothing -> case Map.lookup symN $ FOLSign.sortMap sig of
         Nothing -> fail $ "symbol has no type: " ++ show symN
         Just _ -> typeSentencesSort args symN
-      Just ts -> typeSentencesDisjPred sig args $ Set.elems ts
-    Just ts -> typeSentencesDisjFunc sig args $ Set.elems ts
+      Just ts -> typeSentencesDisjPred sig args $ Set.toList ts
+    Just ts -> typeSentencesDisjFunc sig args $ Set.toList ts
 
 typeSentencesSort :: [FOLSign.SPTerm] -> FOLSign.SPIdentifier
                      -> Result SENTENCE

@@ -1,4 +1,5 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, 
+   FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/CASL2ExtModal.hs
 Description :  embedding from CASL to ExtModal
@@ -32,9 +33,13 @@ import ExtModal.MorphismExtension
 import ExtModal.Sublogic
 
 import Common.ProofTree
+import GHC.Generics (Generic)
+import Data.Hashable
 
 -- | The identity of the comorphism
-data CASL2ExtModal = CASL2ExtModal deriving Show
+data CASL2ExtModal = CASL2ExtModal deriving (Show, Generic)
+
+instance Hashable CASL2ExtModal
 
 instance Language CASL2ExtModal -- default definition is okay
 

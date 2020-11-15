@@ -70,6 +70,7 @@ import Common.ExtSign
 import Common.AS_Annotation (SenAttr (..), makeNamed, mapNamed)
 import qualified Common.Doc as Pretty
 import Common.Utils
+import qualified Common.HashSetUtils as HSU
 
 
 #ifdef UNI_PACKAGE
@@ -306,7 +307,7 @@ checkConservativityEdge useGUI link@(source, target, linklab) libEnv ln
                    transSrcSens = Set.fromList
                       $ map sentence $ toNamedList transSensSrc
                    inputThSens = filter
-                     ((`Set.notMember` transSrcSens) . sentence)
+                     ((`HSU.notMember` transSrcSens) . sentence)
                      inputThSens1
                    showObls = show . Pretty.vsep
                      . map (\ o -> print_named lidT .

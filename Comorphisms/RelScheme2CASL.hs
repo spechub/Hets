@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/RelScheme2CASL.hs
 Description :  Comorphism from RelScheme to CASL
@@ -45,7 +45,12 @@ import CASL.Sublogic as SL
 import CASL.Sign
 import CASL.Morphism
 
-data RelScheme2CASL = RelScheme2CASL deriving (Show)
+import GHC.Generics (Generic)
+import Data.Hashable
+
+data RelScheme2CASL = RelScheme2CASL deriving (Show, Generic)
+
+instance Hashable RelScheme2CASL
 
 instance Language RelScheme2CASL
 

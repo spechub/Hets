@@ -1,4 +1,5 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, 
+ FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/CFOL2IsabelleHOL.hs
 Description :  embedding from CASL (CFOL) to Isabelle-HOL
@@ -54,13 +55,19 @@ import Common.Id
 import Common.ProofTree
 import Common.Utils
 import qualified Common.Lib.MapSet as MapSet
+import qualified Common.HashSetUtils as HSU
 
 import qualified Data.HashMap.Strict as Map
 import qualified Data.HashSet as Set
 import Data.List
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 -- | The identity of the comorphism
-data CFOL2IsabelleHOL = CFOL2IsabelleHOL deriving Show
+data CFOL2IsabelleHOL = CFOL2IsabelleHOL deriving (Show, Generic)
+
+instance Hashable CFOL2IsabelleHOL
 
 -- Isabelle theories
 type IsaTheory = (IsaSign.Sign, [Named IsaSign.Sentence])
@@ -143,14 +150,14 @@ transTheory trSig trForm (sign, sens) =
     dtDefs = makeDtDefs sign tyToks $ map fst freeTypes
     ga = globAnnos sign
     insertOps op ts m = if isSingleton ts then
-      let t = Set.findMin ts in Map.insert
+      let t = HSU.findMin ts in Map.insert
               (mkIsaConstT False ga (length $ opArgs t) op baseSign tyToks)
               (transOpType t) m
       else foldl (\ m1 (t, i) -> Map.insert
              (mkIsaConstIT False ga (length $ opArgs t) op i baseSign tyToks)
              (transOpType t) m1) m $ number $ Set.toList ts
     insertPreds pre ts m = if isSingleton ts then
-      let t = Set.findMin ts in Map.insert
+      let t = HSU.findMin ts in Map.insert
               (mkIsaConstT True ga (length $ predArgs t) pre baseSign tyToks)
               (transPredType t) m
       else foldl (\ m1 (t, i) -> Map.insert

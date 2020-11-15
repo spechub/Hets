@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./OWL2/CASL2OWL.hs
 Description :  Comorphism from CASL to OWL2
@@ -52,7 +52,12 @@ import CASL.Sublogic
 import CASL.ToDoc
 import CASL.Overload
 
-data CASL2OWL = CASL2OWL deriving Show
+import GHC.Generics (Generic)
+import Data.Hashable
+
+data CASL2OWL = CASL2OWL deriving (Show, Generic)
+
+instance Hashable CASL2OWL
 
 instance Language CASL2OWL
 

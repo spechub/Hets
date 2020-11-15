@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/HasCASL2IsabelleHOL.hs
 Description :  old translation that is only better for case terms
@@ -41,9 +41,14 @@ import Common.AS_Annotation
 import Data.List (elemIndex)
 import Data.Maybe
 import Data.Hashable
+import GHC.Generics (Generic)
+
+import qualified Common.HashSetUtils as HSU
 
 -- | The identity of the comorphism
-data HasCASL2IsabelleHOL = HasCASL2IsabelleHOL deriving Show
+data HasCASL2IsabelleHOL = HasCASL2IsabelleHOL deriving (Show, Generic)
+
+instance Hashable HasCASL2IsabelleHOL
 
 instance Language HasCASL2IsabelleHOL where
   language_name HasCASL2IsabelleHOL = "HasCASL2IsabelleDeprecated"
@@ -101,7 +106,7 @@ transSignature sign =
                          _ -> False
     insertOps name ops m =
           if isSingleton ops then
-            let transOp = transOpInfo (Set.findMin ops)
+            let transOp = transOpInfo (HSU.findMin ops)
             in case transOp of
                  Just op ->
                      Map.insert (mkVName $ showIsaConstT name baseSign) op m
@@ -452,9 +457,13 @@ data CaseMatrix = CaseMatrix
     , args :: [As.Term]
     , newArgs :: [As.Term]
     , term :: As.Term
-    } deriving (Show, Eq, Ord)
+    } deriving (Show, Eq, Ord, Generic)
 
-data PatBrand = Appl | Tuple | QuOp | QuVar deriving (Show, Eq, Ord)
+instance Hashable CaseMatrix
+
+data PatBrand = Appl | Tuple | QuOp | QuVar deriving (Show, Eq, Ord, Generic)
+
+instance Hashable PatBrand
 
 {- First of all a matrix is allocated (matriArg) with the arguments of a
  constructor resp.  of a tuple. They're binded with the term, that would

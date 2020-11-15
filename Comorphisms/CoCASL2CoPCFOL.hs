@@ -1,4 +1,5 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances,
+ DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/CoCASL2CoPCFOL.hs
 Description :  Extension of CASL2PCFOL to CoCASL
@@ -33,8 +34,13 @@ import CASL.Project
 import CASL.Monoton
 import Comorphisms.CASL2PCFOL
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 -- | The identity of the comorphism
-data CoCASL2CoPCFOL = CoCASL2CoPCFOL deriving Show
+data CoCASL2CoPCFOL = CoCASL2CoPCFOL deriving (Show, Generic)
+
+instance Hashable CoCASL2CoPCFOL
 
 instance Language CoCASL2CoPCFOL -- default definition is okay
 

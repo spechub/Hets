@@ -1,4 +1,5 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances,
+DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/Maude2CASL.hs
 Description :  Coding of Maude with preorder semantics into CASL
@@ -48,8 +49,13 @@ import qualified Data.HashMap.Strict as Map
 import qualified Data.HashSet as Set
 import qualified Common.OrderedMap as OMap
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 -- | lid of the morphism
-data Maude2CASL = Maude2CASL deriving Show
+data Maude2CASL = Maude2CASL deriving (Show, Generic)
+
+instance Hashable Maude2CASL
 
 instance Language Maude2CASL
 

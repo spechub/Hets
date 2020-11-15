@@ -105,7 +105,7 @@ httpCombine d f = if checkUri f then f else fileCombine d f
 collectDownloads :: HetcatsOpts -> String -> SpecMap -> (String, SpecInfo)
  -> ResultT IO SpecMap
 collectDownloads opts baseDir specMap (n, (b, _, topTexts, importedBy)) = do
-  let directImps = Set.elems $ Set.map tokStr $ directImports b
+  let directImps = Set.toList $ Set.map tokStr $ directImports b
       newTopTexts = Set.insert n topTexts
       newImportedBy = Set.insert n importedBy
   foldM (\ sm d -> do
@@ -224,4 +224,4 @@ topSortSpecs specMap =
   let (fm, rm) = OMap.partitionMap (\ (_, _, is) -> Set.null is) specMap
   in if Map.null fm then [] else
      map (\ (n, (b, f, _)) -> (n, b, f)) (Map.toList fm) ++ topSortSpecs
-         (Map.map (\ (b, f, is) -> (b, f, is Set.\\ (Set.fromList $ Map.keys fm))) rm)
+         (Map.map (\ (b, f, is) -> (b, f, is `Set.difference` (Set.fromList $ Map.keys fm))) rm)

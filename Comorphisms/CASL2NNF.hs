@@ -1,4 +1,5 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, 
+ FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  $Header$
 Description :  negation normal form
@@ -28,7 +29,12 @@ import qualified Data.HashSet as Set
 import Common.AS_Annotation
 import Common.ProofTree
 
-data CASL2NNF = CASL2NNF deriving Show
+import GHC.Generics (Generic)
+import Data.Hashable
+
+data CASL2NNF = CASL2NNF deriving (Show, Generic)
+
+instance Hashable CASL2NNF
 
 instance Language CASL2NNF where
     language_name CASL2NNF = "CASL2NNF"

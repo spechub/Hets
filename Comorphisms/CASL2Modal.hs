@@ -1,4 +1,5 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, 
+FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/CASL2Modal.hs
 Description :  embedding from CASL to ModalCASL
@@ -32,8 +33,13 @@ import Modal.Logic_Modal
 import Modal.AS_Modal
 import Modal.ModalSign
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 -- | The identity of the comorphism
-data CASL2Modal = CASL2Modal deriving (Show)
+data CASL2Modal = CASL2Modal deriving (Show, Generic)
+
+instance Hashable CASL2Modal
 
 instance Language CASL2Modal -- default definition is okay
 

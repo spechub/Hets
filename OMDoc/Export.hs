@@ -65,6 +65,8 @@ import Control.Monad (liftM)
 import System.FilePath
 import Data.Hashable
 
+import qualified Common.HashSetUtils as HSU
+
 -- * Name Mapping interface
 
 {- | A structure similar to SigMap but with a Grothendieck map instead.
@@ -254,7 +256,7 @@ makeImport :: Set.HashSet UniqName -> (String, OMCD, [(OMName, UniqName)])
            -> (Set.HashSet UniqName, TCElement)
 makeImport s (n, cd, mapping) =
     let f s' p@(_, un)
-            | Set.notMember un s' =
+            | HSU.notMember un s' =
                 (Set.insert un s', makeMorphismEntry True p)
             | otherwise = (s', makeMorphismEntry False p)
         (s'', morph) = mapAccumL f s mapping
@@ -429,13 +431,13 @@ mapEntry _ m1 m2 (s1, s2) =
 
 
 -- | extracts the single element from singleton sets, fails otherwise
-sglElem :: (Eq a, Hashable a) => String -> Set.HashSet a -> a
+sglElem :: (Ord a, Hashable a) => String -> Set.HashSet a -> a
 sglElem s sa
     | Set.size sa > 1 =
         error $ "OMDocExport: comorphism symbol image > 1 in " ++ s
     | Set.null sa =
         error $ "OMDocExport: empty comorphism symbol image in " ++ s
-    | otherwise = Set.findMin sa
+    | otherwise = HSU.findMin sa
 
 
 -- * Names and CDs
@@ -463,7 +465,7 @@ exportSymbol :: forall lid sublogics
             -> UniqName -> Result [TCElement]
 exportSymbol lid (SigMap sm _) mSynTbl sl sym n =
     let symNotation = mkNotation n $ fmap (\ x -> (sym_name lid sym, x)) mSynTbl
-    in if all (Set.notMember sym) sl
+    in if all (HSU.notMember sym) sl
        then do
          symConst <- export_symToOmdoc lid sm sym $ nameToString n
          return $ symConst : symNotation

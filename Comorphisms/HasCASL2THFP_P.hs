@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/HasCASL2THFP_P.hs
 Description :  Comorphism from HasCASL to THF
@@ -50,10 +50,16 @@ import qualified Data.List as List
 import Data.Char (toLower)
 import Data.Maybe
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
+
 -- Question: are the remaining symbol variants translatable?
 
 -- | The identity of the comorphism
-data HasCASL2THFP_P = HasCASL2THFP_P deriving Show
+data HasCASL2THFP_P = HasCASL2THFP_P deriving (Show, Generic)
+
+instance Hashable HasCASL2THFP_P
 
 instance Language HasCASL2THFP_P
 

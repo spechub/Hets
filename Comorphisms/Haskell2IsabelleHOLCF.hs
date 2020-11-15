@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/Haskell2IsabelleHOLCF.hs
 Description :  translating a Haskell subset to Isabelle HOLCF
@@ -28,10 +28,16 @@ import Haskell.HatAna as HatAna
 import Isabelle.IsaSign as IsaSign
 import Isabelle.Logic_Isabelle
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
+
 -- * Comorphisms
 
 -- The identity of the comorphism
-data Haskell2IsabelleHOLCF = Haskell2IsabelleHOLCF deriving Show
+data Haskell2IsabelleHOLCF = Haskell2IsabelleHOLCF deriving (Show, Generic)
+
+instance Hashable Haskell2IsabelleHOLCF
 
 instance Language Haskell2IsabelleHOLCF
 

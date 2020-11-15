@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/CommonLogic2IsabelleHOL.hs
 Description :  direct comorphism from CommonLogic to Isabelle-HOL
@@ -41,7 +41,13 @@ import Isabelle.IsaConsts
 import Isabelle.Logic_Isabelle
 import Isabelle.Translate
 
-data CommonLogic2IsabelleHOL = CommonLogic2IsabelleHOL deriving Show
+import GHC.Generics (Generic)
+import Data.Hashable
+
+data CommonLogic2IsabelleHOL = CommonLogic2IsabelleHOL 
+      deriving (Show, Generic)
+
+instance Hashable CommonLogic2IsabelleHOL
 
 instance Language CommonLogic2IsabelleHOL where
   language_name CommonLogic2IsabelleHOL = "CommonLogic2Isabelle"

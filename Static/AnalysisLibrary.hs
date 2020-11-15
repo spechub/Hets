@@ -78,6 +78,7 @@ import Framework.Analysis
 
 import MMT.Hets2mmt (mmtRes)
 import Proofs.ComputeColimit
+import qualified Common.HashSetUtils as HSU
 
 -- a set of library names to check for cyclic imports
 type LNS = Set.HashSet LibName
@@ -288,7 +289,7 @@ shortcutUnions dgraph = let spNs = getGlobNodes $ globalEnv dgraph in
   innNs = innDG dg n
   in case outDG dg n of
        [(_, t, et@DGLink {dgl_type = lt})]
-         | Set.notMember n spNs && null (getThSens locTh) && isGlobalDef lt
+         | HSU.notMember n spNs && null (getThSens locTh) && isGlobalDef lt
            && not (hasOutgoingFreeEdge dg t)
            && length innNs > 1
            && all (\ (_, _, el) -> case dgl_type el of

@@ -1,4 +1,5 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, 
+ FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/CASL2CspCASL.hs
 Copyright   :  (c) Till Mossakowski and Uni Bremen 2003
@@ -34,8 +35,13 @@ import CspCASL.Symbol
 
 import qualified Data.HashSet as Set
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 -- | The identity of the comorphism
-data CASL2CspCASL = CASL2CspCASL deriving (Show)
+data CASL2CspCASL = CASL2CspCASL deriving (Show, Generic)
+
+instance Hashable CASL2CspCASL
 
 instance Language CASL2CspCASL -- default definition is okay
 

@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, ScopedTypeVariables #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, ScopedTypeVariables, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/SuleCFOL2TPTP.hs
 Description :  Coding of a CASL subset into TPTP
@@ -49,13 +49,20 @@ import TPTP.Sign as TSign
 import TPTP.Logic_TPTP
 import TPTP.Sublogic
 
-data TPTP_FOF = TPTP_FOF
+import GHC.Generics (Generic)
+import Data.Hashable
+
+data TPTP_FOF = TPTP_FOF deriving Generic
+
+instance Hashable TPTP_FOF
 
 instance Show TPTP_FOF where
   show TPTP_FOF = "TPTP_FOF"
 
 -- | The identity of the comorphisms
-data GenSuleCFOL2TPTP = GenSuleCFOL2TPTP deriving Show
+data GenSuleCFOL2TPTP = GenSuleCFOL2TPTP deriving (Show, Generic)
+
+instance Hashable GenSuleCFOL2TPTP
 
 suleCFOL2TPTP :: GenSuleCFOL2TPTP
 suleCFOL2TPTP = GenSuleCFOL2TPTP

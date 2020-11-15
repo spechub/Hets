@@ -1,4 +1,5 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, 
+FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/CASL2VSEImport.hs
 Description :  embedding from CASL to VSE, plus wrapping procedures
@@ -37,8 +38,13 @@ import qualified Common.Lib.MapSet as MapSet
 import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 -- | The identity of the comorphism
-data CASL2VSEImport = CASL2VSEImport deriving (Show)
+data CASL2VSEImport = CASL2VSEImport deriving (Show, Generic)
+
+instance Hashable CASL2VSEImport
 
 instance Language CASL2VSEImport -- default definition is okay
 

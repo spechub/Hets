@@ -1,4 +1,5 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, 
+FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/CASL2Prop.hs
 Description :  Coding of a CASL sublogic to Propositional
@@ -45,8 +46,13 @@ import Common.Result
 import Common.DocUtils
 import qualified Common.Lib.MapSet as MapSet
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 -- | lid of the morphism
-data CASL2Prop = CASL2Prop deriving Show
+data CASL2Prop = CASL2Prop deriving (Show, Generic)
+
+instance Hashable CASL2Prop
 
 instance Language CASL2Prop where
   language_name CASL2Prop = "CASL2Propositional"

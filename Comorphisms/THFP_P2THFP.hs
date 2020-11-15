@@ -1,4 +1,5 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, 
+FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/THFP_P2THFP.hs
 Description :  Comorphism from THFP_P to THFP
@@ -29,7 +30,12 @@ import THF.As
 import THF.Utils
 import THF.Poly
 
-data THFP_P2THFP = THFP_P2THFP deriving Show
+import GHC.Generics (Generic)
+import Data.Hashable
+
+data THFP_P2THFP = THFP_P2THFP deriving (Show, Generic)
+
+instance Hashable THFP_P2THFP
 
 instance Language THFP_P2THFP
 

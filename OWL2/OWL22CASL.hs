@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  $Header$
 Description :  Comorphism from OWL 2 to CASL_Dl
@@ -56,10 +56,15 @@ import Common.DocUtils
 import Data.Maybe
 import Text.ParserCombinators.Parsec
 
-import Data.List(foldl')
+import Data.List(foldl', nub)
 import qualified Data.Vector as Vector
 
-data OWL22CASL = OWL22CASL deriving Show
+import GHC.Generics (Generic)
+import Data.Hashable
+
+data OWL22CASL = OWL22CASL deriving (Show, Generic)
+
+instance Hashable OWL22CASL
 
 instance Language OWL22CASL
 
@@ -271,8 +276,8 @@ loadDataInformation sl = let
   dts = Set.map uriToCaslId $ SL.datatype $ sublogic sl
   eSig x = (emptySign ()) { sortRel =
        Rel.fromList  [(x, dataS)]}
-  sigs = Set.toList $
-         Set.map (\x -> Map.findWithDefault (eSig x) x datatypeSigns) dts
+  sigs = nub $ map (\x -> Map.findWithDefault (eSig x) x datatypeSigns) 
+         $ Set.toList dts
  in  foldl' uniteCASLSign (emptySign ()) sigs
 
 mapTheory :: (OS.Sign, [Named Axiom]) -> Result (CASLSign, [Named CASLFORMULA])

@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, TypeSynonymInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, TypeSynonymInstances, DeriveGeneric #-}
 {- |
 Module      :  ./OWL2/DMU2OWL2.hs
 Description :  translating DMU xml to OWL
@@ -49,8 +49,13 @@ import Control.Monad
 import System.Directory
 import System.IO.Unsafe (unsafePerformIO)
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 -- | The identity of the comorphism
-data DMU2OWL2 = DMU2OWL2 deriving Show
+data DMU2OWL2 = DMU2OWL2 deriving (Show, Generic)
+
+instance Hashable DMU2OWL2
 
 instance Language DMU2OWL2 -- default definition is okay
 

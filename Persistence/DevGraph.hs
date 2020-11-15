@@ -140,7 +140,7 @@ createDocuments opts libEnv dbCache0 dependencyOrderedLibsSetL = do
 createDocumentsInDependencyRelation :: MonadIO m
                                     => HetcatsOpts -> LibEnv
                                     -> Entity FileVersion -> DBCache
-                                    ->   Set.HashSet[ LibName]
+                                    -> [Set.HashSet LibName]
                                     -> DBMonad m DBCache
 createDocumentsInDependencyRelation opts libEnv fileVersion =
   foldM

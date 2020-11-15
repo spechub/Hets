@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/CoCASL2CoSubCFOL.hs
 Description :  Extension of CASL2SubCFOL to CoCASL
@@ -35,8 +35,13 @@ import qualified Data.HashSet as Set
 import Common.AS_Annotation
 import Common.ProofUtils
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 -- | The identity of the comorphism
-data CoCASL2CoSubCFOL = CoCASL2CoSubCFOL deriving (Show)
+data CoCASL2CoSubCFOL = CoCASL2CoSubCFOL deriving (Show, Generic)
+
+instance Hashable CoCASL2CoSubCFOL
 
 instance Language CoCASL2CoSubCFOL -- default definition is okay
 

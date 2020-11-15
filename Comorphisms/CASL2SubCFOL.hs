@@ -1,4 +1,5 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, 
+ FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/CASL2SubCFOL.hs
 Description :  coding out partiality
@@ -39,13 +40,18 @@ import Common.ProofUtils
 import Common.ProofTree
 import Common.Utils
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 -- | determine the need for bottom constants
 data FormulaTreatment =
     NoMembershipOrCast
   | FormulaDependent
   | SubsortBottoms
   | AllSortBottoms
-    deriving Show
+    deriving (Show, Generic)
+
+instance Hashable FormulaTreatment
 
 -- | a case selector for formula treatment
 treatFormula :: FormulaTreatment -> a -> a -> a -> a -> a
@@ -63,7 +69,9 @@ data CASL2SubCFOL = CASL2SubCFOL
     { uniqueBottom :: Bool -- ^ removes free types
     , formulaTreatment :: FormulaTreatment
     -- ^ deal with membership tests and casts
-    } deriving Show
+    } deriving (Show, Generic)
+
+instance Hashable CASL2SubCFOL
 
 {- | create unique bottoms, sorts with bottom depend on membership
 and casts in theory sentences. -}
@@ -220,7 +228,7 @@ mkNotDefBotAxiomName = mkAxNameSingle "notDefBottom"
 mkTotalityAxiomName :: OP_NAME -> String
 mkTotalityAxiomName f = "ga_strictness_" ++ show f
 
-generateAxioms :: (Ord f, TermExtension f) =>
+generateAxioms :: (Ord f, TermExtension f, Hashable f) =>
   Bool -> Set.HashSet SORT -> Sign f e -> [Named (FORMULA f)]
 generateAxioms uniqBot bsorts sig = concatMap (\ s -> let
       vx = mkVarDeclStr "x" s

@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/ExtModal2OWL.hs
 Description :  Comorphism from ExtModal to OWL2
@@ -16,6 +16,9 @@ import Logic.Logic as Logic
 import Logic.Comorphism
 
 import Common.ProofTree
+
+import GHC.Generics (Generic)
+import Data.Hashable
 
 -- OWL = codomain
 import OWL2.Logic_OWL2
@@ -39,7 +42,9 @@ import CASL.Morphism
 import CASL.AS_Basic_CASL
 import CASL.Sublogic
 
-data ExtModal2OWL = ExtModal2OWL deriving Show
+data ExtModal2OWL = ExtModal2OWL deriving (Show, Generic)
+
+instance Hashable ExtModal2OWL
 
 instance Language ExtModal2OWL
 

@@ -1,4 +1,5 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, 
+FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  $Header$
 Description :  prenex normal form for sentences of a CASL theory
@@ -31,7 +32,12 @@ import qualified Data.HashSet as Set
 import Common.AS_Annotation
 import Common.ProofTree
 
-data CASL2Prenex = CASL2Prenex deriving Show
+import GHC.Generics (Generic)
+import Data.Hashable
+
+data CASL2Prenex = CASL2Prenex deriving (Show, Generic)
+
+instance Hashable CASL2Prenex
 
 instance Language CASL2Prenex where
     language_name CASL2Prenex = "CASL2Prenex"

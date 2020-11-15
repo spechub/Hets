@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/Prop2CommonLogic.hs
 Description :  Coding of Propositional into CommonLogic
@@ -44,8 +44,13 @@ import qualified CommonLogic.Symbol as ClSymbol
 import qualified CommonLogic.Morphism as ClMor
 import qualified CommonLogic.Sublogic as ClSL
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 -- | lid of the morphism
-data Prop2CommonLogic = Prop2CommonLogic deriving Show
+data Prop2CommonLogic = Prop2CommonLogic deriving (Show, Generic)
+
+instance Hashable Prop2CommonLogic
 
 instance Language Prop2CommonLogic where
   language_name Prop2CommonLogic = "Propositional2CommonLogic"

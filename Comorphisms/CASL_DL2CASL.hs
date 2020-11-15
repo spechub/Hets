@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/CASL_DL2CASL.hs
 Description :  Inclusion of CASL_DL into CASL
@@ -42,7 +42,12 @@ import CASL.Sublogic as Sublogic
 
 import qualified Data.HashSet as Set
 
-data CASL_DL2CASL = CASL_DL2CASL deriving Show
+import GHC.Generics (Generic)
+import Data.Hashable
+
+data CASL_DL2CASL = CASL_DL2CASL deriving (Show, Generic)
+
+instance Hashable CASL_DL2CASL
 
 instance Language CASL_DL2CASL
 

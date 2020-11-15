@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, DeriveDataTypeable, DeriveGeneric, ExistentialQuantification, GADTs, StandaloneDeriving #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./CSL/TreePO.hs
 Description :  Handling of tree-like partial ordering relations
@@ -93,50 +93,10 @@ instance Ord a => Ord (CIType a) where
           EQ -> compare a b
           res -> res
 
-{-
-
--- data Test1 a = forall a . Ord a => Test1 a
-
-data Test1 a = Test1 (Set.HashSet a)
- deriving Typeable
-
-instance Ord a => Eq (Test1 a) where 
-  a == b = compare a b == EQ
- 
-instance Ord a => Ord (Test1 a) where
- compare (Test1 a) (Test1 b) = compare a b 
-
-data Test2 a = Test2 (PlainSet.Set a)
- deriving Typeable
-
-instance Ord a => Eq (Test2 a) where 
-  a == b = compare a b == EQ
- 
-instance Ord a => Ord (Test2 a) where
- compare (Test2 a) (Test2 b) = compare a b 
-
--}
 -- | A finite set or an interval. True = closed, False = opened interval border.
-data SetOrInterval a where
-   Set :: (Ord a, Hashable a) => Set.HashSet a -> SetOrInterval a
-   IntVal :: Ord a => (a, Bool) -> (a, Bool) -> SetOrInterval a
--- deriving (Eq, Ord, Show, Typeable, Data, Generic) -- won't work!
-
-deriving instance (Ord a, Hashable a) => Eq (SetOrInterval a)
-deriving instance (Ord a, Hashable a) => Ord (SetOrInterval a)
-deriving instance (Show a, Ord a, Hashable a) => Show (SetOrInterval a)
-deriving instance (Typeable a, Ord a, Hashable a) => Typeable (SetOrInterval a)
-deriving instance (Data a, Ord a, Hashable a) => Data (SetOrInterval a)
--- deriving instance Generic a => Generic (SetOrInterval a) -- won't work
-
-{-
-original version won't works, a is not Ord
-
-version below won't work, instances must be written by hand
-data SetOrInterval a = forall a . Ord a => Set (Set.HashSet a)
+data SetOrInterval a = Set (Set.HashSet a) 
                      | IntVal (a, Bool) (a, Bool)
-                       deriving (Eq, Ord, Show, Typeable, Data, Generic)
--}
+     deriving (Eq, Ord, Show, Typeable, Data, Generic)
 
 instance (Hashable a, Ord a) => Hashable (SetOrInterval a) where 
  hashWithSalt salt (Set a) = salt `hashWithSalt` a 

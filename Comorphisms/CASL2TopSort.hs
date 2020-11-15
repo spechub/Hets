@@ -1,4 +1,5 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, 
+ FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/CASL2TopSort.hs
 Copyright   :  (c) Klaus Luettich, Uni Bremen 2002-2004
@@ -49,8 +50,13 @@ import CASL.Sublogic as SL
 import qualified Data.HashMap.Strict as Map
 import qualified Data.HashSet as Set
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 -- | The identity of the comorphism
-data CASL2TopSort = CASL2TopSort deriving Show
+data CASL2TopSort = CASL2TopSort deriving (Show, Generic)
+
+instance Hashable CASL2TopSort
 
 instance Language CASL2TopSort where
   language_name CASL2TopSort = "CASL2PCFOLTopSort"
@@ -250,7 +256,7 @@ generateAxioms subSortMap pMap oMap = hi_axs ++ p_axs ++ axs
 mkProfMapPred :: SubSortMap -> Set.HashSet PredType
               -> Map.HashMap [SORT] (Set.HashSet [Maybe PRED_NAME])
 mkProfMapPred ssm = Set.foldr seperate Map.empty
-    where seperate pt = MapSet.HashSetInsert (pt2topSorts pt) (pt2preds pt)
+    where seperate pt = MapSet.setInsert (pt2topSorts pt) (pt2preds pt)
           pt2topSorts = map (lkupTop ssm) . predArgs
           pt2preds = map (lkupPredM ssm) . predArgs
 

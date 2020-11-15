@@ -1,4 +1,5 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, 
+    FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/CASL2CoCASL.hs
 Description :  embedding from CASL to CoCASL
@@ -34,8 +35,13 @@ import CoCASL.CoCASLSign
 import CoCASL.StatAna (CSign)
 import CoCASL.Sublogic
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 -- | The identity of the comorphism
-data CASL2CoCASL = CASL2CoCASL deriving (Show)
+data CASL2CoCASL = CASL2CoCASL deriving (Show, Generic)
+
+instance Hashable CASL2CoCASL
 
 instance Language CASL2CoCASL -- default definition is okay
 

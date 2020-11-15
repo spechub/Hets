@@ -34,8 +34,8 @@ import Common.Id
 import Common.LibName
 import Common.Result
 import Common.Lib.Graph
-import Common.Utils (nubOrd)
-
+--import Common.Utils (nubOrd)
+import Data.List(nub)
 import Data.Graph.Inductive.Graph as Graph
 import qualified Data.HashMap.Strict as Map
 import Control.Monad
@@ -147,7 +147,7 @@ normalFormDG libEnv ln dgraph = foldM (\ dg (node, nodelab) ->
                 insNNF = InsertNode (nfNode, nfLabel)
                 makeEdge src tgt m = (src, tgt, globDefLink m DGLinkProof)
                 insStrMor = map (\ (x, f) -> InsertEdge $ makeEdge x nfNode f)
-                  $ nubOrd $ map (\ (x, y) -> (g Map.! x, y))
+                  $ nub $ map (\ (x, y) -> (g Map.! x, y))
                   $ (node, morNode) : Map.toList mmap
                 allChanges = insNNF : chLab : insStrMor
                 newDG = changesDGH dg allChanges
@@ -204,7 +204,7 @@ predecs graph node = let
       _ -> let
              newDescs = concatMap (pre graph) nList
              nList' = filter (`notElem` nList) newDescs
-             descList' = nubOrd $ descList ++ newDescs
+             descList' = nub $ descList ++ newDescs
            in descs nList' descList'
  in descs [node] []
 

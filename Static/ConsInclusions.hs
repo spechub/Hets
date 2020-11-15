@@ -27,6 +27,7 @@ import Common.DocUtils
 import Common.ExtSign
 import Common.Result
 import qualified Common.OrderedMap as OMap
+import qualified Common.HashSetUtils as HSU
 
 import Data.Graph.Inductive.Graph as Graph
 import qualified Data.HashSet as Set
@@ -57,8 +58,8 @@ dumpConsIncl opts dg (s, t, l) = do
            let pSig2 = plainSign sig2
                diffSig = propagateErrors "dumpConsIncl3"
                   $ signatureDiff lid2 pSig2 (plainSign insig)
-               inSensSet = Set.fromList $ OMap.elems inSens
-               sens = OMap.filter (`Set.notMember` inSensSet) sens2
+               inSensSet = OMap.elems inSens
+               sens = OMap.filter (\x -> not $ x `elem` inSensSet) sens2
            writeVerbFile opts file
              $ show $ useGlobalAnnos ga $ vcat
              [ text $ "spec source_" ++ nm ++ " ="

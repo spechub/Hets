@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/ExtModal2CASL.hs
 Copyright   :  (c) Christian Maeder, DFKI 2012
@@ -42,7 +42,13 @@ import ExtModal.AS_ExtModal
 import ExtModal.ExtModalSign
 import ExtModal.Sublogic
 
-data ExtModal2CASL = ExtModal2CASL deriving (Show)
+import GHC.Generics (Generic)
+import Data.Hashable
+
+data ExtModal2CASL = ExtModal2CASL deriving (Show, Generic)
+
+instance Hashable ExtModal2CASL
+
 instance Language ExtModal2CASL
 
 instance Comorphism ExtModal2CASL

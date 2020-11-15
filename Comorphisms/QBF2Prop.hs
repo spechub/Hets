@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE MultiParamTypeClasses, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/QBF2Prop.hs
 Description :  Comorphism from QBF to Propositional
@@ -39,8 +39,13 @@ import Common.AS_Annotation
 import Common.Id
 import Common.Result
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 -- | lid of the morphism
-data QBF2Prop = QBF2Prop deriving Show
+data QBF2Prop = QBF2Prop deriving (Show, Generic)
+
+instance Hashable QBF2Prop
 
 instance Language QBF2Prop where
   language_name QBF2Prop = "QBF2Propositional"

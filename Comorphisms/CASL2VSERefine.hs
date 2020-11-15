@@ -1,4 +1,5 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, 
+ FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/CASL2VSERefine.hs
 Description :  VSE refinement as comorphism
@@ -38,8 +39,13 @@ import qualified Common.Lib.MapSet as MapSet
 import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 -- | The identity of the comorphism
-data CASL2VSERefine = CASL2VSERefine deriving (Show)
+data CASL2VSERefine = CASL2VSERefine deriving (Show, Generic)
+
+instance Hashable CASL2VSERefine
 
 instance Language CASL2VSERefine -- default definition is okay
 

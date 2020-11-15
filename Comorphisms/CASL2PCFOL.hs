@@ -1,4 +1,5 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, 
+ FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/CASL2PCFOL.hs
 Description :  coding out subsorting
@@ -35,8 +36,13 @@ import CASL.Inject
 import CASL.Project
 import CASL.Monoton
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 -- | The identity of the comorphism
-data CASL2PCFOL = CASL2PCFOL deriving Show
+data CASL2PCFOL = CASL2PCFOL deriving (Show, Generic)
+
+instance Hashable CASL2PCFOL
 
 instance Language CASL2PCFOL -- default definition is okay
 

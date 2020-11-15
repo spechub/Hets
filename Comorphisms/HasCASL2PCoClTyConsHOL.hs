@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE MultiParamTypeClasses, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/HasCASL2PCoClTyConsHOL.hs
 Description :  coding out subtyping
@@ -34,8 +34,13 @@ import HasCASL.FoldTerm
 import HasCASL.Builtin
 import HasCASL.Unify (getTypeOf)
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 -- | The identity of the comorphism
-data HasCASL2PCoClTyConsHOL = HasCASL2PCoClTyConsHOL deriving Show
+data HasCASL2PCoClTyConsHOL = HasCASL2PCoClTyConsHOL deriving (Show, Generic)
+
+instance Hashable HasCASL2PCoClTyConsHOL
 
 instance Language HasCASL2PCoClTyConsHOL where
   language_name HasCASL2PCoClTyConsHOL = "HasCASL2HasCASLNoSubtypes"

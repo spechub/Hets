@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/DFOL2CASL.hs
 Description :  Translation of first-order logic with dependent types (DFOL) to
@@ -34,8 +34,13 @@ import qualified CASL.AS_Basic_CASL as CASL_AS
 import qualified CASL.Sign as CASL_Sign
 import qualified CASL.Morphism as CASL_Morphism
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 -- cid for the comorphism
-data DFOL2CASL = DFOL2CASL deriving Show
+data DFOL2CASL = DFOL2CASL deriving (Show, Generic)
+
+instance Hashable DFOL2CASL
 
 instance Language DFOL2CASL where
    language_name DFOL2CASL = "DFOL2CASL"

@@ -17,6 +17,7 @@ module Common.ExtSign where
 import Data.Data
 import qualified Data.HashSet as Set
 import qualified Data.Set as PlainSet
+import Data.Hashable
 
 import Common.Doc
 import Common.DocUtils

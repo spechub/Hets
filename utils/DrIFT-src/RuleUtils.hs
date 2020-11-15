@@ -85,7 +85,7 @@ simpleInstance s d = hsep [text "instance"
                 , text s
                 , opt1 (texts (strippedName d : vars d)) parenSpace id]
    where
-   constr = map (\ v -> text "Ord" <+> text v)
+   constr = map (\ v -> text "Ord" <+> text v <+> text ", Hashable" <+> text v)
             (concatMap getSetVars . concatMap types $ body d)
        ++ map (\ (c, v) -> text c <+> text v) (constraints d)
        ++ map (\ x -> text s <+> text x) (vars d)

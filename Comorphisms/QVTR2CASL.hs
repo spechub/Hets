@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/QVTR2CASL.hs
 Description :  Coding QVTR into CASL
@@ -46,9 +46,13 @@ import qualified Common.Lib.Rel as Rel
 import qualified Data.HashMap.Strict as Map
 import qualified Data.HashSet as Set
 
+import GHC.Generics (Generic)
+import Data.Hashable
 
 -- | lid of the morphism
-data QVTR2CASL = QVTR2CASL deriving Show
+data QVTR2CASL = QVTR2CASL deriving (Show, Generic)
+
+instance Hashable QVTR2CASL
 
 instance Language QVTR2CASL -- default is ok
 

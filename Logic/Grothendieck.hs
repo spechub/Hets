@@ -126,6 +126,7 @@ import Common.GraphAlgo
 import Control.Monad (foldM)
 import Data.Maybe
 import Data.Typeable
+import Data.List (nub)
 import qualified Data.HashMap.Strict as Map
 import qualified Data.HashSet as Set
 import qualified Data.Map as PlainMap -- need this to avoid Hashable instance for existential type
@@ -284,6 +285,11 @@ data G_symbol = forall lid sublogics
           sign morphism symbol raw_symbol proof_tree =>
   G_symbol lid symbol
   deriving Typeable
+
+instance Hashable G_symbol where
+ hashWithSalt salt g = 
+  case g of
+   G_symbol lid sym -> hashWithSalt salt lid + hashWithSalt salt sym
 
 instance GetRange G_symbol where
   getRange (G_symbol _ s) = getRange s
@@ -1019,5 +1025,5 @@ lookupSquare :: AnyComorphism -> AnyComorphism -> LogicGraph -> Result [Square]
 lookupSquare com1 com2 lg = maybe (fail "lookupSquare") return $ do
   sqL1 <- PlainMap.lookup (com1, com2) $ squares lg
   sqL2 <- PlainMap.lookup (com2, com1) $ squares lg
-  return $ nubOrd $ sqL1 ++ map mirrorSquare sqL2
+  return $ nub $ sqL1 ++ map mirrorSquare sqL2
   -- maybe adjusted if comparing AnyModifications change

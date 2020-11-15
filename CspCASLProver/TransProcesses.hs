@@ -38,7 +38,7 @@ import CspCASL.StatAnaCSP (getDeclaredChanSort)
 import CspCASLProver.Consts
 import CspCASLProver.CspProverConsts
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
 
 import Isabelle.IsaSign
@@ -284,9 +284,9 @@ but deals with variables by applying a case on the origin of the
 variable. The Isabelle terms produced when this record is used are always
 of basic types i.e., can be used as parameters for function in the data
 encoding. -}
-cspCaslTransRecord :: CASL_Sign.Sign f e -> Set.Set String ->
+cspCaslTransRecord :: CASL_Sign.Sign f e -> Set.HashSet String ->
                       CFOL2IsabelleHOL.FormulaTranslator f e ->
-                      Set.Set String -> VSM -> Record f Term Term
+                      Set.HashSet String -> VSM -> Record f Term Term
 cspCaslTransRecord caslSign tyToks trForm strs vsm =
      {- We use the existing record for translation but change its
      function in the case of a qualified variable. If we have a

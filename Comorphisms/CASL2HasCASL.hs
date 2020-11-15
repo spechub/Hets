@@ -1,4 +1,5 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, 
+ FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/CASL2HasCASL.hs
 Description :  embedding CASL into HasCASL
@@ -42,8 +43,13 @@ import HasCASL.Builtin
 import HasCASL.Sublogic as HasSub
 import HasCASL.FoldTerm as HasFold
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 -- | The identity of the comorphism
-data CASL2HasCASL = CASL2HasCASL deriving (Show)
+data CASL2HasCASL = CASL2HasCASL deriving (Show, Generic)
+
+instance Hashable CASL2HasCASL
 
 instance Language CASL2HasCASL -- default definition is okay
 

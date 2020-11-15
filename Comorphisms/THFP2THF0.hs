@@ -1,5 +1,6 @@
 {-# OPTIONS -O0 #-}
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances,
+DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/THFP2THF0.hs
 Description :  Comorphism from THFP to THF0
@@ -34,7 +35,12 @@ import THF.Utils (RewriteFuns (..), rewriteSenFun, rewriteTHF0, recreateSymbols,
 import qualified Data.HashMap.Strict as Map
 import Control.Monad (liftM)
 
-data THFP2THF0 = THFP2THF0 deriving Show
+import GHC.Generics (Generic)
+import Data.Hashable
+
+data THFP2THF0 = THFP2THF0 deriving (Show, Generic)
+
+instance Hashable THFP2THF0
 
 instance Language THFP2THF0
 

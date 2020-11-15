@@ -1,4 +1,5 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, 
+ FlexibleInstances, DeriveGeneric #-}
 {- |
 License     :  GPLv2 or higher, see LICENSE.txt
 
@@ -27,8 +28,13 @@ import Hybrid.Logic_Hybrid
 import Hybrid.AS_Hybrid
 import Hybrid.HybridSign
 
+import GHC.Generics (Generic)
+import Data.Hashable
+
 -- | The identity of the comorphism
-data CASL2Hybrid = CASL2Hybrid deriving (Show)
+data CASL2Hybrid = CASL2Hybrid deriving (Show, Generic)
+
+instance Hashable CASL2Hybrid
 
 instance Language CASL2Hybrid -- default definition is okay
 

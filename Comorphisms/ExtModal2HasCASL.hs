@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/ExtModal2HasCASL.hs
 Copyright   :  (c) Christian Maeder, DFKI 2012
@@ -34,7 +34,7 @@ import Data.List
 import Data.Maybe
 import Data.Function
 import qualified Data.HashMap.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 
 import ExtModal.Logic_ExtModal
 import ExtModal.AS_ExtModal
@@ -50,7 +50,13 @@ import HasCASL.Le as HC
 import HasCASL.Unify
 import HasCASL.Sublogic as HC
 
-data ExtModal2HasCASL = ExtModal2HasCASL deriving (Show)
+import GHC.Generics (Generic)
+import Data.Hashable
+
+data ExtModal2HasCASL = ExtModal2HasCASL deriving (Show, Generic)
+
+instance Hashable ExtModal2HasCASL
+
 instance Language ExtModal2HasCASL
 
 instance Comorphism ExtModal2HasCASL
@@ -202,13 +208,13 @@ transSig sign sens = let
     rigOps' = diffOpMapSet (opMap sign) flexibleOps
     rigPreds' = diffMapSet (predMap sign) flexiblePreds
     noms = nominals extInf
-    noNomsPreds = Set.fold (`MapSet.delete` nomPType) rigPreds' noms
+    noNomsPreds = Set.foldr (`MapSet.delete` nomPType) rigPreds' noms
     termMs = termMods extInf
     timeMs = timeMods extInf
-    rels = Set.fold (\ m ->
+    rels = Set.foldr (\ m ->
       insertModPred world (Set.member m timeMs) (Set.member m termMs) m)
       MapSet.empty $ modalities extInf
-    nomOps = Set.fold (\ n -> addOpTo (nomName n) nomOpType) rigOps' noms
+    nomOps = Set.foldr (\ n -> addOpTo (nomName n) nomOpType) rigOps' noms
     s2 = s1
       { sortRel = Rel.insertKey world $ sortRel sign
       , opMap = addOpMapSet flexOps' nomOps
@@ -294,7 +300,7 @@ nr = nullRange
 worldTy :: Type
 worldTy = toType world
 
-tauDef :: Set.Set Id -> [Id] -> Term
+tauDef :: Set.HashSet Id -> [Id] -> Term
 tauDef termMs timeMs = let ts = tPair worldTy in
          HC.mkForall (pairDs worldTy)
            . mkLogTerm eqvId nr
@@ -393,7 +399,7 @@ sucAlt = Construct (Just sucId) [natTy] HC.Total [typeToSelector Nothing natTy]
 altToTy :: Id -> AltDefn -> Type
 altToTy i (Construct _ ts p _) = getFunType (toType i) p ts
 
-altToOpInfo :: Id -> AltDefn -> (Id, Set.Set OpInfo)
+altToOpInfo :: Id -> AltDefn -> (Id, Set.HashSet OpInfo)
 altToOpInfo i c@(Construct m _ _ _) = let Just n = m in
     (n, Set.singleton .
       OpInfo (simpleTypeScheme $ altToTy i c) Set.empty
@@ -421,7 +427,7 @@ numSel = typeToSelector (Just numId) natTy
 nWorldTy :: Type
 nWorldTy = altToTy nWorldId worldAlt
 
-selWorldInfo :: [Selector] -> (Id, Set.Set OpInfo)
+selWorldInfo :: [Selector] -> (Id, Set.HashSet OpInfo)
 selWorldInfo = selToOpInfo nWorldId . Set.singleton . ConstrInfo mkNWorldId
   $ simpleTypeScheme nWorldTy
 
@@ -429,7 +435,7 @@ selToTy :: Id -> [Selector] -> (Id, Type)
 selToTy i s = let [Select (Just n) t p] = s in
   (n, getFunType t p [toType i])
 
-selToOpInfo :: Id -> Set.Set ConstrInfo -> [Selector] -> (Id, Set.Set OpInfo)
+selToOpInfo :: Id -> Set.HashSet ConstrInfo -> [Selector] -> (Id, Set.HashSet OpInfo)
 selToOpInfo i c s = let (n, ty) = selToTy i s in
   (n, Set.singleton . OpInfo (simpleTypeScheme ty) Set.empty
       $ SelectData c i)

@@ -64,17 +64,26 @@ import SoftFOL.ParseTPTP
 
 import GHC.Generics (Generic)
 import Data.Hashable
+import qualified Common.HashSetUtils as HSU
 
-data PlainSoftFOL = PlainSoftFOL
+data PlainSoftFOL = PlainSoftFOL deriving Generic
+
+instance Hashable PlainSoftFOL
 
 instance Show PlainSoftFOL where
   show PlainSoftFOL = "SoftFOL"
 
-data SoftFOLInduction = SoftFOLInduction deriving Show
-data SoftFOLInduction2 = SoftFOLInduction2 deriving Show
+data SoftFOLInduction = SoftFOLInduction deriving (Show, Generic)
+data SoftFOLInduction2 = SoftFOLInduction2 deriving (Show, Generic)
+
+instance Hashable SoftFOLInduction
+
+instance Hashable SoftFOLInduction2
 
 -- | The identity of the comorphisms
-data GenSuleCFOL2SoftFOL a = GenSuleCFOL2SoftFOL a deriving Show
+data GenSuleCFOL2SoftFOL a = GenSuleCFOL2SoftFOL a deriving (Show, Generic)
+
+instance Hashable a => Hashable (GenSuleCFOL2SoftFOL a)
 
 suleCFOL2SoftFOL :: GenSuleCFOL2SoftFOL PlainSoftFOL
 suleCFOL2SoftFOL = GenSuleCFOL2SoftFOL PlainSoftFOL
@@ -157,7 +166,7 @@ formTrCASL _ _ = error "SuleCFOL2SoftFOL: No extended formulas allowed in CASL"
 instance Show a => Language (GenSuleCFOL2SoftFOL a) where
   language_name (GenSuleCFOL2SoftFOL a) = "CASL2" ++ show a
 
-instance Show a => Comorphism (GenSuleCFOL2SoftFOL a)
+instance (Show a, Hashable a) => Comorphism (GenSuleCFOL2SoftFOL a)
                CASL CASL_Sublogics
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CASLSign
@@ -195,14 +204,14 @@ transFuncMap idMap sign = Map.foldrWithKey toSPOpType (Map.empty, idMap)
   . MapSet.toMap $ CSign.opMap sign
     where toSPOpType iden typeSet (fm, im) =
               if isSingleton typeSet then
-                 let oType = Set.findMin typeSet
+                 let oType = HSU.findMin typeSet
                      sid' = sid fm oType
                  in (Map.insert sid' (Set.singleton (transOpType oType)) fm,
                       insertSPId iden (COp oType) sid' im)
               else foldr insOIdSet (fm, im)
                 $ Rel.partSet (leqF sign) typeSet
               where insOIdSet tset (fm', im') =
-                        let sid' = sid fm' (Set.findMax tset)
+                        let sid' = sid fm' (HSU.findMax tset)
                         in (Map.insert sid' (Set.map transOpType tset) fm',
                             Set.foldr (\ x -> insertSPId iden (COp x) sid')
                                      im' tset)
@@ -219,7 +228,7 @@ transPredMap idMap sign =
       $ CSign.predMap sign
     where toSPPredType iden typeSet (fm, im) =
               if isSingleton typeSet then
-                let pType = Set.findMin typeSet
+                let pType = HSU.findMin typeSet
                     sid' = sid fm pType
                 in (Map.insert sid' (Set.singleton (transPredType pType)) fm
                    , insertSPId iden (CPred pType) sid' im)
@@ -227,7 +236,7 @@ transPredMap idMap sign =
                         Rel.partSet (leqP sign) typeSet of
                      splitTySet -> foldr insOIdSet (fm, im) splitTySet
               where insOIdSet tset (fm', im') =
-                        let sid' = sid fm' (Set.findMax tset)
+                        let sid' = sid fm' (HSU.findMax tset)
                         in (Map.insert sid' (Set.map transPredType tset) fm',
                             Set.foldr (\ x -> insertSPId iden (CPred x) sid')
                                      im' tset)
@@ -900,7 +909,7 @@ createDomain sign m l = do
 typeCheckForm :: Bool -> CASLSign -> RMap -> SPTerm -> ([String], RMap)
 typeCheckForm rev sign m trm =
   let srts = sortSet sign
-      aty = if Set.size srts == 1 then Just $ Set.findMin srts else Nothing
+      aty = if Set.size srts == 1 then Just $ HSU.findMin srts else Nothing
   in case trm of
     SPQuantTerm _ vars frm -> let
         vs = concatMap getVars vars
@@ -946,7 +955,7 @@ typeCheckTerm :: CASLSign -> Maybe SORT -> RMap -> SPTerm
   -> ([String], RMap, Maybe SORT)
 typeCheckTerm sign ty m trm =
   let srts = sortSet sign
-      aty = if Set.size srts == 1 then Just $ Set.findMin srts else Nothing
+      aty = if Set.size srts == 1 then Just $ HSU.findMin srts else Nothing
   in case trm of
     SPComplexTerm (SPCustomSymbol cst) args -> case Map.lookup cst m of
       Nothing -> let

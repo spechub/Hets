@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, DeriveGeneric #-}
 {- |
 Module      :  ./Comorphisms/CommonLogicModuleElimination.hs
 Description :  Comorphism from CommonLogic to CommonLogic
@@ -36,7 +36,13 @@ import qualified CommonLogic.Morphism as Mor
 import qualified CommonLogic.Sublogic as Sl
 import CommonLogic.ModuleElimination
 
-data CommonLogicModuleElimination = CommonLogicModuleElimination deriving Show
+import GHC.Generics (Generic)
+import Data.Hashable
+
+data CommonLogicModuleElimination = CommonLogicModuleElimination 
+     deriving (Show, Generic)
+
+instance Hashable CommonLogicModuleElimination
 
 instance Language CommonLogicModuleElimination where
   language_name CommonLogicModuleElimination = "CommonLogicModuleElimination"
