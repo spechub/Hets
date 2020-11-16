@@ -283,7 +283,8 @@ mapTheory (owlSig, owlSens) = let
                     . Set.union predefIRIs $ OS.datatypes owlSig} -}
     (cSens, nSig) <- foldM (\ (x, y) z -> do
             (sen, sig) <- mapSentence y z
-            return (sen ++ x, uniteCASLSign sig y)) ([], cSig) owlSens
+            return (sen ++ x, cSig)) -- uniteCASLSign sig y)) 
+                     ([], cSig) owlSens
     return (foldl1 uniteCASLSign [nSig, pSig],  -- , dTypes],
             predefinedAxioms ++ (reverse cSens))
 
