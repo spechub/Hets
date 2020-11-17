@@ -117,7 +117,7 @@ hyperCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
 prelTxt :: String -> String
 prelTxt t =
     "% only print essential output\n" ++
-    "#(set_verbosity(1)).\n\n" ++
+    "#(set_verbosity(2)).\n\n" ++
     "% assume all input to be in tptp-syntax\n" ++
     "#(set_parameter(input_type, 2)).\n\n" ++
     "% To prevent blowing up my memory\n" ++
