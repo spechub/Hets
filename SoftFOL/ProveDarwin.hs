@@ -19,6 +19,7 @@ module SoftFOL.ProveDarwin
   , runDarwinProcess
   , ProverBinary (..)
   , darwinExe
+  , proverBinary
   , tptpProvers
   , eproverOpts
   ) where

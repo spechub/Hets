@@ -50,23 +50,23 @@ import Data.Time (timeToTimeOfDay)
 import Data.Time.Clock (secondsToDiffTime)
 import qualified SoftFOL.ProveDarwin as Darwin
 
-extras :: String -> Bool -> String -> String
+extras :: Darwin.ProverBinary -> Bool -> String -> String
 extras b cons tl = let
   tOut = " -to " ++ tl
   darOpt = "-pc false"
   fdOpt = darOpt ++ (if cons then " -pmtptp true" else "") ++ " -fd true"
   in case b of
-    "eprover" -> Darwin.eproverOpts (if cons then "-s" else "") ++ tl
-    "leo" -> "-t " ++ tl
-    "darwin" -> fdOpt ++ tOut
-    -- "DarwinFD" -> fdOpt ++ tOut
-    "e-darwin" -> fdOpt ++ " -eq Axioms" ++ tOut
-    "iproveropt" -> "--time_out_real " ++ tl ++ " --sat_mode true"
+    Darwin.EProver -> Darwin.eproverOpts (if cons then "-s" else "") ++ tl
+    Darwin.Leo -> "-t " ++ tl
+    Darwin.Darwin -> fdOpt ++ tOut
+    Darwin.DarwinFD -> fdOpt ++ tOut
+    Darwin.EDarwin -> fdOpt ++ " -eq Axioms" ++ tOut
+    Darwin.IProver -> "--time_out_real " ++ tl ++ " --sat_mode true"
 
 {- | Runs the Darwin service. The tactic script only contains a string for the
   time limit. -}
 consCheck
-  :: String
+  :: Darwin.ProverBinary
   -> String
   -> TacticScript
   -> TheoryMorphism Sign Sentence Morphism ProofTree
@@ -77,7 +77,7 @@ consCheck b thName (TacticScript tl) tm freedefs = case tTarget tm of
         let proverStateI = tptpProverState sig (toNamedList nSens) freedefs
         prob <- showTPTPProblemM thName proverStateI []
         (exitCode, out, tUsed) <-
-          Darwin.runDarwinProcess b False (extras b True tl) thName prob
+          Darwin.runDarwinProcess (Darwin.darwinExe b) False (extras b True tl) thName prob
         let outState = CCStatus
                { ccResult = Just True
                , ccProofTree = ProofTree $ unlines $ exitCode : out
@@ -89,7 +89,7 @@ consCheck b thName (TacticScript tl) tm freedefs = case tTarget tm of
                                  else Nothing }
 
 darwinConsChecker
-  :: String -> ConsChecker Sign Sentence Sublogic Morphism ProofTree
-darwinConsChecker binary =
-  (mkUsableConsChecker binary binary FOF $ consCheck binary)
+  :: Darwin.ProverBinary -> ConsChecker Sign Sentence Sublogic Morphism ProofTree
+darwinConsChecker b =
+  (mkUsableConsChecker (Darwin.darwinExe b) (Darwin.proverBinary b) FOF $ consCheck b)
   { ccNeedsTimer = False }

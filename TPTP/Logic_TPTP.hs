@@ -43,6 +43,7 @@ import Logic.Logic as Logic
 
 import Data.Monoid
 import qualified Data.Set as Set
+import qualified SoftFOL.ProveDarwin as Darwin
 
 data TPTP = TPTP deriving (Show, Ord, Eq)
 
@@ -84,7 +85,8 @@ instance Logic TPTP Sublogic BASIC_SPEC Sentence () () Sign Morphism Symbol () P
     all_sublogics TPTP = [CNF, FOF, TFF, THF]
     provers TPTP = [cvc4, darwin, eprover, geo3, isabelle, leo2, satallax,
                     spass, vampire]
-    cons_checkers TPTP = [hyperConsChecker] ++ map darwinConsChecker ["darwin", "eprover", "iproveropt", "edarwin", "leo"] 
+    cons_checkers TPTP = [hyperConsChecker] ++ 
+                         map darwinConsChecker Darwin.tptpProvers 
 
 
 instance SublogicName Sublogic where
