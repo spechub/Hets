@@ -58,7 +58,7 @@ extras b cons tl = let
   in case b of
     "eprover" -> Darwin.eproverOpts (if cons then "-s" else "") ++ tl
     "leo" -> "-t " ++ tl
-    "darwin" -> darOpt ++ tOut
+    "darwin" -> fdOpt ++ tOut
     -- "DarwinFD" -> fdOpt ++ tOut
     "e-darwin" -> fdOpt ++ " -eq Axioms" ++ tOut
     "iproveropt" -> "--time_out_real " ++ tl ++ " --sat_mode true"

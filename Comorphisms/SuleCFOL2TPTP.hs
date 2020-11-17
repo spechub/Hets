@@ -49,6 +49,10 @@ import TPTP.Sign as TSign
 import TPTP.Logic_TPTP
 import TPTP.Sublogic
 
+import qualified Comorphisms.SuleCFOL2SoftFOL as CASL2SoftFOL
+
+import Debug.Trace
+
 data TPTP_FOF = TPTP_FOF
 
 instance Show TPTP_FOF where
@@ -86,6 +90,7 @@ instance Comorphism GenSuleCFOL2TPTP
     mapSublogic _ _ = Just FOF
     map_theory GenSuleCFOL2TPTP = transTheory
     has_model_expansion GenSuleCFOL2TPTP = True
+    extractModel GenSuleCFOL2TPTP s pt = trace ("pt:"++show pt) $  CASL2SoftFOL.extractCASLModel s pt
 
 transTheory :: (FormExtension f, Eq f)
             => (CSign.Sign f e, [Named (FORMULA f)])
