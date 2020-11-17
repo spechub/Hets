@@ -56,12 +56,12 @@ extras b cons tl = let
   darOpt = "-pc false"
   fdOpt = darOpt ++ (if cons then " -pmtptp true" else "") ++ " -fd true"
   in case b of
-    "EProver" -> Darwin.eproverOpts (if cons then "-s" else "") ++ tl
-    "Leo" -> "-t " ++ tl
+    "eprover" -> Darwin.eproverOpts (if cons then "-s" else "") ++ tl
+    "leo" -> "-t " ++ tl
     "darwin" -> darOpt ++ tOut
-    "DarwinFD" -> fdOpt ++ tOut
-    "EDarwin" -> fdOpt ++ " -eq Axioms" ++ tOut
-    "IProver" -> "--time_out_real " ++ tl ++ " --sat_mode true"
+    -- "DarwinFD" -> fdOpt ++ tOut
+    "e-darwin" -> fdOpt ++ " -eq Axioms" ++ tOut
+    "iproveropt" -> "--time_out_real " ++ tl ++ " --sat_mode true"
 
 {- | Runs the Darwin service. The tactic script only contains a string for the
   time limit. -}

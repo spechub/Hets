@@ -93,5 +93,5 @@ instance Logic SoftFOL () [TPTP] Sentence () ()
 #endif
            ++ map darwinProver tptpProvers
            ++ [metisProver, hyperProver]
-         cons_checkers SoftFOL = map darwinConsChecker tptpProvers
-           ++ [hyperConsChecker]
+         cons_checkers SoftFOL = [] -- map darwinConsChecker tptpProvers
+           -- ++ [hyperConsChecker]

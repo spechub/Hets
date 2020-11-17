@@ -84,7 +84,7 @@ instance Logic TPTP Sublogic BASIC_SPEC Sentence () () Sign Morphism Symbol () P
     all_sublogics TPTP = [CNF, FOF, TFF, THF]
     provers TPTP = [cvc4, darwin, eprover, geo3, isabelle, leo2, satallax,
                     spass, vampire]
-    cons_checkers TPTP = [hyperConsChecker, darwinConsChecker "darwin"] 
+    cons_checkers TPTP = [hyperConsChecker] ++ map darwinConsChecker ["darwin", "eprover", "iproveropt", "edarwin", "leo"] 
 
 
 instance SublogicName Sublogic where
