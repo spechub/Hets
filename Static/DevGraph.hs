@@ -685,6 +685,7 @@ data GlobalEntry =
   | AlignEntry AlignSig
   | UnitEntry UnitSig
   | NetworkEntry GDiagram
+  | PatternEntry PatternSig
     deriving (Show, Typeable)
 
 getGlobEntryNodes :: GlobalEntry -> Set.Set Node
@@ -705,6 +706,27 @@ data AlignSig = AlignMor NodeSig GMorphism NodeSig
                           NodeSig                     -- t2
                           NodeSig                     -- b
   deriving (Show, Eq, Typeable)
+
+-- true for local patterns, imports, list of nodes for those parameters that are ontologies, kinded vars, body
+data PatternSig = PatternSig Bool MaybeNode [PatternParamInfo] PatternVarMap LocalOrSpecSig
+  deriving (Show, Typeable)
+
+data LocalOrSpecSig = SpecSig LocalOrSpec 
+                    | LocalSig (Map.Map IRI PatternSig) LocalOrSpec
+                    -- store the varmaps of local subpatterns so they dont get recomputed every time
+  deriving (Show, Typeable)
+
+getBody :: LocalOrSpecSig -> LocalOrSpec
+getBody (SpecSig x) = x
+getBody (LocalSig _ x) = x
+
+data PatternParamInfo = SingleParamInfo Bool NodeSig -- optional or not, node in graph
+               | ListParamInfo Int Bool MaybeNode (Maybe IRI)
+                 -- length (currrently saves the number of elements before last),
+                 --  exact or minimal, node of list template, name of tail if not empty list
+               | StringParamInfo IRI
+ deriving (Show, Eq, Typeable)
+-- TODO: extend for data parameters
 
 type GlobalEnv = Map.Map IRI GlobalEntry
 

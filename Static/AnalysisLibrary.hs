@@ -22,6 +22,8 @@ module Static.AnalysisLibrary
     , LNS
     ) where
 
+--import Debug.Trace
+
 import Logic.Logic
 import Logic.Grothendieck
 import Logic.Coerce
@@ -159,7 +161,8 @@ anaStringAux mln lgraph opts topLns initDG mt file posFileName (_, libenv)
         $ concatMap (getSpecDef . item) is'
       declNs = Set.fromList . map expnd
         $ concatMap (getDeclSpecNames . item) is'
-      missNames = Set.toList $ spNs Set.\\ declNs
+      missNames = -- trace ("spNs:" ++ show spNs ++ " declNs:" ++ show declNs) $ 
+                  Set.toList $ spNs Set.\\ declNs
       unDecls = map (addDownload True) $ filter
           (isNothing . (`lookupGlobalEnvDG` initDG)) missNames
       is = unDecls ++ is'
@@ -205,7 +208,7 @@ anaStringAux mln lgraph opts topLns initDG mt file posFileName (_, libenv)
 -- lookup or read a library
 anaLibFile :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph -> LibName
            -> ResultT IO (LibName, LibEnv)
-anaLibFile lgraph opts topLns libenv initDG ln =
+anaLibFile lgraph opts topLns libenv initDG ln = -- trace ("known:" ++ show (Map.keys libenv)) $ 
     let lnstr = show ln in case find (== ln) $ Map.keys libenv of
     Just ln' -> do
         analyzing opts $ "from " ++ lnstr
@@ -369,6 +372,21 @@ anaGenericity lg libEnv ln dg opts eo name
    return (Genericity (Params ps') (Imported imps') pos,
      GenSig nsigI nsigPs $ JustNode ns, dg'')
 
+anaImports :: LogicGraph -> LibEnv -> LibName -> DGraph -> HetcatsOpts
+ -> ExpOverrides -> NodeName -> IMPORTED
+ -> Result (IMPORTED, MaybeNode, DGraph)
+anaImports lg libEnv ln dg opts eo name (Imported imps) = do
+   l <- lookupCurrentLogic "IMPORTS" lg
+   let baseNode = maybe (EmptyNode l) JustNode (currentBaseTheory dg)
+   (imps', nsigI, dg') <- case imps of
+     [] -> return ([], baseNode, dg)
+     _ -> do
+      (is', _, nsig', dgI) <- anaUnion False lg libEnv ln dg baseNode
+          (extName "Imports" name) opts eo imps $ getRange imps
+      return (is', JustNode nsig', dgI)
+   return (Imported imps', nsigI, dg')
+-- TODO: this method should be called in anaGenericity
+
 expCurieT :: GlobalAnnos -> ExpOverrides -> IRI -> ResultT IO IRI
 expCurieT ga eo = liftR . expCurieR ga eo
 
@@ -376,7 +394,7 @@ expCurieT ga eo = liftR . expCurieR ga eo
 anaLibItem :: LogicGraph -> HetcatsOpts -> LNS -> LibName -> LibEnv -> DGraph
   -> ExpOverrides -> LIB_ITEM
   -> ResultT IO (LIB_ITEM, DGraph, LibEnv, LogicGraph, ExpOverrides)
-anaLibItem lg opts topLns currLn libenv dg eo itm =
+anaLibItem lg opts topLns currLn libenv dg eo itm = -- trace ("itm:" ++ show itm) $
  case itm of
   Spec_defn spn2 gen asp pos -> do
     let spn' = if null (iriToStringUnsecure spn2) then
@@ -564,7 +582,240 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
   Newcomorphism_defn com _ -> ResultT $ do
     dg' <- anaComorphismDef com dg
     return $ Result [] $ Just (itm, dg', libenv, lg, eo)
+  Pattern_defn sname params imps body r -> do
+    let spn' = if null (iriToStringUnsecure sname) then
+         simpleIdToIRI $ mkSimpleId "Spec" else sname
+    spn <- expCurieT (globalAnnos dg) eo spn'
+    let spstr = iriToStringUnsecure spn
+        nName = makeName spn
+    analyzing opts $ "pattern " ++ spstr
+    -- spec names are parsed as unsolved. But here we solve them all to specs, no vars possible.
+    let imps'' = case imps of
+                   Imported asps -> Imported $
+                     map (\asp -> 
+                         case item asp of 
+                           UnsolvedName x rg -> asp{item =Spec_inst x [] Nothing rg}
+                           _ -> asp) 
+                     asps
+    (imps', nsigI, dg1) <- liftR $ anaImports lg libenv currLn dg opts eo nName imps''
+    (params', pinfos, vMap, lastParam, dg2) <- liftR $ anaPatternParams lg libenv currLn dg1 opts eo nName nsigI params
+    (dg3, expBodySig) <- liftR $ anaPatternBody lg libenv currLn dg2 opts eo nName pinfos vMap nsigI lastParam body 
+                         -- pinfos are sent for locals, lastParam is needed to solve their parameters correctly
+    let entry = PatternEntry $ PatternSig False nsigI pinfos vMap expBodySig
+        itm' = Pattern_defn sname params' imps' (getBody expBodySig) r
+        genv = globalEnv dg3
+    if Map.member spn genv 
+       then
+        liftR $ plain_error (itm, dg, libenv, lg, eo)
+               (alreadyDefined spstr) r
+       else -- trace ("inserting:" ++ show entry) $
+        return (itm', dg3{globalEnv = Map.insert spn entry genv},
+                libenv, lg, eo)
   _ -> return (itm, dg, libenv, lg, eo)
+
+anaPatternParams :: LogicGraph -> LibEnv -> LibName -> DGraph -> HetcatsOpts
+ -> ExpOverrides -> NodeName -> MaybeNode -> [PatternParam]
+ -> Result ([PatternParam], [PatternParamInfo], PatternVarMap, MaybeNode, DGraph)
+anaPatternParams lg lenv ln dg opts eo name impN params = 
+ foldM (\(plist, slist, vMap, aNode, aDG) param -> do
+           (p, s, vMap', bNode, bDG) <- anaPatternParam lg lenv ln aDG opts eo name vMap aNode param
+           return (plist ++ [p], slist ++ [s], vMap', bNode, bDG)) 
+       ([], [], Map.empty, impN, dg) params
+
+anaPatternParam :: LogicGraph -> LibEnv -> LibName -> DGraph -> HetcatsOpts
+ -> ExpOverrides -> NodeName -> PatternVarMap -> MaybeNode -> PatternParam
+ -> Result (PatternParam, PatternParamInfo, PatternVarMap, MaybeNode, DGraph)
+anaPatternParam lg lenv ln dg opts eo name vMap prevParamNode pParam = 
+ case pParam of
+  StringParam i -> do
+   l <- lookupCurrentLogic "anaPatternParam" lg 
+   return (pParam, StringParamInfo i, Map.insert i (False, "String") vMap, EmptyNode l, dg)
+  OntoParam isOpt aSpec -> do
+    (sp', psig, dg') <- anaSpecTop None False lg lenv ln dg prevParamNode name opts eo (item aSpec) nullRange
+    let aSpec' = aSpec{item = sp'}
+        aSig = getSig psig
+        iSig = case prevParamNode of
+                 EmptyNode _ -> Nothing
+                 JustNode x -> Just $ getSig x
+    (vMap', _) <- addSigSymsToVarMap vMap (mkIRI "") iSig aSig
+    return (OntoParam isOpt aSpec', 
+            SingleParamInfo isOpt psig,
+            vMap',
+            JustNode psig,
+            dg')
+  ListParam oList -> 
+   case oList of 
+    EmptyParamList ->  do
+          l <- lookupCurrentLogic "anaPatternParam" lg 
+          return (ListParam oList, 
+                  ListParamInfo 0 True (EmptyNode l) Nothing,
+                  vMap,
+                  EmptyNode l,
+                  dg)
+    OntoListCons aSpecs ->
+     case reverse aSpecs of
+      [] -> error "empty list, should never happen"
+      lastSpec : sps' -> do
+        let emptyListName = mkIRI "empty"
+            (lastSpecSolved, exactSize, listVar) = 
+              case item lastSpec of
+               UnsolvedName x rg -> if x == emptyListName 
+                                    then (lastSpec{item = EmptyList}, True, emptyListName) 
+                                    else (lastSpec{item = ListVariable x}, False, x)
+               _ -> error "Last element of the list must be empty or a variable name"
+        (aSpecs', nsigs, dg') <- 
+         foldM (\(slist, nlist, aDg) asp -> do
+                    (sp', mnsig, bDg) <- anaListElem lg lenv ln aDg opts eo name vMap prevParamNode asp
+                    return ( slist  ++ [sp'] 
+                           , nlist  ++ case mnsig of 
+                                         EmptyNode _ -> []
+                                         _ -> [mnsig]
+                           , bDg)
+               ) 
+               ([], [], dg) $ map item $ reverse $ lastSpecSolved : sps'
+        let oList' = map (\(x,y) -> x{item = y}) $ zip aSpecs aSpecs'
+            pParam' = ListParam $ OntoListCons oList'
+            size = length aSpecs - 1 -- TODO: check this!
+            firstNode = head nsigs
+            iSig = case prevParamNode of
+                 EmptyNode _ -> Nothing
+                 JustNode x -> Just $ getSig x
+        (vMap', newKinds) <- 
+                  foldM (\(f, k) nsig -> addSigSymsToVarMap f listVar iSig $ getSig nsig) (vMap, Set.empty) $ 
+                        map (\n -> case n of 
+                                     JustNode x -> x
+                                     _ -> error "should never happen"
+                           ) nsigs
+        let newK = case Set.toList newKinds of
+                     [x] -> x
+                     _ -> "ontology"
+            (vMap'', tailName) = if listVar == emptyListName then (vMap', Nothing) else (Map.insert listVar (True, "list") vMap', Just listVar)
+        return (pParam', ListParamInfo size exactSize firstNode tailName, vMap'', firstNode, dg')
+
+anaListElem :: LogicGraph -> LibEnv -> LibName -> DGraph -> HetcatsOpts
+ -> ExpOverrides -> NodeName -> PatternVarMap -> MaybeNode -> SPEC
+ -> Result (SPEC, MaybeNode, DGraph)
+anaListElem lg lenv ln dg opts eo name vMap prevParamNode sp = do
+ l <- lookupCurrentLogic "anaListElem" lg
+ case sp of 
+  EmptyList -> return (sp, EmptyNode l, dg)
+  ListVariable _ -> return (sp, EmptyNode l, dg)
+  _ -> do 
+    (sp', nsig, bDg) <- anaSpecTop None False lg lenv ln dg 
+                                                  prevParamNode name opts eo 
+                                                  sp nullRange
+    return (sp', JustNode nsig, bDg)
+
+addSigSymsToVarMap :: PatternVarMap -> IRI -> Maybe G_sign -> G_sign -> Result (PatternVarMap, Set.Set String)
+addSigSymsToVarMap vMap tailName exclSig aSig = 
+ case aSig of
+   G_sign lid (ExtSign sig _) _ -> do
+      let syms = symset_of lid sig
+      symsExcl <- case exclSig of
+                   Nothing -> return Set.empty
+                   Just (G_sign lidE (ExtSign sigE _) _) -> do
+                    sigE' <- coercePlainSign lidE lid "coerce in addSigSymsToVarMap" sigE
+                    return $ symset_of lid sigE'    
+      let insertOrFail f s k = 
+           let sIRI = idToIRI $ sym_name lid s in
+            if sIRI `elem` Map.keys f then
+                error $ "variable named " ++ show s ++ "already used in " ++ show f
+               else (Map.insert sIRI (if sIRI == tailName then (True, "list") else (False, symKind lid s)) f, Set.insert (symKind lid s) k)  
+          (vMap', newKinds) = foldl (\(f, k) s -> insertOrFail f s k) (vMap, Set.empty) $ Set.toList $ Set.difference syms symsExcl
+      return (vMap', newKinds)   
+
+anaPatternBody :: LogicGraph -> LibEnv -> LibName -> DGraph -> HetcatsOpts
+ -> ExpOverrides -> NodeName -> [PatternParamInfo] -> PatternVarMap -> MaybeNode -> MaybeNode -> LocalOrSpec ->
+    Result (DGraph, LocalOrSpecSig)
+anaPatternBody lg lenv ln dg opts eo name pinfos vMap impNode lastParam body =
+ case body of
+  Spec_pattern aspec -> do 
+    sp'<- solveBody lg lenv ln dg opts eo name vMap impNode $ item aspec
+    -- trace ("sp':" ++ show sp') $ 
+    -- trace ("solvedBody:" ++ show sp') $ 
+    return (dg, SpecSig $ Spec_pattern aspec{item = sp'})
+  Local_pattern locals aspec -> do 
+   (dg', psigs, items) <- solveLocals lg lenv ln dg opts eo name pinfos vMap impNode lastParam locals
+   --let vMap' = foldl Map.union vMap $ map (\(PatternSig _ _ _ f _) -> f) $ Map.elems psigs
+   sp' <- solveBody lg lenv ln dg' opts eo name vMap impNode $ item aspec
+   return (dg', LocalSig psigs $ Local_pattern items $ aspec{item = sp'})
+   
+solveLocals :: LogicGraph -> LibEnv -> LibName -> DGraph -> HetcatsOpts
+ -> ExpOverrides -> NodeName -> [PatternParamInfo] -> PatternVarMap -> MaybeNode -> MaybeNode -> [LIB_ITEM] ->
+    Result (DGraph ,Map.Map IRI PatternSig, [LIB_ITEM])
+solveLocals lg lenv ln dg opts eo name pinfos vMap impNode lastParam locals = do
+ (dg', psigs, items) <- 
+   foldM (\(dg0, psigs0, items0) l -> do
+             (dg1, psigs1, lItem) <- solveLocal lg lenv ln dg0 opts eo name pinfos vMap impNode lastParam l
+             return (dg1, Map.union psigs0 psigs1, items0 ++ [lItem])) 
+         (dg, Map.empty, []) locals 
+ return (dg', psigs, items)
+
+solveLocal :: LogicGraph -> LibEnv -> LibName -> DGraph -> HetcatsOpts
+ -> ExpOverrides -> NodeName -> [PatternParamInfo] -> PatternVarMap -> MaybeNode -> MaybeNode -> LIB_ITEM ->
+    Result (DGraph, Map.Map IRI PatternSig, LIB_ITEM)
+solveLocal lg lenv ln dg opts eo name pinfos vMap impNode lastParam local = 
+ case local of
+  Pattern_defn lname lparams limp (Spec_pattern asp) lRange -> do
+    (lparams', pinfos', vMap', _aNode, dg1) <- anaPatternParams lg lenv ln dg opts eo (makeName lname) lastParam lparams
+    let intVMap = Map.intersection vMap vMap'
+    if  intVMap == Map.empty 
+     then do 
+       sp' <- solveBody lg lenv ln dg1 opts eo name (Map.union vMap vMap') impNode $ item asp
+       let asp' = asp {item = sp'}
+           lpsig = PatternSig True impNode (pinfos') vMap' $ SpecSig $ Spec_pattern asp'
+                   -- here always add the parameters of the global pattern before those of the local one
+                   -- should be pinfos ++ pinfos'
+                   -- but: if we don't do this,then the lists of formal and actual params with match during instantiation
+       -- trace ("solved local:" ++ show lpsig) $ 
+       return (dg1, Map.fromAscList [(lname, lpsig)], 
+               Pattern_defn lname lparams' limp (Spec_pattern asp') lRange)
+       -- trace ("sp':" ++ show sp') $ error "solveLocal nyi"
+     else fail $ "redeclaring variables in local pattern:" ++ (show $ Map.keys intVMap) 
+  _ -> fail $ "only pattern definitions allowed in local part of a pattern"
+
+solveBody :: LogicGraph -> LibEnv -> LibName -> DGraph -> HetcatsOpts
+ -> ExpOverrides -> NodeName -> PatternVarMap -> MaybeNode -> SPEC ->
+    Result SPEC
+solveBody lg lenv ln dg opts eo name vMap impNode sp = 
+ case sp of
+  UnsolvedName i rg -> if i `elem` Map.keys vMap then 
+                         let (_, j) = Map.findWithDefault (error "just checked") i vMap 
+                         in if j == "list" then return $ ListVariable i 
+                                           else return $ NormalVariable i
+                       else return sp -- can't solve now, will be solved later
+  Basic_spec (G_basic_spec lid bspec) r -> do
+    iSyms <- case impNode of
+                 EmptyNode _ -> return Set.empty
+                 JustNode n -> 
+                   case getSig n of
+                     G_sign lidI (ExtSign sigI _) _ -> do
+                      sigI' <- coercePlainSign lidI lid "solveBody" sigI -- TODO: heterogenity won't work
+                      return $ symset_of lid sigI'
+    bspec' <- solve_symbols lid iSyms vMap bspec
+    return $ Basic_spec (G_basic_spec lid bspec') r
+  Extension aspecs r -> do
+    aspecs' <- mapM (solveBody lg lenv ln dg opts eo name vMap impNode) (map item aspecs)
+    return $ Extension (map (\(x,y) -> x{item = y}) $ zip aspecs aspecs') r
+  Union aspecs r -> do
+    aspecs' <- mapM (solveBody lg lenv ln dg opts eo name vMap impNode) (map item aspecs)
+    return $ Union (map (\(x,y) -> x{item = y}) $ zip aspecs aspecs') r
+  Group aspec r -> do
+    sp' <- solveBody lg lenv ln dg opts eo name vMap impNode $ item aspec
+    return $ Group (aspec{item = sp'}) r
+  Spec_inst n fitArgs miri r -> do
+    let solveFitArgs f = 
+         case item f of 
+          Fit_spec asp gm rg -> do
+            sp'<- solveBody lg lenv ln dg opts eo name vMap impNode $ item asp
+            return $ f{item = Fit_spec asp{item = sp'} gm rg}
+          _ -> return f
+    fitArgs' <- mapM solveFitArgs fitArgs 
+    return $ Spec_inst n fitArgs' miri r -- maybe here unsolved arguments should be solved to variables!
+  OntoList aspecs -> do
+    aspecs' <- mapM (solveBody lg lenv ln dg opts eo name vMap impNode) $ map item aspecs
+    return $ OntoList $ map (\(x,y) -> x{item = y}) $ zip aspecs aspecs'
+  _ -> error $ show sp
 
 symbolsOf :: LogicGraph -> G_sign -> G_sign -> [CORRESPONDENCE]
   -> Result (Set.Set (G_symbol, G_symbol))
@@ -666,7 +917,7 @@ anaViewDefn lg ln libenv dg opts eo vn gen vt gsis pos = do
           tmor <- gEmbedComorphism imor gsigmaS''
           fmor <- comp mor tmor
           return (gsigmaS', fmor)
-      emor <- fmap gEmbed $ anaGmaps lg opts pos gsigmaS' gsigmaT hsis
+      emor <- fmap gEmbed $ anaGmaps lg opts pos gsigmaS' gsigmaT Nothing hsis -- TODO: Nothing for now!
       gmor <- comp tmor emor
       let vsig = ExtViewSig src gmor $ ExtGenSig gsig tar
           voidView = nodeS == nodeT && isInclusion gmor

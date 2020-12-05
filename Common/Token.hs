@@ -113,14 +113,15 @@ criticalKeywords = terminatingKeywords ++ startingKeywords
 terminatingKeywords :: [String]
 terminatingKeywords =
     [ andS, endS, extractS, fitS, forgetS, hideS, keepS, rejectS, removeS, 
-      revealS, selectS, thenS, withS, withinS, ofS, forS, toS, intersectS]
+      revealS, selectS, thenS, withS, withinS, ofS, forS, toS, intersectS,
+      ";", "::"]
 
 -- | keywords starting a library item
 startingKeywords :: [String]
 startingKeywords =
     [ archS, fromS, logicS, newlogicS, refinementS, specS, unitS, viewS
     , ontologyS, alignmentS, networkS, equivalenceS, newcomorphismS
-    , interpretationS, entailmentS ]
+    , interpretationS, entailmentS, "pattern" ]
 
 -- | keywords that may follow a defining equal sign
 otherStartKeywords :: [String]

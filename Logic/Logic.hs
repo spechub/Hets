@@ -257,6 +257,9 @@ class (Language lid, PrintTypeConv basic_spec, GetRange basic_spec,
             Just p -> makeDefault (p, pretty)
          -- | parser for basic specifications
          parse_basic_spec :: lid -> Maybe (PrefixMap -> AParser st basic_spec)
+         -- | parser for macros
+         parse_macro :: lid -> Maybe (PrefixMap -> AParser st basic_spec)
+         parse_macro _ = Nothing
          -- | parser for a single symbol returned as list
          parseSingleSymbItem :: lid -> Maybe (AParser st symb_items)
          -- | parser for symbol lists
@@ -276,6 +279,10 @@ class (Language lid, PrintTypeConv basic_spec, GetRange basic_spec,
 basicSpecParser :: Syntax lid basic_spec symbol symb_items symb_map_items
   => Maybe IRI -> lid -> Maybe (PrefixMap -> AParser st basic_spec)
 basicSpecParser sm = fmap fst . parserAndPrinter sm
+
+macroParser :: Syntax lid basic_spec symbol symb_items symb_map_items
+  => Maybe IRI -> lid -> Maybe (PrefixMap -> AParser st basic_spec)
+macroParser _ = parse_macro
 
 basicSpecPrinter :: Syntax lid basic_spec symbol symb_items symb_map_items
   => Maybe IRI -> lid -> Maybe (basic_spec -> Doc)
@@ -372,6 +379,9 @@ class (Language lid, Category sign morphism, Ord sentence,
       -- | symbols have a name, see CASL RefMan p. 192
       sym_name :: lid -> symbol -> Id
       sym_name l _ = statError l "sym_name"
+      -- | allow to change name
+      rename_symbol :: lid -> symbol -> Id -> symbol
+      rename_symbol lid _ _ = error $ "symbol renaming nyi for logic " ++ show lid
       -- | some symbols have a label for better readability
       sym_label :: lid -> symbol -> Maybe String
       sym_label _ _ = Nothing
@@ -387,6 +397,9 @@ class (Language lid, Category sign morphism, Ord sentence,
       -- | combine two symbols into another one
       pair_symbols :: lid -> symbol -> symbol -> Result symbol
       pair_symbols lid _ _ = error $ "pair_symbols nyi for logic " ++ show lid
+      -- | create symbol from a name and a kind
+      new_symbol :: lid -> IRI -> String -> symbol
+      new_symbol _ _ _ = error "new_symbol nyi"
 
 -- | makes a singleton list from the given value
 singletonList :: a -> [a]
@@ -480,6 +493,10 @@ class ( Syntax lid basic_spec symbol symb_items symb_map_items
          -- | convert a theory to basic specs for different serializations
          convertTheory :: lid -> Maybe ((sign, [Named sentence]) -> basic_spec)
          convertTheory _ = Nothing
+
+         -- | convert a pair of symbols to symb_map_items
+         convertSymbols :: lid -> Maybe(symbol -> symbol -> symb_map_items)
+         convertSymbols _ = Nothing 
 
          {- ----------------------- amalgamation ---------------------------
             Computation of colimits of signature diagram.
@@ -625,6 +642,70 @@ class ( Syntax lid basic_spec symbol symb_items symb_map_items
          extract_module :: lid -> [IRI] -> (sign, [Named sentence])
                         -> Result (sign, [Named sentence])
          extract_module _ _ = return
+         -- solving symbols in patterns
+         solve_symbols :: lid -> Set.Set symbol -> PatternVarMap -> basic_spec -> Result basic_spec
+         solve_symbols _ _ _ = error "solve_symbols nyi"
+         -- instantiating macros
+         instantiate_macro :: lid -> PatternVarMap -> GSubst -> basic_spec -> Result basic_spec
+         instantiate_macro _ _ _ _ = error "instantiate_macro nyi"
+         -- delete all occurences of a set of symbols in a solved macro
+         delete_symbols_macro :: lid -> Set.Set symbol -> basic_spec -> Result basic_spec
+         delete_symbols_macro _ _ _ = error "delete_symbols_macro nyi"
+
+
+type GSubst = Map.Map (IRI, String) GSubstVal -- TODO: use GSubstVal instead of IRI!
+  
+data GSubstVal = PlainVal IRI | 
+                 ListVal String [IRI] -- the string stores the kind!
+                 deriving (Eq, Show)
+
+getIRIVal :: GSubstVal -> IRI
+getIRIVal v = case v of
+               PlainVal x -> x
+               _ -> error $ "expecting plain value but got list:" ++ show v
+
+-- instantiate paramerized names
+-- p[X] becomes p[V] if subst maps X to V
+-- the string argument is the kind
+
+instParamName :: GSubst -> IRI -> IRI
+instParamName subst p =
+ p{iriPath = solveId subst (iriPath p)}
+
+solveId :: GSubst -> Id -> Id
+solveId subst t =
+ case getComps t of
+  [] -> let tIRI = idToIRI t
+            k = let tSubsts = filter (\(x,_) -> x == tIRI) $ Map.keys subst
+                 in case tSubsts of 
+                      [(_,b)] -> b
+                      []-> "Class" -- does not matter  
+                      (_, b):_ -> b
+         in iriPath $ getIRIVal $ Map.findWithDefault (PlainVal tIRI) (tIRI,k) subst
+  cs -> let its' = map (solveToken subst) $ getTokens t
+            ts' =  concatMap getTokens its'
+            cs'' = concatMap getComps its' 
+            cs' = map (solveId subst) cs
+        in t{getTokens = ts', getComps = cs'' ++ cs'}
+
+solveToken :: GSubst -> Token  -> Id
+solveToken subst tok = 
+ let tIRI = idToIRI $ mkId [tok]
+     k = let tSubsts = filter (\(x,_) -> x == tIRI) $ Map.keys subst
+                 in case tSubsts of 
+                      [(_,b)] -> b
+                      []-> "Class" -- does not matter  
+                      (_,b):_ -> b
+     idVal = iriPath $ getIRIVal $ Map.findWithDefault (PlainVal tIRI) (tIRI,k) subst
+ in idVal --case getComps idVal of
+    -- [] -> head $ getTokens idVal
+    -- _ -> error $  "expecting simple id but got a composed one: " ++ show idVal
+
+type PatternVarMap = Map.Map IRI (Bool, String)
+-- Bool is true for list- and false for non-list variables
+-- TODO: ideally we should have logic-dependent kinds, but strings will do
+-- TODO: this does not allow to have same name for different kinds. 
+-- One idea would be to work with lists of strings. Future work, should be easy.
 
 -- | print a whole theory
 printTheory :: StaticAnalysis lid basic_spec sentence symb_items symb_map_items

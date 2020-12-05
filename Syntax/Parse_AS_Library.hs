@@ -41,6 +41,8 @@ import Control.Monad
 
 import Framework.AS
 
+import Debug.Trace
+
 lGAnnos :: LogicGraph -> AParser st (LogicGraph, [Annotation])
 lGAnnos lG = do
   as <- annos
@@ -119,10 +121,11 @@ specDefn l = do
     n <- hetIRI l
     g <- generics l
     e <- equalT
-    a <- aSpec l
+    a <- aSpec l True -- OMS, not macros
     q <- optEnd
+    --trace ("spec:" ++ show (Spec_defn n g a nullRange)) $
     return . Spec_defn n g a
-      . catRange $ [s, e] ++ maybeToList q
+       . catRange $ [s, e] ++ maybeToList q
 
 -- CASL view-defn or DOL IntprDefn
 viewDefn :: LogicGraph -> AParser st LIB_ITEM
@@ -166,9 +169,9 @@ queryDefn l = do
   lg <- lookupCurrentLogic "query-defn" l
   (vs, cs) <- parseItemsList lg
   w <- asKey whereS
-  Basic_spec bs _ <- lookupCurrentSyntax "query-defn" l >>= basicSpec l
+  Basic_spec bs _ <- lookupCurrentSyntax "query-defn" l >>= basicSpec l True
   i <- asKey inS
-  oms <- aSpec l
+  oms <- aSpec l True
   mt <- optionMaybe $ asKey "along" >> hetIRI l
   o <- optEnd
   return . Query_defn n vs bs oms mt . catRange
@@ -214,7 +217,7 @@ libItem l = specDefn l
        s2 <- colonT
        et <- equivType l
        s3 <- equalT
-       sp <- fmap MkOms $ aSpec l
+       sp <- fmap MkOms $ aSpec l True
        ep <- optEnd
        return . Equiv_defn en et sp
          . catRange $ s1 : s2 : s3 : maybeToList ep
@@ -305,11 +308,39 @@ libItem l = specDefn l
            (catRange ([s1, s2, s3, s4, s5, s6, s7, s8] ++ maybeToList q)))
   <|> -- just a spec (turned into "spec spec = sp")
      do p1 <- getPos
-        a <- aSpec l
+        a <- aSpec l True
         p2 <- getPos
         if p1 == p2 then fail "cannot parse spec" else
           return (Spec_defn nullIRI
                (Genericity (Params []) (Imported []) nullRange) a nullRange)
+  <|> -- pattern defn
+      patternParser l
+
+patternParser :: LogicGraph -> AParser st LIB_ITEM
+patternParser l = do 
+        s1 <- asKey "pattern"
+        n <- hetIRI l
+        (pars, ps1) <- macroParams l
+        (imp, ps2) <- option ([], nullRange) (imports l)
+        s2 <- equalT
+        a <- --trace ("parsed equal:" ++ show pars) $ 
+             localOrSpec l 
+        q <- optEnd
+        let pattern = Pattern_defn n pars (Imported imp) a nullRange
+        trace ("pattern:" ++ show pattern) $ 
+         return .  Pattern_defn n pars (Imported imp) a 
+          . catRange $ [s1, s2] ++ maybeToList q
+
+localOrSpec :: LogicGraph -> AParser st LocalOrSpec
+localOrSpec l = do
+       _s1 <- asKey "let"
+       locals <- many1 (patternParser l) -- separatedBy (patternParser l) skip -- this might have problems
+       _s2 <- asKey "in"
+       a <- aSpec l False
+       return $ Local_pattern locals a 
+     <|> do
+       a <- aSpec l False -- TODO: this makes sure that the bodies are parsed as macros and not as ontologies
+       return $ Spec_pattern a
 
 downloadItems :: LogicGraph -> AParser st (DownloadItems, [Token])
 downloadItems l = do
@@ -332,12 +363,12 @@ entailType l = do
               i <- asKey inS
               nw <- parseNetwork l
               r <- asKey entailsS
-              g <- groupSpec l
+              g <- groupSpec l True
               return . OMSInNetwork n nw g $ catRange [i, r]
             _ -> fail "OMSName expected"
 
 omsOrNetwork :: LogicGraph -> AParser st OmsOrNetwork
-omsOrNetwork l = fmap (MkOms . emptyAnno) $ groupSpec l
+omsOrNetwork l = fmap (MkOms . emptyAnno) $ groupSpec l True -- no macros in networks
 
 equivType :: LogicGraph -> AParser st EQUIV_TYPE
 equivType l = do
@@ -361,16 +392,16 @@ alignArity = choice $ map (\ a -> asKey (showAlignArity a) >> return a)
 -- | Parse view type also used in alignments
 viewType :: LogicGraph -> AParser st VIEW_TYPE
 viewType l = do
-    sp1 <- annoParser (groupSpec l)
+    sp1 <- annoParser (groupSpec l True)
     s <- asKey toS
-    sp2 <- annoParser (groupSpec l)
+    sp2 <- annoParser (groupSpec l True)
     return $ View_type sp1 sp2 $ tokPos s
 
 moduleType :: LogicGraph -> AParser st MODULE_TYPE
 moduleType l = do
-  sp1 <- aSpec l
+  sp1 <- aSpec l True
   s <- asKey ofS
-  sp2 <- aSpec l
+  sp2 <- aSpec l True
   return $ Module_type sp1 sp2 (tokPos s)
 
 restrictionSignature :: LogicGraph -> AParser st G_symb_items_list
@@ -415,14 +446,42 @@ params l = do
 param :: LogicGraph -> AParser st (Annoted SPEC, Range)
 param l = do
     b <- oBracketT
-    pa <- aSpec l
+    pa <- aSpec l True 
+    -- macros not allowed in params of CASL generic specs
     c <- cBracketT
     return (pa, toRange b [] c)
+
+macroParams :: LogicGraph -> AParser st ([PatternParam], Range)
+macroParams l = do 
+  _o <- oBracketT  
+  (pars, _ps) <- separatedBy (macroParam l) semiT
+  _c <- cBracketT
+  return (pars, nullRange) --TODO: get the range right
+
+
+macroParam :: LogicGraph -> AParser st PatternParam
+macroParam l = do
+ (elems, _ps) <- separatedBy (elemParser l) doubleColonT
+ case elems of
+  [(x, isOpt)] -> return $ OntoParam isOpt x
+  _ -> return $ ListParam $ OntoListCons $ map fst elems
+ <|> do
+  _ <- asKey "xsd:string"
+  i <- hetIRI l
+  return $ StringParam i
+
+elemParser :: LogicGraph -> AParser st (Annoted SPEC, Bool)
+elemParser lg =  do
+  optParam <- option nullTok $ asKey "?"
+  a <- aSpec lg True
+  return (a, (optParam /= nullTok))
+ -- TODO: always True, macros not allowed as parameters 
+ -- TODO: for now, but we need to handle the empty list
 
 imports :: LogicGraph -> AParser st ([Annoted SPEC], Range)
 imports l = do
     s <- asKey givenS
-    (sps, ps) <- separatedBy (annoParser $ groupSpec l) anComma
+    (sps, ps) <- separatedBy (annoParser $ groupSpec l True) anComma -- macro not allowed in imports, always True
     return (sps, catRange (s : ps))
 
 newlogicP :: AParser st (IRI, Token)

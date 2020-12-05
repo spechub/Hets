@@ -36,6 +36,8 @@ import Syntax.AS_Structured
 import Framework.AS
 import Framework.ATC_Framework ()
 
+-- import Debug.Trace
+
 data LIB_DEFN = Lib_defn LibName [Annoted LIB_ITEM] Range [Annotation]
                 {- pos: "library"
                 list of annotations is parsed preceding the first LIB_ITEM
@@ -82,7 +84,12 @@ data LIB_ITEM = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) Range
               -- pos:  "newlogic", Logic_name, "=", opt "end"
               | Newcomorphism_defn ComorphismDef Range
               -- pos: "newcomorphism", Comorphism_name, "=", opt "end"
+              | Pattern_defn SPEC_NAME [PatternParam] IMPORTED LocalOrSpec Range
                 deriving (Show, Typeable)
+
+data LocalOrSpec = Local_pattern [LIB_ITEM] (Annoted SPEC) | 
+                   Spec_pattern (Annoted SPEC)
+                  deriving (Show, Typeable)
 
 data AlignSem = SingleDomain | GlobalDomain | ContextualizedDomain
   deriving (Show, Typeable, Bounded, Enum)
@@ -109,6 +116,12 @@ addDownloadAux unique j =
   in Download_items (iriLibName i)
     (if unique then UniqueItem i else ItemMaps [ItemNameMap i Nothing])
     $ iriPos i
+
+data PatternParam = StringParam IRI | OntoParam Bool (Annoted SPEC) | ListParam OntoList
+  deriving (Show, Typeable)
+ -- the bool flag is true for optional parameters
+
+data OntoList = EmptyParamList | OntoListCons [Annoted SPEC] deriving (Show, Typeable)
 
 data GENERICITY = Genericity PARAMS IMPORTED Range deriving (Show, Typeable)
                   -- pos: many of "[","]" opt ("given", commas)
@@ -175,6 +188,12 @@ getDeclSpecNames :: LIB_ITEM -> [IRI]
 getDeclSpecNames li = case li of
   Spec_defn sn _ _ _ -> [sn]
   Download_items _ di _ -> getImportNames di
+  Pattern_defn sn _ _ (Spec_pattern _) _ -> [sn]
+  Pattern_defn sn _ _ (Local_pattern lis _) _ -> 
+    [sn] ++ concatMap getDeclSpecNames lis
+    -- here we add as declared the local subpatterns
+    -- should this have local visibility? 
+    -- things get complicated
   _ -> []
 
 getImportNames :: DownloadItems -> [IRI]
@@ -188,7 +207,8 @@ getOms o = case o of
   MkNetwork _ -> []
 
 getSpecDef :: LIB_ITEM -> [SPEC]
-getSpecDef li = case li of
+getSpecDef li = -- trace ("li:" ++ show li) $ 
+ case li of
   Spec_defn _ _ as _ -> [item as]
   View_defn _ _ (View_type s1 s2 _) _ _ -> [item s1, item s2]
   Entail_defn _ (Entail_type s1 s2 _) _ -> getOms s1 ++ getOms s2
@@ -196,4 +216,6 @@ getSpecDef li = case li of
     getOms s1 ++ getOms s2 ++ getOms as
   Align_defn _ _ (View_type s1 s2 _) _ _ _ -> [item s1, item s2]
   Module_defn _ (Module_type s1 s2 _) _ _ -> [item s1, item s2]
+  Pattern_defn _ _ _ (Spec_pattern s) _ -> [item s]
+  Pattern_defn _ _ _ (Local_pattern lis s) _ -> concatMap getSpecDef lis ++ [item s]
   _ -> []

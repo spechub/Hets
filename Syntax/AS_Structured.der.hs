@@ -31,9 +31,12 @@ import Logic.Grothendieck
     ( G_basic_spec
     , G_symb_items_list
     , G_symb_map_items_list
+    , G_symbol
     , LogicGraph
     , setCurLogic
     , setSyntax )
+
+-- import Debug.Trace
 
 -- for spec-defn and view-defn see AS_Library
 
@@ -75,6 +78,12 @@ data SPEC = Basic_spec G_basic_spec Range
             -- pos: "combine"
           | Apply IRI G_basic_spec Range
             -- pos: "apply", use a basic spec parser to parse a sentence
+          | UnsolvedName IRI Range
+          | NormalVariable IRI
+          | ListVariable IRI
+          | ListValue [IRI]
+          | OntoList [Annoted SPEC]
+          | EmptyList
             deriving (Show, Typeable)
 
 data Network = Network [LABELED_ONTO_OR_INTPR_REF] [IRI] Range
@@ -120,6 +129,11 @@ data FIT_ARG = Fit_spec (Annoted SPEC) [G_mapping] Range
                -- pos: opt "fit"
              | Fit_view IRI [Annoted FIT_ARG] Range
                -- annotations before the view keyword are stored in Spec_inst
+             | Fit_string IRI Range
+             | Fit_ctx G_symbol G_symbol Range
+             | Fit_new G_symbol G_symbol Range
+             | Fit_list [Annoted SPEC] Range
+             | Missing_arg Range
                deriving (Show, Typeable)
 
 type SPEC_NAME = IRI
@@ -237,3 +251,5 @@ getSpecs :: FIT_ARG -> [Annoted SPEC]
 getSpecs fa = case fa of
   Fit_spec as _ _ -> [as]
   Fit_view _ fas _ -> concatMap (getSpecs . item) fas
+  _ -> [] -- trace (show fa) []
+  

@@ -119,6 +119,7 @@ instance Pretty Literal where
               Nothing -> empty
               Just tag2 -> text asP <> text tag2
         NumberLit f -> text (show f)
+        _ -> error "nyi"
 
 instance Pretty ObjectPropertyExpression where
     pretty = printObjPropExp
@@ -127,6 +128,8 @@ printObjPropExp :: ObjectPropertyExpression -> Doc
 printObjPropExp obExp = case obExp of
     ObjectProp ou -> pretty ou
     ObjectInverseOf iopExp -> keyword inverseS <+> printObjPropExp iopExp
+    ObjectPropertyVar _ ou -> text "var" <+> pretty ou
+    UnsolvedObjProp ou -> text "unsolved" <+> pretty ou
 
 printFV :: (ConstrainingFacet, RestrictionValue) -> Doc
 printFV (facet, restValue) = pretty (fromCF facet) <+> pretty restValue
@@ -159,6 +162,7 @@ printDataRange dr = case dr of
 instance Pretty ClassExpression where
   pretty desc = case desc of
    Expression ocUri -> printIRI ocUri
+   UnsolvedClass anIri -> text "unsolved" <+> printIRI anIri
    ObjectJunction ty ds -> let
       (k, p) = case ty of
           UnionOf -> (orS, pretty)
