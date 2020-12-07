@@ -53,6 +53,8 @@ import System.Directory
 import Control.Monad (when)
 import Control.Concurrent
 
+
+
 hermitS :: String
 hermitS = "Hermit"
 
@@ -180,18 +182,19 @@ runTimedHermit opts tmpFileName prob entail secs = do
   (progTh, pPath) <- check4jarFile hermitEnv hermitJar
   if progTh then withinDirectory pPath $ do
       timeTmpFile <- getTempFile prob tmpFileName
+      timeTmpEnt <- getTempFile (fromMaybe "" entail) tmpFileName
       let entFile = timeTmpFile ++ ".entail.owl"
           doEntail = isJust entail
           args = "-Xmx1024M" : "-jar" : hermitJar
-           : (if doEntail then ["--premise=", prob, "--conclusion=", maybe "" id entail ,"-E", entFile] else ["-k"] ++ words opts)
-           ++ ["file://" ++ timeTmpFile]
+           : (if doEntail then ["--premise=file://"++timeTmpFile, "--conclusion=file://"++entFile, "-E"] else ["-k"] ++ words opts)
       case entail of
         Just c -> writeFile entFile c
         Nothing -> return ()
       mex <- timeoutCommand secs "java" args
       removeFile timeTmpFile
+      removeFile timeTmpEnt
       when doEntail $ removeFile entFile
-      return $ fmap (\ (_, outS, errS) -> (True, outS, errS)) mex
+      return $ fmap (\ (_, outS, errS) -> if outS == "true\n" then (True, outS, errS) else (False, outS, errS)) mex
     else return $ Just (False, "", "")
 
 runHermit :: ProverState
@@ -258,7 +261,7 @@ analyseOutput err outp =
               "Yes" -> (ATPSuccess, Just True, to)
               "No" -> (ATPSuccess, Just False, to)
               _ -> (atp, exCode, to)
-          "All" : "axioms" : "are" : e : _ | isPrefixOf "entailed" e ->
+          ["true"] ->
             (ATPSuccess, Just True, to)
           ne : _ | isPrefixOf "Non-entailments" ne ->
             (ATPSuccess, Just False, to)
@@ -271,4 +274,4 @@ analyseOutput err outp =
   in case atpr of
        ATPError s | null s -> (ATPError "unexpected hermit output", st, ls, tmo)
        _ -> (atpr, st, ls, tmo)
---test
+
