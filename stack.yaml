@@ -53,9 +53,6 @@ extra-deps:
   - protolude-0.2
   - aterm-0.1.0.1
   - glade-0.13.1
-  - glib-0.13.8.1
-  - gio-0.13.8.0
-  - pango-0.13.8.1
   - haskeline-0.7.4.0
   - uni-events-2.2.2.0
   - uni-graphs-2.2.1.0
