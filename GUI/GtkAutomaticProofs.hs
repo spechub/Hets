@@ -16,6 +16,7 @@ module GUI.GtkAutomaticProofs
   where
 
 import Graphics.UI.Gtk
+import Graphics.UI.Gtk.Glade
 
 import qualified GUI.Glade.NodeChecker as ConsistencyChecker
 import GUI.GraphTypes
@@ -74,28 +75,28 @@ showAutomaticProofs ginf@(GInfo { libName = ln }) le = do
 -- | Displays the consistency checker window
 showProverWindow :: GInfo -> MVar LibEnv -> LibName -> LibEnv -> IO ()
 showProverWindow ginf res ln le = postGUIAsync $ do
-  builder <- getGTKBuilder ConsistencyChecker.get
+  xml <- getGladeXML ConsistencyChecker.get
   -- get objects
-  window <- builderGetObject builder castToWindow "NodeChecker"
-  btnClose <- builderGetObject builder castToButton "btnClose"
-  btnResults <- builderGetObject builder castToButton "btnResults"
+  window <- xmlGetWidget xml castToWindow "NodeChecker"
+  btnClose <- xmlGetWidget xml castToButton "btnClose"
+  btnResults <- xmlGetWidget xml castToButton "btnResults"
   -- get nodes view and buttons
-  trvNodes <- builderGetObject builder castToTreeView "trvNodes"
-  btnNodesAll <- builderGetObject builder castToButton "btnNodesAll"
-  btnNodesNone <- builderGetObject builder castToButton "btnNodesNone"
-  btnNodesInvert <- builderGetObject builder castToButton "btnNodesInvert"
-  btnNodesUnchecked <- builderGetObject builder castToButton "btnNodesUnchecked"
-  btnNodesTimeout <- builderGetObject builder castToButton "btnNodesTimeout"
-  cbInclThms <- builderGetObject builder castToCheckButton "cbInclThms"
+  trvNodes <- xmlGetWidget xml castToTreeView "trvNodes"
+  btnNodesAll <- xmlGetWidget xml castToButton "btnNodesAll"
+  btnNodesNone <- xmlGetWidget xml castToButton "btnNodesNone"
+  btnNodesInvert <- xmlGetWidget xml castToButton "btnNodesInvert"
+  btnNodesUnchecked <- xmlGetWidget xml castToButton "btnNodesUnchecked"
+  btnNodesTimeout <- xmlGetWidget xml castToButton "btnNodesTimeout"
+  cbInclThms <- xmlGetWidget xml castToCheckButton "cbInclThms"
   -- get checker view and buttons
-  cbComorphism <- builderGetObject builder castToComboBox "cbComorphism"
-  lblSublogic <- builderGetObject builder castToLabel "lblSublogic"
-  sbTimeout <- builderGetObject builder castToSpinButton "sbTimeout"
-  btnCheck <- builderGetObject builder castToButton "btnCheck"
-  btnStop <- builderGetObject builder castToButton "btnStop"
-  -- btnFineGrained    <- builderGetObject builder castToButton "btnFineGrained"
-  trvFinder <- builderGetObject builder castToTreeView "trvFinder"
-  toolLabel <- builderGetObject builder castToLabel "label1"
+  cbComorphism <- xmlGetWidget xml castToComboBox "cbComorphism"
+  lblSublogic <- xmlGetWidget xml castToLabel "lblSublogic"
+  sbTimeout <- xmlGetWidget xml castToSpinButton "sbTimeout"
+  btnCheck <- xmlGetWidget xml castToButton "btnCheck"
+  btnStop <- xmlGetWidget xml castToButton "btnStop"
+  -- btnFineGrained    <- xmlGetWidget xml castToButton "btnFineGrained"
+  trvFinder <- xmlGetWidget xml castToTreeView "trvFinder"
+  toolLabel <- xmlGetWidget xml castToLabel "label1"
   labelSetLabel toolLabel "Pick prover"
   windowSetTitle window "AutomaticProofs"
   spinButtonSetValue sbTimeout $ fromIntegral guiDefaultTimeLimit
@@ -350,13 +351,13 @@ setSelectedComorphism view list cbComorphism = do
 showModelViewAux :: MVar (IO ()) -> String -> ListStore FNode -> [FNode]
                  -> IO ()
 showModelViewAux lock title list other = do
-  builder <- getGTKBuilder ConsistencyChecker.get
+  xml <- getGladeXML ConsistencyChecker.get
   -- get objects
-  window <- builderGetObject builder castToWindow "ModelView"
-  btnClose <- builderGetObject builder castToButton "btnResClose"
-  frNodes <- builderGetObject builder castToFrame "frResNodes"
-  trvNodes <- builderGetObject builder castToTreeView "trvResNodes"
-  tvModel <- builderGetObject builder castToTextView "tvResModel"
+  window <- xmlGetWidget xml castToWindow "ModelView"
+  btnClose <- xmlGetWidget xml castToButton "btnResClose"
+  frNodes <- xmlGetWidget xml castToFrame "frResNodes"
+  trvNodes <- xmlGetWidget xml castToTreeView "trvResNodes"
+  tvModel <- xmlGetWidget xml castToTextView "tvResModel"
 
   windowSetTitle window title
 

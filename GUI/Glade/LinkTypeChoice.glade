@@ -1,115 +1,124 @@
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE glade-interface SYSTEM "glade-2.0.dtd">
 <!--Generated with glade3 3.4.5 on Wed Oct 15 16:11:39 2008 -->
-<interface>
-  <object class="GtkWindow" id="linktypechoice">
+<glade-interface>
+  <widget class="GtkWindow" id="linktypechoice">
     <child>
-      <object class="GtkVBox" id="vbox3">
+      <widget class="GtkVBox" id="vbox3">
         <property name="visible">True</property>
         <child>
-          <object class="GtkHBox" id="hbox2">
+          <widget class="GtkHBox" id="hbox2">
             <property name="visible">True</property>
             <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
             <property name="homogeneous">True</property>
             <child>
-              <object class="GtkVBox" id="vbox2">
+              <widget class="GtkVBox" id="vbox2">
                 <property name="visible">True</property>
                 <property name="homogeneous">True</property>
                 <child>
-                  <object class="GtkFrame" id="frame1">
+                  <widget class="GtkFrame" id="frame1">
                     <property name="visible">True</property>
                     <property name="label_xalign">0</property>
                     <property name="shadow_type">GTK_SHADOW_NONE</property>
                     <child>
-                      <object class="GtkAlignment" id="alignment1">
+                      <widget class="GtkAlignment" id="alignment1">
                         <property name="visible">True</property>
                         <property name="left_padding">12</property>
                         <child>
-                          <object class="GtkVButtonBox" id="vbuttonbox2">
+                          <widget class="GtkVButtonBox" id="vbuttonbox2">
                             <property name="visible">True</property>
                             <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
                             <property name="layout_style">GTK_BUTTONBOX_START</property>
                             <child>
-                              <object class="GtkCheckButton" id="cbGlobalDef">
+                              <widget class="GtkCheckButton" id="cbGlobalDef">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
                                 <property name="label" translatable="yes">Homogen Global Definition</property>
+                                <property name="response_id">0</property>
                                 <property name="active">True</property>
                                 <property name="draw_indicator">True</property>
-                              </object>
+                              </widget>
                             </child>
                             <child>
-                              <object class="GtkCheckButton" id="cbHetDef">
+                              <widget class="GtkCheckButton" id="cbHetDef">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
                                 <property name="label" translatable="yes">Heterogen Global Definition</property>
+                                <property name="response_id">0</property>
                                 <property name="active">True</property>
                                 <property name="draw_indicator">True</property>
-                              </object>
+                              </widget>
                               <packing>
                                 <property name="position">1</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkCheckButton" id="cbLocalDef">
+                              <widget class="GtkCheckButton" id="cbLocalDef">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
                                 <property name="label" translatable="yes">Local Definition</property>
+                                <property name="response_id">0</property>
                                 <property name="active">True</property>
                                 <property name="draw_indicator">True</property>
-                              </object>
+                              </widget>
                               <packing>
                                 <property name="position">2</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkCheckButton" id="cbHidingDef">
+                              <widget class="GtkCheckButton" id="cbHidingDef">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
                                 <property name="label" translatable="yes">Hiding Definition</property>
+                                <property name="response_id">0</property>
                                 <property name="active">True</property>
                                 <property name="draw_indicator">True</property>
-                              </object>
+                              </widget>
                               <packing>
                                 <property name="position">3</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkCheckButton" id="cbDef">
+                              <widget class="GtkCheckButton" id="cbDef">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
                                 <property name="label" translatable="yes">Free or Cofree Definition</property>
+                                <property name="response_id">0</property>
                                 <property name="active">True</property>
                                 <property name="draw_indicator">True</property>
-                              </object>
+                              </widget>
                               <packing>
                                 <property name="position">4</property>
                               </packing>
                             </child>
-                          </object>
+                          </widget>
                         </child>
-                      </object>
+                      </widget>
                     </child>
-                    <child type="label">
-                      <object class="GtkLabel" id="label1">
+                    <child>
+                      <widget class="GtkLabel" id="label1">
                         <property name="visible">True</property>
                         <property name="label" translatable="yes">&lt;b&gt;Definition links&lt;/b&gt;</property>
                         <property name="use_markup">True</property>
-                      </object>
+                      </widget>
+                      <packing>
+                        <property name="type">label_item</property>
+                      </packing>
                     </child>
-                  </object>
+                  </widget>
                 </child>
                 <child>
-                  <object class="GtkFrame" id="frame4">
+                  <widget class="GtkFrame" id="frame4">
                     <property name="visible">True</property>
                     <property name="label_xalign">0</property>
                     <property name="shadow_type">GTK_SHADOW_NONE</property>
                     <child>
-                      <object class="GtkAlignment" id="alignment4">
+                      <widget class="GtkAlignment" id="alignment4">
                         <property name="visible">True</property>
                         <property name="xalign">0</property>
                         <property name="yalign">0</property>
@@ -117,27 +126,29 @@
                         <property name="left_padding">12</property>
                         <property name="right_padding">100</property>
                         <child>
-                          <object class="GtkVBox" id="vbox4">
+                          <widget class="GtkVBox" id="vbox4">
                             <property name="visible">True</property>
                             <child>
-                              <object class="GtkButton" id="btnSelect">
+                              <widget class="GtkButton" id="btnSelect">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">True</property>
                                 <property name="label" translatable="yes">Select all</property>
-                              </object>
+                                <property name="response_id">0</property>
+                              </widget>
                               <packing>
                                 <property name="expand">False</property>
                                 <property name="fill">False</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkButton" id="btnDeselect">
+                              <widget class="GtkButton" id="btnDeselect">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">True</property>
                                 <property name="label" translatable="yes">Deselect all</property>
-                              </object>
+                                <property name="response_id">0</property>
+                              </widget>
                               <packing>
                                 <property name="expand">False</property>
                                 <property name="fill">False</property>
@@ -145,284 +156,308 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkButton" id="btnInvert">
+                              <widget class="GtkButton" id="btnInvert">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">True</property>
                                 <property name="label" translatable="yes">Invert</property>
-                              </object>
+                                <property name="response_id">0</property>
+                              </widget>
                               <packing>
                                 <property name="expand">False</property>
                                 <property name="fill">False</property>
                                 <property name="position">2</property>
                               </packing>
                             </child>
-                          </object>
+                          </widget>
                         </child>
-                      </object>
+                      </widget>
                     </child>
-                    <child type="label">
-                      <object class="GtkLabel" id="label4">
+                    <child>
+                      <widget class="GtkLabel" id="label4">
                         <property name="visible">True</property>
                         <property name="label" translatable="yes">&lt;b&gt;Modifications&lt;/b&gt;</property>
                         <property name="use_markup">True</property>
-                      </object>
+                      </widget>
+                      <packing>
+                        <property name="type">label_item</property>
+                      </packing>
                     </child>
-                  </object>
+                  </widget>
                   <packing>
                     <property name="expand">False</property>
                     <property name="position">1</property>
                   </packing>
                 </child>
-              </object>
+              </widget>
             </child>
             <child>
-              <object class="GtkVBox" id="vbox1">
+              <widget class="GtkVBox" id="vbox1">
                 <property name="visible">True</property>
                 <child>
-                  <object class="GtkFrame" id="frame2">
+                  <widget class="GtkFrame" id="frame2">
                     <property name="visible">True</property>
                     <property name="label_xalign">0</property>
                     <property name="shadow_type">GTK_SHADOW_NONE</property>
                     <child>
-                      <object class="GtkAlignment" id="alignment2">
+                      <widget class="GtkAlignment" id="alignment2">
                         <property name="visible">True</property>
                         <property name="left_padding">12</property>
                         <child>
-                          <object class="GtkVButtonBox" id="vbuttonbox1">
+                          <widget class="GtkVButtonBox" id="vbuttonbox1">
                             <property name="visible">True</property>
                             <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
                             <property name="layout_style">GTK_BUTTONBOX_START</property>
                             <child>
-                              <object class="GtkCheckButton" id="cbGlobalProvenThm">
+                              <widget class="GtkCheckButton" id="cbGlobalProvenThm">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
                                 <property name="label" translatable="yes">Homogen Global Theorem</property>
+                                <property name="response_id">0</property>
                                 <property name="active">True</property>
                                 <property name="draw_indicator">True</property>
-                              </object>
+                              </widget>
                             </child>
                             <child>
-                              <object class="GtkCheckButton" id="cbHetProvenThm">
+                              <widget class="GtkCheckButton" id="cbHetProvenThm">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
                                 <property name="label" translatable="yes">Heterogen Global Theorem</property>
+                                <property name="response_id">0</property>
                                 <property name="active">True</property>
                                 <property name="draw_indicator">True</property>
-                              </object>
+                              </widget>
                               <packing>
                                 <property name="position">1</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkCheckButton" id="cbLocalProvenThm">
+                              <widget class="GtkCheckButton" id="cbLocalProvenThm">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
                                 <property name="label" translatable="yes">Homogen Local Theorem</property>
+                                <property name="response_id">0</property>
                                 <property name="active">True</property>
                                 <property name="draw_indicator">True</property>
-                              </object>
+                              </widget>
                               <packing>
                                 <property name="position">2</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkCheckButton" id="cbHetLocalProvenThm">
+                              <widget class="GtkCheckButton" id="cbHetLocalProvenThm">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
                                 <property name="label" translatable="yes">Heterogen Local Theorem</property>
+                                <property name="response_id">0</property>
                                 <property name="active">True</property>
                                 <property name="draw_indicator">True</property>
-                              </object>
+                              </widget>
                               <packing>
                                 <property name="position">3</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkCheckButton" id="cbProvenHidingThm">
+                              <widget class="GtkCheckButton" id="cbProvenHidingThm">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
                                 <property name="label" translatable="yes">Hiding Theorem</property>
+                                <property name="response_id">0</property>
                                 <property name="active">True</property>
                                 <property name="draw_indicator">True</property>
-                              </object>
+                              </widget>
                               <packing>
                                 <property name="position">4</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkCheckButton" id="cbProvenThm">
+                              <widget class="GtkCheckButton" id="cbProvenThm">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
                                 <property name="label" translatable="yes">(Co)Free Theorem</property>
+                                <property name="response_id">0</property>
                                 <property name="active">True</property>
                                 <property name="draw_indicator">True</property>
-                              </object>
+                              </widget>
                               <packing>
                                 <property name="position">5</property>
                               </packing>
                             </child>
-                          </object>
+                          </widget>
                         </child>
-                      </object>
+                      </widget>
                     </child>
-                    <child type="label">
-                      <object class="GtkLabel" id="label2">
+                    <child>
+                      <widget class="GtkLabel" id="label2">
                         <property name="visible">True</property>
                         <property name="label" translatable="yes">&lt;b&gt;Theorem links proven&lt;/b&gt;</property>
                         <property name="use_markup">True</property>
-                      </object>
+                      </widget>
+                      <packing>
+                        <property name="type">label_item</property>
+                      </packing>
                     </child>
-                  </object>
+                  </widget>
                 </child>
                 <child>
-                  <object class="GtkFrame" id="frame3">
+                  <widget class="GtkFrame" id="frame3">
                     <property name="visible">True</property>
                     <property name="label_xalign">0</property>
                     <property name="shadow_type">GTK_SHADOW_NONE</property>
                     <child>
-                      <object class="GtkAlignment" id="alignment3">
+                      <widget class="GtkAlignment" id="alignment3">
                         <property name="visible">True</property>
                         <property name="left_padding">12</property>
                         <child>
-                          <object class="GtkVButtonBox" id="vbuttonbox3">
+                          <widget class="GtkVButtonBox" id="vbuttonbox3">
                             <property name="visible">True</property>
                             <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
                             <property name="layout_style">GTK_BUTTONBOX_START</property>
                             <child>
-                              <object class="GtkCheckButton" id="cbGlobalUnprovenThm">
+                              <widget class="GtkCheckButton" id="cbGlobalUnprovenThm">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
                                 <property name="label" translatable="yes">Homogen Global Theorem</property>
+                                <property name="response_id">0</property>
                                 <property name="active">True</property>
                                 <property name="draw_indicator">True</property>
-                              </object>
+                              </widget>
                             </child>
                             <child>
-                              <object class="GtkCheckButton" id="cbHetUnprovenThm">
+                              <widget class="GtkCheckButton" id="cbHetUnprovenThm">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
                                 <property name="label" translatable="yes">Heterogen Global Theorem</property>
+                                <property name="response_id">0</property>
                                 <property name="active">True</property>
                                 <property name="draw_indicator">True</property>
-                              </object>
+                              </widget>
                               <packing>
                                 <property name="position">1</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkCheckButton" id="cbLocalUnprovenThm">
+                              <widget class="GtkCheckButton" id="cbLocalUnprovenThm">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
                                 <property name="label" translatable="yes">Homogen Local Theorem</property>
+                                <property name="response_id">0</property>
                                 <property name="active">True</property>
                                 <property name="draw_indicator">True</property>
-                              </object>
+                              </widget>
                               <packing>
                                 <property name="position">2</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkCheckButton" id="cbHetLocalUnprovenThm">
+                              <widget class="GtkCheckButton" id="cbHetLocalUnprovenThm">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
                                 <property name="label" translatable="yes">Heterogen Local Theorem</property>
+                                <property name="response_id">0</property>
                                 <property name="active">True</property>
                                 <property name="draw_indicator">True</property>
-                              </object>
+                              </widget>
                               <packing>
                                 <property name="position">3</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkCheckButton" id="cbUnprovenHidingThm">
+                              <widget class="GtkCheckButton" id="cbUnprovenHidingThm">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
                                 <property name="label" translatable="yes">Hiding Theorem</property>
+                                <property name="response_id">0</property>
                                 <property name="active">True</property>
                                 <property name="draw_indicator">True</property>
-                              </object>
+                              </widget>
                               <packing>
                                 <property name="position">4</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkCheckButton" id="cbUnprovenThm">
+                              <widget class="GtkCheckButton" id="cbUnprovenThm">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
                                 <property name="label" translatable="yes">(Co)Free Theorem</property>
+                                <property name="response_id">0</property>
                                 <property name="active">True</property>
                                 <property name="draw_indicator">True</property>
-                              </object>
+                              </widget>
                               <packing>
                                 <property name="position">5</property>
                               </packing>
                             </child>
-                          </object>
+                          </widget>
                         </child>
-                      </object>
+                      </widget>
                     </child>
-                    <child type="label">
-                      <object class="GtkLabel" id="label3">
+                    <child>
+                      <widget class="GtkLabel" id="label3">
                         <property name="visible">True</property>
                         <property name="label" translatable="yes">&lt;b&gt;Theorem links unproven&lt;/b&gt;</property>
                         <property name="use_markup">True</property>
-                      </object>
+                      </widget>
+                      <packing>
+                        <property name="type">label_item</property>
+                      </packing>
                     </child>
-                  </object>
+                  </widget>
                   <packing>
                     <property name="position">1</property>
                   </packing>
                 </child>
-              </object>
+              </widget>
               <packing>
                 <property name="position">1</property>
               </packing>
             </child>
-          </object>
+          </widget>
         </child>
         <child>
-          <object class="GtkHButtonBox" id="hbuttonbox1">
+          <widget class="GtkHButtonBox" id="hbuttonbox1">
             <property name="visible">True</property>
             <property name="spacing">5</property>
             <property name="layout_style">GTK_BUTTONBOX_END</property>
             <child>
-              <object class="GtkButton" id="btnCancel">
+              <widget class="GtkButton" id="btnCancel">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
                 <property name="label" translatable="yes">Cancel</property>
-              </object>
+                <property name="response_id">0</property>
+              </widget>
             </child>
             <child>
-              <object class="GtkButton" id="btnOk">
+              <widget class="GtkButton" id="btnOk">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
                 <property name="label" translatable="yes">Ok</property>
-              </object>
+                <property name="response_id">0</property>
+              </widget>
               <packing>
                 <property name="position">1</property>
               </packing>
             </child>
-          </object>
+          </widget>
           <packing>
             <property name="position">1</property>
           </packing>
         </child>
-      </object>
+      </widget>
     </child>
-  </object>
-</interface>
+  </widget>
+</glade-interface>

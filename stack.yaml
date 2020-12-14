@@ -52,6 +52,7 @@ extra-deps:
   - graphql-api-0.2.0
   - protolude-0.2
   - aterm-0.1.0.1
+  - glade-0.13.1
   - glib-0.13.8.1
   - gio-0.13.8.0
   - pango-0.13.8.1

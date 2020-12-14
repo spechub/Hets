@@ -132,7 +132,8 @@ Executable hets
 
   if flag(gtkglade)
     build-depends:
-        gtk >= 0.11.2
+        glade >= 0.11.1
+      , gtk >= 0.11.2
     cpp-options: -DGTKGLADE
 
   if flag(mysql)

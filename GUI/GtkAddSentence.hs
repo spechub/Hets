@@ -14,6 +14,7 @@ This module provides a GUI to add a sentence
 module GUI.GtkAddSentence where
 
 import Graphics.UI.Gtk
+import Graphics.UI.Gtk.Glade
 
 import GUI.GtkUtils
 import qualified GUI.Glade.TextField as TextField
@@ -33,12 +34,12 @@ import Data.IORef
 
 gtkAddSentence :: GInfo -> Int -> DGraph -> IO ()
 gtkAddSentence gi n dg = postGUIAsync $ do
-  builder <- getGTKBuilder TextField.get
+  xml <- getGladeXML TextField.get
   -- get objects
-  window <- builderGetObject builder castToWindow "TextField"
-  btnAbort <- builderGetObject builder castToButton "abort"
-  btnAdd <- builderGetObject builder castToButton "add"
-  entry <- builderGetObject builder castToEntry "entry"
+  window <- xmlGetWidget xml castToWindow "TextField"
+  btnAbort <- xmlGetWidget xml castToButton "abort"
+  btnAdd <- xmlGetWidget xml castToButton "add"
+  entry <- xmlGetWidget xml castToEntry "entry"
   let lbl = labDG dg n
       name = getDGNodeName lbl
   windowSetTitle window $ "Add sentence to " ++ name

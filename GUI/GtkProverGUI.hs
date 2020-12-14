@@ -14,6 +14,7 @@ This module provides a GUI for the prover.
 module GUI.GtkProverGUI ( showProverGUI ) where
 
 import Graphics.UI.Gtk
+import Graphics.UI.Gtk.Glade
 
 import GUI.GtkUtils
 import qualified GUI.Glade.ProverGUI as ProverGUI
@@ -66,38 +67,38 @@ showProverGUI prGuiAcs thName warn th knownProvers comorphList = do
   state <- newMVar initState
   wait <- newEmptyMVar
   postGUIAsync $ do
-    builder <- getGTKBuilder ProverGUI.get
+    xml <- getGladeXML ProverGUI.get
     -- get objects
-    window <- builderGetObject builder castToWindow "ProverGUI"
+    window <- xmlGetWidget xml castToWindow "ProverGUI"
     -- buttons at buttom
-    btnShowTheory <- builderGetObject builder castToButton "btnShowTheory"
-    btnShowSelectedTheory <- builderGetObject builder castToButton "btnShowSelected"
-    btnClose <- builderGetObject builder castToButton "btnClose"
+    btnShowTheory <- xmlGetWidget xml castToButton "btnShowTheory"
+    btnShowSelectedTheory <- xmlGetWidget xml castToButton "btnShowSelected"
+    btnClose <- xmlGetWidget xml castToButton "btnClose"
     -- goals view
-    trvGoals <- builderGetObject builder castToTreeView "trvGoals"
-    btnGoalsAll <- builderGetObject builder castToButton "btnGoalsAll"
-    btnGoalsNone <- builderGetObject builder castToButton "btnGoalsNone"
-    btnGoalsInvert <- builderGetObject builder castToButton "btnGoalsInvert"
-    btnGoalsSelectOpen <- builderGetObject builder castToButton "btnGoalsSelectOpen"
+    trvGoals <- xmlGetWidget xml castToTreeView "trvGoals"
+    btnGoalsAll <- xmlGetWidget xml castToButton "btnGoalsAll"
+    btnGoalsNone <- xmlGetWidget xml castToButton "btnGoalsNone"
+    btnGoalsInvert <- xmlGetWidget xml castToButton "btnGoalsInvert"
+    btnGoalsSelectOpen <- xmlGetWidget xml castToButton "btnGoalsSelectOpen"
     -- axioms view
-    trvAxioms <- builderGetObject builder castToTreeView "trvAxioms"
-    btnAxiomsAll <- builderGetObject builder castToButton "btnAxiomsAll"
-    btnAxiomsNone <- builderGetObject builder castToButton "btnAxiomsNone"
-    btnAxiomsInvert <- builderGetObject builder castToButton "btnAxiomsInvert"
-    btnAxiomsFormer <- builderGetObject builder castToButton "btnAxiomsFormer"
+    trvAxioms <- xmlGetWidget xml castToTreeView "trvAxioms"
+    btnAxiomsAll <- xmlGetWidget xml castToButton "btnAxiomsAll"
+    btnAxiomsNone <- xmlGetWidget xml castToButton "btnAxiomsNone"
+    btnAxiomsInvert <- xmlGetWidget xml castToButton "btnAxiomsInvert"
+    btnAxiomsFormer <- xmlGetWidget xml castToButton "btnAxiomsFormer"
     -- theorems view
-    trvTheorems <- builderGetObject builder castToTreeView "trvTheorems"
-    btnTheoremsAll <- builderGetObject builder castToButton "btnTheoremsAll"
-    btnTheoremsNone <- builderGetObject builder castToButton "btnTheoremsNone"
-    btnTheoremsInvert <- builderGetObject builder castToButton "btnTheoremsInvert"
+    trvTheorems <- xmlGetWidget xml castToTreeView "trvTheorems"
+    btnTheoremsAll <- xmlGetWidget xml castToButton "btnTheoremsAll"
+    btnTheoremsNone <- xmlGetWidget xml castToButton "btnTheoremsNone"
+    btnTheoremsInvert <- xmlGetWidget xml castToButton "btnTheoremsInvert"
     -- status
-    btnDisplay <- builderGetObject builder castToButton "btnDisplay"
-    btnProofDetails <- builderGetObject builder castToButton "btnProofDetails"
-    btnProve <- builderGetObject builder castToButton "btnProve"
-    cbComorphism <- builderGetObject builder castToComboBox "cbComorphism"
-    lblSublogic <- builderGetObject builder castToLabel "lblSublogic"
+    btnDisplay <- xmlGetWidget xml castToButton "btnDisplay"
+    btnProofDetails <- xmlGetWidget xml castToButton "btnProofDetails"
+    btnProve <- xmlGetWidget xml castToButton "btnProve"
+    cbComorphism <- xmlGetWidget xml castToComboBox "cbComorphism"
+    lblSublogic <- xmlGetWidget xml castToLabel "lblSublogic"
     -- prover
-    trvProvers <- builderGetObject builder castToTreeView "trvProvers"
+    trvProvers <- xmlGetWidget xml castToTreeView "trvProvers"
 
     windowSetTitle window $ "Prove: " ++ thName
 

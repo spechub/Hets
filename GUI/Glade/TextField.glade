@@ -1,42 +1,42 @@
 <?xml version="1.0"?>
-<interface>
+<glade-interface>
   <!-- interface-requires gtk+ 2.8 -->
   <!-- interface-naming-policy toplevel-contextual -->
-  <object class="GtkWindow" id="TextField">
+  <widget class="GtkWindow" id="TextField">
     <property name="default_width">500</property>
     <property name="default_height">60</property>
     <child>
-      <object class="GtkVBox" id="vbox1">
+      <widget class="GtkVBox" id="vbox1">
         <property name="visible">True</property>
         <child>
-          <object class="GtkEntry" id="entry">
+          <widget class="GtkEntry" id="entry">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
-          </object>
+          </widget>
         </child>
         <child>
-          <object class="GtkHButtonBox" id="hbuttonbox1">
+          <widget class="GtkHButtonBox" id="hbuttonbox1">
             <property name="visible">True</property>
             <property name="layout_style">end</property>
             <child>
-              <object class="GtkButton" id="abort">
+              <widget class="GtkButton" id="abort">
                 <property name="label">Abort</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
-              </object>
+              </widget>
             </child>
             <child>
-              <object class="GtkButton" id="add">
+              <widget class="GtkButton" id="add">
                 <property name="label">Add</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
-              </object>
+              </widget>
             </child>
-          </object>
+          </widget>
         </child>
-      </object>
+      </widget>
     </child>
-  </object>
-</interface>
+  </widget>
+</glade-interface>

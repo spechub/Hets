@@ -92,10 +92,10 @@ TAR_PACKAGE := $(shell [ $(TARVERSION) -gt 0 ] && echo '-DTAR_PACKAGE')
 UNIXVERSION := $(call version, $(shell $(HCPKG) latest unix))
 UNIX_PACKAGE := $(shell [ $(UNIXVERSION) -ge 2000000 ] && echo '-DUNIX')
 
-GTKVERSION := $(call version, $(shell $(HCPKG) latest gtk))
-GTK_PACKAGE := \
-	$(shell [ $(GTKVERSION) -ge 12000 ] && echo '-DGTKGLADE $(SUNRUNPATH)')
-GTK_PACKAGE += $(shell [ $(GTKVERSION) -lt 13000 ] && \
+GLADEVERSION := $(call version, $(shell $(HCPKG) latest glade))
+GLADE_PACKAGE := \
+	$(shell [ $(GLADEVERSION) -ge 12000 ] && echo '-DGTKGLADE $(SUNRUNPATH)')
+GLADE_PACKAGE += $(shell [ $(GLADEVERSION) -lt 13000 ] && \
 	[ $(FIXED_GLADE) = '0' ] && echo '-DGTK12')
 
 HASKELINEVERSION := $(call version, $(shell $(HCPKG) latest haskeline))
@@ -138,15 +138,15 @@ ifneq ($(strip $(UNI_PACKAGE)),)
   endif
 endif
 
-HC_OPTS_WITHOUTGTK = $(PARSEC_FLAG) \
+HC_OPTS_WITHOUTGLADE = $(PARSEC_FLAG) \
   $(TIME_PACKAGE) $(TAR_PACKAGE) $(HTTP_PACKAGE) $(WGET) $(UNIX_PACKAGE) \
   $(UNI_PACKAGE) $(HASKELINE_PACKAGE) $(HEXPAT_PACKAGE) \
   $(PFE_FLAGS) $(SERVER_FLAG) $(HAXML_PACKAGE)
 ifneq ($(PROFILE),on)
-  HC_OPTS_WITHOUTGTK += $(HAXML_PACKAGE_COMPAT) -DRDFLOGIC -DCASLEXTENSIONS
+  HC_OPTS_WITHOUTGLADE += $(HAXML_PACKAGE_COMPAT) -DRDFLOGIC -DCASLEXTENSIONS
 endif
 
-HC_OPTS = $(HC_OPTS_WITHOUTGTK)
+HC_OPTS = $(HC_OPTS_WITHOUTGLADE)
 ifneq ($(PROFILE),on)
-  HC_OPTS += $(GTK_PACKAGE)
+  HC_OPTS += $(GLADE_PACKAGE)
 endif

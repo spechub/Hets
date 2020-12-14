@@ -15,7 +15,7 @@ we want to distribute them within the binary.
 -}
 
 module GUI.GtkUtils
-  ( getGTKBuilder
+  ( getGladeXML
   , startMainLoop
   , stopMainLoop
   , forkIO_
@@ -75,6 +75,7 @@ module GUI.GtkUtils
   ) where
 
 import Graphics.UI.Gtk
+import Graphics.UI.Gtk.Glade
 
 import qualified GUI.Glade.Utils as Utils
 
@@ -94,11 +95,14 @@ import System.Directory ( removeFile, doesFileExist
 import System.FilePath (takeFileName, takeDirectory)
 
 -- | Returns a GladeXML Object of a xmlstring.
-getGTKBuilder :: (String, String) -> IO Builder
-getGTKBuilder (name, xmlstr) = do
-  builder <- builderNew
-  builderAddFromString builder xmlstr
-  return builder
+getGladeXML :: (String, String) -> IO GladeXML
+getGladeXML (name, xmlstr) = do
+  filename <- getTempFile xmlstr name
+  mxml <- xmlNew filename
+  removeFile filename
+  case mxml of
+    Just xml -> return xml
+    Nothing -> error "GtkUtils: Can't load xml string."
 
 -- | Starts the gtk main event loop in a thread
 startMainLoop :: IO ()
@@ -291,10 +295,10 @@ listChoiceAux :: String -- ^ Title
               -> [a] -- ^ Rows to display
               -> IO (Maybe (Int, a)) -- ^ Selected row
 listChoiceAux title showF items = do
-  builder <- getGTKBuilder Utils.get
+  xml <- getGladeXML Utils.get
   -- get objects
-  dlg <- builderGetObject builder castToDialog "ListView"
-  trvList <- builderGetObject builder castToTreeView "trvList"
+  dlg <- xmlGetWidget xml castToDialog "ListView"
+  trvList <- xmlGetWidget xml castToTreeView "trvList"
 
   windowSetTitle dlg title
   store <- setListData trvList showF items
@@ -336,11 +340,11 @@ progressBarAux :: Bool -- ^ Percent or pulse
                -> String -- ^ Description
                -> IO (Double -> String -> IO (), IO ())
 progressBarAux isProgress title description = do
-  builder <- getGTKBuilder Utils.get
+  xml <- getGladeXML Utils.get
   -- get window
-  window <- builderGetObject builder castToWindow "ProgressBar"
+  window <- xmlGetWidget xml castToWindow "ProgressBar"
   -- get progress bar
-  bar <- builderGetObject builder castToProgressBar "pbProgress"
+  bar <- xmlGetWidget xml castToProgressBar "pbProgress"
 
   windowSetTitle window title
   progressBarSetText bar description
@@ -397,10 +401,10 @@ textView :: String -- ^ Title
          -> Maybe FilePath -- ^ Filename
          -> IO ()
 textView title message mfile = do
-  builder <- getGTKBuilder Utils.get
+  xml <- getGladeXML Utils.get
   -- get objects
-  dlg <- builderGetObject builder castToDialog "TextView"
-  tvText <- builderGetObject builder castToTextView "tvText"
+  dlg <- xmlGetWidget xml castToDialog "TextView"
+  tvText <- xmlGetWidget xml castToTextView "tvText"
 
   windowSetTitle dlg title
   buffer <- textViewGetBuffer tvText
@@ -546,7 +550,7 @@ getSelectedMultiple view list = do
 setListData :: TreeView -> (a -> String) -> [a] -> IO (ListStore a)
 setListData view getT listData = do
   store <- listStoreNew listData
-  treeViewSetModel view (Just store)
+  treeViewSetModel view store
   treeViewSetHeadersVisible view False
   ren <- cellRendererTextNew
   col <- treeViewColumnNew
