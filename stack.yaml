@@ -56,7 +56,6 @@ extra-deps:
   - gio-0.13.8.0
   - pango-0.13.8.1
   - Cabal-2.0.1.1
-  - gtk-0.15.5
   - haskeline-0.7.4.0
   - uni-events-2.2.2.0
   - uni-graphs-2.2.1.0
