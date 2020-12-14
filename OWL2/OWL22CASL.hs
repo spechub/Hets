@@ -121,11 +121,11 @@ uriToCaslId :: IRI -> Id
 uriToCaslId urI = 
  let urS = showIRI urI
      urS' = concatMap 
-            (\c ->  if isAlpha c || 
+            (\c ->  if isAlpha c ||
                        isDigit c || 
                        c == '\'' ||
-                       c == '_' 
-                   then [c] 
+                       c == '_'
+                   then [c]
                    else "_u" ) urS
  in case urS of
       x : _ -> 
