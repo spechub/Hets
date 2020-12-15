@@ -10,15 +10,13 @@
 #
 # If the following environment variables are set, their values get passed to
 # the corresponding tool as is: GHC_PKG_FLAGS (ghc-pkg), GHC_FLAGS (ghc).
+# For profiling, call make with PROFILE=on 
 
 include var.mk
 
 NO_BIND_WARNING := -fno-warn-unused-do-bind
 HC_WARN := -Wall -fwarn-tabs \
   -fwarn-unrecognised-pragmas -fno-warn-orphans $(NO_BIND_WARNING)
-# uncomment HC_PROF for profiling (and comment out packages in var.mk)
-# call resulting binary with a final +RTS -p to get a file <binary>.prof
-#HC_PROF := -prof -auto-all -osuf p_o +RTS -K100m -RTS
 HC_OPTS += $(HC_WARN) $(HC_PROF) $(GHC_FLAGS)
 # -ddump-minimal-imports
 # uncomment the above line to generate .imports files for displayDependencyGraph
@@ -37,15 +35,15 @@ doc: doc/UserGuide.pdf
 
 # Upgrade haskell-stack
 stack_upgrade:
-	$(STACK) $(STACK_OPTS) upgrade
-	$(STACK_EXEC) -- ghc-pkg recache
+	$(STACK) $(STACK_OPTS) $(STACK_PROF) upgrade
+	$(STACK_EXEC) $(STACK_PROF) -- ghc-pkg recache
 # Create the build environment
 stack: $(STACK_UPGRADE_TARGET)
-	$(STACK) $(STACK_OPTS) build --install-ghc --only-dependencies $(STACK_DEPENDENCIES_FLAGS)
+	$(STACK) $(STACK_OPTS) build $(STACK_PROF) --install-ghc --only-dependencies $(STACK_DEPENDENCIES_FLAGS)
 	touch stack
 restack:
 	rm -f stack
-	$(STACK) $(STACK_OPTS) build --install-ghc --only-dependencies $(STACK_DEPENDENCIES_FLAGS)
+	$(STACK) $(STACK_OPTS) build $(STACK_PROF) --install-ghc --only-dependencies $(STACK_DEPENDENCIES_FLAGS)
 	touch stack
 
 SED := $(shell [ "$(OSNAME)" = 'SunOS' ] && printf 'gsed' || printf 'sed')
@@ -474,7 +472,7 @@ derived_sources += $(drifted_files) $(hs_der_files)
 ####################################################################
 # BUILD related targets
 ####################################################################
-.PHONY: all hets-opt hets-optimized hets_server-opt docs jars \
+.PHONY: all hets-opt hets-optimized hets_server-opt doc docs jars \
 	clean o_clean clean_pretty bin_clean java_clean realclean distclean \
 	annos check test capa hacapa h2h h2hf showKP clean_genRules genRules \
     count fromKif release cgi ghci build-hets callghc \
@@ -881,7 +879,7 @@ install-owl-tools: jars
 # If one would add haddocs as well, add
 #	-m 0755 -d $(DESTDIR)$(SUBDIR_common)$(PREFIX)/$(DOC_DIR)/html/
 #	-m 0644 docs/* $(DESTDIR)$(SUBDIR_common)$(PREFIX)/$(DOC_DIR)/html/
-install-common: docs install-owl-tools
+install-common: doc install-owl-tools
 	$(INSTALL) -m 0755 -d \
 		$(DESTDIR)$(SUBDIR_common)$(PREFIX)/$(HETS_DIR)/hets-isa-tools \
 		$(DESTDIR)$(SUBDIR_common)$(PREFIX)/$(HETS_DIR)/hets-maude-lib \
@@ -930,7 +928,7 @@ install: install-hets install-hets_server install-common install-owl-tools
 ############################################################################
 # DEBIAN rules
 ############################################################################
-build-indep: jars docs
+build-indep: jars doc
 
 build-arch: $(STACK_TARGET) hets.bin hets_server.bin
 
