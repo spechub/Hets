@@ -263,10 +263,12 @@ basicSpec pm = do
     as <- frames
     if null nss && null ie && null ans && null as && ou == nullIRI
       then fail "empty ontology"
-      else return $ OntologyDocument
-        (Map.union (Map.fromList $ map (\ (p, q) -> (p, showIRICompact q)) nss)
-         (convertPrefixMap pm))
-        (emptyOntology as)
-            { imports = ie
-            , ann = ans
-            , name = ou }
+      else 
+       let o = OntologyDocument
+                (Map.union (Map.fromList $ map (\ (p, q) -> (p, showIRICompact $ setAngles False q)) nss)
+                (convertPrefixMap pm))
+                (emptyOntology as)
+                  { imports = ie
+                  , ann = ans
+                  , name = ou }
+       in return o 
