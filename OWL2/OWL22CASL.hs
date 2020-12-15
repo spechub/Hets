@@ -113,42 +113,9 @@ dataPropPred = PredType [thing, dataS]
 indiConst :: OpType
 indiConst = OpType Total [] thing
 
+
 uriToIdM :: IRI -> Result Id
 uriToIdM = return . uriToCaslId
-
--- | Extracts Id from URI
-uriToCaslId :: IRI -> Id
-uriToCaslId urI = 
- let urS = showIRI urI
-     urS' = concatMap 
-            (\c ->  if isAlpha c ||
-                       isDigit c || 
-                       c == '\'' ||
-                       c == '_'
-                   then [c]
-                   else "_u" ) urS
- in case urS of
-      x : _ -> 
-         if isDigit x then genName urS' 
-         else stringToId urS'
-      _ -> error "translating empty IRI" 
-           -- should never happen
-
-{- let
-  repl a = if isAlphaNum a then [a] else if a/=':' then "_" else ""
-  getId = stringToId . (concatMap repl)
- in
-  if ((isDatatypeKey urI) && (isThing urI))  then
-        getId $ localPart urI
-   else {-
-    let
-      ePart = expandedIRI urI
-    in
-      if ePart /= "" then
-        getId $ expandedIRI urI
-      else -}
-        getId $ localPart urI
--}
 
 tokDecl :: Token -> VAR_DECL
 tokDecl = flip mkVarDecl thing
