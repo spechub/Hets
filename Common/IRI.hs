@@ -44,7 +44,7 @@ module Common.IRI
     , hasFullIRI
     , isSimple
     , addSuffixToIRI
-
+    , showTrace
     -- * Parsing
     , iriParser
     , angles
@@ -162,6 +162,18 @@ without prefix -}
 isSimple :: IRI -> Bool
 isSimple i = null (prefixName i) && isAbbrev i
 
+showTrace :: IRI -> String
+showTrace i = 
+ "scheme:" ++ iriScheme i ++
+ (case iriAuthority i of
+   Just x -> "\nauthority:" ++ show x
+   _ -> "\nno authority") ++
+ "\npath:" ++ show (iriPath i) ++
+ "\nquery:" ++ iriQuery i ++
+ "\nfragment:" ++ iriFragment i ++
+ "\nprefix:" ++ prefixName i ++
+ "\nisAbbrev:" ++ show (isAbbrev i)
+
 {- IRI as instance of Show.  Note that for security reasons, the default
 behaviour should suppress any iuserinfo field (see RFC3986, section 7.5).
 But we don't do this since we use iriToStringUnsecure all over the place
@@ -180,7 +192,7 @@ instance Ord IRI where
       (\ j -> (prefixName j, iriPath j, iriQuery j, iriFragment j))
       i k
     _ -> comparing (\ j ->
-      (iriScheme j, iriAuthority j, iriPath j,
+      (prefixName j, iriScheme j, iriAuthority j, iriPath j,
        iriQuery j, iriFragment j)) i k
 
 -- |converts IRI to String of expanded form. if available. Also showing Auth
@@ -226,7 +238,7 @@ iRIRange i = let Range rs = iriPos i in case rs of
 
 showIRI :: IRI -> String
 showIRI i 
-  | hasFullIRI i = showIRIFull i
+  | hasFullIRI i && not (isAbbrev i)  = showIRIFull i
   | otherwise = showIRICompact i
 
 
@@ -364,7 +376,7 @@ curie = iriWithPos $ do
     pn <- try (do
         n <- ncname
         c <- string ":"
-        return $ n ++ c
+        return $ n -- ++ c Don't add the colon to the prefix!
       )
     i <- reference
     return i { prefixName = pn }
@@ -781,7 +793,7 @@ that may be present in the IRI.  Use this function with argument @id@
 to preserve the password in the formatted output. -}
 iriToString :: (String -> String) -> IRI -> ShowS
 iriToString iuserinfomap i
-  | hasFullIRI i = iriToStringFull iuserinfomap i
+  | hasFullIRI i && not (isAbbrev i) = iriToStringFull iuserinfomap i
   | otherwise = iriToStringAbbrev i
 
 iriToStringShort :: (String -> String) -> IRI -> ShowS
@@ -809,7 +821,8 @@ iriToStringAbbrev (IRI { prefixName = pname
                        , iriQuery = aQuery
                        , iriFragment = aFragment
                        }) =
-  (pname ++) . (show aPath ++) . (aQuery ++) . (aFragment ++)
+  let pref = if null pname then "" else pname ++ ":" in
+  (pref ++) . (show aPath ++) . (aQuery ++) . (aFragment ++)
 
 iriToStringAbbrevMerge :: IRI -> ShowS
 iriToStringAbbrevMerge (IRI { iriPath = aPath
@@ -1045,7 +1058,7 @@ difSegsFrom sabs base = difSegsFrom ("../" ++ sabs) (snd $ nextSegment base)
 to the prefix of @c@ or the concatenation of @i@ and @iriPath c@
 is not a valid IRI. -}
 expandCurie :: Map String IRI -> IRI -> Maybe IRI
-expandCurie prefixMap c =  
+expandCurie prefixMap c =
   if hasFullIRI c then Just c else
   case Map.lookup (filter (/= ':') $ prefixName c) prefixMap of
     Nothing -> Nothing
