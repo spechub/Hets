@@ -26,7 +26,7 @@ import Common.IRI
 import Common.Lexer
 import Common.Parsec
 import Common.AnnoParser (commentLine)
-import Common.Token (criticalKeywords, sortId)
+import Common.Token (criticalKeywords)
 import Common.Utils (nubOrd)
 import qualified Common.IRI as IRI
 import qualified Common.GlobalAnnotations as GA (PrefixMap)
@@ -382,7 +382,7 @@ dataPrimary = do
 
 mkDataJunction :: JunctionType -> [DataRange] -> DataRange
 mkDataJunction ty ds = case nubOrd ds of
-  [] -> error "mkObjectJunction"
+  [] -> error "mkDataJunction"
   [x] -> x
   ns -> DataJunction ty ns
 
