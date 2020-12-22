@@ -1106,7 +1106,7 @@ uriToCaslId urI =
                    else "_u" ) urS
  in case urS of
       x : _ -> 
-         if not $ isAlpha x then genName urS' 
+         if not (isAlpha x || x == '.') then genName urS' 
          else stringToId urS'
       _ -> error "translating empty IRI" 
            -- should never happen
