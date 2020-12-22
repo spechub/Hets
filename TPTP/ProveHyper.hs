@@ -1,9 +1,9 @@
 {- |
 Module      :  ./TPTP/ProveHyper.hs
 Description :  Interface to the theorem prover e-krhyper in CASC-mode.
-Copyright   :  (c) Dominik Luecke, Uni Bremen 2010
+Copyright   :  (c) Otto-von-Guericke University of Magdeburg, 2020
 License     :  GPLv2 or higher, see LICENSE.txt
-Maintainer  :  luecke@informatik.uni-bremen.de
+Maintainer  :  mscodescu@gmail.com
 Stability   :  provisional
 Portability :  needs POSIX
 

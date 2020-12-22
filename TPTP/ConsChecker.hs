@@ -1,17 +1,12 @@
 {- |
 Module      :  ./TPTP/ConsChecker.hs
-Description :  Interface to the theorem prover e-krhyper in CASC-mode.
-Copyright   :  (c) Dominik Luecke, Uni Bremen 2010
+Description :  Interface to consistency checkers
+Copyright   :  (c) (c) Otto-von-Guericke University of Magdeburg, 2020
 License     :  GPLv2 or higher, see LICENSE.txt
-Maintainer  :  luecke@informatik.uni-bremen.de
+Maintainer  :  mscodescu@gmail.com
 Stability   :  provisional
 Portability :  needs POSIX
 
-Check out
-http://www.uni-koblenz.de/~bpelzer/ekrhyper/
-for details. For the ease of maintenance we are using e-krhyper in
-its CASC-mode, aka tptp-input. It works for single input files and
-fof-style.
 -}
 
 module TPTP.ConsChecker
