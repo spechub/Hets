@@ -78,13 +78,12 @@ Description: The Heterogeneous Tool Set (hets) - server version.
  appropriate for server environments.
 
 ############################################################################
-# TBD: hets-provers, hets-desktop-all, hets-server-all
+# MetaPackages: hets-provers, hets-desktop-all, hets-server-all
 ############################################################################
 Package: hets-provers
 Architecture: amd64
-Depends:     cvc3, darwin, edarwin, eprover, fact++, hol-light, maude, minisat, spass, z3
-# 	TBD: cvc3 -> cvc4, edarwin -> e-darwin, ekrhyper (n/a), leo2 (n/a), kodkodi (n/a), satallax (n/a), twelf (n/a), yices (n/a), zchaff (n/a)
-#	NOTE: z3 @since 15.10, darwin/edarwin/eprover (PPA)
+Depends:     cvc-47, darwin, e-darwin, e-krhyper, eprover, fact++, hol-light, leo2, maude, minisat, satallax, spass, yices, z3, zchaff
+# 	Optional: kodkodi (n/a), twelf (n/a)
 Description: Provers for Hets.
  This meta-package bundles all known provers which might be useful in hets
  related environments. It is just for convinience to be able to install all
@@ -92,7 +91,8 @@ Description: Provers for Hets.
 
 Package: hets-desktop-all
 Architecture: amd64
-Depends: hets-desktop, hets-provers, pellet, isabelle-installer
+Depends: hets-desktop, hets-provers, pellet
+#	Optional: isabelle-installer
 # TBD: protege4 (n/a), protege4-plugins (n/a)
 Description: The Heterogeneous Tool Set (hets) - desktop plus.
  This is a meta-package which pulls in the hets-desktop as well as all any
@@ -100,7 +100,8 @@ Description: The Heterogeneous Tool Set (hets) - desktop plus.
 
 Package: hets-server-all
 Architecture: amd64
-Depends: hets-server, hets-provers, pellet, isabelle-installer
+Depends: hets-server, hets-provers, pellet
+#	Optional: isabelle-installer
 Description: The Heterogeneous Tool Set (hets) - server plus.
  This is a meta-package which pulls in the hets-server as well as all any
  other known non-GUI package, which might be helpful when using hets as a
