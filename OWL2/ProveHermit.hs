@@ -53,6 +53,7 @@ import System.Directory
 import Control.Monad (when)
 import Control.Concurrent
 
+import Debug.Trace
 
 
 hermitS :: String
@@ -184,14 +185,15 @@ runTimedHermit opts tmpFileName prob entail secs = do
       timeTmpFile <- getTempFile prob tmpFileName
       timeTmpEnt <- getTempFile (fromMaybe "" entail) tmpFileName
       let entFile = timeTmpFile ++ ".entail.owl"
-          doEntail = isJust entail
+          doEntail = trace (show opts) (isJust entail)
           args = "-Xmx1024M" : "-jar" : hermitJar
-           : (if doEntail then ["--premise=file://"++timeTmpFile, "--conclusion=file://"++entFile, "-E"] else ["-k"] ++ words opts)
+           : (if doEntail then ["--premise=file://"++timeTmpFile, "--conclusion=file://"++entFile, "-E"] 
+              else ["-k", timeTmpFile]) ++ words opts
       case entail of
         Just c -> writeFile entFile c
         Nothing -> return ()
       mex <- timeoutCommand secs "java" args
-      removeFile timeTmpFile
+      trace (show mex ++ "\n" ++ show args) (removeFile timeTmpFile)
       removeFile timeTmpEnt
       when doEntail $ removeFile entFile
       return $ fmap (\ (_, outS, errS) -> if outS == "true\n" then (True, outS, errS) else (False, outS, errS)) mex
@@ -263,6 +265,8 @@ analyseOutput err outp =
               _ -> (atp, exCode, to)
           ["true"] ->
             (ATPSuccess, Just True, to)
+          ["false"] -> 
+            (ATPSuccess, Just False, to)
           ne : _ | isPrefixOf "Non-entailments" ne ->
             (ATPSuccess, Just False, to)
           "Usage:" : "java" : "Hermit" : _ -> (ATPError line, Nothing, to)
