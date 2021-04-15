@@ -121,7 +121,7 @@ With the option "-o pp.tex" hets can produce nice LaTeX output from your specifi
 
 ## Development
 
-A good starting point is the code documentation for [Hets - the Heterogeneous Tool Set](http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/src-distribution/versions/Hets/docs/).
+A good starting point is the code documentation for [Hets - the Heterogeneous Tool Set](http://hets.eu/docs/).
 
 Since Hets is rather large and complex we recommend following the interactive session in [Debugging and Testing Hets](https://github.com/spechub/Hets/wiki/Debugging-and-Testing-Hets) to get familiar with the central datastructures of Hets.
 
@@ -156,6 +156,7 @@ If you wish to make larger changes we generally recommend [forking](https://help
 * Get the git repository and its submodules
     ```
     git clone https://github.com/spechub/Hets.git
+    cd Hets
     git submodule update --init --recursive
     ```
 * [Install Stack](https://docs.haskellstack.org/en/stable/install_and_upgrade) (use the generic Linux option if you are on Ubuntu).
@@ -163,7 +164,7 @@ If you wish to make larger changes we generally recommend [forking](https://help
   * Ubuntu:
     ```
     sudo apt install libglib2.0-dev libcairo2-dev libpango1.0-dev libgtk2.0-dev libglade2-dev libncurses-dev
-    sudo apt install postgresql postgresql-server-dev-9.5 mysql-server libmysqlclient-dev
+    sudo apt install postgresql postgresql-server-dev-9.5
     ```
   * macOS:
     ```
