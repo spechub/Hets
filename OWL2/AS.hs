@@ -213,11 +213,14 @@ preDefMaps sl pref = let
  in (sl, pref, sp)
 
 checkPredefAux :: PreDefMaps -> IRI -> Maybe (String, String)
-checkPredefAux (sl, pref, exPref) u =
+checkPredefAux (sl, pref, exPref) u = 
   let lp = show $ iriPath u
       res = Just (pref, lp)
-  in case prefixName u of
-    "http" -> case stripPrefix "//www." lp of
+      testString = case iriScheme u of
+                    "" -> prefixName u
+                    _ -> iriScheme u 
+  in case testString of -- was prefixName
+    "http:" -> case stripPrefix "//www." lp of
         Just q -> case stripPrefix "w3.org/" q of
             Just r -> case stripPrefix exPref r of
               Just s | elem s sl -> Just (pref, s)
