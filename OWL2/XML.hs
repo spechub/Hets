@@ -82,7 +82,9 @@ getIRI b e =
     let [a] = elAttribs e
         anIri = attrVal a
     in case qName $ attrKey a of
-        "abbreviatedIRI" -> appendBase b $ nullIRI {iriPath = stringToId anIri, isAbbrev = True }
+        "abbreviatedIRI" ->  
+          let (p, _:v) = span (/= ':') anIri
+          in appendBase b $ nullIRI {iriPath = stringToId v, prefixName = p, isAbbrev = True }
         "IRI" -> let x = parseIRIReference anIri -- todo: or combine parseIRI and parseIRIReference
                  in case x of
                      Just y -> appendBase b y
@@ -91,7 +93,7 @@ getIRI b e =
         _ -> error $ "wrong qName:" ++ show (attrKey a)
    
 
-{- | if the IRI contains colon, it is split there;
+{- | if the IRI contains colon, it is spglit there;
 else, the xml:base needs to be prepended to the local part
 and then the IRI must be splitted -}
 appendBase :: XMLBase -> IRI -> IRI
@@ -112,11 +114,11 @@ splitIRI iri = let
       let lp = tokStr tok
           sp = span (/= ':') lp
       in case sp of
-         (np, ':' : nlp) -> iri { prefixName = np
+         (np, ':' : nlp) -> iri { iriScheme = np ++ ":"
                                 , iriPath = i { getTokens = tok { tokStr = nlp } : ts}
                                 }
-         _ -> iri  
-
+         _ -> iri
+         
 -- | prepends "_:" to the nodeID if is not there already
 mkNodeID :: IRI -> IRI
 mkNodeID iri =
@@ -575,7 +577,7 @@ getOntologyIRI b e =
   in case oi of
     Nothing -> dummyIRI
     Just anIri -> appendBase b
-        $ nullIRI {iriPath = stringToId anIri, isAbbrev = True}
+        $ nullIRI {iriPath = stringToId anIri}
 
 getBase :: Element -> XMLBase
 getBase e = fromJust $ vFindAttrBy (isSmth "base") e
