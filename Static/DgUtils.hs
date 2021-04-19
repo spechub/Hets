@@ -352,7 +352,7 @@ compPointer (NPBranch n1 f1) (NPComp f2) =
        NPBranch n1 (Map.unionWith (\ _ y -> y) f1 f2 )
 compPointer (NPComp f1) (NPComp f2) =
        NPComp (Map.unionWith (\ _ y -> y) f1 f2)
-compPointer x y = error $ "compPointer:" ++ show x ++ " " ++ show y
+compPointer x y = error $ "compPointer:" ++ show x ++ " composed with " ++ show y
 
 -- sources
 
