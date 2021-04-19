@@ -36,6 +36,9 @@ import Static.History
 import qualified Data.Map as Map
 import Data.Char
 
+lookup' :: (Ord a) => Map.Map a b -> a -> b
+lookup' x y = Map.findWithDefault (error "lookup': key not found") y x
+
 showRefTree :: LibFunc
 showRefTree gInfo = do
     graph <- newIORef daVinciSort
@@ -66,7 +69,6 @@ addNodesAndEdgesRef gInfo@(GInfo { hetcatsOpts = opts}) graph nodesEdges = do
   Just ist -> do
    let
     le = i_libEnv ist
-    lookup' x y = Map.findWithDefault (error "lookup': node not found") y x
     dg = lookup' le $ i_ln ist
     rTree = refTree dg
     vertexes = map fst $ Tree.labNodes rTree
@@ -153,7 +155,6 @@ checkConsAux gInfo (n : ns) = do
   Just ist -> do
    let
     le = i_libEnv ist
-    lookup' x y = Map.findWithDefault (error "lookup': node not found") y x
     dg = lookup' le $ i_ln ist
     rtlab = labRT dg n
     rt = refTree dg
@@ -251,7 +252,6 @@ addNodesAndEdgesDeps :: DGraph -> Diag -> DaVinciGraphTypeSyn -> GInfo ->
 addNodesAndEdgesDeps dg diag graph gi nodesEdges = do
    let
     opts = hetcatsOpts gi
-    lookup' x y = Map.findWithDefault (error "lookup': node not found") y x
 
     vertexes = map snd $ Tree.labNodes $ diagGraph diag
     arcs = Tree.labEdges $ diagGraph diag
