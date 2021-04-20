@@ -252,7 +252,6 @@ addNodesAndEdgesDeps :: DGraph -> Diag -> DaVinciGraphTypeSyn -> GInfo ->
 addNodesAndEdgesDeps dg diag graph gi nodesEdges = do
    let
     opts = hetcatsOpts gi
-
     vertexes = map snd $ Tree.labNodes $ diagGraph diag
     arcs = Tree.labEdges $ diagGraph diag
     subNodeMenu = LocalMenu (UDG.Menu Nothing [Button "Show desc and sig" $
