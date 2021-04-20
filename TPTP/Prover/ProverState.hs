@@ -17,6 +17,7 @@ module TPTP.Prover.ProverState ( ProverState (..)
                                , getAxioms
                                , insertSentenceIntoProverState
                                , ioShowTPTPProblem
+                               , showTPTPProblemM
                                , tptpProverState
                                ) where
 
@@ -97,6 +98,17 @@ generateTPTPProblem pLogicalPart mNewGoal = PProblem
     { identifier = "hets_exported"
     , logicalPart = maybe pLogicalPart (insertSentence pLogicalPart) mNewGoal
     }
+
+showTPTPProblemM
+    :: String -- ^ theory name
+    -> ProverState -- ^ prover state containing initial logical part
+    -> [String] -- ^ extra options
+    -> IO String -- ^ formatted output of the goal
+showTPTPProblemM thName pst _opts = do
+  let problem = generateTPTPProblem
+                  (psLogicalPart pst)
+                   Nothing
+  return $ show $ printTPTPProblem thName problem
 
 {- |
   Pretty printing TPTP goal in TPTP format.

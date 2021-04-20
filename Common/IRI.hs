@@ -75,6 +75,7 @@ module Common.IRI
     , mkIRI
     , idToIRI  
     , setPrefix
+    , uriToCaslId
     ) where
 
 import Text.ParserCombinators.Parsec
@@ -1091,3 +1092,21 @@ addSuffixToIRI s i = if not $ null $ iriQuery i
                    then i{iriQuery = iriQuery i ++ s}
                   else  
                         i{iriPath  = appendId (iriPath i) (stringToId s)}
+
+-- | Extracts Id from URI
+uriToCaslId :: IRI -> Id
+uriToCaslId urI = 
+ let urS = showIRI urI
+     urS' = concatMap 
+            (\c ->  if isAlpha c ||
+                       isDigit c || 
+                       c == '\'' ||
+                       c == '_'
+                   then [c]
+                   else "_u" ) urS
+ in case urS of
+      x : _ -> 
+         if not $ isAlpha x then genName urS' 
+         else stringToId urS'
+      _ -> error "translating empty IRI" 
+           -- should never happen
