@@ -1,3 +1,5 @@
+{-# LANGUAGE TupleSections #-}
+
 module OWL2.ParserAS where
 
 import OWL2.AS
@@ -43,7 +45,8 @@ ncNameChar :: Char -> Bool
 ncNameChar c = isAlphaNum c || elem c ".+-_\183"
 
 prefix :: CharParser st String
-prefix = option "" (satisfy ncNameStart <:> many (satisfy ncNameChar)) <++> string ":"
+prefix = option "" (satisfy ncNameStart <:> many (satisfy ncNameChar))
+    <++> string ":"
 
 parseEnclosedWithKeyword :: String -> CharParser st a -> CharParser st a
 parseEnclosedWithKeyword s p = do
@@ -72,18 +75,17 @@ parseDirectlyImportsDocument = parseEnclosedWithKeyword "Import" iriCurie
 parseAnonymousIndividual :: CharParser st AnonymousIndividual
 parseAnonymousIndividual = return "TODO"
 
-quotedString :: CharParser st String
-quotedString = char '"' >> manyTill charOrEscaped (try $ char '"')
 
 parseTypedLiteral :: CharParser st Literal
 parseTypedLiteral = do
-    s <- quotedString
+    s <- stringLit
     string "^^"
     iri <- iriCurie
     return $ Literal s (Typed iri)
 
 charOrEscaped :: CharParser st Char
-charOrEscaped = try (string "\\\"" >> return '"') <|> try (string "\\\\" >> return '\\') <|> anyChar
+charOrEscaped = try (string "\\\"" >> return '"')
+            <|> try (string "\\\\" >> return '\\') <|> anyChar
 
 parseUntypedLiteral :: CharParser st Literal
 parseUntypedLiteral = do
@@ -109,19 +111,28 @@ parseAnnotation = parseEnclosedWithKeyword "Annotation" $ do
     value <- parseAnnotationValue
     return $ Annotation an property value
 
+arbitraryLookaheadOption :: [CharParser st a] -> CharParser st a
+arbitraryLookaheadOption p = lookAhead $ choice (try <$> p)
+
+never :: CharParser st (Maybe a)
+never = return Nothing
+
+parseIriIfNotImportOrAxiom :: CharParser st (Maybe IRI)
+parseIriIfNotImportOrAxiom = 
+    (arbitraryLookaheadOption [parseDirectlyImportsDocument] >> never) <|>
+    optionMaybe iriCurie
+
+
 parseOntology :: CharParser st Ontology
 parseOntology = parseEnclosedWithKeyword "Ontology" $ do
-    let ontologyIRI = Nothing
-    let versionIRI = Nothing
-    -- skips
-    -- ontologyIRI <- optionMaybe (try iriCurie)
-    -- skips
-    -- versionIRI <- optionMaybe (try iriCurie)
+    ontologyIri <- parseIriIfNotImportOrAxiom
+    skips
+    versionIri <- maybe never (const parseIriIfNotImportOrAxiom) ontologyIri
     skips
     imports <- many (parseDirectlyImportsDocument << skips)
     skips
     annotations <- many (parseAnnotation << skips)
-    return $ Ontology ontologyIRI versionIRI imports annotations []
+    return $ Ontology ontologyIri versionIri (imports) annotations []
 
 
 
