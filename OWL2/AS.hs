@@ -572,7 +572,7 @@ data AnnotationValue =
   | AnnValLit Literal
     deriving (Show, Eq, Ord, Typeable, Data)
 
-data AnnotationAxioms = 
+data AnnotationAxiom = 
     AnnotationAssertion AxiomAnnotations AnnotationProperty AnnotationSubject AnnotationValue 
   | SubAnnotationPropertyOf AxiomAnnotations SubAnnotationProperty SuperAnnotationProperty 
   | AnnotationPropertyDomain AxiomAnnotations AnnotationProperty IRI
@@ -590,13 +590,13 @@ type SuperAnnotationProperty  = AnnotationProperty
 
 data Axiom =
   Declaration
-  | ClassAxiom_ ClassAxiom
+  | ClassAxiom ClassAxiom
   | ObjectPropertyAxiom ObjectPropertyAxiom
   | DataPropertyAxiom DataPropertyAxiom
   | DatatypeDefinition AxiomAnnotations Datatype DataRange
-  | HasKey AxiomAnnotations ClassExpression [ObjectPropertyExpression]  [DataPropertyExpression]
-  | Assertion
-  | Axiom
+  | HasKey AxiomAnnotations ClassExpression [ObjectPropertyExpression] [DataPropertyExpression]
+  | Assertion Assertion
+  | AnnotationAxiom AnnotationAxiom
   deriving (Show, Eq, Ord, Typeable, Data)
 
 -- ClassAxiom
@@ -625,8 +625,8 @@ data ObjectPropertyAxiom =
   | FunctionalObjectProperty AxiomAnnotations ObjectPropertyExpression 
   | InverseFunctionalObjectProperty AxiomAnnotations ObjectPropertyExpression
   | ReflexiveObjectProperty AxiomAnnotations ObjectPropertyExpression
-  | IrreflexiveObjectProperty AxiomAnnotations ObjectPropertyExpression
   | SymmetricObjectProperty AxiomAnnotations ObjectPropertyExpression
+  | IrreflexiveObjectProperty AxiomAnnotations ObjectPropertyExpression
   | AssymetricObjectProperty AxiomAnnotations ObjectPropertyExpression
   | TransitiveObjectProperty AxiomAnnotations ObjectPropertyExpression
 
