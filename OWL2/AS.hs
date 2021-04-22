@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {- |
 Module      :  ./OWL2/AS.hs
 Copyright   :  (c) C. Maeder, Felix Gabriel Mance
@@ -59,7 +60,8 @@ type ObjectProperty = IRI
 type DataProperty = IRI
 type DirectlyImportsDocuments = [IRI]
 type AnnotationProperty = IRI
-data Individual = NamedIndividual_ NamedIndividual | AnonymousIndividual AnonymousIndividual -- edited
+data Individual = NamedIndividual_ NamedIndividual | AnonymousIndividual AnonymousIndividual
+  deriving Eq, Ord, Data
 type NamedIndividual = IRI
 type AnonymousIndividual = String
 
@@ -371,7 +373,7 @@ instance GetRange Entity where
   getRange = iriPos . cutIRI
   rangeSpan = iRIRange . cutIRI
 
-data Declaration = Declaration_ AxiomAnnotations EntityType -- edited
+data Declaration = Declaration_ AxiomAnnotations EntityType
 data EntityType =
     Datatype
   | Class
@@ -535,8 +537,8 @@ type DataPropertyExpression = DataProperty
 -- * DATA RANGES
 
 data DataRange =
-    DataTypeRest Datatype [(ConstrainingFacet, RestrictionValue)] -- edited
-  | DataType Datatype  -- added
+    DataTypeRest Datatype [(ConstrainingFacet, RestrictionValue)]
+  | DataType Datatype
   | DataJunction JunctionType [DataRange]
   | DataComplementOf DataRange
   | DataOneOf [Literal]
@@ -586,7 +588,7 @@ type SubAnnotationProperty = AnnotationProperty
 type SuperAnnotationProperty  = AnnotationProperty
 
 
--- * AXIOMS, added
+-- * AXIOMS
 
 data Axiom =
   Declaration
@@ -612,6 +614,7 @@ data ClassAxiom =
   | EquivalentClasses AxiomAnnotations [ClassExpression]
   | DisjointClasses AxiomAnnotations [ClassExpression]
   | DisjointUnion AxiomAnnotations Class DisjointClassExpression
+  deriving (Eq, Ord, Data)
 
 -- ObjectAxiom
 
@@ -629,6 +632,7 @@ data ObjectPropertyAxiom =
   | SymmetricObjectProperty AxiomAnnotations ObjectPropertyExpression
   | AssymetricObjectProperty AxiomAnnotations ObjectPropertyExpression
   | TransitiveObjectProperty AxiomAnnotations ObjectPropertyExpression
+  deriving (Eq, Ord, Data)
 
 -- SubObjectPropertyOf
 
@@ -675,3 +679,4 @@ data PrefixDeclaration = PrefixDeclaration PrefixName IRI
 type PrefixName = String
 
 data Ontology = Ontology (Maybe OntologyIRI) (Maybe VersionIRI) DirectlyImportsDocuments OntologyAnnotations [Axiom]
+
