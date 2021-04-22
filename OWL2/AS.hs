@@ -61,7 +61,7 @@ type DataProperty = IRI
 type DirectlyImportsDocuments = [IRI]
 type AnnotationProperty = IRI
 data Individual = NamedIndividual_ NamedIndividual | AnonymousIndividual AnonymousIndividual
-  deriving Eq, Ord, Data
+  deriving (Eq, Ord, Data)
 type NamedIndividual = IRI
 type AnonymousIndividual = String
 
@@ -527,7 +527,7 @@ data ObjectPropertyExpression = ObjectProp ObjectProperty
   | ObjectInverseOf InverseObjectProperty
         deriving (Show, Eq, Ord, Typeable, Data)
 
-objPropToIRI :: ObjectPropertyExpression -> Individual
+objPropToIRI :: ObjectPropertyExpression -> IRI
 objPropToIRI opExp = case opExp of
     ObjectProp u -> u
     ObjectInverseOf objProp -> objPropToIRI objProp
@@ -608,6 +608,7 @@ type SubClassExpression = ClassExpression
 type SuperClassExpression = ClassExpression
 
 data DisjointClassExpression = DisjClExpr [ClassExpression]
+  deriving (Eq, Ord, Data)
 
 data ClassAxiom =
   SubClassOf AxiomAnnotations SubClassExpression SuperClassExpression
@@ -642,6 +643,7 @@ type SuperObjectPropertyExpression = ObjectPropertyExpression
 data SubObjectPropertyExpression =
     SubObjPropExpr_obj ObjectPropertyExpression
   | SubObjPropExpr_exprchain PropertyExpressionChain
+  deriving (Eq, Ord, Data)
 
 -- DataPropertyAxiom
 data DataPropertyAxiom = 
@@ -651,6 +653,7 @@ data DataPropertyAxiom =
   | DataPropertyDomain AxiomAnnotations DataPropertyExpression ClassExpression
   | DataPropertyRange AxiomAnnotations DataPropertyExpression DataRange
   | FunctionalDataProperty AxiomAnnotations DataPropertyExpression
+  deriving (Eq, Ord, Data)
 
 type SubDataPropertyExpression = DataPropertyExpression
 type SuperDataPropertyExpression = DataPropertyExpression
@@ -679,4 +682,5 @@ data PrefixDeclaration = PrefixDeclaration PrefixName IRI
 type PrefixName = String
 
 data Ontology = Ontology (Maybe OntologyIRI) (Maybe VersionIRI) DirectlyImportsDocuments OntologyAnnotations [Axiom]
+
 
