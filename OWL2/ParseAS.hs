@@ -14,12 +14,12 @@ import Data.Char
 
 -- | parses a comment
 comment :: CharParser st String
-comment = try $ do 
+comment = try $ do
     char '#'
     manyTill anyChar newlineOrEof
 
 atLeast :: Int -> CharParser st a -> CharParser st [a]
-atLeast n p = foldr (\_ r -> p <:> r) (return []) [1..n] <++> many p
+atLeast n p = foldr (\ _ r -> p <:> r) (return []) [1 .. n] <++> many p
 
 -- | Skips whitespaces comments and nested comments
 skips :: CharParser st ()
@@ -31,7 +31,7 @@ skips = (skipMany
 keyword :: String -> CharParser st ()
 keyword s = do
     skips
-    try (do {string s; notFollowedBy alphaNum})
+    try (string s >> notFollowedBy alphaNum)
 
 fullIri :: CharParser st IRI
 fullIri = angles iriParser
@@ -57,8 +57,8 @@ parseEnclosedWithKeyword s p = do
     skips
     char ')'
     return r
-    
-    
+
+
 parsePrefixDeclaration :: CharParser st PrefixDeclaration
 parsePrefixDeclaration = parseEnclosedWithKeyword "Prefix" $ do
     p <- prefix
@@ -117,7 +117,7 @@ never :: CharParser st (Maybe a)
 never = return Nothing
 
 parseIriIfNotImportOrAxiom :: CharParser st (Maybe IRI)
-parseIriIfNotImportOrAxiom = 
+parseIriIfNotImportOrAxiom =
     (arbitraryLookaheadOption [parseDirectlyImportsDocument] >> never) <|>
     optionMaybe iriCurie
 
@@ -184,7 +184,6 @@ parseOntology = parseEnclosedWithKeyword "Ontology" $ do
     skips
     axioms <- many (parseAxiom << skips)
     return $ Ontology ontologyIri versionIri (imports) annotations axioms
-
 
 
 -- | Parses an OntologyDocument from Owl2 Functional Syntax
