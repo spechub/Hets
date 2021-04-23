@@ -161,6 +161,7 @@ parseEntity =
     parseEntity' NamedIndividual "NamedIndividual"
 
 {- # Axioms
+
 ## Declaration -}
 
 parseDeclaration :: CharParser st Axiom
@@ -328,7 +329,7 @@ parseClassExpression =
 
     (Expression <$> iriCurie)
 
--- ## SubClassOf
+-- ## Class Axioms
 
 parseSubClassOf :: CharParser st ClassAxiom
 parseSubClassOf = parseEnclosedWithKeyword "SubClassOf" $ do
@@ -339,13 +340,13 @@ parseSubClassOf = parseEnclosedWithKeyword "SubClassOf" $ do
     superClassExpression <- parseClassExpression
     return $ SubClassOf annotations subClassExpression superClassExpression
 
--- ## EquivalentClasses
-
 parseEquivalentClasses :: CharParser st ClassAxiom
 parseEquivalentClasses = parseEnclosedWithKeyword "EquivalentClasses" $
     EquivalentClasses <$> parseAnnotations <*> manyNSkip 2 parseClassExpression
 
--- ## DisjointUnion
+parseDisjointClasses :: CharParser st ClassAxiom
+parseDisjointClasses = parseEnclosedWithKeyword "DisjointClasses" $
+    DisjointClasses <$> parseAnnotations <*> manyNSkip 2 parseClassExpression
 
 parseDisjointUnion :: CharParser st ClassAxiom
 parseDisjointUnion = parseEnclosedWithKeyword "DisjointUnion" $
@@ -360,6 +361,88 @@ parseClassAxiom = ClassAxiom_ <$> (
         parseEquivalentClasses <|?>
         parseDisjointUnion
     )
+
+-- ## Object Property Axioms
+
+parseEquivalentObjectProperties :: CharParser st ObjectPropertyAxiom
+parseEquivalentObjectProperties =
+    parseEnclosedWithKeyword "EquivalentObjectProperties" $
+    EquivalentObjectProperties <$>
+    parseAnnotations <*>
+    manyNSkip 2 parseObjectPropertyExpression
+
+parseDisjointObjectProperties :: CharParser st ObjectPropertyAxiom
+parseDisjointObjectProperties =
+    parseEnclosedWithKeyword "DisjointObjectProperties" $
+    DisjointObjectProperties <$>
+    parseAnnotations <*>
+    manyNSkip 2 parseObjectPropertyExpression
+
+parseObjectPropertyDomain :: CharParser st ObjectPropertyAxiom
+parseObjectPropertyDomain =
+    parseEnclosedWithKeyword "ObjectPropertyDomain" $
+    ObjectPropertyDomain <$>
+    parseAnnotations <*>
+    (parseObjectPropertyExpression << skips) <*>
+    (parseClassExpression << skips)
+
+parseObjectPropertyRange :: CharParser st ObjectPropertyAxiom
+parseObjectPropertyRange =
+    parseEnclosedWithKeyword "ObjectPropertyRange" $
+    ObjectPropertyRange <$>
+    parseAnnotations <*>
+    (parseObjectPropertyExpression << skips) <*>
+    (parseClassExpression << skips)
+
+parseInverseObjectProperties :: CharParser st ObjectPropertyAxiom
+parseInverseObjectProperties = parseEnclosedWithKeyword "InverseObjectProperties" $
+    InverseObjectProperties <$>
+    parseAnnotations <*>
+    (parseObjectPropertyExpression << skips) <*>
+    (parseObjectPropertyExpression << skips)
+
+-- | Helper function for *C*ommon*O*bject*P*roperty*A*xioms
+parseCOPA :: (AxiomAnnotations -> ObjectPropertyExpression -> ObjectPropertyAxiom) ->  String -> CharParser st ObjectPropertyAxiom
+parseCOPA c s =  parseEnclosedWithKeyword s $
+    c <$>
+    parseAnnotations <*>
+    (parseObjectPropertyExpression << skips)
+
+
+-- ### SubObjectPropertyOf
+parseObjectPropertyExpressionChain :: CharParser st PropertyExpressionChain
+parseObjectPropertyExpressionChain =
+    parseEnclosedWithKeyword "ObjectPropertyChain" $
+    manyNSkip 2 parseObjectPropertyExpression
+
+parseSubObjectPropertyExpression :: CharParser st SubObjectPropertyExpression
+parseSubObjectPropertyExpression = 
+    SubObjPropExpr_obj <$> parseObjectPropertyExpression <|?>
+    SubObjPropExpr_exprchain <$> parseObjectPropertyExpressionChain
+
+parseSubObjectPropertyOf :: CharParser st ObjectPropertyAxiom
+parseSubObjectPropertyOf = parseEnclosedWithKeyword "SubObjectPropertyOf" $
+    SubObjectPropertyOf <$>
+    parseAnnotations <*>
+    (parseSubObjectPropertyExpression << skips) <*>
+    (parseObjectPropertyExpression << skips)
+
+parseObjectPropertyAxiom :: CharParser st ObjectPropertyAxiom
+parseObjectPropertyAxiom = 
+    parseSubObjectPropertyOf <|?>
+    parseEquivalentObjectProperties <|?>
+    parseDisjointObjectProperties <|?>
+    parseObjectPropertyDomain <|?>
+    parseObjectPropertyRange <|?>
+    parseInverseObjectProperties <|?>
+    parseCOPA FunctionalObjectProperty "FunctionalObjectProperty" <|?>
+    parseCOPA InverseFunctionalObjectProperty "InverseFunctionalObjectProperty" <|?>
+    parseCOPA ReflexiveObjectProperty "ReflexiveObjectProperty" <|?>
+    parseCOPA IrreflexiveObjectProperty "IrreflexiveObjectProperty" <|?>
+    parseCOPA SymmetricObjectProperty "SymmetricObjectProperty" <|?>
+    parseCOPA AsymmetricObjectProperty "AsymmetricObjectProperty" <|?>
+    parseCOPA TransitiveObjectProperty "TransitiveObjectProperty"
+
 
 parseAxiom :: CharParser st Axiom
 parseAxiom = try parseDeclaration <|> try parseClassAxiom
