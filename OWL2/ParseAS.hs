@@ -18,15 +18,14 @@ comment = try $ do
     char '#'
     manyTill anyChar newlineOrEof
 
-
+atLeast :: Int -> CharParser st a -> CharParser st [a]
+atLeast n p = foldr (\_ r -> p <:> r) (return []) [1..n] <++> many p
 
 -- | Skips whitespaces comments and nested comments
 skips :: CharParser st ()
 skips = (skipMany
         (forget space <|> forget comment <?> ""))
 
--- skips :: CharParser st a -> CharParser st a
--- skips = (<< skips)
 
 -- | plain string parser with skip
 keyword :: String -> CharParser st ()
@@ -122,17 +121,69 @@ parseIriIfNotImportOrAxiom =
     (arbitraryLookaheadOption [parseDirectlyImportsDocument] >> never) <|>
     optionMaybe iriCurie
 
+parseEntity' :: EntityType -> String -> CharParser st Entity
+parseEntity' t k = parseEnclosedWithKeyword k $ do
+    iri <- iriCurie
+    return $ mkEntity t iri
+
+parseEntity :: CharParser st Entity
+parseEntity =
+    parseEntity' Class "Class" <|>
+    parseEntity' Datatype "Datatype" <|>
+    parseEntity' ObjectProperty "ObjectProperty" <|>
+    parseEntity' DataProperty "DataProperty" <|>
+    parseEntity' NamedIndividual "NamedIndividual"
+
+parseDeclaration :: CharParser st Axiom
+parseDeclaration = parseEnclosedWithKeyword "Declaration" $ do
+    annotations <- many (parseAnnotation << skips)
+    skips
+    entity <- parseEntity
+    return $ Declaration annotations entity
+
+
+parseObjectIntersectionOf :: CharParser st ClassExpression
+parseObjectIntersectionOf = parseEnclosedWithKeyword "ObjectIntersectionOf" $ do
+    classes <- atLeast 2 (parseClassExpression << skips)
+    return $ ObjectJunction IntersectionOf classes
+
+parseObjectJunction :: CharParser st ClassExpression
+parseObjectJunction = parseObjectIntersectionOf
+
+parseClassExpression :: CharParser st ClassExpression
+parseClassExpression =
+    try parseObjectJunction <|>
+    (Expression <$> try iriCurie)
+
+parseSubClassOf :: CharParser st ClassAxiom
+parseSubClassOf = parseEnclosedWithKeyword "SubClassOf" $ do
+    annotations <- (many parseAnnotation << skips)
+    skips
+    subClassExpression <- parseClassExpression
+    skips
+    superClassExpression <- parseClassExpression
+    return $ SubClassOf annotations subClassExpression superClassExpression
+
+
+parseClassAxiom :: CharParser st Axiom
+parseClassAxiom = ClassAxiom_ <$> parseSubClassOf
+
+parseAxiom :: CharParser st Axiom
+parseAxiom = try parseDeclaration <|> try parseClassAxiom
+
 
 parseOntology :: CharParser st Ontology
 parseOntology = parseEnclosedWithKeyword "Ontology" $ do
     ontologyIri <- parseIriIfNotImportOrAxiom
     skips
-    versionIri <- maybe never (const parseIriIfNotImportOrAxiom) ontologyIri
+    versionIri <- parseIriIfNotImportOrAxiom
     skips
     imports <- many (parseDirectlyImportsDocument << skips)
     skips
     annotations <- many (parseAnnotation << skips)
-    return $ Ontology ontologyIri versionIri (imports) annotations []
+    skips
+    axioms <- many (parseAxiom << skips)
+    return $ Ontology ontologyIri versionIri (imports) annotations axioms
 
 
 
