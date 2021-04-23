@@ -534,6 +534,73 @@ parseHasKey = parseEnclosedWithKeyword "HasKey" $ do
     char ')'
     return $ HasKey annotations classExpr objectPropertyExprs dataPropertyExprs
 
+-- ## Assertion
+parseSameIndividual :: CharParser st Assertion
+parseSameIndividual = parseEnclosedWithKeyword "SameIndividual" $
+    SameIndividual <$>
+    parseAnnotations <*>
+    manyNSkip 2 parseIndividual
+
+parseDifferentIndividuals :: CharParser st Assertion
+parseDifferentIndividuals = parseEnclosedWithKeyword "DifferentIndividuals" $
+    DifferentIndividuals <$>
+    parseAnnotations <*>
+    manyNSkip 2 parseIndividual
+
+parseClassAssertion :: CharParser st Assertion
+parseClassAssertion = parseEnclosedWithKeyword "ClassAssertion" $
+    ClassAssertion <$>
+    parseAnnotations <*>
+    (parseClassExpression << skips) <*>
+    (parseIndividual << skips)
+
+parseObjectPropertyAssertion :: CharParser st Assertion
+parseObjectPropertyAssertion =
+    parseEnclosedWithKeyword "ObjectPropertyAssertion" $
+    ObjectPropertyAssertion <$>
+    parseAnnotations <*>
+    (parseObjectPropertyExpression << skips) <*>
+    (parseIndividual << skips) <*>
+    (parseIndividual << skips)
+
+parseNegativeObjectPropertyAssertion :: CharParser st Assertion
+parseNegativeObjectPropertyAssertion =
+    parseEnclosedWithKeyword "NegativeObjectPropertyAssertion" $
+    NegativeObjectPropertyAssertion <$>
+    parseAnnotations <*>
+    (parseObjectPropertyExpression << skips) <*>
+    (parseIndividual << skips) <*>
+    (parseIndividual << skips)
+
+parseDataPropertyAssertion :: CharParser st Assertion
+parseDataPropertyAssertion =
+    parseEnclosedWithKeyword "DataPropertyAssertion" $
+    DataPropertyAssertion <$>
+    parseAnnotations <*>
+    (iriCurie << skips) <*>
+    (parseIndividual << skips) <*>
+    (parseLiteral << skips)
+
+parseNegativeDataPropertyAssertion :: CharParser st Assertion
+parseNegativeDataPropertyAssertion =
+    parseEnclosedWithKeyword "NegativeDataPropertyAssertion" $
+    NegativeDataPropertyAssertion <$>
+    parseAnnotations <*>
+    (iriCurie << skips) <*>
+    (parseIndividual << skips) <*>
+    (parseLiteral << skips)
+
+parseAssertion :: CharParser st Axiom
+parseAssertion = Assertion <$> (
+        parseSameIndividual <|?>
+        parseDifferentIndividuals <|?>
+        parseClassAssertion <|?>
+        parseObjectPropertyAssertion <|?>
+        parseNegativeObjectPropertyAssertion <|?>
+        parseDataPropertyAssertion <|?>
+        parseNegativeDataPropertyAssertion
+    )
+
 
 parseAxiom :: CharParser st Axiom
 parseAxiom =
@@ -542,7 +609,8 @@ parseAxiom =
     parseObjectPropertyAxiom <|?>
     parseDataPropertyAxiom <|?>
     parseDataTypeDefinition <|?>
-    parseHasKey
+    parseHasKey <|?>
+    parseAssertion
 
 
 parseOntology :: CharParser st Ontology
