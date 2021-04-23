@@ -430,26 +430,87 @@ parseSubObjectPropertyOf = parseEnclosedWithKeyword "SubObjectPropertyOf" $
     (parseSubObjectPropertyExpression << skips) <*>
     (parseObjectPropertyExpression << skips)
 
-parseObjectPropertyAxiom :: CharParser st ObjectPropertyAxiom
-parseObjectPropertyAxiom =
-    parseSubObjectPropertyOf <|?>
-    parseEquivalentObjectProperties <|?>
-    parseDisjointObjectProperties <|?>
-    parseObjectPropertyDomain <|?>
-    parseObjectPropertyRange <|?>
-    parseInverseObjectProperties <|?>
-    parseCOPA FunctionalObjectProperty "FunctionalObjectProperty" <|?>
-    parseCOPA InverseFunctionalObjectProperty "InverseFunctionalObjectProperty"
-    <|?>
-    parseCOPA ReflexiveObjectProperty "ReflexiveObjectProperty" <|?>
-    parseCOPA IrreflexiveObjectProperty "IrreflexiveObjectProperty" <|?>
-    parseCOPA SymmetricObjectProperty "SymmetricObjectProperty" <|?>
-    parseCOPA AsymmetricObjectProperty "AsymmetricObjectProperty" <|?>
-    parseCOPA TransitiveObjectProperty "TransitiveObjectProperty"
+parseObjectPropertyAxiom :: CharParser st Axiom
+parseObjectPropertyAxiom = ObjectPropertyAxiom <$> (
+        parseSubObjectPropertyOf <|?>
+        parseEquivalentObjectProperties <|?>
+        parseDisjointObjectProperties <|?>
+        parseObjectPropertyDomain <|?>
+        parseObjectPropertyRange <|?>
+        parseInverseObjectProperties <|?>
+        parseCOPA FunctionalObjectProperty "FunctionalObjectProperty" <|?>
+        parseCOPA InverseFunctionalObjectProperty "InverseFunctionalObjectProperty"
+        <|?>
+        parseCOPA ReflexiveObjectProperty "ReflexiveObjectProperty" <|?>
+        parseCOPA IrreflexiveObjectProperty "IrreflexiveObjectProperty" <|?>
+        parseCOPA SymmetricObjectProperty "SymmetricObjectProperty" <|?>
+        parseCOPA AsymmetricObjectProperty "AsymmetricObjectProperty" <|?>
+        parseCOPA TransitiveObjectProperty "TransitiveObjectProperty"
+    )
+
+-- ## DataPropertyAxioms
+
+parseSubDataPropertyOf :: CharParser st DataPropertyAxiom
+parseSubDataPropertyOf = parseEnclosedWithKeyword "SubDataPropertyOf" $
+    SubDataPropertyOf <$>
+    parseAnnotations <*>
+    (iriCurie << skips) <*>
+    (iriCurie << skips)
+
+parseEquivalentDataProperties :: CharParser st DataPropertyAxiom
+parseEquivalentDataProperties =
+    parseEnclosedWithKeyword "EquivalentDataProperties" $
+    EquivalentDataProperties <$>
+    parseAnnotations <*>
+    manyNSkip 2 iriCurie
+
+parseDisjointDataProperties :: CharParser st DataPropertyAxiom
+parseDisjointDataProperties =
+    parseEnclosedWithKeyword "DisjointDataProperties" $
+    DisjointDataProperties <$>
+    parseAnnotations <*>
+    manyNSkip 2 iriCurie
+
+parseDataPropertyDomain :: CharParser st DataPropertyAxiom
+parseDataPropertyDomain =
+    parseEnclosedWithKeyword "DataPropertyDomain" $
+    DataPropertyDomain <$>
+    parseAnnotations <*>
+    (iriCurie << skips) <*>
+    (parseClassExpression << skips)
+
+parseDataPropertyRange :: CharParser st DataPropertyAxiom
+parseDataPropertyRange =
+    parseEnclosedWithKeyword "DataPropertyRange" $
+    DataPropertyRange <$>
+    parseAnnotations <*>
+    (iriCurie << skips) <*>
+    (parseDataRange << skips)
+
+parseFunctionalDataProperty :: CharParser st DataPropertyAxiom
+parseFunctionalDataProperty =
+    parseEnclosedWithKeyword "FunctionalDataProperty" $
+    FunctionalDataProperty <$>
+    parseAnnotations <*>
+    (iriCurie << skips)
+
+parseDataPropertyAxiom :: CharParser st Axiom
+parseDataPropertyAxiom = DataPropertyAxiom <$> (
+        parseSubDataPropertyOf <|?>
+        parseEquivalentDataProperties <|?>
+        parseDisjointDataProperties <|?>
+        parseDataPropertyDomain <|?>
+        parseDataPropertyRange <|?>
+        parseFunctionalDataProperty
+    )
 
 
 parseAxiom :: CharParser st Axiom
-parseAxiom = try parseDeclaration <|> try parseClassAxiom
+parseAxiom =
+    parseDeclaration <|?>
+    parseClassAxiom <|?>
+    parseObjectPropertyAxiom <|?>
+    parseDataPropertyAxiom
 
 
 parseOntology :: CharParser st Ontology
