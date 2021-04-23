@@ -388,11 +388,11 @@ parseOntologyDocument =
 
 
 -- ** TESTING PURPOSES ONLY **
-pta :: IO()
+pta :: IO ()
 pta = do
     files <- getDirectoryContents "./OWL2/tests"
     let fs = filter (isSuffixOf ".ofn") files
-    foldr (\f p -> do
+    foldr (\ f p -> do
             p
             putStr ("Testing " ++ f ++ "...")
             content <- readFile ("./OWL2/tests/" ++ f)
