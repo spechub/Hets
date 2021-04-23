@@ -89,8 +89,21 @@ parsePrefixDeclaration = parseEnclosedWithKeyword "Prefix" $ do
 parseDirectlyImportsDocument :: CharParser st IRI
 parseDirectlyImportsDocument = parseEnclosedWithKeyword "Import" iriCurie
 
+followedBy :: CharParser st () -> CharParser st a -> CharParser st a
+followedBy cond p = try $ do
+    r <- p
+    lookAhead cond
+    return r
+
 parseAnonymousIndividual :: CharParser st AnonymousIndividual
-parseAnonymousIndividual = many alphaNum
+parseAnonymousIndividual = do
+    string "_:"
+    (pn_chars_u <|?> digit) <:>
+        (many (pn_chars <|?> followedBy (forget pn_chars) (char '.')))
+    where pn_chars_base = letter
+          pn_chars_u = pn_chars_base <|?> char '_'
+          pn_chars = pn_chars_u <|?> char '-' <|?> digit
+
 
 parseIndividual :: CharParser st Individual
 parseIndividual =
@@ -144,7 +157,10 @@ never = return Nothing
 
 parseIriIfNotImportOrAxiom :: CharParser st (Maybe IRI)
 parseIriIfNotImportOrAxiom =
-    (arbitraryLookaheadOption [parseDirectlyImportsDocument] >> never) <|>
+    (arbitraryLookaheadOption [
+        forget parseDirectlyImportsDocument,
+        forget parseAxiom
+    ] >> never) <|>
     optionMaybe iriCurie
 
 parseEntity' :: EntityType -> String -> CharParser st Entity
