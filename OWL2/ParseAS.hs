@@ -7,10 +7,28 @@ import OWL2.AS
 import Common.AnnoParser (newlineOrEof)
 import Common.IRI
 import Common.Parsec
+import Common.Lexer (getNumber, value)
 
 import Text.ParserCombinators.Parsec
+-- doesn't work.. why?
+-- import Text.Parsec.Number
 
 import Data.Char
+
+(<|?>) :: (GenParser t st a )-> (GenParser t st a) -> GenParser t st a
+p <|?> q = try p <|> try q
+infixr 1 <|?>
+
+manySkip :: CharParser st a -> CharParser st [a]
+manySkip p =  many (p << skips)
+
+many1Skip :: CharParser st a -> CharParser st [a]
+many1Skip p = many1 (p << skips)
+
+manyNSkip :: Int -> CharParser st a -> CharParser st [a]
+manyNSkip n p = 
+    foldr (\ _ r -> (p << skips) <:> r) (return []) [1 .. n] <++>
+    many (p << skips)
 
 -- | parses a comment
 comment :: CharParser st String
@@ -18,8 +36,6 @@ comment = try $ do
     char '#'
     manyTill anyChar newlineOrEof
 
-atLeast :: Int -> CharParser st a -> CharParser st [a]
-atLeast n p = foldr (\ _ r -> p <:> r) (return []) [1 .. n] <++> many p
 
 -- | Skips whitespaces comments and nested comments
 skips :: CharParser st ()
@@ -72,7 +88,12 @@ parseDirectlyImportsDocument :: CharParser st IRI
 parseDirectlyImportsDocument = parseEnclosedWithKeyword "Import" iriCurie
 
 parseAnonymousIndividual :: CharParser st AnonymousIndividual
-parseAnonymousIndividual = return "TODO"
+parseAnonymousIndividual = many alphaNum
+
+parseIndividual :: CharParser st Individual
+parseIndividual = 
+    NamedIndividual_ <$> iriCurie <|?>
+    AnonymousIndividual <$> parseAnonymousIndividual
 
 
 parseTypedLiteral :: CharParser st Literal
@@ -93,13 +114,13 @@ parseUntypedLiteral = do
     return $ Literal s (Untyped Nothing)
 
 parseLiteral :: CharParser st Literal
-parseLiteral = try parseTypedLiteral <|> try parseUntypedLiteral
+parseLiteral = parseTypedLiteral <|?>  parseUntypedLiteral
 
 parseAnnotationValue :: CharParser st AnnotationValue
 parseAnnotationValue =
-    try (parseLiteral >>= return . AnnValLit) <|>
-    try (iriCurie >>= return . AnnValue) <|>
-    try (parseAnonymousIndividual >>= return . AnnAnInd)
+     (parseLiteral >>= return . AnnValLit) <|?>
+     (iriCurie >>= return . AnnValue) <|?>
+     (parseAnonymousIndividual >>= return . AnnAnInd)
 
 parseAnnotation :: CharParser st Annotation
 parseAnnotation = parseEnclosedWithKeyword "Annotation" $ do
@@ -107,8 +128,8 @@ parseAnnotation = parseEnclosedWithKeyword "Annotation" $ do
     skips
     property <- iriCurie
     skips
-    value <- parseAnnotationValue
-    return $ Annotation an property value
+    v <- parseAnnotationValue
+    return $ Annotation an property v
 
 arbitraryLookaheadOption :: [CharParser st a] -> CharParser st a
 arbitraryLookaheadOption p = lookAhead $ choice (try <$> p)
@@ -128,11 +149,14 @@ parseEntity' t k = parseEnclosedWithKeyword k $ do
 
 parseEntity :: CharParser st Entity
 parseEntity =
-    parseEntity' Class "Class" <|>
-    parseEntity' Datatype "Datatype" <|>
-    parseEntity' ObjectProperty "ObjectProperty" <|>
-    parseEntity' DataProperty "DataProperty" <|>
+    parseEntity' Class "Class" <|?>
+    parseEntity' Datatype "Datatype" <|?>
+    parseEntity' ObjectProperty "ObjectProperty" <|?>
+    parseEntity' DataProperty "DataProperty" <|?>
     parseEntity' NamedIndividual "NamedIndividual"
+
+-- # Axioms
+-- ## Declaration
 
 parseDeclaration :: CharParser st Axiom
 parseDeclaration = parseEnclosedWithKeyword "Declaration" $ do
@@ -141,23 +165,161 @@ parseDeclaration = parseEnclosedWithKeyword "Declaration" $ do
     entity <- parseEntity
     return $ Declaration annotations entity
 
+-- ## ClassExpression
 
 parseObjectIntersectionOf :: CharParser st ClassExpression
-parseObjectIntersectionOf = parseEnclosedWithKeyword "ObjectIntersectionOf" $ do
-    classes <- atLeast 2 (parseClassExpression << skips)
-    return $ ObjectJunction IntersectionOf classes
+parseObjectIntersectionOf = parseEnclosedWithKeyword "ObjectIntersectionOf" $
+    ObjectJunction IntersectionOf <$> manyNSkip 2 parseClassExpression
+
+parseObjectUnionOf :: CharParser st ClassExpression
+parseObjectUnionOf = parseEnclosedWithKeyword "ObjectUnionOf" $
+    ObjectJunction UnionOf <$> manyNSkip 2 parseClassExpression
+
+parseObjectComplementOf :: CharParser st ClassExpression
+parseObjectComplementOf = parseEnclosedWithKeyword "ObjectComplementOf" $
+    ObjectComplementOf <$> parseClassExpression
+
+parseObjectOneOf ::  CharParser st ClassExpression
+parseObjectOneOf = parseEnclosedWithKeyword "ObjectOneOf" $
+    ObjectOneOf <$> many1Skip parseIndividual
+
+parseObjectProperty :: CharParser st ObjectPropertyExpression
+parseObjectProperty = ObjectProp <$> iriCurie
+
+parseInverseObjectProperty :: CharParser st ObjectPropertyExpression
+parseInverseObjectProperty = parseEnclosedWithKeyword "ObjectInverseOf" $
+    ObjectInverseOf <$> parseObjectProperty
+
+parseObjectPropertyExpression :: CharParser st ObjectPropertyExpression
+parseObjectPropertyExpression =
+    parseInverseObjectProperty <|?>
+    parseObjectProperty
+    
+
+parseObjectSomeValuesFrom :: CharParser st ClassExpression
+parseObjectSomeValuesFrom = parseEnclosedWithKeyword "ObjectSomeValuesFrom" $ do
+    objectPropertyExpr <- parseObjectPropertyExpression
+    skips
+    classExpr <- parseClassExpression
+    return $ ObjectValuesFrom SomeValuesFrom objectPropertyExpr classExpr
+
+parseObjectAllValuesFrom :: CharParser st ClassExpression
+parseObjectAllValuesFrom = parseEnclosedWithKeyword "ObjectAllValuesFrom" $ do
+    objectPropertyExpr <- parseObjectPropertyExpression
+    skips
+    classExpr <- parseClassExpression
+    return $ ObjectValuesFrom AllValuesFrom objectPropertyExpr classExpr
+
+parseObjectHasValue :: CharParser st ClassExpression
+parseObjectHasValue = parseEnclosedWithKeyword "ObjectHasValue" $ do
+    objectPropertyExpr <- parseObjectPropertyExpression
+    skips
+    val <- parseIndividual
+    return $ ObjectHasValue objectPropertyExpr val
+
+parseObjectHasSelf :: CharParser st ClassExpression
+parseObjectHasSelf = parseEnclosedWithKeyword "ObjectHasSelf" $
+    ObjectHasSelf <$> parseObjectPropertyExpression
+
+parseCardinality' :: CardinalityType
+                     -> String
+                     -> CharParser st a
+                     -> CharParser st b
+                     -> CharParser st (Cardinality a b)
+parseCardinality' c k pa pb = parseEnclosedWithKeyword k $ do
+    n <- value 10 <$> getNumber
+    skips
+    objectPropertyExpr <- pa
+    skips
+    classExpr <- optionMaybe (pb << skips)
+    return $ Cardinality c n objectPropertyExpr classExpr
+
+parseObjectCardinality :: CharParser st ClassExpression
+parseObjectCardinality = ObjectCardinality <$> (
+        cardinality "ObjectMinCardinality" MinCardinality <|?>
+        cardinality "ObjectMaxCardinality" MaxCardinality <|?>
+        cardinality "ObjectExactCardinality" ExactCardinality
+    )
+    where cardinality s t = (parseCardinality' t s a b)
+          a = parseObjectPropertyExpression
+          b = parseClassExpression
+
+parseDataJunction' :: String -> JunctionType -> CharParser st DataRange
+parseDataJunction' k t = parseEnclosedWithKeyword k $
+    DataJunction t <$> manyNSkip 2 parseDataRange
+
+parseDataJunction :: CharParser st DataRange
+parseDataJunction = 
+    parseDataJunction' "DataUnionOf" UnionOf <|?>
+    parseDataJunction' "DataIntersectionOf" IntersectionOf
+
+parseDataComplementOf :: CharParser st DataRange
+parseDataComplementOf = parseEnclosedWithKeyword "DataComplementOf" $
+    DataComplementOf <$> parseDataRange
+
+parseDataOneOf :: CharParser st DataRange
+parseDataOneOf = parseEnclosedWithKeyword "DataOneOf" $
+    DataOneOf <$> many1Skip parseLiteral
+
+parseDatatypeResComponent :: CharParser st (ConstrainingFacet, RestrictionValue)
+parseDatatypeResComponent = 
+    (,) <$>
+    (iriCurie << skips) <*>
+    (parseLiteral)
+
+parseDatatypeRestriction :: CharParser st DataRange
+parseDatatypeRestriction = parseEnclosedWithKeyword "DatatypeRestriction" $ do
+    dataType <- iriCurie
+    skips
+    restrictions <- many1Skip parseDatatypeResComponent
+    return $ DataTypeRest dataType restrictions
+
+parseDataRange :: CharParser st DataRange
+parseDataRange = 
+    parseDataJunction <|?>
+    parseDataComplementOf <|?>
+    parseDataOneOf <|?>
+    parseDatatypeRestriction <|?>
+    DataType <$> iriCurie
+
+parseDataCardinality :: CharParser st ClassExpression
+parseDataCardinality = DataCardinality <$> (
+        cardinality "DataMinCardinality" MinCardinality <|?>
+        cardinality "DataMaxCardinality" MaxCardinality <|?>
+        cardinality "DataExactCardinality" ExactCardinality
+    )
+    where cardinality s t = (parseCardinality' t s a b)
+          a = iriCurie
+          b = parseDataRange
+
+parseDataSomeValuesFrom :: CharParser st ClassExpression
+parseDataSomeValuesFrom = parseEnclosedWithKeyword "DataSomeValuesFrom" $ 
+    DataValuesFrom SomeValuesFrom <$> many1Skip iriCurie <*> parseDataRange
+    
+    
 
 parseObjectJunction :: CharParser st ClassExpression
-parseObjectJunction = parseObjectIntersectionOf
+parseObjectJunction =
+    parseObjectIntersectionOf <|?>
+    parseObjectUnionOf <|?>
+    parseObjectComplementOf <|?>
+    parseObjectOneOf <|?>
+    parseObjectSomeValuesFrom <|?>
+    parseObjectAllValuesFrom <|?>
+    parseObjectHasValue <|?>
+    parseObjectHasSelf
 
 parseClassExpression :: CharParser st ClassExpression
 parseClassExpression =
-    try parseObjectJunction <|>
-    (Expression <$> try iriCurie)
+    parseObjectJunction <|?>
+
+    (Expression <$> iriCurie)
+
+-- ## SubClassOf
 
 parseSubClassOf :: CharParser st ClassAxiom
 parseSubClassOf = parseEnclosedWithKeyword "SubClassOf" $ do
-    annotations <- (many parseAnnotation << skips)
+    annotations <- manySkip parseAnnotation
     skips
     subClassExpression <- parseClassExpression
     skips
@@ -178,21 +340,20 @@ parseOntology = parseEnclosedWithKeyword "Ontology" $ do
     skips
     versionIri <- parseIriIfNotImportOrAxiom
     skips
-    imports <- many (parseDirectlyImportsDocument << skips)
+    imports <- manySkip parseDirectlyImportsDocument
     skips
-    annotations <- many (parseAnnotation << skips)
+    annotations <- manySkip parseAnnotation
     skips
-    axioms <- many (parseAxiom << skips)
+    axioms <- manySkip parseAxiom
     return $ Ontology ontologyIri versionIri (imports) annotations axioms
 
 
 -- | Parses an OntologyDocument from Owl2 Functional Syntax
 parseOntologyDocument :: CharParser st OntologyDocument
-parseOntologyDocument = do
-    prefixes <- many (parsePrefixDeclaration << skips)
-    skips
-    ontology <- parseOntology
-    return $ OntologyDocument prefixes ontology
+parseOntologyDocument = 
+    OntologyDocument <$>
+    manySkip parsePrefixDeclaration <*>
+    (skips >> parseOntology)
 
 
 pt :: IO ()
