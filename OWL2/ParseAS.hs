@@ -296,22 +296,30 @@ parseDataSomeValuesFrom :: CharParser st ClassExpression
 parseDataSomeValuesFrom = parseEnclosedWithKeyword "DataSomeValuesFrom" $ 
     DataValuesFrom SomeValuesFrom <$> many1Skip iriCurie <*> parseDataRange
     
+parseDataAllValuesFrom :: CharParser st ClassExpression
+parseDataAllValuesFrom = parseEnclosedWithKeyword "DataAllValuesFrom" $ 
+    DataValuesFrom AllValuesFrom <$> many1Skip iriCurie <*> parseDataRange
+
+parseDataHasValue :: CharParser st ClassExpression
+parseDataHasValue = parseEnclosedWithKeyword "DataHasValue" $
+    DataHasValue <$> iriCurie <*> parseLiteral
     
 
-parseObjectJunction :: CharParser st ClassExpression
-parseObjectJunction =
+parseClassExpression :: CharParser st ClassExpression
+parseClassExpression =
     parseObjectIntersectionOf <|?>
     parseObjectUnionOf <|?>
     parseObjectComplementOf <|?>
     parseObjectOneOf <|?>
+    parseObjectCardinality <|?>
     parseObjectSomeValuesFrom <|?>
     parseObjectAllValuesFrom <|?>
     parseObjectHasValue <|?>
-    parseObjectHasSelf
-
-parseClassExpression :: CharParser st ClassExpression
-parseClassExpression =
-    parseObjectJunction <|?>
+    parseObjectHasSelf <|?>
+    parseDataSomeValuesFrom <|?>
+    parseDataAllValuesFrom <|?>
+    parseDataHasValue <|?>
+    parseDataCardinality <|?>
 
     (Expression <$> iriCurie)
 
