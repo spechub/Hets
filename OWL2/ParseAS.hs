@@ -395,15 +395,18 @@ parseObjectPropertyRange =
     (parseClassExpression << skips)
 
 parseInverseObjectProperties :: CharParser st ObjectPropertyAxiom
-parseInverseObjectProperties = parseEnclosedWithKeyword "InverseObjectProperties" $
+parseInverseObjectProperties =
+    parseEnclosedWithKeyword "InverseObjectProperties" $
     InverseObjectProperties <$>
     parseAnnotations <*>
     (parseObjectPropertyExpression << skips) <*>
     (parseObjectPropertyExpression << skips)
 
 -- | Helper function for *C*ommon*O*bject*P*roperty*A*xioms
-parseCOPA :: (AxiomAnnotations -> ObjectPropertyExpression -> ObjectPropertyAxiom) ->  String -> CharParser st ObjectPropertyAxiom
-parseCOPA c s =  parseEnclosedWithKeyword s $
+parseCOPA :: (
+        AxiomAnnotations -> ObjectPropertyExpression -> ObjectPropertyAxiom
+    ) -> String -> CharParser st ObjectPropertyAxiom
+parseCOPA c s = parseEnclosedWithKeyword s $
     c <$>
     parseAnnotations <*>
     (parseObjectPropertyExpression << skips)
@@ -416,7 +419,7 @@ parseObjectPropertyExpressionChain =
     manyNSkip 2 parseObjectPropertyExpression
 
 parseSubObjectPropertyExpression :: CharParser st SubObjectPropertyExpression
-parseSubObjectPropertyExpression = 
+parseSubObjectPropertyExpression =
     SubObjPropExpr_obj <$> parseObjectPropertyExpression <|?>
     SubObjPropExpr_exprchain <$> parseObjectPropertyExpressionChain
 
@@ -428,7 +431,7 @@ parseSubObjectPropertyOf = parseEnclosedWithKeyword "SubObjectPropertyOf" $
     (parseObjectPropertyExpression << skips)
 
 parseObjectPropertyAxiom :: CharParser st ObjectPropertyAxiom
-parseObjectPropertyAxiom = 
+parseObjectPropertyAxiom =
     parseSubObjectPropertyOf <|?>
     parseEquivalentObjectProperties <|?>
     parseDisjointObjectProperties <|?>
@@ -436,7 +439,8 @@ parseObjectPropertyAxiom =
     parseObjectPropertyRange <|?>
     parseInverseObjectProperties <|?>
     parseCOPA FunctionalObjectProperty "FunctionalObjectProperty" <|?>
-    parseCOPA InverseFunctionalObjectProperty "InverseFunctionalObjectProperty" <|?>
+    parseCOPA InverseFunctionalObjectProperty "InverseFunctionalObjectProperty"
+    <|?>
     parseCOPA ReflexiveObjectProperty "ReflexiveObjectProperty" <|?>
     parseCOPA IrreflexiveObjectProperty "IrreflexiveObjectProperty" <|?>
     parseCOPA SymmetricObjectProperty "SymmetricObjectProperty" <|?>
