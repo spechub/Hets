@@ -439,8 +439,8 @@ parseObjectPropertyAxiom = ObjectPropertyAxiom <$> (
         parseObjectPropertyRange <|?>
         parseInverseObjectProperties <|?>
         parseCOPA FunctionalObjectProperty "FunctionalObjectProperty" <|?>
-        parseCOPA InverseFunctionalObjectProperty "InverseFunctionalObjectProperty"
-        <|?>
+        parseCOPA InverseFunctionalObjectProperty
+            "InverseFunctionalObjectProperty" <|?>
         parseCOPA ReflexiveObjectProperty "ReflexiveObjectProperty" <|?>
         parseCOPA IrreflexiveObjectProperty "IrreflexiveObjectProperty" <|?>
         parseCOPA SymmetricObjectProperty "SymmetricObjectProperty" <|?>
