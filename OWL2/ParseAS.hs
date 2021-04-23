@@ -2,6 +2,10 @@
 
 module OWL2.ParserAS where
 
+-- **TESTING PURPOSES ONLY**
+import System.Directory
+import Data.List
+
 import OWL2.AS
 
 import Common.AnnoParser (newlineOrEof)
@@ -10,23 +14,21 @@ import Common.Parsec
 import Common.Lexer (getNumber, value)
 
 import Text.ParserCombinators.Parsec
--- doesn't work.. why?
--- import Text.Parsec.Number
 
 import Data.Char
 
-(<|?>) :: (GenParser t st a )-> (GenParser t st a) -> GenParser t st a
+(<|?>) :: (GenParser t st a ) -> (GenParser t st a) -> GenParser t st a
 p <|?> q = try p <|> try q
 infixr 1 <|?>
 
 manySkip :: CharParser st a -> CharParser st [a]
-manySkip p =  many (p << skips)
+manySkip p = many (p << skips)
 
 many1Skip :: CharParser st a -> CharParser st [a]
 many1Skip p = many1 (p << skips)
 
 manyNSkip :: Int -> CharParser st a -> CharParser st [a]
-manyNSkip n p = 
+manyNSkip n p =
     foldr (\ _ r -> (p << skips) <:> r) (return []) [1 .. n] <++>
     many (p << skips)
 
@@ -91,7 +93,7 @@ parseAnonymousIndividual :: CharParser st AnonymousIndividual
 parseAnonymousIndividual = many alphaNum
 
 parseIndividual :: CharParser st Individual
-parseIndividual = 
+parseIndividual =
     NamedIndividual_ <$> iriCurie <|?>
     AnonymousIndividual <$> parseAnonymousIndividual
 
@@ -114,13 +116,16 @@ parseUntypedLiteral = do
     return $ Literal s (Untyped Nothing)
 
 parseLiteral :: CharParser st Literal
-parseLiteral = parseTypedLiteral <|?>  parseUntypedLiteral
+parseLiteral = parseTypedLiteral <|?> parseUntypedLiteral
 
 parseAnnotationValue :: CharParser st AnnotationValue
 parseAnnotationValue =
      (parseLiteral >>= return . AnnValLit) <|?>
      (iriCurie >>= return . AnnValue) <|?>
      (parseAnonymousIndividual >>= return . AnnAnInd)
+
+parseAnnotations :: CharParser st [Annotation]
+parseAnnotations = manySkip parseAnnotation
 
 parseAnnotation :: CharParser st Annotation
 parseAnnotation = parseEnclosedWithKeyword "Annotation" $ do
@@ -155,8 +160,8 @@ parseEntity =
     parseEntity' DataProperty "DataProperty" <|?>
     parseEntity' NamedIndividual "NamedIndividual"
 
--- # Axioms
--- ## Declaration
+{- # Axioms
+## Declaration -}
 
 parseDeclaration :: CharParser st Axiom
 parseDeclaration = parseEnclosedWithKeyword "Declaration" $ do
@@ -179,7 +184,7 @@ parseObjectComplementOf :: CharParser st ClassExpression
 parseObjectComplementOf = parseEnclosedWithKeyword "ObjectComplementOf" $
     ObjectComplementOf <$> parseClassExpression
 
-parseObjectOneOf ::  CharParser st ClassExpression
+parseObjectOneOf :: CharParser st ClassExpression
 parseObjectOneOf = parseEnclosedWithKeyword "ObjectOneOf" $
     ObjectOneOf <$> many1Skip parseIndividual
 
@@ -194,7 +199,7 @@ parseObjectPropertyExpression :: CharParser st ObjectPropertyExpression
 parseObjectPropertyExpression =
     parseInverseObjectProperty <|?>
     parseObjectProperty
-    
+
 
 parseObjectSomeValuesFrom :: CharParser st ClassExpression
 parseObjectSomeValuesFrom = parseEnclosedWithKeyword "ObjectSomeValuesFrom" $ do
@@ -249,7 +254,7 @@ parseDataJunction' k t = parseEnclosedWithKeyword k $
     DataJunction t <$> manyNSkip 2 parseDataRange
 
 parseDataJunction :: CharParser st DataRange
-parseDataJunction = 
+parseDataJunction =
     parseDataJunction' "DataUnionOf" UnionOf <|?>
     parseDataJunction' "DataIntersectionOf" IntersectionOf
 
@@ -262,7 +267,7 @@ parseDataOneOf = parseEnclosedWithKeyword "DataOneOf" $
     DataOneOf <$> many1Skip parseLiteral
 
 parseDatatypeResComponent :: CharParser st (ConstrainingFacet, RestrictionValue)
-parseDatatypeResComponent = 
+parseDatatypeResComponent =
     (,) <$>
     (iriCurie << skips) <*>
     (parseLiteral)
@@ -275,7 +280,7 @@ parseDatatypeRestriction = parseEnclosedWithKeyword "DatatypeRestriction" $ do
     return $ DataTypeRest dataType restrictions
 
 parseDataRange :: CharParser st DataRange
-parseDataRange = 
+parseDataRange =
     parseDataJunction <|?>
     parseDataComplementOf <|?>
     parseDataOneOf <|?>
@@ -293,17 +298,17 @@ parseDataCardinality = DataCardinality <$> (
           b = parseDataRange
 
 parseDataSomeValuesFrom :: CharParser st ClassExpression
-parseDataSomeValuesFrom = parseEnclosedWithKeyword "DataSomeValuesFrom" $ 
+parseDataSomeValuesFrom = parseEnclosedWithKeyword "DataSomeValuesFrom" $
     DataValuesFrom SomeValuesFrom <$> many1Skip iriCurie <*> parseDataRange
-    
+
 parseDataAllValuesFrom :: CharParser st ClassExpression
-parseDataAllValuesFrom = parseEnclosedWithKeyword "DataAllValuesFrom" $ 
+parseDataAllValuesFrom = parseEnclosedWithKeyword "DataAllValuesFrom" $
     DataValuesFrom AllValuesFrom <$> many1Skip iriCurie <*> parseDataRange
 
 parseDataHasValue :: CharParser st ClassExpression
 parseDataHasValue = parseEnclosedWithKeyword "DataHasValue" $
     DataHasValue <$> iriCurie <*> parseLiteral
-    
+
 
 parseClassExpression :: CharParser st ClassExpression
 parseClassExpression =
@@ -334,9 +339,27 @@ parseSubClassOf = parseEnclosedWithKeyword "SubClassOf" $ do
     superClassExpression <- parseClassExpression
     return $ SubClassOf annotations subClassExpression superClassExpression
 
+-- ## EquivalentClasses
+
+parseEquivalentClasses :: CharParser st ClassAxiom
+parseEquivalentClasses = parseEnclosedWithKeyword "EquivalentClasses" $
+    EquivalentClasses <$> parseAnnotations <*> manyNSkip 2 parseClassExpression
+
+-- ## DisjointUnion
+
+parseDisjointUnion :: CharParser st ClassAxiom
+parseDisjointUnion = parseEnclosedWithKeyword "DisjointUnion" $
+    DisjointUnion <$>
+    parseAnnotations <*>
+    (iriCurie << skips) <*>
+    manyNSkip 2 parseClassExpression
 
 parseClassAxiom :: CharParser st Axiom
-parseClassAxiom = ClassAxiom_ <$> parseSubClassOf
+parseClassAxiom = ClassAxiom_ <$> (
+        parseSubClassOf <|?>
+        parseEquivalentClasses <|?>
+        parseDisjointUnion
+    )
 
 parseAxiom :: CharParser st Axiom
 parseAxiom = try parseDeclaration <|> try parseClassAxiom
@@ -358,11 +381,25 @@ parseOntology = parseEnclosedWithKeyword "Ontology" $ do
 
 -- | Parses an OntologyDocument from Owl2 Functional Syntax
 parseOntologyDocument :: CharParser st OntologyDocument
-parseOntologyDocument = 
+parseOntologyDocument =
     OntologyDocument <$>
     manySkip parsePrefixDeclaration <*>
     (skips >> parseOntology)
 
+
+-- ** TESTING PURPOSES ONLY **
+pta :: IO()
+pta = do
+    files <- getDirectoryContents "./OWL2/tests"
+    let fs = filter (isSuffixOf ".ofn") files
+    foldr (\f p -> do
+            p
+            putStr ("Testing " ++ f ++ "...")
+            content <- readFile ("./OWL2/tests/" ++ f)
+            let res = parse parseOntologyDocument f content
+            putStrLn $ either (const "Failed") (const "Success") res
+        ) (return ()) fs
+    return ()
 
 pt :: IO ()
 pt = do
