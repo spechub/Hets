@@ -512,13 +512,37 @@ parseDataTypeDefinition = parseEnclosedWithKeyword "DatatypeDefinition" $
     (iriCurie << skips) <*>
     (parseDataRange << skips)
 
+-- ## HasKey
+parseHasKey :: CharParser st Axiom
+parseHasKey = parseEnclosedWithKeyword "HasKey" $ do
+    annotations <- parseAnnotations
+    skips
+    classExpr <- parseClassExpression
+    skips
+    char '('
+    skips
+    objectPropertyExprs <- manySkip parseObjectPropertyExpression
+    skips
+    char ')'
+    skips
+    char '('
+    skips
+    dataPropertyExprs <- manySkip iriCurie
+    skips
+    char ')'
+    skips
+    char ')'
+    return $ HasKey annotations classExpr objectPropertyExprs dataPropertyExprs
+
+
 parseAxiom :: CharParser st Axiom
 parseAxiom =
     parseDeclaration <|?>
     parseClassAxiom <|?>
     parseObjectPropertyAxiom <|?>
     parseDataPropertyAxiom <|?>
-    parseDataTypeDefinition
+    parseDataTypeDefinition <|?>
+    parseHasKey
 
 
 parseOntology :: CharParser st Ontology
