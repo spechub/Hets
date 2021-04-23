@@ -504,13 +504,21 @@ parseDataPropertyAxiom = DataPropertyAxiom <$> (
         parseFunctionalDataProperty
     )
 
+-- ## Data Type Definition
+parseDataTypeDefinition :: CharParser st Axiom
+parseDataTypeDefinition = parseEnclosedWithKeyword "DatatypeDefinition" $
+    DatatypeDefinition <$>
+    parseAnnotations <*>
+    (iriCurie << skips) <*>
+    (parseDataRange << skips)
 
 parseAxiom :: CharParser st Axiom
 parseAxiom =
     parseDeclaration <|?>
     parseClassAxiom <|?>
     parseObjectPropertyAxiom <|?>
-    parseDataPropertyAxiom
+    parseDataPropertyAxiom <|?>
+    parseDataTypeDefinition
 
 
 parseOntology :: CharParser st Ontology
