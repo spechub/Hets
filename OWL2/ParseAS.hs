@@ -142,7 +142,7 @@ parseAnnotations :: CharParser st [Annotation]
 parseAnnotations = manySkip parseAnnotation
 
 parseAnnotation :: CharParser st Annotation
-parseAnnotation = (flip (<?>)) "Annotation" $ 
+parseAnnotation = (flip (<?>)) "Annotation" $
     parseEnclosedWithKeyword "Annotation" $ do
         an <- (many (try parseAnnotation) << skips)
         skips
