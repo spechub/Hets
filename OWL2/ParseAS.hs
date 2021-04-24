@@ -93,7 +93,7 @@ parseDirectlyImportsDocument :: CharParser st IRI
 parseDirectlyImportsDocument = parseEnclosedWithKeyword "Import" parseIRI <?>
     "Import"
 
-followedBy :: CharParser st () -> CharParser st a -> CharParser st a
+followedBy :: CharParser st b -> CharParser st a -> CharParser st a
 followedBy cond p = try $ do
     r <- p
     lookAhead cond
@@ -323,13 +323,21 @@ parseDataCardinality = DataCardinality <$> (
           a = parseIRI
           b = parseDataRange
 
+
+
 parseDataSomeValuesFrom :: CharParser st ClassExpression
-parseDataSomeValuesFrom = parseEnclosedWithKeyword "DataSomeValuesFrom" $
-    DataValuesFrom SomeValuesFrom <$> many1Skip parseIRI <*> parseDataRange
+parseDataSomeValuesFrom = parseEnclosedWithKeyword "DataSomeValuesFrom" $ do
+    exprs <- many1 (followedBy (parseDataRange << skips) (parseIRI << skips))
+    skips
+    range <- parseDataRange
+    return $ DataValuesFrom SomeValuesFrom exprs range
 
 parseDataAllValuesFrom :: CharParser st ClassExpression
-parseDataAllValuesFrom = parseEnclosedWithKeyword "DataAllValuesFrom" $
-    DataValuesFrom AllValuesFrom <$> many1Skip parseIRI <*> parseDataRange
+parseDataAllValuesFrom = parseEnclosedWithKeyword "DataAllValuesFrom" $ do
+    exprs <- many1 (followedBy (parseDataRange << skips) (parseIRI << skips))
+    skips
+    range <- parseDataRange
+    return $ DataValuesFrom AllValuesFrom exprs range
 
 parseDataHasValue :: CharParser st ClassExpression
 parseDataHasValue = parseEnclosedWithKeyword "DataHasValue" $
