@@ -324,7 +324,6 @@ parseDataCardinality = DataCardinality <$> (
           b = parseDataRange
 
 
-
 parseDataSomeValuesFrom :: CharParser st ClassExpression
 parseDataSomeValuesFrom = parseEnclosedWithKeyword "DataSomeValuesFrom" $ do
     exprs <- many1 (followedBy (parseDataRange << skips) (parseIRI << skips))
