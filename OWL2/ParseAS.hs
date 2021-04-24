@@ -12,40 +12,67 @@ import Text.ParserCombinators.Parsec
 
 import Data.Char
 
+{-| @p <|?> q@ behaves like @<|>@ but pretends it hasn't consumed any input
+when an options failes. -}
 (<|?>) :: (GenParser t st a ) -> (GenParser t st a) -> GenParser t st a
 p <|?> q = try p <|> try q
 infixr 1 <|?>
 
+{-| @manySkip p@ parses 0 or more occurences of @p@ while skipping spaces 
+(and comments) inbetween -}
 manySkip :: CharParser st a -> CharParser st [a]
 manySkip p = many (p << skips)
 
+{-| @many1Skip p@ parses 1 or more occurences of @p@ while skipping spaces
+(and comments) inbetween -}
 many1Skip :: CharParser st a -> CharParser st [a]
 many1Skip p = many1 (p << skips)
 
+{-| @manyNSkip n p@ parses @n@ or more occurences of @p@ while skipping spaces
+(and comments) inbetween -}
 manyNSkip :: Int -> CharParser st a -> CharParser st [a]
 manyNSkip n p =
     foldr (\ _ r -> (p << skips) <:> r) (return []) [1 .. n] <++>
     many (p << skips)
 
--- | parses a comment
+-- | @followedBy c p@ first parses @p@ then looks ahead for @c@. Doesn't consume
+-- | any input on failure.
+followedBy :: CharParser st b -> CharParser st a -> CharParser st a
+followedBy cond p = try $ do
+    r <- p
+    lookAhead cond
+    return r
+
+-- | Performs an arbitrary lookahead over choices of parsers
+arbitraryLookaheadOption :: [CharParser st a] -> CharParser st a
+arbitraryLookaheadOption p = lookAhead $ choice (try <$> p)
+
+-- | alias for @return Nothing@
+never :: CharParser st (Maybe a)
+never = return Nothing
+
+-- # Basic constructs
+
+-- | Parses a comment
 comment :: CharParser st String
 comment = try $ do
     char '#'
     manyTill anyChar newlineOrEof
 
 
--- | Skips whitespaces comments and nested comments
+-- | Skips whitespaces and comments
 skips :: CharParser st ()
 skips = (skipMany
         (forget space <|> forget comment <?> ""))
 
 
--- | plain string parser with skip
+-- | Parses plain string with skip
 keyword :: String -> CharParser st ()
 keyword s = do
     skips
     try (string s >> notFollowedBy alphaNum)
 
+-- | Parses a full iri
 fullIri :: CharParser st IRI
 fullIri = angles iriParser
 
@@ -56,13 +83,17 @@ ncNameStart c = isAlpha c || c == '_'
 ncNameChar :: Char -> Bool
 ncNameChar c = isAlphaNum c || elem c ".+-_\183"
 
-parseIRI :: CharParser st IRI
-parseIRI = iriCurie <?> "IRI"
-
+-- | Parses a prefix name (PNAME_NS of SPARQL)
 prefix :: CharParser st String
 prefix = option "" (satisfy ncNameStart <:> many (satisfy ncNameChar))
     <++> string ":"
 
+-- | Parses an abbreviated or full iri
+parseIRI :: CharParser st IRI
+parseIRI = iriCurie <?> "IRI"
+
+-- | @parseEnclosedWithKeyword k p@ parses the keyword @k@ followed @p@
+-- | enclosed in parentheses. Skips spaces and comments before and after @p@.
 parseEnclosedWithKeyword :: String -> CharParser st a -> CharParser st a
 parseEnclosedWithKeyword s p = do
     keyword s
@@ -73,7 +104,6 @@ parseEnclosedWithKeyword s p = do
     skips
     char ')'
     return r
-
 
 parsePrefixDeclaration :: CharParser st PrefixDeclaration
 parsePrefixDeclaration = parseEnclosedWithKeyword "Prefix" $ do
@@ -88,28 +118,25 @@ parseDirectlyImportsDocument :: CharParser st IRI
 parseDirectlyImportsDocument = parseEnclosedWithKeyword "Import" parseIRI <?>
     "Import"
 
-followedBy :: CharParser st b -> CharParser st a -> CharParser st a
-followedBy cond p = try $ do
-    r <- p
-    lookAhead cond
-    return r
+-- # Entities, Literals, and Individuals 
 
-parseAnonymousIndividual :: CharParser st AnonymousIndividual
-parseAnonymousIndividual = do
-    string "_:"
-    (pn_chars_u <|?> digit) <:>
-        (many (pn_chars <|?> followedBy (forget pn_chars) (char '.')))
-    where pn_chars_base = letter
-          pn_chars_u = pn_chars_base <|?> char '_'
-          pn_chars = pn_chars_u <|?> char '-' <|?> digit
+-- ## Entities
+parseEntity' :: EntityType -> String -> CharParser st Entity
+parseEntity' t k = parseEnclosedWithKeyword k $ do
+    iri <- parseIRI
+    return $ mkEntity t iri
 
+parseEntity :: CharParser st Entity
+parseEntity =
+    parseEntity' Class "Class" <|?>
+    parseEntity' Datatype "Datatype" <|?>
+    parseEntity' ObjectProperty "ObjectProperty" <|?>
+    parseEntity' DataProperty "DataProperty" <|?>
+    parseEntity' AnnotationProperty "AnnotationProperty" <|?>
+    parseEntity' NamedIndividual "NamedIndividual" <?>
+    "Entity"
 
-parseIndividual :: CharParser st Individual
-parseIndividual =
-    NamedIndividual_ <$> parseIRI <|?>
-    AnonymousIndividual <$> parseAnonymousIndividual <?>
-    "Individual"
-
+-- ## Literals
 
 parseTypedLiteral :: CharParser st Literal
 parseTypedLiteral = do
@@ -131,6 +158,25 @@ parseUntypedLiteral = do
 parseLiteral :: CharParser st Literal
 parseLiteral = parseTypedLiteral <|?> parseUntypedLiteral <?> "Literal"
 
+-- ## Individuals
+
+parseAnonymousIndividual :: CharParser st AnonymousIndividual
+parseAnonymousIndividual = do
+    string "_:"
+    (pn_chars_u <|?> digit) <:>
+        (many (pn_chars <|?> followedBy (forget pn_chars) (char '.')))
+    where pn_chars_base = letter
+          pn_chars_u = pn_chars_base <|?> char '_'
+          pn_chars = pn_chars_u <|?> char '-' <|?> digit
+
+
+parseIndividual :: CharParser st Individual
+parseIndividual =
+    NamedIndividual_ <$> parseIRI <|?>
+    AnonymousIndividual <$> parseAnonymousIndividual <?>
+    "Individual"
+
+-- # Annotations
 parseAnnotationValue :: CharParser st AnnotationValue
 parseAnnotationValue =
      (parseLiteral >>= return . AnnValLit) <|?>
@@ -151,12 +197,6 @@ parseAnnotation = (flip (<?>)) "Annotation" $
         v <- parseAnnotationValue
         return $ Annotation an property v
 
-arbitraryLookaheadOption :: [CharParser st a] -> CharParser st a
-arbitraryLookaheadOption p = lookAhead $ choice (try <$> p)
-
-never :: CharParser st (Maybe a)
-never = return Nothing
-
 parseIriIfNotImportOrAxiomOrAnnotation :: CharParser st (Maybe IRI)
 parseIriIfNotImportOrAxiomOrAnnotation =
     (arbitraryLookaheadOption [
@@ -166,20 +206,48 @@ parseIriIfNotImportOrAxiomOrAnnotation =
     ] >> never) <|>
     optionMaybe parseIRI
 
-parseEntity' :: EntityType -> String -> CharParser st Entity
-parseEntity' t k = parseEnclosedWithKeyword k $ do
-    iri <- parseIRI
-    return $ mkEntity t iri
 
-parseEntity :: CharParser st Entity
-parseEntity =
-    parseEntity' Class "Class" <|?>
-    parseEntity' Datatype "Datatype" <|?>
-    parseEntity' ObjectProperty "ObjectProperty" <|?>
-    parseEntity' DataProperty "DataProperty" <|?>
-    parseEntity' AnnotationProperty "AnnotationProperty" <|?>
-    parseEntity' NamedIndividual "NamedIndividual" <?>
-    "Entity"
+
+-- ## Data Range
+
+parseDataJunction' :: String -> JunctionType -> CharParser st DataRange
+parseDataJunction' k t = parseEnclosedWithKeyword k $
+    DataJunction t <$> manyNSkip 2 parseDataRange
+
+parseDataJunction :: CharParser st DataRange
+parseDataJunction =
+    parseDataJunction' "DataUnionOf" UnionOf <|?>
+    parseDataJunction' "DataIntersectionOf" IntersectionOf
+
+parseDataComplementOf :: CharParser st DataRange
+parseDataComplementOf = parseEnclosedWithKeyword "DataComplementOf" $
+    DataComplementOf <$> parseDataRange
+
+parseDataOneOf :: CharParser st DataRange
+parseDataOneOf = parseEnclosedWithKeyword "DataOneOf" $
+    DataOneOf <$> many1Skip parseLiteral
+
+parseDatatypeResComponent :: CharParser st (ConstrainingFacet, RestrictionValue)
+parseDatatypeResComponent =
+    (,) <$>
+    (parseIRI << skips) <*>
+    (parseLiteral)
+
+parseDatatypeRestriction :: CharParser st DataRange
+parseDatatypeRestriction = parseEnclosedWithKeyword "DatatypeRestriction" $ do
+    dataType <- parseIRI
+    skips
+    restrictions <- many1Skip parseDatatypeResComponent
+    return $ DataTypeRest dataType restrictions
+
+parseDataRange :: CharParser st DataRange
+parseDataRange =
+    parseDataJunction <|?>
+    parseDataComplementOf <|?>
+    parseDataOneOf <|?>
+    parseDatatypeRestriction <|?>
+    (DataType <$> parseIRI) <?>
+    "DataRange"
 
 {- # Axioms
 
@@ -192,7 +260,7 @@ parseDeclaration = parseEnclosedWithKeyword "Declaration" $ do
     entity <- parseEntity
     return $ Declaration annotations entity
 
--- ## ClassExpression
+-- ## ClassExpressions
 
 parseObjectIntersectionOf :: CharParser st ClassExpression
 parseObjectIntersectionOf = parseEnclosedWithKeyword "ObjectIntersectionOf" $
@@ -271,45 +339,6 @@ parseObjectCardinality = ObjectCardinality <$> (
     where cardinality s t = (parseCardinality' t s a b)
           a = parseObjectPropertyExpression
           b = parseClassExpression
-
-parseDataJunction' :: String -> JunctionType -> CharParser st DataRange
-parseDataJunction' k t = parseEnclosedWithKeyword k $
-    DataJunction t <$> manyNSkip 2 parseDataRange
-
-parseDataJunction :: CharParser st DataRange
-parseDataJunction =
-    parseDataJunction' "DataUnionOf" UnionOf <|?>
-    parseDataJunction' "DataIntersectionOf" IntersectionOf
-
-parseDataComplementOf :: CharParser st DataRange
-parseDataComplementOf = parseEnclosedWithKeyword "DataComplementOf" $
-    DataComplementOf <$> parseDataRange
-
-parseDataOneOf :: CharParser st DataRange
-parseDataOneOf = parseEnclosedWithKeyword "DataOneOf" $
-    DataOneOf <$> many1Skip parseLiteral
-
-parseDatatypeResComponent :: CharParser st (ConstrainingFacet, RestrictionValue)
-parseDatatypeResComponent =
-    (,) <$>
-    (parseIRI << skips) <*>
-    (parseLiteral)
-
-parseDatatypeRestriction :: CharParser st DataRange
-parseDatatypeRestriction = parseEnclosedWithKeyword "DatatypeRestriction" $ do
-    dataType <- parseIRI
-    skips
-    restrictions <- many1Skip parseDatatypeResComponent
-    return $ DataTypeRest dataType restrictions
-
-parseDataRange :: CharParser st DataRange
-parseDataRange =
-    parseDataJunction <|?>
-    parseDataComplementOf <|?>
-    parseDataOneOf <|?>
-    parseDatatypeRestriction <|?>
-    (DataType <$> parseIRI) <?>
-    "DataRange"
 
 parseDataCardinality :: CharParser st ClassExpression
 parseDataCardinality = DataCardinality <$> (
@@ -433,15 +462,6 @@ parseInverseObjectProperties =
     (parseObjectPropertyExpression << skips) <*>
     (parseObjectPropertyExpression << skips)
 
--- | Helper function for *C*ommon*O*bject*P*roperty*A*xioms
-parseCOPA :: (
-        AxiomAnnotations -> ObjectPropertyExpression -> ObjectPropertyAxiom
-    ) -> String -> CharParser st ObjectPropertyAxiom
-parseCOPA c s = parseEnclosedWithKeyword s $
-    c <$>
-    parseAnnotations <*>
-    (parseObjectPropertyExpression << skips)
-
 
 -- ### SubObjectPropertyOf
 parseObjectPropertyExpressionChain :: CharParser st PropertyExpressionChain
@@ -460,6 +480,16 @@ parseSubObjectPropertyOf = parseEnclosedWithKeyword "SubObjectPropertyOf" $
     SubObjectPropertyOf <$>
     parseAnnotations <*>
     (parseSubObjectPropertyExpression << skips) <*>
+    (parseObjectPropertyExpression << skips)
+
+
+-- | Helper function for *C*ommon*O*bject*P*roperty*A*xioms
+parseCOPA :: (
+        AxiomAnnotations -> ObjectPropertyExpression -> ObjectPropertyAxiom
+    ) -> String -> CharParser st ObjectPropertyAxiom
+parseCOPA c s = parseEnclosedWithKeyword s $
+    c <$>
+    parseAnnotations <*>
     (parseObjectPropertyExpression << skips)
 
 parseObjectPropertyAxiom :: CharParser st Axiom
