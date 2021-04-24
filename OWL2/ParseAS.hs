@@ -147,13 +147,14 @@ parseAnnotations :: CharParser st [Annotation]
 parseAnnotations = manySkip parseAnnotation
 
 parseAnnotation :: CharParser st Annotation
-parseAnnotation = parseEnclosedWithKeyword "Annotation" $ do
-    an <- (many (try parseAnnotation) << skips)
-    skips
-    property <- parseIRI
-    skips
-    v <- parseAnnotationValue
-    return $ Annotation an property v
+parseAnnotation = (flip (<?>)) "Annotation" $ 
+    parseEnclosedWithKeyword "Annotation" $ do
+        an <- (many (try parseAnnotation) << skips)
+        skips
+        property <- parseIRI
+        skips
+        v <- parseAnnotationValue
+        return $ Annotation an property v
 
 arbitraryLookaheadOption :: [CharParser st a] -> CharParser st a
 arbitraryLookaheadOption p = lookAhead $ choice (try <$> p)
@@ -161,10 +162,11 @@ arbitraryLookaheadOption p = lookAhead $ choice (try <$> p)
 never :: CharParser st (Maybe a)
 never = return Nothing
 
-parseIriIfNotImportOrAxiom :: CharParser st (Maybe IRI)
-parseIriIfNotImportOrAxiom =
+parseIriIfNotImportOrAxiomOrAnnotation :: CharParser st (Maybe IRI)
+parseIriIfNotImportOrAxiomOrAnnotation =
     (arbitraryLookaheadOption [
         forget parseDirectlyImportsDocument,
+        forget parseAnnotation,
         forget parseAxiom
     ] >> never) <|>
     optionMaybe parseIRI
@@ -180,6 +182,7 @@ parseEntity =
     parseEntity' Datatype "Datatype" <|?>
     parseEntity' ObjectProperty "ObjectProperty" <|?>
     parseEntity' DataProperty "DataProperty" <|?>
+    parseEntity' AnnotationProperty "AnnotationProperty" <|?>
     parseEntity' NamedIndividual "NamedIndividual" <?>
     "Entity"
 
@@ -651,9 +654,9 @@ parseAxiom =
 
 parseOntology :: CharParser st Ontology
 parseOntology = parseEnclosedWithKeyword "Ontology" $ do
-    ontologyIri <- parseIriIfNotImportOrAxiom
+    ontologyIri <- parseIriIfNotImportOrAxiomOrAnnotation
     skips
-    versionIri <- parseIriIfNotImportOrAxiom
+    versionIri <- parseIriIfNotImportOrAxiomOrAnnotation
     skips
     imports <- manySkip parseDirectlyImportsDocument
     skips
