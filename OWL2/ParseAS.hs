@@ -565,8 +565,6 @@ parseHasKey = parseEnclosedWithKeyword "HasKey" $ do
     dataPropertyExprs <- manySkip parseIRI
     skips
     char ')'
-    skips
-    char ')'
     return $ HasKey annotations classExpr objectPropertyExprs dataPropertyExprs
 
 -- ## Assertion
