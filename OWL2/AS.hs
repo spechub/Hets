@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {- |
 Module      :  ./OWL2/AS.hs
 Copyright   :  (c) C. Maeder, Felix Gabriel Mance
@@ -59,7 +60,8 @@ type ObjectProperty = IRI
 type DataProperty = IRI
 type DirectlyImportsDocuments = [IRI]
 type AnnotationProperty = IRI
-data Individual = NamedIndividual_ NamedIndividual | AnonymousIndividual AnonymousIndividual -- edited
+data Individual = NamedIndividual_ NamedIndividual | AnonymousIndividual AnonymousIndividual
+  deriving (Eq, Ord, Data)
 type NamedIndividual = IRI
 type AnonymousIndividual = String
 
@@ -371,7 +373,7 @@ instance GetRange Entity where
   getRange = iriPos . cutIRI
   rangeSpan = iRIRange . cutIRI
 
-data Declaration = Declaration_ AxiomAnnotations EntityType -- edited
+data Declaration = Declaration_ AxiomAnnotations EntityType
 data EntityType =
     Datatype
   | Class
@@ -525,7 +527,7 @@ data ObjectPropertyExpression = ObjectProp ObjectProperty
   | ObjectInverseOf InverseObjectProperty
         deriving (Show, Eq, Ord, Typeable, Data)
 
-objPropToIRI :: ObjectPropertyExpression -> Individual
+objPropToIRI :: ObjectPropertyExpression -> IRI
 objPropToIRI opExp = case opExp of
     ObjectProp u -> u
     ObjectInverseOf objProp -> objPropToIRI objProp
@@ -535,8 +537,8 @@ type DataPropertyExpression = DataProperty
 -- * DATA RANGES
 
 data DataRange =
-    DataTypeRest Datatype [(ConstrainingFacet, RestrictionValue)] -- edited
-  | DataType Datatype  -- added
+    DataTypeRest Datatype [(ConstrainingFacet, RestrictionValue)]
+  | DataType Datatype
   | DataJunction JunctionType [DataRange]
   | DataComplementOf DataRange
   | DataOneOf [Literal]
@@ -586,7 +588,7 @@ type SubAnnotationProperty = AnnotationProperty
 type SuperAnnotationProperty  = AnnotationProperty
 
 
--- * AXIOMS, added
+-- * AXIOMS
 
 data Axiom =
   Declaration
@@ -606,12 +608,14 @@ type SubClassExpression = ClassExpression
 type SuperClassExpression = ClassExpression
 
 data DisjointClassExpression = DisjClExpr [ClassExpression]
+  deriving (Eq, Ord, Data)
 
 data ClassAxiom =
   SubClassOf AxiomAnnotations SubClassExpression SuperClassExpression
   | EquivalentClasses AxiomAnnotations [ClassExpression]
   | DisjointClasses AxiomAnnotations [ClassExpression]
   | DisjointUnion AxiomAnnotations Class DisjointClassExpression
+  deriving (Eq, Ord, Data)
 
 -- ObjectAxiom
 
@@ -629,6 +633,7 @@ data ObjectPropertyAxiom =
   | IrreflexiveObjectProperty AxiomAnnotations ObjectPropertyExpression
   | AssymetricObjectProperty AxiomAnnotations ObjectPropertyExpression
   | TransitiveObjectProperty AxiomAnnotations ObjectPropertyExpression
+  deriving (Eq, Ord, Data)
 
 -- SubObjectPropertyOf
 
@@ -638,6 +643,7 @@ type SuperObjectPropertyExpression = ObjectPropertyExpression
 data SubObjectPropertyExpression =
     SubObjPropExpr_obj ObjectPropertyExpression
   | SubObjPropExpr_exprchain PropertyExpressionChain
+  deriving (Eq, Ord, Data)
 
 -- DataPropertyAxiom
 data DataPropertyAxiom = 
@@ -647,6 +653,7 @@ data DataPropertyAxiom =
   | DataPropertyDomain AxiomAnnotations DataPropertyExpression ClassExpression
   | DataPropertyRange AxiomAnnotations DataPropertyExpression DataRange
   | FunctionalDataProperty AxiomAnnotations DataPropertyExpression
+  deriving (Eq, Ord, Data)
 
 type SubDataPropertyExpression = DataPropertyExpression
 type SuperDataPropertyExpression = DataPropertyExpression
@@ -675,3 +682,5 @@ data PrefixDeclaration = PrefixDeclaration PrefixName IRI
 type PrefixName = String
 
 data Ontology = Ontology (Maybe OntologyIRI) (Maybe VersionIRI) DirectlyImportsDocuments OntologyAnnotations [Axiom]
+
+
