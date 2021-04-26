@@ -60,7 +60,9 @@ type ObjectProperty = IRI
 type DataProperty = IRI
 type DirectlyImportsDocuments = [IRI]
 type AnnotationProperty = IRI
-data Individual = NamedIndividual_ NamedIndividual | AnonymousIndividual AnonymousIndividual
+data Individual =
+  NamedIndividual_ NamedIndividual |
+  AnonymousIndividual AnonymousIndividual
   deriving (Eq, Ord, Data)
 type NamedIndividual = IRI
 type AnonymousIndividual = String
@@ -219,12 +221,12 @@ preDefMaps sl pref = let
  in (sl, pref, sp)
 
 checkPredefAux :: PreDefMaps -> IRI -> Maybe (String, String)
-checkPredefAux (sl, pref, exPref) u = 
+checkPredefAux (sl, pref, exPref) u =
   let lp = show $ iriPath u
       res = Just (pref, lp)
       testString = case iriScheme u of
                     "" -> prefixName u
-                    _ -> iriScheme u 
+                    _ -> iriScheme u
   in case testString of -- was prefixName
     "http:" -> case stripPrefix "//www." lp of
         Just q -> case stripPrefix "w3.org/" q of
@@ -234,7 +236,7 @@ checkPredefAux (sl, pref, exPref) u =
             Nothing -> Nothing
         Nothing -> Nothing
     pu | elem lp sl -> case pu of
-      "" -> let ex = iriToStringUnsecure u in 
+      "" -> let ex = iriToStringUnsecure u in
             case stripPrefix "http://www." ex of
               Just r | r == "w3.org/" ++ exPref ++ lp -- r == lp
                   -> res
@@ -276,7 +278,7 @@ stripReservedPrefix = idToIRI . uriToId
 uriToId :: IRI -> Id
 uriToId i =
     if (prefixName i `elem` ["", "xsd", "rdf", "rdfs", "owl"])
-       || (   null (iriScheme i)
+       || ( null (iriScheme i)
            && null (iriQuery i)
            && null (iriFragment i)
            && isNothing (iriAuthority i))
@@ -373,7 +375,6 @@ instance GetRange Entity where
   getRange = iriPos . cutIRI
   rangeSpan = iRIRange . cutIRI
 
-data Declaration = Declaration_ AxiomAnnotations EntityType
 data EntityType =
     Datatype
   | Class
@@ -407,11 +408,11 @@ pairSymbols (Entity lb1 k1 i1) (Entity lb2 k2 i2) =
             _ -> lbl1
         pairIRIs iri1 iri2 = nullIRI
           { prefixName = prefixName iri1
-          , iriPath = if rest (show $ iriPath iri1) == 
-                            rest (show $ iriPath iri2) 
-                          then iriPath iri1 
+          , iriPath = if rest (show $ iriPath iri1) ==
+                            rest (show $ iriPath iri2)
+                          then iriPath iri1
                           else appendId (iriPath iri1) (iriPath iri2)
-          } -- TODO: improve, see #1597 
+          } -- TODO: improve, see #1597
     return $ Entity (pairLables lb1 lb2) k1 $ pairIRIs i1 i2
 
 -- * LITERALS
@@ -555,7 +556,7 @@ data ClassExpression =
   | ObjectHasValue ObjectPropertyExpression Individual
   | ObjectHasSelf ObjectPropertyExpression
   | ObjectCardinality (Cardinality ObjectPropertyExpression ClassExpression)
-  | DataValuesFrom QuantifierType DataPropertyExpression DataRange
+  | DataValuesFrom QuantifierType [DataPropertyExpression] DataRange
   | DataHasValue DataPropertyExpression Literal
   | DataCardinality (Cardinality DataPropertyExpression DataRange)
     deriving (Show, Eq, Ord, Typeable, Data)
@@ -574,31 +575,44 @@ data AnnotationValue =
   | AnnValLit Literal
     deriving (Show, Eq, Ord, Typeable, Data)
 
-data AnnotationAxioms = 
-    AnnotationAssertion AxiomAnnotations AnnotationProperty AnnotationSubject AnnotationValue 
-  | SubAnnotationPropertyOf AxiomAnnotations SubAnnotationProperty SuperAnnotationProperty 
+data AnnotationAxiom =
+    AnnotationAssertion
+      AxiomAnnotations
+      AnnotationProperty
+      AnnotationSubject
+      AnnotationValue
+  | SubAnnotationPropertyOf
+    AxiomAnnotations
+    SubAnnotationProperty
+    SuperAnnotationProperty
   | AnnotationPropertyDomain AxiomAnnotations AnnotationProperty IRI
   | AnnotationPropertyRange AxiomAnnotations AnnotationProperty IRI
+    deriving (Eq, Ord, Data)
 
 -- Annotation Assertion
 data AnnotationSubject = AnnSubIri IRI | AnnSubAnInd AnonymousIndividual
+    deriving ( Eq, Ord, Data)
 
 -- Annotation Subproperties
 type SubAnnotationProperty = AnnotationProperty
-type SuperAnnotationProperty  = AnnotationProperty
+type SuperAnnotationProperty = AnnotationProperty
 
 
 -- * AXIOMS
 
 data Axiom =
-  Declaration
-  | ClassAxiom_ ClassAxiom
+  Declaration AxiomAnnotations Entity
+  | ClassAxiom ClassAxiom
   | ObjectPropertyAxiom ObjectPropertyAxiom
   | DataPropertyAxiom DataPropertyAxiom
   | DatatypeDefinition AxiomAnnotations Datatype DataRange
-  | HasKey AxiomAnnotations ClassExpression [ObjectPropertyExpression]  [DataPropertyExpression]
-  | Assertion
-  | Axiom
+  | HasKey
+     AxiomAnnotations
+     ClassExpression
+     [ObjectPropertyExpression]
+     [DataPropertyExpression]
+  | Assertion Assertion
+  | AnnotationAxiom AnnotationAxiom
   deriving (Show, Eq, Ord, Typeable, Data)
 
 -- ClassAxiom
@@ -607,9 +621,7 @@ type AxiomAnnotations = [Annotation]
 type SubClassExpression = ClassExpression
 type SuperClassExpression = ClassExpression
 
-data DisjointClassExpression = DisjClExpr [ClassExpression]
-  deriving (Eq, Ord, Data)
-
+type DisjointClassExpression = [ClassExpression]
 data ClassAxiom =
   SubClassOf AxiomAnnotations SubClassExpression SuperClassExpression
   | EquivalentClasses AxiomAnnotations [ClassExpression]
@@ -620,18 +632,30 @@ data ClassAxiom =
 -- ObjectAxiom
 
 data ObjectPropertyAxiom =
-  SubObjectPropertyOf AxiomAnnotations SubObjectPropertyExpression SuperObjectPropertyExpression
+  SubObjectPropertyOf
+    AxiomAnnotations
+    SubObjectPropertyExpression
+    SuperObjectPropertyExpression
   | EquivalentObjectProperties AxiomAnnotations [ObjectPropertyExpression]
   | DisjointObjectProperties AxiomAnnotations [ObjectPropertyExpression]
-  | InverseObjectProperties AxiomAnnotations ObjectPropertyExpression ObjectPropertyExpression
-  | ObjectPropertyDomain AxiomAnnotations ObjectPropertyExpression ClassExpression
-  | ObjectPropertyRange AxiomAnnotations ObjectPropertyExpression ClassExpression
-  | FunctionalObjectProperty AxiomAnnotations ObjectPropertyExpression 
+  | InverseObjectProperties
+      AxiomAnnotations
+      ObjectPropertyExpression
+      ObjectPropertyExpression
+  | ObjectPropertyDomain
+      AxiomAnnotations
+      ObjectPropertyExpression
+      ClassExpression
+  | ObjectPropertyRange
+      AxiomAnnotations
+      ObjectPropertyExpression
+      ClassExpression
+  | FunctionalObjectProperty AxiomAnnotations ObjectPropertyExpression
   | InverseFunctionalObjectProperty AxiomAnnotations ObjectPropertyExpression
   | ReflexiveObjectProperty AxiomAnnotations ObjectPropertyExpression
   | IrreflexiveObjectProperty AxiomAnnotations ObjectPropertyExpression
   | SymmetricObjectProperty AxiomAnnotations ObjectPropertyExpression
-  | AssymetricObjectProperty AxiomAnnotations ObjectPropertyExpression
+  | AsymmetricObjectProperty AxiomAnnotations ObjectPropertyExpression
   | TransitiveObjectProperty AxiomAnnotations ObjectPropertyExpression
   deriving (Eq, Ord, Data)
 
@@ -646,10 +670,13 @@ data SubObjectPropertyExpression =
   deriving (Eq, Ord, Data)
 
 -- DataPropertyAxiom
-data DataPropertyAxiom = 
-  SubDataPropertyOf AxiomAnnotations SubDataPropertyExpression SuperDataPropertyExpression
-  | EquivalentDataProperties AxiomAnnotations [DataPropertyExpression] -- at least 2
-  | DisjointDataProperties AxiomAnnotations [DataPropertyExpression] -- at least 2
+data DataPropertyAxiom =
+  SubDataPropertyOf AxiomAnnotations SubDataPropertyExpression
+    SuperDataPropertyExpression
+  | EquivalentDataProperties AxiomAnnotations [DataPropertyExpression]
+      -- at least 2
+  | DisjointDataProperties AxiomAnnotations [DataPropertyExpression]
+    -- at least 2
   | DataPropertyDomain AxiomAnnotations DataPropertyExpression ClassExpression
   | DataPropertyRange AxiomAnnotations DataPropertyExpression DataRange
   | FunctionalDataProperty AxiomAnnotations DataPropertyExpression
@@ -660,20 +687,23 @@ type SuperDataPropertyExpression = DataPropertyExpression
 
 
 -- Assertions
-data Assertion = 
+data Assertion =
   SameIndividual AxiomAnnotations [Individual]
   | DifferentIndividuals AxiomAnnotations [Individual]
   | ClassAssertion AxiomAnnotations ClassExpression Individual
-  | ObjectPropertyAssertion AxiomAnnotations ObjectPropertyExpression SourceIndividual TargetIndividual  
-  | NegativeObjectPropertyAssertion AxiomAnnotations ObjectPropertyExpression SourceIndividual TargetIndividual
-  | DataPropertyAssertion AxiomAnnotations DataPropertyExpression SourceIndividual TargetValue
-  | NegativeDataPropertyAssertion AxiomAnnotations DataPropertyExpression SourceIndividual TargetValue
+  | ObjectPropertyAssertion AxiomAnnotations ObjectPropertyExpression
+    SourceIndividual TargetIndividual
+  | NegativeObjectPropertyAssertion AxiomAnnotations ObjectPropertyExpression
+    SourceIndividual TargetIndividual
+  | DataPropertyAssertion AxiomAnnotations DataPropertyExpression
+    SourceIndividual TargetValue
+  | NegativeDataPropertyAssertion AxiomAnnotations DataPropertyExpression
+    SourceIndividual TargetValue
+  deriving (Eq, Ord, Data)
 
 type SourceIndividual = Individual
 type TargetIndividual = Individual
 type TargetValue = Literal
-
-
 
 
 -- Root
@@ -681,6 +711,9 @@ data OntologyDocument = OntologyDocument [PrefixDeclaration] Ontology
 data PrefixDeclaration = PrefixDeclaration PrefixName IRI
 type PrefixName = String
 
-data Ontology = Ontology (Maybe OntologyIRI) (Maybe VersionIRI) DirectlyImportsDocuments OntologyAnnotations [Axiom]
-
-
+data Ontology = Ontology
+  (Maybe OntologyIRI)
+  (Maybe VersionIRI)
+  DirectlyImportsDocuments
+  OntologyAnnotations
+  [Axiom]
