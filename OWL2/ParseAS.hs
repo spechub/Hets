@@ -184,6 +184,9 @@ parseAnnotationValue =
      (parseAnonymousIndividual >>= return . AnnAnInd) <?>
      "AnnotationValue"
 
+parseAnnotationSubject :: CharParser st AnnotationSubject
+parseAnnotationSubject = (AnnSubAnInd <$> parseAnonymousIndividual) <|> (AnnSubIri <$> parseIRI)
+
 parseAnnotations :: CharParser st [Annotation]
 parseAnnotations = manySkip parseAnnotation
 
@@ -415,7 +418,7 @@ parseDisjointUnion = parseEnclosedWithKeyword "DisjointUnion" $
     manyNSkip 2 parseClassExpression
 
 parseClassAxiom :: CharParser st Axiom
-parseClassAxiom = ClassAxiom_ <$> (
+parseClassAxiom = ClassAxiom <$> (
         parseSubClassOf <|?>
         parseEquivalentClasses <|?>
         parseDisjointClasses <|?>
@@ -665,6 +668,20 @@ parseAssertion = Assertion <$> (
     )
 
 
+
+parseAnnotationAssertion :: CharParser st AnnotationAxiom
+parseAnnotationAssertion = parseEnclosedWithKeyword "AnnotationAssertion" $
+    AnnotationAssertion <$>
+    parseAnnotations <*>
+    parseIRI <*>
+    parseAnnotationSubject <*>
+    parseAnnotationValue
+
+parseAnnotationAxiom :: CharParser st Axiom
+parseAnnotationAxiom = AnnotationAxiom <$> (
+        parseAnnotationAssertion
+    )
+
 parseAxiom :: CharParser st Axiom
 parseAxiom =
     parseDeclaration <|?>
@@ -673,7 +690,8 @@ parseAxiom =
     parseDataPropertyAxiom <|?>
     parseDataTypeDefinition <|?>
     parseHasKey <|?>
-    parseAssertion <?>
+    parseAssertion <|?>
+    parseAnnotationAxiom <?>
     "Axiom"
 
 
