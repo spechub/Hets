@@ -575,11 +575,6 @@ data AnnotationValue =
   | AnnValLit Literal
     deriving (Show, Eq, Ord, Typeable, Data)
 
-<<<<<<< HEAD
-data AnnotationAxiom = 
-    AnnotationAssertion AxiomAnnotations AnnotationProperty AnnotationSubject AnnotationValue 
-  | SubAnnotationPropertyOf AxiomAnnotations SubAnnotationProperty SuperAnnotationProperty 
-=======
 data AnnotationAxiom =
     AnnotationAssertion
       AxiomAnnotations
@@ -590,7 +585,6 @@ data AnnotationAxiom =
     AxiomAnnotations
     SubAnnotationProperty
     SuperAnnotationProperty
->>>>>>> 812a60b5811412cde130b39e0ce6c6fceb6f1082
   | AnnotationPropertyDomain AxiomAnnotations AnnotationProperty IRI
   | AnnotationPropertyRange AxiomAnnotations AnnotationProperty IRI
     deriving (Eq, Ord, Data)
@@ -607,24 +601,16 @@ type SuperAnnotationProperty = AnnotationProperty
 -- * AXIOMS
 
 data Axiom =
-<<<<<<< HEAD
-  Declaration
-=======
   Declaration AxiomAnnotations Entity
->>>>>>> 812a60b5811412cde130b39e0ce6c6fceb6f1082
   | ClassAxiom ClassAxiom
   | ObjectPropertyAxiom ObjectPropertyAxiom
   | DataPropertyAxiom DataPropertyAxiom
   | DatatypeDefinition AxiomAnnotations Datatype DataRange
-<<<<<<< HEAD
-  | HasKey AxiomAnnotations ClassExpression [ObjectPropertyExpression] [DataPropertyExpression]
-=======
   | HasKey
      AxiomAnnotations
      ClassExpression
      [ObjectPropertyExpression]
      [DataPropertyExpression]
->>>>>>> 812a60b5811412cde130b39e0ce6c6fceb6f1082
   | Assertion Assertion
   | AnnotationAxiom AnnotationAxiom
   deriving (Show, Eq, Ord, Typeable, Data)
@@ -668,12 +654,7 @@ data ObjectPropertyAxiom =
   | InverseFunctionalObjectProperty AxiomAnnotations ObjectPropertyExpression
   | ReflexiveObjectProperty AxiomAnnotations ObjectPropertyExpression
   | SymmetricObjectProperty AxiomAnnotations ObjectPropertyExpression
-<<<<<<< HEAD
-  | IrreflexiveObjectProperty AxiomAnnotations ObjectPropertyExpression
-  | AssymetricObjectProperty AxiomAnnotations ObjectPropertyExpression
-=======
   | AsymmetricObjectProperty AxiomAnnotations ObjectPropertyExpression
->>>>>>> 812a60b5811412cde130b39e0ce6c6fceb6f1082
   | TransitiveObjectProperty AxiomAnnotations ObjectPropertyExpression
   deriving (Eq, Ord, Data)
 
