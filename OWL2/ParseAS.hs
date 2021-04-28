@@ -12,31 +12,31 @@ import Text.ParserCombinators.Parsec
 
 import Data.Char
 
-{-| @p <|?> q@ behaves like @<|>@ but pretends it hasn't consumed any input
+{- | @p <|?> q@ behaves like @<|>@ but pretends it hasn't consumed any input
 when an options failes. -}
 (<|?>) :: (GenParser t st a ) -> (GenParser t st a) -> GenParser t st a
 p <|?> q = try p <|> try q
 infixr 1 <|?>
 
-{-| @manySkip p@ parses 0 or more occurences of @p@ while skipping spaces 
+{- | @manySkip p@ parses 0 or more occurences of @p@ while skipping spaces
 (and comments) inbetween -}
 manySkip :: CharParser st a -> CharParser st [a]
 manySkip p = many (p << skips)
 
-{-| @many1Skip p@ parses 1 or more occurences of @p@ while skipping spaces
+{- | @many1Skip p@ parses 1 or more occurences of @p@ while skipping spaces
 (and comments) inbetween -}
 many1Skip :: CharParser st a -> CharParser st [a]
 many1Skip p = many1 (p << skips)
 
-{-| @manyNSkip n p@ parses @n@ or more occurences of @p@ while skipping spaces
+{- | @manyNSkip n p@ parses @n@ or more occurences of @p@ while skipping spaces
 (and comments) inbetween -}
 manyNSkip :: Int -> CharParser st a -> CharParser st [a]
 manyNSkip n p =
     foldr (\ _ r -> (p << skips) <:> r) (return []) [1 .. n] <++>
     many (p << skips)
 
--- | @followedBy c p@ first parses @p@ then looks ahead for @c@. Doesn't consume
--- | any input on failure.
+{- | @followedBy c p@ first parses @p@ then looks ahead for @c@. Doesn't consume
+any input on failure. -}
 followedBy :: CharParser st b -> CharParser st a -> CharParser st a
 followedBy cond p = try $ do
     r <- p
@@ -92,8 +92,8 @@ prefix = option "" (satisfy ncNameStart <:> many (satisfy ncNameChar))
 parseIRI :: CharParser st IRI
 parseIRI = iriCurie <?> "IRI"
 
--- | @parseEnclosedWithKeyword k p@ parses the keyword @k@ followed @p@
--- | enclosed in parentheses. Skips spaces and comments before and after @p@.
+{- | @parseEnclosedWithKeyword k p@ parses the keyword @k@ followed @p@
+enclosed in parentheses. Skips spaces and comments before and after @p@. -}
 parseEnclosedWithKeyword :: String -> CharParser st a -> CharParser st a
 parseEnclosedWithKeyword s p = do
     keyword s
@@ -118,7 +118,7 @@ parseDirectlyImportsDocument :: CharParser st IRI
 parseDirectlyImportsDocument = parseEnclosedWithKeyword "Import" parseIRI <?>
     "Import"
 
--- # Entities, Literals, and Individuals 
+-- # Entities, Literals, and Individuals
 
 -- ## Entities
 parseEntity' :: EntityType -> String -> CharParser st Entity
@@ -185,7 +185,9 @@ parseAnnotationValue =
      "AnnotationValue"
 
 parseAnnotationSubject :: CharParser st AnnotationSubject
-parseAnnotationSubject = (AnnSubAnInd <$> parseAnonymousIndividual) <|> (AnnSubIri <$> parseIRI)
+parseAnnotationSubject = 
+    (AnnSubAnInd <$> parseAnonymousIndividual) <|>
+    (AnnSubIri <$> parseIRI)
 
 parseAnnotations :: CharParser st [Annotation]
 parseAnnotations = manySkip parseAnnotation
@@ -208,7 +210,6 @@ parseIriIfNotImportOrAxiomOrAnnotation =
         forget parseAxiom
     ] >> never) <|>
     optionMaybe parseIRI
-
 
 
 -- ## Data Range
@@ -666,7 +667,6 @@ parseAssertion = Assertion <$> (
         parseNegativeDataPropertyAssertion <?>
         "Assertion"
     )
-
 
 
 parseAnnotationAssertion :: CharParser st AnnotationAxiom
