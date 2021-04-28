@@ -538,8 +538,7 @@ type DataPropertyExpression = DataProperty
 -- * DATA RANGES
 
 data DataRange =
-    DataTypeRest Datatype [(ConstrainingFacet, RestrictionValue)]
-  | DataType Datatype
+    DataType Datatype [(ConstrainingFacet, RestrictionValue)]
   | DataJunction JunctionType [DataRange]
   | DataComplementOf DataRange
   | DataOneOf [Literal]
