@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {- |
 Module      :  ./OWL2/AS.hs
 Copyright   :  (c) C. Maeder, Felix Gabriel Mance
@@ -52,12 +53,19 @@ type LexicalForm = String
 type LanguageTag = String
 type ImportIRI = IRI
 type OntologyIRI = IRI
+type VersionIRI = IRI
 type Class = IRI
 type Datatype = IRI
 type ObjectProperty = IRI
 type DataProperty = IRI
+type DirectlyImportsDocuments = [IRI]
 type AnnotationProperty = IRI
-type Individual = IRI
+data Individual =
+  NamedIndividual_ NamedIndividual |
+  AnonymousIndividual AnonymousIndividual
+  deriving (Eq, Ord, Data)
+type NamedIndividual = IRI
+type AnonymousIndividual = String
 
 data EquivOrDisjoint = Equivalent | Disjoint
     deriving (Show, Eq, Ord, Typeable, Data)
@@ -68,7 +76,7 @@ showEquivOrDisjoint ed = case ed of
     Disjoint -> disjointWithC
 
 data DomainOrRange = ADomain | ARange
-    deriving (Show, Eq, Ord, Typeable, Data)
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 showDomainOrRange :: DomainOrRange -> String
 showDomainOrRange dr = case dr of
@@ -76,7 +84,7 @@ showDomainOrRange dr = case dr of
     ARange -> rangeC
 
 data SameOrDifferent = Same | Different
-    deriving (Show, Eq, Ord, Typeable, Data)
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 showSameOrDifferent :: SameOrDifferent -> String
 showSameOrDifferent sd = case sd of
@@ -213,12 +221,12 @@ preDefMaps sl pref = let
  in (sl, pref, sp)
 
 checkPredefAux :: PreDefMaps -> IRI -> Maybe (String, String)
-checkPredefAux (sl, pref, exPref) u = 
+checkPredefAux (sl, pref, exPref) u =
   let lp = show $ iriPath u
       res = Just (pref, lp)
       testString = case iriScheme u of
                     "" -> prefixName u
-                    _ -> iriScheme u 
+                    _ -> iriScheme u
   in case testString of -- was prefixName
     "http:" -> case stripPrefix "//www." lp of
         Just q -> case stripPrefix "w3.org/" q of
@@ -228,7 +236,7 @@ checkPredefAux (sl, pref, exPref) u =
             Nothing -> Nothing
         Nothing -> Nothing
     pu | elem lp sl -> case pu of
-      "" -> let ex = iriToStringUnsecure u in 
+      "" -> let ex = iriToStringUnsecure u in
             case stripPrefix "http://www." ex of
               Just r | r == "w3.org/" ++ exPref ++ lp -- r == lp
                   -> res
@@ -270,7 +278,7 @@ stripReservedPrefix = idToIRI . uriToId
 uriToId :: IRI -> Id
 uriToId i =
     if (prefixName i `elem` ["", "xsd", "rdf", "rdfs", "owl"])
-       || (   null (iriScheme i)
+       || ( null (iriScheme i)
            && null (iriQuery i)
            && null (iriFragment i)
            && isNothing (iriAuthority i))
@@ -400,11 +408,11 @@ pairSymbols (Entity lb1 k1 i1) (Entity lb2 k2 i2) =
             _ -> lbl1
         pairIRIs iri1 iri2 = nullIRI
           { prefixName = prefixName iri1
-          , iriPath = if rest (show $ iriPath iri1) == 
-                            rest (show $ iriPath iri2) 
-                          then iriPath iri1 
+          , iriPath = if rest (show $ iriPath iri1) ==
+                            rest (show $ iriPath iri2)
+                          then iriPath iri1
                           else appendId (iriPath iri1) (iriPath iri2)
-          } -- TODO: improve, see #1597 
+          } -- TODO: improve, see #1597
     return $ Entity (pairLables lb1 lb2) k1 $ pairIRIs i1 i2
 
 -- * LITERALS
@@ -520,7 +528,7 @@ data ObjectPropertyExpression = ObjectProp ObjectProperty
   | ObjectInverseOf InverseObjectProperty
         deriving (Show, Eq, Ord, Typeable, Data)
 
-objPropToIRI :: ObjectPropertyExpression -> Individual
+objPropToIRI :: ObjectPropertyExpression -> IRI
 objPropToIRI opExp = case opExp of
     ObjectProp u -> u
     ObjectInverseOf objProp -> objPropToIRI objProp
@@ -530,7 +538,8 @@ type DataPropertyExpression = DataProperty
 -- * DATA RANGES
 
 data DataRange =
-    DataType Datatype [(ConstrainingFacet, RestrictionValue)]
+    DataTypeRest Datatype [(ConstrainingFacet, RestrictionValue)]
+  | DataType Datatype
   | DataJunction JunctionType [DataRange]
   | DataComplementOf DataRange
   | DataOneOf [Literal]
@@ -547,7 +556,7 @@ data ClassExpression =
   | ObjectHasValue ObjectPropertyExpression Individual
   | ObjectHasSelf ObjectPropertyExpression
   | ObjectCardinality (Cardinality ObjectPropertyExpression ClassExpression)
-  | DataValuesFrom QuantifierType DataPropertyExpression DataRange
+  | DataValuesFrom QuantifierType [DataPropertyExpression] DataRange
   | DataHasValue DataPropertyExpression Literal
   | DataCardinality (Cardinality DataPropertyExpression DataRange)
     deriving (Show, Eq, Ord, Typeable, Data)
@@ -557,5 +566,154 @@ data ClassExpression =
 data Annotation = Annotation [Annotation] AnnotationProperty AnnotationValue
     deriving (Show, Eq, Ord, Typeable, Data)
 
-data AnnotationValue = AnnValue IRI | AnnValLit Literal
+type OntologyAnnotations = [Annotation]
+
+
+data AnnotationValue =
+    AnnAnInd AnonymousIndividual
+  | AnnValue IRI
+  | AnnValLit Literal
     deriving (Show, Eq, Ord, Typeable, Data)
+
+data AnnotationAxiom =
+    AnnotationAssertion
+      AxiomAnnotations
+      AnnotationProperty
+      AnnotationSubject
+      AnnotationValue
+  | SubAnnotationPropertyOf
+    AxiomAnnotations
+    SubAnnotationProperty
+    SuperAnnotationProperty
+  | AnnotationPropertyDomain AxiomAnnotations AnnotationProperty IRI
+  | AnnotationPropertyRange AxiomAnnotations AnnotationProperty IRI
+    deriving (Eq, Ord, Data)
+
+-- Annotation Assertion
+data AnnotationSubject = AnnSubIri IRI | AnnSubAnInd AnonymousIndividual
+    deriving ( Eq, Ord, Data)
+
+-- Annotation Subproperties
+type SubAnnotationProperty = AnnotationProperty
+type SuperAnnotationProperty = AnnotationProperty
+
+
+-- * AXIOMS
+
+data Axiom =
+  Declaration AxiomAnnotations Entity
+  | ClassAxiom ClassAxiom
+  | ObjectPropertyAxiom ObjectPropertyAxiom
+  | DataPropertyAxiom DataPropertyAxiom
+  | DatatypeDefinition AxiomAnnotations Datatype DataRange
+  | HasKey
+     AxiomAnnotations
+     ClassExpression
+     [ObjectPropertyExpression]
+     [DataPropertyExpression]
+  | Assertion Assertion
+  | AnnotationAxiom AnnotationAxiom
+  deriving (Show, Eq, Ord, Typeable, Data)
+
+-- ClassAxiom
+
+type AxiomAnnotations = [Annotation]
+type SubClassExpression = ClassExpression
+type SuperClassExpression = ClassExpression
+
+type DisjointClassExpression = [ClassExpression]
+data ClassAxiom =
+  SubClassOf AxiomAnnotations SubClassExpression SuperClassExpression
+  | EquivalentClasses AxiomAnnotations [ClassExpression]
+  | DisjointClasses AxiomAnnotations [ClassExpression]
+  | DisjointUnion AxiomAnnotations Class DisjointClassExpression
+  deriving (Eq, Ord, Data)
+
+-- ObjectAxiom
+
+data ObjectPropertyAxiom =
+  SubObjectPropertyOf
+    AxiomAnnotations
+    SubObjectPropertyExpression
+    SuperObjectPropertyExpression
+  | EquivalentObjectProperties AxiomAnnotations [ObjectPropertyExpression]
+  | DisjointObjectProperties AxiomAnnotations [ObjectPropertyExpression]
+  | InverseObjectProperties
+      AxiomAnnotations
+      ObjectPropertyExpression
+      ObjectPropertyExpression
+  | ObjectPropertyDomain
+      AxiomAnnotations
+      ObjectPropertyExpression
+      ClassExpression
+  | ObjectPropertyRange
+      AxiomAnnotations
+      ObjectPropertyExpression
+      ClassExpression
+  | FunctionalObjectProperty AxiomAnnotations ObjectPropertyExpression
+  | InverseFunctionalObjectProperty AxiomAnnotations ObjectPropertyExpression
+  | ReflexiveObjectProperty AxiomAnnotations ObjectPropertyExpression
+  | IrreflexiveObjectProperty AxiomAnnotations ObjectPropertyExpression
+  | SymmetricObjectProperty AxiomAnnotations ObjectPropertyExpression
+  | AsymmetricObjectProperty AxiomAnnotations ObjectPropertyExpression
+  | TransitiveObjectProperty AxiomAnnotations ObjectPropertyExpression
+  deriving (Eq, Ord, Data)
+
+-- SubObjectPropertyOf
+
+type PropertyExpressionChain = [ObjectPropertyExpression]
+type SuperObjectPropertyExpression = ObjectPropertyExpression
+
+data SubObjectPropertyExpression =
+    SubObjPropExpr_obj ObjectPropertyExpression
+  | SubObjPropExpr_exprchain PropertyExpressionChain
+  deriving (Eq, Ord, Data)
+
+-- DataPropertyAxiom
+data DataPropertyAxiom =
+  SubDataPropertyOf AxiomAnnotations SubDataPropertyExpression
+    SuperDataPropertyExpression
+  | EquivalentDataProperties AxiomAnnotations [DataPropertyExpression]
+      -- at least 2
+  | DisjointDataProperties AxiomAnnotations [DataPropertyExpression]
+    -- at least 2
+  | DataPropertyDomain AxiomAnnotations DataPropertyExpression ClassExpression
+  | DataPropertyRange AxiomAnnotations DataPropertyExpression DataRange
+  | FunctionalDataProperty AxiomAnnotations DataPropertyExpression
+  deriving (Eq, Ord, Data)
+
+type SubDataPropertyExpression = DataPropertyExpression
+type SuperDataPropertyExpression = DataPropertyExpression
+
+
+-- Assertions
+data Assertion =
+  SameIndividual AxiomAnnotations [Individual]
+  | DifferentIndividuals AxiomAnnotations [Individual]
+  | ClassAssertion AxiomAnnotations ClassExpression Individual
+  | ObjectPropertyAssertion AxiomAnnotations ObjectPropertyExpression
+    SourceIndividual TargetIndividual
+  | NegativeObjectPropertyAssertion AxiomAnnotations ObjectPropertyExpression
+    SourceIndividual TargetIndividual
+  | DataPropertyAssertion AxiomAnnotations DataPropertyExpression
+    SourceIndividual TargetValue
+  | NegativeDataPropertyAssertion AxiomAnnotations DataPropertyExpression
+    SourceIndividual TargetValue
+  deriving (Eq, Ord, Data)
+
+type SourceIndividual = Individual
+type TargetIndividual = Individual
+type TargetValue = Literal
+
+
+-- Root
+data OntologyDocument = OntologyDocument [PrefixDeclaration] Ontology
+data PrefixDeclaration = PrefixDeclaration PrefixName IRI
+type PrefixName = String
+
+data Ontology = Ontology
+  (Maybe OntologyIRI)
+  (Maybe VersionIRI)
+  DirectlyImportsDocuments
+  OntologyAnnotations
+  [Axiom]
