@@ -222,3 +222,40 @@ printAnnotatedList :: Pretty a => AnnotatedList a -> Doc
 printAnnotatedList l =
     vcat $ punctuate comma $ map
         ( \ (ans, a) -> printAnnotations ans $+$ pretty a) l
+
+-- | printing Axioms
+
+instance Pretty AxiomAnnotations where
+    pretty = printAnnotations
+
+instance Pretty ClassAxiom where
+    pretty ca = case ca of 
+        SubClassOf axAns subClExpr supClExpr -> printSubClassOf ca
+        EquivalentClasses axAns clExprs -> printEquivalentClasses ca
+        DisjointClasses axAns clExprs -> printDisjointClasses ca
+        DisjointUnion axAns cl disjClExprs -> printDisjointUnion ca
+
+printSubClassOf :: ClassAxiom -> Doc
+printSubClassOf (SubClassOf axAns subClExpr supClExpr) =
+    keyword "SubClassOf" <+>
+    (parens . hsep $ (map pretty [axAns, subClExpr, supClExpr]))
+
+printEquivalentClasses :: ClassAxiom -> Doc
+printEquivalentClasses (EquivalentClasses axAns clExprs) =
+    keyword "EquivalentClasses" <+>
+    (parens . hsep . concat $ [[pretty axAns], map pretty clExprs])
+
+printDisjointClasses :: ClassAxiom -> Doc
+printDisjointClasses (DisjointClasses axAns clExprs) =
+    keyword "DisjointClasses" <+>
+    (parens . hsep . concat $ [[pretty axAns], map pretty clExprs])
+
+printDisjointUnion :: ClassAxiom -> Doc
+printDisjointUnion (DisjointUnion axAns cl disjClExprs) = 
+    keyword "DisjointUnion" <+>
+    (parens . hsep . concat $ [map pretty [axAns, cl],
+        map pretty disjClExprs])
+
+instance Pretty Axiom where
+    pretty axiom = case axiom of
+        ClassAxiom ca -> pretty ca
