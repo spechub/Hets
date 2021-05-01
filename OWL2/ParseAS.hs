@@ -242,7 +242,7 @@ parseDatatypeRestriction = parseEnclosedWithKeyword "DatatypeRestriction" $ do
     dataType <- parseIRI
     skips
     restrictions <- many1Skip parseDatatypeResComponent
-    return $ DataTypeRest dataType restrictions
+    return $ DataType dataType restrictions
 
 parseDataRange :: CharParser st DataRange
 parseDataRange =
@@ -250,7 +250,7 @@ parseDataRange =
     parseDataComplementOf <|?>
     parseDataOneOf <|?>
     parseDatatypeRestriction <|?>
-    (DataType <$> parseIRI) <?>
+    (DataType <$> parseIRI <*> return []) <?>
     "DataRange"
 
 {- # Axioms
