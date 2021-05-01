@@ -158,11 +158,17 @@ charOrEscaped :: CharParser st Char
 charOrEscaped = try (string "\\\"" >> return '"')
             <|> try (string "\\\\" >> return '\\') <|> anyChar
 
+parseLanguageTag :: CharParser st String
+parseLanguageTag = do
+    char '@'
+    many1 (letter <|?> char '-')
+
 parseUntypedLiteral :: CharParser st Literal
 parseUntypedLiteral = do
     char '"'
     s <- manyTill charOrEscaped (try $ char '"')
-    return $ Literal s (Untyped Nothing)
+    languageTag <- optionMaybe (try parseLanguageTag)
+    return $ Literal s (Untyped languageTag)
 
 parseLiteral :: CharParser st Literal
 parseLiteral = skipsp (parseTypedLiteral <|?> parseUntypedLiteral) <?> "Literal"
@@ -685,9 +691,36 @@ parseAnnotationAssertion = parseEnclosedWithKeyword "AnnotationAssertion" $
     parseAnnotationSubject <*>
     parseAnnotationValue
 
+parseSubAnnotationPropertyOf :: CharParser st AnnotationAxiom
+parseSubAnnotationPropertyOf = 
+    parseEnclosedWithKeyword "SubAnnotationPropertyOf" $
+    SubAnnotationPropertyOf <$>
+    parseAnnotations <*>
+    skipsp parseIRI <*>
+    skipsp parseIRI
+
+parseAnnotationPropertyDomain :: CharParser st AnnotationAxiom
+parseAnnotationPropertyDomain =
+    parseEnclosedWithKeyword "AnnotationPropertyDomain" $
+    AnnotationPropertyDomain <$>
+    parseAnnotations <*>
+    skipsp parseIRI <*>
+    skipsp parseIRI
+
+parseAnnotationPropertyRange :: CharParser st AnnotationAxiom
+parseAnnotationPropertyRange =
+    parseEnclosedWithKeyword "AnnotationPropertyRange" $
+    AnnotationPropertyRange <$>
+    parseAnnotations <*>
+    skipsp parseIRI <*>
+    skipsp parseIRI
+
 parseAnnotationAxiom :: CharParser st Axiom
 parseAnnotationAxiom = AnnotationAxiom <$> (
-        parseAnnotationAssertion
+        parseAnnotationAssertion <|?>
+        parseSubAnnotationPropertyOf <|?>
+        parseAnnotationPropertyDomain <|?>
+        parseAnnotationPropertyRange
     )
 
 parseAxiom :: CharParser st Axiom
@@ -699,7 +732,8 @@ parseAxiom =
     parseDataTypeDefinition <|?>
     parseHasKey <|?>
     parseAssertion <|?>
-    parseAnnotationAxiom
+    parseAnnotationAxiom <?>
+    "Axiom"
 
 
 parseOntology :: CharParser st Ontology
@@ -735,8 +769,8 @@ runAllTestsInDir d = do
         runTest f = do
             content <- readFile (d ++ "/" ++ f)
             let res = parse parseOntologyDocument f content
-            putStr $ either (const "❌ Failed ") (const "✅ Success") res
-            putStrLn $ ": " ++ d ++ "/" ++ f
+            let n = ": " ++ d ++ "/" ++ f
+            putStrLn $ either (\err -> "❌ Failed" ++ n ++ ": " ++ show err) (const $ "✅ Success" ++ n) res
 
 pta :: IO ()
 pta = forget $ sequence (runAllTestsInDir <$> dirs)
