@@ -378,7 +378,7 @@ parseDataAllValuesFrom = parseEnclosedWithKeyword "DataAllValuesFrom" $ do
 
 parseDataHasValue :: CharParser st ClassExpression
 parseDataHasValue = parseEnclosedWithKeyword "DataHasValue" $
-    DataHasValue <$> parseIRI <*> parseLiteral
+    DataHasValue <$> (parseIRI << skips) <*> (parseLiteral << skips)
 
 
 parseClassExpression :: CharParser st ClassExpression
