@@ -66,18 +66,20 @@ comment = try $ do
     char '#'
     manyTill anyChar newlineOrEof
 
-
 -- | Skips whitespaces and comments
 skips :: CharParser st ()
-skips = (skipMany
-        (forget space <|> forget comment <?> ""))
+skips = skipMany (forget space <|> forget comment <?> "")
+
+-- | Skips whitespaces and comments preceeding a given parser
+skipsp :: CharParser st a -> CharParser st a
+skipsp d = skips >> d
+
 
 
 -- | Parses plain string with skip
 keyword :: String -> CharParser st ()
 keyword s = do
-    skips
-    try (string s >> notFollowedBy alphaNum)
+    skipsp $ try (string s >> notFollowedBy alphaNum)
 
 -- | Parses a full iri
 fullIri :: CharParser st IRI
@@ -130,7 +132,7 @@ parseDirectlyImportsDocument = parseEnclosedWithKeyword "Import" parseIRI <?>
 -- ## Entities
 parseEntity' :: EntityType -> String -> CharParser st Entity
 parseEntity' t k = parseEnclosedWithKeyword k $ do
-    iri <- parseIRI
+    iri <- skipsp parseIRI
     return $ mkEntity t iri
 
 parseEntity :: CharParser st Entity
@@ -163,7 +165,7 @@ parseUntypedLiteral = do
     return $ Literal s (Untyped Nothing)
 
 parseLiteral :: CharParser st Literal
-parseLiteral = parseTypedLiteral <|?> parseUntypedLiteral <?> "Literal"
+parseLiteral = skipsp (parseTypedLiteral <|?> parseUntypedLiteral) <?> "Literal"
 
 -- ## Individuals
 
@@ -179,22 +181,22 @@ parseAnonymousIndividual = do
 
 parseIndividual :: CharParser st Individual
 parseIndividual =
-    NamedIndividual_ <$> parseIRI <|?>
-    AnonymousIndividual <$> parseAnonymousIndividual <?>
+    NamedIndividual_ <$> skipsp parseIRI <|?>
+    AnonymousIndividual <$> skipsp parseAnonymousIndividual <?>
     "Individual"
 
 -- # Annotations
 parseAnnotationValue :: CharParser st AnnotationValue
 parseAnnotationValue =
      (parseLiteral >>= return . AnnValLit) <|?>
-     (parseIRI >>= return . AnnValue) <|?>
-     (parseAnonymousIndividual >>= return . AnnAnInd) <?>
+     (skipsp parseIRI >>= return . AnnValue) <|?>
+     (skipsp parseAnonymousIndividual >>= return . AnnAnInd) <?>
      "AnnotationValue"
 
 parseAnnotationSubject :: CharParser st AnnotationSubject
 parseAnnotationSubject = 
-    (AnnSubAnInd <$> parseAnonymousIndividual) <|>
-    (AnnSubIri <$> parseIRI)
+    (AnnSubAnInd <$> skipsp parseAnonymousIndividual) <|?>
+    (AnnSubIri <$> skipsp parseIRI)
 
 parseAnnotations :: CharParser st [Annotation]
 parseAnnotations = manySkip parseAnnotation
@@ -202,7 +204,7 @@ parseAnnotations = manySkip parseAnnotation
 parseAnnotation :: CharParser st Annotation
 parseAnnotation = (flip (<?>)) "Annotation" $
     parseEnclosedWithKeyword "Annotation" $ do
-        an <- (many (try parseAnnotation) << skips)
+        an <- (manySkip (try parseAnnotation))
         skips
         property <- parseIRI
         skips
@@ -241,8 +243,8 @@ parseDataOneOf = parseEnclosedWithKeyword "DataOneOf" $
 parseDatatypeResComponent :: CharParser st (ConstrainingFacet, RestrictionValue)
 parseDatatypeResComponent =
     (,) <$>
-    (parseIRI << skips) <*>
-    (parseLiteral)
+    skipsp parseIRI <*>
+    parseLiteral
 
 parseDatatypeRestriction :: CharParser st DataRange
 parseDatatypeRestriction = parseEnclosedWithKeyword "DatatypeRestriction" $ do
@@ -257,7 +259,7 @@ parseDataRange =
     parseDataComplementOf <|?>
     parseDataOneOf <|?>
     parseDatatypeRestriction <|?>
-    (DataType <$> parseIRI <*> return []) <?>
+    (DataType <$> skipsp parseIRI <*> return []) <?>
     "DataRange"
 
 {- # Axioms
@@ -266,7 +268,7 @@ parseDataRange =
 
 parseDeclaration :: CharParser st Axiom
 parseDeclaration = parseEnclosedWithKeyword "Declaration" $ do
-    annotations <- many (parseAnnotation << skips)
+    annotations <- manySkip parseAnnotation
     skips
     entity <- parseEntity
     return $ Declaration annotations entity
@@ -290,7 +292,7 @@ parseObjectOneOf = parseEnclosedWithKeyword "ObjectOneOf" $
     ObjectOneOf <$> many1Skip parseIndividual
 
 parseObjectProperty :: CharParser st ObjectPropertyExpression
-parseObjectProperty = ObjectProp <$> parseIRI
+parseObjectProperty = ObjectProp <$> skipsp parseIRI
 
 parseInverseObjectProperty :: CharParser st ObjectPropertyExpression
 parseInverseObjectProperty = parseEnclosedWithKeyword "ObjectInverseOf" $
@@ -364,21 +366,21 @@ parseDataCardinality = DataCardinality <$> (
 
 parseDataSomeValuesFrom :: CharParser st ClassExpression
 parseDataSomeValuesFrom = parseEnclosedWithKeyword "DataSomeValuesFrom" $ do
-    exprs <- many1 (followedBy (parseDataRange << skips) (parseIRI << skips))
+    exprs <- many1 (followedBy (skipsp parseDataRange) (skipsp parseIRI))
     skips
     range <- parseDataRange
     return $ DataValuesFrom SomeValuesFrom exprs range
 
 parseDataAllValuesFrom :: CharParser st ClassExpression
 parseDataAllValuesFrom = parseEnclosedWithKeyword "DataAllValuesFrom" $ do
-    exprs <- many1 (followedBy (parseDataRange << skips) (parseIRI << skips))
+    exprs <- many1 (followedBy parseDataRange (skipsp parseIRI))
     skips
     range <- parseDataRange
     return $ DataValuesFrom AllValuesFrom exprs range
 
 parseDataHasValue :: CharParser st ClassExpression
 parseDataHasValue = parseEnclosedWithKeyword "DataHasValue" $
-    DataHasValue <$> (parseIRI << skips) <*> (parseLiteral << skips)
+    DataHasValue <$> skipsp parseIRI <*> parseLiteral
 
 
 parseClassExpression :: CharParser st ClassExpression
@@ -396,7 +398,7 @@ parseClassExpression =
     parseDataAllValuesFrom <|?>
     parseDataHasValue <|?>
     parseDataCardinality <|?>
-    (Expression <$> parseIRI) <?>
+    (Expression <$> skipsp parseIRI) <?>
     "ClassExpression"
 
 -- ## Class Axioms
@@ -422,7 +424,7 @@ parseDisjointUnion :: CharParser st ClassAxiom
 parseDisjointUnion = parseEnclosedWithKeyword "DisjointUnion" $
     DisjointUnion <$>
     parseAnnotations <*>
-    (parseIRI << skips) <*>
+    skipsp parseIRI <*>
     manyNSkip 2 parseClassExpression
 
 parseClassAxiom :: CharParser st Axiom
@@ -454,24 +456,24 @@ parseObjectPropertyDomain =
     parseEnclosedWithKeyword "ObjectPropertyDomain" $
     ObjectPropertyDomain <$>
     parseAnnotations <*>
-    (parseObjectPropertyExpression << skips) <*>
-    (parseClassExpression << skips)
+    parseObjectPropertyExpression <*>
+    parseClassExpression
 
 parseObjectPropertyRange :: CharParser st ObjectPropertyAxiom
 parseObjectPropertyRange =
     parseEnclosedWithKeyword "ObjectPropertyRange" $
     ObjectPropertyRange <$>
     parseAnnotations <*>
-    (parseObjectPropertyExpression << skips) <*>
-    (parseClassExpression << skips)
+    parseObjectPropertyExpression <*>
+    parseClassExpression
 
 parseInverseObjectProperties :: CharParser st ObjectPropertyAxiom
 parseInverseObjectProperties =
     parseEnclosedWithKeyword "InverseObjectProperties" $
     InverseObjectProperties <$>
     parseAnnotations <*>
-    (parseObjectPropertyExpression << skips) <*>
-    (parseObjectPropertyExpression << skips)
+    parseObjectPropertyExpression <*>
+    parseObjectPropertyExpression
 
 
 -- ### SubObjectPropertyOf
@@ -490,8 +492,8 @@ parseSubObjectPropertyOf :: CharParser st ObjectPropertyAxiom
 parseSubObjectPropertyOf = parseEnclosedWithKeyword "SubObjectPropertyOf" $
     SubObjectPropertyOf <$>
     parseAnnotations <*>
-    (parseSubObjectPropertyExpression << skips) <*>
-    (parseObjectPropertyExpression << skips)
+    parseSubObjectPropertyExpression <*>
+    parseObjectPropertyExpression
 
 
 -- | Helper function for *C*ommon*O*bject*P*roperty*A*xioms
@@ -501,7 +503,7 @@ parseCOPA :: (
 parseCOPA c s = parseEnclosedWithKeyword s $
     c <$>
     parseAnnotations <*>
-    (parseObjectPropertyExpression << skips)
+    parseObjectPropertyExpression
 
 parseObjectPropertyAxiom :: CharParser st Axiom
 parseObjectPropertyAxiom = ObjectPropertyAxiom <$> (
@@ -528,8 +530,8 @@ parseSubDataPropertyOf :: CharParser st DataPropertyAxiom
 parseSubDataPropertyOf = parseEnclosedWithKeyword "SubDataPropertyOf" $
     SubDataPropertyOf <$>
     parseAnnotations <*>
-    (parseIRI << skips) <*>
-    (parseIRI << skips)
+    skipsp parseIRI <*>
+    skipsp parseIRI
 
 parseEquivalentDataProperties :: CharParser st DataPropertyAxiom
 parseEquivalentDataProperties =
@@ -550,23 +552,23 @@ parseDataPropertyDomain =
     parseEnclosedWithKeyword "DataPropertyDomain" $
     DataPropertyDomain <$>
     parseAnnotations <*>
-    (parseIRI << skips) <*>
-    (parseClassExpression << skips)
+    skipsp parseIRI <*>
+    parseClassExpression
 
 parseDataPropertyRange :: CharParser st DataPropertyAxiom
 parseDataPropertyRange =
     parseEnclosedWithKeyword "DataPropertyRange" $
     DataPropertyRange <$>
     parseAnnotations <*>
-    (parseIRI << skips) <*>
-    (parseDataRange << skips)
+    skipsp parseIRI <*>
+    parseDataRange
 
 parseFunctionalDataProperty :: CharParser st DataPropertyAxiom
 parseFunctionalDataProperty =
     parseEnclosedWithKeyword "FunctionalDataProperty" $
     FunctionalDataProperty <$>
     parseAnnotations <*>
-    (parseIRI << skips)
+    skipsp parseIRI
 
 parseDataPropertyAxiom :: CharParser st Axiom
 parseDataPropertyAxiom = DataPropertyAxiom <$> (
@@ -584,8 +586,8 @@ parseDataTypeDefinition :: CharParser st Axiom
 parseDataTypeDefinition = parseEnclosedWithKeyword "DatatypeDefinition" $
     DatatypeDefinition <$>
     parseAnnotations <*>
-    (parseIRI << skips) <*>
-    (parseDataRange << skips)
+    skipsp parseIRI <*>
+    parseDataRange
 
 -- ## HasKey
 parseHasKey :: CharParser st Axiom
@@ -624,44 +626,44 @@ parseClassAssertion :: CharParser st Assertion
 parseClassAssertion = parseEnclosedWithKeyword "ClassAssertion" $
     ClassAssertion <$>
     parseAnnotations <*>
-    (parseClassExpression << skips) <*>
-    (parseIndividual << skips)
+    parseClassExpression <*>
+    parseIndividual
 
 parseObjectPropertyAssertion :: CharParser st Assertion
 parseObjectPropertyAssertion =
     parseEnclosedWithKeyword "ObjectPropertyAssertion" $
     ObjectPropertyAssertion <$>
     parseAnnotations <*>
-    (parseObjectPropertyExpression << skips) <*>
-    (parseIndividual << skips) <*>
-    (parseIndividual << skips)
+    parseObjectPropertyExpression <*>
+    parseIndividual <*>
+    parseIndividual
 
 parseNegativeObjectPropertyAssertion :: CharParser st Assertion
 parseNegativeObjectPropertyAssertion =
     parseEnclosedWithKeyword "NegativeObjectPropertyAssertion" $
     NegativeObjectPropertyAssertion <$>
     parseAnnotations <*>
-    (parseObjectPropertyExpression << skips) <*>
-    (parseIndividual << skips) <*>
-    (parseIndividual << skips)
+    parseObjectPropertyExpression <*>
+    parseIndividual <*>
+    parseIndividual
 
 parseDataPropertyAssertion :: CharParser st Assertion
 parseDataPropertyAssertion =
     parseEnclosedWithKeyword "DataPropertyAssertion" $
     DataPropertyAssertion <$>
     parseAnnotations <*>
-    (parseIRI << skips) <*>
-    (parseIndividual << skips) <*>
-    (parseLiteral << skips)
+    skipsp parseIRI <*>
+    parseIndividual <*>
+    parseLiteral
 
 parseNegativeDataPropertyAssertion :: CharParser st Assertion
 parseNegativeDataPropertyAssertion =
     parseEnclosedWithKeyword "NegativeDataPropertyAssertion" $
     NegativeDataPropertyAssertion <$>
     parseAnnotations <*>
-    (parseIRI << skips) <*>
-    (parseIndividual << skips) <*>
-    (parseLiteral << skips)
+    skipsp parseIRI <*>
+    parseIndividual <*>
+    parseLiteral
 
 parseAssertion :: CharParser st Axiom
 parseAssertion = Assertion <$> (
@@ -671,8 +673,7 @@ parseAssertion = Assertion <$> (
         parseObjectPropertyAssertion <|?>
         parseNegativeObjectPropertyAssertion <|?>
         parseDataPropertyAssertion <|?>
-        parseNegativeDataPropertyAssertion <?>
-        "Assertion"
+        parseNegativeDataPropertyAssertion
     )
 
 
@@ -680,9 +681,9 @@ parseAnnotationAssertion :: CharParser st AnnotationAxiom
 parseAnnotationAssertion = parseEnclosedWithKeyword "AnnotationAssertion" $
     AnnotationAssertion <$>
     parseAnnotations <*>
-    (parseIRI << skips) <*>
-    (parseAnnotationSubject << skips) <*>
-    (parseAnnotationValue << skips)
+    skipsp parseIRI <*>
+    parseAnnotationSubject <*>
+    parseAnnotationValue
 
 parseAnnotationAxiom :: CharParser st Axiom
 parseAnnotationAxiom = AnnotationAxiom <$> (
@@ -698,8 +699,7 @@ parseAxiom =
     parseDataTypeDefinition <|?>
     parseHasKey <|?>
     parseAssertion <|?>
-    parseAnnotationAxiom <?>
-    "Axiom"
+    parseAnnotationAxiom
 
 
 parseOntology :: CharParser st Ontology
@@ -721,7 +721,7 @@ parseOntologyDocument :: CharParser st OntologyDocument
 parseOntologyDocument =
     OntologyDocument <$>
     manySkip parsePrefixDeclaration <*>
-    (skips >> parseOntology)
+    (skipsp parseOntology)
 
 -- ** TESTING PURPOSES ONLY **
 
