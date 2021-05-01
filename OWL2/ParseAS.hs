@@ -1,6 +1,13 @@
 {-# LANGUAGE TupleSections #-}
 
 module OWL2.ParserAS where
+
+
+-- **TESTING PURPOSES ONLY**
+import System.Directory
+import Data.List
+
+
 import OWL2.AS
 
 import Common.AnnoParser (newlineOrEof)
@@ -673,9 +680,9 @@ parseAnnotationAssertion :: CharParser st AnnotationAxiom
 parseAnnotationAssertion = parseEnclosedWithKeyword "AnnotationAssertion" $
     AnnotationAssertion <$>
     parseAnnotations <*>
-    parseIRI <*>
-    parseAnnotationSubject <*>
-    parseAnnotationValue
+    (parseIRI << skips) <*>
+    (parseAnnotationSubject << skips) <*>
+    (parseAnnotationValue << skips)
 
 parseAnnotationAxiom :: CharParser st Axiom
 parseAnnotationAxiom = AnnotationAxiom <$> (
@@ -715,3 +722,39 @@ parseOntologyDocument =
     OntologyDocument <$>
     manySkip parsePrefixDeclaration <*>
     (skips >> parseOntology)
+
+-- ** TESTING PURPOSES ONLY **
+
+
+runAllTestsInDir :: FilePath -> IO ()
+runAllTestsInDir d = do
+    files <- getDirectoryContents d
+    sequence (runTest <$> filter (isSuffixOf ".ofn") (sort files))
+    return ()
+    where 
+        runTest f = do
+            content <- readFile (d ++ "/" ++ f)
+            let res = parse parseOntologyDocument f content
+            putStr $ either (const "❌ Failed ") (const "✅ Success") res
+            putStrLn $ ": " ++ d ++ "/" ++ f
+
+pta :: IO ()
+pta = forget $ sequence (runAllTestsInDir <$> dirs)
+    where dirs = [
+            "./OWL2/tests",
+            "./OWL2/tests/1",
+            "./OWL2/tests/2",
+            "./OWL2/tests/3",
+            "./OWL2/tests/4",
+            "./OWL2/tests/5",
+            "./OWL2/tests/6",
+            "./OWL2/tests/7",
+            "./OWL2/tests/8",
+            "./OWL2/tests/9",
+            "./tmp"]
+
+pt :: IO ()
+pt = do
+    content <- readFile "./test.ofn"
+    parseTest parseOntologyDocument content
+    return ()
