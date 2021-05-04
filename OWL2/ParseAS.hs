@@ -147,16 +147,18 @@ parseEntity =
 
 -- ## Literals
 
-parseTypedLiteral :: CharParser st Literal
-parseTypedLiteral = do
-    s <- stringLit
-    string "^^"
-    iri <- parseIRI
-    return $ Literal s (Typed iri)
 
 charOrEscaped :: CharParser st Char
 charOrEscaped = try (string "\\\"" >> return '"')
             <|> try (string "\\\\" >> return '\\') <|> anyChar
+
+parseTypedLiteral :: CharParser st Literal
+parseTypedLiteral = do
+    char '"'
+    s <- manyTill charOrEscaped (try $ char '"')
+    string "^^"
+    iri <- parseIRI
+    return $ Literal s (Typed iri)
 
 parseLanguageTag :: CharParser st String
 parseLanguageTag = do
