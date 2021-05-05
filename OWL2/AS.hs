@@ -63,7 +63,7 @@ type AnnotationProperty = IRI
 data Individual =
   NamedIndividual_ NamedIndividual |
   AnonymousIndividual AnonymousIndividual
-  deriving (Eq, Ord, Data)
+  deriving (Show, Eq, Ord, Data)
 type NamedIndividual = IRI
 type AnonymousIndividual = String
 
@@ -586,11 +586,11 @@ data AnnotationAxiom =
     SuperAnnotationProperty
   | AnnotationPropertyDomain AxiomAnnotations AnnotationProperty IRI
   | AnnotationPropertyRange AxiomAnnotations AnnotationProperty IRI
-    deriving (Eq, Ord, Data)
+    deriving (Show, Eq, Ord, Data)
 
 -- Annotation Assertion
 data AnnotationSubject = AnnSubIri IRI | AnnSubAnInd AnonymousIndividual
-    deriving ( Eq, Ord, Data)
+    deriving (Show, Eq, Ord, Data)
 
 -- Annotation Subproperties
 type SubAnnotationProperty = AnnotationProperty
@@ -626,7 +626,7 @@ data ClassAxiom =
   | EquivalentClasses AxiomAnnotations [ClassExpression]
   | DisjointClasses AxiomAnnotations [ClassExpression]
   | DisjointUnion AxiomAnnotations Class DisjointClassExpression
-  deriving (Eq, Ord, Data)
+  deriving (Show, Eq, Ord, Data)
 
 -- ObjectAxiom
 
@@ -655,7 +655,7 @@ data ObjectPropertyAxiom =
   | SymmetricObjectProperty AxiomAnnotations ObjectPropertyExpression
   | AsymmetricObjectProperty AxiomAnnotations ObjectPropertyExpression
   | TransitiveObjectProperty AxiomAnnotations ObjectPropertyExpression
-  deriving (Eq, Ord, Data)
+  deriving (Show, Eq, Ord, Data)
 
 -- SubObjectPropertyOf
 
@@ -665,7 +665,7 @@ type SuperObjectPropertyExpression = ObjectPropertyExpression
 data SubObjectPropertyExpression =
     SubObjPropExpr_obj ObjectPropertyExpression
   | SubObjPropExpr_exprchain PropertyExpressionChain
-  deriving (Eq, Ord, Data)
+  deriving (Show, Eq, Ord, Data)
 
 -- DataPropertyAxiom
 data DataPropertyAxiom =
@@ -678,7 +678,7 @@ data DataPropertyAxiom =
   | DataPropertyDomain AxiomAnnotations DataPropertyExpression ClassExpression
   | DataPropertyRange AxiomAnnotations DataPropertyExpression DataRange
   | FunctionalDataProperty AxiomAnnotations DataPropertyExpression
-  deriving (Eq, Ord, Data)
+  deriving (Show, Eq, Ord, Data)
 
 type SubDataPropertyExpression = DataPropertyExpression
 type SuperDataPropertyExpression = DataPropertyExpression
@@ -697,7 +697,7 @@ data Assertion =
     SourceIndividual TargetValue
   | NegativeDataPropertyAssertion AxiomAnnotations DataPropertyExpression
     SourceIndividual TargetValue
-  deriving (Eq, Ord, Data)
+  deriving (Show, Eq, Ord, Data)
 
 type SourceIndividual = Individual
 type TargetIndividual = Individual
@@ -706,7 +706,10 @@ type TargetValue = Literal
 
 -- Root
 data OntologyDocument = OntologyDocument [PrefixDeclaration] Ontology
+  deriving  (Show, Eq, Ord, Data)
 data PrefixDeclaration = PrefixDeclaration PrefixName IRI
+  deriving  (Show, Eq, Ord, Data)
+  
 type PrefixName = String
 
 data Ontology = Ontology
@@ -715,3 +718,4 @@ data Ontology = Ontology
   DirectlyImportsDocuments
   OntologyAnnotations
   [Axiom]
+  deriving  (Show, Eq, Ord, Data)
