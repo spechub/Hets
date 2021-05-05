@@ -654,7 +654,7 @@ data ObjectPropertyAxiom =
   | ReflexiveObjectProperty AxiomAnnotations ObjectPropertyExpression
   | IrreflexiveObjectProperty AxiomAnnotations ObjectPropertyExpression
   | SymmetricObjectProperty AxiomAnnotations ObjectPropertyExpression
-  | AsymetricObjectProperty AxiomAnnotations ObjectPropertyExpression
+  | AsymmetricObjectProperty AxiomAnnotations ObjectPropertyExpression
   | TransitiveObjectProperty AxiomAnnotations ObjectPropertyExpression
   deriving (Show, Eq, Ord, Data)
 
