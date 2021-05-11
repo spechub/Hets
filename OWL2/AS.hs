@@ -60,12 +60,9 @@ type ObjectProperty = IRI
 type DataProperty = IRI
 type DirectlyImportsDocuments = [IRI]
 type AnnotationProperty = IRI
-data Individual =
-  NamedIndividual_ NamedIndividual |
-  AnonymousIndividual AnonymousIndividual
-  deriving (Show, Eq, Ord, Data)
+type Individual = IRI
+type AnonymousIndividual = IRI
 type NamedIndividual = IRI
-type AnonymousIndividual = String
 
 data EquivOrDisjoint = Equivalent | Disjoint
     deriving (Show, Eq, Ord, Typeable, Data)
