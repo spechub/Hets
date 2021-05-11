@@ -15,7 +15,7 @@ References  :  <http://www.w3.org/TR/owl2-profiles/>
 
 module OWL2.Profiles where
 
-import OWL2.AS
+import qualified OWL2.AS as AS
 import OWL2.MS
 
 import Data.Data
@@ -74,124 +74,124 @@ andList f cel = andProfileList (map f cel)
 minimalCovering :: Profiles -> [Profiles] -> Profiles
 minimalCovering c pl = andProfileList [c, andProfileList pl]
 
-dataType :: Datatype -> Profiles
+dataType :: AS.Datatype -> Profiles
 dataType _ = topProfile -- needs to be implemented, of course
 
-literal :: Literal -> Profiles
+literal :: AS.Literal -> Profiles
 literal _ = topProfile -- needs to be implemented
 
-individual :: Individual -> Profiles
-individual i = if isAnonymous i then rlProfile else topProfile
+individual :: AS.Individual -> Profiles
+individual i = if AS.isAnonymous i then rlProfile else topProfile
 
-objProp :: ObjectPropertyExpression -> Profiles
+objProp :: AS.ObjectPropertyExpression -> Profiles
 objProp ope = case ope of
-    ObjectInverseOf _ -> qlrlProfile
+    AS.ObjectInverseOf _ -> qlrlProfile
     _ -> topProfile
 
-dataRange :: DataRange -> Profiles
+dataRange :: AS.DataRange -> Profiles
 dataRange dr = case dr of
-    DataType dt cfl ->
+    AS.DataType dt cfl ->
         if null cfl then dataType dt
          else bottomProfile
-    DataJunction IntersectionOf drl -> andProfileList $ map dataRange drl
-    DataOneOf ll -> bottomProfile {
+    AS.DataJunction AS.IntersectionOf drl -> andProfileList $ map dataRange drl
+    AS.DataOneOf ll -> bottomProfile {
                         el = el (andList literal ll) && length ll == 1
                     }
     _ -> bottomProfile
 
-subClass :: ClassExpression -> Profiles
+subClass :: AS.ClassExpression -> Profiles
 subClass cex = case cex of
-    Expression c -> if isThing c then elqlProfile else topProfile
-    ObjectJunction jt cel -> minimalCovering (case jt of
-        IntersectionOf -> elrlProfile
-        UnionOf -> rlProfile) $ map subClass cel
-    ObjectOneOf il -> bottomProfile {
+    AS.Expression c -> if AS.isThing c then elqlProfile else topProfile
+    AS.ObjectJunction jt cel -> minimalCovering (case jt of
+        AS.IntersectionOf -> elrlProfile
+        AS.UnionOf -> rlProfile) $ map subClass cel
+    AS.ObjectOneOf il -> bottomProfile {
                     el = el (andList individual il) && length il == 1,
                     rl = ql $ andList individual il
                 }
-    ObjectValuesFrom SomeValuesFrom ope ce -> andProfileList [objProp ope,
+    AS.ObjectValuesFrom AS.SomeValuesFrom ope ce -> andProfileList [objProp ope,
         case ce of
-            Expression c -> if isThing c then topProfile
+            AS.Expression c -> if AS.isThing c then topProfile
                              else elrlProfile
             _ -> minimalCovering elrlProfile [subClass ce]]
-    ObjectHasValue ope i -> minimalCovering elrlProfile
+    AS.ObjectHasValue ope i -> minimalCovering elrlProfile
        [objProp ope, individual i]
-    ObjectHasSelf ope -> minimalCovering elProfile [objProp ope]
-    DataValuesFrom SomeValuesFrom _ dr -> dataRange dr
-    DataHasValue _ l -> literal l
+    AS.ObjectHasSelf ope -> minimalCovering elProfile [objProp ope]
+    AS.DataValuesFrom AS.SomeValuesFrom _ dr -> dataRange dr
+    AS.DataHasValue _ l -> literal l
     _ -> bottomProfile
 
-superClass :: ClassExpression -> Profiles
+superClass :: AS.ClassExpression -> Profiles
 superClass cex = case cex of
-    Expression c -> if isThing c then elqlProfile else topProfile
-    ObjectJunction IntersectionOf cel -> andList superClass cel
-    ObjectComplementOf ce -> minimalCovering qlrlProfile [subClass ce]
-    ObjectOneOf il -> bottomProfile {
+    AS.Expression c -> if AS.isThing c then elqlProfile else topProfile
+    AS.ObjectJunction AS.IntersectionOf cel -> andList superClass cel
+    AS.ObjectComplementOf ce -> minimalCovering qlrlProfile [subClass ce]
+    AS.ObjectOneOf il -> bottomProfile {
                     el = el (andList individual il) && length il == 1,
                     rl = ql $ andList individual il
                 }
-    ObjectValuesFrom qt ope ce -> case qt of
-        SomeValuesFrom -> andProfileList [objProp ope, case ce of
-            Expression _ -> elqlProfile
+    AS.ObjectValuesFrom qt ope ce -> case qt of
+        AS.SomeValuesFrom -> andProfileList [objProp ope, case ce of
+            AS.Expression _ -> elqlProfile
             _ -> elProfile]
-        AllValuesFrom -> andProfileList [superClass ce, rlProfile]
-    ObjectHasValue ope i -> andProfileList [elrlProfile, objProp ope,
+        AS.AllValuesFrom -> andProfileList [superClass ce, rlProfile]
+    AS.ObjectHasValue ope i -> andProfileList [elrlProfile, objProp ope,
         individual i]
-    ObjectHasSelf ope -> andProfileList [elProfile, objProp ope]
-    ObjectCardinality (Cardinality MaxCardinality i _ mce) ->
+    AS.ObjectHasSelf ope -> andProfileList [elProfile, objProp ope]
+    AS.ObjectCardinality (AS.Cardinality AS.MaxCardinality i _ mce) ->
         if elem i [0, 1] then andProfileList [rlProfile, case mce of
             Nothing -> topProfile
             Just ce -> case ce of
-                Expression _ -> topProfile
+                AS.Expression _ -> topProfile
                 _ -> subClass ce]
          else bottomProfile
-    DataValuesFrom qt _ dr -> andProfileList [dataRange dr, case qt of
-        SomeValuesFrom -> elqlProfile
-        AllValuesFrom -> rlProfile]
-    DataHasValue _ l -> andProfileList [elrlProfile, literal l]
-    DataCardinality (Cardinality MaxCardinality i _ mdr) ->
+    AS.DataValuesFrom qt _ dr -> andProfileList [dataRange dr, case qt of
+        AS.SomeValuesFrom -> elqlProfile
+        AS.AllValuesFrom -> rlProfile]
+    AS.DataHasValue _ l -> andProfileList [elrlProfile, literal l]
+    AS.DataCardinality (AS.Cardinality AS.MaxCardinality i _ mdr) ->
         if elem i [0, 1] then andProfileList [rlProfile, case mdr of
             Nothing -> topProfile
             Just dr -> dataRange dr]
          else bottomProfile
     _ -> bottomProfile
 
-equivClassRL :: ClassExpression -> Bool
+equivClassRL :: AS.ClassExpression -> Bool
 equivClassRL cex = case cex of
-    Expression c -> (not . isThing) c
-    ObjectJunction IntersectionOf cel -> all equivClassRL cel
-    ObjectHasValue _ i -> rl $ individual i
-    DataHasValue _ l -> rl $ literal l
+    AS.Expression c -> (not . AS.isThing) c
+    AS.ObjectJunction AS.IntersectionOf cel -> all equivClassRL cel
+    AS.ObjectHasValue _ i -> rl $ individual i
+    AS.DataHasValue _ l -> rl $ literal l
     _ -> False
 
-annotation :: Annotation -> Profiles
-annotation (Annotation as _ av) = andProfileList [annotations as, case av of
-    AnnValLit l -> literal l
+annotation :: AS.Annotation -> Profiles
+annotation (AS.Annotation as _ av) = andProfileList [annotations as, case av of
+    AS.AnnValLit l -> literal l
     _ -> topProfile]
 
 annotations :: Annotations -> Profiles
 annotations ans = andProfileList $ map annotation ans
 
-assertionQL :: ClassExpression -> Bool
+assertionQL :: AS.ClassExpression -> Bool
 assertionQL ce = case ce of
-    Expression _ -> True
+    AS.Expression _ -> True
     _ -> False
 
-char :: [Character] -> [Character] -> Bool
+char :: [AS.Character] -> [AS.Character] -> Bool
 char charList ls = all (`elem` ls) charList
 
 fact :: Fact -> Profiles
 fact f = case f of
     ObjectPropertyFact pn ope i -> andProfileList [objProp ope, individual i,
         case pn of
-            Positive -> topProfile
-            Negative -> elrlProfile]
+            AS.Positive -> topProfile
+            AS.Negative -> elrlProfile]
     DataPropertyFact pn _ l -> andProfileList [literal l,
         case pn of
-            Positive -> topProfile
-            Negative -> elrlProfile]
+            AS.Positive -> topProfile
+            AS.Negative -> elrlProfile]
 
-lFB :: Extended -> Maybe Relation -> ListFrameBit -> Profiles
+lFB :: Extended -> Maybe AS.Relation -> ListFrameBit -> Profiles
 lFB ext mr lfb = case lfb of
     AnnotationBit anl -> annotations $ concatMap fst anl
     ExpressionBit anl ->
@@ -206,7 +206,7 @@ lFB ext mr lfb = case lfb of
                     rl = all equivClassRL cel
                 }]
             ClassEntity c -> case r of
-                SubClass -> andProfileList [ans, subClass c,
+                AS.SubClass -> andProfileList [ans, subClass c,
                     andList superClass cel]
                 _ -> andProfileList [ans, bottomProfile {
                     el = el $ andList subClass $ c : cel,
@@ -215,9 +215,9 @@ lFB ext mr lfb = case lfb of
                 }]
             ObjectEntity op -> andProfileList [ans, objProp op,
                 andList superClass cel]
-            SimpleEntity (Entity _ ty ent) -> case ty of
-                DataProperty -> andProfileList [ans, andList superClass cel]
-                NamedIndividual -> andProfileList [ans, individual ent,
+            SimpleEntity (AS.Entity _ ty ent) -> case ty of
+                AS.DataProperty -> andProfileList [ans, andList superClass cel]
+                AS.NamedIndividual -> andProfileList [ans, individual ent,
                     bottomProfile {
                         el = el $ andList superClass cel,
                         ql = all assertionQL cel,
@@ -230,11 +230,11 @@ lFB ext mr lfb = case lfb of
             r = fromMaybe (error "relation needed") mr
         in case ext of
             Misc anno -> andProfileList [ans, annotations anno, opl, case r of
-                EDRelation Equivalent -> topProfile
+                AS.EDRelation AS.Equivalent -> topProfile
                 _ -> qlrlProfile]
             ObjectEntity op -> andProfileList [ans, opl, objProp op, case r of
-                SubPropertyOf -> topProfile
-                EDRelation Equivalent -> topProfile
+                AS.SubPropertyOf -> topProfile
+                AS.EDRelation AS.Equivalent -> topProfile
                 _ -> qlrlProfile]
             _ -> error "invalit object bit"
     DataBit anl ->
@@ -242,11 +242,11 @@ lFB ext mr lfb = case lfb of
             r = fromMaybe (error "relation needed") mr
         in case ext of
             Misc anno -> andProfileList [ans, annotations anno, case r of
-                EDRelation Equivalent -> topProfile
+                AS.EDRelation AS.Equivalent -> topProfile
                 _ -> qlrlProfile]
             _ -> andProfileList [ans, case r of
-                    SubPropertyOf -> topProfile
-                    EDRelation Equivalent -> topProfile
+                    AS.SubPropertyOf -> topProfile
+                    AS.EDRelation AS.Equivalent -> topProfile
                     _ -> qlrlProfile]
     IndividualSameOrDifferent anl ->
         let ans = annotations $ concatMap fst anl
@@ -254,11 +254,11 @@ lFB ext mr lfb = case lfb of
             i = andList individual $ map snd anl
         in case ext of
             Misc anno -> andProfileList [ans, annotations anno, i, case r of
-                SDRelation Different -> topProfile
+                AS.SDRelation AS.Different -> topProfile
                 _ -> elrlProfile]
-            SimpleEntity (Entity _ _ ind) -> andProfileList [ans, individual ind,
+            SimpleEntity (AS.Entity _ _ ind) -> andProfileList [ans, individual ind,
                 i, case r of
-                    SDRelation Different -> topProfile
+                    AS.SDRelation AS.Different -> topProfile
                     _ -> elrlProfile]
             _ -> error "bad individual bit"
     ObjectCharacteristics anl ->
@@ -267,10 +267,10 @@ lFB ext mr lfb = case lfb of
         in case ext of
             ObjectEntity op -> andProfileList [ans, objProp op,
                     bottomProfile {
-                        el = char cl [Reflexive, Transitive],
-                        ql = char cl [Reflexive, Symmetric, Asymmetric],
-                        rl = char cl [Functional, InverseFunctional,
-                                Irreflexive, Symmetric, Asymmetric, Transitive]
+                        el = char cl [AS.Reflexive, AS.Transitive],
+                        ql = char cl [AS.Reflexive, AS.Symmetric, AS.Asymmetric],
+                        rl = char cl [AS.Functional, AS.InverseFunctional,
+                                AS.Irreflexive, AS.Symmetric, AS.Asymmetric, AS.Transitive]
                     }]
             _ -> error "object entity needed"
     DataPropRange anl ->
@@ -281,7 +281,7 @@ lFB ext mr lfb = case lfb of
         let ans = annotations $ concatMap fst anl
             facts = andList fact $ map snd anl
         in case ext of
-            SimpleEntity (Entity _ _ i) ->
+            SimpleEntity (AS.Entity _ _ i) ->
                 andProfileList [ans, facts, individual i]
             _ -> error "bad fact bit"
 
@@ -292,7 +292,7 @@ aFB ext anno afb =
         AnnotationFrameBit _ -> ans
         DataFunctional -> andProfileList [ans, elrlProfile]
         DatatypeBit dr -> case ext of
-            SimpleEntity (Entity _ _ dt) -> andProfileList
+            SimpleEntity (AS.Entity _ _ dt) -> andProfileList
                 [ans, dataType dt, dataRange dr]
             _ -> error "bad datatype bit"
         ClassDisjointUnion _ -> bottomProfile

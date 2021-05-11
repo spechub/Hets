@@ -14,7 +14,7 @@ Instances for some of the functions used in OWL 2
 
 module OWL2.Function where
 
-import OWL2.AS
+import qualified OWL2.AS as AS
 import Common.IRI
 import Common.Id (stringToId)
 import OWL2.MS
@@ -35,7 +35,7 @@ data Action = Rename | Expand
     deriving (Show, Eq, Ord)
 
 type StringMap = Map.Map String String
-type MorphMap = Map.Map Entity IRI
+type MorphMap = Map.Map AS.Entity IRI
 
 data AMap =
       StringMap StringMap
@@ -45,16 +45,16 @@ data AMap =
 maybeDo :: (Function a) => Action -> AMap -> Maybe a -> Maybe a
 maybeDo t mp = fmap $ function t mp
 
-getIri :: EntityType -> IRI -> Map.Map Entity IRI -> IRI
-getIri ty u = fromMaybe u . Map.lookup (mkEntity ty u)
+getIri :: AS.EntityType -> IRI -> Map.Map AS.Entity IRI -> IRI
+getIri ty u = fromMaybe u . Map.lookup (AS.mkEntity ty u)
 
-cutWith :: EntityType -> Action -> AMap -> IRI -> IRI
-cutWith ty t s anIri = cutIRI $ function t s $ mkEntity ty anIri
+cutWith :: AS.EntityType -> Action -> AMap -> IRI -> IRI
+cutWith ty t s anIri = AS.cutIRI $ function t s $ AS.mkEntity ty anIri
 
 err :: t
 err = error "operation not allowed"
 
-instance Function PrefixMap where
+instance Function AS.PrefixMap where
     function a m oldPs = case m of
         StringMap mp -> case a of
             Rename ->
@@ -98,12 +98,12 @@ instance Function IRI where
                                                  pm'
                                               else pm') 
                               Map.empty $  
-                              Map.toList $ Map.union pm predefPrefixes
+                              Map.toList $ Map.union pm AS.predefPrefixes
                         x = expandCurie iriMap iri 
                     in case x of
                         Just y -> y
                         Nothing -> error $ "could not expand curie:" ++ showIRI iri
-      in setReservedPrefix iRi
+      in AS.setReservedPrefix iRi
     _ -> iri
 
 instance Function Sign where
@@ -119,58 +119,58 @@ instance Function Sign where
             (function t mp p8)
     _ -> err
 
-instance Function Entity where
-    function t pm (Entity _ ty ent) = case pm of
-        StringMap _ -> mkEntity ty $ function t pm ent
-        MorphMap m -> mkEntity ty $ getIri ty ent m
+instance Function AS.Entity where
+    function t pm (AS.Entity _ ty ent) = case pm of
+        StringMap _ -> AS.mkEntity ty $ function t pm ent
+        MorphMap m -> AS.mkEntity ty $ getIri ty ent m
 
-instance Function Literal where
+instance Function AS.Literal where
     function t pm l = case l of
-        Literal lf (Typed dt) -> Literal lf $ Typed
-                $ cutWith Datatype t pm dt
+        AS.Literal lf (AS.Typed dt) -> AS.Literal lf $ AS.Typed
+                $ cutWith AS.Datatype t pm dt
         _ -> l
 
-instance Function ObjectPropertyExpression where
+instance Function AS.ObjectPropertyExpression where
     function t s opr = case opr of
-        ObjectProp op -> ObjectProp $ cutWith ObjectProperty t s op
-        ObjectInverseOf op -> ObjectInverseOf $ function t s op
+        AS.ObjectProp op -> AS.ObjectProp $ cutWith AS.ObjectProperty t s op
+        AS.ObjectInverseOf op -> AS.ObjectInverseOf $ function t s op
 
-instance Function DataRange where
+instance Function AS.DataRange where
     function t s dra = case dra of
-        DataType dt ls -> DataType (cutWith Datatype t s dt)
+        AS.DataType dt ls -> AS.DataType (cutWith AS.Datatype t s dt)
             $ map (\ (cf, rv) -> (function t s cf, function t s rv)) ls
-        DataJunction jt drl -> DataJunction jt $ map (function t s) drl
-        DataComplementOf dr -> DataComplementOf $ function t s dr
-        DataOneOf ll -> DataOneOf $ map (function t s) ll
+        AS.DataJunction jt drl -> AS.DataJunction jt $ map (function t s) drl
+        AS.DataComplementOf dr -> AS.DataComplementOf $ function t s dr
+        AS.DataOneOf ll -> AS.DataOneOf $ map (function t s) ll
 
-instance Function ClassExpression where
+instance Function AS.ClassExpression where
     function t s cle = case cle of
-        Expression c -> Expression $ cutWith Class t s c
-        ObjectJunction jt cel -> ObjectJunction jt $ map (function t s) cel
-        ObjectComplementOf ce -> ObjectComplementOf $ function t s ce
-        ObjectOneOf il -> ObjectOneOf $ map (cutWith NamedIndividual t s) il
-        ObjectValuesFrom qt op ce ->
-            ObjectValuesFrom qt (function t s op) $ function t s ce
-        ObjectHasValue op i -> ObjectHasValue (function t s op)
-            $ cutWith NamedIndividual t s i
-        ObjectHasSelf op -> ObjectHasSelf $ function t s op
-        ObjectCardinality (Cardinality ct i op mce) -> ObjectCardinality
-            $ Cardinality ct i (function t s op) $ maybeDo t s mce
-        DataValuesFrom qt dp dr -> DataValuesFrom qt
-            (cutWith DataProperty t s dp) $ function t s dr
-        DataHasValue dp l -> DataHasValue (cutWith DataProperty t s dp)
+        AS.Expression c -> AS.Expression $ cutWith AS.Class t s c
+        AS.ObjectJunction jt cel -> AS.ObjectJunction jt $ map (function t s) cel
+        AS.ObjectComplementOf ce -> AS.ObjectComplementOf $ function t s ce
+        AS.ObjectOneOf il -> AS.ObjectOneOf $ map (cutWith AS.NamedIndividual t s) il
+        AS.ObjectValuesFrom qt op ce ->
+            AS.ObjectValuesFrom qt (function t s op) $ function t s ce
+        AS.ObjectHasValue op i -> AS.ObjectHasValue (function t s op)
+            $ cutWith AS.NamedIndividual t s i
+        AS.ObjectHasSelf op -> AS.ObjectHasSelf $ function t s op
+        AS.ObjectCardinality (AS.Cardinality ct i op mce) -> AS.ObjectCardinality
+            $ AS.Cardinality ct i (function t s op) $ maybeDo t s mce
+        AS.DataValuesFrom qt dp dr -> AS.DataValuesFrom qt
+            [(cutWith AS.DataProperty t s (head dp))] $ function t s dr
+        AS.DataHasValue dp l -> AS.DataHasValue (cutWith AS.DataProperty t s dp)
             $ function t s l
-        DataCardinality (Cardinality ct i dp mdr) -> DataCardinality
-              $ Cardinality ct i (cutWith DataProperty t s dp) $ maybeDo t s mdr
+        AS.DataCardinality (AS.Cardinality ct i dp mdr) -> AS.DataCardinality
+              $ AS.Cardinality ct i (cutWith AS.DataProperty t s dp) $ maybeDo t s mdr
 
-instance Function Annotation where
-    function t s (Annotation al ap av) = Annotation (map (function t s) al)
-        (cutWith AnnotationProperty t s ap) $ function t s av
+instance Function AS.Annotation where
+    function t s (AS.Annotation al ap av) = AS.Annotation (map (function t s) al)
+        (cutWith AS.AnnotationProperty t s ap) $ function t s av
 
-instance Function AnnotationValue where
+instance Function AS.AnnotationValue where
     function t s av = case av of
-        AnnValue anIri -> AnnValue $ function t s anIri
-        AnnValLit l -> AnnValLit $ function t s l
+        AS.AnnValue anIri -> AS.AnnValue $ function t s anIri
+        AS.AnnValLit l -> AS.AnnValLit $ function t s l
 
 instance Function Annotations where
     function t pm = map (function t pm)
@@ -180,7 +180,7 @@ instance Function a => Function (AnnotatedList a) where
     function t s = map (\ (ans, a) -> (map (function t s) ans, function t s a))
 
 -- | only for IRI AnnotatedLists
-mapAnnList :: EntityType -> Action -> AMap -> AnnotatedList IRI
+mapAnnList :: AS.EntityType -> Action -> AMap -> AnnotatedList IRI
     -> AnnotatedList IRI
 mapAnnList ty t m anl =
     let ans = map fst anl
@@ -190,18 +190,18 @@ mapAnnList ty t m anl =
 instance Function Fact where
     function t s f = case f of
         ObjectPropertyFact pn op i -> ObjectPropertyFact pn
-            (function t s op) $ cutWith NamedIndividual t s i
+            (function t s op) $ cutWith AS.NamedIndividual t s i
         DataPropertyFact pn dp l -> DataPropertyFact pn
-            (cutWith DataProperty t s dp) $ function t s l
+            (cutWith AS.DataProperty t s dp) $ function t s l
 
 instance Function ListFrameBit where
     function t s lfb = case lfb of
-        AnnotationBit al -> AnnotationBit $ mapAnnList AnnotationProperty t s al
+        AnnotationBit al -> AnnotationBit $ mapAnnList AS.AnnotationProperty t s al
         ExpressionBit al -> ExpressionBit $ function t s al
         ObjectBit al -> ObjectBit $ function t s al
-        DataBit al -> DataBit $ mapAnnList DataProperty t s al
+        DataBit al -> DataBit $ mapAnnList AS.DataProperty t s al
         IndividualSameOrDifferent al ->
-            IndividualSameOrDifferent $ mapAnnList NamedIndividual t s al
+            IndividualSameOrDifferent $ mapAnnList AS.NamedIndividual t s al
         DataPropRange al -> DataPropRange $ function t s al
         IndividualFacts al -> IndividualFacts $ function t s al
         _ -> lfb
@@ -211,7 +211,7 @@ instance Function AnnFrameBit where
         DatatypeBit dr -> DatatypeBit $ function t s dr
         ClassDisjointUnion cel -> ClassDisjointUnion $ map (function t s) cel
         ClassHasKey opl dpl -> ClassHasKey (map (function t s) opl)
-            $ map (cutWith DataProperty t s) dpl
+            $ map (cutWith AS.DataProperty t s) dpl
         ObjectSubPropertyChain opl ->
             ObjectSubPropertyChain $ map (function t s) opl
         _ -> afb

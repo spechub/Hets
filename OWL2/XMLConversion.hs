@@ -16,7 +16,7 @@ import Common.AS_Annotation (Named, sentence)
 import Common.IRI hiding (showIRI)
 import Common.Id
 
-import OWL2.AS
+import qualified OWL2.AS as AS
 import OWL2.MS
 import OWL2.Sign
 import OWL2.XML

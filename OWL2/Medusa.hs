@@ -14,7 +14,7 @@ see https://github.com/ConceptualBlending/monster_render_system
 
 module OWL2.Medusa where
 
-import OWL2.AS
+import qualified OWL2.AS as AS
 import OWL2.Sign
 import OWL2.MS
 
@@ -107,7 +107,7 @@ getFiatBoundaryFacts axs tInds point1 point2 =
            Just (ind1, typeOf point1, ind2, typeOf point2)
         _ -> Nothing
 
-getFiatBoundaryFactsAux :: IRI -> Axiom -> Maybe IRI
+getFiatBoundaryFactsAux :: IRI -> AS.Axiom -> Maybe IRI
 getFiatBoundaryFactsAux point ax =
   case axiomTopic ax of
     SimpleEntity e ->

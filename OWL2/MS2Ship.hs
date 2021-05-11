@@ -12,7 +12,7 @@ convert ontology to SHIP syntax
 
 module OWL2.MS2Ship where
 
-import OWL2.AS
+import qualified OWL2.AS
 import Common.IRI
 import OWL2.Keywords
 import OWL2.MS
