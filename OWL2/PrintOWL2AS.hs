@@ -602,4 +602,4 @@ instance Pretty Ontology where
 
 instance Pretty OntologyDocument where
     pretty (OntologyDocument prefDecls ont) = 
-        (hsep . map pretty $ prefDecls) <+> pretty ont
+        (hsep . map pretty $ prefDecls) $+$ pretty ont
