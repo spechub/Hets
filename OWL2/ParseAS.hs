@@ -93,7 +93,8 @@ prefix = option "" (satisfy ncNameStart <:> many (satisfy ncNameChar))
 
 -- | Parses an abbreviated or full iri
 parseIRI :: CharParser st IRI
-parseIRI = iriCurie <?> "IRI"
+parseIRI = fullIri <|?> compoundIriCurie <?> "IRI"
+
 
 {- | @parseEnclosedWithKeyword k p@ parses the keyword @k@ followed @p@
 enclosed in parentheses. Skips spaces and comments before and after @p@. -}
@@ -172,19 +173,11 @@ parseLiteral = skipsp (parseTypedLiteral <|?> parseUntypedLiteral) <?> "Literal"
 -- ## Individuals
 
 parseAnonymousIndividual :: CharParser st AnonymousIndividual
-parseAnonymousIndividual = do
-    string "_:"
-    (pn_chars_u <|?> digit) <:>
-        (many (pn_chars <|?> followedBy (forget pn_chars) (char '.')))
-    where pn_chars_base = letter
-          pn_chars_u = pn_chars_base <|?> char '_'
-          pn_chars = pn_chars_u <|?> char '-' <|?> digit
+parseAnonymousIndividual = iriCurie
 
 
 parseIndividual :: CharParser st Individual
-parseIndividual =
-    NamedIndividual_ <$> skipsp parseIRI <|?>
-    AnonymousIndividual <$> skipsp parseAnonymousIndividual <?>
+parseIndividual = skipsp parseIRI <|?> skipsp parseAnonymousIndividual <?>
     "Individual"
 
 -- # Annotations
