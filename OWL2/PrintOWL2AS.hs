@@ -598,7 +598,7 @@ instance Pretty Ontology where
             ontNameDoc = maybe empty (\ontvalue -> hsep [pretty ontvalue,
                 versionIriDoc]) mOnt
             importedDocs = keyword "Import" 
-                <> sParens(hsep . map pretty $ dImpoDocs)
+                <> sParens(hsep . map pretty $ dImpDocs)
 
 instance Pretty OntologyDocument where
     pretty (OntologyDocument prefDecls ont) = 
