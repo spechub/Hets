@@ -589,7 +589,7 @@ instance Pretty PrefixDeclaration where
 instance Pretty Ontology where
     pretty (Ontology mOnt mVerIri dImpDocs ontAnns axioms) =
         keyword "Ontology"
-        <> sParens (hsep . concat $ 
+        <> sParens (vsep . concat $ 
         [[ontNameDoc], importedDocs, ontAnnsDocs, axiomsDocs])
         where
             ontAnnsDocs = map pretty ontAnns
