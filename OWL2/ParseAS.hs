@@ -1,6 +1,6 @@
 {-# LANGUAGE TupleSections #-}
 
-module OWL2.ParserAS where
+module OWL2.ParseAS where
 
 import OWL2.AS
 
