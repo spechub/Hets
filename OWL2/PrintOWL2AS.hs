@@ -41,11 +41,6 @@ instance Pretty Literal where
               Just tag2 -> text asP <> text tag2
         NumberLit f -> text (show f)
 
-instance Pretty Individual where
-    pretty ind = case ind of
-        NamedIndividual_ ni -> pretty ni
-        AnonymousIndividual ai -> doubleQuotes . text $ ai
-
 -- | print PropertyExpression
 
 instance Pretty ObjectPropertyExpression where
