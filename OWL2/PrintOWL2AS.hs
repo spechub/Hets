@@ -584,7 +584,7 @@ printAnnotationPropertyRange axAnns annProp iri =
 instance Pretty PrefixDeclaration where
     pretty (PrefixDeclaration prName iri) =
         keyword "Prefix"
-        <> sParens ((text prName) <> (text "=") <> pretty iri)
+        <> sParens ((text prName) <> (text " = ") <> pretty iri)
 
 instance Pretty Ontology where
     pretty (Ontology mOnt mVerIri dImpDocs ontAnns axioms) =
