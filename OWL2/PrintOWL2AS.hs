@@ -590,13 +590,15 @@ instance Pretty Ontology where
     pretty (Ontology mOnt mVerIri dImpDocs ontAnns axioms) =
         keyword "Ontology"
         <> sParens (hsep . concat $ 
-        [[ontNameDoc], map pretty dImpDocs, ontAnnsDocs, axiomsDocs])
+        [[ontNameDoc], importedDocs, ontAnnsDocs, axiomsDocs])
         where
             ontAnnsDocs = map pretty ontAnns
             axiomsDocs = map pretty axioms  
             versionIriDoc = maybe empty pretty mVerIri
             ontNameDoc = maybe empty (\ontvalue -> hsep [pretty ontvalue,
                 versionIriDoc]) mOnt
+            importedDocs = keyword "Import" 
+                <> sParens(hsep . map pretty $ dImpoDocs)
 
 instance Pretty OntologyDocument where
     pretty (OntologyDocument prefDecls ont) = 
