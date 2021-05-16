@@ -70,7 +70,6 @@ skipsp :: CharParser st a -> CharParser st a
 skipsp d = skips >> d
 
 
-
 -- | Parses plain string with skip
 keyword :: String -> CharParser st ()
 keyword s = do
@@ -94,7 +93,7 @@ prefix = option "" (satisfy ncNameStart <:> many (satisfy ncNameChar))
 
 -- | Parses an abbreviated or full iri
 parseIRI :: GA.PrefixMap -> CharParser st IRI
-parseIRI pm =fullIri <|?> compoundIriCurie <?> "IRI"
+parseIRI pm = fullIri <|?> compoundIriCurie <?> "IRI"
 
 
 {- | @parseEnclosedWithKeyword k p@ parses the keyword @k@ followed @p@
@@ -120,7 +119,7 @@ parsePrefixDeclaration = parseEnclosedWithKeyword "Prefix" $ do
     return $ PrefixDeclaration p iri
 
 parseDirectlyImportsDocument :: GA.PrefixMap -> CharParser st IRI
-parseDirectlyImportsDocument pm =parseEnclosedWithKeyword "Import" ((parseIRI pm) pm) <?>
+parseDirectlyImportsDocument pm = parseEnclosedWithKeyword "Import" ((parseIRI pm) pm) <?>
     "Import"
 
 -- # Entities, Literals, and Individuals
@@ -149,7 +148,7 @@ charOrEscaped = try (string "\\\"" >> return '"')
             <|> try (string "\\\\" >> return '\\') <|> anyChar
 
 parseTypedLiteral :: GA.PrefixMap -> CharParser st Literal
-parseTypedLiteral pm =do
+parseTypedLiteral pm = do
     char '"'
     s <- manyTill charOrEscaped (try $ char '"')
     string "^^"
@@ -157,28 +156,28 @@ parseTypedLiteral pm =do
     return $ Literal s (Typed iri)
 
 parseLanguageTag :: CharParser st String
-parseLanguageTag =do
+parseLanguageTag = do
     char '@'
     many1 (letter <|?> char '-')
 
 parseUntypedLiteral :: CharParser st Literal
-parseUntypedLiteral =do
+parseUntypedLiteral = do
     char '"'
     s <- manyTill charOrEscaped (try $ char '"')
     languageTag <- optionMaybe (try parseLanguageTag)
     return $ Literal s (Untyped languageTag)
 
 parseLiteral :: GA.PrefixMap -> CharParser st Literal
-parseLiteral pm =skipsp ((parseTypedLiteral pm) <|?> (parseUntypedLiteral) <?> "Literal"
+parseLiteral pm = skipsp ((parseTypedLiteral pm) <|?> (parseUntypedLiteral) <?> "Literal"
 
 -- ## Individuals
 
 parseAnonymousIndividual :: GA.PrefixMap -> CharParser st AnonymousIndividual
-parseAnonymousIndividual pm =iriCurie
+parseAnonymousIndividual pm = iriCurie
 
 
 parseIndividual :: GA.PrefixMap -> CharParser st Individual
-parseIndividual pm =skipsp (parseIRI pm) <|?> skipsp (parseAnonymousIndividual pm) <?>
+parseIndividual pm = skipsp (parseIRI pm) <|?> skipsp (parseAnonymousIndividual pm) <?>
     "Individual"
 
 -- # Annotations
@@ -195,10 +194,10 @@ parseAnnotationSubject pm =
     (AnnSubIri <$> skipsp (parseIRI pm))
 
 parseAnnotations :: GA.PrefixMap -> CharParser st [Annotation]
-parseAnnotations pm =manySkip (parseAnnotation pm)
+parseAnnotations pm = manySkip (parseAnnotation pm)
 
 parseAnnotation :: GA.PrefixMap -> CharParser st Annotation
-parseAnnotation pm =(flip (<?>)) "Annotation" $
+parseAnnotation pm = (flip (<?>)) "Annotation" $
     parseEnclosedWithKeyword "Annotation" $ do
         an <- (manySkip (try (parseAnnotation pm)))
         skips
@@ -229,11 +228,11 @@ parseDataJunction pm =
     parseDataJunction' pm "DataIntersectionOf" IntersectionOf
 
 parseDataComplementOf :: GA.PrefixMap -> CharParser st DataRange
-parseDataComplementOf pm =parseEnclosedWithKeyword "DataComplementOf" $
+parseDataComplementOf pm = parseEnclosedWithKeyword "DataComplementOf" $
     DataComplementOf <$> parseDataRange pm
 
 parseDataOneOf :: GA.PrefixMap -> CharParser st DataRange
-parseDataOneOf pm =parseEnclosedWithKeyword "DataOneOf" $
+parseDataOneOf pm = parseEnclosedWithKeyword "DataOneOf" $
     DataOneOf <$> many1Skip (parseLiteral pm)
 
 parseDatatypeResComponent :: GA.PrefixMap -> CharParser st (ConstrainingFacet, RestrictionValue)
@@ -243,7 +242,7 @@ parseDatatypeResComponent pm =
     (parseLiteral pm)
 
 parseDatatypeRestriction :: GA.PrefixMap -> CharParser st DataRange
-parseDatatypeRestriction pm =parseEnclosedWithKeyword "DatatypeRestriction" $ do
+parseDatatypeRestriction pm = parseEnclosedWithKeyword "DatatypeRestriction" $ do
     dataType <- (parseIRI pm)
     skips
     restrictions <- many1Skip (parseDatatypeResComponent pm)
@@ -263,7 +262,7 @@ parseDataRange pm =
 ## Declaration -}
 
 parseDeclaration :: GA.PrefixMap -> CharParser st Axiom
-parseDeclaration pm =parseEnclosedWithKeyword "Declaration" $ do
+parseDeclaration pm = parseEnclosedWithKeyword "Declaration" $ do
     annotations <- manySkip (parseAnnotation pm)
     skips
     entity <- (parseEntity pm)
@@ -272,26 +271,26 @@ parseDeclaration pm =parseEnclosedWithKeyword "Declaration" $ do
 -- ## ClassExpressions
 
 parseObjectIntersectionOf :: GA.PrefixMap -> CharParser st ClassExpression
-parseObjectIntersectionOf pm =parseEnclosedWithKeyword "ObjectIntersectionOf" $
+parseObjectIntersectionOf pm = parseEnclosedWithKeyword "ObjectIntersectionOf" $
     ObjectJunction IntersectionOf <$> manyNSkip 2 (parseClassExpression pm)
 
 parseObjectUnionOf :: GA.PrefixMap -> CharParser st ClassExpression
-parseObjectUnionOf pm =parseEnclosedWithKeyword "ObjectUnionOf" $
+parseObjectUnionOf pm = parseEnclosedWithKeyword "ObjectUnionOf" $
     ObjectJunction UnionOf <$> manyNSkip 2 (parseClassExpression pm)
 
 parseObjectComplementOf :: GA.PrefixMap -> CharParser st ClassExpression
-parseObjectComplementOf pm =parseEnclosedWithKeyword "ObjectComplementOf" $
+parseObjectComplementOf pm = parseEnclosedWithKeyword "ObjectComplementOf" $
     ObjectComplementOf <$> (parseClassExpression pm)
 
 parseObjectOneOf :: GA.PrefixMap -> CharParser st ClassExpression
-parseObjectOneOf pm =parseEnclosedWithKeyword "ObjectOneOf" $
+parseObjectOneOf pm = parseEnclosedWithKeyword "ObjectOneOf" $
     ObjectOneOf <$> many1Skip (parseIndividual pm)
 
 parseObjectProperty :: GA.PrefixMap -> CharParser st ObjectPropertyExpression
-parseObjectProperty pm =ObjectProp <$> skipsp (parseIRI pm)
+parseObjectProperty pm = ObjectProp <$> skipsp (parseIRI pm)
 
 parseInverseObjectProperty :: GA.PrefixMap -> CharParser st ObjectPropertyExpression
-parseInverseObjectProperty pm =parseEnclosedWithKeyword "ObjectInverseOf" $
+parseInverseObjectProperty pm = parseEnclosedWithKeyword "ObjectInverseOf" $
     ObjectInverseOf <$> (parseObjectProperty pm)
 
 parseObjectPropertyExpression :: GA.PrefixMap -> CharParser st ObjectPropertyExpression
@@ -302,28 +301,28 @@ parseObjectPropertyExpression pm =
 
 
 parseObjectSomeValuesFrom :: GA.PrefixMap -> CharParser st ClassExpression
-parseObjectSomeValuesFrom pm =parseEnclosedWithKeyword "ObjectSomeValuesFrom" $ do
+parseObjectSomeValuesFrom pm = parseEnclosedWithKeyword "ObjectSomeValuesFrom" $ do
     objectPropertyExpr <- (parseObjectPropertyExpression pm)
     skips
     classExpr <- (parseClassExpression pm)
     return $ ObjectValuesFrom SomeValuesFrom objectPropertyExpr classExpr
 
 parseObjectAllValuesFrom :: GA.PrefixMap -> CharParser st ClassExpression
-parseObjectAllValuesFrom pm =parseEnclosedWithKeyword "ObjectAllValuesFrom" $ do
+parseObjectAllValuesFrom pm = parseEnclosedWithKeyword "ObjectAllValuesFrom" $ do
     objectPropertyExpr <- (parseObjectPropertyExpression pm)
     skips
     classExpr <- (parseClassExpression pm)
     return $ ObjectValuesFrom AllValuesFrom objectPropertyExpr classExpr
 
 parseObjectHasValue :: GA.PrefixMap -> CharParser st ClassExpression
-parseObjectHasValue pm =parseEnclosedWithKeyword "ObjectHasValue" $ do
+parseObjectHasValue pm = parseEnclosedWithKeyword "ObjectHasValue" $ do
     objectPropertyExpr <- (parseObjectPropertyExpression pm)
     skips
     val <- (parseIndividual pm)
     return $ ObjectHasValue objectPropertyExpr val
 
 parseObjectHasSelf :: GA.PrefixMap -> CharParser st ClassExpression
-parseObjectHasSelf pm =parseEnclosedWithKeyword "ObjectHasSelf" $
+parseObjectHasSelf pm = parseEnclosedWithKeyword "ObjectHasSelf" $
     ObjectHasSelf <$> (parseObjectPropertyExpression pm)
 
 parseCardinality' :: CardinalityType
@@ -340,7 +339,7 @@ parseCardinality' c k pa pb = parseEnclosedWithKeyword k $ do
     return $ Cardinality c n objectPropertyExpr classExpr
 
 parseObjectCardinality :: GA.PrefixMap -> CharParser st ClassExpression
-parseObjectCardinality pm =ObjectCardinality <$> (
+parseObjectCardinality pm = ObjectCardinality <$> (
         cardinality "ObjectMinCardinality" MinCardinality <|?>
         cardinality "ObjectMaxCardinality" MaxCardinality <|?>
         cardinality "ObjectExactCardinality" ExactCardinality
@@ -350,7 +349,7 @@ parseObjectCardinality pm =ObjectCardinality <$> (
           b = (parseClassExpression pm)
 
 parseDataCardinality :: GA.PrefixMap -> CharParser st ClassExpression
-parseDataCardinality pm =DataCardinality <$> (
+parseDataCardinality pm = DataCardinality <$> (
         cardinality "DataMinCardinality" MinCardinality <|?>
         cardinality "DataMaxCardinality" MaxCardinality <|?>
         cardinality "DataExactCardinality" ExactCardinality
@@ -361,21 +360,21 @@ parseDataCardinality pm =DataCardinality <$> (
 
 
 parseDataSomeValuesFrom :: GA.PrefixMap -> CharParser st ClassExpression
-parseDataSomeValuesFrom pm =parseEnclosedWithKeyword "DataSomeValuesFrom" $ do
+parseDataSomeValuesFrom pm = parseEnclosedWithKeyword "DataSomeValuesFrom" $ do
     exprs <- many1 (followedBy (skipsp (parseDataRange pm)) (skipsp (parseIRI pm)))
     skips
     range <- (parseDataRange pm)
     return $ DataValuesFrom SomeValuesFrom exprs range
 
 parseDataAllValuesFrom :: GA.PrefixMap -> CharParser st ClassExpression
-parseDataAllValuesFrom pm =parseEnclosedWithKeyword "DataAllValuesFrom" $ do
+parseDataAllValuesFrom pm = parseEnclosedWithKeyword "DataAllValuesFrom" $ do
     exprs <- many1 (followedBy (parseDataRange pm) (skipsp (parseIRI pm)))
     skips
     range <- (parseDataRange pm)
     return $ DataValuesFrom AllValuesFrom exprs range
 
 parseDataHasValue :: GA.PrefixMap -> CharParser st ClassExpression
-parseDataHasValue pm =parseEnclosedWithKeyword "DataHasValue" $
+parseDataHasValue pm = parseEnclosedWithKeyword "DataHasValue" $
     DataHasValue <$> skipsp (parseIRI pm) <*> (parseLiteral pm)
 
 
@@ -400,7 +399,7 @@ parseClassExpression pm =
 -- ## Class Axioms
 
 parseSubClassOf :: GA.PrefixMap -> CharParser st ClassAxiom
-parseSubClassOf pm =parseEnclosedWithKeyword "SubClassOf" $ do
+parseSubClassOf pm = parseEnclosedWithKeyword "SubClassOf" $ do
     annotations <- manySkip (parseAnnotation pm)
     skips
     subClassExpression <- (parseClassExpression pm)
@@ -409,22 +408,22 @@ parseSubClassOf pm =parseEnclosedWithKeyword "SubClassOf" $ do
     return $ SubClassOf annotations subClassExpression superClassExpression
 
 parseEquivalentClasses :: GA.PrefixMap -> CharParser st ClassAxiom
-parseEquivalentClasses pm =parseEnclosedWithKeyword "EquivalentClasses" $
+parseEquivalentClasses pm = parseEnclosedWithKeyword "EquivalentClasses" $
     EquivalentClasses <$> (parseAnnotations pm) <*> manyNSkip 2 (parseClassExpression pm)
 
 parseDisjointClasses :: GA.PrefixMap -> CharParser st ClassAxiom
-parseDisjointClasses pm =parseEnclosedWithKeyword "DisjointClasses" $
+parseDisjointClasses pm = parseEnclosedWithKeyword "DisjointClasses" $
     DisjointClasses <$> (parseAnnotations pm) <*> manyNSkip 2 (parseClassExpression pm)
 
 parseDisjointUnion :: GA.PrefixMap -> CharParser st ClassAxiom
-parseDisjointUnion pm =parseEnclosedWithKeyword "DisjointUnion" $
+parseDisjointUnion pm = parseEnclosedWithKeyword "DisjointUnion" $
     DisjointUnion <$>
     (parseAnnotations pm) <*>
     skipsp (parseIRI pm) <*>
     manyNSkip 2 (parseClassExpression pm)
 
 parseClassAxiom :: GA.PrefixMap -> CharParser st Axiom
-parseClassAxiom pm =ClassAxiom <$> (
+parseClassAxiom pm = ClassAxiom <$> (
         (parseSubClassOf pm) <|?>
         (parseEquivalentClasses pm) <|?>
         (parseDisjointClasses pm) <|?>
@@ -485,7 +484,7 @@ parseSubObjectPropertyExpression pm =
     "SubObjectPropertyExpression"
 
 parseSubObjectPropertyOf :: GA.PrefixMap -> CharParser st ObjectPropertyAxiom
-parseSubObjectPropertyOf pm =parseEnclosedWithKeyword "SubObjectPropertyOf" $
+parseSubObjectPropertyOf pm = parseEnclosedWithKeyword "SubObjectPropertyOf" $
     SubObjectPropertyOf <$>
     (parseAnnotations pm) <*>
     (parseSubObjectPropertyExpression pm) <*>
@@ -502,7 +501,7 @@ parseCOPA c s = parseEnclosedWithKeyword s $
     (parseObjectPropertyExpression pm)
 
 parseObjectPropertyAxiom :: GA.PrefixMap -> CharParser st Axiom
-parseObjectPropertyAxiom pm =ObjectPropertyAxiom <$> (
+parseObjectPropertyAxiom pm = ObjectPropertyAxiom <$> (
         (parseSubObjectPropertyOf pm) <|?>
         (parseEquivalentObjectProperties pm) <|?>
         (parseDisjointObjectProperties pm) <|?>
@@ -523,7 +522,7 @@ parseObjectPropertyAxiom pm =ObjectPropertyAxiom <$> (
 -- ## DataPropertyAxioms
 
 parseSubDataPropertyOf :: GA.PrefixMap -> CharParser st DataPropertyAxiom
-parseSubDataPropertyOf pm =parseEnclosedWithKeyword "SubDataPropertyOf" $
+parseSubDataPropertyOf pm = parseEnclosedWithKeyword "SubDataPropertyOf" $
     SubDataPropertyOf <$>
     parseAnnotations pm <*>
     skipsp (parseIRI pm) <*>
@@ -567,7 +566,7 @@ parseFunctionalDataProperty pm =
     skipsp (parseIRI pm)
 
 parseDataPropertyAxiom :: GA.PrefixMap -> CharParser st Axiom
-parseDataPropertyAxiom pm =DataPropertyAxiom <$> (
+parseDataPropertyAxiom pm = DataPropertyAxiom <$> (
         parseSubDataPropertyOf pm <|?>
         parseEquivalentDataProperties pm <|?>
         parseDisjointDataProperties pm <|?>
@@ -579,7 +578,7 @@ parseDataPropertyAxiom pm =DataPropertyAxiom <$> (
 
 -- ## Data Type Definition
 parseDataTypeDefinition :: GA.PrefixMap -> CharParser st Axiom
-parseDataTypeDefinition pm =parseEnclosedWithKeyword "DatatypeDefinition" $
+parseDataTypeDefinition pm = parseEnclosedWithKeyword "DatatypeDefinition" $
     DatatypeDefinition <$>
     parseAnnotations pm <*>
     skipsp (parseIRI pm) <*>
@@ -587,7 +586,7 @@ parseDataTypeDefinition pm =parseEnclosedWithKeyword "DatatypeDefinition" $
 
 -- ## HasKey
 parseHasKey :: GA.PrefixMap -> CharParser st Axiom
-parseHasKey pm =parseEnclosedWithKeyword "HasKey" $ do
+parseHasKey pm = parseEnclosedWithKeyword "HasKey" $ do
     annotations <- (parseAnnotations pm)
     skips
     classExpr <- (parseClassExpression pm)
@@ -607,19 +606,19 @@ parseHasKey pm =parseEnclosedWithKeyword "HasKey" $ do
 
 -- ## Assertion
 parseSameIndividual :: GA.PrefixMap -> CharParser st Assertion
-parseSameIndividual pm =parseEnclosedWithKeyword "SameIndividual" $
+parseSameIndividual pm = parseEnclosedWithKeyword "SameIndividual" $
     SameIndividual <$>
     (parseAnnotations pm) <*>
     manyNSkip 2 (parseIndividual pm)
 
 parseDifferentIndividuals :: GA.PrefixMap -> CharParser st Assertion
-parseDifferentIndividuals pm =parseEnclosedWithKeyword "DifferentIndividuals" $
+parseDifferentIndividuals pm = parseEnclosedWithKeyword "DifferentIndividuals" $
     DifferentIndividuals <$>
     (parseAnnotations pm) <*>
     manyNSkip 2 (parseIndividual pm)
 
 parseClassAssertion :: GA.PrefixMap -> CharParser st Assertion
-parseClassAssertion pm =parseEnclosedWithKeyword "ClassAssertion" $
+parseClassAssertion pm = parseEnclosedWithKeyword "ClassAssertion" $
     ClassAssertion <$>
     (parseAnnotations pm) <*>
     (parseClassExpression pm) <*>
@@ -662,7 +661,7 @@ parseNegativeDataPropertyAssertion pm =
     (parseLiteral pm)
 
 parseAssertion :: GA.PrefixMap -> CharParser st Axiom
-parseAssertion pm =Assertion <$> (
+parseAssertion pm = Assertion <$> (
         (parseSameIndividual pm) <|?>
         (parseDifferentIndividuals pm) <|?>
         (parseClassAssertion pm) <|?>
@@ -674,7 +673,7 @@ parseAssertion pm =Assertion <$> (
 
 
 parseAnnotationAssertion :: GA.PrefixMap -> CharParser st AnnotationAxiom
-parseAnnotationAssertion pm =parseEnclosedWithKeyword "AnnotationAssertion" $
+parseAnnotationAssertion pm = parseEnclosedWithKeyword "AnnotationAssertion" $
     AnnotationAssertion <$>
     (parseAnnotations pm) <*>
     skipsp (parseIRI pm) <*>
@@ -706,7 +705,7 @@ parseAnnotationPropertyRange pm =
     skipsp (parseIRI pm)
 
 parseAnnotationAxiom :: GA.PrefixMap -> CharParser st Axiom
-parseAnnotationAxiom pm =AnnotationAxiom <$> (
+parseAnnotationAxiom pm = AnnotationAxiom <$> (
         (parseAnnotationAssertion pm) <|?>
         (parseSubAnnotationPropertyOf pm) <|?>
         (parseAnnotationPropertyDomain pm) <|?>
@@ -743,7 +742,7 @@ prefixFromMap :: GA.PrefixMap -> [PrefixDeclaration]
 prefixFromMap = map (uncurry PrefixDeclaration) . toList
 
 prefixToMap :: [PrefixDeclaration] -> GA.PrefixMap
-prefixToMap = fromList . map (\(PrefixDeclaration name iri) -> (name, iri))
+prefixToMap = fromList . map (\ (PrefixDeclaration name iri) -> (name, iri))
 
 
 -- | Parses an OntologyDocument from Owl2 Functional Syntax
@@ -754,4 +753,3 @@ parseOntologyDocument gapm = do
     let pm = union gapm (prefixToMap prefix)
     onto <- parseOntology pm
     return $ Ontology (prefixFromMap pm) onto
-
