@@ -13,6 +13,7 @@ import qualified Common.GlobalAnnotations as GA (PrefixMap)
 import Text.ParserCombinators.Parsec
 
 import Data.Char
+import Data.Map (union, toList, fromList)
 
 {- | @p <|?> q@ behaves like @<|>@ but pretends it hasn't consumed any input
 when an options failes. -}
@@ -119,7 +120,7 @@ parsePrefixDeclaration = parseEnclosedWithKeyword "Prefix" $ do
     return $ PrefixDeclaration p iri
 
 parseDirectlyImportsDocument :: GA.PrefixMap -> CharParser st IRI
-parseDirectlyImportsDocument pm = parseEnclosedWithKeyword "Import" ((parseIRI pm) pm) <?>
+parseDirectlyImportsDocument pm = parseEnclosedWithKeyword "Import" (parseIRI pm) <?>
     "Import"
 
 -- # Entities, Literals, and Individuals
@@ -132,12 +133,12 @@ parseEntity' pm t k = parseEnclosedWithKeyword k $ do
 
 parseEntity :: GA.PrefixMap -> CharParser st Entity
 parseEntity pm =
-    (parseEntity' pm Class "Class" <|?>
-    (parseEntity' pm Datatype "Datatype" <|?>
-    (parseEntity' pm ObjectProperty "ObjectProperty" <|?>
-    (parseEntity' pm DataProperty "DataProperty" <|?>
-    (parseEntity' pm AnnotationProperty "AnnotationProperty" <|?>
-    (parseEntity' pm NamedIndividual "NamedIndividual" <?>
+    parseEntity' pm Class "Class" <|?>
+    parseEntity' pm Datatype "Datatype" <|?>
+    parseEntity' pm ObjectProperty "ObjectProperty" <|?>
+    parseEntity' pm DataProperty "DataProperty" <|?>
+    parseEntity' pm AnnotationProperty "AnnotationProperty" <|?>
+    parseEntity' pm NamedIndividual "NamedIndividual" <?>
     "Entity"
 
 -- ## Literals
@@ -168,7 +169,7 @@ parseUntypedLiteral = do
     return $ Literal s (Untyped languageTag)
 
 parseLiteral :: GA.PrefixMap -> CharParser st Literal
-parseLiteral pm = skipsp ((parseTypedLiteral pm) <|?> (parseUntypedLiteral) <?> "Literal"
+parseLiteral pm = skipsp (parseTypedLiteral pm) <|?> parseUntypedLiteral <?> "Literal"
 
 -- ## Individuals
 
@@ -344,7 +345,7 @@ parseObjectCardinality pm = ObjectCardinality <$> (
         cardinality "ObjectMaxCardinality" MaxCardinality <|?>
         cardinality "ObjectExactCardinality" ExactCardinality
     )
-    where cardinality s t = ((parseCardinality' pm) t s a b)
+    where cardinality s t = parseCardinality' t s a b
           a = (parseObjectPropertyExpression pm)
           b = (parseClassExpression pm)
 
@@ -354,7 +355,7 @@ parseDataCardinality pm = DataCardinality <$> (
         cardinality "DataMaxCardinality" MaxCardinality <|?>
         cardinality "DataExactCardinality" ExactCardinality
     )
-    where cardinality s t = ((parseCardinality' pm) t s a b)
+    where cardinality s t = parseCardinality' t s a b
           a = (parseIRI pm)
           b = (parseDataRange pm)
 
@@ -393,7 +394,7 @@ parseClassExpression pm =
     (parseDataAllValuesFrom pm) <|?>
     (parseDataHasValue pm) <|?>
     (parseDataCardinality pm) <|?>
-    (Expression <$> skipsp (parseIRI) pm) <?>
+    (Expression <$> skipsp (parseIRI pm)) <?>
     "ClassExpression"
 
 -- ## Class Axioms
@@ -492,10 +493,10 @@ parseSubObjectPropertyOf pm = parseEnclosedWithKeyword "SubObjectPropertyOf" $
 
 
 -- | Helper function for *C*ommon*O*bject*P*roperty*A*xioms
-parseCOPA :: (
+parseCOPA :: GA.PrefixMap -> (
         AxiomAnnotations -> ObjectPropertyExpression -> ObjectPropertyAxiom
     ) -> String -> CharParser st ObjectPropertyAxiom
-parseCOPA c s = parseEnclosedWithKeyword s $
+parseCOPA pm c s = parseEnclosedWithKeyword s $
     c <$>
     (parseAnnotations pm) <*>
     (parseObjectPropertyExpression pm)
@@ -748,8 +749,8 @@ prefixToMap = fromList . map (\ (PrefixDeclaration name iri) -> (name, iri))
 -- | Parses an OntologyDocument from Owl2 Functional Syntax
 parseOntologyDocument :: GA.PrefixMap -> CharParser st OntologyDocument
 parseOntologyDocument gapm = do
-    prefix <- manySkip parsePrefixDeclaration
+    prefixes <- manySkip parsePrefixDeclaration
     skips
-    let pm = union gapm (prefixToMap prefix)
+    let pm = union gapm (prefixToMap prefixes)
     onto <- parseOntology pm
-    return $ Ontology (prefixFromMap pm) onto
+    return $ OntologyDocument (prefixFromMap pm) onto
