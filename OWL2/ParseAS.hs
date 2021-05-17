@@ -2,6 +2,8 @@
 
 module OWL2.ParseAS where
 
+import Prelude hiding (lookup)
+
 import OWL2.AS
 
 import Common.AnnoParser (newlineOrEof)
@@ -13,7 +15,9 @@ import qualified Common.GlobalAnnotations as GA (PrefixMap)
 import Text.ParserCombinators.Parsec
 
 import Data.Char
-import Data.Map (union, toList, fromList)
+import Data.Map (union, toList, fromList,lookup)
+import Data.Maybe
+
 
 {- | @p <|?> q@ behaves like @<|>@ but pretends it hasn't consumed any input
 when an options failes. -}
@@ -92,9 +96,21 @@ prefix :: CharParser st String
 prefix = option "" (satisfy ncNameStart <:> many (satisfy ncNameChar))
     <++> string ":"
 
+-- | @expandIRI pm iri@ returns the expanded @iri@ with a declaration from @pm@.
+-- | If no declaration is found, return @iri@ unchanged.
+expandIRI :: GA.PrefixMap -> IRI -> IRI
+expandIRI pm iri
+    | isAbbrev iri = fromMaybe iri $ do
+        def <- lookup (prefixName iri) pm
+        expanded <- mergeCurie iri def
+        return $ expanded
+            { iFragment = iFragment iri
+            , prefixName = prefixName iri }
+    | otherwise = iri
+
 -- | Parses an abbreviated or full iri
 parseIRI :: GA.PrefixMap -> CharParser st IRI
-parseIRI pm = fullIri <|?> compoundIriCurie <?> "IRI"
+parseIRI pm = expandIRI pm <$> (fullIri <|?> compoundIriCurie) <?> "IRI"
 
 
 {- | @parseEnclosedWithKeyword k p@ parses the keyword @k@ followed @p@
