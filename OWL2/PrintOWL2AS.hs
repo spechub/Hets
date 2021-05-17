@@ -17,8 +17,13 @@ import Data.List
 sParens d = parens (space <> d <> space)
 
 -- | print IRI
--- here Pretty IRI instance which defined in Common/DocUtils.hs is used
-  
+printIRI :: [String] -> IRI -> Doc
+printIRI ontPrefs iri
+    | isAbbrev iri && elem prefName ontPrefs = 
+        text (prefName ++ ":" ++ (iFragment iri)))
+    | otherwise = pretty iri
+  where prefName = prefixName iri
+
 printDataIRI :: IRI -> Doc
 printDataIRI q = if isDatatypeKey q then text $ showIRI $ setDatatypePrefix q
     else pretty q
