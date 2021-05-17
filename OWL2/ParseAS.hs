@@ -191,7 +191,7 @@ parseLiteral pm =
 -- ## Individuals
 
 parseAnonymousIndividual :: GA.PrefixMap -> CharParser st AnonymousIndividual
-parseAnonymousIndividual pm = iriCurie
+parseAnonymousIndividual pm =  expandIRI pm <$> iriCurie
 
 
 parseIndividual :: GA.PrefixMap -> CharParser st Individual
