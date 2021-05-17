@@ -129,6 +129,8 @@ data IRI = IRI
     , isBlankNode :: Bool         -- ^ is the IRI a blank node?                   
     , hasAngles :: Bool           -- ^ IRI in angle brackets
     , iriPos :: Range             -- ^ position
+    , iFragment :: String         {- ^ If the IRI is a CURIE, @iFragment@
+    holds the fragment -}
     } deriving (Typeable, Data)
 
 -- | Type for authority value within a IRI
@@ -151,6 +153,7 @@ nullIRI = IRI
     , isBlankNode = False
     , hasAngles = False
     , iriPos = nullRange
+    , iFragment = ""
     }
 
 -- | check that we have a full (possibly expanded) IRI (i.e. for comparisons)
