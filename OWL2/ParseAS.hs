@@ -185,7 +185,7 @@ parseUntypedLiteral = do
     return $ Literal s (Untyped languageTag)
 
 parseLiteral :: GA.PrefixMap -> CharParser st Literal
-parseLiteral pm = skipsp (parseTypedLiteral pm) <|?> parseUntypedLiteral <?> "Literal"
+parseLiteral pm = skipsp ((parseTypedLiteral pm) <|?> parseUntypedLiteral) <?> "Literal"
 
 -- ## Individuals
 
