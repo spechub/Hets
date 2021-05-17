@@ -682,7 +682,7 @@ iqueryPart = many1 iprivate <|> uchar ":@/?"
 -- RFC3987, section 2.2
 
 uifragment :: IRIParser st String
-uifragment = char '#' <:> flat (many $ uchar ":@/?")
+uifragment = char '#' <:> flat (many $ uchar ":@/?[]")
 
 -- Reference, Relative and Absolute IRI forms
 
