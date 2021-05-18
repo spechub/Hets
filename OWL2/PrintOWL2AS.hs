@@ -476,7 +476,7 @@ printHasKey axAnns clExpr objPropExprs dataPropExprs =
         dataPropExprsDoc = sParens . hsep . map pretty $ dataPropExprs
 
 -- | print Assertion axiom
-printAssertion :: [PrefixDeclartaion] -> Assertion -> Doc
+printAssertion :: [PrefixDeclaration] -> Assertion -> Doc
 printAssertion pds assertion = case assertion of
     SameIndividual axAnns inds -> printSameIndividual pds axAnns inds
     DifferentIndividuals axAnns inds
