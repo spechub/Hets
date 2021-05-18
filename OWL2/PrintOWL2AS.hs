@@ -271,11 +271,16 @@ printDisjointUnion axAnns cl disjClExprs =
         [map pretty axAnns, [pretty cl], map pretty disjClExprs])
 
 -- | print SubObjectProperyExpression
-instance Pretty SubObjectPropertyExpression where
-    pretty (SubObjPropExpr_obj objPropExpr) = pretty objPropExpr
-    pretty (SubObjPropExpr_exprchain propExprChain) = 
-        keyword objectPropertyChainS
-        <> sParens (hsep . map pretty $ propExprChain)
+printSubObjectPropertyExpression :: [PrefixDeclaration]
+    -> SubObjectPropertyExpression -> Doc
+printSubObjectPropertyExpression pds subObjPropExpr =
+    case subObjPropExpr of
+        SubObjPropExpr_obj objPropExpr
+            -> printObjectPropertyExpression pds objPropExpr
+        SubObjPropExpr_exprchain propExprChain
+            -> keyword objectPropertyChainS 
+                <> sParens (hsep
+                    . map (printObjectPropertyExpression pds) $ propExprChain)
 
 -- | print ObjectPropertyAxiom
 printObjectPropertyAxiom :: [PrefixDeclaration] -> ObjectPropertyAxiom -> Doc
@@ -315,7 +320,7 @@ printSubObjectPropertyOf pds axAnns subObjPropExpr supObjPropExpr =
         [docAxAnns, [docSubObjPropExpr, docSupObjPropExpr]])
     where
         docAxAnns = map (printAnnotation pds) axAnns
-        docSubObjPropExpr = printSubobjectPropertyExpression pds subObjPropExpr
+        docSubObjPropExpr = printSubObjectPropertyExpression pds subObjPropExpr
         docSupObjPropExpr = printObjectPropertyExpression pds supObjPropExpr
 
 printEquivalentObjectProperties :: [PrefixDeclaration] -> AxiomAnnotations
