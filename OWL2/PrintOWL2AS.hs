@@ -207,10 +207,10 @@ instance Pretty Annotation where
         keyword annotationS <> sParens (hsep . concat $
             [map pretty ans, [pretty anProp, pretty anVal]])
 
-instance Pretty AnnotationSubject where
-    pretty annSub = case annSub of
-        AnnSubIri iri -> pretty iri
-        AnnSubAnInd ind -> doubleQuotes . text $ ind
+printAnnotationSubject :: [PrefixDeclaration] -> AnnotationSubject -> Doc
+printAnnotationSubject pds annSub = case annSub of
+    AnnSubIri iri -> printIRI pds iri
+    AnnSubAnInd ind -> printIRI pds iri
 
 -- | print Axioms
 printAxiom :: [PrefixDeclaration] -> Axiom -> Doc
