@@ -201,10 +201,14 @@ printAnnotationValue pds anVal = case anVal of
     AnnValue iri -> printIRI pds iri
     AnnValLit lit -> pretty lit  -- ? check one more time literal printing
 
-instance Pretty Annotation where
-    pretty (Annotation ans anProp anVal) =
-        keyword annotationS <> sParens (hsep . concat $
-            [map pretty ans, [pretty anProp, pretty anVal]])
+printAnnotation :: [PrefixDeclaration] -> Annotation -> Doc
+printAnnotation pds (Annotation ans anProp anVal) =
+    keyword annotationS <> sParens (hsep . concat $
+        [docAns, [docAnProp, docAnVal]])
+    where
+        docAns = map (printAnnotation pds) ans
+        docAnProp = printIRI pds anProp
+        docAnVal = printAnnotationVAlue pds anVal
 
 printAnnotationSubject :: [PrefixDeclaration] -> AnnotationSubject -> Doc
 printAnnotationSubject pds annSub = case annSub of
