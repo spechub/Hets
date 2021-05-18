@@ -457,11 +457,16 @@ printFunctionalDataProperty axAnns dataPropExpr =
 
 -- | print DatatypeDefinition axiom
 
-printDatatypeDefinition :: AxiomAnnotations -> Datatype -> DataRange -> Doc
-printDatatypeDefinition axAnns dt dr =
+printDatatypeDefinition :: [PrefixDeclaration] -> AxiomAnnotations -> Datatype
+    -> DataRange -> Doc
+printDatatypeDefinition pds axAnns dt dr =
     keyword datatypeDefinitionS
     <> sParens (hsep . concat $
-        [map pretty axAnns, [pretty dt, pretty dr]])
+        [docAxAnns, [docDt, docDr]])
+    where
+        docAxAnns = map (printAnnotation pds) axAnns
+        docDt = printIRI pds dt
+        docDr = printDataRange pds dr
 
 -- | print HasKey axiom
 
