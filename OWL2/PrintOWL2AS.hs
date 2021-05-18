@@ -213,24 +213,27 @@ instance Pretty AnnotationSubject where
         AnnSubAnInd ind -> doubleQuotes . text $ ind
 
 -- | print Axioms
+printAxiom :: [PrefixDeclaration] -> Axiom -> Doc
+printAxiom pds axiom = case axiom of 
+    Declaration axAnns ent -> printDeclaration pds axAnns ent
+    ClassAxiom ax -> printClassAxiom pds ax
+    ObjectPropertyAxiom ax -> printObjectPropertyAxiom pds ax
+    DataPropertyAxiom ax -> printDataPropertyAxiom pds ax
+    DatatypeDefinition axAnns dt dr 
+        -> printDatatypeDefinition pds axAnns dt dr
+    HasKey axAnns clExpr objPropExprs dataPropExprs
+        -> printHasKey pds axAnns clExpr objPropExprs dataPropExprs
+    Assertion ax -> printAssertion pds ax
+    AnnotationAxiom ax -> printAnnotationAxiom pds ax
 
-instance Pretty Axiom where
-    pretty axiom = case axiom of
-        Declaration axAnns ent ->
-            keyword "Declaration"
-            <> sParens (hsep . concat $
-                [map pretty axAnns, [pretty ent]])
-
-        ClassAxiom ax -> pretty ax
-        ObjectPropertyAxiom ax -> pretty ax
-        DataPropertyAxiom ax -> pretty ax
-        DatatypeDefinition axAnns dt dr 
-            -> printDatatypeDefinition axAnns dt dr
-        HasKey axAnns clExpr objPropExprs dataPropExprs
-            -> printHasKey axAnns clExpr objPropExprs dataPropExprs
-        Assertion ax -> pretty ax
-        AnnotationAxiom ax -> pretty ax
-
+printDeclaration :: [PrefixDeclaration] -> AxiomAnnotations -> Entity -> Doc
+printDeclaration pds axAnns ent =
+    keyword "Declaration"
+    <> sParens (hsep . concat $
+        [docAxAnns, [docEnt]])
+    where
+        docAxAnns = map (printAnnotation pds) axAnns
+        docEnt = printEntity pds ent
 
 -- | print ClassAxiom
 printClassAxiom :: [PrefixDeclaration] -> ClassAxiom -> Doc
