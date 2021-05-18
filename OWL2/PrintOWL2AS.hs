@@ -476,73 +476,103 @@ printHasKey axAnns clExpr objPropExprs dataPropExprs =
         dataPropExprsDoc = sParens . hsep . map pretty $ dataPropExprs
 
 -- | print Assertion axiom
-instance Pretty Assertion where
-    pretty ax = case ax of
-        SameIndividual axAnns inds -> printSameIndividual axAnns inds
-        DifferentIndividuals axAnns inds
-            -> printDifferentIndividuals axAnns inds
-        ClassAssertion axAnns clExpr ind
-            -> printClassAssertion axAnns clExpr ind
-        ObjectPropertyAssertion axAnns objPropExpr srcInd targInd
-            -> printObjectPropertyAssertion axAnns objPropExpr srcInd targInd
-        NegativeObjectPropertyAssertion axAnns objPropExpr srcInd targInd
-            -> printNegativeObjectPropertyAssertion axAnns objPropExpr srcInd
-                targInd
-        DataPropertyAssertion axAnns dataPropExpr srcInd targVal
-            -> printDataPropertyAssertion axAnns dataPropExpr srcInd targVal
-        NegativeDataPropertyAssertion axAnns dataPropExpr srcInd targVal
-            -> printNegativeDataPropertyAssertion axAnns dataPropExpr srcInd
-                targVal
+printAssertion :: [PrefixDeclartaion] -> Assertion -> Doc
+printAssertion pds assertion = case assertion of
+    SameIndividual axAnns inds -> printSameIndividual pds axAnns inds
+    DifferentIndividuals axAnns inds
+        -> printDifferentIndividuals pds axAnns inds
+    ClassAssertion axAnns clExpr ind
+        -> printClassAssertion pds axAnns clExpr ind
+    ObjectPropertyAssertion axAnns objPropExpr srcInd targInd
+        -> printObjectPropertyAssertion pds axAnns objPropExpr srcInd targInd
+    NegativeObjectPropertyAssertion axAnns objPropExpr srcInd targInd
+        -> printNegativeObjectPropertyAssertion pds axAnns objPropExpr srcInd
+            targInd
+    DataPropertyAssertion axAnns dataPropExpr srcInd targVal
+        -> printDataPropertyAssertion pds axAnns dataPropExpr srcInd targVal
+    NegativeDataPropertyAssertion axAnns dataPropExpr srcInd targVal
+        -> printNegativeDataPropertyAssertion pds axAnns dataPropExpr srcInd
+            targVal
 
-printSameIndividual :: AxiomAnnotations -> [Individual] -> Doc
-printSameIndividual axAnns inds =
+printSameIndividual :: [PrefixDeclaration] -> AxiomAnnotations -> [Individual]
+    -> Doc
+printSameIndividual pds axAnns inds =
     keyword sameIndividualS
     <> sParens (hsep . concat $
-        [map pretty axAnns, map pretty inds])
+        [docAxAnns, docInds])
+    where
+        docAxAnns = map (printAnnotation pds) axAnns
+        docInds = map (printIRI pds) inds
 
-printDifferentIndividuals :: AxiomAnnotations -> [Individual] -> Doc
-printDifferentIndividuals axAnns inds =
+printDifferentIndividuals :: [PrefixDeclaration] -> AxiomAnnotations
+    -> [Individual] -> Doc
+printDifferentIndividuals pds axAnns inds =
     keyword differentIndividualsS
     <> sParens (hsep . concat $
-        [map pretty axAnns, map pretty inds])
+        [docAxAnns, docInds])
+    where
+        docAxAnns = map (printAnnotation pds) axAnns
+        docInds = map (printIRI pds) inds
 
-printClassAssertion :: AxiomAnnotations -> ClassExpression -> Individual -> Doc
-printClassAssertion axAnns clExpr ind =
+printClassAssertion :: [PrefixDeclaration] -> AxiomAnnotations
+    -> ClassExpression -> Individual -> Doc
+printClassAssertion pds axAnns clExpr ind =
     keyword classAssertionS
     <> sParens (hsep . concat $
-        [map pretty axAnns, [pretty clExpr, pretty ind]])
+        [docAxAnns, [docClassExpr, docInd]])
+    where
+        docAxAnns = map (printAnnotation pds) axAnns
+        docClassExpr = printClassExpression pds clExpr
+        docInd = printIRI pds ind
 
-printObjectPropertyAssertion :: AxiomAnnotations -> ObjectPropertyExpression
-    -> SourceIndividual -> TargetIndividual -> Doc
-printObjectPropertyAssertion axAnns objPropExpr srcInd targInd =
+printObjectPropertyAssertion :: [PrefixDeclaration] -> AxiomAnnotations
+    -> ObjectPropertyExpression -> SourceIndividual -> TargetIndividual -> Doc
+printObjectPropertyAssertion pds axAnns objPropExpr srcInd targInd =
     keyword objectPropertyAssertionS
     <> sParens (hsep . concat $
-        [map pretty axAnns, [pretty objPropExpr, pretty srcInd,
-            pretty targInd]])
+        [docAxAnns, [docObjPropExpr, docSrcInd, docTargInd]])
+    where 
+        docAxAnns = map (printAnnotation pds) axAnns
+        docObjPropExpr = printObjectPropertyExpression pds objPropExpr
+        docSrcInd = printIRI pds srcInd
+        docTargInd = printIRI pds targInd
 
-printNegativeObjectPropertyAssertion :: AxiomAnnotations
+
+printNegativeObjectPropertyAssertion :: [PrefixDeclaration] -> AxiomAnnotations
     -> ObjectPropertyExpression -> SourceIndividual -> TargetIndividual -> Doc
-printNegativeObjectPropertyAssertion axAnns objPropExpr srcInd targInd =
+printNegativeObjectPropertyAssertion pds axAnns objPropExpr srcInd targInd =
     keyword negativeObjectPropertyAssertionS
     <> sParens (hsep . concat $
-        [map pretty axAnns, [pretty objPropExpr, pretty srcInd,
-            pretty targInd]])
+        [docAxAnns, [docObjPropExpr, docSrcInd, docTargInd]])
+    where 
+        docAxAnns = map (printAnnotation pds) axAnns
+        docObjPropExpr = printObjectPropertyExpression pds objPropExpr
+        docSrcInd = printIRI pds srcInd
+        docTargInd = printIRI pds targInd
 
-printDataPropertyAssertion :: AxiomAnnotations -> DataPropertyExpression
-    -> SourceIndividual -> TargetValue -> Doc
-printDataPropertyAssertion axAnns dataPropExpr srcInd targVal =
+printDataPropertyAssertion :: [PrefixDeclaration] -> AxiomAnnotations
+    -> DataPropertyExpression -> SourceIndividual -> TargetValue -> Doc
+printDataPropertyAssertion pds axAnns dataPropExpr srcInd targVal =
     keyword dataPropertyAssertionS
     <> sParens (hsep . concat $
-      [map pretty axAnns, [pretty dataPropExpr, pretty srcInd,
-        pretty targVal]])
+      [docAxAnns, [docDataPropExpr, docSrcInd, docTargInd]])
+     where 
+        docAxAnns = map (printAnnotation pds) axAnns
+        docDataPropExpr = printIRI pds dataPropExpr
+        docSrcInd = printIRI pds srcInd
+        docTargInd = printIRI pds targInd
 
-printNegativeDataPropertyAssertion :: AxiomAnnotations -> DataPropertyExpression
-    -> SourceIndividual -> TargetValue -> Doc
-printNegativeDataPropertyAssertion axAnns dataPropExpr srcInd targVal =
+printNegativeDataPropertyAssertion :: [PrefixDeclaration] -> AxiomAnnotations
+    -> DataPropertyExpression -> SourceIndividual -> TargetValue -> Doc
+printNegativeDataPropertyAssertion pds axAnns dataPropExpr srcInd targVal =
     keyword negativeDataPropertyAssertionS
     <> sParens (hsep . concat $
-        [map pretty axAnns, [pretty dataPropExpr, pretty srcInd,
-            pretty targVal]])
+         [docAxAnns, [docDataPropExpr, docSrcInd, docTargInd]])
+     where 
+        docAxAnns = map (printAnnotation pds) axAnns
+        docDataPropExpr = printIRI pds dataPropExpr
+        docSrcInd = printIRI pds srcInd
+        docTargInd = printIRI pds targInd
 
 -- | print AnnotationAxiom
 printAnnotationAxiom :: [PrefixDeclaration] -> AnnotationAxiom -> Doc
