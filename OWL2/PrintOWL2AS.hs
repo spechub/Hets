@@ -278,125 +278,171 @@ instance Pretty SubObjectPropertyExpression where
         <> sParens (hsep . map pretty $ propExprChain)
 
 -- | print ObjectPropertyAxiom
-instance Pretty ObjectPropertyAxiom where
-    pretty ax = case ax of
-        SubObjectPropertyOf axAnns subObjPropExpr supObjPropExpr
-            -> printSubObjectPropertyOf axAnns subObjPropExpr supObjPropExpr
-        EquivalentObjectProperties axAnns objPropExprs
-            -> printEquivalentObjectProperties axAnns objPropExprs
-        DisjointObjectProperties axAnns objPropExprs
-            -> printDisjointObjectProperties axAnns objPropExprs
-        InverseObjectProperties axAnns objPropExpr1 objPropExpr2
-            -> printInverseObjectProperties axAnns objPropExpr1 objPropExpr2
-        ObjectPropertyDomain axAnns objPropExpr clExpr
-            -> printObjectPropertyDomain axAnns objPropExpr clExpr
-        ObjectPropertyRange axAnns objPropExpr clExpr
-            -> printObjectPropertyRange axAnns objPropExpr clExpr
-        FunctionalObjectProperty axAnns objPropExpr
-            -> printFunctionalObjectProperty axAnns objPropExpr
-        InverseFunctionalObjectProperty axAnns objPropExpr
-            -> printInverseFunctionalObjectProperty axAnns objPropExpr
-        ReflexiveObjectProperty  axAnns objPropExpr
-            -> printReflexiveObjectProperty  axAnns objPropExpr
-        IrreflexiveObjectProperty  axAnns objPropExpr
-            -> printIrreflexiveObjectProperty  axAnns objPropExpr
-        SymmetricObjectProperty  axAnns objPropExpr
-            -> printSymmetricObjectProperty axAnns objPropExpr
-        AsymmetricObjectProperty axAnns objPropExpr
-            -> printAsymmetricObjectProperty axAnns objPropExpr
-        TransitiveObjectProperty axAnns objPropExpr
-            -> printTransitiveObjectProperty axAnns objPropExpr
+printObjectPropertyAxiom :: [PrefixDeclaration] -> ObjectPropertyAxiom -> Doc
+printObjectPropertyAxiom pds objPropAx = case objPropAx of
+    SubObjectPropertyOf axAnns subObjPropExpr supObjPropExpr
+        -> printSubObjectPropertyOf pds axAnns subObjPropExpr supObjPropExpr
+    EquivalentObjectProperties axAnns objPropExprs
+        -> printEquivalentObjectProperties pds axAnns objPropExprs
+    DisjointObjectProperties axAnns objPropExprs
+        -> printDisjointObjectProperties pds axAnns objPropExprs
+    InverseObjectProperties axAnns objPropExpr1 objPropExpr2
+        -> printInverseObjectProperties pds axAnns objPropExpr1 objPropExpr2
+    ObjectPropertyDomain axAnns objPropExpr clExpr
+        -> printObjectPropertyDomain pds axAnns objPropExpr clExpr
+    ObjectPropertyRange axAnns objPropExpr clExpr
+        -> printObjectPropertyRange pds axAnns objPropExpr clExpr
+    FunctionalObjectProperty axAnns objPropExpr
+        -> printFunctionalObjectProperty pds axAnns objPropExpr
+    InverseFunctionalObjectProperty axAnns objPropExpr
+        -> printInverseFunctionalObjectProperty pds axAnns objPropExpr
+    ReflexiveObjectProperty axAnns objPropExpr
+        -> printReflexiveObjectProperty pds axAnns objPropExpr
+    IrreflexiveObjectProperty axAnns objPropExpr
+        -> printIrreflexiveObjectProperty pds axAnns objPropExpr
+    SymmetricObjectProperty axAnns objPropExpr
+        -> printSymmetricObjectProperty pds axAnns objPropExpr
+    AsymmetricObjectProperty axAnns objPropExpr
+        -> printAsymmetricObjectProperty pds axAnns objPropExpr
+    TransitiveObjectProperty axAnns objPropExpr
+        -> printTransitiveObjectProperty pds axAnns objPropExpr
 
-printSubObjectPropertyOf :: AxiomAnnotations -> SubObjectPropertyExpression
-    -> SuperObjectPropertyExpression -> Doc
-printSubObjectPropertyOf axAnns subObjPropExpr supObjPropExpr =
+printSubObjectPropertyOf :: [PrefixDeclaration] -> AxiomAnnotations
+    -> SubObjectPropertyExpression -> SuperObjectPropertyExpression -> Doc
+printSubObjectPropertyOf pds axAnns subObjPropExpr supObjPropExpr =
     keyword subObjectPropertyOfS
     <> sParens (hsep . concat $ 
-        [map pretty axAnns, [pretty subObjPropExpr, pretty supObjPropExpr]])
+        [docAxAnns, [docSubObjPropExpr, docSupObjPropExpr]])
+    where
+        docAxAnns = map (printAnnotation pds) axAnns
+        docSubObjPropExpr = printSubobjectPropertyExpression pds subObjPropExpr
+        docSupObjPropExpr = printObjectPropertyExpression pds supObjPropExpr
 
-printEquivalentObjectProperties :: AxiomAnnotations
+printEquivalentObjectProperties :: [PrefixDeclaration] -> AxiomAnnotations
     -> [ObjectPropertyExpression] -> Doc
-printEquivalentObjectProperties axAnns objPropExprs =
+printEquivalentObjectProperties pds axAnns objPropExprs =
     keyword equivalentObjectPropertiesS
     <> sParens (hsep . concat $
-        [map pretty axAnns, map pretty objPropExprs])
+        [docAxAnns, docObjPropExprs])
+    where
+        docAxAnns = map (printAnnotation pds) axAnns
+        docObjPropExprs = map (printObjectPropertyExpression pds) objPropExprs
 
-printDisjointObjectProperties :: AxiomAnnotations
+printDisjointObjectProperties :: [PrefixDeclaration] -> AxiomAnnotations
     -> [ObjectPropertyExpression] -> Doc
-printDisjointObjectProperties axAnns objPropExprs =
+printDisjointObjectProperties pds axAnns objPropExprs =
     keyword disjointObjectPropertiesS
     <> sParens (hsep . concat $
-        [map pretty axAnns, map pretty objPropExprs])
+        [docAxAnns, docObjPropExprs])
+    where
+        docAxAnns = map (printAnnotation pds) axAnns
+        docObjPropExprs = map (printObjectPropertyExpression pds) objPropExprs
 
-printInverseObjectProperties :: AxiomAnnotations -> ObjectPropertyExpression
-    -> ObjectPropertyExpression -> Doc
-printInverseObjectProperties axAnns objPropExpr1 objPropExpr2 =
+printInverseObjectProperties :: [PrefixDeclaration] -> AxiomAnnotations
+    -> ObjectPropertyExpression -> ObjectPropertyExpression -> Doc
+printInverseObjectProperties pds axAnns objPropExpr1 objPropExpr2 =
     keyword inverseObjectPropertiesS
     <> sParens (hsep . concat $ 
-        [map pretty axAnns, map pretty [objPropExpr1, objPropExpr2]])
+        [docAxAnns, [docObjPropExpr1, docObjPropExpr2]])
+    where
+        docAxAnns = map (printAnnotation pds) axAnns
+        docObjPropExpr1 = printObjectPropertyExpression pds objPropExpr1
+        docObjPropExpr2 = printObjectPropertyExpression pds objPropExpr2
 
-printObjectPropertyDomain :: AxiomAnnotations -> ObjectPropertyExpression
-    -> ClassExpression -> Doc
-printObjectPropertyDomain axAnns objPropExpr clExpr =
+
+printObjectPropertyDomain :: [PrefixDeclaration] -> AxiomAnnotations
+    -> ObjectPropertyExpression -> ClassExpression -> Doc
+printObjectPropertyDomain pds axAnns objPropExpr clExpr =
     keyword objectPropertyDomainS
     <> sParens (hsep . concat $ 
-        [map pretty axAnns, [pretty objPropExpr, pretty clExpr]])
+        [docAxAnns, [docObjPropExpr, docClassExpr]])
+    where
+        docAxAnns = map (printAnnotation pds) axAnns
+        docObjPropExpr = printObjectPropertyExpression pds objPropExpr
+        docClassExpr = printClassExpression pds clExpr
 
-printObjectPropertyRange :: AxiomAnnotations -> ObjectPropertyExpression
-    -> ClassExpression -> Doc
-printObjectPropertyRange axAnns objPropExpr clExpr = 
+printObjectPropertyRange :: [PrefixDeclaration] -> AxiomAnnotations
+    -> ObjectPropertyExpression -> ClassExpression -> Doc
+printObjectPropertyRange pds axAnns objPropExpr clExpr = 
     keyword objectPropertyRangeS
     <> sParens (hsep . concat $ 
-        [map pretty axAnns, [pretty objPropExpr, pretty clExpr]])
+        [[docAxAnns, [docObjPropExpr, docClassExpr]])
+    where
+        docAxAnns = map (printAnnotation pds) axAnns
+        docObjPropExpr = printObjectPropertyExpression pds objPropExpr
+        docClassExpr = printClassExpression pds clExpr
+    
 
-printFunctionalObjectProperty :: AxiomAnnotations -> ObjectPropertyExpression
-    -> Doc
-printFunctionalObjectProperty axAnns objPropExpr =
+printFunctionalObjectProperty :: [PrefixDeclaration] -> AxiomAnnotations
+    -> ObjectPropertyExpression -> Doc
+printFunctionalObjectProperty pds axAnns objPropExpr =
     keyword functionalObjectPropertyS
     <> sParens (hsep . concat $
-        [map pretty axAnns, [pretty objPropExpr]])
+        [docAxAnns, [docObjPropExpr]])
+    where
+        docAxAnns = map (printAnnotation pds) axAnns
+        docObjPropExpr = printObjectPropertyExpression pds objPropExpr
 
-printInverseFunctionalObjectProperty :: AxiomAnnotations -> ObjectPropertyExpression
-    -> Doc
-printInverseFunctionalObjectProperty axAnns objPropExpr =
+printInverseFunctionalObjectProperty :: [PrefixDeclaration] -> AxiomAnnotations
+    -> ObjectPropertyExpression -> Doc
+printInverseFunctionalObjectProperty pds axAnns objPropExpr =
     keyword inverseFunctionalObjectPropertyS
     <> sParens (hsep . concat $
-        [map pretty axAnns, [pretty objPropExpr]])
+        [docAxAnns, [docObjPropExpr]])
+    where
+        docAxAnns = map (printAnnotation pds) axAnns
+        docObjPropExpr = printObjectPropertyExpression pds objPropExpr
 
-printReflexiveObjectProperty :: AxiomAnnotations -> ObjectPropertyExpression
-    -> Doc
-printReflexiveObjectProperty axAnns objPropExpr =
+printReflexiveObjectProperty :: [PrefixDeclaration] -> AxiomAnnotations
+    -> ObjectPropertyExpression -> Doc
+printReflexiveObjectProperty pds axAnns objPropExpr =
     keyword reflexiveObjectPropertyS
     <> sParens (hsep . concat $
-        [map pretty axAnns, [pretty objPropExpr]])
+        [docAxAnns, [docObjPropExpr]])
+    where
+        docAxAnns = map (printAnnotation pds) axAnns
+        docObjPropExpr = printObjectPropertyExpression pds objPropExpr
 
-printIrreflexiveObjectProperty :: AxiomAnnotations -> ObjectPropertyExpression
-    -> Doc
-printIrreflexiveObjectProperty axAnns objPropExpr =
+
+printIrreflexiveObjectProperty :: [PrefixDeclaration] -> AxiomAnnotations
+    -> ObjectPropertyExpression -> Doc
+printIrreflexiveObjectProperty pds axAnns objPropExpr =
     keyword irreflexiveObjectPropertyS
     <> sParens (hsep . concat $
-        [map pretty axAnns, [pretty objPropExpr]])
+        [docAxAnns, [docObjPropExpr]])
+    where
+        docAxAnns = map (printAnnotation pds) axAnns
+        docObjPropExpr = printObjectPropertyExpression pds objPropExpr
 
-printSymmetricObjectProperty :: AxiomAnnotations -> ObjectPropertyExpression
-    -> Doc
-printSymmetricObjectProperty axAnns objPropExpr =
+printSymmetricObjectProperty :: [PrefixDeclaration] -> AxiomAnnotations
+    -> ObjectPropertyExpression -> Doc
+printSymmetricObjectProperty pds axAnns objPropExpr =
     keyword symmetricObjectPropertyS
     <> sParens (hsep . concat $
-        [map pretty axAnns, [pretty objPropExpr]])
+        [docAxAnns, [docObjPropExpr]])
+    where
+        docAxAnns = map (printAnnotation pds) axAnns
+        docObjPropExpr = printObjectPropertyExpression pds objPropExpr
 
-printAsymmetricObjectProperty :: AxiomAnnotations -> ObjectPropertyExpression
-    -> Doc
-printAsymmetricObjectProperty axAnns objPropExpr =
+printAsymmetricObjectProperty :: [PrefixDeclaration] -> AxiomAnnotations
+    -> ObjectPropertyExpression -> Doc
+printAsymmetricObjectProperty pds axAnns objPropExpr =
     keyword asymmetricObjectPropertyS
     <> sParens (hsep . concat $
-        [map pretty axAnns, [pretty objPropExpr]])
+        [docAxAnns, [docObjPropExpr]])
+    where
+        docAxAnns = map (printAnnotation pds) axAnns
+        docObjPropExpr = printObjectPropertyExpression pds objPropExpr
 
-printTransitiveObjectProperty :: AxiomAnnotations -> ObjectPropertyExpression
-    -> Doc
+printTransitiveObjectProperty :: [PrefixDeclaration] -> AxiomAnnotations
+    -> ObjectPropertyExpression -> Doc
 printTransitiveObjectProperty axAnns objPropExpr =
     keyword transitiveObjectPropertyS
     <> sParens (hsep . concat $
-        [map pretty axAnns, [pretty objPropExpr]])
+        [docAxAnns, [docObjPropExpr]])
+    where
+        docAxAnns = map (printAnnotation pds) axAnns
+        docObjPropExpr = printObjectPropertyExpression pds objPropExpr
 
 -- | print DataPropertyAxiom
 printDataPropertyAxiom :: [PrefixDeclaration] -> DataPropertyAxiom -> Doc
