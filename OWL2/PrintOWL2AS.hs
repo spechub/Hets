@@ -591,20 +591,20 @@ instance Pretty PrefixDeclaration where
         keyword "Prefix"
         <> sParens ((text prName) <> (text " = ") <> pretty iri)
 
-instance Pretty Ontology where
-    pretty (Ontology mOnt mVerIri dImpDocs ontAnns axioms) =
-        keyword "Ontology"
-        <> sParens (vsep . concat $ 
-        [[ontNameDoc], importedDocs, ontAnnsDocs, axiomsDocs])
-        where
-            ontAnnsDocs = map pretty ontAnns
-            axiomsDocs = map pretty axioms  
-            versionIriDoc = maybe empty pretty mVerIri
-            ontNameDoc = maybe empty (\ontvalue -> hsep [pretty ontvalue,
-                versionIriDoc]) mOnt
-            importedDocs = keyword "Import" 
-                <> sParens(hsep . map pretty $ dImpDocs)
+printOnt :: [PrefixDeclaration] -> Ontology -> Doc
+printOnt pds (Ontology mOnt mVerIri dImpDocs ontAnns axioms) =
+    keyword "Ontology"
+    <> sParens (vsep . concat $
+    [[ontNameDoc], importedDocs, ontAnnsDocs, axiomsDocs])
+    where
+        ontAnnsDocs = map (printAnnotation pds) ontAnns
+        axiomsDocs = map (printAxiom pds) axioms
+        versionIriDoc = maybe empty (printIRI pds) mVerIri
+        ontNameDoc = naybe empty (\ontvalue -> hsep [printIRI pds ontvalue,
+            versionIriDoc]) mOnt
+        importedDocs = keyword "Import"
+            <> sParens(hsep . map (printIRI pds) dImpDocs)
 
 instance Pretty OntologyDocument where
     pretty (OntologyDocument prefDecls ont) = 
-        (hsep . map pretty $ prefDecls) $+$ pretty ont
+        (hsep . map pretty $ prefDecls) $+$ printOnt prefDecls ont
