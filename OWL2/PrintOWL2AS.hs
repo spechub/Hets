@@ -465,15 +465,19 @@ printDatatypeDefinition axAnns dt dr =
 
 -- | print HasKey axiom
 
-printHasKey :: AxiomAnnotations -> ClassExpression -> [ObjectPropertyExpression]
-    -> [DataPropertyExpression] -> Doc
-printHasKey axAnns clExpr objPropExprs dataPropExprs =
+printHasKey :: [PrefixDeclaration] -> AxiomAnnotations -> ClassExpression
+    -> [ObjectPropertyExpression] -> [DataPropertyExpression] -> Doc
+printHasKey pds axAnns clExpr objPropExprs dataPropExprs =
     keyword hasKeyS
-    <> sParens (hsep . concat $ [map pretty axAnns, [pretty clExpr],
-        [objPropExprsDoc], [dataPropExprsDoc]])
+    <> sParens (hsep . concat $
+        [docAxAnns, [docClassExpr, docObjPropExprs, docDataPropExprs]])
     where
-        objPropExprsDoc = sParens . hsep . map pretty $ objPropExprs
-        dataPropExprsDoc = sParens . hsep . map pretty $ dataPropExprs
+        docAxAnns = map (printAnnotation pds) axAnns
+        docClassExpr = printClassExpression pds clExpr
+        docObjPropExprs = sParens . hsep
+            . map (printObjectPropertyExpression pds) $ objPropExprs
+        docDataPropExprs = sParens . hsep
+            . map (printIRI pds) $ dataPropExprs
 
 -- | print Assertion axiom
 printAssertion :: [PrefixDeclaration] -> Assertion -> Doc
