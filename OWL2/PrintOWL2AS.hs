@@ -233,42 +233,57 @@ instance Pretty Axiom where
 
 
 -- | print ClassAxiom
+printClassAxiom :: [PrefixDeclaration] -> ClassAxiom -> Doc
+printClassAxiom pds ca = case ca of
+    SubClassOf axAnns subClExpr supClExpr ->
+        printSubClassOf pds axAnns subClExpr supClExpr
+    EquivalentClasses axAnns clExprs ->
+        printEquivalentClasses pds axAnns clExprs
+    DisjointClasses axAnns clExprs -> printDisjointClasses pds axAnns clExprs
+    DisjointUnion axAnns cl disjClExprs ->
+        printDisjointUnion pds axAnns cl disjClExprs
 
-instance Pretty ClassAxiom where
-    pretty ca = case ca of 
-        SubClassOf axAnns subClExpr supClExpr ->
-            printSubClassOf axAnns subClExpr supClExpr
-        EquivalentClasses axAnns clExprs ->
-            printEquivalentClasses axAnns clExprs
-        DisjointClasses axAnns clExprs -> printDisjointClasses axAnns clExprs
-        DisjointUnion axAnns cl disjClExprs ->
-            printDisjointUnion axAnns cl disjClExprs
-
-printSubClassOf :: AxiomAnnotations -> SubClassExpression
-    -> SuperClassExpression -> Doc
-printSubClassOf axAnns subClExpr supClExpr =
+printSubClassOf :: [PrefixDeclaration] -> AxiomAnnotations
+    -> SubClassExpression -> SuperClassExpression -> Doc
+printSubClassOf pds axAnns subClExpr supClExpr =
     keyword subClassOfS
     <> sParens (hsep . concat $
-        [map pretty axAnns, map pretty [subClExpr, supClExpr]])
+        [docAxAnns, [subClExpr, supClExpr]])
+    where
+        docAxAnns = map (printAnnotation pds) axAnns
+        docSubClExpr = printClassExpression pds subClExpr
+        docSupClExpr = printClassExpression pds supClExpr
 
-printEquivalentClasses :: AxiomAnnotations -> [ClassExpression] -> Doc
-printEquivalentClasses axAnns clExprs =
+printEquivalentClasses :: [PrefixDeclaration] -> AxiomAnnotations
+    -> [ClassExpression] -> Doc
+printEquivalentClasses pds axAnns clExprs =
     keyword equivalentClassesS
     <> sParens (hsep . concat $
-        [map pretty axAnns, map pretty clExprs])
+        [docAxAnns, docClExprs])
+    where
+        docAxAnns = map (printAnnotation pds) axAnns
+        docClExprs = map (printClassExpression pds) clExprs
 
-printDisjointClasses :: AxiomAnnotations -> [ClassExpression] -> Doc
-printDisjointClasses axAnns clExprs =
+printDisjointClasses :: [PrefixDeclaration] -> AxiomAnnotations
+    -> [ClassExpression] -> Doc
+printDisjointClasses pds axAnns clExprs =
     keyword disjointClassesS
     <> sParens (hsep . concat $
-        [map pretty axAnns, map pretty clExprs])
+        [docAxAnns, docClExprs])
+    where
+        docAxAnns = map (printAnnotation pds) axAnns
+        docClExprs = map (printClassExpression pds) clExprs
 
-printDisjointUnion ::AxiomAnnotations -> Class -> DisjointClassExpression 
-    -> Doc
-printDisjointUnion axAnns cl disjClExprs = 
+printDisjointUnion :: [PrefixDeclaration] -> AxiomAnnotations -> Class
+    -> DisjointClassExpression  -> Doc
+printDisjointUnion pds axAnns cl disjClExprs = 
     keyword disjointUnionS
     <> sParens (hsep . concat $
-        [map pretty axAnns, [pretty cl], map pretty disjClExprs])
+        [docAxAnns, [docCl], docDisjClExprs])
+    where
+        docAxAnns = map (printAnnotation pds) axAnns
+        docCl = printIRI pds cl
+        docDisjClExprs = map (printClassExpression pds) disjClExprs
 
 -- | print SubObjectProperyExpression
 printSubObjectPropertyExpression :: [PrefixDeclaration]
