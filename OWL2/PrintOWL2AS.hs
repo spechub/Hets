@@ -195,12 +195,11 @@ printDataHasValue dPropExpr lit =
     keyword dataHasValueS <> sParens(hsep [pretty dPropExpr, pretty lit])
 
 -- | print Annotations
-
-instance Pretty AnnotationValue where
-    pretty anVal = case anVal of
-        AnnAnInd anInd -> doubleQuotes . text $ anInd
-        AnnValue iri -> pretty iri
-        AnnValLit lit -> pretty lit
+printAnnotationValue :: [PrefixDeclaration] -> AnnotationValue -> Doc
+printAnnotationValue pds anVal = case anVal of
+    AnnAnInd anInd -> printIRI pds anInd
+    AnnValue iri -> printIRI pds iri
+    AnnValLit lit -> pretty lit  -- ? check one more time literal printing
 
 instance Pretty Annotation where
     pretty (Annotation ans anProp anVal) =
