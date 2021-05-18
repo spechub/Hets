@@ -545,45 +545,61 @@ printNegativeDataPropertyAssertion axAnns dataPropExpr srcInd targVal =
             pretty targVal]])
 
 -- | print AnnotationAxiom
-instance Pretty AnnotationAxiom where
-    pretty ax = case ax of 
-        AnnotationAssertion axAnns annProp annSub annValue
-            -> printAnnotationAssertion axAnns annProp annSub annValue
-        SubAnnotationPropertyOf axAnns subAnnProp supAnnProp
-            -> printSubAnnotationPropertyOf axAnns subAnnProp supAnnProp
-        AnnotationPropertyDomain axAnns annProp iri
-            -> printAnnotationPropertyDomain axAnns annProp iri
-        AnnotationPropertyRange axAnns annProp iri
-            -> printAnnotationPropertyRange axAnns annProp iri
+printAnnotationAxiom :: [PrefixDeclaration] -> AnnotationAxiom -> Doc
+printAnnotationAxiom pds annAxs = case annAxs of
+    AnnotationAssertion axAnns annProp annSub annValue
+            -> printAnnotationAssertion pds axAnns annProp annSub annValue
+        SubAnnotationPropertyOf pds axAnns subAnnProp supAnnProp
+            -> printSubAnnotationPropertyOf pds axAnns subAnnProp supAnnProp
+        AnnotationPropertyDomain pds axAnns annProp iri
+            -> printAnnotationPropertyDomain pds axAnns annProp iri
+        AnnotationPropertyRange pds axAnns annProp iri
+            -> printAnnotationPropertyRange pds axAnns annProp iri
 
-printAnnotationAssertion :: AxiomAnnotations -> AnnotationProperty
-    -> AnnotationSubject ->  AnnotationValue -> Doc
-printAnnotationAssertion axAnns annProp annSub annValue =
+printAnnotationAssertion :: [PrefixDeclaration] -> AxiomAnnotations
+    -> AnnotationProperty -> AnnotationSubject ->  AnnotationValue -> Doc
+printAnnotationAssertion pds xAnns annProp annSub annValue =
     keyword annotationAssertionS
     <> sParens (hsep . concat $
-        [map pretty axAnns, [pretty annProp, pretty annSub,
-            pretty annValue]])
+        [docAxAnns, [docAnnProp, docAnnSub, docAnnValue]])
+    where
+        docAxAnns = map (printAnnotation pds) axAnns
+        docAnnProp = printIRI pds annProp
+        docAnnSub = printAnnotationSubject pds annSub
+        docAnnValue = printAnnotationValue pds annValue
 
-printSubAnnotationPropertyOf :: AxiomAnnotations -> SubAnnotationProperty
-    -> SuperAnnotationProperty -> Doc
-printSubAnnotationPropertyOf axAnns subAnnProp supAnnProp =
+printSubAnnotationPropertyOf :: [PrefixDeclaration] -> AxiomAnnotations
+    -> SubAnnotationProperty -> SuperAnnotationProperty -> Doc
+printSubAnnotationPropertyOf pds axAnns subAnnProp supAnnProp =
     keyword subAnnotationPropertyOfS
-    <> sParens (hsep . concat $
-        [map pretty axAnns, [pretty subAnnProp, pretty supAnnProp]])
+    <> sParens (hsep . concat $ [docAxAnns, [docSubAnnProp, docSupAnnProp]])
+    where
+        docAxAnns = map (printAnnotation pds) axAnns
+        docSubAnnProp  = printIRI pds subAnnProp
+        docSupAnnProp = printIRI pds supAnnProp
 
-printAnnotationPropertyDomain :: AxiomAnnotations -> AnnotationProperty
-    -> IRI -> Doc
-printAnnotationPropertyDomain axAnns annProp iri =
+
+printAnnotationPropertyDomain :: [PrefixDeclaration] -> AxiomAnnotations
+    -> AnnotationProperty -> IRI -> Doc
+printAnnotationPropertyDomain pds axAnns annProp iri =
     keyword annotationPropertyDomainS
     <> sParens (hsep . concat $
-        [map pretty axAnns, [pretty annProp, pretty iri]])
+        [docAxAnns, [docAnnProp, docIri]])
+    where
+        docAxAnns = map (printAnnotation pds) axAnns
+        docAnnProp = printIRI pds annProp
+        docIri = printIRI pds iri    
 
-printAnnotationPropertyRange :: AxiomAnnotations -> AnnotationProperty
-    -> IRI -> Doc
-printAnnotationPropertyRange axAnns annProp iri =
+printAnnotationPropertyRange :: [PrefixDeclaration] -> AxiomAnnotations
+    -> AnnotationProperty -> IRI -> Doc
+printAnnotationPropertyRange pds axAnns annProp iri =
     keyword annotationPropertyRangeS
     <> sParens (hsep . concat $
-        [map pretty axAnns, [pretty annProp, pretty iri]])
+        [docAxAnns, [docAnnProp, docIri]])
+    where
+        docAxAnns = map (printAnnotation pds) axAnns
+        docAnnProp = printIRI pds annProp
+        docIri = printIRI pds iri
 
 -- | print Root
 instance Pretty PrefixDeclaration where
