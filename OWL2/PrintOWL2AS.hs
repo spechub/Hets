@@ -399,61 +399,83 @@ printTransitiveObjectProperty axAnns objPropExpr =
         [map pretty axAnns, [pretty objPropExpr]])
 
 -- | print DataPropertyAxiom
-instance Pretty DataPropertyAxiom where
-    pretty ax = case ax of
-        SubDataPropertyOf axAnns subDataPropExpr supDataPropExpr
-            -> printSubDataPropertyOf axAnns subDataPropExpr supDataPropExpr
-        EquivalentDataProperties axAnns dataPropExprs
-            -> printEquivalentDataProperties axAnns dataPropExprs
-        DisjointDataProperties axAnns dataPropExprs
-            -> printDisjointDataProperties axAnns dataPropExprs
-        DataPropertyDomain axAnns dataPropExpr clExpr
-            -> printDataPropertyDomain axAnns dataPropExpr clExpr
-        DataPropertyRange axAnns dataPropExpr dr
-            -> printDataPropertyRange  axAnns dataPropExpr dr
-        FunctionalDataProperty axAnns dataPropExpr
-            -> printFunctionalDataProperty axAnns dataPropExpr
+printDataPropertyAxiom :: [PrefixDeclaration] -> DataPropertyAxiom -> Doc
+printDataPropertyAxiom pds dpAx = case dpAx of
+    SubDataPropertyOf axAnns subDataPropExpr supDataPropExpr
+        -> printSubDataPropertyOf pds axAnns subDataPropExpr supDataPropExpr
+    EquivalentDataProperties axAnns dataPropExprs
+        -> printEquivalentDataProperties pds axAnns dataPropExprs
+    DisjointDataProperties axAnns dataPropExprs
+        -> printDisjointDataProperties pds axAnns dataPropExprs
+    DataPropertyDomain axAnns dataPropExpr clExpr
+        -> printDataPropertyDomain pds axAnns dataPropExpr clExpr
+    DataPropertyRange axAnns dataPropExpr dr
+        -> printDataPropertyRange pds axAnns dataPropExpr dr
+    FunctionalDataProperty axAnns dataPropExpr
+        -> printFunctionalDataProperty pds axAnns dataPropExpr
 
-printSubDataPropertyOf :: AxiomAnnotations -> SubDataPropertyExpression
-    -> SuperDataPropertyExpression -> Doc
-printSubDataPropertyOf axAnns subDataPropExpr supDataPropExpr = 
+printSubDataPropertyOf :: [PrefixDeclaration] -> AxiomAnnotations ->
+    SubDataPropertyExpression -> SuperDataPropertyExpression -> Doc
+printSubDataPropertyOf pds axAnns subDataPropExpr supDataPropExpr = 
     keyword subDataPropertyOfS
     <> sParens (hsep . concat $
-        [map pretty axAnns, map pretty [subDataPropExpr, supDataPropExpr]])
+        [docAxAnns, [docSubDataPropExpr, docSupDataPropExpr]])
+    where
+        docAxAnns = map (printAnnotation pds) axAnns
+        docSubDataPropExpr = printIRI pds subDataPropExpr
+        docSupDatapropExpr = printIRI pds supDataPropExpr
 
-printEquivalentDataProperties :: AxiomAnnotations -> [DataPropertyExpression]
-    -> Doc
-printEquivalentDataProperties axAnns dataPropExprs =
+printEquivalentDataProperties :: [PrefixDeclaration] -> AxiomAnnotations
+    -> [DataPropertyExpression] -> Doc
+printEquivalentDataProperties pds axAnns dataPropExprs =
     keyword equivalentDataPropertiesS
     <> sParens (hsep . concat  $
-        [map pretty axAnns, map pretty dataPropExprs])
+        [docAxAnns, docDataPropExprs])
+    where
+        docAxAnns = map (printAnnotation pds) axAnns
+        docDataPropExprs = map (printIRI pds) dataPropExprs
 
-printDisjointDataProperties :: AxiomAnnotations -> [DataPropertyExpression]
-    -> Doc
-printDisjointDataProperties axAnns dataPropExprs =
+printDisjointDataProperties :: [PrefixDeclaration] -> AxiomAnnotations
+    -> [DataPropertyExpression] -> Doc
+printDisjointDataProperties pds axAnns dataPropExprs =
     keyword disjointDataPropertiesS
     <> sParens (hsep . concat $
-        [map pretty axAnns, map pretty dataPropExprs])
+        [docAxAnns, docDataPropExprs])
+    where
+        docAxAnns = map (printAnnotation pds) axAnns
+        docDataPropExprs = map (printIRI pds) dataPropExprs
 
-printDataPropertyDomain :: AxiomAnnotations -> DataPropertyExpression
-    -> ClassExpression -> Doc
-printDataPropertyDomain axAnns dataPropExpr clExpr =
+printDataPropertyDomain :: [PrefixDeclaration] -> AxiomAnnotations
+    -> DataPropertyExpression -> ClassExpression -> Doc
+printDataPropertyDomain pds axAnns dataPropExpr clExpr =
     keyword dataPropertyDomainS
     <> sParens (hsep . concat $
-        [map pretty axAnns, [pretty dataPropExpr, pretty clExpr]])
+        [docAxAnns, [docDataPropExpr, docClassExpr]])
+    where
+        docAxAnns = map (printAnnotation pds) axAnns
+        docDataPropExpr = printIRI pds dataPropExpr
+        docClassExpr = printClassExpression pds clExpr
 
-printDataPropertyRange  :: AxiomAnnotations -> DataPropertyExpression 
-    -> DataRange -> Doc
+printDataPropertyRange  :: [PrefixDeclaration] -> AxiomAnnotations 
+    -> DataPropertyExpression -> DataRange -> Doc
 printDataPropertyRange  axAnns dataPropExpr dr =
     keyword dataPropertyRangeS
     <> sParens (hsep . concat $
-        [map pretty axAnns, [pretty dataPropExpr, pretty dr]])
+        [docAxAnns, [docDataPropExpr, docDataRange]])
+    where
+        docAxAnns = map (printAnnotation pds) axAnns
+        docDataPropExpr = printIRI pds dataPropExpr
+        docDataRange = printDataRange pds dr
 
-printFunctionalDataProperty :: AxiomAnnotations -> DataPropertyExpression -> Doc
+printFunctionalDataProperty :: [PrefixDeclaration] -> AxiomAnnotations
+    -> DataPropertyExpression -> Doc
 printFunctionalDataProperty axAnns dataPropExpr =
     keyword functionalDataPropertyS
     <> sParens (hsep . concat $ 
-        [map pretty axAnns, [pretty dataPropExpr]])
+        [docAxAnns, [docDataPropExpr]])
+    where
+        docAxAnns = map (printAnnotation pds) axAnns
+        docDataPropExpr = printIRI pds dataPropExpr
 
 -- | print DatatypeDefinition axiom
 
