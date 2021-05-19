@@ -379,9 +379,12 @@ compoundCurie = do
 curie :: IRIParser st IRI
 curie = iriWithPos $ do
     pn <- try (do
-        n <- ncname
+        n <- optionMaybe ncname
         c <- string ":"
-        return $ n -- ++ c Don't add the colon to the prefix!
+        return $ maybe "" id n -- ++ c Don't add the colon to the prefix!
+        -- n <- ncname
+        -- c <- string ":"
+        -- return $ n -- ++ c Don't add the colon to the prefix!
       )
     i <- reference
     return i { prefixName = pn, iFragment = show i }
