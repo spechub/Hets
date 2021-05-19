@@ -20,7 +20,7 @@ sParens d = parens (space <> d <> space)
 printIRI :: [PrefixDeclaration] -> IRI -> Doc
 printIRI pds iri
     | isAbbrev iri && containsPrefix pds prefName = 
-        text (prefName ++ ":" ++ (iFragment iri)))
+        text (prefName ++ ":" ++ (iFragment iri))
     | otherwise = pretty iri
   where prefName = prefixName iri
 
