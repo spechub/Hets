@@ -47,15 +47,13 @@ instance Pretty Literal where
         NumberLit f -> text (show f)
 
 -- | print PropertyExpression
-
-instance Pretty ObjectPropertyExpression where
-    pretty = printObjPropExp
-
-printObjPropExp :: ObjectPropertyExpression -> Doc
-printObjPropExp obExp = case obExp of
-    ObjectProp ou -> pretty ou
-    ObjectInverseOf iopExp -> keyword objectInverseOfS 
-        <> sParens (printObjPropExp iopExp)
+printObjectPropertyExpression :: [PrefixDeclaration] -> ObjectPropertyExpression
+    -> Doc
+printObjectPropertyExpression obExpr = case obExpr of
+    ObjectProp objProp -> printIRI pdf objProp
+    ObjectInverseOf iObjPropExpr ->
+        keyword objectInverseOfS
+        <> sParens (printObjectPropertyExpression pds iObjPropExpr)
 
 -- | print Entity
 printEntity :: [PrefixDeclaration] -> Entity -> Doc
@@ -70,7 +68,7 @@ printEntity pds (Entity _ ty ent) =
             DataProperty -> "DataProperty"
             AnnotationProperty -> "AnnotationProperty"
             NamedIndividual -> "NamedIndividual"
-            
+
 -- | print DataRanges
 printDataRange :: [PrefixDeclaration] -> DataRange -> Doc
 printDataRange pds dr = case dr of
