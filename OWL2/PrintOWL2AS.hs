@@ -101,105 +101,124 @@ printDataOneOf :: [Literal] -> Doc
 printDataOneOf lits = keyword dataOneOfS <> sParens (hsep . map pretty $ lits)
 
 -- | print ClassExpressions
+printClassExpression :: [PrefixDeclaration] -> ClassExpression -> Doc
+printClassExpression pds clExpr = case clExpr of
+    Expression cl -> printIRI pds cl
+    ObjectJunction jt clExprs -> printObjectJunction pds jt clExprs
+    ObjectComplementOf clexpr -> printObjectComplementOf pds clexpr
+    ObjectOneOf inds -> printObjectOneOf pds inds
+    ObjectValuesFrom qt obPropExpr clexpr ->
+        printObjectValuesFrom pds qt obPropExpr clexpr
+    ObjectHasValue objPropExpr ind ->
+        printObjectHasValue pds objPropExpr ind
+    ObjectHasSelf objPropExpr -> printObjectHasSelf pds objPropExpr
+    ObjectCardinality card -> printObjectCardinality pds card
+    DataValuesFrom qt dPropExprs dr ->
+        printDataValuesFrom pds qt dPropExprs dr
+    DataHasValue dPropExpr lit -> printDataHasValue pds dPropExpr lit
+    DataCardinality card -> printDataCardinality pds card
 
-instance Pretty ClassExpression where
-    pretty clExpr = case clExpr of
-        Expression cl -> pretty cl
-        ObjectJunction jt clExprs -> printObjectJunction jt clExprs
-        ObjectComplementOf clexpr -> printObjectComplementOf clexpr
-        ObjectOneOf inds -> printObjectOneOf inds
-        ObjectValuesFrom qt obPropExpr clexpr ->
-            printObjectValuesFrom qt obPropExpr clexpr
-        ObjectHasValue objPropExpr ind ->
-            printObjectHasValue objPropExpr ind
-        ObjectHasSelf objPropExpr -> printObjectHasSelf objPropExpr
-        ObjectCardinality card -> printObjectCardinality card
-        DataValuesFrom qt dPropExprs dr ->
-            printDataValuesFrom qt dPropExprs dr
-        DataHasValue dPropExpr lit -> printDataHasValue dPropExpr lit
-        DataCardinality card -> printDataCardinality card
-
-printObjectJunction :: JunctionType -> [ClassExpression] -> Doc
-printObjectJunction jt clExprs = junctionKeyword
-    <> sParens (hsep . map pretty $ clExprs)
+printObjectJunction :: [PrefixDeclaration] -> JunctionType
+    -> [ClassExpression] -> Doc
+printObjectJunction pds jt clExprs =
+    junctionKeyword a<> sParens (hsep docClExprs)
     where 
         junctionKeyword = case jt of
             UnionOf -> keyword objectUnionOfS
             IntersectionOf -> keyword objectIntersectionOfS
+        docClExprs = map (printClassExpression pds) clExprs
 
-printObjectComplementOf :: ClassExpression -> Doc
-printObjectComplementOf clexpr = keyword objectComplementOfS
-    <> sParens (pretty clexpr)
+printObjectComplementOf :: [PrefixDeclaration] -> ClassExpression -> Doc
+printObjectComplementOf pds clExpr =
+    keyword objectComplementOfS <> sParens (docClExpr)
+    where docClExpr = printClassExpression clExpr
 
-printObjectOneOf :: [Individual] -> Doc
-printObjectOneOf inds = keyword objectOneOfS
-    <> sParens (hsep . map pretty $ inds)
+printObjectOneOf :: [PrefixDeclaration] -> [Individual] -> Doc
+printObjectOneOf pds inds =
+    keyword objectOneOfS <> sParens (hsep docIndx)
+    where docInds = map (printIRI pds) inds
 
-printObjectValuesFrom :: QuantifierType -> ObjectPropertyExpression
-    -> ClassExpression -> Doc
-printObjectValuesFrom qt obPropExpr clexpr =
-    quantifierKeyword <> sParens (hsep [pretty obPropExpr, pretty clexpr])
+printObjectValuesFrom :: [PrefixDeclaration] -> QuantifierType
+    -> ObjectPropertyExpression -> ClassExpression -> Doc
+printObjectValuesFrom pds qt obPropExpr clExpr =
+    quantifierKeyword <> sParens (hsep [docObPropExpr, docClExpr])
     where
         quantifierKeyword = case qt of
             AllValuesFrom -> keyword objectAllValuesFromS
             SomeValuesFrom -> keyword objectSomeValuesFromS
+        docObPropExpr = printObjectPropertyExpression pds obPropExpr
+        docClExpr = printClassExpression pds clExpr
 
-printObjectHasValue :: ObjectPropertyExpression -> Individual -> Doc
-printObjectHasValue objPropExpr ind = keyword objectHasValueS
-    <> sParens (hsep [pretty objPropExpr, pretty ind])
+printObjectHasValue :: [PrefixDeclaration] -> ObjectPropertyExpression
+    -> Individual -> Doc
+printObjectHasValue pds objPropExpr ind =
+    keyword objectHasValueS <> sParens (hsep [docObjPropExpr, docInd])
+    where
+        docObjPropExpr = printObjectPropertyExpression pds objPropExpr
+        docInd = printIRI pds ind
 
-printObjectHasSelf :: ObjectPropertyExpression -> Doc
-printObjectHasSelf objPropExpr = keyword objectHasSelfS
-    <> sParens (pretty objPropExpr)
+printObjectHasSelf :: [PrefixDeclaration] -> ObjectPropertyExpression -> Doc
+printObjectHasSelf pds objPropExpr =
+    keyword objectHasSelfS <> sParens docObjPropExpr
+    where docObjPropExpr = printObjectPropertyExpression pds objPropExpr
 
-printObjectCardinality :: Cardinality ObjectPropertyExpression ClassExpression
-    -> Doc
-printObjectCardinality card =
+printObjectCardinality :: [PrefixDeclaration] 
+    -> Cardinality ObjectPropertyExpression ClassExpression -> Doc
+printObjectCardinality pds card =
     cardinalityKeyword <> sParens (hsep $
-        [text $ show n, pretty objPropExpr, clExpr])
+        [text $ show n, docObjPropExpr, docClExpr])
     where
         (Cardinality cardType n objPropExpr mClExpr) = card
         cardinalityKeyword = case cardType of
             MaxCardinality -> keyword objectMaxCardinalityS
             MinCardinality -> keyword objectMinCardinalityS
             ExactCardinality -> keyword objectExactCardinalityS
-        clExpr = case mClExpr of
+        docObjPropExpr = printObjectPropertyExpressino pds objPropExpr
+        docClExpr = case mClExpr of
             Nothing -> empty
-            Just clexpr -> pretty clexpr
+            Just clExpr -> printClassExpression clExpr
 
-printDataValuesFrom :: QuantifierType -> [DataPropertyExpression] -> DataRange
-    -> Doc
-printDataValuesFrom qt dPropExprs dr =
+printDataValuesFrom :: [PrefixDeclaratoin] -> QuantifierType
+    -> [DataPropertyExpression] -> DataRange -> Doc
+printDataValuesFrom pds qt dPropExprs dr =
     quantifierKeyword <> sParens (hsep . concat $
-        [map pretty dPropExprs, [pretty dr]])
+        [docDPropExprs, [docDr]])
     where
         quantifierKeyword = case qt of
             AllValuesFrom -> keyword dataAllValuesFromS
             SomeValuesFrom -> keyword dataSomeValuesFromS
+        docDPropExprs = map (printIRI pds) dPropExprs
+        docDr = printDataRange pds dr
 
-printDataCardinality :: Cardinality DataPropertyExpression DataRange -> Doc
+printDataCardinality :: [PrefixDeclaration]
+    -> Cardinality DataPropertyExpression DataRange -> Doc
 printDataCardinality card = cardinalityKeyword <> sParens (hsep $
-        [text $ show n, pretty dataPropExpr, dr])
+        [text $ show n, docDataPropExpr, docDr])
     where
         (Cardinality cardType n dataPropExpr mDr) = card
         cardinalityKeyword = case cardType of
             MaxCardinality -> keyword dataMaxCardinalityS
             MinCardinality -> keyword dataMinCardinalityS
             ExactCardinality -> keyword dataExactCardinalityS
-        dr = case mDr of
+        docDataPropExpr = printIRI pds dataPropExpr
+        docDr = case mDr of
             Nothing -> empty
-            Just drange -> pretty drange
+            Just drange -> printDataRange pds drange
 
-printDataHasValue :: DataPropertyExpression -> Literal -> Doc
-printDataHasValue dPropExpr lit = 
-    keyword dataHasValueS <> sParens(hsep [pretty dPropExpr, pretty lit])
+printDataHasValue :: [PrefixDeclaration] -> DataPropertyExpression
+    -> Literal -> Doc
+printDataHasValue pds dPropExpr lit = 
+    keyword dataHasValueS <> sParens(hsep [docDPropExpr, docLit])
+    where
+        docDPropExpr = printIRI pds dPropExpr
+        docLit = pretty lit
 
 -- | print Annotations
 printAnnotationValue :: [PrefixDeclaration] -> AnnotationValue -> Doc
 printAnnotationValue pds anVal = case anVal of
     AnnAnInd anInd -> printIRI pds anInd
     AnnValue iri -> printIRI pds iri
-    AnnValLit lit -> pretty lit  -- ? check one more time literal printing
+    AnnValLit lit -> pretty lit
 
 printAnnotation :: [PrefixDeclaration] -> Annotation -> Doc
 printAnnotation pds (Annotation ans anProp anVal) =
