@@ -36,7 +36,7 @@ import qualified Data.Set as Set
 
 import Logic.Logic
 
-import OWL2.AS
+import qualified OWL2.AS as AS
 import OWL2.ATC_OWL2 ()
 import OWL2.ColimSign
 import OWL2.Conservativity

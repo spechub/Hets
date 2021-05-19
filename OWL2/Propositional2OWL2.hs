@@ -20,7 +20,7 @@ import Common.AS_Annotation
 import Common.Id
 import Common.Result
 
-import OWL2.AS
+import qualified OWL2.AS as AS
 import Common.IRI
 import OWL2.Keywords
 import OWL2.MS

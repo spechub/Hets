@@ -14,7 +14,7 @@ module OWL2.StaticAnalysis where
 
 import OWL2.Sign
 import OWL2.Morphism
-import OWL2.AS
+import qualified OWL2.AS as AS
 import OWL2.MS
 import OWL2.Print ()
 import OWL2.Theorem

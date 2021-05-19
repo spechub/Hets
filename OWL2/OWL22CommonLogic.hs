@@ -27,7 +27,7 @@ import qualified Data.Map as Map
 
 -- OWL2 = domain
 import OWL2.Logic_OWL2
-import OWL2.AS
+import qualified OWL2.AS as AS
 import Common.IRI
 import OWL2.Keywords
 import OWL2.MS

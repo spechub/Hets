@@ -12,7 +12,7 @@ analyse OWL files by calling the external Java parser.
 
 module OWL2.ParseOWLAsLibDefn (parseOWLAsLibDefn) where
 
-import OWL2.AS
+import qualified OWL2.AS as AS
 import OWL2.MS
 
 import Data.List

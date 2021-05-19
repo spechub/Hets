@@ -31,7 +31,7 @@ import Data.Maybe
 -- OWL = codomain
 import OWL2.Logic_OWL2
 import OWL2.MS
-import OWL2.AS
+import qualified OWL2.AS as AS
 import Common.IRI
 import OWL2.ProfilesAndSublogics
 import OWL2.ManchesterPrint ()

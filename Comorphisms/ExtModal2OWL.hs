@@ -21,7 +21,7 @@ import Common.ProofTree
 import OWL2.Logic_OWL2
 import OWL2.MS
 import Common.IRI
-import OWL2.AS
+import qualified OWL2.AS as AS
 import OWL2.ProfilesAndSublogics
 import OWL2.ManchesterPrint ()
 import OWL2.Morphism

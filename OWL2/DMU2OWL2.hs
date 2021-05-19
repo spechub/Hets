@@ -30,7 +30,7 @@ import qualified Data.Map as Map
 
 import DMU.Logic_DMU
 
-import OWL2.AS
+import qualified OWL2.AS as AS
 import OWL2.MS
 import OWL2.Logic_OWL2
 import OWL2.Morphism

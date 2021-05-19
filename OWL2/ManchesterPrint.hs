@@ -18,7 +18,7 @@ import Common.AS_Annotation as Anno
 import Common.Lib.State
 import Common.IRI
 
-import OWL2.AS
+import qualified OWL2.AS as AS
 import OWL2.Extract
 import OWL2.MS
 import OWL2.Sign
@@ -40,8 +40,8 @@ printOneNamed ns = pretty
 
 delTopic :: Extended -> Sign -> Sign
 delTopic e s = case e of
-  ClassEntity (Expression c) -> s { concepts = Set.delete c $ concepts s }
-  ObjectEntity (ObjectProp o) -> s
+  ClassEntity (AS.Expression c) -> s { concepts = Set.delete c $ concepts s }
+  ObjectEntity (AS.ObjectProp o) -> s
     { objectProperties = Set.delete o $ objectProperties s }
   SimpleEntity et -> execState (modEntity Set.delete et) s
   _ -> s
@@ -58,7 +58,7 @@ printOWLBasicTheory = printBasicTheory . prepareBasicTheory
 
 prepareBasicTheory :: (Sign, [Named Axiom]) -> (Sign, [Named Axiom])
 prepareBasicTheory (s, l) =
-  (s { prefixMap = Map.union (prefixMap s) predefPrefixes }, l)
+  (s { prefixMap = Map.union (prefixMap s) AS.predefPrefixes }, l)
 
 printBasicTheory :: (Sign, [Named Axiom]) -> Doc
 printBasicTheory = pretty . convertBasicTheory
@@ -118,13 +118,13 @@ printMisc :: Pretty a => Annotations -> (b -> Doc) -> b -> AnnotatedList a
 printMisc a f r anl = f r <+> (printAnnotations a $+$ printAnnotatedList anl)
 
 -- | Misc ListFrameBits
-printMiscBit :: Relation -> Annotations -> ListFrameBit -> Doc
+printMiscBit :: AS.Relation -> Annotations -> ListFrameBit -> Doc
 printMiscBit r a lfb = case lfb of
-    ExpressionBit anl -> printMisc a printEquivOrDisjointClasses (getED r) anl
-    ObjectBit anl -> printMisc a printEquivOrDisjointProp (getED r) anl
-    DataBit anl -> printMisc a printEquivOrDisjointProp (getED r) anl
+    ExpressionBit anl -> printMisc a printEquivOrDisjointClasses (AS.getED r) anl
+    ObjectBit anl -> printMisc a printEquivOrDisjointProp (AS.getED r) anl
+    DataBit anl -> printMisc a printEquivOrDisjointProp (AS.getED r) anl
     IndividualSameOrDifferent anl ->
-        printMisc a printSameOrDifferentInd (getSD r) anl
+        printMisc a printSameOrDifferentInd (AS.getSD r) anl
     _ -> empty
 
 printAnnFrameBit :: Annotations -> AnnFrameBit -> Doc
@@ -163,7 +163,7 @@ instance Pretty Frame where
 
 printFrame :: Frame -> Doc
 printFrame (Frame eith bl) = case eith of
-    SimpleEntity (Entity _ e uri) -> keyword (showEntityType e) <+>
+    SimpleEntity (AS.Entity _ e uri) -> keyword (AS.showEntityType e) <+>
             fsep [pretty uri $+$ vcat (map pretty bl)]
     ObjectEntity ope -> keyword objectPropertyC <+>
             (pretty ope $+$ fsep [vcat (map pretty bl)])
@@ -172,7 +172,7 @@ printFrame (Frame eith bl) = case eith of
     Misc a -> case bl of
         [ListFrameBit (Just r) lfb] -> printMiscBit r a lfb
         [AnnFrameBit ans (AnnotationFrameBit Assertion)] ->
-            let [Annotation _ iri _] = a
+            let [AS.Annotation _ iri _] = a
             in keyword individualC <+> (pretty iri $+$ printAnnotations ans)
         h : r -> printFrame (Frame eith [h])
           $+$ printFrame (Frame eith r)
@@ -184,10 +184,10 @@ instance Pretty Axiom where
 printAxiom :: Axiom -> Doc
 printAxiom (PlainAxiom e fb) = printFrame (Frame e [fb])
 
-printImport :: ImportIRI -> Doc
+printImport :: AS.ImportIRI -> Doc
 printImport x = keyword importC <+> pretty x
 
-printPrefixes :: PrefixMap -> Doc
+printPrefixes :: AS.PrefixMap -> Doc
 printPrefixes x = vcat (map (\ (a, b) ->
        (text "Prefix:" <+> text a <> colon <+> text ('<' : b ++ ">")))
           (Map.toList x))

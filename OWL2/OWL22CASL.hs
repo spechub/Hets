@@ -32,7 +32,7 @@ import CASL_DL.PredefinedCASLAxioms
 import OWL2.Logic_OWL2
 import OWL2.Keywords
 import OWL2.MS
-import OWL2.AS as O
+import qualified OWL2.AS as AS as O
 import OWL2.Parse
 import OWL2.Print
 import OWL2.ProfilesAndSublogics
