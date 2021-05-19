@@ -94,7 +94,7 @@ ncNameChar c = isAlphaNum c || elem c ".+-_\183"
 -- | Parses a prefix name (PNAME_NS of SPARQL)
 prefix :: CharParser st String
 prefix = option "" (satisfy ncNameStart <:> many (satisfy ncNameChar))
-    <++> string ":"
+    << char ':'
 
 {- | @expandIRI pm iri@ returns the expanded @iri@ with a declaration from @pm@.
 If no declaration is found, return @iri@ unchanged. -}

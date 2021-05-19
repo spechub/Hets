@@ -176,6 +176,7 @@ showTrace i =
  "\nquery:" ++ iriQuery i ++
  "\nfragment:" ++ iriFragment i ++
  "\nprefix:" ++ prefixName i ++
+ "\niFragment:" ++ iFragment i ++
  "\nisAbbrev:" ++ show (isAbbrev i)
 
 {- IRI as instance of Show.  Note that for security reasons, the default
