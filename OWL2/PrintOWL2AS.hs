@@ -55,8 +55,8 @@ instance Pretty Literal where
 -- | print PropertyExpression
 printObjectPropertyExpression :: [PrefixDeclaration] -> ObjectPropertyExpression
     -> Doc
-printObjectPropertyExpression obExpr = case obExpr of
-    ObjectProp objProp -> printIRI pdf objProp
+printObjectPropertyExpression pds obExpr = case obExpr of
+    ObjectProp objProp -> printIRI pds objProp
     ObjectInverseOf iObjPropExpr ->
         keyword objectInverseOfS
         <> sParens (printObjectPropertyExpression pds iObjPropExpr)
@@ -67,7 +67,7 @@ printEntity pds (Entity _ ty ent) =
     keyword entityTypeS <> sParens (docEnt)
     where
         docEnt = printIRI pds ent
-        entityTypes = case tye of
+        entityTypeS = case ty of
             Datatype -> "Datatype"
             Class -> "Class"
             ObjectProperty -> "ObjectProperty"
@@ -85,7 +85,7 @@ printDataRange pds dr = case dr of
 
 printDataRestriction :: [PrefixDeclaration] -> Datatype
     -> [(ConstrainingFacet, RestrictionValue)] -> Doc
-printDataRestriction [ds dt fvs
+printDataRestriction pds dt fvs
     | null fvs = printIRI pds dt
     | otherwise = keyword datatypeRestrictionS
         <> sParens (hsep . concat $ [[docDt], fvsUnwrapped])
@@ -105,7 +105,7 @@ printDataJunction pds jt drs =
 printDataComplementOf :: [PrefixDeclaration] -> DataRange -> Doc
 printDataComplementOf pds dr =
     keyword dataComplementOfS <> sParens docDr
-    where docDr = printDataRage pds dr
+    where docDr = printDataRange pds dr
 
 printDataOneOf :: [Literal] -> Doc
 printDataOneOf lits = keyword dataOneOfS <> sParens (hsep . map pretty $ lits)
@@ -131,7 +131,7 @@ printClassExpression pds clExpr = case clExpr of
 printObjectJunction :: [PrefixDeclaration] -> JunctionType
     -> [ClassExpression] -> Doc
 printObjectJunction pds jt clExprs =
-    junctionKeyword a<> sParens (hsep docClExprs)
+    junctionKeyword <> sParens (hsep docClExprs)
     where 
         junctionKeyword = case jt of
             UnionOf -> keyword objectUnionOfS
@@ -141,11 +141,11 @@ printObjectJunction pds jt clExprs =
 printObjectComplementOf :: [PrefixDeclaration] -> ClassExpression -> Doc
 printObjectComplementOf pds clExpr =
     keyword objectComplementOfS <> sParens (docClExpr)
-    where docClExpr = printClassExpression clExpr
+    where docClExpr = printClassExpression pds clExpr
 
 printObjectOneOf :: [PrefixDeclaration] -> [Individual] -> Doc
 printObjectOneOf pds inds =
-    keyword objectOneOfS <> sParens (hsep docIndx)
+    keyword objectOneOfS <> sParens (hsep docInds)
     where docInds = map (printIRI pds) inds
 
 printObjectValuesFrom :: [PrefixDeclaration] -> QuantifierType
@@ -183,10 +183,10 @@ printObjectCardinality pds card =
             MaxCardinality -> keyword objectMaxCardinalityS
             MinCardinality -> keyword objectMinCardinalityS
             ExactCardinality -> keyword objectExactCardinalityS
-        docObjPropExpr = printObjectPropertyExpressino pds objPropExpr
+        docObjPropExpr = printObjectPropertyExpression pds objPropExpr
         docClExpr = case mClExpr of
             Nothing -> empty
-            Just clExpr -> printClassExpression clExpr
+            Just clExpr -> printClassExpression pds clExpr
 
 printDataValuesFrom :: [PrefixDeclaration] -> QuantifierType
     -> [DataPropertyExpression] -> DataRange -> Doc
@@ -202,7 +202,7 @@ printDataValuesFrom pds qt dPropExprs dr =
 
 printDataCardinality :: [PrefixDeclaration]
     -> Cardinality DataPropertyExpression DataRange -> Doc
-printDataCardinality card = cardinalityKeyword <> sParens (hsep $
+printDataCardinality pds card = cardinalityKeyword <> sParens (hsep $
         [text $ show n, docDataPropExpr, docDr])
     where
         (Cardinality cardType n dataPropExpr mDr) = card
@@ -237,12 +237,12 @@ printAnnotation pds (Annotation ans anProp anVal) =
     where
         docAns = map (printAnnotation pds) ans
         docAnProp = printIRI pds anProp
-        docAnVal = printAnnotationVAlue pds anVal
+        docAnVal = printAnnotationValue pds anVal
 
 printAnnotationSubject :: [PrefixDeclaration] -> AnnotationSubject -> Doc
 printAnnotationSubject pds annSub = case annSub of
     AnnSubIri iri -> printIRI pds iri
-    AnnSubAnInd ind -> printIRI pds iri
+    AnnSubAnInd ind -> printIRI pds ind
 
 -- | print Axioms
 printAxiom :: [PrefixDeclaration] -> Axiom -> Doc
@@ -283,7 +283,7 @@ printSubClassOf :: [PrefixDeclaration] -> AxiomAnnotations
 printSubClassOf pds axAnns subClExpr supClExpr =
     keyword subClassOfS
     <> sParens (hsep . concat $
-        [docAxAnns, [subClExpr, supClExpr]])
+        [docAxAnns, [docSubClExpr, docSupClExpr]])
     where
         docAxAnns = map (printAnnotation pds) axAnns
         docSubClExpr = printClassExpression pds subClExpr
@@ -421,7 +421,7 @@ printObjectPropertyRange :: [PrefixDeclaration] -> AxiomAnnotations
 printObjectPropertyRange pds axAnns objPropExpr clExpr = 
     keyword objectPropertyRangeS
     <> sParens (hsep . concat $ 
-        [[docAxAnns, [docObjPropExpr, docClassExpr]])
+        [docAxAnns, [docObjPropExpr, docClassExpr]])
     where
         docAxAnns = map (printAnnotation pds) axAnns
         docObjPropExpr = printObjectPropertyExpression pds objPropExpr
@@ -491,7 +491,7 @@ printAsymmetricObjectProperty pds axAnns objPropExpr =
 
 printTransitiveObjectProperty :: [PrefixDeclaration] -> AxiomAnnotations
     -> ObjectPropertyExpression -> Doc
-printTransitiveObjectProperty axAnns objPropExpr =
+printTransitiveObjectProperty pds axAnns objPropExpr =
     keyword transitiveObjectPropertyS
     <> sParens (hsep . concat $
         [docAxAnns, [docObjPropExpr]])
@@ -524,7 +524,7 @@ printSubDataPropertyOf pds axAnns subDataPropExpr supDataPropExpr =
     where
         docAxAnns = map (printAnnotation pds) axAnns
         docSubDataPropExpr = printIRI pds subDataPropExpr
-        docSupDatapropExpr = printIRI pds supDataPropExpr
+        docSupDataPropExpr = printIRI pds supDataPropExpr
 
 printEquivalentDataProperties :: [PrefixDeclaration] -> AxiomAnnotations
     -> [DataPropertyExpression] -> Doc
@@ -559,7 +559,7 @@ printDataPropertyDomain pds axAnns dataPropExpr clExpr =
 
 printDataPropertyRange  :: [PrefixDeclaration] -> AxiomAnnotations 
     -> DataPropertyExpression -> DataRange -> Doc
-printDataPropertyRange  axAnns dataPropExpr dr =
+printDataPropertyRange pds axAnns dataPropExpr dr =
     keyword dataPropertyRangeS
     <> sParens (hsep . concat $
         [docAxAnns, [docDataPropExpr, docDataRange]])
@@ -570,7 +570,7 @@ printDataPropertyRange  axAnns dataPropExpr dr =
 
 printFunctionalDataProperty :: [PrefixDeclaration] -> AxiomAnnotations
     -> DataPropertyExpression -> Doc
-printFunctionalDataProperty axAnns dataPropExpr =
+printFunctionalDataProperty pds axAnns dataPropExpr =
     keyword functionalDataPropertyS
     <> sParens (hsep . concat $ 
         [docAxAnns, [docDataPropExpr]])
@@ -687,40 +687,40 @@ printDataPropertyAssertion :: [PrefixDeclaration] -> AxiomAnnotations
 printDataPropertyAssertion pds axAnns dataPropExpr srcInd targVal =
     keyword dataPropertyAssertionS
     <> sParens (hsep . concat $
-      [docAxAnns, [docDataPropExpr, docSrcInd, docTargInd]])
+      [docAxAnns, [docDataPropExpr, docSrcInd, docTargVal]])
      where 
         docAxAnns = map (printAnnotation pds) axAnns
         docDataPropExpr = printIRI pds dataPropExpr
         docSrcInd = printIRI pds srcInd
-        docTargInd = printIRI pds targInd
+        docTargVal = pretty targVal
 
 printNegativeDataPropertyAssertion :: [PrefixDeclaration] -> AxiomAnnotations
     -> DataPropertyExpression -> SourceIndividual -> TargetValue -> Doc
 printNegativeDataPropertyAssertion pds axAnns dataPropExpr srcInd targVal =
     keyword negativeDataPropertyAssertionS
     <> sParens (hsep . concat $
-         [docAxAnns, [docDataPropExpr, docSrcInd, docTargInd]])
+         [docAxAnns, [docDataPropExpr, docSrcInd, docTargVal]])
      where 
         docAxAnns = map (printAnnotation pds) axAnns
         docDataPropExpr = printIRI pds dataPropExpr
         docSrcInd = printIRI pds srcInd
-        docTargInd = printIRI pds targInd
+        docTargVal = pretty targVal
 
 -- | print AnnotationAxiom
 printAnnotationAxiom :: [PrefixDeclaration] -> AnnotationAxiom -> Doc
 printAnnotationAxiom pds annAxs = case annAxs of
     AnnotationAssertion axAnns annProp annSub annValue
-            -> printAnnotationAssertion pds axAnns annProp annSub annValue
-        SubAnnotationPropertyOf pds axAnns subAnnProp supAnnProp
-            -> printSubAnnotationPropertyOf pds axAnns subAnnProp supAnnProp
-        AnnotationPropertyDomain pds axAnns annProp iri
-            -> printAnnotationPropertyDomain pds axAnns annProp iri
-        AnnotationPropertyRange pds axAnns annProp iri
-            -> printAnnotationPropertyRange pds axAnns annProp iri
+        -> printAnnotationAssertion pds axAnns annProp annSub annValue
+    SubAnnotationPropertyOf axAnns subAnnProp supAnnProp
+        -> printSubAnnotationPropertyOf pds axAnns subAnnProp supAnnProp
+    AnnotationPropertyDomain axAnns annProp iri
+        -> printAnnotationPropertyDomain pds axAnns annProp iri
+    AnnotationPropertyRange axAnns annProp iri
+        -> printAnnotationPropertyRange pds axAnns annProp iri
 
 printAnnotationAssertion :: [PrefixDeclaration] -> AxiomAnnotations
     -> AnnotationProperty -> AnnotationSubject ->  AnnotationValue -> Doc
-printAnnotationAssertion pds xAnns annProp annSub annValue =
+printAnnotationAssertion pds axAnns annProp annSub annValue =
     keyword annotationAssertionS
     <> sParens (hsep . concat $
         [docAxAnns, [docAnnProp, docAnnSub, docAnnValue]])
@@ -773,15 +773,15 @@ printOnt :: [PrefixDeclaration] -> Ontology -> Doc
 printOnt pds (Ontology mOnt mVerIri dImpDocs ontAnns axioms) =
     keyword "Ontology"
     <> sParens (vsep . concat $
-    [[ontNameDoc], importedDocs, ontAnnsDocs, axiomsDocs])
+    [[ontNameDoc], [importedDocs], ontAnnsDocs, axiomsDocs])
     where
         ontAnnsDocs = map (printAnnotation pds) ontAnns
         axiomsDocs = map (printAxiom pds) axioms
         versionIriDoc = maybe empty (printIRI pds) mVerIri
-        ontNameDoc = naybe empty (\ontvalue -> hsep [printIRI pds ontvalue,
+        ontNameDoc = maybe empty (\ontvalue -> hsep [printIRI pds ontvalue,
             versionIriDoc]) mOnt
         importedDocs = keyword "Import"
-            <> sParens(hsep . map (printIRI pds) dImpDocs)
+            <> sParens(hsep $ map (printIRI pds) dImpDocs)
 
 instance Pretty OntologyDocument where
     pretty (OntologyDocument prefDecls ont) = 
