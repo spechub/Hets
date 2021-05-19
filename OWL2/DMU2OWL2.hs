@@ -57,7 +57,7 @@ instance Language DMU2OWL2 -- default definition is okay
 instance Comorphism DMU2OWL2
    DMU () Text () () () Text (DefaultMorphism Text) () () ()
    OWL2 ProfSub OntologyDocument Axiom SymbItems SymbMapItems
-       Sign OWLMorphism Entity RawSymb ProofTree where
+       Sign OWLMorphism AS.Entity RawSymb ProofTree where
     sourceLogic DMU2OWL2 = DMU
     sourceSublogic DMU2OWL2 = top
     targetLogic DMU2OWL2 = OWL2

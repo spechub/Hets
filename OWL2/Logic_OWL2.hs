@@ -85,7 +85,7 @@ instance Monoid OntologyDocument where
     mappend (OntologyDocument p1 o1) (OntologyDocument p2 o2) =
       OntologyDocument (Map.union p1 p2) $ mappend o1 o2
 
-instance Syntax OWL2 OntologyDocument Entity SymbItems SymbMapItems where
+instance Syntax OWL2 OntologyDocument AS.Entity SymbItems SymbMapItems where
     parsersAndPrinters OWL2 = addSyntax "Ship" (basicSpec, ppShipOnt)
       $ addSyntax "Manchester" (basicSpec, pretty)
       $ makeDefault (basicSpec, pretty)
@@ -94,24 +94,24 @@ instance Syntax OWL2 OntologyDocument Entity SymbItems SymbMapItems where
     parse_symb_map_items OWL2 = Just symbMapItems
     symb_items_name OWL2 = symbItemsName
 
-instance Sentences OWL2 Axiom Sign OWLMorphism Entity where
+instance Sentences OWL2 Axiom Sign OWLMorphism AS.Entity where
     map_sen OWL2 = mapSen
     print_named OWL2 = printOneNamed
     sym_of OWL2 = singletonList . symOf
     symmap_of OWL2 = symMapOf
-    sym_name OWL2 = entityToId
-    sym_label OWL2 = label
+    sym_name OWL2 = AS.entityToId
+    sym_label OWL2 = AS.label
     fullSymName OWL2 s = let
-      i = cutIRI s
+      i = AS.cutIRI s
       x = showIRI i --expandedIRI i
-      in if null x then getPredefName i else x
-    symKind OWL2 = takeWhile isAlpha . showEntityType . entityKind
+      in if null x then AS.getPredefName i else x
+    symKind OWL2 = takeWhile isAlpha . AS.showEntityType . AS.entityKind
     symsOfSen OWL2 _ = Set.toList . symsOfAxiom
-    pair_symbols OWL2 = pairSymbols
+    pair_symbols OWL2 = AS.pairSymbols
 
 inducedFromToMor :: Map.Map RawSymb RawSymb -> 
-                    ExtSign Sign Entity -> 
-                    ExtSign Sign Entity -> 
+                    ExtSign Sign AS.Entity -> 
+                    ExtSign Sign AS.Entity -> 
                     Result OWLMorphism
 inducedFromToMor rm s@(ExtSign ssig _) t@(ExtSign tsig _) = 
  case Map.toList rm of
@@ -120,23 +120,23 @@ inducedFromToMor rm s@(ExtSign ssig _) t@(ExtSign tsig _) =
        mkImplMap f k = 
          case Set.toList (f tsig) of 
            [x] -> 
-              let aEntity = Entity Nothing k x
+              let aEntity = AS.Entity Nothing k x
               in Map.fromList $ 
-                    map (\y -> (ASymbol $ Entity Nothing k y, 
+                    map (\y -> (ASymbol $ AS.Entity Nothing k y, 
                                ASymbol $ aEntity)) $ 
                     Set.toList $ f ssig
            _ -> Map.empty 
        rm' = Map.unions
-                   [mkImplMap concepts Class,
-                    mkImplMap objectProperties ObjectProperty,
-                    mkImplMap dataProperties DataProperty, 
-                    mkImplMap individuals NamedIndividual]
+                   [mkImplMap concepts AS.Class,
+                    mkImplMap objectProperties AS.ObjectProperty,
+                    mkImplMap dataProperties AS.DataProperty, 
+                    mkImplMap individuals AS.NamedIndividual]
       in inducedFromToMorphismAux rm' s t 
    _ ->  inducedFromToMorphismAux rm  s t
 
 inducedFromToMorphismAux :: Map.Map RawSymb RawSymb -> 
-                    ExtSign Sign Entity -> 
-                    ExtSign Sign Entity -> 
+                    ExtSign Sign AS.Entity -> 
+                    ExtSign Sign AS.Entity -> 
                     Result OWLMorphism
 inducedFromToMorphismAux rm s@(ExtSign ssig _) t@(ExtSign tsig _) = do
     mor <- inducedFromMor rm ssig
@@ -148,7 +148,7 @@ instance StaticAnalysis OWL2 OntologyDocument Axiom
                SymbItems SymbMapItems
                Sign
                OWLMorphism
-               Entity RawSymb where
+               AS.Entity RawSymb where
       basic_analysis OWL2 = Just basicOWL2Analysis
       stat_symb_items OWL2 s = return . statSymbItems s
       stat_symb_map_items OWL2 = statSymbMapItems
@@ -178,7 +178,7 @@ instance StaticAnalysis OWL2 OntologyDocument Axiom
 #endif
 instance Logic OWL2 ProfSub OntologyDocument Axiom SymbItems SymbMapItems
                Sign
-               OWLMorphism Entity RawSymb ProofTree where
+               OWLMorphism AS.Entity RawSymb ProofTree where
          empty_proof_tree OWL2 = emptyProofTree
          -- just a selection of sublogics
          all_sublogics OWL2 = bottomS : concat allProfSubs ++ [topS]
@@ -222,7 +222,7 @@ instance MinSublogic ProfSub SymbItems where
 instance MinSublogic ProfSub SymbMapItems where
     minSublogic = const topS
 
-instance MinSublogic ProfSub Entity where
+instance MinSublogic ProfSub AS.Entity where
     minSublogic = const topS
 
 instance MinSublogic ProfSub OntologyDocument where
@@ -234,7 +234,7 @@ instance ProjectSublogicM ProfSub SymbItems where
 instance ProjectSublogicM ProfSub SymbMapItems where
     projectSublogicM = const Just
 
-instance ProjectSublogicM ProfSub Entity where
+instance ProjectSublogicM ProfSub AS.Entity where
     projectSublogicM = const Just
 
 instance ProjectSublogic ProfSub OntologyDocument where

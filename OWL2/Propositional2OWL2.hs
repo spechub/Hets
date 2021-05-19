@@ -64,7 +64,7 @@ instance Comorphism Propositional2OWL2
     OWLSym.SymbMapItems
     OWLSign.Sign
     OWLMor.OWLMorphism
-    Entity
+    AS.Entity
     OWLSym.RawSymb
     ProofTree
     where
@@ -76,28 +76,28 @@ instance Comorphism Propositional2OWL2
         isInclusionComorphism Propositional2OWL2 = True
         has_model_expansion Propositional2OWL2 = True
 
-mkOWLDeclaration :: ClassExpression -> Axiom
-mkOWLDeclaration ex = PlainAxiom (ClassEntity $ Expression $ setPrefix "owl"
-    $ mkIRI thingS) $ ListFrameBit (Just SubClass) $ ExpressionBit [([], ex)]
+mkOWLDeclaration :: AS.ClassExpression -> Axiom
+mkOWLDeclaration ex = PlainAxiom (ClassEntity $ AS.Expression $ setPrefix "owl"
+    $ mkIRI thingS) $ ListFrameBit (Just AS.SubClass) $ ExpressionBit [([], ex)]
 
 tokToIRI :: Token -> IRI
 tokToIRI = idToIRI . simpleIdToId
 
-mapFormula :: FORMULA -> ClassExpression
+mapFormula :: FORMULA -> AS.ClassExpression
 mapFormula f = case f of
-    False_atom _ -> Expression $ mkIRI nothingS
-    True_atom _ -> Expression $ mkIRI thingS
-    Predication p -> Expression $ tokToIRI p
-    Negation nf _ -> ObjectComplementOf $ mapFormula nf
-    Conjunction fl _ -> ObjectJunction IntersectionOf $ map mapFormula fl
-    Disjunction fl _ -> ObjectJunction UnionOf $ map mapFormula fl
-    Implication a b _ -> ObjectJunction UnionOf [ObjectComplementOf
+    False_atom _ -> AS.Expression $ mkIRI nothingS
+    True_atom _ -> AS.Expression $ mkIRI thingS
+    Predication p -> AS.Expression $ tokToIRI p
+    Negation nf _ -> AS.ObjectComplementOf $ mapFormula nf
+    Conjunction fl _ -> AS.ObjectJunction AS.IntersectionOf $ map mapFormula fl
+    Disjunction fl _ -> AS.ObjectJunction AS.UnionOf $ map mapFormula fl
+    Implication a b _ -> AS.ObjectJunction AS.UnionOf [AS.ObjectComplementOf
                 $ mapFormula a, mapFormula b]
-    Equivalence a b _ -> ObjectJunction IntersectionOf $ map mapFormula
+    Equivalence a b _ -> AS.ObjectJunction AS.IntersectionOf $ map mapFormula
                 [Implication a b nullRange, Implication b a nullRange]
 
 mapPredDecl :: PRED_ITEM -> [Axiom]
-mapPredDecl (Pred_item il _) = map (mkOWLDeclaration . Expression
+mapPredDecl (Pred_item il _) = map (mkOWLDeclaration . AS.Expression
     . tokToIRI) il
 
 mapAxiomItems :: Annoted FORMULA -> Axiom

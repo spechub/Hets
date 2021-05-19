@@ -55,7 +55,7 @@ instance Comorphism
     SymbMapItems    -- symbol map items codomain
     OS.Sign         -- signature codomain
     OWLMorphism     -- morphism codomain
-    Entity          -- symbol codomain
+    AS.Entity          -- symbol codomain
     RawSymb         -- rawsymbol codomain
     ProofTree       -- proof tree codomain
     where
