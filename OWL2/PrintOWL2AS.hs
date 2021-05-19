@@ -71,31 +71,36 @@ instance Pretty Entity where
                 NamedIndividual -> "NamedIndividual"
 
 -- | print DataRanges
+printDataRange :: [PrefixDeclaration] -> DataRange -> Doc
+printDataRange pds dr = case dr of
+    DataType dt fvs -> printDataRestriction pds dt fvs
+    DataJunction jt drs -> printDataJunction pds jt drs
+    DataComplementOf dr -> printDataComplementOf pds dr
+    DataOneOf lits -> printDataOneOf lits
 
-instance Pretty DataRange where
-    pretty dr = case dr of
-        DataType dt fvs -> printDataRestriction dt fvs
-        DataJunction jt drs -> printDataJunction jt drs
-        DataComplementOf dr -> printDataComplementOf dr
-        DataOneOf lits -> printDataOneOf lits
-
-printDataRestriction :: Datatype -> [(ConstrainingFacet, RestrictionValue)]
-    -> Doc
-printDataRestriction dt fvs
-    | null fvs = pretty dt
+printDataRestriction :: [PrefixDeclaration] -> Datatype
+    -> [(ConstrainingFacet, RestrictionValue)] -> Doc
+printDataRestriction [ds dt fvs
+    | null fvs = printIRI pds dt
     | otherwise = keyword datatypeRestrictionS
-        <> sParens (hsep . concat $ [[pretty dt], fvsUnwrapped])
-    where fvsUnwrapped = concat [[pretty f, pretty v] | (f, v) <- fvs]
+        <> sParens (hsep . concat $ [[docDt], fvsUnwrapped])
+    where
+        fvsUnwrapped = concat [[printIRI pds f, pretty v] | (f, v) <- fvs]
+        docDt = printIRI pds dt
 
-printDataJunction :: JunctionType -> [DataRange] -> Doc
-printDataJunction jt drs = junctionKeyword <> sParens (hsep . map pretty $ drs)
+printDataJunction :: [PrefixDeclaration] -> JunctionType -> [DataRange] -> Doc
+printDataJunction pds jt drs =
+    junctionKeyword <> sParens (hsep docDrs)
     where 
         junctionKeyword = case jt of 
             UnionOf -> keyword dataUnionOfS
             IntersectionOf -> keyword dataIntersectionOfS
+        docDrs = map (printDataRange pds) drs
 
-printDataComplementOf :: DataRange -> Doc
-printDataComplementOf dr = keyword dataComplementOfS <> sParens (pretty dr)
+printDataComplementOf :: [PrefixDeclaration] -> DataRange -> Doc
+printDataComplementOf pds dr =
+    keyword dataComplementOfS <> sParens docDr
+    where docDr = printDataRage pds dr
 
 printDataOneOf :: [Literal] -> Doc
 printDataOneOf lits = keyword dataOneOfS <> sParens (hsep . map pretty $ lits)
