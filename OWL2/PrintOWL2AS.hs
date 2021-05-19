@@ -780,8 +780,11 @@ printOnt pds (Ontology mOnt mVerIri dImpDocs ontAnns axioms) =
         versionIriDoc = maybe empty (printIRI pds) mVerIri
         ontNameDoc = maybe empty (\ontvalue -> hsep [printIRI pds ontvalue,
             versionIriDoc]) mOnt
-        importedDocs = keyword "Import"
-            <> sParens(hsep $ map (printIRI pds) dImpDocs)
+        importedDocs
+            | null dImpDocs = empty
+            | otherwise =
+                keyword "Import"
+                <> sParens(hsep $ map (printIRI pds) dImpDocs)
 
 instance Pretty OntologyDocument where
     pretty (OntologyDocument prefDecls ont) = 
