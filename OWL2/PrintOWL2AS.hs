@@ -17,9 +17,9 @@ import Data.List
 sParens d = parens (space <> d <> space)
 
 -- | print IRI
-printIRI :: [String] -> IRI -> Doc
-printIRI ontPrefs iri
-    | isAbbrev iri && elem prefName ontPrefs = 
+printIRI :: [PrefixDeclaration] -> IRI -> Doc
+printIRI pds iri
+    | isAbbrev iri && containsPrefix pds prefName = 
         text (prefName ++ ":" ++ (iFragment iri)))
     | otherwise = pretty iri
   where prefName = prefixName iri
@@ -27,6 +27,12 @@ printIRI ontPrefs iri
 printDataIRI :: IRI -> Doc
 printDataIRI q = if isDatatypeKey q then text $ showIRI $ setDatatypePrefix q
     else pretty q
+
+containsPrefix :: [PrefixDeclaration] -> String -> Bool
+containsPrefix [] _ = False
+containsPrefix ((PrefixDeclaration name _):pds) prefName
+    | name == prefName = True
+    | otherwise = containsPrefix pds prefName
 
 -- | print Literal
 
