@@ -58,18 +58,19 @@ printObjPropExp obExp = case obExp of
         <> sParens (printObjPropExp iopExp)
 
 -- | print Entity
-
-instance Pretty Entity where
-    pretty (Entity _ ty e) = keyword entityTypeS <> sParens (pretty e)
-        where 
-            entityTypeS = case ty of
-                Datatype -> "Datatype"
-                Class -> "Class"
-                ObjectProperty -> "ObjectProperty"
-                DataProperty -> "DataProperty"
-                AnnotationProperty -> "AnnotationProperty"
-                NamedIndividual -> "NamedIndividual"
-
+printEntity :: [PrefixDeclaration] -> Entity -> Doc
+printEntity pds (Entity _ ty ent) =
+    keyword entityTypeS <> sParens (docEnt)
+    where
+        docEnt = printIRI pds ent
+        entityTypes = case tye of
+            Datatype -> "Datatype"
+            Class -> "Class"
+            ObjectProperty -> "ObjectProperty"
+            DataProperty -> "DataProperty"
+            AnnotationProperty -> "AnnotationProperty"
+            NamedIndividual -> "NamedIndividual"
+            
 -- | print DataRanges
 printDataRange :: [PrefixDeclaration] -> DataRange -> Doc
 printDataRange pds dr = case dr of
