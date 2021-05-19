@@ -189,3 +189,4 @@ TPTP/ATC_TPTP.hs
 test/*/*.th
 test/*/*.xml
 /_dependencies
+stack.yaml.lock
