@@ -178,7 +178,7 @@ printObjectCardinality pds card =
             Nothing -> empty
             Just clExpr -> printClassExpression clExpr
 
-printDataValuesFrom :: [PrefixDeclaratoin] -> QuantifierType
+printDataValuesFrom :: [PrefixDeclaration] -> QuantifierType
     -> [DataPropertyExpression] -> DataRange -> Doc
 printDataValuesFrom pds qt dPropExprs dr =
     quantifierKeyword <> sParens (hsep . concat $
