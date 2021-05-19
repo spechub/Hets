@@ -12,6 +12,7 @@ import OWL2.ColonKeywords
 import OWL2.ASKeywords
 
 import Data.List
+import Debug.Trace
 
 -- | auxiliary parens function
 sParens d = parens (space <> d <> space)
@@ -19,7 +20,7 @@ sParens d = parens (space <> d <> space)
 -- | print IRI
 printIRI :: [PrefixDeclaration] -> IRI -> Doc
 printIRI pds iri
-    | isAbbrev iri && containsPrefix pds prefName = 
+    | containsPrefix pds prefName = 
         text (prefName ++ ":" ++ (iFragment iri))
     | otherwise = pretty iri
   where prefName = prefixName iri
@@ -767,7 +768,7 @@ printAnnotationPropertyRange pds axAnns annProp iri =
 instance Pretty PrefixDeclaration where
     pretty (PrefixDeclaration prName iri) =
         keyword "Prefix"
-        <> sParens ((text prName) <> (text " = ") <> pretty iri)
+        <> sParens ((text (prName ++ ":")) <> (text " = ") <> pretty iri)
 
 printOnt :: [PrefixDeclaration] -> Ontology -> Doc
 printOnt pds (Ontology mOnt mVerIri dImpDocs ontAnns axioms) =
