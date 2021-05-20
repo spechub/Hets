@@ -25,9 +25,10 @@ printIRI pds iri
     | otherwise = pretty iri
   where prefName = prefixName iri
 
-printDataIRI :: IRI -> Doc
-printDataIRI q = if isDatatypeKey q then text $ showIRI $ setDatatypePrefix q
-    else pretty q
+printDataIRI :: [PrefixDeclaration] -> IRI -> Doc
+printDataIRI pds q =
+    | isDatatypeKey q = text $ showIRI $ setDatatypePrefix q
+    | otherwise = printIRI pds q
 
 containsPrefix :: [PrefixDeclaration] -> String -> Bool
 containsPrefix [] _ = False
@@ -36,22 +37,22 @@ containsPrefix ((PrefixDeclaration name _):pds) prefName
     | otherwise = containsPrefix pds prefName
 
 -- | print Literal
-
-instance Pretty Literal where
-    pretty lit = case lit of
-        Literal lexi ty -> let
-          escapeDQ c s = case s of
-            "" -> ""
-            h : t -> case h of
-              '\\' -> h : escapeDQ (c + 1 :: Int) t
-              _ | odd c || h /= '"' -> h : escapeDQ 0 t
-              _ -> '\\' : h : escapeDQ 0 t
-          in plainText ('"' : escapeDQ 0 lexi ++ "\"") <> case ty of
-            Typed u -> keyword cTypeS <> printDataIRI u
+printLiteral :: [PrefixDeclaration] -> Literal -> Doc
+printLiteral pds lit = case lit of 
+    Literal lexi ty -> plainText ('"' : escapeString False lexi ++ "\"")
+        <> literalTail
+    NumberLit f -> text (show f)
+    where literalTail = case ty of
+            Typed iri -> keyword cTypeS <> printDataIRI pds iri
             Untyped tag -> case tag of
-              Nothing -> empty
-              Just tag2 -> text asP <> text tag2
-        NumberLit f -> text (show f)
+                Nothing -> empty
+                Just tg -> txt asP <> text tg
+
+escapeString :: Bool -> String -> String
+escapeString True ('"':s) = '"' : escapeString False s
+escapeString False ('"':s) = '\\' : '"' : escapeString False s
+escapeString flag ('\\':s) = '\\' : escapeString (!flag) s
+escapeString _ (c:s) = c : escapeString False s 
 
 -- | print PropertyExpression
 printObjectPropertyExpression :: [PrefixDeclaration] -> ObjectPropertyExpression
@@ -91,7 +92,8 @@ printDataRestriction pds dt fvs
     | otherwise = keyword datatypeRestrictionS
         <> sParens (hsep . concat $ [[docDt], fvsUnwrapped])
     where
-        fvsUnwrapped = concat [[printIRI pds f, pretty v] | (f, v) <- fvs]
+        fvsUnwrapped = concat [[printIRI pds f, printLiteral pds v]
+            | (f, v) <- fvs]
         docDt = printIRI pds dt
 
 printDataJunction :: [PrefixDeclaration] -> JunctionType -> [DataRange] -> Doc
@@ -109,7 +111,8 @@ printDataComplementOf pds dr =
     where docDr = printDataRange pds dr
 
 printDataOneOf :: [Literal] -> Doc
-printDataOneOf lits = keyword dataOneOfS <> sParens (hsep . map pretty $ lits)
+printDataOneOf lits = keyword dataOneOfS
+    <> sParens (hsep . map (printLiteral pds) $ lits)
 
 -- | print ClassExpressions
 printClassExpression :: [PrefixDeclaration] -> ClassExpression -> Doc
@@ -222,14 +225,14 @@ printDataHasValue pds dPropExpr lit =
     keyword dataHasValueS <> sParens(hsep [docDPropExpr, docLit])
     where
         docDPropExpr = printIRI pds dPropExpr
-        docLit = pretty lit
+        docLit = printLiteral pds lit
 
 -- | print Annotations
 printAnnotationValue :: [PrefixDeclaration] -> AnnotationValue -> Doc
 printAnnotationValue pds anVal = case anVal of
     AnnAnInd anInd -> printIRI pds anInd
     AnnValue iri -> printIRI pds iri
-    AnnValLit lit -> pretty lit
+    AnnValLit lit -> printLiteral pds lit
 
 printAnnotation :: [PrefixDeclaration] -> Annotation -> Doc
 printAnnotation pds (Annotation ans anProp anVal) =
@@ -693,7 +696,7 @@ printDataPropertyAssertion pds axAnns dataPropExpr srcInd targVal =
         docAxAnns = map (printAnnotation pds) axAnns
         docDataPropExpr = printIRI pds dataPropExpr
         docSrcInd = printIRI pds srcInd
-        docTargVal = pretty targVal
+        docTargVal = printLiteral pds targVal
 
 printNegativeDataPropertyAssertion :: [PrefixDeclaration] -> AxiomAnnotations
     -> DataPropertyExpression -> SourceIndividual -> TargetValue -> Doc
@@ -705,7 +708,7 @@ printNegativeDataPropertyAssertion pds axAnns dataPropExpr srcInd targVal =
         docAxAnns = map (printAnnotation pds) axAnns
         docDataPropExpr = printIRI pds dataPropExpr
         docSrcInd = printIRI pds srcInd
-        docTargVal = pretty targVal
+        docTargVal = printLiteral pds targVal
 
 -- | print AnnotationAxiom
 printAnnotationAxiom :: [PrefixDeclaration] -> AnnotationAxiom -> Doc
