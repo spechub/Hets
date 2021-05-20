@@ -26,7 +26,7 @@ printIRI pds iri
   where prefName = prefixName iri
 
 printDataIRI :: [PrefixDeclaration] -> IRI -> Doc
-printDataIRI pds q =
+printDataIRI pds q
     | isDatatypeKey q = text $ showIRI $ setDatatypePrefix q
     | otherwise = printIRI pds q
 
@@ -40,18 +40,19 @@ containsPrefix ((PrefixDeclaration name _):pds) prefName
 printLiteral :: [PrefixDeclaration] -> Literal -> Doc
 printLiteral pds lit = case lit of 
     Literal lexi ty -> plainText ('"' : escapeString False lexi ++ "\"")
-        <> literalTail
+        <> literalTail ty
     NumberLit f -> text (show f)
-    where literalTail = case ty of
+    where literalTail ty = case ty of
             Typed iri -> keyword cTypeS <> printDataIRI pds iri
             Untyped tag -> case tag of
                 Nothing -> empty
-                Just tg -> txt asP <> text tg
+                Just tg -> text asP <> text tg
 
 escapeString :: Bool -> String -> String
+escapeString _ [] = []
 escapeString True ('"':s) = '"' : escapeString False s
 escapeString False ('"':s) = '\\' : '"' : escapeString False s
-escapeString flag ('\\':s) = '\\' : escapeString (!flag) s
+escapeString flag ('\\':s) = '\\' : escapeString (not flag) s
 escapeString _ (c:s) = c : escapeString False s 
 
 -- | print PropertyExpression
@@ -83,7 +84,7 @@ printDataRange pds dr = case dr of
     DataType dt fvs -> printDataRestriction pds dt fvs
     DataJunction jt drs -> printDataJunction pds jt drs
     DataComplementOf dr -> printDataComplementOf pds dr
-    DataOneOf lits -> printDataOneOf lits
+    DataOneOf lits -> printDataOneOf pds lits
 
 printDataRestriction :: [PrefixDeclaration] -> Datatype
     -> [(ConstrainingFacet, RestrictionValue)] -> Doc
@@ -110,8 +111,8 @@ printDataComplementOf pds dr =
     keyword dataComplementOfS <> sParens docDr
     where docDr = printDataRange pds dr
 
-printDataOneOf :: [Literal] -> Doc
-printDataOneOf lits = keyword dataOneOfS
+printDataOneOf :: [PrefixDeclaration] -> [Literal] -> Doc
+printDataOneOf pds lits = keyword dataOneOfS
     <> sParens (hsep . map (printLiteral pds) $ lits)
 
 -- | print ClassExpressions
