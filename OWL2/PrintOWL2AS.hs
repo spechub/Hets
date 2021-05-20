@@ -12,7 +12,6 @@ import OWL2.ColonKeywords
 import OWL2.ASKeywords
 
 import Data.List
-import Debug.Trace
 
 -- | auxiliary parens function
 sParens d = parens (space <> d <> space)
