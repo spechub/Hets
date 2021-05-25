@@ -37,7 +37,7 @@ import qualified Data.Set as Set
 import Logic.Logic
 
 import qualified OWL2.AS as AS
-import OWL2.ATC_OWL2 ()
+--import OWL2.ATC_OWL2 ()
 import OWL2.ColimSign
 import OWL2.Conservativity
 import OWL2.MS
@@ -57,8 +57,20 @@ import OWL2.Symbols
 import OWL2.Taxonomy
 import OWL2.Theorem
 import OWL2.ExtractModule
+import ATerm.Conversion
 
 data OWL2 = OWL2
+
+instance ShATermConvertible SymbItems
+instance ShATermConvertible SymbMapItems
+instance ShATermConvertible Sign
+instance ShATermConvertible Axiom
+instance ShATermConvertible OntologyDocument
+instance ShATermConvertible OWLMorphism
+instance ShATermConvertible AS.Entity
+instance ShATermConvertible ProfSub
+
+
 
 instance Show OWL2 where
   show _ = "OWL"
