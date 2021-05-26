@@ -792,4 +792,4 @@ printOnt pds (Ontology mOnt mVerIri dImpDocs ontAnns axioms) =
 
 instance Pretty OntologyDocument where
     pretty (OntologyDocument prefDecls ont) = 
-        (hsep . map pretty $ prefDecls) $+$ printOnt prefDecls ont
+        (vsep . map pretty $ prefDecls) $+$ printOnt prefDecls ont
