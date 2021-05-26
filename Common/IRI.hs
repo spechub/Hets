@@ -470,7 +470,7 @@ pnCharsPAux c =
 
 iriParser :: IRIParser st IRI
 iriParser = iriWithPos $ do
-  us <- try uscheme
+  us <- option "" $ try uscheme
   (ua, up) <- ihierPart
   uq <- option "" uiquery
   uf <- option "" uifragment
