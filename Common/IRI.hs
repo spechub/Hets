@@ -501,7 +501,7 @@ pnCharsPAux c =
 / ipath-empty -}
 
 iriParser :: IRIParser st IRI
-iriParser = iriWithPos $ do
+iriParser = (<|>) (try urnParser) $ iriWithPos $ do
   us <- option "" $ try uscheme
   (ua, up) <- ihierPart
   uq <- option "" uiquery
