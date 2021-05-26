@@ -49,6 +49,7 @@ module Common.IRI
     , iriParser
     , angles
     , iriCurie
+    , urnParser
     , compoundIriCurie  
     , parseCurie
     , parseIRICurie
@@ -358,7 +359,7 @@ iriCurie :: IRIParser st IRI
 iriCurie = angles iriParser <|> curie 
 
 compoundIriCurie :: IRIParser st IRI
-compoundIriCurie = angles iriParser <|> compoundCurie 
+compoundIriCurie = angles iriParser <|> compoundCurie
 
 angles :: IRIParser st IRI -> IRIParser st IRI
 angles p = char '<' >> fmap (\ i -> i { hasAngles = True }) p << char '>'
@@ -405,6 +406,37 @@ referenceAux allowEmpty = iriWithPos $ do
           , isAbbrev = True  
           }
   return iri
+
+urnParser :: IRIParser st IRI
+urnParser = let ldh = alphaNum <|> oneOf "-." in iriWithPos $
+  do
+    -- The leading scheme (urn:) is case-insensitive.
+    oneOf "uU" >> oneOf "rR" >> oneOf "nN" >> char ':'
+    nid <- alphaNum <:>
+      manyTill ldh (try . lookAhead $ (ldh >> notFollowedBy ldh)) <++>
+      (alphaNum <:> return "") 
+    char ':'
+    nss <- flat $ many1 (uchar "/[]")
+    rComponent <- option "" $ string "?+" <++> flat (many1 $ uchar "/?")
+    qComponent <- option "" $ string "?=" <++> flat (many1 $ uchar "/?")
+    fragment <- option "" uifragment
+    return nullIRI
+              { iriScheme = "urn"
+              , iriAuthority = Just IRIAuth
+                { iriUserInfo = ""
+                , iriRegName = nss
+                , iriPort = ""
+                }
+              , iriPath = stringToId nss
+              , iriQuery = rComponent ++ qComponent
+              , iriFragment = fragment
+              }
+  
+
+
+  
+
+    
   
 {- | Prefix part of CURIE in @prefix_part:reference@
   <http://www.w3.org/TR/2009/REC-xml-names-20091208/#NT-NCName> -}
