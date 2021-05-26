@@ -375,7 +375,8 @@ compoundCurie = do
 curie :: IRIParser st IRI
 curie = iriWithPos $ do
     pn <- try (do
-        n <- ncname
+        n <- option "" ncname -- although the standard doesn't allow an empty
+                              -- prefix the java OWL API does.
         c <- string ":"
         return $ n -- ++ c Don't add the colon to the prefix!
       )
