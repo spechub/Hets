@@ -788,9 +788,9 @@ printOnt pds (Ontology mOnt mVerIri dImpDocs ontAnns axioms) =
         importedDocs
             | null dImpDocs = empty
             | otherwise =
-                keyword "Import"
-                <> sParens(hsep $ map (printIRI pds) dImpDocs)
+                vsep . map ((keyword "Import" <>)
+                    . sParens . printIRI pds) $ dImpDocs
 
 instance Pretty OntologyDocument where
     pretty (OntologyDocument prefDecls ont) = 
-        (hsep . map pretty $ prefDecls) $+$ printOnt prefDecls ont
+        (vsep . map pretty $ prefDecls) $+$ printOnt prefDecls ont
