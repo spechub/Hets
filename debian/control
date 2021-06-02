@@ -82,7 +82,7 @@ Description: The Heterogeneous Tool Set (hets) - server version.
 ############################################################################
 Package: hets-provers
 Architecture: amd64
-Depends:     cvc-47, darwin, e-darwin, e-krhyper, eprover, fact++, hol-light, leo2, maude, minisat, satallax, spass, yices, z3, zchaff
+Depends:     cvc-47, darwin, e-darwin, e-krhyper, eprover, fact++, hol-light, leo2, maude, minisat, satallax, spass, vampire, yices, z3, zchaff
 # 	Optional: kodkodi (n/a), twelf (n/a)
 Description: Provers for Hets.
  This meta-package bundles all known provers which might be useful in hets

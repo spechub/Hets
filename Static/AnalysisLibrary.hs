@@ -430,12 +430,13 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
                (alreadyDefined asstr) pos
       else do
             let aName = show asn
-                dg'' = updateNodeNameRT dg'
-                       (refSource $ getPointerFromRef archSig)
+                rSource = refSource $ getPointerFromRef archSig
+                dg'' = updateNodeNameRT dg' rSource
                        True aName
-                dg3 = dg'' { archSpecDiags =
-                           Map.insert aName diag
-                           $ archSpecDiags dg''}
+                dg3 = dg'' { 
+                        archSpecDiags = Map.insert aName diag $ archSpecDiags dg''
+                       , specRoots = Map.insert aName [rSource] $ specRoots dg''
+                      }
             return (asd', dg3
               { globalEnv = Map.insert asn
                             (ArchOrRefEntry True archSig) genv }
@@ -467,11 +468,17 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
     analyzing opts $ "ref spec " ++ rnstr
     let rsd' = Ref_spec_defn rn rsp' pos
         genv = globalEnv dg'
+        getSources p = 
+          case p of
+           NPComp f -> concatMap getSources $ Map.elems f
+           _ -> [refSource p]
+        sources = getSources $ getPointerFromRef rsig
     if Map.member rn genv
       then liftR $ plain_error (itm, dg', libenv, lg, eo)
                (alreadyDefined rnstr) pos
       else return ( rsd', dg'
-        { globalEnv = Map.insert rn (ArchOrRefEntry False rsig) genv }
+        { globalEnv = Map.insert rn (ArchOrRefEntry False rsig) genv
+        , specRoots = Map.insert rnstr sources $ specRoots dg' }
         , libenv, lg, eo)
   Logic_decl logN pos -> do
     putMessageIORes opts 1 . show $ prettyLG lg itm

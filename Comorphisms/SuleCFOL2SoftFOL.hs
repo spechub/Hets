@@ -16,6 +16,7 @@ module Comorphisms.SuleCFOL2SoftFOL
   ( suleCFOL2SoftFOL
   , suleCFOL2SoftFOLInduction
   , suleCFOL2SoftFOLInduction2
+  , extractCASLModel
   ) where
 
 import Control.Exception (assert)
