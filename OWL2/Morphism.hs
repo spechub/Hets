@@ -15,7 +15,7 @@ Morphisms for OWL
 module OWL2.Morphism where
 
 import Common.IRI
-import OWL2.AS
+import qualified OWL2.AS as AS
 import OWL2.MS
 import OWL2.Sign
 import OWL2.ManchesterPrint ()
@@ -56,10 +56,10 @@ isOWLInclusion :: OWLMorphism -> Bool
 isOWLInclusion m = Map.null (pmap m)
   && Map.null (mmaps m) && isSubSign (osource m) (otarget m)
 
-symMap :: MorphMap -> Map.Map Entity Entity
-symMap = Map.mapWithKey (\ (Entity lb ty _) -> Entity lb ty)
+symMap :: MorphMap -> Map.Map AS.Entity AS.Entity
+symMap = Map.mapWithKey (\ (AS.Entity lb ty _) -> AS.Entity lb ty)
 
-inducedElems :: MorphMap -> [Entity]
+inducedElems :: MorphMap -> [AS.Entity]
 inducedElems = Map.elems . symMap
 
 inducedSign :: MorphMap -> StringMap -> Sign -> Sign
@@ -83,12 +83,12 @@ inducedFromMor :: Map.Map RawSymb RawSymb -> Sign -> Result OWLMorphism
 inducedFromMor rm sig = do
   let syms = symOf sig
   (mm, tm) <- foldM (\ (m, t) p -> case p of
-        (ASymbol s@(Entity _ _ v), ASymbol (Entity _ _ u)) ->
+        (ASymbol s@(AS.Entity _ _ v), ASymbol (AS.Entity _ _ u)) ->
             if Set.member s syms
             then return $ if u == v then (m, t) else (Map.insert s u m, t)
             else fail $ "unknown symbol: " ++ showDoc s "\n" ++ shows sig ""
         (AnUri v, AnUri u) -> case filter (`Set.member` syms)
-          $ map (`mkEntity` v) entityTypes of
+          $ map (`AS.mkEntity` v) AS.entityTypes of
           [] -> let v2 = showIRICompact v
                     u2 = showIRICompact u
                 in inducedPref v2 u2 sig (m, t)
@@ -103,7 +103,7 @@ inducedFromMor rm sig = do
     , pmap = tm
     , mmaps = mm }
 
-symMapOf :: OWLMorphism -> Map.Map Entity Entity
+symMapOf :: OWLMorphism -> Map.Map AS.Entity AS.Entity
 symMapOf mor = Map.union (symMap $ mmaps mor) $ setToMap $ symOf $ osource mor
 
 instance Pretty OWLMorphism where
@@ -132,7 +132,7 @@ legalMor m = let mm = mmaps m in unless
 
 composeMor :: OWLMorphism -> OWLMorphism -> Result OWLMorphism
 composeMor m1 m2 =
-  let nm = Set.fold (\ s@(Entity _ ty u) -> let
+  let nm = Set.fold (\ s@(AS.Entity _ ty u) -> let
             t = getIri ty u $ mmaps m1
             r = getIri ty t $ mmaps m2
             in if r == u then id else Map.insert s r) Map.empty
@@ -142,17 +142,17 @@ composeMor m1 m2 =
      , pmap = composeMap (prefixMap $ osource m1) (pmap m1) $ pmap m2
      , mmaps = nm }
 
-cogeneratedSign :: Set.Set Entity -> Sign -> Result OWLMorphism
+cogeneratedSign :: Set.Set AS.Entity -> Sign -> Result OWLMorphism
 cogeneratedSign s sign =
   let sig2 = execState (mapM_ (modEntity Set.delete) $ Set.toList s) sign
   in if isSubSign sig2 sign then return $ inclOWLMorphism sig2 sign else
          fail "non OWL2 subsignatures for (co)generatedSign"
 
-generatedSign :: Set.Set Entity -> Sign -> Result OWLMorphism
+generatedSign :: Set.Set AS.Entity -> Sign -> Result OWLMorphism
 generatedSign s sign = cogeneratedSign (Set.difference (symOf sign) s) sign
 
-matchesSym :: Entity -> RawSymb -> Bool
-matchesSym e@(Entity _ _ u) r = case r of
+matchesSym :: AS.Entity -> RawSymb -> Bool
+matchesSym e@(AS.Entity _ _ u) r = case r of
        ASymbol s -> s == e
        AnUri s -> s == u  -- expandedIRI s == expandedIRI u 
                 || case
@@ -166,7 +166,7 @@ statSymbItems sig = map (function Expand . StringMap $ prefixMap sig)
   . concatMap
   (\ (SymbItems m us) -> case m of
                AnyEntity -> map AnUri us
-               EntityType ty -> map (ASymbol . mkEntity ty) us
+               EntityType ty -> map (ASymbol . AS.mkEntity ty) us
                PrefixO -> map (APrefix . showIRI) us)
 
 statSymbMapItems :: Sign -> Maybe Sign -> [SymbMapItems]
@@ -180,9 +180,9 @@ statSymbMapItems sig mtsig =
   . foldM (\ m (s, t) -> case Map.lookup s m of
     Nothing -> return $ Map.insert s t m
     Just u -> case (u, t) of
-      (AnUri su, ASymbol (Entity _ _ tu)) | su == tu ->
+      (AnUri su, ASymbol (AS.Entity _ _ tu)) | su == tu ->
         return $ Map.insert s t m
-      (ASymbol (Entity _ _ su), AnUri tu) | su == tu -> return m
+      (ASymbol (AS.Entity _ _ su), AnUri tu) | su == tu -> return m
       (AnUri su, APrefix tu) | showIRICompact su == tu ->
         return $ Map.insert s t m
       (APrefix su, AnUri tu) | su == showIRICompact tu -> return m
@@ -195,7 +195,7 @@ statSymbMapItems sig mtsig =
       case m of
         AnyEntity -> map (\ (s, t) -> (AnUri s, AnUri t)) ps
         EntityType ty ->
-            let mS = ASymbol . mkEntity ty
+            let mS = ASymbol . AS.mkEntity ty
             in map (\ (s, t) -> (mS s, mS t)) ps
         PrefixO ->
             map (\ (s, t) -> (APrefix (showIRICompact s), APrefix $ showIRICompact t)) ps)

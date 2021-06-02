@@ -14,7 +14,7 @@ see https://github.com/ConceptualBlending/monster_render_system
 
 module OWL2.Medusa where
 
-import OWL2.AS
+import qualified OWL2.AS as AS
 import OWL2.Sign
 import OWL2.MS
 
@@ -62,9 +62,9 @@ getClass axs n = case checkMapMaybe (getClassAux n) axs of
 getClassAux :: IRI -> Axiom -> Maybe IRI
 getClassAux ind ax =
   case axiomTopic ax of
-    SimpleEntity e | cutIRI e == ind ->
+    SimpleEntity e | AS.cutIRI e == ind ->
       case axiomBit ax of
-         ListFrameBit (Just Types) (ExpressionBit classes) -> firstClass classes
+         ListFrameBit (Just AS.Types) (ExpressionBit classes) -> firstClass classes
          _ -> Nothing
     _ -> Nothing
 
@@ -81,11 +81,11 @@ getMeetsFactsAux :: [Axiom] -> Set.Set (IRI, IRI) -> IRI -> Axiom ->
                  Maybe (IRI, IRI, IRI, IRI)
 getMeetsFactsAux axs tInds point1 ax =
   case axiomTopic ax of
-    SimpleEntity e | cutIRI e == point1 ->
+    SimpleEntity e | AS.cutIRI e == point1 ->
       case axiomBit ax of
          ListFrameBit Nothing (IndividualFacts [([],
-                               (ObjectPropertyFact Positive
-                                                   (ObjectProp ope) point2))
+                               (ObjectPropertyFact AS.Positive
+                                                   (AS.ObjectProp ope) point2))
                                                ]) ->
             if show (iriPath ope) == "meets" then
                 getFiatBoundaryFacts axs tInds point1 point2
@@ -118,18 +118,18 @@ getFiatBoundaryFactsAux point ax =
     _ -> Nothing
 
 
-loopFacts :: AnnotatedList Fact -> Entity -> IRI -> Maybe IRI
+loopFacts :: AnnotatedList Fact -> AS.Entity -> IRI -> Maybe IRI
 loopFacts [] _ _ = Nothing
 loopFacts (afact:facts') e point =
   case afact of
-    ([], (ObjectPropertyFact Positive (ObjectProp ope) point')) ->
+    ([], (ObjectPropertyFact AS.Positive (AS.ObjectProp ope) point')) ->
       if (show (iriPath ope) == "has_fiat_boundary") &&
-         (iriPath point == iriPath point') then Just $ cutIRI e
+         (iriPath point == iriPath point') then Just $ AS.cutIRI e
        else loopFacts facts' e point
     _ -> loopFacts facts' e point
 
 
 -- | retrieve the first class of list, somewhat arbitrary
-firstClass :: AnnotatedList ClassExpression -> Maybe IRI
-firstClass ((_,Expression c):_) = Just c
+firstClass :: AnnotatedList AS.ClassExpression -> Maybe IRI
+firstClass ((_,AS.Expression c):_) = Just c
 firstClass _ = Nothing
