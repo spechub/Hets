@@ -20,6 +20,8 @@ import OWL2.Parse
 import OWL2.Keywords
 import OWL2.ColonKeywords
 
+import Data.Maybe
+
 import Common.IRI
 import Common.Keywords
 import Common.Parsec
@@ -254,21 +256,39 @@ frames = many $ datatypeBit <|> classFrame
     <|> objectPropertyFrame <|> dataPropertyFrame <|> individualFrame
     <|> annotationPropertyFrame <|> misc
 
-basicSpec :: GA.PrefixMap -> CharParser st OntologyDocument
+extendedToIri :: Extended -> IRI
+extendedToIri (SimpleEntity (AS.Entity _  _ iri)) = iri
+extendedToIri (ClassEntity iri) = iri
+extendedToIri (ObjectEntity iri) = iri
+
+transformAnnBit :: IRI -> Annotations -> AnnFrameBit -> AS.Axiom
+transformAnnBit iri anns (AnnotationFrameBit Declaration) = 
+  AS.Declaration anns iri
+-- transformAnnBit () anns (AnnotationFrameBit Assertion) = 
+transformAnnBit iri anns (DatatypeBit range) = 
+  AS.DatatypeDefinition anns iri range
+  
+
+transformFrameBit :: IRI -> FrameBit -> AS.Axiom
+transformFrameBit iri (AnnFrameBit anns bit) = transformAnnBit iri anns bit
+
+transformFrame :: Frame -> [AS.Axiom]
+transformFrame (Frame e bits) = transformFrameBit (extendedToIri e) <$> ListFrame
+
+basicSpec :: GA.PrefixMap -> CharParser st AS.OntologyDocument
 basicSpec pm = do
     nss <- many nsEntry
-    ou <- option nullIRI $ pkeyword ontologyC >> option nullIRI uriP
+    ou <- optionMaybe $ pkeyword ontologyC >> uriP
+    versionIri <- optionMaybe uriP 
     ie <- many importEntry
     ans <- many annotations
     as <- frames
-    if null nss && null ie && null ans && null as && ou == nullIRI
+    if null nss && null ie && null ans && null as && isNothing ou
       then fail "empty ontology"
       else 
-       let o = OntologyDocument
-                (Map.union (Map.fromList $ map (\ (p, q) -> (p, showIRICompact $ setAngles False q)) nss)
-                (convertPrefixMap pm))
-                (emptyOntology as)
-                  { imports = ie
-                  , ann = ans
-                  , name = ou }
-       in return o 
+        let mergedPrefixes = Map.union (Map.fromList nss) pm
+            axioms = concat (transformFrame <$> as)
+            ontology = AS.Ontology ou versionIri ie (concat ans) axioms
+        in return $ AS.OntologyDocument
+          (uncurry AS.PrefixDeclaration <$> Map.toList (mergedPrefixes))
+          ontology
