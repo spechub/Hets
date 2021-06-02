@@ -15,7 +15,7 @@ References  :  <http://www.w3.org/TR/2009/NOTE-owl2-manchester-syntax-20091027/>
 
 module OWL2.Parse where
 
-import OWL2.AS
+import qualified OWL2.AS as AS
 import OWL2.Symbols
 import OWL2.Keywords
 import OWL2.ColonKeywords
@@ -36,12 +36,12 @@ import Control.Monad (liftM2)
 import Data.Char
 import qualified Data.Map as Map
 
-characters :: [Character]
+characters :: [AS.Character]
 characters = [minBound .. maxBound]
 
 -- | OWL and CASL structured keywords including 'andS' and 'notS'
 owlKeywords :: [String]
-owlKeywords = notS : stringS : map show entityTypes
+owlKeywords = notS : stringS : map show AS.entityTypes
   ++ map show characters ++ keywords ++ criticalKeywords
 
 ncNameStart :: Char -> Bool
@@ -224,37 +224,37 @@ datatypeUri = fmap mkIRI (choice $ map keyword datatypeKeys) <|> uriP
 optSign :: CharParser st Bool
 optSign = option False $ fmap (== '-') (oneOf "+-")
 
-postDecimal :: CharParser st NNInt
-postDecimal = char '.' >> option zeroNNInt getNNInt
+postDecimal :: CharParser st AS.NNInt
+postDecimal = char '.' >> option AS.zeroNNInt getNNInt
 
-getNNInt :: CharParser st NNInt
-getNNInt = fmap (NNInt . map digitToInt) getNumber
+getNNInt :: CharParser st AS.NNInt
+getNNInt = fmap (AS.NNInt . map digitToInt) getNumber
 
-intLit :: CharParser st IntLit
+intLit :: CharParser st AS.IntLit
 intLit = do
   b <- optSign
   n <- getNNInt
-  return $ negNNInt b n
+  return $ AS.negNNInt b n
 
-decimalLit :: CharParser st DecLit
-decimalLit = liftM2 DecLit intLit $ option zeroNNInt postDecimal
+decimalLit :: CharParser st AS.DecLit
+decimalLit = liftM2 AS.DecLit intLit $ option AS.zeroNNInt postDecimal
 
-floatDecimal :: CharParser st DecLit
+floatDecimal :: CharParser st AS.DecLit
 floatDecimal = do
     n <- getNNInt
-    f <- option zeroNNInt postDecimal
-    return $ DecLit (negNNInt False n) f
+    f <- option AS.zeroNNInt postDecimal
+    return $ AS.DecLit (AS.negNNInt False n) f
    <|> do
     n <- postDecimal
-    return $ DecLit zeroInt n
+    return $ AS.DecLit AS.zeroInt n
 
-floatingPointLit :: CharParser st FloatLit
+floatingPointLit :: CharParser st AS.FloatLit
 floatingPointLit = do
    b <- optSign
    d <- floatDecimal
-   i <- option zeroInt (oneOf "eE" >> intLit)
+   i <- option AS.zeroInt (oneOf "eE" >> intLit)
    optionMaybe $ oneOf "fF"
-   return $ FloatLit (negDec b d) i
+   return $ AS.FloatLit (AS.negDec b d) i
 
 languageTag :: CharParser st String
 languageTag = atMost1 4 letter
@@ -265,24 +265,24 @@ rmQuotes s = case s of
   _ : tl@(_ : _) -> init tl
   _ -> error "rmQuotes"
 
-stringLiteral :: CharParser st Literal
+stringLiteral :: CharParser st AS.Literal
 stringLiteral = do
   s <- fmap rmQuotes stringLit
   do
-      string cTypeS
+      string AS.cTypeS
       d <- datatypeUri
-      return $ Literal s $ Typed d
+      return $ AS.Literal s $ AS.Typed d
     <|> do
         string asP
         t <- skips $ optionMaybe languageTag
-        return $ Literal s $ Untyped t
-    <|> skips (return $ Literal s $ Typed $ mkIRI stringS)
+        return $ AS.Literal s $ AS.Untyped t
+    <|> skips (return $ AS.Literal s $ AS.Typed $ mkIRI stringS) {prefixName = "xsd"} )
 
-literal :: CharParser st Literal
+literal :: CharParser st AS.Literal
 literal = do
     f <- skips $ try floatingPointLit
-         <|> fmap decToFloat decimalLit
-    return $ NumberLit f
+         <|> fmap AS.decToFloat decimalLit
+    return $ AS.NumberLit f
   <|> stringLiteral
 
 -- * description
@@ -293,7 +293,7 @@ owlClassUri = uriP
 individualUri :: CharParser st IRI
 individualUri = uriP
 
-individual :: CharParser st Individual
+individual :: CharParser st AS.Individual
 individual = do
     i <- individualUri
     return $ if prefixName i == "_" then i {isBlankNode = True}
@@ -329,18 +329,18 @@ keyword :: String -> CharParser st String
 keyword s = keywordNotFollowedBy s (alphaNum <|> char '_')
 
 -- base OWLClass excluded
-atomic :: CharParser st ClassExpression
+atomic :: CharParser st AS.ClassExpression
 atomic = parensP description
-  <|> fmap ObjectOneOf (bracesP $ sepByComma individual)
+  <|> fmap AS.ObjectOneOf (bracesP $ sepByComma individual)
 
-objectPropertyExpr :: CharParser st ObjectPropertyExpression
+objectPropertyExpr :: CharParser st AS.ObjectPropertyExpression
 objectPropertyExpr = do
     keyword inverseS
-    fmap ObjectInverseOf objectPropertyExpr
-  <|> fmap ObjectProp uriP
+    fmap AS.ObjectInverseOf objectPropertyExpr
+  <|> fmap AS.ObjectProp uriP
 
 -- creating the facet-value pairs
-facetValuePair :: CharParser st (ConstrainingFacet, RestrictionValue)
+facetValuePair :: CharParser st (AS.ConstrainingFacet, AS.RestrictionValue)
 facetValuePair = do
   df <- choice $ map (\ f -> keyword (showFacet f) >> return f)
       [ LENGTH
@@ -356,58 +356,58 @@ facetValuePair = do
       , MAXINCLUSIVE
       , MAXEXCLUSIVE ]
   rv <- literal
-  return (facetToIRI df, rv)
+  return (AS.facetToIRI df, rv)
 
 -- it returns DataType Datatype or DatatypeRestriction Datatype [facetValuePair]
-dataRangeRestriction :: CharParser st DataRange
+dataRangeRestriction :: CharParser st AS.DataRange
 dataRangeRestriction = do
   e <- datatypeUri
-  option (DataType e []) $ fmap (DataType e) $ bracketsP
+  option (AS.DataType e []) $ fmap (AS.DataType e) $ bracketsP
     $ sepByComma facetValuePair
 
-dataConjunct :: CharParser st DataRange
-dataConjunct = fmap (mkDataJunction IntersectionOf)
+dataConjunct :: CharParser st AS.DataRange
+dataConjunct = fmap (mkDataJunction AS.IntersectionOf)
       $ sepBy1 dataPrimary $ keyword andS
 
-dataRange :: CharParser st DataRange
-dataRange = fmap (mkDataJunction UnionOf)
+dataRange :: CharParser st AS.DataRange
+dataRange = fmap (mkDataJunction AS.UnionOf)
       $ sepBy1 dataConjunct $ keyword orS
 
-dataPrimary :: CharParser st DataRange
+dataPrimary :: CharParser st AS.DataRange
 dataPrimary = do
     keyword notS
-    fmap DataComplementOf dataPrimary
-   <|> fmap DataOneOf (bracesP $ sepByComma literal)
+    fmap AS.DataComplementOf dataPrimary
+   <|> fmap AS.DataOneOf (bracesP $ sepByComma literal)
    <|> dataRangeRestriction
 
-mkDataJunction :: JunctionType -> [DataRange] -> DataRange
+mkDataJunction :: AS.JunctionType -> [AS.DataRange] -> AS.DataRange
 mkDataJunction ty ds = case nubOrd ds of
   [] -> error "mkDataJunction"
   [x] -> x
-  ns -> DataJunction ty ns
+  ns -> AS.DataJunction ty ns
 
 -- parses "some" or "only"
-someOrOnly :: CharParser st QuantifierType
+someOrOnly :: CharParser st AS.QuantifierType
 someOrOnly = choice
-  $ map (\ f -> keyword (showQuantifierType f) >> return f)
-    [AllValuesFrom, SomeValuesFrom]
+  $ map (\ f -> keyword (AS.showQuantifierType f) >> return f)
+    [AS.AllValuesFrom, AS.SomeValuesFrom]
 
 -- locates the keywords "min" "max" "exact" and their argument
-card :: CharParser st (CardinalityType, Int)
+card :: CharParser st (AS.CardinalityType, Int)
 card = do
-  c <- choice $ map (\ f -> keywordNotFollowedBy (showCardinalityType f) letter
+  c <- choice $ map (\ f -> keywordNotFollowedBy (AS.showCardinalityType f) letter
                             >> return f)
-             [MinCardinality, MaxCardinality, ExactCardinality]
+             [AS.MinCardinality, AS.MaxCardinality, AS.ExactCardinality]
   n <- skips getNumber
   return (c, value 10 n)
 
 -- tries to parse either a IRI or a literal
-individualOrConstant :: CharParser st (Either Individual Literal)
+individualOrConstant :: CharParser st (Either AS.Individual AS.Literal)
 individualOrConstant = fmap Right literal <|> fmap Left individual
 
 {- | applies the previous one to a list separated by commas
     (the list needs to be all of the same type, of course) -}
-individualOrConstantList :: CharParser st (Either [Individual] [Literal])
+individualOrConstantList :: CharParser st (Either [AS.Individual] [AS.Literal])
 individualOrConstantList = do
     ioc <- individualOrConstant
     case ioc of
@@ -416,127 +416,127 @@ individualOrConstantList = do
       Right c -> fmap (Right . (c :)) $ optionL
         $ commaP >> sepByComma literal
 
-primaryOrDataRange :: CharParser st (Either ClassExpression DataRange)
+primaryOrDataRange :: CharParser st (Either AS.ClassExpression AS.DataRange)
 primaryOrDataRange = do
   ns <- many $ keyword notS  -- allows multiple not before primary
   ed <- do
       u <- datatypeUri
-      fmap Left (restrictionAny $ ObjectProp u)
-        <|> fmap (Right . DataType u)
+      fmap Left (restrictionAny $ AS.ObjectProp u)
+        <|> fmap (Right . AS.DataType u)
             (bracketsP $ sepByComma facetValuePair)
-        <|> return (if isDatatypeKey u
-              then Right $ DataType u []
-              else Left $ Expression u) -- could still be a datatypeUri
+        <|> return (if AS.isDatatypeKey u
+              then Right $ AS.DataType u []
+              else Left $ AS.Expression u) -- could still be a datatypeUri
     <|> do
       e <- bracesP individualOrConstantList
       return $ case e of
-        Left us -> Left $ ObjectOneOf us
-        Right cs -> Right $ DataOneOf cs
+        Left us -> Left $ AS.ObjectOneOf us
+        Right cs -> Right $ AS.DataOneOf cs
     <|> fmap Left restrictionOrAtomic
   return $ if even (length ns) then ed else
     case ed of
-      Left d -> Left $ ObjectComplementOf d
-      Right d -> Right $ DataComplementOf d
+      Left d -> Left $ AS.ObjectComplementOf d
+      Right d -> Right $ AS.DataComplementOf d
 
-mkObjectJunction :: JunctionType -> [ClassExpression] -> ClassExpression
+mkObjectJunction :: AS.JunctionType -> [AS.ClassExpression] -> AS.ClassExpression
 mkObjectJunction ty ds = case nubOrd ds of
   [] -> error "mkObjectJunction"
   [x] -> x
-  ns -> ObjectJunction ty ns
+  ns -> AS.ObjectJunction ty ns
 
-restrictionAny :: ObjectPropertyExpression -> CharParser st ClassExpression
+restrictionAny :: AS.ObjectPropertyExpression -> CharParser st AS.ClassExpression
 restrictionAny opExpr = do
       keyword valueS
       e <- individualOrConstant
       case e of
-        Left u -> return $ ObjectHasValue opExpr u
+        Left u -> return $ AS.ObjectHasValue opExpr u
         Right c -> case opExpr of
-          ObjectProp dpExpr -> return $ DataHasValue dpExpr c
+          AS.ObjectProp dpExpr -> return $ AS.DataHasValue dpExpr c
           _ -> unexpected "literal"
     <|> do
       keyword selfS
-      return $ ObjectHasSelf opExpr
+      return $ AS.ObjectHasSelf opExpr
     <|> do -- sugar
       keyword onlysomeS
       ds <- bracketsP $ sepByComma description
-      let as = map (ObjectValuesFrom SomeValuesFrom opExpr) ds
-          o = ObjectValuesFrom AllValuesFrom opExpr
-              $ mkObjectJunction UnionOf ds
-      return $ mkObjectJunction IntersectionOf $ o : as
+      let as = map (AS.ObjectValuesFrom AS.SomeValuesFrom opExpr) ds
+          o = AS.ObjectValuesFrom AS.AllValuesFrom opExpr
+              $ mkObjectJunction AS.UnionOf ds
+      return $ mkObjectJunction AS.IntersectionOf $ o : as
     <|> do -- sugar
       keyword hasS
       iu <- individual
-      return $ ObjectValuesFrom SomeValuesFrom opExpr $ ObjectOneOf [iu]
+      return $ AS.ObjectValuesFrom AS.SomeValuesFrom opExpr $ AS.ObjectOneOf [iu]
     <|> do
       v <- someOrOnly
       pr <- primaryOrDataRange
       case pr of
-        Left p -> return $ ObjectValuesFrom v opExpr p
+        Left p -> return $ AS.ObjectValuesFrom v opExpr p
         Right r -> case opExpr of
-          ObjectProp dpExpr -> return $ DataValuesFrom v dpExpr r
-          _ -> unexpected $ "dataRange after " ++ showQuantifierType v
+          AS.ObjectProp dpExpr -> return $ AS.DataValuesFrom v [dpExpr] r
+          _ -> unexpected $ "dataRange after " ++ AS.showQuantifierType v
     <|> do
       (c, n) <- card
       mp <- optionMaybe primaryOrDataRange
       case mp of
-         Nothing -> return $ ObjectCardinality $ Cardinality c n opExpr Nothing
+         Nothing -> return $ AS.ObjectCardinality $ AS.Cardinality c n opExpr Nothing
          Just pr -> case pr of
            Left p ->
-             return $ ObjectCardinality $ Cardinality c n opExpr $ Just p
+             return $ AS.ObjectCardinality $ AS.Cardinality c n opExpr $ Just p
            Right r -> case opExpr of
-             ObjectProp dpExpr ->
-               return $ DataCardinality $ Cardinality c n dpExpr $ Just r
-             _ -> unexpected $ "dataRange after " ++ showCardinalityType c
+             AS.ObjectProp dpExpr ->
+               return $ AS.DataCardinality $ AS.Cardinality c n dpExpr $ Just r
+             _ -> unexpected $ "dataRange after " ++ AS.showCardinalityType c
 
-restriction :: CharParser st ClassExpression
+restriction :: CharParser st AS.ClassExpression
 restriction = objectPropertyExpr >>= restrictionAny
 
-restrictionOrAtomic :: CharParser st ClassExpression
+restrictionOrAtomic :: CharParser st AS.ClassExpression
 restrictionOrAtomic = do
     opExpr <- objectPropertyExpr
     restrictionAny opExpr <|> case opExpr of
-       ObjectProp euri -> return $ Expression euri
+       AS.ObjectProp euri -> return $ AS.Expression euri
        _ -> unexpected "inverse object property"
   <|> atomic
 
 optNot :: (a -> a) -> CharParser st a -> CharParser st a
 optNot f p = (keyword notS >> fmap f p) <|> p
 
-primary :: CharParser st ClassExpression
-primary = optNot ObjectComplementOf restrictionOrAtomic
+primary :: CharParser st AS.ClassExpression
+primary = optNot AS.ObjectComplementOf restrictionOrAtomic
 
-conjunction :: CharParser st ClassExpression
+conjunction :: CharParser st AS.ClassExpression
 conjunction = do
-    curi <- fmap Expression $ try (owlClassUri << keyword thatS)
-    rs <- sepBy1 (optNot ObjectComplementOf restriction) $ keyword andS
-    return $ mkObjectJunction IntersectionOf $ curi : rs
-  <|> fmap (mkObjectJunction IntersectionOf)
+    curi <- fmap AS.Expression $ try (owlClassUri << keyword thatS)
+    rs <- sepBy1 (optNot AS.ObjectComplementOf restriction) $ keyword andS
+    return $ mkObjectJunction AS.IntersectionOf $ curi : rs
+  <|> fmap (mkObjectJunction AS.IntersectionOf)
       (sepBy1 primary $ keyword andS)
 
-description :: CharParser st ClassExpression
+description :: CharParser st AS.ClassExpression
 description =
-  fmap (mkObjectJunction UnionOf) $ sepBy1 conjunction $ keyword orS
+  fmap (mkObjectJunction AS.UnionOf) $ sepBy1 conjunction $ keyword orS
 
-entityType :: CharParser st EntityType
+entityType :: CharParser st AS.EntityType
 entityType = choice $ map (\ f -> keyword (show f) >> return f)
-  entityTypes
+  AS.entityTypes
 
 {- | same as annotation Target in Manchester Syntax,
       named annotation Value in Abstract Syntax -}
-annotationValue :: CharParser st AnnotationValue
+annotationValue :: CharParser st AS.AnnotationValue
 annotationValue = do
     l <- literal
-    return $ AnnValLit l
+    return $ AS.AnnValLit l
   <|> do
     i <- individual
-    return $ AnnValue i
+    return $ AS.AnnValue i
 
-equivOrDisjointL :: [EquivOrDisjoint]
-equivOrDisjointL = [Equivalent, Disjoint]
+equivOrDisjointL :: [AS.EquivOrDisjoint]
+equivOrDisjointL = [AS.Equivalent, AS.Disjoint]
 
-equivOrDisjoint :: CharParser st EquivOrDisjoint
+equivOrDisjoint :: CharParser st AS.EquivOrDisjoint
 equivOrDisjoint = choice
-  $ map (\ f -> pkeyword (showEquivOrDisjoint f) >> return f)
+  $ map (\ f -> pkeyword (AS.showEquivOrDisjoint f) >> return f)
   equivOrDisjointL
 
 subPropertyKey :: CharParser st ()
@@ -545,28 +545,28 @@ subPropertyKey = pkeyword subPropertyOfC
 characterKey :: CharParser st ()
 characterKey = pkeyword characteristicsC
 
-sameOrDifferent :: CharParser st SameOrDifferent
+sameOrDifferent :: CharParser st AS.SameOrDifferent
 sameOrDifferent = choice
-  $ map (\ f -> pkeyword (showSameOrDifferent f) >> return f)
-  [Same, Different]
+  $ map (\ f -> pkeyword (AS.showSameOrDifferent f) >> return f)
+  [AS.Same, AS.Different]
 
-sameOrDifferentIndu :: CharParser st SameOrDifferent
-sameOrDifferentIndu = (pkeyword sameIndividualC >> return Same)
-    <|> (pkeyword differentIndividualsC >> return Different)
+sameOrDifferentIndu :: CharParser st AS.SameOrDifferent
+sameOrDifferentIndu = (pkeyword sameIndividualC >> return AS.Same)
+    <|> (pkeyword differentIndividualsC >> return AS.Different)
 
-equivOrDisjointKeyword :: String -> CharParser st EquivOrDisjoint
+equivOrDisjointKeyword :: String -> CharParser st AS.EquivOrDisjoint
 equivOrDisjointKeyword ext = choice
   $ map (\ f -> pkeyword (show f ++ ext) >> return f)
   equivOrDisjointL
 
-objectPropertyCharacter :: CharParser st Character
+objectPropertyCharacter :: CharParser st AS.Character
 objectPropertyCharacter =
   choice $ map (\ f -> keyword (show f) >> return f) characters
 
-domainOrRange :: CharParser st DomainOrRange
+domainOrRange :: CharParser st AS.DomainOrRange
 domainOrRange = choice
-  $ map (\ f -> pkeyword (showDomainOrRange f) >> return f)
-  [ADomain, ARange]
+  $ map (\ f -> pkeyword (AS.showDomainOrRange f) >> return f)
+  [AS.ADomain, AS.ARange]
 
 nsEntry :: CharParser st (String, IRI)
 nsEntry = do

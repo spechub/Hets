@@ -49,6 +49,7 @@ module Common.IRI
     , iriParser
     , angles
     , iriCurie
+    , urnParser
     , compoundIriCurie  
     , parseCurie
     , parseIRICurie
@@ -76,6 +77,7 @@ module Common.IRI
     , mkIRI
     , idToIRI  
     , setPrefix
+    , uriToCaslId
     ) where
 
 import Text.ParserCombinators.Parsec
@@ -362,7 +364,7 @@ iriCurie :: IRIParser st IRI
 iriCurie = angles iriParser <|> curie 
 
 compoundIriCurie :: IRIParser st IRI
-compoundIriCurie = angles iriParser <|> compoundCurie 
+compoundIriCurie = angles iriParser <|> compoundCurie
 
 angles :: IRIParser st IRI -> IRIParser st IRI
 angles p = char '<' >> fmap (\ i -> i { hasAngles = True }) p << char '>'
@@ -379,7 +381,8 @@ compoundCurie = do
 curie :: IRIParser st IRI
 curie = iriWithPos $ do
     pn <- try (do
-        n <- ncname
+        n <- option "" ncname -- although the standard doesn't allow an empty
+                              -- prefix the java OWL API does.
         c <- string ":"
         return $ n -- ++ c Don't add the colon to the prefix!
       )
@@ -408,6 +411,37 @@ referenceAux allowEmpty = iriWithPos $ do
           , isAbbrev = True  
           }
   return iri
+
+urnParser :: IRIParser st IRI
+urnParser = let ldh = alphaNum <|> oneOf "-." in iriWithPos $
+  do
+    -- The leading scheme (urn:) is case-insensitive.
+    oneOf "uU" >> oneOf "rR" >> oneOf "nN" >> char ':'
+    nid <- alphaNum <:>
+      manyTill ldh (try . lookAhead $ (ldh >> notFollowedBy ldh)) <++>
+      (alphaNum <:> return "") 
+    char ':'
+    nss <- flat $ many1 (uchar "/[]")
+    rComponent <- option "" $ string "?+" <++> flat (many1 $ uchar "/?")
+    qComponent <- option "" $ string "?=" <++> flat (many1 $ uchar "/?")
+    fragment <- option "" uifragment
+    return nullIRI
+              { iriScheme = "urn"
+              , iriAuthority = Just IRIAuth
+                { iriUserInfo = ""
+                , iriRegName = nss
+                , iriPort = ""
+                }
+              , iriPath = stringToId nss
+              , iriQuery = rComponent ++ qComponent
+              , iriFragment = fragment
+              }
+  
+
+
+  
+
+    
   
 {- | Prefix part of CURIE in @prefix_part:reference@
   <http://www.w3.org/TR/2009/REC-xml-names-20091208/#NT-NCName> -}
@@ -472,8 +506,8 @@ pnCharsPAux c =
 / ipath-empty -}
 
 iriParser :: IRIParser st IRI
-iriParser = iriWithPos $ do
-  us <- try uscheme
+iriParser = (<|>) (try urnParser) $ iriWithPos $ do
+  us <- option "" $ try uscheme
   (ua, up) <- ihierPart
   uq <- option "" uiquery
   uf <- option "" uifragment
@@ -686,7 +720,7 @@ iqueryPart = many1 iprivate <|> uchar ":@/?"
 -- RFC3987, section 2.2
 
 uifragment :: IRIParser st String
-uifragment = char '#' <:> flat (many $ uchar ":@/?")
+uifragment = char '#' <:> flat (many $ uchar ":@/?[]")
 
 -- Reference, Relative and Absolute IRI forms
 
@@ -1096,3 +1130,21 @@ addSuffixToIRI s i = if not $ null $ iriQuery i
                    then i{iriQuery = iriQuery i ++ s}
                   else  
                         i{iriPath  = appendId (iriPath i) (stringToId s)}
+
+-- | Extracts Id from URI
+uriToCaslId :: IRI -> Id
+uriToCaslId urI = 
+ let urS = showIRI urI
+     urS' = concatMap 
+            (\c ->  if isAlpha c ||
+                       isDigit c || 
+                       c == '\'' ||
+                       c == '_'
+                   then [c]
+                   else "_u" ) urS
+ in case urS of
+      x : _ -> 
+         if not $ isAlpha x then genName urS' 
+         else stringToId urS'
+      _ -> error "translating empty IRI" 
+           -- should never happen

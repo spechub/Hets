@@ -16,9 +16,12 @@ module SoftFOL.ProveDarwin
   ( darwinProver
   , darwinCMDLautomaticBatch
   , darwinConsChecker
+  , runDarwinProcess
   , ProverBinary (..)
   , darwinExe
+  , proverBinary
   , tptpProvers
+  , eproverOpts
   ) where
 
 -- preliminary hacks for display of CASL models

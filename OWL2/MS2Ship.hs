@@ -12,7 +12,7 @@ convert ontology to SHIP syntax
 
 module OWL2.MS2Ship where
 
-import OWL2.AS
+import qualified OWL2.AS as AS
 import Common.IRI
 import OWL2.Keywords
 import OWL2.MS
@@ -46,8 +46,8 @@ frame2Boxes (Frame e bs) = case e of
     (ds, rs) = getRoleType r es
     rt = on RoleType intersectConcepts ds rs
     in Box [] (nubOrd $ map (setRoleType r rt) es) []
-  SimpleEntity (Entity _ et i) -> case et of
-    NamedIndividual -> Box [] [] $ concatMap (indFrame2Boxes $ show $ iriPath i) bs
+  SimpleEntity (AS.Entity _ et i) -> case et of
+    AS.NamedIndividual -> Box [] [] $ concatMap (indFrame2Boxes $ show $ iriPath i) bs
     _ -> Box [] [] []
   Misc _ -> catBoxes $ map miscFrame2Boxes bs
 
@@ -63,14 +63,14 @@ classAnnFrame2Boxes c fb = case fb of
   AnnotationFrameBit Declaration -> [ConceptDecl c $ ADTCons []]
   _ -> []
 
-classListFrame2Boxes :: Concept -> Maybe Relation -> ListFrameBit -> [TBox]
+classListFrame2Boxes :: Concept -> Maybe AS.Relation -> ListFrameBit -> [TBox]
 classListFrame2Boxes c mr lfb = case lfb of
   ExpressionBit l -> let cs = map (ce2Concept . snd) l in case mr of
     Just r -> case r of
-      SubClass -> map (ConceptDecl c . ConceptRel Less) cs
-      EDRelation ed -> map ((case ed of
-        Disjoint -> disC
-        Equivalent -> eqC) c) cs
+      AS.SubClass -> map (ConceptDecl c . ConceptRel Less) cs
+      AS.EDRelation ed -> map ((case ed of
+        AS.Disjoint -> disC
+        AS.Equivalent -> eqC) c) cs
       _ -> []
     _ -> []
   _ -> []
@@ -82,21 +82,21 @@ opFrame2Boxes r b = case b of
     AnnotationFrameBit Declaration -> [RoleDecl r topRT]
     _ -> []
 
-opListFrame2Boxes :: Role -> Maybe Relation -> ListFrameBit -> [RBox]
+opListFrame2Boxes :: Role -> Maybe AS.Relation -> ListFrameBit -> [RBox]
 opListFrame2Boxes r mr lfb = case mr of
     Just rel -> case rel of
-      DRRelation dr -> case lfb of
+      AS.DRRelation dr -> case lfb of
         ExpressionBit l -> let cs = map (ce2Concept . snd) l in case dr of
-          ADomain -> map (\ c -> RoleDecl r (RoleType c topC)) cs
-          ARange -> map (RoleDecl r . RoleType topC) cs
+          AS.ADomain -> map (\ c -> RoleDecl r (RoleType c topC)) cs
+          AS.ARange -> map (RoleDecl r . RoleType topC) cs
         _ -> []
       _ -> case lfb of
         ObjectBit l -> let opes = map (ope2Role . snd) l in case rel of
-          SubPropertyOf -> map (RoleRel r Less) opes
-          InverseOf -> map (RoleRel r Eq . UnOp InvR) opes
-          EDRelation er -> map ((case er of
-            Equivalent -> eqR
-            Disjoint -> disR) r) opes
+          AS.SubPropertyOf -> map (RoleRel r Less) opes
+          AS.InverseOf -> map (RoleRel r Eq . UnOp InvR) opes
+          AS.EDRelation er -> map ((case er of
+            AS.Equivalent -> eqR
+            AS.Disjoint -> disR) r) opes
           _ -> []
         _ -> []
     Nothing -> case lfb of
@@ -115,14 +115,14 @@ setRoleType r1 r b = case b of
 
 flatIntersection :: Concept -> [Concept]
 flatIntersection c = case c of
-  JoinedC (Just IntersectionOf) cs -> concatMap flatIntersection cs
+  JoinedC (Just AS.IntersectionOf) cs -> concatMap flatIntersection cs
   _ -> [c]
 
 intersectConcepts :: [Concept] -> Concept
 intersectConcepts = (\ l -> case l of
   [] -> topC
   [c] -> c
-  _ -> JoinedC (Just IntersectionOf) l)
+  _ -> JoinedC (Just AS.IntersectionOf) l)
   . Set.toList . Set.delete topC . Set.fromList . concatMap flatIntersection
 
 indFrame2Boxes :: String -> FrameBit -> [ABox]
@@ -130,18 +130,18 @@ indFrame2Boxes i b = case b of
   ListFrameBit mr lfb -> indListFrame2Boxes i mr lfb
   AnnFrameBit {} -> []
 
-indListFrame2Boxes :: String -> Maybe Relation -> ListFrameBit -> [ABox]
+indListFrame2Boxes :: String -> Maybe AS.Relation -> ListFrameBit -> [ABox]
 indListFrame2Boxes i mr lfb = case lfb of
-    ExpressionBit l | mr == Just Types ->
+    ExpressionBit l | mr == Just AS.Types ->
       map (AConcept i . ce2Concept . snd) l
     IndividualFacts l | isNothing mr ->
       concatMap (\ f -> case snd f of
         ObjectPropertyFact pn ope j ->
           [ARole i (show $ iriPath j)
-          $ (if pn == Positive then id else UnOp NotR) $ ope2Role ope]
+          $ (if pn == AS.Positive then id else UnOp NotR) $ ope2Role ope]
         DataPropertyFact {} -> []) l
     IndividualSameOrDifferent l -> case mr of
-      Just (SDRelation sd) -> map (AIndividual i sd . show . iriPath . snd) l
+      Just (AS.SDRelation sd) -> map (AIndividual i sd . show . iriPath . snd) l
       _ -> []
     _ -> []
 
@@ -150,18 +150,18 @@ miscFrame2Boxes b = case b of
     ListFrameBit mr lfb -> miscListFrame2Boxes mr lfb
     AnnFrameBit {} -> emptyBox
 
-miscListFrame2Boxes :: Maybe Relation -> ListFrameBit -> Box
+miscListFrame2Boxes :: Maybe AS.Relation -> ListFrameBit -> Box
 miscListFrame2Boxes mr lfb = case mr of
   Just jr -> case jr of
-    EDRelation ed -> case lfb of
+    AS.EDRelation ed -> case lfb of
       ExpressionBit l -> let cs = map (ce2Concept . snd) l in
-        Box (if ed == Disjoint then [DisjointCs cs] else mkCycle eqC cs) [] []
+        Box (if ed == AS.Disjoint then [DisjointCs cs] else mkCycle eqC cs) [] []
       ObjectBit l -> let opes = map (ope2Role . snd) l in
-        Box [] (if ed == Disjoint then disRs opes else mkCycle eqR opes) []
+        Box [] (if ed == AS.Disjoint then disRs opes else mkCycle eqR opes) []
       _ -> emptyBox
-    SDRelation sd -> case lfb of
+    AS.SDRelation sd -> case lfb of
       IndividualSameOrDifferent l -> let is = map (iriPath . snd) l in
-        Box [] [] $ (if sd == Same then mkCycle else pairwise)
+        Box [] [] $ (if sd == AS.Same then mkCycle else pairwise)
          (`AIndividual` sd) (map show is)
       _ -> emptyBox
     _ -> emptyBox
@@ -188,7 +188,7 @@ pairwise f l = case l of
   h : t -> map (f h) t ++ pairwise f t
 
 disR :: Role -> Role -> RBox
-disR r t = RoleRel botR Eq $ JoinedR (Just IntersectionOf) [r, t]
+disR r t = RoleRel botR Eq $ JoinedR (Just AS.IntersectionOf) [r, t]
 
 disRs :: [Role] -> [RBox]
 disRs = pairwise disR
@@ -199,26 +199,26 @@ topRT = RoleType topC topC
 i2c :: IRI -> Concept
 i2c = NominalC . show . iriPath
 
-ce2Concept :: ClassExpression -> Concept
+ce2Concept :: AS.ClassExpression -> Concept
 ce2Concept ce = case ce of
-    Expression c -> let s = show $ iriPath c in
-      if isThing c then if s == thingS then topC else NotC topC
+    AS.Expression c -> let s = show $ iriPath c in
+      if AS.isThing c then if s == thingS then topC else NotC topC
       else CName s
-    ObjectJunction t cs -> JoinedC (Just t) $ map ce2Concept cs
-    ObjectComplementOf c -> NotC $ ce2Concept c
-    ObjectOneOf is -> JoinedC (Just UnionOf) $ map i2c is
-    ObjectValuesFrom q ope c -> Quant (Left q) (ope2Role ope) $ ce2Concept c
-    ObjectHasValue ope i -> Quant (Left SomeValuesFrom) (ope2Role ope) $ i2c i
+    AS.ObjectJunction t cs -> JoinedC (Just t) $ map ce2Concept cs
+    AS.ObjectComplementOf c -> NotC $ ce2Concept c
+    AS.ObjectOneOf is -> JoinedC (Just AS.UnionOf) $ map i2c is
+    AS.ObjectValuesFrom q ope c -> Quant (Left q) (ope2Role ope) $ ce2Concept c
+    AS.ObjectHasValue ope i -> Quant (Left AS.SomeValuesFrom) (ope2Role ope) $ i2c i
     -- the following translations are partly workarounds
-    ObjectHasSelf ope -> Quant (Left SomeValuesFrom) (ope2Role ope)
+    AS.ObjectHasSelf ope -> Quant (Left AS.SomeValuesFrom) (ope2Role ope)
       $ CName selfS
-    ObjectCardinality (Cardinality t i ope mc) -> Quant (Right (t, i))
+    AS.ObjectCardinality (AS.Cardinality t i ope mc) -> Quant (Right (t, i))
       (ope2Role ope) $ maybe topC ce2Concept mc
     _ -> CName dATAS
 
-ope2Role :: ObjectPropertyExpression -> Role
+ope2Role :: AS.ObjectPropertyExpression -> Role
 ope2Role ope = case ope of
-    ObjectProp o -> let r = show $ iriPath o in
-      if isPredefObjProp o then if r == topObjProp then topR else botR
+    AS.ObjectProp o -> let r = show $ iriPath o in
+      if AS.isPredefObjProp o then if r == topObjProp then topR else botR
       else RName r
-    ObjectInverseOf e -> UnOp InvR $ ope2Role e
+    AS.ObjectInverseOf e -> UnOp InvR $ ope2Role e
