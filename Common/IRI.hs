@@ -384,10 +384,7 @@ curie = iriWithPos $ do
         n <- option "" ncname -- although the standard doesn't allow an empty
                               -- prefix the java OWL API does.
         c <- string ":"
-        return $ maybe "" id n -- ++ c Don't add the colon to the prefix!
-        -- n <- ncname
-        -- c <- string ":"
-        -- return $ n -- ++ c Don't add the colon to the prefix!
+        return $ n -- ++ c Don't add the colon to the prefix!
       )
     i <- reference
     return i { prefixName = pn, iFragment = show i }
