@@ -20,7 +20,7 @@ module RDF.AS where
 
 import Common.Id
 import Common.IRI
-import OWL2.AS
+import qualified OWL2.AS as AS
 
 import Data.Data
 import Data.List
@@ -67,8 +67,8 @@ data Object = Object Subject
 data PredicateObjectList = PredicateObjectList Predicate [Object]
     deriving (Show, Eq, Ord, Typeable, Data)
 
-data RDFLiteral = RDFLiteral Bool LexicalForm TypedOrUntyped
-  | RDFNumberLit FloatLit
+data RDFLiteral = RDFLiteral Bool AS.LexicalForm AS.TypedOrUntyped
+  | RDFNumberLit AS.FloatLit
     deriving (Show, Eq, Ord, Typeable, Data)
 
 -- * Datatypes for Hets manipulation

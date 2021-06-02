@@ -49,6 +49,8 @@ import TPTP.Sign as TSign
 import TPTP.Logic_TPTP
 import TPTP.Sublogic
 
+import qualified Comorphisms.SuleCFOL2SoftFOL as CASL2SoftFOL
+
 data TPTP_FOF = TPTP_FOF
 
 instance Show TPTP_FOF where

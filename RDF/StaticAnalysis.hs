@@ -12,7 +12,7 @@ Static analysis for RDF
 
 module RDF.StaticAnalysis where
 
-import OWL2.AS
+import qualified OWL2.AS as AS
 import Common.IRI
 import OWL2.Parse
 import RDF.AS
@@ -95,8 +95,8 @@ resolveObject :: Base -> RDFPrefixMap -> Object -> Object
 resolveObject b pm o = case o of
     Object s -> Object $ resolveSubject b pm s
     ObjectLiteral lit -> case lit of
-        RDFLiteral bool lf (Typed dt) ->
-                ObjectLiteral $ RDFLiteral bool lf $ Typed $ resolveIRI b pm dt
+        RDFLiteral bool lf (AS.Typed dt) ->
+                ObjectLiteral $ RDFLiteral bool lf $ AS.Typed $ resolveIRI b pm dt
         _ -> o
 
 resolveTriples :: Base -> RDFPrefixMap -> Triples -> Triples

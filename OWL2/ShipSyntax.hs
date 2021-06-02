@@ -12,7 +12,7 @@ different pretty printing for the SHIP tool
 
 module OWL2.ShipSyntax where
 
-import OWL2.AS
+import qualified OWL2.AS as AS
 
 import Common.Doc
 import Common.DocUtils
@@ -28,8 +28,8 @@ data Concept
   = CName String
   | NominalC String
   | NotC Concept
-  | JoinedC (Maybe JunctionType) [Concept] -- Nothing denotes disjoint union
-  | Quant (Either QuantifierType (CardinalityType, Int)) Role Concept
+  | JoinedC (Maybe AS.JunctionType) [Concept] -- Nothing denotes disjoint union
+  | Quant (Either AS.QuantifierType (AS.CardinalityType, Int)) Role Concept
   deriving (Show, Eq, Ord)
 
 topC :: Concept
@@ -41,7 +41,7 @@ data Role
   = RName String
   | NominalR String String
   | UnOp NotOrInverse Role
-  | JoinedR (Maybe JunctionType) [Role] -- Nothing denotes composition!
+  | JoinedR (Maybe AS.JunctionType) [Role] -- Nothing denotes composition!
   deriving (Show, Eq, Ord)
 
 topR :: Role
@@ -50,11 +50,11 @@ topR = RName "TxT"
 botR :: Role
 botR = UnOp NotR topR
 
-ppJunction :: Bool -> Maybe JunctionType -> Doc
+ppJunction :: Bool -> Maybe AS.JunctionType -> Doc
 ppJunction c mt = text $ case mt of
   Just t -> case t of
-    UnionOf -> "+ "
-    IntersectionOf -> "& "
+    AS.UnionOf -> "+ "
+    AS.IntersectionOf -> "& "
   Nothing -> if c then "<+> " else ". "
 
 pppNegConcept :: Concept -> Doc
@@ -63,11 +63,11 @@ pppNegConcept c = case c of
     _ -> id
   $ ppConcept c
 
-pppConcept :: Bool -> Maybe JunctionType -> Concept -> Doc
+pppConcept :: Bool -> Maybe AS.JunctionType -> Concept -> Doc
 pppConcept notLast mt c = case c of
     Quant {} | notLast -> parens
     JoinedC mti _
-      | mti /= mt && maybe True (const $ maybe False (/= UnionOf) mt) mti
+      | mti /= mt && maybe True (const $ maybe False (/= AS.UnionOf) mt) mti
         -> parens
     _ -> id
   $ ppConcept c
@@ -78,7 +78,7 @@ ppConcept co = case co of
   NominalC s -> braces $ text s
   NotC c -> text "~" <> pppNegConcept c
   JoinedC t l -> case reverse l of
-    [] -> ppConcept $ if t == Just IntersectionOf then topC else NotC topC
+    [] -> ppConcept $ if t == Just AS.IntersectionOf then topC else NotC topC
     f : r -> fsep . prepPunctuate (ppJunction True t)
       . reverse $ pppConcept False t f : map (pppConcept True t) r
   Quant q r c -> fsep [(case q of
@@ -86,26 +86,26 @@ ppConcept co = case co of
     Right (n, i) -> text (showCard n) <+> text (show i)
     ) <+> ppRole r, dot <+> ppConcept c]
 
-showQuant :: QuantifierType -> String
+showQuant :: AS.QuantifierType -> String
 showQuant v = case v of
-      AllValuesFrom -> "all"
-      SomeValuesFrom -> "ex"
+      AS.AllValuesFrom -> "all"
+      AS.SomeValuesFrom -> "ex"
 
-showCard :: CardinalityType -> String
+showCard :: AS.CardinalityType -> String
 showCard n = case n of
-      MinCardinality -> ">="
-      MaxCardinality -> "<="
-      ExactCardinality -> "="
+      AS.MinCardinality -> ">="
+      AS.MaxCardinality -> "<="
+      AS.ExactCardinality -> "="
 
-showSame :: SameOrDifferent -> String
+showSame :: AS.SameOrDifferent -> String
 showSame s = case s of
-  Same -> "=="
-  Different -> "!="
+  AS.Same -> "=="
+  AS.Different -> "!="
 
-pppRole :: Maybe JunctionType -> Role -> Doc
+pppRole :: Maybe AS.JunctionType -> Role -> Doc
 pppRole mt r = case r of
     JoinedR (Just ti) _
-      | maybe True (\ to -> ti /= to && ti == UnionOf) mt
+      | maybe True (\ to -> ti /= to && ti == AS.UnionOf) mt
         -> parens
     _ -> id
   $ ppRole r
@@ -121,7 +121,7 @@ ppRole ro = case ro of
       _ | o == InvR -> parens
       _ -> id) (ppRole r)
   JoinedR t l -> case l of
-    [] -> ppRole $ if t /= Just UnionOf then topR else botR
+    [] -> ppRole $ if t /= Just AS.UnionOf then topR else botR
     _ -> fsep . prepPunctuate (ppJunction False t) $ map (pppRole t) l
 
 skip :: CharParser st ()
@@ -142,15 +142,15 @@ key s = forget $ try $ string s >> notFollowedBy myLetter
 skipKey :: String -> CharParser st ()
 skipKey s = key s << skip
 
-quant :: CharParser st QuantifierType
+quant :: CharParser st AS.QuantifierType
 quant = choice $ map (\ a -> key (showQuant a) >> return a)
-        [AllValuesFrom, SomeValuesFrom]
+        [AS.AllValuesFrom, AS.SomeValuesFrom]
 
-card :: CharParser st CardinalityType
+card :: CharParser st AS.CardinalityType
 card = choice $ map (\ a -> tryString (showCard a) >> return a)
-       [MinCardinality, MaxCardinality, ExactCardinality]
+       [AS.MinCardinality, AS.MaxCardinality, AS.ExactCardinality]
 
-quantOrCard :: CharParser st (Either QuantifierType (CardinalityType, Int))
+quantOrCard :: CharParser st (Either AS.QuantifierType (AS.CardinalityType, Int))
 quantOrCard = fmap Left quant
   <|> do
   c <- card << skip
@@ -196,13 +196,13 @@ binC :: ([a] -> a) -> Char -> CharParser st a -> CharParser st a
 binC f c = binPP f $ skipChar c
 
 andConcept :: CharParser st Concept
-andConcept = binC (JoinedC $ Just IntersectionOf) '&' primConcept
+andConcept = binC (JoinedC $ Just AS.IntersectionOf) '&' primConcept
 
 plus :: CharParser st ()
 plus = try $ char '+' >> notFollowedBy (char '>') >> skip
 
 orConcept :: CharParser st Concept
-orConcept = binPP (JoinedC $ Just UnionOf) plus andConcept
+orConcept = binPP (JoinedC $ Just AS.UnionOf) plus andConcept
 
 concept :: CharParser st Concept
 concept = binP (JoinedC Nothing) "<+>" orConcept
@@ -226,10 +226,10 @@ compRole :: CharParser st Role
 compRole = binC (JoinedR Nothing) '.' primRole
 
 andRole :: CharParser st Role
-andRole = binC (JoinedR $ Just IntersectionOf) '&' compRole
+andRole = binC (JoinedR $ Just AS.IntersectionOf) '&' compRole
 
 role :: CharParser st Role
-role = binPP (JoinedR $ Just UnionOf) plus andRole
+role = binPP (JoinedR $ Just AS.UnionOf) plus andRole
 
 data EqOrLess = Eq | Less deriving (Show, Eq, Ord)
 
@@ -252,14 +252,14 @@ data TBox
 data RBox
   = RoleDecl Role RoleType
   | RoleRel Role EqOrLess Role
-  | RoleProp Character Role
+  | RoleProp AS.Character Role
   deriving (Show, Eq, Ord)
 
 -- | assertions
 data ABox
   = AConcept String Concept
   | ARole String String Role
-  | AIndividual String SameOrDifferent String
+  | AIndividual String AS.SameOrDifferent String
   deriving (Show, Eq, Ord)
 
 data Box = Box [TBox] [RBox] [ABox]
@@ -309,18 +309,18 @@ ppBox (Box ts rs as) = let ppM c = keyword $ '%' : c : "BOX" in
   vcat $ ppM 'T' : map ppTBox ts ++ ppM 'R' : map ppRBox rs
            ++ ppM 'A' : map ppABox as
 
-showCharacter :: Character -> String
+showCharacter :: AS.Character -> String
 showCharacter c = case c of
-    Functional -> "Func"
-    InverseFunctional -> "FuncInv"
-    Reflexive -> "Ref"
-    Irreflexive -> "Irref"
-    Symmetric -> "Sym"
-    Asymmetric -> "Asym"
-    Antisymmetric -> "Dis"
-    Transitive -> "Trans"
+    AS.Functional -> "Func"
+    AS.InverseFunctional -> "FuncInv"
+    AS.Reflexive -> "Ref"
+    AS.Irreflexive -> "Irref"
+    AS.Symmetric -> "Sym"
+    AS.Asymmetric -> "Asym"
+    AS.Antisymmetric -> "Dis"
+    AS.Transitive -> "Trans"
 
-character :: CharParser st Character
+character :: CharParser st AS.Character
 character = choice $ map (\ a -> key (showCharacter a) >> return a)
   [minBound .. maxBound]
 
@@ -360,9 +360,9 @@ abox = liftM2 ($) (nomPair ARole) (colonP >> role)
     fmap (AConcept n) (colonP >> concept)
       <|> liftM2 (AIndividual n) (pSame << skip) nominal
 
-pSame :: CharParser st SameOrDifferent
+pSame :: CharParser st AS.SameOrDifferent
 pSame = choice $ map (\ a -> tryString (showSame a) >> return a)
-        [Same, Different]
+        [AS.Same, AS.Different]
 
 box :: CharParser st Box
 box = do

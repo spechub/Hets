@@ -15,7 +15,7 @@ no prefix clashes
 
 module OWL2.Rename where
 
-import OWL2.AS
+import qualified OWL2.AS as AS
 import Common.IRI
 import Common.Id (stringToId)
 import OWL2.MS
@@ -30,7 +30,7 @@ import qualified Data.Set as Set
 import Common.Result
 
 testAndInteg :: (String, String)
-     -> (PrefixMap, StringMap) -> (PrefixMap, StringMap)
+     -> (AS.PrefixMap, StringMap) -> (AS.PrefixMap, StringMap)
 testAndInteg (pre, oiri) (old, tm) = case Map.lookup pre old of
   Just anIri ->
    if oiri == anIri then (old, tm)
@@ -38,7 +38,7 @@ testAndInteg (pre, oiri) (old, tm) = case Map.lookup pre old of
          in (Map.insert pre' oiri old, Map.insert pre pre' tm)
   Nothing -> (Map.insert pre oiri old, tm)
 
-disambiguateName :: String -> PrefixMap -> String
+disambiguateName :: String -> AS.PrefixMap -> String
 disambiguateName n nameMap =
   let nm = if null n then "n" else n  -- change other empty prefixes to "n..."
       newname = reverse . dropWhile isDigit $ reverse nm
@@ -71,12 +71,12 @@ intersectSign s1 s2 = do
             }
     else fail "Static analysis could not intersect signatures"
 
-integPref :: PrefixMap -> PrefixMap
-                    -> (PrefixMap, StringMap)
+integPref :: AS.PrefixMap -> AS.PrefixMap
+                    -> (AS.PrefixMap, StringMap)
 integPref oldMap testMap =
    foldr testAndInteg (oldMap, Map.empty) (Map.toList testMap)
 
-newOid :: OntologyIRI -> OntologyIRI -> OntologyIRI
+newOid :: AS.OntologyIRI -> AS.OntologyIRI -> AS.OntologyIRI
 newOid id1 id2 =
   let lid1 = iriPath id1
       lid2 = iriPath id2
