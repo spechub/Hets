@@ -105,7 +105,8 @@ expandIRI pm iri
         expanded <- mergeCurie iri def
         return $ expanded
             { iFragment = iFragment iri
-            , prefixName = prefixName iri }
+            , prefixName = prefixName iri
+            , isAbbrev = True }
     | otherwise = iri
 
 -- | Parses an abbreviated or full iri
