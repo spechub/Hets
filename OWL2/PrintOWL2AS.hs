@@ -20,7 +20,7 @@ sParens d = parens (space <> d <> space)
 -- | print IRI
 printIRI :: [PrefixDeclaration] -> IRI -> Doc
 printIRI pds iri
-    | containsPrefix pds prefName =
+    | isAbbrev iri && containsPrefix pds prefName =
         text (prefName ++ ":" ++ (iFragment iri))
     | otherwise = pretty iri
   where prefName = prefixName iri
@@ -39,21 +39,21 @@ containsPrefix ((PrefixDeclaration name _):pds) prefName
 -- | print Literal
 printLiteral :: [PrefixDeclaration] -> Literal -> Doc
 printLiteral pds lit = case lit of 
-    Literal lexi ty -> plainText ('"' : escapeString False lexi ++ "\"")
+    Literal lexi ty -> plainText ('"' : escapeString lexi ++ "\"")
         <> literalTail ty
     NumberLit f -> text (show f)
-    where literalTail ty = case ty of
+    where 
+        literalTail ty = case ty of
             Typed iri -> keyword cTypeS <> printDataIRI pds iri
             Untyped tag -> case tag of
                 Nothing -> empty
                 Just tg -> text asP <> text tg
 
-escapeString :: Bool -> String -> String
-escapeString _ [] = []
-escapeString True ('"':s) = '"' : escapeString False s
-escapeString False ('"':s) = '\\' : '"' : escapeString False s
-escapeString flag ('\\':s) = '\\' : escapeString (not flag) s
-escapeString _ (c:s) = c : escapeString False s 
+escapeString ::  String -> String
+escapeString [] = []
+escapeString ('"':s) = '\\' : '"' : escapeString s
+escapeString ('\\':s) = '\\' : '\\' : escapeString s
+escapeString (c:s) = c : escapeString s 
 
 -- | print PropertyExpression
 printObjectPropertyExpression :: [PrefixDeclaration] -> ObjectPropertyExpression
