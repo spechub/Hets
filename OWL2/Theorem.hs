@@ -13,14 +13,14 @@ Adds the "implied" annotation - for specifying theorems
 module OWL2.Theorem where
 
 import Common.IRI
-import OWL2.AS
+import qualified OWL2.AS as AS
 import OWL2.MS
 
 import Data.List
 
-implied :: Annotation
-implied = Annotation [] (mkIRI "Implied")
-  . AnnValLit . Literal "true" . Typed $ mkIRI "string"
+implied :: AS.Annotation
+implied = AS.Annotation [] (mkIRI "Implied")
+  . AS.AnnValLit . AS.Literal "true" . AS.Typed $ mkIRI "string"
 
 rmList :: Annotations -> Annotations
 rmList = filter (not . prove1)
@@ -86,9 +86,9 @@ addImpliedFrame a = case rmImpliedFrame a of
         Misc ans -> Frame (Misc $ implied : ans) l
         _ -> Frame eith $ map addImpliedFrameBit l
 
-prove1 :: Annotation -> Bool
+prove1 :: AS.Annotation -> Bool
 prove1 anno = case anno of
-      Annotation _ aIRI (AnnValLit (Literal value (Typed _))) ->
+      AS.Annotation _ aIRI (AS.AnnValLit (AS.Literal value (AS.Typed _))) ->
           show (iriPath aIRI) == "Implied" && isInfixOf "true" value
       _ -> False
 

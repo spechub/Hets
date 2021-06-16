@@ -21,7 +21,7 @@ import Common.ProofTree
 import OWL2.Logic_OWL2
 import OWL2.MS
 import Common.IRI
-import OWL2.AS
+import qualified OWL2.AS as AS
 import OWL2.ProfilesAndSublogics
 import OWL2.ManchesterPrint ()
 import OWL2.Morphism
@@ -55,7 +55,7 @@ instance Comorphism
     SymbMapItems    -- symbol map items codomain
     OS.Sign         -- signature codomain
     OWLMorphism     -- morphism codomain
-    Entity          -- symbol codomain
+    AS.Entity          -- symbol codomain
     RawSymb         -- rawsymbol codomain
     ProofTree       -- proof tree codomain
     where

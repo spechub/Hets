@@ -17,7 +17,7 @@ import CASL.Fold
 import ExtModal.AS_ExtModal
 import ExtModal.Ship
 
-import OWL2.AS
+import qualified OWL2.AS as AS
 import OWL2.ShipSyntax
 import OWL2.Translate
 

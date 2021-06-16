@@ -19,7 +19,7 @@ import Common.Token (criticalKeywords)
 import Common.IRI
 import qualified Common.GlobalAnnotations as GA (PrefixMap)
 
-import OWL2.AS
+import qualified OWL2.AS as AS
 import OWL2.Parse hiding (stringLiteral, literal, skips, uriP)
 import RDF.AS
 import RDF.Symbols
@@ -95,19 +95,19 @@ stringLiteral :: CharParser st RDFLiteral
 stringLiteral = do
   (s, b) <- try longLiteral <|> shortLiteral
   do
-      string cTypeS
+      string AS.cTypeS
       d <- datatypeUri
-      return $ RDFLiteral b s $ Typed d
+      return $ RDFLiteral b s $ AS.Typed d
     <|> do
         string "@"
         t <- skips $ optionMaybe languageTag
-        return $ RDFLiteral b s $ Untyped t
-    <|> skips (return $ RDFLiteral b s $ Typed $ mkIRI "string")
+        return $ RDFLiteral b s $ AS.Untyped t
+    <|> skips (return $ RDFLiteral b s $ AS.Typed $ mkIRI "string")
 
 literal :: CharParser st RDFLiteral
 literal = do
     f <- skips $ try floatingPointLit
-         <|> fmap decToFloat decimalLit
+         <|> fmap AS.decToFloat decimalLit
     return $ RDFNumberLit f
   <|> stringLiteral
 

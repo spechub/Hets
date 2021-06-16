@@ -14,7 +14,7 @@ Complexity analysis of OWL2
 
 module OWL2.Sublogic where
 
-import OWL2.AS
+import qualified OWL2.AS as AS
 import OWL2.MS
 import OWL2.Sign
 import OWL2.Morphism
@@ -28,8 +28,8 @@ import qualified Data.Set as Set
 data NumberRestrictions = None | Unqualified | Qualified
     deriving (Show, Eq, Ord, Typeable, Data)
 
-owlDatatypes :: Set.Set Datatype
-owlDatatypes = predefIRIs
+owlDatatypes :: Set.Set AS.Datatype
+owlDatatypes = AS.predefIRIs
 
 data OWLSub = OWLSub
     { numberRestrictions :: NumberRestrictions
@@ -39,7 +39,7 @@ data OWLSub = OWLSub
     , roleHierarchy :: Bool
     , complexRoleInclusions :: Bool
     , addFeatures :: Bool
-    , datatype :: Set.Set Datatype
+    , datatype :: Set.Set AS.Datatype
     } deriving (Show, Eq, Ord, Typeable, Data)
 
 allSublogics :: [[OWLSub]]
@@ -112,7 +112,7 @@ slName sl =
         None -> "")
     ++ let ds = datatype sl in if Set.null ds then "" else
            "-D|" ++ (if ds == owlDatatypes then "-|" else
-                intercalate "|" (map printDatatype $ Set.toList ds) ++ "|")
+                intercalate "|" (map AS.printDatatype $ Set.toList ds) ++ "|")
 
 requireQualNumberRestrictions :: OWLSub -> OWLSub
 requireQualNumberRestrictions sl = sl {numberRestrictions = Qualified}
@@ -140,67 +140,67 @@ requireNominals sl = sl {nominals = True}
 requireInverseRoles :: OWLSub -> OWLSub
 requireInverseRoles sl = sl {inverseRoles = True}
 
-slDatatype :: Datatype -> OWLSub
-slDatatype dt = slBottom {datatype = if isDatatypeKey dt then
-    Set.singleton $ setDatatypePrefix dt else Set.empty}
+slDatatype :: AS.Datatype -> OWLSub
+slDatatype dt = slBottom {datatype = if AS.isDatatypeKey dt then
+    Set.singleton $ AS.setDatatypePrefix dt else Set.empty}
 
-slObjProp :: ObjectPropertyExpression -> OWLSub
+slObjProp :: AS.ObjectPropertyExpression -> OWLSub
 slObjProp o = case o of
-    ObjectProp _ -> slBottom
-    ObjectInverseOf _ -> requireInverseRoles slBottom
+    AS.ObjectProp _ -> slBottom
+    AS.ObjectInverseOf _ -> requireInverseRoles slBottom
 
-slEntity :: Entity -> OWLSub
-slEntity (Entity _ et iri) = case et of
-    Datatype -> slDatatype iri
+slEntity :: AS.Entity -> OWLSub
+slEntity (AS.Entity _ et iri) = case et of
+    AS.Datatype -> slDatatype iri
     _ -> slBottom
 
-slDataRange :: DataRange -> OWLSub
+slDataRange :: AS.DataRange -> OWLSub
 slDataRange rn = case rn of
-    DataType ur _ -> slDatatype ur
-    DataComplementOf c -> slDataRange c
-    DataOneOf _ -> requireNominals slBottom
-    DataJunction _ drl -> foldl slMax slBottom $ map slDataRange drl
+    AS.DataType ur _ -> slDatatype ur
+    AS.DataComplementOf c -> slDataRange c
+    AS.DataOneOf _ -> requireNominals slBottom
+    AS.DataJunction _ drl -> foldl slMax slBottom $ map slDataRange drl
 
-slClassExpression :: ClassExpression -> OWLSub
+slClassExpression :: AS.ClassExpression -> OWLSub
 slClassExpression des = case des of
-    ObjectJunction _ dec -> foldl slMax slBottom $ map slClassExpression dec
-    ObjectComplementOf dec -> slClassExpression dec
-    ObjectOneOf _ -> requireNominals slBottom
-    ObjectValuesFrom _ o d -> slMax (slObjProp o) (slClassExpression d)
-    ObjectHasSelf o -> requireAddFeatures $ slObjProp o
-    ObjectHasValue o _ -> slObjProp o
-    ObjectCardinality c -> slObjCard c
-    DataValuesFrom _ _ dr -> slDataRange dr
-    DataCardinality c -> slDataCard c
+    AS.ObjectJunction _ dec -> foldl slMax slBottom $ map slClassExpression dec
+    AS.ObjectComplementOf dec -> slClassExpression dec
+    AS.ObjectOneOf _ -> requireNominals slBottom
+    AS.ObjectValuesFrom _ o d -> slMax (slObjProp o) (slClassExpression d)
+    AS.ObjectHasSelf o -> requireAddFeatures $ slObjProp o
+    AS.ObjectHasValue o _ -> slObjProp o
+    AS.ObjectCardinality c -> slObjCard c
+    AS.DataValuesFrom _ _ dr -> slDataRange dr
+    AS.DataCardinality c -> slDataCard c
     _ -> slBottom
 
-slDataCard :: Cardinality DataPropertyExpression DataRange -> OWLSub
-slDataCard (Cardinality _ _ _ x) = requireNumberRestrictions $ case x of
+slDataCard :: AS.Cardinality AS.DataPropertyExpression AS.DataRange -> OWLSub
+slDataCard (AS.Cardinality _ _ _ x) = requireNumberRestrictions $ case x of
     Nothing -> slBottom
     Just y -> slDataRange y
 
-slObjCard :: Cardinality ObjectPropertyExpression ClassExpression -> OWLSub
-slObjCard (Cardinality _ _ op x) = requireNumberRestrictions $ case x of
+slObjCard :: AS.Cardinality AS.ObjectPropertyExpression AS.ClassExpression -> OWLSub
+slObjCard (AS.Cardinality _ _ op x) = requireNumberRestrictions $ case x of
     Nothing -> slObjProp op
     Just y -> slMax (slObjProp op) (slClassExpression y)
 
-slLFB :: Maybe Relation -> ListFrameBit -> OWLSub
+slLFB :: Maybe AS.Relation -> ListFrameBit -> OWLSub
 slLFB mr lfb = case lfb of
     ExpressionBit anl -> foldl slMax slBottom
         $ map (slClassExpression . snd) anl
     ObjectBit anl -> slMax (case fromMaybe (error "relation needed") mr of
-        EDRelation Disjoint -> requireAddFeatures slBottom
+        AS.EDRelation AS.Disjoint -> requireAddFeatures slBottom
         _ -> slBottom) $ foldl slMax slBottom $ map (slObjProp . snd) anl
     DataBit _ -> case fromMaybe (error "relation needed") mr of
-        EDRelation Disjoint -> requireAddFeatures slBottom
+        AS.EDRelation AS.Disjoint -> requireAddFeatures slBottom
         _ -> slBottom
     IndividualSameOrDifferent _ -> requireNominals slBottom
     ObjectCharacteristics anl -> foldl slMax slBottom
         $ map ((\ c -> case c of
-              Transitive -> requireRoleTransitivity slBottom
-              Reflexive -> requireAddFeatures slBottom
-              Irreflexive -> requireAddFeatures slBottom
-              Asymmetric -> requireAddFeatures slBottom
+              AS.Transitive -> requireRoleTransitivity slBottom
+              AS.Reflexive -> requireAddFeatures slBottom
+              AS.Irreflexive -> requireAddFeatures slBottom
+              AS.Asymmetric -> requireAddFeatures slBottom
               _ -> slBottom) . snd) anl
     DataPropRange anl -> foldl slMax slBottom $ map (slDataRange . snd) anl
     _ -> slBottom
@@ -220,8 +220,8 @@ slFB fb = case fb of
     ListFrameBit mr lfb -> slMax (slLFB mr lfb) $ case mr of
         Nothing -> slBottom
         Just r -> case r of
-            SubPropertyOf -> requireRoleHierarchy slBottom
-            InverseOf -> requireInverseRoles slBottom
+            AS.SubPropertyOf -> requireRoleHierarchy slBottom
+            AS.InverseOf -> requireInverseRoles slBottom
             _ -> slBottom -- maybe addFeatures ??
 
 slAxiom :: Axiom -> OWLSub
