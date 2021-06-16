@@ -57,6 +57,7 @@ module Common.IRI
     , parseIRI
     , ncname
 
+    , mergeCurie
     , expandCurie
     , relativeTo
     , relativeFrom
@@ -177,6 +178,7 @@ showTrace i =
  "\nquery:" ++ iriQuery i ++
  "\nfragment:" ++ iriFragment i ++
  "\nprefix:" ++ prefixName i ++
+ "\niFragment:" ++ iFragment i ++
  "\nisAbbrev:" ++ show (isAbbrev i)
 
 {- IRI as instance of Show.  Note that for security reasons, the default
@@ -385,7 +387,7 @@ curie = iriWithPos $ do
         return $ n -- ++ c Don't add the colon to the prefix!
       )
     i <- reference
-    return i { prefixName = pn }
+    return i { prefixName = pn, iFragment = show i }
   <|> referenceAux False
 
 reference :: IRIParser st IRI
