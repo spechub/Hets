@@ -559,7 +559,11 @@ data ClassExpression =
 
 -- * ANNOTATIONS
 
-data Annotation = Annotation [Annotation] AnnotationProperty AnnotationValue
+data Annotation = Annotation {
+      annAnnotations :: [Annotation]
+    , annProperty :: AnnotationProperty
+    , annValue :: AnnotationValue
+  }
     deriving (Show, Eq, Ord, Typeable, Data)
 
 type OntologyAnnotations = [Annotation]
