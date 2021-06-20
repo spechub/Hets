@@ -8,11 +8,10 @@ import OWL2.ColonKeywords
 import OWL2.ParseAS (expandIRI)
 
 import Common.Keywords
-import Common.Id
 import Common.IRI
 import Common.Lexer
 import Common.Parsec
-import Common.AnnoParser (commentLine, newlineOrEof)
+import Common.AnnoParser (newlineOrEof)
 import Common.Token (criticalKeywords)
 import Common.Utils (nubOrd)
 
@@ -21,51 +20,16 @@ import qualified Common.GlobalAnnotations as GA (PrefixMap)
 import Text.ParserCombinators.Parsec
 
 import Data.Char
-import qualified Data.Map as Map (union, toList, fromList, lookup, Map, map)
-import Data.Maybe
+import qualified Data.Map as Map (union, toList, fromList)
 import Data.Either (partitionEithers)
 import Control.Monad (liftM2)
 
 type Annotations = [Annotation]
 
-{- | @p <|?> q@ behaves like @<|>@ but pretends it hasn't consumed any input
-when an options failes. -}
-(<|?>) :: (GenParser t st a ) -> (GenParser t st a) -> GenParser t st a
-p <|?> q = try p <|> try q
-infixr 1 <|?>
-
 {- | @manySkip p@ parses 0 or more occurences of @p@ while skipping spaces
 (and comments) inbetween -}
 manySkip :: CharParser st a -> CharParser st [a]
 manySkip p = many (p << skips)
-
-{- | @many1Skip p@ parses 1 or more occurences of @p@ while skipping spaces
-(and comments) inbetween -}
-many1Skip :: CharParser st a -> CharParser st [a]
-many1Skip p = many1 (p << skips)
-
-{- | @manyNSkip n p@ parses @n@ or more occurences of @p@ while skipping spaces
-(and comments) inbetween -}
-manyNSkip :: Int -> CharParser st a -> CharParser st [a]
-manyNSkip n p =
-    foldr (\ _ r -> (p << skips) <:> r) (return []) [1 .. n] <++>
-    many (p << skips)
-
-{- | @followedBy c p@ first parses @p@ then looks ahead for @c@. Doesn't consume
-any input on failure. -}
-followedBy :: CharParser st b -> CharParser st a -> CharParser st a
-followedBy cond p = try $ do
-    r <- p
-    lookAhead cond
-    return r
-
--- | Performs an arbitrary lookahead over choices of parsers
-arbitraryLookaheadOption :: [CharParser st a] -> CharParser st a
-arbitraryLookaheadOption p = lookAhead $ choice (try <$> p)
-
--- | alias for @return Nothing@
-never :: CharParser st (Maybe a)
-never = return Nothing
 
 -- | Parses a comment
 comment :: CharParser st String
@@ -103,40 +67,6 @@ ncNameChar c = isAlphaNum c || elem c ".+-_\183"
 prefix :: CharParser st String
 prefix = satisfy ncNameStart <:> many (satisfy ncNameChar)
 
-iunreserved :: Char -> Bool
-iunreserved c = isAlphaNum c || elem c "-._~" || ord c >= 160 && ord c <= 55295
-
--- maybe lower case hex-digits should be illegal
-pctEncoded :: CharParser st String
-pctEncoded = char '%' <:> hexDigit <:> single hexDigit
-
-{- comma and parens are removed here
-   but would cause no problems for full IRIs within angle brackets -}
-subDelims :: Char -> Bool
-subDelims c = elem c "!$&'*+;="
-
-iunreservedSubDelims :: String -> CharParser st Char
-iunreservedSubDelims cs =
-    satisfy $ \ c -> iunreserved c || subDelims c || elem c cs
-
-iunreservedPctEncodedSubDelims :: String -> CharParser st String
-iunreservedPctEncodedSubDelims cs =
-    single (iunreservedSubDelims cs) <|> pctEncoded
-
-ipChar :: CharParser st String
-ipChar = iunreservedPctEncodedSubDelims ":@"
-
-ifragment :: CharParser st String
-ifragment = flat $ many (ipChar <|> single (char '/' <|> char '?'))
-
-iquery :: CharParser st String
-iquery = ifragment -- ignore iprivate
-
-iregName :: CharParser st String
-iregName = flat $ many $ iunreservedPctEncodedSubDelims ""
-
-iuserinfo :: CharParser st String
-iuserinfo = flat $ many $ iunreservedPctEncodedSubDelims ":"
 
 -- | parse zero or at most n consecutive arguments
 atMost :: Int -> GenParser tok st a -> GenParser tok st [a]
@@ -147,58 +77,7 @@ atMost n p = if n <= 0 then return [] else
 atMost1 :: Int -> GenParser tok st a -> GenParser tok st [a]
 atMost1 n p = p <:> atMost (n - 1) p
 
-decOctet :: CharParser st String
-decOctet = atMost 3 digit
-  `checkWith` \ s -> let v = value 10 s in v <= 255 &&
-                             (if v == 0 then s == "0" else take 1 s /= "0")
 
-iPv4Adress :: CharParser st String
-iPv4Adress = decOctet <++> string "."
-  <++> decOctet <++> string "."
-  <++> decOctet <++> string "."
-  <++> decOctet
-
-ihost :: CharParser st String
-ihost = iregName <|> iPv4Adress -- or ipLiteral
-
-port :: CharParser st String
-port = many digit
-
-iauthority :: CharParser st String
-iauthority = optionL (try $ iuserinfo <++> string "@") <++> ihost
-    <++> optionL (char ':' <:> port)
-
-isegment :: CharParser st String
-isegment = flat $ many ipChar
-
-isegmentNz :: CharParser st String
-isegmentNz = flat $ many1 ipChar
-
-ipathAbempty :: CharParser st String
-ipathAbempty = flat $ many (char '/' <:> isegment)
-
-ipathAbsolute :: CharParser st String
-ipathAbsolute = char '/' <:> optionL (isegmentNz <++> ipathAbempty)
-
-{- within abbreviated IRIs only ipath-noscheme should be used
-   that excludes colons via isegment-nz-nc -}
-ipathRootless :: CharParser st String
-ipathRootless = isegmentNz <++> ipathAbempty
-
-iauthorityWithPath :: CharParser st String
-iauthorityWithPath = tryString "//" <++> iauthority <++> ipathAbempty
-
-optQueryOrFrag :: CharParser st String
-optQueryOrFrag = optionL (char '?' <:> iquery)
-  <++> optionL (char '#' <:> ifragment)
-
--- | covers irelative-part (therefore we omit curie)
-ihierPart :: CharParser st String
-ihierPart =
-  iauthorityWithPath <|> ipathAbsolute <|> ipathRootless
-
-hierPartWithOpts :: CharParser st String
-hierPartWithOpts = (char '#' <:> ifragment) <|> ihierPart <++> optQueryOrFrag
 
 
 uriQ :: CharParser st IRI
@@ -523,10 +402,6 @@ description :: GA.PrefixMap -> CharParser st ClassExpression
 description pm =
   fmap (mkObjectJunction UnionOf) $ sepBy1 (conjunction pm) (keyword orS)
 
-entityType :: CharParser st EntityType
-entityType = choice $ map (\ f -> keyword (show f) >> return f)
-  entityTypes
-
 {- | same as annotation Target in Manchester Syntax,
       named annotation Value in Abstract Syntax -}
 annotationValue :: GA.PrefixMap -> CharParser st AnnotationValue
@@ -539,27 +414,6 @@ annotationValue pm = do
 
 equivOrDisjointL :: [EquivOrDisjoint]
 equivOrDisjointL = [Equivalent, Disjoint]
-
-equivOrDisjoint :: CharParser st EquivOrDisjoint
-equivOrDisjoint = choice
-  $ map (\ f -> pkeyword (showEquivOrDisjoint f) >> return f)
-  equivOrDisjointL
-
-subPropertyKey :: CharParser st ()
-subPropertyKey = pkeyword subPropertyOfC
-
-characterKey :: CharParser st ()
-characterKey = pkeyword characteristicsC
-
-sameOrDifferent :: CharParser st SameOrDifferent
-sameOrDifferent = choice
-  $ map (\ f -> pkeyword (showSameOrDifferent f) >> return f)
-  [Same, Different]
-
-sameOrDifferentIndu :: CharParser st SameOrDifferent
-sameOrDifferentIndu = (pkeyword sameIndividualC >> return Same)
-    <|> (pkeyword differentIndividualsC >> return Different)
-
 objectPropertyCharacter :: 
   GA.PrefixMap ->
   ObjectPropertyExpression ->
@@ -575,26 +429,6 @@ objectPropertyCharacter pm oe = do
     (pkeyword transitiveS >> return TransitiveObjectProperty))
   return $ ctor ans oe
 
-
-domainOrRange :: CharParser st DomainOrRange
-domainOrRange = choice
-  $ map (\ f -> pkeyword (showDomainOrRange f) >> return f)
-  [ADomain, ARange]
-
-nsEntry :: CharParser st (String, IRI)
-nsEntry = do
-    pkeyword prefixC
-    p <- skipsp (option "" prefix << char ':')
-    i <- skipsp fullIri
-    return (p, i)
-  <|> do
-    pkeyword namespaceC
-    p <- skipsp prefix
-    i <- skipsp fullIri
-    return (p, i)
-
-convertPrefixMap :: GA.PrefixMap -> Map.Map String String
-convertPrefixMap = Map.map $ iriToStringUnsecure . setAngles False
 
 optAnnos :: GA.PrefixMap -> CharParser st a -> CharParser st (Annotations, a)
 optAnnos pm p = do
@@ -875,7 +709,7 @@ misc pm =
 
 parseFrames :: GA.PrefixMap -> CharParser st [Axiom]
 parseFrames pm = do 
-  frames <- many $ classFrame pm -- datatypeBit pm <|>
+  frames <- many $ classFrame pm <|> parseDatatypeFrame pm
     <|> objectPropertyFrame pm <|> dataPropertyFrame pm <|> individualFrame pm
     <|> annotationPropertyFrame pm <|> (misc pm >>= return.return)
   return $ concat frames
@@ -892,10 +726,10 @@ parseOntology pm = do
     skips
     imports <- importEntry pm
     skips
-    annotations <- optionalAnnos pm
+    anns <- optionalAnnos pm
     skips
     axioms <- manySkip (parseFrames pm) >>= return . concat
-    return $ Ontology ontologyIRI Nothing imports annotations axioms
+    return $ Ontology ontologyIRI Nothing imports anns axioms
 
 parsePrefixDeclaration :: CharParser st PrefixDeclaration
 parsePrefixDeclaration =  do
