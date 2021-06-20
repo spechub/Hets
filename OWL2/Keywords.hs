@@ -75,6 +75,27 @@ fractionS = "fractionDigits"
 functionalS :: String
 functionalS = "Functional"
 
+inverseFunctionalS :: String
+inverseFunctionalS = "InverseFunctional"
+
+reflexiveS :: String
+reflexiveS = "Reflexive"
+
+irreflexiveS :: String
+irreflexiveS = "Irreflexive"
+
+symmetricS :: String
+symmetricS = "Symmetric"
+
+asymmetricS :: String
+asymmetricS = "Asymmetric"
+
+antisymmetricS :: String
+antisymmetricS = "Antisymmetric"
+
+transitiveS :: String
+transitiveS = "Transitive"
+
 hasS :: String
 hasS = "has"
 
