@@ -453,7 +453,7 @@ annotationPropertyFrame pm = do
     pkeyword annotationPropertyC
     ap <- (expUriP pm)
     x <- many $ apBit pm ap
-    return $ concat x
+    return $ Declaration [] (mkEntity AnnotationProperty ap) : concat x
 
 apBit :: GA.PrefixMap -> AnnotationProperty -> CharParser st [Axiom]
 apBit pm p = do
@@ -488,7 +488,7 @@ classFrame pm = do
     axioms <- many $ classFrameBit pm i
     -- ignore Individuals: ... !
     optional $ pkeyword individualsC >> sepByComma (individual pm)
-    return $ concat axioms
+    return $ Declaration [] (mkEntity Class i) : concat axioms
 
 classFrameBit :: GA.PrefixMap -> IRI -> CharParser st [Axiom]
 classFrameBit pm i = let e = Expression i in
@@ -569,7 +569,7 @@ objectPropertyFrame pm = do
     pkeyword objectPropertyC
     ouri <- expUriP pm
     bits <- many $ objectFrameBit pm ouri
-    return $ concat bits
+    return $ Declaration [] (mkEntity ObjectProperty ouri) : concat bits
 
 dataPropExprAList :: GA.PrefixMap -> CharParser st [(Annotations, DataPropertyExpression)]
 dataPropExprAList pm = sepByComma $ (optAnnos pm) (expUriP pm)
@@ -608,7 +608,7 @@ dataPropertyFrame pm = do
     pkeyword dataPropertyC
     duri <- expUriP pm
     bits <- many $ dataFrameBit pm duri 
-    return $ concat bits
+    return $ Declaration [] (mkEntity DataProperty duri) : concat bits
 
 fact :: GA.PrefixMap -> Individual -> CharParser st Assertion
 fact pm i = do
@@ -652,7 +652,7 @@ individualFrame pm = do
     pkeyword individualC
     iuri <- individual pm
     axioms <- many $ iFrameBit pm iuri
-    return $ concat axioms
+    return $ Declaration [] (mkEntity NamedIndividual iuri) :concat axioms
 
 parseEquivalentClasses :: GA.PrefixMap -> CharParser st ClassAxiom
 parseEquivalentClasses pm = do
