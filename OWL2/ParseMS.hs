@@ -1,5 +1,10 @@
 module OWL2.ParseMS where
 
+
+import System.Directory
+import Data.List (sort,isSuffixOf)
+import Data.Map(empty)
+
 import Prelude hiding (lookup)
 
 import OWL2.AS
@@ -201,7 +206,7 @@ pkeyword :: String -> CharParser st ()
 pkeyword s = forget $ keywordNotFollowedBy s (alphaNum <|> char '/')
 
 keywordNotFollowedBy :: String -> CharParser st Char -> CharParser st String
-keywordNotFollowedBy s c = skipsp $ try $ string s << notFollowedBy c
+keywordNotFollowedBy s c = try $ skipsp $ string s << notFollowedBy c
 
 -- | keyword not followed by any alphanum
 keyword :: String -> CharParser st String
@@ -209,8 +214,8 @@ keyword s = keywordNotFollowedBy s (alphaNum <|> char '_')
 
 -- base OWLClass excluded
 atomic :: GA.PrefixMap -> CharParser st ClassExpression
-atomic pm = parensP $ description pm
-  <|> fmap ObjectOneOf (bracesP $ sepByComma $ individual pm)
+atomic pm = (parensP $ description pm)
+  <|?> ObjectOneOf <$> (bracesP $ sepByComma $ individual pm)
 
 objectPropertyExpr :: GA.PrefixMap -> CharParser st ObjectPropertyExpression
 objectPropertyExpr pm = do
@@ -247,8 +252,8 @@ facetValuePair pm = do
 dataRangeRestriction :: GA.PrefixMap -> CharParser st DataRange
 dataRangeRestriction pm = do
   e <- datatypeUri pm
-  option (DataType e []) $ fmap (DataType e) $ bracketsP
-    $ sepByComma $ facetValuePair pm
+  option (DataType e []) $ fmap (DataType e) $ try $ bracketsP
+    $ sepByComma $ skipsp $ facetValuePair pm
 
 dataConjunct :: GA.PrefixMap -> CharParser st DataRange
 dataConjunct pm = fmap (mkDataJunction IntersectionOf)
@@ -262,8 +267,8 @@ dataPrimary :: GA.PrefixMap -> CharParser st DataRange
 dataPrimary pm = do
     pkeyword notS
     fmap DataComplementOf (dataPrimary pm)
-   <|> fmap DataOneOf (bracesP $ sepByComma $ literal pm)
-   <|> dataRangeRestriction pm
+   <|?> fmap DataOneOf (bracesP $ sepByComma $ literal pm)
+   <|?> dataRangeRestriction pm
 
 mkDataJunction :: JunctionType -> [DataRange] -> DataRange
 mkDataJunction ty ds = case nubOrd ds of
@@ -307,17 +312,17 @@ primaryOrDataRange pm = do
   ed <- do
       u <- datatypeUri pm
       fmap Left (restrictionAny pm $ ObjectProp u)
-        <|> fmap (Right . DataType u)
+        <|?> fmap (Right . DataType u)
             (bracketsP $ sepByComma $ facetValuePair pm)
-        <|> return (if isDatatypeKey u
+        <|?> return (if isDatatypeKey u
               then Right $ DataType u []
               else Left $ Expression u) -- could still be a datatypeUri
-    <|> do
+    <|?> do
       e <- bracesP $ individualOrConstantList pm
       return $ case e of
         Left us -> Left $ ObjectOneOf us
         Right cs -> Right $ DataOneOf cs
-    <|> fmap Left (restrictionOrAtomic pm)
+    <|?> fmap Left (restrictionOrAtomic pm)
   return $ if even (length ns) then ed else
     case ed of
       Left d -> Left $ ObjectComplementOf d
@@ -338,21 +343,21 @@ restrictionAny pm opExpr = do
         Right c -> case opExpr of
           ObjectProp dpExpr -> return $ DataHasValue dpExpr c
           _ -> unexpected "literal"
-    <|> do
+    <|?> do
       pkeyword selfS
       return $ ObjectHasSelf opExpr
-    <|> do -- sugar
+    <|?> do -- sugar
       pkeyword onlysomeS
       ds <- bracketsP $ sepByComma $ description pm
       let as = map (ObjectValuesFrom SomeValuesFrom opExpr) ds
           o = ObjectValuesFrom AllValuesFrom opExpr
               $ mkObjectJunction UnionOf ds
       return $ mkObjectJunction IntersectionOf $ o : as
-    <|> do -- sugar
+    <|?> do -- sugar
       pkeyword hasS
       iu <- individual pm
       return $ ObjectValuesFrom SomeValuesFrom opExpr $ ObjectOneOf [iu]
-    <|> do
+    <|?> do
       v <- someOrOnly
       pr <- primaryOrDataRange pm
       case pr of
@@ -360,7 +365,7 @@ restrictionAny pm opExpr = do
         Right r -> case opExpr of
           ObjectProp dpExpr -> return $ DataValuesFrom v [dpExpr] r
           _ -> unexpected $ "dataRange after " ++ showQuantifierType v
-    <|> do
+    <|?> do
       (c, n) <- card
       mp <- optionMaybe $ primaryOrDataRange pm
       case mp of
@@ -393,14 +398,14 @@ primary pm = optNot ObjectComplementOf (restrictionOrAtomic pm)
 conjunction :: GA.PrefixMap -> CharParser st ClassExpression
 conjunction pm = do
     curi <- Expression <$> owlClassUri pm << pkeyword thatS
-    rs <- sepBy1 (optNot ObjectComplementOf $ restriction pm) $ try $ pkeyword andS
+    rs <- sepBy1 (optNot ObjectComplementOf $ restriction pm) $ pkeyword andS
     return $ mkObjectJunction IntersectionOf $ curi : rs
   <|?> (mkObjectJunction IntersectionOf) <$>
-      (sepBy1 (skipsp $ primary pm) (try $ pkeyword andS))
+      (sepBy1 (skipsp $ primary pm) (pkeyword andS))
 
 description :: GA.PrefixMap -> CharParser st ClassExpression
 description pm =
-  (mkObjectJunction UnionOf <$> sepBy1 (conjunction pm) (try $ pkeyword orS))
+  (mkObjectJunction UnionOf <$> sepBy1 (conjunction pm) (pkeyword orS))
 
 {- | same as annotation Target in Manchester Syntax,
       named annotation Value in Abstract Syntax -}
@@ -420,12 +425,12 @@ objectPropertyCharacter ::
   CharParser st ObjectPropertyAxiom
 objectPropertyCharacter pm oe = do
   ans <- (optionalAnnos pm)
-  ctor <- ((pkeyword functionalS >> return FunctionalObjectProperty) <|>
-    (pkeyword inverseFunctionalS >> return InverseFunctionalObjectProperty) <|>
-    (pkeyword reflexiveS >> return ReflexiveObjectProperty) <|>
-    (pkeyword irreflexiveS >> return IrreflexiveObjectProperty) <|>
-    (pkeyword symmetricS >> return SymmetricObjectProperty) <|>
-    (pkeyword asymmetricS >> return AsymmetricObjectProperty) <|>
+  ctor <- ((pkeyword functionalS >> return FunctionalObjectProperty) <|?>
+    (pkeyword inverseFunctionalS >> return InverseFunctionalObjectProperty) <|?>
+    (pkeyword reflexiveS >> return ReflexiveObjectProperty) <|?>
+    (pkeyword irreflexiveS >> return IrreflexiveObjectProperty) <|?>
+    (pkeyword symmetricS >> return SymmetricObjectProperty) <|?>
+    (pkeyword asymmetricS >> return AsymmetricObjectProperty) <|?>
     (pkeyword transitiveS >> return TransitiveObjectProperty))
   return $ ctor ans oe
 
@@ -582,28 +587,28 @@ dataFrameBit pm de = do
     pkeyword domainC
     ds <- descriptionAnnotatedList pm
     return $ map (\(anns, desc) -> DataPropertyAxiom $ DataPropertyDomain anns de desc) ds
-  <|> do
+  <|?> do
     pkeyword rangeC
     ds <- sepByComma $ (optAnnos pm) (dataRange pm)
     return $ map (\(anns, r) -> DataPropertyAxiom $ DataPropertyRange anns de r) ds
-  <|> do
+  <|?> do
     pkeyword characteristicsC
     as <- optionalAnnos pm
     pkeyword functionalS
     return [DataPropertyAxiom $ FunctionalDataProperty as de]
-  <|> do
+  <|?> do
     pkeyword subPropertyOfC
     ds <- dataPropExprAList pm
     return $ map (\(anns, sup) -> DataPropertyAxiom $ SubDataPropertyOf anns de sup) ds
-  <|> do
+  <|?> do
     pkeyword equivalentToC
     ds <- dataPropExprAList pm
     return $ map (\(anns, d) -> DataPropertyAxiom $ EquivalentDataProperties anns [de, d]) ds
-  <|> do
+  <|?> do
     pkeyword disjointWithC
     ds <- dataPropExprAList pm
     return $ map (\(anns, d) -> DataPropertyAxiom $ DisjointDataProperties anns [de, d]) ds
-  <|> parseAnnotationAssertions pm (AnnSubIri de)
+  <|?> parseAnnotationAssertions pm (AnnSubIri de)
 
 dataPropertyFrame :: GA.PrefixMap -> CharParser st [Axiom]
 dataPropertyFrame pm = do
@@ -759,3 +764,50 @@ parseOntologyDocument gapm = do
     skips
     eof
     return $ OntologyDocument (prefixFromMap pm) ontology
+
+
+
+-- parses all file in given directories and displays whether parsing was successful
+runAllTestsInDir :: FilePath -> IO ()
+runAllTestsInDir d = do
+    files <- getDirectoryContents d
+    sequence (runTest <$> filter (isSuffixOf ".omn") (sort files))
+    return ()
+    where 
+        runTest f = do
+            content <- readFile (d ++ "/" ++ f)
+            let res = parse (parseOntologyDocument empty) f content
+            putStr $ either (const "❌ Failed ") (const "✅ Success") res
+            putStrLn $ ": " ++ d ++ "/" ++ f
+
+-- tests parsing on all OWL2/tests/**/*.ofn files
+pta :: IO ()
+pta = forget $ sequence (runAllTestsInDir <$> dirs)
+    where dirs = [
+            "./OWL2/tests",
+            "./OWL2/tests/1",
+            "./OWL2/tests/2",
+            "./OWL2/tests/3",
+            "./OWL2/tests/4",
+            "./OWL2/tests/5",
+            "./OWL2/tests/6",
+            "./OWL2/tests/7",
+            "./OWL2/tests/8",
+            "./OWL2/tests/9",
+            "../HetsOwlTest/tmp"]
+
+-- parses the test.ofn file in the current directory and prints the result
+pt :: IO ()
+pt = do
+    content <- readFile "./test.omn"
+    parseTest (parseOntologyDocument empty) content
+    return ()
+    
+-- parses the test.ofn file in the current directory and prints the result
+ps :: IO ()
+ps = do
+    content <- readFile "./test.omn"
+    let res = parse (parseOntologyDocument empty) "" content
+    putStrLn $ either (const "❌ Failed ") (const "✅ Success") res
+
+    return ()
