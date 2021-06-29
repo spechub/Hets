@@ -1,10 +1,6 @@
 module OWL2.ParseMS where
 
 
-import System.Directory
-import Data.List (sort,isSuffixOf, (\\))
-import Data.Map(empty)
-
 import Prelude hiding (lookup)
 
 import OWL2.AS
@@ -767,49 +763,3 @@ parseOntologyDocument gapm = do
     eof
     return $ OntologyDocument (prefixFromMap pm) ontology
 
-
-
--- parses all file in given directories and displays whether parsing was successful
-runAllTestsInDir :: FilePath -> IO ()
-runAllTestsInDir d = do
-    files <- getDirectoryContents d
-    sequence (runTest <$> filter (isSuffixOf ".omn") (sort files))
-    return ()
-    where 
-        runTest f = do
-            content <- readFile (d ++ "/" ++ f)
-            let res = parse (parseOntologyDocument empty) f content
-            putStr $ either (const "❌ Failed ") (const "✅ Success") res
-            putStrLn $ ": " ++ d ++ "/" ++ f
-
--- tests parsing on all OWL2/tests/**/*.ofn files
-pta :: IO ()
-pta = forget $ sequence (runAllTestsInDir <$> dirs)
-    where dirs = [
-            "./OWL2/tests",
-            "./OWL2/tests/1",
-            "./OWL2/tests/2",
-            "./OWL2/tests/3",
-            "./OWL2/tests/4",
-            "./OWL2/tests/5",
-            "./OWL2/tests/6",
-            "./OWL2/tests/7",
-            "./OWL2/tests/8",
-            "./OWL2/tests/9",
-            "../HetsOwlTest/tmp"]
-
--- parses the test.ofn file in the current directory and prints the result
-pt :: IO ()
-pt = do
-    content <- readFile "./test.omn"
-    parseTest (parseOntologyDocument empty) content
-    return ()
-    
--- parses the test.ofn file in the current directory and prints the result
-ps :: IO ()
-ps = do
-    content <- readFile "./test.omn"
-    let res = parse (parseOntologyDocument empty) "" content
-    putStrLn $ either (const "❌ Failed ") (const "✅ Success") res
-
-    return ()
