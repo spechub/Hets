@@ -80,7 +80,7 @@ atMost1 n p = p <:> atMost (n - 1) p
 
 uriQ :: CharParser st IRI
 -- uriQ = fullIri <|> abbrIri
-uriQ = compoundIriCurie
+uriQ = iriCurie
 
 fullIri :: CharParser st IRI
 fullIri = angles iriParser
@@ -89,8 +89,7 @@ expUriP :: GA.PrefixMap -> CharParser st IRI
 expUriP pm = uriP >>= return . expandIRI pm
 
 uriP :: CharParser st IRI
-uriP =
-  skips $ try $ checkWithUsing showIRI uriQ $ \ q -> let p = prefixName q in
+uriP = skips $ try $ checkWithUsing showIRI uriQ $ \ q -> let p = prefixName q in
   if null p then notElem (show $ iriPath q) owlKeywords
    else notElem p $ map (takeWhile (/= ':'))
         $ colonKeywords
@@ -114,6 +113,12 @@ intLit = do
   b <- optSign
   n <- getNNInt
   return $ negNNInt b n
+
+booleanLit :: CharParser st Literal
+booleanLit = do
+  val <- skips $ try $ choice [string trueS, string falseS]
+  let typed = Typed ((mkIRI booleanS) {prefixName = "xsd"})
+  return $ Literal val typed
 
 decimalLit :: CharParser st DecLit
 decimalLit = liftM2 DecLit intLit $ option zeroNNInt postDecimal
@@ -163,7 +168,8 @@ literal pm = do
          <|> fmap decToFloat decimalLit
     return $ NumberLit f
   <|> skips (stringLiteral pm)
-
+  <|> booleanLit
+  <?> "Literal"
 -- * description
 
 owlClassUri :: GA.PrefixMap -> CharParser st IRI
