@@ -464,7 +464,7 @@ eqMFAxiomsToDoc pds n axioms =
     where
         classAxioms = map unpackClassAxiom axioms
         bodyDocs = map (printClassAxiom pds (n + 1)) classAxioms
-        docsWithHeaders = map (\d -> keyword "EquivalentClases" $+$ d) bodyDocs
+        docsWithHeaders = map (\d -> keyword "EquivalentClases:" $+$ d) bodyDocs
 
 -- | print Annotations
 printAnnotationValue :: [PrefixDeclaration] -> AnnotationValue -> Doc
