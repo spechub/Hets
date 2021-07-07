@@ -1,13 +1,13 @@
 module OWL2.TestParserPrinter where
 
 import OWL2.AS
-import OWL2.PrintOWL2AS
-import OWL2.ParseAS
+import OWL2.PrintMS
+import qualified OWL2.ParseMS as PMS
+import qualified OWL2.ParseAS as PAS
 
 
 import Prelude hiding (lookup)
 
-import OWL2.AS
 
 import Common.AnnoParser (newlineOrEof)
 import Common.Parsec
@@ -24,79 +24,119 @@ import Data.Maybe
 import Data.List (sort, isSuffixOf)
 import System.Directory (getDirectoryContents, getCurrentDirectory)
 
--- parses all file in given directories and displays whether parsing was successful
-runAllTestsInDir :: FilePath -> IO ()
-runAllTestsInDir d = do
-    files <- getDirectoryContents d
-    sequence (runTest <$> filter (isSuffixOf ".ofn") (sort files))
-    return ()
-    where 
-        runTest f = do
-            content <- readFile (d ++ "/" ++ f)
-            let emptyOntDoc = OntologyDocument [] 
-                    (Ontology Nothing Nothing [] [] [])
-                resParse1Either = parse (parseOntologyDocument mempty) f content
-                resParse1 = either (const emptyOntDoc) id resParse1Either
-                -- resParse1NoPrefix = removePrefix resParse1 
-                resPrint = pretty resParse1
-                resParse2Either  = parse (parseOntologyDocument mempty)
-                    f (show resPrint)
-                resParse2 = either (const emptyOntDoc) id resParse2Either
-                result = resParse1 == resParse2
-                resString = if result then "✅ Success" else "❌ Failed"
-            putStr resString
-            putStrLn $ ": " ++ d ++ "/" ++ f
+-- -- parses all file in given directories and displays whether parsing was successful
+-- runAllTestsInDir :: FilePath -> IO ()
+-- runAllTestsInDir d = do
+--     files <- getDirectoryContents d
+--     sequence (runTest <$> filter (isSuffixOf ".ofn") (sort files))
+--     return ()
+--     where 
+--         runTest f = do
+--             content <- readFile (d ++ "/" ++ f)
+--             let emptyOntDoc = OntologyDocument [] 
+--                     (Ontology Nothing Nothing [] [] [])
+--                 resParse1Either = parse (parseOntologyDocument mempty) f content
+--                 resParse1 = either (const emptyOntDoc) id resParse1Either
+--                 -- resParse1NoPrefix = removePrefix resParse1 
+--                 resPrint = pretty resParse1
+--                 resParse2Either  = parse (parseOntologyDocument mempty)
+--                     f (show resPrint)
+--                 resParse2 = either (const emptyOntDoc) id resParse2Either
+--                 result = resParse1 == resParse2
+--                 resString = if result then "✅ Success" else "❌ Failed"
+--             putStr resString
+--             putStrLn $ ": " ++ d ++ "/" ++ f
 
--- tests parsing on all OWL2/tests/**/*.ofn files
-pta :: IO ()
-pta = forget $ sequence (runAllTestsInDir <$> dirs)
-    where dirs = [
-            "./OWL2/tests",
-            "./OWL2/tests/1",
-            "./OWL2/tests/2",
-            "./OWL2/tests/3",
-            "./OWL2/tests/4",
-            "./OWL2/tests/5",
-            "./OWL2/tests/6",
-            "./OWL2/tests/7",
-            "./OWL2/tests/8",
-            "./OWL2/tests/9"]
+-- -- tests parsing on all OWL2/tests/**/*.ofn files
+-- pta :: IO ()
+-- pta = forget $ sequence (runAllTestsInDir <$> dirs)
+--     where dirs = [
+--             "./OWL2/tests",
+--             "./OWL2/tests/1",
+--             "./OWL2/tests/2",
+--             "./OWL2/tests/3",
+--             "./OWL2/tests/4",
+--             "./OWL2/tests/5",
+--             "./OWL2/tests/6",
+--             "./OWL2/tests/7",
+--             "./OWL2/tests/8",
+--             "./OWL2/tests/9"]
 
 -- parses the test.ofn file in the current directory and prints the result
-pt :: IO ()
-pt = do
-    content <- readFile "./test.ofn"
-    parseTest (parseOntologyDocument mempty) content
+-- pt :: IO ()
+-- pt = do
+--     content <- readFile "./test.ofn"
+--     parseTest (parseOntologyDocument mempty) content
+--     return ()
+
+-- dTest :: IO ()
+-- dTest = do 
+--     content <- readFile "./OWL2/tests/myTest.ofn"
+--     let fErr = "./OWL2/tests/myError.txt"
+--         fOut = "./OWL2/tests/myOutput.txt"
+--         fOutParser = "./OWL2/tests/myOutputParser.txt"
+--         emptyOntDoc = OntologyDocument [] 
+--             (Ontology Nothing Nothing [] [] [])
+--         resParse1Either = parse (parseOntologyDocument mempty) fErr content
+--         resParse1 = either (const emptyOntDoc) id resParse1Either
+--         -- resParse1NoPrefix = removePrefix resParse1 
+--         resPrint = pretty resParse1
+--         resParse2Either  = parse (parseOntologyDocument mempty)
+--             fErr (show resPrint)
+--         resParse2 = either (const emptyOntDoc) id resParse2Either
+--         result = resParse1 == resParse2
+
+--     -- putStrLn $ "Parser\n" ++ "========================="
+--     -- putStrLn $ (show resParse1) ++ "\n"
+--     -- putStrLn $ "Printer\n" ++ "========================="
+--     -- putStrLn $ (show resPrint) ++ "\n"
+--     putStrLn $ "Are Parser and Printer consistent?\n"
+--         ++ "========================="
+--     putStrLn $ show result
+--     writeFile fOut $ show resPrint
+--     writeFile fOutParser $ show resParse1
+--     return ()
+
+removePrefix :: OntologyDocument -> OntologyDocument
+removePrefix (OntologyDocument pds ont) =
+    OntologyDocument [] ont
+
+testMS :: IO ()
+testMS = do
+    content <- readFile "./OWL2/tests/myTest.omn"
+    let fErr = "./OWL2/tests/myError.txt"
+        fOut = "./OWL2/tests/myOutput.txt"
+        fOutParser = "./OWL2/tests/myOutputParser.txt"
+        emptyOntDoc = OntologyDocument [] 
+            (Ontology Nothing Nothing [] [] [])
+        resParse1Either = parse (PMS.parseOntologyDocument mempty) fErr content
+        resParse1 = either (const emptyOntDoc) id resParse1Either
+        -- resParse1NoPrefix = removePrefix resParse1 
+        resPrint = pretty resParse1
+        resParse2Either  = parse (PMS.parseOntologyDocument mempty)
+            fErr (show resPrint)
+        resParse2 = either (const emptyOntDoc) id resParse2Either
+        result = resParse1 == resParse2
+    writeFile fOut $ show resPrint
+    writeFile fOutParser $ show resParse1
     return ()
 
-dTest :: IO ()
-dTest = do 
+testAS :: IO ()
+testAS = do
     content <- readFile "./OWL2/tests/myTest.ofn"
     let fErr = "./OWL2/tests/myError.txt"
         fOut = "./OWL2/tests/myOutput.txt"
         fOutParser = "./OWL2/tests/myOutputParser.txt"
         emptyOntDoc = OntologyDocument [] 
             (Ontology Nothing Nothing [] [] [])
-        resParse1Either = parse (parseOntologyDocument mempty) fErr content
+        resParse1Either = parse (PAS.parseOntologyDocument mempty) fErr content
         resParse1 = either (const emptyOntDoc) id resParse1Either
         -- resParse1NoPrefix = removePrefix resParse1 
         resPrint = pretty resParse1
-        resParse2Either  = parse (parseOntologyDocument mempty)
+        resParse2Either  = parse (PAS.parseOntologyDocument mempty)
             fErr (show resPrint)
         resParse2 = either (const emptyOntDoc) id resParse2Either
         result = resParse1 == resParse2
-
-    -- putStrLn $ "Parser\n" ++ "========================="
-    -- putStrLn $ (show resParse1) ++ "\n"
-    -- putStrLn $ "Printer\n" ++ "========================="
-    -- putStrLn $ (show resPrint) ++ "\n"
-    putStrLn $ "Are Parser and Printer consistent?\n"
-        ++ "========================="
-    putStrLn $ show result
     writeFile fOut $ show resPrint
     writeFile fOutParser $ show resParse1
     return ()
-
-removePrefix :: OntologyDocument -> OntologyDocument
-removePrefix (OntologyDocument pds ont) =
-    OntologyDocument [] ont

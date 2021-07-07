@@ -240,7 +240,7 @@ tDatatype iri ms =
 tLiteral :: Literal -> MnchstrSntx -> MnchstrSntx
 tLiteral (Literal _ t) ms = case t of
     Typed dt -> tDatatype dt ms
-    Untyped _ ->  tDatatype (mkIRI "xsd:PlainLiteral") ms
+    Untyped _ ->  tDatatype (setPrefix "xsd" . mkIRI $ "PlainLiteral") ms
 
 -- | transform DataPropertyExpression
 tDataPropertyExpression :: DataPropertyExpression
@@ -632,25 +632,3 @@ quantifierType = keyword . showQuantifierType
 cardinalityType :: CardinalityType -> Doc
 cardinalityType = keyword . showCardinalityType
 
-
--------- test  ---------
-
-testMS :: IO ()
-testMS = do
-    content <- readFile "./OWL2/tests/myTest.ofn"
-    let fErr = "./OWL2/tests/myError.txt"
-        fOut = "./OWL2/tests/myOutput.txt"
-        fOutParser = "./OWL2/tests/myOutputParser.txt"
-        emptyOntDoc = OntologyDocument [] 
-            (Ontology Nothing Nothing [] [] [])
-        resParse1Either = parse (Parser.parseOntologyDocument mempty) fErr content
-        resParse1 = either (const emptyOntDoc) id resParse1Either
-        -- resParse1NoPrefix = removePrefix resParse1 
-        resPrint = pretty resParse1
-        resParse2Either  = parse (Parser.parseOntologyDocument mempty)
-            fErr (show resPrint)
-        resParse2 = either (const emptyOntDoc) id resParse2Either
-        result = resParse1 == resParse2
-    writeFile fOut $ show resPrint
-    writeFile fOutParser $ show resParse1
-    return ()
