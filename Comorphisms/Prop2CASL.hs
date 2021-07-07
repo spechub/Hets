@@ -81,3 +81,4 @@ instance Comorphism Prop2CASL
       has_model_expansion Prop2CASL = True
       is_weakly_amalgamable Prop2CASL = True
       isInclusionComorphism Prop2CASL = True
+      com_path Prop2CASL = "Comorphisms.Prop2CASL"

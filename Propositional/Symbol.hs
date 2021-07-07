@@ -22,13 +22,16 @@ module Propositional.Symbol
     , getSymbolName        -- Determines the name of a symbol
     , idToRaw              -- Creates a raw symbol
     , symbolToRaw          -- Convert symbol to raw symbol
+    , rawToSymbol          -- convert a raw symbol to a symbol
     , matches              -- does a symbol match a raw symbol?
     , applySymMap          -- application function for symbol maps
+    , addSymbToSign        -- add a symbol to the signature
     ) where
 
 import qualified Common.Id as Id
 import Common.Doc
 import Common.DocUtils
+import Common.Result
 
 import Data.Data
 import qualified Data.Set as Set
@@ -55,6 +58,12 @@ symOf :: Sign.Sign -> Set.Set Symbol
 symOf x = Set.fold (\ y -> Set.insert Symbol {symName = y}) Set.empty $
            Sign.items x
 
+-- | Add a symbol to a signature
+
+addSymbToSign :: Sign.Sign -> Symbol -> Result Sign.Sign
+addSymbToSign sign (Symbol i) = 
+ return $ Sign.addToSig sign i
+
 -- | Determines the symbol map of a morhpism
 getSymbolMap :: Morphism.Morphism -> Map.Map Symbol Symbol
 getSymbolMap f =
@@ -72,6 +81,10 @@ idToRaw mid = Symbol {symName = mid}
 -- | convert to raw symbol
 symbolToRaw :: Symbol -> Symbol
 symbolToRaw = id
+
+-- | convert a symbol to raw
+rawToSymbol :: Symbol -> Maybe Symbol
+rawToSymbol = Just
 
 -- | does a smybol match a raw symbol?
 matches :: Symbol -> Symbol -> Bool

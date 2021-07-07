@@ -26,6 +26,8 @@ import CASL.Morphism
 import CASL.AS_Basic_CASL
 import CASL.Sign
 
+import Common.Result
+
 -- Import of logics
 import CASL.Logic_CASL
 import Propositional.Logic_Propositional
@@ -68,7 +70,10 @@ instance StaticAnalysis Hybridize Spc_Wrap Frm_Wrap SYMB_ITEMS SYMB_MAP_ITEMS
           Sgn_Wrap Mor Symbol RawSymbol where
                 basic_analysis Hybridize = Just thAna
                 empty_signature Hybridize = emptyHybridSign
-                sen_analysis Hybridize = Just anaForm'
+                sen_analysis Hybridize = Just $ \(bsp, sig, sen) -> let Result d s = anaForm' (bsp, sig, sen)
+                                                                    in case s of
+                                                                        Nothing -> Result d Nothing
+                                                                        Just x -> Result d $ Just (x, x)
                 stat_symb_map_items Hybridize = error "stat_symb_map_items !"
                 stat_symb_items Hybridize = error "stat_symb_items !"
                 signature_colimit Hybridize = error "signature_colimit !"
