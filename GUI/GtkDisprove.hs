@@ -15,6 +15,7 @@ theorems.
 module GUI.GtkDisprove (disproveAtNode) where
 
 import Graphics.UI.Gtk
+import Graphics.UI.Gtk.Glade
 
 import GUI.GtkUtils
 import qualified GUI.Glade.NodeChecker as ConsistencyChecker
@@ -139,27 +140,27 @@ and holds the functionality to call the ConsistencyChecker for the
 showDisproveWindow :: MVar (Result G_theory) -> LibName -> LibEnv
                    -> DGraph -> G_theory -> [FNode] -> IO ()
 showDisproveWindow res ln le dg g_th fgoals = postGUIAsync $ do
-  builder <- getGTKBuilder ConsistencyChecker.get
+  xml <- getGladeXML ConsistencyChecker.get
   -- get objects
-  window <- builderGetObject builder castToWindow "NodeChecker"
-  btnClose <- builderGetObject builder castToButton "btnClose"
-  btnResults <- builderGetObject builder castToButton "btnResults"
+  window <- xmlGetWidget xml castToWindow "NodeChecker"
+  btnClose <- xmlGetWidget xml castToButton "btnClose"
+  btnResults <- xmlGetWidget xml castToButton "btnResults"
   -- get goals view and buttons
-  trvGoals <- builderGetObject builder castToTreeView "trvNodes"
-  btnNodesAll <- builderGetObject builder castToButton "btnNodesAll"
-  btnNodesNone <- builderGetObject builder castToButton "btnNodesNone"
-  btnNodesInvert <- builderGetObject builder castToButton "btnNodesInvert"
-  btnNodesUnchecked <- builderGetObject builder castToButton "btnNodesUnchecked"
-  btnNodesTimeout <- builderGetObject builder castToButton "btnNodesTimeout"
-  cbInclThms <- builderGetObject builder castToCheckButton "cbInclThms"
+  trvGoals <- xmlGetWidget xml castToTreeView "trvNodes"
+  btnNodesAll <- xmlGetWidget xml castToButton "btnNodesAll"
+  btnNodesNone <- xmlGetWidget xml castToButton "btnNodesNone"
+  btnNodesInvert <- xmlGetWidget xml castToButton "btnNodesInvert"
+  btnNodesUnchecked <- xmlGetWidget xml castToButton "btnNodesUnchecked"
+  btnNodesTimeout <- xmlGetWidget xml castToButton "btnNodesTimeout"
+  cbInclThms <- xmlGetWidget xml castToCheckButton "cbInclThms"
   -- get checker view and buttons
-  cbComorphism <- builderGetObject builder castToComboBox "cbComorphism"
-  lblSublogic <- builderGetObject builder castToLabel "lblSublogic"
-  sbTimeout <- builderGetObject builder castToSpinButton "sbTimeout"
-  btnCheck <- builderGetObject builder castToButton "btnCheck"
-  btnStop <- builderGetObject builder castToButton "btnStop"
-  trvFinder <- builderGetObject builder castToTreeView "trvFinder"
-  toolLabel <- builderGetObject builder castToLabel "label1"
+  cbComorphism <- xmlGetWidget xml castToComboBox "cbComorphism"
+  lblSublogic <- xmlGetWidget xml castToLabel "lblSublogic"
+  sbTimeout <- xmlGetWidget xml castToSpinButton "sbTimeout"
+  btnCheck <- xmlGetWidget xml castToButton "btnCheck"
+  btnStop <- xmlGetWidget xml castToButton "btnStop"
+  trvFinder <- xmlGetWidget xml castToTreeView "trvFinder"
+  toolLabel <- xmlGetWidget xml castToLabel "label1"
   labelSetLabel toolLabel "Pick disprover"
   windowSetTitle window "Disprove"
   spinButtonSetValue sbTimeout $ fromIntegral guiDefaultTimeLimit

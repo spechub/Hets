@@ -14,6 +14,7 @@ Generic Gtk GUI for automatic theorem provers.
 module GUI.GtkGenericATP ( genericATPgui ) where
 
 import Graphics.UI.Gtk
+import Graphics.UI.Gtk.Glade
 
 import GUI.GtkUtils
 import qualified GUI.Glade.GenericATP as GenericATP
@@ -51,30 +52,30 @@ genericATPgui :: (Show sentence, Ord proof_tree, Ord sentence)
 genericATPgui atpFun hasEOptions prName thName th freedefs pt = do
   result <- newEmptyMVar
   postGUIAsync $ do
-    builder <- getGTKBuilder GenericATP.get
+    xml <- getGladeXML GenericATP.get
     -- get objects
-    window <- builderGetObject builder castToWindow "GenericATP"
+    window <- xmlGetWidget xml castToWindow "GenericATP"
     -- buttons at buttom
-    btnClose <- builderGetObject builder castToButton "btnClose"
-    btnHelp <- builderGetObject builder castToButton "btnHelp"
-    btnSaveConfig <- builderGetObject builder castToButton "btnSaveConfig"
+    btnClose <- xmlGetWidget xml castToButton "btnClose"
+    btnHelp <- xmlGetWidget xml castToButton "btnHelp"
+    btnSaveConfig <- xmlGetWidget xml castToButton "btnSaveConfig"
     -- goal list
-    trvGoals <- builderGetObject builder castToTreeView "trvGoals"
+    trvGoals <- xmlGetWidget xml castToTreeView "trvGoals"
     -- options area
-    sbTimeout <- builderGetObject builder castToSpinButton "sbTimeout"
-    entryOptions <- builderGetObject builder castToEntry "entryOptions"
-    cbIncludeProven <- builderGetObject builder castToCheckButton "cbIncludeProven"
-    cbSaveBatch <- builderGetObject builder castToCheckButton "cbSaveBatch"
+    sbTimeout <- xmlGetWidget xml castToSpinButton "sbTimeout"
+    entryOptions <- xmlGetWidget xml castToEntry "entryOptions"
+    cbIncludeProven <- xmlGetWidget xml castToCheckButton "cbIncludeProven"
+    cbSaveBatch <- xmlGetWidget xml castToCheckButton "cbSaveBatch"
     -- prove buttons
-    btnStop <- builderGetObject builder castToButton "btnStop"
-    btnProveSelected <- builderGetObject builder castToButton "btnProveSelected"
-    btnProveAll <- builderGetObject builder castToButton "btnProveAll"
+    btnStop <- xmlGetWidget xml castToButton "btnStop"
+    btnProveSelected <- xmlGetWidget xml castToButton "btnProveSelected"
+    btnProveAll <- xmlGetWidget xml castToButton "btnProveAll"
     -- status and axioms
-    lblStatus <- builderGetObject builder castToLabel "lblStatus"
-    trvAxioms <- builderGetObject builder castToTreeView "trvAxioms"
+    lblStatus <- xmlGetWidget xml castToLabel "lblStatus"
+    trvAxioms <- xmlGetWidget xml castToTreeView "trvAxioms"
     -- info and save buttons
-    btnSaveProblem <- builderGetObject builder castToButton "btnSaveProblem"
-    btnShowDetails <- builderGetObject builder castToButton "btnShowDetails"
+    btnSaveProblem <- xmlGetWidget xml castToButton "btnSaveProblem"
+    btnShowDetails <- xmlGetWidget xml castToButton "btnShowDetails"
 
     windowSetTitle window $ prName ++ ": " ++ thName
 
