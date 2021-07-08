@@ -708,14 +708,14 @@ type TargetValue = Literal
 data Rule = DLSafeRule AxiomAnnotations Body Head
   | DGRule AxiomAnnotations DGBody DGHead 
   deriving (Show, Eq, Ord, Data)
-type Body = Atom
-type Head = Atom
-type DGBody = DGAtom
-type DGHead = DGAtom
+type Body = [Atom]
+type Head = [Atom]
+type DGBody = [DGAtom]
+type DGHead = [DGAtom]
 
-data IndividualArg = IArg Individual | IndividualVar
+data IndividualArg = IArg Individual | IVar IndividualVar
   deriving (Show, Eq, Ord, Data)
-data DataArg = DArg Literal | DataVar
+data DataArg = DArg Literal | DVar DataVar
   deriving (Show, Eq, Ord, Data)
 
 type IndividualVar = Variable
@@ -729,7 +729,7 @@ data Atom = ClassAtom ClassExpression IndividualArg
   -- At least one DataArg
   | BuiltInAtom IRI [DataArg]
   | SameIndividualAtom IndividualArg IndividualArg
-  | DifferentIndividualAtom IndividualArg IndividualArg
+  | DifferentIndividualsAtom IndividualArg IndividualArg
   deriving (Show, Eq, Ord, Data)
   
 data DGAtom = DGClassAtom ClassExpression IndividualArg
