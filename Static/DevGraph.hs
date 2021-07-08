@@ -782,7 +782,7 @@ addSpecNodeRT :: DGraph -> UnitSig -> String -> (Node, DGraph)
 addSpecNodeRT dg usig s =
  let
   (n, dg') = addNodeRT dg usig s
-  f = Map.insert s n $ specRoots dg'
+  f = Map.insert s [n] $ specRoots dg'
  in (n, dg' {specRoots = f})
 
 updateNodeNameRT :: DGraph -> Node -> Bool -> String -> DGraph
@@ -815,7 +815,7 @@ updateSigRT dg n usig =
 updateNodeNameSpecRT :: DGraph -> Node -> String -> DGraph
 updateNodeNameSpecRT dg n s =
  let dg' = updateNodeNameRT dg n False s
- in dg' {specRoots = Map.insert s n $ specRoots dg}
+ in dg' {specRoots = Map.insert s [n] $ specRoots dg}
 
 addSubTree :: DGraph -> Maybe RTLeaves -> RTPointer -> (DGraph, RTPointer)
 addSubTree dg Nothing (NPComp h) =
@@ -930,7 +930,7 @@ data DGraph = DGraph
   , dgBody :: Tree.Gr DGNodeLab DGLinkLab  -- ^ actual 'DGraph` tree
   , currentBaseTheory :: Maybe NodeSig
   , refTree :: Tree.Gr RTNodeLab RTLinkLab -- ^ the refinement tree
-  , specRoots :: Map.Map String Node -- ^ root nodes for named specs
+  , specRoots :: Map.Map String [Node] -- ^ root nodes for named specs, several for comp ref
   , nameMap :: MapSet.MapSet String Node -- ^ all nodes by name
   , archSpecDiags :: Map.Map String Diag
       -- ^ dependency diagrams between units

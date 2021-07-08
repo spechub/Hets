@@ -276,7 +276,7 @@ stringLiteral = do
         string asP
         t <- skips $ optionMaybe languageTag
         return $ AS.Literal s $ AS.Untyped t
-    <|> skips (return $ AS.Literal s $ AS.Typed $ mkIRI stringS)
+    <|> skips (return $ AS.Literal s $ AS.Typed $ mkIRI stringS) {prefixName = "xsd"} )
 
 literal :: CharParser st AS.Literal
 literal = do
