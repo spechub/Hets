@@ -19,22 +19,6 @@ import Data.Map (union, toList, fromList, lookup)
 import Data.Maybe
 
 
-
-import Debug.Trace
-parserTrace :: String -> CharParser st ()
-parserTrace s = pt <|> return ()
-    where
-        pt = try $ do
-           x <- try $ many1 anyToken
-           trace (s++": " ++ show x) $ try $ eof
-           fail (show x)
-
-parserTraced :: String -> CharParser st a -> CharParser st a
-parserTraced s p = do
-  parserTrace s
-  p <|> trace (s ++ " backtracked") (fail s)
-
-
 {- | @followedBy c p@ first parses @p@ then looks ahead for @c@. Doesn't consume
 any input on failure. -}
 followedBy :: CharParser st b -> CharParser st a -> CharParser st a
