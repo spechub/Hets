@@ -13,20 +13,33 @@ bar: <http://www.example.com/bar.dol#>
 
 )%
 
-distributed-ontology foo:chocolate
+library foo:chocolate
 
-logic CommonLogic serialization CLIF
+%% TODO: logics should be complete IRIs (either full or prefixed) (legacy?)
+%%       relates to DOL issue #161
 
-ontology o1 =
-(and (P x)
-     (Q x)
-     ((that (exists (x) (R x)))) // possible in IKL
-     (iff (R x) ((that (R x))))  // a tautology
-     (forall (p) (iff (p) ((that (p))))) // another one
-     (forall (p) (= p (that (p)))) // NOT a tautology (see IKL-SPEC)
-     (= ('foo') foo) // should become a tautology
-     )
-end
+%% The commented lines are problematic because there is courrently no symbol
+%% parser for 'CommonLogic' which means that some of the symbols in the
+%% alignments further down lead to parse errors. As this is not a problem
+%% relating to the DOL parser, the logic/serialization declaration and the
+%% 'CommonLogic' specific parts have been commented out.
+%% This means the logic at work is now CASL which can parse nearly everything
+%% and thus all errors should be DOL related. Once we have a proper
+%% 'CommonLogic' symbol parser, the commented lines can go active again
+%% providing ready made test cases.
+
+%% logic CommonLogic serialization CLIF
+
+%%ontology o1 =
+%%(and (P x)
+%%     (Q x)
+%%     ((that (exists (x) (R x)))) // possible in IKL
+%%     (iff (R x) ((that (R x))))  // a tautology
+%%     (forall (p) (iff (p) ((that (p))))) // another one
+%%     (forall (p) (= p (that (p)))) // NOT a tautology (see IKL-SPEC)
+%%     (= ('foo') foo) // should become a tautology
+%%     )
+%%end
 
 ontology foo:a = {}
 ontology bar:b = {}
@@ -50,42 +63,44 @@ alignment a7 : foo:foo_bar to foo:baz
 end
 
 alignment a8 : foo:owltime_instant_l to bar:owltime_le
-= eRef1 rRef       (0.1) ERef2 %( corrId )%
-, eRef1 rRef       (0.1) ERef2
+= eRef1 rRef         0.1 ERef2 %( corrId )%
+, eRef1 rRef         0.1 ERef2
 , eRef1 rRef             ERef2 %( corrId )%
 , eRef1 rRef             ERef2
-, eRef1 rRef       (0.1) ERef2 %( corrId )%
-, eRef1 rRef       (0.1) ERef2
+, eRef1 rRef         0.1 ERef2 %( corrId )%
+, eRef1 rRef         0.1 ERef2
 , eRef1 rRef             ERef2 %( corrId )%
 , eRef1 rRef             ERef2
-, eRef1            (0.1) ERef2 %( corrId )%
-, eRef1            (0.1) ERef2
+, eRef1              0.1 ERef2 %( corrId )%
+, eRef1              0.1 ERef2
 , eRef1                  ERef2 %( corrId )%
 , eRef1                  ERef2
-, eRef1            (0.1) ERef2 %( corrId )%
-, eRef1            (0.1) ERef2
+, eRef1              0.1 ERef2 %( corrId )%
+, eRef1              0.1 ERef2
 , eRef1                  ERef2 %( corrId )%
 , eRef1                  ERef2
-, eRef1 <          (0.1) ERef2
-, eRef1 >          (0.1) ERef2
-, eRef1 =          (0.1) ERef2
-, eRef1 %          (0.1) ERef2
-, eRef1 $\ni$      (0.1) ERef2
-, eRef1 $\in$      (0.1) ERef2
-, eRef1 $\mapsto$  (0.1) ERef2
+, eRef1 <            0.1 ERef2
+, eRef1 >            0.1 ERef2
+, eRef1 =            0.1 ERef2
+, eRef1 %            0.1 ERef2
+, eRef1 ni           0.1 ERef2
+, eRef1 in           0.1 ERef2
 , eRef1 <                ERef2
 , eRef1 >                ERef2
 , eRef1 =                ERef2
 , eRef1 %                ERef2
-, eRef1 $\ni$            ERef2
-, eRef1 $\in$            ERef2
-, eRef1 $\mapsto$        ERef2
-, relation < (0.1) {eRef1 ERef2}
+, eRef1 ni               ERef2
+, eRef1 in               ERef2
+, relation <   0.1 {eRef1 ERef2}
 , relation <       {eRef1 ERef2}
-, relation   (0.1) {eRef1 ERef2}
+, relation     0.1 {eRef1 ERef2}
 , relation         {eRef1 ERef2}
 end
 
+alignment a9 : foo:owltime_instant_l to bar:owltime_le
+= eRef1 rRef       0.1 ERef2 %( corrId )%
+assuming SingleDomain
+end
 
 alignment a10 align-arity-forward 1 align-arity-backward 1 : foo:foo_bar to foo:baz
 end
@@ -102,8 +117,11 @@ end
 alignment a14 align-arity-forward ? align-arity-backward 1 : foo:foo_bar to foo:baz
 end
 
-module m20 :
-    (P x)
-  of
-    (Q x)
-  for FOO
+%% See the commented directly after the library declaration at the top if you
+%% want to know why this has been commented out.
+
+%% module m20 :
+%%    (P x)
+%%  of
+%%    (Q x)
+%%  for FOO

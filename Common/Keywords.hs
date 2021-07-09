@@ -309,6 +309,9 @@ interpretationS = "interpretation"
 moduleS :: String
 moduleS = "module"
 
+omsS :: String
+omsS = "oms"
+
 ontologyS :: String
 ontologyS = "ontology"
 
@@ -503,6 +506,9 @@ intersectS = "intersect"
 
 lambdaS :: String
 lambdaS = "lambda"
+
+languageS :: String
+languageS = "language"
 
 left_assocS :: String
 left_assocS = "left_assoc"
