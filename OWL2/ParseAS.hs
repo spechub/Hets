@@ -698,16 +698,16 @@ parseAnnotationAxiom pm = AnnotationAxiom <$> (
 
 parseIndividualArg :: GA.PrefixMap -> CharParser st IndividualArg
 parseIndividualArg pm =
-    IArg <$> parseAnonymousIndividual pm <|>
-    -- Apparently the keyword is "Variable" instead of "IndividualVariable"
-    IVar <$> parseEnclosedWithKeyword "Variable" (parseIRI pm)
+        -- Apparently the keyword is "Variable" instead of "IndividualVariable"
+    IVar <$> parseEnclosedWithKeyword "Variable" (parseIRI pm) <|>
+    IArg <$> parseAnonymousIndividual pm
 
 
 parseDataArg :: GA.PrefixMap -> CharParser st DataArg
 parseDataArg pm =
-    DArg <$> parseLiteral pm <|>
     -- Apparently the keyword is "Literal" instead of "LiteralVariable"
-    DVar <$> parseEnclosedWithKeyword "Variable" (parseIRI pm)
+    DVar <$> parseEnclosedWithKeyword "Variable" (parseIRI pm) <|>
+    DArg <$> parseLiteral pm
 
 parseClassAtom :: GA.PrefixMap -> CharParser st Atom
 parseClassAtom pm = parseEnclosedWithKeyword "ClassAtom" $
