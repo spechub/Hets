@@ -507,7 +507,7 @@ classFrameBit pm i = let e = Expression i in
   do
     pkeyword subClassOfC
     ds <- descriptionAnnotatedList pm
-    return $ map (\(anns, desc) -> ClassAxiom $ SubClassOf anns desc e) ds
+    return $ map (\(anns, desc) -> ClassAxiom $ SubClassOf anns e desc) ds
   <|> do
     pkeyword equivalentToC
     ds <- descriptionAnnotatedList pm
