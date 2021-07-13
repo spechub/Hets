@@ -23,6 +23,7 @@ import Data.Map (union, toList, fromList, lookup)
 import Data.Maybe
 import Data.List (sort, isSuffixOf)
 import System.Directory (getDirectoryContents, getCurrentDirectory)
+import Debug.Trace
 
 -- -- parses all file in given directories and displays whether parsing was successful
 -- runAllTestsInDir :: FilePath -> IO ()
@@ -111,12 +112,7 @@ testMS = do
             (Ontology Nothing Nothing [] [] [])
         resParse1Either = parse (PMS.parseOntologyDocument mempty) fErr content
         resParse1 = either (const emptyOntDoc) id resParse1Either
-        -- resParse1NoPrefix = removePrefix resParse1 
         resPrint = pretty resParse1
-        resParse2Either  = parse (PMS.parseOntologyDocument mempty)
-            fErr (show resPrint)
-        resParse2 = either (const emptyOntDoc) id resParse2Either
-        result = resParse1 == resParse2
     writeFile fOut $ show resPrint
     writeFile fOutParser $ show resParse1
     return ()
@@ -131,12 +127,39 @@ testAS = do
             (Ontology Nothing Nothing [] [] [])
         resParse1Either = parse (PAS.parseOntologyDocument mempty) fErr content
         resParse1 = either (const emptyOntDoc) id resParse1Either
-        -- resParse1NoPrefix = removePrefix resParse1 
         resPrint = pretty resParse1
-        resParse2Either  = parse (PAS.parseOntologyDocument mempty)
+    writeFile fOut $ show resPrint
+    writeFile fOutParser $ show resParse1
+    return ()
+
+testOneMS :: IO ()
+testOneMS = do
+    content <- readFile "./OWL2/tests/myTest.omn"
+    let fErr = "./OWL2/tests/myError.txt"
+        fOut = "./OWL2/tests/myOutput.txt"
+        fOutParser = "./OWL2/tests/myOutputParser.txt"
+        emptyOntDoc = OntologyDocument [] 
+            (Ontology Nothing Nothing [] [] [])
+        resParse1Either = parse (PMS.parseOntologyDocument mempty) fErr content
+        resParse1 = either (const emptyOntDoc) id resParse1Either
+        resPrint = pretty resParse1
+        resParse2Either  = parse (PMS.parseOntologyDocument mempty)
             fErr (show resPrint)
         resParse2 = either (const emptyOntDoc) id resParse2Either
         result = resParse1 == resParse2
+    writeFile fOutParser $ show resParse1
     writeFile fOut $ show resPrint
+    -- putStrLn $ "Are MS printer and MS parser consistent? : " ++ show result
+    return ()
+
+testMSParser :: IO ()
+testMSParser = do
+    content <- readFile "./OWL2/tests/myTest.omn"
+    let fErr = "./OWL2/tests/myError.txt"
+        fOutParser = "./OWL2/tests/myOutputParser.txt"
+        emptyOntDoc = OntologyDocument [] 
+            (Ontology Nothing Nothing [] [] [])
+        resParse1Either = parse (PMS.parseOntologyDocument mempty) fErr content
+        resParse1 = either (const emptyOntDoc) id resParse1Either
     writeFile fOutParser $ show resParse1
     return ()
