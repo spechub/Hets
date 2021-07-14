@@ -734,6 +734,8 @@ data Atom = ClassAtom ClassExpression IndividualArg
   | BuiltInAtom IRI [DataArg]
   | SameIndividualAtom IndividualArg IndividualArg
   | DifferentIndividualsAtom IndividualArg IndividualArg
+  | UnknownUnaryAtom IRI Variable
+  | UnknownBinaryAtom IRI Variable Variable
   deriving (Show, Eq, Ord, Data)
   
 data DGAtom = DGClassAtom ClassExpression IndividualArg
