@@ -923,6 +923,8 @@ tLiteral (Literal _ t) ms = case t of
         , iFragment = "PlainLiteral"
     }
 
+tLiteral (NumberLit f) ms = ms
+
 -- | transform DataPropertyExpression
 tDataPropertyExpressions :: [DataPropertyExpression]
     -> MnchstrSntx -> MnchstrSntx
@@ -1837,6 +1839,8 @@ printLiteral pds (Literal lexi ty) =
     case ty of
         Untyped tag -> printUntypedLiteral lexi tag
         Typed iri -> printTypedLiteral pds lexi iri
+
+printLiteral pds (NumberLit f) = text (show f)
 
 printUntypedLiteral :: String -> Maybe String -> Doc
 printUntypedLiteral lexi tag = 

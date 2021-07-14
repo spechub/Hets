@@ -149,7 +149,7 @@ testOneMS = do
         result = resParse1 == resParse2
     writeFile fOutParser $ show resParse1
     writeFile fOut $ show resPrint
-    -- putStrLn $ "Are MS printer and MS parser consistent? : " ++ show result
+    putStrLn $ "Are MS printer and MS parser consistent? : " ++ show result
     return ()
 
 testMSParser :: IO ()
