@@ -158,8 +158,7 @@ stringLiteral pm = do
       d <- datatypeUri pm
       return $ Literal s $ Typed d
     <|> do
-        string asP
-        t <- skips $ optionMaybe languageTag
+        t <- skips $ optionMaybe (string asP >> languageTag)
         return $ Literal s $ Untyped t
 
 literal :: GA.PrefixMap -> CharParser st Literal
