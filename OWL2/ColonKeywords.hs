@@ -47,7 +47,8 @@ colonKeywords =
   , subClassOfC
   , subPropertyChainC
   , subPropertyOfC
-  , typesC ]
+  , typesC
+  , ruleC ]
 
 namespaceC :: String
 namespaceC = "Namespace:"
@@ -153,3 +154,6 @@ disjointPropertiesC = "DisjointProperties:"
 
 equivalentPropertiesC :: String
 equivalentPropertiesC = "EquivalentProperties:"
+
+ruleC :: String
+ruleC = "Rule:"
