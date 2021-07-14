@@ -1858,7 +1858,7 @@ printTypedLiteral pds lexi iri
     | isAbbrev iri && pn == "xsd" && iFrag `elem` ["integer", "decimal"] =
         plainText . escapeString $ lexi
     | otherwise = plainText ('"' : escapeString lexi ++ "\"")
-        <> text "^^" <> printIRI pds iri
+        <> text "^^" <> printDataIRI pds iri
     where
         pn = prefixName iri
         iFrag = iFragment iri
