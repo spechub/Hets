@@ -841,8 +841,8 @@ parseBuiltInAtom pm pred =
     argN <- sepByComma $ parseDArg pm
     return $ BuiltInAtom pred (arg1 : arg2 : argN)) <|>
   (do -- first arg a literal, at least two arguments
-  arg1 <- DArg <$> literal pm
-  commaP
+    arg1 <- DArg <$> literal pm
+    commaP
     argN <- sepByComma (parseDArg pm)
     return $ BuiltInAtom pred (arg1 : argN))
 
@@ -864,14 +864,12 @@ parseAtom pm =  parseClassExprAtom pm <|>
   parseSameIndividualsAtom pm <|>
   parseDifferentIndividualsAtom pm <|> do
     pred <- expUriP pm
-    parensP (
-      try (parseClassAtom pm pred) <|>
-      -- parseDataRangeAtom pm pred <|>
-      try (parseObjectPropertyAtom pm pred) <|>
-      try (parseDataPropertyAtom pm pred) <|>
-      try (parseBuiltInAtom pm pred) <|>
-      parseUnknownAtom pm pred <?>
-      "Rule Atom")
+    choice $ map (try . parensP) [
+      (parseClassAtom pm pred),
+      (parseObjectPropertyAtom pm pred),
+      (parseDataPropertyAtom pm pred),
+      (parseBuiltInAtom pm pred),
+      parseUnknownAtom pm pred]
 
 parseRule :: GA.PrefixMap -> CharParser st Axiom
 parseRule pm = do
