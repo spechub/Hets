@@ -1681,7 +1681,7 @@ eqClsAxiomsToMFDoc pds n axioms =
     where
         classAxioms = map unpackClassAxiom axioms
         bodyDocs = map (printClassAxiom pds (n + 1)) classAxioms
-        docsWithHeaders = map (\d -> keyword "EquivalentClases:" $+$ d) bodyDocs
+        docsWithHeaders = map (\d -> keyword "EquivalentClasses:" $+$ d) bodyDocs
 
 disjClsAxiomsToMFDoc :: [PrefixDeclaration] -> Int -> [Axiom] -> Doc
 disjClsAxiomsToMFDoc pds n [] = empty
