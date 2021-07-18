@@ -92,11 +92,10 @@ tAddDecAnnAssertion entity (Annotation anns prop value) ms =
 
         m1 = M.findWithDefault M.empty k ms
         axioms = M.findWithDefault [] "annotations" m1
-        newAxiom =AnnotationAxiom
+        newAxiom = AnnotationAxiom
             $ AnnotationAssertion anns prop (AnnSubIri frameIRI) value
         newAxioms = newAxiom : axioms
         
-
 -- | transform Annotation v1
 tDecAnnotation :: Annotation -> MnchstrSntx -> MnchstrSntx
 tDecAnnotation (Annotation anns annProp annValue) ms =
@@ -1219,8 +1218,8 @@ printDPF pds n header body =
         annDoc = annotationAssertionsToDoc pds (n + 1)
             . map unpackAnnotationAxiom $ annAxioms
 
-        subDataPropOfAxioms = M.findWithDefault [] "subDataPropertyOf" body
-        subDataPropOfDoc = dpAxiomsToDoc pds (n + 1) "SubDataPropertyOf:"
+        subDataPropOfAxioms = M.findWithDefault [] "subPropertyOf" body
+        subDataPropOfDoc = dpAxiomsToDoc pds (n + 1) "SubPropertyOf:"
             . map unpackDataPropertyAxiom $ subDataPropOfAxioms
 
         eqDataPropsAxioms = M.findWithDefault [] "equivalentTo" body
@@ -1247,8 +1246,8 @@ dpAxiomsToDoc :: [PrefixDeclaration] -> Int -> String
     -> [DataPropertyAxiom] -> Doc
 dpAxiomsToDoc _ _ _ [] = empty
 
-dpAxiomsToDoc pds n "SubDataPropertyOf:" axioms =
-    tabs n <> keyword "SubDataPropertyOf:"
+dpAxiomsToDoc pds n "SubPropertyOf:" axioms =
+    tabs n <> keyword "SubPropertyOf:"
     $+$
     (vcat . punctuate comma
         . map (printDataPropAxiom pds (n + 1)) $ axioms)
