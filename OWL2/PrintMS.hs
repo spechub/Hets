@@ -1058,7 +1058,7 @@ opAxiomsToDoc _ _ _ [] = empty
 
 opAxiomsToDoc pds n "SubPropertyOf:" axioms =
     h $+$ (vcat . punctuate comma
-        . map (\a -> tabs (n + 1) <> printSubPropOf pds a) $ axioms)
+        . map (printSubPropOf pds (n + 1)) $ axioms)
     where
         h = case axioms of
             [] -> empty
@@ -1067,7 +1067,7 @@ opAxiomsToDoc pds n "SubPropertyOf:" axioms =
 opAxiomsToDoc pds n "SubPropertyChain:" axioms =
     vsep
     . map (\d -> tabs n <> keyword "SubPropertyChain:" $+$ d)
-    . map (\a -> tabs (n + 1) <> printSubPropChain pds a)
+    . map (printSubPropChain pds (n + 1))
     $ axioms
 
 opAxiomsToDoc pds n "EquivalentTo:" axioms =
@@ -1100,16 +1100,21 @@ opAxiomsToDoc pds n "Characteristics:" axioms =
     $+$
     (vcat . punctuate comma . map (printCharacteristics pds (n + 1)) $ axioms)
 
-printSubPropOf :: [PrefixDeclaration] -> ObjectPropertyAxiom -> Doc
-printSubPropOf pds (SubObjectPropertyOf anns 
+printSubPropOf :: [PrefixDeclaration] -> Int -> ObjectPropertyAxiom -> Doc
+printSubPropOf pds n (SubObjectPropertyOf anns 
     (SubObjPropExpr_obj _) opExpr) =
-    printObjectPropertyExpression pds opExpr
+    printAnnotations pds (n + 1) anns
+    $+$
+    tabs n <> printObjectPropertyExpression pds opExpr
 
-printSubPropChain :: [PrefixDeclaration] -> ObjectPropertyAxiom -> Doc
-printSubPropChain pds (SubObjectPropertyOf anns
+printSubPropChain :: [PrefixDeclaration] -> Int -> ObjectPropertyAxiom -> Doc
+printSubPropChain pds n (SubObjectPropertyOf anns
     (SubObjPropExpr_exprchain opExprs) (ObjectProp iri)) =
-    hcat . punctuate (keyword " o ")
-    . map (printObjectPropertyExpression pds) $ opExprs
+    printAnnotations pds (n + 1) anns
+    $+$
+    tabs n <> 
+    (hcat . punctuate (keyword " o ")
+    . map (printObjectPropertyExpression pds) $ opExprs)
 
 printEqObProp :: [PrefixDeclaration] -> Int -> ObjectPropertyAxiom -> Doc
 printEqObProp pds n (EquivalentObjectProperties anns (_:es)) =
