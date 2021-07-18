@@ -8,6 +8,8 @@ import qualified OWL2.ParseAS as PAS
 
 import Prelude hiding (lookup)
 
+import Common.Doc
+import Common.DocUtils
 
 import Common.AnnoParser (newlineOrEof)
 import Common.Parsec
@@ -137,7 +139,8 @@ testOneMS = do
     content <- readFile "./OWL2/tests/myTest.omn"
     let fErr = "./OWL2/tests/myError.txt"
         fOut = "./OWL2/tests/myOutput.txt"
-        fOutParser = "./OWL2/tests/myOutputParser.txt"
+        fOutParser1 = "./OWL2/tests/myOutputParser1.txt"
+        fOutParser2 = "./OWL2/tests/myOutputParser2.txt"
         emptyOntDoc = OntologyDocument [] 
             (Ontology Nothing Nothing [] [] [])
         resParse1Either = parse (PMS.parseOntologyDocument mempty) fErr content
@@ -147,7 +150,8 @@ testOneMS = do
             fErr (show resPrint)
         resParse2 = either (const emptyOntDoc) id resParse2Either
         result = resParse1 == resParse2
-    writeFile fOutParser $ show resParse1
+    writeFile fOutParser1 $ show resParse1
+    writeFile fOutParser2 $ show resParse2
     writeFile fOut $ show resPrint
     putStrLn $ "Are MS printer and MS parser consistent? : " ++ show result
     return ()
