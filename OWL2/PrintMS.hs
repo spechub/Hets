@@ -14,9 +14,6 @@ import OWL2.Keywords
 import OWL2.ColonKeywords
 
 -- imports for tests
-import qualified OWL2.ParseAS as Parser
-import Common.Parsec
-import Text.ParserCombinators.Parsec (parse)
 import Debug.Trace
 
 ----- auxiliary data structures and transformations (possible MS syntax) -----
@@ -102,9 +99,9 @@ tAddDecAnnAssertion entity (Annotation anns prop value) ms =
 
 -- | transform Annotation v1
 tDecAnnotation :: Annotation -> MnchstrSntx -> MnchstrSntx
-tDecAnnotation (Annotation anns annProp _) ms =
-    tDecAnnotations anns
-        $ M.insert k v ms
+tDecAnnotation (Annotation anns annProp annValue) ms =
+    tDecAnnotations anns . tAnnotationValue annValue 
+    $ M.insert k v ms
     where 
         k = ("AnnotationProperty", IriId annProp)
         v = M.findWithDefault M.empty k ms
@@ -495,7 +492,6 @@ tClassAxiom clAx@(SubClassOf anns subClExpr@(Expression iri) supClExpr) ms =
     M.insert ("Class", IriId iri) (M.insert "subClassOf" newAxioms m2) m1
     where
         m1 = tClassExpression supClExpr . tAnnotations anns $ ms
-        -- m1 = ms
         m2 = M.findWithDefault M.empty ("Class", IriId iri) m1
         axioms = M.findWithDefault [] "subClassOf" m2
         newAxioms = S.toList . S.fromList $ ClassAxiom clAx : axioms
@@ -910,13 +906,13 @@ tLiteral (Literal _ t) ms = case t of
     Typed dt -> tDatatype dt ms
     Untyped _ ->  tDatatype plainDatatypeIRI ms
     where plainDatatypeIRI = IRI {
-          iriScheme = ""
-        , iriAuthority = Nothing
-        , iriPath = mkId []
+          iriScheme = "http:"
+        , iriAuthority = Just $ IRIAuth "" "www.w3.org" ""
+        , iriPath = stringToId "/1999/02/22-rdf-syntax-ns"
         , iriQuery = ""
-        , iriFragment = "PlainLiteral"
+        , iriFragment = "#PlainLiteral"
         , prefixName = "rdf"
-        , isAbbrev = False
+        , isAbbrev = True
         , isBlankNode = False
         , hasAngles = False
         , iriPos = nullRange
@@ -1393,7 +1389,7 @@ printDFs pds n ms
 printDF :: [PrefixDeclaration] -> Int -> FrameId
     -> M.Map String [Axiom] -> Doc
 printDF pds n header body =
-    vcat [tabs n <> keyword "Datatype:" <+> printMSDatatype pds iri
+    vcat [tabs n <> keyword "Datatype:" <+> printIRI pds iri
         , annDoc, eqDoc]
     where
         IriId iri = snd header
@@ -1420,12 +1416,13 @@ printDatatypeDefinitionAxiom pds n (DatatypeDefinition anns _ dr) =
     $+$
     tabs n <> printDataRange pds dr
 
-printMSDatatype :: [PrefixDeclaration] -> IRI -> Doc
-printMSDatatype pds iri
-    | isAbbrev iri && prefixName iri == "xsd"
-        && iFragment iri `elem` ["integer", "decimal", "float"]
-        = text ("xsd:" ++ iFragment iri)
-    | otherwise = printIRI pds iri
+-- printMSDatatype :: [PrefixDeclaration] -> IRI -> Doc
+-- printMSDatatype pds iri
+--     | isAbbrev iri && prefixName iri == "xsd"
+--         && iFragment iri `elem` ["integer", "decimal", "float"]
+--         = text ("xsd:" ++ iFragment iri)
+        
+--     | otherwise = printIRI pds iri
 
 -- | print Class Frames
 printCFs :: [PrefixDeclaration] -> Int -> MnchstrSntx -> Doc
@@ -1817,8 +1814,13 @@ printAnnotations pds n anns =
 -- | print IRI
 printIRI :: [PrefixDeclaration] -> IRI -> Doc
 printIRI pds iri
-    | isAbbrev iri && containsPrefix pds prefName =
+    | isAbbrev iri && containsPrefix pds prefName 
+        && iFragment iri /= ""  =
         text (prefName ++ ":" ++ (iFragment iri))
+
+    | isAbbrev iri && containsPrefix pds prefName
+        = text (prefName ++ ":" ++ (iriFragment iri))
+
     | otherwise = pretty iri
   where prefName = prefixName iri
 
