@@ -10,6 +10,7 @@ import OWL2.ParseAS (expandIRI)
 
 import Common.Keywords
 import Common.IRI
+import Common.Id (stringToId)
 import Common.Lexer
 import Common.Parsec
 import Common.AnnoParser (newlineOrEof)
@@ -115,10 +116,10 @@ intLit = do
   n <- getNNInt
   return $ negNNInt b n
 
-booleanLit :: CharParser st Literal
-booleanLit = do
+booleanLit :: GA.PrefixMap -> CharParser st Literal
+booleanLit pm = do
   val <- skips $ try $ choice [string trueS, string falseS]
-  let typed = Typed ((mkIRI booleanS) {prefixName = "xsd"})
+  let typed = Typed (expandIRI pm $ nullIRI { iriPath = stringToId booleanS,  iFragment = booleanS, isAbbrev = True, prefixName = "xsd"})
   return $ Literal val typed
 
 decimalLit :: CharParser st DecLit
@@ -172,7 +173,7 @@ literal pm = do
          <|> fmap decToFloat decimalLit
     return $ NumberLit f
   <|> skips (stringLiteral pm)
-  <|> booleanLit
+  <|> booleanLit pm
   <?> "Literal"
 -- * description
 
