@@ -1483,7 +1483,7 @@ printHasKeyAxiom :: [PrefixDeclaration] -> Int -> String -> Axiom -> Doc
 printHasKeyAxiom pds n header (HasKey anns _ opExprs dpExprs) =
     tabs n <> keyword header
     $+$ printAnnotations pds (n + 1) anns
-    $+$ (vcat . punctuate comma $ [opExprsDocs, dpExprsDocs])
+    $+$ (vcat . punctuate comma . july182021_rmEmpties  $ [opExprsDocs, dpExprsDocs])
     where
         opExprsDocs = vcat . punctuate comma
             . map (\e -> tabs (n + 1) <> 
