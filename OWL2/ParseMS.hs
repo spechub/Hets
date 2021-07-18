@@ -249,7 +249,7 @@ facetValuePair pm = do
       , MAXINCLUSIVE
       , MAXEXCLUSIVE ]
   rv <- literal pm
-  return (facetToIRI df, rv)
+  return (expandIRI pm (facetToIRINoSign df), rv)
 
 -- it returns DataType Datatype or DatatypeRestriction Datatype [facetValuePair]
 dataRangeRestriction :: GA.PrefixMap -> CharParser st DataRange
