@@ -74,6 +74,7 @@ module Common.Doc
       Doc
     , Label (..)
     , StripComment (..)
+    , july182021_rmEmpties
     , renderHtml
     , renderExtHtml
     , renderText
@@ -385,6 +386,9 @@ doubleQuotes d = hcat [doubleQuote, d, doubleQuote]
 
 (<>) :: Doc -> Doc -> Doc      -- ^Beside
 a <> b = hcat [a, b]
+
+july182021_rmEmpties :: [Doc] -> [Doc]
+july182021_rmEmpties = rmEmpties
 
 rmEmpties :: [Doc] -> [Doc]
 rmEmpties = filter (not . isEmpty)
