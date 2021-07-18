@@ -738,8 +738,9 @@ tAnnotationAxiom ax@(AnnotationAssertion anns prop subj value) ms = res
         ks = findKeys frameIri $ M.keys m'
         subTrees = map (\k -> M.findWithDefault M.empty k m') ks
         axiomsList = map (M.findWithDefault [] "annotations") subTrees
-        newAxiom = AnnotationAxiom ax
-        newAxiomsList = map (newAxiom:) axiomsList
+        newAxiom = AnnotationAxiom
+            $ (AnnotationAssertion anns prop (AnnSubIri frameIri) value)
+        newAxiomsList = map (S.toList . S.fromList) . map (newAxiom:) $ axiomsList
 
         newSubTrees = zipWith (M.insert "annotations") newAxiomsList subTrees
         res = foldl (\m (k, st) -> M.insert k st m) m' $ zip ks newSubTrees
