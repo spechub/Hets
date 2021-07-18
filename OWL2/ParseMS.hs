@@ -150,9 +150,14 @@ rmQuotes s = case s of
   _ : tl@(_ : _) -> init tl
   _ -> error "rmQuotes"
 
+
+charOrEscaped :: CharParser st Char
+charOrEscaped = (try $ string "\\\"" >> return '"')
+            <|> (try $ string "\\\\" >> return '\\') <|> anyChar
+
 stringLiteral :: GA.PrefixMap -> CharParser st Literal
 stringLiteral pm = do
-  s <- rmQuotes <$> stringLit
+  s <- (char '"' >> manyTill charOrEscaped (try $ char '"'))
   do
       string cTypeS
       d <- datatypeUri pm
