@@ -1073,27 +1073,27 @@ opAxiomsToDoc pds n "SubPropertyChain:" axioms =
 opAxiomsToDoc pds n "EquivalentTo:" axioms =
     tabs n <> keyword "EquivalentTo:"
     $+$
-    (vcat . map (printEqObProp pds (n + 1)) $ axioms)
+    (vcat . punctuate comma . map (printEqObProp pds (n + 1)) $ axioms)
 
 opAxiomsToDoc pds n "DisjointWith:" axioms =
     tabs n <> keyword "DisjointWith:"
     $+$
-    (vcat . map (printDisjObProp pds (n + 1)) $ axioms)
+    (vcat . punctuate comma . map (printDisjObProp pds (n + 1)) $ axioms)
 
 opAxiomsToDoc pds n "InverseOf:" axioms =
     tabs n <> keyword "InverseOf:"
     $+$
-    (vcat . map (printInvObProp pds (n + 1)) $ axioms)
+    (vcat . punctuate comma . map (printInvObProp pds (n + 1)) $ axioms)
 
 opAxiomsToDoc pds n "Domain:" axioms =
     tabs n <> keyword "Domain:"
     $+$
-    (vcat . map (printObPropDom pds (n + 1)) $ axioms)
+    (vcat . punctuate comma . map (printObPropDom pds (n + 1)) $ axioms)
 
 opAxiomsToDoc pds n "Range:" axioms =
     tabs n <> keyword "Range:"
     $+$
-    (vcat . map (printObPropRange pds (n + 1)) $ axioms)
+    (vcat . punctuate comma . map (printObPropRange pds (n + 1)) $ axioms)
 
 opAxiomsToDoc pds n "Characteristics:" axioms =
     tabs n <> keyword "Characteristics:"
