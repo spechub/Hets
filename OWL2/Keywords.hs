@@ -331,6 +331,19 @@ data DatatypeFacet =
   | FRACTIONDIGITS
     deriving (Show, Eq, Ord)
 
+showFacetNoSign :: DatatypeFacet -> String
+showFacetNoSign LENGTH = lengthS
+showFacetNoSign MINLENGTH = minLengthS
+showFacetNoSign MAXLENGTH = maxLengthS
+showFacetNoSign PATTERN = patternS
+showFacetNoSign LANGRANGE = langRangeS
+showFacetNoSign MININCLUSIVE = minInclusiveS
+showFacetNoSign MINEXCLUSIVE = minExclusiveS
+showFacetNoSign MAXINCLUSIVE = maxInclusiveS
+showFacetNoSign MAXEXCLUSIVE = maxExclusiveS
+showFacetNoSign TOTALDIGITS = digitsS
+showFacetNoSign FRACTIONDIGITS = fractionS
+
 showFacet :: DatatypeFacet -> String
 showFacet df = case df of
     LENGTH -> lengthS
