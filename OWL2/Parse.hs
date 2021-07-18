@@ -356,7 +356,7 @@ facetValuePair = do
       , MAXINCLUSIVE
       , MAXEXCLUSIVE ]
   rv <- literal
-  return (AS.facetToIRI df, rv)
+  return (AS.facetToIRINoSign df, rv)
 
 -- it returns DataType Datatype or DatatypeRestriction Datatype [facetValuePair]
 dataRangeRestriction :: CharParser st AS.DataRange
