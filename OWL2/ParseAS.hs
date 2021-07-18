@@ -696,6 +696,137 @@ parseAnnotationAxiom pm = AnnotationAxiom <$> (
         (parseAnnotationPropertyRange pm)
     )
 
+parseIndividualArg :: GA.PrefixMap -> CharParser st IndividualArg
+parseIndividualArg pm =
+        -- Apparently the keyword is "Variable" instead of "IndividualVariable"
+    IVar <$> parseEnclosedWithKeyword "Variable" (parseIRI pm) <|>
+    IArg <$> parseAnonymousIndividual pm
+
+
+parseDataArg :: GA.PrefixMap -> CharParser st DataArg
+parseDataArg pm =
+    -- Apparently the keyword is "Literal" instead of "LiteralVariable"
+    DVar <$> parseEnclosedWithKeyword "Variable" (parseIRI pm) <|>
+    DArg <$> parseLiteral pm
+
+parseClassAtom :: GA.PrefixMap -> CharParser st Atom
+parseClassAtom pm = parseEnclosedWithKeyword "ClassAtom" $
+    ClassAtom <$> parseClassExpression pm <*> parseIndividualArg pm
+
+parseDataRangeAtom :: GA.PrefixMap -> CharParser st Atom
+parseDataRangeAtom pm = parseEnclosedWithKeyword "DataRangeAtom" $
+    DataRangeAtom <$> parseDataRange pm <*> parseDataArg pm
+
+parseObjectPropertyAtom :: GA.PrefixMap -> CharParser st Atom
+parseObjectPropertyAtom pm = parseEnclosedWithKeyword "ObjectPropertyAtom" $
+    ObjectPropertyAtom <$>
+        parseObjectPropertyExpression pm <*>
+        parseIndividualArg pm <*>
+        parseIndividualArg pm
+
+parseDataPropertyAtom :: GA.PrefixMap -> CharParser st Atom
+parseDataPropertyAtom pm = parseEnclosedWithKeyword "DataPropertyAtom" $
+    DataPropertyAtom <$>
+        parseIRI pm <*>
+        parseIndividualArg pm <*>
+        parseDataArg pm
+
+parseBuiltInAtom :: GA.PrefixMap -> CharParser st Atom
+parseBuiltInAtom pm = parseEnclosedWithKeyword "BuiltInAtom" $
+    BuiltInAtom <$> parseIRI pm <*> many1 (parseDataArg pm)
+
+parseSameIndividualAtom :: GA.PrefixMap -> CharParser st Atom
+parseSameIndividualAtom pm = parseEnclosedWithKeyword "SameIndividualAtom" $
+    SameIndividualAtom <$> parseIndividualArg pm <*> parseIndividualArg pm
+
+parseDifferentIndividualsAtom :: GA.PrefixMap -> CharParser st Atom
+parseDifferentIndividualsAtom pm = parseEnclosedWithKeyword "DifferentIndividualsAtom" $
+    DifferentIndividualsAtom <$> parseIndividualArg pm <*> parseIndividualArg pm
+
+parseAtom :: GA.PrefixMap -> CharParser st Atom
+parseAtom pm =
+    parseClassAtom pm <|>
+    parseDataRangeAtom pm <|>
+    parseObjectPropertyAtom pm <|>
+    parseDataPropertyAtom pm <|>
+    parseBuiltInAtom pm<|>
+    parseSameIndividualAtom pm <|>
+    parseDifferentIndividualsAtom pm <?>
+    "Atom"
+
+parseBody :: GA.PrefixMap -> CharParser st Body
+parseBody pm = do
+    parseEnclosedWithKeyword "Body" $ many (parseAtom pm)
+
+parseHead :: GA.PrefixMap -> CharParser st Body
+parseHead pm = do
+    parseEnclosedWithKeyword "Head" $ many (parseAtom pm)
+
+parseDLSafeRule :: GA.PrefixMap -> CharParser st Rule
+parseDLSafeRule pm = parseEnclosedWithKeyword "DLSafeRule" $
+    DLSafeRule <$>
+        parseAnnotations pm <*>
+        parseBody pm <*>
+        parseHead pm
+
+
+parseDGClassAtom  :: GA.PrefixMap -> CharParser st DGAtom
+parseDGClassAtom pm = parseEnclosedWithKeyword "ClassAtom" $
+    DGClassAtom <$> parseClassExpression pm <*> parseIndividualArg pm
+
+parseDGObjectPropertyAtom :: GA.PrefixMap -> CharParser st DGAtom
+parseDGObjectPropertyAtom pm = parseEnclosedWithKeyword "ObjectPropertyAtom" $
+    DGObjectPropertyAtom <$>
+        parseObjectPropertyExpression pm <*>
+        parseIndividualArg pm <*>
+        parseIndividualArg pm
+
+parseDGAtom :: GA.PrefixMap -> CharParser st DGAtom
+parseDGAtom pm = parseDGClassAtom pm <|> parseDGObjectPropertyAtom pm
+
+parseDGBody :: GA.PrefixMap -> CharParser st DGBody
+parseDGBody pm = parseEnclosedWithKeyword "Body" $ many (parseDGAtom pm)
+
+parseDGHead :: GA.PrefixMap -> CharParser st DGHead
+parseDGHead pm = parseEnclosedWithKeyword "Head" $ many (parseDGAtom pm)
+
+parseDGRule :: GA.PrefixMap -> CharParser st Rule
+parseDGRule pm = parseEnclosedWithKeyword "DescriptionGraphRule" $ 
+    DGRule <$> parseAnnotations pm <*> parseDGBody pm <*> parseDGHead pm
+
+parseRule :: GA.PrefixMap -> CharParser st Axiom
+parseRule pm = Rule <$> (parseDLSafeRule pm <|> parseDGRule pm)
+
+parseDGNodeAssertion :: GA.PrefixMap -> CharParser st DGNodeAssertion
+parseDGNodeAssertion pm = parseEnclosedWithKeyword "NodeAssertion" $
+    DGNodeAssertion <$> parseIRI pm <*> parseIRI pm
+
+parseDGNodes :: GA.PrefixMap -> CharParser st DGNodes
+parseDGNodes pm = parseEnclosedWithKeyword "Nodes" $
+    many1 (parseDGNodeAssertion pm)
+
+parseDGEdgeAssertion :: GA.PrefixMap -> CharParser st DGEdgeAssertion
+parseDGEdgeAssertion pm = parseEnclosedWithKeyword "EdgeAssertion" $
+    DGEdgeAssertion <$> parseIRI pm <*> parseIRI pm <*> parseIRI pm
+
+parseDGEdes :: GA.PrefixMap -> CharParser st DGEdges
+parseDGEdes pm = parseEnclosedWithKeyword "Edges" $
+    many1 (parseDGEdgeAssertion pm)
+
+parseMainClasses :: GA.PrefixMap -> CharParser st MainClasses
+parseMainClasses pm = parseEnclosedWithKeyword "MainClasses" $
+    many1 (parseIRI pm)
+
+parseDGAxiom :: GA.PrefixMap -> CharParser st Axiom
+parseDGAxiom pm = parseEnclosedWithKeyword "DescriptionGraph" $
+    DGAxiom <$>
+        parseAnnotations pm <*>
+        parseIRI pm <*>
+        parseDGNodes pm <*>
+        parseDGEdes pm <*>
+        parseMainClasses pm
+
+
 parseAxiom :: GA.PrefixMap -> CharParser st Axiom
 parseAxiom pm =
     (parseDeclaration pm) <|>
@@ -706,8 +837,8 @@ parseAxiom pm =
     (parseHasKey pm) <|>
     (parseAssertion pm) <|>
     (parseAnnotationAxiom pm) <|>
-    ((lookAhead $ keyword "DLSafeRule") >>
-         fail "SWRL Rules aren't supported yet") <?>
+    (parseRule pm) <|>
+    (parseDGAxiom pm) <?>
     "Axiom"
 
 
