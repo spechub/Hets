@@ -41,15 +41,17 @@ runAllTestsInDir d = do
                         case res2 of
                                 Left e -> do
                                     putStrLn ("    ❌ Parsing Printed Failed: \x1b[38;2;255;56;43m" ++ show e ++ "\x1b[0m")
-                                    callCommand $ "touch " ++ f ++ ".printed"
-                                    writeFile (f ++ ".printed") content2
+                                    callCommand $ "touch " ++ path ++ ".printed"
+                                    writeFile (path ++ ".printed") content2
                                     return 0
                                 Right (OntologyDocument _ (Ontology _ _ _ _ ax2)) ->
                                     let diff = difference (S.fromList ax) (S.fromList ax2) in
                                     if S.null diff
                                         then putStrLn "  ✅ Success" >> return 1
                                         else do 
-                                            callCommand $ "touch " ++ f ++ ".differentaxioms"
+                                            callCommand $ "touch " ++ path ++ ".printed"
+                                            writeFile (path ++ ".printed") content2
+                                            callCommand $ "touch " ++ path ++ ".differentaxioms"
                                             writeFile (f ++ ".differentaxioms") (show $ diff)
                                             putStrLn ("    ❌ Axioms are not identical: \x1b[38;2;255;56;43m" ++ show (size diff) ++ " different axioms of " ++ show (length ax) ++ "/" ++ show (length ax2) ++ "\x1b[0m") >> return 0
 
@@ -73,7 +75,7 @@ pta = do
             "./OWL2/tests/7",
             "./OWL2/tests/8",
             "./OWL2/tests/9",
-            "../HetsOwlTest/tmp"]
+            "../bioportal"]
 
 -- parses the test.ofn file in the current directory and prints the result
 pt :: IO ()
