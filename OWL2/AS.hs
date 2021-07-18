@@ -328,6 +328,14 @@ xsdStringsMap = makeXsdMap xsdStrings
 facetToIRI :: DatatypeFacet -> ConstrainingFacet
 facetToIRI = setPrefix "xsd" . mkIRI . showFacet
 
+facetToIRINoSign :: DatatypeFacet -> ConstrainingFacet
+facetToIRINoSign f = nullIRI {
+    prefixName = "xsd"
+  , iFragment = showFacetNoSign f
+  , isAbbrev = True
+}
+
+
 -- * Cardinalities
 
 data CardinalityType = MinCardinality | MaxCardinality | ExactCardinality

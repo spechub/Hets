@@ -179,7 +179,22 @@ diamondS = "<>"
 greaterS :: String
 greaterS = ">"
 
+
+maxInclusiveS :: String
+maxInclusiveS = "maxInclusive"
+
+maxExclusiveS :: String
+maxExclusiveS = "maxExclusive"
+
 -- * OWL key signs
+
+minInclusiveS :: String
+minInclusiveS = "minInclusive"
+
+
+minExclusiveS :: String
+minExclusiveS = "minExclusive"
+
 
 lessEq :: String
 lessEq = "<="
