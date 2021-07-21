@@ -24,6 +24,7 @@ import Text.ParserCombinators.Parsec
 import Data.Char
 import qualified Data.Map as Map (union, toList, fromList)
 import Data.Either (partitionEithers)
+import Data.Maybe (fromJust)
 import Control.Monad (liftM2)
 
 type Annotations = [Annotation]
@@ -534,12 +535,9 @@ classFrameBit pm i = let e = Expression i in
   <|> parseAnnotationAssertions pm (AnnSubIri i)
 
 parseAnnotationAssertions :: GA.PrefixMap -> AnnotationSubject -> CharParser st [Axiom]
-parseAnnotationAssertions pm s = parseAnnotationAssertion pm s >>= return . return
-
-parseAnnotationAssertion :: GA.PrefixMap -> AnnotationSubject -> CharParser st Axiom
-parseAnnotationAssertion pm s =  do
+parseAnnotationAssertions pm s = do
     a <- annotations pm
-    return $ AnnotationAxiom $ AnnotationAssertion (init a) (annProperty $ last a) s (annValue $ last a)
+    return $ (fmap (\an -> AnnotationAxiom $ AnnotationAssertion [] (annProperty an) s (annValue an)) a)
 
 objPropExprAList :: GA.PrefixMap -> CharParser st [(Annotations, ObjectPropertyExpression)]
 objPropExprAList pm = sepByComma $ optAnnos pm $ objectPropertyExpr pm
@@ -766,10 +764,13 @@ prefixFromMap = map (uncurry PrefixDeclaration) . Map.toList
 prefixToMap :: [PrefixDeclaration] -> GA.PrefixMap
 prefixToMap = Map.fromList . map (\ (PrefixDeclaration name iri) -> (name, iri))
 
+predefinedPrefixes :: GA.PrefixMap
+predefinedPrefixes = fmap (fromJust . parseIRI) predefPrefixes
+
 parseOntologyDocument :: GA.PrefixMap -> CharParser st OntologyDocument
 parseOntologyDocument gapm = do
     prefixes <- manySkip parsePrefixDeclaration
-    let pm = Map.union gapm (prefixToMap prefixes)
+    let pm = Map.unions [gapm (prefixToMap prefixes) predefinedPrefixes]
     ontology <- parseOntology pm
     eof
     return $ OntologyDocument (prefixFromMap pm) ontology
