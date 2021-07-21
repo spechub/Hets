@@ -1226,8 +1226,8 @@ printDPF pds n header body =
         eqDataPropsDoc = dpAxiomsToDoc pds (n + 1) "EquivalentTo:"
             . map unpackDataPropertyAxiom $ eqDataPropsAxioms
 
-        disjDataPropsAxioms = M.findWithDefault [] "disjointTo" body
-        disjDataPropsDoc = dpAxiomsToDoc pds (n + 1) "DisjointTo:"
+        disjDataPropsAxioms = M.findWithDefault [] "disjointWith" body
+        disjDataPropsDoc = dpAxiomsToDoc pds (n + 1) "DisjointWith:"
             . map unpackDataPropertyAxiom $ disjDataPropsAxioms
 
         domDataPropAxioms = M.findWithDefault [] "domain" body
@@ -1258,8 +1258,8 @@ dpAxiomsToDoc pds n "EquivalentTo:" axioms =
     (vcat . punctuate comma
         . map (printDataPropAxiom pds (n + 1)) $ axioms)
 
-dpAxiomsToDoc pds n "DisjointTo:" axioms =
-    tabs n <> keyword "DisjointTo:"
+dpAxiomsToDoc pds n "DisjointWith:" axioms =
+    tabs n <> keyword "DisjointWith:"
     $+$
     (vcat . punctuate comma
         . map (printDataPropAxiom pds (n + 1)) $ axioms)
