@@ -957,7 +957,6 @@ printOntology pds
     (Ontology mOntIRI mVersionIRI importedDocs annotations axioms) =
         keyword "Ontology:"
         <+> ontIRI
-        <+> versionIRI
         $++$ impDocs
         $++$ anns
         $++$ axs
