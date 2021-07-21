@@ -534,12 +534,9 @@ classFrameBit pm i = let e = Expression i in
   <|> parseAnnotationAssertions pm (AnnSubIri i)
 
 parseAnnotationAssertions :: GA.PrefixMap -> AnnotationSubject -> CharParser st [Axiom]
-parseAnnotationAssertions pm s = parseAnnotationAssertion pm s >>= return . return
-
-parseAnnotationAssertion :: GA.PrefixMap -> AnnotationSubject -> CharParser st Axiom
-parseAnnotationAssertion pm s =  do
+parseAnnotationAssertions pm s = do
     a <- annotations pm
-    return $ AnnotationAxiom $ AnnotationAssertion (init a) (annProperty $ last a) s (annValue $ last a)
+    return $ (fmap (\an -> AnnotationAxiom $ AnnotationAssertion [] (annProperty an) s (annValue an)) a)
 
 objPropExprAList :: GA.PrefixMap -> CharParser st [(Annotations, ObjectPropertyExpression)]
 objPropExprAList pm = sepByComma $ optAnnos pm $ objectPropertyExpr pm
