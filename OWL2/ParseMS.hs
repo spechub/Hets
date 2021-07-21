@@ -22,7 +22,7 @@ import qualified Common.GlobalAnnotations as GA (PrefixMap)
 import Text.ParserCombinators.Parsec
 
 import Data.Char
-import qualified Data.Map as Map (union, toList, fromList)
+import qualified Data.Map as Map (union, toList, fromList, unions)
 import Data.Either (partitionEithers)
 import Data.Maybe (fromJust)
 import Control.Monad (liftM2)
@@ -770,7 +770,7 @@ predefinedPrefixes = fmap (fromJust . parseIRI) predefPrefixes
 parseOntologyDocument :: GA.PrefixMap -> CharParser st OntologyDocument
 parseOntologyDocument gapm = do
     prefixes <- manySkip parsePrefixDeclaration
-    let pm = Map.unions [gapm (prefixToMap prefixes) predefinedPrefixes]
+    let pm = Map.unions [gapm, (prefixToMap prefixes), predefinedPrefixes]
     ontology <- parseOntology pm
     eof
     return $ OntologyDocument (prefixFromMap pm) ontology
