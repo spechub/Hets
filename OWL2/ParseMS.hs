@@ -542,8 +542,8 @@ parseAnnotationAssertions pm s = do
 objPropExprAList :: GA.PrefixMap -> CharParser st [(Annotations, ObjectPropertyExpression)]
 objPropExprAList pm = sepByComma $ optAnnos pm $ objectPropertyExpr pm
 
-objectPropertyFrameBit :: GA.PrefixMap -> IRI -> CharParser st [Axiom]
-objectPropertyFrameBit pm i = let oe = ObjectProp i in
+objectPropertyFrameBit :: GA.PrefixMap -> ObjectPropertyExpression -> CharParser st [Axiom]
+objectPropertyFrameBit pm oe =
   do
     pkeyword domainC
     ds <- descriptionAnnotatedList pm
@@ -577,14 +577,18 @@ objectPropertyFrameBit pm i = let oe = ObjectProp i in
     as <- optionalAnnos pm
     os <- sepBy1 (objectPropertyExpr pm) (pkeyword oS)
     return [ObjectPropertyAxiom $ SubObjectPropertyOf as (SubObjPropExpr_exprchain os) oe]
-  <|> parseAnnotationAssertions pm (AnnSubIri i)
+  <|> case oe of
+    ObjectProp i -> parseAnnotationAssertions pm (AnnSubIri i)
+    _ -> unexpected "Annotation for object property expression"
 
 objectPropertyFrame :: GA.PrefixMap -> CharParser st [Axiom]
 objectPropertyFrame pm = do
     pkeyword objectPropertyC
-    ouri <- expUriP pm
-    bits <- many $ objectPropertyFrameBit pm ouri
-    return $ Declaration [] (mkEntity ObjectProperty ouri) : concat bits
+    oe <- objectPropertyExpr pm
+    bits <- many $ objectPropertyFrameBit pm oe
+    return $ case oe of
+      ObjectProp i -> Declaration [] (mkEntity ObjectProperty i) : concat bits
+      _ -> concat bits
 
 dataPropExprAList :: GA.PrefixMap -> CharParser st [(Annotations, DataPropertyExpression)]
 dataPropExprAList pm = sepByComma $ (optAnnos pm) (expUriP pm)
@@ -629,19 +633,20 @@ fact :: GA.PrefixMap -> Individual -> CharParser st Assertion
 fact pm i = do
     anns <- optionalAnnos pm
     negative <- option False $ pkeyword notS >> return True
-    u <- expUriP pm
-    do
+    try (do
+        u <- expUriP pm
         c <- literal pm
         let assertion = if negative
             then NegativeDataPropertyAssertion
             else DataPropertyAssertion
-        return $ assertion anns u i c
+        return $ assertion anns u i c)
       <|> do
+        o <- objectPropertyExpr pm
         t <- individual pm
         let assertion = if negative
             then NegativeObjectPropertyAssertion
             else ObjectPropertyAssertion
-        return $ assertion anns (ObjectProp u) i t
+        return $ assertion anns o i t
 
 iFrameBit :: GA.PrefixMap -> Individual -> CharParser st [Axiom]
 iFrameBit pm i = do
