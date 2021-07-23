@@ -2,10 +2,11 @@
 module OWL2.TestMS where
 
 import System.Process
+import System.Environment
 import System.IO
 import System.Directory
-import Data.List as L (sort,isSuffixOf, (\\), sortOn)
-import Data.Set as S (fromList, difference, null, size)
+import Data.List as L (sort,isSuffixOf, isPrefixOf, (\\), sortOn)
+import qualified Data.Set as S (fromList, difference, null, size)
 import Data.Map(empty, unions)
 import Control.Monad
 
@@ -17,6 +18,18 @@ import Common.DocUtils (pretty)
 import OWL2.AS
 import OWL2.PrintMS
 import OWL2.ParseMS
+
+data Option = SkipSuccessful | OnlyParse deriving (Eq, Enum, Bounded)
+
+instance Show Option where
+    show SkipSuccessful = "--skipSuccessful"
+    show OnlyParse = "--onlyParse"
+
+skipSuccessful :: [Option] -> Bool
+skipSuccessful = elem SkipSuccessful
+
+onlyParse :: [Option] -> Bool
+onlyParse = elem OnlyParse
 
 
 data TestResult = Success | ParsingSourceFailed | ParsingPrintedFailed | DifferentAxioms | Skipped
@@ -32,66 +45,68 @@ stat_differentAxioms = sum . fmap (\t -> case t of {DifferentAxioms -> 1; _ -> 0
 stat_skipped :: [TestResult] -> Int
 stat_skipped = sum . fmap (\t -> case t of {Skipped -> 1; _ -> 0})
 
-runTest :: FilePath -> FilePath -> IO TestResult
-runTest d f = do
+runTest :: [Option] -> FilePath -> FilePath -> IO TestResult
+runTest opts d f = do
     let path = d ++ "/" ++ f ++ ".success"
     e <- doesFileExist path
-    if e then return Skipped else runTest' d f
+    if skipSuccessful opts && e then return Skipped else runTest' opts d f
 
-runTest' :: FilePath -> FilePath -> IO TestResult
-runTest' d f = do
+runTest' :: [Option] -> FilePath -> FilePath -> IO TestResult
+runTest' opts d f = do
     let path = d ++ "/" ++ f            
     content <- readFile path
     putStrLn $ "\x1b[38;2;40;177;249mTesting '" ++ path ++ "'" ++ "\x1b[0m"
-    putStrLn "  Parsing Source File"
+    if onlyParse opts then return () else putStrLn "  Parsing Source File"
     let res = parse (parseOntologyDocument mempty) f content
-    case res of
-            Left e -> putStrLn ("    ⚡ Parsing Source Failed: " ++ show e) >> return ParsingSourceFailed
-            Right o@(OntologyDocument _ (Ontology _ _ _ _ ax)) -> do
-                callCommand $ "touch " ++ path ++ ".parsed1"
-                writeFile (path ++ ".parsed1") (show o)
-                putStrLn "  Parsing Printed Document"
-                let content2 = show $ pretty o
-                let res2 = parse (parseOntologyDocument mempty) f content2
-                case res2 of
-                        Left e -> do
-                            putStrLn ("    ❌ Parsing Printed Failed: \x1b[38;2;255;56;43m" ++ show e ++ "\x1b[0m")
-                            callCommand $ "touch " ++ path ++ ".printed"
-                            writeFile (path ++ ".printed") content2
-                            return ParsingPrintedFailed
-                        Right o2@(OntologyDocument _ (Ontology _ _ _ _ ax2)) ->
-                            let diff = difference (S.fromList ax) (S.fromList ax2) in
-                            if S.null diff
-                                then do
-                                    callCommand $ "touch " ++ path ++ ".success"
-                                    putStrLn "  ✅ Success" 
-                                    return Success
-                                else do 
-                                    callCommand $ "touch " ++ path ++ ".parsed2"
-                                    writeFile (path ++ ".parsed2") (show o2)
-                                    callCommand $ "touch " ++ path ++ ".printed"
-                                    writeFile (path ++ ".printed") content2
-                                    callCommand $ "touch " ++ path ++ ".differentaxioms"
-                                    writeFile (f ++ ".differentaxioms") (show $ diff)
-                                    putStrLn ("    ❌ Axioms are not identical: \x1b[38;2;255;56;43m" ++ show (size diff) ++ " different axioms of " ++ show (length ax) ++ "/" ++ show (length ax2) ++ "\x1b[0m")
-                                    return $ DifferentAxioms
+
+    if onlyParse opts then (either (\e -> putStrLn ("  ⚡ Parsing Source Failed: " ++ show e) >> return ParsingSourceFailed) (const (putStrLn "  ✅ Parsing Source Succeeded"  >> return Success)) res) else
+        case res of
+                Left e -> putStrLn ("    ⚡ Parsing Source Failed: " ++ show e) >> return ParsingSourceFailed
+                Right o@(OntologyDocument _ (Ontology _ _ _ _ ax)) -> do
+                    callCommand $ "touch " ++ path ++ ".parsed1"
+                    writeFile (path ++ ".parsed1") (show o)
+                    putStrLn "  Parsing Printed Document"
+                    let content2 = show $ pretty o
+                    let res2 = parse (parseOntologyDocument mempty) f content2
+                    case res2 of
+                            Left e -> do
+                                putStrLn ("    ❌ Parsing Printed Failed: \x1b[38;2;255;56;43m" ++ show e ++ "\x1b[0m")
+                                callCommand $ "touch " ++ path ++ ".printed"
+                                writeFile (path ++ ".printed") content2
+                                return ParsingPrintedFailed
+                            Right o2@(OntologyDocument _ (Ontology _ _ _ _ ax2)) ->
+                                let diff = S.difference (S.fromList ax) (S.fromList ax2) in
+                                if S.null diff
+                                    then do
+                                        callCommand $ "touch " ++ path ++ ".success"
+                                        putStrLn "  ✅ Success" 
+                                        return Success
+                                    else do 
+                                        callCommand $ "touch " ++ path ++ ".parsed2"
+                                        writeFile (path ++ ".parsed2") (show o2)
+                                        callCommand $ "touch " ++ path ++ ".printed"
+                                        writeFile (path ++ ".printed") content2
+                                        callCommand $ "touch " ++ path ++ ".differentaxioms"
+                                        writeFile (f ++ ".differentaxioms") (show $ diff)
+                                        putStrLn ("    ❌ Axioms are not identical: \x1b[38;2;255;56;43m" ++ show (S.size diff) ++ " different axioms of " ++ show (length ax) ++ "/" ++ show (length ax2) ++ "\x1b[0m")
+                                        return $ DifferentAxioms
 
 -- parses all file in given directories and displays whether parsing was successful
-runAllTestsInDir :: FilePath -> IO [TestResult]
-runAllTestsInDir d = do
+runAllTestsInDir :: [Option] -> FilePath -> IO [TestResult]
+runAllTestsInDir opts d = do
     contents <- filter (isSuffixOf ".omn") <$> getDirectoryContents d
     sizes <- mapM (\f -> getFileSize (d ++ "/" ++ f)) contents
     let fs = zip contents sizes
     let files = (fst <$> sortOn snd fs)
     -- excluded <- filterM (\f -> getFileSize (d ++ "/" ++ f) >>= return . (>= 10000*1024*1024)) files
     excluded <- return []
-    r <- sequence (runTest d <$> (files \\ excluded))
+    r <- sequence (runTest opts d <$> (files \\ excluded))
     return $ r ++ (map (const Skipped) excluded)
 
 -- tests parsing on all OWL2/tests/**/*.ofn files
-pta :: IO ()
-pta = do 
-  stats <- sequence (runAllTestsInDir <$> dirs) >>= return . concat
+pta :: [Option] -> IO ()
+pta opts = do 
+  stats <- sequence (runAllTestsInDir opts <$> dirs) >>= return . concat
   let successful = stat_successful stats
   let skipped = stat_skipped stats
   let failedSourceParsing = stat_sourceFailed stats
@@ -110,13 +125,12 @@ pta = do
             "./OWL2/tests/6",
             "./OWL2/tests/7",
             "./OWL2/tests/8",
-            "./OWL2/tests/9",
-            "./_bioportal"]
+            "./OWL2/tests/9"]
 
 -- parses the test.ofn file in the current directory and prints the result
 pt :: IO ()
 pt = do
-    runTest "." "test.omn"
+    runTest [] "." "test.omn"
     return ()
     
 -- parses the test.ofn file in the current directory and prints the result
@@ -132,5 +146,9 @@ ps = do
 -- getFileSize path = handle (return 0) $ bracket (openFile path ReadMode) (hClose) hFileSize
 
 main :: IO ()
-main = pta
+main = do
+    args <- getArgs
+    let opts = filter (\s -> (show s `elem` args)) [minBound..maxBound]
+    let files = filter (not . isPrefixOf "--") args
+    if null files then pta opts else (sequence $ runTest opts "." <$> files) >> return ()
 
