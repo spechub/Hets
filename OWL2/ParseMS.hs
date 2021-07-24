@@ -781,7 +781,7 @@ parseClassExprAtom pm = do
 -- identified as such during parsing is if iArg is an individual. If it is a Variable
 -- it could also be a DataRangeAtom.
 parseClassAtom :: GA.PrefixMap -> IRI -> CharParser st Atom
-parseClassAtom pm pred = ClassAtom (Expression pred) <*>
+parseClassAtom pm pred = ClassAtom (Expression pred) <$>
   (IArg <$> parseNoVariable (expUriP pm))
 
 -- Cannot be distinguished from built in atoms with one argument
