@@ -28,17 +28,12 @@ import Data.Maybe (fromJust)
 import Control.Monad (liftM2)
 
 type Annotations = [Annotation]
-
-{- | @manySkip p@ parses 0 or more occurences of @p@ while skipping spaces
-(and comments) inbetween -}
-manySkip :: CharParser st a -> CharParser st [a]
-manySkip p = many (skips p)
-
 -- | Parses a comment
-comment :: CharParser st String
+comment :: CharParser st ()
 comment = try $ do
     char '#'
     manyTill anyChar newlineOrEof
+    return ()
 
 -- | Skips whitespaces and comments
 skips :: CharParser st a -> CharParser st a
@@ -152,14 +147,14 @@ rmQuotes s = case s of
   _ : tl@(_ : _) -> init tl
   _ -> error "rmQuotes"
 
-
 charOrEscaped :: CharParser st Char
-charOrEscaped = (try $ string "\\\"" >> return '"')
-            <|> (try $ string "\\\\" >> return '\\') <|> anyChar
+charOrEscaped = do
+    c <- anyChar
+    if c == '\\' then char '\\' <|> char '"' else return c
 
 stringLiteral :: GA.PrefixMap -> CharParser st Literal
 stringLiteral pm = do
-  s <- (char '"' >> manyTill charOrEscaped (try $ char '"'))
+  s <- char '"' >> manyTill charOrEscaped (char '"')
   do
       string cTypeS
       d <- datatypeUri pm
@@ -204,7 +199,7 @@ bracketsP :: CharParser st a -> CharParser st a
 bracketsP = between (skipChar '[') (skipChar ']')
 
 commaP :: CharParser st ()
-commaP = forget $ skipChar ','
+commaP = skipChar ','
 
 sepByComma :: CharParser st a -> CharParser st [a]
 sepByComma p = sepBy1 p $ try commaP
@@ -214,7 +209,7 @@ pkeyword :: String -> CharParser st ()
 pkeyword s = forget $ keywordNotFollowedBy s (alphaNum <|> char '/')
 
 keywordNotFollowedBy :: String -> CharParser st Char -> CharParser st String
-keywordNotFollowedBy s c = try $ skips $ string s << notFollowedBy c
+keywordNotFollowedBy s c = skips $ try $ string s << notFollowedBy c
 
 -- | keyword not followed by any alphanum
 keyword :: String -> CharParser st String
@@ -774,7 +769,7 @@ predefinedPrefixes = fmap (fromJust . parseIRI) predefPrefixes
 
 parseOntologyDocument :: GA.PrefixMap -> CharParser st OntologyDocument
 parseOntologyDocument gapm = do
-    prefixes <- manySkip parsePrefixDeclaration
+    prefixes <- many parsePrefixDeclaration
     let pm = Map.unions [gapm, (prefixToMap prefixes), predefinedPrefixes]
     ontology <- parseOntology pm
     eof
