@@ -18,7 +18,7 @@ import Debug.Trace
 
 ----- auxiliary data structures and transformations (possible MS syntax) -----
 
--- | tmp function to extract IRI from ObjectInverseOf
+-- | function to extract IRI from ObjectInverseOf
 obPropExprToIRI :: ObjectPropertyExpression -> IRI
 obPropExprToIRI (ObjectProp iri) = iri
 obPropExprToIRI (ObjectInverseOf obExpr) = obPropExprToIRI obExpr 
@@ -31,8 +31,44 @@ data FrameIdValue =
     | MiscId
     deriving(Show, Eq, Ord)
 
-type FrameId = (String, FrameIdValue)
-type Frame = M.Map String [Axiom]
+data FrameType = DatatypeFrame
+    | ClassFrame
+    | ObjectPropertyFrame
+    | DataPropertyFrame
+    | AnnotationPropertyFrame
+    | IndividualFrame
+    | MiscFrame
+    deriving(Show, Eq, Ord)
+
+data FrameSectionType = AnnotationsSection
+    | EquivalentToSection
+    | SubClassOfSection
+    | DisjointWithSection
+    | DisjointUnionOfSection
+    | HasKeySection
+    | DomainSection
+    | RangeSection
+    | CharacteristicsSection
+    | SubPropertyOfSection
+    | InverseOfSection
+    | SubPropertyChainSection
+    | TypesSection
+    | FactsSection
+    | SameAsSection
+    | DifferentFromSection
+    | EquivalentClassesSection
+    | DisjointClassesSection
+    | EquivalentDataPropertiesSection
+    | EquivalentObjectPropertiesSection
+    | DisjointDataPropertiesSection
+    | DisjointObjectPropertiesSection
+    | SameIndividualSection
+    | DifferentIndividualsSection
+    deriving(Show, Eq, Ord)
+    
+
+type FrameId = (FrameType, FrameIdValue)
+type Frame = M.Map FrameSectionType [Axiom]
 type MnchstrSntx = M.Map FrameId Frame
 
 emptyMS :: MnchstrSntx
@@ -43,8 +79,8 @@ tabs n
     | n < 1 = empty
     | otherwise = text ['\t' | _ <- [1..n]]
 
--- transfromation functions.
--- From FS to intermediate MS
+-- transfromation functions, static analysis
+-- From AS to intermediate MS
 -- | transform Axioms
 tAxioms :: [Axiom] -> MnchstrSntx -> MnchstrSntx
 tAxioms = flip $ foldl (\m a -> tAxiom a m) 
@@ -65,11 +101,11 @@ tAxiom axiom ms = case axiom of
 tDeclaration :: Axiom -> MnchstrSntx -> MnchstrSntx
 tDeclaration (Declaration anns entity) =
     tAddDecAnnAssertions entity anns
-    . tEntity entity . tDecAnnotations anns
+    . tEntity entity . tAnnotations anns
 
 -- | transform Annotations v1
-tDecAnnotations :: Annotations -> MnchstrSntx -> MnchstrSntx
-tDecAnnotations = flip $ foldl (\m ann -> tDecAnnotation ann m) 
+-- tDecAnnotations :: Annotations -> MnchstrSntx -> MnchstrSntx
+-- tDecAnnotations = flip $ foldl (\m ann -> tDecAnnotation ann m) 
 
 tAddDecAnnAssertions :: Entity -> Annotations -> MnchstrSntx -> MnchstrSntx
 tAddDecAnnAssertions entity =
@@ -77,65 +113,65 @@ tAddDecAnnAssertions entity =
 
 tAddDecAnnAssertion :: Entity -> Annotation -> MnchstrSntx -> MnchstrSntx
 tAddDecAnnAssertion entity (Annotation anns prop value) ms =
-    M.insert k (M.insert "annotations" newAxioms m1) ms
+    M.insert k (M.insert AnnotationsSection newAxioms m1) ms
     where
-        k = (frameName, IriId frameIRI)
+        k = (frameType, IriId frameIRI)
 
         frameIRI = cutIRI entity
-        frameName = case entityKind entity of
-            Class -> "Class"
-            Datatype -> "Datatype"
-            ObjectProperty -> "ObjectProperty"
-            DataProperty -> "DataProperty"
-            AnnotationProperty -> "AnnotationProperty"
-            NamedIndividual -> "Individual"
+        frameType = case entityKind entity of
+            Class -> ClassFrame
+            Datatype -> DatatypeFrame
+            ObjectProperty -> ObjectPropertyFrame
+            DataProperty -> DataPropertyFrame
+            AnnotationProperty -> AnnotationPropertyFrame
+            NamedIndividual -> IndividualFrame
 
         m1 = M.findWithDefault M.empty k ms
-        axioms = M.findWithDefault [] "annotations" m1
+        axioms = M.findWithDefault [] AnnotationsSection m1
         newAxiom = AnnotationAxiom
             $ AnnotationAssertion anns prop (AnnSubIri frameIRI) value
         newAxioms = newAxiom : axioms
         
 -- | transform Annotation v1
-tDecAnnotation :: Annotation -> MnchstrSntx -> MnchstrSntx
-tDecAnnotation (Annotation anns annProp annValue) ms =
-    tDecAnnotations anns . tAnnotationValue annValue 
-    $ M.insert k v ms
-    where 
-        k = ("AnnotationProperty", IriId annProp)
-        v = M.findWithDefault M.empty k ms
+-- tDecAnnotation :: Annotation -> MnchstrSntx -> MnchstrSntx
+-- tDecAnnotation (Annotation anns annProp annValue) ms =
+--     tDecAnnotations anns . tAnnotationValue annValue 
+--     $ M.insert k v ms
+--     where 
+--         k = (AnnotationPropertyFrame, IriId annProp)
+--         v = M.findWithDefault M.empty k ms
 
 -- | transform Entity
 tEntity :: Entity -> MnchstrSntx -> MnchstrSntx
 tEntity entity ms = case (entityKind entity) of
     Datatype ->
-        if M.notMember ("Datatype", IriId iri) ms
-            then M.insert ("Datatype", IriId iri) M.empty ms
+        if M.notMember (DatatypeFrame, IriId iri) ms
+            then M.insert (DatatypeFrame, IriId iri) M.empty ms
             else ms
 
     Class -> 
-        if M.notMember ("Class", IriId iri) ms
-            then M.insert ("Class", IriId iri) M.empty ms
+        if M.notMember (ClassFrame, IriId iri) ms
+            then M.insert (ClassFrame, IriId iri) M.empty ms
             else ms
 
     ObjectProperty ->
-        if M.notMember ("ObjectProperty", IriId iri) ms
-            then M.insert ("ObjectProperty", IriId iri) M.empty ms
+        if M.notMember (ObjectPropertyFrame, IriId iri) ms
+            then M.insert (ObjectPropertyFrame, IriId iri) M.empty ms
             else ms
 
     DataProperty -> 
-        if M.notMember ("DataProperty", IriId iri) ms
-            then M.insert ("DataProperty", IriId iri) M.empty ms
+        if M.notMember (DataPropertyFrame, IriId iri) ms
+            then M.insert (DataPropertyFrame, IriId iri) M.empty ms
             else ms
 
     AnnotationProperty ->
-        if M.notMember ("AnnotationProperty", IriId iri) ms
-            then M.insert ("AnnotationProperty", IriId iri) M.empty ms
+        if M.notMember (AnnotationPropertyFrame, IriId iri) ms
+            then M.insert (AnnotationPropertyFrame, IriId iri) M.empty ms
             else ms
     
     NamedIndividual ->
-        if M.notMember ("Individual", IriId iri) ms
-            then M.insert ("Individual", IriId iri) M.empty ms
+        if M.notMember (IndividualFrame, IriId iri) ms
+            then M.insert (IndividualFrame, IriId iri) M.empty ms
             else ms
 
     where iri = cutIRI entity
@@ -145,28 +181,28 @@ tObjectPropertyAxiom :: ObjectPropertyAxiom -> MnchstrSntx -> MnchstrSntx
 -- SubObjectPropertyOf axiom
 tObjectPropertyAxiom opAx@(SubObjectPropertyOf anns 
     (SubObjPropExpr_obj opExpr1) opExpr2) ms =
-    M.insert k (M.insert "subPropertyOf" newAxioms m2) m1
+    M.insert k (M.insert SubPropertyOfSection newAxioms m2) m1
     where
         fIdValue = case opExpr1 of
             ObjectProp iri -> IriId iri
             ObjectInverseOf expr -> ObjInvOfId . obPropExprToIRI $ expr
 
-        k = ("ObjectProperty", fIdValue)
+        k = (ObjectPropertyFrame, fIdValue)
         m1 = tAnnotations anns . tObjectPropertyExpression True opExpr1 
             .tObjectPropertyExpression False opExpr2 $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] "subPropertyOf" m2
-        newAxioms = S.toList . S.fromList $ ObjectPropertyAxiom opAx : axioms
+        axioms = M.findWithDefault [] SubPropertyOfSection m2
+        newAxioms = ObjectPropertyAxiom opAx : axioms
 
 tObjectPropertyAxiom opAx@(SubObjectPropertyOf anns
     (SubObjPropExpr_exprchain opExprs) (ObjectProp iri)) ms =
-    M.insert fid (M.insert "subPropertyChain" newAxioms m2) m1
+    M.insert k (M.insert SubPropertyChainSection newAxioms m2) m1
     where
-        fid = ("ObjectProperty", IriId iri)
+        k = (ObjectPropertyFrame, IriId iri)
         m1 = tAnnotations anns . tObjectPropertyExpressions False opExprs $ ms
-        m2 = M.findWithDefault M.empty fid m1
-        axioms = M.findWithDefault [] "subPropertyChain" m2
-        newAxioms = S.toList . S.fromList $ ObjectPropertyAxiom opAx : axioms
+        m2 = M.findWithDefault M.empty k m1
+        axioms = M.findWithDefault [] SubPropertyChainSection m2
+        newAxioms = ObjectPropertyAxiom opAx : axioms
 
 tObjectPropertyAxiom (SubObjectPropertyOf anns 
     (SubObjPropExpr_obj opExpr1) opExpr2) ms =
@@ -180,10 +216,8 @@ tObjectPropertyAxiom (SubObjectPropertyOf anns
 -- EquivalentObjectProperties axiom
 tObjectPropertyAxiom opAx@(EquivalentObjectProperties anns
     [opExpr1, opExpr2]) ms =
-    M.insert ("ObjectProperty", fIdValue1)
-        (M.insert "equivalentTo" newAxioms1 m1)
-    . M.insert ("ObjectProperty", fIdValue2) 
-        (M.insert "equivalentTo" newAxioms2 m2) $ m'
+    M.insert k1 (M.insert EquivalentToSection newAxioms1 m1)
+    . M.insert k2 (M.insert EquivalentToSection newAxioms2 m2) $ m'
     where
         fIdValue1 = case opExpr1 of
             ObjectProp iri -> IriId iri
@@ -193,32 +227,31 @@ tObjectPropertyAxiom opAx@(EquivalentObjectProperties anns
             ObjectProp iri -> IriId iri
             ObjectInverseOf expr -> ObjInvOfId . obPropExprToIRI $ expr
 
+        k1 = (ObjectPropertyFrame, fIdValue1)
+        k2 = (ObjectPropertyFrame, fIdValue2)
         m' = tAnnotations anns ms
-        m1 = M.findWithDefault M.empty ("ObjectProperty", fIdValue1) m'
-        m2 = M.findWithDefault M.empty ("ObjectProperty", fIdValue2) m'
-        axioms1 = M.findWithDefault [] "equivalentTo" m1
-        axioms2 = M.findWithDefault [] "equivalentTo" m2
-        newAxioms1 = S.toList . S.fromList $ ObjectPropertyAxiom opAx : axioms1
-        newAxioms2 = S.toList . S.fromList
-            $ (ObjectPropertyAxiom . EquivalentObjectProperties anns $
-                [opExpr2, opExpr1]) : axioms2
+        m1 = M.findWithDefault M.empty k1 m'
+        m2 = M.findWithDefault M.empty k2 m'
+        axioms1 = M.findWithDefault [] EquivalentToSection m1
+        axioms2 = M.findWithDefault [] EquivalentToSection m2
+        newAx = EquivalentObjectProperties anns $ [opExpr2, opExpr1]
+        newAxioms1 = ObjectPropertyAxiom opAx : axioms1
+        newAxioms2 = ObjectPropertyAxiom newAx : axioms2
 
 tObjectPropertyAxiom opAx@(EquivalentObjectProperties anns opExprs) ms =
-    M.insert ("Misc", MiscId)
-        (M.insert "equivalentProperties" newAxioms m1) $ m'
+    M.insert k (M.insert EquivalentObjectPropertiesSection newAxioms m1) $ m'
     where
+        k = (MiscFrame, MiscId)
         m' = tAnnotations anns . tObjectPropertyExpressions True opExprs $ ms
-        m1 = M.findWithDefault M.empty ("Misc", MiscId) m'
-        axioms = M.findWithDefault [] "equivalentProperties" m1
-        newAxioms = S.toList . S.fromList $ ObjectPropertyAxiom opAx : axioms
+        m1 = M.findWithDefault M.empty k m'
+        axioms = M.findWithDefault [] EquivalentObjectPropertiesSection m1
+        newAxioms = ObjectPropertyAxiom opAx : axioms
 
 -- DisjointObjectProperties axiom
 tObjectPropertyAxiom opAx@(DisjointObjectProperties anns
     [opExpr1, opExpr2]) ms =
-    M.insert ("ObjectProperty", fIdValue1)
-        (M.insert "disjointWith" newAxioms1 m1)
-    . M.insert ("ObjectProperty", fIdValue2) 
-        (M.insert "disjointWith" newAxioms2 m2) $ m'
+    M.insert k1 (M.insert DisjointWithSection newAxioms1 m1)
+    . M.insert k2 (M.insert DisjointWithSection newAxioms2 m2) $ m'
     where
         fIdValue1 = case opExpr1 of
             ObjectProp iri -> IriId iri
@@ -228,31 +261,30 @@ tObjectPropertyAxiom opAx@(DisjointObjectProperties anns
             ObjectProp iri -> IriId iri
             ObjectInverseOf expr -> ObjInvOfId . obPropExprToIRI $ expr
 
+        k1 = (ObjectPropertyFrame, fIdValue1)
+        k2 = (ObjectPropertyFrame, fIdValue2)
         m' = tAnnotations anns ms
-        m1 = M.findWithDefault M.empty ("ObjectProperty", fIdValue1) m'
-        m2 = M.findWithDefault M.empty ("ObjectProperty", fIdValue2) m'
-        axioms1 = M.findWithDefault [] "disjointWith" m1
-        axioms2 = M.findWithDefault [] "disjointWith" m2
-        newAxioms1 = S.toList . S.fromList $ ObjectPropertyAxiom opAx : axioms1
-        newAxioms2 = S.toList . S.fromList
-            $ (ObjectPropertyAxiom . DisjointObjectProperties anns $
-                [opExpr2, opExpr1]) : axioms2
+        m1 = M.findWithDefault M.empty k1 m'
+        m2 = M.findWithDefault M.empty k2 m'
+        axioms1 = M.findWithDefault [] DisjointWithSection m1
+        axioms2 = M.findWithDefault [] DisjointWithSection m2
+        newAx = DisjointObjectProperties anns $ [opExpr2, opExpr1]
+        newAxioms1 = ObjectPropertyAxiom opAx : axioms1
+        newAxioms2 = ObjectPropertyAxiom newAx : axioms2
 
 tObjectPropertyAxiom opAx@(DisjointObjectProperties anns opExprs) ms =
-    M.insert ("Misc", MiscId)
-        (M.insert "disjointProperties" newAxioms m1) $ m'
+    M.insert k (M.insert DisjointObjectPropertiesSection newAxioms m1) $ m'
     where
+        k = (MiscFrame, MiscId)
         m' = tAnnotations anns . tObjectPropertyExpressions True opExprs $ ms
-        m1 = M.findWithDefault M.empty ("Misc", MiscId) m'
-        axioms = M.findWithDefault [] "disjointProperties" m1
-        newAxioms = S.toList . S.fromList $ ObjectPropertyAxiom opAx : axioms
+        m1 = M.findWithDefault M.empty k m'
+        axioms = M.findWithDefault [] DisjointObjectPropertiesSection m1
+        newAxioms = ObjectPropertyAxiom opAx : axioms
 
 -- InverseObjectProperties axiom
 tObjectPropertyAxiom opAx@(InverseObjectProperties anns opExpr1 opExpr2) ms =
-    M.insert ("ObjectProperty", fIdValue1)
-        (M.insert "inverseOf" newAxioms1 m1)
-    . M.insert ("ObjectProperty", fIdValue2) 
-        (M.insert "inverseOf" newAxioms2 m2) $ m'
+    M.insert k1 (M.insert InverseOfSection newAxioms1 m1)
+    . M.insert k2 (M.insert InverseOfSection newAxioms2 m2) $ m'
     where
         fIdValue1 = case opExpr1 of
             ObjectProp iri -> IriId iri
@@ -262,338 +294,352 @@ tObjectPropertyAxiom opAx@(InverseObjectProperties anns opExpr1 opExpr2) ms =
             ObjectProp iri -> IriId iri
             ObjectInverseOf expr -> ObjInvOfId . obPropExprToIRI $ expr
 
+        k1 = (ObjectPropertyFrame, fIdValue1)
+        k2 = (ObjectPropertyFrame, fIdValue2)
         m' = tAnnotations anns
             . tObjectPropertyExpressions True [opExpr1, opExpr2] $ ms
-        m1 = M.findWithDefault M.empty ("ObjectProperty", fIdValue1) m'
-        m2 = M.findWithDefault M.empty ("ObjectProperty", fIdValue2) m'
-        axioms1 = M.findWithDefault [] "inverseOf" m1
-        axioms2 = M.findWithDefault [] "inverseOf" m2
-        newAxioms1 = S.toList . S.fromList $ ObjectPropertyAxiom opAx : axioms1
-        newAxioms2 = S.toList . S.fromList
-            $ (ObjectPropertyAxiom $ InverseObjectProperties anns
-                opExpr2 opExpr1) : axioms2
+        m1 = M.findWithDefault M.empty k1 m'
+        m2 = M.findWithDefault M.empty k2 m'
+        axioms1 = M.findWithDefault [] InverseOfSection m1
+        axioms2 = M.findWithDefault [] InverseOfSection m2
+        newAx = InverseObjectProperties anns opExpr2 opExpr1
+        newAxioms1 = ObjectPropertyAxiom opAx : axioms1
+        newAxioms2 = ObjectPropertyAxiom newAx : axioms2
 
 -- ObjectPropertyDomain axiom
 tObjectPropertyAxiom opAx@(ObjectPropertyDomain anns opExpr clExpr) ms =
-   M.insert ("ObjectProperty", fIdValue) (M.insert "domain" newAxioms m2) m1
+   M.insert k (M.insert DomainSection newAxioms m2) m1
    where
         fIdValue = case opExpr of
             ObjectProp iri -> IriId iri
             ObjectInverseOf expr -> ObjInvOfId . obPropExprToIRI $ expr
+
+        k = (ObjectPropertyFrame, fIdValue)
         m1 = tAnnotations anns . tObjectPropertyExpression True opExpr
             . tClassExpression clExpr $ ms
-        m2 = M.findWithDefault M.empty ("ObjectProperty", fIdValue) m1
-        axioms = M.findWithDefault [] "domain" m2
-        newAxioms = S.toList . S.fromList $ ObjectPropertyAxiom opAx : axioms
+        m2 = M.findWithDefault M.empty k m1
+        axioms = M.findWithDefault [] DomainSection m2
+        newAxioms = ObjectPropertyAxiom opAx : axioms
 
 -- ObjectPropertyRange axiom
 tObjectPropertyAxiom opAx@(ObjectPropertyRange anns opExpr clExpr) ms =
-   M.insert ("ObjectProperty", fIdValue) (M.insert "range" newAxioms m2) m1
+   M.insert k (M.insert RangeSection newAxioms m2) m1
    where
         fIdValue = case opExpr of
             ObjectProp iri -> IriId iri
             ObjectInverseOf expr -> ObjInvOfId . obPropExprToIRI $ expr
+
+        k = (ObjectPropertyFrame, fIdValue)
         m1 = tAnnotations anns . tObjectPropertyExpression True opExpr
             . tClassExpression clExpr $ ms
-        m2 = M.findWithDefault M.empty ("ObjectProperty", fIdValue) m1
-        axioms = M.findWithDefault [] "range" m2
-        newAxioms = S.toList . S.fromList $ ObjectPropertyAxiom opAx : axioms
+        m2 = M.findWithDefault M.empty k m1
+        axioms = M.findWithDefault [] RangeSection m2
+        newAxioms = ObjectPropertyAxiom opAx : axioms
 
 -- FunctionalObjectProperty axiom
 tObjectPropertyAxiom opAx@(FunctionalObjectProperty anns opExpr) ms =
-   M.insert ("ObjectProperty", fIdValue) (M.insert "characteristics" newAxioms m2) m1
+   M.insert k (M.insert CharacteristicsSection newAxioms m2) m1
    where
         fIdValue = case opExpr of
             ObjectProp iri -> IriId iri
             ObjectInverseOf expr -> ObjInvOfId . obPropExprToIRI $ expr
+
+        k = (ObjectPropertyFrame, fIdValue)
         m1 = tAnnotations anns . tObjectPropertyExpression True opExpr $ ms
-        m2 = M.findWithDefault M.empty ("ObjectProperty", fIdValue) m1
-        axioms = M.findWithDefault [] "characteristics" m2
-        newAxioms = S.toList . S.fromList $ ObjectPropertyAxiom opAx : axioms
+        m2 = M.findWithDefault M.empty k m1
+        axioms = M.findWithDefault [] CharacteristicsSection m2
+        newAxioms = ObjectPropertyAxiom opAx : axioms
 
 
 -- InverseFunctionalObjectProperty axiom
 tObjectPropertyAxiom opAx@(InverseFunctionalObjectProperty anns opExpr) ms =
-   M.insert ("ObjectProperty", fIdValue) (M.insert "characteristics" newAxioms m2) m1
+   M.insert k (M.insert CharacteristicsSection newAxioms m2) m1
    where
         fIdValue = case opExpr of
             ObjectProp iri -> IriId iri
             ObjectInverseOf expr -> ObjInvOfId . obPropExprToIRI $ expr
+
+        k = (ObjectPropertyFrame, fIdValue)
         m1 = tAnnotations anns . tObjectPropertyExpression True opExpr $ ms
-        m2 = M.findWithDefault M.empty ("ObjectProperty", fIdValue) m1
-        axioms = M.findWithDefault [] "characteristics" m2
-        newAxioms = S.toList . S.fromList $ ObjectPropertyAxiom opAx : axioms
+        m2 = M.findWithDefault M.empty k m1
+        axioms = M.findWithDefault [] CharacteristicsSection m2
+        newAxioms = ObjectPropertyAxiom opAx : axioms
 
 -- ReflexiveObjectProperty axiom
 tObjectPropertyAxiom opAx@(ReflexiveObjectProperty anns opExpr) ms =
-   M.insert ("ObjectProperty", fIdValue) (M.insert "characteristics" newAxioms m2) m1
+   M.insert k (M.insert CharacteristicsSection newAxioms m2) m1
    where
         fIdValue = case opExpr of
             ObjectProp iri -> IriId iri
             ObjectInverseOf expr -> ObjInvOfId . obPropExprToIRI $ expr
+
+        k = (ObjectPropertyFrame, fIdValue)
         m1 = tAnnotations anns . tObjectPropertyExpression True opExpr $ ms
-        m2 = M.findWithDefault M.empty ("ObjectProperty", fIdValue) m1
-        axioms = M.findWithDefault [] "characteristics" m2
-        newAxioms = S.toList . S.fromList $ ObjectPropertyAxiom opAx : axioms
+        m2 = M.findWithDefault M.empty k m1
+        axioms = M.findWithDefault [] CharacteristicsSection m2
+        newAxioms = ObjectPropertyAxiom opAx : axioms
 
 -- IrreflexiveObjectProperty axiom
 tObjectPropertyAxiom opAx@(IrreflexiveObjectProperty anns opExpr) ms =
-   M.insert ("ObjectProperty", fIdValue) (M.insert "characteristics" newAxioms m2) m1
+   M.insert k (M.insert CharacteristicsSection newAxioms m2) m1
    where
         fIdValue = case opExpr of
             ObjectProp iri -> IriId iri
             ObjectInverseOf expr -> ObjInvOfId . obPropExprToIRI $ expr
+
+        k = (ObjectPropertyFrame, fIdValue)
         m1 = tAnnotations anns . tObjectPropertyExpression True opExpr $ ms
-        m2 = M.findWithDefault M.empty ("ObjectProperty", fIdValue) m1
-        axioms = M.findWithDefault [] "characteristics" m2
-        newAxioms = S.toList . S.fromList $ ObjectPropertyAxiom opAx : axioms
+        m2 = M.findWithDefault M.empty k m1
+        axioms = M.findWithDefault [] CharacteristicsSection m2
+        newAxioms = ObjectPropertyAxiom opAx : axioms
 
 -- SymmetricObjectProperty axiom
 tObjectPropertyAxiom opAx@(SymmetricObjectProperty anns opExpr) ms =
-   M.insert ("ObjectProperty", fIdValue) (M.insert "characteristics" newAxioms m2) m1
+   M.insert k (M.insert CharacteristicsSection newAxioms m2) m1
    where
         fIdValue = case opExpr of
             ObjectProp iri -> IriId iri
             ObjectInverseOf expr -> ObjInvOfId . obPropExprToIRI $ expr
+
+        k = (ObjectPropertyFrame, fIdValue)
         m1 = tAnnotations anns . tObjectPropertyExpression True opExpr $ ms
-        m2 = M.findWithDefault M.empty ("ObjectProperty", fIdValue) m1
-        axioms = M.findWithDefault [] "characteristics" m2
-        newAxioms = S.toList . S.fromList $ ObjectPropertyAxiom opAx : axioms
+        m2 = M.findWithDefault M.empty k m1
+        axioms = M.findWithDefault [] CharacteristicsSection m2
+        newAxioms = ObjectPropertyAxiom opAx : axioms
 
 -- AsymmetricObjectProperty axiom
 tObjectPropertyAxiom opAx@(AsymmetricObjectProperty anns opExpr) ms =
-   M.insert ("ObjectProperty", fIdValue) (M.insert "characteristics" newAxioms m2) m1
+   M.insert k (M.insert CharacteristicsSection newAxioms m2) m1
    where
         fIdValue = case opExpr of
             ObjectProp iri -> IriId iri
             ObjectInverseOf expr -> ObjInvOfId . obPropExprToIRI $ expr
+
+        k = (ObjectPropertyFrame, fIdValue)
         m1 = tAnnotations anns . tObjectPropertyExpression True opExpr $ ms
-        m2 = M.findWithDefault M.empty ("ObjectProperty", fIdValue) m1
-        axioms = M.findWithDefault [] "characteristics" m2
-        newAxioms = S.toList . S.fromList $ ObjectPropertyAxiom opAx : axioms
+        m2 = M.findWithDefault M.empty k m1
+        axioms = M.findWithDefault [] CharacteristicsSection m2
+        newAxioms = ObjectPropertyAxiom opAx : axioms
 
 -- TransitiveObjectProperty axiom
 tObjectPropertyAxiom opAx@(TransitiveObjectProperty anns opExpr) ms =
-   M.insert ("ObjectProperty", fIdValue) (M.insert "characteristics" newAxioms m2) m1
+   M.insert k (M.insert CharacteristicsSection newAxioms m2) m1
    where
         fIdValue = case opExpr of
             ObjectProp iri -> IriId iri
             ObjectInverseOf expr -> ObjInvOfId . obPropExprToIRI $ expr
+
+        k = (ObjectPropertyFrame, fIdValue)
         m1 = tAnnotations anns . tObjectPropertyExpression True opExpr $ ms
-        m2 = M.findWithDefault M.empty ("ObjectProperty", fIdValue) m1
-        axioms = M.findWithDefault [] "characteristics" m2
-        newAxioms = S.toList . S.fromList $ ObjectPropertyAxiom opAx : axioms
+        m2 = M.findWithDefault M.empty k m1
+        axioms = M.findWithDefault [] CharacteristicsSection m2
+        newAxioms = ObjectPropertyAxiom opAx : axioms
 
 
 -- | transform DataProperty axioms
 tDataPropertyAxiom :: DataPropertyAxiom -> MnchstrSntx -> MnchstrSntx
 -- SubDataPropertyOf axiom
 tDataPropertyAxiom dpAx@(SubDataPropertyOf anns iri1 iri2) ms =
-    M.insert ("DataProperty", IriId iri1)
-        (M.insert "subPropertyOf" newAxioms m2)  m1
+    M.insert k (M.insert SubPropertyOfSection newAxioms m2)  m1
     where
+        k = (DataPropertyFrame, IriId iri1)
         m1 = tAnnotations anns . tDataPropertyExpressions [iri1, iri2] $ ms
-
-        m2 = M.findWithDefault M.empty ("DataProperty", IriId iri1) m1
-        axioms = M.findWithDefault [] "subPropertyOf" m2
-        newAxioms = S.toList . S.fromList $ DataPropertyAxiom dpAx : axioms
+        m2 = M.findWithDefault M.empty k m1
+        axioms = M.findWithDefault [] SubPropertyOfSection m2
+        newAxioms = DataPropertyAxiom dpAx : axioms
 
 -- EquivalentDataProperties axiom
 tDataPropertyAxiom dpAx@(EquivalentDataProperties anns [iri1, iri2]) ms =
-    M.insert k1 (M.insert "equivalentTo" newAxioms1 m1)
-    . M.insert k2 (M.insert "equivalentTo" newAxioms2 m2)
-    $ m'
+    M.insert k1 (M.insert EquivalentToSection newAxioms1 m1)
+    . M.insert k2 (M.insert EquivalentToSection newAxioms2 m2) $ m'
     where
-        k1 = ("DataProperty", IriId iri1)
-        k2 = ("DataProperty", IriId iri2)
+        k1 = (DataPropertyFrame, IriId iri1)
+        k2 = (DataPropertyFrame, IriId iri2)
         m' = tAnnotations anns . tDataPropertyExpressions [iri1, iri2] $ ms
         m1 = M.findWithDefault M.empty k1 m'
         m2 = M.findWithDefault M.empty k2 m'
-        axioms1 = M.findWithDefault [] "equivalentTo" m1
-        axioms2 = M.findWithDefault [] "equivalentTo" m2
-        newAxioms1 = S.toList . S.fromList
-            $ DataPropertyAxiom dpAx : axioms1
-        newAxioms2 = S.toList . S.fromList 
-            $ DataPropertyAxiom (
-                EquivalentDataProperties anns [iri2, iri1]
-              ) : axioms2
+        axioms1 = M.findWithDefault [] EquivalentToSection m1
+        axioms2 = M.findWithDefault [] EquivalentToSection m2
+        newAx = EquivalentDataProperties anns [iri2, iri1]
+        newAxioms1 = DataPropertyAxiom dpAx : axioms1
+        newAxioms2 = DataPropertyAxiom newAx : axioms2
 
 tDataPropertyAxiom dpAx@(EquivalentDataProperties anns iris@(_:_:_:_)) ms =
-    M.insert k (M.insert "equivalentDataProperties" newAxioms m2) $ m1
+    M.insert k (M.insert EquivalentDataPropertiesSection newAxioms m2) $ m1
     where
-        k = ("Misc", MiscId)
+        k = (MiscFrame, MiscId)
         m1 = tAnnotations anns . tDataPropertyExpressions iris $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] "equivalentDataProperties" m2
-        newAxioms = S.toList . S.fromList
-            $ DataPropertyAxiom dpAx : axioms
+        axioms = M.findWithDefault [] EquivalentDataPropertiesSection m2
+        newAxioms = DataPropertyAxiom dpAx : axioms
 
 -- DisjointDataProperties axiom
 tDataPropertyAxiom dpAx@(DisjointDataProperties anns [iri1, iri2]) ms =
-    M.insert k (M.insert "disjointWith" newAxioms m2) m1
+    M.insert k (M.insert DisjointWithSection newAxioms m2) m1
     where
-        k = ("DataProperty", IriId iri1)
+        k = (DataPropertyFrame, IriId iri1)
         m1 = tAnnotations anns . tDataPropertyExpressions [iri1, iri2] $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] "disjointWith" m2
-        newAxioms = S.toList . S.fromList
-            $ DataPropertyAxiom dpAx : axioms
+        axioms = M.findWithDefault [] DisjointWithSection m2
+        newAxioms = DataPropertyAxiom dpAx : axioms
 
 tDataPropertyAxiom dpAx@(DisjointDataProperties anns iris@(_:_:_:_)) ms =
-    M.insert k (M.insert "disjointDataProperties" newAxioms m2) m1
+    M.insert k (M.insert DisjointDataPropertiesSection newAxioms m2) m1
     where
-        k = ("Misc", MiscId)
+        k = (MiscFrame, MiscId)
         m1 = tAnnotations anns . tDataPropertyExpressions iris $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] "disjointDataProperties" m2
-        newAxioms = S.toList . S.fromList
-            $ DataPropertyAxiom dpAx : axioms
+        axioms = M.findWithDefault [] DisjointDataPropertiesSection m2
+        newAxioms = DataPropertyAxiom dpAx : axioms
 
 -- DataPropertyDomain axiom
 tDataPropertyAxiom dpAx@(DataPropertyDomain anns iri clExpr) ms =
-    M.insert k (M.insert "domain" newAxioms m2) m1
+    M.insert k (M.insert DomainSection newAxioms m2) m1
     where
-        k = ("DataProperty", IriId iri)
+        k = (DataPropertyFrame, IriId iri)
         m1 = tAnnotations anns . tDataPropertyExpression iri
             . tClassExpression clExpr $  ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] "domain" m2
-        newAxioms = S.toList . S.fromList 
-            $ DataPropertyAxiom dpAx : axioms
+        axioms = M.findWithDefault [] DomainSection m2
+        newAxioms = DataPropertyAxiom dpAx : axioms
 
 -- DataPropertyRange axiom
 tDataPropertyAxiom dpAx@(DataPropertyRange anns iri dr) ms =
-    M.insert k (M.insert "range" newAxioms m2) m1
+    M.insert k (M.insert RangeSection newAxioms m2) m1
     where
-        k = ("DataProperty", IriId iri)
+        k = (DataPropertyFrame, IriId iri)
         m1 = tAnnotations anns . tDataPropertyExpression iri
             . tDataRange dr $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] "range" m2
-        newAxioms = S.toList . S.fromList
-            $ DataPropertyAxiom dpAx : axioms
+        axioms = M.findWithDefault [] RangeSection m2
+        newAxioms = DataPropertyAxiom dpAx : axioms
 
 -- FunctionalDataProperty axiom
 tDataPropertyAxiom dpAx@(FunctionalDataProperty anns iri) ms =
-    M.insert k (M.insert "functional" newAxioms m2) m1
+    M.insert k (M.insert CharacteristicsSection newAxioms m2) m1
     where
-        k = ("DataProperty", IriId iri)
+        k = (DataPropertyFrame, IriId iri)
         m1 = tAnnotations anns . tDataPropertyExpression iri $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] "functional" m2
-        newAxioms = S.toList . S.fromList
-            $ DataPropertyAxiom dpAx : axioms
+        axioms = M.findWithDefault [] CharacteristicsSection m2
+        newAxioms = DataPropertyAxiom dpAx : axioms
 
 -- | transform Class axiom
 tClassAxiom :: ClassAxiom -> MnchstrSntx -> MnchstrSntx
 -- SubClassOf axiom
 tClassAxiom clAx@(SubClassOf anns subClExpr@(Expression iri) supClExpr) ms = 
-    M.insert ("Class", IriId iri) (M.insert "subClassOf" newAxioms m2) m1
+    M.insert k (M.insert SubClassOfSection newAxioms m2) m1
     where
+        k = (ClassFrame, IriId iri)
         m1 = tClassExpression supClExpr . tAnnotations anns $ ms
-        m2 = M.findWithDefault M.empty ("Class", IriId iri) m1
-        axioms = M.findWithDefault [] "subClassOf" m2
-        newAxioms = S.toList . S.fromList $ ClassAxiom clAx : axioms
+        m2 = M.findWithDefault M.empty k m1
+        axioms = M.findWithDefault [] SubClassOfSection m2
+        newAxioms = ClassAxiom clAx : axioms
 
 -- EquivalentClasses axiom
 tClassAxiom clAx@(EquivalentClasses anns
     [Expression iri1, Expression iri2]) ms =
-    M.insert ("Class", IriId iri1) (M.insert "equivalentTo" newAxioms1 m1)
-    . M.insert ("Class", IriId iri2) 
-        (M.insert "equivalentTo" newAxioms2 m2) $ m'
+    M.insert k1 (M.insert EquivalentToSection newAxioms1 m1)
+    . M.insert k2 (M.insert EquivalentToSection newAxioms2 m2) $ m'
     where
         m' = tAnnotations anns ms
-        m1 = M.findWithDefault M.empty ("Class", IriId iri1) m'
-        m2 = M.findWithDefault M.empty ("Class", IriId iri2) m'
-        axioms1 = M.findWithDefault [] "equivalentTo" m1
-        axioms2 = M.findWithDefault [] "equivalentTo" m2
-        newAxioms1 = S.toList . S.fromList $ ClassAxiom clAx : axioms1
-        newAxioms2 = S.toList . S.fromList
-            $ (ClassAxiom . EquivalentClasses anns $
-                [Expression iri2, Expression iri1]) : axioms2
+        k1 = (ClassFrame, IriId iri1)
+        k2 = (ClassFrame, IriId iri2)
+        m1 = M.findWithDefault M.empty k1 m'
+        m2 = M.findWithDefault M.empty k2 m'
+        axioms1 = M.findWithDefault [] EquivalentToSection m1
+        axioms2 = M.findWithDefault [] EquivalentToSection m2
+        newAx = EquivalentClasses anns [Expression iri2, Expression iri1]
+        newAxioms1 = ClassAxiom clAx : axioms1
+        newAxioms2 = ClassAxiom newAx : axioms2
 
 tClassAxiom clAx@(EquivalentClasses anns [Expression iri, clExpr]) ms =
-    M.insert ("Class", IriId iri) (M.insert "equivalentTo" newAxioms m1) $ m'
+    M.insert k (M.insert EquivalentToSection newAxioms m1) $ m'
     where
+        k = (ClassFrame, IriId iri)
         m' = tAnnotations anns . tClassExpression clExpr $ ms
-        m1 = M.findWithDefault M.empty ("Class", IriId iri) m'
-        axioms = M.findWithDefault [] "equivalentTo" m1
-        newAxioms = S.toList . S.fromList $ ClassAxiom clAx : axioms
+        m1 = M.findWithDefault M.empty k m'
+        axioms = M.findWithDefault [] EquivalentToSection m1
+        newAxioms = ClassAxiom clAx : axioms
 
 tClassAxiom clAx@(EquivalentClasses anns clExprs) ms =
-    M.insert ("Misc", MiscId) (M.insert "equivalentClasses" newAxioms m1) $ m'
+    M.insert k (M.insert EquivalentClassesSection newAxioms m1) $ m'
     where
+        k = (MiscFrame, MiscId)
         m' = tAnnotations anns . tClassExpressions clExprs $ ms
-        m1 = M.findWithDefault M.empty ("Misc", MiscId) m'
-        axioms = M.findWithDefault [] "equivalentClasses" m1
-        newAxioms = S.toList . S.fromList $ ClassAxiom clAx : axioms
+        m1 = M.findWithDefault M.empty k m'
+        axioms = M.findWithDefault [] EquivalentClassesSection m1
+        newAxioms = ClassAxiom clAx : axioms
 
 -- DisjointClasses axiom
 tClassAxiom clAx@(DisjointClasses anns
     [Expression iri1, Expression iri2]) ms =
-    M.insert ("Class", IriId iri1) (M.insert "disjointWith" newAxioms1 m1)
-    . M.insert ("Class", IriId iri2) 
-        (M.insert "disjointWith" newAxioms2 m2) $ m'
+    M.insert k1 (M.insert DisjointWithSection newAxioms1 m1)
+    . M.insert k2 (M.insert DisjointWithSection newAxioms2 m2) $ m'
     where
+        k1 = (ClassFrame, IriId iri1)
+        k2 = (ClassFrame, IriId iri2)
         m' = tAnnotations anns ms
-        m1 = M.findWithDefault M.empty ("Class", IriId iri1) m'
-        m2 = M.findWithDefault M.empty ("Class", IriId iri2) m'
-        axioms1 = M.findWithDefault [] "disjointWith" m1
-        axioms2 = M.findWithDefault [] "disjointWith" m2
-        newAxioms1 = S.toList . S.fromList $ ClassAxiom clAx : axioms1
-        newAxioms2 = S.toList . S.fromList
-            $ (ClassAxiom . DisjointClasses anns $
-                [Expression iri2, Expression iri1]) : axioms2
+        m1 = M.findWithDefault M.empty k1 m'
+        m2 = M.findWithDefault M.empty k2 m'
+        axioms1 = M.findWithDefault [] DisjointWithSection m1
+        axioms2 = M.findWithDefault [] DisjointWithSection m2
+        newAx = DisjointClasses anns [Expression iri2, Expression iri1]
+        newAxioms1 = ClassAxiom clAx : axioms1
+        newAxioms2 = ClassAxiom newAx : axioms2
 
 tClassAxiom clAx@(DisjointClasses anns [Expression iri, clExpr]) ms =
-    M.insert ("Class", IriId iri) (M.insert "disjointWith" newAxioms m1) $ m'
+    M.insert k (M.insert DisjointWithSection newAxioms m1) $ m'
     where
+        k = (ClassFrame, IriId iri)
         m' = tAnnotations anns . tClassExpression clExpr $ ms
-        m1 = M.findWithDefault M.empty ("Class", IriId iri) m'
-        axioms = M.findWithDefault [] "disjointWith" m1
-        newAxioms = S.toList . S.fromList $ ClassAxiom clAx : axioms
+        m1 = M.findWithDefault M.empty k m'
+        axioms = M.findWithDefault [] DisjointWithSection m1
+        newAxioms = ClassAxiom clAx : axioms
 
 tClassAxiom clAx@(DisjointClasses anns clExprs) ms =
-    M.insert ("Misc", MiscId) (M.insert "disjointClasses" newAxioms m1) $ m'
+    M.insert k (M.insert DisjointClassesSection newAxioms m1) $ m'
     where
+        k = (MiscFrame, MiscId)
         m' = tAnnotations anns . tClassExpressions clExprs $ ms
-        m1 = M.findWithDefault M.empty ("Misc", MiscId) m'
-        axioms = M.findWithDefault [] "disjointClasses" m1
-        newAxioms = S.toList . S.fromList $ ClassAxiom clAx : axioms
+        m1 = M.findWithDefault M.empty k m'
+        axioms = M.findWithDefault [] DisjointClassesSection m1
+        newAxioms = ClassAxiom clAx : axioms
 
 -- DisjointUnion axiom
 tClassAxiom clAx@(DisjointUnion anns iri clExprs) ms =
-    M.insert ("Class", IriId iri) (M.insert "disjointUnionOf" newAxioms m1) $ m'
+    M.insert k (M.insert DisjointUnionOfSection newAxioms m1) $ m'
     where
+        k = (ClassFrame, IriId iri)
         m' = tAnnotations anns . tClassExpressions clExprs $ ms
-        m1 = M.findWithDefault M.empty ("Class", IriId iri) m'
-        axioms = M.findWithDefault [] "disjointUnionOf" m1
-        newAxioms = S.toList . S.fromList $ ClassAxiom clAx : axioms
+        m1 = M.findWithDefault M.empty k m'
+        axioms = M.findWithDefault [] DisjointUnionOfSection m1
+        newAxioms = ClassAxiom clAx : axioms
 
 -- | transform DatatypeDefinition axiom
 tDatatypeDefinition :: Axiom -> MnchstrSntx -> MnchstrSntx
 tDatatypeDefinition ax@(DatatypeDefinition anns dtIri dr) ms =
-    M.insert k (M.insert "equivalentTo" newAxioms m2) m1
+    M.insert k (M.insert EquivalentToSection newAxioms m2) m1
     where
-        k = ("Datatype", IriId dtIri)
+        k = (DatatypeFrame, IriId dtIri)
         m1 = tAnnotations anns . tDatatype dtIri . tDataRange dr $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] "equivalentTo" m2
-        newAxioms = S.toList . S.fromList $ ax : axioms
+        axioms = M.findWithDefault [] EquivalentToSection m2
+        newAxioms = ax : axioms
 
 -- | transform HasKey axiom
 tHasKey :: Axiom -> MnchstrSntx -> MnchstrSntx
 tHasKey (HasKey anns (Expression iri) opExprs dpExprs) ms =
-    M.insert ("Class", IriId iri) (M.insert "hasKey" newAxioms m1) $ m'
+    M.insert k (M.insert HasKeySection newAxioms m1) $ m'
     where
+        k = (ClassFrame, IriId iri)
         opExprs' = S.toList . S.fromList $ opExprs
         dpExprs' = S.toList . S.fromList $ dpExprs
         m' = tAnnotations anns . tObjectPropertyExpressions False opExprs'
             . tDataPropertyExpressions dpExprs' $ ms
-        m1 = M.findWithDefault M.empty ("Class", IriId iri) m'
-        axioms = M.findWithDefault [] "hasKey" m1
-        newAxioms = S.toList . S.fromList $
-            (HasKey anns (Expression iri) opExprs' dpExprs') : axioms
+        m1 = M.findWithDefault M.empty k m'
+        axioms = M.findWithDefault [] HasKeySection m1
+        newAxioms = (HasKey anns (Expression iri) opExprs' dpExprs') : axioms
 
 tHasKey (HasKey anns clExpr opExprs dpExprs) ms =
     tAnnotations anns . tClassExpression clExpr
@@ -602,127 +648,112 @@ tHasKey (HasKey anns clExpr opExprs dpExprs) ms =
 
 -- | transform Assertion axioms
 tAssertion :: Assertion -> MnchstrSntx -> MnchstrSntx
-
 -- SameIndividual axiom
 tAssertion ax@(SameIndividual anns [i1, i2]) ms =
-    M.insert k1 (M.insert "sameAs" newAxioms1 m1)
-    . M.insert k2 (M.insert "sameAs" newAxioms2 m2)
+    M.insert k1 (M.insert SameAsSection newAxioms1 m1)
+    . M.insert k2 (M.insert SameAsSection newAxioms2 m2)
     $ m'
     where
-        k1 = ("Individual", IriId i1)
-        k2 = ("Individual", IriId i2)
+        k1 = (IndividualFrame, IriId i1)
+        k2 = (IndividualFrame, IriId i2)
         m' = tAnnotations anns . tIndividuals [i1, i2] $ ms
         m1 = M.findWithDefault M.empty k1 m'
         m2 = M.findWithDefault M.empty k2 m'
-        axioms1 = M.findWithDefault [] "sameAs" m1
-        axioms2 = M.findWithDefault [] "sameAs" m2
-        newAxioms1 = S.toList . S.fromList
-            $ Assertion ax : axioms1
-        newAxioms2 = S.toList . S.fromList
-            $ Assertion (
-                SameIndividual anns [i2, i1]
-            ) : axioms2
+        axioms1 = M.findWithDefault [] SameAsSection m1
+        axioms2 = M.findWithDefault [] SameAsSection m2
+        newAx = SameIndividual anns [i2, i1]
+        newAxioms1 = Assertion ax : axioms1
+        newAxioms2 = Assertion newAx : axioms2
 
 tAssertion ax@(SameIndividual anns inds@(_:_:_:_)) ms =
-    M.insert k (M.insert "sameIndividual" newAxioms m2) m1
+    M.insert k (M.insert SameIndividualSection newAxioms m2) m1
     where
-        k = ("Misc", MiscId)
+        k = (MiscFrame, MiscId)
         m1 = tAnnotations anns . tIndividuals inds $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] "sameIndividual" m2
-        newAxioms = S.toList . S.fromList
-            $ Assertion ax : axioms 
-
+        axioms = M.findWithDefault [] SameIndividualSection m2
+        newAxioms = Assertion ax : axioms 
 
 -- DifferentIndividual axiom
 tAssertion ax@(DifferentIndividuals anns [i1, i2]) ms =
-    M.insert k1 (M.insert "differentFrom" newAxioms1 m1)
-    . M.insert k2 (M.insert "differentFrom" newAxioms2 m2)
+    M.insert k1 (M.insert DifferentFromSection newAxioms1 m1)
+    . M.insert k2 (M.insert DifferentFromSection newAxioms2 m2)
     $ m'
     where
-        k1 = ("Individual", IriId i1)
-        k2 = ("Individual", IriId i2)
+        k1 = (IndividualFrame, IriId i1)
+        k2 = (IndividualFrame, IriId i2)
         m' = tAnnotations anns . tIndividuals [i1, i2] $ ms
         m1 = M.findWithDefault M.empty k1 m'
         m2 = M.findWithDefault M.empty k2 m'
-        axioms1 = M.findWithDefault [] "differentFrom" m1
-        axioms2 = M.findWithDefault [] "differentFrom" m2
-        newAxioms1 = S.toList . S.fromList
-            $ Assertion ax : axioms1
-        newAxioms2 = S.toList . S.fromList
-            $ Assertion (
-                SameIndividual anns [i2, i1]
-            ) : axioms2
+        axioms1 = M.findWithDefault [] DifferentFromSection m1
+        axioms2 = M.findWithDefault [] DifferentFromSection m2
+        newAx = SameIndividual anns [i2, i1]
+        newAxioms1 = Assertion ax : axioms1
+        newAxioms2 = Assertion newAx : axioms2
 
 tAssertion ax@(DifferentIndividuals anns inds@(_:_:_:_)) ms =
-    M.insert k (M.insert "differentIndividuals" newAxioms m2) m1
+    M.insert k (M.insert DifferentIndividualsSection newAxioms m2) m1
     where
-        k = ("Misc", MiscId)
+        k = (MiscFrame, MiscId)
         m1 = tAnnotations anns . tIndividuals inds $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] "differentIndividuals" m2
-        newAxioms = S.toList . S.fromList
-            $ Assertion ax : axioms 
+        axioms = M.findWithDefault [] DifferentIndividualsSection m2
+        newAxioms = Assertion ax : axioms 
 
 -- ClassAssertion axiom
 tAssertion ax@(ClassAssertion anns clExpr iri) ms =
-    M.insert k (M.insert "types" newAxioms m2) m1
+    M.insert k (M.insert TypesSection newAxioms m2) m1
     where
-        k = ("Individual", IriId iri)
+        k = (IndividualFrame, IriId iri)
         m1 = tAnnotations anns . tIndividual iri
             . tClassExpression clExpr $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] "types" m2
-        newAxioms = S.toList . S.fromList
-            $ Assertion ax : axioms 
+        axioms = M.findWithDefault [] TypesSection m2
+        newAxioms = Assertion ax : axioms 
 
 -- ObjectPropertyAssertion axiom
 tAssertion ax@(ObjectPropertyAssertion anns opExpr iri1 iri2) ms =
-    M.insert k (M.insert "facts" newAxioms m2) m1
+    M.insert k (M.insert FactsSection newAxioms m2) m1
     where
-        k = ("Individual", IriId iri1)
+        k = (IndividualFrame, IriId iri1)
         m1 = tAnnotations anns . tIndividuals [iri1, iri2]
             . tObjectPropertyExpression False opExpr $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] "facts" m2
-        newAxioms = S.toList . S.fromList
-            $ Assertion ax : axioms
+        axioms = M.findWithDefault [] FactsSection m2
+        newAxioms = Assertion ax : axioms
 
 -- NegativeObjectPropertyAssertion axiom
 tAssertion ax@(NegativeObjectPropertyAssertion anns opExpr iri1 iri2) ms =
-    M.insert k (M.insert "facts" newAxioms m2) m1
+    M.insert k (M.insert FactsSection newAxioms m2) m1
     where
-        k = ("Individual", IriId iri1)
+        k = (IndividualFrame, IriId iri1)
         m1 = tAnnotations anns . tIndividuals [iri1, iri2]
             . tObjectPropertyExpression False opExpr $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] "facts" m2
-        newAxioms = S.toList . S.fromList
-            $ Assertion ax : axioms
+        axioms = M.findWithDefault [] FactsSection m2
+        newAxioms = Assertion ax : axioms
 
 -- DataPropertyAssertion axiom
 tAssertion ax@(DataPropertyAssertion anns dpIri iri lit) ms =
-    M.insert k (M.insert "facts" newAxioms m2) m1
+    M.insert k (M.insert FactsSection newAxioms m2) m1
     where
-        k = ("Individual", IriId iri)
+        k = (IndividualFrame, IriId iri)
         m1 = tAnnotations anns . tDataPropertyExpression dpIri
             . tIndividual iri . tLiteral lit $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] "facts" m2
-        newAxioms = S.toList . S.fromList
-            $ Assertion ax : axioms
+        axioms = M.findWithDefault [] FactsSection m2
+        newAxioms = Assertion ax : axioms
 
 -- NegativeDataPropertyAssertion axiom
 tAssertion ax@(NegativeDataPropertyAssertion anns dpIri iri lit) ms =
-    M.insert k (M.insert "facts" newAxioms m2) m1
+    M.insert k (M.insert FactsSection newAxioms m2) m1
     where
-        k = ("Individual", IriId iri)
+        k = (IndividualFrame, IriId iri)
         m1 = tAnnotations anns . tDataPropertyExpression dpIri
             . tIndividual iri . tLiteral lit $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] "facts" m2
-        newAxioms = S.toList . S.fromList
-            $ Assertion ax : axioms
+        axioms = M.findWithDefault [] FactsSection m2
+        newAxioms = Assertion ax : axioms
 
 -- | transform AnnotationAxiom axioms
 tAnnotationAxiom :: AnnotationAxiom -> MnchstrSntx -> MnchstrSntx
@@ -737,42 +768,44 @@ tAnnotationAxiom ax@(AnnotationAssertion anns prop subj value) ms = res
             . tAnnotationProperty prop $ ms
         ks = findKeys frameIri $ M.keys m'
         subTrees = map (\k -> M.findWithDefault M.empty k m') ks
-        axiomsList = map (M.findWithDefault [] "annotations") subTrees
+        axiomsList = map (M.findWithDefault [] AnnotationsSection) subTrees
         newAxiom = AnnotationAxiom
             $ (AnnotationAssertion anns prop (AnnSubIri frameIri) value)
-        newAxiomsList = map (S.toList . S.fromList) . map (newAxiom:) $ axiomsList
+        newAxiomsList = map (newAxiom:) $ axiomsList
 
-        newSubTrees = zipWith (M.insert "annotations") newAxiomsList subTrees
+        newSubTrees = zipWith (M.insert AnnotationsSection)
+            newAxiomsList subTrees
+
         res = foldl (\m (k, st) -> M.insert k st m) m' $ zip ks newSubTrees
 
 -- SubAnnotationPropertyOf axiom
 tAnnotationAxiom ax@(SubAnnotationPropertyOf anns iri1 iri2) ms =
-    M.insert k (M.insert "subPropertyOf" newAxioms m2) m1
+    M.insert k (M.insert SubPropertyOfSection newAxioms m2) m1
     where
-        k = ("AnnotationProperty", IriId iri1)
+        k = (AnnotationPropertyFrame, IriId iri1)
         m1 = tAnnotations anns . tAnnotationProperty iri2 $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] "subPropertyOf" m2
+        axioms = M.findWithDefault [] SubPropertyOfSection m2
         newAxioms = AnnotationAxiom ax : axioms
 
 -- AnnotationPropertyDomain axiom
 tAnnotationAxiom ax@(AnnotationPropertyDomain anns iri1 iri2) ms =
-    M.insert k (M.insert "domain" newAxioms m2) m1
+    M.insert k (M.insert DomainSection newAxioms m2) m1
     where
-        k = ("AnnotationProperty", IriId iri1)
+        k = (AnnotationPropertyFrame, IriId iri1)
         m1 = tAnnotations anns ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] "domain" m2
+        axioms = M.findWithDefault [] DomainSection m2
         newAxioms = AnnotationAxiom ax : axioms
 
 -- AnnotationPropertyRange axiom
 tAnnotationAxiom ax@(AnnotationPropertyRange anns iri1 iri2) ms =
-    M.insert k (M.insert "range" newAxioms m2) m1
+    M.insert k (M.insert RangeSection newAxioms m2) m1
     where
-        k = ("AnnotationProperty", IriId iri1)
+        k = (AnnotationPropertyFrame, IriId iri1)
         m1 = tAnnotations anns ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] "range" m2
+        axioms = M.findWithDefault [] RangeSection m2
         newAxioms = AnnotationAxiom ax : axioms
 
 -- auxiliary funciton for AnnotaionAssertion axiom
@@ -792,14 +825,14 @@ tAnnotation :: Annotation -> MnchstrSntx -> MnchstrSntx
 tAnnotation (Annotation anns annProp annVal) ms =
     M.insert k (M.findWithDefault M.empty k m1) m1
     where
-        k = ("AnnotationProperty", IriId annProp)
+        k = (AnnotationPropertyFrame, IriId annProp)
         m1 = tAnnotations anns . tAnnotationValue annVal $ ms
 
 -- | transform AnnotationProperty
 tAnnotationProperty :: IRI -> MnchstrSntx -> MnchstrSntx
 tAnnotationProperty iri ms =
     M.insert k (M.findWithDefault M.empty k ms) ms
-    where k = ("AnnotationProperty", IriId iri)
+    where k = (AnnotationPropertyFrame, IriId iri)
 
 -- | transform AnnotationValue
 tAnnotationValue :: AnnotationValue -> MnchstrSntx -> MnchstrSntx
@@ -819,7 +852,7 @@ tClassExpressions = flip $ foldr tClassExpression
 tClassExpression :: ClassExpression -> MnchstrSntx -> MnchstrSntx
 tClassExpression (Expression iri) ms = 
     M.insert k (M.findWithDefault M.empty k ms) ms
-    where k = ("Class", IriId iri)
+    where k = (ClassFrame, IriId iri)
 
 tClassExpression (ObjectJunction _ clExprs) ms = tClassExpressions clExprs ms
 
@@ -869,19 +902,19 @@ tObjectPropertyExpression :: Bool -> ObjectPropertyExpression
     -> MnchstrSntx -> MnchstrSntx
 tObjectPropertyExpression _ (ObjectProp iri) ms =
     M.insert k (M.findWithDefault M.empty k ms) ms
-    where k = ("ObjectProperty", IriId iri)
+    where k = (ObjectPropertyFrame, IriId iri)
 
 tObjectPropertyExpression True (ObjectInverseOf expr) ms =
     M.insert k2 (M.findWithDefault M.empty k2 m1) m1
     where 
         iri = obPropExprToIRI expr
-        k1 = ("ObjectProperty", ObjInvOfId iri)
-        k2 = ("ObjectProperty", IriId iri)
+        k1 = (ObjectPropertyFrame, ObjInvOfId iri)
+        k2 = (ObjectPropertyFrame, IriId iri)
         m1 = M.insert k1 (M.findWithDefault M.empty k1 ms) ms
 
 tObjectPropertyExpression False (ObjectInverseOf expr) ms =
     M.insert k (M.findWithDefault M.empty k ms) ms
-    where k = ("ObjectProperty", IriId . obPropExprToIRI $ expr)
+    where k = (ObjectPropertyFrame, IriId . obPropExprToIRI $ expr)
 
 -- | transform DataRange
 tDataRange :: DataRange -> MnchstrSntx -> MnchstrSntx
@@ -898,7 +931,7 @@ tDataRange (DataOneOf lits) ms = foldr tLiteral ms lits
 tDatatype :: Datatype -> MnchstrSntx -> MnchstrSntx
 tDatatype iri ms =
     M.insert k (M.findWithDefault M.empty k ms) ms
-    where k = ("Datatype", IriId iri)
+    where k = (DatatypeFrame, IriId iri)
 
 -- | transform Literal
 tLiteral :: Literal -> MnchstrSntx -> MnchstrSntx
@@ -930,7 +963,7 @@ tDataPropertyExpression :: DataPropertyExpression
     -> MnchstrSntx -> MnchstrSntx
 tDataPropertyExpression iri ms =
     M.insert k (M.findWithDefault M.empty k ms) ms
-    where k = ("DataProperty", IriId iri)
+    where k = (DataPropertyFrame, IriId iri)
 
 -- | transform Individual
 tIndividuals :: [Individual] -> MnchstrSntx -> MnchstrSntx
@@ -939,7 +972,7 @@ tIndividuals = flip $ foldr tIndividual
 tIndividual :: Individual -> MnchstrSntx -> MnchstrSntx
 tIndividual iri ms =
     M.insert k (M.findWithDefault M.empty k ms) ms
-    where k = ("Individual", IriId iri)
+    where k = (IndividualFrame, IriId iri)
     
 ------------- main printing part ----------------  
 
@@ -966,7 +999,8 @@ printOntology pds
         impDocs = vcat . map
             (\x -> keyword "Import:" <+> printIRI pds x) $ importedDocs
         anns = printAnnotations pds 0 annotations
-        ms = tAxioms axioms emptyMS
+        axiomsUnique = S.toList . S.fromList $ axioms
+        ms = tAxioms axiomsUnique emptyMS
         axs = printMS pds ms 
 
 -- | print Manchester Syntax
@@ -993,109 +1027,107 @@ printOPFs pds n ms
         . map (\h -> printOPF pds n h $ M.findWithDefault M.empty h ms)
         $ headers
     where
-        headers = filter ((=="ObjectProperty") . fst) . M.keys $ ms
+        headers = filter ((== ObjectPropertyFrame) . fst) . M.keys $ ms
 
 -- | print Object Property Frame
 printOPF :: [PrefixDeclaration] -> Int -> FrameId
-    -> M.Map String [Axiom] -> Doc
+    -> M.Map FrameSectionType [Axiom] -> Doc
 printOPF pds n header body =
-    vcat [tabs n <> keyword "ObjectProperty:" <+> hDoc
+    vcat [tabs n <> keyword objectPropertyC <+> hDoc
         , annDoc, subPropOfDoc, subPropChainDoc, eqDoc, disjDoc
         , invDoc, domDoc, rangeDoc, charsDoc]
     where
         hDoc = case snd header of 
                 IriId iri -> printIRI pds iri
-                ObjInvOfId iri -> keyword "inverse" <+> printIRI pds iri
+                ObjInvOfId iri -> keyword inverseS <+> printIRI pds iri
 
-        annAxioms = M.findWithDefault [] "annotations" body
+        annAxioms = M.findWithDefault [] AnnotationsSection body
         annDoc = annotationAssertionsToDoc pds (n + 1)
             . map unpackAnnotationAxiom $ annAxioms
 
-        subPropOfAxioms = M.findWithDefault [] "subPropertyOf" body
-        subPropOfDoc = opAxiomsToDoc pds (n + 1) "SubPropertyOf:"
+        subPropOfAxioms = M.findWithDefault [] SubPropertyOfSection body
+        subPropOfDoc = opAxiomsToDoc pds (n + 1) SubPropertyOfSection
             . map unpackObjectPropertyAxiom $ subPropOfAxioms
         
-        subPropChainAxioms = M.findWithDefault [] "subPropertyChain" body
-        subPropChainDoc = opAxiomsToDoc pds (n + 1) "SubPropertyChain:"
+        subPropChainAxioms = M.findWithDefault [] SubPropertyChainSection body
+        subPropChainDoc = opAxiomsToDoc pds (n + 1) SubPropertyChainSection
             . map unpackObjectPropertyAxiom $ subPropChainAxioms
 
-        eqAxioms = M.findWithDefault [] "equivalentTo" body
-        eqDoc = opAxiomsToDoc pds (n + 1) "EquivalentTo:"
+        eqAxioms = M.findWithDefault [] EquivalentToSection body
+        eqDoc = opAxiomsToDoc pds (n + 1) EquivalentToSection
             . map unpackObjectPropertyAxiom $ eqAxioms
 
-        disjAxioms = M.findWithDefault [] "disjointWith" body
-        disjDoc = opAxiomsToDoc pds (n + 1) "DisjointWith:"
+        disjAxioms = M.findWithDefault [] DisjointWithSection body
+        disjDoc = opAxiomsToDoc pds (n + 1) DisjointWithSection
             . map unpackObjectPropertyAxiom $ disjAxioms
 
-        invAxioms = M.findWithDefault [] "inverseOf" body
-        invDoc = opAxiomsToDoc pds (n + 1) "InverseOf:"
+        invAxioms = M.findWithDefault [] InverseOfSection body
+        invDoc = opAxiomsToDoc pds (n + 1) InverseOfSection
             . map unpackObjectPropertyAxiom $ invAxioms
 
-        domAxioms = M.findWithDefault [] "domain" body
-        domDoc = opAxiomsToDoc pds (n + 1) "Domain:"
+        domAxioms = M.findWithDefault [] DomainSection body
+        domDoc = opAxiomsToDoc pds (n + 1) DomainSection
             . map unpackObjectPropertyAxiom $ domAxioms
 
-        rangeAxioms = M.findWithDefault [] "range" body
-        rangeDoc = opAxiomsToDoc pds (n + 1) "Range:"
+        rangeAxioms = M.findWithDefault [] RangeSection body
+        rangeDoc = opAxiomsToDoc pds (n + 1) RangeSection
             . map unpackObjectPropertyAxiom $ rangeAxioms
 
-        charsAxioms = M.findWithDefault [] "characteristics" body
-        charsDoc = opAxiomsToDoc pds (n + 1) "Characteristics:"
+        charsAxioms = M.findWithDefault [] CharacteristicsSection body
+        charsDoc = opAxiomsToDoc pds (n + 1) CharacteristicsSection
             . map unpackObjectPropertyAxiom $ charsAxioms
 
 annotationAssertionsToDoc :: [PrefixDeclaration] -> Int -> [AnnotationAxiom]
     -> Doc
 annotationAssertionsToDoc _ _ [] = empty
 annotationAssertionsToDoc pds n axioms =
-    tabs n <> keyword "Annotations:"
+    tabs n <> keyword annotationsC
     $+$
     (vcat . punctuate comma . map (printAnnAssertion pds (n + 1)) $ axioms)
 
-opAxiomsToDoc :: [PrefixDeclaration] -> Int -> String
+opAxiomsToDoc :: [PrefixDeclaration] -> Int -> FrameSectionType
     -> [ObjectPropertyAxiom] -> Doc
 opAxiomsToDoc _ _ _ [] = empty
 
-opAxiomsToDoc pds n "SubPropertyOf:" axioms =
-    h $+$ (vcat . punctuate comma
+opAxiomsToDoc pds n SubPropertyOfSection axioms =
+    tabs n <> keyword subPropertyOfC
+    $+$
+    (vcat . punctuate comma
         . map (printSubPropOf pds (n + 1)) $ axioms)
-    where
-        h = case axioms of
-            [] -> empty
-            _ -> tabs n <> keyword "SubPropertyOf:"
 
-opAxiomsToDoc pds n "SubPropertyChain:" axioms =
+opAxiomsToDoc pds n SubPropertyChainSection axioms =
     vsep
-    . map (\d -> tabs n <> keyword "SubPropertyChain:" $+$ d)
+    . map (\d -> tabs n <> keyword subPropertyChainC $+$ d)
     . map (printSubPropChain pds (n + 1))
     $ axioms
 
-opAxiomsToDoc pds n "EquivalentTo:" axioms =
-    tabs n <> keyword "EquivalentTo:"
+opAxiomsToDoc pds n EquivalentToSection axioms =
+    tabs n <> keyword equivalentToC
     $+$
     (vcat . punctuate comma . map (printEqObProp pds (n + 1)) $ axioms)
 
-opAxiomsToDoc pds n "DisjointWith:" axioms =
-    tabs n <> keyword "DisjointWith:"
+opAxiomsToDoc pds n DisjointWithSection axioms =
+    tabs n <> keyword disjointWithC
     $+$
     (vcat . punctuate comma . map (printDisjObProp pds (n + 1)) $ axioms)
 
-opAxiomsToDoc pds n "InverseOf:" axioms =
-    tabs n <> keyword "InverseOf:"
+opAxiomsToDoc pds n InverseOfSection axioms =
+    tabs n <> keyword inverseOfC
     $+$
     (vcat . punctuate comma . map (printInvObProp pds (n + 1)) $ axioms)
 
-opAxiomsToDoc pds n "Domain:" axioms =
-    tabs n <> keyword "Domain:"
+opAxiomsToDoc pds n DomainSection axioms =
+    tabs n <> keyword domainC
     $+$
     (vcat . punctuate comma . map (printObPropDom pds (n + 1)) $ axioms)
 
-opAxiomsToDoc pds n "Range:" axioms =
-    tabs n <> keyword "Range:"
+opAxiomsToDoc pds n rangeSection axioms =
+    tabs n <> keyword rangeC
     $+$
     (vcat . punctuate comma . map (printObPropRange pds (n + 1)) $ axioms)
 
-opAxiomsToDoc pds n "Characteristics:" axioms =
-    tabs n <> keyword "Characteristics:"
+opAxiomsToDoc pds n CharacteristicsSection axioms =
+    tabs n <> keyword characteristicsC
     $+$
     (vcat . punctuate comma . map (printCharacteristics pds (n + 1)) $ axioms)
 
@@ -1112,7 +1144,7 @@ printSubPropChain pds n (SubObjectPropertyOf anns
     printAnnotations pds (n + 1) anns
     $+$
     tabs n <> 
-    (hcat . punctuate (keyword " o ")
+    (hcat . punctuate (text " o ")
     . map (printObjectPropertyExpression pds) $ opExprs)
 
 printEqObProp :: [PrefixDeclaration] -> Int -> ObjectPropertyAxiom -> Doc
@@ -1153,37 +1185,37 @@ printCharacteristics :: [PrefixDeclaration] -> Int -> ObjectPropertyAxiom -> Doc
 printCharacteristics pds n (FunctionalObjectProperty anns _) =
     printAnnotations pds (n + 1) anns
     $+$
-    tabs n <> keyword "Functional"
+    tabs n <> keyword functionalS
 
 printCharacteristics pds n (InverseFunctionalObjectProperty anns _) =
     printAnnotations pds (n + 1) anns
     $+$
-    tabs n <> keyword "InverseFunctional"
+    tabs n <> keyword inverseFunctionalS
 
 printCharacteristics pds n (ReflexiveObjectProperty anns _) =
     printAnnotations pds (n + 1) anns
     $+$
-    tabs n <> keyword "Reflexive"
+    tabs n <> keyword reflexiveS
 
 printCharacteristics pds n (IrreflexiveObjectProperty anns _) =
     printAnnotations pds (n + 1) anns
     $+$
-    tabs n <> keyword "Irreflexive"
+    tabs n <> keyword irreflexiveS
 
 printCharacteristics pds n (SymmetricObjectProperty anns _) =
     printAnnotations pds (n + 1) anns
     $+$
-    tabs n <> keyword "Symmetric"
+    tabs n <> keyword symmetricS
 
 printCharacteristics pds n (AsymmetricObjectProperty anns _) =
     printAnnotations pds (n + 1) anns
     $+$
-    tabs n <> keyword "Asymmetric"
+    tabs n <> keyword antisymmetricS
 
 printCharacteristics pds n (TransitiveObjectProperty anns _) =
     printAnnotations pds (n + 1) anns
     $+$
-    tabs n <> keyword "Transitive"
+    tabs n <> keyword transitiveS
 
 printAnnAssertion :: [PrefixDeclaration] -> Int -> AnnotationAxiom -> Doc
 printAnnAssertion pds n (AnnotationAssertion anns prop subj value) =
@@ -1202,82 +1234,82 @@ printDPFs pds n ms
         . map (\h -> printDPF pds n h $ M.findWithDefault M.empty h ms)
         $ headers
     where
-        headers = filter ((=="DataProperty") . fst) . M.keys $ ms
+        headers = filter ((== DataPropertyFrame) . fst) . M.keys $ ms
 
 -- | print Data Property Frame
 printDPF :: [PrefixDeclaration] -> Int -> FrameId
-    -> M.Map String [Axiom] -> Doc
+    -> M.Map FrameSectionType [Axiom] -> Doc
 printDPF pds n header body = 
-    vcat [tabs n <> keyword "DataProperty:" <+> printIRI pds iri
+    vcat [tabs n <> keyword dataPropertyC <+> printIRI pds iri
         , annDoc, subDataPropOfDoc, eqDataPropsDoc, disjDataPropsDoc
         , domDataPropDoc, rangeDataPropDoc, funcDataPropDoc]
     where
         IriId iri = snd header
 
-        annAxioms = M.findWithDefault [] "annotations" body
+        annAxioms = M.findWithDefault [] AnnotationsSection body
         annDoc = annotationAssertionsToDoc pds (n + 1)
             . map unpackAnnotationAxiom $ annAxioms
 
-        subDataPropOfAxioms = M.findWithDefault [] "subPropertyOf" body
-        subDataPropOfDoc = dpAxiomsToDoc pds (n + 1) "SubPropertyOf:"
+        subDataPropOfAxioms = M.findWithDefault [] SubPropertyOfSection body
+        subDataPropOfDoc = dpAxiomsToDoc pds (n + 1) SubPropertyOfSection
             . map unpackDataPropertyAxiom $ subDataPropOfAxioms
 
-        eqDataPropsAxioms = M.findWithDefault [] "equivalentTo" body
-        eqDataPropsDoc = dpAxiomsToDoc pds (n + 1) "EquivalentTo:"
+        eqDataPropsAxioms = M.findWithDefault [] EquivalentToSection body
+        eqDataPropsDoc = dpAxiomsToDoc pds (n + 1) EquivalentToSection
             . map unpackDataPropertyAxiom $ eqDataPropsAxioms
 
-        disjDataPropsAxioms = M.findWithDefault [] "disjointWith" body
-        disjDataPropsDoc = dpAxiomsToDoc pds (n + 1) "DisjointWith:"
+        disjDataPropsAxioms = M.findWithDefault [] DisjointWithSection body
+        disjDataPropsDoc = dpAxiomsToDoc pds (n + 1) DisjointWithSection
             . map unpackDataPropertyAxiom $ disjDataPropsAxioms
 
-        domDataPropAxioms = M.findWithDefault [] "domain" body
-        domDataPropDoc = dpAxiomsToDoc pds (n + 1) "Domain:"
+        domDataPropAxioms = M.findWithDefault [] DomainSection body
+        domDataPropDoc = dpAxiomsToDoc pds (n + 1) DomainSection
             . map unpackDataPropertyAxiom $ domDataPropAxioms
 
-        rangeDataPropAxioms = M.findWithDefault [] "range" body
-        rangeDataPropDoc = dpAxiomsToDoc pds (n + 1) "Range:"
+        rangeDataPropAxioms = M.findWithDefault [] RangeSection body
+        rangeDataPropDoc = dpAxiomsToDoc pds (n + 1) RangeSection
             . map unpackDataPropertyAxiom $ rangeDataPropAxioms
 
-        funcDataPropAxioms = M.findWithDefault [] "functional" body
-        funcDataPropDoc = dpAxiomsToDoc pds (n + 1) "Characteristics:"
+        funcDataPropAxioms = M.findWithDefault [] CharacteristicsSection body
+        funcDataPropDoc = dpAxiomsToDoc pds (n + 1) CharacteristicsSection
             . map unpackDataPropertyAxiom $ funcDataPropAxioms
 
-dpAxiomsToDoc :: [PrefixDeclaration] -> Int -> String
+dpAxiomsToDoc :: [PrefixDeclaration] -> Int -> FrameSectionType
     -> [DataPropertyAxiom] -> Doc
 dpAxiomsToDoc _ _ _ [] = empty
 
-dpAxiomsToDoc pds n "SubPropertyOf:" axioms =
-    tabs n <> keyword "SubPropertyOf:"
+dpAxiomsToDoc pds n SubPropertyOfSection axioms =
+    tabs n <> keyword subPropertyOfC
     $+$
     (vcat . punctuate comma
         . map (printDataPropAxiom pds (n + 1)) $ axioms)
 
-dpAxiomsToDoc pds n "EquivalentTo:" axioms =
-    tabs n <> keyword "EquivalentTo:"
+dpAxiomsToDoc pds n EquivalentToSection axioms =
+    tabs n <> keyword equivalentToC
     $+$
     (vcat . punctuate comma
         . map (printDataPropAxiom pds (n + 1)) $ axioms)
 
-dpAxiomsToDoc pds n "DisjointWith:" axioms =
-    tabs n <> keyword "DisjointWith:"
+dpAxiomsToDoc pds n DisjointWithSection axioms =
+    tabs n <> keyword disjointWithC
     $+$
     (vcat . punctuate comma
         . map (printDataPropAxiom pds (n + 1)) $ axioms)
 
-dpAxiomsToDoc pds n "Domain:" axioms =
-    tabs n <> keyword "Domain:"
+dpAxiomsToDoc pds n DomainSection axioms =
+    tabs n <> keyword domainC
     $+$
     (vcat . punctuate comma
         . map (printDataPropAxiom pds (n + 1)) $ axioms)
 
-dpAxiomsToDoc pds n "Range:" axioms =
-    tabs n <> keyword "Range:"
+dpAxiomsToDoc pds n RangeSection axioms =
+    tabs n <> keyword rangeC
     $+$
     (vcat . punctuate comma
         . map (printDataPropAxiom pds (n + 1)) $ axioms)
 
-dpAxiomsToDoc pds n "Characteristics:" axioms =
-    tabs n <> keyword "Characteristics:"
+dpAxiomsToDoc pds n CharacteristicsSection axioms =
+    tabs n <> keyword characteristicsC
     $+$
     (vcat . punctuate comma
         . map (printDataPropAxiom pds (n + 1)) $ axioms)
@@ -1311,7 +1343,7 @@ printDataPropAxiom pds n (DataPropertyRange anns _ dr) =
 printDataPropAxiom pds n (FunctionalDataProperty anns _) =
     printAnnotations pds (n + 1) anns
     $+$
-    tabs n <> text "Functional"
+    tabs n <> text functionalS
  
 unpackDataPropertyAxiom :: Axiom -> DataPropertyAxiom
 unpackDataPropertyAxiom (DataPropertyAxiom a) = a
@@ -1324,42 +1356,46 @@ printAPFs pds n ms
         . map (\h -> printAPF pds n h $ M.findWithDefault M.empty h ms)
         $ headers
     where
-        headers = filter ((=="AnnotationProperty") . fst) . M.keys $ ms
+        headers = filter ((== AnnotationPropertyFrame) . fst) . M.keys $ ms
 
 -- | print Annotation Property Frame
 printAPF :: [PrefixDeclaration] -> Int -> FrameId
-    -> M.Map String [Axiom] -> Doc
+    -> M.Map FrameSectionType [Axiom] -> Doc
 printAPF pds n header body = 
-    vcat [tabs n <> keyword "AnnotationProperty:" <+> printIRI pds iri
+    vcat [tabs n <> keyword annotationPropertyC <+> printIRI pds iri
         , annDoc, subPropOfDoc, domainDoc, rangeDoc]
     where
         IriId iri = snd header
 
-        annAxioms = M.findWithDefault [] "annotations" body
+        annAxioms = M.findWithDefault [] AnnotationsSection body
         annDoc = annotationAssertionsToDoc pds (n + 1)
             . map unpackAnnotationAxiom $ annAxioms
 
-        subPropOfAxioms = M.findWithDefault [] "subPropertyOf" body
-        subPropOfDoc = afAxiomsToDoc pds (n + 1) "SubPropertyOf:"
+        subPropOfAxioms = M.findWithDefault [] SubPropertyOfSection body
+        subPropOfDoc = afAxiomsToDoc pds (n + 1) SubPropertyOfSection
             . map unpackAnnotationAxiom $ subPropOfAxioms
 
-        domainAxioms = M.findWithDefault [] "domain" body
-        domainDoc = afAxiomsToDoc pds (n + 1) "Domain:"
+        domainAxioms = M.findWithDefault [] DomainSection body
+        domainDoc = afAxiomsToDoc pds (n + 1) DomainSection
             . map unpackAnnotationAxiom $ domainAxioms
 
-        rangeAxioms = M.findWithDefault [] "range" body
-        rangeDoc = afAxiomsToDoc pds (n + 1) "Range:"
+        rangeAxioms = M.findWithDefault [] RangeSection body
+        rangeDoc = afAxiomsToDoc pds (n + 1) RangeSection
             . map unpackAnnotationAxiom $ rangeAxioms
 
-afAxiomsToDoc :: [PrefixDeclaration] -> Int -> String
+afAxiomsToDoc :: [PrefixDeclaration] -> Int -> FrameSectionType
     -> [AnnotationAxiom] -> Doc
 afAxiomsToDoc _ _ _ [] = empty
 
-afAxiomsToDoc pds n header axioms =
+afAxiomsToDoc pds n frameSectionType axioms =
     tabs n <> keyword header
     $+$
     (vcat . punctuate comma
         . map (printAFAxiom pds (n + 1)) $ axioms)
+    where header = case frameSectionType of
+            SubPropertyOfSection -> subPropertyOfC
+            DomainSection -> domainC
+            RangeSection -> rangeC
 
 
 printAFAxiom :: [PrefixDeclaration] -> Int -> AnnotationAxiom -> Doc
@@ -1387,29 +1423,30 @@ printDFs pds n ms
         . map (\h -> printDF pds n h $ M.findWithDefault M.empty h ms)
         $ headers
     where
-        headers = filter ((=="Datatype") . fst) . M.keys $ ms
+        headers = filter ((== DatatypeFrame) . fst) . M.keys $ ms
 
 -- | print Datatype Frame
 printDF :: [PrefixDeclaration] -> Int -> FrameId
-    -> M.Map String [Axiom] -> Doc
+    -> M.Map FrameSectionType [Axiom] -> Doc
 printDF pds n header body =
-    vcat [tabs n <> keyword "Datatype:" <+> printIRI pds iri
+    vcat [tabs n <> keyword datatypeC <+> printIRI pds iri
         , annDoc, eqDoc]
     where
         IriId iri = snd header
 
-        annAxioms = M.findWithDefault [] "annotations" body
+        annAxioms = M.findWithDefault [] AnnotationsSection body
         annDoc = annotationAssertionsToDoc pds (n + 1)
             . map unpackAnnotationAxiom $ annAxioms
 
-        eqAxioms = M.findWithDefault [] "equivalentTo" body
-        eqDoc = dtAxiomsToDoc pds (n + 1) "EquivalentTo:" eqAxioms
+        eqAxioms = M.findWithDefault [] EquivalentToSection body
+        eqDoc = dtAxiomsToDoc pds (n + 1) EquivalentToSection eqAxioms
 
-dtAxiomsToDoc :: [PrefixDeclaration] -> Int -> String -> [Axiom] -> Doc
+dtAxiomsToDoc :: [PrefixDeclaration] -> Int -> FrameSectionType
+    -> [Axiom] -> Doc
 dtAxiomsToDoc _ _ _ [] = empty
 
-dtAxiomsToDoc pds n "EquivalentTo:" axioms =
-    tabs n <> keyword "EquivalentTo:"
+dtAxiomsToDoc pds n EquivalentToSection axioms =
+    tabs n <> keyword equivalentToC
     $+$
     (vcat . punctuate comma
         . map (printDatatypeDefinitionAxiom pds (n + 1)) $ axioms)
@@ -1420,14 +1457,6 @@ printDatatypeDefinitionAxiom pds n (DatatypeDefinition anns _ dr) =
     $+$
     tabs n <> printDataRange pds dr
 
--- printMSDatatype :: [PrefixDeclaration] -> IRI -> Doc
--- printMSDatatype pds iri
---     | isAbbrev iri && prefixName iri == "xsd"
---         && iFragment iri `elem` ["integer", "decimal", "float"]
---         = text ("xsd:" ++ iFragment iri)
-        
---     | otherwise = printIRI pds iri
-
 -- | print Class Frames
 printCFs :: [PrefixDeclaration] -> Int -> MnchstrSntx -> Doc
 printCFs pds n ms
@@ -1436,70 +1465,80 @@ printCFs pds n ms
         . map (\h -> printCF pds n h $ M.findWithDefault M.empty h ms)
         $ headers 
     where
-        headers = filter ((=="Class") . fst) . M.keys $ ms
+        headers = filter ((== ClassFrame) . fst) . M.keys $ ms
 
 -- | print Class Frame
 printCF :: [PrefixDeclaration] -> Int -> FrameId
-    -> M.Map String [Axiom] -> Doc
+    -> M.Map FrameSectionType [Axiom] -> Doc
 printCF pds n header body =
-    vcat [tabs n <> keyword "Class:" <+> printIRI pds iri
+    vcat [tabs n <> keyword classC <+> printIRI pds iri
         , annDoc, scoDoc, eqDoc, disjDoc, disjuDoc, haskDoc]
     where
         IriId iri = snd header
 
-        annAxioms = M.findWithDefault [] "annotations" body
+        annAxioms = M.findWithDefault [] AnnotationsSection body
         annDoc = annotationAssertionsToDoc pds (n + 1)
             . map unpackAnnotationAxiom $ annAxioms
 
-        scoAxioms = M.findWithDefault [] "subClassOf" body
-        scoDoc = classAxiomsToDoc pds (n + 1) "SubClassOf:" scoAxioms
+        scoAxioms = M.findWithDefault [] SubClassOfSection body
+        scoDoc = classAxiomsToDoc pds (n + 1) SubClassOfSection scoAxioms
 
-        eqAxioms = M.findWithDefault [] "equivalentTo" body
-        eqDoc = classAxiomsToDoc pds (n + 1) "EquivalentTo:" eqAxioms
+        eqAxioms = M.findWithDefault [] EquivalentToSection body
+        eqDoc = classAxiomsToDoc pds (n + 1) EquivalentToSection eqAxioms
 
-        disjAxioms = M.findWithDefault [] "disjointWith" body
-        disjDoc = classAxiomsToDoc pds (n + 1) "DisjointWith:" disjAxioms
+        disjAxioms = M.findWithDefault [] DisjointWithSection body
+        disjDoc = classAxiomsToDoc pds (n + 1) DisjointWithSection disjAxioms
 
-        disjuAxioms = M.findWithDefault [] "disjointUnionOf" body
-        disjuDoc = classAxiomsToDoc pds (n + 1) "DisjointUnionOf:" disjuAxioms
+        disjuAxioms = M.findWithDefault [] DisjointUnionOfSection body
+        disjuDoc = classAxiomsToDoc pds (n + 1)
+            DisjointUnionOfSection disjuAxioms
 
-        haskAxioms = M.findWithDefault [] "hasKey" body
-        haskDoc = hasKeyAxiomsToCFDoc pds (n + 1) "HasKey:" haskAxioms
+        haskAxioms = M.findWithDefault [] HasKeySection body
+        haskDoc = hasKeyAxiomsToCFDoc pds (n + 1) haskAxioms
 
 
-classAxiomsToDoc :: [PrefixDeclaration] -> Int -> String -> [Axiom] -> Doc
-classAxiomsToDoc pds n header axioms = case axioms of
-    [] -> empty
-    _ ->  tabs n <> keyword header
-        $+$ (printClassAxiomsVer pds (n + 1)
-            . map unpackClassAxiom
-            $ axioms)
+classAxiomsToDoc :: [PrefixDeclaration] -> Int -> FrameSectionType
+    -> [Axiom] -> Doc
+classAxiomsToDoc _ _ _ [] = empty
 
-hasKeyAxiomsToCFDoc :: [PrefixDeclaration] -> Int -> String -> [Axiom] -> Doc
-hasKeyAxiomsToCFDoc pds n header axioms =  
-    foldr (\ax d -> printHasKeyAxiom pds n header ax $+$ d) empty axioms
+classAxiomsToDoc pds n frameSectionType axioms =
+    tabs n <> keyword header
+    $+$ (printClassAxiomsVer pds (n + 1)
+        . map unpackClassAxiom
+        $ axioms)
+    where header = case frameSectionType of
+            SubClassOfSection -> subClassOfC
+            EquivalentToSection -> equivalentToC
+            DisjointWithSection -> disjointWithC
+            DisjointUnionOfSection -> disjointUnionOfC
+
+hasKeyAxiomsToCFDoc :: [PrefixDeclaration] -> Int -> [Axiom] -> Doc
+hasKeyAxiomsToCFDoc pds n axioms =  
+    foldl (\d ax -> printHasKeyAxiom pds n ax $+$ d) empty axioms
 
 unpackClassAxiom :: Axiom -> ClassAxiom
 unpackClassAxiom (ClassAxiom a) = a
 
 -- | print HasKey axiom
-printHasKeyAxiom :: [PrefixDeclaration] -> Int -> String -> Axiom -> Doc
-printHasKeyAxiom pds n header (HasKey anns _ opExprs dpExprs) =
-    tabs n <> keyword header
+printHasKeyAxiom :: [PrefixDeclaration] -> Int -> Axiom -> Doc
+printHasKeyAxiom pds n (HasKey anns _ opExprs dpExprs) =
+    tabs n <> keyword hasKeyC
     $+$ printAnnotations pds (n + 1) anns
-    $+$ (vcat . punctuate comma . july182021_rmEmpties  $ [opExprsDocs, dpExprsDocs])
+    $+$ resDoc
     where
-        opExprsDocs = vcat . punctuate comma
+        resDoc = case (null opExprs, null dpExprs) of
+            (True, True) -> empty
+            (True, False) -> dpExprsDoc
+            (False, True) -> opExprsDoc
+            (False, False) -> vcat . punctuate comma $ [opExprsDoc, dpExprsDoc]
+
+        opExprsDoc = vcat . punctuate comma
             . map (\e -> tabs (n + 1) <> 
                         printObjectPropertyExpression pds e) $ opExprs
-        dpExprsDocs = vcat . punctuate comma
+        dpExprsDoc = vcat . punctuate comma
             . map (\e -> tabs (n + 1) <> printIRI pds e) $ dpExprs
          
 -- | print ClassAxioms
-printClassAxiomsHor :: [PrefixDeclaration] -> Int -> [ClassAxiom] -> Doc
-printClassAxiomsHor pds n axioms =
-    tabs n <> (hsep . punctuate comma . map (printClassAxiom pds 0) $ axioms)
-
 printClassAxiomsVer :: [PrefixDeclaration] -> Int -> [ClassAxiom] -> Doc
 printClassAxiomsVer pds n =
     vcat . punctuate comma . map (printClassAxiom pds n)
@@ -1547,61 +1586,49 @@ printIFs pds n ms
         . map (\h -> printIF pds n h $ M.findWithDefault M.empty h ms)
         $ headers 
     where
-        headers = filter ((=="Individual") . fst) . M.keys $ ms
+        headers = filter ((== IndividualFrame) . fst) . M.keys $ ms
 
 -- | print Individual Frame
 printIF :: [PrefixDeclaration] -> Int -> FrameId
-    -> M.Map String [Axiom] -> Doc
+    -> M.Map FrameSectionType [Axiom] -> Doc
 printIF pds n header body = 
-    vcat [tabs n <> keyword "Individual:" <+> printIRI pds iri
+    vcat [tabs n <> keyword individualC <+> printIRI pds iri
         , annDoc, sameAsDoc, difFromDoc, typesDoc, propAssertionDoc]
     where 
         IriId iri = snd header
 
-        annAxioms = M.findWithDefault [] "annotations" body
+        annAxioms = M.findWithDefault [] AnnotationsSection body
         annDoc = annotationAssertionsToDoc pds (n + 1)
             . map unpackAnnotationAxiom $ annAxioms
 
-        sameAsAxioms = M.findWithDefault [] "sameAs" body
-        sameAsDoc = iFrameAxiomsToDoc pds (n + 1) "SameAs:" $ sameAsAxioms
+        sameAsAxioms = M.findWithDefault [] SameAsSection body
+        sameAsDoc = iFrameAxiomsToDoc pds (n + 1) SameAsSection $ sameAsAxioms
 
-        difFromAxioms = M.findWithDefault [] "differentFrom" body
-        difFromDoc = iFrameAxiomsToDoc pds (n + 1) "DifferentFrom:"
+        difFromAxioms = M.findWithDefault [] DifferentFromSection body
+        difFromDoc = iFrameAxiomsToDoc pds (n + 1) DifferentFromSection
             $ difFromAxioms
 
-        typesAxioms = M.findWithDefault [] "types" body
-        typesDoc = iFrameAxiomsToDoc pds (n + 1) "Types:" $ typesAxioms
+        typesAxioms = M.findWithDefault [] TypesSection body
+        typesDoc = iFrameAxiomsToDoc pds (n + 1) TypesSection $ typesAxioms
 
-        propAssertionAxioms = M.findWithDefault [] "facts" body
-        propAssertionDoc = iFrameAxiomsToDoc pds (n + 1) "Facts:"
+        propAssertionAxioms = M.findWithDefault [] FactsSection body
+        propAssertionDoc = iFrameAxiomsToDoc pds (n + 1) FactsSection
             $ propAssertionAxioms
 
-iFrameAxiomsToDoc :: [PrefixDeclaration] -> Int -> String -> [Axiom] -> Doc
+iFrameAxiomsToDoc :: [PrefixDeclaration] -> Int -> FrameSectionType
+    -> [Axiom] -> Doc
 iFrameAxiomsToDoc _ _ _ [] = empty
 
-iFrameAxiomsToDoc pds n "SameAs:" axioms = 
-    tabs n <> keyword "SameAs:"
+iFrameAxiomsToDoc pds n frameSectionType axioms = 
+    tabs n <> keyword header
     $+$
     (vcat . punctuate comma . map (printIFAssertionAxiom pds (n + 1)) 
         . map (\(Assertion a) -> a) $ axioms)
-
-iFrameAxiomsToDoc pds n "DifferentFrom:" axioms = 
-    tabs n <> keyword "DifferentFrom:"
-    $+$
-    (vcat . punctuate comma . map (printIFAssertionAxiom pds (n + 1)) 
-        . map (\(Assertion a) -> a) $ axioms)
-
-iFrameAxiomsToDoc pds n "Types:" axioms = 
-    tabs n <> keyword "Types:"
-    $+$
-    (vcat . punctuate comma . map (printIFAssertionAxiom pds (n + 1)) 
-        . map (\(Assertion a) -> a) $ axioms)
-
-iFrameAxiomsToDoc pds n "Facts:" axioms = 
-    tabs n <> keyword "Facts:"
-    $+$
-    (vcat . punctuate comma . map (printIFAssertionAxiom pds (n + 1)) 
-        . map (\(Assertion a) -> a) $ axioms)
+    where header = case frameSectionType of
+            SameAsSection -> sameAsC
+            DifferentFromSection -> differentFromC
+            TypesSection -> typesC
+            FactsSection -> factsC
 
 printIFAssertionAxiom :: [PrefixDeclaration] -> Int -> Assertion -> Doc
 printIFAssertionAxiom pds n (SameIndividual anns [_, ind]) =
@@ -1628,7 +1655,7 @@ printIFAssertionAxiom pds n
     (NegativeObjectPropertyAssertion anns opExpr _ iri2) =
     printAnnotations pds (n + 1) anns
     $+$
-    tabs n <> keyword "not"
+    tabs n <> keyword notS
     <+> printObjectPropertyExpression pds opExpr <+> printIRI pds iri2
 
 printIFAssertionAxiom pds n (DataPropertyAssertion anns dpIri _ lit) =
@@ -1640,7 +1667,7 @@ printIFAssertionAxiom pds n
     (NegativeDataPropertyAssertion anns dpIri _ lit) =
     printAnnotations pds (n + 1) anns
     $+$
-    tabs n <> keyword "not" <+> printIRI pds dpIri <+> printLiteral pds lit
+    tabs n <> keyword notS <+> printIRI pds dpIri <+> printLiteral pds lit
 
 -- | print Misc Frame
 printMF :: [PrefixDeclaration] -> Int -> MnchstrSntx -> Doc
@@ -1650,29 +1677,33 @@ printMF pds n ms
         vcat [eqClsDoc, disjClsDoc, eqObPropsDoc, disjObPropsDoc
             , eqDataPropsDoc, disjDataPropsDoc, sameIndsDoc, difIndsDoc]
     where
-        mRoot = M.findWithDefault M.empty ("Misc", MiscId) ms
-        eqClsAxioms = M.findWithDefault [] "equivalentClasses" mRoot
+        mRoot = M.findWithDefault M.empty (MiscFrame, MiscId) ms
+        eqClsAxioms = M.findWithDefault [] EquivalentClassesSection mRoot
         eqClsDoc = eqClsAxiomsToMFDoc pds n eqClsAxioms
 
-        disjClsAxioms = M.findWithDefault [] "disjointClasses" mRoot
+        disjClsAxioms = M.findWithDefault [] DisjointClassesSection mRoot
         disjClsDoc = disjClsAxiomsToMFDoc pds n disjClsAxioms
 
-        eqObPropsAxioms = M.findWithDefault [] "equivalentProperties" mRoot
+        eqObPropsAxioms = M.findWithDefault []
+            EquivalentObjectPropertiesSection mRoot
         eqObPropsDoc = eqObPropsAxiomsToMFDoc pds n eqObPropsAxioms
 
-        disjObPropsAxioms = M.findWithDefault [] "disjointProperties" mRoot
+        disjObPropsAxioms = M.findWithDefault []
+            DisjointObjectPropertiesSection mRoot
         disjObPropsDoc = disjObPropsAxiomsToMFDoc pds n disjObPropsAxioms
 
-        eqDataPropsAxioms = M.findWithDefault [] "equivalentDataProperties" mRoot
+        eqDataPropsAxioms = M.findWithDefault [] 
+            EquivalentDataPropertiesSection mRoot
         eqDataPropsDoc = eqDataPropsAxiomsToMFDoc pds n eqDataPropsAxioms
 
-        disjDataPropsAxioms = M.findWithDefault [] "disjointDataProperties" mRoot
+        disjDataPropsAxioms = M.findWithDefault []
+            DisjointDataPropertiesSection mRoot
         disjDataPropsDoc = disjDataPropsAxiomsToMFDoc pds n disjDataPropsAxioms
         
-        sameIndsAxioms = M.findWithDefault [] "sameIndividual" mRoot
+        sameIndsAxioms = M.findWithDefault [] SameIndividualSection mRoot
         sameIndsDoc = sameIndsAxiomsToMFDoc pds n sameIndsAxioms
 
-        difIndsAxioms = M.findWithDefault [] "differentIndividuals" mRoot
+        difIndsAxioms = M.findWithDefault [] DifferentIndividualsSection mRoot
         difIndsDoc = difIndsAxiomsToMFDoc pds n difIndsAxioms
 
 eqClsAxiomsToMFDoc :: [PrefixDeclaration] -> Int -> [Axiom] -> Doc
@@ -1682,7 +1713,7 @@ eqClsAxiomsToMFDoc pds n axioms =
     where
         classAxioms = map unpackClassAxiom axioms
         bodyDocs = map (printClassAxiom pds (n + 1)) classAxioms
-        docsWithHeaders = map (\d -> keyword "EquivalentClasses:" $+$ d) bodyDocs
+        docsWithHeaders = map (\d -> keyword equivalentClassesC $+$ d) bodyDocs
 
 disjClsAxiomsToMFDoc :: [PrefixDeclaration] -> Int -> [Axiom] -> Doc
 disjClsAxiomsToMFDoc pds n [] = empty
@@ -1691,7 +1722,7 @@ disjClsAxiomsToMFDoc pds n axioms =
     where
         classAxioms = map unpackClassAxiom axioms
         bodyDocs = map (printClassAxiom pds (n + 1)) classAxioms
-        docsWithHeaders = map (\d -> keyword "DisjointClasses:" $+$ d) bodyDocs
+        docsWithHeaders = map (\d -> keyword disjointClassesC $+$ d) bodyDocs
 
 eqObPropsAxiomsToMFDoc :: [PrefixDeclaration] -> Int -> [Axiom] -> Doc
 eqObPropsAxiomsToMFDoc pds n [] = empty
@@ -1701,7 +1732,7 @@ eqObPropsAxiomsToMFDoc pds n axioms =
         opAxioms = map unpackObjectPropertyAxiom axioms
         bodyDocs = map (printObPropAxiomMF pds (n + 1)) opAxioms
         docsWithHeaders =
-            map (\d -> keyword "EquivalentProperties:" $+$ d) bodyDocs
+            map (\d -> keyword equivalentPropertiesC $+$ d) bodyDocs
 
 disjObPropsAxiomsToMFDoc :: [PrefixDeclaration] -> Int -> [Axiom] -> Doc
 disjObPropsAxiomsToMFDoc pds n [] = empty
@@ -1711,7 +1742,7 @@ disjObPropsAxiomsToMFDoc pds n axioms =
         opAxioms = map unpackObjectPropertyAxiom axioms
         bodyDocs = map (printObPropAxiomMF pds (n + 1)) opAxioms
         docsWithHeaders =
-            map (\d -> keyword "DisjointProperties:" $+$ d) bodyDocs
+            map (\d -> keyword disjointPropertiesC $+$ d) bodyDocs
 
 eqDataPropsAxiomsToMFDoc :: [PrefixDeclaration] -> Int -> [Axiom] -> Doc
 eqDataPropsAxiomsToMFDoc pds n [] = empty
@@ -1721,7 +1752,7 @@ eqDataPropsAxiomsToMFDoc pds n axioms =
         dpAxioms = map unpackDataPropertyAxiom axioms
         bodyDocs = map (printDataPropAxiomMF pds (n + 1)) dpAxioms
         docsWithHeaders = 
-            map (\d -> keyword "EquivalentProperties:" $+$ d) bodyDocs
+            map (\d -> keyword equivalentPropertiesC $+$ d) bodyDocs
 
 disjDataPropsAxiomsToMFDoc :: [PrefixDeclaration] -> Int -> [Axiom] -> Doc
 disjDataPropsAxiomsToMFDoc pds n [] = empty
@@ -1731,7 +1762,7 @@ disjDataPropsAxiomsToMFDoc pds n axioms =
         dpAxioms = map unpackDataPropertyAxiom axioms
         bodyDocs = map (printDataPropAxiomMF pds (n + 1)) dpAxioms
         docsWithHeaders = 
-            map (\d -> keyword "DisjointProperties:" $+$ d) bodyDocs
+            map (\d -> keyword disjointPropertiesC $+$ d) bodyDocs
 
 sameIndsAxiomsToMFDoc :: [PrefixDeclaration] -> Int -> [Axiom] -> Doc
 sameIndsAxiomsToMFDoc pds n [] = empty
@@ -1741,7 +1772,7 @@ sameIndsAxiomsToMFDoc pds n axioms =
         unpackedAxioms = map unpackAssertionAxiom axioms
         bodyDocs = map (printAssertionAxiomMF pds (n + 1)) unpackedAxioms
         docsWithHeaders = 
-            map (\d -> keyword "SameIndividual:" $+$ d) bodyDocs
+            map (\d -> keyword sameIndividualC $+$ d) bodyDocs
 
 difIndsAxiomsToMFDoc :: [PrefixDeclaration] -> Int -> [Axiom] -> Doc
 difIndsAxiomsToMFDoc pds n [] = empty
@@ -1751,7 +1782,7 @@ difIndsAxiomsToMFDoc pds n axioms =
         unpackedAxioms = map unpackAssertionAxiom axioms
         bodyDocs = map (printAssertionAxiomMF pds (n + 1)) unpackedAxioms
         docsWithHeaders = 
-            map (\d -> keyword "DifferentIndividuals:" $+$ d) bodyDocs
+            map (\d -> keyword differentIndividualsC $+$ d) bodyDocs
 
 unpackAssertionAxiom :: Axiom -> Assertion
 unpackAssertionAxiom (Assertion a) = a
@@ -1811,7 +1842,7 @@ printAnnotation pds n (Annotation anns annProperty annValue) =
 printAnnotations :: [PrefixDeclaration] -> Int -> Annotations -> Doc
 printAnnotations pds _ [] = empty
 printAnnotations pds n anns =
-    tabs n <> keyword "Annotations:"
+    tabs n <> keyword annotationsC
     $+$
     (vcat . punctuate comma . map (printAnnotation pds (n + 1)) $ anns)
 
@@ -1892,7 +1923,7 @@ printObjectPropertyExpression pds obExpr =
     case obExpr of
         ObjectProp ou -> printIRI pds ou
         ObjectInverseOf iopExp -> 
-            keyword "inverse"
+            keyword inverseS
             <+> printObjectPropertyExpression pds iopExp
 
 ---------------- | print DataRange
@@ -1922,13 +1953,13 @@ printDataRange :: [PrefixDeclaration] -> DataRange -> Doc
 printDataRange pds dr = case dr of
     DataType dtype l -> printIRI pds dtype <+>
         if null l then empty else brackets $ sepByCommas $ map (printFV pds) l
-    DataComplementOf drange -> keyword "not" <+> printDataRange pds drange
+    DataComplementOf drange -> keyword notS <+> printDataRange pds drange
     DataOneOf constList ->
         specBraces . fsep . punctuate comma . map (printLiteral pds) $ constList
     DataJunction ty drlist -> let
       k = case ty of
-          UnionOf -> "or"
-          IntersectionOf -> "and"
+          UnionOf -> orS
+          IntersectionOf -> andS
       in fsep $ prepPunctuate (keyword k <> space)
             $ map (printDataRange pds) drlist
 
@@ -1946,11 +1977,11 @@ printClassExpression pds expr = case expr of
     Expression ocUri -> printIRI pds ocUri
     ObjectJunction ty ds -> let
         k = case ty of
-            UnionOf -> "or"
-            IntersectionOf -> "and"
+            UnionOf -> orS
+            IntersectionOf -> andS
         in fsep . prepPunctuate (keyword k <> space)
                 . map (printPrimary pds) $ ds
-    ObjectComplementOf d -> keyword "not" <+> printPrimary pds d
+    ObjectComplementOf d -> keyword notS <+> printPrimary pds d
     ObjectOneOf indUriList ->
         specBraces . fsep . punctuate comma . map (printIRI pds) $ indUriList
     ObjectValuesFrom ty opExp d ->
@@ -1958,10 +1989,10 @@ printClassExpression pds expr = case expr of
         <+> quantifierType ty
         <+> printPrimary pds d
     ObjectHasSelf opExp ->
-        printObjectPropertyExpression pds opExp <+> keyword "Self"
+        printObjectPropertyExpression pds opExp <+> keyword selfS
     ObjectHasValue opExp indUri ->
         printObjectPropertyExpression pds opExp 
-        <+> keyword "value" <+> printIRI pds indUri
+        <+> keyword valueS <+> printIRI pds indUri
     ObjectCardinality (Cardinality ty card opExp maybeDesc) ->
         printObjectPropertyExpression pds opExp <+> cardinalityType ty
         <+> text (show card)
@@ -1970,7 +2001,7 @@ printClassExpression pds expr = case expr of
         printIRI pds (head dpExp) <+> quantifierType ty
         <+> printDataRange pds dRange
     DataHasValue dpExp cons ->
-        printIRI pds dpExp <+> keyword "value" <+> printLiteral pds cons
+        printIRI pds dpExp <+> keyword valueS <+> printLiteral pds cons
     DataCardinality (Cardinality ty card dpExp maybeRange) ->
         printIRI pds dpExp <+> cardinalityType ty 
         <+> text (show card)
