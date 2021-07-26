@@ -38,7 +38,7 @@ data FrameType = DatatypeFrame
     | AnnotationPropertyFrame
     | IndividualFrame
     | MiscFrame
-    deriving(Show, Eq, Ord)
+    deriving(Show, Eq, Ord, Enum, Bounded)
 
 data FrameSectionType = AnnotationsSection
     | EquivalentToSection
@@ -766,11 +766,11 @@ tAnnotationAxiom ax@(AnnotationAssertion anns prop subj value) ms = res
 
         m' = tAnnotations anns . tAnnotationValue value
             . tAnnotationProperty prop $ ms
-        ks = findKeys frameIri $ M.keys m'
+        ks = foldr (\f a -> maybe a (\t -> (f, IriId frameIri) : a) (M.lookup (f, IriId frameIri) m')) [] [minBound..maxBound]
         subTrees = map (\k -> M.findWithDefault M.empty k m') ks
         axiomsList = map (M.findWithDefault [] AnnotationsSection) subTrees
         newAxiom = AnnotationAxiom
-            $ (AnnotationAssertion anns prop (AnnSubIri frameIri) value)
+            $ (AnnotationAssertion anns prop (AnnSubIri frameIri) value) 
         newAxiomsList = map (newAxiom:) $ axiomsList
 
         newSubTrees = zipWith (M.insert AnnotationsSection)
@@ -1121,7 +1121,7 @@ opAxiomsToDoc pds n DomainSection axioms =
     $+$
     (vcat . punctuate comma . map (printObPropDom pds (n + 1)) $ axioms)
 
-opAxiomsToDoc pds n rangeSection axioms =
+opAxiomsToDoc pds n RangeSection axioms =
     tabs n <> keyword rangeC
     $+$
     (vcat . punctuate comma . map (printObPropRange pds (n + 1)) $ axioms)
@@ -1210,7 +1210,7 @@ printCharacteristics pds n (SymmetricObjectProperty anns _) =
 printCharacteristics pds n (AsymmetricObjectProperty anns _) =
     printAnnotations pds (n + 1) anns
     $+$
-    tabs n <> keyword antisymmetricS
+    tabs n <> keyword asymmetricS
 
 printCharacteristics pds n (TransitiveObjectProperty anns _) =
     printAnnotations pds (n + 1) anns
