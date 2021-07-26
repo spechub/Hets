@@ -766,7 +766,8 @@ tAnnotationAxiom ax@(AnnotationAssertion anns prop subj value) ms = res
 
         m' = tAnnotations anns . tAnnotationValue value
             . tAnnotationProperty prop $ ms
-        ks = foldr (\f a -> maybe a (\t -> (f, IriId frameIri) : a) (M.lookup (f, IriId frameIri) m')) [] [minBound..maxBound]
+        ks = foldr (\f a -> maybe a (\t -> (f, IriId frameIri) : a)
+            (M.lookup (f, IriId frameIri) m')) [] [minBound..maxBound]
         subTrees = map (\k -> M.findWithDefault M.empty k m') ks
         axiomsList = map (M.findWithDefault [] AnnotationsSection) subTrees
         newAxiom = AnnotationAxiom
@@ -807,15 +808,6 @@ tAnnotationAxiom ax@(AnnotationPropertyRange anns iri1 iri2) ms =
         m2 = M.findWithDefault M.empty k m1
         axioms = M.findWithDefault [] RangeSection m2
         newAxioms = AnnotationAxiom ax : axioms
-
--- auxiliary funciton for AnnotaionAssertion axiom
-findKeys :: IRI -> [FrameId] -> [FrameId]
-findKeys iri [] = []
-findKeys iri (fId@(_, IriId iri') : fIds) 
-    | iri == iri' = fId : findKeys iri fIds
-    | otherwise = findKeys iri fIds
-
-findKeys iri (_:fIds) = findKeys iri fIds 
 
 -- | transform Annotations
 tAnnotations :: [Annotation] -> MnchstrSntx -> MnchstrSntx
