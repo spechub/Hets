@@ -706,7 +706,7 @@ type TargetValue = Literal
 -- SWRL Rules
 
 data Rule = DLSafeRule AxiomAnnotations Body Head
-  | DGRule AxiomAnnotations DGBody DGHead 
+  | DGRule AxiomAnnotations DGBody DGHead
   deriving (Show, Eq, Ord, Data)
 type Body = [Atom]
 type Head = [Atom]
