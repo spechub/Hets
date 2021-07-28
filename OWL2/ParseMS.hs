@@ -1,6 +1,5 @@
 module OWL2.ParseMS where
 
-
 import Prelude hiding (lookup)
 
 import OWL2.AS
