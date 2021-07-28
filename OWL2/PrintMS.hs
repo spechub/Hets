@@ -13,16 +13,7 @@ import OWL2.AS
 import OWL2.Keywords
 import OWL2.ColonKeywords
 
--- imports for tests
-import Debug.Trace
-
------ auxiliary data structures and transformations (possible MS syntax) -----
-
--- | function to extract IRI from ObjectInverseOf
-obPropExprToIRI :: ObjectPropertyExpression -> IRI
-obPropExprToIRI (ObjectProp iri) = iri
-obPropExprToIRI (ObjectInverseOf obExpr) = obPropExprToIRI obExpr 
-
+----- auxiliary MS data structures and transformations functions to MS -----
 type Annotations = [Annotation]
 
 data FrameIdValue = 
@@ -71,6 +62,11 @@ type FrameId = (FrameType, FrameIdValue)
 type Frame = M.Map FrameSectionType [Axiom]
 type MnchstrSntx = M.Map FrameId Frame
 
+-- | function to extract IRI from ObjectInverseOf
+obPropExprToIRI :: ObjectPropertyExpression -> IRI
+obPropExprToIRI (ObjectProp iri) = iri
+obPropExprToIRI (ObjectInverseOf obExpr) = obPropExprToIRI obExpr 
+
 emptyMS :: MnchstrSntx
 emptyMS = M.empty
 
@@ -103,10 +99,6 @@ tDeclaration (Declaration anns entity) =
     tAddDecAnnAssertions entity anns
     . tEntity entity . tAnnotations anns
 
--- | transform Annotations v1
--- tDecAnnotations :: Annotations -> MnchstrSntx -> MnchstrSntx
--- tDecAnnotations = flip $ foldl (\m ann -> tDecAnnotation ann m) 
-
 tAddDecAnnAssertions :: Entity -> Annotations -> MnchstrSntx -> MnchstrSntx
 tAddDecAnnAssertions entity =
     flip $ foldl (\m ann -> tAddDecAnnAssertion entity ann m)
@@ -131,15 +123,6 @@ tAddDecAnnAssertion entity (Annotation anns prop value) ms =
         newAxiom = AnnotationAxiom
             $ AnnotationAssertion anns prop (AnnSubIri frameIRI) value
         newAxioms = newAxiom : axioms
-        
--- | transform Annotation v1
--- tDecAnnotation :: Annotation -> MnchstrSntx -> MnchstrSntx
--- tDecAnnotation (Annotation anns annProp annValue) ms =
---     tDecAnnotations anns . tAnnotationValue annValue 
---     $ M.insert k v ms
---     where 
---         k = (AnnotationPropertyFrame, IriId annProp)
---         v = M.findWithDefault M.empty k ms
 
 -- | transform Entity
 tEntity :: Entity -> MnchstrSntx -> MnchstrSntx
