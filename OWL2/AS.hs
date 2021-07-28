@@ -609,6 +609,8 @@ data Axiom =
      [DataPropertyExpression]
   | Assertion Assertion
   | AnnotationAxiom AnnotationAxiom
+  | Rule Rule
+  | DGAxiom AxiomAnnotations DGName DGNodes DGEdges MainClasses
   deriving (Show, Eq, Ord, Typeable, Data)
 
 -- ClassAxiom
@@ -701,6 +703,64 @@ type SourceIndividual = Individual
 type TargetIndividual = Individual
 type TargetValue = Literal
 
+-- SWRL Rules
+
+data Rule = DLSafeRule AxiomAnnotations Body Head
+  | DGRule AxiomAnnotations DGBody DGHead
+  deriving (Show, Eq, Ord, Data)
+type Body = [Atom]
+type Head = [Atom]
+type DGBody = [DGAtom]
+type DGHead = [DGAtom]
+
+data IndividualArg = IArg Individual | IVar IndividualVar
+  deriving (Show, Eq, Ord, Data)
+data DataArg = DArg Literal | DVar DataVar
+  deriving (Show, Eq, Ord, Data)
+
+type IndividualVar = Variable
+type DataVar = Variable
+type Variable = IRI
+
+-- | See `UnkownUnaryAtom`
+data UnkownArg = IndividualArg IndividualArg | DataArg DataArg | Variable Variable
+  deriving (Show, Eq, Ord, Data)
+
+data Atom = ClassAtom ClassExpression IndividualArg
+  | DataRangeAtom DataRange DataArg
+  | ObjectPropertyAtom ObjectPropertyExpression IndividualArg IndividualArg
+  | DataPropertyAtom DataProperty IndividualArg DataArg
+  -- At least one DataArg
+  | BuiltInAtom IRI [DataArg]
+  | SameIndividualAtom IndividualArg IndividualArg
+  | DifferentIndividualsAtom IndividualArg IndividualArg
+
+{-|
+  Ambiguous predicates used in SWRL Rules which type cannot be inferred during parsing
+  This predicates get resolved and replaced with a specific one in static analysis.
+-}
+  | UnknownUnaryAtom IRI UnkownArg
+  | UnknownBinaryAtom IRI UnkownArg UnkownArg
+  deriving (Show, Eq, Ord, Data)
+  
+data DGAtom = DGClassAtom ClassExpression IndividualArg
+  | DGObjectPropertyAtom ObjectPropertyExpression IndividualArg IndividualArg
+  deriving (Show, Eq, Ord, Data)
+
+type DGName = IRI
+-- At least one
+type DGNodes = [DGNodeAssertion]
+-- At least one
+type DGEdges = [DGEdgeAssertion]
+-- At least one
+type MainClasses = [Class]
+
+data DGNodeAssertion = DGNodeAssertion Class DGNode
+  deriving (Show, Eq, Ord, Data)
+type DGNode = IRI
+
+data DGEdgeAssertion = DGEdgeAssertion ObjectProperty DGNode DGNode
+  deriving (Show, Eq, Ord, Data)
 
 -- Root
 data OntologyDocument = OntologyDocument [PrefixDeclaration] Ontology
