@@ -331,7 +331,7 @@ facetToIRI = setPrefix "xsd" . mkIRI . showFacet
 facetToIRINoSign :: DatatypeFacet -> ConstrainingFacet
 facetToIRINoSign f = nullIRI {
     prefixName = "xsd"
-  , iFragment = showFacetNoSign f
+  , iFragment = showFacetAsText f
   , isAbbrev = True
 }
 

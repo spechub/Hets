@@ -331,18 +331,20 @@ data DatatypeFacet =
   | FRACTIONDIGITS
     deriving (Show, Eq, Ord)
 
-showFacetNoSign :: DatatypeFacet -> String
-showFacetNoSign LENGTH = lengthS
-showFacetNoSign MINLENGTH = minLengthS
-showFacetNoSign MAXLENGTH = maxLengthS
-showFacetNoSign PATTERN = patternS
-showFacetNoSign LANGRANGE = langRangeS
-showFacetNoSign MININCLUSIVE = minInclusiveS
-showFacetNoSign MINEXCLUSIVE = minExclusiveS
-showFacetNoSign MAXINCLUSIVE = maxInclusiveS
-showFacetNoSign MAXEXCLUSIVE = maxExclusiveS
-showFacetNoSign TOTALDIGITS = digitsS
-showFacetNoSign FRACTIONDIGITS = fractionS
+-- Converts a facet to string but in contrast to @showFacet@ uses text
+-- instead of signs. E.g. "minInclusive" instead of "<="
+showFacetAsText :: DatatypeFacet -> String
+showFacetAsText LENGTH = lengthS
+showFacetAsText MINLENGTH = minLengthS
+showFacetAsText MAXLENGTH = maxLengthS
+showFacetAsText PATTERN = patternS
+showFacetAsText LANGRANGE = langRangeS
+showFacetAsText MININCLUSIVE = minInclusiveS
+showFacetAsText MINEXCLUSIVE = minExclusiveS
+showFacetAsText MAXINCLUSIVE = maxInclusiveS
+showFacetAsText MAXEXCLUSIVE = maxExclusiveS
+showFacetAsText TOTALDIGITS = digitsS
+showFacetAsText FRACTIONDIGITS = fractionS
 
 showFacet :: DatatypeFacet -> String
 showFacet df = case df of
