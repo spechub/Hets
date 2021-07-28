@@ -22,7 +22,7 @@ import qualified Common.GlobalAnnotations as GA (PrefixMap)
 import Text.ParserCombinators.Parsec
 
 import Data.Char
-import qualified Data.Map as Map (union, toList, fromList, unions)
+import qualified Data.Map as Map (toList, fromList, unions)
 import Data.Either (partitionEithers)
 import Data.Maybe (fromJust)
 import Control.Monad (liftM2)
