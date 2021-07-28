@@ -762,7 +762,7 @@ misc pm =
 -}
 
 parseVariable :: GA.PrefixMap -> CharParser st Variable
-parseVariable pm = do 
+parseVariable pm = optParensP $ do 
   char '?'
   expUriP pm
 
