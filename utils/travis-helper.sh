@@ -410,7 +410,9 @@ function myUploadDocs {
 	env >docs/.env
 	# convert the README.md into docs/README.html
 	if [[ -x /usr/bin/npm ]]; then
-		npm install --only=production --no-optional marked commander
+		# bionic comes with nodejs v8.10 - latest modules bumped min version to
+		# v10+
+		npm install --only=production --no-optional marked@0.7.0 commander@6.2.1
 		utils/md2html.js -t 'Hets (The heterogeneous tool set)' -i README.md \
 			-o docs/README.html
 		[[ -s docs/README.html ]] || rm -f docs/README.html
