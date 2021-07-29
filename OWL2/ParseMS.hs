@@ -526,6 +526,12 @@ classFrameBit pm i = let e = Expression i in
     as <- optionalAnnos pm
     props <- parseProperties pm
     return [HasKey as e (fst props) (snd props)]
+  <|> do
+    -- This section is only created by the OWL API and is not defined in the standard.
+    -- It only duplicates information see https://github.com/owlcs/owlapi/issues/1006
+    pkeyword "Individuals:"
+    sepByComma $ individual pm
+    return []
   <|> parseAnnotationAssertions pm (AnnSubIri i)
 
 parseAnnotationAssertions :: GA.PrefixMap -> AnnotationSubject -> CharParser st [Axiom]
