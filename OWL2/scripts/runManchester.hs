@@ -12,7 +12,7 @@ script for running the manchester syntax parsing
 
 import System.Environment
 
-import OWL2.ManchesterParser
+import OWL2.ParseMS
 import OWL2.Print ()
 import OWL2.ManchesterPrint ()
 
@@ -24,7 +24,7 @@ import Text.ParserCombinators.Parsec
 processFile :: String -> IO ()
 processFile file = do
   str <- readFile file
-  case runParser (basicSpec << eof) () file str of
+  case runParser (parseOntologyDocument mempty << eof) () file str of
     Right o -> print o
     Left err -> print err
 

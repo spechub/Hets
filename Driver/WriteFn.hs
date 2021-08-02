@@ -103,7 +103,7 @@ import OWL2.CreateOWL
 import OWL2.Logic_OWL2
 import OWL2.ParseOWL (convertOWL)
 import qualified OWL2.ManchesterPrint as OWL2 (prepareBasicTheory)
-import qualified OWL2.ManchesterParser as OWL2 (basicSpec)
+import qualified OWL2.ParseMS as OWL2 (parseOntologyDocument)
 #endif
 
 #ifdef RDFLOGIC
@@ -302,7 +302,7 @@ writeTheory ins nam opts filePrefix ga
                   (printTheory ms OWL2 $ OWL2.prepareBasicTheory th2) "\n"
             showDiags opts ds
             when (null sy)
-                $ case parse (OWL2.basicSpec Map.empty >> eof) f owltext of
+                $ case parse (OWL2.parseOntologyDocument Map.empty >> eof) f owltext of
               Left err -> putIfVerbose opts 0 $ show err
               _ -> putIfVerbose opts 3 $ "reparsed: " ++ f
             writeVerbFile opts f owltext

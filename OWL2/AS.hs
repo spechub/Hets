@@ -328,6 +328,14 @@ xsdStringsMap = makeXsdMap xsdStrings
 facetToIRI :: DatatypeFacet -> ConstrainingFacet
 facetToIRI = setPrefix "xsd" . mkIRI . showFacet
 
+facetToIRINoSign :: DatatypeFacet -> ConstrainingFacet
+facetToIRINoSign f = nullIRI {
+    prefixName = "xsd"
+  , iFragment = showFacetAsText f
+  , isAbbrev = True
+}
+
+
 -- * Cardinalities
 
 data CardinalityType = MinCardinality | MaxCardinality | ExactCardinality
@@ -559,7 +567,11 @@ data ClassExpression =
 
 -- * ANNOTATIONS
 
-data Annotation = Annotation [Annotation] AnnotationProperty AnnotationValue
+data Annotation = Annotation {
+      annAnnotations :: [Annotation]
+    , annProperty :: AnnotationProperty
+    , annValue :: AnnotationValue
+  }
     deriving (Show, Eq, Ord, Typeable, Data)
 
 type OntologyAnnotations = [Annotation]

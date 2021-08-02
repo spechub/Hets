@@ -141,3 +141,15 @@ subPropertyOfC = "SubPropertyOf:"
 
 typesC :: String
 typesC = "Types:"
+
+equivalentClassesC :: String
+equivalentClassesC = "EquivalentClasses:"
+
+disjointClassesC :: String
+disjointClassesC = "DisjointClasses:"
+
+disjointPropertiesC :: String
+disjointPropertiesC = "DisjointProperties:"
+
+equivalentPropertiesC :: String
+equivalentPropertiesC = "EquivalentProperties:"
