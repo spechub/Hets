@@ -1,3 +1,15 @@
+
+{- |
+Module      :  ./OWL2/ParseMS.hs
+Copyright   :  (c) Björn Gehrke
+License     :  GPLv2 or higher, see LICENSE.txt
+Maintainer  :  bjoern.gehrke@ovgu.de
+Stability   :  provisional
+Portability :  portable
+Manchester Syntax parser
+References  :  <https://www.w3.org/TR/owl2-manchester-syntax/>
+-}
+
 module OWL2.ParseMS where
 
 import Prelude hiding (lookup)
