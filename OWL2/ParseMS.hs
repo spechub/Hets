@@ -739,12 +739,145 @@ misc pm =
     Assertion <$> parseSameIndividuals pm <|>
     Assertion <$> parseDifferentIndividuals pm
 
+-- # Rules
+-- There are ambiguities listed in the following table
+{-
+
+<predicate>(<iri>)                 | ClassAtom
+<predicate>(<literal>)             | DataRangeAtom, BuiltInAtom
+<predicate>(?<var>)                | ClassAtom, DataRangeAtom, BuiltInAtom
+
+<predicate>(<iri>, <iri>)          | ObjectPropertyAtom
+<predicate>(<literal>, <iri>)      | -invalid-
+<predicate>(?<var>, <iri>)         | ObjectPropertyAtom
+<predicate>(<iri>, <literal>)      | DataPropertyAtom
+<predicate>(<literal>, <literal>)  | BuiltInAtom
+<predicate>(?<var>, <literal>)     | ObjectPropertyAtom, DataPropertyAtom
+<predicate>(<iri>, ?<var>)         | ObjectPropertyAtom, DataPropertyAtom
+<predicate>(<literal>, ?<var>)     | BuiltInAtom
+<predicate>(?<var>, ?<var>)        | ObjectPropertyAtom, DataPropertyAtom, BuiltInAtom
+
+<predicate>(<any>, <any>, <any>, ...) | BuiltInAtom
+
+-}
+
+parseVariable :: GA.PrefixMap -> CharParser st Variable
+parseVariable pm = optParensP $ do 
+  char '?'
+  expUriP pm
+
+parseNoVariable :: CharParser st a -> CharParser st a
+parseNoVariable p = do
+  nextChar <- lookAhead anyChar
+  if nextChar == '?' then fail "Variable" else p
+
+parseClassExprAtom :: GA.PrefixMap -> CharParser st Atom
+parseClassExprAtom pm = do
+  classExpr <- parensP $ description pm
+  arg <- (IVar <$> parseVariable pm) <|> (IArg <$> expUriP pm)
+  return $ ClassAtom classExpr arg
+
+-- parses uniquely identified class atoms. The only way a class atom can be
+-- identified as such during parsing is if iArg is an individual. If it is a Variable
+-- it could also be a DataRangeAtom.
+parseClassAtom :: GA.PrefixMap -> IRI -> CharParser st Atom
+parseClassAtom pm pre = ClassAtom (Expression pre) <$>
+  (IArg <$> parseNoVariable (expUriP pm))
+
+parseIArg :: GA.PrefixMap -> CharParser st IndividualArg
+parseIArg pm = (IVar <$> parseVariable pm) <|> (IArg <$> individual pm)
+
+parseObjectPropertyAtom :: GA.PrefixMap -> IRI -> CharParser st Atom
+parseObjectPropertyAtom pm pre = do
+  iarg <- parseIArg pm
+  commaP
+  i <- IArg <$> parseNoVariable (individual pm)
+  return $ ObjectPropertyAtom (ObjectProp pre) iarg i
+
+parseDataPropertyAtom :: GA.PrefixMap -> IRI -> CharParser st Atom
+parseDataPropertyAtom pm pre = do
+  iarg <- IArg <$> parseNoVariable (individual pm)
+  commaP
+  dataProp <- DArg <$> literal pm
+  return $ DataPropertyAtom pre iarg dataProp
+
+parseSameIndividualsAtom :: GA.PrefixMap -> CharParser st Atom
+parseSameIndividualsAtom pm = do
+  pkeyword sameIndividualC
+  parensP $ do 
+    iarg1 <- parseIArg pm
+    commaP
+    iarg2 <- parseIArg pm
+    return $ SameIndividualAtom iarg1 iarg2
+  
+parseDifferentIndividualsAtom :: GA.PrefixMap -> CharParser st Atom
+parseDifferentIndividualsAtom pm = do
+  pkeyword differentFromC
+  parensP $ do
+    iarg1 <- parseIArg pm
+    commaP
+    iarg2 <- parseIArg pm
+    return $ DifferentIndividualsAtom iarg1 iarg2
+
+parseDArg :: GA.PrefixMap -> CharParser st DataArg
+parseDArg pm = (DArg <$> literal pm) <|> (DVar <$> parseVariable pm)
+
+parseBuiltInAtom :: GA.PrefixMap -> IRI -> CharParser st Atom
+parseBuiltInAtom pm pre = 
+  try (do -- at least three arguments
+    arg1 <- parseDArg pm
+    commaP
+    arg2 <- parseDArg pm
+    commaP
+    argN <- sepByComma $ parseDArg pm
+    return $ BuiltInAtom pre (arg1 : arg2 : argN)) <|>
+  (do -- first arg a literal, at least two arguments
+    arg1 <- DArg <$> literal pm
+    commaP
+    argN <- sepByComma (parseDArg pm)
+    return $ BuiltInAtom pre (arg1 : argN))
+
+
+parseUnknownArg :: GA.PrefixMap -> CharParser st UnkownArg
+parseUnknownArg pm = (Variable <$> parseVariable pm) <|>
+  try (IndividualArg <$> parseIArg pm) <|>
+  (DataArg <$> parseDArg pm)
+
+parseUnknownAtom :: GA.PrefixMap -> IRI -> CharParser st Atom
+parseUnknownAtom pm pre =
+  try (UnknownBinaryAtom pre <$> parseUnknownArg pm <*> (commaP >> parseUnknownArg pm)) <|>
+  (UnknownUnaryAtom pre <$> parseUnknownArg pm)
+  
+
+
+parseAtom :: GA.PrefixMap -> CharParser st Atom
+parseAtom pm =  parseClassExprAtom pm <|> 
+  parseSameIndividualsAtom pm <|>
+  parseDifferentIndividualsAtom pm <|> do
+    pre <- expUriP pm
+    choice $ map (try . parensP) [
+      (parseClassAtom pm pre),
+      (parseObjectPropertyAtom pm pre),
+      (parseDataPropertyAtom pm pre),
+      (parseBuiltInAtom pm pre),
+      parseUnknownAtom pm pre]
+
+parseRule :: GA.PrefixMap -> CharParser st Axiom
+parseRule pm = do
+  pkeyword ruleC
+  anns <- optionalAnnos pm
+  body <- sepByComma (parseAtom pm) 
+  pkeyword "->"
+  rHead <- sepByComma (parseAtom pm)
+  return $ Rule $ DLSafeRule anns body rHead
+
+
 parseFrame :: GA.PrefixMap -> CharParser st [Axiom]
 parseFrame pm = do 
   frames <- classFrame pm <|> parseDatatypeFrame pm
     <|> objectPropertyFrame pm <|> dataPropertyFrame pm <|> individualFrame pm
     <|> annotationPropertyFrame pm <|> (misc pm >>= return.return)
-    <|> (pkeyword "Rule" >> unexpected "SWRL Rule")
+    <|> (parseRule pm >>= return.return)
   return $ frames
 
 
