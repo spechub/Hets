@@ -24,7 +24,7 @@ import Text.ParserCombinators.Parsec
 processFile :: String -> IO ()
 processFile file = do
   str <- readFile file
-  case runParser (parseOntologyDocument << eof) () file str of
+  case runParser (parseOntologyDocument mempty << eof) () file str of
     Right o -> print o
     Left err -> print err
 
