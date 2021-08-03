@@ -172,79 +172,288 @@ instance Function AS.AnnotationValue where
         AS.AnnValue anIri -> AS.AnnValue $ function t s anIri
         AS.AnnValLit l -> AS.AnnValLit $ function t s l
 
-instance Function Annotations where
-    function t pm = map (function t pm)
+instance Function AS.AnnotationSubject where
+    function t s av = case av of
+        AS.AnnSubIri i -> AS.AnnSubIri $ function t s i
+        AS.AnnSubAnInd i -> AS.AnnSubAnInd $ function t s i
 
--- | only for non-IRI AnnotatedLists
-instance Function a => Function (AnnotatedList a) where
-    function t s = map (\ (ans, a) -> (map (function t s) ans, function t s a))
 
--- | only for IRI AnnotatedLists
-mapAnnList :: AS.EntityType -> Action -> AMap -> AnnotatedList IRI
-    -> AnnotatedList IRI
-mapAnnList ty t m anl =
-    let ans = map fst anl
-        l = map snd anl
-    in zip (map (function t m) ans) $ map (cutWith ty t m) l
+instance Function AS.AnnotationAxiom where
+    function t mp (AS.AnnotationAssertion ann p s v) = AS.AnnotationAssertion
+        (function t mp ann)
+        (function t mp p)
+        (function t mp s)
+        (function t mp v)
+    function t mp (AS.SubAnnotationPropertyOf ann subP supP) = AS.SubAnnotationPropertyOf
+        (function t mp ann)
+        (function t mp subP)
+        (function t mp supP)
+    function t mp (AS.AnnotationPropertyDomain ann p i) = AS.AnnotationPropertyDomain
+        (function t mp ann)
+        (function t mp p)
+        (function t mp i)
+    function t mp (AS.AnnotationPropertyRange ann p i) = AS.AnnotationPropertyRange
+        (function t mp ann)
+        (function t mp p)
+        (function t mp i)
 
-instance Function Fact where
-    function t s f = case f of
-        ObjectPropertyFact pn op i -> ObjectPropertyFact pn
-            (function t s op) $ cutWith AS.NamedIndividual t s i
-        DataPropertyFact pn dp l -> DataPropertyFact pn
-            (cutWith AS.DataProperty t s dp) $ function t s l
+instance Function AS.Axiom where
+    function t mp (AS.Declaration anns e) = AS.Declaration (function t mp anns)
+        (function t mp e)
+    function t mp (AS.ClassAxiom c) = AS.ClassAxiom (function t mp c)
+    function t mp (AS.ObjectPropertyAxiom opAx) =
+        AS.ObjectPropertyAxiom (function t mp opAx)
+    function t mp (AS.DataPropertyAxiom d) =
+        AS.DataPropertyAxiom (function t mp d)
+    function t mp  (AS.DatatypeDefinition anns dt dr) =
+        AS.DatatypeDefinition (function t mp anns) (function t mp dt)
+            (function t mp dr)
+    function t mp (AS.HasKey anns c o d) = AS.HasKey
+        (function t mp anns)
+        (function t mp c)
+        (function t mp <$> o)
+        (function t mp <$> d)
 
-instance Function ListFrameBit where
-    function t s lfb = case lfb of
-        AnnotationBit al -> AnnotationBit $ mapAnnList AS.AnnotationProperty t s al
-        ExpressionBit al -> ExpressionBit $ function t s al
-        ObjectBit al -> ObjectBit $ function t s al
-        DataBit al -> DataBit $ mapAnnList AS.DataProperty t s al
-        IndividualSameOrDifferent al ->
-            IndividualSameOrDifferent $ mapAnnList AS.NamedIndividual t s al
-        DataPropRange al -> DataPropRange $ function t s al
-        IndividualFacts al -> IndividualFacts $ function t s al
-        _ -> lfb
+    function t mp (AS.Assertion assertion) = AS.Assertion (function t mp assertion)   
+    function t mp (AS.AnnotationAxiom a) = AS.AnnotationAxiom (function t mp a)
+    function t mp (AS.Rule r) = AS.Rule (function t mp r)
+    function t mp (AS.DGAxiom anns dgName dgNodes dgEdges mainClasses) =
+        AS.DGAxiom (function t mp anns) (function t mp dgName)
+            (function t mp dgNodes) (function t mp dgEdges)
+            (function t mp mainClasses)
 
-instance Function AnnFrameBit where
-    function t s afb = case afb of
-        DatatypeBit dr -> DatatypeBit $ function t s dr
-        ClassDisjointUnion cel -> ClassDisjointUnion $ map (function t s) cel
-        ClassHasKey opl dpl -> ClassHasKey (map (function t s) opl)
-            $ map (cutWith AS.DataProperty t s) dpl
-        ObjectSubPropertyChain opl ->
-            ObjectSubPropertyChain $ map (function t s) opl
-        _ -> afb
+instance Function AS.ClassAxiom where
+    function t mp (AS.SubClassOf anns subClExpr supClExpr) =
+        AS.SubClassOf (function t mp anns) (function t mp subClExpr)
+            (function t mp supClExpr)
 
-instance Function FrameBit where
-    function t s fb = case fb of
-        ListFrameBit mr lfb -> ListFrameBit mr $ function t s lfb
-        AnnFrameBit ans afb -> AnnFrameBit (function t s ans)
-            (function t s afb)
+    function t mp (AS.EquivalentClasses anns clExprs) =
+        AS.EquivalentClasses (function t mp anns)
+            (function t mp <$> clExprs)
+    
+    function t mp (AS.DisjointClasses anns clExprs) =
+        AS.DisjointClasses (function t mp anns)
+            (function t mp <$> clExprs)
 
-instance Function Extended where
-    function t mp ex = case ex of
-        Misc ans -> Misc $ function t mp ans
-        SimpleEntity ent -> SimpleEntity $ function t mp ent
-        ClassEntity ce -> ClassEntity $ function t mp ce
-        ObjectEntity op -> ObjectEntity $ function t mp op
+    function t mp (AS.DisjointUnion anns clIri clExprs) = 
+        AS.DisjointUnion (function t mp anns) (function t mp clIri)
+            (function t mp <$> clExprs)
 
-instance Function Frame where
-    function t mp (Frame ex fbl) = Frame (function t mp ex)
-        (map (function t mp) fbl)
 
-instance Function Axiom where
-    function t mp (PlainAxiom ex fb) = PlainAxiom (function t mp ex)
-        (function t mp fb)
+instance Function AS.SubObjectPropertyExpression where
+    function t mp (AS.SubObjPropExpr_obj e) = AS.SubObjPropExpr_obj
+        (function t mp e)
+    function t mp (AS.SubObjPropExpr_exprchain e) = AS.SubObjPropExpr_exprchain
+        (function t mp e)
 
-instance Function Ontology where
-  function t mp (Ontology ouri impList anList f) =
-      Ontology (function t mp ouri) (map (function t mp) impList)
-         (map (function t mp) anList) (map (function t mp) f)
+instance Function AS.ObjectPropertyAxiom where
+    function t mp (AS.SubObjectPropertyOf anns subExpr supExpr) = 
+        AS.SubObjectPropertyOf (function t mp anns)
+            (function t mp subExpr)
+            (function t mp supExpr)
+            
+    function t mp (AS.EquivalentObjectProperties anns exprs) = 
+        AS.EquivalentObjectProperties (function t mp anns)
+            (function t mp <$> exprs)
 
-instance Function OntologyDocument where
-  function t mp (OntologyDocument pm onto) =
-      OntologyDocument (function t mp pm) (function t mp onto)
+    function t mp (AS.DisjointObjectProperties anns exprs) = 
+        AS.DisjointObjectProperties (function t mp anns)
+            (function t mp <$> exprs)
+
+    function t mp (AS.InverseObjectProperties anns expr1 expr2) = 
+        AS.InverseObjectProperties (function t mp anns)
+            (function t mp expr1) (function t mp expr2)
+
+    function t mp (AS.ObjectPropertyDomain anns opExpr clExpr) = 
+        AS.ObjectPropertyDomain (function t mp anns)
+            (function t mp opExpr) (function t mp clExpr)
+
+    function t mp (AS.ObjectPropertyRange anns opExpr clExpr) = 
+        AS.ObjectPropertyRange (function t mp anns)
+            (function t mp opExpr) (function t mp clExpr)
+            
+    function t mp (AS.FunctionalObjectProperty anns opExpr) =
+        AS.FunctionalObjectProperty (function t mp anns)
+            (function t mp opExpr)
+
+    function t mp (AS.InverseFunctionalObjectProperty anns opExpr) = 
+        AS.InverseFunctionalObjectProperty (function t mp anns)
+            (function t mp opExpr)
+            
+    function t mp (AS.ReflexiveObjectProperty anns opExpr) =
+        AS.ReflexiveObjectProperty (function t mp anns)
+            (function t mp opExpr)
+            
+    function t mp (AS.IrreflexiveObjectProperty anns opExpr) =
+        AS.IrreflexiveObjectProperty (function t mp anns)
+            (function t mp opExpr)
+
+    function t mp (AS.SymmetricObjectProperty anns opExpr) =
+        AS.SymmetricObjectProperty (function t mp anns)
+            (function t mp opExpr)
+
+    function t mp (AS.AsymmetricObjectProperty anns opExpr) =
+        AS.AsymmetricObjectProperty (function t mp anns)
+            (function t mp opExpr)
+
+    function t mp (AS.TransitiveObjectProperty anns opExpr) =
+        AS.TransitiveObjectProperty (function t mp anns)
+            (function t mp opExpr)
+
+instance Function AS.DataPropertyAxiom where
+    function t mp (AS.SubDataPropertyOf anns subD supD) =
+        AS.SubDataPropertyOf (function t mp anns)
+            (function t mp subD) (function t mp supD)
+    
+    function t mp (AS.EquivalentDataProperties anns dpExprs) =
+        AS.EquivalentDataProperties (function t mp anns)
+            (function t mp <$> dpExprs)
+            
+    function t mp (AS.DisjointDataProperties anns dpExprs) =
+        AS.DisjointDataProperties (function t mp anns)
+            (function t mp dpExprs)
+
+    function t mp (AS.DataPropertyDomain anns dpExpr clExpr) =
+        AS.DataPropertyDomain (function t mp anns)
+            (function t mp dpExpr) (function t mp clExpr)
+    
+    function t mp (AS.DataPropertyRange anns dpExpr dr) =
+        AS.DataPropertyRange (function t mp anns)
+            (function t mp dpExpr) (function t mp dr)
+
+    function t mp (AS.FunctionalDataProperty anns dpExpr) = 
+        AS.FunctionalDataProperty (function t mp anns)
+            (function t mp dpExpr)
+
+instance Function AS.Assertion where
+    function t mp (AS.SameIndividual anns is) = AS.SameIndividual
+        (function t mp anns)
+        (function t mp <$> is)
+    function t mp (AS.DifferentIndividuals anns is) = AS.DifferentIndividuals
+        (function t mp anns)
+        (function t mp <$> is)
+    function t mp (AS.ClassAssertion anns c i) = AS.ClassAssertion
+        (function t mp anns)
+        (function t mp c)
+        (function t mp i)
+    function t mp (AS.ObjectPropertyAssertion anns o s t_) = AS.ObjectPropertyAssertion
+        (function t mp anns)
+        (function t mp o)
+        (function t mp s)
+        (function t mp t_)
+    function t mp (AS.NegativeObjectPropertyAssertion anns o s t_) = AS.NegativeObjectPropertyAssertion
+        (function t mp anns)
+        (function t mp o)
+        (function t mp s)
+        (function t mp t_)
+    function t mp (AS.DataPropertyAssertion anns d s t_) = AS.DataPropertyAssertion
+        (function t mp anns)
+        (function t mp d)
+        (function t mp s)
+        (function t mp t_)
+    function t mp (AS.NegativeDataPropertyAssertion anns d s t_) = AS.NegativeDataPropertyAssertion
+        (function t mp anns)
+        (function t mp d)
+        (function t mp s)
+        (function t mp t_)
+
+
+instance (Function a) => Function [a] where
+    function t mp l = function t mp <$> l
+
+instance (Function a) => Function (Maybe a) where
+    function t mp Nothing = Nothing
+    function t mp (Just l) = Just (function t mp l)
+
+instance Function AS.Rule where
+    function t mp (AS.DLSafeRule anns b h) = AS.DLSafeRule
+        (function t mp anns)
+        (function t mp b)
+        (function t mp h)
+    function t mp (AS.DGRule anns b h) = AS.DGRule
+        (function t mp anns)
+        (function t mp b)
+        (function t mp h)
+
+instance Function AS.DataArg where
+    function t mp (AS.DArg l) = AS.DArg (function t mp l)
+    function t mp (AS.DVar v) = AS.DVar (function t mp v)
+
+instance Function AS.IndividualArg where
+    function t mp (AS.IArg i) = AS.IArg (function t mp i)
+    function t mp (AS.IVar v) = AS.IVar (function t mp v)
+
+instance Function AS.UnkownArg   where
+    function t mp (AS.IndividualArg i) = AS.IndividualArg (function t mp i)
+    function t mp (AS.DataArg d) = AS.DataArg (function t mp d)
+    function t mp (AS.Variable v) = AS.Variable (function t mp v)
+    
+instance Function AS.Atom where
+    function t mp (AS.ClassAtom c arg) = AS.ClassAtom
+        (function t mp c)
+        (function t mp arg)
+    function t mp (AS.DataRangeAtom d arg) = AS.DataRangeAtom
+        (function t mp d)
+        (function t mp arg)
+    function t mp (AS.DataPropertyAtom d arg1 arg2) = AS.DataPropertyAtom
+        (function t mp d)
+        (function t mp arg1)
+        (function t mp arg2)
+    function t mp (AS.BuiltInAtom i args) = AS.BuiltInAtom
+        (function t mp i)
+        (function t mp <$> args)
+    function t mp (AS.SameIndividualAtom arg1 arg2) = AS.SameIndividualAtom
+        (function t mp arg1)
+        (function t mp arg2)
+    function t mp (AS.DifferentIndividualsAtom arg1 arg2) = AS.DifferentIndividualsAtom
+        (function t mp arg1)
+        (function t mp arg2)
+    function t mp (AS.UnknownUnaryAtom i arg) = AS.UnknownUnaryAtom
+        (function t mp i)
+        (function t mp arg)
+    function t mp (AS.UnknownBinaryAtom i arg1 arg2) = AS.UnknownBinaryAtom
+        (function t mp i)
+        (function t mp arg1)
+        (function t mp arg2)
+    
+
+instance Function AS.DGAtom where
+    function t mp (AS.DGClassAtom c arg) = AS.DGClassAtom
+        (function t mp c)
+        (function t mp arg)
+    function t mp (AS.DGObjectPropertyAtom e a1 a2) = AS.DGObjectPropertyAtom
+        (function t mp e)
+        (function t mp a1)
+        (function t mp a2)
+
+instance Function AS.DGEdgeAssertion where
+    function t mp (AS.DGEdgeAssertion o v1 v2) = AS.DGEdgeAssertion
+        (function t mp o)
+        (function t mp v1)
+        (function t mp v2)
+
+instance Function AS.DGNodeAssertion where
+    function t mp (AS.DGNodeAssertion c node) = AS.DGNodeAssertion
+        (function t mp c)
+        (function t mp node)
+
+
+instance Function AS.Ontology where
+    function t mp (AS.Ontology name version imp anns ax) = AS.Ontology
+        (function t mp name)
+        (function t mp version)
+        (function t mp imp)
+        (function t mp anns)
+        (function t mp ax)
+
+instance Function AS.PrefixDeclaration where
+    function t mp (AS.PrefixDeclaration n i) = AS.PrefixDeclaration
+        n
+        (function t mp i)
+
+instance Function AS.OntologyDocument where
+  function t mp (AS.OntologyDocument m pm onto) =
+      AS.OntologyDocument m (function t mp pm) (function t mp onto)
 
 instance Function RawSymb where
   function t mp rs = case rs of
