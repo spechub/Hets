@@ -790,5 +790,5 @@ parseOntologyDocument gapm = do
     let pm = Map.unions [gapm, (prefixToMap prefixes), predefinedPrefixes]
     ontology <- parseOntology pm
     eof
-    return $ OntologyDocument (prefixFromMap pm) ontology
+    return $ OntologyDocument (OntologyMetadata MS) (prefixFromMap pm) ontology
 

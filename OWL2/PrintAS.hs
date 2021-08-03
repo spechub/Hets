@@ -1,4 +1,4 @@
-module OWL2.PrintOWL2AS where
+module OWL2.PrintAS where
 
 import Common.Doc
 import Common.DocUtils
@@ -768,8 +768,8 @@ printAnnotationPropertyRange pds axAnns annProp iri =
         docIri = printIRI pds iri
 
 -- | print Root
-instance Pretty PrefixDeclaration where
-    pretty (PrefixDeclaration prName iri) =
+printPrefixDeclaration :: PrefixDeclaration -> Doc
+printPrefixDeclaration (PrefixDeclaration prName iri) =
         keyword "Prefix"
         <> sParens ((text (prName ++ ":")) <> (text " = ") <> pretty iri)
 
@@ -790,6 +790,6 @@ printOnt pds (Ontology mOnt mVerIri dImpDocs ontAnns axioms) =
                 vsep . map ((keyword "Import" <>)
                     . sParens . printIRI pds) $ dImpDocs
 
-instance Pretty OntologyDocument where
-    pretty (OntologyDocument prefDecls ont) = 
-        (vsep . map pretty $ prefDecls) $+$ printOnt prefDecls ont
+printOntologyDocument :: OntologyDocument -> Doc
+printOntologyDocument (OntologyDocument _ prefDecls ont) = 
+    (vsep . map printPrefixDeclaration $ prefDecls) $+$ printOnt prefDecls ont

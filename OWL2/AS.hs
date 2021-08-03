@@ -775,10 +775,26 @@ data DGEdgeAssertion = DGEdgeAssertion ObjectProperty DGNode DGNode
   deriving (Show, Eq, Ord, Data)
 
 -- Root
-data OntologyDocument = OntologyDocument [PrefixDeclaration] Ontology
-  deriving  (Show, Eq, Ord, Data)
+
+emptyOntology :: Ontology
+emptyOntology = Ontology Nothing Nothing [] [] []
+
+emptyOntologyDoc :: OntologyDocument
+emptyOntologyDoc = OntologyDocument (OntologyMetadata AS) [] emptyOntology
+
+data OntologySyntaxType = MS | AS
+  deriving  (Show, Eq, Ord, Data, Typeable)
+data OntologyMetadata = OntologyMetadata {
+  syntaxType :: OntologySyntaxType
+  -- might be extended 
+} deriving  (Show, Eq, Ord, Data, Typeable)
+
+data OntologyDocument = OntologyDocument OntologyMetadata [PrefixDeclaration] Ontology
+  deriving  (Show, Eq, Ord, Data, Typeable)
 data PrefixDeclaration = PrefixDeclaration PrefixName IRI
-  deriving  (Show, Eq, Ord, Data)
+  deriving  (Show, Eq, Ord, Data, Typeable)
+
+instance GetRange OntologyDocument
   
 type PrefixName = String
 

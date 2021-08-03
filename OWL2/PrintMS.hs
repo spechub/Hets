@@ -951,14 +951,14 @@ tIndividual iri ms =
     
 ------------- main printing part ----------------  
 
-instance Pretty OntologyDocument where
-    pretty (OntologyDocument prefDecls ont) = 
-        (vcat . map pretty $ prefDecls)
+printOntologyDocument :: OntologyDocument -> Doc
+printOntologyDocument (OntologyDocument _ prefDecls ont) = 
+        (vcat . map printPrefixDeclaration $ prefDecls)
         $++$ printOntology prefDecls ont
 
-instance Pretty PrefixDeclaration where
-    pretty (PrefixDeclaration prName iri) =
-        hsep [keyword "Prefix:", text (prName ++ ":"), pretty iri]
+printPrefixDeclaration :: PrefixDeclaration -> Doc
+printPrefixDeclaration (PrefixDeclaration prName iri) =
+    hsep [keyword "Prefix:", text (prName ++ ":"), pretty iri]
 
 printOntology :: [PrefixDeclaration] -> Ontology -> Doc
 printOntology pds 
