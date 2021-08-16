@@ -17,6 +17,7 @@ module OWL2.Function where
 import qualified OWL2.AS as AS
 import Common.IRI
 import Common.Id (stringToId)
+import qualified Common.GlobalAnnotations as GA (PrefixMap)
 import OWL2.MS
 import OWL2.Sign
 import OWL2.Symbols
@@ -55,6 +56,16 @@ err :: t
 err = error "operation not allowed"
 
 instance Function AS.PrefixMap where
+    function a m oldPs = case m of
+        StringMap mp -> case a of
+            Rename ->
+                foldl (\ ns (pre, ouri) ->
+                    Map.insert (Map.findWithDefault pre pre mp) ouri ns)
+                    Map.empty $ Map.toList oldPs
+            Expand -> oldPs
+        _ -> err
+
+instance Function GA.PrefixMap where
     function a m oldPs = case m of
         StringMap mp -> case a of
             Rename ->
