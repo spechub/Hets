@@ -43,24 +43,24 @@ parseOWLAsLibDefn quick fn = do
    (imap, ontodocs) <- parseOWL quick fn
    return $ map (convertToLibDefN imap) ontodocs
 
-createSpec :: OntologyDocument -> [SPEC_NAME] -> Annoted SPEC
+createSpec :: AS.OntologyDocument -> [SPEC_NAME] -> Annoted SPEC
 createSpec o imps = addImports imps . makeSpec $ G_basic_spec OWL2 o
 
-convertone :: OntologyDocument -> SPEC_NAME -> [SPEC_NAME] -> Annoted LIB_ITEM
+convertone :: AS.OntologyDocument -> SPEC_NAME -> [SPEC_NAME] -> Annoted LIB_ITEM
 convertone o oname i = makeSpecItem oname $ createSpec o i
 
-convertToLibDefN :: Map.Map String String -> OntologyDocument -> LIB_DEFN
+convertToLibDefN :: Map.Map String String -> AS.OntologyDocument -> LIB_DEFN
 convertToLibDefN imap o = Lib_defn ln
     (makeLogicItem OWL2 : imp_libs ++ [convertone o oname imps2]) nullRange []
-  where ont = ontology o
+  where ont = AS.ontology o
         il = Map.toList imap
         is = map snd il
         ln = case lookup libstr $ map (\ (a, b) -> (b, a)) il of
             Just s -> setFilePath $ tryToStripPrefix "file:" s
             Nothing -> setFilePath libstr
           $ iriLibName oname
-        imps = imports ont
+        imps = AS.importsDocuments ont
         imps2 = filter ((`elem` is) . show . setAngles False) imps
-        oname = name ont
+        oname = fromMaybe nullIRI $ AS.mOntologyIRI ont
         libstr = show $ setAngles False oname
         imp_libs = map (addDownload False) imps2

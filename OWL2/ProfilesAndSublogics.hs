@@ -16,6 +16,7 @@ References  :  <http://www.w3.org/TR/owl2-profiles/>
 module OWL2.ProfilesAndSublogics where
 
 import OWL2.MS
+import qualified OWL2.AS as AS
 import OWL2.Profiles
 import OWL2.Sublogic
 import OWL2.Sign
@@ -45,7 +46,7 @@ maxS ps1 ps2 = ProfSub (andProfileList [profiles ps1, profiles ps2])
 nameS :: ProfSub -> String
 nameS ps = printProfile (profiles ps) ++ "-" ++ slName (sublogic ps)
 
-psAxiom :: Axiom -> ProfSub
+psAxiom :: AS.Axiom -> ProfSub
 psAxiom ax = ProfSub (axiom ax) (slAxiom ax)
 
 sSig :: Sign -> ProfSub
@@ -62,8 +63,8 @@ prMorph s a = a
     { osource = prSign s $ osource a
     , otarget = prSign s $ otarget a }
 
-prOntDoc :: ProfSub -> OntologyDocument -> OntologyDocument
+prOntDoc :: ProfSub -> AS.OntologyDocument -> AS.OntologyDocument
 prOntDoc ps = prODoc (sublogic ps)
 
-profilesAndSublogic :: OntologyDocument -> ProfSub
+profilesAndSublogic :: AS.OntologyDocument -> ProfSub
 profilesAndSublogic odoc = ProfSub (ontologyProfiles odoc) (slODoc odoc)

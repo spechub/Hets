@@ -25,6 +25,7 @@ import Common.Utils
 import GUI.Utils ()
 
 import OWL2.MS
+import qualified OWL2.AS as AS
 import OWL2.Morphism
 import OWL2.Sign
 import OWL2.XMLConversion
@@ -37,20 +38,20 @@ localityJar = "OWLLocality.jar"
 
 -- | Conservativity Check for Propositional Logic
 conserCheck :: String                        -- ^ Conser type
-           -> (Sign, [Named Axiom])       -- ^ Initial sign and formulas
+           -> (Sign, [Named AS.Axiom])       -- ^ Initial sign and formulas
            -> OWLMorphism                    -- ^ morphism between specs
-           -> [Named Axiom]               -- ^ Formulas of extended spec
-           -> IO (Result (Conservativity, [Axiom]))
+           -> [Named AS.Axiom]               -- ^ Formulas of extended spec
+           -> IO (Result (Conservativity, [AS.Axiom]))
 conserCheck ct = uncurry $ doConservCheck localityJar ct
 
 -- | Real conservativity check in IO Monad
 doConservCheck :: String            -- ^ Jar name
                -> String            -- ^ Conser Type
                -> Sign              -- ^ Signature of Onto 1
-               -> [Named Axiom]  -- ^ Formulas of Onto 1
+               -> [Named AS.Axiom]  -- ^ Formulas of Onto 1
                -> OWLMorphism       -- ^ Morphism
-               -> [Named Axiom]  -- ^ Formulas of Onto 2
-               -> IO (Result (Conservativity, [Axiom]))
+               -> [Named AS.Axiom]  -- ^ Formulas of Onto 2
+               -> IO (Result (Conservativity, [AS.Axiom]))
 doConservCheck jar ct sig1 sen1 mor sen2 =
   let ontoFile = mkODoc (otarget mor) sen2
       sigFile = mkODoc sig1 (filter isAxiom sen1)
@@ -61,7 +62,7 @@ runLocalityChecker :: String            -- ^ Jar name
                    -> String            -- ^ Conser Type
                    -> String            -- ^ Ontology
                    -> String            -- ^ String
-                   -> IO (Result (Conservativity, [Axiom]))
+                   -> IO (Result (Conservativity, [AS.Axiom]))
 runLocalityChecker jar ct onto sig = do
   (progTh, toolPath) <- check4HetsOWLjar jar
   if progTh then withinDirectory toolPath $ do
@@ -80,7 +81,7 @@ runLocalityChecker jar ct onto sig = do
 
 parseOutput :: String
             -> ExitCode
-            -> Result (Conservativity, [Axiom])
+            -> Result (Conservativity, [AS.Axiom])
 parseOutput ls1 exit = do
   let ls = lines ls1
   case exit of

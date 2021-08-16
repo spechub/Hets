@@ -30,6 +30,7 @@ import OWL2.Sublogic
 import OWL2.ProfilesAndSublogics
 import OWL2.ProverState
 import OWL2.MS
+import qualified OWL2.AS as AS
 
 import GUI.GenericATP
 import Interfaces.GenericATPState
@@ -74,12 +75,12 @@ pelletCheck = fmap
   The Prover implementation. First runs the batch prover (with graphical
   feedback), then starts the GUI prover.
 -}
-pelletProver :: Prover Sign Axiom OWLMorphism ProfSub ProofTree
+pelletProver :: Prover Sign AS.Axiom OWLMorphism ProfSub ProofTree
 pelletProver =
   (mkAutomaticProver "java" pelletS topS pelletGUI pelletCMDLautomaticBatch)
   { proverUsable = pelletCheck }
 
-pelletConsChecker :: ConsChecker Sign Axiom ProfSub OWLMorphism ProofTree
+pelletConsChecker :: ConsChecker Sign AS.Axiom ProfSub OWLMorphism ProofTree
 pelletConsChecker = (mkConsChecker pelletS topS consCheck)
   { ccNeedsTimer = False
   , ccUsable = pelletCheck }
@@ -89,7 +90,7 @@ pelletConsChecker = (mkConsChecker pelletS topS consCheck)
   line interface.
 -}
 atpFun :: String -- ^ theory name
-       -> ATPFunctions Sign Axiom OWLMorphism ProofTree ProverState
+       -> ATPFunctions Sign AS.Axiom OWLMorphism ProofTree ProverState
 atpFun _ = ATPFunctions
   { initialProverState = owlProverState
   , atpTransSenName = id   -- transSenName,
@@ -109,8 +110,8 @@ atpFun _ = ATPFunctions
   Invokes the generic prover GUI.
 -}
 pelletGUI :: String -- ^ theory name
-          -> Theory Sign Axiom ProofTree
-          -> [FreeDefMorphism Axiom OWLMorphism] -- ^ freeness constraints
+          -> Theory Sign AS.Axiom ProofTree
+          -> [FreeDefMorphism AS.Axiom OWLMorphism] -- ^ freeness constraints
           -> IO [ProofStatus ProofTree] -- ^ proof status for each goal
 pelletGUI thName th freedefs =
   genericATPgui (atpFun thName) True pelletS thName th
@@ -130,8 +131,8 @@ pelletCMDLautomaticBatch ::
            -- ^ used to store the result of the batch run
         -> String -- ^ theory name
         -> TacticScript -- ^ default tactic script
-        -> Theory Sign Axiom ProofTree -- ^ theory
-        -> [FreeDefMorphism Axiom OWLMorphism] -- ^ freeness constraints
+        -> Theory Sign AS.Axiom ProofTree -- ^ theory
+        -> [FreeDefMorphism AS.Axiom OWLMorphism] -- ^ freeness constraints
         -> IO (ThreadId, MVar ())
         {- ^ fst: identifier of the batch thread for killing it
         snd: MVar to wait for the end of the thread -}
@@ -148,8 +149,8 @@ pelletCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
 -}
 consCheck :: String
           -> TacticScript
-          -> TheoryMorphism Sign Axiom OWLMorphism ProofTree
-          -> [FreeDefMorphism Axiom OWLMorphism] -- ^ freeness constraints
+          -> TheoryMorphism Sign AS.Axiom OWLMorphism ProofTree
+          -> [FreeDefMorphism AS.Axiom OWLMorphism] -- ^ freeness constraints
           -> IO (CCStatus ProofTree)
 consCheck thName (TacticScript tl) tm freedefs = case tTarget tm of
   Theory sig nSens -> do
@@ -200,7 +201,7 @@ runPellet :: ProverState
           -> GenericConfig ProofTree -- ^ configuration to use
           -> Bool -- ^ True means save TPTP file
           -> String -- ^ name of the theory in the DevGraph
-          -> Named Axiom -- ^ goal to prove
+          -> Named AS.Axiom -- ^ goal to prove
           -> IO (ATPRetval, GenericConfig ProofTree)
           -- ^ (retval, configuration with proof status and complete output)
 runPellet sps cfg savePellet thName nGoal = do

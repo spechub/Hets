@@ -16,7 +16,7 @@ module OWL2.Morphism where
 
 import Common.IRI
 import qualified OWL2.AS as AS
-import OWL2.MS
+--import OWL2.MS
 import OWL2.Sign
 import OWL2.ManchesterPrint ()
 import OWL2.Symbols
@@ -200,7 +200,7 @@ statSymbMapItems sig mtsig =
         PrefixO ->
             map (\ (s, t) -> (APrefix (showIRICompact s), APrefix $ showIRICompact t)) ps)
 
-mapSen :: OWLMorphism -> Axiom -> Result Axiom
+mapSen :: OWLMorphism -> AS.Axiom -> Result AS.Axiom
 mapSen m a = do
     let new = function Rename (MorphMap $ mmaps m) a
     return $ function Rename (StringMap $ pmap m) new

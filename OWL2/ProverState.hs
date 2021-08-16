@@ -16,6 +16,7 @@ module OWL2.ProverState where
 import Logic.Prover
 
 import OWL2.MS
+import qualified OWL2.AS as AS
 import OWL2.Morphism
 import OWL2.Sign
 import OWL2.ManchesterPrint
@@ -25,11 +26,11 @@ import Common.AS_Annotation
 
 data ProverState = ProverState
     { ontologySign :: Sign,
-      initialState :: [Named Axiom]
+      initialState :: [Named AS.Axiom]
     } deriving Show
 
-owlProverState :: Sign -> [Named Axiom]
-    -> [FreeDefMorphism Axiom OWLMorphism] -- ^ freeness constraints
+owlProverState :: Sign -> [Named AS.Axiom]
+    -> [FreeDefMorphism AS.Axiom OWLMorphism] -- ^ freeness constraints
     -> ProverState
 owlProverState sig oSens _ = ProverState
     { ontologySign = sig,
@@ -39,7 +40,7 @@ owlProverState sig oSens _ = ProverState
   Inserts a named OWL2 axiom into the prover state.
 -}
 insertOWLAxiom :: ProverState -- ^ prover state containing initial logical part
-               -> Named Axiom -- ^ goal to add
+               -> Named AS.Axiom -- ^ goal to add
                -> ProverState
 insertOWLAxiom pps s = pps { initialState = initialState pps ++ [s] }
 
@@ -53,7 +54,7 @@ showOWLProblemS pst =
   Pretty printing OWL goal for pellet or fact++
 -}
 showOWLProblem :: ProverState -- ^ prover state containing initial logical part
-               -> Named Axiom -- ^ goal to print
+               -> Named AS.Axiom -- ^ goal to print
                -> IO String -- ^ formatted output of the goal
 showOWLProblem pst nGoal =
   let sign = ontologySign pst

@@ -15,6 +15,7 @@ module OWL2.ProveFact (factProver, factConsChecker) where
 import Logic.Prover
 
 import OWL2.MS
+import qualified OWL2.AS as AS
 import OWL2.Morphism
 import OWL2.Sign
 import OWL2.ProfilesAndSublogics
@@ -48,7 +49,7 @@ import Data.Maybe
   The Prover implementation. First runs the batch prover (with graphical
   feedback), then starts the GUI prover.
 -}
-factProver :: Prover Sign Axiom OWLMorphism ProfSub ProofTree
+factProver :: Prover Sign AS.Axiom OWLMorphism ProfSub ProofTree
 factProver = (mkAutomaticProver "java" "Fact" topS factGUI
   factCMDLautomaticBatch)
   { proverUsable = checkOWLjar factProverJarS }
@@ -63,8 +64,8 @@ factJarS = "OWLFact.jar"
   Invokes the generic prover GUI.
 -}
 factGUI :: String -- ^ theory name
-          -> Theory Sign Axiom ProofTree
-          -> [FreeDefMorphism Axiom OWLMorphism] -- ^ freeness constraints
+          -> Theory Sign AS.Axiom ProofTree
+          -> [FreeDefMorphism AS.Axiom OWLMorphism] -- ^ freeness constraints
           -> IO [ProofStatus ProofTree] -- ^ proof status for each goal
 factGUI thName th freedefs =
   genericATPgui (atpFun thName) True (proverName factProver) thName th
@@ -82,8 +83,8 @@ factCMDLautomaticBatch ::
            -- ^ used to store the result of the batch run
         -> String -- ^ theory name
         -> TacticScript -- ^ default tactic script
-        -> Theory Sign Axiom ProofTree -- ^ theory
-        -> [FreeDefMorphism Axiom OWLMorphism] -- ^ freeness constraints
+        -> Theory Sign AS.Axiom ProofTree -- ^ theory
+        -> [FreeDefMorphism AS.Axiom OWLMorphism] -- ^ freeness constraints
         -> IO (ThreadId, MVar ())
         {- ^ fst: identifier of the batch thread for killing it
         snd: MVar to wait for the end of the thread -}
@@ -96,7 +97,7 @@ factCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
 {- |
   The Cons-Checker implementation.
 -}
-factConsChecker :: ConsChecker Sign Axiom ProfSub OWLMorphism ProofTree
+factConsChecker :: ConsChecker Sign AS.Axiom ProfSub OWLMorphism ProofTree
 factConsChecker = (mkConsChecker "Fact" topS consCheck)
   { ccUsable = checkOWLjar factJarS }
 
@@ -105,7 +106,7 @@ factConsChecker = (mkConsChecker "Fact" topS consCheck)
   line interface.
 -}
 atpFun :: String -- ^ theory name
-       -> ATPFunctions Sign Axiom OWLMorphism ProofTree ProverState
+       -> ATPFunctions Sign AS.Axiom OWLMorphism ProofTree ProverState
 atpFun _ = ATPFunctions
   { initialProverState = owlProverState
   , atpTransSenName = id   -- transSenName,
@@ -124,8 +125,8 @@ atpFun _ = ATPFunctions
 -}
 consCheck :: String
           -> TacticScript
-          -> TheoryMorphism Sign Axiom OWLMorphism ProofTree
-          -> [FreeDefMorphism Axiom OWLMorphism] -- ^ freeness constraints
+          -> TheoryMorphism Sign AS.Axiom OWLMorphism ProofTree
+          -> [FreeDefMorphism AS.Axiom OWLMorphism] -- ^ freeness constraints
           -> IO (CCStatus ProofTree)
 consCheck thName (TacticScript tl) tm freedefs = case tTarget tm of
   Theory sig nSens ->
@@ -196,7 +197,7 @@ runFact :: ProverState
           -> GenericConfig ProofTree -- ^ configuration to use
           -> Bool -- ^ True means save TPTP file
           -> String -- ^ name of the theory in the DevGraph
-          -> Named Axiom -- ^ goal to prove
+          -> Named AS.Axiom -- ^ goal to prove
           -> IO (ATPRetval, GenericConfig ProofTree)
           -- ^ (retval, configuration with proof status and complete output)
 runFact sps cfg saveFact thName nGoal = do
