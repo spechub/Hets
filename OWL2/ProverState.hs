@@ -45,10 +45,11 @@ insertOWLAxiom :: ProverState -- ^ prover state containing initial logical part
 insertOWLAxiom pps s = pps { initialState = initialState pps ++ [s] }
 
 showOWLProblemS :: ProverState -> String -- ^ formatted output
-showOWLProblemS pst =
-    let namedSens = initialState pst
-        sign = ontologySign pst
-    in mkODoc sign (filter isAxiom namedSens)
+showOWLProblemS pst = []
+    -- TODO: commented out in 1993
+    -- let namedSens = initialState pst
+    --     sign = ontologySign pst
+    -- in mkODoc sign (filter isAxiom namedSens)
 
 {- |
   Pretty printing OWL goal for pellet or fact++
