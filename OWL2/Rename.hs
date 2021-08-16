@@ -15,22 +15,23 @@ no prefix clashes
 
 module OWL2.Rename where
 
-import qualified OWL2.AS as AS
+import OWL2.AS
 import Common.IRI
 import Common.Id (stringToId)
-import OWL2.MS
+-- import OWL2.MS
 import OWL2.Sign
 import OWL2.Function
 
 import Data.Char (isDigit)
 import Data.List (find, nub)
+import Data.Maybe (fromJust)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import Common.Result
 
 testAndInteg :: (String, String)
-     -> (AS.PrefixMap, StringMap) -> (AS.PrefixMap, StringMap)
+     -> (PrefixMap, StringMap) -> (PrefixMap, StringMap)
 testAndInteg (pre, oiri) (old, tm) = case Map.lookup pre old of
   Just anIri ->
    if oiri == anIri then (old, tm)
@@ -38,7 +39,7 @@ testAndInteg (pre, oiri) (old, tm) = case Map.lookup pre old of
          in (Map.insert pre' oiri old, Map.insert pre pre' tm)
   Nothing -> (Map.insert pre oiri old, tm)
 
-disambiguateName :: String -> AS.PrefixMap -> String
+disambiguateName :: String -> PrefixMap -> String
 disambiguateName n nameMap =
   let nm = if null n then "n" else n  -- change other empty prefixes to "n..."
       newname = reverse . dropWhile isDigit $ reverse nm
@@ -71,32 +72,37 @@ intersectSign s1 s2 = do
             }
     else fail "Static analysis could not intersect signatures"
 
-integPref :: AS.PrefixMap -> AS.PrefixMap
-                    -> (AS.PrefixMap, StringMap)
+integPref :: PrefixMap -> PrefixMap
+                    -> (PrefixMap, StringMap)
 integPref oldMap testMap =
    foldr testAndInteg (oldMap, Map.empty) (Map.toList testMap)
 
-newOid :: AS.OntologyIRI -> AS.OntologyIRI -> AS.OntologyIRI
-newOid id1 id2 =
+newOid :: Maybe OntologyIRI -> Maybe OntologyIRI -> Maybe OntologyIRI
+newOid Nothing Nothing = Nothing
+newOid (Just id1) Nothing = Just id1
+newOid Nothing (Just id2) = Just id2
+newOid (Just id1) (Just id2) =
   let lid1 = iriPath id1
       lid2 = iriPath id2
-  in if null $ show lid1 then id2
+  in Just $ if null $ show lid1 then id2
       else if (null $ show lid2) || id1 == id2 then id1
             else id1 { iriPath = stringToId (uriToName (show lid1) ++ "_" ++ uriToName (show lid2)) }
   -- todo: improve, see #1597
 
 combineDoc :: OntologyDocument -> OntologyDocument
                       -> OntologyDocument
-combineDoc od1@( OntologyDocument ns1
-                           ( Ontology oid1 imp1 anno1 frames1))
-                      od2@( OntologyDocument ns2
-                           ( Ontology oid2 imp2 anno2 frames2)) =
+combineDoc od1@( OntologyDocument m ns1
+                           ( Ontology oid1 vid1 imp1 anno1 frames1))
+                      od2@( OntologyDocument _ ns2
+                           ( Ontology oid2 vid2 imp2 anno2 frames2)) =
   if od1 == od2 then od1
    else
-    let (newPref, tm) = integPref ns1 ns2
-    in OntologyDocument newPref
-      (Ontology (newOid oid1 oid2) (nub $ imp1 ++ map
-            (function Rename $ StringMap tm) imp2)
+    let (newPref, tm) = integPref (changePrefixMapTypeToString ns1) (changePrefixMapTypeToString ns2)
+    in OntologyDocument m (changePrefixMapTypeToGA newPref)
+      (Ontology
+        (newOid oid1 oid2)
+        (newOid vid1 vid2)
+        (nub $ imp1 ++ map (function Rename $ StringMap tm) imp2)
        (nub $ anno1 ++ map (function Rename $ StringMap tm) anno2)
        (nub $ frames1 ++ map (function Rename $ StringMap tm) frames2))
 
@@ -121,11 +127,13 @@ unifyWith1 d odl = case odl of
     and as fst the merge of the two -}
 unifyTwo :: OntologyDocument -> OntologyDocument ->
               (OntologyDocument, OntologyDocument)
-unifyTwo od1 od2 =
-  let (_, tm) = integPref (prefixDeclaration od1) (prefixDeclaration od2)
-      newod2 = function Rename (StringMap tm) od2
-      alld = combineDoc od1 od2
-  in (alld, newod2)
+unifyTwo
+  od1@(OntologyDocument _ pref1 _)
+  od2@(OntologyDocument _ pref2 _) =
+    let (_, tm) = integPref (changePrefixMapTypeToString pref1) (changePrefixMapTypeToString pref2)
+        newod2 = function Rename (StringMap tm) od2
+        alld = combineDoc od1 od2
+    in (alld, newod2)
 
 unifyDocs :: [OntologyDocument] -> [OntologyDocument]
 unifyDocs = unifyWith1 emptyOntologyDoc
