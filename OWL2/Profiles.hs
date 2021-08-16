@@ -169,8 +169,8 @@ annotation (AS.Annotation as _ av) = andProfileList [annotations as, case av of
     AS.AnnValLit l -> literal l
     _ -> topProfile]
 
-annotations :: Annotations -> Profiles
-annotations ans = andProfileList $ map annotation ans
+annotations :: [AS.Annotation] -> Profiles
+annotations = andProfileList . map annotation
 
 assertionQL :: AS.ClassExpression -> Bool
 assertionQL ce = case ce of
@@ -310,17 +310,79 @@ fB ext fb = case fb of
     ListFrameBit mr lfb -> lFB ext mr lfb
     AnnFrameBit anno afb -> aFB ext anno afb
 
-axiom :: Axiom -> Profiles
-axiom (PlainAxiom ext fb) = fB ext fb
+classAxiomClassExpressions :: [AS.Annotation] -> [AS.ClassExpression] -> Profiles
+classAxiomClassExpressions anns clExprs = andProfileList [annotations anns, bottomProfile {
+                el = el $ andList subClass $ clExprs,
+                ql = ql $ andList subClass $ clExprs,
+                rl = all equivClassRL $ clExprs
+            }]
+
+axiom :: AS.Axiom -> Profiles
+axiom ax = case ax of
+    AS.Declaration anns _ -> topProfile
+    AS.ClassAxiom cax -> case cax of
+        AS.SubClassOf anns sub sup -> andProfileList [annotations anns, subClass sub, superClass sup]
+        AS.EquivalentClasses anns cExprs -> classAxiomClassExpressions anns cExprs
+        AS.DisjointClasses anns cExprs -> classAxiomClassExpressions anns cExprs
+        AS.DisjointUnion anns c cExprs -> classAxiomClassExpressions anns (AS.Expression c : cExprs)
+    AS.ObjectPropertyAxiom opax -> case opax of
+        AS.SubObjectPropertyOf anns subOpExpr supOpExpr -> case subOpExpr of
+            AS.SubObjPropExpr_obj oExpr ->
+                andProfileList [annotations anns, andProfileList $ map objProp [oExpr, supOpExpr]]
+            AS.SubObjPropExpr_exprchain oExprs -> 
+                minimalCovering elrlProfile [annotations anns, andProfileList $ map objProp (supOpExpr : oExprs)]
+        AS.EquivalentObjectProperties anns oExprs -> minimalCovering (annotations anns) $ map objProp oExprs
+        AS.DisjointObjectProperties anns oExprs -> minimalCovering qlrlProfile $ (annotations anns) : map objProp oExprs
+        AS.InverseObjectProperties anns o1 o2 -> minimalCovering qlrlProfile $ (annotations anns) : map objProp [o1, o2]
+        AS.ObjectPropertyDomain anns oe ce -> andProfileList [annotations anns, objProp oe, superClass ce] 
+        AS.ObjectPropertyRange anns oe ce -> andProfileList [annotations anns, objProp oe, superClass ce] -- previously no check on ce was deon
+        AS.FunctionalObjectProperty anns oe -> minimalCovering rlProfile [objProp oe]
+        AS.InverseFunctionalObjectProperty anns oe -> minimalCovering rlProfile [objProp oe]
+        AS.ReflexiveObjectProperty anns oe -> minimalCovering elqlProfile [objProp oe]
+        AS.IrreflexiveObjectProperty anns oe -> minimalCovering qlrlProfile [objProp oe]
+        AS.SymmetricObjectProperty anns oe -> minimalCovering qlrlProfile [objProp oe]
+        AS.AsymmetricObjectProperty anns oe -> minimalCovering qlrlProfile [objProp oe]
+        AS.TransitiveObjectProperty anns oe -> minimalCovering elrlProfile [objProp oe]
+    AS.DataPropertyAxiom a -> case a of
+        AS.SubDataPropertyOf anns _ _ -> annotations anns
+        AS.EquivalentDataProperties anns _ -> annotations anns
+        AS.DisjointDataProperties anns _ -> minimalCovering qlrlProfile [annotations anns]
+        AS.DataPropertyDomain anns _ classExpr -> andProfileList [annotations anns, superClass classExpr]
+        AS.DataPropertyRange anns _ dr -> andProfileList [annotations anns, dataRange dr]
+        AS.FunctionalDataProperty anns _ -> minimalCovering elrlProfile [annotations anns]
+    AS.DatatypeDefinition anns dt dr -> andProfileList [annotations anns, dataType dt, dataRange dr]
+    AS.HasKey anns classExpr oExprs _ -> minimalCovering elrlProfile
+        [annotations anns, subClass classExpr, andProfileList $ map objProp oExprs]
+    AS.Assertion a -> case a of
+        AS.SameIndividual anns inds -> minimalCovering elrlProfile
+            [annotations anns, andProfileList $ map individual inds]
+        AS.DifferentIndividuals anns inds -> andProfileList $ map individual inds
+        AS.ClassAssertion anns ce ind -> andProfileList [annotations anns, subClass ce, individual ind] 
+        AS.ObjectPropertyAssertion anns oExpr i1 i2 -> andProfileList $
+            [annotations anns, objProp oExpr] ++ map individual [i1, i2]
+        AS.NegativeObjectPropertyAssertion anns oExpr i1 i2 -> minimalCovering elrlProfile $
+            [annotations anns, objProp oExpr] ++ map individual [i1, i2]
+        AS.DataPropertyAssertion anns _ ind lit -> andProfileList $
+            [annotations anns, individual ind, literal lit]
+        AS.NegativeDataPropertyAssertion anns _ ind lit -> minimalCovering elrlProfile $
+            [annotations anns, individual ind, literal lit]
+    AS.AnnotationAxiom a -> case a of
+        AS.AnnotationAssertion anns _ _ _ -> topProfile
+        AS.SubAnnotationPropertyOf anns _ _ -> topProfile
+        AS.AnnotationPropertyDomain anns _ _ -> topProfile
+        AS.AnnotationPropertyRange anns _ _ -> topProfile
+    -- Rules
+    _ -> bottomProfile
+
 
 frame :: Frame -> Profiles
 frame (Frame ext fbl) = andList (fB ext) fbl
 
-ontologyP :: Ontology -> Profiles
+ontologyP :: AS.Ontology -> Profiles
 ontologyP ont =
-    let anns = ann ont
-        fr = ontFrames ont
-    in andProfileList [andList frame fr, andList annotations anns]
+    let anns = AS.ontologyAnnotation ont
+        ax = AS.axioms ont
+    in andProfileList [andList axiom ax, andList annotation anns]
 
-ontologyProfiles :: OntologyDocument -> Profiles
-ontologyProfiles odoc = ontologyP $ ontology odoc
+ontologyProfiles :: AS.OntologyDocument -> Profiles
+ontologyProfiles odoc = ontologyP $ AS.ontology odoc
