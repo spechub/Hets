@@ -1,6 +1,6 @@
 module OWL2.PrintMS where
 
-import qualified Data.Map.Strict as M
+import qualified Data.Map as M
 import qualified Data.Set as S
 
 import Common.Doc
@@ -8,6 +8,7 @@ import Common.DocUtils
 import Common.Id
 import Common.Keywords
 import Common.IRI
+import Common.GlobalAnnotations as GA (PrefixMap)
 
 import OWL2.AS
 import OWL2.Keywords
@@ -953,14 +954,14 @@ tIndividual iri ms =
 
 printOntologyDocument :: OntologyDocument -> Doc
 printOntologyDocument (OntologyDocument _ prefDecls ont) = 
-        (vcat . map printPrefixDeclaration $ prefDecls)
+        (vcat . map printPrefixDeclaration $ M.toList prefDecls)
         $++$ printOntology prefDecls ont
 
-printPrefixDeclaration :: PrefixDeclaration -> Doc
-printPrefixDeclaration (PrefixDeclaration prName iri) =
+printPrefixDeclaration :: (String, IRI) -> Doc
+printPrefixDeclaration (prName, iri) =
     hsep [keyword "Prefix:", text (prName ++ ":"), pretty iri]
 
-printOntology :: [PrefixDeclaration] -> Ontology -> Doc
+printOntology :: GA.PrefixMap -> Ontology -> Doc
 printOntology pds 
     (Ontology mOntIRI mVersionIRI importedDocs annotations axioms) =
         keyword "Ontology:"
@@ -979,7 +980,7 @@ printOntology pds
         axs = printMS pds ms 
 
 -- | print Manchester Syntax
-printMS :: [PrefixDeclaration] -> MnchstrSntx -> Doc
+printMS :: GA.PrefixMap -> MnchstrSntx -> Doc
 printMS pds ms = 
     vsep [objectPropertyFrames, dataPropertyFrames, annotationPropertyFrames
         , datatypeFrames, classFrames, individualFrames, miscFrame]
@@ -995,7 +996,7 @@ printMS pds ms =
 -------------------- Print Frames --------------------
 
 -- | print Object Property Frames
-printOPFs :: [PrefixDeclaration] -> Int -> MnchstrSntx -> Doc
+printOPFs :: GA.PrefixMap -> Int -> MnchstrSntx -> Doc
 printOPFs pds n ms
     | null headers = empty
     | otherwise = foldl ($++$) empty
@@ -1005,7 +1006,7 @@ printOPFs pds n ms
         headers = filter ((== ObjectPropertyFrame) . fst) . M.keys $ ms
 
 -- | print Object Property Frame
-printOPF :: [PrefixDeclaration] -> Int -> FrameId
+printOPF :: GA.PrefixMap -> Int -> FrameId
     -> M.Map FrameSectionType [Axiom] -> Doc
 printOPF pds n header body =
     vcat [tabs n <> keyword objectPropertyC <+> hDoc
@@ -1052,7 +1053,7 @@ printOPF pds n header body =
         charsDoc = opAxiomsToDoc pds (n + 1) CharacteristicsSection
             . map unpackObjectPropertyAxiom $ charsAxioms
 
-annotationAssertionsToDoc :: [PrefixDeclaration] -> Int -> [AnnotationAxiom]
+annotationAssertionsToDoc :: GA.PrefixMap -> Int -> [AnnotationAxiom]
     -> Doc
 annotationAssertionsToDoc _ _ [] = empty
 annotationAssertionsToDoc pds n axioms =
@@ -1060,7 +1061,7 @@ annotationAssertionsToDoc pds n axioms =
     $+$
     (vcat . punctuate comma . map (printAnnAssertion pds (n + 1)) $ axioms)
 
-opAxiomsToDoc :: [PrefixDeclaration] -> Int -> FrameSectionType
+opAxiomsToDoc :: GA.PrefixMap -> Int -> FrameSectionType
     -> [ObjectPropertyAxiom] -> Doc
 opAxiomsToDoc _ _ _ [] = empty
 
@@ -1106,14 +1107,14 @@ opAxiomsToDoc pds n CharacteristicsSection axioms =
     $+$
     (vcat . punctuate comma . map (printCharacteristics pds (n + 1)) $ axioms)
 
-printSubPropOf :: [PrefixDeclaration] -> Int -> ObjectPropertyAxiom -> Doc
+printSubPropOf :: GA.PrefixMap -> Int -> ObjectPropertyAxiom -> Doc
 printSubPropOf pds n (SubObjectPropertyOf anns 
     (SubObjPropExpr_obj _) opExpr) =
     printAnnotations pds (n + 1) anns
     $+$
     tabs n <> printObjectPropertyExpression pds opExpr
 
-printSubPropChain :: [PrefixDeclaration] -> Int -> ObjectPropertyAxiom -> Doc
+printSubPropChain :: GA.PrefixMap -> Int -> ObjectPropertyAxiom -> Doc
 printSubPropChain pds n (SubObjectPropertyOf anns
     (SubObjPropExpr_exprchain opExprs) (ObjectProp iri)) =
     printAnnotations pds (n + 1) anns
@@ -1122,7 +1123,7 @@ printSubPropChain pds n (SubObjectPropertyOf anns
     (hcat . punctuate (text " o ")
     . map (printObjectPropertyExpression pds) $ opExprs)
 
-printEqObProp :: [PrefixDeclaration] -> Int -> ObjectPropertyAxiom -> Doc
+printEqObProp :: GA.PrefixMap -> Int -> ObjectPropertyAxiom -> Doc
 printEqObProp pds n (EquivalentObjectProperties anns (_:es)) =
     printAnnotations pds (n + 1) anns
     $+$
@@ -1130,7 +1131,7 @@ printEqObProp pds n (EquivalentObjectProperties anns (_:es)) =
     . map (\e -> tabs (n + 1)
         <> printObjectPropertyExpression pds e) $ es)
 
-printDisjObProp :: [PrefixDeclaration] -> Int -> ObjectPropertyAxiom -> Doc
+printDisjObProp :: GA.PrefixMap -> Int -> ObjectPropertyAxiom -> Doc
 printDisjObProp pds n (DisjointObjectProperties anns (_:es)) =
     printAnnotations pds (n + 1) anns
     $+$
@@ -1138,25 +1139,25 @@ printDisjObProp pds n (DisjointObjectProperties anns (_:es)) =
     . map (\e -> tabs (n + 1)
         <> printObjectPropertyExpression pds e) $ es)
 
-printInvObProp :: [PrefixDeclaration] -> Int -> ObjectPropertyAxiom -> Doc
+printInvObProp :: GA.PrefixMap -> Int -> ObjectPropertyAxiom -> Doc
 printInvObProp pds n (InverseObjectProperties anns _ opExpr) =
     printAnnotations pds (n + 1) anns
     $+$
     tabs n <> printObjectPropertyExpression pds opExpr
 
-printObPropDom :: [PrefixDeclaration] -> Int -> ObjectPropertyAxiom -> Doc
+printObPropDom :: GA.PrefixMap -> Int -> ObjectPropertyAxiom -> Doc
 printObPropDom pds n (ObjectPropertyDomain anns _ clExpr) =
     printAnnotations pds (n + 1) anns
     $+$
     tabs n <> printClassExpression pds clExpr
 
-printObPropRange :: [PrefixDeclaration] -> Int -> ObjectPropertyAxiom -> Doc
+printObPropRange :: GA.PrefixMap -> Int -> ObjectPropertyAxiom -> Doc
 printObPropRange pds n (ObjectPropertyRange anns _ clExpr) =
     printAnnotations pds (n + 1) anns
     $+$
     tabs n <> printClassExpression pds clExpr
 
-printCharacteristics :: [PrefixDeclaration] -> Int -> ObjectPropertyAxiom -> Doc
+printCharacteristics :: GA.PrefixMap -> Int -> ObjectPropertyAxiom -> Doc
 printCharacteristics pds n (FunctionalObjectProperty anns _) =
     printAnnotations pds (n + 1) anns
     $+$
@@ -1192,7 +1193,7 @@ printCharacteristics pds n (TransitiveObjectProperty anns _) =
     $+$
     tabs n <> keyword transitiveS
 
-printAnnAssertion :: [PrefixDeclaration] -> Int -> AnnotationAxiom -> Doc
+printAnnAssertion :: GA.PrefixMap -> Int -> AnnotationAxiom -> Doc
 printAnnAssertion pds n (AnnotationAssertion anns prop subj value) =
     printAnnotations pds (n + 1) anns
     $+$
@@ -1202,7 +1203,7 @@ unpackObjectPropertyAxiom :: Axiom -> ObjectPropertyAxiom
 unpackObjectPropertyAxiom (ObjectPropertyAxiom a) = a
 
 -- | print Data Property Frames
-printDPFs :: [PrefixDeclaration] -> Int -> MnchstrSntx -> Doc
+printDPFs :: GA.PrefixMap -> Int -> MnchstrSntx -> Doc
 printDPFs pds n ms 
     | null headers = empty
     | otherwise = foldl ($++$) empty
@@ -1212,7 +1213,7 @@ printDPFs pds n ms
         headers = filter ((== DataPropertyFrame) . fst) . M.keys $ ms
 
 -- | print Data Property Frame
-printDPF :: [PrefixDeclaration] -> Int -> FrameId
+printDPF :: GA.PrefixMap -> Int -> FrameId
     -> M.Map FrameSectionType [Axiom] -> Doc
 printDPF pds n header body = 
     vcat [tabs n <> keyword dataPropertyC <+> printIRI pds iri
@@ -1249,7 +1250,7 @@ printDPF pds n header body =
         funcDataPropDoc = dpAxiomsToDoc pds (n + 1) CharacteristicsSection
             . map unpackDataPropertyAxiom $ funcDataPropAxioms
 
-dpAxiomsToDoc :: [PrefixDeclaration] -> Int -> FrameSectionType
+dpAxiomsToDoc :: GA.PrefixMap -> Int -> FrameSectionType
     -> [DataPropertyAxiom] -> Doc
 dpAxiomsToDoc _ _ _ [] = empty
 
@@ -1289,7 +1290,7 @@ dpAxiomsToDoc pds n CharacteristicsSection axioms =
     (vcat . punctuate comma
         . map (printDataPropAxiom pds (n + 1)) $ axioms)
 
-printDataPropAxiom :: [PrefixDeclaration] -> Int -> DataPropertyAxiom -> Doc
+printDataPropAxiom :: GA.PrefixMap -> Int -> DataPropertyAxiom -> Doc
 printDataPropAxiom pds n (SubDataPropertyOf anns _ iri) =
     printAnnotations pds (n + 1) anns
     $+$
@@ -1324,7 +1325,7 @@ unpackDataPropertyAxiom :: Axiom -> DataPropertyAxiom
 unpackDataPropertyAxiom (DataPropertyAxiom a) = a
 
 -- | print Annotation Property Frames
-printAPFs :: [PrefixDeclaration] -> Int -> MnchstrSntx -> Doc
+printAPFs :: GA.PrefixMap -> Int -> MnchstrSntx -> Doc
 printAPFs pds n ms
     | null headers = empty
     | otherwise = foldl ($++$) empty
@@ -1334,7 +1335,7 @@ printAPFs pds n ms
         headers = filter ((== AnnotationPropertyFrame) . fst) . M.keys $ ms
 
 -- | print Annotation Property Frame
-printAPF :: [PrefixDeclaration] -> Int -> FrameId
+printAPF :: GA.PrefixMap -> Int -> FrameId
     -> M.Map FrameSectionType [Axiom] -> Doc
 printAPF pds n header body = 
     vcat [tabs n <> keyword annotationPropertyC <+> printIRI pds iri
@@ -1358,7 +1359,7 @@ printAPF pds n header body =
         rangeDoc = afAxiomsToDoc pds (n + 1) RangeSection
             . map unpackAnnotationAxiom $ rangeAxioms
 
-afAxiomsToDoc :: [PrefixDeclaration] -> Int -> FrameSectionType
+afAxiomsToDoc :: GA.PrefixMap -> Int -> FrameSectionType
     -> [AnnotationAxiom] -> Doc
 afAxiomsToDoc _ _ _ [] = empty
 
@@ -1373,7 +1374,7 @@ afAxiomsToDoc pds n frameSectionType axioms =
             RangeSection -> rangeC
 
 
-printAFAxiom :: [PrefixDeclaration] -> Int -> AnnotationAxiom -> Doc
+printAFAxiom :: GA.PrefixMap -> Int -> AnnotationAxiom -> Doc
 printAFAxiom pds n (SubAnnotationPropertyOf anns _ iri) =
     printAnnotations pds (n + 1) anns
     $+$
@@ -1391,7 +1392,7 @@ printAFAxiom pds n (AnnotationPropertyRange anns _ iri) =
 
 
 -- | print Datatype Frames
-printDFs :: [PrefixDeclaration] -> Int -> MnchstrSntx -> Doc
+printDFs :: GA.PrefixMap -> Int -> MnchstrSntx -> Doc
 printDFs pds n ms
     | null headers = empty
     | otherwise = foldl ($++$) empty
@@ -1401,7 +1402,7 @@ printDFs pds n ms
         headers = filter ((== DatatypeFrame) . fst) . M.keys $ ms
 
 -- | print Datatype Frame
-printDF :: [PrefixDeclaration] -> Int -> FrameId
+printDF :: GA.PrefixMap -> Int -> FrameId
     -> M.Map FrameSectionType [Axiom] -> Doc
 printDF pds n header body =
     vcat [tabs n <> keyword datatypeC <+> printIRI pds iri
@@ -1416,7 +1417,7 @@ printDF pds n header body =
         eqAxioms = M.findWithDefault [] EquivalentToSection body
         eqDoc = dtAxiomsToDoc pds (n + 1) EquivalentToSection eqAxioms
 
-dtAxiomsToDoc :: [PrefixDeclaration] -> Int -> FrameSectionType
+dtAxiomsToDoc :: GA.PrefixMap -> Int -> FrameSectionType
     -> [Axiom] -> Doc
 dtAxiomsToDoc _ _ _ [] = empty
 
@@ -1426,14 +1427,14 @@ dtAxiomsToDoc pds n EquivalentToSection axioms =
     (vcat . punctuate comma
         . map (printDatatypeDefinitionAxiom pds (n + 1)) $ axioms)
 
-printDatatypeDefinitionAxiom :: [PrefixDeclaration] -> Int -> Axiom -> Doc
+printDatatypeDefinitionAxiom :: GA.PrefixMap -> Int -> Axiom -> Doc
 printDatatypeDefinitionAxiom pds n (DatatypeDefinition anns _ dr) =
     printAnnotations pds (n + 1) anns
     $+$
     tabs n <> printDataRange pds dr
 
 -- | print Class Frames
-printCFs :: [PrefixDeclaration] -> Int -> MnchstrSntx -> Doc
+printCFs :: GA.PrefixMap -> Int -> MnchstrSntx -> Doc
 printCFs pds n ms
     | null headers = empty
     | otherwise = foldl ($++$) empty
@@ -1443,7 +1444,7 @@ printCFs pds n ms
         headers = filter ((== ClassFrame) . fst) . M.keys $ ms
 
 -- | print Class Frame
-printCF :: [PrefixDeclaration] -> Int -> FrameId
+printCF :: GA.PrefixMap -> Int -> FrameId
     -> M.Map FrameSectionType [Axiom] -> Doc
 printCF pds n header body =
     vcat [tabs n <> keyword classC <+> printIRI pds iri
@@ -1472,7 +1473,7 @@ printCF pds n header body =
         haskDoc = hasKeyAxiomsToCFDoc pds (n + 1) haskAxioms
 
 
-classAxiomsToDoc :: [PrefixDeclaration] -> Int -> FrameSectionType
+classAxiomsToDoc :: GA.PrefixMap -> Int -> FrameSectionType
     -> [Axiom] -> Doc
 classAxiomsToDoc _ _ _ [] = empty
 
@@ -1487,7 +1488,7 @@ classAxiomsToDoc pds n frameSectionType axioms =
             DisjointWithSection -> disjointWithC
             DisjointUnionOfSection -> disjointUnionOfC
 
-hasKeyAxiomsToCFDoc :: [PrefixDeclaration] -> Int -> [Axiom] -> Doc
+hasKeyAxiomsToCFDoc :: GA.PrefixMap -> Int -> [Axiom] -> Doc
 hasKeyAxiomsToCFDoc pds n axioms =  
     foldl (\d ax -> printHasKeyAxiom pds n ax $+$ d) empty axioms
 
@@ -1495,7 +1496,7 @@ unpackClassAxiom :: Axiom -> ClassAxiom
 unpackClassAxiom (ClassAxiom a) = a
 
 -- | print HasKey axiom
-printHasKeyAxiom :: [PrefixDeclaration] -> Int -> Axiom -> Doc
+printHasKeyAxiom :: GA.PrefixMap -> Int -> Axiom -> Doc
 printHasKeyAxiom pds n (HasKey anns _ opExprs dpExprs) =
     tabs n <> keyword hasKeyC
     $+$ printAnnotations pds (n + 1) anns
@@ -1514,11 +1515,11 @@ printHasKeyAxiom pds n (HasKey anns _ opExprs dpExprs) =
             . map (\e -> tabs (n + 1) <> printIRI pds e) $ dpExprs
          
 -- | print ClassAxioms
-printClassAxiomsVer :: [PrefixDeclaration] -> Int -> [ClassAxiom] -> Doc
+printClassAxiomsVer :: GA.PrefixMap -> Int -> [ClassAxiom] -> Doc
 printClassAxiomsVer pds n =
     vcat . punctuate comma . map (printClassAxiom pds n)
 
-printClassAxiom :: [PrefixDeclaration] -> Int -> ClassAxiom -> Doc
+printClassAxiom :: GA.PrefixMap -> Int -> ClassAxiom -> Doc
 -- subClassOf axiom
 printClassAxiom pds n (SubClassOf anns iri supClExpr) =
     printAnnotations pds (n + 1) anns
@@ -1554,7 +1555,7 @@ printClassAxiom pds n (DisjointUnion anns iri clExprs) =
     tabs n <> printClassExpressionsHor pds clExprs
 
 -- | print Individual Frames
-printIFs :: [PrefixDeclaration] -> Int -> MnchstrSntx -> Doc
+printIFs :: GA.PrefixMap -> Int -> MnchstrSntx -> Doc
 printIFs pds n ms
     | null headers = empty
     | otherwise = foldl ($++$) empty
@@ -1564,7 +1565,7 @@ printIFs pds n ms
         headers = filter ((== IndividualFrame) . fst) . M.keys $ ms
 
 -- | print Individual Frame
-printIF :: [PrefixDeclaration] -> Int -> FrameId
+printIF :: GA.PrefixMap -> Int -> FrameId
     -> M.Map FrameSectionType [Axiom] -> Doc
 printIF pds n header body = 
     vcat [tabs n <> keyword individualC <+> printIRI pds iri
@@ -1590,7 +1591,7 @@ printIF pds n header body =
         propAssertionDoc = iFrameAxiomsToDoc pds (n + 1) FactsSection
             $ propAssertionAxioms
 
-iFrameAxiomsToDoc :: [PrefixDeclaration] -> Int -> FrameSectionType
+iFrameAxiomsToDoc :: GA.PrefixMap -> Int -> FrameSectionType
     -> [Axiom] -> Doc
 iFrameAxiomsToDoc _ _ _ [] = empty
 
@@ -1605,7 +1606,7 @@ iFrameAxiomsToDoc pds n frameSectionType axioms =
             TypesSection -> typesC
             FactsSection -> factsC
 
-printIFAssertionAxiom :: [PrefixDeclaration] -> Int -> Assertion -> Doc
+printIFAssertionAxiom :: GA.PrefixMap -> Int -> Assertion -> Doc
 printIFAssertionAxiom pds n (SameIndividual anns [_, ind]) =
     printAnnotations pds (n + 1) anns
     $+$
@@ -1645,7 +1646,7 @@ printIFAssertionAxiom pds n
     tabs n <> keyword notS <+> printIRI pds dpIri <+> printLiteral pds lit
 
 -- | print Misc Frame
-printMF :: [PrefixDeclaration] -> Int -> MnchstrSntx -> Doc
+printMF :: GA.PrefixMap -> Int -> MnchstrSntx -> Doc
 printMF pds n ms
     | M.null mRoot = empty
     | otherwise = 
@@ -1681,7 +1682,7 @@ printMF pds n ms
         difIndsAxioms = M.findWithDefault [] DifferentIndividualsSection mRoot
         difIndsDoc = difIndsAxiomsToMFDoc pds n difIndsAxioms
 
-eqClsAxiomsToMFDoc :: [PrefixDeclaration] -> Int -> [Axiom] -> Doc
+eqClsAxiomsToMFDoc :: GA.PrefixMap -> Int -> [Axiom] -> Doc
 eqClsAxiomsToMFDoc pds n [] = empty
 eqClsAxiomsToMFDoc pds n axioms =
     vsep docsWithHeaders
@@ -1690,7 +1691,7 @@ eqClsAxiomsToMFDoc pds n axioms =
         bodyDocs = map (printClassAxiom pds (n + 1)) classAxioms
         docsWithHeaders = map (\d -> keyword equivalentClassesC $+$ d) bodyDocs
 
-disjClsAxiomsToMFDoc :: [PrefixDeclaration] -> Int -> [Axiom] -> Doc
+disjClsAxiomsToMFDoc :: GA.PrefixMap -> Int -> [Axiom] -> Doc
 disjClsAxiomsToMFDoc pds n [] = empty
 disjClsAxiomsToMFDoc pds n axioms =
     vsep docsWithHeaders
@@ -1699,7 +1700,7 @@ disjClsAxiomsToMFDoc pds n axioms =
         bodyDocs = map (printClassAxiom pds (n + 1)) classAxioms
         docsWithHeaders = map (\d -> keyword disjointClassesC $+$ d) bodyDocs
 
-eqObPropsAxiomsToMFDoc :: [PrefixDeclaration] -> Int -> [Axiom] -> Doc
+eqObPropsAxiomsToMFDoc :: GA.PrefixMap -> Int -> [Axiom] -> Doc
 eqObPropsAxiomsToMFDoc pds n [] = empty
 eqObPropsAxiomsToMFDoc pds n axioms =
     vsep docsWithHeaders
@@ -1709,7 +1710,7 @@ eqObPropsAxiomsToMFDoc pds n axioms =
         docsWithHeaders =
             map (\d -> keyword equivalentPropertiesC $+$ d) bodyDocs
 
-disjObPropsAxiomsToMFDoc :: [PrefixDeclaration] -> Int -> [Axiom] -> Doc
+disjObPropsAxiomsToMFDoc :: GA.PrefixMap -> Int -> [Axiom] -> Doc
 disjObPropsAxiomsToMFDoc pds n [] = empty
 disjObPropsAxiomsToMFDoc pds n axioms =
     vsep docsWithHeaders
@@ -1719,7 +1720,7 @@ disjObPropsAxiomsToMFDoc pds n axioms =
         docsWithHeaders =
             map (\d -> keyword disjointPropertiesC $+$ d) bodyDocs
 
-eqDataPropsAxiomsToMFDoc :: [PrefixDeclaration] -> Int -> [Axiom] -> Doc
+eqDataPropsAxiomsToMFDoc :: GA.PrefixMap -> Int -> [Axiom] -> Doc
 eqDataPropsAxiomsToMFDoc pds n [] = empty
 eqDataPropsAxiomsToMFDoc pds n axioms = 
     vsep docsWithHeaders
@@ -1729,7 +1730,7 @@ eqDataPropsAxiomsToMFDoc pds n axioms =
         docsWithHeaders = 
             map (\d -> keyword equivalentPropertiesC $+$ d) bodyDocs
 
-disjDataPropsAxiomsToMFDoc :: [PrefixDeclaration] -> Int -> [Axiom] -> Doc
+disjDataPropsAxiomsToMFDoc :: GA.PrefixMap -> Int -> [Axiom] -> Doc
 disjDataPropsAxiomsToMFDoc pds n [] = empty
 disjDataPropsAxiomsToMFDoc pds n axioms = 
     vsep docsWithHeaders
@@ -1739,7 +1740,7 @@ disjDataPropsAxiomsToMFDoc pds n axioms =
         docsWithHeaders = 
             map (\d -> keyword disjointPropertiesC $+$ d) bodyDocs
 
-sameIndsAxiomsToMFDoc :: [PrefixDeclaration] -> Int -> [Axiom] -> Doc
+sameIndsAxiomsToMFDoc :: GA.PrefixMap -> Int -> [Axiom] -> Doc
 sameIndsAxiomsToMFDoc pds n [] = empty
 sameIndsAxiomsToMFDoc pds n axioms =
     vsep docsWithHeaders
@@ -1749,7 +1750,7 @@ sameIndsAxiomsToMFDoc pds n axioms =
         docsWithHeaders = 
             map (\d -> keyword sameIndividualC $+$ d) bodyDocs
 
-difIndsAxiomsToMFDoc :: [PrefixDeclaration] -> Int -> [Axiom] -> Doc
+difIndsAxiomsToMFDoc :: GA.PrefixMap -> Int -> [Axiom] -> Doc
 difIndsAxiomsToMFDoc pds n [] = empty
 difIndsAxiomsToMFDoc pds n axioms =
     vsep docsWithHeaders
@@ -1765,7 +1766,7 @@ unpackAssertionAxiom (Assertion a) = a
 unpackAnnotationAxiom :: Axiom -> AnnotationAxiom
 unpackAnnotationAxiom (AnnotationAxiom a) = a
 
-printObPropAxiomMF :: [PrefixDeclaration] -> Int -> ObjectPropertyAxiom -> Doc
+printObPropAxiomMF :: GA.PrefixMap -> Int -> ObjectPropertyAxiom -> Doc
 printObPropAxiomMF pds n (EquivalentObjectProperties anns opExprs) =
     printAnnotations pds (n + 1) anns
     $+$
@@ -1776,7 +1777,7 @@ printObPropAxiomMF pds n (DisjointObjectProperties anns opExprs) =
     $+$
     tabs n <> printObjectPropertyExpressionsHor pds opExprs 
 
-printDataPropAxiomMF :: [PrefixDeclaration] -> Int -> DataPropertyAxiom -> Doc
+printDataPropAxiomMF :: GA.PrefixMap -> Int -> DataPropertyAxiom -> Doc
 printDataPropAxiomMF pds n (EquivalentDataProperties anns dpExprs) =
     printAnnotations pds (n + 1) anns
     $+$
@@ -1787,7 +1788,7 @@ printDataPropAxiomMF pds n (DisjointDataProperties anns dpExprs) =
     $+$
     tabs n <> (hsep . punctuate comma . map (printIRI pds) $ dpExprs)
 
-printAssertionAxiomMF :: [PrefixDeclaration] -> Int -> Assertion -> Doc
+printAssertionAxiomMF :: GA.PrefixMap -> Int -> Assertion -> Doc
 printAssertionAxiomMF pds n (SameIndividual anns inds) =
     printAnnotations pds (n + 1) anns
     $+$
@@ -1799,13 +1800,13 @@ printAssertionAxiomMF pds n (DifferentIndividuals anns inds) =
     tabs n <> (hsep . punctuate comma . map (printIRI pds) $ inds)
 
 -- | print Annotations
-printAnnotationValue :: [PrefixDeclaration] -> AnnotationValue -> Doc
+printAnnotationValue :: GA.PrefixMap -> AnnotationValue -> Doc
 printAnnotationValue pds anVal = case anVal of
     AnnAnInd anInd -> printIRI pds anInd
     AnnValue iri -> printIRI pds iri
     AnnValLit lit -> printLiteral pds lit
 
-printAnnotation :: [PrefixDeclaration] -> Int -> Annotation -> Doc
+printAnnotation :: GA.PrefixMap -> Int -> Annotation -> Doc
 printAnnotation pds n (Annotation anns annProperty annValue) =
     printAnnotations pds (n + 1) anns
     $+$
@@ -1814,7 +1815,7 @@ printAnnotation pds n (Annotation anns annProperty annValue) =
         docAnnProp = printIRI pds annProperty
         docAnnVal = printAnnotationValue pds annValue
 
-printAnnotations :: [PrefixDeclaration] -> Int -> Annotations -> Doc
+printAnnotations :: GA.PrefixMap -> Int -> Annotations -> Doc
 printAnnotations pds _ [] = empty
 printAnnotations pds n anns =
     tabs n <> keyword annotationsC
@@ -1822,31 +1823,22 @@ printAnnotations pds n anns =
     (vcat . punctuate comma . map (printAnnotation pds (n + 1)) $ anns)
 
 -- | print IRI
-printIRI :: [PrefixDeclaration] -> IRI -> Doc
+printIRI :: GA.PrefixMap -> IRI -> Doc
 printIRI pds iri
-    | isAbbrev iri && containsPrefix pds prefName 
-        && iFragment iri /= ""  =
-        text (prefName ++ ":" ++ (iFragment iri))
-
-    | isAbbrev iri && containsPrefix pds prefName
-        = text (prefName ++ ":" ++ (iriFragment iri))
+    | isAbbrev iri && prefName `M.member` pds
+        = text (prefName ++ ":" ++ (iFragment iri))
 
     | otherwise = pretty iri
   where prefName = prefixName iri
 
-printDataIRI :: [PrefixDeclaration] -> IRI -> Doc
+
+printDataIRI :: GA.PrefixMap -> IRI -> Doc
 printDataIRI pds q
     | isDatatypeKey q = text $ showIRI $ setDatatypePrefix q
     | otherwise = printIRI pds q
 
-containsPrefix :: [PrefixDeclaration] -> String -> Bool
-containsPrefix [] _ = False
-containsPrefix ((PrefixDeclaration name _):pds) prefName
-    | name == prefName = True
-    | otherwise = containsPrefix pds prefName
-
 -- | print Literal
-printLiteral :: [PrefixDeclaration] -> Literal -> Doc
+printLiteral :: GA.PrefixMap -> Literal -> Doc
 printLiteral pds (Literal lexi ty) =
     case ty of
         Untyped tag -> printUntypedLiteral lexi tag
@@ -1863,7 +1855,7 @@ printUntypedLiteral lexi tag =
             Nothing -> empty
             Just tg -> text asP <> text tg
 
-printTypedLiteral :: [PrefixDeclaration] -> String -> IRI -> Doc 
+printTypedLiteral :: GA.PrefixMap -> String -> IRI -> Doc 
 printTypedLiteral pds lexi iri
     | isAbbrev iri && pn == "xsd" && iFrag == "float" =
         plainText (escapeString lexi) <> text "f"
@@ -1882,17 +1874,17 @@ escapeString ('\\':s) = '\\' : '\\' : escapeString s
 escapeString (c:s) = c : escapeString s 
 
 ---------------- | print ObjectPropertyExpression
-printObjectPropertyExpressionsVer :: [PrefixDeclaration]
+printObjectPropertyExpressionsVer :: GA.PrefixMap
     -> [ObjectPropertyExpression] -> Doc
 printObjectPropertyExpressionsVer pds =
     vcat . punctuate comma . map (printObjectPropertyExpression pds)
 
-printObjectPropertyExpressionsHor :: [PrefixDeclaration]
+printObjectPropertyExpressionsHor :: GA.PrefixMap
     -> [ObjectPropertyExpression] -> Doc
 printObjectPropertyExpressionsHor pds =
     hsep . punctuate comma . map (printObjectPropertyExpression pds)
 
-printObjectPropertyExpression :: [PrefixDeclaration]
+printObjectPropertyExpression :: GA.PrefixMap
     -> ObjectPropertyExpression -> Doc
 printObjectPropertyExpression pds obExpr =
     case obExpr of
@@ -1902,7 +1894,7 @@ printObjectPropertyExpression pds obExpr =
             <+> printObjectPropertyExpression pds iopExp
 
 ---------------- | print DataRange
-printFV :: [PrefixDeclaration] -> (ConstrainingFacet, RestrictionValue) -> Doc
+printFV :: GA.PrefixMap -> (ConstrainingFacet, RestrictionValue) -> Doc
 printFV pds (facet, restValue) =
     text (fromCF facet) <+> printLiteral pds restValue
 
@@ -1924,7 +1916,7 @@ fromCF f
     | hasFullIRI f = showIRICompact f
     | otherwise = show $ iriPath f
 
-printDataRange :: [PrefixDeclaration] -> DataRange -> Doc
+printDataRange :: GA.PrefixMap -> DataRange -> Doc
 printDataRange pds dr = case dr of
     DataType dtype l -> printIRI pds dtype <+>
         if null l then empty else brackets $ sepByCommas $ map (printFV pds) l
@@ -1939,15 +1931,15 @@ printDataRange pds dr = case dr of
             $ map (printDataRange pds) drlist
 
 ---------------- | print ClassExpression
-printClassExpressionsHor :: [PrefixDeclaration] -> [ClassExpression] -> Doc
+printClassExpressionsHor :: GA.PrefixMap -> [ClassExpression] -> Doc
 printClassExpressionsHor pds =
     hsep . punctuate comma . map (printClassExpression pds)
 
-printClassExpressionsVer :: [PrefixDeclaration] -> [ClassExpression] -> Doc
+printClassExpressionsVer :: GA.PrefixMap -> [ClassExpression] -> Doc
 printClassExpressionsVer pds =
     vcat . punctuate comma . map (printClassExpression pds)
 
-printClassExpression :: [PrefixDeclaration] -> ClassExpression -> Doc
+printClassExpression :: GA.PrefixMap -> ClassExpression -> Doc
 printClassExpression pds expr = case expr of 
     Expression ocUri -> printIRI pds ocUri
     ObjectJunction ty ds -> let
@@ -1982,7 +1974,7 @@ printClassExpression pds expr = case expr of
         <+> text (show card)
         <+> maybe empty (printDataRange pds) maybeRange
 
-printPrimary :: [PrefixDeclaration] -> ClassExpression -> Doc
+printPrimary :: GA.PrefixMap -> ClassExpression -> Doc
 printPrimary pds d = 
     let dd = printClassExpression pds d
     in case d of

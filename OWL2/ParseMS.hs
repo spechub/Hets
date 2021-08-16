@@ -761,34 +761,23 @@ parseOntology pm = do
     axioms <- many $ parseFrame pm
     return $ Ontology ontologyIRI versionIRI imports anns (concat axioms)
 
-parsePrefixDeclaration :: CharParser st PrefixDeclaration
+parsePrefixDeclaration :: CharParser st (String, IRI)
 parsePrefixDeclaration =  do
     pkeyword prefixC
     p <- skips (option "" prefix << char ':')
     i <- skips fullIri
-    return $ PrefixDeclaration p i
+    return $ (p, i)
   <|> do
     pkeyword namespaceC
     p <- skips prefix
     i <- skips fullIri
-    return $ PrefixDeclaration p i
-
-
-
-prefixFromMap :: GA.PrefixMap -> [PrefixDeclaration]
-prefixFromMap = map (uncurry PrefixDeclaration) . Map.toList
-
-prefixToMap :: [PrefixDeclaration] -> GA.PrefixMap
-prefixToMap = Map.fromList . map (\ (PrefixDeclaration name iri) -> (name, iri))
-
-predefinedPrefixes :: GA.PrefixMap
-predefinedPrefixes = fmap (fromJust . parseIRI) predefPrefixes
+    return $ (p, i)
 
 parseOntologyDocument :: GA.PrefixMap -> CharParser st OntologyDocument
 parseOntologyDocument gapm = do
     prefixes <- many parsePrefixDeclaration
-    let pm = Map.unions [gapm, (prefixToMap prefixes), predefinedPrefixes]
+    let pm = Map.unions [gapm, (Map.fromList prefixes), fmap (fromJust . parseIRI) $ predefPrefixes]
     ontology <- parseOntology pm
     eof
-    return $ OntologyDocument (OntologyMetadata MS) (prefixFromMap pm) ontology
+    return $ OntologyDocument (OntologyMetadata MS) pm ontology
 

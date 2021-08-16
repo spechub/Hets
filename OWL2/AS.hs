@@ -22,6 +22,8 @@ import Common.Id
 import Common.Keywords (stringS)
 import Common.IRI
 
+import qualified Common.GlobalAnnotations as GA (PrefixMap)
+
 import Common.Result
 
 import OWL2.ColonKeywords
@@ -41,12 +43,18 @@ isAnonymous i = prefixName i == "_" && isBlankNode i
 -- | prefix -> localname
 type PrefixMap = Map.Map String String
 
+changePrefixMapTypeToString :: GA.PrefixMap -> PrefixMap
+changePrefixMapTypeToString = fmap show
+
+changePrefixMapTypeToGA :: PrefixMap -> GA.PrefixMap
+changePrefixMapTypeToGA = fmap (fromJust . parseIRI)
+
 predefPrefixes :: PrefixMap
 predefPrefixes = Map.fromList
       [ ("owl", "http://www.w3.org/2002/07/owl#")
       , ("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
       , ("rdfs", "http://www.w3.org/2000/01/rdf-schema#")
-      , ("xsd", "http://www.w3.org/2001/XMLSchema#")
+      , ("xsd", "http://www.w3.org/2001/XMLSchema#") 
       , ("", showIRICompact dummyIRI ++ "#") ]
 
 type LexicalForm = String
@@ -334,6 +342,236 @@ facetToIRINoSign f = nullIRI {
   , iFragment = showFacetAsText f
   , isAbbrev = True
 }
+
+-- * Extracting Symbols
+
+
+-- symsOfAxiom :: Axiom -> Set.Set AS.Entity
+-- symsOfAxiom (PlainAxiom e f) = Set.union (symsOfExtended e) $ symsOfFrameBit f
+
+symsOfAxiom :: Axiom -> Set.Set Entity
+symsOfAxiom ax = case ax of
+    Declaration anns e -> Set.union (symsOfAnnotations anns) (Set.singleton e) 
+    ClassAxiom cax -> case cax of
+        SubClassOf anns supClExpr subClExpr -> Set.unions [
+            (symsOfAnnotations anns),
+            (symsOfClassExpression supClExpr),
+            (symsOfClassExpression subClExpr)
+          ]
+        EquivalentClasses anns clExprs ->
+          foldl Set.union (symsOfAnnotations anns)
+            (map symsOfClassExpression clExprs) 
+        DisjointClasses anns clExprs ->
+          foldl Set.union (symsOfAnnotations anns)
+            (map symsOfClassExpression clExprs) 
+        DisjointUnion anns clIri clExprs ->
+          foldl Set.union (Set.insert (mkEntity Class $ clIri) $ symsOfAnnotations anns)
+            (map symsOfClassExpression clExprs)
+
+    ObjectPropertyAxiom opax -> case opax of
+        SubObjectPropertyOf anns subOpExpr supOpExpr ->
+          let opExprs = case subOpExpr of
+                SubObjPropExpr_obj opExpr -> [opExpr]
+                SubObjPropExpr_exprchain opExprs -> opExprs
+          in
+            foldl Set.union (symsOfAnnotations anns)
+              $ map symsOfObjectPropertyExpression . concat $ [opExprs, [supOpExpr]]
+        EquivalentObjectProperties anns opExprs ->
+          foldl Set.union (symsOfAnnotations anns)
+            $ map symsOfObjectPropertyExpression opExprs
+        DisjointObjectProperties anns opExprs -> 
+          foldl Set.union (symsOfAnnotations anns) 
+            $ map symsOfObjectPropertyExpression opExprs
+        InverseObjectProperties anns opExpr1 opExpr2 ->
+          foldl Set.union (symsOfAnnotations anns)
+            $ map symsOfObjectPropertyExpression [opExpr1, opExpr2]
+        ObjectPropertyDomain anns opExpr clExpr ->
+          foldl Set.union (symsOfAnnotations anns)
+            [ symsOfObjectPropertyExpression opExpr
+            , symsOfClassExpression clExpr] 
+        ObjectPropertyRange anns opExpr clExpr ->
+          foldl Set.union (symsOfAnnotations anns)
+            [ symsOfObjectPropertyExpression opExpr
+            , symsOfClassExpression clExpr] 
+        FunctionalObjectProperty anns opExpr ->
+          Set.union (symsOfAnnotations anns)
+            (symsOfObjectPropertyExpression opExpr) 
+        InverseFunctionalObjectProperty anns opExpr ->
+          Set.union (symsOfAnnotations anns)
+            (symsOfObjectPropertyExpression opExpr) 
+        ReflexiveObjectProperty anns opExpr ->
+          Set.union (symsOfAnnotations anns)
+            (symsOfObjectPropertyExpression opExpr)  
+        IrreflexiveObjectProperty anns opExpr ->
+          Set.union (symsOfAnnotations anns)
+            (symsOfObjectPropertyExpression opExpr)  
+        SymmetricObjectProperty anns opExpr ->
+          Set.union (symsOfAnnotations anns)
+            (symsOfObjectPropertyExpression opExpr)  
+        AsymmetricObjectProperty anns opExpr ->
+          Set.union (symsOfAnnotations anns)
+            (symsOfObjectPropertyExpression opExpr)  
+        TransitiveObjectProperty anns opExpr ->
+          Set.union (symsOfAnnotations anns)
+            (symsOfObjectPropertyExpression opExpr)  
+    DataPropertyAxiom a -> case a of
+        SubDataPropertyOf anns dpExpr1 dpExpr2 ->
+          foldl Set.union (symsOfAnnotations anns)
+            $ map (Set.singleton . mkEntity Datatype) [dpExpr1, dpExpr2] 
+        EquivalentDataProperties anns dpExprs ->
+          foldl Set.union (symsOfAnnotations anns)
+            $ map (Set.singleton . mkEntity Datatype) dpExprs 
+        DisjointDataProperties anns dpExprs ->
+          foldl Set.union (symsOfAnnotations anns)
+            $ map (Set.singleton . mkEntity Datatype) dpExprs
+        DataPropertyDomain anns dpExpr clExpr ->
+          foldl Set.union (symsOfAnnotations anns)
+            [ Set.singleton . mkEntity Datatype $ dpExpr
+            , symsOfClassExpression clExpr] 
+        DataPropertyRange anns dpExpr dr ->
+          foldl Set.union (symsOfAnnotations anns)
+            [ Set.singleton . mkEntity Datatype $ dpExpr
+            , symsOfDataRange dr] 
+        FunctionalDataProperty anns dpExpr ->
+          Set.union (symsOfAnnotations anns)
+            (Set.singleton . mkEntity Datatype $ dpExpr)
+    DatatypeDefinition anns dt dr ->
+      foldl Set.union (symsOfAnnotations anns)
+            [ Set.singleton . mkEntity Datatype $ dt
+            , symsOfDataRange dr] 
+    HasKey anns c os ds -> Set.unions [
+        symsOfAnnotations anns,
+        symsOfClassExpression c,
+        Set.unions (symsOfObjectPropertyExpression <$> os),
+        Set.fromList (mkEntity DataProperty <$> ds)
+      ]
+    Assertion a -> case a of
+        SameIndividual anns inds -> Set.union
+          (symsOfAnnotations anns)
+          (Set.fromList (mkEntity NamedIndividual <$> inds))
+        DifferentIndividuals anns inds -> Set.union
+          (symsOfAnnotations anns)
+          (Set.fromList (mkEntity NamedIndividual <$> inds))
+        ClassAssertion anns c i -> Set.insert (mkEntity NamedIndividual i) $
+          Set.insert (mkEntity NamedIndividual i) (symsOfAnnotations anns)
+        ObjectPropertyAssertion anns o s t -> Set.unions [
+            symsOfAnnotations anns,
+            symsOfObjectPropertyExpression o,
+            Set.fromList (mkEntity NamedIndividual <$> [s, t])
+          ]
+        NegativeObjectPropertyAssertion anns o s t -> Set.unions [
+            symsOfAnnotations anns,
+            symsOfObjectPropertyExpression o,
+            Set.fromList (mkEntity NamedIndividual <$> [s, t])
+          ]
+        DataPropertyAssertion anns d s _ -> Set.unions [
+            symsOfAnnotations anns,
+            Set.singleton $ mkEntity DataProperty d,
+            Set.singleton $ mkEntity NamedIndividual s
+          ]
+        NegativeDataPropertyAssertion anns d s _ -> Set.unions [
+            symsOfAnnotations anns,
+            Set.singleton $ mkEntity DataProperty d,
+            Set.singleton $ mkEntity NamedIndividual s
+          ]
+    AnnotationAxiom a -> case a of
+        AnnotationAssertion anns p s v -> symsOfAnnotation $ Annotation anns p v
+        SubAnnotationPropertyOf anns p1 p2 -> Set.union
+          (symsOfAnnotations anns)
+          (Set.fromList (mkEntity AnnotationProperty <$> [p1, p2]))
+        AnnotationPropertyDomain anns p _ -> Set.insert
+          (mkEntity AnnotationProperty p)
+          (symsOfAnnotations anns)
+        AnnotationPropertyRange anns p _ -> Set.insert
+          (mkEntity AnnotationProperty p)
+          (symsOfAnnotations anns)
+    Rule a -> case a of
+      DLSafeRule anns b h -> Set.unions [
+          symsOfAnnotations anns,
+          symsOfDLSafeAtoms b,
+          symsOfDLSafeAtoms h
+        ]
+      DGRule anns b h -> Set.unions [
+          symsOfAnnotations anns,
+          symsOfDGAtoms b,
+          symsOfDGAtoms h
+        ]
+    DGAxiom anns _ no e c -> Set.unions [
+        symsOfDGEdges e,
+        Set.fromList (mkEntity Class <$> c)
+      ]
+
+symsOfDGAtoms :: [DGAtom] -> Set.Set Entity
+symsOfDGAtoms = Set.unions . fmap (\a -> case a of
+    DGClassAtom e i -> Set.union (symsOfClassExpression e) (symsOfIArg i)
+    DGObjectPropertyAtom o i1 i2 -> Set.unions [
+        symsOfObjectPropertyExpression o,
+        symsOfIArg i1,
+        symsOfIArg i2
+      ]
+  )
+
+symsOfDLSafeAtoms :: [Atom] -> Set.Set Entity
+symsOfDLSafeAtoms = Set.unions . fmap (\a -> case a of
+    ClassAtom e  i-> Set.union (symsOfClassExpression e) (symsOfIArg i)
+    ObjectPropertyAtom o i1 i2 -> Set.unions [
+        symsOfObjectPropertyExpression o,
+        symsOfIArg i1,
+        symsOfIArg i2
+      ]
+    DataPropertyAtom d i _ -> Set.insert (mkEntity DataProperty d) (symsOfIArg i)
+    SameIndividualAtom i1 i2 -> Set.union (symsOfIArg i1) (symsOfIArg i2)
+    DifferentIndividualsAtom i1 i2 -> Set.union (symsOfIArg i1) (symsOfIArg i2)
+    _ -> mempty
+  )
+
+symsOfIArg :: IndividualArg -> Set.Set Entity
+symsOfIArg a = case a of
+  IArg i -> Set.singleton $ mkEntity NamedIndividual i
+  _ -> mempty 
+
+symsOfDGEdges :: DGEdges -> Set.Set Entity
+symsOfDGEdges = Set.fromList . fmap (\(DGEdgeAssertion o _ _) ->
+  mkEntity ObjectProperty o)
+
+symsOfObjectPropertyExpression :: ObjectPropertyExpression -> Set.Set Entity
+symsOfObjectPropertyExpression o = case o of
+  ObjectProp i -> Set.singleton $ mkEntity ObjectProperty i
+  ObjectInverseOf i -> symsOfObjectPropertyExpression i
+
+symsOfClassExpression :: ClassExpression -> Set.Set Entity
+symsOfClassExpression ce = case ce of
+  Expression c -> Set.singleton $ mkEntity Class c
+  ObjectJunction _ cs -> Set.unions $ map symsOfClassExpression cs
+  ObjectComplementOf c -> symsOfClassExpression c
+  ObjectOneOf is -> Set.fromList $ map (mkEntity NamedIndividual) is
+  ObjectValuesFrom _ oe c -> Set.union (symsOfObjectPropertyExpression oe)
+    $ symsOfClassExpression c
+  ObjectHasValue oe i -> Set.insert (mkEntity NamedIndividual i)
+    $ symsOfObjectPropertyExpression oe
+  ObjectHasSelf oe -> symsOfObjectPropertyExpression oe
+  ObjectCardinality (Cardinality _ _ oe mc) -> Set.union
+    (symsOfObjectPropertyExpression oe)
+    $ maybe Set.empty symsOfClassExpression mc
+  DataValuesFrom _ de dr -> Set.union (Set.fromList $ map (mkEntity DataProperty) de)
+    $ symsOfDataRange dr
+  DataHasValue de _ -> Set.singleton $ mkEntity DataProperty de
+  DataCardinality (Cardinality _ _ d m) -> Set.insert (mkEntity DataProperty d)
+    $ maybe Set.empty symsOfDataRange m
+
+symsOfDataRange :: DataRange -> Set.Set Entity
+symsOfDataRange dr = case dr of
+  DataType t _ -> Set.singleton $ mkEntity Datatype t
+  DataJunction _ ds -> Set.unions $ map symsOfDataRange ds
+  DataComplementOf d -> symsOfDataRange d
+  DataOneOf _ -> Set.empty
+
+symsOfAnnotation :: Annotation -> Set.Set Entity
+symsOfAnnotation (Annotation as p _) = Set.insert
+   (mkEntity AnnotationProperty p) $ Set.unions (map symsOfAnnotation as)
+
+symsOfAnnotations :: [Annotation] -> Set.Set Entity
+symsOfAnnotations = Set.unions . map symsOfAnnotation
 
 
 -- * Cardinalities
@@ -625,6 +863,9 @@ data Axiom =
   | DGAxiom AxiomAnnotations DGName DGNodes DGEdges MainClasses
   deriving (Show, Eq, Ord, Typeable, Data)
 
+instance GetRange Axiom where
+  getRange = Range . joinRanges . map rangeSpan . Set.toList . symsOfAxiom
+
 -- ClassAxiom
 
 type AxiomAnnotations = [Annotation]
@@ -780,7 +1021,7 @@ emptyOntology :: Ontology
 emptyOntology = Ontology Nothing Nothing [] [] []
 
 emptyOntologyDoc :: OntologyDocument
-emptyOntologyDoc = OntologyDocument (OntologyMetadata AS) [] emptyOntology
+emptyOntologyDoc = OntologyDocument (OntologyMetadata AS) mempty emptyOntology
 
 data OntologySyntaxType = MS | AS
   deriving  (Show, Eq, Ord, Data, Typeable)
@@ -789,7 +1030,11 @@ data OntologyMetadata = OntologyMetadata {
   -- might be extended 
 } deriving  (Show, Eq, Ord, Data, Typeable)
 
-data OntologyDocument = OntologyDocument OntologyMetadata [PrefixDeclaration] Ontology
+data OntologyDocument = OntologyDocument {
+    ontologyMetadata :: OntologyMetadata 
+  , prefixDeclaration :: GA.PrefixMap
+  , ontology :: Ontology
+}
   deriving  (Show, Eq, Ord, Data, Typeable)
 data PrefixDeclaration = PrefixDeclaration PrefixName IRI
   deriving  (Show, Eq, Ord, Data, Typeable)
@@ -798,10 +1043,11 @@ instance GetRange OntologyDocument
   
 type PrefixName = String
 
-data Ontology = Ontology
-  (Maybe OntologyIRI)
-  (Maybe VersionIRI)
-  DirectlyImportsDocuments
-  OntologyAnnotations
-  [Axiom]
+data Ontology = Ontology {
+    mOntologyIRI :: (Maybe OntologyIRI)
+  , mOntologyVersion :: (Maybe VersionIRI)
+  , importsDocuments :: DirectlyImportsDocuments
+  , ontologyAnnotation:: OntologyAnnotations
+  , axioms :: [Axiom]
+}
   deriving  (Show, Eq, Ord, Data)

@@ -4,7 +4,7 @@ module OWL2.ParseAS where
 
 import Prelude hiding (lookup)
 
-import OWL2.AS
+import OWL2.AS as AS
 
 import Common.AnnoParser (newlineOrEof)
 import Common.IRI hiding (parseIRI)
@@ -102,12 +102,12 @@ parseEnclosedWithKeyword s p = do
     skips $ char ')'
     return r
 
-parsePrefixDeclaration :: CharParser st PrefixDeclaration
+parsePrefixDeclaration :: CharParser st (String, IRI)
 parsePrefixDeclaration = parseEnclosedWithKeyword "Prefix" $ do
     p <- prefix
     skips $ char '='
     iri <- fullIri
-    return $ PrefixDeclaration p iri
+    return $ (p, iri)
 
 parseDirectlyImportsDocument :: GA.PrefixMap -> CharParser st IRI
 parseDirectlyImportsDocument pm =
@@ -860,17 +860,12 @@ parseOntology pm =
         axioms <- many (parseAxiom pm)
         return $ Ontology ontologyIri versionIri (imports) annotations axioms
 
-prefixFromMap :: GA.PrefixMap -> [PrefixDeclaration]
-prefixFromMap = map (uncurry PrefixDeclaration) . toList
-
-prefixToMap :: [PrefixDeclaration] -> GA.PrefixMap
-prefixToMap = fromList . map (\ (PrefixDeclaration name iri) -> (name, iri))
 
 
 -- | Parses an OntologyDocument from Owl2 Functional Syntax
 parseOntologyDocument :: GA.PrefixMap -> CharParser st OntologyDocument
 parseOntologyDocument gapm = do
     prefixes <- many parsePrefixDeclaration
-    let pm = union gapm (prefixToMap prefixes)
+    let pm = union gapm (fromList prefixes)
     onto <- parseOntology pm
-    return $ OntologyDocument (OntologyMetadata AS) (prefixFromMap pm) onto
+    return $ OntologyDocument (OntologyMetadata AS) pm onto

@@ -11,3 +11,6 @@ instance Pretty OntologyDocument where
     pretty o@(OntologyDocument m _ _) = case syntaxType m of
         AS -> PAS.printOntologyDocument o
         MS -> PMS.printOntologyDocument o
+
+instance Pretty Axiom where
+    pretty = PAS.printAxiom mempty
