@@ -93,12 +93,15 @@ relBuild s = case s of
     in Rel.insertKey t $ Rel.fromList (zip (repeat t) suc) `Rel.union` ch
 
 -- | Invocation of Pellet
+-- TODO: commented out in 1993
+-- runClassifier :: Sign -> [Named Axiom] -> IO (Result String)
+-- runClassifier sig sen = do
+--   let th = show $ printOWLBasicTheory (sig, filter isAxiom sen)
+--       tLimit = 800
+--   res <- runTimedPellet "classify" "PelletClassifier" th Nothing tLimit
+--   return $ case res of
+--     Nothing -> fail $ "Timeout after " ++ show tLimit ++ " seconds!"
+--     Just (progTh, out, _) ->
+--       if progTh then return out else fail "Pellet not found"
 runClassifier :: Sign -> [Named Axiom] -> IO (Result String)
-runClassifier sig sen = do
-  let th = show $ printOWLBasicTheory (sig, filter isAxiom sen)
-      tLimit = 800
-  res <- runTimedPellet "classify" "PelletClassifier" th Nothing tLimit
-  return $ case res of
-    Nothing -> fail $ "Timeout after " ++ show tLimit ++ " seconds!"
-    Just (progTh, out, _) ->
-      if progTh then return out else fail "Pellet not found"
+runClassifier _ _ = return $ return []
