@@ -24,6 +24,8 @@ import Taxonomy.MMiSSOntology
 import Common.Taxonomy
 import Common.Utils
 
+import qualified OWL2.AS as AS
+
 import System.IO.Unsafe
 
 import qualified Data.Foldable as Fold
@@ -37,7 +39,7 @@ import qualified Data.Set as Set
 -- | Derivation of an Taxonomy for OWL
 onto2Tax :: TaxoGraphKind
          -> MMiSSOntology
-         -> Sign -> [Named Axiom]
+         -> Sign -> [Named AS.Axiom]
          -> Result MMiSSOntology
 onto2Tax gk inOnto sig sens = case gk of
   KSubsort -> fail "Dear user, this logic is single sorted, sorry!"
@@ -103,5 +105,5 @@ relBuild s = case s of
 --     Nothing -> fail $ "Timeout after " ++ show tLimit ++ " seconds!"
 --     Just (progTh, out, _) ->
 --       if progTh then return out else fail "Pellet not found"
-runClassifier :: Sign -> [Named Axiom] -> IO (Result String)
+runClassifier :: Sign -> [Named AS.Axiom] -> IO (Result String)
 runClassifier _ _ = return $ return []
