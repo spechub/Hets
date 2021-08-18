@@ -96,14 +96,14 @@ relBuild s = case s of
 
 -- | Invocation of Pellet
 -- TODO: commented out in 1993
--- runClassifier :: Sign -> [Named Axiom] -> IO (Result String)
--- runClassifier sig sen = do
---   let th = show $ printOWLBasicTheory (sig, filter isAxiom sen)
---       tLimit = 800
---   res <- runTimedPellet "classify" "PelletClassifier" th Nothing tLimit
---   return $ case res of
---     Nothing -> fail $ "Timeout after " ++ show tLimit ++ " seconds!"
---     Just (progTh, out, _) ->
---       if progTh then return out else fail "Pellet not found"
 runClassifier :: Sign -> [Named AS.Axiom] -> IO (Result String)
-runClassifier _ _ = return $ return []
+runClassifier sig sen = do
+  let th = show $ printOWLBasicTheory (sig, filter isAxiom sen)
+      tLimit = 800
+  res <- runTimedPellet "classify" "PelletClassifier" th Nothing tLimit
+  return $ case res of
+    Nothing -> fail $ "Timeout after " ++ show tLimit ++ " seconds!"
+    Just (progTh, out, _) ->
+      if progTh then return out else fail "Pellet not found"
+-- runClassifier :: Sign -> [Named AS.Axiom] -> IO (Result String)
+-- runClassifier _ _ = return $ return []
