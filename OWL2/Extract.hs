@@ -159,10 +159,244 @@ fromExt ext = case ext of
     ClassEntity ce -> fromDescription ce
     Misc ans -> fromAnnos ans
 
+fromIndividualArg :: AS.IndividualArg -> State Sign ()
+fromIndividualArg i = case i of
+  AS.IArg i -> fromIndividual i
+  _ -> return ()
+
+fromDataArg :: AS.DataArg -> State Sign ()
+fromDataArg d = case d of
+  AS.DArg l -> fromLiteral l
+  _ -> return ()
+
+fromDLAtom :: AS.Atom -> State Sign ()
+fromDLAtom atom = case atom of
+  AS.ClassAtom c iArg -> do
+    fromDescription c
+    fromIndividualArg iArg
+  AS.DataRangeAtom r d -> do
+    fromDataRange r
+    fromDataArg d
+  AS.ObjectPropertyAtom o i1 i2 -> do
+    fromObjPropExpr o
+    fromIndividualArg i1
+    fromIndividualArg i2
+  AS.DataPropertyAtom p i d -> do
+    fromDataPropExpr p
+    fromIndividualArg i
+    fromDataArg d
+  AS.BuiltInAtom i args -> do
+    -- TODO? what about iri (i)?
+    mapM_ fromDataArg args
+  AS.SameIndividualAtom i1 i2 -> do
+    fromIndividualArg i1
+    fromIndividualArg i2
+  AS.DifferentIndividualsAtom i1 i2 -> do
+    fromIndividualArg i1
+    fromIndividualArg i2
+  _ -> return () -- unknown atoms are eliminated in static analysis
+
+fromDGAtom :: AS.DGAtom -> State Sign ()
+fromDGAtom a = case a of
+  AS.DGClassAtom c i -> do
+    fromDescription c
+    fromIndividualArg i
+  AS.DGObjectPropertyAtom o i1 i2 -> do
+    fromObjPropExpr o
+    fromIndividualArg i1
+    fromIndividualArg i2
+
+fromAxiom :: AS.Axiom -> State Sign ()
+fromAxiom a = case a of
+    AS.Declaration anns e -> addEntity e
+    
+    AS.ClassAxiom cax -> case cax of
+        AS.SubClassOf anns sub sup -> do
+          fromAnnos anns
+          fromDescription sub
+          fromDescription sup
+          
+        AS.EquivalentClasses anns clExprs -> do
+          fromAnnos anns
+          mapM_ fromDescription clExprs
+          
+        AS.DisjointClasses anns clExprs -> do
+          fromAnnos anns
+          mapM_ fromDescription clExprs
+          
+        AS.DisjointUnion anns clIri clExprs -> do
+          fromAnnos anns
+          fromDescription (AS.Expression clIri)
+          mapM_ fromDescription clExprs
+
+    AS.ObjectPropertyAxiom opax -> case opax of
+        AS.SubObjectPropertyOf anns subObjProp supObjProp -> do
+          fromAnnos anns
+          fromObjPropExpr supObjProp
+          case subObjProp of
+            AS.SubObjPropExpr_obj op -> fromObjPropExpr op
+            AS.SubObjPropExpr_exprchain ops -> mapM_ fromObjPropExpr ops
+             
+        AS.EquivalentObjectProperties anns ops -> do
+          fromAnnos anns 
+          mapM_ fromObjPropExpr ops
+
+        AS.DisjointObjectProperties anns ops -> do
+          fromAnnos anns
+          mapM_ fromObjPropExpr ops
+          
+        AS.InverseObjectProperties anns op1 op2 -> do
+          fromAnnos anns
+          mapM_ fromObjPropExpr [op1, op2]
+
+        AS.ObjectPropertyDomain anns op des -> do
+          fromAnnos anns
+          fromObjPropExpr op
+          fromDescription des
+
+        AS.ObjectPropertyRange anns op des -> do
+          fromAnnos anns
+          fromObjPropExpr op
+          fromDescription des
+
+        AS.FunctionalObjectProperty anns op -> do
+          fromAnnos anns
+          fromObjPropExpr op
+           
+        AS.InverseFunctionalObjectProperty anns op -> do
+          fromAnnos anns
+          fromObjPropExpr op
+           
+        AS.ReflexiveObjectProperty anns op -> do
+          fromAnnos anns
+          fromObjPropExpr op
+          
+        AS.IrreflexiveObjectProperty anns op -> do
+          fromAnnos anns
+          fromObjPropExpr op
+          
+        AS.SymmetricObjectProperty anns op -> do
+          fromAnnos anns
+          fromObjPropExpr op
+
+        AS.AsymmetricObjectProperty anns op -> do
+          fromAnnos anns
+          fromObjPropExpr op
+          
+        AS.TransitiveObjectProperty anns op -> do
+          fromAnnos anns
+          fromObjPropExpr op
+          
+    AS.DataPropertyAxiom a -> case a of
+        AS.SubDataPropertyOf anns dpSub dpSup -> do
+          fromAnnos anns
+          mapM_ fromDataPropExpr [dpSub, dpSup]
+          
+        AS.EquivalentDataProperties anns dps -> do
+          fromAnnos anns
+          mapM_ fromDataPropExpr dps
+
+        AS.DisjointDataProperties anns dps -> do
+          fromAnnos anns
+          mapM_ fromDataPropExpr dps
+
+        AS.DataPropertyDomain anns dp des -> do
+          fromAnnos anns
+          fromDataPropExpr dp
+          fromDescription des
+
+        AS.DataPropertyRange anns dp r -> do
+          fromAnnos anns
+          fromDataPropExpr dp
+          fromDataRange r
+
+        AS.FunctionalDataProperty anns dp -> do
+          fromAnnos anns
+          fromDataPropExpr dp
+           
+    AS.DatatypeDefinition anns dt dr -> do
+      fromAnnos anns
+      fromDType dt
+      fromDataRange dr
+
+    AS.HasKey anns des ops dps -> do
+      fromAnnos anns
+      fromDescription des
+      mapM_ fromObjPropExpr ops
+      mapM_ fromDataPropExpr dps
+       
+    AS.Assertion a -> case a of
+        AS.SameIndividual anns inds -> do
+          fromAnnos anns
+          mapM_ fromIndividual inds
+          
+        AS.DifferentIndividuals anns inds -> do 
+          fromAnnos anns
+          mapM_ fromIndividual inds
+          
+        AS.ClassAssertion anns c i -> do
+          fromAnnos anns
+          fromDescription c
+          fromIndividual i
+        AS.ObjectPropertyAssertion anns o s t -> do
+          fromAnnos anns
+          fromObjPropExpr o
+          fromIndividual s
+          fromIndividual t
+        AS.NegativeObjectPropertyAssertion anns o s t -> do
+          fromAnnos anns
+          fromObjPropExpr o
+          fromIndividual s
+          fromIndividual t
+        AS.DataPropertyAssertion anns d s t -> do
+          fromAnnos anns
+          fromDataPropExpr d
+          fromIndividual s
+          fromLiteral t
+        AS.NegativeDataPropertyAssertion anns d s t -> do
+          fromAnnos anns
+          fromDataPropExpr d
+          fromIndividual s
+          fromLiteral t
+          
+    AS.AnnotationAxiom a -> case a of
+        AS.AnnotationAssertion anns p s v -> do
+          fromAnnos anns
+          fromAnnoProp p
+          -- TODO: What about subject?
+          case v of
+            AS.AnnValLit l -> fromLiteral l
+            -- TODO: What about AnnValue?
+        AS.SubAnnotationPropertyOf anns sub sup -> do
+          fromAnnos anns
+          fromAnnoProp sub
+          fromAnnoProp sup
+        AS.AnnotationPropertyDomain anns p d -> do
+          -- TODO: What about Domain?
+          fromAnnos anns
+          fromAnnoProp p
+        AS.AnnotationPropertyRange anns p r -> do
+          -- TODO: What about Range?
+          fromAnnos anns
+          fromAnnoProp p
+    AS.Rule r -> case r of
+      AS.DLSafeRule anns b h -> do
+        fromAnnos anns
+        mapM_ fromDLAtom b
+        mapM_ fromDLAtom h
+      AS.DGRule anns b h -> do
+        fromAnnos anns
+        mapM_ fromDGAtom b
+        mapM_ fromDGAtom h
+    AS.DGAxiom anns _ nodes edges classes -> do
+      mapM_ (\(AS.DGNodeAssertion c _) -> fromDescription (AS.Expression c)) nodes
+      mapM_ (\(AS.DGEdgeAssertion o _ _) -> fromObjPropExpr (AS.ObjectProp o)) edges
+      mapM_ (fromDescription . AS.Expression) classes
+
 {- | Top level function: takes the OntologyDocument and completes
 the signature by calling completeSignForFrame -}
-extractSign :: OntologyDocument -> State Sign ()
-extractSign = mapM_ fromFrame . ontFrames . ontology
+extractSign :: AS.OntologyDocument -> State Sign ()
+extractSign = mapM_ fromAxiom . AS.axioms . AS.ontology
 
 toDecl :: Sign -> [AS.Axiom]
 toDecl s =
