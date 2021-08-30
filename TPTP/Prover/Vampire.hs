@@ -32,7 +32,7 @@ binary_name :: String
 binary_name = "vampire"
 
 prover_name :: String
-prover_name = "Vampire"
+prover_name = "Vampire-TPTP"
 
 sublogics :: Sublogic
 sublogics = FOF
