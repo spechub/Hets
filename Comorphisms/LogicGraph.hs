@@ -210,7 +210,7 @@ comorphismList =
     , Comorphism CASL2OWL
     -- , Comorphism Propositional2OWL2
 #ifdef CASLEXTENSIONS
-    -- , Comorphism ExtModal2OWL
+    , Comorphism ExtModal2OWL
 #endif
 #endif
 #ifdef PROGRAMATICA
