@@ -20,10 +20,9 @@ import Common.AS_Annotation
 import Common.Id
 import Common.Result
 
-import qualified OWL2.AS as AS
+import OWL2.AS
 import Common.IRI
 import OWL2.Keywords
-import OWL2.MS
 import OWL2.Translate
 import qualified OWL2.Morphism as OWLMor
 import qualified OWL2.ProfilesAndSublogics as OWLSub
@@ -44,81 +43,81 @@ data Propositional2OWL2 = Propositional2OWL2 deriving Show
 
 instance Language Propositional2OWL2
 
--- instance Comorphism Propositional2OWL2
---     PLogic.Propositional
---     PSL.PropSL
---     BASIC_SPEC
---     FORMULA
---     SYMB_ITEMS
---     SYMB_MAP_ITEMS
---     PSign.Sign
---     PMor.Morphism
---     PSymbol.Symbol
---     PSymbol.Symbol
---     ProofTree
---     OWLLogic.OWL2
---     OWLSub.ProfSub
---     OntologyDocument
---     Axiom
---     OWLSym.SymbItems
---     OWLSym.SymbMapItems
---     OWLSign.Sign
---     OWLMor.OWLMorphism
---     AS.Entity
---     OWLSym.RawSymb
---     ProofTree
---     where
---         sourceLogic Propositional2OWL2 = PLogic.Propositional
---         sourceSublogic Propositional2OWL2 = PSL.top
---         targetLogic Propositional2OWL2 = OWLLogic.OWL2
---         mapSublogic Propositional2OWL2 = Just . mapSub -- TODO
---         map_theory Propositional2OWL2 = mapTheory
---         isInclusionComorphism Propositional2OWL2 = True
---         has_model_expansion Propositional2OWL2 = True
+instance Comorphism Propositional2OWL2
+    PLogic.Propositional
+    PSL.PropSL
+    BASIC_SPEC
+    FORMULA
+    SYMB_ITEMS
+    SYMB_MAP_ITEMS
+    PSign.Sign
+    PMor.Morphism
+    PSymbol.Symbol
+    PSymbol.Symbol
+    ProofTree
+    OWLLogic.OWL2
+    OWLSub.ProfSub
+    OntologyDocument
+    Axiom
+    OWLSym.SymbItems
+    OWLSym.SymbMapItems
+    OWLSign.Sign
+    OWLMor.OWLMorphism
+    Entity
+    OWLSym.RawSymb
+    ProofTree
+    where
+        sourceLogic Propositional2OWL2 = PLogic.Propositional
+        sourceSublogic Propositional2OWL2 = PSL.top
+        targetLogic Propositional2OWL2 = OWLLogic.OWL2
+        mapSublogic Propositional2OWL2 = Just . mapSub -- TODO
+        map_theory Propositional2OWL2 = mapTheory
+        isInclusionComorphism Propositional2OWL2 = True
+        has_model_expansion Propositional2OWL2 = True
 
--- mkOWLDeclaration :: AS.ClassExpression -> Axiom
--- mkOWLDeclaration ex = PlainAxiom (ClassEntity $ AS.Expression $ setPrefix "owl"
---     $ mkIRI thingS) $ ListFrameBit (Just AS.SubClass) $ ExpressionBit [([], ex)]
+mkOWLDeclaration :: ClassExpression -> Axiom
+mkOWLDeclaration ex = ClassAxiom $ SubClassOf []
+    (Expression $ setPrefix "owl" $ mkIRI thingS) ex
 
--- tokToIRI :: Token -> IRI
--- tokToIRI = idToIRI . simpleIdToId
+tokToIRI :: Token -> IRI
+tokToIRI = idToIRI . simpleIdToId
 
--- mapFormula :: FORMULA -> AS.ClassExpression
--- mapFormula f = case f of
---     False_atom _ -> AS.Expression $ mkIRI nothingS
---     True_atom _ -> AS.Expression $ mkIRI thingS
---     Predication p -> AS.Expression $ tokToIRI p
---     Negation nf _ -> AS.ObjectComplementOf $ mapFormula nf
---     Conjunction fl _ -> AS.ObjectJunction AS.IntersectionOf $ map mapFormula fl
---     Disjunction fl _ -> AS.ObjectJunction AS.UnionOf $ map mapFormula fl
---     Implication a b _ -> AS.ObjectJunction AS.UnionOf [AS.ObjectComplementOf
---                 $ mapFormula a, mapFormula b]
---     Equivalence a b _ -> AS.ObjectJunction AS.IntersectionOf $ map mapFormula
---                 [Implication a b nullRange, Implication b a nullRange]
+mapFormula :: FORMULA -> ClassExpression
+mapFormula f = case f of
+    False_atom _ -> Expression $ mkIRI nothingS
+    True_atom _ -> Expression $ mkIRI thingS
+    Predication p -> Expression $ tokToIRI p
+    Negation nf _ -> ObjectComplementOf $ mapFormula nf
+    Conjunction fl _ -> ObjectJunction IntersectionOf $ map mapFormula fl
+    Disjunction fl _ -> ObjectJunction UnionOf $ map mapFormula fl
+    Implication a b _ -> ObjectJunction UnionOf [ObjectComplementOf
+                $ mapFormula a, mapFormula b]
+    Equivalence a b _ -> ObjectJunction IntersectionOf $ map mapFormula
+                [Implication a b nullRange, Implication b a nullRange]
 
--- mapPredDecl :: PRED_ITEM -> [Axiom]
--- mapPredDecl (Pred_item il _) = map (mkOWLDeclaration . AS.Expression
---     . tokToIRI) il
+mapPredDecl :: PRED_ITEM -> [Axiom]
+mapPredDecl (Pred_item il _) = map (mkOWLDeclaration . Expression
+    . tokToIRI) il
 
--- mapAxiomItems :: Annoted FORMULA -> Axiom
--- mapAxiomItems = mkOWLDeclaration . mapFormula . item
+mapAxiomItems :: Annoted FORMULA -> Axiom
+mapAxiomItems = mkOWLDeclaration . mapFormula . item
 
--- mapBasicItems :: BASIC_ITEMS -> [Axiom]
--- mapBasicItems bi = case bi of
---     Pred_decl p -> mapPredDecl p
---     Axiom_items al -> map mapAxiomItems al
+mapBasicItems :: BASIC_ITEMS -> [Axiom]
+mapBasicItems bi = case bi of
+    Pred_decl p -> mapPredDecl p
+    Axiom_items al -> map mapAxiomItems al
 
--- mapBasicSpec :: BASIC_SPEC -> [Axiom]
--- mapBasicSpec (Basic_spec il) = concatMap (mapBasicItems . item) il
+mapBasicSpec :: BASIC_SPEC -> [Axiom]
+mapBasicSpec (Basic_spec il) = concatMap (mapBasicItems . item) il
 
--- mapSign :: PSign.Sign -> OWLSign.Sign
--- mapSign ps = OWLSign.emptySign {OWLSign.concepts = Set.fromList
---     $ map idToIRI $ Set.toList $ PSign.items ps}
+mapSign :: PSign.Sign -> OWLSign.Sign
+mapSign ps = OWLSign.emptySign {OWLSign.concepts = Set.fromList
+    $ map idToIRI $ Set.toList $ PSign.items ps}
 
--- mapTheory :: (PSign.Sign, [Named FORMULA])
---     -> Result (OWLSign.Sign, [Named Axiom])
--- mapTheory (psig, fl) = return (mapSign psig, map
---     (mapNamed $ mkOWLDeclaration . mapFormula) fl)
+mapTheory :: (PSign.Sign, [Named FORMULA])
+    -> Result (OWLSign.Sign, [Named Axiom])
+mapTheory (psig, fl) = return (mapSign psig, map
+    (mapNamed $ mkOWLDeclaration . mapFormula) fl)
 
--- mapSub :: PSL.PropSL -> OWLSub.ProfSub
--- mapSub _ = OWLSub.topS
+mapSub :: PSL.PropSL -> OWLSub.ProfSub
+mapSub _ = OWLSub.topS

@@ -208,7 +208,7 @@ comorphismList =
     -- , Comorphism OWL22CommonLogic
     , Comorphism DMU2OWL2
     , Comorphism CASL2OWL
-    -- , Comorphism Propositional2OWL2
+    , Comorphism Propositional2OWL2
 #ifdef CASLEXTENSIONS
     , Comorphism ExtModal2OWL
 #endif
