@@ -73,8 +73,6 @@ instance ShATermConvertible OWLMorphism
 instance ShATermConvertible Entity
 instance ShATermConvertible ProfSub
 
-
-
 instance Show OWL2 where
   show _ = "OWL"
 
