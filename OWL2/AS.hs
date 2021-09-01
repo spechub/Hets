@@ -1026,7 +1026,7 @@ emptyOntology = Ontology Nothing Nothing [] [] []
 emptyOntologyDoc :: OntologyDocument
 emptyOntologyDoc = OntologyDocument (OntologyMetadata AS) mempty emptyOntology
 
-data OntologySyntaxType = MS | AS
+data OntologySyntaxType = MS | AS | XML
   deriving  (Show, Eq, Ord, Data, Typeable)
 data OntologyMetadata = OntologyMetadata {
   syntaxType :: OntologySyntaxType
