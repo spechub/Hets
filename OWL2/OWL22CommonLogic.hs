@@ -830,15 +830,8 @@ mkEDPairs s il med pairs = do
 
 mapAxioms :: Sign -> AS.Axiom -> Result ([TEXT], Sign)
 mapAxioms cSig axiom = case axiom of
-    AS.Declaration _ (AS.Entity _ ty iri) -> case ty of
-        AS.Datatype -> (\x -> ([senToText $ fst x], snd x)) <$> (mapDataRange cSig (AS.DataType iri []) (OVar 1))
-        AS.Class -> (\x -> ([senToText x], cSig)) <$> (mapClassIRI cSig iri $ mkNName 1)
-        AS.ObjectProperty -> (\x -> ([senToText x], cSig)) <$> (mapObjProp cSig (AS.ObjectProp iri) (OVar 1) (OVar 2))
-        AS.DataProperty -> (\x -> ([senToText x], cSig)) <$> mapDataProp cSig iri (OVar 1) (OVar 2)
-        AS.AnnotationProperty -> return ([], cSig)
-        AS.NamedIndividual -> do
-            term <- mapIndivIRI cSig iri
-            return ([senToText $ mkAE mk1NTERM term], cSig) 
+    
+    AS.Declaration _ _ -> return ([], cSig)
 
     AS.ClassAxiom ax -> case ax of 
         AS.SubClassOf _ sub sup -> do

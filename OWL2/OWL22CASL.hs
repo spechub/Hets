@@ -832,16 +832,7 @@ mapKey ce pl npl p i h = do
 
 mapAxioms :: AS.Axiom -> Result([CASLFORMULA], [CASLSign])
 mapAxioms axiom = case axiom of
-    -- some hesitations about Declaration maps
-    AS.Declaration _ (AS.Entity _ ty iri) -> case ty of
-        AS.Datatype -> (\x -> ([fst x], snd x)) <$> (mapDataRange (AS.DataType iri []) 1)
-        AS.Class -> (\x -> ([x], [])) <$> (mapClassURI iri $ mkNName 1)
-        AS.ObjectProperty -> (\x -> ([x], [])) <$> (mapObjProp (AS.ObjectProp iri) 1 2)
-        AS.DataProperty -> (\x -> ([x], [])) <$> mapDataProp iri 1 2 
-        AS.AnnotationProperty -> return ([], []) 
-        AS.NamedIndividual -> do
-            term <- mapIndivURI iri
-            return ([mkStEq (qualThing 1) term], [])
+    AS.Declaration _ _ -> return ([], [])
 
     AS.ClassAxiom clAxiom -> case clAxiom of
         AS.SubClassOf _ sub sup -> do
