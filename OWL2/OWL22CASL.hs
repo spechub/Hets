@@ -882,7 +882,7 @@ mapAxioms axiom = case axiom of
 
         AS.DisjointObjectProperties _ opExprs -> do
             pairs <- mapComObjectPropsList Nothing opExprs 1 2
-            mkEDPairs [1, 2] (Just $ AS.EDRelation AS.Equivalent) pairs
+            mkEDPairs [1, 2] (Just $ AS.EDRelation AS.Disjoint) pairs
 
         AS.InverseObjectProperties _ opExpr1 opExpr2 -> do
             os1 <- mapM (\o1 -> mapObjProp o1 1 2) [opExpr2]
@@ -955,7 +955,7 @@ mapAxioms axiom = case axiom of
 
         AS.DataPropertyRange _ dpExpr dr -> do
             oEx <- mapDataProp dpExpr 1 2
-            (odes, s) <- mapAndUnzipM (\ r -> mapDataRange r 2) [dr]
+            (odes, s) <- mapAndUnzipM (\r -> mapDataRange r 2) [dr]
             let vars = (mkNName 1, mkNName 2)
             return (map (mkFEI [tokDecl $ fst vars]
                         [tokDataDecl $ snd vars] oEx) odes, concat s)
