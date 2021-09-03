@@ -54,6 +54,7 @@ module Common.IRI
     , parseCurie
     , parseIRICurie
     , parseIRIReference
+    , parseIRICompoundCurie
     , parseIRI
     , ncname
 
@@ -314,6 +315,9 @@ Returns 'Nothing' if the string is not a valid IRI;
 or a CURIE). -}
 parseIRICurie :: String -> Maybe IRI
 parseIRICurie = parseIRIAny iriCurie
+
+parseIRICompoundCurie :: String -> Maybe IRI
+parseIRICompoundCurie = parseIRIAny compoundIriCurie
 
 -- Helper function for turning a string into a IRI
 parseIRIAny :: IRIParser () IRI -> String -> Maybe IRI

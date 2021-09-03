@@ -909,7 +909,7 @@ parsePrefixDeclaration =  do
 parseOntologyDocument :: GA.PrefixMap -> CharParser st OntologyDocument
 parseOntologyDocument gapm = do
     prefixes <- many parsePrefixDeclaration
-    let pm = Map.unions [gapm, (Map.fromList prefixes), fmap (fromJust . parseIRI) $ predefPrefixes]
+    let pm = Map.unions [gapm, (Map.fromList prefixes), changePrefixMapTypeToGA predefPrefixes]
     ontology <- parseOntology pm
     eof
     return $ OntologyDocument (OntologyMetadata MS) pm ontology
