@@ -653,11 +653,13 @@ basicOWL2Analysis (inOnt, inSign, ga) = do
 
 -- | extract labels from Axiom-List (after processing with correctFrames)
 generateLabelMap :: Sign -> [AS.Axiom] -> Map.Map IRI String
-generateLabelMap sig = foldr (\ (AS.AnnotationAxiom ax) -> case ax of
-        AS.AnnotationAssertion _ apr sub (AS.AnnValLit (AS.Literal s' _))
-            | prefixName apr == "rdfs" && show (iriPath apr) == "label"
-            -> Map.insert (ir sub) s'
-        _ -> id ) (labelMap sig)
+generateLabelMap sig = foldr (\ a -> case a of 
+        AS.AnnotationAxiom ax -> case ax of
+            AS.AnnotationAssertion _ apr sub (AS.AnnValLit (AS.Literal s' _))
+                | prefixName apr == "rdfs" && show (iriPath apr) == "label"
+                -> Map.insert (ir sub) s'
+            _ -> id
+        _ -> id) (labelMap sig)
     where ir sub = case sub of
             AS.AnnSubIri i -> i
             AS.AnnSubAnInd i -> i 
