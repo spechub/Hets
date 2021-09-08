@@ -385,7 +385,7 @@ xmlAnnotations = map xmlAnnotation
 --                         [xmlIndividual i] ++ [xmlLiteral lit]
 --             ) list
 
-xmlAssertion :: IRI -> Annotations -> [Element]
+xmlAssertion :: IRI -> [AS.Annotation] -> [Element]
 xmlAssertion iri = map (\ (AS.Annotation as ap av) ->
     makeElement annotationAssertionK $ xmlAnnotations as
         ++ [mwNameIRI annotationPropertyK ap]
@@ -611,7 +611,7 @@ xmlAxioms axiom = case axiom of
                 annotationPropertyK mwNameIRI prop
                 [(xmlAnnotations anns, mwSimpleIRI iri)]
 
-        AS.AnnotationPropertyDomain anns prop iri ->
+        AS.AnnotationPropertyRange anns prop iri ->
             make1 True annotationPropertyRangeK
                 annotationPropertyK mwNameIRI prop
                 [(xmlAnnotations anns, mwSimpleIRI iri)]
