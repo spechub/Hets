@@ -532,7 +532,7 @@ get1Map e =
   in (pref, pmap)
 
 getPrefixMap :: Element -> GA.PrefixMap
-getPrefixMap = AS.changePrefixMapTypeToGA . Map.fromList . map get1Map . filterCh "Prefix"
+getPrefixMap e = AS.changePrefixMapTypeToGA $ Map.map (\x -> "<" ++ x ++ ">") $ Map.fromList $ map get1Map $ filterCh "Prefix" e
 
 getOntologyIRI :: XMLBase -> Element -> Maybe IRI
 getOntologyIRI b e =
