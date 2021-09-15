@@ -60,6 +60,7 @@ module Common.IRI
 
     , mergeCurie
     , expandCurie
+    , expandIRI
     , relativeTo
     , relativeFrom
 
@@ -199,6 +200,8 @@ instance Ord IRI where
     (False, False) -> comparing
       (\ j -> (prefixName j, iriPath j, iriQuery j, iriFragment j))
       i k
+    (True, True) -> comparing (\j -> (iriScheme j, iriAuthority j, iriPath j,
+       iriQuery j, iriFragment j)) i k
     _ -> comparing (\ j ->
       (prefixName j, iriScheme j, iriAuthority j, iriPath j,
        iriQuery j, iriFragment j)) i k
@@ -1096,6 +1099,20 @@ difSegsFrom sabs "" = sabs
 difSegsFrom sabs base = difSegsFrom ("../" ++ sabs) (snd $ nextSegment base)
 
 -- * Other normalization functions
+
+
+{- | @expandIRI pm iri@ returns the expanded @iri@ with a declaration from @pm@.
+If no declaration is found, return @iri@ unchanged. -}
+expandIRI :: Map String IRI -> IRI -> IRI
+expandIRI pm iri
+    | isAbbrev iri = fromMaybe iri $ do
+        def <- Map.lookup (prefixName iri) pm
+        expanded <- mergeCurie iri def
+        return $ expanded
+            { iFragment = iFragment iri
+            , prefixName = prefixName iri
+            , isAbbrev = True }
+    | otherwise = iri
 
 {- |Expands a CURIE to an IRI. @Nothing@ iff there is no IRI @i@ assigned
 to the prefix of @c@ or the concatenation of @i@ and @iriPath c@

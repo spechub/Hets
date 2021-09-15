@@ -85,10 +85,7 @@ instance Function IRI where
           lp = show $ iriPath iri
           iRi = if hasFullIRI iri then let
                   ex = np ++ ":" ++ lp
-                  res = let x = expandCurie (Map.map mkIRI pm) iri in
-                         case x of
-                          Just y -> y
-                          Nothing -> error $ "could not expand:" ++ showIRI iri 
+                  res = expandIRI (AS.changePrefixMapTypeToGA pm) iri
                 in if elem np ["http", "https"] then -- abbreviate
                         case Map.lookup "" pm of
                           Just ep | length ep > 5 -> case stripPrefix ep ex of
@@ -110,10 +107,7 @@ instance Function IRI where
                                               else pm') 
                               Map.empty $  
                               Map.toList $ Map.union pm AS.predefPrefixes
-                        x = expandCurie iriMap iri 
-                    in case x of
-                        Just y -> y
-                        Nothing -> error $ "could not expand curie:" ++ showIRI iri
+                    in expandIRI iriMap iri
       in AS.setReservedPrefix iRi
     _ -> iri
 
