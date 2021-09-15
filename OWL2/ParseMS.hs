@@ -17,7 +17,6 @@ import Prelude hiding (lookup)
 import OWL2.AS
 import OWL2.Keywords hiding (comment)
 import OWL2.ColonKeywords
-import OWL2.ParseAS (expandIRI)
 
 import Common.Keywords
 import Common.IRI

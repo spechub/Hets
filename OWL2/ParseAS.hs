@@ -74,19 +74,6 @@ prefix :: CharParser st String
 prefix = skips $ option "" (satisfy ncNameStart <:> many (satisfy ncNameChar))
     << char ':'
 
-{- | @expandIRI pm iri@ returns the expanded @iri@ with a declaration from @pm@.
-If no declaration is found, return @iri@ unchanged. -}
-expandIRI :: GA.PrefixMap -> IRI -> IRI
-expandIRI pm iri
-    | isAbbrev iri = fromMaybe iri $ do
-        def <- lookup (prefixName iri) pm
-        expanded <- mergeCurie iri def
-        return $ expanded
-            { iFragment = iFragment iri
-            , prefixName = prefixName iri
-            , isAbbrev = True }
-    | otherwise = iri
-
 -- | Parses an abbreviated or full iri
 parseIRI :: GA.PrefixMap -> CharParser st IRI
 parseIRI pm = skips (expandIRI pm <$> (fullIri <|> compoundIriCurie) <?> "IRI")

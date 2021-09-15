@@ -602,6 +602,7 @@ aInTypes = [ ATermIn x | x <- [BAF, NonBAF] ]
 -- | 'OWLFormat' lists possibilities for OWL syntax (in + out)
 data OWLFormat =
     Manchester
+  | Functional
   | OwlXml
   | RdfXml
   | OBO
@@ -609,11 +610,12 @@ data OWLFormat =
   deriving Eq
 
 plainOwlFormats :: [OWLFormat]
-plainOwlFormats = [ Manchester, OwlXml, RdfXml, OBO, Turtle ]
+plainOwlFormats = [ Manchester, Functional, OwlXml, RdfXml, OBO, Turtle ]
 
 instance Show OWLFormat where
   show ty = case ty of
     Manchester -> "omn"
+    Functional -> "ofn"
     OwlXml -> "owl"
     -- "owl.xml" ?? might occur but conflicts with dgxml
     RdfXml -> "rdf"
