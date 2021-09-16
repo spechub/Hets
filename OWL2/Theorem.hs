@@ -47,7 +47,7 @@ rmImplied ax = case ax of
         AS.SymmetricObjectProperty anns a -> AS.ObjectPropertyAxiom $ AS.SymmetricObjectProperty (rmList anns)  a 
         AS.AsymmetricObjectProperty anns a -> AS.ObjectPropertyAxiom $ AS.AsymmetricObjectProperty (rmList anns)  a 
         AS.TransitiveObjectProperty anns a -> AS.ObjectPropertyAxiom $ AS.TransitiveObjectProperty (rmList anns)  a 
-    AS.DataPropertyAxiom ax -> case ax of
+    AS.DataPropertyAxiom dpax -> case dpax of
         AS.SubDataPropertyOf anns a b -> AS.DataPropertyAxiom $ AS.SubDataPropertyOf (rmList anns)  a b 
         AS.EquivalentDataProperties anns a -> AS.DataPropertyAxiom $ AS.EquivalentDataProperties (rmList anns)  a 
         AS.DisjointDataProperties anns a -> AS.DataPropertyAxiom $ AS.DisjointDataProperties (rmList anns)  a 
@@ -56,7 +56,7 @@ rmImplied ax = case ax of
         AS.FunctionalDataProperty anns a -> AS.DataPropertyAxiom $ AS.FunctionalDataProperty (rmList anns)  a 
     AS.DatatypeDefinition anns a b -> AS.DatatypeDefinition (rmList anns)  a b 
     AS.HasKey anns a b c -> AS.HasKey (rmList anns)  a b c 
-    AS.Assertion ax -> case ax of
+    AS.Assertion assertion -> case assertion of
         AS.SameIndividual anns a -> AS.Assertion $ AS.SameIndividual (rmList anns)  a 
         AS.DifferentIndividuals anns a -> AS.Assertion $ AS.DifferentIndividuals (rmList anns)  a 
         AS.ClassAssertion anns a b -> AS.Assertion $ AS.ClassAssertion (rmList anns)  a b 
@@ -64,7 +64,7 @@ rmImplied ax = case ax of
         AS.NegativeObjectPropertyAssertion anns a b c -> AS.Assertion $ AS.NegativeObjectPropertyAssertion (rmList anns)  a b c 
         AS.DataPropertyAssertion anns a b c -> AS.Assertion $ AS.DataPropertyAssertion (rmList anns)  a b c 
         AS.NegativeDataPropertyAssertion anns a b c -> AS.Assertion $ AS.NegativeDataPropertyAssertion (rmList anns) a b c 
-    AS.AnnotationAxiom ax -> case ax of
+    AS.AnnotationAxiom annax -> case annax of
         AS.AnnotationAssertion anns a b c -> AS.AnnotationAxiom $ AS.AnnotationAssertion (rmList anns)  a b c 
         AS.SubAnnotationPropertyOf anns a b -> AS.AnnotationAxiom $ AS.SubAnnotationPropertyOf (rmList anns)  a b 
         AS.AnnotationPropertyDomain anns a b -> AS.AnnotationAxiom $ AS.AnnotationPropertyDomain (rmList anns)  a b 
@@ -93,7 +93,7 @@ addImplied ax = case ax of
         AS.SymmetricObjectProperty anns a -> AS.ObjectPropertyAxiom $ AS.SymmetricObjectProperty (implied : anns)  a 
         AS.AsymmetricObjectProperty anns a -> AS.ObjectPropertyAxiom $ AS.AsymmetricObjectProperty (implied : anns)  a 
         AS.TransitiveObjectProperty anns a -> AS.ObjectPropertyAxiom $ AS.TransitiveObjectProperty (implied : anns)  a 
-    AS.DataPropertyAxiom ax -> case ax of
+    AS.DataPropertyAxiom dpax -> case dpax of
         AS.SubDataPropertyOf anns a b -> AS.DataPropertyAxiom $ AS.SubDataPropertyOf (implied : anns)  a b 
         AS.EquivalentDataProperties anns a -> AS.DataPropertyAxiom $ AS.EquivalentDataProperties (implied : anns)  a 
         AS.DisjointDataProperties anns a -> AS.DataPropertyAxiom $ AS.DisjointDataProperties (implied : anns)  a 
@@ -102,7 +102,7 @@ addImplied ax = case ax of
         AS.FunctionalDataProperty anns a -> AS.DataPropertyAxiom $ AS.FunctionalDataProperty (implied : anns)  a 
     AS.DatatypeDefinition anns a b -> AS.DatatypeDefinition (implied : anns)  a b 
     AS.HasKey anns a b c -> AS.HasKey (implied : anns)  a b c 
-    AS.Assertion ax -> case ax of
+    AS.Assertion assertion -> case assertion of
         AS.SameIndividual anns a -> AS.Assertion $ AS.SameIndividual (implied : anns)  a 
         AS.DifferentIndividuals anns a -> AS.Assertion $ AS.DifferentIndividuals (implied : anns)  a 
         AS.ClassAssertion anns a b -> AS.Assertion $ AS.ClassAssertion (implied : anns)  a b 
@@ -110,7 +110,7 @@ addImplied ax = case ax of
         AS.NegativeObjectPropertyAssertion anns a b c -> AS.Assertion $ AS.NegativeObjectPropertyAssertion (implied : anns)  a b c 
         AS.DataPropertyAssertion anns a b c -> AS.Assertion $ AS.DataPropertyAssertion (implied : anns)  a b c 
         AS.NegativeDataPropertyAssertion anns a b c -> AS.Assertion $ AS.NegativeDataPropertyAssertion (implied : anns) a b c 
-    AS.AnnotationAxiom ax -> case ax of
+    AS.AnnotationAxiom anax -> case anax of
         AS.AnnotationAssertion anns a b c -> AS.AnnotationAxiom $ AS.AnnotationAssertion (implied : anns)  a b c 
         AS.SubAnnotationPropertyOf anns a b -> AS.AnnotationAxiom $ AS.SubAnnotationPropertyOf (implied : anns)  a b 
         AS.AnnotationPropertyDomain anns a b -> AS.AnnotationAxiom $ AS.AnnotationPropertyDomain (implied : anns)  a b 

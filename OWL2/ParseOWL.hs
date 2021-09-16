@@ -12,9 +12,7 @@ analyse OWL files by calling the external Java parser.
 
 module OWL2.ParseOWL (parseOWL, convertOWL) where
 
-import OWL2.MS
-import qualified OWL2.AS as AS
-import OWL2.Rename
+import OWL2.AS
 
 import qualified Data.ByteString.Lazy as L
 import Data.List
@@ -41,7 +39,7 @@ import Text.XML.Light hiding (QName)
 -- | call for owl parser (env. variable $HETS_OWL_TOOLS muss be defined)
 parseOWL :: Bool                  -- ^ Sets Option.quick
          -> FilePath              -- ^ local filepath or uri
-         -> ResultT IO (Map.Map String String, [AS.OntologyDocument]) -- ^ map: uri -> OntologyFile
+         -> ResultT IO (Map.Map String String, [OntologyDocument]) -- ^ map: uri -> OntologyFile
 parseOWL quick fullFileName = do
     let fn = tryToStripPrefix "file://" fullFileName
     tmpFile <- lift $ getTempFile "" "owlTemp.xml"
@@ -79,7 +77,7 @@ convertOWL fn tp = do
     _ -> error $ showRelDiags 2 ds
 
 parseProc :: L.ByteString 
-              -> ResultT IO (Map.Map String String, [AS.OntologyDocument])
+              -> ResultT IO (Map.Map String String, [OntologyDocument])
 parseProc str = do
   res <- lift $ parseXml str
   case res of

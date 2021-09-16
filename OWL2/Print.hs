@@ -201,6 +201,7 @@ printNegatedPrimary d = let r = parens $ pretty d in case d of
 -- | annotations printing
 instance Pretty AS.AnnotationValue where
     pretty x = case x of
+        AS.AnnAnInd i -> pretty i
         AS.AnnValue iri -> pretty iri
         AS.AnnValLit lit -> pretty lit
 

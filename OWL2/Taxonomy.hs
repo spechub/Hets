@@ -13,7 +13,6 @@ Taxonomy extraction for OWL
 
 module OWL2.Taxonomy ( onto2Tax ) where
 
-import OWL2.MS
 import OWL2.Sign
 import OWL2.ManchesterPrint
 import OWL2.ProvePellet
@@ -24,7 +23,7 @@ import Taxonomy.MMiSSOntology
 import Common.Taxonomy
 import Common.Utils
 
-import qualified OWL2.AS as AS
+import OWL2.AS
 
 import System.IO.Unsafe
 
@@ -32,14 +31,13 @@ import qualified Data.Foldable as Fold
 import qualified Common.Lib.Rel as Rel
 import qualified Data.Map as Map
 import Data.List
-import Data.Maybe
 
 import qualified Data.Set as Set
 
 -- | Derivation of an Taxonomy for OWL
 onto2Tax :: TaxoGraphKind
          -> MMiSSOntology
-         -> Sign -> [Named AS.Axiom]
+         -> Sign -> [Named Axiom]
          -> Result MMiSSOntology
 onto2Tax gk inOnto sig sens = case gk of
   KSubsort -> fail "Dear user, this logic is single sorted, sorry!"
@@ -96,7 +94,7 @@ relBuild s = case s of
 
 -- | Invocation of Pellet
 -- TODO: commented out in 1993
-runClassifier :: Sign -> [Named AS.Axiom] -> IO (Result String)
+runClassifier :: Sign -> [Named Axiom] -> IO (Result String)
 runClassifier sig sen = do
   let th = show $ printOWLBasicTheory (sig, filter isAxiom sen)
       tLimit = 800
@@ -105,5 +103,5 @@ runClassifier sig sen = do
     Nothing -> fail $ "Timeout after " ++ show tLimit ++ " seconds!"
     Just (progTh, out, _) ->
       if progTh then return out else fail "Pellet not found"
--- runClassifier :: Sign -> [Named AS.Axiom] -> IO (Result String)
+-- runClassifier :: Sign -> [Named Axiom] -> IO (Result String)
 -- runClassifier _ _ = return $ return []

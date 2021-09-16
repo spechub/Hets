@@ -90,12 +90,8 @@ import Data.Ord (comparing)
 import Data.Map as Map (Map, lookup)
 import Data.Maybe
 import Data.List
-import qualified Data.Map as Map
 
 import Control.Monad (when)
-
-import OWL2.ColonKeywords
-import OWL2.Keywords
 
 import Common.Id as Id
 import Common.Lexer

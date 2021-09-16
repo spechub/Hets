@@ -24,7 +24,6 @@ import OWL2.Function
 
 import Data.Char (isDigit)
 import Data.List (find, nub)
-import Data.Maybe (fromJust)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
