@@ -54,40 +54,40 @@ data DMU2OWL2 = DMU2OWL2 deriving Show
 
 instance Language DMU2OWL2 -- default definition is okay
 
-instance Comorphism DMU2OWL2
-   DMU () Text () () () Text (DefaultMorphism Text) () () ()
-   OWL2 ProfSub OntologyDocument Axiom SymbItems SymbMapItems
-       Sign OWLMorphism AS.Entity RawSymb ProofTree where
-    sourceLogic DMU2OWL2 = DMU
-    sourceSublogic DMU2OWL2 = top
-    targetLogic DMU2OWL2 = OWL2
-    mapSublogic DMU2OWL2 _ = Just top
-    map_theory DMU2OWL2 = mapTheory
-    map_morphism DMU2OWL2 _ = return $ inclOWLMorphism emptySign emptySign
-    has_model_expansion DMU2OWL2 = True
-    is_weakly_amalgamable DMU2OWL2 = True
-    isInclusionComorphism DMU2OWL2 = True
+-- instance Comorphism DMU2OWL2
+--    DMU () Text () () () Text (DefaultMorphism Text) () () ()
+--    OWL2 ProfSub OntologyDocument Axiom SymbItems SymbMapItems
+--        Sign OWLMorphism AS.Entity RawSymb ProofTree where
+--     sourceLogic DMU2OWL2 = DMU
+--     sourceSublogic DMU2OWL2 = top
+--     targetLogic DMU2OWL2 = OWL2
+--     mapSublogic DMU2OWL2 _ = Just top
+--     map_theory DMU2OWL2 = mapTheory
+--     map_morphism DMU2OWL2 _ = return $ inclOWLMorphism emptySign emptySign
+--     has_model_expansion DMU2OWL2 = True
+--     is_weakly_amalgamable DMU2OWL2 = True
+--     isInclusionComorphism DMU2OWL2 = True
 
-mapTheory :: (Text, [Named ()]) -> Result (Sign, [Named Axiom])
-mapTheory = readOWL . unsafePerformIO . runOntoDMU . fromText . fst
+-- mapTheory :: (Text, [Named ()]) -> Result (Sign, [Named Axiom])
+-- mapTheory = readOWL . unsafePerformIO . runOntoDMU . fromText . fst
 
-runOntoDMU :: String -> IO String
-runOntoDMU str = if null str then return "" else do
-  ontoDMUpath <- getEnvDef "HETS_ONTODMU" "DMU/OntoDMU.jar"
-  tmpFile <- getTempFile str "ontoDMU.xml"
-  (_, out, _) <- executeProcess "java"
-    ["-jar", ontoDMUpath, "-f", tmpFile] ""
-  removeFile tmpFile
-  return out
+-- runOntoDMU :: String -> IO String
+-- runOntoDMU str = if null str then return "" else do
+--   ontoDMUpath <- getEnvDef "HETS_ONTODMU" "DMU/OntoDMU.jar"
+--   tmpFile <- getTempFile str "ontoDMU.xml"
+--   (_, out, _) <- executeProcess "java"
+--     ["-jar", ontoDMUpath, "-f", tmpFile] ""
+--   removeFile tmpFile
+--   return out
 
-readOWL :: Monad m => String -> m (Sign, [Named Axiom])
-readOWL str = case runParser (liftM2 const (parseOntologyDocument Map.empty) eof) () "" str of
-  Left er -> fail $ show er
-  Right ontoFile -> let
-    newont = function Expand (StringMap $ prefixDeclaration ontoFile) ontoFile
-    newstate = execState (extractSign newont) emptySign
-    in case basicOWL2Analysis
-    (ontoFile, newstate, emptyGlobalAnnos) of
-    Result ds ms -> case ms of
-      Nothing -> fail $ showRelDiags 1 ds
-      Just (_, ExtSign sig _, sens) -> return (sig, sens)
+-- readOWL :: Monad m => String -> m (Sign, [Named Axiom])
+-- readOWL str = case runParser (liftM2 const (parseOntologyDocument Map.empty) eof) () "" str of
+--   Left er -> fail $ show er
+--   Right ontoFile -> let
+--     newont = function Expand (StringMap $ prefixDeclaration ontoFile) ontoFile
+--     newstate = execState (extractSign newont) emptySign
+--     in case basicOWL2Analysis
+--     (ontoFile, newstate, emptyGlobalAnnos) of
+--     Result ds ms -> case ms of
+--       Nothing -> fail $ showRelDiags 1 ds
+--       Just (_, ExtSign sig _, sens) -> return (sig, sens)

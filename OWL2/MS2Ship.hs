@@ -25,7 +25,7 @@ import Data.Function
 import Data.Maybe
 import qualified Data.Set as Set
 
-ppShipOnt :: OntologyDocument -> Doc
+ppShipOnt :: AS.OntologyDocument -> Doc
 ppShipOnt = ppBox . catBoxes . map frame2Boxes . ontFrames . ontology
 
 emptyBox :: Box

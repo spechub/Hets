@@ -25,11 +25,9 @@ import Logic.Prover
 
 import OWL2.Morphism
 import OWL2.Sign
-import OWL2.Profiles
-import OWL2.Sublogic
 import OWL2.ProfilesAndSublogics
 import OWL2.ProverState
-import OWL2.MS
+import OWL2.AS
 
 import GUI.GenericATP
 import Interfaces.GenericATPState

@@ -164,7 +164,7 @@ the signature by calling completeSignForFrame -}
 extractSign :: OntologyDocument -> State Sign ()
 extractSign = mapM_ fromFrame . ontFrames . ontology
 
-toDecl :: Sign -> [Frame]
+toDecl :: Sign -> [AS.Axiom]
 toDecl s =
     let cls = map (AS.mkEntity AS.Class) $ Set.toList (concepts s)
         dt = map (AS.mkEntity AS.Datatype) $ Set.toList (datatypes s)
@@ -172,9 +172,10 @@ toDecl s =
         dp = map (AS.mkEntity AS.DataProperty) $ Set.toList (dataProperties s)
         i = map (AS.mkEntity AS.NamedIndividual) $ Set.toList (individuals s)
         ans = map (AS.mkEntity AS.AnnotationProperty) $ Set.toList (annotationRoles s)
-    in map (\ c -> Frame (mkExtendedEntity c)
-        [AnnFrameBit [] $ AnnotationFrameBit Declaration])
-            (cls ++ dt ++ op ++ dp ++ i ++ ans)
+    in map (AS.Declaration []) (cls ++ dt ++ op ++ dp ++ i ++ ans)
 
+-- signToFrames :: [Frame] -> [Frame]
+-- signToFrames f = let s = mapM_ fromFrame f in toDecl $ execState s emptySign
+-- TODO: commented out in 1993
 signToFrames :: [Frame] -> [Frame]
-signToFrames f = let s = mapM_ fromFrame f in toDecl $ execState s emptySign
+signToFrames = id

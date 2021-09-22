@@ -12,10 +12,8 @@ analyse OWL files by calling the external Java parser.
 
 module OWL2.ParseOWLAsLibDefn (parseOWLAsLibDefn) where
 
-import qualified OWL2.AS as AS
-import OWL2.MS
+import OWL2.AS
 
-import Data.List
 import Data.Maybe
 import qualified Data.Map as Map
 
@@ -59,8 +57,8 @@ convertToLibDefN imap o = Lib_defn ln
             Just s -> setFilePath $ tryToStripPrefix "file:" s
             Nothing -> setFilePath libstr
           $ iriLibName oname
-        imps = imports ont
+        imps = importsDocuments ont
         imps2 = filter ((`elem` is) . show . setAngles False) imps
-        oname = name ont
+        oname = fromMaybe nullIRI $ mOntologyIRI ont
         libstr = show $ setAngles False oname
         imp_libs = map (addDownload False) imps2

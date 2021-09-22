@@ -504,6 +504,10 @@ xmlOntologyDoc s od =
             ++ concatMap xmlAnnotations (ann ont)
             ++ signToDec s
 
-mkODoc :: Sign -> [Named Axiom] -> String
-mkODoc s = ppTopElement . xmlOntologyDoc s . OntologyDocument (prefixMap s)
-  . emptyOntology . map (axToFrame . sentence)
+
+-- TODO: commented out in 1993
+mkODoc :: Sign -> [Named AS.Axiom] -> String
+mkODoc _ _ = []
+-- mkODoc :: Sign -> [Named Axiom] -> String
+-- mkODoc s = ppTopElement . xmlOntologyDoc s . OntologyDocument (prefixMap s)
+--   . emptyOntology . map (axToFrame . sentence)

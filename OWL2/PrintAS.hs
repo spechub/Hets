@@ -1,42 +1,36 @@
-module OWL2.PrintOWL2AS where
+module OWL2.PrintAS where
 
 import Common.Doc
 import Common.DocUtils
-import Common.Id
 import Common.Keywords
 import Common.IRI
+import Common.GlobalAnnotations as GA (PrefixMap)
 
 import OWL2.AS
-import OWL2.Keywords
-import OWL2.ColonKeywords
 import OWL2.ASKeywords
 
-import Data.List
+import qualified Data.Map as M
 
 -- | auxiliary parens function
+sParens :: Doc -> Doc
 sParens d = parens (space <> d <> space)
 
 -- | print IRI
-printIRI :: [PrefixDeclaration] -> IRI -> Doc
+printIRI :: GA.PrefixMap -> IRI -> Doc
 printIRI pds iri
-    | isAbbrev iri && containsPrefix pds prefName =
-        text (prefName ++ ":" ++ (iFragment iri))
+    | isAbbrev iri && prefName `M.member` pds
+        = text (prefName ++ ":" ++ (iFragment iri))
+
     | otherwise = pretty iri
   where prefName = prefixName iri
 
-printDataIRI :: [PrefixDeclaration] -> IRI -> Doc
+printDataIRI :: GA.PrefixMap -> IRI -> Doc
 printDataIRI pds q
     | isDatatypeKey q = text $ showIRI $ setDatatypePrefix q
     | otherwise = printIRI pds q
 
-containsPrefix :: [PrefixDeclaration] -> String -> Bool
-containsPrefix [] _ = False
-containsPrefix ((PrefixDeclaration name _):pds) prefName
-    | name == prefName = True
-    | otherwise = containsPrefix pds prefName
-
 -- | print Literal
-printLiteral :: [PrefixDeclaration] -> Literal -> Doc
+printLiteral :: GA.PrefixMap -> Literal -> Doc
 printLiteral pds lit = case lit of 
     Literal lexi ty -> plainText ('"' : escapeString lexi ++ "\"")
         <> literalTail ty
@@ -55,7 +49,7 @@ escapeString ('\\':s) = '\\' : '\\' : escapeString s
 escapeString (c:s) = c : escapeString s 
 
 -- | print PropertyExpression
-printObjectPropertyExpression :: [PrefixDeclaration] -> ObjectPropertyExpression
+printObjectPropertyExpression :: GA.PrefixMap -> ObjectPropertyExpression
     -> Doc
 printObjectPropertyExpression pds obExpr = case obExpr of
     ObjectProp objProp -> printIRI pds objProp
@@ -64,7 +58,7 @@ printObjectPropertyExpression pds obExpr = case obExpr of
         <> sParens (printObjectPropertyExpression pds iObjPropExpr)
 
 -- | print Entity
-printEntity :: [PrefixDeclaration] -> Entity -> Doc
+printEntity :: GA.PrefixMap -> Entity -> Doc
 printEntity pds (Entity _ ty ent) =
     keyword entityTypeS <> sParens (docEnt)
     where
@@ -78,14 +72,14 @@ printEntity pds (Entity _ ty ent) =
             NamedIndividual -> "NamedIndividual"
 
 -- | print DataRanges
-printDataRange :: [PrefixDeclaration] -> DataRange -> Doc
+printDataRange :: GA.PrefixMap -> DataRange -> Doc
 printDataRange pds dr = case dr of
     DataType dt fvs -> printDataRestriction pds dt fvs
     DataJunction jt drs -> printDataJunction pds jt drs
-    DataComplementOf dr -> printDataComplementOf pds dr
+    DataComplementOf dr' -> printDataComplementOf pds dr'
     DataOneOf lits -> printDataOneOf pds lits
 
-printDataRestriction :: [PrefixDeclaration] -> Datatype
+printDataRestriction :: GA.PrefixMap -> Datatype
     -> [(ConstrainingFacet, RestrictionValue)] -> Doc
 printDataRestriction pds dt fvs
     | null fvs = printIRI pds dt
@@ -96,7 +90,7 @@ printDataRestriction pds dt fvs
             | (f, v) <- fvs]
         docDt = printIRI pds dt
 
-printDataJunction :: [PrefixDeclaration] -> JunctionType -> [DataRange] -> Doc
+printDataJunction :: GA.PrefixMap -> JunctionType -> [DataRange] -> Doc
 printDataJunction pds jt drs =
     junctionKeyword <> sParens (hsep docDrs)
     where 
@@ -105,17 +99,17 @@ printDataJunction pds jt drs =
             IntersectionOf -> keyword dataIntersectionOfS
         docDrs = map (printDataRange pds) drs
 
-printDataComplementOf :: [PrefixDeclaration] -> DataRange -> Doc
+printDataComplementOf :: GA.PrefixMap -> DataRange -> Doc
 printDataComplementOf pds dr =
     keyword dataComplementOfS <> sParens docDr
     where docDr = printDataRange pds dr
 
-printDataOneOf :: [PrefixDeclaration] -> [Literal] -> Doc
+printDataOneOf :: GA.PrefixMap -> [Literal] -> Doc
 printDataOneOf pds lits = keyword dataOneOfS
     <> sParens (hsep . map (printLiteral pds) $ lits)
 
 -- | print ClassExpressions
-printClassExpression :: [PrefixDeclaration] -> ClassExpression -> Doc
+printClassExpression :: GA.PrefixMap -> ClassExpression -> Doc
 printClassExpression pds clExpr = case clExpr of
     Expression cl -> printIRI pds cl
     ObjectJunction jt clExprs -> printObjectJunction pds jt clExprs
@@ -132,7 +126,7 @@ printClassExpression pds clExpr = case clExpr of
     DataHasValue dPropExpr lit -> printDataHasValue pds dPropExpr lit
     DataCardinality card -> printDataCardinality pds card
 
-printObjectJunction :: [PrefixDeclaration] -> JunctionType
+printObjectJunction :: GA.PrefixMap -> JunctionType
     -> [ClassExpression] -> Doc
 printObjectJunction pds jt clExprs =
     junctionKeyword <> sParens (hsep docClExprs)
@@ -142,17 +136,17 @@ printObjectJunction pds jt clExprs =
             IntersectionOf -> keyword objectIntersectionOfS
         docClExprs = map (printClassExpression pds) clExprs
 
-printObjectComplementOf :: [PrefixDeclaration] -> ClassExpression -> Doc
+printObjectComplementOf :: GA.PrefixMap -> ClassExpression -> Doc
 printObjectComplementOf pds clExpr =
     keyword objectComplementOfS <> sParens (docClExpr)
     where docClExpr = printClassExpression pds clExpr
 
-printObjectOneOf :: [PrefixDeclaration] -> [Individual] -> Doc
+printObjectOneOf :: GA.PrefixMap -> [Individual] -> Doc
 printObjectOneOf pds inds =
     keyword objectOneOfS <> sParens (hsep docInds)
     where docInds = map (printIRI pds) inds
 
-printObjectValuesFrom :: [PrefixDeclaration] -> QuantifierType
+printObjectValuesFrom :: GA.PrefixMap -> QuantifierType
     -> ObjectPropertyExpression -> ClassExpression -> Doc
 printObjectValuesFrom pds qt obPropExpr clExpr =
     quantifierKeyword <> sParens (hsep [docObPropExpr, docClExpr])
@@ -163,7 +157,7 @@ printObjectValuesFrom pds qt obPropExpr clExpr =
         docObPropExpr = printObjectPropertyExpression pds obPropExpr
         docClExpr = printClassExpression pds clExpr
 
-printObjectHasValue :: [PrefixDeclaration] -> ObjectPropertyExpression
+printObjectHasValue :: GA.PrefixMap -> ObjectPropertyExpression
     -> Individual -> Doc
 printObjectHasValue pds objPropExpr ind =
     keyword objectHasValueS <> sParens (hsep [docObjPropExpr, docInd])
@@ -171,12 +165,12 @@ printObjectHasValue pds objPropExpr ind =
         docObjPropExpr = printObjectPropertyExpression pds objPropExpr
         docInd = printIRI pds ind
 
-printObjectHasSelf :: [PrefixDeclaration] -> ObjectPropertyExpression -> Doc
+printObjectHasSelf :: GA.PrefixMap -> ObjectPropertyExpression -> Doc
 printObjectHasSelf pds objPropExpr =
     keyword objectHasSelfS <> sParens docObjPropExpr
     where docObjPropExpr = printObjectPropertyExpression pds objPropExpr
 
-printObjectCardinality :: [PrefixDeclaration] 
+printObjectCardinality :: GA.PrefixMap 
     -> Cardinality ObjectPropertyExpression ClassExpression -> Doc
 printObjectCardinality pds card =
     cardinalityKeyword <> sParens (hsep $
@@ -192,7 +186,7 @@ printObjectCardinality pds card =
             Nothing -> empty
             Just clExpr -> printClassExpression pds clExpr
 
-printDataValuesFrom :: [PrefixDeclaration] -> QuantifierType
+printDataValuesFrom :: GA.PrefixMap -> QuantifierType
     -> [DataPropertyExpression] -> DataRange -> Doc
 printDataValuesFrom pds qt dPropExprs dr =
     quantifierKeyword <> sParens (hsep . concat $
@@ -204,7 +198,7 @@ printDataValuesFrom pds qt dPropExprs dr =
         docDPropExprs = map (printIRI pds) dPropExprs
         docDr = printDataRange pds dr
 
-printDataCardinality :: [PrefixDeclaration]
+printDataCardinality :: GA.PrefixMap
     -> Cardinality DataPropertyExpression DataRange -> Doc
 printDataCardinality pds card = cardinalityKeyword <> sParens (hsep $
         [text $ show n, docDataPropExpr, docDr])
@@ -219,7 +213,7 @@ printDataCardinality pds card = cardinalityKeyword <> sParens (hsep $
             Nothing -> empty
             Just drange -> printDataRange pds drange
 
-printDataHasValue :: [PrefixDeclaration] -> DataPropertyExpression
+printDataHasValue :: GA.PrefixMap -> DataPropertyExpression
     -> Literal -> Doc
 printDataHasValue pds dPropExpr lit = 
     keyword dataHasValueS <> sParens(hsep [docDPropExpr, docLit])
@@ -228,13 +222,13 @@ printDataHasValue pds dPropExpr lit =
         docLit = printLiteral pds lit
 
 -- | print Annotations
-printAnnotationValue :: [PrefixDeclaration] -> AnnotationValue -> Doc
+printAnnotationValue :: GA.PrefixMap -> AnnotationValue -> Doc
 printAnnotationValue pds anVal = case anVal of
     AnnAnInd anInd -> printIRI pds anInd
     AnnValue iri -> printIRI pds iri
     AnnValLit lit -> printLiteral pds lit
 
-printAnnotation :: [PrefixDeclaration] -> Annotation -> Doc
+printAnnotation :: GA.PrefixMap -> Annotation -> Doc
 printAnnotation pds (Annotation ans anProp anVal) =
     keyword annotationS <> sParens (hsep . concat $
         [docAns, [docAnProp, docAnVal]])
@@ -243,13 +237,13 @@ printAnnotation pds (Annotation ans anProp anVal) =
         docAnProp = printIRI pds anProp
         docAnVal = printAnnotationValue pds anVal
 
-printAnnotationSubject :: [PrefixDeclaration] -> AnnotationSubject -> Doc
+printAnnotationSubject :: GA.PrefixMap -> AnnotationSubject -> Doc
 printAnnotationSubject pds annSub = case annSub of
     AnnSubIri iri -> printIRI pds iri
     AnnSubAnInd ind -> printIRI pds ind
 
 -- | print Axioms
-printAxiom :: [PrefixDeclaration] -> Axiom -> Doc
+printAxiom :: GA.PrefixMap -> Axiom -> Doc
 printAxiom pds axiom = case axiom of 
     Declaration axAnns ent -> printDeclaration pds axAnns ent
     ClassAxiom ax -> printClassAxiom pds ax
@@ -262,7 +256,7 @@ printAxiom pds axiom = case axiom of
     Assertion ax -> printAssertion pds ax
     AnnotationAxiom ax -> printAnnotationAxiom pds ax
 
-printDeclaration :: [PrefixDeclaration] -> AxiomAnnotations -> Entity -> Doc
+printDeclaration :: GA.PrefixMap -> AxiomAnnotations -> Entity -> Doc
 printDeclaration pds axAnns ent =
     keyword "Declaration"
     <> sParens (hsep . concat $
@@ -272,7 +266,7 @@ printDeclaration pds axAnns ent =
         docEnt = printEntity pds ent
 
 -- | print ClassAxiom
-printClassAxiom :: [PrefixDeclaration] -> ClassAxiom -> Doc
+printClassAxiom :: GA.PrefixMap -> ClassAxiom -> Doc
 printClassAxiom pds ca = case ca of
     SubClassOf axAnns subClExpr supClExpr ->
         printSubClassOf pds axAnns subClExpr supClExpr
@@ -282,7 +276,7 @@ printClassAxiom pds ca = case ca of
     DisjointUnion axAnns cl disjClExprs ->
         printDisjointUnion pds axAnns cl disjClExprs
 
-printSubClassOf :: [PrefixDeclaration] -> AxiomAnnotations
+printSubClassOf :: GA.PrefixMap -> AxiomAnnotations
     -> SubClassExpression -> SuperClassExpression -> Doc
 printSubClassOf pds axAnns subClExpr supClExpr =
     keyword subClassOfS
@@ -293,7 +287,7 @@ printSubClassOf pds axAnns subClExpr supClExpr =
         docSubClExpr = printClassExpression pds subClExpr
         docSupClExpr = printClassExpression pds supClExpr
 
-printEquivalentClasses :: [PrefixDeclaration] -> AxiomAnnotations
+printEquivalentClasses :: GA.PrefixMap -> AxiomAnnotations
     -> [ClassExpression] -> Doc
 printEquivalentClasses pds axAnns clExprs =
     keyword equivalentClassesS
@@ -303,7 +297,7 @@ printEquivalentClasses pds axAnns clExprs =
         docAxAnns = map (printAnnotation pds) axAnns
         docClExprs = map (printClassExpression pds) clExprs
 
-printDisjointClasses :: [PrefixDeclaration] -> AxiomAnnotations
+printDisjointClasses :: GA.PrefixMap -> AxiomAnnotations
     -> [ClassExpression] -> Doc
 printDisjointClasses pds axAnns clExprs =
     keyword disjointClassesS
@@ -313,7 +307,7 @@ printDisjointClasses pds axAnns clExprs =
         docAxAnns = map (printAnnotation pds) axAnns
         docClExprs = map (printClassExpression pds) clExprs
 
-printDisjointUnion :: [PrefixDeclaration] -> AxiomAnnotations -> Class
+printDisjointUnion :: GA.PrefixMap -> AxiomAnnotations -> Class
     -> DisjointClassExpression  -> Doc
 printDisjointUnion pds axAnns cl disjClExprs = 
     keyword disjointUnionS
@@ -325,7 +319,7 @@ printDisjointUnion pds axAnns cl disjClExprs =
         docDisjClExprs = map (printClassExpression pds) disjClExprs
 
 -- | print SubObjectProperyExpression
-printSubObjectPropertyExpression :: [PrefixDeclaration]
+printSubObjectPropertyExpression :: GA.PrefixMap
     -> SubObjectPropertyExpression -> Doc
 printSubObjectPropertyExpression pds subObjPropExpr =
     case subObjPropExpr of
@@ -337,7 +331,7 @@ printSubObjectPropertyExpression pds subObjPropExpr =
                     . map (printObjectPropertyExpression pds) $ propExprChain)
 
 -- | print ObjectPropertyAxiom
-printObjectPropertyAxiom :: [PrefixDeclaration] -> ObjectPropertyAxiom -> Doc
+printObjectPropertyAxiom :: GA.PrefixMap -> ObjectPropertyAxiom -> Doc
 printObjectPropertyAxiom pds objPropAx = case objPropAx of
     SubObjectPropertyOf axAnns subObjPropExpr supObjPropExpr
         -> printSubObjectPropertyOf pds axAnns subObjPropExpr supObjPropExpr
@@ -366,7 +360,7 @@ printObjectPropertyAxiom pds objPropAx = case objPropAx of
     TransitiveObjectProperty axAnns objPropExpr
         -> printTransitiveObjectProperty pds axAnns objPropExpr
 
-printSubObjectPropertyOf :: [PrefixDeclaration] -> AxiomAnnotations
+printSubObjectPropertyOf :: GA.PrefixMap -> AxiomAnnotations
     -> SubObjectPropertyExpression -> SuperObjectPropertyExpression -> Doc
 printSubObjectPropertyOf pds axAnns subObjPropExpr supObjPropExpr =
     keyword subObjectPropertyOfS
@@ -377,7 +371,7 @@ printSubObjectPropertyOf pds axAnns subObjPropExpr supObjPropExpr =
         docSubObjPropExpr = printSubObjectPropertyExpression pds subObjPropExpr
         docSupObjPropExpr = printObjectPropertyExpression pds supObjPropExpr
 
-printEquivalentObjectProperties :: [PrefixDeclaration] -> AxiomAnnotations
+printEquivalentObjectProperties :: GA.PrefixMap -> AxiomAnnotations
     -> [ObjectPropertyExpression] -> Doc
 printEquivalentObjectProperties pds axAnns objPropExprs =
     keyword equivalentObjectPropertiesS
@@ -387,7 +381,7 @@ printEquivalentObjectProperties pds axAnns objPropExprs =
         docAxAnns = map (printAnnotation pds) axAnns
         docObjPropExprs = map (printObjectPropertyExpression pds) objPropExprs
 
-printDisjointObjectProperties :: [PrefixDeclaration] -> AxiomAnnotations
+printDisjointObjectProperties :: GA.PrefixMap -> AxiomAnnotations
     -> [ObjectPropertyExpression] -> Doc
 printDisjointObjectProperties pds axAnns objPropExprs =
     keyword disjointObjectPropertiesS
@@ -397,7 +391,7 @@ printDisjointObjectProperties pds axAnns objPropExprs =
         docAxAnns = map (printAnnotation pds) axAnns
         docObjPropExprs = map (printObjectPropertyExpression pds) objPropExprs
 
-printInverseObjectProperties :: [PrefixDeclaration] -> AxiomAnnotations
+printInverseObjectProperties :: GA.PrefixMap -> AxiomAnnotations
     -> ObjectPropertyExpression -> ObjectPropertyExpression -> Doc
 printInverseObjectProperties pds axAnns objPropExpr1 objPropExpr2 =
     keyword inverseObjectPropertiesS
@@ -409,7 +403,7 @@ printInverseObjectProperties pds axAnns objPropExpr1 objPropExpr2 =
         docObjPropExpr2 = printObjectPropertyExpression pds objPropExpr2
 
 
-printObjectPropertyDomain :: [PrefixDeclaration] -> AxiomAnnotations
+printObjectPropertyDomain :: GA.PrefixMap -> AxiomAnnotations
     -> ObjectPropertyExpression -> ClassExpression -> Doc
 printObjectPropertyDomain pds axAnns objPropExpr clExpr =
     keyword objectPropertyDomainS
@@ -420,7 +414,7 @@ printObjectPropertyDomain pds axAnns objPropExpr clExpr =
         docObjPropExpr = printObjectPropertyExpression pds objPropExpr
         docClassExpr = printClassExpression pds clExpr
 
-printObjectPropertyRange :: [PrefixDeclaration] -> AxiomAnnotations
+printObjectPropertyRange :: GA.PrefixMap -> AxiomAnnotations
     -> ObjectPropertyExpression -> ClassExpression -> Doc
 printObjectPropertyRange pds axAnns objPropExpr clExpr = 
     keyword objectPropertyRangeS
@@ -432,7 +426,7 @@ printObjectPropertyRange pds axAnns objPropExpr clExpr =
         docClassExpr = printClassExpression pds clExpr
     
 
-printFunctionalObjectProperty :: [PrefixDeclaration] -> AxiomAnnotations
+printFunctionalObjectProperty :: GA.PrefixMap -> AxiomAnnotations
     -> ObjectPropertyExpression -> Doc
 printFunctionalObjectProperty pds axAnns objPropExpr =
     keyword functionalObjectPropertyS
@@ -442,7 +436,7 @@ printFunctionalObjectProperty pds axAnns objPropExpr =
         docAxAnns = map (printAnnotation pds) axAnns
         docObjPropExpr = printObjectPropertyExpression pds objPropExpr
 
-printInverseFunctionalObjectProperty :: [PrefixDeclaration] -> AxiomAnnotations
+printInverseFunctionalObjectProperty :: GA.PrefixMap -> AxiomAnnotations
     -> ObjectPropertyExpression -> Doc
 printInverseFunctionalObjectProperty pds axAnns objPropExpr =
     keyword inverseFunctionalObjectPropertyS
@@ -452,7 +446,7 @@ printInverseFunctionalObjectProperty pds axAnns objPropExpr =
         docAxAnns = map (printAnnotation pds) axAnns
         docObjPropExpr = printObjectPropertyExpression pds objPropExpr
 
-printReflexiveObjectProperty :: [PrefixDeclaration] -> AxiomAnnotations
+printReflexiveObjectProperty :: GA.PrefixMap -> AxiomAnnotations
     -> ObjectPropertyExpression -> Doc
 printReflexiveObjectProperty pds axAnns objPropExpr =
     keyword reflexiveObjectPropertyS
@@ -463,7 +457,7 @@ printReflexiveObjectProperty pds axAnns objPropExpr =
         docObjPropExpr = printObjectPropertyExpression pds objPropExpr
 
 
-printIrreflexiveObjectProperty :: [PrefixDeclaration] -> AxiomAnnotations
+printIrreflexiveObjectProperty :: GA.PrefixMap -> AxiomAnnotations
     -> ObjectPropertyExpression -> Doc
 printIrreflexiveObjectProperty pds axAnns objPropExpr =
     keyword irreflexiveObjectPropertyS
@@ -473,7 +467,7 @@ printIrreflexiveObjectProperty pds axAnns objPropExpr =
         docAxAnns = map (printAnnotation pds) axAnns
         docObjPropExpr = printObjectPropertyExpression pds objPropExpr
 
-printSymmetricObjectProperty :: [PrefixDeclaration] -> AxiomAnnotations
+printSymmetricObjectProperty :: GA.PrefixMap -> AxiomAnnotations
     -> ObjectPropertyExpression -> Doc
 printSymmetricObjectProperty pds axAnns objPropExpr =
     keyword symmetricObjectPropertyS
@@ -483,7 +477,7 @@ printSymmetricObjectProperty pds axAnns objPropExpr =
         docAxAnns = map (printAnnotation pds) axAnns
         docObjPropExpr = printObjectPropertyExpression pds objPropExpr
 
-printAsymmetricObjectProperty :: [PrefixDeclaration] -> AxiomAnnotations
+printAsymmetricObjectProperty :: GA.PrefixMap -> AxiomAnnotations
     -> ObjectPropertyExpression -> Doc
 printAsymmetricObjectProperty pds axAnns objPropExpr =
     keyword asymmetricObjectPropertyS
@@ -493,7 +487,7 @@ printAsymmetricObjectProperty pds axAnns objPropExpr =
         docAxAnns = map (printAnnotation pds) axAnns
         docObjPropExpr = printObjectPropertyExpression pds objPropExpr
 
-printTransitiveObjectProperty :: [PrefixDeclaration] -> AxiomAnnotations
+printTransitiveObjectProperty :: GA.PrefixMap -> AxiomAnnotations
     -> ObjectPropertyExpression -> Doc
 printTransitiveObjectProperty pds axAnns objPropExpr =
     keyword transitiveObjectPropertyS
@@ -504,7 +498,7 @@ printTransitiveObjectProperty pds axAnns objPropExpr =
         docObjPropExpr = printObjectPropertyExpression pds objPropExpr
 
 -- | print DataPropertyAxiom
-printDataPropertyAxiom :: [PrefixDeclaration] -> DataPropertyAxiom -> Doc
+printDataPropertyAxiom :: GA.PrefixMap -> DataPropertyAxiom -> Doc
 printDataPropertyAxiom pds dpAx = case dpAx of
     SubDataPropertyOf axAnns subDataPropExpr supDataPropExpr
         -> printSubDataPropertyOf pds axAnns subDataPropExpr supDataPropExpr
@@ -519,7 +513,7 @@ printDataPropertyAxiom pds dpAx = case dpAx of
     FunctionalDataProperty axAnns dataPropExpr
         -> printFunctionalDataProperty pds axAnns dataPropExpr
 
-printSubDataPropertyOf :: [PrefixDeclaration] -> AxiomAnnotations ->
+printSubDataPropertyOf :: GA.PrefixMap -> AxiomAnnotations ->
     SubDataPropertyExpression -> SuperDataPropertyExpression -> Doc
 printSubDataPropertyOf pds axAnns subDataPropExpr supDataPropExpr = 
     keyword subDataPropertyOfS
@@ -530,7 +524,7 @@ printSubDataPropertyOf pds axAnns subDataPropExpr supDataPropExpr =
         docSubDataPropExpr = printIRI pds subDataPropExpr
         docSupDataPropExpr = printIRI pds supDataPropExpr
 
-printEquivalentDataProperties :: [PrefixDeclaration] -> AxiomAnnotations
+printEquivalentDataProperties :: GA.PrefixMap -> AxiomAnnotations
     -> [DataPropertyExpression] -> Doc
 printEquivalentDataProperties pds axAnns dataPropExprs =
     keyword equivalentDataPropertiesS
@@ -540,7 +534,7 @@ printEquivalentDataProperties pds axAnns dataPropExprs =
         docAxAnns = map (printAnnotation pds) axAnns
         docDataPropExprs = map (printIRI pds) dataPropExprs
 
-printDisjointDataProperties :: [PrefixDeclaration] -> AxiomAnnotations
+printDisjointDataProperties :: GA.PrefixMap -> AxiomAnnotations
     -> [DataPropertyExpression] -> Doc
 printDisjointDataProperties pds axAnns dataPropExprs =
     keyword disjointDataPropertiesS
@@ -550,7 +544,7 @@ printDisjointDataProperties pds axAnns dataPropExprs =
         docAxAnns = map (printAnnotation pds) axAnns
         docDataPropExprs = map (printIRI pds) dataPropExprs
 
-printDataPropertyDomain :: [PrefixDeclaration] -> AxiomAnnotations
+printDataPropertyDomain :: GA.PrefixMap -> AxiomAnnotations
     -> DataPropertyExpression -> ClassExpression -> Doc
 printDataPropertyDomain pds axAnns dataPropExpr clExpr =
     keyword dataPropertyDomainS
@@ -561,7 +555,7 @@ printDataPropertyDomain pds axAnns dataPropExpr clExpr =
         docDataPropExpr = printIRI pds dataPropExpr
         docClassExpr = printClassExpression pds clExpr
 
-printDataPropertyRange  :: [PrefixDeclaration] -> AxiomAnnotations 
+printDataPropertyRange  :: GA.PrefixMap -> AxiomAnnotations 
     -> DataPropertyExpression -> DataRange -> Doc
 printDataPropertyRange pds axAnns dataPropExpr dr =
     keyword dataPropertyRangeS
@@ -572,7 +566,7 @@ printDataPropertyRange pds axAnns dataPropExpr dr =
         docDataPropExpr = printIRI pds dataPropExpr
         docDataRange = printDataRange pds dr
 
-printFunctionalDataProperty :: [PrefixDeclaration] -> AxiomAnnotations
+printFunctionalDataProperty :: GA.PrefixMap -> AxiomAnnotations
     -> DataPropertyExpression -> Doc
 printFunctionalDataProperty pds axAnns dataPropExpr =
     keyword functionalDataPropertyS
@@ -584,7 +578,7 @@ printFunctionalDataProperty pds axAnns dataPropExpr =
 
 -- | print DatatypeDefinition axiom
 
-printDatatypeDefinition :: [PrefixDeclaration] -> AxiomAnnotations -> Datatype
+printDatatypeDefinition :: GA.PrefixMap -> AxiomAnnotations -> Datatype
     -> DataRange -> Doc
 printDatatypeDefinition pds axAnns dt dr =
     keyword datatypeDefinitionS
@@ -597,7 +591,7 @@ printDatatypeDefinition pds axAnns dt dr =
 
 -- | print HasKey axiom
 
-printHasKey :: [PrefixDeclaration] -> AxiomAnnotations -> ClassExpression
+printHasKey :: GA.PrefixMap -> AxiomAnnotations -> ClassExpression
     -> [ObjectPropertyExpression] -> [DataPropertyExpression] -> Doc
 printHasKey pds axAnns clExpr objPropExprs dataPropExprs =
     keyword hasKeyS
@@ -612,7 +606,7 @@ printHasKey pds axAnns clExpr objPropExprs dataPropExprs =
             . map (printIRI pds) $ dataPropExprs
 
 -- | print Assertion axiom
-printAssertion :: [PrefixDeclaration] -> Assertion -> Doc
+printAssertion :: GA.PrefixMap -> Assertion -> Doc
 printAssertion pds assertion = case assertion of
     SameIndividual axAnns inds -> printSameIndividual pds axAnns inds
     DifferentIndividuals axAnns inds
@@ -630,7 +624,7 @@ printAssertion pds assertion = case assertion of
         -> printNegativeDataPropertyAssertion pds axAnns dataPropExpr srcInd
             targVal
 
-printSameIndividual :: [PrefixDeclaration] -> AxiomAnnotations -> [Individual]
+printSameIndividual :: GA.PrefixMap -> AxiomAnnotations -> [Individual]
     -> Doc
 printSameIndividual pds axAnns inds =
     keyword sameIndividualS
@@ -640,7 +634,7 @@ printSameIndividual pds axAnns inds =
         docAxAnns = map (printAnnotation pds) axAnns
         docInds = map (printIRI pds) inds
 
-printDifferentIndividuals :: [PrefixDeclaration] -> AxiomAnnotations
+printDifferentIndividuals :: GA.PrefixMap -> AxiomAnnotations
     -> [Individual] -> Doc
 printDifferentIndividuals pds axAnns inds =
     keyword differentIndividualsS
@@ -650,7 +644,7 @@ printDifferentIndividuals pds axAnns inds =
         docAxAnns = map (printAnnotation pds) axAnns
         docInds = map (printIRI pds) inds
 
-printClassAssertion :: [PrefixDeclaration] -> AxiomAnnotations
+printClassAssertion :: GA.PrefixMap -> AxiomAnnotations
     -> ClassExpression -> Individual -> Doc
 printClassAssertion pds axAnns clExpr ind =
     keyword classAssertionS
@@ -661,7 +655,7 @@ printClassAssertion pds axAnns clExpr ind =
         docClassExpr = printClassExpression pds clExpr
         docInd = printIRI pds ind
 
-printObjectPropertyAssertion :: [PrefixDeclaration] -> AxiomAnnotations
+printObjectPropertyAssertion :: GA.PrefixMap -> AxiomAnnotations
     -> ObjectPropertyExpression -> SourceIndividual -> TargetIndividual -> Doc
 printObjectPropertyAssertion pds axAnns objPropExpr srcInd targInd =
     keyword objectPropertyAssertionS
@@ -674,7 +668,7 @@ printObjectPropertyAssertion pds axAnns objPropExpr srcInd targInd =
         docTargInd = printIRI pds targInd
 
 
-printNegativeObjectPropertyAssertion :: [PrefixDeclaration] -> AxiomAnnotations
+printNegativeObjectPropertyAssertion :: GA.PrefixMap -> AxiomAnnotations
     -> ObjectPropertyExpression -> SourceIndividual -> TargetIndividual -> Doc
 printNegativeObjectPropertyAssertion pds axAnns objPropExpr srcInd targInd =
     keyword negativeObjectPropertyAssertionS
@@ -686,7 +680,7 @@ printNegativeObjectPropertyAssertion pds axAnns objPropExpr srcInd targInd =
         docSrcInd = printIRI pds srcInd
         docTargInd = printIRI pds targInd
 
-printDataPropertyAssertion :: [PrefixDeclaration] -> AxiomAnnotations
+printDataPropertyAssertion :: GA.PrefixMap -> AxiomAnnotations
     -> DataPropertyExpression -> SourceIndividual -> TargetValue -> Doc
 printDataPropertyAssertion pds axAnns dataPropExpr srcInd targVal =
     keyword dataPropertyAssertionS
@@ -698,7 +692,7 @@ printDataPropertyAssertion pds axAnns dataPropExpr srcInd targVal =
         docSrcInd = printIRI pds srcInd
         docTargVal = printLiteral pds targVal
 
-printNegativeDataPropertyAssertion :: [PrefixDeclaration] -> AxiomAnnotations
+printNegativeDataPropertyAssertion :: GA.PrefixMap -> AxiomAnnotations
     -> DataPropertyExpression -> SourceIndividual -> TargetValue -> Doc
 printNegativeDataPropertyAssertion pds axAnns dataPropExpr srcInd targVal =
     keyword negativeDataPropertyAssertionS
@@ -711,10 +705,10 @@ printNegativeDataPropertyAssertion pds axAnns dataPropExpr srcInd targVal =
         docTargVal = printLiteral pds targVal
 
 -- | print AnnotationAxiom
-printAnnotationAxiom :: [PrefixDeclaration] -> AnnotationAxiom -> Doc
+printAnnotationAxiom :: GA.PrefixMap -> AnnotationAxiom -> Doc
 printAnnotationAxiom pds annAxs = case annAxs of
-    AnnotationAssertion axAnns annProp annSub annValue
-        -> printAnnotationAssertion pds axAnns annProp annSub annValue
+    AnnotationAssertion axAnns annProp annSub annVal
+        -> printAnnotationAssertion pds axAnns annProp annSub annVal
     SubAnnotationPropertyOf axAnns subAnnProp supAnnProp
         -> printSubAnnotationPropertyOf pds axAnns subAnnProp supAnnProp
     AnnotationPropertyDomain axAnns annProp iri
@@ -722,9 +716,9 @@ printAnnotationAxiom pds annAxs = case annAxs of
     AnnotationPropertyRange axAnns annProp iri
         -> printAnnotationPropertyRange pds axAnns annProp iri
 
-printAnnotationAssertion :: [PrefixDeclaration] -> AxiomAnnotations
+printAnnotationAssertion :: GA.PrefixMap -> AxiomAnnotations
     -> AnnotationProperty -> AnnotationSubject ->  AnnotationValue -> Doc
-printAnnotationAssertion pds axAnns annProp annSub annValue =
+printAnnotationAssertion pds axAnns annProp annSub annVal =
     keyword annotationAssertionS
     <> sParens (hsep . concat $
         [docAxAnns, [docAnnProp, docAnnSub, docAnnValue]])
@@ -732,9 +726,9 @@ printAnnotationAssertion pds axAnns annProp annSub annValue =
         docAxAnns = map (printAnnotation pds) axAnns
         docAnnProp = printIRI pds annProp
         docAnnSub = printAnnotationSubject pds annSub
-        docAnnValue = printAnnotationValue pds annValue
+        docAnnValue = printAnnotationValue pds annVal
 
-printSubAnnotationPropertyOf :: [PrefixDeclaration] -> AxiomAnnotations
+printSubAnnotationPropertyOf :: GA.PrefixMap -> AxiomAnnotations
     -> SubAnnotationProperty -> SuperAnnotationProperty -> Doc
 printSubAnnotationPropertyOf pds axAnns subAnnProp supAnnProp =
     keyword subAnnotationPropertyOfS
@@ -745,7 +739,7 @@ printSubAnnotationPropertyOf pds axAnns subAnnProp supAnnProp =
         docSupAnnProp = printIRI pds supAnnProp
 
 
-printAnnotationPropertyDomain :: [PrefixDeclaration] -> AxiomAnnotations
+printAnnotationPropertyDomain :: GA.PrefixMap -> AxiomAnnotations
     -> AnnotationProperty -> IRI -> Doc
 printAnnotationPropertyDomain pds axAnns annProp iri =
     keyword annotationPropertyDomainS
@@ -756,7 +750,7 @@ printAnnotationPropertyDomain pds axAnns annProp iri =
         docAnnProp = printIRI pds annProp
         docIri = printIRI pds iri    
 
-printAnnotationPropertyRange :: [PrefixDeclaration] -> AxiomAnnotations
+printAnnotationPropertyRange :: GA.PrefixMap -> AxiomAnnotations
     -> AnnotationProperty -> IRI -> Doc
 printAnnotationPropertyRange pds axAnns annProp iri =
     keyword annotationPropertyRangeS
@@ -768,19 +762,19 @@ printAnnotationPropertyRange pds axAnns annProp iri =
         docIri = printIRI pds iri
 
 -- | print Root
-instance Pretty PrefixDeclaration where
-    pretty (PrefixDeclaration prName iri) =
+printPrefixDeclaration :: (String, IRI) -> Doc
+printPrefixDeclaration (prName, iri) =
         keyword "Prefix"
         <> sParens ((text (prName ++ ":")) <> (text " = ") <> pretty iri)
 
-printOnt :: [PrefixDeclaration] -> Ontology -> Doc
-printOnt pds (Ontology mOnt mVerIri dImpDocs ontAnns axioms) =
+printOnt :: GA.PrefixMap -> Ontology -> Doc
+printOnt pds (Ontology mOnt mVerIri dImpDocs ontAnns axs) =
     keyword "Ontology"
     <> sParens (vsep . concat $
     [[ontNameDoc], [importedDocs], ontAnnsDocs, axiomsDocs])
     where
         ontAnnsDocs = map (printAnnotation pds) ontAnns
-        axiomsDocs = map (printAxiom pds) axioms
+        axiomsDocs = map (printAxiom pds) axs
         versionIriDoc = maybe empty (printIRI pds) mVerIri
         ontNameDoc = maybe empty (\ontvalue -> hsep [printIRI pds ontvalue,
             versionIriDoc]) mOnt
@@ -790,6 +784,6 @@ printOnt pds (Ontology mOnt mVerIri dImpDocs ontAnns axioms) =
                 vsep . map ((keyword "Import" <>)
                     . sParens . printIRI pds) $ dImpDocs
 
-instance Pretty OntologyDocument where
-    pretty (OntologyDocument prefDecls ont) = 
-        (vsep . map pretty $ prefDecls) $+$ printOnt prefDecls ont
+printOntologyDocument :: OntologyDocument -> Doc
+printOntologyDocument (OntologyDocument _ prefDecls ont) = 
+    (vsep . map printPrefixDeclaration $ M.toList prefDecls) $+$ printOnt prefDecls ont

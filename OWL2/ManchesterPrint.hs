@@ -15,7 +15,6 @@ module OWL2.ManchesterPrint where
 import Common.Doc
 import Common.DocUtils
 import Common.AS_Annotation as Anno
-import Common.Lib.State
 import Common.IRI
 
 import qualified OWL2.AS as AS
@@ -27,49 +26,35 @@ import OWL2.Print
 import OWL2.Keywords
 import OWL2.ColonKeywords
 
-import Data.Function
 import Data.List
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
+import OWL2.Pretty()
+
 -- | OWL2 signature printing
 
-printOneNamed :: Anno.Named Axiom -> Doc
-printOneNamed ns = pretty
-  $ (if Anno.isAxiom ns then rmImplied else addImplied) $ Anno.sentence ns
 
-delTopic :: Extended -> Sign -> Sign
-delTopic e s = case e of
-  ClassEntity (AS.Expression c) -> s { concepts = Set.delete c $ concepts s }
-  ObjectEntity (AS.ObjectProp o) -> s
-    { objectProperties = Set.delete o $ objectProperties s }
-  SimpleEntity et -> execState (modEntity Set.delete et) s
-  _ -> s
-
-groupAxioms :: [Axiom] -> [Frame]
-groupAxioms =
-  concatMap (\ l@(PlainAxiom e _ : _) -> case e of
-    Misc _ -> map (Frame e . (: []) . axiomBit) l
-    _ -> [Frame e $ map axiomBit l])
-  . groupBy (on (==) axiomTopic) . sortBy (on compare axiomTopic)
-
-printOWLBasicTheory :: (Sign, [Named Axiom]) -> Doc
+printOWLBasicTheory :: (Sign, [Named AS.Axiom]) -> Doc
 printOWLBasicTheory = printBasicTheory . prepareBasicTheory
 
-prepareBasicTheory :: (Sign, [Named Axiom]) -> (Sign, [Named Axiom])
+prepareBasicTheory :: (Sign, [Named AS.Axiom]) -> (Sign, [Named AS.Axiom])
 prepareBasicTheory (s, l) =
   (s { prefixMap = Map.union (prefixMap s) AS.predefPrefixes }, l)
 
-printBasicTheory :: (Sign, [Named Axiom]) -> Doc
+printBasicTheory :: (Sign, [Named AS.Axiom]) -> Doc
 printBasicTheory = pretty . convertBasicTheory
 
-convertBasicTheory :: (Sign, [Named Axiom]) -> OntologyDocument
+convertBasicTheory :: (Sign, [Named AS.Axiom]) -> AS.OntologyDocument
 convertBasicTheory (sig, l) = let
   (axs, ths) = partition Anno.isAxiom l
-  cnvrt f = map f . groupAxioms . map Anno.sentence
-  s = foldr (delTopic . axiomTopic . sentence) sig l
-  in OntologyDocument (prefixMap s) $ emptyOntology
-  $ toDecl s ++ cnvrt rmImpliedFrame axs ++ cnvrt addImpliedFrame ths
+  cnvrt f = map f . map Anno.sentence
+  in AS.OntologyDocument
+    (AS.OntologyMetadata AS.AS)
+    (AS.changePrefixMapTypeToGA $ prefixMap sig)
+    AS.emptyOntology { 
+        AS.axioms = toDecl sig ++ cnvrt rmImplied axs ++ cnvrt addImplied ths
+    }
 
 instance Pretty Sign where
     pretty = printSign

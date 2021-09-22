@@ -4,7 +4,7 @@ module OWL2.ParseAS where
 
 import Prelude hiding (lookup)
 
-import OWL2.AS
+import OWL2.AS as AS
 
 import Common.AnnoParser (newlineOrEof)
 import Common.IRI hiding (parseIRI)
@@ -15,8 +15,7 @@ import qualified Common.GlobalAnnotations as GA (PrefixMap)
 import Text.ParserCombinators.Parsec
 
 import Data.Char
-import Data.Map (union, toList, fromList, lookup)
-import Data.Maybe
+import Data.Map (union, fromList)
 
 
 {- | @followedBy c p@ first parses @p@ then looks ahead for @c@. Doesn't consume
@@ -74,19 +73,6 @@ prefix :: CharParser st String
 prefix = skips $ option "" (satisfy ncNameStart <:> many (satisfy ncNameChar))
     << char ':'
 
-{- | @expandIRI pm iri@ returns the expanded @iri@ with a declaration from @pm@.
-If no declaration is found, return @iri@ unchanged. -}
-expandIRI :: GA.PrefixMap -> IRI -> IRI
-expandIRI pm iri
-    | isAbbrev iri = fromMaybe iri $ do
-        def <- lookup (prefixName iri) pm
-        expanded <- mergeCurie iri def
-        return $ expanded
-            { iFragment = iFragment iri
-            , prefixName = prefixName iri
-            , isAbbrev = True }
-    | otherwise = iri
-
 -- | Parses an abbreviated or full iri
 parseIRI :: GA.PrefixMap -> CharParser st IRI
 parseIRI pm = skips (expandIRI pm <$> (fullIri <|> compoundIriCurie) <?> "IRI")
@@ -102,12 +88,12 @@ parseEnclosedWithKeyword s p = do
     skips $ char ')'
     return r
 
-parsePrefixDeclaration :: CharParser st PrefixDeclaration
+parsePrefixDeclaration :: CharParser st (String, IRI)
 parsePrefixDeclaration = parseEnclosedWithKeyword "Prefix" $ do
     p <- prefix
     skips $ char '='
     iri <- fullIri
-    return $ PrefixDeclaration p iri
+    return $ (p, iri)
 
 parseDirectlyImportsDocument :: GA.PrefixMap -> CharParser st IRI
 parseDirectlyImportsDocument pm =
@@ -857,20 +843,15 @@ parseOntology pm =
         versionIri <- parseIriIfNotImportOrAxiomOrAnnotation
         imports <- many (parseDirectlyImportsDocument pm)
         annotations <- many (parseAnnotation pm)
-        axioms <- many (parseAxiom pm)
-        return $ Ontology ontologyIri versionIri (imports) annotations axioms
+        axs <- many (parseAxiom pm)
+        return $ Ontology ontologyIri versionIri (imports) annotations axs
 
-prefixFromMap :: GA.PrefixMap -> [PrefixDeclaration]
-prefixFromMap = map (uncurry PrefixDeclaration) . toList
-
-prefixToMap :: [PrefixDeclaration] -> GA.PrefixMap
-prefixToMap = fromList . map (\ (PrefixDeclaration name iri) -> (name, iri))
 
 
 -- | Parses an OntologyDocument from Owl2 Functional Syntax
 parseOntologyDocument :: GA.PrefixMap -> CharParser st OntologyDocument
 parseOntologyDocument gapm = do
     prefixes <- many parsePrefixDeclaration
-    let pm = union gapm (prefixToMap prefixes)
+    let pm = union gapm (fromList prefixes)
     onto <- parseOntology pm
-    return $ OntologyDocument (prefixFromMap pm) onto
+    return $ OntologyDocument (OntologyMetadata AS) pm onto
