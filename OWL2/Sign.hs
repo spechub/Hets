@@ -15,7 +15,7 @@ module OWL2.Sign where
 
 
 import Common.IRI
-import qualified OWL2.AS as AS
+import OWL2.AS
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
@@ -28,18 +28,18 @@ import Control.Monad
 import Data.Data
 
 data Sign = Sign
-            { concepts :: Set.Set AS.Class
+            { concepts :: Set.Set Class
               -- classes
-            , datatypes :: Set.Set AS.Datatype -- datatypes
-            , objectProperties :: Set.Set AS.ObjectProperty
+            , datatypes :: Set.Set Datatype -- datatypes
+            , objectProperties :: Set.Set ObjectProperty
               -- object properties
-            , dataProperties :: Set.Set AS.DataProperty
+            , dataProperties :: Set.Set DataProperty
               -- data properties
-            , annotationRoles :: Set.Set AS.AnnotationProperty
+            , annotationRoles :: Set.Set AnnotationProperty
               -- annotation properties
-            , individuals :: Set.Set AS.NamedIndividual  -- named individuals
+            , individuals :: Set.Set NamedIndividual  -- named individuals
             , labelMap :: Map.Map IRI String -- labels (for better readability)
-            , prefixMap :: AS.PrefixMap
+            , prefixMap :: PrefixMap
             } deriving (Show, Typeable, Data)
 
 instance Ord Sign where
@@ -50,10 +50,10 @@ instance Eq Sign where
   s1 == s2 = compare s1 s2 == EQ
 
 data SignAxiom =
-    Subconcept AS.ClassExpression AS.ClassExpression   -- subclass, superclass
-  | Role (DomainOrRangeOrFunc (RoleKind, RoleType)) AS.ObjectPropertyExpression
-  | Data (DomainOrRangeOrFunc ()) AS.DataPropertyExpression
-  | Conceptmembership AS.Individual AS.ClassExpression
+    Subconcept ClassExpression ClassExpression   -- subclass, superclass
+  | Role (DomainOrRangeOrFunc (RoleKind, RoleType)) ObjectPropertyExpression
+  | Data (DomainOrRangeOrFunc ()) DataPropertyExpression
+  | Conceptmembership Individual ClassExpression
     deriving (Show, Eq, Ord, Typeable, Data)
 
 data RoleKind = FuncRole | RefRole deriving (Show, Eq, Ord, Typeable, Data)
@@ -64,8 +64,8 @@ data DesKind = RDomain | DDomain | RIRange
   deriving (Show, Eq, Ord, Typeable, Data)
 
 data DomainOrRangeOrFunc a =
-    DomainOrRange DesKind AS.ClassExpression
-  | RDRange AS.DataRange
+    DomainOrRange DesKind ClassExpression
+  | RDRange DataRange
   | FuncProp a
     deriving (Show, Eq, Ord, Typeable, Data)
 
@@ -92,14 +92,14 @@ diffSig a b =
       , individuals = individuals a `Set.difference` individuals b
       }
 
-addSymbToSign :: Sign -> AS.Entity -> Result Sign
+addSymbToSign :: Sign -> Entity -> Result Sign
 addSymbToSign sig ent =
  case ent of
-   AS.Entity _ AS.Class eIri ->
+   Entity _ Class eIri ->
     return sig {concepts = Set.insert eIri $ concepts sig}
-   AS.Entity _ AS.ObjectProperty eIri ->
+   Entity _ ObjectProperty eIri ->
     return sig {objectProperties = Set.insert eIri $ objectProperties sig}
-   AS.Entity _ AS.NamedIndividual eIri ->
+   Entity _ NamedIndividual eIri ->
     return sig {individuals = Set.insert eIri $ individuals sig}
    _ -> return sig
 
@@ -129,29 +129,29 @@ isSubSign a b =
        && Set.isSubsetOf (annotationRoles a) (annotationRoles b)
        && Set.isSubsetOf (individuals a) (individuals b)
 
-symOf :: Sign -> Set.Set AS.Entity
+symOf :: Sign -> Set.Set Entity
 symOf s = Set.unions
-  [ Set.map (\ ir -> AS.Entity (Map.lookup ir $ labelMap s) AS.Class ir) $ concepts s
-  , Set.map (AS.mkEntity AS.Datatype) $ datatypes s
-  , Set.map (AS.mkEntity AS.ObjectProperty) $ objectProperties s
-  , Set.map (AS.mkEntity AS.DataProperty) $ dataProperties s
-  , Set.map (AS.mkEntity AS.NamedIndividual) $ individuals s
-  , Set.map (AS.mkEntity AS.AnnotationProperty) $ annotationRoles s ]
+  [ Set.map (\ ir -> Entity (Map.lookup ir $ labelMap s) Class ir) $ concepts s
+  , Set.map (mkEntity Datatype) $ datatypes s
+  , Set.map (mkEntity ObjectProperty) $ objectProperties s
+  , Set.map (mkEntity DataProperty) $ dataProperties s
+  , Set.map (mkEntity NamedIndividual) $ individuals s
+  , Set.map (mkEntity AnnotationProperty) $ annotationRoles s ]
 
 -- | takes an entity and modifies the sign according to the given function
-modEntity :: (IRI -> Set.Set IRI -> Set.Set IRI) -> AS.Entity -> State Sign ()
-modEntity f (AS.Entity _ ty u) = do
+modEntity :: (IRI -> Set.Set IRI -> Set.Set IRI) -> Entity -> State Sign ()
+modEntity f (Entity _ ty u) = do
   s <- get
   let chg = f u
-  unless (AS.isDatatypeKey u || AS.isThing u) $ put $ case ty of
-    AS.Datatype -> s { datatypes = chg $ datatypes s }
-    AS.Class -> s { concepts = chg $ concepts s }
-    AS.ObjectProperty -> s { objectProperties = chg $ objectProperties s }
-    AS.DataProperty -> s { dataProperties = chg $ dataProperties s }
-    AS.NamedIndividual -> if AS.isAnonymous u then s
+  unless (isDatatypeKey u || isThing u) $ put $ case ty of
+    Datatype -> s { datatypes = chg $ datatypes s }
+    Class -> s { concepts = chg $ concepts s }
+    ObjectProperty -> s { objectProperties = chg $ objectProperties s }
+    DataProperty -> s { dataProperties = chg $ dataProperties s }
+    NamedIndividual -> if isAnonymous u then s
          else s { individuals = chg $ individuals s }
-    AS.AnnotationProperty -> s {annotationRoles = chg $ annotationRoles s}
+    AnnotationProperty -> s {annotationRoles = chg $ annotationRoles s}
 
 -- | adding entities to the signature
-addEntity :: AS.Entity -> State Sign ()
+addEntity :: Entity -> State Sign ()
 addEntity = modEntity Set.insert

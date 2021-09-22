@@ -16,7 +16,7 @@ module OWL2.ColimSign where
 
 import OWL2.Sign
 import OWL2.Morphism
-import qualified OWL2.AS as AS
+import OWL2.AS
 import Common.IRI
 
 import Common.SetColimit
@@ -28,14 +28,14 @@ import qualified Data.Map as Map
 signColimit :: Gr Sign (Int, OWLMorphism) ->
                (Sign, Map.Map Int OWLMorphism)
 signColimit graph = let
-   conGraph = emap (getEntityTypeMap AS.Class) $ nmap concepts graph
-   dataGraph = emap (getEntityTypeMap AS.Datatype) $ nmap datatypes graph
-   indGraph = emap (getEntityTypeMap AS.NamedIndividual) $ nmap individuals graph
-   objGraph = emap (getEntityTypeMap AS.ObjectProperty) $
+   conGraph = emap (getEntityTypeMap Class) $ nmap concepts graph
+   dataGraph = emap (getEntityTypeMap Datatype) $ nmap datatypes graph
+   indGraph = emap (getEntityTypeMap NamedIndividual) $ nmap individuals graph
+   objGraph = emap (getEntityTypeMap ObjectProperty) $
               nmap objectProperties graph
-   dataPropGraph = emap (getEntityTypeMap AS.DataProperty) $
+   dataPropGraph = emap (getEntityTypeMap DataProperty) $
                nmap dataProperties graph
-   annPropGraph = emap (getEntityTypeMap AS.AnnotationProperty) $
+   annPropGraph = emap (getEntityTypeMap AnnotationProperty) $
                nmap annotationRoles graph
    _prefixGraph = emap getPrefixMap
                     $ nmap (Map.keysSet . toQName . prefixMap) graph
@@ -47,17 +47,17 @@ signColimit graph = let
    (ap, funAP) = addIntToSymbols $ computeColimitSet annPropGraph
    -- (pf, funP) = addIntToSymbols $ computeColimitSet prefixGraph
    morFun i = foldl Map.union Map.empty
-               [ setEntityTypeMap AS.Class $
+               [ setEntityTypeMap Class $
                    Map.findWithDefault (error "maps") i funC,
-                 setEntityTypeMap AS.Datatype $
+                 setEntityTypeMap Datatype $
                    Map.findWithDefault (error "maps") i funD,
-                 setEntityTypeMap AS.NamedIndividual $
+                 setEntityTypeMap NamedIndividual $
                    Map.findWithDefault (error "maps") i funI,
-                 setEntityTypeMap AS.ObjectProperty $
+                 setEntityTypeMap ObjectProperty $
                    Map.findWithDefault (error "maps") i funO,
-                 setEntityTypeMap AS.DataProperty $
+                 setEntityTypeMap DataProperty $
                    Map.findWithDefault (error "maps") i funDP,
-                 setEntityTypeMap AS.AnnotationProperty $
+                 setEntityTypeMap AnnotationProperty $
                    Map.findWithDefault (error "maps") i funAP
                 ]
    morMaps = Map.fromAscList $
@@ -87,18 +87,18 @@ signColimit graph = let
                      ) $ labNodes graph
   in (colimSign, colimMor)
 
-getEntityTypeMap :: AS.EntityType -> (Int, OWLMorphism)
+getEntityTypeMap :: EntityType -> (Int, OWLMorphism)
                     -> (Int, Map.Map IRI IRI)
 getEntityTypeMap e (i, phi) = let
  f = Map.filterWithKey
-      (\ (AS.Entity _ x _) _ -> x == e) $ mmaps phi
+      (\ (Entity _ x _) _ -> x == e) $ mmaps phi
  in (i, Map.fromList $
-    map (\ (AS.Entity _ _ x, y) -> (x, y)) $
+    map (\ (Entity _ _ x, y) -> (x, y)) $
     Map.toAscList f)
 
-setEntityTypeMap :: AS.EntityType -> Map.Map IRI IRI
-                    -> Map.Map AS.Entity IRI
-setEntityTypeMap = Map.mapKeys . AS.mkEntity
+setEntityTypeMap :: EntityType -> Map.Map IRI IRI
+                    -> Map.Map Entity IRI
+setEntityTypeMap = Map.mapKeys . mkEntity
 
 getPrefixMap :: (Int, OWLMorphism) -> (Int, Map.Map IRI IRI)
 getPrefixMap (i, phi) = let
@@ -107,5 +107,5 @@ getPrefixMap (i, phi) = let
         map (\ (x, y) -> (mkIRI x, mkIRI y)) $
             Map.toAscList f)
 
-toQName :: AS.PrefixMap -> Map.Map IRI String
+toQName :: PrefixMap -> Map.Map IRI String
 toQName pm = Map.fromList $ map (\ (p, s) -> (mkIRI p, s)) $ Map.toList pm

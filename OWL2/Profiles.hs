@@ -319,7 +319,7 @@ classAxiomClassExpressions anns clExprs = andProfileList [annotations anns, bott
 
 axiom :: AS.Axiom -> Profiles
 axiom ax = case ax of
-    AS.Declaration anns _ -> topProfile
+    AS.Declaration _ _ -> topProfile
     AS.ClassAxiom cax -> case cax of
         AS.SubClassOf anns sub sup -> andProfileList [annotations anns, subClass sub, superClass sup]
         AS.EquivalentClasses anns cExprs -> classAxiomClassExpressions anns cExprs
@@ -336,13 +336,13 @@ axiom ax = case ax of
         AS.InverseObjectProperties anns o1 o2 -> minimalCovering qlrlProfile $ (annotations anns) : map objProp [o1, o2]
         AS.ObjectPropertyDomain anns oe ce -> andProfileList [annotations anns, objProp oe, superClass ce] 
         AS.ObjectPropertyRange anns oe ce -> andProfileList [annotations anns, objProp oe, superClass ce] -- previously no check on ce was deon
-        AS.FunctionalObjectProperty anns oe -> minimalCovering rlProfile [objProp oe]
-        AS.InverseFunctionalObjectProperty anns oe -> minimalCovering rlProfile [objProp oe]
-        AS.ReflexiveObjectProperty anns oe -> minimalCovering elqlProfile [objProp oe]
-        AS.IrreflexiveObjectProperty anns oe -> minimalCovering qlrlProfile [objProp oe]
-        AS.SymmetricObjectProperty anns oe -> minimalCovering qlrlProfile [objProp oe]
-        AS.AsymmetricObjectProperty anns oe -> minimalCovering qlrlProfile [objProp oe]
-        AS.TransitiveObjectProperty anns oe -> minimalCovering elrlProfile [objProp oe]
+        AS.FunctionalObjectProperty _ oe -> minimalCovering rlProfile [objProp oe]
+        AS.InverseFunctionalObjectProperty _ oe -> minimalCovering rlProfile [objProp oe]
+        AS.ReflexiveObjectProperty _ oe -> minimalCovering elqlProfile [objProp oe]
+        AS.IrreflexiveObjectProperty _ oe -> minimalCovering qlrlProfile [objProp oe]
+        AS.SymmetricObjectProperty _ oe -> minimalCovering qlrlProfile [objProp oe]
+        AS.AsymmetricObjectProperty _ oe -> minimalCovering qlrlProfile [objProp oe]
+        AS.TransitiveObjectProperty _ oe -> minimalCovering elrlProfile [objProp oe]
     AS.DataPropertyAxiom a -> case a of
         AS.SubDataPropertyOf anns _ _ -> annotations anns
         AS.EquivalentDataProperties anns _ -> annotations anns
@@ -367,10 +367,10 @@ axiom ax = case ax of
         AS.NegativeDataPropertyAssertion anns _ ind lit -> minimalCovering elrlProfile $
             [annotations anns, individual ind, literal lit]
     AS.AnnotationAxiom a -> case a of
-        AS.AnnotationAssertion anns _ _ _ -> topProfile
-        AS.SubAnnotationPropertyOf anns _ _ -> topProfile
-        AS.AnnotationPropertyDomain anns _ _ -> topProfile
-        AS.AnnotationPropertyRange anns _ _ -> topProfile
+        AS.AnnotationAssertion _ _ _ _ -> topProfile
+        AS.SubAnnotationPropertyOf _ _ _ -> topProfile
+        AS.AnnotationPropertyDomain _ _ _ -> topProfile
+        AS.AnnotationPropertyRange _ _ _ -> topProfile
     -- Rules
     _ -> bottomProfile
 

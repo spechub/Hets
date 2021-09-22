@@ -15,8 +15,7 @@ import qualified Common.GlobalAnnotations as GA (PrefixMap)
 import Text.ParserCombinators.Parsec
 
 import Data.Char
-import Data.Map (union, toList, fromList, lookup)
-import Data.Maybe
+import Data.Map (union, fromList)
 
 
 {- | @followedBy c p@ first parses @p@ then looks ahead for @c@. Doesn't consume
@@ -844,8 +843,8 @@ parseOntology pm =
         versionIri <- parseIriIfNotImportOrAxiomOrAnnotation
         imports <- many (parseDirectlyImportsDocument pm)
         annotations <- many (parseAnnotation pm)
-        axioms <- many (parseAxiom pm)
-        return $ Ontology ontologyIri versionIri (imports) annotations axioms
+        axs <- many (parseAxiom pm)
+        return $ Ontology ontologyIri versionIri (imports) annotations axs
 
 
 

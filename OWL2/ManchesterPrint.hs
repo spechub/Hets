@@ -15,7 +15,6 @@ module OWL2.ManchesterPrint where
 import Common.Doc
 import Common.DocUtils
 import Common.AS_Annotation as Anno
-import Common.Lib.State
 import Common.IRI
 
 import qualified OWL2.AS as AS
@@ -27,12 +26,11 @@ import OWL2.Print
 import OWL2.Keywords
 import OWL2.ColonKeywords
 
-import Data.Function
 import Data.List
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-import OWL2.Pretty
+import OWL2.Pretty()
 
 -- | OWL2 signature printing
 
