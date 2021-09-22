@@ -246,6 +246,72 @@ annotationPropertyDomainK = "AnnotationPropertyDomain"
 annotationPropertyRangeK :: String
 annotationPropertyRangeK = "AnnotationPropertyRange"
 
+dlSafeRuleK :: String
+dlSafeRuleK = "DLSafeRule"
+
+dgRuleK :: String
+dgRuleK = "DGRule"
+
+dgAxiomK :: String
+dgAxiomK = "DGAxiom"
+
+classAtomK :: String
+classAtomK = "ClassAtom"
+
+dataRangeAtomK :: String
+dataRangeAtomK = "DataRangeAtom"
+
+objectPropertyAtomK :: String
+objectPropertyAtomK = "ObjectPropertyAtom"
+
+dataPropertyAtomK :: String
+dataPropertyAtomK = "DataPropertyAtom"
+
+builtInAtomK :: String
+builtInAtomK = "BuiltInAtom"
+
+sameIndividualAtomK :: String
+sameIndividualAtomK = "SameIndividualAtom"
+
+differentIndividualsAtomK :: String
+differentIndividualsAtomK = "DifferentIndividualsAtom"
+
+unknownUnaryAtomK :: String
+unknownUnaryAtomK = "UnknownUnaryAtom"
+
+unknownBinaryAtomK :: String
+unknownBinaryAtomK = "UnknownBianryAtom"
+
+dgClassAtomK :: String
+dgClassAtomK = "DGClassAtom"
+
+dgObjectPropertyAtomK :: String
+dgObjectPropertyAtomK = "DGObjectPropertyAtom"
+
+dgNodesK :: String
+dgNodesK = "DGNodes"
+
+dgNodeAssertionK :: String
+dgNodeAssertionK = "DGNodeAssertion"
+
+dgEdgesK :: String
+dgEdgesK = "DGEdges"
+
+dgEdgeAssertionK :: String
+dgEdgeAssertionK = "DGEdgeAssertion"
+
+individualArgumentK :: String
+individualArgumentK  = "IndividualArgument"
+
+individualVariableK :: String
+individualVariableK = "IndividualVariable"
+
+dataVariableK :: String
+dataVariableK = "DataVariable"
+
+variableK :: String
+variableK = "Variable"
+
 entityList :: [String]
 entityList = [classK, datatypeK, namedIndividualK,
     objectPropertyK, dataPropertyK, annotationPropertyK]
