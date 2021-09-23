@@ -2,20 +2,17 @@ module OWL2.PrintAS where
 
 import Common.Doc
 import Common.DocUtils
-import Common.Id
 import Common.Keywords
 import Common.IRI
 import Common.GlobalAnnotations as GA (PrefixMap)
 
 import OWL2.AS
-import OWL2.Keywords
-import OWL2.ColonKeywords
 import OWL2.ASKeywords
 
-import Data.List
 import qualified Data.Map as M
 
 -- | auxiliary parens function
+sParens :: Doc -> Doc
 sParens d = parens (space <> d <> space)
 
 -- | print IRI
@@ -79,7 +76,7 @@ printDataRange :: GA.PrefixMap -> DataRange -> Doc
 printDataRange pds dr = case dr of
     DataType dt fvs -> printDataRestriction pds dt fvs
     DataJunction jt drs -> printDataJunction pds jt drs
-    DataComplementOf dr -> printDataComplementOf pds dr
+    DataComplementOf dr' -> printDataComplementOf pds dr'
     DataOneOf lits -> printDataOneOf pds lits
 
 printDataRestriction :: GA.PrefixMap -> Datatype
@@ -710,8 +707,8 @@ printNegativeDataPropertyAssertion pds axAnns dataPropExpr srcInd targVal =
 -- | print AnnotationAxiom
 printAnnotationAxiom :: GA.PrefixMap -> AnnotationAxiom -> Doc
 printAnnotationAxiom pds annAxs = case annAxs of
-    AnnotationAssertion axAnns annProp annSub annValue
-        -> printAnnotationAssertion pds axAnns annProp annSub annValue
+    AnnotationAssertion axAnns annProp annSub annVal
+        -> printAnnotationAssertion pds axAnns annProp annSub annVal
     SubAnnotationPropertyOf axAnns subAnnProp supAnnProp
         -> printSubAnnotationPropertyOf pds axAnns subAnnProp supAnnProp
     AnnotationPropertyDomain axAnns annProp iri
@@ -721,7 +718,7 @@ printAnnotationAxiom pds annAxs = case annAxs of
 
 printAnnotationAssertion :: GA.PrefixMap -> AxiomAnnotations
     -> AnnotationProperty -> AnnotationSubject ->  AnnotationValue -> Doc
-printAnnotationAssertion pds axAnns annProp annSub annValue =
+printAnnotationAssertion pds axAnns annProp annSub annVal =
     keyword annotationAssertionS
     <> sParens (hsep . concat $
         [docAxAnns, [docAnnProp, docAnnSub, docAnnValue]])
@@ -729,7 +726,7 @@ printAnnotationAssertion pds axAnns annProp annSub annValue =
         docAxAnns = map (printAnnotation pds) axAnns
         docAnnProp = printIRI pds annProp
         docAnnSub = printAnnotationSubject pds annSub
-        docAnnValue = printAnnotationValue pds annValue
+        docAnnValue = printAnnotationValue pds annVal
 
 printSubAnnotationPropertyOf :: GA.PrefixMap -> AxiomAnnotations
     -> SubAnnotationProperty -> SuperAnnotationProperty -> Doc
@@ -771,13 +768,13 @@ printPrefixDeclaration (prName, iri) =
         <> sParens ((text (prName ++ ":")) <> (text " = ") <> pretty iri)
 
 printOnt :: GA.PrefixMap -> Ontology -> Doc
-printOnt pds (Ontology mOnt mVerIri dImpDocs ontAnns axioms) =
+printOnt pds (Ontology mOnt mVerIri dImpDocs ontAnns axs) =
     keyword "Ontology"
     <> sParens (vsep . concat $
     [[ontNameDoc], [importedDocs], ontAnnsDocs, axiomsDocs])
     where
         ontAnnsDocs = map (printAnnotation pds) ontAnns
-        axiomsDocs = map (printAxiom pds) axioms
+        axiomsDocs = map (printAxiom pds) axs
         versionIriDoc = maybe empty (printIRI pds) mVerIri
         ontNameDoc = maybe empty (\ontvalue -> hsep [printIRI pds ontvalue,
             versionIriDoc]) mOnt

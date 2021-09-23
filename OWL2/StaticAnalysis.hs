@@ -224,8 +224,8 @@ extractVariables =
             AS.DVar v -> [v]
             _ -> []
         eUArg a = case a of
-            AS.IndividualArg a -> eIArg a
-            AS.DataArg a -> eDArg a
+            AS.IndividualArg ia -> eIArg ia
+            AS.DataArg da -> eDArg da
             AS.Variable v -> [v]
     in
     
@@ -315,10 +315,10 @@ checkDLAtom s mVars atom = case atom of
                 AS.DataArg a -> return $ AS.DataPropertyAtom i (AS.IVar v) a
                 _ -> mkError "Unkown binary atom" i
             else case a2 of
-                AS.Variable v -> return $ AS.BuiltInAtom i [AS.DVar v]
+                AS.Variable v' -> return $ AS.BuiltInAtom i [AS.DVar v']
                 AS.DataArg a -> return $ AS.BuiltInAtom i [a]
                 _ -> mkError "Unkown binary atom" i 
-        AS.IndividualArg a@(AS.IArg ind) -> case a2 of
+        AS.IndividualArg a@(AS.IArg _) -> case a2 of
             AS.Variable v ->
                 if Set.member i (objectProperties s) then return $ AS.ObjectPropertyAtom (AS.ObjectProp i) a (AS.IVar v)
                 else if Set.member i (dataProperties s) then return $ AS.DataPropertyAtom i a (AS.DVar v)
@@ -328,7 +328,7 @@ checkDLAtom s mVars atom = case atom of
 
 
 checkDGEdgeAssertion :: Sign -> AS.DGEdgeAssertion -> Result ()
-checkDGEdgeAssertion s a@(AS.DGEdgeAssertion o _ _) = do
+checkDGEdgeAssertion s (AS.DGEdgeAssertion o _ _) = do
     checkObjPropList s [AS.ObjectProp o]
     return ()
 
@@ -480,9 +480,10 @@ checkAxiom s a = case a of
 
     AS.HasKey anns clExpr opExprs dpExprs -> do
         checkAnnos s anns
+        nClExpr <- checkClassExpression s clExpr
         checkObjPropList s opExprs
         checkDataPropList s dpExprs
-        return [a]
+        return [AS.HasKey anns nClExpr opExprs dpExprs]
 
     AS.Assertion assertionAxiom -> case assertionAxiom of 
         AS.SameIndividual anns inds -> do
@@ -550,12 +551,12 @@ checkAxiom s a = case a of
             mapM_ (checkEntity s . AS.mkEntity AS.AnnotationProperty) [subAnProp, supAnProp]
             return [a]
 
-        AS.AnnotationPropertyDomain anns prop iri -> do
+        AS.AnnotationPropertyDomain anns prop _ -> do
             checkAnnos s anns
             checkEntity s (AS.mkEntity AS.AnnotationProperty prop)
             return [a]
 
-        AS.AnnotationPropertyRange anns prop iri -> do
+        AS.AnnotationPropertyRange anns prop _ -> do
             checkAnnos s anns
             checkEntity s (AS.mkEntity AS.AnnotationProperty prop)
             return [a]
@@ -574,7 +575,7 @@ checkAxiom s a = case a of
             let vars = extractDGVariables body
             mapM (checkDGAtom s (Just vars)) hea
             return [a]
-    (AS.DGAxiom anns name nodes edges classes) -> do
+    (AS.DGAxiom anns _ _ edges _) -> do
         checkAnnos s anns
         mapM (checkDGEdgeAssertion s) edges
         return [a]
@@ -653,11 +654,13 @@ basicOWL2Analysis (inOnt, inSign, ga) = do
 
 -- | extract labels from Axiom-List (after processing with correctFrames)
 generateLabelMap :: Sign -> [AS.Axiom] -> Map.Map IRI String
-generateLabelMap sig = foldr (\ (AS.AnnotationAxiom ax) -> case ax of
-        AS.AnnotationAssertion _ apr sub (AS.AnnValLit (AS.Literal s' _))
-            | prefixName apr == "rdfs" && show (iriPath apr) == "label"
-            -> Map.insert (ir sub) s'
-        _ -> id ) (labelMap sig)
+generateLabelMap sig = foldr (\ a -> case a of 
+        AS.AnnotationAxiom ax -> case ax of
+            AS.AnnotationAssertion _ apr sub (AS.AnnValLit (AS.Literal s' _))
+                | prefixName apr == "rdfs" && show (iriPath apr) == "label"
+                -> Map.insert (ir sub) s'
+            _ -> id
+        _ -> id) (labelMap sig)
     where ir sub = case sub of
             AS.AnnSubIri i -> i
             AS.AnnSubAnInd i -> i 
@@ -729,6 +732,9 @@ getNames ax = case ax of
         AS.AnnotationPropertyDomain anns _ _ -> getNamesFromAnnos anns
         AS.AnnotationPropertyRange anns _ _ -> getNamesFromAnnos anns
     AS.DGAxiom anns _ _ _ _ -> getNamesFromAnnos anns
+    AS.Rule r -> case r of
+        AS.DLSafeRule anns _ _ -> getNamesFromAnnos anns
+        AS.DGRule anns _ _ -> getNamesFromAnnos anns
 
 
 addEquiv :: Sign -> Sign -> [SymbItems] -> [SymbItems] ->
@@ -782,8 +788,7 @@ corr2theo _aname flag ssig tsig l1 l2 eMap1 eMap2 rref = do
            sigB <- addSymbToSign sig1 e2'
            case rref of
             Equiv -> do
-                let extPart = mkExtendedEntity e2'
-                    axiom = case (AS.entityKind e1', AS.entityKind e2') of
+                let axiom = case (AS.entityKind e1', AS.entityKind e2') of
                         (AS.Class, AS.Class) -> AS.ClassAxiom $
                                 AS.EquivalentClasses [] (AS.Expression . AS.cutIRI <$> [e1', e2'])
                         (AS.ObjectProperty, AS.ObjectProperty) -> AS.ObjectPropertyAxiom $
@@ -795,8 +800,7 @@ corr2theo _aname flag ssig tsig l1 l2 eMap1 eMap2 rref = do
                                         show l1 ++ " " ++ show l2
                 return (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2')
             Subs -> do
-                let extPart = mkExtendedEntity e2'
-                    axiom = case (AS.entityKind e1', AS.entityKind e2') of
+                let axiom = case (AS.entityKind e1', AS.entityKind e2') of
                         (AS.Class, AS.Class) -> AS.ClassAxiom $
                             AS.SubClassOf []
                                 (AS.Expression . AS.cutIRI $ e1')
@@ -810,25 +814,21 @@ corr2theo _aname flag ssig tsig l1 l2 eMap1 eMap2 rref = do
                                         show l1 ++ " " ++ show l2
                 return (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2')
             Incomp -> do
-                let extPart = mkExtendedEntity e1'
-                    axiom = AS.ClassAxiom $ AS.DisjointClasses [] (AS.Expression . AS.cutIRI <$> [e1', e2'])
+                let axiom = AS.ClassAxiom $ AS.DisjointClasses [] (AS.Expression . AS.cutIRI <$> [e1', e2'])
                 return (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2')
             IsSubs -> do
-                let extPart = mkExtendedEntity e1'
-                    axiom = AS.ClassAxiom $ AS.SubClassOf []
+                let axiom = AS.ClassAxiom $ AS.SubClassOf []
                         (AS.Expression . AS.cutIRI $ e1')
                         (AS.Expression . AS.cutIRI $ e2')
                 return (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2')
             InstOf -> do
-                let extPart = mkExtendedEntity e1'
-                    axiom = AS.Assertion $ AS.ClassAssertion []
+                let axiom = AS.Assertion $ AS.ClassAssertion []
                         (AS.Expression . AS.cutIRI $ e1')
                         (AS.cutIRI $ e2')
                 return
                     (sigB, [makeNamed "" axiom], sig1, sig2, eMap1', eMap2')
             HasInst -> do
-                let extPart = mkExtendedEntity e2'
-                    axiom = AS.Assertion $ AS.ClassAssertion []
+                let axiom = AS.Assertion $ AS.ClassAssertion []
                         (AS.Expression . AS.cutIRI $ e2')
                         (AS.cutIRI $ e1')
                 return

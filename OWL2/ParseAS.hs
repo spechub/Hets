@@ -15,8 +15,7 @@ import qualified Common.GlobalAnnotations as GA (PrefixMap)
 import Text.ParserCombinators.Parsec
 
 import Data.Char
-import Data.Map (union, toList, fromList, lookup)
-import Data.Maybe
+import Data.Map (union, fromList)
 
 
 {- | @followedBy c p@ first parses @p@ then looks ahead for @c@. Doesn't consume
@@ -73,19 +72,6 @@ ncNameChar c = isAlphaNum c || elem c ".+-_\183"
 prefix :: CharParser st String
 prefix = skips $ option "" (satisfy ncNameStart <:> many (satisfy ncNameChar))
     << char ':'
-
-{- | @expandIRI pm iri@ returns the expanded @iri@ with a declaration from @pm@.
-If no declaration is found, return @iri@ unchanged. -}
-expandIRI :: GA.PrefixMap -> IRI -> IRI
-expandIRI pm iri
-    | isAbbrev iri = fromMaybe iri $ do
-        def <- lookup (prefixName iri) pm
-        expanded <- mergeCurie iri def
-        return $ expanded
-            { iFragment = iFragment iri
-            , prefixName = prefixName iri
-            , isAbbrev = True }
-    | otherwise = iri
 
 -- | Parses an abbreviated or full iri
 parseIRI :: GA.PrefixMap -> CharParser st IRI
@@ -857,8 +843,8 @@ parseOntology pm =
         versionIri <- parseIriIfNotImportOrAxiomOrAnnotation
         imports <- many (parseDirectlyImportsDocument pm)
         annotations <- many (parseAnnotation pm)
-        axioms <- many (parseAxiom pm)
-        return $ Ontology ontologyIri versionIri (imports) annotations axioms
+        axs <- many (parseAxiom pm)
+        return $ Ontology ontologyIri versionIri (imports) annotations axs
 
 
 

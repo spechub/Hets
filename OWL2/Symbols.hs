@@ -13,7 +13,7 @@ Symbol items for Hets
 
 module OWL2.Symbols where
 
-import qualified OWL2.AS as AS
+import OWL2.AS
 import Common.IRI
 import Common.Id (Id)
 
@@ -21,7 +21,7 @@ import Data.Data
 
 -- * SYMBOL ITEMS FOR HETS
 
-data ExtEntityType = AnyEntity | PrefixO | EntityType AS.EntityType
+data ExtEntityType = AnyEntity | PrefixO | EntityType EntityType
   deriving (Show, Eq, Ord, Typeable, Data)
 
 data SymbItems = SymbItems ExtEntityType [IRI]
@@ -35,7 +35,7 @@ data SymbMapItems = SymbMapItems ExtEntityType [(IRI, Maybe IRI)]
     deriving (Show, Eq, Typeable, Data)
 
 -- | raw symbols
-data RawSymb = ASymbol AS.Entity | AnUri IRI | APrefix String
+data RawSymb = ASymbol Entity | AnUri IRI | APrefix String
     deriving (Show, Eq, Ord, Typeable, Data)
 
 idToRaw :: Id -> RawSymb

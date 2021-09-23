@@ -13,7 +13,6 @@ monitor syntax
 module ExtModal.Ship where
 
 import OWL2.ShipSyntax
-import qualified OWL2.AS as AS
 
 import Common.Doc
 import Common.DocUtils

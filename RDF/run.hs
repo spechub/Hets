@@ -1,6 +1,5 @@
 import System.Environment
 
-import qualified OWL2.AS as AS
 import RDF.AS
 import RDF.Parse
 import RDF.Print

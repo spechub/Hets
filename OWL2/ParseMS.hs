@@ -17,7 +17,6 @@ import Prelude hiding (lookup)
 import OWL2.AS
 import OWL2.Keywords hiding (comment)
 import OWL2.ColonKeywords
-import OWL2.ParseAS (expandIRI)
 
 import Common.Keywords
 import Common.IRI
@@ -33,9 +32,8 @@ import qualified Common.GlobalAnnotations as GA (PrefixMap)
 import Text.ParserCombinators.Parsec
 
 import Data.Char
-import qualified Data.Map as Map (toList, fromList, unions)
+import qualified Data.Map as Map (fromList, unions)
 import Data.Either (partitionEithers)
-import Data.Maybe (fromJust)
 import Control.Monad (liftM2)
 
 type Annotations = [Annotation]
@@ -497,22 +495,22 @@ parseDatatypeFrame :: GA.PrefixMap -> CharParser st [Axiom]
 parseDatatypeFrame pm = do
     pkeyword datatypeC
     iri <- datatypeUri pm
-    axioms <- option [] (try $ (do
+    axs <- option [] (try $ (do
         pkeyword equivalentToC
         ans <- many $ annotations pm
         range <- dataRange pm
         return [DatatypeDefinition (concat ans) iri range]
       ) <|> parseAnnotationAssertions pm (AnnSubIri iri))
-    return $ Declaration [] (mkEntity Datatype iri) : axioms
+    return $ Declaration [] (mkEntity Datatype iri) : axs
 
 classFrame :: GA.PrefixMap -> CharParser st [Axiom]
 classFrame pm = do
     pkeyword classC
     i <- expUriP pm
-    axioms <- many $ classFrameBit pm i
+    axs <- many $ classFrameBit pm i
     -- ignore Individuals: ... !
     -- optional $ pkeyword individualsC >> sepByComma (individual pm)
-    return $ Declaration [] (mkEntity Class i) : concat axioms
+    return $ Declaration [] (mkEntity Class i) : concat axs
 
 classFrameBit :: GA.PrefixMap -> IRI -> CharParser st [Axiom]
 classFrameBit pm i = let e = Expression i in
@@ -683,8 +681,8 @@ individualFrame ::GA.PrefixMap -> CharParser st [Axiom]
 individualFrame pm = do
     pkeyword individualC
     iuri <- individual pm
-    axioms <- many $ iFrameBit pm iuri
-    return $ Declaration [] (mkEntity NamedIndividual iuri) :concat axioms
+    axs <- many $ iFrameBit pm iuri
+    return $ Declaration [] (mkEntity NamedIndividual iuri) :concat axs
 
 parseEquivalentClasses :: GA.PrefixMap -> CharParser st ClassAxiom
 parseEquivalentClasses pm = do
@@ -891,8 +889,8 @@ parseOntology pm = do
     versionIRI <- optionMaybe (expUriP pm)
     imports <- importEntry pm
     anns <- optionalAnnos pm
-    axioms <- many $ parseFrame pm
-    return $ Ontology ontologyIRI versionIRI imports anns (concat axioms)
+    axs <- many $ parseFrame pm
+    return $ Ontology ontologyIRI versionIRI imports anns (concat axs)
 
 parsePrefixDeclaration :: CharParser st (String, IRI)
 parsePrefixDeclaration =  do
@@ -910,7 +908,7 @@ parseOntologyDocument :: GA.PrefixMap -> CharParser st OntologyDocument
 parseOntologyDocument gapm = do
     prefixes <- many parsePrefixDeclaration
     let pm = Map.unions [gapm, (Map.fromList prefixes), changePrefixMapTypeToGA predefPrefixes]
-    ontology <- parseOntology pm
+    o <- parseOntology pm
     eof
-    return $ OntologyDocument (OntologyMetadata MS) pm ontology
+    return $ OntologyDocument (OntologyMetadata MS) pm o
 

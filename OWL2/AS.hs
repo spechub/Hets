@@ -375,7 +375,7 @@ symsOfAxiom ax = case ax of
         SubObjectPropertyOf anns subOpExpr supOpExpr ->
           let opExprs = case subOpExpr of
                 SubObjPropExpr_obj opExpr -> [opExpr]
-                SubObjPropExpr_exprchain opExprs -> opExprs
+                SubObjPropExpr_exprchain opExprCh -> opExprCh
           in
             foldl Set.union (symsOfAnnotations anns)
               $ map symsOfObjectPropertyExpression . concat $ [opExprs, [supOpExpr]]
@@ -455,7 +455,7 @@ symsOfAxiom ax = case ax of
         DifferentIndividuals anns inds -> Set.union
           (symsOfAnnotations anns)
           (Set.fromList (mkEntity NamedIndividual <$> inds))
-        ClassAssertion anns c i -> Set.insert (mkEntity NamedIndividual i) $
+        ClassAssertion anns _ i -> Set.insert (mkEntity NamedIndividual i) $
           Set.insert (mkEntity NamedIndividual i) (symsOfAnnotations anns)
         ObjectPropertyAssertion anns o s t -> Set.unions [
             symsOfAnnotations anns,
@@ -478,7 +478,7 @@ symsOfAxiom ax = case ax of
             Set.singleton $ mkEntity NamedIndividual s
           ]
     AnnotationAxiom a -> case a of
-        AnnotationAssertion anns p s v -> symsOfAnnotation $ Annotation anns p v
+        AnnotationAssertion anns p _ v -> symsOfAnnotation $ Annotation anns p v
         SubAnnotationPropertyOf anns p1 p2 -> Set.union
           (symsOfAnnotations anns)
           (Set.fromList (mkEntity AnnotationProperty <$> [p1, p2]))
@@ -499,7 +499,7 @@ symsOfAxiom ax = case ax of
           symsOfDGAtoms b,
           symsOfDGAtoms h
         ]
-    DGAxiom anns _ no e c -> Set.unions [
+    DGAxiom _ _ _ e c -> Set.unions [
         symsOfDGEdges e,
         Set.fromList (mkEntity Class <$> c)
       ]
