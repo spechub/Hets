@@ -407,7 +407,7 @@ xmlAxioms axiom = case axiom of
                 $ xmlAnnotations anns ++ [mwNameIRI dataPropertyK dp]
                 ++ [xmlIndividual sInd] ++ [xmlLiteral tVal]]
 
-    AS.AnnotationAxiom annAxiom -> case annAxiom of -- ? questions here
+    AS.AnnotationAxiom annAxiom -> case annAxiom of -- ? rewrite it. Look into ontologies XML examples.
         AS.AnnotationAssertion anns _ subj _ -> 
             let iri = case subj of
                     AS.AnnSubIri i -> i
@@ -440,7 +440,7 @@ xmlAxioms axiom = case axiom of
                 ++ [makeElement "DGBody" $ map xmlDGAtom body
                     , makeElement "DGHead" $ map xmlDGAtom head]]
 
-    AS.DGAxiom anns dgName dgNodes dgEdges mainCls -> -- ?
+    AS.DGAxiom anns dgName dgNodes dgEdges mainCls ->
         [setIRI dgName . makeElement dgAxiomK $ xmlAnnotations anns
             ++ [xmlDGNodes dgNodes, xmlDGEdges dgEdges, xmlMainClasses mainCls]]
 
@@ -458,8 +458,13 @@ xmlAtom atom = case atom of
     AS.DataPropertyAtom dp ia da -> makeElement dataPropertyAtomK
         [xmlIndividualArg ia, xmlDataArg da]
 
-    AS.BuiltInAtom iri das -> setIRI iri . makeElement builtInAtomK -- ?
-        $ map xmlDataArg das
+    AS.BuiltInAtom iri das -> setIRI iri . makeElement builtInAtomK -- ? rewrite as commented below
+        $ map xmlDataArg das 
+    -- prefered way - iri is an child element
+    -- <builtInAtomK>
+    --     <IRI iri="iri">
+    --     <DataArg>
+    --     <DataArg>
 
     AS.SameIndividualAtom ia1 ia2 -> makeElement sameIndividualAtomK
         . map xmlIndividualArg $ [ia1, ia2]
@@ -467,10 +472,10 @@ xmlAtom atom = case atom of
     AS.DifferentIndividualsAtom ia1 ia2 -> makeElement differentIndividualsAtomK
         . map xmlIndividualArg $ [ia1, ia2]
 
-    AS.UnknownUnaryAtom iri ua -> setIRI iri . makeElement unknownUnaryAtomK
+    AS.UnknownUnaryAtom iri ua -> setIRI iri . makeElement unknownUnaryAtomK -- ? Unknown atoms shouldn't be printed
         $ [xmlUnknownArg ua]
 
-    AS.UnknownBinaryAtom iri ua1 ua2 -> setIRI iri
+    AS.UnknownBinaryAtom iri ua1 ua2 -> setIRI iri  -- ? in case of unknown atoms throw error
         . makeElement unknownBinaryAtomK
         . map xmlUnknownArg $ [ua1, ua2]
 
@@ -509,6 +514,10 @@ xmlDGNodeAssertion (AS.DGNodeAssertion clIri nodeIri) =
             }
         ]
     }
+-- prefered way for xmlDGNodeAssertion
+-- <dgNodeAssertion nodeIri="..." >
+--     <class iri="clIri"/>
+-- </dgNodeAssertion>
 
 xmlDGEdges :: AS.DGEdges -> Element
 xmlDGEdges edges = makeElement dgEdgesK . map xmlDGEdgeAssertion $ edges
@@ -519,7 +528,7 @@ xmlDGEdgeAssertion (AS.DGEdgeAssertion op iri1 iri2) =
         [xmlObjProp (AS.ObjectProp op), mwNameIRI "DGNode" iri1,
             mwNameIRI "DGNode" iri2]
 
-xmlMainClasses :: AS.MainClasses -> Element -- ? 
+xmlMainClasses :: AS.MainClasses -> Element 
 xmlMainClasses cls = makeElement "MainClasses"
     . map (xmlClassExpression . AS.Expression) $ cls
 
