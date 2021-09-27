@@ -995,11 +995,10 @@ mapAxioms cSig axiom = case axiom of
             return (msen2Txt fs, cSig)
 
         AS.ClassAssertion _ ce iIri -> do
-            ls <- mapM (\c -> mapDescription cSig c (OIndi iIri) 1) [ce]
+            l <- mapDescription cSig ce (OIndi iIri) 1
             inD <- mapIndivIRI cSig iIri
-            let ocls = map (mapClassAssertion inD)
-                    $ zip [ce] $ map fst ls
-            return (ocls, uniteL $ map snd ls)
+            let ocl = mapClassAssertion inD (ce, fst l)
+            return ([ocl], snd l)
 
         AS.ObjectPropertyAssertion _ op si ti -> do
             oPropH <- mapObjProp cSig op (OIndi si) (OIndi ti)
@@ -1032,6 +1031,132 @@ mapAxioms cSig axiom = case axiom of
             return ([senToText $ mkBN $ dPropH], cSig)
 
     AS.AnnotationAxiom _ -> return ([], cSig)
+
+    AS.Rule axiom -> case axiom of
+        AS.DLSafeRule _ b h ->
+            let vars = concat $ getVariablesFromAtom <$> (b ++ h)
+                names = Name . AS.uriToTok <$> vars
+                f (sentences, sig, startVal) at = do
+                    (sentences', sig', offsetValue) <- atomToSentence startVal sig at
+                    return (sentences ++ sentences', sig', offsetValue)
+
+                g startVal sig atoms = foldM f ([], sig, startVal) atoms
+            in do
+                (antecedentSen, sig, offsetValue) <- g 1 cSig b
+                let antecedent = mkBools $ cnjct antecedentSen
+                
+                (consequentSen, sig', _) <- g offsetValue sig h
+                let consequent = mkBools $ cnjct consequentSen
+
+                
+                let impl = mkBools $ mkImpl antecedent consequent
+                return $ ([senToText $ mkUnivQ names impl nullRange], sig')
+    
+        -- AS.DGRule _  ->  -- ? Ask Mihai whether to implement and if so how? What do those represent? How to write them in Common Logic?
+    -- AS.DGAxiom _ c man   ->  -- ? Ask Mihai whether to implement and if so how?  What do those represent? How to write them in Common Logic?
+
+iArgToTerm :: AS.IndividualArg -> TERM
+iArgToTerm arg = case arg of
+    AS.IVar v -> Name_term . AS.uriToTok $ v
+    AS.IArg iri -> Name_term . AS.uriToTok $ iri
+
+iArgToVarOrIndi :: AS.IndividualArg -> VarOrIndi
+iArgToVarOrIndi arg = case arg of
+    AS.IVar v -> OIndi v
+    AS.IArg iri -> OIndi iri
+
+iArgToIRI :: AS.IndividualArg -> IRI
+iArgToIRI arg = case arg of
+    AS.IVar var -> var
+    AS.IArg ind -> ind
+
+dArgToVarOrIndi :: Int -> AS.DataArg -> Result ([SENTENCE], VarOrIndi, Int)
+dArgToVarOrIndi startVar arg = case arg of
+    AS.DVar var -> return $ ([], OIndi var, startVar)
+    AS.DArg lit -> do
+        let var = OVar $ startVar
+        let uid = mkVTerm var
+        cl <- mapLit startVar lit
+        let sen = case cl of
+                Left (sen1, sen2) -> mkBC [sen1,sen2]
+                Right term -> mkAtoms $ Atom term [Term_seq uid]
+        return ([sen], var, startVar + 1)
+
+
+mapClassExpression :: TERM -> (AS.ClassExpression, SENTENCE) -> SENTENCE
+mapClassExpression ind (ce, sent) = case ce of
+    AS.Expression _ -> sent
+    _ -> (mk1QU . mkBI (mkAE mk1NTERM ind)) sent
+
+atomToSentence :: Int -> Sign -> AS.Atom -> Result ([SENTENCE], Sign, Int)
+atomToSentence startVar cSig atom = case atom of
+    AS.ClassAtom clExpr iarg -> do 
+        (l, sig) <- mapDescription cSig clExpr (iArgToVarOrIndi iarg) 1
+        return ([mapClassExpression (iArgToTerm iarg) (clExpr, l)], sig, startVar)
+        
+    AS.DataRangeAtom dataRange darg -> do
+        (sentences, var, offsetValue) <- dArgToVarOrIndi startVar darg
+        (s, sig) <- mapDataRange cSig dataRange var
+        return (s : sentences, sig, offsetValue)
+
+    AS.ObjectPropertyAtom opExpr iarg1 iarg2 -> do
+        sen <- mapObjProp cSig opExpr (iArgToVarOrIndi iarg1) (iArgToVarOrIndi iarg2)
+        return ([sen], cSig, startVar)
+
+    AS.DataPropertyAtom dpExpr iarg darg -> do
+            let inS = iArgToVarOrIndi iarg
+            case darg of
+                AS.DVar var -> do
+                    sen <- mapDataProp cSig dpExpr inS (OIndi var)
+                    return ([sen], cSig, startVar)
+                AS.DArg lit -> do
+                    inT <- mapLit startVar lit
+                    nm <- uriToTokM dpExpr
+                    case inT of
+                            Right li -> return $ ([mkTermAtoms nm [mkVTerm inS, li]], cSig, startVar)
+                            Left (s1, s2) -> do
+                                sen <- mapDataProp cSig dpExpr inS $ OVar startVar
+                                return ([mkBC [sen, s1, s2]], cSig, startVar + 1)
+
+    AS.BuiltInAtom iri args -> do
+        (l, offsetValue) <- foldM (\(results, offsetValue) arg -> do
+                result@(_, _, offsetValue') <- dArgToVarOrIndi offsetValue arg
+                return (result : results, offsetValue')
+            ) ([], startVar) args
+        let sentences = concat $ map (\(s, _, _) -> s) l
+        let vars = map (\(_, v, _) -> v) l
+        let sen = mkTermAtoms (AS.uriToTok iri) $ map mkVTerm vars
+        return (sen:sentences, cSig, offsetValue)
+
+    AS.SameIndividualAtom iarg1 iarg2 -> do
+            sens <- mapComIndivList cSig AS.Same (Just $ iArgToIRI iarg1) [iArgToIRI iarg2]
+            return (sens, cSig, startVar)
+        
+    AS.DifferentIndividualsAtom iarg1 iarg2 -> do
+            sens <- mapComIndivList cSig AS.Different (Just $ iArgToIRI iarg1) [iArgToIRI iarg2]
+            return (sens, cSig, startVar)
+
+getVariablesFromIArg :: AS.IndividualArg -> [AS.Variable]
+getVariablesFromIArg iarg = case iarg of
+    (AS.IVar v) -> [v]
+    _ -> []
+
+getVariablesFromDArg :: AS.DataArg -> [AS.Variable]
+getVariablesFromDArg darg = case darg of
+    (AS.DVar v) -> [v]
+    _ -> []
+
+
+getVariablesFromAtom :: AS.Atom -> [AS.Variable]
+getVariablesFromAtom atom = case atom of
+    AS.ClassAtom _ (AS.IVar var) -> [var]
+    AS.DataRangeAtom _ (AS.DVar var) -> [var]
+    AS.ObjectPropertyAtom _ iarg1 iarg2 -> concat $ getVariablesFromIArg <$> [iarg1, iarg2]
+    AS.DataPropertyAtom _ iarg darg -> getVariablesFromDArg darg ++ getVariablesFromIArg iarg
+    AS.BuiltInAtom _ args -> concat $ getVariablesFromDArg <$> args
+    AS.SameIndividualAtom iarg1 iarg2 -> concat $ getVariablesFromIArg <$> [iarg1, iarg2]
+    AS.DifferentIndividualsAtom iarg1 iarg2 ->  concat $ getVariablesFromIArg <$> [iarg1, iarg2]
+    _ -> []
 
 -- helper function
 addMrs :: TEXT -> TEXT_META
