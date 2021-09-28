@@ -1045,12 +1045,12 @@ mapAxioms cSig axiom = case axiom of
                 (antecedentSen, sig, offsetValue) <- g 1 cSig b
                 let antecedent = mkBools $ cnjct antecedentSen
                 
-                (consequentSen, sig', _) <- g offsetValue sig h
+                (consequentSen, sig', lastVar) <- g offsetValue sig h
                 let consequent = mkBools $ cnjct consequentSen
 
                 
                 let impl = mkBools $ mkImpl antecedent consequent
-                return $ ([senToText $ mkUnivQ names impl nullRange], sig')
+                return $ ([senToText $ mkUnivQ (names ++ map mkNAME [1..lastVar]) impl nullRange], sig')
     
         -- AS.DGRule _  ->  -- ? Ask Mihai whether to implement and if so how? What do those represent? How to write them in Common Logic?
     -- AS.DGAxiom _ c man   ->  -- ? Ask Mihai whether to implement and if so how?  What do those represent? How to write them in Common Logic?
