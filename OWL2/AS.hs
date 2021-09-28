@@ -998,7 +998,29 @@ data Atom = ClassAtom ClassExpression IndividualArg
   | UnknownUnaryAtom IRI UnkownArg
   | UnknownBinaryAtom IRI UnkownArg UnkownArg
   deriving (Show, Eq, Ord, Data)
-  
+
+
+getVariablesFromIArg :: IndividualArg -> [Variable]
+getVariablesFromIArg iarg = case iarg of
+    (IVar v) -> [v]
+    _ -> []
+
+getVariablesFromDArg :: DataArg -> [Variable]
+getVariablesFromDArg darg = case darg of
+    (DVar v) -> [v]
+    _ -> []
+
+getVariablesFromAtom :: Atom -> [Variable]
+getVariablesFromAtom atom = case atom of
+    ClassAtom _ (IVar var) -> [var]
+    DataRangeAtom _ (DVar var) -> [var]
+    ObjectPropertyAtom _ iarg1 iarg2 -> concat $ getVariablesFromIArg <$> [iarg1, iarg2]
+    DataPropertyAtom _ iarg darg -> getVariablesFromDArg darg ++ getVariablesFromIArg iarg
+    BuiltInAtom _ args -> concat $ getVariablesFromDArg <$> args
+    SameIndividualAtom iarg1 iarg2 -> concat $ getVariablesFromIArg <$> [iarg1, iarg2]
+    DifferentIndividualsAtom iarg1 iarg2 ->  concat $ getVariablesFromIArg <$> [iarg1, iarg2]
+    _ -> []
+
 data DGAtom = DGClassAtom ClassExpression IndividualArg
   | DGObjectPropertyAtom ObjectPropertyExpression IndividualArg IndividualArg
   deriving (Show, Eq, Ord, Data)

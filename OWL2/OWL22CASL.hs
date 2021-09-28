@@ -399,7 +399,7 @@ mapComObjectPropsList mol props a b = do
 mapDataRange :: AS.DataRange -> Int -> Result (CASLFORMULA, [CASLSign])
 mapDataRange dr i = case dr of
     AS.DataType d fl -> do
-        let dt = mkMember (qualData i) $ uriToCaslId d
+        let dt = mkMember (qualData i) $ uriToCaslId d 
         (sens, s) <- mapAndUnzipM (mapFacet i) fl
         return (conjunct $ dt : sens, concat s)
     AS.DataComplementOf drc -> do
@@ -1025,4 +1025,102 @@ mapAxioms axiom = case axiom of
                 [])
 
     AS.AnnotationAxiom _ -> return ([], [])
+
+    AS.Rule axiom -> case axiom of
+        AS.DLSafeRule _ b h ->
+            let vars = concat $ AS.getVariablesFromAtom <$> (b ++ h)
+                names = tokDecl . AS.uriToTok <$> vars
+                f (sentences, sig, startVal) at = do
+                    (sentences', sig', offsetValue) <- atomToSentence startVal at
+                    return (sentences ++ sentences', sig ++ sig', offsetValue)
+
+                g startVal atoms = foldM f ([], [], startVal) atoms
+            in do
+                (antecedentSen, sig1, offsetValue) <- g 1 b
+                let antecedent = conjunct antecedentSen
+                
+                (consequentSen, sig2, lastVar) <- g offsetValue h
+                let consequent = conjunct consequentSen
+
+                
+                let impl = mkImpl antecedent consequent
+                return $ ([mkForall (names ++ map thingDecl [1..lastVar]) impl], sig1 ++ sig2)
+
+
+iArgToTerm :: AS.IndividualArg -> Result(TERM ())
+iArgToTerm arg = case arg of
+    AS.IVar v -> return . toQualVar . tokDataDecl . AS.uriToTok $ v
+    AS.IArg iri -> mapIndivURI iri
+
+iArgToVarOrIndi :: AS.IndividualArg -> VarOrIndi
+iArgToVarOrIndi arg = case arg of
+    AS.IVar v -> OIndi v
+    AS.IArg iri -> OIndi iri
+
+
+iArgToIRI :: AS.IndividualArg -> IRI
+iArgToIRI arg = case arg of
+    AS.IVar var -> var
+    AS.IArg ind -> ind
+
+
+dArgToTerm :: AS.DataArg -> Result (TERM ())
+dArgToTerm arg = case arg of
+    AS.DVar var -> return . toQualVar .  tokDataDecl . AS.uriToTok $ var
+    AS.DArg lit -> mapLiteral lit
+
+atomToSentence :: Int -> AS.Atom -> Result ([CASLFORMULA], [CASLSign], Int)
+atomToSentence startVar atom = case atom of
+    AS.ClassAtom clExpr iarg -> do 
+        (el, sigs) <- mapDescription clExpr startVar
+        inD <- iArgToTerm iarg
+        let el' = substitute (mkNName startVar) thing inD el
+        return ([el'], sigs, startVar + 1)
+        
+    AS.DataRangeAtom dataRange darg -> do
+        -- return ([], [], startVar)
+        -- Ask mihai about it? How to represent a DataRangeAtom in CASL?
+        (odes, s) <- mapDataRange dataRange startVar
+        dt <- dArgToTerm darg
+        return ([mkVDataDecl [startVar] $ mkEqv odes $ mkStEq (qualData startVar) dt], s, startVar + 1)
+
+        -- forall 2: odes <=> 2 elem dt
+        -- darg elem dataRange
+
+        -- .forall 2 __dt: odes(2, ...dataRange) <=> 2 elem __dt && darg elem __dt
+        -- .forall 2: odes(2, ...dataRange) <=> 2 == darg
+
+        -- i == dataArg => i `elem` d
+
+    AS.ObjectPropertyAtom opExpr iarg1 iarg2 -> do
+        let si = iArgToVarOrIndi iarg1
+            ti = iArgToVarOrIndi iarg2
+        oPropH <- mapObjPropI opExpr si ti
+        return ([oPropH], [], startVar)
+
+    AS.DataPropertyAtom dpExpr iarg darg -> do
+        let a = startVar
+            b = startVar + 1
+        inS <- iArgToTerm iarg
+        inT <- dArgToTerm darg
+        oProp <- mapDataProp dpExpr a b
+        return ([mkForall [thingDecl a, dataDecl b] $ implConj
+            [mkEqDecl a inS, mkEqVar (dataDecl b) $ upcast inT dataS] oProp],
+            [], startVar + 2)
+
+    AS.BuiltInAtom iri args -> do
+        predArgs <- mapM dArgToTerm args
+        let predtype = PredType $ map (const thing) args
+            pred = mkPred predtype predArgs (AS.uriToId iri)
+
+        return ([pred], [], startVar)
+
+    AS.SameIndividualAtom iarg1 iarg2 -> do
+            fs <- mapComIndivList AS.Same (Just $ iArgToIRI iarg1) [iArgToIRI iarg2]
+            return (fs, [], startVar)
+        
+    AS.DifferentIndividualsAtom iarg1 iarg2 -> do
+            fs <- mapComIndivList AS.Different (Just $ iArgToIRI iarg1) [iArgToIRI iarg2]
+            return (fs, [], startVar)
+
     

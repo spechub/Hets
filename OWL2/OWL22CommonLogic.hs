@@ -1034,7 +1034,7 @@ mapAxioms cSig axiom = case axiom of
 
     AS.Rule axiom -> case axiom of
         AS.DLSafeRule _ b h ->
-            let vars = concat $ getVariablesFromAtom <$> (b ++ h)
+            let vars = concat $ AS.getVariablesFromAtom <$> (b ++ h)
                 names = Name . AS.uriToTok <$> vars
                 f (sentences, sig, startVal) at = do
                     (sentences', sig', offsetValue) <- atomToSentence startVal sig at
@@ -1136,27 +1136,6 @@ atomToSentence startVar cSig atom = case atom of
             sens <- mapComIndivList cSig AS.Different (Just $ iArgToIRI iarg1) [iArgToIRI iarg2]
             return (sens, cSig, startVar)
 
-getVariablesFromIArg :: AS.IndividualArg -> [AS.Variable]
-getVariablesFromIArg iarg = case iarg of
-    (AS.IVar v) -> [v]
-    _ -> []
-
-getVariablesFromDArg :: AS.DataArg -> [AS.Variable]
-getVariablesFromDArg darg = case darg of
-    (AS.DVar v) -> [v]
-    _ -> []
-
-
-getVariablesFromAtom :: AS.Atom -> [AS.Variable]
-getVariablesFromAtom atom = case atom of
-    AS.ClassAtom _ (AS.IVar var) -> [var]
-    AS.DataRangeAtom _ (AS.DVar var) -> [var]
-    AS.ObjectPropertyAtom _ iarg1 iarg2 -> concat $ getVariablesFromIArg <$> [iarg1, iarg2]
-    AS.DataPropertyAtom _ iarg darg -> getVariablesFromDArg darg ++ getVariablesFromIArg iarg
-    AS.BuiltInAtom _ args -> concat $ getVariablesFromDArg <$> args
-    AS.SameIndividualAtom iarg1 iarg2 -> concat $ getVariablesFromIArg <$> [iarg1, iarg2]
-    AS.DifferentIndividualsAtom iarg1 iarg2 ->  concat $ getVariablesFromIArg <$> [iarg1, iarg2]
-    _ -> []
 
 -- helper function
 addMrs :: TEXT -> TEXT_META
