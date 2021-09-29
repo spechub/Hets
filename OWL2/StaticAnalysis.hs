@@ -96,12 +96,12 @@ checkObjPropList s ol = do
     unless (and ls) $ fail $ "undeclared object properties:\n" ++
                       showDoc (map (\o -> case o of
                                      AS.ObjectProp _ -> o
-                                     AS.ObjectInverseOf x -> x) ol) ""
+                                     AS.ObjectInverseOf x -> x) (filter (not . isDeclObjProp s) ol)) ""
 
 checkDataPropList :: Sign -> [AS.DataPropertyExpression] -> Result ()
 checkDataPropList s dl = do
     let ls = map (isDeclDataProp s) dl
-    unless (and ls) $ fail $ "undeclared data properties:\n" ++ showDoc dl ""
+    unless (and ls) $ fail $ "undeclared data properties:\n" ++ showDoc (filter (not . isDeclDataProp s) dl) ""
 
 -- | checks if a DataRange is valid
 checkDataRange :: Sign -> AS.DataRange -> Result ()

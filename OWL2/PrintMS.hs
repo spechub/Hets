@@ -1827,7 +1827,7 @@ printIRI :: GA.PrefixMap -> IRI -> Doc
 printIRI pds iri
     | isAbbrev iri && prefName `M.member` pds
         = text (prefName ++ ":" ++ (iFragment iri))
-
+    | isAbbrev iri && null prefName = (text ":") <> pretty iri
     | otherwise = pretty iri
   where prefName = prefixName iri
 
