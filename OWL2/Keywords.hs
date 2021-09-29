@@ -187,7 +187,7 @@ unsignedIntS :: String
 unsignedIntS = "unsignedInt"
 
 unsignedLongS :: String
-unsignedLongS = "unsignedLongS"
+unsignedLongS = "unsignedLong"
 
 unsignedShortS :: String
 unsignedShortS = "unsignedShort"
