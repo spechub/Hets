@@ -407,12 +407,12 @@ xmlAxioms axiom = case axiom of
                 $ xmlAnnotations anns ++ [mwNameIRI dataPropertyK dp]
                 ++ [xmlIndividual sInd] ++ [xmlLiteral tVal]]
 
-    AS.AnnotationAxiom annAxiom -> case annAxiom of -- ? rewrite it. Look into ontologies XML examples.
-        AS.AnnotationAssertion anns _ subj _ -> 
+    AS.AnnotationAxiom annAxiom -> case annAxiom of
+        AS.AnnotationAssertion anns prop subj value -> 
             let iri = case subj of
                     AS.AnnSubIri i -> i
                     AS.AnnSubAnInd i -> i
-            in xmlAssertion iri anns
+            in xmlAssertion iri [AS.Annotation anns prop value]
 
         AS.SubAnnotationPropertyOf anns sub sup ->
             make1 True subAnnotationPropertyOfK annotationPropertyK
@@ -456,10 +456,10 @@ xmlAtom atom = case atom of
         [xmlObjProp oe, xmlIndividualArg ia1, xmlIndividualArg ia2]
 
     AS.DataPropertyAtom dp ia da -> makeElement dataPropertyAtomK
-        [xmlIndividualArg ia, xmlDataArg da]
+        [mwNameIRI dataPropertyK dp, xmlIndividualArg ia, xmlDataArg da]
 
-    AS.BuiltInAtom iri das -> setIRI iri . makeElement builtInAtomK -- ? rewrite as commented below
-        $ map xmlDataArg das 
+    AS.BuiltInAtom iri das -> makeElement builtInAtomK 
+        $ (mwNameIRI "IRI" iri) : map xmlDataArg das
     -- prefered way - iri is an child element
     -- <builtInAtomK>
     --     <IRI iri="iri">
@@ -472,12 +472,7 @@ xmlAtom atom = case atom of
     AS.DifferentIndividualsAtom ia1 ia2 -> makeElement differentIndividualsAtomK
         . map xmlIndividualArg $ [ia1, ia2]
 
-    AS.UnknownUnaryAtom iri ua -> setIRI iri . makeElement unknownUnaryAtomK -- ? Unknown atoms shouldn't be printed
-        $ [xmlUnknownArg ua]
-
-    AS.UnknownBinaryAtom iri ua1 ua2 -> setIRI iri  -- ? in case of unknown atoms throw error
-        . makeElement unknownBinaryAtomK
-        . map xmlUnknownArg $ [ua1, ua2]
+    _ -> error "XML Converter: Uknown atom"
 
 xmlDGAtom :: AS.DGAtom -> Element
 xmlDGAtom atom = case atom of
@@ -506,11 +501,12 @@ xmlDGNodes :: AS.DGNodes -> Element
 xmlDGNodes nodes = makeElement dgNodesK . map xmlDGNodeAssertion $ nodes
 
 xmlDGNodeAssertion :: AS.DGNodeAssertion -> Element  -- ?
-xmlDGNodeAssertion (AS.DGNodeAssertion clIri nodeIri) = 
-    (mwString dgNodeAssertionK) {
+xmlDGNodeAssertion (AS.DGNodeAssertion clIri nodeIri) =
+    setContent [mwNameIRI "class" clIri]
+    $ (mwString dgNodeAssertionK) {
         elAttribs = [
-            Attr {attrKey = makeQN "class"
-                , attrVal = showIRI $ AS.setReservedPrefix clIri
+            Attr {attrKey = makeQN "nodeIri"
+                , attrVal = showIRI $ AS.setReservedPrefix nodeIri
             }
         ]
     }
