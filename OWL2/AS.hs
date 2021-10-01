@@ -1015,10 +1015,16 @@ emptyOntologyDoc = OntologyDocument (OntologyMetadata AS) mempty emptyOntology
 
 data OntologySyntaxType = MS | AS | XML
   deriving  (Show, Eq, Ord, Data, Typeable)
+
 data OntologyMetadata = OntologyMetadata {
   syntaxType :: OntologySyntaxType
   -- might be extended 
 } deriving  (Show, Eq, Ord, Data, Typeable)
+
+changeSyntax :: OntologySyntaxType -> OntologyDocument -> OntologyDocument
+changeSyntax t o@(OntologyDocument m _ _) = o {
+  ontologyMetadata = m {syntaxType = t}
+}
 
 data OntologyDocument = OntologyDocument {
     ontologyMetadata :: OntologyMetadata 
@@ -1026,6 +1032,7 @@ data OntologyDocument = OntologyDocument {
   , ontology :: Ontology
 }
   deriving  (Show, Eq, Ord, Data, Typeable)
+
 data PrefixDeclaration = PrefixDeclaration PrefixName IRI
   deriving  (Show, Eq, Ord, Data, Typeable)
 
