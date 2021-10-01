@@ -16,8 +16,6 @@ module OWL2.XML
  , isSmth
  ) where
 
-import Debug.Trace
-
 import Common.Lexer (value)
 import Common.IRI
 import Common.Id (stringToId, prependString, tokStr, getTokens)
@@ -34,8 +32,6 @@ import Text.XML.Light
 import Data.Maybe
 import Data.List
 import qualified Data.Map as Map
-
-import Debug.Trace
 
 type XMLBase = Maybe String
 
@@ -210,8 +206,8 @@ getLiteral pm b e = case getName e of
              Just lang -> AS.Literal lf $ AS.Untyped $ Just lang
              Nothing -> if isPlainLiteral dt then
                           AS.Literal lf $ AS.Untyped Nothing
-                         else case parseIRIReference (trace "----dt: " $ traceShowId dt) of
-                            Just f -> trace "----correctedLit" $ traceShowId $ correctLit $ AS.Literal lf $ AS.Typed (expandIRI pm f)
+                         else case parseIRIReference dt of
+                            Just f -> correctLit $ AS.Literal lf $ AS.Typed (expandIRI pm f)
                             _ -> error $ "could not get datatypeIRI from " ++ show dt
     _ -> err "not literal"
 
@@ -556,7 +552,7 @@ xmlBasicSpec imap e =
         pm = getPrefixMap e
         ax = getOnlyAxioms (AS.changePrefixMapTypeToGA imap `Map.union` pm) b e
     in
-        traceShowId $ AS.OntologyDocument
+        AS.OntologyDocument
             (AS.OntologyMetadata AS.XML)
             (getPrefixMap e)
             $ AS.Ontology
