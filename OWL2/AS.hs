@@ -220,23 +220,26 @@ isDatatypeKeyAux :: IRI -> [(String, String)]
 isDatatypeKeyAux i = mapMaybe (`checkPredefAux` i)
   [ xsdMap, owlNumbersMap, rdfMap, rdfsMap ]
 
--- (types, prefixname, prefix iri without "http://www.w3.org/")
+-- (types, prefixname, prefix iri)
 type PreDefMaps = ([String], String, String)
 
 preDefMaps :: [String] -> String -> PreDefMaps
 preDefMaps sl pref = let
   Just puri = Map.lookup pref predefPrefixes
-  Just sp = stripPrefix "http://www.w3.org/" puri
- in (sl, pref, sp)
+ in (sl, pref, puri)
 
 -- returns Maybe (prefix, keyword)
 -- e.g. Just ("xsd", "string")
 checkPredefAux :: PreDefMaps -> IRI -> Maybe (String, String)
 checkPredefAux (sl, pref, exPref) u =
-  if isAbbrev u && prefixName u == pref && iFragment u `elem` sl then Just (pref, iFragment u)
-  else case stripPrefix exPref (show $ iriPath u) of
-    Just lp | lp `elem` sl -> Just (pref, lp)
-    _ -> Nothing
+  let t = stripPrefix exPref (show $ u) in
+    if isAbbrev u then
+      if prefixName u == pref && iFragment u `elem` sl then
+        Just (pref, iFragment u)
+      else Nothing
+    else case t of
+      Just lp | lp `elem` sl -> Just (pref, lp)
+      _ -> Nothing
 
 
 checkPredef :: PreDefMaps -> IRI -> Bool
@@ -248,7 +251,7 @@ makeOWLPredefMaps sl = preDefMaps sl "owl"
 -- | sets the correct prefix for the predefined datatypes
 setDatatypePrefix :: IRI -> IRI
 setDatatypePrefix i = case isDatatypeKeyAux i of
-  (p, l) : _ -> setPrefix p $ mkIRI l
+  (p, l) : _ -> i {prefixName = p, iFragment = l}
   _ -> error $ showIRICompact i ++ " is not a predefined datatype"
 
 -- | checks if the IRI is part of the built-in ones and puts the correct prefix
