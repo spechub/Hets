@@ -77,6 +77,7 @@ module Common.IRI
     , showIRIFull
     , dummyIRI
     , mkIRI
+    , mkAbbrevIRI
     , idToIRI  
     , setPrefix
     , uriToCaslId
@@ -279,6 +280,10 @@ dummyIRI = nullIRI {
 
 mkIRI :: String -> IRI
 mkIRI = simpleIdToIRI. mkSimpleId
+
+mkAbbrevIRI :: String -> String -> IRI
+mkAbbrevIRI pref frag = nullIRI {prefixName= pref, iFragment = frag, isAbbrev = True}
+
 
 idToIRI :: Id -> IRI
 idToIRI i =  nullIRI { iriScheme = ""

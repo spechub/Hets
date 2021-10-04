@@ -269,16 +269,12 @@ stripReservedPrefix = idToIRI . uriToId
      or <http://www.w3.org/2002/07/owl#real> returns "real") -}
 uriToId :: IRI -> Id
 uriToId i =
-    if (prefixName i `elem` ["", "xsd", "rdf", "rdfs", "owl"])
-       || ( null (iriScheme i)
-           && null (iriQuery i)
-           && null (iriFragment i)
-           && isNothing (iriAuthority i))
-        then iriPath i
-        else stringToId $ case mapMaybe (`stripPrefix` showIRICompact i)
-                    $ Map.elems predefPrefixes of
-                [s] -> s
-                _ -> showIRIFull i
+    if (isAbbrev i || prefixName i `elem` ["", "xsd", "rdf", "rdfs", "owl"])
+    then stringToId $ iFragment i
+    else stringToId $ case mapMaybe (`stripPrefix` showIRICompact i)
+                $ Map.elems predefPrefixes of
+            [s] -> s
+            _ -> showIRIFull i
 
 getPredefName :: IRI -> String
 getPredefName = show . uriToId

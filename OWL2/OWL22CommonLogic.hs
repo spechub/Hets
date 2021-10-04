@@ -296,7 +296,7 @@ declarations s =
         dp = Set.toList $ OS.dataProperties s
         op = Set.toList $ OS.objectProperties s
     in map thingIncl c
-        ++ map dataIncl (map (setPrefix "xsd" . mkIRI) datatypeKeys ++ dt)
+        ++ map dataIncl (map (mkAbbrevIRI "xsd") datatypeKeys ++ dt)
         ++ map (propertyIncl topDataProp) dp
         ++ map (propertyIncl bottomDataProp) dp
         ++ map (propertyIncl topObjProp) op
