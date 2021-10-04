@@ -69,6 +69,9 @@ rmImplied ax = case ax of
         AS.SubAnnotationPropertyOf anns a b -> AS.AnnotationAxiom $ AS.SubAnnotationPropertyOf (rmList anns)  a b 
         AS.AnnotationPropertyDomain anns a b -> AS.AnnotationAxiom $ AS.AnnotationPropertyDomain (rmList anns)  a b 
         AS.AnnotationPropertyRange anns a b -> AS.AnnotationAxiom $ AS.AnnotationPropertyRange (rmList anns)  a b 
+    AS.Rule rule -> case rule of
+        AS.DLSafeRule anns a b -> AS.Rule $ AS.DLSafeRule (rmList anns) a b
+        AS.DGRule anns a b -> AS.Rule $ AS.DGRule (rmList anns) a b 
     AS.DGAxiom anns a b c d -> AS.DGAxiom (rmList anns) a b c d 
 
 addImplied :: AS.Axiom -> AS.Axiom
@@ -114,7 +117,10 @@ addImplied ax = case ax of
         AS.AnnotationAssertion anns a b c -> AS.AnnotationAxiom $ AS.AnnotationAssertion (implied : anns)  a b c 
         AS.SubAnnotationPropertyOf anns a b -> AS.AnnotationAxiom $ AS.SubAnnotationPropertyOf (implied : anns)  a b 
         AS.AnnotationPropertyDomain anns a b -> AS.AnnotationAxiom $ AS.AnnotationPropertyDomain (implied : anns)  a b 
-        AS.AnnotationPropertyRange anns a b -> AS.AnnotationAxiom $ AS.AnnotationPropertyRange (implied : anns)  a b 
+        AS.AnnotationPropertyRange anns a b -> AS.AnnotationAxiom $ AS.AnnotationPropertyRange (implied : anns)  a b
+    AS.Rule rule -> case rule of
+        AS.DLSafeRule anns a b -> AS.Rule $ AS.DLSafeRule (implied : anns) a b
+        AS.DGRule anns a b -> AS.Rule $ AS.DGRule (implied : anns) a b
     AS.DGAxiom anns a b c d -> AS.DGAxiom (implied : anns) a b c d 
 
 prove1 :: AS.Annotation -> Bool
