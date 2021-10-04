@@ -170,4 +170,7 @@ prove ax = case ax of
         AS.SubAnnotationPropertyOf anns _ _ -> proveAnnos anns
         AS.AnnotationPropertyDomain anns _ _ -> proveAnnos anns
         AS.AnnotationPropertyRange anns _ _ -> proveAnnos anns
+    AS.Rule rule -> case rule of 
+        AS.DLSafeRule anns _ _ -> proveAnnos anns
+        AS.DGRule anns _ _ -> proveAnnos anns
     AS.DGAxiom anns _ _ _ _ -> proveAnnos anns
