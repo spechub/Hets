@@ -13,6 +13,7 @@ Conversion from Manchester Syntax to XML Syntax
 module OWL2.XMLConversion where
 
 import Common.AS_Annotation (Named, sentence)
+import Common.GlobalAnnotations as GA (PrefixMap)
 import Common.IRI hiding (showIRI)
 import Common.Id
 
@@ -28,9 +29,9 @@ import Data.Maybe
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
--- | prints the IRI with a colon separating the prefix and the local part
+-- | prints the IRI
 showIRI :: IRI -> String
-showIRI iri = prefixName iri ++ show (iriPath iri)
+showIRI iri = show iri {hasAngles = False}
 
 nullQN :: Text.XML.Light.QName
 nullQN = QName "" Nothing Nothing
@@ -64,9 +65,9 @@ setName s e = e {elName = nullQN {qName = s,
 setIRI :: IRI -> Element -> Element
 setIRI iri e =
     let ty
-            | hasFullIRI iri = iriK
+            | isAbbrev iri = "abbreviatedIRI"
             | isBlankNode iri = nodeID
-            | otherwise = "abbreviatedIRI"
+            | otherwise = iriK
     in e {elAttribs = [Attr {attrKey = makeQN ty,
                              attrVal = showIRI $ AS.setReservedPrefix iri}]}
 
@@ -124,10 +125,10 @@ setInt i e = e {elAttribs = [Attr {attrKey = makeQN "cardinality",
 correctFacet :: AS.ConstrainingFacet -> AS.ConstrainingFacet
 correctFacet c = let d = AS.getPredefName c in setPrefix "http" $ mkIRI $
     "//www.w3.org/2001/XMLSchema#" ++ case d of
-        ">" -> "minExclusive"
-        "<" -> "maxExclusive"
-        ">=" -> "minInclusive"
-        "<=" -> "maxInclusive"
+        ">" -> "maxExclusive"
+        "<" -> "minExclusive"
+        ">=" -> "maxInclusive"
+        "<=" -> "minInclusive"
         _ -> d
 
 -- | sets either a literal datatype or a facet
@@ -549,11 +550,11 @@ setPref :: String -> Element -> Element
 setPref s e = e {elAttribs = Attr {attrKey = makeQN "name"
     , attrVal = s} : elAttribs e}
 
-set1Map :: (String, String) -> Element
-set1Map (s, iri) = setPref s $ mwIRI $ splitIRI $ mkIRI iri
+set1Map :: (String, IRI) -> Element
+set1Map (s, iri) = setPref s $ mwIRI iri
 
-xmlPrefixes :: AS.PrefixMap -> [Element]
-xmlPrefixes pm = let allpm = Map.union pm AS.predefPrefixes in
+xmlPrefixes :: GA.PrefixMap -> [Element]
+xmlPrefixes pm = let allpm = Map.union pm $ AS.predefPrefixesGA in
     map (setName prefixK . set1Map) $ Map.toList allpm
 
 setOntIRI :: AS.OntologyIRI -> Element -> Element
@@ -573,8 +574,8 @@ setXMLNS e = e {elAttribs = Attr {attrKey = makeQN "xmlns", attrVal =
 xmlOntologyDoc :: Sign -> AS.OntologyDocument -> Element
 xmlOntologyDoc s od =
     let ont = AS.ontology od
-        pd = AS.changePrefixMapTypeToString $ AS.prefixDeclaration od
-        emptyPref = fromMaybe (showIRI dummyIRI) $ Map.lookup "" pd
+        pd = AS.prefixDeclaration od
+        emptyPref = showIRI $ fromMaybe dummyIRI $ Map.lookup "" pd
     in setBase emptyPref $ setXMLNS
         $ setOntIRI (fromMaybe dummyIRI $ AS.mOntologyIRI ont)
         $ makeElement "Ontology" $ xmlPrefixes pd

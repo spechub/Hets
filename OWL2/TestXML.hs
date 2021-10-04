@@ -11,6 +11,7 @@ import Data.Maybe (fromJust)
 
 
 -- import OWL2.PrintMS
+import OWL2.AS
 import Text.XML.Light
 import OWL2.XML
 import OWL2.XMLConversion
@@ -30,12 +31,14 @@ main = do
       let parsed1 = (xmlBasicSpec mempty) ((!! 0) . onlyElems $ parseXML str)
       let printed = (xmlOntologyDoc emptySign parsed1)
       let parsed2 = xmlBasicSpec mempty printed
-      let r = parsed1 == parsed2
+      let r = ontology parsed1 == ontology parsed2
       if r then return () else do
         putStrLn $ "Error in " ++ f
         putStrLn $ "parsed1: " ++ show (toDocAsAS parsed1)
+        putStrLn $ "printed: " ++ ppTopElement printed
         putStrLn $ "parsed2: " ++ show (toDocAsAS parsed2)
         putStrLn ""
       return r) files
     putStrLn $ show (length $ filter id o) ++ "/" ++ show (length o)
+    if (length $ filter not o) > 0 then fail "Failed!" else return ()
 
