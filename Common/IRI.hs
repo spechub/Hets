@@ -862,9 +862,13 @@ iriToStringAbbrev (IRI { prefixName = pname
                        , iriPath = aPath
                        , iriQuery = aQuery
                        , iriFragment = aFragment
+                       , iFragment = aIFragment
                        }) =
   let pref = if null pname then "" else pname ++ ":" in
-  (pref ++) . (show aPath ++) . (aQuery ++) . (aFragment ++)
+    if null aIFragment then
+      (pref ++) . (show aPath ++) . (aQuery ++) . (aFragment ++)
+    else
+      (pref ++) . (aIFragment ++)
 
 iriToStringAbbrevMerge :: IRI -> ShowS
 iriToStringAbbrevMerge (IRI { iriPath = aPath

@@ -220,6 +220,7 @@ isDatatypeKeyAux :: IRI -> [(String, String)]
 isDatatypeKeyAux i = mapMaybe (`checkPredefAux` i)
   [ xsdMap, owlNumbersMap, rdfMap, rdfsMap ]
 
+-- (types, prefixname, prefix iri without "http://www.w3.org/")
 type PreDefMaps = ([String], String, String)
 
 preDefMaps :: [String] -> String -> PreDefMaps
@@ -228,30 +229,13 @@ preDefMaps sl pref = let
   Just sp = stripPrefix "http://www.w3.org/" puri
  in (sl, pref, sp)
 
+-- returns Maybe (prefix, keyword)
+-- e.g. Just ("xsd", "string")
 checkPredefAux :: PreDefMaps -> IRI -> Maybe (String, String)
 checkPredefAux (sl, pref, exPref) u =
-  let lp = show $ iriPath u
-      res = Just (pref, lp)
-      testString = case iriScheme u of
-                    "" -> prefixName u
-                    _ -> iriScheme u
-  in case testString of -- was prefixName
-    "http:" -> case stripPrefix "//www." lp of
-        Just q -> case stripPrefix "w3.org/" q of
-            Just r -> case stripPrefix exPref r of
-              Just s | elem s sl -> Just (pref, s)
-              _ -> Nothing
-            Nothing -> Nothing
-        Nothing -> Nothing
-    pu | elem lp sl -> case pu of
-      "" -> let ex = iriToStringUnsecure u in
-            case stripPrefix "http://www." ex of
-              Just r | r == "w3.org/" ++ exPref ++ lp -- r == lp
-                  -> res
-              _ | null ex -> res
-              _ -> Nothing
-      _ | pref == pu || pref ++ ":" == pu -> Just (pref, lp)
-      _ -> Nothing
+  if isAbbrev u && prefixName u == pref && iFragment u `elem` sl then Just (pref, iFragment u)
+  else case stripPrefix exPref (show $ iriPath u) of
+    Just lp | lp `elem` sl -> Just (pref, lp)
     _ -> Nothing
 
 
