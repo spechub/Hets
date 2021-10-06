@@ -75,23 +75,26 @@ filterCL :: [String] -> Element -> Element
 filterCL l e = fromMaybe (err "child not found")
     $ filterChildName (isSmthList l) e
 
+getIRIWithType :: GA.PrefixMap -> XMLBase -> String -> String -> IRI
+getIRIWithType pm b typ iriStr = expandIRI pm $ case typ of
+        "abbreviatedIRI" ->  case parseCurie iriStr of
+            Just i -> i
+            Nothing -> error $ "could not get CURIE from " ++ show iriStr
+        "IRI" -> let parsed = getIRIWithResolvedBase b iriStr in
+            maybe (error $ "could not get IRI from " ++ show iriStr) id parsed
+        "nodeID" -> case parseCurie iriStr of
+            Just i -> i {isBlankNode = True}
+            Nothing -> error $ "could not get nodeID from " ++ show iriStr
+        "facet" -> let parsed = getIRIWithResolvedBase b iriStr in
+            maybe (error $ "could not get facet from " ++ show iriStr) id parsed
+        _ -> error $ "wrong qName:" ++ show typ
+
 -- | parses an IRI
 getIRI :: GA.PrefixMap -> XMLBase -> Element -> IRI
 getIRI pm b e =
     let [a] = elAttribs e
         anIri = attrVal a
-    in expandIRI pm $ case qName $ attrKey a of
-        "abbreviatedIRI" ->  case parseCurie anIri of
-            Just i -> i
-            Nothing -> error $ "could not get CURIE from " ++ show anIri
-        "IRI" -> let parsed = getIRIWithResolvedBase b anIri in
-            maybe (error $ "could not get IRI from " ++ show anIri) id parsed
-        "nodeID" -> case parseCurie anIri of
-            Just i -> i {isBlankNode = True}
-            Nothing -> error $ "could not get nodeID from " ++ show anIri
-        "facet" -> let parsed = getIRIWithResolvedBase b anIri in
-            maybe (error $ "could not get facet from " ++ show anIri) id parsed
-        _ -> error $ "wrong qName:" ++ show (attrKey a)
+    in getIRIWithType pm b (qName $ attrKey a) anIri
 
 
 getIRIWithResolvedBase :: XMLBase -> String -> Maybe IRI
@@ -132,25 +135,9 @@ mkNodeID iri =
         -- todo: maybe we should keep the Id structure of iriPath iri
         _ -> iri {prefixName = "_"}
 
--- | gets the content of an element with name Import
-importIRI :: Map.Map String String -> XMLBase -> Element -> IRI
-importIRI m b e =
-  let cont1 = strContent e
-      cont = Map.findWithDefault cont1 cont1 m
-  in nullIRI {iriPath = stringToId cont, isAbbrev = True}
-
 -- | gets the content of an element with name IRI, AbbreviatedIRI or Import
 contentIRI :: GA.PrefixMap -> XMLBase -> Element -> IRI
-contentIRI pm b e =
-  let cont = strContent e
-      anIri = nullIRI {iriPath = stringToId cont, isAbbrev = True}
-  in expandIRI pm $ case getName e of
-      "AbbreviatedIRI" -> splitIRI anIri
-      "IRI" -> if ':' `elem` cont
-                then splitIRI  anIri 
-                else anIri
-      "Import" -> anIri 
-      _ -> err "invalid type of iri"
+contentIRI pm b e = getIRIWithType pm b (getName e) (strContent e)
 
 -- | gets the name of an axiom in XML Syntax
 getName :: Element -> String
@@ -578,8 +565,8 @@ xmlErrorString a = case a of
 getOnlyAxioms :: GA.PrefixMap -> XMLBase -> Element -> [AS.Axiom]
 getOnlyAxioms pm b e = map (getDeclaration pm b) $ filterChildrenName isNotSmth e
 
-getImports :: Map.Map String String -> XMLBase -> Element -> AS.DirectlyImportsDocuments
-getImports m b e = map (importIRI m b) $ filterCh importK e
+getImports :: GA.PrefixMap -> XMLBase -> Element -> AS.DirectlyImportsDocuments
+getImports m b e = map (contentIRI m b) $ filterCh importK e
 
 get1Map :: Element -> (String, String)
 get1Map e =
@@ -606,15 +593,15 @@ getBase e = vFindAttrBy (isSmth "base") e
 xmlBasicSpec :: Map.Map String String -> Element -> AS.OntologyDocument
 xmlBasicSpec imap e =
     let b = getBase e
-        pm = getPrefixMap e
-        ax = getOnlyAxioms (AS.changePrefixMapTypeToGA imap `Map.union` pm) b e
+        pm = AS.changePrefixMapTypeToGA imap `Map.union` getPrefixMap e
+        ax = getOnlyAxioms pm b e
     in
         AS.OntologyDocument
             (AS.OntologyMetadata AS.XML)
-            (getPrefixMap e)
+            pm
             $ AS.Ontology
                 (getOntologyIRI b e)
                 (getVersionIRI b e)
-                (getImports imap b e)
+                (getImports pm b e)
                 (getAllAnnos pm b e)
                 ax
