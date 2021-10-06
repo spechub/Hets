@@ -572,12 +572,12 @@ getPrefixMap e = changePrefixMapTypeToGA $ Map.map (\x -> "<" ++ x ++ ">") $ Map
 getOntologyIRI :: XMLBase -> Element -> Maybe IRI
 getOntologyIRI b e =
   let oi = findAttr (unqual "ontologyIRI") e
-  in fmap (\anIri -> nullIRI {iriPath = stringToId anIri}) oi
+  in oi >>= getIRIWithResolvedBase b
 
 getVersionIRI :: XMLBase -> Element -> Maybe IRI
 getVersionIRI b e =
-  let oi = findAttr (unqual "versionIRI") e
-  in fmap (\anIri -> nullIRI {iriPath = stringToId anIri}) oi
+  let vi = findAttr (unqual "versionIRI") e
+  in vi >>= getIRIWithResolvedBase b
 
 getBase :: Element -> XMLBase
 getBase e = vFindAttrBy (isSmth "base") e
