@@ -1,4 +1,3 @@
-
 module OWL2.TestXML where
 
 import System.Process
@@ -19,27 +18,24 @@ import OWL2.Sign(emptySign)
 import OWL2.Pretty
 import qualified Data.ByteString.Lazy as L
 
-
-
 main :: IO ()
 main = do
     args <- getArgs
     let files = filter (not . isPrefixOf "--") args
     o <- mapM (\f -> do 
       str <- readFile f
-      let rootElem = fromJust $ find (\e -> unqual "Ontology" == elName e)  $ onlyElems $ parseXML str
+      -- putStrLn $ take 500 $ show $ onlyElems $ parseXML str
+      let rootElem = fromJust $ find (\e -> "Ontology" == qName (elName e))  $ onlyElems $ parseXML str
       -- putStrLn $ show $ rootElem
       let parsed1 = (xmlBasicSpec mempty) rootElem
+      writeFile (f ++ ".parsed1.out") $ show ( parsed1) 
       let printed = (xmlOntologyDoc emptySign parsed1)
+      writeFile (f ++ ".printed.out") $ ppTopElement printed
       let parsed2 = xmlBasicSpec mempty printed
+      writeFile (f ++ ".parsed2.out") $ show ( parsed2)
       let r = ontology parsed1 == ontology parsed2
-      if r then return () else do
-        putStrLn $ "Error in " ++ f
-        putStrLn $ "parsed1: " ++ show (toDocAsAS parsed1)
-        putStrLn $ "printed: " ++ ppTopElement printed
-        putStrLn $ "parsed2: " ++ show (toDocAsAS parsed2)
+      if r then return () else putStrLn $ "Error in " ++ f
       putStrLn ""
       return r) files
     putStrLn $ show (length $ filter id o) ++ "/" ++ show (length o)
     if (length $ filter not o) > 0 then fail "Failed!" else return ()
-
