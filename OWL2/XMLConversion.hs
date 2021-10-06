@@ -470,13 +470,13 @@ xmlAtom atom = case atom of
 
 xmlIndividualArg :: AS.IndividualArg -> Element
 xmlIndividualArg ia = case ia of
-    AS.IArg i -> mwNameIRI individualArgumentK i
-    AS.IVar i -> mwNameIRI individualVariableK i
+    AS.IArg i -> mwNameIRI namedIndividualK i
+    AS.IVar i -> mwNameIRI variableK i
 
 xmlDataArg :: AS.DataArg -> Element
 xmlDataArg da = case da of
     AS.DArg lit -> xmlLiteral lit
-    AS.DVar iri -> mwNameIRI dataVariableK iri
+    AS.DVar iri -> mwNameIRI variableK iri
 
 xmlUnknownArg :: AS.UnkownArg -> Element
 xmlUnknownArg ua = case ua of

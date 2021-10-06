@@ -509,6 +509,61 @@ getAnnoAxiom pm b e =
         in AS.AnnotationAxiom $ AS.SubAnnotationPropertyOf as hd lst
     "AnnotationPropertyDomain" -> AS.AnnotationAxiom $ AS.AnnotationPropertyDomain as ap anIri
     "AnnotationPropertyRange" -> AS.AnnotationAxiom $ AS.AnnotationPropertyRange as ap anIri
+    _ -> getRuleAxiom pm b e
+
+getIArg :: GA.PrefixMap -> XMLBase -> Element -> AS.IndividualArg
+getIArg pm b e = case getName e of
+    "Variable" -> AS.IVar $ getIRI pm b e
+    "NamedIndividual" -> AS.IArg $ getIRI pm b e
+    _ ->  err $ "Unexpected element '" ++ getName e ++ "'."
+
+getDArg :: GA.PrefixMap -> XMLBase -> Element -> AS.DataArg
+getDArg pm b e = case getName e of
+    "Variable" -> AS.DVar $ getIRI pm b e
+    "Literal" -> AS.DArg $ getLiteral pm b e
+    _ ->  err $ "Unexpected element '" ++ getName e ++ "'."
+
+getAtom :: GA.PrefixMap -> XMLBase -> Element -> AS.Atom
+getAtom pm b e =  case getName e of
+    "ClassAtom" ->
+        let [clExpr, iarg] = elChildren e
+        in AS.ClassAtom (getClassExpression pm b clExpr) (getIArg pm b iarg)
+    "DataRangeAtom" ->
+        let [dr, darg] = elChildren e
+        in AS.DataRangeAtom (getDataRange pm b dr) (getDArg pm b darg)
+    "ObjectPropertyAtom" ->
+        let [obExpr, iarg1, iarg2] = elChildren e
+        in AS.ObjectPropertyAtom
+            (getObjProp pm b obExpr)
+            (getIArg pm b iarg1)
+            (getIArg pm b iarg2)
+    "DataPropertyAtom" ->
+        let [dpExp, iarg, darg] = elChildren e
+        in AS.DataPropertyAtom
+            (getIRI pm b dpExp)
+            (getIArg pm b iarg)
+            (getDArg pm b darg)
+    "BuiltInAtom" ->
+        let dargs = getDArg pm b <$> elChildren e
+        in AS.BuiltInAtom (getIRI pm b e) dargs
+    "SameIndividualAtom" ->
+        let [iarg1, iarg2] = getIArg pm b <$> elChildren e
+        in AS.SameIndividualAtom iarg1 iarg2
+    "DifferentIndividualsAtom" ->
+        let [iarg1, iarg2] = getIArg pm b <$> elChildren e
+        in AS.DifferentIndividualsAtom iarg1 iarg2
+    _ ->  err $ "Unexpected element '" ++ getName e ++ "'."
+    
+
+
+getRuleAxiom :: GA.PrefixMap -> XMLBase -> Element -> AS.Axiom
+getRuleAxiom pm b e = case getName e of
+    "DLSafeRule" ->
+        let as = getAllAnnos pm b e
+            atoms = elChildren . (`filterC` e)
+            bd = getAtom pm b <$> atoms "Body"
+            hd = getAtom pm b <$> atoms "Head"
+        in AS.Rule $ AS.DLSafeRule as bd hd
     s -> err $ "Unexpected element '" ++ s ++ "'."
 
 xmlErrorString :: Axiom -> Maybe String
