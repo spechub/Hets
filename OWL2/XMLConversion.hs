@@ -434,14 +434,8 @@ xmlAxioms axiom = case axiom of
             [makeElement dlSafeRuleK $ xmlAnnotations anns
                 ++ [makeElement "Body" $ map xmlAtom body
                     , makeElement "Head" $ map xmlAtom head]] 
-        AS.DGRule anns body head -> 
-            [makeElement dgRuleK $ xmlAnnotations anns
-                ++ [makeElement "DGBody" $ map xmlDGAtom body
-                    , makeElement "DGHead" $ map xmlDGAtom head]]
-
-    AS.DGAxiom anns dgName dgNodes dgEdges mainCls ->
-        [setIRI dgName . makeElement dgAxiomK $ xmlAnnotations anns
-            ++ [xmlDGNodes dgNodes, xmlDGEdges dgEdges, xmlMainClasses mainCls]]
+        AS.DGRule _ _ _ -> error "DG Rules are not supported in XML yet"
+    AS.DGAxiom _ _ _ _ _ -> error "DG Axioms are not supported in XML yet"
 
 xmlAtom :: AS.Atom -> Element
 xmlAtom atom = case atom of
@@ -473,12 +467,6 @@ xmlAtom atom = case atom of
 
     _ -> error "XML Converter: Uknown atom"
 
-xmlDGAtom :: AS.DGAtom -> Element
-xmlDGAtom atom = case atom of
-    AS.DGClassAtom ce ia -> makeElement dgClassAtomK
-        [xmlClassExpression ce, xmlIndividualArg ia]
-    AS.DGObjectPropertyAtom oe ia1 ia2 -> makeElement dgObjectPropertyAtomK
-        [xmlObjProp oe, xmlIndividualArg ia1, xmlIndividualArg ia2]
 
 xmlIndividualArg :: AS.IndividualArg -> Element
 xmlIndividualArg ia = case ia of
@@ -495,37 +483,6 @@ xmlUnknownArg ua = case ua of
     AS.IndividualArg ia -> xmlIndividualArg ia
     AS.DataArg da -> xmlDataArg da
     AS.Variable v -> mwNameIRI variableK v
-
-xmlDGNodes :: AS.DGNodes -> Element
-xmlDGNodes nodes = makeElement dgNodesK . map xmlDGNodeAssertion $ nodes
-
-xmlDGNodeAssertion :: AS.DGNodeAssertion -> Element  -- ?
-xmlDGNodeAssertion (AS.DGNodeAssertion clIri nodeIri) =
-    setContent [mwNameIRI "class" clIri]
-    $ (mwString dgNodeAssertionK) {
-        elAttribs = [
-            Attr {attrKey = makeQN "nodeIri"
-                , attrVal = showIRI $ AS.setReservedPrefix nodeIri
-            }
-        ]
-    }
--- prefered way for xmlDGNodeAssertion
--- <dgNodeAssertion nodeIri="..." >
---     <class iri="clIri"/>
--- </dgNodeAssertion>
-
-xmlDGEdges :: AS.DGEdges -> Element
-xmlDGEdges edges = makeElement dgEdgesK . map xmlDGEdgeAssertion $ edges
-
-xmlDGEdgeAssertion :: AS.DGEdgeAssertion -> Element
-xmlDGEdgeAssertion (AS.DGEdgeAssertion op iri1 iri2) =
-    makeElement dgEdgeAssertionK
-        [xmlObjProp (AS.ObjectProp op), mwNameIRI "DGNode" iri1,
-            mwNameIRI "DGNode" iri2]
-
-xmlMainClasses :: AS.MainClasses -> Element 
-xmlMainClasses cls = makeElement "MainClasses"
-    . map (xmlClassExpression . AS.Expression) $ cls
 
 mkElemeDecl :: Sign -> String -> (Sign -> Set.Set IRI) -> [Element]
 mkElemeDecl s k f = map (makeElementWith1 declarationK . mwNameIRI k)
