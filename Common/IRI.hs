@@ -1107,7 +1107,8 @@ expandIRI :: Map String IRI -> IRI -> IRI
 expandIRI pm iri
     | isAbbrev iri = fromMaybe iri $ do
         def <- Map.lookup (prefixName iri) pm
-        expanded <- mergeCurie iri def
+        let defS = iriToStringFull id (setAngles False def) ""
+        expanded <- parseIRI $ defS ++ iFragment iri
         return $ expanded
             { iFragment = iFragment iri
             , prefixName = prefixName iri
