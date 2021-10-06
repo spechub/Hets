@@ -30,7 +30,7 @@ import qualified Data.Map as Map
 
 -- | prints the IRI
 showIRI :: IRI -> String
-showIRI iri = showIRIFull iri {hasAngles = False}
+showIRI iri = (if isURN iri then showURN else showIRIFull) iri {hasAngles = False}
 
 nullQN :: Text.XML.Light.QName
 nullQN = QName "" Nothing Nothing
