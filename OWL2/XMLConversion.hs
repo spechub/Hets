@@ -451,13 +451,8 @@ xmlAtom atom = case atom of
     AS.DataPropertyAtom dp ia da -> makeElement dataPropertyAtomK
         [mwNameIRI dataPropertyK dp, xmlIndividualArg ia, xmlDataArg da]
 
-    AS.BuiltInAtom iri das -> makeElement builtInAtomK 
-        $ (mwNameIRI "IRI" iri) : map xmlDataArg das
-    -- prefered way - iri is an child element
-    -- <builtInAtomK>
-    --     <IRI iri="iri">
-    --     <DataArg>
-    --     <DataArg>
+    AS.BuiltInAtom iri das -> setIRI iri $ makeElement builtInAtomK 
+        $ map xmlDataArg das
 
     AS.SameIndividualAtom ia1 ia2 -> makeElement sameIndividualAtomK
         . map xmlIndividualArg $ [ia1, ia2]
