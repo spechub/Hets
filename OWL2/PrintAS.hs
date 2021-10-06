@@ -771,10 +771,9 @@ printAnnotationPropertyRange pds axAnns annProp iri =
 printDLSafeRule :: GA.PrefixMap -> AxiomAnnotations -> Body -> Head -> Doc
 printDLSafeRule pds anns body head = 
     keyword dlSafeRuleS
-    <> sParens (hsep . concat $
-        [docAnns, [docBody, docHead]])
+    <> sParens (hsep [docAnns, fsep [docBody, docHead]])
     where
-        docAnns = map (printAnnotation pds) anns
+        docAnns = fsep . map (printAnnotation pds) $ anns
         docHead = printDLSafeRuleHead pds head
         docBody = printDLSafeRuleBody pds body
 
@@ -856,10 +855,9 @@ printDataArg pds da = case da of
 printDGRule :: GA.PrefixMap -> AxiomAnnotations -> DGBody -> DGHead -> Doc
 printDGRule pds anns dgBody dgHead =
     keyword descriptionGraphRuleS
-    <> sParens (hsep . concat $
-        [docAnns, [docBody, docHead]])
+    <> sParens (hsep [docAnns, fsep [docBody, docHead]])
     where
-        docAnns = map (printAnnotation pds) anns
+        docAnns = fsep . map (printAnnotation pds) $ anns
         docHead = printDGHead pds dgHead
         docBody = printDGBody pds dgBody
 
@@ -889,10 +887,10 @@ printDGAxiom :: GA.PrefixMap -> AxiomAnnotations -> DGName -> DGNodes
     -> DGEdges -> MainClasses -> Doc
 printDGAxiom pds anns dgName dgNodes dgEdges mainClasses =
     keyword descriptionGraphS
-    <> sParens (fsep . concat
-        $ [docAnns, [docDGName, docDGNodes, docDGEdges, docMainClasses]])
+    <> sParens (fsep 
+        [docAnns, fsep [docDGName, docDGNodes, docDGEdges, docMainClasses]])
     where
-        docAnns = map (printAnnotation pds) anns
+        docAnns = fsep . map (printAnnotation pds) $ anns
         docDGName = printIRI pds dgName
         docDGNodes = printDGNodes pds dgNodes
         docDGEdges = printDGEdges pds dgEdges
