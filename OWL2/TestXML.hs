@@ -27,8 +27,9 @@ main = do
     let files = filter (not . isPrefixOf "--") args
     o <- mapM (\f -> do 
       str <- readFile f
-      -- putStrLn $ show $ (!! 0) . onlyElems $ parseXML str
-      let parsed1 = (xmlBasicSpec mempty) ((!! 0) . onlyElems $ parseXML str)
+      let rootElem = fromJust $ find (\e -> unqual "Ontology" == elName e)  $ onlyElems $ parseXML str
+      -- putStrLn $ show $ rootElem
+      let parsed1 = (xmlBasicSpec mempty) rootElem
       let printed = (xmlOntologyDoc emptySign parsed1)
       let parsed2 = xmlBasicSpec mempty printed
       let r = ontology parsed1 == ontology parsed2
@@ -37,7 +38,7 @@ main = do
         putStrLn $ "parsed1: " ++ show (toDocAsAS parsed1)
         putStrLn $ "printed: " ++ ppTopElement printed
         putStrLn $ "parsed2: " ++ show (toDocAsAS parsed2)
-        putStrLn ""
+      putStrLn ""
       return r) files
     putStrLn $ show (length $ filter id o) ++ "/" ++ show (length o)
     if (length $ filter not o) > 0 then fail "Failed!" else return ()
