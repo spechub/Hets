@@ -82,11 +82,13 @@ getIRI pm b e =
         anIri = attrVal a
     in expandIRI pm $ case qName $ attrKey a of
         "abbreviatedIRI" ->  case parseCurie anIri of
-                Just i -> i
-                Nothing -> error $ "could not get CURIE from " ++ show anIri
+            Just i -> i
+            Nothing -> error $ "could not get CURIE from " ++ show anIri
         "IRI" -> let parsed = getIRIWithResolvedBase b anIri in
             maybe (error $ "could not get IRI from " ++ show anIri) id parsed
-        "nodeID" -> (mkIRI anIri){isBlankNode = True}
+        "nodeID" -> case parseCurie anIri of
+            Just i -> i {isBlankNode = True}
+            Nothing -> error $ "could not get nodeID from " ++ show anIri
         "facet" -> let parsed = getIRIWithResolvedBase b anIri in
             maybe (error $ "could not get facet from " ++ show anIri) id parsed
         _ -> error $ "wrong qName:" ++ show (attrKey a)
