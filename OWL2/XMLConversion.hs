@@ -22,6 +22,7 @@ import OWL2.MS
 import OWL2.Sign
 import OWL2.XML
 import OWL2.XMLKeywords
+import OWL2.Keywords (DatatypeFacet(..))
 
 import Text.XML.Light
 
@@ -31,7 +32,7 @@ import qualified Data.Map as Map
 
 -- | prints the IRI
 showIRI :: IRI -> String
-showIRI iri = show iri {hasAngles = False}
+showIRI iri = showIRIFull iri {hasAngles = False}
 
 nullQN :: Text.XML.Light.QName
 nullQN = QName "" Nothing Nothing
@@ -64,12 +65,12 @@ setName s e = e {elName = nullQN {qName = s,
  and the attribute value to the actual content of the IRI -}
 setIRI :: IRI -> Element -> Element
 setIRI iri e =
-    let ty
-            | isAbbrev iri = "abbreviatedIRI"
-            | isBlankNode iri = nodeID
-            | otherwise = iriK
+    let (ty, fn)
+            | isAbbrev iri = ("abbreviatedIRI", showIRICompact)
+            | isBlankNode iri = (nodeID, showIRI)
+            | otherwise = (iriK, showIRI)
     in e {elAttribs = [Attr {attrKey = makeQN ty,
-                             attrVal = showIRI $ AS.setReservedPrefix iri}]}
+                             attrVal = fn $ AS.setReservedPrefix iri}]}
 
 mwIRI :: IRI -> Element
 mwIRI iri = setIRI iri nullElem
@@ -123,13 +124,12 @@ setInt i e = e {elAttribs = [Attr {attrKey = makeQN "cardinality",
 
 -- | the reverse of @properFacet@ in "OWL2.XML"
 correctFacet :: AS.ConstrainingFacet -> AS.ConstrainingFacet
-correctFacet c = let d = AS.getPredefName c in setPrefix "http" $ mkIRI $
-    "//www.w3.org/2001/XMLSchema#" ++ case d of
-        ">" -> "maxExclusive"
-        "<" -> "minExclusive"
-        ">=" -> "maxInclusive"
-        "<=" -> "minInclusive"
-        _ -> d
+correctFacet c = case AS.getPredefName c of
+    ">" -> AS.facetToIRINoSign MAXEXCLUSIVE
+    "<" -> AS.facetToIRINoSign MINEXCLUSIVE
+    ">=" -> AS.facetToIRINoSign MAXINCLUSIVE
+    "<=" -> AS.facetToIRINoSign MININCLUSIVE
+    _ -> c
 
 -- | sets either a literal datatype or a facet
 setDt :: Bool -> IRI -> Element -> Element
