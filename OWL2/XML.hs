@@ -79,11 +79,13 @@ getIRIWithType pm b typ iriStr =
     let parsed = getIRIWithResolvedBase b iriStr 
         e = error $ "could not get " ++ typ ++ " from " ++ show iriStr
         full = maybe e id parsed
-    
-    in expandIRI pm $ case typ of
-        "abbreviatedIRI" ->  case parseCurie iriStr of
+        curie = case parseCurie iriStr of
             Just i -> i
             Nothing -> error $ "could not get CURIE from " ++ show iriStr
+    
+    in expandIRI pm $ case typ of
+        "abbreviatedIRI" ->  curie
+        "AbbreviatedIRI" -> curie
         "nodeID" -> case parseCurie iriStr of
             Just i -> i {isBlankNode = True}
             Nothing -> error $ "could not get nodeID from " ++ show iriStr
