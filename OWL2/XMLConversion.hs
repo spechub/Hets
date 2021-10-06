@@ -507,11 +507,19 @@ xmlPrefixes :: GA.PrefixMap -> [Element]
 xmlPrefixes pm = let allpm = Map.union pm $ AS.predefPrefixesGA in
     map (setName prefixK . set1Map) $ Map.toList allpm
 
-setOntIRI :: AS.OntologyIRI -> Element -> Element
-setOntIRI iri e =
-    if elem iri [nullIRI, dummyIRI] then e
-     else e {elAttribs = Attr {attrKey = makeQN "ontologyIRI",
-        attrVal = showIRI iri} : elAttribs e}
+setOntIRI :: Maybe AS.OntologyIRI -> Element -> Element
+setOntIRI mIri e = case mIri of
+    Nothing -> e
+    Just iri -> e { elAttribs = Attr {
+        attrKey = makeQN "ontologyIRI"
+      , attrVal = showIRI iri } : elAttribs e }
+
+setOntVersionIRI :: Maybe AS.OntologyIRI -> Element -> Element
+setOntVersionIRI mIri e = case mIri of
+    Nothing -> e
+    Just iri -> e { elAttribs = Attr {
+        attrKey = makeQN "versionIRI"
+      , attrVal = showIRI iri } : elAttribs e }
 
 setBase :: String -> Element -> Element
 setBase s e = e {elAttribs = Attr {attrKey = nullQN {qName = "base",
@@ -527,7 +535,8 @@ xmlOntologyDoc s od =
         pd = AS.prefixDeclaration od
         emptyPref = showIRI $ fromMaybe dummyIRI $ Map.lookup "" pd
     in setBase emptyPref $ setXMLNS
-        $ setOntIRI (fromMaybe dummyIRI $ AS.mOntologyIRI ont)
+        $ setOntIRI (AS.mOntologyIRI ont)
+        $ setOntVersionIRI (AS.mOntologyVersion ont)
         $ makeElement "Ontology" $ xmlPrefixes pd
             ++ map xmlImport (AS.importsDocuments ont)
             ++ concatMap xmlAxioms (AS.axioms ont) -- change xmlFrames 
