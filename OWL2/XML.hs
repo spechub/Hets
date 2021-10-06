@@ -75,17 +75,21 @@ filterCL l e = fromMaybe (err "child not found")
     $ filterChildName (isSmthList l) e
 
 getIRIWithType :: GA.PrefixMap -> XMLBase -> String -> String -> IRI
-getIRIWithType pm b typ iriStr = expandIRI pm $ case typ of
+getIRIWithType pm b typ iriStr =
+    let parsed = getIRIWithResolvedBase b iriStr 
+        e = error $ "could not get " ++ typ ++ " from " ++ show iriStr
+        full = maybe e id parsed
+    
+    in expandIRI pm $ case typ of
         "abbreviatedIRI" ->  case parseCurie iriStr of
             Just i -> i
             Nothing -> error $ "could not get CURIE from " ++ show iriStr
-        "IRI" -> let parsed = getIRIWithResolvedBase b iriStr in
-            maybe (error $ "could not get IRI from " ++ show iriStr) id parsed
         "nodeID" -> case parseCurie iriStr of
             Just i -> i {isBlankNode = True}
             Nothing -> error $ "could not get nodeID from " ++ show iriStr
-        "facet" -> let parsed = getIRIWithResolvedBase b iriStr in
-            maybe (error $ "could not get facet from " ++ show iriStr) id parsed
+        "IRI" -> full
+        "facet" -> full
+        "Import" -> full
         _ -> error $ "wrong qName:" ++ show typ
 
 -- | parses an IRI
