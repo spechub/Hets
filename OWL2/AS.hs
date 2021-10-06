@@ -62,6 +62,21 @@ predefPrefixes = Map.fromList
       , ("rdfs", "http://www.w3.org/2000/01/rdf-schema#")
       , ("xsd", "http://www.w3.org/2001/XMLSchema#") ]
 
+plainDatatypeIRI :: IRI
+plainDatatypeIRI = IRI {
+          iriScheme = "http:"
+        , iriAuthority = Just $ IRIAuth "" "www.w3.org" ""
+        , iriPath = stringToId "/1999/02/22-rdf-syntax-ns"
+        , iriQuery = ""
+        , iriFragment = "#PlainLiteral"
+        , prefixName = "rdf"
+        , isAbbrev = True
+        , isBlankNode = False
+        , hasAngles = False
+        , iriPos = nullRange
+        , iFragment = "PlainLiteral"
+    }
+
 type LexicalForm = String
 type LanguageTag = String
 type ImportIRI = IRI
@@ -274,17 +289,12 @@ stripReservedPrefix = idToIRI . uriToId
      or <http://www.w3.org/2002/07/owl#real> returns "real") -}
 uriToId :: IRI -> Id
 uriToId i =
-    if (prefixName i `elem` ["", "xsd", "rdf", "rdfs", "owl"])
-       || ( null (iriScheme i)
-           && null (iriQuery i)
-           && null (iriFragment i)
-           && isNothing (iriAuthority i))
-        then iriPath i
-        else stringToId $ case mapMaybe (`stripPrefix` showIRICompact i)
-                    $ Map.elems predefPrefixes of
-                [s] -> s
-                _ -> showIRIFull i
-
+    if (isAbbrev i || prefixName i `elem` ["", "xsd", "rdf", "rdfs", "owl"])
+    then stringToId $ iFragment i
+    else stringToId $ case mapMaybe (`stripPrefix` showIRICompact i)
+                $ Map.elems predefPrefixes of
+            [s] -> s
+            _ -> showIRIFull i
 getPredefName :: IRI -> String
 getPredefName = show . uriToId
 
@@ -326,10 +336,14 @@ xsdStringsMap :: PreDefMaps
 xsdStringsMap = makeXsdMap xsdStrings
 
 facetToIRI :: DatatypeFacet -> ConstrainingFacet
-facetToIRI = setPrefix "xsd" . mkIRI . showFacet
+facetToIRI f = expandIRI predefPrefixesGA $ nullIRI {
+    prefixName = "xsd"
+  , iFragment = showFacet f
+  , isAbbrev = True
+}
 
 facetToIRINoSign :: DatatypeFacet -> ConstrainingFacet
-facetToIRINoSign f = nullIRI {
+facetToIRINoSign f = expandIRI predefPrefixesGA $ nullIRI {
     prefixName = "xsd"
   , iFragment = showFacetAsText f
   , isAbbrev = True

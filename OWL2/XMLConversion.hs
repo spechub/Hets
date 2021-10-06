@@ -158,9 +158,7 @@ xmlLiteral l = case l of
     let part = setName literalK $ mwText lf
     in case tu of
         AS.Typed dt -> setDt True dt part
-        AS.Untyped lang -> setLangTag lang $ setDt True (splitIRI $ mkIRI
-            "http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral")
-            part
+        AS.Untyped lang -> setLangTag lang $ setDt True AS.plainDatatypeIRI part
   AS.NumberLit f -> setDt True (nullIRI {iriScheme = "http:",
         iriPath = stringToId $ "//www.w3.org/2001/XMLSchema#" ++ AS.numberName f})
         $ setName literalK $ mwText $ show f
