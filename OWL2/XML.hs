@@ -18,13 +18,12 @@ module OWL2.XML
 
 import Common.Lexer (value)
 import Common.IRI
-import Common.Id (stringToId, prependString, tokStr, getTokens)
+import Common.Id (stringToId, tokStr, getTokens)
 import qualified Common.GlobalAnnotations as GA (PrefixMap)
 
 
 import qualified OWL2.AS as AS
 import OWL2.Keywords
-import OWL2.MS
 import OWL2.XMLKeywords
 
 import Text.XML.Light
@@ -181,8 +180,8 @@ correctLit l = case l of
         in AS.Literal nlf (AS.Typed dt)
     _ -> l
 
-getLiteral :: GA.PrefixMap -> XMLBase -> Element -> AS.Literal
-getLiteral pm b e = case getName e of
+getLiteral :: GA.PrefixMap -> Element -> AS.Literal
+getLiteral pm e = case getName e of
     "Literal" ->
       let lf = strContent e
           mdt = findAttr (unqual "datatypeIRI") e
@@ -202,7 +201,7 @@ getLiteral pm b e = case getName e of
 
 getValue :: GA.PrefixMap -> XMLBase -> Element -> AS.AnnotationValue
 getValue pm b e = case getName e of
-    "Literal" -> AS.AnnValLit $ getLiteral pm b e
+    "Literal" -> AS.AnnValLit $ getLiteral pm e
     "AnonymousIndividual" -> AS.AnnValue $ getIRI pm b e
     _ -> AS.AnnValue $ contentIRI pm b e
 
@@ -251,7 +250,7 @@ getFacetValuePair :: GA.PrefixMap -> XMLBase -> Element -> (AS.ConstrainingFacet
 getFacetValuePair pm b e = case getName e of
     "FacetRestriction" ->
        let [ch] = elChildren e
-       in (properFacet $ getIRI pm b e, getLiteral pm b ch)
+       in (properFacet $ getIRI pm b e, getLiteral pm ch)
     _ -> err "not facet"
 
 getDataRange :: GA.PrefixMap -> XMLBase -> Element -> AS.DataRange
@@ -264,7 +263,7 @@ getDataRange pm b e =
             fvp = map (getFacetValuePair pm b) $ filterCh "FacetRestriction" e
         in AS.DataType dt fvp
     "DataComplementOf" -> AS.DataComplementOf $ getDataRange pm b ch1
-    "DataOneOf" -> AS.DataOneOf $ map (getLiteral pm b) $ filterCh "Literal" e
+    "DataOneOf" -> AS.DataOneOf $ map (getLiteral pm) $ filterCh "Literal" e
     "DataIntersectionOf" -> AS.DataJunction AS.IntersectionOf
             $ map (getDataRange pm b) ch
     "DataUnionOf" -> AS.DataJunction AS.UnionOf $ map (getDataRange pm b) ch
@@ -292,7 +291,7 @@ getClassExpression pm b e =
             $ getDataRange pm b rch1
     "DataAllValuesFrom" -> AS.DataValuesFrom AS.AllValuesFrom ([getIRI pm b ch1])
             $ getDataRange pm b rch1
-    "DataHasValue" -> AS.DataHasValue (getIRI pm b ch1) $ getLiteral pm b rch1
+    "DataHasValue" -> AS.DataHasValue (getIRI pm b ch1) $ getLiteral pm rch1
     _ -> getObjCard pm b e ch rch1
 
 getObjCard :: GA.PrefixMap -> XMLBase -> Element -> [Element] -> Element -> AS.ClassExpression
@@ -440,7 +439,7 @@ getDataAssertion pm b e =
    let as = getAllAnnos pm b e
        dp = getIRI pm b $ filterCL dataPropList e
        ind = getIRI pm b $ filterCL individualList e
-       lit = getLiteral pm b $ filterC "Literal" e
+       lit = getLiteral pm $ filterC "Literal" e
    in case getName e of
     "DataPropertyAssertion" -> AS.Assertion $ AS.DataPropertyAssertion as dp ind lit
     "NegativeDataPropertyAssertion" -> 
@@ -509,7 +508,7 @@ getIArg pm b e = case getName e of
 getDArg :: GA.PrefixMap -> XMLBase -> Element -> AS.DataArg
 getDArg pm b e = case getName e of
     "Variable" -> AS.DVar $ getIRI pm b e
-    "Literal" -> AS.DArg $ getLiteral pm b e
+    "Literal" -> AS.DArg $ getLiteral pm e
     _ ->  err $ "Unexpected element '" ++ getName e ++ "'."
 
 getAtom :: GA.PrefixMap -> XMLBase -> Element -> AS.Atom
@@ -554,12 +553,6 @@ getRuleAxiom pm b e = case getName e of
             hd = getAtom pm b <$> atoms "Head"
         in AS.Rule $ AS.DLSafeRule as bd hd
     s -> err $ "Unexpected element '" ++ s ++ "'."
-
-xmlErrorString :: Axiom -> Maybe String
-xmlErrorString a = case a of
-   PlainAxiom (Misc []) (AnnFrameBit [] (AnnotationFrameBit (XmlError e)))
-     -> Just e
-   _ -> Nothing
 
 
 getOnlyAxioms :: GA.PrefixMap -> XMLBase -> Element -> [AS.Axiom]
