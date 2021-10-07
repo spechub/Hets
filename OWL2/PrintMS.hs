@@ -1893,16 +1893,15 @@ printAtom pds (DifferentIndividualsAtom iarg1 iarg2) =
         $ [iarg1, iarg2])
 
 printAtom pds (UnknownUnaryAtom iri uarg) =
-    text "UnknownUnaryAtom"
-    <> parens (hsep . punctuate comma $ [printIRI pds iri, printUnknownArg pds uarg])
+    printIRI pds iri
+    <> parens (printUnknownArg pds uarg)
 
 printAtom pds (UnknownBinaryAtom iri uarg1 uarg2) =
-    text "UnknownBinaryAtom"
-    <> parens (hsep . punctuate comma
-        $ [printIRI pds iri, printUnknownArg pds uarg1
-            , printUnknownArg pds uarg2])
+    printIRI pds iri
+    <> parens (hsep . punctuate comma . map (printUnknownArg pds)
+        $ [uarg1, uarg2])
 
-printUnknownArg :: GA.PrefixMap -> UnkownArg-> Doc
+printUnknownArg :: GA.PrefixMap -> UnkownArg -> Doc
 printUnknownArg pds uarg = case uarg of
     IndividualArg iarg -> printIndividualArg pds iarg
     DataArg darg -> printDataArg pds darg
