@@ -1901,7 +1901,7 @@ printAtom pds (UnknownBinaryAtom iri uarg1 uarg2) =
     <> parens (hsep . punctuate comma . map (printUnknownArg pds)
         $ [uarg1, uarg2])
 
-printUnknownArg :: GA.PrefixMap -> UnkownArg -> Doc
+printUnknownArg :: GA.PrefixMap -> UnknownArg -> Doc
 printUnknownArg pds uarg = case uarg of
     IndividualArg iarg -> printIndividualArg pds iarg
     DataArg darg -> printDataArg pds darg
