@@ -565,10 +565,10 @@ checkAxiom s a = case a of
     (AS.Rule rule) -> case rule of 
         AS.DLSafeRule anns body hea -> do
             checkAnnos s anns
-            mapM (checkDLAtom s Nothing) body
+            nBody <- mapM (checkDLAtom s Nothing) body
             let vars = extractVariables body
             nHead <- mapM (checkDLAtom s (Just vars)) hea
-            return [AS.Rule $ AS.DLSafeRule anns body nHead]
+            return [AS.Rule $ AS.DLSafeRule anns nBody nHead]
         AS.DGRule anns body hea -> do
             checkAnnos s anns
             mapM (checkDGAtom s Nothing) body
