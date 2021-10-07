@@ -1867,6 +1867,9 @@ printAtom :: GA.PrefixMap -> Atom -> Doc
 printAtom pds (ClassAtom ce iarg) =
     printClassExpression pds ce <> parens (printIndividualArg pds iarg)
 
+printAtom pds (DataRangeAtom dr darg) =
+    printDataRange pds dr <> parens (printDataArg pdf darg)
+
 printAtom pds (ObjectPropertyAtom oe iarg1 iarg2) =
     printObjectPropertyExpression pds oe
     <> parens (hcat . punctuate comma . map (printIndividualArg pds) $ [iarg1, iarg2])
@@ -1877,7 +1880,33 @@ printAtom pds (DataPropertyAtom dp iarg darg) =
 
 printAtom pds (BuiltInAtom iri dargs) =  
     printIRI pds iri
-    <> parens (hcat . punctuate comma . map (printDataArg pds) $ dargs)
+    <> parens (hsep . punctuate comma . map (printDataArg pds) $ dargs)
+
+printAtom pds (SameIndividualAtom iarg1 iarg2) =
+    text "SameIndividual"
+    <> parens (hsep . punctuate comma . map (printIndividualArg pds)
+        $ [iarg1, iarg2])
+
+printAtom pds (DifferentIndividuals iarg1 iarg2) =
+    text "DifferentIndividuals"
+    <> parens (hsep . punctuate comma . map (printIndividualArg pds)
+        $ [iarg1, iarg2])
+
+printAtom pds (UknownUnaryAtom iri uarg) =
+    text "UnknownUnaryAtom"
+    <> parens (hsep . punctuate comma $ [printIRI pds iri, printUnknownArg pds uarg])
+
+printAtom pds (UnknownBinaryAtom iri uarg1 uarg2) =
+    text "UnknownBinaryAtom"
+    <> parens (hsep . punctuate comma
+        $ [printIRI pds iri, printUnknownArg pds uarg1
+            , printUnknownArg pds uarg2])
+
+printUnknownArg :: GA.PrefixMap -> UnknownArg -> Doc
+printUnknownArg pds uarg = case uarg of
+    IndividualArg iarg -> printIndividualArg pds iarg
+    DataArg darg -> printDataArg pds darg
+    Variable var -> text "?" <> printIRI pds v
 
 printIndividualArg :: GA.PrefixMap -> IndividualArg -> Doc
 printIndividualArg pds iarg = case iarg of
