@@ -388,7 +388,7 @@ instance Function IndividualArg where
     function t mp (IArg i) = IArg (function t mp i)
     function t mp (IVar v) = IVar (function t mp v)
 
-instance Function UnkownArg   where
+instance Function UnknownArg   where
     function t mp (IndividualArg i) = IndividualArg (function t mp i)
     function t mp (DataArg d) = DataArg (function t mp d)
     function t mp (Variable v) = Variable (function t mp v)

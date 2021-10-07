@@ -962,8 +962,8 @@ type IndividualVar = Variable
 type DataVar = Variable
 type Variable = IRI
 
--- | See `UnkownUnaryAtom`
-data UnkownArg = IndividualArg IndividualArg | DataArg DataArg | Variable Variable
+-- | See `UnknownUnaryAtom`
+data UnknownArg = IndividualArg IndividualArg | DataArg DataArg | Variable Variable
   deriving (Show, Eq, Ord, Data)
 
 data Atom = ClassAtom ClassExpression IndividualArg
@@ -979,8 +979,8 @@ data Atom = ClassAtom ClassExpression IndividualArg
   Ambiguous predicates used in SWRL Rules which type cannot be inferred during parsing
   This predicates get resolved and replaced with a specific one in static analysis.
 -}
-  | UnknownUnaryAtom IRI UnkownArg
-  | UnknownBinaryAtom IRI UnkownArg UnkownArg
+  | UnknownUnaryAtom IRI UnknownArg
+  | UnknownBinaryAtom IRI UnknownArg UnknownArg
   deriving (Show, Eq, Ord, Data)
   
 data DGAtom = DGClassAtom ClassExpression IndividualArg

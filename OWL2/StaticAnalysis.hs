@@ -246,14 +246,14 @@ checkIndividualArg s mVars a = case a of
     AS.IArg i -> checkEntity s (AS.mkEntity AS.NamedIndividual i) >> return ()
     AS.IVar v -> case mVars of
         Nothing -> return ()
-        Just vars -> unless (v `elem` vars) $ mkError "unkown variable" v
+        Just vars -> unless (v `elem` vars) $ mkError "Unknown variable" v
 
 checkDataArg :: Sign -> Maybe [AS.Variable] -> AS.DataArg -> Result ()
 checkDataArg s mVars a = case a of
     AS.DArg l -> checkLiteral s l >> return ()
     AS.DVar v -> case mVars of
         Nothing -> return ()
-        Just vars -> unless (v `elem` vars) $ mkError "unkown variable" v
+        Just vars -> unless (v `elem` vars) $ mkError "Unknown variable" v
 
 checkDGAtom :: Sign -> Maybe [AS.Variable] -> AS.DGAtom -> Result AS.DGAtom
 checkDGAtom s mVars atom = case atom of
@@ -303,28 +303,28 @@ checkDLAtom s mVars atom = case atom of
         AS.Variable v -> if Set.member i (concepts s)
             then return $ AS.ClassAtom (AS.Expression v) (AS.IVar v)
             else return $ AS.BuiltInAtom i [AS.DVar v]
-        _ -> mkError "Unkown unary atom" i
+        _ -> mkError "Unknown unary atom" i
     AS.UnknownBinaryAtom i a1 a2 -> case a1 of
         AS.Variable v ->
             if Set.member i (objectProperties s) then case a2 of
                 AS.Variable v2 -> return $ AS.ObjectPropertyAtom (AS.ObjectProp i) (AS.IVar v) (AS.IVar v2)
                 AS.IndividualArg a -> return $ AS.ObjectPropertyAtom (AS.ObjectProp i) (AS.IVar v) a
-                _ -> mkError "Unkown binary atom" i
+                _ -> mkError "Unknown binary atom" i
             else if Set.member i (dataProperties s) then case a2 of
                 AS.Variable v2 -> return $ AS.DataPropertyAtom i (AS.IVar v) (AS.DVar v2)
                 AS.DataArg a -> return $ AS.DataPropertyAtom i (AS.IVar v) a
-                _ -> mkError "Unkown binary atom" i
+                _ -> mkError "Unknown binary atom" i
             else case a2 of
                 AS.Variable v' -> return $ AS.BuiltInAtom i [AS.DVar v']
                 AS.DataArg a -> return $ AS.BuiltInAtom i [a]
-                _ -> mkError "Unkown binary atom" i 
+                _ -> mkError "Unknown binary atom" i 
         AS.IndividualArg a@(AS.IArg _) -> case a2 of
             AS.Variable v ->
                 if Set.member i (objectProperties s) then return $ AS.ObjectPropertyAtom (AS.ObjectProp i) a (AS.IVar v)
                 else if Set.member i (dataProperties s) then return $ AS.DataPropertyAtom i a (AS.DVar v)
-                else mkError "Unkown binary atom" i
-            _ -> mkError "Unkown binary atom" i
-        _ -> mkError "Unkown binary atom" i
+                else mkError "Unknown binary atom" i
+            _ -> mkError "Unknown binary atom" i
+        _ -> mkError "Unknown binary atom" i
 
 
 checkDGEdgeAssertion :: Sign -> AS.DGEdgeAssertion -> Result ()
