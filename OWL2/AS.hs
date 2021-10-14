@@ -49,16 +49,35 @@ changePrefixMapTypeToString = fmap show
 changePrefixMapTypeToGA :: PrefixMap -> GA.PrefixMap
 changePrefixMapTypeToGA = fmap (\s -> case parseIRICompoundCurie s of
     Just i -> i
-    Nothing -> error $ "Invalid IRI while OWL2.AS.changePrefixMapTypeToGA: "  ++ s
+    Nothing -> case parseIRI s of 
+      Just i -> i
+      Nothing -> error $ "Invalid IRI while OWL2.AS.changePrefixMapTypeToGA: "  ++ s
   )
+
+predefPrefixesGA :: GA.PrefixMap
+predefPrefixesGA = changePrefixMapTypeToGA $ Map.map (\v -> "<" ++ v ++ ">") predefPrefixes
 
 predefPrefixes :: PrefixMap
 predefPrefixes = Map.fromList
       [ ("owl", "http://www.w3.org/2002/07/owl#")
       , ("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
       , ("rdfs", "http://www.w3.org/2000/01/rdf-schema#")
-      , ("xsd", "http://www.w3.org/2001/XMLSchema#") 
-      , ("", showIRICompact dummyIRI ++ "#") ]
+      , ("xsd", "http://www.w3.org/2001/XMLSchema#") ]
+
+plainDatatypeIRI :: IRI
+plainDatatypeIRI = IRI {
+          iriScheme = "http:"
+        , iriAuthority = Just $ IRIAuth "" "www.w3.org" ""
+        , iriPath = stringToId "/1999/02/22-rdf-syntax-ns"
+        , iriQuery = ""
+        , iriFragment = "#PlainLiteral"
+        , prefixName = "rdf"
+        , isAbbrev = True
+        , isBlankNode = False
+        , hasAngles = False
+        , iriPos = nullRange
+        , iFragment = "PlainLiteral"
+    }
 
 type LexicalForm = String
 type LanguageTag = String
@@ -220,23 +239,26 @@ isDatatypeKeyAux :: IRI -> [(String, String)]
 isDatatypeKeyAux i = mapMaybe (`checkPredefAux` i)
   [ xsdMap, owlNumbersMap, rdfMap, rdfsMap ]
 
--- (types, prefixname, prefix iri without "http://www.w3.org/")
+-- (types, prefixname, prefix iri)
 type PreDefMaps = ([String], String, String)
 
 preDefMaps :: [String] -> String -> PreDefMaps
 preDefMaps sl pref = let
   Just puri = Map.lookup pref predefPrefixes
-  Just sp = stripPrefix "http://www.w3.org/" puri
- in (sl, pref, sp)
+ in (sl, pref, puri)
 
 -- returns Maybe (prefix, keyword)
 -- e.g. Just ("xsd", "string")
 checkPredefAux :: PreDefMaps -> IRI -> Maybe (String, String)
 checkPredefAux (sl, pref, exPref) u =
-  if isAbbrev u && prefixName u == pref && iFragment u `elem` sl then Just (pref, iFragment u)
-  else case stripPrefix exPref (show $ iriPath u) of
-    Just lp | lp `elem` sl -> Just (pref, lp)
-    _ -> Nothing
+  let t = stripPrefix exPref (show $ u) in
+    if isAbbrev u then
+      if prefixName u == pref && iFragment u `elem` sl then
+        Just (pref, iFragment u)
+      else Nothing
+    else case t of
+      Just lp | lp `elem` sl -> Just (pref, lp)
+      _ -> Nothing
 
 
 checkPredef :: PreDefMaps -> IRI -> Bool
@@ -248,7 +270,7 @@ makeOWLPredefMaps sl = preDefMaps sl "owl"
 -- | sets the correct prefix for the predefined datatypes
 setDatatypePrefix :: IRI -> IRI
 setDatatypePrefix i = case isDatatypeKeyAux i of
-  (p, l) : _ -> setPrefix p $ mkIRI l
+  (p, l) : _ -> i {prefixName = p, iFragment = l}
   _ -> error $ showIRICompact i ++ " is not a predefined datatype"
 
 -- | checks if the IRI is part of the built-in ones and puts the correct prefix
@@ -269,17 +291,12 @@ stripReservedPrefix = idToIRI . uriToId
      or <http://www.w3.org/2002/07/owl#real> returns "real") -}
 uriToId :: IRI -> Id
 uriToId i =
-    if (prefixName i `elem` ["", "xsd", "rdf", "rdfs", "owl"])
-       || ( null (iriScheme i)
-           && null (iriQuery i)
-           && null (iriFragment i)
-           && isNothing (iriAuthority i))
-        then iriPath i
-        else stringToId $ case mapMaybe (`stripPrefix` showIRICompact i)
-                    $ Map.elems predefPrefixes of
-                [s] -> s
-                _ -> showIRIFull i
-
+    if (isAbbrev i || prefixName i `elem` ["", "xsd", "rdf", "rdfs", "owl"])
+    then stringToId $ iFragment i
+    else stringToId $ case mapMaybe (`stripPrefix` showIRICompact i)
+                $ Map.elems predefPrefixes of
+            [s] -> s
+            _ -> showIRIFull i
 getPredefName :: IRI -> String
 getPredefName = show . uriToId
 
@@ -321,10 +338,14 @@ xsdStringsMap :: PreDefMaps
 xsdStringsMap = makeXsdMap xsdStrings
 
 facetToIRI :: DatatypeFacet -> ConstrainingFacet
-facetToIRI = setPrefix "xsd" . mkIRI . showFacet
+facetToIRI f = expandIRI predefPrefixesGA $ nullIRI {
+    prefixName = "xsd"
+  , iFragment = showFacet f
+  , isAbbrev = True
+}
 
 facetToIRINoSign :: DatatypeFacet -> ConstrainingFacet
-facetToIRINoSign f = nullIRI {
+facetToIRINoSign f = expandIRI predefPrefixesGA $ nullIRI {
     prefixName = "xsd"
   , iFragment = showFacetAsText f
   , isAbbrev = True
@@ -1010,12 +1031,18 @@ emptyOntology = Ontology Nothing Nothing [] [] []
 emptyOntologyDoc :: OntologyDocument
 emptyOntologyDoc = OntologyDocument (OntologyMetadata AS) mempty emptyOntology
 
-data OntologySyntaxType = MS | AS
+data OntologySyntaxType = MS | AS | XML
   deriving  (Show, Eq, Ord, Data, Typeable)
+
 data OntologyMetadata = OntologyMetadata {
   syntaxType :: OntologySyntaxType
   -- might be extended 
 } deriving  (Show, Eq, Ord, Data, Typeable)
+
+changeSyntax :: OntologySyntaxType -> OntologyDocument -> OntologyDocument
+changeSyntax t o@(OntologyDocument m _ _) = o {
+  ontologyMetadata = m {syntaxType = t}
+}
 
 data OntologyDocument = OntologyDocument {
     ontologyMetadata :: OntologyMetadata 
@@ -1023,6 +1050,7 @@ data OntologyDocument = OntologyDocument {
   , ontology :: Ontology
 }
   deriving  (Show, Eq, Ord, Data, Typeable)
+
 data PrefixDeclaration = PrefixDeclaration PrefixName IRI
   deriving  (Show, Eq, Ord, Data, Typeable)
 

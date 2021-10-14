@@ -914,19 +914,6 @@ tLiteral :: Literal -> MnchstrSntx -> MnchstrSntx
 tLiteral (Literal _ t) ms = case t of
     Typed dt -> tDatatype dt ms
     Untyped _ ->  tDatatype plainDatatypeIRI ms
-    where plainDatatypeIRI = IRI {
-          iriScheme = "http:"
-        , iriAuthority = Just $ IRIAuth "" "www.w3.org" ""
-        , iriPath = stringToId "/1999/02/22-rdf-syntax-ns"
-        , iriQuery = ""
-        , iriFragment = "#PlainLiteral"
-        , prefixName = "rdf"
-        , isAbbrev = True
-        , isBlankNode = False
-        , hasAngles = False
-        , iriPos = nullRange
-        , iFragment = "PlainLiteral"
-    }
 
 tLiteral (NumberLit f) ms = ms
 
