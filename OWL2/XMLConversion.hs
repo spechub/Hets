@@ -473,7 +473,7 @@ xmlDataArg da = case da of
     DArg lit -> xmlLiteral lit
     DVar iri -> mwNameIRI variableK iri
 
-xmlUnknownArg :: UnkownArg -> Element
+xmlUnknownArg :: UnknownArg -> Element
 xmlUnknownArg ua = case ua of
     IndividualArg ia -> xmlIndividualArg ia
     DataArg da -> xmlDataArg da

@@ -30,6 +30,7 @@ import Control.Monad
 import Control.Monad.Trans
 
 import OWL2.XML
+import OWL2.Rename (unifyDocs)
 
 import System.Directory
 import System.Exit

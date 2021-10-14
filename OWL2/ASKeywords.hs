@@ -188,3 +188,65 @@ dataPropertyAssertionS = "DataPropertyAssertion"
 negativeDataPropertyAssertionS :: String
 negativeDataPropertyAssertionS = "NegativeDataPropertyAssertion"
 
+dlSafeRuleS :: String
+dlSafeRuleS = "DLSafeRule"
+
+dgRuleS :: String
+dgRuleS = "DGRule"
+
+headS :: String
+headS = "Head"
+
+bodyS :: String
+bodyS = "Body"
+
+dgHeadS :: String
+dgHeadS = "DGHead"
+
+dgBodyS :: String
+dgBodyS = "DGBody"
+
+classAtomS :: String
+classAtomS = "ClassAtom"
+
+dataRangeAtomS :: String
+dataRangeAtomS = "DataRangeAtom"
+
+objectPropertyAtomS :: String
+objectPropertyAtomS = "ObjectPropertyAtom"
+
+dataPropertyAtomS :: String
+dataPropertyAtomS = "DataPropertyAtom"
+
+builtInAtomS :: String
+builtInAtomS = "BuiltInAtom"
+
+sameIndividualAtomS :: String
+sameIndividualAtomS = "SameIndividualAtom"
+
+differentIndividualsAtomS :: String
+differentIndividualsAtomS = "DifferentIndividualsAtom"
+
+descriptionGraphRuleS :: String
+descriptionGraphRuleS = "DescriptionGraphRule"
+
+variableS :: String
+variableS = "Variable"
+
+descriptionGraphS :: String
+descriptionGraphS = "DescriptionGraph"
+
+nodesS :: String
+nodesS = "Nodes"
+
+edgesS :: String
+edgesS = "Edges"
+
+nodeAssertionS :: String
+nodeAssertionS = "NodeAssertion"
+
+edgeAssertionS :: String
+edgeAssertionS = "EdgeAssertion"
+
+mainClassesS :: String
+mainClassesS = "MainClasses"

@@ -21,18 +21,22 @@ data FrameIdValue =
       IriId IRI
     | ObjInvOfId IRI
     | MiscId
+    | RuleId
     deriving(Show, Eq, Ord)
 
-data FrameType = DatatypeFrame
+data FrameType =
+      DatatypeFrame
     | ClassFrame
     | ObjectPropertyFrame
     | DataPropertyFrame
     | AnnotationPropertyFrame
     | IndividualFrame
     | MiscFrame
+    | RuleFrame
     deriving(Show, Eq, Ord, Enum, Bounded)
 
-data FrameSectionType = AnnotationsSection
+data FrameSectionType =
+      AnnotationsSection
     | EquivalentToSection
     | SubClassOfSection
     | DisjointWithSection
@@ -56,8 +60,8 @@ data FrameSectionType = AnnotationsSection
     | DisjointObjectPropertiesSection
     | SameIndividualSection
     | DifferentIndividualsSection
+    | RuleSection
     deriving(Show, Eq, Ord)
-    
 
 type FrameId = (FrameType, FrameIdValue)
 type Frame = M.Map FrameSectionType [Axiom]
@@ -793,6 +797,15 @@ tAnnotationAxiom ax@(AnnotationPropertyRange anns iri1 iri2) ms =
         axioms = M.findWithDefault [] RangeSection m2
         newAxioms = AnnotationAxiom ax : axioms
 
+tRule :: Rule -> MnchstrSntx -> MnchstrSntx
+tRule ax@(DLSafeRule anns body head) ms =
+    let k = (RuleFrame, RuleId) 
+        m1 = tAnnotations anns . tAtoms body . tAtoms head $ ms
+        m2 = M.findWithDefault M.empty k m1
+        axioms = M.findWithDefault [] RuleSection m2
+        newAxioms = Rule ax : axioms
+    in M.insert k (M.insert RuleSection newAxioms m2) m1
+
 -- | transform Annotations
 tAnnotations :: [Annotation] -> MnchstrSntx -> MnchstrSntx
 tAnnotations = flip $ foldr tAnnotation
@@ -936,6 +949,41 @@ tIndividual :: Individual -> MnchstrSntx -> MnchstrSntx
 tIndividual iri ms =
     M.insert k (M.findWithDefault M.empty k ms) ms
     where k = (IndividualFrame, IriId iri)
+
+-- | transform Atoms
+tAtoms :: [Atom] -> MnchstrSntx -> MnchstrSntx
+tAtoms = flip $ foldr tAtom
+
+tAtom :: Atom -> MnchstrSntx -> MnchstrSntx
+tAtom (ClassAtom ce iarg) ms = tClassExpression ce . tIndividualArg iarg $ ms
+
+tAtom (DataRangeAtom dr darg) ms = tDataRange dr . tDataArg darg $ ms
+
+tAtom (ObjectPropertyAtom oe iarg1 iarg2) ms = tObjectPropertyExpression True oe
+    . tIndividualArg iarg1 . tIndividualArg iarg2 $ ms
+
+tAtom (DataPropertyAtom dp iarg darg) ms = tDataPropertyExpression dp
+    . tIndividualArg iarg . tDataArg darg $ ms
+
+tAtom (BuiltInAtom iri dargs) ms = foldr tDataArg ms dargs
+
+tAtom (SameIndividualAtom iarg1 iarg2) ms = tIndividualArg iarg1
+    . tIndividualArg iarg2 $ ms
+
+tAtom (DifferentIndividualsAtom iarg1 iarg2) ms = tIndividualArg iarg1
+    . tIndividualArg iarg2 $ ms
+
+-- | transform IndividualArg
+tIndividualArg :: IndividualArg -> MnchstrSntx -> MnchstrSntx
+tIndividualArg iarg ms = case iarg of
+    IArg iri -> tIndividual iri ms
+    IVar _ -> ms
+
+-- | transform DataArg
+tDataArg :: DataArg -> MnchstrSntx -> MnchstrSntx
+tDataArg darg ms = case darg of
+    DArg lit -> tLiteral lit ms
+    DVar _ -> ms
     
 ------------- main printing part ----------------  
 
@@ -970,7 +1018,7 @@ printOntology pds
 printMS :: GA.PrefixMap -> MnchstrSntx -> Doc
 printMS pds ms = 
     vsep [objectPropertyFrames, dataPropertyFrames, annotationPropertyFrames
-        , datatypeFrames, classFrames, individualFrames, miscFrame]
+        , datatypeFrames, classFrames, individualFrames, miscFrame, rules]
     where
         objectPropertyFrames = printOPFs pds 0 ms
         dataPropertyFrames = printDPFs pds 0 ms
@@ -979,6 +1027,7 @@ printMS pds ms =
         classFrames = printCFs pds 0 ms
         individualFrames = printIFs pds 0 ms
         miscFrame = printMF pds 0 ms
+        rules = printRules pds 0 ms
 
 -------------------- Print Frames --------------------
 
@@ -1785,6 +1834,75 @@ printAssertionAxiomMF pds n (DifferentIndividuals anns inds) =
     printAnnotations pds (n + 1) anns
     $+$
     tabs n <> (hsep . punctuate comma . map (printIRI pds) $ inds)
+
+-- | print Rules
+printRules :: GA.PrefixMap -> Int -> MnchstrSntx -> Doc
+printRules pds _ ms =
+    vcat . map (printRule pds . (\(Rule rule) -> rule))
+        . M.findWithDefault [] RuleSection
+        . M.findWithDefault M.empty (RuleFrame, RuleId) $ ms
+
+printRule :: GA.PrefixMap -> Rule -> Doc
+printRule pds (DLSafeRule anns body head) = 
+    text "Rule:" $+$ printAnnotations pds 1 anns 
+        $+$ tabs 1 <> printAtoms pds body <+> text " -> " <+> printAtoms pds head
+
+printAtoms :: GA.PrefixMap -> [Atom] -> Doc
+printAtoms pds atoms = hcat . punctuate comma . map (printAtom pds) $ atoms
+
+printAtom :: GA.PrefixMap -> Atom -> Doc
+printAtom pds (ClassAtom ce iarg) =
+    printClassExpression pds ce <> parens (printIndividualArg pds iarg)
+
+printAtom pds (DataRangeAtom dr darg) =
+    printDataRange pds dr <> parens (printDataArg pds darg)
+
+printAtom pds (ObjectPropertyAtom oe iarg1 iarg2) =
+    printObjectPropertyExpression pds oe
+    <> parens (hcat . punctuate comma . map (printIndividualArg pds) $ [iarg1, iarg2])
+
+printAtom pds (DataPropertyAtom dp iarg darg) =
+    printIRI pds dp <> (parens $ printIndividualArg pds iarg <> text ", "
+        <> printDataArg pds darg)
+
+printAtom pds (BuiltInAtom iri dargs) =  
+    printIRI pds iri
+    <> parens (hsep . punctuate comma . map (printDataArg pds) $ dargs)
+
+printAtom pds (SameIndividualAtom iarg1 iarg2) =
+    text "SameIndividual"
+    <> parens (hsep . punctuate comma . map (printIndividualArg pds)
+        $ [iarg1, iarg2])
+
+printAtom pds (DifferentIndividualsAtom iarg1 iarg2) =
+    text "DifferentIndividuals"
+    <> parens (hsep . punctuate comma . map (printIndividualArg pds)
+        $ [iarg1, iarg2])
+
+printAtom pds (UnknownUnaryAtom iri uarg) =
+    printIRI pds iri
+    <> parens (printUnknownArg pds uarg)
+
+printAtom pds (UnknownBinaryAtom iri uarg1 uarg2) =
+    printIRI pds iri
+    <> parens (hsep . punctuate comma . map (printUnknownArg pds)
+        $ [uarg1, uarg2])
+
+printUnknownArg :: GA.PrefixMap -> UnknownArg -> Doc
+printUnknownArg pds uarg = case uarg of
+    IndividualArg iarg -> printIndividualArg pds iarg
+    DataArg darg -> printDataArg pds darg
+    Variable var -> text "?" <> printIRI pds var
+
+printIndividualArg :: GA.PrefixMap -> IndividualArg -> Doc
+printIndividualArg pds iarg = case iarg of
+    IArg iri -> printIRI pds iri
+    IVar v -> text "?" <> printIRI pds v
+
+printDataArg :: GA.PrefixMap -> DataArg -> Doc
+printDataArg pds darg = case darg of
+    DArg iri -> printLiteral pds iri
+    DVar v -> text "?" <> printIRI pds v
 
 -- | print Annotations
 printAnnotationValue :: GA.PrefixMap -> AnnotationValue -> Doc
