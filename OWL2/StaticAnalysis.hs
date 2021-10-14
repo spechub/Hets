@@ -301,7 +301,7 @@ checkDLAtom s mVars atom = case atom of
         return atom
     AS.UnknownUnaryAtom i a -> case a of
         AS.Variable v -> if Set.member i (concepts s)
-            then return $ AS.ClassAtom (AS.Expression v) (AS.IVar v)
+            then return $ AS.ClassAtom (AS.Expression i) (AS.IVar v)
             else return $ AS.BuiltInAtom i [AS.DVar v]
         _ -> mkError "Unknown unary atom" i
     AS.UnknownBinaryAtom i a1 a2 -> case a1 of
