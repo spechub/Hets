@@ -18,12 +18,12 @@ module OWL2.XML
 
 import Common.Lexer (value)
 import Common.IRI
-import Common.Id (stringToId, prependString, tokStr, getTokens)
+import Common.Id (stringToId, tokStr, getTokens)
+import qualified Common.GlobalAnnotations as GA (PrefixMap)
 
-import qualified OWL2.AS as AS
-import OWL2.Extract
+
+import OWL2.AS
 import OWL2.Keywords
-import OWL2.MS
 import OWL2.XMLKeywords
 
 import Text.XML.Light
@@ -32,9 +32,7 @@ import Data.Maybe
 import Data.List
 import qualified Data.Map as Map
 
-import Debug.Trace
-
-type XMLBase = String
+type XMLBase = Maybe String
 
 -- | error messages for the parser
 err :: String -> t
@@ -55,7 +53,7 @@ isSmthList :: [String] -> Text.XML.Light.QName -> Bool
 isSmthList l qn = qName qn `elem` l
 
 isNotSmth :: Text.XML.Light.QName -> Bool
-isNotSmth q = let qn = qName q in qn `notElem` [declarationK,
+isNotSmth q = let qn = qName q in qn `notElem` [
     prefixK, importK, annotationK]
 
 -- | parses all children with the given name
@@ -76,32 +74,46 @@ filterCL :: [String] -> Element -> Element
 filterCL l e = fromMaybe (err "child not found")
     $ filterChildName (isSmthList l) e
 
+getIRIWithType :: GA.PrefixMap -> XMLBase -> String -> String -> IRI
+getIRIWithType pm b typ iriStr =
+    let parsed = getIRIWithResolvedBase b iriStr 
+        e = error $ "could not get " ++ typ ++ " from " ++ show iriStr
+        full = fromMaybe e parsed
+        curie = case parseCurie iriStr of
+            Just i -> i
+            Nothing -> error $ "could not get CURIE from " ++ show iriStr
+    
+    in expandIRI pm $ case typ of
+        "abbreviatedIRI" ->  curie
+        "AbbreviatedIRI" -> curie
+        "nodeID" -> case parseCurie iriStr of
+            Just i -> i {isBlankNode = True}
+            Nothing -> error $ "could not get nodeID from " ++ show iriStr
+        "IRI" -> full
+        "facet" -> full
+        "Import" -> full
+        _ -> error $ "wrong qName:" ++ show typ
+
 -- | parses an IRI
-getIRI :: XMLBase -> Element -> IRI
-getIRI b e =
+getIRI :: GA.PrefixMap -> XMLBase -> Element -> IRI
+getIRI pm b e =
     let [a] = elAttribs e
         anIri = attrVal a
-    in case qName $ attrKey a of
-        "abbreviatedIRI" ->  
-          let (p, _:v) = span (/= ':') anIri
-          in appendBase b $ nullIRI {iriPath = stringToId v, prefixName = p, isAbbrev = True }
-        "IRI" -> let x = parseIRIReference anIri -- todo: or combine parseIRI and parseIRIReference
-                 in case x of
-                     Just y -> appendBase b y
-                     Nothing -> error $ "could not get IRI from " ++ show anIri
-        "nodeID" -> appendBase b $ (mkIRI anIri){isBlankNode = True}
-        _ -> error $ "wrong qName:" ++ show (attrKey a)
-   
+    in getIRIWithType pm b (qName $ attrKey a) anIri
 
-{- | if the IRI contains colon, it is spglit there;
-else, the xml:base needs to be prepended to the local part
-and then the IRI must be splitted -}
-appendBase :: XMLBase -> IRI -> IRI
-appendBase b iri =
-    let r = iriPath iri
-    in splitIRI $ if ':' `elem` show r
-                   then iri
-                   else iri {iriPath = prependString b r}
+
+getIRIWithResolvedBase :: XMLBase -> String -> Maybe IRI
+getIRIWithResolvedBase b str =
+    -- According to https://www.w3.org/TR/2012/REC-owl2-xml-serialization-20121211/#The_Serialization_Syntax
+    -- all @IRI@s must be resolved against xml:base. Only doing this
+    -- if the iri is relative
+    let absIri = parseIRI str
+        resolvedIRI = b >>= (parseIRI . ( ++ str))
+    in case absIri of
+        Just y -> if not $ null $ iriScheme y then Just y else resolvedIRI
+        Nothing -> resolvedIRI
+
+
 
 -- | splits an IRI at the colon
 splitIRI :: IRI -> IRI
@@ -128,26 +140,9 @@ mkNodeID iri =
         -- todo: maybe we should keep the Id structure of iriPath iri
         _ -> iri {prefixName = "_"}
 
--- | gets the content of an element with name Import
-importIRI :: Map.Map String String -> XMLBase -> Element -> IRI
-importIRI m b e =
-  let cont1 = strContent e
-      cont = Map.findWithDefault cont1 cont1 m
-      anIri = nullIRI {iriPath = stringToId cont, isAbbrev = True}
-  in appendBase b anIri
-
 -- | gets the content of an element with name IRI, AbbreviatedIRI or Import
-contentIRI :: XMLBase -> Element -> IRI
-contentIRI b e =
-  let cont = strContent e
-      anIri = nullIRI {iriPath = stringToId cont, isAbbrev = True}
-  in case getName e of
-      "AbbreviatedIRI" -> splitIRI anIri
-      "IRI" -> if ':' `elem` cont
-                then splitIRI  anIri 
-                else appendBase b anIri
-      "Import" -> appendBase b $ anIri 
-      _ -> err "invalid type of iri"
+contentIRI :: GA.PrefixMap -> XMLBase -> Element -> IRI
+contentIRI pm b e = getIRIWithType pm b (getName e) (strContent e)
 
 -- | gets the name of an axiom in XML Syntax
 getName :: Element -> String
@@ -164,441 +159,448 @@ getName e =
 getInt :: Element -> Int
 getInt e = let [int] = elAttribs e in value 10 $ attrVal int
 
-getEntityType :: String -> AS.EntityType
+getEntityType :: String -> EntityType
 getEntityType ty = fromMaybe (err $ "no entity type " ++ ty)
-  . lookup ty $ map (\ e -> (show e, e)) AS.entityTypes
+  . lookup ty $ map (\ e -> (show e, e)) entityTypes
 
-getEntity :: XMLBase -> Element -> AS.Entity
-getEntity b e = AS.mkEntity (getEntityType $ (qName . elName) e) $ getIRI b e
+getEntity :: GA.PrefixMap -> XMLBase -> Element -> Entity
+getEntity pm b e = mkEntity (getEntityType $ (qName . elName) e) $ getIRI pm b e
 
-getDeclaration :: XMLBase -> Element -> Axiom
-getDeclaration b e = case getName e of
+getDeclaration :: GA.PrefixMap -> XMLBase -> Element -> Axiom
+getDeclaration pm b e = case getName e of
    "Declaration" ->
-        PlainAxiom (mkExtendedEntity $ getEntity b $ filterCL entityList e)
-            $ AnnFrameBit (getAllAnnos b e) $ AnnotationFrameBit Declaration
-   _ -> err "not declaration"
+       Declaration (getAllAnnos pm b e) (getEntity pm b $ filterCL entityList e)
+   _ -> getClassAxiom pm b e
 
 isPlainLiteral :: String -> Bool
 isPlainLiteral s =
     "http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral" == s
 
 -- | put an "f" for float if not there already (eg. 123.45 --> 123.45f)
-correctLit :: AS.Literal -> AS.Literal
+correctLit :: Literal -> Literal
 correctLit l = case l of
-    AS.Literal lf (AS.Typed dt) ->
+    Literal lf (Typed dt) ->
         let nlf = if isSuffixOf "float" (show $ iriPath dt) && last lf /= 'f'
                 then lf ++ "f"
                 else lf
-        in AS.Literal nlf (AS.Typed dt)
+        in Literal nlf (Typed dt)
     _ -> l
 
-getLiteral :: XMLBase -> Element -> AS.Literal
-getLiteral b e = case getName e of
+getLiteral :: GA.PrefixMap -> Element -> Literal
+getLiteral pm e = case getName e of
     "Literal" ->
       let lf = strContent e
           mdt = findAttr (unqual "datatypeIRI") e
           mattr = vFindAttrBy (isSmth "lang") e
       in case mdt of
           Nothing -> case mattr of
-             Just lang -> AS.Literal lf $ AS.Untyped $ Just lang
-             Nothing -> AS.Literal lf $ AS.Untyped Nothing
+             Just lang -> Literal lf $ Untyped $ Just lang
+             Nothing -> Literal lf $ Untyped Nothing
           Just dt -> case mattr of
-             Just lang -> AS.Literal lf $ AS.Untyped $ Just lang
+             Just lang -> Literal lf $ Untyped $ Just lang
              Nothing -> if isPlainLiteral dt then
-                          AS.Literal lf $ AS.Untyped Nothing
-                         else correctLit $ AS.Literal lf $ AS.Typed $ appendBase b $
-                            nullIRI{iriPath = stringToId dt}
+                          Literal lf $ Untyped Nothing
+                         else case parseIRIReference dt of
+                            Just f -> correctLit $ Literal lf $ Typed (expandIRI pm f)
+                            _ -> error $ "could not get datatypeIRI from " ++ show dt
     _ -> err "not literal"
 
-getValue :: XMLBase -> Element -> AS.AnnotationValue
-getValue b e = case getName e of
-    "Literal" -> AS.AnnValLit $ getLiteral b e
-    "AnonymousIndividual" -> AS.AnnValue $ getIRI b e
-    _ -> AS.AnnValue $ contentIRI b e
+getValue :: GA.PrefixMap -> XMLBase -> Element -> AnnotationValue
+getValue pm b e = case getName e of
+    "Literal" -> AnnValLit $ getLiteral pm e
+    "AnonymousIndividual" -> AnnValue $ getIRI pm b e
+    _ -> AnnValue $ contentIRI pm b e
 
-getSubject :: XMLBase -> Element -> IRI
-getSubject b e = case getName e of
-    "AnonymousIndividual" -> getIRI b e
-    _ -> contentIRI b e
+getSubject :: GA.PrefixMap -> XMLBase -> Element -> IRI
+getSubject pm b e = case getName e of
+    "AnonymousIndividual" -> getIRI pm b e
+    _ -> contentIRI pm b e
 
-getAnnotation :: XMLBase -> Element -> AS.Annotation
-getAnnotation b e =
+getAnnotation :: GA.PrefixMap -> XMLBase -> Element -> Annotation
+getAnnotation pm b e =
      let hd = filterCh "Annotation" e
          [ap] = filterCh "AnnotationProperty" e
          av = filterCL annotationValueList e
-     in AS.Annotation (map (getAnnotation b) hd) (getIRI b ap) $ getValue b av
+     in Annotation (map (getAnnotation pm b) hd) (getIRI pm b ap) $ getValue pm b av
 
 -- | returns a list of annotations
-getAllAnnos :: XMLBase -> Element -> [AS.Annotation]
-getAllAnnos b e = map (getAnnotation b) $ filterCh "Annotation" e
+getAllAnnos :: GA.PrefixMap -> XMLBase -> Element -> [Annotation]
+getAllAnnos pm b e = map (getAnnotation pm b) $ filterCh "Annotation" e
 
-getObjProp :: XMLBase -> Element -> AS.ObjectPropertyExpression
-getObjProp b e = case getName e of
-  "ObjectProperty" -> AS.ObjectProp $ getIRI b e
+getObjProp :: GA.PrefixMap -> XMLBase -> Element -> ObjectPropertyExpression
+getObjProp pm b e = case getName e of
+  "ObjectProperty" -> ObjectProp $ getIRI pm b e
   "ObjectInverseOf" ->
     let [ch] = elChildren e
         [cch] = elChildren ch
     in case getName ch of
-      "ObjectInverseOf" -> getObjProp b cch
-      "ObjectProperty" -> AS.ObjectInverseOf $ AS.ObjectProp $ getIRI b ch
+      "ObjectInverseOf" -> getObjProp pm b cch
+      "ObjectProperty" -> ObjectInverseOf $ ObjectProp $ getIRI pm b ch
       _ -> err "not objectProperty"
   _ -> err "not objectProperty"
 
 -- | replaces eg. "minExclusive" with ">"
-properFacet :: AS.ConstrainingFacet -> AS.ConstrainingFacet
+properFacet :: ConstrainingFacet -> ConstrainingFacet
 properFacet cf
     | hasFullIRI cf =
         let p = showIRICompact cf \\ "http://www.w3.org/2001/XMLSchema#"
         in case p of
-            "minInclusive" -> AS.facetToIRI MININCLUSIVE
-            "minExclusive" -> AS.facetToIRI MINEXCLUSIVE
-            "maxInclusive" -> AS.facetToIRI MAXINCLUSIVE
-            "maxExclusive" -> AS.facetToIRI MAXEXCLUSIVE
+            "minInclusive" -> facetToIRI MININCLUSIVE
+            "minExclusive" -> facetToIRI MINEXCLUSIVE
+            "maxInclusive" -> facetToIRI MAXINCLUSIVE
+            "maxExclusive" -> facetToIRI MAXEXCLUSIVE
             _ -> cf
     | otherwise = cf
 
-getFacetValuePair :: XMLBase -> Element -> (AS.ConstrainingFacet, AS.RestrictionValue)
-getFacetValuePair b e = case getName e of
+getFacetValuePair :: GA.PrefixMap -> XMLBase -> Element -> (ConstrainingFacet, RestrictionValue)
+getFacetValuePair pm b e = case getName e of
     "FacetRestriction" ->
        let [ch] = elChildren e
-       in (properFacet $ getIRI b e, getLiteral b ch)
+       in (properFacet $ getIRI pm b e, getLiteral pm ch)
     _ -> err "not facet"
 
-getDataRange :: XMLBase -> Element -> AS.DataRange
-getDataRange b e =
+getDataRange :: GA.PrefixMap -> XMLBase -> Element -> DataRange
+getDataRange pm b e =
   let ch@(ch1 : _) = elChildren e
   in case getName e of
-    "Datatype" -> AS.DataType (getIRI b e) []
+    "Datatype" -> DataType (getIRI pm b e) []
     "DatatypeRestriction" ->
-        let dt = getIRI b $ filterC "Datatype" e
-            fvp = map (getFacetValuePair b) $ filterCh "FacetRestriction" e
-        in AS.DataType dt fvp
-    "DataComplementOf" -> AS.DataComplementOf $ getDataRange b ch1
-    "DataOneOf" -> AS.DataOneOf $ map (getLiteral b) $ filterCh "Literal" e
-    "DataIntersectionOf" -> AS.DataJunction AS.IntersectionOf
-            $ map (getDataRange b) ch
-    "DataUnionOf" -> AS.DataJunction AS.UnionOf $ map (getDataRange b) ch
+        let dt = getIRI pm b $ filterC "Datatype" e
+            fvp = map (getFacetValuePair pm b) $ filterCh "FacetRestriction" e
+        in DataType dt fvp
+    "DataComplementOf" -> DataComplementOf $ getDataRange pm b ch1
+    "DataOneOf" -> DataOneOf $ map (getLiteral pm) $ filterCh "Literal" e
+    "DataIntersectionOf" -> DataJunction IntersectionOf
+            $ map (getDataRange pm b) ch
+    "DataUnionOf" -> DataJunction UnionOf $ map (getDataRange pm b) ch
     _ -> err "not data range"
 
-getClassExpression :: XMLBase -> Element -> AS.ClassExpression
-getClassExpression b e =
+getClassExpression :: GA.PrefixMap -> XMLBase -> Element -> ClassExpression
+getClassExpression pm b e =
   let ch = elChildren e
       ch1 : _ = ch
       rch1 : _ = reverse ch
   in case getName e of
-    "Class" -> AS.Expression $ getIRI b e
-    "ObjectIntersectionOf" -> AS.ObjectJunction AS.IntersectionOf
-            $ map (getClassExpression b) ch
-    "ObjectUnionOf" -> AS.ObjectJunction AS.UnionOf $ map (getClassExpression b) ch
-    "ObjectComplementOf" -> AS.ObjectComplementOf $ getClassExpression b ch1
-    "ObjectOneOf" -> AS.ObjectOneOf $ map (getIRI b) ch
-    "ObjectSomeValuesFrom" -> AS.ObjectValuesFrom AS.SomeValuesFrom
-            (getObjProp b ch1) $ getClassExpression b rch1
-    "ObjectAllValuesFrom" -> AS.ObjectValuesFrom AS.AllValuesFrom
-            (getObjProp b ch1) $ getClassExpression b rch1
-    "ObjectHasValue" -> AS.ObjectHasValue (getObjProp b ch1) $ getIRI b rch1
-    "ObjectHasSelf" -> AS.ObjectHasSelf $ getObjProp b ch1
-    "DataSomeValuesFrom" -> AS.DataValuesFrom AS.SomeValuesFrom ([getIRI b ch1])
-            $ getDataRange b rch1
-    "DataAllValuesFrom" -> AS.DataValuesFrom AS.AllValuesFrom ([getIRI b ch1])
-            $ getDataRange b rch1
-    "DataHasValue" -> AS.DataHasValue (getIRI b ch1) $ getLiteral b rch1
-    _ -> getObjCard b e ch rch1
+    "Class" -> Expression $ getIRI pm b e
+    "ObjectIntersectionOf" -> ObjectJunction IntersectionOf
+            $ map (getClassExpression pm b) ch
+    "ObjectUnionOf" -> ObjectJunction UnionOf $ map (getClassExpression pm b) ch
+    "ObjectComplementOf" -> ObjectComplementOf $ getClassExpression pm b ch1
+    "ObjectOneOf" -> ObjectOneOf $ map (getIRI pm b) ch
+    "ObjectSomeValuesFrom" -> ObjectValuesFrom SomeValuesFrom
+            (getObjProp pm b ch1) $ getClassExpression pm b rch1
+    "ObjectAllValuesFrom" -> ObjectValuesFrom AllValuesFrom
+            (getObjProp pm b ch1) $ getClassExpression pm b rch1
+    "ObjectHasValue" -> ObjectHasValue (getObjProp pm b ch1) $ getIRI pm b rch1
+    "ObjectHasSelf" -> ObjectHasSelf $ getObjProp pm b ch1
+    "DataSomeValuesFrom" -> DataValuesFrom SomeValuesFrom ([getIRI pm b ch1])
+            $ getDataRange pm b rch1
+    "DataAllValuesFrom" -> DataValuesFrom AllValuesFrom ([getIRI pm b ch1])
+            $ getDataRange pm b rch1
+    "DataHasValue" -> DataHasValue (getIRI pm b ch1) $ getLiteral pm rch1
+    _ -> getObjCard pm b e ch rch1
 
-getObjCard :: XMLBase -> Element -> [Element] -> Element -> AS.ClassExpression
-getObjCard b e ch rch1 =
+getObjCard :: GA.PrefixMap -> XMLBase -> Element -> [Element] -> Element -> ClassExpression
+getObjCard pm b e ch rch1 =
     let ch1 : _ = ch
         i = getInt e
-        op = getObjProp b ch1
+        op = getObjProp pm b ch1
         ce = if length ch == 2
-                then Just $ getClassExpression b rch1
+                then Just $ getClassExpression pm b rch1
                 else Nothing
     in case getName e of
-        "ObjectMinCardinality" -> AS.ObjectCardinality $ AS.Cardinality
-            AS.MinCardinality i op ce
-        "ObjectMaxCardinality" -> AS.ObjectCardinality $ AS.Cardinality
-            AS.MaxCardinality i op ce
-        "ObjectExactCardinality" -> AS.ObjectCardinality $ AS.Cardinality
-            AS.ExactCardinality i op ce
-        _ -> getDataCard b e ch rch1
+        "ObjectMinCardinality" -> ObjectCardinality $ Cardinality
+            MinCardinality i op ce
+        "ObjectMaxCardinality" -> ObjectCardinality $ Cardinality
+            MaxCardinality i op ce
+        "ObjectExactCardinality" -> ObjectCardinality $ Cardinality
+            ExactCardinality i op ce
+        _ -> getDataCard pm b e ch rch1
 
-getDataCard :: XMLBase -> Element -> [Element] -> Element -> AS.ClassExpression
-getDataCard b e ch rch1 =
+getDataCard :: GA.PrefixMap -> XMLBase -> Element -> [Element] -> Element -> ClassExpression
+getDataCard pm b e ch rch1 =
     let ch1 : _ = ch
         i = getInt e
-        dp = getIRI b ch1
+        dp = getIRI pm b ch1
         dr = if length ch == 2
-                then Just $ getDataRange b rch1
+                then Just $ getDataRange pm b rch1
                 else Nothing
     in case getName e of
-        "DataMinCardinality" -> AS.DataCardinality $ AS.Cardinality
-              AS.MinCardinality i dp dr
-        "DataMaxCardinality" -> AS.DataCardinality $ AS.Cardinality
-              AS.MaxCardinality i dp dr
-        "DataExactCardinality" -> AS.DataCardinality $ AS.Cardinality
-              AS.ExactCardinality i dp dr
+        "DataMinCardinality" -> DataCardinality $ Cardinality
+              MinCardinality i dp dr
+        "DataMaxCardinality" -> DataCardinality $ Cardinality
+              MaxCardinality i dp dr
+        "DataExactCardinality" -> DataCardinality $ Cardinality
+              ExactCardinality i dp dr
         _ -> err "not class expression"
 
-getClassAxiom :: XMLBase -> Element -> Axiom
-getClassAxiom b e =
+getClassAxiom :: GA.PrefixMap -> XMLBase -> Element -> Axiom
+getClassAxiom pm b e =
    let ch = elChildren e
-       as = getAllAnnos b e
+       as = getAllAnnos pm b e
        l@(hd : tl) = filterChL classExpressionList e
        [dhd, dtl] = filterChL dataRangeList e
-       cel = map (getClassExpression b) l
+       cel = map (getClassExpression pm b) l
    in case getName e of
     "SubClassOf" ->
-       let [sub, super] = drop (length ch - 2) ch
-       in PlainAxiom (ClassEntity $ getClassExpression b sub)
-        $ ListFrameBit (Just AS.SubClass) $ ExpressionBit
-                      [(as, getClassExpression b super)]
-    "EquivalentClasses" -> PlainAxiom (Misc as) $ ListFrameBit
-      (Just $ AS.EDRelation AS.Equivalent) $ ExpressionBit $ emptyAnnoList cel
-    "DisjointClasses" -> PlainAxiom (Misc as) $ ListFrameBit
-      (Just $ AS.EDRelation AS.Disjoint) $ ExpressionBit $ emptyAnnoList cel
-    "DisjointUnion" -> PlainAxiom (ClassEntity $ getClassExpression b hd)
-        $ AnnFrameBit as $ ClassDisjointUnion $ map (getClassExpression b) tl
+       let [sub, super] = getClassExpression pm b <$> drop (length ch - 2) ch
+       in ClassAxiom $ SubClassOf as sub super
+    "EquivalentClasses" -> ClassAxiom $ EquivalentClasses as cel
+    "DisjointClasses" -> ClassAxiom $ DisjointClasses as cel
+    "DisjointUnion" -> case getClassExpression pm b hd of
+        Expression c -> ClassAxiom $ DisjointUnion as c (getClassExpression pm b <$> tl)
+        _ -> err "Invalid ClassExpression. DisjointUnion must have a class."
     "DatatypeDefinition" ->
-        PlainAxiom (SimpleEntity $ AS.mkEntity AS.Datatype $ getIRI b dhd)
-            $ AnnFrameBit as $ DatatypeBit $ getDataRange b dtl
-    _ -> getKey b e
+        DatatypeDefinition as (getIRI pm b dhd) (getDataRange pm b dtl)
+    _ -> getKey pm b e
 
-getKey :: XMLBase -> Element -> Axiom
-getKey b e = case getName e of
+getKey :: GA.PrefixMap -> XMLBase -> Element -> Axiom
+getKey pm b e = case getName e of
   "HasKey" ->
-    let as = getAllAnnos b e
+    let as = getAllAnnos pm b e
         [ce] = filterChL classExpressionList e
-        op = map (getObjProp b) $ filterChL objectPropList e
-        dp = map (getIRI b) $ filterChL dataPropList e
-    in PlainAxiom (ClassEntity $ getClassExpression b ce)
-          $ AnnFrameBit as $ ClassHasKey op dp
-  _ -> getOPAxiom b e
+        op = map (getObjProp pm b) $ filterChL objectPropList e
+        dp = map (getIRI pm b) $ filterChL dataPropList e
+    in HasKey as (getClassExpression pm b ce) op dp
+  _ -> getOPAxiom pm b e
 
-getOPAxiom :: XMLBase -> Element -> Axiom
-getOPAxiom b e =
-   let as = getAllAnnos b e
-       op = getObjProp b $ filterCL objectPropList e
+getOPAxiom :: GA.PrefixMap -> XMLBase -> Element -> Axiom
+getOPAxiom pm b e =
+   let as = getAllAnnos pm b e
+       op = getObjProp pm b $ filterCL objectPropList e
    in case getName e of
     "SubObjectPropertyOf" ->
-       let opchain = concatMap (map $ getObjProp b) $ map elChildren
+       let opchain = concatMap (map (getObjProp pm b) . elChildren)
             $ filterCh "ObjectPropertyChain" e
        in if null opchain
-             then let [o1, o2] = map (getObjProp b) $ filterChL objectPropList e
-                  in PlainAxiom (ObjectEntity o1) $ ListFrameBit
-                        (Just AS.SubPropertyOf) $ ObjectBit [(as, o2)]
-             else PlainAxiom (ObjectEntity op) $ AnnFrameBit as
-                    $ ObjectSubPropertyChain opchain
+             then let [o1, o2] = map (getObjProp pm b) $ filterChL objectPropList e
+                  in ObjectPropertyAxiom $ 
+                    SubObjectPropertyOf as (SubObjPropExpr_obj o1) o2
+             else ObjectPropertyAxiom $ 
+                SubObjectPropertyOf as (SubObjPropExpr_exprchain opchain) op
     "EquivalentObjectProperties" ->
-       let opl = map (getObjProp b) $ filterChL objectPropList e
-       in PlainAxiom (Misc as) $ ListFrameBit (Just $ AS.EDRelation AS.Equivalent)
-            $ ObjectBit $ emptyAnnoList opl
+       let opl = map (getObjProp pm b) $ filterChL objectPropList e
+       in ObjectPropertyAxiom $ 
+        EquivalentObjectProperties as opl
     "DisjointObjectProperties" ->
-       let opl = map (getObjProp b) $ filterChL objectPropList e
-       in PlainAxiom (Misc as) $ ListFrameBit (Just $ AS.EDRelation AS.Disjoint)
-            $ ObjectBit $ emptyAnnoList opl
+       let opl = map (getObjProp pm b) $ filterChL objectPropList e
+       in ObjectPropertyAxiom $ 
+        DisjointObjectProperties as opl
     "ObjectPropertyDomain" ->
-       let ce = getClassExpression b $ filterCL classExpressionList e
-       in PlainAxiom (ObjectEntity op) $ ListFrameBit
-            (Just $ AS.DRRelation AS.ADomain) $ ExpressionBit [(as, ce)]
+       let ce = getClassExpression pm b $ filterCL classExpressionList e
+       in ObjectPropertyAxiom $ 
+        ObjectPropertyDomain as op ce
     "ObjectPropertyRange" ->
-       let ce = getClassExpression b $ filterCL classExpressionList e
-       in PlainAxiom (ObjectEntity op) $ ListFrameBit
-            (Just $ AS.DRRelation AS.ARange) $ ExpressionBit [(as, ce)]
+       let ce = getClassExpression pm b $ filterCL classExpressionList e
+       in ObjectPropertyAxiom $ 
+        ObjectPropertyRange as op ce
     "InverseObjectProperties" ->
-       let [hd, lst] = map (getObjProp b) $ filterChL objectPropList e
-       in PlainAxiom (ObjectEntity hd) $ ListFrameBit (Just AS.InverseOf)
-            $ ObjectBit [(as, lst)]
-    "FunctionalObjectProperty" -> PlainAxiom (ObjectEntity op) $ ListFrameBit
-            Nothing $ ObjectCharacteristics [(as, AS.Functional)]
-    "InverseFunctionalObjectProperty" -> PlainAxiom (ObjectEntity op)
-            $ ListFrameBit Nothing $ ObjectCharacteristics
-            [(as, AS.InverseFunctional)]
-    "ReflexiveObjectProperty" -> PlainAxiom (ObjectEntity op) $ ListFrameBit
-            Nothing $ ObjectCharacteristics [(as, AS.Reflexive)]
-    "IrreflexiveObjectProperty" -> PlainAxiom (ObjectEntity op) $ ListFrameBit
-            Nothing $ ObjectCharacteristics [(as, AS.Irreflexive)]
-    "SymmetricObjectProperty" -> PlainAxiom (ObjectEntity op) $ ListFrameBit
-            Nothing $ ObjectCharacteristics [(as, AS.Symmetric)]
-    "AsymmetricObjectProperty" -> PlainAxiom (ObjectEntity op) $ ListFrameBit
-            Nothing $ ObjectCharacteristics [(as, AS.Asymmetric)]
-    "AntisymmetricObjectProperty" -> PlainAxiom (ObjectEntity op) $ ListFrameBit
-            Nothing $ ObjectCharacteristics [(as, AS.Antisymmetric)]
-    "TransitiveObjectProperty" -> PlainAxiom (ObjectEntity op) $ ListFrameBit
-            Nothing $ ObjectCharacteristics [(as, AS.Transitive)]
-    _ -> getDPAxiom b e
+       let [hd, lst] = map (getObjProp pm b) $ filterChL objectPropList e
+       in ObjectPropertyAxiom $ 
+        InverseObjectProperties as hd lst
+    "FunctionalObjectProperty" -> ObjectPropertyAxiom $ 
+        FunctionalObjectProperty as op
+    "InverseFunctionalObjectProperty" -> ObjectPropertyAxiom $ 
+        InverseFunctionalObjectProperty as op
+    "ReflexiveObjectProperty" -> ObjectPropertyAxiom $ 
+        ReflexiveObjectProperty as op
+    "IrreflexiveObjectProperty" -> ObjectPropertyAxiom $ 
+        IrreflexiveObjectProperty as op
+    "SymmetricObjectProperty" -> ObjectPropertyAxiom $ 
+        SymmetricObjectProperty as op
+    "AsymmetricObjectProperty" -> ObjectPropertyAxiom $ 
+        AsymmetricObjectProperty as op
+    "TransitiveObjectProperty" -> ObjectPropertyAxiom $ 
+        TransitiveObjectProperty as op
+    _ -> getDPAxiom pm b e
 
-getDPAxiom :: XMLBase -> Element -> Axiom
-getDPAxiom b e =
-   let as = getAllAnnos b e
+getDPAxiom :: GA.PrefixMap -> XMLBase -> Element -> Axiom
+getDPAxiom pm b e =
+   let as = getAllAnnos pm b e
    in case getName e of
     "SubDataPropertyOf" ->
-        let [hd, lst] = map (getIRI b) $ filterChL dataPropList e
-        in PlainAxiom (SimpleEntity $ AS.mkEntity AS.DataProperty hd)
-              $ ListFrameBit (Just AS.SubPropertyOf) $ DataBit [(as, lst)]
+        let [hd, lst] = map (getIRI pm b) $ filterChL dataPropList e
+        in DataPropertyAxiom $ SubDataPropertyOf as hd lst
     "EquivalentDataProperties" ->
-        let dpl = map (getIRI b) $ filterChL dataPropList e
-        in PlainAxiom (Misc as) $ ListFrameBit (Just $ AS.EDRelation AS.Equivalent)
-            $ DataBit $ emptyAnnoList dpl
+        let dpl = map (getIRI pm b) $ filterChL dataPropList e
+        in DataPropertyAxiom $ EquivalentDataProperties as dpl
     "DisjointDataProperties" ->
-        let dpl = map (getIRI b) $ filterChL dataPropList e
-        in PlainAxiom (Misc as) $ ListFrameBit (Just $ AS.EDRelation AS.Disjoint)
-            $ DataBit $ emptyAnnoList dpl
+        let dpl = map (getIRI pm b) $ filterChL dataPropList e
+        in DataPropertyAxiom $ DisjointDataProperties as dpl
     "DataPropertyDomain" ->
-        let dp = getIRI b $ filterCL dataPropList e
-            ce = getClassExpression b $ filterCL classExpressionList e
-        in PlainAxiom (SimpleEntity $ AS.mkEntity AS.DataProperty dp) $ ListFrameBit
-                (Just $ AS.DRRelation AS.ADomain) $ ExpressionBit [(as, ce)]
+        let dp = getIRI pm b $ filterCL dataPropList e
+            ce = getClassExpression pm b $ filterCL classExpressionList e
+        in DataPropertyAxiom $ DataPropertyDomain as dp ce
     "DataPropertyRange" ->
-        let dp = getIRI b $ filterCL dataPropList e
-            dr = getDataRange b $ filterCL dataRangeList e
-        in PlainAxiom (SimpleEntity $ AS.mkEntity AS.DataProperty dp)
-                $ ListFrameBit Nothing $ DataPropRange [(as, dr)]
+        let dp = getIRI pm b $ filterCL dataPropList e
+            dr = getDataRange pm b $ filterCL dataRangeList e
+        in DataPropertyAxiom $ DataPropertyRange as dp dr
     "FunctionalDataProperty" ->
-        let dp = getIRI b $ filterCL dataPropList e
-        in PlainAxiom (SimpleEntity $ AS.mkEntity AS.DataProperty dp)
-                $ AnnFrameBit as DataFunctional
-    _ -> getDataAssertion b e
+        let dp = getIRI pm b $ filterCL dataPropList e
+        in DataPropertyAxiom $ FunctionalDataProperty as dp
+    _ -> getDataAssertion pm b e
 
-getDataAssertion :: XMLBase -> Element -> Axiom
-getDataAssertion b e =
-   let as = getAllAnnos b e
-       dp = getIRI b $ filterCL dataPropList e
-       ind = getIRI b $ filterCL individualList e
-       lit = getLiteral b $ filterC "Literal" e
+getDataAssertion :: GA.PrefixMap -> XMLBase -> Element -> Axiom
+getDataAssertion pm b e =
+   let as = getAllAnnos pm b e
+       dp = getIRI pm b $ filterCL dataPropList e
+       ind = getIRI pm b $ filterCL individualList e
+       lit = getLiteral pm $ filterC "Literal" e
    in case getName e of
-    "DataPropertyAssertion" ->
-         PlainAxiom (SimpleEntity $ AS.mkEntity AS.NamedIndividual ind)
-           $ ListFrameBit Nothing $ IndividualFacts
-               [(as, DataPropertyFact AS.Positive dp lit)]
-    "NegativeDataPropertyAssertion" ->
-         PlainAxiom (SimpleEntity $ AS.mkEntity AS.NamedIndividual ind)
-            $ ListFrameBit Nothing $ IndividualFacts
-               [(as, DataPropertyFact AS.Negative dp lit)]
-    _ -> getObjectAssertion b e
+    "DataPropertyAssertion" -> Assertion $ DataPropertyAssertion as dp ind lit
+    "NegativeDataPropertyAssertion" -> 
+        Assertion $  NegativeDataPropertyAssertion as dp ind lit
+    _ -> getObjectAssertion pm b e
 
-getObjectAssertion :: XMLBase -> Element -> Axiom
-getObjectAssertion b e =
-   let as = getAllAnnos b e
-       op = getObjProp b $ filterCL objectPropList e
-       [hd, lst] = map (getIRI b) $ filterChL individualList e
+
+getObjectAssertion :: GA.PrefixMap -> XMLBase -> Element -> Axiom
+getObjectAssertion pm b e =
+   let as = getAllAnnos pm b e
+       op = getObjProp pm b $ filterCL objectPropList e
+       [hd, lst] = map (getIRI pm b) $ filterChL individualList e
    in case getName e of
-    "ObjectPropertyAssertion" ->
-        PlainAxiom (SimpleEntity $ AS.mkEntity AS.NamedIndividual hd)
-           $ ListFrameBit Nothing $ IndividualFacts
-               [(as, ObjectPropertyFact AS.Positive op lst)]
+    "ObjectPropertyAssertion" -> Assertion $ ObjectPropertyAssertion as op hd lst
     "NegativeObjectPropertyAssertion" ->
-        PlainAxiom (SimpleEntity $ AS.mkEntity AS.NamedIndividual hd)
-           $ ListFrameBit Nothing $ IndividualFacts
-               [(as, ObjectPropertyFact AS.Negative op lst)]
-    _ -> getIndividualAssertion b e
+        Assertion $ NegativeObjectPropertyAssertion as op hd lst
+    _ -> getIndividualAssertion pm b e
 
-getIndividualAssertion :: XMLBase -> Element -> Axiom
-getIndividualAssertion b e =
-   let as = getAllAnnos b e
-       ind = map (getIRI b) $ filterChL individualList e
-       l = emptyAnnoList ind
+getIndividualAssertion :: GA.PrefixMap -> XMLBase -> Element -> Axiom
+getIndividualAssertion pm b e =
+   let as = getAllAnnos pm b e
+       ind = map (getIRI pm b) $ filterChL individualList e
    in case getName e of
-    "SameIndividual" ->
-        PlainAxiom (Misc as) $ ListFrameBit (Just (AS.SDRelation AS.Same))
-          $ IndividualSameOrDifferent l
-    "DifferentIndividuals" ->
-        PlainAxiom (Misc as) $ ListFrameBit (Just (AS.SDRelation AS.Different))
-          $ IndividualSameOrDifferent l
-    _ -> getClassAssertion b e
+    "SameIndividual" -> Assertion $ SameIndividual as ind
+    "DifferentIndividuals" -> Assertion $ DifferentIndividuals as ind
+    _ -> getClassAssertion pm b e
 
-getClassAssertion :: XMLBase -> Element -> Axiom
-getClassAssertion b e = case getName e of
+getClassAssertion :: GA.PrefixMap -> XMLBase -> Element -> Axiom
+getClassAssertion pm b e = case getName e of
     "ClassAssertion" ->
-        let as = getAllAnnos b e
-            ce = getClassExpression b $ filterCL classExpressionList e
-            ind = getIRI b $ filterCL individualList e
-        in PlainAxiom (SimpleEntity $ AS.mkEntity AS.NamedIndividual ind)
-                $ ListFrameBit (Just AS.Types) $ ExpressionBit [(as, ce)]
-    _ -> getAnnoAxiom b e
+        let as = getAllAnnos pm b e
+            ce = getClassExpression pm b $ filterCL classExpressionList e
+            ind = getIRI pm b $ filterCL individualList e
+        in Assertion $ ClassAssertion as ce ind
+    _ -> getAnnoAxiom pm b e
 
-getAnnoAxiom :: XMLBase -> Element -> Axiom
-getAnnoAxiom b e =
-   let as = getAllAnnos b e
-       ap = getIRI b $ filterC "AnnotationProperty" e
+getAnnoAxiom :: GA.PrefixMap -> XMLBase -> Element -> Axiom
+getAnnoAxiom pm b e =
+   let as = getAllAnnos pm b e
+       ap = getIRI pm b $ filterC "AnnotationProperty" e
        [ch] = filterChL [iriK, abbreviatedIRI] e
-       anIri = contentIRI b ch
+       anIri = contentIRI pm b ch
     in case getName e of
     "AnnotationAssertion" ->
        let [s, v] = filterChL annotationValueList e
-           sub = getSubject b s
+           sub = getSubject pm b s
+        -- TODO: What about iris?
+       in AnnotationAxiom $ AnnotationAssertion as ap (AnnSubIri sub) (getValue pm b v)
        -- the misc will be converted to entities in static analysis
-       in PlainAxiom (Misc [AS.Annotation [] sub $ AS.AnnValue sub])
-           $ AnnFrameBit [AS.Annotation as ap (getValue b v)]
-                    $ AnnotationFrameBit Assertion
+    --    in PlainAxiom (Misc [Annotation [] sub $ AnnValue sub])
+    --        $ AnnFrameBit [Annotation as ap (getValue b v)]
+    --                 $ AnnotationFrameBit Assertion
     "SubAnnotationPropertyOf" ->
-        let [hd, lst] = map (getIRI b) $ filterCh "AnnotationProperty" e
-        in PlainAxiom (SimpleEntity $ AS.mkEntity AS.AnnotationProperty hd)
-            $ ListFrameBit (Just AS.SubPropertyOf) $ AnnotationBit [(as, lst)]
-    "AnnotationPropertyDomain" ->
-        PlainAxiom (SimpleEntity $ AS.mkEntity AS.AnnotationProperty ap)
-               $ ListFrameBit (Just $ AS.DRRelation AS.ADomain)
-                      $ AnnotationBit [(as, anIri)]
-    "AnnotationPropertyRange" ->
-        PlainAxiom (SimpleEntity $ AS.mkEntity AS.AnnotationProperty ap)
-               $ ListFrameBit (Just $ AS.DRRelation AS.ARange)
-                      $ AnnotationBit [(as, anIri)]
-    _ -> PlainAxiom (Misc []) . AnnFrameBit [] . AnnotationFrameBit
-      . XmlError $ getName e
+        let [hd, lst] = map (getIRI pm b) $ filterCh "AnnotationProperty" e
+        in AnnotationAxiom $ SubAnnotationPropertyOf as hd lst
+    "AnnotationPropertyDomain" -> AnnotationAxiom $ AnnotationPropertyDomain as ap anIri
+    "AnnotationPropertyRange" -> AnnotationAxiom $ AnnotationPropertyRange as ap anIri
+    _ -> getRuleAxiom pm b e
 
-xmlErrorString :: Axiom -> Maybe String
-xmlErrorString a = case a of
-   PlainAxiom (Misc []) (AnnFrameBit [] (AnnotationFrameBit (XmlError e)))
-     -> Just e
-   _ -> Nothing
+getIArg :: GA.PrefixMap -> XMLBase -> Element -> IndividualArg
+getIArg pm b e = case getName e of
+    "Variable" -> IVar $ getIRI pm b e
+    "NamedIndividual" -> IArg $ getIRI pm b e
+    _ ->  err $ "Unexpected element '" ++ getName e ++ "'."
 
-getFrames :: XMLBase -> Element -> [Axiom] -> [Frame]
-getFrames b e ax =
-   let f = map (axToFrame . getDeclaration b) (filterCh "Declaration" e)
-           ++ map axToFrame (filter (isNothing . xmlErrorString) ax)
-   in f ++ signToFrames f
+getDArg :: GA.PrefixMap -> XMLBase -> Element -> DataArg
+getDArg pm b e = case getName e of
+    "Variable" -> DVar $ getIRI pm b e
+    "Literal" -> DArg $ getLiteral pm e
+    _ ->  err $ "Unexpected element '" ++ getName e ++ "'."
 
-getOnlyAxioms :: XMLBase -> Element -> [Axiom]
-getOnlyAxioms b e = map (getClassAxiom b) $ filterChildrenName isNotSmth e
+getAtom :: GA.PrefixMap -> XMLBase -> Element -> Atom
+getAtom pm b e =  case getName e of
+    "ClassAtom" ->
+        let [clExpr, iarg] = elChildren e
+        in ClassAtom (getClassExpression pm b clExpr) (getIArg pm b iarg)
+    "DataRangeAtom" ->
+        let [dr, darg] = elChildren e
+        in DataRangeAtom (getDataRange pm b dr) (getDArg pm b darg)
+    "ObjectPropertyAtom" ->
+        let [obExpr, iarg1, iarg2] = elChildren e
+        in ObjectPropertyAtom
+            (getObjProp pm b obExpr)
+            (getIArg pm b iarg1)
+            (getIArg pm b iarg2)
+    "DataPropertyAtom" ->
+        let [dpExp, iarg, darg] = elChildren e
+        in DataPropertyAtom
+            (getIRI pm b dpExp)
+            (getIArg pm b iarg)
+            (getDArg pm b darg)
+    "BuiltInAtom" ->
+        let dargs = getDArg pm b <$> elChildren e
+        in BuiltInAtom (getIRI pm b e) dargs
+    "SameIndividualAtom" ->
+        let [iarg1, iarg2] = getIArg pm b <$> elChildren e
+        in SameIndividualAtom iarg1 iarg2
+    "DifferentIndividualsAtom" ->
+        let [iarg1, iarg2] = getIArg pm b <$> elChildren e
+        in DifferentIndividualsAtom iarg1 iarg2
+    _ ->  err $ "Unexpected element '" ++ getName e ++ "'."
+    
 
-getImports :: Map.Map String String -> XMLBase -> Element -> [AS.ImportIRI]
-getImports m b e = map (importIRI m b) $ filterCh importK e
+
+getRuleAxiom :: GA.PrefixMap -> XMLBase -> Element -> Axiom
+getRuleAxiom pm b e = case getName e of
+    "DLSafeRule" ->
+        let as = getAllAnnos pm b e
+            atoms = elChildren . (`filterC` e)
+            bd = getAtom pm b <$> atoms "Body"
+            hd = getAtom pm b <$> atoms "Head"
+        in Rule $ DLSafeRule as bd hd
+    s -> err $ "Unexpected element '" ++ s ++ "'."
+
+
+getOnlyAxioms :: GA.PrefixMap -> XMLBase -> Element -> [Axiom]
+getOnlyAxioms pm b e = map (getDeclaration pm b) $ filterChildrenName isNotSmth e
+
+getImports :: GA.PrefixMap -> XMLBase -> Element -> DirectlyImportsDocuments
+getImports m b e = map (contentIRI m b) $ filterCh importK e
 
 get1Map :: Element -> (String, String)
 get1Map e =
   let [pref, pmap] = map attrVal $ elAttribs e
   in (pref, pmap)
 
-getPrefixMap :: Element -> [(String, String)]
-getPrefixMap e = map get1Map $ filterCh "Prefix" e
+getPrefixMap :: Element -> GA.PrefixMap
+getPrefixMap e = changePrefixMapTypeToGA $ Map.map (\x -> "<" ++ x ++ ">") $ Map.fromList $ map get1Map $ filterCh "Prefix" e
 
-getOntologyIRI :: XMLBase -> Element -> AS.OntologyIRI
+getOntologyIRI :: XMLBase -> Element -> Maybe IRI
 getOntologyIRI b e =
   let oi = findAttr (unqual "ontologyIRI") e
-  in case oi of
-    Nothing -> dummyIRI
-    Just anIri -> appendBase b
-        $ nullIRI {iriPath = stringToId anIri}
+  in oi >>= getIRIWithResolvedBase b
+
+getVersionIRI :: XMLBase -> Element -> Maybe IRI
+getVersionIRI b e =
+  let vi = findAttr (unqual "versionIRI") e
+  in vi >>= getIRIWithResolvedBase b
 
 getBase :: Element -> XMLBase
-getBase e = fromJust $ vFindAttrBy (isSmth "base") e
+getBase e = vFindAttrBy (isSmth "base") e
 
 -- | parses an ontology document
 xmlBasicSpec :: Map.Map String String -> Element -> OntologyDocument
 xmlBasicSpec imap e =
     let b = getBase e
-        ax = getOnlyAxioms b e
-        es = mapMaybe xmlErrorString ax
-        em = Map.fromListWith (+) $ map (\ s -> (s, 1 :: Int)) es
+        pm = changePrefixMapTypeToGA imap `Map.union` getPrefixMap e
+        ax = getOnlyAxioms pm b e
     in
-    (if Map.null em then id else
-      trace ("ignored element tags: "
-             ++ unwords (map (\ (s, c) ->
-                if c > 1 then s ++ " (" ++ show c ++ " times)" else s)
-                         $ Map.toList em)))
-    $ OntologyDocument (Map.fromList $ getPrefixMap e)
-    (emptyOntology $ getFrames b e ax)
-        {
-        imports = getImports imap b e,
-        ann = [getAllAnnos b e],
-        name = getOntologyIRI b e
-        }
+        OntologyDocument
+            (OntologyMetadata XML)
+            pm
+            $ Ontology
+                (getOntologyIRI b e)
+                (getVersionIRI b e)
+                (getImports pm b e)
+                (getAllAnnos pm b e)
+                ax

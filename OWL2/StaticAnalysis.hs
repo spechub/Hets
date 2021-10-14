@@ -28,7 +28,7 @@ import Data.List
 import Common.AS_Annotation hiding (Annotation)
 import Common.DocUtils
 import Common.Result
-import Common.GlobalAnnotations hiding (PrefixMap)
+import Common.GlobalAnnotations as GA
 import Common.ExtSign
 import Common.Lib.State
 import Common.IRI --(iriToStringUnsecure, setAngles)
@@ -607,29 +607,23 @@ createAxioms s fl = do
     cf <- correctFrames s $ map (function Expand $ StringMap $ prefixMap s) fl
     return (map anaAxiom . filter noDecl $ cf, cf)
 
-check1Prefix :: Maybe String -> String -> Bool
-check1Prefix ms s =
-  let
-    dropCharPre c str = if isPrefixOf [c] str then drop 1 str else str
-    dropBracketSuf str = reverse $ dropCharPre '>' $ reverse str
-  in case ms of
+check1Prefix :: Maybe IRI -> IRI -> Bool
+check1Prefix ms s = case ms of
       Nothing -> True
-      Just iri -> let iri' = dropBracketSuf $ dropCharPre '<' iri
-                      s' = dropBracketSuf $ dropCharPre '<' s
-                  in iri' == s'
+      Just iri -> iri == s
 
-checkPrefixMap :: AS.PrefixMap -> Bool
+checkPrefixMap :: GA.PrefixMap -> Bool
 checkPrefixMap pm =
     let pl = map (`Map.lookup` pm) ["owl", "rdf", "rdfs", "xsd"]
     in and $ zipWith check1Prefix pl
-            (map snd $ tail $ Map.toList AS.predefPrefixes)
+            (map snd $ Map.toList AS.predefPrefixesGA)
 
 newODoc :: AS.OntologyDocument -> [AS.Axiom] -> Result AS.OntologyDocument
 newODoc AS.OntologyDocument {
       AS.ontology = mo
     , AS.ontologyMetadata = md
     , AS.prefixDeclaration = pd} ax =
-    if checkPrefixMap (AS.changePrefixMapTypeToString pd)
+    if checkPrefixMap pd
         then return AS.OntologyDocument
                 { AS.ontologyMetadata = md
                 , AS.ontology = mo {AS.axioms = ax}
