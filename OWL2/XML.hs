@@ -78,7 +78,7 @@ getIRIWithType :: GA.PrefixMap -> XMLBase -> String -> String -> IRI
 getIRIWithType pm b typ iriStr =
     let parsed = getIRIWithResolvedBase b iriStr 
         e = error $ "could not get " ++ typ ++ " from " ++ show iriStr
-        full = maybe e id parsed
+        full = fromMaybe e parsed
         curie = case parseCurie iriStr of
             Just i -> i
             Nothing -> error $ "could not get CURIE from " ++ show iriStr
@@ -370,7 +370,7 @@ getOPAxiom pm b e =
        op = getObjProp pm b $ filterCL objectPropList e
    in case getName e of
     "SubObjectPropertyOf" ->
-       let opchain = concatMap (map $ getObjProp pm b) $ map elChildren
+       let opchain = concatMap (map (getObjProp pm b) . elChildren)
             $ filterCh "ObjectPropertyChain" e
        in if null opchain
              then let [o1, o2] = map (getObjProp pm b) $ filterChL objectPropList e
