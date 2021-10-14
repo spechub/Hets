@@ -836,7 +836,7 @@ parseBuiltInAtom pm pre =
     return $ BuiltInAtom pre (arg1 : argN))
 
 
-parseUnknownArg :: GA.PrefixMap -> CharParser st UnkownArg
+parseUnknownArg :: GA.PrefixMap -> CharParser st UnknownArg
 parseUnknownArg pm = (Variable <$> parseVariable pm) <|>
   try (IndividualArg <$> parseIArg pm) <|>
   (DataArg <$> parseDArg pm)
