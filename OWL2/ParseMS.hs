@@ -884,9 +884,12 @@ importEntry pm = many $ pkeyword importC >> expUriP pm
 
 parseOntology :: GA.PrefixMap -> CharParser st Ontology
 parseOntology pm = do
-    pkeyword ontologyC
-    ontologyIRI <- optionMaybe (expUriP pm)
-    versionIRI <- optionMaybe (expUriP pm)
+    (ontologyIRI, versionIRI) <- option (Nothing, Nothing) (do 
+        pkeyword ontologyC
+        o <- optionMaybe (expUriP pm)
+        v <- optionMaybe (expUriP pm)
+        return (o, v)
+      )
     imports <- importEntry pm
     anns <- optionalAnnos pm
     axs <- many $ parseFrame pm
