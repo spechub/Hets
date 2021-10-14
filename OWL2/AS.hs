@@ -49,7 +49,9 @@ changePrefixMapTypeToString = fmap show
 changePrefixMapTypeToGA :: PrefixMap -> GA.PrefixMap
 changePrefixMapTypeToGA = fmap (\s -> case parseIRICompoundCurie s of
     Just i -> i
-    Nothing -> error $ "Invalid IRI while OWL2.AS.changePrefixMapTypeToGA: "  ++ s
+    Nothing -> case parseIRI s of 
+      Just i -> i
+      Nothing -> error $ "Invalid IRI while OWL2.AS.changePrefixMapTypeToGA: "  ++ s
   )
 
 predefPrefixesGA :: GA.PrefixMap
