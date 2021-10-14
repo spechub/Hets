@@ -13,6 +13,7 @@ analyse OWL files by calling the external Java parser.
 module OWL2.ParseOWL (parseOWL, convertOWL) where
 
 import OWL2.AS
+import OWL2.Rename
 
 import qualified Data.ByteString.Lazy as L
 import Data.List
@@ -29,6 +30,7 @@ import Control.Monad
 import Control.Monad.Trans
 
 import OWL2.XML
+import OWL2.Rename (unifyDocs)
 
 import System.Directory
 import System.Exit
@@ -92,8 +94,6 @@ parseProc str = do
       in do
         unless (null mis) . liftR . justWarn () $ "Missing imports: "
             ++ intercalate ", " (map strContent mis)
-        return (mempty, [])
-        -- TODO: commented out in 1993
-        -- return (imap, unifyDocs . map (xmlBasicSpec imap)
-        --                $ concatMap (filterElementsName $ isSmth "Ontology") es)
+        return (imap, unifyDocs . map (xmlBasicSpec imap)
+                       $ concatMap (filterElementsName $ isSmth "Ontology") es)
 

@@ -43,6 +43,7 @@ module Common.IRI
     , iriToStringShortUnsecure
     , hasFullIRI
     , isSimple
+    , isURN
     , addSuffixToIRI
     , showTrace
     -- * Parsing
@@ -75,6 +76,7 @@ module Common.IRI
     , showIRI
     , showIRICompact
     , showIRIFull
+    , showURN
     , dummyIRI
     , mkIRI
     , mkAbbrevIRI
@@ -162,6 +164,20 @@ nullIRI = IRI
 hasFullIRI :: IRI -> Bool
 hasFullIRI i = not . null $ iriScheme i ++ (show $ iriPath i)
 
+-- | check whether the IRI is a URN (uniform resource name)
+isURN :: IRI -> Bool
+isURN i = iriScheme i == "urn"
+
+-- | gets the nid part of an urn
+urnNID :: IRI -> String
+urnNID = iriRegName . fromJust . iriAuthority
+
+-- | get the nss part of an urn
+urnNSS :: IRI -> String
+urnNSS = show . iriPath
+
+
+
 {- | check that we have a simple IRI that is a (possibly expanded) abbreviated IRI
 without prefix -}
 isSimple :: IRI -> Bool
@@ -246,9 +262,13 @@ iRIRange i = let Range rs = iriPos i in case rs of
 
 showIRI :: IRI -> String
 showIRI i 
+  | isURN i = showURN i
   | hasFullIRI i && not (isAbbrev i)  = showIRIFull i
   | otherwise = showIRICompact i
 
+
+showURN :: IRI -> String
+showURN i = urnToString i ""
 
 -- | show IRI as abbreviated, when possible
 showIRICompact :: IRI -> String
@@ -437,7 +457,7 @@ urnParser = let ldh = alphaNum <|> oneOf "-." in iriWithPos $
               { iriScheme = "urn"
               , iriAuthority = Just IRIAuth
                 { iriUserInfo = ""
-                , iriRegName = nss
+                , iriRegName = nid
                 , iriPort = ""
                 }
               , iriPath = stringToId nss
@@ -840,8 +860,13 @@ that may be present in the IRI.  Use this function with argument @id@
 to preserve the password in the formatted output. -}
 iriToString :: (String -> String) -> IRI -> ShowS
 iriToString iuserinfomap i
+  | isURN i = urnToString i
   | hasFullIRI i && not (isAbbrev i) = iriToStringFull iuserinfomap i
   | otherwise = iriToStringAbbrev i
+
+
+urnToString :: IRI -> ShowS
+urnToString i = (("urn:" ++ urnNID i ++ ":" ++ urnNSS i ++ iriQuery i ++ iriFragment i) ++)
 
 iriToStringShort :: (String -> String) -> IRI -> ShowS
 iriToStringShort iuserinfomap i
@@ -1112,7 +1137,8 @@ expandIRI :: Map String IRI -> IRI -> IRI
 expandIRI pm iri
     | isAbbrev iri = fromMaybe iri $ do
         def <- Map.lookup (prefixName iri) pm
-        expanded <- mergeCurie iri def
+        let defS = iriToStringFull id (setAngles False def) ""
+        expanded <- parseIRI $ defS ++ iFragment iri
         return $ expanded
             { iFragment = iFragment iri
             , prefixName = prefixName iri

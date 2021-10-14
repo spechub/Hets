@@ -257,6 +257,10 @@ printAxiom pds axiom = case axiom of
         -> printHasKey pds axAnns clExpr objPropExprs dataPropExprs
     Assertion ax -> printAssertion pds ax
     AnnotationAxiom ax -> printAnnotationAxiom pds ax
+    Rule (DLSafeRule anns body head) -> printDLSafeRule pds anns body head
+    Rule (DGRule anns dgBody dgHead) -> printDGRule pds anns dgBody dgHead
+    DGAxiom anns dgName dgNodes dgEdges mainClasses ->
+        printDGAxiom pds anns dgName dgNodes dgEdges mainClasses
 
 printDeclaration :: GA.PrefixMap -> AxiomAnnotations -> Entity -> Doc
 printDeclaration pds axAnns ent =
@@ -763,11 +767,164 @@ printAnnotationPropertyRange pds axAnns annProp iri =
         docAnnProp = printIRI pds annProp
         docIri = printIRI pds iri
 
+-- | print DLSafeRules
+printDLSafeRule :: GA.PrefixMap -> AxiomAnnotations -> Body -> Head -> Doc
+printDLSafeRule pds anns body head = 
+    keyword dlSafeRuleS
+    <> sParens (hsep [docAnns, fsep [docBody, docHead]])
+    where
+        docAnns = fsep . map (printAnnotation pds) $ anns
+        docHead = printDLSafeRuleHead pds head
+        docBody = printDLSafeRuleBody pds body
+
+printDLSafeRuleHead :: GA.PrefixMap -> Head -> Doc
+printDLSafeRuleHead pds atoms =
+    keyword headS
+    <> sParens (fsep $ map (printAtom pds) atoms)
+
+printDLSafeRuleBody :: GA.PrefixMap -> Body -> Doc
+printDLSafeRuleBody pds atoms =
+    keyword bodyS
+    <> sParens (fsep $ map (printAtom pds) atoms)
+
+printAtom :: GA.PrefixMap -> Atom -> Doc
+printAtom pds atom = case atom of
+    ClassAtom ce ia -> printClassAtom pds ce ia
+    DataRangeAtom dr da -> printDataRangeAtom pds dr da
+    ObjectPropertyAtom oe ia1 ia2 -> printObjectPropertyAtom pds oe ia1 ia2
+    DataPropertyAtom dp ia da -> printDataPropertyAtom pds dp ia da
+    BuiltInAtom iri das -> printBuiltInAtom pds iri das
+    SameIndividualAtom ia1 ia2 -> printSameIndividualAtom pds ia1 ia2
+    DifferentIndividualsAtom ia1 ia2 ->
+        printDifferentIndividualsAtom pds ia1 ia2
+    _ -> keyword "Atom" -- ?
+
+printClassAtom :: GA.PrefixMap -> ClassExpression -> IndividualArg -> Doc
+printClassAtom pds ce ia =
+    keyword classAtomS
+    <> sParens (fsep [printClassExpression pds ce,  printIndividualArg pds ia])
+
+printDataRangeAtom :: GA.PrefixMap -> DataRange -> DataArg -> Doc
+printDataRangeAtom pds dr da =
+    keyword dataRangeAtomS
+    <> sParens (fsep [printDataRange pds dr, printDataArg pds da])
+
+printObjectPropertyAtom :: GA.PrefixMap -> ObjectPropertyExpression
+    -> IndividualArg -> IndividualArg -> Doc
+printObjectPropertyAtom pds oe ia1 ia2 =
+    keyword objectPropertyAtomS
+    <> sParens (fsep [printObjectPropertyExpression pds oe
+        , printIndividualArg pds ia1
+        , printIndividualArg pds ia2])
+
+printDataPropertyAtom :: GA.PrefixMap -> DataProperty -> IndividualArg
+    -> DataArg -> Doc
+printDataPropertyAtom pds dp ia da = 
+    keyword dataPropertyAtomS
+    <> sParens (fsep [printIRI pds dp, printIndividualArg pds ia
+        , printDataArg pds da])
+
+printBuiltInAtom :: GA.PrefixMap -> IRI -> [DataArg] -> Doc
+printBuiltInAtom pds iri das = 
+    keyword builtInAtomS
+    <> sParens (fsep . concat
+        $ [[printIRI pds iri], map (printDataArg pds ) das])
+
+printSameIndividualAtom :: GA.PrefixMap -> IndividualArg -> IndividualArg -> Doc
+printSameIndividualAtom pds ia1 ia2 =
+    keyword sameIndividualAtomS
+    <> sParens (fsep . map (printIndividualArg pds) $ [ia1, ia2])
+
+printDifferentIndividualsAtom :: GA.PrefixMap -> IndividualArg -> IndividualArg
+    -> Doc
+printDifferentIndividualsAtom pds ia1 ia2 =
+    keyword differentIndividualsAtomS
+    <> sParens (fsep . map (printIndividualArg pds) $ [ia1, ia2])
+
+printIndividualArg :: GA.PrefixMap -> IndividualArg -> Doc
+printIndividualArg pds ia = case ia of
+    IArg iri -> printIRI pds iri
+    IVar iri -> keyword variableS <> sParens (printIRI pds iri)
+
+printDataArg :: GA.PrefixMap -> DataArg -> Doc
+printDataArg pds da = case da of
+    DArg lit -> printLiteral pds lit
+    DVar iri -> keyword variableS <> sParens (printIRI pds iri)
+
+-- | print DGRules
+printDGRule :: GA.PrefixMap -> AxiomAnnotations -> DGBody -> DGHead -> Doc
+printDGRule pds anns dgBody dgHead =
+    keyword descriptionGraphRuleS
+    <> sParens (hsep [docAnns, fsep [docBody, docHead]])
+    where
+        docAnns = fsep . map (printAnnotation pds) $ anns
+        docHead = printDGHead pds dgHead
+        docBody = printDGBody pds dgBody
+
+printDGHead :: GA.PrefixMap -> DGHead -> Doc
+printDGHead pds dgAtoms =
+    keyword headS
+    <> sParens (fsep . map (printDGAtom pds) $ dgAtoms)
+
+printDGBody :: GA.PrefixMap -> DGBody -> Doc
+printDGBody pds dgAtoms =
+    keyword bodyS
+    <> sParens (fsep . map (printDGAtom pds) $ dgAtoms)
+
+printDGAtom :: GA.PrefixMap -> DGAtom -> Doc
+printDGAtom pds dgAtom = case dgAtom of
+    DGClassAtom ce ia -> keyword classAtomS
+        <> sParens (fsep [printClassExpression pds ce
+            , printIndividualArg pds ia])
+
+    DGObjectPropertyAtom oe ia1 ia2 -> keyword objectPropertyAtomS
+        <> sParens (fsep [printObjectPropertyExpression pds oe
+            , printIndividualArg pds ia1
+            , printIndividualArg pds ia2])
+
+-- | print DGAxiom
+printDGAxiom :: GA.PrefixMap -> AxiomAnnotations -> DGName -> DGNodes
+    -> DGEdges -> MainClasses -> Doc
+printDGAxiom pds anns dgName dgNodes dgEdges mainClasses =
+    keyword descriptionGraphS
+    <> sParens (fsep 
+        [docAnns, fsep [docDGName, docDGNodes, docDGEdges, docMainClasses]])
+    where
+        docAnns = fsep . map (printAnnotation pds) $ anns
+        docDGName = printIRI pds dgName
+        docDGNodes = printDGNodes pds dgNodes
+        docDGEdges = printDGEdges pds dgEdges
+        docMainClasses = printMainClasses pds mainClasses
+
+printDGNodes :: GA.PrefixMap -> DGNodes -> Doc
+printDGNodes pds dgNodes =
+    keyword nodesS
+    <> sParens (fsep . map (printDGNodeAssertion pds) $ dgNodes)
+
+printDGEdges :: GA.PrefixMap -> DGEdges -> Doc
+printDGEdges pds dgEdges =
+    keyword edgesS
+    <> sParens (fsep . map (printDGEdgeAssertion pds) $ dgEdges)
+
+printDGNodeAssertion :: GA.PrefixMap -> DGNodeAssertion -> Doc
+printDGNodeAssertion pds (DGNodeAssertion clIri nodeIri) =
+    keyword nodeAssertionS
+    <> sParens (fsep . map (printIRI pds) $ [clIri, nodeIri]) 
+
+printDGEdgeAssertion :: GA.PrefixMap -> DGEdgeAssertion -> Doc
+printDGEdgeAssertion pds (DGEdgeAssertion dp nodeIri1 nodeIri2) =
+    keyword edgeAssertionS
+    <> sParens (fsep . map (printIRI pds) $ [dp, nodeIri1, nodeIri2])
+
+printMainClasses :: GA.PrefixMap -> MainClasses -> Doc
+printMainClasses pds cls = keyword mainClassesS
+    <> sParens (fsep . map (printIRI pds) $ cls)
+
 -- | print Root
 printPrefixDeclaration :: (String, IRI) -> Doc
 printPrefixDeclaration (prName, iri) =
-        keyword "Prefix"
-        <> sParens ((text (prName ++ ":")) <> (text " = ") <> pretty iri)
+    keyword "Prefix"
+    <> sParens ((text (prName ++ ":")) <> (text " = ") <> pretty iri)
 
 printOnt :: GA.PrefixMap -> Ontology -> Doc
 printOnt pds (Ontology mOnt mVerIri dImpDocs ontAnns axs) =
