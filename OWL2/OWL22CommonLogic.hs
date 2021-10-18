@@ -1060,10 +1060,10 @@ iArgToTerm arg = case arg of
     AS.IVar v -> Name_term . AS.uriToTok $ v
     AS.IArg iri -> Name_term . AS.uriToTok $ iri
 
-iArgToVarOrIndi :: AS.IndividualArg -> VarOrIndi
-iArgToVarOrIndi arg = case arg of
-    AS.IVar v -> OIndi v
-    AS.IArg iri -> OIndi iri
+iArgToVarOrIndi :: Int -> AS.IndividualArg -> Result ([SENTENCE], VarOrIndi, Int)
+iArgToVarOrIndi startVar arg = case arg of
+    AS.IVar var -> return ([mkEqual (mkNName startVar) (AS.uriToTok var)], OVar startVar, startVar + 1)
+    AS.IArg iri -> return ([], OIndi iri, startVar)
 
 iArgToIRI :: AS.IndividualArg -> IRI
 iArgToIRI arg = case arg of
@@ -1072,7 +1072,7 @@ iArgToIRI arg = case arg of
 
 dArgToVarOrIndi :: Int -> AS.DataArg -> Result ([SENTENCE], VarOrIndi, Int)
 dArgToVarOrIndi startVar arg = case arg of
-    AS.DVar var -> return $ ([], OIndi var, startVar)
+    AS.DVar var -> return $ ([mkEqual (mkNName startVar) (AS.uriToTok var)], OVar startVar, startVar + 1)
     AS.DArg lit -> do
         let var = OVar $ startVar
         let uid = mkVTerm var
@@ -1092,8 +1092,9 @@ mapClassExpression ind (ce, sent) = case ce of
 atomToSentence :: Int -> Sign -> AS.Atom -> Result ([SENTENCE], Sign, Int)
 atomToSentence startVar cSig atom = case atom of
     AS.ClassAtom clExpr iarg -> do 
-        (l, sig) <- mapDescription cSig clExpr (iArgToVarOrIndi iarg) 1
-        return ([mapClassExpression (iArgToTerm iarg) (clExpr, l)], sig, startVar)
+        (sentences, var, offsetValue) <- iArgToVarOrIndi startVar iarg
+        (l, sig) <- mapDescription cSig clExpr var 1
+        return (mapClassExpression (iArgToTerm iarg) (clExpr, l) : sentences, sig, offsetValue)
         
     AS.DataRangeAtom dataRange darg -> do
         (sentences, var, offsetValue) <- dArgToVarOrIndi startVar darg
@@ -1101,23 +1102,25 @@ atomToSentence startVar cSig atom = case atom of
         return (s : sentences, sig, offsetValue)
 
     AS.ObjectPropertyAtom opExpr iarg1 iarg2 -> do
-        sen <- mapObjProp cSig opExpr (iArgToVarOrIndi iarg1) (iArgToVarOrIndi iarg2)
-        return ([sen], cSig, startVar)
+        (sentences1, var1, offsetValue1) <- iArgToVarOrIndi startVar iarg1
+        (sentences2, var2, offsetValue2) <- iArgToVarOrIndi offsetValue1 iarg2
+        sen <- mapObjProp cSig opExpr var1 var2
+        return (sen : sentences1 ++ sentences2 , cSig, offsetValue2)
 
     AS.DataPropertyAtom dpExpr iarg darg -> do
-            let inS = iArgToVarOrIndi iarg
+            (sentences, var1, offsetValue) <- iArgToVarOrIndi startVar iarg
             case darg of
-                AS.DVar var -> do
-                    sen <- mapDataProp cSig dpExpr inS (OIndi var)
-                    return ([sen], cSig, startVar)
+                AS.DVar var2 -> do
+                    sen <- mapDataProp cSig dpExpr var1 (OIndi var2)
+                    return (sen : sentences, cSig, offsetValue)
                 AS.DArg lit -> do
                     inT <- mapLit startVar lit
                     nm <- uriToTokM dpExpr
                     case inT of
-                            Right li -> return $ ([mkTermAtoms nm [mkVTerm inS, li]], cSig, startVar)
+                            Right li -> return $ (mkTermAtoms nm [mkVTerm var1, li] : sentences, cSig, offsetValue)
                             Left (s1, s2) -> do
-                                sen <- mapDataProp cSig dpExpr inS $ OVar startVar
-                                return ([mkBC [sen, s1, s2]], cSig, startVar + 1)
+                                sen <- mapDataProp cSig dpExpr var1 $ OVar (offsetValue + 1)
+                                return (mkBC [sen, s1, s2] : sentences, cSig, offsetValue + 2)
 
     AS.BuiltInAtom iri args -> do
         (l, offsetValue) <- foldM (\(results, offsetValue) arg -> do
