@@ -395,32 +395,35 @@ mapComObjectPropsList mol props a b = do
         Nothing -> return $ comPairs fs fs
         Just ol -> fmap (`mkPairs` fs) $ mapObjProp ol a b
 
--- | mapping of Data Range
-mapDataRange :: AS.DataRange -> Int -> Result (CASLFORMULA, [CASLSign])
-mapDataRange dr i = case dr of
+mapDataRangeAux :: AS.DataRange -> CASLTERM -> Result (CASLFORMULA, [CASLSign])
+mapDataRangeAux dr i = case dr of
     AS.DataType d fl -> do
-        let dt = mkMember (qualData i) $ uriToCaslId d 
+        let dt = mkMember i $ uriToCaslId d 
         (sens, s) <- mapAndUnzipM (mapFacet i) fl
         return (conjunct $ dt : sens, concat s)
     AS.DataComplementOf drc -> do
-        (sens, s) <- mapDataRange drc i
+        (sens, s) <- mapDataRangeAux drc i
         return (mkNeg sens, s)
     AS.DataJunction jt drl -> do
-        (jl, sl) <- mapAndUnzipM ((\ v r -> mapDataRange r v) i) drl
+        (jl, sl) <- mapAndUnzipM ((\ v r -> mapDataRangeAux r v) i) drl
         --let usig = uniteL sl
         return $ case jt of
                 AS.IntersectionOf -> (conjunct jl, concat sl)
                 AS.UnionOf -> (disjunct jl, concat sl)
     AS.DataOneOf cs -> do
         ls <- mapM mapLiteral cs
-        return (disjunct $ map (mkStEq $ qualData i) ls, [])
+        return (disjunct $ map (mkStEq i) ls, [])
 
-mkFacetPred :: TERM f -> AS.ConstrainingFacet -> Int -> (FORMULA f, Id)
+-- | mapping of Data Range
+mapDataRange :: AS.DataRange -> Int -> Result (CASLFORMULA, [CASLSign])
+mapDataRange dr = mapDataRangeAux dr . qualData
+
+mkFacetPred :: TERM f -> AS.ConstrainingFacet -> TERM f -> (FORMULA f, Id)
 mkFacetPred lit f var =
     let cf = mkInfix $ fromCF f
-    in (mkPred dataPred [qualData var, lit] cf, cf)
+    in (mkPred dataPred [var, lit] cf, cf)
 
-mapFacet :: Int -> (AS.ConstrainingFacet, AS.RestrictionValue)
+mapFacet :: CASLTERM -> (AS.ConstrainingFacet, AS.RestrictionValue)
     -> Result (CASLFORMULA, [CASLSign])
 mapFacet var (f, r) = do
     con <- mapLiteral r
@@ -1026,9 +1029,20 @@ mapAxioms axiom = case axiom of
 
     AS.AnnotationAxiom _ -> return ([], [])
 
+
+--  <http://www.semanticweb.org/mcodescu/ontologies/2021/9/untitled-ontology-71#S>(?<a>), 
+--  <http://www.semanticweb.org/mcodescu/ontologies/2021/9/untitled-ontology-71#T>(?<b>),
+--  <http://www.semanticweb.org/mcodescu/ontologies/2021/9/untitled-ontology-71#pv>(?<a>, ?<b>) ->
+--  <http://www.semanticweb.org/mcodescu/ontologies/2021/9/untitled-ontology-71#hasVal>(
+--      ?<b>, <http://www.semanticweb.org/mcodescu/ontologies/2021/9/untitled-ontology-71#v>
+--  )
+-- forall gn_a : Thing. forall gn_b : Thing . S(gn_a) /\ T(gn_b) /\ pv(gn_a, gn_b) => hasVal(gn_b, v)
+
+
+
     AS.Rule axiom -> case axiom of
         AS.DLSafeRule _ b h ->
-            let vars = concat $ AS.getVariablesFromAtom <$> (b ++ h)
+            let vars = Set.toList . Set.unions $ AS.getVariablesFromAtom <$> (b ++ h)
                 names = tokDecl . AS.uriToTok <$> vars
                 f (sentences, sig, startVal) at = do
                     (sentences', sig', offsetValue) <- atomToSentence startVal at
@@ -1044,7 +1058,7 @@ mapAxioms axiom = case axiom of
 
                 
                 let impl = mkImpl antecedent consequent
-                return $ ([mkForall (names ++ map thingDecl [1..lastVar]) impl], sig1 ++ sig2)
+                return $ ([mkForall (names ++ map thingDecl [1..lastVar - 1]) impl], sig1 ++ sig2)
 
 
 iArgToTerm :: AS.IndividualArg -> Result(TERM ())
@@ -1075,14 +1089,14 @@ atomToSentence startVar atom = case atom of
         (el, sigs) <- mapDescription clExpr startVar
         inD <- iArgToTerm iarg
         let el' = substitute (mkNName startVar) thing inD el
-        return ([el'], sigs, startVar + 1)
+        return ([el'], sigs, startVar)
         
     AS.DataRangeAtom dataRange darg -> do
         -- return ([], [], startVar)
         -- Ask mihai about it? How to represent a DataRangeAtom in CASL?
-        (odes, s) <- mapDataRange dataRange startVar
         dt <- dArgToTerm darg
-        return ([mkVDataDecl [startVar] $ mkEqv odes $ mkStEq (qualData startVar) dt], s, startVar + 1)
+        (odes, s) <- mapDataRangeAux dataRange dt
+        return ([substitute (mkNName 1) thing dt odes], s, startVar)
 
         -- forall 2: odes <=> 2 elem dt
         -- darg elem dataRange
@@ -1099,14 +1113,14 @@ atomToSentence startVar atom = case atom of
         return ([oPropH], [], startVar)
 
     AS.DataPropertyAtom dpExpr iarg darg -> do
-        let a = startVar
-            b = startVar + 1
+        let a = 1
+            b = 2
         inS <- iArgToTerm iarg
         inT <- dArgToTerm darg
         oProp <- mapDataProp dpExpr a b
         return ([mkForall [thingDecl a, dataDecl b] $ implConj
             [mkEqDecl a inS, mkEqVar (dataDecl b) $ upcast inT dataS] oProp],
-            [], startVar + 2)
+            [], startVar)
 
     AS.BuiltInAtom iri args -> do
         predArgs <- mapM dArgToTerm args

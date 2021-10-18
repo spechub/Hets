@@ -1034,7 +1034,7 @@ mapAxioms cSig axiom = case axiom of
 
     AS.Rule axiom -> case axiom of
         AS.DLSafeRule _ b h ->
-            let vars = concat $ AS.getVariablesFromAtom <$> (b ++ h)
+            let vars = Set.toList . Set.unions $ AS.getVariablesFromAtom <$> (b ++ h)
                 names = Name . AS.uriToTok <$> vars
                 f (sentences, sig, startVal) at = do
                     (sentences', sig', offsetValue) <- atomToSentence startVal sig at
@@ -1082,7 +1082,8 @@ dArgToVarOrIndi startVar arg = case arg of
                 Right term -> mkAtoms $ Atom term [Term_seq uid]
         return ([sen], var, startVar + 1)
 
-
+-- make PROFILE=on restack
+-- make PROFILE=on hets
 mapClassExpression :: TERM -> (AS.ClassExpression, SENTENCE) -> SENTENCE
 mapClassExpression ind (ce, sent) = case ce of
     AS.Expression _ -> sent
