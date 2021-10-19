@@ -22,6 +22,7 @@ import Control.Monad
 import Data.Char
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+import qualified Data.List as List
 import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
 
@@ -833,6 +834,12 @@ mapKey ce pl npl p i h = do
 --     ListFrameBit rel lfb -> mapListFrameBit ex rel lfb
 --     AnnFrameBit ans afb -> mapAnnFrameBit ex ans afb
 
+swrlVariableToVar :: IRI -> VAR_DECL
+swrlVariableToVar iri = (flip mkVarDecl) thing $ 
+    case List.stripPrefix "urn:swrl#" (showIRI iri) of
+        Nothing -> idToSimpleId . uriToCaslId $ iri
+        Just var -> genToken var
+
 mapAxioms :: AS.Axiom -> Result([CASLFORMULA], [CASLSign])
 mapAxioms axiom = case axiom of
     AS.Declaration _ _ -> return ([], [])
@@ -1029,21 +1036,10 @@ mapAxioms axiom = case axiom of
 
     AS.AnnotationAxiom _ -> return ([], [])
 
-
---  <http://www.semanticweb.org/mcodescu/ontologies/2021/9/untitled-ontology-71#S>(?<a>), 
---  <http://www.semanticweb.org/mcodescu/ontologies/2021/9/untitled-ontology-71#T>(?<b>),
---  <http://www.semanticweb.org/mcodescu/ontologies/2021/9/untitled-ontology-71#pv>(?<a>, ?<b>) ->
---  <http://www.semanticweb.org/mcodescu/ontologies/2021/9/untitled-ontology-71#hasVal>(
---      ?<b>, <http://www.semanticweb.org/mcodescu/ontologies/2021/9/untitled-ontology-71#v>
---  )
--- forall gn_a : Thing. forall gn_b : Thing . S(gn_a) /\ T(gn_b) /\ pv(gn_a, gn_b) => hasVal(gn_b, v)
-
-
-
     AS.Rule axiom -> case axiom of
         AS.DLSafeRule _ b h ->
             let vars = Set.toList . Set.unions $ AS.getVariablesFromAtom <$> (b ++ h)
-                names = tokDecl . AS.uriToTok <$> vars
+                names = swrlVariableToVar <$> vars
                 f (sentences, sig, startVal) at = do
                     (sentences', sig', offsetValue) <- atomToSentence startVal at
                     return (sentences ++ sentences', sig ++ sig', offsetValue)
@@ -1063,7 +1059,7 @@ mapAxioms axiom = case axiom of
 
 iArgToTerm :: AS.IndividualArg -> Result(TERM ())
 iArgToTerm arg = case arg of
-    AS.IVar v -> return . toQualVar . tokDataDecl . AS.uriToTok $ v
+    AS.IVar v -> return . toQualVar . swrlVariableToVar $ v
     AS.IArg iri -> mapIndivURI iri
 
 iArgToVarOrIndi :: AS.IndividualArg -> VarOrIndi
