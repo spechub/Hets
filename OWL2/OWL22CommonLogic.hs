@@ -1050,7 +1050,7 @@ mapAxioms cSig axiom = case axiom of
 
                 
                 let impl = mkBools $ mkImpl antecedent consequent
-                return $ ([senToText $ mkUnivQ (names ++ map mkNAME [1..lastVar]) impl nullRange], sig')
+                return $ ([senToText $ mkUnivQ (names ++ map mkNAME [1..lastVar - 1]) impl nullRange], sig')
     
         -- AS.DGRule _  ->  -- ? Ask Mihai whether to implement and if so how? What do those represent? How to write them in Common Logic?
     -- AS.DGAxiom _ c man   ->  -- ? Ask Mihai whether to implement and if so how?  What do those represent? How to write them in Common Logic?
@@ -1062,7 +1062,7 @@ iArgToTerm arg = case arg of
 
 iArgToVarOrIndi :: Int -> AS.IndividualArg -> Result ([SENTENCE], VarOrIndi, Int)
 iArgToVarOrIndi startVar arg = case arg of
-    AS.IVar var -> return ([mkEqual (mkNName startVar) (AS.uriToTok var)], OVar startVar, startVar + 1)
+    AS.IVar var -> return ([], OIndi var, startVar)
     AS.IArg iri -> return ([], OIndi iri, startVar)
 
 iArgToIRI :: AS.IndividualArg -> IRI
@@ -1072,7 +1072,7 @@ iArgToIRI arg = case arg of
 
 dArgToVarOrIndi :: Int -> AS.DataArg -> Result ([SENTENCE], VarOrIndi, Int)
 dArgToVarOrIndi startVar arg = case arg of
-    AS.DVar var -> return $ ([mkEqual (mkNName startVar) (AS.uriToTok var)], OVar startVar, startVar + 1)
+    AS.DVar var -> return $ ([], OIndi var, startVar)
     AS.DArg lit -> do
         let var = OVar $ startVar
         let uid = mkVTerm var
