@@ -354,14 +354,17 @@ mapComIndivList cSig sod mi inds = do
                     AS.Different -> mkBN $ mkAE x y) il
     return [mkBC sntLst]
 
-mapLit :: Int -> AS.Literal -> Result (Either (SENTENCE, SENTENCE) TERM)
-mapLit i c = return $ case c of
+mapLitAux :: VarOrIndi -> AS.Literal -> Result (Either (SENTENCE, SENTENCE) TERM)
+mapLitAux var c = return $ case c of
     AS.Literal l ty -> case ty of
-        AS.Typed dt -> Left (mkEqual (mkSimpleId l) $ mkNName i,
-                    mkTermAtoms (AS.uriToTok dt) [mkNTERM i])
+        AS.Typed dt -> Left (mkEqual (mkSimpleId l) $ voiToTok var,
+                    mkTermAtoms (AS.uriToTok dt) [mkVTerm var])
         AS.Untyped _ -> Right $ Name_term $ mkSimpleId l
-    AS.NumberLit l -> Left (mkEqual (mkSimpleId $ show l) $ mkNName i,
-                    mkTermAtoms (mkSimpleId $ AS.numberName l) [mkNTERM i])
+    AS.NumberLit l -> Left (mkEqual (mkSimpleId $ show l) $ voiToTok var,
+                    mkTermAtoms (mkSimpleId $ AS.numberName l) [mkVTerm var])
+
+mapLit :: Int -> AS.Literal -> Result (Either (SENTENCE, SENTENCE) TERM)
+mapLit i = mapLitAux (OVar i) 
 
 -- | Mapping of data properties
 mapDataProp :: Sign -> AS.DataPropertyExpression -> VarOrIndi -> VarOrIndi
@@ -412,9 +415,13 @@ mapObjOrDataListP f cSig a b ls = do
     l2 <- f cSig a b r
     return $ zip l1 l2
 
--- | mapping of Data Range
 mapDataRange :: Sign -> AS.DataRange -> VarOrIndi -> Result (SENTENCE, Sign)
-mapDataRange cSig dr var = let uid = mkVTerm var in case dr of
+mapDataRange cSig dr var = mapDataRangeAux cSig dr var (varToInt var + 1)
+
+
+-- | mapping of Data Range
+mapDataRangeAux :: Sign -> AS.DataRange -> VarOrIndi -> Int -> Result (SENTENCE, Sign)
+mapDataRangeAux cSig dr var i = let uid = mkVTerm var in case dr of
     AS.DataJunction jt drl -> do
         (jl, sig) <- mapAndUnzipM ((\ s v r -> mapDataRange s r v) cSig var) drl
         let un = uniteL sig
@@ -425,21 +432,20 @@ mapDataRange cSig dr var = let uid = mkVTerm var in case dr of
         (dc, sig) <- mapDataRange cSig cdr var
         return (mkBN dc, sig)
     AS.DataOneOf cs -> do
-        let i = varToInt var
-        cl <- mapM (mapLit i) cs
+        cl <- mapM (mapLitAux var) cs
         let (sens, ts) = (lefts cl, rights cl)
             sl = map (\ (s1, s2) -> mkBC [s1, s2]) sens
         tl <- mapM (\ x -> return $ mkAtoms $ Atom x [Term_seq uid]) ts
         return (mkBD $ tl ++ sl, cSig)
     AS.DataType dt rlst -> do
         let sent = mkTermAtoms (AS.uriToTok dt) [uid]
-        (sens, sigL) <- mapAndUnzipM (mapFacet cSig var uid) rlst
+        (sens, sigL) <- mapAndUnzipM (mapFacet cSig var i uid) rlst
         return (mkBC $ sent : sens, uniteL $ cSig : sigL)
 
 -- | mapping of a tuple of ConstrainingFacet and RestictionValue
-mapFacet :: Sign -> VarOrIndi -> TERM -> (AS.ConstrainingFacet, AS.RestrictionValue)
+mapFacet :: Sign -> VarOrIndi -> Int -> TERM -> (AS.ConstrainingFacet, AS.RestrictionValue)
     -> Result (SENTENCE, Sign)
-mapFacet sig i var (f, r) = let v = varToInt i + 1 in do
+mapFacet sig i v var (f, r) = do
     l <- mapLit v r
     let sign = unite sig $ emptySig {
                   discourseNames = Set.fromList [stringToId $ showIRI
@@ -1098,8 +1104,8 @@ atomToSentence startVar cSig atom = case atom of
         
     AS.DataRangeAtom dataRange darg -> do
         (sentences, var, offsetValue) <- dArgToVarOrIndi startVar darg
-        (s, sig) <- mapDataRange cSig dataRange var
-        return (s : sentences, sig, offsetValue)
+        (s, sig) <- mapDataRangeAux cSig dataRange var offsetValue
+        return (s : sentences, sig, offsetValue + 1)
 
     AS.ObjectPropertyAtom opExpr iarg1 iarg2 -> do
         (sentences1, var1, offsetValue1) <- iArgToVarOrIndi startVar iarg1
