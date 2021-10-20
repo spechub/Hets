@@ -1048,10 +1048,14 @@ mapAxioms cSig axiom = case axiom of
                 g startVal sig atoms = foldM f ([], sig, startVal) atoms
             in do
                 (antecedentSen, sig, offsetValue) <- g 1 cSig b
-                let antecedent = mkBools $ cnjct antecedentSen
-                
+                let antecedent = case antecedentSen of
+                        [s] -> s
+                        _ -> mkBools $ cnjct antecedentSen
+                    
                 (consequentSen, sig', lastVar) <- g offsetValue sig h
-                let consequent = mkBools $ cnjct consequentSen
+                let consequent =case consequentSen of
+                        [s] -> s
+                        _ -> mkBools $ cnjct consequentSen
 
                 
                 let impl = mkBools $ mkImpl antecedent consequent
