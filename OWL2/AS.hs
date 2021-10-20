@@ -291,12 +291,13 @@ stripReservedPrefix = idToIRI . uriToId
      or <http://www.w3.org/2002/07/owl#real> returns "real") -}
 uriToId :: IRI -> Id
 uriToId i =
-    if (isAbbrev i || prefixName i `elem` ["", "xsd", "rdf", "rdfs", "owl"])
+    if (isAbbrev i || (not (hasFullIRI i) && prefixName i `elem` ["", "xsd", "rdf", "rdfs", "owl"]))
     then stringToId $ iFragment i
     else stringToId $ case mapMaybe (`stripPrefix` showIRICompact i)
                 $ Map.elems predefPrefixes of
             [s] -> s
             _ -> showIRIFull i
+            
 getPredefName :: IRI -> String
 getPredefName = show . uriToId
 
@@ -1003,7 +1004,29 @@ data Atom = ClassAtom ClassExpression IndividualArg
   | UnknownUnaryAtom IRI UnknownArg
   | UnknownBinaryAtom IRI UnknownArg UnknownArg
   deriving (Show, Eq, Ord, Data)
-  
+
+
+getVariablesFromIArg :: IndividualArg -> Set.Set Variable
+getVariablesFromIArg iarg = case iarg of
+    (IVar v) -> Set.singleton v
+    _ -> mempty
+
+getVariablesFromDArg :: DataArg -> Set.Set Variable
+getVariablesFromDArg darg = case darg of
+    (DVar v) -> Set.singleton v
+    _ -> mempty
+
+getVariablesFromAtom :: Atom -> Set.Set Variable
+getVariablesFromAtom atom = case atom of
+    ClassAtom _ (IVar var) -> Set.singleton var
+    DataRangeAtom _ (DVar var) -> Set.singleton var
+    ObjectPropertyAtom _ iarg1 iarg2 -> Set.unions $ getVariablesFromIArg <$> [iarg1, iarg2]
+    DataPropertyAtom _ iarg darg -> getVariablesFromDArg darg `Set.union` getVariablesFromIArg iarg
+    BuiltInAtom _ args -> Set.unions $ getVariablesFromDArg <$> args
+    SameIndividualAtom iarg1 iarg2 -> Set.unions $ getVariablesFromIArg <$> [iarg1, iarg2]
+    DifferentIndividualsAtom iarg1 iarg2 ->  Set.unions $ getVariablesFromIArg <$> [iarg1, iarg2]
+    _ -> mempty
+
 data DGAtom = DGClassAtom ClassExpression IndividualArg
   | DGObjectPropertyAtom ObjectPropertyExpression IndividualArg IndividualArg
   deriving (Show, Eq, Ord, Data)

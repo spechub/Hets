@@ -204,13 +204,13 @@ comorphismList =
     , Comorphism Adl2CASL
 #endif
 #ifndef NOOWLLOGIC
-    -- , Comorphism OWL22CASL
-    -- , Comorphism OWL22CommonLogic
-    -- , Comorphism DMU2OWL2
-    -- , Comorphism CASL2OWL
-    -- , Comorphism Propositional2OWL2
+    , Comorphism OWL22CASL
+    , Comorphism OWL22CommonLogic
+    , Comorphism DMU2OWL2
+    , Comorphism CASL2OWL
+    , Comorphism Propositional2OWL2
 #ifdef CASLEXTENSIONS
-    -- , Comorphism ExtModal2OWL
+    , Comorphism ExtModal2OWL
 #endif
 #endif
 #ifdef PROGRAMATICA

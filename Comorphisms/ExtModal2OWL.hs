@@ -19,9 +19,8 @@ import Common.ProofTree
 
 -- OWL = codomain
 import OWL2.Logic_OWL2
-import OWL2.MS
 import Common.IRI
-import qualified OWL2.AS as AS
+import OWL2.AS
 import OWL2.ProfilesAndSublogics
 import OWL2.ManchesterPrint ()
 import OWL2.Morphism
@@ -43,24 +42,24 @@ data ExtModal2OWL = ExtModal2OWL deriving Show
 
 instance Language ExtModal2OWL
 
--- instance Comorphism
---     ExtModal2OWL        -- comorphism
---     ExtModal ExtModalSL EM_BASIC_SPEC ExtModalFORMULA SYMB_ITEMS
---     SYMB_MAP_ITEMS ExtModalSign ExtModalMorph Symbol RawSymbol ()
---     OWL2            -- lid codomain
---     ProfSub         -- sublogics codomain
---     OntologyDocument -- Basic spec codomain
---     Axiom           -- sentence codomain
---     SymbItems       -- symbol items codomain
---     SymbMapItems    -- symbol map items codomain
---     OS.Sign         -- signature codomain
---     OWLMorphism     -- morphism codomain
---     AS.Entity          -- symbol codomain
---     RawSymb         -- rawsymbol codomain
---     ProofTree       -- proof tree codomain
---     where
---       sourceLogic ExtModal2OWL = ExtModal
---       sourceSublogic ExtModal2OWL = mkTop maxSublogic
---       targetLogic ExtModal2OWL = OWL2
---       mapSublogic ExtModal2OWL _ = Just topS
---       map_theory ExtModal2OWL = mapTheory
+instance Comorphism
+    ExtModal2OWL        -- comorphism
+    ExtModal ExtModalSL EM_BASIC_SPEC ExtModalFORMULA SYMB_ITEMS
+    SYMB_MAP_ITEMS ExtModalSign ExtModalMorph Symbol RawSymbol ()
+    OWL2            -- lid codomain
+    ProfSub         -- sublogics codomain
+    OntologyDocument -- Basic spec codomain
+    Axiom           -- sentence codomain
+    SymbItems       -- symbol items codomain
+    SymbMapItems    -- symbol map items codomain
+    OS.Sign         -- signature codomain
+    OWLMorphism     -- morphism codomain
+    Entity          -- symbol codomain
+    RawSymb         -- rawsymbol codomain
+    ProofTree       -- proof tree codomain
+    where
+      sourceLogic ExtModal2OWL = ExtModal
+      sourceSublogic ExtModal2OWL = mkTop maxSublogic
+      targetLogic ExtModal2OWL = OWL2
+      mapSublogic ExtModal2OWL _ = Just topS
+      map_theory ExtModal2OWL = mapTheory

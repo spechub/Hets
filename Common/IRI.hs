@@ -79,6 +79,7 @@ module Common.IRI
     , showURN
     , dummyIRI
     , mkIRI
+    , mkAbbrevIRI
     , idToIRI  
     , setPrefix
     , uriToCaslId
@@ -299,6 +300,10 @@ dummyIRI = nullIRI {
 
 mkIRI :: String -> IRI
 mkIRI = simpleIdToIRI. mkSimpleId
+
+mkAbbrevIRI :: String -> String -> IRI
+mkAbbrevIRI pref frag = nullIRI {prefixName= pref, iFragment = frag, isAbbrev = True}
+
 
 idToIRI :: Id -> IRI
 idToIRI i =  nullIRI { iriScheme = ""
@@ -1189,9 +1194,10 @@ uriToCaslId urI =
                        c == '_'
                    then [c]
                    else "_u" ) urS
- in case urS of
-      x : _ -> 
-         if not $ isAlpha x then genName urS' 
-         else stringToId urS'
+ in case urS' of
+      x : t -> 
+         if x == '_' then genName $ dropWhile (== '_') t
+         else if not $ isAlpha x then genName urS' 
+              else stringToId urS'
       _ -> error "translating empty IRI" 
            -- should never happen
