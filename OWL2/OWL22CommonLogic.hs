@@ -439,13 +439,13 @@ mapDataRangeAux cSig dr var i = let uid = mkVTerm var in case dr of
         return (mkBD $ tl ++ sl, cSig)
     AS.DataType dt rlst -> do
         let sent = mkTermAtoms (AS.uriToTok dt) [uid]
-        (sens, sigL) <- mapAndUnzipM (mapFacet cSig var i uid) rlst
+        (sens, sigL) <- mapAndUnzipM (mapFacet cSig i uid) rlst
         return (mkBC $ sent : sens, uniteL $ cSig : sigL)
 
 -- | mapping of a tuple of ConstrainingFacet and RestictionValue
-mapFacet :: Sign -> VarOrIndi -> Int -> TERM -> (AS.ConstrainingFacet, AS.RestrictionValue)
+mapFacet :: Sign -> Int -> TERM -> (AS.ConstrainingFacet, AS.RestrictionValue)
     -> Result (SENTENCE, Sign)
-mapFacet sig i v var (f, r) = do
+mapFacet sig v var (f, r) = do
     l <- mapLit v r
     let sign = unite sig $ emptySig {
                   discourseNames = Set.fromList [stringToId $ showIRI
@@ -985,17 +985,17 @@ mapAxioms cSig axiom = case axiom of
             $ uptoOP ++ uptoDP
         return ([senToText keys], sig)
 
-    AS.Assertion axiom -> case axiom of
+    AS.Assertion assertion -> case assertion of
         AS.SameIndividual _ inds -> do
             let (mi, rest) = case inds of
-                    (iri:rest) -> (Just iri, rest)
+                    (iri:t) -> (Just iri, t)
                     _ -> (Nothing, inds)
             fs <- mapComIndivList cSig AS.Same mi rest
             return (msen2Txt fs, cSig)
 
         AS.DifferentIndividuals _ inds -> do
             let (mi, rest) = case inds of
-                    (iri:rest) -> (Just iri, rest)
+                    (iri:t) -> (Just iri, t)
                     _ -> (Nothing, inds)
             fs <- mapComIndivList cSig AS.Different mi rest
             return (msen2Txt fs, cSig)
@@ -1038,7 +1038,7 @@ mapAxioms cSig axiom = case axiom of
 
     AS.AnnotationAxiom _ -> return ([], cSig)
 
-    AS.Rule axiom -> case axiom of
+    AS.Rule rule -> case rule of
         AS.DLSafeRule _ b h ->
             let vars = Set.toList . Set.unions $ AS.getVariablesFromAtom <$> (b ++ h)
                 names = Name . AS.uriToTok <$> vars
@@ -1057,7 +1057,9 @@ mapAxioms cSig axiom = case axiom of
                 
                 let impl = mkBools $ mkImpl antecedent consequent
                 return $ ([senToText $ mkUnivQ (names ++ map mkNAME [1..lastVar - 1]) impl nullRange], sig')
+        AS.DGRule _ _ _ -> error "mapAxioms: DGRules are not supported yet!"
     
+    AS.DGAxiom _ _ _ _ _ -> error "mapAxioms: DGAxiom are not supported yet!"
         -- AS.DGRule _  ->  -- ? Ask Mihai whether to implement and if so how? What do those represent? How to write them in Common Logic?
     -- AS.DGAxiom _ c man   ->  -- ? Ask Mihai whether to implement and if so how?  What do those represent? How to write them in Common Logic?
 
@@ -1145,6 +1147,7 @@ atomToSentence startVar cSig atom = case atom of
     AS.DifferentIndividualsAtom iarg1 iarg2 -> do
             sens <- mapComIndivList cSig AS.Different (Just $ iArgToIRI iarg1) [iArgToIRI iarg2]
             return (sens, cSig, startVar)
+    _ -> error $ "atomToSentence: Unknown Atom '" ++ show atom ++ "'!"
 
 
 -- helper function
