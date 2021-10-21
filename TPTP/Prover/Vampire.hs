@@ -31,6 +31,7 @@ vampire = mkProver binary_name prover_name sublogics runTheProver
 binary_name :: String
 binary_name = "vampire"
 
+-- renamed so it does not clash with Vampire for SoftFOL
 prover_name :: String
 prover_name = "Vampire-TPTP"
 
