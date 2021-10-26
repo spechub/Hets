@@ -85,12 +85,19 @@ do
             done
 
             $ECHO "Running hets on all files"
-            for i in *.ofn *.omn *.mno *.xml *.rdf *.dol
+            for i in *.ofn *.omn *.xml *.dol # *.rdf 
             do
                 if test -f $i
                 then
-                    $ECHO "Testing $i ... "
-                    $HETSROOT/hets $i
+                    $ECHO -n "  Testing $i ... "
+                    OUTPUT=`$HETSROOT/hets $i 2>&1` 
+                    if [ $? -eq 0 ]
+                    then
+                        $ECHO "✅ success"
+                    else
+                        $ECHO "❌ failed:\n$OUTPUT"
+                    fi
+                    
                 fi
             done
 
