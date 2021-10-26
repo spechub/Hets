@@ -1,5 +1,6 @@
-spec a =
+logic OWL serialization Manchester
 
+spec a  =
 
 ObjectProperty: <http://www.w3.org/2002/03owlt/description-logic/consistent908#r-N-times-M-to-1>
 

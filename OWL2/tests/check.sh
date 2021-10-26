@@ -85,7 +85,7 @@ do
             done
 
             $ECHO "Running hets on all files"
-            for i in *.ofn *.omn *.mno *.xml *.rdf
+            for i in *.ofn *.omn *.mno *.xml *.rdf *.dol
             do
                 if test -f $i
                 then

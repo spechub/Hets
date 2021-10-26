@@ -1,4 +1,4 @@
-logic OWL
+logic OWL serialization Manchester
 
 spec person =
     
