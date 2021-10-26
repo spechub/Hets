@@ -3,16 +3,16 @@ logic OWL serialization Manchester
 spec person =
     
     Datatype: height
-        EquivalentTo: float [totalDigits 3, fractionDigits 2]
+        EquivalentTo: xsd:float [totalDigits 3, fractionDigits 2]
     Datatype: natural
-        EquivalentTo: not negativeInteger
+        EquivalentTo: not xsd:negativeInteger
     Datatype: Years
         EquivalentTo: natural
     Datatype: Surname
-        EquivalentTo: string [pattern "[a-z] [0-1]"^^xsd:string]
+        EquivalentTo: xsd:string [pattern "[a-z] [0-1]"^^xsd:string]
 
     AnnotationProperty: x
-        SubPropertyOf: deprecated
+        SubPropertyOf: owl:deprecated
 
     ObjectProperty: hasSSN
     ObjectProperty: hasName
@@ -21,15 +21,15 @@ spec person =
         SubPropertyOf: hasChildren
 
     DataProperty: hasAge
-        Range: natural [> "10.24"^^real]
+        Range: natural [> "10.24"^^xsd:decimal]
     DataProperty: hasHeight
         Range: height [< 2.1f] or height [> 3]
 
     Class: smallChild
-        SubClassOf: Annotations: deprecated "y" hasHeight value 1.0f
+        SubClassOf: Annotations: owl:deprecated "y" hasHeight value 1.0f
 
     Class: Person
-        HasKey: Annotations: isDefinedBy y hasSSN, hasAge, hasName
+        HasKey: Annotations: rdfs:isDefinedBy "y" hasSSN, hasAge, hasName
 
     Individual: Ann
         Types: hasAge some natural, hasChildren min 2
