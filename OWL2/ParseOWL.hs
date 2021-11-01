@@ -13,7 +13,6 @@ analyse OWL files by calling the external Java parser.
 module OWL2.ParseOWL (parseOWL, convertOWL) where
 
 import OWL2.AS
-import OWL2.Rename
 
 import qualified Data.ByteString.Lazy as L
 import Data.List

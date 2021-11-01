@@ -45,7 +45,7 @@ maxS ps1 ps2 = ProfSub (andProfileList [profiles ps1, profiles ps2])
 nameS :: ProfSub -> String
 nameS ps = printProfile (profiles ps) ++ "-" ++ slName (sublogic ps)
 
-psAxiom :: AS.Axiom -> ProfSub
+psAxiom :: Axiom -> ProfSub
 psAxiom ax = ProfSub (axiom ax) (slAxiom ax)
 
 sSig :: Sign -> ProfSub
@@ -62,8 +62,8 @@ prMorph s a = a
     { osource = prSign s $ osource a
     , otarget = prSign s $ otarget a }
 
-prOntDoc :: ProfSub -> AS.OntologyDocument -> AS.OntologyDocument
+prOntDoc :: ProfSub -> OntologyDocument -> OntologyDocument
 prOntDoc ps = prODoc (sublogic ps)
 
-profilesAndSublogic :: AS.OntologyDocument -> ProfSub
+profilesAndSublogic :: OntologyDocument -> ProfSub
 profilesAndSublogic odoc = ProfSub (ontologyProfiles odoc) (slODoc odoc)

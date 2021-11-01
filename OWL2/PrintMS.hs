@@ -5,7 +5,6 @@ import qualified Data.Set as S
 
 import Common.Doc
 import Common.DocUtils
-import Common.Id
 import Common.Keywords
 import Common.IRI
 import Common.GlobalAnnotations as GA (PrefixMap)
@@ -97,7 +96,8 @@ tAxiom axiom ms = case axiom of
     Assertion a -> tAssertion a ms
     AnnotationAxiom a -> tAnnotationAxiom a ms
     HasKey {} -> tHasKey axiom ms
-    Rule rule -> tRule rule ms
+    Rule ruel-> tRule ruel ms
+    DGAxiom _ _ _ _ _ -> ms
 
 -- | transform Declaration
 tDeclaration :: Axiom -> MnchstrSntx -> MnchstrSntx
@@ -968,7 +968,6 @@ tAtoms = flip $ foldr tAtom
 
 tAtom :: Atom -> MnchstrSntx -> MnchstrSntx
 tAtom (ClassAtom ce iarg) ms = tClassExpression ce . tIndividualArg iarg $ ms
-tAtom atom _ = error $ "Unexpected Atoms in SWRLRules: " ++ show atom
 
 tAtom (DataRangeAtom dr darg) ms = tDataRange dr . tDataArg darg $ ms
 
@@ -985,6 +984,8 @@ tAtom (SameIndividualAtom iarg1 iarg2) ms = tIndividualArg iarg1
 
 tAtom (DifferentIndividualsAtom iarg1 iarg2) ms = tIndividualArg iarg1
     . tIndividualArg iarg2 $ ms
+
+tAtom atom _ = error $ "Unexpected Atoms in SWRLRules: " ++ show atom
 
 -- | transform IndividualArg
 tIndividualArg :: IndividualArg -> MnchstrSntx -> MnchstrSntx
@@ -1880,6 +1881,8 @@ printDataPropAxiomMF pds n (DisjointDataProperties anns dpExprs) =
     printAnnotations pds (n + 1) anns
     $+$
     tabs n <> (hsep . punctuate comma . map (printIRI pds) $ dpExprs)
+    
+printDataPropAxiomMF _ _ ax = error $ "Unexpected DataPropertyAxiom in Misc Frame: " ++ show ax
 
 printAssertionAxiomMF :: GA.PrefixMap -> Int -> Assertion -> Doc
 printAssertionAxiomMF pds n (SameIndividual anns inds) =
