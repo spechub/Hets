@@ -780,6 +780,10 @@ data ObjectPropertyExpression = ObjectProp ObjectProperty
   | ObjectInverseOf InverseObjectProperty
         deriving (Show, Eq, Ord, Typeable, Data)
 
+isObjectProperty :: ObjectPropertyExpression -> Bool
+isObjectProperty (ObjectProp _) = True
+isObjectProperty _ = False
+
 objPropToIRI :: ObjectPropertyExpression -> IRI
 objPropToIRI opExp = case opExp of
     ObjectProp u -> u

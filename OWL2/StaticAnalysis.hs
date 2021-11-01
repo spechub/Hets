@@ -90,6 +90,22 @@ filterObjProp :: Sign -> [AS.ObjectPropertyExpression]
     -> [AS.ObjectPropertyExpression]
 filterObjProp = filter . isDeclObjProp
 
+
+checkHasKey :: Sign -> [AS.ObjectPropertyExpression] -> [AS.DataPropertyExpression] -> Result ([AS.ObjectPropertyExpression], [AS.DataPropertyExpression])
+checkHasKey s ol dl = do
+    let (declaredObjProps, undeclaredObjs) = partition (isDeclObjProp s) ol
+    let (declaredDProps, undeclaredDProps) = partition (isDeclDataProp s) dl
+
+    let newDProps = map (AS.objPropToIRI) $ filter AS.isObjectProperty undeclaredObjs
+    let newObjProps = map (AS.ObjectProp) undeclaredDProps
+
+    checkObjPropList s newObjProps
+    checkDataPropList s newDProps
+
+    return (declaredObjProps ++ newObjProps, declaredDProps ++ newDProps)
+
+    
+
 checkObjPropList :: Sign -> [AS.ObjectPropertyExpression] -> Result ()
 checkObjPropList s ol = do
     let ls = map (isDeclObjProp s) ol
@@ -481,9 +497,8 @@ checkAxiom s a = case a of
     AS.HasKey anns clExpr opExprs dpExprs -> do
         checkAnnos s anns
         nClExpr <- checkClassExpression s clExpr
-        checkObjPropList s opExprs
-        checkDataPropList s dpExprs
-        return [AS.HasKey anns nClExpr opExprs dpExprs]
+        (nOpExprs, nDpExprs) <- checkHasKey s opExprs dpExprs
+        return [AS.HasKey anns nClExpr nOpExprs nDpExprs]
 
     AS.Assertion assertionAxiom -> case assertionAxiom of 
         AS.SameIndividual anns inds -> do
