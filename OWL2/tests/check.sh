@@ -40,7 +40,7 @@ ${MAKE} $TESTSCRIPT
 cd $TESTS
 for DIR in $ALL
 do
-    if test -d $DIR;
+    if test -d $DIR
         then
             $ECHO "Entering $DIR"
             cd $DIR
@@ -101,6 +101,9 @@ do
                 fi
             done
 
+            if [ "." != "$DIR" ]; then
+                cd ..
+            fi
     fi
 done
 
