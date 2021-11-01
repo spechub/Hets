@@ -35,7 +35,6 @@ import OWL2.Morphism
 import OWL2.Symbols hiding (idToRaw)
 import qualified OWL2.Sign as OS
 -- CommonLogic = codomain
-import Common.DocUtils
 import CommonLogic.Logic_CommonLogic
 import Common.Id as Id
 import CommonLogic.AS_CommonLogic
@@ -94,9 +93,6 @@ smap :: Monad m =>
 smap f s a b c = do
     x <- f s a b c
     return (x, s)
-
-failMsg :: Pretty a => a -> Result b
-failMsg a = fail $ "cannot translate " ++ showDoc a "\n"
 
 hetsPrefix :: String
 hetsPrefix = ""

@@ -23,7 +23,6 @@ import Common.Result
 import OWL2.AS
 import Common.IRI
 import OWL2.Keywords
-import OWL2.Translate
 import qualified OWL2.Morphism as OWLMor
 import qualified OWL2.ProfilesAndSublogics as OWLSub
 import qualified OWL2.Sign as OWLSign
