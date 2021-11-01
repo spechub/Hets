@@ -1,19 +1,22 @@
 import System.Environment
 
 import Control.Monad (forM_)
+import Data.Maybe (fromJust)
 
-
-import Common.Parsec
+import Common.Parsec()
+import Common.GlobalAnnotations(emptyGlobalAnnos)
 import Text.ParserCombinators.Parsec
 
 import OWL2.AS
 import OWL2.Sign (emptySign)
 import OWL2.XML
 import OWL2.XMLConversion
+import OWL2.StaticAnalysis (basicOWL2Analysis)
 import Text.XML.Light
 import qualified Data.Set as Set
 
 import Common.DocUtils
+import Common.Result (maybeResult)
 import OWL2.Pretty()
 import qualified OWL2.ParseMS as MSParse
 import qualified OWL2.ParseAS as ASParse
@@ -37,11 +40,13 @@ processParserPrinter file parser cmp = do
     s <- readFile file
     case parse (parser >>= (\r -> eof >> return r)) file s of
         Left err -> putStrLn $ "❌ initial parsing failed: " ++ show err
-        Right o1 -> let p = show $ pretty o1 in
+        Right o1 -> let 
+          (o1', _, _) = fromJust $ maybeResult $ basicOWL2Analysis (o1, emptySign, emptyGlobalAnnos)
+          p = show $ pretty o1' in
             case parse (parser >>= (\r -> eof >> return r)) file p of
                 Left err -> putStrLn $ "❌ parsing printed failed: " ++ show err
-                Right o2 ->
-                    if cmp o1 o2 then  putStrLn "✅ success"
+                Right o2 -> let (o2', _, _) = fromJust $ maybeResult $ basicOWL2Analysis (o2, emptySign, emptyGlobalAnnos) in
+                    if cmp o1' o2' then  putStrLn "✅ success"
                     else
                         putStrLn $ "❌ parse-print-parse circle failed. Printed: " ++ show p
 
