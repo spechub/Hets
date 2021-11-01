@@ -230,7 +230,7 @@ owlNumbersMap :: PreDefMaps
 owlNumbersMap = makeOWLPredefMaps owlNumbers
 
 rdfMap :: PreDefMaps
-rdfMap = preDefMaps [xmlLiteral, stringS] "rdf"
+rdfMap = preDefMaps [xmlLiteral, stringS, rdfPlainLiteralS] "rdf"
 
 rdfsMap :: PreDefMaps
 rdfsMap = preDefMaps [rdfsLiteral] "rdfs"

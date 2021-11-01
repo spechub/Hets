@@ -180,6 +180,9 @@ thatS = "that"
 rdfsLiteral :: String
 rdfsLiteral = "Literal"
 
+rdfPlainLiteralS :: String
+rdfPlainLiteralS = "PlainLiteral"
+
 unsignedByteS :: String
 unsignedByteS = "unsignedByte"
 
