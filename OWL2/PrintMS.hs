@@ -97,12 +97,15 @@ tAxiom axiom ms = case axiom of
     Assertion a -> tAssertion a ms
     AnnotationAxiom a -> tAnnotationAxiom a ms
     HasKey {} -> tHasKey axiom ms
+    Rule rule -> tRule rule ms
 
 -- | transform Declaration
 tDeclaration :: Axiom -> MnchstrSntx -> MnchstrSntx
 tDeclaration (Declaration anns entity) =
     tAddDecAnnAssertions entity anns
     . tEntity entity . tAnnotations anns
+
+tDeclaration _ = id
 
 tAddDecAnnAssertions :: Entity -> Annotations -> MnchstrSntx -> MnchstrSntx
 tAddDecAnnAssertions entity =
@@ -124,10 +127,10 @@ tAddDecAnnAssertion entity (Annotation anns prop value) ms =
             NamedIndividual -> IndividualFrame
 
         m1 = M.findWithDefault M.empty k ms
-        axioms = M.findWithDefault [] AnnotationsSection m1
+        axs = M.findWithDefault [] AnnotationsSection m1
         newAxiom = AnnotationAxiom
             $ AnnotationAssertion anns prop (AnnSubIri frameIRI) value
-        newAxioms = newAxiom : axioms
+        newAxioms = newAxiom : axs
 
 -- | transform Entity
 tEntity :: Entity -> MnchstrSntx -> MnchstrSntx
@@ -179,8 +182,8 @@ tObjectPropertyAxiom opAx@(SubObjectPropertyOf anns
         m1 = tAnnotations anns . tObjectPropertyExpression True opExpr1 
             .tObjectPropertyExpression False opExpr2 $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] SubPropertyOfSection m2
-        newAxioms = ObjectPropertyAxiom opAx : axioms
+        axs = M.findWithDefault [] SubPropertyOfSection m2
+        newAxioms = ObjectPropertyAxiom opAx : axs
 
 tObjectPropertyAxiom opAx@(SubObjectPropertyOf anns
     (SubObjPropExpr_exprchain opExprs) (ObjectProp iri)) ms =
@@ -189,12 +192,8 @@ tObjectPropertyAxiom opAx@(SubObjectPropertyOf anns
         k = (ObjectPropertyFrame, IriId iri)
         m1 = tAnnotations anns . tObjectPropertyExpressions False opExprs $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] SubPropertyChainSection m2
-        newAxioms = ObjectPropertyAxiom opAx : axioms
-
-tObjectPropertyAxiom (SubObjectPropertyOf anns 
-    (SubObjPropExpr_obj opExpr1) opExpr2) ms =
-    tAnnotations anns . tObjectPropertyExpressions False [opExpr1, opExpr2] $ ms
+        axs = M.findWithDefault [] SubPropertyChainSection m2
+        newAxioms = ObjectPropertyAxiom opAx : axs
 
 tObjectPropertyAxiom (SubObjectPropertyOf anns
     (SubObjPropExpr_exprchain opExprs) opExpr) ms =
@@ -232,8 +231,8 @@ tObjectPropertyAxiom opAx@(EquivalentObjectProperties anns opExprs) ms =
         k = (MiscFrame, MiscId)
         m' = tAnnotations anns . tObjectPropertyExpressions True opExprs $ ms
         m1 = M.findWithDefault M.empty k m'
-        axioms = M.findWithDefault [] EquivalentObjectPropertiesSection m1
-        newAxioms = ObjectPropertyAxiom opAx : axioms
+        axs = M.findWithDefault [] EquivalentObjectPropertiesSection m1
+        newAxioms = ObjectPropertyAxiom opAx : axs
 
 -- DisjointObjectProperties axiom
 tObjectPropertyAxiom opAx@(DisjointObjectProperties anns
@@ -266,8 +265,8 @@ tObjectPropertyAxiom opAx@(DisjointObjectProperties anns opExprs) ms =
         k = (MiscFrame, MiscId)
         m' = tAnnotations anns . tObjectPropertyExpressions True opExprs $ ms
         m1 = M.findWithDefault M.empty k m'
-        axioms = M.findWithDefault [] DisjointObjectPropertiesSection m1
-        newAxioms = ObjectPropertyAxiom opAx : axioms
+        axs = M.findWithDefault [] DisjointObjectPropertiesSection m1
+        newAxioms = ObjectPropertyAxiom opAx : axs
 
 -- InverseObjectProperties axiom
 tObjectPropertyAxiom opAx@(InverseObjectProperties anns opExpr1 opExpr2) ms =
@@ -306,8 +305,8 @@ tObjectPropertyAxiom opAx@(ObjectPropertyDomain anns opExpr clExpr) ms =
         m1 = tAnnotations anns . tObjectPropertyExpression True opExpr
             . tClassExpression clExpr $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] DomainSection m2
-        newAxioms = ObjectPropertyAxiom opAx : axioms
+        axs = M.findWithDefault [] DomainSection m2
+        newAxioms = ObjectPropertyAxiom opAx : axs
 
 -- ObjectPropertyRange axiom
 tObjectPropertyAxiom opAx@(ObjectPropertyRange anns opExpr clExpr) ms =
@@ -321,8 +320,8 @@ tObjectPropertyAxiom opAx@(ObjectPropertyRange anns opExpr clExpr) ms =
         m1 = tAnnotations anns . tObjectPropertyExpression True opExpr
             . tClassExpression clExpr $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] RangeSection m2
-        newAxioms = ObjectPropertyAxiom opAx : axioms
+        axs = M.findWithDefault [] RangeSection m2
+        newAxioms = ObjectPropertyAxiom opAx : axs
 
 -- FunctionalObjectProperty axiom
 tObjectPropertyAxiom opAx@(FunctionalObjectProperty anns opExpr) ms =
@@ -335,8 +334,8 @@ tObjectPropertyAxiom opAx@(FunctionalObjectProperty anns opExpr) ms =
         k = (ObjectPropertyFrame, fIdValue)
         m1 = tAnnotations anns . tObjectPropertyExpression True opExpr $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] CharacteristicsSection m2
-        newAxioms = ObjectPropertyAxiom opAx : axioms
+        axs = M.findWithDefault [] CharacteristicsSection m2
+        newAxioms = ObjectPropertyAxiom opAx : axs
 
 
 -- InverseFunctionalObjectProperty axiom
@@ -350,8 +349,8 @@ tObjectPropertyAxiom opAx@(InverseFunctionalObjectProperty anns opExpr) ms =
         k = (ObjectPropertyFrame, fIdValue)
         m1 = tAnnotations anns . tObjectPropertyExpression True opExpr $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] CharacteristicsSection m2
-        newAxioms = ObjectPropertyAxiom opAx : axioms
+        axs = M.findWithDefault [] CharacteristicsSection m2
+        newAxioms = ObjectPropertyAxiom opAx : axs
 
 -- ReflexiveObjectProperty axiom
 tObjectPropertyAxiom opAx@(ReflexiveObjectProperty anns opExpr) ms =
@@ -364,8 +363,8 @@ tObjectPropertyAxiom opAx@(ReflexiveObjectProperty anns opExpr) ms =
         k = (ObjectPropertyFrame, fIdValue)
         m1 = tAnnotations anns . tObjectPropertyExpression True opExpr $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] CharacteristicsSection m2
-        newAxioms = ObjectPropertyAxiom opAx : axioms
+        axs = M.findWithDefault [] CharacteristicsSection m2
+        newAxioms = ObjectPropertyAxiom opAx : axs
 
 -- IrreflexiveObjectProperty axiom
 tObjectPropertyAxiom opAx@(IrreflexiveObjectProperty anns opExpr) ms =
@@ -378,8 +377,8 @@ tObjectPropertyAxiom opAx@(IrreflexiveObjectProperty anns opExpr) ms =
         k = (ObjectPropertyFrame, fIdValue)
         m1 = tAnnotations anns . tObjectPropertyExpression True opExpr $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] CharacteristicsSection m2
-        newAxioms = ObjectPropertyAxiom opAx : axioms
+        axs = M.findWithDefault [] CharacteristicsSection m2
+        newAxioms = ObjectPropertyAxiom opAx : axs
 
 -- SymmetricObjectProperty axiom
 tObjectPropertyAxiom opAx@(SymmetricObjectProperty anns opExpr) ms =
@@ -392,8 +391,8 @@ tObjectPropertyAxiom opAx@(SymmetricObjectProperty anns opExpr) ms =
         k = (ObjectPropertyFrame, fIdValue)
         m1 = tAnnotations anns . tObjectPropertyExpression True opExpr $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] CharacteristicsSection m2
-        newAxioms = ObjectPropertyAxiom opAx : axioms
+        axs = M.findWithDefault [] CharacteristicsSection m2
+        newAxioms = ObjectPropertyAxiom opAx : axs
 
 -- AsymmetricObjectProperty axiom
 tObjectPropertyAxiom opAx@(AsymmetricObjectProperty anns opExpr) ms =
@@ -406,8 +405,8 @@ tObjectPropertyAxiom opAx@(AsymmetricObjectProperty anns opExpr) ms =
         k = (ObjectPropertyFrame, fIdValue)
         m1 = tAnnotations anns . tObjectPropertyExpression True opExpr $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] CharacteristicsSection m2
-        newAxioms = ObjectPropertyAxiom opAx : axioms
+        axs = M.findWithDefault [] CharacteristicsSection m2
+        newAxioms = ObjectPropertyAxiom opAx : axs
 
 -- TransitiveObjectProperty axiom
 tObjectPropertyAxiom opAx@(TransitiveObjectProperty anns opExpr) ms =
@@ -420,8 +419,8 @@ tObjectPropertyAxiom opAx@(TransitiveObjectProperty anns opExpr) ms =
         k = (ObjectPropertyFrame, fIdValue)
         m1 = tAnnotations anns . tObjectPropertyExpression True opExpr $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] CharacteristicsSection m2
-        newAxioms = ObjectPropertyAxiom opAx : axioms
+        axs = M.findWithDefault [] CharacteristicsSection m2
+        newAxioms = ObjectPropertyAxiom opAx : axs
 
 
 -- | transform DataProperty axioms
@@ -433,8 +432,8 @@ tDataPropertyAxiom dpAx@(SubDataPropertyOf anns iri1 iri2) ms =
         k = (DataPropertyFrame, IriId iri1)
         m1 = tAnnotations anns . tDataPropertyExpressions [iri1, iri2] $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] SubPropertyOfSection m2
-        newAxioms = DataPropertyAxiom dpAx : axioms
+        axs = M.findWithDefault [] SubPropertyOfSection m2
+        newAxioms = DataPropertyAxiom dpAx : axs
 
 -- EquivalentDataProperties axiom
 tDataPropertyAxiom dpAx@(EquivalentDataProperties anns [iri1, iri2]) ms =
@@ -458,8 +457,8 @@ tDataPropertyAxiom dpAx@(EquivalentDataProperties anns iris@(_:_:_:_)) ms =
         k = (MiscFrame, MiscId)
         m1 = tAnnotations anns . tDataPropertyExpressions iris $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] EquivalentDataPropertiesSection m2
-        newAxioms = DataPropertyAxiom dpAx : axioms
+        axs = M.findWithDefault [] EquivalentDataPropertiesSection m2
+        newAxioms = DataPropertyAxiom dpAx : axs
 
 -- DisjointDataProperties axiom
 tDataPropertyAxiom dpAx@(DisjointDataProperties anns [iri1, iri2]) ms =
@@ -468,8 +467,8 @@ tDataPropertyAxiom dpAx@(DisjointDataProperties anns [iri1, iri2]) ms =
         k = (DataPropertyFrame, IriId iri1)
         m1 = tAnnotations anns . tDataPropertyExpressions [iri1, iri2] $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] DisjointWithSection m2
-        newAxioms = DataPropertyAxiom dpAx : axioms
+        axs = M.findWithDefault [] DisjointWithSection m2
+        newAxioms = DataPropertyAxiom dpAx : axs
 
 tDataPropertyAxiom dpAx@(DisjointDataProperties anns iris@(_:_:_:_)) ms =
     M.insert k (M.insert DisjointDataPropertiesSection newAxioms m2) m1
@@ -477,8 +476,8 @@ tDataPropertyAxiom dpAx@(DisjointDataProperties anns iris@(_:_:_:_)) ms =
         k = (MiscFrame, MiscId)
         m1 = tAnnotations anns . tDataPropertyExpressions iris $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] DisjointDataPropertiesSection m2
-        newAxioms = DataPropertyAxiom dpAx : axioms
+        axs = M.findWithDefault [] DisjointDataPropertiesSection m2
+        newAxioms = DataPropertyAxiom dpAx : axs
 
 -- DataPropertyDomain axiom
 tDataPropertyAxiom dpAx@(DataPropertyDomain anns iri clExpr) ms =
@@ -488,8 +487,8 @@ tDataPropertyAxiom dpAx@(DataPropertyDomain anns iri clExpr) ms =
         m1 = tAnnotations anns . tDataPropertyExpression iri
             . tClassExpression clExpr $  ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] DomainSection m2
-        newAxioms = DataPropertyAxiom dpAx : axioms
+        axs = M.findWithDefault [] DomainSection m2
+        newAxioms = DataPropertyAxiom dpAx : axs
 
 -- DataPropertyRange axiom
 tDataPropertyAxiom dpAx@(DataPropertyRange anns iri dr) ms =
@@ -499,8 +498,8 @@ tDataPropertyAxiom dpAx@(DataPropertyRange anns iri dr) ms =
         m1 = tAnnotations anns . tDataPropertyExpression iri
             . tDataRange dr $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] RangeSection m2
-        newAxioms = DataPropertyAxiom dpAx : axioms
+        axs = M.findWithDefault [] RangeSection m2
+        newAxioms = DataPropertyAxiom dpAx : axs
 
 -- FunctionalDataProperty axiom
 tDataPropertyAxiom dpAx@(FunctionalDataProperty anns iri) ms =
@@ -509,20 +508,22 @@ tDataPropertyAxiom dpAx@(FunctionalDataProperty anns iri) ms =
         k = (DataPropertyFrame, IriId iri)
         m1 = tAnnotations anns . tDataPropertyExpression iri $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] CharacteristicsSection m2
-        newAxioms = DataPropertyAxiom dpAx : axioms
+        axs = M.findWithDefault [] CharacteristicsSection m2
+        newAxioms = DataPropertyAxiom dpAx : axs
+
+tDataPropertyAxiom _ ms = ms
 
 -- | transform Class axiom
 tClassAxiom :: ClassAxiom -> MnchstrSntx -> MnchstrSntx
 -- SubClassOf axiom
-tClassAxiom clAx@(SubClassOf anns subClExpr@(Expression iri) supClExpr) ms = 
+tClassAxiom clAx@(SubClassOf anns (Expression iri) supClExpr) ms = 
     M.insert k (M.insert SubClassOfSection newAxioms m2) m1
     where
         k = (ClassFrame, IriId iri)
         m1 = tClassExpression supClExpr . tAnnotations anns $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] SubClassOfSection m2
-        newAxioms = ClassAxiom clAx : axioms
+        axs = M.findWithDefault [] SubClassOfSection m2
+        newAxioms = ClassAxiom clAx : axs
 
 -- EquivalentClasses axiom
 tClassAxiom clAx@(EquivalentClasses anns
@@ -547,8 +548,8 @@ tClassAxiom clAx@(EquivalentClasses anns [Expression iri, clExpr]) ms =
         k = (ClassFrame, IriId iri)
         m' = tAnnotations anns . tClassExpression clExpr $ ms
         m1 = M.findWithDefault M.empty k m'
-        axioms = M.findWithDefault [] EquivalentToSection m1
-        newAxioms = ClassAxiom clAx : axioms
+        axs = M.findWithDefault [] EquivalentToSection m1
+        newAxioms = ClassAxiom clAx : axs
 
 tClassAxiom clAx@(EquivalentClasses anns clExprs) ms =
     M.insert k (M.insert EquivalentClassesSection newAxioms m1) $ m'
@@ -556,8 +557,8 @@ tClassAxiom clAx@(EquivalentClasses anns clExprs) ms =
         k = (MiscFrame, MiscId)
         m' = tAnnotations anns . tClassExpressions clExprs $ ms
         m1 = M.findWithDefault M.empty k m'
-        axioms = M.findWithDefault [] EquivalentClassesSection m1
-        newAxioms = ClassAxiom clAx : axioms
+        axs = M.findWithDefault [] EquivalentClassesSection m1
+        newAxioms = ClassAxiom clAx : axs
 
 -- DisjointClasses axiom
 tClassAxiom clAx@(DisjointClasses anns
@@ -582,8 +583,8 @@ tClassAxiom clAx@(DisjointClasses anns [Expression iri, clExpr]) ms =
         k = (ClassFrame, IriId iri)
         m' = tAnnotations anns . tClassExpression clExpr $ ms
         m1 = M.findWithDefault M.empty k m'
-        axioms = M.findWithDefault [] DisjointWithSection m1
-        newAxioms = ClassAxiom clAx : axioms
+        axs = M.findWithDefault [] DisjointWithSection m1
+        newAxioms = ClassAxiom clAx : axs
 
 tClassAxiom clAx@(DisjointClasses anns clExprs) ms =
     M.insert k (M.insert DisjointClassesSection newAxioms m1) $ m'
@@ -591,8 +592,8 @@ tClassAxiom clAx@(DisjointClasses anns clExprs) ms =
         k = (MiscFrame, MiscId)
         m' = tAnnotations anns . tClassExpressions clExprs $ ms
         m1 = M.findWithDefault M.empty k m'
-        axioms = M.findWithDefault [] DisjointClassesSection m1
-        newAxioms = ClassAxiom clAx : axioms
+        axs = M.findWithDefault [] DisjointClassesSection m1
+        newAxioms = ClassAxiom clAx : axs
 
 -- DisjointUnion axiom
 tClassAxiom clAx@(DisjointUnion anns iri clExprs) ms =
@@ -601,8 +602,11 @@ tClassAxiom clAx@(DisjointUnion anns iri clExprs) ms =
         k = (ClassFrame, IriId iri)
         m' = tAnnotations anns . tClassExpressions clExprs $ ms
         m1 = M.findWithDefault M.empty k m'
-        axioms = M.findWithDefault [] DisjointUnionOfSection m1
-        newAxioms = ClassAxiom clAx : axioms
+        axs = M.findWithDefault [] DisjointUnionOfSection m1
+        newAxioms = ClassAxiom clAx : axs
+
+
+tClassAxiom _ ms = ms
 
 -- | transform DatatypeDefinition axiom
 tDatatypeDefinition :: Axiom -> MnchstrSntx -> MnchstrSntx
@@ -612,8 +616,10 @@ tDatatypeDefinition ax@(DatatypeDefinition anns dtIri dr) ms =
         k = (DatatypeFrame, IriId dtIri)
         m1 = tAnnotations anns . tDatatype dtIri . tDataRange dr $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] EquivalentToSection m2
-        newAxioms = ax : axioms
+        axs = M.findWithDefault [] EquivalentToSection m2
+        newAxioms = ax : axs
+        
+tDatatypeDefinition _ ms = ms
 
 -- | transform HasKey axiom
 tHasKey :: Axiom -> MnchstrSntx -> MnchstrSntx
@@ -626,13 +632,15 @@ tHasKey (HasKey anns (Expression iri) opExprs dpExprs) ms =
         m' = tAnnotations anns . tObjectPropertyExpressions False opExprs'
             . tDataPropertyExpressions dpExprs' $ ms
         m1 = M.findWithDefault M.empty k m'
-        axioms = M.findWithDefault [] HasKeySection m1
-        newAxioms = (HasKey anns (Expression iri) opExprs' dpExprs') : axioms
+        axs = M.findWithDefault [] HasKeySection m1
+        newAxioms = (HasKey anns (Expression iri) opExprs' dpExprs') : axs
 
 tHasKey (HasKey anns clExpr opExprs dpExprs) ms =
     tAnnotations anns . tClassExpression clExpr
     . tObjectPropertyExpressions False opExprs
     . tDataPropertyExpressions dpExprs $ ms
+
+tHasKey _  ms = ms
 
 -- | transform Assertion axioms
 tAssertion :: Assertion -> MnchstrSntx -> MnchstrSntx
@@ -659,8 +667,8 @@ tAssertion ax@(SameIndividual anns inds@(_:_:_:_)) ms =
         k = (MiscFrame, MiscId)
         m1 = tAnnotations anns . tIndividuals inds $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] SameIndividualSection m2
-        newAxioms = Assertion ax : axioms 
+        axs = M.findWithDefault [] SameIndividualSection m2
+        newAxioms = Assertion ax : axs 
 
 -- DifferentIndividual axiom
 tAssertion ax@(DifferentIndividuals anns [i1, i2]) ms =
@@ -685,8 +693,8 @@ tAssertion ax@(DifferentIndividuals anns inds@(_:_:_:_)) ms =
         k = (MiscFrame, MiscId)
         m1 = tAnnotations anns . tIndividuals inds $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] DifferentIndividualsSection m2
-        newAxioms = Assertion ax : axioms 
+        axs = M.findWithDefault [] DifferentIndividualsSection m2
+        newAxioms = Assertion ax : axs 
 
 -- ClassAssertion axiom
 tAssertion ax@(ClassAssertion anns clExpr iri) ms =
@@ -696,8 +704,8 @@ tAssertion ax@(ClassAssertion anns clExpr iri) ms =
         m1 = tAnnotations anns . tIndividual iri
             . tClassExpression clExpr $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] TypesSection m2
-        newAxioms = Assertion ax : axioms 
+        axs = M.findWithDefault [] TypesSection m2
+        newAxioms = Assertion ax : axs 
 
 -- ObjectPropertyAssertion axiom
 tAssertion ax@(ObjectPropertyAssertion anns opExpr iri1 iri2) ms =
@@ -707,8 +715,8 @@ tAssertion ax@(ObjectPropertyAssertion anns opExpr iri1 iri2) ms =
         m1 = tAnnotations anns . tIndividuals [iri1, iri2]
             . tObjectPropertyExpression False opExpr $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] FactsSection m2
-        newAxioms = Assertion ax : axioms
+        axs = M.findWithDefault [] FactsSection m2
+        newAxioms = Assertion ax : axs
 
 -- NegativeObjectPropertyAssertion axiom
 tAssertion ax@(NegativeObjectPropertyAssertion anns opExpr iri1 iri2) ms =
@@ -718,8 +726,8 @@ tAssertion ax@(NegativeObjectPropertyAssertion anns opExpr iri1 iri2) ms =
         m1 = tAnnotations anns . tIndividuals [iri1, iri2]
             . tObjectPropertyExpression False opExpr $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] FactsSection m2
-        newAxioms = Assertion ax : axioms
+        axs = M.findWithDefault [] FactsSection m2
+        newAxioms = Assertion ax : axs
 
 -- DataPropertyAssertion axiom
 tAssertion ax@(DataPropertyAssertion anns dpIri iri lit) ms =
@@ -729,8 +737,8 @@ tAssertion ax@(DataPropertyAssertion anns dpIri iri lit) ms =
         m1 = tAnnotations anns . tDataPropertyExpression dpIri
             . tIndividual iri . tLiteral lit $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] FactsSection m2
-        newAxioms = Assertion ax : axioms
+        axs = M.findWithDefault [] FactsSection m2
+        newAxioms = Assertion ax : axs
 
 -- NegativeDataPropertyAssertion axiom
 tAssertion ax@(NegativeDataPropertyAssertion anns dpIri iri lit) ms =
@@ -740,13 +748,15 @@ tAssertion ax@(NegativeDataPropertyAssertion anns dpIri iri lit) ms =
         m1 = tAnnotations anns . tDataPropertyExpression dpIri
             . tIndividual iri . tLiteral lit $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] FactsSection m2
-        newAxioms = Assertion ax : axioms
+        axs = M.findWithDefault [] FactsSection m2
+        newAxioms = Assertion ax : axs
+
+tAssertion _ ms = ms
 
 -- | transform AnnotationAxiom axioms
 tAnnotationAxiom :: AnnotationAxiom -> MnchstrSntx -> MnchstrSntx
 -- AnnotationAssertion axiom
-tAnnotationAxiom ax@(AnnotationAssertion anns prop subj value) ms = res
+tAnnotationAxiom (AnnotationAssertion anns prop subj value) ms = res
     where
         frameIri = case subj of
             AnnSubIri iri -> iri
@@ -754,7 +764,7 @@ tAnnotationAxiom ax@(AnnotationAssertion anns prop subj value) ms = res
 
         m' = tAnnotations anns . tAnnotationValue value
             . tAnnotationProperty prop $ ms
-        ks = foldr (\f a -> maybe a (\t -> (f, IriId frameIri) : a)
+        ks = foldr (\f a -> maybe a (const $ (f, IriId frameIri) : a)
             (M.lookup (f, IriId frameIri) m')) [] [minBound..maxBound]
         subTrees = map (\k -> M.findWithDefault M.empty k m') ks
         axiomsList = map (M.findWithDefault [] AnnotationsSection) subTrees
@@ -774,37 +784,39 @@ tAnnotationAxiom ax@(SubAnnotationPropertyOf anns iri1 iri2) ms =
         k = (AnnotationPropertyFrame, IriId iri1)
         m1 = tAnnotations anns . tAnnotationProperty iri2 $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] SubPropertyOfSection m2
-        newAxioms = AnnotationAxiom ax : axioms
+        axs = M.findWithDefault [] SubPropertyOfSection m2
+        newAxioms = AnnotationAxiom ax : axs
 
 -- AnnotationPropertyDomain axiom
-tAnnotationAxiom ax@(AnnotationPropertyDomain anns iri1 iri2) ms =
+tAnnotationAxiom ax@(AnnotationPropertyDomain anns iri1 _) ms =
     M.insert k (M.insert DomainSection newAxioms m2) m1
     where
         k = (AnnotationPropertyFrame, IriId iri1)
         m1 = tAnnotations anns ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] DomainSection m2
-        newAxioms = AnnotationAxiom ax : axioms
+        axs = M.findWithDefault [] DomainSection m2
+        newAxioms = AnnotationAxiom ax : axs
 
 -- AnnotationPropertyRange axiom
-tAnnotationAxiom ax@(AnnotationPropertyRange anns iri1 iri2) ms =
+tAnnotationAxiom ax@(AnnotationPropertyRange anns iri1 _) ms =
     M.insert k (M.insert RangeSection newAxioms m2) m1
     where
         k = (AnnotationPropertyFrame, IriId iri1)
         m1 = tAnnotations anns ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] RangeSection m2
-        newAxioms = AnnotationAxiom ax : axioms
+        axs = M.findWithDefault [] RangeSection m2
+        newAxioms = AnnotationAxiom ax : axs
 
 tRule :: Rule -> MnchstrSntx -> MnchstrSntx
-tRule ax@(DLSafeRule anns body head) ms =
+tRule ax@(DLSafeRule anns body h) ms =
     let k = (RuleFrame, RuleId) 
-        m1 = tAnnotations anns . tAtoms body . tAtoms head $ ms
+        m1 = tAnnotations anns . tAtoms body . tAtoms h $ ms
         m2 = M.findWithDefault M.empty k m1
-        axioms = M.findWithDefault [] RuleSection m2
-        newAxioms = Rule ax : axioms
+        axs = M.findWithDefault [] RuleSection m2
+        newAxioms = Rule ax : axs
     in M.insert k (M.insert RuleSection newAxioms m2) m1
+    
+tRule _ ms = ms
 
 -- | transform Annotations
 tAnnotations :: [Annotation] -> MnchstrSntx -> MnchstrSntx
@@ -826,7 +838,7 @@ tAnnotationProperty iri ms =
 -- | transform AnnotationValue
 tAnnotationValue :: AnnotationValue -> MnchstrSntx -> MnchstrSntx
 tAnnotationValue (AnnAnInd ind) ms = tIndividual ind ms
-tAnnotationValue (AnnValue iri) ms = ms --- ?
+tAnnotationValue (AnnValue _) ms = ms
 tAnnotationValue (AnnValLit lit) ms = tLiteral lit ms
 
 -- | transform AnnotationSubject
@@ -862,13 +874,13 @@ tClassExpression (ObjectHasSelf obPropExpr) ms =
 
 tClassExpression (ObjectCardinality card) ms =
     case card of
-        Cardinality ct n obPropExpr (Just clExpr) ->
+        Cardinality _ _ obPropExpr (Just clExpr) ->
             tObjectPropertyExpression False obPropExpr
             . tClassExpression clExpr $ ms
-        Cardinality ct n obPropExpr Nothing ->
+        Cardinality _ _ obPropExpr Nothing ->
             tObjectPropertyExpression False obPropExpr ms
 
-tClassExpression (DataValuesFrom qt iris dr) ms =
+tClassExpression (DataValuesFrom _ iris dr) ms =
     tDataPropertyExpression (head iris) . tDataRange dr $ ms
 
 tClassExpression (DataHasValue dpExpr lit) ms =
@@ -876,10 +888,10 @@ tClassExpression (DataHasValue dpExpr lit) ms =
 
 tClassExpression (DataCardinality card) ms =
     case card of
-        Cardinality ct n dpExpr (Just dr) ->
+        Cardinality _ _ dpExpr (Just dr) ->
             tDataPropertyExpression dpExpr
             . tDataRange dr $ ms
-        Cardinality ct n dpExpr Nothing ->
+        Cardinality _ _ dpExpr Nothing ->
             tDataPropertyExpression dpExpr ms
 
 -- | transform ObjectPropertyExpression
@@ -928,7 +940,7 @@ tLiteral (Literal _ t) ms = case t of
     Typed dt -> tDatatype dt ms
     Untyped _ ->  tDatatype plainDatatypeIRI ms
 
-tLiteral (NumberLit f) ms = ms
+tLiteral (NumberLit _) ms = ms
 
 -- | transform DataPropertyExpression
 tDataPropertyExpressions :: [DataPropertyExpression]
@@ -956,6 +968,7 @@ tAtoms = flip $ foldr tAtom
 
 tAtom :: Atom -> MnchstrSntx -> MnchstrSntx
 tAtom (ClassAtom ce iarg) ms = tClassExpression ce . tIndividualArg iarg $ ms
+tAtom atom _ = error $ "Unexpected Atoms in SWRLRules: " ++ show atom
 
 tAtom (DataRangeAtom dr darg) ms = tDataRange dr . tDataArg darg $ ms
 
@@ -965,7 +978,7 @@ tAtom (ObjectPropertyAtom oe iarg1 iarg2) ms = tObjectPropertyExpression True oe
 tAtom (DataPropertyAtom dp iarg darg) ms = tDataPropertyExpression dp
     . tIndividualArg iarg . tDataArg darg $ ms
 
-tAtom (BuiltInAtom iri dargs) ms = foldr tDataArg ms dargs
+tAtom (BuiltInAtom _ dargs) ms = foldr tDataArg ms dargs
 
 tAtom (SameIndividualAtom iarg1 iarg2) ms = tIndividualArg iarg1
     . tIndividualArg iarg2 $ ms
@@ -998,7 +1011,7 @@ printPrefixDeclaration (prName, iri) =
 
 printOntology :: GA.PrefixMap -> Ontology -> Doc
 printOntology pds 
-    (Ontology mOntIRI mVersionIRI importedDocs annotations axioms) =
+    (Ontology mOntIRI mVersionIRI importedDocs annotations axioms') =
         keyword "Ontology:"
         <+> ontIRI
         $++$ impDocs
@@ -1010,7 +1023,7 @@ printOntology pds
         impDocs = vcat . map
             (\x -> keyword "Import:" <+> printIRI pds x) $ importedDocs
         anns = printAnnotations pds 0 annotations
-        axiomsUnique = S.toList . S.fromList $ axioms
+        axiomsUnique = S.toList . S.fromList $ axioms'
         ms = tAxioms axiomsUnique emptyMS
         axs = printMS pds ms 
 
@@ -1052,6 +1065,7 @@ printOPF pds n header body =
         hDoc = case snd header of 
                 IriId iri -> printIRI pds iri
                 ObjInvOfId iri -> keyword inverseS <+> printIRI pds iri
+                s -> error $ "Unexpected Frame ID: " ++ show s
 
         annAxioms = M.findWithDefault [] AnnotationsSection body
         annDoc = annotationAssertionsToDoc pds (n + 1)
@@ -1092,56 +1106,58 @@ printOPF pds n header body =
 annotationAssertionsToDoc :: GA.PrefixMap -> Int -> [AnnotationAxiom]
     -> Doc
 annotationAssertionsToDoc _ _ [] = empty
-annotationAssertionsToDoc pds n axioms =
+annotationAssertionsToDoc pds n axs =
     tabs n <> keyword annotationsC
     $+$
-    (vcat . punctuate comma . map (printAnnAssertion pds (n + 1)) $ axioms)
+    (vcat . punctuate comma . map (printAnnAssertion pds (n + 1)) $ axs)
 
 opAxiomsToDoc :: GA.PrefixMap -> Int -> FrameSectionType
     -> [ObjectPropertyAxiom] -> Doc
 opAxiomsToDoc _ _ _ [] = empty
 
-opAxiomsToDoc pds n SubPropertyOfSection axioms =
+opAxiomsToDoc pds n SubPropertyOfSection axs =
     tabs n <> keyword subPropertyOfC
     $+$
     (vcat . punctuate comma
-        . map (printSubPropOf pds (n + 1)) $ axioms)
+        . map (printSubPropOf pds (n + 1)) $ axs)
 
-opAxiomsToDoc pds n SubPropertyChainSection axioms =
+opAxiomsToDoc pds n SubPropertyChainSection axs =
     vsep
     . map (\d -> tabs n <> keyword subPropertyChainC $+$ d)
     . map (printSubPropChain pds (n + 1))
-    $ axioms
+    $ axs
 
-opAxiomsToDoc pds n EquivalentToSection axioms =
+opAxiomsToDoc pds n EquivalentToSection axs =
     tabs n <> keyword equivalentToC
     $+$
-    (vcat . punctuate comma . map (printEqObProp pds (n + 1)) $ axioms)
+    (vcat . punctuate comma . map (printEqObProp pds (n + 1)) $ axs)
 
-opAxiomsToDoc pds n DisjointWithSection axioms =
+opAxiomsToDoc pds n DisjointWithSection axs =
     tabs n <> keyword disjointWithC
     $+$
-    (vcat . punctuate comma . map (printDisjObProp pds (n + 1)) $ axioms)
+    (vcat . punctuate comma . map (printDisjObProp pds (n + 1)) $ axs)
 
-opAxiomsToDoc pds n InverseOfSection axioms =
+opAxiomsToDoc pds n InverseOfSection axs =
     tabs n <> keyword inverseOfC
     $+$
-    (vcat . punctuate comma . map (printInvObProp pds (n + 1)) $ axioms)
+    (vcat . punctuate comma . map (printInvObProp pds (n + 1)) $ axs)
 
-opAxiomsToDoc pds n DomainSection axioms =
+opAxiomsToDoc pds n DomainSection axs =
     tabs n <> keyword domainC
     $+$
-    (vcat . punctuate comma . map (printObPropDom pds (n + 1)) $ axioms)
+    (vcat . punctuate comma . map (printObPropDom pds (n + 1)) $ axs)
 
-opAxiomsToDoc pds n RangeSection axioms =
+opAxiomsToDoc pds n RangeSection axs =
     tabs n <> keyword rangeC
     $+$
-    (vcat . punctuate comma . map (printObPropRange pds (n + 1)) $ axioms)
+    (vcat . punctuate comma . map (printObPropRange pds (n + 1)) $ axs)
 
-opAxiomsToDoc pds n CharacteristicsSection axioms =
+opAxiomsToDoc pds n CharacteristicsSection axs =
     tabs n <> keyword characteristicsC
     $+$
-    (vcat . punctuate comma . map (printCharacteristics pds (n + 1)) $ axioms)
+    (vcat . punctuate comma . map (printCharacteristics pds (n + 1)) $ axs)
+
+opAxiomsToDoc  _ _ s _ = error $ "Unexpected Section type in ObjectProperty Frame: " ++ show s
 
 printSubPropOf :: GA.PrefixMap -> Int -> ObjectPropertyAxiom -> Doc
 printSubPropOf pds n (SubObjectPropertyOf anns 
@@ -1150,14 +1166,19 @@ printSubPropOf pds n (SubObjectPropertyOf anns
     $+$
     tabs n <> printObjectPropertyExpression pds opExpr
 
+printSubPropOf _ _ ax = error $ "Expected SubObjectPropertyOf, got: " ++ show ax
+
+
 printSubPropChain :: GA.PrefixMap -> Int -> ObjectPropertyAxiom -> Doc
 printSubPropChain pds n (SubObjectPropertyOf anns
-    (SubObjPropExpr_exprchain opExprs) (ObjectProp iri)) =
+    (SubObjPropExpr_exprchain opExprs) _) =
     printAnnotations pds (n + 1) anns
     $+$
     tabs n <> 
     (hcat . punctuate (text " o ")
     . map (printObjectPropertyExpression pds) $ opExprs)
+    
+printSubPropChain _ _ ax = error $ "Expected SubObjectPropertyOf, got: " ++ show ax
 
 printEqObProp :: GA.PrefixMap -> Int -> ObjectPropertyAxiom -> Doc
 printEqObProp pds n (EquivalentObjectProperties anns (_:es)) =
@@ -1167,6 +1188,8 @@ printEqObProp pds n (EquivalentObjectProperties anns (_:es)) =
     . map (\e -> tabs (n + 1)
         <> printObjectPropertyExpression pds e) $ es)
 
+printEqObProp _ _ ax = error $ "Expected EquivalentObjectProperties, got: " ++ show ax
+
 printDisjObProp :: GA.PrefixMap -> Int -> ObjectPropertyAxiom -> Doc
 printDisjObProp pds n (DisjointObjectProperties anns (_:es)) =
     printAnnotations pds (n + 1) anns
@@ -1175,11 +1198,14 @@ printDisjObProp pds n (DisjointObjectProperties anns (_:es)) =
     . map (\e -> tabs (n + 1)
         <> printObjectPropertyExpression pds e) $ es)
 
+printDisjObProp _ _ ax = error $ "Expected DisjointObjectProperties, got: " ++ show ax
+
 printInvObProp :: GA.PrefixMap -> Int -> ObjectPropertyAxiom -> Doc
 printInvObProp pds n (InverseObjectProperties anns _ opExpr) =
     printAnnotations pds (n + 1) anns
     $+$
     tabs n <> printObjectPropertyExpression pds opExpr
+printInvObProp _ _ ax = error $ "Expected InverseObjectProperties, got: " ++ show ax
 
 printObPropDom :: GA.PrefixMap -> Int -> ObjectPropertyAxiom -> Doc
 printObPropDom pds n (ObjectPropertyDomain anns _ clExpr) =
@@ -1187,11 +1213,15 @@ printObPropDom pds n (ObjectPropertyDomain anns _ clExpr) =
     $+$
     tabs n <> printClassExpression pds clExpr
 
+printObPropDom _ _ ax = error $ "Expected ObjectPropertyDomain, got: " ++ show ax
+
 printObPropRange :: GA.PrefixMap -> Int -> ObjectPropertyAxiom -> Doc
 printObPropRange pds n (ObjectPropertyRange anns _ clExpr) =
     printAnnotations pds (n + 1) anns
     $+$
     tabs n <> printClassExpression pds clExpr
+
+printObPropRange _ _ ax = error $ "Expected ObjectPropertyRange, got: " ++ show ax
 
 printCharacteristics :: GA.PrefixMap -> Int -> ObjectPropertyAxiom -> Doc
 printCharacteristics pds n (FunctionalObjectProperty anns _) =
@@ -1229,14 +1259,19 @@ printCharacteristics pds n (TransitiveObjectProperty anns _) =
     $+$
     tabs n <> keyword transitiveS
 
+printCharacteristics  _ _ ax = error $ "Expected ObjectPropertyAxiom, got: " ++ show ax
+
 printAnnAssertion :: GA.PrefixMap -> Int -> AnnotationAxiom -> Doc
-printAnnAssertion pds n (AnnotationAssertion anns prop subj value) =
+printAnnAssertion pds n (AnnotationAssertion anns prop _ value) =
     printAnnotations pds (n + 1) anns
     $+$
     tabs n <> printIRI pds prop <+> printAnnotationValue pds value
 
+printAnnAssertion _ _ ax = error $ "Expected AnnotationAxiom, got: " ++ show ax
+
 unpackObjectPropertyAxiom :: Axiom -> ObjectPropertyAxiom
 unpackObjectPropertyAxiom (ObjectPropertyAxiom a) = a
+unpackObjectPropertyAxiom ax = error $ "Expected ObjectPropertyAxiom, got: " ++ show ax
 
 -- | print Data Property Frames
 printDPFs :: GA.PrefixMap -> Int -> MnchstrSntx -> Doc
@@ -1290,41 +1325,43 @@ dpAxiomsToDoc :: GA.PrefixMap -> Int -> FrameSectionType
     -> [DataPropertyAxiom] -> Doc
 dpAxiomsToDoc _ _ _ [] = empty
 
-dpAxiomsToDoc pds n SubPropertyOfSection axioms =
+dpAxiomsToDoc pds n SubPropertyOfSection axs =
     tabs n <> keyword subPropertyOfC
     $+$
     (vcat . punctuate comma
-        . map (printDataPropAxiom pds (n + 1)) $ axioms)
+        . map (printDataPropAxiom pds (n + 1)) $ axs)
 
-dpAxiomsToDoc pds n EquivalentToSection axioms =
+dpAxiomsToDoc pds n EquivalentToSection axs =
     tabs n <> keyword equivalentToC
     $+$
     (vcat . punctuate comma
-        . map (printDataPropAxiom pds (n + 1)) $ axioms)
+        . map (printDataPropAxiom pds (n + 1)) $ axs)
 
-dpAxiomsToDoc pds n DisjointWithSection axioms =
+dpAxiomsToDoc pds n DisjointWithSection axs =
     tabs n <> keyword disjointWithC
     $+$
     (vcat . punctuate comma
-        . map (printDataPropAxiom pds (n + 1)) $ axioms)
+        . map (printDataPropAxiom pds (n + 1)) $ axs)
 
-dpAxiomsToDoc pds n DomainSection axioms =
+dpAxiomsToDoc pds n DomainSection axs =
     tabs n <> keyword domainC
     $+$
     (vcat . punctuate comma
-        . map (printDataPropAxiom pds (n + 1)) $ axioms)
+        . map (printDataPropAxiom pds (n + 1)) $ axs)
 
-dpAxiomsToDoc pds n RangeSection axioms =
+dpAxiomsToDoc pds n RangeSection axs =
     tabs n <> keyword rangeC
     $+$
     (vcat . punctuate comma
-        . map (printDataPropAxiom pds (n + 1)) $ axioms)
+        . map (printDataPropAxiom pds (n + 1)) $ axs)
 
-dpAxiomsToDoc pds n CharacteristicsSection axioms =
+dpAxiomsToDoc pds n CharacteristicsSection axs =
     tabs n <> keyword characteristicsC
     $+$
     (vcat . punctuate comma
-        . map (printDataPropAxiom pds (n + 1)) $ axioms)
+        . map (printDataPropAxiom pds (n + 1)) $ axs)
+
+dpAxiomsToDoc _ _ s _ = error $ "Unexpected Section type in DataProperty Frame: " ++ show s
 
 printDataPropAxiom :: GA.PrefixMap -> Int -> DataPropertyAxiom -> Doc
 printDataPropAxiom pds n (SubDataPropertyOf anns _ iri) =
@@ -1356,9 +1393,12 @@ printDataPropAxiom pds n (FunctionalDataProperty anns _) =
     printAnnotations pds (n + 1) anns
     $+$
     tabs n <> text functionalS
+
+printDataPropAxiom _ _ ax = error $ "Unexpected DataPropertyAxiom in DataProperty Frame: " ++ show ax
  
 unpackDataPropertyAxiom :: Axiom -> DataPropertyAxiom
 unpackDataPropertyAxiom (DataPropertyAxiom a) = a
+unpackDataPropertyAxiom ax = error $ "Expected DataPropertyAxiom, got: " ++ show ax
 
 -- | print Annotation Property Frames
 printAPFs :: GA.PrefixMap -> Int -> MnchstrSntx -> Doc
@@ -1399,15 +1439,16 @@ afAxiomsToDoc :: GA.PrefixMap -> Int -> FrameSectionType
     -> [AnnotationAxiom] -> Doc
 afAxiomsToDoc _ _ _ [] = empty
 
-afAxiomsToDoc pds n frameSectionType axioms =
+afAxiomsToDoc pds n frameSectionType axs =
     tabs n <> keyword header
     $+$
     (vcat . punctuate comma
-        . map (printAFAxiom pds (n + 1)) $ axioms)
+        . map (printAFAxiom pds (n + 1)) $ axs)
     where header = case frameSectionType of
             SubPropertyOfSection -> subPropertyOfC
             DomainSection -> domainC
             RangeSection -> rangeC
+            s -> error $ "Unexpected Section type in Annotation Property Frame: " ++ show s
 
 
 printAFAxiom :: GA.PrefixMap -> Int -> AnnotationAxiom -> Doc
@@ -1425,6 +1466,8 @@ printAFAxiom pds n (AnnotationPropertyRange anns _ iri) =
     printAnnotations pds (n + 1) anns
     $+$
     tabs n <> printIRI pds iri
+
+printAFAxiom  _ _ ax = error $ "Unexpected AnnotationAxiom in Annotation Property Frame: " ++ show ax
 
 
 -- | print Datatype Frames
@@ -1457,17 +1500,21 @@ dtAxiomsToDoc :: GA.PrefixMap -> Int -> FrameSectionType
     -> [Axiom] -> Doc
 dtAxiomsToDoc _ _ _ [] = empty
 
-dtAxiomsToDoc pds n EquivalentToSection axioms =
+dtAxiomsToDoc pds n EquivalentToSection axs =
     tabs n <> keyword equivalentToC
     $+$
     (vcat . punctuate comma
-        . map (printDatatypeDefinitionAxiom pds (n + 1)) $ axioms)
+        . map (printDatatypeDefinitionAxiom pds (n + 1)) $ axs)
+
+dtAxiomsToDoc _ _ s _ = error $ "Unexpected Section type in Datateyp Frame: " ++ show s
 
 printDatatypeDefinitionAxiom :: GA.PrefixMap -> Int -> Axiom -> Doc
 printDatatypeDefinitionAxiom pds n (DatatypeDefinition anns _ dr) =
     printAnnotations pds (n + 1) anns
     $+$
     tabs n <> printDataRange pds dr
+
+printDatatypeDefinitionAxiom _ _ ax = error $ "Unexpected Axiom in Datatype Frame: " ++ show ax
 
 -- | print Class Frames
 printCFs :: GA.PrefixMap -> Int -> MnchstrSntx -> Doc
@@ -1513,23 +1560,25 @@ classAxiomsToDoc :: GA.PrefixMap -> Int -> FrameSectionType
     -> [Axiom] -> Doc
 classAxiomsToDoc _ _ _ [] = empty
 
-classAxiomsToDoc pds n frameSectionType axioms =
+classAxiomsToDoc pds n frameSectionType axs =
     tabs n <> keyword header
     $+$ (printClassAxiomsVer pds (n + 1)
         . map unpackClassAxiom
-        $ axioms)
+        $ axs)
     where header = case frameSectionType of
             SubClassOfSection -> subClassOfC
             EquivalentToSection -> equivalentToC
             DisjointWithSection -> disjointWithC
             DisjointUnionOfSection -> disjointUnionOfC
+            s -> error $ "Unexpected Section type in Class Frame: " ++ show s
 
 hasKeyAxiomsToCFDoc :: GA.PrefixMap -> Int -> [Axiom] -> Doc
-hasKeyAxiomsToCFDoc pds n axioms =  
-    foldl (\d ax -> printHasKeyAxiom pds n ax $+$ d) empty axioms
+hasKeyAxiomsToCFDoc pds n axs =  
+    foldl (\d ax -> printHasKeyAxiom pds n ax $+$ d) empty axs
 
 unpackClassAxiom :: Axiom -> ClassAxiom
 unpackClassAxiom (ClassAxiom a) = a
+unpackClassAxiom ax = error $ "Expected ClassAxiom, got: " ++ show ax
 
 -- | print HasKey axiom
 printHasKeyAxiom :: GA.PrefixMap -> Int -> Axiom -> Doc
@@ -1549,6 +1598,8 @@ printHasKeyAxiom pds n (HasKey anns _ opExprs dpExprs) =
                         printObjectPropertyExpression pds e) $ opExprs
         dpExprsDoc = vcat . punctuate comma
             . map (\e -> tabs (n + 1) <> printIRI pds e) $ dpExprs
+
+printHasKeyAxiom _ _ ax = error $ "Expected HasKeyAxiom, got: " ++ show ax
          
 -- | print ClassAxioms
 printClassAxiomsVer :: GA.PrefixMap -> Int -> [ClassAxiom] -> Doc
@@ -1557,7 +1608,7 @@ printClassAxiomsVer pds n =
 
 printClassAxiom :: GA.PrefixMap -> Int -> ClassAxiom -> Doc
 -- subClassOf axiom
-printClassAxiom pds n (SubClassOf anns iri supClExpr) =
+printClassAxiom pds n (SubClassOf anns _ supClExpr) =
     printAnnotations pds (n + 1) anns
     $+$
     tabs n <> printClassExpression pds supClExpr
@@ -1585,7 +1636,7 @@ printClassAxiom pds n (DisjointClasses anns clExprs) =
     tabs n <> printClassExpressionsHor pds clExprs
 
 -- DisjointUnion axiom
-printClassAxiom pds n (DisjointUnion anns iri clExprs) =
+printClassAxiom pds n (DisjointUnion anns _ clExprs) =
     printAnnotations pds (n + 1) anns
     $+$
     tabs n <> printClassExpressionsHor pds clExprs
@@ -1630,17 +1681,17 @@ printIF pds n header body =
 iFrameAxiomsToDoc :: GA.PrefixMap -> Int -> FrameSectionType
     -> [Axiom] -> Doc
 iFrameAxiomsToDoc _ _ _ [] = empty
-
-iFrameAxiomsToDoc pds n frameSectionType axioms = 
+iFrameAxiomsToDoc pds n frameSectionType axs = 
     tabs n <> keyword header
     $+$
     (vcat . punctuate comma . map (printIFAssertionAxiom pds (n + 1)) 
-        . map (\(Assertion a) -> a) $ axioms)
+        . map (\(Assertion a) -> a) $ axs)
     where header = case frameSectionType of
             SameAsSection -> sameAsC
             DifferentFromSection -> differentFromC
             TypesSection -> typesC
             FactsSection -> factsC
+            s -> error $ "Unexpected Section type in Individual Frame: " ++ show s
 
 printIFAssertionAxiom :: GA.PrefixMap -> Int -> Assertion -> Doc
 printIFAssertionAxiom pds n (SameIndividual anns [_, ind]) =
@@ -1681,6 +1732,8 @@ printIFAssertionAxiom pds n
     $+$
     tabs n <> keyword notS <+> printIRI pds dpIri <+> printLiteral pds lit
 
+printIFAssertionAxiom _ _ ax = error $ "Unexpected Assertion in Individual Frame: " ++ show ax
+
 -- | print Misc Frame
 printMF :: GA.PrefixMap -> Int -> MnchstrSntx -> Doc
 printMF pds n ms
@@ -1719,88 +1772,90 @@ printMF pds n ms
         difIndsDoc = difIndsAxiomsToMFDoc pds n difIndsAxioms
 
 eqClsAxiomsToMFDoc :: GA.PrefixMap -> Int -> [Axiom] -> Doc
-eqClsAxiomsToMFDoc pds n [] = empty
-eqClsAxiomsToMFDoc pds n axioms =
+eqClsAxiomsToMFDoc _ _ [] = empty
+eqClsAxiomsToMFDoc pds n axs =
     vsep docsWithHeaders
     where
-        classAxioms = map unpackClassAxiom axioms
+        classAxioms = map unpackClassAxiom axs
         bodyDocs = map (printClassAxiom pds (n + 1)) classAxioms
         docsWithHeaders = map (\d -> keyword equivalentClassesC $+$ d) bodyDocs
 
 disjClsAxiomsToMFDoc :: GA.PrefixMap -> Int -> [Axiom] -> Doc
-disjClsAxiomsToMFDoc pds n [] = empty
-disjClsAxiomsToMFDoc pds n axioms =
+disjClsAxiomsToMFDoc _ _[] = empty
+disjClsAxiomsToMFDoc pds n axs =
     vsep docsWithHeaders
     where
-        classAxioms = map unpackClassAxiom axioms
+        classAxioms = map unpackClassAxiom axs
         bodyDocs = map (printClassAxiom pds (n + 1)) classAxioms
         docsWithHeaders = map (\d -> keyword disjointClassesC $+$ d) bodyDocs
 
 eqObPropsAxiomsToMFDoc :: GA.PrefixMap -> Int -> [Axiom] -> Doc
-eqObPropsAxiomsToMFDoc pds n [] = empty
-eqObPropsAxiomsToMFDoc pds n axioms =
+eqObPropsAxiomsToMFDoc _ _[] = empty
+eqObPropsAxiomsToMFDoc pds n axs =
     vsep docsWithHeaders
     where 
-        opAxioms = map unpackObjectPropertyAxiom axioms
+        opAxioms = map unpackObjectPropertyAxiom axs
         bodyDocs = map (printObPropAxiomMF pds (n + 1)) opAxioms
         docsWithHeaders =
             map (\d -> keyword equivalentPropertiesC $+$ d) bodyDocs
 
 disjObPropsAxiomsToMFDoc :: GA.PrefixMap -> Int -> [Axiom] -> Doc
-disjObPropsAxiomsToMFDoc pds n [] = empty
-disjObPropsAxiomsToMFDoc pds n axioms =
+disjObPropsAxiomsToMFDoc _ _[] = empty
+disjObPropsAxiomsToMFDoc pds n axs =
     vsep docsWithHeaders
     where 
-        opAxioms = map unpackObjectPropertyAxiom axioms
+        opAxioms = map unpackObjectPropertyAxiom axs
         bodyDocs = map (printObPropAxiomMF pds (n + 1)) opAxioms
         docsWithHeaders =
             map (\d -> keyword disjointPropertiesC $+$ d) bodyDocs
 
 eqDataPropsAxiomsToMFDoc :: GA.PrefixMap -> Int -> [Axiom] -> Doc
-eqDataPropsAxiomsToMFDoc pds n [] = empty
-eqDataPropsAxiomsToMFDoc pds n axioms = 
+eqDataPropsAxiomsToMFDoc _ _ [] = empty
+eqDataPropsAxiomsToMFDoc pds n axs = 
     vsep docsWithHeaders
     where
-        dpAxioms = map unpackDataPropertyAxiom axioms
+        dpAxioms = map unpackDataPropertyAxiom axs
         bodyDocs = map (printDataPropAxiomMF pds (n + 1)) dpAxioms
         docsWithHeaders = 
             map (\d -> keyword equivalentPropertiesC $+$ d) bodyDocs
 
 disjDataPropsAxiomsToMFDoc :: GA.PrefixMap -> Int -> [Axiom] -> Doc
-disjDataPropsAxiomsToMFDoc pds n [] = empty
-disjDataPropsAxiomsToMFDoc pds n axioms = 
+disjDataPropsAxiomsToMFDoc _ _[] = empty
+disjDataPropsAxiomsToMFDoc pds n axs = 
     vsep docsWithHeaders
     where
-        dpAxioms = map unpackDataPropertyAxiom axioms
+        dpAxioms = map unpackDataPropertyAxiom axs
         bodyDocs = map (printDataPropAxiomMF pds (n + 1)) dpAxioms
         docsWithHeaders = 
             map (\d -> keyword disjointPropertiesC $+$ d) bodyDocs
 
 sameIndsAxiomsToMFDoc :: GA.PrefixMap -> Int -> [Axiom] -> Doc
-sameIndsAxiomsToMFDoc pds n [] = empty
-sameIndsAxiomsToMFDoc pds n axioms =
+sameIndsAxiomsToMFDoc _ _ [] = empty
+sameIndsAxiomsToMFDoc pds n axs =
     vsep docsWithHeaders
     where
-        unpackedAxioms = map unpackAssertionAxiom axioms
+        unpackedAxioms = map unpackAssertionAxiom axs
         bodyDocs = map (printAssertionAxiomMF pds (n + 1)) unpackedAxioms
         docsWithHeaders = 
             map (\d -> keyword sameIndividualC $+$ d) bodyDocs
 
 difIndsAxiomsToMFDoc :: GA.PrefixMap -> Int -> [Axiom] -> Doc
-difIndsAxiomsToMFDoc pds n [] = empty
-difIndsAxiomsToMFDoc pds n axioms =
+difIndsAxiomsToMFDoc _ _ [] = empty
+difIndsAxiomsToMFDoc pds n axs =
     vsep docsWithHeaders
     where
-        unpackedAxioms = map unpackAssertionAxiom axioms
+        unpackedAxioms = map unpackAssertionAxiom axs
         bodyDocs = map (printAssertionAxiomMF pds (n + 1)) unpackedAxioms
         docsWithHeaders = 
             map (\d -> keyword differentIndividualsC $+$ d) bodyDocs
 
 unpackAssertionAxiom :: Axiom -> Assertion
 unpackAssertionAxiom (Assertion a) = a
+unpackAssertionAxiom ax = error $ "Expected Assertion, got: " ++ show ax
 
 unpackAnnotationAxiom :: Axiom -> AnnotationAxiom
 unpackAnnotationAxiom (AnnotationAxiom a) = a
+unpackAnnotationAxiom ax = error $ "Expected AnnotationAxiom, got: " ++ show ax
 
 printObPropAxiomMF :: GA.PrefixMap -> Int -> ObjectPropertyAxiom -> Doc
 printObPropAxiomMF pds n (EquivalentObjectProperties anns opExprs) =
@@ -1812,6 +1867,8 @@ printObPropAxiomMF pds n (DisjointObjectProperties anns opExprs) =
     printAnnotations pds (n + 1) anns
     $+$
     tabs n <> printObjectPropertyExpressionsHor pds opExprs 
+
+printObPropAxiomMF _ _ ax = error $ "Unexpected ObjectPropertyAxiom in Misc Frame: " ++ show ax
 
 printDataPropAxiomMF :: GA.PrefixMap -> Int -> DataPropertyAxiom -> Doc
 printDataPropAxiomMF pds n (EquivalentDataProperties anns dpExprs) =
@@ -1835,6 +1892,8 @@ printAssertionAxiomMF pds n (DifferentIndividuals anns inds) =
     $+$
     tabs n <> (hsep . punctuate comma . map (printIRI pds) $ inds)
 
+printAssertionAxiomMF _ _ ax = error $ "Unexpected AssertionAxiom in Misc Frame: " ++ show ax
+
 -- | print Rules
 printRules :: GA.PrefixMap -> Int -> MnchstrSntx -> Doc
 printRules pds _ ms =
@@ -1843,9 +1902,10 @@ printRules pds _ ms =
         . M.findWithDefault M.empty (RuleFrame, RuleId) $ ms
 
 printRule :: GA.PrefixMap -> Rule -> Doc
-printRule pds (DLSafeRule anns body head) = 
+printRule pds (DLSafeRule anns body h) = 
     text "Rule:" $+$ printAnnotations pds 1 anns 
-        $+$ tabs 1 <> printAtoms pds body <+> text " -> " <+> printAtoms pds head
+        $+$ tabs 1 <> printAtoms pds body <+> text " -> " <+> printAtoms pds h
+printRule _ rule = text $ "# Unsupported Rule: " ++ show rule
 
 printAtoms :: GA.PrefixMap -> [Atom] -> Doc
 printAtoms pds atoms = hcat . punctuate comma . map (printAtom pds) $ atoms
@@ -1912,16 +1972,16 @@ printAnnotationValue pds anVal = case anVal of
     AnnValLit lit -> printLiteral pds lit
 
 printAnnotation :: GA.PrefixMap -> Int -> Annotation -> Doc
-printAnnotation pds n (Annotation anns annProperty annValue) =
+printAnnotation pds n (Annotation anns ap av) =
     printAnnotations pds (n + 1) anns
     $+$
     (hsep $ [tabs n, docAnnProp, docAnnVal])
     where
-        docAnnProp = printIRI pds annProperty
-        docAnnVal = printAnnotationValue pds annValue
+        docAnnProp = printIRI pds ap
+        docAnnVal = printAnnotationValue pds av
 
 printAnnotations :: GA.PrefixMap -> Int -> Annotations -> Doc
-printAnnotations pds _ [] = empty
+printAnnotations _ _ [] = empty
 printAnnotations pds n anns =
     tabs n <> keyword annotationsC
     $+$
@@ -1949,7 +2009,7 @@ printLiteral pds (Literal lexi ty) =
         Untyped tag -> printUntypedLiteral lexi tag
         Typed iri -> printTypedLiteral pds lexi iri
 
-printLiteral pds (NumberLit f) = text (show f)
+printLiteral _ (NumberLit f) = text (show f)
 
 printUntypedLiteral :: String -> Maybe String -> Doc
 printUntypedLiteral lexi tag = 
