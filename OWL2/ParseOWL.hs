@@ -49,7 +49,6 @@ parseOWL quick fullFileName = do
     case (exitCode, errStr) of
       (ExitSuccess, "") -> do
           cont <- lift $ L.readFile tmpFile
-          lift $ putStrLn (show cont)
           lift $ removeFile tmpFile
           parseProc cont
       _ -> fail $ "process stop! " ++ shows exitCode "\n" ++ errStr
