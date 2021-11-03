@@ -26,7 +26,7 @@ import Common.IRI
 import Common.Lexer
 import Common.Parsec
 import Common.AnnoParser (commentLine)
-import Common.Token (criticalKeywords, sortId)
+import Common.Token (criticalKeywords)
 import Common.Utils (nubOrd)
 import qualified Common.IRI as IRI
 import qualified Common.GlobalAnnotations as GA (PrefixMap)
@@ -276,7 +276,7 @@ stringLiteral = do
         string asP
         t <- skips $ optionMaybe languageTag
         return $ Literal s $ Untyped t
-    <|> skips (return $ Literal s $ Typed $ mkIRI stringS)
+    <|> skips (return $ Literal s $ Typed $ (mkIRI stringS) {prefixName = "xsd"} )
 
 literal :: CharParser st Literal
 literal = do
@@ -382,7 +382,7 @@ dataPrimary = do
 
 mkDataJunction :: JunctionType -> [DataRange] -> DataRange
 mkDataJunction ty ds = case nubOrd ds of
-  [] -> error "mkObjectJunction"
+  [] -> error "mkDataJunction"
   [x] -> x
   ns -> DataJunction ty ns
 

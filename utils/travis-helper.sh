@@ -291,8 +291,7 @@ function myGetMissingPkgs {
 	sudo rm -f /etc/apt/sources.list.d/{computology_apt-backport,docker,git-ppa,github_git-lfs,heroku-toolbelt,pollinate}.list
 	# DB tests require PostgreSQL 9.5+ because of 'CREATE INDEX IF NOT EXISTS'
 	# and xenial is the 1st release, which ships it
-	(( ${_system_version//.} >= 1604 )) && \
-		sudo rm -f /etc/apt/sources.list.d/pgdg.list
+	sudo rm -f /etc/apt/sources.list.d/pgdg.list
 
 	# utilize cached packages
 	sudo apt-get update
@@ -305,10 +304,7 @@ function myGetMissingPkgs {
 
 	local ADD_PKGS MISSING
 	# we want JDK 8 (and remove it from debian build deps)
-	case "${_system_version}" in
-		'14.04') ADD_PKGS='openjdk-7-jdk' ;;
-		*) ADD_PKGS='openjdk-8-jdk-headless' ;;
-	esac
+	ADD_PKGS='openjdk-8-jdk-headless'
 	ADD_PKGS+=' spass darwin '
 
 	MISSING+=`dpkg-checkbuilddeps debian/control 2>&1 | \
@@ -329,15 +325,16 @@ function myGetMissingPkgs {
 	if [[ ${JOB_NAME} == 'pg' ]]; then
 		if ! which pg_ctl ; then
 			ADD_PKGS+=' postgresql'
-			(( ${_system_version//.} < 1604 )) && ADD_PKGS+='-9.5'
 		fi
-	elif [[ ${JOB_NAME} == 'haddock' ]]; then
-		# we use 'marked' to convert README.md into docs/README.html
-		ADD_PKGS+=' npm'
 	fi
 	echo "Add. Packages: '${ADD_PKGS}' ..."
 	SECONDS=0
 	sudo apt-get install --no-install-recommends ${ADD_PKGS}
+	if [[ ${JOB_NAME} == 'haddock' ]]; then
+		# travis-ci uses outdated, broken packages which prevent npm install
+		sudo apt --fix-broken install
+		sudo apt-get install npm || true
+	fi
 	echo "fetched in ${SECONDS}s."
 
 	# cache packages
@@ -412,10 +409,16 @@ function myUploadDocs {
 	fi
 	env >docs/.env
 	# convert the README.md into docs/README.html
-	npm install --only=production --no-optional marked commander
-	utils/md2html.js -t 'Hets (The heterogeneous tool set)' -i README.md \
-		-o docs/README.html 
-	[[ -s docs/README.html ]] || rm -f docs/README.html
+	if [[ -x /usr/bin/npm ]]; then
+		# bionic comes with nodejs v8.10 - latest modules bumped min version to
+		# v10+
+		npm install --only=production --no-optional marked@0.7.0 commander@6.2.1
+		utils/md2html.js -t 'Hets (The heterogeneous tool set)' -i README.md \
+			-o docs/README.html
+		[[ -s docs/README.html ]] || rm -f docs/README.html
+	else
+		echo 'npm not installed - skipping docs/README.html.'
+	fi
 	# archive
 	if ! tar cplzf $F docs ; then
 		echo 'Archiving docs/ failed - skipping upload.'

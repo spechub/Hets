@@ -34,9 +34,32 @@ import Static.PrintDevGraph
 import Static.History
 
 import qualified Data.Map as Map
+import qualified Data.Set as Set
+import Data.Char
+
+lookup' :: (Ord a) => Map.Map a b -> a -> b
+lookup' x y = Map.findWithDefault (error "lookup': key not found") y x
 
 showRefTree :: LibFunc
 showRefTree gInfo = do
+  ost <- readIORef $ intState gInfo
+  case i_state ost of
+    Nothing -> return ()
+    Just ist -> do
+     let
+      le = i_libEnv ist
+      dg = lookup' le $ i_ln ist
+     sel <- listBox "Choose a specification" $ Map.keys $ specRoots dg
+     case sel of
+       Nothing -> errorDialog "Error" "no specification chosen"
+       Just i -> do 
+        let rspName = (Map.keys $ specRoots dg) !! i
+        showRefTreeAux rspName 
+            (lookup' (specRoots dg) rspName)
+            gInfo
+
+showRefTreeAux :: String -> [Int] -> LibFunc
+showRefTreeAux rspName roots gInfo = do
     graph <- newIORef daVinciSort
     nodesEdges <- newIORef (([], []) :: NodeEdgeListRef)
     let
@@ -44,12 +67,12 @@ showRefTree gInfo = do
         GlobalMenu (UDG.Menu Nothing
           [])
       graphParms = globalMenu $$
-                   GraphTitle "Refinement Tree" $$
+                   GraphTitle ("Refinement Tree of " ++ rspName) $$
                    OptimiseLayout True $$
                    AllowClose (return True) $$
                    emptyGraphParms
     graph' <- newGraph daVinciSort graphParms
-    addNodesAndEdgesRef gInfo graph' nodesEdges
+    addNodesAndEdgesRef gInfo graph' nodesEdges roots
     writeIORef graph graph'
     redraw graph'
 
@@ -57,20 +80,29 @@ type NodeEdgeListRef = ([DaVinciNode Int], [DaVinciArc (IO RTLinkLab)])
 type NodeEdgeListDep = ([DaVinciNode DiagNodeLab], [DaVinciArc (IO String)])
 
 addNodesAndEdgesRef :: GInfo -> DaVinciGraphTypeSyn ->
-                       IORef NodeEdgeListRef -> IO ()
-addNodesAndEdgesRef gInfo@(GInfo { hetcatsOpts = opts}) graph nodesEdges = do
+                       IORef NodeEdgeListRef -> [Int] -> IO ()
+addNodesAndEdgesRef gInfo@(GInfo { hetcatsOpts = opts}) graph nodesEdges roots = do
  ost <- readIORef $ intState gInfo
  case i_state ost of
   Nothing -> return ()
   Just ist -> do
    let
     le = i_libEnv ist
-    lookup' x y = Map.findWithDefault (error "lookup': node not found") y x
     dg = lookup' le $ i_ln ist
-    rTree = refTree dg
+    allRefTree = refTree dg
+    ccomp = getConnectedComps (Set.fromList roots) allRefTree
+    getConnectedComps nodes0 tree = 
+     let nodes1 = concatMap (suc tree) $ Set.toList nodes0
+     in if Set.isSubsetOf (Set.fromList nodes1) $ nodes0 
+           then Set.toList nodes0 
+           else getConnectedComps 
+                  (foldl (\ s x -> Set.insert x s) nodes0 nodes1) tree
+    rTree = Tree.subgraph ccomp allRefTree
     vertexes = map fst $ Tree.labNodes rTree
-    isRoot n = any (\ (_, _, llab) -> rtl_type llab == RTComp) $
-                out rTree n
+    isRoot n = (any (\ (_, _, llab) -> rtl_type llab == RTComp) $
+                out rTree n) && not
+               (any (\ (_, _, llab) -> rtl_type llab == RTComp) $
+                inn rTree n)
         -- look for outgoing component links
     arcs = Tree.labEdges rTree
     subNodeMenuRoots = LocalMenu (UDG.Menu Nothing [
@@ -83,7 +115,7 @@ addNodesAndEdgesRef gInfo@(GInfo { hetcatsOpts = opts}) graph nodesEdges = do
     subNodeTypeParmsR = subNodeMenuRoots $$$
                         Ellipse $$$
                         ValueTitle (return . rtn_name . labRT dg) $$$
-                        Color (getColor opts Green True True) $$$
+                        Color (getColor opts Blue True True) $$$
                         emptyNodeTypeParms
     subNodeTypeParms = subNodeMenu $$$
                        Ellipse $$$
@@ -152,7 +184,6 @@ checkConsAux gInfo (n : ns) = do
   Just ist -> do
    let
     le = i_libEnv ist
-    lookup' x y = Map.findWithDefault (error "lookup': node not found") y x
     dg = lookup' le $ i_ln ist
     rtlab = labRT dg n
     rt = refTree dg
@@ -235,7 +266,7 @@ showDiagram gInfo dg n = do
                            graph' gInfo nodesEdges
       writeIORef graph graph'
       redraw graph'
-
+ 
 showDiagSpec :: DGraph -> DiagNodeLab -> IO ()
 showDiagSpec dg l = do
  let NodeSig n _ = dn_sig l
@@ -250,8 +281,6 @@ addNodesAndEdgesDeps :: DGraph -> Diag -> DaVinciGraphTypeSyn -> GInfo ->
 addNodesAndEdgesDeps dg diag graph gi nodesEdges = do
    let
     opts = hetcatsOpts gi
-    lookup' x y = Map.findWithDefault (error "lookup': node not found") y x
-
     vertexes = map snd $ Tree.labNodes $ diagGraph diag
     arcs = Tree.labEdges $ diagGraph diag
     subNodeMenu = LocalMenu (UDG.Menu Nothing [Button "Show desc and sig" $

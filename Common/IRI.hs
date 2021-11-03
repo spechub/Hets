@@ -44,11 +44,12 @@ module Common.IRI
     , hasFullIRI
     , isSimple
     , addSuffixToIRI
-
+    , showTrace
     -- * Parsing
     , iriParser
     , angles
     , iriCurie
+    , urnParser
     , compoundIriCurie  
     , parseCurie
     , parseIRICurie
@@ -75,6 +76,7 @@ module Common.IRI
     , mkIRI
     , idToIRI  
     , setPrefix
+    , uriToCaslId
     ) where
 
 import Text.ParserCombinators.Parsec
@@ -162,6 +164,18 @@ without prefix -}
 isSimple :: IRI -> Bool
 isSimple i = null (prefixName i) && isAbbrev i
 
+showTrace :: IRI -> String
+showTrace i = 
+ "scheme:" ++ iriScheme i ++
+ (case iriAuthority i of
+   Just x -> "\nauthority:" ++ show x
+   _ -> "\nno authority") ++
+ "\npath:" ++ show (iriPath i) ++
+ "\nquery:" ++ iriQuery i ++
+ "\nfragment:" ++ iriFragment i ++
+ "\nprefix:" ++ prefixName i ++
+ "\nisAbbrev:" ++ show (isAbbrev i)
+
 {- IRI as instance of Show.  Note that for security reasons, the default
 behaviour should suppress any iuserinfo field (see RFC3986, section 7.5).
 But we don't do this since we use iriToStringUnsecure all over the place
@@ -180,7 +194,7 @@ instance Ord IRI where
       (\ j -> (prefixName j, iriPath j, iriQuery j, iriFragment j))
       i k
     _ -> comparing (\ j ->
-      (iriScheme j, iriAuthority j, iriPath j,
+      (prefixName j, iriScheme j, iriAuthority j, iriPath j,
        iriQuery j, iriFragment j)) i k
 
 -- |converts IRI to String of expanded form. if available. Also showing Auth
@@ -226,7 +240,7 @@ iRIRange i = let Range rs = iriPos i in case rs of
 
 showIRI :: IRI -> String
 showIRI i 
-  | hasFullIRI i = showIRIFull i
+  | hasFullIRI i && not (isAbbrev i)  = showIRIFull i
   | otherwise = showIRICompact i
 
 
@@ -345,7 +359,7 @@ iriCurie :: IRIParser st IRI
 iriCurie = angles iriParser <|> curie 
 
 compoundIriCurie :: IRIParser st IRI
-compoundIriCurie = angles iriParser <|> compoundCurie 
+compoundIriCurie = angles iriParser <|> compoundCurie
 
 angles :: IRIParser st IRI -> IRIParser st IRI
 angles p = char '<' >> fmap (\ i -> i { hasAngles = True }) p << char '>'
@@ -362,9 +376,10 @@ compoundCurie = do
 curie :: IRIParser st IRI
 curie = iriWithPos $ do
     pn <- try (do
-        n <- ncname
+        n <- option "" ncname -- although the standard doesn't allow an empty
+                              -- prefix the java OWL API does.
         c <- string ":"
-        return $ n ++ c
+        return $ n -- ++ c Don't add the colon to the prefix!
       )
     i <- reference
     return i { prefixName = pn }
@@ -391,6 +406,37 @@ referenceAux allowEmpty = iriWithPos $ do
           , isAbbrev = True  
           }
   return iri
+
+urnParser :: IRIParser st IRI
+urnParser = let ldh = alphaNum <|> oneOf "-." in iriWithPos $
+  do
+    -- The leading scheme (urn:) is case-insensitive.
+    oneOf "uU" >> oneOf "rR" >> oneOf "nN" >> char ':'
+    nid <- alphaNum <:>
+      manyTill ldh (try . lookAhead $ (ldh >> notFollowedBy ldh)) <++>
+      (alphaNum <:> return "") 
+    char ':'
+    nss <- flat $ many1 (uchar "/[]")
+    rComponent <- option "" $ string "?+" <++> flat (many1 $ uchar "/?")
+    qComponent <- option "" $ string "?=" <++> flat (many1 $ uchar "/?")
+    fragment <- option "" uifragment
+    return nullIRI
+              { iriScheme = "urn"
+              , iriAuthority = Just IRIAuth
+                { iriUserInfo = ""
+                , iriRegName = nss
+                , iriPort = ""
+                }
+              , iriPath = stringToId nss
+              , iriQuery = rComponent ++ qComponent
+              , iriFragment = fragment
+              }
+  
+
+
+  
+
+    
   
 {- | Prefix part of CURIE in @prefix_part:reference@
   <http://www.w3.org/TR/2009/REC-xml-names-20091208/#NT-NCName> -}
@@ -455,8 +501,8 @@ pnCharsPAux c =
 / ipath-empty -}
 
 iriParser :: IRIParser st IRI
-iriParser = iriWithPos $ do
-  us <- try uscheme
+iriParser = (<|>) (try urnParser) $ iriWithPos $ do
+  us <- option "" $ try uscheme
   (ua, up) <- ihierPart
   uq <- option "" uiquery
   uf <- option "" uifragment
@@ -669,7 +715,7 @@ iqueryPart = many1 iprivate <|> uchar ":@/?"
 -- RFC3987, section 2.2
 
 uifragment :: IRIParser st String
-uifragment = char '#' <:> flat (many $ uchar ":@/?")
+uifragment = char '#' <:> flat (many $ uchar ":@/?[]")
 
 -- Reference, Relative and Absolute IRI forms
 
@@ -781,7 +827,7 @@ that may be present in the IRI.  Use this function with argument @id@
 to preserve the password in the formatted output. -}
 iriToString :: (String -> String) -> IRI -> ShowS
 iriToString iuserinfomap i
-  | hasFullIRI i = iriToStringFull iuserinfomap i
+  | hasFullIRI i && not (isAbbrev i) = iriToStringFull iuserinfomap i
   | otherwise = iriToStringAbbrev i
 
 iriToStringShort :: (String -> String) -> IRI -> ShowS
@@ -809,7 +855,8 @@ iriToStringAbbrev (IRI { prefixName = pname
                        , iriQuery = aQuery
                        , iriFragment = aFragment
                        }) =
-  (pname ++) . (show aPath ++) . (aQuery ++) . (aFragment ++)
+  let pref = if null pname then "" else pname ++ ":" in
+  (pref ++) . (show aPath ++) . (aQuery ++) . (aFragment ++)
 
 iriToStringAbbrevMerge :: IRI -> ShowS
 iriToStringAbbrevMerge (IRI { iriPath = aPath
@@ -1045,7 +1092,7 @@ difSegsFrom sabs base = difSegsFrom ("../" ++ sabs) (snd $ nextSegment base)
 to the prefix of @c@ or the concatenation of @i@ and @iriPath c@
 is not a valid IRI. -}
 expandCurie :: Map String IRI -> IRI -> Maybe IRI
-expandCurie prefixMap c =  
+expandCurie prefixMap c =
   if hasFullIRI c then Just c else
   case Map.lookup (filter (/= ':') $ prefixName c) prefixMap of
     Nothing -> Nothing
@@ -1078,3 +1125,21 @@ addSuffixToIRI s i = if not $ null $ iriQuery i
                    then i{iriQuery = iriQuery i ++ s}
                   else  
                         i{iriPath  = appendId (iriPath i) (stringToId s)}
+
+-- | Extracts Id from URI
+uriToCaslId :: IRI -> Id
+uriToCaslId urI = 
+ let urS = showIRI urI
+     urS' = concatMap 
+            (\c ->  if isAlpha c ||
+                       isDigit c || 
+                       c == '\'' ||
+                       c == '_'
+                   then [c]
+                   else "_u" ) urS
+ in case urS of
+      x : _ -> 
+         if not $ isAlpha x then genName urS' 
+         else stringToId urS'
+      _ -> error "translating empty IRI" 
+           -- should never happen
