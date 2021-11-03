@@ -193,10 +193,9 @@ runTimedHermit opts tmpFileName prob entail secs = do
         Just c -> writeFile entFile c
         Nothing -> return ()
       mex <- timeoutCommand secs "java" args
-      trace (show mex ++ "\n" ++ show args) (removeFile timeTmpFile)
       removeFile timeTmpEnt
       when doEntail $ removeFile entFile
-      return $ fmap (\ (_, outS, errS) -> if outS == "true\n" then (True, outS, errS) else (False, outS, errS)) mex
+      return $ fmap (\ (_, outS, errS) -> (True, outS, errS)) mex
     else return $ Just (False, "", "")
 
 runHermit :: ProverState
