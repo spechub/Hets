@@ -266,8 +266,10 @@ facetValuePair pm = do
 dataRangeRestriction :: GA.PrefixMap -> CharParser st DataRange
 dataRangeRestriction pm = do
   e <- datatypeUri pm
-  option (DataType e []) $ fmap (DataType e) $ try $ bracketsP
-    $ sepByComma $ skips $ facetValuePair pm
+  option (DataType e []) $ fmap (DataType e) $ try $ parseFacetValuePairs pm
+    
+parseFacetValuePairs :: GA.PrefixMap -> CharParser st [(ConstrainingFacet, RestrictionValue)]
+parseFacetValuePairs pm = bracketsP $ sepByComma $ skips $ facetValuePair pm
 
 dataConjunct :: GA.PrefixMap -> CharParser st DataRange
 dataConjunct pm = fmap (mkDataJunction IntersectionOf)
@@ -845,7 +847,12 @@ parseUnknownAtom :: GA.PrefixMap -> IRI -> CharParser st Atom
 parseUnknownAtom pm pre =
   try (UnknownBinaryAtom pre <$> parseUnknownArg pm <*> (commaP >> parseUnknownArg pm)) <|>
   (UnknownUnaryAtom pre <$> parseUnknownArg pm)
-  
+
+parseDataRangeAtom :: GA.PrefixMap -> IRI -> CharParser st Atom
+parseDataRangeAtom pm pre = do
+  facets <- parseFacetValuePairs pm
+  darg <- parseDArg pm
+  return $ DataRangeAtom (DataType pre facets) darg
 
 
 parseAtom :: GA.PrefixMap -> CharParser st Atom
@@ -853,12 +860,13 @@ parseAtom pm =  parseClassExprAtom pm <|>
   parseSameIndividualsAtom pm <|>
   parseDifferentIndividualsAtom pm <|> do
     pre <- expUriP pm
-    choice $ map (try . parensP) [
-      (parseClassAtom pm pre),
-      (parseObjectPropertyAtom pm pre),
-      (parseDataPropertyAtom pm pre),
-      (parseBuiltInAtom pm pre),
-      parseUnknownAtom pm pre]
+    choice $ map try [
+      parensP $ parseClassAtom pm pre,
+      parensP $ parseObjectPropertyAtom pm pre,
+      parensP $ parseDataPropertyAtom pm pre,
+      parensP $ parseBuiltInAtom pm pre,
+      parseDataRangeAtom pm pre,
+      parensP $ parseUnknownAtom pm pre]
 
 parseRule :: GA.PrefixMap -> CharParser st Axiom
 parseRule pm = do
