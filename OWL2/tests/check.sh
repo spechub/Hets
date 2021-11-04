@@ -50,7 +50,7 @@ do
             do
                 if test -f $i
                 then
-                    $ECHO -n "  Testing $i ... "
+                    $ECHO -n "  Testing $DIR/$i ... "
                     $TESTSCRIPT $i
                 fi
             done
@@ -60,7 +60,7 @@ do
             do
                 if test -f $i
                 then
-                    $ECHO -n "  Testing $i ... "
+                    $ECHO -n "  Testing $DIR/$i ... "
                     $TESTSCRIPT $i
                 fi
             done
@@ -69,7 +69,7 @@ do
             do
                 if test -f $i
                 then
-                    $ECHO -n "  Testing $i ... "
+                    $ECHO -n "  Testing $DIR/$i ... "
                     $TESTSCRIPT $i
                 fi
             done
@@ -79,7 +79,7 @@ do
             do
                 if test -f $i
                 then
-                    $ECHO -n "  Testing $i ... "
+                    $ECHO -n "  Testing $DIR/$i ... "
                     $TESTSCRIPT $i
                 fi
             done
@@ -89,7 +89,7 @@ do
             do
                 if test -f $i
                 then
-                    $ECHO -n "  Testing $i ... "
+                    $ECHO -n "  Testing $DIR/$i ... "
                     OUTPUT=`$HETSROOT/hets $i 2>&1` 
                     if [ $? -eq 0 ]
                     then

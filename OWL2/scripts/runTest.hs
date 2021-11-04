@@ -1,3 +1,5 @@
+import Debug.Trace
+
 import System.Environment
 
 import Control.Monad (forM_)
@@ -16,7 +18,7 @@ import Text.XML.Light
 import qualified Data.Set as Set
 
 import Common.DocUtils
-import Common.Result (maybeResult)
+import Common.Result (maybeResult, diags)
 import OWL2.Pretty()
 import qualified OWL2.ParseMS as MSParse
 import qualified OWL2.ParseAS as ASParse
@@ -40,15 +42,15 @@ processParserPrinter file parser cmp = do
     s <- readFile file
     case parse (parser >>= (\r -> eof >> return r)) file s of
         Left err -> putStrLn $ "❌ initial parsing failed: " ++ show err
-        Right o1 -> let 
-          (o1', _, _) = fromJust $ maybeResult $ basicOWL2Analysis (o1, emptySign, emptyGlobalAnnos)
-          p = show $ pretty o1' in
-            case parse (parser >>= (\r -> eof >> return r)) file p of
-                Left err -> putStrLn $ "❌ parsing printed failed: " ++ show err
-                Right o2 -> let (o2', _, _) = fromJust $ maybeResult $ basicOWL2Analysis (o2, emptySign, emptyGlobalAnnos) in
-                    if cmp o1' o2' then  putStrLn "✅ success"
-                    else
-                        putStrLn $ "❌ parse-print-parse circle failed. Printed: " ++ show p
+        Right o1 -> let r = basicOWL2Analysis (o1, emptySign, emptyGlobalAnnos) in traceShow o1 $ case maybeResult r of
+            Just (o1', _, _) -> let p = show $ pretty o1' in
+                case parse (parser >>= (\r -> eof >> return r)) file p of
+                    Left err -> putStrLn $ "❌ parsing printed failed: " ++ show err
+                    Right o2 -> let (o2', _, _) = fromJust $ maybeResult $ basicOWL2Analysis (o2, emptySign, emptyGlobalAnnos) in
+                        if cmp o1' o2' then  putStrLn "✅ success"
+                        else
+                            putStrLn $ "❌ parse-print-parse circle failed. Printed: " ++ show p
+            Nothing -> putStrLn $ "❌ static analysis failed: " ++ show (diags r)
 
 processOMN :: String -> IO ()
 processOMN file = processParserPrinter file (MSParse.parseOntologyDocument mempty) cmpAxioms
