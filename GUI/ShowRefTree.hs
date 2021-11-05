@@ -34,6 +34,7 @@ import Static.PrintDevGraph
 import Static.History
 
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Data.Char
 
 lookup' :: (Ord a) => Map.Map a b -> a -> b
