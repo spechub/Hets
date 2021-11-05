@@ -34,7 +34,6 @@ import Static.PrintDevGraph
 import Static.History
 
 import qualified Data.Map as Map
-import qualified Data.Set as Set
 import Data.Char
 
 lookup' :: (Ord a) => Map.Map a b -> a -> b
@@ -288,7 +287,7 @@ addNodesAndEdgesDeps dg diag graph gi nodesEdges = do
     subNodeTypeParms = subNodeMenu $$$
                        Ellipse $$$
                        ValueTitle (return . (\ x ->
-                                   take 20 (dn_desc x) ++ "..." )) $$$
+                                   take 20 (filter (\c -> isAlphaNum c || isSpace c) $ dn_desc x) ++ "..." )) $$$
                        Color (getColor opts Green True True) $$$
                        emptyNodeTypeParms
    subNodeType <- newNodeType graph subNodeTypeParms
