@@ -1,6 +1,5 @@
-import Debug.Trace
-
 import System.Environment
+import System.Exit (exitFailure)
 
 import Control.Monad (forM_)
 import Data.Maybe (fromJust)
@@ -40,11 +39,11 @@ processXML file = do
 processParserPrinter :: FilePath -> CharParser () OntologyDocument -> (OntologyDocument -> OntologyDocument -> Bool) -> IO ()
 processParserPrinter file parser cmp = do
     s <- readFile file
-    case parse (parser >>= (\r -> eof >> return r)) file s of
+    case parse (parser >>= ((>>) eof . return)) file s of
         Left err -> putStrLn $ "❌ initial parsing failed: " ++ show err
-        Right o1 -> let r = basicOWL2Analysis (o1, emptySign, emptyGlobalAnnos) in traceShow o1 $ case maybeResult r of
+        Right o1 -> let r = basicOWL2Analysis (o1, emptySign, emptyGlobalAnnos) in case maybeResult r of
             Just (o1', _, _) -> let p = show $ pretty o1' in
-                case parse (parser >>= (\r -> eof >> return r)) file p of
+                case parse (parser >>= ((>>) eof . return)) file p of
                     Left err -> putStrLn $ "❌ parsing printed failed: " ++ show err
                     Right o2 -> let (o2', _, _) = fromJust $ maybeResult $ basicOWL2Analysis (o2, emptySign, emptyGlobalAnnos) in
                         if cmp o1' o2' then  putStrLn "✅ success"
@@ -67,4 +66,5 @@ main = do
             "xml" -> processXML path
             "omn" -> processOMN path
             "mno" -> processOMN path
-            "ofn" -> processOFN path)
+            "ofn" -> processOFN path
+            _ -> putStrLn ("Unkown extension: " ++ ext) >> exitFailure )
