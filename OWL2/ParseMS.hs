@@ -34,7 +34,7 @@ import Text.ParserCombinators.Parsec
 import Data.Char
 import qualified Data.Map as Map (fromList, unions)
 import Data.Either (partitionEithers)
-import Control.Monad (liftM2)
+import Control.Monad (liftM2, unless)
 
 type Annotations = [Annotation]
 -- | Parses a comment
@@ -822,20 +822,12 @@ parseDifferentIndividualsAtom pm = do
 parseDArg :: GA.PrefixMap -> CharParser st DataArg
 parseDArg pm = (DArg <$> literal pm) <|> (DVar <$> parseVariable pm)
 
+
+
 parseBuiltInAtom :: GA.PrefixMap -> IRI -> CharParser st Atom
-parseBuiltInAtom pm pre = 
-  try (do -- at least three arguments
-    arg1 <- parseDArg pm
-    commaP
-    arg2 <- parseDArg pm
-    commaP
-    argN <- sepByComma $ parseDArg pm
-    return $ BuiltInAtom pre (arg1 : arg2 : argN)) <|>
-  (do -- first arg a literal, at least two arguments
-    arg1 <- DArg <$> literal pm
-    commaP
-    argN <- sepByComma (parseDArg pm)
-    return $ BuiltInAtom pre (arg1 : argN))
+parseBuiltInAtom pm pre = do
+  unless (isSWRLBuiltIn pre) $ fail ("\"" ++ show pre ++ "\" is not a built in predicate.")
+  BuiltInAtom pre <$> sepByComma (parseDArg pm)
 
 
 parseUnknownArg :: GA.PrefixMap -> CharParser st UnknownArg
@@ -861,10 +853,10 @@ parseAtom pm =  parseClassExprAtom pm <|>
   parseDifferentIndividualsAtom pm <|> do
     pre <- expUriP pm
     choice $ map try [
+      parensP $ parseBuiltInAtom pm pre,
       parensP $ parseClassAtom pm pre,
       parensP $ parseObjectPropertyAtom pm pre,
       parensP $ parseDataPropertyAtom pm pre,
-      parensP $ parseBuiltInAtom pm pre,
       parseDataRangeAtom pm pre,
       parensP $ parseUnknownAtom pm pre]
 

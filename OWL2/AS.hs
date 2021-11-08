@@ -223,6 +223,10 @@ predefIRIs = Set.fromList $ map (setPrefix "xsd" . mkIRI) xsdKeys
 isDatatypeKey :: IRI -> Bool
 isDatatypeKey = not . null . isDatatypeKeyAux
 
+isSWRLBuiltIn :: IRI -> Bool
+isSWRLBuiltIn iri = isAbbrev iri && prefixName iri == "swrlb" ||
+  "http://www.w3.org/2003/11/swrlb#" `isPrefixOf` show iri {hasAngles = False}
+
 xsdMap :: PreDefMaps
 xsdMap = makeXsdMap xsdKeys
 
