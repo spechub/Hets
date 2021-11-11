@@ -53,6 +53,7 @@ import OWL2.Parse (symbItem, symbItems, symbMapItems) --temporary
 import OWL2.ProfilesAndSublogics
 import OWL2.ProveFact
 import OWL2.ProvePellet
+import OWL2.ProveHermit
 import OWL2.Rename
 import OWL2.Sign
 import OWL2.StaticAnalysis
@@ -204,9 +205,9 @@ instance Logic OWL2 ProfSub OntologyDocument Axiom SymbItems SymbMapItems
          bottomSublogic OWL2 = Just bottomS
          sublogicDimensions OWL2 = allProfSubs
          parseSublogic OWL2 _ = Just topS -- ignore sublogics
-         provers OWL2 = [pelletProver, factProver]
+         provers OWL2 = [pelletProver, factProver, hermitProver]
          default_prover OWL2 = "Fact"
-         cons_checkers OWL2 = [pelletConsChecker, factConsChecker]
+         cons_checkers OWL2 = [pelletConsChecker, factConsChecker, hermitConsChecker]
          conservativityCheck OWL2 = map
            (\ ct -> ConservativityChecker ("Locality_" ++ ct)
                     (checkOWLjar localityJar) $ conserCheck ct)

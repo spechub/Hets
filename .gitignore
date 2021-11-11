@@ -191,3 +191,4 @@ test/*/*.th
 test/*/*.xml
 /_dependencies
 stack.yaml.lock
+consoleHistory.tmp
