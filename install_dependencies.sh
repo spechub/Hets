@@ -12,7 +12,7 @@ fi
 case $OSTYPE in
     "linux-gnu")
         sudo apt install libglib2.0-dev libcairo2-dev libpango1.0-dev libgtk2.0-dev libglade2-dev libncurses-dev
-        sudo apt install postgresql postgresql-server-dev-9.5
+        sudo apt install postgresql postgresql-server-dev-all
         sudo apt install ant
         ;;
     "darwin*")
