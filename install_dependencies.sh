@@ -5,7 +5,7 @@ echo "Installing dependencies..."
 which javac > /dev/null
 if [ $? -ne 0 ]
 then
-    echo "JDE not found. Install JDE to use Hets."
+    echo "JDK not found. Install JDK to use Hets."
     exit 0
 fi
 
