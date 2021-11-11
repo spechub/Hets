@@ -90,8 +90,8 @@ filterObjProp :: Sign -> [AS.ObjectPropertyExpression]
     -> [AS.ObjectPropertyExpression]
 filterObjProp = filter . isDeclObjProp
 
-
-checkHasKey :: Sign -> [AS.ObjectPropertyExpression] -> [AS.DataPropertyExpression] -> Result ([AS.ObjectPropertyExpression], [AS.DataPropertyExpression])
+checkHasKey :: Sign -> [AS.ObjectPropertyExpression] -> [AS.DataPropertyExpression]
+    -> Result ([AS.ObjectPropertyExpression], [AS.DataPropertyExpression])
 checkHasKey s ol dl = do
     let (declaredObjProps, undeclaredObjs) = partition (isDeclObjProp s) ol
     let (declaredDProps, undeclaredDProps) = partition (isDeclDataProp s) dl
