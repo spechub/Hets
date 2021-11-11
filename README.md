@@ -181,7 +181,7 @@ If you wish to make larger changes we generally recommend [forking](https://help
       ```
 * If you work with OWL ontologies, build OWL tools before running hets
   ```
-  make install-owl-tools
+  sudo make install-owl-tools
   ```
 * Setup Stack for Hets (this needs to be done only once after every time the stack.yaml has changed):
   ```
