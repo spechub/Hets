@@ -23,7 +23,6 @@ import Logic.Prover
 import Common.ExtSign
 
 import OWL2.Sign
-import OWL2.MS
 import qualified OWL2.AS as AS
 import OWL2.Logic_OWL2
 import OWL2.CASL2OWL

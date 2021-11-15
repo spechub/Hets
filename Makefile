@@ -117,7 +117,7 @@ TESTTARGETFILES += Scratch.hs CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
 
 ### list of directories to run checks in
 TESTDIRS += Common CASL Fpl/test HasCASL test ExtModal/Tries \
-    CommonLogic/TestData
+    CommonLogic/TestData OWL2/tests
 
 hs_clean_files = Haskell/TiATC.hs Haskell/TiDecorateATC.hs \
     Haskell/TiPropATC.hs Haskell/ATC_Haskell.der.hs

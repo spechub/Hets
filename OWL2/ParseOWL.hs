@@ -13,7 +13,6 @@ analyse OWL files by calling the external Java parser.
 module OWL2.ParseOWL (parseOWL, convertOWL) where
 
 import OWL2.AS
-import OWL2.Rename
 
 import qualified Data.ByteString.Lazy as L
 import Data.List
@@ -49,7 +48,6 @@ parseOWL quick fullFileName = do
     case (exitCode, errStr) of
       (ExitSuccess, "") -> do
           cont <- lift $ L.readFile tmpFile
-          lift $ putStrLn (show cont)
           lift $ removeFile tmpFile
           parseProc cont
       _ -> fail $ "process stop! " ++ shows exitCode "\n" ++ errStr

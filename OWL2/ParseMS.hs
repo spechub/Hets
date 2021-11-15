@@ -34,7 +34,7 @@ import Text.ParserCombinators.Parsec
 import Data.Char
 import qualified Data.Map as Map (fromList, unions)
 import Data.Either (partitionEithers)
-import Control.Monad (liftM2)
+import Control.Monad (liftM2, unless)
 
 type Annotations = [Annotation]
 -- | Parses a comment
@@ -266,8 +266,10 @@ facetValuePair pm = do
 dataRangeRestriction :: GA.PrefixMap -> CharParser st DataRange
 dataRangeRestriction pm = do
   e <- datatypeUri pm
-  option (DataType e []) $ fmap (DataType e) $ try $ bracketsP
-    $ sepByComma $ skips $ facetValuePair pm
+  option (DataType e []) $ fmap (DataType e) $ try $ parseFacetValuePairs pm
+    
+parseFacetValuePairs :: GA.PrefixMap -> CharParser st [(ConstrainingFacet, RestrictionValue)]
+parseFacetValuePairs pm = bracketsP $ sepByComma $ skips $ facetValuePair pm
 
 dataConjunct :: GA.PrefixMap -> CharParser st DataRange
 dataConjunct pm = fmap (mkDataJunction IntersectionOf)
@@ -820,20 +822,12 @@ parseDifferentIndividualsAtom pm = do
 parseDArg :: GA.PrefixMap -> CharParser st DataArg
 parseDArg pm = (DArg <$> literal pm) <|> (DVar <$> parseVariable pm)
 
+
+
 parseBuiltInAtom :: GA.PrefixMap -> IRI -> CharParser st Atom
-parseBuiltInAtom pm pre = 
-  try (do -- at least three arguments
-    arg1 <- parseDArg pm
-    commaP
-    arg2 <- parseDArg pm
-    commaP
-    argN <- sepByComma $ parseDArg pm
-    return $ BuiltInAtom pre (arg1 : arg2 : argN)) <|>
-  (do -- first arg a literal, at least two arguments
-    arg1 <- DArg <$> literal pm
-    commaP
-    argN <- sepByComma (parseDArg pm)
-    return $ BuiltInAtom pre (arg1 : argN))
+parseBuiltInAtom pm pre = do
+  unless (isSWRLBuiltIn pre) $ fail ("\"" ++ show pre ++ "\" is not a built in predicate.")
+  BuiltInAtom pre <$> sepByComma (parseDArg pm)
 
 
 parseUnknownArg :: GA.PrefixMap -> CharParser st UnknownArg
@@ -845,7 +839,12 @@ parseUnknownAtom :: GA.PrefixMap -> IRI -> CharParser st Atom
 parseUnknownAtom pm pre =
   try (UnknownBinaryAtom pre <$> parseUnknownArg pm <*> (commaP >> parseUnknownArg pm)) <|>
   (UnknownUnaryAtom pre <$> parseUnknownArg pm)
-  
+
+parseDataRangeAtom :: GA.PrefixMap -> IRI -> CharParser st Atom
+parseDataRangeAtom pm pre = do
+  facets <- parseFacetValuePairs pm
+  darg <- parseDArg pm
+  return $ DataRangeAtom (DataType pre facets) darg
 
 
 parseAtom :: GA.PrefixMap -> CharParser st Atom
@@ -853,12 +852,13 @@ parseAtom pm =  parseClassExprAtom pm <|>
   parseSameIndividualsAtom pm <|>
   parseDifferentIndividualsAtom pm <|> do
     pre <- expUriP pm
-    choice $ map (try . parensP) [
-      (parseClassAtom pm pre),
-      (parseObjectPropertyAtom pm pre),
-      (parseDataPropertyAtom pm pre),
-      (parseBuiltInAtom pm pre),
-      parseUnknownAtom pm pre]
+    choice $ map try [
+      parensP $ parseBuiltInAtom pm pre,
+      parensP $ parseClassAtom pm pre,
+      parensP $ parseObjectPropertyAtom pm pre,
+      parensP $ parseDataPropertyAtom pm pre,
+      parseDataRangeAtom pm pre,
+      parensP $ parseUnknownAtom pm pre]
 
 parseRule :: GA.PrefixMap -> CharParser st Axiom
 parseRule pm = do
@@ -909,6 +909,7 @@ parsePrefixDeclaration =  do
 
 parseOntologyDocument :: GA.PrefixMap -> CharParser st OntologyDocument
 parseOntologyDocument gapm = do
+    skipMany (forget space <|> forget comment)
     prefixes <- many parsePrefixDeclaration
     let pm = Map.unions [gapm, (Map.fromList prefixes), changePrefixMapTypeToGA predefPrefixes]
     o <- parseOntology pm

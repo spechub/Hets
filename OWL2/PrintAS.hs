@@ -257,7 +257,7 @@ printAxiom pds axiom = case axiom of
         -> printHasKey pds axAnns clExpr objPropExprs dataPropExprs
     Assertion ax -> printAssertion pds ax
     AnnotationAxiom ax -> printAnnotationAxiom pds ax
-    Rule (DLSafeRule anns body head) -> printDLSafeRule pds anns body head
+    Rule (DLSafeRule anns body hd) -> printDLSafeRule pds anns body hd
     Rule (DGRule anns dgBody dgHead) -> printDGRule pds anns dgBody dgHead
     DGAxiom anns dgName dgNodes dgEdges mainClasses ->
         printDGAxiom pds anns dgName dgNodes dgEdges mainClasses
@@ -769,12 +769,12 @@ printAnnotationPropertyRange pds axAnns annProp iri =
 
 -- | print DLSafeRules
 printDLSafeRule :: GA.PrefixMap -> AxiomAnnotations -> Body -> Head -> Doc
-printDLSafeRule pds anns body head = 
+printDLSafeRule pds anns body hd = 
     keyword dlSafeRuleS
     <> sParens (hsep [docAnns, fsep [docBody, docHead]])
     where
         docAnns = fsep . map (printAnnotation pds) $ anns
-        docHead = printDLSafeRuleHead pds head
+        docHead = printDLSafeRuleHead pds hd
         docBody = printDLSafeRuleBody pds body
 
 printDLSafeRuleHead :: GA.PrefixMap -> Head -> Doc

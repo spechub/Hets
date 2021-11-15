@@ -356,7 +356,8 @@ axiom ax = case ax of
     AS.Assertion a -> case a of
         AS.SameIndividual anns inds -> minimalCovering elrlProfile
             [annotations anns, andProfileList $ map individual inds]
-        AS.DifferentIndividuals anns inds -> andProfileList $ map individual inds
+        AS.DifferentIndividuals anns inds -> minimalCovering elrlProfile
+            [annotations anns, andProfileList $ map individual inds]
         AS.ClassAssertion anns ce ind -> andProfileList [annotations anns, subClass ce, individual ind] 
         AS.ObjectPropertyAssertion anns oExpr i1 i2 -> andProfileList $
             [annotations anns, objProp oExpr] ++ map individual [i1, i2]

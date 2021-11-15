@@ -223,6 +223,10 @@ predefIRIs = Set.fromList $ map (setPrefix "xsd" . mkIRI) xsdKeys
 isDatatypeKey :: IRI -> Bool
 isDatatypeKey = not . null . isDatatypeKeyAux
 
+isSWRLBuiltIn :: IRI -> Bool
+isSWRLBuiltIn iri = isAbbrev iri && prefixName iri == "swrlb" ||
+  "http://www.w3.org/2003/11/swrlb#" `isPrefixOf` show iri {hasAngles = False}
+
 xsdMap :: PreDefMaps
 xsdMap = makeXsdMap xsdKeys
 
@@ -230,7 +234,7 @@ owlNumbersMap :: PreDefMaps
 owlNumbersMap = makeOWLPredefMaps owlNumbers
 
 rdfMap :: PreDefMaps
-rdfMap = preDefMaps [xmlLiteral, stringS] "rdf"
+rdfMap = preDefMaps [xmlLiteral, stringS, rdfPlainLiteralS] "rdf"
 
 rdfsMap :: PreDefMaps
 rdfsMap = preDefMaps [rdfsLiteral] "rdfs"
@@ -779,6 +783,10 @@ type InverseObjectProperty = ObjectPropertyExpression
 data ObjectPropertyExpression = ObjectProp ObjectProperty
   | ObjectInverseOf InverseObjectProperty
         deriving (Show, Eq, Ord, Typeable, Data)
+
+isObjectProperty :: ObjectPropertyExpression -> Bool
+isObjectProperty (ObjectProp _) = True
+isObjectProperty _ = False
 
 objPropToIRI :: ObjectPropertyExpression -> IRI
 objPropToIRI opExp = case opExp of
