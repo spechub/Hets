@@ -179,7 +179,8 @@ If you wish to make larger changes we generally recommend [forking](https://help
       brew install binutils glib libglade cairo gtk fontconfig freetype gettext spechub/hets/udrawgraph
       brew install ant
       ```
-* If you work with OWL ontologies, build OWL tools before running hets
+* If you work with OWL ontologies, build OWL tools before running hets. Warnings produced by stack (like "You are not the owner of '/.stack-work/'. Aborting to protect file permissions")
+  can be ignored as the script doesn't use ghc or stack in general.
   ```
   sudo make install-owl-tools
   ```
