@@ -24,6 +24,7 @@ import Interfaces.GenericATPState hiding (proverState)
 import Logic.Prover hiding (proofLines)
 
 import Data.List
+import Data.Graph.Inductive.Graph (mkGraph)
 
 spass :: Prover Sign Sentence Morphism Sublogic ProofTree
 spass = mkProver binary_name prover_name sublogics runTheProver
@@ -60,14 +61,15 @@ runTheProver proverState cfg saveTPTPFile theoryName namedGoal = do
   (_, out, _) <-
     executeTheProver binary_name (allOptions ++ [problemFileName])
 
-  let (mResult, axiomsUsed, outputExists, resultedTimeUsed) =
+  let (mResult, axiomsUsed, outputExists, resultedTimeUsed, _, clNodes, clEdges) =
         parseOutput namedGoal out
   let (defaultProofStatus, provedStatus, disprovedStatus) =
         proofStatuses cfg namedGoal resultedTimeUsed axiomsUsed prover_name
   let (atpRetval, resultedProofStatus) = case mResult of
         Nothing -> (ATPError $ errorMessage outputExists, defaultProofStatus)
         Just result
-          | isInfixOf "Proof found." result -> (ATPSuccess, provedStatus)
+          | isInfixOf "Proof found." result ->
+             (ATPSuccess, provedStatus { proofTree = ProofGraph $ mkGraph clNodes clEdges })
           | isInfixOf "Completion found." result -> (ATPSuccess, disprovedStatus)
           | isInfixOf "Ran out of time." result ->
               (ATPTLimitExceeded, defaultProofStatus)

@@ -80,9 +80,12 @@ runTheProver proverState cfg saveTPTPFile theoryName namedGoal = do
                          putStrLn $ unlines errs
                          return $ getAxioms proverState
                 else return $ getAxioms proverState
+  let proofGraph = if szsProved szsStatusLine || szsDisproved szsStatusLine
+                then graphFromProofObject proofLines
+                else proofTree (proofStatus cfg)
   let (atpRetval, resultedProofStatus) =
         atpRetValAndProofStatus cfg namedGoal resultedTimeUsed axiomsUsed
           szsStatusLine prover_name
-  return (atpRetval, cfg { proofStatus = resultedProofStatus
+  return (atpRetval, cfg { proofStatus = resultedProofStatus { proofTree = proofGraph }
                          , resultOutput = out
                          , timeUsed = resultedTimeUsed })
