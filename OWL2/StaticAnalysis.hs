@@ -552,7 +552,7 @@ checkAxiom s a = case a of
 
             case subj of
                 AS.AnnSubIri iri -> when (null $ correctEntity s iri)
-                    $ mkError "Incorrect AnnotationAssertion axiom. Axiom subject is not declared: " (show subj)
+                    $ mkError "Incorrect AnnotationAssertion axiom. Axiom subject is not declared: " (show iri)
                 _ -> return ()
                 
             case val of

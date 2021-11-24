@@ -103,15 +103,14 @@ getIRI pm b e =
 
 
 getIRIWithResolvedBase :: XMLBase -> String -> Maybe IRI
-getIRIWithResolvedBase b str =
+getIRIWithResolvedBase b str
     -- According to https://www.w3.org/TR/2012/REC-owl2-xml-serialization-20121211/#The_Serialization_Syntax
     -- all @IRI@s must be resolved against xml:base. Only doing this
     -- if the iri is relative
-    let absIri = parseIRI str
-        resolvedIRI = b >>= (parseIRI . ( ++ str))
-    in case absIri of
-        Just y -> if not $ null $ iriScheme y then Just y else resolvedIRI
-        Nothing -> resolvedIRI
+
+    
+    | "://" `isInfixOf` str = parseIRI str -- iri is absolute (contains a scheme)
+    | otherwise = b >>= (parseIRI . ( ++ str))
 
 
 

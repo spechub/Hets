@@ -84,7 +84,7 @@ instance Function IRI where
           lp = show $ iriPath iri
           iRi = if hasFullIRI iri then let
                   ex = np ++ ":" ++ lp
-                  res = expandIRI (changePrefixMapTypeToGA pm) iri
+                  res = expandIRI' pm iri
                 in if elem np ["http", "https"] then -- abbreviate
                         case Map.lookup "" pm of
                           Just ep | length ep > 5 -> case stripPrefix ep ex of

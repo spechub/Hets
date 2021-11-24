@@ -62,6 +62,7 @@ module Common.IRI
     , mergeCurie
     , expandCurie
     , expandIRI
+    , expandIRI'
     , relativeTo
     , relativeFrom
 
@@ -1139,6 +1140,17 @@ expandIRI pm iri
         def <- Map.lookup (prefixName iri) pm
         let defS = iriToStringFull id (setAngles False def) ""
         expanded <- parseIRI $ defS ++ iFragment iri
+        return $ expanded
+            { iFragment = iFragment iri
+            , prefixName = prefixName iri
+            , isAbbrev = True }
+    | otherwise = iri
+
+expandIRI' :: Map String String -> IRI -> IRI
+expandIRI' pm iri
+    | isAbbrev iri = fromMaybe iri $ do
+        def <- Map.lookup (prefixName iri) pm
+        expanded <- parseIRI $ def ++ iFragment iri
         return $ expanded
             { iFragment = iFragment iri
             , prefixName = prefixName iri
