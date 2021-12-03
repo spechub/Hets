@@ -160,7 +160,7 @@ fromExt ext = case ext of
     Misc ans -> fromAnnos ans
 
 fromIndividualArg :: AS.IndividualArg -> State Sign ()
-fromIndividualArg i = case i of
+fromIndividualArg arg = case arg of
   AS.IArg i -> fromIndividual i
   _ -> return ()
 
@@ -185,9 +185,7 @@ fromDLAtom atom = case atom of
     fromDataPropExpr p
     fromIndividualArg i
     fromDataArg d
-  AS.BuiltInAtom i args -> do
-    -- TODO? what about iri (i)?
-    mapM_ fromDataArg args
+  AS.BuiltInAtom _ _ -> return () -- built in atoms don't change the sign
   AS.SameIndividualAtom i1 i2 -> do
     fromIndividualArg i1
     fromIndividualArg i2
@@ -208,7 +206,9 @@ fromDGAtom a = case a of
 
 fromAxiom :: AS.Axiom -> State Sign ()
 fromAxiom a = case a of
-    AS.Declaration anns e -> addEntity e
+    AS.Declaration anns e -> do
+      fromAnnos anns
+      addEntity e
     
     AS.ClassAxiom cax -> case cax of
         AS.SubClassOf anns sub sup -> do
@@ -287,7 +287,7 @@ fromAxiom a = case a of
           fromAnnos anns
           fromObjPropExpr op
           
-    AS.DataPropertyAxiom a -> case a of
+    AS.DataPropertyAxiom dpa -> case dpa of
         AS.SubDataPropertyOf anns dpSub dpSup -> do
           fromAnnos anns
           mapM_ fromDataPropExpr [dpSub, dpSup]
@@ -325,7 +325,7 @@ fromAxiom a = case a of
       mapM_ fromObjPropExpr ops
       mapM_ fromDataPropExpr dps
        
-    AS.Assertion a -> case a of
+    AS.Assertion assertion -> case assertion of
         AS.SameIndividual anns inds -> do
           fromAnnos anns
           mapM_ fromIndividual inds
@@ -359,24 +359,21 @@ fromAxiom a = case a of
           fromIndividual s
           fromLiteral t
           
-    AS.AnnotationAxiom a -> case a of
-        AS.AnnotationAssertion anns p s v -> do
+    AS.AnnotationAxiom ax -> case ax of
+        AS.AnnotationAssertion anns p _ v -> do
           fromAnnos anns
           fromAnnoProp p
-          -- TODO: What about subject?
           case v of
             AS.AnnValLit l -> fromLiteral l
-            -- TODO: What about AnnValue?
+            _ -> return ()
         AS.SubAnnotationPropertyOf anns sub sup -> do
           fromAnnos anns
           fromAnnoProp sub
           fromAnnoProp sup
-        AS.AnnotationPropertyDomain anns p d -> do
-          -- TODO: What about Domain?
+        AS.AnnotationPropertyDomain anns p _ -> do
           fromAnnos anns
           fromAnnoProp p
-        AS.AnnotationPropertyRange anns p r -> do
-          -- TODO: What about Range?
+        AS.AnnotationPropertyRange anns p _ -> do
           fromAnnos anns
           fromAnnoProp p
     AS.Rule r -> case r of
@@ -389,6 +386,7 @@ fromAxiom a = case a of
         mapM_ fromDGAtom b
         mapM_ fromDGAtom h
     AS.DGAxiom anns _ nodes edges classes -> do
+      fromAnnos anns
       mapM_ (\(AS.DGNodeAssertion c _) -> fromDescription (AS.Expression c)) nodes
       mapM_ (\(AS.DGEdgeAssertion o _ _) -> fromObjPropExpr (AS.ObjectProp o)) edges
       mapM_ (fromDescription . AS.Expression) classes
