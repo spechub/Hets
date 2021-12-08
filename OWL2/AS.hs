@@ -1005,10 +1005,11 @@ data Atom = ClassAtom ClassExpression IndividualArg
   | SameIndividualAtom IndividualArg IndividualArg
   | DifferentIndividualsAtom IndividualArg IndividualArg
 
-{-|
-  Ambiguous predicates used in SWRL Rules which type cannot be inferred during parsing
-  This predicates get resolved and replaced with a specific one in static analysis.
--}
+  {-|
+    Ambiguous predicates used in SWRL Rules which type cannot be inferred 
+    during parsing. This predicates get resolved and replaced with a 
+    specific one in static analysis.
+  -}
   | UnknownUnaryAtom IRI UnknownArg
   | UnknownBinaryAtom IRI UnknownArg UnknownArg
   deriving (Show, Eq, Ord, Data)

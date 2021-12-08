@@ -223,9 +223,9 @@ parseDataRange pm =
     (DataType <$> (parseIRI pm) <*> return []) <?>
     "DataRange"
 
-{- # Axioms
+-- # Axioms
 
-## Declaration -}
+-- ## Declaration
 
 parseDeclaration :: GA.PrefixMap -> CharParser st Axiom
 parseDeclaration pm = parseEnclosedWithKeyword "Declaration" $ do
