@@ -415,7 +415,7 @@ curie = iriWithPos $ do
         c <- string ":"
         return $ n -- ++ c Don't add the colon to the prefix!
       )
-    i <- reference
+    i <- referenceAux False
     return i { prefixName = pn, iFragment = show i }
   <|> referenceAux False
 
