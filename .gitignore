@@ -190,3 +190,5 @@ test/*/*.th
 test/*/*.xml
 /_dependencies
 consoleHistory.tmp
+/stack.yaml.lock
+/.old.stack-work
