@@ -121,6 +121,7 @@ function setupBaseCmd {
 
 function doMain {
 	typeset -a CMD
+	integer E=0 N=0
 	[[ -z $1 ]] && showUsage 1 && return 0
 
 	setupBaseCmd CMD $1 && DB=$1 || return 1
@@ -140,16 +141,25 @@ function doMain {
 	(( TODO & 2 )) && populateDB CMD
 	(( TODO )) && return 0
 
-	set -e
-
 	print "${CMD[@]}"
 	for F in ${TEST_FILES}; do
-		populateDB CMD 
-		print "${CMD[@]}" ${HETS_LIB:-.}/$F
-		"${CMD[@]}" ${HETS_LIB:-.}/$F
+		(( N++ ))
+		if populateDB CMD ; then
+			print "${CMD[@]}" ${HETS_LIB:-.}/$F
+			"${CMD[@]}" ${HETS_LIB:-.}/$F || (( E++ ))
+		else
+			(( E++ ))
+		fi
 		resetDB ${DB}
+		(( FAIL_EARLY && E )) && return 1
 	done
-	print "${DB} test done."
+	typeset COL='38;5;232;48;5;118' MSG="$N ${DB} tests done."
+	if (( E )); then
+		MSG="$E of $N ${DB} tests failed."
+		COL='38;5;9;48;5;118'
+	fi
+	print -u2 "\E[1;${COL}m${MSG}\E[0m"
+	return $E
 }
 
 USAGE="[-?${VERSION}"' ]
@@ -162,14 +172,15 @@ USAGE="[-?${VERSION}"' ]
 [r:reset?Just drop and re-create the related DB and exit.]
 [p:populate?Just drop, re-create and populate the related DB and exit.]
 [k:keep?Do not cleanup the \bTEST_DATADIR\b on exit.]
+[a:all?Try all files, ignore errors. Per default the first error would stop the test.]
 [+ENVIRONMENT]{
 	[+TEST_DATADIR?The directory to use for creating test databases and files. All files and directories inside this one get removed on demand without notice! Default: '"${DATADIR}"']
 	[+HETS_LIB?The directory containing the test files. Default: .]
 }
 \n\n{\bPostgreSQL\b|\bMySQL\b|\bSQLite\b}
 '
-unset TODO KEEP
-integer TODO=0 KEEP=0
+unset TODO KEEP FAIL_EARLY
+integer TODO=0 KEEP=0 FAIL_EARLY=1
 
 X="${ print ${USAGE} ; }"
 while getopts "${X}" OPT ; do
@@ -182,6 +193,7 @@ while getopts "${X}" OPT ; do
 			fi
 			;;
 		F) typeset +f && exit 0 ;;
+		a) FAIL_EARLY=0 ;;
 		k) KEEP=1 ;;
 		r) TODO|=1 ;;
 		p) TODO|=3 ;;
