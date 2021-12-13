@@ -19,5 +19,11 @@ while read F ; do
 	./hets --quiet -a none ${HETS_LIB}/$F || (( E++ ))
 	(( FAIL_EARLY && E )) && exit 1
 done<${FLIST}
-(( $E )) && printf "Failed with $E errors.\n" || printf "Done.\n"
+
+COL='38;5;232;48;5;118' MSG="$N tests done."
+if (( E )); then
+	MSG="$E of $N tests failed."
+	COL='38;5;9;48;5;118'
+fi
+printf "\E[1;${COL}m${MSG}\E[0m"
 exit $E
