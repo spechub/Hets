@@ -6,10 +6,10 @@ import Prelude hiding (lookup)
 
 import OWL2.AS as AS
 
-import Common.AnnoParser (newlineOrEof)
+import Common.AnnoParser (newlineOrEof, commentLine)
 import Common.IRI hiding (parseIRI)
 import Common.Parsec
-import Common.Lexer (getNumber, value)
+import Common.Lexer (getNumber, value, nestCommentOut)
 import qualified Common.GlobalAnnotations as GA (PrefixMap)
 
 import Text.ParserCombinators.Parsec
@@ -50,7 +50,7 @@ comment = try $ do
 
 -- | Skips whitespaces and comments
 skips :: CharParser st a -> CharParser st a
-skips = (<< skipMany (forget space <|> forget comment <?> ""))
+skips = (<< skipMany (forget space <|> forget comment <|> forget commentLine <|> forget nestCommentOut))
 
 
 -- | Parses plain string with skip

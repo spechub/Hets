@@ -23,7 +23,7 @@ import Common.IRI
 import Common.Id (stringToId)
 import Common.Lexer
 import Common.Parsec
-import Common.AnnoParser (newlineOrEof)
+import Common.AnnoParser (newlineOrEof, commentLine)
 import Common.Token (criticalKeywords)
 import Common.Utils (nubOrd)
 
@@ -46,7 +46,7 @@ comment = try $ do
 
 -- | Skips whitespaces and comments
 skips :: CharParser st a -> CharParser st a
-skips = (<< skipMany (forget space <|> forget comment))
+skips = (<< skipMany (forget space <|> comment <|> forget commentLine <|> forget nestCommentOut <?> "comment"))
 
 
 skipChar :: Char -> CharParser st ()
