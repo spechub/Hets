@@ -192,3 +192,5 @@ test/*/*.xml
 /_dependencies
 stack.yaml.lock
 consoleHistory.tmp
+/stack.yaml.lock
+/.old.stack-work
