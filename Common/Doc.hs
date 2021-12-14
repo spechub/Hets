@@ -266,7 +266,7 @@ renderText = renderExtText $ StripComment False
 
 renderExtText :: StripComment -> GlobalAnnos -> Doc -> String
 renderExtText stripCs ga =
-  removeTrailingSpaces 0 . Pretty.renderStyle textStyle . toText stripCs ga
+  id . Pretty.renderStyle textStyle . toText stripCs ga
 
 instance Show Doc where
     show = renderText emptyGlobalAnnos

@@ -14,7 +14,7 @@ module OWL2.ProveFact (factProver, factConsChecker) where
 
 import Logic.Prover
 
-import OWL2.MS
+import OWL2.AS
 import OWL2.Morphism
 import OWL2.Sign
 import OWL2.ProfilesAndSublogics

@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {- |
 Module      :  ./OWL2/AS.hs
 Copyright   :  (c) C. Maeder, Felix Gabriel Mance
@@ -21,6 +22,8 @@ import Common.Id
 import Common.Keywords (stringS)
 import Common.IRI
 
+import qualified Common.GlobalAnnotations as GA (PrefixMap)
+
 import Common.Result
 
 import OWL2.ColonKeywords
@@ -40,24 +43,56 @@ isAnonymous i = prefixName i == "_" && isBlankNode i
 -- | prefix -> localname
 type PrefixMap = Map.Map String String
 
+changePrefixMapTypeToString :: GA.PrefixMap -> PrefixMap
+changePrefixMapTypeToString = fmap show
+
+changePrefixMapTypeToGA :: PrefixMap -> GA.PrefixMap
+changePrefixMapTypeToGA = fmap (\s -> case parseIRICompoundCurie s of
+    Just i -> i
+    Nothing -> case parseIRI s of 
+      Just i -> i
+      Nothing -> error $ "Invalid IRI while OWL2.AS.changePrefixMapTypeToGA: "  ++ s
+  )
+
+predefPrefixesGA :: GA.PrefixMap
+predefPrefixesGA = changePrefixMapTypeToGA $ Map.map (\v -> "<" ++ v ++ ">") predefPrefixes
+
 predefPrefixes :: PrefixMap
 predefPrefixes = Map.fromList
       [ ("owl", "http://www.w3.org/2002/07/owl#")
       , ("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
       , ("rdfs", "http://www.w3.org/2000/01/rdf-schema#")
-      , ("xsd", "http://www.w3.org/2001/XMLSchema#")
-      , ("", showIRICompact dummyIRI ++ "#") ]
+      , ("xsd", "http://www.w3.org/2001/XMLSchema#") ]
+
+plainDatatypeIRI :: IRI
+plainDatatypeIRI = IRI {
+          iriScheme = "http:"
+        , iriAuthority = Just $ IRIAuth "" "www.w3.org" ""
+        , iriPath = stringToId "/1999/02/22-rdf-syntax-ns"
+        , iriQuery = ""
+        , iriFragment = "#PlainLiteral"
+        , prefixName = "rdf"
+        , isAbbrev = True
+        , isBlankNode = False
+        , hasAngles = False
+        , iriPos = nullRange
+        , iFragment = "PlainLiteral"
+    }
 
 type LexicalForm = String
 type LanguageTag = String
 type ImportIRI = IRI
 type OntologyIRI = IRI
+type VersionIRI = IRI
 type Class = IRI
 type Datatype = IRI
 type ObjectProperty = IRI
 type DataProperty = IRI
+type DirectlyImportsDocuments = [IRI]
 type AnnotationProperty = IRI
 type Individual = IRI
+type AnonymousIndividual = IRI
+type NamedIndividual = IRI
 
 data EquivOrDisjoint = Equivalent | Disjoint
     deriving (Show, Eq, Ord, Typeable, Data)
@@ -68,7 +103,7 @@ showEquivOrDisjoint ed = case ed of
     Disjoint -> disjointWithC
 
 data DomainOrRange = ADomain | ARange
-    deriving (Show, Eq, Ord, Typeable, Data)
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 showDomainOrRange :: DomainOrRange -> String
 showDomainOrRange dr = case dr of
@@ -76,7 +111,7 @@ showDomainOrRange dr = case dr of
     ARange -> rangeC
 
 data SameOrDifferent = Same | Different
-    deriving (Show, Eq, Ord, Typeable, Data)
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 showSameOrDifferent :: SameOrDifferent -> String
 showSameOrDifferent sd = case sd of
@@ -188,6 +223,10 @@ predefIRIs = Set.fromList $ map (setPrefix "xsd" . mkIRI) xsdKeys
 isDatatypeKey :: IRI -> Bool
 isDatatypeKey = not . null . isDatatypeKeyAux
 
+isSWRLBuiltIn :: IRI -> Bool
+isSWRLBuiltIn iri = isAbbrev iri && prefixName iri == "swrlb" ||
+  "http://www.w3.org/2003/11/swrlb#" `isPrefixOf` show iri {hasAngles = False}
+
 xsdMap :: PreDefMaps
 xsdMap = makeXsdMap xsdKeys
 
@@ -195,7 +234,7 @@ owlNumbersMap :: PreDefMaps
 owlNumbersMap = makeOWLPredefMaps owlNumbers
 
 rdfMap :: PreDefMaps
-rdfMap = preDefMaps [xmlLiteral, stringS] "rdf"
+rdfMap = preDefMaps [xmlLiteral, stringS, rdfPlainLiteralS] "rdf"
 
 rdfsMap :: PreDefMaps
 rdfsMap = preDefMaps [rdfsLiteral] "rdfs"
@@ -204,39 +243,26 @@ isDatatypeKeyAux :: IRI -> [(String, String)]
 isDatatypeKeyAux i = mapMaybe (`checkPredefAux` i)
   [ xsdMap, owlNumbersMap, rdfMap, rdfsMap ]
 
+-- (types, prefixname, prefix iri)
 type PreDefMaps = ([String], String, String)
 
 preDefMaps :: [String] -> String -> PreDefMaps
 preDefMaps sl pref = let
   Just puri = Map.lookup pref predefPrefixes
-  Just sp = stripPrefix "http://www.w3.org/" puri
- in (sl, pref, sp)
+ in (sl, pref, puri)
 
+-- returns Maybe (prefix, keyword)
+-- e.g. Just ("xsd", "string")
 checkPredefAux :: PreDefMaps -> IRI -> Maybe (String, String)
-checkPredefAux (sl, pref, exPref) u = 
-  let lp = show $ iriPath u
-      res = Just (pref, lp)
-      testString = case iriScheme u of
-                    "" -> prefixName u
-                    _ -> iriScheme u 
-  in case testString of -- was prefixName
-    "http:" -> case stripPrefix "//www." lp of
-        Just q -> case stripPrefix "w3.org/" q of
-            Just r -> case stripPrefix exPref r of
-              Just s | elem s sl -> Just (pref, s)
-              _ -> Nothing
-            Nothing -> Nothing
-        Nothing -> Nothing
-    pu | elem lp sl -> case pu of
-      "" -> let ex = iriToStringUnsecure u in 
-            case stripPrefix "http://www." ex of
-              Just r | r == "w3.org/" ++ exPref ++ lp -- r == lp
-                  -> res
-              _ | null ex -> res
-              _ -> Nothing
-      _ | pref == pu || pref ++ ":" == pu -> Just (pref, lp)
+checkPredefAux (sl, pref, exPref) u =
+  let t = stripPrefix exPref (show $ u) in
+    if isAbbrev u then
+      if prefixName u == pref && iFragment u `elem` sl then
+        Just (pref, iFragment u)
+      else Nothing
+    else case t of
+      Just lp | lp `elem` sl -> Just (pref, lp)
       _ -> Nothing
-    _ -> Nothing
 
 
 checkPredef :: PreDefMaps -> IRI -> Bool
@@ -248,7 +274,7 @@ makeOWLPredefMaps sl = preDefMaps sl "owl"
 -- | sets the correct prefix for the predefined datatypes
 setDatatypePrefix :: IRI -> IRI
 setDatatypePrefix i = case isDatatypeKeyAux i of
-  (p, l) : _ -> setPrefix p $ mkIRI l
+  (p, l) : _ -> i {prefixName = p, iFragment = l}
   _ -> error $ showIRICompact i ++ " is not a predefined datatype"
 
 -- | checks if the IRI is part of the built-in ones and puts the correct prefix
@@ -269,17 +295,13 @@ stripReservedPrefix = idToIRI . uriToId
      or <http://www.w3.org/2002/07/owl#real> returns "real") -}
 uriToId :: IRI -> Id
 uriToId i =
-    if (prefixName i `elem` ["", "xsd", "rdf", "rdfs", "owl"])
-       || (   null (iriScheme i)
-           && null (iriQuery i)
-           && null (iriFragment i)
-           && isNothing (iriAuthority i))
-        then iriPath i
-        else stringToId $ case mapMaybe (`stripPrefix` showIRICompact i)
-                    $ Map.elems predefPrefixes of
-                [s] -> s
-                _ -> showIRIFull i
-
+    if (isAbbrev i || (not (hasFullIRI i) && prefixName i `elem` ["", "xsd", "rdf", "rdfs", "owl"]))
+    then stringToId $ iFragment i
+    else stringToId $ case mapMaybe (`stripPrefix` showIRICompact i)
+                $ Map.elems predefPrefixes of
+            [s] -> s
+            _ -> showIRIFull i
+            
 getPredefName :: IRI -> String
 getPredefName = show . uriToId
 
@@ -321,7 +343,249 @@ xsdStringsMap :: PreDefMaps
 xsdStringsMap = makeXsdMap xsdStrings
 
 facetToIRI :: DatatypeFacet -> ConstrainingFacet
-facetToIRI = setPrefix "xsd" . mkIRI . showFacet
+facetToIRI f = expandIRI predefPrefixesGA $ nullIRI {
+    prefixName = "xsd"
+  , iFragment = showFacet f
+  , isAbbrev = True
+}
+
+facetToIRINoSign :: DatatypeFacet -> ConstrainingFacet
+facetToIRINoSign f = expandIRI predefPrefixesGA $ nullIRI {
+    prefixName = "xsd"
+  , iFragment = showFacetAsText f
+  , isAbbrev = True
+}
+
+-- * Extracting Symbols
+
+
+-- symsOfAxiom :: Axiom -> Set.Set AS.Entity
+-- symsOfAxiom (PlainAxiom e f) = Set.union (symsOfExtended e) $ symsOfFrameBit f
+
+symsOfAxiom :: Axiom -> Set.Set Entity
+symsOfAxiom ax = case ax of
+    Declaration anns e -> Set.union (symsOfAnnotations anns) (Set.singleton e) 
+    ClassAxiom cax -> case cax of
+        SubClassOf anns supClExpr subClExpr -> Set.unions [
+            (symsOfAnnotations anns),
+            (symsOfClassExpression supClExpr),
+            (symsOfClassExpression subClExpr)
+          ]
+        EquivalentClasses anns clExprs ->
+          foldl Set.union (symsOfAnnotations anns)
+            (map symsOfClassExpression clExprs) 
+        DisjointClasses anns clExprs ->
+          foldl Set.union (symsOfAnnotations anns)
+            (map symsOfClassExpression clExprs) 
+        DisjointUnion anns clIri clExprs ->
+          foldl Set.union (Set.insert (mkEntity Class $ clIri) $ symsOfAnnotations anns)
+            (map symsOfClassExpression clExprs)
+
+    ObjectPropertyAxiom opax -> case opax of
+        SubObjectPropertyOf anns subOpExpr supOpExpr ->
+          let opExprs = case subOpExpr of
+                SubObjPropExpr_obj opExpr -> [opExpr]
+                SubObjPropExpr_exprchain opExprCh -> opExprCh
+          in
+            foldl Set.union (symsOfAnnotations anns)
+              $ map symsOfObjectPropertyExpression . concat $ [opExprs, [supOpExpr]]
+        EquivalentObjectProperties anns opExprs ->
+          foldl Set.union (symsOfAnnotations anns)
+            $ map symsOfObjectPropertyExpression opExprs
+        DisjointObjectProperties anns opExprs -> 
+          foldl Set.union (symsOfAnnotations anns) 
+            $ map symsOfObjectPropertyExpression opExprs
+        InverseObjectProperties anns opExpr1 opExpr2 ->
+          foldl Set.union (symsOfAnnotations anns)
+            $ map symsOfObjectPropertyExpression [opExpr1, opExpr2]
+        ObjectPropertyDomain anns opExpr clExpr ->
+          foldl Set.union (symsOfAnnotations anns)
+            [ symsOfObjectPropertyExpression opExpr
+            , symsOfClassExpression clExpr] 
+        ObjectPropertyRange anns opExpr clExpr ->
+          foldl Set.union (symsOfAnnotations anns)
+            [ symsOfObjectPropertyExpression opExpr
+            , symsOfClassExpression clExpr] 
+        FunctionalObjectProperty anns opExpr ->
+          Set.union (symsOfAnnotations anns)
+            (symsOfObjectPropertyExpression opExpr) 
+        InverseFunctionalObjectProperty anns opExpr ->
+          Set.union (symsOfAnnotations anns)
+            (symsOfObjectPropertyExpression opExpr) 
+        ReflexiveObjectProperty anns opExpr ->
+          Set.union (symsOfAnnotations anns)
+            (symsOfObjectPropertyExpression opExpr)  
+        IrreflexiveObjectProperty anns opExpr ->
+          Set.union (symsOfAnnotations anns)
+            (symsOfObjectPropertyExpression opExpr)  
+        SymmetricObjectProperty anns opExpr ->
+          Set.union (symsOfAnnotations anns)
+            (symsOfObjectPropertyExpression opExpr)  
+        AsymmetricObjectProperty anns opExpr ->
+          Set.union (symsOfAnnotations anns)
+            (symsOfObjectPropertyExpression opExpr)  
+        TransitiveObjectProperty anns opExpr ->
+          Set.union (symsOfAnnotations anns)
+            (symsOfObjectPropertyExpression opExpr)  
+    DataPropertyAxiom a -> case a of
+        SubDataPropertyOf anns dpExpr1 dpExpr2 ->
+          foldl Set.union (symsOfAnnotations anns)
+            $ map (Set.singleton . mkEntity Datatype) [dpExpr1, dpExpr2] 
+        EquivalentDataProperties anns dpExprs ->
+          foldl Set.union (symsOfAnnotations anns)
+            $ map (Set.singleton . mkEntity Datatype) dpExprs 
+        DisjointDataProperties anns dpExprs ->
+          foldl Set.union (symsOfAnnotations anns)
+            $ map (Set.singleton . mkEntity Datatype) dpExprs
+        DataPropertyDomain anns dpExpr clExpr ->
+          foldl Set.union (symsOfAnnotations anns)
+            [ Set.singleton . mkEntity Datatype $ dpExpr
+            , symsOfClassExpression clExpr] 
+        DataPropertyRange anns dpExpr dr ->
+          foldl Set.union (symsOfAnnotations anns)
+            [ Set.singleton . mkEntity Datatype $ dpExpr
+            , symsOfDataRange dr] 
+        FunctionalDataProperty anns dpExpr ->
+          Set.union (symsOfAnnotations anns)
+            (Set.singleton . mkEntity Datatype $ dpExpr)
+    DatatypeDefinition anns dt dr ->
+      foldl Set.union (symsOfAnnotations anns)
+            [ Set.singleton . mkEntity Datatype $ dt
+            , symsOfDataRange dr] 
+    HasKey anns c os ds -> Set.unions [
+        symsOfAnnotations anns,
+        symsOfClassExpression c,
+        Set.unions (symsOfObjectPropertyExpression <$> os),
+        Set.fromList (mkEntity DataProperty <$> ds)
+      ]
+    Assertion a -> case a of
+        SameIndividual anns inds -> Set.union
+          (symsOfAnnotations anns)
+          (Set.fromList (mkEntity NamedIndividual <$> inds))
+        DifferentIndividuals anns inds -> Set.union
+          (symsOfAnnotations anns)
+          (Set.fromList (mkEntity NamedIndividual <$> inds))
+        ClassAssertion anns _ i -> Set.insert (mkEntity NamedIndividual i) $
+          Set.insert (mkEntity NamedIndividual i) (symsOfAnnotations anns)
+        ObjectPropertyAssertion anns o s t -> Set.unions [
+            symsOfAnnotations anns,
+            symsOfObjectPropertyExpression o,
+            Set.fromList (mkEntity NamedIndividual <$> [s, t])
+          ]
+        NegativeObjectPropertyAssertion anns o s t -> Set.unions [
+            symsOfAnnotations anns,
+            symsOfObjectPropertyExpression o,
+            Set.fromList (mkEntity NamedIndividual <$> [s, t])
+          ]
+        DataPropertyAssertion anns d s _ -> Set.unions [
+            symsOfAnnotations anns,
+            Set.singleton $ mkEntity DataProperty d,
+            Set.singleton $ mkEntity NamedIndividual s
+          ]
+        NegativeDataPropertyAssertion anns d s _ -> Set.unions [
+            symsOfAnnotations anns,
+            Set.singleton $ mkEntity DataProperty d,
+            Set.singleton $ mkEntity NamedIndividual s
+          ]
+    AnnotationAxiom a -> case a of
+        AnnotationAssertion anns p _ v -> symsOfAnnotation $ Annotation anns p v
+        SubAnnotationPropertyOf anns p1 p2 -> Set.union
+          (symsOfAnnotations anns)
+          (Set.fromList (mkEntity AnnotationProperty <$> [p1, p2]))
+        AnnotationPropertyDomain anns p _ -> Set.insert
+          (mkEntity AnnotationProperty p)
+          (symsOfAnnotations anns)
+        AnnotationPropertyRange anns p _ -> Set.insert
+          (mkEntity AnnotationProperty p)
+          (symsOfAnnotations anns)
+    Rule a -> case a of
+      DLSafeRule anns b h -> Set.unions [
+          symsOfAnnotations anns,
+          symsOfDLSafeAtoms b,
+          symsOfDLSafeAtoms h
+        ]
+      DGRule anns b h -> Set.unions [
+          symsOfAnnotations anns,
+          symsOfDGAtoms b,
+          symsOfDGAtoms h
+        ]
+    DGAxiom _ _ _ e c -> Set.unions [
+        symsOfDGEdges e,
+        Set.fromList (mkEntity Class <$> c)
+      ]
+
+symsOfDGAtoms :: [DGAtom] -> Set.Set Entity
+symsOfDGAtoms = Set.unions . fmap (\a -> case a of
+    DGClassAtom e i -> Set.union (symsOfClassExpression e) (symsOfIArg i)
+    DGObjectPropertyAtom o i1 i2 -> Set.unions [
+        symsOfObjectPropertyExpression o,
+        symsOfIArg i1,
+        symsOfIArg i2
+      ]
+  )
+
+symsOfDLSafeAtoms :: [Atom] -> Set.Set Entity
+symsOfDLSafeAtoms = Set.unions . fmap (\a -> case a of
+    ClassAtom e  i-> Set.union (symsOfClassExpression e) (symsOfIArg i)
+    ObjectPropertyAtom o i1 i2 -> Set.unions [
+        symsOfObjectPropertyExpression o,
+        symsOfIArg i1,
+        symsOfIArg i2
+      ]
+    DataPropertyAtom d i _ -> Set.insert (mkEntity DataProperty d) (symsOfIArg i)
+    SameIndividualAtom i1 i2 -> Set.union (symsOfIArg i1) (symsOfIArg i2)
+    DifferentIndividualsAtom i1 i2 -> Set.union (symsOfIArg i1) (symsOfIArg i2)
+    _ -> mempty
+  )
+
+symsOfIArg :: IndividualArg -> Set.Set Entity
+symsOfIArg a = case a of
+  IArg i -> Set.singleton $ mkEntity NamedIndividual i
+  _ -> mempty 
+
+symsOfDGEdges :: DGEdges -> Set.Set Entity
+symsOfDGEdges = Set.fromList . fmap (\(DGEdgeAssertion o _ _) ->
+  mkEntity ObjectProperty o)
+
+symsOfObjectPropertyExpression :: ObjectPropertyExpression -> Set.Set Entity
+symsOfObjectPropertyExpression o = case o of
+  ObjectProp i -> Set.singleton $ mkEntity ObjectProperty i
+  ObjectInverseOf i -> symsOfObjectPropertyExpression i
+
+symsOfClassExpression :: ClassExpression -> Set.Set Entity
+symsOfClassExpression ce = case ce of
+  Expression c -> Set.singleton $ mkEntity Class c
+  ObjectJunction _ cs -> Set.unions $ map symsOfClassExpression cs
+  ObjectComplementOf c -> symsOfClassExpression c
+  ObjectOneOf is -> Set.fromList $ map (mkEntity NamedIndividual) is
+  ObjectValuesFrom _ oe c -> Set.union (symsOfObjectPropertyExpression oe)
+    $ symsOfClassExpression c
+  ObjectHasValue oe i -> Set.insert (mkEntity NamedIndividual i)
+    $ symsOfObjectPropertyExpression oe
+  ObjectHasSelf oe -> symsOfObjectPropertyExpression oe
+  ObjectCardinality (Cardinality _ _ oe mc) -> Set.union
+    (symsOfObjectPropertyExpression oe)
+    $ maybe Set.empty symsOfClassExpression mc
+  DataValuesFrom _ de dr -> Set.union (Set.fromList $ map (mkEntity DataProperty) de)
+    $ symsOfDataRange dr
+  DataHasValue de _ -> Set.singleton $ mkEntity DataProperty de
+  DataCardinality (Cardinality _ _ d m) -> Set.insert (mkEntity DataProperty d)
+    $ maybe Set.empty symsOfDataRange m
+
+symsOfDataRange :: DataRange -> Set.Set Entity
+symsOfDataRange dr = case dr of
+  DataType t _ -> Set.singleton $ mkEntity Datatype t
+  DataJunction _ ds -> Set.unions $ map symsOfDataRange ds
+  DataComplementOf d -> symsOfDataRange d
+  DataOneOf _ -> Set.empty
+
+symsOfAnnotation :: Annotation -> Set.Set Entity
+symsOfAnnotation (Annotation as p _) = Set.insert
+   (mkEntity AnnotationProperty p) $ Set.unions (map symsOfAnnotation as)
+
+symsOfAnnotations :: [Annotation] -> Set.Set Entity
+symsOfAnnotations = Set.unions . map symsOfAnnotation
+
 
 -- * Cardinalities
 
@@ -400,11 +664,11 @@ pairSymbols (Entity lb1 k1 i1) (Entity lb2 k2 i2) =
             _ -> lbl1
         pairIRIs iri1 iri2 = nullIRI
           { prefixName = prefixName iri1
-          , iriPath = if rest (show $ iriPath iri1) == 
-                            rest (show $ iriPath iri2) 
-                          then iriPath iri1 
+          , iriPath = if rest (show $ iriPath iri1) ==
+                            rest (show $ iriPath iri2)
+                          then iriPath iri1
                           else appendId (iriPath iri1) (iriPath iri2)
-          } -- TODO: improve, see #1597 
+          } -- TODO: improve, see #1597
     return $ Entity (pairLables lb1 lb2) k1 $ pairIRIs i1 i2
 
 -- * LITERALS
@@ -520,7 +784,11 @@ data ObjectPropertyExpression = ObjectProp ObjectProperty
   | ObjectInverseOf InverseObjectProperty
         deriving (Show, Eq, Ord, Typeable, Data)
 
-objPropToIRI :: ObjectPropertyExpression -> Individual
+isObjectProperty :: ObjectPropertyExpression -> Bool
+isObjectProperty (ObjectProp _) = True
+isObjectProperty _ = False
+
+objPropToIRI :: ObjectPropertyExpression -> IRI
 objPropToIRI opExp = case opExp of
     ObjectProp u -> u
     ObjectInverseOf objProp -> objPropToIRI objProp
@@ -547,15 +815,286 @@ data ClassExpression =
   | ObjectHasValue ObjectPropertyExpression Individual
   | ObjectHasSelf ObjectPropertyExpression
   | ObjectCardinality (Cardinality ObjectPropertyExpression ClassExpression)
-  | DataValuesFrom QuantifierType DataPropertyExpression DataRange
+  | DataValuesFrom QuantifierType [DataPropertyExpression] DataRange
   | DataHasValue DataPropertyExpression Literal
   | DataCardinality (Cardinality DataPropertyExpression DataRange)
     deriving (Show, Eq, Ord, Typeable, Data)
 
 -- * ANNOTATIONS
 
-data Annotation = Annotation [Annotation] AnnotationProperty AnnotationValue
+data Annotation = Annotation {
+      annAnnotations :: [Annotation]
+    , annProperty :: AnnotationProperty
+    , annValue :: AnnotationValue
+  }
     deriving (Show, Eq, Ord, Typeable, Data)
 
-data AnnotationValue = AnnValue IRI | AnnValLit Literal
+type OntologyAnnotations = [Annotation]
+
+
+data AnnotationValue =
+    AnnAnInd AnonymousIndividual
+  | AnnValue IRI
+  | AnnValLit Literal
     deriving (Show, Eq, Ord, Typeable, Data)
+
+data AnnotationAxiom =
+    AnnotationAssertion
+      AxiomAnnotations
+      AnnotationProperty
+      AnnotationSubject
+      AnnotationValue
+  | SubAnnotationPropertyOf
+    AxiomAnnotations
+    SubAnnotationProperty
+    SuperAnnotationProperty
+  | AnnotationPropertyDomain AxiomAnnotations AnnotationProperty IRI
+  | AnnotationPropertyRange AxiomAnnotations AnnotationProperty IRI
+    deriving (Show, Eq, Ord, Data)
+
+-- Annotation Assertion
+data AnnotationSubject = AnnSubIri IRI | AnnSubAnInd AnonymousIndividual
+    deriving (Show, Eq, Ord, Data)
+
+-- Annotation Subproperties
+type SubAnnotationProperty = AnnotationProperty
+type SuperAnnotationProperty = AnnotationProperty
+
+
+-- * AXIOMS
+
+data Axiom =
+  Declaration AxiomAnnotations Entity
+  | ClassAxiom ClassAxiom
+  | ObjectPropertyAxiom ObjectPropertyAxiom
+  | DataPropertyAxiom DataPropertyAxiom
+  | DatatypeDefinition AxiomAnnotations Datatype DataRange
+  | HasKey
+     AxiomAnnotations
+     ClassExpression
+     [ObjectPropertyExpression]
+     [DataPropertyExpression]
+  | Assertion Assertion
+  | AnnotationAxiom AnnotationAxiom
+  | Rule Rule
+  | DGAxiom AxiomAnnotations DGName DGNodes DGEdges MainClasses
+  deriving (Show, Eq, Ord, Typeable, Data)
+
+instance GetRange Axiom where
+  getRange = Range . joinRanges . map rangeSpan . Set.toList . symsOfAxiom
+
+-- ClassAxiom
+
+type AxiomAnnotations = [Annotation]
+type SubClassExpression = ClassExpression
+type SuperClassExpression = ClassExpression
+
+type DisjointClassExpression = [ClassExpression]
+data ClassAxiom =
+  SubClassOf AxiomAnnotations SubClassExpression SuperClassExpression
+  | EquivalentClasses AxiomAnnotations [ClassExpression]
+  | DisjointClasses AxiomAnnotations [ClassExpression]
+  | DisjointUnion AxiomAnnotations Class DisjointClassExpression
+  deriving (Show, Eq, Ord, Data)
+
+-- ObjectAxiom
+
+data ObjectPropertyAxiom =
+  SubObjectPropertyOf
+    AxiomAnnotations
+    SubObjectPropertyExpression
+    SuperObjectPropertyExpression
+  | EquivalentObjectProperties AxiomAnnotations [ObjectPropertyExpression]
+  | DisjointObjectProperties AxiomAnnotations [ObjectPropertyExpression]
+  | InverseObjectProperties
+      AxiomAnnotations
+      ObjectPropertyExpression
+      ObjectPropertyExpression
+  | ObjectPropertyDomain
+      AxiomAnnotations
+      ObjectPropertyExpression
+      ClassExpression
+  | ObjectPropertyRange
+      AxiomAnnotations
+      ObjectPropertyExpression
+      ClassExpression
+  | FunctionalObjectProperty AxiomAnnotations ObjectPropertyExpression
+  | InverseFunctionalObjectProperty AxiomAnnotations ObjectPropertyExpression
+  | ReflexiveObjectProperty AxiomAnnotations ObjectPropertyExpression
+  | IrreflexiveObjectProperty AxiomAnnotations ObjectPropertyExpression
+  | SymmetricObjectProperty AxiomAnnotations ObjectPropertyExpression
+  | AsymmetricObjectProperty AxiomAnnotations ObjectPropertyExpression
+  | TransitiveObjectProperty AxiomAnnotations ObjectPropertyExpression
+  deriving (Show, Eq, Ord, Data)
+
+-- SubObjectPropertyOf
+
+type PropertyExpressionChain = [ObjectPropertyExpression]
+type SuperObjectPropertyExpression = ObjectPropertyExpression
+
+data SubObjectPropertyExpression =
+    SubObjPropExpr_obj ObjectPropertyExpression
+  | SubObjPropExpr_exprchain PropertyExpressionChain
+  deriving (Show, Eq, Ord, Data)
+
+-- DataPropertyAxiom
+data DataPropertyAxiom =
+  SubDataPropertyOf AxiomAnnotations SubDataPropertyExpression
+    SuperDataPropertyExpression
+  | EquivalentDataProperties AxiomAnnotations [DataPropertyExpression]
+      -- at least 2
+  | DisjointDataProperties AxiomAnnotations [DataPropertyExpression]
+    -- at least 2
+  | DataPropertyDomain AxiomAnnotations DataPropertyExpression ClassExpression
+  | DataPropertyRange AxiomAnnotations DataPropertyExpression DataRange
+  | FunctionalDataProperty AxiomAnnotations DataPropertyExpression
+  deriving (Show, Eq, Ord, Data)
+
+type SubDataPropertyExpression = DataPropertyExpression
+type SuperDataPropertyExpression = DataPropertyExpression
+
+
+-- Assertions
+data Assertion =
+  SameIndividual AxiomAnnotations [Individual]
+  | DifferentIndividuals AxiomAnnotations [Individual]
+  | ClassAssertion AxiomAnnotations ClassExpression Individual
+  | ObjectPropertyAssertion AxiomAnnotations ObjectPropertyExpression
+    SourceIndividual TargetIndividual
+  | NegativeObjectPropertyAssertion AxiomAnnotations ObjectPropertyExpression
+    SourceIndividual TargetIndividual
+  | DataPropertyAssertion AxiomAnnotations DataPropertyExpression
+    SourceIndividual TargetValue
+  | NegativeDataPropertyAssertion AxiomAnnotations DataPropertyExpression
+    SourceIndividual TargetValue
+  deriving (Show, Eq, Ord, Data)
+
+type SourceIndividual = Individual
+type TargetIndividual = Individual
+type TargetValue = Literal
+
+-- SWRL Rules
+
+data Rule = DLSafeRule AxiomAnnotations Body Head
+  | DGRule AxiomAnnotations DGBody DGHead
+  deriving (Show, Eq, Ord, Data)
+type Body = [Atom]
+type Head = [Atom]
+type DGBody = [DGAtom]
+type DGHead = [DGAtom]
+
+data IndividualArg = IArg Individual | IVar IndividualVar
+  deriving (Show, Eq, Ord, Data)
+data DataArg = DArg Literal | DVar DataVar
+  deriving (Show, Eq, Ord, Data)
+
+type IndividualVar = Variable
+type DataVar = Variable
+type Variable = IRI
+
+-- | See `UnknownUnaryAtom`
+data UnknownArg = IndividualArg IndividualArg | DataArg DataArg | Variable Variable
+  deriving (Show, Eq, Ord, Data)
+
+data Atom = ClassAtom ClassExpression IndividualArg
+  | DataRangeAtom DataRange DataArg
+  | ObjectPropertyAtom ObjectPropertyExpression IndividualArg IndividualArg
+  | DataPropertyAtom DataProperty IndividualArg DataArg
+  -- At least one DataArg
+  | BuiltInAtom IRI [DataArg]
+  | SameIndividualAtom IndividualArg IndividualArg
+  | DifferentIndividualsAtom IndividualArg IndividualArg
+
+  {-|
+    Ambiguous predicates used in SWRL Rules which type cannot be inferred 
+    during parsing. This predicates get resolved and replaced with a 
+    specific one in static analysis.
+  -}
+  | UnknownUnaryAtom IRI UnknownArg
+  | UnknownBinaryAtom IRI UnknownArg UnknownArg
+  deriving (Show, Eq, Ord, Data)
+
+
+getVariablesFromIArg :: IndividualArg -> Set.Set Variable
+getVariablesFromIArg iarg = case iarg of
+    (IVar v) -> Set.singleton v
+    _ -> mempty
+
+getVariablesFromDArg :: DataArg -> Set.Set Variable
+getVariablesFromDArg darg = case darg of
+    (DVar v) -> Set.singleton v
+    _ -> mempty
+
+getVariablesFromAtom :: Atom -> Set.Set Variable
+getVariablesFromAtom atom = case atom of
+    ClassAtom _ (IVar var) -> Set.singleton var
+    DataRangeAtom _ (DVar var) -> Set.singleton var
+    ObjectPropertyAtom _ iarg1 iarg2 -> Set.unions $ getVariablesFromIArg <$> [iarg1, iarg2]
+    DataPropertyAtom _ iarg darg -> getVariablesFromDArg darg `Set.union` getVariablesFromIArg iarg
+    BuiltInAtom _ args -> Set.unions $ getVariablesFromDArg <$> args
+    SameIndividualAtom iarg1 iarg2 -> Set.unions $ getVariablesFromIArg <$> [iarg1, iarg2]
+    DifferentIndividualsAtom iarg1 iarg2 ->  Set.unions $ getVariablesFromIArg <$> [iarg1, iarg2]
+    _ -> mempty
+
+data DGAtom = DGClassAtom ClassExpression IndividualArg
+  | DGObjectPropertyAtom ObjectPropertyExpression IndividualArg IndividualArg
+  deriving (Show, Eq, Ord, Data)
+
+type DGName = IRI
+-- At least one
+type DGNodes = [DGNodeAssertion]
+-- At least one
+type DGEdges = [DGEdgeAssertion]
+-- At least one
+type MainClasses = [Class]
+
+data DGNodeAssertion = DGNodeAssertion Class DGNode
+  deriving (Show, Eq, Ord, Data)
+type DGNode = IRI
+
+data DGEdgeAssertion = DGEdgeAssertion ObjectProperty DGNode DGNode
+  deriving (Show, Eq, Ord, Data)
+
+-- Root
+
+emptyOntology :: Ontology
+emptyOntology = Ontology Nothing Nothing [] [] []
+
+emptyOntologyDoc :: OntologyDocument
+emptyOntologyDoc = OntologyDocument (OntologyMetadata AS) mempty emptyOntology
+
+data OntologySyntaxType = MS | AS | XML
+  deriving  (Show, Eq, Ord, Data, Typeable)
+
+data OntologyMetadata = OntologyMetadata {
+  syntaxType :: OntologySyntaxType
+  -- might be extended 
+} deriving  (Show, Eq, Ord, Data, Typeable)
+
+changeSyntax :: OntologySyntaxType -> OntologyDocument -> OntologyDocument
+changeSyntax t o@(OntologyDocument m _ _) = o {
+  ontologyMetadata = m {syntaxType = t}
+}
+
+data OntologyDocument = OntologyDocument {
+    ontologyMetadata :: OntologyMetadata 
+  , prefixDeclaration :: GA.PrefixMap
+  , ontology :: Ontology
+}
+  deriving  (Show, Eq, Ord, Data, Typeable)
+
+data PrefixDeclaration = PrefixDeclaration PrefixName IRI
+  deriving  (Show, Eq, Ord, Data, Typeable)
+
+instance GetRange OntologyDocument
+  
+type PrefixName = String
+
+data Ontology = Ontology {
+    mOntologyIRI :: (Maybe OntologyIRI)
+  , mOntologyVersion :: (Maybe VersionIRI)
+  , importsDocuments :: DirectlyImportsDocuments
+  , ontologyAnnotation:: OntologyAnnotations
+  , axioms :: [Axiom]
+}
+  deriving  (Show, Eq, Ord, Data)

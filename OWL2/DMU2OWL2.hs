@@ -31,13 +31,12 @@ import qualified Data.Map as Map
 import DMU.Logic_DMU
 
 import OWL2.AS
-import OWL2.MS
 import OWL2.Logic_OWL2
 import OWL2.Morphism
 import OWL2.Sign
 import OWL2.StaticAnalysis
 import OWL2.ProfilesAndSublogics
-import OWL2.ManchesterParser
+import OWL2.ParseMS
 import OWL2.Symbols
 import OWL2.Function
 import OWL2.Extract
@@ -81,10 +80,10 @@ runOntoDMU str = if null str then return "" else do
   return out
 
 readOWL :: Monad m => String -> m (Sign, [Named Axiom])
-readOWL str = case runParser (liftM2 const (basicSpec Map.empty) eof) () "" str of
+readOWL str = case runParser (liftM2 const (parseOntologyDocument Map.empty) eof) () "" str of
   Left er -> fail $ show er
   Right ontoFile -> let
-    newont = function Expand (StringMap $ prefixDeclaration ontoFile) ontoFile
+    newont = function Expand (StringMap $ changePrefixMapTypeToString $ prefixDeclaration ontoFile) ontoFile
     newstate = execState (extractSign newont) emptySign
     in case basicOWL2Analysis
     (ontoFile, newstate, emptyGlobalAnnos) of

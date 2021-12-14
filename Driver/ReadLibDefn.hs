@@ -51,6 +51,7 @@ mimeTypeMap =
   [ ("xml", DgXml)
   , ("html", HtmlIn)
   , ("rdf", OWLIn RdfXml)
+  , ("ofn", OWLIn Functional)
   , ("owl", OWLIn OwlXml)
   , ("obo", OWLIn OBO)
   , ("ttl", OWLIn Turtle)

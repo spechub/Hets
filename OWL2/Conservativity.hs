@@ -24,7 +24,7 @@ import Common.Utils
 
 import GUI.Utils ()
 
-import OWL2.MS
+import OWL2.AS
 import OWL2.Morphism
 import OWL2.Sign
 import OWL2.XMLConversion

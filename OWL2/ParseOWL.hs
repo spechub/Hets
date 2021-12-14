@@ -12,8 +12,7 @@ analyse OWL files by calling the external Java parser.
 
 module OWL2.ParseOWL (parseOWL, convertOWL) where
 
-import OWL2.MS
-import OWL2.Rename
+import OWL2.AS
 
 import qualified Data.ByteString.Lazy as L
 import Data.List
@@ -30,6 +29,7 @@ import Control.Monad
 import Control.Monad.Trans
 
 import OWL2.XML
+import OWL2.Rename (unifyDocs)
 
 import System.Directory
 import System.Exit
@@ -48,7 +48,6 @@ parseOWL quick fullFileName = do
     case (exitCode, errStr) of
       (ExitSuccess, "") -> do
           cont <- lift $ L.readFile tmpFile
-          lift $ putStrLn (show cont)
           lift $ removeFile tmpFile
           parseProc cont
       _ -> fail $ "process stop! " ++ shows exitCode "\n" ++ errStr

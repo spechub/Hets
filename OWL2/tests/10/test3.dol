@@ -1,0 +1,75 @@
+logic OWL
+
+ontology O =
+Prefix(: = <http://example.org/>)
+Prefix( xsd: = <http://www.w3.org/2001/XMLSchema#>)
+Prefix( owl: = <http://www.w3.org/2002/07/owl#>)
+Prefix( xml: = <http://www.w3.org/XML/1998/namespace>)
+Prefix( rdf: = <http://www.w3.org/1999/02/22-rdf-syntax-ns#>)
+Prefix( rdfs: = <http://www.w3.org/2000/01/rdf-schema#>)
+
+Ontology(
+    Declaration(NamedIndividual(:i))
+    Declaration(Class(:A))
+    Declaration(Class(:B))
+    Declaration(ObjectProperty(:oprop))
+    Declaration(DataProperty(:dprop))
+
+    DLSafeRule(Body(ClassAtom(:A Variable(:x)))
+        Head(SameIndividualAtom(:i Variable(:x))))
+
+    DLSafeRule(Body(ClassAtom(:B Variable(:x)))
+        Head(DifferentIndividualsAtom(:i Variable(:x))))
+
+    DLSafeRule(
+        Body(ClassAtom(:A Variable(:x)) ClassAtom(:B Variable(:x)))
+        Head(DataPropertyAtom(:dprop :x "19"^^xsd:integer)))
+)
+end
+
+logic OWL serialization Manchester
+ontology P =
+
+
+Prefix: : <http://example.org/>
+Prefix: owl: <http://www.w3.org/2002/07/owl#>
+Prefix: rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+Prefix: rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+Prefix: xml: <http://www.w3.org/XML/1998/namespace>
+Prefix: xsd: <http://www.w3.org/2001/XMLSchema#>
+
+
+
+Ontology: 
+
+Datatype: xsd:integer
+
+    
+ObjectProperty: oprop
+
+    
+DataProperty: dprop
+
+    
+Class: A
+
+    
+Class: B
+
+    
+Individual: i
+
+    
+Individual: x
+
+    
+Rule: 
+    A(?x) ->  SameAs (i, ?x)
+
+Rule: 
+    B(?x), A(?x) -> dprop(x, 19)
+
+Rule: 
+    B(?x) ->  DifferentFrom (i, ?x)
+end
+

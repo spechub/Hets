@@ -1,8 +1,17 @@
 #!/bin/bash
 
-HETS_OWL_TOOLS=~/Hets/OWL2
-export HETS_OWL_TOOLS
+# - Parser Printer (own testscripts)
+#   - MS
+#   - AS
+#   - XML
+# - Calling hets on (static analysis)
+#   - DOL
+#   - MS
+#   - AS
+#   - XML
 
+# 1. run tests for *.xml
+# 2. run tests for *.omn
 ECHO="echo -e"
 
 $ECHO "\nhi !\n"
@@ -10,95 +19,91 @@ $ECHO "\nhi !\n"
 [[ `uname -s` == 'SunOS' ]] && MAKE=gmake || MAKE=make
 
 ALL=`ls`
+ALL=". $ALL"
 
+
+
+TESTS=$(pwd)
+cd ../..
+HETSROOT=$(pwd)
+
+
+HETS_OWL_TOOLS=$HETSROOT/OWL2
+export HETS_OWL_TOOLS
+
+$ECHO "\ncompiling runTest...\n"
+
+TESTSCRIPT=$HETSROOT/OWL2/scripts/runTest
+${MAKE} $TESTSCRIPT
+
+
+cd $TESTS
 for DIR in $ALL
 do
-    if test -d $DIR;
+    if test -d $DIR
         then
+            $ECHO "Entering $DIR"
             cd $DIR
 
-            $ECHO "testing for directory:" $DIR
-
-            mkdir res
-
-            for i in *.ofn *.rdf
+            $ECHO "Running Functional Syntax Files"
+            for i in *.ofn
             do
-                $ECHO "\ncalling java for:" $i
-                java -jar ../../OWL2Parser.jar file:`pwd`/$i xml >> `pwd`/res/$i.xml
+                if test -f $i
+                then
+                    $ECHO -n "  Testing $DIR/$i ... "
+                    $TESTSCRIPT $i
+                fi
             done
 
-            cd ../../..
+            $ECHO "Running Manchester Syntax Files"
+            for i in ./*.omn
+            do
+                if test -f $i
+                then
+                    $ECHO -n "  Testing $DIR/$i ... "
+                    $TESTSCRIPT $i
+                fi
+            done
 
-            $ECHO "\ncompiling runConv...\n"
+            for i in ./*.mno
+            do
+                if test -f $i
+                then
+                    $ECHO -n "  Testing $DIR/$i ... "
+                    $TESTSCRIPT $i
+                fi
+            done
 
-            ${MAKE} OWL2/scripts/runConv
-
-            cd OWL2/tests/$DIR/res
-
-            $ECHO "\nrunning runConv first time..."
-
+            $ECHO "Running XML Syntax Files"
             for i in *.xml
             do
-                $ECHO "\ncalling runConv for:" $i
-                ../../../scripts/runConv $i >> $i.xml
+                if test -f $i
+                then
+                    $ECHO -n "  Testing $DIR/$i ... "
+                    $TESTSCRIPT $i
+                fi
             done
 
-            $ECHO "\nrunning runConv second time..."
-
-            for i in *.xml.xml
+            $ECHO "Running hets on all files"
+            for i in *.ofn *.omn *.xml *.dol # *.rdf 
             do
-                $ECHO "\ncalling runConv for:" $i
-                ../../../scripts/runConv $i >> $i.xml
+                if test -f $i
+                then
+                    $ECHO -n "  Testing $DIR/$i ... "
+                    OUTPUT=`$HETSROOT/hets $i 2>&1` 
+                    if [ $? -eq 0 ]
+                    then
+                        $ECHO "✅ success"
+                    else
+                        $ECHO "❌ failed:\n$OUTPUT"
+                    fi
+                    
+                fi
             done
 
-            cd ../../../..
-
-            $ECHO "\ncalling hets for all xml files...\n"
-
-            for i in OWL2/tests/$DIR/res/*.xml
-            do
-                ./hets -i ow2 $i
-                $ECHO "\n"
-            done
-
-            $ECHO "creating omn files with java..."
-
-            cd OWL2/tests/$DIR/res
-
-            for i in *.ofn.xml.xml *.rdf.xml.xml
-            do
-                $ECHO "\ncalling java for:" $i
-                java -jar ../../../OWL2Parser.jar file:`pwd`/$i >> `pwd`/$i.xml.omn
-            done
-
-            cd ../../../..
-
-            $ECHO "\ncompiling runXML...\n"
-
-            ${MAKE} OWL2/scripts/runXML
-
-            cd OWL2/tests/$DIR/res
-
-            $ECHO "\ncalling runXML on .xml files..."
-
-            for i in *.ofn.xml *.rdf.xml
-            do
-                $ECHO "\ncalling runXML for:" $i
-                ../../../scripts/runXML $i >> $i.xml.mno
-            done
-
-            for i in *.ofn.xml.xml *.rdf.xml.xml
-            do
-                $ECHO "\ncalling runXML for:" $i
-                ../../../scripts/runXML $i >> $i.mno.mno
-            done
-
-            cd ..
-
-            #rm -rf res
-
-            cd ..
-
+            if [ "." != "$DIR" ]; then
+                cd ..
+            fi
     fi
 done
 

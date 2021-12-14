@@ -1,6 +1,5 @@
 import System.Environment
 
-import OWL2.AS
 import RDF.AS
 import RDF.Parse
 import RDF.Print

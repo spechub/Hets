@@ -43,6 +43,7 @@ module Common.IRI
     , iriToStringShortUnsecure
     , hasFullIRI
     , isSimple
+    , isURN
     , addSuffixToIRI
     , showTrace
     -- * Parsing
@@ -54,10 +55,14 @@ module Common.IRI
     , parseCurie
     , parseIRICurie
     , parseIRIReference
+    , parseIRICompoundCurie
     , parseIRI
     , ncname
 
+    , mergeCurie
     , expandCurie
+    , expandIRI
+    , expandIRI'
     , relativeTo
     , relativeFrom
 
@@ -72,8 +77,10 @@ module Common.IRI
     , showIRI
     , showIRICompact
     , showIRIFull
+    , showURN
     , dummyIRI
     , mkIRI
+    , mkAbbrevIRI
     , idToIRI  
     , setPrefix
     , uriToCaslId
@@ -87,12 +94,8 @@ import Data.Ord (comparing)
 import Data.Map as Map (Map, lookup)
 import Data.Maybe
 import Data.List
-import qualified Data.Map as Map
 
 import Control.Monad (when)
-
-import OWL2.ColonKeywords
-import OWL2.Keywords
 
 import Common.Id as Id
 import Common.Lexer
@@ -131,6 +134,8 @@ data IRI = IRI
     , isBlankNode :: Bool         -- ^ is the IRI a blank node?                   
     , hasAngles :: Bool           -- ^ IRI in angle brackets
     , iriPos :: Range             -- ^ position
+    , iFragment :: String         {- ^ If the IRI is a CURIE, @iFragment@
+    holds the fragment -}
     } deriving (Typeable, Data)
 
 -- | Type for authority value within a IRI
@@ -153,11 +158,26 @@ nullIRI = IRI
     , isBlankNode = False
     , hasAngles = False
     , iriPos = nullRange
+    , iFragment = ""
     }
 
 -- | check that we have a full (possibly expanded) IRI (i.e. for comparisons)
 hasFullIRI :: IRI -> Bool
 hasFullIRI i = not . null $ iriScheme i ++ (show $ iriPath i)
+
+-- | check whether the IRI is a URN (uniform resource name)
+isURN :: IRI -> Bool
+isURN i = iriScheme i == "urn"
+
+-- | gets the nid part of an urn
+urnNID :: IRI -> String
+urnNID = iriRegName . fromJust . iriAuthority
+
+-- | get the nss part of an urn
+urnNSS :: IRI -> String
+urnNSS = show . iriPath
+
+
 
 {- | check that we have a simple IRI that is a (possibly expanded) abbreviated IRI
 without prefix -}
@@ -174,6 +194,7 @@ showTrace i =
  "\nquery:" ++ iriQuery i ++
  "\nfragment:" ++ iriFragment i ++
  "\nprefix:" ++ prefixName i ++
+ "\niFragment:" ++ iFragment i ++
  "\nisAbbrev:" ++ show (isAbbrev i)
 
 {- IRI as instance of Show.  Note that for security reasons, the default
@@ -193,6 +214,8 @@ instance Ord IRI where
     (False, False) -> comparing
       (\ j -> (prefixName j, iriPath j, iriQuery j, iriFragment j))
       i k
+    (True, True) -> comparing (\j -> (iriScheme j, iriAuthority j, iriPath j,
+       iriQuery j, iriFragment j)) i k
     _ -> comparing (\ j ->
       (prefixName j, iriScheme j, iriAuthority j, iriPath j,
        iriQuery j, iriFragment j)) i k
@@ -240,9 +263,13 @@ iRIRange i = let Range rs = iriPos i in case rs of
 
 showIRI :: IRI -> String
 showIRI i 
+  | isURN i = showURN i
   | hasFullIRI i && not (isAbbrev i)  = showIRIFull i
   | otherwise = showIRICompact i
 
+
+showURN :: IRI -> String
+showURN i = urnToString i ""
 
 -- | show IRI as abbreviated, when possible
 showIRICompact :: IRI -> String
@@ -274,6 +301,10 @@ dummyIRI = nullIRI {
 
 mkIRI :: String -> IRI
 mkIRI = simpleIdToIRI. mkSimpleId
+
+mkAbbrevIRI :: String -> String -> IRI
+mkAbbrevIRI pref frag = nullIRI {prefixName= pref, iFragment = frag, isAbbrev = True}
+
 
 idToIRI :: Id -> IRI
 idToIRI i =  nullIRI { iriScheme = ""
@@ -309,6 +340,9 @@ Returns 'Nothing' if the string is not a valid IRI;
 or a CURIE). -}
 parseIRICurie :: String -> Maybe IRI
 parseIRICurie = parseIRIAny iriCurie
+
+parseIRICompoundCurie :: String -> Maybe IRI
+parseIRICompoundCurie = parseIRIAny compoundIriCurie
 
 -- Helper function for turning a string into a IRI
 parseIRIAny :: IRIParser () IRI -> String -> Maybe IRI
@@ -381,8 +415,8 @@ curie = iriWithPos $ do
         c <- string ":"
         return $ n -- ++ c Don't add the colon to the prefix!
       )
-    i <- reference
-    return i { prefixName = pn }
+    i <- referenceAux False
+    return i { prefixName = pn, iFragment = show i }
   <|> referenceAux False
 
 reference :: IRIParser st IRI
@@ -424,7 +458,7 @@ urnParser = let ldh = alphaNum <|> oneOf "-." in iriWithPos $
               { iriScheme = "urn"
               , iriAuthority = Just IRIAuth
                 { iriUserInfo = ""
-                , iriRegName = nss
+                , iriRegName = nid
                 , iriPort = ""
                 }
               , iriPath = stringToId nss
@@ -827,8 +861,13 @@ that may be present in the IRI.  Use this function with argument @id@
 to preserve the password in the formatted output. -}
 iriToString :: (String -> String) -> IRI -> ShowS
 iriToString iuserinfomap i
+  | isURN i = urnToString i
   | hasFullIRI i && not (isAbbrev i) = iriToStringFull iuserinfomap i
   | otherwise = iriToStringAbbrev i
+
+
+urnToString :: IRI -> ShowS
+urnToString i = (("urn:" ++ urnNID i ++ ":" ++ urnNSS i ++ iriQuery i ++ iriFragment i) ++)
 
 iriToStringShort :: (String -> String) -> IRI -> ShowS
 iriToStringShort iuserinfomap i
@@ -854,9 +893,13 @@ iriToStringAbbrev (IRI { prefixName = pname
                        , iriPath = aPath
                        , iriQuery = aQuery
                        , iriFragment = aFragment
+                       , iFragment = aIFragment
                        }) =
   let pref = if null pname then "" else pname ++ ":" in
-  (pref ++) . (show aPath ++) . (aQuery ++) . (aFragment ++)
+    if null aIFragment then
+      (pref ++) . (show aPath ++) . (aQuery ++) . (aFragment ++)
+    else
+      (pref ++) . (aIFragment ++)
 
 iriToStringAbbrevMerge :: IRI -> ShowS
 iriToStringAbbrevMerge (IRI { iriPath = aPath
@@ -1088,6 +1131,32 @@ difSegsFrom sabs base = difSegsFrom ("../" ++ sabs) (snd $ nextSegment base)
 
 -- * Other normalization functions
 
+
+{- | @expandIRI pm iri@ returns the expanded @iri@ with a declaration from @pm@.
+If no declaration is found, return @iri@ unchanged. -}
+expandIRI :: Map String IRI -> IRI -> IRI
+expandIRI pm iri
+    | isAbbrev iri = fromMaybe iri $ do
+        def <- Map.lookup (prefixName iri) pm
+        let defS = iriToStringFull id (setAngles False def) ""
+        expanded <- parseIRI $ defS ++ iFragment iri
+        return $ expanded
+            { iFragment = iFragment iri
+            , prefixName = prefixName iri
+            , isAbbrev = True }
+    | otherwise = iri
+
+expandIRI' :: Map String String -> IRI -> IRI
+expandIRI' pm iri
+    | isAbbrev iri = fromMaybe iri $ do
+        def <- Map.lookup (prefixName iri) pm
+        expanded <- parseIRI $ def ++ iFragment iri
+        return $ expanded
+            { iFragment = iFragment iri
+            , prefixName = prefixName iri
+            , isAbbrev = True }
+    | otherwise = iri
+
 {- |Expands a CURIE to an IRI. @Nothing@ iff there is no IRI @i@ assigned
 to the prefix of @c@ or the concatenation of @i@ and @iriPath c@
 is not a valid IRI. -}
@@ -1137,9 +1206,10 @@ uriToCaslId urI =
                        c == '_'
                    then [c]
                    else "_u" ) urS
- in case urS of
-      x : _ -> 
-         if not $ isAlpha x then genName urS' 
-         else stringToId urS'
+ in case urS' of
+      x : t -> 
+         if x == '_' then genName $ dropWhile (== '_') t
+         else if not $ isAlpha x then genName urS' 
+              else stringToId urS'
       _ -> error "translating empty IRI" 
            -- should never happen
