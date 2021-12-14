@@ -1152,7 +1152,13 @@ expandIRI' :: Map String String -> IRI -> IRI
 expandIRI' pm iri
     | isAbbrev iri = fromMaybe iri $ do
         def <- Map.lookup (prefixName iri) pm
-        expanded <- parseIRI $ def ++ iFragment iri
+        -- remove surrounding angle brackets if needed
+        let def' =
+              if "<" `isPrefixOf` def && ">" `isSuffixOf` def then
+                tail . init $ def
+              else 
+                def
+        expanded <- parseIRI $ def' ++ iFragment iri
         return $ expanded
             { iFragment = iFragment iri
             , prefixName = prefixName iri
