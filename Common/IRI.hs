@@ -408,18 +408,20 @@ compoundCurie = do
       return i { iriPath = addComponents (iriPath i) (c,p),
                  isBlankNode = prefixName i == "_" }
 
--- | Parses a CURIE <http://www.w3.org/TR/rdfa-core/#s_curies>
+-- | Parses a CURIE according to <http://www.w3.org/TR/rdfa-core/#s_curies> and
+--   the following exceptions:
+--    - the prefix may be empty (java OWL API allows this)
+--    - for the empty prefix, the colon can be omitted (":A" == "A")
 curie :: IRIParser st IRI
 curie = iriWithPos $ do
-    pn <- try (do
-        n <- option "" ncname -- although the standard doesn't allow an empty
-                              -- prefix the java OWL API does.
+    pn <- option "" $ try (do
+        n <- option "" ncname 
+                              
         c <- string ":"
         return $ n -- ++ c Don't add the colon to the prefix!
       )
     i <- referenceAux False
     return i { prefixName = pn, iFragment = show i }
-  <|> referenceAux False
 
 reference :: IRIParser st IRI
 reference = referenceAux True
