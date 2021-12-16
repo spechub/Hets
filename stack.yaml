@@ -100,3 +100,6 @@ extra-package-dbs: []
 #
 # Allow a newer minor version of GHC than the snapshot specifies
 # compiler-check: newer-minor
+
+# Increment if you want Github Actions to build a new stack cache.
+# Cache counter: 0
