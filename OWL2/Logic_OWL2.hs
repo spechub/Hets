@@ -103,7 +103,7 @@ instance Syntax OWL2 OntologyDocument Entity SymbItems SymbMapItems where
     parsersAndPrinters OWL2 = -- addSyntax "Ship" (parseOntologyDocument, ppShipOnt) 
       addSyntax "Manchester" (PaMS.parseOntologyDocument, PrMS.printOntologyDocument)
       $ addSyntax "Functional" (PaAS.parseOntologyDocument, PrAS.printOntologyDocument)
-      $ makeDefault (PaAS.parseOntologyDocument, PrAS.printOntologyDocument)
+      $ makeDefault (PaMS.parseOntologyDocument, PrMS.printOntologyDocument)
     parseSingleSymbItem OWL2 = Just symbItem
     parse_symb_items OWL2 = Just symbItems
     parse_symb_map_items OWL2 = Just symbMapItems
