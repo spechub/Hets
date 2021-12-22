@@ -110,7 +110,7 @@ readLibDefn lgraph opts mr file fileForPos input = trace "--- readlibDefn" $
       HtmlIn -> fail "unexpected html input"
       CommonLogicIn _ -> parseCL_CLIF file opts
 #ifdef RDFLOGIC
-     RDFIn -> liftIO $ parseRDF file
+     -- RDFIn -> liftIO $ parseRDF file
 #endif
       Xmi -> return [parseXmi file input]
       Qvt -> liftIO $ fmap (: []) $ parseQvt file input
