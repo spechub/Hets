@@ -26,6 +26,8 @@ import qualified Data.ByteString.UTF8 as UTF8
 import qualified Data.ByteString.Char8 as Char8
 import Data.Char
 
+import Debug.Trace
+
 {- according to http://tools.ietf.org/html/rfc3986#section-2.1
 uppercase uppercase hexadecimal digits should be used -}
 encodeChar8 :: (Char -> Bool) -> String -> String

@@ -78,6 +78,8 @@ import Framework.Analysis
 import MMT.Hets2mmt (mmtRes)
 import Proofs.ComputeColimit
 
+import Debug.Trace
+
 -- a set of library names to check for cyclic imports
 type LNS = Set.Set LibName
 
@@ -90,7 +92,7 @@ anaSourceFile = anaSource Nothing
 anaSource :: Maybe LibName -- ^ suggested library name
   -> LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph
   -> FilePath -> ResultT IO (LibName, LibEnv)
-anaSource mln lg opts topLns libenv initDG origName = ResultT $ do
+anaSource mln lg opts topLns libenv initDG origName = trace "--- anaSource" $ ResultT $ do
   let mName = useCatalogURL opts origName
       fname = tryToStripPrefix "file://" mName
       syn = case defSyntax opts of
@@ -98,10 +100,11 @@ anaSource mln lg opts topLns libenv initDG origName = ResultT $ do
         s -> Just $ simpleIdToIRI $ mkSimpleId s
       lgraph = setSyntax syn $ setCurLogic (defLogic opts) lg
   fname' <- getContentAndFileType opts fname
+  -- fname' <- return $ Right (Just "text/xml", Nothing, "./OWL2/tests/bioportal/MCCL.owl", "")
   dir <- getCurrentDirectory
   case fname' of
     Left err -> return $ fail err
-    Right (mr, _, file, inputLit) ->
+    Right (mr, _, file, inputLit) -> trace ("--- got content (in anaSource):\n\tmr: " ++ show mr ++ "\tfile: " ++ file) $
         if any (`isSuffixOf` file) [envSuffix, prfSuffix] then
           return . fail $ "no matching source file for '" ++ fname ++ "' found."
         else let
@@ -132,7 +135,7 @@ anaString :: Maybe LibName -- ^ suggested library name
   -> LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph -> String
   -> FilePath -> Maybe String -- ^ mime-type of file
   -> ResultT IO (LibName, LibEnv)
-anaString mln lgraph opts topLns libenv initDG input file mr = do
+anaString mln lgraph opts topLns libenv initDG input file mr = trace ("--- anaString:\n\tfile: " ++ file) $ do
   curDir <- lift getCurrentDirectory -- get full path for parser positions
   let realFileName = curDir </> file
       posFileName = case mln of
@@ -152,7 +155,7 @@ anaStringAux :: Maybe LibName -- ^ suggested library name
   -> LogicGraph -> HetcatsOpts -> LNS -> DGraph -> Maybe String -> FilePath
   -> FilePath -> (LibName, LibEnv) -> LIB_DEFN -> ResultT IO (LibName, LibEnv)
 anaStringAux mln lgraph opts topLns initDG mt file posFileName (_, libenv)
-             (Lib_defn pln is' ps ans) = do
+             (Lib_defn pln is' ps ans) = trace ("--- anaStringAux\n\tfile: " ++ file ++ "\n\tposFileName: " ++ posFileName) $ do
   let pm = fst $ partPrefixes ans
       expnd i = fromMaybe i $ expandCurie pm i
       spNs = Set.unions . map (Set.map expnd . getSpecNames)
@@ -224,7 +227,7 @@ anaLibFile lgraph opts topLns libenv initDG ln =
 -- | lookup or read a library
 anaLibFileOrGetEnv :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph
                    -> Maybe LibName -> FilePath -> ResultT IO (LibName, LibEnv)
-anaLibFileOrGetEnv lgraph opts topLns libenv initDG mln file = do
+anaLibFileOrGetEnv lgraph opts topLns libenv initDG mln file = trace "--- anaLibFileOrGetEnv" $ do
      let envFile = rmSuffix file ++ envSuffix
      recent_envFile <- lift $ checkRecentEnv opts envFile file
      if recent_envFile
@@ -263,7 +266,7 @@ anaLibFileOrGetEnv lgraph opts topLns libenv initDG mln file = do
 anaLibDefn :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph -> LIB_DEFN
   -> FilePath -> ResultT IO (LibName, LIB_DEFN, GlobalAnnos, LibEnv)
 anaLibDefn lgraph opts topLns libenv dg (Lib_defn ln alibItems pos ans) file
-  = do
+  = trace ("--- anaLibDefn\n\tfile: " ++ file) $ do
   let libStr = libToFileName ln
       isDOLlib = elem ':' libStr
   gannos <- showDiags1 opts $ liftR $ addGlobalAnnos
@@ -315,7 +318,7 @@ anaLibItemAux opts topLns ln q@(libItems', dg1, libenv1, lg, eo) libItem = let
   currLog = currentLogic lg
   newOpts = if elem currLog ["DMU", "Framework"] then
               opts { defLogic = currLog } else opts
-  in ResultT $ do
+  in trace "--- anaLibItemAux" $ ResultT $ do
       res2@(Result diags2 res) <- runResultT
         $ anaLibItem lg newOpts topLns ln libenv1 dg1 eo libItem
       runResultT $ showDiags1 opts (liftR res2)
@@ -348,7 +351,7 @@ anaGenericity :: LogicGraph -> LibEnv -> LibName -> DGraph -> HetcatsOpts
 anaGenericity lg libEnv ln dg opts eo name
     gen@(Genericity (Params psps) (Imported isps) pos) =
   let ms = currentBaseTheory dg in
-  adjustPos pos $ case psps of
+  trace "--- anaGenericity" $ adjustPos pos $ case psps of
   [] -> do -- no parameter ...
     unless (null isps) $ plain_error ()
       "Parameterless specifications must not have imports" pos
@@ -376,9 +379,9 @@ expCurieT ga eo = liftR . expCurieR ga eo
 anaLibItem :: LogicGraph -> HetcatsOpts -> LNS -> LibName -> LibEnv -> DGraph
   -> ExpOverrides -> LIB_ITEM
   -> ResultT IO (LIB_ITEM, DGraph, LibEnv, LogicGraph, ExpOverrides)
-anaLibItem lg opts topLns currLn libenv dg eo itm =
+anaLibItem lg opts topLns currLn libenv dg eo itm = trace "--- anaLibItem" $
  case itm of
-  Spec_defn spn2 gen asp pos -> do
+  Spec_defn spn2 gen asp pos -> trace "\tSpec_defn" $ do
     let spn' = if null (iriToStringUnsecure spn2) then
          simpleIdToIRI $ mkSimpleId "Spec" else spn2
     spn <- expCurieT (globalAnnos dg) eo spn'
@@ -387,37 +390,37 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
     analyzing opts $ "spec " ++ spstr
     (gen', gsig@(GenSig _ _args allparams), dg') <-
       liftR $ anaGenericity lg libenv currLn dg opts eo nName gen
-    (sanno1, impliesA) <- liftR $ getSpecAnnos pos asp
+    (sanno1, impliesA) <- trace "--- running getSpecAnnos" $ liftR $ getSpecAnnos pos asp
     when impliesA $ liftR $ plain_error ()
       "unexpected initial %implies in spec-defn" pos
     (sp', body, dg'') <-
-      liftR (anaSpecTop sanno1 True lg libenv currLn dg'
+      trace "--- running anaSpecTop" $ liftR (anaSpecTop sanno1 True lg libenv currLn dg'
             allparams nName opts eo (item asp) pos)
-    let libItem' = Spec_defn spn gen' (replaceAnnoted sp' asp) pos
+    let libItem' = Spec_defn spn gen' (trace "--- running replaceAnnoted" $ replaceAnnoted sp' asp) pos
         genv = globalEnv dg
     if Map.member spn genv
       then liftR $ plain_error (libItem', dg'', libenv, lg, eo)
               (alreadyDefined spstr) pos
       else
         -- let (_n, dg''') = addSpecNodeRT dg'' (UnitSig args body) $ show spn
-        return
+        trace "--- FINISH spec analysis" $ return
         ( libItem'
         , dg'' { globalEnv = Map.insert spn (SpecEntry
                   $ ExtGenSig gsig body) genv }
         , libenv, lg, eo)
-  Entail_defn en' etype pos -> do
+  Entail_defn en' etype pos -> trace "\tEntail_defn" $ do
     en <- expCurieT (globalAnnos dg) eo en'
     analyzing opts $ "entailment " ++ iriToStringUnsecure en
     liftR $ anaEntailmentDefn lg currLn libenv dg opts eo en etype pos
-  View_defn vn' gen vt gsis pos -> do
+  View_defn vn' gen vt gsis pos -> trace "\tView_defn" $ do
     vn <- expCurieT (globalAnnos dg) eo vn'
     analyzing opts $ "view " ++ iriToStringUnsecure vn
     liftR $ anaViewDefn lg currLn libenv dg opts eo vn gen vt gsis pos
-  Align_defn an' arities atype acorresps _ pos -> do
+  Align_defn an' arities atype acorresps _ pos -> trace "\tAlign_defn" $ do
     an <- expCurieT (globalAnnos dg) eo an'
     analyzing opts $ "alignment " ++ iriToStringUnsecure an
     anaAlignDefn lg currLn libenv dg opts eo an arities atype acorresps pos
-  Arch_spec_defn asn' asp pos -> do
+  Arch_spec_defn asn' asp pos -> trace "\tArch_spec_defn" $ do
     asn <- expCurieT (globalAnnos dg) eo asn'
     let asstr = iriToStringUnsecure asn
     analyzing opts $ "arch spec " ++ asstr
@@ -441,7 +444,7 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
               { globalEnv = Map.insert asn
                             (ArchOrRefEntry True archSig) genv }
               , libenv, lg, eo)
-  Unit_spec_defn usn' usp pos -> do
+  Unit_spec_defn usn' usp pos -> trace "\tUnit_spec_defn" $ do
     usn <- expCurieT (globalAnnos dg) eo usn'
     let usstr = iriToStringUnsecure usn
     analyzing opts $ "unit spec " ++ usstr
@@ -458,7 +461,7 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
       else return (usd', dg'
              { globalEnv = Map.insert usn (UnitEntry unitSig) genv },
              libenv, lg, eo)
-  Ref_spec_defn rn' rsp pos -> do
+  Ref_spec_defn rn' rsp pos -> trace "\tRef_spec_defn" $ do
     rn <- expCurieT (globalAnnos dg) eo rn'
     let rnstr = iriToStringUnsecure rn
     l <- lookupCurrentLogic "Ref_spec_defn" lg
@@ -480,7 +483,7 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
         { globalEnv = Map.insert rn (ArchOrRefEntry False rsig) genv
         , specRoots = Map.insert rnstr sources $ specRoots dg' }
         , libenv, lg, eo)
-  Logic_decl logN pos -> do
+  Logic_decl logN pos -> trace "\tLogic_decl" $ do
     putMessageIORes opts 1 . show $ prettyLG lg itm
     (mth, newLg) <- liftR
       $ adjustPos pos $ anaSublogic opts logN currLn dg libenv lg
@@ -496,7 +499,7 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
                        , currentBaseTheory = Just $ extGenBody s2 }
               else dg { currentBaseTheory = Just $ extGenBody s }
         return (itm, dg2, libenv, newLg, eo)
-  Network_defn anIri (Network cItems eItems _) pos -> do
+  Network_defn anIri (Network cItems eItems _) pos -> trace "\tNetwork_defn" $ do
     nn <- expCurieT (globalAnnos dg) eo anIri
     let nnstr = iriToStringUnsecure nn
     analyzing opts $ "network " ++ nnstr
@@ -510,7 +513,7 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
        else
         return (itm, dg{globalEnv = Map.insert nn (NetworkEntry diag) genv},
                 libenv, lg, eo)
-  Download_items ln items pos ->
+  Download_items ln items pos -> trace "\tDownload_items" $
     if Set.member ln topLns then
      liftR $ mkError "illegal cyclic library import"
        $ Set.map getLibId topLns
@@ -565,13 +568,13 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
             mapM_ liftR errs
             dg1 <- liftR $ anaItemNamesOrMaps libenv' ln' dg' dg0 realItems
             return (itm, dg1, libenv', lg, eo')
-  Newlogic_defn ld _ -> ResultT $ do
+  Newlogic_defn ld _ -> trace "\tNewlogic_defn" $ ResultT $ do
     dg' <- anaLogicDef ld dg
     return $ Result [] $ Just (itm, dg', libenv, lg, eo)
-  Newcomorphism_defn com _ -> ResultT $ do
+  Newcomorphism_defn com _ -> trace "\tNewcomorphism_defn" $ ResultT $ do
     dg' <- anaComorphismDef com dg
     return $ Result [] $ Just (itm, dg', libenv, lg, eo)
-  _ -> return (itm, dg, libenv, lg, eo)
+  _ -> trace "\tunknown item" $ return (itm, dg, libenv, lg, eo)
 
 symbolsOf :: LogicGraph -> G_sign -> G_sign -> [CORRESPONDENCE]
   -> Result (Set.Set (G_symbol, G_symbol))

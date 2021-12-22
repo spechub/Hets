@@ -91,6 +91,8 @@ import System.IO.Unsafe (unsafeInterleaveIO)
 
 import Control.Monad
 
+import Debug.Trace
+
 {- | Writes the message to the given handle unless the verbosity is less than
 the message level. -}
 verbMsg :: Handle -- ^ Output handle
@@ -386,7 +388,7 @@ getEnvSave :: a                   -- ^ default value
            -> String              -- ^ name of environment variable
            -> (String -> Maybe a) -- ^ parse and check value of variable
            -> IO a
-getEnvSave defValue envVar readFun =
+getEnvSave defValue envVar readFun = trace "--- getEnvSave" $ 
     liftM (maybe defValue (fromMaybe defValue . readFun)
            . lookup envVar) getEnvironment
 
@@ -394,7 +396,7 @@ getEnvSave defValue envVar readFun =
 getEnvDef :: String -- ^ environment variable
           -> String -- ^  default value
           -> IO String
-getEnvDef envVar defValue = getEnvSave defValue envVar Just
+getEnvDef envVar defValue = trace "--- getEnvDef" $ getEnvSave defValue envVar Just
 
 -- | the timeout function taking seconds instead of microseconds
 timeoutSecs :: Int -> IO a -> IO (Maybe a)

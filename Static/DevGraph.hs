@@ -72,6 +72,8 @@ import qualified Data.Set as Set
 
 import Common.Result
 
+import Debug.Trace
+
 -- * types for structured specification analysis
 
 -- ** basic types
@@ -215,7 +217,7 @@ hasOpenNodeConsStatus b lbl = if isJust $ dgn_nf lbl then b else
   hasOpenConsStatus b $ getNodeConsStatus lbl
 
 markNodeConsistency :: Conservativity -> String -> DGNodeLab -> DGNodeLab
-markNodeConsistency newc str dgnode = dgnode
+markNodeConsistency newc str dgnode = trace "--- markNodeConsistency" $ dgnode
   { nodeInfo = case nodeInfo dgnode of
       ninfo@DGNode { node_cons_status = ConsStatus c pc thm } ->
           if pc == newc && isProvenThmLinkStatus thm then ninfo else

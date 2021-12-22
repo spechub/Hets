@@ -31,6 +31,8 @@ module Common.IO
 import System.IO
 import Control.Exception as Exception
 
+import Debug.Trace
+
 catchIOException :: a -> IO a -> IO a
 catchIOException d a = catchJust (\ e ->
   fromException e :: Maybe IOException) a . const $ return d
@@ -48,14 +50,15 @@ readEncFile _ = readFile
 writeEncFile _ = writeFile
 setStdEnc _ = return ()
 #else
-readEncFile c f = do
-  hdl <- openFile f ReadMode
-  hSetEncoding hdl $ case c of
-    Utf8 -> utf8
-    Latin1 -> latin1
-  hGetContents hdl
+readEncFile _ f = trace ("--- readEncFile: " ++ f) $ readFile f
+  -- do
+  -- hdl <- openFile f ReadMode
+  -- hSetEncoding hdl $ case c of
+  --   Utf8 -> utf8
+  --   Latin1 -> latin1
+  -- hGetContents hdl
 
-writeEncFile c f txt = withFile f WriteMode $ \ hdl -> do
+writeEncFile c f txt = trace ("--- writeEncFile: " ++ f) $ withFile f WriteMode $ \ hdl -> do
     hSetEncoding hdl $ case c of
       Utf8 -> utf8
       Latin1 -> latin1

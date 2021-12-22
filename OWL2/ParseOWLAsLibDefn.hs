@@ -32,12 +32,14 @@ import OWL2.ParseOWL
 import Syntax.AS_Library
 import Syntax.AS_Structured
 
+import Debug.Trace
+
 
 -- | call for owl parser (env. variable $HETS_OWL_TOOLS muss be defined)
 parseOWLAsLibDefn :: Bool                  -- ^ Sets Option.quick
          -> FilePath              -- ^ local filepath or uri
          -> ResultT IO [LIB_DEFN] -- ^ map: uri -> OntologyFile
-parseOWLAsLibDefn quick fn = do
+parseOWLAsLibDefn quick fn = trace "--- parseOWLAsLibDefn" $ do
    (imap, ontodocs) <- parseOWL quick fn
    return $ map (convertToLibDefN imap) ontodocs
 

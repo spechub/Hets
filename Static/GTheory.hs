@@ -44,6 +44,8 @@ import Data.Typeable
 import Control.Monad (foldM)
 import Control.Exception
 
+import Debug.Trace
+
 -- a theory index describing a set of sentences
 newtype ThId = ThId Int
   deriving (Typeable, Show, Eq, Ord, Enum, ShATermConvertible)
@@ -295,7 +297,7 @@ proveSens lid sens = let
 
 proveLocalSens :: G_theory -> G_theory -> G_theory
 proveLocalSens (G_theory glid _ _ _ gsens _)
-  lth@(G_theory lid syn sig ind sens _) =
+  lth@(G_theory lid syn sig ind sens _) = trace "--- proveLocalSens" $
   case coerceThSens glid lid "proveLocalSens" gsens of
     Just lsens -> G_theory lid syn sig ind
       (proveSensAux lid (OMap.filter (\ s -> isAxiom s || isProvenSenStatus s)
@@ -309,7 +311,7 @@ proveSensAux :: Logic lid sublogics basic_spec sentence symb_items
     => lid -> ThSens sentence (AnyComorphism, BasicProof)
            -> ThSens sentence (AnyComorphism, BasicProof)
            -> ThSens sentence (AnyComorphism, BasicProof)
-proveSensAux lid axs ths = let
+proveSensAux lid axs ths = trace "--- proveSensAux" $ let
   axSet = Map.fromList $ map (\ (n, s) -> (sentence s, n)) $ OMap.toList axs
   in Map.mapWithKey (\ i e -> let sen = OMap.ele e in
          case Map.lookup (sentence sen) axSet of

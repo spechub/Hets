@@ -24,6 +24,8 @@ import qualified Common.XmlExpat as XE
 import Data.ByteString.Lazy.UTF8
 #endif
 
+import Debug.Trace
+
 readXmlFile :: FilePath -> IO BS.ByteString
 readXmlFile fp = do
   bs <- BS.readFile fp
@@ -38,12 +40,12 @@ class XmlParseable a where
 
 #ifdef HEXPAT
 instance XmlParseable BS.ByteString where
-    parseXml = return . XE.parseXml
+    parseXml = trace "--- parseXml (XE)" $ return . XE.parseXml
 
 -- 169MB on Basic/Algebra_I
 #else
 instance XmlParseable BS.ByteString where
-    parseXml s = return $ case parseXMLDoc $ toString s of
+    parseXml s = trace "--- parseXml" $ return $ case parseXMLDoc $ toString s of
                    Just x -> Right x
                    _ -> Left "parseXMLDoc: parse error"
 

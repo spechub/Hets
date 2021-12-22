@@ -132,6 +132,8 @@ import qualified Data.Set as Set
 import Text.ParserCombinators.Parsec (Parser, parse, eof, (<|>))
 -- for looking up modifications
 
+import Debug.Trace
+
 -- * \"Grothendieck\" versions of the various parts of type class Logic
 
 -- | Grothendieck basic specifications
@@ -494,7 +496,7 @@ lookupLogic error_prefix logname logicGraph =
     Just lid -> return lid
 
 lookupCurrentLogic :: Monad m => String -> LogicGraph -> m AnyLogic
-lookupCurrentLogic msg lg = lookupLogic (msg ++ " ") (currentLogic lg) lg
+lookupCurrentLogic msg lg = trace ("--- lookupCurrentLogic\n\tmsg: " ++ msg) $ lookupLogic (msg ++ " ") (currentLogic lg) lg
 
 lookupCurrentSyntax :: Monad m => String -> LogicGraph
   -> m (AnyLogic, Maybe IRI)

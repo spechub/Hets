@@ -38,6 +38,8 @@ import Control.Monad
 
 import Logic.Logic
 
+import Debug.Trace
+
 -- | Error messages for static analysis
 failMsg :: AS.Entity -> AS.ClassExpression -> Result a
 failMsg (AS.Entity _ ty e) desc =
@@ -598,7 +600,7 @@ checkAxiom s a = case a of
 
 
 correctFrames :: Sign -> [AS.Axiom] -> Result [AS.Axiom]
-correctFrames s = fmap concat . mapM (checkAxiom s)
+correctFrames s = trace "--- correctFrames" $ fmap concat . mapM (checkAxiom s)
 
 collectEntities :: AS.Axiom -> State Sign ()
 collectEntities f = case f of
@@ -618,9 +620,9 @@ noDecl ax = case ax of
 
 -- | corrects the axioms according to the signature
 createAxioms :: Sign -> [AS.Axiom] -> Result ([Named AS.Axiom], [AS.Axiom])
-createAxioms s fl = do
-    cf <- correctFrames s $ map (function Expand $ StringMap $ prefixMap s) fl
-    return (map anaAxiom . filter noDecl $ cf, cf)
+createAxioms s fl = trace "--- createAxioms" $ do
+    cf <- trace "--- running correctFrames" $ correctFrames s $ map (function Expand $ StringMap $ prefixMap s) fl
+    trace "--- FINISH createAxioms" $ return (map anaAxiom . filter noDecl $ cf, cf)
 
 check1Prefix :: Maybe IRI -> IRI -> Bool
 check1Prefix ms s = case ms of
@@ -649,16 +651,16 @@ newODoc AS.OntologyDocument {
 -- | static analysis of ontology with incoming sign.
 basicOWL2Analysis :: (AS.OntologyDocument, Sign, GlobalAnnos)
     -> Result (AS.OntologyDocument, ExtSign Sign AS.Entity, [Named AS.Axiom])
-basicOWL2Analysis (inOnt, inSign, ga) = do
+basicOWL2Analysis (inOnt, inSign, ga) = trace "--- basicOWL2Analysis" $ do
     let pm = Map.union (AS.prefixDeclaration inOnt)
           . Map.delete "" $ prefix_map ga
         odoc = inOnt { AS.prefixDeclaration = pm }
         axs = AS.axioms $ AS.ontology odoc
         accSign = execState (createSign axs) inSign { prefixMap = AS.changePrefixMapTypeToString pm }
         syms = Set.difference (symOf accSign) $ symOf inSign
-    (axl, nfl) <- createAxioms accSign axs
-    newdoc <- newODoc odoc nfl
-    return (newdoc
+    (axl, nfl) <- trace "--- running createAxioms" $ createAxioms accSign axs
+    newdoc <- trace "--- running newODoc" $ newODoc odoc nfl
+    trace "--- FINISH basicOWL2Analysis" $ return (newdoc
       , ExtSign accSign {labelMap = generateLabelMap accSign nfl} syms, axl)
 
 -- | extract labels from Axiom-List (after processing with correctFrames)

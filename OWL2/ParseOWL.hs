@@ -37,11 +37,13 @@ import System.FilePath
 
 import Text.XML.Light hiding (QName)
 
+import Debug.Trace
+
 -- | call for owl parser (env. variable $HETS_OWL_TOOLS muss be defined)
 parseOWL :: Bool                  -- ^ Sets Option.quick
          -> FilePath              -- ^ local filepath or uri
          -> ResultT IO (Map.Map String String, [OntologyDocument]) -- ^ map: uri -> OntologyFile
-parseOWL quick fullFileName = do
+parseOWL quick fullFileName = trace ("--- parseOWL\n\tfullFileName = " ++ fullFileName) $ do
     let fn = tryToStripPrefix "file://" fullFileName
     tmpFile <- lift $ getTempFile "" "owlTemp.xml"
     (exitCode, _, errStr) <- parseOWLAux quick fn ["-o", "xml", tmpFile]
@@ -56,11 +58,11 @@ parseOWLAux :: Bool         -- ^ Sets Option.quick
          -> FilePath        -- ^ local filepath or uri
          -> [String]        -- ^ arguments for java parser
          -> ResultT IO (ExitCode, String, String)
-parseOWLAux quick fn args = do
+parseOWLAux quick fn args = trace ("--- parseOWLAux:\n\ttmpFile = " ++ (show . head. tail . tail $ args)) $ do
     let jar = "OWL2Parser.jar"
     (hasJar, toolPath) <- lift $ check4HetsOWLjar jar
     if hasJar
-      then lift $ executeProcess "java" (["-jar", toolPath </> jar]
+      then trace "--- running executeProcess java" $ lift $ executeProcess "java" (["-jar", toolPath </> jar]
         ++ args ++ [fn] ++ ["-qk" | quick]) ""
       else fail $ jar
         ++ " not found, check your environment variable: " ++ hetsOWLenv
@@ -78,7 +80,7 @@ convertOWL fn tp = do
 
 parseProc :: L.ByteString 
               -> ResultT IO (Map.Map String String, [OntologyDocument])
-parseProc str = do
+parseProc str = trace "--- parseProc" $ do
   res <- lift $ parseXml str
   case res of
     Left err -> fail err

@@ -59,6 +59,8 @@ import Data.Char (isSpace)
 import Data.List (isPrefixOf)
 import Data.Maybe
 
+import Debug.Trace
+
 noPrefix :: QName -> Bool
 noPrefix = isNothing . qPrefix
 
@@ -78,26 +80,26 @@ isOWLOnto :: QName -> Bool
 isOWLOnto q = qName q == "Ontology" && qPrefix q == Just "owl"
 
 guessXmlContent :: Bool -> String -> Either String InType
-guessXmlContent isXml str = case dropWhile isSpace str of
- '<' : _ -> case parseXMLDoc str of
-  Nothing -> Right GuessIn
-  Just e -> case elName e of
-    q | isDgXml q -> Right DgXml
-      | isRDF q -> Right $ OWLIn $ if any (isOWLOnto . elName) $ elChildren e
+guessXmlContent isXml str = trace "--- guessXmlContent" $ case dropWhile isSpace str of
+ '<' : _ -> case trace "--- START PARCING HERE!" $ parseXMLDoc str of
+  Nothing -> trace "--- failed to parse xml" $ Right GuessIn
+  Just e -> trace ("--- start guessing xml content") $ case elName e of
+    q | isDgXml q -> trace "--- it is DgXml" $ Right DgXml
+      | isRDF q -> trace "--- it is RDF" $ Right $ OWLIn $ if any (isOWLOnto . elName) $ elChildren e
           then OwlXml else RdfXml
-      | qName q == "Ontology" -> Right $ OWLIn OwlXml
-      | isDMU q -> Left "unexpected DMU xml format"
-      | isPpXml q -> Left "unexpected pp.xml format"
-      | null (qName q) || not isXml -> Right GuessIn
-      | otherwise -> Left $ "unknown XML format: " ++ tagEnd q ""
- _ -> Right GuessIn  -- assume that it is no xml content
+      | qName q == "Ontology" -> trace "--- it is Ontology" $ Right $ OWLIn OwlXml
+      | isDMU q -> trace "--- it is DMU" $ Left "unexpected DMU xml format"
+      | isPpXml q -> trace "--- it is PpXml" $ Left "unexpected pp.xml format"
+      | null (qName q) || not isXml -> trace "--- it is not xml" $ Right GuessIn
+      | otherwise -> Left $ "--- unknown XML format: " ++ tagEnd q ""
+ _ -> trace "--- assume that it is not xml" $ Right GuessIn  -- assume that it is no xml content
 
 isDgXmlFile :: HetcatsOpts -> FilePath -> String -> Bool
-isDgXmlFile opts file content = guess file (intype opts) == DgXml
+isDgXmlFile opts file content = trace "--- isDgXmlFile" $ guess file (intype opts) == DgXml
         && guessXmlContent True content == Right DgXml
 
 readShATermFile :: ShATermLG a => LogicGraph -> FilePath -> IO (Result a)
-readShATermFile lg fp = do
+readShATermFile lg fp = trace ("--- readShATermFile: " ++ fp) $ do
     str <- readFile fp
     return $ fromShATermString lg str
 
@@ -170,8 +172,8 @@ loadAccessUri opts fn = do
   loadFromUri opts u
 
 downloadSource :: HetcatsOpts -> FilePath -> IO (Either String String)
-downloadSource opts fn =
-  if checkUri fn then loadAccessUri opts fn else do
+downloadSource opts fn = trace ("--- downloadSource: " ++ fn) $ 
+  if checkUri fn then trace "--- loadAccessUri" $ loadAccessUri opts fn else do
     b <- doesFileExist fn
     if b then catchIOException (Left $ "could not read file: " ++ fn)
         . fmap Right $ readEncFile (ioEncoding opts) fn
@@ -179,14 +181,14 @@ downloadSource opts fn =
 
 tryDownload :: HetcatsOpts -> [FilePath] -> FilePath
   -> IO (Either String (FilePath, String))
-tryDownload opts fnames fn = case fnames of
+tryDownload opts fnames fn = trace "--- tryDownload" $ case fnames of
   [] -> return $ Left $ "no input found for: " ++ fn
-  fname : fnames' -> do
-       let fname' = tryToStripPrefix "file://" fname
+  fname : fnames' -> trace ("\tfname = " ++ fname) $ do
+       let fname' = trace "--- running tryToStripPrefix" $ tryToStripPrefix "file://" fname
        mRes <- downloadSource opts fname'
        case mRes of
          Left err -> do
-           eith <- tryDownload opts fnames' fn
+           eith <- trace "--- TRYDOWNLOAD TWICE" $ tryDownload opts fnames' fn
            case eith of
              Left res | null fnames' ->
                return . Left $ err ++ "\n" ++ res
@@ -200,7 +202,7 @@ getContent opts = getExtContent opts (getExtensions opts)
 -- URIs must not have queries or fragments as possible extensions are appended
 getExtContent :: HetcatsOpts -> [String] -> FilePath
   -> IO (Either String (FilePath, String))
-getExtContent opts exts fp =
+getExtContent opts exts fp = trace ("--- getExtContent\n\tfile: " ++ fp) $
   let fn = tryToStripPrefix "file://" fp
       fs = getFileNames exts fn
       ffs = if checkUri fn || isAbsolute fn then fs else
@@ -212,7 +214,7 @@ inputs are hets options, optional argument for the file program,
 and the library or file name. -}
 getContentAndFileType :: HetcatsOpts -> FilePath
   -> IO (Either String (Maybe String, Maybe String, FilePath, String))
-getContentAndFileType opts fn = do
+getContentAndFileType opts fn = trace ("--- getContentAndFileType: file=" ++ fn) $ do
   eith <- getContent opts fn
   case eith of
     Left err -> return $ Left err
@@ -222,8 +224,7 @@ getContentAndFileType opts fn = do
       Result ds mr <- runResultT $ getMagicFileType (Just "--mime-type") f
       Result es mc <- runResultT $ getChecksum f
       showDiags opts (ds ++ es)
-      when isUri $ removeFile f
-      return $ Right (mr, mc, nFn, cont)
+      return $ Right (mr, mc, if isUri then f else nFn, cont)
 
 showFileType :: HetcatsOpts -> FilePath -> IO ()
 showFileType opts fn = do

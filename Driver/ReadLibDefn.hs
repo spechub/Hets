@@ -79,12 +79,12 @@ joinFileTypes ext magic = case (ext, magic) of
   _ -> ext -- ignore contradictions
 
 findFiletype :: String -> InType
-findFiletype s =
+findFiletype s = trace ("--- findFiletype\n\ts = " ++ s) $
   maybe GuessIn snd $ find (\ (r, _) -> isInfixOf ('/' : r) s) mimeTypeMap
 
 guessInput :: MonadIO m => HetcatsOpts -> Maybe String -> FilePath -> String
   -> m InType
-guessInput opts mr file input =
+guessInput opts mr file input = trace "--- guessInput" $ 
   let fty1 = guess file (intype opts)
       fty2 = maybe GuessIn findFiletype mr
       fty = joinFileTypes fty1 fty2
@@ -98,31 +98,31 @@ guessInput opts mr file input =
 
 readLibDefn :: LogicGraph -> HetcatsOpts -> Maybe String
   -> FilePath -> FilePath -> String -> ResultT IO [LIB_DEFN]
-readLibDefn lgraph opts mr file fileForPos input =
-    if null input then fail ("empty input file: " ++ file) else
-    case intype opts of
+readLibDefn lgraph opts mr file fileForPos input = trace "--- readlibDefn" $
+    if trace "--- check input is EMPTY" $ (null input) then fail ("empty input file: " ++ file) else
+    trace "--- input is not empty (in readLibDefn)" $ case intype opts of
     ATermIn _ -> return [from_sml_ATermString input]
     FreeCADIn ->
       liftIO $ fmap (: []) . readFreeCADLib file $ fileToLibName opts file
     _ -> do
---      ty <- guessInput opts mr file input
---      case ty of
---       HtmlIn -> fail "unexpected html input"
---       CommonLogicIn _ -> parseCL_CLIF file opts
--- #ifdef RDFLOGIC
---      -- RDFIn -> liftIO $ parseRDF file
--- #endif
---       Xmi -> return [parseXmi file input]
---       Qvt -> liftIO $ fmap (: []) $ parseQvt file input
---       TPTPIn -> parseTPTP opts file input
--- #ifndef NOOWLLOGIC
---       OWLIn _ -> parseOWLAsLibDefn (isStructured opts) file
--- #endif
---       _ -> case runParser (library lgraph { dolOnly = False })
---            (emptyAnnos ()) fileForPos input of
---          Left err -> fail (showErr err)
---          Right ast -> return [ast]
+     ty <- guessInput opts mr file input
+     case ty of
+      HtmlIn -> fail "unexpected html input"
+      CommonLogicIn _ -> parseCL_CLIF file opts
+#ifdef RDFLOGIC
+     RDFIn -> liftIO $ parseRDF file
+#endif
+      Xmi -> return [parseXmi file input]
+      Qvt -> liftIO $ fmap (: []) $ parseQvt file input
+      TPTPIn -> parseTPTP opts file input
+#ifndef NOOWLLOGIC
+      OWLIn _ -> parseOWLAsLibDefn (isStructured opts) file
+#endif
+      _ -> case runParser (library lgraph { dolOnly = False })
+           (emptyAnnos ()) fileForPos input of
+         Left err -> fail (showErr err)
+         Right ast -> return [ast]
 
-      if mr == (Just "text/html")
-        then fail "unexpected html input"
-        else parseOWLAsLibDefn (isStructured opts) file
+      -- if mr == (Just "text/html")
+      --   then fail "unexpected html input"
+      --   else parseOWLAsLibDefn (isStructured opts) file

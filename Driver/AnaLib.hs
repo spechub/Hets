@@ -41,6 +41,8 @@ import Data.List (isSuffixOf)
 import Control.Monad
 import Data.Maybe
 
+import Debug.Trace
+
 anaLibReadPrfs :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
 anaLibReadPrfs opts file = do
     m <- anaLib opts
@@ -56,10 +58,10 @@ anaLibReadPrfs opts file = do
 
 -- | lookup an env or read and analyze a file
 anaLib :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
-anaLib opts origName = do
+anaLib opts origName = trace "--- anaLib" $ do
   let fname = useCatalogURL opts origName
       isPrfFile = isSuffixOf prfSuffix
-  ep <- getContent opts {intype = GuessIn}
+  ep <- trace "--- running getContent (in Driver.AnaLib.anaLib)" $ getContent opts {intype = GuessIn}
     $ if isPrfFile fname then rmSuffix fname else fname
   case ep of
     Left _ -> anaLibExt opts fname emptyLibEnv emptyDG
@@ -72,11 +74,12 @@ anaLib opts origName = do
       | intype opts == DgXml -> readDGXml opts file
       | otherwise -> anaLibExt opts (keepOrigClifName opts origName file)
             emptyLibEnv emptyDG
+  -- anaLibExt opts (keepOrigClifName opts origName (if isPrfFile fname then rmSuffix fname else fname)) emptyLibEnv emptyDG
 
 -- | read a file and extended the current library environment
 anaLibExt :: HetcatsOpts -> FilePath -> LibEnv -> DGraph
   -> IO (Maybe (LibName, LibEnv))
-anaLibExt opts file libEnv initDG = do
+anaLibExt opts file libEnv initDG = trace "--- anaLibExt" $ do
     Result ds res <- runResultT $ anaLibFileOrGetEnv logicGraph opts
       Set.empty libEnv initDG Nothing file
     showDiags opts ds
@@ -92,7 +95,7 @@ anaLibExt opts file libEnv initDG = do
             showDiags opts $ diags envRes
             p <- if null xd then return (ln, nEnv) else do
               putIfVerbose opts 2 $ "Reading " ++ xd
-              xs <- readFile xd
+              xs <- trace ("--- Driver.Analib.anaLibExt 96, read file: " ++ xd) $ readFile xd
               Result es mdg <- runResultT $ dgXUpdate opts xs nEnv ln
                 (lookupDGraph ln nEnv)
               showDiags opts es

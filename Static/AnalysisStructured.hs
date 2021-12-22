@@ -80,6 +80,8 @@ import Common.Lib.Graph
 
 import Static.ComputeTheory
 
+import Debug.Trace
+
 -- overrides CUIRIE expansion for Download_items
 type ExpOverrides = Map.Map IRI FilePath
 
@@ -302,36 +304,36 @@ anaSpecAux :: Conservativity -> Bool -> Bool
   -> MaybeNode -> NodeName -> HetcatsOpts -> ExpOverrides -> SPEC -> Range
   -> Result (SPEC, NodeSig, DGraph)
 anaSpecAux conser addSyms optNodes lg 
-           libEnv ln dg nsig name opts eo sp rg = case sp of
-  Basic_spec (G_basic_spec lid bspec) pos -> adjustPos pos $ do
+           libEnv ln dg nsig name opts eo sp rg = trace "--- anaSpecAux" $ case sp of
+  Basic_spec (G_basic_spec lid bspec) pos -> trace "\tBasic_spec" $ adjustPos pos $ do
        let curLogic = Logic lid
            curSL = currentSublogic lg
            bsSL = G_sublogics lid $ minSublogic bspec
        when (maybe False (`isProperSublogic` bsSL) curSL)
          $ fail $ "sublogic expected: " ++ maybe "" show curSL
                ++ " found: " ++ show bsSL
-       (nsig', dg0) <- coerceMaybeNode lg dg nsig name curLogic
+       (nsig', dg0) <- trace "--- running coerceMaybeNode" $ coerceMaybeNode lg dg nsig name curLogic
        G_sign lid' sigma' _ <- return $ case nsig' of
            EmptyNode cl -> emptyG_sign cl
            JustNode ns -> getSig ns
        ExtSign sig sys <-
-           coerceSign lid' lid "Analysis of basic spec" sigma'
+           trace "--- running coerceSign" $ coerceSign lid' lid "Analysis of basic spec" sigma'
        (bspec', ExtSign sigma_complete sysd, ax) <-
           if isStructured opts
            then return (bspec, mkExtSign $ empty_signature lid, [])
-           else
+           else trace "--- running extBasicAnalysis" $
              let res@(Result ds mb) = extBasicAnalysis lid (getName name)
                    ln bspec sig $ globalAnnos dg0
              in case mb of
                Nothing | null ds ->
                  fail "basic analysis failed without giving a reason"
                _ -> res
-       diffSig <- case signatureDiff lid sigma_complete sig of
+       diffSig <- trace "--- running signatureDiff" $ case signatureDiff lid sigma_complete sig of
          Result _ (Just ds) -> return ds
          _ -> warning sigma_complete
            "signature difference could not be computed using full one" pos
        let gsysd = Set.map (G_symbol lid) sysd
-           (ns, dg') = insGTheory dg0 (setSrcRange rg name)
+           (ns, dg') = trace "--- running insGTheory" $ insGTheory dg0 (setSrcRange rg name)
              (DGBasicSpec (Just $ G_basic_spec lid bspec')
              (G_sign lid (mkExtSign diffSig) startSigId) gsysd)
                $ G_theory lid (currentSyntax lg) (ExtSign sigma_complete
@@ -339,9 +341,9 @@ anaSpecAux conser addSyms optNodes lg
                      (if addSyms then Set.union sys sysd else sysd)
                $ symset_of lid sigma_complete)
              startSigId (toThSens ax) startThId
-       dg'' <- createConsLink DefLink conser lg dg' nsig' ns DGLinkExtension
-       return (Basic_spec (G_basic_spec lid bspec') pos, ns, dg'')
-  EmptySpec pos -> case nsig of
+       dg'' <- trace "--- running createConsLink" $ createConsLink DefLink conser lg dg' nsig' ns DGLinkExtension
+       trace "--- FINISH Basic_spec" $ return (Basic_spec (G_basic_spec lid bspec') pos, ns, dg'')
+  EmptySpec pos -> trace "\tEmptySpec" $ case nsig of
       EmptyNode _ -> do
         warning () "empty spec" pos
         let (ns, dg') = insGSig dg (setSrcRange rg name) DGEmpty
@@ -351,7 +353,7 @@ anaSpecAux conser addSyms optNodes lg
            Then this duplicate dummy node could be avoided.
            Also empty unions could be treated then -}
       JustNode ns -> return (sp, ns , dg)
-  Translation asp ren ->
+  Translation asp ren -> trace "\tTranslation" $
    do let sp1 = item asp
           rPos = getRange ren
       (sp1', ns'@(NodeSig n' gsigma), dg') <- 
@@ -368,14 +370,14 @@ anaSpecAux conser addSyms optNodes lg
            -- ??? too simplistic for non-comorphism inter-logic translations
          return (ns, insLink dg'' mor globalDef SeeTarget n' node)
       return (Translation (replaceAnnoted sp1' asp) ren, fs, dgf)
-  Extraction asp extr -> do
+  Extraction asp extr -> trace "\tExtraction" $ do
     let sp0 = item asp
         rname = extName "Extension" name
     (sp', nsig', dg0) <- anaSpec addSyms optNodes lg libEnv 
                                  ln dg nsig rname opts eo sp0 rg
     (ns', dg1) <- anaExtraction lg libEnv ln dg0 nsig' name rg extr
     return (Extraction (replaceAnnoted sp' asp) extr, ns', dg1)
-  Reduction asp restr ->
+  Reduction asp restr -> trace "\tReduction" $
    do let sp1 = item asp
           rname = extName "Restriction" name
       (sp1', ns0, dg0) <- anaSpec addSyms optNodes lg libEnv 
@@ -409,7 +411,7 @@ anaSpecAux conser addSyms optNodes lg
         _ -> hint p2 ("nothing renamed by:\n" ++ showDoc restr "")
             $ getRange restr
       return (Reduction (replaceAnnoted sp1' asp) restr, fs, dgf)
-  Filtering asp filtering -> do
+  Filtering asp filtering -> trace "\tFiltering" $ do
        let sp1 = item asp
            rname = extName "Filtering" name
        (sp', nsig', dg') <- anaSpec addSyms optNodes lg libEnv ln dg 
@@ -417,19 +419,19 @@ anaSpecAux conser addSyms optNodes lg
        (nf, dgF) <- anaFiltering lg libEnv ln dg' nsig' name filtering
        return (Filtering (replaceAnnoted sp' asp) filtering, nf, dgF)
        -- error "analysis of filterings not yet implemented"
-  Minimization asp (Mini kw cm cv poss) -> do
+  Minimization asp (Mini kw cm cv poss) -> trace "\tMinimization" $ do
       (nasp, nsig', dg') <- anaFreeOrCofreeSpec addSyms lg libEnv opts ln dg nsig
         name Minimize eo asp poss
       return (Minimization nasp (Mini kw cm cv poss), nsig', dg')
-  Union asps pos -> do
+  Union asps pos -> trace "\tUnion" $ do
     (newAsps, _, ns, dg') <- adjustPos pos $ anaUnion addSyms lg libEnv ln dg nsig
       name opts eo asps rg
     return (Union newAsps pos, ns, dg')
-  Intersection asps pos -> do
+  Intersection asps pos -> trace "\tIntersection" $ do
     (newAsps, _, ns, dg') <- adjustPos pos $ anaIntersect addSyms lg libEnv ln dg nsig
       name opts eo asps rg
     return (Intersection newAsps pos, ns, dg')
-  Extension asps pos -> do
+  Extension asps pos -> trace "\tExtension" $ do
    let namedSps = map (\ (asp, n) ->
          let nn = incBy n (extName "Extension" name) in
          if n < length asps then (nn, asp)
@@ -441,19 +443,19 @@ anaSpecAux conser addSyms optNodes lg
        JustNode nsig1 -> return (Extension (zipWith replaceAnnoted
                           (reverse sps') asps)
                                  pos, nsig1, dg1)
-  Free_spec asp poss -> do
+  Free_spec asp poss -> trace "\tFree_spec" $ do
       (nasp, nsig', dg') <- anaFreeOrCofreeSpec addSyms lg libEnv opts ln dg nsig
         name Free eo asp poss
       return (Free_spec nasp poss, nsig', dg')
-  Cofree_spec asp poss -> do
+  Cofree_spec asp poss -> trace "\tCofree_spec" $ do
       (nasp, nsig', dg') <- anaFreeOrCofreeSpec addSyms lg libEnv opts ln dg nsig
         name Cofree eo asp poss
       return (Cofree_spec nasp poss, nsig', dg')
-  Minimize_spec asp poss -> do
+  Minimize_spec asp poss -> trace "\tMinimize_spec" $ do
       (nasp, nsig', dg') <- anaFreeOrCofreeSpec addSyms lg libEnv opts ln dg nsig
           name Minimize eo asp poss
       return (Minimize_spec nasp poss, nsig', dg')
-  Local_spec asp asp' poss -> adjustPos poss $ do
+  Local_spec asp asp' poss -> trace "\tLocal_spec" $ adjustPos poss $ do
       let sp1 = item asp
           pos1 = getRange sp1
           sp1' = item asp'
@@ -493,7 +495,7 @@ anaSpecAux conser addSyms optNodes lg
                          poss, ns,
               insLink dg2 (gEmbed2 gsigma3 $ mkG_morphism lid2 mor3)
                   HidingDefLink SeeTarget n'' node)
-  Closed_spec asp pos -> adjustPos pos $ do
+  Closed_spec asp pos -> trace "\tClosed_spec" $ adjustPos pos $ do
       let sp1 = item asp
           pos1 = getRange sp1
           l = getLogic nsig
@@ -506,7 +508,7 @@ anaSpecAux conser addSyms optNodes lg
       let dg3 = insLink dg2 incl2 globalDef SeeTarget n' node
       dg4 <- createConsLink DefLink conser lg dg3 nsig ns DGLinkClosedLenv
       return (Closed_spec (replaceAnnoted sp' asp) pos, ns, dg4)
-  Qualified_spec lognm asp pos -> adjustPos pos $ do
+  Qualified_spec lognm asp pos -> trace "\tQualified_spec" $ adjustPos pos $ do
       let newLG = setLogicName lognm lg
       l <- lookupCurrentLogic "Qualified_spec" newLG
       let newNSig = case nsig of
@@ -518,12 +520,12 @@ anaSpecAux conser addSyms optNodes lg
         (item asp) pos
       (ns, dg2) <- coerceNode lg dg' ns' qname l
       return (Qualified_spec lognm asp { item = sp' } pos, ns, dg2)
-  Group asp pos -> do
+  Group asp pos -> trace "\tGroup" $ do
       (sp', nsig', dg') <-
           anaSpecTop conser addSyms lg libEnv ln 
                      dg nsig name opts eo (item asp) rg
       return (Group (replaceAnnoted sp' asp) pos, nsig', dg')
-  Spec_inst spname' afitargs mImp pos0 -> do
+  Spec_inst spname' afitargs mImp pos0 -> trace "\tSpec_inst" $ do
    spname <- expCurieR (globalAnnos dg) eo spname'
    let pos = if null afitargs then iriPos spname else pos0
    adjustPos pos $ case lookupGlobalEnvDG spname dg of
@@ -574,7 +576,7 @@ anaSpecAux conser addSyms optNodes lg
         let (ns, dg') = insGSig dg name DGEmpty (getMaybeSig nsig)
         return (sp, ns, dg')
       JustNode ns -> return (sp, ns , dg)
-    _ -> notFoundError "structured spec" spname
+    _ -> trace "\tnotFoundError" $ notFoundError "structured spec" spname
 
   -- analyse "data SPEC1 SPEC2"
   Data lD@(Logic lidD) lP asp1 asp2 pos -> adjustPos pos $ do
@@ -754,7 +756,7 @@ anaExtraction lg libEnv ln dg nsig name rg (ExtractOrRemove b iris _) = if not b
 anaUnion :: Bool -> LogicGraph -> LibEnv -> LibName -> DGraph -> MaybeNode -> NodeName
   -> HetcatsOpts -> ExpOverrides -> [Annoted SPEC] -> Range
   -> Result ([Annoted SPEC], [NodeSig], NodeSig, DGraph)
-anaUnion addSyms lg libEnv ln dg nsig name opts eo asps rg = case asps of
+anaUnion addSyms lg libEnv ln dg nsig name opts eo asps rg = trace "--- anaUnion" $ case asps of
   [] -> fail "empty union"
   _ -> do
       let sps = map item asps

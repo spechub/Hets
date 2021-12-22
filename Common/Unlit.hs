@@ -14,13 +14,15 @@ module Common.Unlit (unlit) where
 
 import Data.List
 
+import Debug.Trace
+
 unlit :: String -> String
-unlit s = let cs = getCode True $ lines s in
+unlit s = trace "--- unlit" $ let cs = getCode True $ lines s in
   if all null cs then "" else unlines cs
 
 -- keep code positions intact
 getCode :: Bool -> [String] -> [String]
-getCode d l = case l of
+getCode d l = trace "--- getCode" $ case l of
   [] -> []
   s : r -> if not d && isPrefixOf "\\end{code}" s
            || d && isPrefixOf "\\begin{code}" s

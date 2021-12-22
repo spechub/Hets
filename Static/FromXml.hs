@@ -44,9 +44,11 @@ import Logic.Prover (noSens)
 
 import Text.XML.Light (Element)
 
+import Debug.Trace
+
 -- | top-level function
 readDGXml :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
-readDGXml opts path = do
+readDGXml opts path = trace "--- readDGXml" $ do
     Result ds res <- runResultT $ readDGXmlR opts path Map.empty
     showDiags opts ds
     return res
