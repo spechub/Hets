@@ -68,7 +68,8 @@ anaLib opts origName = do
             putIfVerbose opts 0 $ "a matching source file for proof history '"
                              ++ file ++ "' not found."
             return Nothing
-      | isDgXmlFile opts file content -> readDGXml opts file
+      -- | isDgXmlFile opts file content -> readDGXml opts file
+      | intype opts == DgXml -> readDGXml opts file
       | otherwise -> anaLibExt opts (keepOrigClifName opts origName file)
             emptyLibEnv emptyDG
 
