@@ -805,7 +805,7 @@ archive: $(USER_GUIDE)
 	rm -rf HolLight/OcamlTools/*/*dmtcp OWL2/java/lib/native \
 		MMT/hets-mmt-standalone.jar ; \
 	rm -rf GMP mini .gitignore utils/{nightly,debian,macports,ubuntu} ; \
-	zip -d OWL2/java/lib/owlapi-osgidistribution-3.5.2.jar \
+	zip -d OWL2/java/lib/owlapi-distribution-4.5.20.jar \
 		lib/guava-18.0.jar lib/trove4j-3.0.3.jar ; \
 	printf 'Done.\n' ; \
 	cd .. ; $(TAR) cJf $(ARC_BNAME).tar.xz $(ARC_BNAME) || exit 4 ; \
@@ -865,7 +865,7 @@ install-owl-tools: jars
 	rm -rf $(BASEDIR)/lib/native/*/*.dll lib \
 		$(BASEDIR)/lib/`basename $$X` ; \
 	jar cMf $(BASEDIR)/lib/`basename $$X` *
-	-zip -d $(BASEDIR)/lib/owlapi-osgidistribution-3.5.2.jar \
+	-zip -d $(BASEDIR)/lib/owlapi-distribution-4.5.20.jar \
 		lib/guava-18.0.jar lib/trove4j-3.0.3.jar
 	@printf 'Sources:\n\t%s\n\t%s\n\t%s\n' \
 		'https://bitbucket.org/trove4j/trove/downloads'\
