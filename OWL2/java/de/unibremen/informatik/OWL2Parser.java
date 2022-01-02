@@ -18,8 +18,8 @@ import java.util.Set;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
-import org.coode.owlapi.owlxml.renderer.OWLXMLRenderer;
-import org.coode.owlapi.rdf.rdfxml.RDFXMLRenderer;
+import org.semanticweb.owlapi.owlxml.renderer.OWLXMLRenderer;
+import org.semanticweb.owlapi.rdf.rdfxml.renderer.RDFXMLRenderer;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.io.OWLRendererException;
 import org.semanticweb.owlapi.io.StreamDocumentSource;
@@ -476,7 +476,7 @@ public class OWL2Parser {
 				append("<Loaded name=\"")
 					.append(manager.getOntologyDocumentIRI(onto))
 					.append("\" ontiri=\"")
-					.append(onto.getOntologyID().getOntologyIRI())
+					.append(onto.getOntologyID().getOntologyIRI().get())
 					.append("\"/>\n");
 			} catch (Exception ex) {
 				System.err.println("Error by XMLParser!");
