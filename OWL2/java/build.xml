@@ -8,7 +8,7 @@
     <property name="owlapi-jars" value="lib/owlapi-distribution-4.5.20.jar
       lib/slf4j-api-1.7.25.jar lib/javax.inject-1.jar lib/caffeine-3.0.4.jar
       lib/commons-io-2.11.0.jar lib/hppcrt-0.7.5.jar lib/slf4j-log4j12-1.7.25.jar
-      lib/log4j-1.2-api-2.12.1.jar lib/log4j-api-2.12.1.jar lib/log4j-core-2.12.1.fact-jar
+      lib/log4j-1.2-api-2.12.1.jar lib/log4j-api-2.12.1.jar lib/log4j-core-2.12.1.jar
       lib/rdf4j-rio-api-3.7.4.jar lib/rdf4j-util-3.7.4.jar lib/rdf4j-model-3.7.4.jar
       lib/rdf4j-model-api-3.7.4.jar lib/xz-1.9.jar
       lib/guava-18.0.jar lib/trove4j-3.0.3.jar"/>
