@@ -61,20 +61,20 @@ anaLib :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
 anaLib opts origName = trace "--- anaLib" $ do
   let fname = useCatalogURL opts origName
       isPrfFile = isSuffixOf prfSuffix
-  ep <- trace "--- running getContent (in Driver.AnaLib.anaLib)" $ getContent opts {intype = GuessIn}
-    $ if isPrfFile fname then rmSuffix fname else fname
-  case ep of
-    Left _ -> anaLibExt opts fname emptyLibEnv emptyDG
-    Right (file, content)
-      | isPrfFile file -> do
-            putIfVerbose opts 0 $ "a matching source file for proof history '"
-                             ++ file ++ "' not found."
-            return Nothing
-      -- | isDgXmlFile opts file content -> readDGXml opts file
-      | intype opts == DgXml -> readDGXml opts file
-      | otherwise -> anaLibExt opts (keepOrigClifName opts origName file)
-            emptyLibEnv emptyDG
-  -- anaLibExt opts (keepOrigClifName opts origName (if isPrfFile fname then rmSuffix fname else fname)) emptyLibEnv emptyDG
+  -- ep <- trace "--- running getContent (in Driver.AnaLib.anaLib)" $ getContent opts {intype = GuessIn}
+  --   $ if isPrfFile fname then rmSuffix fname else fname
+  -- case ep of
+  --   Left _ -> anaLibExt opts fname emptyLibEnv emptyDG
+  --   Right (file, content)
+  --     | isPrfFile file -> do
+  --           putIfVerbose opts 0 $ "a matching source file for proof history '"
+  --                            ++ file ++ "' not found."
+  --           return Nothing
+  --     -- | isDgXmlFile opts file content -> readDGXml opts file
+  --     | intype opts == DgXml -> readDGXml opts file
+  --     | otherwise -> anaLibExt opts (keepOrigClifName opts origName file)
+  --           emptyLibEnv emptyDG
+  anaLibExt opts (keepOrigClifName opts origName (if isPrfFile fname then rmSuffix fname else fname)) emptyLibEnv emptyDG
 
 -- | read a file and extended the current library environment
 anaLibExt :: HetcatsOpts -> FilePath -> LibEnv -> DGraph

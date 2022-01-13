@@ -93,42 +93,54 @@ anaSource :: Maybe LibName -- ^ suggested library name
   -> LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph
   -> FilePath -> ResultT IO (LibName, LibEnv)
 anaSource mln lg opts topLns libenv initDG origName = trace "--- anaSource" $ ResultT $ do
+  dir <- getCurrentDirectory
   let mName = useCatalogURL opts origName
       fname = tryToStripPrefix "file://" mName
       syn = case defSyntax opts of
         "" -> Nothing
         s -> Just $ simpleIdToIRI $ mkSimpleId s
       lgraph = setSyntax syn $ setCurLogic (defLogic opts) lg
-  fname' <- getContentAndFileType opts fname
-  -- fname' <- return $ Right (Just "text/xml", Nothing, "./OWL2/tests/bioportal/MCCL.owl", "")
-  dir <- getCurrentDirectory
-  case fname' of
-    Left err -> return $ fail err
-    Right (mr, _, file, inputLit) -> trace ("--- got content (in anaSource):\n\tmr: " ++ show mr ++ "\tfile: " ++ file) $
-        if any (`isSuffixOf` file) [envSuffix, prfSuffix] then
-          return . fail $ "no matching source file for '" ++ fname ++ "' found."
-        else let
-        input = (if unlit opts then Unlit.unlit else id) inputLit
-        libStr = if isAbsolute fname
-              then convertFileToLibStr fname
-              else dropExtensions fname
-        nLn = case mln of
+
+      libStr = if isAbsolute fname
+                  then convertFileToLibStr fname
+                  else dropExtensions fname
+      nLn = case mln of
               Nothing | useLibPos opts && not (checkUri fname) ->
                 Just $ emptyLibName libStr
               _ -> mln
-        fn2 = keepOrigClifName opts origName file
-        fnAbs = if isAbsolute fn2 then fn2 else dir </> fn2
-        url = if checkUri fn2 then fn2 else "file://" ++ fnAbs
-        in
-        if runMMT opts then mmtRes fname else
-            if takeExtension file /= ('.' : show TwelfIn)
-            then runResultT $
-                 anaString nLn lgraph opts topLns libenv initDG input url mr
-            else do
-              res <- anaTwelfFile opts file
-              return $ case res of
-                Nothing -> fail $ "failed to analyse file: " ++ file
-                Just (lname, lenv) -> return (lname, Map.union lenv libenv)
+      fn2 = keepOrigClifName opts origName fname
+      fnAbs = if isAbsolute fn2 then fn2 else dir </> fn2
+      url = if checkUri fn2 then fn2 else "file://" ++ fnAbs
+  runResultT $ anaString nLn lgraph opts topLns libenv initDG  "" url Nothing 
+  -- fname' <- getContentAndFileType opts fname
+  -- dir <- getCurrentDirectory
+  -- case fname' of
+  --   Left err -> return $ fail err
+  --   Right (mr, _, file, inputLit) -> trace ("--- got content (in anaSource):\n\tmr: " ++ show mr ++ "\tfile: " ++ file) $
+  --       if any (`isSuffixOf` file) [envSuffix, prfSuffix] then
+  --         return . fail $ "no matching source file for '" ++ fname ++ "' found."
+  --       else let
+  --       input = (if unlit opts then Unlit.unlit else id) inputLit
+  --       libStr = if isAbsolute fname
+  --             then convertFileToLibStr fname
+  --             else dropExtensions fname
+  --       nLn = case mln of
+  --             Nothing | useLibPos opts && not (checkUri fname) ->
+  --               Just $ emptyLibName libStr
+  --             _ -> mln
+  --       fn2 = keepOrigClifName opts origName file
+  --       fnAbs = if isAbsolute fn2 then fn2 else dir </> fn2
+  --       url = if checkUri fn2 then fn2 else "file://" ++ fnAbs
+  --       in
+  --       if runMMT opts then mmtRes fname else
+  --           if takeExtension file /= ('.' : show TwelfIn)
+  --           then runResultT $
+  --                anaString nLn lgraph opts topLns libenv initDG input url mr
+  --           else do
+  --             res <- anaTwelfFile opts file
+  --             return $ case res of
+  --               Nothing -> fail $ "failed to analyse file: " ++ file
+  --               Just (lname, lenv) -> return (lname, Map.union lenv libenv)
 
 -- | parsing of input string (content of file)
 anaString :: Maybe LibName -- ^ suggested library name
