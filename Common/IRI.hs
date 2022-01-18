@@ -1139,8 +1139,17 @@ difSegsFrom sabs base = difSegsFrom ("../" ++ sabs) (snd $ nextSegment base)
 {- | @expandIRI pm iri@ returns the expanded @iri@ with a declaration from @pm@.
 If no declaration is found, return @iri@ unchanged. -}
 expandIRI :: Map String IRI -> IRI -> IRI
-expandIRI pm iri
-    | isAbbrev iri = fromMaybe iri $ do
+expandIRI pm iri = fromMaybe iri $ expandCurie pm iri
+
+expandIRI' :: Map String String -> IRI -> IRI
+expandIRI' pm iri = fromMaybe iri $ expandCurie' pm iri
+
+{- |Expands a CURIE to an IRI. @Nothing@ iff there is no IRI @i@ assigned
+to the prefix of @c@ or the concatenation of @i@ and @iriPath c@
+is not a valid IRI. -}
+expandCurie :: Map String IRI -> IRI -> Maybe IRI
+expandCurie pm iri
+    | isAbbrev iri = do
         def <- Map.lookup (prefixName iri) pm
         let defS = iriToStringFull id (setAngles False def) ""
         expanded <- parseIRI $ defS ++ iFragment iri
@@ -1148,11 +1157,11 @@ expandIRI pm iri
             { iFragment = iFragment iri
             , prefixName = prefixName iri
             , isAbbrev = True }
-    | otherwise = iri
+    | otherwise = Just iri
 
-expandIRI' :: Map String String -> IRI -> IRI
-expandIRI' pm iri
-    | isAbbrev iri = fromMaybe iri $ do
+expandCurie' :: Map String String -> IRI -> Maybe IRI
+expandCurie' pm iri
+    | isAbbrev iri = do
         def <- Map.lookup (prefixName iri) pm
         -- remove surrounding angle brackets if needed
         let def' =
@@ -1165,25 +1174,7 @@ expandIRI' pm iri
             { iFragment = iFragment iri
             , prefixName = prefixName iri
             , isAbbrev = True }
-    | otherwise = iri
-
-{- |Expands a CURIE to an IRI. @Nothing@ iff there is no IRI @i@ assigned
-to the prefix of @c@ or the concatenation of @i@ and @iriPath c@
-is not a valid IRI. -}
-expandCurie :: Map String IRI -> IRI -> Maybe IRI
-expandCurie prefixMap c =
-  if hasFullIRI c then Just c else
-  case Map.lookup (filter (/= ':') $ prefixName c) prefixMap of
-    Nothing -> Nothing
-    Just i -> case mergeCurie c i of
-      Nothing -> Nothing
-      Just j -> Just $ if null $ iriScheme i then j { iriPos = iriPos c }
-        else j
-        { prefixName = prefixName c
-        , iriPath = iriPath c
-        , iriQuery = iriQuery c
-        , iriFragment = iriFragment c
-        , iriPos = iriPos c }
+    | otherwise = Just iri
 
 setAngles :: Bool -> IRI -> IRI
 setAngles b i = i { hasAngles = b }
