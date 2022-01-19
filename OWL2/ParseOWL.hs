@@ -58,7 +58,6 @@ parseOWLAux :: Bool         -- ^ Sets Option.quick
          -> ResultT IO (ExitCode, String, String)
 parseOWLAux quick fn args = do
     let jar = "OWL2Parser.jar"
-    hetsRoot <- lift getCurrentDirectory
     (hasJar, toolPath) <- lift $ check4HetsOWLjar jar
     if hasJar
       then lift $ executeProcess "java" (["-Dlog4j2.configurationFile=" ++ (toolPath </> "java/log4j.xml"), "-jar", toolPath </> jar]
