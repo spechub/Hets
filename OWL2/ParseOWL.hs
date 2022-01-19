@@ -61,7 +61,7 @@ parseOWLAux quick fn args = do
     hetsRoot <- lift getCurrentDirectory
     (hasJar, toolPath) <- lift $ check4HetsOWLjar jar
     if hasJar
-      then lift $ executeProcess "java" (["-Dlog4j2.configurationFile=" ++ hetsRoot ++ "/OWL2/java/log4j.xml", "-jar", toolPath </> jar]
+      then lift $ executeProcess "java" (["-Dlog4j2.configurationFile=" ++ (toolPath </> "java/log4j.xml"), "-jar", toolPath </> jar]
         ++ args ++ [fn] ++ ["-qk" | quick]) ""
       else fail $ jar
         ++ " not found, check your environment variable: " ++ hetsOWLenv
