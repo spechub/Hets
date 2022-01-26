@@ -210,15 +210,17 @@ instance Eq IRI where
 
 -- compares full/expanded IRI (if expanded) or abbreviated part if not expanded
 instance Ord IRI where
-  compare i k = case (hasFullIRI i, hasFullIRI k) of
-    (False, False) -> comparing
-      (\ j -> (prefixName j, iriPath j, iriQuery j, iriFragment j))
-      i k
-    (True, True) -> comparing (\j -> (iriScheme j, iriAuthority j, iriPath j,
-       iriQuery j, iriFragment j)) i k
+  compare i k = case (isAbbrev i, isAbbrev k) of
+    (False, False) -> comparing (\ j -> 
+      ( iriScheme j
+      , iriAuthority j
+      , iriPath j
+      , iriQuery j
+      , iriFragment j)) i k
+    (True, True) -> comparing (\j -> (prefixName j, iFragment j)) i k
     _ -> comparing (\ j ->
       (prefixName j, iriScheme j, iriAuthority j, iriPath j,
-       iriQuery j, iriFragment j)) i k
+       iriQuery j, iriFragment j, iFragment j)) i k
 
 -- |converts IRI to String of expanded form. if available. Also showing Auth
 iriToStringUnsecure :: IRI -> String
@@ -234,7 +236,7 @@ instance GetRange IRI where
 
 -- | Converts a Simple_ID to an IRI
 simpleIdToIRI :: SIMPLE_ID -> IRI
-simpleIdToIRI sid = nullIRI { iriPath = simpleIdToId sid
+simpleIdToIRI sid = nullIRI { iFragment = show $ simpleIdToId sid
                             , iriPos = tokPos sid
                             , isAbbrev = True
                             }
@@ -309,9 +311,7 @@ mkAbbrevIRI pref frag = nullIRI {prefixName= pref, iFragment = frag, isAbbrev = 
 
 
 idToIRI :: Id -> IRI
-idToIRI i =  nullIRI { iriScheme = ""
-                     , iriAuthority = Nothing
-                     , iriPath = i
+idToIRI i =  nullIRI { iFragment = show i
                      , isAbbrev = True
                      }
 
@@ -405,7 +405,7 @@ compoundCurie :: IRIParser st IRI
 compoundCurie = do
       i <- curie
       (c, p) <- option ([], nullRange) (comps ([], []))
-      return i { iriPath = addComponents (iriPath i) (c,p),
+      return i { iFragment = show $ addComponents (stringToId $ iFragment i) (c,p),
                  isBlankNode = prefixName i == "_" }
 
 -- | Parses a CURIE according to <http://www.w3.org/TR/rdfa-core/#s_curies> and
@@ -421,7 +421,7 @@ curie = iriWithPos $ do
         return $ n -- ++ c Don't add the colon to the prefix!
       )
     i <- referenceAux False
-    return i { prefixName = pn, iFragment = show i }
+    return nullIRI { prefixName = pn, iFragment = iriToString id i $ [], isAbbrev = True }
 
 reference :: IRIParser st IRI
 reference = referenceAux True
@@ -1191,8 +1191,11 @@ deleteQuery :: IRI -> IRI
 deleteQuery i = i { iriQuery = "" }
 
 addSuffixToIRI :: String -> IRI -> IRI
-addSuffixToIRI s i = if not $ null $ iriQuery i 
-                   then i{iriQuery = iriQuery i ++ s}
+addSuffixToIRI s i =
+    if isAbbrev i then
+      i {iFragment = iFragment i ++ s}
+    else if not $ null $ iriQuery i then
+      i{iriQuery = iriQuery i ++ s}
                   else  
                         i{iriPath  = appendId (iriPath i) (stringToId s)}
 
