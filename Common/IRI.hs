@@ -875,7 +875,8 @@ urnToString i = (("urn:" ++ urnNID i ++ ":" ++ urnNSS i ++ iriQuery i ++ iriFrag
 
 iriToStringShort :: (String -> String) -> IRI -> ShowS
 iriToStringShort iuserinfomap i
-  | hasFullIRI i && not (isAbbrev i) = iriToStringFull iuserinfomap i
+  | isAbbrev i = iriToStringAbbrev i
+  | hasFullIRI i = iriToStringFull iuserinfomap i
   | not $ null $ iriQuery i = tail . (iriQuery i ++)
   | otherwise = iriToStringAbbrev i
 
