@@ -53,8 +53,6 @@ import Driver.Version
 
 import System.FilePath
 
-import Debug.Trace
-
 -- | Compute the prefix for files to be written out
 getFilePrefix :: HetcatsOpts -> FilePath -> (FilePath, FilePath)
 getFilePrefix opts = getFilePrefixGeneric (envSuffix : downloadExtensions)
@@ -75,7 +73,7 @@ getFilePrefixGeneric suffs odir' file =
 -}
 writeLibDefn :: LogicGraph -> GlobalAnnos -> FilePath -> HetcatsOpts
   -> LIB_DEFN -> IO ()
-writeLibDefn lg ga fullFileName opts ld = trace ("--- writeLibDefn\n\tfile: " ++ fullFileName ++ "\n\touttypes: " ++ (show $ outtypes opts)) $ do
+writeLibDefn lg ga fullFileName opts ld = do
     let file = tryToStripPrefix "file://" fullFileName
         (odir, filePrefix) = getFilePrefix opts file
         printXml fn = writeFile fn $ ppTopElement (xmlLibDefn lg ga ld)
@@ -84,15 +82,15 @@ writeLibDefn lg ga fullFileName opts ld = trace ("--- writeLibDefn\n\tfile: " ++
         printHtml fn = writeEncFile (ioEncoding opts) fn
           $ renderHtml ga $ prettyLG lg ld
         write_type :: OutType -> IO ()
-        write_type ty = trace ("--- write_type: ty = " ++ show ty) $ case ty of
+        write_type ty = case ty of
             PrettyOut pty -> do
               let fn = filePrefix ++ "." ++ show ty
               putIfVerbose opts 2 $ "Writing file: " ++ fn
               case pty of
-                PrettyXml -> trace "--- writeLibDefn_printXml" $ printXml fn
-                PrettyAscii b -> trace "--- writeLibDefn_printAscii" $ printAscii b fn
-                PrettyHtml -> trace "--- writeLibDefn_printHtml" $ printHtml fn
-                PrettyLatex b -> trace "--- wrteLibDefn_writeLidbDefnLatex" $ writeLibDefnLatex lg b ga fn ld
+                PrettyXml -> printXml fn
+                PrettyAscii b -> printAscii b fn
+                PrettyHtml -> printHtml fn
+                PrettyLatex b -> writeLibDefnLatex lg b ga fn ld
             _ -> return () -- implemented elsewhere
     putIfVerbose opts 3 ("Current OutDir: " ++ odir)
     mapM_ write_type $ outtypes opts
@@ -106,7 +104,7 @@ toShATermString :: ShATermLG a => a -> IO String
 toShATermString = fmap AT.writeSharedATerm . versionedATermTable
 
 writeShATermFile :: ShATermLG a => FilePath -> a -> IO ()
-writeShATermFile fp atcon = trace ("--- writeShATermFile: " ++ fp) $ toShATermString atcon >>= writeFile fp
+writeShATermFile fp atcon = toShATermString atcon >>= writeFile fp
 
 versionedATermTable :: ShATermLG a => a -> IO ATermTable
 versionedATermTable atcon = do
@@ -120,7 +118,7 @@ writeShATermFileSDoc fp atcon =
 
 writeFileInfo :: ShATermLG a => HetcatsOpts -> LibName
               -> FilePath -> LIB_DEFN -> a -> IO ()
-writeFileInfo opts ln fullFileName ld gctx = trace ("--- writeFileInfo: " ++ fullFileName) $
+writeFileInfo opts ln fullFileName ld gctx =
   let file = tryToStripPrefix "file://" fullFileName
       envFile = snd (getFilePrefix opts file) ++ envSuffix in
   case analysis opts of

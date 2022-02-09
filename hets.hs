@@ -61,14 +61,12 @@ import HolLight.HolLight2DG (anaHolLightFile)
 import Isabelle.Isa2DG (anaIsaFile, anaThyFile)
 #endif
 
-import Debug.Trace
-
 main :: IO ()
 main =
-  (trace "--- gettingArgs" $ getArgs) >>= (trace "--- running hetcatsOpts" $ hetcatsOpts) >>= \ opts -> let imode = interactive opts in
-    (trace "--- running printOptionsWarnings" $ printOptionsWarnings opts) >>
+  getArgs >>= hetcatsOpts >>= \ opts -> let imode = interactive opts in
+    printOptionsWarnings opts >>
 #ifdef SERVER
-     if (trace "--- serve opts" $ serve opts) then hetsServer opts else
+     if serve opts then hetsServer opts else
 #endif
      if isRemote opts || imode
        then cmdlRun opts >>= displayGraph "" opts . getMaybeLib . intState
@@ -97,7 +95,7 @@ noUniPkg = fail $ "No graph display interface; \n"
             ++ "disabled during compilation of Hets"
 
 processFile :: HetcatsOpts -> FilePath -> IO ()
-processFile opts file = trace ("--- processFile:\n\tfile = " ++ show file) $ if fileType opts then showFileType opts file else do
+processFile opts file = if fileType opts then showFileType opts file else do
     putIfVerbose opts 3 ("Processing input: " ++ file)
     let doExit = guiType opts == UseGui
     res <- case guess file (intype opts) of

@@ -41,8 +41,6 @@ import Data.List (isSuffixOf)
 import Control.Monad
 import Data.Maybe
 
-import Debug.Trace
-
 anaLibReadPrfs :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
 anaLibReadPrfs opts file = do
     m <- anaLib opts
@@ -58,28 +56,27 @@ anaLibReadPrfs opts file = do
 
 -- | lookup an env or read and analyze a file
 anaLib :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
-anaLib opts origName = trace "--- anaLib" $ do
+anaLib opts origName = do
   let fname = useCatalogURL opts origName
       isPrfFile = isSuffixOf prfSuffix
-  -- ep <- trace "--- running getContent (in Driver.AnaLib.anaLib)" $ getContent opts {intype = GuessIn}
-  --   $ if isPrfFile fname then rmSuffix fname else fname
-  -- case ep of
-  --   Left _ -> anaLibExt opts fname emptyLibEnv emptyDG
-  --   Right (file, content)
-  --     | isPrfFile file -> do
-  --           putIfVerbose opts 0 $ "a matching source file for proof history '"
-  --                            ++ file ++ "' not found."
-  --           return Nothing
-  --     -- | isDgXmlFile opts file content -> readDGXml opts file
-  --     | intype opts == DgXml -> readDGXml opts file
-  --     | otherwise -> anaLibExt opts (keepOrigClifName opts origName file)
-  --           emptyLibEnv emptyDG
-  anaLibExt opts (keepOrigClifName opts origName (if isPrfFile fname then rmSuffix fname else fname)) emptyLibEnv emptyDG
+  ep <- getContentAndFileType opts {intype = GuessIn}
+    $ if isPrfFile fname then rmSuffix fname else fname
+  case ep of
+    Left _ -> anaLibExt opts fname emptyLibEnv emptyDG
+    Right (_, _, file, content)
+      | isPrfFile file -> do
+            putIfVerbose opts 0 $ "a matching source file for proof history '"
+                             ++ file ++ "' not found."
+            return Nothing
+      -- | isDgXmlFile opts file content -> readDGXml opts file
+      | intype opts == DgXml -> readDGXml opts file
+      | otherwise -> anaLibExt opts (keepOrigClifName opts origName file)
+            emptyLibEnv emptyDG
 
 -- | read a file and extended the current library environment
 anaLibExt :: HetcatsOpts -> FilePath -> LibEnv -> DGraph
   -> IO (Maybe (LibName, LibEnv))
-anaLibExt opts file libEnv initDG = trace "--- anaLibExt" $ do
+anaLibExt opts file libEnv initDG = do
     Result ds res <- runResultT $ anaLibFileOrGetEnv logicGraph opts
       Set.empty libEnv initDG Nothing file
     showDiags opts ds
@@ -95,7 +92,7 @@ anaLibExt opts file libEnv initDG = trace "--- anaLibExt" $ do
             showDiags opts $ diags envRes
             p <- if null xd then return (ln, nEnv) else do
               putIfVerbose opts 2 $ "Reading " ++ xd
-              xs <- trace ("--- Driver.Analib.anaLibExt 96, read file: " ++ xd) $ readFile xd
+              xs <- readFile xd
               Result es mdg <- runResultT $ dgXUpdate opts xs nEnv ln
                 (lookupDGraph ln nEnv)
               showDiags opts es

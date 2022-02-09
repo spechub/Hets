@@ -30,16 +30,14 @@ import Common.Utils
 import System.Exit
 #endif
 
-import Debug.Trace
-
 loadFromUri :: HetcatsOpts -> String -> IO (Either String String)
 #ifdef NO_WGET
-loadFromUri opts uri = trace ("--- loadFromUri\n\turi = " ++ uri) $ do
+loadFromUri opts uri = do
   manager <-
     if disableCertificateVerification opts
     then newManager noVerifyTlsManagerSettings
     else newManager tlsManagerSettings
-  initialRequest <- trace "--- running parseRequest" $ parseRequest uri
+  initialRequest <- parseRequest uri
   let additionalHeaders =
         map ((\ (header, value) ->
                (CI.mk $ Char8.pack header,
@@ -48,7 +46,7 @@ loadFromUri opts uri = trace ("--- loadFromUri\n\turi = " ++ uri) $ do
   let request = initialRequest
         { requestHeaders = ("Accept", "*/*; q=0.1, text/plain")
                              : additionalHeaders }
-  eResponse <- trace "--- running httpLbs" $ try $ httpLbs request manager
+  eResponse <- try $ httpLbs request manager
   case eResponse of
     Left err ->
       case err :: HttpException of
@@ -57,12 +55,12 @@ loadFromUri opts uri = trace ("--- loadFromUri\n\turi = " ++ uri) $ do
             ("Failed to load " ++ show uri ++ ": " ++ show exceptionContent)
         InvalidUrlException invalidUrl reason ->
           return $ Left ("Failed to load " ++ show invalidUrl ++ ": " ++ reason)
-    Right response -> trace "\tgot response!" $
+    Right response ->
       let status = statusCode $ responseStatus response in
       return $ if 400 <= status
                then Left ("Failed to load " ++ show uri ++ ": HTTP status code "
                           ++ show status)
-               else trace ("\tstatus code = " ++ show status) $ Right $ LChar8.unpack $ responseBody response
+               else Right $ LChar8.unpack $ responseBody response
 
 noVerifyTlsManagerSettings :: ManagerSettings
 noVerifyTlsManagerSettings = mkManagerSettings noVerifyTlsSettings Nothing

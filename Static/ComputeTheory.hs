@@ -44,8 +44,6 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set (fromList, toList)
 import Data.Ord
 
-import Debug.Trace
-
 -- * nodes with incoming hiding definition links
 
 nodeHasHiding :: DGraph -> Node -> Bool
@@ -108,17 +106,17 @@ computeLibEnvTheories le =
 computeDGraphTheories :: LibEnv -> LibName -> DGraph -> DGraph
 computeDGraphTheories le ln dgraph =
   let newDg = computeDGraphTheoriesAux le ln dgraph
-  in trace "--- computeDGraphTheories" $ groupHistory dgraph (DGRule "Compute theory") newDg
+  in groupHistory dgraph (DGRule "Compute theory") newDg
 
 
 computeDGraphTheoriesAux :: LibEnv -> LibName -> DGraph -> DGraph
-computeDGraphTheoriesAux le ln dgraph = trace "--- computeDGraphTheoriesAux" $
+computeDGraphTheoriesAux le ln dgraph =
   foldl (\ dg l@(n, lbl) -> updatePending dg lbl
     (n, recomputeNodeLabel le ln dg l))
      dgraph $ topsortedNodes dgraph
 
 recomputeNodeLabel :: LibEnv -> LibName -> DGraph -> LNode DGNodeLab -> DGNodeLab
-recomputeNodeLabel le ln dg l@(n, lbl) = trace "--- recomputeNodeLabel" $
+recomputeNodeLabel le ln dg l@(n, lbl) =
   case computeLabelTheory le ln dg l of
     gTh@(Just th) ->
       let (chg, lbl1) = case globalTheory lbl of
@@ -140,8 +138,7 @@ computeLabelTheory le ln dg (n, lbl) = let
   localTh = dgn_theory lbl 
   lblName = dgn_libname lbl 
   lblNode = dgn_node lbl 
- in trace "-- computeLabelTheory" $
-    fmap reduceTheory . maybeResult $ if isDGRef lbl then
+ in fmap reduceTheory . maybeResult $ if isDGRef lbl then
         case Map.lookup lblName le of
           Nothing -> return localTh -- do not crash here
           Just dg' -> do

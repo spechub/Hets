@@ -123,10 +123,8 @@ import Driver.WriteLibDefn
 import OMDoc.XmlInterface (xmlOut)
 import OMDoc.Export (exportLibEnv)
 
-import Debug.Trace
-
 writeVerbFile :: HetcatsOpts -> FilePath -> String -> IO ()
-writeVerbFile opts fullFileName str = trace "-- writeVerbFile" $ do
+writeVerbFile opts fullFileName str = do
     let f = tryToStripPrefix "file://" fullFileName
     putIfVerbose opts 2 $ "Writing file: " ++ f
     writeEncFile (ioEncoding opts) f str
@@ -141,7 +139,7 @@ writeVerbFiles opts suffix = mapM_ f
 
 writeLibEnv :: HetcatsOpts -> FilePath -> LibEnv -> LibName -> OutType
             -> IO ()
-writeLibEnv opts filePrefix lenv ln ot = trace "--- writeLibEnv" $ 
+writeLibEnv opts filePrefix lenv ln ot =
     let f = filePrefix ++ "." ++ show ot
         dg = lookupDGraph ln lenv in case ot of
       Prf -> toShATermString (ln, lookupHistory ln lenv)
@@ -354,7 +352,7 @@ modelSparQCheck opts gTh@(G_theory lid _ (ExtSign sign0 _) _ sens0 _) =
 
 writeTheoryFiles :: HetcatsOpts -> [OutType] -> FilePath -> LibEnv
                  -> GlobalAnnos -> LibName -> IRI -> Int -> IO ()
-writeTheoryFiles opts specOutTypes filePrefix lenv ga ln i n = trace "--- writeTheoryFiles" $
+writeTheoryFiles opts specOutTypes filePrefix lenv ga ln i n =
   let dg = lookupDGraph ln lenv
       nam = getDGNodeName $ labDG dg n
       ins = getImportNames dg n
@@ -381,7 +379,7 @@ writeTheoryFiles opts specOutTypes filePrefix lenv ga ln i n = trace "--- writeT
 
 writeSpecFiles :: HetcatsOpts -> FilePath -> LibEnv -> LibName -> DGraph
                -> IO ()
-writeSpecFiles opts file lenv ln dg = trace ("--- writeSpecFiles\n\tfile: " ++ file ++ "\n\toutTypes: " ++ (show . outtypes $ opts)) $ do
+writeSpecFiles opts file lenv ln dg = do
     let gctx = globalEnv dg
         gns = Map.keys gctx
         mns = map $ \ t -> Map.findWithDefault (simpleIdToIRI t) (tokStr t)

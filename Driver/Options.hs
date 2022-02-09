@@ -83,8 +83,6 @@ import Data.Char
 import Data.List
 import Data.Maybe
 
-import Debug.Trace
-
 -- | translate a given http reference using the URL catalog
 useCatalogURL :: HetcatsOpts -> FilePath -> FilePath
 useCatalogURL opts fname = case mapMaybe
@@ -985,11 +983,11 @@ getFileNames exts file =
 
 -- | checks if a source file for the given file name exists
 existsAnSource :: HetcatsOpts -> FilePath -> IO (Maybe FilePath)
-existsAnSource opts file = trace "--- existsAnSource" $ do
+existsAnSource opts file = do
   let names = getFileNames (getExtensions opts) file
   -- look for the first existing file
-  validFlags <- trace ("--- running doesFileExists\n\tnames: " ++ show names) $ mapM doesFileExist names
-  trace "-- FINISH existsAnSource" $ return . fmap snd . find fst $ zip validFlags names
+  validFlags <- mapM doesFileExist names
+  return . fmap snd . find fst $ zip validFlags names
 
 -- | should env be written
 hasEnvOut :: HetcatsOpts -> Bool
@@ -1016,9 +1014,9 @@ removePrfOut opts =
 gets two Paths and checks if the first file is not older than the
 second one and should return True for two identical files -}
 checkRecentEnv :: HetcatsOpts -> FilePath -> FilePath -> IO Bool
-checkRecentEnv opts fp1 base2 = trace ("--- checkRecentEnv\n\tfp1: " ++ fp1 ++ "\n\tbase2: " ++ base2) $ catchIOException False $ do
-    fp1_time <- trace "--- running getModificationTime" $ getModificationTime fp1
-    maybe_source_file <- trace "--- running existsAnSource" $ existsAnSource opts {intype = GuessIn} base2
+checkRecentEnv opts fp1 base2 = catchIOException False $ do
+    fp1_time <- getModificationTime fp1
+    maybe_source_file <- existsAnSource opts {intype = GuessIn} base2
     maybe (return False) ( \ fp2 -> do
        fp2_time <- getModificationTime fp2
        return (fp1_time >= fp2_time)) maybe_source_file
@@ -1058,15 +1056,15 @@ parseTransOpt = Trans . map mkSimpleId . splitPaths
 
 -- | guesses the InType
 guess :: String -> InType -> InType
-guess file itype = trace "--- guess" $ case itype of
+guess file itype = case itype of
     GuessIn -> guessInType file
     _ -> itype
 
 -- | 'guessInType' parses an 'InType' from the FilePath
 guessInType :: FilePath -> InType
-guessInType file = trace "--- guessInType" $ case fileparse downloadExtensions file of
-      (_, _, Just ('.' : suf)) -> trace ("--- suf: " ++ suf) $ parseInType1 suf
-      (_, _, _) -> trace "--- NO SUFFIX" $ GuessIn
+guessInType file = case fileparse downloadExtensions file of
+      (_, _, Just ('.' : suf)) -> parseInType1 suf
+      (_, _, _) -> GuessIn
 
 -- | 'parseCASLAmalg' parses CASL amalgamability options
 parseCASLAmalg :: String -> Flag

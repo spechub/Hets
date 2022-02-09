@@ -37,8 +37,6 @@ import qualified Common.Lib.SizedList as SizedList
 import Data.Graph.Inductive.Graph as Graph
 import Data.List
 
-import Debug.Trace
-
 -- | add a history item to current history.
 addToProofHistoryDG :: HistElem -> DGraph -> DGraph
 addToProofHistoryDG x dg =
@@ -64,7 +62,7 @@ reverseHistory = SizedList.reverse . SizedList.map
 groupHistory :: DGraph -> DGRule -> DGraph -> DGraph
 groupHistory oldGraph rule newGraph = let
   (oldHist, diff) = splitHistory oldGraph newGraph
-  in trace "--- groupHistory" $ if SizedList.null diff then newGraph else
+  in if SizedList.null diff then newGraph else
      newGraph { proofHistory = SizedList.cons (HistGroup rule diff) oldHist }
 
 -- | get most recent step

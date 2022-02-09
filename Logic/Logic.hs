@@ -155,8 +155,6 @@ import Data.Ord
 import Data.Typeable
 import Control.Monad (unless)
 
-import Debug.Trace
-
 -- | Stability of logic implementations
 data Stability = Stable | Testing | Unstable | Experimental
      deriving (Eq, Show)
@@ -470,7 +468,7 @@ class ( Syntax lid basic_spec symbol symb_items symb_map_items
              -> Result (basic_spec, ExtSign sign symbol, [Named sentence])
          extBasicAnalysis l _ _ b s g = case basic_analysis l of
             Nothing -> statFail l "basic_analysis"
-            Just ba -> trace "--- running basic_analysis (module Logic.Logic)" $ ba (b, s, g)
+            Just ba -> ba (b, s, g)
          -- | static analysis of symbol maps, see CASL RefMan p. 222f.
          stat_symb_map_items :: lid -> sign -> Maybe sign -> [symb_map_items]
              -> Result (EndoMap raw_symbol)
