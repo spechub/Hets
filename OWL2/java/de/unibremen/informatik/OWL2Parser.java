@@ -478,7 +478,7 @@ public class OWL2Parser {
 				append("<Loaded name=\"")
 					.append(manager.getOntologyDocumentIRI(onto))
 					.append("\" ontiri=\"")
-					.append(onto.getOntologyID().getOntologyIRI().get())
+					.append(onto.getOntologyID().getOntologyIRI().orElse(null))
 					.append("\"/>\n");
 			} catch (Exception ex) {
 				System.err.println("Error by XMLParser!");
