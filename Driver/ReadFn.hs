@@ -211,7 +211,7 @@ getExtContent opts exts fp =
 inputs are hets options, optional argument for the file program,
 and the library or file name. -}
 getContentAndFileType :: HetcatsOpts -> FilePath
-  -> IO (Either String (Maybe String, Maybe String, FilePath, String))
+  -> IO (Either String (Maybe String, Maybe String, FileInfo, String))
 getContentAndFileType opts fn = do
   eith <- getContent opts fn
   case eith of
@@ -222,15 +222,20 @@ getContentAndFileType opts fn = do
       Result ds mr <- runResultT $ getMagicFileType (Just "--mime-type") f
       Result es mc <- runResultT $ getChecksum f
       showDiags opts (ds ++ es)
-      return $ Right (mr, mc, if isUri then f else nFn, cont)
+      let fInfo = FileInfo {
+          wasDownloaded = isUri,
+          filePath = if isUri then f else nFn
+        }
+      return $ Right (mr, mc, fInfo, cont)
 
 showFileType :: HetcatsOpts -> FilePath -> IO ()
 showFileType opts fn = do
   eith <- getContentAndFileType opts fn
   case eith of
     Left err -> hetsIOError err
-    Right (mr, _, nFn, _) ->
-      let fstr = (if nFn == fn then fn else nFn ++ " (via " ++ fn ++ ")")
+    Right (mr, _, fInfo, _) ->
+      let nFn = filePath fInfo
+          fstr = (if nFn == fn then fn else nFn ++ " (via " ++ fn ++ ")")
              ++ ": "
       in case mr of
         Just s -> putStrLn $ fstr ++ s

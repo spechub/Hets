@@ -718,9 +718,11 @@ mkFiletypeResponse opts libIri respond = do
   res <- liftIO $ getContentAndFileType opts libIri
   respond $ case res of
     Left err -> mkResponse textC status422 err
-    Right (mr, _, fn, _) -> case mr of
-      Nothing -> mkResponse textC status422 $ fn ++ ": unknown file type"
-      Just r -> mkOkResponse textC $ fn ++ ": " ++ r
+    Right (mr, _, fInfo, _) -> 
+      let fn = filePath fInfo in
+      case mr of
+        Nothing -> mkResponse textC status422 $ fn ++ ": unknown file type"
+        Just r -> mkOkResponse textC $ fn ++ ": " ++ r
 
 menuTriple :: String -> String -> String -> Element
 menuTriple q d c = unode "triple"
@@ -1141,7 +1143,7 @@ getDGraph opts sessRef dgQ = do
       mf <- lift $ getContentAndFileType opts absolutPathToFile
       case mf of
         Left err -> fail err
-        Right (_, mh, f, cont) -> case mh of
+        Right (_, mh, fInfo, cont) -> let f = filePath fInfo in case mh of
           Nothing -> fail $ "could determine checksum for: " ++ file
           Just h -> let q = absolutPathToFile : h : cmdList in
             case Map.lookup q lm of

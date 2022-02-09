@@ -101,7 +101,8 @@ anaSource mln lg opts topLns libenv initDG origName = ResultT $ do
   dir <- getCurrentDirectory
   case fname' of
     Left err -> return $ fail err
-    Right (mr, _, file, inputLit) ->
+    Right (mr, _, fInfo, inputLit) ->
+        let file = filePath fInfo in
         if any (`isSuffixOf` file) [envSuffix, prfSuffix] then
           return . fail $ "no matching source file for '" ++ fname ++ "' found."
         else let
@@ -140,9 +141,6 @@ anaString mln lgraph opts topLns libenv initDG input file mr = do
           _ -> if checkUri file then file else realFileName
   lift $ putIfVerbose opts 2 $ "Reading file " ++ file
   libdefns <- readLibDefn lgraph opts mr file posFileName input
-  when (isSuffixOf ".tmp" file) $ lift $ removeFile $ case stripPrefix "file://" file of
-    Just f -> f
-    Nothing -> file
   when (null libdefns) . fail $ "failed to read contents of file: " ++ file
   foldM (anaStringAux mln lgraph opts topLns initDG mr file posFileName)
         (error "Static.AnalysisLibrary.anaString", libenv)

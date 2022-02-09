@@ -16,6 +16,8 @@ module Driver.AnaLib
     , anaLibReadPrfs
     ) where
 
+import Common.Utils (FileInfo(..))
+
 import Proofs.Automatic
 import Proofs.NormalForm
 
@@ -24,6 +26,7 @@ import Static.History
 import Static.AnalysisLibrary
 import Static.ApplyChanges
 import Static.FromXml
+import System.Directory (removeFile)
 
 import Comorphisms.LogicGraph
 
@@ -63,14 +66,21 @@ anaLib opts origName = do
     $ if isPrfFile fname then rmSuffix fname else fname
   case ep of
     Left _ -> anaLibExt opts fname emptyLibEnv emptyDG
-    Right (_, _, file, content)
-      | isPrfFile file -> do
-            putIfVerbose opts 0 $ "a matching source file for proof history '"
-                             ++ file ++ "' not found."
-            return Nothing
-      | isDgXmlFile opts file content -> readDGXml opts file
-      | otherwise -> anaLibExt opts (keepOrigClifName opts origName file)
+    Right (_, _, fInfo, content)
+      | isPrfFile (filePath fInfo) -> do
+          putIfVerbose opts 0 $ "a matching source file for proof history '"
+                           ++ (filePath fInfo) ++ "' not found."
+          when (wasDownloaded fInfo) $ removeFile (filePath fInfo)
+          return Nothing
+      | isDgXmlFile opts (filePath fInfo) content -> do
+          res <- readDGXml opts (filePath fInfo)
+          when (wasDownloaded fInfo) $ removeFile (filePath fInfo)
+          return res
+      | otherwise -> do
+          res <- anaLibExt opts (keepOrigClifName opts origName (filePath fInfo))
             emptyLibEnv emptyDG
+          when (wasDownloaded fInfo) $ removeFile (filePath fInfo)
+          return res
 
 -- | read a file and extended the current library environment
 anaLibExt :: HetcatsOpts -> FilePath -> LibEnv -> DGraph
