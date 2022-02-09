@@ -89,7 +89,7 @@ guessXmlContent isXml str = case dropWhile isSpace str of
       | isDMU q -> Left "unexpected DMU xml format"
       | isPpXml q -> Left "unexpected pp.xml format"
       | null (qName q) || not isXml -> Right GuessIn
-      | otherwise -> Left $ "--- unknown XML format: " ++ tagEnd q ""
+      | otherwise -> Left $ "unknown XML format: " ++ tagEnd q ""
  _ -> Right GuessIn  -- assume that it is no xml content
 
 isDgXmlFile :: HetcatsOpts -> FilePath -> String -> Bool
