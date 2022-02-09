@@ -48,7 +48,7 @@ readEncFile _ = readFile
 writeEncFile _ = writeFile
 setStdEnc _ = return ()
 #else
-readEncFile _ f = do
+readEncFile c f = do
   hdl <- openFile f ReadMode
   hSetEncoding hdl $ case c of
     Utf8 -> utf8
