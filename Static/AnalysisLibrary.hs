@@ -91,27 +91,14 @@ anaSource :: Maybe LibName -- ^ suggested library name
   -> LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph
   -> FilePath -> ResultT IO (LibName, LibEnv)
 anaSource mln lg opts topLns libenv initDG origName = ResultT $ do
-  dir <- getCurrentDirectory
   let mName = useCatalogURL opts origName
       fname = tryToStripPrefix "file://" mName
       syn = case defSyntax opts of
         "" -> Nothing
         s -> Just $ simpleIdToIRI $ mkSimpleId s
       lgraph = setSyntax syn $ setCurLogic (defLogic opts) lg
-
-      -- libStr = if isAbsolute fname
-      --             then convertFileToLibStr fname
-      --             else dropExtensions fname
-      -- nLn = case mln of
-      --         Nothing | useLibPos opts && not (checkUri fname) ->
-      --           Just $ emptyLibName libStr
-      --         _ -> mln
-      -- fn2 = keepOrigClifName opts origName fname
-      -- fnAbs = if isAbsolute fn2 then fn2 else dir </> fn2
-      -- url = if checkUri fn2 then fn2 else "file://" ++ fnAbs
-  -- runResultT $ anaString nLn lgraph opts topLns libenv initDG  "" url Nothing 
   fname' <- getContentAndFileType opts fname
-  -- dir <- getCurrentDirectory
+  dir <- getCurrentDirectory
   case fname' of
     Left err -> return $ fail err
     Right (mr, _, file, inputLit) ->

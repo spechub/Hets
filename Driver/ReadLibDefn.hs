@@ -97,7 +97,7 @@ guessInput opts mr file input =
 readLibDefn :: LogicGraph -> HetcatsOpts -> Maybe String
   -> FilePath -> FilePath -> String -> ResultT IO [LIB_DEFN]
 readLibDefn lgraph opts mr file fileForPos input =
-    if (null input) then fail ("empty input file: " ++ file) else
+    if null input then fail ("empty input file: " ++ file) else
     case intype opts of
     ATermIn _ -> return [from_sml_ATermString input]
     FreeCADIn ->
