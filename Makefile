@@ -806,7 +806,15 @@ archive: $(USER_GUIDE)
 		MMT/hets-mmt-standalone.jar ; \
 	rm -rf GMP mini .gitignore utils/{nightly,debian,macports,ubuntu} ; \
 	zip -d OWL2/java/lib/owlapi-distribution-5.1.19.jar \
-		lib/guava-18.0.jar lib/trove4j-3.0.3.jar ; \
+		lib/guava-31.0.1.jar lib/trove4j-3.0.3.jar \
+		lib/caffeine-2.9.2.jar lib/commons-io-2.11.0.jar \
+		lib/commons-rdf-api-0.5.0.jar lib/hppcrt-0.7.5.jar \
+		lib/javax.inject-1.jar lib/log4j-1.2-api-2.17.1.jar \
+		lib/log4j-api-2.17.1.jar lib/log4j-core-2.17.1.jar \
+		lib/rdf4j-rio-api-3.7.4.jar lib/rdf4j-util-3.7.4.jar \
+		lib/rdf4j-model-3.7.4.jar lib/rdf4j-model-api-3.7.4.jar \
+		lib/slf4j-api-1.7.25.jar lib/slf4j-log4j12-1.7.25.jar \
+		lib/xz-1.9.jar ; \
 	printf 'Done.\n' ; \
 	cd .. ; $(TAR) cJf $(ARC_BNAME).tar.xz $(ARC_BNAME) || exit 4 ; \
 	cd .. ; \
@@ -866,7 +874,15 @@ install-owl-tools: jars
 		$(BASEDIR)/lib/`basename $$X` ; \
 	jar cMf $(BASEDIR)/lib/`basename $$X` *
 	-zip -d $(BASEDIR)/lib/owlapi-distribution-5.1.19.jar \
-		lib/guava-18.0.jar lib/trove4j-3.0.3.jar
+		lib/guava-31.0.1.jar lib/trove4j-3.0.3.jar \
+		lib/caffeine-2.9.2.jar lib/commons-io-2.11.0.jar \
+		lib/commons-rdf-api-0.5.0.jar lib/hppcrt-0.7.5.jar \
+		lib/javax.inject-1.jar lib/log4j-1.2-api-2.17.1.jar \
+		lib/log4j-api-2.17.1.jar lib/log4j-core-2.17.1.jar \
+		lib/rdf4j-rio-api-3.7.4.jar lib/rdf4j-util-3.7.4.jar \
+		lib/rdf4j-model-3.7.4.jar lib/rdf4j-model-api-3.7.4.jar \
+		lib/slf4j-api-1.7.25.jar lib/slf4j-log4j12-1.7.25.jar \
+		lib/xz-1.9.jar
 	@printf 'Sources:\n\t%s\n\t%s\n\t%s\n' \
 		'https://bitbucket.org/trove4j/trove/downloads'\
 		'https://github.com/google/guava' \
