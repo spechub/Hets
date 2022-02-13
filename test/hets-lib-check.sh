@@ -35,15 +35,15 @@ fi
 	git clone --depth=1 "${HETS_LIB_REPO}" "${HETS_LIB}"
 
 [[ -z ${HETS_OWL_TOOLS} ]] && \
-	export HETS_OWL_TOOL=${PREFIX}/lib/hets/hets-owl-tools
-[[ -e ${HETS_OWL_TOOL}/OWL2Parser.jar ]] || make install-owl-tools
+	export HETS_OWL_TOOLS=${PREFIX}/lib/hets/hets-owl-tools
+[[ -e ${HETS_OWL_TOOLS}/OWL2Parser.jar ]] || make install-owl-tools
 
 print "Testing named files in ${FLIST} from ${HETS_LIB} ..."
 while read F ; do
 	${HETS} --quiet -a none ${HETS_LIB}/$F || (( E++ ))
 	if (( FAIL_EARLY && E )) ; then
 		print -u2 "\E[1;38;5;9;48;5;118mFailed command:\E[0m\n" \
-			"HETS_LIB=${HETS_LIB} HETS_OWL_TOOL=${HETS_OWL_TOOL}" \
+			"HETS_LIB=${HETS_LIB} HETS_OWL_TOOLS=${HETS_OWL_TOOLS}" \
 			"${HETS} --quiet -a none ${HETS_LIB}/$F"
 		exit 1
 	fi
