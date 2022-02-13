@@ -87,6 +87,7 @@ Either adjust the 'target-vm' property in the build.xml or use a compatible JVM.
         <javac srcdir="./" destdir="${classesdir}" debug="on">
             <classpath refid="classpath"/>
 	    <include name="de/unibremen/informatik/*.java"/>
+		<include name="de/ovgu/cs/*.java"/>
         </javac>
     </target>
 
