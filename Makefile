@@ -805,52 +805,6 @@ archive: $(USER_GUIDE)
 	rm -rf HolLight/OcamlTools/*/*dmtcp OWL2/java/lib/native \
 		MMT/hets-mmt-standalone.jar ; \
 	rm -rf GMP mini .gitignore utils/{nightly,debian,macports,ubuntu} ; \
-	zip -d OWL2/java/lib/owlapi-distribution-5.1.19.jar \
-		  lib/caffeine-2.8.6.jar \
-		  lib/commons-codec-1.11.jar \
-		  lib/commons-io-2.7.jar \
-		  lib/commons-rdf-api-0.5.0.jar \
-		  lib/failureaccess-1.0.1.jar \
-		  lib/fluent-hc-4.5.10.jar \
-		  lib/guava-30.1.1-jre.jar \
-		  lib/hppcrt-0.7.5.jar \
-		  lib/httpcore-4.4.13.jar \
-		  lib/httpclient-4.5.13.jar \
-		  lib/httpclient-cache-4.5.13.jar \
-		  lib/httpclient-osgi-4.5.10.jar \
-		  lib/httpcore-nio-4.4.12.jar \
-		  lib/httpcore-osgi-4.4.12.jar \
-		  lib/httpmime-4.5.10.jar \
-		  lib/j2objc-annotations-1.3.jar \
-		  lib/jackson-annotations-2.9.10.jar \
-		  lib/jackson-core-2.9.10.jar \
-		  lib/jackson-databind-2.9.10.8.jar \
-		  lib/javax.inject-1.jar \
-		  lib/jcl-over-slf4j-1.7.30.jar \
-		  lib/jsonld-java-0.13.0.jar \
-		  lib/jsr305-3.0.2.jar \
-		  lib/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar \
-		  lib/rdf4j-model-3.7.4.jar \
-		  lib/rdf4j-model-api-3.7.4.jar \
-		  lib/rdf4j-model-vocabulary-3.7.4.jar \
-		  lib/rdf4j-rio-api-3.7.4.jar \
-		  lib/rdf4j-rio-binary-3.7.4.jar \
-		  lib/rdf4j-rio-datatypes-3.7.4.jar \
-		  lib/rdf4j-rio-hdt-3.7.4.jar \
-		  lib/rdf4j-rio-jsonld-3.7.4.jar \
-		  lib/rdf4j-rio-languages-3.7.4.jar \
-		  lib/rdf4j-rio-n3-3.7.4.jar \
-		  lib/rdf4j-rio-nquads-3.7.4.jar \
-		  lib/rdf4j-rio-ntriples-3.7.4.jar \
-		  lib/rdf4j-rio-rdfjson-3.7.4.jar \
-		  lib/rdf4j-rio-rdfxml-3.7.4.jar \
-		  lib/rdf4j-rio-trig-3.7.4.jar \
-		  lib/rdf4j-rio-trix-3.7.4.jar \
-		  lib/rdf4j-rio-turtle-3.7.4.jar \
-		  lib/rdf4j-util-3.7.4.jar \
-		  lib/slf4j-api-1.7.30.jar \
-		  lib/slf4j-jdk14-1.7.30.jar \
-		  lib/xz-1.6.jar
 	printf 'Done.\n' ; \
 	cd .. ; $(TAR) cJf $(ARC_BNAME).tar.xz $(ARC_BNAME) || exit 4 ; \
 	cd .. ; \
@@ -909,52 +863,6 @@ install-owl-tools: jars
 	rm -rf $(BASEDIR)/lib/native/*/*.dll lib \
 		$(BASEDIR)/lib/`basename $$X` ; \
 	jar cMf $(BASEDIR)/lib/`basename $$X` *
-	-zip -d $(BASEDIR)/lib/owlapi-distribution-5.1.19.jar \
-		  lib/caffeine-2.8.6.jar \
-		  lib/commons-codec-1.11.jar \
-		  lib/commons-io-2.7.jar \
-		  lib/commons-rdf-api-0.5.0.jar \
-		  lib/failureaccess-1.0.1.jar \
-		  lib/fluent-hc-4.5.10.jar \
-		  lib/guava-30.1.1-jre.jar \
-		  lib/hppcrt-0.7.5.jar \
-		  lib/httpcore-4.4.13.jar \
-		  lib/httpclient-4.5.13.jar \
-		  lib/httpclient-cache-4.5.13.jar \
-		  lib/httpclient-osgi-4.5.10.jar \
-		  lib/httpcore-nio-4.4.12.jar \
-		  lib/httpcore-osgi-4.4.12.jar \
-		  lib/httpmime-4.5.10.jar \
-		  lib/j2objc-annotations-1.3.jar \
-		  lib/jackson-annotations-2.9.10.jar \
-		  lib/jackson-core-2.9.10.jar \
-		  lib/jackson-databind-2.9.10.8.jar \
-		  lib/javax.inject-1.jar \
-		  lib/jcl-over-slf4j-1.7.30.jar \
-		  lib/jsonld-java-0.13.0.jar \
-		  lib/jsr305-3.0.2.jar \
-		  lib/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar \
-		  lib/rdf4j-model-3.7.4.jar \
-		  lib/rdf4j-model-api-3.7.4.jar \
-		  lib/rdf4j-model-vocabulary-3.7.4.jar \
-		  lib/rdf4j-rio-api-3.7.4.jar \
-		  lib/rdf4j-rio-binary-3.7.4.jar \
-		  lib/rdf4j-rio-datatypes-3.7.4.jar \
-		  lib/rdf4j-rio-hdt-3.7.4.jar \
-		  lib/rdf4j-rio-jsonld-3.7.4.jar \
-		  lib/rdf4j-rio-languages-3.7.4.jar \
-		  lib/rdf4j-rio-n3-3.7.4.jar \
-		  lib/rdf4j-rio-nquads-3.7.4.jar \
-		  lib/rdf4j-rio-ntriples-3.7.4.jar \
-		  lib/rdf4j-rio-rdfjson-3.7.4.jar \
-		  lib/rdf4j-rio-rdfxml-3.7.4.jar \
-		  lib/rdf4j-rio-trig-3.7.4.jar \
-		  lib/rdf4j-rio-trix-3.7.4.jar \
-		  lib/rdf4j-rio-turtle-3.7.4.jar \
-		  lib/rdf4j-util-3.7.4.jar \
-		  lib/slf4j-api-1.7.30.jar \
-		  lib/slf4j-jdk14-1.7.30.jar \
-		  lib/xz-1.6.jar
 	@printf 'Sources:\n\t%s\n\t%s\n\t%s\n' \
 		'https://bitbucket.org/trove4j/trove/downloads'\
 		'https://github.com/google/guava' \
@@ -1083,4 +991,4 @@ binary-arch: build-arch install-hets install-hets_server $(CHANGELOG)
 binary: binary-indep binary-arch
 	@[ -f debian/changelog ] || ln -s changelog.tmp debian/changelog
 
-# vim: ts=4 sw=4 filetype=make
+# vim: ts=4 sw=4 noet nosta filetype=make
