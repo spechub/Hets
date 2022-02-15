@@ -123,6 +123,8 @@ import Driver.WriteLibDefn
 import OMDoc.XmlInterface (xmlOut)
 import OMDoc.Export (exportLibEnv)
 
+import Debug.Trace
+
 writeVerbFile :: HetcatsOpts -> FilePath -> String -> IO ()
 writeVerbFile opts fullFileName str = do
     let f = tryToStripPrefix "file://" fullFileName
@@ -290,8 +292,10 @@ writeTheory ins nam opts filePrefix ga
         | otherwise -> putIfVerbose opts 0 $ wrongLogicMsg f "RDF" lang
 #endif
 #ifndef NOOWLLOGIC
-    OWLOut ty -> case ty of
-      Manchester -> case createOWLTheory raw_gTh of
+    OWLOut ty -> trace "-- OWLOut" $ 
+      trace ("-- lang: " ++ show lang) $
+      trace ("-- defSyntax opts: " ++ show (defSyntax opts)) $ case ty of
+      Manchester -> trace "-- Manchester" $ case createOWLTheory raw_gTh of
         Result _ Nothing ->
           putIfVerbose opts 0 $ wrongLogicMsg f "Manchester OWL" $ show ty
         Result ds (Just th2) -> do
@@ -306,6 +310,40 @@ writeTheory ins nam opts filePrefix ga
               Left err -> putIfVerbose opts 0 $ show err
               _ -> putIfVerbose opts 3 $ "reparsed: " ++ f
             writeVerbFile opts f owltext
+
+      -- RdfXml -> trace "-- RdfXml" $ case createOWLTheory raw_gTh of
+      --   Result _ Nothing ->
+      --     putIferbose opts 0 $ wrongLogicMsg f "RDF OWL" $ show ty
+      --   Result ds (Just th2) -> do
+      --     let sy = defSyntax opts
+      --         ms = if null sy then Nothing
+      --              else Just $ simpleIdToIRI $ mkSimpleId sy
+      --         owltext = shows (RDF.printRDFBasicTheory th2) "\n"
+      --     showDiags opts ds
+      --     writeVerbFile opts f owltext
+
+      -- RdfXml -> do
+      --   traceM "-- RdfXml"
+      --   th2 <- coerceBasicTheory lid OWL2 "" th
+      --   traceM "-- RdfXml, after coerceBasicTheory"
+      --   let rdftext = shows (RDF.printRDFBasicTheory th2) "\n"
+      --   writeVerbFile opts f rdftext
+
+      OwlXml -> trace "-- OwlXml" $ case createOWLTheory raw_gTh of
+        Result _ Nothing ->
+          putIfVerbose opts 0 $ wrongLogicMsg f "OWL" $ show ty
+        Result ds (Just th2) -> do
+            let sy = "Functional"
+                ms = Just $ simpleIdToIRI $ mkSimpleId sy
+                owltext = shows 
+                  (printTheory ms OWL2 $ OWL2.prepareBasicTheory th2) "\n"
+            showDiags opts ds
+            -- when (null sy)
+            --     $ case parse (OWL2.parseOntologyDocument Map.empty >> eof) f owltext of
+            --   Left err -> putIfVerbose opts 0 $ show err
+            --   _ -> putIfVerbose opts 3 $ "reparsed: " ++ f
+            writeVerbFile opts f owltext
+
       _ -> let flp = getFilePath ln in case guess flp GuessIn of
         OWLIn _ -> writeVerbFile opts f =<< convertOWL flp (show ty)
         _ -> putIfVerbose opts 0
