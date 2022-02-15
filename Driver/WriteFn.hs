@@ -76,6 +76,7 @@ import CASL.CompositionTable.ParseTable2
 
 import OWL2.Medusa
 import OWL2.MedusaToJson
+import OWL2.XMLConversion (xmlOntologyDoc)
 
 #ifdef PROGRAMATICA
 import Haskell.CreateModules
@@ -102,7 +103,7 @@ import VSE.ToSExpr
 import OWL2.CreateOWL
 import OWL2.Logic_OWL2
 import OWL2.ParseOWL (convertOWL)
-import qualified OWL2.ManchesterPrint as OWL2 (prepareBasicTheory)
+import qualified OWL2.ManchesterPrint as OWL2 (prepareBasicTheory, convertBasicTheory)
 import qualified OWL2.ParseMS as OWL2 (parseOntologyDocument)
 #endif
 
@@ -329,14 +330,27 @@ writeTheory ins nam opts filePrefix ga
       --   let rdftext = shows (RDF.printRDFBasicTheory th2) "\n"
       --   writeVerbFile opts f rdftext
 
-      OwlXml -> trace "-- OwlXml" $ case createOWLTheory raw_gTh of
+      Functional -> trace "-- Functional" $ case createOWLTheory raw_gTh of
         Result _ Nothing ->
           putIfVerbose opts 0 $ wrongLogicMsg f "OWL" $ show ty
         Result ds (Just th2) -> do
             let sy = "Functional"
                 ms = Just $ simpleIdToIRI $ mkSimpleId sy
-                owltext = shows 
+                owltext = shows
                   (printTheory ms OWL2 $ OWL2.prepareBasicTheory th2) "\n"
+            showDiags opts ds
+            -- when (null sy)
+            --     $ case parse (OWL2.parseOntologyDocument Map.empty >> eof) f owltext of
+            --   Left err -> putIfVerbose opts 0 $ show err
+            --   _ -> putIfVerbose opts 3 $ "reparsed: " ++ f
+            writeVerbFile opts f owltext
+
+      OwlXml -> trace "-- OwlXml" $ case createOWLTheory raw_gTh of
+        Result _ Nothing ->
+          putIfVerbose opts 0 $ wrongLogicMsg f "OWL" $ show ty
+        Result ds (Just th2) -> do
+            let owltext =
+                  ppTopElement $ xmlOntologyDoc (fst th2) $ OWL2.convertBasicTheory th2
             showDiags opts ds
             -- when (null sy)
             --     $ case parse (OWL2.parseOntologyDocument Map.empty >> eof) f owltext of
