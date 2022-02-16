@@ -32,6 +32,8 @@ module Syntax.Parse_AS_Structured
     , parseNetwork
     ) where
 
+import Debug.Trace
+
 import Logic.Logic
 import Logic.Comorphism
 import Logic.Grothendieck
@@ -101,7 +103,7 @@ decide after seeing ".", ":" or "->" what was meant -}
 logicName :: LogicGraph -> AParser st Logic_name
 logicName l = do
       i <- hetIriCurie >>= expandCurieMConservative l
-      let (ft, rt) = if isSimple i then break (== '.') $ show $ iriPath i else (show $ iriPath i, [])
+      let (ft, rt) = if isSimple i then break (== '.') $ iFragment i else ( iFragment i, [])
       (e, ms) <- if null rt then return (i, Nothing)
          else do
            s <- sublogicChars -- try more sublogic characters
@@ -213,6 +215,7 @@ callSymParser oneOnly p name itemType = case p of
 
 parseItemsMap :: AnyLogic -> AParser st (G_symb_map_items_list, [Token])
 parseItemsMap (Logic lid) = do
+      -- traceM "----parseItemsMap"
       (cs, ps) <- callSymParser False (parse_symb_map_items lid)
                   (language_name lid) " maps"
       return (G_symb_map_items_list lid cs, ps)
@@ -227,14 +230,15 @@ parseMapOrHide :: String -> (Logic_code -> a) -> (t -> a)
                -> AParser st ([a], [Token])
 parseMapOrHide altKw constrLogic constrMap pa lG =
     do (n, nLg) <- parseLogic altKw lG
-       do optional anComma
+       do anComma
           (gs, ps) <- parseMapOrHide altKw constrLogic constrMap pa nLg
           return (constrLogic n : gs, ps)
         <|> return ([constrLogic n], [])
     <|> do
       l <- lookupCurrentLogic "parseMapOrHide" lG
       (m, ps) <- pa l
-      do optional anComma
+      do anComma
+        --  traceM "----parseMapOrHide doing recursion"
          (gs, qs) <- parseMapOrHide altKw constrLogic constrMap pa lG
          return (constrMap m : gs, ps ++ qs)
         <|> return ([constrMap m], ps)
