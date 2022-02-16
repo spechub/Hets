@@ -300,7 +300,9 @@ dummyIRI = nullIRI {
     }
 
 mkIRI :: String -> IRI
-mkIRI = simpleIdToIRI. mkSimpleId
+mkIRI s= nullIRI {  iFragment = s
+                  , isAbbrev = True
+                 }
 
 mkAbbrevIRI :: String -> String -> IRI
 mkAbbrevIRI pref frag = nullIRI {prefixName= pref, iFragment = frag, isAbbrev = True}
