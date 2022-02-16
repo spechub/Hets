@@ -60,7 +60,7 @@ parseOWLAux quick fn args = do
     let jar = "OWL2Parser.jar"
     (hasJar, toolPath) <- lift $ check4HetsOWLjar jar
     if hasJar
-      then lift $ executeProcess "java" (["-jar", toolPath </> jar]
+      then lift $ executeProcess "java" (["-Djava.util.logging.config.class=JulConfig", "-jar", toolPath </> jar]
         ++ args ++ [fn] ++ ["-qk" | quick]) ""
       else fail $ jar
         ++ " not found, check your environment variable: " ++ hetsOWLenv
