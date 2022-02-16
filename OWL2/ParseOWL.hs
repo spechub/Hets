@@ -85,13 +85,9 @@ parseProc str = do
     Right el -> let
       es = elChildren el
       mis = concatMap (filterElementsName $ isSmth "Missing") es
-      imap = Map.fromList . mapMaybe (\ e -> do
-        imp <- findAttr (unqual "name") e
-        ont <- findAttr (unqual "ontiri") e
-        return (imp, ont)) $ concatMap (filterElementsName $ isSmth "Loaded") es
       in do
         unless (null mis) . liftR . justWarn () $ "Missing imports: "
             ++ intercalate ", " (map strContent mis)
-        return (imap, unifyDocs . map (xmlBasicSpec imap)
+        return (imap, unifyDocs . map (xmlBasicSpec Map.empty)
                        $ concatMap (filterElementsName $ isSmth "Ontology") es)
 
