@@ -6,6 +6,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.io.Writer;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -18,9 +19,10 @@ import java.util.Set;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
-import org.coode.owlapi.owlxml.renderer.OWLXMLRenderer;
-import org.coode.owlapi.rdf.rdfxml.RDFXMLRenderer;
+import org.semanticweb.owlapi.owlxml.renderer.OWLXMLRenderer;
+import org.semanticweb.owlapi.rdf.rdfxml.renderer.RDFXMLRenderer;
 import org.semanticweb.owlapi.apibinding.OWLManager;
+import org.semanticweb.owlapi.io.OWLOntologyDocumentSource;
 import org.semanticweb.owlapi.io.OWLRendererException;
 import org.semanticweb.owlapi.io.StreamDocumentSource;
 import org.semanticweb.owlapi.model.IRI;
@@ -397,7 +399,7 @@ public class OWL2Parser {
 			try {
 				ManchesterOWLSyntaxRenderer omnrend =
 					new ManchesterOWLSyntaxRenderer();
-				omnrend.render(onto, this);
+				omnrend.render(onto, new PrintWriter(this));
 			} catch (OWLRendererException ex) {
 				System.err.println("Error by ManchesterParser!");
 				ex.printStackTrace();
@@ -429,7 +431,7 @@ public class OWL2Parser {
 					onto.getOWLOntologyManager()
 						.removeAxioms(onto,onto.getAxioms());
 				}
-				xmlren.render(onto, out);
+				xmlren.render(onto, new PrintWriter(out));
 				out.close();
 				out = null;
 				fos = null;
@@ -476,7 +478,7 @@ public class OWL2Parser {
 				append("<Loaded name=\"")
 					.append(manager.getOntologyDocumentIRI(onto))
 					.append("\" ontiri=\"")
-					.append(onto.getOntologyID().getOntologyIRI())
+					.append(onto.getOntologyID().getOntologyIRI().orElse(null))
 					.append("\"/>\n");
 			} catch (Exception ex) {
 				System.err.println("Error by XMLParser!");
@@ -496,13 +498,8 @@ public class OWL2Parser {
 		}
 
 		void renderAsRdf(OWLOntology onto) {
-			try {
-				RDFXMLRenderer rdfrend = new RDFXMLRenderer(onto, this);
-				rdfrend.render();
-			} catch (IOException ex) {
-				System.err.println("Error by RDFParser!");
-				ex.printStackTrace();
-			}
+			RDFXMLRenderer rdfrend = new RDFXMLRenderer(onto, new PrintWriter(this));
+			rdfrend.render();
 		}
 	}
 }
