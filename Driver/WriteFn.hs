@@ -312,23 +312,8 @@ writeTheory ins nam opts filePrefix ga
               _ -> putIfVerbose opts 3 $ "reparsed: " ++ f
             writeVerbFile opts f owltext
 
+      --  TODO: implement OWL2 RDF parser/printer
       -- RdfXml -> trace "-- RdfXml" $ case createOWLTheory raw_gTh of
-      --   Result _ Nothing ->
-      --     putIferbose opts 0 $ wrongLogicMsg f "RDF OWL" $ show ty
-      --   Result ds (Just th2) -> do
-      --     let sy = defSyntax opts
-      --         ms = if null sy then Nothing
-      --              else Just $ simpleIdToIRI $ mkSimpleId sy
-      --         owltext = shows (RDF.printRDFBasicTheory th2) "\n"
-      --     showDiags opts ds
-      --     writeVerbFile opts f owltext
-
-      -- RdfXml -> do
-      --   traceM "-- RdfXml"
-      --   th2 <- coerceBasicTheory lid OWL2 "" th
-      --   traceM "-- RdfXml, after coerceBasicTheory"
-      --   let rdftext = shows (RDF.printRDFBasicTheory th2) "\n"
-      --   writeVerbFile opts f rdftext
 
       Functional -> trace "-- Functional" $ case createOWLTheory raw_gTh of
         Result _ Nothing ->
@@ -339,10 +324,6 @@ writeTheory ins nam opts filePrefix ga
                 owltext = shows
                   (printTheory ms OWL2 $ OWL2.prepareBasicTheory th2) "\n"
             showDiags opts ds
-            -- when (null sy)
-            --     $ case parse (OWL2.parseOntologyDocument Map.empty >> eof) f owltext of
-            --   Left err -> putIfVerbose opts 0 $ show err
-            --   _ -> putIfVerbose opts 3 $ "reparsed: " ++ f
             writeVerbFile opts f owltext
 
       OwlXml -> trace "-- OwlXml" $ case createOWLTheory raw_gTh of
@@ -352,10 +333,6 @@ writeTheory ins nam opts filePrefix ga
             let owltext =
                   ppTopElement $ xmlOntologyDoc (fst th2) $ OWL2.convertBasicTheory th2
             showDiags opts ds
-            -- when (null sy)
-            --     $ case parse (OWL2.parseOntologyDocument Map.empty >> eof) f owltext of
-            --   Left err -> putIfVerbose opts 0 $ show err
-            --   _ -> putIfVerbose opts 3 $ "reparsed: " ++ f
             writeVerbFile opts f owltext
 
       _ -> let flp = getFilePath ln in case guess flp GuessIn of
