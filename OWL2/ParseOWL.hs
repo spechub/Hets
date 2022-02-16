@@ -88,6 +88,6 @@ parseProc str = do
       in do
         unless (null mis) . liftR . justWarn () $ "Missing imports: "
             ++ intercalate ", " (map strContent mis)
-        return (imap, unifyDocs . map (xmlBasicSpec Map.empty)
+        return (Map.empty, unifyDocs . map (xmlBasicSpec Map.empty)
                        $ concatMap (filterElementsName $ isSmth "Ontology") es)
 
