@@ -296,35 +296,14 @@ writeTheory ins nam opts filePrefix ga
     OWLOut ty -> trace "-- OWLOut" $ 
       trace ("-- lang: " ++ show lang) $
       trace ("-- defSyntax opts: " ++ show (defSyntax opts)) $ case ty of
-      Manchester -> trace "-- Manchester" $ case createOWLTheory raw_gTh of
-        Result _ Nothing ->
-          putIfVerbose opts 0 $ wrongLogicMsg f "Manchester OWL" $ show ty
-        Result ds (Just th2) -> do
-            let sy = defSyntax opts
-                ms = if null sy then Nothing
-                     else Just $ simpleIdToIRI $ mkSimpleId sy
-                owltext = shows
-                  (printTheory ms OWL2 $ OWL2.prepareBasicTheory th2) "\n"
-            showDiags opts ds
-            when (null sy)
-                $ case parse (OWL2.parseOntologyDocument Map.empty >> eof) f owltext of
-              Left err -> putIfVerbose opts 0 $ show err
-              _ -> putIfVerbose opts 3 $ "reparsed: " ++ f
-            writeVerbFile opts f owltext
+      Manchester -> trace "-- Manchester" $
+        writeOWL2VerbFile opts ty f raw_gTh "Manchester"
 
       --  TODO: implement OWL2 RDF parser/printer
       -- RdfXml -> trace "-- RdfXml" $ case createOWLTheory raw_gTh of
 
-      Functional -> trace "-- Functional" $ case createOWLTheory raw_gTh of
-        Result _ Nothing ->
-          putIfVerbose opts 0 $ wrongLogicMsg f "OWL" $ show ty
-        Result ds (Just th2) -> do
-            let sy = "Functional"
-                ms = Just $ simpleIdToIRI $ mkSimpleId sy
-                owltext = shows
-                  (printTheory ms OWL2 $ OWL2.prepareBasicTheory th2) "\n"
-            showDiags opts ds
-            writeVerbFile opts f owltext
+      Functional -> trace "-- Functional" $
+        writeOWL2VerbFile opts ty f raw_gTh "Functional"
 
       OwlXml -> trace "-- OwlXml" $ case createOWLTheory raw_gTh of
         Result _ Nothing ->
@@ -357,6 +336,23 @@ writeTheory ins nam opts filePrefix ga
             writeVerbFile opts f kiftext
       | otherwise -> putIfVerbose opts 0 $ wrongLogicMsg f "Common Logic" lang
     _ -> return () -- ignore other file types
+
+allowedOWL2Syntaxes :: [String]
+allowedOWL2Syntaxes = ["Functional", "Manchester"]
+
+writeOWL2VerbFile :: HetcatsOpts -> OWLFormat -> FilePath -> G_theory -> String -> IO ()
+writeOWL2VerbFile opts ty f raw_gTh syntax = case createOWLTheory raw_gTh of
+  Result _ Nothing ->
+    putIfVerbose opts 0 $ wrongLogicMsg f "OWL" $ show ty
+  Result ds (Just th2) -> if elem syntax allowedOWL2Syntaxes
+    then do 
+      let sy = syntax
+          ms = Just $ simpleIdToIRI $ mkSimpleId sy
+          owltext = shows
+            (printTheory ms OWL2 $ OWL2.prepareBasicTheory th2) "\n"
+      showDiags opts ds
+      writeVerbFile opts f owltext
+    else putIfVerbose opts 0 $ "Syntax '" ++ syntax ++ "' is not allowed for OWL2."
 
 modelSparQCheck :: HetcatsOpts -> G_theory -> IO ()
 modelSparQCheck opts gTh@(G_theory lid _ (ExtSign sign0 _) _ sens0 _) =
