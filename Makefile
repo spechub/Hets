@@ -805,8 +805,6 @@ archive: $(USER_GUIDE)
 	rm -rf HolLight/OcamlTools/*/*dmtcp OWL2/java/lib/native \
 		MMT/hets-mmt-standalone.jar ; \
 	rm -rf GMP mini .gitignore utils/{nightly,debian,macports,ubuntu} ; \
-	zip -d OWL2/java/lib/owlapi-osgidistribution-3.5.2.jar \
-		lib/guava-18.0.jar lib/trove4j-3.0.3.jar ; \
 	printf 'Done.\n' ; \
 	cd .. ; $(TAR) cJf $(ARC_BNAME).tar.xz $(ARC_BNAME) || exit 4 ; \
 	cd .. ; \
@@ -865,8 +863,6 @@ install-owl-tools: jars
 	rm -rf $(BASEDIR)/lib/native/*/*.dll lib \
 		$(BASEDIR)/lib/`basename $$X` ; \
 	jar cMf $(BASEDIR)/lib/`basename $$X` *
-	-zip -d $(BASEDIR)/lib/owlapi-osgidistribution-3.5.2.jar \
-		lib/guava-18.0.jar lib/trove4j-3.0.3.jar
 	@printf 'Sources:\n\t%s\n\t%s\n\t%s\n' \
 		'https://bitbucket.org/trove4j/trove/downloads'\
 		'https://github.com/google/guava' \
@@ -995,4 +991,4 @@ binary-arch: build-arch install-hets install-hets_server $(CHANGELOG)
 binary: binary-indep binary-arch
 	@[ -f debian/changelog ] || ln -s changelog.tmp debian/changelog
 
-# vim: ts=4 sw=4 filetype=make
+# vim: ts=4 sw=4 noet nosta filetype=make
