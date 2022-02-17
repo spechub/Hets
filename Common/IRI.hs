@@ -210,14 +210,14 @@ instance Eq IRI where
 
 -- compares full/expanded IRI (if expanded) or abbreviated part if not expanded
 instance Ord IRI where
-  compare i k = case (isAbbrev i, isAbbrev k) of
-    (False, False) -> comparing (\ j -> 
+  compare i k = case (hasFullIRI i, hasFullIRI k) of
+    (True, True) -> comparing (\ j -> 
       ( iriScheme j
       , iriAuthority j
       , iriPath j
       , iriQuery j
       , iriFragment j)) i k
-    (True, True) -> comparing (\j -> (prefixName j, iFragment j)) i k
+    (False, False) -> comparing (\j -> (prefixName j, iFragment j)) i k
     _ -> comparing (\ j ->
       (prefixName j, iriScheme j, iriAuthority j, iriPath j,
        iriQuery j, iriFragment j, iFragment j)) i k

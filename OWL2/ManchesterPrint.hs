@@ -65,7 +65,7 @@ printSignElem s ty f = vcat $ map (\ t -> keyword ty <+> pretty t)
 
 printSign :: Sign -> Doc
 printSign s = vcat
-    (map (\ (c, l) -> hsep $ map text [prefixC, c ++ ":", '<' : l ++ ">"])
+    (map (\ (c, l) -> hsep $ map text [prefixC, c ++ ":", l])
     $ Map.toList $ prefixMap s)
         $++$ foldl1 ($++$) (map (uncurry $ printSignElem s)
                 [ (datatypeC, datatypes)
