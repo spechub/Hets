@@ -32,8 +32,6 @@ module Syntax.Parse_AS_Structured
     , parseNetwork
     ) where
 
-import Debug.Trace
-
 import Logic.Logic
 import Logic.Comorphism
 import Logic.Grothendieck
@@ -215,7 +213,6 @@ callSymParser oneOnly p name itemType = case p of
 
 parseItemsMap :: AnyLogic -> AParser st (G_symb_map_items_list, [Token])
 parseItemsMap (Logic lid) = do
-      -- traceM "----parseItemsMap"
       (cs, ps) <- callSymParser False (parse_symb_map_items lid)
                   (language_name lid) " maps"
       return (G_symb_map_items_list lid cs, ps)
@@ -238,7 +235,6 @@ parseMapOrHide altKw constrLogic constrMap pa lG =
       l <- lookupCurrentLogic "parseMapOrHide" lG
       (m, ps) <- pa l
       do anComma
-        --  traceM "----parseMapOrHide doing recursion"
          (gs, qs) <- parseMapOrHide altKw constrLogic constrMap pa lG
          return (constrMap m : gs, ps ++ qs)
         <|> return ([constrMap m], ps)
