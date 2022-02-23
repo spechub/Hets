@@ -541,6 +541,7 @@ xmlOntologyDoc s od =
             ++ map xmlImport (importsDocuments ont)
             ++ concatMap xmlAxioms (axioms ont) -- change xmlFrames 
             ++ concatMap xmlAnnotations [(ontologyAnnotation ont)]
+            ++ signToDec s
 
 -- TODO: commented out in 1993
 mkODoc :: Sign -> [Named Axiom] -> String
