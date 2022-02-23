@@ -77,6 +77,7 @@ import CASL.CompositionTable.ParseTable2
 import OWL2.Medusa
 import OWL2.MedusaToJson
 import OWL2.XMLConversion (xmlOntologyDoc)
+import OWL2.Sign (emptySign)
 
 #ifdef PROGRAMATICA
 import Haskell.CreateModules
@@ -310,7 +311,7 @@ writeTheory ins nam opts filePrefix ga
           putIfVerbose opts 0 $ wrongLogicMsg f "OWL" $ show ty
         Result ds (Just th2) -> do
             let owltext =
-                  ppTopElement $ xmlOntologyDoc (fst th2) $ OWL2.convertBasicTheory th2
+                  ppTopElement $ xmlOntologyDoc emptySign $ OWL2.convertBasicTheory th2
             showDiags opts ds
             writeVerbFile opts f owltext
 
