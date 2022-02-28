@@ -163,7 +163,7 @@ nullIRI = IRI
 
 -- | check that we have a full (possibly expanded) IRI (i.e. for comparisons)
 hasFullIRI :: IRI -> Bool
-hasFullIRI i = (not . null $ iriScheme i) && (not . isNullId $ iriPath i)
+hasFullIRI i = (not . null $ iriScheme i) || (not . isNullId $ iriPath i)
 
 -- | check whether the IRI is a URN (uniform resource name)
 isURN :: IRI -> Bool
