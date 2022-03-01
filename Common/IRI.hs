@@ -1193,12 +1193,20 @@ deleteQuery i = i { iriQuery = "" }
 
 addSuffixToIRI :: String -> IRI -> IRI
 addSuffixToIRI s i =
-    if isAbbrev i then
-      i {iFragment = iFragment i ++ s}
-    else if not $ null $ iriQuery i then
-      i{iriQuery = iriQuery i ++ s}
-                  else  
-                        i{iriPath  = appendId (iriPath i) (stringToId s)}
+  let abbr j = j { iFragment = iFragment j ++ s }
+      full j = if not $ null $ iriQuery j then
+          j { iriQuery = iriQuery j ++ s }
+        else  
+          j { iriPath  = appendId (iriPath j) (stringToId s) }
+  in
+    case (hasFullIRI i, isAbbrev i) of
+      (True, True) -> full . abbr $ i
+      (True, False) -> full i
+      (False, True) -> abbr i
+      (False, False) -> abbr i
+      
+    
+      
 
 -- | Extracts Id from URI
 uriToCaslId :: IRI -> Id
