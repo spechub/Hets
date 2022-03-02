@@ -105,7 +105,6 @@ import OWL2.CreateOWL
 import OWL2.Logic_OWL2
 import OWL2.ParseOWL (convertOWL)
 import qualified OWL2.ManchesterPrint as OWL2 (prepareBasicTheory, convertBasicTheory)
-import qualified OWL2.ParseMS as OWL2 (parseOntologyDocument)
 #endif
 
 #ifdef RDFLOGIC
