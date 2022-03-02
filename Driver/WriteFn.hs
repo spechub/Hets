@@ -125,8 +125,6 @@ import Driver.WriteLibDefn
 import OMDoc.XmlInterface (xmlOut)
 import OMDoc.Export (exportLibEnv)
 
-import Debug.Trace
-
 writeVerbFile :: HetcatsOpts -> FilePath -> String -> IO ()
 writeVerbFile opts fullFileName str = do
     let f = tryToStripPrefix "file://" fullFileName
@@ -294,19 +292,15 @@ writeTheory ins nam opts filePrefix ga
         | otherwise -> putIfVerbose opts 0 $ wrongLogicMsg f "RDF" lang
 #endif
 #ifndef NOOWLLOGIC
-    OWLOut ty -> trace "-- OWLOut" $ 
-      trace ("-- lang: " ++ show lang) $
-      trace ("-- defSyntax opts: " ++ show (defSyntax opts)) $ case ty of
-      Manchester -> trace "-- Manchester" $
-        writeOWL2VerbFile opts ty f raw_gTh "Manchester"
+    OWLOut ty -> case ty of
+      Manchester -> writeOWL2VerbFile opts ty f raw_gTh "Manchester"
 
       --  TODO: implement OWL2 RDF parser/printer
       -- RdfXml -> trace "-- RdfXml" $ case createOWLTheory raw_gTh of
 
-      Functional -> trace "-- Functional" $
-        writeOWL2VerbFile opts ty f raw_gTh "Functional"
+      Functional -> writeOWL2VerbFile opts ty f raw_gTh "Functional"
 
-      OwlXml -> trace "-- OwlXml" $ case createOWLTheory raw_gTh of
+      OwlXml -> case createOWLTheory raw_gTh of
         Result _ Nothing ->
           putIfVerbose opts 0 $ wrongLogicMsg f "OWL" $ show ty
         Result ds (Just th2) -> do
