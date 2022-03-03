@@ -1008,7 +1008,7 @@ printOntologyDocument (OntologyDocument _ prefDecls ont) =
 
 printPrefixDeclaration :: (String, IRI) -> Doc
 printPrefixDeclaration (prName, iri) =
-    hsep [keyword "Prefix:", text (prName ++ ":"), pretty iri]
+    hsep [keyword "Prefix:", text (prName ++ ":"), text . showIRIFull . setAngles True $ iri]
 
 printOntology :: GA.PrefixMap -> Ontology -> Doc
 printOntology pds 
