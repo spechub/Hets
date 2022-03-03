@@ -479,11 +479,11 @@ annotationPropertyFrame :: GA.PrefixMap -> CharParser st [Axiom]
 annotationPropertyFrame pm = do
     pkeyword annotationPropertyC
     ap <- (expUriP pm)
-    x <- many $ try $ apBit pm ap
+    x <- many $ try $ apSection pm ap
     return $ Declaration [] (mkEntity AnnotationProperty ap) : concat x
 
-apBit :: GA.PrefixMap -> AnnotationProperty -> CharParser st [Axiom]
-apBit pm p = do
+apSection :: GA.PrefixMap -> AnnotationProperty -> CharParser st [Axiom]
+apSection pm p = do
     pkeyword subPropertyOfC
     as <- sepByComma $ optAnnos pm (expUriP pm)
     return $ map (\(ans, i) -> AnnotationAxiom $ SubAnnotationPropertyOf ans p i) as
@@ -514,13 +514,13 @@ classFrame :: GA.PrefixMap -> CharParser st [Axiom]
 classFrame pm = do
     pkeyword classC
     i <- expUriP pm
-    axs <- many $ classFrameBit pm i
+    axs <- many $ classFrameSection pm i
     -- ignore Individuals: ... !
     -- optional $ pkeyword individualsC >> sepByComma (individual pm)
     return $ Declaration [] (mkEntity Class i) : concat axs
 
-classFrameBit :: GA.PrefixMap -> IRI -> CharParser st [Axiom]
-classFrameBit pm i = let e = Expression i in
+classFrameSection :: GA.PrefixMap -> IRI -> CharParser st [Axiom]
+classFrameSection pm i = let e = Expression i in
   do
     pkeyword subClassOfC
     ds <- descriptionAnnotatedList pm
@@ -559,8 +559,8 @@ parseAnnotationAssertions pm s = do
 objPropExprAList :: GA.PrefixMap -> CharParser st [(Annotations, ObjectPropertyExpression)]
 objPropExprAList pm = sepByComma $ optAnnos pm $ objectPropertyExpr pm
 
-objectPropertyFrameBit :: GA.PrefixMap -> ObjectPropertyExpression -> CharParser st [Axiom]
-objectPropertyFrameBit pm oe =
+objectPropertyFrameSection :: GA.PrefixMap -> ObjectPropertyExpression -> CharParser st [Axiom]
+objectPropertyFrameSection pm oe =
   do
     pkeyword domainC
     ds <- descriptionAnnotatedList pm
@@ -602,17 +602,17 @@ objectPropertyFrame :: GA.PrefixMap -> CharParser st [Axiom]
 objectPropertyFrame pm = do
     pkeyword objectPropertyC
     oe <- objectPropertyExpr pm
-    bits <- many $ objectPropertyFrameBit pm oe
+    sections <- many $ objectPropertyFrameSection pm oe
     return $ case oe of
-      ObjectProp i -> Declaration [] (mkEntity ObjectProperty i) : concat bits
-      _ -> concat bits
+      ObjectProp i -> Declaration [] (mkEntity ObjectProperty i) : concat sections
+      _ -> concat sections
 
 dataPropExprAList :: GA.PrefixMap -> CharParser st [(Annotations, DataPropertyExpression)]
 dataPropExprAList pm = sepByComma $ (optAnnos pm) (expUriP pm)
 
 
-dataFrameBit :: GA.PrefixMap -> DataPropertyExpression -> CharParser st [Axiom]
-dataFrameBit pm de = do
+dataFrameSection :: GA.PrefixMap -> DataPropertyExpression -> CharParser st [Axiom]
+dataFrameSection pm de = do
     pkeyword domainC
     ds <- descriptionAnnotatedList pm
     return $ map (\(anns, desc) -> DataPropertyAxiom $ DataPropertyDomain anns de desc) ds
@@ -643,8 +643,8 @@ dataPropertyFrame :: GA.PrefixMap -> CharParser st [Axiom]
 dataPropertyFrame pm = do
     pkeyword dataPropertyC
     duri <- expUriP pm
-    bits <- many $ dataFrameBit pm duri 
-    return $ Declaration [] (mkEntity DataProperty duri) : concat bits
+    sections <- many $ dataFrameSection pm duri 
+    return $ Declaration [] (mkEntity DataProperty duri) : concat sections
 
 fact :: GA.PrefixMap -> Individual -> CharParser st Assertion
 fact pm i = do
@@ -665,8 +665,8 @@ fact pm i = do
             else ObjectPropertyAssertion
         return $ assertion anns o i t
 
-iFrameBit :: GA.PrefixMap -> Individual -> CharParser st [Axiom]
-iFrameBit pm i = do
+iFrameSection :: GA.PrefixMap -> Individual -> CharParser st [Axiom]
+iFrameSection pm i = do
     pkeyword typesC
     ds <- descriptionAnnotatedList pm
     return $ map (\(ans, d) -> Assertion $ ClassAssertion ans d i) ds
@@ -688,7 +688,7 @@ individualFrame ::GA.PrefixMap -> CharParser st [Axiom]
 individualFrame pm = do
     pkeyword individualC
     iuri <- individual pm
-    axs <- many $ iFrameBit pm iuri
+    axs <- many $ iFrameSection pm iuri
     return $ Declaration [] (mkEntity NamedIndividual iuri) :concat axs
 
 parseEquivalentClasses :: GA.PrefixMap -> CharParser st ClassAxiom
