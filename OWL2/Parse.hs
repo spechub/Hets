@@ -204,11 +204,7 @@ symbMapItems = do
 
 -- | parse a comma separated list of uri pairs
 symbPairs :: GenParser Char st [(IRI, Maybe IRI)]
-symbPairs = uriPair >>= \ u -> do
-    commaP `followedWith` uriP
-    us <- symbPairs
-    return $ u : us
-  <|> return [u]
+symbPairs = sepByComma uriPair
 
 uriPair :: GenParser Char st (IRI, Maybe IRI)
 uriPair = uriP >>= \ u -> do

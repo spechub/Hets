@@ -19,6 +19,7 @@ type Annotations = [Annotation]
 data FrameIdValue = 
       IriId IRI
     | ObjInvOfId IRI
+    | ComplexClassExpr ClassExpression
     | MiscId
     | RuleId
     deriving(Show, Eq, Ord)
@@ -60,6 +61,7 @@ data FrameSectionType =
     | SameIndividualSection
     | DifferentIndividualsSection
     | RuleSection
+    | DeclarationSection
     deriving(Show, Eq, Ord)
 
 type FrameId = (FrameType, FrameIdValue)
@@ -103,17 +105,13 @@ tAxiom axiom ms = case axiom of
 tDeclaration :: Axiom -> MnchstrSntx -> MnchstrSntx
 tDeclaration (Declaration anns entity) =
     tAddDecAnnAssertions entity anns
-    . tEntity entity . tAnnotations anns
+    . tEntity entity
 
 tDeclaration _ = id
 
 tAddDecAnnAssertions :: Entity -> Annotations -> MnchstrSntx -> MnchstrSntx
-tAddDecAnnAssertions entity =
-    flip $ foldl (\m ann -> tAddDecAnnAssertion entity ann m)
-
-tAddDecAnnAssertion :: Entity -> Annotation -> MnchstrSntx -> MnchstrSntx
-tAddDecAnnAssertion entity (Annotation anns prop value) ms =
-    M.insert k (M.insert AnnotationsSection newAxioms m1) ms
+tAddDecAnnAssertions entity anns ms =
+    M.insert k (M.insert DeclarationSection newAxioms m1) ms
     where
         k = (frameType, IriId frameIRI)
 
@@ -127,9 +125,8 @@ tAddDecAnnAssertion entity (Annotation anns prop value) ms =
             NamedIndividual -> IndividualFrame
 
         m1 = M.findWithDefault M.empty k ms
-        axs = M.findWithDefault [] AnnotationsSection m1
-        newAxiom = AnnotationAxiom
-            $ AnnotationAssertion anns prop (AnnSubIri frameIRI) value
+        axs = M.findWithDefault [] DeclarationSection m1
+        newAxiom = Declaration anns entity
         newAxioms = newAxiom : axs
 
 -- | transform Entity
@@ -516,10 +513,12 @@ tDataPropertyAxiom _ ms = ms
 -- | transform Class axiom
 tClassAxiom :: ClassAxiom -> MnchstrSntx -> MnchstrSntx
 -- SubClassOf axiom
-tClassAxiom clAx@(SubClassOf anns (Expression iri) supClExpr) ms = 
+tClassAxiom clAx@(SubClassOf anns e supClExpr) ms = 
     M.insert k (M.insert SubClassOfSection newAxioms m2) m1
     where
-        k = (ClassFrame, IriId iri)
+        k = case e of
+            Expression iri -> (ClassFrame,  IriId iri)
+            _ -> (ClassFrame, ComplexClassExpr e)
         m1 = tClassExpression supClExpr . tAnnotations anns $ ms
         m2 = M.findWithDefault M.empty k m1
         axs = M.findWithDefault [] SubClassOfSection m2
@@ -605,9 +604,6 @@ tClassAxiom clAx@(DisjointUnion anns iri clExprs) ms =
         axs = M.findWithDefault [] DisjointUnionOfSection m1
         newAxioms = ClassAxiom clAx : axs
 
-
-tClassAxiom _ ms = ms
-
 -- | transform DatatypeDefinition axiom
 tDatatypeDefinition :: Axiom -> MnchstrSntx -> MnchstrSntx
 tDatatypeDefinition ax@(DatatypeDefinition anns dtIri dr) ms =
@@ -623,22 +619,19 @@ tDatatypeDefinition _ ms = ms
 
 -- | transform HasKey axiom
 tHasKey :: Axiom -> MnchstrSntx -> MnchstrSntx
-tHasKey (HasKey anns (Expression iri) opExprs dpExprs) ms =
+tHasKey (HasKey anns e opExprs dpExprs) ms =
     M.insert k (M.insert HasKeySection newAxioms m1) $ m'
     where
-        k = (ClassFrame, IriId iri)
+        k = case e of 
+            Expression iri -> (ClassFrame, IriId iri)
+            _ -> (ClassFrame, ComplexClassExpr e)
         opExprs' = S.toList . S.fromList $ opExprs
         dpExprs' = S.toList . S.fromList $ dpExprs
         m' = tAnnotations anns . tObjectPropertyExpressions False opExprs'
             . tDataPropertyExpressions dpExprs' $ ms
         m1 = M.findWithDefault M.empty k m'
         axs = M.findWithDefault [] HasKeySection m1
-        newAxioms = (HasKey anns (Expression iri) opExprs' dpExprs') : axs
-
-tHasKey (HasKey anns clExpr opExprs dpExprs) ms =
-    tAnnotations anns . tClassExpression clExpr
-    . tObjectPropertyExpressions False opExprs
-    . tDataPropertyExpressions dpExprs $ ms
+        newAxioms = (HasKey anns e opExprs' dpExprs') : axs
 
 tHasKey _  ms = ms
 
@@ -1059,7 +1052,7 @@ printOPFs pds n ms
 printOPF :: GA.PrefixMap -> Int -> FrameId
     -> M.Map FrameSectionType [Axiom] -> Doc
 printOPF pds n header body =
-    vcat [tabs n <> keyword objectPropertyC <+> hDoc
+    vcat [tabs n <> keyword objectPropertyC <+> printAnnotations pds n annos <+> hDoc
         , annDoc, subPropOfDoc, subPropChainDoc, eqDoc, disjDoc
         , invDoc, domDoc, rangeDoc, charsDoc]
     where
@@ -1067,6 +1060,9 @@ printOPF pds n header body =
                 IriId iri -> printIRI pds iri
                 ObjInvOfId iri -> keyword inverseS <+> printIRI pds iri
                 s -> error $ "Unexpected Frame ID: " ++ show s
+
+        declAxioms = M.findWithDefault [] DeclarationSection body
+        annos = getAnnosFromDeclarationAxioms declAxioms
 
         annAxioms = M.findWithDefault [] AnnotationsSection body
         annDoc = annotationAssertionsToDoc pds (n + 1)
@@ -1288,11 +1284,14 @@ printDPFs pds n ms
 printDPF :: GA.PrefixMap -> Int -> FrameId
     -> M.Map FrameSectionType [Axiom] -> Doc
 printDPF pds n header body = 
-    vcat [tabs n <> keyword dataPropertyC <+> printIRI pds iri
+    vcat [tabs n <> keyword dataPropertyC <+> printAnnotations pds n annos <+> printIRI pds iri
         , annDoc, subDataPropOfDoc, eqDataPropsDoc, disjDataPropsDoc
         , domDataPropDoc, rangeDataPropDoc, funcDataPropDoc]
     where
         IriId iri = snd header
+
+        declAxioms = M.findWithDefault [] DeclarationSection body
+        annos = getAnnosFromDeclarationAxioms declAxioms
 
         annAxioms = M.findWithDefault [] AnnotationsSection body
         annDoc = annotationAssertionsToDoc pds (n + 1)
@@ -1415,10 +1414,13 @@ printAPFs pds n ms
 printAPF :: GA.PrefixMap -> Int -> FrameId
     -> M.Map FrameSectionType [Axiom] -> Doc
 printAPF pds n header body = 
-    vcat [tabs n <> keyword annotationPropertyC <+> printIRI pds iri
+    vcat [tabs n <> keyword annotationPropertyC <+> printAnnotations pds n annos <+> printIRI pds iri
         , annDoc, subPropOfDoc, domainDoc, rangeDoc]
     where
         IriId iri = snd header
+
+        declAxioms = M.findWithDefault [] DeclarationSection body
+        annos = getAnnosFromDeclarationAxioms declAxioms
 
         annAxioms = M.findWithDefault [] AnnotationsSection body
         annDoc = annotationAssertionsToDoc pds (n + 1)
@@ -1485,10 +1487,13 @@ printDFs pds n ms
 printDF :: GA.PrefixMap -> Int -> FrameId
     -> M.Map FrameSectionType [Axiom] -> Doc
 printDF pds n header body =
-    vcat [tabs n <> keyword datatypeC <+> printIRI pds iri
+    vcat [tabs n <> keyword datatypeC <+> printAnnotations pds n annos <+> printIRI pds iri
         , annDoc, eqDoc]
     where
         IriId iri = snd header
+
+        declAxioms = M.findWithDefault [] DeclarationSection body
+        annos = getAnnosFromDeclarationAxioms declAxioms
 
         annAxioms = M.findWithDefault [] AnnotationsSection body
         annDoc = annotationAssertionsToDoc pds (n + 1)
@@ -1531,10 +1536,16 @@ printCFs pds n ms
 printCF :: GA.PrefixMap -> Int -> FrameId
     -> M.Map FrameSectionType [Axiom] -> Doc
 printCF pds n header body =
-    vcat [tabs n <> keyword classC <+> printIRI pds iri
+    vcat [tabs n <> keyword classC <+> printAnnotations pds n annos <+> printClassExpression pds e
         , annDoc, scoDoc, eqDoc, disjDoc, disjuDoc, haskDoc]
     where
-        IriId iri = snd header
+        e = case snd header of
+            IriId iri -> Expression iri
+            ComplexClassExpr c -> c
+            _ -> error $ "Unexpected subject in class frame"
+
+        declAxioms = M.findWithDefault [] DeclarationSection body
+        annos = getAnnosFromDeclarationAxioms declAxioms
 
         annAxioms = M.findWithDefault [] AnnotationsSection body
         annDoc = annotationAssertionsToDoc pds (n + 1)
@@ -1576,6 +1587,11 @@ classAxiomsToDoc pds n frameSectionType axs =
 hasKeyAxiomsToCFDoc :: GA.PrefixMap -> Int -> [Axiom] -> Doc
 hasKeyAxiomsToCFDoc pds n axs =  
     foldl (\d ax -> printHasKeyAxiom pds n ax $+$ d) empty axs
+
+getAnnosFromDeclarationAxioms :: [Axiom] -> Annotations
+getAnnosFromDeclarationAxioms = concatMap $ \a -> case a of
+    Declaration annos _ -> annos
+    _ -> []
 
 unpackClassAxiom :: Axiom -> ClassAxiom
 unpackClassAxiom (ClassAxiom a) = a
@@ -1656,10 +1672,13 @@ printIFs pds n ms
 printIF :: GA.PrefixMap -> Int -> FrameId
     -> M.Map FrameSectionType [Axiom] -> Doc
 printIF pds n header body = 
-    vcat [tabs n <> keyword individualC <+> printIRI pds iri
+    vcat [tabs n <> keyword individualC <+> printAnnotations pds n annos <+> printIRI pds iri
         , annDoc, sameAsDoc, difFromDoc, typesDoc, propAssertionDoc]
     where 
         IriId iri = snd header
+
+        declAxioms = M.findWithDefault [] DeclarationSection body
+        annos = getAnnosFromDeclarationAxioms declAxioms
 
         annAxioms = M.findWithDefault [] AnnotationsSection body
         annDoc = annotationAssertionsToDoc pds (n + 1)
@@ -2132,8 +2151,10 @@ printClassExpression pds expr = case expr of
         printObjectPropertyExpression pds opExp <+> cardinalityType ty
         <+> text (show card)
         <+> maybe (keyword "owl:Thing") (printPrimary pds) maybeDesc
-    DataValuesFrom ty dpExp dRange ->
-        printIRI pds (head dpExp) <+> quantifierType ty
+    DataValuesFrom ty dpExps dRange -> (case dpExps of
+            [dpExp] -> printIRI pds dpExp
+            _ -> parens . vcat . punctuate comma $ map (printIRI pds) dpExps)
+        <+> quantifierType ty
         <+> printDataRange pds dRange
     DataHasValue dpExp cons ->
         printIRI pds dpExp <+> keyword valueS <+> printLiteral pds cons

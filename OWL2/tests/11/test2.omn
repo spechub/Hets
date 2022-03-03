@@ -1,0 +1,7 @@
+Prefix: : <http://example.org/>
+
+Ontology: 
+
+ObjectProperty: prop1
+
+ObjectProperty: inverse prop1
