@@ -33,23 +33,23 @@ processXML file = do
     let o1 = xmlBasicSpec mempty xml
     let p = xmlOntologyDoc emptySign o1
     let o2 = xmlBasicSpec mempty p
-    if cmpAxioms o1 o2 then putStrLn "✅ success"
-    else putStrLn $ "❌ parse-print-parse circle failed."
+    if cmpAxioms o1 o2 then putStrLn "\ESC[1;38;5;40m✔\ESC[0m success"
+    else putStrLn $ "\ESC[1;38;5;196m✘\ESC[0m parse-print-parse circle failed."
     
 processParserPrinter :: FilePath -> CharParser () OntologyDocument -> (OntologyDocument -> OntologyDocument -> Bool) -> IO ()
 processParserPrinter file parser cmp = do
     s <- readFile file
     case parse (parser >>= ((>>) eof . return)) file s of
-        Left err -> putStrLn $ "❌ initial parsing failed: " ++ show err
+        Left err -> putStrLn $ "\ESC[1;38;5;196m✘\ESC[0m initial parsing failed: " ++ show err
         Right o1 -> let r = basicOWL2Analysis (o1, emptySign, emptyGlobalAnnos) in case maybeResult r of
             Just (o1', _, _) -> let p = show $ pretty o1' in
                 case parse (parser >>= ((>>) eof . return)) file p of
-                    Left err -> putStrLn $ "❌ parsing printed failed: " ++ show err
+                    Left err -> putStrLn $ "\ESC[1;38;5;196m✘\ESC[0m parsing printed failed: " ++ show err
                     Right o2 -> let (o2', _, _) = fromJust $ maybeResult $ basicOWL2Analysis (o2, emptySign, emptyGlobalAnnos) in
-                        if cmp o1' o2' then  putStrLn "✅ success"
+                        if cmp o1' o2' then  putStrLn "\ESC[1;38;5;40m✔\ESC[0m success"
                         else
-                            putStrLn $ "❌ parse-print-parse circle failed. Printed: " ++ show p
-            Nothing -> putStrLn $ "❌ static analysis failed: " ++ show (diags r)
+                            putStrLn $ "\ESC[1;38;5;196m✘\ESC[0m parse-print-parse circle failed. Printed: " ++ show p
+            Nothing -> putStrLn $ "\ESC[1;38;5;196m✘\ESC[0m static analysis failed: " ++ show (diags r)
 
 processOMN :: String -> IO ()
 processOMN file = processParserPrinter file (MSParse.parseOntologyDocument mempty) cmpAxioms

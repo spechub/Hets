@@ -1,28 +1,34 @@
-#!/bin/sh
+#!/bin/ksh93
+
+SD=$( cd ${ dirname $0; }; printf "$PWD" )
+BD=${SD%/*/*}
 
 PA=$1
 SET=$2
-ANNOS=../../Common/test/Standard.annos
+ANNOS=${BD}/Common/test/Standard.annos
 
-. ../../Common/test/checkFunctions.sh
+. ${BD}/Common/test/checkFunctions.sh
 
-runchecker MixIds ../../Common/test/MixIds.casl MixIds.casl.output
-runchecker MixIds ../../Common/test/WrongMixIds.casl WrongMixIds.casl.output
-runchecker BasicSpec ../../CASL/test/BasicSpec.casl BasicSpec.casl.output
-runchecker MixfixTerms ../../CASL/test/MixfixTerms.casl MixfixTerms.casl.output
-runchecker MixfixTerms ../../CASL/test/MixfixFormula.casl MixfixFormula.casl.output
+D=${BD}/Common/test/
 
-for i in Kinds Types Terms Items MixfixTerms
-do
-    runmycheck $i hascasl
-    runwrongcheck $i hascasl
+runchecker MixIds ${D}MixIds.casl MixIds.casl.output || addErr
+runchecker MixIds ${D}WrongMixIds.casl WrongMixIds.casl.output || addErr
+runchecker BasicSpec ${D}sicSpec.casl BasicSpec.casl.output || addErr
+runchecker MixfixTerms ${D}xfixTerms.casl MixfixTerms.casl.output || addErr
+runchecker MixfixTerms ${D}xfixFormula.casl MixfixFormula.casl.output || addErr
+
+for T in Kinds Types Terms Items MixfixTerms ; do
+    runmycheck $T hascasl || addErr
+    runwrongcheck $T hascasl || addErr
 done
 
-runchecker BasicSpec BasicSpec.hascasl BasicSpec.hascasl.parser.output
-runwrongcheck BasicSpec hascasl
+runchecker BasicSpec BasicSpec.hascasl BasicSpec.hascasl.parser.output || addErr
+runwrongcheck BasicSpec hascasl || addErr
 
-for i in [A-HLN-SX-Z]*.hascasl
-do
-  echo "processing $i"
-  runchecker "analysis" $i $i.output
+for F in [A-HLN-SX-Z]*.hascasl ; do
+	infoMsg "  Processing $F ...  "
+	runchecker "analysis" $F ${F}.output || addErr
 done
+
+errorMsg ${ERR} "${.sh.file}"
+(( ! ERR ))
