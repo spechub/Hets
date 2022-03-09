@@ -103,8 +103,13 @@ uriP = skips $ try $ checkWithUsing showIRI uriQ $ \ q -> let p = prefixName q i
         ++ [ show d ++ e | d <- equivOrDisjointL, e <- [classesC, propertiesC]]
 
 
+datatypeKey :: GA.PrefixMap -> CharParser st IRI
+datatypeKey pm = mkIRI <$> (choice $ map (try . keyword) datatypeKeys) >>=
+    return . expandIRI pm . setPrefix "xsd"
+  
+
 datatypeUri :: GA.PrefixMap -> CharParser st IRI
-datatypeUri pm = fmap mkIRI (choice $ map (try . keyword) datatypeKeys) <|> (expUriP pm)
+datatypeUri pm = datatypeKey pm <|> expUriP pm
 
 optSign :: CharParser st Bool
 optSign = option False $ fmap (== '-') (oneOf "+-")

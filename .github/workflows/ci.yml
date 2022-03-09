@@ -209,7 +209,7 @@ jobs:
   job_2a:
     # Takes ~ 18 min | 45 s.
     name: Build Hets Server
-    if: github.event_name == 'pull_request'
+    #if: github.event_name == 'pull_request'
     runs-on: ubuntu-18.04
     needs: job_1
     steps:
@@ -289,8 +289,27 @@ jobs:
           # gives us a proper exit code, too.
           ./hets -V
 
+      # 28s
+      - name: Compress Binary
+        continue-on-error: true
+        #if: github.event_name == 'push'
+        run: |
+          xz -c -T0 --x86 --lzma2 hets_server.bin >hets-server.xz
+          ls -l hets-server.xz
+
+      # 14.1 MiB, 2s
+      - name: Upload Binary
+        continue-on-error: true
+        #if: github.event_name == 'push'
+        uses: actions/upload-artifact@v2
+        with:
+          name: hets server binary
+          path: hets-server.xz
+          retention-days: 90
+
       # ~ 125 MiB , 15s
       - name: Upload Hets build dir
+        if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v2
         with:
           name: hets-server
@@ -316,7 +335,7 @@ jobs:
   job_2b:
     # Takes ~ 19 min | 45 s.
     name: Build Hets Desktop
-    if: github.event_name == 'pull_request'
+    #if: github.event_name == 'pull_request'
     runs-on: ubuntu-18.04
     needs: job_1
     steps:
@@ -372,8 +391,27 @@ jobs:
           # gives us a proper exit code, too.
           ./hets -V
 
+      # 28..37s
+      - name: Compress Binary
+        continue-on-error: true
+        #if: github.event_name == 'push'
+        run: |
+          xz -c -T0 --x86 --lzma2 hets.bin >hets.xz
+          ls -l hets.xz
+
+      # 14.1 MiB, 2..3s
+      - name: Upload Binary
+        continue-on-error: true
+        #if: github.event_name == 'push'
+        uses: actions/upload-artifact@v2
+        with:
+          name: hets desktop binary
+          path: hets.xz
+          retention-days: 90
+
       # ~ 17 s
       - name: Upload Hets build dir
+        if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v2
         with:
           name: hets-desktop
@@ -589,8 +627,6 @@ jobs:
           sudo rm -f /var/lib/man-db/auto-update
           sudo apt-get install latexmk texlive-fonts-recommended \
               texlive-latex-extra
-          npm install --only=production --no-optional \
-              marked@0.7.0 commander@6.2.1
 
       - name: Checkout
         if: startsWith(env.FAKE_URL, 'http') == false
@@ -624,10 +660,20 @@ jobs:
           # export TMPDIR=/var/tmp	# if haddock fails with no space left
           make docs
           make doc && mv doc/UserGuide.pdf docs/
-          utils/md2html.js -t 'Hets (The heterogeneous tool set)' \
-              -i README.md  -o doc/README.html
-          [[ -s docs/README.html ]] || rm -f docs/README.html
           rmdir docs || true
+          if [[ -d docs ]]; then
+              # Can't do it in 'Install packages': cache copy doesn't contain it
+              npm install --only=production --no-optional \
+                  marked@0.7.0 commander@6.2.1
+              npm list
+              utils/md2html.js -t 'Hets (The heterogeneous tool set)' \
+                  -i README.md  -o docs/README.html
+              [[ -s docs/README.html ]] || rm -f docs/README.html
+              printf '%s %s %s/actions/runs/%s\n' \
+                  ${{ github.ref_name }} ${{ github.event_name }} \
+                  ${{ github.event.repository.html_url }} ${{ github.run_id }} \
+                  >docs/event
+          fi
           tar cplzf ${{ runner.temp }}/docs.tgz docs
 
       - name: Upload docs to artifacts
