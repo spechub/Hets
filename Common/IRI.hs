@@ -132,7 +132,7 @@ data IRI = IRI
     { iriPos :: Range             -- ^ position
 
     -- fields used for storing an absolute IRI
-      iriScheme :: String         -- ^ @foo:@
+    , iriScheme :: String         -- ^ @foo:@
     , iriAuthority :: Maybe IRIAuth -- ^ @\/\/anonymous\@www.haskell.org:42@
     , iriPath :: Id               -- ^ local part @\/ghc@
     , iriQuery :: String          -- ^ @?query@
