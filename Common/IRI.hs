@@ -114,28 +114,38 @@ For example, for the (full) IRI
 
 or the abbreviated IRI
 
->   prefix:iriPath?iriQuery#iriFragment
+>   prefix:iFragement
 
 or the simple IRI
 
->  iriPath
+>  iFragement
+
+The @isAbbrev@ flag is set, if an iri @i@ is abbreviated. With a prefix map @pm@
+  or @pm'@ it can be expanded using @expandIRI pm i@, @expandIRI' pm' i@,
+  @expandCurie pm i@, and @expandCurie' pm ' i@ yielding a new IRI which stores
+  both, the abbreviated and absolute IRI.
 -}
 
 
 
 data IRI = IRI
-    { iriScheme :: String         -- ^ @foo:@
+    { iriPos :: Range             -- ^ position
+
+    -- fields used for storing an absolute IRI
+      iriScheme :: String         -- ^ @foo:@
     , iriAuthority :: Maybe IRIAuth -- ^ @\/\/anonymous\@www.haskell.org:42@
     , iriPath :: Id               -- ^ local part @\/ghc@
     , iriQuery :: String          -- ^ @?query@
     , iriFragment :: String       -- ^ @#frag@
-    , prefixName :: String        -- ^ @prefix@
+
+    -- fields used for storing a CURIE
+    , prefixName :: String        -- ^ Prefix name of the CURIE (@prefix@)
+    , iFragment :: String         -- ^ Fragment of the CURIE (@iFragment@)
+
+    -- flags
     , isAbbrev :: Bool            -- ^ is the IRI a CURIE or not?
     , isBlankNode :: Bool         -- ^ is the IRI a blank node?                   
     , hasAngles :: Bool           -- ^ IRI in angle brackets
-    , iriPos :: Range             -- ^ position
-    , iFragment :: String         {- ^ If the IRI is a CURIE, @iFragment@
-    holds the fragment -}
     } deriving (Typeable, Data)
 
 -- | Type for authority value within a IRI
@@ -208,7 +218,18 @@ instance Show IRI where
 instance Eq IRI where
   (==) i j = compare i j == EQ
 
--- compares full/expanded IRI (if expanded) or abbreviated part if not expanded
+{- | compares two IRIs
+
+If both IRIs are absolute or are expanded, only the absolute IRIs are compared.
+If both IRIs abbreviated *and* not expanded their abbreviated forms are compared.
+
+Comparision is done componentwise for all components in any other case:
+  If both IRIs, @i@ and @j@, abbreviated forms are equal but only one IRI @i@ is
+  expanded they don't have to be equal and cannot be compared based on their
+  abbreviated forms as the prefix of @j@ might not point to the same as the
+  prefix of @i@. This cannot be resolved at the time of comparison.
+-}
+
 instance Ord IRI where
   compare i k = case (hasFullIRI i, hasFullIRI k) of
     (True, True) -> comparing (\ j -> 
@@ -280,6 +301,7 @@ showIRICompact i
   | not $ null $ iriQuery i = tail $ iriQuery i
   | otherwise = showIRIAbbrev i
 
+-- | shows IRI as abbreviated
 showIRIAbbrev :: IRI -> String
 showIRIAbbrev i = iriToStringAbbrev i ""
  -- don't duplicate code
@@ -892,7 +914,12 @@ iriToStringFull iuserinfomap (IRI { iriScheme = scheme
   ++ iriAuthToString iuserinfomap authority ""
   ++ show path ++ query ++ fragment ++ (if b then ">" else "") ++ s
 
+{- | @iriToStringAbbrev i@ Shows @i@ in abbreviated form
 
+In a previous implementation the iFragment of abbreviated IRIs were stored in
+  the path, query and fragement. For backward compatibility, these components
+  are used if the @iFragment i@ is empty.
+-}
 iriToStringAbbrev :: IRI -> ShowS
 iriToStringAbbrev (IRI { prefixName = pname
                        , iriPath = aPath
@@ -1142,6 +1169,8 @@ If no declaration is found, return @iri@ unchanged. -}
 expandIRI :: Map String IRI -> IRI -> IRI
 expandIRI pm iri = fromMaybe iri $ expandCurie pm iri
 
+
+{- | Same as @expandIRI@ but with a @Map String String@ as prefix map. See @expandCurie'@ for more details. -}
 expandIRI' :: Map String String -> IRI -> IRI
 expandIRI' pm iri = fromMaybe iri $ expandCurie' pm iri
 
@@ -1160,6 +1189,11 @@ expandCurie pm iri
             , isAbbrev = True }
     | otherwise = Just iri
 
+{- | Same as @expandCurie@ but with @Map String String@ as prefix map.
+
+If the prefixmap maps prefix names to the string representation of absolut iris,
+expansion can be done more efficient than using @expandCurie@.
+-}
 expandCurie' :: Map String String -> IRI -> Maybe IRI
 expandCurie' pm iri
     | isAbbrev iri = do
@@ -1191,6 +1225,12 @@ mergeCurie c i =
 deleteQuery :: IRI -> IRI
 deleteQuery i = i { iriQuery = "" }
 
+{-| @addSuffixToIRI s iri@ adds a suffix @s@ to @iri@.
+
+@s@ is added to the @iFragement@ if @iri@ is abbreviated.
+@s@ is added to the query or the path of @iri@ if @iri@ contains an absolute IRI
+  (either being an absolute IRI or being an expanded abbreviated IRI)
+ -}
 addSuffixToIRI :: String -> IRI -> IRI
 addSuffixToIRI s i =
   let abbr j = j { iFragment = iFragment j ++ s }
