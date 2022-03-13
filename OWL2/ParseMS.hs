@@ -58,7 +58,7 @@ characters = [minBound .. maxBound]
 
 -- | OWL and CASL structured keywords including 'andS' and 'notS'
 owlKeywords :: [String]
-owlKeywords = notS : stringS : map show entityTypes
+owlKeywords = endS : notS : stringS : map show entityTypes
   ++ map show characters ++ keywords ++ criticalKeywords
 
 ncNameStart :: Char -> Bool
@@ -97,7 +97,7 @@ expUriP pm = uriP >>= return . expandIRI pm
 uriP :: CharParser st IRI
 uriP = skips $ try $ checkWithUsing showIRI uriQ $ \ q -> let p = prefixName q in
   if not $ isAbbrev q then True else
-   if null p then notElem (show $ iriPath q) owlKeywords
+   if null p then notElem (iFragment q) owlKeywords
     else notElem p $ map (takeWhile (/= ':'))
         $ colonKeywords
         ++ [ show d ++ e | d <- equivOrDisjointL, e <- [classesC, propertiesC]]
