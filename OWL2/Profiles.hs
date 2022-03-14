@@ -41,11 +41,10 @@ data Profiles = Profiles
     } deriving (Show, Eq, Ord, Typeable, Data)
 
 allProfiles :: [[Profiles]]
-allProfiles = let b = [True, False] in
-  [[bottomProfile]
-  , [elProfile, qlProfile, rlProfile]
-  , [elqlProfile, elrlProfile, qlrlProfile]
-  , [topProfile]]
+allProfiles = [[bottomProfile]
+            , [elProfile, qlProfile, rlProfile]
+            , [elqlProfile, elrlProfile, qlrlProfile]
+            , [topProfile]]
 
 bottomProfile :: Profiles
 bottomProfile = Profiles False False False
@@ -198,25 +197,6 @@ annotation (AS.Annotation as _ av) = profileMax [annotations as, case av of
 
 annotations :: [AS.Annotation] -> Profiles
 annotations = profileMax . map annotation
-
-assertionQL :: AS.ClassExpression -> Bool
-assertionQL ce = case ce of
-    AS.Expression _ -> True
-    _ -> False
-
-char :: [AS.Character] -> [AS.Character] -> Bool
-char charList ls = all (`elem` ls) charList
-
-fact :: Fact -> Profiles
-fact f = case f of
-    ObjectPropertyFact pn ope i -> profileMax [objProp ope, individual i,
-        case pn of
-            AS.Positive -> topProfile
-            AS.Negative -> elrlProfile]
-    DataPropertyFact pn _ l -> profileMax [literal l,
-        case pn of
-            AS.Positive -> topProfile
-            AS.Negative -> elrlProfile]
 
 classAxiomClassExpressions :: [AS.Annotation] -> [AS.ClassExpression] -> Profiles
 classAxiomClassExpressions anns clExprs = profileMax [annotations anns, bottomProfile {
