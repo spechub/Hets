@@ -30,14 +30,15 @@ owlDatatypes :: Set.Set Datatype
 owlDatatypes = predefIRIs
 
 data OWLSub = OWLSub
-    { numberRestrictions :: NumberRestrictions
-    , nominals :: Bool
-    , inverseRoles :: Bool
-    , roleTransitivity :: Bool
-    , roleHierarchy :: Bool
-    , complexRoleInclusions :: Bool
-    , addFeatures :: Bool
-    , datatype :: Set.Set Datatype
+    { numberRestrictions :: NumberRestrictions -- | Cardinaly restrictions the can be used
+    , nominals :: Bool              -- | Enumerated classes can be used
+    , inverseRoles :: Bool          -- | Inverse roles can be used
+    , roleTransitivity :: Bool      -- | Roles can be transitive
+    , roleHierarchy :: Bool         -- | Role hierachy (subproperties) can be used
+    , complexRoleInclusions :: Bool -- | ? Complex role inclusions can be used
+    , addFeatures :: Bool           -- | ?
+    , datatype :: Set.Set Datatype  -- | Set of datatypes that can be used
+    , rules :: Bool                 -- | SWRL Rules can be used
     } deriving (Show, Eq, Ord, Typeable, Data)
 
 allSublogics :: [[OWLSub]]
@@ -53,6 +54,7 @@ allSublogics = let
   , [b { roleHierarchy = t } ]
   , [b { complexRoleInclusions = t } ]
   , [b { addFeatures = t } ]
+  , [b { rules = t} ]
   , map (\ d -> b { datatype = Set.singleton d }) $ Set.toList owlDatatypes ]
 
 -- | sROIQ(D)
@@ -66,6 +68,7 @@ slTop = OWLSub
     , complexRoleInclusions = True
     , addFeatures = True
     , datatype = owlDatatypes
+    , rules = True
     }
 
 -- | ALC
@@ -79,6 +82,7 @@ slBottom = OWLSub
     , complexRoleInclusions = False
     , addFeatures = False
     , datatype = Set.empty
+    , rules = False
     }
 
 
@@ -93,6 +97,7 @@ slMax sl1 sl2 = OWLSub
             (complexRoleInclusions sl2)
     , addFeatures = max (addFeatures sl1) (addFeatures sl2)
     , datatype = Set.union (datatype sl1) (datatype sl2)
+    , rules = max (rules sl1) (rules sl2)
     }
 
 -- | Naming for Description Logics
@@ -108,6 +113,7 @@ slName sl =
         Qualified -> "Q"
         Unqualified -> "N"
         None -> "")
+    ++ (if rules sl then "u" else "")
     ++ let ds = datatype sl in if Set.null ds then "" else
            "-D|" ++ (if ds == owlDatatypes then "-|" else
                 intercalate "|" (map printDatatype $ Set.toList ds) ++ "|")
@@ -137,6 +143,9 @@ requireNominals sl = sl {nominals = True}
 
 requireInverseRoles :: OWLSub -> OWLSub
 requireInverseRoles sl = sl {inverseRoles = True}
+
+requireRules :: OWLSub -> OWLSub
+requireRules sl = sl {rules = True}
 
 slDatatype :: Datatype -> OWLSub
 slDatatype dt = slBottom {datatype = if isDatatypeKey dt then
@@ -231,6 +240,7 @@ slAxiom ax = case ax of
         SubAnnotationPropertyOf _ _ _ -> requireRoleHierarchy slBottom
         AnnotationPropertyDomain _ _ _ -> slBottom
         AnnotationPropertyRange _ _ _ -> slBottom
+    Rule _ -> requireRules slBottom
     _ -> slBottom
 
 
