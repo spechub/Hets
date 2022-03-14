@@ -26,8 +26,7 @@ module OWL2.Profiles
     , ontologyProfiles
     ) where
 
-import qualified OWL2.AS as AS
-import OWL2.MS
+import OWL2.AS
 
 import Data.Data
 import qualified Data.Set as Set
@@ -90,184 +89,184 @@ maximalCovering :: Profiles -> [Profiles] -> Profiles
 maximalCovering c pl = profileMax [c, profileMax pl]
 
 
-owlELQLForbiddenDatatypes :: Set.Set AS.Datatype
+owlELQLForbiddenDatatypes :: Set.Set Datatype
 owlELQLForbiddenDatatypes = Set.fromList . map (setPrefix "xsd" . mkIRI) $
  [ "double", "float", "nonPositiveInteger", "positiveInteger"
  , "negativeInteger", "long", "int", "short", "byte", "unsignedLong"
  , "unsignedInt", "unsignedShort", "unsignedByte", "language", "boolean"]
 
-datatype :: AS.Datatype -> Profiles
+datatype :: Datatype -> Profiles
 datatype dt = if dt `Set.member` owlELQLForbiddenDatatypes then rlProfile else bottomProfile 
 
-literal :: AS.Literal -> Profiles
+literal :: Literal -> Profiles
 literal l = case l of
-    AS.Literal _ (AS.Typed dt) -> datatype dt
-    AS.NumberLit f -> datatype . setPrefix "xsd" . mkIRI . AS.numberName $ f
+    Literal _ (Typed dt) -> datatype dt
+    NumberLit f -> datatype . setPrefix "xsd" . mkIRI . numberName $ f
     _ -> bottomProfile
 
-individual :: AS.Individual -> Profiles
-individual i = if AS.isAnonymous i then rlProfile else bottomProfile
+individual :: Individual -> Profiles
+individual i = if isAnonymous i then rlProfile else bottomProfile
 
-objProp :: AS.ObjectPropertyExpression -> Profiles
+objProp :: ObjectPropertyExpression -> Profiles
 objProp ope = case ope of
-    AS.ObjectInverseOf _ -> qlrlProfile
+    ObjectInverseOf _ -> qlrlProfile
     _ -> bottomProfile
 
 -- TODO: verify
-dataRange :: AS.DataRange -> Profiles
+dataRange :: DataRange -> Profiles
 dataRange dr = case dr of
-    AS.DataType dt cfl ->
+    DataType dt cfl ->
         if null cfl then datatype dt
          else topProfile
-    AS.DataJunction AS.IntersectionOf drl -> profileMax $ map dataRange drl
-    AS.DataOneOf ll -> topProfile {
+    DataJunction IntersectionOf drl -> profileMax $ map dataRange drl
+    DataOneOf ll -> topProfile {
                         outsideEL = length ll /= 1 || outsideEL (profileMaxWith literal ll)
                     }
     _ -> topProfile
 
-subClass :: AS.ClassExpression -> Profiles
+subClass :: ClassExpression -> Profiles
 subClass cex = case cex of
-    AS.Expression c -> if AS.isThing c then elqlProfile else bottomProfile
-    AS.ObjectJunction jt cel -> maximalCovering (case jt of
-        AS.IntersectionOf -> elrlProfile
-        AS.UnionOf -> rlProfile) $ map subClass cel
-    AS.ObjectOneOf il -> bottomProfile {
+    Expression c -> if isThing c then elqlProfile else bottomProfile
+    ObjectJunction jt cel -> maximalCovering (case jt of
+        IntersectionOf -> elrlProfile
+        UnionOf -> rlProfile) $ map subClass cel
+    ObjectOneOf il -> bottomProfile {
                     outsideEL = length il /= 1 || outsideEL (profileMaxWith individual il),
                     outsideRL = outsideRL $ profileMaxWith individual il
                 }
-    AS.ObjectValuesFrom AS.SomeValuesFrom ope ce -> profileMax [objProp ope,
+    ObjectValuesFrom SomeValuesFrom ope ce -> profileMax [objProp ope,
         case ce of
-            AS.Expression c -> if AS.isThing c then bottomProfile
+            Expression c -> if isThing c then bottomProfile
                              else elrlProfile
             _ -> maximalCovering elrlProfile [subClass ce]]
-    AS.ObjectHasValue ope i -> maximalCovering elrlProfile
+    ObjectHasValue ope i -> maximalCovering elrlProfile
        [objProp ope, individual i]
-    AS.ObjectHasSelf ope -> maximalCovering elProfile [objProp ope]
-    AS.DataValuesFrom AS.SomeValuesFrom _ dr -> dataRange dr
-    AS.DataHasValue _ l -> literal l
+    ObjectHasSelf ope -> maximalCovering elProfile [objProp ope]
+    DataValuesFrom SomeValuesFrom _ dr -> dataRange dr
+    DataHasValue _ l -> literal l
     _ -> bottomProfile
 
-superClass :: AS.ClassExpression -> Profiles
+superClass :: ClassExpression -> Profiles
 superClass cex = case cex of
-    AS.Expression c -> if AS.isThing c then elqlProfile else bottomProfile
-    AS.ObjectJunction AS.IntersectionOf cel -> profileMaxWith superClass cel
-    AS.ObjectComplementOf ce -> maximalCovering qlrlProfile [subClass ce]
-    AS.ObjectOneOf il -> bottomProfile {
+    Expression c -> if isThing c then elqlProfile else bottomProfile
+    ObjectJunction IntersectionOf cel -> profileMaxWith superClass cel
+    ObjectComplementOf ce -> maximalCovering qlrlProfile [subClass ce]
+    ObjectOneOf il -> bottomProfile {
                     outsideEL = length il /= 1 || outsideEL (profileMaxWith individual il),
                     outsideRL = outsideRL $ profileMaxWith individual il
                 }
-    AS.ObjectValuesFrom qt ope ce -> case qt of
-        AS.SomeValuesFrom -> profileMax [objProp ope, case ce of
-            AS.Expression _ -> elqlProfile
+    ObjectValuesFrom qt ope ce -> case qt of
+        SomeValuesFrom -> profileMax [objProp ope, case ce of
+            Expression _ -> elqlProfile
             _ -> elProfile]
-        AS.AllValuesFrom -> profileMax [superClass ce, rlProfile]
-    AS.ObjectHasValue ope i -> profileMax [elrlProfile, objProp ope,
+        AllValuesFrom -> profileMax [superClass ce, rlProfile]
+    ObjectHasValue ope i -> profileMax [elrlProfile, objProp ope,
         individual i]
-    AS.ObjectHasSelf ope -> profileMax [elProfile, objProp ope]
-    AS.ObjectCardinality (AS.Cardinality AS.MaxCardinality i _ mce) ->
+    ObjectHasSelf ope -> profileMax [elProfile, objProp ope]
+    ObjectCardinality (Cardinality MaxCardinality i _ mce) ->
         if elem i [0, 1] then profileMax [rlProfile, case mce of
             Nothing -> bottomProfile
             Just ce -> case ce of
-                AS.Expression _ -> bottomProfile
+                Expression _ -> bottomProfile
                 _ -> subClass ce]
          else bottomProfile
-    AS.DataValuesFrom qt _ dr -> profileMax [dataRange dr, case qt of
-        AS.SomeValuesFrom -> elqlProfile
-        AS.AllValuesFrom -> rlProfile]
-    AS.DataHasValue _ l -> profileMax [elrlProfile, literal l]
-    AS.DataCardinality (AS.Cardinality AS.MaxCardinality i _ mdr) ->
+    DataValuesFrom qt _ dr -> profileMax [dataRange dr, case qt of
+        SomeValuesFrom -> elqlProfile
+        AllValuesFrom -> rlProfile]
+    DataHasValue _ l -> profileMax [elrlProfile, literal l]
+    DataCardinality (Cardinality MaxCardinality i _ mdr) ->
         if elem i [0, 1] then profileMax [rlProfile, case mdr of
             Nothing -> topProfile
             Just dr -> dataRange dr]
          else bottomProfile
     _ -> bottomProfile
 
-equivClassRL :: AS.ClassExpression -> Bool
+equivClassRL :: ClassExpression -> Bool
 equivClassRL cex = case cex of
-    AS.Expression c -> (not . AS.isThing) c
-    AS.ObjectJunction AS.IntersectionOf cel -> any equivClassRL cel
-    AS.ObjectHasValue _ i -> outsideRL $ individual i
-    AS.DataHasValue _ l -> outsideRL $ literal l
+    Expression c -> (not . isThing) c
+    ObjectJunction IntersectionOf cel -> any equivClassRL cel
+    ObjectHasValue _ i -> outsideRL $ individual i
+    DataHasValue _ l -> outsideRL $ literal l
     _ -> False
 
-annotation :: AS.Annotation -> Profiles
-annotation (AS.Annotation as _ av) = profileMax [annotations as, case av of
-    AS.AnnValLit l -> literal l
+annotation :: Annotation -> Profiles
+annotation (Annotation as _ av) = profileMax [annotations as, case av of
+    AnnValLit l -> literal l
     _ -> topProfile]
 
-annotations :: [AS.Annotation] -> Profiles
+annotations :: [Annotation] -> Profiles
 annotations = profileMax . map annotation
 
-classAxiomClassExpressions :: [AS.Annotation] -> [AS.ClassExpression] -> Profiles
+classAxiomClassExpressions :: [Annotation] -> [ClassExpression] -> Profiles
 classAxiomClassExpressions anns clExprs = profileMax [annotations anns, bottomProfile {
                 outsideEL = outsideEL $ profileMaxWith subClass $ clExprs,
                 outsideQL = outsideQL $ profileMaxWith subClass $ clExprs,
                 outsideRL = any equivClassRL $ clExprs
             }]
 
-axiom :: AS.Axiom -> Profiles
+axiom :: Axiom -> Profiles
 axiom ax = case ax of
-    AS.Declaration _ _ -> bottomProfile
-    AS.ClassAxiom cax -> case cax of
-        AS.SubClassOf anns sub sup -> profileMax [annotations anns, subClass sub, superClass sup]
-        AS.EquivalentClasses anns cExprs -> classAxiomClassExpressions anns cExprs
-        AS.DisjointClasses anns cExprs -> classAxiomClassExpressions anns cExprs
-        AS.DisjointUnion anns c cExprs -> classAxiomClassExpressions anns (AS.Expression c : cExprs)
-    AS.ObjectPropertyAxiom opax -> case opax of
-        AS.SubObjectPropertyOf anns subOpExpr supOpExpr -> case subOpExpr of
-            AS.SubObjPropExpr_obj oExpr ->
+    Declaration _ _ -> bottomProfile
+    ClassAxiom cax -> case cax of
+        SubClassOf anns sub sup -> profileMax [annotations anns, subClass sub, superClass sup]
+        EquivalentClasses anns cExprs -> classAxiomClassExpressions anns cExprs
+        DisjointClasses anns cExprs -> classAxiomClassExpressions anns cExprs
+        DisjointUnion anns c cExprs -> classAxiomClassExpressions anns (Expression c : cExprs)
+    ObjectPropertyAxiom opax -> case opax of
+        SubObjectPropertyOf anns subOpExpr supOpExpr -> case subOpExpr of
+            SubObjPropExpr_obj oExpr ->
                 profileMax [annotations anns, profileMax $ map objProp [oExpr, supOpExpr]]
-            AS.SubObjPropExpr_exprchain oExprs -> 
+            SubObjPropExpr_exprchain oExprs -> 
                 maximalCovering elrlProfile [annotations anns, profileMax $ map objProp (supOpExpr : oExprs)]
-        AS.EquivalentObjectProperties anns oExprs -> maximalCovering (annotations anns) $ map objProp oExprs
-        AS.DisjointObjectProperties anns oExprs -> maximalCovering qlrlProfile $ (annotations anns) : map objProp oExprs
-        AS.InverseObjectProperties anns o1 o2 -> maximalCovering qlrlProfile $ (annotations anns) : map objProp [o1, o2]
-        AS.ObjectPropertyDomain anns oe ce -> profileMax [annotations anns, objProp oe, superClass ce] 
-        AS.ObjectPropertyRange anns oe ce -> profileMax [annotations anns, objProp oe, superClass ce] -- previously no check on ce was deon
-        AS.FunctionalObjectProperty _ oe -> maximalCovering rlProfile [objProp oe]
-        AS.InverseFunctionalObjectProperty _ oe -> maximalCovering rlProfile [objProp oe]
-        AS.ReflexiveObjectProperty _ oe -> maximalCovering elqlProfile [objProp oe]
-        AS.IrreflexiveObjectProperty _ oe -> maximalCovering qlrlProfile [objProp oe]
-        AS.SymmetricObjectProperty _ oe -> maximalCovering qlrlProfile [objProp oe]
-        AS.AsymmetricObjectProperty _ oe -> maximalCovering qlrlProfile [objProp oe]
-        AS.TransitiveObjectProperty _ oe -> maximalCovering elrlProfile [objProp oe]
-    AS.DataPropertyAxiom a -> case a of
-        AS.SubDataPropertyOf anns _ _ -> annotations anns
-        AS.EquivalentDataProperties anns _ -> annotations anns
-        AS.DisjointDataProperties anns _ -> maximalCovering qlrlProfile [annotations anns]
-        AS.DataPropertyDomain anns _ classExpr -> profileMax [annotations anns, superClass classExpr]
-        AS.DataPropertyRange anns _ dr -> profileMax [annotations anns, dataRange dr]
-        AS.FunctionalDataProperty anns _ -> maximalCovering elrlProfile [annotations anns]
-    AS.DatatypeDefinition anns dt dr -> profileMax [annotations anns, datatype dt, dataRange dr]
-    AS.HasKey anns classExpr oExprs _ -> maximalCovering elrlProfile
+        EquivalentObjectProperties anns oExprs -> maximalCovering (annotations anns) $ map objProp oExprs
+        DisjointObjectProperties anns oExprs -> maximalCovering qlrlProfile $ (annotations anns) : map objProp oExprs
+        InverseObjectProperties anns o1 o2 -> maximalCovering qlrlProfile $ (annotations anns) : map objProp [o1, o2]
+        ObjectPropertyDomain anns oe ce -> profileMax [annotations anns, objProp oe, superClass ce] 
+        ObjectPropertyRange anns oe ce -> profileMax [annotations anns, objProp oe, superClass ce] -- previously no check on ce was deon
+        FunctionalObjectProperty _ oe -> maximalCovering rlProfile [objProp oe]
+        InverseFunctionalObjectProperty _ oe -> maximalCovering rlProfile [objProp oe]
+        ReflexiveObjectProperty _ oe -> maximalCovering elqlProfile [objProp oe]
+        IrreflexiveObjectProperty _ oe -> maximalCovering qlrlProfile [objProp oe]
+        SymmetricObjectProperty _ oe -> maximalCovering qlrlProfile [objProp oe]
+        AsymmetricObjectProperty _ oe -> maximalCovering qlrlProfile [objProp oe]
+        TransitiveObjectProperty _ oe -> maximalCovering elrlProfile [objProp oe]
+    DataPropertyAxiom a -> case a of
+        SubDataPropertyOf anns _ _ -> annotations anns
+        EquivalentDataProperties anns _ -> annotations anns
+        DisjointDataProperties anns _ -> maximalCovering qlrlProfile [annotations anns]
+        DataPropertyDomain anns _ classExpr -> profileMax [annotations anns, superClass classExpr]
+        DataPropertyRange anns _ dr -> profileMax [annotations anns, dataRange dr]
+        FunctionalDataProperty anns _ -> maximalCovering elrlProfile [annotations anns]
+    DatatypeDefinition anns dt dr -> profileMax [annotations anns, datatype dt, dataRange dr]
+    HasKey anns classExpr oExprs _ -> maximalCovering elrlProfile
         [annotations anns, subClass classExpr, profileMax $ map objProp oExprs]
-    AS.Assertion a -> case a of
-        AS.SameIndividual anns inds -> maximalCovering elrlProfile
+    Assertion a -> case a of
+        SameIndividual anns inds -> maximalCovering elrlProfile
             [annotations anns, profileMax $ map individual inds]
-        AS.DifferentIndividuals anns inds -> maximalCovering elrlProfile
+        DifferentIndividuals anns inds -> maximalCovering elrlProfile
             [annotations anns, profileMax $ map individual inds]
-        AS.ClassAssertion anns ce ind -> profileMax [annotations anns, subClass ce, individual ind] 
-        AS.ObjectPropertyAssertion anns oExpr i1 i2 -> profileMax $
+        ClassAssertion anns ce ind -> profileMax [annotations anns, subClass ce, individual ind] 
+        ObjectPropertyAssertion anns oExpr i1 i2 -> profileMax $
             [annotations anns, objProp oExpr] ++ map individual [i1, i2]
-        AS.NegativeObjectPropertyAssertion anns oExpr i1 i2 -> maximalCovering elrlProfile $
+        NegativeObjectPropertyAssertion anns oExpr i1 i2 -> maximalCovering elrlProfile $
             [annotations anns, objProp oExpr] ++ map individual [i1, i2]
-        AS.DataPropertyAssertion anns _ ind lit -> profileMax $
+        DataPropertyAssertion anns _ ind lit -> profileMax $
             [annotations anns, individual ind, literal lit]
-        AS.NegativeDataPropertyAssertion anns _ ind lit -> maximalCovering elrlProfile $
+        NegativeDataPropertyAssertion anns _ ind lit -> maximalCovering elrlProfile $
             [annotations anns, individual ind, literal lit]
-    AS.AnnotationAxiom a -> case a of
-        AS.AnnotationAssertion anns prop _ val -> annotation $ AS.Annotation anns prop val
-        AS.SubAnnotationPropertyOf anns _ _ -> annotations anns
-        AS.AnnotationPropertyDomain anns _ _ -> annotations anns
-        AS.AnnotationPropertyRange anns _ _ -> annotations anns
-    AS.Rule _ -> topProfile
-    AS.DGAxiom _ _ _ _ _ -> topProfile
+    AnnotationAxiom a -> case a of
+        AnnotationAssertion anns prop _ val -> annotation $ Annotation anns prop val
+        SubAnnotationPropertyOf anns _ _ -> annotations anns
+        AnnotationPropertyDomain anns _ _ -> annotations anns
+        AnnotationPropertyRange anns _ _ -> annotations anns
+    Rule _ -> topProfile
+    DGAxiom _ _ _ _ _ -> topProfile
 
-ontologyP :: AS.Ontology -> Profiles
+ontologyP :: Ontology -> Profiles
 ontologyP ont =
-    let anns = AS.ontologyAnnotation ont
-        ax = AS.axioms ont
+    let anns = ontologyAnnotation ont
+        ax = axioms ont
     in profileMax [profileMaxWith axiom ax, profileMaxWith annotation anns]
 
-ontologyProfiles :: AS.OntologyDocument -> Profiles
-ontologyProfiles odoc = ontologyP $ AS.ontology odoc
+ontologyProfiles :: OntologyDocument -> Profiles
+ontologyProfiles odoc = ontologyP $ ontology odoc
