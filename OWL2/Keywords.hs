@@ -99,6 +99,12 @@ transitiveS = "Transitive"
 hasS :: String
 hasS = "has"
 
+sameAsS :: String
+sameAsS = "SameAs"
+
+differentFromS :: String
+differentFromS = "DifferentFrom"
+
 hexBinaryS :: String
 hexBinaryS = "hexBinary"
 
