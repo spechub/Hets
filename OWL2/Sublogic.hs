@@ -21,6 +21,7 @@ import OWL2.Morphism
 import Data.List
 
 import Data.Data
+import Data.Maybe (mapMaybe)
 import qualified Data.Set as Set
 
 data NumberRestrictions = None | Unqualified | Qualified
@@ -39,6 +40,7 @@ data OWLSub = OWLSub
     , addFeatures :: Bool           -- | ?
     , datatype :: Set.Set Datatype  -- | Set of datatypes that can be used
     , rules :: Bool                 -- | SWRL Rules can be used
+    , unrestrictedDL :: Bool        -- | OWL2 DL restriction can be ignored
     } deriving (Show, Eq, Ord, Typeable, Data)
 
 allSublogics :: [[OWLSub]]
@@ -55,6 +57,7 @@ allSublogics = let
   , [b { complexRoleInclusions = t } ]
   , [b { addFeatures = t } ]
   , [b { rules = t} ]
+  , [b { unrestrictedDL = t} ]
   , map (\ d -> b { datatype = Set.singleton d }) $ Set.toList owlDatatypes ]
 
 -- | sROIQ(D)
@@ -69,6 +72,7 @@ slTop = OWLSub
     , addFeatures = True
     , datatype = owlDatatypes
     , rules = True
+    , unrestrictedDL = True
     }
 
 -- | ALC
@@ -83,6 +87,7 @@ slBottom = OWLSub
     , addFeatures = False
     , datatype = Set.empty
     , rules = False
+    , unrestrictedDL = False
     }
 
 
@@ -98,6 +103,7 @@ slMax sl1 sl2 = OWLSub
     , addFeatures = max (addFeatures sl1) (addFeatures sl2)
     , datatype = Set.union (datatype sl1) (datatype sl2)
     , rules = max (rules sl1) (rules sl2)
+    , unrestrictedDL = max (unrestrictedDL sl1) (unrestrictedDL sl2) 
     }
 
 -- | Naming for Description Logics
@@ -114,6 +120,7 @@ slName sl =
         Unqualified -> "N"
         None -> "")
     ++ (if rules sl then "u" else "")
+    ++ (if unrestrictedDL sl then "x" else "")
     ++ let ds = datatype sl in if Set.null ds then "" else
            "-D|" ++ (if ds == owlDatatypes then "-|" else
                 intercalate "|" (map printDatatype $ Set.toList ds) ++ "|")
@@ -147,6 +154,9 @@ requireInverseRoles sl = sl {inverseRoles = True}
 requireRules :: OWLSub -> OWLSub
 requireRules sl = sl {rules = True}
 
+requireUnrestrictedDL :: OWLSub -> OWLSub
+requireUnrestrictedDL sl = sl {unrestrictedDL = True}
+
 slDatatype :: Datatype -> OWLSub
 slDatatype dt = slBottom {datatype = if isDatatypeKey dt then
     Set.singleton $ setDatatypePrefix dt else Set.empty}
@@ -174,7 +184,7 @@ slClassExpression des = case des of
     ObjectComplementOf dec -> slClassExpression dec
     ObjectOneOf _ -> requireNominals slBottom
     ObjectValuesFrom _ o d -> slMax (slObjProp o) (slClassExpression d)
-    ObjectHasSelf o -> requireAddFeatures $ slObjProp o
+    ObjectHasSelf o -> ifSimpleObjectProp o requireUnrestrictedDL $ requireAddFeatures $ slObjProp o
     ObjectHasValue o _ -> slObjProp o
     ObjectCardinality c -> slObjCard c
     DataValuesFrom _ _ dr -> slDataRange dr
@@ -187,9 +197,15 @@ slDataCard (Cardinality _ _ _ x) = requireNumberRestrictions $ case x of
     Just y -> slDataRange y
 
 slObjCard :: Cardinality ObjectPropertyExpression ClassExpression -> OWLSub
-slObjCard (Cardinality _ _ op x) = requireNumberRestrictions $ case x of
+slObjCard (Cardinality _ _ op x) =
+  requireUnrestrictedDL . requireNumberRestrictions $ case x of
     Nothing -> slObjProp op
     Just y -> slMax (slObjProp op) (slClassExpression y)
+
+ifSimpleObjectProp :: ObjectPropertyExpression -> (OWLSub -> OWLSub) -> (OWLSub -> OWLSub)
+ifSimpleObjectProp ope f = case ope of
+    ObjectProp _ -> id
+    _ -> f
 
 slAxiom :: Axiom -> OWLSub
 slAxiom ax = case ax of
@@ -206,19 +222,21 @@ slAxiom ax = case ax of
                     SubObjPropExpr_exprchain e -> e
             in requireRoleHierarchy $ foldl slMax slBottom $ map slObjProp (supOpExpr : oExprs) 
         EquivalentObjectProperties _ oExprs -> foldl slMax slBottom $ map slObjProp oExprs 
-        DisjointObjectProperties _ oExprs -> foldl slMax (requireAddFeatures slBottom) $ map slObjProp oExprs 
+        DisjointObjectProperties _ oExprs -> foldl slMax (requireAddFeatures slBottom) $ map (\o -> ifSimpleObjectProp o requireUnrestrictedDL $ slObjProp o) oExprs 
         InverseObjectProperties _ e1 e2 -> slMax (slObjProp e1) (slObjProp e2)
         ObjectPropertyDomain _ oExpr cExpr -> slMax (slObjProp oExpr) (slClassExpression cExpr)
         ObjectPropertyRange _ oExpr cExpr -> slMax (slObjProp oExpr) (slClassExpression cExpr)
-        FunctionalObjectProperty _ oExpr -> slObjProp oExpr
-        InverseFunctionalObjectProperty _ oExpr -> requireInverseRoles $ slObjProp oExpr
+        FunctionalObjectProperty _ oExpr -> ifSimpleObjectProp oExpr requireUnrestrictedDL $ slObjProp oExpr
+        InverseFunctionalObjectProperty _ oExpr -> ifSimpleObjectProp oExpr requireUnrestrictedDL $ requireInverseRoles $ slObjProp oExpr
         ReflexiveObjectProperty _ oExpr -> requireAddFeatures (slObjProp oExpr)
-        IrreflexiveObjectProperty _ oExpr -> requireAddFeatures (slObjProp oExpr)
+        IrreflexiveObjectProperty _ oExpr -> ifSimpleObjectProp oExpr requireUnrestrictedDL $ requireAddFeatures (slObjProp oExpr)
         SymmetricObjectProperty _ oExpr -> slObjProp oExpr
-        AsymmetricObjectProperty _ oExpr -> requireAddFeatures (slObjProp oExpr)
+        AsymmetricObjectProperty _ oExpr -> ifSimpleObjectProp oExpr requireUnrestrictedDL $ requireAddFeatures (slObjProp oExpr)
         TransitiveObjectProperty _ oExpr -> requireRoleTransitivity (slObjProp oExpr)
     DataPropertyAxiom a -> case a of
-        SubDataPropertyOf _ _ _ -> requireRoleHierarchy slBottom
+        SubDataPropertyOf _ sub _ -> requireRoleHierarchy .
+            (if topDataProperty == sub then requireUnrestrictedDL else id) $
+            slBottom
         EquivalentDataProperties _ _ -> slBottom
         DisjointDataProperties _ _ -> requireAddFeatures slBottom
         DataPropertyDomain _ _ _ -> slBottom
@@ -244,8 +262,28 @@ slAxiom ax = case ax of
     _ -> slBottom
 
 
+-- | Checks only for general restrictions 
+slGeneralRestrictions :: [Axiom] -> OWLSub
+slGeneralRestrictions axs = 
+    let dts = mapMaybe (\ax -> case ax of
+            DatatypeDefinition _ dt dr -> Just (dt, dr)
+            _ -> Nothing) axs
+    in
+    slGDatatypes dts slBottom
+
+-- | Analyses the datatypes for a circle in their definition
+slGDatatypes :: [(Datatype, DataRange)] -> OWLSub -> OWLSub
+slGDatatypes ax sl = slMax sl slBottom -- TODO: Implement
+
+
+
+
 slODoc :: OntologyDocument -> OWLSub
-slODoc = foldl slMax slBottom . map slAxiom . axioms . ontology
+slODoc odoc =
+    let axs = axioms . ontology $ odoc
+    in slMax
+    (slGeneralRestrictions axs)
+    (foldl slMax slBottom . map slAxiom $ axs)
 
 slSig :: Sign -> OWLSub
 slSig sig = let dts = Set.toList $ datatypes sig in

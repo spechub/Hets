@@ -79,6 +79,10 @@ plainDatatypeIRI = IRI {
         , iFragment = "PlainLiteral"
     }
 
+topDataProperty :: IRI
+topDataProperty = expandIRI' predefPrefixes $
+  setPrefix "owl" $ mkIRI "topDataProperty"
+
 type LexicalForm = String
 type LanguageTag = String
 type ImportIRI = IRI
