@@ -179,6 +179,7 @@ jobs:
           echo 'man-db man-db/auto-update boolean false' | \
               sudo debconf-set-selections
           sudo rm -f /var/lib/man-db/auto-update
+          sudo apt-get update
           sudo apt-get install ksh93 || sudo apt-get install ksh
           sudo apt-get install ${{ env.MISSING_GUI_PKGS }}
 
@@ -347,6 +348,7 @@ jobs:
           echo 'man-db man-db/auto-update boolean false' | \
               sudo debconf-set-selections
           sudo rm -f /var/lib/man-db/auto-update
+          sudo apt-get update
           sudo apt-get install ${{ env.MISSING_GUI_PKGS }}
 
       - name: Checkout
@@ -625,6 +627,7 @@ jobs:
           echo 'man-db man-db/auto-update boolean false' | \
               sudo debconf-set-selections
           sudo rm -f /var/lib/man-db/auto-update
+          sudo apt-get update
           sudo apt-get install latexmk texlive-fonts-recommended \
               texlive-latex-extra
 
