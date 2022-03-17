@@ -18,7 +18,7 @@ import Common.Id
 import Common.Keywords
 import Common.IRI
 
-import OWL2.AS
+import qualified OWL2.AS as AS
 import OWL2.MS
 import OWL2.Symbols
 import OWL2.Keywords
@@ -26,7 +26,7 @@ import OWL2.ColonKeywords
 
 import Data.List
 
-instance Pretty Character where
+instance Pretty AS.Character where
     pretty = printCharact . show
 
 printCharact :: String -> Doc
@@ -35,12 +35,12 @@ printCharact = text
 printIRI :: IRI -> Doc
 printIRI q
     | ((hasFullIRI q || prefixName q `elem` ["", "owl", "rdfs"])
-       && isPredefPropOrClass q)
-       || isDatatypeKey q = keyword $ getPredefName q
+       && AS.isPredefPropOrClass q)
+       || AS.isDatatypeKey q = keyword $ AS.getPredefName q
     | otherwise = text $ showIRI q
 
 printDataIRI :: IRI -> Doc
-printDataIRI q = if isDatatypeKey q then text $ showIRI $ setDatatypePrefix q
+printDataIRI q = if AS.isDatatypeKey q then text $ showIRI $ AS.setDatatypePrefix q
  else printIRI q
 
 -- | Symbols printing
@@ -72,41 +72,41 @@ instance Pretty RawSymb where
         AnUri u -> pretty u
         APrefix p -> pretty p
 
-cardinalityType :: CardinalityType -> Doc
-cardinalityType = keyword . showCardinalityType
+cardinalityType :: AS.CardinalityType -> Doc
+cardinalityType = keyword . AS.showCardinalityType
 
-quantifierType :: QuantifierType -> Doc
-quantifierType = keyword . showQuantifierType
+quantifierType :: AS.QuantifierType -> Doc
+quantifierType = keyword . AS.showQuantifierType
 
-printRelation :: Relation -> Doc
-printRelation = keyword . showRelation
+printRelation :: AS.Relation -> Doc
+printRelation = keyword . AS.showRelation
 
-printEquivOrDisjointClasses :: EquivOrDisjoint -> Doc
+printEquivOrDisjointClasses :: AS.EquivOrDisjoint -> Doc
 printEquivOrDisjointClasses x = case x of
-    Equivalent -> text "EquivalentClasses:"
-    Disjoint -> text "DisjointClasses:"
+    AS.Equivalent -> text "EquivalentClasses:"
+    AS.Disjoint -> text "DisjointClasses:"
 
-printEquivOrDisjointProp :: EquivOrDisjoint -> Doc
+printEquivOrDisjointProp :: AS.EquivOrDisjoint -> Doc
 printEquivOrDisjointProp e = case e of
-    Disjoint -> text "DisjointProperties:"
-    Equivalent -> text "EquivalentProperties:"
+    AS.Disjoint -> text "DisjointProperties:"
+    AS.Equivalent -> text "EquivalentProperties:"
 
-printPositiveOrNegative :: PositiveOrNegative -> Doc
+printPositiveOrNegative :: AS.PositiveOrNegative -> Doc
 printPositiveOrNegative x = case x of
-    Positive -> empty
-    Negative -> keyword notS
+    AS.Positive -> empty
+    AS.Negative -> keyword notS
 
-printSameOrDifferentInd :: SameOrDifferent -> Doc
+printSameOrDifferentInd :: AS.SameOrDifferent -> Doc
 printSameOrDifferentInd x = case x of
-    Same -> keyword sameIndividualC
-    Different -> keyword differentIndividualsC
+    AS.Same -> keyword sameIndividualC
+    AS.Different -> keyword differentIndividualsC
 
-instance Pretty Entity where
-    pretty (Entity _ ty e) = keyword (show ty) <+> pretty e
+instance Pretty AS.Entity where
+    pretty (AS.Entity _ ty e) = keyword (show ty) <+> pretty e
 
-instance Pretty Literal where
+instance Pretty AS.Literal where
     pretty lit = case lit of
-        Literal lexi ty -> let
+        AS.Literal lexi ty -> let
           escapeDQ c s = case s of
             "" -> ""
             h : t -> case h of
@@ -114,24 +114,24 @@ instance Pretty Literal where
               _ | odd c || h /= '"' -> h : escapeDQ 0 t
               _ -> '\\' : h : escapeDQ 0 t
           in plainText ('"' : escapeDQ 0 lexi ++ "\"") <> case ty of
-            Typed u -> keyword cTypeS <> printDataIRI u
-            Untyped tag -> case tag of
+            AS.Typed u -> keyword AS.cTypeS <> printDataIRI u
+            AS.Untyped tag -> case tag of
               Nothing -> empty
               Just tag2 -> text asP <> text tag2
-        NumberLit f -> text (show f)
+        AS.NumberLit f -> text (show f)
 
-instance Pretty ObjectPropertyExpression where
+instance Pretty AS.ObjectPropertyExpression where
     pretty = printObjPropExp
 
-printObjPropExp :: ObjectPropertyExpression -> Doc
+printObjPropExp :: AS.ObjectPropertyExpression -> Doc
 printObjPropExp obExp = case obExp of
-    ObjectProp ou -> pretty ou
-    ObjectInverseOf iopExp -> keyword inverseS <+> printObjPropExp iopExp
+    AS.ObjectProp ou -> pretty ou
+    AS.ObjectInverseOf iopExp -> keyword inverseS <+> printObjPropExp iopExp
 
-printFV :: (ConstrainingFacet, RestrictionValue) -> Doc
+printFV :: (AS.ConstrainingFacet, AS.RestrictionValue) -> Doc
 printFV (facet, restValue) = pretty (fromCF facet) <+> pretty restValue
 
-fromCF :: ConstrainingFacet -> String
+fromCF :: AS.ConstrainingFacet -> String
 fromCF f
     | hasFullIRI f = showIRICompact f \\ "http://www.w3.org/2001/XMLSchema#"
     | otherwise = show $ iriPath f
@@ -140,83 +140,84 @@ instance Pretty DatatypeFacet where
     pretty = keyword . showFacet
 
 -- | Printing the DataRange
-instance Pretty DataRange where
+instance Pretty AS.DataRange where
     pretty = printDataRange
 
-printDataRange :: DataRange -> Doc
+printDataRange :: AS.DataRange -> Doc
 printDataRange dr = case dr of
-    DataType dtype l -> pretty dtype <+>
+    AS.DataType dtype l -> pretty dtype <+>
       if null l then empty else brackets $ sepByCommas $ map printFV l
-    DataComplementOf drange -> keyword notS <+> pretty drange
-    DataOneOf constList -> specBraces $ ppWithCommas constList
-    DataJunction ty drlist -> let
+    AS.DataComplementOf drange -> keyword notS <+> pretty drange
+    AS.DataOneOf constList -> specBraces $ ppWithCommas constList
+    AS.DataJunction ty drlist -> let
       k = case ty of
-          UnionOf -> orS
-          IntersectionOf -> andS
+          AS.UnionOf -> orS
+          AS.IntersectionOf -> andS
       in fsep $ prepPunctuate (keyword k <> space) $ map pretty drlist
 
 -- | Printing the ClassExpression
-instance Pretty ClassExpression where
+instance Pretty AS.ClassExpression where
   pretty desc = case desc of
-   Expression ocUri -> printIRI ocUri
-   ObjectJunction ty ds -> let
+   AS.Expression ocUri -> printIRI ocUri
+   AS.ObjectJunction ty ds -> let
       (k, p) = case ty of
-          UnionOf -> (orS, pretty)
-          IntersectionOf -> (andS, printPrimary)
+          AS.UnionOf -> (orS, pretty)
+          AS.IntersectionOf -> (andS, printPrimary)
       in fsep $ prepPunctuate (keyword k <> space) $ map p ds
-   ObjectComplementOf d -> keyword notS <+> printNegatedPrimary d
-   ObjectOneOf indUriList -> specBraces $ ppWithCommas indUriList
-   ObjectValuesFrom ty opExp d ->
+   AS.ObjectComplementOf d -> keyword notS <+> printNegatedPrimary d
+   AS.ObjectOneOf indUriList -> specBraces $ ppWithCommas indUriList
+   AS.ObjectValuesFrom ty opExp d ->
       printObjPropExp opExp <+> quantifierType ty <+> printNegatedPrimary d
-   ObjectHasSelf opExp ->
+   AS.ObjectHasSelf opExp ->
       printObjPropExp opExp <+> keyword selfS
-   ObjectHasValue opExp indUri ->
+   AS.ObjectHasValue opExp indUri ->
       pretty opExp <+> keyword valueS <+> pretty indUri
-   ObjectCardinality (Cardinality ty card opExp maybeDesc) ->
+   AS.ObjectCardinality (AS.Cardinality ty card opExp maybeDesc) ->
       printObjPropExp opExp <+> cardinalityType ty
         <+> text (show card)
         <+> maybe (keyword "Thing") printPrimary maybeDesc
-   DataValuesFrom ty dpExp dRange ->
-       printIRI dpExp <+> quantifierType ty
+   AS.DataValuesFrom ty dpExp dRange ->
+       printIRI (head dpExp) <+> quantifierType ty
         <+> pretty dRange
-   DataHasValue dpExp cons -> pretty dpExp <+> keyword valueS <+> pretty cons
-   DataCardinality (Cardinality ty card dpExp maybeRange) ->
+   AS.DataHasValue dpExp cons -> pretty dpExp <+> keyword valueS <+> pretty cons
+   AS.DataCardinality (AS.Cardinality ty card dpExp maybeRange) ->
        pretty dpExp <+> cardinalityType ty <+> text (show card)
          <+> maybe empty pretty maybeRange
 
-printPrimary :: ClassExpression -> Doc
+printPrimary :: AS.ClassExpression -> Doc
 printPrimary d = let dd = pretty d in case d of
-  ObjectJunction {} -> parens dd
+  AS.ObjectJunction {} -> parens dd
   _ -> dd
 
-printNegatedPrimary :: ClassExpression -> Doc
+printNegatedPrimary :: AS.ClassExpression -> Doc
 printNegatedPrimary d = let r = parens $ pretty d in case d of
-  ObjectComplementOf _ -> r
-  ObjectValuesFrom {} -> r
-  DataValuesFrom {} -> r
-  ObjectHasValue {} -> r
-  DataHasValue {} -> r
+  AS.ObjectComplementOf _ -> r
+  AS.ObjectValuesFrom {} -> r
+  AS.DataValuesFrom {} -> r
+  AS.ObjectHasValue {} -> r
+  AS.DataHasValue {} -> r
   _ -> printPrimary d
 
 -- | annotations printing
-instance Pretty AnnotationValue where
+instance Pretty AS.AnnotationValue where
     pretty x = case x of
-        AnnValue iri -> pretty iri
-        AnnValLit lit -> pretty lit
+        AS.AnnAnInd i -> pretty i
+        AS.AnnValue iri -> pretty iri
+        AS.AnnValLit lit -> pretty lit
 
-instance Pretty OWL2.AS.Annotation where
+instance Pretty AS.Annotation where
     pretty = printAnnotation
 
-printAnnotation :: OWL2.AS.Annotation -> Doc
-printAnnotation (Annotation ans ap av) =
+printAnnotation :: AS.Annotation -> Doc
+printAnnotation (AS.Annotation ans ap av) =
     sep [printAnnotations ans, sep [pretty ap, pretty av]]
 
 printAnnotations :: Annotations -> Doc
 printAnnotations l = case l of
     [] -> empty
     _ -> keyword annotationsC <+>
-          vcat (punctuate comma (map (\ (Annotation ans ap av) ->
-            printAnnotations ans $+$ pretty (Annotation [] ap av)) l) )
+          vcat (punctuate comma (map (\ (AS.Annotation ans ap av) ->
+            printAnnotations ans $+$ pretty (AS.Annotation [] ap av)) l) )
 
 printAnnotatedList :: Pretty a => AnnotatedList a -> Doc
 printAnnotatedList l =

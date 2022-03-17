@@ -15,12 +15,10 @@ Complexity analysis of OWL2
 module OWL2.Sublogic where
 
 import OWL2.AS
-import OWL2.MS
 import OWL2.Sign
 import OWL2.Morphism
 
 import Data.List
-import Data.Maybe
 
 import Data.Data
 import qualified Data.Set as Set
@@ -184,58 +182,60 @@ slObjCard (Cardinality _ _ op x) = requireNumberRestrictions $ case x of
     Nothing -> slObjProp op
     Just y -> slMax (slObjProp op) (slClassExpression y)
 
-slLFB :: Maybe Relation -> ListFrameBit -> OWLSub
-slLFB mr lfb = case lfb of
-    ExpressionBit anl -> foldl slMax slBottom
-        $ map (slClassExpression . snd) anl
-    ObjectBit anl -> slMax (case fromMaybe (error "relation needed") mr of
-        EDRelation Disjoint -> requireAddFeatures slBottom
-        _ -> slBottom) $ foldl slMax slBottom $ map (slObjProp . snd) anl
-    DataBit _ -> case fromMaybe (error "relation needed") mr of
-        EDRelation Disjoint -> requireAddFeatures slBottom
-        _ -> slBottom
-    IndividualSameOrDifferent _ -> requireNominals slBottom
-    ObjectCharacteristics anl -> foldl slMax slBottom
-        $ map ((\ c -> case c of
-              Transitive -> requireRoleTransitivity slBottom
-              Reflexive -> requireAddFeatures slBottom
-              Irreflexive -> requireAddFeatures slBottom
-              Asymmetric -> requireAddFeatures slBottom
-              _ -> slBottom) . snd) anl
-    DataPropRange anl -> foldl slMax slBottom $ map (slDataRange . snd) anl
-    _ -> slBottom
-
-slAFB :: AnnFrameBit -> OWLSub
-slAFB afb = case afb of
-    DatatypeBit dr -> slDataRange dr
-    ClassDisjointUnion cel -> foldl slMax slBottom $ map slClassExpression cel
-    ClassHasKey opl _ -> foldl slMax slBottom $ map slObjProp opl
-    ObjectSubPropertyChain opl -> requireComplexRoleInclusions
-        $ requireRoleHierarchy $ foldl slMax slBottom $ map slObjProp opl
-    _ -> slBottom
-
-slFB :: FrameBit -> OWLSub
-slFB fb = case fb of
-    AnnFrameBit _ afb -> slAFB afb
-    ListFrameBit mr lfb -> slMax (slLFB mr lfb) $ case mr of
-        Nothing -> slBottom
-        Just r -> case r of
-            SubPropertyOf -> requireRoleHierarchy slBottom
-            InverseOf -> requireInverseRoles slBottom
-            _ -> slBottom -- maybe addFeatures ??
-
 slAxiom :: Axiom -> OWLSub
-slAxiom (PlainAxiom ext fb) = case ext of
-    Misc _ -> slFB fb
-    ClassEntity ce -> slMax (slFB fb) (slClassExpression ce)
-    ObjectEntity o -> slMax (slFB fb) (slObjProp o)
-    SimpleEntity e -> slMax (slEntity e) (slFB fb)
+slAxiom ax = case ax of
+    Declaration _ e -> slEntity e 
+    ClassAxiom cax -> case cax of
+        SubClassOf _ sub sup -> slMax (slClassExpression sub) (slClassExpression sup)
+        EquivalentClasses _ clExprs -> foldl slMax slBottom $ map slClassExpression clExprs 
+        DisjointClasses _ clExprs -> foldl slMax slBottom $ map slClassExpression clExprs 
+        DisjointUnion _ _ clExprs -> foldl slMax slBottom $ map slClassExpression clExprs 
+    ObjectPropertyAxiom opax -> case opax of
+        SubObjectPropertyOf _ subOpExpr supOpExpr ->
+            let oExprs = case subOpExpr of
+                    SubObjPropExpr_obj oExpr -> [oExpr]
+                    SubObjPropExpr_exprchain e -> e
+            in requireRoleHierarchy $ foldl slMax slBottom $ map slObjProp (supOpExpr : oExprs) 
+        EquivalentObjectProperties _ oExprs -> foldl slMax slBottom $ map slObjProp oExprs 
+        DisjointObjectProperties _ oExprs -> foldl slMax (requireAddFeatures slBottom) $ map slObjProp oExprs 
+        InverseObjectProperties _ e1 e2 -> slMax (slObjProp e1) (slObjProp e2)
+        ObjectPropertyDomain _ oExpr cExpr -> slMax (slObjProp oExpr) (slClassExpression cExpr)
+        ObjectPropertyRange _ oExpr cExpr -> slMax (slObjProp oExpr) (slClassExpression cExpr)
+        FunctionalObjectProperty _ oExpr -> slObjProp oExpr
+        InverseFunctionalObjectProperty _ oExpr -> requireInverseRoles $ slObjProp oExpr
+        ReflexiveObjectProperty _ oExpr -> requireAddFeatures (slObjProp oExpr)
+        IrreflexiveObjectProperty _ oExpr -> requireAddFeatures (slObjProp oExpr)
+        SymmetricObjectProperty _ oExpr -> slObjProp oExpr
+        AsymmetricObjectProperty _ oExpr -> requireAddFeatures (slObjProp oExpr)
+        TransitiveObjectProperty _ oExpr -> requireRoleTransitivity (slObjProp oExpr)
+    DataPropertyAxiom a -> case a of
+        SubDataPropertyOf _ _ _ -> requireRoleHierarchy slBottom
+        EquivalentDataProperties _ _ -> slBottom
+        DisjointDataProperties _ _ -> requireAddFeatures slBottom
+        DataPropertyDomain _ _ _ -> slBottom
+        DataPropertyRange _ _ r -> slDataRange r
+        FunctionalDataProperty _ _ -> slBottom
+    DatatypeDefinition _ dt dr -> slMax (slDatatype dt) (slDataRange dr)
+    HasKey _ cExpr oExprs _ -> foldl slMax (slClassExpression cExpr)
+        $ map slObjProp oExprs 
+    Assertion a -> case a of
+        SameIndividual _ _ -> requireNominals slBottom
+        DifferentIndividuals _ _ -> requireNominals slBottom
+        ClassAssertion _ clExpr _ -> slClassExpression clExpr
+        ObjectPropertyAssertion _ _ _ _ -> slBottom
+        NegativeObjectPropertyAssertion _ _ _ _ -> slBottom
+        DataPropertyAssertion _ _ _ _ -> slBottom
+        NegativeDataPropertyAssertion _ _ _ _ -> slBottom
+    AnnotationAxiom a -> case a of
+        AnnotationAssertion _ _ _ _ -> slBottom 
+        SubAnnotationPropertyOf _ _ _ -> requireRoleHierarchy slBottom
+        AnnotationPropertyDomain _ _ _ -> slBottom
+        AnnotationPropertyRange _ _ _ -> slBottom
+    _ -> slBottom
 
-slFrame :: Frame -> OWLSub
-slFrame = foldl slMax slBottom . map slAxiom . getAxioms
 
 slODoc :: OntologyDocument -> OWLSub
-slODoc = foldl slMax slBottom . map slFrame . ontFrames . ontology
+slODoc = foldl slMax slBottom . map slAxiom . axioms . ontology
 
 slSig :: Sign -> OWLSub
 slSig sig = let dts = Set.toList $ datatypes sig in
@@ -258,6 +258,6 @@ prSig s a = if datatype s == Set.empty
 
 prODoc :: OWLSub -> OntologyDocument -> OntologyDocument
 prODoc s a =
-    let o = (ontology a) {ontFrames = filter ((s >=) . slFrame) $ ontFrames $
+    let o = (ontology a) {axioms = filter ((s >=) . slAxiom) $ axioms $
             ontology a }
     in a {ontology = o}

@@ -21,7 +21,6 @@ import OWL2.Keywords
 import OWL2.ColonKeywords
 
 import Common.Keywords
-import Common.Id
 import Common.IRI
 import Common.Lexer
 import Common.Parsec
@@ -473,7 +472,7 @@ restrictionAny opExpr = do
       case pr of
         Left p -> return $ ObjectValuesFrom v opExpr p
         Right r -> case opExpr of
-          ObjectProp dpExpr -> return $ DataValuesFrom v dpExpr r
+          ObjectProp dpExpr -> return $ DataValuesFrom v [dpExpr] r
           _ -> unexpected $ "dataRange after " ++ showQuantifierType v
     <|> do
       (c, n) <- card

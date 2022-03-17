@@ -18,7 +18,7 @@ import Common.IRI
 import Common.Doc hiding (sepBySemis, sepByCommas)
 import Common.DocUtils hiding (ppWithCommas)
 
-import OWL2.AS
+import qualified OWL2.AS as AS
 import OWL2.Print ()
 
 import RDF.AS
@@ -51,8 +51,8 @@ instance Pretty RDFLiteral where
         RDFLiteral b lexi ty -> text (if not b
                 then '"' : lexi ++ "\""
                 else "\"\"\"" ++ lexi ++ "\"\"\"") <> case ty of
-            Typed u -> keyword cTypeS <> pretty u
-            Untyped tag -> if isNothing tag then empty
+            AS.Typed u -> keyword AS.cTypeS <> pretty u
+            AS.Untyped tag -> if isNothing tag then empty
                     else let Just tag2 = tag in text "@" <> text tag2
         RDFNumberLit f -> text (show f)
 

@@ -23,7 +23,7 @@ import Logic.Prover
 import Common.ExtSign
 
 import OWL2.Sign
-import OWL2.MS
+import qualified OWL2.AS as AS
 import OWL2.Logic_OWL2
 import OWL2.CASL2OWL
 import OWL2.DMU2OWL2
@@ -37,7 +37,7 @@ import DMU.Logic_DMU
 import Propositional.Logic_Propositional
 
 
-createOWLTheory :: G_theory -> Result (Sign, [Named Axiom])
+createOWLTheory :: G_theory -> Result (Sign, [Named AS.Axiom])
 createOWLTheory (G_theory lid _ (ExtSign sign0 _) _ sens0 _) = do
     let th = (sign0, toNamedList sens0)
         r1 = coerceBasicTheory lid CASL "" th
@@ -58,5 +58,8 @@ createOWLTheory (G_theory lid _ (ExtSign sign0 _) _ sens0 _) = do
                    _ -> r3'
                  _ -> r2'
                _ -> r1'
+
     (sign, sens) <- r6
     return (sign, toNamedList $ toThSens sens)
+
+    return (emptySign, [])

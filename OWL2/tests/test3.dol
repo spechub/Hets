@@ -1,3 +1,5 @@
+logic OWL serialization Manchester
+
 spec emptyontology =
 
 Class: Boy

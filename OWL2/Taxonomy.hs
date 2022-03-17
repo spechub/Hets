@@ -13,7 +13,6 @@ Taxonomy extraction for OWL
 
 module OWL2.Taxonomy ( onto2Tax ) where
 
-import OWL2.MS
 import OWL2.Sign
 import OWL2.ManchesterPrint
 import OWL2.ProvePellet
@@ -24,13 +23,14 @@ import Taxonomy.MMiSSOntology
 import Common.Taxonomy
 import Common.Utils
 
+import OWL2.AS
+
 import System.IO.Unsafe
 
 import qualified Data.Foldable as Fold
 import qualified Common.Lib.Rel as Rel
 import qualified Data.Map as Map
 import Data.List
-import Data.Maybe
 
 import qualified Data.Set as Set
 
@@ -93,6 +93,7 @@ relBuild s = case s of
     in Rel.insertKey t $ Rel.fromList (zip (repeat t) suc) `Rel.union` ch
 
 -- | Invocation of Pellet
+-- TODO: commented out in 1993
 runClassifier :: Sign -> [Named Axiom] -> IO (Result String)
 runClassifier sig sen = do
   let th = show $ printOWLBasicTheory (sig, filter isAxiom sen)
@@ -102,3 +103,5 @@ runClassifier sig sen = do
     Nothing -> fail $ "Timeout after " ++ show tLimit ++ " seconds!"
     Just (progTh, out, _) ->
       if progTh then return out else fail "Pellet not found"
+-- runClassifier :: Sign -> [Named Axiom] -> IO (Result String)
+-- runClassifier _ _ = return $ return []

@@ -173,6 +173,9 @@ data Id = Id
 instance Show Id where
   showsPrec _ = showId
 
+isNullId :: Id -> Bool
+isNullId (Id ts cs r) = null ts && null cs && isNullRange r
+
 -- | construct an 'Id' from a token list
 mkId :: [Token] -> Id
 mkId toks = Id toks [] nullRange

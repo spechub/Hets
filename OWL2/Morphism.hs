@@ -16,7 +16,6 @@ module OWL2.Morphism where
 
 import Common.IRI
 import OWL2.AS
-import OWL2.MS
 import OWL2.Sign
 import OWL2.ManchesterPrint ()
 import OWL2.Symbols
@@ -97,7 +96,7 @@ inducedFromMor rm sig = do
         (APrefix v, APrefix u) -> inducedPref v u sig (m, t)
         _ -> error "OWL2.Morphism.inducedFromMor") (Map.empty, Map.empty)
                         $ Map.toList rm
-  return OWLMorphism
+  return OWLMorphism 
     { osource = sig
     , otarget = inducedSign mm tm sig
     , pmap = tm

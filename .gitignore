@@ -2,6 +2,7 @@
 *.DS_Store
 *.hi
 *.o
+*.p_o
 *.dyn_hi
 *.dyn_o
 .*.swp
@@ -189,4 +190,7 @@ TPTP/ATC_TPTP.hs
 test/*/*.th
 test/*/*.xml
 /_dependencies
+stack.yaml.lock
 consoleHistory.tmp
+/stack.yaml.lock
+/.old.stack-work

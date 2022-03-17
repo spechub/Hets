@@ -15,7 +15,7 @@ References  :  <http://www.w3.org/TR/owl2-profiles/>
 
 module OWL2.ProfilesAndSublogics where
 
-import OWL2.MS
+import OWL2.AS
 import OWL2.Profiles
 import OWL2.Sublogic
 import OWL2.Sign

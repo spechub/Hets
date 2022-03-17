@@ -23,8 +23,6 @@ import Common.Result
 import OWL2.AS
 import Common.IRI
 import OWL2.Keywords
-import OWL2.MS
-import OWL2.Translate
 import qualified OWL2.Morphism as OWLMor
 import qualified OWL2.ProfilesAndSublogics as OWLSub
 import qualified OWL2.Sign as OWLSign
@@ -77,8 +75,8 @@ instance Comorphism Propositional2OWL2
         has_model_expansion Propositional2OWL2 = True
 
 mkOWLDeclaration :: ClassExpression -> Axiom
-mkOWLDeclaration ex = PlainAxiom (ClassEntity $ Expression $ setPrefix "owl"
-    $ mkIRI thingS) $ ListFrameBit (Just SubClass) $ ExpressionBit [([], ex)]
+mkOWLDeclaration ex = ClassAxiom $ SubClassOf []
+    (Expression $ setPrefix "owl" $ mkIRI thingS) ex
 
 tokToIRI :: Token -> IRI
 tokToIRI = idToIRI . simpleIdToId
