@@ -19,7 +19,7 @@ import OWL2.Sign
 import OWL2.Morphism
 
 import Data.List
-
+import Data.Graph (stronglyConnComp, SCC(..))
 import Data.Data
 import Data.Maybe (mapMaybe)
 import qualified Data.Set as Set
@@ -273,9 +273,18 @@ slGeneralRestrictions axs =
 
 -- | Analyses the datatypes for a circle in their definition
 slGDatatypes :: [(Datatype, DataRange)] -> OWLSub -> OWLSub
-slGDatatypes ax sl = slMax sl slBottom -- TODO: Implement
+slGDatatypes ax sl = if isAcyclic fst (basedOn . snd) ax then
+        requireUnrestrictedDL sl 
+    else sl
 
 
+
+isAcyclic :: Ord b => (a -> b) -> (a -> [b]) -> [a] -> Bool
+isAcyclic f connectedTo l = any cyclic vertices where
+    vertices = stronglyConnComp $ map (\x -> (x, f x, connectedTo x)) l
+    cyclic s = case s of
+        AcyclicSCC _ -> False
+        CyclicSCC _ -> True
 
 
 slODoc :: OntologyDocument -> OWLSub

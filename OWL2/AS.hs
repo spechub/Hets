@@ -777,6 +777,11 @@ numberName f
     | isFloatDec f = decimalS
     | otherwise = floatS
 
+litType :: Literal -> Maybe IRI
+litType l = case l of
+  Literal _ (Typed t) -> Just t
+  NumberLit f -> Just . expandIRI' predefPrefixes . setPrefix "xsd" . mkIRI . numberName $ f
+
 cTypeS :: String
 cTypeS = "^^"
 
@@ -807,6 +812,15 @@ data DataRange =
   | DataComplementOf DataRange
   | DataOneOf [Literal]
     deriving (Show, Eq, Ord, Typeable, Data)
+
+-- | Extracts all Datatypes used in a Datarange.
+basedOn :: DataRange -> [Datatype]
+basedOn dr = case dr of
+  DataType dt fs -> dt : concatMap (\(f, l) -> f : maybeToList (litType l)) fs
+  DataJunction _ drs -> concatMap basedOn drs
+  DataComplementOf dr' -> basedOn dr'
+  DataOneOf ls -> concatMap (maybeToList . litType) ls
+
 
 -- * CLASS EXPERSSIONS
 
