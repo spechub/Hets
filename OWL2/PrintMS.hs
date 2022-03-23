@@ -2150,10 +2150,10 @@ printClassExpression pds expr = case expr of
     ObjectCardinality (Cardinality ty card opExp maybeDesc) ->
         printObjectPropertyExpression pds opExp <+> cardinalityType ty
         <+> text (show card)
-        <+> maybe (keyword "owl:Thing") (printPrimary pds) maybeDesc
+        <+> maybe empty (printPrimary pds) maybeDesc
     DataValuesFrom ty dpExps dRange -> (case dpExps of
             [dpExp] -> printIRI pds dpExp
-            _ -> parens . vcat . punctuate comma $ map (printIRI pds) dpExps)
+            _ -> parens . hsep . punctuate comma $ map (printIRI pds) dpExps)
         <+> quantifierType ty
         <+> printDataRange pds dRange
     DataHasValue dpExp cons ->
