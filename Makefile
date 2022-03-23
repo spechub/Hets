@@ -12,6 +12,8 @@
 # the corresponding tool as is: GHC_PKG_FLAGS (ghc-pkg), GHC_FLAGS (ghc).
 # For profiling, call make with PROFILE=on 
 
+## dummy line to re-trigger CI runs like GHA, travic-ci, etc.
+
 include var.mk
 
 NO_BIND_WARNING := -fno-warn-unused-do-bind
