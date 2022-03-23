@@ -85,7 +85,7 @@ instance Function IRI where
           iRi = if hasFullIRI iri then let
                   ex = np ++ ":" ++ lp
                   res = expandIRI' pm iri
-                in if elem np ["http", "https"] then -- abbreviate
+                in if elem np ["http", "https"] && not (isAbbrev iri) then -- abbreviate
                         case Map.lookup "" pm of
                           Just ep | length ep > 5 -> case stripPrefix ep ex of
                             Just rl@(_ : _) -> res
@@ -95,18 +95,9 @@ instance Function IRI where
                             _ -> res
                           _ -> res
                       else res
-               else if isBlankNode iri then iri else   
-                    let iriMap = foldl (\pm' (kp, vp) -> 
-                                case parseIRI vp of
-                                  Just i -> Map.insert kp i pm'
-                                  Nothing -> if null kp then 
-                                               Map.insert kp 
-                                                 ((mkIRI vp)) 
-                                                 pm'
-                                              else pm') 
-                              Map.empty $  
-                              Map.toList $ Map.union pm predefPrefixes
-                    in expandIRI iriMap iri
+               else if isBlankNode iri then iri
+               else let iriMap = Map.union pm predefPrefixes
+                    in expandIRI' iriMap iri
       in setReservedPrefix iRi
     _ -> iri
 
