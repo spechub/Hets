@@ -36,7 +36,6 @@ import Comorphisms.ExtModal2OWL
 import DMU.Logic_DMU
 import Propositional.Logic_Propositional
 
-
 createOWLTheory :: G_theory -> Result (Sign, [Named AS.Axiom])
 createOWLTheory (G_theory lid _ (ExtSign sign0 _) _ sens0 _) = do
     let th = (sign0, toNamedList sens0)
@@ -61,5 +60,3 @@ createOWLTheory (G_theory lid _ (ExtSign sign0 _) _ sens0 _) = do
 
     (sign, sens) <- r6
     return (sign, toNamedList $ toThSens sens)
-
-    return (emptySign, [])
