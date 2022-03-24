@@ -1933,12 +1933,12 @@ printAtom pds (BuiltInAtom iri dargs) =
     <> parens (hsep . punctuate comma . map (printDataArg pds) $ dargs)
 
 printAtom pds (SameIndividualAtom iarg1 iarg2) =
-    text "SameIndividual"
+    text sameAsS
     <> parens (hsep . punctuate comma . map (printIndividualArg pds)
         $ [iarg1, iarg2])
 
 printAtom pds (DifferentIndividualsAtom iarg1 iarg2) =
-    text "DifferentIndividuals"
+    text differentFromS
     <> parens (hsep . punctuate comma . map (printIndividualArg pds)
         $ [iarg1, iarg2])
 
