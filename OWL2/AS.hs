@@ -83,6 +83,14 @@ topDataProperty :: IRI
 topDataProperty = expandIRI' predefPrefixes $
   setPrefix "owl" $ mkIRI "topDataProperty"
 
+topObjectProperty :: IRI
+topObjectProperty = expandIRI' predefPrefixes $
+  setPrefix "owl" $ mkIRI "topObjectProperty"
+
+bottomObjectProperty :: IRI
+bottomObjectProperty = expandIRI' predefPrefixes $
+  setPrefix "owl" $ mkIRI "bottomObjectProperty"
+
 type LexicalForm = String
 type LanguageTag = String
 type ImportIRI = IRI
@@ -781,6 +789,7 @@ litType :: Literal -> Maybe IRI
 litType l = case l of
   Literal _ (Typed t) -> Just t
   NumberLit f -> Just . expandIRI' predefPrefixes . setPrefix "xsd" . mkIRI . numberName $ f
+  _ -> Nothing
 
 cTypeS :: String
 cTypeS = "^^"
@@ -801,6 +810,11 @@ objPropToIRI :: ObjectPropertyExpression -> IRI
 objPropToIRI opExp = case opExp of
     ObjectProp u -> u
     ObjectInverseOf objProp -> objPropToIRI objProp
+
+inverseOf :: ObjectPropertyExpression -> ObjectPropertyExpression
+inverseOf ope = case ope of
+  ObjectProp _ -> ObjectInverseOf ope
+  ObjectInverseOf ope' -> ope'
 
 type DataPropertyExpression = DataProperty
 
