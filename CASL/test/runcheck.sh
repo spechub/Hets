@@ -10,6 +10,9 @@ BD=${SD%/*/*}
 
 cd ${SD} || return 99
 
+warnMsg "skipped until fixed in #2050"
+return 0
+
 PA=$1
 SET=$2
 ANNOS=${BD}/Common/test/Standard.annos

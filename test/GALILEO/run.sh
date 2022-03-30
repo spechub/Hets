@@ -7,7 +7,11 @@ BD=${SD%/*/*}
 
 cd ${SD} || return 99
 
+set -o xtrace
+
 ${BD}/hets -v2 -L ${HETS_LIB}:.. Heat.hpf || addErr
+
+set +o xtrace
 
 errorMsg ${ERR} "${.sh.file}"
 (( ! ERR ))
