@@ -89,15 +89,17 @@ instance Category Sign OWLMorphism where
     isInclusion = isOWLInclusion
     composeMorphisms = composeMor
 
+instance Semigroup Ontology where
+    (Ontology n v i1 a1 ax1) <> (Ontology _ _ i2 a2 ax2) =
+        Ontology n v (i1 ++ i2) (a1 ++ a2) (ax1 ++ ax2)
 instance Monoid Ontology where
     mempty = Ontology Nothing Nothing [] [] []
-    mappend (Ontology n v i1 a1 ax1) (Ontology _ _ i2 a2 ax2) =
-        Ontology n v (i1 ++ i2) (a1 ++ a2) (ax1 ++ ax2)
 
+instance Semigroup OntologyDocument where
+    (OntologyDocument m p1 o1) <> (OntologyDocument _ p2 o2) =
+      OntologyDocument m (Map.union p1 p2) $ mappend o1 o2
 instance Monoid OntologyDocument where
     mempty = OntologyDocument (OntologyMetadata AS) mempty mempty
-    mappend (OntologyDocument m p1 o1) (OntologyDocument _ p2 o2) =
-      OntologyDocument m (Map.union p1 p2) $ mappend o1 o2
 
 instance Syntax OWL2 OntologyDocument Entity SymbItems SymbMapItems where
     parsersAndPrinters OWL2 = -- addSyntax "Ship" (parseOntologyDocument, ppShipOnt) 

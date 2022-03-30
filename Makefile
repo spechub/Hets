@@ -565,9 +565,7 @@ docs: $(derived_sources) $(STACK_UPGRADE_TARGET)
 $(DRIFT): $(DRIFT_deps)
 	cd utils/DrIFT-src; $(HC) --make -o ../DrIFT DrIFT.hs
 
-$(DTD2HS): $(DTD2HS_deps) utils/DtdToHaskell-src/DtdToHaskell.hs
-	@mkdir -p utils/DtdToHaskell-src/DtdToHaskell
-	@cp -f $(DTD2HS_deps) utils/DtdToHaskell-src/DtdToHaskell
+$(DTD2HS): utils/DtdToHaskell-src/DtdToHaskell.hs
 	$(HC) --make $(HC_OPTS) -iutils/DtdToHaskell-src -o $@ \
             utils/DtdToHaskell-src/DtdToHaskell.hs
 

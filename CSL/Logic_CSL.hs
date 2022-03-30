@@ -80,9 +80,10 @@ instance Sentences CSL CMD
     simplify_sen CSL _ = id
     symKind CSL _ = "op"
 
+instance Semigroup BASIC_SPEC where
+    (Basic_spec l1) <> (Basic_spec l2) = Basic_spec $ l1 ++ l2
 instance Monoid BASIC_SPEC where
     mempty = Basic_spec []
-    mappend (Basic_spec l1) (Basic_spec l2) = Basic_spec $ l1 ++ l2
 
 -- | Syntax of CSL logic
 instance Syntax CSL BASIC_SPEC Symbol

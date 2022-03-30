@@ -65,7 +65,7 @@ getTypeVars :: LocalTypeVars -> [Type] -> Range -> [TypeArg]
 getTypeVars e tys ps =
   let is = Set.unions $ map (idsOf (>= 0)) tys
       tyVs = Map.intersection e $ setToMap is
-      dTys = Map.fold (\ (TypeVarDefn _ vk _ _) l -> case vk of
+      dTys = Map.foldr (\ (TypeVarDefn _ vk _ _) l -> case vk of
              Downset ty -> ty : l
              _ -> l) [] tyVs
       dis = Set.unions $ map (idsOf (>= 0)) dTys

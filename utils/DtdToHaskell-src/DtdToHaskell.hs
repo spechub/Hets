@@ -20,9 +20,9 @@ import Text.XML.HaXml.Types (DocTypeDecl (..))
 import Text.XML.HaXml.Namespaces (localName)
 #endif
 import Text.XML.HaXml.Parse (dtdParse)
-import DtdToHaskell.TypeDef (TypeDef, ppTypeDef, mangle)
-import DtdToHaskell.Convert (dtd2TypeDef)
-import DtdToHaskell.Instance (mkInstance)
+import Text.XML.HaXml.DtdToHaskell.TypeDef (ppTypeDef, mangle)
+import Text.XML.HaXml.DtdToHaskell.Convert (dtd2TypeDef)
+import Text.XML.HaXml.DtdToHaskell.Instance (mkInstance)
 import Text.PrettyPrint.HughesPJ (render, vcat)
 
 -- sucked in from Text.XML.HaXml.Wrappers to avod dependency on T.X.H.Html

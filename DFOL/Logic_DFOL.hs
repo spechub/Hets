@@ -50,9 +50,10 @@ instance Category Sign Morphism where
    composeMorphisms = compMorph
    legal_mor m = unless (isValidMorph m) $ fail "illegal DFOL morphism"
 
+instance Semigroup BASIC_SPEC where
+    (Basic_spec l1) <> (Basic_spec l2) = Basic_spec $ l1 ++ l2
 instance Monoid BASIC_SPEC where
     mempty = Basic_spec []
-    mappend (Basic_spec l1) (Basic_spec l2) = Basic_spec $ l1 ++ l2
 
 -- syntax for DFOL
 instance Syntax DFOL BASIC_SPEC Symbol SYMB_ITEMS SYMB_MAP_ITEMS where
