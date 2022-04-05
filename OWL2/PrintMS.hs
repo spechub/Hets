@@ -73,6 +73,10 @@ obPropExprToIRI :: ObjectPropertyExpression -> IRI
 obPropExprToIRI (ObjectProp iri) = iri
 obPropExprToIRI (ObjectInverseOf obExpr) = obPropExprToIRI obExpr 
 
+obPropExprToIdVal :: ObjectPropertyExpression -> FrameIdValue
+obPropExprToIdVal (ObjectProp iri) = IriId iri
+obPropExprToIdVal (ObjectInverseOf o) = ObjInvOfId . obPropExprToIRI $ o
+
 emptyMS :: MnchstrSntx
 emptyMS = M.empty
 
@@ -183,19 +187,14 @@ tObjectPropertyAxiom opAx@(SubObjectPropertyOf anns
         newAxioms = ObjectPropertyAxiom opAx : axs
 
 tObjectPropertyAxiom opAx@(SubObjectPropertyOf anns
-    (SubObjPropExpr_exprchain opExprs) (ObjectProp iri)) ms =
+    (SubObjPropExpr_exprchain opExprs) opExpr) ms =
     M.insert k (M.insert SubPropertyChainSection newAxioms m2) m1
     where
-        k = (ObjectPropertyFrame, IriId iri)
+        k = (ObjectPropertyFrame, obPropExprToIdVal opExpr)
         m1 = tAnnotations anns . tObjectPropertyExpressions False opExprs $ ms
         m2 = M.findWithDefault M.empty k m1
         axs = M.findWithDefault [] SubPropertyChainSection m2
         newAxioms = ObjectPropertyAxiom opAx : axs
-
-tObjectPropertyAxiom (SubObjectPropertyOf anns
-    (SubObjPropExpr_exprchain opExprs) opExpr) ms =
-    tAnnotations anns . tObjectPropertyExpressions False opExprs
-    . tObjectPropertyExpression False opExpr $ ms
 
 -- EquivalentObjectProperties axiom
 tObjectPropertyAxiom opAx@(EquivalentObjectProperties anns
@@ -267,28 +266,16 @@ tObjectPropertyAxiom opAx@(DisjointObjectProperties anns opExprs) ms =
 
 -- InverseObjectProperties axiom
 tObjectPropertyAxiom opAx@(InverseObjectProperties anns opExpr1 opExpr2) ms =
-    M.insert k1 (M.insert InverseOfSection newAxioms1 m1)
-    . M.insert k2 (M.insert InverseOfSection newAxioms2 m2) $ m'
+    M.insert k1 (M.insert InverseOfSection newAxioms1 m1) m'
     where
-        fIdValue1 = case opExpr1 of
-            ObjectProp iri -> IriId iri
-            ObjectInverseOf expr -> ObjInvOfId . obPropExprToIRI $ expr
-
-        fIdValue2 = case opExpr2 of
-            ObjectProp iri -> IriId iri
-            ObjectInverseOf expr -> ObjInvOfId . obPropExprToIRI $ expr
+        fIdValue1 = obPropExprToIdVal opExpr1
 
         k1 = (ObjectPropertyFrame, fIdValue1)
-        k2 = (ObjectPropertyFrame, fIdValue2)
         m' = tAnnotations anns
             . tObjectPropertyExpressions True [opExpr1, opExpr2] $ ms
         m1 = M.findWithDefault M.empty k1 m'
-        m2 = M.findWithDefault M.empty k2 m'
         axioms1 = M.findWithDefault [] InverseOfSection m1
-        axioms2 = M.findWithDefault [] InverseOfSection m2
-        newAx = InverseObjectProperties anns opExpr2 opExpr1
         newAxioms1 = ObjectPropertyAxiom opAx : axioms1
-        newAxioms2 = ObjectPropertyAxiom newAx : axioms2
 
 -- ObjectPropertyDomain axiom
 tObjectPropertyAxiom opAx@(ObjectPropertyDomain anns opExpr clExpr) ms =
