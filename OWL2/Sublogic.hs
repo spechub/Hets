@@ -401,7 +401,7 @@ compositeObjectProperties axs = Set.fromList $
 -- | Extracts the object property hierachy as an adjacency list.
 --
 --   Each object property expression has an edge according to https://www.w3.org/TR/2012/REC-owl2-syntax-20121211/#Property_Hierarchy_and_Simple_Object_Property_Expressions
-objectPropertyHierachy :: Bool -> [Axiom] -> Map.Map ObjectPropertyExpression (Set.Set ObjectPropertyExpression)
+objectPropertyHierachy :: Bool -> [Axiom] -> Graph ObjectPropertyExpression
 objectPropertyHierachy withChains = foldr (\ax m -> case ax of
         ObjectPropertyAxiom (SubObjectPropertyOf _ (SubObjPropExpr_obj o1) o2) ->
             ins o2 o1 m
@@ -422,8 +422,8 @@ objectPropertyHierachy withChains = foldr (\ax m -> case ax of
         _ -> m) Map.empty
     where
         ins k v m = insl k [k, v] m -- also add self for reflexive closure
-        insl k v m = Map.insertWith (Set.union) k (Set.fromList v) $
-            Map.insertWith (Set.union) (inverseOf k) (Set.fromList (inverseOf <$> v)) m
+        insl k v m = Map.insertWith (Set.union) k (Set.fromList v) m -- $
+            --Map.insertWith (Set.union) (inverseOf k) (Set.fromList (inverseOf <$> v)) m
         -- also add hierachy for inverse
 
 -- | All object properties in a set of axioms that are not simple
