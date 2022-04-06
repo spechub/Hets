@@ -355,11 +355,12 @@ buildTree graph r = (Node r f, g') where
             (tree : f', g''')) ([] :: [Tree a], g) $ Set.filter (/= r) (Map.findWithDefault Set.empty r graph)
 
 slGAnonymousIndividuals :: [(Individual, Individual)] -> OWLSub
-slGAnonymousIndividuals edges = if any isCyclicU comps || not (all (\t -> any (\x -> isAnonymous x && Set.size (Set.filter (not . isAnonymous) (connected x g)) <= 1) t) f) then
+slGAnonymousIndividuals edges = if any isCyclicU comps || not (all (\t -> any (\x -> Set.size (Set.filter (not . isAnonymous) (connected x g')) <= 1) t) f) then
         requireUnrestrictedDL slBottom
     else slBottom where
     edges' = edges ++ [(y,x) | (x,y) <- edges]
-    g = foldl (\m (x,y) -> Map.insertWith Set.union x (Set.singleton y) m) Map.empty edges'
+    g = foldl (\m (x,y) -> Map.insertWith Set.union x (if isAnonymous y then Set.singleton y else Set.empty) m) Map.empty (filter (\(x,y) -> isAnonymous x) edges')
+    g' = foldl (\m (x,y) -> Map.insertWith Set.union x (Set.singleton y) m) Map.empty edges'
     comps = components g
     f = forest g
 
