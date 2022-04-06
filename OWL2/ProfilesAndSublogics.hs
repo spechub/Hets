@@ -22,6 +22,7 @@ import OWL2.Sign
 import OWL2.Morphism
 
 import Data.Data
+import Data.Set (empty)
 
 data ProfSub = ProfSub
     { profiles :: Profiles
@@ -47,7 +48,7 @@ nameS :: ProfSub -> String
 nameS ps = printProfile (profiles ps) ++ "-" ++ slName (sublogic ps)
 
 psAxiom :: Axiom -> ProfSub
-psAxiom ax = ProfSub (axiom ax) (slAxiom ax)
+psAxiom ax = ProfSub (axiom ax) (slAxiom empty ax)
 
 sSig :: Sign -> ProfSub
 sSig s = bottomS {sublogic = slSig s}
