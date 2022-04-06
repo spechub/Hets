@@ -19,7 +19,9 @@ import OWL2.Sign
 import OWL2.Morphism
 
 import Data.List
-import Data.Graph (stronglyConnComp, SCC(..))
+import Data.Graph (stronglyConnComp, stronglyConnCompR, graphFromEdges, SCC(..))
+import Data.Array ((!), assocs, elems)
+import Data.Tree
 import Data.Data
 import Data.Maybe (mapMaybe)
 import qualified Data.Map as Map
@@ -179,14 +181,19 @@ slDataRange rn = case rn of
     DataOneOf _ -> requireNominals slBottom
     DataJunction _ drl -> foldl slMax slBottom $ map slDataRange drl
 
+-- | Checks anonymous individuals
+--   Anonymous individuals are not allowed in some place in OWL2 DL
+slIndividuals :: [Individual] -> OWLSub
+slIndividuals is = if any isAnonymous is then requireUnrestrictedDL slBottom else slBottom
+
 slClassExpression :: COPs -> ClassExpression -> OWLSub
 slClassExpression cops des = case des of
     ObjectJunction _ dec -> foldl slMax slBottom $ map (slClassExpression cops) dec
     ObjectComplementOf dec -> slClassExpression cops dec
-    ObjectOneOf _ -> requireNominals slBottom
+    ObjectOneOf is -> requireNominals $ slIndividuals is
     ObjectValuesFrom _ o d -> slMax (slObjProp o) (slClassExpression cops d)
-    ObjectHasSelf o -> slSimpleObjectProp cops o $ requireAddFeatures
-    ObjectHasValue o _ -> slObjProp o
+    ObjectHasSelf o -> requireAddFeatures $ slSimpleObjectProp cops o
+    ObjectHasValue o i -> (if isAnonymous i then requireUnrestrictedDL else id) $ slObjProp o
     ObjectCardinality c -> slObjCard cops c
     DataValuesFrom _ _ dr -> slDataRange dr
     DataCardinality c -> slDataCard c
@@ -199,12 +206,12 @@ slDataCard (Cardinality _ _ _ x) = requireNumberRestrictions $ case x of
 
 slObjCard :: COPs -> Cardinality ObjectPropertyExpression ClassExpression -> OWLSub
 slObjCard cops (Cardinality _ _ op x) = requireNumberRestrictions $
-    slSimpleObjectProp cops op $ case x of
-    Nothing -> slObjProp op
-        Just y -> slMax (slObjProp op) (slClassExpression cops y)
+    case x of
+        Nothing -> slSimpleObjectProp cops op
+        Just y -> slMax (slSimpleObjectProp cops op) (slClassExpression cops y)
 
 slSimpleObjectProp :: COPs -> ObjectPropertyExpression  -> OWLSub
-slSimpleObjectProp cops ope = let sl = slObjProp ope
+slSimpleObjectProp cops ope = let sl = slObjProp ope in
     if ope `Set.member` cops then requireUnrestrictedDL sl else sl
 
 slAxiom :: COPs -> Axiom -> OWLSub
@@ -226,7 +233,7 @@ slAxiom cops ax = case ax of
         InverseObjectProperties _ e1 e2 -> slMax (slObjProp e1) (slObjProp e2)
         ObjectPropertyDomain _ oExpr cExpr -> slMax (slObjProp oExpr) (slClassExpression cops cExpr)
         ObjectPropertyRange _ oExpr cExpr -> slMax (slObjProp oExpr) (slClassExpression cops cExpr)
-        FunctionalObjectProperty _ oExpr -> slSimpleObjectProp cops oExpr slBottom
+        FunctionalObjectProperty _ oExpr -> slSimpleObjectProp cops oExpr
         InverseFunctionalObjectProperty _ oExpr -> requireInverseRoles $ slSimpleObjectProp cops oExpr
         ReflexiveObjectProperty _ oExpr -> requireAddFeatures (slObjProp oExpr)
         IrreflexiveObjectProperty _ oExpr -> requireAddFeatures $ slSimpleObjectProp cops oExpr
@@ -246,11 +253,11 @@ slAxiom cops ax = case ax of
     HasKey _ cExpr oExprs _ -> foldl slMax (slClassExpression cops cExpr)
         $ map slObjProp oExprs 
     Assertion a -> case a of
-        SameIndividual _ _ -> requireNominals slBottom
-        DifferentIndividuals _ _ -> requireNominals slBottom
+        SameIndividual _ is -> requireNominals $ slIndividuals is
+        DifferentIndividuals _ is -> requireNominals  $ slIndividuals is
         ClassAssertion _ clExpr _ -> slClassExpression cops clExpr
-        ObjectPropertyAssertion _ _ _ _ -> slBottom
-        NegativeObjectPropertyAssertion _ _ _ _ -> slBottom
+        ObjectPropertyAssertion _ _ si ti -> slIndividuals [si, ti]
+        NegativeObjectPropertyAssertion _ _ si ti -> slIndividuals [si, ti]
         DataPropertyAssertion _ _ _ _ -> slBottom
         NegativeDataPropertyAssertion _ _ _ _ -> slBottom
     AnnotationAxiom a -> case a of
@@ -268,23 +275,99 @@ slGeneralRestrictions axs =
     let dts = mapMaybe (\ax -> case ax of
             DatatypeDefinition _ dt dr -> Just (dt, dr)
             _ -> Nothing) axs
+        is = mapMaybe (\ax -> case ax of
+            Assertion (ObjectPropertyAssertion _ _ s t) -> Just (s, t)
+            _ -> Nothing) axs
     in
-    slGDatatypes dts slBottom
+    foldl slMax slBottom $ 
+        [ slGDatatypes dts
+        , slGPropertyHierachy axs
+        , slGAnonymousIndividuals is]
+
 
 -- | Analyses the datatypes for a circle in their definition
-slGDatatypes :: [(Datatype, DataRange)] -> OWLSub -> OWLSub
-slGDatatypes ax sl = if isCyclic vertices then
-        requireUnrestrictedDL sl 
-    else sl where
-    vertices = stronglyConnComp $ map (\x -> (x, fst x, basedOn . snd $ x)) ax
+slGDatatypes :: [(Datatype, DataRange)] -> OWLSub 
+slGDatatypes ax = if isCyclic comps then
+        requireUnrestrictedDL slBottom
+    else slBottom where
+    comps = stronglyConnComp $ map (\x -> (x, fst x, basedOn . snd $ x)) ax
+
+type Graph a = Map.Map a (Set.Set a)
+
+-- | @connected x g@ yields all nodes connected to x with an edge in g
+connected :: Ord a => a -> Graph a -> Set.Set a
+connected = Map.findWithDefault Set.empty
+
+-- | Checks whether an undirected graph is cyclic
+isCyclicU :: Ord a => Graph a -> Bool
+isCyclicU g = case Map.keys g of
+    [] -> False
+    (h:_) -> fst $ isCyclicU' g h Nothing (Map.keysSet g)
+
+-- | @isCyclicU' g v p r@ checks if a cycle can be found in @g@ starting at vertex @v@ with parent @p@ and not visited vertices @r@
+isCyclicU' :: Ord a => Graph a -> a -> Maybe a -> Set.Set a -> (Bool, Set.Set a)
+isCyclicU' g v p remaining = let remaining' = Set.delete v remaining in
+    foldl (\(b, r) c -> if b then (b, r) else if c `Set.member` r then 
+            isCyclicU' g c (Just v) r
+        else (Just c /= p, r)) (False, remaining') (Map.findWithDefault Set.empty v g)
+
+-- | @forest g@ Given that @g@ is acyclic, transforms @g@ to a forest
+forest :: Ord a => Graph a -> Forest a
+forest g = case Map.keys g of
+    [] -> []
+    (h:_) -> let (t, g') = buildTree g h in t : forest g'
+
+-- | @reachable r g@ returns all reachable nodes from @r@ in @g@
+reachable :: Ord a => a -> Graph a -> Set.Set a
+reachable r g = reachable' g (Set.singleton r) r
+
+-- | @reachable' g visited r@ returns all reachable unvisited nodes from @r@ in @g@ 
+reachable' :: Ord a => Graph a -> Set.Set a -> a -> Set.Set a
+reachable' g visited r = Set.union c $ Set.unions . Set.toList $ Set.map (reachable' g (Set.union visited c)) c where
+    c = (connected r g) `Set.difference` visited
+
+-- | @components  g@ gets the components of @g@
+components :: Ord a => Graph a -> [Graph a]
+components graph = case Map.keys graph of
+    [] -> []
+    (h:_) -> let (c, g') = compsOf graph h in c : components g'
+    where
+    compsOf graph' r = Map.partitionWithKey (\k _ -> r == k || k `Set.member` (reachable r graph')) graph'
+
+-- | @buildTree g r@ given that @g@ is acyclic, transforms @g@ into a tree with @r@ as root node and returns the remaining graph
+buildTree :: Ord a => Graph a -> a -> (Tree a, Graph a)
+buildTree graph r = (Node r f, g') where
+    g = Map.delete r graph
+    (f, g') = foldl (\(f', g'') v ->
+        let (tree, g''') = buildTree g'' v in 
+            (tree : f', g''')) ([] :: [Tree a], g) $ Set.filter (/= r) (Map.findWithDefault Set.empty r graph)
+
+slGAnonymousIndividuals :: [(Individual, Individual)] -> OWLSub
+slGAnonymousIndividuals edges = if any isCyclicU comps || not (all (\t -> any (\x -> isAnonymous x && Set.size (Set.filter (not . isAnonymous) (connected x g)) <= 1) t) f) then
+        requireUnrestrictedDL slBottom
+    else slBottom where
+    edges' = edges ++ [(y,x) | (x,y) <- edges]
+    g = foldl (\m (x,y) -> Map.insertWith Set.union x (Set.singleton y) m) Map.empty edges'
+    comps = components g
+    f = forest g
 
 
+slGPropertyHierachy :: [Axiom] -> OWLSub
+slGPropertyHierachy axs
+    | containsCircle 2
+        . stronglyConnComp
+        . (fmap (\(k, v) -> (k, k, Set.toList v)))
+        . Map.assocs
+        . objectPropertyHierachy True $ axs = requireUnrestrictedDL slBottom
+    | otherwise = slBottom
+
+-- | Whether a direct graph is cyclic
 isCyclic :: [SCC a] -> Bool
-isCyclic = contains 1
+isCyclic = containsCircle 1
 
--- | @containsCircle len ver@ Checks whether @ver@ contains a circle of min length @len@
+-- | @containsCircle len comps@ Checks whether @comps@ contain a circle of min length @len@
 containsCircle :: Int -> [SCC a] -> Bool
-containsCircle len vertices = any cyclic vertices where
+containsCircle len comps = any cyclic comps where
     cyclic s = case s of
         CyclicSCC circle | length circle >= len -> True
         _ -> False
@@ -305,10 +388,18 @@ compositeObjectProperties axs = Set.fromList $
 -- | Extracts the object property hierachy as an adjacency list.
 --
 --   Each object property expression has an edge according to https://www.w3.org/TR/2012/REC-owl2-syntax-20121211/#Property_Hierarchy_and_Simple_Object_Property_Expressions
-hierachy :: [Axiom] -> Map.Map ObjectPropertyExpression (Set.Set ObjectPropertyExpression)
-hierachy = foldr (\ax m -> case ax of
+objectPropertyHierachy :: Bool -> [Axiom] -> Map.Map ObjectPropertyExpression (Set.Set ObjectPropertyExpression)
+objectPropertyHierachy withChains = foldr (\ax m -> case ax of
         ObjectPropertyAxiom (SubObjectPropertyOf _ (SubObjPropExpr_obj o1) o2) ->
             ins o2 o1 m
+        ObjectPropertyAxiom (SubObjectPropertyOf _ (SubObjPropExpr_exprchain (ops@(o1 : _ : _))) o)
+            | not withChains -> m
+            | o == ObjectProp topObjectProperty -> m
+            | length ops == 2 && all (== o) ops -> m
+            | o == o1 -> insl o (tail ops) m
+            | o == last ops -> insl o (init ops) m
+            | otherwise -> insl o ops m
+
         ObjectPropertyAxiom (EquivalentObjectProperties _ ops) ->
             foldr (\o2 -> insl o2 [o1 | o1 <- ops, o1 /= o2]) m ops
         ObjectPropertyAxiom (InverseObjectProperties _ o1 o2) ->
@@ -326,7 +417,7 @@ hierachy = foldr (\ax m -> case ax of
 complexObjectProperties :: [Axiom] -> Set.Set ObjectPropertyExpression
 complexObjectProperties axs = foldr cop Set.empty axs where
     compOPE = compositeObjectProperties axs
-    h = hierachy axs
+    h = objectPropertyHierachy False axs
     -- cop :: Axiom -> Set.Set ObjectProperty -> Set.Set.ObjectProperty
     cop (ObjectPropertyAxiom (SubObjectPropertyOf _ sub super)) = case sub of
         SubObjPropExpr_obj o -- @o -> super@ holds
@@ -340,15 +431,13 @@ complexObjectProperties axs = foldr cop Set.empty axs where
     -- expression in their hierachy
     isComposite ope = ope `Set.member` compOPE || any isComposite ts where
         ts = Map.findWithDefault Set.empty ope h
-
+        
 
 slODoc :: OntologyDocument -> OWLSub
 slODoc odoc =
     let axs = axioms . ontology $ odoc
         cops = complexObjectProperties axs
-    in slMax
-    (slGeneralRestrictions axs)
-    (foldl slMax slBottom . map (slAxiom cops) $ axs)
+    in slMax (slGeneralRestrictions axs) (foldl slMax slBottom . map (slAxiom cops) $ axs)
 
 slSig :: Sign -> OWLSub
 slSig sig = let dts = Set.toList $ datatypes sig in
@@ -371,6 +460,7 @@ prSig s a = if datatype s == Set.empty
 
 prODoc :: OWLSub -> OntologyDocument -> OntologyDocument
 prODoc s a =
-    let o = (ontology a) {axioms = filter ((s >=) . slAxiom) $ axioms $
+    let cops = compositeObjectProperties . axioms . ontology $ a
+        o = (ontology a) {axioms = filter ((s >=) . slAxiom cops) $ axioms $
             ontology a }
     in a {ontology = o}
