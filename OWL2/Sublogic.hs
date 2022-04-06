@@ -278,11 +278,23 @@ slGeneralRestrictions axs =
         is = mapMaybe (\ax -> case ax of
             Assertion (ObjectPropertyAssertion _ _ s t) -> Just (s, t)
             _ -> Nothing) axs
+        es = mapMaybe (\ax -> case ax of
+            Declaration _ e -> Just e
+            _ -> Nothing) axs
     in
     foldl slMax slBottom $ 
         [ slGDatatypes dts
         , slGPropertyHierachy axs
-        , slGAnonymousIndividuals is]
+        , slGAnonymousIndividuals is
+        , slGTypingConstraints es]
+
+slGTypingConstraints :: [Entity] -> OWLSub
+slGTypingConstraints declared = 
+    if all obeysRestriction $ Map.elems entityMap then slBottom else requireUnrestrictedDL slBottom where
+    entityMap = foldl (\m (Entity _ k i) -> Map.insertWith Set.union i (Set.singleton k) m) Map.empty declared
+    obeysRestriction ks = all ((>=) 1 . Set.size . Set.intersection ks) $ Set.fromList <$> [
+        [ObjectProperty, DataProperty, AnnotationProperty],
+        [Datatype, Class]]
 
 
 -- | Analyses the datatypes for a circle in their definition
@@ -431,7 +443,7 @@ complexObjectProperties axs = foldr cop Set.empty axs where
     -- expression in their hierachy
     isComposite ope = ope `Set.member` compOPE || any isComposite ts where
         ts = Map.findWithDefault Set.empty ope h
-        
+
 
 slODoc :: OntologyDocument -> OWLSub
 slODoc odoc =
