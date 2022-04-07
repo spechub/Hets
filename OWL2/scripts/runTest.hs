@@ -54,7 +54,7 @@ processParserPrinter file parser cmp = do
                     Right o2 -> let (o2', _, _) = fromJust $ maybeResult $ basicOWL2Analysis (o2, emptySign, emptyGlobalAnnos) in
                         if cmp o1' o2' then  putStrLn "\ESC[1;38;5;40m✔\ESC[0m success"
                         else do
-                            putStrLn $ "\ESC[1;38;5;196m✘\ESC[0m parse-print-parse circle failed. Printed: " ++ show p
+                            putStrLn $ "\ESC[1;38;5;196m✘\ESC[0m parse-print-parse circle failed. Printed: " ++ p
                             exitFailure
             Nothing -> do
                 putStrLn $ "\ESC[1;38;5;196m✘\ESC[0m static analysis failed: " ++ show (diags r)
