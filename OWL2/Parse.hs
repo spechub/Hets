@@ -34,6 +34,7 @@ import Text.ParserCombinators.Parsec
 import Control.Monad (liftM2)
 import Data.Char
 import qualified Data.Map as Map
+import Data.Maybe (isJust)
 
 characters :: [Character]
 characters = [minBound .. maxBound]
@@ -163,10 +164,12 @@ fullIri :: CharParser st IRI
 fullIri = angles iriParser
 
 uriP :: CharParser st IRI
-uriP =
-  skips $ try $ checkWithUsing showIRI uriQ $ \ q -> let p = prefixName q in
-  if null p then notElem (iFragment q) owlKeywords
-   else notElem p $ map (takeWhile (/= ':'))
+uriP = skips $ try $ do
+  colonM <- optionMaybe . try . lookAhead $ char ':'
+  checkWithUsing (\i -> "keyword \"" ++ showIRI i ++ "\"") uriQ $ \ q -> let p = prefixName q in
+    if not (isAbbrev q) || isJust colonM then True
+    else if null p then notElem (iFragment q) owlKeywords
+    else notElem p $ map (takeWhile (/= ':'))
         $ colonKeywords
         ++ [ show d ++ e | d <- equivOrDisjointL, e <- [classesC, propertiesC]]
 
