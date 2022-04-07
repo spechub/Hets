@@ -32,6 +32,7 @@ import qualified Common.GlobalAnnotations as GA (PrefixMap)
 import Text.ParserCombinators.Parsec
 
 import Data.Char
+import Data.Maybe (isJust)
 import qualified Data.Map as Map (fromList, unions)
 import Data.Either (partitionEithers)
 import Control.Monad (liftM2, unless)
@@ -95,9 +96,11 @@ expUriP :: GA.PrefixMap -> CharParser st IRI
 expUriP pm = uriP >>= return . expandIRI pm
 
 uriP :: CharParser st IRI
-uriP = skips $ try $ checkWithUsing showIRI uriQ $ \ q -> let p = prefixName q in
-  if not $ isAbbrev q then True else
-   if null p then notElem (show $ iriPath q) owlKeywords
+uriP = skips $ try $ do
+  colonM <- optionMaybe . try . lookAhead $ char ':'
+  checkWithUsing (\i -> "keyword \"" ++ showIRI i ++ "\"") uriQ $ \ q -> let p = prefixName q in
+    if not (isAbbrev q) || isJust colonM then True
+    else if null p then notElem (iFragment q) owlKeywords
     else notElem p $ map (takeWhile (/= ':'))
         $ colonKeywords
         ++ [ show d ++ e | d <- equivOrDisjointL, e <- [classesC, propertiesC]]
