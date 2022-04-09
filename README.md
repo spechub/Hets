@@ -57,6 +57,10 @@ sudo apt-get install hets-desktop
 
 * for using Hets as a server providing a RESTful interface, use hets-server. This is a smaller version without GUI dependencies. Note that also hets-desktop can be used as as server.
 
+#### Get the latest binaries
+
+From [here](http://hets.eu/latest) you can get the latest Hets binaries (always freshly compiled from the master branch). 
+
 #### Hets development
 For Hets development additionally type in
 ```
