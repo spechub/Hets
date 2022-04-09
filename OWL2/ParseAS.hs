@@ -446,7 +446,7 @@ parseObjectPropertyExpressionChain ::
     GA.PrefixMap -> CharParser st PropertyExpressionChain
 parseObjectPropertyExpressionChain pm =
     parseEnclosedWithKeyword "ObjectPropertyChain" $
-    manyN 2 (parseObjectPropertyExpression pm)
+    many1 (parseObjectPropertyExpression pm)
 
 parseSubObjectPropertyExpression ::
     GA.PrefixMap -> CharParser st SubObjectPropertyExpression

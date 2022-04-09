@@ -1,0 +1,40 @@
+Prefix(: = <http://example.com/>)
+Ontology(
+    Declaration(Annotation (rdfs:label "CLASS A") Class(:a))
+    Declaration(Class(:b))
+    Declaration(Class(:c))
+    Declaration(NamedIndividual(:i))
+    Declaration(NamedIndividual(:j))
+    Declaration(DataProperty(:prop1))
+    Declaration(DataProperty(:prop2))
+    Declaration(DataProperty(:prop3))
+    Declaration(ObjectProperty(:oprop1))
+    Declaration(ObjectProperty(:oprop2))
+
+    SubClassOf(ObjectUnionOf(:a :b) :c)
+
+    HasKey(ObjectUnionOf(:a :b) (:prop1) ())
+    HasKey(:a (:prop1) ())
+
+    SubObjectPropertyOf( ObjectInverseOf(:oprop1) :oprop2)
+    InverseFunctionalObjectProperty( ObjectInverseOf(:oprop1))
+    ReflexiveObjectProperty( ObjectInverseOf(:oprop1))
+    IrreflexiveObjectProperty( ObjectInverseOf(:oprop1))
+    FunctionalObjectProperty( ObjectInverseOf(:oprop1))
+    TransitiveObjectProperty( ObjectInverseOf(:oprop1))
+
+    
+    SymmetricObjectProperty( ObjectInverseOf(:oprop1))
+    AsymmetricObjectProperty( ObjectInverseOf(:oprop1))
+
+    InverseObjectProperties( ObjectInverseOf(:oprop1) :oprop2)
+    ObjectPropertyRange( ObjectInverseOf(:oprop1) :a)
+    ObjectPropertyDomain( ObjectInverseOf(:oprop1) :a)
+    NegativeObjectPropertyAssertion( ObjectInverseOf(:oprop1) :i :j)
+    ObjectPropertyAssertion( ObjectInverseOf(:oprop1) :i :j)
+
+    SubObjectPropertyOf ( ObjectPropertyChain (:oprop1) ObjectInverseOf (:oprop2) )
+
+
+
+)
