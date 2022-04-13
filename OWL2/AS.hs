@@ -95,6 +95,10 @@ bottomObjectProperty :: IRI
 bottomObjectProperty = expandIRI' predefPrefixes $
   setPrefix "owl" $ mkIRI "bottomObjectProperty"
 
+owlThing :: IRI
+owlThing = expandIRI' predefPrefixes $
+  setPrefix "owl" $ mkIRI "Thing"
+
 type LexicalForm = String
 type LanguageTag = String
 type ImportIRI = IRI
