@@ -1,4 +1,4 @@
-#SUBLOGIC=ALC
+#SUBLOGIC=ALC-D|integer|
 Prefix( xsd: = <http://www.w3.org/2001/XMLSchema#> )
 Prefix( : = <http://example.org/> )
 

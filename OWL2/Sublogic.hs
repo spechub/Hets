@@ -19,8 +19,7 @@ import OWL2.Sign
 import OWL2.Morphism
 
 import Data.List
-import Data.Graph (stronglyConnComp, stronglyConnCompR, graphFromEdges, SCC(..))
-import Data.Array ((!), assocs, elems)
+import Data.Graph (stronglyConnComp, SCC(..))
 import Data.Tree
 import Data.Data
 import Data.Maybe (mapMaybe)
@@ -109,6 +108,9 @@ slMax sl1 sl2 = OWLSub
     , unrestrictedDL = max (unrestrictedDL sl1) (unrestrictedDL sl2) 
     }
 
+slMaxs :: Foldable t => t OWLSub -> OWLSub
+slMaxs = foldl slMax slBottom
+
 -- | Naming for Description Logics
 slName :: OWLSub -> String
 slName sl =
@@ -174,11 +176,26 @@ slEntity (Entity _ et iri) = case et of
     Datatype -> slDatatype iri
     _ -> slBottom
 
+slAnnotation :: Annotation -> OWLSub
+slAnnotation (Annotation annos _ val) = slMax (slAnnos annos) $ case val of
+    AnnAnInd i -> slIndividuals [i]
+    AnnValLit l -> slLiteral l
+    _ -> slBottom
+
+slAnnos :: [Annotation] -> OWLSub
+slAnnos = foldl slMax slBottom . map slAnnotation
+
+slAnnosAnd :: [Annotation] -> OWLSub  -> OWLSub
+slAnnosAnd annos = slMax (slAnnos annos)
+
+slLiteral :: Literal -> OWLSub
+slLiteral = maybe slBottom slDatatype . litType
+
 slDataRange :: DataRange -> OWLSub
 slDataRange rn = case rn of
-    DataType ur _ -> slDatatype ur
+    DataType ur fs -> foldl slMax (slDatatype ur) (slLiteral . snd <$> fs)
     DataComplementOf c -> slDataRange c
-    DataOneOf _ -> requireNominals slBottom
+    DataOneOf lits -> requireNominals (foldl slMax slBottom (slLiteral <$> lits))
     DataJunction _ drl -> foldl slMax slBottom $ map slDataRange drl
 
 -- | Checks anonymous individuals
@@ -197,6 +214,7 @@ slClassExpression cops des = case des of
     ObjectCardinality c -> slObjCard cops c
     DataValuesFrom _ _ dr -> slDataRange dr
     DataCardinality c -> slDataCard c
+    DataHasValue _ l -> slLiteral l
     _ -> slBottom
 
 slDataCard :: Cardinality DataPropertyExpression DataRange -> OWLSub
@@ -208,64 +226,88 @@ slObjCard :: COPs -> Cardinality ObjectPropertyExpression ClassExpression -> OWL
 slObjCard cops (Cardinality _ _ op x) = requireNumberRestrictions $
     case x of
         Nothing -> slSimpleObjectProp cops op
-        Just y -> slMax (slSimpleObjectProp cops op) (slClassExpression cops y)
+        Just y -> (if y == Expression owlThing then id else requireQualNumberRestrictions) $ 
+            slMax (slSimpleObjectProp cops op) (slClassExpression cops y)
 
 slSimpleObjectProp :: COPs -> ObjectPropertyExpression  -> OWLSub
 slSimpleObjectProp cops ope = let sl = slObjProp ope in
     if ope `Set.member` cops then requireUnrestrictedDL sl else sl
 
+slIArg :: IndividualArg -> OWLSub
+slIArg arg = case arg of
+    IArg i -> slIndividuals [i]
+    _ -> slBottom
+
+slDArg :: DataArg -> OWLSub
+slDArg arg = case arg of
+    DArg l -> slLiteral l
+    _ -> slBottom
+
+slAtom :: COPs -> Atom -> OWLSub
+slAtom cops atom = case atom of
+    ClassAtom clExpr iArg -> slMax (slClassExpression cops clExpr) (slIArg iArg)
+    DataRangeAtom dr dArg -> slMax (slDataRange dr) (slDArg dArg)
+    ObjectPropertyAtom opExpr iArg1 iArg2 -> slMaxs $ [slObjProp opExpr, slIArg iArg1, slIArg iArg2]
+    DataPropertyAtom _ iArg dArg -> slMax (slIArg iArg) (slDArg dArg)
+    BuiltInAtom _ dArgs -> slMaxs $ slDArg <$> dArgs
+    SameIndividualAtom iArg1 iArg2 -> slMaxs $ slIArg <$> [iArg1, iArg2]
+    DifferentIndividualsAtom iArg1 iArg2 -> slMaxs $ slIArg <$> [iArg1, iArg2]
+    _ -> slBottom
+
 slAxiom :: COPs -> Axiom -> OWLSub
 slAxiom cops ax = case ax of
-    Declaration _ e -> slEntity e 
+    Declaration annos e -> slAnnosAnd annos $ slEntity e 
     ClassAxiom cax -> case cax of
-        SubClassOf _ sub sup -> slMax (slClassExpression cops sub) (slClassExpression cops sup)
-        EquivalentClasses _ clExprs -> foldl slMax slBottom $ map (slClassExpression cops) clExprs 
-        DisjointClasses _ clExprs -> foldl slMax slBottom $ map (slClassExpression cops) clExprs 
-        DisjointUnion _ _ clExprs -> foldl slMax slBottom $ map (slClassExpression cops) clExprs 
+        SubClassOf annos sub sup -> slAnnosAnd annos $ slMax (slClassExpression cops sub) (slClassExpression cops sup)
+        EquivalentClasses annos clExprs -> slAnnosAnd annos $ foldl slMax slBottom $ map (slClassExpression cops) clExprs 
+        DisjointClasses annos clExprs -> slAnnosAnd annos $ foldl slMax slBottom $ map (slClassExpression cops) clExprs 
+        DisjointUnion annos _ clExprs -> slAnnosAnd annos $ foldl slMax slBottom $ map (slClassExpression cops) clExprs 
     ObjectPropertyAxiom opax -> case opax of
-        SubObjectPropertyOf _ subOpExpr supOpExpr ->
+        SubObjectPropertyOf annos subOpExpr supOpExpr ->
             let oExprs = case subOpExpr of
                     SubObjPropExpr_obj oExpr -> [oExpr]
                     SubObjPropExpr_exprchain e -> e
-            in requireRoleHierarchy $ foldl slMax slBottom $ map slObjProp (supOpExpr : oExprs) 
-        EquivalentObjectProperties _ oExprs -> foldl slMax slBottom $ map slObjProp oExprs 
-        DisjointObjectProperties _ oExprs -> foldl slMax (requireAddFeatures slBottom) $ map (slSimpleObjectProp cops) oExprs 
-        InverseObjectProperties _ e1 e2 -> slMax (slObjProp e1) (slObjProp e2)
-        ObjectPropertyDomain _ oExpr cExpr -> slMax (slObjProp oExpr) (slClassExpression cops cExpr)
-        ObjectPropertyRange _ oExpr cExpr -> slMax (slObjProp oExpr) (slClassExpression cops cExpr)
-        FunctionalObjectProperty _ oExpr -> slSimpleObjectProp cops oExpr
-        InverseFunctionalObjectProperty _ oExpr -> requireInverseRoles $ slSimpleObjectProp cops oExpr
-        ReflexiveObjectProperty _ oExpr -> requireAddFeatures (slObjProp oExpr)
-        IrreflexiveObjectProperty _ oExpr -> requireAddFeatures $ slSimpleObjectProp cops oExpr
-        SymmetricObjectProperty _ oExpr -> slObjProp oExpr
-        AsymmetricObjectProperty _ oExpr -> requireAddFeatures $ slSimpleObjectProp cops oExpr
-        TransitiveObjectProperty _ oExpr -> requireRoleTransitivity (slObjProp oExpr)
+            in slAnnosAnd annos $ requireRoleHierarchy $ foldl slMax slBottom $ map slObjProp (supOpExpr : oExprs) 
+        EquivalentObjectProperties annos oExprs -> slAnnosAnd annos $ foldl slMax slBottom $ map slObjProp oExprs 
+        DisjointObjectProperties annos oExprs -> slAnnosAnd annos $ foldl slMax (requireAddFeatures slBottom) $ map (slSimpleObjectProp cops) oExprs 
+        InverseObjectProperties annos e1 e2 -> slAnnosAnd annos $ requireInverseRoles $ slMax (slObjProp e1) (slObjProp e2)
+        ObjectPropertyDomain annos oExpr cExpr -> slAnnosAnd annos $ slMax (slObjProp oExpr) (slClassExpression cops cExpr)
+        ObjectPropertyRange annos oExpr cExpr -> slAnnosAnd annos $ slMax (slObjProp oExpr) (slClassExpression cops cExpr)
+        FunctionalObjectProperty annos oExpr -> slAnnosAnd annos $ slSimpleObjectProp cops oExpr
+        InverseFunctionalObjectProperty annos oExpr -> slAnnosAnd annos $ requireInverseRoles $ slSimpleObjectProp cops oExpr
+        ReflexiveObjectProperty annos oExpr -> slAnnosAnd annos $ requireAddFeatures (slObjProp oExpr)
+        IrreflexiveObjectProperty annos oExpr -> slAnnosAnd annos $ requireAddFeatures $ slSimpleObjectProp cops oExpr
+        SymmetricObjectProperty annos oExpr -> slAnnosAnd annos $ slObjProp oExpr
+        AsymmetricObjectProperty annos oExpr -> slAnnosAnd annos $ requireAddFeatures $ slSimpleObjectProp cops oExpr
+        TransitiveObjectProperty annos oExpr -> slAnnosAnd annos $ requireRoleTransitivity (slObjProp oExpr)
     DataPropertyAxiom a -> case a of
-        SubDataPropertyOf _ sub _ -> requireRoleHierarchy .
+        SubDataPropertyOf annos sub _ -> slAnnosAnd annos $ requireRoleHierarchy .
             (if topDataProperty == sub then requireUnrestrictedDL else id) $
             slBottom
-        EquivalentDataProperties _ _ -> slBottom
-        DisjointDataProperties _ _ -> requireAddFeatures slBottom
-        DataPropertyDomain _ _ _ -> slBottom
-        DataPropertyRange _ _ r -> slDataRange r
-        FunctionalDataProperty _ _ -> slBottom
-    DatatypeDefinition _ dt dr -> slMax (slDatatype dt) (slDataRange dr)
-    HasKey _ cExpr oExprs _ -> foldl slMax (slClassExpression cops cExpr)
+        EquivalentDataProperties annos _ -> slAnnosAnd annos $ slBottom
+        DisjointDataProperties annos _ -> slAnnosAnd annos $ requireAddFeatures slBottom
+        DataPropertyDomain annos _ cExpr -> slAnnosAnd annos $ slClassExpression cops cExpr
+        DataPropertyRange annos _ r -> slAnnosAnd annos $ slDataRange r
+        FunctionalDataProperty annos _ -> slAnnosAnd annos $ slBottom
+    DatatypeDefinition annos dt dr -> slAnnosAnd annos $ slMax (slDatatype dt) (slDataRange dr)
+    HasKey annos cExpr oExprs _ -> slAnnosAnd annos $ foldl slMax (slClassExpression cops cExpr)
         $ map slObjProp oExprs 
     Assertion a -> case a of
-        SameIndividual _ is -> requireNominals $ slIndividuals is
-        DifferentIndividuals _ is -> requireNominals  $ slIndividuals is
-        ClassAssertion _ clExpr _ -> slClassExpression cops clExpr
-        ObjectPropertyAssertion _ _ si ti -> slIndividuals [si, ti]
-        NegativeObjectPropertyAssertion _ _ si ti -> slIndividuals [si, ti]
-        DataPropertyAssertion _ _ _ _ -> slBottom
-        NegativeDataPropertyAssertion _ _ _ _ -> slBottom
+        SameIndividual annos is -> slAnnosAnd annos $ requireNominals $ slIndividuals is
+        DifferentIndividuals annos is -> slAnnosAnd annos $ requireNominals  $ slIndividuals is
+        ClassAssertion annos clExpr _ -> slAnnosAnd annos $ slClassExpression cops clExpr
+        ObjectPropertyAssertion annos oExpr si ti -> slAnnosAnd annos $ slMax (slObjProp oExpr) (slIndividuals [si, ti])
+        NegativeObjectPropertyAssertion annos oExpr si ti -> slAnnosAnd annos $ slMax (slObjProp oExpr) (slIndividuals [si, ti])
+        DataPropertyAssertion annos _ _ l -> slAnnosAnd annos $ slLiteral l
+        NegativeDataPropertyAssertion annos _ _ l -> slAnnosAnd annos $ slLiteral l
     AnnotationAxiom a -> case a of
-        AnnotationAssertion _ _ _ _ -> slBottom 
-        SubAnnotationPropertyOf _ _ _ -> requireRoleHierarchy slBottom
-        AnnotationPropertyDomain _ _ _ -> slBottom
-        AnnotationPropertyRange _ _ _ -> slBottom
-    Rule _ -> requireRules slBottom
+        AnnotationAssertion annos _ _ _ -> slAnnosAnd annos $ slBottom 
+        SubAnnotationPropertyOf annos _ _ -> slAnnosAnd annos $ requireRoleHierarchy slBottom
+        AnnotationPropertyDomain annos _ _ -> slAnnosAnd annos $ slBottom
+        AnnotationPropertyRange annos _ _ -> slAnnosAnd annos $ slBottom
+    Rule r -> requireRules $ case r of
+        DLSafeRule annos b h -> slAnnosAnd annos $ foldl slMax slBottom $ slAtom cops <$> (b ++ h)
+        _ -> slBottom
     _ -> slBottom
 
 
@@ -306,6 +348,10 @@ slGDatatypes ax = if isCyclic comps then
 
 type Graph a = Map.Map a (Set.Set a)
 
+addEdge :: Ord a => a -> a -> Graph a -> Graph a
+addEdge from to = Map.insertWith Set.union from (Set.singleton to) .
+    Map.insertWith Set.union to Set.empty
+
 -- | @connected x g@ yields all nodes connected to x with an edge in g
 connected :: Ord a => a -> Graph a -> Set.Set a
 connected = Map.findWithDefault Set.empty
@@ -314,14 +360,20 @@ connected = Map.findWithDefault Set.empty
 isCyclicU :: Ord a => Graph a -> Bool
 isCyclicU g = case Map.keys g of
     [] -> False
-    (h:_) -> fst $ isCyclicU' g h Nothing (Map.keysSet g)
+    (h:_) -> fst $ isCyclic' False g h Nothing (Map.keysSet g)
 
--- | @isCyclicU' g v p r@ checks if a cycle can be found in @g@ starting at vertex @v@ with parent @p@ and not visited vertices @r@
-isCyclicU' :: Ord a => Graph a -> a -> Maybe a -> Set.Set a -> (Bool, Set.Set a)
-isCyclicU' g v p remaining = let remaining' = Set.delete v remaining in
+isCyclicD :: Ord a => Graph a -> Bool
+isCyclicD g = case Map.keys g of
+    [] -> False
+    (h:_) -> fst $ isCyclic' True g h Nothing (Map.keysSet g)
+
+
+-- | @isCyclic' directed g v p r@ checks if a cycle can be found in @g@ starting at vertex @v@ with parent @p@ and not visited vertices @r@
+isCyclic' :: Ord a => Bool -> Graph a -> a -> Maybe a -> Set.Set a -> (Bool, Set.Set a)
+isCyclic' directed g v p remaining = let remaining' = Set.delete v remaining in
     foldl (\(b, r) c -> if b then (b, r) else if c `Set.member` r then 
-            isCyclicU' g c (Just v) r
-        else (Just c /= p, r)) (False, remaining') (Map.findWithDefault Set.empty v g)
+            isCyclic' directed g c (Just v) r
+        else (directed || Just c /= p, r)) (False, remaining') (Map.findWithDefault Set.empty v g)
 
 -- | @forest g@ Given that @g@ is acyclic, transforms @g@ to a forest
 forest :: Ord a => Graph a -> Forest a
@@ -359,20 +411,20 @@ slGAnonymousIndividuals edges = if any isCyclicU comps || not (all (\t -> any (\
         requireUnrestrictedDL slBottom
     else slBottom where
     edges' = edges ++ [(y,x) | (x,y) <- edges]
-    g = foldl (\m (x,y) -> Map.insertWith Set.union x (if isAnonymous y then Set.singleton y else Set.empty) m) Map.empty (filter (\(x,y) -> isAnonymous x) edges')
+    g = foldl (\m (x,y) -> Map.insertWith Set.union x (if isAnonymous y then Set.singleton y else Set.empty) m) Map.empty (filter (isAnonymous . fst) edges')
     g' = foldl (\m (x,y) -> Map.insertWith Set.union x (Set.singleton y) m) Map.empty edges'
     comps = components g
     f = forest g
 
 
 slGPropertyHierachy :: [Axiom] -> OWLSub
-slGPropertyHierachy axs
-    | containsCircle 2
-        . stronglyConnComp
-        . (fmap (\(k, v) -> (k, k, Set.toList v)))
-        . Map.assocs
-        . objectPropertyHierachy True $ axs = requireUnrestrictedDL slBottom
-    | otherwise = slBottom
+slGPropertyHierachy axs = if verify then slBottom else requireUnrestrictedDL slBottom where
+    ops = mapMaybe (\ax -> case ax of
+            ObjectPropertyAxiom (SubObjectPropertyOf _ (SubObjPropExpr_exprchain ch) ope) -> Just (ch, ope)
+            _ -> Nothing) axs
+    hierachy = objectPropertyHierachy False axs
+    ord = objectPropertyOrder ops
+    verify = not (isCyclicD ord) && all (\v -> all (\v' -> ObjectProp v `Set.notMember` reachable (ObjectProp v') hierachy) $ Set.toList $ Map.findWithDefault Set.empty v ord) (Map.keys ord)
 
 -- | Whether a direct graph is cyclic
 isCyclic :: [SCC a] -> Bool
@@ -425,6 +477,18 @@ objectPropertyHierachy withChains = foldr (\ax m -> case ax of
         insl k v m = Map.insertWith (Set.union) k (Set.fromList v) m -- $
             --Map.insertWith (Set.union) (inverseOf k) (Set.fromList (inverseOf <$> v)) m
         -- also add hierachy for inverse
+
+objectPropertyOrder :: [(PropertyExpressionChain, ObjectPropertyExpression)] -> Graph ObjectProperty
+objectPropertyOrder = foldl ((\g c -> case c of
+    (_,ope) | ope == ObjectProp topObjectProperty -> g
+    ((ope1 : ope2 : _), ope) | ope1 == ope2 && ope2 == ope -> g
+
+    (ch@(_:_:_), ope) -> foldl (\g' o -> addEdge (objPropToIRI ope) (objPropToIRI o) g') g $
+        if head ch == ope then tail ch
+        else if last ch == ope then init ch
+        else ch
+    _ -> g
+    )) Map.empty
 
 -- | All object properties in a set of axioms that are not simple
 complexObjectProperties :: [Axiom] -> Set.Set ObjectPropertyExpression

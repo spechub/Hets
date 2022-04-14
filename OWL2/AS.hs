@@ -87,6 +87,10 @@ topObjectProperty :: IRI
 topObjectProperty = expandIRI' predefPrefixes $
   setPrefix "owl" $ mkIRI "topObjectProperty"
 
+owlThing :: IRI
+owlThing = expandIRI' predefPrefixes $
+  setPrefix "owl" $ mkIRI "Thing"
+
 bottomObjectProperty :: IRI
 bottomObjectProperty = expandIRI' predefPrefixes $
   setPrefix "owl" $ mkIRI "bottomObjectProperty"
