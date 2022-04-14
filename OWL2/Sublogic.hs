@@ -92,6 +92,9 @@ slBottom = OWLSub
     , unrestrictedDL = False
     }
 
+slDL :: OWLSub
+slDL = slTop { unrestrictedDL = False }
+
 
 slMax :: OWLSub -> OWLSub -> OWLSub
 slMax sl1 sl2 = OWLSub

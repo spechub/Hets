@@ -40,6 +40,10 @@ bottomS = ProfSub bottomProfile slBottom
 topS :: ProfSub
 topS = ProfSub topProfile slTop
 
+-- | OWL2 DL Sublogic
+dlS :: ProfSub
+dlS = ProfSub topProfile slDL
+
 maxS :: ProfSub -> ProfSub -> ProfSub
 maxS ps1 ps2 = ProfSub (profileMax [profiles ps1, profiles ps2])
     (slMax (sublogic ps1) (sublogic ps2))

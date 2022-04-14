@@ -79,7 +79,7 @@ hermitCheck = fmap
 -}
 hermitProver :: Prover Sign Axiom OWLMorphism ProfSub ProofTree
 hermitProver =
-  (mkAutomaticProver "java" hermitS topS hermitGUI hermitCMDLautomaticBatch)
+  (mkAutomaticProver "java" hermitS dlS hermitGUI hermitCMDLautomaticBatch)
   { proverUsable = hermitCheck }
 
 hermitConsChecker :: ConsChecker Sign Axiom ProfSub OWLMorphism ProofTree
