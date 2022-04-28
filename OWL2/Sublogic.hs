@@ -327,11 +327,12 @@ slGeneralRestrictions axs =
             Declaration _ e -> Just e
             _ -> Nothing) axs
     in
-    foldl slMax slBottom $ 
+    foldl slMax slBottom $
         [ slGDatatypes dts
         , slGPropertyHierachy axs
         , slGAnonymousIndividuals is
-        , slGTypingConstraints es]
+        , slGTypingConstraints es
+        ]
 
 slGTypingConstraints :: [Entity] -> OWLSub
 slGTypingConstraints declared = 
@@ -393,6 +394,9 @@ reachable' :: Ord a => Graph a -> Set.Set a -> a -> Set.Set a
 reachable' g visited r = Set.union c $ Set.unions . Set.toList $ Set.map (reachable' g (Set.union visited c)) c where
     c = (connected r g) `Set.difference` visited
 
+inverse :: Ord a => Graph a -> Graph a
+inverse g = foldr (\(n, outs) g' -> Set.foldr (\o g''  -> addEdge o n g'') g' outs) Map.empty (Map.toList g)
+
 -- | @components  g@ gets the components of @g@
 components :: Ord a => Graph a -> [Graph a]
 components graph = case Map.keys graph of
@@ -425,7 +429,7 @@ slGPropertyHierachy axs = if verify then slBottom else requireUnrestrictedDL slB
     ops = mapMaybe (\ax -> case ax of
             ObjectPropertyAxiom (SubObjectPropertyOf _ (SubObjPropExpr_exprchain ch) ope) -> Just (ch, ope)
             _ -> Nothing) axs
-    hierachy = objectPropertyHierachy False axs
+    hierachy = objectPropertyHierachy axs
     ord = objectPropertyOrder ops
     verify = not (isCyclicD ord) && all (\v -> all (\v' -> ObjectProp v `Set.notMember` reachable (ObjectProp v') hierachy) $ Set.toList $ Map.findWithDefault Set.empty v ord) (Map.keys ord)
 
@@ -456,18 +460,11 @@ compositeObjectProperties axs = Set.fromList $
 -- | Extracts the object property hierachy as an adjacency list.
 --
 --   Each object property expression has an edge according to https://www.w3.org/TR/2012/REC-owl2-syntax-20121211/#Property_Hierarchy_and_Simple_Object_Property_Expressions
-objectPropertyHierachy :: Bool -> [Axiom] -> Graph ObjectPropertyExpression
-objectPropertyHierachy withChains = foldr (\ax m -> case ax of
+objectPropertyHierachy :: [Axiom] -> Graph ObjectPropertyExpression
+objectPropertyHierachy = foldr (\ax m -> case ax of
         ObjectPropertyAxiom (SubObjectPropertyOf _ (SubObjPropExpr_obj o1) o2) ->
             ins o2 o1 m
-        ObjectPropertyAxiom (SubObjectPropertyOf _ (SubObjPropExpr_exprchain (ops@(o1 : _ : _))) o)
-            | not withChains -> m
-            | o == ObjectProp topObjectProperty -> m
-            | length ops == 2 && all (== o) ops -> m
-            | o == o1 -> insl o (tail ops) m
-            | o == last ops -> insl o (init ops) m
-            | otherwise -> insl o ops m
-
+        ObjectPropertyAxiom (SubObjectPropertyOf _ (SubObjPropExpr_exprchain (ops@(o1 : _ : _))) o) -> m
         ObjectPropertyAxiom (EquivalentObjectProperties _ ops) ->
             foldr (\o2 -> insl o2 [o1 | o1 <- ops, o1 /= o2]) m ops
         ObjectPropertyAxiom (InverseObjectProperties _ o1 o2) ->
@@ -477,8 +474,8 @@ objectPropertyHierachy withChains = foldr (\ax m -> case ax of
         _ -> m) Map.empty
     where
         ins k v m = insl k [k, v] m -- also add self for reflexive closure
-        insl k v m = Map.insertWith (Set.union) k (Set.fromList v) m -- $
-            --Map.insertWith (Set.union) (inverseOf k) (Set.fromList (inverseOf <$> v)) m
+        insl k v m = Map.insertWith (Set.union) k (Set.fromList v) $
+            Map.insertWith (Set.union) (inverseOf k) (Set.fromList (inverseOf <$> v)) m
         -- also add hierachy for inverse
 
 objectPropertyOrder :: [(PropertyExpressionChain, ObjectPropertyExpression)] -> Graph ObjectProperty
@@ -497,7 +494,7 @@ objectPropertyOrder = foldl ((\g c -> case c of
 complexObjectProperties :: [Axiom] -> Set.Set ObjectPropertyExpression
 complexObjectProperties axs = foldr cop Set.empty axs where
     compOPE = compositeObjectProperties axs
-    h = objectPropertyHierachy False axs
+    h = inverse $ objectPropertyHierachy axs
     -- cop :: Axiom -> Set.Set ObjectProperty -> Set.Set.ObjectProperty
     cop (ObjectPropertyAxiom (SubObjectPropertyOf _ sub super)) = case sub of
         SubObjPropExpr_obj o -- @o -> super@ holds
@@ -505,12 +502,13 @@ complexObjectProperties axs = foldr cop Set.empty axs where
         SubObjPropExpr_exprchain ch  -- @super ->* super@ holds, super is composite
             | length ch > 1 -> Set.insert super
         _ -> id
+    cop (ObjectPropertyAxiom (TransitiveObjectProperty _ o))
+        | isComposite o = Set.insert o
     cop _ = id
 
     -- Checks if object property expression has any composite object property
     -- expression in their hierachy
-    isComposite ope = ope `Set.member` compOPE || any isComposite ts where
-        ts = Map.findWithDefault Set.empty ope h
+    isComposite ope = any (`Set.member` compOPE) $ Set.insert ope $ reachable ope h
 
 
 slODoc :: OntologyDocument -> OWLSub
