@@ -1,7 +1,11 @@
+#SUBLOGIC=ALCI
 Prefix: : <http://example.org/>
 
 Ontology: 
 
 ObjectProperty: prop1
+ObjectProperty: prop2
+    EquivalentTo: inverse prop1
 
 ObjectProperty: inverse prop1
+    EquivalentTo: prop2
