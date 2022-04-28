@@ -70,6 +70,7 @@ for D in . * ; do
 	for F in ~(N)*.ofn ~(N)*.omn ~(N)*.xml ~(N)*.dol # *.rdf
 	do
 		[[ -f $F ]] || continue
+		[[ "$D" == "11" ]] && [[ "${F##*.}" == "omn" ]] && warnMsg "Skipping $D/$F until OWLAPI supporting Manchester extensions is implemented" && continue
 		print "  Testing $D/$F ... "
 		OUTPUT=${ ${BD}/hets "$F" 2>&1 ; }
 		if (( $? )); then
