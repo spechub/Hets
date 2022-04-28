@@ -28,7 +28,7 @@ cmpAxioms :: OntologyDocument -> OntologyDocument -> Bool
 cmpAxioms o1 o2 = Set.fromList (axioms . ontology $ o1) == Set.fromList(axioms . ontology $ o2)
 
 processXML :: FilePath -> String -> IO OntologyDocument
-processXML file s = do
+processXML _ s = do
     let xml = head $ concatMap (filterElementsName $ isSmth "Ontology")
                 $ onlyElems $ parseXML s
     let o1 = xmlBasicSpec mempty xml

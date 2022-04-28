@@ -464,7 +464,6 @@ objectPropertyHierachy :: [Axiom] -> Graph ObjectPropertyExpression
 objectPropertyHierachy = foldr (\ax m -> case ax of
         ObjectPropertyAxiom (SubObjectPropertyOf _ (SubObjPropExpr_obj o1) o2) ->
             ins o2 o1 m
-        ObjectPropertyAxiom (SubObjectPropertyOf _ (SubObjPropExpr_exprchain (ops@(o1 : _ : _))) o) -> m
         ObjectPropertyAxiom (EquivalentObjectProperties _ ops) ->
             foldr (\o2 -> insl o2 [o1 | o1 <- ops, o1 /= o2]) m ops
         ObjectPropertyAxiom (InverseObjectProperties _ o1 o2) ->
