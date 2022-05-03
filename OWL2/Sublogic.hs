@@ -33,16 +33,16 @@ owlDatatypes :: Set.Set Datatype
 owlDatatypes = predefIRIs
 
 data OWLSub = OWLSub
-    { numberRestrictions :: NumberRestrictions -- | Cardinaly restrictions the can be used
-    , nominals :: Bool              -- | Enumerated classes can be used
-    , inverseRoles :: Bool          -- | Inverse roles can be used
-    , roleTransitivity :: Bool      -- | Roles can be transitive
-    , roleHierarchy :: Bool         -- | Role hierachy (subproperties) can be used
-    , complexRoleInclusions :: Bool -- | ? Complex role inclusions can be used
-    , addFeatures :: Bool           -- | ?
-    , datatype :: Set.Set Datatype  -- | Set of datatypes that can be used
-    , rules :: Bool                 -- | SWRL Rules can be used
-    , unrestrictedDL :: Bool        -- | OWL2 DL restriction can be ignored
+    { numberRestrictions :: NumberRestrictions -- ^ Cardinaly restrictions the can be used
+    , nominals :: Bool              -- ^ Enumerated classes can be used
+    , inverseRoles :: Bool          -- ^ Inverse roles can be used
+    , roleTransitivity :: Bool      -- ^ Roles can be transitive
+    , roleHierarchy :: Bool         -- ^ Role hierachy (subproperties) can be used
+    , complexRoleInclusions :: Bool -- ^ Complex role inclusions can be used
+    , addFeatures :: Bool           -- ^ Additional features can be used
+    , datatype :: Set.Set Datatype  -- ^ Set of datatypes that can be used
+    , rules :: Bool                 -- ^ SWRL Rules can be used
+    , unrestrictedDL :: Bool        -- ^ OWL2 DL restriction can be ignored
     } deriving (Show, Eq, Ord, Typeable, Data)
 
 allSublogics :: [[OWLSub]]
