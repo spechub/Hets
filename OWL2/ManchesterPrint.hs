@@ -49,11 +49,14 @@ convertBasicTheory :: (Sign, [Named AS.Axiom]) -> AS.OntologyDocument
 convertBasicTheory (sig, l) = let
   (axs, ths) = partition Anno.isAxiom l
   cnvrt f = map f . map Anno.sentence
-  in AS.OntologyDocument
-    (AS.OntologyMetadata AS.AS)
-    (AS.changePrefixMapTypeToGA $ prefixMap sig)
-    AS.emptyOntology { 
-        AS.axioms = toDecl sig ++ cnvrt rmImplied axs ++ cnvrt addImplied ths
+  in convertBasicTheory' (sig, cnvrt rmImplied axs ++ cnvrt addImplied ths)
+
+convertBasicTheory' :: (Sign, [AS.Axiom]) -> AS.OntologyDocument
+convertBasicTheory' (sig, axs) = AS.emptyOntologyDoc {
+        AS.prefixDeclaration = AS.changePrefixMapTypeToGA $ prefixMap sig,
+        AS.ontology = AS.emptyOntology {
+            AS.axioms = toDecl sig ++ axs
+        }
     }
 
 instance Pretty Sign where
