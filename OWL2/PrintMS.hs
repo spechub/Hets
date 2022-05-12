@@ -988,7 +988,7 @@ printOntologyDocument (OntologyDocument _ prefDecls ont) =
 
 printPrefixDeclaration :: (String, IRI) -> Doc
 printPrefixDeclaration (prName, iri) =
-    hsep [keyword "Prefix:", text (prName ++ ":"), pretty iri]
+    hsep [keyword "Prefix:", text (prName ++ ":"), text . showIRIFull . setAngles True $ iri]
 
 printOntology :: GA.PrefixMap -> Ontology -> Doc
 printOntology pds 
@@ -1939,12 +1939,12 @@ printAtom pds (BuiltInAtom iri dargs) =
     <> parens (hsep . punctuate comma . map (printDataArg pds) $ dargs)
 
 printAtom pds (SameIndividualAtom iarg1 iarg2) =
-    text "SameIndividual"
+    text sameAsS
     <> parens (hsep . punctuate comma . map (printIndividualArg pds)
         $ [iarg1, iarg2])
 
 printAtom pds (DifferentIndividualsAtom iarg1 iarg2) =
-    text "DifferentIndividuals"
+    text differentFromS
     <> parens (hsep . punctuate comma . map (printIndividualArg pds)
         $ [iarg1, iarg2])
 
@@ -1999,10 +1999,9 @@ printAnnotations pds n anns =
 -- | print IRI
 printIRI :: GA.PrefixMap -> IRI -> Doc
 printIRI pds iri
-    | isAbbrev iri && prefName `M.member` pds
-        = text (prefName ++ ":" ++ (iFragment iri))
-    | isAbbrev iri && null prefName = (text ":") <> pretty iri
-    | otherwise = pretty iri
+    | isAbbrev iri && prefName `M.member` pds = text (showIRI iri)
+    | isAbbrev iri && null prefName = text (showIRIFull iri)
+    | otherwise = text (showIRI iri)
   where prefName = prefixName iri
 
 

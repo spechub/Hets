@@ -2,7 +2,6 @@ import System.Environment
 import System.Exit (exitFailure)
 
 import Control.Monad (forM_)
-import Data.Maybe (fromJust)
 
 import Common.Parsec()
 import Common.GlobalAnnotations(emptyGlobalAnnos)
@@ -51,11 +50,15 @@ processParserPrinter file parser cmp = do
                     Left err -> do
                         putStrLn $ "\ESC[1;38;5;196m✘\ESC[0m parsing printed failed: " ++ show err
                         exitFailure
-                    Right o2 -> let (o2', _, _) = fromJust $ maybeResult $ basicOWL2Analysis (o2, emptySign, emptyGlobalAnnos) in
-                        if cmp o1' o2' then  putStrLn "\ESC[1;38;5;40m✔\ESC[0m success"
-                        else do
-                            putStrLn $ "\ESC[1;38;5;196m✘\ESC[0m parse-print-parse circle failed. Printed: " ++ p
-                            exitFailure
+                    Right o2 -> let r' = basicOWL2Analysis (o2, emptySign, emptyGlobalAnnos) in case maybeResult r'  of
+                        Just (o2', _, _) ->
+                            if cmp o1' o2' then  putStrLn "\ESC[1;38;5;40m✔\ESC[0m success"
+                            else do
+                                putStrLn $ "\ESC[1;38;5;196m✘\ESC[0m parse-print-parse circle failed. Printed:\n" ++ p
+                                exitFailure
+                        Nothing -> do
+                                putStrLn $ "\ESC[1;38;5;196m✘\ESC[0m Static analysis failed on second parse: " ++ show (diags r') ++ "\nPrinted:\n" ++ p
+                                exitFailure
             Nothing -> do
                 putStrLn $ "\ESC[1;38;5;196m✘\ESC[0m static analysis failed: " ++ show (diags r)
                 exitFailure

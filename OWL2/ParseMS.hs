@@ -59,7 +59,7 @@ characters = [minBound .. maxBound]
 
 -- | OWL and CASL structured keywords including 'andS' and 'notS'
 owlKeywords :: [String]
-owlKeywords = notS : stringS : map show entityTypes
+owlKeywords = endS : notS : stringS : map show entityTypes
   ++ map show characters ++ keywords ++ criticalKeywords
 
 ncNameStart :: Char -> Bool
@@ -835,7 +835,7 @@ parseDataPropertyAtom pm pre = do
 
 parseSameIndividualsAtom :: GA.PrefixMap -> CharParser st Atom
 parseSameIndividualsAtom pm = do
-  pkeyword sameIndividualC
+  pkeyword sameAsS
   parensP $ do 
     iarg1 <- parseIArg pm
     commaP
@@ -844,7 +844,7 @@ parseSameIndividualsAtom pm = do
   
 parseDifferentIndividualsAtom :: GA.PrefixMap -> CharParser st Atom
 parseDifferentIndividualsAtom pm = do
-  pkeyword differentFromC
+  pkeyword differentFromS
   parensP $ do
     iarg1 <- parseIArg pm
     commaP
@@ -887,8 +887,8 @@ parseAtom pm =  parseClassExprAtom pm <|>
     choice $ map try [
       parensP $ parseBuiltInAtom pm pre,
       parensP $ parseClassAtom pm pre,
-      parensP $ parseObjectPropertyAtom pm pre,
       parensP $ parseDataPropertyAtom pm pre,
+      parensP $ parseObjectPropertyAtom pm pre,
       parseDataRangeAtom pm pre,
       parensP $ parseUnknownAtom pm pre]
 

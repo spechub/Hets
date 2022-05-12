@@ -1,5 +1,14 @@
-#!/bin/sh
+#!/bin/ksh93
 
-../../hets -v2 -o thy *.dol
-../../utils/nightly/runisabelle.sh *.thy
+SD=$( cd ${ dirname $0; }; printf "$PWD" )
+BD=${SD%/*/*}
 
+. ${BD}/Common/test/checkFunctions.sh
+
+cd ${SD} || return 99
+
+${BD}/hets -v2 -o thy *.dol || addErr
+${BD}/utils/nightly/runisabelle.sh *.thy || addErr
+
+errorMsg ${ERR} "${.sh.file}"
+(( ! ERR ))
