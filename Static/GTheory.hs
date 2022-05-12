@@ -107,12 +107,8 @@ prettyGTheory sm g = case simplifyTh g of
 
 -- | compute sublogic of a theory
 sublogicOfTh :: G_theory -> G_sublogics
-sublogicOfTh (G_theory lid _ (ExtSign sigma _) _ sens _) =
-  let sub = foldl lub
-                  (minSublogic sigma)
-                  (map snd $ OMap.toList $
-                   OMap.map (minSublogic . sentence)
-                       sens)
+sublogicOfTh theory@(G_theory lid _ sign@(ExtSign sigma _) _ sens _) =
+  let sub = sublogicOfTheo lid (sigma, sentence . snd <$> OMap.toList sens)
    in G_sublogics lid sub
 
 -- | get theorem names with their best proof results

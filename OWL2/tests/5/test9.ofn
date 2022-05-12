@@ -1,3 +1,4 @@
+#SUBLOGIC=ALC
 Prefix(: = <http://example.org/>)
  Ontology(Annotation(Annotation(:member :a) Annotation(:member :b) Annotation(:member :c) :for :eqc)
  Declaration(Class(:a))

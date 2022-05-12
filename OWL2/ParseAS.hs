@@ -48,9 +48,13 @@ comment = try $ do
     char '#'
     manyTill anyChar newlineOrEof
 
--- | Skips whitespaces and comments
+-- | Skips trailing whitespaces and comments
 skips :: CharParser st a -> CharParser st a
-skips = (<< skipMany (forget space <|> forget comment <|> forget commentLine <|> forget nestCommentOut))
+skips = (<< skips')
+
+-- | Skips whitespaces and comments
+skips' :: CharParser st ()
+skips' = skipMany (forget space <|> forget comment <|> forget commentLine <|> forget nestCommentOut)
 
 
 -- | Parses plain string with skip
@@ -851,6 +855,7 @@ parseOntology pm =
 -- | Parses an OntologyDocument from Owl2 Functional Syntax
 parseOntologyDocument :: GA.PrefixMap -> CharParser st OntologyDocument
 parseOntologyDocument gapm = do
+    skips'
     prefixes <- many parsePrefixDeclaration
     let pm = union gapm (fromList prefixes)
     onto <- parseOntology pm

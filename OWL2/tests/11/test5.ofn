@@ -1,3 +1,4 @@
+#SUBLOGIC=sRIx
 Prefix(: = <http://example.com/>)
 Ontology(
     Declaration(Annotation (rdfs:label "CLASS A") Class(:a))
