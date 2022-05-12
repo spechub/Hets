@@ -1,4 +1,4 @@
-logic OWL
+logic OWL serialization Functional
 
 ontology O =
 Prefix(: = <http://example.org/>)

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/ksh93
 
 # - Parser Printer (own testscripts)
 #   - MS
@@ -12,99 +12,79 @@
 
 # 1. run tests for *.xml
 # 2. run tests for *.omn
-ECHO="echo -e"
 
-$ECHO "\nhi !\n"
+SD=$( cd ${ dirname $0; }; printf "$PWD" )
+BD=${SD%/*/*}
 
-[[ `uname -s` == 'SunOS' ]] && MAKE=gmake || MAKE=make
+. ${BD}/Common/test/checkFunctions.sh
 
-ALL=`ls`
-ALL=". $ALL"
+cd ${BD}
 
+export HETS_OWL_TOOLS=${BD}/OWL2
+if [[ -z ${MAKE} ]]; then
+	[[ ${ uname -s ; } == 'SunOS' ]] && MAKE=gmake || MAKE=make
+fi
 
+[[ -f OWL2/OWL2Parser.jar ]] || make jars
 
-TESTS=$(pwd)
-cd ../..
-HETSROOT=$(pwd)
+print 'Compiling runTest...'
+F=OWL2/scripts/runTest
+${MAKE} $F || return 1
 
+TESTSCRIPT=${BD}/$F
 
-HETS_OWL_TOOLS=$HETSROOT/OWL2
-export HETS_OWL_TOOLS
+cd ${SD} || return 99
 
-$ECHO "\ncompiling runTest...\n"
+for D in . * ; do
+	[[ -d $D ]] || continue
+	[[ $D != '.' ]] && cd "$D"
 
-TESTSCRIPT=$HETSROOT/OWL2/scripts/runTest
-${MAKE} $TESTSCRIPT
+	infoMsg "Running Functional Syntax Files in $D/ ..."
+	for F in ~(N)*.ofn ; do
+		[[ -f $F ]] || continue
+		print "  Testing $D/$F ... "
+		${TESTSCRIPT} "$F" || addErr
+	done
 
+	infoMsg "Running Manchester Syntax Files in $D/ ..."
+	for F in ~(N)*.omn ; do
+		[[ -f $F ]] || continue
+		print "  Testing $D/$F ... "
+		${TESTSCRIPT} "$F" || addErr
+	done
 
-cd $TESTS
-for DIR in $ALL
-do
-    if test -d $DIR
-        then
-            $ECHO "Entering $DIR"
-            cd $DIR
+	for F in ~(N)*.mno ; do
+		[[ -f $F ]] || continue
+		print "  Testing $D/$F ... "
+		${TESTSCRIPT} "$F" || addErr
+	done
 
-            $ECHO "Running Functional Syntax Files"
-            for i in *.ofn
-            do
-                if test -f $i
-                then
-                    $ECHO -n "  Testing $DIR/$i ... "
-                    $TESTSCRIPT $i
-                fi
-            done
+	infoMsg "Running XML Syntax Files in $D/ ..."
+	for F in ~(N)*.xml ; do
+		[[ -f $F ]] || continue
+		print "  Testing $D/$F ... "
+		${TESTSCRIPT} "$F" || addErr
+	done
 
-            $ECHO "Running Manchester Syntax Files"
-            for i in ./*.omn
-            do
-                if test -f $i
-                then
-                    $ECHO -n "  Testing $DIR/$i ... "
-                    $TESTSCRIPT $i
-                fi
-            done
+	infoMsg "Running hets on all files in $D/ ..."
+	for F in ~(N)*.ofn ~(N)*.omn ~(N)*.xml ~(N)*.dol # *.rdf
+	do
+		[[ -f $F ]] || continue
+		[[ "$D" == "11" ]] && [[ "${F##*.}" == "omn" ]] && warnMsg "Skipping $D/$F until OWLAPI supporting Manchester extensions is implemented" && continue
+		print "  Testing $D/$F ... "
+		OUTPUT=${ ${BD}/hets "$F" 2>&1 ; }
+		if (( $? )); then
+			printf "${BOX_FAIL} failed:\n"
+			(( ${#OUTPUT} < 1024 )) && print -- "${OUTPUT}" || \
+				print -- "${COLOR_GRAY}${OUTPUT}${COLOR_END}"
+			addErr
+		else
+			printf "${BOX_OK} success\n"
+		fi
+	done
 
-            for i in ./*.mno
-            do
-                if test -f $i
-                then
-                    $ECHO -n "  Testing $DIR/$i ... "
-                    $TESTSCRIPT $i
-                fi
-            done
-
-            $ECHO "Running XML Syntax Files"
-            for i in *.xml
-            do
-                if test -f $i
-                then
-                    $ECHO -n "  Testing $DIR/$i ... "
-                    $TESTSCRIPT $i
-                fi
-            done
-
-            $ECHO "Running hets on all files"
-            for i in *.ofn *.omn *.xml *.dol # *.rdf 
-            do
-                if test -f $i
-                then
-                    $ECHO -n "  Testing $DIR/$i ... "
-                    OUTPUT=`$HETSROOT/hets $i 2>&1` 
-                    if [ $? -eq 0 ]
-                    then
-                        $ECHO "✅ success"
-                    else
-                        $ECHO "❌ failed:\n$OUTPUT"
-                    fi
-                    
-                fi
-            done
-
-            if [ "." != "$DIR" ]; then
-                cd ..
-            fi
-    fi
+	[[ "$D" == '.'  ]] || cd ~-
 done
 
-$ECHO "\nbye bye !\n"
+errorMsg ${ERR} "${.sh.file}"
+(( ! ERR ))

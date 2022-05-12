@@ -1,4 +1,4 @@
-logic OWL
+logic OWL serialization Functional
 
 spec a = 
 Prefix(dc:=<http://purl.org/dc/elements/1.1/>)

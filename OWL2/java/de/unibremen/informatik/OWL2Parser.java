@@ -117,6 +117,7 @@ public class OWL2Parser {
 	}
 
 	public static void main(String[] args) {
+		boolean failed = false;
 		// A simple example of how to load and save an ontology
 		try {
 			OWLOutputHandler out = new OWLOutputHandler();
@@ -176,8 +177,9 @@ public class OWL2Parser {
 			out._close();
 		} catch (Exception ex) {
 			System.err.println("OWL parse error: " + ex.getMessage());
-			ex.printStackTrace();
+			failed = true;
 		}
+		System.exit(failed ? 1 : 0);
 	}
 
 	// print usage information screen

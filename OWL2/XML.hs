@@ -109,7 +109,7 @@ getIRIWithResolvedBase b str
     -- if the iri is relative
 
     
-    | "://" `isInfixOf` str = parseIRI str -- iri is absolute (contains a scheme)
+    | "://" `isInfixOf` str || "urn:" `isPrefixOf` str = parseIRI str -- iri is absolute (contains a scheme)
     | otherwise = b >>= (parseIRI . ( ++ str))
 
 
