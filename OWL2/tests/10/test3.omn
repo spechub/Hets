@@ -1,4 +1,4 @@
-#SUBLOGIC=ALCu
+#SUBLOGIC=ALCu-D|integer|
 
 Prefix: : <http://example.org/>
 Prefix: owl: <http://www.w3.org/2002/07/owl#>
@@ -10,8 +10,6 @@ Prefix: xsd: <http://www.w3.org/2001/XMLSchema#>
 
 
 Ontology: 
-
-Datatype: xsd:integer
 
     
 ObjectProperty: oprop

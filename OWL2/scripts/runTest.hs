@@ -2,7 +2,6 @@ import System.Environment
 import System.Exit (exitFailure)
 
 import Control.Monad (forM_)
-import Data.Maybe (fromJust)
 import Data.List (uncons, stripPrefix)
 
 import Common.Parsec()
@@ -55,9 +54,7 @@ processParserPrinter file s parser cmp = do
                         exitFailure
                     Right o2 -> let r' = basicOWL2Analysis (o2, emptySign, emptyGlobalAnnos) in case maybeResult r'  of
                         Just (o2', _, _) ->
-                            if cmp o1' o2' then do
-                                putStrLn "\ESC[1;38;5;40m✔\ESC[0m success"
-                                return o2'
+                            if cmp o1' o2' then return o2'
                             else do
                                 putStrLn $ "\ESC[1;38;5;196m✘\ESC[0m parse-print-parse circle failed. Printed:\n" ++ p
                                 exitFailure
