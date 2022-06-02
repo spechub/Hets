@@ -105,9 +105,11 @@ instance Show Spc_Wrap where
   show (Spc_Wrap l b a) =
     "Spc_Wrap " ++ show l ++ " (" ++ show b ++ ") " ++ show a
 
+instance Semigroup Spc_Wrap where
+  _ <> _ = error "Not implemented!"
+
 instance Monoid Spc_Wrap where
  mempty = error "Not implemented!"
- mappend _ _ = error "Not implemented!"
 
 -- --- instances
 data Mor = Mor deriving (Show, Eq, Ord, Typeable, Data)
