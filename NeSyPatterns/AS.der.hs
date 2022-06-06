@@ -41,8 +41,7 @@ newtype BASIC_SPEC = Basic_spec [AS_Anno.Annoted BASIC_ITEM]
                   deriving (Show, Typeable, Data)
 
 data BASIC_ITEM =
-    Node_decl Node
-    | Edge_decl [Node] -- written node -> ... -> node;
+    Path [Node] -- written node -> ... -> node;
     deriving (Show, Typeable, Data)
 
 
