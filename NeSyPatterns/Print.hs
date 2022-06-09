@@ -1,3 +1,10 @@
+module NeSyPatterns.Print where
+
+import Common.Doc
+import Common.DocUtils
+
+import NeSyPatterns.AS
+
 {- All about pretty printing
 we chose the easy way here :) -}
 instance Pretty BASIC_SPEC where
@@ -16,23 +23,32 @@ instance Pretty Node where
     pretty = printNode
 
 printNode :: Node -> Doc
-printPredItem = undefined
+printNode (Node mot mid _) =
+  let
+    ot = maybe empty pretty mot
+    id' = maybe empty (brackets . pretty) mid
+  in ot <> id'
 
 printBasicSpec :: BASIC_SPEC -> Doc
-printBasicSpec = undefined
+printBasicSpec (Basic_spec l) = vsep $ map (printAnnoted pretty) l
 
 printBasicItem :: BASIC_ITEM -> Doc
-printBasicItem = undefined
+printBasicItem (Path nodes) =
+  fsep . punctuate (text "->") $ map pretty nodes
 
 printSymbol :: SYMB -> Doc
-printSymbol = undefined 
+printSymbol (Symb_id id') = pretty id'
 
 printSymbItems :: SYMB_ITEMS -> Doc
- printSymbItems = undefined
+printSymbItems (Symb_items symbs _) =
+  fsep . punctuate (text ",") $ map pretty symbs
 
 printSymbOrMap :: SYMB_OR_MAP -> Doc
-printSymbOrMap = undefined
+printSymbOrMap (Symb s) = pretty s
+printSymbOrMap (Symb_map s1 s2 _) = 
+  pretty s1 <> text " |-> " <> pretty s2
 
 printSymbMapItems :: SYMB_MAP_ITEMS -> Doc
-printSymbMapItems = undefined
+printSymbMapItems (Symb_map_items l _) =
+  fsep . punctuate (text ",") $ map pretty l
 
