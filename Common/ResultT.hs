@@ -16,6 +16,7 @@ module Common.ResultT where
 import Common.Result
 import Control.Applicative
 import Control.Monad
+import qualified Control.Monad.Fail as MFail
 import Control.Monad.Trans
 
 newtype ResultT m a = ResultT { runResultT :: m (Result a) }
@@ -39,6 +40,9 @@ instance Monad m => Monad (ResultT m) where
                 s <- runResultT $ k a
                 return $ joinResult r s
     fail = ResultT . return . fail
+
+instance Monad m => MFail.MonadFail (ResultT m) where
+  fail = ResultT . return . fail
 
 instance MonadTrans ResultT where
     lift m = ResultT $ do
