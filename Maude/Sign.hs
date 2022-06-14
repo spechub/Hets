@@ -108,13 +108,13 @@ instance Pretty Sign where
         pr'sups = hsep . map pretty . Set.elems
         pr'pair sub sups = (:) . hsep $
             [keyword "subsort", pretty sub, less, pr'sups sups, dot]
-        pr'subs = vcat . Map.foldWithKey pr'pair []
+        pr'subs = vcat . Map.foldrWithKey pr'pair []
         -- print operator declarations
         pr'decl attrs symb = hsep
             [keyword "op", pretty symb, pretty attrs, dot]
         pr'ods (decls, attrs) = descend ((:) . pr'decl attrs) decls
         pr'ocs = descend pr'ods
-        pr'ops = vcat . Map.fold pr'ocs []
+        pr'ops = vcat . Map.foldr pr'ocs []
         in vcat [ pr'sorts $ Set.elems $ sorts sign
                 , pr'kinds $ Set.elems $ kinds sign
                 , pr'subs $ Rel.toMap $ Rel.transReduce $ subsorts sign
@@ -144,13 +144,13 @@ instance HasOps Sign where
     getOps = let
         descend = flip . Set.fold
         insert = descend $ descend Set.insert . fst
-        in Map.fold insert Set.empty . ops
+        in Map.foldr insert Set.empty . ops
     mapOps mp sign = let
         subrel = subsorts sign
         opmap = ops sign
         update src tgt = mapOpDecl subrel src tgt []
         in sign {
-            ops = Map.foldWithKey update opmap mp
+            ops = Map.foldrWithKey update opmap mp
             -- NOTE: Leaving out Sentences for now.
         }
 
@@ -231,13 +231,13 @@ inlineSign sign = let
         pr'sups = hsep . map pretty . Set.elems
         pr'pair sub sups = (:) . hsep $
             [keyword "subsort", pretty sub, less, pr'sups sups, dot]
-        pr'subs = vcat . Map.foldWithKey pr'pair []
+        pr'subs = vcat . Map.foldrWithKey pr'pair []
         -- print operator decparations
         pr'decl attrs symb = hsep
             [keyword "op", pretty symb, pretty attrs, dot]
         pr'ods (decls, attrs) = descend ((:) . pr'decl attrs) decls
         pr'ocs = descend pr'ods
-        pr'ops = vcat . Map.fold pr'ocs []
+        pr'ops = vcat . Map.foldr pr'ocs []
         in vcat [ pr'sorts $ Set.elems $ sorts sign
                 , pr'subs $ Rel.toMap $ Rel.transReduce $ subsorts sign
                 , pr'ops $ ops sign ]
@@ -431,7 +431,7 @@ kindsFromMap kr = foldr (\ (_, y) z -> Set.insert y z) Set.empty krl
       where krl = Map.toList kr
 
 getSortsKindRel :: KindRel -> SymbolSet
-getSortsKindRel = Map.foldWithKey f Set.empty
+getSortsKindRel = Map.foldrWithKey f Set.empty
       where f k _ = Set.insert k
 
 renameSortKindRel :: Map Symbol Symbol -> KindRel -> KindRel

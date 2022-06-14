@@ -1183,12 +1183,12 @@ extendMorphism sharing (G_sign lid sigmaP _) (G_sign lidB sigmaB1 _)
       symsB = ext_sym_of lid sigmaB
       idsB = Set.map (sym_name lid) symsB
       h = symmap_of lid fittingMor
-      symbMapToRawSymbMap = Map.foldWithKey
+      symbMapToRawSymbMap = Map.foldrWithKey
           (on Map.insert $ symbol_to_raw lid) Map.empty
       rh = symbMapToRawSymbMap h
-      idh = Map.foldWithKey (on setInsert $ sym_name lid) Map.empty h
+      idh = Map.foldrWithKey (on setInsert $ sym_name lid) Map.empty h
   idhExt <- extID idsB idh
-  let rIdExt = Map.foldWithKey (on Map.insert $ id_to_raw lid) Map.empty
+  let rIdExt = Map.foldrWithKey (on Map.insert $ id_to_raw lid) Map.empty
                 (foldr Map.delete idhExt $ Map.keys idh)
       r = rh `Map.union` rIdExt
       -- do we need combining function catching the clashes???

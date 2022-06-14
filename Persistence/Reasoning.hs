@@ -30,6 +30,7 @@ import Static.GTheory
 import Control.Exception (catch)
 import Control.Exception.Base (SomeException)
 import Control.Monad.IO.Class (MonadIO (..))
+import qualified Control.Monad.Fail as MFail
 import Data.Char (toLower)
 import Data.Maybe as Maybe (fromJust, fromMaybe, isNothing)
 import Data.List (elemIndex, isPrefixOf, isInfixOf, maximumBy)
@@ -129,7 +130,7 @@ performPremiseSelection opts gTheory
         SInE.perform opts gTheory premiseSelectionParameters goalName
       return (premisesM, timeTaken, SineResult sineResult)
 
-createReasoningAttempt :: forall m . MonadIO m
+createReasoningAttempt :: forall m . (MonadIO m, MFail.MonadFail m)
                        => HetcatsOpts
                        -> String
                        -> ReasoningCacheGoal

@@ -57,6 +57,7 @@ import Common.Lexer
 
 import Control.Applicative
 import Control.Monad.Identity
+import qualified Control.Monad.Fail
 
 import Data.Data
 import Data.Function
@@ -154,6 +155,9 @@ instance MonadPlus Result where
    r1@(Result _ m) `mplus` r2 = case m of
                                  Nothing -> r2
                                  Just _ -> r1
+
+instance Control.Monad.Fail.MonadFail Result where
+  fail s = fatal_error s nullRange
 
 appendDiags :: [Diagnosis] -> Result ()
 appendDiags ds = Result ds (Just ())
