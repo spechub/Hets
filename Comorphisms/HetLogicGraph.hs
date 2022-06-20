@@ -102,7 +102,7 @@ hetSublogicGraph = do
 {- | adds the interesting comorphisms without adding new nodes;
 considering as start and end points only existing nodes -}
 addComorphismEdges :: HetSublogicGraph -> HetSublogicGraph
-addComorphismEdges hsg = Map.fold insComs hsg $ sublogicNodes hsg
+addComorphismEdges hsg = Map.foldr insComs hsg $ sublogicNodes hsg
     where insComs gsl h = foldr (insCom gsl) h comorphismList
           insCom gsl acm hsg' =
              case acm of
