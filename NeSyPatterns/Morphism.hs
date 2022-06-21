@@ -43,8 +43,8 @@ import Control.Monad (unless)
 data Morphism = Morphism
   { source :: Sign.Sign
   , target :: Sign.Sign
-  , nodeMap :: Map.Map Node Node
-  } deriving (Show, Eq, Ord, Typeable, Data)
+  , nodeMap :: Map.Map Sign.ResolvedNode Sign.ResolvedNode
+  } deriving (Show, Eq, Ord, Typeable)
 
 instance Pretty Morphism where
     pretty = printMorphism
@@ -64,11 +64,11 @@ isLegalMorphism pmor =
         fail "illegal NeSyPatterns morphism"
 
 -- | Application funtion for morphisms
-applyMorphism :: Morphism -> Node -> Node
+applyMorphism :: Morphism -> Sign.ResolvedNode -> Sign.ResolvedNode
 applyMorphism mor idt = Map.findWithDefault idt idt $ nodeMap mor
 
 -- | Application function for nodeMaps
-applyMap :: Map.Map Node Node -> Node -> Node
+applyMap :: Map.Map Sign.ResolvedNode Sign.ResolvedNode -> Sign.ResolvedNode -> Sign.ResolvedNode
 applyMap pmap idt = Map.findWithDefault idt idt pmap
 
 -- | Composition of morphisms in propositional Logic
@@ -112,8 +112,8 @@ morphismUnion mor1 mor2 =
           Nothing -> (ds, Map.insert i j m)
           Just k -> if j == k then (ds, m) else
               (Diag Error
-               ("incompatible mapping of prop " ++ showId i " to "
-                ++ showId j " and " ++ showId k "")
+               ("incompatible mapping of prop " ++ show i ++ " to "
+                ++ show j ++ " and " ++ show k)
                nullRange : ds, m)) ([], pmap1)
           (Map.toList pmap2 ++ map (\ a -> (a, a))
                       (Set.toList $ Set.union up1 up2))

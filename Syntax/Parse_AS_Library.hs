@@ -115,7 +115,7 @@ emptyParams = Genericity (Params []) (Imported []) nullRange
 specDefn :: LogicGraph -> AParser st LIB_ITEM
 specDefn l = do
     s <- choice $ map asKey
-      ["specification", specS, ontologyS, "onto", "model", "OMS"]
+      ["specification", specS, ontologyS, "onto", "model", "OMS", patternS]
     n <- hetIRI l
     g <- generics l
     e <- equalT

@@ -35,15 +35,15 @@ import qualified Common.Result as Result
 import qualified Data.List as List
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import qualified NeSyPatterns.AS_NeSyPatterns as AS
+import qualified NeSyPatterns.AS as AS
 import qualified NeSyPatterns.Morphism as Morphism
 import qualified NeSyPatterns.Symbol as Symbol
 
 data TEST_SIG = TestSig
     {
       msign :: Sign.Sign
-    , occurence :: Int
     , tdiagnosis :: [Result.Diagnosis]
+    , genIndex :: Int -- next generated id suffix
     }
 
 -- | Retrieves the signature out of a basic spec
@@ -53,49 +53,48 @@ makeSig ::
     -> TEST_SIG                          -- Output Signature
 makeSig (AS.Basic_spec spec) sig = List.foldl retrieveBasicItem
                                          TestSig { msign = sig
-                                                 , occurence = 0
                                                  , tdiagnosis = []
+                                                 , genIndex = 0
                                                  }
                                          spec
+
+addError :: (GetRange a, Pretty a) => String -> a -> TEST_SIG -> TEST_SIG
+addError s n t = t {
+  tdiagnosis = tdiagnosis t ++ [mkError s n]
+}
+
 
 -- Helper for makeSig
 retrieveBasicItem ::
     TEST_SIG                                      -- Input Signature
-    -> AS_Anno.Annoted AS.BASIC_ITEMS       -- Input Item
+    -> AS_Anno.Annoted AS.BASIC_ITEM              -- Input Item
     -> TEST_SIG                                   -- Output Signature
-retrieveBasicItem tsig x =
-    let
-        occ = occurence tsig
-        nocc = occ == 0
-    in
-    case AS_Anno.item x of
-      AS.Pred_decl apred -> List.foldl (\ asig ax -> TestSig
-        { msign = Sign.addToSig (msign asig) $ Id.simpleIdToId ax
-        , occurence = occ
-        , tdiagnosis = tdiagnosis tsig ++
-            [ Result.Diag
-              { Result.diagKind = if nocc then Result.Hint else Result.Error
-              , Result.diagString = if nocc then "All fine" else
-                 "Definition of proposition " ++ show (pretty ax)
-                 ++ " after first axiom"
-              , Result.diagPos = AS_Anno.opt_pos x }]
-        }) tsig $ (\ (AS.Pred_item xs _) -> xs) apred
-      AS.Axiom_items _ -> TestSig
-        { msign = msign tsig
-        , occurence = occ + 1
-        , tdiagnosis = tdiagnosis tsig ++
-            [ Result.Diag
-             { Result.diagKind = Result.Hint
-             , Result.diagString = "First axiom"
-             , Result.diagPos = AS_Anno.opt_pos x }]
-        }
+retrieveBasicItem tsig x = let sig = msig tsig in case AS_Anno.item x of
+      Path [] -> tsig
+      Path nodes@(n0:_) ->
+        foldl (retrieveNode tsig n0) (\(tsig', fM) t -> case fM of
+          Nothing -> (tsig', Nothing) -- If an error occured for the previous node, abort
+          Just f -> tsig' {
+            msig = addEdgeToSig (f, retrieveNode t) sig
+          }) nodes
 
+retrieveNode :: TEST_SIG -> AS.Node -> (TEST_SIG, Maybe ResolvedNode)
+retrieveNode tsig n = 
+  let sig = msig tsig
+      mkRNode o i = ResolvedNode o i (getRange n)
+  in case (ontologyTerm n, nesyId n) of
+    (Nothing, Nothing) -> (addError "Invalid configuration for node. Either an ontoloty term or an id has to be specified" n tsig, Nothing)
+    (Just o, Just i) -> if i `elem` nesyIds sig
+      then (addError "id already in use" n tsig, Nothing)
+      else let r = mkRNode o i in (tsig { msign = addToSig r}, r)
+    (Just o, Nothing) -> let r = mkRNode o (genNumVar "__gen" (genIndex tsig))
+      in (tsig { msign = addToSig r, genIndex = genIndex tsig + 1}, r)
 
 -- Basic analysis 
 basicNeSyPatternsAnalysis
   :: (AS.BASIC_SPEC, Sign.Sign, GlobalAnnos.GlobalAnnos)
   -> Result.Result (AS.BASIC_SPEC,
-                    ExtSign Sign.Sign Symbol.Symbol,
+                    ExtSign Sign.Sign AS.Node,
                     [AS_Anno.Named AS.FORMULA])
 basicNeSyPatternsAnalysis (bs, sig, _) =
    Result.Result diags $ if exErrs then Nothing else
@@ -103,7 +102,7 @@ basicNeSyPatternsAnalysis (bs, sig, _) =
     where
       bsSig = makeSig bs sig
       sigItems = msign bsSig
-      declaredSyms = Set.map Symbol.Symbol
+      declaredSyms = Set.map AS.Node
         $ Set.difference (nodes sigItems) $ nodes sig
       bsForm = makeFormulas bs sigItems
       formulae = map formula bsForm
@@ -112,7 +111,7 @@ basicNeSyPatternsAnalysis (bs, sig, _) =
 
 -- | Static analysis for symbol maps
 mkStatSymbMapItem :: [AS.SYMB_MAP_ITEMS]
-                  -> Result.Result (Map.Map Symbol.Symbol Symbol.Symbol)
+                  -> Result.Result (Map.Map AS.Node AS.Node)
 mkStatSymbMapItem xs =
     Result.Result
     {
@@ -130,7 +129,7 @@ mkStatSymbMapItem xs =
     }
 
 statSymbMapItem :: [AS.SYMB_OR_MAP]
-                 -> Map.Map Symbol.Symbol Symbol.Symbol
+                 -> Map.Map AS.Node AS.Node
 statSymbMapItem =
     foldl
     (

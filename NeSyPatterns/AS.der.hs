@@ -34,9 +34,11 @@ import Data.Data
 
 -- | nodes are of form: ontology_term[id]
 -- | both components are optional, but at least one must be present
-data Node = Node (Maybe Id.Token) (Maybe Id.Token) Id.Range
-               deriving (Show, Typeable, Data)
-
+data Node = Node {
+    ontologyTerm :: (Maybe Id.Token),
+    nesyId :: (Maybe Id.Token),
+    nodeRange :: Id.Range
+  }
 newtype BASIC_SPEC = Basic_spec [AS_Anno.Annoted BASIC_ITEM]
                   deriving (Show, Typeable, Data)
 

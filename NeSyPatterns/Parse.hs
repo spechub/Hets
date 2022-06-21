@@ -39,15 +39,15 @@ symbMapItems = do
 name :: AParser st Token
 name = wrapAnnos $ pToken (alphaNum <:> many (alphaNum <|> char ':'))
 
-ontologyTerm :: AParser st Token
-ontologyTerm = name
+ontologyTermP :: AParser st Token
+ontologyTermP = name
 
 nodeId :: AParser st Token
 nodeId = brackets name
 
 node :: AParser st Node
 node = do
-    otM <- optionMaybe ontologyTerm
+    otM <- optionMaybe ontologyTermP
     idM <- if isJust otM then optionMaybe nodeId else Just <$> nodeId
     let range = catRange . catMaybes $ [otM, idM]
     return $ Node otM idM range
