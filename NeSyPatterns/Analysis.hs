@@ -24,9 +24,11 @@ module NeSyPatterns.Analysis
     where
 
 import Common.ExtSign
+import Common.Doc
 import Common.Lib.Graph
 import Common.SetColimit
 import Data.Graph.Inductive.Graph
+import Data.Maybe (fromJust)
 import NeSyPatterns.Sign as Sign
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.GlobalAnnotations as GlobalAnnos
@@ -43,25 +45,48 @@ data TEST_SIG = TestSig
     {
       msign :: Sign.Sign
     , tdiagnosis :: [Result.Diagnosis]
-    , genIndex :: Int -- next generated id suffix
+    -- , ids :: Set.Set Id.Token
+    , idMap :: Map.Map Id.Token Id.Token -- Maps a nesy id to its ontolgy term
     }
 
 -- | Retrieves the signature out of a basic spec
 makeSig ::
-    AS.BASIC_SPEC                  -- Input SPEC
-    -> Sign.Sign                         -- Input Signature
-    -> TEST_SIG                          -- Output Signature
-makeSig (AS.Basic_spec spec) sig = List.foldl retrieveBasicItem
-                                         TestSig { msign = sig
-                                                 , tdiagnosis = []
-                                                 , genIndex = 0
-                                                 }
-                                         spec
+    AS.BASIC_SPEC                         -- Input SPEC
+    -> Sign.Sign                          -- Input Signature
+    -> TEST_SIG                           -- Output Signature
+makeSig bs@(AS.Basic_spec spec) sig = let spec' = genIds spec in
+  List.foldl retrieveBasicItem TestSig {
+      msign = sig
+    , tdiagnosis = []
+    , idMap = extractIdMap bs
+    } spec' 
 
-addError :: (GetRange a, Pretty a) => String -> a -> TEST_SIG -> TEST_SIG
+extractIdMap :: AS.BASIC_SPEC -> Map.Map Id.Token Id.Token
+extractIdMap (AS.Basic_spec spec) = foldr idMapP Map.empty spec where
+  idMapP :: AS.BASIC_ITEM -> Map.Map Id.Token Id.Token -> Map.Map Id.Token Id.Token
+  idMapP (AS.Path nodes) m = foldr idMapN m nodes
+
+  idMapN :: AS.Node -> Map.Map Id.Token Id.Token -> Map.Map Id.Token Id.Token
+  idMapN node m = case (ontologyTerm node, nesyId node) of
+    (Just o, Just i) -> Map.insert i o m
+    (Nothing, Nothing) -> m
+
+
+addError :: (Id.GetRange a, Pretty a) => String -> a -> TEST_SIG -> TEST_SIG
 addError s n t = t {
   tdiagnosis = tdiagnosis t ++ [mkError s n]
 }
+
+genIds :: AS.BASIC_SPEC -> AS.BASIC_SPEC
+genIds (AS.Basic_spec paths) = AS.Basic_spec $ snd $ foldl genIdsPath (0, []) paths
+
+genIdsPath :: AS.BASIC_ITEM -> (Int, [AS.BASIC_ITEM]) -> (Int, [AS.BASIC_ITEM])
+genIdsPath (AS.Path nodes) (genId, agg) = Path <$> foldl genIdsNode ([], genId) nodes
+
+genIdsNode :: AS.Node -> (Int, [AS.Node]) -> (Int, [AS.Node])
+genIdsNode node (genId, agg) = case (ontologyTerm node, nesyId node) of
+  (Just _, Nothing) -> (genId + 1, node { AS.nesyId = mkNumVar "__genid" genId } : agg)
+  _ -> (genId, node : agg)
 
 
 -- Helper for makeSig
@@ -69,33 +94,33 @@ retrieveBasicItem ::
     TEST_SIG                                      -- Input Signature
     -> AS_Anno.Annoted AS.BASIC_ITEM              -- Input Item
     -> TEST_SIG                                   -- Output Signature
-retrieveBasicItem tsig x = let sig = msig tsig in case AS_Anno.item x of
-      Path [] -> tsig
-      Path nodes@(n0:_) ->
+retrieveBasicItem tsig x = let sig = msign tsig in case AS_Anno.item x of
+      AS.Path [] -> tsig
+      AS.Path nodes@(n0:_) ->
         foldl (retrieveNode tsig n0) (\(tsig', fM) t -> case fM of
           Nothing -> (tsig', Nothing) -- If an error occured for the previous node, abort
           Just f -> tsig' {
-            msig = addEdgeToSig (f, retrieveNode t) sig
+            msign = addEdgeToSig (f, retrieveNode t) sig
           }) nodes
 
-retrieveNode :: TEST_SIG -> AS.Node -> (TEST_SIG, Maybe ResolvedNode)
-retrieveNode tsig n = 
+resolveNode :: TEST_SIG -> AS.Node -> (TEST_SIG, ResolvedNode)
+resolveNode tsig n = 
   let sig = msig tsig
       mkRNode o i = ResolvedNode o i (getRange n)
   in case (ontologyTerm n, nesyId n) of
     (Nothing, Nothing) -> (addError "Invalid configuration for node. Either an ontoloty term or an id has to be specified" n tsig, Nothing)
-    (Just o, Just i) -> if i `elem` nesyIds sig
-      then (addError "id already in use" n tsig, Nothing)
-      else let r = mkRNode o i in (tsig { msign = addToSig r}, r)
-    (Just o, Nothing) -> let r = mkRNode o (genNumVar "__gen" (genIndex tsig))
-      in (tsig { msign = addToSig r, genIndex = genIndex tsig + 1}, r)
+    (Just o, Just i) ->  let r = mkRNode o i in (tsig { msign = addToSig r}, r)
+    (Just o, Nothing) -> (addError "Unset nesyid." n tsig, Nothing)
+    (Nothing, Just i) -> case Map.lookup i (idMap tsig) of
+      Just o -> let r = mkRNode o i in (tsig { msign = addToSig r}, r)
+      Nothing -> (addError ("Undefined id '" ++ show i ++ "'." n) tsig, Nothing)
 
 -- Basic analysis 
 basicNeSyPatternsAnalysis
   :: (AS.BASIC_SPEC, Sign.Sign, GlobalAnnos.GlobalAnnos)
   -> Result.Result (AS.BASIC_SPEC,
                     ExtSign Sign.Sign AS.Node,
-                    [AS_Anno.Named AS.FORMULA])
+                    [AS_Anno.Named AS.Node])
 basicNeSyPatternsAnalysis (bs, sig, _) =
    Result.Result diags $ if exErrs then Nothing else
      Just (bs, ExtSign sigItems declaredSyms, formulae)
@@ -103,7 +128,7 @@ basicNeSyPatternsAnalysis (bs, sig, _) =
       bsSig = makeSig bs sig
       sigItems = msign bsSig
       declaredSyms = Set.map AS.Node
-        $ Set.difference (nodes sigItems) $ nodes sig
+        $ Set.difference (Sign.nodes sigItems) $ nodes sig
       bsForm = makeFormulas bs sigItems
       formulae = map formula bsForm
       diags = map diagnosis bsForm ++ tdiagnosis bsSig

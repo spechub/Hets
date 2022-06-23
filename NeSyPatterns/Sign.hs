@@ -65,8 +65,8 @@ data Sign = Sign { nodes :: Set.Set ResolvedNode,
 instance Pretty Sign where
     pretty = printSign
 
-nesyIds :: Sign -> Set.Token
-nesyIds = fmap resolvedNeSyId . nodes
+nesyIds :: Sign -> Set.Set Token
+nesyIds = Set.map resolvedNeSyId . nodes
 
 id2SimpleId :: Id -> Token
 id2SimpleId i = case filter (not . isPlace) $ getTokens i of
@@ -90,7 +90,7 @@ addToSig :: Sign -> ResolvedNode -> Sign
 addToSig sig node = sig {nodes = Set.insert node $ nodes sig}
 
 -- | Adds an edge to the signature. Nodes are not added. See addEdgeToSig' 
-addEdgeToSig' :: Sign -> (ResolvedNode, ResolvedNode) -> Sign
+addEdgeToSig :: Sign -> (ResolvedNode, ResolvedNode) -> Sign
 addEdgeToSig sig (f, t) = sig {edges = Rel.insert f t $ edges sig}
 
 -- | Adds an edge with its nodes to the signature

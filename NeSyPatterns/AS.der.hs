@@ -38,12 +38,13 @@ data Node = Node {
     ontologyTerm :: (Maybe Id.Token),
     nesyId :: (Maybe Id.Token),
     nodeRange :: Id.Range
-  }
-newtype BASIC_SPEC = Basic_spec [AS_Anno.Annoted BASIC_ITEM]
+  } deriving (Show, Typeable, Data)
+newtype BASIC_SPEC = Basic_spec { items :: [AS_Anno.Annoted BASIC_ITEM] }
                   deriving (Show, Typeable, Data)
 
-data BASIC_ITEM =
-    Path [Node] -- written node -> ... -> node;
+data BASIC_ITEM = Path {
+    path ::  [Node] -- written node -> ... -> node;
+  }
     deriving (Show, Typeable, Data)
 
 
