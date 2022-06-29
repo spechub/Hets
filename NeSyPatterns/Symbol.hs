@@ -31,7 +31,7 @@ import Common.Doc
 import Common.DocUtils
 
 import Data.Data
-import Data.Maybe (catMaybes)
+import Data.Maybe (catMaybes, maybeToList)
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
@@ -41,7 +41,7 @@ import NeSyPatterns.Morphism as Morphism
 import qualified NeSyPatterns.AS as AS
 
 -- | Datatype for symbols
-newtype Symbol = Symbol { node :: Sign.ResolvedNode }
+newtype Symbol = Symbol { node :: AS.Node }
     deriving (Show, Eq, Ord, Typeable, Data)
 
 instance Id.GetRange Symbol where
@@ -55,22 +55,24 @@ printSymbol = pretty . node
 
 -- | Extraction of symbols from a signature
 symOf :: Sign.Sign -> Set.Set Symbol
-symOf = Set.map Symbol . Sign.nodes
+symOf = Set.map (Symbol . Sign.resolved2Node) . Sign.nodes
 
 -- | Determines the symbol map of a morhpism
 getSymbolMap :: Morphism.Morphism -> Map.Map Symbol Symbol
 getSymbolMap f = 
-  foldr (\ n -> Map.insert (Symbol n) (Symbol $ Morphism.applyMap (Morphism.nodeMap f) n))
-  Map.empty $ Sign.nodes (source f)
+  foldr
+    (\n -> Map.insert (Symbol . Sign.resolved2Node $ n) (Symbol . Sign.resolved2Node $ Morphism.applyMap (Morphism.nodeMap f) n))
+    (Map.empty :: Map.Map Symbol Symbol)
+    (Sign.nodes (source f))
 
 -- | Determines the name of a symbol
 getSymbolName :: Symbol -> Id.Id
-getSymbolName (Symbol ( Sign.ResolvedNode o i _)) = Id.mkId [o, i]
+getSymbolName (Symbol ( AS.Node o i _)) = Id.mkId $ catMaybes [o, i]
 
 -- | make a raw_symbol
 idToRaw :: Id.Id -> Symbol
 idToRaw mid = case Id.getPlainTokenList mid of
-  [o, i] -> Symbol $ Sign.ResolvedNode o i (Id.posOfId mid)
+  [o, i] -> Symbol $ AS.Node (Just o) (Just i) (Id.posOfId mid)
   _ -> error "NeSyPatterns.Symbol.idToRaw: Invalid number of tokens"
 
 -- | convert to raw symbol

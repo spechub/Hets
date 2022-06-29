@@ -16,6 +16,7 @@ module NeSyPatterns.Sign
     (Sign (..)                      -- Signatures
     , ResolvedNode(..)
     , id2SimpleId
+    , resolved2Node
     , pretty                        -- pretty printing
     , isLegalSignature              -- is a signature ok?
     , addToSig                      -- adds an id to the given Signature
@@ -32,6 +33,7 @@ import Data.Data
 import Data.List as List
 import qualified Data.Set as Set
 import qualified Data.Relation as Rel
+import qualified Data.Map as Map
 
 import Common.Id
 import Common.Result
@@ -59,7 +61,8 @@ instance GetRange ResolvedNode where
 {- | Datatype for propositional Signatures
 Signatures are graphs over nodes from the abstract syntax -}
 data Sign = Sign { nodes :: Set.Set ResolvedNode,
-                    edges :: Rel.Relation ResolvedNode ResolvedNode}
+                   edges :: Rel.Relation ResolvedNode ResolvedNode,
+                   idMap :: Map.Map Token Token }
   deriving (Show, Eq, Ord, Typeable)
 
 instance Pretty Sign where
@@ -67,6 +70,9 @@ instance Pretty Sign where
 
 nesyIds :: Sign -> Set.Set Token
 nesyIds = Set.map resolvedNeSyId . nodes
+
+resolved2Node :: ResolvedNode -> Node
+resolved2Node (ResolvedNode t i r) = Node (Just t) (Just i) r
 
 id2SimpleId :: Id -> Token
 id2SimpleId i = case filter (not . isPlace) $ getTokens i of
@@ -83,7 +89,8 @@ isLegalSignature s =
 printSign :: Sign -> Doc
 printSign s =
     hsep [sepBySemis $ map pretty $ Set.toList $ nodes s,
-          sepBySemis $ map pretty $ Rel.toList $ edges s]
+          sepBySemis $ map pretty $ Rel.toList $ edges s,
+          sepBySemis $ map pretty $ Map.toList $ idMap s]
 
 -- | Adds a node to the signature
 addToSig :: Sign -> ResolvedNode -> Sign
@@ -100,11 +107,12 @@ addEdgeToSig' sig (f, t) = addToSig (addToSig (sig {edges = Rel.insert f t $ edg
 -- | Union of signatures
 unite :: Sign -> Sign -> Sign
 unite sig1 sig2 = Sign {nodes = Set.union (nodes sig1) $ nodes sig2,
+                        idMap = Map.union (idMap sig1) $ idMap sig2,
                         edges = Rel.union (edges sig1) $ edges sig2}
 
 -- | The empty signature
 emptySig :: Sign
-emptySig = Sign {nodes = Set.empty, edges = Rel.empty}
+emptySig = Sign {nodes = Set.empty, edges = Rel.empty, idMap = Map.empty}
 
 relToSet :: (Ord a, Ord b) => Rel.Relation a b -> Set.Set (a,b)
 relToSet r = Set.fromList $ Rel.toList r
@@ -124,6 +132,7 @@ relDiff r1 r2 = Rel.fromList (l1 List.\\ l2)
 sigDiff :: Sign -> Sign -> Sign
 sigDiff sig1 sig2 = Sign
   {nodes = Set.difference (nodes sig1) $ nodes sig2,
+   idMap = Map.difference (idMap sig1) $ idMap sig2,
    edges = relDiff (edges sig1) $ edges sig2}
 
 {- | union of Signatures, using Result -}

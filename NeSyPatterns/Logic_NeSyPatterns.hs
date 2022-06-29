@@ -19,7 +19,6 @@ import Logic.Logic
 import NeSyPatterns.Sign
 import NeSyPatterns.Morphism
 import NeSyPatterns.AS
-import NeSyPatterns.Fold
 import NeSyPatterns.Symbol as Symbol
 import NeSyPatterns.Parse
 import NeSyPatterns.Print
@@ -133,8 +132,8 @@ instance StaticAnalysis NeSyPatterns
           symbol_to_raw NeSyPatterns = symbolToRaw
           id_to_raw NeSyPatterns = idToRaw
           matches NeSyPatterns = Symbol.matches
-          stat_symb_items NeSyPatterns _ = mkStatSymbItems
-          stat_symb_map_items NeSyPatterns _ _ = mkStatSymbMapItem
+          stat_symb_items NeSyPatterns = mkStatSymbItems
+          stat_symb_map_items NeSyPatterns = mkStatSymbMapItem
           morphism_union NeSyPatterns = morphismUnion
           induced_from_morphism NeSyPatterns = inducedFromMorphism
           induced_from_to_morphism NeSyPatterns = inducedFromToMorphism
