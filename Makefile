@@ -650,7 +650,7 @@ clean_pretty:
 		CommonLogic/TestData/*.{pp.dol,th} Common/testxmldiff \
 		OWL2/tests/*.pp* OWL2/tests/*_*.omn OWL2/tests/*_*.th \
 		Static/test/*.xupdate3* Static/test/*.{dol.bak,xh,xhi,xml} \
-			Static/test/patch
+			Static/test/patch \
 		doc/UserGuide.{log,aux,bbl,blg,out,fdb_latexmk,fls} doc/hs2isa.ps \
 			$(USER_GUIDE) log.haddock \
 		debian/{root,files,hets-*,tmp} \
