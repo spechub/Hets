@@ -119,9 +119,9 @@ basicNeSyPatternsAnalysis (spec@(AS.Basic_spec paths), sig, _) = do
   return (spec, ExtSign sign (Set.map (Symbol.Symbol . resolved2Node) $ Sign.nodes sign), [])
 
 -- | Static analysis for symbol maps
-mkStatSymbMapItem ::  [AS.SYMB_MAP_ITEMS]
+mkStatSymbMapItem :: Sign -> Maybe Sign -> [AS.SYMB_MAP_ITEMS]
                   -> Result.Result (Map.Map Symbol.Symbol Symbol.Symbol)
-mkStatSymbMapItem = return . foldr
+mkStatSymbMapItem _ _ = return . foldr
   (\(AS.Symb_map_items sitem r) -> Map.union $ statSymbMapItem sitem)
   Map.empty
 

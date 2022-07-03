@@ -6,6 +6,8 @@ import Common.Id
 import Common.Lexer
 import Common.Parsec
 
+import qualified Common.GlobalAnnotations as GA (PrefixMap)
+
 import NeSyPatterns.AS
 
 import Data.Maybe (isJust, catMaybes)
@@ -56,8 +58,8 @@ node = do
 basicItem :: AParser st BASIC_ITEM
 basicItem = Path <$> fst <$> separatedBy node (asKey "->") << anSemi
 
-basicSpec :: AParser st BASIC_SPEC
-basicSpec = Basic_spec <$> annosParser basicItem
+basicSpec :: GA.PrefixMap -> AParser st BASIC_SPEC
+basicSpec _ = Basic_spec <$> annosParser basicItem
 
 
 

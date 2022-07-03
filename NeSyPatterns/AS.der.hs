@@ -61,4 +61,3 @@ data SYMB_OR_MAP = Symb SYMB
                  | Symb_map SYMB SYMB Id.Range
                    -- pos: "|->"
                    deriving (Show, Eq, Ord, Typeable, Data)
-
