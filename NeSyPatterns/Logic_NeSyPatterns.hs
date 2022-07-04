@@ -59,7 +59,7 @@ instance Category Sign Morphism where
 -- | Instance of Sentences for propositional logic
 instance Sentences NeSyPatterns ()
     Sign Morphism Symbol where
-    negation NeSyPatterns = Just . negForm nullRange
+    negation NeSyPatterns _ = Just ()
     -- returns the set of symbols
     sym_of NeSyPatterns = singletonList . symOf
     -- returns the symbol map
@@ -68,9 +68,9 @@ instance Sentences NeSyPatterns ()
     sym_name NeSyPatterns = getSymbolName
     symKind NeSyPatterns _ = "prop"
     -- translation of sentences along signature morphism
-    map_sen NeSyPatterns = mapSentence
+    map_sen NeSyPatterns _ = return $ return ()
     -- there is nothing to leave out
-    simplify_sen NeSyPatterns _ = simplify
+    simplify_sen NeSyPatterns _ _ = ()
 
 
 instance Semigroup BASIC_SPEC where
