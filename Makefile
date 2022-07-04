@@ -465,7 +465,8 @@ OWL2/ATC_OWL2.der.hs: $(OWL2_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.Result -o $@ $(OWL2_files)
 
 NeSyPatterns/ATC_NeSyPatterns.der.hs: $(NeSyPatterns_files) $(GENRULES)
-	$(GENRULECALL) -i ATC.Result -o $@ $(NeSyPatterns_files)
+	$(GENRULECALL) -i ATC.Result -i NeSyPatterns.ATC_Relation \
+		-i ATC.AS_Annotation -o $@ $(NeSyPatterns_files)
 
 RDF/ATC_RDF.der.hs: $(RDF_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.Result -o $@ $(RDF_files)

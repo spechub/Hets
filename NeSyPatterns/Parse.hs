@@ -37,9 +37,15 @@ symbMapItems = do
     let range = concatMapRange getRange items
     return $ Symb_map_items items range
 
+nesyKeywords :: [String]
+nesyKeywords = [endS]
 
 name :: AParser st Token
-name = wrapAnnos $ pToken (alphaNum <:> many (alphaNum <|> char ':'))
+name = try $ checkWithUsing (\i -> "keyword \"" ++ show i ++ "\"") name' check where
+    startChars = alphaNum <|> char '_'
+    allowedChars = startChars <|> oneOf "-:"
+    name' = wrapAnnos $ pToken (startChars <:> many (allowedChars))
+    check s = show s `notElem` nesyKeywords
 
 ontologyTermP :: AParser st Token
 ontologyTermP = name
