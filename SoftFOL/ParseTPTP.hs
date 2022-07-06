@@ -363,20 +363,20 @@ prTPTP :: TPTP -> Doc.Doc
 prTPTP p = case p of
   FormAnno k (Name n) r t m ->
       Doc.text (show k)
-      Doc.<> Doc.parens
+      <> Doc.parens
       (Doc.sepByCommas $
        [ Doc.text n
        , Doc.text $ showRole r
        , printTPTP t]
        ++ maybe [] ppAnnos m)
-      Doc.<> Doc.dot
+      <> Doc.dot
   Include (FileName f) ns ->
       Doc.text "include"
-      Doc.<> Doc.parens
+      <> Doc.parens
       (Doc.sepByCommas $
        ppName f : if null ns then [] else
           [Doc.brackets $ Doc.sepByCommas $ map ppAName ns])
-      Doc.<> Doc.dot
+      <> Doc.dot
   CommentLine l -> Doc.text $ '%' : l
   EmptyLine -> Doc.text ""
 
@@ -401,15 +401,15 @@ ppGenList = Doc.brackets . ppList
 ppGenTerm :: GenTerm -> Doc.Doc
 ppGenTerm gt = case gt of
   GenTerm gd m -> let d = ppGenData gd in case m of
-    Just t -> Doc.fsep [d Doc.<> Doc.colon, ppGenTerm t]
+    Just t -> Doc.fsep [d <> Doc.colon, ppGenTerm t]
     Nothing -> d
   GenTermList l -> ppGenList l
 
 ppGenData :: GenData -> Doc.Doc
 ppGenData gd = case gd of
-  GenData (AWord aw) l -> ppName aw Doc.<>
+  GenData (AWord aw) l -> ppName aw <>
     if null l then Doc.empty else Doc.parens $ ppList l
   OtherGenData s -> Doc.text s
   GenFormData (FormData k t) ->
      Doc.text ('$' : show k)
-     Doc.<> Doc.parens (printTPTP t)
+     <> Doc.parens (printTPTP t)

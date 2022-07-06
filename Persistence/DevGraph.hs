@@ -65,6 +65,7 @@ import qualified Static.ToJson as ToJson
 import Control.Exception
 import Control.Monad (foldM, foldM_, when)
 import Control.Monad.IO.Class (MonadIO (..))
+import qualified Control.Monad.Fail as MFail
 import Data.Char (toLower)
 import qualified Data.IntMap as IntMap
 import Data.Graph.Inductive.Graph as Graph
@@ -129,7 +130,7 @@ exportLibEnv opts libEnv = do
                                                }]
       fail message
 
-createDocuments :: MonadIO m
+createDocuments :: (MonadIO m, MFail.MonadFail m)
                 => HetcatsOpts -> LibEnv -> DBCache -> [Set LibName]
                 -> DBMonad m DBCache
 createDocuments opts libEnv dbCache0 dependencyOrderedLibsSetL = do
@@ -139,7 +140,7 @@ createDocuments opts libEnv dbCache0 dependencyOrderedLibsSetL = do
       reverse dependencyOrderedLibsSetL
   createDocumentsThatAreIndependent opts libEnv fileVersion dbCache1
 
-createDocumentsInDependencyRelation :: MonadIO m
+createDocumentsInDependencyRelation :: (MonadIO m, MFail.MonadFail m)
                                     => HetcatsOpts -> LibEnv
                                     -> Entity FileVersion -> DBCache -> [Set LibName]
                                     -> DBMonad m DBCache
@@ -152,7 +153,7 @@ createDocumentsInDependencyRelation opts libEnv fileVersion =
          ) outerAcc libNameSet
     )
 
-createDocumentsThatAreIndependent :: MonadIO m
+createDocumentsThatAreIndependent :: (MonadIO m, MFail.MonadFail m)
                                   => HetcatsOpts -> LibEnv
                                   -> Entity FileVersion -> DBCache
                                   -> DBMonad m DBCache
@@ -165,7 +166,7 @@ createDocumentsThatAreIndependent opts libEnv fileVersion dbCache =
           else createDocument opts libEnv fileVersion dbCacheAcc libName
     ) dbCache $ Map.keys libEnv
 
-createDocument :: MonadIO m
+createDocument :: (MonadIO m, MFail.MonadFail m)
                => HetcatsOpts -> LibEnv -> Entity FileVersion -> DBCache
                -> LibName -> DBMonad m DBCache
 createDocument opts libEnv parentFileVersion dbCache0 libName =
@@ -275,7 +276,7 @@ kindOfDocument opts filepathM = case filepathM of
                             then Enums.Library
                             else Enums.NativeDocument
 
-createAllOmsOfDocument :: MonadIO m
+createAllOmsOfDocument :: (MonadIO m, MFail.MonadFail m)
                        => HetcatsOpts -> LibEnv -> FileVersionId -> DBCache
                        -> Bool -> DGraph -> GlobalAnnos -> LibName
                        -> Entity LocIdBase -> DBMonad m DBCache
@@ -296,7 +297,7 @@ createAllOmsOfDocument opts libEnv fileVersionKey dbCache0 doSave dGraph
               globalAnnotations libName documentLocIdBase labeledEdge
           ) dbCache1 labeledEdges
 
-findOrCreateOMSM :: MonadIO m
+findOrCreateOMSM :: (MonadIO m, MFail.MonadFail m)
                  => HetcatsOpts -> LibEnv -> FileVersionId -> DBCache -> Bool
                  -> GlobalAnnos -> LibName -> Entity LocIdBase -> Maybe Int
                  -> DBMonad m (Maybe LocIdBaseId, Maybe SignatureId, DBCache)
@@ -312,7 +313,7 @@ findOrCreateOMSM opts libEnv fileVersionKey dbCache0 doSave globalAnnotations
                 globalAnnotations libName documentLocIdBase (nodeId, nodeLabel)
             return (Just omsKey, Just signatureKey, dbCache1)
 
-findOrCreateOMS :: MonadIO m
+findOrCreateOMS :: (MonadIO m, MFail.MonadFail m)
                 => HetcatsOpts -> LibEnv -> FileVersionId -> DBCache -> Bool
                 -> GlobalAnnos -> LibName -> Entity LocIdBase
                 -> (Int, DGNodeLab)
@@ -346,7 +347,7 @@ findOrCreateOMS opts libEnv fileVersionKey dbCache0 doSave globalAnnotations
               globalAnnotations libName documentLocIdBase (nodeId, nodeLabel)
               consStatus
 
-createOMS :: MonadIO m
+createOMS :: (MonadIO m, MFail.MonadFail m)
           => HetcatsOpts -> LibEnv -> FileVersionId -> DBCache -> Bool
           -> GlobalAnnos -> LibName -> Entity LocIdBase -> (Int, DGNodeLab)
           -> ConsStatus -> DBMonad m (LocIdBaseId, SignatureId, DBCache)
@@ -537,7 +538,7 @@ createConservativityStatus (ConsStatus r p _) =
       Unknown s -> s
       _ -> map toLower $ show c
 
-findOrCreateSignatureMorphismM :: MonadIO m
+findOrCreateSignatureMorphismM :: (MonadIO m, MFail.MonadFail m)
                                => HetcatsOpts -> LibEnv -> DBCache -> Bool
                                -> LibName -> (Int, Maybe Int) -> GlobalAnnos
                                -> (SignatureId, Maybe SignatureId)
@@ -558,7 +559,7 @@ findOrCreateSignatureMorphismM opts libEnv dbCache doSave libName
             (sourceSignatureKey, fromJust targetSignatureKeyM) gMorphism
         return (Just signatureMorphismKey, symbolMappingKeys, dbCache1)
 
-findOrCreateSignatureMorphism :: MonadIO m
+findOrCreateSignatureMorphism :: (MonadIO m, MFail.MonadFail m)
                               => HetcatsOpts -> LibEnv -> DBCache -> Bool
                               -> LibName -> (Int, Int) -> GlobalAnnos
                               -> (SignatureId, SignatureId)
@@ -1071,7 +1072,7 @@ associateSymbolsOfSignature libEnv dbCache libName nodeId lid extSign signatureK
          ) Set.empty allSymbols
        return dbCache
 
-createMapping :: MonadIO m
+createMapping :: (MonadIO m, MFail.MonadFail m)
               => HetcatsOpts -> LibEnv -> FileVersionId -> DBCache -> Bool
               -> GlobalAnnos -> LibName -> Entity LocIdBase
               -> (Int, Int, DGLinkLab) -> DBMonad m DBCache

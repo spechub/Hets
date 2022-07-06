@@ -80,7 +80,7 @@ instance (Ord a, HasSorts a) => HasSorts (Set a) where
     mapSorts = Set.map . mapSorts
 
 instance (Ord a, HasSorts a) => HasSorts (Map k a) where
-    getSorts = Map.fold (Set.union . getSorts) Set.empty
+    getSorts = Map.foldr (Set.union . getSorts) Set.empty
     mapSorts = Map.map . mapSorts
 
 instance (Ord a, HasSorts a) => HasSorts (Rel a) where

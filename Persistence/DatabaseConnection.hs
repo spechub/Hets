@@ -19,6 +19,7 @@ import qualified Persistence.PostgreSQL as PSQL
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Control
 import Control.Monad.Logger
+import Control.Monad.IO.Unlift
 
 import Data.Maybe (fromMaybe)
 import Data.Pool (Pool)
@@ -33,6 +34,7 @@ getConnection :: ( BaseBackend backend ~ SqlBackend
                  , MonadIO m
                  , MonadBaseControl IO m
                  , MonadLogger m
+                 , MonadUnliftIO m
                  )
               => DBConfig -> IO ((Pool backend -> m a) -> m a)
 getConnection dbConfig = case adapter dbConfig of

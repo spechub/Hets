@@ -91,9 +91,10 @@ instance Sentences Propositional FORMULA
     -- there is nothing to leave out
     simplify_sen Propositional _ = simplify
 
+instance Semigroup BASIC_SPEC where
+    (Basic_spec l1) <> (Basic_spec l2) = Basic_spec $ l1 ++ l2
 instance Monoid BASIC_SPEC where
     mempty = Basic_spec []
-    mappend (Basic_spec l1) (Basic_spec l2) = Basic_spec $ l1 ++ l2
 
 -- - | Syntax of Propositional logic
 instance Syntax Propositional BASIC_SPEC

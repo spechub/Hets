@@ -65,9 +65,10 @@ instance Sentences CommonLogic
       symsOfSen CommonLogic _ = symsOfTextMeta
       symKind CommonLogic = Symbol.symKind
 
+instance Semigroup BASIC_SPEC where
+    (Basic_spec l1) <> (Basic_spec l2) = Basic_spec $ l1 ++ l2
 instance Monoid BASIC_SPEC where
     mempty = Basic_spec []
-    mappend (Basic_spec l1) (Basic_spec l2) = Basic_spec $ l1 ++ l2
 
 instance Syntax CommonLogic
     BASIC_SPEC

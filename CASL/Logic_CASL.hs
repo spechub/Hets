@@ -114,9 +114,10 @@ instance (Ord f, Ord e, Ord m, MorphismExtension e m) =>
     isInclusion = isInclusionMorphism isInclusionMorphismExtension
     legal_mor = legalMor
 
+instance Semigroup (BASIC_SPEC b s f) where
+    (Basic_spec l1) <> (Basic_spec l2) = Basic_spec $ l1 ++ l2
 instance Monoid (BASIC_SPEC b s f) where
     mempty = Basic_spec []
-    mappend (Basic_spec l1) (Basic_spec l2) = Basic_spec $ l1 ++ l2
 
 -- abstract syntax, parsing (and printing)
 

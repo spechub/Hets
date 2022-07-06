@@ -65,9 +65,10 @@ instance Language HasCASL where
   , "  SubCFOL=       -> the CASL logic without sort generation constraints"
   , "  PCoClTyConsHOL -> the Haskell type system fragment" ]
 
+instance Semigroup BasicSpec where
+    (BasicSpec l1) <> (BasicSpec l2) = BasicSpec $ l1 ++ l2
 instance Monoid BasicSpec where
     mempty = BasicSpec []
-    mappend (BasicSpec l1) (BasicSpec l2) = BasicSpec $ l1 ++ l2
 
 instance Syntax HasCASL BasicSpec
                 Symbol SymbItems SymbMapItems

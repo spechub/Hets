@@ -320,7 +320,7 @@ candFromSymbol _ _ = Nothing
 candidatesAux :: Map.Map TypeScheme [MatchOp]
            -> Map.Map TypeScheme [MatchOp]
            -> [Injection MatchOp MatchOp]
-candidatesAux patMap cMap = crossInjs $ Map.foldWithKey f [] patMap where
+candidatesAux patMap cMap = crossInjs $ Map.foldrWithKey f [] patMap where
     f typ l injL = let l' = Map.findWithDefault err typ cMap
                        err = error $ "candidates: No concrete ops for type: "
                              ++ show (pretty typ)
