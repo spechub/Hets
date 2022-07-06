@@ -65,10 +65,11 @@ instance Category Sign RDFMorphism where
     composeMorphisms = composeMor
 -}
 
+instance Semigroup TurtleDocument where
+    (TurtleDocument i p1 l1) <> (TurtleDocument _ p2 l2) =
+      TurtleDocument i (Map.union p1 p2) $ l1 ++ l2
 instance Monoid TurtleDocument where
     mempty = emptyTurtleDocument
-    mappend (TurtleDocument i p1 l1) (TurtleDocument _ p2 l2) =
-      TurtleDocument i (Map.union p1 p2) $ l1 ++ l2
 
 instance Syntax RDF TurtleDocument RDFEntity SymbItems SymbMapItems where
     parse_basic_spec RDF = Just basicSpec

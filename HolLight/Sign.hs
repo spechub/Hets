@@ -32,7 +32,7 @@ prettyTypes = ppMap text (\ i -> if i < 1 then empty else parens (pretty i))
 instance Pretty Sign where
   pretty s = keyword "types" <+> prettyTypes (types s)
     $++$ ppMap text ppPrintType
-         (const id) vcat (\ a -> (a <+> colon <+>)) (ops s)
+         (const id) vcat (\ a -> ((a <+> colon) <+>)) (ops s)
 
 emptySig :: Sign
 emptySig = Sign {types = Map.empty, ops = Map.empty }

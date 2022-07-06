@@ -710,9 +710,6 @@ mkMenus = menuTriple "" "Get menu triples" "menus"
   ++ map (\ nc -> menuTriple "/DGraph/DGNode" ("Show " ++ nc) nc) nodeCommands
   ++ [menuTriple "/DGraph/DGLink" "Show edge info" "edge"]
 
-status422 :: Status
-status422 = Status 422 $ B8.pack "Unprocessable Entity"
-
 mkFiletypeResponse :: HetcatsOpts -> String -> WebResponse
 mkFiletypeResponse opts libIri respond = do
   res <- liftIO $ getContentAndFileType opts libIri

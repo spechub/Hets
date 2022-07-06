@@ -56,7 +56,7 @@ qualifySigExt extInd extEm nodeId libId m sig = do
       sMap = Set.fold (`Map.insert` 1) Map.empty ss
       om = createOpMorMap $ qualOverloaded sMap (Map.map fst $ op_map m)
            nodeId libId (mapOpType sm) mkPartial os
-      oMap = Map.foldWithKey (\ i ->
+      oMap = Map.foldrWithKey (\ i ->
              Map.insertWith (+) i . Set.size) sMap $ MapSet.toMap os
       pm = Map.map fst $ qualOverloaded oMap (pred_map m) nodeId libId
            (mapPredType sm) id ps
@@ -69,7 +69,7 @@ qualOverloaded :: Ord a => Map.Map Id Int -> Map.Map (Id, a) Id -> SIMPLE_ID
                -> LibName -> (a -> a) -> (a -> a) -> MapSet.MapSet Id a
                -> Map.Map (Id, a) (Id, a)
 qualOverloaded oMap rn nodeId libId f g =
-  Map.foldWithKey (\ i s m -> foldr (\ (e, n) -> let ge = g e in
+  Map.foldrWithKey (\ i s m -> foldr (\ (e, n) -> let ge = g e in
     Map.insert (i, ge)
       (case Map.lookup (i, ge) rn of
          Just j | isQualName j -> j

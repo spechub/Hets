@@ -67,7 +67,7 @@ makeLibEnv libs bs = fst $
 addNodes :: LibEnv -> NODE_MAP -> BASE -> SIGS -> (LibEnv, NODE_MAP)
 addNodes le nm b sigs =
   let ln = emptyLibName b
-      (dg2, nm1) = Map.foldWithKey
+      (dg2, nm1) = Map.foldrWithKey
          (\ m sig (dg, nmap) ->
             let (n, dg1) = addSigToDG sig dg
                 nmap1 = Map.insert (b, m) n nmap
@@ -98,7 +98,7 @@ addSigToDG sig dg =
 addLinks :: LibEnv -> NODE_MAP -> BASE -> MORPHS -> LibEnv
 addLinks le nm b morphs =
   let ln = emptyLibName b
-      dg1 = Map.fold (\ morph dg -> addMorphToDG morph dg nm le)
+      dg1 = Map.foldr (\ morph dg -> addMorphToDG morph dg nm le)
               (lookupDGraph ln le) morphs
       in Map.insert ln dg1 le
 

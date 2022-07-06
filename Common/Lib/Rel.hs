@@ -332,7 +332,7 @@ addCycle c r = if Set.null c then error "Common.Lib.Rel.addCycle" else
 -}
 haveCommonLeftElem :: Ord a => a -> a -> Rel a -> Bool
 haveCommonLeftElem t1 t2 =
-    Map.fold (\ e -> (|| Set.member t1 e && Set.member t2 e)) False . toMap
+    Map.foldr (\ e -> (|| Set.member t1 e && Set.member t2 e)) False . toMap
 
 {- | partitions a set into a list of disjoint non-empty subsets
 determined by the given function as equivalence classes -}

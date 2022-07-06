@@ -221,7 +221,6 @@ import Prelude
 import Data.Monoid ( Monoid (mempty, mappend) )
 import Data.String ( IsString (fromString) )
 
-infixl 6 <>
 infixl 6 <+>
 infixl 5 $$, $+$
 
@@ -290,13 +289,15 @@ doubleQuotes :: Doc -> Doc;     -- ^ Wrap document in @\"...\"@
 
 -- Combining @Doc@ values
 
+instance Semigroup Doc where
+    p <> q = beside_ p False q
+
 instance Monoid Doc where
     mempty = empty
-    mappend = (<>)
 
 {- | Beside.
 '<>' is associative, with identity 'empty'. -}
-(<>) :: Doc -> Doc -> Doc
+-- (<>) :: Doc -> Doc -> Doc   -- see Semigroup instance above
 
 {- | Beside, separated by space, unless one of the arguments is 'empty'.
 '<+>' is associative, with identity 'empty'. -}
@@ -716,7 +717,6 @@ beside_ p _ Empty = p
 beside_ Empty _ q = q
 beside_ p g q = Beside p g q
 
-p <> q = beside_ p False q
 p <+> q = beside_ p True q
 
 beside :: Doc -> Bool -> RDoc -> RDoc

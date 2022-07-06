@@ -20,12 +20,13 @@ import Persistence.Schema as DatabaseSchema
 import Database.Esqueleto
 
 import Control.Monad.IO.Class (MonadIO (..))
+import Control.Monad.Fail
 
 resolve :: HetcatsOpts -> Cache -> Int -> IO (Maybe GraphQLResult.Result)
 resolve opts sessionReference idVar =
   onDatabase (databaseConfig opts) $ resolveDB idVar
 
-resolveDB :: MonadIO m => Int -> DBMonad m (Maybe GraphQLResult.Result)
+resolveDB :: (MonadIO m, MonadFail m) => Int -> DBMonad m (Maybe GraphQLResult.Result)
 resolveDB idVar = do
   signatureMorphismL <-
     select $ from $ \(signature_morphisms `InnerJoin` signaturesSource
@@ -48,7 +49,7 @@ resolveDB idVar = do
         signatureMorphismToResult signatureMorphismEntity signatureSource
           signatureTarget logicMappingResult mappingResults symbolMappingResults
 
-getLogicMappingResult :: MonadIO m
+getLogicMappingResult :: (MonadIO m, MonadFail m)
                       => SignatureMorphismId
                       -> DBMonad m GraphQLResultLogicMapping.LogicMapping
 getLogicMappingResult signatureMorphismKey = do
@@ -137,7 +138,7 @@ getSymbolMappingResults signatureMorphismKey = do
              )
   return $ map (uncurry symbolMappingToResult) symbolData
 
-getLanguageMapping :: MonadIO m
+getLanguageMapping :: (MonadIO m, MonadFail m)
                    => LogicMappingId
                    -> DBMonad m GraphQLResultLanguageMapping.LanguageMapping
 getLanguageMapping logicMappingKey = do

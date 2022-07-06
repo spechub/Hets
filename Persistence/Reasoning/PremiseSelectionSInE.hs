@@ -2,6 +2,7 @@
 {-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module Persistence.Reasoning.PremiseSelectionSInE ( G_SInEResult (..)
                                                   , SInEParameters (..)

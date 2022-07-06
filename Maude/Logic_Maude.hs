@@ -80,10 +80,11 @@ instance Sentences Maude Sentence Sign Morphism Symbol where
     sym_of Maude = singletonList . Sign.symbols
     symmap_of Maude = Morphism.symbolMap
 
+instance Semigroup MaudeText where
+    (MaudeText l1) <> (MaudeText l2) = MaudeText
+      . unlines $ lines l1 ++ lines l2
 instance Monoid MaudeText where
     mempty = MaudeText ""
-    mappend (MaudeText l1) (MaudeText l2) = MaudeText
-      . unlines $ lines l1 ++ lines l2
 
 -- | Instance of Syntax for Maude
 instance Syntax Maude MaudeText Symbol () () where
