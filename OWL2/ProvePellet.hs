@@ -74,7 +74,7 @@ pelletCheck = fmap
 -}
 pelletProver :: Prover Sign Axiom OWLMorphism ProfSub ProofTree
 pelletProver =
-  (mkAutomaticProver "java" pelletS topS pelletGUI pelletCMDLautomaticBatch)
+  (mkAutomaticProver "java" pelletS dlS pelletGUI pelletCMDLautomaticBatch)
   { proverUsable = pelletCheck }
 
 pelletConsChecker :: ConsChecker Sign Axiom ProfSub OWLMorphism ProofTree

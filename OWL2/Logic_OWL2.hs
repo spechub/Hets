@@ -48,7 +48,7 @@ import OWL2.Pretty
 import OWL2.Morphism
 import qualified OWL2.ParseMS as PaMS (parseOntologyDocument)
 import qualified OWL2.ParseAS as PaAS (parseOntologyDocument) 
-import OWL2.ManchesterPrint (convertBasicTheory)
+import OWL2.ManchesterPrint (convertBasicTheory, convertBasicTheory')
 import OWL2.Parse (symbItem, symbItems, symbMapItems) --temporary
 import OWL2.ProfilesAndSublogics
 import OWL2.ProveFact
@@ -215,6 +215,7 @@ instance Logic OWL2 ProfSub OntologyDocument Axiom SymbItems SymbMapItems
                     (checkOWLjar localityJar) $ conserCheck ct)
            ["BOTTOM_BOTTOM", "TOP_BOTTOM", "TOP_TOP"]
          stability OWL2 = Stable
+         sublogicOfTheo OWL2 = profilesAndSublogic . convertBasicTheory'
 
 instance SemiLatticeWithTop ProfSub where
     lub = maxS

@@ -151,8 +151,8 @@ instance Function ClassExpression where
         ObjectHasSelf op -> ObjectHasSelf $ function t s op
         ObjectCardinality (Cardinality ct i op mce) -> ObjectCardinality
             $ Cardinality ct i (function t s op) $ maybeDo t s mce
-        DataValuesFrom qt dp dr -> DataValuesFrom qt
-            [(cutWith DataProperty t s (head dp))] $ function t s dr
+        DataValuesFrom qt dps dr -> DataValuesFrom qt
+            (cutWith DataProperty t s <$> dps) $ function t s dr
         DataHasValue dp l -> DataHasValue (cutWith DataProperty t s dp)
             $ function t s l
         DataCardinality (Cardinality ct i dp mdr) -> DataCardinality

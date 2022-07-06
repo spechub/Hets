@@ -1,3 +1,4 @@
+#SUBLOGIC=ALC-D|PlainLiteral|XMLLiteral|NCName|NMTOKEN|Name|anyURI|base64Binary|boolean|byte|dateTime|dateTimeStamp|decimal|double|float|hexBinary|int|integer|language|long|negativeInteger|nonNegativeInteger|nonPositiveInteger|normalizedString|positiveInteger|short|string|token|unsignedByte|unsignedInt|unsignedLong|unsignedShort|rational|
 Prefix(: = <http://example.org/>)
   Prefix(xsd: = <http://www.w3.org/2001/XMLSchema#>)
   Prefix(rdf: = <http://www.w3.org/1999/02/22-rdf-syntax-ns#>)

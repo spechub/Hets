@@ -450,7 +450,7 @@ jobs:
           echo 'man-db man-db/auto-update boolean false' | \
               sudo debconf-set-selections
           sudo rm -f /var/lib/man-db/auto-update
-          sudo apt-get install spass darwin vampire \
+          sudo apt-get install spass darwin vampire eprover \
               texlive-latex-base texlive-fonts-recommended
 
       # Unfortunately utils/checkChangedSourceGit.sh uses 'git diff' - so need
@@ -484,14 +484,14 @@ jobs:
           ${{ env.GHAH }} -c showEnv
           stack --version
           stack exec -- ghc -V
-          ls -al . ${{ runner.temp }}
+          ls -al . ./OWL2 ${{ runner.temp }}
 
       # ~ 10 min
       - name: Test
         run: |
           unset POSIXLY_CORRECT
           make restack
-          HETS_MAGIC=${{ github.workspace }}/magic/hets.magic  make check
+          FAIL_EARLY=0  make check
 
   job_3b:
     # Takes ~ 2 min.

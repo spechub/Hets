@@ -79,6 +79,23 @@ plainDatatypeIRI = IRI {
         , iFragment = "PlainLiteral"
     }
 
+topDataProperty :: IRI
+topDataProperty = expandIRI' predefPrefixes $
+  setPrefix "owl" $ mkIRI "topDataProperty"
+
+topObjectProperty :: IRI
+topObjectProperty = expandIRI' predefPrefixes $
+  setPrefix "owl" $ mkIRI "topObjectProperty"
+
+owlThing :: IRI
+owlThing = expandIRI' predefPrefixes $
+  setPrefix "owl" $ mkIRI "Thing"
+
+bottomObjectProperty :: IRI
+bottomObjectProperty = expandIRI' predefPrefixes $
+  setPrefix "owl" $ mkIRI "bottomObjectProperty"
+
+
 type LexicalForm = String
 type LanguageTag = String
 type ImportIRI = IRI
@@ -773,6 +790,12 @@ numberName f
     | isFloatDec f = decimalS
     | otherwise = floatS
 
+litType :: Literal -> Maybe IRI
+litType l = case l of
+  Literal _ (Typed t) -> Just t
+  NumberLit f -> Just . expandIRI' predefPrefixes . setPrefix "xsd" . mkIRI . numberName $ f
+  _ -> Nothing
+
 cTypeS :: String
 cTypeS = "^^"
 
@@ -793,6 +816,11 @@ objPropToIRI opExp = case opExp of
     ObjectProp u -> u
     ObjectInverseOf objProp -> objPropToIRI objProp
 
+inverseOf :: ObjectPropertyExpression -> ObjectPropertyExpression
+inverseOf ope = case ope of
+  ObjectProp _ -> ObjectInverseOf ope
+  ObjectInverseOf ope' -> ope'
+
 type DataPropertyExpression = DataProperty
 
 -- * DATA RANGES
@@ -803,6 +831,15 @@ data DataRange =
   | DataComplementOf DataRange
   | DataOneOf [Literal]
     deriving (Show, Eq, Ord, Typeable, Data)
+
+-- | Extracts all Datatypes used in a Datarange.
+basedOn :: DataRange -> [Datatype]
+basedOn dr = case dr of
+  DataType dt fs -> dt : concatMap (\(f, l) -> f : maybeToList (litType l)) fs
+  DataJunction _ drs -> concatMap basedOn drs
+  DataComplementOf dr' -> basedOn dr'
+  DataOneOf ls -> concatMap (maybeToList . litType) ls
+
 
 -- * CLASS EXPERSSIONS
 

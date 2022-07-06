@@ -853,15 +853,12 @@ class (StaticAnalysis lid
          -- no logic should throw an error here
          addOmdocToTheory _ _ t _ = return t
 
+         -- | sublogic of a theory
+         sublogicOfTheo :: lid -> (sign, [sentence]) -> sublogics
+         sublogicOfTheo _ (sig, axs) = 
+            foldl lub (minSublogic sig) $ map minSublogic axs
 
--- | sublogic of a theory
-sublogicOfTheo :: (Logic lid sublogics
-        basic_spec sentence symb_items symb_map_items
-        sign morphism symbol raw_symbol proof_tree) =>
-    lid -> (sign, [sentence]) -> sublogics
-sublogicOfTheo _ (sig, axs) =
-  foldl lub (minSublogic sig) $
-  map minSublogic axs
+
 
 
 {- The class of logics which can be used as logical frameworks, in which object

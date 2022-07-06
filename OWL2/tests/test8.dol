@@ -1,4 +1,4 @@
-logic OWL
+logic OWL serialization Functional
 
 spec a = 
 Prefix(:=<http://example.com/#>)

@@ -25,6 +25,23 @@ HC_OPTS += $(HC_WARN) $(HC_PROF) $(GHC_FLAGS)
 
 .DEFAULT_GOAL := hets
 
+# GHA 16 color pallete is junk. So use 256 colors (i.e. BG >= 16). That's much
+# closer to what *x terminals would show.
+#	bold, black, cyan
+COLOR_INFO := \E[1;38;5;0;48;5;80m
+#	bold, red, yellow
+COLOR_WARN := \E[1;38;5;1;48;5;226m
+#	bold, yellow, red
+COLOR_ERROR := \E[1;38;5;226;48;5;196m
+#	# bold, black, green
+COLOR_OK := \E[1;38;5;0;48;5;82m
+COLOR_END := \E[0m
+
+# Testing:
+# If != 0 'make check' and related scripts stop immediately if an error occurs.
+# Otherwise continues until all test have been run and finally the target fails.
+FAIL_EARLY ?= 1
+
 .NOTPARALLEL:
 
 # *.bin variants here to let them survive a 'make clean'
@@ -111,11 +128,12 @@ logics = CASL HasCASL Isabelle Modal Hybrid TopHybrid Temporal \
 TESTTARGETFILES += Scratch.hs CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     Haskell/wrap.hs Isabelle/isa.hs Syntax/hetpa.hs \
     ATC/ATCTest.hs ATC/ATCTest2.hs Common/ATerm/ATermLibTest.hs \
-    Common/ATerm/ATermDiffMain.hs Common/annos.hs \
+    Common/ATerm/ATermDiffMain.hs Common/annos.hs Common/testxmldiff.hs \
     SoftFOL/tests/PrintTPTPTests.hs Comorphisms/test/showKP.hs \
     Comorphisms/test/sublogicGraph.hs PGIP/ParseProofScript.hs \
     Common/testxupdate.hs Common/testxpath.hs \
-    SoftFOL/dfg.hs Adl/adl.hs GUI/displayDependencyGraph.hs
+    SoftFOL/dfg.hs Adl/adl.hs GUI/displayDependencyGraph.hs \
+	OWL2/scripts/runTest.hs
 
 ### list of directories to run checks in
 TESTDIRS += Common CASL Fpl/test HasCASL test ExtModal/Tries \
@@ -503,9 +521,9 @@ check_cgi:
 %-opt: HC_OPTS += -O
 
 # the variant without GUI
-hets_server hets_server-opt: HASKELINE_PACKAGE :=
-hets_server hets_server-opt: GLADE_PACKAGE :=
-hets_server hets_server-opt: UNI_PACKAGE :=
+hets_server hets_server-opt check $(TESTTARGETS): HASKELINE_PACKAGE :=
+hets_server hets_server-opt check $(TESTTARGETS): GTK_PACKAGE :=
+hets_server hets_server-opt check $(TESTTARGETS): UNI_PACKAGE :=
 hets_server hets_server-opt: check_server $(derived_sources)
 	@touch .hets_server
 	$(HC) --make $(HC_OPTS) -o hets_server hets.hs
@@ -524,7 +542,12 @@ hets_cgi hets_cgi-opt: check_cgi GUI/hets_cgi.hs $(derived_sources)
 	$(HC) --make $(HC_OPTS) -o hets.cgi GUI/hets_cgi.hs
 	@ln -f hets.cgi hets_cgi.bin
 
-derivedSources: $(derived_sources)
+# For tests: Usually hets_server as well as hets[_desktop] are ok for testing.
+# Thus we avoid re-building one or the other by not adding a hard dep here.
+hets_available:
+	@[[ ! -x hets ]] && { [[ -x hets_server ]] && ln -s hets_server hets ; } \
+		|| true
+	@[[ ! -x hets ]] && { echo 'Build hets_server first' && return 1 ; } || true
 
 TEX_FILES := $(wildcard doc/*.tex doc/*.png doc/*.dot doc/*.sty doc/*.eps)
 doc/UserGuide.pdf: $(TEX_FILES)
@@ -621,8 +644,11 @@ clean_pretty:
 			pretty/generated_words.tex \
 		test/*/*.{thy,pp.dol,pp.tex,th,dfg.c,xml,log,dvi,aux,sty} \
 			test/*/log */test/temp* ToHaskell/test/*.{out,output} \
-			ExtModal/Tries/*.{pp.dol,th} Fpl/test/*.{pp.dol,th} \
-			CommonLogic/TestData/*.{pp.dol,th} Common/testxmldiff \
+		ExtModal/Tries/*.{pp.dol,th} Fpl/test/*.{pp.dol,th} \
+		CommonLogic/TestData/*.{pp.dol,th} Common/testxmldiff \
+		OWL2/tests/*.pp* OWL2/tests/*_*.omn OWL2/tests/*_*.th \
+		Static/test/*.xupdate3* Static/test/*.{dol.bak,xh,xhi,xml} \
+			Static/test/patch \
 		doc/UserGuide.{log,aux,bbl,blg,out,fdb_latexmk,fls} doc/hs2isa.ps \
 			$(USER_GUIDE) log.haddock \
 		debian/{root,files,hets-*,tmp} \
@@ -683,9 +709,18 @@ h2h: Haskell/h2h
 ### test program to check the known provers
 showKP: Comorphisms/test/showKP
 
-### run tests in other directories
-check: $(TESTTARGETS)
-	for i in $(TESTDIRS); do $(MAKE) -C $$i check; done
+### run tests in other directories. No deps to $(TESTTARGETS) because
+### Makefile in the subdirs would re-make them anyway
+check: hets_available
+	@FAIL=; \
+	for i in $(TESTDIRS) ; do \
+		printf "Test: ${COLOR_INFO}  $(MAKE) -C $$i check  ${COLOR_END}\n"; \
+		FAIL_EARLY=$(FAIL_EARLY) $(MAKE) -C $$i check && \
+			printf "${COLOR_OK}  OK  ${COLOR_END}\n" && continue ; \
+		(( $(FAIL_EARLY) )) && return 99 ; \
+		printf "${COLOR_ERROR}  FAILED  ${COLOR_END}\n" && FAIL=1 ; \
+	done ; \
+	[[ -n $${FAIL} ]] && return 1 || return 0
 
 test:
 	yes X | $(MAKE) check
