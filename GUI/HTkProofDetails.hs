@@ -106,7 +106,7 @@ indent :: Int -- ^ number of spaces
        -> String -- ^ input String
        -> Pretty.Doc -- ^ output document
 indent numSp st =
-  Pretty.text (replicate numSp ' ') Pretty.<>
+  Pretty.text (replicate numSp ' ') <>
     (Pretty.vcat . map Pretty.text . lines) st
 
 {- |

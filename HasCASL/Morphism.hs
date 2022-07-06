@@ -176,7 +176,7 @@ compMor m1 m2 = let
       { typeIdMap = ctm
       , classIdMap = ccm
       , funMap = Map.intersection
-          (Map.foldWithKey ( \ p1@(i, sc) p2 ->
+          (Map.foldrWithKey ( \ p1@(i, sc) p2 ->
                        let p3 = mapFunSym ccm tm tm2 fm2 p2
                            nSc = mapTypeScheme ccm tm ctm sc
                        in if (i, nSc) == p3 then Map.delete p1 else
@@ -270,17 +270,17 @@ morphismToSymbMap mor = let
     im = typeIdMap mor
     jm = classIdMap mor
     tm = filterAliases $ typeMap tar
-    classSymMap = Map.foldWithKey ( \ i ti ->
+    classSymMap = Map.foldrWithKey ( \ i ti ->
        let j = Map.findWithDefault i i jm
            k = rawKind ti
            in Map.insert (idToClassSymbol i k)
                $ idToClassSymbol j k) Map.empty $ classMap src
-    typeSymMap = Map.foldWithKey ( \ i ti ->
+    typeSymMap = Map.foldrWithKey ( \ i ti ->
        let j = Map.findWithDefault i i im
            k = typeKind ti
            in Map.insert (idToTypeSymbol i k)
                $ idToTypeSymbol j k) classSymMap $ typeMap src
-   in Map.foldWithKey
+   in Map.foldrWithKey
          ( \ i s m ->
              Set.fold ( \ oi ->
              let ty = opType oi

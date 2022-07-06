@@ -155,7 +155,7 @@ trMor mp =
         pt = PredType {predArgs = []}
         id2Id = tok2Id . mkSimpleId . show
     in
-      Map.foldWithKey
+      Map.foldrWithKey
              (\ k a ->
               Map.insert (id2Id k, pt) $ id2Id a
              )

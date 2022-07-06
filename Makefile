@@ -588,9 +588,7 @@ docs: $(derived_sources) $(STACK_UPGRADE_TARGET)
 $(DRIFT): $(DRIFT_deps)
 	cd utils/DrIFT-src; $(HC) --make -o ../DrIFT DrIFT.hs
 
-$(DTD2HS): $(DTD2HS_deps) utils/DtdToHaskell-src/DtdToHaskell.hs
-	@mkdir -p utils/DtdToHaskell-src/DtdToHaskell
-	@cp -f $(DTD2HS_deps) utils/DtdToHaskell-src/DtdToHaskell
+$(DTD2HS): utils/DtdToHaskell-src/DtdToHaskell.hs
 	$(HC) --make $(HC_OPTS) -iutils/DtdToHaskell-src -o $@ \
             utils/DtdToHaskell-src/DtdToHaskell.hs
 
@@ -650,7 +648,7 @@ clean_pretty:
 		CommonLogic/TestData/*.{pp.dol,th} Common/testxmldiff \
 		OWL2/tests/*.pp* OWL2/tests/*_*.omn OWL2/tests/*_*.th \
 		Static/test/*.xupdate3* Static/test/*.{dol.bak,xh,xhi,xml} \
-			Static/test/patch
+			Static/test/patch \
 		doc/UserGuide.{log,aux,bbl,blg,out,fdb_latexmk,fls} doc/hs2isa.ps \
 			$(USER_GUIDE) log.haddock \
 		debian/{root,files,hets-*,tmp} \

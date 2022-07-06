@@ -131,10 +131,10 @@ inducedFromMorphismExt extInd extEm rmap sigma = do
                 return $ if s' == s then m1 else Map.insert s s' m1)
               (return Map.empty) (sortSet sigma)
   -- compute the op map (as a Map)
-  op_Map <- Map.foldWithKey (opFun sigma rmap sort_Map)
+  op_Map <- Map.foldrWithKey (opFun sigma rmap sort_Map)
               (return Map.empty) (MapSet.toMap $ opMap sigma)
   -- compute the pred map (as a Map)
-  pred_Map <- Map.foldWithKey (predFun sigma rmap sort_Map)
+  pred_Map <- Map.foldrWithKey (predFun sigma rmap sort_Map)
               (return Map.empty) (MapSet.toMap $ predMap sigma)
   em <- extEm rmap $ extendedInfo sigma
   -- return assembled morphism

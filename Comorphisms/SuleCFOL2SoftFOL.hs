@@ -131,7 +131,7 @@ deleteSPId i t m =
 
 -- | specialized elems into a set for IdTypeSPIdMap
 elemsSPIdSet :: IdTypeSPIdMap -> Set.Set SPIdentifier
-elemsSPIdSet = Map.fold (\ m res -> Set.union res
+elemsSPIdSet = Map.foldr (\ m res -> Set.union res
                                       (Set.fromList (Map.elems m)))
                          Set.empty
 
@@ -187,7 +187,7 @@ instance Show a => Comorphism (GenSuleCFOL2SoftFOL a)
 transFuncMap :: IdTypeSPIdMap ->
                 CSign.Sign e f ->
                 (FuncMap, IdTypeSPIdMap)
-transFuncMap idMap sign = Map.foldWithKey toSPOpType (Map.empty, idMap)
+transFuncMap idMap sign = Map.foldrWithKey toSPOpType (Map.empty, idMap)
   . MapSet.toMap $ CSign.opMap sign
     where toSPOpType iden typeSet (fm, im) =
               if isSingleton typeSet then
@@ -211,7 +211,7 @@ transFuncMap idMap sign = Map.foldWithKey toSPOpType (Map.empty, idMap)
 transPredMap :: IdTypeSPIdMap -> CSign.Sign e f
   -> (SPSign.PredMap, IdTypeSPIdMap)
 transPredMap idMap sign =
-    Map.foldWithKey toSPPredType (Map.empty, idMap) . MapSet.toMap
+    Map.foldrWithKey toSPPredType (Map.empty, idMap) . MapSet.toMap
       $ CSign.predMap sign
     where toSPPredType iden typeSet (fm, im) =
               if isSingleton typeSet then
@@ -467,7 +467,7 @@ mkInjOp _ _ = error "SuleCFOL2SoftFOL.mkInjOp: Wrong constructor!!"
 mkInjSentences :: IdTypeSPIdMap
                -> FuncMap
                -> [Named SPTerm]
-mkInjSentences idMap = Map.foldWithKey genInjs []
+mkInjSentences idMap = Map.foldrWithKey genInjs []
     where genInjs k tset fs = Set.fold (genInj k) fs tset
           genInj k (args, res) =
               assert (length args == 1)

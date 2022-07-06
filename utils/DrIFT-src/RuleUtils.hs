@@ -12,6 +12,7 @@ utilities for writing new rules.
 
 module RuleUtils where
 
+import Prelude hiding ((<>))
 import Text.PrettyPrint.HughesPJ
 import DataP (Statement (..), Data (..), Type (..), Class,
               Body (..), Constructor)

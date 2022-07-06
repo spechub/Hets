@@ -6,7 +6,7 @@
     <property name="classesdir" value="${builddir}/classes"/>
     <property name="target-vm"  value="1.7"/>
     <property name="owlapi-jars" value="
-      lib/owlapi-distribution-5.1.19.jar
+      lib/owlapi-distribution-4.5.20.jar
       lib/caffeine-2.8.6.jar
       lib/commons-codec-1.11.jar
       lib/commons-io-2.7.jar

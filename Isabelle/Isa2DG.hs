@@ -124,7 +124,7 @@ mkNode (dg, m) (name, header', imps, keywords', uses', body) =
                                             (map (\ (n', _, _, _) -> n') fsigs)
                   _ -> ""
              in makeNamed name' sen) body
-     sgns = Map.foldWithKey (\ k a l ->
+     sgns = Map.foldrWithKey (\ k a l ->
              if elem k imps then snd a : l else l) [] m
      sgn = foldl union_sig (emptySign { imports = imps,
                                          header = header',

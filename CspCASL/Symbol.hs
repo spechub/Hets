@@ -258,7 +258,7 @@ toRawSymbol r = case r of
 
 splitSymbolMap :: Map.Map CspRawSymbol CspRawSymbol
   -> (RawSymbolMap, Map.Map CspRawSymbol CspRawSymbol)
-splitSymbolMap = Map.foldWithKey (\ s t (cm, ccm) ->
+splitSymbolMap = Map.foldrWithKey (\ s t (cm, ccm) ->
   case (toRawSymbol s, toRawSymbol t) of
     (Just c, Just d) -> (Map.insert c d cm, ccm)
     _ -> (cm, Map.insert s t ccm)) (Map.empty, Map.empty)

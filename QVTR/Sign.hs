@@ -65,9 +65,9 @@ instance Pretty Sign where
     $++$
     text "Definition of Relations"
     $+$
-    Map.fold (($+$) . pretty) empty topRel
+    Map.foldr (($+$) . pretty) empty topRel
     $+$
-    Map.fold (($+$) . pretty) empty nonRel
+    Map.foldr (($+$) . pretty) empty nonRel
     $++$
     text "Definition of Keys"
     $+$

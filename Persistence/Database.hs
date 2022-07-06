@@ -15,6 +15,7 @@ import Control.Monad.IO.Class
 import Control.Monad.Trans.Control
 import Control.Monad.Trans.Reader
 import Control.Monad.Logger
+import Control.Monad.IO.Unlift
 
 import Data.List (intercalate, isInfixOf)
 import Data.Text (Text, pack)
@@ -25,6 +26,7 @@ type DBMonad m a = ReaderT SqlBackend m a
 
 onDatabase :: ( MonadIO m
               , MonadBaseControl IO m
+              , MonadUnliftIO m
               )
            => DBConfig
            -> DBMonad (NoLoggingT m) a
@@ -37,6 +39,7 @@ onDatabase dbConfig f = do
 
 runFullMigrationSet :: forall m . ( MonadBaseControl IO m
                                   , MonadIO m
+                                  , MonadUnliftIO m
                                   )
                     => DBConfig -> DBMonad m ()
 runFullMigrationSet dbConfig =

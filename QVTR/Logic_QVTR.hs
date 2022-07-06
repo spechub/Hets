@@ -34,9 +34,10 @@ type Morphism = DefaultMorphism Sign
 
 -- QVTR logic
 
+instance Semigroup Transformation where
+  _ <>_ = error "Not implemented!"
 instance Monoid Transformation where
   mempty = error "Not implemented!"
-  mappend _ _ = error "Not implemented!"
 
 instance Sentences QVTR
   Sen

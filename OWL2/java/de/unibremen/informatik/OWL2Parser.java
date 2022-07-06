@@ -480,7 +480,7 @@ public class OWL2Parser {
 				append("<Loaded name=\"")
 					.append(manager.getOntologyDocumentIRI(onto))
 					.append("\" ontiri=\"")
-					.append(onto.getOntologyID().getOntologyIRI().orElse(null))
+					.append(onto.getOntologyID().getOntologyIRI().orNull())
 					.append("\"/>\n");
 			} catch (Exception ex) {
 				System.err.println("Error by XMLParser!");
@@ -500,8 +500,13 @@ public class OWL2Parser {
 		}
 
 		void renderAsRdf(OWLOntology onto) {
-			RDFXMLRenderer rdfrend = new RDFXMLRenderer(onto, new PrintWriter(this));
-			rdfrend.render();
+      try {
+        RDFXMLRenderer rdfrend = new RDFXMLRenderer(onto, new PrintWriter(this));
+        rdfrend.render();
+      } catch (IOException ex) {
+				System.err.println("Error by RDFParser!");
+				ex.printStackTrace();
+			}
 		}
 	}
 }
