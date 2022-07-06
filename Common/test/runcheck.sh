@@ -1,20 +1,27 @@
-#!/bin/sh
+#!/bin/ksh93
+
+SD=$( cd ${ dirname $0; }; printf "$PWD" )
+BD=${SD%/*/*}
 
 PA=$1
 SET=$2
-ANNOS=../../Common/test/Empty.annos
+ANNOS=${BD}/Common/test/Empty.annos
 
-. ../../Common/test/checkFunctions.sh
+. ${BD}/Common/test/checkFunctions.sh
 
-for i in *.annos Annotations.casl
-do
-  echo "processing $i"
-  runchecker "Annotations" $i $i.output
-  runchecker "Annos" $i $i.perLine.output
-  runchecker "GlobalAnnos" $i $i.global.output
+cd ${SD} || return 99
+
+for F in ~(N)*.annos Annotations.casl ; do
+	print "Processing $F ..."
+	runchecker "Annotations" $F ${F}.output || addErr
+	runchecker "Annos" $F ${F}.perLine.output || addErr
+	runchecker "GlobalAnnos" $F ${F}.global.output || addErr
 done
 
-runmycheck MixIds casl
-runwrongcheck MixIds casl
-runchecker SortIds MixIds.casl MixIds.casl.asSortIds.output
-runchecker VarIds MixIds.casl MixIds.casl.asVarIds.output 
+runmycheck MixIds casl || addErr
+runwrongcheck MixIds casl || addErr
+runchecker SortIds MixIds.casl MixIds.casl.asSortIds.output || addErr
+runchecker VarIds MixIds.casl MixIds.casl.asVarIds.output || addErr
+
+errorMsg ${ERR} "${.sh.file}"
+(( ! ERR ))

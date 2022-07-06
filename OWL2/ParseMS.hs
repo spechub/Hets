@@ -32,6 +32,7 @@ import qualified Common.GlobalAnnotations as GA (PrefixMap)
 import Text.ParserCombinators.Parsec
 
 import Data.Char
+import Data.Maybe (isJust)
 import qualified Data.Map as Map (fromList, unions)
 import Data.Either (partitionEithers)
 import Control.Monad (liftM2, unless)
@@ -58,7 +59,7 @@ characters = [minBound .. maxBound]
 
 -- | OWL and CASL structured keywords including 'andS' and 'notS'
 owlKeywords :: [String]
-owlKeywords = notS : stringS : map show entityTypes
+owlKeywords = endS : notS : stringS : map show entityTypes
   ++ map show characters ++ keywords ++ criticalKeywords
 
 ncNameStart :: Char -> Bool
@@ -95,9 +96,11 @@ expUriP :: GA.PrefixMap -> CharParser st IRI
 expUriP pm = uriP >>= return . expandIRI pm
 
 uriP :: CharParser st IRI
-uriP = skips $ try $ checkWithUsing showIRI uriQ $ \ q -> let p = prefixName q in
-  if not $ isAbbrev q then True else
-   if null p then notElem (show $ iriPath q) owlKeywords
+uriP = skips $ try $ do
+  colonM <- optionMaybe . try . lookAhead $ char ':'
+  checkWithUsing (\i -> "keyword \"" ++ showIRI i ++ "\"") uriQ $ \ q -> let p = prefixName q in
+    if not (isAbbrev q) || isJust colonM then True
+    else if null p then notElem (iFragment q) owlKeywords
     else notElem p $ map (takeWhile (/= ':'))
         $ colonKeywords
         ++ [ show d ++ e | d <- equivOrDisjointL, e <- [classesC, propertiesC]]
@@ -107,6 +110,8 @@ datatypeKey :: GA.PrefixMap -> CharParser st IRI
 datatypeKey pm = mkIRI <$> (choice $ map (try . keyword) datatypeKeys) >>=
     return . expandIRI pm . setPrefix "xsd"
   
+dataPropertyExpr :: GA.PrefixMap -> CharParser st DataPropertyExpression
+dataPropertyExpr = expUriP
 
 datatypeUri :: GA.PrefixMap -> CharParser st IRI
 datatypeUri pm = datatypeKey pm <|> expUriP pm
@@ -356,6 +361,17 @@ mkObjectJunction ty ds = case nubOrd ds of
   [x] -> x
   ns -> ObjectJunction ty ns
 
+dataValuesFrom :: GA.PrefixMap -> CharParser st ClassExpression
+dataValuesFrom pm = try $ do
+    dpExprs <- parensP $ do
+      dpExpr <- dataPropertyExpr pm
+      commaP
+      dpExprs <- sepByComma (dataPropertyExpr pm)
+      return (dpExpr : dpExprs)
+    s <- someOrOnly
+    dp <- dataPrimary pm
+    return $ DataValuesFrom s dpExprs dp
+
 restrictionAny :: GA.PrefixMap -> ObjectPropertyExpression -> CharParser st ClassExpression
 restrictionAny pm opExpr = do
       pkeyword valueS
@@ -401,10 +417,10 @@ restrictionAny pm opExpr = do
              _ -> unexpected $ "dataRange after " ++ showCardinalityType c
 
 restriction :: GA.PrefixMap -> CharParser st ClassExpression
-restriction pm = objectPropertyExpr pm >>= restrictionAny pm
+restriction pm = dataValuesFrom pm <|> (objectPropertyExpr pm >>= restrictionAny pm)
 
 restrictionOrAtomic :: GA.PrefixMap -> CharParser st ClassExpression
-restrictionOrAtomic pm = do
+restrictionOrAtomic pm = dataValuesFrom pm <|> do
     opExpr <- objectPropertyExpr pm
     restrictionAny pm opExpr <|> case opExpr of
        ObjectProp euri -> return $ Expression euri
@@ -478,12 +494,13 @@ descriptionAnnotatedList pm = sepByComma $ optAnnos pm (description pm)
 annotationPropertyFrame :: GA.PrefixMap -> CharParser st [Axiom]
 annotationPropertyFrame pm = do
     pkeyword annotationPropertyC
+    annos <- optionalAnnos pm
     ap <- (expUriP pm)
-    x <- many $ try $ apBit pm ap
-    return $ Declaration [] (mkEntity AnnotationProperty ap) : concat x
+    x <- many $ try $ apSection pm ap
+    return $ Declaration annos (mkEntity AnnotationProperty ap) : concat x
 
-apBit :: GA.PrefixMap -> AnnotationProperty -> CharParser st [Axiom]
-apBit pm p = do
+apSection :: GA.PrefixMap -> AnnotationProperty -> CharParser st [Axiom]
+apSection pm p = do
     pkeyword subPropertyOfC
     as <- sepByComma $ optAnnos pm (expUriP pm)
     return $ map (\(ans, i) -> AnnotationAxiom $ SubAnnotationPropertyOf ans p i) as
@@ -501,6 +518,7 @@ apBit pm p = do
 parseDatatypeFrame :: GA.PrefixMap -> CharParser st [Axiom]
 parseDatatypeFrame pm = do
     pkeyword datatypeC
+    annos <- optionalAnnos pm
     iri <- datatypeUri pm
     axs <- option [] (try $ (do
         pkeyword equivalentToC
@@ -508,19 +526,22 @@ parseDatatypeFrame pm = do
         range <- dataRange pm
         return [DatatypeDefinition (concat ans) iri range]
       ) <|> parseAnnotationAssertions pm (AnnSubIri iri))
-    return $ Declaration [] (mkEntity Datatype iri) : axs
+    return $ Declaration annos (mkEntity Datatype iri) : axs
 
 classFrame :: GA.PrefixMap -> CharParser st [Axiom]
 classFrame pm = do
     pkeyword classC
-    i <- expUriP pm
-    axs <- many $ classFrameBit pm i
+    annos <- optionalAnnos pm
+    desc <- description pm
+    axs <- many $ classFrameSection pm desc
     -- ignore Individuals: ... !
     -- optional $ pkeyword individualsC >> sepByComma (individual pm)
-    return $ Declaration [] (mkEntity Class i) : concat axs
+    return $ case desc of
+      Expression i -> Declaration annos (mkEntity Class i) : concat axs
+      _ -> concat axs
 
-classFrameBit :: GA.PrefixMap -> IRI -> CharParser st [Axiom]
-classFrameBit pm i = let e = Expression i in
+classFrameSection :: GA.PrefixMap -> ClassExpression -> CharParser st [Axiom]
+classFrameSection pm e =
   do
     pkeyword subClassOfC
     ds <- descriptionAnnotatedList pm
@@ -537,7 +558,8 @@ classFrameBit pm i = let e = Expression i in
     pkeyword disjointUnionOfC
     as <- optionalAnnos pm
     ds <- sepByComma $ description pm
-    return [ClassAxiom $ DisjointUnion as i ds]
+    return [ClassAxiom $ DisjointClasses as (e : ds)]
+      
   <|> do
     pkeyword hasKeyC
     as <- optionalAnnos pm
@@ -549,7 +571,9 @@ classFrameBit pm i = let e = Expression i in
     pkeyword "Individuals:"
     sepByComma $ individual pm
     return []
-  <|> parseAnnotationAssertions pm (AnnSubIri i)
+  <|> case e of
+    Expression i -> parseAnnotationAssertions pm (AnnSubIri i)
+    _ -> unexpected "Annotation for class expression"
 
 parseAnnotationAssertions :: GA.PrefixMap -> AnnotationSubject -> CharParser st [Axiom]
 parseAnnotationAssertions pm s = do
@@ -559,8 +583,8 @@ parseAnnotationAssertions pm s = do
 objPropExprAList :: GA.PrefixMap -> CharParser st [(Annotations, ObjectPropertyExpression)]
 objPropExprAList pm = sepByComma $ optAnnos pm $ objectPropertyExpr pm
 
-objectPropertyFrameBit :: GA.PrefixMap -> ObjectPropertyExpression -> CharParser st [Axiom]
-objectPropertyFrameBit pm oe =
+objectPropertyFrameSection :: GA.PrefixMap -> ObjectPropertyExpression -> CharParser st [Axiom]
+objectPropertyFrameSection pm oe =
   do
     pkeyword domainC
     ds <- descriptionAnnotatedList pm
@@ -601,18 +625,19 @@ objectPropertyFrameBit pm oe =
 objectPropertyFrame :: GA.PrefixMap -> CharParser st [Axiom]
 objectPropertyFrame pm = do
     pkeyword objectPropertyC
+    annos <- optionalAnnos pm
     oe <- objectPropertyExpr pm
-    bits <- many $ objectPropertyFrameBit pm oe
+    sections <- many $ objectPropertyFrameSection pm oe
     return $ case oe of
-      ObjectProp i -> Declaration [] (mkEntity ObjectProperty i) : concat bits
-      _ -> concat bits
+      ObjectProp i -> Declaration annos (mkEntity ObjectProperty i) : concat sections
+      _ -> concat sections
 
 dataPropExprAList :: GA.PrefixMap -> CharParser st [(Annotations, DataPropertyExpression)]
 dataPropExprAList pm = sepByComma $ (optAnnos pm) (expUriP pm)
 
 
-dataFrameBit :: GA.PrefixMap -> DataPropertyExpression -> CharParser st [Axiom]
-dataFrameBit pm de = do
+dataFrameSection :: GA.PrefixMap -> DataPropertyExpression -> CharParser st [Axiom]
+dataFrameSection pm de = do
     pkeyword domainC
     ds <- descriptionAnnotatedList pm
     return $ map (\(anns, desc) -> DataPropertyAxiom $ DataPropertyDomain anns de desc) ds
@@ -642,9 +667,10 @@ dataFrameBit pm de = do
 dataPropertyFrame :: GA.PrefixMap -> CharParser st [Axiom]
 dataPropertyFrame pm = do
     pkeyword dataPropertyC
+    annos <- optionalAnnos pm
     duri <- expUriP pm
-    bits <- many $ dataFrameBit pm duri 
-    return $ Declaration [] (mkEntity DataProperty duri) : concat bits
+    sections <- many $ dataFrameSection pm duri 
+    return $ Declaration annos (mkEntity DataProperty duri) : concat sections
 
 fact :: GA.PrefixMap -> Individual -> CharParser st Assertion
 fact pm i = do
@@ -665,8 +691,8 @@ fact pm i = do
             else ObjectPropertyAssertion
         return $ assertion anns o i t
 
-iFrameBit :: GA.PrefixMap -> Individual -> CharParser st [Axiom]
-iFrameBit pm i = do
+iFrameSection :: GA.PrefixMap -> Individual -> CharParser st [Axiom]
+iFrameSection pm i = do
     pkeyword typesC
     ds <- descriptionAnnotatedList pm
     return $ map (\(ans, d) -> Assertion $ ClassAssertion ans d i) ds
@@ -687,9 +713,10 @@ iFrameBit pm i = do
 individualFrame ::GA.PrefixMap -> CharParser st [Axiom]
 individualFrame pm = do
     pkeyword individualC
+    annos <- optionalAnnos pm
     iuri <- individual pm
-    axs <- many $ iFrameBit pm iuri
-    return $ Declaration [] (mkEntity NamedIndividual iuri) :concat axs
+    axs <- many $ iFrameSection pm iuri
+    return $ Declaration annos (mkEntity NamedIndividual iuri) :concat axs
 
 parseEquivalentClasses :: GA.PrefixMap -> CharParser st ClassAxiom
 parseEquivalentClasses pm = do
@@ -808,7 +835,7 @@ parseDataPropertyAtom pm pre = do
 
 parseSameIndividualsAtom :: GA.PrefixMap -> CharParser st Atom
 parseSameIndividualsAtom pm = do
-  pkeyword sameIndividualC
+  pkeyword sameAsS
   parensP $ do 
     iarg1 <- parseIArg pm
     commaP
@@ -817,7 +844,7 @@ parseSameIndividualsAtom pm = do
   
 parseDifferentIndividualsAtom :: GA.PrefixMap -> CharParser st Atom
 parseDifferentIndividualsAtom pm = do
-  pkeyword differentFromC
+  pkeyword differentFromS
   parensP $ do
     iarg1 <- parseIArg pm
     commaP
@@ -860,8 +887,8 @@ parseAtom pm =  parseClassExprAtom pm <|>
     choice $ map try [
       parensP $ parseBuiltInAtom pm pre,
       parensP $ parseClassAtom pm pre,
-      parensP $ parseObjectPropertyAtom pm pre,
       parensP $ parseDataPropertyAtom pm pre,
+      parensP $ parseObjectPropertyAtom pm pre,
       parseDataRangeAtom pm pre,
       parensP $ parseUnknownAtom pm pre]
 

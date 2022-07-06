@@ -60,7 +60,7 @@ parseOWLAux quick fn args = do
     let jar = "OWL2Parser.jar"
     (hasJar, toolPath) <- lift $ check4HetsOWLjar jar
     if hasJar
-      then lift $ executeProcess "java" (["-Djava.util.logging.config.class=JulConfig", "-jar", toolPath </> jar]
+      then lift $ executeProcess "java" (["-Djava.util.logging.config.class=JulConfig", "-Dorg.semanticweb.owlapi.model.parameters.ConfigurationOptions.REPORT_STACK_TRACES=false", "-jar", toolPath </> jar]
         ++ args ++ [fn] ++ ["-qk" | quick]) ""
       else fail $ jar
         ++ " not found, check your environment variable: " ++ hetsOWLenv
@@ -85,13 +85,9 @@ parseProc str = do
     Right el -> let
       es = elChildren el
       mis = concatMap (filterElementsName $ isSmth "Missing") es
-      imap = Map.fromList . mapMaybe (\ e -> do
-        imp <- findAttr (unqual "name") e
-        ont <- findAttr (unqual "ontiri") e
-        return (imp, ont)) $ concatMap (filterElementsName $ isSmth "Loaded") es
       in do
         unless (null mis) . liftR . justWarn () $ "Missing imports: "
             ++ intercalate ", " (map strContent mis)
-        return (imap, unifyDocs . map (xmlBasicSpec imap)
+        return (Map.empty, unifyDocs . map (xmlBasicSpec Map.empty)
                        $ concatMap (filterElementsName $ isSmth "Ontology") es)
 

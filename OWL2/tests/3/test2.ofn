@@ -1,3 +1,4 @@
+#SUBLOGIC=ALCO
 Prefix( : = <http://example.org/> )
 
 Ontology(

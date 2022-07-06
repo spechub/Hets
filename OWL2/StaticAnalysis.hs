@@ -186,8 +186,8 @@ checkClassExpression s desc =
                         return $ AS.DataCardinality
                           $ AS.Cardinality a b iri $ Just dr
                         else datErr iri
-    AS.DataValuesFrom _ dExp r -> checkDataRange s r
-        >> if isDeclDataProp s (head dExp) then return desc else datErr (head dExp)
+    AS.DataValuesFrom _ dExps r -> checkDataRange s r
+        >> if all (isDeclDataProp s) dExps then return desc else datErr (head $ filter (not.isDeclDataProp s) dExps)
     AS.DataHasValue dExp l -> do
         checkLiteral s l
         if isDeclDataProp s dExp then return desc
