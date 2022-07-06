@@ -16,6 +16,8 @@ module NeSyPatterns.Logic_NeSyPatterns where
 
 import Logic.Logic
 
+import OWL2.Logic_OWL2
+
 import NeSyPatterns.Sign
 import NeSyPatterns.Morphism
 import NeSyPatterns.AS
@@ -112,6 +114,7 @@ instance Logic NeSyPatterns
       provers NeSyPatterns = []
       cons_checkers NeSyPatterns = []
       conservativityCheck NeSyPatterns = []
+      data_logic (NeSyPatterns) = Just (Logic OWL2)
 
 -- | Static Analysis for propositional logic
 instance StaticAnalysis NeSyPatterns
