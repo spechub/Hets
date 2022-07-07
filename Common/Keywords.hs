@@ -330,6 +330,9 @@ ontologyS = "ontology"
 networkS :: String
 networkS = "network"
 
+patternS :: String
+patternS = "pattern"
+
 relationS :: String
 relationS = "relation"
 

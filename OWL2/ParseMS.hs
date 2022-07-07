@@ -927,6 +927,12 @@ parseOntology pm = do
     axs <- many $ parseFrame pm
     return $ Ontology ontologyIRI versionIRI imports anns (concat axs)
 
+parseOntologyByIRI :: GA.PrefixMap -> CharParser st Ontology
+parseOntologyByIRI pm = do
+  o <- expUriP pm
+  return $ emptyOntology {mOntologyIRI = Just o}
+  
+
 parsePrefixDeclaration :: CharParser st (String, IRI)
 parsePrefixDeclaration =  do
     pkeyword prefixC
@@ -945,5 +951,6 @@ parseOntologyDocument gapm = do
     prefixes <- many parsePrefixDeclaration
     let pm = Map.unions [gapm, (Map.fromList prefixes), predefPrefixesGA]
     o <- parseOntology pm
-    return $ OntologyDocument (OntologyMetadata MS) pm o
+    o' <-  if o == emptyOntology then parseOntologyByIRI pm else return o
+    return $ OntologyDocument (OntologyMetadata MS) pm o'
 

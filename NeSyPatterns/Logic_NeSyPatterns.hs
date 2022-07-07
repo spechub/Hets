@@ -16,16 +16,21 @@ module NeSyPatterns.Logic_NeSyPatterns where
 
 import Logic.Logic
 
+import OWL2.Logic_OWL2
+
 import NeSyPatterns.Sign
 import NeSyPatterns.Morphism
 import NeSyPatterns.AS
-import NeSyPatterns.Fold
 import NeSyPatterns.Symbol as Symbol
 import NeSyPatterns.Parse
 import NeSyPatterns.Print
 import NeSyPatterns.Analysis
 
 import Common.Id
+import Common.ProofTree
+import ATC.ProofTree ()
+
+import NeSyPatterns.ATC_NeSyPatterns ()
 
 import qualified Data.Map as Map
 import Data.Monoid
@@ -47,16 +52,16 @@ instance Category Sign Morphism where
     -- Returns the codomain of a morphism
     cod = target
     -- check if morphism is inclusion
-    isInclusion = Map.null . propMap
+    isInclusion = Map.null . nodeMap
     -- tests if the morphism is ok
     legal_mor = isLegalMorphism
     -- composition of morphisms
     composeMorphisms = composeMor
 
 -- | Instance of Sentences for propositional logic
-instance Sentences NeSyPatterns FORMULA
+instance Sentences NeSyPatterns ()
     Sign Morphism Symbol where
-    negation NeSyPatterns = Just . negForm nullRange
+    negation NeSyPatterns _ = Just ()
     -- returns the set of symbols
     sym_of NeSyPatterns = singletonList . symOf
     -- returns the symbol map
@@ -65,9 +70,13 @@ instance Sentences NeSyPatterns FORMULA
     sym_name NeSyPatterns = getSymbolName
     symKind NeSyPatterns _ = "prop"
     -- translation of sentences along signature morphism
-    map_sen NeSyPatterns = mapSentence
+    map_sen NeSyPatterns _ = return $ return ()
     -- there is nothing to leave out
-    simplify_sen NeSyPatterns _ = simplify
+    simplify_sen NeSyPatterns _ _ = ()
+
+
+instance Semigroup BASIC_SPEC where
+    (Basic_spec paths1) <> (Basic_spec paths2) = Basic_spec (paths1 ++ paths2)
 
 instance Monoid BASIC_SPEC where
     mempty = Basic_spec []
@@ -84,9 +93,9 @@ instance Syntax NeSyPatterns BASIC_SPEC
 
 -- | Instance of Logic for propositional logc
 instance Logic NeSyPatterns
-    PropSL                    -- Sublogics
+    ()                    -- Sublogics
     BASIC_SPEC                -- basic_spec
-    FORMULA                   -- sentence
+    ()                   -- sentence
     SYMB_ITEMS                -- symb_items
     SYMB_MAP_ITEMS            -- symb_map_items
     Sign                          -- sign
@@ -96,26 +105,21 @@ instance Logic NeSyPatterns
     ProofTree                      -- proof_tree
     where
         -- hybridization
-      parse_basic_sen NeSyPatterns = Just $ const impFormula
+      parse_basic_sen NeSyPatterns = Just . const . return $ ()
       stability NeSyPatterns = Stable
-      top_sublogic NeSyPatterns = Sublogic.top
-      all_sublogics NeSyPatterns = sublogics_all
+      top_sublogic NeSyPatterns = ()
+      all_sublogics NeSyPatterns = []
       empty_proof_tree NeSyPatterns = emptyProofTree
     -- supplied provers
-      provers NeSyPatterns =
-        [zchaffProver, minisatProver Minisat, minisatProver Minisat2, ttProver]
-      cons_checkers NeSyPatterns =
-        [ propConsChecker, minisatConsChecker Minisat
-        , minisatConsChecker Minisat2, ttConsistencyChecker]
-      conservativityCheck NeSyPatterns =
-          [ ConservativityChecker "sKizzo" (checkBinary "sKizzo") conserCheck
-          , ConservativityChecker "Truth Tables" (return Nothing)
-              ttConservativityChecker]
+      provers NeSyPatterns = []
+      cons_checkers NeSyPatterns = []
+      conservativityCheck NeSyPatterns = []
+      data_logic (NeSyPatterns) = Just (Logic OWL2)
 
 -- | Static Analysis for propositional logic
 instance StaticAnalysis NeSyPatterns
     BASIC_SPEC                -- basic_spec
-    FORMULA                   -- sentence
+    ()                   -- sentence
     SYMB_ITEMS                -- symb_items
     SYMB_MAP_ITEMS            -- symb_map_items
     Sign                          -- sign
@@ -125,7 +129,6 @@ instance StaticAnalysis NeSyPatterns
         where
           basic_analysis NeSyPatterns =
               Just basicNeSyPatternsAnalysis
-          sen_analysis NeSyPatterns = Just pROPsen_analysis
           empty_signature NeSyPatterns = emptySig
           is_subsig NeSyPatterns = isSubSigOf
           subsig_inclusion NeSyPatterns s = return . inclusionMap s
@@ -133,59 +136,11 @@ instance StaticAnalysis NeSyPatterns
           symbol_to_raw NeSyPatterns = symbolToRaw
           id_to_raw NeSyPatterns = idToRaw
           matches NeSyPatterns = Symbol.matches
-          stat_symb_items NeSyPatterns _ = mkStatSymbItems
-          stat_symb_map_items NeSyPatterns _ _ = mkStatSymbMapItem
+          stat_symb_items NeSyPatterns = mkStatSymbItems
+          stat_symb_map_items NeSyPatterns = mkStatSymbMapItem
           morphism_union NeSyPatterns = morphismUnion
           induced_from_morphism NeSyPatterns = inducedFromMorphism
           induced_from_to_morphism NeSyPatterns = inducedFromToMorphism
           signature_colimit NeSyPatterns = signatureColimit
 
 -- | Sublogics
-instance SemiLatticeWithTop PropSL where
-    lub = sublogics_max
-    top = Sublogic.top
-
-instance MinSublogic PropSL BASIC_SPEC where
-     minSublogic = sl_basic_spec bottom
-
-instance MinSublogic PropSL Sign where
-    minSublogic = sl_sig bottom
-
-instance SublogicName PropSL where
-    sublogicName = sublogics_name
-
-instance MinSublogic PropSL FORMULA where
-    minSublogic = sl_form bottom
-
-instance MinSublogic PropSL Symbol where
-    minSublogic = sl_sym bottom
-
-instance MinSublogic PropSL SYMB_ITEMS where
-    minSublogic = sl_symit bottom
-
-instance MinSublogic PropSL Morphism where
-    minSublogic = sl_mor bottom
-
-instance MinSublogic PropSL SYMB_MAP_ITEMS where
-    minSublogic = sl_symmap bottom
-
-instance ProjectSublogicM PropSL Symbol where
-    projectSublogicM = prSymbolM
-
-instance ProjectSublogic PropSL Sign where
-    projectSublogic = prSig
-
-instance ProjectSublogic PropSL Morphism where
-    projectSublogic = prMor
-
-instance ProjectSublogicM PropSL SYMB_MAP_ITEMS where
-    projectSublogicM = prSymMapM
-
-instance ProjectSublogicM PropSL SYMB_ITEMS where
-    projectSublogicM = prSymM
-
-instance ProjectSublogic PropSL BASIC_SPEC where
-    projectSublogic = prBasicSpec
-
-instance ProjectSublogicM PropSL FORMULA where
-    projectSublogicM = prFormulaM

@@ -6,6 +6,8 @@ import Common.Id
 import Common.Lexer
 import Common.Parsec
 
+import qualified Common.GlobalAnnotations as GA (PrefixMap)
+
 import NeSyPatterns.AS
 
 import Data.Maybe (isJust, catMaybes)
@@ -35,19 +37,25 @@ symbMapItems = do
     let range = concatMapRange getRange items
     return $ Symb_map_items items range
 
+nesyKeywords :: [String]
+nesyKeywords = [endS]
 
 name :: AParser st Token
-name = wrapAnnos $ pToken (alphaNum <:> many (alphaNum <|> char ':'))
+name = try $ checkWithUsing (\i -> "keyword \"" ++ show i ++ "\"") name' check where
+    startChars = alphaNum <|> char '_'
+    allowedChars = startChars <|> oneOf "-:"
+    name' = wrapAnnos $ pToken (startChars <:> many (allowedChars))
+    check s = show s `notElem` nesyKeywords
 
-ontologyTerm :: AParser st Token
-ontologyTerm = name
+ontologyTermP :: AParser st Token
+ontologyTermP = name
 
 nodeId :: AParser st Token
 nodeId = brackets name
 
 node :: AParser st Node
 node = do
-    otM <- optionMaybe ontologyTerm
+    otM <- optionMaybe ontologyTermP
     idM <- if isJust otM then optionMaybe nodeId else Just <$> nodeId
     let range = catRange . catMaybes $ [otM, idM]
     return $ Node otM idM range
@@ -56,8 +64,8 @@ node = do
 basicItem :: AParser st BASIC_ITEM
 basicItem = Path <$> fst <$> separatedBy node (asKey "->") << anSemi
 
-basicSpec :: AParser st BASIC_SPEC
-basicSpec = Basic_spec <$> annosParser basicItem
+basicSpec :: GA.PrefixMap -> AParser st BASIC_SPEC
+basicSpec _ = Basic_spec <$> annosParser basicItem
 
 
 
