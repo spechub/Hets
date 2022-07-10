@@ -25,24 +25,24 @@ import Persistence.Schema as SchemaClass
 import Persistence.Schema.EvaluationStateType
 
 import Control.Monad.IO.Class (MonadIO (..))
-import qualified Control.Monad.Fail
+import qualified Control.Monad.Fail as Fail
 import Database.Persist
 import Database.Persist.Sql (toSqlKey)
 
-setFileVersionStateOn :: (MonadIO m, Control.Monad.Fail.MonadFail m)
+setFileVersionStateOn :: (MonadIO m, Fail.MonadFail m)
                       => FileVersionId -> EvaluationStateType -> DBMonad m ()
 setFileVersionStateOn fileVersionKey state = do
   Just fileVersionValue <- get fileVersionKey
   update (fileVersionActionId fileVersionValue) [ActionEvaluationState =. state]
   return ()
 
-setFileVersionState :: (MonadIO m, Control.Monad.Fail.MonadFail m)
+setFileVersionState :: (MonadIO m, Fail.MonadFail m)
                     => DBContext -> EvaluationStateType -> DBMonad m ()
 setFileVersionState dbContext state = do
   (Entity fileVersionKey _) <- getFileVersion dbContext
   setFileVersionStateOn fileVersionKey state
 
-getFileVersion :: MonadIO m => DBContext -> DBMonad m (Entity FileVersion)
+getFileVersion :: (MonadIO m, Fail.MonadFail m) => DBContext -> DBMonad m (Entity FileVersion)
 getFileVersion dbContext =
   let fileVersionS = contextFileVersion dbContext in
   if null fileVersionS
@@ -52,7 +52,7 @@ getFileVersion dbContext =
           selectFirst [ FileVersionId ==. toSqlKey
                             (fromIntegral (read fileVersionS :: Integer))] []
         case fileVersionM of
-          Nothing -> fail ("Could not find the FileVersion \"" ++
+          Nothing -> Fail.fail ("Could not find the FileVersion \"" ++
                            fileVersionS ++ "\"")
           Just fileVersion' -> return fileVersion'
 

@@ -41,8 +41,8 @@ data DBConfig = DBConfig { adapter :: Maybe String
 doMigrate :: DBConfig -> Bool
 doMigrate = (Just True ==) . needMigration
 
-instance FromJSON ExtDBConfig
-instance FromJSON DBConfig
+instance Yaml.FromJSON ExtDBConfig
+instance Yaml.FromJSON DBConfig
 
 emptyDBConfig :: DBConfig
 emptyDBConfig = DBConfig { adapter = Nothing

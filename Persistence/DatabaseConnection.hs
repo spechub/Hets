@@ -29,14 +29,14 @@ import Database.Persist.Sql
 defaultPoolSize :: Int
 defaultPoolSize = 4
 
-getConnection :: ( BaseBackend backend ~ SqlBackend
-                 , IsPersistBackend backend
-                 , MonadIO m
+getConnection :: ( -- BaseBackend backend ~ SqlBackend
+                 -- , IsPersistBackend backend
+                   MonadIO m
                  , MonadBaseControl IO m
                  , MonadLogger m
                  , MonadUnliftIO m
                  )
-              => DBConfig -> IO ((Pool backend -> m a) -> m a)
+              => DBConfig -> IO ((Pool SqlBackend -> m a) -> m a)
 getConnection dbConfig = case adapter dbConfig of
 #ifdef MYSQL
   Just "mysql" -> fail mySQLErrorMessage

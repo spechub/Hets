@@ -18,12 +18,13 @@ import Persistence.Utils
 import Database.Esqueleto
 
 import Control.Monad.IO.Class (MonadIO (..))
+import qualified Control.Monad.Fail as Fail
 
 resolve :: HetcatsOpts -> Cache -> String -> IO (Maybe GraphQLResult.Result)
 resolve opts sessionReference locIdVar =
   onDatabase (databaseConfig opts) $ resolveDB locIdVar
 
-resolveDB :: MonadIO m => String -> DBMonad m (Maybe GraphQLResult.Result)
+resolveDB :: (MonadIO m, Fail.MonadFail m) => String -> DBMonad m (Maybe GraphQLResult.Result)
 resolveDB locIdVar = do
   dgraphL <-
     select $ from $ \(documents `InnerJoin` loc_id_bases) -> do
@@ -46,7 +47,7 @@ resolveDB locIdVar = do
               documentLinksSourceResults documentLinksTargetResults omsResults
         DatabaseSchemaEnums.NativeDocument -> do
           omsResult <- case omsResults of
-            [] -> fail ("No OMS found for document " ++ locIdVar)
+            [] -> Fail.fail ("No OMS found for document " ++ locIdVar)
             oms : _ -> return oms
           return $ Just $ GraphQLResult.DGraphResult $
             GraphQLResultDGraph.DGNativeDocument $

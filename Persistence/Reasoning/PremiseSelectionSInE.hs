@@ -27,6 +27,7 @@ import Logic.Prover (toNamed)
 import Static.GTheory
 
 import Control.Monad.IO.Class (MonadIO (..))
+import qualified Control.Monad.Fail as Fail
 import Data.List as List hiding (insert)
 import Data.Map (Map)
 import qualified Data.Map as Map
@@ -336,7 +337,7 @@ selectPremise gTheoryLid triggeredSentence G_SInEResult{..} =
   in  G_SInEResult gTheoryLid parameters symbolCommonnesses' premiseTriggers'
         leastCommonSymbols' selectedPremises' selectedPremiseNames'
 
-saveToDatabase :: MonadIO m
+saveToDatabase :: (MonadIO m, Fail.MonadFail m)
                => HetcatsOpts
                -> G_SInEResult
                -> Entity LocIdBase

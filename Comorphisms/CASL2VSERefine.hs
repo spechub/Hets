@@ -34,6 +34,7 @@ import Common.Result
 import Common.Utils (number)
 import Common.Lib.State
 import qualified Common.Lib.MapSet as MapSet
+import qualified Control.Monad.Fail as Fail
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
@@ -881,7 +882,7 @@ mapCASLTerm n t = case t of
                        foldr1 (\ p1 p2 -> Ranged (Seq p1 p2) nullRange) prgs
                        else Ranged Skip nullRange
    case opsym of
-    Op_name _ -> fail "must be qualified"
+    Op_name _ -> Fail.fail "must be qualified"
     Qual_op_name oName (Op_type _ args res _) _ ->
       case args of
        [] -> return $ Ranged (Assign (genNumVar "x" n)

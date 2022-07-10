@@ -32,14 +32,15 @@ import Common.Utils (composeMap)
 import Common.Lib.MapSet (setToMap)
 
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
-disjointKeys :: (Ord a, Pretty a, Monad m) => Map.Map a b -> Map.Map a c
+disjointKeys :: (Ord a, Pretty a, Fail.MonadFail m) => Map.Map a b -> Map.Map a c
              -> m ()
 disjointKeys m1 m2 = let d = Map.keysSet $ Map.intersection m1 m2 in
-  unless (Set.null d) $ fail $ show
+  unless (Set.null d) $ Fail.fail $ show
          (sep [ text "overlapping identifiers for types and classes:"
               , pretty d])
 

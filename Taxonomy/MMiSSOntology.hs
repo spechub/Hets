@@ -72,6 +72,7 @@ import Data.Graph.Inductive.Basic
 import Common.Lib.Graph
 import qualified Data.Map as Map
 import Common.Taxonomy
+import qualified Control.Monad.Fail as Fail
 
 type ClassName = String
 type ObjectName = String
@@ -97,7 +98,7 @@ weither :: (String -> b) -> (a -> b) -> WithError a -> b
 weither = either
 
 -- | convert to another monad
-fromWithError :: (Monad m) => WithError a -> m a
+fromWithError :: (Fail.MonadFail m) => WithError a -> m a
 fromWithError = either fail return
 
 data RelationProperty = InversOf String | Functional deriving (Eq, Read, Show)

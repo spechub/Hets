@@ -26,6 +26,7 @@ import qualified Common.Lib.Rel as Rel
 import Common.AS_Annotation hiding (Name)
 import Common.Id
 import Common.DefaultMorphism
+import qualified Control.Monad.Fail as Fail
 
 -- * Externally used data structures
 
@@ -345,7 +346,7 @@ instance GetRange TPTP
 data SPLiteral = SPLiteral Bool SPSymbol
   deriving (Show, Eq, Ord, Typeable, Data)
 
-toLiteral :: Monad m => SPTerm -> m SPLiteral
+toLiteral :: (Fail.MonadFail m) => SPTerm -> m SPLiteral
 toLiteral t = case t of
       SPComplexTerm SPNot [SPComplexTerm arg []] ->
           return $ SPLiteral False arg

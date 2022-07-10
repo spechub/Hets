@@ -34,6 +34,7 @@ import Common.SFKT
 import Common.Id
 import Common.IRI
 import Common.Utils (nubOrd)
+import qualified Control.Monad.Fail as Fail
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set

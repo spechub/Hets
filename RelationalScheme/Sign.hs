@@ -42,6 +42,7 @@ import Common.DocUtils
 import Common.Id
 import Common.Result
 import Common.Utils
+import qualified Control.Monad.Fail as Fail
 
 import Data.Data
 import qualified Data.Map as Map
@@ -104,11 +105,11 @@ instance GetRange RSTables
 isRSSubsig :: RSTables -> RSTables -> Bool
 isRSSubsig t1 t2 = t1 <= t2
 
-uniteSig :: (Monad m) => RSTables -> RSTables -> m RSTables
+uniteSig :: (Fail.MonadFail m) => RSTables -> RSTables -> m RSTables
 uniteSig s1 s2 =
     if s1 `isRSSubsig` s2 || s2 `isRSSubsig` s1 || s1 `isDisjoint` s2
     then return $ RSTables $ tables s1 `Set.union` tables s2
-    else fail $ "Tables " ++ showDoc s1 "\nand "
+    else Fail.fail $ "Tables " ++ showDoc s1 "\nand "
              ++ showDoc s2 "\ncannot be united."
 
 type Sign = RSTables

@@ -42,7 +42,7 @@ import Interfaces.Command
 
 import Driver.Options
 
-import Network
+import Network.Socket
 
 import System.IO (Handle)
 

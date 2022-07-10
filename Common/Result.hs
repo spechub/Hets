@@ -57,7 +57,7 @@ import Common.Lexer
 
 import Control.Applicative
 import Control.Monad.Identity
-import qualified Control.Monad.Fail
+import qualified Control.Monad.Fail as Fail
 
 import Data.Data
 import Data.Function
@@ -79,7 +79,8 @@ data Diagnosis = Diag { diagKind :: DiagKind
                       } deriving (Eq, Typeable, Data)
 
 -- | construct a message for a printable item that carries a position
-mkDiag :: (GetRange a, Pretty a) => DiagKind -> String -> a -> Diagnosis
+mkDiag :: (GetRange a,
+ Pretty a) => DiagKind -> String -> a -> Diagnosis
 mkDiag k s a = let q = text "'" in
     Diag k (show $ sep [text s, q <> pretty a <> q]) $ getRangeSpan a
 
@@ -144,7 +145,6 @@ instance Monad Result where
   r@(Result e m) >>= f = case m of
       Nothing -> Result e Nothing
       Just x -> joinResult r $ f x
-  fail s = fatal_error s nullRange
 
 instance Alternative Result where
     (<|>) = mplus
@@ -156,7 +156,7 @@ instance MonadPlus Result where
                                  Nothing -> r2
                                  Just _ -> r1
 
-instance Control.Monad.Fail.MonadFail Result where
+instance Fail.MonadFail Result where
   fail s = fatal_error s nullRange
 
 appendDiags :: [Diagnosis] -> Result ()
@@ -235,7 +235,7 @@ resultToMonad :: Monad m => String -> Result a -> m a
 resultToMonad pos r = let ds = diags r in
   case (hasErrors ds, maybeResult r) of
     (False, Just x) -> return x
-    _ -> fail $ pos ++ ' ' : showRelDiags 2 ds
+    _ -> error $ pos ++ ' ' : showRelDiags 2 ds
 
 -- | Propagate errors using the error function
 propagateErrors :: String -> Result a -> a

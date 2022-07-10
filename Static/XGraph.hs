@@ -24,6 +24,7 @@ import Common.Utils (readMaybe)
 import Common.XUpdate (getAttrVal, readAttrVal)
 
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 import Data.Data
 import Data.List
@@ -131,7 +132,7 @@ xGraph xml = do
   xg <- builtXGraph (Map.keysSet initN) edgeMap restN []
   return $ XGraph ln ga i' thmLk (Map.elems initN) xg
 
-builtXGraph :: Monad m => Set.Set String -> EdgeMap -> Map.Map String XNode
+builtXGraph :: Fail.MonadFail m => Set.Set String -> EdgeMap -> Map.Map String XNode
             -> XTree -> m XTree
 builtXGraph ns xls xns xg = if Map.null xls && Map.null xns then return xg
   else do
@@ -147,13 +148,13 @@ builtXGraph ns xls xns xg = if Map.null xls && Map.null xns then return xg
     (Map.difference xns bs) $
        map (\ (m, x) -> (concat $ Map.elems m, x)) (Map.elems bs) : xg
 
-extractXNodes :: Monad m => Element -> m [XNode]
+extractXNodes :: Fail.MonadFail m => Element -> m [XNode]
 extractXNodes = mapM mkXNode . findChildren (unqual "DGNode")
 
-extractXLinks :: Monad m => Element -> m [XLink]
+extractXLinks :: Fail.MonadFail m => Element -> m [XLink]
 extractXLinks = mapM mkXLink . findChildren (unqual "DGLink")
 
-mkXNode :: Monad m => Element -> m XNode
+mkXNode :: Fail.MonadFail m => Element -> m XNode
 mkXNode el = let spcs = unlines . map strContent
                    . concatMap (findChildren $ unqual "Text")
                    $ deepSearch ["Axiom", "Theorem"] el
@@ -181,10 +182,10 @@ mkXNode el = let spcs = unlines . map strContent
         xp1 <- readXPath (nm0 ++ xp0)
         return $ XNode nm { xpath = reverse xp1 } lgN hdSyms spcs $ readCons el
 
-extractNodeName :: Monad m => Element -> m NodeName
+extractNodeName :: Fail.MonadFail m => Element -> m NodeName
 extractNodeName e = liftM parseNodeName $ getAttrVal "name" e
 
-mkXLink :: Monad m => Element -> m XLink
+mkXLink :: Fail.MonadFail m => Element -> m XLink
 mkXLink el = do
   sr <- getAttrVal "source" el
   tr <- getAttrVal "target" el
@@ -217,7 +218,7 @@ readCons el = case findChild (unqual "ConsStatus") el of
   Nothing -> None
   Just c' -> fromMaybe None $ readMaybe $ strContent c'
 
-extractEdgeId :: Monad m => Element -> m EdgeId
+extractEdgeId :: Fail.MonadFail m => Element -> m EdgeId
 extractEdgeId = liftM EdgeId . readAttrVal "XGraph.extractEdgeId" "linkid"
 
 readEdgeId :: String -> EdgeId

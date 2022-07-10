@@ -24,6 +24,7 @@ import Data.Char
 import Data.List
 
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 -- | possible insertions
 data AddChange
@@ -74,12 +75,12 @@ instance Show Change where
   show (Change c p) =
     show p ++ ":" ++ show c
 
-anaXUpdates :: Monad m => String -> m [Change]
+anaXUpdates :: Fail.MonadFail m => String -> m [Change]
 anaXUpdates input = case parseXMLDoc input of
-    Nothing -> fail "cannot parse xupdate file"
+    Nothing -> Fail.fail "cannot parse xupdate file"
     Just e -> anaMods e
 
-anaMods :: Monad m => Element -> m [Change]
+anaMods :: Fail.MonadFail m => Element -> m [Change]
 anaMods = mapM anaXUpdate . elChildren
 
 {- the input element is expected to be one of
@@ -137,22 +138,22 @@ isRemoveQN :: QName -> Bool
 isRemoveQN = hasLocalQN removeS
 
 -- | extract the non-empty attribute value
-getAttrVal :: Monad m => String -> Element -> m String
+getAttrVal :: Fail.MonadFail m => String -> Element -> m String
 getAttrVal n e = case findAttr (unqual n) e of
   Nothing -> failX ("missing " ++ n ++ " attribute") $ elName e
   Just s -> return s
 
 -- | apply a read operation to the extracted value
-readAttrVal :: (Read a, Monad m) => String -> String -> Element -> m a
+readAttrVal :: (Read a, Fail.MonadFail m) => String -> String -> Element -> m a
 readAttrVal err attr = (>>= maybeF err . readMaybe) . getAttrVal attr
 
-maybeF :: Monad m => String -> Maybe a -> m a
-maybeF err = maybe (fail err) return
+maybeF :: Fail.MonadFail m => String -> Maybe a -> m a
+maybeF err = maybe (Fail.fail err) return
 
-getSelectAttr :: Monad m => Element -> m String
+getSelectAttr :: Fail.MonadFail m => Element -> m String
 getSelectAttr = getAttrVal selectS
 
-getNameAttr :: Monad m => Element -> m String
+getNameAttr :: Fail.MonadFail m => Element -> m String
 getNameAttr = getAttrVal "name"
 
 -- | convert a string to a qualified name by splitting at the colon
@@ -163,13 +164,13 @@ str2QName str = let (ft, rt) = break (== ':') str in
     _ -> unqual str
 
 -- | extract text and check for no other children
-getText :: Monad m => Element -> m String
+getText :: Fail.MonadFail m => Element -> m String
 getText e = let s = trim $ strContent e in
   case elChildren e of
     [] -> return s
     c : _ -> failX "unexpected child" $ elName c
 
-getXUpdateText :: Monad m => Element -> m String
+getXUpdateText :: Fail.MonadFail m => Element -> m String
 getXUpdateText e = let
     msg = fail "expected single <xupdate:text> element"
     in case elChildren e of
@@ -180,7 +181,7 @@ getXUpdateText e = let
       in if isXUpdateQN q && u == "text" then getText s else msg
   _ -> msg
 
-anaXUpdate :: Monad m => Element -> m Change
+anaXUpdate :: Fail.MonadFail m => Element -> m Change
 anaXUpdate e = let
   q = elName e
   u = qName q in
@@ -213,16 +214,16 @@ partitionAddChanges = foldr (\ c (as, cs) -> case c of
       AddText s -> (as, mkText s : cs)
       _ -> (as, cs)) ([], [])
 
-failX :: Monad m => String -> QName -> m a
-failX str q = fail $ str ++ ": " ++ showQName q
+failX :: Fail.MonadFail m => String -> QName -> m a
+failX str q = Fail.fail $ str ++ ": " ++ showQName q
 
 -- | check if the element contains no other content
-noContent :: Monad m => Element -> a -> m a
+noContent :: Fail.MonadFail m => Element -> a -> m a
 noContent e a = case elContent e of
   [] -> return a
-  c : _ -> fail $ "unexpected content: " ++ showContent c
+  c : _ -> Fail.fail $ "unexpected content: " ++ showContent c
 
-addXElem :: Monad m => Element -> m AddChange
+addXElem :: Fail.MonadFail m => Element -> m AddChange
 addXElem e = let q = elName e in
   if isXUpdateQN q then case () of
       _ | isTextQN q -> liftM AddText $ getText e

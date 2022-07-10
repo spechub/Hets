@@ -15,14 +15,12 @@ import Data.Maybe
 import Data.Pool (Pool)
 import Database.Persist.Postgresql
 
-connection :: ( BaseBackend backend ~ SqlBackend
-              , IsPersistBackend backend
-              , MonadIO m
+connection :: ( MonadIO m
               , MonadBaseControl IO m
               , MonadLogger m
               , MonadUnliftIO m
               )
-           => DBConfig -> Int -> (Pool backend -> m a) -> m a
+           => DBConfig -> Int -> (Pool SqlBackend -> m a) -> m a
 connection dbConfig defaultPoolSize =
   withPostgresqlPool (connectionString dbConfig) $
     fromMaybe defaultPoolSize $ pool dbConfig

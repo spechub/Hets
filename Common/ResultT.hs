@@ -39,7 +39,6 @@ instance Monad m => Monad (ResultT m) where
           Just a -> do
                 s <- runResultT $ k a
                 return $ joinResult r s
-    fail = ResultT . return . fail
 
 instance Monad m => MFail.MonadFail (ResultT m) where
   fail = ResultT . return . fail

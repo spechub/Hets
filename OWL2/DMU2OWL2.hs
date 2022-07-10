@@ -44,6 +44,7 @@ import OWL2.Extract
 import Text.ParserCombinators.Parsec (eof, runParser)
 
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 import System.Directory
 import System.IO.Unsafe (unsafePerformIO)
@@ -79,9 +80,9 @@ runOntoDMU str = if null str then return "" else do
   removeFile tmpFile
   return out
 
-readOWL :: Monad m => String -> m (Sign, [Named Axiom])
+readOWL :: Fail.MonadFail m => String -> m (Sign, [Named Axiom])
 readOWL str = case runParser (liftM2 const (parseOntologyDocument Map.empty) eof) () "" str of
-  Left er -> fail $ show er
+  Left er -> Fail.fail $ show er
   Right ontoFile -> let
     newont = function Expand (StringMap $ changePrefixMapTypeToString $ prefixDeclaration ontoFile) ontoFile
     newstate = execState (extractSign newont) emptySign

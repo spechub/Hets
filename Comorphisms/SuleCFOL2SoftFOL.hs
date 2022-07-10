@@ -21,6 +21,7 @@ module Comorphisms.SuleCFOL2SoftFOL
 
 import Control.Exception (assert)
 import Control.Monad (foldM)
+import qualified Control.Monad.Fail as Fail
 
 import Logic.Logic as Logic
 import Logic.Comorphism
@@ -981,7 +982,7 @@ typeCheckTerm sign ty m trm =
       _ -> (["unexpected predicate in term: " ++ showDoc trm ""], m, ty)
     _ -> (["unexpected term: " ++ showDoc trm ""], m, ty)
 
-toForm :: Monad m => CASLSign -> RMap -> SPTerm -> m (FORMULA ())
+toForm :: Fail.MonadFail m => CASLSign -> RMap -> SPTerm -> m (FORMULA ())
 toForm sign m t = case t of
     SPQuantTerm q vars frm -> do
         let vs = concatMap getVars vars
@@ -990,7 +991,7 @@ toForm sign m t = case t of
             nvs = mapMaybe (toVar nm) vars
         nf <- toForm sign nm frm
         if null b then return $ Quantification (toQuant q) nvs nf nullRange
-           else fail $ unlines b
+           else Fail.fail $ unlines b
     SPComplexTerm SPEqual [a1, a2] -> do
         t1 <- toTERM m a1
         t2 <- toTERM m a2
@@ -1020,7 +1021,7 @@ toForm sign m t = case t of
            (SPFalse, []) -> return falseForm
            _ -> fail $ "wrong boolean formula: " ++ showDoc t ""
 
-toTERM :: Monad m => RMap -> SPTerm -> m (TERM ())
+toTERM :: Fail.MonadFail m => RMap -> SPTerm -> m (TERM ())
 toTERM m spt = case spt of
   SPComplexTerm (SPCustomSymbol cst) args -> case Map.lookup cst m of
     Just (CVar s, _) | null args -> return $ Qual_var cst s nullRange
@@ -1030,8 +1031,8 @@ toTERM m spt = case spt of
               Just i -> i
               _ -> simpleIdToId cst) (toOP_TYPE ot) nullRange)
         ts nullRange
-    _ -> fail $ "cannot reconstruct term: " ++ showDoc spt ""
-  _ -> fail $ "cannot reconstruct term: " ++ showDoc spt ""
+    _ -> Fail.fail $ "cannot reconstruct term: " ++ showDoc spt ""
+  _ -> Fail.fail $ "cannot reconstruct term: " ++ showDoc spt ""
 
 toQuant :: SPQuantSym -> QUANTIFIER
 toQuant sp = case sp of
@@ -1039,11 +1040,11 @@ toQuant sp = case sp of
   SPExists -> Existential
   _ -> error "toQuant"
 
-toVar :: Monad m => RMap -> SPTerm -> m VAR_DECL
+toVar :: Fail.MonadFail m => RMap -> SPTerm -> m VAR_DECL
 toVar m sp = case sp of
   SPComplexTerm (SPCustomSymbol cst) [] | isVar cst -> case Map.lookup cst m of
     Just (CVar s, _) -> return $ Var_decl [cst] s nullRange
-    _ -> fail $ "unknown variable: " ++ show cst
+    _ -> Fail.fail $ "unknown variable: " ++ show cst
   _ -> fail $ "quantified term as variable: " ++ showDoc sp ""
 
 isVar :: SPIdentifier -> Bool

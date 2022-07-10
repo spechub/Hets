@@ -81,7 +81,7 @@ proveTheory :: Logic lid sublogics
            -> IO ( [ProofStatus proof_tree]
                 , [(Named sentence, ProofStatus proof_tree)])
 proveTheory _ =
-    fromMaybe (\ _ _ -> fail "proveGUI not implemented") . proveGUI
+    fromMaybe (\ _ _ -> error "proveGUI not implemented") . proveGUI
 
 
 {- | applies basic inference to a given node. The result is a theory which is

@@ -51,6 +51,7 @@ import Common.Id
 import Common.LibName
 import Common.ProofUtils
 import Common.Result
+import qualified Control.Monad.Fail as Fail
 
 import Data.Data
 import Data.Maybe
@@ -260,7 +261,7 @@ mkIdComorphism lid sub = InclComorphism
 mkInclComorphism :: (Logic lid sublogics
                            basic_spec sentence symb_items symb_map_items
                            sign morphism symbol raw_symbol proof_tree,
-                     Monad m) =>
+                     Fail.MonadFail m) =>
                     lid -> sublogics -> sublogics
                  -> m (InclComorphism lid sublogics)
 mkInclComorphism lid srcSub trgSub =
@@ -269,7 +270,7 @@ mkInclComorphism lid srcSub trgSub =
       { inclusion_logic = lid
       , inclusion_source_sublogic = srcSub
       , inclusion_target_sublogic = trgSub }
-    else fail ("mkInclComorphism: first sublogic must be a " ++
+    else Fail.fail ("mkInclComorphism: first sublogic must be a " ++
                "subElem of the second sublogic")
 
 instance (Language lid, Eq sublogics, Show sublogics, SublogicName sublogics)
@@ -479,7 +480,7 @@ isRps (Comorphism cid) = rps cid
 
 
 -- | Compose comorphisms
-compComorphism :: Monad m => AnyComorphism -> AnyComorphism -> m AnyComorphism
+compComorphism :: Fail.MonadFail m => AnyComorphism -> AnyComorphism -> m AnyComorphism
 compComorphism (Comorphism cid1) (Comorphism cid2) =
    let l1 = targetLogic cid1
        l2 = sourceLogic cid2
@@ -490,7 +491,7 @@ compComorphism (Comorphism cid1) (Comorphism cid2) =
       if isSubElem (forceCoerceSublogic l1 l2 $ targetSublogic cid1)
             $ sourceSublogic cid2
        then return $ Comorphism (CompComorphism cid1 cid2)
-       else fail $ "Subl" ++ msg ++ " (Expected sublogic "
+       else Fail.fail $ "Subl" ++ msg ++ " (Expected sublogic "
                           ++ sublogicName (sourceSublogic cid2)
                           ++ " but found sublogic "
                           ++ sublogicName (targetSublogic cid1) ++ ")"

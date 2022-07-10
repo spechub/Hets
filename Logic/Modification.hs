@@ -17,6 +17,7 @@ module Logic.Modification where
 import Logic.Logic
 import Logic.Comorphism
 import Common.Result
+import qualified Control.Monad.Fail as Fail
 import Data.Typeable
 
 -- | comorphism modifications
@@ -229,7 +230,7 @@ idModification (Comorphism cid) = Modification (IdModif cid)
 
 -- | vertical compositions of modifications
 
-vertCompModification :: Monad m => AnyModification -> AnyModification
+vertCompModification :: Fail.MonadFail m => AnyModification -> AnyModification
                      -> m AnyModification
 vertCompModification (Modification lid1) (Modification lid2) =
    let cid1 = targetComorphism lid1
@@ -237,17 +238,17 @@ vertCompModification (Modification lid1) (Modification lid2) =
    in
     if language_name cid1 == language_name cid2
     then return $ Modification (VerCompModif lid1 lid2)
-    else fail $ "Comorphism mismatch in composition of" ++ language_name lid1
+    else Fail.fail $ "Comorphism mismatch in composition of" ++ language_name lid1
              ++ "and" ++ language_name lid2
 
 -- | horizontal composition of modifications
 
-horCompModification :: Monad m => AnyModification -> AnyModification
+horCompModification :: Fail.MonadFail m => AnyModification -> AnyModification
                     -> m AnyModification
 horCompModification (Modification lid1) (Modification lid2) =
    let cid1 = sourceComorphism lid1
        cid2 = sourceComorphism lid2
    in if language_name (targetLogic cid1) == language_name (sourceLogic cid2)
       then return $ Modification (HorCompModif lid1 lid2)
-      else fail $ "Logic mismatch in composition of" ++ language_name lid1
+      else Fail.fail $ "Logic mismatch in composition of" ++ language_name lid1
                ++ "and" ++ language_name lid2

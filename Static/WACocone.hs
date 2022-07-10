@@ -33,6 +33,7 @@ import Common.Lib.Graph as Tree
 import Common.ExtSign
 import Common.Result
 import Common.LogicT
+import qualified Control.Monad.Fail as Fail
 
 import Logic.Logic
 import Logic.Comorphism
@@ -339,7 +340,8 @@ commonDesc funDesc n1 n2 = case glb funDesc n1 n2 of
                             Nothing -> maxBounds funDesc n1 n2
 
 -- returns a weakly amalgamable square of lax triangles
-pickSquare :: (MonadPlus t) => Result GMorphism -> Result GMorphism -> t Square
+pickSquare :: (MonadPlus t, Fail.MonadFail t) => Result GMorphism -> Result GMorphism
+  -> t Square
 pickSquare (Result _ (Just phi1@(GMorphism cid1 _ _ _ _)))
            (Result _ (Just phi2@(GMorphism cid2 _ _ _ _))) =
    if isHomogeneous phi1 && isHomogeneous phi2 then
@@ -356,8 +358,8 @@ pickSquare (Result _ (Just phi1@(GMorphism cid1 _ _ _ _)))
           Nothing -> msum $ map return defaultSquare
           Just sqList -> msum $ map return $ sqList ++ defaultSquare
 
-pickSquare (Result _ Nothing) _ = fail "Error computing comorphisms"
-pickSquare _ (Result _ Nothing) = fail "Error computing comorphisms"
+pickSquare (Result _ Nothing) _ = Fail.fail "Error computing comorphisms"
+pickSquare _ (Result _ Nothing) = Fail.fail "Error computing comorphisms"
 
 -- builds the span for which the colimit is computed
 buildSpan :: GDiagram ->
@@ -426,7 +428,8 @@ nrMaxNodes :: Gr a b -> Int
 nrMaxNodes graph = length $ filter (\ n -> outdeg graph n == 0) $ nodes graph
 
 -- | backtracking function for heterogeneous weak amalgamable cocones
-hetWeakAmalgCocone :: (Monad m, LogicT t, MonadPlus (t m)) =>
+hetWeakAmalgCocone :: (Fail.MonadFail m, LogicT t, MonadPlus (t m),
+                      Fail.MonadFail (t m)) =>
                      GDiagram -> Map.Map Int [(Int, G_theory)] -> t m GDiagram
 hetWeakAmalgCocone graph funDesc =
  if nrMaxNodes graph == 1 then return graph

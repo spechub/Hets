@@ -18,6 +18,7 @@ import Common.Id
 import Common.Utils
 import Common.LibName
 import Common.Consistency
+import qualified Control.Monad.Fail as Fail
 
 import Data.Data
 import Data.List
@@ -46,14 +47,14 @@ instance Ord NodeName where
 instance Eq NodeName where
   n1 == n2 = compare n1 n2 == EQ
 
-readXPath :: Monad m => String -> m [XPathPart]
+readXPath :: Fail.MonadFail m => String -> m [XPathPart]
 readXPath = mapM readXPathComp . splitOn '/'
 
-readXPathComp :: Monad m => String -> m XPathPart
+readXPathComp :: Fail.MonadFail m => String -> m XPathPart
 readXPathComp s = case splitAt 5 s of
   ("Spec[", s') -> case readMaybe $ takeWhile (/= ']') s' of
         Just i -> return $ ChildIndex i
-        Nothing -> fail "cannot read nodes ChildIndex"
+        Nothing -> Fail.fail "cannot read nodes ChildIndex"
   _ -> return $ ElemName s
 
 isInternal :: NodeName -> Bool

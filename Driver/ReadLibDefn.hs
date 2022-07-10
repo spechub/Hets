@@ -44,6 +44,7 @@ import Common.ResultT
 import Text.ParserCombinators.Parsec
 
 import Control.Monad.Trans (MonadIO (..))
+import qualified Control.Monad.Fail as Fail
 import Data.List
 
 mimeTypeMap :: [(String, InType)]
@@ -80,7 +81,8 @@ findFiletype :: String -> InType
 findFiletype s =
   maybe GuessIn snd $ find (\ (r, _) -> isInfixOf ('/' : r) s) mimeTypeMap
 
-guessInput :: MonadIO m => HetcatsOpts -> Maybe String -> FilePath -> String
+guessInput :: (MonadIO m, Fail.MonadFail m) =>
+  HetcatsOpts -> Maybe String -> FilePath -> String
   -> m InType
 guessInput opts mr file input =
   let fty1 = guess file (intype opts)
@@ -88,7 +90,7 @@ guessInput opts mr file input =
       fty = joinFileTypes fty1 fty2
   in if elem fty $ GuessIn : DgXml : owlXmlTypes then
     case guessXmlContent (fty == DgXml) input of
-    Left ty -> fail ty
+    Left ty -> Fail.fail ty
     Right ty -> case ty of
       DgXml -> fail "unexpected DGraph xml"
       _ -> return $ joinFileTypes fty ty

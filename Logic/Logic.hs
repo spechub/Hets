@@ -154,6 +154,7 @@ import Data.Monoid
 import Data.Ord
 import Data.Typeable
 import Control.Monad (unless)
+import qualified Control.Monad.Fail as Fail
 
 -- | Stability of logic implementations
 data Stability = Stable | Testing | Unstable | Experimental
@@ -411,8 +412,8 @@ inlineAxioms :: StaticAnalysis lid
 inlineAxioms _ _ = error "inlineAxioms"
 
 -- | fail function for static analysis
-statFail :: (Language lid, Monad m) => lid -> String -> m a
-statFail lid = fail . statErrMsg lid
+statFail :: (Language lid, Fail.MonadFail m) => lid -> String -> m a
+statFail lid = Fail.fail . statErrMsg lid
 
 statError :: Language lid => lid -> String -> a
 statError lid = error . statErrMsg lid
@@ -808,7 +809,7 @@ class (StaticAnalysis lid
 
          export_symToOmdoc :: lid -> OMDoc.NameMap symbol
                            -> symbol -> String -> Result OMDoc.TCElement
-         export_symToOmdoc l _ _ = statFail l "export_symToOmdoc"
+         export_symToOmdoc l _ _ _ = statFail l "export_symToOmdoc"
 
          export_senToOmdoc :: lid -> OMDoc.NameMap symbol
                           -> sentence -> Result OMDoc.TCorOMElement

@@ -124,6 +124,7 @@ import Common.LibName
 import Common.GraphAlgo
 
 import Control.Monad (foldM)
+import qualified Control.Monad.Fail as Fail
 import Data.Maybe
 import Data.Typeable
 import qualified Data.Map as Map
@@ -487,16 +488,16 @@ instance Pretty LogicGraph where
        $+$ vcat (map pretty $ Map.elems $ comorphisms lg)
 
 -- | find a logic in a logic graph
-lookupLogic :: Monad m => String -> String -> LogicGraph -> m AnyLogic
+lookupLogic :: Fail.MonadFail m => String -> String -> LogicGraph -> m AnyLogic
 lookupLogic error_prefix logname logicGraph =
     case Map.lookup logname $ logics logicGraph of
-    Nothing -> fail $ error_prefix ++ "unknown logic: " ++ logname
+    Nothing -> Fail.fail $ error_prefix ++ "unknown logic: " ++ logname
     Just lid -> return lid
 
-lookupCurrentLogic :: Monad m => String -> LogicGraph -> m AnyLogic
+lookupCurrentLogic :: Fail.MonadFail m => String -> LogicGraph -> m AnyLogic
 lookupCurrentLogic msg lg = lookupLogic (msg ++ " ") (currentLogic lg) lg
 
-lookupCurrentSyntax :: Monad m => String -> LogicGraph
+lookupCurrentSyntax :: Fail.MonadFail m => String -> LogicGraph
   -> m (AnyLogic, Maybe IRI)
 lookupCurrentSyntax msg lg = do
   l <- lookupLogic (msg ++ " ") (currentLogic lg) lg
@@ -520,7 +521,7 @@ logicUnion lg l1@(Logic lid1) l2@(Logic lid2) =
          ln2 = language_name lid2
 
 -- | find a comorphism composition in a logic graph
-lookupCompComorphism :: Monad m => [String] -> LogicGraph -> m AnyComorphism
+lookupCompComorphism :: Fail.MonadFail m => [String] -> LogicGraph -> m AnyComorphism
 lookupCompComorphism nameList logicGraph = do
   cs <- mapM lookupN nameList
   case cs of
@@ -545,17 +546,17 @@ lookupCompComorphism nameList logicGraph = do
              $ Map.lookup name (comorphisms logicGraph)
 
 -- | find a comorphism in a logic graph
-lookupComorphism :: Monad m => String -> LogicGraph -> m AnyComorphism
+lookupComorphism :: Fail.MonadFail m => String -> LogicGraph -> m AnyComorphism
 lookupComorphism = lookupCompComorphism . splitOn ';'
 
 -- | find a modification in a logic graph
-lookupModification :: (Monad m) => String -> LogicGraph -> m AnyModification
+lookupModification :: (Fail.MonadFail m) => String -> LogicGraph -> m AnyModification
 lookupModification input lG
         = case parse (parseModif lG << eof) "" input of
-            Left err -> fail $ show err
+            Left err -> Fail.fail $ show err
             Right x -> x
 
-parseModif :: (Monad m) => LogicGraph -> Parser (m AnyModification)
+parseModif :: (Fail.MonadFail m) => LogicGraph -> Parser (m AnyModification)
 parseModif lG = do
   (xs, _) <- separatedBy (vertcomp lG) crossT
   let r = do
@@ -567,7 +568,7 @@ parseModif lG = do
     Nothing -> fail "Illegal empty horizontal composition"
     Just m -> return m
 
-vertcomp :: (Monad m) => LogicGraph -> Parser (m AnyModification)
+vertcomp :: (Fail.MonadFail m) => LogicGraph -> Parser (m AnyModification)
 vertcomp lG = do
   (xs, _) <- separatedBy (pm lG) semiT
   let r = do
@@ -580,31 +581,31 @@ vertcomp lG = do
     Nothing -> fail "Illegal empty vertical composition"
     Just m -> return m
 
-pm :: (Monad m) => LogicGraph -> Parser (m AnyModification)
+pm :: (Fail.MonadFail m) => LogicGraph -> Parser (m AnyModification)
 pm lG = parseName lG <|> bracks lG
 
-bracks :: (Monad m) => LogicGraph -> Parser (m AnyModification)
+bracks :: (Fail.MonadFail m) => LogicGraph -> Parser (m AnyModification)
 bracks lG = do
   oParenT
   modif <- parseModif lG
   cParenT
   return modif
 
-parseIdentity :: (Monad m) => LogicGraph -> Parser (m AnyModification)
+parseIdentity :: (Fail.MonadFail m) => LogicGraph -> Parser (m AnyModification)
 parseIdentity lG = do
   tryString "id_"
   tok <- simpleId
   let name = tokStr tok
   case Map.lookup name (comorphisms lG) of
-    Nothing -> fail $ "Cannot find comorphism" ++ name
+    Nothing -> Fail.fail $ "Cannot find comorphism" ++ name
     Just x -> return $ return $ idModification x
 
-parseName :: (Monad m) => LogicGraph -> Parser (m AnyModification)
+parseName :: (Fail.MonadFail m) => LogicGraph -> Parser (m AnyModification)
 parseName lG = parseIdentity lG <|> do
   tok <- simpleId
   let name = tokStr tok
   case Map.lookup name (modifications lG) of
-    Nothing -> fail $ "Cannot find modification" ++ name
+    Nothing -> Fail.fail $ "Cannot find modification" ++ name
     Just x -> return $ return x
 
 -- * The Grothendieck signature category
@@ -923,8 +924,8 @@ logicGraph2Graph lg =
  }
 
 -- | finds first comorphism with a matching sublogic
-findComorphism :: Monad m => G_sublogics -> [AnyComorphism] -> m AnyComorphism
-findComorphism _ [] = fail "No matching comorphism found"
+findComorphism :: Fail.MonadFail m => G_sublogics -> [AnyComorphism] -> m AnyComorphism
+findComorphism _ [] = Fail.fail "No matching comorphism found"
 findComorphism gsl@(G_sublogics lid sub) (Comorphism cid : rest) =
     let l2 = sourceLogic cid in
     if Logic lid == Logic l2
