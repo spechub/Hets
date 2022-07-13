@@ -38,6 +38,7 @@ Assembles all the logics and comorphisms into a graph.
 
 module Comorphisms.LogicGraph
     ( logicGraph
+    , logicGraphForFile
     , lookupComorphism_in_LG
     , comorphismList
     , inclusionList
@@ -46,8 +47,10 @@ module Comorphisms.LogicGraph
     ) where
 
 import qualified Data.Map as Map
+import Data.Maybe (fromMaybe)
 
 import Common.Result
+import Common.IRI (nullIRI, parseIRI)
 import Logic.Logic
 import Logic.Grothendieck
 import Logic.Comorphism
@@ -289,6 +292,11 @@ logicGraph = emptyLogicGraph
     , qTATranslations =
        Map.fromList $ map (\ x@(Comorphism c) -> (show (sourceLogic c), x))
                        qtaList}
+
+logicGraphForFile :: FilePath -> LogicGraph
+logicGraphForFile file = logicGraph {
+    prefixes = Map.singleton "" $ fromMaybe nullIRI $ parseIRI $ "file://" ++ file ++ "?"
+  }
 
 lookupSquare_in_LG :: AnyComorphism -> AnyComorphism -> Result [Square]
 lookupSquare_in_LG com1 com2 = lookupSquare com1 com2 logicGraph
