@@ -57,7 +57,6 @@ import Common.Lexer
 
 import Control.Applicative
 import Control.Monad.Identity
-import qualified Control.Monad
 import qualified Control.Monad.Fail as Fail
 
 import Data.Data
@@ -161,7 +160,7 @@ instance Fail.MonadFail Result where
   fail s = fatal_error s nullRange
 
 instance Fail.MonadFail Identity where
-  fail = Control.Monad.fail . show
+  fail = Fail.fail . show
 
 appendDiags :: [Diagnosis] -> Result ()
 appendDiags ds = Result ds (Just ())
