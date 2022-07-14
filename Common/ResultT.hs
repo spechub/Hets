@@ -52,7 +52,6 @@ instance MonadTrans ResultT where
 class Monad m => MonadResult m where
     liftR :: Result a -> m a
 
-
 instance Monad m => MonadResult (ResultT m) where
     liftR = ResultT . return
 

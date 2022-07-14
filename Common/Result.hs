@@ -57,6 +57,7 @@ import Common.Lexer
 
 import Control.Applicative
 import Control.Monad.Identity
+import qualified Control.Monad
 import qualified Control.Monad.Fail as Fail
 
 import Data.Data
@@ -159,6 +160,9 @@ instance MonadPlus Result where
 instance Fail.MonadFail Result where
   fail s = fatal_error s nullRange
 
+instance Fail.MonadFail Identity where
+  fail = Control.Monad.fail . show
+
 appendDiags :: [Diagnosis] -> Result ()
 appendDiags ds = Result ds (Just ())
 
@@ -231,11 +235,11 @@ adjustPos p r =
   r {diags = map (adjustDiagPos p) $ diags r}
 
 -- | Propagate errors using the error function
-resultToMonad :: Monad m => String -> Result a -> m a
+resultToMonad :: Fail.MonadFail m => String -> Result a -> m a
 resultToMonad pos r = let ds = diags r in
   case (hasErrors ds, maybeResult r) of
     (False, Just x) -> return x
-    _ -> error $ pos ++ ' ' : showRelDiags 2 ds
+    _ -> Fail.fail $ pos ++ ' ' : showRelDiags 2 ds
 
 -- | Propagate errors using the error function
 propagateErrors :: String -> Result a -> a
