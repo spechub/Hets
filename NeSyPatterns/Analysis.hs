@@ -30,6 +30,9 @@ import Data.Graph.Inductive.Graph
 import Data.Maybe (fromJust, catMaybes)
 import Data.Foldable (foldrM)
 import NeSyPatterns.Sign as Sign
+
+import Common.IRI (IRI)
+
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.GlobalAnnotations as GlobalAnnos
 import qualified Common.Id as Id
@@ -41,6 +44,7 @@ import qualified Data.Relation as Rel
 import qualified NeSyPatterns.AS as AS
 import qualified NeSyPatterns.Morphism as Morphism
 import qualified NeSyPatterns.Symbol as Symbol
+import qualified OWL2.AS as OWL2
 
 data TEST_SIG = TestSig
     {
@@ -197,6 +201,10 @@ inducedFromToMorphism imap (ExtSign sig _) (ExtSign tSig _) =
                      , Morphism.target = tSig
                      }
                      else fail "Incompatible mapping"
+
+-- | Retrieves a relation of simple classes from a set of axioms. If (a SubClassOf b) then (a ~ b)
+subClassRelation :: [OWL2.Axiom] -> Rel.Relation IRI IRI
+subClassRelation axs = Rel.fromList [ (cl1, cl2) | OWL2.ClassAxiom (OWL2.SubClassOf _ (OWL2.Expression cl1) (OWL2.Expression cl2)) <- axs]
 
 signatureColimit :: Gr Sign.Sign (Int, Morphism.Morphism)
                  -> Result.Result (Sign.Sign, Map.Map Int Morphism.Morphism)
