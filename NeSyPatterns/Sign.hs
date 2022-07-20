@@ -71,6 +71,9 @@ instance Pretty Sign where
 nesyIds :: Sign -> Set.Set Token
 nesyIds = Set.map resolvedNeSyId . nodes
 
+nesyIdMap :: Set.Set ResolvedNode -> Map.Map Token Token
+nesyIdMap nodes = Map.fromList [(i, o) | ResolvedNode o i _ <- Set.toList nodes]
+
 resolved2Node :: ResolvedNode -> Node
 resolved2Node (ResolvedNode t i r) = Node (Just t) (Just i) r
 
