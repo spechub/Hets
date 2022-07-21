@@ -19,16 +19,22 @@ module NeSyPatterns.Analysis
     , inducedFromMorphism
     , inducedFromToMorphism
     , signatureColimit
+    , subClassRelation
     )
     where
+
+
+import Debug.Trace
+import OWL2.Propositional2OWL2(tokToIRI)
+import OWL2.AS(uriToTok)
 
 import Common.ExtSign
 import Common.DocUtils
 import Common.Lib.Graph
 import Common.SetColimit
-import Data.Graph.Inductive.Graph
+import qualified Data.Graph.Inductive.Graph as Gr
 import Data.Maybe (fromJust, catMaybes)
-import Data.Foldable (foldrM)
+import Data.Foldable (foldrM, foldlM)
 import NeSyPatterns.Sign as Sign
 
 import Common.IRI (IRI)
@@ -176,8 +182,9 @@ inducedFromMorphism imap sig = let pMap = makePMapR imap sig in
               return
               Morphism.Morphism
                           { Morphism.source = sig
+                          , Morphism.owlMap = Map.empty
                           , Morphism.nodeMap = pMap
-                          , Morphism.target = Sign.Sign
+                          , Morphism.target = Sign.emptySig
                             { Sign.nodes = Set.map (Morphism.applyMap pMap)
                               $ Sign.nodes sig }
                           }
@@ -191,6 +198,8 @@ inducedFromToMorphism imap (ExtSign sig _) (ExtSign tSig _) =
               let
                   pMap = makePMapR imap sig
                   targetSig = Sign.Sign {
+                    Sign.owlClasses = Set.empty, --TODO
+                    Sign.owlTaxonomy = Rel.empty, -- TODO
                     Sign.nodes = Set.empty, -- Set.map (Morphism.applyMap pMap) $ Sign.nodes sig,
                     Sign.edges = Rel.empty,
                     Sign.idMap = Map.empty } -- TODO: IMPLEMENT
@@ -198,6 +207,7 @@ inducedFromToMorphism imap (ExtSign sig _) (ExtSign tSig _) =
               in if isSub then return Morphism.Morphism
                      { Morphism.source = sig
                      , Morphism.nodeMap = makePMapR imap sig
+                     , Morphism.owlMap = Map.empty -- TODO
                      , Morphism.target = tSig
                      }
                      else fail "Incompatible mapping"
@@ -206,19 +216,70 @@ inducedFromToMorphism imap (ExtSign sig _) (ExtSign tSig _) =
 subClassRelation :: [OWL2.Axiom] -> Rel.Relation IRI IRI
 subClassRelation axs = Rel.fromList [ (cl1, cl2) | OWL2.ClassAxiom (OWL2.SubClassOf _ (OWL2.Expression cl1) (OWL2.Expression cl2)) <- axs]
 
+computeGLB :: (Ord a, Show a) => Rel.Relation a a -> Set.Set a -> Maybe a
+computeGLB r s =    
+ let getAllBounds aSet = 
+      let aBounds = Set.unions $ map (\x -> Rel.lookupRan x r) $ Set.toList aSet
+      in trace ("aBounds:" ++ show aBounds ++ "aSet: " ++ show aSet) $ 
+         if Set.isSubsetOf aBounds aSet 
+            then aSet 
+            else getAllBounds $ Set.union aBounds aSet
+     bounds = map getAllBounds $ map (\x -> Set.union (Set.singleton x) $ Rel.lookupRan x r) $ Set.toList s
+ in case bounds of
+      [] -> Nothing
+      aSet : sets -> 
+        let intBounds = foldl Set.intersection aSet sets
+        in if null intBounds then Nothing 
+           else let isLB y = let notR = Set.filter (\x -> (Rel.notMember x y r) && x /= y ) intBounds 
+                              in Set.null notR
+                    gbs = Set.filter isLB intBounds
+                in case Set.toList gbs of 
+                    [x] -> Just x
+                    _ -> Nothing 
+
+allLabels :: [(Int, Set.Set ResolvedNode)] -- the graph nodes
+          -> Map.Map Int (Map.Map Id.Token Id.Token) -- the structural morphisms f of the colimit on nodeIds
+          -> Id.Token -- the nodeId N in the colimit 
+          -> Set.Set ResolvedNode 
+          -- all resolved nodes in the graph whose nodeId is mapped to N 
+          -- along the corresponding morphism in f
+allLabels nSets tMaps cId = 
+  foldl (\aSet (iMap, s) -> Set.union aSet $ 
+                            Set.filter (\(ResolvedNode _ nId _) -> cId == Map.findWithDefault nId nId iMap) s) 
+        Set.empty $ map (\(i, s) -> (Map.findWithDefault (error "missing index") i tMaps, s))nSets          
+
 signatureColimit :: Gr Sign.Sign (Int, Morphism.Morphism)
                  -> Result.Result (Sign.Sign, Map.Map Int Morphism.Morphism)
 signatureColimit graph = do
-  fail "NOT IMPLEMENTED"
---  let graph1 = nmap Sign.nodes $ emap (\ (x, y) -> (x, Morphism.nodeMap y)) graph
---      (set, maps) = addIntToSymbols $ computeColimitSet graph1
---      cSig = Sign.Sign {Sign.nodes = set}
---  return (cSig,
---          Map.fromList $ map (\ (i, n) ->
---                               (i, Morphism.Morphism {
---                                     Morphism.source = n,
---                                     Morphism.target = cSig,
---                                     Morphism.nodeMap = maps Map.! i
---                                   })) $ labNodes graph)
-
+  let owlGraph = Gr.nmap Sign.owlClasses $ 
+                 Gr.emap (\(x,y) -> (x, Morphism.owlMap y)) graph
+      (owlC, owlMors) = addIntToSymbols $ computeColimitSet owlGraph
+      owlR = colimitRel ( map(\(i, sig) -> (i, Sign.owlTaxonomy sig)) $ Gr.labNodes graph) owlMors
+      graph1 = Gr.nmap (\s -> Set.map Sign.resolvedNeSyId $ Sign.nodes s) $ 
+               Gr.emap (\ (x, m) -> (x, Morphism.morphism2TokenMap m)) graph
+      (nodeSet, maps) = addIntToSymbols $ computeColimitSet graph1
+  resSet <- foldlM (\aSet aNode -> do
+                        let labSet = Set.map (tokToIRI . Sign.resolvedOTerm) $ 
+                                     allLabels (map (\(i, s) -> (i, Sign.nodes s)) $ Gr.labNodes graph) maps aNode
+                        case computeGLB owlR labSet of
+                          Nothing -> fail "couldn't compute greatest lower bound" 
+                          Just glb -> return $ Set.insert (ResolvedNode (uriToTok glb) aNode Id.nullRange) aSet    
+                     ) Set.empty nodeSet
+  nMaps <- foldlM (\f (i, sig) -> do
+                    let fi = Map.findWithDefault (error "missing morphism") i maps
+                    gi <- Morphism.tokenMap2NodeMap (Sign.nodes sig) resSet fi 
+                    return $ Map.insert i gi f  
+                  ) 
+           Map.empty $ Gr.labNodes graph
+  let edgesC = colimitRel ( map(\(i, sig) -> (i, Sign.edges sig)) $ Gr.labNodes graph) nMaps
+      colimSig = Sign{ owlClasses = owlC
+                     , owlTaxonomy = owlR
+                     , nodes = resSet
+                     , edges = edgesC
+                     , idMap = nesyIdMap resSet}
+      colimMors = Map.fromList $ 
+                  map (\(i, sig) -> let oi = Map.findWithDefault (error "owl map") i owlMors
+                                        ni = Map.findWithDefault (error "node map") i nMaps
+                                   in (i, Morphism.Morphism sig colimSig oi ni) ) $ Gr.labNodes graph 
+  return (colimSig, colimMors)
 

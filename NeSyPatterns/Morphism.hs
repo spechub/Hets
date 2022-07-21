@@ -22,6 +22,8 @@ module NeSyPatterns.Morphism
   , applyMap                    -- application function for maps
   , applyMorphism               -- application function for morphism
   , morphismUnion
+  , morphism2TokenMap
+  , tokenMap2NodeMap
   ) where
 
 import Data.Data
@@ -36,13 +38,15 @@ import Common.Result
 import Common.Doc
 import Common.DocUtils
 import qualified Common.Result as Result
+import Common.IRI
 
-import Control.Monad (unless)
+import Control.Monad (unless, foldM)
 
 {- | Morphisms are graph homomorphisms, here: node maps -}
 data Morphism = Morphism
   { source :: Sign.Sign
   , target :: Sign.Sign
+  , owlMap :: Map.Map IRI IRI
   , nodeMap :: Map.Map Sign.ResolvedNode Sign.ResolvedNode
   } deriving (Show, Eq, Ord, Typeable)
 
@@ -52,6 +56,26 @@ instance Pretty Morphism where
 -- | Constructs an id-morphism
 idMor :: Sign -> Morphism
 idMor a = inclusionMap a a
+
+-- | convert to token map
+morphism2TokenMap :: Morphism -> Map.Map Token Token
+morphism2TokenMap m = 
+ foldl (\aMap (x, fx) -> Map.insert x fx aMap) Map.empty $ 
+ map (\(x, fx) -> (resolvedNeSyId x, resolvedNeSyId fx)) $ 
+ Map.toList $ nodeMap m
+
+tokenMap2NodeMap ::  Set.Set ResolvedNode
+                  -> Set.Set ResolvedNode
+                  -> Map.Map Token Token
+                  -> Result (Map.Map ResolvedNode ResolvedNode)
+tokenMap2NodeMap sSet tSet tMap =
+ foldM (\f (t1, t2) -> do
+                  let findT1 = findNodeId t1 sSet
+                      findT2 = findNodeId t2 tSet
+                  case (Set.toList findT1, Set.toList findT2) of
+                    ([x], [y]) -> return $ Map.insert x y f
+                    _ -> fail "element not found" ) 
+         Map.empty $ Map.toList tMap
 
 -- | Determines whether a morphism is valid
 isLegalMorphism :: Morphism -> Result ()
@@ -81,6 +105,7 @@ composeMor f g =
   in return Morphism
   { source = fSource
   , target = gTarget
+  , owlMap = Map.empty -- TODO
   , nodeMap = if Map.null gMap then fMap else
       Set.fold ( \ i -> let j = applyMap gMap (applyMap fMap i) in
                         if i == j then id else Map.insert i j)
@@ -97,6 +122,7 @@ inclusionMap :: Sign.Sign -> Sign.Sign -> Morphism
 inclusionMap s1 s2 = Morphism
   { source = s1
   , target = s2
+  , owlMap = Map.empty
   , nodeMap = Map.empty }
 
 
@@ -120,4 +146,5 @@ morphismUnion mor1 mor2 =
    in if null pds then return Morphism
       { source = unite p1 p2
       , target = unite (target mor1) $ target mor2
+      , owlMap = Map.empty --TODO
       , nodeMap = pmap } else Result pds Nothing
