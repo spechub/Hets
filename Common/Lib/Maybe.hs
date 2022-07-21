@@ -15,7 +15,7 @@ and only contains the Monad instance for the newtype MaybeT m.
 
 module Common.Lib.Maybe (MaybeT (..), liftToMaybeT) where
 
-import Control.Applicative
+import Control.Applicative ()
 import Control.Monad
 
 -- | A monad transformer which adds Maybe semantics to an existing monad.

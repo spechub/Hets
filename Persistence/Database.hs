@@ -17,7 +17,7 @@ import Control.Monad.Trans.Reader
 import Control.Monad.Logger
 import Control.Monad.IO.Unlift
 
-import Data.List (intercalate, isInfixOf)
+import Data.List (intercalate)
 import Data.Text (Text, pack)
 
 import Database.Persist.Sql

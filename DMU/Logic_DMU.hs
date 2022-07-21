@@ -30,7 +30,7 @@ import ATerm.Lib
 import Text.ParserCombinators.Parsec
 
 import Data.List
-import Data.Monoid
+import Data.Monoid ()
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Typeable

@@ -16,7 +16,6 @@ module Maude.Logic_Maude where
 
 import Logic.Logic
 
-import Common.Doc
 import Common.DocUtils
 
 import Maude.AS_Maude (MaudeText (..))
@@ -36,7 +35,7 @@ import Maude.Shellout
 import Common.AS_Annotation
 import Common.ExtSign
 
-import Data.Monoid
+import Data.Monoid ()
 
 import System.IO.Unsafe
 

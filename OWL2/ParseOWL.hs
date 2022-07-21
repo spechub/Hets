@@ -16,7 +16,7 @@ import OWL2.AS
 
 import qualified Data.ByteString.Lazy as L
 import Data.List
-import Data.Maybe
+import Data.Maybe ()
 import qualified Data.Map as Map
 
 import Common.XmlParser

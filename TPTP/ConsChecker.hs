@@ -15,32 +15,13 @@ module TPTP.ConsChecker
 import Logic.Prover
 
 import Common.ProofTree
-import qualified Common.Result as Result
-import Common.AS_Annotation as AS_Anno
 import Common.SZSOntology
-import Common.Timing
-import Common.Utils
 
 import TPTP.Sign
 import TPTP.Morphism
-import TPTP.Translate
 import TPTP.Prover.ProverState
 import TPTP.Sublogic
 
-import GUI.GenericATP
-import Proofs.BatchProcessing
-import Interfaces.GenericATPState
-
-import System.Directory
-
-import Control.Monad (when)
-import qualified Control.Concurrent as Concurrent
-
-import Data.Char
-import Data.List
-import Data.Maybe
-
-import Data.Time.LocalTime (TimeOfDay, midnight)
 import Data.Time (timeToTimeOfDay)
 import Data.Time.Clock (secondsToDiffTime)
 import qualified SoftFOL.ProveDarwin as Darwin

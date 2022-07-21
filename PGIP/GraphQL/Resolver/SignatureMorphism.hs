@@ -23,7 +23,7 @@ import Control.Monad.IO.Class (MonadIO (..))
 import Control.Monad.Fail
 
 resolve :: HetcatsOpts -> Cache -> Int -> IO (Maybe GraphQLResult.Result)
-resolve opts sessionReference idVar =
+resolve opts _ idVar =
   onDatabase (databaseConfig opts) $ resolveDB idVar
 
 resolveDB :: (MonadIO m, MonadFail m) => Int -> DBMonad m (Maybe GraphQLResult.Result)

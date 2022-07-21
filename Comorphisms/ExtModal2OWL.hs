@@ -19,7 +19,6 @@ import Common.ProofTree
 
 -- OWL = codomain
 import OWL2.Logic_OWL2
-import Common.IRI
 import OWL2.AS
 import OWL2.ProfilesAndSublogics
 import OWL2.ManchesterPrint ()

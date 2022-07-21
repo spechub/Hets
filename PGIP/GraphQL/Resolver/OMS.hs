@@ -25,7 +25,7 @@ import Control.Monad.IO.Class (MonadIO (..))
 import Control.Monad.Fail
 
 resolve :: HetcatsOpts -> Cache -> String -> IO (Maybe GraphQLResult.Result)
-resolve opts sessionReference locIdVar =
+resolve opts _ locIdVar =
   onDatabase (databaseConfig opts) $ resolveDB locIdVar
 
 resolveDB :: (MonadIO m, MonadFail m) => String -> DBMonad m (Maybe GraphQLResult.Result)

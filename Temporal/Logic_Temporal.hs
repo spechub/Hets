@@ -15,7 +15,7 @@ Instance of class Logic for temporal logic
 
 module Temporal.Logic_Temporal where
 
-import Data.Monoid
+import Data.Monoid ()
 
 import Logic.Logic
 

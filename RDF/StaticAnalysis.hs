@@ -14,7 +14,7 @@ module RDF.StaticAnalysis where
 
 import qualified OWL2.AS as AS
 import Common.IRI
-import OWL2.Parse
+import OWL2.Parse ()
 import RDF.AS
 import RDF.Sign
 import RDF.Parse (predefinedPrefixes)
@@ -23,7 +23,7 @@ import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-import Text.ParserCombinators.Parsec hiding (State)
+import Text.ParserCombinators.Parsec ()
 
 import Common.AS_Annotation hiding (Annotation)
 import Common.Id

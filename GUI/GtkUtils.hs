@@ -82,20 +82,19 @@ import Static.GTheory
 
 import Common.DocUtils (showDoc)
 import Common.IO
-import Common.Utils (getTempFile)
 
 import Control.Concurrent (forkIO)
 import Control.Monad (when)
 
 import qualified Data.Text as Text
 
-import System.Directory ( removeFile, doesFileExist
+import System.Directory ( doesFileExist
                         , canonicalizePath)
 import System.FilePath (takeFileName, takeDirectory)
 
 -- | Returns a GladeXML Object of a xmlstring.
 getGTKBuilder :: (String, String) -> IO Builder
-getGTKBuilder (name, xmlstr) = do
+getGTKBuilder (_, xmlstr) = do
   builder <- builderNew
   builderAddFromString builder xmlstr
   return builder

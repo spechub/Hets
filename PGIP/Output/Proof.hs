@@ -11,18 +11,18 @@ module PGIP.Output.Proof
   ) where
 
 import PGIP.Output.Formatting
-import PGIP.Output.Mime
+import PGIP.Output.Mime ()
 import PGIP.Output.Provers (Prover, prepareFormatProver)
 import PGIP.Shared
 
 import Interfaces.GenericATPState (tsTimeLimit, tsExtraOpts)
-import Logic.Comorphism (AnyComorphism)
+import Logic.Comorphism ()
 
 import qualified Logic.Prover as LP
 
-import Proofs.AbstractState (G_proof_tree, ProverOrConsChecker)
+import Proofs.AbstractState (G_proof_tree)
 
-import Common.Json (ppJson, asJson)
+import Common.Json (asJson)
 import Common.JSONOrXML
 import Common.ToXml (asXml)
 import Common.Utils (readMaybe)
@@ -32,7 +32,7 @@ import Data.Time.LocalTime
 
 import Numeric
 
-import Text.XML.Light (ppTopElement)
+import Text.XML.Light ()
 import Text.Printf (printf)
 
 type ProofFormatter =
