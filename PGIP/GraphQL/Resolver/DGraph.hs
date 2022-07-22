@@ -20,7 +20,7 @@ import Database.Esqueleto
 import Control.Monad.IO.Class (MonadIO (..))
 
 resolve :: HetcatsOpts -> Cache -> String -> IO (Maybe GraphQLResult.Result)
-resolve opts sessionReference locIdVar =
+resolve opts _ locIdVar =
   onDatabase (databaseConfig opts) $ resolveDB locIdVar
 
 resolveDB :: MonadIO m => String -> DBMonad m (Maybe GraphQLResult.Result)

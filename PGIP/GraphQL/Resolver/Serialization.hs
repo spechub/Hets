@@ -15,7 +15,7 @@ import Database.Esqueleto
 import Control.Monad.IO.Class (MonadIO (..))
 
 resolve :: HetcatsOpts -> Cache -> String -> IO (Maybe GraphQLResult.Result)
-resolve opts sessionReference idVar =
+resolve opts _ idVar =
   onDatabase (databaseConfig opts) $ resolveDB idVar
 
 resolveDB :: MonadIO m => String -> DBMonad m (Maybe GraphQLResult.Result)
