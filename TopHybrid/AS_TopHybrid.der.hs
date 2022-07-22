@@ -1,5 +1,6 @@
-{-# LANGUAGE ExistentialQuantification, DeriveDataTypeable
-  , OverlappingInstances #-}
+{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE MonoLocalBinds #-}
 {- |
 Module      :  ./TopHybrid/AS_TopHybrid.der.hs
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -26,7 +27,7 @@ import Logic.Logic
 import Unsafe.Coerce
 
 import Data.Data
-import Data.Monoid
+import Data.Monoid ()
 
 import Text.XML.Light
 
