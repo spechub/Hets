@@ -100,13 +100,18 @@ isLegalSignature s =
   Rel.dom (edges s) `Set.isSubsetOf` nodes s
   && Rel.ran (edges s) `Set.isSubsetOf` nodes s
 
+-- | pretty printin for edge e.g. tuple (ResolvedNode, ResolvedNode)
+printEdge :: (ResolvedNode, ResolvedNode) -> Doc
+printEdge (node1, node2) =
+  fsep . punctuate (text " ->") $ map pretty [node1, node2]
+
 -- | pretty printing for Signatures
 printSign :: Sign -> Doc
-printSign s = 
+printSign s =
     hsep [sepBySemis $ map pretty $ Set.toList $ owlClasses s,
           sepBySemis $ map pretty $ Rel.toList $ owlTaxonomy s,
           sepBySemis $ map pretty $ Set.toList $ nodes s,
-          sepBySemis $ map pretty $ Rel.toList $ edges s,
+          sepBySemis $ map printEdge $ Rel.toList $ edges s,
           sepBySemis $ map pretty $ Map.toList $ idMap s]
 
 -- | Adds a node to the signature
