@@ -78,13 +78,13 @@ extractIdMap :: AS.BASIC_SPEC -> Map.Map Id.Token Id.Token
 extractIdMap (AS.Basic_spec spec) = foldr addPathToIdMap Map.empty (AS_Anno.item <$> spec)
 
 genIds :: AS.BASIC_SPEC -> [AS.BASIC_ITEM]
-genIds (AS.Basic_spec paths) = snd $ foldl genIdsPath (0, []) $ AS_Anno.item <$> paths
+genIds (AS.Basic_spec paths) = snd $ foldr genIdsPath (0, []) $ AS_Anno.item <$> paths
 
-genIdsPath :: (Int, [AS.BASIC_ITEM]) -> AS.BASIC_ITEM -> (Int, [AS.BASIC_ITEM])
-genIdsPath (genId, agg) (AS.Path nodes) = ((: agg) . AS.Path <$> foldl genIdsNode (genId, []) nodes)
+genIdsPath :: AS.BASIC_ITEM -> (Int, [AS.BASIC_ITEM]) -> (Int, [AS.BASIC_ITEM])
+genIdsPath (AS.Path nodes) (genId, agg) = ((: agg) . AS.Path <$> foldr genIdsNode (genId, []) nodes)
 
-genIdsNode :: (Int, [AS.Node]) -> AS.Node -> (Int, [AS.Node])
-genIdsNode (genId, agg) node = case (AS.ontologyTerm node, AS.nesyId node) of
+genIdsNode :: AS.Node -> (Int, [AS.Node]) -> (Int, [AS.Node])
+genIdsNode node (genId, agg) = case (AS.ontologyTerm node, AS.nesyId node) of
   (Just _, Nothing) -> (genId + 1, node { AS.nesyId = Just $ Id.mkNumVar "__genid" genId } : agg)
   _ -> (genId, node : agg)
 
@@ -96,12 +96,13 @@ retrieveBasicItem ::
     -> Result.Result Sign                                -- Output Signature
 retrieveBasicItem x sig = case x of
       AS.Path [] -> return sig
-      AS.Path (n0:nodes) -> do
-        n0' <- (resolveNode sig n0)
-        (_, sig') <- foldrM (\t (f, s) -> do
-            resolvedTo <- resolveNode sig t
-            return (resolvedTo, addEdgeToSig s (f, resolvedTo))
-          ) (n0', sig) nodes
+      AS.Path nodes -> do
+        let n0 = last nodes
+        n0' <- resolveNode sig n0
+        (_, sig') <- foldrM (\f (t, s) -> do
+            resolvedFrom <- resolveNode sig f
+            return (resolvedFrom, addEdgeToSig s (resolvedFrom, t))
+          ) (n0', sig) (init nodes)
         return sig'
         
 
