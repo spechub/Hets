@@ -67,12 +67,12 @@ getSymbolMap f =
 
 -- | Determines the name of a symbol
 getSymbolName :: Symbol -> Id.Id
-getSymbolName (Symbol ( AS.Node o i _)) = Id.mkId $ catMaybes [o, i]
+getSymbolName (Symbol ( AS.Node o i _)) = Id.mkId $ catMaybes [Just o, i]
 
 -- | make a raw_symbol
 idToRaw :: Id.Id -> Symbol
 idToRaw mid = case Id.getPlainTokenList mid of
-  [o, i] -> Symbol $ AS.Node (Just o) (Just i) (Id.posOfId mid)
+  [o, i] -> Symbol $ AS.Node o (Just i) (Id.posOfId mid)
   _ -> error "NeSyPatterns.Symbol.idToRaw: Invalid number of tokens"
 
 -- | convert to raw symbol
