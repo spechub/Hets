@@ -96,7 +96,7 @@ retrieveBasicItem ::
     -> Result.Result Sign                                -- Output Signature
 retrieveBasicItem x sig = case x of
       AS.Path [] -> return sig
-      AS.Path nodes@(n0:_) -> do
+      AS.Path (n0:nodes) -> do
         n0' <- (resolveNode sig n0)
         (_, sig') <- foldrM (\t (f, s) -> do
             resolvedTo <- resolveNode sig t
