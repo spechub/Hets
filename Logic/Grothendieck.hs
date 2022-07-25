@@ -515,7 +515,7 @@ logicUnion lg l1@(Logic lid1) l2@(Logic lid2) =
         Just u -> return u
         Nothing -> case Map.lookup (ln2, ln1) (unions lg) of
           Just (c2, c1) -> return (c1, c2)
-          Nothing -> fail $ "Union of logics " ++ ln1 ++
+          Nothing -> Fail.fail $ "Union of logics " ++ ln1 ++
                      " and " ++ ln2 ++ " does not exist"
    where ln1 = language_name lid1
          ln2 = language_name lid2
@@ -526,7 +526,7 @@ lookupCompComorphism nameList logicGraph = do
   cs <- mapM lookupN nameList
   case cs of
     c : cs1 -> foldM compComorphism c cs1
-    _ -> fail "Illegal empty comorphism composition"
+    _ -> Fail.fail "Illegal empty comorphism composition"
   where
   lookupN name =
     case name of
@@ -536,13 +536,13 @@ lookupCompComorphism nameList logicGraph = do
              msublogic = if null subLogicD
                      then Nothing
                      else Just $ tail subLogicD
-         Logic lid <- maybe (fail ("Cannot find Logic " ++ mainLogic)) return
+         Logic lid <- maybe (Fail.fail ("Cannot find Logic " ++ mainLogic)) return
                  $ Map.lookup mainLogic (logics logicGraph)
          case maybe (Just $ top_sublogic lid) (parseSublogic lid) msublogic of
-           Nothing -> fail $ maybe "missing sublogic"
+           Nothing -> Fail.fail $ maybe "missing sublogic"
                     ("unknown sublogic name " ++) msublogic
            Just s -> return $ Comorphism $ mkIdComorphism lid s
-      _ -> maybe (fail ("Cannot find logic comorphism " ++ name)) return
+      _ -> maybe (Fail.fail ("Cannot find logic comorphism " ++ name)) return
              $ Map.lookup name (comorphisms logicGraph)
 
 -- | find a comorphism in a logic graph
@@ -565,7 +565,7 @@ parseModif lG = do
           m : ms -> return $ foldM horCompModification m ms
           _ -> Nothing
   case r of
-    Nothing -> fail "Illegal empty horizontal composition"
+    Nothing -> Fail.fail "Illegal empty horizontal composition"
     Just m -> return m
 
 vertcomp :: (Fail.MonadFail m) => LogicGraph -> Parser (m AnyModification)
@@ -717,7 +717,7 @@ instance Category G_sign GMorphism where
     legal_mor mor
     case maybeResult $ map_sign r s of
       Just (sigma', _) | sigma' == cod mor -> return ()
-      _ -> fail "legal_mor.GMorphism2"
+      _ -> Fail.fail "legal_mor.GMorphism2"
 
 -- | Embedding of homogeneous signature morphisms as Grothendieck sig mors
 gEmbed2 :: G_sign -> G_morphism -> GMorphism
@@ -779,14 +779,14 @@ homGsigDiff (G_sign lid1 (ExtSign s1 _) _) (G_sign lid2 (ExtSign s2 _) _) = do
 -- | union of a list of Grothendieck signatures
 gsigManyUnion :: LogicGraph -> [G_sign] -> Result G_sign
 gsigManyUnion _ [] =
-  fail "union of emtpy list of signatures"
+  Fail.fail "union of emtpy list of signatures"
 gsigManyUnion lg (gsigma : gsigmas) =
   foldM (gsigUnion lg True) gsigma gsigmas
 
 -- | homogeneous Union of a list of morphisms
 homogeneousMorManyUnion :: [G_morphism] -> Result G_morphism
 homogeneousMorManyUnion [] =
-  fail "homogeneous union of emtpy list of morphisms"
+  Fail.fail "homogeneous union of emtpy list of morphisms"
 homogeneousMorManyUnion (gmor : gmors) =
   foldM ( \ (G_morphism lid2 mor2 _) (G_morphism lid1 mor1 _) -> do
             mor1' <- coerceMorphism lid1 lid2 "homogeneousMorManyUnion" mor1
@@ -796,7 +796,7 @@ homogeneousMorManyUnion (gmor : gmors) =
 -- | intersection of a list of Grothendieck signatures
 gsigManyIntersect :: LogicGraph -> [G_sign] -> Result G_sign
 gsigManyIntersect _ [] =
-  fail "intersection of emtpy list of signatures"
+  Fail.fail "intersection of emtpy list of signatures"
 gsigManyIntersect lg (gsigma : gsigmas) =
   foldM (gsigIntersect lg True) gsigma gsigmas
 
@@ -830,7 +830,7 @@ logicInclusion logicGraph l1@(Logic lid1) (Logic lid2) =
            Just (Comorphism i) ->
                return (Comorphism i)
            Nothing ->
-               fail ("No inclusion from " ++ ln1 ++ " to " ++ ln2 ++ " found")
+               Fail.fail ("No inclusion from " ++ ln1 ++ " to " ++ ln2 ++ " found")
 
 updateMorIndex :: MorId -> GMorphism -> GMorphism
 updateMorIndex i (GMorphism cid sign si mor _) = GMorphism cid sign si mor i
@@ -1004,7 +1004,7 @@ mirrorSquare s = Square {
                  rightTriangle = leftTriangle s}
 
 lookupSquare :: AnyComorphism -> AnyComorphism -> LogicGraph -> Result [Square]
-lookupSquare com1 com2 lg = maybe (fail "lookupSquare") return $ do
+lookupSquare com1 com2 lg = maybe (Fail.fail "lookupSquare") return $ do
   sqL1 <- Map.lookup (com1, com2) $ squares lg
   sqL2 <- Map.lookup (com2, com1) $ squares lg
   return $ nubOrd $ sqL1 ++ map mirrorSquare sqL2
