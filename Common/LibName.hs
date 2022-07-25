@@ -115,7 +115,7 @@ setMimeType m ln = ln { mimeType = m }
 
 -- | interpret library IRI as file path
 libToFileName :: LibName -> FilePath
-libToFileName = iriToStringUnsecure . setAngles False . getLibId
+libToFileName = showIRIFull . setAngles False . getLibId
 
 -- | extract location IRI as file name
 getFilePath :: LibName -> FilePath
