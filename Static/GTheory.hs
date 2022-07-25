@@ -169,7 +169,7 @@ joinG_sentences (G_theory lid1 syn sig1 ind sens1 _)
              $ G_theory lid1 syn sig1 ind (joinSens sens1 sens2') startThId
 
 -- | Intersect the sentences of two G_theories, G_sign is the intersection of their signatures
-intersectG_sentences :: Monad m => G_sign -> G_theory -> G_theory -> m G_theory
+intersectG_sentences :: Fail.MonadFail m => G_sign -> G_theory -> G_theory -> m G_theory
 intersectG_sentences (G_sign lidS signS indS)
                     (G_theory lid1 _ _ _ sens1 _)
                     (G_theory lid2 _ _ _ sens2 _) = do
