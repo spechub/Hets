@@ -1,5 +1,11 @@
-{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, DeriveDataTypeable
-  , FlexibleInstances, UndecidableInstances, ExistentialQuantification #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE MonoLocalBinds #-}
 {- |
 Module      :  ./Logic/Logic.hs
 Description :  central interface (type class) for logics in Hets
@@ -150,7 +156,7 @@ import Common.ToXml
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
-import Data.Monoid
+import Data.Monoid ()
 import Data.Ord
 import Data.Typeable
 import Control.Monad (unless)

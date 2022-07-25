@@ -17,7 +17,7 @@ Control.Monad.State, but now Control.Monad.Trans.State can be used instead.
 
 module Common.Lib.State where
 
-import Control.Applicative
+import Control.Applicative ()
 import Control.Monad
 import qualified Control.Monad.Fail as Fail
 

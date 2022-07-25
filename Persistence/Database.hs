@@ -18,7 +18,7 @@ import Control.Monad.Logger
 import Control.Monad.IO.Unlift
 import qualified Control.Monad.Fail as Fail
 
-import Data.List (intercalate, isInfixOf)
+import Data.List (intercalate)
 import Data.Text (Text, pack)
 
 import Database.Persist.Sql

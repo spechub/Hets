@@ -20,7 +20,7 @@ import ATC.ProofTree ()
 import Common.DefaultMorphism
 import Common.ProofTree
 
-import Data.Monoid
+import Data.Monoid ()
 import Data.Map (isSubmapOf)
 import qualified Data.Map (toList, foldr)
 import qualified Data.Set (fromList)

@@ -21,7 +21,7 @@ import Logic.Logic
 
 import Common.DefaultMorphism
 
-import Data.Monoid
+import Data.Monoid ()
 
 data CSMOF = CSMOF deriving Show
 

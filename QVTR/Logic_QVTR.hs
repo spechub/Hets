@@ -22,7 +22,7 @@ import Logic.Logic
 
 import Common.DefaultMorphism
 
-import Data.Monoid
+import Data.Monoid ()
 
 data QVTR = QVTR deriving Show
 

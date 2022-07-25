@@ -108,9 +108,6 @@ networkDefn l = do
     return . Network_defn name n
          . catRange $ [kGraph, kEqu, kEnd]
 
-emptyParams :: GENERICITY
-emptyParams = Genericity (Params []) (Imported []) nullRange
-
 -- CASL spec-defn or DOL OMSDefn
 specDefn :: LogicGraph -> AParser st LIB_ITEM
 specDefn l = do

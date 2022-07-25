@@ -97,7 +97,7 @@ parseDatabaseConfig dbFile dbConfigFile subconfigKey performMigration =
 
     parseDBConfig :: BS.ByteString -> IO DBConfig
     parseDBConfig content =
-      let parsedContent = Yaml.decode content :: Maybe DBConfig
+      let parsedContent = Yaml.decodeThrow content :: Maybe DBConfig
       in case parsedContent of
         Nothing ->
           fail "Persistence.DBConfig: Could not parse database config file."
@@ -105,7 +105,7 @@ parseDatabaseConfig dbFile dbConfigFile subconfigKey performMigration =
 
     parseExtDBConfig :: String -> BS.ByteString -> IO DBConfig
     parseExtDBConfig key content =
-      let parsedContent = Yaml.decode content :: Maybe ExtDBConfig
+      let parsedContent = Yaml.decodeThrow content :: Maybe ExtDBConfig
       in case parsedContent of
         Nothing ->
           fail "Persistence.DBConfig: Could not parse database config file."

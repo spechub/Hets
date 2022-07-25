@@ -14,7 +14,7 @@ Portability :  portable
 module Common.ResultT where
 
 import Common.Result
-import Control.Applicative
+import Control.Applicative ()
 import Control.Monad
 import qualified Control.Monad.Fail as MFail
 import Control.Monad.Trans

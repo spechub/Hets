@@ -34,7 +34,7 @@ import Common.DocUtils
 
 import Control.Monad
 import qualified Data.Map as Map
-import Data.Monoid
+import Data.Monoid ()
 
 import Logic.Logic
 

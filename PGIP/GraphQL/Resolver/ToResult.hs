@@ -68,7 +68,7 @@ conjectureToResult :: Entity DatabaseSchema.Sentence
                    -> [GraphQLResultReasoningAttempt.ReasoningAttempt]
                    -> GraphQLResultSentence.Sentence
 conjectureToResult (Entity _ sentenceValue) (Entity _ locIdBaseValue) fileRangeM
-  (Entity _ conjectureValue) actionResult symbolResults proofAttemptResults =
+  (Entity _ _) actionResult symbolResults proofAttemptResults =
   GraphQLResultSentence.Conjecture GraphQLResultConjecture.Conjecture
     { GraphQLResultConjecture.__typename = "Conjecture"
     , GraphQLResultConjecture.fileRange = fmap fileRangeToResult fileRangeM
