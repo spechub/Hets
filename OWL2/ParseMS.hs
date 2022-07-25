@@ -951,6 +951,5 @@ parseOntologyDocument gapm = do
     prefixes <- many parsePrefixDeclaration
     let pm = Map.unions [gapm, (Map.fromList prefixes), predefPrefixesGA]
     o <- parseOntology pm
-    o' <-  if o == emptyOntology then parseOntologyByIRI pm else return o
-    return $ OntologyDocument (OntologyMetadata MS) pm o'
+    return $ OntologyDocument (OntologyMetadata MS) pm o
 
