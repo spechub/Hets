@@ -87,6 +87,7 @@ instance Comorphism
       map_morphism OWL22NeSyPatterns = mapMorphism
       map_symbol OWL22NeSyPatterns _ = mapSymbol
       isInclusionComorphism OWL22NeSyPatterns = True
+      isGTC OWL22NeSyPatterns = True
 
 mapTheory :: (OS.Sign, [Named Axiom]) -> Result (Sign, [Named ()])
 mapTheory (sig, sens) = return (emptySig{ owlClasses = OS.concepts sig
