@@ -16,7 +16,7 @@ module Main (main) where
 import Common.XPath
 import Text.ParserCombinators.Parsec
 import Common.Parsec
--- import qualified Control.Monad.Fail as Fail
+import qualified Control.Monad.Fail as Fail
 
 main :: IO ()
 main = do
