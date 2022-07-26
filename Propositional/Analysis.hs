@@ -34,6 +34,7 @@ import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.GlobalAnnotations as GlobalAnnos
 import qualified Common.Id as Id
 import qualified Common.Result as Result
+import qualified Control.Monad.Fail as Fail
 import qualified Data.List as List
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -317,7 +318,7 @@ inducedFromToMorphism imap (ExtSign sig _) (ExtSign tSig _) =
                      , Morphism.propMap = makePMap imap sig
                      , Morphism.target = tSig
                      }
-                     else fail "Incompatible mapping"
+                     else Fail.fail "Incompatible mapping"
 
 signatureColimit :: Gr Sign.Sign (Int, Morphism.Morphism)
                  -> Result.Result (Sign.Sign, Map.Map Int Morphism.Morphism)

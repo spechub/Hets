@@ -99,7 +99,7 @@ weither = either
 
 -- | convert to another monad
 fromWithError :: (Fail.MonadFail m) => WithError a -> m a
-fromWithError = either fail return
+fromWithError = either Fail.fail return
 
 data RelationProperty = InversOf String | Functional deriving (Eq, Read, Show)
 

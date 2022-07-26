@@ -92,14 +92,14 @@ guessInput opts mr file input =
     case guessXmlContent (fty == DgXml) input of
     Left ty -> Fail.fail ty
     Right ty -> case ty of
-      DgXml -> fail "unexpected DGraph xml"
+      DgXml -> Fail.fail "unexpected DGraph xml"
       _ -> return $ joinFileTypes fty ty
   else return fty
 
 readLibDefn :: LogicGraph -> HetcatsOpts -> Maybe String
   -> FilePath -> FilePath -> String -> ResultT IO [LIB_DEFN]
 readLibDefn lgraph opts mr file fileForPos input =
-    if null input then fail ("empty input file: " ++ file) else
+    if null input then Fail.fail ("empty input file: " ++ file) else
     case intype opts of
     ATermIn _ -> return [from_sml_ATermString input]
     FreeCADIn ->
@@ -107,7 +107,7 @@ readLibDefn lgraph opts mr file fileForPos input =
     _ -> do
      ty <- guessInput opts mr file input
      case ty of
-      HtmlIn -> fail "unexpected html input"
+      HtmlIn -> Fail.fail "unexpected html input"
       CommonLogicIn _ -> parseCL_CLIF file opts
 #ifdef RDFLOGIC
      -- RDFIn -> liftIO $ parseRDF file
@@ -120,5 +120,5 @@ readLibDefn lgraph opts mr file fileForPos input =
 #endif
       _ -> case runParser (library lgraph { dolOnly = False })
            (emptyAnnos ()) fileForPos input of
-         Left err -> fail (showErr err)
+         Left err -> Fail.fail (showErr err)
          Right ast -> return [ast]
