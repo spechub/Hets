@@ -54,6 +54,7 @@ import Text.ParserCombinators.Parsec
 import Data.Char
 import Data.Maybe
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 expandCurieM :: LogicGraph -> IRI -> GenParser Char st IRI
 expandCurieM lG i =
@@ -93,7 +94,7 @@ lookupLogicM i = if isSimple i
                  then return l
                  else case lookupLogicName l of
                    Just s -> return s
-                   Nothing -> fail $ "logic " ++ show i ++ " not found"
+                   Nothing -> Fail.fail $ "logic " ++ show i ++ " not found"
   where l = iriToStringUnsecure i
 
 {- keep these identical in order to
@@ -205,7 +206,7 @@ callSymParser :: Bool -> Maybe (AParser st a) -> String -> String ->
                  AParser st ([a], [Token])
 callSymParser oneOnly p name itemType = case p of
     Nothing ->
-        fail $ "no symbol" ++ itemType ++ " parser for language " ++ name
+        Fail.fail $ "no symbol" ++ itemType ++ " parser for language " ++ name
     Just pa -> if oneOnly then do
         s <- pa
         return ([s], [])
@@ -584,7 +585,7 @@ corr1 l = do
     (mrRef, mconf, toer) <- corr2 l
     cids <- annotations
     if not (null cids || null (tail cids))
-      then fail "more than one correspondence id"
+      then Fail.fail "more than one correspondence id"
       else return (listToMaybe cids, eRef, mrRef, mconf, toer)
 
 corr2 :: LogicGraph

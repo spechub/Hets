@@ -654,7 +654,7 @@ refSigComposition (BranchRefSig n1 (usig1, Just (UnitSigAsBranchSig usig2)))
                   (BranchRefSig n2 (usig3, bsig)) =
   if equalSigs usig2 usig3 then
     return $ BranchRefSig (compPointer n1 n2) (usig1, bsig)
-    else fail $ "Signatures: \n" ++ show usig2 ++ "\n and \n " ++ show usig3 ++
+    else Fail.fail $ "Signatures: \n" ++ show usig2 ++ "\n and \n " ++ show usig3 ++
                 "  do not compose"
 
 refSigComposition _rsig1@(BranchRefSig n1
@@ -664,7 +664,7 @@ refSigComposition _rsig1@(BranchRefSig n1
           return $ BranchRefSig (compPointer n1 n2)
                    (usig1, Just $ BranchStaticContext $
                           modifyCtx (Map.keys rsmap) rsmap bstc)
-      else fail ("Signatures do not match:" ++ show (Map.keys bstc) ++ " "
+      else Fail.fail ("Signatures do not match:" ++ show (Map.keys bstc) ++ " "
                 ++ show (Map.keys rsmap))
 
 refSigComposition (ComponentRefSig n1 rsmap1) (ComponentRefSig n2 rsmap2) = do
@@ -677,7 +677,7 @@ refSigComposition (ComponentRefSig n1 rsmap1) (ComponentRefSig n2 rsmap2) = do
   return $ ComponentRefSig (compPointer n1 n2) unionMap
 
 refSigComposition _rsig1 _rsig2 =
-  fail "composition of refinement signatures"
+  Fail.fail "composition of refinement signatures"
 
 -- | an entry of the global environment
 data GlobalEntry =

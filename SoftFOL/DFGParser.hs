@@ -498,4 +498,4 @@ toClauseBody b t = case t of
     SPComplexTerm n ts | b == SPCNF && n == SPOr || b == SPDNF && n == SPAnd ->
       do ls <- mapM toLiteral ts
          return $ NSPClauseBody b ls
-    _ -> fail $ "expected " ++ show b ++ "-application"
+    _ -> Fail.fail $ "expected " ++ show b ++ "-application"

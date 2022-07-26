@@ -65,6 +65,7 @@ import Common.LibName
 import Common.Result
 import Common.Utils (number)
 import Common.Lib.MapSet (imageSet, setInsert)
+import qualified Control.Monad.Fail as Fail
 
 import Data.Graph.Inductive.Graph
 import qualified Data.Set as Set
@@ -197,7 +198,7 @@ anaSublogic _opts itm ln dg libenv lG
       Just subL -> do
         let s = tokStr subL
         case parseSublogic lid s of
-          Nothing -> fail $ "unknown sublogic of logic " ++ show logN
+          Nothing -> Fail.fail $ "unknown sublogic of logic " ++ show logN
             ++ ": " ++ s
           Just sl ->
             if sublogicName (top_sublogic lid) == s then do
@@ -216,13 +217,13 @@ anaSublogic _opts itm ln dg libenv lG
         case sublogicOfTh $ globOrLocTh lbl of
           gs2@(G_sublogics lid2 _) -> do
             unless (logN == Logic lid2)
-              $ fail $ "the logic of '" ++ ssp
+              $ Fail.fail $ "the logic of '" ++ ssp
                   ++ "' is '" ++ language_name lid2
                   ++ "' and not '" ++ shows logN "'!"
             case mgs of
               Nothing -> return ()
               Just gs -> unless (isSublogic gs2 gs)
-                $ fail $ "theory '" ++ ssp
+                $ Fail.fail $ "theory '" ++ ssp
                   ++ "' has sublogic '" ++ shows gs2 "' and not '"
                   ++ shows gs "'!"
             let sbMap = sublogicBasedTheories lG1
@@ -232,12 +233,12 @@ anaSublogic _opts itm ln dg libenv lG
               Nothing -> return $ Map.insert sp (libName, nName) lMap
               Just (prevLib, prevName) -> do
                 unless (libName == prevLib)
-                  $ fail $ "theory '" ++ ssp
+                  $ Fail.fail $ "theory '" ++ ssp
                     ++ "' should come from library '"
                     ++ showDoc prevLib "' and not from '"
                     ++ showDoc libName "'!"
                 unless (nName == prevName)
-                  $ fail $ "the original theory name for '" ++ ssp
+                  $ Fail.fail $ "the original theory name for '" ++ ssp
                     ++ "' should be '"
                     ++ prevName ++ "' and not '"
                     ++ nName ++ "'!"
@@ -308,7 +309,7 @@ anaSpecAux conser addSyms optNodes lg
            curSL = currentSublogic lg
            bsSL = G_sublogics lid $ minSublogic bspec
        when (maybe False (`isProperSublogic` bsSL) curSL)
-         $ fail $ "sublogic expected: " ++ maybe "" show curSL
+         $ Fail.fail $ "sublogic expected: " ++ maybe "" show curSL
                ++ " found: " ++ show bsSL
        (nsig', dg0) <- coerceMaybeNode lg dg nsig name curLogic
        G_sign lid' sigma' _ <- return $ case nsig' of
@@ -324,7 +325,7 @@ anaSpecAux conser addSyms optNodes lg
                    ln bspec sig $ globalAnnos dg0
              in case mb of
                Nothing | null ds ->
-                 fail "basic analysis failed without giving a reason"
+                 Fail.fail "basic analysis failed without giving a reason"
                _ -> res
        diffSig <- case signatureDiff lid sigma_complete sig of
          Result _ (Just ds) -> return ds
@@ -437,7 +438,7 @@ anaSpecAux conser addSyms optNodes lg
    (sps', nsig1', dg1, _, _) <- foldM (anaExtension lg libEnv opts eo ln pos)
      ([], nsig, dg, conser, addSyms) namedSps
    case nsig1' of
-       EmptyNode _ -> fail "empty extension"
+       EmptyNode _ -> Fail.fail "empty extension"
        JustNode nsig1 -> return (Extension (zipWith replaceAnnoted
                           (reverse sps') asps)
                                  pos, nsig1, dg1)
@@ -615,7 +616,7 @@ anaSpecAux conser addSyms optNodes lg
     let (cNodes', cEdges') = networkDiagram dg cItems eItems
     (ns, dg') <- insertColimitInGraph libEnv ln dg cNodes' cEdges' name
     return (sp, ns, dg')
-  _ -> fail $ "AnalysisStructured: " ++ show (prettyLG lg sp)
+  _ -> Fail.fail $ "AnalysisStructured: " ++ show (prettyLG lg sp)
 
 
 -- | build the diagram of a network specified as a list of network elements to be added
@@ -728,12 +729,12 @@ gsigUnionMaybe lg both mn gsig = case mn of
 anaExtraction :: LogicGraph -> LibEnv -> LibName -> DGraph -> NodeSig -> NodeName -> Range ->
               EXTRACTION -> Result (NodeSig, DGraph)
 anaExtraction lg libEnv ln dg nsig name rg (ExtractOrRemove b iris _) = if not b then
-  fail "analysis of remove not implemented yet"
+  Fail.fail "analysis of remove not implemented yet"
  else do
   let dg0 = markHiding libEnv dg
       n = getNode nsig
   if labelHasHiding $ labDG dg0 n then
-    fail "cannot extract module from a non-flattenable OMS"
+    Fail.fail "cannot extract module from a non-flattenable OMS"
    else do
     let dgThm = computeDGraphTheories libEnv ln dg0
         gth = case (globalTheory . labDG dgThm) n  of
@@ -755,7 +756,7 @@ anaUnion :: Bool -> LogicGraph -> LibEnv -> LibName -> DGraph -> MaybeNode -> No
   -> HetcatsOpts -> ExpOverrides -> [Annoted SPEC] -> Range
   -> Result ([Annoted SPEC], [NodeSig], NodeSig, DGraph)
 anaUnion addSyms lg libEnv ln dg nsig name opts eo asps rg = case asps of
-  [] -> fail "empty union"
+  [] -> Fail.fail "empty union"
   _ -> do
       let sps = map item asps
       (sps', nsigs, dg', _) <-
@@ -784,7 +785,7 @@ anaIntersect :: Bool -> LogicGraph -> LibEnv -> LibName -> DGraph -> MaybeNode -
   -> HetcatsOpts -> ExpOverrides -> [Annoted SPEC] -> Range
   -> Result ([Annoted SPEC], [NodeSig], NodeSig, DGraph)
 anaIntersect addSyms lg libEnv ln dg nsig name opts eo asps rg = case asps of
-  [] -> fail "empty intersection"
+  [] -> Fail.fail "empty intersection"
   _ -> do
       let sps = map item asps
           ana (sps1, nsigs, dg', n) sp' = do
@@ -803,7 +804,7 @@ anaIntersect addSyms lg libEnv ln dg nsig name opts eo asps rg = case asps of
               labelHidings = map labelHasHiding $ map (\n -> labDG (markHiding libEnv dg) $ getNode n) nsigs'
               hasHiding = foldl (\x y -> x || y) False labelHidings
           case hasHiding of
-            True -> fail "Intersection is defined only for flattenable theories"
+            True -> Fail.fail "Intersection is defined only for flattenable theories"
             False -> do
              let dgThm = computeDGraphTheories libEnv ln dg
                  theo:theos = map (\x -> case (globalTheory . labDG dgThm . getNode) x of
@@ -889,7 +890,7 @@ anaRen lg opts lenv pos gmor@(GMorphism r sigma ind1 mor _) gMapping =
                Just (Logic_name l _ _) ->
                  lookupLogic "with logic: " l lg
                  >>= logicInclusion lg (Logic srcLid)
-               Nothing -> fail "with logic: cannot determine comorphism"
+               Nothing -> Fail.fail "with logic: cannot determine comorphism"
     checkSrcOrTarLogic pos2 True c src
     checkSrcOrTarLogic pos2 False c tar
     mor1 <- gEmbedComorphism c (G_sign srcLid srcSig ind)
@@ -1258,7 +1259,7 @@ homogenizeGM (Logic lid) =
          sis1' <- coerceSymbMapItemsList lid1 lid2 "homogenizeGM" sis1
          return $ G_symb_map_items_list lid2 $ sis ++ sis1'
     G_logic_translation lc ->
-         fail $ "translation not supported by " ++ showDoc lc ""
+         Fail.fail $ "translation not supported by " ++ showDoc lc ""
 
 getSpecAnnos :: Range -> Annoted a -> Result (Conservativity, Bool)
 getSpecAnnos pos a = do

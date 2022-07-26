@@ -54,6 +54,7 @@ import Common.IRI
 import Common.DocUtils
 import qualified Common.Unlit as Unlit
 import Common.Utils
+import qualified Control.Monad.Fail as Fail
 
 import Driver.Options
 import Driver.ReadFn
@@ -100,10 +101,10 @@ anaSource mln lg opts topLns libenv initDG origName = ResultT $ do
   fname' <- getContentAndFileType opts fname
   dir <- getCurrentDirectory
   case fname' of
-    Left err -> return $ fail err
+    Left err -> return $ Fail.fail err
     Right (mr, _, file, inputLit) ->
         if any (`isSuffixOf` file) [envSuffix, prfSuffix] then
-          return . fail $ "no matching source file for '" ++ fname ++ "' found."
+          return . Fail.fail $ "no matching source file for '" ++ fname ++ "' found."
         else let
         input = (if unlit opts then Unlit.unlit else id) inputLit
         libStr = if isAbsolute fname
@@ -124,7 +125,7 @@ anaSource mln lg opts topLns libenv initDG origName = ResultT $ do
             else do
               res <- anaTwelfFile opts file
               return $ case res of
-                Nothing -> fail $ "failed to analyse file: " ++ file
+                Nothing -> Fail.fail $ "failed to analyse file: " ++ file
                 Just (lname, lenv) -> return (lname, Map.union lenv libenv)
 
 -- | parsing of input string (content of file)
@@ -140,7 +141,7 @@ anaString mln lgraph opts topLns libenv initDG input file mr = do
           _ -> if checkUri file then file else realFileName
   lift $ putIfVerbose opts 2 $ "Reading file " ++ file
   libdefns <- readLibDefn lgraph opts mr file posFileName input
-  when (null libdefns) . fail $ "failed to read contents of file: " ++ file
+  when (null libdefns) . Fail.fail $ "failed to read contents of file: " ++ file
   foldM (anaStringAux mln lgraph opts topLns initDG mr file posFileName)
         (error "Static.AnalysisLibrary.anaString", libenv)
     $ case analysis opts of
@@ -325,7 +326,7 @@ anaLibItemAux opts topLns ln q@(libItems', dg1, libenv1, lg, eo) libItem = let
              Nothing -> Just q
       if outputToStdout opts then
          if hasErrors diags2 then
-            fail "Stopped due to errors"
+            Fail.fail "Stopped due to errors"
             else runResultT $ liftR $ Result [] mRes
          else runResultT $ liftR $ Result diags2 mRes
 
@@ -607,7 +608,7 @@ symbolsOf lg gs1@(G_sign l1 (ExtSign sig1 sys1) _)
                    showDoc rs2 "\n" ++
                    showDoc ll2 "\n") 
                   nullRange
-        _ -> fail $ "non-unique raw symbols"
+        _ -> Fail.fail $ "non-unique raw symbols"
       ps <- symbolsOf lg gs1 gs2 corresps'
       return $ Set.insert p ps
 
@@ -640,8 +641,8 @@ anaEntailmentDefn lg ln libEnv dg opts eo en et pos = do
                   globalEnv = Map.insert en (ViewOrStructEntry True vsig)
                               $ globalEnv dg3},
                 libEnv, lg, eo)
-      _ -> fail "entailment between networks not supported yet"
-   _ -> fail "omsinnetwork entailment not supported yet"
+      _ -> Fail.fail "entailment between networks not supported yet"
+   _ -> Fail.fail "omsinnetwork entailment not supported yet"
 
 
 -- | analyse genericity and view type and construct gmorphism

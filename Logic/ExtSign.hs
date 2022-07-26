@@ -16,6 +16,7 @@ module Logic.ExtSign where
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 import Common.Result
 import Common.DocUtils
 import Common.ExtSign
@@ -160,7 +161,7 @@ ext_induced_from_to_morphism l r s@(ExtSign p sy) t = do
         morM = symmap_of l mor
         msysI = map (\ sym -> Map.findWithDefault sym sym morM) sysI
     unless (sysI == msysI)
-      $ fail $ "imported symbols are mapped differently.\n"
+      $ Fail.fail $ "imported symbols are mapped differently.\n"
             ++ showDoc (filter (uncurry (/=)) $ zip sysI msysI) ""
     legal_mor mor
     return mor

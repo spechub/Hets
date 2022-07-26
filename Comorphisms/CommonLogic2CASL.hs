@@ -52,6 +52,7 @@ import CASL.Sign as CSign
 import CASL.Morphism as CMor
 
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 newtype CL2CFOL = CL2CFOL { fol :: CommonLogicSL } deriving Show
 
@@ -337,8 +338,8 @@ quantSentForm b quantifier rn bndVars bs sen = do
               sf <- senForm b bndVarsSet sen
               bindSeq <- mapM bindingSeq bs
               return $ CBasic.Quantification quantifier bindSeq sf rn
-  unless (null predSs) $ fail $ "unsupported bound predicates: " ++ show predSs
-  unless (null opSs) $ fail $ "unsupported bound functions: " ++ show opSs
+  unless (null predSs) $ Fail.fail $ "unsupported bound predicates: " ++ show predSs
+  unless (null opSs) $ Fail.fail $ "unsupported bound functions: " ++ show opSs
   return folSen
 
 opType :: Int -> CBasic.OP_TYPE
@@ -382,21 +383,21 @@ termForm b bndVars trm = case trm of
               else toOP_TYPE seqFunType)
             (trm1 : trmSF) rn
   Cl.Comment_term term _ _ -> termForm b bndVars term
-  Cl.That_term {} -> fail "CL2CFOL: that-terms not supported"
+  Cl.That_term {} -> Fail.fail "CL2CFOL: that-terms not supported"
 
 termFormApp :: Cl.TERM -> Maybe Int -> Result CBasic.OP_SYMB
 termFormApp trm ar = case trm of
   Cl.Name_term n -> return $ mkQualOp (tok2Id n) $ maybe (toOP_TYPE seqType)
      opType ar
   Cl.Comment_term t _ _ -> termFormApp t ar
-  _ -> fail "CL2CFOL.termFormApp"
+  _ -> Fail.fail "CL2CFOL.termFormApp"
 
 termFormPrd :: Cl.TERM -> Maybe Int -> Result CBasic.PRED_SYMB
 termFormPrd trm ar = case trm of
   Cl.Name_term n -> return $ mkQualPred (tok2Id n) $ maybe
     (Pred_type [list] nullRange) predType ar
   Cl.Comment_term t _ _ -> termFormPrd t ar
-  _ -> fail "CL2CFOL.termFormPrd"
+  _ -> Fail.fail "CL2CFOL.termFormPrd"
 
 termSeqForm :: CommonLogicSL -> Set.Set Cl.NAME -> Cl.TERM_SEQ
   -> Result (CBasic.TERM ())

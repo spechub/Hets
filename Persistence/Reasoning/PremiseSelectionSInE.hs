@@ -387,7 +387,7 @@ saveToDatabase opts G_SInEResult{..} omsEntity sinePremiseSelectionKey = do
         limit 1
         return loc_id_bases
       case sentenceL of
-        [] -> fail ("Persistence.Reasoning.saveToDatabase: Could not find " ++ kind ++ " " ++ locId)
+        [] -> Fail.fail ("Persistence.Reasoning.saveToDatabase: Could not find " ++ kind ++ " " ++ locId)
         Entity key _ : _ -> return key
 
 

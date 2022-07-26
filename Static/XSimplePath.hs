@@ -52,7 +52,7 @@ exprToSimplePath (Change csel e) = case e of
           return (finder : fs', atS')
         -- should be last step only. return path so-far plus attribute selector
         Step Attribute (NameTest n) [] -> return (fs', Just n)
-        _ -> fail $ "unexpected step: " ++ show stp) ([], Nothing) stps
+        _ -> Fail.fail $ "unexpected step: " ++ show stp) ([], Nothing) stps
     return $ SimplePath (reverse fs) $ ChangeData csel atS
   _ -> Fail.fail $ "not a valid path description: " ++ show e
 
@@ -69,7 +69,7 @@ mkFinderAux f@(FindBy qn attrs i) e = case e of
       return $ FindBy qn (att : attrs) i
     PrimExpr Number i' -> do
       v <- maybeF ("illegal number: " ++ i') $ readMaybe i'
-      when (i /= 1) $ fail "XPATH number already set differently"
+      when (i /= 1) $ Fail.fail "XPATH number already set differently"
       return $ FindBy qn attrs v
     _ -> Fail.fail "unexpected (2)"
 
@@ -279,7 +279,7 @@ propagatePaths cr pths = case current cr of
       (changes, toChildren) <- foldM (\ (r1, r2) sp -> case sp of
           SimplePath [_] cd -> return (cd : r1, r2)
           SimplePath (_ : r) cd -> return (r1, SimplePath r cd : r2)
-          _ -> fail "propagatePaths: unexpected PathEnd!") ([], []) cur
+          _ -> Fail.fail "propagatePaths: unexpected PathEnd!") ([], []) cur
       return (changes, toRight, toChildren)
   c -> Fail.fail $ "propagatePaths: unexpected Cursor Content: " ++ show c
 

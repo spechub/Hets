@@ -351,7 +351,7 @@ toLiteral t = case t of
       SPComplexTerm SPNot [SPComplexTerm arg []] ->
           return $ SPLiteral False arg
       SPComplexTerm arg [] -> return $ SPLiteral True arg
-      _ -> fail "expected literal"
+      _ -> Fail.fail "expected literal"
 
 {- |
   SPASS Quantifier Symbols.

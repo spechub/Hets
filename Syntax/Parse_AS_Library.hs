@@ -38,6 +38,7 @@ import Data.List
 import Data.Maybe (maybeToList)
 import qualified Data.Map as Map
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 import Framework.AS
 
@@ -304,7 +305,7 @@ libItem l = specDefn l
      do p1 <- getPos
         a <- aSpec l
         p2 <- getPos
-        if p1 == p2 then fail "cannot parse spec" else
+        if p1 == p2 then Fail.fail "cannot parse spec" else
           return (Spec_defn nullIRI
                (Genericity (Params []) (Imported []) nullRange) a nullRange)
 
@@ -331,7 +332,7 @@ entailType l = do
               r <- asKey entailsS
               g <- groupSpec l
               return . OMSInNetwork n nw g $ catRange [i, r]
-            _ -> fail "OMSName expected"
+            _ -> Fail.fail "OMSName expected"
 
 omsOrNetwork :: LogicGraph -> AParser st OmsOrNetwork
 omsOrNetwork l = fmap (MkOms . emptyAnno) $ groupSpec l

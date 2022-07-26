@@ -382,7 +382,7 @@ lookupKnownConsChecker st =
            findCC (pr_n, cms) =
                case filter (matchingCC pr_n) $ getAllConsCheckers
                     $ filter (lessSublogicComor sl) cms of
-                 [] -> fail ("CMDL.ProverConsistency.lookupKnownConsChecker" ++
+                 [] -> Fail.fail ("CMDL.ProverConsistency.lookupKnownConsChecker" ++
                                  ": no consistency checker found")
                  p : _ -> return p
        in maybe ( Fail.fail ("CMDL.ProverConsistency.lookupKnownConsChecker: " ++
@@ -402,7 +402,7 @@ lookupKnownProver st pk =
         findProver (pr_n, cms) =
             case filter (matchingPr pr_n) $ getProvers pk sl
                  $ filter (lessSublogicComor sl) cms of
-               [] -> fail "Proofs.InferBasic: no prover found"
+               [] -> Fail.fail "Proofs.InferBasic: no prover found"
                p : _ -> return p
     in maybe (Fail.fail "Proofs.InferBasic: no matching known prover")
              findProver mt
@@ -532,12 +532,12 @@ autoProofAtNode useTh timeout goals axioms g_th p_cm = do
             { includedAxioms = filter (`elem` axioms) $ includedAxioms sg_st }
           st = recalculateSublogicAndSelectedTheory sa_st
       -- try to prepare the theory
-      if null $ selectedGoals st then fail "autoProofAtNode: no goals selected"
+      if null $ selectedGoals st then Fail.fail "autoProofAtNode: no goals selected"
         else do
           (G_theory_with_prover lid1 th p) <- liftR $ prepareForProving st p_cm
           case proveCMDLautomaticBatch p of
             Nothing ->
-              fail "autoProofAtNode: failed to init CMDLautomaticBatch"
+              Fail.fail "autoProofAtNode: failed to init CMDLautomaticBatch"
             Just fn -> do
               let encapsulate_pt ps =
                    ps {proofTree = G_proof_tree lid1 $ proofTree ps}
@@ -549,7 +549,7 @@ autoProofAtNode useTh timeout goals axioms g_th p_cm = do
                 takeMVar mV
                 takeMVar answ
               case maybeResult d of
-                Nothing -> fail "autoProofAtNode: proving failed"
+                Nothing -> Fail.fail "autoProofAtNode: proving failed"
                 Just d' ->
                  return (( currentTheory $ markProved (snd p_cm) lid1 d' st
                          , map (\ ps -> ( goalName ps

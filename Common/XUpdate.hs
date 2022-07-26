@@ -172,7 +172,7 @@ getText e = let s = trim $ strContent e in
 
 getXUpdateText :: Fail.MonadFail m => Element -> m String
 getXUpdateText e = let
-    msg = fail "expected single <xupdate:text> element"
+    msg = Fail.fail "expected single <xupdate:text> element"
     in case elChildren e of
   [] -> getText e
   [s] -> let
@@ -188,7 +188,7 @@ anaXUpdate e = let
   if isXUpdateQN q then do
     sel <- getSelectAttr e
     case parseExpr sel of
-      Left _ -> fail $ "unparsable xpath: " ++ sel
+      Left _ -> Fail.fail $ "unparsable xpath: " ++ sel
       Right p -> case () of
         _ | isRemoveQN q -> noContent e $ Change Remove p
           | hasLocalQN "variable" q -> do

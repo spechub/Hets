@@ -218,7 +218,7 @@ class (Ord object, Ord morphism)
          dom, cod :: morphism -> object
          -- | the inverse of a morphism
          inverse :: morphism -> Result morphism
-         inverse _ = fail "Logic.Logic.Category.inverse not implemented"
+         inverse _ = Fail.fail "Logic.Logic.Category.inverse not implemented"
          -- | test if the signature morphism an inclusion
          isInclusion :: morphism -> Bool
          isInclusion _ = False -- in general no inclusion
@@ -233,7 +233,7 @@ isIdentity m = isInclusion m && dom m == cod m
 
 comp :: Category object morphism => morphism -> morphism -> Result morphism
 comp m1 m2 = if cod m1 == dom m2 then composeMorphisms m1 m2 else
-  fail "target of first and source of second morphism are different"
+  Fail.fail "target of first and source of second morphism are different"
 
 instance Ord sign => Category sign (DefaultMorphism sign) where
     dom = domOfDefaultMorphism
@@ -647,7 +647,7 @@ inclusion :: StaticAnalysis lid basic_spec sentence symb_items symb_map_items
              sign morphism symbol raw_symbol
           => lid -> sign -> sign -> Result morphism
 inclusion l s1 s2 = if is_subsig l s1 s2 then subsig_inclusion l s1 s2
-  else fail $ show $ fsep
+  else Fail.fail $ show $ fsep
        [ text (language_name l)
        , text "cannot construct inclusion. Symbol(s) missing in target:"
        , pretty $ Set.difference (symset_of l s1) $ symset_of l s2

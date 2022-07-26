@@ -213,7 +213,7 @@ dijkstra graph source target = do
    in if u == tn then shortPath sn p1 c1 [] tn
      else mainloop gr sn tn q1 d1 p1 c1
   shortPath sn p1 c s u =
-   if u `notElem` Map.keys p1 then fail "path not found"
+   if u `notElem` Map.keys p1 then Fail.fail "path not found"
     else let
     x = Map.findWithDefault (error $ show u) u p1 in
     if x == sn then return (u : s, c)
@@ -299,7 +299,7 @@ computeCoeqs graph funDesc (n1, gt1) (n2, gt2)
  _rho2@(GMorphism cid4 _ _ mor4 _) <- dijkstra graph n n2
  com1 <- compComorphism (Comorphism cid1) (Comorphism cid3)
  com2 <- compComorphism (Comorphism cid1) (Comorphism cid3)
- if com1 /= com2 then fail "Unable to compute coequalizer" else do
+ if com1 /= com2 then Fail.fail "Unable to compute coequalizer" else do
    _gtM@(G_theory lidM _ signM _idxM _ _) <- mapG_theory False com1 gt
    s1 <- coerceSign lidM tlid "coequalizers" signM
    mor3' <- coerceMorphism (targetLogic cid3) (sourceLogic cid1) "coeqs" mor3

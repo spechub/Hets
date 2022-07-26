@@ -89,5 +89,5 @@ readOWL str = case runParser (liftM2 const (parseOntologyDocument Map.empty) eof
     in case basicOWL2Analysis
     (ontoFile, newstate, emptyGlobalAnnos) of
     Result ds ms -> case ms of
-      Nothing -> fail $ showRelDiags 1 ds
+      Nothing -> Fail.fail $ showRelDiags 1 ds
       Just (_, ExtSign sig _, sens) -> return (sig, sens)

@@ -39,6 +39,7 @@ import Common.Utils (nubOrd)
 import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Map as Map
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 normalFormRule :: DGRule
 normalFormRule = DGRule "NormalForm"
@@ -124,7 +125,7 @@ normalFormDG libEnv ln dgraph = foldM (\ dg (node, nodelab) ->
                                                       diagram x) leaves
                                           in
                             case paths of
-                             [] -> fail "node should reach a tip"
+                             [] -> Fail.fail "node should reach a tip"
                              (xn, xf) : _ -> comp xf $ mmap Map.! xn
             let nfNode = getNewNodeDG dg -- new node for normal form
                 info = nodeInfo nodelab

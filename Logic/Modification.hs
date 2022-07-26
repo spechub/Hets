@@ -125,11 +125,11 @@ instance (Modification lid1 cid1 cid2
  tauSigma (VerCompModif lid1 lid2) sigma = do
    mor1 <- tauSigma lid1 sigma
    case cast sigma of
-     Nothing -> fail "Cannot compose modifications"
+     Nothing -> Fail.fail "Cannot compose modifications"
      Just sigma1 -> do
        mor3 <- tauSigma lid2 sigma1
        case cast mor3 of
-         Nothing -> fail "Cannot compose modifications"
+         Nothing -> Fail.fail "Cannot compose modifications"
          Just mor2 -> comp mor1 mor2
 
 -- | horizontal composition of modifications
@@ -183,15 +183,15 @@ instance (Modification lid1 cid1 cid2
    tauSigma (HorCompModif lid1 lid2) sigma1 = do
      mor2 <- tauSigma lid1 sigma1
      case cast mor2 of
-       Nothing -> fail "Cannot compose modifications"
+       Nothing -> Fail.fail "Cannot compose modifications"
        Just mor5 -> do
          mor6 <- map_morphism (sourceComorphism lid2) mor5
          case cast sigma1 of
-           Nothing -> fail "Cannot compose modifications"
+           Nothing -> Fail.fail "Cannot compose modifications"
            Just sigma3 -> do
              (sigma4, _) <- map_sign (targetComorphism lid1) sigma3
              case cast sigma4 of
-               Nothing -> fail "Cannot compose modifications"
+               Nothing -> Fail.fail "Cannot compose modifications"
                Just sigma5 -> tauSigma lid2 sigma5 >>= comp mor6
 
 -- | Modifications

@@ -245,4 +245,4 @@ axiomSub f = case f of
     return $ applyBin (if c == Equivalence then "equiv" else "implies") s1 s2
   Quantification {} -> Fail.fail "no support for local quantifications"
   Membership {} -> Fail.fail "no support for membership tests"
-  _ -> fail $ "no support for: " ++ showDoc f ""
+  _ -> Fail.fail $ "no support for: " ++ showDoc f ""

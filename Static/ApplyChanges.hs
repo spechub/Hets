@@ -66,7 +66,7 @@ changes would lead to an unchanged signature further down). -}
 dgXUpdate :: HetcatsOpts -> String -> LibEnv -> LibName -> DGraph
           -> ResultT IO (LibName, LibEnv)
 dgXUpdate opts xs le ln dg = case parseXMLDoc xs of
-    Nothing -> fail "dgXUpdate: cannot parse xupdate file"
+    Nothing -> Fail.fail "dgXUpdate: cannot parse xupdate file"
     Just diff -> let
       -- we assume that the diff refers to an unchanged dg..
       dgOld = undoAllChanges dg
@@ -107,7 +107,7 @@ deleteLeftoverChanges dg chL = let lIds = Map.keys $ changeLinks chL in do
   foldM (\ dg' ei -> case getDGLinksById ei dg' of
     [ledge@(_, _, lkLab)] | not $ isDefEdge $ dgl_type lkLab -> return
       $ changeDGH dg' $ DeleteEdge ledge
-    _ -> fail $ "deleteLeftoverChanges: conflict with edge #" ++ show ei
+    _ -> Fail.fail $ "deleteLeftoverChanges: conflict with edge #" ++ show ei
     ) dg lIds
 
 {- | move along xgraph structure and make updates or insertions in accordance
@@ -165,7 +165,7 @@ mkNodeUpdate opts lg mGt (dg, lv, chL) xnd = let
       (lbl, lv') <- generateNodeLab opts lg mGt xnd (dg, lv)
       (n, lblOrig) <- case lookupUniqueNodeByName nd dg of
         Just ndOrig -> return ndOrig
-        Nothing -> fail $ "node [" ++ nd ++ "] was not found in dg, but was"
+        Nothing -> Fail.fail $ "node [" ++ nd ++ "] was not found in dg, but was"
             ++ " marked for updating"
       let dg' = changeDGH dg $ SetNodeLab lblOrig (n, lbl)
       -- all adjacent links need to get their morphism updated

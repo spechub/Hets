@@ -2,7 +2,6 @@
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE TypeFamilies               #-}
-
 {- |
 Module      :  ./Persistence.DevGraph.hs
 Copyright   :  (c) Uni Magdeburg 2017
@@ -128,7 +127,7 @@ exportLibEnv opts libEnv = do
                                                , diagString = message
                                                , diagPos = nullRange
                                                }]
-      fail message
+      Fail.fail message
 
 createDocuments :: (MonadIO m, Fail.MonadFail m)
                 => HetcatsOpts -> LibEnv -> DBCache -> [Set LibName]
@@ -411,7 +410,7 @@ createOMS opts libEnv fileVersionKey dbCache0 doSave globalAnnotations libName
               return loc_id_bases
 
             case omsL of
-              [] -> fail ("Persistence.DevGraph.createOMS: OMS not found"
+              [] -> Fail.fail ("Persistence.DevGraph.createOMS: OMS not found"
                           ++ locId)
               entity : _ -> return entity
           else do
@@ -598,7 +597,7 @@ findOrCreateSignatureMorphism opts libEnv dbCache doSave libName edge
                                 &&. signature_morphisms ^. SignatureMorphismAsJson ==. val json)
                       return signature_morphisms
                     case signatureMorphismL of
-                      [] -> fail "Persistence.DevGraph.findOrCreateSignatureMorphism: not found "
+                      [] -> Fail.fail "Persistence.DevGraph.findOrCreateSignatureMorphism: not found "
                       Entity key _ : _ -> return key
 
                 (symbolMappingKeys, dbCache1) <-
@@ -680,7 +679,7 @@ findOrCreateSymbolMapping libEnv dbCache doSave libName (sourceId, targetId)
             , symbolMappingSourceId = sourceKey
             , symbolMappingTargetId = targetKey
             }
-      else fail "Persistence.DevGraph.findOrCreateSymbolMapping: not found"
+      else Fail.fail "Persistence.DevGraph.findOrCreateSymbolMapping: not found"
 
 symbolErrorMessage :: Sentences lid sentence sign morphism symbol
                    => LibEnv -> LibName -> Node -> symbol -> lid -> String
@@ -968,7 +967,7 @@ createSentence libEnv fileVersionKey dbCache doSave globalAnnotations
                           &&. loc_id_bases ^. LocIdBaseKind ==. val kind)
                 return loc_id_bases
               case sentenceL of
-                [] -> fail ("Persistence.DevGraph.createSentence: Sentence not found"
+                [] -> Fail.fail ("Persistence.DevGraph.createSentence: Sentence not found"
                             ++ locId)
                 Entity sentenceKey _ : _-> return sentenceKey
         return (sentenceKey, dbCache)
@@ -1092,12 +1091,12 @@ createMapping opts libEnv fileVersionKey dbCache doSave globalAnnotations
   (sourceOMSKey, sourceSignatureKey) <-
     case Map.lookup (libName, sourceId) $ nodeMap dbCache of
       Just (omsKey, signatureKey) -> return (omsKey, signatureKey)
-      Nothing -> fail ("Persistence.DevGraph.createMapping: Could not find source node with ID " ++ show (libName, sourceId))
+      Nothing -> Fail.fail ("Persistence.DevGraph.createMapping: Could not find source node with ID " ++ show (libName, sourceId))
 
   (targetOMSKey, targetSignatureKey) <-
     case Map.lookup (libName, targetId) $ nodeMap dbCache of
       Just (omsKey, signatureKey) -> return (omsKey, signatureKey)
-      Nothing -> fail ("Persistence.DevGraph.createMapping: Could not find target node with ID " ++ show (libName, targetId))
+      Nothing -> Fail.fail ("Persistence.DevGraph.createMapping: Could not find target node with ID " ++ show (libName, targetId))
 
   (signatureMorphismKey, _, dbCache1) <-
     findOrCreateSignatureMorphism opts libEnv dbCache True libName

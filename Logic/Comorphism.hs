@@ -113,7 +113,7 @@ class (Language cid,
     map_symbol = errMapSymbol
     extractModel :: cid -> sign1 -> proof_tree2
                  -> Result (sign1, [Named sentence1])
-    extractModel cid _ _ = fail
+    extractModel cid _ _ = Fail.fail
       $ "extractModel not implemented for comorphism "
       ++ language_name cid
     -- properties of comorphisms
@@ -175,7 +175,7 @@ failMapSentence :: Comorphism cid
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2
          => cid -> sign1 -> sentence1 -> Result sentence2
 failMapSentence cid _ _ =
-    fail $ "Unsupported sentence translation " ++ show cid
+    Fail.fail $ "Unsupported sentence translation " ++ show cid
 
 errMapSymbol :: Comorphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
@@ -397,7 +397,7 @@ instance (Comorphism cid1
            coerceBasicTheory (targetLogic cid1) lid3 "extractModel1" bTh1
          bTh2 <- extractModel cid2 sign1 pt3
          coerceBasicTheory lid3 lid1 "extractModel2" bTh2
-     else fail $ "extractModel not implemented for comorphism composition with "
+     else Fail.fail $ "extractModel not implemented for comorphism composition with "
           ++ language_name cid1
    constituents (CompComorphism cid1 cid2) =
       constituents cid1 ++ constituents cid2
@@ -495,7 +495,7 @@ compComorphism (Comorphism cid1) (Comorphism cid2) =
                           ++ sublogicName (sourceSublogic cid2)
                           ++ " but found sublogic "
                           ++ sublogicName (targetSublogic cid1) ++ ")"
-    else fail $ 'L' : msg ++ " (Expected logic "
+    else Fail.fail $ 'L' : msg ++ " (Expected logic "
                           ++ language_name l2
                           ++ " but found logic "
                           ++ language_name l1 ++ ")"

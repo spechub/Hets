@@ -206,7 +206,7 @@ legalMor m = let
     && all (`elem` Map.keys (classMap t)) (Map.elems cs)
     && all ((`elem` Map.keys (assumps s)) . fst) (Map.keys fs)
     && all ((`elem` Map.keys (assumps t)) . fst) (Map.elems fs))
-     (fail "illegal HasCASL morphism")
+     (Fail.fail "illegal HasCASL morphism")
 
 morphismUnion :: Morphism -> Morphism -> Result Morphism
 morphismUnion m1 m2 = do
@@ -250,13 +250,13 @@ morphismUnion m1 m2 = do
       fma2 = Map.union fm2 $ setToMap uf2
       showFun (i, ty) = showId i . (" : " ++) . showDoc ty
   tma <- mergeMap ( \ t1 t2 -> if t1 == t2 then return t1 else
-                      fail $ "incompatible type mapping to `"
+                      Fail.fail $ "incompatible type mapping to `"
                          ++ showId t1 "' and '" ++ showId t2 "'") ima1 ima2
   cma <- mergeMap ( \ t1 t2 -> if t1 == t2 then return t1 else
-                      fail $ "incompatible class mapping to `"
+                      Fail.fail $ "incompatible class mapping to `"
                          ++ showId t1 "' and '" ++ showId t2 "'") cima1 cima2
   fma <- mergeMap ( \ o1 o2 -> if o1 == o2 then return o1 else
-                      fail $ "incompatible mapping to '"
+                      Fail.fail $ "incompatible mapping to '"
                          ++ showFun o1 "' and '" ++ showFun o2 "'") fma1 fma2
   disjointKeys tma cma
   return (mkMorphism s t)

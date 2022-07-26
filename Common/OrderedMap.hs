@@ -56,7 +56,7 @@ null :: OMap k a -> Bool
 null = Map.null
 
 lookup :: (Fail.MonadFail m, Ord k) => k -> OMap k a -> m a
-lookup k = maybe (fail "Common.OrderedMap.lookup")
+lookup k = maybe (Fail.fail "Common.OrderedMap.lookup")
   (return . ele) . Map.lookup k
 
 insert :: Ord k => k -> a -> OMap k a -> OMap k a

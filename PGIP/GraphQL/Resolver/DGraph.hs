@@ -53,7 +53,7 @@ resolveDB locIdVar = do
             GraphQLResultDGraph.DGNativeDocument $
               nativeDocumentToResult documentEntity locIdBaseEntity
               documentLinksSourceResults documentLinksTargetResults omsResult
-        _ -> fail ("Bad kind of document in database at locId " ++ locIdVar)
+        _ -> Fail.fail ("Bad kind of document in database at locId " ++ locIdVar)
 
 resolveDocumentLinks :: MonadIO m
                      => LocIdBaseId

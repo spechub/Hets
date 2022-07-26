@@ -832,7 +832,7 @@ extractCASLModel sign (ProofTree output) =
          return $ makeNamed n $ simplifyFormula id cf) rs
       Result (map mkWarn es) $ Just ()
       return (nsign, doms ++ distfs ++ terms ++ sens)
-    Left err -> fail $ showErr err
+    Left err -> Fail.fail $ showErr err
 
 type RMap = Map.Map SPIdentifier (CType, Maybe Id)
 
@@ -853,7 +853,7 @@ getUneqElems :: Set.Set SPTerm -> SPTerm -> Result (Set.Set SPTerm)
 getUneqElems s trm = case trm of
   SPComplexTerm SPNot [SPComplexTerm SPEqual [a1, a2]] ->
       return $ Set.insert a2 $ Set.insert a1 s
-  _ -> fail $ "unexpected disjointness formula: " ++ showDoc trm ""
+  _ -> Fail.fail $ "unexpected disjointness formula: " ++ showDoc trm ""
 
 splitDisjs :: SPTerm -> [SPTerm]
 splitDisjs trm = case trm of
@@ -868,9 +868,9 @@ getDomElems trm = case trm of
         SPComplexTerm SPEqual [a1, a2]
           | var == a1 -> return a2
           | var == a2 -> return a1
-        _ -> fail $ "expecting equation with " ++ show var
+        _ -> Fail.fail $ "expecting equation with " ++ show var
              ++ ", got: " ++ showDoc t "") $ splitDisjs frm
-  _ -> fail $ "expecting simple quantified disjunction, got: "
+  _ -> Fail.fail $ "expecting simple quantified disjunction, got: "
        ++ showDoc trm ""
 
 createDomain :: CASLSign -> RMap -> [SPTerm] -> Result (FORMULA ())
@@ -878,13 +878,13 @@ createDomain sign m l = do
   let es = map ((\ (e, _, s) -> (e, s)) . typeCheckTerm sign Nothing m) l
   tys <- mapM (\ (e, ms) -> case ms of
           Just s -> return s
-          _ -> fail $ unlines e) es
+          _ -> Fail.fail $ unlines e) es
   cs <- mapM (\ ds -> do
         ts@(trm : r) <- mapM (toTERM m . snd) ds
         let mtys = keepMinimals sign id . Set.toList . foldl1 Set.intersection
                   $ map (\ (ty, _) -> Set.insert ty $ supersortsOf ty sign) ds
         case mtys of
-          [] -> fail $ "no common supersort found for: " ++ showDoc ds ""
+          [] -> Fail.fail $ "no common supersort found for: " ++ showDoc ds ""
           ty : _ -> do
             let v = mkVarDeclStr "X" ty
             return $ mkForall [v]
@@ -1003,10 +1003,10 @@ toForm sign m t = case t of
               case mi of
                 Nothing -> case args of
                   [_] -> return trueForm
-                  _ -> fail $ "unkown predicate: " ++ show cst
+                  _ -> Fail.fail $ "unkown predicate: " ++ show cst
                 Just i -> return $ mkPredication
                       (mkQualPred i $ toPRED_TYPE pt) ts
-          _ -> fail $ "inconsistent pred symbol: " ++ show cst
+          _ -> Fail.fail $ "inconsistent pred symbol: " ++ show cst
     SPComplexTerm symb args -> do
          fs <- mapM (toForm sign m) args
          case (symb, fs) of
@@ -1019,7 +1019,7 @@ toForm sign m t = case t of
            (SPOr, _) -> return (disjunct fs)
            (SPTrue, []) -> return trueForm
            (SPFalse, []) -> return falseForm
-           _ -> fail $ "wrong boolean formula: " ++ showDoc t ""
+           _ -> Fail.fail $ "wrong boolean formula: " ++ showDoc t ""
 
 toTERM :: Fail.MonadFail m => RMap -> SPTerm -> m (TERM ())
 toTERM m spt = case spt of
@@ -1045,7 +1045,7 @@ toVar m sp = case sp of
   SPComplexTerm (SPCustomSymbol cst) [] | isVar cst -> case Map.lookup cst m of
     Just (CVar s, _) -> return $ Var_decl [cst] s nullRange
     _ -> Fail.fail $ "unknown variable: " ++ show cst
-  _ -> fail $ "quantified term as variable: " ++ showDoc sp ""
+  _ -> Fail.fail $ "quantified term as variable: " ++ showDoc sp ""
 
 isVar :: SPIdentifier -> Bool
 isVar cst = case tokStr cst of

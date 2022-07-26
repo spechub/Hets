@@ -578,7 +578,7 @@ vertcomp lG = do
           _ -> Nothing
              -- r has type Maybe (m AnyModification)
   case r of
-    Nothing -> fail "Illegal empty vertical composition"
+    Nothing -> Fail.fail "Illegal empty vertical composition"
     Just m -> return m
 
 pm :: (Fail.MonadFail m) => LogicGraph -> Parser (m AnyModification)

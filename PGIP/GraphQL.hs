@@ -19,6 +19,7 @@ import qualified Data.Text.Lazy as LText
 import Data.Text as Text
 import Network.Wai
 import GHC.Generics
+import qualified Control.Monad.Fail as Fail
 
 isGraphQL :: String -> [String] -> Bool
 isGraphQL httpVerb pathComponents =
@@ -29,7 +30,7 @@ processGraphQL opts sessionReference request = do
   body <- receivedRequestBody request
   let bodyQueryE = Aeson.eitherDecode $ LBS.fromStrict body :: Either String QueryBodyAux
   queryBody <- case bodyQueryE of
-    Left message -> fail ("bad request body: " ++ message)
+    Left message -> Fail.fail ("bad request body: " ++ message)
     Right b -> return $ toGraphQLQueryBody b
   resolve opts sessionReference (graphQLQuery queryBody) (graphQLVariables queryBody)
 

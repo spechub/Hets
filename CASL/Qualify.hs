@@ -30,6 +30,7 @@ import Common.Result
 import qualified Common.Lib.MapSet as MapSet
 
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -94,11 +95,11 @@ inverseMorphism invExt m = do
       ipm = Map.fromList $ map (\ ((i, t), j) ->
                   ((j, mapPredType sm t), i)) $ Map.toList pm
   unless (ss == Set.map (mapSort ism . mapSort sm) ss)
-    $ fail "no injective CASL sort mapping"
+    $ Fail.fail "no injective CASL sort mapping"
   unless (os == inducedOpMap ism iom (inducedOpMap sm om os))
-    $ fail "no injective CASL op mapping"
+    $ Fail.fail "no injective CASL op mapping"
   unless (ps == inducedPredMap ism ipm (inducedPredMap sm pm ps))
-    $ fail "no injective CASL pred mapping"
+    $ Fail.fail "no injective CASL pred mapping"
   return (embedMorphism iExt (imageOfMorphism m) src)
     { sort_map = ism
     , op_map = iom

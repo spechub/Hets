@@ -102,6 +102,7 @@ import Common.Lexer
 import Common.Parsec
 import Common.Percent
 import Common.Token (comps)
+import qualified Control.Monad.Fail as Fail
 
 -- * The IRI datatype
 
@@ -658,7 +659,7 @@ decOctet :: IRIParser st String
 decOctet = do
   a1 <- countMinMax 1 3 digit
   if (read a1 :: Int) > 255 then
-            fail "Decimal octet value too large"
+            Fail.fail "Decimal octet value too large"
           else
             return a1
 
