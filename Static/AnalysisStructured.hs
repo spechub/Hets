@@ -104,20 +104,25 @@ coerceNode lg libEnv ln dg ns@(NodeSig _ (G_sign lid1 _ _)) nn l2@(Logic lid2) =
 coerceNodeByComorph :: LibEnv -> LibName -> AnyComorphism -> DGraph -> NodeSig -> NodeName
            -> Result (NodeSig, DGraph)
 coerceNodeByComorph libEnv ln c@(Comorphism cid) dg (NodeSig n s) nn = do
-      gmor <- if isGTC cid then do
-                 let Just gth = computeTheoryGraph libEnv ln dg n
-                 gEmbedGTC c gth
-              else gEmbedComorphism c s
+      (dg', gmor) <- if isGTC cid then do
+                       let dg0 = computeDGraphTheories libEnv ln dg
+                           Just l = lab (dgBody dg0) n 
+                           Just gth = globalTheory l
+                       gm <- gEmbedGTC c gth
+                       return (dg0, gm)
+                     else do 
+                      gm <- gEmbedComorphism c s
+                      return (dg, gm)      
       case find (\ (_, _, l) -> dgl_origin l == SeeTarget
           && dgl_type l == globalDef
-          && dgl_morphism l == gmor) $ outDG dg n of
+          && dgl_morphism l == gmor) $ outDG dg' n of
         Nothing -> do
           let (ms@(NodeSig m _), dg2) =
-                insGSig dg (extName "XCoerced" nn) DGLogicCoercion $ cod gmor
+                insGSig dg' (extName "XCoerced" nn) DGLogicCoercion $ cod gmor
               dg3 = insLink dg2 gmor globalDef SeeTarget n m
           return (ms, dg3)
         Just (_, t, _) ->
-            return (NodeSig t $ signOf $ dgn_theory $ labDG dg t, dg)
+            return (NodeSig t $ signOf $ dgn_theory $ labDG dg' t, dg')
 
 insGTheory :: DGraph -> NodeName -> DGOrigin -> G_theory -> (NodeSig, DGraph)
 insGTheory dg name orig (G_theory lid syn sig ind sens tind) =

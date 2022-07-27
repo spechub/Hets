@@ -13,7 +13,6 @@ compute the theory of a node
 
 module Static.ComputeTheory
     ( computeTheory
-    , computeTheoryGraph
     , globalNodeTheory
     , getGlobalTheory
     , theoremsToAxioms
@@ -85,10 +84,6 @@ markHiding le dgraph =
 
 computeTheory :: LibEnv -> LibName -> Node -> Maybe G_theory
 computeTheory libEnv ln = globalNodeTheory $ lookupDGraph ln libEnv
-
-computeTheoryGraph :: LibEnv -> LibName -> DGraph -> Node -> Maybe G_theory
-computeTheoryGraph le ln dg = 
- globalNodeTheory $ lookupDGraph ln (Map.insert ln (computeDGraphTheories le ln dg) le)
 
 theoremsToAxioms :: G_theory -> G_theory
 theoremsToAxioms (G_theory lid syn sign ind1 sens ind2) =
