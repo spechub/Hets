@@ -23,8 +23,6 @@ module NeSyPatterns.Analysis
     )
     where
 
-
-import Debug.Trace
 import OWL2.Propositional2OWL2(tokToIRI)
 import OWL2.AS(uriToTok)
 
@@ -221,8 +219,7 @@ computeGLB :: (Ord a, Show a) => Rel.Relation a a -> Set.Set a -> Maybe a
 computeGLB r s =    
  let getAllBounds aSet = 
       let aBounds = Set.unions $ map (\x -> Rel.lookupRan x r) $ Set.toList aSet
-      in trace ("aBounds:" ++ show aBounds ++ "aSet: " ++ show aSet) $ 
-         if Set.isSubsetOf aBounds aSet 
+      in if Set.isSubsetOf aBounds aSet 
             then aSet 
             else getAllBounds $ Set.union aBounds aSet
      bounds = map getAllBounds $ map (\x -> Set.union (Set.singleton x) $ Rel.lookupRan x r) $ Set.toList s

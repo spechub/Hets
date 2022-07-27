@@ -108,11 +108,12 @@ printEdge (node1, node2) =
 -- | pretty printing for Signatures
 printSign :: Sign -> Doc
 printSign s =
-    hsep [sepBySemis $ map pretty $ Set.toList $ owlClasses s,
+    hsep [-- sepBySemis $ map pretty $ Set.toList $ owlClasses s,
           sepBySemis $ map pretty $ Rel.toList $ owlTaxonomy s,
           sepBySemis $ map pretty $ Set.toList $ nodes s,
-          sepBySemis $ map printEdge $ Rel.toList $ edges s,
-          sepBySemis $ map pretty $ Map.toList $ idMap s]
+          sepBySemis $ map printEdge $ Rel.toList $ edges s
+          --sepBySemis $ map pretty $ Map.toList $ idMap s
+         ]
 
 -- | Adds a node to the signature
 addToSig :: Sign -> ResolvedNode -> Sign
