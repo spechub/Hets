@@ -37,7 +37,7 @@ import Logic.Logic
 import Common.Doc
 import Common.DocUtils
 
-import Data.Monoid
+import Data.Monoid ()
 
 data HasCASL = HasCASL deriving Show
 

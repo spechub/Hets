@@ -136,7 +136,7 @@ instance HasSorts Sign where
         sentences = mapSorts mp $ sentences sign -}
     }
 
-instance HasSorts KindRel where
+instance {-# OVERLAPS #-} HasSorts KindRel where
     getSorts = getSortsKindRel
     mapSorts = renameSortKindRel
 

@@ -1,4 +1,5 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE CPP, MultiParamTypeClasses #-}
+
 {- |
 Module      :  ./NeSyPatterns/Logic_NeSyPatterns.hs
 Description :  Instance of class Logic for neural-symbolic patterns
@@ -24,6 +25,7 @@ import NeSyPatterns.AS
 import NeSyPatterns.Symbol as Symbol
 import NeSyPatterns.Parse
 import NeSyPatterns.Print
+import NeSyPatterns.Taxonomy
 import NeSyPatterns.Analysis
 
 import Common.Id
@@ -142,5 +144,8 @@ instance StaticAnalysis NeSyPatterns
           induced_from_morphism NeSyPatterns = inducedFromMorphism
           induced_from_to_morphism NeSyPatterns = inducedFromToMorphism
           signature_colimit NeSyPatterns = signatureColimit
+#ifdef UNI_PACKAGE
+          theory_to_taxonomy NeSyPatterns = nesy2Tax
+#endif
 
 -- | Sublogics

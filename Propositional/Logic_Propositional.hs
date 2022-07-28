@@ -50,7 +50,7 @@ import Common.ProofTree
 import Common.Id
 
 import qualified Data.Map as Map
-import Data.Monoid
+import Data.Monoid ()
 
 -- | Lid for propositional logic
 data Propositional = Propositional deriving Show
