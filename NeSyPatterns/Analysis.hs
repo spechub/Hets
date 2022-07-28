@@ -97,11 +97,12 @@ retrieveBasicItem x sig = case x of
       AS.Path nodes -> do
         let n0 = last nodes
         n0' <- resolveNode sig n0
-        (_, sig') <- foldrM (\f (t, s) -> do
-            resolvedFrom <- resolveNode sig f
-            return (resolvedFrom, addEdgeToSig s (resolvedFrom, t))
-          ) (n0', sig) (init nodes)
-        return sig'
+        let sig' = addToSig sig n0'
+        (_, sig'') <- foldrM (\f (t, s) -> do
+            resolvedFrom <- resolveNode sig' f
+            return (resolvedFrom, addEdgeToSig' s (resolvedFrom, t))
+          ) (n0', sig') (init nodes)
+        return sig''
         
 
 resolveNode :: Sign -> AS.Node -> Result.Result ResolvedNode
