@@ -23,6 +23,7 @@ module NeSyPatterns.Sign
     , isLegalSignature              -- is a signature ok?
     , addToSig                      -- adds an id to the given Signature
     , addEdgeToSig                  -- adds an edge to the given signature
+    , addEdgeToSig'                 -- adds an edge and its nodes to the given signature
     , unite                         -- union of signatures
     , emptySig                      -- empty signature
     , isSubSigOf                    -- is subsignature?
