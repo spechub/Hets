@@ -107,7 +107,7 @@ prettyGTheory sm g = case simplifyTh g of
 
 -- | compute sublogic of a theory
 sublogicOfTh :: G_theory -> G_sublogics
-sublogicOfTh theory@(G_theory lid _ sign@(ExtSign sigma _) _ sens _) =
+sublogicOfTh (G_theory lid _ (ExtSign sigma _) _ sens _) =
   let sub = sublogicOfTheo lid (sigma, sentence . snd <$> OMap.toList sens)
    in G_sublogics lid sub
 
@@ -177,9 +177,9 @@ joinG_sentences (G_theory lid1 syn sig1 ind sens1 _)
 
 -- | Intersect the sentences of two G_theories, G_sign is the intersection of their signatures
 intersectG_sentences :: Monad m => G_sign -> G_theory -> G_theory -> m G_theory
-intersectG_sentences gsig@(G_sign lidS signS indS) 
-                    (G_theory lid1 syn sig1 ind sens1 _)
-                    (G_theory lid2 _ sig2 _ sens2 _) = do
+intersectG_sentences (G_sign lidS signS indS)
+                    (G_theory lid1 _ _ _ sens1 _)
+                    (G_theory lid2 _ _ _ sens2 _) = do
   sens1' <- coerceThSens lid1 lidS "intersectG_sentences1" sens1
   sens2' <- coerceThSens lid2 lidS "intersectG_sentences2" sens2
   return $ G_theory lidS Nothing signS indS (intersectSens sens1' sens2') startThId

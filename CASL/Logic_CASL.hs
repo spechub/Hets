@@ -57,7 +57,7 @@ import Common.ProofTree
 import Common.Consistency
 import Common.DocUtils
 
-import Data.Monoid
+import Data.Monoid ()
 import qualified Data.Set as Set
 
 import Logic.Logic

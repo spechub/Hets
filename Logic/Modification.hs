@@ -1,5 +1,9 @@
-{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies
-  , FlexibleInstances, UndecidableInstances, ExistentialQuantification #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE MonoLocalBinds #-}
 {- |
 Module      :  ./Logic/Modification.hs
 Description :  interface (type class) for comorphism modifications in Hets

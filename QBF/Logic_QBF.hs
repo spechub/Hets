@@ -47,7 +47,7 @@ import ATC.ProofTree ()
 import Common.ProofTree
 
 import qualified Data.Map as Map
-import Data.Monoid
+import Data.Monoid ()
 
 -- | Lid for propositional logic
 data QBF = QBF deriving Show

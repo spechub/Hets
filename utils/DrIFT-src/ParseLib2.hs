@@ -71,7 +71,6 @@ instance Monad Parser where
    -- >>=         :: Parser a -> (a -> Parser b) -> Parser b
    (P p) >>= f = P (\ pos inp -> concat [papply (f v) pos out
                                                 | (v, out) <- p pos inp])
-   fail _ = P (\ _ _ -> [])
 
 instance Alternative Parser where
    (<|>) = mplus
