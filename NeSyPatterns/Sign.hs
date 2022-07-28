@@ -15,7 +15,6 @@ Definition of signatures for neural-symbolic patterns
 module NeSyPatterns.Sign
     (Sign (..)                      -- Signatures6
     , ResolvedNode(..)
-    , id2SimpleId
     , resolved2Node
     , findNodeId
     , nesyIdMap
@@ -50,13 +49,13 @@ import NeSyPatterns.Print()
 
 
 data ResolvedNode = ResolvedNode {
-    resolvedOTerm :: Token,
-    resolvedNeSyId :: Token,
+    resolvedOTerm :: IRI,
+    resolvedNeSyId :: IRI,
     resolvedNodeRange :: Range
   } deriving (Show, Eq, Ord, Typeable, Data)
 
 instance SymbolName ResolvedNode where
-  addString (ResolvedNode t1 t2 r, s) = ResolvedNode t1 (addStringToTok t2 s) r
+  addString (ResolvedNode t1 t2 r, s) = ResolvedNode t1 (addSuffixToIRI s t2) r
 
 instance Pretty ResolvedNode where
   pretty (ResolvedNode o i r) = pretty $ Node o (Just i) r
@@ -72,28 +71,24 @@ data Sign = Sign { owlClasses :: Set.Set IRI,
                    owlTaxonomy :: Rel.Relation IRI IRI,
                    nodes :: Set.Set ResolvedNode,
                    edges :: Rel.Relation ResolvedNode ResolvedNode,
-                   idMap :: Map.Map Token Token }
+                   idMap :: Map.Map IRI IRI }
   deriving (Show, Eq, Ord, Typeable)
 
 instance Pretty Sign where
     pretty = printSign
 
-findNodeId :: Token -> Set.Set ResolvedNode -> Set.Set ResolvedNode
+findNodeId :: IRI -> Set.Set ResolvedNode -> Set.Set ResolvedNode
 findNodeId t s = Set.filter (\(ResolvedNode _ t1 _) -> t == t1 ) s  
 
-nesyIds :: Sign -> Set.Set Token
+nesyIds :: Sign -> Set.Set IRI
 nesyIds = Set.map resolvedNeSyId . nodes
 
-nesyIdMap :: Set.Set ResolvedNode -> Map.Map Token Token
+nesyIdMap :: Set.Set ResolvedNode -> Map.Map IRI IRI
 nesyIdMap nodes = Map.fromList [(i, o) | ResolvedNode o i _ <- Set.toList nodes]
 
 resolved2Node :: ResolvedNode -> Node
 resolved2Node (ResolvedNode t i r) = Node t (Just i) r
 
-id2SimpleId :: Id -> Token
-id2SimpleId i = case filter (not . isPlace) $ getTokens i of
-  [] -> error "id2SimpleId"
-  c : _ -> c
 
 {- | determines whether a signature is vaild -}
 isLegalSignature :: Sign -> Bool

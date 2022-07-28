@@ -34,7 +34,7 @@ import Data.Maybe (catMaybes)
 import Data.Foldable (foldrM, foldlM)
 import NeSyPatterns.Sign as Sign
 
-import Common.IRI (IRI)
+import Common.IRI
 
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.GlobalAnnotations as GlobalAnnos
@@ -56,15 +56,15 @@ makeSig ::
 makeSig bs sig = let spec' = genIds bs in
   foldrM retrieveBasicItem sig spec'
 
-addNodeToIdMap :: AS.Node -> Map.Map Id.Token Id.Token -> Map.Map Id.Token Id.Token
+addNodeToIdMap :: AS.Node -> Map.Map IRI IRI -> Map.Map IRI IRI
 addNodeToIdMap (AS.Node o mi _) m = case mi of
   Just i -> Map.insert i o m
   Nothing -> m
 
-addPathToIdMap :: AS.BASIC_ITEM -> Map.Map Id.Token Id.Token -> Map.Map Id.Token Id.Token
+addPathToIdMap :: AS.BASIC_ITEM -> Map.Map IRI IRI -> Map.Map IRI IRI
 addPathToIdMap (AS.Path ns) m = foldr addNodeToIdMap m ns
 
-extractIdMap :: AS.BASIC_SPEC -> Map.Map Id.Token Id.Token
+extractIdMap :: AS.BASIC_SPEC -> Map.Map IRI IRI
 extractIdMap (AS.Basic_spec spec) = foldr addPathToIdMap Map.empty (AS_Anno.item <$> spec)
 
 genIds :: AS.BASIC_SPEC -> [AS.BASIC_ITEM]
@@ -75,7 +75,7 @@ genIdsPath (AS.Path ns) (genId, agg) = ((: agg) . AS.Path <$> foldr genIdsNode (
 
 genIdsNode :: AS.Node -> (Int, [AS.Node]) -> (Int, [AS.Node])
 genIdsNode node (genId, agg) = case AS.nesyId node of
-  Nothing -> (genId + 1, node { AS.nesyId = Just $ Id.mkNumVar "__genid" genId } : agg)
+  Nothing -> (genId + 1, node { AS.nesyId = Just $ idToIRI $ Id.mkId [ Id.genNumVar "nesy" genId ] } : agg)
   _ -> (genId, node : agg)
 
 
@@ -214,8 +214,8 @@ computeGLB r s =
                     _ -> Nothing 
 
 allLabels :: [(Int, Set.Set ResolvedNode)] -- the graph nodes
-          -> Map.Map Int (Map.Map Id.Token Id.Token) -- the structural morphisms f of the colimit on nodeIds
-          -> Id.Token -- the nodeId N in the colimit 
+          -> Map.Map Int (Map.Map IRI IRI) -- the structural morphisms f of the colimit on nodeIds
+          -> IRI -- the nodeId N in the colimit 
           -> Set.Set ResolvedNode 
           -- all resolved nodes in the graph whose nodeId is mapped to N 
           -- along the corresponding morphism in f
@@ -235,11 +235,11 @@ signatureColimit graph = do
                Gr.emap (\ (x, m) -> (x, Morphism.morphism2TokenMap m)) graph
       (nodeSet, maps) = addIntToSymbols $ computeColimitSet graph1
   resSet <- foldlM (\aSet aNode -> do
-                        let labSet = Set.map (tokToIRI . Sign.resolvedOTerm) $ 
+                        let labSet = Set.map Sign.resolvedOTerm $ 
                                      allLabels (map (\(i, s) -> (i, Sign.nodes s)) $ Gr.labNodes graph) maps aNode
                         case computeGLB owlR labSet of
                           Nothing -> fail "couldn't compute greatest lower bound" 
-                          Just glb -> return $ Set.insert (ResolvedNode (uriToTok glb) aNode Id.nullRange) aSet    
+                          Just glb -> return $ Set.insert (ResolvedNode glb aNode Id.nullRange) aSet    
                      ) Set.empty nodeSet
   nMaps <- foldlM (\f (i, sig) -> do
                     let fi = Map.findWithDefault (error "missing morphism") i maps

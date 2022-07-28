@@ -58,7 +58,7 @@ idMor :: Sign -> Morphism
 idMor a = inclusionMap a a
 
 -- | convert to token map
-morphism2TokenMap :: Morphism -> Map.Map Token Token
+morphism2TokenMap :: Morphism -> Map.Map IRI IRI
 morphism2TokenMap m = 
  foldl (\aMap (x, fx) -> Map.insert x fx aMap) Map.empty $ 
  map (\(x, fx) -> (resolvedNeSyId x, resolvedNeSyId fx)) $ 
@@ -66,7 +66,7 @@ morphism2TokenMap m =
 
 tokenMap2NodeMap ::  Set.Set ResolvedNode
                   -> Set.Set ResolvedNode
-                  -> Map.Map Token Token
+                  -> Map.Map IRI IRI
                   -> Result (Map.Map ResolvedNode ResolvedNode)
 tokenMap2NodeMap sSet tSet tMap =
  foldM (\f (t1, t2) -> do
