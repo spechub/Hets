@@ -27,11 +27,10 @@ import OWL2.Propositional2OWL2(tokToIRI)
 import OWL2.AS(uriToTok)
 
 import Common.ExtSign
-import Common.DocUtils
 import Common.Lib.Graph
 import Common.SetColimit
 import qualified Data.Graph.Inductive.Graph as Gr
-import Data.Maybe (fromJust, catMaybes)
+import Data.Maybe (catMaybes)
 import Data.Foldable (foldrM, foldlM)
 import NeSyPatterns.Sign as Sign
 
@@ -41,7 +40,6 @@ import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.GlobalAnnotations as GlobalAnnos
 import qualified Common.Id as Id
 import qualified Common.Result as Result
-import qualified Data.List as List
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Data.Relation as Rel
@@ -50,27 +48,21 @@ import qualified NeSyPatterns.Morphism as Morphism
 import qualified NeSyPatterns.Symbol as Symbol
 import qualified OWL2.AS as OWL2
 
-data TEST_SIG = TestSig
-    {
-      msign :: Sign.Sign
-    , tdiagnosis :: [Result.Diagnosis]
-    }
-
 -- | Retrieves the signature out of a basic spec
 makeSig ::
     AS.BASIC_SPEC                         -- Input SPEC
     -> Sign.Sign                          -- Input Signature
     -> Result.Result Sign.Sign                   -- Output Signature
-makeSig bs@(AS.Basic_spec spec) sig = let spec' = genIds bs in
+makeSig bs sig = let spec' = genIds bs in
   foldrM retrieveBasicItem sig spec'
 
 addNodeToIdMap :: AS.Node -> Map.Map Id.Token Id.Token -> Map.Map Id.Token Id.Token
-addNodeToIdMap node m = case (AS.ontologyTerm node, AS.nesyId node) of
-  (Just o, Just i) -> Map.insert i o m
-  (Nothing, Nothing) -> m
+addNodeToIdMap (AS.Node o mi _) m = case mi of
+  Just i -> Map.insert i o m
+  Nothing -> m
 
 addPathToIdMap :: AS.BASIC_ITEM -> Map.Map Id.Token Id.Token -> Map.Map Id.Token Id.Token
-addPathToIdMap (AS.Path nodes) m = foldr addNodeToIdMap m nodes
+addPathToIdMap (AS.Path ns) m = foldr addNodeToIdMap m ns
 
 extractIdMap :: AS.BASIC_SPEC -> Map.Map Id.Token Id.Token
 extractIdMap (AS.Basic_spec spec) = foldr addPathToIdMap Map.empty (AS_Anno.item <$> spec)
@@ -79,11 +71,11 @@ genIds :: AS.BASIC_SPEC -> [AS.BASIC_ITEM]
 genIds (AS.Basic_spec paths) = snd $ foldr genIdsPath (0, []) $ AS_Anno.item <$> paths
 
 genIdsPath :: AS.BASIC_ITEM -> (Int, [AS.BASIC_ITEM]) -> (Int, [AS.BASIC_ITEM])
-genIdsPath (AS.Path nodes) (genId, agg) = ((: agg) . AS.Path <$> foldr genIdsNode (genId, []) nodes)
+genIdsPath (AS.Path ns) (genId, agg) = ((: agg) . AS.Path <$> foldr genIdsNode (genId, []) ns)
 
 genIdsNode :: AS.Node -> (Int, [AS.Node]) -> (Int, [AS.Node])
-genIdsNode node (genId, agg) = case (AS.ontologyTerm node, AS.nesyId node) of
-  (Just _, Nothing) -> (genId + 1, node { AS.nesyId = Just $ Id.mkNumVar "__genid" genId } : agg)
+genIdsNode node (genId, agg) = case AS.nesyId node of
+  Nothing -> (genId + 1, node { AS.nesyId = Just $ Id.mkNumVar "__genid" genId } : agg)
   _ -> (genId, node : agg)
 
 
@@ -96,25 +88,19 @@ retrieveBasicItem x sig = case x of
       AS.Path [] -> return sig
       AS.Path nodes -> do
         let n0 = last nodes
-        n0' <- resolveNode sig n0
+        n0' <- resolveNode n0
         let sig' = addToSig sig n0'
         (_, sig'') <- foldrM (\f (t, s) -> do
-            resolvedFrom <- resolveNode sig' f
+            resolvedFrom <- resolveNode f
             return (resolvedFrom, addEdgeToSig' s (resolvedFrom, t))
           ) (n0', sig') (init nodes)
         return sig''
         
 
-resolveNode :: Sign -> AS.Node -> Result.Result ResolvedNode
-resolveNode sig n = let
-      mkRNode o i = ResolvedNode o i (Id.getRange n)
-  in case (AS.ontologyTerm n, AS.nesyId n) of
-    (Nothing, Nothing) -> Result.mkError "Invalid configuration for node. Either an ontoloty term or an id has to be specified" n
-    (Just o, Just i) ->  let r = mkRNode o i in return r
-    (Just o, Nothing) -> Result.mkError "Unset nesyid." n
-    (Nothing, Just i) -> case Map.lookup i (idMap sig) of
-      Just o -> let r = mkRNode o i in return r
-      Nothing -> Result.mkError ("Undefined id '" ++ show i ++ "'.") n
+resolveNode :: AS.Node -> Result.Result ResolvedNode
+resolveNode n@(AS.Node o mi r) = case mi of
+    Just i -> return $ ResolvedNode o i r
+    Nothing -> Result.mkError "Unset nesyid." n
 
 -- Basic analysis 
 basicNeSyPatternsAnalysis
@@ -122,17 +108,16 @@ basicNeSyPatternsAnalysis
   -> Result.Result (AS.BASIC_SPEC,
                     ExtSign Sign.Sign Symbol.Symbol,
                     [AS_Anno.Named ()])
-basicNeSyPatternsAnalysis (spec@(AS.Basic_spec paths), sig, _) = do
-  let idMap = extractIdMap spec
-  sign <- makeSig spec sig
-
+basicNeSyPatternsAnalysis (spec, sig, _) = do
+  let idm = extractIdMap spec
+  sign <- makeSig spec sig { idMap = idm }
   return (spec, ExtSign sign (Set.map (Symbol.Symbol . resolved2Node) $ Sign.nodes sign), [])
 
 -- | Static analysis for symbol maps
 mkStatSymbMapItem :: Sign -> Maybe Sign -> [AS.SYMB_MAP_ITEMS]
                   -> Result.Result (Map.Map Symbol.Symbol Symbol.Symbol)
 mkStatSymbMapItem _ _ = return . foldr
-  (\(AS.Symb_map_items sitem r) -> Map.union $ statSymbMapItem sitem)
+  (\(AS.Symb_map_items sitem _) -> Map.union $ statSymbMapItem sitem)
   Map.empty
 
 statSymbMapItem :: [AS.SYMB_OR_MAP]
@@ -149,36 +134,29 @@ mkStatSymbItems :: Sign.Sign -> [AS.SYMB_ITEMS] -> Result.Result [Symbol.Symbol]
 mkStatSymbItems sig a = let
     tokens = [(t, Map.lookup t (Sign.idMap sig), r) | (AS.Symb_items symbs r) <- a, (AS.Symb_id t) <- symbs]
     errors =  [ Result.mkDiag Result.Error "Unknown symbol" t | (t, Nothing, _) <- tokens]
-  in Result.Result errors (Just [ Symbol.Symbol $ AS.Node (Just t) o r | (t, o, r) <- tokens])
-
-statSymbItems :: [AS.SYMB_ITEMS] -> [Symbol.Symbol]
-statSymbItems = concatMap symbItemsToSymbol
-
-symbItemsToSymbol :: AS.SYMB_ITEMS -> [Symbol.Symbol]
-symbItemsToSymbol (AS.Symb_items syms _) = map symbToSymbol syms
+  in Result.Result errors (Just [ Symbol.Symbol $ AS.Node t o r | (t, o, r) <- tokens])
 
 symbToSymbol :: AS.SYMB -> Symbol.Symbol
 symbToSymbol (AS.Symb_id tok) =
-    Symbol.Symbol $ AS.Node Nothing (Just tok) (Id.getRange tok)
+    Symbol.Symbol $ AS.Node tok Nothing (Id.getRange tok)
 
 
-symbol2ResolvedNode :: Sign.Sign -> (Symbol.Symbol, Symbol.Symbol) -> Maybe (ResolvedNode, ResolvedNode)
-symbol2ResolvedNode sig (sk, sv) = do
-  k <- Result.resultToMaybe $ resolveNode sig $ Symbol.node sk
-  v <- Result.resultToMaybe $ resolveNode sig $ Symbol.node sv
+symbol2ResolvedNode :: (Symbol.Symbol, Symbol.Symbol) -> Maybe (ResolvedNode, ResolvedNode)
+symbol2ResolvedNode (sk, sv) = do
+  k <- Result.resultToMaybe $ resolveNode $ Symbol.node sk
+  v <- Result.resultToMaybe $ resolveNode $ Symbol.node sv
   return (k, v)
   
 
 makePMapR :: Map.Map Symbol.Symbol Symbol.Symbol
-  -> Sign.Sign
   -> Map.Map ResolvedNode ResolvedNode
-makePMapR imap sig = Map.fromList . catMaybes . fmap (symbol2ResolvedNode sig) . Map.toList $ imap
+makePMapR imap = Map.fromList . catMaybes . fmap symbol2ResolvedNode . Map.toList $ imap
 
 -- | Induce a signature morphism from a source signature and a raw symbol map
 inducedFromMorphism :: Map.Map Symbol.Symbol Symbol.Symbol
                     -> Sign.Sign
                     -> Result.Result Morphism.Morphism
-inducedFromMorphism imap sig = let pMap = makePMapR imap sig in
+inducedFromMorphism imap sig = let pMap = makePMapR imap in
               return
               Morphism.Morphism
                           { Morphism.source = sig
@@ -196,7 +174,6 @@ inducedFromToMorphism :: Map.Map Symbol.Symbol Symbol.Symbol
                     -> Result.Result Morphism.Morphism
 inducedFromToMorphism imap (ExtSign sig _) (ExtSign tSig _) =
               let
-                  pMap = makePMapR imap sig
                   targetSig = Sign.Sign {
                     Sign.owlClasses = Set.empty, --TODO
                     Sign.owlTaxonomy = Rel.empty, -- TODO
@@ -206,7 +183,7 @@ inducedFromToMorphism imap (ExtSign sig _) (ExtSign tSig _) =
                   isSub = Sign.nodes targetSig `Set.isSubsetOf` Sign.nodes tSig
               in if isSub then return Morphism.Morphism
                      { Morphism.source = sig
-                     , Morphism.nodeMap = makePMapR imap sig
+                     , Morphism.nodeMap = makePMapR imap
                      , Morphism.owlMap = Map.empty -- TODO
                      , Morphism.target = tSig
                      }

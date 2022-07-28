@@ -59,7 +59,7 @@ instance SymbolName ResolvedNode where
   addString (ResolvedNode t1 t2 r, s) = ResolvedNode t1 (addStringToTok t2 s) r
 
 instance Pretty ResolvedNode where
-  pretty (ResolvedNode o i r) = pretty $ Node (Just o) (Just i) r
+  pretty (ResolvedNode o i r) = pretty $ Node o (Just i) r
 
 instance GetRange ResolvedNode where
   getRange = const nullRange
@@ -88,7 +88,7 @@ nesyIdMap :: Set.Set ResolvedNode -> Map.Map Token Token
 nesyIdMap nodes = Map.fromList [(i, o) | ResolvedNode o i _ <- Set.toList nodes]
 
 resolved2Node :: ResolvedNode -> Node
-resolved2Node (ResolvedNode t i r) = Node (Just t) (Just i) r
+resolved2Node (ResolvedNode t i r) = Node t (Just i) r
 
 id2SimpleId :: Id -> Token
 id2SimpleId i = case filter (not . isPlace) $ getTokens i of

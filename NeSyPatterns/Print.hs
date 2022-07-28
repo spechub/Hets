@@ -23,7 +23,7 @@ instance Pretty Node where
     pretty = printNode
 
 printNode :: Node -> Doc
-printNode (Node mot _ _) = maybe empty pretty mot
+printNode (Node ot mni _) = maybe empty (\ni -> pretty ni <+> colon) mni <+> pretty ot
 
 printBasicSpec :: BASIC_SPEC -> Doc
 printBasicSpec (Basic_spec l) = vsep $ map (printAnnoted pretty) l

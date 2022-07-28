@@ -32,10 +32,10 @@ import Data.Data
 -- DrIFT command
 {-! global: GetRange !-}
 
--- | nodes are of form: ontology_term[id]
--- | both components are optional, but at least one must be present
+-- | nodes are of form: id : ontology_term
+-- | id is optional
 data Node = Node {
-    ontologyTerm :: (Maybe Id.Token),
+    ontologyTerm :: Id.Token,
     nesyId :: (Maybe Id.Token),
     nodeRange :: Id.Range
   } deriving (Show, Typeable, Data, Eq, Ord)

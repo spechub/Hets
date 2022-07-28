@@ -115,7 +115,8 @@ setMimeType m ln = ln { mimeType = m }
 
 -- | interpret library IRI as file path
 libToFileName :: LibName -> FilePath
-libToFileName = showIRIFull . setAngles False . getLibId
+libToFileName ln = let iri = getLibId ln in
+  if hasFullIRI iri then showIRIFull . setAngles False $ iri else showIRI iri
 
 -- | extract location IRI as file name
 getFilePath :: LibName -> FilePath

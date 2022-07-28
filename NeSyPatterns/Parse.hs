@@ -3,6 +3,7 @@ module NeSyPatterns.Parse (basicSpec, symb, symbItems, symbMapItems) where
 import Common.Keywords
 import Common.AnnoState
 import Common.Id
+import Common.IRI
 import Common.Lexer
 import Common.Parsec
 
@@ -15,13 +16,13 @@ import Data.Maybe (isJust, catMaybes)
 import Text.ParserCombinators.Parsec
 
 symb :: AParser st SYMB
-symb = Symb_id <$> name
+symb = Symb_id <$> name mempty
 
 symbItems :: AParser st SYMB_ITEMS
 symbItems = do
-    items <- fst <$> symb `separatedBy` anComma
-    let range = concatMapRange getRange items
-    return $ Symb_items items range
+    is <- fst <$> symb `separatedBy` anComma
+    let range = concatMapRange getRange is
+    return $ Symb_items is range
 
 symbOrMap :: AParser st SYMB_OR_MAP
 symbOrMap = do
@@ -33,39 +34,46 @@ symbOrMap = do
 
 symbMapItems :: AParser st SYMB_MAP_ITEMS
 symbMapItems = do
-    items <- fst <$> symbOrMap `separatedBy` anComma
-    let range = concatMapRange getRange items
-    return $ Symb_map_items items range
+    is <- fst <$> symbOrMap `separatedBy` anComma
+    let range = concatMapRange getRange is
+    return $ Symb_map_items is range
 
 nesyKeywords :: [String]
 nesyKeywords = [endS]
 
-name :: AParser st Token
-name = try $ checkWithUsing (\i -> "keyword \"" ++ show i ++ "\"") name' check where
-    startChars = alphaNum <|> char '_'
-    allowedChars = startChars <|> oneOf "-:"
-    name' = wrapAnnos $ pToken (startChars <:> many (allowedChars))
-    check s = show s `notElem` nesyKeywords
+uriQ :: CharParser st IRI
+uriQ = iriCurie
 
-ontologyTermP :: AParser st Token
-ontologyTermP = name
+expUriP :: GA.PrefixMap -> CharParser st IRI
+expUriP pm = uriP >>= return . expandIRI pm
 
-nodeId :: AParser st Token
-nodeId = brackets name
+uriP :: CharParser st IRI
+uriP = try $ do
+  startsWithColon <- isJust <$> (optionMaybe . try . lookAhead $ char ':')
+  checkWithUsing (\i -> "keyword \"" ++ showIRI i ++ "\"") uriQ $ \ q -> let p = prefixName q in
+    if not (isAbbrev q) || startsWithColon then True
+    else not (null p) || (iFragment q) `notElem` nesyKeywords
 
-node :: AParser st Node
-node = do
-    otM <- optionMaybe ontologyTermP
-    idM <- if isJust otM then optionMaybe nodeId else Just <$> nodeId
-    let range = catRange . catMaybes $ [otM, idM]
-    return $ Node otM idM range
+name :: GA.PrefixMap -> AParser st Token
+name pm = wrapAnnos $ do
+    iri <- expUriP pm
+    return (mkSimpleId (show iri)) { tokPos = iriPos iri}
+
+node :: GA.PrefixMap -> AParser st Node
+node pm = do
+    n <- name pm
+    classM <- optionMaybe (asKey ":" >> name pm)
+    let range = catRange . catMaybes $ [Just n, classM]
+    return $ case classM of
+        Nothing -> Node n Nothing range
+        Just ot -> Node ot (Just n) range
 
 
-basicItem :: AParser st BASIC_ITEM
-basicItem = Path <$> fst <$> separatedBy node (asKey "->") << anSemi
+basicItem :: GA.PrefixMap -> AParser st BASIC_ITEM
+basicItem pm = Path <$> fst <$> separatedBy (node pm) (asKey "->") << anSemi
 
 basicSpec :: GA.PrefixMap -> AParser st BASIC_SPEC
-basicSpec _ = Basic_spec <$> annosParser basicItem
+basicSpec pm = Basic_spec <$> annosParser (basicItem pm)
 
 
 
