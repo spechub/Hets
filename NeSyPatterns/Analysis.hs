@@ -86,14 +86,15 @@ retrieveBasicItem ::
     -> Result.Result Sign                                -- Output Signature
 retrieveBasicItem x sig = case x of
       AS.Path [] -> return sig
-      AS.Path ns -> do
-        let n0 = last ns
-        n0' <- resolveNode n0
-        (_, sig') <- foldrM (\f (t, s) -> do
-            resolvedFrom <- resolveNode f
-            return (resolvedFrom, addEdgeToSig s (resolvedFrom, t))
-          ) (n0', sig) (init ns)
-        return sig'
+      AS.Path nodes -> do
+        let n0 = last nodes
+        n0' <- resolveNode sig n0
+        let sig' = addToSig sig n0'
+        (_, sig'') <- foldrM (\f (t, s) -> do
+            resolvedFrom <- resolveNode sig' f
+            return (resolvedFrom, addEdgeToSig' s (resolvedFrom, t))
+          ) (n0', sig') (init nodes)
+        return sig''
         
 
 resolveNode :: AS.Node -> Result.Result ResolvedNode
