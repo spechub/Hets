@@ -925,12 +925,9 @@ parseOntology pm = do
     imports <- importEntry pm
     anns <- optionalAnnos pm
     axs <- many $ parseFrame pm
-    return $ Ontology ontologyIRI versionIRI imports anns (concat axs)
-
-parseOntologyByIRI :: GA.PrefixMap -> CharParser st Ontology
-parseOntologyByIRI pm = do
-  o <- expUriP pm
-  return $ emptyOntology {mOntologyIRI = Just o}
+    case (ontologyIRI, versionIRI, imports, anns, axs) of
+      (Nothing, Nothing, [], [], []) -> unexpected "empty ontology"
+      _ -> return $ Ontology ontologyIRI versionIRI imports anns (concat axs)
   
 
 parsePrefixDeclaration :: CharParser st (String, IRI)
