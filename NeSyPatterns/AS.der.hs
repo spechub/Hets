@@ -21,6 +21,7 @@ Definition of abstract syntax for neural-symbolic patterns
 
 module NeSyPatterns.AS where
 
+import Common.IRI
 import Common.Id as Id
 import Common.Doc
 import Common.DocUtils
@@ -35,8 +36,8 @@ import Data.Data
 -- | nodes are of form: id : ontology_term
 -- | id is optional
 data Node = Node {
-    ontologyTerm :: Id.Token,
-    nesyId :: (Maybe Id.Token),
+    ontologyTerm :: IRI,
+    nesyId :: (Maybe IRI),
     nodeRange :: Id.Range
   } deriving (Show, Typeable, Data, Eq, Ord)
 newtype BASIC_SPEC = Basic_spec { items :: [AS_Anno.Annoted BASIC_ITEM] }
@@ -48,7 +49,7 @@ data BASIC_ITEM = Path {
     deriving (Show, Typeable, Data)
 
 
-newtype SYMB = Symb_id Id.Token
+newtype SYMB = Symb_id IRI
             deriving (Show, Eq, Ord, Typeable, Data)
 
 data SYMB_ITEMS = Symb_items [SYMB] Id.Range

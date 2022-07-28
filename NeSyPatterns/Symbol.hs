@@ -26,6 +26,7 @@ module NeSyPatterns.Symbol
     , applySymMap          -- application function for symbol maps
     ) where
 
+import Common.IRI
 import qualified Common.Id as Id
 import Common.Doc
 import Common.DocUtils
@@ -67,12 +68,14 @@ getSymbolMap f =
 
 -- | Determines the name of a symbol
 getSymbolName :: Symbol -> Id.Id
-getSymbolName (Symbol ( AS.Node o i _)) = Id.mkId $ catMaybes [Just o, i]
+getSymbolName (Symbol ( AS.Node o i _)) = Id.appendId (uriToCaslId o) (maybe (Id.mkId []) uriToCaslId i)
 
 -- | make a raw_symbol
 idToRaw :: Id.Id -> Symbol
 idToRaw mid = case Id.getPlainTokenList mid of
-  [o, i] -> Symbol $ AS.Node o (Just i) (Id.posOfId mid)
+  [o, i] -> case (parseIRI $ show o, parseIRI $ show i) of 
+      (Just o', Just i') -> Symbol $ AS.Node o' (Just i') (Id.posOfId mid)
+      _ -> error "NeSyPatterns.Symbol.idToRaw: Invalid iri"
   _ -> error "NeSyPatterns.Symbol.idToRaw: Invalid number of tokens"
 
 -- | convert to raw symbol

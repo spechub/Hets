@@ -54,16 +54,14 @@ uriP = try $ do
     if not (isAbbrev q) || startsWithColon then True
     else not (null p) || (iFragment q) `notElem` nesyKeywords
 
-name :: GA.PrefixMap -> AParser st Token
-name pm = wrapAnnos $ do
-    iri <- expUriP pm
-    return (mkSimpleId (show iri)) { tokPos = iriPos iri}
+name :: GA.PrefixMap -> AParser st IRI
+name pm = wrapAnnos $ expUriP pm
 
 node :: GA.PrefixMap -> AParser st Node
 node pm = do
     n <- name pm
     classM <- optionMaybe (asKey ":" >> name pm)
-    let range = catRange . catMaybes $ [Just n, classM]
+    let range = getRange . catMaybes $ [Just n, classM]
     return $ case classM of
         Nothing -> Node n Nothing range
         Just ot -> Node ot (Just n) range
