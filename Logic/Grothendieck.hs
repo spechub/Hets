@@ -811,7 +811,7 @@ gsigIntersect _lg both gsig1@(G_sign lid1 (ExtSign _sigma1 _) _)
 homogeneousGsigIntersect :: Bool -> G_sign -> G_sign -> Result G_sign
 homogeneousGsigIntersect _both (G_sign lid1 sigma1@(ExtSign _sig1 syms1) _) (G_sign lid2 sigma2 _) = do
   sigma2'@(ExtSign sig2 _) <- coerceSign lid2 lid1 "Intersection of signatures" sigma2
-  sigma3@(ExtSign sig3 _) <- ext_signature_intersect lid1 sigma1 sigma2'
+  ExtSign sig3 _ <- ext_signature_intersect lid1 sigma1 sigma2'
   let syms2 = symset_of lid1 sig2
       symI = Set.intersection syms1 syms2
   return $ G_sign lid1

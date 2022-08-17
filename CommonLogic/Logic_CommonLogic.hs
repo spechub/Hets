@@ -33,7 +33,7 @@ import CommonLogic.OMDoc
 import CommonLogic.Sublogic
 
 import qualified Data.Map as Map
-import Data.Monoid
+import Data.Monoid ()
 
 import Logic.Logic
 

@@ -26,7 +26,7 @@ import Framework.ATC_Framework ()
 
 import Logic.Logic
 
-import Data.Monoid
+import Data.Monoid ()
 
 import Common.DefaultMorphism
 

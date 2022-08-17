@@ -29,7 +29,7 @@ import Common.Result
 import Common.ExtSign
 
 import qualified Data.Map as Map
-import Data.Monoid
+import Data.Monoid ()
 
 data LF = LF deriving Show
 

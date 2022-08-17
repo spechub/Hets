@@ -270,14 +270,6 @@ renderExtText stripCs ga =
 instance Show Doc where
     show = renderText emptyGlobalAnnos
 
-removeTrailingSpaces :: Int -> String -> String
-removeTrailingSpaces n s = case s of
-  "" -> ""
-  c : r -> case c of
-    ' ' -> removeTrailingSpaces (n + 1) r
-    _ -> (if c == '\n' then "" else replicate n ' ')
-         ++ c : removeTrailingSpaces 0 r
-
 renderHtml :: GlobalAnnos -> Doc -> String
 renderHtml = renderExtHtml (StripComment False) $ MkLabel False
 
