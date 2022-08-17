@@ -43,9 +43,13 @@ import Common.Doc
 import Common.DocUtils
 import Common.SetColimit
 import Common.IRI
+import Common.Keywords
 
 import NeSyPatterns.AS
 import NeSyPatterns.Print()
+
+import OWL2.AS
+import OWL2.Pretty
 
 
 data ResolvedNode = ResolvedNode {
@@ -89,6 +93,14 @@ nesyIdMap nodes = Map.fromList [(i, o) | ResolvedNode o i _ <- Set.toList nodes]
 resolved2Node :: ResolvedNode -> Node
 resolved2Node (ResolvedNode t i r) = Node t (Just i) r
 
+-- | Builds the owl2 ontology from a signature
+getOntology :: Sign -> OntologyDocument
+getOntology s = let
+    decls = Declaration [] . mkEntity Class <$> Set.toList (owlClasses s)
+    subClasses = fmap (\(a,b) -> SubClassOf [] (Expression a) (Expression b)) $ Rel.toList (owlTaxonomy s)
+    subClassAxs = ClassAxiom <$> subClasses
+    axs = decls ++ subClassAxs
+  in emptyOntologyDoc { ontology = emptyOntology { axioms = axs}}
 
 {- | determines whether a signature is vaild -}
 isLegalSignature :: Sign -> Bool
@@ -98,18 +110,14 @@ isLegalSignature s =
 
 -- | pretty printin for edge e.g. tuple (ResolvedNode, ResolvedNode)
 printEdge :: (ResolvedNode, ResolvedNode) -> Doc
-printEdge (node1, node2) =
-  fsep . punctuate (text " ->") $ map pretty [node1, node2]
+printEdge (node1, node2) = pretty node1 <+> text "->" <+> pretty node2 <> semi
+  -- (fsep . punctuate (text " ->") $ map pretty [node1, node2]) <> semi
 
 -- | pretty printing for Signatures
 printSign :: Sign -> Doc
-printSign s =
-    hsep [-- sepBySemis $ map pretty $ Set.toList $ owlClasses s,
-          sepBySemis $ map pretty $ Rel.toList $ owlTaxonomy s,
-          sepBySemis $ map pretty $ Set.toList $ nodes s,
-          sepBySemis $ map printEdge $ Rel.toList $ edges s
-          --sepBySemis $ map pretty $ Map.toList $ idMap s
-         ]
+printSign s = keyword dataS <+> (specBraces . toDocAsMS . getOntology $ s) $+$
+    (vcat . map printEdge . Rel.toList . edges $ s) $+$
+    (vcat . map ((<> semi) . pretty) . Set.toList $ (nodes s Set.\\ (Set.union (Rel.dom . edges $ s) (Rel.ran . edges $ s))))
 
 -- | Adds a node to the signature
 addToSig :: Sign -> ResolvedNode -> Sign
