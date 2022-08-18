@@ -140,7 +140,7 @@ computeSymbolCommonnesses gTheoryLid ExtSign{plainSign = sign}
                            -> Map symbol Int
                            -> G_SInEResult
                            -> G_SInEResult
-    withSymbolCommonnesses lid symbolCommonnesses' G_SInEResult{..} =
+    withSymbolCommonnesses lid symbolCommonnesses' _ =
       G_SInEResult gSineLogic parameters
         (coerceSymbolCommonnesses "withSymbolCommonnesses" lid gSineLogic symbolCommonnesses')
         premiseTriggers leastCommonSymbols selectedPremises selectedPremiseNames
@@ -185,7 +185,7 @@ computeLeastCommonSymbols gTheoryLid ExtSign{plainSign = sign}
                            -> Map (Named sentence) (symbol, Int)
                            -> G_SInEResult
                            -> G_SInEResult
-    withLeastCommonSymbols lid leastCommonSymbols' G_SInEResult{..} =
+    withLeastCommonSymbols lid leastCommonSymbols' _ =
       G_SInEResult gSineLogic parameters symbolCommonnesses premiseTriggers
         (coerceLeastCommonSymbols "withLeastCommonSymbols" lid gSineLogic leastCommonSymbols')
         selectedPremises selectedPremiseNames
@@ -239,7 +239,7 @@ computePremiseTriggers gTheoryLid ExtSign{plainSign = sign}
                         -> Map symbol [(Double, Named sentence)]
                         -> G_SInEResult
                         -> G_SInEResult
-    withPremiseTriggers lid premiseTriggers' G_SInEResult{..} =
+    withPremiseTriggers lid premiseTriggers' _ =
       G_SInEResult gSineLogic parameters symbolCommonnesses
         (coercePremiseTriggers "withPremiseTriggers" lid gSineLogic premiseTriggers')
         leastCommonSymbols selectedPremises selectedPremiseNames
@@ -342,7 +342,7 @@ saveToDatabase :: MonadIO m
                -> Entity LocIdBase
                -> SinePremiseSelectionId
                -> DBMonad m ()
-saveToDatabase opts G_SInEResult{..} omsEntity sinePremiseSelectionKey = do
+saveToDatabase _ G_SInEResult{..} omsEntity sinePremiseSelectionKey = do
   saveSymbolPremiseTriggers
   saveSymbolCommonnesses
   return ()
