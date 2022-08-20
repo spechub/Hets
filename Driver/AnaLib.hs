@@ -76,7 +76,7 @@ anaLib opts origName = do
 anaLibExt :: HetcatsOpts -> FilePath -> LibEnv -> DGraph
   -> IO (Maybe (LibName, LibEnv))
 anaLibExt opts file libEnv initDG = do
-    Result ds res <- runResultT $ anaLibFileOrGetEnv (logicGraphForFile file) opts
+    Result ds res <- runResultT $ anaLibFileOrGetEnv logicGraph opts
       Set.empty libEnv initDG Nothing file
     showDiags opts ds
     case res of
