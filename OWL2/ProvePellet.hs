@@ -15,7 +15,6 @@ See <http://www.w3.org/2004/OWL/> for details on OWL, and
 
 module OWL2.ProvePellet
   ( runTimedPellet
-  , pelletJar
   , pelletEnv
   , pelletProver
   , pelletConsChecker
@@ -54,19 +53,23 @@ import Control.Concurrent
 pelletS :: String
 pelletS = "Pellet"
 
-pelletJar :: String
-pelletJar = "lib/pellet-cli.jar"
+pelletBinary :: String
+pelletBinary = "pellet"
 
 pelletEnv :: String
 pelletEnv = "PELLET_PATH"
 
 pelletCheck :: IO (Maybe String)
-pelletCheck = fmap
-  (\ l ->
-    if null l
-    then Just $ pelletJar ++ " not found in $" ++ pelletEnv
-    else Nothing)
-  $ check4FileAux pelletJar pelletEnv
+pelletCheck = do
+  binInEnv <- check4FileAux pelletBinary pelletEnv
+  case binInEnv of
+    [] -> do
+      binInPath <- checkBinary pelletBinary
+      case binInPath of
+        Just e -> return . Just $
+          pelletBinary ++ " not found in $" ++ pelletEnv ++ "\n" ++ e
+        _ -> return Nothing
+    _ -> return Nothing
 
 {- |
   The Prover implementation. First runs the batch prover (with graphical
@@ -74,7 +77,7 @@ pelletCheck = fmap
 -}
 pelletProver :: Prover Sign Axiom OWLMorphism ProfSub ProofTree
 pelletProver =
-  (mkAutomaticProver "java" pelletS dlS pelletGUI pelletCMDLautomaticBatch)
+  (mkAutomaticProver pelletBinary pelletS dlS pelletGUI pelletCMDLautomaticBatch)
   { proverUsable = pelletCheck }
 
 pelletConsChecker :: ConsChecker Sign Axiom ProfSub OWLMorphism ProofTree
@@ -175,22 +178,18 @@ runTimedPellet :: String -- ^ pellet subcommand
   -> Int                 -- ^ time limit in seconds
   -> IO (Maybe (Bool, String, String)) -- ^ timeout or (success, stdout, stderr)
 runTimedPellet opts tmpFileName prob entail secs = do
-  (progTh, pPath) <- check4jarFile pelletEnv pelletJar
-  if progTh then withinDirectory pPath $ do
-      timeTmpFile <- getTempFile prob tmpFileName
-      let entFile = timeTmpFile ++ ".entail.owl"
-          doEntail = isJust entail
-          args = "-Xmx512m" : "-jar" : pelletJar
-           : (if doEntail then ["entail", "-e", entFile] else words opts)
-           ++ ["file://" ++ timeTmpFile]
-      case entail of
-        Just c -> writeFile entFile c
-        Nothing -> return ()
-      mex <- timeoutCommand secs "java" args
-      removeFile timeTmpFile
-      when doEntail $ removeFile entFile
-      return $ fmap (\ (_, outS, errS) -> (True, outS, errS)) mex
-    else return $ Just (False, "", "")
+    timeTmpFile <- getTempFile prob tmpFileName
+    let entFile = timeTmpFile ++ ".entail.owl"
+        doEntail = isJust entail
+        args =(if doEntail then ["entail", "-e", entFile] else words opts)
+          ++ ["file://" ++ timeTmpFile]
+    case entail of
+      Just c -> writeFile entFile c
+      Nothing -> return ()
+    mex <- timeoutCommand secs pelletBinary args
+    removeFile timeTmpFile
+    when doEntail $ removeFile entFile
+    return $ fmap (\ (_, outS, errS) -> (True, outS, errS)) mex
 
 runPellet :: ProverState
           {- ^ logical part containing the input Sign and axioms and possibly
@@ -267,5 +266,5 @@ analyseOutput err outp =
           _ -> (atp, exCode, to)
       (atpr, st, tmo) = foldl anaHelp (ATPError "", Nothing, -1) ls
   in case atpr of
-       ATPError s | null s -> (ATPError "unexpected pellet output", st, ls, tmo)
+       ATPError s | null s -> (ATPError ("unexpected pellet output:\n" ++ outp), st, ls, tmo)
        _ -> (atpr, st, ls, tmo)
