@@ -26,11 +26,13 @@ import Data.Maybe (mapMaybe)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
+import Common.IRI (expandIRI')
+
 data NumberRestrictions = None | Unqualified | Qualified
     deriving (Show, Eq, Ord, Typeable, Data)
 
 owlDatatypes :: Set.Set Datatype
-owlDatatypes = predefIRIs
+owlDatatypes = Set.map (expandIRI' predefPrefixes) predefIRIs
 
 data OWLSub = OWLSub
     { numberRestrictions :: NumberRestrictions -- ^ Cardinaly restrictions the can be used

@@ -532,7 +532,7 @@ setXMLNS e = e {elAttribs = Attr {attrKey = makeQN "xmlns", attrVal =
 xmlOntologyDoc :: Sign -> OntologyDocument -> Element
 xmlOntologyDoc s od =
     let ont = ontology od
-        pd = prefixDeclaration od
+        pd = Map.unions [prefixDeclaration od, Map.singleton "" dummyIRI]
         emptyPref = showIRI $ fromMaybe dummyIRI $ Map.lookup "" pd
     in setBase emptyPref $ setXMLNS
         $ setOntIRI (mOntologyIRI ont)
