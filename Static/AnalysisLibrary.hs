@@ -153,7 +153,7 @@ anaStringAux :: Maybe LibName -- ^ suggested library name
   -> FilePath -> (LibName, LibEnv) -> LIB_DEFN -> ResultT IO (LibName, LibEnv)
 anaStringAux mln lgraph opts topLns initDG mt file posFileName (_, libenv)
              (Lib_defn pln is' ps ans) = do
-  let pm = fst $ partPrefixes ans
+  let pm = Map.union (fst $ partPrefixes ans) (prefixes lgraph)
       expnd i = fromMaybe i $ expandCurie pm i
       spNs = Set.unions . map (Set.map expnd . getSpecNames)
         $ concatMap (getSpecDef . item) is'
