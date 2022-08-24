@@ -208,10 +208,10 @@ runFact sps cfg saveFact thName nGoal = do
         writeFile (tmpFileName ++ ".entail.owl") entail
       mExit <- runTimedFact tmpFileName prob (Just entail) tLimit
       let ((err, retval), output, tUsed) = case mExit of
-            Just (b, ex, output, t_u) -> if b then let outp = lines output in
-                (proofStat ex outp t_u, outp, t_u)
+            Just (b, ex, out, t_u) -> if b then let outlines = lines out in
+                (proofStat ex outlines t_u, outlines, t_u)
               else
-                ((ATPError output, defaultProofStatus), [], t_u)
+                ((ATPError out, defaultProofStatus), [], t_u)
             Nothing -> ( (ATPTLimitExceeded, defaultProofStatus), [], midnight)
       return (err, cfg
             { proofStatus = retval
