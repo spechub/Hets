@@ -34,7 +34,7 @@ import CSL.Symbol
 import CSL.Tools
 
 import qualified Data.Map as Map
-import Data.Monoid
+import Data.Monoid ()
 
 import Logic.Logic
 

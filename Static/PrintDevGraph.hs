@@ -395,6 +395,7 @@ instance Pretty GlobalEntry where
     AlignEntry ae -> pretty ae
     ArchOrRefEntry b ae -> (if b then topKey archS else keyword refinementS)
       <+> pretty ae
+    _ -> Doc.empty
 
 instance Pretty DGraph where
   pretty dg = vcat

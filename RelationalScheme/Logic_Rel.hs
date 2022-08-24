@@ -17,7 +17,7 @@ module RelationalScheme.Logic_Rel where
 import Common.DocUtils
 import Common.Id
 
-import Data.Monoid
+import Data.Monoid ()
 import qualified Data.Set as Set
 
 import Logic.Logic
