@@ -62,9 +62,16 @@ library lG = do
     return (Lib_defn ln ls ps (an1 ++ an2))
 
 -- | Parse library name
+-- For expanding the iri of the library name the empty prefix is to `"file://"
+-- to parse the it as an individual file. Otherwise the default empty prefix
+-- would be used.
 libName :: LogicGraph -> AParser st LibName
-libName lG = liftM2 mkLibName (hetIRI lG)
+libName lG = liftM2 mkLibName (hetIRI lG')
   $ if dolOnly lG then return Nothing else optionMaybe version
+  where
+    fileIRI = nullIRI { iriScheme = "file://"}
+    pm = Map.insert "" fileIRI $ prefixes lG
+    lG' = lG {prefixes = pm}
 
 -- | Parse the library version
 version :: AParser st VersionNumber

@@ -22,6 +22,7 @@ module Common.LibName
   , unQualName
   , setFilePath
   , libToFileName
+  , libToString
   , getFilePath
   , iriLibName
   , filePathToLibId
@@ -117,6 +118,11 @@ setMimeType m ln = ln { mimeType = m }
 libToFileName :: LibName -> FilePath
 libToFileName ln = let iri = getLibId ln in
   if hasFullIRI iri then showIRIFull . setAngles False $ iri else showIRI iri
+
+-- | interpret library IRI as path. Uses CURIE if available.
+libToString :: LibName -> String
+libToString = iriToStringUnsecure . setAngles False . getLibId
+
 
 -- | extract location IRI as file name
 getFilePath :: LibName -> FilePath
