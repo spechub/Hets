@@ -171,7 +171,6 @@ VSE/ATC_VSE.der.hs
 VSE/ATC_VSE.hs
 utils/DrIFT
 utils/DtdToHaskell
-utils/DtdToHaskell-src/DtdToHaskell/
 utils/appendHaskellPreludeString
 utils/genRules
 Hybrid/ATC_Hybrid.hs

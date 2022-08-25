@@ -126,7 +126,7 @@ addImplied ax = case ax of
 prove1 :: AS.Annotation -> Bool
 prove1 anno = case anno of
       AS.Annotation _ aIRI (AS.AnnValLit (AS.Literal value (AS.Typed _))) ->
-          show (iriPath aIRI) == "Implied" && isInfixOf "true" value
+          iFragment aIRI == "Implied" && isInfixOf "true" value
       _ -> False
 
 proveAnnos :: [AS.Annotation] -> Bool
