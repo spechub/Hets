@@ -925,7 +925,10 @@ parseOntology pm = do
     imports <- importEntry pm
     anns <- optionalAnnos pm
     axs <- many $ parseFrame pm
-    return $ Ontology ontologyIRI versionIRI imports anns (concat axs)
+    case (ontologyIRI, versionIRI, imports, anns, axs) of
+      (Nothing, Nothing, [], [], []) -> unexpected "empty ontology"
+      _ -> return $ Ontology ontologyIRI versionIRI imports anns (concat axs)
+  
 
 parsePrefixDeclaration :: CharParser st (String, IRI)
 parsePrefixDeclaration =  do

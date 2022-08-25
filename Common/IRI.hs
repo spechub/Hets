@@ -1179,6 +1179,7 @@ to the prefix of @c@ or the concatenation of @i@ and @iriPath c@
 is not a valid IRI. -}
 expandCurie :: Map String IRI -> IRI -> Maybe IRI
 expandCurie pm iri
+    | hasFullIRI iri = Just iri
     | isAbbrev iri = do
         def <- Map.lookup (prefixName iri) pm
         let defS = iriToStringFull id (setAngles False def) ""
@@ -1196,6 +1197,7 @@ expansion can be done more efficient than using @expandCurie@.
 -}
 expandCurie' :: Map String String -> IRI -> Maybe IRI
 expandCurie' pm iri
+    | hasFullIRI iri = Just iri
     | isAbbrev iri = do
         def <- Map.lookup (prefixName iri) pm
         -- remove surrounding angle brackets if needed
