@@ -27,6 +27,7 @@ import Common.Utils
 
 import Control.Monad
 import Control.Monad.Trans
+import qualified Control.Monad.Fail as Fail
 
 import OWL2.XML
 import OWL2.Rename (unifyDocs)
@@ -50,7 +51,7 @@ parseOWL quick fullFileName = do
           cont <- lift $ L.readFile tmpFile
           lift $ removeFile tmpFile
           parseProc cont
-      _ -> fail $ "process stop! " ++ shows exitCode "\n" ++ errStr
+      _ -> Fail.fail $ "process stop! " ++ shows exitCode "\n" ++ errStr
 
 parseOWLAux :: Bool         -- ^ Sets Option.quick
          -> FilePath        -- ^ local filepath or uri
@@ -62,7 +63,7 @@ parseOWLAux quick fn args = do
     if hasJar
       then lift $ executeProcess "java" (["-Djava.util.logging.config.class=JulConfig", "-Dorg.semanticweb.owlapi.model.parameters.ConfigurationOptions.REPORT_STACK_TRACES=false", "-jar", toolPath </> jar]
         ++ args ++ [fn] ++ ["-qk" | quick]) ""
-      else fail $ jar
+      else Fail.fail $ jar
         ++ " not found, check your environment variable: " ++ hetsOWLenv
 
 -- | converts owl file to desired syntax using owl-api
@@ -81,7 +82,7 @@ parseProc :: L.ByteString
 parseProc str = do
   res <- lift $ parseXml str
   case res of
-    Left err -> fail err
+    Left err -> Fail.fail err
     Right el -> let
       es = elChildren el
       mis = concatMap (filterElementsName $ isSmth "Missing") es

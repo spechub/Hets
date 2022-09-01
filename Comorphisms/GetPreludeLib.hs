@@ -26,6 +26,7 @@ import Static.GTheory
 import Common.Result
 import Common.ResultT
 import Common.Utils
+import qualified Control.Monad.Fail as Fail
 
 import Data.Maybe
 import qualified Data.Map as Map
@@ -41,7 +42,7 @@ readLib fp0 = do
   Result _ mLib <- runResultT $ anaLibFileOrGetEnv preLogicGraph
     opts Set.empty Map.empty emptyDG (fileToLibName opts fp) fp
   case mLib of
-    Nothing -> fail $ "library could not be read from: " ++ fp
+    Nothing -> Fail.fail $ "library could not be read from: " ++ fp
     Just (ln, le) -> do
       let dg = lookupDGraph ln le
       return . catMaybes . Map.fold (\ ge -> case ge of

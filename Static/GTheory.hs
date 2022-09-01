@@ -42,6 +42,7 @@ import qualified Data.Map as Map
 import Data.Typeable
 
 import Control.Monad (foldM)
+import qualified Control.Monad.Fail as Fail
 import Control.Exception
 
 -- a theory index describing a set of sentences
@@ -75,7 +76,7 @@ coerceThSens ::
            sign1 morphism1 symbol1 raw_symbol1 proof_tree1
    , Logic lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
            sign2 morphism2 symbol2 raw_symbol2 proof_tree2
-   , Monad m, Typeable b)
+   , Fail.MonadFail m, Typeable b)
    => lid1 -> lid2 -> String -> ThSens sentence1 b -> m (ThSens sentence2 b)
 coerceThSens = primCoerce
 
@@ -167,7 +168,7 @@ translateG_theory (GMorphism cid _ _ morphism2 _)
              startSigId (toThSens sens''') startThId
 
 -- | Join the sentences of two G_theories
-joinG_sentences :: Monad m => G_theory -> G_theory -> m G_theory
+joinG_sentences :: Fail.MonadFail m => G_theory -> G_theory -> m G_theory
 joinG_sentences (G_theory lid1 syn sig1 ind sens1 _)
                     (G_theory lid2 _ sig2 _ sens2 _) = do
   sens2' <- coerceThSens lid2 lid1 "joinG_sentences" sens2
@@ -176,7 +177,7 @@ joinG_sentences (G_theory lid1 syn sig1 ind sens1 _)
              $ G_theory lid1 syn sig1 ind (joinSens sens1 sens2') startThId
 
 -- | Intersect the sentences of two G_theories, G_sign is the intersection of their signatures
-intersectG_sentences :: Monad m => G_sign -> G_theory -> G_theory -> m G_theory
+intersectG_sentences :: Fail.MonadFail m => G_sign -> G_theory -> G_theory -> m G_theory
 intersectG_sentences (G_sign lidS signS indS)
                     (G_theory lid1 _ _ _ sens1 _)
                     (G_theory lid2 _ _ _ sens2 _) = do
@@ -186,7 +187,7 @@ intersectG_sentences (G_sign lidS signS indS)
 
 
 -- | flattening the sentences form a list of G_theories
-flatG_sentences :: Monad m => G_theory -> [G_theory] -> m G_theory
+flatG_sentences :: Fail.MonadFail m => G_theory -> [G_theory] -> m G_theory
 flatG_sentences = foldM joinG_sentences
 
 -- | Get signature of a theory
@@ -367,7 +368,7 @@ homogeniseGDiagram targetLid diag = do
         = if isIdComorphism (Comorphism cid) then
             do mor' <- coerceMorphism (targetLogic cid) targetLid "" mor
                return (n1, n2, (nr, mor'))
-          else fail $
+          else Fail.fail $
                "Trying to coerce a morphism between different logics.\n" ++
                "Heterogeneous specifications are not fully supported yet."
       convertNodes cDiag [] = return cDiag
@@ -401,7 +402,7 @@ homogeniseSink targetLid dEdges =
                if isIdComorphism (Comorphism cid) then
                   do mor' <- coerceMorphism (targetLogic cid) targetLid "" mor
                      return (n, mor')
-               else fail $
+               else Fail.fail $
                "Trying to coerce a morphism between different logics.\n" ++
                 "Heterogeneous specifications are not fully supported yet."
            convEdges [] = return []

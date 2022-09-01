@@ -32,6 +32,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 data CspSymbType
   = CaslSymbType SymbType
@@ -215,7 +216,7 @@ cspSymbOrMapToRaw sig msig k (CspSymbMap s mt) = case mt of
                 : zipWith pairS (res1 : args1) (res2 : args2)
             (CaslSymbType SortAsItemType, CaslSymbType SortAsItemType) ->
               return [(w, x)]
-            _ -> fail $ "profiles of '" ++ showDoc c1 "' and '"
+            _ -> Fail.fail $ "profiles of '" ++ showDoc c1 "' and '"
                ++ showDoc c2 "' do not match"
         _ -> return [(w, x)]
 

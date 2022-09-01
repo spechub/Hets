@@ -16,6 +16,7 @@ Provides an xml parse function which depends on external libraries.
 module Common.XmlParser (XmlParseable (parseXml), readXmlFile) where
 
 import Text.XML.Light
+import qualified Control.Monad.Fail as Fail
 
 import qualified Data.ByteString.Lazy as BS
 #ifdef HEXPAT
@@ -28,7 +29,7 @@ readXmlFile :: FilePath -> IO BS.ByteString
 readXmlFile fp = do
   bs <- BS.readFile fp
   if BS.length bs > 0 then return bs else
-      fail "Common.XmlParser.readXmlFile: empty file"
+      Fail.fail "Common.XmlParser.readXmlFile: empty file"
 
 {- | This class provides an xml parsing function which is instantiated
 by using the hexpat or the XML.Light library, dependent on the haskell

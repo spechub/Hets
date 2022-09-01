@@ -36,6 +36,7 @@ import Data.Maybe (isJust)
 import qualified Data.Map as Map (fromList, unions)
 import Data.Either (partitionEithers)
 import Control.Monad (liftM2, unless)
+import qualified Control.Monad.Fail as Fail
 
 type Annotations = [Annotation]
 -- | Parses a comment
@@ -801,7 +802,7 @@ parseVariable pm = optParensP $ do
 parseNoVariable :: CharParser st a -> CharParser st a
 parseNoVariable p = do
   nextChar <- lookAhead anyChar
-  if nextChar == '?' then fail "Variable" else p
+  if nextChar == '?' then Fail.fail "Variable" else p
 
 parseClassExprAtom :: GA.PrefixMap -> CharParser st Atom
 parseClassExprAtom pm = do
@@ -858,7 +859,7 @@ parseDArg pm = (DArg <$> literal pm) <|> (DVar <$> parseVariable pm)
 
 parseBuiltInAtom :: GA.PrefixMap -> IRI -> CharParser st Atom
 parseBuiltInAtom pm pre = do
-  unless (isSWRLBuiltIn pre) $ fail ("\"" ++ show pre ++ "\" is not a built in predicate.")
+  unless (isSWRLBuiltIn pre) $ Fail.fail ("\"" ++ show pre ++ "\" is not a built in predicate.")
   BuiltInAtom pre <$> sepByComma (parseDArg pm)
 
 

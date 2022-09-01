@@ -47,6 +47,7 @@ module Comorphisms.LogicGraph
     ) where
 
 import qualified Data.Map as Map
+import qualified Control.Monad.Fail as Fail
 import Data.Maybe (fromMaybe)
 
 import Common.Result
@@ -320,4 +321,4 @@ lookupQTA_in_LG coname =
    qta = qTATranslations logicGraph
  in if coname `elem` Map.keys qta then
         return $ Map.findWithDefault (error "") coname qta
-      else fail "no translation found"
+      else Fail.fail "no translation found"

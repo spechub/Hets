@@ -44,6 +44,7 @@ import Common.Id
 import Common.Result
 import Common.DocUtils
 import qualified Common.Lib.MapSet as MapSet
+import qualified Control.Monad.Fail as Fail
 
 -- | lid of the morphism
 data CASL2Prop = CASL2Prop deriving Show
@@ -143,4 +144,4 @@ trForm form = case form of
   Atom b rn -> return $ (if b then PBasic.True_atom else PBasic.False_atom) rn
   Predication (Qual_pred_name pid (Pred_type [] _) _) [] _ ->
     return . PBasic.Predication . mkSimpleId $ show pid
-  _ -> fail $ "not a propositional formula: " ++ showDoc form ""
+  _ -> Fail.fail $ "not a propositional formula: " ++ showDoc form ""

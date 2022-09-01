@@ -17,6 +17,7 @@ import OWL2.XMLConversion
 import OWL2.Sign(emptySign)
 import OWL2.Pretty
 import qualified Data.ByteString.Lazy as L
+import qualified Control.Monad.Fail as Fail
 
 main :: IO ()
 main = do
@@ -38,4 +39,4 @@ main = do
       putStrLn ""
       return r) files
     putStrLn $ show (length $ filter id o) ++ "/" ++ show (length o)
-    if (length $ filter not o) > 0 then fail "Failed!" else return ()
+    if (length $ filter not o) > 0 then Fail.fail "Failed!" else return ()

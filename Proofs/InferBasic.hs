@@ -58,18 +58,19 @@ import Data.Graph.Inductive.Graph
 import Data.Maybe
 
 import Control.Monad.Trans
+import qualified Control.Monad.Fail as Fail
 
 selectProver :: [(G_prover, AnyComorphism)]
              -> ResultT IO (G_prover, AnyComorphism)
 selectProver ps = case ps of
-  [] -> fail "No prover available"
+  [] -> Fail.fail "No prover available"
   [p] -> return p
   _ -> do
    sel <- lift $ listBox "Choose a translation to a prover-supported logic"
      $ map (\ (aGN, cm) -> shows cm $ " (" ++ getProverName aGN ++ ")") ps
    i <- case sel of
            Just j -> return j
-           _ -> fail "Proofs.Proofs: selection"
+           _ -> Fail.fail "Proofs.Proofs: selection"
    return $ ps !! i
 
 proveTheory :: Logic lid sublogics
@@ -81,7 +82,7 @@ proveTheory :: Logic lid sublogics
            -> IO ( [ProofStatus proof_tree]
                 , [(Named sentence, ProofStatus proof_tree)])
 proveTheory _ =
-    fromMaybe (\ _ _ -> fail "proveGUI not implemented") . proveGUI
+    fromMaybe (\ _ _ -> error "proveGUI not implemented") . proveGUI
 
 
 {- | applies basic inference to a given node. The result is a theory which is

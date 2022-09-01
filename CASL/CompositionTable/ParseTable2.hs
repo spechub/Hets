@@ -25,6 +25,7 @@ import CASL.CompositionTable.Keywords
 import CASL.CompositionTable.ParseSparQ
 import Common.Parsec
 import Common.Utils
+import qualified Control.Monad.Fail as Fail
 
 import qualified Data.IntSet as IntSet
 import qualified Data.IntMap as IntMap
@@ -58,8 +59,8 @@ parseSparQTable = inParens $ do
   (i3, _) <- parseIdBaOths
   case i2 ++ i3 of
     [i] -> return $ Table2 calculusName (lkup i m) ns bs compt ct
-    [] -> fail "missing identity relation"
-    is -> fail $ "non-unique identity relation " ++ show is
+    [] -> Fail.fail "missing identity relation"
+    is -> Fail.fail $ "non-unique identity relation " ++ show is
 
 parseComTab :: BMap -> Parser CmpTbl
 parseComTab m = cKey compositionOperationS

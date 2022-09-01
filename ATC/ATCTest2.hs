@@ -20,6 +20,7 @@ import ATerm.Conversion
 import ATerm.ReadWrite
 import ATerm.Unshared
 import Common.Utils (readMaybe)
+import qualified Control.Monad.Fail as Fail
 import qualified Data.Map as Map
 import Data.List (isPrefixOf)
 
@@ -47,7 +48,7 @@ usage :: String -> FilePath -> IO ()
 usage cmd _ = do
   putStrLn ("unknown command: " ++ cmd)
   putStrLn "Known commands are: ReadWrite, [Check]Big{Map,List}<n>"
-  fail "no known command given"
+  Fail.fail "no known command given"
 
 generateRandomLists :: String -> IO [(Int, Int)]
 generateRandomLists upstr = do

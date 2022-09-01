@@ -51,6 +51,7 @@ import Common.Id
 import Common.LibName
 import Common.ProofUtils
 import Common.Result
+import qualified Control.Monad.Fail as Fail
 
 import Data.Data
 import Data.Maybe
@@ -112,7 +113,7 @@ class (Language cid,
     map_symbol = errMapSymbol
     extractModel :: cid -> sign1 -> proof_tree2
                  -> Result (sign1, [Named sentence1])
-    extractModel cid _ _ = fail
+    extractModel cid _ _ = Fail.fail
       $ "extractModel not implemented for comorphism "
       ++ language_name cid
     -- properties of comorphisms
@@ -179,7 +180,7 @@ failMapSentence :: Comorphism cid
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2
          => cid -> sign1 -> sentence1 -> Result sentence2
 failMapSentence cid _ _ =
-    fail $ "Unsupported sentence translation " ++ show cid
+    Fail.fail $ "Unsupported sentence translation " ++ show cid
 
 errMapSymbol :: Comorphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
@@ -265,7 +266,7 @@ mkIdComorphism lid sub = InclComorphism
 mkInclComorphism :: (Logic lid sublogics
                            basic_spec sentence symb_items symb_map_items
                            sign morphism symbol raw_symbol proof_tree,
-                     Monad m) =>
+                     Fail.MonadFail m) =>
                     lid -> sublogics -> sublogics
                  -> m (InclComorphism lid sublogics)
 mkInclComorphism lid srcSub trgSub =
@@ -274,7 +275,7 @@ mkInclComorphism lid srcSub trgSub =
       { inclusion_logic = lid
       , inclusion_source_sublogic = srcSub
       , inclusion_target_sublogic = trgSub }
-    else fail ("mkInclComorphism: first sublogic must be a " ++
+    else Fail.fail ("mkInclComorphism: first sublogic must be a " ++
                "subElem of the second sublogic")
 
 instance (Language lid, Eq sublogics, Show sublogics, SublogicName sublogics)
@@ -401,7 +402,7 @@ instance (Comorphism cid1
            coerceBasicTheory (targetLogic cid1) lid3 "extractModel1" bTh1
          bTh2 <- extractModel cid2 sign1 pt3
          coerceBasicTheory lid3 lid1 "extractModel2" bTh2
-     else fail $ "extractModel not implemented for comorphism composition with "
+     else Fail.fail $ "extractModel not implemented for comorphism composition with "
           ++ language_name cid1
    constituents (CompComorphism cid1 cid2) =
       constituents cid1 ++ constituents cid2
@@ -484,7 +485,7 @@ isRps (Comorphism cid) = rps cid
 
 
 -- | Compose comorphisms
-compComorphism :: Monad m => AnyComorphism -> AnyComorphism -> m AnyComorphism
+compComorphism :: Fail.MonadFail m => AnyComorphism -> AnyComorphism -> m AnyComorphism
 compComorphism (Comorphism cid1) (Comorphism cid2) =
    let l1 = targetLogic cid1
        l2 = sourceLogic cid2
@@ -495,11 +496,11 @@ compComorphism (Comorphism cid1) (Comorphism cid2) =
       if isSubElem (forceCoerceSublogic l1 l2 $ targetSublogic cid1)
             $ sourceSublogic cid2
        then return $ Comorphism (CompComorphism cid1 cid2)
-       else fail $ "Subl" ++ msg ++ " (Expected sublogic "
+       else Fail.fail $ "Subl" ++ msg ++ " (Expected sublogic "
                           ++ sublogicName (sourceSublogic cid2)
                           ++ " but found sublogic "
                           ++ sublogicName (targetSublogic cid1) ++ ")"
-    else fail $ 'L' : msg ++ " (Expected logic "
+    else Fail.fail $ 'L' : msg ++ " (Expected logic "
                           ++ language_name l2
                           ++ " but found logic "
                           ++ language_name l1 ++ ")"

@@ -39,6 +39,7 @@ import Common.Keywords
 import Common.Lexer hiding (parens)
 import Common.Parsec
 import Common.Token (parseId, sortId, varId)
+import qualified Control.Monad.Fail as Fail
 
 import CspCASL.AS_CspCASL_Process
 import CspCASL.CspCASL_Keywords
@@ -321,7 +322,7 @@ sortedVars = do
       Nothing -> return $ Left is
       Just (r, s) -> if all isSimpleId is
         then return $ Right $ Var_decl (map idToSimpleId is) s $ tokPos r else
-        fail "expected only simple vars before colon"
+        Fail.fail "expected only simple vars before colon"
 
 -- | parse variables with possibly different sorts
 manySortedVars :: AParser st (Either [SORT] [VAR_DECL])
@@ -391,7 +392,7 @@ procDeclOrDefn = do
           Just (Left ss) | all isSimpleId ss ->
              return $ Left (PROCESS_NAME pn, map idToSimpleId ss)
           Nothing -> return $ Left (PROCESS_NAME pn, [])
-          _ -> fail "unexpected argument list"
+          _ -> Fail.fail "unexpected argument list"
       Just al -> case ma of
         Nothing -> do
           me <- optionMaybe equalT

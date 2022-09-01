@@ -218,7 +218,7 @@ module Common.Lib.Pretty (
 
 
 import Prelude
-import Data.Monoid ( Monoid (mempty) )
+import Data.Monoid ()
 import Data.String ( IsString (fromString) )
 
 infixl 6 <+>

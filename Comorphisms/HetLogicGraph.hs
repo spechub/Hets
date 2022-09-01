@@ -29,6 +29,7 @@ import Logic.Grothendieck
 import Logic.Coerce
 
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -234,7 +235,7 @@ onlyMaximal_preImage = Map.map shrink
 {- | inserts an edge into the graph without checking if the
 sublogic pair is compatible with the comorphism;
 but both nodes must be already present in the graph -}
-insertEdge :: (Monad m) =>
+insertEdge :: (Fail.MonadFail m) =>
               G_sublogics -> G_sublogics
            -> AnyComorphism -> HetSublogicGraph
            -> m HetSublogicGraph
@@ -245,7 +246,7 @@ insertEdge src trg acm hsg =
          hsg { comorphismEdges = Map.insertWith (++)
                                                 (show src, show trg) [acm] $
                                                 comorphismEdges hsg }
-    else fail ("Comorphisms.HetLogicGraph: insertEdge: both nodes need " ++
+    else Fail.fail ("Comorphisms.HetLogicGraph: insertEdge: both nodes need " ++
                "to be present")
 
 removeLoops :: HetSublogicGraph -> HetSublogicGraph

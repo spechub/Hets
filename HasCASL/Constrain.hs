@@ -46,6 +46,7 @@ import Common.Utils
 
 import Control.Exception (assert)
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 import Data.List
 import Data.Maybe
@@ -96,22 +97,22 @@ simplify te rs =
                                  Just _ -> cs
                                  Nothing -> insertC r cs)
 
-entail :: Monad m => Env -> Constrain -> m ()
+entail :: Fail.MonadFail m => Env -> Constrain -> m ()
 entail te c = let cm = classMap te in case c of
     Kinding ty k -> if k == universe then
                         assert (rawKindOfType ty == ClassKind ())
                     $ return () else
       let Result _ds mk = inferKinds Nothing ty te in
                    case mk of
-                   Nothing -> fail $ "constrain '" ++
+                   Nothing -> Fail.fail $ "constrain '" ++
                                   showDoc c "' is unprovable"
                    Just ((_, ks), _) -> when (newKind cm k ks)
-                       $ fail $ "constrain '" ++
+                       $ Fail.fail $ "constrain '" ++
                            showDoc c "' is unprovable" ++
                               if Set.null ks then "" else
                                   "\n  known kinds are: " ++ showDoc ks ""
     Subtyping t1 t2 -> unless (lesserType te t1 t2)
-                       $ fail ("unable to prove: " ++ showDoc t1 " < "
+                       $ Fail.fail ("unable to prove: " ++ showDoc t1 " < "
                                   ++ showDoc t2 "")
 
 freshLeaves :: Type -> State Int Type

@@ -27,6 +27,7 @@ import Common.DocUtils
 import Common.Id
 import Common.Lib.State
 import Common.Result
+import qualified Control.Monad.Fail as Fail
 
 import Data.List as List
 import Data.Maybe
@@ -177,7 +178,7 @@ substGen m = foldType mapTypeRec
   , foldTypeAbs = \ t v1@(TypeArg _ _ _ _ c _ _) ty p ->
       if Map.member c m then substGen (Map.delete c m) t else TypeAbs v1 ty p }
 
-getTypeOf :: Monad m => Term -> m Type
+getTypeOf :: Fail.MonadFail m => Term -> m Type
 getTypeOf trm = case trm of
     TypedTerm _ q t _ -> return $ case q of
         InType -> unitType
@@ -191,7 +192,7 @@ getTypeOf trm = case trm of
     QuantifiedTerm _ _ t _ -> getTypeOf t
     LetTerm _ _ t _ -> getTypeOf t
     AsPattern _ p _ -> getTypeOf p
-    _ -> fail $ "getTypeOf: " ++ showDoc trm ""
+    _ -> Fail.fail $ "getTypeOf: " ++ showDoc trm ""
 
 -- | substitute variables with positive index
 subst :: Subst -> Type -> Type
