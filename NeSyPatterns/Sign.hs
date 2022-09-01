@@ -15,7 +15,6 @@ Definition of signatures for neural-symbolic patterns
 module NeSyPatterns.Sign
     (Sign (..)                      -- Signatures6
     , ResolvedNode(..)
-    , id2SimpleId
     , resolved2Node
     , findNodeId
     , nesyIdMap
@@ -44,19 +43,23 @@ import Common.Doc
 import Common.DocUtils
 import Common.SetColimit
 import Common.IRI
+import Common.Keywords
 
 import NeSyPatterns.AS
 import NeSyPatterns.Print()
 
+import OWL2.AS
+import OWL2.Pretty
+
 
 data ResolvedNode = ResolvedNode {
-    resolvedOTerm :: Token,
-    resolvedNeSyId :: Token,
+    resolvedOTerm :: IRI,
+    resolvedNeSyId :: IRI,
     resolvedNodeRange :: Range
   } deriving (Show, Eq, Ord, Typeable, Data)
 
 instance SymbolName ResolvedNode where
-  addString (ResolvedNode t1 t2 r, s) = ResolvedNode t1 (addStringToTok t2 s) r
+  addString (ResolvedNode t1 t2 r, s) = ResolvedNode t1 (addSuffixToIRI s t2) r
 
 instance Pretty ResolvedNode where
   pretty (ResolvedNode o i r) = pretty $ Node o (Just i) r
@@ -72,28 +75,32 @@ data Sign = Sign { owlClasses :: Set.Set IRI,
                    owlTaxonomy :: Rel.Relation IRI IRI,
                    nodes :: Set.Set ResolvedNode,
                    edges :: Rel.Relation ResolvedNode ResolvedNode,
-                   idMap :: Map.Map Token Token }
+                   idMap :: Map.Map IRI IRI }
   deriving (Show, Eq, Ord, Typeable)
 
 instance Pretty Sign where
     pretty = printSign
 
-findNodeId :: Token -> Set.Set ResolvedNode -> Set.Set ResolvedNode
+findNodeId :: IRI -> Set.Set ResolvedNode -> Set.Set ResolvedNode
 findNodeId t s = Set.filter (\(ResolvedNode _ t1 _) -> t == t1 ) s  
 
-nesyIds :: Sign -> Set.Set Token
+nesyIds :: Sign -> Set.Set IRI
 nesyIds = Set.map resolvedNeSyId . nodes
 
-nesyIdMap :: Set.Set ResolvedNode -> Map.Map Token Token
+nesyIdMap :: Set.Set ResolvedNode -> Map.Map IRI IRI
 nesyIdMap nodes = Map.fromList [(i, o) | ResolvedNode o i _ <- Set.toList nodes]
 
 resolved2Node :: ResolvedNode -> Node
 resolved2Node (ResolvedNode t i r) = Node t (Just i) r
 
-id2SimpleId :: Id -> Token
-id2SimpleId i = case filter (not . isPlace) $ getTokens i of
-  [] -> error "id2SimpleId"
-  c : _ -> c
+-- | Builds the owl2 ontology from a signature
+getOntology :: Sign -> OntologyDocument
+getOntology s = let
+    decls = Declaration [] . mkEntity Class <$> Set.toList (owlClasses s)
+    subClasses = fmap (\(a,b) -> SubClassOf [] (Expression a) (Expression b)) $ Rel.toList (owlTaxonomy s)
+    subClassAxs = ClassAxiom <$> subClasses
+    axs = decls ++ subClassAxs
+  in emptyOntologyDoc { ontology = emptyOntology { axioms = axs}}
 
 {- | determines whether a signature is vaild -}
 isLegalSignature :: Sign -> Bool
@@ -103,18 +110,14 @@ isLegalSignature s =
 
 -- | pretty printin for edge e.g. tuple (ResolvedNode, ResolvedNode)
 printEdge :: (ResolvedNode, ResolvedNode) -> Doc
-printEdge (node1, node2) =
-  fsep . punctuate (text " ->") $ map pretty [node1, node2]
+printEdge (node1, node2) = pretty node1 <+> text "->" <+> pretty node2 <> semi
+  -- (fsep . punctuate (text " ->") $ map pretty [node1, node2]) <> semi
 
 -- | pretty printing for Signatures
 printSign :: Sign -> Doc
-printSign s =
-    hsep [-- sepBySemis $ map pretty $ Set.toList $ owlClasses s,
-          sepBySemis $ map pretty $ Rel.toList $ owlTaxonomy s,
-          sepBySemis $ map pretty $ Set.toList $ nodes s,
-          sepBySemis $ map printEdge $ Rel.toList $ edges s
-          --sepBySemis $ map pretty $ Map.toList $ idMap s
-         ]
+printSign s = keyword dataS <+> (specBraces . toDocAsMS . getOntology $ s) $+$
+    (vcat . map printEdge . Rel.toList . edges $ s) $+$
+    (vcat . map ((<> semi) . pretty) . Set.toList $ (nodes s Set.\\ (Set.union (Rel.dom . edges $ s) (Rel.ran . edges $ s))))
 
 -- | Adds a node to the signature
 addToSig :: Sign -> ResolvedNode -> Sign
