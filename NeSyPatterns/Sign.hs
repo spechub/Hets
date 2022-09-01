@@ -88,7 +88,7 @@ nesyIds :: Sign -> Set.Set IRI
 nesyIds = Set.map resolvedNeSyId . nodes
 
 nesyIdMap :: Set.Set ResolvedNode -> Map.Map IRI IRI
-nesyIdMap nodes = Map.fromList [(i, o) | ResolvedNode o i _ <- Set.toList nodes]
+nesyIdMap ns = Map.fromList [(i, o) | ResolvedNode o i _ <- Set.toList ns]
 
 resolved2Node :: ResolvedNode -> Node
 resolved2Node (ResolvedNode t i r) = Node t (Just i) r
