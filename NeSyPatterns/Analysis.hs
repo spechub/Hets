@@ -23,9 +23,6 @@ module NeSyPatterns.Analysis
     )
     where
 
-import OWL2.Propositional2OWL2(tokToIRI)
-import OWL2.AS(uriToTok)
-
 import Common.ExtSign
 import Common.Lib.Graph
 import Common.SetColimit
@@ -84,22 +81,28 @@ retrieveBasicItem ::
     AS.BASIC_ITEM              -- Input Item
     -> Sign                                          -- Input Signature
     -> Result.Result Sign                                -- Output Signature
-retrieveBasicItem x sig = case x of
+retrieveBasicItem x sig = let sigM = Just sig in case x of
       AS.Path [] -> return sig
-      AS.Path nodes -> do
-        let n0 = last nodes
-        n0' <- resolveNode n0
+      AS.Path ns -> do
+        let n0 = last ns
+        n0' <- resolveNode sigM n0
         let sig' = addToSig sig n0'
         (_, sig'') <- foldrM (\f (t, s) -> do
-            resolvedFrom <- resolveNode f
+            resolvedFrom <- resolveNode sigM f
             return (resolvedFrom, addEdgeToSig' s (resolvedFrom, t))
-          ) (n0', sig') (init nodes)
+          ) (n0', sig') (init ns)
         return sig''
-        
 
-resolveNode :: AS.Node -> Result.Result ResolvedNode
-resolveNode n@(AS.Node o mi r) = case mi of
-    Just i -> return $ ResolvedNode o i r
+
+resolveNode :: Maybe Sign -> AS.Node -> Result.Result ResolvedNode
+resolveNode sigM n@(AS.Node o mi r) = case mi of
+    Just i -> case sigM of
+      Just sig -> if Set.member o (owlClasses sig) then
+          return $ ResolvedNode o i r
+        else
+          Result.mkError "Undefined class" o
+
+      Nothing -> return $ ResolvedNode o i r
     Nothing -> Result.mkError "Unset nesyid." n
 
 -- Basic analysis 
@@ -143,8 +146,8 @@ symbToSymbol (AS.Symb_id tok) =
 
 symbol2ResolvedNode :: (Symbol.Symbol, Symbol.Symbol) -> Maybe (ResolvedNode, ResolvedNode)
 symbol2ResolvedNode (sk, sv) = do
-  k <- Result.resultToMaybe $ resolveNode $ Symbol.node sk
-  v <- Result.resultToMaybe $ resolveNode $ Symbol.node sv
+  k <- Result.resultToMaybe $ resolveNode Nothing $ Symbol.node sk
+  v <- Result.resultToMaybe $ resolveNode Nothing $ Symbol.node sv
   return (k, v)
   
 
