@@ -9,6 +9,7 @@ module Common.JSONOrXML where
 
 import Common.Json
 import Common.Result
+import qualified Control.Monad.Fail as Fail
 
 import PGIP.Output.Mime
 
@@ -35,7 +36,7 @@ joinData (str1, (XML xml1)) (str2, (XML xml2)) =
         elem2 = Element (QName str2 Nothing Nothing) [] [Elem xml2] Nothing
     in
     return $ XML $ Element (QName "pair" Nothing Nothing) [] [Elem elem1, Elem elem2] Nothing
-joinData _ _ = fail "Cannot join JSON and XML!"
+joinData _ _ = Fail.fail "Cannot join JSON and XML!"
 
 -- return a tuple with the type as string and the data as string
 prettyWithTag :: JSONOrXML -> (String, String)

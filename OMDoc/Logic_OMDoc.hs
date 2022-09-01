@@ -1,4 +1,6 @@
-{-# LANGUAGE TypeSynonymInstances, MultiParamTypeClasses, FlexibleInstances #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances #-}
 {- |
 Module      :  ./OMDoc/Logic_OMDoc.hs
 Description :  Rudimentary Logic-instances for OMDoc
@@ -22,6 +24,7 @@ import Data.Maybe (fromMaybe)
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Control.Monad (unless)
+import qualified Control.Monad.Fail as Fail
 
 data OMDoc_PUN = OMDoc_PUN
 
@@ -86,7 +89,7 @@ instance Category OMDoc_Sign OMDoc_Morphism where
     (OMDoc.inclusionFrom m == OMDoc.mkSymbolRef (OMDoc.theoryId s)
      &&
      OMDoc.inclusionTo m == OMDoc.mkSymbolRef (OMDoc.theoryId t)) $
-    fail "illegal OMDoc morphism"
+    Fail.fail "illegal OMDoc morphism"
 
 instance Sentences OMDoc_PUN () OMDoc_Sign OMDoc_Morphism OMDoc.Symbol where
   sym_of OMDoc_PUN s =

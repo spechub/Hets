@@ -37,6 +37,7 @@ import Common.LibName
 import Common.Result
 import Common.AS_Annotation
 import qualified Common.OrderedMap as OMap
+import qualified Control.Monad.Fail as Fail
 
 import Data.Graph.Inductive.Graph as Graph
 import Data.List (sortBy)
@@ -90,7 +91,7 @@ theoremsToAxioms (G_theory lid syn sign ind1 sens ind2) =
      G_theory lid syn sign ind1 (markAsAxiom True sens) ind2
 
 getGlobalTheory :: DGNodeLab -> Result G_theory
-getGlobalTheory = maybe (fail "no global theory") return . globalTheory
+getGlobalTheory = maybe (Fail.fail "no global theory") return . globalTheory
 
 globalNodeTheory :: DGraph -> Node -> Maybe G_theory
 globalNodeTheory dg = globalTheory . labDG dg

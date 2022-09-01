@@ -37,6 +37,7 @@ import Common.DocUtils
 import Common.ExtSign
 import Common.Id
 import Common.Result
+import qualified Control.Monad.Fail as Fail
 
 import Data.List (partition, find)
 import Data.Maybe
@@ -613,7 +614,7 @@ finalUnion addSigExt s1 s2 =
      prM str = ppMap ((text str <+>) . pretty)
                (vcat . map prL) (const id) vcat (\ v1 v2 -> sep [v1, v2])
  in if Map.null d2 && Map.null e2 then return s3
-    else fail $ "illegal overload relation identifications for profiles of:\n"
+    else Fail.fail $ "illegal overload relation identifications for profiles of:\n"
          ++ show (prM "op" d2 $+$ prM "pred" e2)
 
 listOfSetDiff :: Ord a => Bool -> [(Set.Set a, [Set.Set a], Bool)]

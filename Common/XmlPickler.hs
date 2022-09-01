@@ -17,6 +17,7 @@ import Text.XML.Light
 import Common.Result
 import Common.ToXml
 import Common.Utils
+import qualified Control.Monad.Fail as Fail
 
 import Data.Maybe
 
@@ -29,7 +30,7 @@ puPrim :: (Show a, Read a) => PU a String
 puPrim = PU
   { pickle = show
   , unpickle = \ s -> case readMaybe s of
-        Nothing -> fail $ "unexpected text: " ++ s
+        Nothing -> Fail.fail $ "unexpected text: " ++ s
         Just a -> return a
   }
 
@@ -51,7 +52,7 @@ xpCData = PU
   { pickle = mkText
   , unpickle = \ c -> case c of
       Text d -> return $ cdData d
-      _ -> fail $ "expected text instead of:\n" ++ ppContent c
+      _ -> Fail.fail $ "expected text instead of:\n" ++ ppContent c
   }
 
 xpString :: PU String Content
@@ -82,7 +83,7 @@ tagContentList :: String -> PU [Content] Element
 tagContentList tag = PU
   { pickle = unode tag
   , unpickle = \ e -> if qName (elName e) == tag then return $ elContent e
-      else fail $ "expected <" ++ tag ++ "> element"
+      else Fail.fail $ "expected <" ++ tag ++ "> element"
   }
 
 elemToContent :: PU Element Content
@@ -90,7 +91,7 @@ elemToContent = PU
   { pickle = Elem
   , unpickle = \ c -> case c of
       Elem e -> return e
-      _ -> fail $ "expected element instead of:\n" ++ ppContent c
+      _ -> Fail.fail $ "expected element instead of:\n" ++ ppContent c
   }
 
 pairToList :: PU (a, a) [a]
@@ -98,7 +99,7 @@ pairToList = PU
   { pickle = \ (a, b) -> [a, b]
   , unpickle = \ l -> case l of
       [a, b] -> return (a, b)
-      _ -> fail "expected two elements"
+      _ -> Fail.fail "expected two elements"
   }
 
 xpPair :: String -> PU a Content -> PU b Content -> PU (a, b) Element
@@ -129,7 +130,7 @@ tagAttr :: String -> PU String Attr
 tagAttr tag = PU
   { pickle = mkAttr tag
   , unpickle = \ a -> if qName (attrKey a) == tag then return $ attrVal a else
-      fail $ "expected attribute key: " ++ tag
+      Fail.fail $ "expected attribute key: " ++ tag
   }
 
 tagAttrs :: String -> PU String [Attr]

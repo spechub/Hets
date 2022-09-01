@@ -18,25 +18,26 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Text (Text)
 import qualified Data.Text as Text
+import qualified Control.Monad.Fail as Fail
 
 resolve :: HetcatsOpts -> Cache -> Text -> Map Text Text -> IO String
 resolve opts sessionReference query variables = do
   queryType <- determineQueryType query
   resultM <- case queryType of
     QTSerialization -> case Map.lookup "id" variables of
-      Nothing -> fail "Serialization query: Variable \"id\" not provided."
+      Nothing -> Fail.fail "Serialization query: Variable \"id\" not provided."
       Just idVar -> SerializationResolver.resolve opts sessionReference $ unencloseQuotesAndUnpack idVar
     QTDGraph -> case Map.lookup "locId" variables of
-      Nothing -> fail "OMS query: Variable \"locId\" not provided."
+      Nothing -> Fail.fail "OMS query: Variable \"locId\" not provided."
       Just idVar -> DGraphResolver.resolve opts sessionReference $ unencloseQuotesAndUnpack idVar
     QTOMS -> case Map.lookup "locId" variables of
-      Nothing -> fail "OMS query: Variable \"locId\" not provided."
+      Nothing -> Fail.fail "OMS query: Variable \"locId\" not provided."
       Just idVar -> OMSResolver.resolve opts sessionReference $ unencloseQuotesAndUnpack idVar
     QTSignature -> case Map.lookup "id" variables of
-      Nothing -> fail "Signature query: Variable \"id\" not provided."
+      Nothing -> Fail.fail "Signature query: Variable \"id\" not provided."
       Just idVar -> SignatureResolver.resolve opts sessionReference $ read $ Text.unpack idVar
     QTSignatureMorphism -> case Map.lookup "id" variables of
-      Nothing -> fail "SignatureMorphism query: Variable \"id\" not provided."
+      Nothing -> Fail.fail "SignatureMorphism query: Variable \"id\" not provided."
       Just idVar -> SignatureMorphismResolver.resolve opts sessionReference $ read $ Text.unpack idVar
   return $ resultToResponse queryType resultM
 
@@ -70,7 +71,7 @@ determineQueryType queryArg
   | isQueryPrefix "query SignatureMorphism" = return QTSignatureMorphism
   | isQueryPrefix "query Signature" = return QTSignature
   | otherwise =
-      fail ("Query not supported.\n"
+      Fail.fail ("Query not supported.\n"
             ++ "The query must begin with \"query X\", where X is one of "
             ++ "DGraph, OMS, Serialization, Signature, SignatureMorphism\n"
             ++ "This is due to a limitation of only mimicking a GraphQL API.")

@@ -20,6 +20,7 @@ import Isabelle.IsaConsts
 import qualified Data.Map as Map
 import Common.Doc as Doc
 import Common.DocUtils
+import qualified Control.Monad.Fail as Fail
 
 main :: IO ()
 main = getArgs >>= mapM_ process
@@ -29,7 +30,7 @@ process f = do
   s <- readFile f
   case parse parseTheory f s of
              Right (_, b) -> print $ printBody b
-             Left err -> fail $ show err
+             Left err -> Fail.fail $ show err
 
 printBody :: Body -> Doc
 printBody f = let

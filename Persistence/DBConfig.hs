@@ -1,12 +1,13 @@
-{-# LANGUAGE CPP, DeriveGeneric #-}
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Persistence.DBConfig where
 
 import qualified Data.ByteString.Char8 as BS
-import Data.Aeson
 import qualified Data.Yaml as Yaml
 import GHC.Generics
 import System.Directory
+import qualified Control.Monad.Fail as Fail
 
 data DBContext = DBContext { contextFileVersion :: String
                            , contextFilePath :: FilePath -- a cache of "head $ infiles opts"
@@ -41,8 +42,8 @@ data DBConfig = DBConfig { adapter :: Maybe String
 doMigrate :: DBConfig -> Bool
 doMigrate = (Just True ==) . needMigration
 
-instance FromJSON ExtDBConfig
-instance FromJSON DBConfig
+instance Yaml.FromJSON ExtDBConfig
+instance Yaml.FromJSON DBConfig
 
 emptyDBConfig :: DBConfig
 emptyDBConfig = DBConfig { adapter = Nothing
@@ -68,7 +69,7 @@ isMySql dbConfig = case adapter dbConfig of
 parseDatabaseConfig :: FilePath -> FilePath -> String -> Bool -> IO DBConfig
 parseDatabaseConfig dbFile dbConfigFile subconfigKey performMigration =
   case (null dbFile, null dbConfigFile) of
-     (True, True) -> fail ("No database configuration supplied. "
+     (True, True) -> Fail.fail ("No database configuration supplied. "
                            ++ "Please specify either --database-config "
                            ++ "or --database-file.")
      (_, False) -> do
@@ -91,16 +92,16 @@ parseDatabaseConfig dbFile dbConfigFile subconfigKey performMigration =
            "" -> parseDBConfig content
            _ | subconfigKey `elem` ["production", "development", "test"] ->
              parseExtDBConfig subconfigKey content
-           _ -> fail "Persistence.DBConfig: Bad database-subconfig specified."
+           _ -> Fail.fail "Persistence.DBConfig: Bad database-subconfig specified."
        else
-         fail "Persistence.DBConfig: Database configuration file does not exist."
+         Fail.fail "Persistence.DBConfig: Database configuration file does not exist."
 
     parseDBConfig :: BS.ByteString -> IO DBConfig
     parseDBConfig content =
       let parsedContent = Yaml.decodeThrow content :: Maybe DBConfig
       in case parsedContent of
         Nothing ->
-          fail "Persistence.DBConfig: Could not parse database config file."
+          Fail.fail "Persistence.DBConfig: Could not parse database config file."
         Just dbConfig -> return dbConfig
 
     parseExtDBConfig :: String -> BS.ByteString -> IO DBConfig
@@ -108,13 +109,13 @@ parseDatabaseConfig dbFile dbConfigFile subconfigKey performMigration =
       let parsedContent = Yaml.decodeThrow content :: Maybe ExtDBConfig
       in case parsedContent of
         Nothing ->
-          fail "Persistence.DBConfig: Could not parse database config file."
+          Fail.fail "Persistence.DBConfig: Could not parse database config file."
         Just extDbConfig ->
           let field = if key == "production" then production
                       else if key == "development" then development
                       else test
           in case field extDbConfig of
             Nothing ->
-              fail ("Persistence.DBConfig: Could not find subconfig "
+              Fail.fail ("Persistence.DBConfig: Could not find subconfig "
                 ++ key ++ " in database configuration file.")
             Just dbConfig -> return dbConfig

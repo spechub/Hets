@@ -21,6 +21,7 @@ import Text.ParserCombinators.Parsec
 import qualified Text.ParserCombinators.Parsec.Pos as Pos
 
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 import Data.Char
 import Data.List
 
@@ -71,7 +72,7 @@ myLookAhead parser = do
     p <- getPosition
     _ <- setParserState state
     case x of
-      Nothing -> fail $ lookaheadPosition ++ showPos
+      Nothing -> Fail.fail $ lookaheadPosition ++ showPos
                  (fromSourcePos p) { Common.Id.sourceName = "" } ")"
       Just y -> return y
 

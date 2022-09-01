@@ -24,6 +24,7 @@ import Common.Result
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.ExtSign
+import qualified Control.Monad.Fail as Fail
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -68,13 +69,13 @@ mapSingleSentence :: Env -> Sentence -> Result (TiDecl PNT)
 mapSingleSentence sign sen = do
     (_, l) <- mapTheory (sign, [makeNamed "" sen])
     case l of
-      [] -> fail "sentence was not translated"
+      [] -> Fail.fail "sentence was not translated"
       [s] -> return $ sentence s
       _ -> do (_, o) <- mapTheory (sign, [])
               case l \\ o of
-                [] -> fail "not a new sentence"
+                [] -> Fail.fail "not a new sentence"
                 [s] -> return $ sentence s
-                _ -> fail "several sentences resulted"
+                _ -> Fail.fail "several sentences resulted"
 
 mapTheory :: (Env, [Named Sentence]) -> Result (Sign, [Named (TiDecl PNT)])
 mapTheory (sig, csens) = do

@@ -38,6 +38,7 @@ import Common.AS_Annotation
 import Common.ProofUtils
 import Common.ProofTree
 import Common.Utils
+import qualified Control.Monad.Fail as Fail
 
 -- | determine the need for bottom constants
 data FormulaTreatment =
@@ -103,7 +104,7 @@ instance Comorphism CASL2SubCFOL
         in case m of
              NoMembershipOrCast
                | not $ Set.null $ Set.difference fbsrts bsrts ->
-                 fail "CASL2SubCFOL: unexpected membership test or cast"
+                 Fail.fail "CASL2SubCFOL: unexpected membership test or cast"
              _ -> return
                  ( encodeSig bsrts sig
                  , nameAndDisambiguate $ sens1 ++ sens2)
@@ -118,7 +119,7 @@ instance Comorphism CASL2SubCFOL
         in case m of
              NoMembershipOrCast
                | not $ Set.null $ Set.difference fbsrts bsrts ->
-                 fail $ "CASL2SubCFOL: unexpected membership test or cast:\n"
+                 Fail.fail $ "CASL2SubCFOL: unexpected membership test or cast:\n"
                       ++ showDoc sen ""
              _ -> return $ simplifyFormula id $ codeFormula b bsrts sen
     map_symbol (CASL2SubCFOL _ _) _ s =

@@ -123,7 +123,7 @@ logics = CASL HasCASL Isabelle Modal Hybrid TopHybrid Temporal \
     CoCASL COL CspCASL CASL_DL \
     SoftFOL ConstraintCASL Propositional RelationalScheme VSE OMDoc DFOL \
     LF Framework Maude ExtModal CommonLogic CSL QBF Adl HolLight Fpl THF \
-    FreeCAD OWL2 RDF CSMOF QVTR TPTP
+    FreeCAD OWL2 RDF CSMOF QVTR TPTP NeSyPatterns
 
 TESTTARGETFILES += Scratch.hs CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     Haskell/wrap.hs Isabelle/isa.hs Syntax/hetpa.hs \
@@ -357,6 +357,9 @@ OWL2_files = OWL2/AS.hs OWL2/Symbols.hs OWL2/Sign.hs OWL2/MS.hs \
   OWL2/Morphism.hs OWL2/ProfilesAndSublogics.hs OWL2/Sublogic.hs \
   OWL2/Profiles.hs Common/IRI.hs
 
+NeSyPatterns_files = NeSyPatterns/AS.hs NeSyPatterns/Symbol.hs \
+  NeSyPatterns/Sign.hs NeSyPatterns/Morphism.hs
+
 RDF_files = RDF/AS.hs OWL2/AS.hs RDF/Symbols.hs RDF/Sign.hs RDF/Morphism.hs \
   RDF/Sublogic.hs Common/IRI.hs
 
@@ -460,6 +463,10 @@ FreeCAD/ATC_FreeCAD.der.hs: $(FreeCAD_files) $(GENRULES)
 
 OWL2/ATC_OWL2.der.hs: $(OWL2_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.Result -o $@ $(OWL2_files)
+
+NeSyPatterns/ATC_NeSyPatterns.der.hs: $(NeSyPatterns_files) $(GENRULES)
+	$(GENRULECALL) -i ATC.Result -i NeSyPatterns.ATC_Relation \
+		-i ATC.AS_Annotation -o $@ $(NeSyPatterns_files)
 
 RDF/ATC_RDF.der.hs: $(RDF_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.Result -o $@ $(RDF_files)

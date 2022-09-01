@@ -36,6 +36,7 @@ import Common.XUpdate
 import Logic.Grothendieck
 
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 import Control.Monad.Trans (lift)
 
 import Data.Graph.Inductive.Graph (Node, match, lab)
@@ -65,7 +66,7 @@ changes would lead to an unchanged signature further down). -}
 dgXUpdate :: HetcatsOpts -> String -> LibEnv -> LibName -> DGraph
           -> ResultT IO (LibName, LibEnv)
 dgXUpdate opts xs le ln dg = case parseXMLDoc xs of
-    Nothing -> fail "dgXUpdate: cannot parse xupdate file"
+    Nothing -> Fail.fail "dgXUpdate: cannot parse xupdate file"
     Just diff -> let
       -- we assume that the diff refers to an unchanged dg..
       dgOld = undoAllChanges dg
@@ -99,14 +100,14 @@ dgXUpdateMods opts xorig oldLId diff le ln dg = do
 
 {- | deletes theorem links from dg that were left-over in changelist.
 fails if any other undone changes are found -}
-deleteLeftoverChanges :: Monad m => DGraph -> ChangeList -> m DGraph
+deleteLeftoverChanges :: Fail.MonadFail m => DGraph -> ChangeList -> m DGraph
 deleteLeftoverChanges dg chL = let lIds = Map.keys $ changeLinks chL in do
   unless (emptyChangeList == chL { changeLinks = Map.empty })
-    $ fail $ "some changes could not be processed:\n" ++ show chL
+    $ Fail.fail $ "some changes could not be processed:\n" ++ show chL
   foldM (\ dg' ei -> case getDGLinksById ei dg' of
     [ledge@(_, _, lkLab)] | not $ isDefEdge $ dgl_type lkLab -> return
       $ changeDGH dg' $ DeleteEdge ledge
-    _ -> fail $ "deleteLeftoverChanges: conflict with edge #" ++ show ei
+    _ -> Fail.fail $ "deleteLeftoverChanges: conflict with edge #" ++ show ei
     ) dg lIds
 
 {- | move along xgraph structure and make updates or insertions in accordance
@@ -164,7 +165,7 @@ mkNodeUpdate opts lg mGt (dg, lv, chL) xnd = let
       (lbl, lv') <- generateNodeLab opts lg mGt xnd (dg, lv)
       (n, lblOrig) <- case lookupUniqueNodeByName nd dg of
         Just ndOrig -> return ndOrig
-        Nothing -> fail $ "node [" ++ nd ++ "] was not found in dg, but was"
+        Nothing -> Fail.fail $ "node [" ++ nd ++ "] was not found in dg, but was"
             ++ " marked for updating"
       let dg' = changeDGH dg $ SetNodeLab lblOrig (n, lbl)
       -- all adjacent links need to get their morphism updated
@@ -212,14 +213,14 @@ deleteElements dg chL = do
   return (dg2, chL' { deleteNodes = Set.empty, deleteLinks = Set.empty })
 
 -- | look for given node in dg and mark as update-pending in changelist
-markNodeUpdates :: Monad m => DGraph -> Node -> ChangeList -> m ChangeList
+markNodeUpdates :: Fail.MonadFail m => DGraph -> Node -> ChangeList -> m ChangeList
 markNodeUpdates dg trg = case lab (dgBody dg) trg of
   Nothing -> return
   -- TODO: symMod was chosen to ensure updating, it does not always apply.
   Just lbl -> return . updateNodeChange (MkUpdate symMod) (dgn_name lbl)
 
 -- | deletes a link from dg and returns (def)links target id additionally
-deleteLinkAux :: Monad m => (DGraph, [Node]) -> XLink -> m (DGraph, [Node])
+deleteLinkAux :: Fail.MonadFail m => (DGraph, [Node]) -> XLink -> m (DGraph, [Node])
 deleteLinkAux (dg, tars) xl = case lookupUniqueNodeByName (source xl) dg of
   Just (s, _) -> do
     dg' <- liftM (changeDGH dg . DeleteEdge)
@@ -228,15 +229,15 @@ deleteLinkAux (dg, tars) xl = case lookupUniqueNodeByName (source xl) dg of
       then return (dg', tars)
       else case lookupUniqueNodeByName (target xl) dg of
         Just (t, _) -> return (dg', t : tars)
-        Nothing -> fail $ "required target [" ++ target xl
+        Nothing -> Fail.fail $ "required target [" ++ target xl
           ++ "] was not found in DGraph!"
-  Nothing -> fail $ "required source [" ++ source xl
+  Nothing -> Fail.fail $ "required source [" ++ source xl
     ++ "] was not found in DGraph!"
 
 -- | deletes a node from dg
-deleteNode :: Monad m => DGraph -> NodeName -> m (Node, DGraph)
+deleteNode :: Fail.MonadFail m => DGraph -> NodeName -> m (Node, DGraph)
 deleteNode dg nm = let nd = showName nm
   in case lookupUniqueNodeByName nd dg of
       Just (j, lbl) -> return (j, changeDGH dg $ DeleteNode (j, lbl))
-      Nothing -> fail $
+      Nothing -> Fail.fail $
         "required node [" ++ nd ++ "] was not found in DGraph!"

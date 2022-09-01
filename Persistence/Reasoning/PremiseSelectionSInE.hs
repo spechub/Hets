@@ -27,6 +27,7 @@ import Logic.Prover (toNamed)
 import Static.GTheory
 
 import Control.Monad.IO.Class (MonadIO (..))
+import qualified Control.Monad.Fail as Fail
 import Data.List as List hiding (insert)
 import Data.Map (Map)
 import qualified Data.Map as Map
@@ -336,7 +337,7 @@ selectPremise gTheoryLid triggeredSentence G_SInEResult{..} =
   in  G_SInEResult gTheoryLid parameters symbolCommonnesses' premiseTriggers'
         leastCommonSymbols' selectedPremises' selectedPremiseNames'
 
-saveToDatabase :: MonadIO m
+saveToDatabase :: (MonadIO m, Fail.MonadFail m)
                => HetcatsOpts
                -> G_SInEResult
                -> Entity LocIdBase
@@ -386,7 +387,7 @@ saveToDatabase _ G_SInEResult{..} omsEntity sinePremiseSelectionKey = do
         limit 1
         return loc_id_bases
       case sentenceL of
-        [] -> fail ("Persistence.Reasoning.saveToDatabase: Could not find " ++ kind ++ " " ++ locId)
+        [] -> Fail.fail ("Persistence.Reasoning.saveToDatabase: Could not find " ++ kind ++ " " ++ locId)
         Entity key _ : _ -> return key
 
 

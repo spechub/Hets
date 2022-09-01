@@ -27,6 +27,7 @@ import Common.Result
 import Common.Utils
 
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 import System.Directory
 
@@ -126,7 +127,7 @@ predSymName :: PRED_SYMB -> String
 predSymName = idStr . predSymbName
 
 -- | create a predicate application
-predAppl :: (Monad m, FormExtension f) => PRED_SYMB -> [TERM f] -> m String
+predAppl :: (Fail.MonadFail m, FormExtension f) => PRED_SYMB -> [TERM f] -> m String
 predAppl p = liftM (predSymName p ++) . termsPA
 
 -- | apply function string to argument string with brackets
@@ -138,7 +139,7 @@ applyBin :: String -> String -> String -> String
 applyBin o t1 t2 = apply o $ t1 ++ "," ++ t2
 
 -- | translate a casl term to a term of TRS(Terme Rewrite Systems)
-term2TRS :: (Monad m, FormExtension f) => TERM f -> m String
+term2TRS :: (Fail.MonadFail m, FormExtension f) => TERM f -> m String
 term2TRS t = case unsortedTerm t of
   Qual_var var _ _ -> return $ tokStr var
   Application o ts _ -> liftM (opSymName o ++) $ termsPA ts
@@ -147,10 +148,10 @@ term2TRS t = case unsortedTerm t of
     c <- axiomSub f
     b2 <- term2TRS t2
     return $ apply "when_else" $ b1 ++ "," ++ c ++ "," ++ b2
-  _ -> fail $ "no support for: " ++ showDoc t ""
+  _ -> Fail.fail $ "no support for: " ++ showDoc t ""
 
 -- | translate a list of casl terms to the patterns of a term in TRS
-termsPA :: (Monad m, FormExtension f) => [TERM f] -> m String
+termsPA :: (Fail.MonadFail m, FormExtension f) => [TERM f] -> m String
 termsPA ts = if null ts then return "" else
     liftM (apply "" . intercalate ",") $ mapM term2TRS ts
 
@@ -159,7 +160,7 @@ a rule without condition is represented by "A -> B" in
 Term Rewrite Systems; if there are some conditions, then
 follow the conditions after the symbol "|".
 For example : "A -> B | C -> D, E -> F, ..." -}
-axiom2TRS :: (FormExtension f, TermExtension f, Ord f, Monad m) => Sign f e
+axiom2TRS :: (FormExtension f, TermExtension f, Ord f, Fail.MonadFail m) => Sign f e
   -> [FORMULA f] -> FORMULA f -> m String
 axiom2TRS sig doms f = case splitAxiom f of
   (cs, f') -> do
@@ -184,7 +185,7 @@ axiom2TRS sig doms f = case splitAxiom f of
         _ -> t
       _ -> t
 
-axiom2Cond :: (FormExtension f, TermExtension f, Ord f, Monad m) => Sign f e
+axiom2Cond :: (FormExtension f, TermExtension f, Ord f, Fail.MonadFail m) => Sign f e
   -> [FORMULA f] -> FORMULA f -> m String
 axiom2Cond sig doms f = let s = liftM (++ " -> true") $ axiomSub f in
   case f of
@@ -206,11 +207,11 @@ isApp t = case unsortedTerm t of
   Application _ ts _ -> all isVar ts
   _ -> False
 
-axiom2Rule :: (Monad m, FormExtension f) => FORMULA f -> m String
+axiom2Rule :: (Fail.MonadFail m, FormExtension f) => FORMULA f -> m String
 axiom2Rule f = case f of
   Negation f' _ -> case f' of
     Quantification {} ->
-      fail "no support for negated quantification"
+      Fail.fail "no support for negated quantification"
     Definedness t _ -> liftM (++ " -> undefined") $ term2TRS t
     _ -> liftM (++ " -> false") $ axiomSub f'
   Definedness {} -> liftM (++ " -> open") $ axiomSub f
@@ -225,7 +226,7 @@ axiom2Rule f = case f of
   _ -> liftM (++ " -> true") $ axiomSub f
 
 -- | translate a casl axiom (without conditions) to a term of TRS,
-axiomSub :: (Monad m, FormExtension f) => FORMULA f -> m String
+axiomSub :: (Fail.MonadFail m, FormExtension f) => FORMULA f -> m String
 axiomSub f = case f of
   Junction j fs@(_ : _) _ -> do
     as <- mapM axiomSub fs
@@ -242,6 +243,6 @@ axiomSub f = case f of
     s1 <- axiomSub f1
     s2 <- axiomSub f2
     return $ applyBin (if c == Equivalence then "equiv" else "implies") s1 s2
-  Quantification {} -> fail "no support for local quantifications"
-  Membership {} -> fail "no support for membership tests"
-  _ -> fail $ "no support for: " ++ showDoc f ""
+  Quantification {} -> Fail.fail "no support for local quantifications"
+  Membership {} -> Fail.fail "no support for membership tests"
+  _ -> Fail.fail $ "no support for: " ++ showDoc f ""

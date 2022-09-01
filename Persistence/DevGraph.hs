@@ -2,7 +2,6 @@
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE TypeFamilies               #-}
-
 {- |
 Module      :  ./Persistence.DevGraph.hs
 Copyright   :  (c) Uni Magdeburg 2017
@@ -65,7 +64,7 @@ import qualified Static.ToJson as ToJson
 import Control.Exception
 import Control.Monad (foldM, foldM_, when)
 import Control.Monad.IO.Class (MonadIO (..))
-import qualified Control.Monad.Fail as MFail
+import qualified Control.Monad.Fail as Fail
 import Data.Char (toLower)
 import qualified Data.IntMap as IntMap
 import Data.Graph.Inductive.Graph as Graph
@@ -128,9 +127,9 @@ exportLibEnv opts libEnv = do
                                                , diagString = message
                                                , diagPos = nullRange
                                                }]
-      fail message
+      Fail.fail message
 
-createDocuments :: (MonadIO m, MFail.MonadFail m)
+createDocuments :: (MonadIO m, Fail.MonadFail m)
                 => HetcatsOpts -> LibEnv -> DBCache -> [Set LibName]
                 -> DBMonad m DBCache
 createDocuments opts libEnv dbCache0 dependencyOrderedLibsSetL = do
@@ -140,7 +139,7 @@ createDocuments opts libEnv dbCache0 dependencyOrderedLibsSetL = do
       reverse dependencyOrderedLibsSetL
   createDocumentsThatAreIndependent opts libEnv fileVersion dbCache1
 
-createDocumentsInDependencyRelation :: (MonadIO m, MFail.MonadFail m)
+createDocumentsInDependencyRelation :: (MonadIO m, Fail.MonadFail m)
                                     => HetcatsOpts -> LibEnv
                                     -> Entity FileVersion -> DBCache -> [Set LibName]
                                     -> DBMonad m DBCache
@@ -153,7 +152,7 @@ createDocumentsInDependencyRelation opts libEnv fileVersion =
          ) outerAcc libNameSet
     )
 
-createDocumentsThatAreIndependent :: (MonadIO m, MFail.MonadFail m)
+createDocumentsThatAreIndependent :: (MonadIO m, Fail.MonadFail m)
                                   => HetcatsOpts -> LibEnv
                                   -> Entity FileVersion -> DBCache
                                   -> DBMonad m DBCache
@@ -166,7 +165,7 @@ createDocumentsThatAreIndependent opts libEnv fileVersion dbCache =
           else createDocument opts libEnv fileVersion dbCacheAcc libName
     ) dbCache $ Map.keys libEnv
 
-createDocument :: (MonadIO m, MFail.MonadFail m)
+createDocument :: (MonadIO m, Fail.MonadFail m)
                => HetcatsOpts -> LibEnv -> Entity FileVersion -> DBCache
                -> LibName -> DBMonad m DBCache
 createDocument opts libEnv parentFileVersion dbCache0 libName =
@@ -276,7 +275,7 @@ kindOfDocument opts filepathM = case filepathM of
                             then Enums.Library
                             else Enums.NativeDocument
 
-createAllOmsOfDocument :: (MonadIO m, MFail.MonadFail m)
+createAllOmsOfDocument :: (MonadIO m, Fail.MonadFail m)
                        => HetcatsOpts -> LibEnv -> FileVersionId -> DBCache
                        -> Bool -> DGraph -> GlobalAnnos -> LibName
                        -> Entity LocIdBase -> DBMonad m DBCache
@@ -297,7 +296,7 @@ createAllOmsOfDocument opts libEnv fileVersionKey dbCache0 doSave dGraph
               globalAnnotations libName documentLocIdBase labeledEdge
           ) dbCache1 labeledEdges
 
-findOrCreateOMSM :: (MonadIO m, MFail.MonadFail m)
+findOrCreateOMSM :: (MonadIO m, Fail.MonadFail m)
                  => HetcatsOpts -> LibEnv -> FileVersionId -> DBCache -> Bool
                  -> GlobalAnnos -> LibName -> Entity LocIdBase -> Maybe Int
                  -> DBMonad m (Maybe LocIdBaseId, Maybe SignatureId, DBCache)
@@ -313,7 +312,7 @@ findOrCreateOMSM opts libEnv fileVersionKey dbCache0 doSave globalAnnotations
                 globalAnnotations libName documentLocIdBase (nodeId, nodeLabel)
             return (Just omsKey, Just signatureKey, dbCache1)
 
-findOrCreateOMS :: (MonadIO m, MFail.MonadFail m)
+findOrCreateOMS :: (MonadIO m, Fail.MonadFail m)
                 => HetcatsOpts -> LibEnv -> FileVersionId -> DBCache -> Bool
                 -> GlobalAnnos -> LibName -> Entity LocIdBase
                 -> (Int, DGNodeLab)
@@ -347,7 +346,7 @@ findOrCreateOMS opts libEnv fileVersionKey dbCache0 doSave globalAnnotations
               globalAnnotations libName documentLocIdBase (nodeId, nodeLabel)
               consStatus
 
-createOMS :: (MonadIO m, MFail.MonadFail m)
+createOMS :: (MonadIO m, Fail.MonadFail m)
           => HetcatsOpts -> LibEnv -> FileVersionId -> DBCache -> Bool
           -> GlobalAnnos -> LibName -> Entity LocIdBase -> (Int, DGNodeLab)
           -> ConsStatus -> DBMonad m (LocIdBaseId, SignatureId, DBCache)
@@ -411,7 +410,7 @@ createOMS opts libEnv fileVersionKey dbCache0 doSave globalAnnotations libName
               return loc_id_bases
 
             case omsL of
-              [] -> fail ("Persistence.DevGraph.createOMS: OMS not found"
+              [] -> Fail.fail ("Persistence.DevGraph.createOMS: OMS not found"
                           ++ locId)
               entity : _ -> return entity
           else do
@@ -538,7 +537,7 @@ createConservativityStatus (ConsStatus r p _) =
       Unknown s -> s
       _ -> map toLower $ show c
 
-findOrCreateSignatureMorphismM :: (MonadIO m, MFail.MonadFail m)
+findOrCreateSignatureMorphismM :: (MonadIO m, Fail.MonadFail m)
                                => HetcatsOpts -> LibEnv -> DBCache -> Bool
                                -> LibName -> (Int, Maybe Int) -> GlobalAnnos
                                -> (SignatureId, Maybe SignatureId)
@@ -559,7 +558,7 @@ findOrCreateSignatureMorphismM opts libEnv dbCache doSave libName
             (sourceSignatureKey, fromJust targetSignatureKeyM) gMorphism
         return (Just signatureMorphismKey, symbolMappingKeys, dbCache1)
 
-findOrCreateSignatureMorphism :: (MonadIO m, MFail.MonadFail m)
+findOrCreateSignatureMorphism :: (MonadIO m, Fail.MonadFail m)
                               => HetcatsOpts -> LibEnv -> DBCache -> Bool
                               -> LibName -> (Int, Int) -> GlobalAnnos
                               -> (SignatureId, SignatureId)
@@ -598,7 +597,7 @@ findOrCreateSignatureMorphism opts libEnv dbCache doSave libName edge
                                 &&. signature_morphisms ^. SignatureMorphismAsJson ==. val json)
                       return signature_morphisms
                     case signatureMorphismL of
-                      [] -> fail "Persistence.DevGraph.findOrCreateSignatureMorphism: not found "
+                      [] -> Fail.fail "Persistence.DevGraph.findOrCreateSignatureMorphism: not found "
                       Entity key _ : _ -> return key
 
                 (symbolMappingKeys, dbCache1) <-
@@ -616,7 +615,7 @@ findOrCreateSignatureMorphism opts libEnv dbCache doSave libName edge
                        , dbCache2
                        )
 
-findOrCreateSymbolMappings :: MonadIO m
+findOrCreateSymbolMappings :: (MonadIO m, Fail.MonadFail m)
                            => LibEnv -> DBCache -> Bool -> LibName -> (Int, Int)
                            -> SignatureMorphismId -> GMorphism
                            -> DBMonad m ([SymbolMappingId], DBCache)
@@ -648,6 +647,7 @@ findOrCreateSymbolMappings libEnv dbCache doSave libName edge
             return (symbolMappingKeys, dbCache)
 
 findOrCreateSymbolMapping :: ( MonadIO m
+                             , Fail.MonadFail m
                              , Sentences lid1 sentence1 sign1 morphism1 symbol1
                              , Sentences lid2 sentence2 sign2 morphism2 symbol2
                              )
@@ -679,7 +679,7 @@ findOrCreateSymbolMapping libEnv dbCache doSave libName (sourceId, targetId)
             , symbolMappingSourceId = sourceKey
             , symbolMappingTargetId = targetKey
             }
-      else fail "Persistence.DevGraph.findOrCreateSymbolMapping: not found"
+      else Fail.fail "Persistence.DevGraph.findOrCreateSymbolMapping: not found"
 
 symbolErrorMessage :: Sentences lid sentence sign morphism symbol
                    => LibEnv -> LibName -> Node -> symbol -> lid -> String
@@ -720,6 +720,7 @@ findOrCreateSerializationM languageKey syntaxM =
           return $ Just serializationKey
 
 findLanguage :: ( MonadIO m
+                , Fail.MonadFail m
                 , Logic.Logic lid sublogics
                     basic_spec sentence symb_items symb_map_items
                     sign morphism symbol raw_symbol proof_tree
@@ -731,9 +732,10 @@ findLanguage lid = do
     return languages
   case languageL of
     Entity key _ : _ -> return key
-    [] -> fail ("Language not found in the database: " ++ show lid)
+    [] -> Fail.fail ("Language not found in the database: " ++ show lid)
 
 findOrCreateLogic' :: ( MonadIO m
+                      , Fail.MonadFail m
                       , Logic.Logic lid sublogics
                           basic_spec sentence symb_items symb_map_items
                           sign morphism symbol raw_symbol proof_tree
@@ -763,6 +765,7 @@ findOrCreateSignature dbCache libName lid extSign sigId languageKey =
              )
 
 createSymbols :: ( MonadIO m
+                 , Fail.MonadFail m
                  , Logic.Logic lid sublogics
                      basic_spec sentence symb_items symb_map_items
                      sign morphism symbol raw_symbol proof_tree
@@ -778,6 +781,7 @@ createSymbols libEnv fileVersionKey dbCache doSave libName nodeId omsLocIdBase
         ) dbCache $ symlist_of lid sign
 
 findOrCreateSymbol :: ( MonadIO m
+                      , Fail.MonadFail m
                       , Logic.Logic lid sublogics
                           basic_spec sentence symb_items symb_map_items
                           sign morphism symbol raw_symbol proof_tree
@@ -816,12 +820,13 @@ findOrCreateSymbol libEnv fileVersionKey dbCache doSave libName nodeId
                           &&. loc_id_bases ^. LocIdBaseKind ==. val Enums.Symbol)
                 return loc_id_bases
               case symbolL of
-                [] -> fail ("Persistence.DevGraph.findOrCreateSymbol: "
+                [] -> Fail.fail ("Persistence.DevGraph.findOrCreateSymbol: "
                                  ++ "Symbol not found: " ++ locId)
                 Entity symbolKey _ : _ -> return symbolKey
           return $ addSymbolToCache libEnv libName nodeId lid symbol symbolKey dbCache
 
 createSentences :: ( MonadIO m
+                   , Fail.MonadFail m
                    , GetRange sentence
                    , Pretty sentence
                    , Logic.Logic lid sublogics basic_spec sentence symb_items
@@ -844,6 +849,7 @@ createSentences libEnv fileVersionKey dbCache0 doSave globalAnnotations libName
       globalAnnotations libName nodeId omsLocId lid sign orderedConjectures
 
 createAxioms :: ( MonadIO m
+                , Fail.MonadFail m
                 , Foldable t
                 , Logic.Logic lid sublogics basic_spec sentence symb_items
                     symb_map_items sign morphism symbol
@@ -864,6 +870,7 @@ createAxioms libEnv fileVersionKey dbCache doSave globalAnnotations libName
         ) dbCache
 
 createConjectures :: ( MonadIO m
+                     , Fail.MonadFail m
                      , Foldable t
                      , Logic.Logic lid sublogics basic_spec sentence symb_items
                          symb_map_items sign morphism symbol
@@ -887,6 +894,7 @@ createConjectures libEnv fileVersionKey dbCache doSave globalAnnotations libName
         ) dbCache
 
 createSentence :: ( MonadIO m
+                  , Fail.MonadFail m
                   , GetRange sentence
                   , Pretty sentence
                   , Logic.Logic lid sublogics basic_spec sentence symb_items
@@ -959,12 +967,13 @@ createSentence libEnv fileVersionKey dbCache doSave globalAnnotations
                           &&. loc_id_bases ^. LocIdBaseKind ==. val kind)
                 return loc_id_bases
               case sentenceL of
-                [] -> fail ("Persistence.DevGraph.createSentence: Sentence not found"
+                [] -> Fail.fail ("Persistence.DevGraph.createSentence: Sentence not found"
                             ++ locId)
                 Entity sentenceKey _ : _-> return sentenceKey
         return (sentenceKey, dbCache)
 
 findOriginalSentence :: ( MonadIO m
+                        , Fail.MonadFail m
                         , GetRange sentence
                         , Pretty sentence
                         , Logic.Logic lid sublogics basic_spec sentence symb_items
@@ -983,7 +992,7 @@ findOriginalSentence libEnv fileVersionKey dbCache _ namedSentence =
 
       let filterPredicate libName _ = originLibNameIRI == iriOfLibName libName
       originDGraph <- case Map.toList $ Map.filterWithKey filterPredicate libEnv of
-        [] -> fail ("Persistence.DevGraph.findOriginalSentence: Could not find dGraph named " ++ show originLibNameIRI)
+        [] -> Fail.fail ("Persistence.DevGraph.findOriginalSentence: Could not find dGraph named " ++ show originLibNameIRI)
         (_, dg) : _ -> return dg
       let nodeLabel = Graph.nodeLabel $ fromJust $ IntMap.lookup originNodeId_ $ convertToMap $ dgBody originDGraph
 
@@ -993,16 +1002,17 @@ findOriginalSentence libEnv fileVersionKey dbCache _ namedSentence =
       let omsLocId = locIdOfOMS documentEntity nodeLabel
       omsLocIdBaseM <- findOMS fileVersionKey documentEntity nodeLabel
       omsLocIdBase <- case omsLocIdBaseM of
-        Nothing -> fail ("Persistence.DevGraph.findOriginalSentence: Could not find OMS " ++ omsLocId)
+        Nothing -> Fail.fail ("Persistence.DevGraph.findOriginalSentence: Could not find OMS " ++ omsLocId)
         Just x -> return x
       let locIdOfOriginalSentence = locIdOfSentence omsLocIdBase originSentenceName
       sentenceM <- findSentence fileVersionKey locIdOfOriginalSentence
       (Entity sentenceKey _) <- case sentenceM of
-        Nothing -> fail ("Persistence.DevGraph.findOriginalSentence: Could not find Sentence " ++ locIdOfOriginalSentence)
+        Nothing -> Fail.fail ("Persistence.DevGraph.findOriginalSentence: Could not find Sentence " ++ locIdOfOriginalSentence)
         Just x -> return x
       return $ Just sentenceKey
 
 associateSymbolsOfSentence :: ( MonadIO m
+                              , Fail.MonadFail m
                               , GetRange sentence
                               , Pretty sentence
                               , Logic.Logic lid sublogics basic_spec sentence
@@ -1072,7 +1082,7 @@ associateSymbolsOfSignature libEnv dbCache libName nodeId lid extSign signatureK
          ) Set.empty allSymbols
        return dbCache
 
-createMapping :: (MonadIO m, MFail.MonadFail m)
+createMapping :: (MonadIO m, Fail.MonadFail m)
               => HetcatsOpts -> LibEnv -> FileVersionId -> DBCache -> Bool
               -> GlobalAnnos -> LibName -> Entity LocIdBase
               -> (Int, Int, DGLinkLab) -> DBMonad m DBCache
@@ -1081,12 +1091,12 @@ createMapping opts libEnv fileVersionKey dbCache doSave globalAnnotations
   (sourceOMSKey, sourceSignatureKey) <-
     case Map.lookup (libName, sourceId) $ nodeMap dbCache of
       Just (omsKey, signatureKey) -> return (omsKey, signatureKey)
-      Nothing -> fail ("Persistence.DevGraph.createMapping: Could not find source node with ID " ++ show (libName, sourceId))
+      Nothing -> Fail.fail ("Persistence.DevGraph.createMapping: Could not find source node with ID " ++ show (libName, sourceId))
 
   (targetOMSKey, targetSignatureKey) <-
     case Map.lookup (libName, targetId) $ nodeMap dbCache of
       Just (omsKey, signatureKey) -> return (omsKey, signatureKey)
-      Nothing -> fail ("Persistence.DevGraph.createMapping: Could not find target node with ID " ++ show (libName, targetId))
+      Nothing -> Fail.fail ("Persistence.DevGraph.createMapping: Could not find target node with ID " ++ show (libName, targetId))
 
   (signatureMorphismKey, _, dbCache1) <-
     findOrCreateSignatureMorphism opts libEnv dbCache True libName
@@ -1269,7 +1279,7 @@ findOMS fileVersionKey documentLocIdBase nodeLabel = do
     [] -> return Nothing
     entity : _ -> return $ Just entity
 
-findOMSAndSignature :: MonadIO m
+findOMSAndSignature :: (MonadIO m, Fail.MonadFail m)
                     => FileVersionId -> Entity LocIdBase -> DGNodeLab
                     -> DBMonad m (Maybe (LocIdBaseId, SignatureId))
 findOMSAndSignature fileVersionKey documentLocIdBase nodeLabel = do
@@ -1282,7 +1292,7 @@ findOMSAndSignature fileVersionKey documentLocIdBase nodeLabel = do
         return omsSql
       omsValue <- case omsValueL of
         [] ->
-          fail ("Persistence.DevGraph.findOMSAndSignature could not find OMS with ID "
+          Fail.fail ("Persistence.DevGraph.findOMSAndSignature could not find OMS with ID "
                 ++ show (unSqlBackendKey $ unLocIdBaseKey omsKey))
         Entity _ omsValue : _ -> return omsValue
       return $ Just (omsKey, oMSSignatureId omsValue)
@@ -1336,7 +1346,7 @@ createDocumentLinks dbCache dependencyLibNameRel =
       return ()
 
 
-fromJustFail :: MonadIO m => String -> Maybe a -> m a
+fromJustFail :: (MonadIO m, Fail.MonadFail m) => String -> Maybe a -> m a
 fromJustFail message maybeValue = case maybeValue of
   Just value -> return value
-  Nothing -> fail message
+  Nothing -> Fail.fail message

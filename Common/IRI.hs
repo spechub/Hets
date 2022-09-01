@@ -102,6 +102,7 @@ import Common.Lexer
 import Common.Parsec
 import Common.Percent
 import Common.Token (comps)
+import qualified Control.Monad.Fail as Fail
 
 -- * The IRI datatype
 
@@ -658,7 +659,7 @@ decOctet :: IRIParser st String
 decOctet = do
   a1 <- countMinMax 1 3 digit
   if (read a1 :: Int) > 255 then
-            fail "Decimal octet value too large"
+            Fail.fail "Decimal octet value too large"
           else
             return a1
 
@@ -1179,6 +1180,7 @@ to the prefix of @c@ or the concatenation of @i@ and @iriPath c@
 is not a valid IRI. -}
 expandCurie :: Map String IRI -> IRI -> Maybe IRI
 expandCurie pm iri
+    | hasFullIRI iri = Just iri
     | isAbbrev iri = do
         def <- Map.lookup (prefixName iri) pm
         let defS = iriToStringFull id (setAngles False def) ""
@@ -1196,6 +1198,7 @@ expansion can be done more efficient than using @expandCurie@.
 -}
 expandCurie' :: Map String String -> IRI -> Maybe IRI
 expandCurie' pm iri
+    | hasFullIRI iri = Just iri
     | isAbbrev iri = do
         def <- Map.lookup (prefixName iri) pm
         -- remove surrounding angle brackets if needed
