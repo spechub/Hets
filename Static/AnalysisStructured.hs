@@ -84,36 +84,46 @@ import Static.ComputeTheory
 -- overrides CUIRIE expansion for Download_items
 type ExpOverrides = Map.Map IRI FilePath
 
-coerceMaybeNode :: LogicGraph -> DGraph -> MaybeNode -> NodeName -> AnyLogic
+coerceMaybeNode :: LogicGraph -> LibEnv -> LibName ->
+                   DGraph -> MaybeNode -> NodeName -> AnyLogic
                 -> Result (MaybeNode, DGraph)
-coerceMaybeNode lg dg mn nn l2 = case mn of
+coerceMaybeNode lg libEnv ln dg mn nn l2 = case mn of
   EmptyNode _ -> return (EmptyNode l2, dg)
   JustNode ns -> do
-    (ms, dg2) <- coerceNode lg dg ns nn l2
+    (ms, dg2) <- coerceNode lg libEnv ln dg ns nn l2
     return (JustNode ms, dg2)
 
-coerceNode :: LogicGraph -> DGraph -> NodeSig -> NodeName -> AnyLogic
+coerceNode :: LogicGraph -> LibEnv -> LibName ->
+              DGraph -> NodeSig -> NodeName -> AnyLogic
            -> Result (NodeSig, DGraph)
-coerceNode lg dg ns@(NodeSig _ (G_sign lid1 _ _)) nn l2@(Logic lid2) =
+coerceNode lg libEnv ln dg ns@(NodeSig _ (G_sign lid1 _ _)) nn l2@(Logic lid2) =
     if language_name lid1 == language_name lid2 then return (ns, dg)
     else do
       c <- logicInclusion lg (Logic lid1) l2
-      coerceNodeByComorph c dg ns nn
+      coerceNodeByComorph libEnv ln c dg ns nn
 
-coerceNodeByComorph :: AnyComorphism -> DGraph -> NodeSig -> NodeName
+coerceNodeByComorph :: LibEnv -> LibName -> AnyComorphism -> DGraph -> NodeSig -> NodeName
            -> Result (NodeSig, DGraph)
-coerceNodeByComorph c dg (NodeSig n s) nn = do
-      gmor <- gEmbedComorphism c s
+coerceNodeByComorph libEnv ln c@(Comorphism cid) dg (NodeSig n s) nn = do
+      (dg', gmor) <- if isGTC cid then do
+                       let dg0 = computeDGraphTheories libEnv ln dg
+                           Just l = lab (dgBody dg0) n 
+                           Just gth = globalTheory l
+                       gm <- gEmbedGTC c gth
+                       return (dg0, gm)
+                     else do 
+                      gm <- gEmbedComorphism c s
+                      return (dg, gm)      
       case find (\ (_, _, l) -> dgl_origin l == SeeTarget
           && dgl_type l == globalDef
-          && dgl_morphism l == gmor) $ outDG dg n of
+          && dgl_morphism l == gmor) $ outDG dg' n of
         Nothing -> do
           let (ms@(NodeSig m _), dg2) =
-                insGSig dg (extName "XCoerced" nn) DGLogicCoercion $ cod gmor
+                insGSig dg' (extName "XCoerced" nn) DGLogicCoercion $ cod gmor
               dg3 = insLink dg2 gmor globalDef SeeTarget n m
           return (ms, dg3)
         Just (_, t, _) ->
-            return (NodeSig t $ signOf $ dgn_theory $ labDG dg t, dg)
+            return (NodeSig t $ signOf $ dgn_theory $ labDG dg' t, dg')
 
 insGTheory :: DGraph -> NodeName -> DGOrigin -> G_theory -> (NodeSig, DGraph)
 insGTheory dg name orig (G_theory lid syn sig ind sens tind) =
@@ -311,7 +321,7 @@ anaSpecAux conser addSyms optNodes lg
        when (maybe False (`isProperSublogic` bsSL) curSL)
          $ Fail.fail $ "sublogic expected: " ++ maybe "" show curSL
                ++ " found: " ++ show bsSL
-       (nsig', dg0) <- coerceMaybeNode lg dg nsig name curLogic
+       (nsig', dg0) <- coerceMaybeNode lg libEnv ln dg nsig name curLogic
        G_sign lid' sigma' _ <- return $ case nsig' of
            EmptyNode cl -> emptyG_sign cl
            JustNode ns -> getSig ns
@@ -382,7 +392,7 @@ anaSpecAux conser addSyms optNodes lg
       (sp1', ns0, dg0) <- anaSpec addSyms optNodes lg libEnv 
                            ln dg nsig rname opts eo sp1 rg
       rLid <- getRestrLogic restr
-      p1@(NodeSig n' gsigma', dg') <- coerceNode lg dg0 ns0 rname rLid
+      p1@(NodeSig n' gsigma', dg') <- coerceNode lg libEnv ln dg0 ns0 rname rLid
       (hmor, tmor) <- anaRestriction lg (getMaybeSig nsig) gsigma' opts restr
       let noRename = maybe True isIdentity tmor
           noHide = isIdentity hmor
@@ -517,7 +527,7 @@ anaSpecAux conser addSyms optNodes lg
       (sp', ns', dg') <- anaSpec addSyms optNodes newLG libEnv ln 
                                  dg newNSig qname opts eo
         (item asp) pos
-      (ns, dg2) <- coerceNode lg dg' ns' qname l
+      (ns, dg2) <- coerceNode lg libEnv ln dg' ns' qname l
       return (Qualified_spec lognm asp { item = sp' } pos, ns, dg2)
   Group asp pos -> do
       (sp', nsig', dg') <-
@@ -590,10 +600,10 @@ anaSpecAux conser addSyms optNodes lg
       (sp1', ns', dg') <- anaSpec False True (setCurLogic (language_name lidD) lg)
          libEnv ln dg (EmptyNode lD) dname opts eo sp1 pos1
       -- force the result to be in the data logic
-      (ns'', dg'') <- coerceNode lg dg' ns' (extName "Qualified" dname) lD
+      (ns'', dg'') <- coerceNode lg libEnv ln dg' ns' (extName "Qualified" dname) lD
       -- translate SPEC1's signature along the comorphism
-      (nsig2@(NodeSig node gsigmaD), dg2) <-
-         coerceNodeByComorph c dg'' ns'' dname
+      (nsig2@(NodeSig node gsigmaD), dg2) <- 
+         coerceNodeByComorph libEnv ln c dg'' ns'' dname
       (usig, udg) <- case nsig of
         EmptyNode _ -> return (nsig2, dg2)
         JustNode ns2 -> do
@@ -1037,7 +1047,7 @@ anaFitArg lg libEnv ln dg spname nsigI nsigP@(NodeSig nP gsigmaP) opts name eo f
    (_, Comorphism aid) <-
        logicUnion lg (getNodeLogic nsigP) (getNodeLogic nsigA)
    let tl = Logic $ targetLogic aid
-   (nsigA'@(NodeSig nA' gsigA'), dg'') <- coerceNode lg dg' nsigA name tl
+   (nsigA'@(NodeSig nA' gsigA'), dg'') <- coerceNode lg libEnv ln dg' nsigA name tl
    (gsigmaP', pmor) <- gSigCoerce lg gsigmaP tl
    tmor <- gEmbedComorphism pmor gsigmaP
    gmor <- anaGmaps lg opts pos gsigmaP' gsigA' gsis

@@ -103,6 +103,10 @@ type SIMPLE_ID = Token
 mkSimpleId :: String -> Token
 mkSimpleId s = Token s nullRange
 
+-- | add a string to a token
+addStringToTok :: Token -> String -> Token 
+addStringToTok (Token s r) s' = Token (s ++ s') r
+ 
 -- | null token
 nullTok :: Token
 nullTok = mkSimpleId ""

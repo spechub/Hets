@@ -159,9 +159,6 @@ onlysomeS = "onlysome"
 orS :: String
 orS = "or"
 
-patternS :: String
-patternS = "pattern"
-
 positiveIntegerS :: String
 positiveIntegerS = "positiveInteger"
 

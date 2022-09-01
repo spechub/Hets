@@ -1998,11 +1998,13 @@ printAnnotations pds n anns =
 
 -- | print IRI
 printIRI :: GA.PrefixMap -> IRI -> Doc
-printIRI pds iri
+printIRI pds i
     | isAbbrev iri && prefName `M.member` pds = text (showIRI iri)
     | isAbbrev iri && null prefName = text (showIRIFull iri)
     | otherwise = text (showIRI iri)
-  where prefName = prefixName iri
+  where
+    iri = setAngles True i
+    prefName = prefixName iri
 
 
 printDataIRI :: GA.PrefixMap -> IRI -> Doc

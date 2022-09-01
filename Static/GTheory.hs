@@ -147,6 +147,14 @@ mapG_theory lossy (Comorphism cid) (G_theory lid _ (ExtSign sign _)
   return $ G_theory (targetLogic cid) Nothing (mkExtSign sign')
          ind1 (toThSens sens') ind2
 
+-- | Embedding of GTCs as Grothendieck sig mors
+gEmbedGTC :: AnyComorphism -> G_theory -> Result GMorphism
+gEmbedGTC (Comorphism cid) gth@(G_theory lid _ ssig _ _ _) = do 
+  gth'@(G_theory lid' _ tsig ind _ _) <- mapG_theory False (Comorphism cid) gth
+  ssig' <- coerceSign lid (sourceLogic cid) "can't convert sigs" ssig
+  (ExtSign s _) <- coerceSign lid' (targetLogic cid) "can't convert sigs" tsig
+  return $ GMorphism cid ssig' ind (ide s) startMorId
+
 -- | Translation of a G_theory along a GMorphism
 translateG_theory :: GMorphism -> G_theory -> Result G_theory
 translateG_theory (GMorphism cid _ _ morphism2 _)

@@ -18,6 +18,8 @@ Computes the colimit of an arbitrary diagram in Set:
 
 module Common.SetColimit (
     computeColimitSet,
+    computeColimitRel,
+    colimitRel,
     addIntToSymbols,
     SymbolName (..)
   )
@@ -31,6 +33,8 @@ import Common.Lib.Rel (leqClasses)
 import Data.Graph.Inductive.Graph
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+
+import qualified Data.Relation as Rel
 
 compose :: (Ord a) => Set.Set (a, Int) ->
                       Map.Map (a, Int) (a, Int) ->
@@ -108,6 +112,9 @@ computeCoeqs graph (colim, morMap) edgeList =
 class (Eq a, Ord a) => SymbolName a where
   addString :: (a, String) -> a
 
+instance SymbolName Token where
+ addString (t, s) = addStringToTok t s
+
 instance SymbolName Id where
  addString (x, y) = appendString x y
 
@@ -151,3 +158,24 @@ addIntToSymbols (set, fun) = let
     in namePartitions ps f0 s2 f2
  in namePartitions (partList set) fun Set.empty $
     Map.fromList $ zip (Map.keys fun) (repeat Map.empty)
+
+colimitRel :: (Ord a) => 
+              [(Int, Rel.Relation a a)] -> Map.Map Node (Map.Map a a) ->
+              Rel.Relation a a
+colimitRel rels nMaps = 
+  foldl (\r (n, r') -> let nf = Map.findWithDefault (error "nf") n nMaps 
+                           r'' = Rel.fromList $ 
+                                           map (\(x,y) -> (Map.findWithDefault x x nf, 
+                                                           Map.findWithDefault y y nf)) $ 
+                                           Rel.toList r'
+                       in r `Rel.union` r'') 
+        Rel.empty rels
+
+computeColimitRel :: (Ord a, SymbolName a) =>
+                     Gr (Rel.Relation a a) (Int, Map.Map a a) ->
+                     (Rel.Relation a a, Map.Map Node (Map.Map a a))
+computeColimitRel gr = 
+  let grSet = nmap (\r -> (Rel.dom r) `Set.union` (Rel.ran r)) gr
+      (_cSet, nMaps) = addIntToSymbols $ computeColimitSet grSet
+      rel = colimitRel (labNodes gr) nMaps
+  in (rel, nMaps)

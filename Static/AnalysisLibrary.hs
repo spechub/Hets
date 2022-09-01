@@ -154,7 +154,7 @@ anaStringAux :: Maybe LibName -- ^ suggested library name
   -> FilePath -> (LibName, LibEnv) -> LIB_DEFN -> ResultT IO (LibName, LibEnv)
 anaStringAux mln lgraph opts topLns initDG mt file posFileName (_, libenv)
              (Lib_defn pln is' ps ans) = do
-  let pm = fst $ partPrefixes ans
+  let pm = Map.union (fst $ partPrefixes ans) (prefixes lgraph)
       expnd i = fromMaybe i $ expandCurie pm i
       spNs = Set.unions . map (Set.map expnd . getSpecNames)
         $ concatMap (getSpecDef . item) is'
@@ -185,7 +185,7 @@ anaStringAux mln lgraph opts topLns initDG mt file posFileName (_, libenv)
           lift $ writeLibDefn lgraph ga file opts ast
           liftR mzero
       _ -> do
-          let libstring = libToFileName ln
+          let libstring = libToString ln
           unless (isSuffixOf libstring (dropExtension file)
               || not emptyFilePath) . lift . putIfVerbose opts 1
               $ "### file name '" ++ file ++ "' does not match library name '"

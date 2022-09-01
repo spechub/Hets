@@ -138,6 +138,11 @@ class (Language cid,
     -- expansion preserves satisfaction
     eps :: cid -> Bool
     eps _ = True
+    -- a comorphism is a generalized theoroidal comorphism (GTC)
+    -- if the presence of an axiom in a theory
+    -- impacts on the signature of the translated theory along the GTC
+    isGTC :: cid -> Bool 
+    isGTC _ = False
 
 targetSublogic :: Comorphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
