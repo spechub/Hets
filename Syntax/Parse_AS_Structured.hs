@@ -42,6 +42,7 @@ import Syntax.AS_Structured
 import Common.AS_Annotation
 import Common.AnnoState
 import Common.AnnoParser
+import Common.GlobalAnnotations
 import Common.Id
 import Common.IRI
 import Common.Keywords
@@ -202,19 +203,19 @@ plainComma = anComma `notFollowedWith` asKey logicS
 
 -- * parse G_mapping
 
-callSymParser :: Bool -> Maybe (AParser st a) -> String -> String ->
+callSymParser :: Bool -> Maybe (PrefixMap -> AParser st a) -> PrefixMap -> String -> String ->
                  AParser st ([a], [Token])
-callSymParser oneOnly p name itemType = case p of
+callSymParser oneOnly p pm name itemType = case p of
     Nothing ->
         Fail.fail $ "no symbol" ++ itemType ++ " parser for language " ++ name
     Just pa -> if oneOnly then do
-        s <- pa
+        s <- pa pm
         return ([s], [])
-      else separatedBy pa plainComma
+      else separatedBy (pa pm) plainComma
 
-parseItemsMap :: AnyLogic -> AParser st (G_symb_map_items_list, [Token])
-parseItemsMap (Logic lid) = do
-      (cs, ps) <- callSymParser False (parse_symb_map_items lid)
+parseItemsMap :: AnyLogic -> PrefixMap -> AParser st (G_symb_map_items_list, [Token])
+parseItemsMap (Logic lid) pm = do
+      (cs, ps) <- callSymParser False (parse_symb_map_items lid) pm
                   (language_name lid) " maps"
       return (G_symb_map_items_list lid cs, ps)
 
@@ -224,7 +225,7 @@ parseMapping =
   parseMapOrHide "translation" G_logic_translation G_symb_map parseItemsMap
 
 parseMapOrHide :: String -> (Logic_code -> a) -> (t -> a)
-               -> (AnyLogic -> AParser st (t, [Token])) -> LogicGraph
+               -> (AnyLogic -> PrefixMap -> AParser st (t, [Token])) -> LogicGraph
                -> AParser st ([a], [Token])
 parseMapOrHide altKw constrLogic constrMap pa lG =
     do (n, nLg) <- parseLogic altKw lG
@@ -234,7 +235,7 @@ parseMapOrHide altKw constrLogic constrMap pa lG =
         <|> return ([constrLogic n], [])
     <|> do
       l <- lookupCurrentLogic "parseMapOrHide" lG
-      (m, ps) <- pa l
+      (m, ps) <- pa l $ prefixes lG
       do anComma
          (gs, qs) <- parseMapOrHide altKw constrLogic constrMap pa lG
          return (constrMap m : gs, ps ++ qs)
@@ -242,20 +243,20 @@ parseMapOrHide altKw constrLogic constrMap pa lG =
 
 -- * parse G_hiding
 
-parseItemsList :: AnyLogic -> AParser st (G_symb_items_list, [Token])
-parseItemsList (Logic lid) = do
-      (cs, ps) <- callSymParser False (parse_symb_items lid)
+parseItemsList :: AnyLogic -> PrefixMap -> AParser st (G_symb_items_list, [Token])
+parseItemsList (Logic lid) pm = do
+      (cs, ps) <- callSymParser False (parse_symb_items lid) pm
                   (language_name lid) ""
       return (G_symb_items_list lid cs, ps)
 
-parseSingleSymb :: AnyLogic -> AParser st (G_symb_items_list, [Token])
-parseSingleSymb (Logic lid) = do
-      (cs, ps) <- callSymParser True (parseSingleSymbItem lid)
+parseSingleSymb :: AnyLogic -> PrefixMap -> AParser st (G_symb_items_list, [Token])
+parseSingleSymb (Logic lid) pm = do
+      (cs, ps) <- callSymParser True (parseSingleSymbItem lid) pm
                   (language_name lid) ""
       return (G_symb_items_list lid cs, ps)
 
 parseHiding :: LogicGraph -> AParser st ([G_hiding], [Token])
-parseHiding =
+parseHiding = 
   parseMapOrHide "along" G_logic_projection G_symb_list parseItemsList
 
 -- * specs
@@ -365,7 +366,7 @@ restriction lg =
     <|> -- reveal
     do kReveal <- asKey revealS
        nl <- lookupCurrentLogic "reveal" lg
-       (mappings, commas) <- parseItemsMap nl
+       (mappings, commas) <- parseItemsMap nl $ prefixes lg
        return (Revealed mappings (catRange (kReveal : commas)))
 
 -- | Parse approximation
@@ -406,7 +407,7 @@ filtering_aux p lg =
  <|>
   do
     s <- lookupCurrentSyntax "filtering" lg
-    (g_symb_items_list,ps) <- parseItemsList (fst s)
+    (g_symb_items_list,ps) <- parseItemsList (fst s) $ prefixes lg
     return . FilterSymbolList (tokStr p == selectS) 
                g_symb_items_list $ catRange (p : ps)
 
@@ -581,7 +582,7 @@ corr1 :: LogicGraph
                     , Maybe RELATION_REF, Maybe CONFIDENCE, G_symb_items_list)
 corr1 l = do
     al <- lookupCurrentLogic "correspondence" l
-    (eRef, _) <- parseSingleSymb al
+    (eRef, _) <- parseSingleSymb al $ prefixes l
     (mrRef, mconf, toer) <- corr2 l
     cids <- annotations
     if not (null cids || null (tail cids))
@@ -599,7 +600,7 @@ corr3 :: LogicGraph -> AParser st (Maybe CONFIDENCE, G_symb_items_list)
 corr3 l = do
     al <- lookupCurrentLogic "corr3" l
     conf <- optionMaybe $ try confidence
-    (sym, _) <- parseSingleSymb al
+    (sym, _) <- parseSingleSymb al $ prefixes l
     return (conf, sym)
 
 relationRefWithLookAhead :: LogicGraph -> AParser st RELATION_REF

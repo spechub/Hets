@@ -64,9 +64,9 @@ instance Syntax CASL_DL DL_BASIC_SPEC
                 Symbol SYMB_ITEMS SYMB_MAP_ITEMS
       where
          parse_basic_spec CASL_DL = Just $ basicSpec casl_DL_reserved_words
-         parse_symb_items CASL_DL = Just $ symbItems casl_DL_reserved_words
+         parse_symb_items CASL_DL = Just . const $ symbItems casl_DL_reserved_words
          parse_symb_map_items CASL_DL =
-             Just $ symbMapItems casl_DL_reserved_words
+              Just . const $ symbMapItems casl_DL_reserved_words
 
 -- CASL_DL logic
 

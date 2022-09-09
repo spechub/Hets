@@ -48,8 +48,8 @@ instance SignExtension CoCASLSign where
 
 instance Syntax CoCASL C_BASIC_SPEC Symbol SYMB_ITEMS SYMB_MAP_ITEMS where
     parse_basic_spec CoCASL = Just $ basicSpec cocasl_reserved_words
-    parse_symb_items CoCASL = Just $ symbItems cocasl_reserved_words
-    parse_symb_map_items CoCASL = Just $ symbMapItems cocasl_reserved_words
+    parse_symb_items CoCASL = Just . const $ symbItems cocasl_reserved_words
+    parse_symb_map_items CoCASL = Just . const $ symbMapItems cocasl_reserved_words
 
 -- CoCASL logic
 

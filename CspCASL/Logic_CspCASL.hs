@@ -98,8 +98,8 @@ instance Show a => Syntax (GenCspCASL a)
     CspSymbItems
     CspSymbMapItems
     where
-      parse_symb_items (GenCspCASL _) = Just cspSymbItems
-      parse_symb_map_items (GenCspCASL _) = Just cspSymbMapItems
+      parse_symb_items (GenCspCASL _) = Just . const $ cspSymbItems
+      parse_symb_map_items (GenCspCASL _) = Just . const $ cspSymbMapItems
       parse_basic_spec (GenCspCASL _) = Just $ basicSpec startCspKeywords
 
 -- lattices (for sublogics) missing

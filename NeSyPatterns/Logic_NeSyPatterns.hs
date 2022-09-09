@@ -90,8 +90,8 @@ instance Syntax NeSyPatterns BASIC_SPEC
          parsersAndPrinters NeSyPatterns =
            addSyntax "Hets" (basicSpec, pretty)
            $ makeDefault (basicSpec, pretty)
-         parse_symb_items NeSyPatterns = Just symbItems
-         parse_symb_map_items NeSyPatterns = Just symbMapItems
+         parse_symb_items NeSyPatterns = Just . const $ symbItems
+         parse_symb_map_items NeSyPatterns = Just . const $ symbMapItems
 
 -- | Instance of Logic for propositional logc
 instance Logic NeSyPatterns
