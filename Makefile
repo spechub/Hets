@@ -675,7 +675,6 @@ distclean: clean_stack realclean clean_genRules
 		utils/appendHaskellPreludeString \
 		utils/DrIFT utils/genRules \
 		$(DTD2HS) \
-		utils/DtdToHaskell-src/DtdToHaskell \
 		utils/genItCorrections pretty/LaTeX_maps.hs pretty/words.pl.log \
 		docs
 
