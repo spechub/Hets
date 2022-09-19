@@ -16,7 +16,7 @@ import Data.Maybe (isJust, catMaybes)
 import Text.ParserCombinators.Parsec
 
 symb :: GA.PrefixMap -> AParser st SYMB
-symb = fmap Symb_id . name
+symb = fmap Symb_id . node
 
 symbItems :: GA.PrefixMap -> AParser st SYMB_ITEMS
 symbItems pm = do
