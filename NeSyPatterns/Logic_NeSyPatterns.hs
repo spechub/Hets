@@ -24,18 +24,14 @@ import NeSyPatterns.Morphism
 import NeSyPatterns.AS
 import NeSyPatterns.Symbol as Symbol
 import NeSyPatterns.Parse
-import NeSyPatterns.Print
-import NeSyPatterns.Taxonomy
 import NeSyPatterns.Analysis
 
-import Common.Id
 import Common.ProofTree
 import ATC.ProofTree ()
 
 import NeSyPatterns.ATC_NeSyPatterns ()
 
 import qualified Data.Map as Map
-import Data.Monoid
 
 -- | Lid for propositional logic
 data NeSyPatterns = NeSyPatterns deriving Show
@@ -116,7 +112,7 @@ instance Logic NeSyPatterns
       provers NeSyPatterns = []
       cons_checkers NeSyPatterns = []
       conservativityCheck NeSyPatterns = []
-      data_logic (NeSyPatterns) = Just (Logic OWL2)
+      data_logic NeSyPatterns = Just (Logic OWL2)
 
 -- | Static Analysis for propositional logic
 instance StaticAnalysis NeSyPatterns

@@ -31,7 +31,6 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import NeSyPatterns.Sign as Sign
-import NeSyPatterns.AS
 
 import Common.Id as Id
 import Common.Result
@@ -41,6 +40,7 @@ import qualified Common.Result as Result
 import Common.IRI
 
 import Control.Monad (unless, foldM)
+import qualified Data.Bifunctor
 
 {- | Morphisms are graph homomorphisms, here: node maps -}
 data Morphism = Morphism
@@ -59,9 +59,9 @@ idMor a = inclusionMap a a
 
 -- | convert to token map
 morphism2TokenMap :: Morphism -> Map.Map IRI IRI
-morphism2TokenMap m = 
- foldl (\aMap (x, fx) -> Map.insert x fx aMap) Map.empty $ 
- map (\(x, fx) -> (resolvedNeSyId x, resolvedNeSyId fx)) $ 
+morphism2TokenMap m =
+ foldl (\aMap (x, fx) -> Map.insert x fx aMap) Map.empty $
+ map (Data.Bifunctor.bimap resolvedNeSyId resolvedNeSyId) $
  Map.toList $ nodeMap m
 
 tokenMap2NodeMap ::  Set.Set ResolvedNode
@@ -74,7 +74,7 @@ tokenMap2NodeMap sSet tSet tMap =
                       findT2 = findNodeId t2 tSet
                   case (Set.toList findT1, Set.toList findT2) of
                     ([x], [y]) -> return $ Map.insert x y f
-                    _ -> fail "element not found" ) 
+                    _ -> fail "element not found" )
          Map.empty $ Map.toList tMap
 
 -- | Determines whether a morphism is valid

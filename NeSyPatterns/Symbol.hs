@@ -32,15 +32,12 @@ import Common.Doc
 import Common.DocUtils
 
 import Data.Data
-import Data.Maybe (catMaybes, maybeToList)
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
 import qualified NeSyPatterns.Sign as Sign
 import NeSyPatterns.Morphism as Morphism
 
-import qualified NeSyPatterns.AS as AS
-import NeSyPatterns.AS (Node(ontologyTerm))
 import NeSyPatterns.Sign (ResolvedNode)
 
 -- | Datatype for symbols

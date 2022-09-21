@@ -51,8 +51,7 @@ uriP :: CharParser st IRI
 uriP = try $ do
   startsWithColon <- isJust <$> (optionMaybe . try . lookAhead $ char ':')
   checkWithUsing (\i -> "keyword \"" ++ showIRI i ++ "\"") uriQ $ \ q -> let p = prefixName q in
-    if not (isAbbrev q) || startsWithColon then True
-    else not (null p) || (iFragment q) `notElem` nesyKeywords
+    (not (isAbbrev q) || startsWithColon) || (not (null p) || iFragment q `notElem` nesyKeywords)
 
 name :: GA.PrefixMap -> AParser st IRI
 name pm = wrapAnnos $ expUriP pm
