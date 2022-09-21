@@ -24,7 +24,7 @@ module NeSyPatterns.Analysis
     where
 
 
-import Data.Maybe (catMaybes, fromMaybe, fromJust)
+import Data.Maybe (fromMaybe)
 import Data.Foldable (foldrM, foldlM)
 import Data.List (stripPrefix)
 import Data.Bifunctor (bimap, Bifunctor (second))
@@ -104,18 +104,38 @@ retrieveBasicItem x sig = let sigM = Just sig in case x of
         return sig''
 
 
-resolveNode :: Maybe Sign -> AS.Node -> Result.Result ResolvedNode
+{- | @resolveNode sm n@ converts @n@ to a @ResolvedNode@ if it's ontology term
+  is declared in the data ontology @owlClasses s@. If @n@ does not contain an id,
+  @findId@ is used to try to match it.
+   -}
+resolveNode :: Maybe Sign -- ^ 
+  -> AS.Node -- ^ 
+  -> Result.Result ResolvedNode
 resolveNode sigM n@(AS.Node o mi r) = case mi of
     Just i -> case sigM of
       Just sig -> if Set.member o (owlClasses sig) then
           return $ ResolvedNode o i r
         else
-          Result.mkError "Undefined class" o
+          Result.mkError "Undefined class" n
 
       Nothing -> return $ ResolvedNode o i r
-    Nothing -> Result.mkError "Unset nesyid." n
+    Nothing -> case sigM of
+      Just sig -> case findId o $ nodes sig of
+        Just i -> return $ ResolvedNode o i r
+        Nothing -> Result.mkError "Cannot uniquely resolve unset nesyid." n
+      Nothing -> Result.mkError "Unset nesyid." n
 
--- Basic analysis 
+{- | @findId o f@ finds a the id used to refer to @o@ in @f@ if there is exactly
+  one id used in @f@ to refer to @o@ -}
+findId :: Foldable t => IRI -- ^ Ontology term which id should be found
+  -> t ResolvedNode -- ^ List of nodes in which @o@ should be searched
+  -> Maybe IRI
+findId o = foldr (\n' r -> case r of
+          Nothing | resolvedOTerm n' == o -> Just $ resolvedNeSyId n'
+          Just i | i /= resolvedNeSyId n' -> Nothing
+          _ -> r) Nothing
+
+-- | Basic analysis 
 basicNeSyPatternsAnalysis
   :: (AS.BASIC_SPEC, Sign.Sign, GlobalAnnos.GlobalAnnos)
   -> Result.Result (AS.BASIC_SPEC,
@@ -129,18 +149,17 @@ basicNeSyPatternsAnalysis (spec, sig, _) = do
 -- | Static analysis for symbol maps
 mkStatSymbMapItem :: Sign -> Maybe Sign -> [AS.SYMB_MAP_ITEMS]
                   -> Result.Result (Map.Map Symbol.Symbol Symbol.Symbol)
-mkStatSymbMapItem sig sigM = let s = maybe sig (Sign.unite Sign.emptySig) sigM in
-   return . foldr
-  (\(AS.Symb_map_items sitem _) -> Map.union $ statSymbMapItem s sitem)
+mkStatSymbMapItem sig sigM = return . foldr 
+  (\(AS.Symb_map_items sitem _) -> Map.union $ statSymbMapItem sig sigM sitem)
   Map.empty
 
-statSymbMapItem :: Sign.Sign -> [AS.SYMB_OR_MAP]
+statSymbMapItem :: Sign.Sign -> Maybe Sign -> [AS.SYMB_OR_MAP]
                  -> Map.Map Symbol.Symbol Symbol.Symbol
-statSymbMapItem sig = foldl (\mmap x ->
+statSymbMapItem sig sigM = let s = fromMaybe sig sigM in foldr (\x mmap ->
          case x of
            AS.Symb sym -> Map.insert (symbToSymbol sig sym) (symbToSymbol sig sym) mmap
            AS.Symb_map s1 s2 _ ->
-               Map.insert (symbToSymbol sig s1) (symbToSymbol sig s2) mmap
+               Map.insert (symbToSymbol sig s1) (symbToSymbol s s2) mmap
     ) Map.empty
 
 -- | Retrieve raw symbols
@@ -148,9 +167,6 @@ mkStatSymbItems :: Sign.Sign -> [AS.SYMB_ITEMS] -> Result.Result [Symbol.Symbol]
 mkStatSymbItems sig a = do
     resolvedSymbols <- mapM (resolveNode (Just sig)) [t | (AS.Symb_items r _) <- a, (AS.Symb_id t) <- r]
     return $ Symbol.Symbol <$> resolvedSymbols
-  --   tokens = [(t, resolveNode (Just sig) t, r) | (AS.Symb_items symbs r) <- a, (AS.Symb_id t) <- symbs]
-  --   errors =  [ Result.mkDiag Result.Error "Unknown symbol" t | (t, Nothing, _) <- tokens]
-  -- in Result.Result errors (Just [ Symbol.Symbol $ Sign.ResolvedNode t o r | (t, o, r) <- tokens])
 
 symbToSymbol :: Sign.Sign -> AS.SYMB -> Symbol.Symbol
 symbToSymbol sig (AS.Symb_id node) = let
@@ -159,8 +175,8 @@ symbToSymbol sig (AS.Symb_id node) = let
     (_, newId) = genIdNode nextId node
     nodeM = resultToMaybe $ resolved <|> resolveNode (Just sig) newId
   in case nodeM of
-    Just n -> Symbol.Symbol n
-    Nothing -> error "NeSyPatterns.Analysis.symbToSymbol: Cannot convert symbol"
+  Just n -> Symbol.Symbol n
+  Nothing -> error "NeSyPatterns.Analysis.symbToSymbol: Cannot convert symbol"
 
 
 
@@ -276,9 +292,9 @@ signatureColimit graph = do
   return (colimSig, colimMors)
 
 nextGenId :: Sign.Sign -> Int
-nextGenId sig = foldr (\n id -> fromMaybe id $ do
-      id' <- genIdFromNode n
-      return $ if id' > id then id' else id
+nextGenId sig = foldr (\n genId -> fromMaybe genId $ do
+      genId' <- genIdFromNode n
+      return $ if genId' > genId then genId' else genId
     ) 0 $ Sign.nodes sig
   where
     genIdFromNode :: Sign.ResolvedNode -> Maybe Int
