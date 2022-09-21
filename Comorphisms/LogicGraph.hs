@@ -232,6 +232,8 @@ comorphismList =
     , Comorphism $ CASL2SubCFOL True FormulaDependent -- unique bottoms
     , Comorphism $ CASL2SubCFOL False SubsortBottoms -- keep free types
     , Comorphism $ CASL2SubCFOL False NoMembershipOrCast -- keep free types
+    , Comorphism $ CASL2SubCFOL False FormulaDependent
+      -- keep free types if all gen constraint constructors are total
     , Comorphism CASL2TopSort
     , Comorphism QBF2Prop
     , Comorphism Prop2QBF

@@ -78,6 +78,8 @@ instance Language CASL where
   , "  Sul    -> with a locally filtered subsort relation"
   , "  P      -> with partial functions"
   , "  C      -> with sort generation constraints"
+  , "  tC     -> C without partial constructors"
+  , "  fC     -> C without non-free constraints (implies tC)"
   , "  eC     -> C without renamings"
   , "  sC     -> C with injective constructors"
   , "  seC    -> sC and eC"
