@@ -47,6 +47,7 @@ import Network.Wai.Parse as W
 
 import qualified Data.ByteString.Lazy.Char8 as BS
 import qualified Data.ByteString.Char8 as B8
+import qualified Control.Monad.Fail as Fail
 
 import Static.AnalysisLibrary
 import Static.ApplyChanges
@@ -361,7 +362,7 @@ oldWebApi opts tempLib sessRef re pathBits splitQuery meth respond =
                    anaAutoProofQuery splitQuery in do
                Result ds ms <- liftIO $ runResultT
                  $ case readMaybe $ head pathBits of
-                 Nothing -> fail "cannot read session id for automatic proofs"
+                 Nothing -> Fail.fail "cannot read session id for automatic proofs"
                  Just k' -> getHetsResult opts [] sessRef (qr k')
                               Nothing OldWebAPI proofFormatterOptions
                respond $ case ms of
@@ -543,7 +544,7 @@ parseRESTful
         -- Check if file already exists and no overwrite flag is set
         if fileExists && not (elem ("overwrite", Just "true") splitQuery)
           then
-            fail ("the file you wish to upload already exists, for overwrite" ++
+            Fail.fail ("the file you wish to upload already exists, for overwrite" ++
                       "please set the corresponding flag")
           else do
             -- write file
@@ -567,13 +568,13 @@ parseRESTful
               Just ndIri -> parseNodeQuery ndIri sId $ case cmd of
                 ["provers"] -> return $ NcProvers GlProofs transM
                 ["translations"] -> return $ NcTranslations Nothing
-                _ -> fail $ "unknown node command for a GET-request: "
+                _ -> Fail.fail $ "unknown node command for a GET-request: "
                       ++ intercalate "/" cmd
               Nothing -> fmap (Query (DGQuery sId Nothing)) $ case cmd of
                 [] -> return $ DisplayQuery format_
                 ["provers"] -> return $ GlProvers GlProofs transM
                 ["translations"] -> return GlTranslations
-                _ -> fail $ "unknown global command for a GET-request: "
+                _ -> Fail.fail $ "unknown global command for a GET-request: "
                   ++ intercalate "/" cmd) >>= getResponse
       -- get node or edge view
       nodeOrEdge : p : c | elem nodeOrEdge nodeEdgeIdes -> let
@@ -660,7 +661,7 @@ parseRESTful
           respond
         Just sId -> case cmd of
           "prove" -> case reasoningParametersE of
-              Left message_ -> fail ("Invalid parameters: " ++ message_)
+              Left message_ -> Fail.fail ("Invalid parameters: " ++ message_)
               Right reasoningParameters ->
                 return $ Query (DGQuery sId Nothing) $
                   GlAutoProveREST GlProofs reasoningParameters
@@ -669,18 +670,18 @@ parseRESTful
           _ -> case (nodeM, lookupSingleParam "edge") of
               -- fail if both are specified
               (Just _, Just _) ->
-                fail "please specify only either node or edge"
+                Fail.fail "please specify only either node or edge"
               -- call command upon a single node
               (Just ndIri, Nothing) -> parseNodeQuery ndIri sId
                 $ case lookup cmd $ map (\ a -> (showNodeCmd a, a)) nodeCmds of
                   Just nc -> return $ NcCmd nc
-                  _ -> fail $ "unknown node command '" ++ cmd ++ "' "
+                  _ -> Fail.fail $ "unknown node command '" ++ cmd ++ "' "
               -- call (the only) command upon a single edge
               (Nothing, Just edIri) -> case readMaybe $ getFragOfCode edIri of
                 Just i -> return $ Query (DGQuery sId Nothing)
                   $ EdgeQuery i "edge"
                 Nothing ->
-                  fail $ "failed to read edgeId from edgeIRI: " ++ edIri
+                  Fail.fail $ "failed to read edgeId from edgeIRI: " ++ edIri
               -- call of global command
               _ -> return $ Query (DGQuery sId Nothing) $ GlobCmdQuery cmd
            >>= getResponse
@@ -1073,7 +1074,7 @@ modifySessionAndCache errorMessage f sess sessRef k =
 
 ppDGraph :: DGraph -> Maybe PrettyType -> ResultT IO (String, String)
 ppDGraph dg mt = let ga = globalAnnos dg in case optLibDefn dg of
-    Nothing -> fail "parsed LIB-DEFN not avaible"
+    Nothing -> Fail.fail "parsed LIB-DEFN not avaible"
     Just ld ->
       let d = prettyLG logicGraph ld
           latex = renderLatex Nothing $ toLatex ga d
@@ -1137,9 +1138,9 @@ getDGraph opts sessRef dgQ = do
                                  else return file
       mf <- lift $ getContentAndFileType opts absolutPathToFile
       case mf of
-        Left err -> fail err
+        Left err -> Fail.fail err
         Right (_, mh, f, cont) -> case mh of
-          Nothing -> fail $ "could determine checksum for: " ++ file
+          Nothing -> Fail.fail $ "could determine checksum for: " ++ file
           Just h -> let q = absolutPathToFile : h : cmdList in
             case Map.lookup q lm of
             Just sess -> increaseUsage sessRef sess -- Return result from cache.
@@ -1164,7 +1165,7 @@ getDGraph opts sessRef dgQ = do
               k <- lift $ addNewSess sessRef sess
               return (sess, k)
     DGQuery k _ -> case IntMap.lookup k m of
-      Nothing -> fail "unknown development graph"
+      Nothing -> Fail.fail "unknown development graph"
       Just sess -> increaseUsage sessRef sess
 
 getSVG :: String -> String -> DGraph -> ResultT IO String
@@ -1173,7 +1174,7 @@ getSVG title url dg = do
           $ dotGraph title False url dg
         case exCode of
           ExitSuccess -> liftR $ extractSVG dg out
-          _ -> fail err
+          _ -> Fail.fail err
 
 enrichSVG :: DGraph -> Element -> Element
 enrichSVG dg e = processSVG dg $ fromElement e
@@ -1218,7 +1219,7 @@ addSVGAttribs dg c = case c of
 
 extractSVG :: DGraph -> String -> Result String
 extractSVG dg str = case parseXMLDoc str of
-  Nothing -> fail "did not recognize svg element"
+  Nothing -> Fail.fail "did not recognize svg element"
   Just e -> return $ showTopElement $ enrichSVG dg e
 
 cmpFilePath :: FilePath -> FilePath -> Ordering
@@ -1231,7 +1232,7 @@ getHetsResponse :: HetcatsOpts -> [W.FileInfo BS.ByteString]
 getHetsResponse opts updates sessRef pathBits query respond = do
   Result ds ms <- liftIO $ runResultT $ case anaUri pathBits query
     $ updateS : globalCommands of
-    Left err -> fail err
+    Left err -> Fail.fail err
     Right q -> getHetsResult opts updates sessRef q Nothing OldWebAPI
                   proofFormatterOptions
   respond $ case ms of
@@ -1249,7 +1250,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format_ api pfOptions = do
       sk@(sess', k) <- getDGraph opts sessRef dgQ
       sess <- lift $ makeSessCleanable sess' sessRef k
       let libEnv = sessLibEnv sess
-      (ln, dg) <- maybe (fail "unknown development graph") return
+      (ln, dg) <- maybe (Fail.fail "unknown development graph") return
         $ sessGraph dgQ sess
       let title = libToFileName ln
       let svg = getSVG title ('/' : show k) dg
@@ -1309,7 +1310,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format_ api pfOptions = do
                 else do
                   lift $ nextSess newLib sess sessRef k
                   processProofResult format_ pfOptions nodesAndProofResults (opts, libEnv, ln, dg)
-              _ -> fail ("The GlAutoProveREST path is only "
+              _ -> Fail.fail ("The GlAutoProveREST path is only "
                          ++ "available in the REST interface.")
             GlAutoProve (ProveCmd prOrCons incl mp mt tl nds xForm axioms) -> do
               (newLib, nodesAndProofResults) <-
@@ -1338,7 +1339,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format_ api pfOptions = do
                   newSess <- lift $ nextSess newLib sess sessRef k
                   sessAns newLn svg (newSess, k)
                 [] -> sessAns ln svg sk
-                else fail "getHetsResult.GlobCmdQuery"
+                else Fail.fail "getHetsResult.GlobCmdQuery"
               Just (_, act) -> do
                 newLib <- liftR $ act ln libEnv
                 newSess <- lift $ nextSess newLib sess sessRef k
@@ -1350,9 +1351,9 @@ getHetsResult opts updates sessRef (Query dgQ qk) format_ api pfOptions = do
               nl@(i, dgnode) <- case ein of
                 Right n -> case lookupNodeByName n dg of
                   p : _ -> return p
-                  [] -> fail $ "no node name: " ++ n
+                  [] -> Fail.fail $ "no node name: " ++ n
                 Left i -> case lab (dgBody dg) i of
-                  Nothing -> fail $ "no node id: " ++ show i
+                  Nothing -> Fail.fail $ "no node id: " ++ show i
                   Just dgnode -> return (i, dgnode)
               let fstLine = (if isDGRef dgnode then ("reference " ++) else
                     if isInternalNode dgnode then ("internal " ++) else id)
@@ -1366,7 +1367,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format_ api pfOptions = do
                            $ showSymbols opts ins (globalAnnos dg) dgnode)
                    _ -> return (textC, fstLine ++ showN dgnode)
                 _ -> case maybeResult $ getGlobalTheory dgnode of
-                  Nothing -> fail $
+                  Nothing -> Fail.fail $
                     "cannot compute global theory of:\n" ++ fstLine
                   Just gTh -> let subL = sublogicOfTh gTh in case nc of
                     ProveNode (ProveCmd pm incl mp mt tl thms xForm axioms) ->
@@ -1440,8 +1441,8 @@ getHetsResult opts updates sessRef (Query dgQ qk) format_ api pfOptions = do
               case getDGLinksById (EdgeId i) dg of
               [e@(_, _, l)] ->
                 return (textC, showLEdge e ++ "\n" ++ showDoc l "")
-              [] -> fail $ "no edge found with id: " ++ show i
-              _ -> fail $ "multiple edges found with id: " ++ show i
+              [] -> Fail.fail $ "no edge found with id: " ++ show i
+              _ -> Fail.fail $ "multiple edges found with id: " ++ show i
 
 processProofResult :: Maybe String
                    -> ProofFormatterOptions
@@ -1685,7 +1686,7 @@ showAutoProofWindow dg sessId prOrCons = let
       [] -> return ("", plain "nothing to prove (graph has no nodes)")
       -- otherwise
       (_, nd) : _ -> case maybeResult $ getGlobalTheory nd of
-        Nothing -> fail $ "cannot compute global theory of:\n" ++ show nd
+        Nothing -> Fail.fail $ "cannot compute global theory of:\n" ++ show nd
         Just gTh -> do
           let br = unode "br " ()
           (prSel, cmSel, jvSc) <- lift $ showProverSelection prOrCons
@@ -1952,7 +1953,7 @@ findConsChecker translationM gSublogic consCheckerNameM = do
   let findCC x = filter ((== x ) . getCcName . fst) consList
       consCheckersL = maybe (findCC "darwin") findCC consCheckerNameM
   case consCheckersL of
-        [] -> fail "no cons checker found"
+        [] -> Fail.fail "no cons checker found"
         (gConsChecker, comorphism) : _ -> return (gConsChecker, comorphism)
 
 reasonREST :: HetcatsOpts -> LibEnv -> LibName -> DGraph -> ProverMode
@@ -1979,7 +1980,7 @@ reasonREST opts libEnv libName dGraph_ proverMode location reasoningParameters =
     failOnLefts :: ReasoningCacheE -> ResultT IO ()
     failOnLefts reasoningCache =
       let lefts_ = lefts reasoningCache
-      in  unless (null lefts_) $ fail $ unlines lefts_
+      in  unless (null lefts_) $ Fail.fail $ unlines lefts_
 
     buildReasoningCache :: IO ReasoningCacheE
     buildReasoningCache =
@@ -2005,7 +2006,7 @@ reasonREST opts libEnv libName dGraph_ proverMode location reasoningParameters =
               let gTheoryM = maybeResult $ getGlobalTheory nodeLabel
               gTheory <- case gTheoryM of
                 Nothing ->
-                  fail ("Cannot compute global theory of: "
+                  Fail.fail ("Cannot compute global theory of: "
                         ++ showName (dgn_name nodeLabel) ++ "\n")
                 Just gTheory -> return gTheory
               let gSublogic = sublogicOfTh gTheory
@@ -2051,7 +2052,7 @@ reasonREST opts libEnv libName dGraph_ proverMode location reasoningParameters =
               proversAndComorphisms <-
                 getProverAndComorph reasonerM translationM gSublogic
               (gProver, comorphism) <- case proversAndComorphisms of
-                [] -> fail ("No matching translation or prover found for "
+                [] -> Fail.fail ("No matching translation or prover found for "
                             ++ nodeName ++ "\n")
                 (gProver, comorphism) : _ ->
                   return (gProver, comorphism)
@@ -2092,7 +2093,7 @@ performReasoning opts libEnv libName dGraph_ location reasoningCache = do
             let gTheoryM = maybeResult $ getGlobalTheory nodeLabel
             gTheory_ <- case gTheoryM of
               Nothing ->
-                fail ("Cannot compute global theory of: "
+                Fail.fail ("Cannot compute global theory of: "
                       ++ showName (dgn_name nodeLabel) ++ "\n")
               Just gTheory_ -> return gTheory_
             let reasoningCacheGoal' = reasoningCacheGoal { rceGTheory = gTheory_ }
@@ -2153,13 +2154,13 @@ proveNode :: LibEnv -> LibName -> DGraph -> (Int, DGNodeLab)
 proveNode le ln dg nl gTh subL useTh mp mt tl thms axioms = do
  ps <- lift $ getProverAndComorph mp mt subL
  case ps of
-  [] -> fail "no matching translation or prover found"
+  [] -> Fail.fail "no matching translation or prover found"
   cp : _ -> do
     let ks = map fst $ getThGoals gTh
         diffs = Set.difference (Set.fromList thms)
                 $ Set.fromList ks
-    unless (Set.null diffs) . fail $ "unknown theorems: " ++ show diffs
-    when (null thms && null ks) $ fail "no theorems to prove"
+    unless (Set.null diffs) . Fail.fail $ "unknown theorems: " ++ show diffs
+    when (null thms && null ks) $ Fail.fail "no theorems to prove"
     let selectedGoals_ = if null thms then ks else thms
     let timeLimit_ = maybe 1 (max 1) tl
     (nTh, sens, proofStatuses) <- do
@@ -2208,7 +2209,7 @@ proveMultiNodes pm le ln dg useTh mp mt tl nodeSel axioms = let
   in foldM
   (\ (le', res) nl@(_, dgn) ->
     case maybeResult $ getGlobalTheory dgn of
-      Nothing -> fail $
+      Nothing -> Fail.fail $
                     "cannot compute global theory of:\n" ++ show dgn
       Just gTh -> do
         (le'', proofResults) <- runProof le' gTh nl

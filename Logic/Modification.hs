@@ -21,6 +21,7 @@ module Logic.Modification where
 import Logic.Logic
 import Logic.Comorphism
 import Common.Result
+import qualified Control.Monad.Fail as Fail
 import Data.Typeable
 
 -- | comorphism modifications
@@ -124,11 +125,11 @@ instance (Modification lid1 cid1 cid2
  tauSigma (VerCompModif lid1 lid2) sigma = do
    mor1 <- tauSigma lid1 sigma
    case cast sigma of
-     Nothing -> fail "Cannot compose modifications"
+     Nothing -> Fail.fail "Cannot compose modifications"
      Just sigma1 -> do
        mor3 <- tauSigma lid2 sigma1
        case cast mor3 of
-         Nothing -> fail "Cannot compose modifications"
+         Nothing -> Fail.fail "Cannot compose modifications"
          Just mor2 -> comp mor1 mor2
 
 -- | horizontal composition of modifications
@@ -182,15 +183,15 @@ instance (Modification lid1 cid1 cid2
    tauSigma (HorCompModif lid1 lid2) sigma1 = do
      mor2 <- tauSigma lid1 sigma1
      case cast mor2 of
-       Nothing -> fail "Cannot compose modifications"
+       Nothing -> Fail.fail "Cannot compose modifications"
        Just mor5 -> do
          mor6 <- map_morphism (sourceComorphism lid2) mor5
          case cast sigma1 of
-           Nothing -> fail "Cannot compose modifications"
+           Nothing -> Fail.fail "Cannot compose modifications"
            Just sigma3 -> do
              (sigma4, _) <- map_sign (targetComorphism lid1) sigma3
              case cast sigma4 of
-               Nothing -> fail "Cannot compose modifications"
+               Nothing -> Fail.fail "Cannot compose modifications"
                Just sigma5 -> tauSigma lid2 sigma5 >>= comp mor6
 
 -- | Modifications
@@ -233,7 +234,7 @@ idModification (Comorphism cid) = Modification (IdModif cid)
 
 -- | vertical compositions of modifications
 
-vertCompModification :: Monad m => AnyModification -> AnyModification
+vertCompModification :: Fail.MonadFail m => AnyModification -> AnyModification
                      -> m AnyModification
 vertCompModification (Modification lid1) (Modification lid2) =
    let cid1 = targetComorphism lid1
@@ -241,17 +242,17 @@ vertCompModification (Modification lid1) (Modification lid2) =
    in
     if language_name cid1 == language_name cid2
     then return $ Modification (VerCompModif lid1 lid2)
-    else fail $ "Comorphism mismatch in composition of" ++ language_name lid1
+    else Fail.fail $ "Comorphism mismatch in composition of" ++ language_name lid1
              ++ "and" ++ language_name lid2
 
 -- | horizontal composition of modifications
 
-horCompModification :: Monad m => AnyModification -> AnyModification
+horCompModification :: Fail.MonadFail m => AnyModification -> AnyModification
                     -> m AnyModification
 horCompModification (Modification lid1) (Modification lid2) =
    let cid1 = sourceComorphism lid1
        cid2 = sourceComorphism lid2
    in if language_name (targetLogic cid1) == language_name (sourceLogic cid2)
       then return $ Modification (HorCompModif lid1 lid2)
-      else fail $ "Logic mismatch in composition of" ++ language_name lid1
+      else Fail.fail $ "Logic mismatch in composition of" ++ language_name lid1
                ++ "and" ++ language_name lid2

@@ -7,8 +7,6 @@ import Data.List (intersperse)
 import DtdToHaskell.TypeDef
 import Text.PrettyPrint.HughesPJ as PP
 
-import Debug.Trace
-
 {- | Convert typedef to appropriate instance declaration, either @XmlContent@,
 @XmlAttributes@, or @XmlAttrType@. -}
 mkInstance :: TypeDef -> Doc
@@ -20,7 +18,7 @@ mkInstance (DataDef _ n fs []) =
         topatval = if null fs then ppHName n else topat
     in
     text "instance HTypeable" <+> ppHName n <+> text "where" $$
-    nest 4 ( trace "-- HERE!" $ text "toHType _ = Defined \"" PP.<> ppXName n
+    nest 4 (text "toHType _ = Defined \"" PP.<> ppXName n
              PP.<> text "\" [] []" )
     $$
     text "instance XmlContent" <+> ppHName n <+> text "where" $$

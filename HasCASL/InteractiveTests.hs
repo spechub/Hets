@@ -47,6 +47,7 @@ import Data.Time.Clock
 
 import Control.Monad
 import Control.Monad.Trans (MonadIO (..))
+import qualified Control.Monad.Fail as Fail
 
 import Driver.Options
 import Common.Utils (getEnvDef)
@@ -383,7 +384,7 @@ fromSigs :: SigSens Env Sentence -> String -> String ->
             (DefinitionStore -> DGNav -> String -> String -> IO a) -> IO a
 fromSigs sigs s1 s2 f =
   case prepareDefStore sigs s1 of
-    Nothing -> fail $ "Pattern spec " ++ s1 ++ " not found."
+    Nothing -> Fail.fail $ "Pattern spec " ++ s1 ++ " not found."
     Just (def, dgnav) -> f def dgnav s1 s2
 
 
@@ -436,7 +437,7 @@ testSpecMatchM :: SigSens Env Sentence
                -> IO ()
 testSpecMatchM sigs patN cN =
   case prepareDefStore sigs patN of
-    Nothing -> fail $ "Pattern spec " ++ patN ++ " not found."
+    Nothing -> Fail.fail $ "Pattern spec " ++ patN ++ " not found."
     Just (def, dgnav) -> do
       (res, l) <- matchSpecs def dgnav typeFilter 1 patN cN
       (res2, l') <- matchCandidates def l

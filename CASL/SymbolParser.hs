@@ -29,6 +29,7 @@ import Common.Id
 import Common.Keywords
 import Common.Lexer
 import Common.Token
+import qualified Control.Monad.Fail as Fail
 
 import Text.ParserCombinators.Parsec
 
@@ -73,7 +74,7 @@ symbMap ks k =
          f <- asKey mapsTo
          k2 <- option Implicit $ fmap fst symbKind
          case joinSymbKinds k k2 of
-           Nothing -> fail $ "contradicting symbol kinds '"
+           Nothing -> Fail.fail $ "contradicting symbol kinds '"
              ++ showDoc k "' and '" ++ showDoc k2 "'"
            Just k3 -> do
              t <- symb ks k3

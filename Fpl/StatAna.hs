@@ -40,6 +40,7 @@ import Common.Utils
 import qualified Common.Lib.MapSet as MapSet
 
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
@@ -143,7 +144,7 @@ terms) after overload resolution.  A current limitation is that a unique sort
 is needed as input that is taken from the term between @case@ and @of@. -}
 resolvePattern :: FplSign -> (SORT, FplTerm) -> Result ([VAR_DECL], FplTerm)
 resolvePattern sign (resSort, term) =
-  let err msg = fail $ msg ++ " " ++ showDoc term "" in
+  let err msg = Fail.fail $ msg ++ " " ++ showDoc term "" in
   case term of
   Application opSym args p ->
     let ide@(Id ts _ _) = opSymbName opSym in
@@ -341,7 +342,7 @@ instance TermExtension TermExt where
   termToFormula t = let s = sortOfTerm t in
         if s == boolSort
         then return $ ExtFORMULA $ BoolTerm t
-        else fail $ "expected boolean term but found sort: " ++ show s
+        else Fail.fail $ "expected boolean term but found sort: " ++ show s
 
 simplifyTermExt :: FplSign -> TermExt -> TermExt
 simplifyTermExt s te = let rec = simplifyTerm minFplTerm simplifyTermExt in

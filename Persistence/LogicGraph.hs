@@ -35,10 +35,10 @@ import Proofs.AbstractState (ProverOrConsChecker (..), G_prover (..), G_cons_che
 
 import Control.Monad (unless)
 import Control.Monad.IO.Class (MonadIO (..))
-import qualified Control.Monad.Fail as MFail
+import qualified Control.Monad.Fail as Fail
 import Data.List (isPrefixOf)
 import Database.Persist hiding ((==.))
-import Database.Esqueleto
+import Database.Esqueleto hiding (Entity, insert, EntityField)
 
 migrateLogicGraphKey :: String
 migrateLogicGraphKey = "migrateLogicGraph"
@@ -48,7 +48,7 @@ exportLogicGraph opts =
   onDatabase (databaseConfig opts) $
     advisoryLocked opts migrateLogicGraphKey $ migrateLogicGraph opts
 
-migrateLogicGraph :: (MonadIO m, MFail.MonadFail m) => HetcatsOpts -> DBMonad m ()
+migrateLogicGraph :: (MonadIO m, Fail.MonadFail m) => HetcatsOpts -> DBMonad m ()
 migrateLogicGraph opts = do
   let versionKeyName = "lastMigratedVersion"
   do
@@ -61,7 +61,7 @@ migrateLogicGraph opts = do
       Entity _ value : _ ->
         unless (hetsValue value == hetsVersionNumeric) $ migrateLogicGraph' opts
 
-migrateLogicGraph' :: (MonadIO m, MFail.MonadFail m) => HetcatsOpts -> DBMonad m ()
+migrateLogicGraph' :: (MonadIO m, Fail.MonadFail m) => HetcatsOpts -> DBMonad m ()
 migrateLogicGraph' opts = do
   exportLanguagesAndLogics opts LogicGraph.logicGraph
   exportLanguageMappingsAndLogicMappings opts LogicGraph.logicGraph
@@ -151,14 +151,14 @@ findLogic logicSlugS = do
 -- Export all LanguageMappings and LogicMappings. Add those that have been added
 -- since a previous version of Hets. This does not delete any of the old
 -- mappings.
-exportLanguageMappingsAndLogicMappings :: (MonadIO m, MFail.MonadFail m)
+exportLanguageMappingsAndLogicMappings :: (MonadIO m, Fail.MonadFail m)
                                        => HetcatsOpts
                                        -> LogicGraph -> DBMonad m ()
 exportLanguageMappingsAndLogicMappings opts logicGraph =
   mapM_ (findOrCreateLanguageMappingAndLogicMapping opts) $
     comorphisms logicGraph
 
-findOrCreateLanguageMappingAndLogicMapping :: (MonadIO m, MFail.MonadFail m)
+findOrCreateLanguageMappingAndLogicMapping :: (MonadIO m, Fail.MonadFail m)
                                            => HetcatsOpts -> AnyComorphism
                                            -> DBMonad m ( LanguageMappingId
                                                         , LogicMappingId
@@ -226,7 +226,7 @@ findOrCreateLogicMapping sourceLogicKey targetLogicKey languageMappingKey (Comor
       }
     Entity key _ : _ -> return key
 
-findLogicMappingByComorphism :: (MonadIO m, MFail.MonadFail m)
+findLogicMappingByComorphism :: (MonadIO m, Fail.MonadFail m)
                              => AnyComorphism
                              -> DBMonad m (Maybe (Entity LogicMapping))
 findLogicMappingByComorphism comorphism =
@@ -234,7 +234,7 @@ findLogicMappingByComorphism comorphism =
     let logicMappingSlugS = slugOfLogicMapping comorphism
     findLogicMappingBySlug logicMappingSlugS
 
-findLogicMappingBySlug :: (MonadIO m, MFail.MonadFail m)
+findLogicMappingBySlug :: (MonadIO m, Fail.MonadFail m)
                        => String
                        -> DBMonad m (Maybe (Entity LogicMapping))
 findLogicMappingBySlug logicMappingSlugS = do
@@ -242,7 +242,7 @@ findLogicMappingBySlug logicMappingSlugS = do
     where_ (logic_mappings ^. LogicMappingSlug ==. val logicMappingSlugS)
     return logic_mappings
   case logicMappingL of
-    [] -> MFail.fail ("Persistence.LogicGraph.findLogicMappingBySlug: Could not find LogicMapping " ++ logicMappingSlugS)
+    [] -> Fail.fail ("Persistence.LogicGraph.findLogicMappingBySlug: Could not find LogicMapping " ++ logicMappingSlugS)
     logicMappingEntity : _ -> return $ Just logicMappingEntity
 
 exportReasoners :: MonadIO m => HetcatsOpts -> LogicGraph -> DBMonad m ()
@@ -292,34 +292,34 @@ findOrCreateReasoner reasonerSlugS name reasonerKindValue = do
       , reasonerKind = reasonerKindValue
       }
 
-findReasonerByGConsChecker :: (MonadIO m, MFail.MonadFail m)
+findReasonerByGConsChecker :: (MonadIO m, Fail.MonadFail m)
                            => G_cons_checker
                            -> DBMonad m (Entity Reasoner)
 findReasonerByGConsChecker gConsChecker = do
   let reasonerSlugS = slugOfConsistencyChecker gConsChecker
   reasonerM <- findReasoner reasonerSlugS Enums.ConsistencyChecker
   case reasonerM of
-    Nothing -> MFail.fail ("Persistence.LogicGraph.findReasonerByGConsChecker: Could not find Consistency Checker " ++ reasonerSlugS)
+    Nothing -> Fail.fail ("Persistence.LogicGraph.findReasonerByGConsChecker: Could not find Consistency Checker " ++ reasonerSlugS)
     Just reasonerEntity -> return reasonerEntity
 
-findReasonerByGProver :: MonadIO m
+findReasonerByGProver :: (MonadIO m, Fail.MonadFail m)
                       => G_prover
                       -> DBMonad m (Entity Reasoner)
 findReasonerByGProver gProver = do
   let reasonerSlugS = slugOfProver gProver
   reasonerM <- findReasoner reasonerSlugS Enums.Prover
   case reasonerM of
-    Nothing -> fail ("Persistence.LogicGraph.findReasonerByGProver: Could not find Prover " ++ reasonerSlugS)
+    Nothing -> Fail.fail ("Persistence.LogicGraph.findReasonerByGProver: Could not find Prover " ++ reasonerSlugS)
     Just reasonerEntity -> return reasonerEntity
 
-findReasonerByProverOrConsChecker :: (MonadIO m, MFail.MonadFail m)
+findReasonerByProverOrConsChecker :: (MonadIO m, Fail.MonadFail m)
                                   => ProverOrConsChecker
                                   -> DBMonad m (Entity Reasoner)
 findReasonerByProverOrConsChecker reasoner = case reasoner of
   Prover gProver -> findReasonerByGProver gProver
   ConsChecker gConsChecker -> findReasonerByGConsChecker gConsChecker
 
-findOrCreateLogicTranslation :: (MonadIO m, MFail.MonadFail m)
+findOrCreateLogicTranslation :: (MonadIO m, Fail.MonadFail m)
                              => HetcatsOpts
                              -> AnyComorphism
                              -> DBMonad m (Maybe (Entity LogicTranslation))
@@ -345,7 +345,7 @@ findOrCreateLogicTranslation _ comorphism@(Comorphism.Comorphism cid) =
               ) $ zip [1..] $ constituents cid
         return $ Just $ Entity logicTranslationKey logicTranslationValue
 
-createLogicTranslationStep :: (MonadIO m, MFail.MonadFail m)
+createLogicTranslationStep :: (MonadIO m, Fail.MonadFail m)
                            => LogicTranslationId
                            -> (Int, String)
                            -> DBMonad m (Entity LogicTranslationStep)
@@ -375,7 +375,7 @@ createLogicTranslationStep logicTranslationKey (number, name)
     isInclusion_ :: String -> Bool
     isInclusion_ name_ = "id_" `isPrefixOf` name_ || "incl_" `isPrefixOf` name_
 
-findOrCreateLogicInclusion :: (MonadIO m, MFail.MonadFail m)
+findOrCreateLogicInclusion :: (MonadIO m, Fail.MonadFail m)
                            => String
                            -> DBMonad m (Entity LogicInclusion)
 findOrCreateLogicInclusion name = do
@@ -390,13 +390,13 @@ findOrCreateLogicInclusion name = do
 
       languageM <- findLanguage languageSlugS
       languageKey <- case languageM of
-        Nothing -> MFail.fail ("Persistence.LogicGraph.findOrCreateLogicInclusion: "
+        Nothing -> Fail.fail ("Persistence.LogicGraph.findOrCreateLogicInclusion: "
           ++ "Could not find the language " ++ languageSlugS)
         Just (Entity key _) -> return key
 
       sourceM <- findLogic sourceSlugS
       sourceKey <- case sourceM of
-        Nothing -> MFail.fail ("Persistence.LogicGraph.findOrCreateLogicInclusion: "
+        Nothing -> Fail.fail ("Persistence.LogicGraph.findOrCreateLogicInclusion: "
           ++ "Could not find the source logic " ++ sourceSlugS)
         Just (Entity key _) -> return key
 
@@ -405,7 +405,7 @@ findOrCreateLogicInclusion name = do
         Just targetSlugS -> do
           targetM <- findLogic targetSlugS
           case targetM of
-            Nothing -> MFail.fail ("Persistence.LogicGraph.findOrCreateLogicInclusion: "
+            Nothing -> Fail.fail ("Persistence.LogicGraph.findOrCreateLogicInclusion: "
               ++ "Could not find the target logic " ++ targetSlugS)
             Just (Entity key _) -> return $ Just key
 

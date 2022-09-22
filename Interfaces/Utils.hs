@@ -61,7 +61,6 @@ import Comorphisms.LogicGraph (logicGraph)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Common.IRI
-import Common.Utils (splitOn)
 import Common.Result
 import Common.LibName
 import qualified Common.Lib.SizedList as SizedList
@@ -70,6 +69,7 @@ import Common.ExtSign
 import Common.AS_Annotation (SenAttr (..), makeNamed, mapNamed)
 import qualified Common.Doc as Pretty
 import Common.Utils
+import qualified Control.Monad.Fail as Fail
 
 
 #ifdef UNI_PACKAGE
@@ -218,18 +218,18 @@ conservativityChoser :: Bool -> [ConservativityChecker sign sentence morphism]
   -> IO (Result (ConservativityChecker sign sentence morphism))
 #ifdef UNI_PACKAGE
 conservativityChoser useGUI checkers = case checkers of
-  [] -> return $ fail "No conservativity checker available"
+  [] -> return $ Fail.fail "No conservativity checker available"
   hd : tl ->
     if useGUI && not (null tl) then do
       chosenOne <- listBox "Pick a conservativity checker"
                                 $ map checkerId checkers
       case chosenOne of
-        Nothing -> return $ fail "No conservativity checker chosen"
+        Nothing -> return $ Fail.fail "No conservativity checker chosen"
         Just i -> return $ return $ checkers !! i
    else
 #else
 conservativityChoser _ checkers = case checkers of
-  [] -> return $ fail "No conservativity checker available"
+  [] -> return $ Fail.fail "No conservativity checker available"
   hd : _ ->
 #endif
    return $ return hd

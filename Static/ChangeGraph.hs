@@ -36,6 +36,7 @@ import qualified Data.Set as Set
 import Data.List
 
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 -- * deleting and adding nodes
 
@@ -158,7 +159,7 @@ addDGNode nn th o cs dg = let
   nl = newInfoNodeLab nn inf th
   in case lookupNodeByName sn dg of
      [] -> return (changeDGH dg $ InsertNode (n, nl), n)
-     ns -> fail $ "node name '" ++ sn
+     ns -> Fail.fail $ "node name '" ++ sn
        ++ "' already defined in graph for node(s): "
        ++ show (map fst ns)
 
@@ -169,7 +170,7 @@ renameNode n nn dg = let
   nl = labDG dg n
   in case lookupNodeByName sn dg of
      [] -> return $ changeDGH dg $ SetNodeLab nl (n, nl { dgn_name = nn })
-     ns -> fail $ "node name '" ++ sn
+     ns -> Fail.fail $ "node name '" ++ sn
        ++ "' already defined in graph for node(s): "
        ++ show (map fst ns)
 
@@ -206,7 +207,7 @@ delDGLink ms t i dg = let
        $ "ambiguous link: " ++ shows (t, i) " other sources are: "
          ++ show (map snd os)
      case ms of
-      Just sr | sr /= s -> fail
+      Just sr | sr /= s -> Fail.fail
         $ "non-matching source node: " ++ show (s, t, i)
         ++ " given: " ++ show sr
       _ -> let delE dg' = return $ changeDGH dg' $ DeleteEdge (s, t, lbl)

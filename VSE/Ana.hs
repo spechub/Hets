@@ -46,6 +46,7 @@ import Data.Char (toLower)
 import Data.List
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import qualified Control.Monad.Fail as Fail
 
 import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
@@ -304,7 +305,7 @@ minExpForm sign (Ranged f r) = let sig = castSign sign in case f of
   Defprocs ps -> do
     nps <- mapM (minProcdecl sig) ps
     return $ Ranged (Defprocs nps) r
-  _ -> fail "nyi for restricted constraints"
+  _ -> Fail.fail "nyi for restricted constraints"
 
 oneExpT :: Sign () Procs -> TERM () -> Result (TERM ())
 oneExpT = oneExpTerm (const return)

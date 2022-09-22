@@ -47,6 +47,7 @@ module Comorphisms.LogicGraph
     ) where
 
 import qualified Data.Map as Map
+import qualified Control.Monad.Fail as Fail
 import Data.Maybe (fromMaybe)
 
 import Common.Result
@@ -123,6 +124,7 @@ import Comorphisms.Adl2CASL
 #ifndef NOOWLLOGIC
 import OWL2.DMU2OWL2
 import OWL2.OWL22CASL
+import OWL2.OWL22NeSyPatterns
 import OWL2.CASL2OWL
 import OWL2.OWL22CommonLogic
 import OWL2.Propositional2OWL2
@@ -211,6 +213,7 @@ comorphismList =
     , Comorphism OWL22CommonLogic
     , Comorphism DMU2OWL2
     , Comorphism CASL2OWL
+    , Comorphism OWL22NeSyPatterns
     , Comorphism Propositional2OWL2
 #ifdef CASLEXTENSIONS
     , Comorphism ExtModal2OWL
@@ -318,4 +321,4 @@ lookupQTA_in_LG coname =
    qta = qTATranslations logicGraph
  in if coname `elem` Map.keys qta then
         return $ Map.findWithDefault (error "") coname qta
-      else fail "no translation found"
+      else Fail.fail "no translation found"

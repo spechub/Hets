@@ -36,6 +36,7 @@ import Data.List (stripPrefix)
 import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import qualified Control.Monad.Fail as Fail
 
 data OWLMorphism = OWLMorphism
   { osource :: Sign
@@ -85,7 +86,7 @@ inducedFromMor rm sig = do
         (ASymbol s@(Entity _ _ v), ASymbol (Entity _ _ u)) ->
             if Set.member s syms
             then return $ if u == v then (m, t) else (Map.insert s u m, t)
-            else fail $ "unknown symbol: " ++ showDoc s "\n" ++ shows sig ""
+            else Fail.fail $ "unknown symbol: " ++ showDoc s "\n" ++ shows sig ""
         (AnUri v, AnUri u) -> case filter (`Set.member` syms)
           $ map (`mkEntity` v) entityTypes of
           [] -> let v2 = showIRICompact v
@@ -127,7 +128,7 @@ legalMor :: OWLMorphism -> Result ()
 legalMor m = let mm = mmaps m in unless
   (Set.isSubsetOf (Map.keysSet mm) (symOf $ osource m)
   && Set.isSubsetOf (Set.fromList $ inducedElems mm) (symOf $ otarget m))
-        $ fail "illegal OWL2 morphism"
+        $ Fail.fail "illegal OWL2 morphism"
 
 composeMor :: OWLMorphism -> OWLMorphism -> Result OWLMorphism
 composeMor m1 m2 =
@@ -145,7 +146,7 @@ cogeneratedSign :: Set.Set Entity -> Sign -> Result OWLMorphism
 cogeneratedSign s sign =
   let sig2 = execState (mapM_ (modEntity Set.delete) $ Set.toList s) sign
   in if isSubSign sig2 sign then return $ inclOWLMorphism sig2 sign else
-         fail "non OWL2 subsignatures for (co)generatedSign"
+         Fail.fail "non OWL2 subsignatures for (co)generatedSign"
 
 generatedSign :: Set.Set Entity -> Sign -> Result OWLMorphism
 generatedSign s sign = cogeneratedSign (Set.difference (symOf sign) s) sign
@@ -186,7 +187,7 @@ statSymbMapItems sig mtsig =
         return $ Map.insert s t m
       (APrefix su, AnUri tu) | su == showIRICompact tu -> return m
       _ -> if u == t then return m else
-        fail $ "differently mapped symbol: " ++ showDoc s "\nmapped to "
+        Fail.fail $ "differently mapped symbol: " ++ showDoc s "\nmapped to "
              ++ showDoc u " and " ++ showDoc t "")
   Map.empty
   . concatMap (\ (SymbMapItems m us) ->
@@ -226,4 +227,4 @@ morphismUnion mor1 mor2 = do
                  otarget = tsig,
                  mmaps = Map.union m1 m2,
                  pmap = Map.union (pmap mor1) $ pmap mor2}
-  _ -> fail $ "can't unite morphisms:" ++ show pairs
+  _ -> Fail.fail $ "can't unite morphisms:" ++ show pairs

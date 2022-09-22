@@ -23,6 +23,7 @@ import OWL2.Translate
 
 import Common.Id
 import Common.Result
+import qualified Control.Monad.Fail as Fail
 
 transSid :: Token -> String
 transSid = transString . show
@@ -34,10 +35,10 @@ toFoltl :: FORMULA EM_FORMULA -> Result Foltl
 toFoltl = foldFormula foltlRec
 
 foltlRec :: Record EM_FORMULA (Result Foltl) (Result Foltl)
-foltlRec = (constRecord extModalToFoltlt (const $ fail "foltlRec1")
-  (fail "foltlRec2"))
+foltlRec = (constRecord extModalToFoltlt (const $ Fail.fail "foltlRec1")
+  (Fail.fail "foltlRec2"))
   { foldQuantification = \ _ q vs f _ -> if
-      q == Unique_existential then fail "Unique_existential not supported"
+      q == Unique_existential then Fail.fail "Unique_existential not supported"
       else fmap (PreOp $ QuantF
         (if q == Universal then AllValuesFrom else SomeValuesFrom)
         $ concatMap (\ (Var_decl l s _) -> map
@@ -62,8 +63,8 @@ foltlRec = (constRecord extModalToFoltlt (const $ fail "foltlRec1")
       n1 <- toNominal a1
       n2 <- toNominal a2
       return . ABoxass . ARole n1 n2 . RName $ predSymToString ps
-    _ -> fail "no concept or role"
-  , foldDefinedness = \ _ _ _ -> fail "foltlRec.Definedness"
+    _ -> Fail.fail "no concept or role"
+  , foldDefinedness = \ _ _ _ -> Fail.fail "foltlRec.Definedness"
   , foldEquation = \ (Equation t1 _ t2 _) _ _ _ _ -> do
       s1 <- toNominal t1
       s2 <- toNominal t2
@@ -71,8 +72,8 @@ foltlRec = (constRecord extModalToFoltlt (const $ fail "foltlRec1")
   , foldMembership = \ (Membership t s _) _ _ _ -> do
       n <- toNominal t
       return . ABoxass . AConcept n . CName $ transId s
-  , foldQuantOp = \ _ _ _ _ -> fail "foltlRec.QuantOp"
-  , foldQuantPred = \ _ _ _ _ -> fail "foltlRec.QuantPred"
+  , foldQuantOp = \ _ _ _ _ -> Fail.fail "foltlRec.QuantOp"
+  , foldQuantPred = \ _ _ _ _ -> Fail.fail "foltlRec.QuantPred"
   }
 
 extModalToFoltlt :: EM_FORMULA -> Result Foltl
@@ -82,12 +83,12 @@ extModalToFoltlt emf = case emf of
     case p of
       NextY True -> return $ PreOp X f
       StateQuantification True b -> return $ PreOp (if b then G else F) f
-      _ -> fail "extModalToFoltl.PrefixForm"
+      _ -> Fail.fail "extModalToFoltl.PrefixForm"
   UntilSince True f1 f2 _ -> do
     u1 <- toFoltl f1
     u2 <- toFoltl f2
     return $ BinOp u1 Until u2
-  _ -> fail "extModalToFoltl"
+  _ -> Fail.fail "extModalToFoltl"
 
 predSymToString :: PRED_SYMB -> String
 predSymToString = transId . predSymbName
@@ -97,4 +98,4 @@ toNominal trm = case trm of
   Qual_var v _ _ -> return . transString $ show v
   Sorted_term t _ _ -> toNominal t
   Cast t _ _ -> toNominal t
-  _ -> fail "no nominal"
+  _ -> Fail.fail "no nominal"

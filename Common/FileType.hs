@@ -18,6 +18,7 @@ import System.Exit
 import Common.Utils
 import Common.Result
 import Common.ResultT
+import qualified Control.Monad.Fail as Fail
 
 import Data.List
 import Data.Maybe
@@ -26,13 +27,13 @@ getChecksum :: FilePath -> ResultT IO String
 getChecksum fn = ResultT $ do
   ckprg <- getEnvDef "HETS_CHECKSUM" "shasum -a 256"
   case words ckprg of  -- no support for options with spaces
-    [] -> return $ fail "set HETS_CHECKSUM to a proper command"
+    [] -> return $ Fail.fail "set HETS_CHECKSUM to a proper command"
     cmd : args -> do
       (ex, out, err) <- executeProcess cmd (args ++ [fn]) ""
       return $ case (ex, map words $ lines out) of
         (ExitSuccess, (h : _) : _) | null err ->
           justHint h $ h ++ "  " ++ fn
-        _ -> fail $ "could not determine checksum: "
+        _ -> Fail.fail $ "could not determine checksum: "
           ++ shows ex "\n" ++ out
           ++ if null err then "" else "\nerror\n" ++ err
 
@@ -52,7 +53,7 @@ getMagicFileType mp fn = ResultT $ do
 getMagicFileTypeAux :: Maybe String -> FilePath -> ResultT IO String
 getMagicFileTypeAux pm fn = ResultT $ do
   magic <- getEnvDef "HETS_MAGIC" ""
-  res <- if null magic then return $ fail "null magic" else
+  res <- if null magic then return $ Fail.fail "null magic" else
       runResultT $ getFileType Nothing Nothing magic
   runResultT $ case maybeResult res of
     Just s | isInfixOf "magic" s -> getFileType (Just magic) pm fn
@@ -69,6 +70,6 @@ getFileType mmf mp fn = ResultT $ do
   return $ case (ex, lines out) of
     (ExitSuccess, ls) -> if null err then case ls of
         [l] -> return l
-        _ -> fail $ unexp ++ "output:\n" ++ out
-      else fail $ unexp ++ "error:\n" ++ err
-    _ -> fail $ unexp ++ "exit code: " ++ show ex
+        _ -> Fail.fail $ unexp ++ "output:\n" ++ out
+      else Fail.fail $ unexp ++ "error:\n" ++ err
+    _ -> Fail.fail $ unexp ++ "exit code: " ++ show ex
