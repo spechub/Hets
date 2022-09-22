@@ -101,12 +101,12 @@ Executable hets
 
   if flag(uniform)
     build-depends:
-      --   uni-events
-      -- , uni-graphs >= 2.0 && < 3.0
-      -- , uni-htk >= 2.0 && < 3.0
-      -- , uni-reactor
-      -- , uni-uDrawGraph >= 2.0 && < 3.0
-      -- , uni-util >= 2.0 && < 3.0
+         uni-events
+       , uni-graphs >= 2.0 && < 3.0
+       , uni-htk >= 2.0 && < 3.0
+       , uni-reactor
+       , uni-uDrawGraph >= 2.0 && < 3.0
+       , uni-util >= 2.0 && < 3.0
     cpp-options: -DUNI_PACKAGE
 
   if flag(haxml)
